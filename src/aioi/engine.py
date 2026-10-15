@@ -48,7 +48,6 @@ from .prompts import (
     OPERATIONS_SYSTEM,
     PROJECT_EXTRACTION_SYSTEM,
     UNIT_TYPE_EXTRACTION_SYSTEM,
-    build_buyer_chat_system,
     build_chat_system,
     build_column_map_system,
     build_project_docs_block,
@@ -60,10 +59,6 @@ from .prompts import (
     build_media_group_instruction,
     build_media_read_instruction,
     build_project_block,
-    DEED_VISION_INSTRUCTION,
-    FIELD_LABELS,
-    NATURAL_QUESTIONS,
-    deed_extraction_schema,
     column_map_schema,
     extraction_schema,
     inventory_schema,
@@ -76,7 +71,7 @@ from .prompts import (
 )
 from .imaging import downscale_image
 from .revenue import SellerRole
-from .schema import Property, BuyerLead, PropertyGroup
+from .schema import Property
 from .sharepoint import MediaStore, SharePointError, extension_for, listing_folder, sanitize_filename
 
 # Headroom so the token cap never truncates a reply. The model controls actual length
@@ -146,36 +141,6 @@ def _wants_project_facts(text: str) -> bool:
     return any(k in t for k in _DOC_TOPIC_HINTS) and any(q in t for q in _QUESTION_MARKERS)
 
 
-def _is_fee_question(text: str) -> bool:
-    t = (text or "").lower()
-    # Loại trừ các chi phí nội tại của BĐS (phí quản lý, thuế phí, phí bảo trì, phí gửi xe...)
-    if any(p in t for p in ("phí quản lý", "phi quan ly", "phí gửi xe", "phí giữ xe", "phí dịch vụ tòa", "thuế phí", "phí trước bạ", "phí sang tên", "phí bảo trì", "phí bảo dưỡng", "phí công chứng")):
-        return False
-    fee_inquiries = (
-        "phí môi giới", "phi moi gioi", "phí hoa hồng", "phi hoa hong", "hoa hồng", "hoa hong",
-        "phí bên em", "phi ben em", "phí dịch vụ bên em", "thu phí thế nào", "thu phi the nao",
-        "tốn phí không", "ton phi khong", "mất phí không", "mat phi khong", "mất tiền không",
-        "tốn tiền không", "thu bao nhiêu", "chi phí thế nào", "lấy phí bao nhiêu", "mấy % hoa hồng",
-        "bao nhiêu phần trăm", "đăng tin có mất tiền", "đăng tin có tốn phí", "đăng tin miễn phí", "chi phí"
-    )
-    return any(w in t for w in fee_inquiries)
-
-
-def _is_trust_question(text: str) -> bool:
-    t = (text or "").lower()
-    trust_inquiries = (
-        "lừa đảo", "lua dao", "công ty gì", "công ty nào", "ai ơi nhà đất là gì",
-        "aioinhadat là gì", "có uy tín không", "uy tín không", "sao tin được",
-        "văn phòng công ty ở đâu", "trụ sở ở đâu", "công ty ở đâu"
-    )
-    return any(w in t for w in trust_inquiries)
-
-
-def _is_link_question(text: str) -> bool:
-    t = (text or "").lower()
-    return any(w in t for w in ("link bài đăng", "link bai dang", "có link không", "co link khong", "gửi link", "gui link", "xem bài đăng ở đâu", "link đâu", "link dau", "link bài", "link xem"))
-
-
 # Max tool-calling steps in one agent turn (a safety cap so the loop can't run away).
 MAX_AGENT_STEPS = 6
 
@@ -211,32 +176,13 @@ _AGENT_TOOL_GUIDE = (
 # A request to SEE a drawing / floor plan / render ("bản vẽ căn 24", "cho xem mặt bằng") — this
 # is NOT a basket edit; it must NEVER run listing operations (that once pruned the basket).
 _MEDIA_REQUEST_HINTS = (
-    "bản vẽ", "bản vẻ", "bản thiết kế", "mặt cắt", "sơ đồ", "phối cảnh",
+    "bản vẽ", "bản vẻ", "bản thiết kế", "mặt bằng", "mặt cắt", "sơ đồ", "phối cảnh",
     "layout", "brochure", "mẫu thiết kế", "bản đồ",
-    "xem mặt bằng", "xin mặt bằng", "gửi mặt bằng", "mặt bằng tầng", "mặt bằng căn",
-    "mặt bằng tổng thể", "mặt bằng chi tiết", "sơ đồ mặt bằng",
-)
-
-_COMMERCIAL_PREMISES_HINTS = (
-    "cho thuê mặt bằng", "thuê mặt bằng", "mặt bằng kinh doanh", "mặt bằng buôn bán",
-    "bán mặt bằng", "mặt bằng cho thuê", "mặt bằng mặt tiền", "mặt bằng trệt",
-    "mặt bằng tầng trệt", "tìm mặt bằng", "kiếm mặt bằng",
 )
 
 
 def _wants_media(text: str) -> bool:
-    t = (text or "").lower()
-    # Commercial retail premises ("cho thuê mặt bằng kinh doanh", "bán mặt bằng...")
-    # is a property listing/inquiry, NOT a media request for an architectural floorplan drawing.
-    if any(p in t for p in _COMMERCIAL_PREMISES_HINTS):
-        if not any(k in t for k in ("xem bản vẽ", "cho xem", "gửi bản vẽ", "xin bản vẽ")):
-            return False
-    if "mặt bằng" in t:
-        if any(h in t for h in ("xem mặt bằng", "xin mặt bằng", "gửi mặt bằng", "mặt bằng tầng",
-                                "mặt bằng căn", "mặt bằng tổng thể", "mặt bằng chi tiết", "sơ đồ mặt bằng")):
-            return True
-        return any(h in t for h in ("bản vẽ", "bản vẻ", "bản thiết kế", "layout", "phối cảnh"))
-    return any(h in t for h in _MEDIA_REQUEST_HINTS)
+    return any(h in (text or "").lower() for h in _MEDIA_REQUEST_HINTS)
 
 
 # A read-out description that indicates the file is SHARED REFERENCE knowledge (a phân-lô map,
@@ -392,8 +338,6 @@ class Conversation:
     user_type: SellerRole = SellerRole.UNKNOWN  # seller role, once the bot can tell (§V)
     listings: list[Listing] = field(default_factory=list)
     active_listing_id: str = ""
-    role: str = "unknown"  # "seller", "buyer", "unknown"
-    buyer_lead: BuyerLead | None = None
     # Transient (not persisted): the structural basket ops applied on the latest turn, so the
     # reply layer can confirm exactly what happened. Reset each turn by _plan_and_apply.
     last_receipts: list[tuple] = field(default_factory=list)
@@ -417,21 +361,12 @@ class Conversation:
     def __post_init__(self) -> None:
         if not self.listings:
             self.listings.append(Listing())
-        if not self.active_listing_id or all(li.listing_id != self.active_listing_id for li in self.listings):
+        if not self.active_listing_id:
             self.active_listing_id = self.listings[0].listing_id
 
     @property
     def active(self) -> Listing:
-        for li in self.listings:
-            if li.listing_id == self.active_listing_id:
-                return li
-        if self.listings:
-            self.active_listing_id = self.listings[-1].listing_id
-            return self.listings[-1]
-        li = Listing()
-        self.listings.append(li)
-        self.active_listing_id = li.listing_id
-        return li
+        return next(li for li in self.listings if li.listing_id == self.active_listing_id)
 
     def new_listing(self) -> Listing:
         """Start a fresh listing and make it active (seller is listing another property)."""
@@ -457,13 +392,10 @@ class Conversation:
     def listing_proposed(self, value: bool) -> None:
         self.active.listing_proposed = value
 
-    def messages(self, limit: int = 16) -> list[Message]:
+    def messages(self) -> list[Message]:
         # Only the ACTIVE listing's turns — so a new listing doesn't inherit the prior
         # one's address/details (the Zalo thread is shared, but each căn reads clean).
-        turns = self.history[self.active.history_start:]
-        if limit and len(turns) > limit:
-            turns = turns[-limit:]
-        return [Message(t.role, t.content) for t in turns]
+        return [Message(t.role, t.content) for t in self.history[self.active.history_start:]]
 
 
 @dataclass
@@ -479,8 +411,6 @@ class TurnResult:
     user_score: float          # 0..100
     tier: str
     escalated: bool = False    # True when this turn was handed to a human admin (oversize media)
-    role: str = "seller"       # "seller" hoặc "buyer"
-    lead: BuyerLead | None = None
 
 
 class ConversationStore(ABC):
@@ -493,8 +423,6 @@ class ConversationStore(ABC):
     @abstractmethod
     def save(self, conv: Conversation) -> None: ...
 
-    def reset(self, user_key: str) -> None: ...
-
 
 class SqliteConversationStore(ConversationStore):
     """Persist a seller and their BASKET of listings. Two tables: `conversations`
@@ -502,16 +430,12 @@ class SqliteConversationStore(ConversationStore):
     keyed by `listing_id`, with `user_key` linking back). A seller has 1..n listings."""
 
     def __init__(self, path: str = "aioi.db"):
-        self._conn = sqlite3.connect(path, check_same_thread=False)
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA busy_timeout=5000")
+        self._conn = sqlite3.connect(path)
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS conversations ("
             "user_key TEXT PRIMARY KEY, user_type TEXT, last_ai_at REAL, "
             "active_listing_id TEXT, history_json TEXT, "
-            "price_book_json TEXT NOT NULL DEFAULT '{}', "
-            "role TEXT NOT NULL DEFAULT 'unknown', "
-            "active_lead_id TEXT NOT NULL DEFAULT '')"
+            "price_book_json TEXT NOT NULL DEFAULT '{}')"
         )
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS listings ("
@@ -520,87 +444,38 @@ class SqliteConversationStore(ConversationStore):
             "history_start INTEGER, status TEXT, fields_json TEXT, "
             "media_json TEXT NOT NULL DEFAULT '[]')"
         )
-        self._conn.execute(
-            "CREATE TABLE IF NOT EXISTS buyer_leads ("
-            "lead_id TEXT PRIMARY KEY, user_key TEXT NOT NULL, loai_giao_dich TEXT, "
-            "loai_bds TEXT, ngan_sach TEXT, khu_vuc TEXT, so_phong_ngu TEXT, "
-            "yeu_cau_xe_hoi TEXT, huong TEXT, muc_dich TEXT, tien_do_mua TEXT, "
-            "vay_ngan_hang TEXT, stage TEXT, notes TEXT, fields_json TEXT, "
-            "updated_at REAL)"
-        )
-        for table, col, default in (
-            ("listings", "media_json", "'[]'"),
-            ("conversations", "price_book_json", "'{}'"),
-            ("conversations", "role", "'unknown'"),
-            ("conversations", "active_lead_id", "''"),
-        ):
+        for table, col, default in (("listings", "media_json", "'[]'"),
+                                    ("conversations", "price_book_json", "'{}'")):
             try:  # migrate older tables that predate this column
                 self._conn.execute(
                     f"ALTER TABLE {table} ADD COLUMN {col} TEXT NOT NULL DEFAULT {default}")
             except sqlite3.OperationalError:
                 pass  # column already exists
         self._conn.execute("CREATE INDEX IF NOT EXISTS idx_listings_user ON listings(user_key)")
-        self._conn.execute("CREATE INDEX IF NOT EXISTS idx_buyer_leads_user ON buyer_leads(user_key)")
         self._conn.commit()
 
     def save(self, conv: Conversation) -> None:
-        active_lead_id = conv.buyer_lead.lead_id if conv.buyer_lead else ""
         self._conn.execute(
             "INSERT INTO conversations(user_key, user_type, last_ai_at, active_listing_id, "
-            "history_json, price_book_json, role, active_lead_id) VALUES (?,?,?,?,?,?,?,?) "
-            "ON CONFLICT(user_key) DO UPDATE SET "
+            "history_json, price_book_json) VALUES (?,?,?,?,?,?) ON CONFLICT(user_key) DO UPDATE SET "
             "user_type=excluded.user_type, last_ai_at=excluded.last_ai_at, "
             "active_listing_id=excluded.active_listing_id, history_json=excluded.history_json, "
-            "price_book_json=excluded.price_book_json, role=excluded.role, "
-            "active_lead_id=excluded.active_lead_id",
+            "price_book_json=excluded.price_book_json",
             (
                 conv.user_key,
                 conv.user_type.value,
                 conv.last_ai_at,
                 conv.active_listing_id,
                 json.dumps([t.__dict__ for t in conv.history], ensure_ascii=False),
-                json.dumps(conv.price_book, ensure_ascii=False),
-                conv.role,
-                active_lead_id,
+                json.dumps(conv.price_book, ensure_ascii=False),  # the seller's OWN uploaded prices
             ),
         )
-        if conv.buyer_lead is not None:
-            bl = conv.buyer_lead
-            self._conn.execute(
-                "INSERT INTO buyer_leads(lead_id, user_key, loai_giao_dich, loai_bds, ngan_sach, "
-                "khu_vuc, so_phong_ngu, yeu_cau_xe_hoi, huong, muc_dich, tien_do_mua, vay_ngan_hang, "
-                "stage, notes, fields_json, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
-                "ON CONFLICT(lead_id) DO UPDATE SET loai_giao_dich=excluded.loai_giao_dich, "
-                "loai_bds=excluded.loai_bds, ngan_sach=excluded.ngan_sach, khu_vuc=excluded.khu_vuc, "
-                "so_phong_ngu=excluded.so_phong_ngu, yeu_cau_xe_hoi=excluded.yeu_cau_xe_hoi, "
-                "huong=excluded.huong, muc_dich=excluded.muc_dich, tien_do_mua=excluded.tien_do_mua, "
-                "vay_ngan_hang=excluded.vay_ngan_hang, stage=excluded.stage, notes=excluded.notes, "
-                "fields_json=excluded.fields_json, updated_at=excluded.updated_at",
-                (
-                    bl.lead_id,
-                    conv.user_key,
-                    bl.loai_giao_dich,
-                    bl.loai_bds,
-                    bl.ngan_sach,
-                    bl.khu_vuc,
-                    bl.so_phong_ngu,
-                    bl.yeu_cau_xe_hoi,
-                    bl.huong,
-                    bl.muc_dich,
-                    bl.tien_do_mua,
-                    bl.vay_ngan_hang,
-                    bl.stage,
-                    bl.notes,
-                    json.dumps(bl.fields, ensure_ascii=False),
-                    bl.updated_at,
-                ),
-            )
         for li in conv.listings:
             self._conn.execute(
                 "INSERT INTO listings(listing_id, user_key, loai_hinh, is_rental, du_an, "
                 "listing_proposed, history_start, status, fields_json, media_json) "
                 "VALUES (?,?,?,?,?,?,?,?,?,?) "
-                "ON CONFLICT(listing_id) DO UPDATE SET user_key=excluded.user_key, loai_hinh=excluded.loai_hinh, "
+                "ON CONFLICT(listing_id) DO UPDATE SET loai_hinh=excluded.loai_hinh, "
                 "is_rental=excluded.is_rental, du_an=excluded.du_an, "
                 "listing_proposed=excluded.listing_proposed, history_start=excluded.history_start, "
                 "status=excluded.status, fields_json=excluded.fields_json, "
@@ -630,8 +505,8 @@ class SqliteConversationStore(ConversationStore):
 
     def load(self, user_key: str) -> Conversation | None:
         row = self._conn.execute(
-            "SELECT user_type, last_ai_at, active_listing_id, history_json, price_book_json, "
-            "role, active_lead_id FROM conversations WHERE user_key=?",
+            "SELECT user_type, last_ai_at, active_listing_id, history_json, price_book_json "
+            "FROM conversations WHERE user_key=?",
             (user_key,),
         ).fetchone()
         if row is None:
@@ -653,34 +528,6 @@ class SqliteConversationStore(ConversationStore):
             for r in lrows
         ]
         history = [Turn(**d) for d in json.loads(row[3])]
-        lead = None
-        if len(row) > 6 and row[6]:
-            lrow = self._conn.execute(
-                "SELECT lead_id, loai_giao_dich, loai_bds, ngan_sach, khu_vuc, so_phong_ngu, "
-                "yeu_cau_xe_hoi, huong, muc_dich, tien_do_mua, vay_ngan_hang, stage, notes, "
-                "fields_json, updated_at FROM buyer_leads WHERE lead_id=?",
-                (row[6],),
-            ).fetchone()
-            if lrow:
-                lead = BuyerLead(
-                    lead_id=lrow[0],
-                    user_key=user_key,
-                    loai_giao_dich=lrow[1] or "mua",
-                    loai_bds=lrow[2],
-                    ngan_sach=lrow[3],
-                    khu_vuc=lrow[4],
-                    so_phong_ngu=lrow[5],
-                    yeu_cau_xe_hoi=lrow[6],
-                    huong=lrow[7],
-                    muc_dich=lrow[8],
-                    tien_do_mua=lrow[9],
-                    vay_ngan_hang=lrow[10],
-                    stage=lrow[11] or "discovery",
-                    notes=lrow[12] or "",
-                    fields=json.loads(lrow[13]) if lrow[13] else {},
-                    updated_at=lrow[14] or 0.0,
-                )
-
         return Conversation(
             user_key=user_key,
             assistant=assign_assistant(user_key),  # deterministic — recompute, don't store
@@ -690,15 +537,7 @@ class SqliteConversationStore(ConversationStore):
             listings=listings,
             active_listing_id=row[2],
             price_book=json.loads(row[4]) if row[4] else {},  # the seller's uploaded prices survive restart
-            role=row[5] if len(row) > 5 and row[5] else "unknown",
-            buyer_lead=lead,
         )
-
-    def reset(self, user_key: str) -> None:
-        self._conn.execute("DELETE FROM listings WHERE user_key=?", (user_key,))
-        self._conn.execute("DELETE FROM buyer_leads WHERE user_key=?", (user_key,))
-        self._conn.execute("DELETE FROM conversations WHERE user_key=?", (user_key,))
-        self._conn.commit()
 
 
 class Engine:
@@ -712,12 +551,10 @@ class Engine:
         conversation_store: ConversationStore | None = None,
         media_store: MediaStore | None = None,
         max_photos_per_listing: int = MAX_PHOTOS_PER_LISTING,
-        sync_json: bool = False,
     ):
         self._provider = provider
         self._fetcher = fetcher  # injectable so tests/offline don't hit the network
         self._max_photos = max_photos_per_listing  # cap photos KEPT per listing (storage cost)
-        self._sync_json = sync_json
         # url -> [(download_url, name|None)]; expands Google Drive folders/files when a
         # GOOGLE_API_KEY is configured. Default is a pass-through (one url, no name).
         self._resolve = resolver or (lambda url: [(url, None)])
@@ -1407,94 +1244,6 @@ class Engine:
     def handle(self, user_key: str, text: str, now: float | None = None) -> TurnResult:
         now = now if now is not None else time.time()
         conv = self.conversation(user_key)
-
-        clean_text = text.strip()
-        cmd = clean_text.lower()
-
-        # Command: hello / reset / xoa — Clear session and all draft data
-        if cmd in ("hello", "/hello", "reset", "/reset", "xoa", "xóa", "/xoa", "clear", "/clear"):
-            new_li = Listing(prop=Property())
-            conv.listings = [new_li]
-            conv.active_listing_id = new_li.listing_id
-            conv.price_book = {}
-            conv.history = []
-            conv.role = "unknown"
-            conv.buyer_lead = None
-            conv.pending_destructive = []
-            conv.last_receipts = []
-            if self._convstore is not None:
-                self._convstore.reset(user_key)
-            reply = (
-                f"Dạ em chào anh/chị! Em là {conv.assistant.name} từ AI Ơi Nhà Đất.\n"
-                "Em đã làm mới phiên chat và xóa toàn bộ thông tin nháp trước đó rồi ạ. "
-                "Anh/chị có thể bắt đầu gửi thông tin nhà đất cần rao bán hoặc cho thuê nhé! 🏡✨"
-            )
-            conv.history.append(Turn("assistant", reply, now))
-            conv.last_ai_at = now
-            return self._build_result(conv, reply, captured=[], now=now)
-
-        # Command: json / thong tin — Inspect current extracted structured data
-        if cmd in ("json", "/json", "xem json", "check json", "thong tin", "thong_tin"):
-            conv.history.append(Turn("user", text, now))
-            if conv.role == "buyer" and conv.buyer_lead:
-                dump_data = {
-                    "vai_tro": "buyer",
-                    "lead_id": conv.buyer_lead.lead_id,
-                    "stage": conv.buyer_lead.stage,
-                    "loai_giao_dich": conv.buyer_lead.loai_giao_dich,
-                    "loai_bds": conv.buyer_lead.loai_bds,
-                    "ngan_sach": conv.buyer_lead.ngan_sach,
-                    "khu_vuc": conv.buyer_lead.khu_vuc,
-                    "thong_tin": dict(conv.buyer_lead.fields),
-                }
-            elif len(conv.listings) > 1:
-                dump_data = {
-                    "vai_tro": "seller",
-                    "so_can_trong_gio": len(conv.listings),
-                    "can_hien_tai": conv.active_listing_id,
-                    "gio_hang": [
-                        {
-                            "ma_can": li.listing_id,
-                            "loai_hinh": li.prop.loai_hinh,
-                            "du_an": li.prop.fields.get("du_an"),
-                            "thong_tin": dict(li.prop.fields),
-                            "do_day_du": f"{int(li.prop.completeness() * 100)}%",
-                            "thieu_truong": li.prop.missing_fields(),
-                            "hinh_anh": len(li.media),
-                        }
-                        for li in conv.listings
-                    ],
-                }
-            else:
-                li = conv.active
-                dump_data = {
-                    "vai_tro": "seller",
-                    "ma_can": li.listing_id,
-                    "loai_hinh": li.prop.loai_hinh,
-                    "du_an": li.prop.fields.get("du_an"),
-                    "thong_tin": dict(li.prop.fields),
-                    "do_day_du": f"{int(li.prop.completeness() * 100)}%",
-                    "thieu_truong": li.prop.missing_fields(),
-                    "du_dieu_kien_tin_nhap": li.prop.summary_ready(),
-                    "hinh_anh": len(li.media),
-                }
-            json_str = json.dumps(dump_data, ensure_ascii=False, indent=2)
-            reply = f"📋 Dữ liệu trích xuất hiện tại (JSON):\n```json\n{json_str}\n```"
-            conv.history.append(Turn("assistant", reply, now))
-            conv.last_ai_at = now
-            return self._build_result(conv, reply, captured=[], now=now)
-
-        # Check if text contains a media/document URL (e.g. from Zalo or pasted link)
-        url_match = re.search(r"https?://\S+", clean_text)
-        if url_match:
-            cand_url = url_match.group(0).rstrip(".,)>\"'")
-            cand_lower = cand_url.lower()
-            media_exts = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf")
-            is_media = any(cand_lower.endswith(ext) for ext in media_exts) or "zadn.vn" in cand_lower or "drive.google.com" in cand_lower
-            if is_media:
-                caption = clean_text.replace(cand_url, "").strip() or None
-                return self.handle_link(user_key, cand_url, now=now, caption=caption)
-
         conv.history.append(Turn("user", text, now))
 
         # 0−. PENDING DESTRUCTIVE CONFIRMATION: a clear/bỏ/chỉ-giữ proposed last turn waits here.
@@ -1593,17 +1342,6 @@ class Engine:
                 self.register_unit_type_from_text(text, project_name=du_an, name=ut_name, voter=user_key)
             project = self.project_for(conv.prop)  # reload for the block below
 
-        # 1d. Buyer branch routing
-        if conv.role == "buyer" and conv.buyer_lead is not None:
-            next_field = conv.buyer_lead.next_question_field()
-            system = build_buyer_chat_system(conv.assistant.name, conv.buyer_lead, next_field)
-            reply = self._provider.chat(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
-            if not reply:
-                reply = f"Dạ em đây ạ! Kết nối mạng vừa bị gián đoạn một chút, anh/chị nhắn lại giúp em với nhé ạ."
-            conv.history.append(Turn("assistant", reply, now))
-            conv.last_ai_at = now
-            return self._build_result(conv, reply, captured, now)
-
         # 2. Choose the reply mode (no word cap on the listing stages):
         #    - essentials still missing       -> <=30-word praise + 1 question (collecting)
         #    - "khá đầy đủ", not yet proposed -> draft the ad, ask "hấp dẫn chưa" (no fee)
@@ -1631,33 +1369,6 @@ class Engine:
             system = build_fee_followup_system(
                 conv.assistant.name, conv.prop, conv.user_type, project_block
             )
-
-        if _is_fee_question(text):
-            system += (
-                "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ PHÍ / CHI PHÍ: ===\n"
-                "Khách vừa hỏi về phí dịch vụ. Hãy TRẢ LỜI RÕ RÀNG, MINH BẠCH trước:\n"
-                "- Đăng tin HOÀN TOÀN MIỄN PHÍ.\n"
-                "- CHỈ thu phí khi giao dịch bán/thuê thành công (1% giá chốt cho chính chủ, 0.5% cho môi giới).\n"
-                "- Không bán được thì KHÔNG tốn một đồng nào.\n"
-                "Sau đó khéo léo kết nối tiếp tục nội dung BĐS đang trao đổi.\n"
-            )
-        elif _is_trust_question(text):
-            system += (
-                "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ UY TÍN / CÔNG TY: ===\n"
-                "Khách vừa hỏi về danh tính công ty hoặc lo ngại an toàn/lừa đảo. Hãy TRẢ LỜI ẤM ÁP, TẠO NIỀM TIN:\n"
-                "- Giới thiệu AI Ơi Nhà Đất (aioinhadat.com) là nền tảng công nghệ kết nối mạng lưới hàng trăm môi giới và người mua thực tế tại TP.HCM.\n"
-                "- Cam kết bảo mật thông tin cá nhân và số điện thoại của khách, không làm phiền.\n"
-                "- Mọi giao dịch chỉ thu phí khi bán thành công.\n"
-                "Sau đó lịch sự mời khách an tâm chia sẻ tiếp thông tin căn nhà.\n"
-            )
-        elif _is_link_question(text):
-            system += (
-                "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ LINK BÀI ĐĂNG: ===\n"
-                "Khách vừa hỏi xem có link bài đăng không. Hãy TRẢ LỜI RÕ RÀNG, CHÂN THÀNH:\n"
-                "- Bên em là mạng lưới kết nối trực tiếp nguồn hàng tới khách mua và môi giới nội bộ, KHÔNG đăng đại trà lên website công khai.\n"
-                "- Bản tóm tắt chi tiết căn nhà em gửi ngay trong tin nhắn này chính là bản tin chuẩn đã được lưu vào hệ thống để kết nối ngay tới người mua.\n"
-                "TUYỆT ĐỐI KHÔNG hứa hẹn chờ hệ thống cập nhật để gửi link.\n"
-            )
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
         system += self._project_memory_block(project)  # remember the price list + phân lô; reason over it
         system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
@@ -1671,9 +1382,6 @@ class Engine:
             reply = self._agent_reply(conv, project, system, now)
         else:
             reply = self._provider.chat(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
-
-        if not reply:
-            reply = f"Dạ em đây ạ! Kết nối mạng vừa bị gián đoạn một chút, anh/chị nhắn lại giúp em với nhé ạ."
 
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
@@ -2162,87 +1870,8 @@ class Engine:
             # shared by the whole project — figure out which before extracting anything.
             reply, captured = self._group_media_batch(conv, fetched, urls, user_key, now)
         else:
-            # Inspect with Vision if this is a Real Estate Deed (Sổ đỏ / Sổ hồng / GCN QSDĐ)
-            deed_data = self._provider.extract_media(
-                [(m.data, m.media_type) for m in fetched],
-                f"{DEED_VISION_INSTRUCTION}\n\nTệp: {names}",
-                deed_extraction_schema(),
-            )
-            if deed_data.get("la_giay_to_bds"):
-                update_fields: dict[str, str] = {}
-                if deed_data.get("loai_hinh") and deed_data["loai_hinh"] != "chua_ro":
-                    update_fields["loai_hinh"] = deed_data["loai_hinh"]
-                for f_name in (
-                    "dia_chi", "dien_tich_dat", "dien_tich_nha", "dien_tich",
-                    "tho_cu", "kich_thuoc", "so_thua", "so_to", "phap_ly",
-                    "ten_du_an", "ma_can"
-                ):
-                    val = deed_data.get(f_name)
-                    if val and str(val).strip():
-                        update_fields[f_name] = str(val).strip()
-                if "ten_du_an" in update_fields and not conv.active.prop.fields.get("du_an"):
-                    update_fields["du_an"] = update_fields["ten_du_an"]
-                if "ma_can" in update_fields and not conv.active.prop.fields.get("ma_so_can"):
-                    update_fields["ma_so_can"] = update_fields["ma_can"]
-
-                captured = conv.active.prop.update(update_fields)
-                refs, capped = self._upload_media(
-                    self._folder_for(conv.active), fetched,
-                    image_slots=self._max_photos - _image_count(conv.active.media),
-                )
-                conv.active.media += refs
-                self._sync_media_folder(conv.active)
-                if self._convstore is not None:
-                    self._convstore.save(conv)
-
-                missing = conv.active.prop.missing_fields()
-                next_field = missing[0] if missing else None
-
-                details = []
-                f_map = conv.active.prop.fields
-                if f_map.get("dia_chi"):
-                    details.append(f"• Địa chỉ: {f_map['dia_chi']}")
-                dt = f_map.get("dien_tich_dat") or f_map.get("dien_tich")
-                kt = f_map.get("kich_thuoc")
-                kt_str = f" ({kt})" if kt else ""
-                if dt:
-                    details.append(f"• Diện tích: {dt}{kt_str}")
-                if f_map.get("tho_cu"):
-                    details.append(f"• Thổ cư công nhận: {f_map['tho_cu']}")
-                st, sb = f_map.get("so_thua"), f_map.get("so_to")
-                if st and sb:
-                    details.append(f"• Số thửa / Tờ bản đồ: Thửa {st}, Tờ {sb}")
-                if f_map.get("phap_ly"):
-                    details.append(f"• Pháp lý: {f_map['phap_ly']}")
-
-                detail_lines = "\n".join(details)
-                if next_field:
-                    natural_ask = NATURAL_QUESTIONS.get(next_field, f"cho em xin thêm {FIELD_LABELS.get(next_field, next_field)}")
-                    if next_field == "gia":
-                        ask_tail = "Pháp lý sổ chuẩn chỉnh rồi anh/chị nha! Anh/chị xác nhận giúp em thông tin trên, và căn này mình dự tính bán với mức giá bao nhiêu ạ? 😊"
-                    elif next_field == "ket_cau":
-                        ask_tail = "Pháp lý sổ chuẩn chỉnh rồi anh/chị nhé! Anh/chị xác nhận giúp em thông tin trên, và nhà mình hiện tại xây mấy tầng/lầu, có mấy phòng ngủ vậy anh? 😊"
-                    else:
-                        ask_tail = f"Pháp lý sổ chuẩn chỉnh rồi anh/chị nhé! Anh/chị xác nhận giúp em và {natural_ask.lower()} để em hoàn thiện tin rao nha ạ 😊"
-                else:
-                    ask_tail = "Hồ sơ pháp lý căn này rất đầy đủ rồi ạ! Anh/chị xem xác nhận lại giúp em thông tin có cần điều chỉnh gì không nhé 😊"
-
-                reply = f"📎 Em đã nhận ({names}) — em xem ảnh sổ của mình rồi ạ 📄✨\n{detail_lines}\n\n{ask_tail}" + self._cap_note(capped)
-                seller_turn = f"[Khách gửi ảnh giấy tờ BĐS: {names}]" + (f" kèm tin nhắn: “{caption.strip()}”" if caption and caption.strip() else "")
-                conv.history.append(Turn("user", seller_turn, now))
-                conv.history.append(Turn("assistant", reply, now))
-                conv.last_ai_at = now
-                return self._build_result(conv, reply, captured=captured, now=now)
-
-            active_prop = conv.active.prop if conv.active else None
-            missing = active_prop.missing_fields() if active_prop else []
-            next_f = missing[0] if missing else None
             instruction = build_media_read_instruction(
-                conv.assistant.name,
-                pending_question=self._pending_seller_question(conv),
-                prop=active_prop,
-                next_field=next_f,
-            )
+                conv.assistant.name, self._pending_seller_question(conv))
             description = self._provider.describe_media(
                 [(m.data, m.media_type) for m in fetched], instruction
             ).strip()
@@ -2254,8 +1883,7 @@ class Engine:
             # Register the project + model, then store the files where they belong: a MẪU NHÀ
             # brochure → the UnitType's shared media (units inherit), else the active căn.
             captured, capped = self._route_readout_media(conv, description, fetched, user_key)
-            header = self._friendly_media_receipt(names, len(fetched))
-            reply = f"{header}\n\n{description}" + self._cap_note(capped)
+            reply = f"📎 Em đã nhận: {names}\n\n{description}" + self._cap_note(capped)
             if (q := self._drain_name_concern()):  # read doc named a near-miss project → ASK
                 reply += "\n\n🤔 " + q
 
@@ -2267,17 +1895,6 @@ class Engine:
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
         return self._build_result(conv, reply, captured, now)
-
-    @staticmethod
-    def _friendly_media_receipt(names: str, count: int) -> str:
-        parts = [p.strip() for p in names.split(",") if p.strip()]
-        is_hash = all(
-            len(p.rsplit(".", 1)[0]) >= 20 and not any(c in p for c in (" ", "_", "-"))
-            for p in parts
-        ) if parts else False
-        if is_hash:
-            return f"📎 Em đã nhận {count} ảnh của nhà mình rồi nhé! 📸✨"
-        return f"📎 Em đã nhận: {names}"
 
     @staticmethod
     def _pending_seller_question(conv: Conversation) -> str:
@@ -2499,15 +2116,8 @@ class Engine:
         groups = [g for g in (result.get("nhom") or []) if g.get("tep")]
 
         if len(groups) <= 1:  # not actually multiple căn — treat as the old single-blob read
-            active_prop = conv.active.prop if conv.active else None
-            missing = active_prop.missing_fields() if active_prop else []
-            next_f = missing[0] if missing else None
             instruction = build_media_read_instruction(
-                conv.assistant.name,
-                pending_question=self._pending_seller_question(conv),
-                prop=active_prop,
-                next_field=next_f,
-            )
+                conv.assistant.name, self._pending_seller_question(conv))
             description = self._provider.describe_media(
                 [(m.data, m.media_type) for m in fetched], instruction
             ).strip()
@@ -2524,8 +2134,7 @@ class Engine:
             tail = "\n\n(Em đã lấy thông tin từ tài liệu, không cần lưu ảnh bảng dữ liệu nha.)" if data_only else ""
             if (q := self._drain_name_concern()):  # read doc named a near-miss project → ASK
                 tail += "\n\n🤔 " + q
-            header = self._friendly_media_receipt(names, len(fetched))
-            return (f"{header}\n\n{description}{tail}" + self._cap_note(capped), captured)
+            return (f"📎 Em đã nhận: {names}\n\n{description}{tail}" + self._cap_note(capped), captured)
 
         # Multiple groups: route each — "chung" enriches the shared project, "can_da_co"
         # updates an EXISTING basket listing, "can_moi" fills the empty starter listing
@@ -2626,77 +2235,12 @@ class Engine:
             if all(li.listing_id != conv.active_listing_id for li in conv.listings):
                 conv.active_listing_id = conv.listings[-1].listing_id
 
-    def sync_listing_json_to_sharepoint(self, listing: Listing) -> None:
-        """Export the listing's structured data as `thong_tin.json` and upload it to
-        the listing's SharePoint folder, ensuring every property folder holds BOTH
-        media bytes (photos/PDFs) and complete machine-readable JSON data."""
-        if self._media_store is None:
-            return
-        if not listing.prop.fields and not listing.prop.loai_hinh and not listing.media:
-            return
-        folder = self._folder_for(listing)
-        data = {
-            "listing_id": listing.listing_id,
-            "status": listing.display_status,
-            "loai_hinh": listing.prop.loai_hinh,
-            "is_rental": listing.prop.is_rental,
-            "du_an": listing.prop.fields.get("du_an"),
-            "fields": dict(listing.prop.fields),
-            "completeness": round(listing.prop.completeness(), 2),
-            "missing_fields": listing.prop.missing_fields(),
-            "summary_ready": listing.prop.summary_ready(),
-            "media_count": len(listing.media),
-            "media": listing.media,
-            "updated_at": int(time.time()),
-        }
-        json_bytes = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
-        try:
-            self._media_store.upload(folder, "thong_tin.json", json_bytes, "application/json")
-        except Exception as e:
-            log.warning("Không thể lưu thong_tin.json lên SharePoint: %s", e)
-
-    def sync_lead_json_to_sharepoint(self, lead: BuyerLead) -> None:
-        """Export the buyer's lead data as `nhu_cau.json` and upload it to
-        the SharePoint folder: `Khách mua/{lead.lead_id}`, ensuring enterprise
-        teams can access structured buyer profiles from OneDrive/SharePoint."""
-        if self._media_store is None:
-            return
-        folder = f"Khách mua/{lead.lead_id}"
-        data = {
-            "lead_id": lead.lead_id,
-            "user_key": lead.user_key,
-            "loai_giao_dich": lead.loai_giao_dich,
-            "loai_bds": lead.loai_bds,
-            "ngan_sach": lead.ngan_sach,
-            "khu_vuc": lead.khu_vuc,
-            "so_phong_ngu": lead.so_phong_ngu,
-            "yeu_cau_xe_hoi": lead.yeu_cau_xe_hoi,
-            "huong": lead.huong,
-            "muc_dich": lead.muc_dich,
-            "tien_do_mua": lead.tien_do_mua,
-            "vay_ngan_hang": lead.vay_ngan_hang,
-            "stage": lead.stage,
-            "notes": lead.notes,
-            "fields": dict(lead.fields),
-            "updated_at": int(lead.updated_at),
-        }
-        json_bytes = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
-        try:
-            self._media_store.upload(folder, "nhu_cau.json", json_bytes, "application/json")
-        except Exception as e:
-            log.warning("Không thể lưu nhu_cau.json lên SharePoint: %s", e)
-
     def _build_result(
         self, conv: Conversation, reply: str, captured: list[str], now: float
     ) -> TurnResult:
         self._drop_stub_listings(conv)   # clean up the blank starter once real căn exist
         if self._convstore is not None:  # persist the listing after every turn
             self._convstore.save(conv)
-        if self._sync_json:
-            if conv.role == "buyer" and conv.buyer_lead:
-                self.sync_lead_json_to_sharepoint(conv.buyer_lead)
-            else:
-                self.sync_listing_json_to_sharepoint(conv.active)
         timeliness = self._timeliness(conv, now)
         completeness = conv.prop.completeness()  # the active listing
         prop_score = g.property_score(completeness, timeliness)
@@ -2705,24 +2249,17 @@ class Engine:
         all_scores = [g.property_score(li.prop.completeness(), timeliness) for li in conv.listings]
         u_score = g.user_score(all_scores, num_listings=len(conv.listings))
         missing = conv.prop.missing_fields()
-        next_f = (
-            conv.buyer_lead.next_question_field()
-            if conv.role == "buyer" and conv.buyer_lead
-            else (missing[0] if missing else None)
-        )
         return TurnResult(
             reply=reply,
             assistant_name=conv.assistant.name,
             captured=captured,
-            next_field=next_f,
+            next_field=missing[0] if missing else None,
             user_type=conv.user_type.value,
             is_listing_post=conv.prop.summary_ready(),
             completeness=completeness,
             property_score=prop_score,
             user_score=u_score,
             tier=g.tier_for(u_score).value,
-            role=conv.role,
-            lead=conv.buyer_lead,
         )
 
     def _match_listing(self, conv: Conversation, ref: str) -> Listing | None:
@@ -2808,20 +2345,6 @@ class Engine:
             conv.user_type = SellerRole(raw_role)
         if plan.get("is_rental"):
             conv.prop.is_rental = True
-
-        intent = plan.get("user_intent")
-        has_seller_context = conv.role == "seller" or len(conv.prop.fields) >= 2
-
-        # Định tuyến theo ngữ nghĩa thực tế (Semantic Intent do Gemini hiểu toàn câu):
-        # Chỉ chuyển sang buyer khi khách thực sự có nhu cầu tìm mua và chưa có hồ sơ bán dở dang.
-        if intent == "buy" and not has_seller_context:
-            conv.role = "buyer"
-            if conv.buyer_lead is None:
-                conv.buyer_lead = BuyerLead(user_key=conv.user_key)
-            if plan.get("buyer_lead"):
-                conv.buyer_lead.update(plan["buyer_lead"])
-        elif intent == "sell":
-            conv.role = "seller"
 
         changed: set[str] = set()
         receipts: list[tuple] = []
