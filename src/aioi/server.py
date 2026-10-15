@@ -7,6 +7,7 @@ Run: uvicorn aioi.server:app --reload --port 8000
 """
 from __future__ import annotations
 
+import logging
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -23,6 +24,9 @@ from .sharepoint import (
     SharePointMediaStore,
 )
 from .supabase_sync import sync_to_supabase_async
+from .voice import is_audio_file, transcribe_voice_url
+
+log = logging.getLogger("aioi.server")
 
 
 def _init_engine() -> Engine:
@@ -57,7 +61,8 @@ app = FastAPI(title="AI Ơi Nhà Đất (AOND) API", version="0.2.0")
 
 class IncomingMessage(BaseModel):
     user_key: str        # Zalo user id (sender)
-    text: str            # message text (or links / commands)
+    text: str = ""       # message text (or links / commands)
+    audio_url: str | None = None
 
 
 class Reply(BaseModel):
@@ -101,15 +106,33 @@ class ZaloBridgeResponse(BaseModel):
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "provider": _settings.effective_provider}
+    return {
+        "status": "ok",
+        "provider": _settings.effective_provider,
+        "chat_model": _settings.chat_model,
+        "stt": "groq-whisper" if _settings.groq_api_key else "disabled",
+    }
 
 
 @app.post("/message", response_model=Reply)
 def message(msg: IncomingMessage) -> Reply:
-    r = _engine.handle(msg.user_key, msg.text)
+    incoming_text = msg.text or ""
+    if msg.audio_url and is_audio_file(msg.audio_url):
+        log.info("Voice note received at /message from %s", msg.user_key)
+        transcribed = transcribe_voice_url(
+            msg.audio_url,
+            groq_api_key=_settings.groq_api_key,
+            model=_settings.groq_whisper_model,
+        )
+        if transcribed:
+            incoming_text = f"[Tin nhắn thoại của khách]: \"{transcribed}\""
+        else:
+            incoming_text = "[Khách gửi tin nhắn thoại nhưng âm thanh bị rè hoặc không nghe rõ tiếng]"
+
+    r = _engine.handle(msg.user_key, incoming_text)
     sync_to_supabase_async(
         external_user_id=msg.user_key,
-        incoming_text=msg.text,
+        incoming_text=incoming_text,
         bot_reply=r.reply,
         role=r.role,
     )
@@ -141,17 +164,54 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
             completeness=0.0,
         )
 
+    # 1. Check if incoming file/message is a voice note
+    audio_url = None
+    if payload.file_url and is_audio_file(payload.file_url, payload.file_name):
+        audio_url = payload.file_url
+    elif "[Khách gửi tin nhắn thoại" in payload.text and payload.file_url:
+        audio_url = payload.file_url
+
+    # 2. Separate image URLs from audio URLs
     media_urls = []
     if payload.image_urls:
         for u in payload.image_urls:
             if u and isinstance(u, str) and u.strip() and u.strip() not in media_urls:
-                media_urls.append(u.strip())
+                if not is_audio_file(u):
+                    media_urls.append(u.strip())
+                elif not audio_url:
+                    audio_url = u.strip()
+
     if payload.image_url and payload.image_url.strip() and payload.image_url.strip() not in media_urls:
-        media_urls.append(payload.image_url.strip())
-    if payload.file_url and payload.file_url.strip() and payload.file_url.strip() not in media_urls:
+        if not is_audio_file(payload.image_url):
+            media_urls.append(payload.image_url.strip())
+        elif not audio_url:
+            audio_url = payload.image_url.strip()
+
+    if payload.file_url and payload.file_url.strip() and payload.file_url.strip() not in media_urls and not audio_url:
+        # Non-audio file (e.g. PDF / DOCX)
         media_urls.append(payload.file_url.strip())
 
     incoming_text = payload.text.strip() if payload.text else ""
+
+    # 3. Handle Voice Note transcription via Groq Whisper API
+    if audio_url or "[Khách gửi tin nhắn thoại" in incoming_text:
+        if audio_url:
+            log.info("Voice note detected from %s: %s", payload.external_user_id, audio_url)
+            transcribed = transcribe_voice_url(
+                audio_url,
+                groq_api_key=_settings.groq_api_key,
+                model=_settings.groq_whisper_model,
+            )
+            if transcribed:
+                log.info("Voice note transcribed for %s: '%s'", payload.external_user_id, transcribed)
+                incoming_text = f"[Tin nhắn thoại của khách]: \"{transcribed}\""
+            else:
+                log.warning("Voice note transcription failed for %s", payload.external_user_id)
+                incoming_text = "[Khách gửi tin nhắn thoại nhưng âm thanh bị rè hoặc không nghe rõ tiếng]"
+        else:
+            incoming_text = "[Khách gửi tin nhắn thoại nhưng không tìm thấy file ghi âm]"
+
+    # 4. Dispatch to Engine
     if media_urls:
         caption = incoming_text or None
         r = _engine.handle_media_batch(payload.external_user_id, media_urls, caption=caption)
