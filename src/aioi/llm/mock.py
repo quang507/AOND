@@ -14,12 +14,12 @@ from .base import LLMProvider, Message
 
 # Very small keyword map mirroring the SRD transcripts. Real extraction is the LLM's job.
 _TYPE_KEYWORDS = {
-    "nha_pho": ["nhà phố", "nha pho"],
-    "chung_cu": ["chung cư", "chung cu", "căn hộ", "can ho"],
+    "nha_pho": ["nhà phố", "nha pho", "1 trệt", "nhà hẻm", "mặt tiền"],
+    "chung_cu": ["chung cư", "chung cu", "căn hộ", "can ho", "2pn", "1pn", "3pn", "officetel", "penthouse", "block"],
     "biet_thu": ["biệt thự", "villa"],
     "nha_xuong": ["nhà xưởng", "nha xuong"],
-    "kho_bai": ["kho bãi", "kho bai"],
-    "dat_tho_cu": ["đất thổ cư", "dat tho cu", "đất nền", "dat nen"],
+    "kho_bai": ["kho bãi", "kho bai", "kho xưởng"],
+    "dat_tho_cu": ["đất thổ cư", "dat tho cu", "đất nền", "dat nen", "lô đất", "thửa đất"],
 }
 
 
@@ -28,6 +28,22 @@ class MockProvider(LLMProvider):
         self._settings = settings
 
     def chat(self, system: str, messages: list[Message], max_tokens: int = 256) -> str:
+        if "KHÁCH HỎI VỀ PHÍ" in system:
+            return (
+                "Dạ bên em đăng tin hoàn toàn MIỄN PHÍ nha anh/chị! Tụi em chỉ thu phí 1% "
+                "khi giao dịch thành công thôi ạ, không bán được thì không tốn đồng nào. (offline)"
+            )
+        if "KHÁCH HỎI VỀ UY TÍN" in system or "KHÁCH HỎI VỀ ĐỘ TIN CẬY" in system:
+            return (
+                "Dạ bên em là nền tảng AI Ơi Nhà Đất thuộc Công ty Nhà Đất, hỗ trợ kết nối mua bán "
+                "bất động sản minh bạch và an toàn ạ! (offline)"
+            )
+        if "KHÁCH HỎI VỀ LINK BÀI ĐĂNG" in system:
+            return (
+                "Dạ bên em là mạng lưới kết nối trực tiếp nguồn hàng tới khách mua và môi giới nội bộ, "
+                "không đăng đại trà lên website công khai. Bản tin tóm tắt em gửi trong tin nhắn này "
+                "chính là bản chuẩn được gửi trực tiếp tới khách mua phù hợp ngay ạ! (offline)"
+            )
         if "DỰ THẢO TIN RAO" in system:
             # Step 1: show the draft ad and ask for approval — NO fee yet.
             return (
@@ -94,6 +110,28 @@ class MockProvider(LLMProvider):
     def extract_media(
         self, items: list[tuple[bytes, str]], instruction: str, json_schema: dict[str, Any]
     ) -> dict[str, Any]:
+        props = json_schema.get("properties", {})
+        if "la_giay_to_bds" in props:
+            # Check if any filename or hint in instruction matches deed keywords
+            # (engine passes "\nTệp: <names>")
+            instr_lower = instruction.lower()
+            file_part = instr_lower.split("tệp:")[-1] if "tệp:" in instr_lower else ""
+            deed_kws = ("so_do", "so_hong", "so-do", "so-hong", "sổ", "gcn", "giay_to", "deed")
+            if any(k in file_part for k in deed_kws) and not any(k in file_part for k in ("phan-lo", "bang_gia", "mat_tien")):
+                return {
+                    "la_giay_to_bds": True,
+                    "loai_giay_to": "so_hong",
+                    "loai_hinh": "nha_pho",
+                    "dia_chi": "123 Nguyễn Thị Thập, P. Tân Phú, Quận 7",
+                    "so_thua": "125",
+                    "so_to": "45",
+                    "dien_tich_dat": "75m2",
+                    "dien_tich_nha": "150m2",
+                    "tho_cu": "75m2",
+                    "kich_thuoc": "5x15m",
+                    "phap_ly": "Sổ hồng riêng chính chủ",
+                }
+            return {"la_giay_to_bds": False}
         # Offline: no pixels to read → not a price list. Tests use a fixed provider double.
         return {}
 
@@ -186,6 +224,14 @@ class MockProvider(LLMProvider):
             if m:
                 out["dien_tich"] = f"{m.group(1)}m2"
 
+        m_dim = re.search(r"(\d+(?:[.,]\d+)?)\s*[x*X]\s*(\d+(?:[.,]\d+)?)", text)
+        if m_dim:
+            out["kich_thuoc"] = f"{m_dim.group(1)}x{m_dim.group(2)}m"
+
+        m_pn = re.search(r"(\d+)\s*(?:pn|phòng ngủ)", text)
+        if m_pn:
+            out["so_phong_ngu"] = f"{m_pn.group(1)}PN"
+
         # Nhiều căn trong 1 tin: "căn 42 và 41", "42 với 41", "các căn 40, 41 và 42". Require an
         # explicit "và"/"với"/"&" conjunction so a trailing area like "căn 42, 70m2" isn't
         # misread as a 2-code list (the real LLM disambiguates by context; the offline mock can't).
@@ -259,6 +305,23 @@ class MockProvider(LLMProvider):
         if m:
             out["unit_type"] = m.group(1).strip()
 
+        # Mock intent extraction (for offline tests without real LLM)
+        if any(k in text for k in ("tìm mua", "cần mua", "muốn mua", "tìm nhà", "tìm căn", "cần thuê", "tìm thuê", "muốn thuê", "hỏi mua")):
+            out["user_intent"] = "buy"
+            lead_data: dict[str, str] = {}
+            if "bình thạnh" in text:
+                lead_data["khu_vuc"] = "Bình Thạnh"
+            m_g = re.search(r"(\d+(?:[.,]\d+)?\s*tỷ)", text)
+            if m_g:
+                lead_data["ngan_sach"] = m_g.group(1)
+            if "nhà phố" in text:
+                lead_data["loai_bds"] = "nha_pho"
+            elif "chung cư" in text or "căn hộ" in text:
+                lead_data["loai_bds"] = "chung_cu"
+            out["buyer_lead"] = lead_data
+        elif any(k in text for k in ("bán", "cần bán", "muốn bán", "gửi bán", "cho thuê", "rao bán", "ký gửi")):
+            out["user_intent"] = "sell"
+
         return out
 
 
@@ -274,6 +337,12 @@ def _flat_to_operations(flat: dict[str, Any]) -> dict[str, Any]:
         result["seller_role"] = role
     if out.pop("is_rental", None):
         result["is_rental"] = True
+    intent = out.pop("user_intent", None)
+    if intent:
+        result["user_intent"] = intent
+    blead = out.pop("buyer_lead", None)
+    if blead:
+        result["buyer_lead"] = blead
     ops = result["operations"]
 
     keep = list(out.pop("giu_lai_cac_can", None) or [])

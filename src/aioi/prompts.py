@@ -14,7 +14,10 @@ from .schema import (
     HOUSE_AREA_FIELDS,
     IDENTITY_FIELDS,
     RENTAL_FIELDS,
+    SECONDARY_FIELDS,
+    PropertyGroup,
     Property,
+    BuyerLead,
 )
 
 # Human-readable Vietnamese labels for each field slug — used when asking questions.
@@ -22,33 +25,172 @@ FIELD_LABELS: dict[str, str] = {
     "loai_hinh": "loại hình BĐS",
     "dia_chi": "địa chỉ",
     "ma_so_can": "mã số căn (vd căn số 42, block/tầng)",
+    "du_an": "tên dự án / chung cư",
     "dien_tich": "diện tích",
     "dien_tich_dat": "diện tích đất",
     "dien_tich_nha": "diện tích nhà",
     "gia": "giá",
     "ket_cau": "kết cấu (số lầu, phòng ngủ)",
-    "lo_gioi_hem": "lộ giới / hẻm trước nhà",
+    "lo_gioi_hem": "vị trí mặt tiền hay hẻm (đường trước nhà)",
     "tinh_trang_ban_giao": "tình trạng bàn giao (đang trống hay có khách thuê)",
     "phap_ly_hoan_cong": "pháp lý, hoàn công (sổ hồng)",
-    "kich_thuoc": "kích thước",
+    # Nhà đất & Đất
+    "kich_thuoc": "kích thước (ngang x dài)",
     "chi_tieu_xay_dung": "chỉ tiêu xây dựng",
     "quy_hoach": "quy hoạch",
     "yeu_to_ha_tang": "yếu tố hạ tầng (cột điện, hố ga)",
+    "tho_cu": "diện tích đất thổ cư",
+    "lo_gioi_duong": "lộ giới đường trước đất",
+    "phap_ly_so_do": "sổ đỏ riêng chính chủ",
+    "the_chap": "tình trạng thế chấp ngân hàng",
+    "thuong_luong": "khả năng thương lượng, bớt lộc",
+    "ly_do_ban": "lý do cần bán / hoàn cảnh riêng tư chia sẻ",
+    "hinh_anh": "hình ảnh thực tế / sổ đỏ",
+    # Chung cư / Căn hộ
+    "so_phong_ngu": "số phòng ngủ và WC",
+    "tang_toa": "tầng và tòa/block căn hộ",
+    "ban_cong_view": "hướng ban công và tầm nhìn (view thoáng hay nội khu)",
+    "noi_that": "tình trạng nội thất (bàn giao cơ bản hay đầy đủ)",
+    "phap_ly_so_hong": "pháp lý (sổ hồng riêng hay HĐMB)",
+    "phi_quan_ly": "phí quản lý dịch vụ",
+    "can_goc": "căn thường hay căn góc",
+    "phi_gui_xe": "phí gửi ô tô / xe máy",
+    "hien_trang_su_dung": "hiện trạng đang ở, để trống hay có khách thuê",
+    # Dự án
+    "chu_dau_tu_phan_khu": "chủ đầu tư và phân khu dự án",
+    "tien_do_xay_dung": "tiến độ thi công xây dựng",
+    "chinh_sach_thanh_toan": "tiến độ thanh toán và chính sách ưu đãi",
+    "phap_ly_du_an": "pháp lý dự án (quy hoạch 1/500, GPXD)",
+    "thoi_gian_ban_giao": "thời gian dự kiến bàn giao",
+    "chiet_khau": "chính sách chiết khấu thanh toán sớm / quà tặng CĐT",
+    "phi_chuyen_nhuong": "phí chuyển nhượng hợp đồng",
+    # Công nghiệp & Kho xưởng
     "thoi_han_su_dung": "thời hạn sử dụng đất",
     "chieu_cao_tran": "chiều cao trần",
     "tai_trong_san": "tải trọng sàn",
     "tram_bien_ap": "trạm biến áp",
     "tieu_chuan_container": "tiêu chuẩn container",
+    "pccc": "hệ thống PCCC nghiệm thu",
+    # Mặt bằng & Thương mại
+    "mat_tien": "bề ngang mặt tiền (m)",
+    "loi_di": "lối đi (chung chủ hay riêng biệt độc lập)",
+    "vi_he_xe": "vỉa hè và chỗ để xe (máy/ô tô)",
+    "nganh_nghe": "ngành nghề kinh doanh phù hợp hoặc hạn chế",
+    "dien_tich_trang_thiet_bi": "hiện trạng bàn giao và trang thiết bị sẵn có",
+    "dien_nuoc_kd": "nguồn điện (3 pha) và nước kinh doanh",
+    # Toà nhà / CHDV / Phòng trọ
+    "dong_tien_thue": "dòng tiền doanh thu khai thác mỗi tháng",
+    "so_phong": "số lượng phòng / căn hộ",
+    "thang_may": "thang máy di chuyển",
+    "gia_dien_nuoc": "giá điện nước và chi phí dịch vụ",
+    "gio_giac": "giờ giấc tự do hay giới nghiêm",
+    "tien_ich_phong": "tiện ích phòng (gác lửng, máy lạnh, bếp)",
+    # Cho thuê chung
     "thoi_han_hd": "thời hạn hợp đồng",
     "muc_coc": "mức cọc",
     "truot_gia": "trượt giá",
     "thoi_gian_fitout": "thời gian fit-out",
+    # Người mua / Thuê
+    "khu_vuc": "khu vực / quận mong muốn",
+    "ngan_sach": "ngân sách / tầm tài chính dự kiến",
+    "loai_bds": "loại hình BĐS tìm kiếm",
+    "yeu_cau_xe_hoi": "yêu cầu hẻm xe hơi / chỗ đậu ô tô",
+    "muc_dich": "mục đích mua (để ở hay đầu tư, kinh doanh)",
+    "tien_do_mua": "thời gian dự kiến chốt mua / xem nhà",
+    "vay_ngan_hang": "nhu cầu vay vốn ngân hàng",
+    "nhan_nha_khi_nao": "thời gian muốn nhận nhà vào ở",
 }
 
+# Lời hỏi tự nhiên như môi giới thực tế (tránh đọc tên slug khô cứng)
+NATURAL_QUESTIONS: dict[str, str] = {
+    # Identity & chung
+    "loai_hinh": "Xác nhận nhẹ căn này là chung cư, nhà phố hay đất",
+    "dia_chi": "Hỏi địa chỉ chính xác của nhà mình ở đường nào, phường mấy, quận nào",
+    "ma_so_can": "Hỏi mã căn hộ hoặc số nhà, tầng và tòa",
+    "du_an": "Hỏi tên chung cư hoặc khu đô thị/dự án",
+    "dien_tich": "Hỏi diện tích sử dụng của căn mình khoảng bao nhiêu mét vuông",
+    "dien_tich_dat": "Hỏi diện tích đất công nhận trên sổ (ngang x dài khoảng bao nhiêu mét)",
+    "dien_tich_nha": "Hỏi diện tích sàn sử dụng hoặc số tầng/lầu",
+    "gia": "Hỏi mức giá bán mong muốn thu về (và giá có thương lượng bớt lộc không)",
+    "ket_cau": "Hỏi nhà mình xây mấy lầu / mấy tầng, có mấy phòng ngủ",
+    "lo_gioi_hem": "Hỏi nhà mình nằm ở mặt tiền đường hay trong hẻm (nếu hẻm thì xe hơi có vào tận cửa được không)",
+    "tinh_trang_ban_giao": "Hỏi nhà hiện đang trống giao ngay hay đang cho thuê",
+    "phap_ly_hoan_cong": "Hỏi sổ hồng riêng đã hoàn công đầy đủ chưa",
+    # Nhà đất & Đất
+    "kich_thuoc": "Hỏi bề ngang và chiều dài nhà/đất khoảng bao nhiêu mét",
+    "chi_tieu_xay_dung": "Hỏi chỉ tiêu quy hoạch được phép xây mấy tầng",
+    "quy_hoach": "Hỏi tình trạng quy hoạch lộ giới",
+    "yeu_to_ha_tang": "Hỏi trước nhà có vướng cột điện hay hố ga không",
+    "tho_cu": "Hỏi diện tích đất thổ cư công nhận trên sổ là bao nhiêu mét vuông",
+    "lo_gioi_duong": "Hỏi đường trước đất rộng mấy mét, xe tải/ô tô vào tận nơi không",
+    "phap_ly_so_do": "Hỏi sổ đỏ riêng chính chủ sẵn sàng công chứng chưa",
+    "the_chap": "Hỏi sổ đang cất ở nhà hay đang thế chấp ngân hàng",
+    "thuong_luong": "Hỏi giá này có thương lượng bớt lộc cho khách thiện chí không",
+    "ly_do_ban": "Hỏi thăm lý do bán hoặc tiến độ cần bán nhanh hay thong thả",
+    "hinh_anh": "Mời gửi hình ảnh thực tế hoặc hình sổ để hồ sơ được chấm điểm cao",
+    # Chung cư / Căn hộ
+    "so_phong_ngu": "Hỏi căn mình thiết kế mấy phòng ngủ và mấy WC",
+    "tang_toa": "Hỏi căn mình ở tầng mấy, thuộc tòa/block nào",
+    "ban_cong_view": "Hỏi hướng ban công và tầm nhìn (view thoáng mát hay nội khu)",
+    "noi_that": "Hỏi nội thất để lại đầy đủ hay bàn giao cơ bản",
+    "phap_ly_so_hong": "Hỏi căn hộ đã có sổ hồng riêng hay còn hợp đồng mua bán (HĐMB)",
+    "phi_quan_ly": "Hỏi phí quản lý dịch vụ mỗi tháng khoảng bao nhiêu",
+    "can_goc": "Hỏi căn mình là căn góc hay căn thường",
+    "phi_gui_xe": "Hỏi phí gửi xe máy, ô tô ở tòa nhà",
+    "hien_trang_su_dung": "Hỏi hiện trạng đang ở, để trống hay đang có hợp đồng thuê",
+    # Dự án
+    "chu_dau_tu_phan_khu": "Hỏi chủ đầu tư và tên phân khu dự án",
+    "tien_do_xay_dung": "Hỏi tiến độ xây dựng hiện tại đến đâu (đang móng, cất nóc hay bàn giao)",
+    "chinh_sach_thanh_toan": "Hỏi tiến độ thanh toán và chính sách vay ngân hàng",
+    "phap_ly_du_an": "Hỏi pháp lý dự án (quy hoạch 1/500, giấy phép xây dựng)",
+    "thoi_gian_ban_giao": "Hỏi dự kiến thời gian nào bàn giao nhà",
+    # Kho xưởng
+    "thoi_han_su_dung": "Hỏi thời hạn sử dụng đất đến năm nào",
+    "chieu_cao_tran": "Hỏi chiều cao trần kho xưởng (m)",
+    "tai_trong_san": "Hỏi tải trọng sàn (tấn/m2)",
+    "tram_bien_ap": "Hỏi trạm biến áp công suất bao nhiêu kVA và nguồn điện 3 pha",
+    "tieu_chuan_container": "Hỏi xe container 20ft/40ft vào tận cửa xưởng được không",
+    "pccc": "Hỏi hệ thống PCCC đã nghiệm thu chưa",
+    # Mặt bằng & Thương mại
+    "mat_tien": "Hỏi bề ngang mặt tiền kinh doanh mấy mét",
+    "loi_di": "Hỏi lối đi chung chủ hay hoàn toàn riêng biệt",
+    "vi_he_xe": "Hỏi vỉa hè rộng mấy mét và chỗ để xe cho khách",
+    "nganh_nghe": "Hỏi ngành nghề kinh doanh phù hợp hoặc ngành bị hạn chế",
+    "thoi_han_hd": "Hỏi thời hạn hợp đồng thuê tối thiểu mấy năm",
+    "muc_coc": "Hỏi mức cọc mấy tháng tiền thuê",
+}
 
-# Stable business context injected into every system prompt so Claude chats in line
-# with AOND's model. Keep it COMPACT — it is sent on every turn. It is also the guard
-# against fabricated fees: the model must quote only the numbers stated here.
+# Hướng dẫn chính sách & tư vấn chưng cất, gọn gàng cho lượt chat thông thường
+CONVERSATION_POLICY = """CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi khách hỏi ngược):
+- Về PHÍ / DỊCH VỤ / CÔNG TY:
+  • Trả lời rõ ràng, uy tín: Bên em đăng tin MIỄN PHÍ; CHỈ thu phí khi giao dịch thành công (1% giá chốt với chính chủ, 0.5% với môi giới; không bán được không mất phí).
+  • An tâm, minh bạch, bảo mật thông tin cá nhân.
+  • Sau khi giải đáp thắc mắc thì khéo léo quay lại thông tin BĐS đang trao đổi.
+- XƯNG HÔ & PHONG CÁCH MÔI GIỚI THỰC CHIẾN (HOẠT BÁT, VUI VẺ, KHÔNG NỊNH BỢ):
+  • Xưng "em", gọi khách "anh/chị". Giọng điệu nhanh nhẹn, hoạt bát, tươi vui, tự nhiên, tràn đầy năng lượng tích cực của chuyên viên môi giới thực chiến (dùng trợ từ linh hoạt: "anh nha", "chị nè", "ạ 😊", "nhé anh").
+  • TUYỆT ĐỐI KHÔNG LẶP TỪ "DẠ": CẤM mở đầu mọi câu nói bằng từ "Dạ"! Mỗi lượt phản hồi tối đa 1 từ "dạ" hoặc không cần dùng "dạ". Hãy mở đầu đa dạng, tự nhiên:
+    - "Vâng anh ơi! ..."
+    - "Em ghi nhận rồi nè anh! ..."
+    - "Dạ vâng chị, ..."
+    - "Tuyệt quá anh nha! ..."
+    - "Okie anh, ..."
+    - Hoặc đi thẳng vào nội dung: "Kích thước 4x15.5m đẹp quá anh. Nhà mình hiện tại..."
+  • TUYỆT ĐỐI KHÔNG CÂU NÀO CŨNG KHEN! Cấm hoàn toàn các tính từ tâng bốc thảo mai: "quá đẹp", "quá tiện", "quá kiên cố", "ấm cúng lắm anh nhỉ", "quá rộng rãi", "quá xuất sắc", "tuyệt vời".
+  • PHÂN BIỆT RÕ RÀNG:
+    - Với các thông số kỹ thuật bình thường (diện tích, kết cấu, địa chỉ, số phòng...): CHỈ TIẾP NHẬN TỰ NHIÊN hoặc đi thẳng vào câu hỏi kế tiếp một cách thân tình, hoạt bát, KHÔNG ĐƯỢC KHEN VÔ CĂN CỨ!
+      Ví dụ tốt: "Em nhận kích thước 4x15.5m rồi anh nha. Nhà mình hiện tại xây mấy tầng/lầu và có mấy phòng ngủ vậy anh?"
+      Ví dụ tốt: "Vâng anh, kết cấu 1 trệt 4 lầu. Nhà mình nằm ở mặt tiền đường hay trong hẻm vậy anh ha?"
+    - CHỈ khen khi có điểm cộng ĐẶC BIỆT THỰC SỰ (mặt tiền kinh doanh lớn, view sông/Landmark, nở hậu tài lộc) và cả cuộc trò chuyện chỉ khen tối đa 1 lần thật ngắn gọn, đúng bản chất.
+- NGUYÊN TẮC HỎI THÔNG TIN BĐS:
+  • VỊ TRÍ NHÀ PHỐ / ĐẤT (lo_gioi_hem): TUYỆT ĐỐI KHÔNG tự nhận / tự đoán nhà nằm trong hẻm khi khách mới chỉ nêu tên đường! Phải hỏi rõ: "Nhà mình nằm ở mặt tiền đường hay trong hẻm vậy anh/chị? (Nếu hẻm thì xe hơi có vào tận cửa được không ạ?)".
+  • CHUNG CƯ & DỰ ÁN (CONDO & PROJECT): TUYỆT ĐỐI KHÔNG hỏi về sổ đỏ / sổ hồng! (Chung cư/dự án tập trung vào tầng, view, số phòng ngủ, CĐT, tiến độ thanh toán, KHÔNG đòi hỏi sổ hồng).
+  • Trả lời ngắn gọn (~25-35 từ khi đang thu thập thông tin), mỗi lượt CHỈ hỏi 1 thông tin cần thiết nhất.
+- KHI KHÁCH HỎI LINK BÀI ĐĂNG (VD: "có link không", "xong gửi link anh xem", "có link bài đăng ko"):
+  • TUYỆT ĐỐI KHÔNG HỨA HẸN "chờ một lát hệ thống cập nhật xong em gửi link" (hệ thống là mạng lưới kết nối môi giới nội bộ, KHÔNG tạo link web công khai như Chợ Tốt / Batdongsan).
+  • Hãy giải thích chân thành, chuyên nghiệp: Dạ bên em là mạng lưới kết nối trực tiếp nguồn hàng tới các nhà đầu tư và môi giới đang có khách mua sẵn, KHÔNG đăng đại trà lên website công khai.
+  • Khẳng định: Toàn bộ thông tin tổng hợp căn nhà em vừa gửi anh/chị xem trong tin nhắn này CHÍNH LÀ bản tin chuẩn đã được lưu vào hệ thống để kết nối tìm người mua ngay ạ!"""
+
+# Stable business context used when discussing fees / drafting listings
 BUSINESS_CONTEXT = """BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ — chỉ nói ra khi khách hỏi, đừng thuyết giảng):
 - Người rao bán/cho thuê BĐS bằng cách chat Zalo tự nhiên (KHÔNG form). Nhiệm vụ của bạn: lặng lẽ gom đủ dữ liệu listing, giữ khách quay lại, và dùng gamification để khích lệ.
 - HAI loại khách — hãy nhận biết qua hội thoại rồi tư vấn cho đúng:
@@ -106,11 +248,10 @@ def build_project_block(
         )
     elif du_an_name:
         parts.append(
-            f'\nƯU TIÊN LƯỢT NÀY — BỔ SUNG KIẾN THỨC DỰ ÁN: khách nhắc dự án "{du_an_name}" '
-            "nhưng em CHƯA có dữ liệu về dự án này. Ngay lượt này, thay vì hỏi chi tiết khác "
-            "của căn, hãy hỏi 1 ý về DỰ ÁN (tiện ích, cổng/vị trí, pháp lý, các mẫu nhà) HOẶC "
-            "XIN MỘT LINK (brochure / trang dự án / folder ảnh) để em đọc và học thêm về dự án. "
-            "Vẫn khen ngắn trước, rồi hỏi đúng 1 ý.\n"
+            f'\nKhách nhắc dự án "{du_an_name}" (hệ thống CHƯA có dữ liệu dự án này). '
+            "Ưu tiên hỗ trợ khách rao căn của họ trước (diện tích, giá, tầng/tòa). "
+            "Nếu tiện hoặc khách có sẵn LINK brochure/mặt bằng thì mới xin một LINK, "
+            "không làm phiền khách, tập trung vào căn đang bán.\n"
         )
 
     if unit_type is not None and unit_type.facts():
@@ -127,7 +268,7 @@ def build_project_block(
             "nhưng em CHƯA có dữ liệu về mẫu này. TUYỆT ĐỐI đừng bịa/suy diễn thông số của mẫu "
             "(diện tích, số phòng, số tầng, bố trí, vật liệu...). Hãy nói thật là em chưa có thông "
             "tin mẫu này và hỏi khách 1 ý về mẫu (diện tích, số phòng ngủ, số tầng, bố trí) HOẶC "
-            "XIN LINK brochure / mặt bằng của mẫu để em đọc và học. Khen ngắn trước, rồi hỏi đúng 1 ý.\n"
+            "XIN LINK brochure / mặt bằng của mẫu để em đọc và học. Tiếp nhận ngắn gọn, rồi hỏi đúng 1 ý.\n"
         )
 
     # Verify-conflicts opening: this seller ALSO lists in the project, so they're a good
@@ -174,55 +315,142 @@ def build_chat_system(
     project_block: str = "",
 ) -> str:
     """System prompt for the conversational reply (SRD §II tone rules)."""
-    # A house (đất riêng) may have an AMBIGUOUS diện tích parked in `dien_tich` (seller gave
-    # one number without saying đất/nhà — captured, not dropped, per honesty rule). Once the
-    # bot has an opening (this field is next up anyway), ask to resolve it by referencing the
-    # number already given, instead of a blind "diện tích đất là bao nhiêu" that ignores it.
     ambiguous_area = prop.fields.get("dien_tich")
     if next_field in ("dien_tich_dat", "dien_tich_nha") and ambiguous_area:
         ask_line = (
             f'Khách đã cho biết diện tích {ambiguous_area} nhưng CHƯA RÕ là diện tích ĐẤT hay '
-            f'diện tích NHÀ (nhà phố/biệt thự/nhà cấp 4 có 2 diện tích khác nhau). Khen ngợi '
-            f'điểm mạnh trước, rồi hỏi lại đúng 1 câu để xác nhận {ambiguous_area} đó là đất '
+            f'diện tích NHÀ (nhà phố/biệt thự/nhà cấp 4 có 2 diện tích khác nhau). Ghi nhận ngắn gọn '
+            f'trước, rồi hỏi lại đúng 1 câu để xác nhận {ambiguous_area} đó là đất '
             "hay nhà, và nếu tiện thì hỏi luôn số diện tích còn lại."
         )
     else:
+        label = FIELD_LABELS.get(next_field, next_field or "")
+        natural = NATURAL_QUESTIONS.get(next_field, f"hỏi thêm {label}")
         ask_line = (
-            f'Thông tin cần hỏi tiếp theo: "{FIELD_LABELS.get(next_field, next_field)}". '
-            "Hãy khen ngợi điểm mạnh của BĐS trước, rồi hỏi đúng 1 thông tin này một cách tự nhiên."
+            f'Thông tin cần hỏi tiếp theo: "{label}". Mục tiêu: {natural}. Tiếp nhận nhanh gọn, tự nhiên (TUYỆT ĐỐI KHÔNG nịnh bợ, KHÔNG khen các thông số kỹ thuật thông thường), rồi hỏi đúng 1 ý này một cách khéo léo.'
             if next_field
             else "Dữ liệu đã khá đầy đủ. Cảm ơn anh/chị và xác nhận trạng thái tin một cách thân thiện."
         )
-    return f"""Bạn là "{assistant_name}", một trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
-{BUSINESS_CONTEXT}
+    group_guidance = ""
+    if prop.group == PropertyGroup.RESIDENTIAL:
+        group_guidance = (
+            "KỊCH BẢN CHO NHÀ ĐẤT (Nhà phố / Biệt thự / Nhà cấp 4):\n"
+            "- Tập trung khai thác: kích thước ngang x dài, vị trí mặt tiền hay trong hẻm (nếu hẻm thì xe hơi vào được không - TUYỆT ĐỐI KHÔNG tự đoán là hẻm), "
+            "kết cấu số tầng/lầu/phòng ngủ, và pháp lý hoàn công sổ hồng riêng.\n"
+            "- Khi thông tin cơ bản đã rõ, hỏi thêm: nhà có đang thế chấp ngân hàng không, "
+            "giá có thương lượng bớt lộc không, và xin gửi hình ảnh thực tế / sổ hồng.\n"
+        )
+    elif prop.group == PropertyGroup.CONDO:
+        group_guidance = (
+            "KỊCH BẢN CHO CHUNG CƯ (Căn hộ / Penthouse / Officetel):\n"
+            "- TUYỆT ĐỐI KHÔNG hỏi về 'lộ giới/hẻm' (chung cư không có hẻm).\n"
+            "- TUYỆT ĐỐI KHÔNG hỏi về sổ đỏ / sổ hồng riêng (chung cư đa số theo HĐMB hoặc tiến độ, tuyệt đối không làm khó khách).\n"
+            "- Tập trung khai thác: tên dự án, tòa/block, tầng, số phòng ngủ & WC, hướng ban công & view, "
+            "nội thất bàn giao, và phí quản lý dịch vụ.\n"
+            "- Khi thông tin cơ bản đã rõ, hỏi thêm: căn góc không, phí gửi xe máy/ô tô, "
+            "hiện trạng đang ở hay có khách thuê sẵn, và xin ảnh view ban công/căn hộ.\n"
+        )
+    elif prop.group == PropertyGroup.PROJECT:
+        group_guidance = (
+            "KỊCH BẢN CHO BĐS DỰ ÁN (Đất dự án, Liền kề / Shophouse CĐT):\n"
+            "- TUYỆT ĐỐI KHÔNG hỏi về sổ đỏ / sổ hồng riêng.\n"
+            "- Tập trung khai thác: Chủ đầu tư, phân khu, tiến độ thi công thực tế, chính sách & tiến độ thanh toán "
+            "(gói vay ưu đãi ân hạn nợ gốc), pháp lý 1/500 và GPXD, thời gian dự kiến bàn giao.\n"
+            "- Khi thông tin cơ bản đã rõ, hỏi thêm: chiết khấu thanh toán sớm, phí chuyển nhượng hợp đồng, "
+            "và xin gửi brochure / layout thiết kế.\n"
+        )
+    elif prop.group == PropertyGroup.COMMERCIAL:
+        group_guidance = (
+            "KỊCH BẢN CHO MẶT BẰNG KINH DOANH (Mặt bằng / Shophouse / Cửa hàng cho thuê):\n"
+            "- Tập trung khai thác: bề ngang mặt tiền (rất quan trọng để nhận diện thương hiệu, đặt bảng hiệu), "
+            "lối đi (chung chủ hay hoàn toàn riêng biệt độc lập), vỉa hè rộng mấy mét và chỗ để xe (xe máy / ô tô), "
+            "ngành nghề kinh doanh phù hợp hoặc hạn chế (chủ nhà cho phép F&B ăn uống, thời trang, văn phòng... hay cấm ngành nào).\n"
+            "- Về điều khoản thuê: thời hạn hợp đồng tối thiểu mấy năm, mức cọc, trượt giá, và thời gian cho sửa chữa (fit-out miễn phí tiền nhà).\n"
+            "- Khi thông tin cơ bản đã rõ, hỏi thêm: hiện trạng bàn giao (trống suốt hay có sẵn vách kính/nội thất), điện 3 pha, và xin gửi ảnh mặt tiền/vỉa hè.\n"
+        )
+    elif prop.group == PropertyGroup.INDUSTRIAL:
+        group_guidance = (
+            "KỊCH BẢN CHO KHO XƯỞNG / ĐẤT CÔNG NGHIỆP (Kho bãi / Nhà xưởng / Đất SKC, TMD, Đất kinh doanh):\n"
+            "- Tập trung khai thác: chiều cao trần, tải trọng sàn (tấn/m2), đường xe container 20ft/40ft ra vào tới cửa không, "
+            "trạm biến áp công suất bao nhiêu kVA (nguồn điện 3 pha), hệ thống PCCC đã nghiệm thu chưa.\n"
+            "- Về pháp lý: thời hạn sử dụng đất (đến năm nào), đất SKC hay TMD, giấy phép xây dựng nhà xưởng.\n"
+        )
+    elif prop.group == PropertyGroup.LAND:
+        group_guidance = (
+            "KỊCH BẢN CHO ĐẤT (Đất thổ cư / Đất nông nghiệp / Đất nền):\n"
+            "- Tập trung khai thác: kích thước (ngang x dài), diện tích thổ cư công nhận trên sổ (và đất nông nghiệp nếu có), "
+            "lộ giới đường trước đất (đường nhựa/bê tông mấy mét, ô tô/xe tải vào tận đất không), quy hoạch đất ở hay đất gì.\n"
+            "- Khi thông tin cơ bản đã rõ, hỏi thêm: ranh mốc cắm cọc rõ ràng chưa, có vướng cột điện/hố ga không, "
+            "pháp lý sổ đỏ riêng chính chủ, và xin hình sổ đỏ / trích lục quy hoạch.\n"
+        )
+
+    return f"""Bạn là "{assistant_name}", trợ lý tư vấn bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
+
+{CONVERSATION_POLICY}
 {project_block}
-ĐỘ DÀI (tự cân nhắc theo ý khách, KHÔNG có luật cứng):
-- MẶC ĐỊNH khi đang trò chuyện thu thập thông tin: trả lời NGẮN, khoảng 30 từ — khen vài từ rồi hỏi đúng 1 thông tin.
+{group_guidance}
+ĐỘ DÀI & PHONG CÁCH:
+- MẶC ĐỊNH khi đang trò chuyện thu thập thông tin: trả lời NGẮN GỌN (~20-30 từ) — tiếp nhận tự nhiên (TUYỆT ĐỐI KHÔNG nịnh bợ, KHÔNG khen các thông số kỹ thuật thông thường) rồi hỏi đúng 1 thông tin.
 - KHI khách yêu cầu xem/đăng toàn bộ tin (ví dụ "nêu đầy đủ", "xem lại tin", "đăng giúp em"): hãy soạn BÀI ĐĂNG RAO ĐẦY ĐỦ, dài bao nhiêu cũng được.
 - Dù ngắn hay dài, LUÔN viết TRỌN VẸN. TUYỆT ĐỐI không dừng giữa chừng, không bỏ lửng danh sách, không kết thúc bằng "…" hoặc "-".
 
-QUY TẮC KHÁC:
-- Mỗi lượt hỏi thì chỉ hỏi TỐI ĐA 1 thông tin. Khen ngợi điểm mạnh của BĐS trước khi hỏi. KHÔNG bắt khách điền form.
+QUY TẮC BẮT BUỘC:
+- Mỗi lượt hỏi TỐI ĐA 1–2 ý gắn liền tự nhiên (Smart Bundling, ví dụ: bề ngang + số tầng, hoặc hẻm xe hơi + pháp lý sổ hồng). Tuyệt đối KHÔNG hỏi dồn dập 3-4 ý làm khách ngợp. KHÔNG bắt khách điền form.
+- XÁC NHẬN ĐỊA CHỈ & PHƯỜNG / QUẬN:
+  Khi khách cho tên đường nhưng chưa rõ phường/quận (hoặc đường dài qua nhiều phường/quận như Cao Lỗ, Huỳnh Tấn Phát, Phạm Văn Đồng, Trường Chinh...):
+  Dùng tri thức bản đồ để hỏi xác nhận nhẹ 1 câu rất tự nhiên, ví dụ: "Dạ đoạn Cao Lỗ này là thuộc Phường 4 bên Quận 8 đúng không anh?" hoặc "Dạ đoạn Huỳnh Tấn Phát này là bên Phú Thuận đúng không chị?".
 - Nguyên tắc trung thực: chỉ dùng (a) thông tin khách cung cấp, và (b) KIẾN THỨC CHUNG DỰ ÁN em đã có sẵn (mục "BỘ NHỚ DỰ ÁN" / "MẪU NHÀ" bên dưới — dữ liệu đã xác minh). KHÔNG bịa ngoài hai nguồn đó, KHÔNG suy diễn vật liệu/thông tin từ ảnh. Nếu đoán, dùng "hình như là" và xác nhận lại.
 - QUAN TRỌNG: kiến thức chung dự án (mẫu nhà, phân lô, tiện ích, chủ đầu tư...) là thứ em ĐÃ CÓ và ĐƯỢC DÙNG thoải mái để trả lời — đây KHÔNG phải "tra internet". Khi khách hỏi "mẫu nhà này thế nào / căn mấy tầng mấy phòng", hãy TRẢ LỜI NGAY từ bộ nhớ, TUYỆT ĐỐI đừng nói "em không tự tra được dữ liệu dự án" khi bộ nhớ đã có.
-- Ngắn gọn, thân thiện, đậm chất địa phương Việt Nam. Xưng "em", gọi khách "anh/chị".
+- ĐỒNG CẢM VÀ TÂM SỰ CHUYỆN RIÊNG:
+  • Khi khách tâm sự chuyện riêng tư (gia đình, vợ chồng không hợp ý, con cái định cư nước ngoài, kẹt tiền, nợ nần, bệnh tật...):
+    HÃY đáp lại bằng 1 câu ngắn đồng cảm, chân thành, ấm áp, KHÔNG bình luận sâu, KHÔNG phán xét, KHÔNG hứa hẹn suông (vd: "Dạ em hiểu, nhà ở phải cả hai vợ chồng cùng ưng ý mới thoải mái được ạ").
+    Sau đó khéo léo kết nối với tiến độ bán mong muốn (vd: "Căn này mình cần bán sớm hay cứ thong thả được giá mới chốt ạ?").
+  • TUYỆT ĐỐI KHÔNG đưa chuyện riêng tư, nợ nần, bệnh tật, chuyện gia đình vào bài đăng rao bán công khai.
 {(chr(10) + _fee_hint(user_type)) if _fee_hint(user_type) else ""}
 {ask_line}"""
 
 
+def build_buyer_chat_system(
+    assistant_name: str,
+    lead: BuyerLead,
+    next_field: str | None,
+) -> str:
+    """System prompt dành riêng cho nhánh Người Mua / Người Thuê."""
+    ask_line = (
+        f'Thông tin cần khai thác tiếp theo: "{FIELD_LABELS.get(next_field, next_field)}". '
+        "Hãy lắng nghe, đồng cảm với nhu cầu của khách trước, rồi hỏi đúng 1 câu này một cách tự nhiên, thân tình."
+        if next_field
+        else "Nhu cầu của khách đã rất rõ ràng. Cảm ơn anh/chị, gợi ý rằng hệ thống đang có quỹ căn phù hợp và hẹn lịch đi xem thực tế hoặc xin số điện thoại để gửi bảng chi tiết qua Zalo."
+    )
+    return f"""Bạn là "{assistant_name}", trợ lý tư vấn tìm mua/thuê bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
+
+BỐI CẢNH TƯ VẤN KHÁCH MUA / THUÊ:
+- Khách đang tìm kiếm BĐS qua Zalo. Mục tiêu của bạn: hiểu rõ chân dung & tiêu chí tìm kiếm của khách, lưu trữ nhu cầu để khớp căn chính xác nhất từ rổ hàng.
+- NGUYÊN TẮC HỎI NHỎ GIỌT (1 câu hỏi / lượt):
+  • Tầng 1 (Cốt lõi): Khu vực / Quận mong muốn, Tầm tài chính / Ngân sách dự kiến, Loại BĐS tìm kiếm.
+  • Tầng 2 (Làm rõ theo loại BĐS):
+    - Khách tìm Nhà đất: hỏi mục đích (để ở hay kinh doanh?), đường trước nhà (xe hơi vào tận cửa không?), số phòng ngủ, hướng phong thủy.
+    - Khách tìm Chung cư: hỏi số phòng ngủ (1PN/2PN/3PN), thời gian nhận nhà (ở liền hay chờ xây), có dự án ưa thích chưa.
+    - Khách tìm Dự án / Đất: hỏi mục đích đầu tư ngắn/dài hạn, tỷ lệ vốn tự có và có cần vay gói ưu đãi lãi suất ngân hàng không.
+  • Tầng 3 (Chốt hành động): Hỏi thời gian dự kiến mua/xem nhà, gợi ý quỹ căn phù hợp và hẹn lịch dẫn đi xem thực tế.
+
+QUY TẮC PHẢN HỒI:
+- Trả lời ngắn gọn, chuyên nghiệp, ấm áp, đậm chất môi giới bất động sản am hiểu thị trường. Xưng "em", gọi khách "anh/chị".
+- Mỗi lượt CHỈ hỏi tối đa 1 thông tin còn thiếu.
+- Tuyệt đối không bịa đặt căn ảo không có trong rổ hàng.
+
+{ask_line}"""
+
+
 def build_greeting(assistant_name: str) -> str:
-    """The opening message AOND sends before the seller says anything — it introduces itself
-    and sets the boundary: this channel is for SELLERS/LANDLORDS posting listings only. A
-    buyer looking to purchase/rent is redirected to the sibling channel "AI Ơi Nhà Đất - Buyers"
-    (a different assistant serves them there). Deterministic (no LLM) so it's instant and stable."""
+    """The opening message AOND sends before the user says anything."""
     return (
-        f"Xin chào anh/chị! Em là {assistant_name}, trợ lý ảo của AI Ơi Nhà Đất "
-        "(aioinhadat.com). 🏡\n\n"
-        "Em chỉ phục vụ anh/chị GỬI RAO bất động sản cần **BÁN** hoặc **CHO THUÊ** — cứ nhắn "
-        "em thoải mái bằng chữ, giọng nói hay hình ảnh, không cần điền form gì cả ạ.\n\n"
-        "Nếu anh/chị là người **TÌM MUA hoặc THUÊ**, anh/chị tìm đến kênh khác — kênh "
-        "**AI Ơi Nhà Đất - Buyers** nhé. Một đồng nghiệp của em sẽ phục vụ anh/chị bên đó ạ! 😊"
+        f"Xin chào anh/chị! Em là {assistant_name}, trợ lý bất động sản của AI Ơi Nhà Đất (aioinhadat.com). 🏡\n\n"
+        "Em sẵn sàng hỗ trợ anh/chị:\n"
+        "1. **Gửi Bán / Cho Thuê** nhà đất, căn hộ, dự án — cứ nhắn tin, gửi ảnh hoặc bảng giá tự nhiên, không cần điền form.\n"
+        "2. **Tìm Mua / Thuê** BĐS — nếu anh/chị cần tìm mua, em cùng đồng nghiệp tại kênh **AI Ơi Nhà Đất - Buyers** sẵn sàng lọc rổ hàng và hỗ trợ anh/chị tận tình ạ!\n\n"
+        "Anh/chị đang cần hỗ trợ gửi bán hay tìm mua BĐS để em phục vụ chu đáo nhất ạ? 😊"
     )
 
 
@@ -230,14 +458,20 @@ def describe_captured(prop: Property) -> str:
     """Render every filled field as 'Nhãn: giá trị' lines for the listing-post prompt."""
     lines: list[str] = []
     if prop.loai_hinh:
-        lines.append(f"- {FIELD_LABELS['loai_hinh']}: {prop.loai_hinh}")
+        lines.append(f"- {FIELD_LABELS.get('loai_hinh', 'loại hình BĐS')}: {prop.loai_hinh}")
     if prop.is_rental:
         lines.append("- hình thức: cho thuê")
+    seen = {"loai_hinh"}
     for slug in prop.expected_fields():
-        if slug == "loai_hinh":
+        if slug in seen:
             continue
+        seen.add(slug)
         value = prop.fields.get(slug)
         if value:
+            lines.append(f"- {FIELD_LABELS.get(slug, slug)}: {value}")
+    for slug, value in prop.fields.items():
+        if slug not in seen and value:
+            seen.add(slug)
             lines.append(f"- {FIELD_LABELS.get(slug, slug)}: {value}")
     return "\n".join(lines)
 
@@ -259,6 +493,7 @@ NHIỆM VỤ (DỰ THẢO TIN RAO): Thông tin căn này đã khá đầy đủ.
 QUY TẮC BẮT BUỘC:
 - CHỈ dùng dữ liệu được cung cấp bên dưới. TUYỆT ĐỐI không bịa, không suy diễn thêm số liệu/vật liệu/tiện ích.
 - Bố cục: 1 tiêu đề ngắn gây chú ý (có thể dùng emoji), rồi danh sách thông số chính. Văn phong thân thiện, đậm chất địa phương Việt Nam.
+- ĐẶC BIỆT KHI LÀ CĂN HỘ CHUNG CƯ HOẶC BĐS THUỘC DỰ ÁN: Tiêu đề BẮT BUỘC phải nổi bật TÊN DỰ ÁN / CHUNG CƯ (nếu có trong dữ liệu) kèm số phòng ngủ / tầng / view / điểm nhấn, nghe thật CATCHY, hấp dẫn, thu hút người mua (ví dụ: "🔥 Chỉ 3,2 tỷ căn 2PN Vinhomes Grand Park view công viên thoáng mát", "🌟 Bán căn góc 3PN Masteri Centre Point full nội thất sang xịn").
 - Viết TRỌN VẸN, không bỏ lửng câu, không kết thúc bằng "…".
 - TUYỆT ĐỐI CHƯA nhắc gì đến phí môi giới ở bước này. Chỉ trình bản tin và hỏi khách thấy hấp dẫn chưa.
 
@@ -293,8 +528,8 @@ def build_fee_followup_system(
 {BUSINESS_CONTEXT}
 {project_block}
 NHIỆM VỤ (DẪN DẮT PHÍ): Bạn vừa cho khách xem bản tin rao và hỏi họ thấy hấp dẫn chưa. Hãy đọc phản hồi MỚI NHẤT của khách:
-- NẾU khách ĐỒNG Ý / ưng bản tin: vui vẻ xác nhận sẽ đem đi chào ngay, rồi nhẹ nhàng hỏi khách đã biết phí môi giới bên mình chưa, theo tinh thần: "Em sẽ cho chào căn nhà của anh ngay ạ, mà anh có biết phí môi giới của tụi em chưa ạ?". Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách.
-- NẾU khách muốn CHỈNH SỬA / chưa ưng bản tin: tiếp thu, KHÔNG nhắc phí, và rao lại bản tin cho phù hợp.
+- NẾU khách ĐỒNG Ý / ưng bản tin (kể cả nói câu phủ định mang ý khen / không cần sửa như "không phải sửa cái này đâu em", "vậy là được rồi", "không cần đổi gì", "chuẩn rồi em", hoặc thả tim/like): vui vẻ xác nhận sẽ đem đi chào ngay, rồi nhẹ nhàng hỏi khách đã biết phí môi giới bên mình chưa, theo tinh thần: "Em sẽ cho chào căn nhà của anh ngay ạ, mà anh có biết phí môi giới của tụi em chưa ạ?". Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách.
+- NẾU khách muốn CHỈNH SỬA THẬT SỰ (vd "giá sửa lại 8 tỷ", "nhà có 3 lầu chứ không phải 2"): tiếp thu, cập nhật dữ liệu, KHÔNG nhắc phí, và rao lại bản tin cho phù hợp (với chung cư/dự án thì tiêu đề vẫn phải nổi bật tên dự án và nghe thật catchy).
 - NẾU khách CHÊ PHÍ CAO / DO DỰ / TỪ CHỐI trả phí: hãy THUYẾT PHỤC một cách khéo léo, ấm áp:
   • Đồng cảm trước ("Dạ em hiểu ạ"), KHÔNG tranh cãi, KHÔNG chê khách.
   • Mỗi lượt nhấn 1–2 lợi ích mạnh nhất phù hợp với mối lo của khách (xem DANH SÁCH GIÁ TRỊ), rồi nhẹ nhàng chốt lại.
@@ -309,7 +544,12 @@ DỮ LIỆU BĐS:
 {describe_captured(prop)}"""
 
 
-def build_media_read_instruction(assistant_name: str, pending_question: str | None = None) -> str:
+def build_media_read_instruction(
+    assistant_name: str,
+    pending_question: str | None = None,
+    prop: Property | None = None,
+    next_field: str | None = None,
+) -> str:
     """Instruction for the vision/OCR read of a seller-sent photo or PDF (§II honesty). The chat
     reply must be SHORT (a one-line gist) — the FULL faithful content is stored separately to a
     .md; and it must be context-aware (the seller is here to LIST/SELL). When `pending_question`
@@ -318,17 +558,50 @@ def build_media_read_instruction(assistant_name: str, pending_question: str | No
     generic "đang rao căn nào" prompt."""
     ctx = ""
     if pending_question and pending_question.strip():
-        ctx = (f"""
+        ctx = f"""
 NGAY TRƯỚC ĐÓ khách đang hỏi: "{pending_question.strip()}"
 => Nếu tài liệu này TRẢ LỜI ĐƯỢC câu đó (họ gửi file chính là để em xem và trả lời), hãy TRẢ LỜI THẲNG câu đó TỪ tài liệu — ưu tiên số 1, đừng hỏi lạc đề. Nếu tài liệu KHÔNG có dữ kiện đó thì nói thật là chưa thấy trong tài liệu. Chỉ khi câu hỏi KHÔNG liên quan tài liệu mới quay lại hỏi định hướng.
-""")
+"""
+
+    known_block = ""
+    if prop:
+        captured = describe_captured(prop)
+        if captured:
+            known_block = f"""
+DỮ LIỆU ĐÃ BIẾT VỀ CĂN NÀY (ĐÃ THU THẬP TỪ TRƯỚC - TUYỆT ĐỐI KHÔNG ĐƯỢC HỎI LẠI CÁC THÔNG TIN NÀY!):
+{captured}
+"""
+
+    next_guide = ""
+    if next_field:
+        label = FIELD_LABELS.get(next_field, next_field)
+        natural = NATURAL_QUESTIONS.get(next_field, f"hỏi thêm {label}")
+        next_guide = f"""
+MỤC TIÊU HỎI TIẾP THEO: Sau khi ghi nhận ngắn gọn ảnh, hãy hỏi tiếp thông tin: "{label}".
+Gợi ý câu hỏi: {natural}.
+(Lưu ý: Nếu trong ảnh đã thể hiện rõ thông tin này, hãy ghi nhận luôn; nếu chưa có thì hỏi đúng 1 câu này thật vui vẻ, hoạt bát!)
+"""
+    elif prop:
+        next_guide = """
+Thông tin căn này đã rất đầy đủ. Sau khi ghi nhận ảnh, hãy vui vẻ cảm ơn và hỏi khách xem có cần bổ sung góc chụp hay thông tin gì nữa không nhé!
+"""
+
     return f"""Bạn là "{assistant_name}", trợ lý ảo BĐS của AI Ơi Nhà Đất. Khách vừa gửi một ẢNH hoặc TÀI LIỆU BĐS.
-Hãy TÓM TẮT THẬT NGẮN (1–2 câu) Ý CHÍNH của tài liệu — TUYỆT ĐỐI KHÔNG liệt kê dài dòng từng hạng mục (chi tiết em đã lưu lại để tra cứu sau). Ví dụ: "Đây là quy cách bàn giao thô/hoàn thiện mặt ngoài, phần trong nhà khách tự hoàn thiện anh/chị ạ."
-{ctx}
+Hãy TÓM TẮT THẬT NGẮN (1–2 câu) Ý CHÍNH của ảnh/tài liệu (ví dụ: "Ảnh phòng khách rất sáng và thoáng anh nhé!"). TUYỆT ĐỐI KHÔNG liệt kê dài dòng.
+{ctx}{known_block}{next_guide}
 QUY TẮC BẮT BUỘC:
+- GIỌNG ĐIỆU HOẠT BÁT, VUI VẺ, NĂNG LƯỢNG: Xưng "em", gọi khách "anh/chị". Tự nhiên, thân tình, hoạt bát (dùng "anh ha", "anh nha", "ạ 😊"). CẤM lặp từ "Dạ" ở đầu câu, cấm khen nịnh giả tạo.
+- TUYỆT ĐỐI KHÔNG HỎI LẠI: Nếu trong mục "DỮ LIỆU ĐÃ BIẾT" đã có diện tích, kết cấu, địa chỉ hay giá, CẤM KHÔNG ĐƯỢC xin lại diện tích, giá bán hay mã căn!
+- VỚI CHUNG CƯ & DỰ ÁN: TUYỆT ĐỐI KHÔNG hỏi sổ đỏ / sổ hồng!
+- VỚI NHÀ PHỐ / ĐẤT: TUYỆT ĐỐI KHÔNG tự nhận là trong hẻm! Hãy hỏi nhà mình nằm ở mặt tiền hay trong hẻm.
 - TRUNG THỰC: chỉ nói điều CHẮC CHẮN thấy được. Nếu suy đoán, dùng "hình như". KHÔNG bịa.
-- Xưng "em", gọi khách "anh/chị", thân thiện, NGẮN GỌN.
-- NGƯỜI GỬI ĐANG MUỐN RAO BÁN. Nếu tài liệu là THÔNG TIN CHUNG của dự án (quy cách bàn giao, phụ lục, brochure mẫu nhà... KHÔNG phải một căn cụ thể có giá) VÀ khách KHÔNG đang hỏi điều gì cụ thể, hãy nhắc nhẹ đây là thông tin chung và HỎI khách đang rao CĂN NÀO / đã có BẢNG GIÁ chưa (vd: "Trong này chưa có căn/giá cụ thể — anh/chị đang rao căn nào ạ?"). Nếu là ảnh/giấy tờ của MỘT CĂN cụ thể thì hỏi xác nhận thông tin căn đó.
+- ĐỐI VỚI ẢNH SỔ ĐỎ / SỔ HỒNG / GIẤY CHỨNG NHẬN:
+  • PHÂN VÙNG THỊ GIÁC: CHỈ trích xuất dữ liệu BĐS/thửa đất (Thửa đất số, Tờ bản đồ số, Diện tích, Hình thức & mục đích sử dụng, Thời hạn, Sơ đồ hình thể thửa đất ở trang 2 & trang 3).
+  • BẢO MẬT NHÂN THÂN (PII): TUYỆT ĐỐI KHÔNG đọc, KHÔNG trích xuất, KHÔNG đưa tên chủ sở hữu, số CMND/CCCD, năm sinh, địa chỉ thường trú vào bài đăng tóm tắt công khai.
+  • BÁO LỖI ẢNH THÔNG MINH: Nếu ảnh bị mờ, chụp nghiêng, lóa đèn flash không đọc rõ số thửa/diện tích/sơ đồ, hãy phản hồi ấm áp xin chụp lại trang sơ đồ thửa đất: "Dạ ảnh sổ phần diện tích và sơ đồ thửa đất hơi bị loá sáng/mờ, anh/chị chụp lại gần hơn trang sơ đồ giúp em với nha!".
+- NGƯỜI GỬI ĐANG MUỐN RAO BÁN:
+  • Nếu tài liệu là THÔNG TIN CHUNG của dự án (quy cách bàn giao, phụ lục, brochure mẫu nhà... KHÔNG phải một căn cụ thể có giá) VÀ khách KHÔNG đang hỏi điều gì cụ thể, hãy nhắc nhẹ đây là thông tin chung và HỎI khách đang rao CĂN NÀO / đã có BẢNG GIÁ chưa (vd: "Trong này chưa có căn/giá cụ thể — anh/chị đang rao căn nào ạ?").
+  • Nếu là ảnh thực tế của căn đang rao: Tóm tắt 1 câu về góc ảnh và KẾT THÚC BẰNG CÂU HỎI TIẾP THEO về thông tin còn thiếu.
 - Kết bằng MỘT câu hỏi định hướng (trừ khi đã trả lời câu hỏi đang chờ ở trên thì chỉ cần chốt lại ngắn gọn)."""
 
 
@@ -381,6 +654,60 @@ QUY TẮC:
 - TUYỆT ĐỐI không bịa/suy diễn thông tin không có trong tài liệu. Chỗ nào mờ/không chắc, ghi rõ
   "(không đọc rõ)".
 - Mở đầu bằng một dòng tiêu đề "# {kind}" và các mục con hợp lý. Chỉ trả về Markdown, không lời dẫn."""
+
+
+# Hệ thống Vision chuyên sâu đọc và thẩm định Giấy chứng nhận QSDĐ / Sổ đỏ / Sổ hồng
+DEED_VISION_INSTRUCTION = """Bạn là chuyên gia thẩm định pháp lý BĐS của AI Ơi Nhà Đất.
+Nhiệm vụ: Phân tích kỹ hình ảnh hoặc tài liệu được gửi (Sổ đỏ, Sổ hồng, Giấy chứng nhận QSDĐ, Hợp đồng mua bán, Bản vẽ sơ đồ thửa đất).
+Trích xuất chính xác các thông số kỹ thuật và pháp lý của BĐS:
+1. Địa chỉ thửa đất / căn nhà ghi trên giấy tờ (số nhà, đường, phường/xã, quận/huyện, tỉnh/thành).
+2. Số thửa đất và số tờ bản đồ.
+3. Diện tích đất (m2), diện tích sàn xây dựng nhà ở (m2), diện tích đất ở / thổ cư (m2).
+4. Kích thước (ngang x dài) nếu nhìn thấy trên bản vẽ sơ đồ thửa đất (ví dụ: '5x15m', '4.2x18m').
+5. Loại hình BĐS: nhà ở riêng lẻ -> 'nha_pho', căn hộ chung cư -> 'chung_cu', đất ở -> 'dat'.
+6. Tình trạng pháp lý: ví dụ 'Sổ hồng riêng chính chủ', 'Sổ đỏ riêng', 'Đã hoàn công', 'Hợp đồng mua bán'.
+7. Tên dự án, số tầng, mã căn (nếu là căn hộ chung cư).
+🔒 BẢO MẬT NHÂN THÂN (PII): TUYỆT ĐỐI KHÔNG trích xuất tên chủ sở hữu, số CMND/CCCD, năm sinh, địa chỉ thường trú của chủ nhà. Chỉ trích xuất thông số kỹ thuật của BĐS.
+Nếu ảnh bị mờ hoặc KHÔNG PHẢI giấy tờ pháp lý BĐS (vd ảnh chụp phòng khách, mặt tiền, phong cảnh...), đặt la_giay_to_bds = false."""
+
+
+def deed_extraction_schema() -> dict[str, Any]:
+    """JSON schema để trích xuất dữ liệu từ Sổ hồng, Sổ đỏ, Giấy chứng nhận QSDĐ."""
+    return {
+        "type": "object",
+        "properties": {
+            "la_giay_to_bds": {
+                "type": "boolean",
+                "description": "true nếu ảnh là giấy chứng nhận QSDĐ, sổ hồng, sổ đỏ, HĐMB, bản vẽ sơ đồ thửa đất. false nếu là ảnh nhà thông thường hoặc tài liệu khác.",
+            },
+            "loai_giay_to": {
+                "type": "string",
+                "enum": ["so_hong", "so_do", "hdmb", "so_do_thua_dat", "ban_ve", "khac"],
+                "description": "Phân loại giấy tờ.",
+            },
+            "loai_hinh": {
+                "type": "string",
+                "enum": ["nha_pho", "chung_cu", "dat", "kho_xuong", "mat_bang", "biet_thu", "chua_ro"],
+                "description": "Loại BĐS xác định từ giấy tờ (nhà ở riêng lẻ -> nha_pho, chung cư -> chung_cu, đất ở -> dat).",
+            },
+            "dia_chi": {
+                "type": "string",
+                "description": "Địa chỉ thửa đất / căn nhà ghi trên sổ.",
+            },
+            "so_thua": {"type": "string", "description": "Số thửa đất ghi trên giấy chứng nhận."},
+            "so_to": {"type": "string", "description": "Số tờ bản đồ ghi trên giấy chứng nhận."},
+            "dien_tich_dat": {"type": "string", "description": "Diện tích thửa đất (m2)."},
+            "dien_tich_nha": {"type": "string", "description": "Diện tích sàn xây dựng nhà ở (m2)."},
+            "dien_tich": {"type": "string", "description": "Diện tích căn hộ hoặc diện tích tổng (m2)."},
+            "tho_cu": {"type": "string", "description": "Diện tích đất ở / thổ cư (m2) ghi trên sổ."},
+            "kich_thuoc": {"type": "string", "description": "Kích thước ngang x dài (vd: '5x15m', '4.2x18m')."},
+            "phap_ly": {"type": "string", "description": "Tình trạng pháp lý (vd: Sổ hồng riêng chính chủ, Đã hoàn công)."},
+            "ten_du_an": {"type": "string", "description": "Tên dự án chung cư nếu có."},
+            "ma_can": {"type": "string", "description": "Mã căn hộ / số tầng nếu có."},
+        },
+        "required": ["la_giay_to_bds"],
+        "additionalProperties": False,
+    }
 
 
 def build_inventory_instruction(assistant_name: str) -> str:
@@ -633,6 +960,10 @@ is_new_listing.
 QUAN TRỌNG — is_new_listing: nếu người rao rõ ràng CHUYỂN SANG một BĐS KHÁC so với căn đang nói
 (vd "còn một căn nữa", "qua căn khác", "thêm căn", địa chỉ HOÀN TOÀN khác trong khi căn cũ đã có dữ liệu),
 hãy đặt is_new_listing=true và CHỈ trích thông tin của CĂN MỚI. Nếu chỉ sửa/bổ sung căn hiện tại thì để trống.
+QUAN TRỌNG — lý do bán và chuyện riêng tư: nếu người rao chia sẻ lý do cần bán, hoàn cảnh gia đình
+(con cái định cư/đi xa, vợ chồng không ở, nợ nần, bệnh tật, về quê...), hãy trích vào ly_do_ban
+để lưu trữ nội bộ cho CTV/Admin hỗ trợ. TUYỆT ĐỐI KHÔNG xếp các câu chuyện riêng tư này vào tiện ích
+hay mô tả công khai của căn nhà.
 Trả về JSON theo schema. Bỏ trống (không thêm key) cho thông tin chưa có."""
 
 
@@ -644,6 +975,7 @@ def property_field_props() -> dict[str, Any]:
         list(IDENTITY_FIELDS)
         + list(HOUSE_AREA_FIELDS)
         + sum((CORE_FIELDS[g] for g in CORE_FIELDS), [])
+        + sum((SECONDARY_FIELDS[g] for g in SECONDARY_FIELDS), [])
         + list(RENTAL_FIELDS)
     )
     properties: dict[str, Any] = {
@@ -653,8 +985,8 @@ def property_field_props() -> dict[str, Any]:
     }
     properties["loai_hinh"] = {
         "type": "string",
-        "description": "Loại hình BĐS (slug): nha_pho, chung_cu, biet_thu, chdv, nha_cap_4, "
-        "khach_san, dat_tho_cu, dat_du_an, dat_nong_nghiep, dat_skc, dat_tmd, kho_bai, nha_xuong",
+        "description": "Loại hình BĐS (slug khớp CRM): nha_pho, nha_cap_4, chung_cu, dat, biet_thu, "
+        "phong_tro, mat_bang, toa_nha, chdv, dat_nong_nghiep, dat_kinh_doanh, kho_xuong, khach_san, du_an",
     }
     properties["ma_so_can"] = {
         "type": "string",
@@ -792,6 +1124,11 @@ op hủy; để operations RỖNG. Thà bỏ sót còn hơn ẩn nhầm.
 Ngoài "operations", nếu rõ vai trò người rao thì đặt "seller_role"
 (chu_nha/luot_song/moi_gioi/san/chu_dau_tu); nếu là tin cho thuê đặt "is_rental"=true.
 
+PHÂN BIỆT Ý ĐỊNH KHÁCH ("user_intent") BẰNG TOÀN BỘ NGỮ CẢNH (Semantic Understanding):
+- "sell": Người bán / cho thuê gửi thông tin BĐS của họ, HOẶC người bán hỏi thăm tình hình bán/thị trường (vd: "giá này có khách mua không em?", "có ai hỏi mua chưa?", "bên mua có trả giá không?"). Việc nhắc tới chữ "mua" trong câu hỏi VẪN LÀ "sell"!
+- "buy": Khách thể hiện rõ nhu cầu cá nhân ĐANG TÌM MUA hoặc TÌM THUÊ BĐS (vd: "tôi cần tìm mua căn nhà phố", "tìm thuê chung cư 2PN", "anh muốn mua đầu tư tầm 5 tỷ"). Nếu có thông tin nhu cầu thì trích xuất vào "buyer_lead".
+- "unknown": Chào hỏi chung, hỏi phí, hỏi công ty mà chưa rõ họ muốn bán hay mua.
+
 QUY TẮC:
 - Người rao chỉ khai thông tin bình thường (chưa có gì đặc biệt) → MỘT op "update" target trống.
 - KHÔNG bịa thao tác. Nếu tin nhắn không có ý thao tác nào (vd chào hỏi, hỏi phí) → operations rỗng.
@@ -903,6 +1240,27 @@ def operations_schema() -> dict[str, Any]:
                 "description": "Vai trò người rao khi đã rõ. Bỏ trống nếu chưa chắc.",
             },
             "is_rental": {"type": "boolean", "description": "Có phải tin cho thuê không."},
+            "user_intent": {
+                "type": "string",
+                "enum": ["sell", "buy", "unknown"],
+                "description": "Ý định của khách: sell=gửi bán/cho thuê; buy=tìm mua/thuê; unknown=chưa rõ.",
+            },
+            "buyer_lead": {
+                "type": "object",
+                "properties": {
+                    "loai_giao_dich": {"type": "string", "enum": ["mua", "thue"]},
+                    "loai_bds": {"type": "string", "description": "nha_pho, chung_cu, du_an, dat_tho_cu..."},
+                    "ngan_sach": {"type": "string", "description": "Ngân sách tối đa (vd: 5 tỷ, 10-15 tỷ, 15 tr/tháng)"},
+                    "khu_vuc": {"type": "string", "description": "Quận, huyện, tên dự án tìm kiếm"},
+                    "so_phong_ngu": {"type": "string", "description": "Số phòng ngủ (vd: 2PN, 3PN)"},
+                    "yeu_cau_xe_hoi": {"type": "string", "description": "Hẻm xe hơi, xe hơi vào nhà, chỗ đậu ô tô..."},
+                    "huong": {"type": "string", "description": "Hướng phong thủy mong muốn"},
+                    "muc_dich": {"type": "string", "description": "ở, đầu tư lướt, đầu tư cho thuê, kinh doanh"},
+                    "tien_do_mua": {"type": "string", "description": "mua ngay trong tháng, chuẩn bị tài chính, tham khảo"},
+                    "vay_ngan_hang": {"type": "string", "description": "nhu cầu vay ngân hàng"},
+                },
+                "description": "Dữ liệu nhu cầu người mua/thuê khi khách có ý định mua hoặc thuê.",
+            },
         },
         "required": ["operations"],
     }

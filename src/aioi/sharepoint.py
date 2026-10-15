@@ -16,6 +16,7 @@ import urllib.parse
 import urllib.request
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable
 
 _GRAPH = "https://graph.microsoft.com/v1.0"
@@ -304,3 +305,53 @@ class SharePointMediaStore(MediaStore):
             raise SharePointError(f"Tải lên SharePoint thất bại: {e}") from e
         return MediaRef(item_id=item["id"], web_url=item.get("webUrl", ""),
                          path=item_path, filename=safe_name)
+
+
+class LocalDirectoryMediaStore(MediaStore):
+    """Local filesystem fallback mirroring SharePoint M365 folder structure.
+    Used when Azure AD / SharePoint credentials are not configured or for offline/local run.
+    Stores files and thong_tin.json under `base_dir/<folder>/<filename>`.
+    """
+
+    def __init__(self, base_dir: str | Path = "sharepoint_store"):
+        self.base_dir = Path(base_dir)
+
+    def upload(self, folder: str, filename: str, data: bytes, content_type: str) -> MediaRef:
+        safe_name = sanitize_filename(filename)
+        safe_folder = sanitize_path(folder)
+        target_dir = self.base_dir / safe_folder if safe_folder else self.base_dir
+        target_dir.mkdir(parents=True, exist_ok=True)
+        file_path = target_dir / safe_name
+        file_path.write_bytes(data)
+        item_path = f"{safe_folder}/{safe_name}" if safe_folder else safe_name
+        return MediaRef(
+            item_id=str(file_path.absolute()),
+            web_url=f"file:///{file_path.absolute().as_posix()}",
+            path=item_path,
+            filename=safe_name,
+        )
+
+    def move_folder(self, old_path: str, new_path: str) -> None:
+        old_dir = self.base_dir / sanitize_path(old_path)
+        new_dir = self.base_dir / sanitize_path(new_path)
+        if old_dir.exists() and old_dir != new_dir:
+            new_dir.parent.mkdir(parents=True, exist_ok=True)
+            if new_dir.exists():
+                import shutil
+                for item in old_dir.iterdir():
+                    shutil.move(str(item), str(new_dir / item.name))
+                try:
+                    old_dir.rmdir()
+                except OSError:
+                    pass
+            else:
+                old_dir.rename(new_dir)
+
+    def delete(self, item_id: str) -> None:
+        try:
+            p = Path(item_id)
+            if p.exists() and p.is_file():
+                p.unlink()
+        except Exception:
+            pass
+

@@ -17,8 +17,10 @@ class Settings:
     provider: str
     anthropic_api_key: str | None
     chat_model: str
-    vision_model: str
-    extract_model: str = "claude-haiku-4-5"  # structured extraction/ops — cheap model is enough
+    vision_model: str = "claude-opus-4-8"
+    extract_model: str = "claude-haiku-4-5"
+    gemini_api_key: str | None = None
+    gemini_model: str = "gemini-flash-latest"
     google_api_key: str | None = None  # for Google Drive folder listing (optional)
     db_path: str = "aioi.db"           # local persistent store (projects, later listings)
     azure_tenant_id: str | None = None    # SharePoint media store (kho gốc) — Azure AD app
@@ -29,8 +31,10 @@ class Settings:
 
     @property
     def effective_provider(self) -> str:
-        """Fall back to the offline mock provider when Claude is selected but no key is present."""
+        """Fall back to the offline mock provider when provider key is missing."""
         if self.provider == "claude" and not self.anthropic_api_key:
+            return "mock"
+        if self.provider == "gemini" and not self.gemini_api_key:
             return "mock"
         return self.provider
 
@@ -41,12 +45,20 @@ class Settings:
 
 
 def load_settings() -> Settings:
+    provider = os.getenv("AIOI_LLM_PROVIDER")
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+    if not provider:
+        provider = "gemini" if gemini_key else ("claude" if anthropic_key else "claude")
+
     return Settings(
-        provider=os.getenv("AIOI_LLM_PROVIDER", "claude").strip().lower(),
-        anthropic_api_key=os.getenv("ANTHROPIC_API_KEY") or None,
+        provider=provider.strip().lower(),
+        anthropic_api_key=anthropic_key or None,
         chat_model=os.getenv("AIOI_CHAT_MODEL", "claude-haiku-4-5"),
         vision_model=os.getenv("AIOI_VISION_MODEL", "claude-opus-4-8"),
         extract_model=os.getenv("AIOI_EXTRACT_MODEL", "claude-haiku-4-5"),
+        gemini_api_key=gemini_key or None,
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-flash-latest,gemini-2.5-flash,gemini-flash-lite-latest,gemini-3.5-flash-lite"),
 
         google_api_key=os.getenv("GOOGLE_API_KEY") or None,
         db_path=os.getenv("AIOI_DB_PATH", "aioi.db"),

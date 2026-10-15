@@ -9,16 +9,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Kho tên phân bổ tự động (SRD §II). Order preserved from the requirements doc.
+# Kho 20 tên người thật thân thiện, đậm chất môi giới địa phương (từ Nhadat.cc).
 ASSISTANT_NAMES: list[str] = [
-    "B•ai", "C•ai", "D•ai", "Đ•ai", "G•ai", "Gi•ai", "H•ai", "K•ai",
-    "Kh•ai", "L•ai", "M•ai", "N•ai", "Nh•ai", "Ph•ai", "Q•ai", "R•ai",
-    "S•ai", "T•ai", "Tr•ai", "V•ai",
+    "Thảo", "Hương", "Linh", "Trang", "Ngọc", "Vy", "Nhung", "Yến", "Hằng", "Thư",
+    "Tuấn", "Hùng", "Khoa", "Duy", "Quân", "Huy", "Đạt", "Khang", "Thắng", "Toàn",
 ]
 
-# Reserved roles from the architecture section (Bot-to-Bot truy vấn chéo, SRD §VII).
-SELLER_ASSISTANT = "T•ai"  # phụ trách Người bán (tiếp nhận, làm giàu dữ liệu)
-BUYER_ASSISTANT = "M•ai"   # phụ trách Người mua (lọc khách, hẹn lịch)
+# Tên mặc định đại diện cho nhánh Người bán và Người mua
+SELLER_ASSISTANT = "Tuấn"   # phụ trách Người bán (tiếp nhận, làm giàu dữ liệu)
+BUYER_ASSISTANT = "Linh"    # phụ trách Người mua (lọc khách, hẹn lịch)
 
 
 @dataclass(frozen=True)

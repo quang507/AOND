@@ -17,4 +17,8 @@ aioi.db.bak*
 *.sqlite
 *.sqlite3
 # Local launch/preview config
-.claude/launch.json
+.claude/
+desktop.ini
+sharepoint_store/
+backups/
+*.log

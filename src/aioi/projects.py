@@ -303,7 +303,7 @@ class SqliteProjectStore(ProjectStore):
     SQLite locally; a SharePoint/Postgres backend can replace it behind ProjectStore."""
 
     def __init__(self, path: str = "aioi.db"):
-        self._conn = sqlite3.connect(path)
+        self._conn = sqlite3.connect(path, check_same_thread=False)
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS projects ("
             "key TEXT PRIMARY KEY, name TEXT NOT NULL, amenities TEXT NOT NULL, "
