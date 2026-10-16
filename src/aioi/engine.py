@@ -701,6 +701,75 @@ class SqliteConversationStore(ConversationStore):
         self._conn.commit()
 
 
+_CUSTOMER_IS_EM_RE = re.compile(
+    r"\b(?:em\s+(?:gửi|có|cần|muốn|đang|bán|thuê|chính\s+chủ|chào|là|ở|nhắn|hỏi)|nhà\s+em|căn\s+em|đất\s+em|bên\s+em|sổ\s+em|giá\s+em|của\s+em)\b",
+    re.IGNORECASE,
+)
+_CUSTOMER_IS_CHI_RE = re.compile(
+    r"\b(?:chị\s+(?:gửi|có|cần|muốn|đang|bán|thuê|chính\s+chủ|chào|là|ở|nhắn|hỏi)|nhà\s+chị|căn\s+chị|đất\s+chị|bên\s+chị|sổ\s+chị|giá\s+chị|của\s+chị)\b",
+    re.IGNORECASE,
+)
+_CUSTOMER_IS_ANH_RE = re.compile(
+    r"\b(?:anh\s+(?:gửi|có|cần|muốn|đang|bán|thuê|chính\s+chủ|chào|là|ở|nhắn|hỏi)|nhà\s+anh|căn\s+anh|đất\s+anh|bên\s+anh|sổ\s+anh|giá\s+anh|của\s+anh)\b",
+    re.IGNORECASE,
+)
+_CUSTOMER_IS_ELDER_RE = re.compile(
+    r"\b(?:(?:chú|cô|bác|dì)\s+(?:gửi|có|cần|muốn|đang|bán|thuê|chính\s+chủ|chào|là|ở)|nhà\s+(?:chú|cô|bác|dì))\b",
+    re.IGNORECASE,
+)
+
+
+def _detect_customer_pronoun(conv: Conversation, current_text: str) -> str:
+    if _CUSTOMER_IS_EM_RE.search(current_text):
+        return "em"
+    if _CUSTOMER_IS_CHI_RE.search(current_text):
+        return "chi"
+    if _CUSTOMER_IS_ANH_RE.search(current_text):
+        return "anh"
+    if _CUSTOMER_IS_ELDER_RE.search(current_text):
+        return "elder"
+    for turn in reversed(conv.history[-6:]):
+        if turn.role == "user" and turn.content:
+            if _CUSTOMER_IS_EM_RE.search(turn.content):
+                return "em"
+            if _CUSTOMER_IS_CHI_RE.search(turn.content):
+                return "chi"
+            if _CUSTOMER_IS_ANH_RE.search(turn.content):
+                return "anh"
+            if _CUSTOMER_IS_ELDER_RE.search(turn.content):
+                return "elder"
+    return "unknown"
+
+
+def _clean_reply_tone(reply: str, conv: Conversation, customer_is_em: bool) -> str:
+    reply = reply.strip()
+    # Strip markdown bold asterisks
+    reply = re.sub(r"\*\*([^*]+)\*\*", r"\1", reply)
+
+    if customer_is_em:
+        # Strip any leading "Dạ" / "Dạ em" / "Dạ vâng" / etc.
+        reply = re.sub(r"^(?:dạ\s*(?:vâng|em|anh|chị|ơi|ạ)?[\s,.]*)+", "", reply, flags=re.IGNORECASE).strip()
+        # Strip trailing "ạ"
+        reply = re.sub(r"[\s,]+ạ([.!?]?)$", r"\1", reply, flags=re.IGNORECASE).strip()
+        # Replace accidental "anh/chị" with "em"
+        reply = re.sub(r"\b(?:anh/chị|anh\s*chị)\b", "em", reply, flags=re.IGNORECASE)
+        if reply:
+            reply = reply[0].upper() + reply[1:]
+    else:
+        # Prevent consecutive turns starting with "Dạ"
+        prev_ai_da = False
+        for t in reversed(conv.history):
+            if t.role == "assistant" and t.content:
+                if re.match(r"^\s*dạ\b", t.content, re.IGNORECASE):
+                    prev_ai_da = True
+                break
+        if prev_ai_da and re.match(r"^\s*dạ\b", reply, re.IGNORECASE):
+            reply = re.sub(r"^(?:dạ\s*(?:vâng|ơi|ạ)?[\s,.]*)+", "", reply, flags=re.IGNORECASE).strip()
+            if reply:
+                reply = reply[0].upper() + reply[1:]
+    return reply
+
+
 class Engine:
     def __init__(
         self,
@@ -976,6 +1045,21 @@ class Engine:
         """True if this user has never exchanged a turn — the channel uses it to know whether to
         lead with `greeting()` (so a returning seller isn't greeted from scratch every restart)."""
         return not self.conversation(user_key).history
+
+    def reset(self, user_key: str) -> None:
+        """Reset all in-memory and database records for a specific user_key."""
+        self._conversations.pop(user_key, None)
+        if self._convstore is not None:
+            self._convstore.reset(user_key)
+
+    def reset_all(self) -> None:
+        """Reset all conversations, listings, and leads across all users."""
+        self._conversations.clear()
+        if self._convstore is not None:
+            self._convstore._conn.execute("DELETE FROM listings")
+            self._convstore._conn.execute("DELETE FROM buyer_leads")
+            self._convstore._conn.execute("DELETE FROM conversations")
+            self._convstore._conn.commit()
 
     def _dedup_basket(self, conv: Conversation) -> None:
         """Collapse listings that share a (dự án, mã số căn) — a seller can't list the same
@@ -1411,8 +1495,19 @@ class Engine:
         clean_text = text.strip()
         cmd = clean_text.lower()
 
-        # Command: hello / reset / xoa — Clear session and all draft data
-        if cmd in ("hello", "/hello", "reset", "/reset", "xoa", "xóa", "/xoa", "clear", "/clear"):
+        # Explicit reset command or greeting restart (hello, sticker greeting, /reset)
+        is_greeting_reset = (
+            cmd in (
+                "/reset", "/clear", "/xoa", "reset session", "xóa hết",
+                "hello", "hi", "alo", "helo", "hế lô", "halo",
+                "hello em", "hi em", "chào em", "chào bot",
+                "hello bot", "hi bot", "[sticker cảm xúc]", "👋", "🙋", "🙋‍♂️", "🙋‍♀️",
+            )
+            or (cmd.startswith("hello") and len(cmd) <= 10)
+            or (cmd.startswith("hi ") and len(cmd) <= 8)
+        )
+        if is_greeting_reset:
+            had_prior_history = len(conv.history) > 0
             new_li = Listing(prop=Property())
             conv.listings = [new_li]
             conv.active_listing_id = new_li.listing_id
@@ -1424,11 +1519,23 @@ class Engine:
             conv.last_receipts = []
             if self._convstore is not None:
                 self._convstore.reset(user_key)
-            reply = (
-                f"Dạ em chào anh/chị! Em là {conv.assistant.name} từ AI Ơi Nhà Đất.\n"
-                "Em đã làm mới phiên chat và xóa toàn bộ thông tin nháp trước đó rồi ạ. "
-                "Anh/chị có thể bắt đầu gửi thông tin nhà đất cần rao bán hoặc cho thuê nhé! 🏡✨"
-            )
+            
+            if had_prior_history and cmd in ("/reset", "/clear", "/xoa", "reset session", "xóa hết"):
+                reply = (
+                    f"Dạ em chào anh/chị! Em là {conv.assistant.name} từ AI Ơi Nhà Đất.\n"
+                    "Em đã làm mới phiên chat và xóa toàn bộ thông tin nháp trước đó rồi ạ. "
+                    "Anh/chị có thể bắt đầu gửi thông tin nhà đất cần rao bán hoặc cho thuê nhé! 🏡✨"
+                )
+            elif had_prior_history:
+                reply = (
+                    f"Chào anh/chị ạ! Em là {conv.assistant.name}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n"
+                    "Em đã làm mới cuộc trò chuyện rồi ạ. Anh/chị đang có căn chung cư, nhà phố hay đất cần gửi bán hoặc cho thuê vậy ạ?"
+                )
+            else:
+                reply = (
+                    f"Chào anh/chị ạ! Em là {conv.assistant.name}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n"
+                    "Anh/chị đang có căn chung cư, nhà phố hay đất cần gửi bán hoặc cho thuê vậy ạ?"
+                )
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured=[], now=now)
@@ -1594,12 +1701,21 @@ class Engine:
             project = self.project_for(conv.prop)  # reload for the block below
 
         # 1d. Buyer branch routing
+        # 1d. Buyer branch routing
         if conv.role == "buyer" and conv.buyer_lead is not None:
+            customer_pronoun = _detect_customer_pronoun(conv, text)
+            customer_is_em = (customer_pronoun == "em")
             next_field = conv.buyer_lead.next_question_field()
             system = build_buyer_chat_system(conv.assistant.name, conv.buyer_lead, next_field)
+            if customer_is_em:
+                system += (
+                    "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
+                    "Khách tự xưng là 'em'. TUYỆT ĐỐI CẤM DÙNG TỪ 'DẠ'! Gọi khách là 'em', bản thân xưng 'mình' hoặc 'anh/chị'.\n"
+                )
             reply = self._provider.chat(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
-                reply = f"Dạ em đây ạ! Kết nối mạng vừa bị gián đoạn một chút, anh/chị nhắn lại giúp em với nhé ạ."
+                reply = "Mình đây nhé! Bạn nhắn lại giúp mình với nha." if customer_is_em else "Em đây ạ! Anh/chị nhắn lại giúp em với nhé ạ."
+            reply = _clean_reply_tone(reply, conv, customer_is_em)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured, now)
@@ -1608,6 +1724,9 @@ class Engine:
         #    - essentials still missing       -> <=30-word praise + 1 question (collecting)
         #    - "khá đầy đủ", not yet proposed -> draft the ad, ask "hấp dẫn chưa" (no fee)
         #    - draft already shown            -> react to approval & pivot to the fee (§V)
+        customer_pronoun = _detect_customer_pronoun(conv, text)
+        customer_is_em = (customer_pronoun == "em")
+
         missing = conv.prop.missing_fields()
         next_field = missing[0] if missing else None
         # Project awareness: if the listing's project is registered, inherit its verified
@@ -1626,10 +1745,36 @@ class Engine:
             )
         elif not conv.listing_proposed:
             conv.listing_proposed = True
-            system = build_listing_proposal_system(conv.assistant.name, conv.prop, project_block)
+            system = build_listing_proposal_system(
+                conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em
+            )
         else:
             system = build_fee_followup_system(
                 conv.assistant.name, conv.prop, conv.user_type, project_block
+            )
+
+        if customer_pronoun == "em":
+            system += (
+                "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC LƯỢT NÀY (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
+                "Khách tự xưng là 'em' (vd: 'nhà em...', 'em gửi...', 'em có...', 'em bán...').\n"
+                "1. TUYỆT ĐỐI CẤM DÙNG TỪ 'DẠ' HOẶC 'DẠ VÂNG' Ở BẤT KỲ ĐÂU! Không dạ thưa với người xưng em.\n"
+                "2. TUYỆT ĐỐI CẤM gọi khách là 'anh' hay 'chị'. Hãy gọi khách là 'em'.\n"
+                "3. Bản thân xưng là 'mình' hoặc 'anh/chị' (Ví dụ: 'Căn của em ở đường nào vậy?', 'Nhà em nằm ở mặt tiền hay trong hẻm em ha?').\n"
+            )
+        elif customer_pronoun == "chi":
+            system += (
+                "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
+                "Khách xưng 'chị'. Gọi khách là 'chị', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu.\n"
+            )
+        elif customer_pronoun == "anh":
+            system += (
+                "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
+                "Khách xưng 'anh'. Gọi khách là 'anh', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu.\n"
+            )
+        elif customer_pronoun == "elder":
+            system += (
+                "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
+                "Khách là người lớn tuổi (chú/cô/bác/dì). Lễ phép xưng 'cháu', gọi đúng 'chú/cô/bác/dì'.\n"
             )
 
         if _is_fee_question(text):
@@ -1673,7 +1818,9 @@ class Engine:
             reply = self._provider.chat(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
 
         if not reply:
-            reply = f"Dạ em đây ạ! Kết nối mạng vừa bị gián đoạn một chút, anh/chị nhắn lại giúp em với nhé ạ."
+            reply = "Mình đây nhé! Kết nối mạng vừa gián đoạn một chút, em nhắn lại giúp mình với nha." if customer_is_em else "Em đây ạ! Kết nối mạng vừa bị gián đoạn một chút, anh/chị nhắn lại giúp em với nhé ạ."
+
+        reply = _clean_reply_tone(reply, conv, customer_is_em)
 
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
@@ -2615,16 +2762,16 @@ class Engine:
 
     def _drop_stub_listings(self, conv: Conversation) -> None:
         """Remove the leftover empty STARTER listing (a blank Listing() every conversation opens
-        with, that once lingered as junk 'căn 1 · nha_pho' in the rổ) once REAL căn exist — but
-        never drop the one the seller is actively building."""
-        if not any(not self._is_stub_listing(li) for li in conv.listings):
-            return  # nothing real yet — the seller is still starting their first căn
-        kept = [li for li in conv.listings
-                if not self._is_stub_listing(li) or li.listing_id == conv.active_listing_id]
-        if len(kept) != len(conv.listings):
-            conv.listings = kept or [Listing()]
-            if all(li.listing_id != conv.active_listing_id for li in conv.listings):
-                conv.active_listing_id = conv.listings[-1].listing_id
+        with, that once lingered as junk 'căn 1 · nha_pho' in the rổ) once REAL căn exist,
+        and ensure active_listing_id never stays stuck on an empty stub."""
+        real_listings = [li for li in conv.listings if not self._is_stub_listing(li)]
+        if real_listings:
+            if self._is_stub_listing(conv.active) or all(li.listing_id != conv.active_listing_id for li in real_listings):
+                conv.active_listing_id = real_listings[-1].listing_id
+            conv.listings = real_listings
+        elif not conv.listings:
+            conv.listings = [Listing()]
+            conv.active_listing_id = conv.listings[0].listing_id
 
     def sync_listing_json_to_sharepoint(self, listing: Listing) -> None:
         """Export the listing's structured data as `thong_tin.json` and upload it to
@@ -2810,17 +2957,22 @@ class Engine:
             conv.prop.is_rental = True
 
         intent = plan.get("user_intent")
-        has_seller_context = conv.role == "seller" or len(conv.prop.fields) >= 2
+        has_seller_context = (
+            conv.role == "seller"
+            or len(conv.prop.fields) >= 1
+            or bool(conv.prop.loai_hinh)
+            or any(not self._is_stub_listing(li) for li in conv.listings)
+        )
 
         # Định tuyến theo ngữ nghĩa thực tế (Semantic Intent do Gemini hiểu toàn câu):
-        # Chỉ chuyển sang buyer khi khách thực sự có nhu cầu tìm mua và chưa có hồ sơ bán dở dang.
+        # Chỉ chuyển sang buyer khi khách thực sự có nhu cầu tìm mua và HOÀN TOÀN KHÔNG có hồ sơ bán dở dang.
         if intent == "buy" and not has_seller_context:
             conv.role = "buyer"
             if conv.buyer_lead is None:
                 conv.buyer_lead = BuyerLead(user_key=conv.user_key)
             if plan.get("buyer_lead"):
                 conv.buyer_lead.update(plan["buyer_lead"])
-        elif intent == "sell":
+        elif intent == "sell" or has_seller_context:
             conv.role = "seller"
 
         changed: set[str] = set()
@@ -2925,9 +3077,31 @@ class Engine:
             receipts.append(("remove", targets, self._rao_count(conv)))
             return
         if kind == "add":
+            # Guard against mis-parsed "add" on listing approval turns:
+            # If the user message is an approval to post ("lên tin đi", "đăng đi", "ok em", "duyệt")
+            # and no explicit new property indicator was provided, DO NOT create a new listing!
+            last_user_turn = ""
+            for t in reversed(conv.history):
+                if t.role == "user" and t.content:
+                    last_user_turn = t.content.lower()
+                    break
+
+            is_post_approval = bool(re.search(
+                r"\b(?:lên\s*tin|đăng\s*tin|lên\s*bài|đăng\s*bài|cho\s*lên|chào\s*đi|lên\s*đi|đăng\s*đi|lên\s*được\s*rồi|duyệt)\b",
+                last_user_turn,
+            ))
+            has_new_can_keywords = bool(re.search(
+                r"\b(?:căn\s+(?:nữa|khác|mới|tiếp|thứ|số\s*\d+)|thêm\s+căn|còn\s+căn|bán\s+thêm)\b",
+                last_user_turn,
+            ))
+
+            if is_post_approval and not has_new_can_keywords:
+                data = _data()
+                if data:
+                    changed.update(conv.active.prop.update(data))
+                return
+
             # Multiple units of the SAME model ("2 căn 42 và 41") → one listing per mã số căn
-            # (an existing code UPDATES, never duplicates). A single add starts a fresh listing
-            # (filling the empty starter first) so its fields don't bleed onto the previous căn.
             if len(targets) >= 2:
                 changed.update(self._fan_out_units(conv, _data(exclude_code=True), targets))
             elif self._listing_empty(conv.active):
@@ -2936,16 +3110,20 @@ class Engine:
                 if targets:
                     data["ma_so_can"] = targets[0]
                 changed.update(conv.active.prop.update(data))
-            else:
-                # A genuinely NEW căn alongside existing ones: open a fresh listing pointed at
-                # the describing message and RE-READ its fields from that clean slice, so nothing
-                # bleeds from the previous căn.
+            elif has_new_can_keywords:
+                # A genuinely NEW căn explicitly stated by customer ("căn nữa", "căn khác", "thêm căn")
                 li = conv.new_listing()
                 li.history_start = max(0, len(conv.history) - 1)
                 data = self._extract_fields(conv)
                 if targets:
                     data["ma_so_can"] = targets[0]
                 changed.update(li.prop.update(data))
+            else:
+                # User is continuing, approving, or adding details to the ACTIVE căn
+                data = _data()
+                if targets:
+                    data.setdefault("ma_so_can", targets[0])
+                changed.update(conv.active.prop.update(data))
             receipts.append(("add", targets))
             return
         if kind == "set_status":

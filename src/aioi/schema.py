@@ -11,25 +11,124 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 
-# A bare house number / alley code: "391/34", "123", "12A", "198A/22", "15-17".
-_HOUSE_NO_RE = re.compile(r"^\d+[\d/\-.]*[A-Za-z]?$")
+DISTRICT_PAIRS = [
+    "tân bình", "bình tân", "bình thạnh", "phú nhuận", "gò vấp", "tân phú",
+    "thủ đức", "bình chánh", "hóc môn", "củ chi", "nhà bè", "cần giờ",
+    "dĩ an", "thuận an", "biên hòa"
+]
 
+_HOUSE_NO_RE = re.compile(r"^(?:(?:đ/?c|dc|địa chỉ)\s*:?\s*)?(\d+[\d/\-.]*[A-Za-z]?)$", re.IGNORECASE)
+
+def _clean_address_filler(text: str) -> str:
+    t = text.strip()
+    t = re.sub(r"^(?:ở|tại|thuộc|nằm ở|địa chỉ(?:\s*là)?|đc:?)\s+", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\s+(?:đó|nha|nhé|ạ|em|ạ em|ấy em|nhe|đấy|đó)\s*$", "", t, flags=re.IGNORECASE)
+    return t.strip()
+
+def _extract_district(text: str) -> str | None:
+    # 1. Numbered districts: Quận 1..12 or Q.1..12 or Q 1..12
+    m_num = re.search(r"\b(?:quận|q\b\.?)\s*(?:1[0-2]|[1-9])\b", text, flags=re.IGNORECASE)
+    if m_num:
+        return m_num.group(0)
+    # 2. Named districts (with or without 'quận/q.')
+    tl = text.lower()
+    for d in sorted(DISTRICT_PAIRS, key=lambda x: -len(x)):
+        m = re.search(r"\b(?:(?:quận|q\b\.?)\s*)?" + re.escape(d) + r"\b", tl)
+        if m:
+            start, end = m.span()
+            return text[start:end]
+    return None
+
+def _extract_ward(text: str) -> str | None:
+    m = re.search(r"\b(?:phường\s+[\w\d]+|p\.\s*[\w\d]+|p\b\s+\d+|xã\s+[\w\d]+|thị trấn\s+[\w\d]+)", text, flags=re.IGNORECASE)
+    if m:
+        return m.group(0)
+    return None
+
+def _extract_house_num(text: str) -> str | None:
+    m = re.search(r"^\s*(\d+[\d/\-.]*[A-Za-z]?)", text)
+    if m:
+        return m.group(1)
+    return None
 
 def _merge_dia_chi(old: str, new: str) -> str:
-    """Address fields ACCUMULATE — adding a số nhà must never erase the street/ward already
-    captured. Rules: keep the richer value when one contains the other; if the new value is just
-    a house number, PREPEND it to the known street ('391/34' + 'Trần Hưng Đạo…' → '391/34 Trần
-    Hưng Đạo…'); otherwise treat it as a correction and take the new (fuller) value."""
-    old, new = (old or "").strip(), (new or "").strip()
+    """Address fields ACCUMULATE & MERGE WITHOUT LOSS — adding house number, ward, or district
+    must never erase the components already captured. Supports corrections (e.g. correcting
+    Tân Bình vs Bình Tân)."""
+    old = (old or "").strip()
+    raw_new = (new or "").strip()
+    new = _clean_address_filler(raw_new)
+
     if not old:
         return new
     if not new or new.lower() in old.lower():
-        return old                              # nothing new, or already contained → keep richer old
+        return old
     if old.lower() in new.lower():
-        return new                              # new already includes the old → take fuller new
-    if _HOUSE_NO_RE.match(new):
-        return f"{new} {old}"                   # a house number → prepend, keep everything else
-    return new                                  # a genuinely different/fuller address → correction
+        return new
+
+    # 1. Bare house number: '100/9', '120', 'số 120'
+    m_house = _HOUSE_NO_RE.match(new)
+    if m_house:
+        num = m_house.group(1)
+        old_num = _extract_house_num(old)
+        if old_num:
+            return re.sub(r"^\s*" + re.escape(old_num), num, old)
+        return f"{num} {old}"
+
+    # 2. Explicit correction pattern: 'tân bình chứ không phải bình tân'
+    m_not = re.search(r"([A-ZÀ-Ỹa-zà-ỹ0-9\s]+?)\s+(?:chứ\s+)?không\s+phải\s+([A-ZÀ-Ỹa-zà-ỹ0-9\s]+)", new, re.IGNORECASE)
+    if m_not:
+        right_val = m_not.group(1).strip()
+        wrong_val = m_not.group(2).strip()
+        if wrong_val.lower() in old.lower():
+            return re.sub(re.escape(wrong_val), right_val, old, flags=re.IGNORECASE)
+
+    # 3. Ward / District analysis
+    old_dist = _extract_district(old)
+    new_dist = _extract_district(new)
+    old_ward = _extract_ward(old)
+    new_ward = _extract_ward(new)
+
+    # Check if new is ONLY ward / district (no street)
+    new_without_loc = new
+    if new_dist:
+        new_without_loc = re.sub(re.escape(new_dist), "", new_without_loc, flags=re.IGNORECASE)
+    if new_ward:
+        new_without_loc = re.sub(re.escape(new_ward), "", new_without_loc, flags=re.IGNORECASE)
+    new_without_loc = re.sub(r"[,\s]+", "", new_without_loc)
+    new_is_only_location = (len(new_without_loc) == 0)
+
+    if new_is_only_location:
+        res = old
+        # District update/replacement
+        if new_dist:
+            if old_dist and old_dist in res:
+                res = res.replace(old_dist, new_dist)
+            else:
+                res = f"{res}, {new_dist}"
+        # Ward update/insertion
+        if new_ward:
+            if old_ward and old_ward in res:
+                res = res.replace(old_ward, new_ward)
+            else:
+                cur_dist = new_dist or old_dist
+                if cur_dist and cur_dist in res:
+                    res = res.replace(cur_dist, f"{new_ward}, {cur_dist}")
+                else:
+                    res = f"{res}, {new_ward}"
+        return res
+
+    # 4. New has street and/or house number, but lacks ward/district that old has
+    if (old_dist and not new_dist) or (old_ward and not new_ward):
+        extras = []
+        if old_ward and not new_ward:
+            extras.append(old_ward)
+        if old_dist and not new_dist:
+            extras.append(old_dist)
+        suffix = ", ".join(extras)
+        return f"{new}, {suffix}"
+
+    return new
 
 
 def _calc_area_from_dimension(dim: str) -> str | None:
@@ -262,9 +361,7 @@ class Property:
 
     def missing_fields(self) -> list[str]:
         """Fields still unknown — the pool the AI draws its next question from."""
-        have = {"loai_hinh"} if self.loai_hinh else set()
-        have |= {k for k, v in self.fields.items() if v}
-        return [f for f in self.expected_fields() if f not in have]
+        return [f for f in self.expected_fields() if not self._has(f)]
 
     def completeness(self) -> float:
         """Fraction of expected fields that are filled, in [0, 1]."""
@@ -279,8 +376,10 @@ class Property:
             return self.loai_hinh is not None
         if name == "ma_so_can":
             return bool(self.fields.get("ma_so_can") or self.fields.get("tang_toa"))
-        if name == "dien_tich":
-            return bool(self.fields.get("dien_tich") or self.fields.get("kich_thuoc"))
+        if name in ("dien_tich", "dien_tich_dat"):
+            return bool(self.fields.get("dien_tich_dat") or self.fields.get("dien_tich") or self.fields.get("kich_thuoc"))
+        if name == "dien_tich_nha":
+            return bool(self.fields.get("dien_tich_nha") or self.fields.get("dien_tich") or self.fields.get("dien_tich_dat"))
         return bool(self.fields.get(name))
 
     def secondary_missing_fields(self) -> list[str]:
@@ -320,43 +419,65 @@ class Property:
                 self.fields[k] = v
                 newly.append(k)
 
+        # Guard: if dien_tich was erroneously extracted as a slash number (e.g. "100/9"), that is a house number, NOT area!
+        dt = self.fields.get("dien_tich") or ""
+        if re.match(r"^\s*\d+/\d+\s*$", dt):
+            if dt not in (self.fields.get("dia_chi") or ""):
+                self.fields["dia_chi"] = _merge_dia_chi(self.fields.get("dia_chi", ""), dt)
+            del self.fields["dien_tich"]
+            if "dien_tich" in newly:
+                newly.remove("dien_tich")
+
+        # Slash in address -> inherently an alley house ("nhà trong hẻm")
+        dia_chi_val = self.fields.get("dia_chi") or ""
+        if "/" in dia_chi_val and not self.fields.get("lo_gioi_hem"):
+            if re.search(r"\b\d+[\w]*\/[\d\w/]+", dia_chi_val):
+                self.fields["lo_gioi_hem"] = "Nhà hẻm"
+                if "lo_gioi_hem" not in newly:
+                    newly.append("lo_gioi_hem")
+
         # 1. Tự động suy luận loại hình nếu chưa có (Auto-inference loai_hinh)
         if self.loai_hinh is None:
-            # Chung cư / Căn hộ: có số phòng ngủ, tầng/tòa, view ban công, phí quản lý hoặc dự án căn hộ
-            condo_hints = ("so_phong_ngu", "tang_toa", "ban_cong_view", "phi_quan_ly")
             dia_chi_l = (self.fields.get("dia_chi") or "").lower()
-            if any(k in dia_chi_l for k in ("kho xưởng", "kho xuong", "nhà xưởng", "nha xuong", "kho bãi")):
+            du_an_l = (self.fields.get("du_an") or "").lower()
+            raw_text = " ".join(str(v).lower() for v in self.fields.values())
+
+            if any(k in dia_chi_l or k in raw_text for k in ("kho xưởng", "kho xuong", "nhà xưởng", "nha xuong", "kho bãi")):
                 self.loai_hinh = "kho_xuong"
                 newly.append("loai_hinh")
-            elif any(k in dia_chi_l for k in ("chung cư", "chung cu", "căn hộ", "can ho")):
+            elif any(k in dia_chi_l or k in du_an_l for k in ("chung cư", "chung cu", "căn hộ", "can ho", "officetel", "penthouse")):
                 self.loai_hinh = "chung_cu"
                 newly.append("loai_hinh")
-            elif any(self.fields.get(h) for h in condo_hints):
+            elif self.fields.get("tang_toa") or self.fields.get("ban_cong_view") or self.fields.get("phi_quan_ly") or self.fields.get("ma_so_can"):
                 self.loai_hinh = "chung_cu"
                 newly.append("loai_hinh")
             elif self.fields.get("du_an"):
-                du_an_l = self.fields["du_an"].lower()
                 condo_kw = ("tower", "residence", "park", "city", "apartment", "condo", "chung cư", "officetel", "sunrise", "masteri", "vinhomes", "safira", "feliz", "botanic", "jamona", "novaland")
                 if any(w in du_an_l for w in condo_kw) or not any(w in du_an_l for w in ("kdc", "khu dân cư", "đất nền", "kho xưởng")):
                     self.loai_hinh = "chung_cu"
                     newly.append("loai_hinh")
+            elif any(k in raw_text for k in ("đất thổ cư", "lô đất", "đất nền", "sào", "công đất")):
+                self.loai_hinh = "dat"
+                newly.append("loai_hinh")
+            elif self.fields.get("tho_cu") or self.fields.get("quy_hoach") or self.fields.get("chi_tieu_xay_dung"):
+                self.loai_hinh = "dat"
+                newly.append("loai_hinh")
+            elif any(k in raw_text for k in ("mặt bằng", "shophouse", "cửa hàng")):
+                self.loai_hinh = "mat_bang"
+                newly.append("loai_hinh")
             elif self.fields.get("chieu_cao_tran") or self.fields.get("tai_trong_san") or self.fields.get("tram_bien_ap"):
                 self.loai_hinh = "kho_xuong"
                 newly.append("loai_hinh")
             elif self.fields.get("mat_tien") or self.fields.get("vi_he_xe") or self.fields.get("loi_di"):
                 self.loai_hinh = "mat_bang"
                 newly.append("loai_hinh")
-            elif self.fields.get("lo_gioi_hem") or self.fields.get("ket_cau"):
+            elif self.fields.get("lo_gioi_hem") or self.fields.get("ket_cau") or any(k in raw_text for k in ("nhà", "nhà phố", "trệt", "lầu", "tầng", "hẻm")):
                 self.loai_hinh = "nha_pho"
                 newly.append("loai_hinh")
-            elif self.fields.get("tho_cu") or self.fields.get("lo_gioi_duong"):
-                self.loai_hinh = "dat"
-                newly.append("loai_hinh")
 
-        # 2. Tự động tính diện tích từ kích thước (vd 4x15 -> 60m2)
+        # 2. Tự động tính diện tích từ kích thước (vd 4x15 -> 60m2) và đồng bộ diện tích
         dim_str = self.fields.get("kich_thuoc") or ""
         raw_dt = self.fields.get("dien_tich") or ""
-        # Nếu diện tích chứa kích thước (vd '4x15')
         if not dim_str and re.search(r"\d+\s*[x*X]\s*\d+", raw_dt):
             dim_str = raw_dt
             self.fields["kich_thuoc"] = dim_str
@@ -374,6 +495,17 @@ class Property:
                     if not self.fields.get("dien_tich") or re.search(r"\d+\s*[x*X]\s*\d+", self.fields.get("dien_tich", "")):
                         self.fields["dien_tich"] = area_calc
                         newly.append("dien_tich")
+
+        # Đồng bộ diện tích đất cho nhà có đất riêng khi chỉ có dien_tich
+        if self.loai_hinh in HOUSE_TYPES:
+            if self.fields.get("dien_tich") and not self.fields.get("dien_tich_dat"):
+                self.fields["dien_tich_dat"] = self.fields["dien_tich"]
+                if "dien_tich_dat" not in newly:
+                    newly.append("dien_tich_dat")
+            elif self.fields.get("dien_tich_dat") and not self.fields.get("dien_tich"):
+                self.fields["dien_tich"] = self.fields["dien_tich_dat"]
+                if "dien_tich" not in newly:
+                    newly.append("dien_tich")
 
         return newly
 

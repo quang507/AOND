@@ -28,6 +28,8 @@ class Settings:
     max_photos_per_listing: int = 20      # cap photos KEPT per listing (storage cost control)
     groq_api_key: str | None = None       # Groq Cloud API key for Whisper STT
     groq_whisper_model: str = "whisper-large-v3-turbo"
+    supabase_url: str = "https://rqxmmqmctpklqcmbfxuj.supabase.co"
+    supabase_service_role_key: str | None = None
 
     @property
     def effective_provider(self) -> str:
@@ -59,6 +61,8 @@ def load_settings() -> Settings:
         max_photos_per_listing=_int_env("AIOI_MAX_PHOTOS_PER_LISTING", 20),
         groq_api_key=os.getenv("GROQ_API_KEY") or None,
         groq_whisper_model=os.getenv("GROQ_WHISPER_MODEL", "whisper-large-v3-turbo"),
+        supabase_url=os.getenv("SUPABASE_URL", "https://rqxmmqmctpklqcmbfxuj.supabase.co"),
+        supabase_service_role_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY") or None,
     )
 
 
