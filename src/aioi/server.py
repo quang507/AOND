@@ -3,6 +3,7 @@ Serves:
   - GET  /health: health check
   - POST /message: native AOND API
   - POST /chat-reply: full compatibility endpoint with Zalo Bridge (zca-js) from Nhadat.cc
+  - POST /trigger-followup/{user_key}: test/trigger immediate inactivity follow-up
 Run: uvicorn aioi.server:app --reload --port 8000
 """
 from __future__ import annotations
@@ -15,6 +16,7 @@ from .config import load_settings
 from .delivery import chunk_reply, typing_delay
 from .drive import make_folder_namer, make_resolver
 from .engine import Engine, SqliteConversationStore
+from .followup import followup_manager
 from .llm import build_provider
 from .projects import SqliteProjectStore
 from .sharepoint import (
@@ -79,6 +81,8 @@ class Reply(BaseModel):
 # Zalo Bridge zca-js compatible models
 class ZaloBridgePayload(BaseModel):
     external_user_id: str = ""
+    sender_name: str | None = None
+    user_name: str | None = None
     text: str = ""
     image_urls: list[str] = []
     image_url: str | None = None
@@ -130,15 +134,26 @@ def message(msg: IncomingMessage) -> Reply:
             incoming_text = "[Khách gửi tin nhắn thoại nhưng âm thanh bị rè hoặc không nghe rõ tiếng]"
 
     r = _engine.handle(msg.user_key, incoming_text)
+    cleaned_reply = r.reply.replace("**", "")
+
+    # Cancel previous follow-up timer for this user and schedule a new 5-minute inactivity follow-up
+    followup_manager.cancel_followup(msg.user_key)
+    if r.role == "seller" and r.completeness < 1.0:
+        followup_manager.schedule_followup(
+            user_key=msg.user_key,
+            engine=_engine,
+            role=r.role,
+        )
+
     sync_to_supabase_async(
         external_user_id=msg.user_key,
         incoming_text=incoming_text,
-        bot_reply=r.reply,
+        bot_reply=cleaned_reply,
         role=r.role,
     )
     return Reply(
         assistant_name=r.assistant_name,
-        reply=r.reply,
+        reply=cleaned_reply,
         captured=r.captured,
         next_field=r.next_field,
         property_score=r.property_score,
@@ -221,8 +236,14 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         incoming_text = incoming_text or "[Khách gửi tin nhắn]"
         r = _engine.handle(payload.external_user_id, incoming_text)
 
-    # Deliver via paced bubbles
-    bubbles = chunk_reply(r.reply)
+    # Clean asterisks so Zalo displays clean text without markdown markup
+    cleaned_reply = r.reply.replace("**", "").strip()
+
+    # Deliver via paced bubbles: Listing drafts stay as ONE whole message
+    if r.is_listing_post or "Em sẽ rao như vầy" in cleaned_reply or "Em sẽ đăng như vầy" in cleaned_reply:
+        bubbles = [cleaned_reply]
+    else:
+        bubbles = [c.replace("**", "") for c in chunk_reply(cleaned_reply)]
     nhip_go = [int(typing_delay(c) * 1000) for c in bubbles]
 
     captured = r.captured
@@ -231,16 +252,28 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         captured = list(dict.fromkeys(captured + lead_fields))
 
     # Real-time async sync to Supabase CRM (shows on https://aioinhadat.vercel.app/admin/tin-nhan)
+    zalo_name = payload.sender_name or payload.user_name
     sync_to_supabase_async(
         external_user_id=payload.external_user_id,
         incoming_text=incoming_text,
-        bot_reply=r.reply,
+        bot_reply=cleaned_reply,
         zalo_msg_id=payload.msg_id,
         role=r.role,
+        user_name=zalo_name,
     )
 
+    # Cancel previous follow-up timer for this user and schedule a new 5-minute inactivity follow-up
+    followup_manager.cancel_followup(payload.external_user_id)
+    if r.role == "seller" and r.completeness < 1.0:
+        followup_manager.schedule_followup(
+            user_key=payload.external_user_id,
+            engine=_engine,
+            user_name=zalo_name,
+            role=r.role,
+        )
+
     return ZaloBridgeResponse(
-        reply=r.reply,
+        reply=cleaned_reply,
         replies=bubbles,
         nhip_go=nhip_go,
         assistant_name=r.assistant_name,
@@ -251,3 +284,10 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         tier=r.tier,
         completeness=r.completeness,
     )
+
+
+@app.post("/trigger-followup/{user_key}")
+def trigger_followup(user_key: str):
+    followup_manager.cancel_followup(user_key)
+    followup_manager._execute_followup(user_key, _engine)
+    return {"ok": True, "message": f"Follow-up triggered for {user_key}"}

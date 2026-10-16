@@ -83,6 +83,7 @@ def _sync_worker(
     bot_reply: str,
     zalo_msg_id: str | None = None,
     role: str = "seller",
+    user_name: str | None = None,
 ) -> None:
     try:
         url, key = _get_credentials()
@@ -96,11 +97,14 @@ def _sync_worker(
             sellers = _get_json(url, key, f"sellers?zalo_user_id=eq.{external_user_id}")
             if sellers:
                 seller_id = sellers[0]["id"]
+                if user_name and ("Khách Zalo" in sellers[0].get("name", "") or not sellers[0].get("name")):
+                    _patch_json(url, key, f"sellers?id=eq.{seller_id}", {"name": user_name})
             else:
                 short_uid = external_user_id[-4:] if len(external_user_id) >= 4 else external_user_id
+                display_name = user_name or f"Khách Zalo {short_uid}"
                 res = _post_json(
                     url, key, "sellers",
-                    {"zalo_user_id": external_user_id, "name": f"Khách Zalo {short_uid}", "seller_type": "ccrb"}
+                    {"zalo_user_id": external_user_id, "name": display_name, "seller_type": "ccrb"}
                 )
                 seller_id = res[0]["id"]
             _seller_cache[external_user_id] = seller_id
@@ -157,13 +161,14 @@ def sync_to_supabase_async(
     bot_reply: str,
     zalo_msg_id: str | None = None,
     role: str = "seller",
+    user_name: str | None = None,
 ) -> None:
     """Non-blocking asynchronous sync of conversation turn to Supabase CRM."""
     if not external_user_id:
         return
     t = threading.Thread(
         target=_sync_worker,
-        args=(external_user_id, incoming_text, bot_reply, zalo_msg_id, role),
+        args=(external_user_id, incoming_text, bot_reply, zalo_msg_id, role, user_name),
         daemon=True,
     )
     t.start()

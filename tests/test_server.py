@@ -75,3 +75,9 @@ def test_zalo_bridge_chat_reply_with_image_urls(monkeypatch):
     data = resp.json()
     assert "reply" in data
     assert len(data["replies"]) >= 1
+
+
+def test_trigger_followup_endpoint():
+    resp = client.post("/trigger-followup/zalo_test_user_followup")
+    assert resp.status_code == 200
+    assert resp.json().get("ok") is True
