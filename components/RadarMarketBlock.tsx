@@ -2,8 +2,8 @@ import Link from "next/link";
 import { zaloLink } from "@/lib/format";
 
 const KEY_REGIONS = [
-  { name: "Quận 5", desc: "Nhà phố kinh doanh, hẻm xe hơi trung tâm", count: "320+ căn", tag: "q5" },
-  { name: "Quận 8", desc: "Mặt tiền Cao Lỗ, Phạm Thế Hiển, cầu Chữ Y", count: "280+ căn", tag: "q8" },
+  { name: "Quận 7", desc: "Khu đô thị Phú Mỹ Hưng, biệt thự & căn hộ cao cấp", count: "340+ căn", tag: "q7" },
+  { name: "Quận 8", desc: "Mặt tiền Cao Lỗ, Phạm Thế Hiển, kết nối nhanh Quận 1", count: "280+ căn", tag: "q8" },
   { name: "Quận 10", desc: "Toà nhà dòng tiền, CHDV, gần Vạn Hạnh Mall", count: "190+ căn", tag: "q10" },
   { name: "Nhà Bè", desc: "Căn hộ Sunrise Riverside, biệt thự ven sông", count: "210+ căn", tag: "nha-be" },
   { name: "Bình Chánh", desc: "Mizuki Park, KDC Trung Sơn, nhà vườn sinh thái", count: "175+ căn", tag: "binh-chanh" },

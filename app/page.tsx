@@ -26,7 +26,7 @@ const LOI_HUA: Array<{ Icon: (p: { className?: string }) => React.ReactElement; 
     t: "Trực 24/7, nhớ nhu cầu",
     d: "Chat hôm nay, ba tháng sau quay lại vẫn tiếp đúng chỗ cũ, không hỏi lại từ đầu.",
     chat: [
-      { ai: "khach", noi: "Hồi tháng 5 anh có hỏi nhà Phường 5 dưới 8 tỉ đó em." },
+      { ai: "khach", noi: "Hồi tháng 5 anh có hỏi nhà Quận 8 dưới 8 tỉ đó em." },
       { ai: "em", noi: "Dạ em nhớ, hẻm xe hơi 3 phòng ngủ. Tháng này có 2 căn mới, em gửi anh liền." },
       { ai: "khach", noi: "Ok gửi anh xem." },
     ],
@@ -89,7 +89,7 @@ export default async function Home() {
             </h1>
             <p className="mt-5 max-w-md leading-7 text-white/75 text-base">
               Tụi em không hỏi số điện thoại, không spam. Trợ lý trực 24/7 trên
-              Zalo, hỏi kiểu gì cũng hiểu: “nhà gần hồ bơi Lam Sơn”, “hẻm xe hơi
+              Zalo, hỏi kiểu gì cũng hiểu: “nhà gần Lotte Mart Quận 7”, “hẻm xe hơi
               dưới 10 tỉ”.
             </p>
             <div className="mt-7 flex flex-wrap gap-2 text-xs">
@@ -110,7 +110,7 @@ export default async function Home() {
             <div className="overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={placeholderImg("hero-q5")}
+                src={placeholderImg("hero-q8")}
                 alt="Nhà phố Sài Gòn & Long An"
                 fetchPriority="high"
                 decoding="async"
@@ -135,7 +135,7 @@ export default async function Home() {
               type="search"
               maxLength={300}
               autoComplete="off"
-              placeholder="tìm mua nhà phố HXH 8 tỉ ở Q5, căn hộ Nhà Bè, đất Bến Lức..."
+              placeholder="tìm mua nhà phố HXH Quận 8, căn hộ Nhà Bè, biệt thự Bình Chánh, đất Bến Lức..."
               aria-label="Nhắn một câu mô tả căn anh chị đang tìm"
               className="min-w-0 flex-1 bg-transparent px-1 py-2 leading-6 text-navy outline-none placeholder:text-mute font-medium text-sm sm:text-base"
             />
@@ -293,7 +293,7 @@ export default async function Home() {
               Rao bán? Một câu là xong.
             </h2>
             <p className="mt-3 leading-7 text-white/75 text-sm md:text-base">
-              “Bán nhà HXH xe tải quay đầu, gần ngã tư Trần Bình Trọng, 9 tỉ bớt
+              “Bán nhà HXH xe tải quay đầu, gần Cao Lỗ Quận 8, 9 tỉ bớt
               lộc” - nhắn vậy là đủ. Tụi em viết lại tin, trả lời khách, chỉ liên
               hệ anh chị khi thật sự cần.
             </p>
