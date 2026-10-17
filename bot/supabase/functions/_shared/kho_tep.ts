@@ -243,3 +243,108 @@ export function redactDocTitle(title: string): string {
   return m ? `Sổ đỏ / GCN QSDĐ căn ${m[1]}` : "Sổ đỏ / GCN QSDĐ (đã ẩn thông tin cá nhân)";
 }
 
+/**
+ * Giải mã tin nhắn thoại (Voice-to-Text) bằng Groq Whisper Cloud (whisper-large-v3-turbo).
+ * Tốc độ ~0.3-0.5s, nhận diện tiếng Việt chính xác cao.
+ */
+export async function giaiMaVoiceGroq(bytes: Uint8Array, mime: string, groqApiKey: string): Promise<string | null> {
+  if (!groqApiKey || !bytes?.byteLength) return null;
+  try {
+    const ext = mime.includes("aac") ? "aac" : mime.includes("mp4") || mime.includes("m4a") ? "m4a" : mime.includes("ogg") ? "ogg" : "mp3";
+    const blob = new Blob([bytes], { type: mime || "audio/aac" });
+    const fd = new FormData();
+    fd.append("file", blob, `voice.${ext}`);
+    fd.append("model", "whisper-large-v3-turbo");
+    fd.append("language", "vi");
+    fd.append("response_format", "json");
+
+    const r = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${groqApiKey}` },
+      body: fd,
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => ({}));
+    const text = String(j?.text ?? "").trim();
+    return text || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Giải mã âm thanh dự phòng bằng Google Gemini Flash (nhận diện audio trực tiếp bằng base64 inlineData, zero-dependency).
+ */
+export async function giaiMaVoiceGemini(bytes: Uint8Array, mime: string, geminiApiKey: string, geminiModel = "gemini-1.5-flash"): Promise<string | null> {
+  if (!geminiApiKey || !bytes?.byteLength) return null;
+  try {
+    const audioB64 = base64(bytes);
+    const audioMime = mime && mime.startsWith("audio/") ? mime : "audio/aac";
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`;
+
+    const r = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: "Chuyển toàn bộ lời nói trong đoạn ghi âm tiếng Việt này thành văn bản thuần tuý. Chỉ trả về nội dung người nói, không thêm lời chào, không giải thích, không thêm dấu ngoặc kép hay định dạng markdown.",
+              },
+              {
+                inline_data: {
+                  mime_type: audioMime,
+                  data: audioB64,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1024,
+        },
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => ({}));
+    const raw = j?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = String(raw ?? "").trim();
+    return text || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Pipeline chuyển đổi tin nhắn thoại (URL audio Zalo) sang văn bản đa tầng:
+ * 1. Tải file âm thanh qua `taiTep`.
+ * 2. Thử giải mã bằng Groq Whisper (nhanh và nhẹ).
+ * 3. Nếu Groq lỗi / 429 / từ chối mã hoá, fallback sang Gemini Flash.
+ * Trả về văn bản nhận diện được hoặc null.
+ */
+export async function transcribeVoiceUrl(
+  voiceUrl: string,
+  opts: { groqApiKey?: string | null; geminiApiKey?: string | null; geminiModel?: string | null } = {},
+): Promise<string | null> {
+  if (!voiceUrl) return null;
+  const tep = await taiTep(voiceUrl, { tran: 15 * 1024 * 1024, hanMs: 15_000 });
+  if (!tep || !tep.bytes?.byteLength) return null;
+
+  if (opts.groqApiKey) {
+    const txtGroq = await giaiMaVoiceGroq(tep.bytes, tep.mime, opts.groqApiKey);
+    if (txtGroq) return txtGroq;
+  }
+
+  if (opts.geminiApiKey) {
+    const txtGemini = await giaiMaVoiceGemini(tep.bytes, tep.mime, opts.geminiApiKey, opts.geminiModel ?? "gemini-1.5-flash");
+    if (txtGemini) return txtGemini;
+  }
+
+  return null;
+}
+
+

@@ -13,6 +13,7 @@ import {
   sendZaloImage,
   serviceClient,
 } from "../_shared/claude.ts";
+import { transcribeVoiceUrl } from "../_shared/kho_tep.ts";
 
 async function sha256hex(s: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
@@ -27,16 +28,45 @@ async function handleEvent(raw: string): Promise<void> {
   // SRS-5.1zzj/zzl (05/10/2026, demo AOND): FILE (PDF / CSV / XLSX) và LINK người bán gửi — trước đây rơi ngay cửa.
   const isFile = ev.event_name === "user_send_file";
   const isLink = ev.event_name === "user_send_link";
-  if (!isText && !isImage && !isFile && !isLink) return;
+  const isAudio = ev.event_name === "user_send_audio";
+  if (!isText && !isImage && !isFile && !isLink && !isAudio) return;
 
   const zaloUserId = String(ev.sender?.id ?? "");
-  const text = String(ev.message?.text ?? "").trim();
+  let text = String(ev.message?.text ?? "").trim();
   const dinhKem = ev.message?.attachments?.[0]?.payload ?? {};
   const imageUrl = isImage ? String(dinhKem.url ?? "") : "";
   const fileUrl = isFile ? String(dinhKem.url ?? "") : "";
   const fileName = isFile ? String(dinhKem.name ?? "").slice(0, 200) : "";
   const linkUrl = isLink ? String(dinhKem.url ?? "") : "";
+  const audioUrl = isAudio ? String(dinhKem.url ?? "") : "";
   const zaloMsgId = ev.message?.msg_id ? String(ev.message.msg_id) : null;
+
+  // Xử lý tin nhắn thoại (Voice message): tải và giải mã thành văn bản qua Groq Whisper / Gemini Flash
+  if (isAudio && audioUrl) {
+    const groqKey = await secretOf(client, "GROQ_API_KEY");
+    const geminiKey = (await secretOf(client, "GEMINI_API_KEY")) || (await secretOf(client, "GEMINI_API_KEY_2"));
+    const geminiModel = (await secretOf(client, "GEMINI_MODEL")) || "gemini-1.5-flash";
+    const voiceText = await transcribeVoiceUrl(audioUrl, {
+      groqApiKey: groqKey,
+      geminiApiKey: geminiKey,
+      geminiModel,
+    });
+    if (voiceText) {
+      text = voiceText;
+    } else {
+      // Khi không giải mã được file thoại (file hỏng, CDN lỗi hoặc câm tiếng), gửi phản hồi lịch sự
+      const oaToken = await secretOf(client, "ZALO_OA_ACCESS_TOKEN");
+      if (oaToken && zaloUserId) {
+        await sendZalo(
+          oaToken,
+          zaloUserId,
+          "Dạ em nhận được tin nhắn thoại của anh/chị rồi nhưng bên em nghe chưa rõ tiếng. Anh/chị nhắn giúp em bằng tin nhắn chữ nha ạ!",
+        );
+      }
+      return;
+    }
+  }
+
   if (!zaloUserId || (!text && !imageUrl && !fileUrl && !linkUrl)) return;
 
   // Bộ não dùng chung (NFR-12): nhớ khách, hồ sơ nhu cầu FR-130, dedupe msg_id
@@ -308,7 +338,7 @@ Deno.serve(async (req) => {
   try {
     const ev = JSON.parse(raw);
     const evMsgId = ev?.message?.msg_id ? String(ev.message.msg_id) : null;
-    const evText = ["user_send_text", "user_send_image", "user_send_file", "user_send_link"].includes(ev?.event_name);
+    const evText = ["user_send_text", "user_send_image", "user_send_file", "user_send_link", "user_send_audio"].includes(ev?.event_name);
     if (evText && evMsgId) {
       const { error: seErr } = await client.rpc("ghi_su_kien_inbound", {
         p_event_id: evMsgId,
