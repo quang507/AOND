@@ -46,9 +46,14 @@ class MockProvider(LLMProvider):
         if "DỰ THẢO TIN RAO" in system:
             # Step 1: show the draft ad and ask for approval — NO fee yet.
             return (
-                "Em sẽ rao như vầy nhé:\n"
-                "🏠 BĐS vị trí đẹp, pháp lý rõ ràng, sẵn sàng giao dịch. (offline)\n\n"
-                "Anh thấy hấp dẫn chưa ạ?"
+                "Em sẽ rao như vầy nhé:\n\n"
+                "Bán gấp nhà phố mặt tiền đường Cao Lỗ Phường 4 Quận 8 gần Parc Mall kinh doanh sầm uất giá 10 tỷ còn thương lượng\n\n"
+                "Căn nhà toạ lạc tại vị trí vô cùng đắc địa trên mặt tiền đường lớn, khu dân cư sầm uất, liền kề trung tâm thương mại Parc Mall. Không gian thiết kế hiện đại, thông thoáng, ánh sáng tự nhiên ngập tràn các phòng. Vừa thích hợp để gia đình an cư lâu dài, vừa lý tưởng mở văn phòng công ty, spa hoặc cho thuê mặt bằng sinh dòng tiền ổn định hàng tháng. Chủ nhà thiện chí bán nhanh để chuyển đổi mục đích kinh doanh.\n\n"
+                "- Mặt tiền kinh doanh sầm uất Cao Lỗ, Phường 4, Quận 8, lề đường 3m\n"
+                "- 132m² đất, 120m² sàn xây dựng, 3 lầu, 4 phòng ngủ\n"
+                "- Sổ hồng riêng chính chủ, hoàn công đầy đủ, công chứng ngay\n"
+                "- 10 tỷ (thương lượng trực tiếp với khách thiện chí)\n\n"
+                "Anh/chị thấy bản tin này hấp dẫn chưa ạ?"
             )
         if "XỬ LÝ SAU KHI XEM BẢN TIN RAO" in system or "DẪN DẮT PHÍ" in system:
             # Step 2: customer approved -> confirm published to website & network immediately (skip fee gate)

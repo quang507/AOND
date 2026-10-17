@@ -114,3 +114,13 @@ def test_normal_missing_field_question_unaffected_by_ambiguous_area_check():
     s = build_chat_system("T•ai", _prop(), "gia")
     assert "CHƯA RÕ" not in s
     assert '"giá"' in s  # asks about the actual next_field ("gia"), not diện tích at all
+
+
+def test_listing_proposal_system_contains_length_and_no_header_rules():
+    from aioi.prompts import build_listing_proposal_system
+    s = build_listing_proposal_system("T•ai", _prop())
+    assert "15 - 25 TỪ" in s
+    assert "70 - 150 TỪ" in s
+    assert "4 GẠCH ĐẦU DÒNG" in s
+    assert "KHÔNG DÙNG HEADER" in s
+    assert "132m²" in s
