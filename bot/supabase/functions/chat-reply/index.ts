@@ -11743,15 +11743,22 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
     const pCode = photoWanted.toUpperCase();
     const inAsked = ((askedListings ?? []) as Asked[]).find((l) => l.code === pCode);
     let tatCa: string[];
-    // Nhu cầu ảnh cụ thể của người mua (bếp, phòng ngủ, mặt tiền, hẻm, wc...)
+    // Nhu cầu ảnh cụ thể của người mua đa dạng theo 5 loại BĐS:
+    // - Nhà phố/CHDV: bếp, phòng ngủ, toilet, hẻm, sân thượng, mặt tiền, cầu thang, thang máy, PCCC
+    // - Chung cư: view ban công, phòng khách, bếp, tiện ích nội khu (hồ bơi, công viên, sảnh)
+    // - Đất nền: ranh đất/cọc mốc, đường trước đất, sơ đồ phân lô, bản đồ quy hoạch
+    // - Kho xưởng: xưởng sản xuất, trạm điện 3 pha, đường xe container/bãi xe, văn phòng điều hành, PCCC
+    // - Mặt bằng: mặt tiền kinh doanh, vỉa hè/chỗ để xe, lối đi riêng
     const textBuyer = String(text || "").toLowerCase();
     const loaiYeuCau = textBuyer.includes("bếp") || textBuyer.includes("bep") ? "bep"
       : textBuyer.includes("phòng ngủ") || textBuyer.includes("phong ngu") || textBuyer.includes("pn") ? "phong_ngu"
-      : textBuyer.includes("mặt tiền") || textBuyer.includes("mat tien") || textBuyer.includes("cổng") || textBuyer.includes("ngoài") ? "mat_tien"
-      : textBuyer.includes("hẻm") || textBuyer.includes("hem") || textBuyer.includes("đường trước") ? "hem"
+      : textBuyer.includes("mặt tiền") || textBuyer.includes("mat tien") || textBuyer.includes("cổng") || textBuyer.includes("vỉa hè") || textBuyer.includes("via he") ? "mat_tien"
+      : textBuyer.includes("hẻm") || textBuyer.includes("hem") || textBuyer.includes("đường trước") || textBuyer.includes("container") || textBuyer.includes("xe tải") ? "hem"
       : textBuyer.includes("nhà vệ sinh") || textBuyer.includes("toilet") || textBuyer.includes("wc") ? "wc"
-      : textBuyer.includes("phòng khách") || textBuyer.includes("trong nhà") ? "trong_nha"
-      : textBuyer.includes("sân thượng") || textBuyer.includes("ban công") ? "san_thuong"
+      : textBuyer.includes("view") || textBuyer.includes("ban công") || textBuyer.includes("cảnh") ? "view"
+      : textBuyer.includes("sân thượng") || textBuyer.includes("san thuong") || textBuyer.includes("sân vườn") ? "san_thuong"
+      : textBuyer.includes("phòng khách") || textBuyer.includes("trong nhà") || textBuyer.includes("xưởng") || textBuyer.includes("kho") || textBuyer.includes("mặt bằng") ? "trong_nha"
+      : textBuyer.includes("sơ đồ") || textBuyer.includes("bản vẽ") || textBuyer.includes("mặt bằng tầng") || textBuyer.includes("phân lô") || textBuyer.includes("quy hoạch") ? "ban_ve"
       : null;
 
     if (inAsked) tatCa = photosOf(inAsked);
