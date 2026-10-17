@@ -23,6 +23,27 @@ export const FEE_RULES = `Luật phí (chỉ nói khi được hỏi, hoặc đ�
 - CHỦ ĐẦU TƯ dự án: phí thoả thuận riêng — TUYỆT ĐỐI không tự báo con số, nói "để em kết nối bộ phận hợp tác dự án".
 - Không bịa bất kỳ mức phí, ưu đãi hay cam kết nào ngoài các mức trên.`;
 
+/**
+ * BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự) — bài rao tự nhiên, cô đọng, không rập khuôn.
+ */
+export const AD_FORMAT = `BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự):
+1) TIÊU ĐỀ: 15–25 từ, VIẾT HOA gây chú ý, dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm). Tối đa 1–2 emoji.
+2) MÔ TẢ: MỘT đoạn văn 70–150 từ, văn phong tự nhiên, thuyết phục — kể vị trí & kết nối, công năng, điểm nổi bật, pháp lý. KHÔNG liệt kê khô khan, KHÔNG xuống dòng gạch đầu dòng ở đoạn này.
+3) ĐÚNG 4 GẠCH ĐẦU DÒNG (mỗi dòng 1 ý đắt giá nhất — vd mặt tiền/kết cấu/pháp lý/giá):
+   - KHÔNG ghi nhãn/tiêu đề nếu dữ liệu đã TỰ RÕ: ghi "132m²" — KHÔNG ghi "Diện tích: 132m²"; ghi "19 tỷ (thương lượng)" — KHÔNG ghi "Giá: 19 tỷ"; ghi "sổ hồng riêng" — KHÔNG ghi "Pháp lý: sổ hồng riêng".
+   - CHỈ thêm chữ phân biệt khi KHÔNG tự rõ: "132m² đất · 120m² xây dựng", "mặt tiền 12m", "6 tầng có thang máy".
+   - Mỗi gạch đầu dòng ngắn gọn, không trùng ý nhau.`;
+
+/**
+ * 5 điểm giá trị giải thích chính sách phí môi giới (dùng khi khách băn khoăn về phí).
+ */
+export const FEE_VALUE_POINTS = `- CHỈ thu phí KHI giao dịch thành công — khách không tốn đồng nào trước, không rủi ro.
+- Hệ thống tự điều cộng tác viên (CTV) dẫn khách tới xem nhà, chủ không phải tự tìm khách.
+- Tin được đẩy tới mạng lưới 20 nhà môi giới lõi + rổ khách mua đã được lọc (trợ lý M•ai), tiếp cận khách "nét".
+- Tin được chuẩn hóa, chấm điểm và ưu tiên lên Top hiển thị Quận 5 — bán nhanh hơn tự rao.
+- Tiết kiệm thời gian, sàng lọc khách ảo, giữ liên lạc tự động qua Zalo.`;
+
+
 // 06/10/2026 (SRS-5.1zzq, đối chiếu SRD AOND): câu phí soạn sẵn từng chép ở ba chỗ trong chat-reply và chỉ đọc nhãn người
 // rao — tin CHO THUÊ vẫn nghe "1% giá chốt", hồ sơ chưa rõ vai vẫn nghe con số. Đây là MỘT NGUỒN của câu phí tiền định:
 // FEE_RULES (cho model) và hàm này (cho câu code ghép) phải nói cùng một thứ.

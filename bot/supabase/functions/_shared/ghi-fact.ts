@@ -14,7 +14,7 @@
 // sửa dấu, không chặn đường ghi (cùng luật FR-212).
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { laTenPhuongHopLe, tenPhuongCot } from "./extraction/khop-phuong.ts";
-import { chuanHoaViTri, tenDuongDeTra } from "./extraction/dia-chi.ts";
+import { chuanHoaViTri, mergeDiaChi, tenDuongDeTra } from "./extraction/dia-chi.ts";
 import { chonDuong, type UngVienDuong } from "./extraction/tra-duong.ts";
 import { duongTraDuoc } from "./extraction/tra-phuong.ts";
 
@@ -160,6 +160,18 @@ export async function ghiFact(client: SupabaseClient, a: ThamSoFact): Promise<Ke
   let answer = String(a.p_answer ?? "");
   const laPhuong = a.p_question === "phuong" || (a.p_question === "vi_tri" && viTriLaPhuong(answer));
   if (a.p_question === "vi_tri" && !laPhuong && answer.trim()) {
+    if (a.p_listing_id) {
+      const { data: lf } = await client.from("listing_facts")
+        .select("answer")
+        .eq("listing_id", a.p_listing_id)
+        .eq("question", "vi_tri")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lf?.answer) {
+        answer = mergeDiaChi(lf.answer, answer);
+      }
+    }
     const { quan, error: qErr } = await quanCua(client, a.p_listing_id);
     if (qErr) return { data: null, error: qErr };
     answer = chuanHoaViTri(answer, await tenDuongTuDien(client, answer, quan));

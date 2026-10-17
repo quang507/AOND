@@ -67,3 +67,22 @@ export function tenDuongDeTra(viTri: string): string {
   const m = tachManhDiaChi(viTri);
   return catTenDuong(chuanTenDuong(m.tenDuong));
 }
+
+const HOUSE_NO_RE = /^\d+[\d/\-.]*[A-Za-z]?$/;
+
+/**
+ * Gộp địa chỉ dồn: Khách bổ sung số nhà riêng ("391/34") không được xóa tên đường/phường đã có.
+ * - Nếu mới là số nhà trơn -> ghép lên đầu địa chỉ cũ ("391/34" + "Trần Hưng Đạo, P.1, Q.5" -> "391/34 Trần Hưng Đạo, P.1, Q.5").
+ * - Nếu mới đã chứa cũ hoặc cũ đã chứa mới -> giữ bản đầy đủ hơn.
+ * - Nếu địa chỉ hoàn toàn mới -> thay thế (sửa sai).
+ */
+export function mergeDiaChi(oldAddr: string | null | undefined, newAddr: string | null | undefined): string {
+  const oldA = (oldAddr || "").trim();
+  const newA = (newAddr || "").trim();
+  if (!oldA) return newA;
+  if (!newA || boDau(oldA).includes(boDau(newA))) return oldA;
+  if (boDau(newA).includes(boDau(oldA))) return newA;
+  if (HOUSE_NO_RE.test(newA)) return `${newA} ${oldA}`;
+  return newA;
+}
+

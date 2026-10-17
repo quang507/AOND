@@ -35,6 +35,7 @@ import {
   cauBaoPhi, cauPhi, // SRS-5.1zzq: câu phí MỘT NGUỒN theo vai + loại giao dịch
   coCauPhi, coCauPhiChuaRoVai, coCauPhiTheoVai, vaiPhi, phanTramPhi, viDuPhi, // SRS-5.1zzzze: lượt đã nói phí chưa — đối chiếu đúng chữ cauPhi() sinh
   tenHang, // SRS-5.1zzs: tên hạng Đồng / Bạc / Vàng cho câu lên kệ
+  AD_FORMAT, FEE_VALUE_POINTS,
 } from "../_shared/prompts.ts";
 import { SPEC_COLS, thongSoNgan, type SpecRow } from "../_shared/thong_so.ts";
 import { chuanY, type FactNhap, soanTinNhapHaiBong, tenDuAnKho, type TinNhapRow } from "../_shared/tin-nhap.ts";
@@ -1679,7 +1680,7 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
   // 170 chữ-máy FEES thừa ở r1/r2 rẻ hơn hẳn một ô nhớ tạm riêng.
   // FR-178: few-shot người bán (giọng AI Ơi Nhà Đất + kịch bản sếp) đi cùng luật.
   const SELLER_FEW = dienTen(P.seller_fewshot ?? SELLER_FEWSHOT, TEN_GIU_CHO) + (mauBan ? "\n\n" + MAU_CHUAN_TD + "\n" + mauBan : "");
-  const SELLER_SYSTEM = TONE + "\n\n" + SELLER_SCRIPT + "\n\n" + SELLER_FEW + "\n\n" + FEES;
+  const SELLER_SYSTEM = TONE + "\n\n" + SELLER_SCRIPT + "\n\n" + SELLER_FEW + "\n\n" + FEES + "\n\n" + AD_FORMAT + "\n\n" + FEE_VALUE_POINTS;
 
   // ─── FR-173 d: NGƯỜI NỘI BỘ (CTV/admin) nhắn "#mã tin: câu trả lời" ──────────
   // Câu khách hỏi đi về CTV (quyết định 03/09/2026); CTV hỏi chủ xong nhắn lại

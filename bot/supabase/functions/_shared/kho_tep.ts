@@ -214,3 +214,32 @@ export function tangTuChu(s: string | null | undefined): number | null {
   const n = Number(m[0]);
   return n >= 0 && n <= 150 ? n : null;
 }
+
+/** Chuyển ID file Google Drive sang direct download link để fetch đúng media/bytes thay vì vướng HTML đăng nhập. */
+export function directDriveDownloadUrl(id: string): string {
+  return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`;
+}
+
+// Bộ lọc thông tin định danh cá nhân (PII) trên sổ đỏ, tài liệu pháp lý khi lưu vào kho dự án chung.
+const PII_PHONE_RE = /(?<!\d)(?:\+?84|0)\d{9}(?!\d)/g;
+const PII_ID_RE = /(?<!\d)\d{9}(?:\d{3})?(?!\d)/g;
+const PII_OWNER_RE = /^(\s*[-*>#]*\s*(?:họ và tên|họ tên|chủ sở hữu|chủ hộ|người sử dụng đất|người mua|người bán|bên mua|bên bán|đại diện|ông|bà|năm sinh|ngày sinh|địa chỉ thường trú|nơi thường trú)\s*[:：]).*$/gim;
+const LEGAL_TITLE_HINTS = ["sổ đỏ", "sổ hồng", "gcn", "gcnqsdđ", "giấy chứng nhận"];
+
+/** Xoá thông tin cá nhân (tên chủ sở hữu, CCCD/CMND, SĐT, nơi thường trú) khỏi văn bản tài liệu; giữ nguyên dữ liệu đất/thửa/quy hoạch. */
+export function redactPersonalData(text: string): string {
+  if (!text) return text;
+  let t = text.replace(PII_OWNER_RE, "$1 [đã ẩn]");
+  t = t.replace(PII_PHONE_RE, "[đã ẩn]");
+  t = t.replace(PII_ID_RE, "[đã ẩn]");
+  return t;
+}
+
+/** Chuẩn hoá tiêu đề file pháp lý, thay tên chủ nhà bằng nhãn trung tính. */
+export function redactDocTitle(title: string): string {
+  const low = (title || "").toLowerCase();
+  if (!LEGAL_TITLE_HINTS.some((h) => low.includes(h))) return title;
+  const m = low.match(/(?:căn|can|npd|lô|lo|c)[\s_#]*(\d+)/i);
+  return m ? `Sổ đỏ / GCN QSDĐ căn ${m[1]}` : "Sổ đỏ / GCN QSDĐ (đã ẩn thông tin cá nhân)";
+}
+
