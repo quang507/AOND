@@ -6346,6 +6346,22 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
         if (d.thieu.length) thieu.push(`dòng ${d.stt} thiếu ${d.thieu.join(", ")}`);
       }
       if (!soTao) return [`Dạ em đọc được bảng mà chưa nhập được căn nào, em đã ghi sổ để anh Thu xem. ${CachGoi} nhắn từng căn giúp em cũng được ạ.`];
+
+      // Cơ chế giống anh Luân (_drop_stub_listings): Khi đã nhập được các căn thật từ bảng hàng,
+      // tự động dọn bỏ căn nháp rỗng khởi tạo ban đầu để giỏ hàng không bị sót căn rác vô danh.
+      try {
+        const { data: tinRongCu } = await client.from("listings").select("id, status, price_raw, price_vnd, area_m2, district, ward, location_raw, project_id, unit_code")
+          .eq("seller_id", sellerRow.id).eq("status", "cho_thong_tin");
+        if (Array.isArray(tinRongCu)) {
+          for (const trc of tinRongCu) {
+            if (laTinRong({ ...trc, location_raw: trc.location_raw ?? null, area_m2: trc.area_m2 == null ? null : Number(trc.area_m2) })) {
+              await client.from("listings").delete().eq("id", trc.id);
+            }
+          }
+        }
+      } catch (eRong) {
+        await ghiLoi(client, "chat-reply xoa tin rong sau nhap bang", eRong);
+      }
       return [
         `📥 Em nhập ${soTao} căn từ bảng${tenTep ? ` ${tenTep}` : ""} vào rổ của ${cachGoi}:\n${tenCan.join("\n")}` +
         (kq.laCot.length ? `\nCột em chưa nhận: ${kq.laCot.slice(0, 5).join(", ")}.` : "") +
