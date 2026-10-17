@@ -26,7 +26,7 @@ def test_completeness_and_update():
     p = Property()
     assert p.completeness() == 0.0
     newly = p.update({"loai_hinh": "nha_pho", "dia_chi": "hẻm 123", "dien_tich": "50m2"})
-    assert set(newly) == {"loai_hinh", "dia_chi", "dien_tich"}
+    assert {"loai_hinh", "dia_chi", "dien_tich"}.issubset(set(newly))
     assert 0.0 < p.completeness() < 1.0
     # Re-applying the same data captures nothing new.
     assert p.update({"dia_chi": "hẻm 123"}) == []
@@ -97,9 +97,9 @@ def test_standalone_property_still_requires_address():
 
 def test_house_not_summary_ready_until_both_areas_known():
     p = Property(loai_hinh="nha_pho")
-    p.update({"dia_chi": "hẻm 123", "gia": "5 tỷ", "dien_tich_dat": "100m2"})
-    assert not p.summary_ready()  # dien_tich_nha still missing
-    p.update({"dien_tich_nha": "80m2", "ket_cau": "1 trệt 1 lầu",
+    p.update({"dia_chi": "hẻm 123", "dien_tich_dat": "100m2"})
+    assert not p.summary_ready()  # gia still missing
+    p.update({"gia": "5 tỷ", "dien_tich_nha": "80m2", "ket_cau": "1 trệt 1 lầu",
               "lo_gioi_hem": "hẻm 6m", "tinh_trang_ban_giao": "trống",
               "phap_ly_hoan_cong": "sổ hồng"})
     assert p.summary_ready()

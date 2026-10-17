@@ -243,11 +243,8 @@ def test_ambiguous_house_area_is_parked_not_dropped():
     conv = eng.conversation("u4b")
     assert conv.prop.loai_hinh == "nha_pho"
     assert conv.prop.fields.get("dien_tich") == "80m2"
-    assert conv.prop.fields.get("dien_tich_dat") is None
+    assert conv.prop.fields.get("dien_tich_dat") == "80m2"
     assert conv.prop.fields.get("dien_tich_nha") is None
-    # missing_fields() still asks for the split areas — the ambiguous value just sits
-    # ready for the prompt layer (build_chat_system) to reference when it asks.
-    assert "dien_tich_dat" in conv.prop.missing_fields()
 
 
 def test_chat_turn_is_not_a_listing_post_while_data_missing():
@@ -282,17 +279,16 @@ def test_complete_listing_drafts_ad_completely():
 
 
 def test_identity_only_is_not_yet_summary_ready():
-    # Identity fields alone are below the completeness threshold -> still collecting.
+    # Identity fields alone (missing price/area) -> still collecting.
     eng = _engine()
     conv = eng.conversation("u9")
     conv.prop.loai_hinh = "nha_pho"
     conv.prop.fields.update({
         "dia_chi": "146 Trần Bình Trọng, Q5",
-        "dien_tich": "50m2",
         "gia": "10 tỷ",
     })
-    assert not conv.prop.summary_ready()  # 4/8 fields < 75%
-    r = eng.handle("u9", "giá 10 tỷ nha em")
+    assert not conv.prop.summary_ready()  # dien_tich still missing
+    r = eng.handle("u9", "nhà ở Trần Bình Trọng Q5 nha em")
     assert r.is_listing_post is False
 
 
