@@ -23,7 +23,7 @@ export default function ListingCard({
   const areaStr = formatArea(listing.area_m2);
 
   return (
-    <div className="group flex flex-col rounded-xl bg-white border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200">
+    <div className="group flex flex-col rounded-lg bg-white border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200">
       {/* Thumbnail */}
       <Link href={`/nha-dat/${encodeURIComponent(code)}`} className="relative aspect-[16/10] overflow-hidden bg-slate-100 block">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -35,7 +35,7 @@ export default function ListingCard({
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         {listing.deal && (
-          <span className="absolute top-2.5 left-2.5 rounded bg-black/50 text-white text-[10px] font-bold px-2 py-0.5 backdrop-blur-sm">
+          <span className="absolute top-2.5 left-2.5 rounded-md bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 backdrop-blur-sm">
             {listing.deal === "cho_thue" ? "Cho thuê" : "Bán"}
           </span>
         )}
@@ -49,7 +49,7 @@ export default function ListingCard({
           className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 group-hover:text-brand transition-colors"
           title={title}
         >
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 mr-1.5 align-middle tracking-wide">
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 mr-1.5 align-middle tracking-wide">
             ✓ XÁC THỰC
           </span>
           <span>{title}</span>

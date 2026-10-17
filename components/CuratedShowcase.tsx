@@ -28,7 +28,7 @@ export default function CuratedShowcase() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
             <span>⭐</span>
             <span>Kho tin tiêu biểu</span>
           </div>
@@ -42,13 +42,13 @@ export default function CuratedShowcase() {
         <div className="flex items-center gap-2">
           <Link
             href="/mua-ban"
-            className="rounded-lg border border-line bg-white px-3.5 py-1.5 text-xs font-bold text-navy shadow-sm transition hover:border-brand hover:text-brand"
+            className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-bold text-navy shadow-sm transition hover:border-brand hover:text-brand"
           >
             Mua bán →
           </Link>
           <Link
             href="/cho-thue"
-            className="rounded-lg border border-line bg-white px-3.5 py-1.5 text-xs font-bold text-navy shadow-sm transition hover:border-brand hover:text-brand"
+            className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-bold text-navy shadow-sm transition hover:border-brand hover:text-brand"
           >
             Cho thuê →
           </Link>
@@ -63,13 +63,13 @@ export default function CuratedShowcase() {
             <button
               key={cat.id}
               onClick={() => setSelectedCat(cat.id)}
-              className={`whitespace-nowrap px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 border ${
+              className={`whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-200 border ${
                 active
-                  ? "bg-navy text-white border-navy shadow-sm"
+                  ? "bg-brand text-white border-brand shadow-sm"
                   : "bg-white text-mute border-line hover:border-brand/40 hover:text-navy"
               }`}
             >
-              {cat.label} <span className={`ml-1 text-[11px] ${active ? "text-amber-400" : "text-mute/70"}`}>({cat.count})</span>
+              {cat.label} <span className={`ml-1 text-[11px] ${active ? "text-white/80" : "text-mute/70"}`}>({cat.count})</span>
             </button>
           );
         })}

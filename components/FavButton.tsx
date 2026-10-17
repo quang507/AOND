@@ -51,7 +51,7 @@ export default function FavButton({
         type="button"
         onClick={toggle}
         aria-label={fav ? "Bỏ lưu tin" : "Lưu tin"}
-        className={`w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center transition-all hover:bg-slate-50 hover:border-slate-300 ${
+        className={`w-8 h-8 rounded-md border border-slate-200 flex items-center justify-center transition-all hover:bg-slate-50 hover:border-slate-300 ${
           fav ? "text-red-500 bg-red-50/50 border-red-200" : "text-slate-400 hover:text-red-500"
         } ${className}`}
       >

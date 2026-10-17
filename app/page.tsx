@@ -51,14 +51,14 @@ const VONG_HOI = [
 
 function HoiThoai({ chat, toi }: { chat: Bong[]; toi?: boolean }) {
   return (
-    <div className={`mt-4 flex flex-col gap-1.5 rounded-xl p-3 text-sm leading-5 ${toi ? "bg-white/10" : "bg-cream/70"}`} aria-label="Minh hoạ hội thoại">
+    <div className={`mt-4 flex flex-col gap-2 rounded-lg p-3 text-sm leading-relaxed ${toi ? "bg-white/10" : "bg-[#F0F4F8]"}`} aria-label="Minh hoạ hội thoại">
       {chat.map((b, i) => (
         <p
           key={i}
-          className={`max-w-[88%] rounded-2xl px-3 py-1.5 ${
+          className={`max-w-[88%] rounded-lg px-3.5 py-2 text-xs sm:text-sm ${
             b.ai === "khach"
-              ? `self-start rounded-bl-sm ${toi ? "bg-white/15 text-white" : "bg-white text-navy shadow-sm"}`
-              : `self-end rounded-br-sm ${toi ? "bg-brand text-white font-medium shadow-sm" : "bg-brand/10 text-navy font-medium"}`
+              ? `self-end rounded-br-xs ${toi ? "bg-brand text-white font-medium" : "bg-[#DDF2FD] text-navy font-medium border border-[#C6E7FD] shadow-xs"}`
+              : `self-start rounded-bl-xs ${toi ? "bg-white/15 text-white" : "bg-white text-navy font-medium border border-slate-200/80 shadow-xs"}`
           }`}
         >
           {b.noi}
@@ -78,14 +78,14 @@ export default async function Home() {
         </div>
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pb-28 pt-14 md:grid-cols-[1.15fr_.85fr] md:pt-16">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/10 text-[#60A5FA] text-xs font-bold tracking-wide uppercase mb-3">
               <span>📍</span>
               <span>Môi giới thường trực · Sài Gòn & Long An</span>
             </div>
             <h1 className="text-4xl font-extrabold leading-[1.08] [text-wrap:balance] md:text-5xl text-white">
               Tìm nhà Sài Gòn, Long An?
               <br />
-              <span className="text-amber-400">Nhắn một câu là xong.</span>
+              <span className="text-[#60A5FA]">Nhắn một câu là xong.</span>
             </h1>
             <p className="mt-5 max-w-md leading-7 text-white/75 text-base">
               Tụi em không hỏi số điện thoại, không spam. Trợ lý trực 24/7 trên
@@ -97,7 +97,7 @@ export default async function Home() {
                 <Link
                   key={t.slug}
                   href={`/${t.slug}`}
-                  className="rounded-lg border border-white/20 bg-white/5 px-3.5 py-1.5 text-white/85 transition hover:border-brand hover:bg-brand hover:text-white"
+                  className="rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-white/85 transition hover:border-brand hover:bg-brand hover:text-white"
                 >
                   {t.keyword}
                 </Link>
@@ -107,7 +107,7 @@ export default async function Home() {
 
           {/* Ảnh minh hoạ Hero */}
           <div className="relative hidden md:block">
-            <div className="overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
+            <div className="overflow-hidden rounded-lg border border-white/10 shadow-2xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={placeholderImg("hero-q8")}
@@ -126,7 +126,7 @@ export default async function Home() {
             action="/api/search"
             method="get"
             role="search"
-            className="flex flex-col gap-3 rounded-2xl bg-white p-4 text-navy shadow-[0_18px_40px_rgba(13,37,61,0.18)] border border-slate-100 sm:flex-row sm:items-center sm:gap-4 sm:p-3 sm:pl-6"
+            className="flex flex-col gap-3 rounded-lg bg-white p-4 text-navy shadow-[0_18px_40px_rgba(13,37,61,0.18)] border border-slate-100 sm:flex-row sm:items-center sm:gap-4 sm:p-3 sm:pl-6"
           >
             <input type="hidden" name="go" value="1" />
             <IconSearch className="hidden h-5 w-5 shrink-0 text-brand sm:block" />
@@ -141,13 +141,13 @@ export default async function Home() {
             />
             <button
               type="submit"
-              className="nut nut-chinh px-6 py-2.5 rounded-xl font-bold shadow-sm"
+              className="nut nut-chinh px-6 py-2.5 rounded-md font-bold shadow-sm"
             >
               Tìm ngay
             </button>
             <a
               href={zaloLink("hero")}
-              className="nut nut-phu px-5 py-2.5 rounded-xl font-bold"
+              className="nut nut-phu px-5 py-2.5 rounded-md font-bold"
             >
               Hỏi qua Zalo
             </a>
@@ -174,8 +174,8 @@ export default async function Home() {
 
       {/* 4. VÒNG HỎI 3 BƯỚC ĐI HỎI GIÙM CHỦ NHÀ */}
       <section className="mx-auto max-w-6xl px-4 py-8">
-        <div className="rounded-2xl bg-white p-6 border border-line shadow-[0_2px_14px_rgba(13,37,61,0.06)] md:p-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
+        <div className="rounded-xl bg-white p-6 border border-line shadow-[0_2px_14px_rgba(13,37,61,0.06)] md:p-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-brand/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
             <span>🤝</span>
             <span>Hỏi bất kỳ, có tức thì</span>
           </div>
@@ -185,7 +185,7 @@ export default async function Home() {
           <ol className="mt-6 grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch">
             {VONG_HOI.map((b, i) => (
               <li key={b.ai} className="contents">
-                <div className="rounded-xl border border-line bg-cream/60 p-5">
+                <div className="rounded-lg border border-line bg-cream/60 p-5">
                   <p className="eyebrow text-mute">{i + 1}. {b.ai}</p>
                   <p className="mt-2 font-bold leading-6 text-navy text-sm md:text-base">{b.noi}</p>
                   <p className="mt-1 text-xs text-mute">{b.chu}</p>
@@ -207,9 +207,9 @@ export default async function Home() {
 
       {/* 6. CAM KẾT RIÊNG TƯ ZALO */}
       <section className="mx-auto max-w-6xl px-4 py-12">
-        <div className="grid gap-6 rounded-2xl bg-navy p-6 text-white md:grid-cols-[1.1fr_.9fr] md:p-10 shadow-xl border border-white/10">
+        <div className="grid gap-6 rounded-xl bg-navy p-6 text-white md:grid-cols-[1.1fr_.9fr] md:p-10 shadow-xl border border-white/10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
               <span>🔒</span>
               <span>Bảo vệ quyền riêng tư</span>
             </div>
@@ -253,9 +253,9 @@ export default async function Home() {
             <Link
               key={href}
               href={href}
-              className="group rounded-2xl bg-white p-5 border border-line shadow-[0_2px_14px_rgba(13,37,61,0.06)] transition hover:-translate-y-1 hover:shadow-md hover:border-brand/40"
+              className="group rounded-xl bg-white p-5 border border-line shadow-[0_2px_14px_rgba(13,37,61,0.06)] transition hover:-translate-y-1 hover:shadow-md hover:border-brand/40"
             >
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand/10 text-brand">
+              <span className="grid h-11 w-11 place-items-center rounded-lg bg-brand/10 text-brand">
                 <Icon className="h-6 w-6" />
               </span>
               <p className="mt-4 font-extrabold text-navy group-hover:text-brand transition-colors">{t}</p>
@@ -263,7 +263,7 @@ export default async function Home() {
             </Link>
           ))}
         </div>
-        <div className="rounded-2xl bg-white p-6 border border-line shadow-[0_2px_14px_rgba(13,37,61,0.06)]">
+        <div className="rounded-xl bg-white p-6 border border-line shadow-[0_2px_14px_rgba(13,37,61,0.06)]">
           <p className="eyebrow text-brand">Theo phường & khu vực</p>
           <h2 className="mt-1.5 text-lg font-extrabold text-navy">Chọn khu vực anh chị đang nhắm</h2>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -271,7 +271,7 @@ export default async function Home() {
               <Link
                 key={w}
                 href={`/mua-ban?phuong=${encodeURIComponent(w)}`}
-                className="rounded-lg border border-line px-3 py-1.5 text-xs text-slate-700 transition hover:border-brand hover:text-brand bg-slate-50"
+                className="rounded-md border border-line px-3 py-1.5 text-xs text-slate-700 transition hover:border-brand hover:text-brand bg-slate-50"
               >
                 {w}
               </Link>
@@ -282,10 +282,10 @@ export default async function Home() {
 
       {/* 8. CTA DÀNH CHO NGƯỜI BÁN */}
       <section className="mx-auto max-w-6xl px-4 pb-16">
-        <div className="relative overflow-hidden rounded-2xl bg-navy px-6 py-12 text-white md:px-12 border border-white/10 shadow-xl">
+        <div className="relative overflow-hidden rounded-xl bg-navy px-6 py-12 text-white md:px-12 border border-white/10 shadow-xl">
           <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-brand/25 blur-3xl" />
           <div className="relative max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-3">
               <span>🏠</span>
               <span>Dành cho người bán</span>
             </div>
@@ -300,13 +300,13 @@ export default async function Home() {
             <div className="mt-7 flex flex-wrap items-center gap-4">
               <Link
                 href="/raoban"
-                className="nut nut-chinh px-6 py-3 rounded-xl font-bold shadow-md"
+                className="nut nut-chinh px-6 py-3 rounded-md font-bold shadow-md"
               >
                 Rao bán ngay - Miễn phí
               </Link>
               <a
                 href={zaloLink("seller_cta")}
-                className="px-6 py-3 rounded-xl border border-white/20 bg-white/10 text-white font-bold text-sm hover:bg-white/20 transition"
+                className="px-6 py-3 rounded-md border border-white/20 bg-white/10 text-white font-bold text-sm hover:bg-white/20 transition"
               >
                 Gửi tin qua Zalo
               </a>

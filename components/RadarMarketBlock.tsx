@@ -21,7 +21,7 @@ export default function RadarMarketBlock() {
         {/* Top Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/10 text-[#60A5FA] text-xs font-bold tracking-wide uppercase mb-3">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
@@ -39,14 +39,14 @@ export default function RadarMarketBlock() {
           <div className="flex items-center gap-3">
             <Link
               href="/ban-do"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-navy font-bold text-sm shadow-md hover:bg-slate-100 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-white text-navy font-bold text-xs shadow hover:bg-slate-100 transition"
             >
               <span>🗺️</span>
-              <span>Mở bản đồ quy hoạch</span>
+              <span>Mở bản đồ</span>
             </Link>
             <a
               href={zaloLink("radar_market")}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand text-white font-bold text-sm shadow-md hover:bg-brand-dark transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-brand text-white font-bold text-xs shadow hover:bg-brand-dark transition"
             >
               <span>💬</span>
               <span>Hỏi giá khu vực</span>
@@ -60,7 +60,7 @@ export default function RadarMarketBlock() {
             <Link
               key={region.name}
               href={`/mua-ban?q=${encodeURIComponent(region.name)}`}
-              className="group p-5 rounded-2xl bg-white/5 border border-white/10 hover:border-brand/50 hover:bg-white/10 transition-all duration-200"
+              className="group p-4 rounded-xl bg-white/5 border border-white/10 hover:border-brand/50 hover:bg-white/10 transition-all duration-200"
             >
               <div className="flex items-baseline justify-between mb-2">
                 <h3 className="font-extrabold text-lg text-white group-hover:text-brand transition-colors">

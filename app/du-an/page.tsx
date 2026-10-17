@@ -101,7 +101,7 @@ export default async function DuAnPage({
       {/* Page Header */}
       <div className="bg-navy text-white py-12 px-4">
         <div className="mx-auto max-w-6xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/10 text-[#60A5FA] text-xs font-bold tracking-wide uppercase mb-3">
             <span>🏢</span>
             <span>Kho dự án bất động sản</span>
           </div>
@@ -122,12 +122,12 @@ export default async function DuAnPage({
                 type="search"
                 defaultValue={q}
                 placeholder="Tìm tên dự án (VD: Sunrise, Mizuki, Glory...)"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white text-navy text-sm font-medium outline-none placeholder:text-slate-400 shadow-sm"
+                className="w-full pl-10 pr-4 py-2.5 rounded-md bg-white text-navy text-sm font-medium outline-none placeholder:text-slate-400 shadow-sm"
               />
             </div>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-brand text-white text-sm font-bold shadow transition hover:bg-brand-dark shrink-0"
+              className="px-6 py-2.5 rounded-md bg-brand text-white text-sm font-bold shadow transition hover:bg-brand-dark shrink-0"
             >
               Tìm kiếm
             </button>
@@ -148,9 +148,9 @@ export default async function DuAnPage({
               <Link
                 key={d.id}
                 href={href}
-                className={`whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                className={`whitespace-nowrap px-3.5 py-1.5 rounded-md text-xs font-bold transition-all border ${
                   active
-                    ? "bg-navy text-white border-navy shadow-sm"
+                    ? "bg-brand text-white border-brand shadow-sm"
                     : "bg-white text-slate-600 border-slate-200 hover:border-brand hover:text-brand"
                 }`}
               >
