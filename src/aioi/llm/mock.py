@@ -38,11 +38,10 @@ class MockProvider(LLMProvider):
                 "Dạ bên em là nền tảng AI Ơi Nhà Đất thuộc Công ty Nhà Đất, hỗ trợ kết nối mua bán "
                 "bất động sản minh bạch và an toàn ạ! (offline)"
             )
-        if "KHÁCH HỎI VỀ LINK BÀI ĐĂNG" in system:
+        if "KHÁCH HỎI VỀ LINK" in system:
             return (
-                "Dạ bên em là mạng lưới kết nối trực tiếp nguồn hàng tới khách mua và môi giới nội bộ, "
-                "không đăng đại trà lên website công khai. Bản tin tóm tắt em gửi trong tin nhắn này "
-                "chính là bản chuẩn được gửi trực tiếp tới khách mua phù hợp ngay ạ! (offline)"
+                "Dạ tin đăng của anh/chị đã được đưa lên hệ thống website https://aioinhadat.com với đầy đủ hình ảnh, "
+                "thông số và giá bán rồi ạ! Anh/chị có thể truy cập https://aioinhadat.com để xem trực tiếp nhé ạ. (offline)"
             )
         if "DỰ THẢO TIN RAO" in system:
             # Step 1: show the draft ad and ask for approval — NO fee yet.
@@ -51,11 +50,12 @@ class MockProvider(LLMProvider):
                 "🏠 BĐS vị trí đẹp, pháp lý rõ ràng, sẵn sàng giao dịch. (offline)\n\n"
                 "Anh thấy hấp dẫn chưa ạ?"
             )
-        if "DẪN DẮT PHÍ" in system:
-            # Step 2: customer approved -> pivot to the brokerage fee.
+        if "XỬ LÝ SAU KHI XEM BẢN TIN RAO" in system or "DẪN DẮT PHÍ" in system:
+            # Step 2: customer approved -> confirm published to website & network immediately (skip fee gate)
             return (
-                "Dạ tuyệt vời! Em sẽ cho chào căn nhà của anh ngay ạ, mà anh có biết "
-                "phí môi giới của tụi em chưa ạ? (offline)"
+                "Dạ tuyệt vời! Bản tin của anh/chị đã được duyệt và chính thức đăng lên hệ thống website "
+                "https://aioinhadat.com cũng như chuyển tới mạng lưới khách mua ngay ạ! Anh/chị có thể xem và "
+                "theo dõi tin tại https://aioinhadat.com nhé ạ. (offline)"
             )
         # A friendly, complete, <30-word templated reply that praises then asks one thing.
         return (

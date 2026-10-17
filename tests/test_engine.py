@@ -314,9 +314,10 @@ def test_draft_then_fee_only_after_approval():
     assert "phí môi giới" not in r1.reply
     assert conv.listing_proposed is True
 
-    # Step 2: customer approves -> only now does the fee come up.
+    # Step 2: customer approves -> published to website, skip fee gate
     r2 = eng.handle("u10", "ok nhìn hấp dẫn đó em")
-    assert "phí môi giới" in r2.reply
+    assert "aioinhadat.com" in r2.reply
+    assert conv.active.status == "đang bán"
 
 
 def test_seller_role_detected_and_sticky():
@@ -1620,3 +1621,47 @@ def test_seller_assistant_stable_per_user():
     a = eng.handle("same-user", "nhà phố").assistant_name
     b = eng.handle("same-user", "thêm thông tin").assistant_name
     assert a == b
+
+
+def test_is_link_question_and_website_system():
+    from aioi.engine import _is_link_question
+    assert _is_link_question("đang đăng web như thế nào")
+    assert _is_link_question("cho xin link web với em")
+    assert _is_link_question("xem tin ở đâu vậy em")
+    assert _is_link_question("có link bài đăng không")
+
+    class SpyProvider:
+        def __init__(self):
+            self.last_system = ""
+        def extract(self, *a, **k):
+            return {}
+        def chat(self, system, messages, **k):
+            self.last_system = system
+            return "Dạ vâng anh có thể xem tại https://aioinhadat.com ạ"
+
+    spy = SpyProvider()
+    eng = Engine(spy, fetcher=_fetch_default)
+    eng.handle("test_user_link", "cho xin link web đang đăng như thế nào")
+    assert "https://aioinhadat.com" in spy.last_system
+
+
+def test_post_approval_marks_status_dang_ban():
+    eng = _engine()
+    conv = eng.conversation("u_appr")
+    conv.prop.loai_hinh = "nha_pho"
+    conv.prop.fields.update({
+        "dia_chi": "146 Trần Bình Trọng, Q5",
+        "dien_tich_dat": "60m2",
+        "dien_tich_nha": "50m2",
+        "gia": "10 tỷ",
+        "ket_cau": "1 trệt 2 lầu, 4PN",
+        "lo_gioi_hem": "hẻm xe hơi 4m",
+    })
+    # Step 1: propose
+    r1 = eng.handle("u_appr", "xong rồi đó em")
+    assert conv.listing_proposed is True
+    # Step 2: Customer approves post
+    r2 = eng.handle("u_appr", "đăng đi em")
+    assert "aioinhadat.com" in r2.reply
+    assert conv.active.status == "đang bán"
+

@@ -54,10 +54,10 @@ def test_counter_question_consultation_link():
     settings = Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")
     eng = Engine(MockProvider(settings))
 
-    # User asks if there is a listing link
+    # User asks if there is a listing link -> bot provides website link aioinhadat.com
     r = eng.handle("u_link", "Xong có link bài đăng không đưa anh xem nhé?")
     assert r.reply
-    assert "mạng lưới" in r.reply.lower() or "nội bộ" in r.reply.lower() or "không đăng đại trà" in r.reply.lower()
+    assert "aioinhadat.com" in r.reply.lower() or "website" in r.reply.lower()
 
 
 def test_seller_asking_about_buyers_not_flipping_role():

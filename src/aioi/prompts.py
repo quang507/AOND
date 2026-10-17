@@ -346,13 +346,22 @@ def build_chat_system(
     user_type: SellerRole = SellerRole.UNKNOWN,
     project_block: str = "",
 ) -> str:
-    label = FIELD_LABELS.get(next_field, next_field or "")
-    natural = NATURAL_QUESTIONS.get(next_field, f"hỏi thêm {label}")
-    ask_line = (
-        f'Thông tin cần hỏi tiếp theo: "{label}". Mục tiêu: {natural}. Tiếp nhận nhanh gọn, tự nhiên (TUYỆT ĐỐI KHÔNG nịnh bợ, KHÔNG mở đầu bằng từ "Dạ", KHÔNG khen các thông số kỹ thuật thông thường), rồi hỏi đúng 1 ý này một cách khéo léo.'
-        if next_field
-        else "Dữ liệu đã khá đầy đủ. Cảm ơn anh/chị và xác nhận trạng thái tin một cách thân thiện."
-    )
+    ambiguous_area = prop.fields.get("dien_tich")
+    if next_field in ("dien_tich_dat", "dien_tich_nha") and ambiguous_area:
+        ask_line = (
+            f'Khách đã cho biết diện tích {ambiguous_area} nhưng CHƯA RÕ là diện tích ĐẤT hay '
+            f'diện tích NHÀ (nhà phố/biệt thự/nhà cấp 4 có 2 diện tích khác nhau). Tiếp nhận nhanh gọn, tự nhiên, '
+            f'rồi hỏi lại đúng 1 câu để xác nhận {ambiguous_area} đó là đất '
+            "hay nhà, và nếu tiện thì hỏi luôn số diện tích còn lại."
+        )
+    else:
+        label = FIELD_LABELS.get(next_field, next_field or "")
+        natural = NATURAL_QUESTIONS.get(next_field, f"hỏi thêm {label}")
+        ask_line = (
+            f'Thông tin cần hỏi tiếp theo: "{label}". Mục tiêu: {natural}. Tiếp nhận nhanh gọn, tự nhiên (TUYỆT ĐỐI KHÔNG nịnh bợ, KHÔNG mở đầu bằng từ "Dạ", KHÔNG khen các thông số kỹ thuật thông thường), rồi hỏi đúng 1 ý này một cách khéo léo.'
+            if next_field
+            else "Dữ liệu đã khá đầy đủ. Cảm ơn anh/chị và xác nhận trạng thái tin một cách thân thiện."
+        )
 
     group_guidance = ""
     if prop.group == PropertyGroup.RESIDENTIAL:
@@ -608,8 +617,14 @@ def build_fee_followup_system(
 
 {BUSINESS_CONTEXT}
 {project_block}
-NHIỆM VỤ (DẪN DẮT PHÍ): Bạn vừa cho khách xem bản tin rao và hỏi họ thấy hấp dẫn chưa. Hãy đọc phản hồi MỚI NHẤT của khách:
-- NẾU khách ĐỒNG Ý / ưng bản tin (kể cả nói câu phủ định mang ý khen / không cần sửa như "không phải sửa cái này đâu em", "vậy là được rồi", "không cần đổi gì", "chuẩn rồi em", hoặc thả tim/like): vui vẻ xác nhận sẽ đem đi chào ngay, rồi nhẹ nhàng hỏi khách đã biết phí môi giới bên mình chưa, theo tinh thần: "Em sẽ cho chào căn nhà của anh ngay ạ, mà anh có biết phí môi giới của tụi em chưa ạ?". Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách.
+NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem bản tin rao và hỏi họ thấy hấp dẫn chưa. Hãy đọc phản hồi MỚI NHẤT của khách:
+- NẾU khách ĐỒNG Ý / DUYỆT / BẢO ĐĂNG TIN (vd: "đăng đi", "lên bài đi", "lên tin đi", "đăng tin đi", "ok em", "được rồi", "chuẩn rồi em", "không cần sửa gì", hoặc thả tim/like):
+  • TẠM BỎ QUA BƯỚC HỎI PHÍ: Tuyệt đối KHÔNG hỏi phí môi giới ở lượt này (không hỏi "anh có biết phí môi giới của tụi em chưa ạ?").
+  • XÁC NHẬN ĐĂNG TIN LÊN HỆ THỐNG VÀ WEB NGAY: Vui vẻ chúc mừng và xác nhận bản tin đã được duyệt và chính thức đăng lên hệ thống website https://aioinhadat.com cũng như chuyển cho mạng lưới kết nối khách mua ngay.
+  • Hướng dẫn khách truy cập https://aioinhadat.com để xem và theo dõi tin rao.
+- NẾU khách HỎI LINK BÀI ĐĂNG HOẶC HỎI TRÊN WEB ĐĂNG NHƯ THẾ NÀO (vd: "đang đăng web như thế nào", "xem tin ở đâu", "cho xin link web", "link đâu"):
+  • Gửi ngay link website: https://aioinhadat.com
+  • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng như môi giới dễ dàng tìm kiếm, kết nối.
 - NẾU khách muốn CHỈNH SỬA THẬT SỰ (vd "tiêu đề nhiều thông tin quá", "đổi tiêu đề...", "giá sửa lại...", "nhà có 3 lầu..."):
   • Tiếp thu ngay và khen tinh thần đóng góp của khách (vd "Tiêu đề này ngắn gọn và hút khách hơn hẳn ạ!"), cập nhật dữ liệu, KHÔNG nhắc phí.
   • RAO LẠI BẢN TIN ĐÃ SỬA ("📋 Bản tin cập nhật:") theo ĐÚNG TIÊU CHUẨN CỰC KỲ TINH GỌN:
@@ -620,10 +635,10 @@ NHIỆM VỤ (DẪN DẮT PHÍ): Bạn vừa cho khách xem bản tin rao và h�
       * Mẫu 4 (Trực diện tinh gọn): [Bán/Cho thuê] [Số tầng/Kết cấu] [Vị trí MT/Hẻm] [Điểm nhấn nếu có] giá [Giá] (Vd: "Bán nhà 3 tầng MT Cao Lỗ gần Parc Mall giá 10 tỷ")
     - ⚠️ CẤM TUYỆT ĐỐI NHỒI NHÉT VÀO TIÊU ĐỀ: CẤM nhét số phòng ngủ (4PN 5WC), hướng nhà (hướng Tây), tình trạng (đang trống), đường vào (ô tô vào tận nhà, hẻm nội bộ)... vào dòng tiêu đề! Toàn bộ chi tiết đó ĐÃ CÓ ở các dòng emoji bên dưới.
     - Giữ các dòng thông số bên dưới (📍, 📐, 🏠, 🛏️, 📦, 🚗, 📜, 💰) chuẩn xác. ⚠️ CẤM TUYỆT ĐỐI viết "đang cập nhật" — thông số nào chưa có thì BỎ QUA dòng đó hoàn toàn!
-- NẾU khách CHÊ PHÍ CAO / DO DỰ / TỪ CHỐI trả phí: hãy THUYẾT PHỤC một cách khéo léo, ấm áp:
+- NẾU khách CHỦ ĐỘNG HỎI PHÍ HOẶC CHÊ PHÍ CAO / DO DỰ / TỪ CHỐI trả phí: hãy THUYẾT PHỤC một cách khéo léo, ấm áp:
   • Đồng cảm trước ("Em hiểu băn khoăn của anh/chị..."), KHÔNG tranh cãi, KHÔNG chê khách.
   • Mỗi lượt nhấn 1–2 lợi ích mạnh nhất phù hợp với mối lo của khách (xem DANH SÁCH GIÁ TRỊ), rồi nhẹ nhàng chốt lại.
-  • Nhấn mạnh "chỉ thu khi bán/cho thuê THÀNH CÔNG" để gỡ tâm lý rủi ro.
+  • Nhấn mạnh "chỉ thu phí KHI giao dịch thành công" để gỡ tâm lý rủi ro.
   • TUYỆT ĐỐI giữ đúng mức phí chính sách — KHÔNG tự ý giảm giá, KHÔNG hứa ưu đãi/cam kết ngoài chính sách, KHÔNG bịa.
   • Chỉ thuyết phục tối đa 1–2 lần; nếu khách vẫn dứt khoát từ chối thì lịch sự, tôn trọng, để ngỏ cửa ("khi nào anh cần cứ nhắn em"), KHÔNG nài ép gây khó chịu.
 

@@ -173,7 +173,15 @@ def _is_trust_question(text: str) -> bool:
 
 def _is_link_question(text: str) -> bool:
     t = (text or "").lower()
-    return any(w in t for w in ("link bài đăng", "link bai dang", "có link không", "co link khong", "gửi link", "gui link", "xem bài đăng ở đâu", "link đâu", "link dau", "link bài", "link xem"))
+    keywords = (
+        "link bài đăng", "link bai dang", "có link không", "co link khong",
+        "gửi link", "gui link", "xem bài đăng ở đâu", "link đâu", "link dau",
+        "link bài", "link xem", "link web", "link website", "cho xin link",
+        "cho em xin link", "xem tin ở đâu", "xem ở đâu", "xem o dau",
+        "đang đăng web như thế nào", "dang web nhu the nao", "đăng web như thế nào",
+        "tin đăng trên web", "xem trên web", "trên web như thế nào", "web đâu", "web dau",
+    )
+    return any(w in t for w in keywords)
 
 
 # Max tool-calling steps in one agent turn (a safety cap so the loop can't run away).
@@ -1797,11 +1805,11 @@ class Engine:
             )
         elif _is_link_question(text):
             system += (
-                "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ LINK BÀI ĐĂNG: ===\n"
-                "Khách vừa hỏi xem có link bài đăng không. Hãy TRẢ LỜI RÕ RÀNG, CHÂN THÀNH:\n"
-                "- Bên em là mạng lưới kết nối trực tiếp nguồn hàng tới khách mua và môi giới nội bộ, KHÔNG đăng đại trà lên website công khai.\n"
-                "- Bản tóm tắt chi tiết căn nhà em gửi ngay trong tin nhắn này chính là bản tin chuẩn đã được lưu vào hệ thống để kết nối ngay tới người mua.\n"
-                "TUYỆT ĐỐI KHÔNG hứa hẹn chờ hệ thống cập nhật để gửi link.\n"
+                "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ LINK HOẶC CÁCH ĐĂNG TRÊN WEB: ===\n"
+                "Khách vừa hỏi xem link bài đăng, xem tin ở đâu hoặc tin trên web đang hiển thị như thế nào. Hãy TRẢ LỜI RÕ RÀNG, CHUYÊN NGHIỆP:\n"
+                "- Cung cấp ngay đường link website hệ thống: https://aioinhadat.com\n"
+                "- Giải thích ngắn gọn: Tin của anh/chị đã được đưa lên hệ thống website aioinhadat.com với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng như mạng lưới môi giới có thể xem và liên hệ trực tiếp.\n"
+                "- Mời anh/chị truy cập https://aioinhadat.com để xem hoặc theo dõi tin rao.\n"
             )
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
         system += self._project_memory_block(project)  # remember the price list + phân lô; reason over it
@@ -3087,7 +3095,7 @@ class Engine:
                     break
 
             is_post_approval = bool(re.search(
-                r"\b(?:lên\s*tin|đăng\s*tin|lên\s*bài|đăng\s*bài|cho\s*lên|chào\s*đi|lên\s*đi|đăng\s*đi|lên\s*được\s*rồi|duyệt)\b",
+                r"\b(?:lên\s*tin|đăng\s*tin|lên\s*bài|đăng\s*bài|cho\s*lên|chào\s*đi|lên\s*đi|đăng\s*đi|lên\s*được\s*rồi|duyệt|ok|chuẩn|hấp\s*dẫn|được\s*đó|đăng\s*luôn|đăng\s*hộ|đăng\s*nhé|lên\s*nhé)\b",
                 last_user_turn,
             ))
             has_new_can_keywords = bool(re.search(
@@ -3096,6 +3104,8 @@ class Engine:
             ))
 
             if is_post_approval and not has_new_can_keywords:
+                conv.active.status = "đang bán"
+                conv.listing_proposed = True
                 data = _data()
                 if data:
                     changed.update(conv.active.prop.update(data))
