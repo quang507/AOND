@@ -28,8 +28,7 @@ export default function CuratedShowcase() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
-            <span>⭐</span>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#DDF2FD] text-[#0068FF] text-xs font-bold tracking-wide uppercase mb-2">
             <span>Kho tin tiêu biểu</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-extrabold text-navy tracking-tight [text-wrap:balance]">
@@ -42,13 +41,13 @@ export default function CuratedShowcase() {
         <div className="flex items-center gap-2">
           <Link
             href="/mua-ban"
-            className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-bold text-navy shadow-sm transition hover:border-brand hover:text-brand"
+            className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-bold text-navy shadow-xs transition hover:border-brand hover:text-brand"
           >
             Mua bán →
           </Link>
           <Link
             href="/cho-thue"
-            className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-bold text-navy shadow-sm transition hover:border-brand hover:text-brand"
+            className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-bold text-navy shadow-xs transition hover:border-brand hover:text-brand"
           >
             Cho thuê →
           </Link>
@@ -56,7 +55,7 @@ export default function CuratedShowcase() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2.5 mb-6 no-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar">
         {CATEGORIES.map((cat) => {
           const active = selectedCat === cat.id;
           return (
@@ -65,7 +64,7 @@ export default function CuratedShowcase() {
               onClick={() => setSelectedCat(cat.id)}
               className={`whitespace-nowrap px-3.5 py-1.5 rounded-md text-xs font-bold transition-all duration-200 border ${
                 active
-                  ? "bg-brand text-white border-brand shadow-sm"
+                  ? "bg-brand text-white border-brand shadow-xs"
                   : "bg-white text-mute border-line hover:border-brand/40 hover:text-navy"
               }`}
             >
@@ -75,12 +74,12 @@ export default function CuratedShowcase() {
         })}
       </div>
 
-      {/* Grid: 4 columns standard layout matching Image 2 */}
+      {/* Grid: 4 columns standard layout */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
         {filtered.map((item) => (
           <div
             key={item.id}
-            className="group flex flex-col rounded-2xl bg-white border border-slate-200/80 overflow-hidden shadow-[0_1px_3px_0_rgba(15,23,42,0.04),0_1px_2px_-1px_rgba(15,23,42,0.03)] hover:shadow-[0_4px_6px_-2px_rgba(15,23,42,0.05),0_10px_15px_-3px_rgba(15,23,42,0.08)] hover:border-slate-300 transition-all duration-200"
+            className="group flex flex-col rounded-lg bg-white border border-slate-200 overflow-hidden shadow-xs hover:shadow-md hover:border-slate-300 transition-all duration-200"
           >
             {/* Thumbnail link */}
             <Link href={`/nha-dat/${item.code}`} className="relative aspect-[16/10] overflow-hidden bg-slate-100 block">
@@ -92,29 +91,30 @@ export default function CuratedShowcase() {
                 decoding="async"
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
+              {/* Verified badge on photo */}
+              {item.verified && (
+                <span className="absolute top-2 right-2 rounded bg-emerald-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 backdrop-blur-xs shadow-xs">
+                  ✓ Xác thực
+                </span>
+              )}
             </Link>
 
             {/* Card Body */}
-            <div className="p-3.5 sm:p-4 flex flex-col flex-1">
+            <div className="p-3 sm:p-3.5 flex flex-col flex-1">
               {/* Title (2 lines clamp) */}
               <Link
                 href={`/nha-dat/${item.code}`}
                 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 group-hover:text-brand transition-colors"
                 title={item.title}
               >
-                {item.verified && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 mr-1.5 align-middle tracking-wide">
-                    ✓ XÁC THỰC
-                  </span>
-                )}
-                <span>{item.title}</span>
+                {item.title}
               </Link>
 
-              {/* Price & Area (red/crimson text) */}
-              <div className="mt-2.5 flex items-baseline gap-1.5 text-[15px] sm:text-base font-bold">
-                <span className="text-[#DC2626] font-extrabold">{item.price_display}</span>
-                <span className="text-slate-400 font-bold">·</span>
-                <span className="text-[#DC2626] font-extrabold">{item.area_display}</span>
+              {/* Price & Area */}
+              <div className="mt-2 flex items-baseline gap-2 text-sm">
+                <span className="text-[#DC2626] font-extrabold text-base">{item.price_display}</span>
+                <span className="text-slate-300 font-normal">|</span>
+                <span className="text-slate-600 font-semibold text-xs">{item.area_display}</span>
               </div>
 
               {/* Location */}
@@ -124,7 +124,7 @@ export default function CuratedShowcase() {
               </div>
 
               {/* Footer: Date posted + Square Fav Button */}
-              <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+              <div className="mt-auto pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
                 <span>{item.posted_time}</span>
                 <FavButton code={item.code} variant="square" />
               </div>

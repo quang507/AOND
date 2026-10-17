@@ -39,16 +39,14 @@ export default function RadarMarketBlock() {
           <div className="flex items-center gap-3">
             <Link
               href="/ban-do"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-white text-navy font-bold text-xs shadow hover:bg-slate-100 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-white text-navy font-bold text-xs shadow-xs hover:bg-slate-100 transition"
             >
-              <span>🗺️</span>
               <span>Mở bản đồ</span>
             </Link>
             <a
               href={zaloLink("radar_market")}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-brand text-white font-bold text-xs shadow hover:bg-brand-dark transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-brand text-white font-bold text-xs shadow-xs hover:bg-brand-dark transition"
             >
-              <span>💬</span>
               <span>Hỏi giá khu vực</span>
             </a>
           </div>
@@ -60,10 +58,10 @@ export default function RadarMarketBlock() {
             <Link
               key={region.name}
               href={`/mua-ban?q=${encodeURIComponent(region.name)}`}
-              className="group p-4 rounded-xl bg-white/5 border border-white/10 hover:border-brand/50 hover:bg-white/10 transition-all duration-200"
+              className="group p-4 rounded-lg bg-white/5 border border-white/10 hover:border-brand/50 hover:bg-white/10 transition-all duration-200"
             >
               <div className="flex items-baseline justify-between mb-2">
-                <h3 className="font-extrabold text-lg text-white group-hover:text-brand transition-colors">
+                <h3 className="font-extrabold text-base sm:text-lg text-white group-hover:text-brand transition-colors">
                   {region.name}
                 </h3>
                 <span className="text-xs font-mono font-bold text-amber-400 px-2 py-0.5 rounded bg-white/10">
@@ -80,31 +78,37 @@ export default function RadarMarketBlock() {
         {/* 3 Metrics Banner */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-white/10 text-center sm:text-left">
           <div className="flex items-center gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white/10 text-2xl">
-              🛡️
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white/10 text-brand">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
             </span>
             <div>
-              <p className="text-lg font-black text-white">100% Không Spam</p>
+              <p className="text-sm font-extrabold text-white">100% Không Spam</p>
               <p className="text-xs text-white/70">Không thu số điện thoại, không gọi làm phiền</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white/10 text-2xl">
-              ⚡
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white/10 text-brand">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </span>
             <div>
-              <p className="text-lg font-black text-white">Trực 24/7 Zalo</p>
+              <p className="text-sm font-extrabold text-white">Trực 24/7 Zalo</p>
               <p className="text-xs text-white/70">Hỏi bất kỳ lúc nào, nhớ lịch sử nhu cầu</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white/10 text-2xl">
-              🔍
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white/10 text-brand">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </span>
             <div>
-              <p className="text-lg font-black text-white">Xác Minh Tận Nơi</p>
+              <p className="text-sm font-extrabold text-white">Xác Minh Tận Nơi</p>
               <p className="text-xs text-white/70">Hỏi giùm chủ nhà từng chi tiết ngõ ngách</p>
             </div>
           </div>

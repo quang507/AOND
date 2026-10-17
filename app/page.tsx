@@ -72,27 +72,26 @@ export default async function Home() {
   return (
     <>
       {/* 1. HERO DARK NAVY (#0B192C) */}
-      <section className="relative bg-navy text-white">
+      <section className="relative bg-navy text-white pb-12 pt-4">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand/20 blur-3xl" />
         </div>
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pb-28 pt-14 md:grid-cols-[1.15fr_.85fr] md:pt-16">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pt-10 md:grid-cols-[1.15fr_.85fr] md:pt-14">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/10 text-[#60A5FA] text-xs font-bold tracking-wide uppercase mb-3">
-              <span>📍</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 text-[#60A5FA] text-xs font-bold tracking-wide uppercase mb-3">
               <span>Môi giới thường trực · Sài Gòn & Long An</span>
             </div>
-            <h1 className="text-4xl font-extrabold leading-[1.08] [text-wrap:balance] md:text-5xl text-white">
+            <h1 className="text-3xl sm:text-4xl font-extrabold leading-[1.12] [text-wrap:balance] md:text-5xl text-white">
               Tìm nhà Sài Gòn, Long An?
               <br />
               <span className="text-[#60A5FA]">Nhắn một câu là xong.</span>
             </h1>
-            <p className="mt-5 max-w-md leading-7 text-white/75 text-base">
+            <p className="mt-4 max-w-md leading-7 text-white/75 text-sm sm:text-base">
               Tụi em không hỏi số điện thoại, không spam. Trợ lý trực 24/7 trên
               Zalo, hỏi kiểu gì cũng hiểu: “nhà gần Lotte Mart Quận 7”, “hẻm xe hơi
               dưới 10 tỉ”.
             </p>
-            <div className="mt-7 flex flex-wrap gap-2 text-xs">
+            <div className="mt-6 flex flex-wrap gap-2 text-xs">
               {FEATURED_TAGS.slice(0, 5).map((t) => (
                 <Link
                   key={t.slug}
@@ -107,7 +106,7 @@ export default async function Home() {
 
           {/* Ảnh minh hoạ Hero */}
           <div className="relative hidden md:block">
-            <div className="overflow-hidden rounded-lg border border-white/10 shadow-2xl">
+            <div className="overflow-hidden rounded-lg border border-white/10 shadow-xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={placeholderImg("hero-q8")}
@@ -120,13 +119,13 @@ export default async function Home() {
           </div>
         </div>
 
-        {/* Thanh tìm kiếm DẠNG CHAT nổi đè chân hero */}
-        <div className="relative mx-auto -mb-12 max-w-6xl px-4">
+        {/* Thanh tìm kiếm DẠNG CHAT tích hợp tự nhiên trong Hero */}
+        <div className="relative mx-auto mt-8 max-w-6xl px-4">
           <form
             action="/api/search"
             method="get"
             role="search"
-            className="flex flex-col gap-3 rounded-2xl bg-white p-4 text-navy shadow-[0_10px_25px_-5px_rgba(11,25,44,0.15),0_8px_10px_-6px_rgba(11,25,44,0.1)] border border-slate-200/90 sm:flex-row sm:items-center sm:gap-4 sm:p-3 sm:pl-6"
+            className="flex flex-col gap-2.5 rounded-lg bg-white p-2.5 sm:p-2 sm:pl-4 text-navy shadow-md border border-slate-200 sm:flex-row sm:items-center sm:gap-3"
           >
             <input type="hidden" name="go" value="1" />
             <IconSearch className="hidden h-5 w-5 shrink-0 text-brand sm:block" />
@@ -141,13 +140,13 @@ export default async function Home() {
             />
             <button
               type="submit"
-              className="nut nut-chinh px-6 py-2.5 rounded-xl font-bold shadow-sm min-h-[44px]"
+              className="nut nut-chinh px-6 py-2 rounded-md font-bold text-sm min-h-[44px]"
             >
               Tìm ngay
             </button>
             <a
               href={zaloLink("hero")}
-              className="nut nut-phu px-5 py-2.5 rounded-xl font-bold min-h-[44px]"
+              className="nut nut-phu px-5 py-2 rounded-md font-bold text-sm min-h-[44px]"
             >
               Hỏi qua Zalo
             </a>
@@ -156,13 +155,13 @@ export default async function Home() {
       </section>
 
       {/* 2. KHỐI 3 LỜI HỨA CỐT LÕI (NỀN SÁNG) */}
-      <section className="mx-auto grid max-w-6xl gap-5 px-4 pb-4 pt-24 md:grid-cols-3">
+      <section className="mx-auto grid max-w-6xl gap-5 px-4 py-12 md:grid-cols-3">
         {LOI_HUA.map(({ Icon, t, d, chat }) => (
-          <div key={t} className="flex flex-col rounded-2xl bg-white p-6 border border-slate-200/80 shadow-[0_1px_3px_0_rgba(15,23,42,0.04),0_1px_2px_-1px_rgba(15,23,42,0.03)] hover:shadow-[0_4px_6px_-2px_rgba(15,23,42,0.05),0_10px_15px_-3px_rgba(15,23,42,0.08)] transition">
-            <span className="grid h-12 w-12 place-items-center rounded-xl bg-brand/10 text-brand">
-              <Icon className="h-6 w-6" />
+          <div key={t} className="flex flex-col rounded-lg bg-white p-5 sm:p-6 border border-slate-200 shadow-xs hover:shadow-md transition">
+            <span className="grid h-11 w-11 place-items-center rounded-md bg-brand/10 text-brand">
+              <Icon className="h-5 w-5" />
             </span>
-            <h2 className="mt-4 text-lg font-extrabold text-navy">{t}</h2>
+            <h2 className="mt-4 text-base sm:text-lg font-extrabold text-navy">{t}</h2>
             <p className="mt-1.5 text-xs sm:text-sm leading-6 text-mute">{d}</p>
             <HoiThoai chat={chat} />
           </div>
@@ -174,9 +173,8 @@ export default async function Home() {
 
       {/* 4. VÒNG HỎI 3 BƯỚC ĐI HỎI GIÙM CHỦ NHÀ */}
       <section className="mx-auto max-w-6xl px-4 py-8">
-        <div className="rounded-xl bg-white p-6 border border-line shadow-[0_2px_14px_rgba(13,37,61,0.06)] md:p-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-brand/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
-            <span>🤝</span>
+        <div className="rounded-lg bg-white p-6 border border-line shadow-xs md:p-8">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-brand/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
             <span>Hỏi bất kỳ, có tức thì</span>
           </div>
           <h2 className="text-2xl font-extrabold text-navy [text-wrap:balance] md:text-3xl">
@@ -207,10 +205,9 @@ export default async function Home() {
 
       {/* 6. CAM KẾT RIÊNG TƯ ZALO */}
       <section className="mx-auto max-w-6xl px-4 py-12">
-        <div className="grid gap-6 rounded-xl bg-navy p-6 text-white md:grid-cols-[1.1fr_.9fr] md:p-10 shadow-xl border border-white/10">
+        <div className="grid gap-6 rounded-lg bg-navy p-6 text-white md:grid-cols-[1.1fr_.9fr] md:p-8 shadow-lg border border-white/10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
-              <span>🔒</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
               <span>Bảo vệ quyền riêng tư</span>
             </div>
             <h2 className="mt-1.5 text-2xl font-extrabold [text-wrap:balance] md:text-3xl text-white">
@@ -282,12 +279,11 @@ export default async function Home() {
 
       {/* 8. CTA DÀNH CHO NGƯỜI BÁN */}
       <section className="mx-auto max-w-6xl px-4 pb-16">
-        <div className="relative overflow-hidden rounded-xl bg-navy px-6 py-12 text-white md:px-12 border border-white/10 shadow-xl">
+        <div className="relative overflow-hidden rounded-lg bg-navy px-6 py-10 text-white md:px-10 border border-white/10 shadow-lg">
           <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-brand/25 blur-3xl" />
           <div className="relative max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-3">
-              <span>🏠</span>
-              <span>Dành cho người bán</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-3">
+              <span>Dành cho người bán & môi giới</span>
             </div>
             <h2 className="mt-2 text-2xl font-extrabold [text-wrap:balance] md:text-3xl text-white">
               Rao bán? Một câu là xong.

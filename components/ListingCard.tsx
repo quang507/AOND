@@ -23,7 +23,7 @@ export default function ListingCard({
   const areaStr = formatArea(listing.area_m2);
 
   return (
-    <div className="group flex flex-col rounded-2xl bg-white border border-slate-200/80 overflow-hidden shadow-[0_1px_3px_0_rgba(15,23,42,0.04),0_1px_2px_-1px_rgba(15,23,42,0.03)] hover:shadow-[0_4px_6px_-2px_rgba(15,23,42,0.05),0_10px_15px_-3px_rgba(15,23,42,0.08)] hover:border-slate-300 transition-all duration-200">
+    <div className="group flex flex-col rounded-lg bg-white border border-slate-200 overflow-hidden shadow-xs hover:shadow-md hover:border-slate-300 transition-all duration-200">
       {/* Thumbnail */}
       <Link href={`/nha-dat/${encodeURIComponent(code)}`} className="relative aspect-[16/10] overflow-hidden bg-slate-100 block">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -34,34 +34,36 @@ export default function ListingCard({
           decoding="async"
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
+        {/* Deal Tag */}
         {listing.deal && (
-          <span className="absolute top-2.5 left-2.5 rounded-md bg-black/65 text-white text-[11px] font-bold px-2 py-0.5 backdrop-blur-sm">
+          <span className="absolute top-2 left-2 rounded bg-slate-900/80 text-white text-[11px] font-semibold px-2 py-0.5 backdrop-blur-xs">
             {listing.deal === "cho_thue" ? "Cho thuê" : "Bán"}
           </span>
         )}
+        {/* Verified Badge on Photo */}
+        <span className="absolute top-2 right-2 rounded bg-emerald-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 backdrop-blur-xs shadow-xs">
+          ✓ Xác thực
+        </span>
       </Link>
 
       {/* Body */}
-      <div className="p-3.5 sm:p-4 flex flex-col flex-1">
+      <div className="p-3 sm:p-3.5 flex flex-col flex-1">
         {/* Title */}
         <Link
           href={`/nha-dat/${encodeURIComponent(code)}`}
           className="font-bold text-slate-900 text-sm leading-snug line-clamp-2 group-hover:text-brand transition-colors"
           title={title}
         >
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 mr-1.5 align-middle tracking-wide">
-            ✓ XÁC THỰC
-          </span>
-          <span>{title}</span>
+          {title}
         </Link>
 
-        {/* Price & Area (red/crimson) */}
-        <div className="mt-2.5 flex items-baseline gap-1.5 text-[15px] sm:text-base font-bold">
-          <span className="text-[#DC2626] font-extrabold">{priceStr}</span>
+        {/* Price & Area */}
+        <div className="mt-2 flex items-baseline gap-2 text-sm">
+          <span className="text-[#DC2626] font-extrabold text-base">{priceStr}</span>
           {listing.area_m2 ? (
             <>
-              <span className="text-slate-400 font-bold">·</span>
-              <span className="text-[#DC2626] font-extrabold">{areaStr}</span>
+              <span className="text-slate-300 font-normal">|</span>
+              <span className="text-slate-600 font-semibold text-xs">{areaStr}</span>
             </>
           ) : null}
         </div>
@@ -73,7 +75,7 @@ export default function ListingCard({
         </div>
 
         {/* Footer */}
-        <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+        <div className="mt-auto pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
           <span>Đăng hôm nay</span>
           <FavButton code={code} variant="square" />
         </div>
