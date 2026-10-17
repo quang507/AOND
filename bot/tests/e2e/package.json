@@ -1,0 +1,8 @@
+{
+  "name": "nhadat-bot-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Chạy chat-reply THẬT trong Node với Supabase + model giả lập — kiểm luồng bốn vai người nhắn, không cần Deno, không đụng DB thật.",
+  "scripts": { "test": "bash chay.sh" },
+  "devDependencies": { "@anthropic-ai/sdk": "^0.80.0", "zod": "^4.0.0" }
+}

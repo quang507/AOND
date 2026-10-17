@@ -1,0 +1,159 @@
+{
+ "nguon": "SRS-5.1zzzx — đối chứng: tin rỗng 'nhà' rồi câu rao NÓI RÕ loại khác ('căn hộ'), AI trích trong chính câu → loại mới thắng",
+ "luot": [
+  {
+   "text": "em cần bán nhà",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "cần bán",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "bán nhà",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "vi_tri",
+     "ly_do": "cần địa chỉ"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ nhà mình ở đâu vậy ạ?"
+   ]
+  },
+  {
+   "text": "à nhầm, là căn hộ Sunrise City quận 7, 76m2, 2pn, giá 5 tỷ 2",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "chung_cu",
+      "trich_dan": "căn hộ",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 7",
+      "trich_dan": "quận 7",
+      "can": null
+     },
+     {
+      "khoa": "dien_tich",
+      "gia_tri": "76",
+      "trich_dan": "76m2",
+      "can": null
+     },
+     {
+      "khoa": "so_phong_ngu",
+      "gia_tri": "2",
+      "trich_dan": "2pn",
+      "can": null
+     },
+     {
+      "khoa": "gia",
+      "gia_tri": "5 tỷ 2",
+      "trich_dan": "giá 5 tỷ 2",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "vi_tri",
+     "ly_do": "cần địa chỉ"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ em ghi rồi ạ. Căn hộ mình sổ hồng chưa ạ?"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,119 @@
+name: Đo mức dùng Supabase (chỉ đọc)
+
+# 02/10/2026: tổ chức vượt gói Free (egress 11,6/5 GB, log 13,4/1 GB). Workflow này ĐO trước khi sửa: chỉ SELECT
+# (Management API /database/query + analytics logs), không ghi gì. Repo PUBLIC nên log Actions công khai — chỉ in SỐ ĐẾM,
+# tên bảng, đường dẫn đã cắt (không query string), câu SQL đã chuẩn hoá ($1…) cắt 160 ký tự. Không in nội dung dòng nào.
+
+on:
+  workflow_dispatch:
+    inputs:
+      gio:
+        description: Số giờ nhìn lại cho log (tối đa 24)
+        required: false
+        default: '24'
+
+env:
+  PROJECT_REF: rqxmmqmctpklqcmbfxuj
+
+jobs:
+  do:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Che token
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "::error::Thiếu SUPABASE_ACCESS_TOKEN"; exit 1; fi
+          echo "::add-mask::$TOKEN"
+
+      - name: Đo DB
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -uo pipefail
+          q() {
+            echo; echo "=== $1 ==="
+            PAYLOAD=$(jq -n --arg q "$2" '{query: $q, read_only: true}')
+            RES=$(curl -sS -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+              -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$PAYLOAD")
+            echo "$RES" | jq -r 'if type=="array" then (if length>0 then ((.[0]|keys_unsorted|join(" | ")), (.[]|[.[]|tostring]|join(" | "))) else "(rỗng)" end) else . end' 2>/dev/null || echo "$RES" | head -c 600
+          }
+          q "Kích thước DB" "select pg_size_pretty(pg_database_size(current_database())) as db, pg_database_size(current_database()) as bytes"
+          q "Top 15 quan hệ theo tổng kích thước" "select n.nspname||'.'||c.relname as rel, c.relkind as k, pg_size_pretty(pg_total_relation_size(c.oid)) as tong, pg_size_pretty(pg_relation_size(c.oid)) as bang, pg_size_pretty(pg_total_relation_size(c.oid)-pg_relation_size(c.oid)) as index_toast, c.reltuples::bigint as dong_uoc from pg_class c join pg_namespace n on n.oid=c.relnamespace where c.relkind in ('r','m','t') and n.nspname not in ('pg_catalog','information_schema') order by pg_total_relation_size(c.oid) desc limit 15"
+          q "Bảng: lượt quét / ghi kể từ lần reset thống kê" "select schemaname||'.'||relname as rel, seq_scan, seq_tup_read, idx_scan, n_tup_ins as ins, n_tup_upd as upd, n_tup_hot_upd as hot_upd, n_tup_del as del, n_live_tup as live, n_dead_tup as dead from pg_stat_user_tables order by (n_tup_ins+n_tup_upd+n_tup_del) desc limit 20"
+          q "pg_stat_statements: mốc reset" "select stats_reset::text from extensions.pg_stat_statements_info"
+          q "pg_stat_statements top 20 theo số lần gọi" "select calls, rows, round(total_exec_time)::bigint as ms_tong, round(mean_exec_time::numeric,2) as ms_tb, left(regexp_replace(query,'\s+',' ','g'),160) as cau from extensions.pg_stat_statements where query ~* '^\s*(select|insert|update|delete|with)' order by calls desc limit 20"
+          q "pg_stat_statements top 20 theo số dòng trả về" "select rows, calls, round(rows::numeric/nullif(calls,0),1) as dong_moi_lan, left(regexp_replace(query,'\s+',' ','g'),160) as cau from extensions.pg_stat_statements where query ~* '^\s*(select|with)' order by rows desc limit 20"
+          q "pg_stat_statements top 15 theo thời gian" "select round(total_exec_time)::bigint as ms_tong, calls, left(regexp_replace(query,'\s+',' ','g'),160) as cau from extensions.pg_stat_statements where query ~* '^\s*(select|insert|update|delete|with)' order by total_exec_time desc limit 15"
+          q "pg_cron: job + số lượt 24h" "select j.jobname, j.schedule, j.active, count(d.*) filter (where d.start_time > now()-interval '24 hours') as luot_24h, count(d.*) filter (where d.start_time > now()-interval '24 hours' and d.status<>'succeeded') as hong_24h from cron.job j left join cron.job_run_details d on d.jobid=j.jobid group by 1,2,3 order by luot_24h desc"
+          q "net._http_response 24h theo mã" "select status_code, count(*) as n, pg_size_pretty(sum(coalesce(length(content),0))::bigint) as noi_dung from net._http_response where created > now()-interval '24 hours' group by 1 order by 2 desc"
+          q "Số dòng sinh ra 24h ở các bảng nhật ký" "select 'messages' t, count(*) from messages where created_at > now()-interval '24 hours' union all select 'bot_errors', count(*) from bot_errors where at > now()-interval '24 hours' union all select 'inbound_ledger', count(*) from inbound_ledger where created_at > now()-interval '24 hours' union all select 'cron.job_run_details', count(*) from cron.job_run_details where start_time > now()-interval '24 hours'"
+
+      - name: Đo cỡ dòng (ước egress mỗi lượt đọc)
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -uo pipefail
+          q() {
+            echo; echo "=== $1 ==="
+            PAYLOAD=$(jq -n --arg q "$2" '{query: $q, read_only: true}')
+            RES=$(curl -sS -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+              -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$PAYLOAD")
+            echo "$RES" | jq -r 'if type=="array" then (if length>0 then ((.[0]|keys_unsorted|join(" | ")), (.[]|[.[]|tostring]|join(" | "))) else "(rỗng)" end) else . end' 2>/dev/null || echo "$RES" | head -c 600
+          }
+          q "Bảng chủ của các pg_toast lớn" "select t.relname as toast, c.relname as bang, pg_size_pretty(pg_total_relation_size(t.oid)) as co from pg_class c join pg_class t on t.oid=c.reltoastrelid order by pg_total_relation_size(t.oid) desc limit 6"
+          q "Số trang build dựng sẵn" "select (select count(*) from projects where slug is not null) as du_an, (select count(*) from listings where status in ('dang_ban','dang_quan_tam')) as tin_len_ke, (select count(*) from listings) as tin_tong"
+          q "projects: cỡ JSON trung bình (byte)" "select round(avg(octet_length(row_to_json(p)::text))) as ca_dong, round(avg(octet_length(coalesce(p.nhung::text,'')))) as nhung, round(avg(octet_length(coalesce(p.description,'')))) as description, round(avg(octet_length(coalesce(p.unit_types::text,'')||coalesce(p.amenities::text,'')||coalesce(p.images::text,'')||coalesce(p.specs::text,'')))) as jsonb_4 from projects p"
+          q "listings: cỡ JSON trung bình (byte)" "select round(avg(octet_length(row_to_json(l)::text))) as ca_dong, round(avg(octet_length(coalesce(l.nhung::text,'')))) as nhung, round(avg(octet_length(coalesce(l.boc_tach::text,'')))) as boc_tach, round(avg(octet_length(coalesce(l.tien_ich_gan::text,'')))) as tien_ich_gan, round(avg(octet_length(coalesce(l.description,'')))) as description from listings l"
+          q "bot_errors 24h theo nguồn" "select left(source,50) as nguon, count(*) as n from bot_errors where at > now()-interval '24 hours' group by 1 order by 2 desc limit 15"
+          q "bot_errors pg_net 24h theo mã + loại (không in nội dung)" "select status_code as ma, case when detail ilike '%RESOURCE_EXHAUSTED%' then 'gemini_429' when detail ilike '%generativelanguage%' then 'gemini_khac' when detail ilike '%timeout%' or detail ilike '%timed out%' then 'timeout' when detail ilike '%nominatim%' then 'nominatim' else 'khac' end as loai, count(*) as n from bot_errors where source = 'pg_net' and at > now()-interval '24 hours' group by 1,2 order by 3 desc"
+          q "HET TIEN API 7 ngày: nguồn báo (không in nguyên văn)" "select date_trunc('day', at)::date as ngay, substring(detail from 'Nguồn báo: ([^·]{1,60})') as nguon, status_code as ma, count(*) as n from bot_errors where source = 'HET TIEN API' and at > now()-interval '7 days' group by 1,2,3 order by 1 desc"
+          q "bridge_dang_nhap: cỡ qr_png" "select count(*) as dong, max(octet_length(coalesce(qr_png,''))) as qr_byte from bridge_dang_nhap"
+
+      - name: Đo log + egress theo đường dẫn
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -uo pipefail
+          GIO="${{ inputs.gio }}"; case "$GIO" in ''|*[!0-9]*) GIO=24;; esac; [ "$GIO" -gt 24 ] && GIO=24
+          END=$(date -u +%Y-%m-%dT%H:%M:%SZ); START=$(date -u -d "-$GIO hours" +%Y-%m-%dT%H:%M:%SZ)
+          echo "Cửa sổ: $START → $END"
+          DEBUG_LOG=1
+          lg() {
+            echo; echo "=== $1 ==="
+            RES=$(curl -sS -G "https://api.supabase.com/v1/projects/$PROJECT_REF/analytics/endpoints/logs" \
+              -H "Authorization: Bearer $TOKEN" --data-urlencode "sql=$2" \
+              --data-urlencode "iso_timestamp_start=$START" --data-urlencode "iso_timestamp_end=$END")
+            [ -n "${DEBUG_LOG:-}" ] && { echo "raw: $(echo "$RES" | head -c 300)"; DEBUG_LOG=; }
+            echo "$RES" | jq -r 'if .error then ("LỖI: " + (.error|tostring|.[0:400])) elif (.result|length)>0 then ((.result[0]|keys_unsorted|join(" | ")), (.result[]|[.[]|tostring]|join(" | "))) else "(rỗng)" end' 2>/dev/null || echo "$RES" | head -c 600
+          }
+          # 03/10/2026: analytics báo "Table edge_logs does not exist" — thử bảng log hợp nhất `logs` (cột source, log_attributes).
+          lg "logs hợp nhất: số dòng theo nguồn" "select source, count(*) as n from logs group by source order by n desc limit 20"
+          lg "logs hợp nhất: một dòng mẫu edge (chỉ tên khoá log_attributes)" "select mapKeys(log_attributes) as khoa from logs where source = 'edge_logs' limit 1"
+          lg "logs hợp nhất: top 30 đường dẫn edge" "select log_attributes['request.path'] as path, count(*) as n from logs where source = 'edge_logs' group by path order by n desc limit 30"
+          lg "logs hợp nhất: byte theo đường dẫn (content_length)" "select log_attributes['request.path'] as path, count(*) as n, sum(toInt64OrZero(log_attributes['response.headers.content_length'])) as byte from logs where source = 'edge_logs' group by path order by byte desc limit 20"
+          lg "logs hợp nhất: listings/projects theo client + giờ" "select log_attributes['request.path'] as path, left(log_attributes['request.headers.x_client_info'], 30) as client, left(log_attributes['request.headers.user_agent'], 40) as ua, count(*) as n, sum(toInt64OrZero(log_attributes['response.headers.content_length'])) as byte from logs where source = 'edge_logs' and log_attributes['request.path'] in ('/rest/v1/listings', '/rest/v1/projects') group by path, client, ua order by n desc limit 20"
+          lg "logs hợp nhất: listings/projects theo giờ" "select toStartOfHour(timestamp) as gio, countIf(log_attributes['request.path'] = '/rest/v1/listings') as listings, countIf(log_attributes['request.path'] = '/rest/v1/projects') as projects, sum(toInt64OrZero(log_attributes['response.headers.content_length'])) as byte_tat_ca from logs where source = 'edge_logs' group by gio order by gio"
+          lg "logs hợp nhất: listings/projects theo câu select (cắt 120)" "select log_attributes['request.path'] as path, left(replaceRegexpAll(log_attributes['request.search'], '[0-9a-f]{8}-[0-9a-f-]{27}|eq\\.[^&]+', 'X'), 120) as q, count(*) as n, sum(toInt64OrZero(log_attributes['response.headers.content_length'])) as byte from logs where source = 'edge_logs' and log_attributes['request.path'] in ('/rest/v1/listings', '/rest/v1/projects') group by path, q order by n desc limit 15"
+          for src in edge_logs postgres_logs function_logs function_edge_logs auth_logs storage_logs realtime_logs postgrest_logs pgbouncer_logs supavisor_logs; do
+            lg "Nguồn log $src: số dòng + cỡ event_message" "select count(*) as dong, sum(length(event_message)) as byte_msg from $src"
+          done
+          # Đường dẫn: bỏ query string (req.path không có), gộp UUID/số và cắt Storage còn bucket để không in tên file.
+          lg "edge_logs: top 40 đường dẫn (method, path gộp, mã)" "select req.method as m, regexp_replace(regexp_replace(regexp_replace(req.path, r'^(/storage/v1/object/(?:public|sign|authenticated)/[^/]+)/.*', r'\1/*'), r'[0-9a-f]{8}-[0-9a-f-]{27}', ':uuid'), r'/[0-9]+', '/:n') as path, resp.status_code as st, count(*) as n from edge_logs cross join unnest(metadata) as md cross join unnest(md.request) as req cross join unnest(md.response) as resp group by 1,2,3 order by n desc limit 40"
+          lg "edge_logs: byte trả về theo đường dẫn (content_length)" "select regexp_replace(regexp_replace(req.path, r'^(/storage/v1/object/(?:public|sign|authenticated)/[^/]+)/.*', r'\1/*'), r'[0-9a-f]{8}-[0-9a-f-]{27}', ':uuid') as path, count(*) as n, sum(safe_cast(h.content_length as int64)) as byte from edge_logs cross join unnest(metadata) as md cross join unnest(md.request) as req cross join unnest(md.response) as resp cross join unnest(resp.headers) as h group by 1 order by byte desc limit 30"
+          lg "edge_logs: Storage theo cache CDN" "select h.cf_cache_status as cache, count(*) as n, sum(safe_cast(h.content_length as int64)) as byte from edge_logs cross join unnest(metadata) as md cross join unnest(md.request) as req cross join unnest(md.response) as resp cross join unnest(resp.headers) as h where req.path like '/storage/%' group by 1 order by n desc"
+          lg "edge_logs: user-agent gộp (ai gọi)" "select left(coalesce(rh.user_agent,''),40) as ua, count(*) as n from edge_logs cross join unnest(metadata) as md cross join unnest(md.request) as req cross join unnest(req.headers) as rh group by 1 order by n desc limit 15"
+          lg "function_edge_logs: theo function + mã" "select regexp_replace(req.pathname, r'[0-9a-f]{8}-[0-9a-f-]{27}', ':uuid') as fn, resp.status_code as st, count(*) as n from function_edge_logs cross join unnest(metadata) as md cross join unnest(md.request) as req cross join unnest(md.response) as resp group by 1,2 order by n desc limit 20"
+          lg "function_logs: cỡ log theo function + mức" "select md.function_id as fn, md.level as lv, count(*) as dong, sum(length(event_message)) as byte_msg from function_logs cross join unnest(metadata) as md group by 1,2 order by byte_msg desc limit 20"
+          lg "postgres_logs: theo mức + loại" "select pm.error_severity as sev, left(regexp_replace(event_message, r'[0-9]+', 'N'),60) as mau, count(*) as n from postgres_logs cross join unnest(metadata) as md cross join unnest(md.parsed) as pm group by 1,2 order by n desc limit 20"
+
+      - name: Đo số request theo dịch vụ (usage API)
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -uo pipefail
+          for iv in 1day 7day; do
+            echo; echo "=== usage.api-counts interval=$iv ==="
+            curl -sS "https://api.supabase.com/v1/projects/$PROJECT_REF/analytics/endpoints/usage.api-counts?interval=$iv" \
+              -H "Authorization: Bearer $TOKEN" | jq -c '.result // .' | head -c 4000; echo
+          done

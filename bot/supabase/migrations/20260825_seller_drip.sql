@@ -1,0 +1,6 @@
+-- FR-129: hỏi nhỏ giọt người bán (bản lưu tham chiếu — đã áp lên nhadat-cc
+-- qua MCP apply_migration 'add_seller_drip_trigger_and_cron', 25/08/2026).
+-- Trigger sau khi đăng tin → ask-seller mode drip (chào + 1 câu đầu).
+-- Cron 30 phút seller_drip_tick(): hỏi tiếp listing đủ điều kiện, chống spam:
+--   không có câu pending · tối đa 3 câu/24h · tin <7 ngày hoặc seller có Zalo
+--   · tối đa 10 listing mỗi nhịp. Xem nội dung đầy đủ trong migration đã áp.

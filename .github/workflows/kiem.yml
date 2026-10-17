@@ -1,0 +1,216 @@
+# Cổng kiểm tự động — chạy đúng những gì người ta vẫn chạy tay trước khi push.
+# Trước 04/09/2026 repo không có CI nào: mọi lần "tsc sạch, e2e xanh" đều là lời
+# kể của người đẩy commit. Nay máy nói.
+name: Kiểm
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  web:
+    name: Web — kiểu dữ liệu + dựng
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      # Mọi bước dưới đây gọi script trong package.json, không gõ lệnh riêng:
+      # CI và người phải chạy ĐÚNG một câu lệnh, không thì "máy xanh, máy tao
+      # đỏ" và không ai biết bên nào đúng.
+      - name: Kiểu dữ liệu
+        run: bun run kieu
+      - name: Dựng
+        # Build không có key Supabase vẫn phải qua: trang động rơi về rỗng,
+        # nhưng lỗi cú pháp / import / kiểu thì lộ ra ngay.
+        run: bun run build
+
+  bot:
+    name: Bot — e2e hội thoại
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      # Không cần `setup-node`: ubuntu-latest có sẵn Node, và bốn file test là
+      # .mjs trần không import gói nào — thêm bước chỉ tốn 4 s tải Node 20 và
+      # kéo theo cảnh báo deprecation.
+      #
+      # Suite e2e có package.json RIÊNG (`@anthropic-ai/sdk`, `zod`) và
+      # node_modules của nó nằm trong .gitignore — cài ở gốc repo là không đủ.
+      - name: Cài phụ thuộc của suite e2e
+        run: bun install --frozen-lockfile --cwd bot/tests/e2e
+      - name: Cài gói cho bộ đo giọng (bot/tests/giong — SDK thật, Bun tìm node_modules theo vị trí file)
+        run: bun install --frozen-lockfile --cwd bot/tests/giong
+      # `chay.sh` TỰ dựng lại bundle từ nguồn rồi mới chạy 208 ca (run.mjs 160 +
+      # webhook.mjs 44 + cong-thieu-bi-mat.mjs 4, ba tiến trình) — đừng
+      # đổi thành `node run.mjs`, nó sẽ test bản bundle cũ nằm sẵn trong repo.
+      # Supabase và model đều là bản giả lập trong `mock-*.mjs`: không đụng DB
+      # thật, không tốn tiền model, không cần secret nào trong CI.
+      #
+      # `test:bot` kéo theo cả `ranh-gioi.mjs` — kiểm tĩnh ranh giới bóc tách ⟂
+      # AI (mã tiền định không được chạm model/DB; tầng AI không được ghi bảng
+      # nghiệp vụ). Để chung job cố ý: danh sách required status checks ở
+      # docs/11 §11.5 giữ nguyên 5 tên, thêm check mới là phải sửa branch
+      # protection bằng tay và người ta sẽ quên.
+      - name: e2e + hồi quy FR-159/161/164 + ranh giới bóc tách ⟂ AI
+        run: bun run test:bot
+      # TS-DO-BOC-01: 110 ca bóc tách, chế độ luật một mình (model giả, miễn phí). Đỏ khi một ca từng
+      # đạt nay rớt hoặc tổng trường đúng giảm so với bot/tests/do-boc/nen.json. Chung job `bot` cố ý
+      # (xem ghi chú trên về required checks).
+      - name: Bộ đo bóc tách — không tụt so với bản nền
+        run: bun run do-boc:nen
+      # 02/10/2026 (SRS-5.1v): trigger / hàm SQL chạy THẬT trên Postgres tạm (mock e2e không mô phỏng regex DB). Thoát 2 =
+      # máy không có Postgres = chưa kiểm được → đỏ.
+      - name: Trigger SQL thật trên Postgres tạm (thông số AI quyết không bị regex đè)
+        run: bun run test:sql
+
+  baomat:
+    name: Bảo mật — hồi quy RLS trên DB thật
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      # Bắn anon key CÔNG KHAI (đã nằm trong lib/supabase.ts và mọi bundle web
+      # đã phát hành) vào DB thật — không cần secret nào, và đó chính là điểm:
+      # thứ phải chịu được là cái key mà ai cũng có. Chỉ các bài KHÔNG phá huỷ;
+      # bài xoá dữ liệu vẫn ở bộ chạy tay (docs/10 §10.7).
+      #
+      # Job này KHÔNG nằm trong `bun run kiem` vì nó cần đường ra Internet tới
+      # supabase.co — máy dev hoặc sandbox không có là `kiem` đỏ oan. Bù lại
+      # `test:bot` có bài tự kiểm chạy offline, chứng minh bộ này không thể
+      # báo xanh khi mất mạng (thoát 2 = "chưa kiểm được", khác 0 = "đạt").
+      - name: TS-SEC — anon không đọc/ghi được gì nội bộ, mặt công khai còn sống
+        run: bun run test:sec
+
+  truyvet:
+    name: Tài liệu — truy vết ID
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      # Gọi script trong package.json chứ KHÔNG gõ `bash scripts/…` thẳng: hai
+      # chỗ ghi đường dẫn là hai chỗ trôi được. Không `bun install`: script là
+      # bash trần, không đụng node_modules.
+      - name: Không có ID gãy, số đếm khớp README, không rò PII
+        run: bun run truyvet
+
+  # Hai bài tự kiểm cho script GHI FILE, chạy trên máy chủ giả trong bộ nhớ —
+  # không chạm DB thật, không chạm bucket thật, không cần khoá.
+  rohang:
+    name: Rổ hàng + masterDB — tự kiểm trên máy chủ giả
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      # Bản xuất rổ hàng ghi file ra đĩa và có thể lỡ ghi vào repo (SĐT thật →
+      # repo public).
+      - name: Bản xuất rổ hàng không ghi vào repo, không nuốt dòng thiếu
+        run: bun run test:rohang
+      # `up-masterdb.mjs` đẩy bản gốc lên bucket, và cái phải chứng minh không
+      # phải "đẩy được" mà là "biết khi nào mình đẩy hụt" — bucket trả 200 mà
+      # không cất thì vòng lặp vẫn báo xong.
+      - name: Đẩy masterDB biết khi nào mình đẩy hụt
+        run: bun run test:masterdb
+
+  # ── CỔNG THỨ 7: REPO ↔ DB CÓ CÙNG DANH SÁCH MIGRATION KHÔNG ────────────────
+  # Chủ dự án 10/09/2026: "thêm một cổng CI so danh sách migration trên database
+  # với thư mục trong repo. Cổng này lẽ ra đã chặn được cả năm báo động giả
+  # hôm nay."
+  #
+  # Chuyện xảy ra hôm đó: hai lượt soát code đọc bản chụp `schema.sql` ở hai mốc
+  # thời gian khác nhau trong lúc DB đang được vá, rồi kết luận ngược nhau — một
+  # bên báo 5 lỗ, một bên báo 5 báo động giả. Không ai sai; cái thiếu là một chỗ
+  # NÓI RA rằng repo đang tụt lại sau DB.
+  #
+  # Không cần secret: gọi `liet_ke_migration_cong_khai()` (20260910o) bằng đúng
+  # khoá công khai đã nằm trong mọi bundle web, và hàm đó chỉ trả version + name
+  # — không bao giờ trả nội dung DDL. Nhét service_role vào CI của repo PUBLIC
+  # là mở toang, một cổng chống trôi schema không đáng đổi bằng cái đó.
+  migration:
+    name: Migration — repo và DB cùng một danh sách
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Mọi migration đã áp đều có file, mọi file đều đã áp, ảnh chụp không cũ hơn
+        run: bun run soat:migration
+
+  # ── CỔNG THỨ 8: TRẠNG THÁI DB CÓ GÌ MỚI KHÔNG ──────────────────────────────
+  # Tầng một (cổng 7) hỏi "repo và DB có cùng DANH SÁCH migration không". Cổng
+  # này hỏi câu khác: DB đang ở TRẠNG THÁI nào — vì cả năm lỗi nặng ngày 10/09
+  # đều KHÔNG nhìn thấy được từ danh sách migration, chúng nằm trong catalog
+  # (policy chặn khoá không tồn tại · view mất security_invoker · hàm hai chữ ký
+  # · bảng mất khoá chính).
+  #
+  # Tám phép soát chạy TRONG DB qua `soat_db_cong_khai()` (20260910p): dưới một
+  # giây, chỉ `select`, không ghi gì, và chỉ trả KẾT LUẬN — Zalo ID che còn 4 số
+  # cuối, không có nội dung tin nhắn. Không cần secret, cùng lý do với cổng 7.
+  #
+  # Cổng đỏ khi có phát hiện KHÁC bản nền `scripts/soat-db-da-biet.json`. Nền có
+  # là vì cổng đỏ ngay từ ngày đầu là cổng sẽ bị bỏ qua — đúng bài học 52 dòng
+  # cảnh báo kêu mãi rồi cái thứ 53 chìm lẫn vào đó.
+  soatdb:
+    name: DB — tám phép soát trạng thái
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Không có phát hiện mới so với bản nền đã biết
+        run: bun run soat:db
+
+  # ── CỔNG THỨ 9: KIỂM KIỂU CHO BOT ─────────────────────────────────────────
+  # `tsconfig.json` loại hẳn thư mục `bot` nên 3.900 dòng `chat-reply` và tám
+  # function kia CHƯA TỪNG qua kiểm kiểu. Bật lần đầu 11/09: 15 lỗi — tất cả là
+  # kiểu KHAI SAI so với dữ liệu thật (RPC trả `r_dead` mà kiểu không có, select
+  # có `created_at` mà kiểu không có…). Lần này chưa cái nào thành lỗi chạy,
+  # nhưng một kiểu nói dối là chỗ lỗi chạy kế tiếp sẽ nấp.
+  #
+  # Dùng `deno check` vì function viết cho Deno (specifier `npm:`, global `Deno`)
+  # — tsc của web không đọc được chúng. `--node-modules-dir=auto` để Deno tự kéo
+  # gói npm mà không cần thêm deno.json vào thư mục function (thêm vào đó là đổi
+  # luôn cách Supabase CLI đóng gói lúc deploy).
+  kieubot:
+    name: Bot — kiểm kiểu (deno check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Chín edge function không có lỗi kiểu nào
+        working-directory: bot/supabase/functions
+        run: deno check --node-modules-dir=auto */index.ts
+
+  # ── CỔNG THỨ 10: LUẬT TIỀN TS ↔ SQL RA CÙNG MỘT SỐ ──────────────────────────
+  # Luật tiền phía TS gom về `_shared/extraction/luat-tien.ts` (tầng bốn 11/09),
+  # nhưng SQL `parse_vnd` không import được TypeScript — nó sẽ luôn là bản riêng.
+  # "Một nguồn" cho hai ngôn ngữ nghĩa là một BẢNG CA (`bot/tests/luat/tien.json`)
+  # mà cả hai bản phải trả lời như nhau. Lệch là đỏ, dòng đỏ nói bản nào lệch.
+  # Phía SQL gọi `doi_chieu_tien_cong_khai()` (20260911a, hàm thuần, không đọc
+  # bảng nào) bằng khoá công khai — không cần secret.
+  doichieutien:
+    name: Luật tiền — TS và SQL cùng một bảng ca
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: docTien (TS) và parse_vnd (SQL) ra cùng một số trên mọi ca
+        run: bun run doi-chieu:tien

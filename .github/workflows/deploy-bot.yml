@@ -1,0 +1,172 @@
+# Deploy một edge function lên Supabase, chạy tay từ tab Actions.
+#
+# Vì sao có file này: đường deploy cũ đi qua MCP, tức nội dung file phải được
+# CHÉP TAY vào lời gọi tool. `bot/README.md §Deploy` đã đo tỉ lệ hỏng của lối
+# đó: một lỗi mỗi 7 KB. `escalation-feed` 5 KB thì còn kiểm được bằng cách so
+# từng byte; `chat-reply` 120 KB thì không — 17 lỗi kỳ vọng, lỗi rơi vào regex
+# là hỏng im lặng, và chữa cũng phải chép tay 120 KB nữa. Ở đây runner tự
+# checkout, tự build, tự đẩy — bytes không đi qua tay ai.
+#
+# Cần `SUPABASE_ACCESS_TOKEN` (Personal Access Token, tạo ở
+# https://supabase.com/dashboard/account/tokens). Không có nó thì job dừng ngay
+# ở bước đầu chứ không chạy nửa vời.
+#
+# Nhận cả `secrets.` lẫn `vars.`, secret được ưu tiên. Đặt làm secret thì hơn:
+# GitHub tự che secret trong log, variable thì KHÔNG — chỉ cần một step lỡ in
+# nó ra là token nằm nguyên trong log, mà repo này PUBLIC nên log ai cũng đọc
+# được. Đi lối variable thì bước `Che token trong log` phải chạy TRƯỚC mọi bước
+# đụng tới token: `::add-mask::` bảo Actions bôi đen giá trị đó ở mọi dòng log
+# SAU nó. Che sau khi đã in ra thì không cứu được gì.
+
+name: Deploy bot lên Supabase
+
+on:
+  workflow_dispatch:
+    inputs:
+      ham:
+        description: Edge function cần deploy
+        required: true
+        type: choice
+        options:
+          - chat-reply
+          - escalation-feed
+          - nudge
+          - zalo-webhook
+          - ask-seller
+          - ctv-report
+          - geocode-listings
+          - media-cleanup
+          - inbound-sweep
+
+env:
+  PROJECT_REF: rqxmmqmctpklqcmbfxuj
+
+# Chỉ MỘT lượt deploy chạy tại một thời điểm, cho mọi function (28/09/2026). Hôm đó chat-reply và
+# ask-seller deploy song song: bước "Chứng minh nó tới nơi" của chat-reply báo v262 → v263, nhưng vài
+# phút sau Supabase vẫn ghi v262 và production chạy code cũ suốt một lượt test. Lượt sau xếp hàng chờ
+# lượt trước xong, không huỷ lượt đang chạy. Lưu ý của GitHub: nhóm chỉ giữ MỘT lượt chờ — bấm ba lượt
+# liền thì lượt chờ cũ bị thay bằng lượt mới nhất (bị huỷ, không mất im: tab Actions ghi "cancelled").
+concurrency:
+  group: deploy-bot
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.ham }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Che token trong log, và phải có token
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+          TU_SECRET: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Thiếu SUPABASE_ACCESS_TOKEN — không có ở cả secret lẫn variable."
+            echo "Tạo token ở https://supabase.com/dashboard/account/tokens rồi thêm vào"
+            echo "Settings → Secrets and variables → Actions của repo này."
+            exit 1
+          fi
+          # Che NGAY, trước mọi bước dùng tới nó. Secret thì GitHub che sẵn;
+          # variable thì không, nên dòng này là thứ duy nhất đứng giữa token và
+          # log của một repo public.
+          echo "::add-mask::$TOKEN"
+          if [ "$TU_SECRET" = "true" ]; then
+            echo "Nguồn token: secret"
+          else
+            echo "Nguồn token: variable — nên chuyển sang secret, variable không được che sẵn"
+          fi
+
+      # verify_jwt KHÔNG được đoán và KHÔNG được chép cứng vào file này — chép
+      # cứng là sẽ lệch, y như `schema.sql` đã lệch với DB. Đọc thẳng bản đang
+      # chạy rồi deploy lại đúng giá trị đó. Đặt sai cờ này là bot câm: đang
+      # false mà bật lên thì zalo-webhook gọi vào ăn 401.
+      - name: Đọc verify_jwt của bản đang chạy
+        id: truoc
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          api="https://api.supabase.com/v1/projects/$PROJECT_REF/functions/${{ inputs.ham }}"
+          ma=$(curl -sS -o /tmp/ham.json -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$api")
+          if [ "$ma" = "404" ]; then
+            # 08/10/2026: project mới (project cũ bị xoá nhầm) chưa có function nào để đọc cờ. Lần deploy ĐẦU lấy đúng
+            # bảng verify_jwt ở bot/README.md §Function đang chạy — đổi cờ thì sửa bảng đó, đừng sửa ở đây.
+            case "${{ inputs.ham }}" in
+              ask-seller|ctv-report|escalation-feed|geocode-listings) jwt=true ;;
+              chat-reply|zalo-webhook|nudge|media-cleanup|inbound-sweep) jwt=false ;;
+              *) echo "::error::${{ inputs.ham }} chưa có trong bảng verify_jwt của bot/README.md"; exit 1 ;;
+            esac
+            echo "verify_jwt=$jwt" >> "$GITHUB_OUTPUT"
+            echo "version=0"       >> "$GITHUB_OUTPUT"
+            echo "Function chưa có (deploy lần đầu): verify_jwt=$jwt theo bot/README.md"
+            exit 0
+          fi
+          if [ "$ma" != "200" ]; then
+            echo "::error::API trả $ma khi đọc ${{ inputs.ham }} — token sai quyền, hoặc function chưa tồn tại."
+            exit 1
+          fi
+          jwt=$(jq -r '.verify_jwt' /tmp/ham.json)
+          ver=$(jq -r '.version' /tmp/ham.json)
+          if [ "$jwt" != "true" ] && [ "$jwt" != "false" ]; then
+            echo "::error::Không đọc được verify_jwt (nhận '$jwt') — dừng, không đoán."
+            exit 1
+          fi
+          echo "verify_jwt=$jwt" >> "$GITHUB_OUTPUT"
+          echo "version=$ver"   >> "$GITHUB_OUTPUT"
+          echo "Bản đang chạy: v$ver, verify_jwt=$jwt"
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        working-directory: bot
+        run: |
+          set -euo pipefail
+          co=""
+          if [ "${{ steps.truoc.outputs.verify_jwt }}" = "false" ]; then co="--no-verify-jwt"; fi
+          echo "supabase functions deploy ${{ inputs.ham }} $co"
+          supabase functions deploy "${{ inputs.ham }}" --project-ref "$PROJECT_REF" $co 2>&1 | tee /tmp/deploy.log
+
+      # "Đã gọi lệnh deploy" không phải bằng chứng đã deploy — cùng cái bẫy
+      # NFR-18. Đọc lại bản đang chạy: số version PHẢI tăng, verify_jwt PHẢI
+      # giữ nguyên.
+      - name: Chứng minh nó tới nơi
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          api="https://api.supabase.com/v1/projects/$PROJECT_REF/functions/${{ inputs.ham }}"
+          curl -sS -H "Authorization: Bearer $TOKEN" "$api" > /tmp/sau.json
+          ver=$(jq -r '.version' /tmp/sau.json)
+          jwt=$(jq -r '.verify_jwt' /tmp/sau.json)
+          truoc="${{ steps.truoc.outputs.version }}"
+          echo "Trước: v$truoc verify_jwt=${{ steps.truoc.outputs.verify_jwt }}"
+          echo "Sau  : v$ver verify_jwt=$jwt"
+          loi=0
+          # 11/10/2026 (deploy main sau PR #468): code đã deploy từ nhánh trước đó, CLI so bản đóng gói rồi báo "No change found" và
+          # Supabase KHÔNG tạo bản mới — version đứng yên là ĐÚNG, không phải deploy hỏng. Bằng chứng lúc đó là chính dòng CLI đó +
+          # version không đổi + mã bản build giữ nguyên ở lần đọc sau 30 giây (bên dưới).
+          if grep -q "No change found in Function" /tmp/deploy.log; then
+            if [ "$ver" != "$truoc" ]; then echo "::error::CLI báo không đổi mà version đổi ($truoc → $ver) — không rõ bản nào đang chạy."; loi=1
+            else echo "CLI báo code giống bản đang chạy (v$ver) — Supabase không tạo bản mới, không phải lỗi."; fi
+          elif [ "$ver" -le "$truoc" ]; then
+            echo "::error::version không tăng ($truoc → $ver) — deploy KHÔNG tới nơi."; loi=1
+          fi
+          if [ "$jwt" != "${{ steps.truoc.outputs.verify_jwt }}" ]; then
+            echo "::error::verify_jwt đã đổi (${{ steps.truoc.outputs.verify_jwt }} → $jwt) — sai, phải giữ nguyên."; loi=1
+          fi
+          [ "$loi" = "0" ] || exit $loi
+          # 28/09/2026: đọc ngay sau deploy thấy v263, vài phút sau Supabase lại ghi v262 — con số đọc một lần
+          # chưa phải bằng chứng. Đọc lại sau 30 giây: version và mã bản build phải giữ nguyên.
+          sleep 30
+          curl -sS -H "Authorization: Bearer $TOKEN" "$api" > /tmp/sau2.json
+          ver2=$(jq -r '.version' /tmp/sau2.json)
+          if [ "$ver2" != "$ver" ] || [ "$(jq -r '.ezbr_sha256' /tmp/sau2.json)" != "$(jq -r '.ezbr_sha256' /tmp/sau.json)" ]; then
+            echo "::error::30 giây sau bản đang chạy đã đổi (v$ver → v$ver2) — deploy không giữ được, chạy lại."; exit 1
+          fi
+          echo "Sau 30s: v$ver2 — giữ nguyên."

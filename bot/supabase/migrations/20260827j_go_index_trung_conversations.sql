@@ -1,0 +1,13 @@
+-- Gỡ index TRÙNG trên conversations(seller_id).
+--
+-- Migration 20260827i thêm `idx_conversations_seller (seller_id, started_at desc)`
+-- — đúng hình dạng `ensure_seller_conversation` cần (lọc seller_id rồi
+-- `order by started_at desc limit 1`). Nhưng `conversations_seller_id_idx
+-- (seller_id)` cũ vẫn nằm đó: seller_id là cột DẪN ĐẦU của index mới nên index
+-- mới bao trọn nó, mọi truy vấn cái cũ phục vụ được thì cái mới cũng phục vụ,
+-- và phục vụ tốt hơn.
+--
+-- Giữ cả hai không sai kết quả, chỉ âm thầm tốn: mỗi INSERT/UPDATE
+-- `conversations` phải bảo trì thêm một cây B-tree — mà từ FR-141/FR-152 thì
+-- bảng này bị ghi thêm ở mọi lượt chat của người bán, không còn chỉ lượt mua.
+drop index if exists public.conversations_seller_id_idx;

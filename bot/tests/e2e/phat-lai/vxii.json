@@ -1,0 +1,226 @@
+{
+ "nguon": "SRS-5.1zzzw — chủ dự án chat thử 08/10/2026 (…vxii), đầu ra AI thật từ nhật ký trang thử — 3 lượt đầu; đầu ra bóc tách lượt 3 bị nhật ký cắt ở 1.500 chữ sau 'y_dinh', phần đuôi (y_dinh/vai/cau_ke/tu_xung) dựng lại = không có ý",
+ "luot": [
+  {
+   "text": "Xin chào",
+   "boc": null,
+   "y": null,
+   "rep": []
+  },
+  {
+   "text": "Tôi cần bán đất mặt tiền",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "cần bán",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "dat",
+      "trich_dan": "bán đất mặt tiền",
+      "can": null
+     },
+     {
+      "khoa": "loai_duong_vao",
+      "gia_tri": "mat_tien",
+      "trich_dan": "mặt tiền",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "vi_tri",
+     "ly_do": "cần biết vị trí, quận, phường, tên đường để lên tin"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, đất mặt tiền thì khách tìm nhiều lắm anh chị. Đất mình ở đâu vậy, ở Hồ Chí Minh đúng không ạ?"
+   ]
+  },
+  {
+   "text": "Vị trí: 156 An Dương Vương, P. Phú Định\nDiện tích: 73,5m² - Ngang 4m, nở hậu 5,5m\nHướng: Bắc - Mặt tiền đường 12m\nKhu nhà ở cao tầng, được xây đến 6 tầng, khu dân cư đồng bộ, đẹp\n📄 Sổ đỏ sẵn, công chứng ngay\n💰 Giá: 8,8 tỷ - chỉ áp dụng trong Tháng 10\n✅ Phù hợp xây nhà vừa ở vừa kinh doanh, hoặc xây căn hộ cho thuê",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "cần bán",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "dat",
+      "trich_dan": "bán đất",
+      "can": null
+     },
+     {
+      "khoa": "duong",
+      "gia_tri": "156 An Dương Vương",
+      "trich_dan": "156 An Dương Vương",
+      "can": null
+     },
+     {
+      "khoa": "phuong",
+      "gia_tri": "Phường Phú Định",
+      "trich_dan": "P. Phú Định",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 8",
+      "trich_dan": "Quận 8",
+      "can": null
+     },
+     {
+      "khoa": "dien_tich",
+      "gia_tri": "73.5",
+      "trich_dan": "73,5m²",
+      "can": null
+     },
+     {
+      "khoa": "ngang",
+      "gia_tri": "4",
+      "trich_dan": "Ngang 4m",
+      "can": null
+     },
+     {
+      "khoa": "no_hau",
+      "gia_tri": "5.5",
+      "trich_dan": "nở hậu 5,5m",
+      "can": null
+     },
+     {
+      "khoa": "do_rong_duong",
+      "gia_tri": "12",
+      "trich_dan": "Mặt tiền đường 12m",
+      "can": null
+     },
+     {
+      "khoa": "huong",
+      "gia_tri": "Bắc",
+      "trich_dan": "Hướng: Bắc",
+      "can": null
+     },
+     {
+      "khoa": "xay_dung",
+      "gia_tri": "được xây đến 6 tầng",
+      "trich_dan": "được xây đến 6 tầng",
+      "can": null
+     },
+     {
+      "khoa": "gia",
+      "gia_tri": "8,8 tỷ",
+      "trich_dan": "Giá: 8,8 tỷ",
+      "can": null
+     }
+    ],
+    "kien_thuc": [
+     "khu nhà ở cao tầng",
+     "khu dân cư đồng bộ, đẹp",
+     "sổ đỏ sẵn, công chứng ngay",
+     "chỉ áp dụng trong Tháng 10",
+     "phù hợp xây nhà vừa ở vừa kinh doanh",
+     "hoặc xây căn hộ cho thuê"
+    ],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "156 An Dương Vương, Phường Phú Định, Quận 8",
+     "trich_dan": "156 An Dương Vương, P. Phú Định"
+    },
+    "cap_nhat": [
+     {
+      "khoa": "vi_tri",
+      "gia_tri_moi": "156 An Dương Vương",
+      "cach": "thay"
+     }
+    ],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": null,
+     "ly_do": null
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "dong_y",
+    "dong_y_trich": "Vị trí: 156 An Dương Vương, P. Phú Định",
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ mặt tiền 12m sổ đỏ sẵn là lợi thế lớn cho anh chị ạ. Vậy đất mình là để xây nhà ở hay nhà kinh doanh, hay anh chị chưa định hướng ạ?"
+   ]
+  }
+ ]
+}

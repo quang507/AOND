@@ -1,0 +1,445 @@
+{
+ "nguon": "bắn thử trang chat 08/10/2026 (…kb1tatt), câu trả lời THẬT của AI từng lượt; lượt cuối đổi sang cách nói mới 'up tin lun e' (SRS-5.1zzzl)",
+ "luot": [
+  {
+   "text": "chao e",
+   "boc": null,
+   "y": null,
+   "rep": []
+  },
+  {
+   "text": "ban nha",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "ban nha",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "nha",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "vi_tri",
+     "ly_do": "cần xác định vị trí căn nhà"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, em ghi nhận rồi ạ. Nhà anh chị ở đường nào vậy ạ?"
+   ]
+  },
+  {
+   "text": "hem 5m le van sy q3",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "duong",
+      "gia_tri": "Lê Văn Sỹ",
+      "trich_dan": "le van sy",
+      "can": null
+     },
+     {
+      "khoa": "ten_duong",
+      "gia_tri": "Lê Văn Sỹ",
+      "trich_dan": "le van sy",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 3",
+      "trich_dan": "q3",
+      "can": null
+     },
+     {
+      "khoa": "do_rong_hem",
+      "gia_tri": "5",
+      "trich_dan": "hem 5m",
+      "can": null
+     },
+     {
+      "khoa": "loai_duong_vao",
+      "gia_tri": "hem_xe_hoi",
+      "trich_dan": "hem 5m",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "Hẻm 5m Lê Văn Sỹ, Quận 3",
+     "trich_dan": "hem 5m le van sy q3"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "dien_tich_dat",
+     "ly_do": "Cần biết diện tích đất để định giá và lên tin"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ em ghi hẻm 5m Lê Văn Sỹ rồi ạ. Diện tích trên sổ ngang dài bao nhiêu vậy anh chị?"
+   ]
+  },
+  {
+   "text": "4x15 3 lau",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "ngang",
+      "gia_tri": "4",
+      "trich_dan": "4x15",
+      "can": null
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "15",
+      "trich_dan": "4x15",
+      "can": null
+     },
+     {
+      "khoa": "so_tang",
+      "gia_tri": "4",
+      "trich_dan": "3 lau",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "ngang 4m dài 15m, 3 lầu",
+     "trich_dan": "4x15 3 lau"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "ket_cau",
+     "ly_do": "nó là nội dung tiếp theo sau khi biết ngang dài"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ em ghi rồi ạ. Nhà anh chị mong muốn giá bao nhiêu vậy?"
+   ]
+  },
+  {
+   "text": "7ty2",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "gia",
+      "gia_tri": "7 tỷ 2",
+      "trich_dan": "7ty2",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "7 tỷ 2",
+     "trich_dan": "7ty2"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "phap_ly",
+     "ly_do": "đã trả lời giá, bước tiếp là pháp lý để xác nhận căn này có thể rao"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ em ghi 7 tỷ 2 rồi ạ. Sổ nhà anh chị riêng hay chung vậy?"
+   ]
+  },
+  {
+   "text": "so hong rieng",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "phap_ly",
+      "gia_tri": "sổ hồng riêng",
+      "trich_dan": "so hong rieng",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "sổ hồng riêng",
+     "trich_dan": "so hong rieng"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "nguoi_dung_ten",
+     "ly_do": "Chủ nhà vừa nói về sổ hồng, nên hỏi ai đứng tên để hoàn thiện pháp lý"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ em ghi sổ riêng rồi ạ. Em tra thấy đường Lê Văn Sỹ thuộc Phường Nhiêu Lộc (Quận 3 cũ), đúng không anh chị ạ?"
+   ]
+  },
+  {
+   "text": "anh dung ten",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [
+     {
+      "khoa": "nguoi_dung_ten",
+      "ly_do": "chủ nhà đã trả lời",
+      "gia_tri": "đứng tên",
+      "trich_dan": "anh dung ten"
+     }
+    ],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "chinh_chu",
+     "trich_dan": "anh"
+    },
+    "cau_ke": {
+     "khoa": "the_chap",
+     "ly_do": "tiếp tục tìm hiểu thông tin pháp lý"
+    },
+    "tu_xung": {
+     "la": "anh",
+     "trich_dan": "anh dung ten"
+    }
+   },
+   "y": {
+    "dong_y": "khong_dong_y",
+    "dong_y_trich": "anh dung ten",
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Vâng ạ, em ghi người thân đứng tên rồi. Em hỏi kế về hiện trạng nhà anh nhé — lúc này nhà anh đang ở, hay đã bỏ trống ạ?"
+   ]
+  },
+  {
+   "text": "up tin lun e",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [],
+    "kien_thuc": [],
+    "y_dinh": {
+     "loai": "du_roi",
+     "trich_dan": "up tin lun e"
+    },
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    }
+   },
+   "y": {
+    "dong_y": "dong_y_dang",
+    "dong_y_trich": "up tin lun e",
+    "yeu_cau": "khong"
+   },
+   "rep": [
+    "Dạ em ghi đang ở rồi ạ. Nhà anh bao nhiêu tầng vậy?"
+   ]
+  }
+ ]
+}

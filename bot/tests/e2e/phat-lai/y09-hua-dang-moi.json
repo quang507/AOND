@@ -1,0 +1,191 @@
+{
+ "nguon": "SRS-5.1zzzy — cách nói MỚI (dựng tay, đầu ra AI dựng lại): 'chị có căn nhà muốn bán' rồi câu rao mặt tiền đủ ý, model hứa 'em đăng tin ngay cho chị nhé'",
+ "luot": [
+  {
+   "text": "chào em",
+   "boc": null,
+   "y": null,
+   "rep": [
+    "Dạ em chào chị ạ."
+   ]
+  },
+  {
+   "text": "chị có căn nhà muốn bán",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "muốn bán",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "căn nhà",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "vi_tri",
+     "ly_do": "cần địa chỉ"
+    },
+    "tu_xung": {
+     "la": "chị",
+     "trich_dan": "chị có"
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, nhà mình ở đâu vậy chị?"
+   ]
+  },
+  {
+   "text": "nhà mặt tiền Hùng Vương phường Chợ Quán, 5x20, trệt 3 lầu, sổ hồng chính chủ, 15 tỷ",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_duong_vao",
+      "gia_tri": "mat_tien",
+      "trich_dan": "mặt tiền Hùng Vương",
+      "can": null
+     },
+     {
+      "khoa": "duong",
+      "gia_tri": "Hùng Vương",
+      "trich_dan": "Hùng Vương",
+      "can": null
+     },
+     {
+      "khoa": "ten_duong",
+      "gia_tri": "Hùng Vương",
+      "trich_dan": "Hùng Vương",
+      "can": null
+     },
+     {
+      "khoa": "phuong",
+      "gia_tri": "Phường Chợ Quán",
+      "trich_dan": "phường Chợ Quán",
+      "can": null
+     },
+     {
+      "khoa": "ngang",
+      "gia_tri": "5",
+      "trich_dan": "5x20",
+      "can": null
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "20",
+      "trich_dan": "5x20",
+      "can": null
+     },
+     {
+      "khoa": "so_tang",
+      "gia_tri": "4",
+      "trich_dan": "trệt 3 lầu",
+      "can": null
+     },
+     {
+      "khoa": "phap_ly",
+      "gia_tri": "sổ hồng riêng",
+      "trich_dan": "sổ hồng chính chủ",
+      "can": null
+     },
+     {
+      "khoa": "gia",
+      "gia_tri": "15 tỷ",
+      "trich_dan": "15 tỷ",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "so_phong_ngu",
+     "ly_do": "còn thiếu"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Mặt tiền Hùng Vương thì đẹp rồi chị, em đăng tin ngay cho chị nhé."
+   ]
+  }
+ ]
+}

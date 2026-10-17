@@ -1,0 +1,79 @@
+name: Chat thử bot (DB giả, không đụng production)
+
+# 07/10/2026 (chủ dự án: "làm workflow đi chạy online"): chạy `bun run chat` — mã chat-reply THẬT trong repo, DB GIẢ trong
+# bộ nhớ (bot/tests/e2e/mock-supabase.mjs, kho 5 căn mẫu Quận 5) — trên máy GitHub, không cần pull code về máy. Chạy được
+# cả khi Supabase đang khoá (402): bot không gọi DB thật. Khoá Anthropic lấy từ Vault qua Management API (chỉ đọc), che
+# trong log. Repo PUBLIC nên log Actions công khai: đừng gõ tên thật / SĐT thật vào ô câu.
+# Tiền: mỗi câu ≈ 2–3 lượt model thật (mặc định Haiku 4.5) — như bắn production.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cau:
+        description: Các câu khách nhắn, cách nhau bằng dấu | (mỗi câu một lượt). Lệnh /tin xem tin đang ghi, /moi làm lại khách mới
+        required: true
+        default: 'chào em|đúng rồi em|nhà phố hẻm 137 Nguyễn Trãi phường Bến Thành quận 1, 4x16, 3 tầng|5 tỷ 2, sổ hồng riêng|/tin'
+      model:
+        description: Model trả lời (để trống = Haiku 4.5 cho rẻ)
+        required: false
+        default: 'claude-haiku-4-5-20251001'
+      prompt:
+        description: Prompt dùng bản nào — code (bản sẽ deploy) hay db (bản production đang chạy, DB đè code)
+        type: choice
+        options: [code, db]
+        default: code
+
+env:
+  PROJECT_REF: rqxmmqmctpklqcmbfxuj
+
+jobs:
+  chat:
+    name: Chat thử
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+
+      - name: Lấy khoá Anthropic từ Vault (che trong log)
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -uo pipefail
+          if [ -z "$TOKEN" ]; then echo "::error::Thiếu SUPABASE_ACCESS_TOKEN"; exit 1; fi
+          echo "::add-mask::$TOKEN"
+          K=$(curl -sS -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+                -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+                -d "$(jq -n --arg q "select decrypted_secret as k from vault.decrypted_secrets where name = 'ANTHROPIC_API_KEY'" '{query: $q}')" \
+              | jq -r '.[0].k // empty' 2>/dev/null)
+          if [ -z "$K" ]; then
+            echo "::warning::Không đọc được ANTHROPIC_API_KEY từ Vault — chạy bằng model GIẢ (chỉ thấy phần luật code)."
+          else
+            echo "::add-mask::$K"
+            echo "ANTHROPIC_API_KEY=$K" >> "$GITHUB_ENV"
+          fi
+
+      # 07/10/2026: công tắc app_config + mẫu câu + bot_prompts production (keo-that.mjs, chỉ đọc, không in nội dung).
+      - name: Kéo prompt + công tắc + mẫu câu production
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: bun bot/tests/chat/keo-that.mjs || echo "::warning::Không kéo được dữ liệu production — chạy prompt code + công tắc mặc định."
+
+      - name: Chat
+        env:
+          CAU: ${{ inputs.cau }}
+          ANTHROPIC_MODEL: ${{ inputs.model || 'claude-haiku-4-5-20251001' }}
+          PROMPT: ${{ inputs.prompt || 'code' }}
+        run: |
+          set -uo pipefail
+          : > cau.txt
+          IFS='|' read -ra DS <<< "$CAU"
+          for C in "${DS[@]}"; do
+            C="$(printf '%s' "$C" | sed 's/^ *//; s/ *$//')"
+            [ -n "$C" ] && printf '%s\n' "$C" >> cau.txt
+          done
+          # NO_COLOR không có tác dụng với script này — bỏ mã màu ANSI để log đọc được trên GitHub.
+          bun run chat -- --prompt "$PROMPT" < cau.txt 2>&1 | sed -E 's/\x1b\[[0-9;]*m//g'

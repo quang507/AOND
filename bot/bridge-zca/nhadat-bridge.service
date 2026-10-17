@@ -1,0 +1,30 @@
+# systemd unit cho bridge Zalo (bot/bridge-zca) trên VPS — FR-152 (e), 04/09/2026.
+# Cài:  sudo cp nhadat-bridge.service /etc/systemd/system/ && sudo systemctl daemon-reload
+#       sudo systemctl enable --now nhadat-bridge
+# Xem:  journalctl -u nhadat-bridge -f
+# LẦN ĐẦU chưa có zalo-session.json: bridge chờ quét QR — link ảnh QR nằm trong
+# `journalctl -u nhadat-bridge -f` (http://<ip>:8787/qr-<token>.png), mở trên
+# điện thoại và quét bằng acc clone (VPS.md §3). Không cần tmux.
+[Unit]
+Description=nhadat.cc — bridge Zalo (zca-js) nối acc clone với chat-reply
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nhadat
+WorkingDirectory=/opt/nhadat/bot/bridge-zca
+ExecStart=/usr/bin/node index.mjs
+# Bridge tự nạp .env cạnh index.mjs (BRIDGE_SECRET); không cần EnvironmentFile.
+Restart=always
+RestartSec=10
+# Zalo khoá session → zca-js ném lỗi liên tục; đừng để systemd bỏ cuộc,
+# nhưng giãn ra để không spam log.
+StartLimitIntervalSec=0
+Environment=NODE_ENV=production
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nhadat-bridge
+
+[Install]
+WantedBy=multi-user.target

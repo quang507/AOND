@@ -1,0 +1,377 @@
+{
+ "nguon": "bắn thử trang chat 08/10/2026 (…kb2chau), câu trả lời THẬT của AI từng lượt (SRS-5.1zzzm)",
+ "luot": [
+  {
+   "text": "Chào cháu",
+   "boc": null,
+   "y": null,
+   "rep": []
+  },
+  {
+   "text": "chú có căn nhà muốn bán",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "muốn bán",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "căn nhà",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "chinh_chu",
+     "trich_dan": "chú có"
+    },
+    "cau_ke": {
+     "khoa": "duong",
+     "ly_do": "cần biết vị trí của căn nhà để tiếp tục"
+    },
+    "tu_xung": {
+     "la": "anh",
+     "trich_dan": "chú"
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Vâng ạ. Nhà chú ở đường nào vậy ạ?"
+   ]
+  },
+  {
+   "text": "ở đường Nguyễn Trãi quận 5",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "duong",
+      "gia_tri": "Nguyễn Trãi",
+      "trich_dan": "ở đường Nguyễn Trãi",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 5",
+      "trich_dan": "quận 5",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "Nguyễn Trãi, Quận 5",
+     "trich_dan": "ở đường Nguyễn Trãi quận 5"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "chinh_chu",
+     "trich_dan": "chú có căn nhà"
+    },
+    "cau_ke": {
+     "khoa": "phuong",
+     "ly_do": "cần xác định phường cụ thể để ghi đầy đủ địa chỉ"
+    },
+    "tu_xung": {
+     "la": "chú",
+     "trich_dan": "chú có căn nhà"
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Vâng ạ. Đường Nguyễn Trãi đoạn nhà chú thuộc Phường An Đông, Phường Chợ Lớn hay Phường Chợ Quán vậy chú ạ?"
+   ]
+  },
+  {
+   "text": "ngang 4 dài 18",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "ngang",
+      "gia_tri": "4",
+      "trich_dan": "ngang 4",
+      "can": null
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "18",
+      "trich_dan": "dài 18",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "phuong",
+     "ly_do": "chủ nhà chưa trả lời câu phường vừa hỏi"
+    },
+    "tu_xung": {
+     "la": "khong",
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Vâng ạ, cháu ghi rồi. Nhà chú mấy tầng và mấy phòng ngủ vậy chú?"
+   ]
+  },
+  {
+   "text": "giá 15 tỷ cháu",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "gia",
+      "gia_tri": "15 tỷ",
+      "trich_dan": "giá 15 tỷ",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "chinh_chu",
+     "trich_dan": "chú có căn nhà"
+    },
+    "cau_ke": {
+     "khoa": "ket_cau",
+     "ly_do": "chú chưa trả lời câu vừa hỏi"
+    },
+    "tu_xung": {
+     "la": "chú",
+     "trich_dan": "giá 15 tỷ cháu"
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": []
+  },
+  {
+   "text": "phí sao cháu",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": true,
+     "cau_hoi": "phí sao cháu",
+     "chu_de": "dich_vu"
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "phi_quan_ly",
+     "ly_do": "chủ nhà vừa hỏi về phí"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Vâng ạ, phí bên cháu chỉ thu khi giao dịch thành công, 1% giá chốt ạ. Hẻm trước nhà chú mấy mét vậy ạ?"
+   ]
+  },
+  {
+   "text": "thôi để mai chú nói tiếp",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "hoan",
+     "trich_dan": "thôi để mai chú nói tiếp"
+    },
+    "vai": {
+     "la": "chinh_chu",
+     "trich_dan": "chú"
+    },
+    "cau_ke": {
+     "khoa": null,
+     "ly_do": null
+    },
+    "tu_xung": {
+     "la": "chi",
+     "trich_dan": "để mai chú nói tiếp"
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": []
+  }
+ ]
+}

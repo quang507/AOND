@@ -1,0 +1,78 @@
+# Cấu hình đăng nhập Google của web cho project Supabase (Management API PATCH /v1/projects/{ref}/config/auth).
+# 12/10/2026: dựng lại DB sang project mới (08/10) mất luôn cấu hình Auth — nó là CÀI ĐẶT project, không nằm trong
+# schema.sql hay migration — nên web báo "Unsupported provider: provider is not enabled". Workflow này đặt lại:
+#   - Site URL + Redirect URLs cho web (gộp vào danh sách đang có, không xoá dòng nào);
+#   - Google provider: Client ID lấy từ ô nhập (không bí mật — nó nằm sẵn trong URL đăng nhập), Client Secret lấy từ
+#     GitHub secret GOOGLE_OAUTH_CLIENT_SECRET. KHÔNG BAO GIỜ nhận secret qua ô nhập: repo PUBLIC, ô nhập hiện trong log.
+# Chỉ in các trường không bí mật. Phía Google (thêm redirect URI https://<ref>.supabase.co/auth/v1/callback, tạo secret)
+# vẫn phải làm tay ở Google Cloud Console — Google không có API sửa OAuth client loại Web.
+name: Đăng nhập Google (Supabase Auth)
+
+on:
+  workflow_dispatch:
+    inputs:
+      client_id:
+        description: Google OAuth Client ID (dạng ...apps.googleusercontent.com). Để trống = chỉ đặt Site URL / Redirect URLs
+        type: string
+        default: ""
+      site_url:
+        description: Site URL của web
+        type: string
+        default: https://aioinhadat.vercel.app
+
+env:
+  PROJECT_REF: rqxmmqmctpklqcmbfxuj
+
+jobs:
+  dat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Che token
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+          GSEC: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "::error::Thiếu SUPABASE_ACCESS_TOKEN"; exit 1; fi
+          echo "::add-mask::$TOKEN"
+          [ -n "$GSEC" ] && echo "::add-mask::$GSEC" || true
+
+      - name: Đặt cấu hình
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+          GSEC: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          CLIENT_ID: ${{ inputs.client_id }}
+          SITE_URL: ${{ inputs.site_url }}
+        run: |
+          set -euo pipefail
+          API="https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth"
+          xem() {
+            curl -sS --fail-with-body "$API" -H "Authorization: Bearer $TOKEN" \
+              | jq '{site_url, uri_allow_list, external_google_enabled, external_google_client_id}'
+          }
+          TRUOC=$(xem); echo "::notice title=Trước::$(echo "$TRUOC" | jq -c .)"
+
+          SITE_URL="${SITE_URL%/}"
+          case "$SITE_URL" in https://*) ;; *) echo "::error::site_url phải bắt đầu bằng https://"; exit 1 ;; esac
+          DS=$(echo "$TRUOC" | jq -r --arg u "$SITE_URL/**" \
+            '[(.uri_allow_list // "" | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != ""))) + [$u]] | flatten | unique | join(",")')
+          BODY=$(jq -n --arg s "$SITE_URL" --arg l "$DS" '{site_url: $s, uri_allow_list: $l}')
+
+          if [ -n "$CLIENT_ID" ]; then
+            case "$CLIENT_ID" in *.apps.googleusercontent.com) ;; *) echo "::error::client_id phải kết thúc bằng .apps.googleusercontent.com"; exit 1 ;; esac
+            if [ -z "$GSEC" ]; then
+              echo "::error::Thiếu GitHub secret GOOGLE_OAUTH_CLIENT_SECRET (Settings → Secrets and variables → Actions)"; exit 1
+            fi
+            BODY=$(echo "$BODY" | jq --arg id "$CLIENT_ID" --arg sec "$GSEC" \
+              '. + {external_google_enabled: true, external_google_client_id: $id, external_google_secret: $sec}')
+          fi
+
+          MA=$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH "$API" \
+            -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$BODY")
+          echo "::notice title=PATCH::HTTP $MA"
+          case "$MA" in 2*) ;; *) echo "::error::Supabase từ chối (HTTP $MA)"; exit 1 ;; esac
+
+          SAU=$(xem); echo "::notice title=Sau::$(echo "$SAU" | jq -c .)"
+          if [ -n "$CLIENT_ID" ] && [ "$(echo "$SAU" | jq -r .external_google_enabled)" != "true" ]; then
+            echo "::error::PATCH trả 2xx nhưng Google vẫn chưa bật"; exit 1
+          fi
+          echo "::notice::Đã đặt. Redirect URI cần có bên Google: https://$PROJECT_REF.supabase.co/auth/v1/callback"

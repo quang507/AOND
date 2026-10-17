@@ -1,0 +1,171 @@
+{
+ "nguon": "SRS-5.1zzzw — biến thể của …vxii (2 lượt đầu thật): lượt 3 dựng tay theo khuôn đầu ra AI thật — khách ĐỔI Ý sang cho thuê (cách nói MỚI)",
+ "luot": [
+  {
+   "text": "Xin chào",
+   "boc": null,
+   "y": null,
+   "rep": []
+  },
+  {
+   "text": "Tôi cần bán đất mặt tiền",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "cần bán",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "dat",
+      "trich_dan": "bán đất mặt tiền",
+      "can": null
+     },
+     {
+      "khoa": "loai_duong_vao",
+      "gia_tri": "mat_tien",
+      "trich_dan": "mặt tiền",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "vi_tri",
+     "ly_do": "cần biết vị trí, quận, phường, tên đường để lên tin"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, đất mặt tiền thì khách tìm nhiều lắm anh chị. Đất mình ở đâu vậy, ở Hồ Chí Minh đúng không ạ?"
+   ]
+  },
+  {
+   "text": "Thôi anh đổi ý, cho thuê lô đất 156 An Dương Vương P. Phú Định luôn em, 30 triệu/tháng",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "cho_thue",
+      "trich_dan": "cho thuê lô đất",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "dat",
+      "trich_dan": "lô đất",
+      "can": null
+     },
+     {
+      "khoa": "duong",
+      "gia_tri": "156 An Dương Vương",
+      "trich_dan": "156 An Dương Vương",
+      "can": null
+     },
+     {
+      "khoa": "phuong",
+      "gia_tri": "Phường Phú Định",
+      "trich_dan": "P. Phú Định",
+      "can": null
+     },
+     {
+      "khoa": "gia",
+      "gia_tri": "30 triệu",
+      "trich_dan": "30 triệu/tháng",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": null,
+     "ly_do": null
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ mặt tiền 12m sổ đỏ sẵn là lợi thế lớn cho anh chị ạ. Vậy đất mình là để xây nhà ở hay nhà kinh doanh, hay anh chị chưa định hướng ạ?"
+   ]
+  }
+ ]
+}

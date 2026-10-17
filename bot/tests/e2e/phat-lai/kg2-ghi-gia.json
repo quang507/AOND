@@ -1,0 +1,187 @@
+{
+ "nguon": "SRS-5.1zzzzg — bắn production 09/10/2026 thu-kg2 (dựng lại): đang hỏi pháp lý, khách 'sổ riêng, giá 9 tỷ 5' → bong bóng code 'Dạ em ghi giá 9 tỷ 5 rồi ạ.' + model 'Vâng ạ, em ghi sổ riêng và giá rồi anh…' (lời model NGUYÊN VĂN production)",
+ "luot": [
+  {
+   "text": "anh bán nhà hẻm 4m Trần Bình Trọng phường 1 quận 5, 4x15, trệt 2 lầu",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "bán nhà",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "bán nhà",
+      "can": null
+     },
+     {
+      "khoa": "duong",
+      "gia_tri": "hẻm Trần Bình Trọng",
+      "trich_dan": "hẻm 4m Trần Bình Trọng",
+      "can": null
+     },
+     {
+      "khoa": "ten_duong",
+      "gia_tri": "Trần Bình Trọng",
+      "trich_dan": "hẻm 4m Trần Bình Trọng",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 5",
+      "trich_dan": "quận 5",
+      "can": null
+     },
+     {
+      "khoa": "ngang",
+      "gia_tri": "4",
+      "trich_dan": "4x15",
+      "can": null
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "15",
+      "trich_dan": "4x15",
+      "can": null
+     },
+     {
+      "khoa": "ket_cau",
+      "gia_tri": "trệt 2 lầu",
+      "trich_dan": "trệt 2 lầu",
+      "can": null
+     },
+     {
+      "khoa": "so_tang",
+      "gia_tri": "3",
+      "trich_dan": "trệt 2 lầu",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "phap_ly",
+     "ly_do": "pháp lý"
+    },
+    "tu_xung": {
+     "la": "anh",
+     "trich_dan": "anh"
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, nhà mình sổ riêng hay sổ chung vậy anh?"
+   ]
+  },
+  {
+   "text": "sổ riêng, giá 9 tỷ 5",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "phap_ly",
+      "gia_tri": "sổ riêng",
+      "trich_dan": "sổ riêng",
+      "can": null
+     },
+     {
+      "khoa": "gia",
+      "gia_tri": "9 tỷ 5",
+      "trich_dan": "giá 9 tỷ 5",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "sổ riêng",
+     "trich_dan": "sổ riêng"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "nguoi_dung_ten",
+     "ly_do": "đứng tên"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Vâng ạ, em ghi sổ riêng và giá rồi anh. Sổ đứng tên anh luôn hả anh?"
+   ],
+   "vai": {
+    "vai": "chua_ro",
+    "bang_chung": ""
+   }
+  }
+ ]
+}

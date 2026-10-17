@@ -1,0 +1,42 @@
+# Đồng bộ prompt bot: so md5 bản CODE (prompts.ts) ↔ bản DB (bot_prompts, ĐÈ code lúc chạy), và đẩy code lên DB khi được bảo.
+# 05/10/2026 (SRS-5.1zza): trước đây chỉ chạy được trên máy có service_role trong scripts/.env; phiên Claude / máy mới không có nên
+# prompt sửa trong PR mà DB vẫn giữ bản cũ. Chạy bằng SUPABASE_ACCESS_TOKEN (Management API) như ban-thu.yml.
+name: Đồng bộ prompt (code ↔ bot_prompts)
+
+on:
+  workflow_dispatch:
+    inputs:
+      day:
+        description: Đẩy bản CODE lên DB (để trống = chỉ so sánh, không ghi gì)
+        type: boolean
+        default: false
+      chi_khoa:
+        description: "Chỉ so / đẩy các khoá này (cách nhau dấu phẩy, vd fee_rules). Trống = mọi khoá"
+        type: string
+        default: ""
+
+env:
+  PROJECT_REF: rqxmmqmctpklqcmbfxuj
+
+jobs:
+  dong-bo:
+    name: ${{ inputs.day && 'Đẩy code → DB' || 'So sánh' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Che token
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "::error::Thiếu SUPABASE_ACCESS_TOKEN"; exit 1; fi
+          echo "::add-mask::$TOKEN"
+      - name: So / đẩy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+          CHI_KHOA: ${{ inputs.chi_khoa }}
+        run: |
+          set -euo pipefail
+          CHI=()
+          if [ -n "$CHI_KHOA" ]; then CHI=(--chi "$CHI_KHOA"); fi
+          if [ "${{ inputs.day }}" = "true" ]; then bun scripts/dong-bo-prompt.mjs --day "${CHI[@]}"; else bun scripts/dong-bo-prompt.mjs "${CHI[@]}" || true; fi

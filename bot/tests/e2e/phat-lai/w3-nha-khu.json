@@ -1,0 +1,92 @@
+{
+ "nguon": "SRS-5.1zzzs — nhà phố nói tên khu: tên khu KHÔNG phải địa chỉ",
+ "luot": [
+  {
+   "text": "chao e",
+   "boc": null,
+   "y": null,
+   "rep": []
+  },
+  {
+   "text": "bán nhà trong khu Him Lam 4x20 12 tỷ",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "bán",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "bán nhà",
+      "can": null
+     },
+     {
+      "khoa": "du_an",
+      "gia_tri": "Him Lam",
+      "trich_dan": "khu Him Lam",
+      "can": null
+     },
+     {
+      "khoa": "ngang",
+      "gia_tri": "4",
+      "trich_dan": "4x20",
+      "can": null
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "20",
+      "trich_dan": "4x20",
+      "can": null
+     },
+     {
+      "khoa": "gia",
+      "gia_tri": "12 tỷ",
+      "trich_dan": "12 tỷ",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "phap_ly",
+     "ly_do": "chưa có"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": null,
+   "rep": []
+  }
+ ]
+}

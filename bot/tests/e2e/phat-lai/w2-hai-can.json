@@ -1,0 +1,154 @@
+{
+ "nguon": "SRS-5.1zzzr — tin hai căn dựng tay theo khuôn đầu ra AI thật (…kc1tatt); cách nói MỚI: hxh + quận viết tắt Q5",
+ "luot": [
+  {
+   "text": "chào em",
+   "boc": null,
+   "y": null,
+   "rep": []
+  },
+  {
+   "text": "gửi em 2 căn nha: căn 1 hxh Lê Văn Sỹ quận 3 4x15 7 tỷ; căn 2 mặt tiền Nguyễn Trãi Q5 5x18 25 tỷ",
+   "boc": {
+    "can_khac": false,
+    "so_can": 2,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "gửi em 2 căn",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "căn 1 hxh",
+      "can": 1
+     },
+     {
+      "khoa": "duong",
+      "gia_tri": "Lê Văn Sỹ",
+      "trich_dan": "hxh Lê Văn Sỹ",
+      "can": 1
+     },
+     {
+      "khoa": "loai_duong_vao",
+      "gia_tri": "hem_xe_hoi",
+      "trich_dan": "hxh",
+      "can": 1
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 3",
+      "trich_dan": "quận 3",
+      "can": 1
+     },
+     {
+      "khoa": "ngang",
+      "gia_tri": "4",
+      "trich_dan": "4x15",
+      "can": 1
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "15",
+      "trich_dan": "4x15",
+      "can": 1
+     },
+     {
+      "khoa": "gia",
+      "gia_tri": "7 tỷ",
+      "trich_dan": "7 tỷ",
+      "can": 1
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "căn 2 mặt tiền",
+      "can": 2
+     },
+     {
+      "khoa": "duong",
+      "gia_tri": "Nguyễn Trãi",
+      "trich_dan": "mặt tiền Nguyễn Trãi",
+      "can": 2
+     },
+     {
+      "khoa": "loai_duong_vao",
+      "gia_tri": "mat_tien",
+      "trich_dan": "mặt tiền Nguyễn Trãi",
+      "can": 2
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 5",
+      "trich_dan": "Q5",
+      "can": 2
+     },
+     {
+      "khoa": "ngang",
+      "gia_tri": "5",
+      "trich_dan": "5x18",
+      "can": 2
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "18",
+      "trich_dan": "5x18",
+      "can": 2
+     },
+     {
+      "khoa": "gia",
+      "gia_tri": "25 tỷ",
+      "trich_dan": "25 tỷ",
+      "can": 2
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "moi_gioi",
+     "trich_dan": "gửi em 2 căn"
+    },
+    "cau_ke": {
+     "khoa": "phap_ly",
+     "ly_do": "chưa có"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": []
+  }
+ ]
+}

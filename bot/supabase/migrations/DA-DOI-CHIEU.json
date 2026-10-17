@@ -1,0 +1,23 @@
+{
+  "_doc": "Hồ sơ ĐÃ ĐỐI CHIẾU giữa thư mục migration và DB. `soat-migration.mjs` đọc file này để chỉ kêu khi có TRÔI MỚI. Sửa file này là một quyết định, phải có người đọc lại — đừng thêm dòng chỉ để cổng CI xanh.",
+  "vi_sao": [
+    "Suốt 21/08 → 01/09/2026, 52 migration được áp thẳng qua MCP mà không ai lưu file (OPEN-46).",
+    "Ngược lại, 11 file viết tay thời đó được áp dưới TÊN KHÁC do MCP tự đặt, nên so theo tên không bắt cặp được.",
+    "Không ai chép lại nội dung DDL gốc, nên KHÔNG dựng lại được cặp chính xác. Ghi nhận đúng như nó là, thay vì bịa một bản đồ trông có vẻ đầy đủ.",
+    "Từ 20260902 trở đi mọi migration đều có file đúng tên — cổng CI canh đúng khoảng đó."
+  ],
+  "file_ap_duoi_ten_khac": [
+    "20260825_anh_theo_ma_va_bao_cao_admin",
+    "20260825_crm_ctv_va_tu_nhien",
+    "20260825_seller_drip",
+    "20260826c_soat_bao_mat",
+    "20260826d_soat_cloud_va_compute",
+    "20260826_sua_cau_truc_du_lieu",
+    "20260827f_parse_vnd_slang",
+    "20260827g_seller_rank_admin_dang_tin",
+    "20260827h_seller_active_listing",
+    "20260829b_cron_duong_cuu",
+    "20260901c_chuong_keu_nham_khi_thieu_ma_http"
+  ],
+  "dung_lai_tu_so_khong": "KHÔNG replay được cả thư mục. Đường đúng: nạp bot/supabase/schema.sql trước (ảnh chụp đầy đủ), rồi áp migration TỪ 20260902 trở đi. Xem bot/README.md §Phục hồi từ số không."
+}

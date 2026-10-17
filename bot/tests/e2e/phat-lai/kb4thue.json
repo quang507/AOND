@@ -1,0 +1,387 @@
+{
+ "nguon": "bắn thử trang chat 08/10/2026 (…kb4thue), câu trả lời THẬT của AI; lượt 2 đổi tên dự án sang 'The Sun Avenue' (cách nói mới, dự án không có trong kho giả) (SRS-5.1zzzm)",
+ "luot": [
+  {
+   "text": "hi em",
+   "boc": null,
+   "y": null,
+   "rep": []
+  },
+  {
+   "text": "chị có căn hộ The Sun Avenue cần cho thuê",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "cho_thue",
+      "trich_dan": "cho thuê",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "chung_cu",
+      "trich_dan": "căn hộ",
+      "can": null
+     },
+     {
+      "khoa": "du_an",
+      "gia_tri": "The Sun Avenue",
+      "trich_dan": "The Sun Avenue",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "chinh_chu",
+     "trich_dan": "chị có căn hộ"
+    },
+    "cau_ke": {
+     "khoa": "quan",
+     "ly_do": "xác định vị trí căn hộ để lên tin"
+    },
+    "tu_xung": {
+     "la": "chi",
+     "trich_dan": "chị có căn hộ"
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Vâng ạ, căn hộ The Sun Avenue cho thuê là dễ kiếm khách lắm chị. Diện tích sàn của căn mình bao nhiêu ạ?"
+   ]
+  },
+  {
+   "text": "em là người hay máy vậy",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": true,
+     "cau_hoi": "em là người hay máy vậy",
+     "chu_de": "ve_bot"
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "dien_tich_tim_tuong",
+     "ly_do": "Chủ nhà vừa trả lời câu diện tích"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Vâng ạ, chị. Căn hộ mình mấy phòng ngủ ạ?"
+   ]
+  },
+  {
+   "text": "2pn 76m2 tầng 12",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "so_phong_ngu",
+      "gia_tri": "2",
+      "trich_dan": "2pn",
+      "can": null
+     },
+     {
+      "khoa": "dien_tich",
+      "gia_tri": "76",
+      "trich_dan": "76m2",
+      "can": null
+     },
+     {
+      "khoa": "tang",
+      "gia_tri": "12",
+      "trich_dan": "tầng 12",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "2 phòng ngủ",
+     "trich_dan": "2pn"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "chinh_chu",
+     "trich_dan": "có căn hộ"
+    },
+    "cau_ke": {
+     "khoa": "dien_tich_tim_tuong",
+     "ly_do": "cần diện tích tim tường để so sánh"
+    },
+    "tu_xung": {
+     "la": "chị",
+     "trich_dan": "chị có căn hộ"
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Vâng ạ, chị. Chị muốn cho thuê giá bao nhiêu một tháng ạ?"
+   ]
+  },
+  {
+   "text": "18 triệu/tháng",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "gia",
+      "gia_tri": "18 triệu",
+      "trich_dan": "18 triệu/tháng",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "18 triệu một tháng",
+     "trich_dan": "18 triệu/tháng"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "vi_tri",
+     "ly_do": "chưa có vị trí cụ thể của căn"
+    },
+    "tu_xung": {
+     "la": "chi",
+     "trich_dan": "chị có căn hộ"
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Vâng ạ, chị. Chị cọc mấy tháng ạ?"
+   ]
+  },
+  {
+   "text": "phí bên em tính sao",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": true,
+     "cau_hoi": "phí bên em tính sao",
+     "chu_de": "dich_vu"
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "phi_quan_ly",
+     "ly_do": "chủ nhà hỏi phí, nên cần xác định số tiền phí quản lý để làm rõ giá thuê net"
+    },
+    "tu_xung": {
+     "la": "chi",
+     "trich_dan": "phí bên em"
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Vâng ạ, chị. Căn hộ mình ở đâu vậy, ở Hồ Chí Minh đúng không ạ?"
+   ]
+  },
+  {
+   "text": "full nội thất",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "noi_that",
+      "gia_tri": "full nội thất",
+      "trich_dan": "full nội thất",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "chinh_chu",
+     "trich_dan": "chị có căn hộ"
+    },
+    "cau_ke": {
+     "khoa": "vi_tri",
+     "ly_do": "chưa có địa chỉ cụ thể"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Vâng ạ, chị. Căn mình ở dự án nào và tòa / block mấy vậy chị ạ?"
+   ]
+  }
+ ]
+}

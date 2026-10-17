@@ -1,0 +1,1085 @@
+{
+ "nguon": "SRS-5.1zzzv — chủ dự án chat thử 08/10/2026 (…hua2), đầu ra AI thật từ nhật ký trang thử",
+ "luot": [
+  {
+   "text": "chào e",
+   "boc": null,
+   "y": null,
+   "rep": []
+  },
+  {
+   "text": "đúng rồi",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "đúng, cần rao bán bất động sản",
+     "trich_dan": "đúng rồi"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": null,
+     "ly_do": null
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "dong_y",
+    "dong_y_trich": "đúng rồi",
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ. Bất động sản anh chị ở đâu vậy, ở Hồ Chí Minh đúng không ạ?"
+   ]
+  },
+  {
+   "text": "đúng rồi HCM e ạ. cụ thể quận 5",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 5",
+      "trich_dan": "quận 5",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "Hồ Chí Minh, Quận 5",
+     "trich_dan": "HCM e ạ. cụ thể quận 5"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": null,
+     "ly_do": null
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": "đúng rồi HCM em ạ. cụ thể quận 5",
+    "dong_y": "dong_y",
+    "dong_y_trich": "đúng rồi HCM e ạ. cụ thể quận 5",
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ em ghi nhận ạ. Anh chị muốn bán nhà, đất hay căn hộ vậy?"
+   ]
+  },
+  {
+   "text": "bán nhà đang ở nha e",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "bán nhà",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "bán nhà",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 5",
+      "trich_dan": "quận 5",
+      "can": null
+     }
+    ],
+    "kien_thuc": [
+     "đang ở"
+    ],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "bán nhà",
+     "trich_dan": "bán nhà đang ở nha e"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "chinh_chu",
+     "trich_dan": "bán nhà đang ở"
+    },
+    "cau_ke": {
+     "khoa": "duong",
+     "ly_do": "chưa có địa chỉ cụ thể"
+    },
+    "tu_xung": {
+     "la": "khong_noi",
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "dong_y",
+    "dong_y_trich": "bán nhà đang ở nha e",
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, nhà anh chị ở đường nào vậy ạ?"
+   ]
+  },
+  {
+   "text": "an dương vương",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "ten_duong",
+      "gia_tri": "An Dương Vương",
+      "trich_dan": "an dương vương",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "An Dương Vương",
+     "trich_dan": "an dương vương"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [
+     {
+      "khoa": "phuong",
+      "ly_do": "chủ nhà chưa nêu phường, chỉ nói tên đường An Dương Vương — tên này nằm ở nhiều phường trong Quận 5, không đủ để xác định phường chính xác",
+      "gia_tri": null,
+      "trich_dan": "an dương vương"
+     }
+    ],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "phuong",
+     "ly_do": "chủ nhà vừa nói đường, tiếp theo hỏi phường để hoàn thiện vị trí cụ thể"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": "An Dương Vương",
+    "dong_y": "dong_y",
+    "dong_y_trich": "an dương vương",
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ, em ghi rồi ạ. Đường An Dương Vương đoạn nhà anh chị thuộc Phường An Đông, Phường Chợ Quán hay Phường Chợ Lớn vậy anh chị?"
+   ]
+  },
+  {
+   "text": "chợ quán e",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "phuong",
+      "gia_tri": "Phường Chợ Quán",
+      "trich_dan": "chợ quán e",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "Phường Chợ Quán",
+     "trich_dan": "chợ quán e"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "ket_cau",
+     "ly_do": "chưa biết tình trạng kết cấu của nhà, cần để lên tin"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "dong_y",
+    "dong_y_trich": "chợ quán e",
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ, em ghi rồi ạ. Nhà anh chị mấy tầng vậy?"
+   ]
+  },
+  {
+   "text": "nhà 4 tầng",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "ket_cau",
+      "gia_tri": "4 tầng",
+      "trich_dan": "nhà 4 tầng",
+      "can": null
+     },
+     {
+      "khoa": "so_tang",
+      "gia_tri": "4",
+      "trich_dan": "nhà 4 tầng",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "4 tầng",
+     "trich_dan": "nhà 4 tầng"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "do_rong_hem",
+     "ly_do": "căn nhà có địa chỉ đã xác định nên cần biết hẻm xe vào được loại nào"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ, em ghi rồi ạ. 4 tầng là tính cả gác lửng hay là 4 tầng riêng biệt vậy anh chị?"
+   ]
+  },
+  {
+   "text": "ko có gác",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [
+     {
+      "khoa": "tang_phu",
+      "ly_do": "chủ nhà nói không có gác lửng, không cần hỏi tầng phụ khác",
+      "trich_dan": "ko có gác"
+     }
+    ],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "do_rong_hem",
+     "ly_do": "câu bot vừa hỏi chưa có câu trả lời"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_dong_y",
+    "dong_y_trich": "ko có gác",
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": []
+  },
+  {
+   "text": "hxh quay đầu",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_duong_vao",
+      "gia_tri": "hem_xe_hoi",
+      "trich_dan": "hxh",
+      "can": null
+     },
+     {
+      "khoa": "hem_thong",
+      "gia_tri": "hẻm quay đầu được",
+      "trich_dan": "quay đầu",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [
+     {
+      "khoa": "do_rong_hem",
+      "ly_do": "chủ nhà đã trả lời không có số đo cụ thể, chỉ nói hxh quay đầu",
+      "trich_dan": "hxh quay đầu"
+     }
+    ],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "gia",
+     "ly_do": "cần giá để lên tin"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": "hxh quay đầu",
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ, hẻm quay đầu thoải mái anh chị ạ. Nhà mình anh chị định bán giá bao nhiêu vậy ạ?"
+   ]
+  },
+  {
+   "text": "20t",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "gia",
+      "gia_tri": "20 tỷ",
+      "trich_dan": "20t",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "20 tỷ",
+     "trich_dan": "20t"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "dien_tich_dat",
+     "ly_do": "cần biết diện tích đất để hoàn chỉnh thông tin căn nhà"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ em ghi 20 tỷ rồi ạ. Diện tích trên sổ ngang dài bao nhiêu vậy anh chị ạ?"
+   ]
+  },
+  {
+   "text": "5x21 nở hậu 6m",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "ngang",
+      "gia_tri": "5",
+      "trich_dan": "5x21",
+      "can": null
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "21",
+      "trich_dan": "5x21",
+      "can": null
+     },
+     {
+      "khoa": "no_hau",
+      "gia_tri": "6",
+      "trich_dan": "nở hậu 6m",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "ngang 5m, dài 21m, nở hậu 6m",
+     "trich_dan": "5x21 nở hậu 6m"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "do_rong_hem",
+     "ly_do": "vừa trả lời ngang dài rồi, hẻm quay đầu vừa nói nhưng chưa cụ thể bề rộng"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ nở hậu 6m là tốt lắm anh chị ạ. Sổ nhà mình riêng hay chung vậy ạ?"
+   ]
+  },
+  {
+   "text": "shr",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "phap_ly",
+      "gia_tri": "sổ hồng riêng",
+      "trich_dan": "shr",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "sổ hồng riêng",
+     "trich_dan": "shr"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "the_chap",
+     "ly_do": "vừa xác nhận sổ riêng, nên tiếp theo là tình trạng thế chấp"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "dong_y",
+    "dong_y_trich": "shr",
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [],
+   "chot": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "bán nhà",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "bán nhà",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 5",
+      "trich_dan": "quận 5",
+      "can": null
+     },
+     {
+      "khoa": "duong",
+      "gia_tri": "An Dương Vương",
+      "trich_dan": "an dương vương",
+      "can": null
+     },
+     {
+      "khoa": "ten_duong",
+      "gia_tri": "An Dương Vương",
+      "trich_dan": "an dương vương",
+      "can": null
+     },
+     {
+      "khoa": "ngang",
+      "gia_tri": "5",
+      "trich_dan": "5x21",
+      "can": null
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "21",
+      "trich_dan": "5x21",
+      "can": null
+     },
+     {
+      "khoa": "no_hau",
+      "gia_tri": "6",
+      "trich_dan": "nở hậu 6m",
+      "can": null
+     },
+     {
+      "khoa": "so_tang",
+      "gia_tri": "4",
+      "trich_dan": "nhà 4 tầng",
+      "can": null
+     },
+     {
+      "khoa": "loai_duong_vao",
+      "gia_tri": "hem_xe_hoi",
+      "trich_dan": "hxh quay đầu",
+      "can": null
+     },
+     {
+      "khoa": "gia",
+      "gia_tri": "20t",
+      "trich_dan": "20t",
+      "can": null
+     },
+     {
+      "khoa": "phap_ly",
+      "gia_tri": "sổ hồng riêng",
+      "trich_dan": "shr",
+      "can": null
+     }
+    ],
+    "kien_thuc": [
+     "chợ quán"
+    ],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": null,
+     "ly_do": null
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   }
+  },
+  {
+   "text": "4 pn",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "so_phong_ngu",
+      "gia_tri": "4",
+      "trich_dan": "4 pn",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "so_wc",
+     "ly_do": "chưa biết căn có mấy WC"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "dong_y",
+    "dong_y_trich": "4 pn",
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [],
+   "chot": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "bán nhà",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "bán nhà",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 5",
+      "trich_dan": "quận 5",
+      "can": null
+     },
+     {
+      "khoa": "duong",
+      "gia_tri": "An Dương Vương",
+      "trich_dan": "an dương vương",
+      "can": null
+     },
+     {
+      "khoa": "ten_duong",
+      "gia_tri": "An Dương Vương",
+      "trich_dan": "an dương vương",
+      "can": null
+     },
+     {
+      "khoa": "phuong",
+      "gia_tri": "Phường Chợ Quán",
+      "trich_dan": "chợ quán e",
+      "can": null
+     },
+     {
+      "khoa": "so_tang",
+      "gia_tri": "4",
+      "trich_dan": "nhà 4 tầng",
+      "can": null
+     },
+     {
+      "khoa": "ngang",
+      "gia_tri": "5",
+      "trich_dan": "5x21",
+      "can": null
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "21",
+      "trich_dan": "5x21",
+      "can": null
+     },
+     {
+      "khoa": "no_hau",
+      "gia_tri": "6",
+      "trich_dan": "nở hậu 6m",
+      "can": null
+     },
+     {
+      "khoa": "loai_duong_vao",
+      "gia_tri": "hem_xe_hoi",
+      "trich_dan": "hxh quay đầu",
+      "can": null
+     },
+     {
+      "khoa": "gia",
+      "gia_tri": "20t",
+      "trich_dan": "20t",
+      "can": null
+     },
+     {
+      "khoa": "phap_ly",
+      "gia_tri": "sổ hồng riêng",
+      "trich_dan": "shr",
+      "can": null
+     },
+     {
+      "khoa": "so_phong_ngu",
+      "gia_tri": "4",
+      "trich_dan": "4 pn",
+      "can": null
+     }
+    ],
+    "kien_thuc": [
+     "đang ở"
+    ],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": null,
+     "ly_do": null
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   }
+  },
+  {
+   "text": "đăng thử đi",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "có, đồng ý đăng",
+     "trich_dan": "đăng thử đi"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "du_roi",
+     "trich_dan": "đăng thử đi"
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": null,
+     "ly_do": null
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "dong_y_dang",
+    "dong_y_trich": "đăng thử đi",
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": []
+  }
+ ]
+}

@@ -1,0 +1,312 @@
+name: Bắn thử bot trên production
+
+# FR-246 (29/09/2026): bắn thử chat-reply trên production KHÔNG cần Supabase MCP. Chạy SQL qua Management API bằng
+# SUPABASE_ACCESS_TOKEN (cùng đường apply-migration.yml): in tình trạng (model bot đã dùng, số tin lên kệ, vector),
+# gửi các câu thử bằng ID THỬ (phải qua `la_id_thu`), in câu bot trả lời, rồi dọn sạch người thử.
+# Tuỳ chọn đổi model chính (secret ANTHROPIC_MODEL của edge function) khi chủ dự án yêu cầu.
+# Log repo này CÔNG KHAI: chỉ in số đếm, mã tin và câu bot trả lời cho ID thử — không in dữ liệu khách thật.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cau:
+        description: Các câu khách thử nhắn, cách nhau bằng dấu | (mỗi câu một lượt)
+        required: true
+        default: 'mình cần mua nhà quận 5 tầm 5 tỷ'
+      zalo:
+        description: Zalo ID THỬ (phải khớp la_id_thu — lx-, do-, thu-…)
+        required: true
+        default: 'lx-mua-01'
+      doi_model:
+        description: Để trống = giữ nguyên. Điền model ID để đặt secret ANTHROPIC_MODEL (vd claude-haiku-4-5-20251001)
+        required: false
+        default: ''
+      thu_tu_model:
+        description: Để trống = giữ nguyên. groq | gemini | claude — đặt secret MODEL_TRUOC (model nào gọi trước)
+        required: false
+        default: ''
+      do_nghia:
+        description: Để trống = bỏ qua. Tên dự án để soi tìm theo nghĩa (cổng sẵn sàng, HTTP Gemini, top ứng viên vector)
+        required: false
+        default: ''
+      soi_vector:
+        description: Để trống = bỏ qua. Câu tìm của người mua, cách nhau bằng | — in văn bản sẽ nhúng của tin ID thử, nhúng thật và đo độ gần từng câu
+        required: false
+        default: ''
+      soi_gemini:
+        description: Để trống = bỏ qua. "co" = gọi thử Gemini chat 1 lần bằng TỪNG khoá trong Vault, in mã HTTP (không in khoá)
+        required: false
+        default: ''
+
+env:
+  PROJECT_REF: rqxmmqmctpklqcmbfxuj
+
+jobs:
+  ban-thu:
+    name: Bắn thử
+    runs-on: ubuntu-latest
+    steps:
+      - name: Che token
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "::error::Thiếu SUPABASE_ACCESS_TOKEN"; exit 1; fi
+          echo "::add-mask::$TOKEN"
+
+      - name: Bắn thử
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+          CAU: ${{ inputs.cau }}
+          ZALO: ${{ inputs.zalo }}
+          DOI_MODEL: ${{ inputs.doi_model }}
+          THU_TU: ${{ inputs.thu_tu_model }}
+          DO_NGHIA: ${{ inputs.do_nghia }}
+          SOI_VECTOR: ${{ inputs.soi_vector }}
+          SOI_GEMINI: ${{ inputs.soi_gemini }}
+        run: |
+          set -euo pipefail
+          q() { # chạy một câu SQL, in kết quả JSON
+            curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+              -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+              -d "$(jq -n --arg q "$1" '{query: $q}')"
+          }
+          lit() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/''/g")"; }
+
+          if ! printf '%s' "$ZALO" | grep -Eq '^[a-z0-9-]{3,40}$'; then echo "::error::Zalo ID thử không hợp lệ"; exit 1; fi
+          if [ "$(q "select public.la_id_thu($(lit "$ZALO")) as t" | jq -r '.[0].t')" != "true" ]; then
+            echo "::error::$ZALO không phải ID thử (la_id_thu) — không bắn bằng ID có thể là khách thật"; exit 1
+          fi
+
+          # 30/09/2026: tài khoản Anthropic hết tiền (400 credit balance too low) mà MODEL_TRUOC=claude → lượt nào cũng gọi
+          # Claude hỏng trước rồi mới sang Groq. Đổi thứ tự ở đây, không cần mở Supabase dashboard.
+          if [ -n "$THU_TU" ]; then
+            if ! printf '%s' "$THU_TU" | grep -Eq '^(groq|gemini|claude)$'; then echo "::error::thu_tu_model chỉ nhận groq | gemini | claude"; exit 1; fi
+            curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/secrets" \
+              -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+              -d "$(jq -n --arg v "$THU_TU" '[{name: "MODEL_TRUOC", value: $v}]')" >/dev/null
+            echo "Đã đặt MODEL_TRUOC = $THU_TU (edge function nhận ở lượt khởi động kế)."
+          fi
+
+          if [ -n "$DOI_MODEL" ]; then
+            if ! printf '%s' "$DOI_MODEL" | grep -Eq '^claude-[a-z0-9.-]{3,60}$'; then echo "::error::model ID lạ"; exit 1; fi
+            curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/secrets" \
+              -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+              -d "$(jq -n --arg v "$DOI_MODEL" '[{name: "ANTHROPIC_MODEL", value: $v}]')" >/dev/null
+            echo "Đã đặt ANTHROPIC_MODEL = $DOI_MODEL (edge function nhận ở lượt khởi động kế)."
+          fi
+
+          echo "== Tình trạng"
+          q "select coalesce((select json_agg(x) from (select model, count(*) as luot from boc_tach_bong where created_at > now() - interval '3 days' group by 1 order by 2 desc) x), '[]') as model_3_ngay,
+                    (select count(*) from listings where status in ('dang_ban','dang_quan_tam')) as tin_len_ke,
+                    (select count(*) from listings where status in ('dang_ban','dang_quan_tam') and nhung is not null) as tin_co_vector,
+                    (select count(*) from projects where nhung is not null) as du_an_co_vector,
+                    json_build_object('wards', (select count(nhung) || '/' || count(*) from wards),
+                      'phuong_cu', (select count(nhung) || '/' || count(*) from phuong_cu),
+                      'quan_cu', (select count(nhung) || '/' || count(*) from quan_cu),
+                      'duong_khong_hem', (select count(nhung) || '/' || count(*) from duong where loai is distinct from 'hem'),
+                      'hem', (select count(*) from duong where loai = 'hem')) as dia_danh_co_vector,
+                    public.cau_hinh('tim_theo_nghia') as tim_theo_nghia,
+                    public.cau_hinh('boc_tach_ai') as boc_tach_ai,
+                    (select coalesce(json_agg(x order by x.so desc), '[]') from (select source, substring(detail from '^((?:Groq|Gemini|Claude|Anthropic|[0-9]{3})[^:\[{]{0,40})') as loai, count(*) as so
+                       from bot_errors where at > now() - interval '24 hours' and (source ~ '(model|boc_tach|du phong|het nhip)' or detail ~ '^(Groq|Gemini|Claude|Anthropic)')
+                       group by 1, 2 order by 3 desc limit 15) x) as loi_model_24h,
+                    (select json_build_object('luc', e.at, 'loi', left(regexp_replace(e.detail, '[0-9]{9,}', '#', 'g'), 220),
+                            'da_goi_lai_duoc', exists (select 1 from bot_health h where h.who = 'model_chinh' and h.at > e.at))
+                       from bot_errors e where e.source like 'model chinh hong%' and e.at > now() - interval '24 hours'
+                      order by e.at desc limit 1) as loi_claude_24h" | jq -c '.[0]'
+          # 07/10/2026: dòng cũ `loi_claude_moi_nhat` lấy lỗi Claude gần nhất TỪNG có, không giới hạn thời gian — lỗi "hết credit"
+          # từ trước khi nạp tiền vẫn hiện, đọc thành báo động giả. Nay chỉ lỗi 24 giờ qua, kèm giờ và `da_goi_lai_duoc` (sau lỗi
+          # đó dấu sống `bot_health.model_chinh` — đóng mỗi lượt Claude trả về — mới hơn thì lỗi đã qua, không phải sự cố đang diễn ra).
+
+          # 30/09/2026: "cho Gemini chạy có đủ để người test không" — khoá nào đang có. Chỉ in CÓ / KHÔNG và TÊN secret,
+          # không bao giờ in giá trị (log repo công khai).
+          echo "== Prompt đang đè trong DB (bot_prompts: chỉ tên khoá + ngày sửa, không in nội dung)"
+          q "select coalesce(json_agg(key || ' ' || to_char(updated_at, 'YYYY-MM-DD') order by key), '[]') as khoa from public.bot_prompts" | jq -c '.[0].khoa' || echo "(không đọc được)"
+          echo "== Khoá AI"
+          q "select json_build_object('vault', json_build_object(
+                    'GEMINI_API_KEY', public.get_secret('GEMINI_API_KEY') is not null,
+                    'GEMINI_API_KEY_2', public.get_secret('GEMINI_API_KEY_2') is not null,
+                    'GROQ_API_KEY', public.get_secret('GROQ_API_KEY') is not null,
+                    'ANTHROPIC_API_KEY', public.get_secret('ANTHROPIC_API_KEY') is not null)) as k" | jq -c '.[0].k'
+          echo -n "Secret edge function (chỉ tên): "
+          curl -sS -f "https://api.supabase.com/v1/projects/$PROJECT_REF/secrets" -H "Authorization: Bearer $TOKEN" \
+            | jq -c '[.[].name | select(test("GEMINI|GROQ|ANTHROPIC|MODEL"))]' || echo "(không đọc được)"
+
+          if [ -n "$SOI_GEMINI" ]; then (
+            echo "== Gọi thử Gemini chat (1 lượt / khoá, câu 'ping')"
+            for K in GEMINI_API_KEY GEMINI_API_KEY_2; do
+              RID=$(q "select case when public.get_secret('$K') is null then null else net.http_post(
+                     url := 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+                     body := jsonb_build_object('model', coalesce(public.get_secret('GEMINI_MODEL'), 'gemini-3.8-flash'),
+                                                'messages', jsonb_build_array(jsonb_build_object('role', 'user', 'content', 'ping')), 'max_tokens', 5),
+                     headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || public.get_secret('$K')),
+                     timeout_milliseconds := 20000) end as id" | jq -r '.[0].id // empty')
+              if [ -z "$RID" ]; then echo "$K: không có trong Vault"; continue; fi
+              ST=""
+              for i in $(seq 1 10); do
+                sleep 3
+                ST=$(q "select coalesce(status_code::text, case when error_msg is not null then 'loi' end) as s,
+                          left(regexp_replace(coalesce(content, error_msg, ''), '[0-9]{6,}', '#', 'g'), 160) as m
+                        from net._http_response where id = $RID" | jq -c '.[0] // empty')
+                [ -n "$ST" ] && [ "$(echo "$ST" | jq -r '.s // empty')" != "" ] && break
+              done
+              if [ "$(echo "$ST" | jq -r '.s // empty')" = "200" ]; then echo "$K: 200"; else echo "$K: ${ST:-chua_tra}"; fi
+            done
+            echo "Model gọi thử: $(q "select coalesce(public.get_secret('GEMINI_MODEL'), 'gemini-3.8-flash (mặc định trong mã; secret edge function nếu có thì đè)') as m" | jq -r '.[0].m')"
+          ) || echo "(gọi thử Gemini lỗi giữa chừng)"; fi
+
+          echo "== Câu hỏi theo loại BĐS (required_facts: loại · bán/thuê → khoá:ưu tiên:nhóm)"
+          q "select coalesce(json_agg(x order by x.loai, x.deal), '[]') as ds from (select property_type::text as loai, coalesce(deal::text, '*') as deal,
+                    string_agg(fact_key || ':' || priority || ':' || coalesce(nhom::text, '-'), ' ' order by priority, fact_key) as cau
+                    from required_facts group by 1, 2) x" | jq -r '.[0].ds[] | "\(.loai) [\(.deal)] \(.cau)"'
+
+          # 30/09/2026 (SRS-5.1e): chat-reply chỉ console.log khi tìm theo nghĩa không ra (đường đi bình thường), log edge
+          # function thì không đọc được từ đây — soi thẳng từng khâu: cổng sẵn sàng → Gemini nhúng câu → top ứng viên vector.
+          if [ -n "$DO_NGHIA" ]; then (
+            echo "== Tìm theo nghĩa: $DO_NGHIA"
+            q "select public.tim_nghia_san_sang() as san_sang, public.cau_hinh('nhung_tam_dung_den') as tam_dung_den, now() as bay_gio" | jq -c '.[0]'
+            RID=$(q "select net.http_post(url := 'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent',
+                 body := jsonb_build_object('content', jsonb_build_object('parts', jsonb_build_array(jsonb_build_object('text', $(lit "Dự án $DO_NGHIA")))),
+                                            'taskType', 'RETRIEVAL_QUERY', 'outputDimensionality', 768),
+                 headers := jsonb_build_object('Content-Type', 'application/json', 'x-goog-api-key', public.get_secret('GEMINI_API_KEY')),
+                 timeout_milliseconds := 15000) as id" | jq -r '.[0].id')
+            ST=""
+            for i in $(seq 1 10); do
+              sleep 3
+              ST=$(q "select coalesce(status_code::text, case when error_msg is not null then 'loi' end) as s from net._http_response where id = $RID" | jq -r '.[0].s // empty')
+              [ -n "$ST" ] && break
+            done
+            echo "Gemini nhúng câu: ${ST:-chưa trả}"
+            if [ "$ST" = "200" ]; then
+              q "select name, round(do_gan::numeric, 3) as do_gan from public.tim_du_an_theo_nghia(
+                   (select array(select jsonb_array_elements_text(content::jsonb -> 'embedding' -> 'values')::float8) from net._http_response where id = $RID), 8)" | jq -c '.[]'
+            elif [ -n "$ST" ]; then
+              q "select left(regexp_replace(coalesce(content, error_msg), '[A-Za-z0-9_-]{30,}', '#', 'g'), 200) as loi from net._http_response where id = $RID" | jq -c '.[0]'
+            fi
+          ) || echo "(soi tìm theo nghĩa lỗi giữa chừng — vẫn bắn tiếp)"; fi
+
+          q "select public.reset_nguoi_test($(lit "$ZALO")) as r" | jq -c '.[0].r'
+          MOC=$(q "select now()::text as t" | jq -r '.[0].t')
+
+          IFS='|' read -ra DS <<< "$CAU"
+          for C in "${DS[@]}"; do
+            C="$(printf '%s' "$C" | sed 's/^ *//; s/ *$//')"
+            [ -z "$C" ] && continue
+            echo; echo "== KHÁCH: $C"
+            TRUOC=$(q "select count(*) as n from messages m join conversations c on c.id = m.conversation_id
+                         left join buyers b on b.id = c.buyer_id left join sellers s on s.id = c.seller_id
+                        where (b.zalo_user_id = $(lit "$ZALO") or s.zalo_user_id = $(lit "$ZALO")) and m.sender not in ('buyer','seller')" | jq -r '.[0].n')
+            q "select net.http_post(url := public.cau_hinh('functions_base_url') || '/chat-reply',
+                 body := jsonb_build_object('external_user_id', $(lit "$ZALO"), 'channel', 'zalo_personal_test', 'text', $(lit "$C"),
+                   'msg_id', 'bt-' || $(lit "$ZALO") || '-' || gen_random_uuid()::text),
+                 headers := jsonb_build_object('Content-Type', 'application/json', 'x-bridge-secret', public.get_secret('BRIDGE_SECRET')),
+                 timeout_milliseconds := 120000) as id" >/dev/null
+            for i in $(seq 1 40); do
+              sleep 5
+              SAU=$(q "select count(*) as n from messages m join conversations c on c.id = m.conversation_id
+                         left join buyers b on b.id = c.buyer_id left join sellers s on s.id = c.seller_id
+                        where (b.zalo_user_id = $(lit "$ZALO") or s.zalo_user_id = $(lit "$ZALO")) and m.sender not in ('buyer','seller')" | jq -r '.[0].n')
+              [ "$SAU" -gt "$TRUOC" ] && { sleep 5; break; }
+            done
+            # Câu đang treo sau lượt này (mã tin · câu) + tin đang neo — để truy câu hỏi lạc tin (SRS-5.1zzzzy).
+            q "select coalesce(json_agg(json_build_object('tin', l.code, 'hoi', r.question, 'neo', l.id = s.active_listing_id, 'tt', l.status) order by r.created_at), '[]') as ds
+                 from info_requests r join listings l on l.id = r.listing_id join sellers s on s.id = l.seller_id
+                where s.zalo_user_id = $(lit "$ZALO") and r.status = 'pending'" | jq -c '"   treo: " + (.[0].ds | tostring)' -r || true
+          done
+
+          echo; echo "== HỘI THOẠI (từ $MOC)"
+          q "select m.sender, m.body from messages m join conversations c on c.id = m.conversation_id
+               left join buyers b on b.id = c.buyer_id left join sellers s on s.id = c.seller_id
+              where (b.zalo_user_id = $(lit "$ZALO") or s.zalo_user_id = $(lit "$ZALO")) and m.created_at >= $(lit "$MOC")::timestamptz
+              order by m.created_at, m.seq" | jq -r '.[] | "[\(.sender)] \(.body)"'
+          # 02/10/2026 (SRS-5.1y): msg_id 'bt-<ID thử>-…' → sổ inbound lưu payload; in phần trợ lý có công cụ (công cụ đã gọi, lời gốc
+          # model trước các lưới, kết quả công cụ đọc, lý do rơi về đường JSON) và hồ sơ mua của ID thử.
+          echo; echo "== Trợ lý có công cụ (payload từng lượt)"
+          q "select coalesce(json_agg(json_build_object('replies', reply->'replies', 'tro_ly', reply->'tro_ly', 'luu_luong', reply->'_luu_luong', 'ms', reply->'_ms') order by created_at), '[]') as ds
+              from inbound_ledger where zalo_msg_id like 'bt-' || $(lit "$ZALO") || '-%' and created_at >= $(lit "$MOC")::timestamptz" | jq -c '.[0].ds[]' || true
+          echo "-- Hồ sơ mua của ID thử:"
+          q "select preferences from buyers where zalo_user_id = $(lit "$ZALO")" | jq -c '.[0].preferences' || true
+          echo; echo "== Tin của ID thử (cột chính)"
+          # 01/10/2026 (chủ dự án: "bắn test xem bot có bịa ko, ghi vào db tốt ko"): in cả các cột THÔNG SỐ (ô trên form sửa tin)
+          # để so với câu khách gõ — chỉ tin của ID thử.
+          q "select coalesce(json_agg(x), '[]') as ds from (select l.property_type, l.deal, l.district, l.ward, l.street, l.location_raw, p.name as du_an, l.status,
+                l.price_raw, l.area_m2, l.frontage_m, l.length_m, l.rear_width_m, l.bedrooms, l.bathrooms, l.floors, l.floors_text, l.floor,
+                l.access_type, l.alley_width_m, l.legal_status, l.has_completion, l.has_elevator, l.car_in_house, l.corner_lot, l.negotiable, l.year_built,
+                l.boc_tach->'khong_hoi' as ai_bo_cau, l.boc_tach->'_thong_so_ai' as thong_so_ai
+              from listings l join sellers s on s.id = l.seller_id left join projects p on p.id = l.project_id
+              where s.zalo_user_id = $(lit "$ZALO") order by l.created_at) x" | jq -c '.[0].ds[]'
+          # 01/10/2026 (SRS-5.1t): việc báo người phụ trách của ID thử (cảm xúc 😟, câu không có dữ liệu ❓) — chỉ ghi chú, đã che Zalo ID.
+          echo "-- Việc báo người phụ trách (escalation) của ID thử:"
+          # Từ 01/10 (SRS-5.1u) việc nội bộ ❓/😟 KHÔNG còn seller_id → tìm qua tin của ID thử hoặc 4 số cuối Zalo trong ghi chú;
+          # cột gui_chu_nha = true là dòng sẽ đi về CHỦ NHÀ (chỉ đúng với tin 💬 soạn cho chủ nhà).
+          q "select coalesce(json_agg(json_build_object('gui_chu_nha', r.seller_id is not null, 'note', left(r.note, 200)) order by r.created_at), '[]') as ds
+              from reminders r, sellers s
+              where s.zalo_user_id = $(lit "$ZALO") and r.kind = 'escalation'
+                and (r.seller_id = s.id or r.listing_id in (select l.id from listings l where l.seller_id = s.id)
+                     or r.note like '%Zalo …' || right(s.zalo_user_id, 4) || '%')" | jq -c '.[0].ds[]' || true
+          echo "-- Fact của tin ID thử (khoá · nguồn · trả lời):"
+          q "select coalesce(json_agg(x order by x.luc), '[]') as ds from (select f.question as khoa, f.source as nguon,
+                left(regexp_replace(f.answer, '[0-9]{9,}', '#', 'g'), 120) as tl, f.created_at as luc
+              from listing_facts f join listings l on l.id = f.listing_id join sellers s on s.id = l.seller_id
+              where s.zalo_user_id = $(lit "$ZALO")) x" | jq -r '.[0].ds[] | "\(.khoa) · \(.nguon) · \(.tl)"'
+          # 30/09/2026: cron `nhung-tick` chỉ nhúng tin ĐÃ LÊN KỆ, còn tin ID thử dừng ở cho_thong_tin và bị xoá cuối lượt — nên soi
+          # thẳng: văn bản `van_ban_nhung()` (đúng thứ cron sẽ gửi), nhúng thật (RETRIEVAL_DOCUMENT) và đo độ gần từng câu tìm
+          # (RETRIEVAL_QUERY, như chat-reply). Không ghi vector vào tin, không đưa tin lên kệ.
+          if [ -n "$SOI_VECTOR" ]; then (
+            nhung() { # $1 = biểu thức SQL ra text, $2 = taskType → in id request
+              q "select net.http_post(url := 'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent',
+                   body := jsonb_build_object('content', jsonb_build_object('parts', jsonb_build_array(jsonb_build_object('text', left($1, 6000)))),
+                                              'taskType', '$2', 'outputDimensionality', 768),
+                   headers := jsonb_build_object('Content-Type', 'application/json', 'x-goog-api-key', public.get_secret('GEMINI_API_KEY')),
+                   timeout_milliseconds := 20000) as id" | jq -r '.[0].id'
+            }
+            cho() { # chờ request $1 xong, in mã HTTP
+              local st=""
+              for i in $(seq 1 10); do
+                sleep 3
+                st=$(q "select coalesce(status_code::text, case when error_msg is not null then 'loi' end) as s from net._http_response where id = $1" | jq -r '.[0].s // empty')
+                [ -n "$st" ] && break
+              done
+              echo "${st:-chua_tra}"
+            }
+            vec() { echo "(select array(select jsonb_array_elements_text(content::jsonb -> 'embedding' -> 'values')::float8) from net._http_response where id = $1)::extensions.vector"; }
+            for LID in $(q "select l.id from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = $(lit "$ZALO") order by l.created_at" | jq -r '.[].id'); do
+              echo; echo "== Vector của tin ID thử"
+              q "select l.property_type, l.status, (l.nhung is not null) as da_co_vector from listings l where l.id = '$LID'" | jq -c '.[0]'
+              echo "-- Văn bản sẽ nhúng (van_ban_nhung):"
+              q "select regexp_replace(public.van_ban_nhung('$LID'::uuid), '[0-9]{9,}', '#', 'g') as t" | jq -r '.[0].t'
+              RD=$(nhung "public.van_ban_nhung('$LID'::uuid)" RETRIEVAL_DOCUMENT)
+              SD=$(cho "$RD")
+              echo "-- Gemini nhúng văn bản tin: $SD"
+              [ "$SD" = "200" ] || continue
+              IFS='|' read -ra DSV <<< "$SOI_VECTOR"
+              for CT in "${DSV[@]}"; do
+                CT="$(printf '%s' "$CT" | sed 's/^ *//; s/ *$//')"; [ -z "$CT" ] && continue
+                RQ=$(nhung "$(lit "$CT")" RETRIEVAL_QUERY)
+                SQ=$(cho "$RQ")
+                if [ "$SQ" = "200" ]; then
+                  G=$(q "select round((1 - ($(vec "$RD") operator(extensions.<=>) $(vec "$RQ")))::numeric, 3) as g" | jq -r '.[0].g')
+                  echo "độ gần $G · $CT"
+                else echo "câu tìm nhúng hỏng ($SQ) · $CT"; fi
+              done
+            done
+          ) || echo "(soi vector lỗi giữa chừng — vẫn dọn người thử)"; fi
+
+          # 01/10/2026 (chế độ bóc tách `ai`): AI đề xuất gì, máy loại trường nào vì sao — để biết lỗi ở AI hay ở lớp kiểm.
+          # Chỉ dòng của ID thử (seller_id của nó); bảng xoá theo seller khi dọn.
+          echo; echo "== AI bóc tách từng lượt (model · câu đang hỏi · đề xuất · bị loại)"
+          q "select coalesce(json_agg(x order by x.luc), '[]') as ds from (select b.created_at as luc, b.model, b.ms, b.cau_dang_hoi as hoi, left(b.tin, 160) as tin,
+                (select string_agg((d->>'khoa') || '=' || (d->>'gia_tri') || ' «' || (d->>'trich_dan') || '»', ' · ') from jsonb_array_elements(b.de_xuat) d) as de_xuat,
+                (select string_agg((d->>'khoa') || ':' || (d->>'ly_do'), ' · ') from jsonb_array_elements(b.bo) d) as bo,
+                case when b.da_ghi->'hoi_lai'->>'co_hoi' = 'true' then (b.da_ghi->'hoi_lai'->>'chu_de') || ' «' || coalesce(b.da_ghi->'hoi_lai'->>'cau_hoi', '') || '»'
+                     when b.da_ghi->'hoi_lai'->>'co_hoi' = 'false' then 'không' end as hoi_lai,
+                b.da_ghi->'ai_khac' as ai_khac
+              from boc_tach_bong b join sellers s on s.id = b.seller_id where s.zalo_user_id = $(lit "$ZALO")) x" \
+            | jq -r '.[0].ds[] | "\(.model // "?") \(.ms // 0)ms · tin «\(.tin // "")» · hỏi \(.hoi // "-") · đề xuất: \(.de_xuat // "(rỗng)") · loại: \(.bo // "-") · khách hỏi: \(.hoi_lai // "-")\(if .ai_khac then " · AI khác: " + (.ai_khac | tojson) else "" end)"' \
+            || echo "(không đọc được boc_tach_bong — vẫn dọn người thử)"
+
+          echo; echo "== Sổ lỗi chat-reply từ lúc bắn"
+          q "select coalesce(json_agg(x), '[]') as loi from (select source, left(detail, 160) as detail from bot_errors
+              where at >= $(lit "$MOC")::timestamptz and source like 'chat-reply%' order by at limit 10) x" | jq -c '.[0].loi'
+
+          echo; q "select public.reset_nguoi_test($(lit "$ZALO")) as r" | jq -c '.[0].r'

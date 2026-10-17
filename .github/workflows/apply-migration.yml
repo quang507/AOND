@@ -1,0 +1,236 @@
+name: Apply Database Migration on Supabase
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration_file:
+        description: Tên file migration trong bot/supabase/migrations/ (gõ đúng tên, không có mặc định). Bỏ trống khi chạy dung_lai
+        required: false
+        # 30/09/2026: từng mặc định '20260908c_chuan_hoa_ma_tin_va_boc_thong_so.sql' — bấm chạy để nguyên ô là ÁP LẠI file
+        # 08/09, đè boc_thong_so / next_listing_code / listing_photos_v bằng bản cũ (phải khôi phục bằng 20260930b).
+        default: ''
+      ap_lai:
+        description: File đã có trong sổ migration mà vẫn muốn áp lại (đè hàm bằng bản trong file)? Gõ đúng chữ "ap lai".
+        required: false
+        default: ''
+      dung_lai:
+        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-du-an | nap-duong | cai-vps. Trống = áp migration_file như thường"
+        required: false
+        default: ''
+      commit_schema:
+        description: Sau khi áp, COMMIT bot/supabase/schema.sql vừa xuất lên đúng nhánh đang chạy (phiên không có service_role không tải được artifact). Gõ đúng chữ "commit".
+        required: false
+        default: ''
+
+env:
+  PROJECT_REF: rqxmmqmctpklqcmbfxuj
+  # Khoá publishable (công khai, như lib/supabase.ts) — dung-lai-db.mjs ghi vào app_config.publishable_key.
+  PUBLISHABLE_KEY: sb_publishable_f4wNO8jQcCDWn1QmNZQ7-g_BXDtYM3Y
+
+jobs:
+  migrate:
+    name: Apply Migration
+    runs-on: ubuntu-latest
+    # 05/10/2026: cần quyền ghi để bước cuối commit schema.sql về nhánh (chỉ khi commit_schema = "commit").
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Che token trong log
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Thiếu SUPABASE_ACCESS_TOKEN"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+
+      # 08/10/2026: nạp dữ liệu tham chiếu cần service_role (kho dự án, từ điển tên đường). Khoá lấy qua Management API
+      # bằng chính token này lúc chạy, che trong log, chỉ ghi vào scripts/.env TRÊN MÁY RUNNER (gitignore, không commit).
+      - name: Nạp dữ liệu (nap-du-an / nap-duong)
+        if: ${{ inputs.dung_lai == 'nap-du-an' || inputs.dung_lai == 'nap-duong' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+          BUOC: ${{ inputs.dung_lai }}
+        run: |
+          set -euo pipefail
+          K=$(curl -sS -f "https://api.supabase.com/v1/projects/$PROJECT_REF/api-keys?reveal=true" -H "Authorization: Bearer $TOKEN" \
+              | jq -r '([.[] | select(.name == "service_role" and (.api_key // "") != "")][0].api_key) // ([.[] | select(.type == "secret" and (.api_key // "") != "")][0].api_key) // empty')
+          if [ -z "$K" ]; then echo "::error::Không lấy được khoá service_role / secret"; exit 1; fi
+          echo "::add-mask::$K"
+          umask 077
+          printf 'SUPABASE_URL=https://%s.supabase.co\nSUPABASE_SERVICE_ROLE_KEY=%s\n' "$PROJECT_REF" "$K" > scripts/.env
+          # Log job phiên Claude không đọc được — 40 dòng cuối (tên đường / dự án công khai, không có khoá) ra một annotation.
+          rc=0
+          if [ "$BUOC" = "nap-du-an" ]; then node scripts/thu-du-an.mjs > /tmp/nap.log 2>&1 || rc=$?; else node scripts/nap-duong.mjs --thieu > /tmp/nap.log 2>&1 || rc=$?; fi
+          rm -f scripts/.env
+          cat /tmp/nap.log
+          echo "::notice title=nap $BUOC (thoát $rc)::$(tail -40 /tmp/nap.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
+          exit $rc
+
+      # 09/10/2026: cài / cập nhật bridge Zalo clone trên VPS khi chủ dự án không tự SSH được. Thông tin VPS và
+      # BRIDGE_SECRET nằm trong Supabase Vault (VPS_HOST, VPS_ROOT_PASSWORD đặt tạm), đọc qua Management API, che trong
+      # log, BRIDGE_SECRET đi qua stdin (không nằm trên dòng lệnh). Log không in link / ảnh QR — ai cầm QR là đăng nhập
+      # được bridge; QR đọc ở bảng bridge_dang_nhap (chỉ admin). Bước sau luôn GHI ĐÈ VPS_ROOT_PASSWORD + VPS_HOST trong Vault
+      # (DELETE trên vault.secrets qua Management API bị từ chối — lượt 09/10 thoát 22; update_secret thì được).
+      - name: Cài bridge Zalo trên VPS (cai-vps)
+        if: ${{ inputs.dung_lai == 'cai-vps' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          q() { curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+                  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$(jq -n --arg q "$1" '{query:$q}')"; }
+          J=$(q "select json_object_agg(name, decrypted_secret) as s from vault.decrypted_secrets where name in ('VPS_HOST','VPS_ROOT_PASSWORD','BRIDGE_SECRET')")
+          HOST=$(jq -r '.[0].s.VPS_HOST // empty' <<<"$J"); PW=$(jq -r '.[0].s.VPS_ROOT_PASSWORD // empty' <<<"$J"); BS=$(jq -r '.[0].s.BRIDGE_SECRET // empty' <<<"$J")
+          unset J
+          for v in "$HOST" "$PW" "$BS"; do [ -n "$v" ] && echo "::add-mask::$v"; done
+          if [ -z "$HOST" ] || [ -z "$PW" ] || [ -z "$BS" ]; then echo "::error::Thiếu VPS_HOST / VPS_ROOT_PASSWORD / BRIDGE_SECRET trong Vault"; exit 1; fi
+          sudo apt-get install -y -qq sshpass >/dev/null
+          export SSHPASS="$PW"
+          rc=0
+          # 10/10/2026 (SRS-5.1zzzzs): cài ĐÚNG nhánh workflow đang chạy (trước luôn lấy main) — bản sửa bridge lên VPS được
+          # trước khi merge. Tên nhánh chỉ nhận ký tự an toàn vì nó đi vào lệnh chạy trên VPS.
+          NHANH_VPS="$GITHUB_REF_NAME"
+          if ! printf '%s' "$NHANH_VPS" | grep -Eq '^[A-Za-z0-9._/-]+$'; then echo "::error::Tên nhánh lạ: $NHANH_VPS"; exit 1; fi
+          printf '%s\n' "$BS" | sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 "root@$HOST" \
+            "read -r BRIDGE_SECRET; export BRIDGE_SECRET; curl -fsSL https://raw.githubusercontent.com/quang507/Nhadat.cc/$NHANH_VPS/bot/bridge-zca/cai-vps.sh -o /root/cai-vps.sh && NHANH='$NHANH_VPS' bash /root/cai-vps.sh </dev/null; unset BRIDGE_SECRET; sleep 25; echo \"== service: \$(systemctl is-active nhadat-bridge)\"; journalctl -u nhadat-bridge -n 40 --no-pager -o cat | grep -viE 'qr-|http://|https://' | tail -25" \
+            > /tmp/vps.log 2>&1 || rc=$?
+          unset SSHPASS PW BS
+          # Che dãy số ≥ 9 chữ số (Zalo ID của acc clone / khách, SĐT) — log repo này công khai.
+          sach() { grep -viE "qr-[a-z0-9]|password|secret=" /tmp/vps.log | sed -E 's/[0-9]{9,}/#/g; s/\r//g'; }
+          sach | tail -60
+          echo "::notice title=cai-vps (thoát $rc)::$(sach | tail -40 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
+          exit $rc
+
+      - name: Ghi đè thông tin VPS tạm trong Vault
+        if: ${{ always() && inputs.dung_lai == 'cai-vps' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        # 11/10/2026: bản cũ viết SQL trong chuỗi bash nháy đơn — `''x''` bị bash nuốt dấu nháy, SQL sai, API trả 400, bước này
+        # chưa từng ghi đè được (lượt cai-vps 11/10 phải ghi đè tay). Dựng JSON bằng jq để SQL đi nguyên văn.
+        run: |
+          SQL="select vault.update_secret(id, 'x', 'DA_XOA_' || name || '_' || floor(extract(epoch from now()))::text, 'đã ghi đè') from vault.secrets where name in ('VPS_ROOT_PASSWORD','VPS_HOST')"
+          jq -n --arg q "$SQL" '{query: $q}' | curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d @-
+          echo
+
+      # 08/10/2026: project production cũ bị xoá nhầm — dựng lại từng bước trên project mới rỗng.
+      - name: Dựng lại DB (dung_lai)
+        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-du-an' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'cai-vps' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+          BUOC: ${{ inputs.dung_lai }}
+        run: node scripts/dung-lai-db.mjs "$BUOC"
+
+      - name: Chạy migration qua Supabase Management API
+        if: ${{ inputs.dung_lai == '' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          FILE="${{ inputs.migration_file }}"
+          [ -n "$FILE" ] || { echo "::error::Thiếu migration_file"; exit 1; }
+          TARGET="bot/supabase/migrations/$FILE"
+          if [ ! -f "$TARGET" ]; then
+            echo "::error::Không tìm thấy file $TARGET"
+            exit 1
+          fi
+          # 30/09/2026: file ĐÃ ÁP thì chặn — áp lại một file cũ là dựng lại hàm/view bản cũ đè bản hiện hành (thân hàm trên
+          # DB thường đã khác file cũ, CLAUDE.md §6). Muốn áp lại thật thì gõ "ap lai" ở ô ap_lai.
+          NAME0="${FILE%.sql}"
+          if ! printf '%s' "$NAME0" | grep -Eq '^[0-9a-z_]+$'; then echo "::error::Tên file lạ: $FILE"; exit 1; fi
+          DA=$(curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+            -d "{\"query\":\"select count(*)::int as n from supabase_migrations.schema_migrations where name = '$NAME0'\"}" | jq -r '.[0].n')
+          if [ "$DA" != "0" ] && [ "${{ inputs.ap_lai }}" != "ap lai" ]; then
+            echo "::error::$NAME0 đã áp trên DB rồi. Áp lại sẽ đè hàm/view bằng bản trong file (có thể là bản cũ). Muốn thật thì gõ 'ap lai' ở ô ap_lai."
+            exit 1
+          fi
+          echo "Đang áp migration: $TARGET"
+          SQL=$(cat "$TARGET")
+          PAYLOAD=$(jq -n --arg q "$SQL" '{query: $q}')
+          # `-f`: HTTP ≥400 phải làm job ĐỎ. Bản đầu không có cờ này nên SQL lỗi
+          # (Management API trả 400 kèm thông báo) vẫn in "Kết quả: …" và job xanh.
+          RES=$(curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+          echo "Kết quả: $RES"
+
+          # GHI SỔ. Endpoint /database/query chạy SQL trần, KHÔNG ghi vào
+          # supabase_migrations.schema_migrations như `apply_migration` của MCP.
+          # 20260908e áp qua đường này 08/09 và biến mất khỏi sổ: DB có trigger
+          # mà `liet_ke_migration()` không thấy, `soat-migration.mjs` kêu "chưa áp"
+          # — đúng hình lỗi OPEN-46, chiều ngược. Tên = tên file bỏ .sql, version =
+          # dấu thời gian lúc áp (cùng cách MCP đặt). Chạy lại cùng file thì
+          # `on conflict do nothing`, không đẻ dòng trùng.
+          NAME="${FILE%.sql}"
+          VERSION=$(date -u +%Y%m%d%H%M%S)
+          SO=$(jq -n --arg n "$NAME" --arg v "$VERSION" \
+            '($n | gsub("'"'"'"; "'"'"''"'"'")) as $qn | ($v | gsub("'"'"'"; "'"'"''"'"'")) as $qv
+             | {query: ("insert into supabase_migrations.schema_migrations (version, name, statements) select '"'"'" + $qv + "'"'"', '"'"'" + $qn + "'"'"', array[]::text[] where not exists (select 1 from supabase_migrations.schema_migrations where name = '"'"'" + $qn + "'"'"')")}')
+          curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$SO" >/dev/null
+          echo "Đã ghi sổ: $VERSION $NAME"
+
+      # 29/09/2026 (FR-245): sinh lại schema.sql ngay sau khi áp, để phiên làm việc không có service_role vẫn giữ được
+      # `schema.sql` khớp DB (cổng CI thứ 7 so md5 từng thân hàm). Chạy `xuat_schema()` qua Management API (cùng token
+      # vừa áp), chặn chuỗi giống khoá như scripts/sinh-schema.mjs, rồi để lại dạng artifact — người/máy tải về commit.
+      - name: Xuất schema.sql sau khi áp
+        if: ${{ inputs.dung_lai == '' || inputs.dung_lai == 'du-lieu' || inputs.dung_lai == 'xac-minh' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"query":"select public.xuat_schema() as s"}' | jq -r '.[0].s' > schema.sql
+          test -s schema.sql
+          grep -q "SINH TỰ ĐỘNG bởi public.xuat_schema" schema.sql
+          if grep -Eq 'eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}|sb_secret_|sk-ant-|gsk_[A-Za-z0-9]{10}' schema.sql; then
+            echo "::error::schema.sql có chuỗi giống khoá bí mật — không xuất"
+            exit 1
+          fi
+          wc -l schema.sql
+
+      # FR-245: in SỐ ĐẾM máy soi dữ liệu tin (mã lỗi + số lượng, không nội dung — log repo công khai) để thấy trước/sau
+      # một migration sửa dữ liệu. Hàm chưa có thì bỏ qua.
+      - name: Số đếm soát dữ liệu tin
+        if: ${{ inputs.dung_lai == '' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          Q="select case when to_regprocedure('public.soat_du_lieu_tin()') is null then '\"chưa có hàm\"'::json else (select coalesce(json_agg(x order by x.so desc), '[]'::json) from (select split_part(t.loi, ':', 1) as loi, count(*) as so from public.soat_du_lieu_tin() t group by 1) x) end as dem"
+          curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg q "$Q" '{query: $q}')" | jq -c '.[0].dem'
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.dung_lai == '' || inputs.dung_lai == 'du-lieu' || inputs.dung_lai == 'xac-minh' }}
+        with:
+          name: schema-sql
+          path: schema.sql
+          retention-days: 3
+
+      # 05/10/2026 (SRS-5.1zzc): phiên Claude / máy mới không tải được artifact (gh nội bộ không theo redirect sang kho blob),
+      # mà cổng CI thứ 7 so md5 thân hàm schema.sql ↔ DB — nên khi được bảo, commit thẳng schema.sql về nhánh vừa dispatch.
+      # Không có thay đổi thì không commit. Không bao giờ đẩy lên main từ đây (chỉ nhánh đang chạy, và main thì PR lo).
+      - name: Commit schema.sql về nhánh
+        if: ${{ inputs.commit_schema == 'commit' && github.ref_name != 'main' && (inputs.dung_lai == '' || inputs.dung_lai == 'du-lieu' || inputs.dung_lai == 'xac-minh') }}
+        run: |
+          set -euo pipefail
+          cp schema.sql bot/supabase/schema.sql
+          if git diff --quiet -- bot/supabase/schema.sql; then echo "schema.sql không đổi, không commit"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bot/supabase/schema.sql
+          git commit -m "schema.sql: sinh lại sau khi áp ${{ inputs.migration_file }}${{ inputs.dung_lai }}"
+          git push origin "HEAD:${{ github.ref_name }}"

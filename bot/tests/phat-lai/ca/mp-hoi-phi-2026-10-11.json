@@ -1,0 +1,1092 @@
+{
+ "ten": "mp-hoi-phi-2026-10-11",
+ "nguon": {
+  "run": "38170086556",
+  "persona": "hoi-phi"
+ },
+ "cau_hinh": {
+  "lenh_json": "bat",
+  "tro_ly": "thu",
+  "boc_tach_ai": "ai",
+  "luat_loi_bot": "gon",
+  "bao_lai_da_luu": "thay_doi"
+ },
+ "luot": [
+  {
+   "khach": "chị muốn bán căn hộ, mà bên em lấy phí sao",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• loại: làm chuẩn \"Căn hộ bán\"\n👤 Hồ sơ: Zalo: \"…-phi\" · cách gọi: \"chị\"",
+    "Dạ phí bên em chỉ thu khi giao dịch thành công, mức tuỳ chính chủ hay môi giới ạ.\nDạ vâng chị, căn hộ mình ở đâu vậy ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": "gia",
+        "ly_do": "cần lấy giá để tính phí"
+       },
+       "so_can": 0,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "muốn bán căn hộ"
+        },
+        {
+         "can": null,
+         "khoa": "loai_bds",
+         "gia_tri": "chung_cu",
+         "trich_dan": "căn hộ"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": "phi",
+        "co_hoi": true,
+        "cau_hoi": "bên em lấy phí sao"
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Dạ vâng chị, căn hộ mình ở đâu vậy ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "Căn hộ Sunrise City Q7 ý, 76m2 2 phòng ngủ, sổ hồng riêng",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• pháp lý: \"sổ hồng riêng\"\n• diện tích: \"76m2\" → làm chuẩn \"76m²\"\n• số phòng ngủ: \"2\"\n• tên dự án: \"Sunrise City Q7\"\n• quận: làm chuẩn \"Quận 7\"",
+    "Dạ vâng chị, em ghi rồi ạ. Căn mình ở tầng mấy vậy chị?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "muốn bán"
+       },
+       "cau_ke": {
+        "khoa": "tang",
+        "ly_do": "chủ nhà vừa nói căn hộ, cần xác định tầng để đánh giá"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "muốn bán căn hộ"
+        },
+        {
+         "can": null,
+         "khoa": "loai_bds",
+         "gia_tri": "chung_cu",
+         "trich_dan": "Căn hộ"
+        },
+        {
+         "can": null,
+         "khoa": "du_an",
+         "gia_tri": "Sunrise City",
+         "trich_dan": "Sunrise City Q7"
+        },
+        {
+         "can": null,
+         "khoa": "quan",
+         "gia_tri": "Quận 7",
+         "trich_dan": "Q7"
+        },
+        {
+         "can": null,
+         "khoa": "dien_tich",
+         "gia_tri": "76",
+         "trich_dan": "76m2"
+        },
+        {
+         "can": null,
+         "khoa": "so_phong_ngu",
+         "gia_tri": "2",
+         "trich_dan": "2 phòng ngủ"
+        },
+        {
+         "can": null,
+         "khoa": "phap_ly",
+         "gia_tri": "sổ hồng riêng",
+         "trich_dan": "sổ hồng riêng"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "Sunrise City quận 7",
+        "trich_dan": "Sunrise City Q7",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": [
+        {
+         "khoa": "vi_tri",
+         "ly_do": "chủ nhà đã nói dự án, quận",
+         "trich_dan": "Sunrise City Q7"
+        },
+        {
+         "khoa": "phuong",
+         "ly_do": "dự án Sunrise City Q7 đã xác định vị trí",
+         "trich_dan": "Sunrise City Q7"
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Dạ vâng chị, em ghi rồi ạ. Căn mình ở tầng mấy vậy chị?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "Tầng 15 ý, giá 5 tỷ 2 luôn",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• tầng: \"tầng 15\"\n• giá mong muốn: \"5 tỷ 2\"",
+    "Căn mình ở phường nào vậy chị?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": "phuong",
+        "ly_do": "thông tin địa chỉ chưa đủ chi tiết"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "tang",
+         "gia_tri": "15",
+         "trich_dan": "Tầng 15"
+        },
+        {
+         "can": null,
+         "khoa": "gia",
+         "gia_tri": "5 tỷ 2",
+         "trich_dan": "giá 5 tỷ 2"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "tầng 15",
+        "trich_dan": "Tầng 15",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Dạ vâng chị, em ghi giá 5 tỷ 2 tầng 15 rồi ạ. Căn mình ở phường nào vậy chị?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "Phường Tân Phong ấy, mà bên em có tính phí gì không chị, chứ chị là chính chủ bán thôi",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• phường: làm chuẩn \"Phường Tân Hưng (Quận 7 cũ)\"\n• tầng: làm chuẩn \"15\"",
+    "Dạ vậy phí bên em chỉ thu khi giao dịch thành công, 1% giá chốt ạ.",
+    "📋 Em sẽ rao như vầy nhé chị:\nBán căn hộ Sunrise City Phường Tân Hưng Q.7, 76m², 2PN, SHR, giá 5 tỷ 2\n📍 Sunrise City, Phường Tân Hưng, Quận 7\n💰 5 tỷ 2\n📐 Diện tích: 76m²\n🏗 Kết cấu: tầng 15 · 2 phòng ngủ\n📜 Pháp lý: sổ hồng riêng\nĐộ đầy đủ 85/100, thêm tiềm năng sử dụng (ở, cho thuê hay kinh doanh) và vài tấm ảnh (căn hộ, sổ, view, ảnh nào cũng được) là tin đủ 100/100 luôn ạ.\nChị thấy hấp dẫn chưa ạ? Ổn thì em đăng liền và rao tích cực cho chị.\n👉 Có khách quan tâm là C•ai báo lại chị liền ạ."
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị là chính chủ bán thôi"
+       },
+       "cau_ke": {
+        "khoa": "view",
+        "ly_do": "thông tin thiếu để lên tin, chắc khách muốn bán gấp nên cần bổ sung còn lại"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "phuong",
+         "gia_tri": "Phường Tân Hưng",
+         "trich_dan": "Phường Tân Phong ấy"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": "phi",
+        "co_hoi": true,
+        "cau_hoi": "bên em có tính phí gì không chị"
+       },
+       "tra_loi": {
+        "gia_tri": "Phường Tân Hưng",
+        "trich_dan": "Phường Tân Phong ấy",
+        "co_tra_loi": true
+       },
+       "tu_xung": null,
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": [
+        {
+         "khoa": "vai",
+         "ly_do": "chủ nhà đã tự nói mình là chính chủ bán",
+         "gia_tri": null,
+         "trich_dan": "chị là chính chủ bán thôi"
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị là chính chủ bán"
+       },
+       "cau_ke": {
+        "khoa": null,
+        "ly_do": null
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "muốn bán căn hộ"
+        },
+        {
+         "can": null,
+         "khoa": "loai_bds",
+         "gia_tri": "chung_cu",
+         "trich_dan": "căn hộ"
+        },
+        {
+         "can": null,
+         "khoa": "du_an",
+         "gia_tri": "Sunrise City",
+         "trich_dan": "Sunrise City Q7"
+        },
+        {
+         "can": null,
+         "khoa": "quan",
+         "gia_tri": "Quận 7",
+         "trich_dan": "Q7"
+        },
+        {
+         "can": null,
+         "khoa": "phuong",
+         "gia_tri": "Phường Tân Hưng",
+         "trich_dan": "Phường Tân Phong"
+        },
+        {
+         "can": null,
+         "khoa": "dien_tich",
+         "gia_tri": "76",
+         "trich_dan": "76m2"
+        },
+        {
+         "can": null,
+         "khoa": "so_phong_ngu",
+         "gia_tri": "2",
+         "trich_dan": "2 phòng ngủ"
+        },
+        {
+         "can": null,
+         "khoa": "tang",
+         "gia_tri": "15",
+         "trich_dan": "Tầng 15"
+        },
+        {
+         "can": null,
+         "khoa": "phap_ly",
+         "gia_tri": "sổ hồng riêng",
+         "trich_dan": "sổ hồng riêng"
+        },
+        {
+         "can": null,
+         "khoa": "gia",
+         "gia_tri": "5 tỷ 2",
+         "trich_dan": "giá 5 tỷ 2"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": "phi",
+        "co_hoi": true,
+        "cau_hoi": "bên em có tính phí gì không chị"
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "chot_tin"
+    }
+   ]
+  },
+  {
+   "khach": "Được rồi, nhưng mà phí 1% kia thì lấy từ bên bán hay bên mua vậy em? Chứ chị muốn biết rõ",
+   "bot_goc": [
+    "🤖 Không trích xuất được gì từ tin này.",
+    "Dạ em cảm ơn chị, tin căn hộ mình lên kệ AI Ơi Nhà Đất rồi, điểm đầy đủ 85/100.\nCó khách quan tâm là em báo chị liền.",
+    "Muốn thêm điểm thì chị gửi em tiềm năng sử dụng (ở, cho thuê hay kinh doanh) và vài tấm ảnh (căn hộ, sổ, view, ảnh nào cũng được); gửi thêm ảnh là điểm tăng ngay.\nChị đang ở hạng Vàng bên em.",
+    "Dạ bên em chỉ có đúng khoản phí đó thôi ạ, ngoài ra không thu thêm gì."
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "Được rồi",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị là chính chủ bán"
+       },
+       "cau_ke": {
+        "khoa": "ly_do_ban",
+        "ly_do": "Chủ nhà muốn hiểu rõ chi phí trước khi duyệt tin"
+       },
+       "so_can": 0,
+       "truong": [],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": "phi",
+        "co_hoi": true,
+        "cau_hoi": "phí 1% kia thì lấy từ bên bán hay bên mua vậy em"
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": null,
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    }
+   ]
+  },
+  {
+   "khach": "Em ơi, em nói mà em không trả lời rõ. Phí 1% kia thì lấy từ bên bán hay bên mua? Chứ chị cần biết rõ ràng chứ",
+   "bot_goc": [
+    "🤖 Không trích xuất được gì từ tin này.",
+    "Vâng ạ."
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": null,
+        "ly_do": null
+       },
+       "so_can": 0,
+       "truong": [],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "buc",
+        "trich_dan": "Em ơi, em nói mà em không trả lời rõ. Chứ chị cần biết rõ ràng chứ"
+       },
+       "hoi_lai": {
+        "chu_de": "phi",
+        "co_hoi": true,
+        "cau_hoi": "Phí 1% kia thì lấy từ bên bán hay bên mua?"
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Vâng ạ. Phí 1% đó lấy từ bên bán (chính chủ hoặc môi giới bán), không lấy từ bên mua chị ơi. Khách mua thì miễn phí hoàn toàn, chỉ bên bán là trả khi giao dịch xong."
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": [
+        {
+         "cau": "Phí 1% đó lấy từ bên bán (chính chủ hoặc môi giới bán), không lấy từ bên mua chị ơi.",
+         "kieu": null,
+         "goi_y": false,
+         "can_cu": null,
+         "khang_dinh": "Phí 1% được lấy từ bên bán, không lấy từ bên mua",
+         "noi_co_hang": false,
+         "hua_khong_lam": false,
+         "noi_trang_thai_tin": false,
+         "danh_gia_thi_truong": false
+        },
+        {
+         "cau": "Khách mua thì miễn phí hoàn toàn, chỉ bên bán là trả khi giao dịch xong.",
+         "kieu": null,
+         "goi_y": false,
+         "can_cu": null,
+         "khang_dinh": "Khách mua miễn phí, chỉ bên bán phải trả",
+         "noi_co_hang": false,
+         "hua_khong_lam": false,
+         "noi_trang_thai_tin": false,
+         "danh_gia_thi_truong": false
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "Em ơi, chị hỏi mà em vẫn không nói rõ. Phí 1% đó thì bên em lấy từ chị hay từ bên mua nhà vậy? Chị là chính chủ nên cần hiểu rõ chứ",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• mua hay thuê: \"mua\"",
+    "Dạ em xin lỗi chị, em hiểu rõ rồi ạ. Phí 1% đó bên em lấy từ chị (bên bán) khi giao dịch thành công, bên mua không trả gì cả ạ.",
+    "Chị có thêm ảnh hoặc thông tin tiềm năng sử dụng để em nâng điểm tin lên 100/100 không ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "content": [
+       {
+        "text": "Dạ em xin lỗi chị, em hiểu rõ rồi ạ. Phí 1% đó bên em lấy từ chị (bên bán) khi giao dịch thành công, bên mua không trả gì cả ạ.\n\nChị có thêm ảnh hoặc thông tin tiềm năng sử dụng để em nâng điểm tin lên 100/100 không ạ?",
+        "type": "text"
+       },
+       {
+        "id": "toolu_018WoSTU9DQJLgjETjDWwbjr",
+        "name": "ghi_ho_so_mua",
+        "type": "tool_use",
+        "input": {
+         "truong": [
+          {
+           "khoa": "deal",
+           "gia_tri": "ban",
+           "trich_dan": "Em ơi, em nói mà em không trả lời rõ. Phí 1% kia thì lấy từ bên bán hay bên mua? Chứ chị cần biết rõ ràng chứ"
+          },
+          {
+           "khoa": "property_type",
+           "gia_tri": "căn hộ",
+           "trich_dan": "tin căn hộ mình"
+          },
+          {
+           "khoa": "area",
+           "gia_tri": "Phường Tân Hưng, Quận 7",
+           "trich_dan": "Sunrise City Phường Tân Hưng Q.7"
+          },
+          {
+           "khoa": "budget",
+           "gia_tri": "5,2 tỷ",
+           "trich_dan": "giá 5 tỷ 2"
+          },
+          {
+           "khoa": "bedrooms",
+           "gia_tri": "2",
+           "trich_dan": "2PN"
+          },
+          {
+           "khoa": "dien_tich_mong_muon",
+           "gia_tri": "76m²",
+           "trich_dan": "76m²"
+          },
+          {
+           "khoa": "notes",
+           "gia_tri": "Căn hộ Sunrise City, tầng 15, SHR, chính chủ",
+           "trich_dan": "Bán căn hộ Sunrise City Phường Tân Hưng Q.7, 76m², 2PN, SHR, giá 5 tỷ 2"
+          }
+         ]
+        },
+        "caller": {
+         "type": "direct"
+        }
+       }
+      ],
+      "stop_reason": "tool_use"
+     },
+     "kind": "create",
+     "loai": "tro_ly"
+    },
+    {
+     "ra": {
+      "content": [
+       {
+        "text": "Dạ em xin lỗi chị, em hiểu rõ rồi ạ. Phí 1% đó bên em lấy từ chị (bên bán) khi giao dịch thành công, bên mua không trả gì cả ạ.\n\nChị có thêm ảnh hoặc thông tin tiềm năng sử dụng để em nâng điểm tin lên 100/100 không ạ?",
+        "type": "text"
+       }
+      ],
+      "stop_reason": "end_turn"
+     },
+     "kind": "create",
+     "loai": "tro_ly"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_mua"
+    }
+   ]
+  },
+  {
+   "khach": "Được rồi em, chị sẽ gửi ảnh sau. Mà còn gì khác không, phí hay chi phí gì khác không vậy em?",
+   "bot_goc": [
+    "🤖 Không trích xuất được gì từ tin này.",
+    "Vâng ạ."
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "Được rồi em, chị sẽ gửi ảnh sau",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị là chính chủ"
+       },
+       "cau_ke": {
+        "khoa": null,
+        "ly_do": null
+       },
+       "so_can": 0,
+       "truong": [],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "không có phí hay chi phí khác, chỉ phí 1% lấy từ bên bán khi giao dịch thành công",
+        "trich_dan": "còn gì khác không, phí hay chi phí gì khác không",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Vâng ạ. Bên em chỉ có khoản phí 1% kia thôi chị, lấy từ chị khi giao dịch thành công, bên mua không trả gì cả ạ."
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": [
+        {
+         "cau": "Bên em chỉ có khoản phí 1% kia thôi chị, lấy từ chị khi giao dịch thành công, bên mua không trả gì cả ạ.",
+         "kieu": null,
+         "goi_y": null,
+         "can_cu": null,
+         "khang_dinh": "Phí 1% được lấy từ bên bán (chủ nhà), bên mua không trả.",
+         "noi_co_hang": null,
+         "hua_khong_lam": null,
+         "noi_trang_thai_tin": null,
+         "danh_gia_thi_truong": false
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "Không có gì khác đâu em, chỉ có phí 1% như chị nói thôi. Chị sẽ gửi ảnh cho em sau nhé",
+   "bot_goc": [
+    "🤖 Không trích xuất được gì từ tin này.",
+    "Dạ vâng chị, em chờ ảnh. Chị gửi xong thì em nâng tin luôn cho chị ạ."
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị là chính chủ bán"
+       },
+       "cau_ke": {
+        "khoa": null,
+        "ly_do": null
+       },
+       "so_can": 0,
+       "truong": [],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "không có chi phí gì khác ngoài phí 1%",
+        "trich_dan": "Không có gì khác đâu em, chỉ có phí 1% như chị nói thôi",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Dạ vâng chị, em chờ ảnh. Chị gửi xong thì em nâng tin luôn cho chị ạ."
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "Được em, chị sẽ gửi ảnh với thông tin chi tiết lại cho em sau nhé",
+   "bot_goc": [
+    "🤖 Không trích xuất được gì từ tin này.",
+    "Dạ vâng, vậy em rao như vậy nhé chị.\nĐộ đầy đủ tin của mình đang 85/100.\nKhi nào có tiềm năng sử dụng (ở, cho thuê hay kinh doanh) và vài tấm ảnh (căn hộ, sổ, view, ảnh nào cũng được) thì chị gửi em, điểm lên ngay và tin được đẩy mạnh hơn.\nCó khách quan tâm là em báo chị liền ạ."
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "Được em, chị sẽ gửi ảnh với thông tin chi tiết lại cho em sau nhé",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị là chính chủ bán thôi"
+       },
+       "cau_ke": {
+        "khoa": null,
+        "ly_do": null
+       },
+       "so_can": 0,
+       "truong": [],
+       "y_dinh": {
+        "loai": "du_roi",
+        "trich_dan": "Được em, chị sẽ gửi ảnh với thông tin chi tiết lại cho em sau nhé"
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    }
+   ]
+  }
+ ],
+ "ky_vong": [
+  {
+   "sau_luot": 5,
+   "loai": "loi_khong",
+   "mau": "chỉ có đúng khoản phí đó",
+   "ghi_chu": "SRS-5.1zzzzze: hỏi ai trả phí → không câu soạn sẵn trả lời câu khác"
+  }
+ ]
+}

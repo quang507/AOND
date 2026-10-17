@@ -1,0 +1,72 @@
+name: Kiểm khoá API (còn tiền / còn hạn mức / sai khoá)
+
+# 02/10/2026: chủ dự án "key nào hết thì xóa". Sổ lỗi có 'HET TIEN API' mà không nói khoá nào. Workflow này thử TỪNG khoá
+# bot dùng bằng một lượt gọi nhỏ nhất (Anthropic 1 token, Groq liệt kê model, Gemini nhúng 1 chữ) rồi in TÊN khoá + mã HTTP +
+# phân loại. KHÔNG BAO GIỜ in giá trị khoá hay thân phản hồi (repo PUBLIC, log Actions công khai): khoá được add-mask ngay khi
+# đọc từ Vault. CHỈ ĐỌC: không xoá/sửa khoá — xoá khoá hết tiền là việc của người, làm tay ở Supabase Dashboard
+# (Project Settings → Vault, và Edge Functions → Secrets). 429 (chạm trần nhịp / hạn mức ngày) là tạm thời.
+
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_REF: rqxmmqmctpklqcmbfxuj
+
+jobs:
+  kiem:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Che token
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "::error::Thiếu SUPABASE_ACCESS_TOKEN"; exit 1; fi
+          echo "::add-mask::$TOKEN"
+
+      - name: Thử từng khoá
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -uo pipefail
+          sql() {
+            curl -sS -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+              -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+              -d "$(jq -n --arg q "$1" '{query: $q}')"
+          }
+          ENV_TEN=$(curl -sS "https://api.supabase.com/v1/projects/$PROJECT_REF/secrets" -H "Authorization: Bearer $TOKEN" | jq -r '.[].name' 2>/dev/null || true)
+          TMP=$(mktemp)
+          printf '%-20s | %-5s | %-5s | %-4s | %s\n' "KHOÁ" "VAULT" "ENV" "HTTP" "PHÂN LOẠI"
+          for TEN in ANTHROPIC_API_KEY GROQ_API_KEY GEMINI_API_KEY GEMINI_API_KEY_2; do
+            K=$(sql "select decrypted_secret as k from vault.decrypted_secrets where name = '$TEN'" | jq -r '.[0].k // empty' 2>/dev/null)
+            [ -n "$K" ] && echo "::add-mask::$K"
+            CO_VAULT=$([ -n "$K" ] && echo có || echo không)
+            CO_ENV=$(printf '%s\n' "$ENV_TEN" | grep -qx "$TEN" && echo có || echo không)
+            if [ -z "$K" ]; then
+              printf '%-20s | %-5s | %-5s | %-4s | %s\n' "$TEN" "$CO_VAULT" "$CO_ENV" "-" "KHÔNG CÓ TRONG VAULT (không thử được)"
+              continue
+            fi
+            case "$TEN" in
+              ANTHROPIC_API_KEY)
+                MA=$(curl -sS -o "$TMP" -w '%{http_code}' https://api.anthropic.com/v1/messages \
+                  -H "x-api-key: $K" -H "anthropic-version: 2023-06-01" -H "content-type: application/json" \
+                  -d '{"model":"claude-haiku-4-5-20251001","max_tokens":1,"messages":[{"role":"user","content":"hi"}]}') ;;
+              GROQ_API_KEY)
+                MA=$(curl -sS -o "$TMP" -w '%{http_code}' https://api.groq.com/openai/v1/models -H "Authorization: Bearer $K") ;;
+              *)
+                MA=$(curl -sS -o "$TMP" -w '%{http_code}' \
+                  "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent" \
+                  -H "x-goog-api-key: $K" -H "Content-Type: application/json" \
+                  -d '{"content":{"parts":[{"text":"thu"}]},"outputDimensionality":768}') ;;
+            esac
+            THAN=$(tr '[:upper:]' '[:lower:]' < "$TMP")
+            if [ "$MA" = "200" ]; then LOAI=OK
+            elif printf '%s' "$THAN" | grep -qE 'credit balance|plans & billing|insufficient_quota|billing'; then LOAI=HET_TIEN
+            elif [ "$MA" = "402" ]; then LOAI=HET_TIEN
+            elif [ "$MA" = "401" ] || printf '%s' "$THAN" | grep -qE 'api_key_invalid|api key not valid|invalid api key|invalid x-api-key|api key expired'; then LOAI=KHOA_SAI
+            elif [ "$MA" = "403" ]; then LOAI=BI_CHAN_403
+            elif [ "$MA" = "429" ] && printf '%s' "$THAN" | grep -q 'perday'; then LOAI=HET_HAN_MUC_NGAY_tam_thoi
+            elif [ "$MA" = "429" ]; then LOAI=CHAM_TRAN_NHIP_tam_thoi
+            else LOAI="KHAC"; fi
+            printf '%-20s | %-5s | %-5s | %-4s | %s\n' "$TEN" "$CO_VAULT" "$CO_ENV" "$MA" "$LOAI"
+          done
+          rm -f "$TMP"

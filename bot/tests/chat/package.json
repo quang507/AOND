@@ -1,0 +1,7 @@
+{
+  "name": "nhadat-bot-chat",
+  "private": true,
+  "type": "module",
+  "description": "Chat thử với bot ngay trong terminal (FR-246 e): chat-reply thật + DB giả trên máy, hoặc bắn thẳng production bằng ID thử. Gói SDK cài riêng ở đây vì Bun tìm node_modules từ vị trí file.",
+  "devDependencies": { "@anthropic-ai/sdk": "^0.80.0", "zod": "^4.0.0" }
+}

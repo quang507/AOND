@@ -1,0 +1,171 @@
+{
+ "nguon": "SRS-5.1zzzzd/zzzze/zzzzf — bắn production 09/10/2026 thu-kg5 (đầu ra AI dựng lại): đất Củ Chi giấy tay; AI đưa cụm «10x50 củ chi xã tân an hội» vào duong/ten_duong (chỉ là kích thước + tên hành chính), hỏi phí + nghi ngờ",
+ "luot": [
+  {
+   "text": "cần bán lô đất",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "cần bán",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "dat",
+      "trich_dan": "lô đất",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "vi_tri",
+     "ly_do": "cần địa chỉ"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, lô đất mình ở đâu vậy ạ?"
+   ]
+  },
+  {
+   "text": "đất 10x50 củ chi xã tân an hội giấy tay, bên em lấy phí sao, mà sao tin em được",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "ngang",
+      "gia_tri": "10",
+      "trich_dan": "10x50",
+      "can": null
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "50",
+      "trich_dan": "10x50",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Huyện Củ Chi",
+      "trich_dan": "củ chi",
+      "can": null
+     },
+     {
+      "khoa": "phuong",
+      "gia_tri": "Xã Tân An Hội",
+      "trich_dan": "xã tân an hội",
+      "can": null
+     },
+     {
+      "khoa": "duong",
+      "gia_tri": "Củ Chi xã Tân An Hội",
+      "trich_dan": "10x50 củ chi xã tân an hội",
+      "can": null
+     },
+     {
+      "khoa": "ten_duong",
+      "gia_tri": "Củ Chi xã Tân An Hội",
+      "trich_dan": "củ chi xã tân an hội",
+      "can": null
+     },
+     {
+      "khoa": "phap_ly",
+      "gia_tri": "giấy tay",
+      "trich_dan": "giấy tay",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": true,
+     "cau_hoi": "bên em lấy phí sao",
+     "chu_de": "dich_vu"
+    },
+    "cam_xuc": {
+     "muc": "nghi_ngo",
+     "trich_dan": "sao tin em được"
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "tho_cu",
+     "ly_do": "đất cần thổ cư"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, em ghi rồi ạ. Lô đất anh chị có giấy tờ thổ cư không ạ?"
+   ]
+  }
+ ]
+}

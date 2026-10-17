@@ -1,0 +1,171 @@
+{
+ "nguon": "SRS-5.1zzzzd/zzzze/zzzzf — cách nói MỚI (dựng tay): 'lô đất 8x40 xã phước vĩnh an huyện củ chi sổ chung, phí bên em bao nhiêu, làm sao tin được bên em'",
+ "luot": [
+  {
+   "text": "cần bán lô đất",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "cần bán",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "dat",
+      "trich_dan": "lô đất",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "vi_tri",
+     "ly_do": "cần địa chỉ"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, lô đất mình ở đâu vậy ạ?"
+   ]
+  },
+  {
+   "text": "lô đất 8x40 xã phước vĩnh an huyện củ chi sổ chung, phí bên em bao nhiêu, làm sao tin được bên em",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "ngang",
+      "gia_tri": "8",
+      "trich_dan": "8x40",
+      "can": null
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "40",
+      "trich_dan": "8x40",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Huyện Củ Chi",
+      "trich_dan": "huyện củ chi",
+      "can": null
+     },
+     {
+      "khoa": "phuong",
+      "gia_tri": "Xã Phước Vĩnh An",
+      "trich_dan": "xã phước vĩnh an",
+      "can": null
+     },
+     {
+      "khoa": "duong",
+      "gia_tri": "8x40 xã Phước Vĩnh An huyện Củ Chi",
+      "trich_dan": "lô đất 8x40 xã phước vĩnh an huyện củ chi",
+      "can": null
+     },
+     {
+      "khoa": "ten_duong",
+      "gia_tri": "Phước Vĩnh An",
+      "trich_dan": "xã phước vĩnh an",
+      "can": null
+     },
+     {
+      "khoa": "phap_ly",
+      "gia_tri": "sổ chung",
+      "trich_dan": "sổ chung",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": true,
+     "cau_hoi": "phí bên em bao nhiêu",
+     "chu_de": "dich_vu"
+    },
+    "cam_xuc": {
+     "muc": "nghi_ngo",
+     "trich_dan": "làm sao tin được bên em"
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "tho_cu",
+     "ly_do": "đất cần thổ cư"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ em ghi rồi ạ. Lô đất mình có thổ cư bao nhiêu mét vậy ạ?"
+   ]
+  }
+ ]
+}

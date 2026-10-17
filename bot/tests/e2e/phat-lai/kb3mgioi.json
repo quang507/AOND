@@ -1,0 +1,190 @@
+{
+ "nguon": "bắn thử trang chat 08/10/2026 (…kb3mgioi), câu trả lời THẬT của AI từng lượt (SRS-5.1zzzm)",
+ "luot": [
+  {
+   "text": "chào em",
+   "boc": null,
+   "y": null,
+   "rep": []
+  },
+  {
+   "text": "anh là môi giới, gửi em 2 căn: căn 1 hẻm 6m Phan Xích Long Phú Nhuận 4x16 9.5 tỷ; căn 2 mặt tiền Hồng Bàng quận 5 5x20 32 tỷ",
+   "boc": "{\"can_khac\":false,\"so_can\":2,\"truong\":[{\"khoa\":\"loai_giao_dich\",\"gia_tri\":\"ban\",\"trich_dan\":\"rao bán\",\"can\":1},{\"khoa\":\"loai_bds\",\"gia_tri\":\"nha_pho\",\"trich_dan\":\"căn 1 hẻm\",\"can\":1},{\"khoa\":\"duong\",\"gia_tri\":\"Phan Xích Long\",\"trich_dan\":\"hẻm 6m Phan Xích Long\",\"can\":1},{\"khoa\":\"do_rong_hem\",\"gia_tri\":\"6\",\"trich_dan\":\"hẻm 6m\",\"can\":1},{\"khoa\":\"quan\",\"gia_tri\":\"Quận Phú Nhuận\",\"trich_dan\":\"Phú Nhuận\",\"can\":1},{\"khoa\":\"ngang\",\"gia_tri\":\"4\",\"trich_dan\":\"4x16\",\"can\":1},{\"khoa\":\"dai\",\"gia_tri\":\"16\",\"trich_dan\":\"4x16\",\"can\":1},{\"khoa\":\"gia\",\"gia_tri\":\"9.5 tỷ\",\"trich_dan\":\"9.5 tỷ\",\"can\":1},{\"khoa\":\"loai_giao_dich\",\"gia_tri\":\"ban\",\"trich_dan\":\"rao bán\",\"can\":2},{\"khoa\":\"loai_bds\",\"gia_tri\":\"nha_pho\",\"trich_dan\":\"căn 2 mặt tiền\",\"can\":2},{\"khoa\":\"duong\",\"gia_tri\":\"Hồng Bàng\",\"trich_dan\":\"mặt tiền Hồng Bàng\",\"can\":2},{\"khoa\":\"quan\",\"gia_tri\":\"Quận 5\",\"trich_dan\":\"quận 5\",\"can\":2},{\"khoa\":\"ngang\",\"gia_tri\":\"5\",\"trich_dan\":\"5x20\",\"can\":2},{\"khoa\":\"dai\",\"gia_tri\":\"20\",\"trich_dan\":\"5x20\",\"can\":2},{\"khoa\":\"gia\",\"gia_tri\":\"32 tỷ\",\"trich_dan\":\"32 tỷ\",\"can\":2}],\"kien_thuc\":[],\"tra_loi\":{\"co_tra_loi\":false,\"gia_tri\":null,\"trich_dan\":null},\"cap_nhat\":[],\"xac_nhan\":[],\"hoi_lai\":{\"co_hoi\":false,\"cau_hoi\":null,\"chu_de\":null},\"cam_xuc\":{\"muc\":\"binh_thuong\",\"trich_dan\":null},\"khong_can_hoi\":[],\"y_dinh\":{\"loai\":\"binh_thuong\",\"trich_dan\":null},\"vai\":{\"la\":\"moi_gioi\",\"trich_dan\":\"anh là môi giới\"},\"cau_ke\":{\"khoa\":\"loai_giao_dich\",\"ly_do\":\"chưa rõ bán hay cho thuê từng căn\"},\"tu_xung\":{\"la\":\"anh\",\"trich",
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": []
+  },
+  {
+   "text": "căn 1 sổ hồng riêng",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "phap_ly",
+      "gia_tri": "sổ hồng riêng",
+      "trich_dan": "sổ hồng riêng",
+      "can": 1
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "moi_gioi",
+     "trich_dan": "anh là môi giới"
+    },
+    "cau_ke": {
+     "khoa": "dien_tich_dat",
+     "ly_do": "chưa có diện tích đất, ngang dài"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": []
+  },
+  {
+   "text": "căn 2 đang cho thuê 80tr/tháng",
+   "boc": {
+    "can_khac": true,
+    "so_can": 0,
+    "truong": [],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "moi_gioi",
+     "trich_dan": "anh là môi giới"
+    },
+    "cau_ke": {
+     "khoa": "dien_tich_dat",
+     "ly_do": "Đang nói về căn 2, cần quay lại hỏi diện tích căn 1"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": []
+  },
+  {
+   "text": "ok em",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "moi_gioi",
+     "trich_dan": "anh là môi giới"
+    },
+    "cau_ke": {
+     "khoa": "dien_tich_dat",
+     "ly_do": "cần biết diện tích đất để lên tin"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "dong_y": "dong_y",
+    "dong_y_trich": "ok em",
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng anh. Căn hẻm 6m Phan Xích Long, em ghi rồi ạ. Nhà mình trệt lửng mấy lầu, mấy phòng ngủ ạ?"
+   ]
+  }
+ ]
+}

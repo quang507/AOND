@@ -1,0 +1,918 @@
+{
+ "ten": "mp-lon-tuoi-2026-10-11",
+ "nguon": {
+  "run": "38170086556",
+  "persona": "lon-tuoi"
+ },
+ "cau_hinh": {
+  "lenh_json": "bat",
+  "tro_ly": "thu",
+  "boc_tach_ai": "ai",
+  "luat_loi_bot": "gon",
+  "bao_lai_da_luu": "thay_doi"
+ },
+ "luot": [
+  {
+   "khach": "chào cháu, bác có cái nhà ở Gò Vấp muốn bán để về quê",
+   "bot_goc": [
+    "Dạ cháu chào bác ạ!",
+    "🤖 Đã trích xuất:\n• loại: làm chuẩn \"Nhà bán\"\n• địa chỉ: làm chuẩn \"Quận Gò Vấp\"\n👤 Hồ sơ: Zalo: \"…tuoi\" · cách gọi: \"bác\"",
+    "Vâng ạ, cháu ghi nhận rồi bác ơi. Nhà bác ở đường nào, số mấy vậy ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "bác có"
+       },
+       "cau_ke": {
+        "khoa": "duong",
+        "ly_do": "chưa có địa chỉ để lên tin"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "muốn bán"
+        },
+        {
+         "can": null,
+         "khoa": "loai_bds",
+         "gia_tri": "nha_pho",
+         "trich_dan": "cái nhà"
+        },
+        {
+         "can": null,
+         "khoa": "quan",
+         "gia_tri": "Quận Gò Vấp",
+         "trich_dan": "Gò Vấp"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": null,
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Vâng ạ, cháu ghi nhận rồi bác ơi. Nhà bác ở đường nào, số mấy vậy ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "ở hẻm Quang Trung cháu ơi, hẻm khá rộng, gần chợ Gò Vấp lắm",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• vị trí cụ thể: \"Hẻm Quang Trung\"\n• thông tin bổ sung: \"gần chợ Gò Vấp lắm\"\n• nhãn tìm kiếm: \"gần chợ\"",
+    "Vâng ạ, cháu ghi hẻm Quang Trung rồi bác ơi. Hẻm bác rộng bao nhiêu mét vậy ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": "do_rong_hem",
+        "ly_do": "chủ nhà vừa nói hẻm rộng, cần biết số mét để ghi"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "duong",
+         "gia_tri": "Quang Trung",
+         "trich_dan": "hẻm Quang Trung"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "hẻm Quang Trung",
+        "trich_dan": "ở hẻm Quang Trung",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [
+        "hẻm khá rộng",
+        "gần chợ Gò Vấp lắm"
+       ],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Vâng ạ, cháu ghi hẻm Quang Trung rồi bác ơi. Hẻm bác rộng bao nhiêu mét vậy ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "hẻm bác chừng 4 mét rộng cháu ơi, còn chiều sâu thì 16 mét, cả nhà trệt lầu",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• độ rộng hẻm trước nhà: làm chuẩn \"hẻm rộng 4 mét\"\n• kết cấu: \"cả nhà trệt lầu\"",
+    "Vâng ạ, 4x16 cháu ghi rồi bác ơi. Diện tích trên sổ bác ngang dài bao nhiêu mét vậy ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": ".",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": "ket_cau",
+        "ly_do": "câu trả lời kết cấu giúp xác định số phòng và WC phù hợp"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "do_rong_hem",
+         "gia_tri": "4",
+         "trich_dan": "hẻm bác chừng 4 mét rộng"
+        },
+        {
+         "can": null,
+         "khoa": "dai",
+         "gia_tri": "16",
+         "trich_dan": "chiều sâu thì 16 mét"
+        },
+        {
+         "can": null,
+         "khoa": "ket_cau",
+         "gia_tri": "trệt 1 lầu",
+         "trich_dan": "cả nhà trệt lầu"
+        },
+        {
+         "can": null,
+         "khoa": "so_tang",
+         "gia_tri": "2",
+         "trich_dan": "cả nhà trệt lầu"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "hẻm rộng 4 mét",
+        "trich_dan": "hẻm bác chừng 4 mét rộng",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [
+        {
+         "cach": "thay",
+         "khoa": "vi_tri",
+         "gia_tri_moi": "hẻm Quang Trung"
+        }
+       ],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Vâng ạ, 4x16 cháu ghi rồi bác ơi. Diện tích trên sổ bác ngang dài bao nhiêu mét vậy ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "diện tích trên sổ cũng 4 mét rộng 16 mét sâu cháu ơi, bác có sổ hồng riêng đấy",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• pháp lý: \"bác có sổ hồng riêng đấy\" → làm chuẩn \"có sổ hồng riêng\"",
+    "Vâng ạ, sổ hồng riêng cháu ghi rồi bác ơi. Bác định bán giá bao nhiêu vậy ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "diện tích trên sổ cũng 4 mét rộng 16 mét sâu",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "bác có sổ hồng riêng đấy"
+       },
+       "cau_ke": {
+        "khoa": "gia",
+        "ly_do": "chưa biết giá mong muốn"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "dien_tich",
+         "gia_tri": "64",
+         "trich_dan": "4 mét rộng 16 mét sâu"
+        },
+        {
+         "can": null,
+         "khoa": "phap_ly",
+         "gia_tri": "sổ hồng riêng",
+         "trich_dan": "bác có sổ hồng riêng đấy"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "64 m² (4m × 16m)",
+        "trich_dan": "diện tích trên sổ cũng 4 mét rộng 16 mét sâu",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": "anh",
+        "trich_dan": "bác có sổ hồng riêng đấy"
+       },
+       "can_khac": false,
+       "cap_nhat": [
+        {
+         "cach": "gop",
+         "khoa": "vi_tri",
+         "gia_tri_moi": "hẻm Quang Trung"
+        }
+       ],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Vâng ạ, sổ hồng riêng cháu ghi rồi bác ơi. Bác định bán giá bao nhiêu vậy ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "bác định bán 6 tỷ 8 cháu ơi, nhà vị trí tốt lắm",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• giá mong muốn: \"6 tỷ 8\"\n• thông tin bổ sung: \"nhà vị trí tốt lắm\"",
+    "Vâng ạ, cháu ghi giá 6 tỷ 8 rồi bác ơi. Nhà bác ở phường nào vậy, ở Phường An Hội Tây, Hạnh Thông, Thông Tây Hội hay Phường Gò Vấp ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": "phuong",
+        "ly_do": "cần địa chỉ phường để lên tin hoàn chỉnh"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "gia",
+         "gia_tri": "6 tỷ 8",
+         "trich_dan": "bác định bán 6 tỷ 8"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "6 tỷ 8",
+        "trich_dan": "bác định bán 6 tỷ 8 cháu ơi",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [
+        "nhà vị trí tốt lắm"
+       ],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Vâng ạ, cháu ghi giá 6 tỷ 8 rồi bác ơi. Nhà bác ở phường nào vậy, ở Phường An Hội Tây, Hạnh Thông, Thông Tây Hội hay Phường Gò Vấp ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": [
+        {
+         "cau": "cháu ghi giá 6 tỷ 8 rồi bác ơi",
+         "kieu": null,
+         "goi_y": null,
+         "can_cu": "bác định bán 6 tỷ 8 cháu ơi",
+         "khang_dinh": "giá bán 6 tỷ 8",
+         "noi_co_hang": null,
+         "hua_khong_lam": null,
+         "noi_trang_thai_tin": null,
+         "danh_gia_thi_truong": false
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "ở Phường Gò Vấp cháu ơi, gần chợ Gò Vấp mà bác nói rồi",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• phường: \"Phường Gò Vấp\" → làm chuẩn \"Phường Gò Vấp (Quận Gò Vấp cũ)\"",
+    "Vâng ạ, Phường Gò Vấp cháu ghi rồi bác ơi. Diện tích đất bác bao nhiêu m² vậy ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "ở Phường Gò Vấp cháu ơi, gần chợ Gò Vấp mà bác nói rồi",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": "ly_do_ban",
+        "ly_do": "chủ nhà vừa trả lời câu phường, tiếp tục hỏi lý do bán"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "phuong",
+         "gia_tri": "Phường Gò Vấp",
+         "trich_dan": "Phường Gò Vấp"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "Phường Gò Vấp",
+        "trich_dan": "ở Phường Gò Vấp cháu ơi, gần chợ Gò Vấp mà bác nói rồi",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [
+        "gần chợ Gò Vấp"
+       ],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Vâng ạ, Phường Gò Vấp cháu ghi rồi bác ơi. Diện tích đất bác bao nhiêu m² vậy ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "cháu ơi, diện tích đất thì cũng 4 mét rộng 16 mét sâu nó, tính ra 64 mét vuông đấy cháu",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• diện tích: \"4 mét rộng 16 mét sâu nó, tính ra 64 mét vuông\" → làm chuẩn \"64m²\"\n• chiều ngang mặt tiền: \"4 mét rộng 16 mét sâu\" → làm chuẩn \"ngang 4m × dài 16m (64m²)\"\n• độ rộng hẻm trước nhà: làm chuẩn \"4m\"\n• kết cấu: làm chuẩn \"2 tầng\"",
+    "📋 Cháu sẽ rao như vầy nhé bác:\nBán nhà hẻm 4m Quang Trung Phường Gò Vấp Quận Gò Vấp, 64m², trệt + 1 lầu, SHR, giá 6 tỷ 8\n📍 Hẻm Quang Trung, Phường Gò Vấp, Quận Gò Vấp\n💰 6 tỷ 8\n📐 Diện tích: 64m² · ngang 4m x dài 16m\n🏗 Kết cấu: trệt + 1 lầu\n🛣 Đường vào: trong hẻm 4m\n📜 Pháp lý: sổ hồng riêng\n📝 Thêm: hẻm khá rộng · gần chợ Gò Vấp lắm · nhà vị trí tốt lắm\nĐộ đầy đủ 78/100, thêm mấy phòng ngủ và tiềm năng sử dụng (ở, cho thuê hay kinh doanh) là tin mạnh hơn nữa ạ.\nBác thấy hấp dẫn chưa ạ? Ổn thì cháu đăng liền và rao tích cực cho bác.\n👉 Có khách quan tâm là Q•ai báo lại bác liền ạ."
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": null,
+       "cau_ke": {
+        "khoa": "so_phong_ngu",
+        "ly_do": "chưa biết số phòng ngủ, thông tin cần để lên tin"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "dien_tich",
+         "gia_tri": "64",
+         "trich_dan": "4 mét rộng 16 mét sâu nó, tính ra 64 mét vuông"
+        },
+        {
+         "can": null,
+         "khoa": "ngang",
+         "gia_tri": "4",
+         "trich_dan": "4 mét rộng 16 mét sâu"
+        },
+        {
+         "can": null,
+         "khoa": "dai",
+         "gia_tri": "16",
+         "trich_dan": "4 mét rộng 16 mét sâu"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "64 m², ngang 4m, dài 16m",
+        "trich_dan": "diện tích đất thì cũng 4 mét rộng 16 mét sâu nó, tính ra 64 mét vuông",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "bác có cái nhà"
+       },
+       "cau_ke": {
+        "khoa": null,
+        "ly_do": null
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "muốn bán"
+        },
+        {
+         "can": null,
+         "khoa": "loai_bds",
+         "gia_tri": "nha_pho",
+         "trich_dan": "cái nhà"
+        },
+        {
+         "can": null,
+         "khoa": "quan",
+         "gia_tri": "Quận Gò Vấp",
+         "trich_dan": "Gò Vấp"
+        },
+        {
+         "can": null,
+         "khoa": "phuong",
+         "gia_tri": "Phường Gò Vấp",
+         "trich_dan": "Phường Gò Vấp"
+        },
+        {
+         "can": null,
+         "khoa": "duong",
+         "gia_tri": "hẻm Quang Trung",
+         "trich_dan": "hẻm Quang Trung"
+        },
+        {
+         "can": null,
+         "khoa": "ten_duong",
+         "gia_tri": "Quang Trung",
+         "trich_dan": "hẻm Quang Trung"
+        },
+        {
+         "can": null,
+         "khoa": "do_rong_hem",
+         "gia_tri": "4",
+         "trich_dan": "hẻm bác chừng 4 mét rộng"
+        },
+        {
+         "can": null,
+         "khoa": "dai",
+         "gia_tri": "16",
+         "trich_dan": "chiều sâu thì 16 mét"
+        },
+        {
+         "can": null,
+         "khoa": "ngang",
+         "gia_tri": "4",
+         "trich_dan": "4 mét rộng 16 mét sâu"
+        },
+        {
+         "can": null,
+         "khoa": "so_tang",
+         "gia_tri": "2",
+         "trich_dan": "trệt lầu"
+        },
+        {
+         "can": null,
+         "khoa": "dien_tich",
+         "gia_tri": "64",
+         "trich_dan": "64 mét vuông"
+        },
+        {
+         "can": null,
+         "khoa": "phap_ly",
+         "gia_tri": "sổ hồng riêng",
+         "trich_dan": "bác có sổ hồng riêng"
+        },
+        {
+         "can": null,
+         "khoa": "gia",
+         "gia_tri": "6 tỷ 8",
+         "trich_dan": "bác định bán 6 tỷ 8"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [
+        "gần chợ Gò Vấp",
+        "nhà vị trí tốt lắm",
+        "riêng: bác muốn về quê"
+       ],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "chot_tin"
+    }
+   ]
+  },
+  {
+   "khach": "vâng cháu, tin này ổn lắm, bác thấy hấp dẫn rồi. cháu cứ đăng đi, bác chờ khách thôi",
+   "bot_goc": [
+    "🤖 Không trích xuất được gì từ tin này.",
+    "Dạ cháu cảm ơn bác, tin nhà mình lên kệ AI Ơi Nhà Đất rồi, điểm đầy đủ 78/100.\nCó khách quan tâm là cháu báo bác liền.\nMà bác biết phí bên cháu chưa ạ?",
+    "Muốn thêm điểm thì bác gửi cháu mấy phòng ngủ và tiềm năng sử dụng (ở, cho thuê hay kinh doanh); gửi thêm ảnh là điểm tăng ngay.\nBác đang ở hạng Bạc bên cháu."
+   ],
+   "ai": [
+    {
+     "ra": {
+      "loi": true
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y_dang",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "vâng cháu, tin này ổn lắm, bác thấy hấp dẫn rồi. cháu cứ đăng đi",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    }
+   ]
+  }
+ ],
+ "ky_vong": [
+  {
+   "sau_luot": 4,
+   "loai": "cot",
+   "cot": "area_m2",
+   "bang": 64,
+   "ghi_chu": "SRS-5.1zzzzze: «4 mét rộng 16 mét sâu» → AI diện tích 64 (tích hai số trong cụm) được ghi"
+  },
+  {
+   "sau_luot": 3,
+   "loai": "cot",
+   "cot": "length_m",
+   "bang": 16,
+   "ghi_chu": "SRS-5.1zzzzzf: «chiều sâu thì 16 mét» khi chưa có ngang → dài 16 vào cột (fact chieu_dai), không bị bỏ"
+  }
+ ]
+}

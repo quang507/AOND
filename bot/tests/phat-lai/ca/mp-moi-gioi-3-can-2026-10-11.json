@@ -1,0 +1,1505 @@
+{
+ "ten": "mp-moi-gioi-3-can-2026-10-11",
+ "nguon": {
+  "run": "38170086556",
+  "persona": "moi-gioi-3-can"
+ },
+ "cau_hinh": {
+  "lenh_json": "bat",
+  "tro_ly": "thu",
+  "boc_tach_ai": "ai",
+  "luat_loi_bot": "gon",
+  "bao_lai_da_luu": "thay_doi"
+ },
+ "luot": [
+  {
+   "khach": "chào bạn, mình bên môi giới, có mấy căn quận 5 cần đăng",
+   "bot_goc": [
+    "Dạ em chào anh chị ạ!",
+    "🤖 Đã trích xuất:\n• loại: làm chuẩn \"BĐS bán\"\n• địa chỉ: làm chuẩn \"Quận 5\"\n👤 Hồ sơ: Zalo: \"…-can\"",
+    "Dạ, mấy căn ở quận 5 là nhà phố, chung cư hay loại gì ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "vai": "ban",
+       "bang_chung": "có mấy căn quận 5 cần đăng"
+      }
+     },
+     "kind": "parse",
+     "loai": "phan_vai"
+    },
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "moi_gioi",
+        "trich_dan": "bên môi giới"
+       },
+       "cau_ke": {
+        "khoa": null,
+        "ly_do": null
+       },
+       "so_can": 0,
+       "truong": [],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": true,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Dạ, mấy căn ở quận 5 là nhà phố, chung cư hay loại gì ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "nhà phố ạ, căn đầu tiên là MT Trần Hưng Đạo, 4x20, 4 tầng, shr, 18 tỷ",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• loại bất động sản: \"nhà phố\"\n• đường vào: \"MT Trần Hưng Đạo\" → làm chuẩn \"mặt tiền\"\n• kết cấu: \"4 tầng\"\n• pháp lý: \"shr\" → làm chuẩn \"sổ hồng riêng\"\n• giá mong muốn: \"18 tỷ\"\n• diện tích: \"4x20\" → làm chuẩn \"ngang 4m × dài 20m (80m²)\"\n• vị trí cụ thể: \"MT Trần Hưng Đạo\" → làm chuẩn \"Mặt tiền Trần Hưng Đạo\"",
+    "Dạ vâng anh chị, em ghi rồi ạ. Dạ kết cấu 4 tầng đó có tính cả gác lửng không anh chị ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "moi_gioi",
+        "trich_dan": "mình bên môi giới"
+       },
+       "cau_ke": {
+        "khoa": "vi_tri",
+        "ly_do": "chưa có vị trí đầy đủ"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "loai_bds",
+         "gia_tri": "nha_pho",
+         "trich_dan": "nhà phố"
+        },
+        {
+         "can": null,
+         "khoa": "loai_duong_vao",
+         "gia_tri": "mat_tien",
+         "trich_dan": "MT Trần Hưng Đạo"
+        },
+        {
+         "can": null,
+         "khoa": "duong",
+         "gia_tri": "Trần Hưng Đạo",
+         "trich_dan": "MT Trần Hưng Đạo"
+        },
+        {
+         "can": null,
+         "khoa": "ten_duong",
+         "gia_tri": "Trần Hưng Đạo",
+         "trich_dan": "MT Trần Hưng Đạo"
+        },
+        {
+         "can": null,
+         "khoa": "ngang",
+         "gia_tri": "4",
+         "trich_dan": "4x20"
+        },
+        {
+         "can": null,
+         "khoa": "dai",
+         "gia_tri": "20",
+         "trich_dan": "4x20"
+        },
+        {
+         "can": null,
+         "khoa": "so_tang",
+         "gia_tri": "4",
+         "trich_dan": "4 tầng"
+        },
+        {
+         "can": null,
+         "khoa": "phap_ly",
+         "gia_tri": "sổ hồng riêng",
+         "trich_dan": "shr"
+        },
+        {
+         "can": null,
+         "khoa": "gia",
+         "gia_tri": "18 tỷ",
+         "trich_dan": "18 tỷ"
+        },
+        {
+         "can": null,
+         "khoa": "quan",
+         "gia_tri": "Quận 5",
+         "trich_dan": "Quận 5"
+        },
+        {
+         "can": null,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "nhà phố"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "nhà phố",
+        "trich_dan": "nhà phố",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Dạ vâng anh chị, em ghi rồi ạ. Kết cấu 4 tầng đó có tính cả gác lửng không anh chị ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "ko có gác lửng, 4 tầng thôi",
+   "bot_goc": [
+    "🤖 Không trích xuất được gì từ tin này.",
+    "Dạ vậy kết cấu nhà mình là trệt + 3 lầu ạ. Mặt tiền Trần Hưng Đạo đó phường mấy anh chị nhỉ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "ko có gác lửng, 4 tầng thôi",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": "phuong",
+        "ly_do": "cần địa chỉ đầy đủ để ghi vị trí"
+       },
+       "so_can": 0,
+       "truong": [],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "không có gác lửng, 4 tầng",
+        "trich_dan": "ko có gác lửng, 4 tầng thôi",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [
+        {
+         "cach": "thay",
+         "khoa": "ket_cau",
+         "gia_tri_moi": "trệt + 3 lầu"
+        }
+       ],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    }
+   ]
+  },
+  {
+   "khach": "Phường Nguyễn Thái Bình ạ. Còn 2 căn nữa em muốn đăng luôn, hẻm Nguyễn Trãi 3x12 2 tầng 6 tỷ 5, và hẻm An Dương Vương 4x10 cấp 4 5 tỷ",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• loại: làm chuẩn \"Nhà phố bán\"\n• địa chỉ: \"hẻm Nguyễn Trãi\" → làm chuẩn \"Hẻm Nguyễn Trãi (chưa rõ quận)\"\n• diện tích: \"3x12\" → làm chuẩn \"36m²\"\n• thông số: làm chuẩn \"3x12m · trệt + 1 lầu · trong hẻm\"\n• giá: \"6 tỷ 5\"",
+    "Dạ vâng anh chị, em ghi 3 căn rồi ạ. Anh chị cho em xin ảnh mặt tiền và sổ từng căn để hoàn thiện tin nhé :) Dạ kết cấu 2 tầng đó có tính cả gác lửng không anh chị ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "Phường Nguyễn Thái Bình ạ",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "moi_gioi",
+        "trich_dan": "mình bên môi giới"
+       },
+       "cau_ke": {
+        "khoa": "so_phong_ngu",
+        "ly_do": "giúp hoàn chỉnh thông tin các căn để lên tin"
+       },
+       "so_can": 3,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "phuong",
+         "gia_tri": "Phường Bến Thành",
+         "trich_dan": "Phường Nguyễn Thái Bình ạ"
+        },
+        {
+         "can": 2,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "em muốn đăng luôn"
+        },
+        {
+         "can": 2,
+         "khoa": "loai_bds",
+         "gia_tri": "nha_pho",
+         "trich_dan": "hẻm Nguyễn Trãi"
+        },
+        {
+         "can": 2,
+         "khoa": "duong",
+         "gia_tri": "Nguyễn Trãi",
+         "trich_dan": "hẻm Nguyễn Trãi"
+        },
+        {
+         "can": 2,
+         "khoa": "ten_duong",
+         "gia_tri": "Nguyễn Trãi",
+         "trich_dan": "hẻm Nguyễn Trãi"
+        },
+        {
+         "can": 2,
+         "khoa": "ngang",
+         "gia_tri": "3",
+         "trich_dan": "3x12"
+        },
+        {
+         "can": 2,
+         "khoa": "dai",
+         "gia_tri": "12",
+         "trich_dan": "3x12"
+        },
+        {
+         "can": 2,
+         "khoa": "so_tang",
+         "gia_tri": "2",
+         "trich_dan": "2 tầng"
+        },
+        {
+         "can": 2,
+         "khoa": "gia",
+         "gia_tri": "6 tỷ 5",
+         "trich_dan": "6 tỷ 5"
+        },
+        {
+         "can": 3,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "em muốn đăng luôn"
+        },
+        {
+         "can": 3,
+         "khoa": "loai_bds",
+         "gia_tri": "nha_cap4",
+         "trich_dan": "cấp 4"
+        },
+        {
+         "can": 3,
+         "khoa": "duong",
+         "gia_tri": "An Dương Vương",
+         "trich_dan": "hẻm An Dương Vương"
+        },
+        {
+         "can": 3,
+         "khoa": "ten_duong",
+         "gia_tri": "An Dương Vương",
+         "trich_dan": "hẻm An Dương Vương"
+        },
+        {
+         "can": 3,
+         "khoa": "ngang",
+         "gia_tri": "4",
+         "trich_dan": "4x10"
+        },
+        {
+         "can": 3,
+         "khoa": "dai",
+         "gia_tri": "10",
+         "trich_dan": "4x10"
+        },
+        {
+         "can": 3,
+         "khoa": "gia",
+         "gia_tri": "5 tỷ",
+         "trich_dan": "5 tỷ"
+        }
+       ],
+       "y_dinh": {
+        "loai": "du_roi",
+        "trich_dan": "em muốn đăng luôn"
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "Phường Bến Thành",
+        "trich_dan": "Phường Nguyễn Thái Bình ạ",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": "anh",
+        "trich_dan": "mình bên môi giới"
+       },
+       "can_khac": true,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Dạ vâng anh chị, em ghi 3 căn rồi ạ. Anh chị cho em xin ảnh mặt tiền và sổ từng căn để hoàn thiện tin nhé :)"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "ko có gác lửng, căn Nguyễn Trãi là trệt + 1 lầu. Còn căn An Dương Vương cấp 4 ko có gác lửng",
+   "bot_goc": [
+    "🤖 Không trích xuất được gì từ tin này.",
+    "📝 Em ghi vào mở tin mới BDS-NP-XX-0001.",
+    "Dạ vậy kết cấu nhà mình là trệt + 1 lầu ạ. Hẻm Nguyễn Trãi đó phường mấy anh chị nhỉ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "manh": [
+        {
+         "trich": "ko có gác lửng, căn Nguyễn Trãi là trệt + 1 lầu",
+         "ma_tin": "BDS-NP-Q5-0002"
+        },
+        {
+         "trich": "Còn căn An Dương Vương cấp 4 ko có gác lửng",
+         "ma_tin": "MOI"
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "gan_manh"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "moi_gioi",
+        "trich_dan": "bên môi giới"
+       },
+       "cau_ke": {
+        "khoa": null,
+        "ly_do": null
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": 3,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "Còn căn"
+        },
+        {
+         "can": 3,
+         "khoa": "loai_bds",
+         "gia_tri": "nha_cap4",
+         "trich_dan": "cấp 4"
+        },
+        {
+         "can": 3,
+         "khoa": "duong",
+         "gia_tri": "An Dương Vương",
+         "trich_dan": "An Dương Vương"
+        },
+        {
+         "can": 3,
+         "khoa": "ten_duong",
+         "gia_tri": "An Dương Vương",
+         "trich_dan": "An Dương Vương"
+        },
+        {
+         "can": 3,
+         "khoa": "ngang",
+         "gia_tri": "4",
+         "trich_dan": "4x10"
+        },
+        {
+         "can": 3,
+         "khoa": "dai",
+         "gia_tri": "10",
+         "trich_dan": "4x10"
+        },
+        {
+         "can": 3,
+         "khoa": "so_tang",
+         "gia_tri": "1",
+         "trich_dan": "ko có gác lửng"
+        },
+        {
+         "can": 3,
+         "khoa": "gia",
+         "gia_tri": "5 tỷ",
+         "trich_dan": "5 tỷ"
+        },
+        {
+         "can": 3,
+         "khoa": "quan",
+         "gia_tri": "Quận 5",
+         "trich_dan": "quận 5"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "không có gác lửng",
+        "trich_dan": "ko có gác lửng",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "ko có gác lửng, căn Nguyễn Trãi là trệt + 1 lầu",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "moi_gioi",
+        "trich_dan": "bên môi giới"
+       },
+       "cau_ke": {
+        "khoa": "phap_ly",
+        "ly_do": "vừa nói về căn Nguyễn Trãi, tiếp theo cần giấy tờ để hoàn thiện tin"
+       },
+       "so_can": 0,
+       "truong": [
+        {
+         "can": 2,
+         "khoa": "ket_cau",
+         "gia_tri": "trệt + 1 lầu",
+         "trich_dan": "trệt + 1 lầu"
+        },
+        {
+         "can": 2,
+         "khoa": "so_tang",
+         "gia_tri": "2",
+         "trich_dan": "trệt + 1 lầu"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "không có gác lửng",
+        "trich_dan": "ko có gác lửng",
+        "co_tra_loi": true
+       },
+       "tu_xung": null,
+       "can_khac": false,
+       "cap_nhat": [
+        {
+         "cach": "thay",
+         "khoa": "ket_cau",
+         "gia_tri_moi": "trệt + 1 lầu"
+        }
+       ],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    }
+   ]
+  },
+  {
+   "khach": "Phường Nguyễn Trãi ạ",
+   "bot_goc": [
+    "🤖 Không trích xuất được gì từ tin này.",
+    "Căn hẻm Nguyễn Trãi này, sổ nhà mình là sổ riêng hay sổ chung vậy anh chị?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": "so_phong_ngu",
+        "ly_do": "chủ nhà vừa nói kết cấu (trệt + 1 lầu) nên nên hỏi tiếp số phòng ngủ để có đủ thông tin cơ bản"
+       },
+       "so_can": 0,
+       "truong": [],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "Phường Nguyễn Trãi",
+        "trich_dan": "Phường Nguyễn Trãi ạ",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Dạ Phường Nguyễn Trãi ạ. Căn hẻm Nguyễn Trãi này, sổ nhà mình là sổ riêng hay sổ chung vậy anh chị?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": [
+        {
+         "cau": "Dạ Phường Nguyễn Trãi ạ",
+         "kieu": null,
+         "goi_y": false,
+         "can_cu": null,
+         "khang_dinh": "Căn nhà ở Phường Nguyễn Trãi",
+         "noi_co_hang": false,
+         "hua_khong_lam": false,
+         "noi_trang_thai_tin": false,
+         "danh_gia_thi_truong": false
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "sổ riêng ạ, còn căn An Dương Vương em chưa kể chi tiết, hẻm An Dương Vương 4x10 cấp 4 5 tỷ, sổ riêng",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• pháp lý: \"sổ riêng\"",
+    "📝 Em ghi vào mở tin mới BDS-NP-XX-0002.",
+    "Dạ vâng anh chị, em ghi sổ riêng rồi ạ. Đường Nguyễn Trãi có ở nhiều nơi (Bình Dương, Quận 5, Quận 9, Quận 1), nhà mình thuộc phường nào, quận nào vậy anh chị?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "manh": [
+        {
+         "trich": "sổ riêng ạ",
+         "ma_tin": "BDS-NP-Q5-0002"
+        },
+        {
+         "trich": "còn căn An Dương Vương em chưa kể chi tiết, hẻm An Dương Vương 4x10 cấp 4 5 tỷ, sổ riêng",
+         "ma_tin": "MOI"
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "gan_manh"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "moi_gioi",
+        "trich_dan": "bên môi giới"
+       },
+       "cau_ke": {
+        "khoa": null,
+        "ly_do": null
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": 3,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "cấp 4 5 tỷ"
+        },
+        {
+         "can": 3,
+         "khoa": "loai_bds",
+         "gia_tri": "nha_cap4",
+         "trich_dan": "cấp 4"
+        },
+        {
+         "can": 3,
+         "khoa": "duong",
+         "gia_tri": "hẻm An Dương Vương",
+         "trich_dan": "hẻm An Dương Vương"
+        },
+        {
+         "can": 3,
+         "khoa": "ten_duong",
+         "gia_tri": "An Dương Vương",
+         "trich_dan": "hẻm An Dương Vương"
+        },
+        {
+         "can": 3,
+         "khoa": "ngang",
+         "gia_tri": "4",
+         "trich_dan": "4x10"
+        },
+        {
+         "can": 3,
+         "khoa": "dai",
+         "gia_tri": "10",
+         "trich_dan": "4x10"
+        },
+        {
+         "can": 3,
+         "khoa": "quan",
+         "gia_tri": "Quận 5",
+         "trich_dan": "quận 5"
+        },
+        {
+         "can": 3,
+         "khoa": "gia",
+         "gia_tri": "5 tỷ",
+         "trich_dan": "5 tỷ"
+        },
+        {
+         "can": 3,
+         "khoa": "phap_ly",
+         "gia_tri": "sổ hồng riêng",
+         "trich_dan": "sổ riêng"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "sổ riêng ạ",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "moi_gioi",
+        "trich_dan": "bên môi giới"
+       },
+       "cau_ke": {
+        "khoa": "nguoi_dung_ten",
+        "ly_do": "Vừa xác định sổ riêng, cần biết ai đứng tên"
+       },
+       "so_can": 0,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "phap_ly",
+         "gia_tri": "sổ riêng",
+         "trich_dan": "sổ riêng ạ"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "sổ riêng",
+        "trich_dan": "sổ riêng ạ",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Dạ vâng anh chị, em ghi sổ riêng rồi ạ. Căn hẻm Nguyễn Trãi, đường Nguyễn Trãi có ở nhiều nơi (Bình Dương, Quận 5, Quận 9, Quận 1), nhà mình thuộc phường nào, quận nào vậy anh chị?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": [
+        {
+         "cau": "em ghi sổ riêng rồi ạ",
+         "kieu": null,
+         "goi_y": null,
+         "can_cu": "sổ riêng ạ",
+         "khang_dinh": "căn có sổ riêng",
+         "noi_co_hang": null,
+         "hua_khong_lam": null,
+         "noi_trang_thai_tin": null,
+         "danh_gia_thi_truong": false
+        },
+        {
+         "cau": "Căn hẻm Nguyễn Trãi, đường Nguyễn Trãi có ở nhiều nơi (Bình Dương, Quận 5, Quận 9, Quận 1)",
+         "kieu": "nhac_lai",
+         "goi_y": null,
+         "can_cu": null,
+         "khang_dinh": "đường Nguyễn Trãi có ở nhiều địa phương khác nhau",
+         "noi_co_hang": null,
+         "hua_khong_lam": null,
+         "noi_trang_thai_tin": null,
+         "danh_gia_thi_truong": false
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "Căn Nguyễn Trãi ở Q5 bạn ơi, phường Nguyễn Trãi",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• quận: làm chuẩn \"Quận 5\"",
+    "Dạ vâng, quận 5 ạ. Đường Nguyễn Trãi đoạn nhà mình thuộc Phường Chợ Lớn, Phường An Đông hay Phường Chợ Quán vậy anh chị?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "Căn Nguyễn Trãi ở Q5 bạn ơi, phường Nguyễn Trãi",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": "so_wc",
+        "ly_do": "Chủ nhà chưa nói về số phòng vệ sinh"
+       },
+       "so_can": 0,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "phuong",
+         "gia_tri": "Phường Nguyễn Trãi",
+         "trich_dan": "phường Nguyễn Trãi"
+        },
+        {
+         "can": null,
+         "khoa": "quan",
+         "gia_tri": "Quận 5",
+         "trich_dan": "Q5"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "Quận 5, Phường Nguyễn Trãi",
+        "trich_dan": "Căn Nguyễn Trãi ở Q5 bạn ơi, phường Nguyễn Trãi",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Dạ vâng, quận 5 ạ. Căn hẻm Nguyễn Trãi này, đường Nguyễn Trãi đoạn nhà mình thuộc Phường Chợ Lớn, Phường An Đông hay Phường Chợ Quán vậy anh chị?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": [
+        {
+         "cau": "Căn hẻm Nguyễn Trãi này, đường Nguyễn Trãi đoạn nhà mình thuộc Phường Chợ Lớn, Phường An Đông hay Phường Chợ Quán vậy anh chị?",
+         "kieu": null,
+         "goi_y": true,
+         "can_cu": null,
+         "khang_dinh": "Đường Nguyễn Trãi thuộc một trong các phường: Chợ Lớn, An Đông hoặc Chợ Quán",
+         "noi_co_hang": null,
+         "hua_khong_lam": null,
+         "noi_trang_thai_tin": null,
+         "danh_gia_thi_truong": false
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "Phường Chợ Lớn bạn ơi",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• phường: \"Phường Chợ Lớn\" → làm chuẩn \"Phường Chợ Lớn (Quận 5 cũ)\"",
+    "📋 Em sẽ rao như vầy nhé anh chị:\nBán nhà hẻm Nguyễn Trãi Phường Chợ Lớn Q.5, 36m², trệt + 1 lầu, SHR, giá 6 tỷ 5\n📍 Hẻm Nguyễn Trãi, Phường Chợ Lớn, Quận 5\n💰 6 tỷ 5\n📐 Diện tích: 36m² · ngang 3m x dài 12m\n🏗 Kết cấu: trệt + 1 lầu\n🛣 Đường vào: trong hẻm\n📜 Pháp lý: sổ hồng riêng\nĐộ đầy đủ 73/100, thêm mấy phòng ngủ và tiềm năng sử dụng (ở, cho thuê hay kinh doanh) là tin mạnh hơn nữa ạ.\nAnh chị thấy hấp dẫn chưa ạ? Ổn thì em đăng liền và rao tích cực cho anh chị.\n👉 Có khách quan tâm là Nh•ai báo lại anh chị liền ạ."
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "Phường Chợ Lớn bạn ơi",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": "so_wc",
+        "ly_do": "Tin chưa nói số WC của căn"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "phuong",
+         "gia_tri": "Phường Chợ Lớn",
+         "trich_dan": "Phường Chợ Lớn"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "Phường Chợ Lớn",
+        "trich_dan": "Phường Chợ Lớn bạn ơi",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    }
+   ]
+  },
+  {
+   "khach": "được bạn ơi, đăng luôn. Còn căn An Dương Vương em cần kể thêm, 4x10 cấp 4 5 tỷ, sổ riêng, ở Q5 phường nào bạn biết ko",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• giá mong muốn: \"5 tỷ\"\n• pháp lý: \"sổ riêng\"\n• diện tích: \"4x10\" → làm chuẩn \"ngang 4m × dài 10m (40m²)\"",
+    "📝 Em ghi vào tin BDS-NP-XX-0002: giá mong muốn: 5 tỷ · pháp lý: sổ hồng riêng · diện tích: 4x10.",
+    "Dạ em cảm ơn anh chị, tin nhà mình lên kệ AI Ơi Nhà Đất rồi, điểm đầy đủ 73/100.\nCó khách quan tâm là em báo anh chị liền.\nĐiểm người rao của anh chị hiện 64/100 (4 tin); tin nào đủ hơn là điểm chung lên theo.\nMà anh chị biết phí bên em chưa ạ?",
+    "Anh chị đang ở hạng Bạc bên em."
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "manh": [
+        {
+         "trich": "được bạn ơi, đăng luôn",
+         "ma_tin": "BDS-NP-Q5-0002"
+        },
+        {
+         "trich": "Còn căn An Dương Vương em cần kể thêm, 4x10 cấp 4 5 tỷ, sổ riêng, ở Q5 phường nào bạn biết ko",
+         "ma_tin": "BDS-NP-XX-0002"
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "gan_manh"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "moi_gioi",
+        "trich_dan": "em"
+       },
+       "cau_ke": {
+        "khoa": "phuong",
+        "ly_do": "chủ nhà hỏi không biết phường"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "loai_bds",
+         "gia_tri": "nha_cap4",
+         "trich_dan": "cấp 4"
+        },
+        {
+         "can": null,
+         "khoa": "ngang",
+         "gia_tri": "4",
+         "trich_dan": "4x10"
+        },
+        {
+         "can": null,
+         "khoa": "dai",
+         "gia_tri": "10",
+         "trich_dan": "4x10"
+        },
+        {
+         "can": null,
+         "khoa": "duong",
+         "gia_tri": "hẻm An Dương Vương",
+         "trich_dan": "hẻm An Dương Vương"
+        },
+        {
+         "can": null,
+         "khoa": "ten_duong",
+         "gia_tri": "An Dương Vương",
+         "trich_dan": "hẻm An Dương Vương"
+        },
+        {
+         "can": null,
+         "khoa": "quan",
+         "gia_tri": "Quận 5",
+         "trich_dan": "Q5"
+        },
+        {
+         "can": null,
+         "khoa": "gia",
+         "gia_tri": "5 tỷ",
+         "trich_dan": "5 tỷ"
+        },
+        {
+         "can": null,
+         "khoa": "phap_ly",
+         "gia_tri": "sổ riêng",
+         "trich_dan": "sổ riêng"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": "dia_danh",
+        "co_hoi": true,
+        "cau_hoi": "ở Q5 phường nào bạn biết ko"
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": "anh",
+        "trich_dan": "bạn ơi"
+       },
+       "can_khac": true,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y_dang",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": "được bạn ơi, đăng luôn",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": null,
+        "ly_do": null
+       },
+       "so_can": 0,
+       "truong": [],
+       "y_dinh": {
+        "loai": "du_roi",
+        "trich_dan": "được bạn ơi, đăng luôn"
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "đồng ý đăng tin",
+        "trich_dan": "được bạn ơi, đăng luôn",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    }
+   ]
+  }
+ ],
+ "ky_vong": [
+  {
+   "sau_luot": 4,
+   "loai": "cot",
+   "tin": 1,
+   "cot": "price_vnd",
+   "bang": 6500000000,
+   "ghi_chu": "SRS-5.1zzzzze: căn hẻm Nguyễn Trãi mở với giá 6 tỷ 5"
+  },
+  {
+   "sau_luot": 4,
+   "loai": "cot",
+   "tin": 2,
+   "cot": "price_vnd",
+   "bang": 5000000000,
+   "ghi_chu": "SRS-5.1zzzzze: căn hẻm An Dương Vương MỞ CÙNG LƯỢT (cụm chung 'em muốn đăng luôn' không làm mất căn)"
+  },
+  {
+   "sau_luot": 4,
+   "loai": "cot",
+   "tin": 1,
+   "cot": "district",
+   "bang": "Quận 5",
+   "ghi_chu": "quận chung của lô (khách nói 'mấy căn quận 5')"
+  },
+  {
+   "sau_luot": 4,
+   "loai": "cot",
+   "tin": 2,
+   "cot": "district",
+   "bang": "Quận 5",
+   "ghi_chu": "quận chung của lô"
+  },
+  {
+   "sau_luot": 4,
+   "tin": 1,
+   "loai": "cot",
+   "cot": "street",
+   "mau": "^Nguyễn Trãi$",
+   "ghi_chu": "SRS-5.1zzzzzf: căn thêm cùng Quận 5 có đường riêng → không mượn street Trần Hưng Đạo của căn đầu"
+  },
+  {
+   "sau_luot": 4,
+   "tin": 2,
+   "loai": "cot",
+   "cot": "street",
+   "mau": "^An Dương Vương$",
+   "ghi_chu": "SRS-5.1zzzzzf: căn thêm thứ hai cũng giữ đường riêng"
+  }
+ ]
+}

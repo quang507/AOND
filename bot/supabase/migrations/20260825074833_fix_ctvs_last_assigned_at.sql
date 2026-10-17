@@ -1,0 +1,16 @@
+-- 20260825074833 — fix_ctvs_last_assigned_at
+--
+-- ÁP LÊN PRODUCTION 25/08/2026 lúc 07:48 QUA MCP, KHÔNG AI LƯU FILE. Nội dung DDL gốc
+-- KHÔNG CÒN Ở ĐÂU (OPEN-46): Supabase không giữ lại câu lệnh của migration áp
+-- bằng `apply_migration`, và không ai chép ra. File này là DẤU VẾT, không phải
+-- bản dựng lại — chạy nó không tạo ra gì hết.
+--
+-- VÌ SAO VẪN VIẾT FILE RỖNG: trước bản này, `soat-migration.mjs` kêu 52 dòng
+-- mỗi lần chạy, và một cảnh báo kêu mãi thì thành tiếng ồn — người ta thôi đọc,
+-- rồi cái thứ 53 (drift THẬT, mới xảy ra hôm nay) chìm lẫn vào đó. Nay 52 dòng
+-- này thành hồ sơ đã biết, cổng CI chỉ còn kêu khi có drift MỚI.
+--
+-- DỰNG LẠI TỪ SỐ KHÔNG thì KHÔNG replay được thư mục này. Đường đúng:
+--   1. `bot/supabase/schema.sql` — ảnh chụp đầy đủ, sinh bởi `xuat_schema()`
+--   2. rồi mới áp các migration TỪ 20260902 trở đi
+-- Quy trình đầy đủ: `bot/README.md §Phục hồi từ số không`, `docs/12`.

@@ -1,0 +1,8 @@
+{
+  "name": "nhadat-bot-giong",
+  "private": true,
+  "type": "module",
+  "description": "Bộ đo giọng bot: chat-reply thật + DB giả (../e2e) + model THẬT. Gói SDK cài riêng ở đây vì Bun tìm node_modules từ vị trí file, không dùng chung với ../e2e.",
+  "scripts": { "test": "bun kiem-giong.mjs --tu-kiem && bun cham.mjs --tu-kiem" },
+  "devDependencies": { "@anthropic-ai/sdk": "^0.80.0", "zod": "^4.0.0" }
+}

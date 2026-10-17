@@ -1,0 +1,189 @@
+{
+ "nguon": "SRS-5.1zzzz — cách nói MỚI (dựng tay, đầu ra AI dựng lại): 'anh cần bán nhà' rồi câu rao 'quận 5' có tên đường Trần Bình Trọng (đường ở nhiều quận) → chỉ hỏi phường trong Quận 5",
+ "luot": [
+  {
+   "text": "anh cần bán nhà",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "cần bán",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "nhà",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "vi_tri",
+     "ly_do": "cần địa chỉ"
+    },
+    "tu_xung": {
+     "la": "anh",
+     "trich_dan": "anh cần"
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, nhà mình ở đâu vậy anh?"
+   ]
+  },
+  {
+   "text": "nhà hẻm 4m Trần Bình Trọng quận 5, 4x15, trệt 2 lầu, sổ hồng, 7 tỷ 5",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_duong_vao",
+      "gia_tri": "hem_xe_hoi",
+      "trich_dan": "hẻm 4m",
+      "can": null
+     },
+     {
+      "khoa": "do_rong_hem",
+      "gia_tri": "4",
+      "trich_dan": "hẻm 4m",
+      "can": null
+     },
+     {
+      "khoa": "duong",
+      "gia_tri": "hẻm 4m Trần Bình Trọng",
+      "trich_dan": "hẻm 4m Trần Bình Trọng",
+      "can": null
+     },
+     {
+      "khoa": "ten_duong",
+      "gia_tri": "Trần Bình Trọng",
+      "trich_dan": "Trần Bình Trọng",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 5",
+      "trich_dan": "quận 5",
+      "can": null
+     },
+     {
+      "khoa": "ngang",
+      "gia_tri": "4",
+      "trich_dan": "4x15",
+      "can": null
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "15",
+      "trich_dan": "4x15",
+      "can": null
+     },
+     {
+      "khoa": "so_tang",
+      "gia_tri": "3",
+      "trich_dan": "trệt 2 lầu",
+      "can": null
+     },
+     {
+      "khoa": "phap_ly",
+      "gia_tri": "sổ hồng",
+      "trich_dan": "sổ hồng",
+      "can": null
+     },
+     {
+      "khoa": "gia",
+      "gia_tri": "7 tỷ 5",
+      "trich_dan": "7 tỷ 5",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "phuong",
+     "ly_do": "còn thiếu phường"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ em nhận tin rao rồi ạ."
+   ]
+  }
+ ]
+}

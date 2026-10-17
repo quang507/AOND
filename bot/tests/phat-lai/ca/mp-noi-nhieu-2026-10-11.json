@@ -1,0 +1,994 @@
+{
+ "ten": "mp-noi-nhieu-2026-10-11",
+ "nguon": {
+  "run": "38170086556",
+  "persona": "noi-nhieu"
+ },
+ "cau_hinh": {
+  "lenh_json": "bat",
+  "tro_ly": "thu",
+  "boc_tach_ai": "ai",
+  "luat_loi_bot": "gon",
+  "bao_lai_da_luu": "thay_doi"
+ },
+ "luot": [
+  {
+   "khach": "chào em, chị có căn nhà ở Phú Nhuận muốn bán, con chị đi nước ngoài rồi nên ở không hết. Mấy năm nay toàn để trống, tiếc quá.",
+   "bot_goc": [
+    "Dạ em chào chị ạ!",
+    "🤖 Đã trích xuất:\n• loại: làm chuẩn \"Nhà bán\"\n• địa chỉ: làm chuẩn \"Quận Phú Nhuận\"\n• hiện trạng: \"toàn để trống\"\n👤 Hồ sơ: Zalo: \"…hieu\" · cách gọi: \"chị\"",
+    "Dạ vâng chị. Nhà chị ở đường nào, số bao nhiêu vậy ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "khong_noi",
+        "trich_dan": null
+       },
+       "cau_ke": {
+        "khoa": "duong",
+        "ly_do": "cần xác định địa chỉ cụ thể để lên tin"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "muốn bán"
+        },
+        {
+         "can": null,
+         "khoa": "loai_bds",
+         "gia_tri": "nha_pho",
+         "trich_dan": "căn nhà"
+        },
+        {
+         "can": null,
+         "khoa": "quan",
+         "gia_tri": "Quận Phú Nhuận",
+         "trich_dan": "Phú Nhuận"
+        },
+        {
+         "can": null,
+         "khoa": "hien_trang_su_dung",
+         "gia_tri": "để trống",
+         "trich_dan": "toàn để trống"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [
+        "riêng: con chị đi nước ngoài rồi",
+        "riêng: tiếc quá"
+       ],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Dạ vâng chị. Nhà chị ở đường nào, số bao nhiêu vậy ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "Ở hẻm Phan Xích Long khu vực Phú Nhuận, ngang 5 dài 18 ấy em. Con chị học tiếng Anh ở Mỹ nên không về được, chị cũng già rồi không còn sức quản lý. Sổ hồng riêng, 1 trệt 3 lầu.",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• vị trí cụ thể: \"Hẻm Phan Xích Long\"\n• kết cấu: làm chuẩn \"4 tầng\"\n• pháp lý: \"sổ hồng riêng\"\n• diện tích: làm chuẩn \"ngang 5m × dài 18m (90m²)\"\n• quận: làm chuẩn \"Quận Phú Nhuận\"",
+    "Vâng ạ. Hẻm Phan Xích Long ngang 5 dài 18 ấy chị, em ghi rồi ạ. Hẻm trước nhà chị rộng mấy mét vậy ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị có căn nhà"
+       },
+       "cau_ke": {
+        "khoa": "dien_tich_dat",
+        "ly_do": "chủ nhà vừa nói kích thước ngang dài, bước tiếp là diện tích đất để hoàn chỉnh thông tin vị trí"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "muốn bán"
+        },
+        {
+         "can": null,
+         "khoa": "loai_bds",
+         "gia_tri": "nha_pho",
+         "trich_dan": "căn nhà"
+        },
+        {
+         "can": null,
+         "khoa": "duong",
+         "gia_tri": "Phan Xích Long",
+         "trich_dan": "hẻm Phan Xích Long"
+        },
+        {
+         "can": null,
+         "khoa": "ten_duong",
+         "gia_tri": "Phan Xích Long",
+         "trich_dan": "hẻm Phan Xích Long"
+        },
+        {
+         "can": null,
+         "khoa": "quan",
+         "gia_tri": "Quận Phú Nhuận",
+         "trich_dan": "Phú Nhuận"
+        },
+        {
+         "can": null,
+         "khoa": "ngang",
+         "gia_tri": "5",
+         "trich_dan": "ngang 5"
+        },
+        {
+         "can": null,
+         "khoa": "dai",
+         "gia_tri": "18",
+         "trich_dan": "dài 18"
+        },
+        {
+         "can": null,
+         "khoa": "so_tang",
+         "gia_tri": "4",
+         "trich_dan": "1 trệt 3 lầu"
+        },
+        {
+         "can": null,
+         "khoa": "phap_ly",
+         "gia_tri": "sổ hồng riêng",
+         "trich_dan": "Sổ hồng riêng"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "Hẻm Phan Xích Long, ngang 5 dài 18",
+        "trich_dan": "Ở hẻm Phan Xích Long khu vực Phú Nhuận, ngang 5 dài 18 ấy em. 1 trệt 3 lầu",
+        "co_tra_loi": true
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [
+        "ở trong khu vực",
+        "riêng: con chị học tiếng Anh ở Mỹ nên không về được",
+        "riêng: chị cũng già rồi không còn sức quản lý"
+       ],
+       "khong_can_hoi": [
+        {
+         "khoa": "phuong",
+         "ly_do": "chủ nhà nói ở Phú Nhuận nhưng phường cũ bị chia thành nhiều phần, không đủ thông tin để xác định",
+         "gia_tri": null,
+         "trich_dan": "Ở hẻm Phan Xích Long khu vực Phú Nhuận"
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Vâng ạ. Hẻm Phan Xích Long ngang 5 dài 18 ấy chị, em ghi rồi ạ. Hẻm trước nhà chị rộng mấy mét vậy ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "Hẻm trước khoảng 2m thôi em, hẻp lắm. Hôm qua con hàng xóm còn kêu hẻp quá không vô được, chị cũng không biết bán cho ai. Giá chị định 14 tỷ ấy.",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• độ rộng hẻm trước nhà: làm chuẩn \"hẻm rộng khoảng 2m\"\n• giá mong muốn: \"14 tỷ\"\n• thông tin bổ sung: làm chuẩn \"hẻp lắm\"",
+    "Dạ em ghi giá 14 tỷ rồi chị ạ. Đường Phan Xích Long đoạn nhà mình thuộc Phường Cầu Kiệu hay Phường Đức Nhuận vậy chị?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": null,
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị"
+       },
+       "cau_ke": {
+        "khoa": "ly_do_ban",
+        "ly_do": "chủ nhà vừa nêu lý do liên quan đến gia đình"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "do_rong_hem",
+         "gia_tri": "2",
+         "trich_dan": "Hẻm trước khoảng 2m"
+        },
+        {
+         "can": null,
+         "khoa": "gia",
+         "gia_tri": "14 tỷ",
+         "trich_dan": "Giá chị định 14 tỷ"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": "hẻm rộng khoảng 2m",
+        "trich_dan": "Hẻm trước khoảng 2m",
+        "co_tra_loi": true
+       },
+       "tu_xung": null,
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [
+        "hẻp lắm",
+        "con hàng xóm kêu hẻp quá không vô được"
+       ],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Dạ em ghi giá 14 tỷ rồi chị ạ. Đường Phan Xích Long đoạn nhà chị thuộc Phường Cầu Kiệu hay Phường Đức Nhuận vậy chị?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": [
+        {
+         "cau": "Đường Phan Xích Long đoạn nhà chị thuộc Phường Cầu Kiệu hay Phường Đức Nhuận vậy chị?",
+         "kieu": null,
+         "goi_y": false,
+         "can_cu": "Bảng tên đường: đường Phan Xích Long ở Quận Phú Nhuận đi qua 2 phường: Phường Cầu Kiệu, Phường Đức Nhuận",
+         "khang_dinh": "Địa chỉ nhà ở đường Phan Xích Long thuộc một trong hai phường Cầu Kiệu hoặc Đức Nhuận",
+         "noi_co_hang": false,
+         "hua_khong_lam": false,
+         "noi_trang_thai_tin": false,
+         "danh_gia_thi_truong": false
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "Em ơi, chị không nhớ rõ lắm, chị chỉ biết là ở Phú Nhuận thôi. Cách đây mấy năm chị mua nó, lúc đó nóng lắm, mặt tiền nhà mình nắng gắt kinh khủng.",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• độ rộng hẻm trước nhà: làm chuẩn \"2m\"\n• đường vào: làm chuẩn \"hẻm xe máy\"",
+    "📋 Em sẽ rao như vầy nhé chị:\nBán nhà hẻm 2m Phan Xích Long Quận Phú Nhuận, 90m², trệt + 3 lầu, SHR, giá 14 tỷ\n📍 Hẻm Phan Xích Long, Quận Phú Nhuận\n💰 14 tỷ\n📐 Diện tích: 90m² · ngang 5m x dài 18m\n🏗 Kết cấu: trệt + 3 lầu\n🛣 Đường vào: hẻm xe máy 2m\n📜 Pháp lý: sổ hồng riêng\n🏠 Hiện trạng: toàn để trống\n📝 Thêm: hẻp lắm\nĐộ đầy đủ 74/100, thêm mấy phòng ngủ và tiềm năng sử dụng (ở, cho thuê hay kinh doanh) là tin mạnh hơn nữa ạ.\nChị thấy hấp dẫn chưa ạ? Ổn thì em đăng liền và rao tích cực cho chị.\n👉 Có khách quan tâm là Đ•ai báo lại chị liền ạ."
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": "chỉ biết là ở Phú Nhuận thôi",
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị có căn nhà ở Phú Nhuận muốn bán"
+       },
+       "cau_ke": {
+        "khoa": "ly_do_ban",
+        "ly_do": "chủ nhà đã nói con chị đi nước ngoài, ở không hết, để trống nhiều năm"
+       },
+       "so_can": 0,
+       "truong": [],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [
+        "mặt tiền nhà nắng gắt"
+       ],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị có căn nhà"
+       },
+       "cau_ke": {
+        "khoa": null,
+        "ly_do": null
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "muốn bán"
+        },
+        {
+         "can": null,
+         "khoa": "loai_bds",
+         "gia_tri": "nha_pho",
+         "trich_dan": "căn nhà"
+        },
+        {
+         "can": null,
+         "khoa": "quan",
+         "gia_tri": "Quận Phú Nhuận",
+         "trich_dan": "Phú Nhuận"
+        },
+        {
+         "can": null,
+         "khoa": "duong",
+         "gia_tri": "Phạm Xích Long",
+         "trich_dan": "hẻm Phan Xích Long"
+        },
+        {
+         "can": null,
+         "khoa": "ten_duong",
+         "gia_tri": "Phạm Xích Long",
+         "trich_dan": "hẻm Phan Xích Long"
+        },
+        {
+         "can": null,
+         "khoa": "ngang",
+         "gia_tri": "5",
+         "trich_dan": "ngang 5"
+        },
+        {
+         "can": null,
+         "khoa": "dai",
+         "gia_tri": "18",
+         "trich_dan": "dài 18"
+        },
+        {
+         "can": null,
+         "khoa": "do_rong_hem",
+         "gia_tri": "2",
+         "trich_dan": "hẻm trước khoảng 2m"
+        },
+        {
+         "can": null,
+         "khoa": "so_tang",
+         "gia_tri": "4",
+         "trich_dan": "1 trệt 3 lầu"
+        },
+        {
+         "can": null,
+         "khoa": "phap_ly",
+         "gia_tri": "sổ hồng riêng",
+         "trich_dan": "Sổ hồng riêng"
+        },
+        {
+         "can": null,
+         "khoa": "gia",
+         "gia_tri": "14 tỷ",
+         "trich_dan": "Giá chị định 14 tỷ"
+        },
+        {
+         "can": null,
+         "khoa": "loai_duong_vao",
+         "gia_tri": "hem_xe_may",
+         "trich_dan": "hẻm trước khoảng 2m"
+        }
+       ],
+       "y_dinh": {
+        "loai": "binh_thuong",
+        "trich_dan": null
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": null,
+        "trich_dan": null
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [
+        "mặt tiền nắng gắt",
+        "riêng: con chị đi nước ngoài",
+        "riêng: để trống mấy năm",
+        "riêng: chị già không còn sức quản lý"
+       ],
+       "khong_can_hoi": []
+      }
+     },
+     "kind": "parse",
+     "loai": "chot_tin"
+    }
+   ]
+  },
+  {
+   "khach": "Được em ơi, cái bản nháp đó được rồi. Chị không biết mấy phòng ngủ chính xác bao nhiêu nên chị không nói thêm được. Đăng đi em, chị đợi khách liên hệ.",
+   "bot_goc": [
+    "🤖 Không trích xuất được gì từ tin này.",
+    "Dạ tin chỉ còn thiếu phường là lên kệ được chị. Phường có ghi trên sổ hồng (dòng địa chỉ thửa đất) hoặc hoá đơn điện nước đó chị, chị xem giúp em rồi nhắn em, có là em đăng luôn không hỏi lại."
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y_dang",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": "không biết mấy phòng ngủ chính xác bao nhiêu",
+       "dong_y_trich": "Được em ơi, cái bản nháp đó được rồi. Đăng đi em",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị không biết mấy phòng ngủ chính xác"
+       },
+       "cau_ke": {
+        "khoa": null,
+        "ly_do": null
+       },
+       "so_can": 1,
+       "truong": [],
+       "y_dinh": {
+        "loai": "du_roi",
+        "trich_dan": "Đăng đi em"
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": null,
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": [
+        {
+         "khoa": "so_phong_ngu",
+         "ly_do": "chủ nhà không biết mấy phòng ngủ chính xác",
+         "trich_dan": "không biết mấy phòng ngủ chính xác bao nhiêu"
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    }
+   ]
+  },
+  {
+   "khach": "Em ơi, chị xem qua những giấy tờ rồi nhưng để lâu quá, chị không tìm thấy sổ hồng đâu. Con chị ở Mỹ, mẹ chồng ở nhà bảo sổ để đâu không rõ, chị cũng chẳng biết. Chị cứ đăng trước được không em, khách quan tâm thì chị hỏi lại.",
+   "bot_goc": [
+    "🤖 Không trích xuất được gì từ tin này.",
+    "Vâng ạ. Chị cứ đăng trước được, em sẽ điền những thông tin chị đã cho là xong. Nếu khách hỏi tiếp thì chị kiểm tra sổ lúc đó cũng kịp mà chị ơi.\n\nCòn để chắc chắn, nhà mình ở phường nào vậy chị, Phường Cầu Kiệu hay Phường Đức Nhuận ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "khong_noi",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": "không tìm thấy sổ hồng, không rõ sổ để đâu",
+       "dong_y_trich": null,
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị xem qua những giấy tờ"
+       },
+       "cau_ke": {
+        "khoa": "ly_do_ban",
+        "ly_do": "chị vừa nói sổ không tìm thấy nên có thể liên quan tới lý do bán hoặc tình trạng pháp lý cần làm rõ"
+       },
+       "so_can": 0,
+       "truong": [],
+       "y_dinh": {
+        "loai": "du_roi",
+        "trich_dan": "Đăng đi em, chị đợi khách liên hệ"
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": "dia_danh",
+        "co_hoi": true,
+        "cau_hoi": "Phường có ghi trên sổ hồng (dòng địa chỉ thửa đất) hoặc hoá đơn điện nước đó chị, chị xem giúp em rồi nhắn em, có là em đăng luôn không hỏi lại."
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": "chị",
+        "trich_dan": "chị xem qua những giấy tờ"
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [],
+       "khong_can_hoi": [
+        {
+         "khoa": "so_phong_ngu",
+         "ly_do": "chị không biết mấy phòng ngủ chính xác bao nhiêu nên không nói được",
+         "trich_dan": "chị không biết mấy phòng ngủ chính xác bao nhiêu"
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Vâng ạ. Chị cứ đăng trước được, em sẽ điền những thông tin chị đã cho là xong. Nếu khách hỏi tiếp thì chị kiểm tra sổ lúc đó cũng kịp mà chị ơi.\n\nCòn để chắc chắn, nhà mình ở phường nào vậy chị — Phường Cầu Kiệu hay Phường Đức Nhuận ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": []
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  },
+  {
+   "khach": "Em ơi, chị thật không nhớ rõ, để lâu quá mất rồi. Chị chỉ biết là Phú Nhuận thôi, hẻm Phan Xích Long ấy. Cứ đăng đi em, khách hỏi thì chị tìm hiểu sau cũng được.",
+   "bot_goc": [
+    "🤖 Đã trích xuất:\n• quận: làm chuẩn \"Quận Phú Nhuận\"",
+    "Vâng ạ chị. Hẻm Phan Xích Long Phú Nhuận, 90m², 14 tỷ. Chị còn muốn bổ sung gì không ạ?"
+   ],
+   "ai": [
+    {
+     "ra": {
+      "po": {
+       "bo_y": null,
+       "dong_y": "dong_y_dang",
+       "doc_lai": null,
+       "mua_kem": null,
+       "yeu_cau": "khong",
+       "yeu_cau_o": null,
+       "khong_biet": "chị thật không nhớ rõ, để lâu quá mất rồi",
+       "dong_y_trich": "Cứ đăng đi em",
+       "yeu_cau_trich": null,
+       "ngung_hang_loat": null
+      }
+     },
+     "kind": "parse",
+     "loai": "doc_y_luot"
+    },
+    {
+     "ra": {
+      "po": {
+       "vai": {
+        "la": "chinh_chu",
+        "trich_dan": "chị có căn nhà"
+       },
+       "cau_ke": {
+        "khoa": "ly_do_ban",
+        "ly_do": "chủ nhà vừa nói con chị ở nước ngoài và để trống lâu nên có thể là lý do bán"
+       },
+       "so_can": 1,
+       "truong": [
+        {
+         "can": null,
+         "khoa": "loai_giao_dich",
+         "gia_tri": "ban",
+         "trich_dan": "muốn bán"
+        },
+        {
+         "can": null,
+         "khoa": "loai_bds",
+         "gia_tri": "nha_pho",
+         "trich_dan": "căn nhà"
+        },
+        {
+         "can": null,
+         "khoa": "duong",
+         "gia_tri": "hẻm Phan Xích Long",
+         "trich_dan": "hẻm Phan Xích Long"
+        },
+        {
+         "can": null,
+         "khoa": "quan",
+         "gia_tri": "Quận Phú Nhuận",
+         "trich_dan": "Phú Nhuận"
+        },
+        {
+         "can": null,
+         "khoa": "ngang",
+         "gia_tri": "5",
+         "trich_dan": "ngang 5"
+        },
+        {
+         "can": null,
+         "khoa": "dai",
+         "gia_tri": "18",
+         "trich_dan": "dài 18"
+        },
+        {
+         "can": null,
+         "khoa": "so_tang",
+         "gia_tri": "4",
+         "trich_dan": "1 trệt 3 lầu"
+        },
+        {
+         "can": null,
+         "khoa": "phap_ly",
+         "gia_tri": "sổ hồng riêng",
+         "trich_dan": "Sổ hồng riêng"
+        },
+        {
+         "can": null,
+         "khoa": "gia",
+         "gia_tri": "14 tỷ",
+         "trich_dan": "Giá chị định 14 tỷ"
+        },
+        {
+         "can": null,
+         "khoa": "do_rong_hem",
+         "gia_tri": "2",
+         "trich_dan": "hẻm trước khoảng 2m"
+        },
+        {
+         "can": null,
+         "khoa": "loai_duong_vao",
+         "gia_tri": "hem_xe_may",
+         "trich_dan": "hẻm trước khoảng 2m"
+        }
+       ],
+       "y_dinh": {
+        "loai": "du_roi",
+        "trich_dan": "Đăng đi em"
+       },
+       "cam_xuc": {
+        "muc": "binh_thuong",
+        "trich_dan": null
+       },
+       "hoi_lai": {
+        "chu_de": null,
+        "co_hoi": false,
+        "cau_hoi": null
+       },
+       "tra_loi": {
+        "gia_tri": null,
+        "trich_dan": null,
+        "co_tra_loi": false
+       },
+       "tu_xung": {
+        "la": "chị",
+        "trich_dan": "chị chỉ biết là Phú Nhuận thôi"
+       },
+       "can_khac": false,
+       "cap_nhat": [],
+       "xac_nhan": [],
+       "kien_thuc": [
+        "con chị đi nước ngoài nên ở không hết",
+        "toàn để trống",
+        "mặt tiền nhà mình nắng gắt"
+       ],
+       "khong_can_hoi": [
+        {
+         "khoa": "phuong",
+         "ly_do": "chủ nhà không nhớ rõ phường, chỉ biết quận Phú Nhuận",
+         "trich_dan": "chị chỉ biết là Phú Nhuận thôi"
+        },
+        {
+         "khoa": "dien_tich_khop_so",
+         "ly_do": "chủ nhà không tìm thấy sổ hồng nên không thể kiểm tra",
+         "trich_dan": "chị không tìm thấy sổ hồng đâu"
+        },
+        {
+         "khoa": "nguoi_dung_ten",
+         "ly_do": "chủ nhà không tìm thấy sổ hồng để xác minh",
+         "trich_dan": "chị không tìm thấy sổ hồng đâu"
+        },
+        {
+         "khoa": "the_chap",
+         "ly_do": "chủ nhà không tìm thấy sổ hồng để xác minh",
+         "trich_dan": "chị không tìm thấy sổ hồng đâu"
+        },
+        {
+         "khoa": "so_phong_ngu",
+         "ly_do": "chủ nhà không nhớ chính xác số phòng ngủ",
+         "trich_dan": "chị không biết mấy phòng ngủ chính xác bao nhiêu"
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "boc_rao"
+    },
+    {
+     "ra": {
+      "chu": "Vâng ạ chị. Em đã đăng tin rồi, hẻm Phan Xích Long Phú Nhuận, 90m², 14 tỷ. Có khách quan tâm em sẽ báo chị ngay nha. Chị còn muốn bổ sung gì không ạ?"
+     },
+     "kind": "create",
+     "loai": "viet"
+    },
+    {
+     "ra": {
+      "po": {
+       "nhan_xet": [
+        {
+         "cau": "Em đã đăng tin rồi",
+         "kieu": null,
+         "goi_y": null,
+         "can_cu": null,
+         "khang_dinh": "Tin đã được đăng",
+         "noi_co_hang": false,
+         "hua_khong_lam": null,
+         "noi_trang_thai_tin": true,
+         "danh_gia_thi_truong": false
+        },
+        {
+         "cau": "hẻm Phan Xích Long Phú Nhuận",
+         "kieu": null,
+         "goi_y": null,
+         "can_cu": "hẻm Phan Xích Long",
+         "khang_dinh": "Nhà nằm ở hẻm Phan Xích Long, Phú Nhuận",
+         "noi_co_hang": false,
+         "hua_khong_lam": null,
+         "noi_trang_thai_tin": false,
+         "danh_gia_thi_truong": false
+        },
+        {
+         "cau": "Có khách quan tâm em sẽ báo chị ngay nha",
+         "kieu": null,
+         "goi_y": null,
+         "can_cu": null,
+         "khang_dinh": "Bot sẽ liên hệ chủ nhà khi có khách hỏi",
+         "noi_co_hang": false,
+         "hua_khong_lam": true,
+         "noi_trang_thai_tin": false,
+         "danh_gia_thi_truong": false
+        }
+       ]
+      }
+     },
+     "kind": "parse",
+     "loai": "soat_ban"
+    }
+   ]
+  }
+ ],
+ "ky_vong": [
+  {
+   "sau_luot": 4,
+   "loai": "cot",
+   "cot": "street",
+   "mau": "^Phan Xích Long$",
+   "ghi_chu": "SRS-5.1zzzzzf: khách gõ «hẻm Phan Xích Long», AI chốt tin trả «Phạm Xích Long» → cột street giữ chữ khách"
+  }
+ ]
+}

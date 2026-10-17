@@ -1,0 +1,127 @@
+{
+ "nguon": "SRS-5.1zzzzh — cách nói MỚI (dựng tay): 'gia 7ty2' (đơn vị dính số)",
+ "luot": [
+  {
+   "text": "can ban gap nha hem 4m tran hung dao q5 4x15 gia 7ty2",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "can ban",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "nha",
+      "can": null
+     },
+     {
+      "khoa": "gap",
+      "gia_tri": "co",
+      "trich_dan": "gap",
+      "can": null
+     },
+     {
+      "khoa": "duong",
+      "gia_tri": "hẻm Trần Hưng Đạo",
+      "trich_dan": "hem 4m tran hung dao",
+      "can": null
+     },
+     {
+      "khoa": "ten_duong",
+      "gia_tri": "Trần Hưng Đạo",
+      "trich_dan": "hem 4m tran hung dao",
+      "can": null
+     },
+     {
+      "khoa": "do_rong_hem",
+      "gia_tri": "4",
+      "trich_dan": "hem 4m",
+      "can": null
+     },
+     {
+      "khoa": "loai_duong_vao",
+      "gia_tri": "hem_xe_hoi",
+      "trich_dan": "hem 4m",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 5",
+      "trich_dan": "q5",
+      "can": null
+     },
+     {
+      "khoa": "ngang",
+      "gia_tri": "4",
+      "trich_dan": "4x15",
+      "can": null
+     },
+     {
+      "khoa": "dai",
+      "gia_tri": "15",
+      "trich_dan": "4x15",
+      "can": null
+     },
+     {
+      "khoa": "gia",
+      "gia_tri": "7ty2",
+      "trich_dan": "gia 7ty2",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "ket_cau",
+     "ly_do": "kết cấu"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, nhà mình mấy tầng vậy ạ?"
+   ]
+  }
+ ]
+}

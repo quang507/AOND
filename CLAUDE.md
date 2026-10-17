@@ -1,0 +1,536 @@
+# CLAUDE.md — Harness dự án nhadat.cc
+
+Tài liệu điều hướng cho mọi phiên làm việc trên repo này. Đọc file này trước khi
+chạm vào bất kỳ file nào khác.
+
+## 1. Dự án là gì
+
+**nhadat.cc** — dịch vụ môi giới bất động sản "chat-first" tại TP.HCM, khởi điểm
+là thị trường **Quận 5**. Luận điểm cốt lõi: *listing chỉ là mồi, giao dịch xảy
+ra trong cuộc trò chuyện, và cuộc trò chuyện không bao giờ kết thúc.*
+
+- **Người mua (B)** không trả phí, không phải để lại số điện thoại, tương tác qua
+  **Zalo OA** với trợ lý AI trực 24/7.
+- **Người bán (S)** — gồm **CCRB** (chính chủ rao bán) và **NMG** (nhà môi giới) —
+  rao tin bằng một câu rao thông thường, AI bóc tách trường và viết lại.
+- **Website nhadat.cc** là kênh SEO + listing + phễu đẩy người dùng sang Zalo OA.
+- Doanh thu 100% từ phía bán: CCRB 1%, NMG 0.5% giá trị giao dịch.
+
+Chi tiết đầy đủ: `docs/`.
+
+## 2. Bộ tài liệu BA (nguồn sự thật)
+
+Thứ tự đọc = thứ tự phụ thuộc. Tài liệu sau **không được mâu thuẫn** tài liệu trước.
+
+| # | File | Nội dung | ID prefix |
+|---|---|---|---|
+| 0 | `docs/00-dinh-huong.md` | **Định hướng** — BRD hợp nhất Aioinhadat × nhadat.cc: thương hiệu Aioinhadat (viết AI Ơi Nhà Đất), trợ lý mỗi khách một tên •ai (FR-181); mặt bán theo SRD AOND, mặt mua + web theo nhadat.cc, câu khách hỏi đi về CTV (FR-173); bất biến, sao Bắc Đẩu, lộ trình, quyết định treo. Đứng trên mọi tầng dưới | `DH-` |
+| 0 | `docs/00-glossary.md` | Từ điển thuật ngữ (B, S, CCRB, NMG, CTV, HXH…) | — |
+| 1 | `docs/01-research.md` | Nghiên cứu thị trường, người dùng, đối thủ, insight | `INS-` |
+| 2 | `docs/02-requirements.md` | Mục tiêu KD, persona, yêu cầu chức năng / phi chức năng | `BR- FR- NFR-` |
+| 3 | `docs/03-user-flows.md` | Luồng người dùng end-to-end | `UF-` |
+| 4 | `docs/04-information-architecture.md` | Sitemap, URL/SEO, content model, taxonomy | `IA-` |
+| 5 | `docs/05-wireframes.md` | Wireframe low-fi từng màn hình | `WF-` |
+| 6 | `docs/06-ui-design.md` | Design system, token, component, tone giọng | `UI-` |
+| 7 | `docs/07-srs.md` | Đặc tả phần mềm: kiến trúc, data model, API, acceptance | `SRS-` |
+| 8 | `docs/08-traceability.md` | Ma trận truy vết BR → FR → UF → WF → SRS | — |
+| 9 | `docs/09-open-issues.md` | Mâu thuẫn / quyết định còn treo, cần chủ dự án chốt | `OPEN-` |
+| 10 | `docs/10-ke-hoach-kiem-thu.md` | Kế hoạch kiểm thử 4 tầng: chức năng, kỹ thuật, UI/UX, phi chức năng | `TS-` |
+| 11 | `docs/11-quy-trinh.md` | Quy trình BA và tester: hai vòng làm việc, ba cổng, máy kiểm gì / người kiểm gì, định nghĩa XONG. Không sinh ID mới | — |
+| — | `docs/SRD-AI-Oi-Nha-Dat.docx` | **SRD gộp .docx** theo bố cục SRD Aioinhadat (06/10/2026, chủ dự án: "đổi thành đuôi docx như bên AOND"). **Bản XUẤT, không phải nguồn sự thật**: `bun run srd` sinh lại từ các file md trên bằng `scripts/sinh-srd-docx.mjs`; sửa nội dung thì sửa md rồi sinh lại, đừng sửa tay .docx | — |
+
+## 3. Tài liệu gốc & Phân định phạm vi
+
+**Tài liệu gốc 2024 KHÔNG còn trong repo** (xoá ở commit `459008d` ngày 08/09/2026 cùng `design/`, `SS/`, `hình samples/`, dữ liệu crawl; chủ dự án 10/09: "tài liệu nào bị cũ thì xoá đi"). Chúng là tư liệu lịch sử nhadat.cc 2024, đã ngưng kế thừa (OPEN-48). Muốn xem lại thì `git show 459008d^:"<tên file>"`. Các trích dẫn `[nguồn: biz model.docx §…]` trong `docs/` giữ nguyên làm dấu vết lịch sử — không phải lời mời đi tìm file.
+**Nguồn sự thật chuẩn duy nhất hiện nay của hệ thống là:**
+1. Bộ tài liệu `docs/` đã được chuẩn hóa theo **Aioinhadat 2026**.
+2. Kịch bản Gemini mới của Sếp: `Kịch bản huấn luyện môi giới (Gemini 07-09-2026).md`.
+   Chat Gemini gốc của dự án (21–27/06/2026, share `EEX3PutTDZDt`), chưng cất ở
+   `Kịch bản AI Ơi Nhà Đất (Gemini 21-06-2026, share).md` — chủ dự án đối chiếu với
+   hệ thống ngày 09/09/2026 và chốt 14 dòng ở `docs/09` OPEN-55 → FR-181…186.
+3. SRD Aioinhadat `AOND req + chat examples.docx` — đã chưng cất hết vào `06 §6.8`, `09` OPEN-20/21; file gốc cũng đã xoá.
+
+Bản đồ "file gốc (đã xoá) → chưng cất ở đâu", để đọc `[nguồn: …]` trong docs mà không phải mở file:
+
+| File gốc | Được chưng cất vào |
+|---|---|
+| `Tài liệu hệ thống nhadat.cc.pdf`, `SS/` | `07-srs.md` (kiến trúc, tech stack) |
+| `nhadat.cc website.docx` | `02`, `04`, `05`, `06` (website & SEO) |
+| `biz model.docx` / `.pdf` | `01`, `02` (mô hình KD, OKRs, phí) |
+| `S's side.docx` | `02`, `03` (luồng người bán, API S↔B) |
+| `chats w B.docx` | `03`, `06` (kịch bản chat, tone giọng), `07` (backend B Side) |
+| `demo2Vitalify.docx` | `01` (concept gốc bằng tiếng Anh) |
+| `OKRs eo2024.pptx` | `01` (định vị: *permanent agent of agents*) |
+| `dự kiến vốn 6 tháng đầu.xlsx` | `01` (ngân sách, ràng buộc nguồn lực) |
+| `AOND req + chat examples.docx` | `06` §6.8 (kịch bản người bán), `09` OPEN-20/21 (gamification, vai người rao) |
+| `hình samples/` | `05`, `06` (ảnh listing mẫu) |
+| `Kịch bản huấn luyện môi giới (Gemini 07-09-2026).md` | `02` FR-177 (hỏi người bán 1 thông tin/lần + khích lệ, bản nháp tin, điểm 7 tiêu chí), `09` OPEN-49 |
+| `Kịch bản AI Ơi Nhà Đất (Gemini 21-06-2026, share).md` | `09` OPEN-55 (14 dòng chốt 09/09), `02` FR-181 (tên trợ lý theo khách), FR-183 (điểm người rao), FR-184 (bán rồi), FR-185 (ảnh vào kho), FR-186 (câu hỏi theo loại; tối 09/09 thêm 4 loại toà nhà/đất nông nghiệp/đất SKC/kho xưởng + nhóm hỏi bù `sau_dang`), FR-187 (JSON chia nhóm từng tin), FR-173 a (chủ nhà trước 12 giờ), FR-114 d (kiến thức dự án), FR-177 h (giá thị trường khu vực) |
+
+## 4. Quy ước làm việc
+
+1. **Mọi câu khẳng định trong `docs/` phải truy được về nguồn.** Dùng cú pháp
+   `[nguồn: biz model.docx §Doanh thu]`. Không có nguồn → ghi
+   `[giả định BA]` hoặc đưa vào `09-open-issues.md`.
+2. **Không tự ý chốt điều còn mơ hồ.** Mâu thuẫn giữa hai tài liệu gốc → tạo
+   `OPEN-xx`, nêu hai phương án và khuyến nghị, chờ chủ dự án.
+3. **ID là bất biến.** Không đánh số lại `FR-`, `UF-`… khi chèn mục mới — cấp ID
+   kế tiếp và đánh dấu mục cũ `[deprecated]`.
+4. **Sửa tài liệu tầng trên → phải cập nhật `08-traceability.md` cùng commit.**
+5. Ngôn ngữ tài liệu: **tiếng Việt**, giữ nguyên thuật ngữ kỹ thuật tiếng Anh
+   (listing, webhook, fingerprint…). Tên biến/bảng/API: **tiếng Anh, snake_case**.
+6. Sơ đồ: **Mermaid** (render được trên GitHub). Wireframe: ASCII box.
+
+## 5. Ranh giới bảo mật — TUYỆT ĐỐI
+
+Các thư mục sau từng nằm cạnh repo (nay không còn trên máy chủ dự án — soát 10/09/2026), vẫn giữ trong `.gitignore` và **không bao giờ** được
+đọc-rồi-chép nội dung vào `docs/`, commit message, hay PR nếu ai đó chép lại:
+
+- `admin logins/` — credential.
+- `sổ đỏ samples/` — sổ đỏ, CCCD, địa chỉ thật của người dân.
+- `masterDB/` — dữ liệu nhà + ảnh thật (~179MB).
+- `ThemeForest/` — theme thương mại có bản quyền (~274MB).
+
+Số điện thoại, Zalo ID, tên thật xuất hiện trong tài liệu gốc phải được **ẩn
+danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
+
+## 6. Mã nguồn app
+
+Từ 24/08/2026 (quyết định chủ dự án) code nằm **trong repo này**, hai mảnh:
+
+- **Web** (Next.js 15 + TS + Tailwind 4, App Router) ở **root repo**:
+  `app/`, `components/`, `lib/`, `public/` — Vercel project `nhadat-cc` build
+  từ root, package manager **Bun** (`bun.lock`). Dữ liệu đọc Supabase bằng
+  publishable key qua RLS; mô tả listing luôn qua `sanitizeDescription()`
+  (lọc SĐT — FR-104) trước khi render.
+- **Bot** ở `bot/` — Supabase Edge Functions (xem `bot/README.md`).
+- **Script vận hành** ở `scripts/` — chạy trên máy local, không deploy.
+  `up-anh.mjs` đẩy ảnh thật lên bucket `listing-public` theo UUID của tin và
+  ghi kèm dòng `listing_media` (FR-165; lối cũ theo mã tin của FR-148 đã bỏ);
+  nó chỉ ĐỌC `masterDB/`, không bao giờ copy ảnh vào repo. **Đã chạy thật
+  07/09/2026**: `listing_media` 1005 dòng, `listing_photos_v` 945, **171/173 tin
+  có ảnh** (`BDS-Q5-0113` và `BDS-Q5-0124` trống vì thư mục nguồn rỗng, không
+  phải lỗi script). Trước hôm đó `storage.objects` = 0 và web hiện ảnh giữ chỗ
+  cho MỌI tin — nếu thấy lại cảnh đó thì kiểm `listing_media` trước tiên.
+  Lần chạy đầu để lộ một bẫy đáng nhớ: `sort_order` là `int4`, hai ảnh mang tên
+  là dấu thời gian 14 chữ số làm tràn kiểu, insert nổ **sau khi** file đã lên
+  kho nên nhánh dọn dẹp xoá mất file vừa up, để lại một dòng lỗi trôi giữa 1005
+  dòng thành công. Vá ở CẢ HAI tầng (`20260907a`: `CHECK sort_order 0..9999`;
+  script: chỉ nhận số ≤4 chữ số) — vì `1700000000` vừa khít `int4` nên kiểu dữ
+  liệu một mình không bắt được.
+  **Không còn sao lưu** (chủ dự án bỏ 11/09/2026: "không cần backup ở trên
+  OneDrive nữa… chơi đơn giản", chọn "bỏ hết sạch"). Đã gỡ `sao-luu.mjs`,
+  `phuc-hoi.mjs`, `soat-phuc-hoi.mjs`, `xuat-onedrive.mjs`, hai bài tự kiểm,
+  CI job `saoluu`/`phuchoi` và `docs/12`. Lịch Windows "Nhadat - dong bo
+  OneDrive" đã xoá. **Supabase gói Free không tự sao lưu — mất dữ liệu là
+  không lấy lại được.** Chủ dự án biết và chấp nhận (OPEN-25).
+  Soát 11/09/2026: VPS không còn cron / timer / file khoá sao lưu nào
+  (`bot/bridge-zca/VPS.md §8`); máy văn phòng không còn lịch Windows nào. Còn
+  lại DUY NHẤT lịch `nhadat-sao-luu.cmd` trên máy Quang Lê Bá Duy — phải xoá
+  tay trên máy đó. Thư mục `nhadat-backup/` đã xoá: script nào cần chỗ ghi
+  thì ghi vào `train/out/` (gitignore) hoặc thư mục tạm. `liet_ke_bang()`
+  (chỉ sao lưu dùng) xoá ở `20260911h`. Cần bản cũ thì lấy trong git:
+  `git log --diff-filter=D -- scripts/sao-luu.mjs`.
+  **Tầng bốn — chống tái phát (11/09/2026).** Ba việc, mỗi việc một cổng:
+  (1) **Kiểm kiểu cho bot** — `tsconfig.json` loại hẳn `bot` nên 3.900 dòng
+  `chat-reply` chưa từng qua kiểm kiểu. `bun run kieu:bot` (nằm trong `kiem`, cổng CI
+  thứ 9) chạy `deno check --node-modules-dir=auto` — cờ đó thay cho một `deno.json`,
+  vì thêm deno.json vào thư mục function là đổi luôn cách Supabase CLI đóng gói.
+  Lần bật đầu: 15 lỗi, tất cả là kiểu khai sai so với dữ liệu thật.
+  (2) **Luật MỘT NGUỒN** — luật tiền ở `_shared/extraction/luat-tien.ts`, luật che
+  liên hệ ở `_shared/extraction/luat-lien-he.ts`; bot, bộ bóc tách VÀ web (`lib/`,
+  qua đường `@/bot/...`) cùng nhập từ đó. Trước đó luật tiền có năm bản chép tay
+  lệch nhau đúng ở chỗ đã cắn người thật ("5 tới 6 tỷ", "2 tỏi 5"). SQL `parse_vnd` không
+  import được TS nên nó phải trả lời CÙNG MỘT BẢNG CA (`bot/tests/luat/tien.json`) —
+  `bun run doi-chieu:tien` (cổng CI thứ 10) đỏ khi hai bản lệch. **Sửa luật tiền là
+  sửa ở luat-tien.ts + parse_vnd + thêm ca vào tien.json, không đi tìm năm chỗ.**
+  Lượt gom bắt được một lỗi có sẵn từ 02/09: che SĐT bằng hai lượt `replace` nối
+  nhau làm LỒNG NHÃN (nhãn có chữ "Zalo", luật mạng xã hội khớp chữ đó) — nay một
+  lượt, không bao giờ quét lại chữ vừa chèn.
+  Từ 18/09 thêm **từ điển nhãn tìm kiếm** `_shared/extraction/nhan.ts` (FR-211): bot gắn,
+  web lọc, cùng một file — thêm nhãn là thêm khoá ở đó + ca trong `bot/tests/nhan.mjs`, KHÔNG
+  ghi tay vào `listings.nhan`. Văn bản nhúng vector đọc tên nhãn qua `ten_nhan()` (SQL, `20260930c`) — thêm nhãn thì thêm dòng
+  `when` bằng migration mới; `bot/tests/ten-nhan-sql.mjs` đỏ khi hai bên lệch. Từ 21/09 thêm **từ điển tên đường** bảng `duong` (FR-212, `20260921b`,
+  ~5.200 tên lượt đầu 21/09; đếm 12/10/2026 sau `nap-duong`: TP.HCM 37.146 dòng gồm hẻm, đủ 168/168 phường — Đặc khu Côn Đảo nằm ngoài hộp bao chung, nạp nhờ `BBOX_RIENG`; Tây Ninh 1.598, Đồng Nai 677; OSM theo phường mới): bot gọi `tim_duong` ở MỌI chỗ ghi địa chỉ — không dấu → có dấu
+  ngay, sai 1–2 ký tự → hỏi xác nhận (`boc_tach.duong_goi_y`), không có → giữ nguyên chữ khách; nạp lại
+  bằng `node scripts/nap-duong.mjs`, KHÔNG ghi tay. `listings` nay 67 cột (số "56 cột" cũ ở đây đã lệch từ lâu).
+  (3) **Luật phá dữ liệu phải có bảng câu KHÔNG được kích** — `bot/tests/luat/khong-duoc-kich.json`:
+  mỗi luật tìm-chuỗi mà khớp là ghi đè dữ liệu có `phai_kich` (để không vá quá tay) và
+  ≥ 8 `khong_duoc_kich`. `luat-pha-du-lieu.mjs` còn đếm chỗ ghi đè trong chat-reply:
+  **thêm một chỗ ghi đè mới mà không thêm luật vào bảng là đỏ.**
+  **`soat-db.mjs` là CỔNG CI THỨ 8 — soát TRẠNG THÁI DB, không phải danh sách.**
+  Tám phép chỉ đọc, chạy trong DB qua `soat_db_cong_khai()` (`20260910p`), dưới
+  một giây: policy chặn theo tên có phủ hết khoá đang sống · view nào đọc xuyên
+  RLS · hàm nào trùng chữ ký (PostgREST trả `PGRST203`) · bảng nào thiếu khoá
+  chính · `SECURITY DEFINER` thiếu `set search_path` · RLS bật mà không policy
+  trong khi web có quyền · trigger BEFORE sai thứ tự · ai nhận quá 2 tin chủ
+  động một ngày. Cả năm lỗi nặng ngày 10/09 đều KHÔNG nhìn thấy được từ danh
+  sách migration — chúng nằm trong catalog, và đây là chỗ soi.
+  Hàm chỉ trả KẾT LUẬN (mã · mức · số · chi tiết ngắn), Zalo ID che còn 4 số
+  cuối, không có nội dung tin nhắn — nó mở cho `anon` nên chính chỗ đó là chỗ
+  dễ biến một cổng kiểm thành một lỗ rò.
+  Cổng đỏ khi có phát hiện KHÁC bản nền `scripts/soat-db-da-biet.json`. **Thêm
+  dòng vào bản nền là một quyết định kèm lý do, không phải cách làm cổng xanh**
+  — xoá một dòng ở đó nghĩa là tuyên bố đã sửa xong. Lượt chạy đầu 10/09 để lại
+  ba dòng nền: 9 view thiếu `security_invoker` (7 có cổng admin trong WHERE, 2
+  thì không), 3 hàm trùng chữ ký kiểu tập-con, 4 bảng RLS-không-policy cố ý.
+
+  **`soat-migration.mjs` so DB ↔ repo, và từ 10/09 nó là CỔNG CI THỨ 7.** Ngày
+  đó hai lượt soát code đọc `schema.sql` ở hai mốc thời gian khác nhau trong lúc
+  DB đang được vá, rồi kết luận ngược nhau — một bên báo 5 lỗ, một bên báo 5 báo
+  động giả. Không ai sai; cái thiếu là một chỗ NÓI RA rằng repo đang tụt sau DB.
+  Cổng chạy bằng KHOÁ CÔNG KHAI qua `liet_ke_migration_cong_khai()`
+  (`20260910o`, chỉ trả version + name, KHÔNG bao giờ trả nội dung DDL) — nhét
+  service_role vào CI của một repo đang PUBLIC là mở toang, mà tên migration thì
+  vốn đã công khai trong chính thư mục này.
+  Nợ cũ 21/08 → 01/09 (OPEN-46) nay có hồ sơ thay vì kêu mãi: 52 migration áp
+  không file đã có **file dấu vết** (chỉ chú thích, chạy không tạo gì — nội dung
+  gốc mất vĩnh viễn), và 11 file áp dưới tên khác ghi trong
+  `bot/supabase/migrations/DA-DOI-CHIEU.json`. Cảnh báo kêu mãi thì thành tiếng
+  ồn, rồi cái thứ 53 — trôi THẬT — chìm lẫn vào đó. **Thêm dòng vào
+  DA-DOI-CHIEU.json là một quyết định, không phải cách làm cổng xanh.**
+  Dựng lại từ số không: chỉ nạp `schema.sql` (+ ba file schema `so`) theo
+  `bot/README.md §Dựng lại từ số không` — KHÔNG replay thư mục migration. Câu cũ ở
+  đây ("nạp schema.sql rồi áp migration từ 20260902") lệch với README; soát 13/09
+  còn thấy 34 hàm trên DB có thân KHÁC file migration cuối cùng định nghĩa chúng
+  (bản áp qua MCP không giống file), nên replay là dựng ra hàm cũ.
+  `xuat-ro-hang.mjs` xuất rổ hàng ra thứ NGƯỜI đọc được — mỗi tin một thư mục
+  (`tin.md` + `anh/`) kèm `ro-hang.csv` mở thẳng Excel; nó **không phải bản sao
+  lưu** (chỉ 3/31 bảng, không giữ UUID/khoá ngoại) và `manifest.json` của nó ghi
+  thẳng chữ `KHONG_PHAI_BAN_SAO_LUU`.
+  `thu-du-an.mjs` nạp KHO DỰ ÁN (HCM/Bình Dương/Đồng Nai/Long An/Tây Ninh, nguồn mogi
+  theo lệnh chủ dự án 10/09) — chỉ lấy DỮ KIỆN, mô tả viết lại từ dữ kiện, giữ
+  `source_url`.
+
+**AI bóc tách tin người bán có BỐN chế độ, công tắc `app_config.boc_tach_ai`** (`tat` · `bong` · `ghi` · **`chinh`** từ 21/09/2026, FR-208 f). `chinh` = ĐẢO TẦNG: chat-reply CHỜ lượt AI (qua kiểm bằng chứng `kiem-bang-chung.ts`) trước khi luật quyết — câu treo, fact kèm, cột lõi lúc tạo tin đều lấy của AI; luật tìm-chuỗi chỉ đỡ khi model hỏng hoặc cho khoá AI không có chỗ nói (`KHOA_FACT_AI_BIET`). Hệ quả cho người sửa luật: **một luật regex mới trong `khop-cau-tra-loi.ts` / `boc-cau-rao.ts` cho khoá nằm trong `KHOA_FACT_AI_BIET` sẽ KHÔNG chạy ở production** khi AI còn sống — muốn AI đọc ra thứ đó thì sửa LUAT trong `_shared/ai/boc-rao.ts` (prompt) hoặc thêm một VÍ DỤ MẪU ở `_shared/ai/vi-du-boc-rao.ts` (FR-208 g — ví dụ phải qua `bun bot/tests/vi-du-boc-rao.mjs`: dạy model thứ code sẽ bỏ là đỏ), và thêm ca ở `bot/tests/kiem-bang-chung.mjs`. Không train model; "học" ở đây là ví dụ trong prompt. Từ 01/10/2026 lượt AI bóc tách đọc NGỮ CẢNH (câu bot vừa nói nguyên văn + 4 lượt gần nhất + câu còn định hỏi — SRS-5.1t); ngữ cảnh để hiểu, trích dẫn vẫn phải nằm trong tin. Từ 02/10/2026 thêm "bộ nhớ": nguyên văn mọi tin chủ nhà gần đây (≤ 6.000 chữ, SRS-5.1za), và nhánh chia mảnh theo tin cũng ghi ô bằng AI — `nhanDienNhieuFact` chỉ còn là lưới đỡ. Đổi công tắc ở Table Editor là có hiệu lực lượt kế, không cần deploy; e2e mô phỏng bằng `globalThis.__cauHinh.boc_tach_ai`. **Từ 07/10/2026 (SRS-5.1zzzd) có thêm lượt AI CHỐT TIN trước mọi bản nháp** (`chotTinAi`, chế độ `ai`, người rao một căn): đọc TOÀN BỘ tin chủ nhà qua cùng bộ bóc tách + `LUAT_CHOT`, giá trị qua kiểm trích dẫn đè lỗi dồn từ từng lượt, AI để trống thì giữ; bản nháp chỉ in ý thêm AI đã lọc. Lỗi bóc tách ra tới bản nháp thì xem lượt chốt trước khi vá từng lượt.
+
+**Nhánh MUA có trợ lý có công cụ, công tắc `app_config.tro_ly`** (`tat` · `thu` = chỉ ID thử theo `la_id_thu` · `bat`; SRS-5.1y, 02/10/2026). `_shared/ai/tro-ly.ts` chạy vòng tool use trên CÙNG ngữ cảnh lượt mua: công cụ ĐỌC (`tim_tien_ich_quanh`, `xem_can`) chạy thật; công cụ GHI chỉ gom về khuôn `LuotMua` nên mọi bước sau lượt model và lưới chặn bịa vẫn chạy như đường cũ. Công cụ ghi điều khách nói phải có trích dẫn trong lời khách (code kiểm). Thêm công cụ mới thì: định nghĩa ở `CONG_CU_MUA`, công cụ đọc nối ở `docCongCuMua` (chat-reply) và kết quả phải vào `duLieuCongCu` (không thì lưới gọt tên bịa sẽ gọt luôn dữ liệu thật), thêm ca ở `bot/tests/tro-ly.mjs`. Trợ lý gọi THẲNG Claude (`anthropicTrucTiep`) — lưới Groq/Gemini bỏ `tools`; trợ lý hỏng thì đường JSON cũ trả lời ngay trong lượt.
+
+**Văn phong người bán theo demo AOND (05/10/2026, SRS-5.1zzi).** Chủ dự án: "bớt luật viết máy mà phụ thuộc AI hơn… sếp muốn văn phong như nó". Câu lệnh r1/r2 cho model là khuôn `ĐÃ BIẾT` / `CHỦ NHÀ VỪA NHẮN` / `CẦN HỎI: <ý>` — hệ thống chỉ đưa Ý, model tự đặt câu; câu mẫu `CAU_HOI_MAU` chỉ tới model khi là câu CODE tra ra mang lựa chọn (đường, phường, viết tắt, số hẻm) hoặc chủ dự án đã sửa câu đó ở dashboard. **Muốn đổi giọng thì sửa prompt (`TONE_RULES`/`SELLER_SCRIPT_RULES`/`SELLER_FEWSHOT`), đừng thêm van sửa văn**; van mới chỉ cho lớp chống bịa / lời hứa / ghi đúng ô, van sửa văn phải treo theo `app_config.luat_loi_bot` (gọn = tắt). Bong bóng 🤖 có chế độ `bao_lai_da_luu = admin`: ghi `messages` cho /admin, không gửi khách. Bóc tách của demo KHÔNG học (ảnh 05/10: bịa đường, ghi sai ô, ghi đè mất địa chỉ) — bảng bỏ/giữ ở `docs/06 §6.8`. **06/10/2026 (SRS-5.1zzn): `luat_loi_bot` gọn (mặc định) nay tắt TOÀN BỘ van sửa văn, cả xưng hô / gạch chéo / gạch dài / "mình" / ghi nhận trùng / lặp / khen; chỉ còn lưới an toàn + ghi đúng ô. Mọi van đổi lời ghi sổ `van_kich` (`so-van.ts`, `20261006b`) — đọc `van_kich_7_ngay` trước khi quyết bỏ hay bật lại một van; thêm van mới thì đặt `mocVan("tên")` ngay sau nó.** **Cùng ngày (SRS-5.1zzo): bốn lưới luôn bật mới — `damBaoCauHoi` (mở ô chờ thì lời phải có câu hỏi, r1/r2/r2b), `canTheoAi` (AI trả `so_can ≥ 2` có đánh số `can` thì chia tin theo AI, regex `nhanDienNhieuCan` chỉ đỡ), `docHoiLai` đòi bằng chứng chủ đề `ve_bot` và nhường `vai` tự nói, `traLoiSeller` bỏ mệnh đề "đang rao / đã đăng" khi người bán không còn tin mở (r3 chỉ liệt kê tin mở). Thêm lưới cùng lớp thì đặt vào đúng hàm đó, không rải regex.** **Bước 3 (SRS-5.1zzp): lời model lệch ô ở r1/r2 → `goiLaiChoDungO` gọi lại model một lần với lý do, câu mẫu chỉ là lưới cuối; câu mẫu địa chỉ lần đầu nay "Nhà {ac} ở đâu vậy, ở Hồ Chí Minh đúng không?" (thay quyết định 09/09 kèm lý do). Thứ tự hỏi không tự do: `required_facts.priority` theo loại, AI chỉ chọn trong các ý còn thiếu.** **Câu phí là MỘT NGUỒN `cauPhi()` trong `_shared/prompts.ts` (SRS-5.1zzq): theo vai + `deal` (thuê = 3/4 tháng, vai chưa rõ = không số) — không viết tay "1% giá chốt" ở chỗ khác; `FEE_RULES` cho model phải nói cùng một thứ.** **Ô QUAN TRỌNG ghi NGUYÊN VĂN cụm khách gõ (SRS-5.1zzr): bảng `O_NGUYEN_VAN` theo loại BĐS trong `kiem-bang-chung.ts` là chỗ duy nhất quyết ô nào; model chỉ chỉ ra cụm (`cum_goc`), code ghi đúng cụm đó — muốn ô nào nguyên văn / không thì sửa bảng, đừng vá từng ô.**
+
+**Bất biến, không vá từng ca (09/10/2026, SRS-5.1zzzzj — chủ dự án: "lại fix vá từng trường hợp nữa à"; "cả bộ luật không được mâu thuẫn nhau").** Mỗi trường / đầu ra có MỘT chủ, chặn ở MỘT chỗ. **Cột `listings.ward` chỉ mang `wards.ten_day_du` hoặc null**: mọi đường ghi qua `tenPhuongCot` (`khop-phuong.ts`; fact qua `ghiFact` trong `_shared/ghi-fact.ts` — không gọi `rpc("ghi_fact_listing"` chỗ khác, `bot/tests/ghi-phuong-mot-cua.mjs` đỏ), DB (`20261009b`) chỉ CHẶN lần cuối: chữ lạ → để trống + sổ lỗi; tra không ra → không ghi, bot hỏi (phường số cũ thiếu bảng: OPEN-60, đừng bịa dòng). **Chữ in cho khách đọc từ cột chuẩn / bộ in một nguồn** (`diaChiHienThi` cho địa chỉ, `donViGiaDep` cho giá), không chép `location_raw` / `price_raw` thô — cột vẫn lưu nguyên văn. **Địa chỉ một cửa (14/10/2026, SRS-5.1zzzzzzm):** fact `vi_tri` qua `ghiFact` được chuẩn hoá bằng `_shared/extraction/dia-chi.ts` (số nhà trước, tên đường theo từ điển `duong`) — đừng chuẩn hoá địa chỉ ở chỗ ghi; phường gợi ý từ tên đường LUÔN tra bảng `duong` trước (`cauHoiPhuongGoiY`, kể 2–4 phường kèm quận cho chọn, Nominatim chỉ là lưới đỡ), câu trả lời câu phường có MỘT quyết định (tên khách / AI nói → gật), phường kho dự án chỉ cho căn hộ. Con số phí chỉ do `cauPhi(vaiPhi(…))` nói (vai đã xác nhận: `sellers.seller_type_source` — chỉ thành `tu_nhan` khi cụm trích GỌI TÊN vai, `vaiTuCau`; "bán lô đất", "chú có căn nhà" không phải). Câu nói trạng thái tin (đã đăng / lên kệ / đang rao) có MỘT chủ: lưới ở `traLoiSeller` đọc trạng thái THẬT của tin đang nói (SRS-5.1zzzzk) — đừng thêm lưới riêng ở r1 / r2. Bộ e2e soát năm BẤT BIẾN (phường · địa chỉ · giọng · phí · trạng thái) sau MỌI lượt của MỌI ca — thêm luật mà vỡ một bất biến là đỏ; thêm luật chạm trường / đầu ra đã có chủ thì ghi vào bảng chủ sở hữu ở SRS-5.1zzzzj và `bot/tests/luat-khong-mau-thuan.mjs`.
+
+**Người bán gửi FILE và LINK (05/10/2026, SRS-5.1zzj…zzm, chủ dự án "Lấy đi" năm mục từ demo AOND).** Webhook OA nhận thêm `user_send_file` / `user_send_link`, bridge nhận file qua `href` + tên có đuôi; chat-reply có `file_url` / `file_name` / `link_url`. Tải về qua `_shared/kho_tep.ts` — **mọi URL ngoài đi qua `taiTep` (rào SSRF, kiểm lại từng bước chuyển hướng, trần 20 MB), không `fetch` tay**; loại file nhận bằng BYTE ĐẦU. CSV / XLSX = rổ hàng môi giới → `nhap-ro-hang.ts` (ánh xạ cột tất định, cột SĐT / Zalo / CCCD **bỏ dù viết thế nào** — thêm cột là thêm bí danh + ca `bot/tests/kho-tep.mjs`). PDF / ảnh bảng giá / phân lô / brochure → `_shared/ai/doc-tai-lieu-du-an.ts` đọc ra căn theo mã lô vào **kho `du_an_can`** (`20261006a`, chung cho dự án; giá là giá NIÊM YẾT, không bao giờ thành `price_raw`), file vào `listing-private/du-an/…`; bot nối khối `CĂN TRONG DỰ ÁN` cho model và tin rao "căn A12" tự điền diện tích từ kho (`dienTuKhoDuAn`). Link Google Drive: file công khai tải được không cần khoá, THƯ MỤC cần `GOOGLE_API_KEY` trong Vault (chưa có → bot nói gửi từng file). Gom nhiều căn ("chỉ giữ căn A, ẩn hết còn lại", "gỡ hết") do AI đọc (`doc-y-luot.ngung_hang_loat`), luật `laNgungHangLoat` chỉ đỡ, **hỏi xác nhận rồi gật mới ẩn** (`xac_nhan_ngung_hang_loat`); người rao ≥ 2 căn thì mọi tin đều qua lượt AI nhỏ. Nhịp gửi: `app_config.nhip_go = bat` → chat-reply trả `nhip_go[]`, webhook và bridge cùng nghỉ theo đó (mặc định vẫn 300 ms của 25/08). Bong bóng tài liệu / nhập bảng là chữ code ghép từ dữ liệu vừa ghi — hai van `boCauM2KhongCo` / `boCauGhiTienKhongCo` bỏ qua chúng.
+
+**Prompt bot có HAI BẢN, DB đè code.** Bản trong git là bot/supabase/functions/_shared/prompts.ts (có PR, có review); bản sửa tay là bảng bot_prompts trong Supabase Table Editor — sửa ở đó bot đổi giọng trong vòng 60 giây, KHÔNG cần deploy, và nó ĐÈ bản trong code. Vì đè nên hai bên trôi xa nhau mà không ai thấy: 10/09 cau_hoi_mau trong DB cũ hơn code, bot chạy bộ câu hỏi cũ suốt. Nay bun run prompt so md5 hai bên và in khoá nào lệch; --day đẩy code lên DB, --keo in bản DB ra để dán ngược vào code rồi mở PR. Chạy nó sau mỗi lần sửa prompt ở một trong hai nơi. **Chỗ thứ ba (07/10/2026): trang chat thử** (`chat-web.yml`) kéo công tắc `app_config` + mẫu câu + `bot_prompts` production xuống DB giả (`bot/tests/chat/keo-that.mjs`), có nút "Sửa prompt" — sửa ở đó KHÔNG đổi production; khi tắt trang bản sửa được cất ở nhánh `chat-web/sua-prompt-<run_id>`, gộp vào `prompts.ts` bằng PR rồi `--day`. Ô `bam_log` (sha256 của một khoá ngẫu nhiên — chỉ nhập MÃ BĂM, log Actions công khai) mở `GET /nhat-ky` (header `x-khoa`, `?tu=N&tin=1`): nhật ký mọi người thử (từ 07/10 kèm dòng `ai`: loại lượt model + đầu ra, để truy ô bị mất), không mất khi bấm Xoá chat, để Claude đọc trong lúc test; tắt trang là mất. Từ 08/10/2026 trang có nút 📷 gửi ảnh: ảnh cất trong bộ nhớ trang, phục vụ ở `/anh/…`; CHỈ bản bot đóng gói cho trang thử thêm `trycloudflare.com` vào `HOST_ANH` (SEC-08) — code bot và production vẫn chỉ nhận ảnh CDN Zalo. Cũng từ 08/10: trang sống tới 350 phút và (ô `tu_cap_nhat` = co, mặc định) mỗi phút soi nhánh — có commit mới thì tắt tiến trình (chat.mjs `--luu-trang` cất lịch sử, DB giả, nhật ký, ảnh, bản sửa prompt), kéo code, bật lại và nạp; đường hầm không tắt nên LINK GIỮ NGUYÊN, người đang chat chờ ~10–20 giây. Code mới không bật được thì quay về commit cũ. Sửa chính `chat-web.yml` thì phải chạy lượt mới. Chạy 24/7 trên VPS: `bot/tests/chat/cai-vps.sh` (user riêng `trangthu`, chỉ nghe 127.0.0.1:3100, đường hầm `trang-thu-ham`, timer `trang-thu-cap-nhat` mỗi phút; xem link bằng `trang-thu-link`); khoá Anthropic nằm ở `/etc/trang-thu.env` (chỉ root đọc) — dùng khoá riêng có hạn mức chi.
+
+**08/10/2026: project production cũ `tbcdpupiarkuxtntmosl` bị xoá nhầm** (gói Free — Supabase trả lời không khôi phục được;
+dữ liệu cũ toàn là dữ liệu thử). Project mới **`rqxmmqmctpklqcmbfxuj`** (Tokyo) dựng lại bằng `scripts/dung-lai-db.mjs` qua
+`apply-migration.yml` ô `dung_lai` — quy trình và những gì lượt diễn tập bắt được ở `bot/README.md §Dựng lại từ số không`.
+Mọi chỗ ghi mã project / khoá publishable trong repo đã đổi sang project mới (migration cũ giữ nguyên làm lịch sử).
+
+**Migration ghi THAY ĐỔI, `schema.sql` mới dựng lại được** (soát lại 07/09/2026).
+Câu cũ ở đây nói "migration là nguồn sự thật của schema" — sai. Số đo 07/09: DB
+đã áp **114** migration, `main` có **72** file, tức **41 migration áp thẳng qua
+MCP mà không ai lưu file** — gần hết là khối 21/08 → 27/08 dựng schema lõi (30
+bảng, RLS, projects, conversations, reminders, CTV, drip). Nội dung chúng mất
+vĩnh viễn (OPEN-46). Không ai thấy suốt hai tuần vì không có gì đối chiếu hai
+bên. Nay: thay đổi schema vẫn BẮT BUỘC đi qua một file trong
+`bot/supabase/migrations/`, `soat-migration.mjs` chặn trôi thêm, và
+`bot/supabase/schema.sql` là lưới an toàn để dựng lại từ số không (quy trình
+đầy đủ ở `bot/README.md §Dựng lại từ số không` — chỉ ra DB rỗng, vì không
+còn sao lưu dữ liệu).
+
+**Vết đó suýt lặp lại 07/09.** `20260907a_sort_order_la_so_thu_tu` áp lên
+production xong, file thì nằm trên một nhánh đã đẩy lên remote **mà không ai mở
+PR** — đúng hình lỗi đẻ ra OPEN-46, chỉ khác là bắt được sau vài giờ chứ không
+phải hai tuần (nay là PR #35). **Áp migration xong mà chưa mở PR cho file của nó
+thì việc chưa xong.** Đẩy nhánh lên không phải là đưa file về repo.
+
+**`bun run build` có thể im lặng bỏ sót lớp Tailwind MỚI** (bắt 07/09/2026 lúc
+dựng lại `/admin`). Lượt build đầu sau khi sửa giao diện sinh ra CSS **thiếu
+`mt-16`, `gap-x-2.5`, `pb-24`, `max-w-[70ch]`** — đúng những lớp vừa đặt lần đầu
+trong dự án; các lớp đã dùng ở chỗ khác (`mt-12`, `mt-8`, `gap-x-3`) thì có đủ.
+Không lỗi, không cảnh báo: `tsc` sạch, build xanh, trang lên — chỉ là các khối
+dính vào nhau vì margin không tồn tại. `rm -rf .next/cache && bun run build` là
+hết. **Vercel có khôi phục `.next/cache` giữa các lần build, nên vết này ra được
+tới production.** Sửa giao diện mà thấy khoảng cách sai so với mã nguồn thì
+việc đầu tiên là soi CSS đã build (`grep -o 'mt-16' .next/static/css/*.css`),
+đừng sửa lại mã theo cái mình thấy — cách đó dẫn tới việc bịa số cho vừa một
+bản dựng hỏng. Đây cũng là lý do phải CHỤP MÀN HÌNH bản dựng thật khi đổi bố
+cục: đọc mã nguồn không bao giờ thấy được lớp bị rụng.
+
+**Trang tin phải nằm trong cache** (NFR-17). Route động có tham số đường dẫn mà
+thiếu `generateStaticParams()` thì `export const revalidate` là chữ chết —
+Next 15 để `prerender-manifest.dynamicRoutes` rỗng và mỗi lượt xem là một lambda
++ đủ số query. Kiểm bằng bảng route sau `bun run build`: trang tin phải là `●`
+hoặc `○`, thấy `ƒ` là hỏng. Route đọc `searchParams` thì không ISR được, phải
+bọc truy vấn trong `unstable_cache`. **`generateStaticParams` trả `[]`, KHÔNG hỏi DB** (02/10/2026,
+SRS-5.1z): trả danh sách đầy đủ là mỗi lượt build (CI mỗi PR + Vercel) dựng sẵn mọi dòng — `/du-an` từng đốt 83% request
+REST của cả project. Mảng rỗng vẫn ra `●` + ISR khi có người xem; `bot/tests/giam-egress.mjs` canh luật này và luật chọn cột.
+
+**Đường đi ĐÚNG THIẾT KẾ không được ghi vào sổ lỗi** (bắt 08/09/2026). Sổ lỗi
+`bot_errors` là ĐẦU VÀO của còi: `bot_health_tick` mỗi giờ đếm lỗi trong một giờ
+qua, có lỗi thì đẻ một tin 🩺 gửi Zalo admin. `escalation-feed` có một nhánh từ
+chối học `zalo_user_id` của admin (bản vá SEC-03, hoàn toàn đúng) — nhưng nhánh
+đó lại `log_loi`. Bridge gửi tin 🩺 xong gọi `ack`, rơi đúng nhánh ấy, ghi thêm
+một dòng lỗi, giờ sau còi lại đếm được. **Vòng tự nuôi**: sổ lỗi 07/09 có đúng
+một dòng `escalation-feed admin uid` mỗi giờ có tin 🩺 được gửi, liên tục 05:00
+→ 10:00 UTC, và tin nào cũng chỉ nói "1 lỗi trong 1 giờ qua" mà không nói lỗi
+gì. Nay nhánh đó `console.log`. Thêm bất kỳ `log_loi` nào thì hỏi: đây là SỰ CỐ
+hay là đường đi bình thường?
+
+**Bot hỏi thứ chính luật cấm hỏi** (cùng ngày). `20260907h` xếp nhóm `phu`
+(hướng, quy hoạch, năm xây) priority ≥ 20 với ý "không bao giờ tới lượt" — nhưng
+khi các nhóm trên trả lời hết thì `phu` LÀ nhóm còn lại, `chonCauKe()` bốc ngay.
+Log 07/09 đúng vậy. Ngưỡng ưu tiên không phải là cấm; muốn cấm thì phải LỌC.
+Nay `listing_missing_facts` bỏ hẳn `nhom = 'phu'`, và mock e2e bỏ theo — mock
+lệch bản thật ở chỗ nào thì bộ e2e đo sai ở chỗ đó.
+
+**`schema.sql` tụt lại sau migration mà không ai biết** (cùng ngày). Nó do
+`xuat_schema()` sinh ra; áp migration qua MCP rồi quên sinh lại là nó lặng lẽ
+cũ đi — `20260907h` merge hôm trước mà `schema.sql` không hề có `diem_tin`,
+`can_chu_duyet`. Đúng hình lỗi OPEN-46 nhưng thiếu NGƯỢC (repo thiếu so với DB),
+nên `soat-migration.mjs` không thấy.
+
+**Hai lưới cũ đều thủng, nay so NỘI DUNG** (review code 13/09/2026). `soat-truy-vet.sh`
+chỉ soi TÊN hàm (`create or replace` đè hàm đã có thì luôn xanh), `soat-migration.mjs`
+so MTIME (sau `git clone` mọi file cùng mtime, nhánh đỏ không bao giờ chạy) — trong
+lúc `schema.sql` mang `parse_vnd` bản TRƯỚC vá 42 ca. Nay cổng CI thứ 7 so **md5 từng
+thân hàm** `schema.sql` ↔ DB qua `ham_md5_cong_khai()` (`20260913c`, chỉ tên + md5, mở
+cho anon vì thân hàm đã công khai trong chính file này). So với DB chứ không so với
+file migration — DB là bản thật (34 hàm lệch file, xem trên). **Cổng đỏ vì schema.sql
+thì sinh lại, đừng sửa tay:** `node scripts/sinh-schema.mjs` (đọc service_role từ
+`scripts/.env`, gọi `xuat_schema()`, từ chối ghi nếu thấy chuỗi giống khoá bí mật;
+chạy thật lần đầu 13/09/2026). Lệnh curl tương đương:
+
+```bash
+curl -s -X POST "https://rqxmmqmctpklqcmbfxuj.supabase.co/rest/v1/rpc/xuat_schema" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" -d '{}' | jq -r . > bot/supabase/schema.sql
+```
+
+Dòng "Sinh lại" ở đầu `schema.sql` từng trỏ tới `scripts/sao-luu.mjs` (đã
+xoá). Migration `20260911h` sửa chữ đó ngay trong hàm `xuat_schema()` trên DB,
+nên sinh lại giờ ra đúng câu "gọi rpc xuat_schema()". Không sửa migration cũ;
+muốn đổi gì trong `xuat_schema()` thì viết migration mới.
+
+**Đừng tin `cron.job_run_details.status`** (NFR-18). `net.http_post()` trả về
+ngay khi xếp hàng nên cron luôn báo `succeeded`, kể cả lúc edge function trả
+500. Kết quả thật nằm ở `net._http_response`, và được `bot_health_tick()` quét
+sang `bot_errors` (FR-152). Xem sức khoẻ ở trang `/admin`.
+
+**Luật đó áp cho CẢ CÁI CÒI, không chỉ cho cron** (soát 06/09/2026). Chính
+`bot_health_tick` đã tái phạm: nó gọi `canh_bao_ngoai()` — hàm này cũng chỉ
+XẾP HÀNG một `net.http_post` — rồi đóng dấu `bot_health(who='ntfy')` ngay và
+dùng con dấu đó để im lặng một giờ. Bắt tại trận: dấu lúc `00:00:00.054` trỏ
+request 2221, mà request 2221 là `Timeout of 5000 ms` lúc `00:00:00.212`. 24
+lượt timeout như vậy từ 27/08, nhiều lượt đúng phút `:00` — mỗi lượt là một giờ
+không ai được báo, và không có gì nói ra điều đó. Nay (`20260906a`) còi ĐỌC LẠI
+`net._http_response` của lượt trước rồi mới quyết im, hạn chờ nới 5→15 s, và
+lượt hụt tự ghi một dòng `coi ntfy`. **Thêm bất kỳ đường báo động nào thì phải
+hỏi: cái gì chứng minh nó tới nơi? "Đã gọi hàm gửi" không phải bằng chứng.**
+
+**SĐT không được vào sổ lỗi.** `sellers.phone` có UNIQUE, nên một lượt chèn
+trùng sinh lỗi 23505 mà PostgREST kèm nguyên `Key (phone)=(09…)`; một
+`ghiLoi(client, "...", e)` trên đường đó là SĐT khách nằm vĩnh viễn trong
+`bot_errors`, trái §5 và repo đang PUBLIC. `log_loi` nay che qua `che_sdt()` —
+che ở một chỗ vì mọi đường ghi sổ (edge function, bridge qua escalation-feed,
+web qua `instrumentation.ts`) đều chảy qua đó.
+
+**Mọi `catch` mới phải nối dây vào sổ** (FR-152 d). `console.error` một mình là
+mất: log edge function bậc Free chỉ giữ 1 ngày, còn loại lỗi nguy nhất ở đây
+lại TRẢ 200 nên `bot_health_tick` — vốn chỉ soi mã HTTP — không thấy gì. Trong
+edge function dùng `ghiLoi(client, "tên chỗ", e)` của `_shared/claude.ts`;
+trong bridge dùng `ghiLoi("tên chỗ", detail)`; phía web thì `instrumentation.ts`
+đã bắt sẵn mọi lỗi server chưa bắt. Thêm `catch` mà quên nối là thêm một chỗ
+hỏng im lặng.
+
+**`=` trong khối `NOT (…)` của SQL là bẫy NULL** (bắt 25/09/2026). `listing_missing_facts` loại câu đã có dữ liệu
+bằng `NOT (… OR access_type = 'mat_tien' …)`; `access_type` trống → NULL → `NOT NULL` vẫn NULL → WHERE bỏ luôn dòng
+"thiếu hẻm": tin nào chưa có loại đường vào thì câu hẻm KHÔNG BAO GIỜ được hỏi. Mock e2e chạy bằng JS nên xanh suốt.
+So sánh bằng trên cột có thể trống thì dùng `IS NOT DISTINCT FROM`; `bot/tests/null-ba-tri.mjs` soi `schema.sql`.
+
+**Nhúng `listings ↔ sellers` PHẢI chỉ tên khoá ngoại** (bắt 15/09/2026). Từ
+`20260827h` bảng `sellers` có `active_listing_id → listings`, nên giữa hai bảng
+có HAI quan hệ và PostgREST từ chối `sellers(...)` trần trên select đi từ
+`listings` bằng 300 PGRST201. Ba chỗ dính mà không chỗ nào đọc `error`: hỏi bù
+(`ask-seller`) chết im 6 ngày với 313 dòng sổ lỗi ghi SAI nguyên nhân ("listing
+không tồn tại"), chốt kèo không vào `deals`, nhắc đến hạn rơi rỗng. Viết
+`sellers!listings_seller_id_fkey(...)`; `bun bot/tests/nhung-mo-ho.mjs` (trong
+`test:bot`) soi mã nguồn chặn tái phát — mock e2e KHÔNG mô phỏng PGRST201 nên
+e2e xanh không chứng minh được gì ở đây. Và một `catch`/`maybeSingle` không đọc
+`error` là một chỗ hỏng im: 313 lần còi kêu "1 lỗi" mà không ai truy.
+
+**Bốn bucket Storage, đừng lẫn** (`masterdb-raw` thêm 07/09, `20260907b`):
+
+| Bucket | Chứa gì | Ai vào được |
+|---|---|---|
+| `listing-public` | ảnh ĐÃ nén (sharp ≤2500px q80) phục vụ web — 1005 file / 148 MB | **công khai** |
+| `listing-private` | sổ đỏ, giấy tờ — link ký sống 15 phút | policy riêng (NFR-06) |
+| **`masterdb-raw`** | **bản GỐC masterDB, chưa đụng vào, KHÔNG phục vụ ai** | **chỉ `service_role`** |
+| `listing-photos` | lối cũ FR-148 đã bỏ — đã bịt bằng trần 1 byte + mime không tồn tại | (đã khoá) |
+
+**09/09/2026: `masterDB/` KHÔNG còn trên máy chủ dự án** (chủ dự án chốt xoá dữ liệu cũ; thư mục đã không tồn tại ở máy này khi soát), `masterdb-raw` và `listing-public` đều 0 file — `up-anh.mjs`/`up-masterdb.mjs` không còn nguồn để chạy. Rổ hàng từ đây là tin rao THẬT qua chat.
+Đường đẩy là **`scripts/up-masterdb.mjs`** (chạy trên máy local, `--dry` xem trước).
+Nó **KHÔNG nén** — ai định thêm `sharp` vào đó thì đọc lại: `up-anh.mjs` nén để
+phục vụ web, file này giữ nguyên byte để mai kia còn dựng lại được thứ khác từ
+bản gốc. Chạy lại được (bỏ qua file đã có đúng kích thước — 179 MB qua mạng nhà
+đứt giữa chừng là chuyện thường), và **cuối cùng đối chiếu đếm đĩa ↔ đếm bucket
+rồi mới dám báo xong**: Storage trả `200` cho một lượt PUT rồi không cất file
+thì vòng lặp vẫn chạy hết và vẫn báo thành công — cùng một hình lỗi với
+`net.http_post` ở NFR-18. Bài tự kiểm TS-MASTERDB (24 ca, Storage giả) canh
+đúng chỗ đó.
+
+`masterdb-raw` **cố ý không có policy nào** cho `anon` lẫn `authenticated`: RLS trên
+`storage.objects` đang bật nên không policy = không ai vào, trừ `service_role`. Đó
+là chủ đích, không phải quên — bản gốc mang địa chỉ nhà dân (§5). **Đừng trỏ web
+vào bucket này**, nó là tủ hồ sơ chứ không phải CDN. Nó sinh ra để trả lời OPEN-47:
+bucket `listing-public` không nằm trong bản sao nào, dựng lại được chỉ vì `masterDB/`
+còn trên một ổ đĩa cá nhân. **Nhưng dựng cái tủ không phải là cất đồ vào tủ** — chừng
+nào chưa đẩy `masterDB/` lên thì lưới an toàn vẫn y như cũ.
+
+**Dữ liệu THỬ và THẬT tách bằng `la_id_thu(zalo)`** (FR-245, 29/09/2026). Đó là chỗ DUY NHẤT giữ tiền tố ID thử
+(`thu- b15- hoi- z- e2e- b- lx- do-`) — bắn thử production thì dùng đúng các tiền tố đó, thêm tiền tố mới là sửa hàm này.
+`reset_nguoi_test` từ chối ID thật; xoá khách thật chỉ qua `admin_xoa_khach`. Nút "Xoá hàng loạt" chép mọi dòng sang schema
+`luu_tru` trước khi xoá — khôi phục bằng `admin_khoi_phuc_lan_xoa(lan)`. Kho lưu cùng DB, KHÔNG phải sao lưu (OPEN-25);
+`xuat_schema()` không quét `luu_tru` nên dựng lại từ số không phải chạy thêm `20260929b` (như schema `so`).
+`soat_du_lieu_tin()` soi dấu vết lỗi bóc tách trên tin thật; workflow `apply-migration` in số đếm của nó và xuất
+`schema.sql` thành artifact (sinh lại schema không cần service_role trên máy). **05/10/2026:** phiên không tải được artifact
+(gh nội bộ không theo redirect) thì dispatch workflow trên NHÁNH của PR với ô `commit_schema` = "commit" — workflow tự commit
+`schema.sql` về nhánh đó (không bao giờ về `main`). Lưu ý commit đó do `github-actions[bot]` đẩy nên KHÔNG kích CI; push thêm
+một commit thật (hoặc dispatch `kiem.yml` trên nhánh) để CI chạy trên head mới.
+
+**Dữ liệu hội thoại đã dọn sạch 07/09.** Xoá 286 dòng bã kiểm thử: `messages` 69,
+`reminders` 192, `ctv_daily_reports` 15, `conversations` 3 (hai dòng
+`channel='zalo_personal_test'`), `buyers` 3 (một dòng `zalo_user_id='e2e-sweep-user'`),
+`inbound_ledger`/`inbound_events`/`property_events`. **Giữ nguyên** `listings` 173,
+`listing_media` 1005, `projects` 1, `ctvs` 2 (cấu hình FR-173), và **`sellers` 3 —
+"Trai/Ngai/Lai" tạo 21/08 đang sở hữu 60 tin, là NMG THẬT chứ không phải test**;
+khoá `listings_seller_id_fkey` là `NO ACTION` nên có xoá cũng bị chặn. Mốc sao Bắc
+Đẩu nay đếm từ số 0 thật (`docs/10 §10.9`), không còn lẫn lượt thử của nhóm làm.
+
+**Chú thích bảng nằm TRONG DB, không nằm trong docs** (`20260906b`). 46/46 bảng (soát 18/09: `tien_ich` từng thiếu, vá `20260918a`; `duong` thêm 21/09; `nhung_viec`, `nhung_viec_du_an` thêm 23/09; `nhung_viec_dia_danh`, `phuong_cu`, `quan_cu` thêm 30/09; `du_an_tai_lieu`, `du_an_can` thêm 05/10; `van_kich` thêm 06/10)
+và 19/19 view (public, soát 18/09) đã có `comment on`, cộng 69 chú thích cột; tiền tố `[RỔ HÀNG]`
+`[NGƯỜI & HỘI THOẠI]` `[BOT & HÀNG ĐỢI]` `[CTV]` `[HỆ THỐNG]` để Table Editor
+xếp A→Z mà mắt vẫn gom được theo việc. Thêm bảng hay cột mới thì **thêm
+`comment on` trong cùng migration** — chú thích ở chỗ khác là chú thích sẽ lệch.
+Bản in ra giấy (sơ đồ quan hệ + đường bóc tách) ở `docs/07-srs.md §SRS-3.0`;
+đừng mở `docs/architecture/` song song với `07-srs.md`, hai nguồn sự thật là
+đúng cái bẫy đã đẻ ra OPEN-46. Mở rổ hàng bằng mắt người thì dùng view
+`ro_hang_ban` chứ đừng mở `listings` 67 cột — hoặc chọn schema **`so`** trong
+Table Editor (`20260907c`): ba view `so.ro_hang` (9 cột đầu đúng thứ tự
+sheet Excel gốc Q5 trong `masterDB/`), `so.nguoi_ban` và `so.hoi_thoai` (log chat đọc
+được, `20260907g` — muốn xem lại bot nói gì với khách thì mở đây, đừng mở `messages`
+trần), không lẫn ruột bot, PostgREST không phơi, `anon`/`authenticated` bị revoke; `xuat_schema()` không quét `so` nên
+dựng lại phải chạy thêm file migration đó. **View MỚI ở project này mặc định
+LỘ**: `alter default privileges` cấp sẵn toàn quyền cho `anon` và
+`authenticated`, nên `grant select` không siết được gì — phải `revoke all …
+from anon, authenticated` TRƯỚC rồi mới grant.
+
+**Bóc tách và AI là hai tầng, có máy canh** (`bot/tests/ranh-gioi.mjs`, trong
+`bun run test:bot`). Mã bóc tách tiền định không được import SDK Anthropic hay
+`claude.ts` hay gọi RPC — nó phải chạy và kiểm được mà không tốn một đồng. Tầng
+AI không được ghi bảng nghiệp vụ; ba RPC ngoại lệ đã khai tên trong file luật
+(`get_secret`, `log_loi`, `cong_token`), muốn thêm thì phải sửa file đó, tức
+phải có người đọc lại câu "cái này có phải dữ liệu nghiệp vụ không?". Hôm nay
+ranh giới đúng nhưng đúng do may: `regexProfileFallback()` vẫn nằm trong
+`chat-reply/index.ts` cạnh chỗ gọi model, và nhánh NGƯỜI MUA đang chạy ngược —
+model trước, regex chỉ đỡ khi model chết.
+
+**Repo hiện đang PUBLIC** (kiểm 26/08/2026 qua API GitHub: `"private": false`).
+Nghĩa là mọi file đang track đều đọc được công khai, kể cả tài liệu gốc ở thư
+mục gốc: `biz model.docx`, `dự kiến vốn 6 tháng đầu.xlsx`, `chats w B.docx`,
+`S's side.docx`, `Tài liệu hệ thống nhadat.cc.pdf`, `hình samples/`. Muốn đóng
+thì đổi visibility ở GitHub Settings — nhưng đóng KHÔNG xoá được lịch sử người
+khác đã clone.
+
+Dù public hay private, **đừng để web trỏ tới
+`raw.githubusercontent.com/quang507/Nhadat.cc/...`**: nó buộc ảnh của web phụ
+thuộc vào một thiết lập GitHub chẳng liên quan gì, set private một cái là raw
+trả 404 và ảnh vỡ sạch. Tài nguyên tĩnh để trong `public/` rồi tham chiếu bằng
+đường dẫn tương đối (`/img/house1.jpg`).
+
+Thư mục `nhadat-cc/` cũ (máy local) không dùng nữa.
+
+**Từ 01/10/2026 (chủ dự án: "sửa từ cái gốc nguyên nhân nào mà làm nó sai, sau này có lỗi tương tự như này nữa ko, từ đây về sau phải xét như vậy"): mỗi lần sửa lỗi bot/web phải trả lời ba câu, ghi trong mục docs/07 của lần sửa đó.** (1) **Lớp lỗi**: nguyên nhân gốc chung là gì — không phải "câu X của khách", mà là cơ chế nào cho câu X lọt (vd "đoán Ý khách bằng từ khoá trên chữ bỏ dấu"). (2) **Chỗ khác cùng lớp**: soát và liệt kê các chỗ dùng cùng cơ chế, cái nào đã sửa, cái nào còn. (3) **Bài kiểm đỏ khi tắt bản sửa**, kèm ít nhất một cách nói MỚI chưa từng bắn. Lỗi thuộc lớp "máy đoán ý bằng từ khoá" thì KHÔNG vá bằng cách thêm từ vào regex — đưa quyết định sang AI (đọc theo nghĩa, code kiểm trích dẫn), từ khoá lùi xuống lưới đỡ khi AI không chạy (mẫu: SRS-5.1q).
+
+**Từ 30/09/2026 (chủ dự án: "bỏ luôn giờ ko cần FR nữa, viết vào trong docs đi"): sửa lỗi / cải tiến bot và web KHÔNG cần cấp FR trước khi code.** Thay vào đó ghi thẳng vào tài liệu tầng liên quan (thường là `docs/07` — một mục SRS kèm ca gốc, nguyên nhân, chỗ sửa, cách kiểm; ví dụ SRS-5.1a), cùng commit với code và test. FR cũ giữ nguyên số, vẫn là tham chiếu; ai muốn cấp FR cho một tính năng lớn vẫn được, chỉ không còn là cổng bắt buộc.
+
+## 6b. Nguồn thiết kế
+
+`design/` (token, 13 artboard, canvas) và việc Figma đã **xoá** 08/09/2026 (commit `459008d`); OPEN-45 đóng 10/09. Nguồn thiết kế còn lại là `docs/06-ui-design.md` (tone giọng, component) và chính code (`app/globals.css` là token thật). Không dựng lại Figma trừ khi chủ dự án yêu cầu.
+
+## 7. Cách chạy pipeline BA
+
+Quy trình đầy đủ (BA + tester + ba cổng + định nghĩa XONG): `docs/11-quy-trinh.md`.
+Bản rút gọn nạp tự động cho agent: `.claude/skills/ba-pipeline/SKILL.md`.
+
+**Cổng kiểm — chạy trước mọi commit:**
+
+```bash
+bun run kiem   # = kieu (tsc) + build + test:bot (256 e2e + FR-159/161/164/176/177 + tự kiểm TS-SEC) + truyvet
+bun run test:sec   # TS-SEC thật trên DB thật — cần Internet, nên KHÔNG nằm trong `kiem`
+bun run chat       # chat thử với bot trong terminal: DB giả trên máy; `-- --that` bắn production bằng ID thử (FR-246 e)
+```
+
+**Bộ đo bóc tách** (`bot/tests/do-boc/`, TS-DO-BOC-01, 23/09/2026): 110 ca cố định, cho con số "bot ghi đúng bao
+nhiêu phần trăm" thay cho kiểu "5 ca vừa bắn thì qua". `bun run do-boc:nen` (trong job CI `bot`) đỏ khi luật
+một mình TỤT so với `nen.json`. Số production đo bằng cách bắn Zalo thử `do-*` (README của bộ đo) — bắn
+mẻ ≤ 20 người: 110 cùng lúc làm DB Free huỷ `tao tin rao` vì quá giờ và số đo sai. **Thêm ca mới đạt thì cập
+nhật `nen.json` cùng PR; xoá ca khỏi `nen.json` là chấp nhận tụt, phải ghi lý do.** **Tiền (04/10/2026):** mỗi tin bắn
+production ≈ 3 lượt AI, cả bộ ≈ 450 lượt credit thật — chỉ chạy `do-boc.yml` khi PR đụng bóc tách và chọn `nhom`; để trống
+`nhom` phải gõ `ca bo` (SRS-5.1zw). Bộ e2e offline là miễn phí, dựa vào nó trước.
+
+**Khách mô phỏng** (`bot/tests/mo-phong/`, TS-MO-PHONG-01, 11/10/2026): model đóng vai 1–5 kiểu chủ nhà (`persona.json`) chat với bot
+production bằng Zalo thử `thu-mp-*`, chấm ghi đúng / lỗi lời bot / giám khảo AI (lỗi phải trích nguyên văn). Chạy tay qua `mo-phong.yml`,
+tiền thật (~10 lượt × ~4 lượt AI mỗi persona), không vào CI; tự dọn dữ liệu thử. Bộ chấm tự kiểm offline nằm trong `test:bot`.
+
+**Phát lại** (`bot/tests/phat-lai/`, TS-PHAT-LAI-01, 11/10/2026, SRS-5.1zzzzzd): tin khách mô phỏng mang cờ `ghi_ai` → chat-reply ghi nguyên đầu ra
+model của lượt vào `ai_ghi_thu` (chỉ ID thử, giữ 2 ngày), log `mo-phong.yml` in dòng `PHAT_LAI_JSON`; `lay-tu-log.mjs` cắt thành ca ở `ca/`,
+`phat-lai.mjs` (trong `test:bot`) bơm lại qua handler thật trên DB giả, không tốn tiền. **Lỗi thấy ở khách mô phỏng: lấy ca, thêm `ky_vong`, thấy
+đỏ trên code cũ rồi mới sửa; ca không xoá khi sửa xong.** e2e dùng model giả chỉ kiểm giả định của người sửa — đừng coi e2e xanh là đủ.
+
+Bốn job đó chạy trong CI (`.github/workflows/kiem.yml`) mỗi PR, kể cả `test:sec`.
+**Thoát 2 của `test:sec` nghĩa là "chưa kiểm được", không phải "đạt"** — bản đầu
+của nó coi mọi HTTP ≥400 là bị chặn và báo 24/24 xanh trong lúc proxy chặn sạch,
+chưa request nào tới Supabase. Bài tự kiểm offline
+(`bot/tests/ts-sec-anon.tu-kiem.mjs`) dựng PostgREST giả để chứng minh nó không
+tái phạm; sửa bộ probe thì phải chạy lại bài đó. Người và
+máy dùng chung script trong `package.json` — đừng gõ lệnh rời, không thì "máy
+xanh, máy tao đỏ" và không ai biết bên nào đúng. `scripts/soat-truy-vet.sh` bắt
+ID gãy, FR thiếu dòng truy vết, số đếm README lệch, SĐT thật lọt vào `docs/`,
+khoá service_role bị ghi vào file, và web trỏ `raw.githubusercontent.com`.
+
+**Skill PM mượn ngoài** (`phuryn/pm-skills`, MIT — kiểm license 03/09/2026;
+marketplace đã khai ở `.claude/settings.json` không ghim commit, nên nội dung
+skill đổi theo thượng nguồn; Claude Code sẽ hỏi cài lần đầu mở repo). Dùng làm
+*khung trình bày*, không thay `ba-pipeline`; chúng viết bằng tiếng Anh và không
+biết ID truy vết, nên kết quả phải đổi sang tiếng Việt và gắn `BR-/FR-/DH-` tay:
+
+| Việc | Skill | Đã dùng ở |
+|---|---|---|
+| Canvas chiến lược 9 ô | `/product-strategy` | `docs/00-dinh-huong.md §0.4` |
+| Chỉ số sao Bắc Đẩu + chỉ số đầu vào | `/north-star-metric` | `§0.5` |
+| Phản biện kế hoạch (giả định chịu lực) | `/strategy-red-team` | `§0.7` |
+| Đối chiếu tài liệu ↔ code theo ranh giới tin cậy | `/intended-vs-implemented` | soát bảo mật kiểu FR-167 |
+| Kịch bản kiểm thử từ tiêu chí nghiệm thu | `/test-scenarios` | nháp cho `docs/10` (giữ ID `TS-` của mình) |
+| Job story cho tính năng chat | `/job-stories` | nháp UF mới |
+
+Không dùng: `competitor-analysis` / `competitive-battlecard` (tìm nguồn tiếng
+Anh, không biết batdongsan/mogi), `pm-toolkit`, `pm-data-analytics`.
+
+## 8. Dùng với Cline (VS Code, chạy local)
+
+`.clinerules/` chứa bản đồ tương đương cho Cline: luật dự án tự nạp +
+3 workflow gõ bằng lệnh slash trong chat Cline:
+
+| Lệnh | Việc |
+|---|---|
+| `/ba-pipeline.md` | Thêm/sửa yêu cầu giữ truy vết |
+| `/soat-truy-vet.md` | Soát ID gãy trước commit |
+| `/review-docs.md` | Review diff đụng docs/ |
+
+Claude Code và Cline dùng chung nguồn sự thật (`docs/`) — harness
+hai bên phải được cập nhật song song khi quy ước đổi.
+
+## 9. Agent vai phụ (.claude/agents/)
+
+Hai vai gọi được từ mọi phiên Claude Code mở repo này (`figma-builder` xoá 10/09/2026 cùng `design/`):
+
+| Agent | Việc | Khi nào |
+|---|---|---|
+| `soat-truy-vet` | Soát ID gãy, truy vết thiếu, số đếm lệch, PII | Trước mọi commit đụng docs/ |
+| `reviewer` | Review diff/PR theo checklist BA, chỉ báo finding | Khi review PR |
+
+Routine nền: soát docs hằng đêm 22:00 (giờ VN) trên phiên mới, chỉ báo khi có lỗi.

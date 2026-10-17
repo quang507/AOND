@@ -1,0 +1,165 @@
+{
+ "nguon": "SRS-5.1zzzzc — cách nói MỚI (dựng tay): 'nhà chị hẻm 5m trần quốc thảo phường 12 quận 3 cũ' → AI 'Phường Nhiêu Lộc' trích «phường 12 quận 3»",
+ "luot": [
+  {
+   "text": "chị muốn bán căn nhà",
+   "boc": {
+    "can_khac": false,
+    "so_can": 0,
+    "truong": [
+     {
+      "khoa": "loai_giao_dich",
+      "gia_tri": "ban",
+      "trich_dan": "muốn bán",
+      "can": null
+     },
+     {
+      "khoa": "loai_bds",
+      "gia_tri": "nha_pho",
+      "trich_dan": "căn nhà",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": false,
+     "gia_tri": null,
+     "trich_dan": null
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "vi_tri",
+     "ly_do": "cần địa chỉ"
+    },
+    "tu_xung": {
+     "la": "chị",
+     "trich_dan": "chị muốn"
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, nhà mình ở đâu vậy chị?"
+   ]
+  },
+  {
+   "text": "nhà chị hẻm 5m trần quốc thảo phường 12 quận 3 cũ",
+   "boc": {
+    "can_khac": false,
+    "so_can": 1,
+    "truong": [
+     {
+      "khoa": "duong",
+      "gia_tri": "hẻm Trần Quốc Thảo",
+      "trich_dan": "hẻm 5m trần quốc thảo",
+      "can": null
+     },
+     {
+      "khoa": "ten_duong",
+      "gia_tri": "Trần Quốc Thảo",
+      "trich_dan": "hẻm 5m trần quốc thảo",
+      "can": null
+     },
+     {
+      "khoa": "do_rong_hem",
+      "gia_tri": "5",
+      "trich_dan": "hẻm 5m",
+      "can": null
+     },
+     {
+      "khoa": "loai_duong_vao",
+      "gia_tri": "hem_xe_hoi",
+      "trich_dan": "hẻm 5m",
+      "can": null
+     },
+     {
+      "khoa": "phuong",
+      "gia_tri": "Phường Nhiêu Lộc",
+      "trich_dan": "phường 12 quận 3",
+      "can": null
+     },
+     {
+      "khoa": "quan",
+      "gia_tri": "Quận 3",
+      "trich_dan": "quận 3",
+      "can": null
+     }
+    ],
+    "kien_thuc": [],
+    "tra_loi": {
+     "co_tra_loi": true,
+     "gia_tri": "hẻm Trần Quốc Thảo",
+     "trich_dan": "hẻm 5m trần quốc thảo"
+    },
+    "cap_nhat": [],
+    "xac_nhan": [],
+    "hoi_lai": {
+     "co_hoi": false,
+     "cau_hoi": null,
+     "chu_de": null
+    },
+    "cam_xuc": {
+     "muc": "binh_thuong",
+     "trich_dan": null
+    },
+    "khong_can_hoi": [],
+    "y_dinh": {
+     "loai": "binh_thuong",
+     "trich_dan": null
+    },
+    "vai": {
+     "la": "khong_noi",
+     "trich_dan": null
+    },
+    "cau_ke": {
+     "khoa": "dien_tich_dat",
+     "ly_do": "còn thiếu diện tích"
+    },
+    "tu_xung": {
+     "la": null,
+     "trich_dan": null
+    }
+   },
+   "y": {
+    "doc_lai": null,
+    "dong_y": "khong_noi",
+    "dong_y_trich": null,
+    "yeu_cau": "khong",
+    "yeu_cau_trich": null,
+    "yeu_cau_o": null,
+    "mua_kem": null,
+    "ngung_hang_loat": null
+   },
+   "rep": [
+    "Dạ vâng, nhà mình diện tích bao nhiêu vậy chị?"
+   ]
+  }
+ ]
+}
