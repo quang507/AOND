@@ -6790,14 +6790,18 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
       // 20/09/2026 (bắn thật mau-y-D): "giá 250 triệu/m2 thương lượng" — price_raw có chữ nhưng
       // parse_vnd không ra số → tin không bao giờ lên kệ, mà điểm vẫn 75 và bản nháp vẫn gửi với
       // "giá 250…". Chưa đọc ra GIÁ CẢ CĂN thì chưa gửi nháp: báo thiếu giá để hỏi lại.
-      const lg = l as { price_vnd?: number | null; price_raw?: string | null };
+      const lg = l as { price_vnd?: number | null; price_raw?: string | null; area_m2?: number | null; ward?: string | null; street?: string | null; location_raw?: string | null };
       if (lg.price_vnd == null) {
         // FR-239 f (phát lại test 28/09): tin đất báo thiếu "giá cả căn" — đất là "cả lô".
         const caGi = /^dat/.test(String((l as { property_type?: string | null }).property_type ?? "")) ? "cả lô" : "cả căn";
         const thieuGia = `giá ${caGi} bằng con số${lg.price_raw ? ` (em chưa đọc ra số từ "${lg.price_raw}")` : ""}`;
         return [thieuGia, ...(d.thieu ?? []).filter((t) => !/^giá/i.test(t))];
       }
-      if (d.diem < 70 && !chiXem) return d.thieu ?? [];
+      // Khớp cơ chế anh Luân (SUMMARY_READY_COMPLETENESS = 0.55): Có đủ bộ nhận diện (giá + diện tích + địa chỉ đường/phường)
+      // thì từ điểm ≥ 50 đã kích hoạt bản nháp sớm để giữ chân chủ nhà, không bắt đợi tới 70 điểm mới được thấy bài rao.
+      const coDinhDanhCoBan = !!lg.price_vnd && (lg.area_m2 != null && lg.area_m2 > 0) && !!(lg.ward || lg.street || lg.location_raw);
+      const nguongDiemNhap = coDinhDanhCoBan ? 50 : 70;
+      if (d.diem < nguongDiemNhap && !chiXem) return d.thieu ?? [];
       // SRS-5.1zzzzzl: tiêu đề chủ nhà gửi lúc duyệt (đã qua kiểm trích dẫn khi ghi) + câu khen AI viết trên chính bản tin rồi soát.
       const tieuDeKhach = (() => { const v = (l as { boc_tach?: { tieu_de_khach?: unknown } | null }).boc_tach?.tieu_de_khach; return typeof v === "string" && v.trim() ? v.trim() : null; })();
       const thamNhap = { l: l as TinNhapRow, facts: factsNhap as FactNhap[], diem: d.diem, thieu: d.thieu ?? [], soAnh: d.so_anh ?? 0, cauTD, tieuDeKhach };
