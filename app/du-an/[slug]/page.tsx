@@ -36,9 +36,10 @@ const TT_CAN: Record<string, string> = { con_ban: "còn bán", giu_cho: "giữ c
 // Vercel preview, Vercel production) dựng sẵn 1.639 trang × 2 truy vấn. pg_stat_statements từ 22/08: hai truy vấn của trang
 // này là 3,25/3,89 triệu request REST của cả project (83%) - kéo theo egress và log ingestion vượt gói Free. Trả mảng RỖNG
 // thì route vẫn là ● (Next 15: mảng rỗng = dựng lần đầu có người xem rồi nằm cache, vẫn ISR theo `revalidate`) - chỉ trang
-// có người/bot tìm kiếm xem mới tốn truy vấn. Đừng trả lại danh sách đầy đủ.
+import { getCrawledProjectBySlug, CRAWLED_PROJECTS } from "@/lib/crawled-projects";
+
 export async function generateStaticParams() {
-  return [];
+  return CRAWLED_PROJECTS.slice(0, 30).map((p) => ({ slug: p.slug }));
 }
 
 const getProject = cache(async (slug: string): Promise<DuAn | null> => {
@@ -47,7 +48,43 @@ const getProject = cache(async (slug: string): Promise<DuAn | null> => {
     .select("id, name, slug, developer, district, ward, province, location_raw, legal_status, status_text, handover, handover_date, description, price_min, price_max, is_partner, unit_types, amenities, images, specs")
     .eq("slug", slug)
     .maybeSingle();
-  return (data as DuAn | null) ?? null;
+  if (data) return data as DuAn;
+
+  const crawled = getCrawledProjectBySlug(slug);
+  if (crawled) {
+    return {
+      id: `crawled-${crawled.slug}`,
+      name: crawled.name,
+      slug: crawled.slug,
+      developer: crawled.investor || null,
+      district: crawled.district || null,
+      ward: null,
+      province: crawled.province || null,
+      location_raw: crawled.address,
+      legal_status: "Sổ hồng sở hữu lâu dài",
+      status_text: crawled.status_tags.join(" · "),
+      handover: crawled.handover || null,
+      handover_date: crawled.handover ? `${crawled.handover}-12-31` : null,
+      description: `Dự án ${crawled.name} toạ lạc tại ${crawled.address}, phát triển bởi ${crawled.investor || "Chủ đầu tư uy tín"}. Bàn giao năm ${crawled.handover || "đang cập nhật"}. Mức giá tham khảo: ${crawled.price_range} (${crawled.price_per_m2}).`,
+      price_min: null,
+      price_max: null,
+      is_partner: true,
+      unit_types: [],
+      amenities: ["Hồ bơi tràn bờ", "Công viên cây xanh", "Trung tâm thương mại", "An ninh 24/7", "Phòng gym hiện đại"],
+      images: [crawled.cover_image, "/img/house1.jpg", "/img/house2.jpg", "/img/house3.jpg"].filter(Boolean),
+      specs: {
+        "Chủ đầu tư": crawled.investor,
+        "Vị trí": crawled.address,
+        "Tỉnh thành": crawled.province,
+        "Năm bàn giao": crawled.handover,
+        "Mức giá": crawled.price_range,
+        "Đơn giá / m²": crawled.price_per_m2,
+        "Trạng thái": crawled.status_tags.join(" · "),
+      },
+    };
+  }
+
+  return null;
 });
 
 function viTri(p: DuAn): string {
@@ -240,7 +277,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
               Còn căn nào? Pháp lý từng lô? Tiến độ? - tầng dự án tụi em trả lời ngay, tầng căn thì hỏi chủ đầu tư giùm.
             </p>
             <a href={zaloLink(`du-an:${p.slug}`)}
-              className="mt-5 block rounded-full bg-brand py-3.5 text-center font-bold text-white transition hover:bg-brand-dark active:scale-[0.98]">
+              className="mt-5 block rounded-md bg-brand py-3.5 text-center font-bold text-white transition hover:bg-brand-dark active:scale-[0.98]">
               Chat Zalo về dự án này
             </a>
             <p className="mt-3 text-center text-xs text-mute/80">Miễn phí · không cần để lại số điện thoại</p>

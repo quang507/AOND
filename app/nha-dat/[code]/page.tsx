@@ -28,7 +28,7 @@ export const revalidate = 3600; // SRS-5.1zl (03/10/2026): 5 phút → 1 giờ, 
 // lượt/ngày lúc làm việc) dựng sẵn mọi tin × ~6 truy vấn - cùng cơ chế đã đốt 83% request REST ở /du-an/[slug]. Trả mảng
 // RỖNG: route vẫn là ● (Next 15 dựng lần đầu có người xem rồi giữ cache 5 phút như trên), chỉ không dựng trước lúc build.
 export async function generateStaticParams() {
-  return [];
+  return CURATED_LISTINGS.map((c) => ({ code: c.code }));
 }
 
 // `cache` của React gộp hai lượt gọi cùng tham số trong MỘT lần render —
@@ -45,6 +45,8 @@ const DETAIL_COLS =
   "planning_status, has_elevator, car_in_house, corner_lot, furnishing, year_built, negotiable, rent_income_vnd, specs_source, " +
   "price_per_m2_vnd, project_id, unit_code, nhan";
 
+import { getCuratedAsListing, CURATED_LISTINGS } from "@/lib/curated";
+
 const getListing = cache(async (code: string): Promise<Listing | null> => {
   // Đoạn đường dẫn đi THẲNG vào chuỗi `.or()` của PostgREST, nơi `,` `(` `)` là
   // ngữ pháp và `%` `_` là wildcard: `/nha-dat/%25` là "mọi tin", `/nha-dat/x,status.eq.an`
@@ -56,7 +58,8 @@ const getListing = cache(async (code: string): Promise<Listing | null> => {
     .or(`code.ilike.${code},legacy_code.ilike.${code}`)
     .limit(1)
     .maybeSingle();
-  return data as Listing | null;
+  if (data) return data as unknown as Listing;
+  return getCuratedAsListing(code);
 });
 
 // FR-99 (dựng 04/09/2026): giá/m² của mọi tin ĐANG LÊN KỆ cùng phường, cùng
@@ -439,7 +442,7 @@ export default async function Page({
             {((listing as { nhan?: string[] | null }).nhan?.length ?? 0) > 0 && (
               <div className="mt-5 flex flex-wrap gap-2">
                 {((listing as { nhan?: string[] | null }).nhan ?? []).map((k) => (
-                  <span key={k} className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-mute shadow-[0_2px_14px_rgba(13,37,61,0.06)]">🏷 {tenNhan([k])}</span>
+                  <span key={k} className="rounded-md bg-white px-3 py-1 text-sm font-semibold text-mute shadow-[0_2px_14px_rgba(13,37,61,0.06)]">🏷 {tenNhan([k])}</span>
                 ))}
               </div>
             )}
@@ -469,7 +472,7 @@ export default async function Page({
             </p>
             <a
               href={zaloLink(`#${listing.code}`)}
-              className="mt-5 block rounded-full bg-brand py-3.5 text-center font-bold text-white transition hover:bg-brand-dark active:scale-[0.98]"
+              className="mt-5 block rounded-md bg-brand py-3.5 text-center font-bold text-white transition hover:bg-brand-dark active:scale-[0.98]"
             >
               Chat Zalo về căn này
             </a>
@@ -479,7 +482,7 @@ export default async function Page({
             {listing.price_vnd && listing.price_vnd > 0 && (
               <Link
                 href={`/tinh-lai-vay?price=${listing.price_vnd}`}
-                className="mt-3 block rounded-full border border-line py-3 text-center text-sm font-bold transition hover:border-brand hover:text-brand"
+                className="mt-3 block rounded-md border border-line py-3 text-center text-sm font-bold transition hover:border-brand hover:text-brand"
               >
                 Tính lãi vay với giá căn này
               </Link>

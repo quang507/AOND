@@ -9,6 +9,7 @@
 // người đặt tên file. Ảnh bìa lấy thẳng cờ `is_cover` do DB giữ tất định.
 import { unstable_cache } from "next/cache";
 import { supabase } from "@/lib/supabase";
+import { getCuratedByCode } from "@/lib/curated";
 
 // Hai trang /mua-ban và /cho-thue đọc searchParams nên Next dựng chúng LẠI TỪ
 // ĐẦU mỗi request (build in ƒ, không ISR được vì tổ hợp bộ lọc là vô hạn).
@@ -39,6 +40,12 @@ async function _coverByCode(
   for (const r of data ?? []) {
     if (!cover[r.code as string]) cover[r.code as string] = r.url as string;
   }
+  for (const c of list) {
+    if (!cover[c]) {
+      const cur = getCuratedByCode(c);
+      if (cur) cover[c] = cur.image;
+    }
+  }
   return cover;
 }
 
@@ -60,5 +67,12 @@ async function _photosOfCode(code: string, limit = 12): Promise<string[]> {
     .order("created_at")
     .order("media_id")
     .limit(limit);
-  return (data ?? []).map((r) => r.url as string);
+  const urls = (data ?? []).map((r) => r.url as string);
+  if (urls.length > 0) return urls;
+
+  const cur = getCuratedByCode(code);
+  if (cur) {
+    return [cur.image, "/img/house1.jpg", "/img/house2.jpg", "/img/house3.jpg", "/img/house4.jpg"].filter((v, i, a) => a.indexOf(v) === i);
+  }
+  return [];
 }
