@@ -5182,9 +5182,15 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
     const dongHangRao = async (): Promise<string> => {
       const tr = await tranHangRao();
       if (!tr?.hang) return "";
+      const diem = Number(tr.diem ?? 0);
+      const lyDo = tr.hang === "vang"
+        ? `đạt ${diem}/100 điểm đầy đủ và uy tín, được ưu tiên giới thiệu đầu tiên cho khách mua`
+        : tr.hang === "bac"
+        ? `đạt ${diem}/100 điểm, gửi thêm ảnh hoặc sổ đỏ để lên hạng Vàng ưu tiên hiển thị`
+        : `đạt ${diem}/100 điểm thông số cơ bản, bổ sung thêm ảnh và kết cấu để lên hạng Bạc/Vàng`;
       // SRS-5.1zzzzzzz2: câu khích lệ có quyền lợi thật — môi giới chưa Vàng, dưới 10 căn (hệ số điểm chỉ tăng tới 10 căn).
       const khichLe = sellerRow.seller_type === "nmg" && tr.hang !== "vang" && tr.so_dang_rao < 10 ? cauTD("dang_xong_khich_le") : "";
-      return [cauTD("dang_xong_hang", { hang: tenHang(tr.hang) }), khichLe].filter(Boolean).join(" ");
+      return [cauTD("dang_xong_hang", { hang: tenHang(tr.hang), ly_do: lyDo }), khichLe].filter(Boolean).join(" ");
     };
 
     // ─── SRD §VI 2.4 (05/10/2026, SRS-5.1zzc): câu keep-alive "còn bán không" đang treo. AI đọc theo NGHĨA: gật với câu bot vừa

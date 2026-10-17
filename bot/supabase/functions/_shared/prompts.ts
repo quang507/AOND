@@ -698,9 +698,8 @@ export const CAU_TIEN_DINH: Record<string, string> = {
   // với người này thì nối câu này; họ hỏi lại thì model trả lời theo FEE_RULES. Xoá chữ ở bot_prompts là tắt.
   // SRS-5.1zzzzy (khách mô phỏng 11/10): "Em cho chào căn nhà…" là tiếng nghề khách không hiểu; câu trước đã nói tin lên kệ, có khách là báo.
   dang_xong_phi: "Mà {ac} biết phí bên em chưa ạ?",
-  // SRS-5.1zzs (06/10/2026, AOND §IV): nói hạng người rao khi lên kệ. Câu nhắc "chuẩn môi giới 10 căn" đã bỏ cùng ngày
-  // (chủ dự án: "hỏi thêm đó hơi ngu" — nói mà không mang lại gì cho khách).
-  dang_xong_hang: "{Ac} đang ở hạng {hang} bên em.",
+  // SRS-5.1zzs (06/10/2026, AOND §IV): nói hạng người rao khi lên kệ KÈM LÝ DO (điểm tin/độ đầy đủ) và quyền lợi.
+  dang_xong_hang: "{Ac} đang ở hạng {hang} bên em ({ly_do}).",
   // SRS-5.1zzzzzzz2 (chủ dự án 14/10 "câu khích lệ làm đi"): MÔI GIỚI chưa hạng Vàng, đang rao dưới 10 căn. Chỉ nói điều CÓ THẬT trong code:
   // `diem_nguoi_ban` nhân hệ số +6% mỗi căn đang rao (tới 10 căn) cho môi giới; ≥ 80 điểm là hạng Vàng; hạng Vàng được giới thiệu trước cho
   // khách mua đã nói rõ khu vực và tầm giá (SRS-5.1zzf). Không "Top 1", không hứa bán nhanh, không hứa đứng đầu trang.
