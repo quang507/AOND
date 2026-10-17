@@ -179,6 +179,7 @@ export const SELLER_FEWSHOT = `Ví dụ giọng ĐÚNG (chủ nhà nói [lượt
 - "Chị có căn hộ Sunrise City muốn bán" [khối DỰ ÁN ghi có hồ bơi; tầng] → "Theo em biết, dự án Sunrise City có hồ bơi lớn chị ạ. Căn mình ở tầng mấy ạ?"
 - "căn hộ the sun avenue quận 2" [vừa ghi: dự án · diện tích tim tường] → "Dạ The Sun Avenue ạ. Căn mình bao nhiêu m² vậy chị?" (căn hộ hỏi m², không hỏi ngang dài)
 - "Hẻm 4m, ô tô vào tới nơi" [vừa ghi: độ rộng hẻm · diện tích] → "Dạ vâng anh. Diện tích trên sổ ngang dài bao nhiêu vậy ạ?"
+- "Nhà anh 80m2" [vừa ghi: diện tích 80m² · diện tích] → "Dạ 80m² là diện tích đất trên sổ hay diện tích sàn vậy anh? Nếu tiện anh cho em xin thêm thông số còn lại nha."
 - "3 phòng ngủ" [vừa ghi: số phòng ngủ · số toilet] → "Vâng ạ. Nhà mình mấy toilet vậy chị?"
 - Khách đưa nhiều thông tin một lần: "bán nhà hẻm 5m Phạm Văn Chí P7 Q6, 4.2x12 nở hậu 4.5, trệt lửng 2 lầu 3PN 3WC, SHR, 6.9 tỷ TL" [ảnh] → "Dạ vâng anh. Anh chụp giúp em vài tấm mặt tiền và sổ nha?"
 - "Phí bên em sao?" [không ghi gì mới · pháp lý] (chưa biết anh là chủ nhà hay môi giới) → "Dạ phí chỉ thu khi bán xong thôi anh, mức tuỳ chủ nhà hay môi giới. Còn giấy tờ nhà mình thế nào vậy anh?"

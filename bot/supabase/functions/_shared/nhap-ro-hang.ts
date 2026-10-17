@@ -188,3 +188,34 @@ export function cauRaoTuDong(d: DongNhap): string {
   if (d.mo_ta) p.push(d.mo_ta);
   return p.join(", ") + ".";
 }
+
+/**
+ * Phân tích ý định khi người bán gửi BẢNG GIÁ / TỆP RỔ HÀNG (theo demo AOND inventory_scope).
+ * - "tham_khao": Người gửi chỉ muốn gửi tham khảo/lưu trữ dự án ("gửi em tham khảo", "bảng giá để xem...") -> không tạo rổ hàng tự động.
+ * - "rao": Có ý định rao bán/cho thuê ("bán giùm anh", "đăng căn 12, 14", "rao căn 5.01", "lên kệ giúp").
+ * - `maCanChiDinh`: Các mã căn cụ thể được chỉ định rao (nếu có); rỗng nghĩa là rao cả bảng.
+ */
+export function kiemYNhapRao(caption: string | null | undefined): {
+  yDinh: "rao" | "tham_khao" | "khong_ro";
+  maCanChiDinh: string[];
+} {
+  const cap = (caption ?? "").trim();
+  if (!cap) return { yDinh: "khong_ro", maCanChiDinh: [] };
+  const kd = chuan(cap);
+
+  // Tìm các mã căn được chỉ định trong lời nhắn (vd: "căn 24", "lô 12", "căn 5.01")
+  const maCanMatches = cap.match(/(?:căn|can|lô|lo|mã|ma)\s*([A-Za-z0-9_.-]+)/gi) ?? [];
+  const maCanChiDinh = maCanMatches.map((m) => m.replace(/^(?:căn|can|lô|lo|mã|ma)\s*/i, "").trim()).filter(Boolean);
+
+  const coYThamKhao = /\b(tham khao|xem thu|xem giup|de xem|luu thong tin|luu lai|doi chieu)\b/.test(kd);
+  const coYRao = /\b(ban|rao|dang|ky gui|chao|day|len ke|ban dum|ban giup|rao giup|day hang)\b/.test(kd);
+
+  if (coYRao || maCanChiDinh.length > 0) {
+    return { yDinh: "rao", maCanChiDinh };
+  }
+  if (coYThamKhao) {
+    return { yDinh: "tham_khao", maCanChiDinh: [] };
+  }
+  return { yDinh: "khong_ro", maCanChiDinh: [] };
+}
+
