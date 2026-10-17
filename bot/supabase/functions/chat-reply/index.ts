@@ -11743,19 +11743,46 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
     const pCode = photoWanted.toUpperCase();
     const inAsked = ((askedListings ?? []) as Asked[]).find((l) => l.code === pCode);
     let tatCa: string[];
+    // Nhu cầu ảnh cụ thể của người mua (bếp, phòng ngủ, mặt tiền, hẻm, wc...)
+    const textBuyer = String(text || "").toLowerCase();
+    const loaiYeuCau = textBuyer.includes("bếp") || textBuyer.includes("bep") ? "bep"
+      : textBuyer.includes("phòng ngủ") || textBuyer.includes("phong ngu") || textBuyer.includes("pn") ? "phong_ngu"
+      : textBuyer.includes("mặt tiền") || textBuyer.includes("mat tien") || textBuyer.includes("cổng") || textBuyer.includes("ngoài") ? "mat_tien"
+      : textBuyer.includes("hẻm") || textBuyer.includes("hem") || textBuyer.includes("đường trước") ? "hem"
+      : textBuyer.includes("nhà vệ sinh") || textBuyer.includes("toilet") || textBuyer.includes("wc") ? "wc"
+      : textBuyer.includes("phòng khách") || textBuyer.includes("trong nhà") ? "trong_nha"
+      : textBuyer.includes("sân thượng") || textBuyer.includes("ban công") ? "san_thuong"
+      : null;
+
     if (inAsked) tatCa = photosOf(inAsked);
     else {
-      // Cùng ranh giới với khối askedListings: `listing_photos_v` tự lọc tin đã
-      // lên kệ (FR-167c), còn fact ảnh thì phải lọc ở đây — không thì URL ảnh
-      // của tin chưa đăng / đã gỡ vẫn lọt qua cửa này.
+      // Cùng ranh giới với khối askedListings: `listing_photos_v` tự lọc tin đã lên kệ.
+      // Khi khách hỏi cụ thể (ảnh bếp, ảnh mặt tiền...), truy vấn listing_media lọc đúng media_type trước!
+      let pStoreUrls: string[] = [];
+      if (loaiYeuCau) {
+        const { data: pTheoLoai } = await client.from("listing_media")
+          .select("storage_path, bucket, listings!inner(code, status)")
+          .eq("listings.code", pCode)
+          .eq("media_type", loaiYeuCau)
+          .eq("bucket", "listing-public")
+          .in("listings.status", ["dang_ban", "dang_quan_tam", "da_chot"])
+          .limit(10);
+        if (pTheoLoai && pTheoLoai.length) {
+          const { data: baseCfg } = await client.rpc("cau_hinh", { p_key: "storage_public_base_url" });
+          const baseUrl = (typeof baseCfg === "string" && baseCfg.trim()) ? baseCfg.trim().replace(/\/+$/, "") : `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public`;
+          pStoreUrls = pTheoLoai.map((m) => `${baseUrl}/${m.bucket}/${m.storage_path}`);
+        }
+      }
+
       const [{ data: pStore }, { data: pFacts }] = await Promise.all([
-        client.from("listing_photos_v").select("url").eq("code", pCode).limit(24),
+        pStoreUrls.length ? Promise.resolve({ data: [] }) : client.from("listing_photos_v").select("url").eq("code", pCode).limit(24),
         client.from("listing_facts")
           .select("answer, listings!inner(code, status)")
           .eq("question", "hinh_anh").eq("listings.code", pCode)
           .in("listings.status", ["dang_ban", "dang_quan_tam", "da_chot"]).limit(8),
       ]);
       tatCa = [
+        ...pStoreUrls,
         ...(pStore ?? []).map((p) => p.url as string),
         ...(pFacts ?? []).flatMap((f) => (f.answer as string).match(PHOTO_URL_RE) ?? []),
       ];
