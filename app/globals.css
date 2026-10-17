@@ -9,29 +9,20 @@
    Magazine Theme", trong 225KB CSS của nó có 0 class property/listing/agent,
    không có gì để mượn cho trang nhà đất. Đổi về Veedoo (quyết định 26/08). */
 @theme {
-  --color-brand: #ec6324;
-  --color-brand-dark: #d0511a;
-  --color-navy: #0d253d;
-  --color-navy-soft: #14324f;
+  --color-brand: #ea580c;
+  --color-brand-dark: #c2410c;
+  --color-navy: #0b192c;
+  --color-navy-soft: #1e293b;
+  --color-teal: #0f766e;
+  --color-teal-light: #14b8a6;
   --color-zalo: #0068ff;
-  --color-cream: #eaf0f5;
-  --color-line: #e3e9f0;
-  /* 14/09/2026 (soát WCAG 1.4.3): #667a8e của ảnh Veedoo chỉ đạt 4,43:1 trên trắng, 3,86:1 trên
-     nền cream — chữ xám nhỏ khắp web/admin trượt 4,5:1. Tối một nấc, cùng sắc: 6,09 / 5,30. */
-  --color-mute: #526477;
+  --color-cream: #f8fafc;
+  --color-line: #e2e8f0;
+  --color-mute: #64748b;
 
-  /* Bo góc Veedoo đi theo CẶP: khung ngoài to, ảnh bên trong nhỏ hơn một nấc.
-     Đó là thứ tạo cảm giác "ảnh nằm trong khung" chứ không phải "ảnh bị cắt". */
   --radius-king: 10px;
   --radius-shot: 6px;
 
-  /* GÓC NHỌN HƠN — chủ dự án 10/09/2026: "ux mấy cái góc bo tròn AI quá, để
-     nhọn hơn đi". Góc tròn to là dấu hiệu dễ thấy nhất của giao diện do máy
-     sinh: mọi thẻ đều `rounded-2xl`, mọi nút đều viên thuốc, không có gì phân
-     biệt được khối này với khối kia. Sửa ở TOKEN chứ không đi sửa từng lớp:
-     Tailwind 4 lấy `rounded-*` từ đúng mấy biến này, nên một chỗ đổi là cả web
-     lẫn bàn làm việc theo. `rounded-full` giữ nguyên cho thứ đúng là tròn —
-     ảnh đại diện, chấm trạng thái, huy hiệu đếm. */
   --radius-xs: 1px;
   --radius-sm: 2px;
   --radius-md: 4px;
@@ -41,7 +32,7 @@
   --radius-3xl: 12px;
   --radius-4xl: 14px;
 
-  --font-sans: var(--font-nunito), system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
 }
 
 html {

@@ -22,3 +22,7 @@ desktop.ini
 sharepoint_store/
 backups/
 *.log
+.next/
+node_modules/
+tsconfig.tsbuildinfo
+next-env.d.ts

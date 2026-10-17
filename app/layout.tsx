@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
-import { Nunito } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ZaloWidget from "@/components/ZaloWidget";
 import { SITE_URL } from "@/lib/format";
 import "./globals.css";
 
-const nunito = Nunito({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin", "vietnamese"],
-  // Không có `font-black` nào trong app — bỏ 900 là bớt hai file font
-  // (latin + vietnamese) mỗi lượt tải đầu (FR-171 j).
-  weight: ["400", "600", "700", "800"],
-  variable: "--font-nunito",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-jakarta",
 });
 
 // NFR-09: metadataBase để canonical/OpenGraph ở trang con ghi đường dẫn tương
@@ -35,8 +33,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" className={nunito.variable}>
-      <body className="font-sans">
+    <html lang="vi" className={plusJakartaSans.variable}>
+      <body className="font-sans antialiased">
         <Header />
         <main className="min-h-screen">{children}</main>
         <Footer />
