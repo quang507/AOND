@@ -23,7 +23,7 @@ export default function ListingCard({
   const areaStr = formatArea(listing.area_m2);
 
   return (
-    <div className="group flex flex-col rounded-lg bg-white border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200">
+    <div className="group flex flex-col rounded-2xl bg-white border border-slate-200/80 overflow-hidden shadow-[0_1px_3px_0_rgba(15,23,42,0.04),0_1px_2px_-1px_rgba(15,23,42,0.03)] hover:shadow-[0_4px_6px_-2px_rgba(15,23,42,0.05),0_10px_15px_-3px_rgba(15,23,42,0.08)] hover:border-slate-300 transition-all duration-200">
       {/* Thumbnail */}
       <Link href={`/nha-dat/${encodeURIComponent(code)}`} className="relative aspect-[16/10] overflow-hidden bg-slate-100 block">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -35,7 +35,7 @@ export default function ListingCard({
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         {listing.deal && (
-          <span className="absolute top-2.5 left-2.5 rounded-md bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 backdrop-blur-sm">
+          <span className="absolute top-2.5 left-2.5 rounded-md bg-black/65 text-white text-[11px] font-bold px-2 py-0.5 backdrop-blur-sm">
             {listing.deal === "cho_thue" ? "Cho thuê" : "Bán"}
           </span>
         )}
@@ -55,8 +55,8 @@ export default function ListingCard({
           <span>{title}</span>
         </Link>
 
-        {/* Price & Area (red/orange matching Image 2) */}
-        <div className="mt-2 flex items-baseline gap-1.5 text-[15px] sm:text-base font-bold">
+        {/* Price & Area (red/crimson) */}
+        <div className="mt-2.5 flex items-baseline gap-1.5 text-[15px] sm:text-base font-bold">
           <span className="text-[#DC2626] font-extrabold">{priceStr}</span>
           {listing.area_m2 ? (
             <>
@@ -73,7 +73,7 @@ export default function ListingCard({
         </div>
 
         {/* Footer */}
-        <div className="mt-auto pt-3 flex items-center justify-between text-xs text-slate-400">
+        <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
           <span>Đăng hôm nay</span>
           <FavButton code={code} variant="square" />
         </div>

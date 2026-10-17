@@ -126,7 +126,7 @@ export default async function Home() {
             action="/api/search"
             method="get"
             role="search"
-            className="flex flex-col gap-3 rounded-lg bg-white p-4 text-navy shadow-[0_18px_40px_rgba(13,37,61,0.18)] border border-slate-100 sm:flex-row sm:items-center sm:gap-4 sm:p-3 sm:pl-6"
+            className="flex flex-col gap-3 rounded-2xl bg-white p-4 text-navy shadow-[0_10px_25px_-5px_rgba(11,25,44,0.15),0_8px_10px_-6px_rgba(11,25,44,0.1)] border border-slate-200/90 sm:flex-row sm:items-center sm:gap-4 sm:p-3 sm:pl-6"
           >
             <input type="hidden" name="go" value="1" />
             <IconSearch className="hidden h-5 w-5 shrink-0 text-brand sm:block" />
@@ -141,13 +141,13 @@ export default async function Home() {
             />
             <button
               type="submit"
-              className="nut nut-chinh px-6 py-2.5 rounded-md font-bold shadow-sm"
+              className="nut nut-chinh px-6 py-2.5 rounded-xl font-bold shadow-sm min-h-[44px]"
             >
               Tìm ngay
             </button>
             <a
               href={zaloLink("hero")}
-              className="nut nut-phu px-5 py-2.5 rounded-md font-bold"
+              className="nut nut-phu px-5 py-2.5 rounded-xl font-bold min-h-[44px]"
             >
               Hỏi qua Zalo
             </a>
@@ -158,7 +158,7 @@ export default async function Home() {
       {/* 2. KHỐI 3 LỜI HỨA CỐT LÕI (NỀN SÁNG) */}
       <section className="mx-auto grid max-w-6xl gap-5 px-4 pb-4 pt-24 md:grid-cols-3">
         {LOI_HUA.map(({ Icon, t, d, chat }) => (
-          <div key={t} className="flex flex-col rounded-2xl bg-white p-6 border border-line shadow-[0_2px_14px_rgba(13,37,61,0.06)] hover:shadow-md transition">
+          <div key={t} className="flex flex-col rounded-2xl bg-white p-6 border border-slate-200/80 shadow-[0_1px_3px_0_rgba(15,23,42,0.04),0_1px_2px_-1px_rgba(15,23,42,0.03)] hover:shadow-[0_4px_6px_-2px_rgba(15,23,42,0.05),0_10px_15px_-3px_rgba(15,23,42,0.08)] transition">
             <span className="grid h-12 w-12 place-items-center rounded-xl bg-brand/10 text-brand">
               <Icon className="h-6 w-6" />
             </span>

@@ -63,7 +63,7 @@ export default function CuratedShowcase() {
             <button
               key={cat.id}
               onClick={() => setSelectedCat(cat.id)}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-200 border ${
+              className={`whitespace-nowrap px-3.5 py-1.5 rounded-md text-xs font-bold transition-all duration-200 border ${
                 active
                   ? "bg-brand text-white border-brand shadow-sm"
                   : "bg-white text-mute border-line hover:border-brand/40 hover:text-navy"
@@ -80,7 +80,7 @@ export default function CuratedShowcase() {
         {filtered.map((item) => (
           <div
             key={item.id}
-            className="group flex flex-col rounded-xl bg-white border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200"
+            className="group flex flex-col rounded-2xl bg-white border border-slate-200/80 overflow-hidden shadow-[0_1px_3px_0_rgba(15,23,42,0.04),0_1px_2px_-1px_rgba(15,23,42,0.03)] hover:shadow-[0_4px_6px_-2px_rgba(15,23,42,0.05),0_10px_15px_-3px_rgba(15,23,42,0.08)] hover:border-slate-300 transition-all duration-200"
           >
             {/* Thumbnail link */}
             <Link href={`/nha-dat/${item.code}`} className="relative aspect-[16/10] overflow-hidden bg-slate-100 block">
@@ -103,15 +103,15 @@ export default function CuratedShowcase() {
                 title={item.title}
               >
                 {item.verified && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 mr-1.5 align-middle tracking-wide">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 mr-1.5 align-middle tracking-wide">
                     ✓ XÁC THỰC
                   </span>
                 )}
                 <span>{item.title}</span>
               </Link>
 
-              {/* Price & Area (red/orange text matching Image 2) */}
-              <div className="mt-2 flex items-baseline gap-1.5 text-[15px] sm:text-base font-bold">
+              {/* Price & Area (red/crimson text) */}
+              <div className="mt-2.5 flex items-baseline gap-1.5 text-[15px] sm:text-base font-bold">
                 <span className="text-[#DC2626] font-extrabold">{item.price_display}</span>
                 <span className="text-slate-400 font-bold">·</span>
                 <span className="text-[#DC2626] font-extrabold">{item.area_display}</span>
@@ -124,7 +124,7 @@ export default function CuratedShowcase() {
               </div>
 
               {/* Footer: Date posted + Square Fav Button */}
-              <div className="mt-auto pt-3 flex items-center justify-between text-xs text-slate-400">
+              <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
                 <span>{item.posted_time}</span>
                 <FavButton code={item.code} variant="square" />
               </div>

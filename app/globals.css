@@ -18,21 +18,28 @@
   --color-teal-light: #14b8a6;
   --color-zalo: #0068ff;
   --color-zalo-bubble: #ddf2fd;
-  --color-cream: #f4f7fb;
+  --color-cream: #f8fafc;
   --color-line: #e2e8f0;
+  --color-line-strong: #cbd5e1;
   --color-mute: #64748b;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f8fafc;
+  --color-surface-tint: #ddf2fd;
 
-  --radius-king: 8px;
-  --radius-shot: 6px;
+  --radius-king: 12px;
+  --radius-shot: 8px;
 
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 10px;
-  --radius-2xl: 12px;
-  --radius-3xl: 14px;
-  --radius-4xl: 16px;
+  --radius-zen-xs: 4px;
+  --radius-zen-sm: 6px;
+  --radius-zen-md: 8px;
+  --radius-zen-lg: 12px;
+  --radius-zen-xl: 16px;
+  --radius-zen-2xl: 24px;
+
+  --shadow-zen-1: 0 1px 2px 0 rgba(15, 23, 42, 0.04), 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+  --shadow-zen-2: 0 2px 4px -1px rgba(15, 23, 42, 0.06), 0 4px 6px -1px rgba(15, 23, 42, 0.05);
+  --shadow-zen-3: 0 4px 6px -2px rgba(15, 23, 42, 0.05), 0 10px 15px -3px rgba(15, 23, 42, 0.08);
+  --shadow-zen-4: 0 10px 20px -5px rgba(15, 23, 42, 0.08), 0 20px 25px -5px rgba(15, 23, 42, 0.06);
 
   --font-sans: var(--font-jakarta), system-ui, sans-serif;
 }

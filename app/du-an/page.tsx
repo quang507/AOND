@@ -133,12 +133,12 @@ export default async function DuAnPage({
                   return (
                     <article
                       key={p.slug}
-                      className="group bg-white rounded-md border border-slate-200 p-3.5 sm:p-4 shadow-sm hover:shadow hover:border-slate-300 transition-all flex flex-col sm:flex-row gap-4"
+                      className="group bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-[0_1px_3px_0_rgba(15,23,42,0.04),0_1px_2px_-1px_rgba(15,23,42,0.03)] hover:shadow-[0_4px_6px_-2px_rgba(15,23,42,0.05),0_10px_15px_-3px_rgba(15,23,42,0.08)] hover:border-slate-300 transition-all flex flex-col sm:flex-row gap-4 sm:gap-5"
                     >
                       {/* Photo Thumbnail */}
                       <Link
                         href={`/du-an/${p.slug}`}
-                        className="relative w-full sm:w-56 aspect-[16/10] sm:aspect-[4/3] rounded-md overflow-hidden bg-slate-100 shrink-0 block"
+                        className="relative w-full sm:w-60 aspect-[16/10] sm:aspect-[4/3] rounded-xl overflow-hidden bg-slate-100 shrink-0 block"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -276,7 +276,7 @@ export default async function DuAnPage({
 
           {/* Right Sidebar: Regional List matching Mogi UI */}
           <aside className="space-y-6">
-            <div className="bg-white rounded-md border border-slate-200 p-5 shadow-sm">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-[0_1px_3px_0_rgba(15,23,42,0.04),0_1px_2px_-1px_rgba(15,23,42,0.03)]">
               <h2 className="text-sm font-extrabold uppercase tracking-wider text-[#0B192C] border-b border-slate-100 pb-3">
                 Dự án BĐS theo khu vực
               </h2>
@@ -306,7 +306,7 @@ export default async function DuAnPage({
             </div>
 
             {/* Quick Zalo Consultation CTA */}
-            <div className="bg-[#DDF2FD]/60 rounded-md border border-[#0068FF]/20 p-5 shadow-sm">
+            <div className="bg-[#DDF2FD]/70 rounded-2xl border border-[#0068FF]/20 p-5 shadow-[0_1px_3px_0_rgba(15,23,42,0.04),0_1px_2px_-1px_rgba(15,23,42,0.03)]">
               <span className="text-2xl">💬</span>
               <h3 className="mt-2 font-bold text-[#0B192C] text-sm">
                 Cần tư vấn chọn căn & pháp lý dự án?
@@ -318,7 +318,7 @@ export default async function DuAnPage({
                 href={zaloLink("Tư vấn dự án bất động sản")}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-4 block w-full text-center py-2.5 rounded-md bg-[#0068FF] text-white text-xs font-bold shadow hover:bg-blue-600 transition"
+                className="mt-4 flex items-center justify-center min-h-[44px] w-full text-center py-2.5 px-4 rounded-xl bg-[#0068FF] text-white text-xs font-bold shadow-sm hover:bg-blue-600 transition"
               >
                 Nhắn Zalo tư vấn ngay
               </a>
