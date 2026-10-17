@@ -194,16 +194,17 @@ TIỀN VÀ GIÁ
 - Cách nói số: "5 tỏi rưỡi" / "5 tỷ rưỡi" / "5t5" / "5tỷ2" = 5,5 và 5,2 tỷ; "4 tỷ 8" = 4,8 tỷ; "800tr" = 800 triệu; "15tr/th" = 15 triệu một tháng.
 - Khoảng giá: "tầm 5 tỷ", "trên dưới 5 tỷ", "5-6 tỷ", "hơn 5 tỷ xíu", "dưới 6 tỷ" — ghi nguyên khoảng, đừng tự chốt một con số.
 - "cây" / "lượng" = vàng SJC (nhà cũ hay ra giá bằng vàng) — ghi nguyên văn, không tự quy ra tiền.
-- "TL" / "thương lượng" / "giá còn TL" = giá mềm, chưa chốt; "giá net" / "giá bao" = đã là giá cuối.
-- "ngộp" / "kẹt" / "cần tiền gấp" / "cắt lỗ" / "bán lỗ" = chủ đang cần thanh khoản nhanh, thường thương lượng mạnh.
+- "TL" / "thương lượng" / "giá còn TL" = giá mềm, chưa chốt; "giá net" / "giá bao" = đã là giá cuối; "giá cứng" / "chốt cứng" = không thương lượng thêm.
+- "ngộp" / "ngộp bank" / "kẹt" / "cần tiền gấp" / "cắt lỗ" / "bán lỗ" = chủ đang cần thanh khoản nhanh, thường thương lượng mạnh; "bớt lộc" / "gia lộc" = bớt chút ít lấy may khi công chứng.
 - "bao sang tên" / "bao thuế phí" = bên bán chịu chi phí sang tên; "thuế phí 50-50" = chia đôi.
 - "cọc" = đặt cọc; "công chứng" = ký hợp đồng mua bán ở phòng công chứng.
 
 VỊ TRÍ, ĐƯỜNG SÁ
-- "MT" = mặt tiền (nhà giáp mặt đường lớn); "MTKD" = mặt tiền kinh doanh được.
-- "HXH" = hẻm xe hơi (xe 4 chỗ vô tới cửa); "HXH thông" = hẻm xe hơi không cụt; "hẻm ba gác" = chỉ xe ba gác vô; "hẻm xe máy" = chỉ xe máy.
-- "hẻm thông" / "hẻm cụt"; "hẻm 4m" = hẻm rộng 4 mét; "cách MT 50m"; "vô 1 xuyệt / 2 xuyệt" = qua 1-2 lần rẽ hẻm (càng nhiều xuyệt càng sâu, càng rẻ).
+- "MT" = mặt tiền (nhà giáp mặt đường lớn); "MTKD" = mặt tiền kinh doanh được; "2MT" = 2 mặt tiền (nhà căn góc 2 mặt đường hoặc trước sau có hẻm/đường).
+- "HXH" = hẻm xe hơi (xe 4 chỗ vô tới cửa); "HXT" = hẻm xe tải (xe tải vô tận nơi); "HXH thông" = hẻm xe hơi không cụt; "HBA" / "hẻm ba gác" = chỉ xe ba gác vô; "hẻm xe máy" = chỉ xe máy.
+- "hẻm thông" / "hẻm cụt"; "hẻm 4m" = hẻm rộng 4 mét; "cách MT 50m"; "lô nhì" = cách mặt tiền đúng 1 căn; "vô 1 xuyệt / 2 xuyệt" = qua 1-2 lần rẽ hẻm (càng nhiều xuyệt càng sâu, càng rẻ).
 - "lô góc" / "căn góc" = 2 mặt thoáng; "2 mặt tiền"; "nhà nở hậu" = phía sau rộng hơn phía trước (khách thích), "tóp hậu" ngược lại; "vuông vức" = đất đều cạnh.
+- "CHDV" = toà nhà căn hộ dịch vụ (chia nhiều phòng khai thác dòng tiền cho thuê).
 - "khu người Hoa" / "Chợ Lớn" = khu Quận 5 quanh P10-P14; hay nhắc: Hải Thượng Lãn Ông, Trần Hưng Đạo, An Dương Vương, Hồng Bàng, Nguyễn Trãi, Trần Bình Trọng, chợ Kim Biên, chợ An Đông, Bệnh viện Chợ Rẫy, Đại học Sài Gòn.
 - "khu chợ" / "khu sung" = đông đúc buôn bán; "khu yên tĩnh" ngược lại.
 
