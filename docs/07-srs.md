@@ -5760,6 +5760,30 @@ xã-huyện + 4 ca không được kích). Thử hàm tạm trên dữ liệu th
 Bình" → Phường Tân Sơn Hòa. `tests/test_supabase_store_luu_tin.py` (ward / district / location_raw), `tests/test_ban_nhap_du_dieu_kien.py`
 (hẻm hỏi sau), `tests/test_branching.py` sửa khẳng định cũ "hẻm nằm trong câu hỏi trước bản nháp". pytest 279 đạt.
 
+### SRS-5.1zzzzzzz40 · Bảng giao lộ thật từ OSM (18/10/2026)
+
+**Ca gốc.** Chủ dự án: "Bảng giao lộ đường – phường có thì quá tốt làm đi, bot sẽ biết bds gần ngã tư bao nhiêu mét các kiểu, ở đường
+này gần đường kia".
+
+**Lớp lỗi.** Câu "gần đường nào / phường nào có cả hai đường" đang trả bằng TÂM tên đường trong phường (`duong.lat/lng`,
+`phuong_giao_hai_duong`, `duong_gan_duong` — 20260930a): đường dài thì tâm cách ngã tư hàng trăm mét tới cả cây số, nên "cách ngã tư X
+m" không tính được. **Chỗ cùng lớp.** Hai hàm cũ giữ nguyên (ước lượng thô khi bảng giao lộ chưa phủ); lượt nối vào bot sẽ ưu tiên
+`giao_lo_*`, cũ chỉ đỡ.
+
+**Sửa.** Migration `20261018f_giao_lo.sql`: bảng `giao_lo` (cặp tên, loại duong / so / hem, toạ độ, phường mới, quận cũ, `osm_node`,
+`so_nut`; khoá `(osm_node, duong_a, duong_b)` — nút ba đường sinh ba cặp; không CHECK thứ tự chữ vì collation DB khác JS),
+`giao_lo_cua(đường 1, đường 2[, lat, lng])`, `giao_lo_gan(lat, lng, bán kính, giới hạn, bỏ hẻm)` (lọc hộp bao trước), chỉ
+service_role. `scripts/lib/giao-lo.mjs` `timGiaoLo` (thuần): nút có ≥ 2 tên khác nhau sau `phanLoaiDuong` → cặp; nút cùng cặp
+cách ≤ 60 m gom một ngã tư (đại lộ hai chiều, vòng xoay). `scripts/nap-giao-lo.mjs`: Overpass theo từng phường (nút giới hạn TRONG
+đa giác phường — ngã tư trên ranh chỉ một dòng), dừng sớm khi 3 phường đầu không có trả lời, đối chiếu số phường có dòng.
+`apply-migration.yml` ô `dung_lai = nap-giao-lo` (`--thieu`). Proxy của phiên Claude chặn Overpass nên nạp chạy trên runner.
+Chưa làm: nối vào lời bot (lượt sau — tin có toạ độ → "cách ngã tư A – B ~N m"; khách nói "gần ngã tư A – B" → phường + tin gần đó).
+
+**Kiểm.** `bot/tests/giao-lo.mjs` (10 ca: ngã tư thường, đại lộ hai chiều gom một, cắt hai lần ở xa, nút ba đường, + 4 ca không được
+kích: cùng tên nối đoạn, nút ngoài phường, tên rác, đường không tên). `bot/tests/sql/giao-lo.sql` (7 ca: hai đường thứ tự bất kỳ không
+dấu, gần trước theo toạ độ, quanh điểm 111 / 222 m, giữ / bỏ hẻm, ngoài bán kính, không giao). Production: số dòng + số phường có
+giao lộ sau lượt `nap-giao-lo`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
