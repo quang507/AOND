@@ -60,3 +60,16 @@ python -m pytest tests/test_schema.py tests/test_engine.py -v
 * Đọc bản đặc tả toàn diện tại: [`SRS.md`](SRS.md)
 * Quy chuẩn làm việc cho AI Agent: [`CLAUDE.md`](CLAUDE.md)
 * Mô hình dữ liệu BĐS: [`docs/data-model.md`](docs/data-model.md)
+
+---
+
+## 📚 Bộ tài liệu BA (truy vết)
+
+Nguồn sự thật của yêu cầu hệ thống nằm trong [`docs/`](docs/README.md); cổng CI `truyvet` (`scripts/soat-truy-vet.sh`) đối chiếu số đếm dưới đây với các file docs.
+
+| # | Tài liệu | Quy mô |
+|---|---|---|
+| 2 | [Requirements](docs/02-requirements.md) | 9 BR · 225 FR · 18 NFR |
+| 3 | [User Flows](docs/03-user-flows.md) | 13 luồng end-to-end |
+| 5 | [Wireframes](docs/05-wireframes.md) | 14 màn hình low-fi |
+| 9 | [Open Issues](docs/09-open-issues.md) | 62 vấn đề |

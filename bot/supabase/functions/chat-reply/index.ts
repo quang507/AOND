@@ -54,7 +54,7 @@ import { ganManhBangModel } from "../_shared/ai/gan-manh.ts"; // FR-214 b/d: m�
 import { bocGhiAi, chayCoDoGio, chayCoGhiAi, gioAiHienTai, type DongGhiAi } from "../_shared/ai/ghi-luot-ai.ts"; // SRS-5.1zzzzzd: ghi đầu ra model của ID thử
 import { canGanManh, donManh } from "../_shared/extraction/gan-manh-loc.ts";
 // 05/10/2026 (demo AOND, SRS-5.1zzj…zzm): file / link người bán gửi, tài liệu dự án, nhập rổ hàng, nhịp gửi.
-import { base64, docCsv, docLinkDrive, docXlsx, loaiTep, m2TuChu, taiTep, tangTuChu, timLinkTrongChu, type TepTai } from "../_shared/kho_tep.ts";
+import { base64, docCsv, docLinkDrive, docXlsx, loaiTep, m2TuChu, taiTep, tangTuChu, timLinkTrongChu, transcribeVoiceUrl, type TepTai } from "../_shared/kho_tep.ts";
 import { docTaiLieuDuAn, type NguonTaiLieu, type TaiLieuDoc } from "../_shared/ai/doc-tai-lieu-du-an.ts";
 import { bangThanhTin, cauRaoTuDong } from "../_shared/nhap-ro-hang.ts";
 import { nhipGui } from "../_shared/nhip-gui.ts";
@@ -1051,6 +1051,17 @@ function anhHopLe(url: string | null): string | null {
   return ok ? url : null;
 }
 
+// 18/10/2026 — VOICE trên Zalo CÁ NHÂN (bridge zca-js). Lớp lỗi: pipeline giải mã thoại
+// (`transcribeVoiceUrl`, Groq Whisper → Gemini Flash) trước đây CHỈ được nối ở `zalo-webhook`
+// (kênh OA); nhánh bridge gửi placeholder "[Khách gửi tin nhắn thoại/ghi âm]" + `file_url`
+// (`tin_nhan_thoai.m4a`), file âm thanh rơi vào `loaiTep` → "khac" → bot trả "em chưa đọc được
+// định dạng". Nay nhận diện file thoại bằng ĐUÔI (và tên `tin_nhan_thoai`) để giải mã một chỗ
+// cho CẢ HAI kênh. Chỗ khác cùng lớp: zalo-webhook đã có (OA); đây là nửa còn thiếu (bridge).
+const DUOI_THOAI = /\.(m4a|aac|mp3|mpeg|wav|ogg|oga|opus|amr)(?:$|[?#])/i;
+function laTepThoai(url: string | null, ten: string | null): boolean {
+  return DUOI_THOAI.test(url ?? "") || DUOI_THOAI.test(ten ?? "") || /tin_nhan_thoai/i.test(ten ?? "");
+}
+
 const xuLyLuot = async (req: Request): Promise<Response> => {
   if (req.method !== "POST") return new Response("POST only", { status: 405 });
   // 14/09/2026: đồng hồ theo chặng — lượt đầu người mua chậm 10–12 s mà không ai biết
@@ -1151,15 +1162,17 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
   const imageUrl = anhHopLe(body.image_url ? String(body.image_url) : null);
   // SRS-5.1zzj (05/10/2026, demo AOND): FILE (PDF / CSV / XLSX) từ CDN Zalo cùng danh sách máy chủ với ảnh; LINK người bán
   // dán (`link_url` từ webhook, hoặc nằm trong chữ) — tải về có rào SSRF ở `kho_tep.ts`, chỉ nhánh NGƯỜI BÁN đọc.
-  const fileUrl = anhHopLe(body.file_url ? String(body.file_url) : null);
-  const fileName = typeof body.file_name === "string" && body.file_name.trim() ? body.file_name.trim().slice(0, 200) : null;
+  // `let`: fix VOICE 18/10 — file thoại được giải mã thành `text` sau cổng rồi XOÁ file_url/file_name
+  // để lượt chạy như tin chữ (không rơi xuống nhánh tài liệu).
+  let fileUrl = anhHopLe(body.file_url ? String(body.file_url) : null);
+  let fileName = typeof body.file_name === "string" && body.file_name.trim() ? body.file_name.trim().slice(0, 200) : null;
   const linkUrl = typeof body.link_url === "string" && /^https?:\/\//i.test(body.link_url) && body.link_url.length <= 2048 ? body.link_url.trim() : null;
   // `mark_sent` là cửa ghi sổ, không phải tin nhắn — nó không có người gửi lẫn
   // nội dung. Xử ở dưới, SAU cổng bí mật.
   if (!body.mark_sent && (!externalUserId || (!text && !imageUrl && !fileUrl && !linkUrl))) {
     return jsonResponse({ error: "external_user_id và text (hoặc image_url / file_url / link_url) bắt buộc" }, 400);
   }
-  const textOrTag = text || (fileUrl ? "[khách gửi file]" : linkUrl ? "[khách gửi link]" : "[khách gửi ảnh]");
+  let textOrTag = text || (fileUrl ? "[khách gửi file]" : linkUrl ? "[khách gửi link]" : "[khách gửi ảnh]");
 
   // FR-161: người ta gõ LẪN dấu suốt — "ban nha q5 giá 5 ty" có đúng một chữ
   // có dấu. Bản trước dò một cờ "câu này có dấu không" (bật khi câu chứa BẤT KỲ
@@ -1222,6 +1235,39 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
         "GATE_MO_KHI_CHUA_CO_BI_MAT=1 - cổng đang MỞ có chủ ý, ai cũng gọi được.");
     } else if (!await bangNhau(req.headers.get("x-bridge-secret") ?? "", gate)) {
       return jsonResponse({ error: "forbidden" }, 403);
+    }
+  }
+
+  // ─── FIX VOICE (18/10/2026): giải mã tin thoại TẠI chat-reply, SAU cổng (không ai chưa qua cổng
+  // đốt credit Groq/Gemini), TRƯỚC khi tách vai / bóc tách. Giải mã xong thay `text` = lời nói và
+  // XOÁ file_url/file_name để lượt chạy như tin chữ thường (cả nhánh mua lẫn bán). Một lượt / turn
+  // (chạy một lần trong `xuLyLuot`, không lặp). Keys đọc qua Vault như zalo-webhook. Hỏng im / câm
+  // tiếng → GIỮ nguyên file_url: rơi về nhánh tài liệu cũ (nhánh bán nói "em đọc được PDF/ảnh/CSV…"),
+  // không chặn lượt.
+  if (!body.mark_sent && fileUrl && laTepThoai(fileUrl, fileName)) {
+    try {
+      // Cùng bộ khoá Vault với zalo-webhook (GEMINI_API_KEY_2 là khoá dự phòng khi khoá chính 429).
+      const [groqKey, geminiKey, geminiKey2, geminiModelRaw] = await Promise.all([
+        secretOf(client, "GROQ_API_KEY"),
+        secretOf(client, "GEMINI_API_KEY"),
+        secretOf(client, "GEMINI_API_KEY_2"),
+        secretOf(client, "GEMINI_MODEL"),
+      ]);
+      const loiNoi = await transcribeVoiceUrl(fileUrl, {
+        groqApiKey: groqKey,
+        geminiApiKey: geminiKey || geminiKey2,
+        geminiModel: geminiModelRaw || "gemini-1.5-flash",
+      });
+      if (loiNoi) {
+        text = loiNoi.slice(0, 12000);
+        textBoc = soChuThanhSo(text);
+        tKD = boDau(textBoc);
+        textOrTag = text;
+        fileUrl = null;
+        fileName = null;
+      }
+    } catch (e) {
+      await ghiLoi(client, "chat-reply transcribe voice", e);
     }
   }
 
@@ -6703,12 +6749,18 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
     // ghi nguồn ai_kiem, bản nháp bỏ ghi chú thô `seller_chat`. Chỉ chạy ở chế độ `ai` (production) và người rao MỘT căn (nhiều căn
     // thì tin dễ lẫn giữa các căn); không chốt được → `docLaiGhiChu` như cũ. Một lượt model mỗi bản nháp.
     async function chotTinAi(listingId: string): Promise<boolean> {
-      if (!anthropicS || nhieuCan) return false;
+      if (!anthropicS) return false;
       try {
         // `cheDoBocAi` trả "chinh" cho công tắc `ai` (đường câu treo dùng chung) — chế độ thật nằm ở `laCheDoAi`, đặt khi nó chạy xong.
         const laAi = cheDoBocAi ? (await cheDoBocAi, laCheDoAi) : String((await client.rpc("cau_hinh", { p_key: "boc_tach_ai" })).data ?? "tat").trim() === "ai";
         if (!laAi) return false;
-        const tinKhach = [...tinChuNhaGoc(), thayLienHe(text.trim(), "[liên hệ]")].filter((b) => b && !laThaCamXuc(b));
+        // 18/10/2026 — MỞ CHỐT TIN CHO NGƯỜI RAO NHIỀU CĂN (bỏ chặn cứng `nhieuCan`). Lý do guard cũ: lượt chốt đọc CẢ hội
+        // thoại (`tinChuNhaGoc()`) rồi dồn vào MỘT căn — nhiều căn thì fact căn B lẫn sang căn A. Nay vẫn chốt theo đúng
+        // `listingId` đang soạn, nhưng khi nhiều căn thì CHỈ đọc tin chủ nhà VỪA nhắn lượt này (đã qua `gan-manh` định tuyến
+        // về đúng căn), KHÔNG đọc lại cả hội thoại — facts từng căn đã lưu riêng, lớp dedup (`giaTriKhongDoi`,
+        // `cungNoiDungDiaChi`, `docTien`) vẫn chặn ghi đè chéo. Một căn (cũ) giữ nguyên: đọc cả hội thoại để vá fact rớt.
+        const nguonChot = nhieuCan ? [thayLienHe(text.trim(), "[liên hệ]")] : [...tinChuNhaGoc(), thayLienHe(text.trim(), "[liên hệ]")];
+        const tinKhach = nguonChot.filter((b) => b && !laThaCamXuc(b));
         if (!tinKhach.length) return false;
         const tinGop = tinKhach.map((b) => b.replace(/\s*\n+\s*/g, " / ")).join("\n").slice(-6000);
         const [{ data: lRow, error: lErr }, { data: fRows, error: fErr }] = await Promise.all([

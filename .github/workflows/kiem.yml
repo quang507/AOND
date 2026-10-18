@@ -193,9 +193,16 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      # `--min-dep-age=0`: `--node-modules-dir=auto` khiến Deno resolve CẢ package.json
+      # gốc (next/react/lucide-react…). Chính sách minimum-dependency-age mặc định của
+      # Deno 2.x chặn mọi phiên bản npm mới hơn 24h — một web dep vừa bump (vd
+      # lucide-react) làm lượt check ĐỎ dù không liên quan edge function, và đỏ theo
+      # ĐỒNG HỒ (tự xanh lại sau 24h) nên CI mất tính tất định. Lượt này chỉ TYPECHECK,
+      # không cài gì vào production, nên tắt gate tuổi gói ở đây là an toàn và làm CI
+      # xác định. (Soát cung ứng gói thật thuộc về bước cài/deploy, không phải typecheck.)
       - name: Chín edge function không có lỗi kiểu nào
         working-directory: bot/supabase/functions
-        run: deno check --node-modules-dir=auto */index.ts
+        run: deno check --node-modules-dir=auto --min-dep-age=0 */index.ts
 
   # ── CỔNG THỨ 10: LUẬT TIỀN TS ↔ SQL RA CÙNG MỘT SỐ ──────────────────────────
   # Luật tiền phía TS gom về `_shared/extraction/luat-tien.ts` (tầng bốn 11/09),
