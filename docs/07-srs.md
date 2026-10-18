@@ -5882,6 +5882,32 @@ DB, slug không có → 404, không có ảnh → dòng chữ "Chưa có ảnh d
 
 **Kiểm.** `bun run kieu` + `bun run build` sạch; bảng route `/du-an/[slug]`, `/nha-dat/[code]` vẫn ●.
 
+### SRS-5.1zzzzzzz46 · Gỡ tàn dư bot TypeScript: code, trang admin, bảng / hàm DB (18/10/2026)
+
+**Ca gốc.** Chủ dự án: "thời typescript xóa". Soát 18/10 (đồ thị import từ web, 3 edge function, bridge, script, lõi Python):
+53 file `_shared/` chỉ còn bot TypeScript (đã gỡ ở 5.1zzzzzzz31) hoặc test của nó dùng; DB còn bảng / hàm chỉ edge function cũ đọc ghi.
+
+**Lớp lỗi.** Gỡ bộ não cũ mà để lại hạ tầng của nó: (1) trigger `listing_insert_drip` vẫn chạy — mỗi tin mới lõi Python tạo bắn
+`net.http_post` tới `/ask-seller` đã xoá; (2) hai trang admin sửa dữ liệu không ai đọc (`/admin/prompt` → `bot_prompts`, "Sửa thành
+câu chuẩn" + `/admin/mau-cau` → `mau_cau`) — chủ dự án sửa mà giọng bot không đổi; (3) `/admin` hiện "độ trễ" từ `inbound_ledger`
+không còn ai ghi (số cũ đứng yên); (4) 44 file test kiểm code không còn chạy, nên `test:bot` xanh không nói gì về bot thật.
+**Chỗ cùng lớp còn giữ (có hàm sống dùng).** `listing_facts` (diem_tin, van_ban_nhung, trigger listings), `project_facts` +
+`boc_tach_bong` (RPC xoá / khôi phục admin), `required_facts` + `listing_missing_facts` (soat_db_cong_khai, dung-lai-db), `deals`,
+`ratings_log`, `claude.ts` phần client Supabase / secret / sổ lỗi, `tin_nhac.ts`, `geocode.ts`, luật tiền / che liên hệ / nhãn / phường.
+
+**Sửa.** Code: xoá 53 file `_shared/` (prompts.ts, ai/\*, bóc tách regex, Groq / Gemini, `claude.ts` chỉ còn hàm 3 edge function
+dùng), `scripts/xem-tin-nhap.mjs`, `scripts/xuat-mau-cau.mjs`, 44 file trong `bot/tests/` (kể cả `e2e/package.json` — CI thôi cài
+`@anthropic-ai/sdk`), workflow `go-ham-ts.yml` (đã chạy: Supabase còn đúng 3 function); `phuong-cu-truoc-2025.mjs` giữ phần kiểm
+dữ liệu phường cũ, bỏ phần kiểm `tenPhuongCot` / `kiemDeXuat`. Web: xoá `/admin/prompt`, `/admin/mau-cau`, tab "Mẫu câu", phần "Sửa
+thành câu chuẩn" ở `/admin/tin-nhan`, ô độ trễ ở `/admin`. TS-SEC: bỏ dò `inbound_ledger` / `bot_prompts`, đổi hai RPC dò sang
+`bot_health_tick` / `soat_du_lieu_tick` (vẫn chỉ service_role). DB `20261018i`: chép `bot_prompts` (12 dòng), `mau_cau` (2),
+`du_an_tai_lieu` (1) sang `luu_tru.ts_*_20261018`; gỡ trigger `listing_insert_drip`, view `bot_do_tre` / `job_suc_khoe` /
+`van_kich_7_ngay`, 10 bảng (`ai_ghi_thu`, `ctv_daily_reports`, `van_kich`, `inbound_events`, `inbound_ledger`, `du_an_can`,
+`du_an_tai_lieu`, `project_fact_phieu`, `bot_prompts`, `mau_cau`) và 26 hàm, không CASCADE.
+
+**Kiểm.** `bun run kiem` thoát 0 (tsc, deno check 3 function, build, test:bot, truy vết); `bash bot/tests/sql/chay.sh
+20261018i_go_tan_du_ts.sql` TẤT CẢ ĐẠT (migration áp sạch trên schema.sql, các trigger listings còn lại chạy); pytest 288 đạt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

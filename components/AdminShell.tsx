@@ -8,7 +8,7 @@ import { Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode }
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { IconBell, IconChart, IconChat, IconEdit, IconGrid, IconList, IconLogout, IconPlus, IconSettings, IconUsers } from "@/components/icons";
+import { IconBell, IconChart, IconChat, IconGrid, IconList, IconLogout, IconPlus, IconSettings, IconUsers } from "@/components/icons";
 
 type Tab = { href: string; label: string; Icon: (p: { className?: string }) => ReactNode; khop: (p: string, tab: string | null) => boolean; title?: string };
 
@@ -17,7 +17,6 @@ const TABS: Tab[] = [
   { href: "/admin?tab=crm", label: "Khách hàng", Icon: IconUsers, khop: (p, t) => p === "/admin" && t === "crm" },
   { href: "/admin/tin-nhan", label: "Tin nhắn", Icon: IconChat, khop: (p) => p.startsWith("/admin/tin-nhan") },
   { href: "/admin/ro-hang", label: "Rổ hàng", Icon: IconList, khop: (p) => p.startsWith("/admin/ro-hang") || p.startsWith("/admin/dang-tin") },
-  { href: "/admin/mau-cau", label: "Mẫu câu", Icon: IconEdit, khop: (p) => p.startsWith("/admin/mau-cau"), title: "Câu chuẩn để huấn luyện giọng bot (FR-180)" },
   { href: "/admin?tab=stats", label: "Báo cáo", Icon: IconChart, khop: (p, t) => p === "/admin" && t === "stats" },
   { href: "/admin?tab=ops", label: "Vận hành", Icon: IconSettings, khop: (p, t) => p === "/admin" && t === "ops" },
 ];

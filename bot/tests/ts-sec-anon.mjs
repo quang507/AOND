@@ -93,7 +93,7 @@ if (dau.body.length === 0) {
 for (const bang of [
   "reminders", "sellers", "ctvs", "messages", "conversations",
   "viewings", "deals", "buyers", "info_requests", "bot_errors",
-  "inbound_ledger", "curated_lists", "ratings_log", "property_events",
+  "curated_lists", "ratings_log", "property_events",
 ]) {
   const r = await goi(`${bang}?select=*&limit=1`);
   if (laPostgrestTuChoi(r)) ok(`${bang}: DB từ chối anon (${r.body.code ?? r.status})`);
@@ -110,7 +110,7 @@ for (const bang of [
   else khongToiDuoc("public_listings", r);
 }
 for (const ten of [
-  "get_secret", "seller_drip_tick", "ctv_report_tick",
+  "get_secret", "bot_health_tick", "soat_du_lieu_tick", // 18/10/2026: seller_drip_tick / ctv_report_tick gỡ cùng bot TS
   "xuat_schema", "liet_ke_migration", // liet_ke_bang: xoá ở 20260911h cùng sao lưu
   "quota_tieu_hao", // FR-192: cửa đọc quota chỉ cho admin
 ]) {
@@ -139,20 +139,6 @@ for (const ten of [
     await goi(`listings?code=eq.${ma}`, { method: "DELETE" });
   } else khongToiDuoc("insert listings", r);
 }
-{
-  const r = await goi("bot_prompts?key=eq.tone_rules", { method: "PATCH", than: { content: "probe CI" } });
-  if (laPostgrestTuChoi(r)) ok(`update bot_prompts: DB từ chối anon (${r.body.code ?? r.status})`);
-  else if (r.status < 400) {
-    // PostgREST trả 204 kèm 0 dòng bị đụng khi RLS lọc sạch — đó cũng là đạt.
-    const con = await goi("bot_prompts?select=content&key=eq.tone_rules");
-    if (laPostgrestTuChoi(con) || (Array.isArray(con.body) && con.body.length === 0)) {
-      ok("update bot_prompts: anon không đụng được dòng nào");
-    } else {
-      ko("update bot_prompts: ANON SỬA ĐƯỢC NÃO BOT", "khôi phục bot_prompts NGAY");
-    }
-  } else khongToiDuoc("update bot_prompts", r);
-}
-
 // ── Nhóm 4: mặt công khai — phải CÒN đọc được ───────────────────────────────
 // Nhóm này bắt lỗi SIẾT QUÁ TAY, đúng loại đã làm /moi-gioi trắng 8 ngày. Một
 // bộ kiểm bảo mật chỉ kiểm chiều "chặn" sẽ báo xanh rờn khi web chết sạch.

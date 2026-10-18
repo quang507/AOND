@@ -150,7 +150,7 @@ const docFile = (p) => {
 // schema.sql do xuat_schema() bản trước 20261008b sinh ra: cột SINH thành `default <biểu thức>`, cột IDENTITY thành
 // `not null` trơn + sequence xuất riêng. Vá đúng các dòng đó (mỗi dòng phải khớp đúng một lần — lệch là dừng, không đoán).
 const COT_IDENTITY = [["boc_tach_bong", "id", "always"], ["messages", "seq", "always"], ["phuong_cu", "id", "always"],
-  ["required_facts", "id", "by default"], ["van_kich", "id", "always"]];
+  ["required_facts", "id", "by default"]];
 function vaSchema(s) {
   if (!/default bo_dau\(ten\)/.test(s)) return s; // schema.sql đã sinh bằng xuat_schema() mới
   const doi = (a, b) => { const n = s.split(a).length - 1; if (n !== 1) throw new Error(`vá schema.sql: "${a.slice(0, 50)}" khớp ${n} lần`); s = s.replace(a, b); };
@@ -335,7 +335,7 @@ if (buoc === "kiem") {
     `insert into public.app_config (key, value) values (${q(k)}, ${q(v)}) on conflict (key) do update set value = excluded.value`));
   process.exit(hong ? 1 : 0);
 } else if (buoc === "xac-minh") {
-  for (const t of ["wards", "phuong_cu", "quan_cu", "required_facts", "app_config", "duong", "bot_prompts"]) {
+  for (const t of ["wards", "phuong_cu", "quan_cu", "required_facts", "app_config", "duong"]) {
     const r = await sql(`select count(*)::int as n from public.${t}`, true).catch((e) => [{ n: `lỗi ${e.message.slice(0, 80)}` }]);
     console.log(`${t}: ${r[0]?.n}`);
   }

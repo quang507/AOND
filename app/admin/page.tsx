@@ -173,7 +173,6 @@ const TRANG_THAI_XEM: Record<string, string> = {
 const NGUOI_GIAO: Record<string, string> = { ctv: "CTV", seller: "chủ nhà", admin: "admin" };
 
 type BdsHot = { listing_id: string; code: string | null; ward: string | null; so_su_kien_60d: number; last_event_at: string | null };
-type DoTre = { so_luot: number | null; p50_giay: number | null; p95_giay: number | null; max_giay: number | null };
 type GiayTo = { id: string; listing_id: string; storage_path: string; media_type: string; mime_type: string; created_at: string; listings: { code: string | null } | null };
 
 const MOI_TRANG = 20;
@@ -265,7 +264,6 @@ function BanLamViec() {
   }, [tabUrl]);
 
   const [bdsHot, setBdsHot] = useState<BdsHot[] | null>(null);
-  const [doTre, setDoTre] = useState<DoTre | null | undefined>(undefined);
   const [giayTo, setGiayTo] = useState<GiayTo[]>([]);
   const [loiPhu, setLoiPhu] = useState<Record<string, string>>({});
   const [dsMa, setDsMa] = useState("");
@@ -382,7 +380,7 @@ function BanLamViec() {
   const load = async () => {
     void taiDangNhap();
     const d7 = new Date(Date.now() - 7 * 86400e3).toISOString();
-    const [pend, st, beatRes, errRes, tn, vc, nb, hg, hc, ch, lx, kc, tk, hot, tre, gt, buyRes, intRes, qtRes, pfRes, tmRes] = await Promise.all([
+    const [pend, st, beatRes, errRes, tn, vc, nb, hg, hc, ch, lx, kc, tk, hot, gt, buyRes, intRes, qtRes, pfRes, tmRes] = await Promise.all([
       supabase
         .from("listings")
         .select("id, code, ward, price_vnd, price_raw, area_m2, description, location_raw, created_at")
@@ -431,7 +429,6 @@ function BanLamViec() {
         .order("ngay", { ascending: false }),
       supabase.from("bds_hot").select("listing_id, code, ward, so_su_kien_60d, last_event_at")
         .order("so_su_kien_60d", { ascending: false }).limit(20),
-      supabase.from("bot_do_tre").select("so_luot, p50_giay, p95_giay, max_giay").maybeSingle(),
       supabase.from("listing_media")
         .select("id, listing_id, storage_path, media_type, mime_type, created_at, listings(code)")
         .eq("bucket", "listing-private").order("created_at", { ascending: false }).limit(100),
@@ -460,11 +457,9 @@ function BanLamViec() {
     setFactDuAn(pfRes.error ? [] : ((pfRes.data ?? []) as FactDuAn[]));
     setQuota(qtRes.error ? null : ((qtRes.data as Quota | null) ?? null));
     setBdsHot(hot.error ? null : ((hot.data ?? []) as BdsHot[]));
-    setDoTre(tre.error ? null : ((tre.data as DoTre | null) ?? null));
     setGiayTo((gt.data ?? []) as unknown as GiayTo[]);
     setLoiPhu({
       ...(hot.error ? { bds_hot: hot.error.message } : {}),
-      ...(tre.error ? { bot_do_tre: tre.error.message } : {}),
       ...(gt.error ? { giay_to: gt.error.message } : {}),
       ...(qtRes.error ? { quota: qtRes.error.message } : {}),
     });
@@ -968,7 +963,7 @@ function BanLamViec() {
             {!health ? "Đang đọc…" : botLoi ? "Đang lỗi" : "Đang trực"}
           </div>
           <div className={`mt-1 text-xs truncate ${botLoi ? "font-bold text-brand" : "text-mute"}`}>
-            {botLoi ?? `p50: ${Math.round((doTre?.p50_giay ?? 0) * 1000)}ms · ${health?.errs.length ?? 0} lỗi`}
+            {botLoi ?? `${health?.errs.length ?? 0} lỗi`}
           </div>
         </button>
       </div>
@@ -1877,32 +1872,12 @@ function BanLamViec() {
             <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-3">
               <div>
                 <h2 className="text-lg font-bold tracking-tight text-navy">Tình trạng Trợ lý Bot & Hạ tầng</h2>
-                <p className="text-xs text-mute mt-0.5">Nhịp tim bridge Zalo, độ trễ và nhật ký lỗi gần nhất</p>
+                <p className="text-xs text-mute mt-0.5">Nhịp tim bridge Zalo và nhật ký lỗi gần nhất</p>
               </div>
               {health && <BridgeBadge at={health.beat} />}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2 text-sm">
-              <div className="rounded-xl border border-line p-4 bg-slate-50/50 space-y-1">
-                <span className="text-xs font-bold text-mute uppercase tracking-wider block">Độ trễ phản hồi (7 ngày)</span>
-                {doTre && doTre.so_luot != null ? (
-                  <div className="space-y-1">
-                    <div className="text-lg font-bold text-navy">
-                      p50: {Math.round((doTre.p50_giay ?? 0) * 1000).toLocaleString("vi-VN")} ms
-                      {" · "}p95:{" "}
-                      <span className={(doTre.p95_giay ?? 0) > 3 ? "text-brand" : "text-navy"}>
-                        {Math.round((doTre.p95_giay ?? 0) * 1000).toLocaleString("vi-VN")} ms
-                      </span>
-                    </div>
-                    <div className="text-xs text-mute">
-                      Tổng {doTre.so_luot} lượt · Tiêu chuẩn NFR-01: p95 &lt; 3.000 ms
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-xs text-mute">Chưa có dữ liệu đo trễ</span>
-                )}
-              </div>
-
               <div className="rounded-xl border border-line p-4 bg-slate-50/50 space-y-1">
                 <span className="text-xs font-bold text-mute uppercase tracking-wider block">Nhật ký lỗi hệ thống</span>
                 <div className="text-lg font-bold text-navy">
