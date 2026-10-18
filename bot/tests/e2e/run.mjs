@@ -1896,7 +1896,9 @@ fresh(seedKho);
   fresh(seedKho);
   globalThis.__storageHong = true;
   r = await send({ external_user_id: "z-ccrb", text: "", image_url: "https://f9-zpg.zdn.vn/hong.jpg" });
-  check("N9 kho hỏng → rơi về fact hinh_anh URL tạm + ghi sổ lỗi, vẫn đáp nhận ảnh", db().t.listing_facts.some((f) => f.question === "hinh_anh" && /hong\.jpg/.test(f.answer)) && db().t.listing_media.length === 0 && db().t.bot_errors.some((e) => /anh vao kho/.test(e.source ?? "")) && /Cảm ơn|Ảnh .*đẹp/.test(r.body.replies.at(-1)), JSON.stringify({ f: db().t.listing_facts, e: db().t.bot_errors, rep: r.body.replies }));
+  // 18/10/2026: câu nhận ảnh đã đổi ở e446cf3 ("tự nhiên hoá nhận ảnh": "Ảnh … đẹp lắm" → "Dạ em nhận được ảnh … rồi ạ"),
+  // khớp TONE_RULES "không khen suông". Kiểm lời nhận ảnh theo câu mới.
+  check("N9 kho hỏng → rơi về fact hinh_anh URL tạm + ghi sổ lỗi, vẫn đáp nhận ảnh", db().t.listing_facts.some((f) => f.question === "hinh_anh" && /hong\.jpg/.test(f.answer)) && db().t.listing_media.length === 0 && db().t.bot_errors.some((e) => /anh vao kho/.test(e.source ?? "")) && /nhận được ảnh/.test(r.body.replies.at(-1)), JSON.stringify({ f: db().t.listing_facts, e: db().t.bot_errors, rep: r.body.replies }));
   globalThis.__storageHong = false;
   // FR-185: sổ ghi lệch diện tích → hỏi lại + báo admin; chưa có diện tích → lấy từ sổ.
   fresh(seedKho);
@@ -2949,9 +2951,11 @@ fresh(seedKho);
     db().t.info_requests.forEach((x) => { if (x.status === "pending") x.status = "expired"; });
     db().insert("info_requests", { listing_id: LB.id, question: "phap_ly", status: "pending" });
     const rA1 = await send({ external_user_id: "alb-1", text: "", image_url: "https://f9-zpg.zdn.vn/p1.jpg" });
-    check("ALB-01 ảnh trơn → KHÔNG có '🤖 Không trích xuất được gì'; 🤖 'Đã trích xuất từ ảnh: mặt tiền'; một câu khen; hỏi lại câu đang chờ (pháp lý)",
+    // 18/10/2026 (e446cf3, "tự nhiên hoá nhận ảnh"): câu dưới 🤖 nay là "Dạ em nhận được ảnh … rồi ạ" thay cho "Ảnh … đẹp lắm".
+    // Ý của ca này giữ nguyên: đúng MỘT câu nhận ảnh cho cả lượt, không lặp theo từng tấm.
+    check("ALB-01 ảnh trơn → KHÔNG có '🤖 Không trích xuất được gì'; 🤖 'Đã trích xuất từ ảnh: mặt tiền'; một câu nhận ảnh; hỏi lại câu đang chờ (pháp lý)",
       !rA1.body.replies.some((x) => /Không trích xuất được gì/.test(x)) && rA1.body.replies.some((x) => /^🤖 Đã trích xuất từ ảnh: mặt tiền/.test(x)) &&
-        rA1.body.replies.filter((x) => /^Ảnh .*đẹp/.test(x)).length === 1 &&
+        rA1.body.replies.filter((x) => /^Dạ em nhận được ảnh/.test(x)).length === 1 &&
         rA1.body.replies.some((x) => /sổ|pháp lý/i.test(x) && /\?/.test(x)),
       JSON.stringify(rA1.body.replies));
     const conv = db().t.messages.find((m) => m.sender === "seller")?.conversation_id;
