@@ -1,0 +1,40 @@
+# 18/10/2026 (SRS-5.1zzzzzzz31): chủ dự án chốt bộ não DUY NHẤT là lõi Python src/aioi — gỡ lõi TypeScript. Workflow này xoá các
+# edge function đã gỡ khỏi repo nhưng còn deploy trên Supabase. Code vẫn còn trong lịch sử git (deploy lại được nếu cần).
+# Giữ: escalation-feed (bridge kéo việc / báo sống / QR), geocode-listings, media-cleanup (lịch dọn dẹp còn chạy).
+name: Gỡ edge function của lõi TypeScript
+
+on:
+  workflow_dispatch:
+    inputs:
+      xac_nhan:
+        description: Gõ đúng chữ "go" để xoá chat-reply, zalo-webhook, nudge, ask-seller, ctv-report, inbound-sweep khỏi Supabase
+        required: true
+        default: ''
+
+env:
+  PROJECT_REF: rqxmmqmctpklqcmbfxuj
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Xoá function và in danh sách còn lại
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+          XAC_NHAN: ${{ inputs.xac_nhan }}
+        run: |
+          set -euo pipefail
+          [ -n "$TOKEN" ] || { echo "::error::Thiếu SUPABASE_ACCESS_TOKEN"; exit 1; }
+          echo "::add-mask::$TOKEN"
+          [ "$XAC_NHAN" = "go" ] || { echo "::error::Ô xac_nhan phải là \"go\""; exit 1; }
+          api="https://api.supabase.com/v1/projects/$PROJECT_REF/functions"
+          for f in chat-reply zalo-webhook nudge ask-seller ctv-report inbound-sweep; do
+            ma=$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE "$api/$f" -H "Authorization: Bearer $TOKEN")
+            case "$ma" in
+              200|204) echo "đã xoá $f" ;;
+              404) echo "$f không còn trên Supabase (bỏ qua)" ;;
+              *) echo "::error::xoá $f trả HTTP $ma"; exit 1 ;;
+            esac
+          done
+          echo "== function còn lại:"
+          curl -sS -f "$api" -H "Authorization: Bearer $TOKEN" | jq -r '.[].slug'

@@ -12,7 +12,7 @@ const ok = (ten, dk, ct = "") => { console.log(`${dk ? "✓" : "✗"} ${ten}${dk
 const REPO_CU = /(?:github\.com|raw\.githubusercontent\.com)\/quang507\/Nhadat\.cc/i;
 const tep = [
   ...readdirSync(new URL(".github/workflows/", goc)).filter((f) => f.endsWith(".yml")).map((f) => `.github/workflows/${f}`),
-  "bot/bridge-zca/cai-vps.sh", "bot/tests/chat/cai-vps.sh", "bot/bridge-zca/VPS.md",
+  "bot/bridge-zca/cai-vps.sh", "bot/bridge-zca/VPS.md",
 ];
 for (const f of tep) {
   const dong = doc(f).split("\n").map((d, i) => [i + 1, d]).filter(([, d]) => REPO_CU.test(d));

@@ -96,6 +96,16 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 
 ## 6. Mã nguồn app
 
+> **18/10/2026 — BỘ NÃO DUY NHẤT LÀ LÕI PYTHON `src/aioi/`** (chủ dự án: "lõi chuẩn duy nhất của AOND là PYTHON… phần TypeScript
+> chat-reply trên Supabase chỉ là tàn dư cũ… dồn 100% vào lõi Python, tránh hai con AI sửa chéo"). Logic nghiệp vụ, prompt, bóc tách,
+> xưng hô, phí, phiên chat: sửa ở `src/aioi/` (test `tests/`, chạy `bun run test:py`), chạy trên VPS `aond-core.service` cổng 8000 tại
+> `/opt/aond_core`; bridge gọi `http://127.0.0.1:8000/chat-reply`; `cai-vps` (workflow `apply-migration`, ô `dung_lai`) đưa `src/aioi`
+> lên và khởi động lại. Edge function TypeScript `chat-reply`, `zalo-webhook`, `nudge`, `ask-seller`, `ctv-report`, `inbound-sweep` đã
+> gỡ khỏi repo (SRS-5.1zzzzzzz31); còn `escalation-feed` (bridge kéo việc / báo sống / QR), `geocode-listings`, `media-cleanup`.
+> `_shared/` còn vì web (`lib/` nhập luật tiền, luật che liên hệ, nhãn, phường, prompts) và `escalation-feed` dùng. **Mọi đoạn bên dưới
+> nói về chat-reply / prompt TypeScript / bot_prompts / e2e 1440 ca / trang chat thử / bộ đo bóc tách / khách mô phỏng là LỊCH SỬ**,
+> không còn là chỗ sửa bot.
+
 Từ 24/08/2026 (quyết định chủ dự án) code nằm **trong repo này**, hai mảnh:
 
 - **Web** (Next.js 15 + TS + Tailwind 4, App Router) ở **root repo**:
@@ -103,7 +113,7 @@ Từ 24/08/2026 (quyết định chủ dự án) code nằm **trong repo này**,
   từ root, package manager **Bun** (`bun.lock`). Dữ liệu đọc Supabase bằng
   publishable key qua RLS; mô tả listing luôn qua `sanitizeDescription()`
   (lọc SĐT — FR-104) trước khi render.
-- **Bot** ở `bot/` — Supabase Edge Functions (xem `bot/README.md`).
+- **Bot**: bộ não là lõi Python `src/aioi/` (xem khung trên); `bot/` còn bridge Zalo (`bot/bridge-zca/`), migration + schema, và 3 edge function phụ (xem `bot/README.md`).
 - **Script vận hành** ở `scripts/` — chạy trên máy local, không deploy.
   `up-anh.mjs` đẩy ảnh thật lên bucket `listing-public` theo UUID của tin và
   ghi kèm dòng `listing_media` (FR-165; lối cũ theo mã tin của FR-148 đã bỏ);
