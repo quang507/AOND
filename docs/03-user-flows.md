@@ -281,8 +281,9 @@ flowchart TD
    được không → mấy lầu → mấy phòng ngủ → pháp lý → xin ảnh. Hướng, quy hoạch,
    năm xây **không hỏi**, chỉ ghi khi S tự kể. Thứ tự nằm ở `required_facts`
    (`nhom` + `priority`), không ở prompt.
-3. **Mỗi tin dưới 30 từ**: nhắc lại chi tiết vừa nghe kèm một câu khích lệ có nghĩa
-   gắn với khách mua, rồi hỏi đúng **một** thông tin (FR-177 b, FR-178 b).
+3. **Mỗi tin khoảng 30 từ**: đáp một tiếng ("Dạ", "Vâng ạ"), lâu lâu khen ngắn đúng điểm
+   mạnh khách vừa nói (không gắn khách mua, không câu nào cũng khen — `TONE_RULES`), rồi hỏi
+   đúng **một** thông tin (FR-177 b, FR-178 b).
 4. **Hỏi một đường, trả lời một nẻo thì VẪN GHI** (FR-177 e): nhận ra S đang nói
    fact nào thì ghi vào đúng fact đó; không nhận ra thì ghi nguyên văn vào
    `bo_sung`. Câu hỏi gốc vẫn treo, bot hỏi lại bằng lời khác. Chỉ ừ/ok, dặn xưng

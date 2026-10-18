@@ -87,7 +87,7 @@ không phải ack.
 ```mermaid
 flowchart LR
   subgraph SYS[SELLER_SYSTEM — cache_control ephemeral, giống nhau mọi lượt]
-    T[TONE_RULES<br/>"{ten}" → tenTroLy&#40;zalo&#41;<br/>FNV-1a, 20 tên •ai]
+    T[TONE_RULES<br/>"{ten}" → tenTroLy&#40;zalo&#41;<br/>FNV-1a, 20 tên người thật]
     SC[SELLER_SCRIPT_RULES<br/>thứ tự hỏi theo 11 loại,<br/>một câu một thông tin, dự án, bán rồi]
     FS[SELLER_FEWSHOT<br/>+ mẫu chuẩn admin duyệt<br/>mau_cau_fewshot]
     FE[FEE_RULES<br/>phí chỉ nói khi hỏi]

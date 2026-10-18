@@ -28,7 +28,7 @@ flowchart LR
 
 | File | Mô tả | Đối tượng đọc |
 |---|---|---|
-| [00-dinh-huong.md](00-dinh-huong.md) | **Định hướng (BRD hợp nhất Aioinhadat × nhadat.cc)** — thương hiệu Aioinhadat / AI Ơi Nhà Đất, trợ lý mỗi khách một tên •ai (FR-181); sản phẩm hôm nay là gì, giữ gì của bên nào, câu khách hỏi đi về chủ nhà rồi CTV, sao Bắc Đẩu, lộ trình, quyết định treo | Founder, PO, mọi người mới vào |
+| [00-dinh-huong.md](00-dinh-huong.md) | **Định hướng (BRD hợp nhất Aioinhadat × nhadat.cc)** — thương hiệu Aioinhadat / AI Ơi Nhà Đất, trợ lý mỗi khách một tên người thật (FR-181; kho •ai bỏ 14/10/2026, SRS-5.1zzzzzzz9); sản phẩm hôm nay là gì, giữ gì của bên nào, câu khách hỏi đi về chủ nhà rồi CTV, sao Bắc Đẩu, lộ trình, quyết định treo | Founder, PO, mọi người mới vào |
 | [00-glossary.md](00-glossary.md) | Từ điển thuật ngữ | Tất cả |
 | [01-research.md](01-research.md) | Bối cảnh thị trường, người dùng, đối thủ, ràng buộc | PO, Founder, Marketing |
 | [02-requirements.md](02-requirements.md) | Mục tiêu KD, persona, FR/NFR | PO, Dev Lead, QA |
@@ -55,7 +55,7 @@ flowchart LR
 
 | Tầng | Độ đầy đủ | Chặn bởi |
 |---|---|---|
-| 00 Định hướng | 95% — tên đã chốt (Aioinhadat; trợ lý mỗi khách một tên •ai từ 09/09), địa bàn đã chốt nửa đầu (Sài Gòn phường mới + Long An); chờ phạm vi loại BĐS, nhà cung cấp model, ngưỡng CTV; địa bàn nửa sau chốt 15/09 (lưu tên phường mới, bảng `wards`, FR-209); 07/09 thêm: bớt kế thừa nhadat.cc (OPEN-48); hỏi người bán đã chốt theo kịch bản Gemini → FR-177 | OPEN-40, OPEN-41, OPEN-42, OPEN-27, OPEN-48 |
+| 00 Định hướng | 95% — tên đã chốt (Aioinhadat; trợ lý mỗi khách một tên từ 09/09, tên người thật từ 14/10), địa bàn đã chốt nửa đầu (Sài Gòn phường mới + Long An); chờ phạm vi loại BĐS, nhà cung cấp model, ngưỡng CTV; địa bàn nửa sau chốt 15/09 (lưu tên phường mới, bảng `wards`, FR-209); 07/09 thêm: bớt kế thừa nhadat.cc (OPEN-48); hỏi người bán đã chốt theo kịch bản Gemini → FR-177 | OPEN-40, OPEN-41, OPEN-42, OPEN-27, OPEN-48 |
 | 01 Research | 85% — thiếu số liệu thị trường sơ cấp | OPEN-01 |
 | 02 Requirements | 90% | OPEN-02, OPEN-05 |
 | 03 User Flow | 90% | OPEN-04 |

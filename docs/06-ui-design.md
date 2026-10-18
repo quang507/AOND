@@ -154,11 +154,11 @@ Mục này viết lại theo code; sửa tone thì sửa cả hai nơi.
 | Khách bất kỳ | **em** | **anh / chị** (biết tên thì "anh Hưng", "chị Dương") |
 | Chưa biết giới tính | em | **anh chị** (lớn tuổi chưa rõ cô hay chú: **cô chú**) hoặc bỏ đại từ ("Nhà mình ở đường nào vậy ạ?"); KHÔNG gọi khách là "mình" (05/10/2026, chủ dự án: "bỏ 'mình' luôn"); khách tự xưng ("anh bận", "e ơi a…", "chị Lan đây em") thì gọi theo. Không viết "anh/chị" gạch chéo trong tin (11/09/2026, lượt bắn 42 ca: 34/52 câu bot viết "anh/chị") |
 
-Danh tính: mỗi khách **một trợ lý tên riêng** từ kho •ai (T•ai, Kh•ai, M•ai… 20 tên,
-FR-181 — chốt lại 09/09/2026, trước đó là một tên Thái), gán theo Zalo ID và giữ suốt,
+Danh tính: mỗi khách **một trợ lý tên riêng** từ kho 20 tên người thật (Thảo, Hương… Tuấn, Hùng…,
+FR-181; SRS-5.1zzzzzzz9 14/10/2026 — trước đó kho •ai từ 09/09, trước nữa một tên Thái), gán theo Zalo ID và giữ suốt,
 chuyên viên tư vấn của **AI Ơi Nhà Đất** — dịch vụ môi giới BĐS tại Sài Gòn (TP.HCM)
 và Long An, khởi điểm khu Quận 5 cũ (web aioinhadat.vercel.app). Prompt viết "{ten}",
-hệ thống điền. Khách hỏi "em là ai": *"Dạ em là T•ai bên AI Ơi Nhà Đất ạ"* — một câu
+hệ thống điền. Khách hỏi "em là ai": *"Dạ em là Thảo bên AI Ơi Nhà Đất ạ"* — một câu
 rồi quay lại việc của khách, không thuyết minh dài, không đổi tên giữa chừng
 (OPEN-39/OPEN-08). Khách hỏi **thẳng "người hay máy / có phải bot không"**: nói thật là
 trợ lý AI, việc cần người thật thì có anh/chị phụ trách theo sát — **không bao giờ nhận
@@ -544,7 +544,7 @@ Sau khi gộp: `bun run prompt --day` (khoá `cau_hoi_mau`, `cau_tien_dinh`, `se
 | 🤖 lượt khách ra LỆNH cho bot (SRS-5.1zzzzzzc) | "🤖 Đã trích xuất yêu cầu cho bot thực hiện: \"sửa giá đã ghi\"" rồi các dòng dữ liệu lượt đó ("• giá: …"); lệnh bỏ ô / ý, tiêu đề của khách, chuyển căn cùng khuôn, không dòng dữ liệu | "🤖 Đã trích xuất:" cho lượt chỉ đưa dữ liệu |
 | Ảnh bìa sổ (SRS-5.1zzzzzs) | pháp lý ghi đúng loại trên bìa: "sổ đỏ" / "sổ hồng" (+ ", đồng sở hữu"), 🤖 từ ảnh in "• pháp lý: …", câu "Trên bìa là sổ đỏ, em ghi pháp lý vậy nha" khi model không viết lời nhận | chữ chủ nhà đã nói không bị ảnh ghi đè |
 | Tin rỗng + "đăng cho mình với nội dung này" / "đủ rồi" (SRS-5.1zzzzzt) | "Dạ {ac} gửi nội dung tin qua đây giúp em nha, em đọc rồi soạn lại cho mình ạ." — giữ câu đang hỏi, không "em thôi hỏi" | câu "em thôi hỏi … còn thiếu" cho tin đã có dữ liệu |
-| Tiêu đề bản tin (SRS-5.1zzzzzu) | AI viết tiêu đề thu hút 40–90 ký tự cho cả bán lẫn thuê (thuê mở "Cho thuê / Thuê ngay"), không bắt "Chỉ <giá>"; code kiểm: có con số, mọi số trong bản tin, không chữ thị trường | tiêu đề máy khi AI không qua kiểm |
+| Tiêu đề bản tin (SRS-5.1zzzzzu) | AI được dặn viết tiêu đề thu hút 40–90 ký tự (`khen-nhap.ts`; `tieuDeHopLe` nhận 20–100 ký tự, một dòng, không "?" / "!" / "—") cho cả bán lẫn thuê (thuê mở "Cho thuê / Thuê ngay"), không bắt "Chỉ <giá>"; code kiểm: có con số, mọi số trong bản tin, không chữ thị trường | tiêu đề máy khi AI không qua kiểm |
 | "📝 Điều kiện thuê" | "cọc 2 tháng" (thêm nhãn khi khách chỉ nói số); điểm đầy đủ tin thuê thiếu → "điều kiện thuê (cọc, thời hạn)", không đòi sổ; tin bán thiếu → "pháp lý (loại sổ, hoàn công)" | các mục thiếu khác của `diem_tin` |
 | Lượt lên kệ | câu chấm điểm trải nghiệm hỏi NGAY cả khi có câu phí (bong bóng riêng) | câu phí `cauBaoPhi` |
 | Lời VỀ bản nháp lúc chờ duyệt (SRS-5.1zzzzzv) | `xin_sua` → "Dạ {ac} nói giúp em chỗ cần sửa (sửa thành gì, hay bỏ ý nào) là em sửa liền ạ."; `gui_noi_dung_sau` → "Dạ {ac} gửi nội dung qua đây giúp em, em sửa bản nháp theo đó rồi gửi lại {ac} xem ạ."; AI không ra gì → "Dạ em nghe rồi ạ. Bản nháp ở trên … nhắn ok…" — không ghi chú, không gửi lại nháp | lời sửa có giá trị (ghi + gửi lại nháp) |

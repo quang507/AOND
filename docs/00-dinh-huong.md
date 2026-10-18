@@ -48,7 +48,7 @@ cả hai phía (`06 §6.8`).
 
 | Khía cạnh | nhadat.cc (2024) | AOND SRD (06/2026) | Hôm nay | Neo |
 |---|---|---|---|---|
-| Tên | nhadat.cc, "Thái" | aioinhadat.com, gia đình •ai | **Aioinhadat**, viết cho khách **AI Ơi Nhà Đất**; trợ lý **mỗi khách một tên** từ kho •ai (T•ai, Kh•ai…, FR-181 — chốt lại 09/09, bản 03–09/09 là một tên Thái); domain web: https://aioinhadat.vercel.app/ | OPEN-08, OPEN-39, FR-181 |
+| Tên | nhadat.cc, "Thái" | aioinhadat.com, gia đình •ai | **Aioinhadat**, viết cho khách **AI Ơi Nhà Đất**; trợ lý **mỗi khách một tên** (FR-181 — chốt lại 09/09, bản 03–09/09 là một tên Thái; kho •ai T•ai, Kh•ai… chạy 09/09–14/10, **đổi 14/10/2026 (SRS-5.1zzzzzzz9): 20 tên người thật** (Thảo, Hương… Tuấn, Hùng… — `KHO_TEN_TRO_LY`)); domain web: https://aioinhadat.vercel.app/ | OPEN-08, OPEN-39, FR-181 |
 | Trọng tâm | Khách chat Zalo; web SEO | Người rao gửi hàng tự nhiên | Cả hai, một `chat-reply`, tách vai từng lượt | FR-157, FR-159 |
 | Nhận tin rao | `/raoban` + câu rao | Text/thoại/ảnh, không form | Câu rao trong Zalo sinh mã tin; ảnh có; thoại chưa | FR-158, FR-134 |
 | Nuôi tin | TTL 7 ngày | 1 thông tin/lần, 1–2 căn/ngày | Đúng AOND | FR-129, FR-144 |
@@ -69,9 +69,9 @@ cả hai phía (`06 §6.8`).
 | §I | Thoại | ⏳ | FR-134 "STT chưa làm" |
 | §I | Tích lũy ngầm nhiều phiên | ✅ | FR-129/144/153/172 |
 | §I | 200–300 người/ngày, 6–9k tin, phủ 90% Q5 | 🔶 | NFR-05; Free-tier chưa đo (NFR-16) |
-| §II | Kho tên •ai (m•ai, t•ai…) | ✅ | Chốt lại 09/09: mỗi khách một tên, gán tất định theo Zalo ID, giữ suốt (FR-181); bản 03/09 "một tên Thái" đã bỏ |
+| §II | Kho tên •ai (m•ai, t•ai…) | 🔶 | Chốt lại 09/09: mỗi khách một tên, gán tất định theo Zalo ID, giữ suốt (FR-181); bản 03/09 "một tên Thái" đã bỏ. Giữ "mỗi khách một tên", bỏ dạng •ai — **đổi 14/10/2026 (SRS-5.1zzzzzzz9): 20 tên người thật** (Thảo, Hương… Tuấn, Hùng… — `KHO_TEN_TRO_LY`) |
 | §II | Quy tắc 30 từ | ✅ | FR-178 (07/09), `TONE_RULES` 05/10 (SRS-5.1zzi): một tin khoảng 30 từ, kể cả nhánh mua; dài hơn chỉ khi khách hỏi điều cần giải thích hoặc liệt kê 2–3 căn (`06 §6.8`) |
-| §II | Khen trước, hỏi 1/lần; "hình như là" | ✅ | FR-129, FR-134, FR-177 b (khích lệ phải gắn khách mua, không khen suông) |
+| §II | Khen trước, hỏi 1/lần; "hình như là" | ✅ | FR-129, FR-134, FR-177 b. **Code hiện tại (`TONE_RULES`, 18/09 → 05/10/2026):** khen NGẮN, lâu lâu một câu, chỉ khi khách vừa nói một điểm mạnh thật; KHÔNG gắn khách mua / thanh khoản ("khách chuộng", "dễ bán" bị cấm) |
 | §II | Giọng mẫu: transcript 30 câu người bán | ✅ | FR-178 d: `SELLER_FEWSHOT` 16 cặp chép từ transcript AOND + kịch bản Gemini của sếp, khoá `bot_prompts.seller_fewshot` |
 | §II | Nút bấm nhanh trong tin (`[Vẫn đang bán]`…) | ⏳ | Bridge zca-js gửi chữ, chưa gửi nút — OPEN-33 (Zalo OA) |
 | §III | Nhóm 1 nhà ở | ✅ | FR-172 |
@@ -165,8 +165,8 @@ nhóm công nghiệp. Giả định 4 đã **đổ một lần**: bridge chết 
 
 ## 0.8 Chờ chủ dự án chốt
 
-Đã chốt 03/09/2026: **OPEN-08 + OPEN-39** (Aioinhadat; "một bot Thái" đã đảo lại 09/09 → kho
-•ai theo khách, FR-181), **luồng CTV** (FR-173), **địa bàn — OPEN-27 nửa đầu** (Sài Gòn phường
+Đã chốt 03/09/2026: **OPEN-08 + OPEN-39** (Aioinhadat; "một bot Thái" đã đảo lại 09/09 → mỗi
+khách một tên, FR-181; tên người thật từ 14/10), **luồng CTV** (FR-173), **địa bàn — OPEN-27 nửa đầu** (Sài Gòn phường
 mới + Long An, trọng tâm bán — FR-174). Đã chốt 04/09/2026: **giữ chân khách
 mốc 5 ngày** (FR-60 đổi từ 3 ngày; FR-63 buộc giữ kết nối từ ngày 6) và **dựng
 hết phần tài liệu có mà code chưa** (OPEN-43 → xem `10 §10.8.4`) [nguồn: chủ
@@ -182,8 +182,8 @@ dự án 04/09/2026 "dựng hết đi, giữ chân 5 ngày"]. Còn:
 
 **Đã chốt 07/09/2026: cách hỏi người bán** — theo kịch bản huấn luyện môi giới sếp
 làm trong Gemini (tài liệu gốc ở thư mục gốc): một thông tin/lần theo thứ tự địa chỉ →
-giá → hẻm → diện tích → tầng → phòng → pháp lý → ảnh → lịch khảo sát; mỗi câu trả lời
-được khích lệ; đủ thì gửi bản nháp tin kèm điểm 100 theo 7 tiêu chí, đủ điểm mới rao
+giá → hẻm → diện tích → tầng → phòng → pháp lý → ảnh → lịch khảo sát; khen ngắn khi
+khách vừa nói điểm mạnh thật (không câu nào cũng khen — `TONE_RULES`); đủ thì gửi bản nháp tin kèm điểm 100 theo 7 tiêu chí, đủ điểm mới rao
 (FR-177, thay thứ tự FR-176 f). Cùng ngày, 13 mục OPEN của hướng nhadat.cc 2024 đóng
 vì không còn hợp AOND (`09` bảng "đã chốt / đã đóng").
 

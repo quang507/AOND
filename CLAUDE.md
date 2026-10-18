@@ -24,7 +24,7 @@ Thứ tự đọc = thứ tự phụ thuộc. Tài liệu sau **không được 
 
 | # | File | Nội dung | ID prefix |
 |---|---|---|---|
-| 0 | `docs/00-dinh-huong.md` | **Định hướng** — BRD hợp nhất Aioinhadat × nhadat.cc: thương hiệu Aioinhadat (viết AI Ơi Nhà Đất), trợ lý mỗi khách một tên •ai (FR-181); mặt bán theo SRD AOND, mặt mua + web theo nhadat.cc, câu khách hỏi đi về CTV (FR-173); bất biến, sao Bắc Đẩu, lộ trình, quyết định treo. Đứng trên mọi tầng dưới | `DH-` |
+| 0 | `docs/00-dinh-huong.md` | **Định hướng** — BRD hợp nhất Aioinhadat × nhadat.cc: thương hiệu Aioinhadat (viết AI Ơi Nhà Đất), trợ lý mỗi khách một tên người thật (FR-181; kho •ai bỏ 14/10/2026, SRS-5.1zzzzzzz9); mặt bán theo SRD AOND, mặt mua + web theo nhadat.cc, câu khách hỏi đi về CTV (FR-173); bất biến, sao Bắc Đẩu, lộ trình, quyết định treo. Đứng trên mọi tầng dưới | `DH-` |
 | 0 | `docs/00-glossary.md` | Từ điển thuật ngữ (B, S, CCRB, NMG, CTV, HXH…) | — |
 | 1 | `docs/01-research.md` | Nghiên cứu thị trường, người dùng, đối thủ, insight | `INS-` |
 | 2 | `docs/02-requirements.md` | Mục tiêu KD, persona, yêu cầu chức năng / phi chức năng | `BR- FR- NFR-` |
