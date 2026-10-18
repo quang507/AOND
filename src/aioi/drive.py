@@ -109,6 +109,30 @@ def folder_name(url: str, client: DriveClient) -> str | None:
     return _clean_name(meta.get("name", "")) if meta.get("mimeType") == FOLDER_MIME else None
 
 
+def khoa_drive(api_key: str | None, supabase_url: str | None, service_key: str | None, doc=None) -> str | None:
+    """Khoá Drive API: biến môi trường `GOOGLE_API_KEY` trước; không có thì đọc Vault Supabase (`GOOGLE_DRIVE_API_KEY`, đặt
+    sẵn từ thời bot TypeScript) qua rpc get_secret bằng service_role — khỏi phải chép khoá lên VPS (SRS-5.1zzzzzzz47).
+    Lỗi / không có → None (link thư mục Drive thì bot nhờ gửi từng file). `doc` để test thay lời gọi mạng."""
+    if api_key:
+        return api_key
+    if not (supabase_url and service_key):
+        return None
+    if doc is None:
+        def doc() -> object:
+            req = urllib.request.Request(
+                f"{supabase_url.rstrip('/')}/rest/v1/rpc/get_secret",
+                data=json.dumps({"secret_name": "GOOGLE_DRIVE_API_KEY"}).encode("utf-8"),
+                headers={"apikey": service_key, "Authorization": f"Bearer {service_key}", "Content-Type": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+    try:
+        v = doc()
+    except Exception:  # noqa: BLE001 — không đọc được khoá thì chạy như chưa có khoá
+        return None
+    return v if isinstance(v, str) and v.strip() else None
+
+
 def make_resolver(api_key: str | None):
     """Return a url -> [(url, name|None)] resolver. With a Drive key it expands Drive
     links (incl. folders); without one, or for non-Drive links, it's a pass-through."""

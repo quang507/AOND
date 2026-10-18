@@ -317,6 +317,13 @@ def _redact_doc_title(title: str) -> str:
 _DESTRUCTIVE_OPS = {"clear", "keep_only", "remove"}
 
 
+def _trich_dan_khop(trich: str | None, cau: str | None) -> bool:
+    """Cụm AI trích có nằm NGUYÊN trong câu khách không (bỏ dấu, gộp khoảng trắng) — AI đọc nghĩa, code chỉ kiểm bằng chứng."""
+    gon = lambda s: re.sub(r"\s+", " ", _strip_accents(str(s or "")).lower()).strip()
+    t = gon(trich)
+    return bool(t) and t in gon(cau)
+
+
 def _strip_accents(s: str) -> str:
     s = (s or "").replace("đ", "d").replace("Đ", "D")  # NFD won't decompose đ — map it first
     return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
@@ -422,6 +429,9 @@ class Conversation:
     # (e.g. garbled voice-to-text) from silently wiping the basket. Applied on confirm, dropped
     # on deny or when the seller moves on.
     pending_destructive: list[dict] = field(default_factory=list)
+    # Transient (not persisted): khách vừa ĐỒNG Ý / KHÔNG ĐỒNG Ý bản tin nháp ở lượt này ("dong_y" / "khong_dong_y"), do lượt AI
+    # lập thao tác đọc theo nghĩa và code kiểm trích dẫn (SRS-5.1zzzzzzz47). None = không phải câu duyệt.
+    duyet_luot: str | None = None
 
     def __post_init__(self) -> None:
         if not self.listings:
@@ -1608,8 +1618,11 @@ class Engine:
         if url_match:
             cand_url = url_match.group(0).rstrip(".,)>\"'")
             cand_lower = cand_url.lower()
-            media_exts = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf")
-            is_media = any(cand_lower.endswith(ext) for ext in media_exts) or "zadn.vn" in cand_lower or "drive.google.com" in cand_lower
+            # 18/10/2026 (SRS-5.1zzzzzzz47): link Google Sheets / file .xlsx .csv dán vào chat cũng vào handle_link (nhập rổ hàng)
+            # — trước đây chỉ link Drive mới tới được nhánh bảng tính.
+            media_exts = (".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf", ".xlsx", ".csv")
+            is_media = (any(cand_lower.endswith(ext) for ext in media_exts) or "zadn.vn" in cand_lower
+                        or "drive.google.com" in cand_lower or "docs.google.com/spreadsheets" in cand_lower)
             if is_media:
                 caption = clean_text.replace(cand_url, "").strip() or None
                 return self.handle_link(user_key, cand_url, now=now, caption=caption)
@@ -1682,6 +1695,16 @@ class Engine:
                 conv.history.append(Turn("assistant", receipt_reply, now))
                 conv.last_ai_at = now
                 return self._build_result(conv, receipt_reply, captured, now)
+
+            # 1a-duyệt (SRS-5.1zzzzzzz47): tin từ chat chỉ lên web khi khách ĐỒNG Ý bản nháp — ghi / xoá dấu duyệt trên DB
+            #     trước khi soạn lời, để câu "đã đăng" đọc đúng trạng thái mới.
+            ghi_duyet = getattr(self._convstore, "ghi_duyet", None)
+            if conv.duyet_luot and ghi_duyet is not None:
+                try:
+                    self._convstore.save(conv)
+                    ghi_duyet(conv, conv.duyet_luot == "dong_y")
+                except Exception as e:  # noqa: BLE001 — ghi duyệt hỏng thì lời bot vẫn đọc trạng thái thật
+                    log.warning("ghi_duyet lỗi: %s", e)
 
             # 1a-ngã tư (18/10/2026, SRS-5.1zzzzzzz43): khách tả vị trí bằng ngã tư mà chưa nói phường → tra bảng giao lộ;
             #     ngã tư nằm trong đúng một phường thì điền phường, khỏi hỏi lại.
@@ -1771,7 +1794,8 @@ class Engine:
             )
         else:
             system = build_fee_followup_system(
-                conv.assistant.name, conv.prop, conv.user_type, project_block, web=self._trang_thai_web(conv)
+                conv.assistant.name, conv.prop, conv.user_type, project_block, web=self._trang_thai_web(conv),
+                duyet=conv.duyet_luot,
             )
 
         if customer_pronoun == "em":
@@ -3010,6 +3034,14 @@ class Engine:
                 conv.buyer_lead.update(plan["buyer_lead"])
         elif intent == "sell" or has_seller_context:
             conv.role = "seller"
+
+        # Duyệt bản nháp (SRS-5.1zzzzzzz47): chỉ tính khi bản nháp ĐÃ gửi ở lượt trước và cụm trích có thật trong tin khách.
+        conv.duyet_luot = None
+        y = plan.get("duyet_ban_nhap")
+        if conv.listing_proposed and y in ("dong_y", "khong_dong_y"):
+            cuoi = next((t.content for t in reversed(conv.history) if t.role == "user"), "")
+            if _trich_dan_khop(plan.get("duyet_trich_dan"), cuoi):
+                conv.duyet_luot = y
 
         changed: set[str] = set()
         receipts: list[tuple] = []

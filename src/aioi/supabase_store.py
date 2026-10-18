@@ -288,10 +288,25 @@ class SupabaseConversationStore:
                     lid = existing[0]["id"]
                     self._patch(f"listings?id=eq.{lid}", listing_payload)
                 else:
-                    self._post("listings", {**listing_payload, "status": "cho_thong_tin"})
+                    # Tin tạo từ chat chỉ lên web khi khách đồng ý bản nháp (trigger listings_quyet_dinh_dang_tin đọc
+                    # can_chu_duyet + chu_duyet_at; SRS-5.1zzzzzzz47). Admin / Excel tạo tin thì cờ này false như cũ.
+                    self._post("listings", {**listing_payload, "status": "cho_thong_tin", "can_chu_duyet": True})
 
         except Exception as e:
             log.error("Failed to save conversation to Supabase: %s", e)
+
+    def ghi_duyet(self, conv: Conversation, dong_y: bool) -> None:
+        """Khách ĐỒNG Ý bản nháp → `chu_duyet_at` = bây giờ (trigger cho lên web nếu đủ giá / diện tích / phường); KHÔNG đồng ý →
+        xoá dấu (tin đang hiển thị thì trigger hạ về `cho_thong_tin`). Quyết định đồng ý hay không là của lượt AI, đã kiểm trích
+        dẫn ở engine (SRS-5.1zzzzzzz47)."""
+        if not self.is_configured:
+            return
+        sid = self._get_or_create_seller(conv.user_key)
+        if not sid:
+            return
+        code = conv.active.listing_id[:8].upper()
+        self._patch(f"listings?seller_id=eq.{sid}&code=eq.{code}",
+                    {"chu_duyet_at": datetime.now(timezone.utc).isoformat() if dong_y else None})
 
     # Cột → ô bot hỏi: đúng ba điều kiện của `listing_du_dang_tin` (giá · diện tích · phường).
     _COT_DANG_TIN = (("phuong", "ward"), ("dien_tich", "area_m2"), ("gia", "price_vnd"))

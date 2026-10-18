@@ -86,8 +86,9 @@ if [ -d /opt/aond_core/src/aioi ]; then
   cp -r --no-preserve=ownership "$DIR/src/aioi/." /opt/aond_core/src/aioi/
   systemctl restart aond-core
   for i in $(seq 1 20); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done
-  curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null || { echo "aond-core không trả /health sau khởi động lại — bản cũ ở $LUU"; exit 1; }
-  xong "aond-core chạy code repo, /health trả lời (bản cũ: $LUU)"
+  SUC_KHOE=$(curl -fsS -m 3 http://127.0.0.1:8000/health) || { echo "aond-core không trả /health sau khởi động lại — bản cũ ở $LUU"; exit 1; }
+  # /health chỉ báo có / không (provider, model, stt, drive) — không mang giá trị khoá nào.
+  xong "aond-core chạy code repo, /health: $SUC_KHOE (bản cũ: $LUU)"
 fi
 
 buoc "5/5 systemd nhadat-bridge"
