@@ -57,6 +57,11 @@ import { tieuDeHopLe } from "../supabase/functions/_shared/extraction/khen-hop-l
   ok3("TD-6b tiêu đề bán giá đứng cuối 'Nhà hẻm xe hơi Đông Thạnh 132m², sân rộng, chỉ 3,9 tỷ' → nhận", tieuDeHopLe("Nhà hẻm xe hơi Đông Thạnh 132m², sân rộng, chỉ 3,9 tỷ", TIN) !== null);
   ok3("TD-7 tiêu đề không có con số nào → bỏ", tieuDeHopLe("Nhà xinh hẻm xe hơi Đông Thạnh, về ở liền", TIN) === null);
   ok3("TD-5 null / rỗng → null", tieuDeHopLe(null, TIN) === null && tieuDeHopLe("", TIN) === null);
+  // SRS-5.1zzzzzzz25: chuẩn AD_FORMAT 15–25 từ — tiêu đề 24 từ (~110 ký tự, đỏ với trần 100 ký tự cũ) nhận; 26 từ bỏ.
+  const td24 = "Chỉ 3,9 tỷ sở hữu ngay nhà trệt lửng hẻm xe hơi 5m, sân rộng 132m², 2 phòng ngủ tại xã Đông Thạnh, Hóc Môn";
+  ok3("TD-8 tiêu đề 24 từ đúng số, đúng khu (dài hơn 100 ký tự) → nhận", tieuDeHopLe(td24, TIN) === td24, `${td24.split(" ").length} từ, ${td24.length} ký tự`);
+  const td26 = td24.replace("sân rộng", "sân trước rộng rãi thoáng");
+  ok3("TD-8b tiêu đề 26 từ (quá chuẩn 25 từ) → bỏ", tieuDeHopLe(td26, TIN) === null, `${td26.split(" ").length} từ`);
 }
 
 

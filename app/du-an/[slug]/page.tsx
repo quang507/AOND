@@ -36,10 +36,13 @@ const TT_CAN: Record<string, string> = { con_ban: "còn bán", giu_cho: "giữ c
 // Vercel preview, Vercel production) dựng sẵn 1.639 trang × 2 truy vấn. pg_stat_statements từ 22/08: hai truy vấn của trang
 // này là 3,25/3,89 triệu request REST của cả project (83%) - kéo theo egress và log ingestion vượt gói Free. Trả mảng RỖNG
 // thì route vẫn là ● (Next 15: mảng rỗng = dựng lần đầu có người xem rồi nằm cache, vẫn ISR theo `revalidate`) - chỉ trang
-import { getCrawledProjectBySlug, CRAWLED_PROJECTS } from "@/lib/crawled-projects";
+// có người/bot tìm kiếm xem mới tốn truy vấn. Đừng trả lại danh sách đầy đủ.
+// SRS-5.1zzzzzzz25 (18/10/2026): 3619b7d đổi thành 30 slug dự án crawl để "chống 404" — 404 thật ra được chữa bằng nhánh
+// dự phòng `getCrawledProjectBySlug` trong `getProject` (chạy cả khi dựng on-demand), nên mảng rỗng không làm mất trang nào.
+import { getCrawledProjectBySlug } from "@/lib/crawled-projects";
 
 export async function generateStaticParams() {
-  return CRAWLED_PROJECTS.slice(0, 30).map((p) => ({ slug: p.slug }));
+  return [];
 }
 
 const getProject = cache(async (slug: string): Promise<DuAn | null> => {

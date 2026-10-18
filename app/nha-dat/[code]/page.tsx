@@ -27,8 +27,9 @@ export const revalidate = 3600; // SRS-5.1zl (03/10/2026): 5 phút → 1 giờ, 
 // 02/10/2026 (đo Supabase): danh sách mã tin ở đây làm MỖI lượt build (CI mỗi PR + Vercel preview + production, ~24
 // lượt/ngày lúc làm việc) dựng sẵn mọi tin × ~6 truy vấn - cùng cơ chế đã đốt 83% request REST ở /du-an/[slug]. Trả mảng
 // RỖNG: route vẫn là ● (Next 15 dựng lần đầu có người xem rồi giữ cache 5 phút như trên), chỉ không dựng trước lúc build.
+// SRS-5.1zzzzzzz25 (18/10/2026): tin curated không cần dựng sẵn — `getListing` rơi về `getCuratedAsListing` cả khi dựng on-demand.
 export async function generateStaticParams() {
-  return CURATED_LISTINGS.map((c) => ({ code: c.code }));
+  return [];
 }
 
 // `cache` của React gộp hai lượt gọi cùng tham số trong MỘT lần render —
@@ -45,7 +46,7 @@ const DETAIL_COLS =
   "planning_status, has_elevator, car_in_house, corner_lot, furnishing, year_built, negotiable, rent_income_vnd, specs_source, " +
   "price_per_m2_vnd, project_id, unit_code, nhan";
 
-import { getCuratedAsListing, CURATED_LISTINGS } from "@/lib/curated";
+import { getCuratedAsListing } from "@/lib/curated";
 
 const getListing = cache(async (code: string): Promise<Listing | null> => {
   // Đoạn đường dẫn đi THẲNG vào chuỗi `.or()` của PostgREST, nơi `,` `(` `)` là

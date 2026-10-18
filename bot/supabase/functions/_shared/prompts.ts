@@ -39,7 +39,7 @@ export const AD_FORMAT = `BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự):
  */
 export const FEE_VALUE_POINTS = `- CHỈ thu phí KHI giao dịch thành công — khách không tốn đồng nào trước, không rủi ro.
 - Hệ thống tự điều cộng tác viên (CTV) dẫn khách tới xem nhà, chủ không phải tự tìm khách.
-- Tin được đẩy tới mạng lưới 20 nhà môi giới lõi + rổ khách mua đã được lọc (trợ lý M•ai), tiếp cận khách "nét".
+- Tin được đẩy tới mạng lưới 20 nhà môi giới lõi + rổ khách mua đã được lọc, tiếp cận khách "nét".
 - Tin được chuẩn hóa, chấm điểm và ưu tiên lên Top hiển thị Quận 5 — bán nhanh hơn tự rao.
 - Tiết kiệm thời gian, sàng lọc khách ảo, giữ liên lạc tự động qua Zalo.`;
 

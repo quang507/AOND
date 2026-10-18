@@ -285,8 +285,9 @@ Chuẩn khi model viết bài rao (nằm trong system prompt người bán):
 3. **Đúng 4 gạch đầu dòng**, mỗi dòng một ý đắt nhất; không ghi nhãn khi dữ liệu tự rõ ("132m²", không "Diện tích: 132m²").
 
 Bản nháp gửi duyệt trên Zalo thì code ghép (`tin-nhap.ts`): tiêu đề khách tự đặt thắng; không có thì tiêu đề AI viết ở lượt khen
-(`khen-nhap.ts` dặn 40–90 ký tự, `tieuDeHopLe` nhận 20–100 ký tự, phải có con số đúng bản tin), không qua kiểm thì tiêu đề máy
-(`tieuDeTin`; căn hộ dự án theo tên dự án — SRS-5.1zzzzzzz19).
+(`khen-nhap.ts` dặn **15–25 từ** theo cùng chuẩn trên — SRS-5.1zzzzzzz25; trước đó 40–90 ký tự), `tieuDeHopLe` bỏ tiêu đề quá 25 từ /
+dưới 20 ký tự / thiếu con số đúng bản tin; không qua kiểm thì tiêu đề máy (`tieuDeTin`, ≤ 120 ký tự; căn hộ dự án theo tên dự án —
+SRS-5.1zzzzzzz19).
 
 ### Luật phí (`FEE_RULES`)
 Chỉ nói khi được hỏi, không thuyết giảng: người MUA miễn phí hoàn toàn; bên BÁN chỉ
@@ -558,7 +559,7 @@ Sau khi gộp: `bun run prompt --day` (khoá `cau_hoi_mau`, `cau_tien_dinh`, `se
 | 🤖 lượt khách ra LỆNH cho bot (SRS-5.1zzzzzzc) | "🤖 Đã trích xuất yêu cầu cho bot thực hiện: \"sửa giá đã ghi\"" rồi các dòng dữ liệu lượt đó ("• giá: …"); lệnh bỏ ô / ý, tiêu đề của khách, chuyển căn cùng khuôn, không dòng dữ liệu | "🤖 Đã trích xuất:" cho lượt chỉ đưa dữ liệu |
 | Ảnh bìa sổ (SRS-5.1zzzzzs) | pháp lý ghi đúng loại trên bìa: "sổ đỏ" / "sổ hồng" (+ ", đồng sở hữu"), 🤖 từ ảnh in "• pháp lý: …", câu "Trên bìa là sổ đỏ, em ghi pháp lý vậy nha" khi model không viết lời nhận | chữ chủ nhà đã nói không bị ảnh ghi đè |
 | Tin rỗng + "đăng cho mình với nội dung này" / "đủ rồi" (SRS-5.1zzzzzt) | "Dạ {ac} gửi nội dung tin qua đây giúp em nha, em đọc rồi soạn lại cho mình ạ." — giữ câu đang hỏi, không "em thôi hỏi" | câu "em thôi hỏi … còn thiếu" cho tin đã có dữ liệu |
-| Tiêu đề bản tin (SRS-5.1zzzzzu) | AI được dặn viết tiêu đề thu hút 40–90 ký tự (`khen-nhap.ts`; `tieuDeHopLe` nhận 20–100 ký tự, một dòng, không "?" / "!" / "—") cho cả bán lẫn thuê (thuê mở "Cho thuê / Thuê ngay"), không bắt "Chỉ <giá>"; code kiểm: có con số, mọi số trong bản tin, không chữ thị trường | tiêu đề máy khi AI không qua kiểm |
+| Tiêu đề bản tin (SRS-5.1zzzzzu) | AI được dặn viết tiêu đề thu hút 15–25 từ (`khen-nhap.ts`, chuẩn `AD_FORMAT` từ 18/10 — SRS-5.1zzzzzzz25; `tieuDeHopLe` nhận tối đa 25 từ, từ 20 ký tự, một dòng, không "?" / "!" / "—") cho cả bán lẫn thuê (thuê mở "Cho thuê / Thuê ngay"), không bắt "Chỉ <giá>"; code kiểm: có con số, mọi số trong bản tin, không chữ thị trường | tiêu đề máy khi AI không qua kiểm |
 | "📝 Điều kiện thuê" | "cọc 2 tháng" (thêm nhãn khi khách chỉ nói số); điểm đầy đủ tin thuê thiếu → "điều kiện thuê (cọc, thời hạn)", không đòi sổ; tin bán thiếu → "pháp lý (loại sổ, hoàn công)" | các mục thiếu khác của `diem_tin` |
 | Lượt lên kệ | câu chấm điểm trải nghiệm hỏi NGAY cả khi có câu phí (bong bóng riêng) | câu phí `cauBaoPhi` |
 | Lời VỀ bản nháp lúc chờ duyệt (SRS-5.1zzzzzv) | `xin_sua` → "Dạ {ac} nói giúp em chỗ cần sửa (sửa thành gì, hay bỏ ý nào) là em sửa liền ạ."; `gui_noi_dung_sau` → "Dạ {ac} gửi nội dung qua đây giúp em, em sửa bản nháp theo đó rồi gửi lại {ac} xem ạ."; AI không ra gì → "Dạ em nghe rồi ạ. Bản nháp ở trên … nhắn ok…" — không ghi chú, không gửi lại nháp | lời sửa có giá trị (ghi + gửi lại nháp) |

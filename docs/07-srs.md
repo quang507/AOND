@@ -5368,16 +5368,45 @@ Không đổi code; các chỗ tài liệu lệch được sửa theo code, ch�
 
 **Ba điểm.** (1) **Tên trợ lý** = 20 tên người thật trong `KHO_TEN_TRO_LY` (SRS-5.1zzzzzzz9), bỏ dạng "T•ai / H•ai" — dấu chấm giữa tên làm
 lộ bot trên Zalo cá nhân. (2) **Tiêu đề bài rao** theo `AD_FORMAT`: 15–25 từ (thay mốc 10–12 chữ của bản quy ước cũ ngoài repo — quá ngắn,
-cụt ý kết cấu và vị trí). Tiêu đề bản nháp Zalo vẫn là luật riêng của code (`khen-nhap.ts` 40–90 ký tự, `tieuDeHopLe` 20–100 ký tự) — xem
-`06 §6.8 Bố cục bài rao`. (3) **Câu khen** theo `TONE_RULES`: lâu lâu một câu, chỉ khi khách vừa nói một điểm mạnh thật; bỏ quy ước "câu nào
+cụt ý kết cấu và vị trí). Tiêu đề bản nháp Zalo lúc đó còn là luật riêng (`khen-nhap.ts` 40–90 ký tự, `tieuDeHopLe` 20–100 ký tự) — đưa về cùng chuẩn ở
+SRS-5.1zzzzzzz25. (3) **Câu khen** theo `TONE_RULES`: lâu lâu một câu, chỉ khi khách vừa nói một điểm mạnh thật; bỏ quy ước "câu nào
 cũng khích lệ / gắn khách mua" (FR-177 b cũ) — tạo cảm giác hỏi cung thảo mai, máy móc.
 
 **Chỗ đã sửa.** `CLAUDE.md`; `docs/00-dinh-huong` (§0.1 tên, §0.3, đoạn chốt 07/09), `00-glossary` (Tên trợ lý, Aioinhadat), `02` FR-177 (tựa + b),
 FR-181, `03` UF-10 bước 3, `06 §6.8` (danh tính, văn phong, kịch bản người bán, mục mới Bố cục bài rao, tiêu đề bản tin), `09` OPEN-39, `10`
-TS-KYGUI-26, `13`, `docs/README`. **Còn lại (code, không thuộc lần này):** `FEE_VALUE_POINTS` (`prompts.ts`) còn chữ "trợ lý M•ai" đưa cho model;
-`docs/data-model.md` dùng M•ai / T•ai làm tên vai bot mua / bán (tài liệu milestone lưu trữ cũ).
+TS-KYGUI-26, `13`, `docs/README`. **Còn lại lúc đó:** `FEE_VALUE_POINTS` còn chữ "trợ lý M•ai", `docs/data-model.md` dùng M•ai / T•ai làm tên vai — sửa ở
+SRS-5.1zzzzzzz25.
 
 **Kiểm.** `bash scripts/soat-truy-vet.sh` sạch (không ID gãy). Không có bài kiểm code vì không đổi code.
+
+### SRS-5.1zzzzzzz25 · Sửa hết chỗ lệch còn lại: cache trang web (giam-egress), tiêu đề bản nháp 15–25 từ, tên •ai trong code (18/10/2026)
+
+**Ca gốc.** Chủ dự án 18/10/2026: "sửa luôn hết các chỗ đi" — sau SRS-5.1zzzzzzz24 còn ba chỗ: (a) CI đỏ `bot/tests/giam-egress.mjs` 27/30
+từ hai commit web 17/10 (`3619b7d`: `generateStaticParams` của `/du-an/[slug]` trả 30 slug crawl, của `/nha-dat/[code]` trả mọi tin curated;
+`b9e03c3`: `ListingBrowse` hạ `unstable_cache` 3 giờ → 300 s, bỏ tag); (b) tiêu đề bản nháp Zalo AI viết 40–90 ký tự và bị chặn ở 100 ký tự,
+lệch chuẩn `AD_FORMAT` 15–25 từ chủ dự án vừa chốt; (c) code còn chữ "trợ lý M•ai" trong `FEE_VALUE_POINTS` (đưa cho model) và "T•ai" cố định
+trong `scripts/xuat-mau-cau.mjs`.
+
+**Lớp lỗi.** (a) Chữa một triệu chứng (404 tin curated / dự án crawl) bằng cách DỰNG SẴN trang lúc build — đúng cơ chế đã đốt 83% request
+REST (SRS-5.1z). 404 thật ra đã được chữa bằng nhánh dự phòng trong `getListing` / `getProject` (chạy cả khi dựng on-demand), nên dựng sẵn chỉ
+thêm truy vấn mỗi lượt build. (b) Một chuẩn (độ dài tiêu đề) nằm ở hai nơi viết tay khác nhau (`AD_FORMAT` và `khen-nhap.ts` +
+`tieuDeHopLe`). (c) Đổi quyết định sản phẩm (SRS-5.1zzzzzzz9) mà không soát hết chữ cũ trong code ngoài kho tên.
+
+**Chỗ cùng lớp.** (a) Soát mọi `generateStaticParams` và `revalidate` / `unstable_cache` của web: chỉ ba chỗ này lệch (giam-egress soi đủ
+`app/`, `components/`, `lib/`). (b) Tiêu đề máy `tieuDeTin` (≤ 120 ký tự, cắt giữa giữ giá) là lưới đỡ, không theo 15–25 từ — để vậy vì tiêu đề
+máy chỉ ghép cột có thật. (c) Soát `•ai` trong `bot/`, `app/`, `components/`, `lib/`, `scripts/`: còn câu trích lịch sử trong chú thích
+`van-tra-loi.ts`, dòng bảng AOND gốc trong `sinh-srd-docx.mjs` ("Bot-to-bot m•ai ↔ t•ai" — tên mục của SRD gốc) và lời model giả trong
+`bot/tests/van-tra-loi.mjs` / e2e (đầu vào kiểm `chanNhanLaNguoi`, không phải lời bot) — giữ nguyên.
+
+**Sửa.** (a) Hai `generateStaticParams` trả `[]` (giữ nguyên nhánh dự phòng crawl / curated); `ListingBrowse` về `{ revalidate: 10800, tags:
+["listings"] }` như SRS-5.1zl. (b) `khen-nhap.ts` dặn 15–25 từ; `tieuDeHopLe` trần 25 TỪ thay 100 ký tự (25 từ ≈ 110–130 ký tự), sàn giữ 20 ký tự
+(tiêu đề AI hơi ngắn vẫn hơn tiêu đề máy), trần cứng 170 ký tự. (c) `FEE_VALUE_POINTS` bỏ "(trợ lý M•ai)"; `xuat-mau-cau.mjs` điền "Thảo";
+`docs/data-model.md` gọi "nhánh mua / nhánh bán".
+
+**Kiểm (đỏ khi tắt).** (a) `bun bot/tests/giam-egress.mjs` 30/30 (trước 27/30). `bun run build`: `/du-an/[slug]` và `/nha-dat/[code]` vẫn `●`;
+`next start` thử: `/nha-dat/Q8-CL102`, `/nha-dat/NB-SR485` (curated), `/du-an/the-marq-prj5610`, `/du-an/masteri-lumiere-riverside-prj5623`
+(crawl) đều 200 dựng on-demand, mã không có vẫn 404. (b) `bot/tests/khen-nhap.mjs` TD-8 (tiêu đề 24 từ, > 100 ký tự → nhận; đỏ khi trả trần
+100 ký tự), TD-8b (26 từ → bỏ); TD-1…7 giữ nguyên. (c) không có bài kiểm (chữ trong prompt / script xuất).
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

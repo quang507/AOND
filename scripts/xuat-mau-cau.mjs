@@ -50,7 +50,7 @@ const mau = await keo("mau_cau?select=*&dung_lam=in.(fine_tune,ca_hai)&order=upd
 const [tone] = await keo("bot_prompts?select=content&key=eq.tone_rules");
 // FR-181: tone viết "{ten}" — khi xuất mẫu huấn luyện dùng một tên cố định để
 // mô hình học GIỌNG, không học tên (tên gán lúc chạy theo từng khách).
-const SYS = (tone?.content ?? "Bạn là {ten}, trợ lý của AI Ơi Nhà Đất.").trim().replace(/\{ten\}/g, "T•ai");
+const SYS = (tone?.content ?? "Bạn là {ten}, trợ lý của AI Ơi Nhà Đất.").trim().replace(/\{ten\}/g, "Thảo"); // SRS-5.1zzzzzzz9: tên đầu kho 20 tên người thật
 
 const luot = (m) => {
   // human/gpt xen kẽ từ ngữ cảnh; kết bằng gpt = câu chuẩn.

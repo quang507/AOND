@@ -71,7 +71,11 @@ export function cauDuAnCoNguon(
 export function tieuDeHopLe(td: string | null | undefined, banTin: string): string | null {
   const k = (td ?? "").replace(/\s+/g, " ").trim();
   // SRS-5.1zzzzzu: không bắt mở bằng "Chỉ" nữa (tiêu đề "cachy" cho cả tin bán lẫn thuê) — vẫn phải có ít nhất một con số (giá / diện tích).
-  if (k.length < 20 || k.length > 100 || /[?!\n—]/.test(td ?? "") || !/\d/.test(k)) return null;
+  // SRS-5.1zzzzzzz25 (chủ dự án 18/10/2026: tiêu đề theo AD_FORMAT 15–25 từ, mốc ngắn "cụt ý kết cấu và vị trí"): trần là 25 TỪ thay cho
+  // 100 ký tự (25 từ tiếng Việt ≈ 110–130 ký tự, trần cũ bỏ cả tiêu đề đúng chuẩn). Sàn giữ 20 ký tự: tiêu đề AI hơi ngắn vẫn hơn tiêu
+  // đề máy (`tieuDeTin`) vốn còn ngắn hơn — prompt nhắm 15–25 từ, code chỉ chặn cái quá dài / hỏng.
+  const soTu = k.split(" ").filter(Boolean).length;
+  if (k.length < 20 || soTu > 25 || k.length > 170 || /[?!\n—]/.test(td ?? "") || !/\d/.test(k)) return null;
   const CAM = /\b(?:dễ bán|bán nhanh|khách chuộng|đắt khách|sinh lời|đầu tư|thanh khoản|giá tốt|giá rẻ|rẻ nhất|hời|lời|cam kết|đảm bảo|hot|vip|luxury|premium|view)\b/iu;
   if (CAM.test(k)) return null;
   // "nhà cấp 4" là LOẠI nhà, không phải con số — chỉ nhận khi bản tin cũng nói cấp 4 (AI gọi nhà trệt lửng là "cấp 4" thì bỏ).

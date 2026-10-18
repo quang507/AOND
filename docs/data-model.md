@@ -1,11 +1,11 @@
 # AI Ơi Nhà Đất — Mô hình dữ liệu & Lưu trữ (Data Model)
 
-> Tài liệu thiết kế cho **milestone lưu trữ** (SRD §VII) và phía người mua (M•ai search).
+> Tài liệu thiết kế cho **milestone lưu trữ** (SRD §VII) và phía người mua (tìm căn cho nhánh mua). *Tên vai M•ai / T•ai của SRD AOND bỏ 14/10/2026 — trợ lý là một `chat-reply`, mỗi khách một tên người thật (SRS-5.1zzzzzzz9).*
 > Bản xuất từ ghi nhớ dự án — cập nhật 2026-06-28. Trạng thái build được ghi rõ trong từng mục.
 > Liên quan: tài liệu build engine (`docs/build-status.md` nếu xuất), `req + chat examples.docx`.
 
 ## Vì sao cần lưu bền
-Phải lưu **MỌI** chi tiết BĐS người rao cung cấp (toàn bộ listing có cấu trúc, không chỉ state chat), ở dạng **truy vấn được**. Mục đích: phục vụ bên mua/thuê — M•ai search truy vấn dữ liệu này để khớp BĐS cho người mua. Claude là stateless; "trí nhớ" = thứ app lưu và phát lại.
+Phải lưu **MỌI** chi tiết BĐS người rao cung cấp (toàn bộ listing có cấu trúc, không chỉ state chat), ở dạng **truy vấn được**. Mục đích: phục vụ bên mua/thuê — nhánh mua truy vấn dữ liệu này để khớp BĐS cho người mua. Claude là stateless; "trí nhớ" = thứ app lưu và phát lại.
 
 > *Trạng thái:* listing nay đã lưu bền qua `SqliteConversationStore` (sống sót restart) — nhưng dạng blob theo từng conversation; **chỉ mục tìm-kiếm-chéo cho bên mua vẫn chưa build.**
 
@@ -16,7 +16,7 @@ Phải lưu **MỌI** chi tiết BĐS người rao cung cấp (toàn bộ listin
 **Lớp Store đã khởi động (2026-06-24):** các mảnh lưu bền hiện có — `SqliteProjectStore` (dự án) và `SqliteConversationStore` (`aioi/engine.py`) cho listing/conversation (Property + lịch sử chat + user_type + listing_proposed + `Conversation.listing_id` UUID ổn định). Engine nhận `conversation_store=`; dict in-memory là cache, load-on-miss khôi phục sau restart, save sau mỗi lượt. CLI dùng cả hai trên một `aioi.db` (`Settings.db_path`/`AIOI_DB_PATH`, đã gitignore) — đã verify: dự án + listing đều sống sót restart mô phỏng. Cùng interface cắm-rút (→ SharePoint/Postgres sau). **Còn lại:** chỉ mục truy vấn (cột lọc + embeddings cho bên mua), UnitType, các trường dự án giàu, media SharePoint.
 
 ### SharePoint hoạt động thế nào (thiết kế, CHƯA build)
-SharePoint = một document library M365 = một "drive" trong **Microsoft Graph API**. Xác thực = app Azure AD (Entra) + OAuth client-credentials, quyền application **`Sites.Selected`** (least-privilege, một site) + admin consent — tương đương Google Drive API key. Upload: nhỏ (<4MB) `PUT /sites/{id}/drive/root:/<path>/<file>:/content`; lớn dùng upload session (chunk). **Bố cục thư mục map theo taxonomy:** `/<Quận>/<Dự án>/_Chung/` cho file cấp dự án (sơ đồ tổng thể, brochure, bản đồ vị trí, mặt bằng, phân lô), `/<Dự án>/<Loại căn>/_Chung/` cho asset UnitType (floor plan, render), `/<Loại căn>/<Block-Căn>/{Pháp lý,Nội thất,...}` cho Unit — + metadata columns để truy vấn. **Quan trọng: BYTES lưu ở SharePoint, chỉ lưu THAM CHIẾU (Graph item id + webUrl + path) trên record DB** (Project/UnitType/Unit) — không bao giờ lưu bytes trong SQLite. Sanitize tên file (SharePoint cấm `~ " # % & * : < > ? / \ { | }`; cùng vấn đề mojibake của Drive) vd `<listing_id>_mat_tien_01.jpg`. Đọc lại cho bên mua: sharing link SharePoint = link first-party (đúng quy tắc M•ai chỉ gửi link nhà mình). Cần: app Azure AD → rồi `SharePointMediaStore` sau interface Store. Lưu ý: ngưỡng 4MB, throttling 429 (retry), ngưỡng 5.000 mục của List.
+SharePoint = một document library M365 = một "drive" trong **Microsoft Graph API**. Xác thực = app Azure AD (Entra) + OAuth client-credentials, quyền application **`Sites.Selected`** (least-privilege, một site) + admin consent — tương đương Google Drive API key. Upload: nhỏ (<4MB) `PUT /sites/{id}/drive/root:/<path>/<file>:/content`; lớn dùng upload session (chunk). **Bố cục thư mục map theo taxonomy:** `/<Quận>/<Dự án>/_Chung/` cho file cấp dự án (sơ đồ tổng thể, brochure, bản đồ vị trí, mặt bằng, phân lô), `/<Dự án>/<Loại căn>/_Chung/` cho asset UnitType (floor plan, render), `/<Loại căn>/<Block-Căn>/{Pháp lý,Nội thất,...}` cho Unit — + metadata columns để truy vấn. **Quan trọng: BYTES lưu ở SharePoint, chỉ lưu THAM CHIẾU (Graph item id + webUrl + path) trên record DB** (Project/UnitType/Unit) — không bao giờ lưu bytes trong SQLite. Sanitize tên file (SharePoint cấm `~ " # % & * : < > ? / \ { | }`; cùng vấn đề mojibake của Drive) vd `<listing_id>_mat_tien_01.jpg`. Đọc lại cho bên mua: sharing link SharePoint = link first-party (đúng quy tắc nhánh mua chỉ gửi link nhà mình). Cần: app Azure AD → rồi `SharePointMediaStore` sau interface Store. Lưu ý: ngưỡng 4MB, throttling 429 (retry), ngưỡng 5.000 mục của List.
 
 Khi lưu/sửa: ghi file gốc vào SharePoint **và** cập nhật chỉ mục. Bên mua truy vấn → lấy ID → app lấy ảnh/giấy tờ từ SharePoint theo ID/link. Lý do tách: SharePoint là hệ thống lưu trữ file, không phải cỗ máy tìm kiếm (không có vector search; List bị throttle ở ngưỡng 5.000 mục, dự án nhắm ~5.000+ listing).
 
@@ -62,22 +62,22 @@ Folder lồng tốt ở đây (con người đọc được, **ổn định** �
 ```
 (Nội thất = bếp/phòng ngủ/khách/WC; Ngoại thất = mặt tiền/cổng/sân; Khu vực = đường vào/hẻm/hàng xóm/cổng dự án/đường lớn/view; Khác = video/3D/floor plan.) **Đừng tạo folder cho từng phòng** — chi tiết để trong tên file (`noi_that_phong_ngu_1.jpg`). Nếu app bên mua cần lọc ảnh theo phòng, đó là **tag per-ảnh** (`room: bep`, `view: interior`), không phải folder sâu hơn (một ảnh có thể vừa "bếp" vừa "nội thất"). Nguyên tắc: folder nông cho người, metadata/tag cho máy.
 
-## Link ngoài người rao gửi (phía T•ai)
+## Link ngoài người rao gửi (nhánh bán)
 Luồng **fetch → show → confirm → snapshot** phía người rao (mẫu trung thực/xác nhận §II, tái dùng pipeline vision/OCR):
 - Fetch link, mô tả/trích (ảnh → vision Opus 4.8; PDF → OCR; trang → text), nói với người rao "Em thấy [X], đúng không?", và chỉ **khi xác nhận** mới thành dữ liệu. Nguyên tắc trung thực: "hình như" khi đoán, không khẳng định.
 - **Lưu snapshot nếu kích thước hợp lý** (cap cứng; stream + abort khi vượt) vào folder BĐS (`Khác/` hoặc `Pháp lý/`) kèm `{original_url, fetched_at, checksum, kind, status}`. Vượt cap → chỉ lưu tham chiếu.
 - **Rào chắn (phần rủi ro — fetch URL người dùng):** chống SSRF (chỉ http/https, phân giải DNS và chặn IP nội bộ, re-check redirect, fetch từ worker sandbox/giới-hạn-egress), timeout + allowlist content-type + cap kích thước; thất bại lịch sự với link cần đăng nhập/JS/video. "Đáng tin" = người rao xác nhận + đối soát, không phải điểm tin tự động.
 
 ## Tìm kiếm phía người mua — bám chặt DB
-Khi người mua (M•ai) tìm, AOND chỉ giới thiệu BĐS hợp từ DB của mình — không lướt Internet, không bịa:
+Khi người mua tìm (nhánh mua), AOND chỉ giới thiệu BĐS hợp từ DB của mình — không lướt Internet, không bịa:
 1. Model **không có tool web** (`ClaudeProvider` hiện không có — giữ vậy).
 2. **Tìm bằng code xác định** (SQL/lọc theo quận/loại hình/giá/diện tích/phòng/hướng), tùy chọn + **xếp hạng ngữ nghĩa** (embeddings) — không phải model. Phễu 5.000 → lọc SQL → ~50 → xếp hạng → top ~10–20 → chỉ nhúm đó vào prompt. Model không bao giờ đọc cả DB.
 3. Prompt: chỉ giới thiệu trong danh sách; không có thì nói "chưa có căn phù hợp" và nới tiêu chí; không kiến thức ngoài, không bịa.
 4. **Khóa mạnh nhất:** model trả **ID** (qua tool `search_listings` chỉ trả từ DB); **app render sự thật** (giá/địa chỉ/ảnh) từ DB theo ID và **kiểm mỗi ID nằm trong tập ứng viên**. Mọi con số khách thấy đều từ DB; model chỉ khớp + diễn đạt.
-- **Chỉ link first-party:** M•ai **không bao giờ** gửi link ngoài cho người mua — chỉ link của AOND (trang aioinhadat.com, media tự host). Tham chiếu ngoài đã lưu chỉ dùng nội bộ.
+- **Chỉ link first-party:** nhánh mua **không bao giờ** gửi link ngoài cho người mua — chỉ link của AOND (trang aioinhadat.com, media tự host). Tham chiếu ngoài đã lưu chỉ dùng nội bộ.
 
 ## Tìm kiếm ngữ nghĩa (khi thêm)
 Embeddings biến mô tả mỗi listing thành vector (một lần lúc lưu; re-embed khi đổi); câu hỏi → top-K gần nhất theo cosine. **Hybrid: lọc cứng SQL trước (ngân sách/quận — embeddings dở về số/ràng buộc), xếp hạng ngữ nghĩa trong số còn lại.** Embedding model tách khỏi chat model (Anthropic không có API embeddings — Voyage AI, hoặc model đa ngữ mã nguồn mở như BGE-M3 / multilingual-E5 chạy local, hợp lộ trình Blackwell). Ở ~5.000 listing, quét cosine brute-force trong app là mili-giây — chưa cần vector DB tới khi vài trăm nghìn+ (lúc đó pgvector/Qdrant/FAISS).
 
 ## Thứ tự build đề xuất
-Interface `Store` + backend **SQLite** (PK surrogate-ID + cột lọc/index) → lưu listing từ T•ai → `search_listings` (lọc + xếp hạng, chưa vector) → thêm **embeddings** → cắm **SharePoint** làm kho gốc + đồng bộ.
+Interface `Store` + backend **SQLite** (PK surrogate-ID + cột lọc/index) → lưu listing từ nhánh bán → `search_listings` (lọc + xếp hạng, chưa vector) → thêm **embeddings** → cắm **SharePoint** làm kho gốc + đồng bộ.
