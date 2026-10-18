@@ -5527,6 +5527,13 @@ Lượt thứ hai (đã dừng đúng chỗ) lộ thêm hai thứ: `git fetch` h
 `tail` cuối chuỗi đọc log → giữ `rc_cai` của `cai-vps.sh`, thoát theo nó, in commit + origin đang chạy (AMN-08). Cùng lớp với ca đầu: đường báo
 "xong" không đọc lại kết quả thật.
 
+**Bot im sau khi VPS lên code AOND (18/10, bắt bằng tin Zalo thật).** Bridge nhận tin, `bot_errors` ghi "bridge xử lý tin gom: Unexpected token
+'I', "Internal S"… is not valid JSON", log edge function không có lượt gọi chat-reply nào. Nguyên nhân: commit gộp repo `d3a8f70` đổi mặc định
+`CHAT_REPLY_URL` của `bot/bridge-zca/index.mjs` thành `http://127.0.0.1:8000/chat-reply` (máy chủ chạy thử trên máy); VPS chỉ có `BRIDGE_SECRET`
+trong `.env` nên bridge gọi vào cổng 8000 của chính VPS. Lớp lỗi: giá trị mặc định cho môi trường thử lọt vào bản chạy thật — cùng họ với
+"đổi nguồn code mà không soát chỗ đang chạy". Sửa: mặc định về chat-reply production (cùng project với `escalation-feed`). Chỗ cùng lớp: soát
+`127.0.0.1:8000` / `localhost:8000` toàn repo (trừ docs) — chỉ chỗ này. AMN-09 đỏ trên bản trước sửa.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
