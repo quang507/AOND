@@ -27,8 +27,8 @@ const gitDong = lenhSh("bot/bridge-zca/cai-vps.sh").split("\n").filter((d) => /\
 ok("AMN-06 cai-vps.sh bridge: mỗi lệnh git một dòng (không nối &&), checkout có -f", gitDong.length >= 3 && gitDong.every((d) => !/&&/.test(d)) && gitDong.some((d) => /checkout -q -f /.test(d)));
 ok("AMN-07 cai-vps.sh bridge trả cây /opt/nhadat về user nhadat trước khi git chạy", /chown -R nhadat:nhadat "\$DIR"[\s\S]{0,200}remote set-url/.test(lenhSh("bot/bridge-zca/cai-vps.sh")));
 ok("AMN-08 workflow cai-vps thoát theo mã của cai-vps.sh, không theo lệnh đọc log", /cai-vps\.sh <\/dev\/null; rc_cai=\\\$\?[\s\S]*exit \\\$rc_cai"/.test(doc(".github/workflows/apply-migration.yml")));
-// 18/10/2026: bridge mặc định gọi 127.0.0.1:8000 → bot im trên VPS (không đặt CHAT_REPLY_URL).
-ok("AMN-09 bridge mặc định gọi chat-reply production, không gọi máy cục bộ", /CHAT_REPLY_URL \|\| "https:\/\/[a-z0-9]+\.supabase\.co\/functions\/v1\/chat-reply"/.test(doc("bot/bridge-zca/index.mjs")) && !/127\.0\.0\.1:8000|localhost:8000/.test(doc("bot/bridge-zca/index.mjs").split("\n").filter((d) => !/^\s*\/\//.test(d)).join("\n")));
+// 18/10/2026: chủ dự án chốt bộ não là lõi Python trên VPS (aond-core, cổng 8000) — bridge mặc định phải gọi nó.
+ok("AMN-09 bridge mặc định gọi lõi Python aond-core (127.0.0.1:8000)", /CHAT_REPLY_URL \|\| "http:\/\/127\.0\.0\.1:8000\/chat-reply"/.test(doc("bot/bridge-zca/index.mjs")));
 ok("AMN-04 CRM tin-nhan nghe Realtime INSERT messages", /postgres_changes[\s\S]{0,80}event: "INSERT"[\s\S]{0,60}table: "messages"/.test(crm));
 ok("AMN-05 migration bật Realtime cho messages + conversations", /add table public\.messages/.test(doc("bot/supabase/migrations/20261018a_crm_realtime.sql")) && /add table public\.conversations/.test(doc("bot/supabase/migrations/20261018a_crm_realtime.sql")));
 ok("AMN-tu-kiem bắt được URL repo cũ", REPO_CU.test("REPO=https://github.com/quang507/Nhadat.cc.git") && REPO_CU.test("https://raw.githubusercontent.com/quang507/Nhadat.cc/main/x.sh"));

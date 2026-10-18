@@ -5527,12 +5527,13 @@ Lượt thứ hai (đã dừng đúng chỗ) lộ thêm hai thứ: `git fetch` h
 `tail` cuối chuỗi đọc log → giữ `rc_cai` của `cai-vps.sh`, thoát theo nó, in commit + origin đang chạy (AMN-08). Cùng lớp với ca đầu: đường báo
 "xong" không đọc lại kết quả thật.
 
-**Bot im sau khi VPS lên code AOND (18/10, bắt bằng tin Zalo thật).** Bridge nhận tin, `bot_errors` ghi "bridge xử lý tin gom: Unexpected token
-'I', "Internal S"… is not valid JSON", log edge function không có lượt gọi chat-reply nào. Nguyên nhân: commit gộp repo `d3a8f70` đổi mặc định
-`CHAT_REPLY_URL` của `bot/bridge-zca/index.mjs` thành `http://127.0.0.1:8000/chat-reply` (máy chủ chạy thử trên máy); VPS chỉ có `BRIDGE_SECRET`
-trong `.env` nên bridge gọi vào cổng 8000 của chính VPS. Lớp lỗi: giá trị mặc định cho môi trường thử lọt vào bản chạy thật — cùng họ với
-"đổi nguồn code mà không soát chỗ đang chạy". Sửa: mặc định về chat-reply production (cùng project với `escalation-feed`). Chỗ cùng lớp: soát
-`127.0.0.1:8000` / `localhost:8000` toàn repo (trừ docs) — chỉ chỗ này. AMN-09 đỏ trên bản trước sửa.
+**Bot im sau khi VPS lên code AOND (18/10, bắt bằng tin Zalo thật) — và một chẩn đoán sai đã sửa lại.** Bridge nhận tin, `bot_errors` ghi
+"bridge xử lý tin gom: Unexpected token 'I', "Internal S"… is not valid JSON". Bridge AOND gọi `CHAT_REPLY_URL` mặc định
+`http://127.0.0.1:8000/chat-reply` = lõi Python `src/aioi/server.py` (`aond-core.service`, theo README) — lõi đó trả 500. Lượt sửa đầu đọc nhầm
+đó là địa chỉ chạy thử và trỏ bridge sang chat-reply TypeScript trên Supabase; chủ dự án chỉ ra lõi chính là Python ("hình 2 là core python") và
+chốt **bỏ lõi TypeScript**. Bridge trả về cổng 8000 (AMN-09 nay canh điều đó); workflow `cai-vps` in trạng thái + log `aond-core` để truy lỗi 500.
+Lớp lỗi của chẩn đoán sai: repo có HAI bộ não (README nói Python, CLAUDE.md / docs nói TypeScript) — "một chủ cho mỗi đầu ra" vỡ ở chính cấp
+kiến trúc; gỡ lõi TypeScript là việc tiếp theo.
 
 **Bỏ bước tự ghi đè secret VPS (18/10, quyết định chủ dự án).** Bước "Ghi đè thông tin VPS tạm trong Vault" của `apply-migration.yml` (ghi đè
 `VPS_HOST` / `VPS_ROOT_PASSWORD` thành `x` + đổi tên `DA_XOA_…` sau mỗi lượt `cai-vps`) đã gỡ: ba lượt hỏng liền nhau buộc nhập lại mật khẩu ba lần.
