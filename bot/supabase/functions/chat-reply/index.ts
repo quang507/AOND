@@ -3026,6 +3026,12 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
           note: `${dau}: "${thayLienHe(camXucLuot.trich, "[liên hệ]").slice(0, 120)}" — anh chị phụ trách xem lại cuộc chat, nhắn khách giúp.`,
         });
         if (rErr) await ghiLoi(client, "chat-reply cam xuc(ghi)", rErr.message);
+        if (convSId && (camXucLuot.muc === "buc" || camXucLuot.muc === "muon_dung")) {
+          await client.from("conversations").update({
+            needs_human: true,
+            needs_human_at: new Date().toISOString(),
+          }).eq("id", convSId);
+        }
       }
       return camXucLuot;
     };
@@ -6536,6 +6542,9 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
         // SRS-5.1zzzzzn: lời nhận do AI viết (qua `loiNhanGiayToHopLe`); diện tích LỆCH thì câu hỏi xác nhận + báo admin giữ soạn sẵn.
         const loiAi = lech !== null && lech > 5 ? null : loiNhanGiayToHopLe((kq as { loi_nhan?: string | null }).loi_nhan, soM2, Number(l?.area_m2) || null);
         const cau: string[] = [loiAi ?? `Em nhận được ảnh ${g?.loai_giay ?? "giấy tờ"} rồi ạ, em cất riêng, không đưa lên web.`];
+        if (g && !soM2 && !g?.dia_chi && !loiAi) {
+          cau.push(`Ảnh này hơi mờ hoặc thiếu trang sơ đồ thửa đất, nếu tiện ${cachGoi} chụp giúp em trang 2-3 bên trong rõ nét hơn xíu nha để em lấy đúng kích thước ạ.`);
+        }
         if (soM2 && !l?.area_m2) {
           const { error: dtErr } = await ghiFact(client, {
             p_listing_id: id, p_question: "dien_tich", p_answer: `${soM2}m2`, p_source: "so_do_ocr",
@@ -6661,7 +6670,7 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
       if (!(anhLaGiayTo as boolean)) {
         const khenL = khenAnhLuot as string | null; // gán trong `nhanAnh` (closure) — TS thu hẹp nhầm thành null
         const khenGon = khenL ? `, ${khenL.charAt(0).toLowerCase()}${khenL.slice(1)}` : "";
-        ackAnh = [`Ảnh${loaiDot.length === 1 ? ` ${loaiDot[0]}` : ""} đẹp lắm ${cachGoi} ạ${khenGon}.`];
+        ackAnh = [`Dạ em nhận được ảnh${loaiDot.length === 1 ? ` ${loaiDot[0]}` : ""} rồi ạ${khenGon}.`];
       }
       // Hỏi tiếp câu đang chờ (câu "gửi ảnh" thì nhanAnh đã đóng) — nhận ảnh xong không để hội thoại đứng.
       // SRS-5.1zzzzzs: câu pháp lý vừa được bìa sổ trả lời trong chính lượt này → không nhắc lại điều vừa đọc trên bìa.
