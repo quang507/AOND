@@ -14,7 +14,7 @@ on:
         required: false
         default: ''
       dung_lai:
-        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-du-an | nap-duong | cai-vps. Trống = áp migration_file như thường"
+        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-du-an | nap-duong | cai-vps | go-trang-thu. Trống = áp migration_file như thường"
         required: false
         default: ''
       commit_schema:
@@ -110,9 +110,42 @@ jobs:
       # 18/10/2026: chủ dự án bỏ bước tự ghi đè VPS_HOST / VPS_ROOT_PASSWORD trong Vault sau mỗi lượt cai-vps ("bỏ cái tự xóa đó đi")
       # — mỗi lượt hỏng là phải nhập lại mật khẩu. Hai secret nay ở lại Vault (chỉ service_role / Management API đọc được).
 
+      # 18/10/2026 (SRS-5.1zzzzzzz32): chủ dự án "xóa trang chat thử luôn đi" — trang thử chạy bộ não TypeScript đã gỡ. Gỡ đúng
+      # những gì bot/tests/chat/cai-vps.sh (đã xoá, xem git) dựng: 3 unit systemd, 2 lệnh /usr/local/bin, /opt/trang-thu,
+      # /etc/trang-thu.env|.nhanh, user trangthu. Giữ swapfile và cloudflared (có thể còn việc khác dùng). Không đụng bridge / aond-core.
+      - name: Gỡ trang chat thử trên VPS (go-trang-thu)
+        if: ${{ inputs.dung_lai == 'go-trang-thu' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          q() { curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+                  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$(jq -n --arg q "$1" '{query:$q}')"; }
+          J=$(q "select json_object_agg(name, decrypted_secret) as s from vault.decrypted_secrets where name in ('VPS_HOST','VPS_ROOT_PASSWORD')")
+          HOST=$(jq -r '.[0].s.VPS_HOST // empty' <<<"$J"); PW=$(jq -r '.[0].s.VPS_ROOT_PASSWORD // empty' <<<"$J")
+          unset J
+          for v in "$HOST" "$PW"; do [ -n "$v" ] && echo "::add-mask::$v"; done
+          if [ -z "$HOST" ] || [ -z "$PW" ]; then echo "::error::Thiếu VPS_HOST / VPS_ROOT_PASSWORD trong Vault"; exit 1; fi
+          sudo apt-get install -y -qq sshpass >/dev/null
+          export SSHPASS="$PW"
+          sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 "root@$HOST" '
+            set -u
+            systemctl disable --now trang-thu-cap-nhat.timer trang-thu-cap-nhat.service trang-thu-ham.service trang-thu.service 2>/dev/null || true
+            rm -f /etc/systemd/system/trang-thu.service /etc/systemd/system/trang-thu-ham.service \
+                  /etc/systemd/system/trang-thu-cap-nhat.service /etc/systemd/system/trang-thu-cap-nhat.timer
+            systemctl daemon-reload; systemctl reset-failed 2>/dev/null || true
+            rm -f /usr/local/bin/trang-thu-link /usr/local/bin/trang-thu-cap-nhat /etc/trang-thu.env /etc/trang-thu.nhanh
+            rm -rf /opt/trang-thu
+            id trangthu >/dev/null 2>&1 && userdel -r trangthu 2>/dev/null || true
+            echo "== còn unit trang-thu: $(systemctl list-unit-files "trang-thu*" --no-legend | wc -l)"
+            echo "== còn /opt/trang-thu: $([ -e /opt/trang-thu ] && echo co || echo khong)"
+            echo "== còn user trangthu: $(id trangthu >/dev/null 2>&1 && echo co || echo khong)"
+            echo "== bridge: $(systemctl is-active nhadat-bridge) · aond-core: $(systemctl is-active aond-core)"
+          '
+
       # 08/10/2026: project production cũ bị xoá nhầm — dựng lại từng bước trên project mới rỗng.
       - name: Dựng lại DB (dung_lai)
-        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-du-an' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'cai-vps' }}
+        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-du-an' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'cai-vps' && inputs.dung_lai != 'go-trang-thu' }}
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
           BUOC: ${{ inputs.dung_lai }}
