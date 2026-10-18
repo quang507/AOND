@@ -5682,6 +5682,29 @@ trong 24 giờ, `/chat-reply` trả `photos` (đỏ khi bỏ dòng gọi trong `
 không ảnh. `match_projects` thử 12 câu thật: khớp đúng 7 câu có tên dự án, 5 câu không tên ra rỗng. Production: đếm `images` khác
 rỗng sau lượt `nap-du-an`, nhắn thử Zalo tên một dự án.
 
+### SRS-5.1zzzzzzz37 · Lõi Python không ghi được tin người bán vào `listings` (18/10/2026)
+
+**Ca gốc.** Log `aond-core` lúc cài 5.1zzzzzzz36: `Failed to save conversation to Supabase: 'Property' object has no attribute
+'dien_tich'`. `SupabaseConversationStore.save` đọc `li.prop.dien_tich` / `li.prop.gia`; `Property` chỉ có `fields`, `loai_hinh`,
+`is_rental` — mọi lượt có tin văng `AttributeError` (nuốt trong `except`, chỉ còn một dòng log), nên tin người bán chưa từng vào bảng
+`listings` của CRM từ khi lõi Python thay lõi TS. Sửa xong lộ thêm hai lỗi cùng đường mà DB sẽ từ chối: `status = 'dang_rao'` (không có
+trong `listings_status_check`) và `legal_status` = chữ khách gõ ("sổ hồng", CHECK chỉ nhận mã).
+
+**Lớp lỗi.** Mã ghi DB viết theo hình dạng dữ liệu TƯỞNG TƯỢNG (thuộc tính không có, giá trị cột không có trong CHECK) và không bài nào
+chạy đường đó — `except Exception` + `log.error` biến lỗi chắc chắn thành im lặng.
+
+**Chỗ cùng lớp.** Soát mọi `.prop.<thuộc tính>` trong `src/aioi`: chỉ còn `fields`, `loai_hinh`, `is_rental`, `completeness`,
+`missing_fields`, `summary_ready`, `update` — đều có thật. Các đường ghi khác của `supabase_store` (sellers, conversations) và
+`supabase_sync` (messages) đang chạy được (CRM có tin nhắn). Chưa soát: cột / CHECK của `buyers` nếu lõi ghi người mua.
+
+**Sửa.** `so_m2(fields)` (số đầu của `dien_tich` / `dien_tich_dat`, không có thì `kich_thuoc` 4x15); giá gửi chuỗi gốc vào `price_raw`
+— trigger `listings_set_price_vnd` tính `price_vnd` bằng `parse_vnd` (luật tiền một nguồn); pháp lý đổi mã qua `rpc/boc_thong_so`,
+không nhận ra thì không ghi; `status` chỉ đặt `cho_thong_tin` lúc TẠO (trigger tự lên `dang_ban`), PATCH không ghi đè trạng thái admin.
+
+**Kiểm.** `tests/test_supabase_store_luu_tin.py` (store giả ghi lại từng request): tạo tin gửi `price_raw` / `area_m2` /
+`legal_status` mã / `status`; cập nhật không gửi `status`, bỏ pháp lý lạ; đỏ khi bỏ bản sửa. Thử payload trên DB thật trong giao dịch
+rồi huỷ: `price_vnd` 5.200.000.000 từ "5 tỷ 2", `legal_status` so_hong, PATCH giữ `cho_thong_tin`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

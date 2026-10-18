@@ -1,0 +1,61 @@
+"""18/10/2026 (SRS-5.1zzzzzzz37): `save` từng đọc `li.prop.dien_tich` / `li.prop.gia` (không tồn tại) → AttributeError mỗi lượt
+có tin, tin người bán không bao giờ vào `listings`. Bài này đỏ khi quay lại thuộc tính cũ, khi gửi `dang_rao` / chữ pháp lý thô
+(CHECK của DB từ chối), hay khi PATCH ghi đè trạng thái admin đặt."""
+from types import SimpleNamespace
+
+from aioi.schema import Property
+from aioi.supabase_store import SupabaseConversationStore, so_m2
+
+
+class StoreGia(SupabaseConversationStore):
+    def __init__(self, co_san: bool):
+        super().__init__(url="https://x.invalid", key="khoa-gia")
+        self.goi: list[tuple[str, str, object]] = []
+        self.co_san = co_san
+
+    def _request(self, method, endpoint, data=None, prefer=None):
+        self.goi.append((method, endpoint, data))
+        if endpoint.startswith("sellers?"):
+            return [{"id": "s1", "name": "A"}]
+        if endpoint.startswith("conversations?"):
+            return [{"id": "c1"}]
+        if endpoint == "rpc/boc_thong_so":
+            return {"legal_status": "so_hong_rieng"} if "riêng" in data["p_text"] else {}
+        if endpoint.startswith("listings?seller_id"):
+            return [{"id": "l1"}] if self.co_san else []
+        return []
+
+
+def _conv(fields):
+    li = SimpleNamespace(prop=Property(loai_hinh="nha_pho", fields=fields), listing_id="abcdef123456", listing_proposed=True)
+    return SimpleNamespace(user_key="zalo-thu-1", listings=[li])
+
+
+def _ghi_tin(store):
+    return [(m, e, d) for m, e, d in store.goi if e.startswith("listings") and m in ("POST", "PATCH")]
+
+
+def test_tao_tin_moi_gui_dung_cot():
+    st = StoreGia(co_san=False)
+    st.save(_conv({"gia": "5 tỷ 2", "dien_tich": "50m2", "phap_ly": "sổ hồng riêng", "quan": "Quận 5", "duong": "Trần Hưng Đạo"}))
+    [(m, e, d)] = _ghi_tin(st)
+    assert (m, e) == ("POST", "listings")
+    assert d["price_raw"] == "5 tỷ 2" and "price_vnd" not in d  # DB tính price_vnd bằng parse_vnd
+    assert d["area_m2"] == 50.0
+    assert d["legal_status"] == "so_hong_rieng"
+    assert d["status"] == "cho_thong_tin"
+
+
+def test_cap_nhat_khong_ghi_de_trang_thai_va_bo_phap_ly_la():
+    st = StoreGia(co_san=True)
+    st.save(_conv({"gia": "6 tỷ", "kich_thuoc": "4x15", "phap_ly": "đang chờ sổ"}))
+    [(m, e, d)] = _ghi_tin(st)
+    assert (m, e) == ("PATCH", "listings?id=eq.l1")
+    assert "status" not in d and "legal_status" not in d
+    assert d["area_m2"] == 60.0 and d["price_raw"] == "6 tỷ"
+
+
+def test_so_m2():
+    assert so_m2({"dien_tich_dat": "72,5 m2"}) == 72.5
+    assert so_m2({"dien_tich": "khoảng"}) is None
+    assert so_m2({}) is None

@@ -11,12 +11,13 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import urllib.request
 import urllib.parse
 from datetime import datetime, timezone
 from typing import Any, TYPE_CHECKING
 
-from .schema import Property
+from .schema import Property, _calc_area_from_dimension
 from .assistants import assign_assistant
 
 if TYPE_CHECKING:
@@ -40,6 +41,25 @@ def vai_tu_seller_type(raw: Any) -> "SellerRole":
         return SellerRole(ma)
     except ValueError:
         return SellerRole.UNKNOWN
+
+
+# 18/10/2026 (SRS-5.1zzzzzzz37): `save` từng đọc `li.prop.dien_tich` / `li.prop.gia` — `Property` không có hai thuộc tính đó
+# (giá trị nằm trong `prop.fields`), nên MỌI lượt có tin văng AttributeError và tin người bán không bao giờ vào bảng `listings`.
+# Giá gửi CHUỖI GỐC vào `price_raw`: trigger `listings_set_price_vnd` tính `price_vnd` bằng `parse_vnd` (luật tiền một nguồn,
+# không đổi tiền ở Python). `legal_status` chỉ nhận mã (`so_hong_rieng`…): chữ khách gõ đổi qua `boc_thong_so` của DB. `status`
+# chỉ đặt lúc TẠO tin (`cho_thong_tin`; trigger `listings_quyet_dinh_dang_tin` tự lên `dang_ban` khi đủ) — `dang_rao` cũ không
+# có trong CHECK, và ghi đè mỗi lượt sẽ xoá trạng thái admin đặt trên CRM (`an`, `da_chot`).
+MA_PHAP_LY = {"so_hong_rieng", "so_hong_chung", "so_hong", "hdmb", "giay_tay"}
+def so_m2(fields: dict[str, str]) -> float | None:
+    """Diện tích (m²) từ ô bóc tách: số đầu tiên của `dien_tich` / `dien_tich_dat`, không có thì tính từ `kich_thuoc` (4x15)."""
+    for k in ("dien_tich", "dien_tich_dat"):
+        m = re.search(r"\d+(?:[.,]\d+)?", str(fields.get(k) or ""))
+        if m:
+            v = float(m.group(0).replace(",", "."))
+            if v > 0:
+                return v
+    tinh = _calc_area_from_dimension(str(fields.get("kich_thuoc") or ""))
+    return float(tinh[:-2]) if tinh else None
 
 
 class SupabaseConversationStore:
@@ -96,6 +116,21 @@ class SupabaseConversationStore:
     def _post(self, endpoint: str, data: dict, prefer: str = "return=representation") -> list[dict]:
         res = self._request("POST", endpoint, data=data, prefer=prefer)
         return res if isinstance(res, list) else []
+
+    def _ma_phap_ly(self, chu: str | None) -> str | None:
+        """Chữ pháp lý khách gõ → mã cột `legal_status` (qua `boc_thong_so` của DB); không nhận ra → None (không ghi)."""
+        chu = str(chu or "").strip()
+        if not chu:
+            return None
+        if chu in MA_PHAP_LY:
+            return chu
+        try:
+            kq = self._request("POST", "rpc/boc_thong_so", data={"p_text": chu})
+        except Exception as e:
+            log.warning("boc_thong_so lỗi: %s", e)
+            return None
+        ma = kq.get("legal_status") if isinstance(kq, dict) else None
+        return ma if ma in MA_PHAP_LY else None
 
     def _patch(self, endpoint: str, data: dict) -> None:
         self._request("PATCH", endpoint, data=data, prefer="return=minimal")
@@ -197,17 +232,17 @@ class SupabaseConversationStore:
                     "district": fields.get("quan"),
                     "ward": fields.get("phuong"),
                     "street": fields.get("duong"),
-                    "legal_status": fields.get("phap_ly"),
                     "boc_tach": fields,
-                    "status": "dang_rao" if li.listing_proposed else "cho_thong_tin",
                     "updated_at": now_iso,
                 }
-                # Parse numeric area if available
-                if li.prop.dien_tich:
-                    listing_payload["area_m2"] = float(li.prop.dien_tich)
-                # Parse numeric price if available
-                if li.prop.gia:
-                    listing_payload["price_vnd"] = int(li.prop.gia)
+                ma_pl = self._ma_phap_ly(fields.get("phap_ly"))
+                if ma_pl:
+                    listing_payload["legal_status"] = ma_pl
+                dt = so_m2(fields)
+                if dt is not None:
+                    listing_payload["area_m2"] = dt
+                if fields.get("gia"):
+                    listing_payload["price_raw"] = str(fields["gia"])
                 if li.prop.loai_hinh:
                     listing_payload["property_type"] = li.prop.loai_hinh
 
@@ -217,7 +252,7 @@ class SupabaseConversationStore:
                     lid = existing[0]["id"]
                     self._patch(f"listings?id=eq.{lid}", listing_payload)
                 else:
-                    self._post("listings", listing_payload)
+                    self._post("listings", {**listing_payload, "status": "cho_thong_tin"})
 
         except Exception as e:
             log.error("Failed to save conversation to Supabase: %s", e)
