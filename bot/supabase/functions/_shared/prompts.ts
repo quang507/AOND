@@ -36,12 +36,14 @@ export const AD_FORMAT = `BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự):
 
 /**
  * 5 điểm giá trị giải thích chính sách phí môi giới (dùng khi khách băn khoăn về phí).
+ * SRS-5.1zzzzzzz26 (18/10/2026): chỉ điều có thật — bỏ "ưu tiên lên Top Quận 5, bán nhanh hơn tự rao" và "20 nhà môi giới
+ * lõi" (trái FEE_RULES: không hứa đứng đầu trang, không hứa bán nhanh hơn).
  */
-export const FEE_VALUE_POINTS = `- CHỈ thu phí KHI giao dịch thành công — khách không tốn đồng nào trước, không rủi ro.
-- Hệ thống tự điều cộng tác viên (CTV) dẫn khách tới xem nhà, chủ không phải tự tìm khách.
-- Tin được đẩy tới mạng lưới 20 nhà môi giới lõi + rổ khách mua đã được lọc, tiếp cận khách "nét".
-- Tin được chuẩn hóa, chấm điểm và ưu tiên lên Top hiển thị Quận 5 — bán nhanh hơn tự rao.
-- Tiết kiệm thời gian, sàng lọc khách ảo, giữ liên lạc tự động qua Zalo.`;
+export const FEE_VALUE_POINTS = `- Chỉ thu phí khi giao dịch thành công — chủ nhà không tốn đồng nào trước, không rủi ro.
+- Có đội ngũ cộng tác viên (CTV) hỗ trợ dẫn khách tới xem nhà.
+- Tiếp cận tệp khách mua có nhu cầu thực tế, đã qua sàng lọc.
+- Tin đăng được chuẩn hoá thông số, trình bày chuyên nghiệp.
+- Giúp chủ nhà tiết kiệm thời gian, lọc khách ảo và cập nhật tiến độ qua Zalo.`;
 
 
 // 06/10/2026 (SRS-5.1zzq, đối chiếu SRD AOND): câu phí soạn sẵn từng chép ở ba chỗ trong chat-reply và chỉ đọc nhãn người
@@ -682,6 +684,9 @@ export const CAU_TIEN_DINH: Record<string, string> = {
   nhap_uu_tien: "Điểm càng cao, công ty càng ưu tiên chào bán.",
   nhap_hoi_duyet: "{Ac} thấy hấp dẫn chưa ạ? Ổn thì em đăng liền và rao tích cực cho {ac}.",
   nhap_sua_xong: "Em sửa lại rồi, {ac} xem vậy được chưa ạ?",
+  // SRS-5.1zzzzzzz26 (chủ dự án 18/10/2026): tin 50–69 điểm được xem bản nháp sớm nhưng CHƯA đủ 70 để lên kệ — không hỏi duyệt
+  // (gật "ok em" rồi bot lại hỏi tiếp là hụt hẫng), nói thẳng còn thiếu gì; câu hỏi cho ô thiếu đi ngay sau.
+  nhap_chua_du_dang: "Đây là bản nháp em soạn trước để {ac} xem qua thông số. Nhà mình chỉ cần thêm {thieu} nữa là đủ điều kiện đăng lên hệ thống ngay ạ.",
   // 24/09/2026 (chủ dự án): bỏ "Khách quan tâm nhắn Zalo cho em để hẹn xem nhà" — đổi thành lời hứa với NGƯỜI RAO,
   // có tên trợ lý ({ten}) và cách gọi người rao, đứng CUỐI tin bản nháp.
   nhap_goi_hanh_dong: "👉 Có khách quan tâm là {ten} báo lại {ac} liền ạ.",

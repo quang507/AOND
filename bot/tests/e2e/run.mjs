@@ -4546,6 +4546,56 @@ fresh(seedKho);
     globalThis.__khongNhoCauHinh = false;
     globalThis.__cauHinh = cuCH;
   }
+  // SRS-5.1zzzzzzz26 (chủ dự án 18/10/2026): bản nháp sớm từ 50 điểm (đủ giá + diện tích + địa chỉ) mà lên kệ đòi 70. Dưới 70 thì bản
+  // nháp KHÔNG xin duyệt ("thấy hấp dẫn chưa", câu chờ duyet_tin) — nói đây là bản soạn trước, còn thiếu mục nào, mở ô chờ cho mục đó.
+  for (const [nhan, diemDe] of [["NHAP50-01 (ca gốc) 62 điểm", 62], ["NHAP50-02 (đối chứng) 78 điểm", 78]]) {
+    fresh(seedKho);
+    const cuCH = globalThis.__cauHinh;
+    const uid = `nhap50-${diemDe}`;
+    globalThis.__cauHinh = { test_reset_hello: "1", boc_tach_ai: "chinh", bao_lai_da_luu: "thay_doi" };
+    globalThis.__model.parse = (p) => laLuotBocRao(p) ? { so_can: 0, kien_thuc: [], truong: [] } : OUT();
+    await send({ external_user_id: uid, text: "anh cần bán nhà trong hẻm 12 Trần Bình Trọng quận 5" });
+    const LC = db().t.listings.at(-1);
+    Object.assign(db().t.listings.find((x) => x.id === LC.id), { property_type: "nha_pho", location_raw: "12 Trần Bình Trọng", ward: "Phường Chợ Quán",
+      district: "Quận 5", alley_width_m: 4, area_m2: 64, frontage_m: 4, floors: 1, bedrooms: 3, price_raw: "5 tỷ", price_vnd: 5000000000, legal_status: null });
+    db().t.listing_facts = db().t.listing_facts.filter((f) => f.listing_id !== LC.id);
+    for (const [q, a] of [["vi_tri", "12 Trần Bình Trọng"], ["dien_tich_dat", "4x16"], ["do_rong_hem", "4m"], ["gia", "5 tỷ"], ["phuong", "Phường Chợ Quán"],
+      ["so_phong_ngu", "3"], ["ket_cau", "1 tầng"]]) {
+      db().insert("listing_facts", { listing_id: LC.id, question: q, answer: a, source: "seller_chat" });
+    }
+    db().t.info_requests.forEach((x) => { if (x.status === "pending") x.status = "expired"; });
+    daHtsd(LC);
+    db().insert("info_requests", { listing_id: LC.id, question: "phap_ly", status: "pending" });
+    globalThis.__khongNhoCauHinh = true;
+    // Điểm đè: chỉ đổi điểm / mục thiếu của tin này để đo đúng nhánh ngưỡng, mọi thứ khác đi đường thật.
+    globalThis.__rpc = { diem_tin: (d, a) => {
+      const l = d.t.listings.find((x) => x.id === a.p_listing_id);
+      if (!l) return { data: null, error: null };
+      return { data: a.p_listing_id === LC.id ? { ...d.diemTin(l), diem: diemDe, thieu: diemDe < 70 ? ["chiều ngang mặt tiền", "ảnh mặt tiền, trong nhà"] : [] } : d.diemTin(l), error: null };
+    } };
+    globalThis.__model.parse = (p) => laLuotBocRao(p)
+      ? { so_can: 0, kien_thuc: [], cap_nhat: [], truong: [{ khoa: "phap_ly", gia_tri: "sổ hồng riêng", trich_dan: "sổ riêng", can: null }],
+        tra_loi: { co_tra_loi: true, gia_tri: "sổ hồng riêng", trich_dan: "sổ riêng" } }
+      : OUT();
+    const r = await send({ external_user_id: uid, text: "sổ riêng" });
+    globalThis.__rpc = null;
+    const rep = (r.body.replies ?? [r.body.reply]).filter(Boolean).join("\n");
+    const treoLC = db().t.info_requests.filter((q) => q.listing_id === LC.id && q.status === "pending").map((q) => q.question);
+    if (diemDe < 70) {
+      check(`${nhan} → bản nháp có tin rao, nói 'bản nháp em soạn trước… chỉ cần thêm chiều ngang mặt tiền nữa là đủ điều kiện đăng', KHÔNG xin duyệt / hứa báo khách`,
+        /Em sẽ rao như vầy/.test(rep) && /bản nháp em soạn trước/.test(rep) && /chỉ cần thêm chiều ngang mặt tiền nữa là đủ điều kiện đăng/.test(rep)
+          && !/thấy hấp dẫn chưa|Ổn thì em đăng liền/.test(rep) && !/👉 Có khách quan tâm/.test(rep),
+        rep.slice(0, 900));
+      check(`${nhan} → KHÔNG mở câu chờ duyet_tin; mở ô chờ cho mục thiếu (mat_tien); tin chưa duyệt`,
+        !treoLC.includes("duyet_tin") && treoLC.includes("mat_tien") && !db().t.listings.find((x) => x.id === LC.id).chu_duyet_at,
+        JSON.stringify({ treoLC, body: { ban_nhap: r.body.ban_nhap, nhap_chua_du: r.body.nhap_chua_du, asked: r.body.asked } }));
+    } else {
+      check(`${nhan} → đủ 70: bản nháp xin duyệt như cũ ('thấy hấp dẫn chưa'), mở câu chờ duyet_tin, không câu 'bản nháp soạn trước'`,
+        /thấy hấp dẫn chưa/.test(rep) && treoLC.includes("duyet_tin") && !/bản nháp em soạn trước/.test(rep), JSON.stringify({ treoLC, rep: rep.slice(0, 600) }));
+    }
+    globalThis.__khongNhoCauHinh = false;
+    globalThis.__cauHinh = cuCH;
+  }
   // SRS-5.1zzzi (07/10/2026, chat thử …98iz): người bán CHƯA có tin, bot hỏi "bất động sản ở đâu", khách "Ở Trần Bình Trọng" →
   // AI không được gọi (không mùi dữ liệu, không câu treo), tên đường mất, về sau bot hỏi lại "nhà ở đường nào". Nay AI đọc và
   // mở tin với địa chỉ đó; lời bot (r3) có câu bot vừa hỏi.

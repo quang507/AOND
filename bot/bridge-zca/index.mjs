@@ -407,30 +407,8 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep) {
     }
   }
 
-  // Đồng bộ hội thoại thực tế sang CRM Supabase (với cờ sync_turn để không chạy duplicate AI bot)
-  const EDGE_SYNC_URL = "https://rqxmmqmctpklqcmbfxuj.supabase.co/functions/v1/chat-reply";
-  const ANON_KEY_SYNC = "sb_publishable_f4wNO8jQcCDWn1QmNZQ7-g_BXDtYM3Y";
-  fetch(EDGE_SYNC_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${ANON_KEY_SYNC}`,
-      "x-bridge-secret": process.env.BRIDGE_SECRET || "",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      sync_turn: true,
-      external_user_id: String(threadId),
-      sender_name: zaloName || undefined,
-      text: typeof text === "string" ? text : "",
-      image_urls: imgList,
-      image_url: imgList[0] || null,
-      msg_id: msgId,
-      channel: "zalo_personal_test",
-      bot_reply: out?.reply || (bubbles.length ? bubbles[0] : ""),
-      bot_replies: bubbles,
-    }),
-    signal: AbortSignal.timeout(15_000),
-  }).catch((e) => console.warn("[Edge Sync CRM error]:", e?.message));
+  // SRS-5.1zzzzzzz26 (18/10/2026): bỏ lượt POST `sync_turn` gửi sau mỗi lượt — chat-reply đã ghi lời khách và lời bot vào
+  // `messages` ngay trong lượt chính, lượt đồng bộ thêm làm mỗi câu bot nằm hai lần trong sổ hội thoại (CRM + lịch sử model).
 }
 
 

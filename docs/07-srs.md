@@ -5408,6 +5408,41 @@ máy chỉ ghép cột có thật. (c) Soát `•ai` trong `bot/`, `app/`, `comp
 (crawl) đều 200 dựng on-demand, mã không có vẫn 404. (b) `bot/tests/khen-nhap.mjs` TD-8 (tiêu đề 24 từ, > 100 ký tự → nhận; đỏ khi trả trần
 100 ký tự), TD-8b (26 từ → bỏ); TD-1…7 giữ nguyên. (c) không có bài kiểm (chữ trong prompt / script xuất).
 
+### SRS-5.1zzzzzzz26 · Bỏ ghi trùng lời bot (sync_turn), lời giải thích phí chỉ điều có thật, bản nháp dưới 70 điểm không xin duyệt (18/10/2026)
+
+**Ca gốc.** Bản thẩm định ba vai 18/10/2026, chủ dự án duyệt sửa cùng ngày. (a) Sau mỗi lượt, bridge POST thêm `sync_turn`
+(`bridge-zca/index.mjs`, vào repo ở `d3a8f70` 17/10); chat-reply nhận và insert lại lời khách + mọi bong bóng bot vào `messages`
+(`chat-reply/index.ts` khối `if (body.sync_turn)`), trong khi lượt chính đã ghi cả hai. Bong bóng bot không mang `zalo_msg_id` nên khoá
+UNIQUE không chặn: theo code, mỗi câu bot nằm hai lần trong sổ hội thoại (CRM, và 40 tin lịch sử đưa cho model). Chưa đếm trên DB.
+(b) `FEE_VALUE_POINTS` (nối vào prompt người bán) cho model nói "ưu tiên lên Top hiển thị Quận 5 — bán nhanh hơn tự rao" và "mạng lưới
+20 nhà môi giới lõi", trái `FEE_RULES` (không hứa đứng đầu trang, không hứa bán nhanh hơn). (c) `guiBanNhap` gửi bản nháp từ 50 điểm khi
+đủ giá + diện tích + địa chỉ, nhưng trigger lên kệ đòi 70: bản nháp 50–69 điểm vẫn hỏi "thấy hấp dẫn chưa… ổn thì em đăng liền" và mở câu
+chờ `duyet_tin` — chủ gật "ok em" rồi bot mới nói tin chưa lên được.
+
+**Lớp lỗi.** (a) Hai đường cùng ghi một dữ liệu (lượt chính và lượt đồng bộ) — một trường hai chủ. (b) Một đoạn prompt nói điều trái luật
+của chính prompt đó, không có gì soát hai đoạn với nhau. (c) Hai ngưỡng cho cùng một quyết định "tin này đăng được chưa" (50 ở bản nháp,
+70 ở trigger), câu xin duyệt chỉ nhìn ngưỡng thấp.
+
+**Chỗ cùng lớp.** (a) Khối xử lý `sync_turn` ở chat-reply vẫn còn (không còn ai gọi — soát `bridge-zca`, `scripts/`, các file .py: không thấy);
+để lại vì chủ dự án chỉ duyệt gỡ phía bridge, gỡ hẳn là việc sau. Ghi `messages` ở đường bình thường: một chỗ cho lời bot người bán (khối ghi
+bong bóng) — không thấy đường thứ ba. (b) Soát các đoạn khác nối vào `SELLER_SYSTEM` (`TONE`, `SELLER_SCRIPT`, `SELLER_FEW`, `FEES`,
+`AD_FORMAT`): mâu thuẫn khác (gộp 1 ý / 2 ý, "mình", câu tiền định mở bằng "cảm ơn", emoji câu soạn sẵn) ghi ở bản thẩm định, chưa sửa.
+(c) Nhánh "đăng đi" (`dangLuon`) dưới 70 điểm đã nói thật còn thiếu gì (`noiThieuDeDang`) — giữ; nhánh gật bản nháp cũ dưới 70 điểm cũng
+nói "chưa lên được" — giữ làm lưới.
+
+**Sửa.** (a) Bỏ khối `fetch(... sync_turn ...)` trong `handleIncoming` của bridge (kèm URL project và khoá publishable viết cứng). (b)
+`FEE_VALUE_POINTS` viết lại 5 ý theo chủ dự án: chỉ thu khi giao dịch thành công; CTV dẫn khách xem nhà; tiếp cận khách mua có nhu cầu
+thực, đã qua sàng lọc; tin chuẩn hoá thông số; tiết kiệm thời gian, lọc khách ảo, cập nhật tiến độ qua Zalo. (c) `guiBanNhap`: `diem < 70`
+→ không mở `duyet_tin`, mở ô chờ cho mục thiếu đầu tiên ứng được một ô (`khoaCuaMucThieu`, cùng luật `tiepSauGhi`); bong bóng cuối là câu
+mới `nhap_chua_du_dang` ("Đây là bản nháp em soạn trước để {ac} xem qua thông số. Nhà mình chỉ cần thêm {thieu} nữa là đủ điều kiện đăng
+lên hệ thống ngay ạ.") + câu hỏi của ô đó, không câu "👉 Có khách quan tâm là … báo lại"; gửi lại bản nháp y hệt cũng không xin "ok".
+`tin-nhap.ts` thêm tham số `chuaDuDang`. Đủ 70 thì lượt sau gửi bản nháp kèm câu duyệt như cũ.
+
+**Kiểm (đỏ khi tắt).** e2e NHAP50-01 (ca gốc, điểm đè 62: có tin rao + câu "bản nháp em soạn trước… chỉ cần thêm chiều ngang mặt tiền nữa",
+không "thấy hấp dẫn chưa" / "👉 Có khách quan tâm"; không câu chờ `duyet_tin`, có câu chờ `mat_tien`) — ép `duDiemLenKe = true` thì cả hai ca
+đỏ; NHAP50-02 (đối chứng 78 điểm: xin duyệt như cũ). (a) và (b) không có bài kiểm tự động (đường mạng bridge / chữ prompt); `node --check`
+bridge sạch. e2e 1440/1440, `bun run test:bot` exit 0, deno check sạch.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

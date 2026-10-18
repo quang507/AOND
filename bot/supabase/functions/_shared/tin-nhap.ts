@@ -100,6 +100,8 @@ export type ThamSoNhap = {
    */
   tienIchNoiBat?: Array<{ goc: string; in: string }>;
   cauTD:(khoa: string, o?: Record<string, string | number | null | undefined>) => string;
+  /** SRS-5.1zzzzzzz26: tin chưa đủ điểm lên kệ — câu thay cho câu hỏi duyệt (không xin gật, không hứa báo khách). */
+  chuaDuDang?: string | null;
 };
 
 export const LOAI_VI: Record<string, string> = {
@@ -325,7 +327,7 @@ export function soanTinNhap(t: ThamSoNhap): string {
  * Tách theo VỊ TRÍ dòng trong hàm dựng, không theo chữ "Độ đầy đủ" (câu tiền định sửa được ở dashboard).
  */
 export function soanTinNhapHaiBong(t: ThamSoNhap): { than: string; duoi: string; hoi: string } {
-  const { l, facts, diem, thieu, soAnh, lai, cauTD, daDang, tieuDeKhach, tieuDeAi, khen, quyMo, tienIch: tienIchAi, tienIchNoiBat, tieuDeDau } = t;
+  const { l, facts, diem, thieu, soAnh, lai, cauTD, daDang, tieuDeKhach, tieuDeAi, khen, quyMo, tienIch: tienIchAi, tienIchNoiBat, tieuDeDau, chuaDuDang } = t;
   const fact = (k: string) => facts.find((f) => f.question === k)?.answer ?? null;
   // Dán nhãn mà không lặp chữ: "thuê tối thiểu 3 năm" đã có nhãn thì không thành
   // "thuê tối thiểu thuê tối thiểu 3 năm". So theo TỪNG CHỮ của nhãn.
@@ -568,10 +570,11 @@ export function soanTinNhapHaiBong(t: ThamSoNhap): { than: string; duoi: string;
   dong.push(cauTD("nhap_uu_tien"));
   // 13/10/2026 (chủ dự án: câu điểm "tách ra với câu dưới"): điểm + ưu tiên là một bong bóng, câu hỏi duyệt + lời hứa báo lại là bong bóng riêng.
   const hetDuoi = dong.length;
-  if (!daDang) dong.push(lai ? cauTD("nhap_sua_xong") : cauTD("nhap_hoi_duyet"));
+  // SRS-5.1zzzzzzz26: chưa đủ điểm lên kệ → câu "bản nháp soạn trước, chỉ cần thêm …" thay câu hỏi duyệt, và không hứa "có khách là báo".
+  if (!daDang) dong.push(chuaDuDang?.trim() ? chuaDuDang.trim() : lai ? cauTD("nhap_sua_xong") : cauTD("nhap_hoi_duyet"));
   // FR-178: không đọc mã tin cho khách — mã chỉ ở web, CTV, admin.
   // 24/09/2026 (chủ dự án): lời hứa báo lại người rao đứng SAU CÙNG. Tin đã lên kệ (daDang) thì câu
   // `dang_luon_cuoi` nói đúng ý đó ngay sau — không lặp.
-  if (!daDang) dong.push(cauTD("nhap_goi_hanh_dong"));
+  if (!daDang && !chuaDuDang?.trim()) dong.push(cauTD("nhap_goi_hanh_dong"));
   return { than: dong.slice(0, hetThan).filter(Boolean).join("\n"), duoi: dong.slice(hetThan, hetDuoi).filter(Boolean).join("\n"), hoi: dong.slice(hetDuoi).filter(Boolean).join("\n") };
 }

@@ -6951,19 +6951,33 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
       // Tin bot lưu có thể gộp nhiều bong bóng (🤖 … rồi 📋 …) — so từ dấu 📋.
       // Luật xưng hô đổi "anh/chị" → "anh chị" trước khi lưu — so sau khi bỏ "/" và gộp khoảng trắng.
       const thanNhap = (s: string) => s.slice(Math.max(0, s.indexOf("📋"))).split(/\n(?=Độ đầy đủ)/u)[0].replace(/\s*\/\s*/g, " ").replace(/\s+/g, " ").trim();
+      // SRS-5.1zzzzzzz26 (chủ dự án 18/10/2026): bản nháp sớm từ 50 điểm (`nguongDiemNhap`) mà trigger lên kệ đòi 70 — dưới 70 KHÔNG mở
+      // câu duyệt (chủ gật "ok em" rồi bot lại hỏi tiếp là hụt hẫng). Thay vào đó: nói đây là bản soạn trước, còn thiếu mục nào, và mở ô
+      // chờ cho mục thiếu đầu tiên ứng được một ô (`khoaCuaMucThieu`, cùng luật `tiepSauGhi`) để câu trả lời vào đúng ô. Đủ 70 thì lượt
+      // sau gửi lại bản nháp kèm câu duyệt như thường.
+      const duDiemLenKe = d.diem >= 70;
+      const loaiNhap = (l as { property_type?: string | null }).property_type ?? null;
+      const mucThieu = duDiemLenKe ? null : ((d.thieu ?? []).find((m) => !!khoaCuaMucThieu(m, loaiNhap)) ?? (d.thieu ?? [])[0] ?? null);
+      const khoaThieuNhap = mucThieu ? khoaCuaMucThieu(mucThieu, loaiNhap) : null;
+      const chuaDuDang = duDiemLenKe ? null
+        : [cauTD("nhap_chua_du_dang", { thieu: mucThieu ?? "vài thông tin" }),
+          ...(khoaThieuNhap ? [cauHoiMau(khoaThieuNhap, cachGoi, loaiNhap, (l as { district?: string | null }).district, (l as { deal?: string | null }).deal)] : [])].join("\n");
       if (lai && typeof extra.nhap_cu === "string" && thanNhap(extra.nhap_cu) === thanNhap(tin)) {
         const { nhap_cu: _bo, ...extraGon } = extra;
-        return await traLoiSeller([`Dạ em ghi thêm rồi ạ. Bản nháp ở trên ${cachGoi} thấy được thì nhắn "ok" là em đăng liền ạ.`], { ...extraGon, loai_cau: "ghi_them" });
+        return await traLoiSeller([duDiemLenKe
+          ? `Dạ em ghi thêm rồi ạ. Bản nháp ở trên ${cachGoi} thấy được thì nhắn "ok" là em đăng liền ạ.`
+          : `Dạ em ghi thêm rồi ạ. ${chuaDuDang}`], { ...extraGon, loai_cau: "ghi_them" });
       }
-      // 23505 = câu duyệt đã mở từ lượt trước (gửi lại bản nháp) — không phải sự cố.
-      const { error: irErr } = await moCauTreo({
-        listing_id: listingId, question: "duyet_tin", status: "pending",
-      });
-      if (irErr && irErr.code !== "23505") await ghiLoi(client, "chat-reply mo duyet_tin", irErr.message);
+      // 23505 = câu duyệt (hay câu mục thiếu) đã mở từ lượt trước (gửi lại bản nháp) — không phải sự cố.
+      const { error: irErr } = duDiemLenKe || khoaThieuNhap
+        ? await moCauTreo({ listing_id: listingId, question: duDiemLenKe ? "duyet_tin" : khoaThieuNhap!, status: "pending" })
+        : { error: null };
+      if (irErr && irErr.code !== "23505") await ghiLoi(client, duDiemLenKe ? "chat-reply mo duyet_tin" : "chat-reply mo cau thieu(ban nhap)", irErr.message);
       const { nhap_cu: _nc, ...extraGui } = extra;
-      const nhapHai = soanTinNhapHaiBong({ ...thamNhap, lai, ...(await layKhen()) });
+      const nhapHai = soanTinNhapHaiBong({ ...thamNhap, lai, chuaDuDang, ...(await layKhen()) });
       // SRS-5.1zzzzzzb: `nhap_cua` để đường nhường lượt biết câu duyệt nào vừa mở cho bản nháp này.
-      return await traLoiSeller([...truoc, nhapHai.than, ...(nhapHai.duoi ? [nhapHai.duoi] : []), ...(nhapHai.hoi ? [nhapHai.hoi] : [])], { ...extraGui, ban_nhap: true, nhap_cua: listingId, diem: d.diem });
+      return await traLoiSeller([...truoc, nhapHai.than, ...(nhapHai.duoi ? [nhapHai.duoi] : []), ...(nhapHai.hoi ? [nhapHai.hoi] : [])],
+        { ...extraGui, ban_nhap: true, nhap_cua: listingId, diem: d.diem, ...(duDiemLenKe ? {} : { nhap_chua_du: true, ...(khoaThieuNhap ? { asked: khoaThieuNhap } : {}) }) });
     }
     /**
      * SRS-5.1zzzzzzv (Zalo thật 14/10/2026 14:20, tin cho thuê Q8): chủ nhà dán bài rao vào tin CHƯA lên kệ lúc không có câu chờ →
