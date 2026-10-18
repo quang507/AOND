@@ -703,7 +703,8 @@ globalThis.__rpc.mark_listing_interest = (d, a) => a.p_buyer_id ? { data: null, 
 r = await send({ external_user_id: "v48-2", text: "#BDS-Q5-0005 sao em" });
 const mi = db().log.filter((l) => l.rpc === "mark_listing_interest");
 check("V48-108c overload chưa có (PGRST202) → gọi lại bản cũ, lỗi vào sổ, khách vẫn có trả lời", mi.at(-1).args.p_buyer_id == null && mi.at(-2).args.p_buyer_id === bid && db().t.bot_errors.some((e) => e.source === "chat-reply mark_listing_interest(buyer)") && r.body.replies.length > 0);
-check("V48-45 luật + fewshot: hứa hỏi chủ → kết bằng 'Trong khi chờ, anh/chị có câu hỏi gì khác về căn này không ạ?'", (() => { const s0 = parseCalls().pop().params.system[0].text; return /Trong khi chờ, anh\/chị có câu hỏi gì khác về căn này không ạ\?/.test(s0) && /voice_request=true/.test(s0) && /giá TB phường/.test(s0) && /CĂN TƯƠNG TỰ/.test(s0) && /CHẤM SAO/.test(s0); })());
+// SRS-5.1zzzzzzz28 (chủ dự án 18/10/2026): bỏ gạch chéo "anh/chị" trong prompt — kỳ vọng đổi theo câu mới.
+check("V48-45 luật + fewshot: hứa hỏi chủ → kết bằng 'Trong khi chờ, anh chị có câu hỏi gì khác về căn này không ạ?'", (() => { const s0 = parseCalls().pop().params.system[0].text; return /Trong khi chờ, anh chị có câu hỏi gì khác về căn này không ạ\?/.test(s0) && !/anh\/chị có câu hỏi/.test(s0) && /voice_request=true/.test(s0) && /giá TB phường/.test(s0) && /CĂN TƯƠNG TỰ/.test(s0) && /CHẤM SAO/.test(s0); })());
 
 // FR-31 căn tương tự
 fresh(seedKho);

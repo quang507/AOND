@@ -2439,7 +2439,7 @@ Hai lỗi giọng còn lại của lượt a1 ("Anh để lại giá 10 tỷ có
 - **Ca gốc**: cả ngày chat thử 07/10 — nhà cấp 4 vẫn ghi nhà phố, địa chỉ "đúng rồi e. nhà a ở", bổ sung "không có mặt tiền đẹp", kết cấu ôm "3 phòng ngủ", "Thạnh Lộc 41" mất số. Mỗi lỗi sửa riêng một chỗ (SRS-5.1zzza…c) nhưng lớp lỗi còn nguyên.
 - **Lớp lỗi**: *bóc tách chỉ có cơ chế 1* (mỗi lượt AI đọc một tin + vài lượt quanh nó rồi ghi ngay), sau đó nhiều lớp code cắt / kiểm / ghi đè theo từng lượt — một lượt sai là sai ở DB, không có bước nào đọc lại cả cuộc trò chuyện để dọn. Thiếu cơ chế 2 (đọc toàn bộ hội thoại, đưa trạng thái cuối) mà các nền tảng kiểu Dify dùng.
 - **Chỗ khác cùng lớp**: `docLaiGhiChu` (FR-234) đã là một bước đọc lại trước bản nháp nhưng chỉ đọc ghi chú bổ sung và chỉ điền ô TRỐNG — không sửa ô sai. Bảng hỏi bù sau khi đăng, chấm điểm tin, web đọc cùng `listing_facts` — sửa ở bước trước bản nháp là sửa cho tất cả. Người rao nhiều căn chưa chốt (tin dễ lẫn giữa các căn — cần gán mảnh theo căn, T5).
-- **Sửa**: `chotTinAi` (chat-reply, ngay đầu `guiBanNhap`, tức trước MỌI bản nháp, kể cả "đăng đi"): toàn bộ tin chủ nhà (≤ 6.000 chữ, `tinChuNhaGoc` + tin vừa nhắn) đưa qua ĐÚNG bộ bóc tách hiện có `bocRaoBangModel` với khối `LUAT_CHOT` (trạng thái cuối, khách sửa thì lấy giá trị sau cùng, lời gật / câu trả lời có-không / lời nói với bot không phải thông tin căn, kien_thuc đúng nghĩa khách nói) → `kiemDeXuat` (trích dẫn có thật, số nằm trong cụm, ô nguyên văn) → `docAiChinh`. Ghi: giá trị qua kiểm mà khác giá trị đang ghi → AI thắng (nguồn ai_kiem); địa chỉ qua `chonViTri` để không mất số nhà; loại nhà so với cột `property_type`; AI để trống thì GIỮ, không xoá. Ý thêm qua `kiemKienThuc` ghi `bo_sung` nguồn ai_kiem; bản nháp bỏ ghi chú thô `seller_chat`. Dấu `boc_tach.chot_ai` (lúc, ô đã sửa, số ý thêm). Chỉ chạy khi `boc_tach_ai = ai` (production) và người rao một căn; không chốt được → `docLaiGhiChu` như cũ. Chi phí: một lượt model mỗi bản nháp.
+- **Sửa**: `chotTinAi` (chat-reply, ngay đầu `guiBanNhap`, tức trước MỌI bản nháp, kể cả "đăng đi"): toàn bộ tin chủ nhà (≤ 6.000 chữ, `tinChuNhaGoc` + tin vừa nhắn) đưa qua ĐÚNG bộ bóc tách hiện có `bocRaoBangModel` với khối `LUAT_CHOT` (trạng thái cuối, khách sửa thì lấy giá trị sau cùng, lời gật / câu trả lời có-không / lời nói với bot không phải thông tin căn, kien_thuc đúng nghĩa khách nói) → `kiemDeXuat` (trích dẫn có thật, số nằm trong cụm, ô nguyên văn) → `docAiChinh`. Ghi: giá trị qua kiểm mà khác giá trị đang ghi → AI thắng (nguồn ai_kiem); địa chỉ qua `chonViTri` để không mất số nhà; loại nhà so với cột `property_type`; AI để trống thì GIỮ, không xoá. Ý thêm qua `kiemKienThuc` ghi `bo_sung` nguồn ai_kiem; bản nháp bỏ ghi chú thô `seller_chat`. Dấu `boc_tach.chot_ai` (lúc, ô đã sửa, số ý thêm). Chỉ chạy khi `boc_tach_ai = ai` (production) và người rao một căn (từ 18/10/2026 cả nhiều căn, chỉ đọc tin vừa nhắn — SRS-5.1zzzzzzz21); không chốt được → `docLaiGhiChu` như cũ. Chi phí: một lượt model mỗi bản nháp.
 - **Kiểm, đỏ khi tắt**: e2e "SRS-5.1zzzd" — tin mang đủ lỗi dồn (nhà phố, kết cấu ôm cả câu, bổ sung "không có mặt tiền đẹp em"), khách trả lời câu sổ → đúng MỘT lượt chốt, tin thành `nha_cap4`, kết cấu "1 tầng", "📝 Thêm" có "mặt tiền đẹp", không còn rác. Tắt `chotTinAi`: 1/1015 đỏ. Toàn bộ ca chế độ `ai` cũ có bản nháp vẫn đạt (bước chốt chạy qua với mock của chúng). Đo thật: trang chat thử (Haiku) sau khi bật bản này.
 
 ### SRS-5.1zzze · Trả lời câu hỏi vai: AI đọc kèm câu bot vừa hỏi; câu mời người bán mới hỏi một ý (07/10/2026)
@@ -5457,6 +5457,38 @@ bridge trước, chat-reply sau.
 
 **Kiểm (đỏ khi tắt).** `bot/tests/khong-ghi-trung.mjs` (trong `test:bot`): KGT-01 bridge không gửi `sync_turn`, KGT-02 chat-reply không có
 nhánh `body.sync_turn` — chạy trên bản chat-reply trước bản sửa thì KGT-02 đỏ.
+
+### SRS-5.1zzzzzzz28 · Prompt hết tự cãi nhau; soát cấu hình bot trên DB production (18/10/2026)
+
+**Ca gốc.** Lượt soát prompt 18/10/2026 (bản thẩm định ba vai) tìm ra các cặp luật ngược nhau trong `prompts.ts`; chủ dự án chốt cùng ngày:
+hỏi một ý mỗi tin ("khỏi gộp cũng được"), giữ các câu về khách mua / ưu tiên ("c ok"), tối đa 1 emoji mỗi tin, các mục còn lại sửa theo
+luật đang có. Kèm lệnh "kiểm tra lại trong db các thứ đã quy định khi có người chat trên zalo".
+
+**Lớp lỗi.** Một prompt nhiều đoạn do nhiều đợt viết thêm, không gì soát đoạn mới với luật cũ: luật nói A, ví dụ / câu soạn sẵn / dòng thêm sau
+nói ngược A. Model nhận cả hai, lượt theo lệnh này lượt theo lệnh kia. Lớp thứ hai: bản DB `bot_prompts` ĐÈ bản code, nên sửa code chưa đẩy
+DB là sửa chưa có hiệu lực.
+
+**Chỗ cùng lớp (đã sửa).** (a) `SELLER_SCRIPT_RULES` bỏ dòng "được phép hỏi gộp tối đa 2 ý" (trái luật hỏi một ý và ví dụ SAI "Sổ riêng hay
+chung, đã hoàn công chưa anh?"); 5 ví dụ ĐÚNG trong `SELLER_FEWSHOT` mang hai câu hỏi rút còn một. Người MUA (`HUMAN_CHAT_RULES`) vẫn được gộp
+2–3 ý — luật riêng, không đổi. (b) Ví dụ "Phí bên em sao?" chưa rõ vai không còn nói "mức tuỳ chủ nhà hay môi giới" (trái luật nêu cả hai
+mức) — câu phí do hệ thống nói ở bong bóng trước, model chỉ quay lại câu đang hỏi; chú thích `vaiPhi` / `daNoiPhiRoi` cũ ("không số") sửa.
+(d) "anh/chị" gạch chéo bỏ khỏi `TONE_RULES`, `HUMAN_CHAT_RULES`, `BUYER_FEWSHOT`, `LOI_CHAO`; "mình" chỉ khách ("gọi lại cho mình", "báo mình",
+"mình cứ để em rao thử", "mình đang tự vận hành") đổi "anh chị" / "anh". (e) Câu `dang_xong` không mở bằng "Dạ em cảm ơn"; luật ảnh không bảo
+"cảm ơn" đầu tin. (f) `TONE_RULES` "tối đa 1 emoji mỗi tin, không bắt buộc" thay "không emoji hình" — khớp `RATE_CTV_RUBRIC`; `AD_FORMAT` tiêu đề
+1–2 → tối đa 1 emoji; câu soạn sẵn mỗi câu tối đa một emoji. (g) Chú thích "khen vài chữ, ~30 từ" đổi theo luật hiện hành. **Còn lại:** (c) giữ
+nguyên theo chủ dự án.
+
+**Soát DB production (chỉ đọc, 18/10/2026).** `app_config`: `boc_tach_ai = ai`, `tro_ly = thu`, `luat_loi_bot = gon`, `lenh_json = bat`,
+`tim_theo_nghia = bat`; **`test_reset_hello = 1`** — khách THẬT nhắn đúng chữ "hello" là bị xoá sạch dữ liệu (`xoa_nguoi_theo_zalo`), chú thích
+code ghi "chạy thật phải đặt 0" — chưa đổi, chờ chủ dự án. Vault: `MODEL_TRUOC = claude` (Claude trả lời trước); khoá Drive tên
+`GOOGLE_DRIVE_API_KEY` trong khi code đọc `GOOGLE_API_KEY` (link thư mục Drive không mở được); còn hai bí mật VPS tiền tố `DA_XOA_`.
+`bot_prompts` (đè code): 7 khoá khớp md5; **lệch 5 khoá** — `seller_script_rules`, `seller_fewshot`, `slang_notes`, `human_chat_rules` (bản DB
+13–14/10 ngắn hơn, chưa có phần code thêm sau đó) và `cau_tien_dinh` (bản 14/10: `dang_xong_hang` chưa có `({ly_do})`, `dang_xong` còn "Dạ em cảm
+ơn"). Sửa của mục này chỉ có hiệu lực khi chạy `bun run prompt -- --day` (ghi DB production — chủ dự án quyết; khoá nào chủ dự án sửa tay thì
+dùng `--chi`).
+
+**Kiểm (đỏ khi tắt).** `bot/tests/prompt-khong-mau-thuan.mjs` (trong `test:bot`): PKM-01…08 — chạy trên `prompts.ts` trước bản sửa đỏ 11 ca
+(01, 02, 03 ×4, 04 ×3, 05, 07). e2e V48-45 đổi kỳ vọng "anh/chị" → "anh chị". e2e 1440/1440.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

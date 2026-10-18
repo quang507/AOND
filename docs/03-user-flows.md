@@ -261,7 +261,9 @@ flowchart TD
     I --> C
     J --> C
     C -->|Hết câu + điểm ≥ 70| K["Gửi BẢN NHÁP TIN + điểm<br/>hỏi: như vậy được chưa?"]
-    C -->|Hết câu, điểm < 70| L["Nói còn thiếu gì, hỏi tiếp"]
+    C -->|Hết câu, 50–69 điểm, đủ giá + diện tích + địa chỉ| P2["Gửi bản nháp SOẠN TRƯỚC<br/>không hỏi duyệt, nói còn thiếu gì, hỏi mục đó"]
+    P2 --> C
+    C -->|Hết câu, điểm < 70 còn lại| L["Nói còn thiếu gì, hỏi tiếp"]
     L --> C
     K --> M{S trả lời}
     M -->|Gật| N["chu_duyet_at → tin LÊN KỆ dang_ban"]
@@ -291,7 +293,8 @@ flowchart TD
 5. Ảnh Zalo là URL tạm → tải về, lưu kho, ghi `listing_media` (FR-111/165).
 6. **Đủ thông tin → gửi bản nháp tin** (FR-177 c): tiêu đề · vị trí · thông số ·
    kết cấu · pháp lý · tiềm năng · giá · lời gọi hành động, kèm **điểm đầy đủ
-   0–100** (7 tiêu chí, FR-177 d) và câu "như vậy được chưa?". Bản nháp là chữ
+   0–100** (7 tiêu chí, FR-177 d) và câu "như vậy được chưa?" — chỉ khi đủ 70 điểm;
+   50–69 điểm thì bản nháp "soạn trước" không xin duyệt, nói còn thiếu gì (SRS-5.1zzzzzzz26). Bản nháp là chữ
    **tiền định**, không do model soạn — số liệu phải đúng từng chữ với cột.
 7. **S gật → tin lên kệ** (`chu_duyet_at`, rồi `dang_ban`). S sửa → ghi fact rồi
    gửi lại bản nháp. Điều kiện lên kệ của tin tạo từ chat: đủ giá + diện tích +

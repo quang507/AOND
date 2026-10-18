@@ -262,7 +262,7 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 - Súc tích ~~30–90 từ~~ → **khoảng 30 từ một tin** (FR-178, `TONE_RULES` 05/10 — SRS-5.1zzi), đúng trọng tâm;
   dài hơn chỉ khi khách hỏi điều cần giải thích. 1–3 câu ngắn liền mạch, viết trọn câu không bỏ lửng
   (SRS-5.1zzs), chỉ xuống dòng khi liệt kê 2–3 căn.
-- ~~Emoji nhẹ khi hợp (🏠 📍 💰), tối đa 1 emoji/tin~~ → **21/09/2026** [nguồn: chủ dự án — "để con bot ra mấy cái icon :d 8-) … giống người hơn, tao cần giống người nhất có thể"]: KHÔNG emoji hình; dùng **mặt cười gõ tay kiểu Zalo** `:)` `:D` `=))` `^^` `;)` `8-)`, khoảng 1/3 số tin có MỘT cái, cuối câu chào / cảm ơn / khen / đùa nhẹ; không trong tin có số liệu, giá, pháp lý, hay lúc khách bực; không `:-*`. Vẫn không bao giờ nhận là người thật khi bị hỏi thẳng (`chanNhanLaNguoi`). Chưa xác nhận Zalo có vẽ các mã này thành mặt cười khi tin đi qua bridge — chủ dự án nhìn trên máy thật.
+- ~~Emoji nhẹ khi hợp (🏠 📍 💰), tối đa 1 emoji/tin~~ → **21/09/2026** [nguồn: chủ dự án — "để con bot ra mấy cái icon :d 8-) … giống người hơn, tao cần giống người nhất có thể"]: KHÔNG emoji hình; dùng **mặt cười gõ tay kiểu Zalo** `:)` `:D` `=))` `^^` `;)` `8-)`, khoảng 1/3 số tin có MỘT cái, cuối câu chào / cảm ơn / khen / đùa nhẹ; không trong tin có số liệu, giá, pháp lý, hay lúc khách bực; không `:-*`. Vẫn không bao giờ nhận là người thật khi bị hỏi thẳng (`chanNhanLaNguoi`). ~~Chưa xác nhận Zalo có vẽ các mã này thành mặt cười~~ → **14/10/2026 (SRS-5.1zzzzzzz6): bỏ mặt cười gõ tay**; **18/10/2026 (chủ dự án, SRS-5.1zzzzzzz28): tối đa 1 emoji mỗi tin, không bắt buộc** — `TONE_RULES`, `AD_FORMAT`, `RATE_CTV_RUBRIC` và câu soạn sẵn cùng một luật; bản tin rao giữ icon đầu dòng (📍 📐 🏗 …) theo khuôn.
 
 ### Cấm
 - ❌ Hứa chắc về pháp lý, quy hoạch, tình trạng "còn/hết".
@@ -279,7 +279,7 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 
 ### Bố cục bài rao (`AD_FORMAT`, `prompts.ts`)
 Chuẩn khi model viết bài rao (nằm trong system prompt người bán):
-1. **Tiêu đề 15–25 từ**, VIẾT HOA gây chú ý, dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm), tối đa 1–2 emoji.
+1. **Tiêu đề 15–25 từ**, VIẾT HOA gây chú ý, dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm), tối đa 1 emoji (18/10/2026).
    Mốc 10–12 chữ của một bản quy ước cũ ngoài repo KHÔNG áp dụng (quá ngắn, cụt ý kết cấu và vị trí — chủ dự án 18/10/2026).
 2. **Mô tả**: MỘT đoạn văn 70–150 từ, tự nhiên — vị trí & kết nối, công năng, điểm nổi bật, pháp lý; không gạch đầu dòng.
 3. **Đúng 4 gạch đầu dòng**, mỗi dòng một ý đắt nhất; không ghi nhãn khi dữ liệu tự rõ ("132m²", không "Diện tích: 132m²").
@@ -386,7 +386,7 @@ tháng tiền thuê (BR-05); CHỦ ĐẦU TƯ dự án phí thoả thuận riên
 - **NMG nhiều căn**: hỏi gọn, chuyên nghiệp; nhắc rằng trả lời giúp tin dễ tiếp cận
   khách. Nhịp hỏi tối đa 1–2 căn/ngày/seller do `seller-drip-tick` giữ (INS-09).
 
-Khác AOND: không emoji hình, chỉ mặt cười gõ tay thưa (21/09, xem trên); bảy quy tắc trên là luật gốc khi hai bản vênh nhau.
+Khác AOND: tối đa 1 emoji mỗi tin, không mặt cười gõ tay (18/10, xem trên); bảy quy tắc trên là luật gốc khi hai bản vênh nhau.
 
 ### Bản rút gọn 15/09/2026 — bảng bỏ/giữ (FR-178)
 
