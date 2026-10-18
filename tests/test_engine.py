@@ -261,6 +261,7 @@ def test_complete_listing_drafts_ad_completely():
     conv.prop.loai_hinh = "nha_pho"
     conv.prop.fields.update({
         "dia_chi": "146 Trần Bình Trọng, Q5",
+        "duong": "Trần Bình Trọng", "phuong": "Phường 1",  # ô AI tách từ địa chỉ (SRS-5.1zzzzzzz41)
         "dien_tich_dat": "60m2",
         "dien_tich_nha": "50m2",
         "gia": "10 tỷ",
@@ -285,6 +286,7 @@ def test_identity_only_is_not_yet_summary_ready():
     conv.prop.loai_hinh = "nha_pho"
     conv.prop.fields.update({
         "dia_chi": "146 Trần Bình Trọng, Q5",
+        "duong": "Trần Bình Trọng", "phuong": "Phường 1",  # ô AI tách từ địa chỉ (SRS-5.1zzzzzzz41)
         "gia": "10 tỷ",
     })
     assert not conv.prop.summary_ready()  # dien_tich still missing
@@ -299,6 +301,7 @@ def test_draft_then_fee_only_after_approval():
     conv.prop.loai_hinh = "nha_pho"
     conv.prop.fields.update({
         "dia_chi": "146 Trần Bình Trọng, Q5",
+        "duong": "Trần Bình Trọng", "phuong": "Phường 1",  # ô AI tách từ địa chỉ (SRS-5.1zzzzzzz41)
         "dien_tich_dat": "60m2",
         "dien_tich_nha": "50m2",
         "gia": "10 tỷ",
@@ -1651,6 +1654,7 @@ def test_post_approval_marks_status_dang_ban():
     conv.prop.loai_hinh = "nha_pho"
     conv.prop.fields.update({
         "dia_chi": "146 Trần Bình Trọng, Q5",
+        "duong": "Trần Bình Trọng", "phuong": "Phường 1",  # ô AI tách từ địa chỉ (SRS-5.1zzzzzzz41)
         "dien_tich_dat": "60m2",
         "dien_tich_nha": "50m2",
         "gia": "10 tỷ",

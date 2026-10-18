@@ -122,6 +122,22 @@ class SupabaseConversationStore:
         Quán") qua `rpc/chuan_dia_ban` (20261018e, SRS-5.1zzzzzzz39). Phường cũ bị chia (mo_ho) / không nhận ra → không ghi phường;
         lỗi mạng → không ghi gì (cột cũ giữ nguyên)."""
         chu = ", ".join(str(fields[k]) for k in ("dia_chi", "phuong", "quan") if fields.get(k))
+        phuong, quan = self._chuan_dia_ban(chu)
+        # Căn hộ trong dự án: khách thường chỉ nói tên dự án — lấy phường theo địa chỉ dự án trong kho (SRS-5.1zzzzzzz41).
+        if not phuong and fields.get("du_an"):
+            try:
+                da = self._request("POST", "rpc/match_projects?select=location_raw,ward,district",
+                                   data={"p_text": str(fields["du_an"])})
+            except Exception as e:
+                log.warning("match_projects lỗi: %s", e)
+                da = None
+            if isinstance(da, list) and da:
+                d = da[0]
+                p2, q2 = self._chuan_dia_ban(", ".join(str(d[k]) for k in ("location_raw", "ward", "district") if d.get(k)))
+                phuong, quan = p2, quan or q2
+        return phuong, quan
+
+    def _chuan_dia_ban(self, chu: str) -> tuple[str | None, str | None]:
         if not chu:
             return None, None
         try:

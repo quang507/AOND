@@ -129,7 +129,7 @@ class FollowUpManager:
                         follow_up_msg = "Căn này em đang dự tính bán thu về tầm bao nhiêu để mình lên tin cho chuẩn nè em?"
                     else:
                         follow_up_msg = "Căn này mình đang dự tính bán thu về khoảng bao nhiêu tỷ vậy anh/chị ha, để em lên tin đăng cho chuẩn ạ?"
-                elif next_f == "dia_chi":
+                elif next_f in ("dia_chi", "phuong"):
                     if customer_is_em:
                         follow_up_msg = "Nhà em nằm ở đoạn đường nào, thuộc phường mấy vậy em ha?"
                     else:
