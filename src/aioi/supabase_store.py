@@ -117,6 +117,21 @@ class SupabaseConversationStore:
         res = self._request("POST", endpoint, data=data, prefer=prefer)
         return res if isinstance(res, list) else []
 
+    def _dia_ban(self, fields: dict[str, str]) -> tuple[str | None, str | None]:
+        """(phường mới = wards.ten_day_du, quận cũ) từ chữ khách gõ — nhận cả kiểu trước gộp ("P.1, Q.5") và sau gộp ("Phường Chợ
+        Quán") qua `rpc/chuan_dia_ban` (20261018e, SRS-5.1zzzzzzz39). Phường cũ bị chia (mo_ho) / không nhận ra → không ghi phường;
+        lỗi mạng → không ghi gì (cột cũ giữ nguyên)."""
+        chu = ", ".join(str(fields[k]) for k in ("dia_chi", "phuong", "quan") if fields.get(k))
+        if not chu:
+            return None, None
+        try:
+            kq = self._request("POST", "rpc/chuan_dia_ban", data={"p_text": chu})
+        except Exception as e:
+            log.warning("chuan_dia_ban lỗi: %s", e)
+            return None, None
+        dong = kq[0] if isinstance(kq, list) and kq else {}
+        return dong.get("phuong"), dong.get("quan_cu")
+
     def _ma_phap_ly(self, chu: str | None) -> str | None:
         """Chữ pháp lý khách gõ → mã cột `legal_status` (qua `boc_thong_so` của DB); không nhận ra → None (không ghi)."""
         chu = str(chu or "").strip()
@@ -229,12 +244,17 @@ class SupabaseConversationStore:
                     "seller_id": seller_id,
                     "code": li.listing_id[:8].upper(),
                     "deal": deal_type,
-                    "district": fields.get("quan"),
-                    "ward": fields.get("phuong"),
                     "street": fields.get("duong"),
                     "boc_tach": fields,
                     "updated_at": now_iso,
                 }
+                if fields.get("dia_chi"):
+                    listing_payload["location_raw"] = fields["dia_chi"]
+                phuong, quan = self._dia_ban(fields)
+                if phuong:
+                    listing_payload["ward"] = phuong
+                if quan:
+                    listing_payload["district"] = quan
                 ma_pl = self._ma_phap_ly(fields.get("phap_ly"))
                 if ma_pl:
                     listing_payload["legal_status"] = ma_pl

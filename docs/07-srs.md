@@ -5732,6 +5732,34 @@ cách nói mới bắt được lúc viết); ca gốc điểm ≥ 0.70 mà vẫ
 nông nghiệp; năm ô bắt buộc nằm trong schema bóc tách. Đỏ khi bỏ bản sửa. `tests/test_schema.py` hai bài đổi địa chỉ mẫu "hẻm 123" →
 "hẻm 123 Lê Lợi" (mẫu cũ không có tên đường — đúng là chưa được ra bản nháp). pytest 277 đạt.
 
+### SRS-5.1zzzzzzz39 · Địa bàn hai kiểu (trước / sau gộp) + độ rộng hẻm hỏi sau khi ra tin (18/10/2026)
+
+**Ca gốc.** (1) Tin thử 18/10 21:02 vào `listings` đúng giá / diện tích / pháp lý nhưng `district` trống — lõi chỉ ghi quận khi bóc được
+ô `quan` riêng, còn "Quận 5" nằm trong `dia_chi`. (2) Chủ dự án: "có nên chuẩn hóa là lúc chưa gộp phường và lúc gộp rồi ko, sợ khách
+nhắn cả 2 kiểu"; "độ rộng hẻm ko bắt buộc, hỏi sau khi ra tin".
+
+**Đánh giá BA (quyết định).** Có — và chuẩn hoá về MỘT dạng lưu, không bắt khách đổi cách nói. Khách (nhất là người lớn tuổi, môi
+giới lâu năm) sẽ còn nói "P.1 Q.5" nhiều năm; khách trẻ / giấy tờ mới nói "Phường Chợ Quán". Ba lớp, mỗi lớp một chủ:
+`location_raw` = nguyên văn khách gõ (truy được, không mất chữ); `ward` = phường MỚI (`wards.ten_day_du` — đơn vị pháp lý từ
+01/07/2025, bất biến 5.1zzzzj); `district` = quận CŨ (`quan_cu.ten` — mô hình 2 cấp không còn quận, nhưng người mua vẫn tìm theo
+quận). Phường cũ bị chia cho nhiều phường mới (vd P.12 Q.11 → Bình Thới / Phú Thọ) thì KHÔNG đoán: để trống, bot hỏi.
+
+**Lớp lỗi.** Mỗi đường ghi tự đọc địa bàn theo cách riêng (ô `quan` / `phuong` rời) trong khi chữ khách nằm ở `dia_chi` và có hai hệ
+tên. **Chỗ cùng lớp.** `chuan_hoa_phuong` (trigger) chỉ nhận đúng tên mới — giữ làm lớp chặn cuối; web hiển thị địa chỉ vẫn đọc cột
+chuẩn. Chưa sửa: bot chưa HỎI lại phường khi `kieu = mo_ho` (lượt sau).
+
+**Sửa.** Migration `20261018e_chuan_dia_ban.sql`: `chuan_dia_ban(p_text)` → (phuong, quan_cu, kieu moi / cu / mo_ho / chi_quan /
+khong); phường gọi tên phải có tiền tố "phường / p / xã" (tên phường cũ trùng tên đường: "123 Nguyễn Cư Trinh" không thành phường),
+phường số cần quận, quận gọi tên chỉ lấy dòng có tiền tố (không lấy "Bình Dương" của "Đại lộ Bình Dương"). `supabase_store.save`
+gọi `rpc/chuan_dia_ban` (`_dia_ban`) và ghi thêm `location_raw`. Độ rộng hẻm: `schema.HOI_SAU_KHI_RA_TIN` (`lo_gioi_hem` bỏ khỏi
+`missing_fields`, vẫn tính %), `Property.cau_hoi_sau_ra_tin()`; `build_fee_followup_system` thêm một câu hỏi sau khi khách duyệt
+(chưa biết mặt tiền / hẻm thì hỏi cả hai, đã có số mét / mặt tiền thì không hỏi).
+
+**Kiểm.** `bot/tests/sql/chuan-dia-ban.sql` (12 ca: kiểu cũ số, cũ viết tắt, mới gọi tên, cũ gọi tên, bị chia, chỉ quận, quận tên,
+xã-huyện + 4 ca không được kích). Thử hàm tạm trên dữ liệu thật: "P.1 Q.5" → Phường Chợ Quán, "P.13 Q.3" → Phường Nhiêu Lộc, "P.2 Q.Tân
+Bình" → Phường Tân Sơn Hòa. `tests/test_supabase_store_luu_tin.py` (ward / district / location_raw), `tests/test_ban_nhap_du_dieu_kien.py`
+(hẻm hỏi sau), `tests/test_branching.py` sửa khẳng định cũ "hẻm nằm trong câu hỏi trước bản nháp". pytest 279 đạt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

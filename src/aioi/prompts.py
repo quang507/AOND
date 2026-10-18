@@ -611,6 +611,15 @@ def build_fee_followup_system(
     """
     fee_hint = _fee_hint(user_type)
     fee_block = ("\n" + fee_hint) if fee_hint else ""
+    # 18/10/2026: độ rộng hẻm không chặn bản nháp — hỏi MỘT câu sau khi khách duyệt tin (schema.HOI_SAU_KHI_RA_TIN).
+    hoi_sau = ""
+    if prop.cau_hoi_sau_ra_tin() == "lo_gioi_hem":
+        y = ("hẻm trước nhà rộng khoảng mấy mét, xe hơi vào tận nhà được không" if prop.fields.get("lo_gioi_hem")
+             else "nhà nằm mặt tiền hay trong hẻm, nếu hẻm thì rộng khoảng mấy mét")
+        hoi_sau = (
+            f"\n  • BỔ SUNG SAU KHI DUYỆT: sau câu xác nhận đăng, hỏi thêm ĐÚNG 1 câu ngắn: {y} — để bổ sung vào tin cho "
+            "khách mua dễ hình dung. Chỉ hỏi 1 lần; khách đã nói độ rộng hẻm hoặc nhà mặt tiền thì không hỏi."
+        )
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
 {BUSINESS_CONTEXT}
@@ -619,7 +628,7 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
 - NẾU khách ĐỒNG Ý / DUYỆT / BẢO ĐĂNG TIN (vd: "đăng đi", "lên bài đi", "lên tin đi", "đăng tin đi", "ok em", "được rồi", "chuẩn rồi em", "không cần sửa gì", hoặc thả tim/like):
   • TẠM BỎ QUA BƯỚC HỎI PHÍ: Tuyệt đối KHÔNG hỏi phí môi giới ở lượt này (không hỏi "anh có biết phí môi giới của tụi em chưa ạ?").
   • XÁC NHẬN ĐĂNG TIN LÊN HỆ THỐNG VÀ WEB NGAY: Vui vẻ chúc mừng và xác nhận bản tin đã được duyệt và chính thức đăng lên hệ thống website https://aioinhadat.com cũng như chuyển cho mạng lưới kết nối khách mua ngay.
-  • Hướng dẫn khách truy cập https://aioinhadat.com để xem và theo dõi tin rao.
+  • Hướng dẫn khách truy cập https://aioinhadat.com để xem và theo dõi tin rao.{hoi_sau}
 - NẾU khách HỎI LINK BÀI ĐĂNG HOẶC HỎI TRÊN WEB ĐĂNG NHƯ THẾ NÀO (vd: "đang đăng web như thế nào", "xem tin ở đâu", "cho xin link web", "link đâu"):
   • Gửi ngay link website: https://aioinhadat.com
   • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng như môi giới dễ dàng tìm kiếm, kết nối.

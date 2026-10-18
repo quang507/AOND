@@ -52,3 +52,17 @@ def test_o_bat_buoc_moi_boc_duoc():
     props = property_field_props()
     for k in ("lo_gioi_duong", "tho_cu", "ket_cau", "du_an", "so_phong_ngu"):
         assert k in props, k  # ô chặn mà bộ bóc không ghi được thì bot kẹt mãi
+
+
+def test_do_rong_hem_hoi_sau_khi_ra_tin():
+    from aioi.prompts import build_fee_followup_system
+    p = Property(loai_hinh="nha_pho", fields={"dia_chi": "Trần Hưng Đạo, Quận 5", "lo_gioi_hem": "hẻm"})
+    assert "lo_gioi_hem" not in p.missing_fields()  # không hỏi trước bản nháp
+    assert p.cau_hoi_sau_ra_tin() == "lo_gioi_hem"
+    assert "rộng khoảng mấy mét" in build_fee_followup_system("Hằng", p)
+    chua_biet = Property(loai_hinh="nha_pho", fields={})
+    assert "mặt tiền hay trong hẻm" in build_fee_followup_system("Hằng", chua_biet)
+    for da_ro in ("hẻm 6m", "mặt tiền", "MT"):
+        q = Property(loai_hinh="nha_pho", fields={"lo_gioi_hem": da_ro})
+        assert q.cau_hoi_sau_ra_tin() is None and "BỔ SUNG SAU KHI DUYỆT" not in build_fee_followup_system("Hằng", q)
+    assert Property(loai_hinh="chung_cu").cau_hoi_sau_ra_tin() is None
