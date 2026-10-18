@@ -45,8 +45,6 @@ jobs:
       # node_modules của nó nằm trong .gitignore — cài ở gốc repo là không đủ.
       - name: Cài phụ thuộc của suite e2e
         run: bun install --frozen-lockfile --cwd bot/tests/e2e
-      - name: Cài gói cho bộ đo giọng (bot/tests/giong — SDK thật, Bun tìm node_modules theo vị trí file)
-        run: bun install --frozen-lockfile --cwd bot/tests/giong
       # `chay.sh` TỰ dựng lại bundle từ nguồn rồi mới chạy 208 ca (run.mjs 160 +
       # webhook.mjs 44 + cong-thieu-bi-mat.mjs 4, ba tiến trình) — đừng
       # đổi thành `node run.mjs`, nó sẽ test bản bundle cũ nằm sẵn trong repo.
@@ -60,11 +58,15 @@ jobs:
       # protection bằng tay và người ta sẽ quên.
       - name: e2e + hồi quy FR-159/161/164 + ranh giới bóc tách ⟂ AI
         run: bun run test:bot
-      # TS-DO-BOC-01: 110 ca bóc tách, chế độ luật một mình (model giả, miễn phí). Đỏ khi một ca từng
-      # đạt nay rớt hoặc tổng trường đúng giảm so với bot/tests/do-boc/nen.json. Chung job `bot` cố ý
-      # (xem ghi chú trên về required checks).
-      - name: Bộ đo bóc tách — không tụt so với bản nền
-        run: bun run do-boc:nen
+      # 18/10/2026: bộ não là lõi Python src/aioi (lõi TypeScript chat-reply đã gỡ). Chung job `bot` để danh sách required
+      # status checks giữ nguyên tên (xem ghi chú trên).
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Lõi Python — pytest
+        run: |
+          python -m pip install -q -e ".[dev]" httpx
+          python -m pytest -q tests
       # 02/10/2026 (SRS-5.1v): trigger / hàm SQL chạy THẬT trên Postgres tạm (mock e2e không mô phỏng regex DB). Thoát 2 =
       # máy không có Postgres = chưa kiểm được → đỏ.
       - name: Trigger SQL thật trên Postgres tạm (thông số AI quyết không bị regex đè)
@@ -200,7 +202,7 @@ jobs:
       # ĐỒNG HỒ (tự xanh lại sau 24h) nên CI mất tính tất định. Lượt này chỉ TYPECHECK,
       # không cài gì vào production, nên tắt gate tuổi gói ở đây là an toàn và làm CI
       # xác định. (Soát cung ứng gói thật thuộc về bước cài/deploy, không phải typecheck.)
-      - name: Chín edge function không có lỗi kiểu nào
+      - name: Edge function còn lại không có lỗi kiểu nào
         working-directory: bot/supabase/functions
         run: deno check --node-modules-dir=auto --min-dep-age=0 */index.ts
 

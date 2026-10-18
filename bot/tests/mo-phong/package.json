@@ -1,7 +1,0 @@
-{
-  "name": "mo-phong",
-  "private": true,
-  "type": "module",
-  "description": "Khách mô phỏng có persona chat với bot production (TS-MO-PHONG-01). Chỉ chạy trong workflow mo-phong.yml.",
-  "dependencies": { "@anthropic-ai/sdk": "^0.80.0" }
-}

@@ -5566,6 +5566,27 @@ dữ liệu riêng của chúng — vỡ "một chủ cho mỗi đầu ra" ở t
 **Kiểm.** Sau khi áp: `select jobname, active from cron.job` — đúng 9 lịch `false`, 10 lịch còn lại `true`; soát lại `reminders` mới tạo
 không còn kind `seller_flow` / `followup` từ các hàm đã tắt.
 
+### SRS-5.1zzzzzzz31 · Gỡ lõi TypeScript — bộ não duy nhất là lõi Python (18/10/2026)
+
+**Ca gốc.** Chủ dự án 18/10/2026: "gỡ luôn lõi typescript đi khỏi chờ"; "lõi chuẩn duy nhất của AOND là PYTHON (src/aioi/)… toàn bộ logic
+nghiệp vụ, prompt, bóc tách, xưng hô, tính phí môi giới và quản lý phiên chat đều nằm trong Python. Phần TypeScript chat-reply trên
+Supabase chỉ là tàn dư cũ… tránh việc hai con AI sửa chéo làm loãng hệ thống."
+
+**Lớp lỗi.** Hai bộ não song song (SRS-5.1zzzzzzz29/30) — sửa một bên không tới bên kia, tài liệu và test canh bên không còn chạy.
+
+**Gỡ.** Edge function `chat-reply`, `zalo-webhook`, `nudge`, `ask-seller`, `ctv-report`, `inbound-sweep` (code; bản deploy xoá bằng workflow
+`go-ham-ts.yml`, ô `xac_nhan` = `go`); bộ thử chỉ phục vụ chat-reply: `bot/tests/e2e/{run,webhook,cong-thieu-bi-mat}.mjs` + `chay.sh`,
+`phat-lai/`, `giong/`, `chat/` (trang chat thử), `do-boc/`, `mo-phong/`, `kich-ban-hanh-vi.mjs` và 7 test đọc mã chat-reply / ask-seller
+(`hoi-bu`, `ghi-phuong-mot-cua`, `luat-khong-mau-thuan`, `khong-ghi-trung`, `luat-pha-du-lieu`, `van-tra-loi`, `doi-chieu-ai`); workflow
+`ban-thu`, `chat-may`, `chat-web`, `do-boc`, `mo-phong`, `dong-bo-prompt` + `scripts/dong-bo-prompt.mjs`; script npm `e2e`, `chat`,
+`do-boc*`, `giong*`, `prompt`, `kich-ban`. `giam-egress.mjs` bỏ G-06 và chat-reply khỏi G-02/G-03 (luật web giữ).
+
+**Giữ.** `escalation-feed`, `geocode-listings`, `media-cleanup` (deno check sạch); `_shared/` (web và escalation-feed nhập); 55 bước
+`test:bot` còn lại (kiểm `_shared` + web + SQL) đều đạt. CI job `bot` thêm `pytest` cho lõi Python (giữ tên job — required checks).
+
+**Kiểm.** `bun run test:bot` thoát 0; `deno check` ba function còn lại sạch; pytest 264 đạt; `truyvet` SẠCH. Sau khi chạy
+`go-ham-ts.yml`: danh sách function trên Supabase chỉ còn ba cái giữ.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

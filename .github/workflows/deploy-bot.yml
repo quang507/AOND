@@ -28,15 +28,9 @@ on:
         required: true
         type: choice
         options:
-          - chat-reply
           - escalation-feed
-          - nudge
-          - zalo-webhook
-          - ask-seller
-          - ctv-report
           - geocode-listings
           - media-cleanup
-          - inbound-sweep
 
 env:
   PROJECT_REF: rqxmmqmctpklqcmbfxuj
@@ -94,8 +88,8 @@ jobs:
             # 08/10/2026: project mới (project cũ bị xoá nhầm) chưa có function nào để đọc cờ. Lần deploy ĐẦU lấy đúng
             # bảng verify_jwt ở bot/README.md §Function đang chạy — đổi cờ thì sửa bảng đó, đừng sửa ở đây.
             case "${{ inputs.ham }}" in
-              ask-seller|ctv-report|escalation-feed|geocode-listings) jwt=true ;;
-              chat-reply|zalo-webhook|nudge|media-cleanup|inbound-sweep) jwt=false ;;
+              escalation-feed|geocode-listings) jwt=true ;;
+              media-cleanup) jwt=false ;;
               *) echo "::error::${{ inputs.ham }} chưa có trong bảng verify_jwt của bot/README.md"; exit 1 ;;
             esac
             echo "verify_jwt=$jwt" >> "$GITHUB_OUTPUT"

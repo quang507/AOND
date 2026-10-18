@@ -48,18 +48,10 @@ for (const p of [...duyet(join(goc, "app")), ...duyet(join(goc, "lib")), ...duye
     kiem(`G-05 ${p.slice(goc.length)}: cache ≥ 3600 s`, n >= 3600, m[0]);
   }
 }
-// G-06.
-{
-  const cr = readFileSync(join(goc, "bot/supabase/functions/chat-reply/index.ts"), "utf8");
-  const keoBang = [...cr.matchAll(/from\("bot_prompts"\)\.select\(/g)].length;
-  const thanNap = cr.match(/async function napPrompt\([\s\S]*?\n\}/)?.[0] ?? "";
-  kiem("G-06 chat-reply: bot_prompts đọc qua doc_prompt_khac; select cả bảng chỉ còn ở nhánh RPC hỏng trong napPrompt",
-    /rpc\("doc_prompt_khac"/.test(thanNap) && keoBang === 1 && /from\("bot_prompts"\)\.select\(/.test(thanNap.slice(thanNap.indexOf("doc_prompt_khac"))),
-    `số chỗ select bot_prompts: ${keoBang}`);
-}
+// G-06 bỏ 18/10/2026: chat-reply TypeScript đã gỡ (bộ não là lõi Python src/aioi).
 
-// G-02 + G-03 trên chat-reply và web.
-const nguon = [join(goc, "bot/supabase/functions/chat-reply/index.ts"), ...duyet(join(goc, "app")), ...duyet(join(goc, "lib")), ...duyet(join(goc, "components"))];
+// G-02 + G-03 trên web.
+const nguon = [...duyet(join(goc, "app")), ...duyet(join(goc, "lib")), ...duyet(join(goc, "components"))];
 for (const p of nguon) {
   const s = readFileSync(p, "utf8");
   const ten = p.slice(goc.length);
