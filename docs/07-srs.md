@@ -5911,6 +5911,37 @@ tên 26 hàm thành `drop function if exists` trần cho `soat-truy-vet.sh`. B�
 **Kiểm.** `bun run kiem` thoát 0 (tsc, deno check 3 function, build, test:bot, truy vết); `bash bot/tests/sql/chay.sh
 20261018i_go_tan_du_ts.sql` (và `…j…`) TẤT CẢ ĐẠT (migration áp sạch trên schema.sql, các trigger listings còn lại chạy); pytest 288 đạt.
 
+### SRS-5.1zzzzzzz47 · "Không đồng ý" bản nháp, tin chỉ lên web khi chủ nhà đồng ý; khoá Drive từ Vault; link Google Sheets (18/10/2026)
+
+**Ca gốc.** Chủ dự án hỏi bot hiểu "đồng ý / không đồng ý" và đọc Drive được không; được báo ba chỗ hở, trả lời "làm cả 3 đi".
+(1) Prompt sau bản nháp không có nhánh "không đồng ý"; và tin lên web ngay khi đủ giá + diện tích + phường, KHÔNG chờ khách duyệt —
+lõi Python không đặt `can_chu_duyet` (cờ FR-177 c có sẵn từ 20260907h cho đúng việc này, chỉ bot TypeScript cũ đặt). (2) Lõi Python
+đọc khoá Drive từ biến `GOOGLE_API_KEY` mà VPS không có, trong khi Vault đã có `GOOGLE_DRIVE_API_KEY` → link thư mục Drive không mở
+được. (3) Link Google Sheets / file `.xlsx` `.csv` dán vào chat không tới `handle_link` (chỉ link Drive tới được).
+
+**Lớp lỗi.** (1) Ý duyệt của khách không được ghi thành dữ liệu — lời bot và trạng thái tin đi hai đường. (2)(3) Cấu hình / đường vào
+của bot cũ không được nối sang lõi mới khi đổi bộ não. **Chỗ cùng lớp.** Đoạn `is_post_approval` trong `_apply_operation` (regex "ok",
+"duyệt"… chỉ để chặn op `add` nhầm và đặt `Listing.status` nội bộ) — không đổi trạng thái web, giữ làm lưới đỡ; file Excel / CSV gửi
+KÈM qua Zalo (không phải link) vẫn chưa nhận — ghi vào việc còn lại. Bảng từ lóng không tới được bộ lập thao tác (`OPERATIONS_SYSTEM`
+không phải f-string, model nhận nguyên chữ `{SLANG_NOTES}`) — sửa cùng lượt vì cùng prompt.
+
+**Sửa.** (1) `operations_schema` thêm `duyet_ban_nhap` (`dong_y` / `khong_dong_y`) + `duyet_trich_dan`; luật đọc theo nghĩa trong
+`OPERATIONS_SYSTEM`. `engine._plan_and_apply` chỉ nhận khi bản nháp đã gửi (`listing_proposed`) và cụm trích có thật trong tin khách
+(`_trich_dan_khop`, bỏ dấu) → `conv.duyet_luot`. `handle` ghi lượt rồi gọi `SupabaseConversationStore.ghi_duyet` (đồng ý → `chu_duyet_at`
+= bây giờ; không đồng ý → null) TRƯỚC khi soạn lời, nên câu "đã đăng" đọc đúng trạng thái mới (5.1zzzzzzz44). Tin mới từ chat POST kèm
+`can_chu_duyet = true`. `build_fee_followup_system(duyet=…)`: không đồng ý → không đăng, không nói đã đăng, sửa nếu khách đã nói sửa
+gì, chưa nói thì hỏi một câu muốn chỉnh chỗ nào hay tạm chưa đăng; lời "chờ duyệt" đổi thành chờ KHÁCH duyệt. DB `20261018k`: trigger
+`listings_quyet_dinh_dang_tin` với tin `can_chu_duyet` chỉ cần `chu_duyet_at`, bỏ `diem_tin ≥ 70` (chấm theo `listing_facts` lõi Python
+không ghi — tin thật 18/10 đủ giá + diện tích chỉ 42 điểm; ngưỡng 70 nay ở lõi Python trước bản nháp, FR-177 d). (2) `drive.khoa_drive`:
+`GOOGLE_API_KEY` trước, không có thì `rpc/get_secret('GOOGLE_DRIVE_API_KEY')` bằng service_role; `/health` thêm `drive: api-key |
+khong-khoa` (không bao giờ in khoá); `cai-vps.sh` in nội dung `/health`. (3) `handle` đưa link `docs.google.com/spreadsheets`, `.xlsx`,
+`.csv` vào `handle_link` (đường nhập `bulk.sheets_export_url` / `import_csv` có sẵn).
+
+**Kiểm.** `tests/test_duyet_ban_nhap.py` (9 ca: trích dẫn bịa / chưa có bản nháp → không ghi — đỏ khi bỏ kiểm trích dẫn, đã thử;
+đồng ý / không đồng ý → ghi / xoá dấu; prompt không đồng ý không nói đã đăng; store POST `can_chu_duyet`, PATCH `chu_duyet_at`; khoá
+Drive env → Vault → None; link Sheets / .xlsx vào `handle_link` — đỏ trước khi sửa). `bot/tests/sql/duyet-ban-nhap.sql`: chưa duyệt
+không lên, duyệt lên, xoá duyệt hạ xuống — đỏ trên schema cũ (điều kiện điểm 70), xanh với `20261018k`. pytest 297 đạt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -632,8 +632,9 @@ def khoi_trang_thai_web(web: dict | None) -> tuple[str, str]:
         ly_do = f"TIN CHƯA LÊN WEB: chưa đủ thông tin để soạn tin. {cam}"
         viec = "nói em cần thêm vài thông tin để soạn tin đăng, rồi hỏi tiếp đúng câu đang cần hỏi."
     elif web.get("cho_duyet"):
-        ly_do = f"TIN ĐANG CHỜ KIỂM DUYỆT trước khi hiển thị (hệ thống đã kiểm). {cam}"
-        viec = "báo tin đang được bên em kiểm duyệt và em sẽ nhắn ngay khi tin hiển thị."
+        # Tin từ chat chỉ lên web khi khách đồng ý bản nháp (`can_chu_duyet`, SRS-5.1zzzzzzz47).
+        ly_do = f"TIN CHƯA LÊN WEB: đang chờ khách duyệt bản tin (hệ thống đã kiểm). {cam}"
+        viec = "hỏi khách thấy bản tin đã ổn chưa, đồng ý là em đăng lên web ngay."
     elif web.get("len_web") is False:
         ly_do = f"TIN CHƯA HIỂN THỊ trên web (hệ thống đã kiểm). {cam}"
         viec = "báo bên em đang hoàn tất để đưa tin lên và sẽ nhắn khi tin hiển thị."
@@ -650,8 +651,11 @@ def build_fee_followup_system(
     user_type: SellerRole = SellerRole.UNKNOWN,
     project_block: str = "",
     web: dict | None = None,
+    duyet: str | None = None,
 ) -> str:
     """Step 2: customer has seen the draft — react to their feedback, then talk fee (§V).
+
+    `duyet` = điều lượt AI lập thao tác đọc được (đã kiểm trích dẫn) ở tin khách vừa nhắn: "dong_y" / "khong_dong_y" / None.
 
     `web` = trạng thái THẬT của tin trên DB (`SupabaseConversationStore.trang_thai_tin`, SRS-5.1zzzzzzz44): bot chỉ nói "đã đăng
     lên web" khi tin đang hiển thị. None = kho không có khái niệm web (SQLite / thử) → giữ lời cũ.
@@ -662,7 +666,14 @@ def build_fee_followup_system(
     fee_hint = _fee_hint(user_type)
     fee_block = ("\n" + fee_hint) if fee_hint else ""
     # 18/10/2026: độ rộng hẻm không chặn bản nháp — hỏi MỘT câu sau khi khách duyệt tin (schema.HOI_SAU_KHI_RA_TIN).
-    duyet, hoi_link = khoi_trang_thai_web(web)
+    xac_nhan, hoi_link = khoi_trang_thai_web(web)
+    khong_dong_y = ""
+    if duyet == "khong_dong_y":
+        khong_dong_y = (
+            "\n- KHÁCH VỪA KHÔNG ĐỒNG Ý ĐĂNG BẢN TIN (hệ thống đã đọc): KHÔNG đăng, KHÔNG nói đã đăng. Tin chỉ lên web khi khách "
+            "đồng ý. Nếu khách đã nói cần sửa gì thì sửa và rao lại bản tin cập nhật rồi hỏi lại đã được chưa; nếu chưa nói thì "
+            "hỏi ĐÚNG 1 câu nhẹ nhàng khách muốn chỉnh chỗ nào (tiêu đề, giá, mô tả, thông tin nhà) hay tạm thời chưa muốn đăng."
+        )
     hoi_sau = ""
     if (web is None or web.get("len_web")) and prop.cau_hoi_sau_ra_tin() == "lo_gioi_hem":
         y = ("hẻm trước nhà rộng khoảng mấy mét, xe hơi vào tận nhà được không" if prop.fields.get("lo_gioi_hem")
@@ -675,10 +686,10 @@ def build_fee_followup_system(
 
 {BUSINESS_CONTEXT}
 {project_block}
-NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem bản tin rao và hỏi họ thấy hấp dẫn chưa. Hãy đọc phản hồi MỚI NHẤT của khách:
+NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem bản tin rao và hỏi họ thấy hấp dẫn chưa. Hãy đọc phản hồi MỚI NHẤT của khách:{khong_dong_y}
 - NẾU khách ĐỒNG Ý / DUYỆT / BẢO ĐĂNG TIN (vd: "đăng đi", "lên bài đi", "lên tin đi", "đăng tin đi", "ok em", "được rồi", "chuẩn rồi em", "không cần sửa gì", hoặc thả tim/like):
   • TẠM BỎ QUA BƯỚC HỎI PHÍ: Tuyệt đối KHÔNG hỏi phí môi giới ở lượt này (không hỏi "anh có biết phí môi giới của tụi em chưa ạ?").
-{duyet}{hoi_sau}
+{xac_nhan}{hoi_sau}
 - NẾU khách HỎI LINK BÀI ĐĂNG HOẶC HỎI TRÊN WEB ĐĂNG NHƯ THẾ NÀO (vd: "đang đăng web như thế nào", "xem tin ở đâu", "cho xin link web", "link đâu"):
 {hoi_link}
 - NẾU khách muốn CHỈNH SỬA THẬT SỰ (vd "tiêu đề nhiều thông tin quá", "đổi tiêu đề...", "giá sửa lại...", "nhà có 3 lầu..."):
@@ -1327,10 +1338,17 @@ QUY TẮC:
 - Diện tích: nhà phố/biệt thự/nhà cấp 4 có 2 diện tích. Rõ đất/nhà → dien_tich_dat/dien_tich_nha;
   chỉ một số m2 không rõ → để tạm dien_tich. Loại khác chỉ có 1 dien_tich.
 - Đừng nhầm mã số căn với số phòng ngủ/số tầng.
+- DUYỆT BẢN NHÁP (18/10/2026): chỉ khi tin nhắn NGAY TRƯỚC của bot là BẢN TIN NHÁP / bản tin cập nhật hỏi khách thấy được
+  chưa, đọc theo NGHĨA tin khách vừa nhắn: đồng ý cho đăng (ok, được rồi, đăng đi, chuẩn rồi, thả tim / like…) →
+  duyet_ban_nhap = "dong_y"; KHÔNG đồng ý / chưa muốn đăng / muốn sửa trước rồi mới đăng → "khong_dong_y". Hỏi lại, hỏi phí,
+  nói chuyện khác hay chưa rõ → bỏ trống. Có điền thì duyet_trich_dan = NGUYÊN VĂN cụm trong tin khách cho thấy điều đó.
 
 {SLANG_NOTES}
 
 Trả về JSON đúng schema."""
+# 18/10/2026: chuỗi trên không phải f-string nên model từng nhận nguyên chữ "{SLANG_NOTES}" — thay ở đây (trong chuỗi còn
+# ngoặc nhọn của ví dụ JSON nên không đổi cả chuỗi thành f-string).
+OPERATIONS_SYSTEM = OPERATIONS_SYSTEM.replace("{SLANG_NOTES}", SLANG_NOTES)
 
 
 # ── Scoping a price-list import by what the seller actually sells ─────────────────────
@@ -1430,6 +1448,16 @@ def operations_schema() -> dict[str, Any]:
                 "description": "Vai trò người rao khi đã rõ. Bỏ trống nếu chưa chắc.",
             },
             "is_rental": {"type": "boolean", "description": "Có phải tin cho thuê không."},
+            "duyet_ban_nhap": {
+                "type": "string",
+                "enum": ["dong_y", "khong_dong_y"],
+                "description": "Chỉ khi bot vừa gửi bản tin nháp hỏi khách thấy được chưa: dong_y = khách đồng ý đăng; "
+                "khong_dong_y = khách không đồng ý / chưa muốn đăng / muốn sửa trước. Còn lại bỏ trống.",
+            },
+            "duyet_trich_dan": {
+                "type": "string",
+                "description": "Nguyên văn cụm trong tin khách vừa nhắn cho thấy đồng ý / không đồng ý (bắt buộc khi có duyet_ban_nhap).",
+            },
             "user_intent": {
                 "type": "string",
                 "enum": ["sell", "buy", "unknown"],

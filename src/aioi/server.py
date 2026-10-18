@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from .anh_du_an import anh_gui_kem
 from .config import load_settings
 from .delivery import chunk_reply, typing_delay
-from .drive import make_folder_namer, make_resolver
+from .drive import khoa_drive, make_folder_namer, make_resolver
 from .giao_lo import dia_ban_tu_nga_tu
 from .engine import Engine, SqliteConversationStore
 from .followup import followup_manager
@@ -31,6 +31,7 @@ from .supabase_sync import sync_to_supabase_async
 from .voice import is_audio_file, transcribe_voice_url
 
 log = logging.getLogger("aioi.server")
+_co_khoa_drive = False  # /health báo có khoá Drive hay không (không bao giờ in giá trị khoá)
 
 
 def _init_engine() -> Engine:
@@ -58,10 +59,13 @@ def _init_engine() -> Engine:
         conv_store = sqlite_store
         log.info("Initialized local SqliteConversationStore at %s", settings.db_path)
 
+    global _co_khoa_drive
+    khoa = khoa_drive(settings.google_api_key, settings.supabase_url, settings.supabase_service_role_key)
+    _co_khoa_drive = bool(khoa)
     return Engine(
         provider,
-        resolver=make_resolver(settings.google_api_key),
-        folder_namer=make_folder_namer(settings.google_api_key),
+        resolver=make_resolver(khoa),
+        folder_namer=make_folder_namer(khoa),
         project_store=SqliteProjectStore(settings.db_path),
         conversation_store=conv_store,
         media_store=media_store,
@@ -133,6 +137,7 @@ def health() -> dict[str, str]:
         "provider": _settings.effective_provider,
         "chat_model": _settings.chat_model,
         "stt": "groq-whisper" if _settings.groq_api_key else "disabled",
+        "drive": "api-key" if _co_khoa_drive else "khong-khoa",
     }
 
 
