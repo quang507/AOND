@@ -95,8 +95,10 @@ jobs:
           # trước khi merge. Tên nhánh chỉ nhận ký tự an toàn vì nó đi vào lệnh chạy trên VPS.
           NHANH_VPS="$GITHUB_REF_NAME"
           if ! printf '%s' "$NHANH_VPS" | grep -Eq '^[A-Za-z0-9._/-]+$'; then echo "::error::Tên nhánh lạ: $NHANH_VPS"; exit 1; fi
+          # 18/10/2026: lượt cài hỏng (git checkout / quyền .git) vẫn báo xanh — lệnh từ xa thoát theo mã của `tail` cuối chuỗi. Nay giữ
+          # mã thoát của cai-vps.sh (rc_cai) và in commit + origin đang chạy để thấy VPS đã lên code mới chưa.
           printf '%s\n' "$BS" | sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 "root@$HOST" \
-            "read -r BRIDGE_SECRET; export BRIDGE_SECRET; curl -fsSL https://raw.githubusercontent.com/quang507/AOND/$NHANH_VPS/bot/bridge-zca/cai-vps.sh -o /root/cai-vps.sh && NHANH='$NHANH_VPS' bash /root/cai-vps.sh </dev/null; unset BRIDGE_SECRET; sleep 25; echo \"== service: \$(systemctl is-active nhadat-bridge)\"; journalctl -u nhadat-bridge -n 40 --no-pager -o cat | grep -viE 'qr-|http://|https://' | tail -25" \
+            "read -r BRIDGE_SECRET; export BRIDGE_SECRET; curl -fsSL https://raw.githubusercontent.com/quang507/AOND/$NHANH_VPS/bot/bridge-zca/cai-vps.sh -o /root/cai-vps.sh && NHANH='$NHANH_VPS' bash /root/cai-vps.sh </dev/null; rc_cai=\$?; unset BRIDGE_SECRET; sleep 25; echo \"== service: \$(systemctl is-active nhadat-bridge)\"; echo \"== code: \$(sudo -u nhadat git -C /opt/nhadat rev-parse --short HEAD) \$(sudo -u nhadat git -C /opt/nhadat remote get-url origin)\"; journalctl -u nhadat-bridge -n 40 --no-pager -o cat | grep -viE 'qr-|http://|https://' | tail -25; echo \"== cai-vps.sh thoát \$rc_cai\"; exit \$rc_cai" \
             > /tmp/vps.log 2>&1 || rc=$?
           unset SSHPASS PW BS
           # Che dãy số ≥ 9 chữ số (Zalo ID của acc clone / khách, SĐT) — log repo này công khai.

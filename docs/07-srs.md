@@ -5522,6 +5522,10 @@ thật chỉ kiểm được sau khi áp migration và mở `/admin/tin-nhan`.
 `&&` — chuỗi `&&` không kích `set -e` — script chạy tiếp, khởi động lại bridge bằng code cũ. Lớp lỗi: lệnh nền móng nối `&&` trong script
 `set -e` là hỏng im. Sửa: `checkout -f`, mỗi lệnh git một dòng. Chỗ cùng lớp: `bot/tests/chat/cai-vps.sh` đã một-lệnh-một-dòng, dùng
 `reset --hard` (ghi đè được file không track). AMN-06 đỏ trên bản trước sửa.
+Lượt thứ hai (đã dừng đúng chỗ) lộ thêm hai thứ: `git fetch` hỏng "insufficient permission … .git/objects" (có lần git chạy bằng root trong
+`/opt/nhadat`) → script `chown -R nhadat:nhadat` cả cây trước khi git chạy (AMN-07); và workflow vẫn báo xanh vì lệnh từ xa thoát theo mã của
+`tail` cuối chuỗi đọc log → giữ `rc_cai` của `cai-vps.sh`, thoát theo nó, in commit + origin đang chạy (AMN-08). Cùng lớp với ca đầu: đường báo
+"xong" không đọc lại kết quả thật.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

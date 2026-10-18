@@ -43,6 +43,9 @@ if [ -d "$DIR/.git" ]; then
   # 18/10/2026: `checkout -f` — lượt cài đầu dừng ở "untracked .gitattributes would be overwritten" (file AOND track mà máy cũ
   # không) và vì chuỗi `a && b` không kích `set -e`, script chạy tiếp, khởi động lại bridge bằng CODE CŨ và vẫn báo xanh.
   # Mỗi lệnh git một dòng để hỏng là dừng.
+  # Lượt thứ hai: "insufficient permission for adding an object to .git/objects" — có lần git chạy bằng root trong thư mục
+  # này, để lại file của root. Trả cả cây về user nhadat trước khi git chạy dưới tên nó.
+  chown -R nhadat:nhadat "$DIR"
   sudo -u nhadat git -C "$DIR" remote set-url origin "$REPO"
   sudo -u nhadat git -C "$DIR" fetch -q origin "$NHANH"
   sudo -u nhadat git -C "$DIR" checkout -q -f -B "$NHANH" FETCH_HEAD
