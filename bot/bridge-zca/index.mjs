@@ -534,7 +534,13 @@ api.listener.on("message", async (message) => {
         imageUrl = text.href;
         text = text.title ?? "";
       } else if (text.catId != null || text.id != null) {
-        text = "[sticker cảm xúc]"; // FR-142: sticker vui/like/tim = tín hiệu đồng ý
+        // 18/10/2026 — STICKER KHÔNG tự coi là ĐỒNG Ý. Lớp lỗi: mọi sticker (vui, giận, buồn, khóc)
+        // đều bị gán "[sticker cảm xúc]" → khớp `EMOJI_VUI` (`\[sticker`) → `laDongY`/AGREE_RULES hiểu là
+        // GẬT: chủ nhà gửi sticker bực lúc bot hỏi duyệt tin là tin tự lên kệ. zca-js KHÔNG cho sắc thái
+        // sticker tin cậy được, nên gán chuỗi TRUNG TÍNH `[khách gửi sticker]` (không khớp EMOJI_VUI,
+        // không khớp `laThaCamXuc`) → bot trả lời bình thường, không kích AGREE_RULES. Tim / like THẬT đi
+        // qua listener `reaction` riêng (bên dưới) với icon rõ ràng, vẫn là tín hiệu đồng ý như cũ.
+        text = "[khách gửi sticker]";
       } else {
         text = "";
       }
