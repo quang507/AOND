@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-14 23:14 (giờ VN)
+-- Sinh lúc: 2026-10-18 20:10 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -4405,6 +4405,26 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.khoa_nhung_nen()
+ RETURNS text
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare
+  v_ds text[];
+  v_so int;
+  v_key text;
+begin
+  v_ds := array_remove(string_to_array(regexp_replace(coalesce(public.cau_hinh('nhung_khoa_ds'), ''), '\s', '', 'g'), ','), '');
+  if coalesce(array_length(v_ds, 1), 0) > 0 then
+    v_so := ((greatest(coalesce(nullif(public.cau_hinh('nhung_khoa_so'), '')::int, 1), 1) - 1) % array_length(v_ds, 1)) + 1;
+    v_key := public.get_secret(v_ds[v_so]);
+  end if;
+  return coalesce(nullif(v_key, ''), public.get_secret('GEMINI_API_KEY_2'), public.get_secret('GEMINI_API_KEY'));
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.khoang_cach_m(p_lat1 double precision, p_lng1 double precision, p_lat2 double precision, p_lng2 double precision)
  RETURNS double precision
  LANGUAGE sql
@@ -5832,6 +5852,11 @@ begin
   -- 429 / 24 giờ), và câu tìm theo nghĩa của khách cũng 429 theo. Nay giãn nhịp dùng CHUNG bộ đếm với nhung-tick
   -- (nhung_lan_loi): 2, 4, 8 … 60 phút; 402 hết tiền thì 60 phút ngay; ghi sổ lần đầu và mỗi 12 lần.
   v_loi := coalesce(nullif(public.cau_hinh('nhung_lan_loi'), '')::int, 0);
+  -- 20261018d: 429 (hết hạn mức) → đổi sang khoá kế trong vòng và gửi tiếp ngay; chỉ khi cả vòng đều 429 mới giãn nhịp / dừng
+  -- tới lúc Google cấp lại hạn mức như cũ.
+  if v_tu_choi and v_ma = 429 and public.nhung_doi_khoa() then
+    v_tu_choi := false;
+  end if;
   if v_tu_choi then
     v_loi := v_loi + 1;
     v_dung := now() + make_interval(mins => case when v_ma = 402 then 60 else least(60, (2 ^ least(v_loi, 6))::int) end);
@@ -5852,6 +5877,12 @@ begin
           || to_char(v_dung at time zone 'Asia/Ho_Chi_Minh', 'HH24:MI DD/MM') || ' giờ VN. ' || coalesce(v_mau, ''),
         null);
     end if;
+  elsif v_ok and coalesce(nullif(public.cau_hinh('nhung_khoa_vong'), '')::int, 0) > 0 then
+    update public.app_config set value = '0' where key = 'nhung_khoa_vong';
+    if v_loi > 0 then
+      update public.app_config set value = '0' where key = 'nhung_lan_loi';
+      update public.app_config set value = '' where key = 'nhung_tam_dung_den';
+    end if;
   elsif v_ok and v_loi > 0 then
     update public.app_config set value = '0' where key = 'nhung_lan_loi';
     update public.app_config set value = '' where key = 'nhung_tam_dung_den';
@@ -5864,7 +5895,8 @@ begin
   if exists (select 1 from public.nhung_viec) or exists (select 1 from public.nhung_viec_du_an)
      or exists (select 1 from public.nhung_viec_dia_danh) then return; end if;
   -- 20260930e: khoá thứ hai (nếu có) gánh việc nhúng NỀN, để khoá chính còn hạn mức cho câu tìm của khách.
-  v_key := coalesce(public.get_secret('GEMINI_API_KEY_2'), public.get_secret('GEMINI_API_KEY'));
+  -- 20261018d: xoay vòng khoá nhúng nền (app_config.nhung_khoa_ds), khoá chính GEMINI_API_KEY để dành câu tìm của khách.
+  v_key := public.khoa_nhung_nen();
   if v_key is null then return; end if;
   v_tran := greatest(1, least(coalesce(nullif(public.cau_hinh('nhung_dia_danh_moi_tick'), '')::int, 20), 50));
 
@@ -5893,6 +5925,31 @@ begin
       timeout_milliseconds := 20000), v_md5);
     v_gui := v_gui + 1;
   end loop;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.nhung_doi_khoa()
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare
+  v_n int;
+  v_so int;
+  v_vong int;
+begin
+  v_n := coalesce(array_length(array_remove(string_to_array(regexp_replace(coalesce(public.cau_hinh('nhung_khoa_ds'), ''), '\s', '', 'g'), ','), ''), 1), 0);
+  if v_n <= 1 then return false; end if;
+  v_so := (coalesce(nullif(public.cau_hinh('nhung_khoa_so'), '')::int, 1) % v_n) + 1;
+  v_vong := coalesce(nullif(public.cau_hinh('nhung_khoa_vong'), '')::int, 0) + 1;
+  update public.app_config set value = v_so::text where key = 'nhung_khoa_so';
+  if v_vong >= v_n then
+    update public.app_config set value = '0' where key = 'nhung_khoa_vong';
+    return false;
+  end if;
+  update public.app_config set value = v_vong::text where key = 'nhung_khoa_vong';
+  return true;
 end $function$
 ;
 
@@ -5960,6 +6017,11 @@ begin
 
   -- Giãn nhịp: Gemini từ chối → tạm dừng 2, 4, 8 … 60 phút (402 hết tiền: 60 phút ngay); ghi sổ một lần mỗi đợt.
   v_loi := coalesce(nullif(public.cau_hinh('nhung_lan_loi'), '')::int, 0);
+  -- 20261018d: 429 (hết hạn mức) → đổi sang khoá kế trong vòng và gửi tiếp ngay; chỉ khi cả vòng đều 429 mới giãn nhịp / dừng
+  -- tới lúc Google cấp lại hạn mức như cũ.
+  if v_tu_choi and v_ma = 429 and public.nhung_doi_khoa() then
+    v_tu_choi := false;
+  end if;
   if v_tu_choi then
     v_loi := v_loi + 1;
     v_dung := now() + make_interval(mins => case when v_ma = 402 then 60 else least(60, (2 ^ least(v_loi, 6))::int) end);
@@ -5978,6 +6040,12 @@ begin
           || to_char(v_dung at time zone 'Asia/Ho_Chi_Minh', 'HH24:MI DD/MM') || ' giờ VN. ' || coalesce(v_mau, ''),
         null);
     end if;
+  elsif v_ok and coalesce(nullif(public.cau_hinh('nhung_khoa_vong'), '')::int, 0) > 0 then
+    update public.app_config set value = '0' where key = 'nhung_khoa_vong';
+    if v_loi > 0 then
+      update public.app_config set value = '0' where key = 'nhung_lan_loi';
+      update public.app_config set value = '' where key = 'nhung_tam_dung_den';
+    end if;
   elsif v_ok and v_loi > 0 then
     update public.app_config set value = '0' where key = 'nhung_lan_loi';
     update public.app_config set value = '' where key = 'nhung_tam_dung_den';
@@ -5989,7 +6057,8 @@ begin
   if v_dung is not null and v_dung > now() then return; end if;
   if exists (select 1 from public.nhung_viec) or exists (select 1 from public.nhung_viec_du_an) then return; end if;
   -- 20260930e: khoá thứ hai (nếu có) gánh việc nhúng NỀN, để khoá chính còn hạn mức cho câu tìm của khách.
-  v_key := coalesce(public.get_secret('GEMINI_API_KEY_2'), public.get_secret('GEMINI_API_KEY'));
+  -- 20261018d: xoay vòng khoá nhúng nền (app_config.nhung_khoa_ds), khoá chính GEMINI_API_KEY để dành câu tìm của khách.
+  v_key := public.khoa_nhung_nen();
   if v_key is null then return; end if;
   v_tran := greatest(1, least(coalesce(nullif(public.cau_hinh('nhung_moi_tick'), '')::int, 10), 50));
 
@@ -9380,6 +9449,8 @@ revoke all on function public.khoa_du_an_danh_sach(p_khoa text) from public, ano
 grant execute on function public.khoa_du_an_danh_sach(p_khoa text) to anon;
 grant execute on function public.khoa_du_an_danh_sach(p_khoa text) to authenticated;
 grant execute on function public.khoa_du_an_danh_sach(p_khoa text) to service_role;
+revoke all on function public.khoa_nhung_nen() from public, anon, authenticated;
+grant execute on function public.khoa_nhung_nen() to service_role;
 revoke all on function public.khoang_cach_m(p_lat1 double precision, p_lng1 double precision, p_lat2 double precision, p_lng2 double precision) from public, anon, authenticated;
 grant execute on function public.khoang_cach_m(p_lat1 double precision, p_lng1 double precision, p_lat2 double precision, p_lng2 double precision) to authenticated;
 grant execute on function public.khoang_cach_m(p_lat1 double precision, p_lng1 double precision, p_lat2 double precision, p_lng2 double precision) to service_role;
@@ -9510,6 +9581,8 @@ revoke all on function public.nhan_viec_nhac(p_kinds text[], p_limit integer, p_
 grant execute on function public.nhan_viec_nhac(p_kinds text[], p_limit integer, p_worker text) to service_role;
 revoke all on function public.nhung_dia_danh_tick() from public, anon, authenticated;
 grant execute on function public.nhung_dia_danh_tick() to service_role;
+revoke all on function public.nhung_doi_khoa() from public, anon, authenticated;
+grant execute on function public.nhung_doi_khoa() to service_role;
 revoke all on function public.nhung_tick() from public, anon, authenticated;
 grant execute on function public.nhung_tick() to service_role;
 revoke all on function public.notify_info_request_escalation() from public, anon, authenticated;
