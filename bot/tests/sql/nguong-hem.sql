@@ -3,7 +3,6 @@
 -- Chủ nói thẳng "hxh" / "xe hơi vào được" thì theo lời chủ. Mỗi khẳng định sai → raise exception. Rollback cuối.
 begin;
 set local client_min_messages = warning;
-alter table listings disable trigger listing_insert_drip;
 alter table listings disable trigger trg_listings_bao_tin_moi_khop;
 alter table listings disable trigger trg_listings_zz_toa_do;
 alter table listings disable trigger trg_pe_listings;

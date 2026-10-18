@@ -102,7 +102,11 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > `/opt/aond_core`; bridge gọi `http://127.0.0.1:8000/chat-reply`; `cai-vps` (workflow `apply-migration`, ô `dung_lai`) đưa `src/aioi`
 > lên và khởi động lại. Edge function TypeScript `chat-reply`, `zalo-webhook`, `nudge`, `ask-seller`, `ctv-report`, `inbound-sweep` đã
 > gỡ khỏi repo (SRS-5.1zzzzzzz31); còn `escalation-feed` (bridge kéo việc / báo sống / QR), `geocode-listings`, `media-cleanup`.
-> `_shared/` còn vì web (`lib/` nhập luật tiền, luật che liên hệ, nhãn, phường, prompts) và `escalation-feed` dùng. **Mọi đoạn bên dưới
+> `_shared/` còn vì web (`lib/` nhập luật tiền, luật che liên hệ, nhãn, phường) và ba edge function dùng. **18/10 tối (SRS-5.1zzzzzzz46):
+> gỡ nốt tàn dư TS** — 53 file `_shared/` chỉ chat-reply dùng (prompts.ts, ai/*, bóc tách regex, Groq/Gemini), 44 file test của chúng,
+> trang `/admin/prompt` + `/admin/mau-cau`, workflow `go-ham-ts`; DB (`20261018i`): 10 bảng (`bot_prompts`, `mau_cau`, `van_kich`,
+> `inbound_ledger`, `inbound_events`, `ai_ghi_thu`, `ctv_daily_reports`, `du_an_can`, `du_an_tai_lieu`, `project_fact_phieu`), 3 view, 26 hàm
+> và trigger `listing_insert_drip` (đang bắn tới `/ask-seller` đã xoá). Nội dung chủ dự án soạn chép sang `luu_tru.ts_*_20261018`. **Mọi đoạn bên dưới
 > nói về chat-reply / prompt TypeScript / bot_prompts / e2e 1440 ca / trang chat thử / bộ đo bóc tách / khách mô phỏng là LỊCH SỬ**,
 > không còn là chỗ sửa bot.
 

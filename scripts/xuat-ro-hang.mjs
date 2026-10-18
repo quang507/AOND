@@ -10,9 +10,8 @@
 //   ĐÂY KHÔNG PHẢI BẢN SAO LƯU.
 //
 // Nó chỉ xuất `listings` + `media` + `listing_facts` (3/31 bảng). KHÔNG có
-// `conversations`, `messages`, `inbound_ledger`, `deals`, `buyers`, `sellers`.
-// Mất hội thoại là mất chính luận điểm sản phẩm; mất `inbound_ledger` là bot
-// phát lại toàn bộ tin cũ cho khách. Và markdown không giữ UUID, khoá ngoại,
+// `conversations`, `messages`, `deals`, `buyers`, `sellers`.
+// Mất hội thoại là mất chính luận điểm sản phẩm. Và markdown không giữ UUID, khoá ngoại,
 // `status`, `*_source` — đọc lại được, DỰNG LẠI KHÔNG ĐƯỢC.
 //
 // Dự án KHÔNG còn sao lưu DB (chủ dự án bỏ 11/09/2026) — thư mục này không thay

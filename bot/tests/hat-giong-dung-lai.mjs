@@ -23,7 +23,7 @@ const MIEN = {
   listing_media: "như trên",
   listing_facts: "như trên",
   projects: "kho dự án nạp bằng bước nap-du-an",
-  bot_prompts: "prompt đẩy bằng dong-bo-prompt.yml (--day) từ code",
+  bot_prompts: "bảng đã gỡ 20261018i cùng bot TypeScript — insert chỉ còn trong migration lịch sử",
   bot_health: "dòng điểm danh tự sinh khi chạy",
   bot_errors: "sổ lỗi",
   reminders: "hàng đợi tự sinh",

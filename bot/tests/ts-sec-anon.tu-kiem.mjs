@@ -30,10 +30,10 @@ const BO_TEST = join(HERE, "ts-sec-anon.mjs");
 
 const NOI_BO = [
   "reminders", "sellers", "ctvs", "messages", "conversations", "viewings",
-  "deals", "buyers", "info_requests", "bot_errors", "inbound_ledger",
+  "deals", "buyers", "info_requests", "bot_errors",
   "curated_lists", "ratings_log", "property_events", "public_listings",
 ];
-const RPC_KHOA = ["get_secret", "seller_drip_tick", "ctv_report_tick",
+const RPC_KHOA = ["get_secret", "bot_health_tick", "soat_du_lieu_tick",
                   "xuat_schema", "liet_ke_migration", // liet_ke_bang: xoá ở 20260911h cùng sao lưu
                   // FR-192: mock phải khoá y như DB thật, không thì bộ e2e đo sai
                   // đúng chỗ đó (bài học `phu` 07/09 ở CLAUDE.md).

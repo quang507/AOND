@@ -4,7 +4,7 @@
 // FR-104) và `chat-reply locLienHe` (bot, FR-105). Chú thích bên bot còn ghi
 // thẳng "Deno không import được module Next; sửa regex một bên thì sửa bên
 // kia" — tức lời hứa đồng bộ bằng trí nhớ. Chiều ngược lại thì được: web nhập
-// thẳng file này qua `@/bot/...` (đúng như `/admin/prompt` nhập `prompts.ts`).
+// thẳng file này qua `@/bot/...`.
 //
 // Giữ NGUỒN regex dạng chuỗi, dựng RegExp mới mỗi lần gọi: một RegExp `/g` dùng
 // chung giữa nhiều lời gọi `.test()` giữ `lastIndex` từ lần trước — lần gọi thứ

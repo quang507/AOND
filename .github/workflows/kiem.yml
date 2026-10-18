@@ -37,26 +37,17 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      # Không cần `setup-node`: ubuntu-latest có sẵn Node, và bốn file test là
-      # .mjs trần không import gói nào — thêm bước chỉ tốn 4 s tải Node 20 và
-      # kéo theo cảnh báo deprecation.
-      #
-      # Suite e2e có package.json RIÊNG (`@anthropic-ai/sdk`, `zod`) và
-      # node_modules của nó nằm trong .gitignore — cài ở gốc repo là không đủ.
-      - name: Cài phụ thuộc của suite e2e
-        run: bun install --frozen-lockfile --cwd bot/tests/e2e
-      # `chay.sh` TỰ dựng lại bundle từ nguồn rồi mới chạy 208 ca (run.mjs 160 +
-      # webhook.mjs 44 + cong-thieu-bi-mat.mjs 4, ba tiến trình) — đừng
-      # đổi thành `node run.mjs`, nó sẽ test bản bundle cũ nằm sẵn trong repo.
-      # Supabase và model đều là bản giả lập trong `mock-*.mjs`: không đụng DB
-      # thật, không tốn tiền model, không cần secret nào trong CI.
+      # Không cần `setup-node`: ubuntu-latest có sẵn Node, và các file test là
+      # .mjs trần không import gói nào ngoài repo. 18/10/2026 (SRS-5.1zzzzzzz46): bỏ bước cài suite e2e
+      # (`@anthropic-ai/sdk`, `zod`) — bài chạy chat-reply THẬT đã gỡ cùng bot TypeScript; `test:bot` còn lại
+      # kiểm code web / edge function / script đang sống, không gọi DB thật hay model.
       #
       # `test:bot` kéo theo cả `ranh-gioi.mjs` — kiểm tĩnh ranh giới bóc tách ⟂
       # AI (mã tiền định không được chạm model/DB; tầng AI không được ghi bảng
       # nghiệp vụ). Để chung job cố ý: danh sách required status checks ở
       # docs/11 §11.5 giữ nguyên 5 tên, thêm check mới là phải sửa branch
       # protection bằng tay và người ta sẽ quên.
-      - name: e2e + hồi quy FR-159/161/164 + ranh giới bóc tách ⟂ AI
+      - name: test:bot + ranh giới bóc tách ⟂ AI
         run: bun run test:bot
       # 18/10/2026: bộ não là lõi Python src/aioi (lõi TypeScript chat-reply đã gỡ). Chung job `bot` để danh sách required
       # status checks giữ nguyên tên (xem ghi chú trên).
