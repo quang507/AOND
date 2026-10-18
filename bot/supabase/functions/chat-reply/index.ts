@@ -1246,12 +1246,18 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
   // không chặn lượt.
   if (!body.mark_sent && fileUrl && laTepThoai(fileUrl, fileName)) {
     try {
-      const [groqKey, geminiKey, geminiModel] = await Promise.all([
+      // Cùng bộ khoá Vault với zalo-webhook (GEMINI_API_KEY_2 là khoá dự phòng khi khoá chính 429).
+      const [groqKey, geminiKey, geminiKey2, geminiModelRaw] = await Promise.all([
         secretOf(client, "GROQ_API_KEY"),
-        (async () => (await secretOf(client, "GEMINI_API_KEY")) || (await secretOf(client, "GEMINI_API_KEY_2")))(),
-        (async () => (await secretOf(client, "GEMINI_MODEL")) || "gemini-1.5-flash")(),
+        secretOf(client, "GEMINI_API_KEY"),
+        secretOf(client, "GEMINI_API_KEY_2"),
+        secretOf(client, "GEMINI_MODEL"),
       ]);
-      const loiNoi = await transcribeVoiceUrl(fileUrl, { groqApiKey: groqKey, geminiApiKey: geminiKey, geminiModel });
+      const loiNoi = await transcribeVoiceUrl(fileUrl, {
+        groqApiKey: groqKey,
+        geminiApiKey: geminiKey || geminiKey2,
+        geminiModel: geminiModelRaw || "gemini-1.5-flash",
+      });
       if (loiNoi) {
         text = loiNoi.slice(0, 12000);
         textBoc = soChuThanhSo(text);
