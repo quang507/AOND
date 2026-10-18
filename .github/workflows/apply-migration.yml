@@ -95,8 +95,10 @@ jobs:
           # trước khi merge. Tên nhánh chỉ nhận ký tự an toàn vì nó đi vào lệnh chạy trên VPS.
           NHANH_VPS="$GITHUB_REF_NAME"
           if ! printf '%s' "$NHANH_VPS" | grep -Eq '^[A-Za-z0-9._/-]+$'; then echo "::error::Tên nhánh lạ: $NHANH_VPS"; exit 1; fi
+          # 18/10/2026: lượt cài hỏng (git checkout / quyền .git) vẫn báo xanh — lệnh từ xa thoát theo mã của `tail` cuối chuỗi. Nay giữ
+          # mã thoát của cai-vps.sh (rc_cai) và in commit + origin đang chạy để thấy VPS đã lên code mới chưa.
           printf '%s\n' "$BS" | sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 "root@$HOST" \
-            "read -r BRIDGE_SECRET; export BRIDGE_SECRET; curl -fsSL https://raw.githubusercontent.com/quang507/Nhadat.cc/$NHANH_VPS/bot/bridge-zca/cai-vps.sh -o /root/cai-vps.sh && NHANH='$NHANH_VPS' bash /root/cai-vps.sh </dev/null; unset BRIDGE_SECRET; sleep 25; echo \"== service: \$(systemctl is-active nhadat-bridge)\"; journalctl -u nhadat-bridge -n 40 --no-pager -o cat | grep -viE 'qr-|http://|https://' | tail -25" \
+            "read -r BRIDGE_SECRET; export BRIDGE_SECRET; curl -fsSL https://raw.githubusercontent.com/quang507/AOND/$NHANH_VPS/bot/bridge-zca/cai-vps.sh -o /root/cai-vps.sh && NHANH='$NHANH_VPS' bash /root/cai-vps.sh </dev/null; rc_cai=\$?; unset BRIDGE_SECRET; sleep 25; echo \"== service: \$(systemctl is-active nhadat-bridge)\"; echo \"== code: \$(sudo -u nhadat git -C /opt/nhadat rev-parse --short HEAD) \$(sudo -u nhadat git -C /opt/nhadat remote get-url origin)\"; journalctl -u nhadat-bridge -n 40 --no-pager -o cat | grep -viE 'qr-|http://|https://' | tail -25; echo \"== cai-vps.sh thoát \$rc_cai\"; exit \$rc_cai" \
             > /tmp/vps.log 2>&1 || rc=$?
           unset SSHPASS PW BS
           # Che dãy số ≥ 9 chữ số (Zalo ID của acc clone / khách, SĐT) — log repo này công khai.
@@ -105,17 +107,8 @@ jobs:
           echo "::notice title=cai-vps (thoát $rc)::$(sach | tail -40 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
           exit $rc
 
-      - name: Ghi đè thông tin VPS tạm trong Vault
-        if: ${{ always() && inputs.dung_lai == 'cai-vps' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        # 11/10/2026: bản cũ viết SQL trong chuỗi bash nháy đơn — `''x''` bị bash nuốt dấu nháy, SQL sai, API trả 400, bước này
-        # chưa từng ghi đè được (lượt cai-vps 11/10 phải ghi đè tay). Dựng JSON bằng jq để SQL đi nguyên văn.
-        run: |
-          SQL="select vault.update_secret(id, 'x', 'DA_XOA_' || name || '_' || floor(extract(epoch from now()))::text, 'đã ghi đè') from vault.secrets where name in ('VPS_ROOT_PASSWORD','VPS_HOST')"
-          jq -n --arg q "$SQL" '{query: $q}' | curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
-            -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d @-
-          echo
+      # 18/10/2026: chủ dự án bỏ bước tự ghi đè VPS_HOST / VPS_ROOT_PASSWORD trong Vault sau mỗi lượt cai-vps ("bỏ cái tự xóa đó đi")
+      # — mỗi lượt hỏng là phải nhập lại mật khẩu. Hai secret nay ở lại Vault (chỉ service_role / Management API đọc được).
 
       # 08/10/2026: project production cũ bị xoá nhầm — dựng lại từng bước trên project mới rỗng.
       - name: Dựng lại DB (dung_lai)

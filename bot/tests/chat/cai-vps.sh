@@ -12,7 +12,7 @@
 #                      nhật ký / ảnh / bản sửa prompt), kéo code, bật lại và nạp. Code mới không bật được → quay về.
 #
 # Chạy trên VPS bằng root:
-#   curl -fsSL https://raw.githubusercontent.com/quang507/Nhadat.cc/claude/zealous-ramanujan-p5ftyj/bot/tests/chat/cai-vps.sh -o cai-trang-thu.sh
+#   curl -fsSL https://raw.githubusercontent.com/quang507/AOND/main/bot/tests/chat/cai-vps.sh -o cai-trang-thu.sh
 #   sudo bash cai-trang-thu.sh
 # Chạy lại được (đổi nhánh: NHANH=<tên nhánh>). Script hỏi ANTHROPIC_API_KEY (gõ không hiện chữ) và không in ra đâu cả;
 # nên dùng một khoá RIÊNG có hạn mức chi — link lộ thì xoá khoá đó, production không ảnh hưởng.
@@ -20,8 +20,9 @@
 # token chỉ dùng cho lệnh đó, KHÔNG lưu xuống máy.
 set -euo pipefail
 
-REPO=https://github.com/quang507/Nhadat.cc.git
-NHANH="${NHANH:-claude/zealous-ramanujan-p5ftyj}"
+# 18/10/2026: code nằm ở repo AOND (Nhadat.cc sắp xoá); mặc định chạy `main`.
+REPO=https://github.com/quang507/AOND.git
+NHANH="${NHANH:-main}"
 DIR=/opt/trang-thu
 U=trangthu
 PORT=3100
@@ -57,6 +58,7 @@ xong "bun $(sudo -iu "$U" "$BUN" --version)"
 buoc "3/7 code nhánh $NHANH → $DIR"
 mkdir -p "$DIR" && chown "$U:$U" "$DIR"
 if [ -d "$DIR/.git" ]; then
+  sudo -u "$U" git -C "$DIR" remote set-url origin "$REPO"   # máy cài từ Nhadat.cc → AOND
   sudo -u "$U" git -C "$DIR" fetch -q --depth 1 origin "$NHANH"
   sudo -u "$U" git -C "$DIR" reset -q --hard FETCH_HEAD
 else

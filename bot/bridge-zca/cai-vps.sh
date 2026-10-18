@@ -3,7 +3,7 @@
 # Gói đúng các bước 1, 2, 4 của VPS.md; bước 3 (quét QR) bắt buộc làm tay.
 #
 # Chạy trên VPS với quyền root (hoặc user có sudo):
-#     curl -fsSL https://raw.githubusercontent.com/quang507/Nhadat.cc/main/bot/bridge-zca/cai-vps.sh -o cai-vps.sh
+#     curl -fsSL https://raw.githubusercontent.com/quang507/AOND/main/bot/bridge-zca/cai-vps.sh -o cai-vps.sh
 #     sudo BRIDGE_SECRET='<giá trị trong Supabase → Vault → BRIDGE_SECRET>' bash cai-vps.sh
 #
 # Chạy lại được: máy đã có node/user/repo thì bỏ qua, chỉ `git pull` + `npm i`.
@@ -11,7 +11,8 @@
 # Script KHÔNG in secret ra màn hình và KHÔNG ghi vào log.
 set -euo pipefail
 
-REPO=https://github.com/quang507/Nhadat.cc.git
+# 18/10/2026: code nằm ở repo AOND (gộp từ Nhadat.cc 17/10) — Nhadat.cc sắp xoá, máy cũ tự đổi origin ở bước 2.
+REPO=https://github.com/quang507/AOND.git
 # Nhánh lấy code (mặc định main). Cần chạy bản chưa merge thì NHANH=<tên nhánh>.
 NHANH="${NHANH:-main}"
 DIR=/opt/nhadat
@@ -37,7 +38,19 @@ buoc "2/5 user nhadat + $DIR"
 id nhadat >/dev/null 2>&1 || useradd -m -s /bin/bash nhadat
 mkdir -p "$DIR" && chown nhadat:nhadat "$DIR"
 if [ -d "$DIR/.git" ]; then
-  sudo -u nhadat git -C "$DIR" fetch -q origin "$NHANH" && sudo -u nhadat git -C "$DIR" checkout -q "$NHANH" && sudo -u nhadat git -C "$DIR" pull --ff-only -q origin "$NHANH" && xong "repo đã có, nhánh $NHANH, pull xong"
+  # Máy cài từ Nhadat.cc: trỏ origin sang AOND rồi lấy ĐÚNG bản của nhánh (`reset --hard`, không `pull --ff-only` — lịch sử hai
+  # repo không nối nhau). File không track (.env, zalo-session.json) không bị đụng.
+  # 18/10/2026: `checkout -f` — lượt cài đầu dừng ở "untracked .gitattributes would be overwritten" (file AOND track mà máy cũ
+  # không) và vì chuỗi `a && b` không kích `set -e`, script chạy tiếp, khởi động lại bridge bằng CODE CŨ và vẫn báo xanh.
+  # Mỗi lệnh git một dòng để hỏng là dừng.
+  # Lượt thứ hai: "insufficient permission for adding an object to .git/objects" — có lần git chạy bằng root trong thư mục
+  # này, để lại file của root. Trả cả cây về user nhadat trước khi git chạy dưới tên nó.
+  chown -R nhadat:nhadat "$DIR"
+  sudo -u nhadat git -C "$DIR" remote set-url origin "$REPO"
+  sudo -u nhadat git -C "$DIR" fetch -q origin "$NHANH"
+  sudo -u nhadat git -C "$DIR" checkout -q -f -B "$NHANH" FETCH_HEAD
+  sudo -u nhadat git -C "$DIR" reset -q --hard FETCH_HEAD
+  xong "repo đã có, nhánh $NHANH ($(sudo -u nhadat git -C "$DIR" rev-parse --short HEAD)) từ $REPO"
 else
   sudo -u nhadat git clone -q -b "$NHANH" "$REPO" "$DIR" && xong "clone xong (nhánh $NHANH)"
 fi
