@@ -2449,13 +2449,19 @@ fresh(seedKho);
   globalThis.__model.create = () => { throw new Error("model chết"); };
   r = await send({ external_user_id: "z-gapthue", text: "ok em" });
   const tatCa = JSON.stringify(r.body.replies);
-  check("GAPTHUE-01 tin cho thuê đang treo câu gấp, hỏi lại → câu của tin THUÊ, không 'ra hàng gấp hay được giá'",
-    /cho thuê gấp hay chờ được khách/.test(tatCa) && !/ra hàng gấp/.test(tatCa), tatCa);
+  // 18/10/2026 (chủ dự án chọn B): `gap` là nhóm `sau_dang` (FR-188, hỏi bù SAU khi lên kệ) — nó KHÔNG chặn đăng tin.
+  // Khi tin đã đủ điều kiện và chủ nhà gật ("ok em"), bot tiến tới ĐĂNG (đường `dang_luon_*`), không quay lại hỏi câu
+  // gap. Test cũ đòi "hỏi lại câu gấp theo deal" phản ánh hành vi đã bỏ. Nay kiểm đúng hành vi hiện tại: gật → tiến tới
+  // đăng, và KHÔNG re-ask gap bằng câu cũ ("ra hàng gấp…" cho tin bán, "cho thuê gấp…" cho tin thuê) ở cả hai loại deal.
+  check("GAPTHUE-01 tin cho thuê, chủ nhà gật lúc treo câu gap (sau_dang) → tiến tới đăng, KHÔNG hỏi lại câu gấp",
+    /(lên kệ|đăng)/.test(tatCa) && !/ra hàng gấp/.test(tatCa) && !/cho thuê gấp hay chờ/.test(tatCa), tatCa);
   fresh((d) => { const l = thue(d); l.deal = "ban"; });
   globalThis.__model.parse = () => { throw new Error("model chết"); };
   globalThis.__model.create = () => { throw new Error("model chết"); };
   r = await send({ external_user_id: "z-gapthue", text: "ok em" });
-  check("GAPTHUE-02 tin BÁN vẫn câu cũ 'ra hàng gấp hay được giá'", /ra hàng gấp/.test(JSON.stringify(r.body.replies)), JSON.stringify(r.body.replies));
+  const tatCaBan = JSON.stringify(r.body.replies);
+  check("GAPTHUE-02 tin bán, chủ nhà gật lúc treo câu gap (sau_dang) → tiến tới đăng, KHÔNG hỏi lại câu gấp",
+    /(lên kệ|đăng)/.test(tatCaBan) && !/ra hàng gấp/.test(tatCaBan), tatCaBan);
   delete globalThis.__cauHinh;
 }
 
