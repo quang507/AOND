@@ -76,6 +76,20 @@ else
   xong ".env ghi xong (chmod 600), ${#BRIDGE_SECRET} ký tự"
 fi
 
+# 18/10/2026: bộ não là lõi Python (`aond-core.service`, /opt/aond_core — không phải bản git, dựng tay). Trước đây không có đường
+# nào đưa code repo lên đó, nên bản vá lõi nằm trong repo mà VPS vẫn chạy bản cũ. Nay mỗi lượt cài chép `src/aioi` của repo sang,
+# nén bản cũ vào /root trước (khôi phục: tar -xzf … -C /opt/aond_core/src), khởi động lại và đòi /health trả lời.
+if [ -d /opt/aond_core/src/aioi ]; then
+  buoc "lõi Python aond-core ← $DIR/src/aioi"
+  LUU="/root/aond_core-aioi-$(date +%Y%m%d%H%M%S).tgz"
+  tar -czf "$LUU" -C /opt/aond_core/src aioi
+  cp -r --no-preserve=ownership "$DIR/src/aioi/." /opt/aond_core/src/aioi/
+  systemctl restart aond-core
+  for i in $(seq 1 20); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done
+  curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null || { echo "aond-core không trả /health sau khởi động lại — bản cũ ở $LUU"; exit 1; }
+  xong "aond-core chạy code repo, /health trả lời (bản cũ: $LUU)"
+fi
+
 buoc "5/5 systemd nhadat-bridge"
 cp "$BR/nhadat-bridge.service" /etc/systemd/system/nhadat-bridge.service
 systemctl daemon-reload

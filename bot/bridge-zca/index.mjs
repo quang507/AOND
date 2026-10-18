@@ -57,11 +57,10 @@ if (fs.existsSync(ENV_FILE)) {
   console.log(`Đã nạp ${ENV_FILE} (${Object.keys(tuFile).join(", ") || "không có biến nào"})`);
 }
 
-// 18/10/2026: commit gộp repo (d3a8f70) đổi mặc định sang http://127.0.0.1:8000/chat-reply (máy chủ chạy thử trên máy) —
-// VPS không đặt CHAT_REPLY_URL nên mọi tin khách đi vào cổng 8000 của chính VPS, nhận 500, bot im. Mặc định PHẢI là production;
-// chạy thử trên máy thì đặt CHAT_REPLY_URL trong .env.
+// Bộ não là lõi Python AOND (`src/aioi/server.py`, `aond-core.service` cổng 8000 trên cùng VPS — README). 18/10/2026: từng đổi
+// nhầm sang chat-reply TypeScript trên Supabase; chủ dự án chốt lõi Python, bỏ lõi TypeScript.
 const CHAT_REPLY_URL =
-  process.env.CHAT_REPLY_URL || "https://rqxmmqmctpklqcmbfxuj.supabase.co/functions/v1/chat-reply";
+  process.env.CHAT_REPLY_URL || "http://127.0.0.1:8000/chat-reply";
 const ANON_KEY =
   "sb_publishable_f4wNO8jQcCDWn1QmNZQ7-g_BXDtYM3Y"; // key công khai, chỉ gọi được function
 
