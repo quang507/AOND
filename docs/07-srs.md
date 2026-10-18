@@ -5632,6 +5632,31 @@ một vòng mà vẫn 429. Gỡ lệnh dừng đang treo. Chỗ cùng lớp: `ti
 **Kiểm.** `bot/tests/sql/xoay-khoa-nhung.sql` (trong `test:sql`, đỏ khi bỏ hai hàm). Chạy migration trên Postgres tạm: vòng `k2→k3→k4→k5→k6`, lần đổi thứ 5 trả false và quay về `k2`; `nhung_tam_dung_den` rỗng.
 Production: `nhung_tick` gửi mẻ lại, số dòng có vector tăng.
 
+### SRS-5.1zzzzzzz35 · Kho dự án: thu bù + loại căn từ mogi (18/10/2026)
+
+**Ca gốc.** Chủ dự án hỏi kho dự án đã lấy hết mogi.vn chưa, có ảnh / mặt bằng / loại căn chưa ("thu bù đi… mặt bằng và loại căn
+ko có hả, tìm dc ko"); phạm vi 5 tỉnh HCM, Bình Dương, Đồng Nai, Long An, Tây Ninh. Đếm 18/10: DB 2.361 dự án; mogi (số trang cuối × 10,
+ước tính) HCM ~1.613 / BD ~333 / ĐN ~238 / LA ~223 / TN ~7 — thiếu ~40 so với DB (1.581 / 323 / 235 / 216 / 6), lượt thu cuối 14/10 (HCM)
+và 08/10 (còn lại). `unit_types` và `floor_plans` 0/2.361, ảnh 0/2.361.
+
+**Soát nguồn.** Trang chi tiết mogi không có mặt bằng có cấu trúc (`var FloorImages = []` trên mọi trang mẫu; ảnh chi tiết, tài liệu,
+giá lịch sử nằm sau đăng nhập). Loại căn chỉ có trong các dòng liệt kê của bài giới thiệu ("Căn hộ 2 phòng ngủ: 51m² - 53m²",
+"2PN + 2WC góc") — 10/68 trang mẫu. Ảnh vẫn không lấy (quyết định trong `thu-du-an.mjs`: bản quyền + nội dung trùng hại SEO); chờ chủ dự án.
+
+**Lớp lỗi.** Không phải lỗi: kho thiếu một loại dữ kiện mà nguồn CÓ (loại căn trong bài giới thiệu) và tụt sau nguồn vì chỉ thu tay.
+
+**Sửa.** `scripts/loai-can-du-an.mjs` `bocLoaiCan(html)`: chỉ đọc khối `id="project-intro"`, dòng phải mở đầu bằng loại căn và là dòng
+liệt kê; một dòng nhiều loại thì không gán diện tích; số lệch khoảng hợp lý thì bỏ cả dòng; không lấy giá. Ra khuôn `unit_types` web
+đang đọc (`{ name, specs: { dien_tich, so_phong_ngu } }`); `vietMoTa` thêm câu "Loại căn: …" (đổi mô tả → nhúng lại đúng những dự án đó).
+`thu-du-an.mjs` ghi `unit_types`; trang `/du-an/[slug]` thêm nhãn "Diện tích". Thu bù = chạy lại cả 5 tỉnh qua `apply-migration.yml`
+ô `dung_lai = nap-du-an` (upsert theo `slug`, không đụng toạ độ / ảnh / vector; `specs.dao_sau_at` 0/2.361 nên không đè kết quả đào sâu).
+Chỗ cùng lớp: `scripts/dao-sau-du-an.mjs` (FR-196) cũng bóc loại căn nhưng bằng model và chỉ từ dữ liệu đã có trong DB — chưa chạy trên
+project mới (cần `GROQ_API_KEY`, không có trong Vault).
+
+**Kiểm.** `bot/tests/loai-can-du-an.mjs` (trong `test:bot`): 6 ca phải kích + 6 ca không được kích (menu / chân trang, câu văn có
+"phòng ngủ" ở giữa, câu văn mở đầu "Shophouse", tổng diện tích, "4 căn 1 phòng ngủ") + nhiều loại một dòng + dải lệch khoảng; đỏ 7/15 với
+bản cắt khối chưa sửa. Production: đếm `unit_types` khác rỗng sau lượt `nap-du-an`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

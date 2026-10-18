@@ -112,7 +112,7 @@ function loaiCan(v: unknown): LoaiCan[] {
 const NHAN_SPEC: Record<string, string> = {
   so_tang: "Số tầng", mat_tien: "Mặt tiền", so_phong_ngu: "Phòng ngủ", bo_tri: "Bố trí",
   ban_giao: "Bàn giao", thang_may: "Thang máy", ghi_chu: "Ghi chú", cong: "Cổng",
-  vi_tri: "Vị trí", ket_cau: "Kết cấu", tong_so_can: "Tổng số căn",
+  vi_tri: "Vị trí", ket_cau: "Kết cấu", tong_so_can: "Tổng số căn", dien_tich: "Diện tích",
 };
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {

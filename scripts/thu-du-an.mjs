@@ -6,7 +6,7 @@
 //
 // LẤY GÌ: DỮ KIỆN — tên, chủ đầu tư, tỉnh/quận/phường, địa chỉ, giá từ, đơn giá
 // mỗi m2, tổng diện tích, dải diện tích sản phẩm, năm khởi công / hoàn thành,
-// pháp lý, trạng thái, danh sách tiện ích, và link nguồn.
+// pháp lý, trạng thái, danh sách tiện ích, loại căn + dải diện tích (18/10/2026, `loai-can-du-an.mjs`), và link nguồn.
 //
 // KHÔNG chép nguyên bài giới thiệu và ảnh của trang nguồn: (1) đó là phần có
 // bản quyền rõ nhất, (2) nội dung trùng lặp làm hại chính SEO của Aioinhadat —
@@ -22,6 +22,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { bocLoaiCan } from "./loai-can-du-an.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const env = Object.fromEntries(
@@ -159,6 +160,7 @@ function bocChiTiet(html, url) {
     nam_hoan_thanh: thongSo["Năm hoàn thành"] ?? null,
     phap_ly: thongSo["Pháp lý hiện tại"] ?? null,
     tien_ich: tienIch,
+    loai_can: bocLoaiCan(html),
   };
 }
 
@@ -170,6 +172,7 @@ function vietMoTa(d) {
   if (d.tong_dien_tich) quyMo.push(`tổng diện tích ${d.tong_dien_tich}`);
   if (d.dien_tich_tu) quyMo.push(`sản phẩm ${d.dien_tich_tu}-${d.dien_tich_den} m2`);
   if (quyMo.length) y.push(`Quy mô: ${quyMo.join(", ")}.`);
+  if (d.loai_can?.length) y.push(`Loại căn: ${d.loai_can.map((c) => c.name + (c.specs.dien_tich ? ` ${c.specs.dien_tich}` : "")).join(", ")}.`);
   const gia = [];
   if (d.gia_dong) gia.push(d.gia_dong.replace(/^Giá từ\s*/i, "giá từ "));
   if (gia.length) y.push(`Giá: ${gia.join(" ")}.`);
@@ -237,6 +240,7 @@ const rows = tatCa.map((d) => ({
   legal_status: d.phap_ly,
   price_min: d.gia_tu,
   amenities: d.tien_ich,
+  unit_types: d.loai_can,
   description: vietMoTa(d),
   status_text: d.trang_thai ?? (d.ban_giao ? `bàn giao ${d.ban_giao}` : null),
   handover: d.ban_giao ?? d.nam_hoan_thanh,
