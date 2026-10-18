@@ -5443,6 +5443,21 @@ không "thấy hấp dẫn chưa" / "👉 Có khách quan tâm"; không câu ch�
 đỏ; NHAP50-02 (đối chứng 78 điểm: xin duyệt như cũ). (a) và (b) không có bài kiểm tự động (đường mạng bridge / chữ prompt); `node --check`
 bridge sạch. e2e 1440/1440, `bun run test:bot` exit 0, deno check sạch.
 
+### SRS-5.1zzzzzzz27 · Gỡ hẳn nhánh `sync_turn` ở chat-reply (18/10/2026)
+
+**Ca gốc.** Chủ dự án 18/10/2026: "gỡ luôn khối sync_turn ở chat-reply đi, tại hôm trước phải làm ở onedrive nên cần sync". Sau
+SRS-5.1zzzzzzz26 bridge không còn gửi `sync_turn`, nhưng nhánh xử lý ở chat-reply (insert lời khách + lời bot vào `messages`) vẫn còn.
+
+**Lớp lỗi.** Đường ghi thứ hai của cùng dữ liệu còn sống sau khi lý do sinh ra nó (đồng bộ thời OneDrive / "Python Core") đã mất — ai gọi lại
+là ghi trùng. **Chỗ cùng lớp.** Soát `bot/`, `scripts/`, `app/`, `lib/`: không còn chỗ nào gửi hay xử lý `sync_turn`.
+
+**Sửa.** Bỏ khối `if (body.sync_turn) { … }` trong `chat-reply/index.ts`. Một request còn mang cờ đó (bridge bản cũ chưa cập nhật trên VPS)
+nay đi đường thường; cùng `msg_id` với lượt chính nên `claim_inbound` trả `completed` và phát lại, không gọi model. Thứ tự deploy an toàn:
+bridge trước, chat-reply sau.
+
+**Kiểm (đỏ khi tắt).** `bot/tests/khong-ghi-trung.mjs` (trong `test:bot`): KGT-01 bridge không gửi `sync_turn`, KGT-02 chat-reply không có
+nhánh `body.sync_turn` — chạy trên bản chat-reply trước bản sửa thì KGT-02 đỏ.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

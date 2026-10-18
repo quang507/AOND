@@ -1404,65 +1404,8 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
     return jsonResponse({ ok: true, human_note: true, cham });
   }
 
-  // AOND Sync Turn: Đồng bộ trực tiếp tin nhắn và phản hồi từ Python Core vào CRM
-  // mà không kích hoạt duplicate AI model của Supabase Deno Edge Function.
-  if (body.sync_turn) {
-    const nowSync = new Date().toISOString();
-    const botReplies: string[] = Array.isArray(body.bot_replies) && body.bot_replies.length
-      ? body.bot_replies
-      : (body.bot_reply ? [String(body.bot_reply)] : []);
-
-    const userText = String(text || "");
-    const imgUrl = body.image_url || (Array.isArray(body.image_urls) ? body.image_urls[0] : null);
-
-    let convId: string | null = null;
-    let senderRole = "seller";
-
-    const { data: hSeller } = await client.from("sellers").select("id")
-      .eq("zalo_user_id", externalUserId).maybeSingle();
-
-    if (hSeller) {
-      const { data: hsc } = await client.rpc("ensure_seller_conversation", {
-        p_seller_id: hSeller.id, p_channel: channel,
-      }).single();
-      convId = (hsc as { c_id?: string } | null)?.c_id ?? null;
-      senderRole = "seller";
-    } else {
-      const { data: hbc } = await client.rpc("ensure_buyer_conversation", {
-        p_zalo_user_id: externalUserId, p_channel: channel,
-      }).single();
-      convId = (hbc as { c_id?: string } | null)?.c_id ?? null;
-      senderRole = "buyer";
-    }
-
-    if (convId) {
-      if (userText || imgUrl) {
-        const bodyContent = imgUrl ? `${userText} [ảnh: ${imgUrl}]` : userText;
-        await client.from("messages").insert({
-          conversation_id: convId,
-          sender: senderRole,
-          body: bodyContent,
-          zalo_msg_id: msgId || null,
-        });
-      }
-
-      if (botReplies.length) {
-        await client.from("messages").insert(
-          botReplies.map((r) => ({
-            conversation_id: convId,
-            sender: "bot",
-            body: r,
-          }))
-        );
-      }
-
-      await client.from("conversations").update({
-        last_message_at: nowSync,
-      }).eq("id", convId);
-    }
-
-    return jsonResponse({ ok: true, sync_turn: true, conversation_id: convId });
-  }
+  // SRS-5.1zzzzzzz27 (18/10/2026): bỏ nhánh `sync_turn` (đồng bộ lượt từ "Python Core" thời còn OneDrive) — lượt chính tự ghi
+  // `messages`, nhánh này chỉ còn làm ghi trùng (SRS-5.1zzzzzzz26). Không còn bên nào gửi `sync_turn`.
 
   // ─── SỔ INBOUND (FR-162): mỗi zalo_msg_id là MỘT vòng đời xử lý
   // received → processing → completed/failed, lưu nguyên payload trả lời.
