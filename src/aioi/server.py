@@ -16,6 +16,7 @@ from .anh_du_an import anh_gui_kem
 from .config import load_settings
 from .delivery import chunk_reply, typing_delay
 from .drive import make_folder_namer, make_resolver
+from .giao_lo import dia_ban_tu_nga_tu
 from .engine import Engine, SqliteConversationStore
 from .followup import followup_manager
 from .llm import build_provider
@@ -66,6 +67,7 @@ def _init_engine() -> Engine:
         media_store=media_store,
         max_photos_per_listing=settings.max_photos_per_listing,
         sync_json=True,
+        nga_tu_resolver=dia_ban_tu_nga_tu,
     )
 
 

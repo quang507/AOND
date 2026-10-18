@@ -25,6 +25,7 @@ FIELD_LABELS: dict[str, str] = {
     "loai_hinh": "loại hình BĐS",
     "dia_chi": "địa chỉ",
     "phuong": "phường (phường cũ hay phường mới đều được, vd phường 1 quận 5 / phường Chợ Quán)",
+    "gan_nga_tu": "gần ngã tư nào",
     "ma_so_can": "mã số căn (vd căn số 42, block/tầng)",
     "du_an": "tên dự án / chung cư",
     "dien_tich": "diện tích",
@@ -1080,6 +1081,8 @@ QUAN TRỌNG — địa chỉ tách phần (18/10/2026): ngoài dia_chi (nguyên
 - phuong: PHƯỜNG / XÃ khách nêu, chép đúng cách khách gọi, kiểu cũ hay kiểu mới đều được ("Phường 1", "P.13", "Phường Chợ
   Quán", "xã Bình Mỹ"). Chưa nêu thì BỎ TRỐNG — KHÔNG tự suy phường từ tên đường.
 - quan: QUẬN / HUYỆN / THÀNH PHỐ (cũ) khách nêu ("Quận 5", "Q7", "Bình Thạnh", "Thủ Đức").
+- gan_nga_tu: khách tả vị trí bằng NGÃ TƯ / GÓC hai đường ("gần ngã tư Lê Văn Sỹ – Trần Huy Liệu", "góc Nguyễn Trãi với Trần Phú")
+  → hai tên đường cách nhau bằng " | " ("Lê Văn Sỹ | Trần Huy Liệu"). Chỉ khi khách nói rõ hai đường; không suy.
 Trả về JSON theo schema. Bỏ trống (không thêm key) cho thông tin chưa có."""
 
 
@@ -1127,6 +1130,10 @@ def property_field_props() -> dict[str, Any]:
     properties["quan"] = {
         "type": "string",
         "description": "Quận/huyện/thành phố (cũ) khách nêu ('Quận 5', 'Bình Thạnh', 'Thủ Đức').",
+    }
+    properties["gan_nga_tu"] = {
+        "type": "string",
+        "description": "Ngã tư khách nói nhà nằm gần: hai tên đường cách nhau ' | ' ('Lê Văn Sỹ | Trần Huy Liệu'). Chỉ khi khách nêu rõ hai đường.",
     }
     properties["unit_type"] = {
         "type": "string",

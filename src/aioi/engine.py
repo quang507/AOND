@@ -790,6 +790,7 @@ class Engine:
         media_store: MediaStore | None = None,
         max_photos_per_listing: int = MAX_PHOTOS_PER_LISTING,
         sync_json: bool = False,
+        nga_tu_resolver: Callable[[str | None], dict[str, str] | None] | None = None,
     ):
         self._provider = provider
         self._fetcher = fetcher  # injectable so tests/offline don't hit the network
@@ -798,6 +799,8 @@ class Engine:
         # url -> [(download_url, name|None)]; expands Google Drive folders/files when a
         # GOOGLE_API_KEY is configured. Default is a pass-through (one url, no name).
         self._resolve = resolver or (lambda url: [(url, None)])
+        # "A | B" (ô AI gan_nga_tu) → {"phuong", "quan"} qua bảng giao_lo (giao_lo.dia_ban_tu_nga_tu). Mặc định tắt (test offline).
+        self._nga_tu = nga_tu_resolver
         # url -> the ENCLOSING folder's own name (a hint for grouping a multi-file batch).
         self._folder_name = folder_namer or (lambda url: None)
         # SharePoint (kho gốc) — stores the seller's raw files; None = files aren't kept
@@ -1678,6 +1681,15 @@ class Engine:
                 conv.history.append(Turn("assistant", receipt_reply, now))
                 conv.last_ai_at = now
                 return self._build_result(conv, receipt_reply, captured, now)
+
+            # 1a-ngã tư (18/10/2026, SRS-5.1zzzzzzz43): khách tả vị trí bằng ngã tư mà chưa nói phường → tra bảng giao lộ;
+            #     ngã tư nằm trong đúng một phường thì điền phường, khỏi hỏi lại.
+            if self._nga_tu and conv.prop.fields.get("gan_nga_tu") and not conv.prop.fields.get("phuong"):
+                dia_ban = self._nga_tu(conv.prop.fields.get("gan_nga_tu"))
+                if dia_ban:
+                    if conv.prop.fields.get("quan"):
+                        dia_ban.pop("quan", None)
+                    captured = list(dict.fromkeys(list(captured) + conv.prop.update(dia_ban)))
 
             # 1a. A newly-captured address/project makes a listing's folder name readable — if it
             #     already has files stored under the old (id-only) folder, rename it to match.
