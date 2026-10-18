@@ -5705,6 +5705,33 @@ không nhận ra thì không ghi; `status` chỉ đặt `cho_thong_tin` lúc T�
 `legal_status` mã / `status`; cập nhật không gửi `status`, bỏ pháp lý lạ; đỏ khi bỏ bản sửa. Thử payload trên DB thật trong giao dịch
 rồi huỷ: `price_vnd` 5.200.000.000 từ "5 tỷ 2", `legal_status` so_hong, PATCH giữ `cho_thong_tin`.
 
+### SRS-5.1zzzzzzz38 · Bản nháp chỉ ra khi đủ ô bắt buộc theo loại BĐS (18/10/2026)
+
+**Ca gốc.** Zalo 18/10 21:02, câu đầu "bán nhà hẻm 4x15 quận 5, sổ hồng riêng, giá 5 tỷ 2" → bot gửi ngay bản nháp xin duyệt: chưa
+tên đường, chưa phường, chưa kết cấu, chưa độ rộng hẻm. Chủ dự án yêu cầu chuẩn hoá điều kiện ra bản nháp trong lõi Python.
+
+**Lớp lỗi.** `Property.summary_ready` chỉ đếm Ô CÓ CHỮ: `dia_chi = "hẻm Quận 5"` tính là có địa chỉ, `dien_tich_nha` mượn
+`dien_tich_dat`, nên ca gốc đạt 7/9 ô = 0.78 — trên cả ngưỡng 0.70 mới. Nâng ngưỡng một mình KHÔNG chặn được; thiếu là luật "ô nào
+bắt buộc cho loại nào" và luật "ô có chữ nhưng chưa đủ nghĩa" (địa chỉ chỉ có quận).
+
+**Chỗ cùng lớp.** (1) Ô `lo_gioi_duong` / `tho_cu` có nhãn ở `FIELD_LABELS` nhưng không thuộc danh sách ô nào nên bộ bóc tách không
+bao giờ ghi được — chặn đất nền bằng chúng mà không thêm vào `CORE_FIELDS[LAND]` thì bot kẹt mãi; đã thêm và có bài kiểm. (2) Đất nông
+nghiệp ở xã thường không có tên đường — để ngoài cổng tên đường (`LAND_GATED_TYPES` chỉ `dat`, `dat_tho_cu`). (3) Còn lại chưa sửa:
+`_has` vẫn cho `dien_tich_nha` mượn diện tích đất (ảnh hưởng điểm %, không còn quyết bản nháp); nhà dự án chưa có địa chỉ (định vị
+bằng dự án + mã căn) không bị đòi tên đường, theo thiết kế `identity_fields`.
+
+**Sửa.** `src/aioi/schema.py`: `SUMMARY_READY_COMPLETENESS` 0.55 → 0.70; `co_ten_duong(dia_chi)` (bỏ phần hành chính + chữ chung, còn
+tên riêng mới là có tên đường; mơ hồ thì nghiêng về "chưa có" — tốn thêm một câu hỏi, không ra tin rác); `blocking_fields()` — nhà
+phố / biệt thự / cấp 4: tên đường + kết cấu (hoặc diện tích nhà / số tầng / số phòng ngủ); chung cư / căn hộ: tên dự án + số phòng
+ngủ; đất nền / thổ cư: tên đường + lộ giới hoặc thổ cư; `summary_ready` đòi `blocking_fields()` rỗng; `missing_fields` đưa ô bắt buộc
+vào đúng chỗ trong thứ tự hỏi (bot hỏi đường, rồi kết cấu). `src/aioi/prompts.py`: tiêu đề "DƯỚI 10 - 12 TỪ" → "15 - 25 TỪ" (khớp
+`AD_FORMAT`), `FEE_VALUE_POINTS` bỏ "(trợ lý M•ai)" và "bán/cho thuê nhanh hơn tự rao" (luật cấm hứa bán nhanh).
+
+**Kiểm.** `tests/test_ban_nhap_du_dieu_kien.py`: `co_ten_duong` 6 ca có / 11 ca không (gồm "hẻm Quận 5", "hẻm xe hơi quận Gò Vấp" —
+cách nói mới bắt được lúc viết); ca gốc điểm ≥ 0.70 mà vẫn chặn, hỏi `dia_chi` → `ket_cau` rồi mới ra bản nháp; chung cư; đất nền + đất
+nông nghiệp; năm ô bắt buộc nằm trong schema bóc tách. Đỏ khi bỏ bản sửa. `tests/test_schema.py` hai bài đổi địa chỉ mẫu "hẻm 123" →
+"hẻm 123 Lê Lợi" (mẫu cũ không có tên đường — đúng là chưa được ra bản nháp). pytest 277 đạt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

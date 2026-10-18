@@ -45,6 +45,46 @@ def _extract_ward(text: str) -> str | None:
         return m.group(0)
     return None
 
+# 18/10/2026 (SRS-5.1zzzzzzz38): "Quận 5" / "hẻm Quận 5" từng được tính là ĐÃ CÓ địa chỉ → bản nháp nhảy ra ngay lượt đầu
+# khi chưa có tên đường. `co_ten_duong` bỏ phần hành chính (quận / huyện / phường / xã / tỉnh / thành phố, tên quận chữ) và
+# chữ chung (hẻm, mặt tiền, gần…) rồi xem còn tên riêng nào không. Sai về phía "chưa có" chỉ tốn thêm một câu hỏi; sai về phía
+# "có rồi" là bản nháp rác — nên chỗ mơ hồ nghiêng về "chưa có".
+_ADMIN_DAU_RE = re.compile(
+    r"^\s*(?:quận|q\.?\s*\d|huyện|h\.\s|phường|p\.?\s*\d|p\.\s|xã|thị trấn|thị xã|thành phố|tp\b|tp\.|tỉnh|đặc khu)",
+    re.IGNORECASE,
+)
+_ADMIN_TRONG_RE = re.compile(
+    r"\b(?:quận|q\.?)\s*(?:1[0-2]|[1-9])\b|\b(?:phường|p\.?)\s*\d{1,2}\b|"
+    r"tp\.?\s*hcm|tphcm|\bhcm\b|hồ chí minh|sài gòn|saigon|việt nam",
+    re.IGNORECASE,
+)
+_CHU_CHUNG = {
+    "hẻm", "hem", "hxh", "hxt", "hxm", "kiệt", "ngõ", "ngách", "mặt", "tiền", "mt", "nhà", "căn", "lô", "gần", "cạnh",
+    "khu", "vực", "ngay", "trong", "ngoài", "ở", "tại", "số", "đường", "xe", "hơi", "máy", "ba", "gác", "tải", "lớn",
+    "nhỏ", "rộng", "hẹp", "thông", "cụt", "chính", "nội", "bộ", "trung", "tâm", "thành", "phố", "bán", "cho", "thuê",
+    "quận", "huyện", "phường", "xã", "tỉnh", "tp", "thị", "trấn", "đặc",
+}
+
+
+def co_ten_duong(dia_chi: str | None) -> bool:
+    """Địa chỉ có TÊN ĐƯỜNG (hay số nhà kèm tên đường) chưa — không chỉ quận / phường / tỉnh."""
+    t = (dia_chi or "").strip()
+    if not t:
+        return False
+    if re.search(r"\b(?:đường|đ\.)\s*(?:số\s*)?\d+[a-z]?\b|\bđường\s+[a-z]{1,2}\d+\b", t, re.IGNORECASE):
+        return True  # "Đường số 5", "đường N1"
+    for phan in re.split(r"[,;\-–]", t):
+        if _ADMIN_DAU_RE.match(phan):
+            continue
+        con = _ADMIN_TRONG_RE.sub(" ", phan).lower()
+        for d in DISTRICT_PAIRS:
+            con = con.replace(d, " ")
+        tu = [w for w in re.findall(r"[^\W\d_]{2,}", con) if w not in _CHU_CHUNG]
+        if tu:
+            return True
+    return False
+
+
 def _extract_house_num(text: str) -> str | None:
     m = re.search(r"^\s*(\d+[\d/\-.]*[A-Za-z]?)", text)
     if m:
@@ -230,6 +270,8 @@ CORE_FIELDS: dict[PropertyGroup, list[str]] = {
         "chi_tieu_xay_dung",  # Chỉ tiêu xây dựng
         "quy_hoach",          # Quy hoạch
         "yeu_to_ha_tang",     # Hạ tầng (vướng cột điện / hố ga)
+        "lo_gioi_duong",      # Lộ giới đường trước đất (18/10: ô bắt buộc của đất nền — phải bóc được)
+        "tho_cu",             # Diện tích thổ cư
     ],
     PropertyGroup.INDUSTRIAL: [
         "thoi_han_su_dung",   # Thời hạn sử dụng đất
@@ -300,9 +342,13 @@ HOUSE_TYPES: set[str] = {"nha_pho", "biet_thu", "nha_cap_4"}
 HOUSE_AREA_FIELDS: list[str] = ["dien_tich_dat", "dien_tich_nha"]
 
 # A listing is "khá đầy đủ" (ready to draft an ad) at this fraction of expected fields,
-# on top of having every identity field. Lowered to 0.55 so the initial draft fires early
-# (once core identity + 1 main feature is known), keeping sellers engaged immediately.
-SUMMARY_READY_COMPLETENESS: float = 0.55
+# on top of having every identity field AND the per-type required fields (`blocking_fields`).
+# 18/10/2026 (SRS-5.1zzzzzzz38): 0.55 → 0.70 — bản nháp ra ngay lượt đầu khi mới có "Quận 5".
+SUMMARY_READY_COMPLETENESS: float = 0.70
+
+# Đất nền / thổ cư phải có tên đường + lộ giới hoặc thổ cư mới soạn tin; đất nông nghiệp thường ở xã, không có tên đường —
+# không chặn theo tên đường để khỏi kẹt câu hỏi.
+LAND_GATED_TYPES: set[str] = {"dat", "dat_tho_cu"}
 
 # Thông số cho thuê (áp dụng chung khi là tin cho thuê) — SRD §III.
 RENTAL_FIELDS: list[str] = [
@@ -357,11 +403,46 @@ class Property:
         """
         if not all(self._has(f) for f in self.identity_fields()):
             return False
+        if self.blocking_fields():
+            return False
         return self.completeness() >= SUMMARY_READY_COMPLETENESS
 
+    def blocking_fields(self) -> list[str]:
+        """Ô BẮT BUỘC theo loại BĐS trước khi soạn bản nháp (ngoài ngưỡng %), theo thứ tự hỏi:
+        - nhà phố / biệt thự / cấp 4: địa chỉ có tên đường (trừ căn dự án chưa có địa chỉ, định vị bằng dự án + mã căn),
+          và kết cấu (hoặc diện tích nhà / số tầng / số phòng ngủ);
+        - chung cư / căn hộ: tên dự án / chung cư và số phòng ngủ;
+        - đất nền / thổ cư: địa chỉ có tên đường, và lộ giới đường trước đất hoặc diện tích thổ cư."""
+        f = self.fields
+        can: list[str] = []
+        if self.loai_hinh in HOUSE_TYPES:
+            if "dia_chi" in self.identity_fields() and not co_ten_duong(f.get("dia_chi")):
+                can.append("dia_chi")
+            if not any(f.get(k) for k in ("ket_cau", "dien_tich_nha", "so_tang", "so_phong_ngu")):
+                can.append("ket_cau")
+        elif self.group is PropertyGroup.CONDO:
+            if not f.get("du_an"):
+                can.append("du_an")
+            if not f.get("so_phong_ngu"):
+                can.append("so_phong_ngu")
+        elif self.loai_hinh in LAND_GATED_TYPES:
+            if not co_ten_duong(f.get("dia_chi")):
+                can.append("dia_chi")
+            if not (f.get("lo_gioi_duong") or f.get("tho_cu")):
+                can.append("lo_gioi_duong")
+        return can
+
     def missing_fields(self) -> list[str]:
-        """Fields still unknown — the pool the AI draws its next question from."""
-        return [f for f in self.expected_fields() if not self._has(f)]
+        """Fields still unknown — the pool the AI draws its next question from. Ô bắt buộc chưa đạt (vd địa chỉ mới có
+        quận) nằm đúng chỗ của nó trong thứ tự hỏi; ô bắt buộc không thuộc danh sách mong đợi (tên dự án của căn hộ đã có
+        địa chỉ) đứng ngay sau nhóm nhận diện."""
+        chan = self.blocking_fields()
+        identity = set(self.identity_fields())
+        expected = self.expected_fields()
+        ra = [x for x in expected if x in identity and (not self._has(x) or x in chan)]
+        ra += [x for x in chan if x not in expected]
+        ra += [x for x in expected if x not in identity and (not self._has(x) or x in chan)]
+        return ra
 
     def completeness(self) -> float:
         """Fraction of expected fields that are filled, in [0, 1]."""

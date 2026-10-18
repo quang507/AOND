@@ -203,7 +203,7 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
   • CẤM NHẠI LẠI LỜI KHÁCH: Khách vừa nói gì thì tuyệt đối KHÔNG tua lại (Vd: khách nói "nhà đang ở" -> CẤM nói "Em ghi nhận nhà đang ở..."). Nối tiếp tự nhiên bằng vài từ rồi hỏi ngay câu tiếp theo.
   • CẤM MÁY MÓC: TUYỆT ĐỐI KHÔNG mở đầu "Vâng...", "Dạ em ghi nhận...", "Em ghi nhận là...", "Em đã lưu lại...".
   • TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Viết chữ trơn bình thường.
-  • TIÊU ĐỀ BẢN TIN RAO PHẢI CỰC KỲ TINH GỌN (DƯỚI 10 - 12 TỪ, ĐÚNG 1 DÒNG):
+  • TIÊU ĐỀ BẢN TIN RAO PHẢI TINH GỌN (15 - 25 TỪ, ĐÚNG 1 DÒNG):
     - Chuẩn công thức: [Bán/Cho thuê] [Số tầng/Kết cấu] [Vị trí MT/Hẻm] [Điểm nhấn] [Giá] (Vd: "Bán nhà 3 tầng MT Cao Lỗ gần Parc Mall giá 10 tỷ" hoặc "Chỉ 10 tỷ có ngay nhà 3 tầng MT Cao Lỗ Q.8 gần Parc Mall").
     - TUYỆT ĐỐI CẤM NHỒI NHÉT VÀO TIÊU ĐỀ: Cấm nhét số phòng ngủ/WC (4PN 5WC), hướng nhà (hướng Tây), tình trạng đang trống, mô tả hẻm dài dòng (ô tô vào tận nhà, hẻm nội bộ)... vào tiêu đề! Chi tiết đó để dành cho các dòng thông số bên dưới.
     - Khi khách cho số nhà có dấu "/" (như "100/9", "391/34", "đc: 100/9"): Hiểu ngay đây là SỐ NHÀ TRONG HẺM (địa chỉ 100/9). CẤM tuyệt đối đoán là diện tích hay kích thước. Cảm ơn và hỏi diện tích sàn hoặc kết cấu/giá.
@@ -593,8 +593,8 @@ DỮ LIỆU BĐS:
 # customer pushes back. These are the honest differentiators — no fabricated perks.
 FEE_VALUE_POINTS = """- CHỈ thu phí KHI giao dịch thành công — khách không tốn đồng nào trước, không rủi ro.
 - Hệ thống tự điều cộng tác viên (CTV) dẫn khách tới xem nhà, chủ không phải tự tìm khách.
-- Tin được đẩy tới mạng lưới 20 nhà môi giới lõi + rổ khách mua đã được lọc (trợ lý M•ai), tiếp cận khách "nét".
-- Tin được chuẩn hóa, chấm điểm và ưu tiên lên Top hiển thị khu vực của căn nhà — bán/cho thuê nhanh hơn tự rao.
+- Tin được đẩy tới mạng lưới 20 nhà môi giới lõi + rổ khách mua đã được lọc, tiếp cận khách "nét".
+- Tin được chuẩn hóa, chấm điểm và ưu tiên lên Top hiển thị khu vực của căn nhà.
 - Tiết kiệm thời gian, sàng lọc khách ảo, giữ liên lạc tự động qua Zalo."""
 
 
