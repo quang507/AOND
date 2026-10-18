@@ -54,6 +54,7 @@ from .prompts import (
     build_project_docs_block,
     build_transcribe_instruction,
     build_fee_followup_system,
+    khoi_trang_thai_web,
     build_greeting,
     build_listing_proposal_system,
     build_inventory_instruction,
@@ -1770,7 +1771,7 @@ class Engine:
             )
         else:
             system = build_fee_followup_system(
-                conv.assistant.name, conv.prop, conv.user_type, project_block
+                conv.assistant.name, conv.prop, conv.user_type, project_block, web=self._trang_thai_web(conv)
             )
 
         if customer_pronoun == "em":
@@ -1816,12 +1817,13 @@ class Engine:
                 "Sau đó lịch sự mời khách an tâm chia sẻ tiếp thông tin căn nhà.\n"
             )
         elif _is_link_question(text):
+            # Câu "tin đã lên web" do trạng thái THẬT quyết (khoi_trang_thai_web, SRS-5.1zzzzzzz44) — tin chưa ra bản nháp thì
+            # chắc chắn chưa hiển thị.
+            web = self._trang_thai_web(conv) if is_listing_post else {"len_web": False, "chua_ban_nhap": True}
             system += (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ LINK HOẶC CÁCH ĐĂNG TRÊN WEB: ===\n"
                 "Khách vừa hỏi xem link bài đăng, xem tin ở đâu hoặc tin trên web đang hiển thị như thế nào. Hãy TRẢ LỜI RÕ RÀNG, CHUYÊN NGHIỆP:\n"
-                "- Cung cấp ngay đường link website hệ thống: https://aioinhadat.com\n"
-                "- Giải thích ngắn gọn: Tin của anh/chị đã được đưa lên hệ thống website aioinhadat.com với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng như mạng lưới môi giới có thể xem và liên hệ trực tiếp.\n"
-                "- Mời anh/chị truy cập https://aioinhadat.com để xem hoặc theo dõi tin rao.\n"
+                + khoi_trang_thai_web(web)[1] + "\n"
             )
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
         system += self._project_memory_block(project)  # remember the price list + phân lô; reason over it
@@ -2852,6 +2854,20 @@ class Engine:
             self._media_store.upload(folder, "nhu_cau.json", json_bytes, "application/json")
         except Exception as e:
             log.warning("Không thể lưu nhu_cau.json lên SharePoint: %s", e)
+
+    def _trang_thai_web(self, conv: Conversation) -> dict | None:
+        """Trạng thái THẬT của tin đang nói trên web (kho Supabase). Kho không có khái niệm web → None (giữ lời cũ); có nhưng đọc
+        lỗi → {"len_web": None}: bot nói trung tính, không bịa "đã đăng". Ghi lượt này xuống trước để trigger DB tính trên dữ liệu
+        mới nhất (khách vừa bổ sung phường → tin lên ngay, bot báo đúng)."""
+        doc = getattr(self._convstore, "trang_thai_tin", None)
+        if doc is None:
+            return None
+        try:
+            self._convstore.save(conv)
+            return doc(conv) or {"len_web": None}
+        except Exception as e:  # noqa: BLE001
+            log.warning("trang_thai_web lỗi: %s", e)
+            return {"len_web": None}
 
     def _build_result(
         self, conv: Conversation, reply: str, captured: list[str], now: float
