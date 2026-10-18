@@ -5782,7 +5782,8 @@ Chưa làm: nối vào lời bot (lượt sau — tin có toạ độ → "cách
 **Kiểm.** `bot/tests/giao-lo.mjs` (10 ca: ngã tư thường, đại lộ hai chiều gom một, cắt hai lần ở xa, nút ba đường, + 4 ca không được
 kích: cùng tên nối đoạn, nút ngoài phường, tên rác, đường không tên). `bot/tests/sql/giao-lo.sql` (7 ca: hai đường thứ tự bất kỳ không
 dấu, gần trước theo toạ độ, quanh điểm 111 / 222 m, giữ / bỏ hẻm, ngoài bán kính, không giao). Production: số dòng + số phường có
-giao lộ sau lượt `nap-giao-lo`.
+giao lộ sau lượt `nap-giao-lo`. `bot/tests/sql/chay.sh` nạp `schema.sql` hai lượt: file tạo bảng trước hàm nên cột sinh gọi
+`bo_dau` (`giao_lo`, cả `duong` từ 20260921b) hỏng ở lượt đầu — CI đỏ "relation giao_lo does not exist" bắt được lỗi bộ chạy này.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
