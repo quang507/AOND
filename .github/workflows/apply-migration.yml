@@ -96,7 +96,7 @@ jobs:
           NHANH_VPS="$GITHUB_REF_NAME"
           if ! printf '%s' "$NHANH_VPS" | grep -Eq '^[A-Za-z0-9._/-]+$'; then echo "::error::Tên nhánh lạ: $NHANH_VPS"; exit 1; fi
           printf '%s\n' "$BS" | sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 "root@$HOST" \
-            "read -r BRIDGE_SECRET; export BRIDGE_SECRET; curl -fsSL https://raw.githubusercontent.com/quang507/Nhadat.cc/$NHANH_VPS/bot/bridge-zca/cai-vps.sh -o /root/cai-vps.sh && NHANH='$NHANH_VPS' bash /root/cai-vps.sh </dev/null; unset BRIDGE_SECRET; sleep 25; echo \"== service: \$(systemctl is-active nhadat-bridge)\"; journalctl -u nhadat-bridge -n 40 --no-pager -o cat | grep -viE 'qr-|http://|https://' | tail -25" \
+            "read -r BRIDGE_SECRET; export BRIDGE_SECRET; curl -fsSL https://raw.githubusercontent.com/quang507/AOND/$NHANH_VPS/bot/bridge-zca/cai-vps.sh -o /root/cai-vps.sh && NHANH='$NHANH_VPS' bash /root/cai-vps.sh </dev/null; unset BRIDGE_SECRET; sleep 25; echo \"== service: \$(systemctl is-active nhadat-bridge)\"; journalctl -u nhadat-bridge -n 40 --no-pager -o cat | grep -viE 'qr-|http://|https://' | tail -25" \
             > /tmp/vps.log 2>&1 || rc=$?
           unset SSHPASS PW BS
           # Che dãy số ≥ 9 chữ số (Zalo ID của acc clone / khách, SĐT) — log repo này công khai.

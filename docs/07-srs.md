@@ -5490,6 +5490,33 @@ dùng `--chi`).
 **Kiểm (đỏ khi tắt).** `bot/tests/prompt-khong-mau-thuan.mjs` (trong `test:bot`): PKM-01…08 — chạy trên `prompts.ts` trước bản sửa đỏ 11 ca
 (01, 02, 03 ×4, 04 ×3, 05, 07). e2e V48-45 đổi kỳ vọng "anh/chị" → "anh chị". e2e 1440/1440.
 
+### SRS-5.1zzzzzzz29 · Mọi thứ chạy trên máy trỏ về repo AOND; CRM tự cập nhật khi có tin (18/10/2026)
+
+**Ca gốc.** Chủ dự án 18/10/2026: "cấu hình ssh và cập nhật đi, đang còn thiếu cái nào của bản nhadat.cc… crm có cập nhật khi nhận tin
+luôn chưa"; "phải chuyển sang đây để xoá repo nhadat.cc". Soát cùng ngày: (a) code gộp về AOND 17/10 nhưng `bot/bridge-zca/cai-vps.sh`
+(bridge Zalo), `bot/tests/chat/cai-vps.sh` (trang chat thử, nhánh mặc định `claude/zealous-ramanujan-p5ftyj` của repo cũ), bước `cai-vps`
+của `apply-migration.yml` và `VPS.md` vẫn clone / tải script từ `quang507/Nhadat.cc` — VPS chạy code cũ, xoá repo cũ thì lần cập nhật sau
+hỏng; 8/9 edge function cũng còn bản dựng từ repo cũ (chat-reply đã deploy lại từ AOND, v75). (b) `/admin/tin-nhan` chỉ tải lúc mở và khi
+bấm "Làm mới"; publication `supabase_realtime` rỗng.
+
+**Lớp lỗi.** (a) Đổi nguồn code (gộp repo) mà không soát chỗ nào ĐANG KÉO code từ nguồn cũ — script cài máy và workflow không nằm trong
+đường build nên CI không thấy. (b) Màn theo dõi trực tiếp mà dữ liệu chỉ tới khi người bấm.
+
+**Chỗ cùng lớp.** (a) Soát `.github/workflows/*.yml`, mọi `*.sh`, `VPS.md`: 4 file trên — đã sửa. Còn lại: các edge function khác deploy lại từ
+AOND (`deploy-bot.yml`, từng function); VPS phải chạy lại script cài (bridge qua `apply-migration` ô `cai-vps`; trang chat thử qua
+`bot/tests/chat/cai-vps.sh`, cần khoá Anthropic riêng nên chạy tay); `CLAUDE.md` còn nhắc URL raw repo cũ trong luật "đừng trỏ web vào
+raw.githubusercontent" — luật vẫn đúng, giữ. (b) Trang `/admin` (bảng tổng) cũng tải một lần — chưa đổi.
+
+**Sửa.** (a) Ba chỗ clone / tải script đổi sang `quang507/AOND`; script bridge trên máy cài từ repo cũ tự `remote set-url origin` rồi lấy đúng
+bản nhánh bằng `fetch` + `reset --hard` (bỏ `pull --ff-only` — lịch sử hai repo không nối nhau; file không track `.env`, `zalo-session.json`
+giữ nguyên); script trang chat thử cũng đổi origin, nhánh mặc định `main`. (b) Migration `20261018a_crm_realtime.sql` thêm `messages` +
+`conversations` vào `supabase_realtime` (RLS admin vẫn chặn người ngoài); `/admin/tin-nhan` nghe `postgres_changes` INSERT `messages` (tin của
+hội thoại đang mở hiện ngay) và UPDATE `conversations`, tải lại danh sách sau 1,5 s (gom nhiều tin một lượt).
+
+**Kiểm (đỏ khi tắt).** `bot/tests/aond-mot-nguon.mjs` (trong `test:bot`): AMN-01 (không file chạy-trên-máy nào trỏ repo cũ), AMN-02/03 (đổi
+origin, không `pull --ff-only`), AMN-04 (CRM nghe Realtime), AMN-05 (migration). Trên bản trước sửa đỏ 7 ca. `bun run kieu` sạch. Realtime chạy
+thật chỉ kiểm được sau khi áp migration và mở `/admin/tin-nhan`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

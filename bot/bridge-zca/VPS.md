@@ -11,7 +11,7 @@ VPS nhỏ nhất là đủ (1 vCPU, 1 GB, Ubuntu 22.04/24.04).
 `cai-vps.sh` gói mục 1, 2, 4 dưới đây, chạy lại được, không in secret:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/quang507/Nhadat.cc/main/bot/bridge-zca/cai-vps.sh -o cai-vps.sh
+curl -fsSL https://raw.githubusercontent.com/quang507/AOND/main/bot/bridge-zca/cai-vps.sh -o cai-vps.sh
 sudo BRIDGE_SECRET='<giá trị trong Supabase → Vault → BRIDGE_SECRET>' bash cai-vps.sh
 ```
 
@@ -37,7 +37,7 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-ge
 sudo useradd -m -s /bin/bash nhadat
 sudo mkdir -p /opt/nhadat && sudo chown nhadat:nhadat /opt/nhadat
 sudo -iu nhadat
-git clone https://github.com/quang507/Nhadat.cc.git /opt/nhadat   # repo public
+git clone https://github.com/quang507/AOND.git /opt/nhadat   # repo public
 cd /opt/nhadat/bot/bridge-zca && npm init -y >/dev/null && npm i zca-js
 ```
 

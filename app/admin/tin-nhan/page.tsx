@@ -4,7 +4,7 @@
 // "Sửa thành câu chuẩn" (FR-180) — sửa ngay tại chỗ đang đọc, mẫu vào `mau_cau`.
 // Đọc `conversations`/`messages` qua RLS admin; không gọi RPC nào của bot.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { Btn } from "@/components/ui";
@@ -61,6 +61,9 @@ export default function Page() {
   const [nhap, setNhap] = useState("");
   const [dangLuu, setDangLuu] = useState(false);
   const [thongBao, setThongBao] = useState<string | null>(null);
+  // SRS-5.1zzzzzzz29: hội thoại đang mở, đọc được trong callback Realtime (closure của effect không thấy state mới).
+  const chonRef = useRef<HoiThoai | null>(null);
+  useEffect(() => { chonRef.current = chon; }, [chon]);
 
   const napMau = async () => {
     const { data } = await supabase.from("mau_cau").select("id, message_id, conversation_id, cau_chuan, dung_lam").limit(3000);
@@ -100,6 +103,29 @@ export default function Page() {
       } catch { /* không có URL */ }
     });
   }, []);
+
+  // SRS-5.1zzzzzzz29 (chủ dự án 18/10/2026: "crm có cập nhật khi nhận tin luôn chưa"): trước đây chỉ tải lúc mở trang và khi bấm
+  // "Làm mới". Nay nghe Supabase Realtime (migration 20261018a thêm `messages` + `conversations` vào publication; RLS admin vẫn chặn —
+  // chỉ admin nhận sự kiện): tin mới của hội thoại đang mở hiện ngay, danh sách hội thoại tải lại sau 1,5 s (gom nhiều tin liền một
+  // lượt, đỡ request REST gói Free). Mất kết nối thì nút "Làm mới" vẫn dùng như cũ.
+  useEffect(() => {
+    if (role !== "admin") return;
+    let hen: ReturnType<typeof setTimeout> | null = null;
+    const napLai = () => { if (hen) clearTimeout(hen); hen = setTimeout(() => { void napHoiThoai(); }, 1500); };
+    const kenh = supabase.channel("crm-tin-nhan")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (p) => {
+        const m = p.new as Tin & { conversation_id: string };
+        if (chonRef.current?.id === m.conversation_id) {
+          setTin((ds) => ds.some((x) => x.id === m.id) ? ds
+            : [...ds, { id: m.id, sender: m.sender, body: m.body, seq: m.seq, created_at: m.created_at }].sort((a, b) => a.seq - b.seq));
+        }
+        napLai();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversations" }, () => napLai())
+      .subscribe();
+    return () => { if (hen) clearTimeout(hen); void supabase.removeChannel(kenh); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role]);
 
   const moHoiThoai = async (h: HoiThoai) => {
     setChon(h); setDangSua(null);
