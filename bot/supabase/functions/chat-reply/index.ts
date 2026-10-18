@@ -6378,8 +6378,8 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
         let urls: Array<{ url: string; ten: string | null }> = [{ url: n.url, ten: n.ten }];
         const drive = n.kieu === "link" ? docLinkDrive(n.url) : null;
         if (drive) {
-          // SRS-5.1zzl (demo drive.py): file chia sẻ công khai tải được không cần khoá; THƯ MỤC cần GOOGLE_API_KEY (Vault).
-          const key = (await docBiMat(client, "GOOGLE_API_KEY")).giaTri;
+          // SRS-5.1zzl (demo drive.py): file chia sẻ công khai tải được không cần khoá; THƯ MỤC cần GOOGLE_API_KEY / GOOGLE_DRIVE_API_KEY (Vault).
+          const key = (await docBiMat(client, "GOOGLE_API_KEY")).giaTri || (await docBiMat(client, "GOOGLE_DRIVE_API_KEY")).giaTri;
           if (drive.loai === "thu_muc") {
             if (!key) { cau.push(`Dạ link thư mục Google Drive em chưa mở được ạ. ${CachGoi} gửi thẳng file (PDF, ảnh, Excel) hoặc link từng file giúp em nha.`); continue; }
             const r = await fetch(`https://www.googleapis.com/drive/v3/files?q='${drive.id}'+in+parents+and+trashed=false&fields=files(id,name,mimeType)&pageSize=20&key=${key}`, { signal: AbortSignal.timeout(15_000) }).catch(() => null);
