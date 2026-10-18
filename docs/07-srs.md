@@ -5629,7 +5629,7 @@ GEMINI_API_KEY_3, GEMINI_NHUNG_4, GEMINI_NHUNG_5, GEMINI_NHUNG_6` — khoá chí
 một vòng mà vẫn 429. Gỡ lệnh dừng đang treo. Chỗ cùng lớp: `tim_nghia_san_sang` / câu tìm của khách vẫn dùng một khoá chính — cố ý,
 để nhúng nền không ăn hạn mức của khách.
 
-**Kiểm.** Chạy migration trên Postgres tạm: vòng `k2→k3→k4→k5→k6`, lần đổi thứ 5 trả false và quay về `k2`; `nhung_tam_dung_den` rỗng.
+**Kiểm.** `bot/tests/sql/xoay-khoa-nhung.sql` (trong `test:sql`, đỏ khi bỏ hai hàm). Chạy migration trên Postgres tạm: vòng `k2→k3→k4→k5→k6`, lần đổi thứ 5 trả false và quay về `k2`; `nhung_tam_dung_den` rỗng.
 Production: `nhung_tick` gửi mẻ lại, số dòng có vector tăng.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
