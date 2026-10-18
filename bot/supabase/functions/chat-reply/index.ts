@@ -90,7 +90,7 @@ import { timTienIchQuanh, timTinGanMoc, type TinGan } from "../_shared/tim-moc.t
 import { cauKhoangCachKhongNguon, chayTroLyMua, DAU_RA_CONG_CU, doiLenhCuoiTroLy, LENH_CUOI_JSON, type PhanHoiModel } from "../_shared/ai/tro-ly.ts";
 // FR-176: câu chủ nhà nhắn có phải câu trả lời không — tầng tiền định, không model.
 import {
-  batXungHo, bocViTriRao, chonCanTheoCau, gonGiaTriFact, laChiDonViHanhChinh, chonCauKe, cungHoFact, HOI_MOT_LAN, laBaoDang, laCauHoiTron, laDongY, laThaCamXuc, laDuRoi, laGap, laHoanLai, laKhongGiHet, laNgungRao, docTraLoiConBan, laRaoLai, laRutLoiBan, NHAN_HOI_LAI, nhanDienFact,
+  batXungHo, bocViTriRao, chonCanTheoCau, gonGiaTriFact, laChiDonViHanhChinh, chonCauKe, cungHoFact, HOI_MOT_LAN, laBaoDang, laCauHoiTron, laDongY, laThaCamXuc, laStickerTrungTinh, laTinRongNghia, laDuRoi, laGap, laHoanLai, laKhongGiHet, laNgungRao, docTraLoiConBan, laRaoLai, laRutLoiBan, NHAN_HOI_LAI, nhanDienFact,
   loaiTuChu, nhanDienNhieuCan, nhanDienNhieuFact, laChiLenhDang, phanLoaiCauTraLoi, tachCauHoiNguoc, tachTheoCan, tuXungTuCau, vungPhuDinh, cheoPhuDinh, catDapAn, type KetQuaKhop, type NgungRao,
   suyTuXungHo, tuXungBot, laChaoChau, hocXungHoTuLichSu, cachGoiKhach, XUNG_HO_LON_TUOI, XUNG_HO_HOP_LE, type XungHo, boLoiChaoDau,
 } from "../_shared/extraction/khop-cau-tra-loi.ts";
@@ -2325,7 +2325,7 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
           const { data, error } = await client.from("messages").select("seq, body").eq("conversation_id", convSId)
             .in("sender", ["buyer", "seller"]).gt("seq", seqChu).limit(5);
           if (error) { await ghiLoi(client, "chat-reply kiem tin moi hon (ban)", error.message); return false; }
-          return ((data ?? []) as Array<{ body: string | null }>).some((m) => !laThaCamXuc(m.body ?? ""));
+          return ((data ?? []) as Array<{ body: string | null }>).some((m) => !laTinRongNghia(m.body ?? ""));
         };
       }
     }
@@ -2400,7 +2400,7 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
       for (const r of truocDo) {
         if (!laTinNguoi(r.sender) || !r.created_at) break;
         // Ảnh / file / link và thả cảm xúc giữa hai câu chữ không cắt cụm, cũng không gộp (không mang chữ để đọc).
-        if (laTinMedia(r.body) || laThaCamXuc(r.body ?? "")) continue;
+        if (laTinMedia(r.body) || laTinRongNghia(r.body ?? "")) continue;
         if (giayCach(sau, r.created_at) > 90) break;
         cum.push(r); sau = r.created_at;
       }
@@ -4150,7 +4150,7 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
      *  bóc tách chỉ thấy 4 lượt, mỗi lượt cắt 220 chữ. */
     const tinChuNhaGoc = (): string[] => {
       const nguoi = ((lichSuDai ?? []) as Array<{ sender: string; body: string | null }>).filter((m) => laTinNguoi(m.sender));
-      const ds = nguoi.map((m) => thayLienHe((m.body ?? "").trim(), "[liên hệ]")).filter((b) => b && !laThaCamXuc(b));
+      const ds = nguoi.map((m) => thayLienHe((m.body ?? "").trim(), "[liên hệ]")).filter((b) => b && !laTinRongNghia(b));
       if (ds.length && ds[0] === thayLienHe(textTinNay.trim(), "[liên hệ]")) ds.shift(); // SRS-5.1zzzzzzg: so với tin đơn đã ghi sổ, không so bản gộp
       const ra: string[] = [];
       let tong = 0;
@@ -4537,6 +4537,11 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
 
     // 02/10/2026 (test Zalo, ảnh chủ dự án): "[khách thả cảm xúc /-strong]" ngay sau tin rao bị lấy làm câu trả lời câu
     // "loại nhà" → bot hỏi lại lần ba. Thả cảm xúc chỉ là GẬT (FR-142): có nghĩa với câu xin đồng ý; câu cần NỘI DUNG thì im.
+    // 18/10/2026: sticker trung tính (`laStickerTrungTinh`) KHÁC thả cảm xúc — không bao giờ là gật, kể cả lúc chờ duyệt:
+    // im lặng, không ghi gì, không coi là yêu cầu sửa tin (trước đó nó rơi xuống "sửa bản tin" → bo_sung → bài rao).
+    if (!imageUrl && laStickerTrungTinh(text)) {
+      return await traLoiSeller([], { sticker: true });
+    }
     if (!imageUrl && laThaCamXuc(text) && !(pendingReq && CAU_GAT_DUOC.has(pendingReq.question))) {
       return await traLoiSeller([], { tha_cam_xuc: true });
     }
@@ -6760,7 +6765,7 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
         // về đúng căn), KHÔNG đọc lại cả hội thoại — facts từng căn đã lưu riêng, lớp dedup (`giaTriKhongDoi`,
         // `cungNoiDungDiaChi`, `docTien`) vẫn chặn ghi đè chéo. Một căn (cũ) giữ nguyên: đọc cả hội thoại để vá fact rớt.
         const nguonChot = nhieuCan ? [thayLienHe(text.trim(), "[liên hệ]")] : [...tinChuNhaGoc(), thayLienHe(text.trim(), "[liên hệ]")];
-        const tinKhach = nguonChot.filter((b) => b && !laThaCamXuc(b));
+        const tinKhach = nguonChot.filter((b) => b && !laTinRongNghia(b));
         if (!tinKhach.length) return false;
         const tinGop = tinKhach.map((b) => b.replace(/\s*\n+\s*/g, " / ")).join("\n").slice(-6000);
         const [{ data: lRow, error: lErr }, { data: fRows, error: fErr }] = await Promise.all([
@@ -10113,7 +10118,7 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
   }
   // SRS-5.1zzzzzq (Zalo thật 13/10/2026): khách mua thả 👍 hai lần → mỗi lần một lượt model + "🤖 Không trích xuất được gì" + câu
   // tư vấn lạc đề. Thả cảm xúc là GẬT (FR-142), bên mua không có câu nào đang xin đồng ý → im (tin đã ghi messages).
-  if (!imageUrl && laThaCamXuc(text)) return await hoanTat({ reply: null, replies: [], tha_cam_xuc: true });
+  if (!imageUrl && laTinRongNghia(text)) return await hoanTat({ reply: null, replies: [], tha_cam_xuc: true });
 
   // MỘT lượt đọc `messages` cho bốn việc từng là bốn truy vấn nối đuôi
   // (FR-171 h): trần 24h (FR-146), nhường lượt (FR-131), "tin đầu tiên?"
@@ -10181,7 +10186,7 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
       const { data, error } = await client.from("messages").select("seq, body").eq("conversation_id", convId)
         .in("sender", ["buyer", "seller"]).gt("seq", seqToi).limit(5);
       if (error) { await ghiLoi(client, "chat-reply kiem tin moi hon (mua)", error.message); return false; }
-      return ((data ?? []) as Array<{ body: string | null }>).some((m) => !laThaCamXuc(m.body ?? ""));
+      return ((data ?? []) as Array<{ body: string | null }>).some((m) => !laTinRongNghia(m.body ?? ""));
     };
   }
 

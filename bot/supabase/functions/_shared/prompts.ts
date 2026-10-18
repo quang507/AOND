@@ -666,7 +666,8 @@ export const CAU_HOI_MAU_TEXT = JSON.stringify(CAU_HOI_MAU, null, 2);
  *
  * Ô điền: {ac} = cách gọi khách (anh/chị hoặc tên), {Ac} = viết hoa đầu câu,
  * {diem} = điểm đầy đủ, {thieu} = hai thứ còn thiếu, {ds} = danh sách vừa bóc,
- * {web} = tên web, {ten} = tên trợ lý của khách (FR-181), {loai} = loại BĐS đọc thường ("đất", "căn hộ" — FR-236; thiếu thì "nhà"). Ô nào không có dữ liệu thì cả câu chứa nó được bỏ.
+ * {web} = tên web, {ten} = tên trợ lý của khách (FR-181), {loai} = loại BĐS đọc thường ("đất", "căn hộ" — FR-236; thiếu thì "nhà"),
+ * {hang} = hạng người rao, {ly_do} = lý do hạng (điểm tin), {goi_y} = câu gợi ý phường. Ô nào không có dữ liệu thì cả câu chứa nó được bỏ.
  */
 export const CAU_TIEN_DINH: Record<string, string> = {
   // 23/09/2026 (chủ dự án, ảnh Zalo): bỏ câu "Sai chỗ nào … nhắn lại giúp em nha" — thừa, lượt nào cũng lặp.
@@ -733,7 +734,10 @@ export function docCauTienDinh(json: string | null | undefined): { bang: Record<
 /** Điền ô cho một câu tiền định. Ô thiếu dữ liệu → trả chuỗi rỗng để tầng gọi bỏ câu. */
 export function dienCau(mau: string, o: Record<string, string | number | null | undefined>): string {
   let thieuO = false;
-  const ra = mau.replace(/\{(ac|Ac|diem|thieu|ds|web|ten|loai|hang|goi_y)\}/g, (_, k: string) => {
+  // 18/10/2026: thêm `ly_do` — `dang_xong_hang` ("… hạng {hang} bên em ({ly_do}).") truyền ô này từ chat-reply nhưng
+  // regex cũ không nhận, nên khách đọc nguyên văn "({ly_do})" mỗi lần tin lên kệ. Ô mới dùng ở câu tiền định nào thì
+  // thêm tên ô vào đây, không thì nó lộ nguyên chữ ra Zalo.
+  const ra = mau.replace(/\{(ac|Ac|diem|thieu|ds|web|ten|loai|hang|ly_do|goi_y)\}/g, (_, k: string) => {
     const v = o[k];
     if (v == null || v === "") { thieuO = true; return ""; }
     const s = String(v);

@@ -2111,6 +2111,19 @@ const EMOJI_VUI = /(👍|❤️|❤|😍|🥰|😊|🙂|👌|🔥|💯|\[sticker
 export function laThaCamXuc(text: string): boolean {
   return /^\s*\[(?:khách|khach) thả cảm xúc[^\]]*\]\s*$/iu.test(text ?? "");
 }
+/**
+ * 18/10/2026 — sticker Zalo cá nhân KHÔNG rõ sắc thái (bridge gán `[khách gửi sticker]`, thay "[sticker cảm xúc]" cũ từng
+ * khớp EMOJI_VUI nên sticker bực cũng thành GẬT). Khác `laThaCamXuc` ở chỗ: sticker KHÔNG BAO GIỜ là gật, kể cả khi đang
+ * hỏi duyệt — chỉ là tin rỗng nghĩa. Lớp lỗi bắt khi chat thử: chuỗi trung tính không được nhận là tin-rỗng nên lúc chờ
+ * duyệt nó rơi xuống đường "sửa bản tin" → ghi bo_sung → in lên bài rao công khai.
+ */
+export function laStickerTrungTinh(text: string): boolean {
+  return /^\s*\[(?:khách|khach) gửi sticker\]\s*$/iu.test(text ?? "");
+}
+/** Tin không mang chữ (thả cảm xúc hoặc sticker trung tính): không phải dữ liệu căn nhà, không tính là "tin mới hơn". */
+export function laTinRongNghia(text: string): boolean {
+  return laThaCamXuc(text) || laStickerTrungTinh(text);
+}
 export function laDongY(text: string): boolean {
   const goc = text.trim();
   if (!goc) return false;

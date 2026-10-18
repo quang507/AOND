@@ -2467,6 +2467,42 @@ fresh(seedKho);
   delete globalThis.__cauHinh;
 }
 
+// 18/10/2026 (chat thử ký gửi): sticker trung tính từ bridge `[khách gửi sticker]` — KHÔNG bao giờ là gật, KHÔNG phải dữ
+// liệu căn nhà. Trước bản sửa: lúc chờ duyệt nó rơi xuống "sửa bản tin" → bo_sung → in "📝 Thêm: … · [khách gửi sticker]"
+// lên bài rao. Model chết để kiểm đúng đường tiền định (đường production rơi về khi model hỏng).
+{
+  globalThis.__cauHinh = { test_reset_hello: "1" };
+  const moStk = (q) => (d) => {
+    const s = d.insert("sellers", { zalo_user_id: "z-stk", seller_type: "ccrb", name: null, active_listing_id: null }).data;
+    const l = d.insert("listings", { code: "BDS-Q5-0777", seller_id: s.id, deal: "ban", status: "cho_thong_tin", property_type: "nha_pho", location_raw: "123 Trần Bình Trọng", ward: "Phường Chợ Quán", district: "Quận 5", price_raw: "7 tỷ", price_vnd: 7e9, area_m2: 60, can_chu_duyet: true }).data;
+    s.active_listing_id = l.id;
+    d.insert("info_requests", { listing_id: l.id, question: q, status: "pending" });
+  };
+  globalThis.__model.parse = () => { throw new Error("model chết"); };
+  globalThis.__model.create = () => { throw new Error("model chết"); };
+  fresh(moStk("duyet_tin"));
+  r = await send({ external_user_id: "z-stk", text: "[khách gửi sticker]" });
+  const lStk = db().t.listings.find((x) => x.code === "BDS-Q5-0777");
+  check("STK-01 chờ duyệt bản nháp, khách gửi sticker → KHÔNG đăng tin, không ghi sticker vào tin",
+    lStk?.status === "cho_thong_tin" && !lStk?.chu_duyet_at && !db().t.listing_facts.some((f) => /sticker/i.test(f.answer ?? "")),
+    JSON.stringify({ st: lStk?.status, duyet: lStk?.chu_duyet_at, f: db().t.listing_facts, rep: r.body.replies }));
+  fresh(moStk("phap_ly"));
+  r = await send({ external_user_id: "z-stk", text: "[khach gửi sticker]" });
+  check("STK-02 (cách gõ mới, 'khach' không dấu) đang hỏi pháp lý, khách gửi sticker → không ghi pháp lý / bổ sung từ sticker",
+    !db().t.listing_facts.some((f) => /sticker/i.test(f.answer ?? "")),
+    JSON.stringify({ f: db().t.listing_facts, rep: r.body.replies }));
+  delete globalThis.__cauHinh;
+}
+
+// 18/10/2026: `dienCau` không nhận ô {ly_do} → khách đọc nguyên văn "hạng Bạc bên em ({ly_do})." mỗi lần tin lên kệ.
+{
+  const { dienCau, CAU_TIEN_DINH } = await import("../../supabase/functions/_shared/prompts.ts");
+  const cHang = dienCau(CAU_TIEN_DINH.dang_xong_hang, { Ac: "Anh", hang: "Bạc", ly_do: "điểm tin 85/100" });
+  check("LYDO-01 câu báo hạng điền ô {ly_do}, không lộ ngoặc nhọn ra Zalo", cHang.includes("điểm tin 85/100") && !/[{}]/.test(cHang), cHang);
+  const cThieu = dienCau(CAU_TIEN_DINH.dang_xong_hang, { Ac: "Chị", hang: "Vàng", ly_do: "" });
+  check("LYDO-02 (đối chứng) thiếu lý do → bỏ cả câu, không in '({ly_do})'", cThieu === "", cThieu);
+}
+
 // ── 14/09: nhánh mua KHÔNG còn structured output (chậm gấp đôi) — đọc JSON từ chữ ──
 {
   fresh(seedKho);
@@ -9909,8 +9945,11 @@ const aiTat = () => { globalThis.__cauHinh = { test_reset_hello: "1", boc_tach_a
   seedDuyet("g-ccrb", "ccrb", "BDS-Q5-0971");
   rG = await send({ external_user_id: "g-ccrb", text: "ok đăng đi em" });
   const lG = db().t.listings.find((l) => l.code === "BDS-Q5-0971");
-  check("AOND-G2 chính chủ gật → lên kệ, câu lên kệ nói hạng (mock: Bạc), KHÔNG nhắc chuẩn 10 căn",
-    lG?.status === "dang_ban" && /hạng Bạc/.test(rG.body.replies.join("\n")) && !/10 căn/.test(rG.body.replies.join("\n")) && !/hạng Vàng/.test(rG.body.replies.join("\n")),
+  // 18/10/2026: điều kiện cũ `!/hạng Vàng/` chỉ xanh nhờ bug `{ly_do}` (lý do hạng không được điền). Nay lý do Bạc điền đúng
+  // lời soạn sẵn "… để lên hạng Vàng ưu tiên hiển thị" — đó là lời hợp lệ. Ý thật của ca: chính chủ KHÔNG nhận câu khích lệ
+  // của môi giới (dấu hiệu "giới thiệu căn hạng Vàng trước", G3 kiểm có mặt) và không bị gọi sai là đang ở hạng Vàng.
+  check("AOND-G2 chính chủ gật → lên kệ, câu lên kệ nói hạng (mock: Bạc), KHÔNG nhắc chuẩn 10 căn, KHÔNG câu khích lệ môi giới",
+    lG?.status === "dang_ban" && /hạng Bạc/.test(rG.body.replies.join("\n")) && !/10 căn/.test(rG.body.replies.join("\n")) && !/giới thiệu căn hạng Vàng trước|đang ở hạng Vàng/.test(rG.body.replies.join("\n")),
     JSON.stringify({ st: lG?.status, rep: rG.body.replies }));
   seedDuyet("g-nmg", "nmg", "BDS-Q5-0972", 2);
   rG = await send({ external_user_id: "g-nmg", text: "ok đăng đi em" });
