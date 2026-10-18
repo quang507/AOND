@@ -5614,6 +5614,24 @@ ntfy cũng tắt; tin 🩺 Zalo cho admin qua `bot_health_tick` → `reminders` 
 **Kiểm.** Sau khi áp: `vault.secrets` không còn tên `DA_XOA_%`; `app_config` không còn `ntfy_topic`; lượt `bot_health_tick` kế tiếp
 không ghi lỗi mới.
 
+### SRS-5.1zzzzzzz34 · Xoay vòng khoá Gemini cho nhúng nền (18/10/2026)
+
+**Ca gốc.** Sổ lỗi 18/10 09:43: "Gemini embed từ chối HTTP 429 — tạm dừng tới 15:00 19/10". Soát: dự án 1.758/2.361 có vector, tên
+đường 8.464/39.421; nhúng nền (`nhung_tick`, `nhung_dia_danh_tick`) chỉ đọc MỘT khoá `GEMINI_API_KEY_2`. Chủ dự án đưa 6 khoá free
+("lấy mấy key này để nhúng đi"): 3 khoá trùng khoá đã có (`GEMINI_API_KEY`, `_2`, `_3`), 3 khoá mới cất Vault `GEMINI_NHUNG_4/5/6`;
+thử 6/6 nhúng được (HTTP 200, 768 số).
+
+**Lớp lỗi.** Một điểm hỏng duy nhất cho hạn mức: một khoá cạn là cả đường nhúng dừng tới hôm sau dù còn khoá khác.
+
+**Sửa.** Migration `20261018d_xoay_khoa_nhung.sql`: `app_config.nhung_khoa_ds` = danh sách TÊN secret (`GEMINI_API_KEY_2,
+GEMINI_API_KEY_3, GEMINI_NHUNG_4, GEMINI_NHUNG_5, GEMINI_NHUNG_6` — khoá chính `GEMINI_API_KEY` ngoài vòng, để dành câu tìm của khách),
+`khoa_nhung_nen()` trả khoá đang dùng, `nhung_doi_khoa()` đổi sang khoá kế khi 429; hai hàm tick chỉ giãn nhịp / dừng khi đã đổi đủ
+một vòng mà vẫn 429. Gỡ lệnh dừng đang treo. Chỗ cùng lớp: `tim_nghia_san_sang` / câu tìm của khách vẫn dùng một khoá chính — cố ý,
+để nhúng nền không ăn hạn mức của khách.
+
+**Kiểm.** Chạy migration trên Postgres tạm: vòng `k2→k3→k4→k5→k6`, lần đổi thứ 5 trả false và quay về `k2`; `nhung_tam_dung_den` rỗng.
+Production: `nhung_tick` gửi mẻ lại, số dòng có vector tăng.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
