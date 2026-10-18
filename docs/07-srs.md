@@ -5601,6 +5601,19 @@ cloudflared; không đụng `nhadat-bridge` / `aond-core`. Chỗ cùng lớp: 6 
 
 **Kiểm.** Log lượt chạy in: 0 unit `trang-thu*`, `/opt/trang-thu` không còn, user `trangthu` không còn, bridge + aond-core `active`.
 
+### SRS-5.1zzzzzzz33 · Dọn Vault rác, tắt còi ntfy (18/10/2026)
+
+**Ca gốc.** Soát hạ tầng 18/10: Vault còn 6 mục `DA_XOA_VPS_*` (vỏ các lượt `cai-vps` cũ, giá trị `x`); còi ntfy báo lần cuối 09/10.
+Chủ dự án: "xóa vault rác đi, tự xóa luôn, còi ntfy xóa luôn".
+
+**Sửa.** Migration `20261018c_don_vault_rac_tat_ntfy.sql`: xoá `vault.secrets` tên `DA_XOA_%`; xoá `app_config.ntfy_topic` —
+`canh_bao_ngoai()` trả null khi khoá trống nên ntfy tắt hẳn mà không sửa hàm (schema.sql không đổi). Hệ quả: email admin đi chung
+ntfy cũng tắt; tin 🩺 Zalo cho admin qua `bot_health_tick` → `reminders` → `escalation-feed` → bridge vẫn chạy. Nguồn sinh `DA_XOA_`
+(bước tự ghi đè ở `apply-migration.yml`) đã gỡ trước đó.
+
+**Kiểm.** Sau khi áp: `vault.secrets` không còn tên `DA_XOA_%`; `app_config` không còn `ntfy_topic`; lượt `bot_health_tick` kế tiếp
+không ghi lỗi mới.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
