@@ -5820,6 +5820,25 @@ gỡ 9 lịch đã tắt. Chỗ cùng lớp: `giao_lo` không nhúng — tra b�
 **Kiểm.** `bun run test:sql` áp hai migration trên Postgres tạm; production: số dòng có vector theo bảng sau vài lượt tick, `cron.job`
 còn 10 lịch.
 
+### SRS-5.1zzzzzzz43 · Khách tả vị trí bằng ngã tư → phường tra từ bảng giao lộ (18/10/2026)
+
+**Ca gốc.** Chủ dự án: "bot sẽ biết bds … ở đường này gần đường kia" (làm cả hai lượt nối bảng `giao_lo` 5.1zzzzzzz40). Người bán hay
+nói "nhà gần ngã tư Lê Văn Sỹ – Trần Huy Liệu" mà không nói phường; từ 5.1zzzzzzz41 thiếu phường là chưa ra bản nháp → bot phải hỏi
+thêm một câu dù ngã tư đã chỉ ra phường.
+
+**Lớp lỗi.** Bot có dữ kiện suy được (ngã tư → phường) nhưng không tra. **Chỗ cùng lớp.** Tên đường đơn nằm trong một phường cũng
+suy được phường (bảng `duong`) — chưa làm (một tên đường thường chạy qua nhiều phường, phải hỏi chọn). **Chưa làm (chờ chủ dự án):**
+lượt "tin cách ngã tư N m" — trang tin cố ý chỉ hiện mức phường (FR-104, địa chỉ chính xác chia sẻ khi hẹn xem), ghi khoảng cách tới
+ngã tư lên web là lộ gần đúng căn; nhánh người mua của lõi Python chưa tra kho tin nên chưa có chỗ đưa khoảng cách vào lời bot.
+
+**Sửa.** `prompts.EXTRACTION_SYSTEM` + schema: ô `gan_nga_tu` ("A | B", chỉ khi khách nêu rõ hai đường). `src/aioi/giao_lo.py`
+`dia_ban_tu_nga_tu` (rpc `giao_lo_cua`; đúng một phường mới điền, nhiều phường / không có → không đoán; lỗi → không điền).
+`engine.handle` bước 1a-ngã tư sau lượt bóc tách: có `gan_nga_tu`, chưa có `phuong` → điền `phuong` (+ `quan` nếu trống).
+`server.py` truyền `nga_tu_resolver`.
+
+**Kiểm.** `tests/test_giao_lo.py` (một phường → điền; hai phường / không có → không điền; ô sai khuôn không gọi DB; engine điền phường
+từ ngã tư — đỏ khi bỏ bước trong engine). pytest 284 đạt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
