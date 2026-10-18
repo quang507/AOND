@@ -5546,6 +5546,26 @@ Soát trước khi chép: `/opt/aond_core/src/aioi` chỉ khác repo đúng `sup
 `VPS_HOST` / `VPS_ROOT_PASSWORD` thành `x` + đổi tên `DA_XOA_…` sau mỗi lượt `cai-vps`) đã gỡ: ba lượt hỏng liền nhau buộc nhập lại mật khẩu ba lần.
 Chủ dự án: "bỏ cái tự xóa đó đi". Hai secret ở lại Vault, chỉ đọc được bằng service_role / Management API.
 
+### SRS-5.1zzzzzzz30 · Một bộ não: tắt các lịch tự nhắn khách của lõi TypeScript (18/10/2026)
+
+**Ca gốc.** Sau khi bridge chuyển về lõi Python (SRS-5.1zzzzzzz29), chủ dự án chốt "bỏ cái typescript đi", "không nhắn cho CTV nữa", "zalo OA
+bỏ". Soát `cron.job`: 19 lịch, trong đó 9 lịch tự đẻ tin ra ngoài qua lõi TypeScript — nhắn người bán / người mua (`nudge-tick`,
+`seller-drip-tick`, `seller-hoi-bu-tick`, `seller-keep-alive-tick`, `stale-listing-tick`, `info-timeout-tick` — các hàm tạo `reminders`
+`seller_flow` / `followup`), báo cáo + SLA cho CTV (`ctv-report-tick`, `ctv-sla-tick`), quét tin Zalo OA sót (`inbound-sweep-tick`).
+
+**Lớp lỗi.** Hai bộ não cùng chủ động nhắn một khách: lõi Python có hẹn nhắn lại riêng (followup 5 phút), các lịch TS vẫn đẻ tin theo
+dữ liệu riêng của chúng — vỡ "một chủ cho mỗi đầu ra" ở tin chủ động.
+
+**Chỗ cùng lớp.** Soát cả 19 lịch bằng định nghĩa hàm trên DB (`pg_get_functiondef`): `bot-health-tick`, `soat-du-lieu-tick` chỉ báo admin
+(kind `escalation` / `report`) — giữ; dọn sổ, geocode, nhúng vector, dọn media, hạ trạng thái quan tâm không nhắn ai — giữ.
+`escalation-feed` (TS) giữ vì bridge kéo việc / báo sống / gửi QR qua nó.
+
+**Sửa.** Migration `20261018b_tat_lich_nhan_khach_loi_ts.sql` TẮT (active = false, không xoá) 9 lịch trên — bật lại được. Gỡ code + function
+`chat-reply`, `zalo-webhook`, `nudge`, `ask-seller`, `ctv-report`, `inbound-sweep` là bước sau, khi chạy một ngày không thiếu gì.
+
+**Kiểm.** Sau khi áp: `select jobname, active from cron.job` — đúng 9 lịch `false`, 10 lịch còn lại `true`; soát lại `reminders` mới tạo
+không còn kind `seller_flow` / `followup` từ các hàm đã tắt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
