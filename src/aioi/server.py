@@ -12,6 +12,7 @@ import logging
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from .anh_du_an import anh_gui_kem
 from .config import load_settings
 from .delivery import chunk_reply, typing_delay
 from .drive import make_folder_namer, make_resolver
@@ -119,6 +120,8 @@ class ZaloBridgeResponse(BaseModel):
     user_score: float
     tier: str
     completeness: float
+    # Ảnh dự án khách vừa nhắc tên (anh_du_an.py) — bridge tải về và gửi sau các bong bóng chữ (FR-143).
+    photos: list[str] = []
 
 
 @app.get("/health")
@@ -285,6 +288,8 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
             role=r.role,
         )
 
+    photos = anh_gui_kem(payload.external_user_id, r.role, payload.text)
+
     return ZaloBridgeResponse(
         reply=cleaned_reply,
         replies=bubbles,
@@ -296,6 +301,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         user_score=r.user_score,
         tier=r.tier,
         completeness=r.completeness,
+        photos=photos,
     )
 
 
