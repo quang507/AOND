@@ -1,0 +1,94 @@
+"""18/10/2026 (SRS-5.1zzzzzzz44): bot báo "đã đăng lên web" theo prompt cố định, trong khi trigger DB giữ tin ở `cho_thong_tin`
+khi thiếu phường chuẩn / giá / diện tích (vd phường cũ đã chia về nhiều phường mới → `chuan_dia_ban` trả `mo_ho`). Nay câu
+"đã đăng / đang hiển thị" đọc trạng thái THẬT. Đỏ khi prompt quay lại lời cố định hay khi engine không đọc kho."""
+from aioi.prompts import build_fee_followup_system, khoi_trang_thai_web
+from aioi.schema import Property
+from aioi.supabase_store import SupabaseConversationStore
+
+DA_DANG = "chính thức đăng lên hệ thống website"
+
+
+def _nha():
+    return Property(loai_hinh="nha_pho", fields={"dia_chi": "146 Trần Bình Trọng", "duong": "Trần Bình Trọng",
+                                                 "phuong": "Phường 2", "lo_gioi_hem": "hẻm"})
+
+
+def test_chi_noi_da_dang_khi_tin_dang_hien_thi():
+    assert DA_DANG in khoi_trang_thai_web({"len_web": True, "thieu": []})[0]
+    assert DA_DANG in khoi_trang_thai_web(None)[0]  # kho không có khái niệm web (SQLite / thử): giữ lời cũ
+    for web in ({"len_web": False, "thieu": ["phuong"]}, {"len_web": False, "thieu": [], "cho_duyet": True},
+                {"len_web": False, "thieu": []}, {"len_web": False, "chua_ban_nhap": True}, {"len_web": None}):
+        duyet, link = khoi_trang_thai_web(web)
+        assert DA_DANG not in duyet and "TUYỆT ĐỐI KHÔNG nói tin đã đăng" in duyet, web
+        assert "đã được hiển thị trên web" not in link, web
+        assert "đã duyệt" not in link and "cảm ơn" not in link.lower(), web  # khách hỏi link chưa chắc đã duyệt
+
+
+def test_thieu_phuong_thi_hoi_phuong_moi_khong_hoi_hem():
+    s = build_fee_followup_system("Hằng", _nha(), web={"len_web": False, "thieu": ["phuong"]})
+    assert DA_DANG not in s and "phường MỚI sau sáp nhập" in s
+    assert "BỔ SUNG SAU KHI DUYỆT" not in s  # một lượt một câu: hỏi phường trước, hẻm để sau
+    s = build_fee_followup_system("Hằng", _nha(), web={"len_web": False, "thieu": ["gia", "dien_tich"]})
+    assert "còn thiếu giá, diện tích" in s and "hỏi ĐÚNG 1 câu về giá" in s
+    s = build_fee_followup_system("Hằng", _nha(), web={"len_web": True, "thieu": []})
+    assert DA_DANG in s and "BỔ SUNG SAU KHI DUYỆT" in s
+
+
+def test_engine_doc_trang_thai_that_khi_khach_duyet():
+    from tests.test_engine import _engine
+
+    eng = _engine()
+    seen: list[str] = []
+    goc = eng._provider.chat
+    eng._provider.chat = lambda system, messages, **k: seen.append(system) or goc(system, messages, **k)
+
+    class Kho:
+        def __init__(self):
+            self.luu = 0
+        def load(self, k): return None
+        def reset(self, k): pass
+        def save(self, conv): self.luu += 1
+        def trang_thai_tin(self, conv): return {"len_web": False, "thieu": ["phuong"], "cho_duyet": False}
+
+    kho = Kho()
+    eng._convstore = kho
+    conv = eng.conversation("u-web")
+    conv.prop.loai_hinh = "nha_pho"
+    conv.prop.fields.update({"dia_chi": "146 Trần Bình Trọng, Q5", "duong": "Trần Bình Trọng", "phuong": "Phường 2",
+                             "dien_tich_dat": "60m2", "dien_tich_nha": "50m2", "gia": "10 tỷ", "ket_cau": "1 trệt 2 lầu, 4PN",
+                             "lo_gioi_hem": "hẻm xe hơi 4m"})
+    eng.handle("u-web", "xong rồi đó em")
+    assert conv.listing_proposed
+    truoc = kho.luu
+    eng.handle("u-web", "đăng đi em")
+    assert "TIN CHƯA LÊN WEB" in seen[-1] and DA_DANG not in seen[-1]
+    assert kho.luu >= truoc + 2  # ghi lượt này xuống TRƯỚC khi đọc trạng thái, rồi ghi cuối lượt như thường
+
+
+class StoreGia(SupabaseConversationStore):
+    def __init__(self, dong):
+        super().__init__(url="https://x.invalid", key="khoa-gia")
+        self.dong = dong
+
+    def _request(self, method, endpoint, data=None, prefer=None):
+        if endpoint.startswith("sellers?"):
+            return [{"id": "s1", "name": "A"}]
+        if endpoint.startswith("listings?seller_id=eq.s1&code=eq.ABCDEF12"):
+            assert "select=status,ward,area_m2,price_vnd" in endpoint
+            return self.dong
+        raise AssertionError(endpoint)
+
+
+def _conv():
+    from types import SimpleNamespace
+    return SimpleNamespace(user_key="zalo-thu-1", active=SimpleNamespace(listing_id="abcdef123456"))
+
+
+def test_store_doc_status_va_o_thieu():
+    assert StoreGia([{"status": "dang_ban", "ward": "Phường Chợ Quán", "area_m2": 60, "price_vnd": 10}]).trang_thai_tin(_conv()) == \
+        {"len_web": True, "thieu": [], "cho_duyet": False}
+    assert StoreGia([{"status": "cho_thong_tin", "ward": None, "area_m2": 60, "price_vnd": None}]).trang_thai_tin(_conv()) == \
+        {"len_web": False, "thieu": ["phuong", "gia"], "cho_duyet": False}
+    assert StoreGia([{"status": "cho_thong_tin", "ward": "P", "area_m2": 1, "price_vnd": 1, "can_chu_duyet": True,
+                      "chu_duyet_at": None}]).trang_thai_tin(_conv())["cho_duyet"] is True
+    assert StoreGia([]).trang_thai_tin(_conv()) is None

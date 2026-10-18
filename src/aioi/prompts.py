@@ -600,13 +600,61 @@ FEE_VALUE_POINTS = """- CHỈ thu phí KHI giao dịch thành công — khách k
 - Tiết kiệm thời gian, sàng lọc khách ảo, giữ liên lạc tự động qua Zalo."""
 
 
+_WEB = "https://aioinhadat.com"
+
+
+def khoi_trang_thai_web(web: dict | None) -> tuple[str, str]:
+    """(lời khi khách DUYỆT tin, lời khi khách HỎI LINK) theo trạng thái THẬT của tin trên DB — một chỗ duy nhất quyết câu
+    "đã đăng / đang hiển thị" của nhánh người bán (SRS-5.1zzzzzzz44). Trước đó prompt luôn bảo "xác nhận đã đăng lên web" kể cả
+    khi trigger DB giữ tin ở `cho_thong_tin` (thiếu phường chuẩn / giá / diện tích) → khách tin đã đăng mà web không có."""
+    if web is None or web.get("len_web"):
+        vua = ("\n  • Nếu lượt trước em báo tin CHƯA lên web vì thiếu thông tin và khách vừa bổ sung: báo tin nay ĐÃ hiển thị trên "
+               f"{_WEB}." if web is not None else "")
+        return (
+            "  • XÁC NHẬN ĐĂNG TIN LÊN HỆ THỐNG VÀ WEB NGAY: Vui vẻ chúc mừng và xác nhận bản tin đã được duyệt và chính thức đăng "
+            f"lên hệ thống website {_WEB} cũng như chuyển cho mạng lưới kết nối khách mua ngay.\n"
+            f"  • Hướng dẫn khách truy cập {_WEB} để xem và theo dõi tin rao.{vua}",
+            f"  • Gửi ngay link website: {_WEB}\n"
+            "  • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng "
+            "như môi giới dễ dàng tìm kiếm, kết nối.",
+        )
+    cam = "TUYỆT ĐỐI KHÔNG nói tin đã đăng / đã lên web / đang hiển thị, KHÔNG bảo khách vào web xem tin của mình."
+    thieu = [o for o in (web.get("thieu") or []) if o in FIELD_LABELS]
+    if thieu:
+        nhan = ", ".join(FIELD_LABELS[o].split(" (")[0] for o in thieu)
+        hoi = FIELD_LABELS[thieu[0]]
+        if thieu[0] == "phuong":
+            hoi = ("phường của nhà theo tên phường MỚI sau sáp nhập (phường khách nói chưa khớp được một phường mới duy nhất — "
+                   "có thể phường cũ đã chia về nhiều phường mới)")
+        ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu {nhan}. {cam}"
+        viec = f"nói chỉ cần thêm {nhan} là tin lên web ngay, rồi hỏi ĐÚNG 1 câu về {hoi}."
+    elif web.get("chua_ban_nhap"):
+        ly_do = f"TIN CHƯA LÊN WEB: chưa đủ thông tin để soạn tin. {cam}"
+        viec = "nói em cần thêm vài thông tin để soạn tin đăng, rồi hỏi tiếp đúng câu đang cần hỏi."
+    elif web.get("cho_duyet"):
+        ly_do = f"TIN ĐANG CHỜ KIỂM DUYỆT trước khi hiển thị (hệ thống đã kiểm). {cam}"
+        viec = "báo tin đang được bên em kiểm duyệt và em sẽ nhắn ngay khi tin hiển thị."
+    elif web.get("len_web") is False:
+        ly_do = f"TIN CHƯA HIỂN THỊ trên web (hệ thống đã kiểm). {cam}"
+        viec = "báo bên em đang hoàn tất để đưa tin lên và sẽ nhắn khi tin hiển thị."
+    else:  # không đọc được trạng thái
+        ly_do = f"CHƯA XÁC NHẬN ĐƯỢC tin đã hiển thị trên web. {cam}"
+        viec = f"nói tin sẽ hiển thị trên {_WEB} sau khi hệ thống hoàn tất."
+    return (f"  • {ly_do}\n  • Nếu khách vừa duyệt tin thì cảm ơn, rồi {viec}",
+            f"  • {ly_do}\n  • Nói thật tình trạng: {viec} Có thể gửi {_WEB} để khách xem các tin khác.")
+
+
 def build_fee_followup_system(
     assistant_name: str,
     prop: Property,
     user_type: SellerRole = SellerRole.UNKNOWN,
     project_block: str = "",
+    web: dict | None = None,
 ) -> str:
     """Step 2: customer has seen the draft — react to their feedback, then talk fee (§V).
+
+    `web` = trạng thái THẬT của tin trên DB (`SupabaseConversationStore.trang_thai_tin`, SRS-5.1zzzzzzz44): bot chỉ nói "đã đăng
+    lên web" khi tin đang hiển thị. None = kho không có khái niệm web (SQLite / thử) → giữ lời cũ.
 
     If they approve, pivot to the brokerage fee; if they want changes, revise the draft
     and stay silent on the fee.
@@ -614,8 +662,9 @@ def build_fee_followup_system(
     fee_hint = _fee_hint(user_type)
     fee_block = ("\n" + fee_hint) if fee_hint else ""
     # 18/10/2026: độ rộng hẻm không chặn bản nháp — hỏi MỘT câu sau khi khách duyệt tin (schema.HOI_SAU_KHI_RA_TIN).
+    duyet, hoi_link = khoi_trang_thai_web(web)
     hoi_sau = ""
-    if prop.cau_hoi_sau_ra_tin() == "lo_gioi_hem":
+    if (web is None or web.get("len_web")) and prop.cau_hoi_sau_ra_tin() == "lo_gioi_hem":
         y = ("hẻm trước nhà rộng khoảng mấy mét, xe hơi vào tận nhà được không" if prop.fields.get("lo_gioi_hem")
              else "nhà nằm mặt tiền hay trong hẻm, nếu hẻm thì rộng khoảng mấy mét")
         hoi_sau = (
@@ -629,11 +678,9 @@ def build_fee_followup_system(
 NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem bản tin rao và hỏi họ thấy hấp dẫn chưa. Hãy đọc phản hồi MỚI NHẤT của khách:
 - NẾU khách ĐỒNG Ý / DUYỆT / BẢO ĐĂNG TIN (vd: "đăng đi", "lên bài đi", "lên tin đi", "đăng tin đi", "ok em", "được rồi", "chuẩn rồi em", "không cần sửa gì", hoặc thả tim/like):
   • TẠM BỎ QUA BƯỚC HỎI PHÍ: Tuyệt đối KHÔNG hỏi phí môi giới ở lượt này (không hỏi "anh có biết phí môi giới của tụi em chưa ạ?").
-  • XÁC NHẬN ĐĂNG TIN LÊN HỆ THỐNG VÀ WEB NGAY: Vui vẻ chúc mừng và xác nhận bản tin đã được duyệt và chính thức đăng lên hệ thống website https://aioinhadat.com cũng như chuyển cho mạng lưới kết nối khách mua ngay.
-  • Hướng dẫn khách truy cập https://aioinhadat.com để xem và theo dõi tin rao.{hoi_sau}
+{duyet}{hoi_sau}
 - NẾU khách HỎI LINK BÀI ĐĂNG HOẶC HỎI TRÊN WEB ĐĂNG NHƯ THẾ NÀO (vd: "đang đăng web như thế nào", "xem tin ở đâu", "cho xin link web", "link đâu"):
-  • Gửi ngay link website: https://aioinhadat.com
-  • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng như môi giới dễ dàng tìm kiếm, kết nối.
+{hoi_link}
 - NẾU khách muốn CHỈNH SỬA THẬT SỰ (vd "tiêu đề nhiều thông tin quá", "đổi tiêu đề...", "giá sửa lại...", "nhà có 3 lầu..."):
   • Tiếp thu ngay và khen tinh thần đóng góp của khách (vd "Tiêu đề này ngắn gọn và hút khách hơn hẳn ạ!"), cập nhật dữ liệu, KHÔNG nhắc phí.
   • RAO LẠI BẢN TIN ĐÃ SỬA ("📋 Bản tin cập nhật:") theo ĐÚNG TIÊU CHUẨN BẮT BUỘC:

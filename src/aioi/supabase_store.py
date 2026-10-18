@@ -293,6 +293,31 @@ class SupabaseConversationStore:
         except Exception as e:
             log.error("Failed to save conversation to Supabase: %s", e)
 
+    # Cột → ô bot hỏi: đúng ba điều kiện của `listing_du_dang_tin` (giá · diện tích · phường).
+    _COT_DANG_TIN = (("phuong", "ward"), ("dien_tich", "area_m2"), ("gia", "price_vnd"))
+
+    def trang_thai_tin(self, conv: Conversation) -> dict | None:
+        """Tin đang nói có ĐANG HIỂN THỊ trên web không — đọc `status` thật (trigger `listings_quyet_dinh_dang_tin` quyết),
+        không suy từ điểm đủ của lõi (SRS-5.1zzzzzzz44). {"len_web", "thieu": [ô], "cho_duyet"}; lỗi / chưa có dòng → None."""
+        if not self.is_configured:
+            return None
+        try:
+            sid = self._get_or_create_seller(conv.user_key)
+            if not sid:
+                return None
+            code = conv.active.listing_id[:8].upper()
+            rows = self._get(f"listings?seller_id=eq.{sid}&code=eq.{code}"
+                             "&select=status,ward,area_m2,price_vnd,can_chu_duyet,chu_duyet_at")
+        except Exception as e:  # noqa: BLE001 — không biết thì bot nói trung tính, không bịa "đã đăng"
+            log.warning("trang_thai_tin lỗi: %s", e)
+            return None
+        if not rows:
+            return None
+        r = rows[0]
+        thieu = [o for o, cot in self._COT_DANG_TIN if r.get(cot) in (None, "")]
+        return {"len_web": r.get("status") == "dang_ban", "thieu": thieu,
+                "cho_duyet": not thieu and bool(r.get("can_chu_duyet")) and not r.get("chu_duyet_at")}
+
     def load(self, user_key: str) -> Any:
         """Load conversation from Supabase.
         CRITICAL: If the seller or conversation was deleted on CRM (aioinhadat.vercel.app),

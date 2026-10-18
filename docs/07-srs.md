@@ -5839,6 +5839,28 @@ ngã tư lên web là lộ gần đúng căn; nhánh người mua của lõi Pyt
 **Kiểm.** `tests/test_giao_lo.py` (một phường → điền; hai phường / không có → không điền; ô sai khuôn không gọi DB; engine điền phường
 từ ngã tư — đỏ khi bỏ bước trong engine). pytest 284 đạt.
 
+### SRS-5.1zzzzzzz44 · Bot chỉ nói "tin đã lên web" khi tin THẬT đang hiển thị (18/10/2026)
+
+**Ca gốc.** Còn lại từ lượt soát 5.1zzzzzzz41 (bot báo "đã chính thức đăng lên website" trong khi tin không có trên web). 5.1zzzzzzz41
+chặn bản nháp khi thiếu phường do AI tách, nhưng AI có phường mà DB vẫn không chuẩn được (phường cũ đã chia về nhiều phường mới →
+`chuan_dia_ban` trả `mo_ho`; giá viết lạ → `price_vnd` trống) thì trigger `listings_quyet_dinh_dang_tin` giữ tin ở `cho_thong_tin`,
+còn prompt sau duyệt (`build_fee_followup_system`) và khối hỏi link của `engine.handle` vẫn bảo model "xác nhận đã đăng lên web".
+
+**Lớp lỗi.** Lời bot nói trạng thái tin (đã đăng / đang hiển thị) được VIẾT CỐ ĐỊNH trong prompt thay vì đọc từ chủ của trạng thái
+đó (trigger DB). **Chỗ cùng lớp.** (1) bước duyệt tin của `build_fee_followup_system` — đã sửa; (2) nhánh "khách hỏi link" trong cùng
+prompt — đã sửa; (3) khối `_is_link_question` của `engine.handle` — đã sửa (chưa ra bản nháp thì nói chưa hiển thị); (4) câu
+"không đăng đại trà lên web" trong `BUSINESS_CONTEXT` nói về cách làm, không nói trạng thái một tin — giữ.
+
+**Sửa.** `SupabaseConversationStore.trang_thai_tin` đọc `status, ward, area_m2, price_vnd, can_chu_duyet, chu_duyet_at` của tin đang
+nói → `{len_web, thieu, cho_duyet}` (ô thiếu đúng ba điều kiện của `listing_du_dang_tin`). `engine._trang_thai_web` ghi lượt xuống
+trước (khách vừa bổ sung phường → trigger tính trên dữ liệu mới) rồi đọc; kho không có khái niệm web (SQLite) → None, giữ lời cũ;
+đọc lỗi → trung tính. `prompts.khoi_trang_thai_web` là chỗ DUY NHẤT ra lời: đang hiển thị → lời cũ; thiếu ô → cấm nói đã đăng, hỏi
+đúng một câu về ô thiếu (phường: hỏi theo tên phường MỚI sau sáp nhập — cũng là lượt hỏi lại cho ca `mo_ho`); chờ kiểm duyệt → báo
+đang duyệt; câu hẻm sau duyệt (5.1zzzzzzz38) chỉ hỏi khi tin đã lên.
+
+**Kiểm.** `tests/test_trang_thai_web.py`: lời theo bốn trạng thái; thiếu phường thì hỏi phường mới, không hỏi hẻm; engine đọc kho khi
+khách duyệt (đỏ khi `_trang_thai_web` không đọc kho — đã thử tắt); store tính ô thiếu từ dòng DB. pytest 288 đạt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
