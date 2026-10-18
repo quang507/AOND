@@ -66,3 +66,16 @@ export function timGiaoLo(elements) {
   }
   return ra.sort((x, y) => x.osm_node - y.osm_node);
 }
+
+/**
+ * Câu Overpass chọn ĐA GIÁC của một phường. Tên phường mới trùng nhau giữa các tỉnh / xã cũ (vd "Phường Phú Thọ", "Xã Bình Mỹ":
+ * 2–3 đa giác cùng tên) → theo tên thì không biết lấy cái nào. Có toạ độ phường (`wards.lat/lng`) thì `theoDiem` lấy đúng đa giác
+ * CHỨA điểm đó (`is_in`); không đa giác nào chứa → rỗng, nơi gọi bỏ qua như cũ (không đoán). 18/10/2026, SRS-5.1zzzzzzz48.
+ */
+export function vungPhuong(w, theoDiem = false) {
+  const ten = String(w.ten_day_du).replace(/"/g, '\\"');
+  if (theoDiem && Number.isFinite(w.lat) && Number.isFinite(w.lng)) {
+    return `is_in(${w.lat},${w.lng})->.c;area.c["admin_level"="6"]["name"="${ten}"]->.a;`;
+  }
+  return `area["admin_level"="6"]["name"="${ten}"]->.a;`;
+}

@@ -17,7 +17,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { timGiaoLo } from "./lib/giao-lo.mjs";
+import { timGiaoLo, vungPhuong } from "./lib/giao-lo.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const env = Object.fromEntries(
@@ -93,24 +93,30 @@ async function ghi(rows) {
   return rows.length;
 }
 
-const wards = await rest("wards?select=ten_day_du,quan_cu&order=ten_day_du");
+const wards = await rest("wards?select=ten_day_du,quan_cu,lat,lng&order=ten_day_du");
 const daCo = CHI_THIEU ? new Set((await tatCa("giao_lo?select=phuong&order=id")).map((d) => d.phuong)) : new Set();
 let daTra = 0, coDong = 0, tongDong = 0;
 
 for (const w of wards) {
   if (CHI_PHUONG && w.ten_day_du !== CHI_PHUONG) continue;
   if (CHI_THIEU && daCo.has(w.ten_day_du)) continue;
-  const q = `[out:json][timeout:240];area["admin_level"="6"]["name"="${w.ten_day_du}"]->.a;` +
+  const truyVan = (vung) => `[out:json][timeout:240];${vung}` +
     `way(area.a)(${BBOX_RIENG[w.ten_day_du] ?? BBOX_HCM})["highway"]["name"]["highway"!~"${BO_LOAI}"]->.d;` +
     `.d out body qt;node(w.d)(area.a);out skel qt;.a out ids;`;
-  const kq = await overpass(q); daTra++;
+  let kq = await overpass(truyVan(vungPhuong(w))); daTra++;
   if (kq == null) {
     console.log(`  ✗ ${w.ten_day_du}: không có trả lời`);
     // Ba phường đầu đều hỏng thì gần như chắc là câu truy vấn hay máy chủ — dừng, đừng đốt 168 × thử lại (hàng giờ).
     if (daTra >= 3 && coDong === 0) { console.error("Dừng: 3 phường đầu không có trả lời."); process.exit(1); }
     await nghi(3000); continue;
   }
-  const soArea = (kq.elements ?? []).filter((e) => e.type === "area").length;
+  let soArea = (kq.elements ?? []).filter((e) => e.type === "area").length;
+  // Tên trùng nhiều đa giác → hỏi lại theo toạ độ phường (đa giác CHỨA điểm), không đoán theo thứ tự.
+  if (soArea > 1 && Number.isFinite(w.lat) && Number.isFinite(w.lng)) {
+    await nghi(3000);
+    const lai = await overpass(truyVan(vungPhuong(w, true)));
+    if (lai != null) { kq = lai; soArea = (kq.elements ?? []).filter((e) => e.type === "area").length; }
+  }
   if (soArea !== 1) { console.log(`  ✗ ${w.ten_day_du}: ${soArea} đa giác cùng tên — bỏ, cần soi tay`); await nghi(3000); continue; }
   const gl = timGiaoLo(kq.elements);
   const n = await ghi(gl.map((g) => ({
