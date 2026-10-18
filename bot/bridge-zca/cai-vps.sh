@@ -40,8 +40,14 @@ mkdir -p "$DIR" && chown nhadat:nhadat "$DIR"
 if [ -d "$DIR/.git" ]; then
   # Máy cài từ Nhadat.cc: trỏ origin sang AOND rồi lấy ĐÚNG bản của nhánh (`reset --hard`, không `pull --ff-only` — lịch sử hai
   # repo không nối nhau). File không track (.env, zalo-session.json) không bị đụng.
+  # 18/10/2026: `checkout -f` — lượt cài đầu dừng ở "untracked .gitattributes would be overwritten" (file AOND track mà máy cũ
+  # không) và vì chuỗi `a && b` không kích `set -e`, script chạy tiếp, khởi động lại bridge bằng CODE CŨ và vẫn báo xanh.
+  # Mỗi lệnh git một dòng để hỏng là dừng.
   sudo -u nhadat git -C "$DIR" remote set-url origin "$REPO"
-  sudo -u nhadat git -C "$DIR" fetch -q origin "$NHANH" && sudo -u nhadat git -C "$DIR" checkout -q -B "$NHANH" FETCH_HEAD && sudo -u nhadat git -C "$DIR" reset -q --hard FETCH_HEAD && xong "repo đã có, nhánh $NHANH ($(sudo -u nhadat git -C "$DIR" rev-parse --short HEAD)) từ $REPO"
+  sudo -u nhadat git -C "$DIR" fetch -q origin "$NHANH"
+  sudo -u nhadat git -C "$DIR" checkout -q -f -B "$NHANH" FETCH_HEAD
+  sudo -u nhadat git -C "$DIR" reset -q --hard FETCH_HEAD
+  xong "repo đã có, nhánh $NHANH ($(sudo -u nhadat git -C "$DIR" rev-parse --short HEAD)) từ $REPO"
 else
   sudo -u nhadat git clone -q -b "$NHANH" "$REPO" "$DIR" && xong "clone xong (nhánh $NHANH)"
 fi

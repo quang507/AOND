@@ -5517,6 +5517,12 @@ hội thoại đang mở hiện ngay) và UPDATE `conversations`, tải lại da
 origin, không `pull --ff-only`), AMN-04 (CRM nghe Realtime), AMN-05 (migration). Trên bản trước sửa đỏ 7 ca. `bun run kieu` sạch. Realtime chạy
 thật chỉ kiểm được sau khi áp migration và mở `/admin/tin-nhan`.
 
+**Lượt cài thật 18/10 (bắt được).** Lượt `cai-vps` đầu báo xanh, `nhadat-bridge` active, nhưng VPS VẪN code cũ: `git checkout` dừng ở
+"untracked `.gitattributes` would be overwritten" (AOND track file đó, máy cài từ repo cũ có bản không track), và vì bốn lệnh git nối bằng
+`&&` — chuỗi `&&` không kích `set -e` — script chạy tiếp, khởi động lại bridge bằng code cũ. Lớp lỗi: lệnh nền móng nối `&&` trong script
+`set -e` là hỏng im. Sửa: `checkout -f`, mỗi lệnh git một dòng. Chỗ cùng lớp: `bot/tests/chat/cai-vps.sh` đã một-lệnh-một-dòng, dùng
+`reset --hard` (ghi đè được file không track). AMN-06 đỏ trên bản trước sửa.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

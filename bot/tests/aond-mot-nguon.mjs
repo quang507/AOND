@@ -22,6 +22,9 @@ ok("AMN-02 cai-vps.sh bridge đổi origin sang AOND trên máy cài từ repo c
 const lenhSh = (f) => doc(f).split("\n").filter((d) => !/^\s*#/.test(d)).join("\n"); // bỏ dòng chú thích
 ok("AMN-03 cai-vps.sh bridge không dùng pull --ff-only (lịch sử hai repo không nối nhau)", !/pull --ff-only/.test(lenhSh("bot/bridge-zca/cai-vps.sh")));
 const crm = doc("app/admin/tin-nhan/page.tsx");
+// 18/10/2026: lượt cài thật dừng ở checkout (untracked .gitattributes) mà vẫn báo xanh vì `a && b` không kích set -e.
+const gitDong = lenhSh("bot/bridge-zca/cai-vps.sh").split("\n").filter((d) => /\bgit -C\b/.test(d) && !/rev-parse/.test(d));
+ok("AMN-06 cai-vps.sh bridge: mỗi lệnh git một dòng (không nối &&), checkout có -f", gitDong.length >= 3 && gitDong.every((d) => !/&&/.test(d)) && gitDong.some((d) => /checkout -q -f /.test(d)));
 ok("AMN-04 CRM tin-nhan nghe Realtime INSERT messages", /postgres_changes[\s\S]{0,80}event: "INSERT"[\s\S]{0,60}table: "messages"/.test(crm));
 ok("AMN-05 migration bật Realtime cho messages + conversations", /add table public\.messages/.test(doc("bot/supabase/migrations/20261018a_crm_realtime.sql")) && /add table public\.conversations/.test(doc("bot/supabase/migrations/20261018a_crm_realtime.sql")));
 ok("AMN-tu-kiem bắt được URL repo cũ", REPO_CU.test("REPO=https://github.com/quang507/Nhadat.cc.git") && REPO_CU.test("https://raw.githubusercontent.com/quang507/Nhadat.cc/main/x.sh"));
