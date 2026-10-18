@@ -29,6 +29,8 @@ ok("AMN-07 cai-vps.sh bridge trả cây /opt/nhadat về user nhadat trước kh
 ok("AMN-08 workflow cai-vps thoát theo mã của cai-vps.sh, không theo lệnh đọc log", /cai-vps\.sh <\/dev\/null; rc_cai=\\\$\?[\s\S]*exit \\\$rc_cai"/.test(doc(".github/workflows/apply-migration.yml")));
 // 18/10/2026: chủ dự án chốt bộ não là lõi Python trên VPS (aond-core, cổng 8000) — bridge mặc định phải gọi nó.
 ok("AMN-09 bridge mặc định gọi lõi Python aond-core (127.0.0.1:8000)", /CHAT_REPLY_URL \|\| "http:\/\/127\.0\.0\.1:8000\/chat-reply"/.test(doc("bot/bridge-zca/index.mjs")));
+// 18/10/2026: bản vá lõi Python nằm trong repo mà VPS chạy bản cũ — không có đường nào chép src/aioi sang /opt/aond_core.
+ok("AMN-10 cai-vps.sh chép src/aioi sang /opt/aond_core, khởi động lại aond-core và đòi /health", /cp -r [^\n]*src\/aioi\/\.[^\n]*\/opt\/aond_core\/src\/aioi/.test(lenhSh("bot/bridge-zca/cai-vps.sh")) && /systemctl restart aond-core/.test(lenhSh("bot/bridge-zca/cai-vps.sh")) && /8000\/health/.test(lenhSh("bot/bridge-zca/cai-vps.sh")));
 ok("AMN-04 CRM tin-nhan nghe Realtime INSERT messages", /postgres_changes[\s\S]{0,80}event: "INSERT"[\s\S]{0,60}table: "messages"/.test(crm));
 ok("AMN-05 migration bật Realtime cho messages + conversations", /add table public\.messages/.test(doc("bot/supabase/migrations/20261018a_crm_realtime.sql")) && /add table public\.conversations/.test(doc("bot/supabase/migrations/20261018a_crm_realtime.sql")));
 ok("AMN-tu-kiem bắt được URL repo cũ", REPO_CU.test("REPO=https://github.com/quang507/Nhadat.cc.git") && REPO_CU.test("https://raw.githubusercontent.com/quang507/Nhadat.cc/main/x.sh"));

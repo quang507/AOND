@@ -5535,6 +5535,13 @@ chốt **bỏ lõi TypeScript**. Bridge trả về cổng 8000 (AMN-09 nay canh 
 Lớp lỗi của chẩn đoán sai: repo có HAI bộ não (README nói Python, CLAUDE.md / docs nói TypeScript) — "một chủ cho mỗi đầu ra" vỡ ở chính cấp
 kiến trúc; gỡ lõi TypeScript là việc tiếp theo.
 
+**Lỗi 500 của lõi Python (18/10).** Log `aond-core`: `engine.py:2873 user_type=conv.user_type.value → AttributeError: 'str' object has no
+attribute 'value'`. `supabase_store.py` nạp `sellers.seller_type` (mã CRM `ccrb` / `nmg`) thẳng vào `Conversation.user_type`, engine cần
+`SellerRole`. Sửa: `vai_tu_seller_type()` (ccrb→chu_nha, nmg→moi_gioi, lạ→unknown) là đường nạp vai DUY NHẤT từ Supabase;
+`tests/test_supabase_store_vai.py` đỏ khi bỏ, pytest 264 đạt. Lớp lỗi thứ hai: `/opt/aond_core` dựng tay, không phải bản git, không có đường
+nào đưa code repo lên — `cai-vps.sh` nay chép `src/aioi` sang (nén bản cũ vào `/root` trước), khởi động lại `aond-core`, đòi `/health` (AMN-10).
+Soát trước khi chép: `/opt/aond_core/src/aioi` chỉ khác repo đúng `supabase_store.py` — không có bản sửa nào chỉ nằm trên VPS.
+
 **Bỏ bước tự ghi đè secret VPS (18/10, quyết định chủ dự án).** Bước "Ghi đè thông tin VPS tạm trong Vault" của `apply-migration.yml` (ghi đè
 `VPS_HOST` / `VPS_ROOT_PASSWORD` thành `x` + đổi tên `DA_XOA_…` sau mỗi lượt `cai-vps`) đã gỡ: ba lượt hỏng liền nhau buộc nhập lại mật khẩu ba lần.
 Chủ dự án: "bỏ cái tự xóa đó đi". Hai secret ở lại Vault, chỉ đọc được bằng service_role / Management API.
