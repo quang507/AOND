@@ -5361,6 +5361,24 @@ hỏi pháp lý → không ghi pháp lý / bổ sung từ sticker). Không có b
 **Kiểm (đỏ khi tắt).** e2e LYDO-01 (ca gốc: điền lý do, không còn `{}`), LYDO-02 (đối chứng: thiếu lý do → bỏ cả câu), LYDO-03 (canh cả lớp: mọi
 ô trong mọi câu `CAU_TIEN_DINH` đều được điền khi có giá trị). Bỏ `ly_do` khỏi regex → LYDO-01 và LYDO-03 đỏ.
 
+### SRS-5.1zzzzzzz24 · Chốt: tài liệu làm theo code — tên trợ lý, tiêu đề bài rao, câu khen (18/10/2026)
+
+**Nguồn.** Chủ dự án 18/10/2026: "Thống nhất chốt LÀM THEO CODE HIỆN TẠI cho toàn bộ tài liệu (code là nguồn sự thật thực chiến mới nhất)".
+Không đổi code; các chỗ tài liệu lệch được sửa theo code, chữ cũ giữ dạng gạch ngang / ghi chú lịch sử, không đánh số lại ID.
+
+**Ba điểm.** (1) **Tên trợ lý** = 20 tên người thật trong `KHO_TEN_TRO_LY` (SRS-5.1zzzzzzz9), bỏ dạng "T•ai / H•ai" — dấu chấm giữa tên làm
+lộ bot trên Zalo cá nhân. (2) **Tiêu đề bài rao** theo `AD_FORMAT`: 15–25 từ (thay mốc 10–12 chữ của bản quy ước cũ ngoài repo — quá ngắn,
+cụt ý kết cấu và vị trí). Tiêu đề bản nháp Zalo vẫn là luật riêng của code (`khen-nhap.ts` 40–90 ký tự, `tieuDeHopLe` 20–100 ký tự) — xem
+`06 §6.8 Bố cục bài rao`. (3) **Câu khen** theo `TONE_RULES`: lâu lâu một câu, chỉ khi khách vừa nói một điểm mạnh thật; bỏ quy ước "câu nào
+cũng khích lệ / gắn khách mua" (FR-177 b cũ) — tạo cảm giác hỏi cung thảo mai, máy móc.
+
+**Chỗ đã sửa.** `CLAUDE.md`; `docs/00-dinh-huong` (§0.1 tên, §0.3, đoạn chốt 07/09), `00-glossary` (Tên trợ lý, Aioinhadat), `02` FR-177 (tựa + b),
+FR-181, `03` UF-10 bước 3, `06 §6.8` (danh tính, văn phong, kịch bản người bán, mục mới Bố cục bài rao, tiêu đề bản tin), `09` OPEN-39, `10`
+TS-KYGUI-26, `13`, `docs/README`. **Còn lại (code, không thuộc lần này):** `FEE_VALUE_POINTS` (`prompts.ts`) còn chữ "trợ lý M•ai" đưa cho model;
+`docs/data-model.md` dùng M•ai / T•ai làm tên vai bot mua / bán (tài liệu milestone lưu trữ cũ).
+
+**Kiểm.** `bash scripts/soat-truy-vet.sh` sạch (không ID gãy). Không có bài kiểm code vì không đổi code.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

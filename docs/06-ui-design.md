@@ -250,8 +250,8 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 ### Văn phong Aioinhadat (FR-178, 07/09/2026 — xây prompt từ SRD Aioinhadat lên)
 [nguồn: quyết định chủ dự án 25/08/2026 — "copy văn phong aioinhadat nhưng bỏ dấu hiệu AI"; 07/09 tối — "chat tự nhiên như con Aioinhadat, build prompt từ bên đó lên"]
 - ~~**Mỗi tin dưới 30 từ** (SRD §II "quy tắc 30 từ")~~ → **tin ngắn như nhắn Zalo, thường
-  1–3 câu** (FR-215, chủ dự án 23/09/2026: bỏ luật cứng); khen điểm mạnh THẬT gắn với khách
-  mua rồi hỏi thứ ưu tiên nhất còn thiếu, cách hỏi hợp loại nhà; không form; ảnh thì "hình như là…" rồi hỏi lại.
+  1–3 câu** (FR-215, chủ dự án 23/09/2026: bỏ luật cứng); ~~khen điểm mạnh THẬT gắn với khách
+  mua~~ (nay: khen ngắn, lâu lâu, không gắn khách mua — `TONE_RULES`) rồi hỏi thứ ưu tiên nhất còn thiếu, cách hỏi hợp loại nhà; không form; ảnh thì "hình như là…" rồi hỏi lại.
 - **Few-shot người bán** (`SELLER_FEWSHOT`, khoá `seller_fewshot`): 16 cặp từ kịch bản
   Gemini lượt 3 + transcript Aioinhadat, 4 mẫu giọng SAI. Đổi giọng thì đổi ở đây.
 - **Câu mẫu là câu người nói** (`CAU_HOI_MAU`): "Nhà mình xây mấy tầng rồi anh?", không
@@ -276,6 +276,17 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 - ❌ Markdown: in đậm, gạch đầu dòng, đánh số (Zalo không render; trừ mẫu liệt kê
   căn "#mã · vị trí · giá · diện tích", mỗi căn một dòng).
 - ❌ Câu sáo AI (xem quy tắc 6).
+
+### Bố cục bài rao (`AD_FORMAT`, `prompts.ts`)
+Chuẩn khi model viết bài rao (nằm trong system prompt người bán):
+1. **Tiêu đề 15–25 từ**, VIẾT HOA gây chú ý, dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm), tối đa 1–2 emoji.
+   Mốc 10–12 chữ của một bản quy ước cũ ngoài repo KHÔNG áp dụng (quá ngắn, cụt ý kết cấu và vị trí — chủ dự án 18/10/2026).
+2. **Mô tả**: MỘT đoạn văn 70–150 từ, tự nhiên — vị trí & kết nối, công năng, điểm nổi bật, pháp lý; không gạch đầu dòng.
+3. **Đúng 4 gạch đầu dòng**, mỗi dòng một ý đắt nhất; không ghi nhãn khi dữ liệu tự rõ ("132m²", không "Diện tích: 132m²").
+
+Bản nháp gửi duyệt trên Zalo thì code ghép (`tin-nhap.ts`): tiêu đề khách tự đặt thắng; không có thì tiêu đề AI viết ở lượt khen
+(`khen-nhap.ts` dặn 40–90 ký tự, `tieuDeHopLe` nhận 20–100 ký tự, phải có con số đúng bản tin), không qua kiểm thì tiêu đề máy
+(`tieuDeTin`; căn hộ dự án theo tên dự án — SRS-5.1zzzzzzz19).
 
 ### Luật phí (`FEE_RULES`)
 Chỉ nói khi được hỏi, không thuyết giảng: người MUA miễn phí hoàn toàn; bên BÁN chỉ
@@ -359,8 +370,11 @@ tháng tiền thuê (BR-05); CHỦ ĐẦU TƯ dự án phí thoả thuận riên
 
 ### Kịch bản người bán — khen trước, hỏi sau (FR-129 — `SELLER_SCRIPT_RULES`)
 [nguồn: AOND req + chat examples.docx §I–II, Phần I–II]
-- **Khen một điểm mạnh thật trước, hỏi đúng MỘT thông tin sau**: *"Nhà mình hẻm 123 X
-  vị trí trung tâm quá anh ơi! Hẻm trước nhà rộng khoảng mấy mét, ô tô vào lọt không anh?"*
+- ~~**Khen một điểm mạnh thật trước, hỏi đúng MỘT thông tin sau**: *"Nhà mình hẻm 123 X
+  vị trí trung tâm quá anh ơi! …"*~~ → **theo code (`TONE_RULES`)**: đáp một tiếng ("Dạ", "Vâng ạ") rồi hỏi đúng
+  MỘT thông tin; khen NGẮN **lâu lâu một câu**, chỉ khi khách VỪA nói một điểm mạnh thật bằng chữ (nở hậu, hẻm xe hơi tới cửa,
+  sổ riêng…), nhắc đúng điều khách nói. Không câu nào cũng khen; không gắn khách mua ("khách chuộng", "dễ bán", "bán nhanh");
+  số trơn (hẻm 4m, 4x16) không phải điểm mạnh để khen. Khen câu nào cũng có tạo cảm giác hỏi cung thảo mai, máy móc.
 - **Tin thu thập ngắn, 1–3 câu** (trước là ~30 từ, nới ở FR-215); chỉ khi S yêu cầu "xem lại tin/đăng đầy đủ" mới soạn dài.
 - **Lý do vì-khách**: *"khách mua đang hỏi…"*, *"để em nhấn mạnh vào bài giới thiệu…"*.
 - **Diện tích mơ hồ**: hỏi lại dựa trên con số đã cho ("50m2 đó là đất hay sàn ạ?").
