@@ -5942,6 +5942,23 @@ khong-khoa` (không bao giờ in khoá); `cai-vps.sh` in nội dung `/health`. (
 Drive env → Vault → None; link Sheets / .xlsx vào `handle_link` — đỏ trước khi sửa). `bot/tests/sql/duyet-ban-nhap.sql`: chưa duyệt
 không lên, duyệt lên, xoá duyệt hạ xuống — đỏ trên schema cũ (điều kiện điểm 70), xanh với `20261018k`. pytest 297 đạt.
 
+### SRS-5.1zzzzzzz48 · Nạp giao lộ: phường trùng tên chọn đa giác theo toạ độ (18/10/2026)
+
+**Ca gốc.** Hai lượt `nap-giao-lo` (5.1zzzzzzz40) dừng ở 140/168 phường (52.059 giao lộ): 26 phường / xã bị bỏ vì "2–3 đa giác cùng
+tên" trên OSM (vd "Phường Phú Thọ", "Phường Tân Hưng", "Xã Bình Mỹ" — tên mới trùng nhau giữa các tỉnh / xã cũ), 1 xã Overpass không trả
+lời (Xã Vĩnh Lộc), 1 xã 0 giao lộ thật (Xã Bàu Lâm), 1 xã không có đa giác tên đó (Xã Hưng Long).
+
+**Lớp lỗi.** Chọn vùng địa lý theo TÊN khi tên không duy nhất. **Chỗ cùng lớp.** `scripts/nap-duong.mjs` dùng cùng câu `area[name=…]` +
+phép "đúng một đa giác" — chưa đổi (từ điển đường đã đủ 168/168 phường theo đếm 12/10); nếu lần nạp lại hụt vì trùng tên thì dùng chung
+`vungPhuong`.
+
+**Sửa.** `scripts/lib/giao-lo.mjs` `vungPhuong(w, theoDiem)`: có `wards.lat/lng` thì `is_in(lat,lng)` lấy đúng đa giác CHỨA toạ độ phường;
+`nap-giao-lo.mjs` chỉ hỏi lại theo toạ độ khi lần hỏi theo tên ra > 1 đa giác — vẫn đòi đúng một đa giác, không đa giác nào chứa thì bỏ
+như cũ (không đoán theo thứ tự).
+
+**Kiểm.** `bot/tests/giao-lo.mjs` thêm 4 ca (theo tên; theo toạ độ; thiếu toạ độ thì theo tên; tên có nháy kép). Chạy thật qua
+`apply-migration` `dung_lai=nap-giao-lo` (chỉ phường còn thiếu).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -1,5 +1,5 @@
 // TS-GIAO-LO — nút OSM chung → giao lộ (scripts/lib/giao-lo.mjs, docs/07 SRS-5.1zzzzzzz40). Dữ liệu Overpass dựng tay.
-import { timGiaoLo, khoangCachM } from "../../scripts/lib/giao-lo.mjs";
+import { timGiaoLo, khoangCachM, vungPhuong } from "../../scripts/lib/giao-lo.mjs";
 
 let dat = 0, hong = 0;
 const la = (t, thuc, mong) => {
@@ -44,6 +44,14 @@ la("tên rác (cầu, lối) bị phanLoaiDuong bỏ",
   timGiaoLo([nut(1, 10.78, 106.68), way(10, "Cầu Kênh Tẻ", [1]), way(11, "Lối đi bộ", [1]), way(12, "Lê Văn Sỹ", [1])]), []);
 la("đường không tên bỏ", timGiaoLo([nut(1, 10.78, 106.68), { type: "way", id: 9, nodes: [1], tags: {} }, way(12, "Lê Văn Sỹ", [1])]), []);
 la("khoangCachM ~111 m cho 0,001 độ vĩ", Math.round(khoangCachM({ lat: 10.78, lng: 106.68 }, { lat: 10.781, lng: 106.68 })), 111);
+
+// Tên phường trùng nhiều đa giác (SRS-5.1zzzzzzz48): có toạ độ thì chọn đa giác CHỨA điểm; không toạ độ thì vẫn theo tên.
+la("vùng theo tên", vungPhuong({ ten_day_du: "Phường Phú Thọ" }), 'area["admin_level"="6"]["name"="Phường Phú Thọ"]->.a;');
+la("vùng theo toạ độ khi có lat/lng", vungPhuong({ ten_day_du: "Phường Phú Thọ", lat: 10.7655, lng: 106.6573 }, true),
+  'is_in(10.7655,106.6573)->.c;area.c["admin_level"="6"]["name"="Phường Phú Thọ"]->.a;');
+la("theoDiem mà thiếu toạ độ → theo tên (không đoán)", vungPhuong({ ten_day_du: "Xã Hưng Long", lat: null }, true),
+  'area["admin_level"="6"]["name"="Xã Hưng Long"]->.a;');
+la("tên có dấu nháy kép không phá câu truy vấn", vungPhuong({ ten_day_du: 'A"B' }), 'area["admin_level"="6"]["name"="A\\"B"]->.a;');
 
 console.log(`\n${dat}/${dat + hong} đạt`);
 if (hong) process.exit(1);
