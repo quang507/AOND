@@ -350,6 +350,10 @@ SUMMARY_READY_COMPLETENESS: float = 0.70
 # không chặn theo tên đường để khỏi kẹt câu hỏi.
 LAND_GATED_TYPES: set[str] = {"dat", "dat_tho_cu"}
 
+# 18/10/2026 (chủ dự án: "độ rộng hẻm ko bắt buộc, hỏi sau khi ra tin"): ô KHÔNG hỏi trước bản nháp — vẫn tính vào % đầy đủ,
+# bỏ khỏi `missing_fields`, và được hỏi một câu sau khi khách duyệt tin (`cau_hoi_sau_ra_tin`, prompt build_fee_followup_system).
+HOI_SAU_KHI_RA_TIN: set[str] = {"lo_gioi_hem"}
+
 # Thông số cho thuê (áp dụng chung khi là tin cho thuê) — SRD §III.
 RENTAL_FIELDS: list[str] = [
     "thoi_han_hd",   # Thời hạn hợp đồng
@@ -442,7 +446,17 @@ class Property:
         ra = [x for x in expected if x in identity and (not self._has(x) or x in chan)]
         ra += [x for x in chan if x not in expected]
         ra += [x for x in expected if x not in identity and (not self._has(x) or x in chan)]
-        return ra
+        return [x for x in ra if x not in HOI_SAU_KHI_RA_TIN]
+
+    def cau_hoi_sau_ra_tin(self) -> str | None:
+        """Ô hỏi SAU khi khách duyệt bản nháp: độ rộng hẻm của nhà ở trong hẻm khi chưa biết bề rộng (chưa có chữ số, không
+        phải mặt tiền)."""
+        if self.group is not PropertyGroup.RESIDENTIAL:
+            return None
+        v = (self.fields.get("lo_gioi_hem") or "").lower()
+        if "mặt tiền" in v or re.search(r"\bmt\b", v) or re.search(r"\d", v):
+            return None
+        return "lo_gioi_hem"
 
     def completeness(self) -> float:
         """Fraction of expected fields that are filled, in [0, 1]."""
