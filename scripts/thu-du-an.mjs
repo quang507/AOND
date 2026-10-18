@@ -8,7 +8,8 @@
 // mỗi m2, tổng diện tích, dải diện tích sản phẩm, năm khởi công / hoàn thành,
 // pháp lý, trạng thái, danh sách tiện ích, loại căn + dải diện tích (18/10/2026, `loai-can-du-an.mjs`), và link nguồn.
 //
-// KHÔNG chép nguyên bài giới thiệu và ảnh của trang nguồn: (1) đó là phần có
+// ẢNH: từ 18/10/2026 giữ đường dẫn ≤ 5 ảnh thư viện (`anh-du-an.mjs`, chủ dự án "cứ lấy ảnh đi").
+// KHÔNG chép nguyên bài giới thiệu của trang nguồn: (1) đó là phần có
 // bản quyền rõ nhất, (2) nội dung trùng lặp làm hại chính SEO của Aioinhadat —
 // Google hạ trang chép lại chứ không hạ trang gốc. `description` được VIẾT LẠI
 // từ các dữ kiện vừa bóc (hàm `viet_mo_ta`), `source_url` giữ để truy nguồn.
@@ -23,6 +24,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bocLoaiCan } from "./loai-can-du-an.mjs";
+import { bocAnhDuAn } from "./anh-du-an.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const env = Object.fromEntries(
@@ -161,6 +163,7 @@ function bocChiTiet(html, url) {
     phap_ly: thongSo["Pháp lý hiện tại"] ?? null,
     tien_ich: tienIch,
     loai_can: bocLoaiCan(html),
+    anh: bocAnhDuAn(html),
   };
 }
 
@@ -241,6 +244,7 @@ const rows = tatCa.map((d) => ({
   price_min: d.gia_tu,
   amenities: d.tien_ich,
   unit_types: d.loai_can,
+  images: d.anh,
   description: vietMoTa(d),
   status_text: d.trang_thai ?? (d.ban_giao ? `bàn giao ${d.ban_giao}` : null),
   handover: d.ban_giao ?? d.nam_hoan_thanh,

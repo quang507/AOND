@@ -5657,6 +5657,31 @@ project mới (cần `GROQ_API_KEY`, không có trong Vault).
 "phòng ngủ" ở giữa, câu văn mở đầu "Shophouse", tổng diện tích, "4 căn 1 phòng ngủ") + nhiều loại một dòng + dải lệch khoảng; đỏ 7/15 với
 bản cắt khối chưa sửa. Production: đếm `unit_types` khác rỗng sau lượt `nap-du-an`.
 
+### SRS-5.1zzzzzzz36 · Ảnh dự án: thu từ mogi + bot gửi khi khách hỏi mua (18/10/2026)
+
+**Ca gốc.** Chủ dự án: "cứ lấy ảnh đi 4 5 ảnh trong 1 dự án … vector hoá tên để người hỏi mua thì bot tự gửi ảnh". Đổi quyết định
+"không chép ảnh" ở 5.1zzzzzzz35 / `thu-du-an.mjs`. Trước đó `projects.images` 0/2.361; lõi Python không trả ảnh nào cho bridge (bridge
+đã có đường gửi `photos`, FR-143, chỉ chưa ai điền).
+
+**Lớp lỗi.** Không phải lỗi: tính năng mới. Hai quyết định thiết kế:
+(1) Chỉ giữ ĐƯỜNG DẪN CDN mogi, không tải về Storage — 5 × ~2.400 ảnh ≈ 650 MB, gần trần 1 GB gói Free; đổi lại ảnh vỡ nếu mogi gỡ.
+(2) Khớp dự án bằng TÊN (`match_projects`, luật khớp tên đang dùng ở web), không bằng vector: vector luôn trả "dự án gần nhất" nên
+câu "căn hộ quận 7 tầm 3 tỷ" sẽ kéo ảnh một dự án bất kỳ. Tên dự án đã nằm trong văn bản nhúng (`van_ban_du_an`), nên không cần
+nhúng thêm gì. `match_projects` trả hai dòng (câu chỉ chạm một phần tên, "Vinhomes Grand Park" → The Beverly / The Origami) thì chỉ
+gửi dòng có trọn tên trong câu, không thì thôi.
+
+**Sửa.** `scripts/anh-du-an.mjs` `bocAnhDuAn(html)`: ≤ 5 ảnh khối thư viện `div.media-item` (src / data-src, `cloud.mogi.vn/project/`),
+bỏ trùng; `thu-du-an.mjs` ghi `images`. Lõi Python `src/aioi/anh_du_an.py`: `tim_anh_du_an` (gọi `match_projects?select=name,images`,
+hạn 5 s, lỗi → không ảnh), `anh_gui_kem` (không gửi cho người bán; mỗi khách một dự án một lần / 24 giờ, nhớ trong tiến trình);
+`server.py` `/chat-reply` trả `photos`. Web `/du-an/[slug]` tự hiện ảnh (đã đọc `images`). Chỗ cùng lớp: chưa có — đây là chỗ duy
+nhất bot gửi ảnh dự án; lời model chưa biết sẽ có ảnh gửi kèm (lượt sau có thể nối vào system prompt nếu thấy lời nói lệch).
+
+**Kiểm.** `bot/tests/anh-du-an.mjs` (trong `test:bot`): src / data-src, bỏ trùng, trần 5, không lấy og:image / logo / ảnh ngoài thư
+viện. `tests/test_anh_du_an.py`: trần 5 + bỏ link lạ, hai dòng khớp, lỗi DB không làm hỏng lượt, người bán không nhận, không gửi lại
+trong 24 giờ, `/chat-reply` trả `photos` (đỏ khi bỏ dòng gọi trong `server.py`). Thử trên 60 trang mogi: 44 trang đủ 5 ảnh, 4 trang
+không ảnh. `match_projects` thử 12 câu thật: khớp đúng 7 câu có tên dự án, 5 câu không tên ra rỗng. Production: đếm `images` khác
+rỗng sau lượt `nap-du-an`, nhắn thử Zalo tên một dự án.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
