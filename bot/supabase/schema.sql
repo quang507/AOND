@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-18 23:33 (giờ VN)
+-- Sinh lúc: 2026-10-18 23:35 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -2246,17 +2246,6 @@ begin
 end $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.bot_prompts_touch()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'pg_temp'
-AS $function$
-begin
-  new.updated_at := now();
-  return new;
-end $function$
-;
-
 CREATE OR REPLACE FUNCTION public.bump_model_quota(p_limit integer)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -3251,21 +3240,6 @@ begin
   return jsonb_build_object('tin', v_tin, 'tin_nhan', v_tin_nhan,
                             'nguoi_ban', v_nguoi, 'khach', v_khach, 'fact_du_an', v_pf);
 end $function$
-;
-
-CREATE OR REPLACE FUNCTION public.du_an_can_doc_gia()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public'
-AS $function$
-begin
-  if new.gia_raw is distinct from coalesce(old.gia_raw, '') or new.price_vnd is null then
-    new.price_vnd := case when new.gia_raw is null then null else public.parse_vnd(new.gia_raw) end;
-  end if;
-  new.updated_at := now();
-  return new;
-end;
-$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.du_an_can_geocode(p_limit integer DEFAULT 30)
@@ -4475,18 +4449,6 @@ begin
     values (old.bucket, old.storage_path);
   end if;
   return new;
-end $function$
-;
-
-CREATE OR REPLACE FUNCTION public.listings_autopublish()
- RETURNS trigger
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
-AS $function$
-begin
-  perform public.listings_try_publish(new.id);
-  return null;
 end $function$
 ;
 
@@ -7096,19 +7058,6 @@ AS $function$
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.van_kich_che_so()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public'
-AS $function$
-begin
-  new.truoc := regexp_replace(coalesce(new.truoc, ''), '\d{9,}', '#', 'g');
-  new.sau := regexp_replace(coalesce(new.sau, ''), '\d{9,}', '#', 'g');
-  return new;
-end;
-$function$
-;
-
 CREATE OR REPLACE FUNCTION public.viewings_bao_ctv_va_email()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -8391,8 +8340,6 @@ grant execute on function public.boc_thong_so(p_text text, p_type text) to authe
 grant execute on function public.boc_thong_so(p_text text, p_type text) to service_role;
 revoke all on function public.bot_health_tick() from public, anon, authenticated;
 grant execute on function public.bot_health_tick() to service_role;
-revoke all on function public.bot_prompts_touch() from public, anon, authenticated;
-grant execute on function public.bot_prompts_touch() to service_role;
 revoke all on function public.bump_model_quota(p_limit integer) from public, anon, authenticated;
 grant execute on function public.bump_model_quota(p_limit integer) to service_role;
 revoke all on function public.bump_user_quota(p_uid text, p_gio_limit integer, p_ngay_limit integer) from public, anon, authenticated;
@@ -8483,10 +8430,6 @@ grant execute on function public.doi_chieu_tien_cong_khai(p_cau text[]) to servi
 revoke all on function public.don_du_lieu_thu() from public, anon, authenticated;
 grant execute on function public.don_du_lieu_thu() to authenticated;
 grant execute on function public.don_du_lieu_thu() to service_role;
-revoke all on function public.du_an_can_doc_gia() from public, anon, authenticated;
-grant execute on function public.du_an_can_doc_gia() to anon;
-grant execute on function public.du_an_can_doc_gia() to authenticated;
-grant execute on function public.du_an_can_doc_gia() to service_role;
 revoke all on function public.du_an_can_geocode(p_limit integer) from public, anon, authenticated;
 grant execute on function public.du_an_can_geocode(p_limit integer) to service_role;
 revoke all on function public.du_an_co_phap_ly(p_project_id uuid) from public, anon, authenticated;
@@ -8603,8 +8546,6 @@ revoke all on function public.listing_media_giu_bia() from public, anon, authent
 grant execute on function public.listing_media_giu_bia() to service_role;
 revoke all on function public.listing_media_xep_hang_don() from public, anon, authenticated;
 grant execute on function public.listing_media_xep_hang_don() to service_role;
-revoke all on function public.listings_autopublish() from public, anon, authenticated;
-grant execute on function public.listings_autopublish() to service_role;
 revoke all on function public.listings_bao_can_da_chot() from public, anon, authenticated;
 grant execute on function public.listings_bao_can_da_chot() to service_role;
 revoke all on function public.listings_bao_tin_moi_khop() from public, anon, authenticated;
@@ -8788,10 +8729,6 @@ revoke all on function public.van_ban_du_an(p_id uuid) from public, anon, authen
 grant execute on function public.van_ban_du_an(p_id uuid) to service_role;
 revoke all on function public.van_ban_nhung(p_id uuid) from public, anon, authenticated;
 grant execute on function public.van_ban_nhung(p_id uuid) to service_role;
-revoke all on function public.van_kich_che_so() from public, anon, authenticated;
-grant execute on function public.van_kich_che_so() to anon;
-grant execute on function public.van_kich_che_so() to authenticated;
-grant execute on function public.van_kich_che_so() to service_role;
 revoke all on function public.viewings_bao_ctv_va_email() from public, anon, authenticated;
 grant execute on function public.viewings_bao_ctv_va_email() to service_role;
 revoke all on function public.xoa_nguoi_theo_zalo(p_zalo text) from public, anon, authenticated;
