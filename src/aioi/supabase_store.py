@@ -25,6 +25,23 @@ if TYPE_CHECKING:
 log = logging.getLogger("aioi.supabase_store")
 
 
+# 18/10/2026: cột `sellers.seller_type` trên Supabase mang mã của CRM / lõi cũ (`ccrb`, `nmg`), còn engine cần `SellerRole`
+# (`chu_nha`, `moi_gioi`…). Nạp chuỗi trần vào `Conversation.user_type` làm `_build_result` sập ở `.value` (AttributeError → 500,
+# bot im với khách thật). Mọi đường nạp vai từ Supabase đi qua hàm này.
+_SELLER_TYPE_SANG_VAI = {"ccrb": "chu_nha", "nmg": "moi_gioi"}
+
+
+def vai_tu_seller_type(raw: Any) -> "SellerRole":
+    from .revenue import SellerRole
+
+    ma = str(raw or "").strip().lower()
+    ma = _SELLER_TYPE_SANG_VAI.get(ma, ma)
+    try:
+        return SellerRole(ma)
+    except ValueError:
+        return SellerRole.UNKNOWN
+
+
 class SupabaseConversationStore:
     """Persistent ConversationStore storing state in Supabase REST API (PostgreSQL).
     Implements ConversationStore protocol: save, load, reset.
@@ -278,7 +295,7 @@ class SupabaseConversationStore:
             # 5. Reconstruct Conversation
             conv = Conversation(
                 user_key=user_key,
-                user_type=seller.get("seller_type", "chu_nha"),
+                user_type=vai_tu_seller_type(seller.get("seller_type")),
                 assistant=assign_assistant(user_key),
                 history=history,
                 listings=listings if listings else [Listing(prop=Property())],
