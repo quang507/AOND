@@ -37,9 +37,8 @@ const TT_CAN: Record<string, string> = { con_ban: "còn bán", giu_cho: "giữ c
 // này là 3,25/3,89 triệu request REST của cả project (83%) - kéo theo egress và log ingestion vượt gói Free. Trả mảng RỖNG
 // thì route vẫn là ● (Next 15: mảng rỗng = dựng lần đầu có người xem rồi nằm cache, vẫn ISR theo `revalidate`) - chỉ trang
 // có người/bot tìm kiếm xem mới tốn truy vấn. Đừng trả lại danh sách đầy đủ.
-// SRS-5.1zzzzzzz25 (18/10/2026): 3619b7d đổi thành 30 slug dự án crawl để "chống 404" — 404 thật ra được chữa bằng nhánh
-// dự phòng `getCrawledProjectBySlug` trong `getProject` (chạy cả khi dựng on-demand), nên mảng rỗng không làm mất trang nào.
-import { getCrawledProjectBySlug } from "@/lib/crawled-projects";
+// 18/10/2026 (SRS-5.1zzzzzzz45): bỏ nhánh dự phòng đọc `data/mogi_projects.json` — nó tự điền tiện ích, pháp lý "Sổ hồng sở
+// hữu lâu dài" và ảnh nhà mẫu cho dự án không có trong DB (dữ liệu bịa). Kho `projects` nay đủ 5 tỉnh; slug không có → 404.
 
 export async function generateStaticParams() {
   return [];
@@ -51,43 +50,7 @@ const getProject = cache(async (slug: string): Promise<DuAn | null> => {
     .select("id, name, slug, developer, district, ward, province, location_raw, legal_status, status_text, handover, handover_date, description, price_min, price_max, is_partner, unit_types, amenities, images, specs")
     .eq("slug", slug)
     .maybeSingle();
-  if (data) return data as DuAn;
-
-  const crawled = getCrawledProjectBySlug(slug);
-  if (crawled) {
-    return {
-      id: `crawled-${crawled.slug}`,
-      name: crawled.name,
-      slug: crawled.slug,
-      developer: crawled.investor || null,
-      district: crawled.district || null,
-      ward: null,
-      province: crawled.province || null,
-      location_raw: crawled.address,
-      legal_status: "Sổ hồng sở hữu lâu dài",
-      status_text: crawled.status_tags.join(" · "),
-      handover: crawled.handover || null,
-      handover_date: crawled.handover ? `${crawled.handover}-12-31` : null,
-      description: `Dự án ${crawled.name} toạ lạc tại ${crawled.address}, phát triển bởi ${crawled.investor || "Chủ đầu tư uy tín"}. Bàn giao năm ${crawled.handover || "đang cập nhật"}. Mức giá tham khảo: ${crawled.price_range} (${crawled.price_per_m2}).`,
-      price_min: null,
-      price_max: null,
-      is_partner: true,
-      unit_types: [],
-      amenities: ["Hồ bơi tràn bờ", "Công viên cây xanh", "Trung tâm thương mại", "An ninh 24/7", "Phòng gym hiện đại"],
-      images: [crawled.cover_image, "/img/house1.jpg", "/img/house2.jpg", "/img/house3.jpg"].filter(Boolean),
-      specs: {
-        "Chủ đầu tư": crawled.investor,
-        "Vị trí": crawled.address,
-        "Tỉnh thành": crawled.province,
-        "Năm bàn giao": crawled.handover,
-        "Mức giá": crawled.price_range,
-        "Đơn giá / m²": crawled.price_per_m2,
-        "Trạng thái": crawled.status_tags.join(" · "),
-      },
-    };
-  }
-
-  return null;
+  return (data as DuAn) ?? null;
 });
 
 function viTri(p: DuAn): string {
@@ -197,12 +160,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
             ))}
           </div>
         ) : (
-          <div className="relative overflow-hidden rounded-king bg-navy/5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={placeholderImg(p.slug)} alt={p.name} className="aspect-[21/9] w-full object-cover" />
-            <span className="absolute bottom-3 right-4 rounded-md bg-navy/80 px-3 py-1.5 text-xs font-semibold text-white">
-              Ảnh minh hoạ - hình dự án gửi qua Zalo
-            </span>
+          <div className="grid place-items-center rounded-king bg-navy/5 px-4 py-10 text-center text-sm text-mute">
+            Chưa có ảnh dự án — nhắn Zalo để nhận hình thực tế.
           </div>
         )}
 

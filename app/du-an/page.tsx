@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { searchCrawledProjects, getProvinceCounts, type CrawledProject } from "@/lib/crawled-projects";
+import { unstable_cache } from "next/cache";
 import FavButton from "@/components/FavButton";
 import { IconPin, IconSearch } from "@/components/icons";
-import { zaloLink } from "@/lib/format";
+import { formatPrice, zaloLink } from "@/lib/format";
+import { supabase } from "@/lib/supabase";
 
 export const revalidate = 3600;
 
@@ -22,6 +23,55 @@ const PROVINCE_TABS = [
   { id: "Tây Ninh", label: "Tây Ninh" },
 ];
 
+// 18/10/2026 (SRS-5.1zzzzzzz45, chủ dự án "mình cần data đúng"): trang này đọc file tĩnh `data/mogi_projects.json` (bản crawl
+// cũ, thiếu dự án), gắn ảnh nhà mẫu khi thiếu ảnh và nhãn "✓ Xác thực" cho mọi dự án. Nay đọc bảng `projects` (2.361 dự án 5 tỉnh,
+// ảnh mogi thật); trang đọc searchParams nên không ISR được → bọc `unstable_cache` 1 giờ theo (từ khoá, tỉnh, trang).
+type DuAnThe = {
+  name: string; slug: string; developer: string | null; location_raw: string | null; province: string | null;
+  handover: string | null; status_text: string | null; price_min: number | null; price_max: number | null; cover: string | null;
+};
+const PAGE_SIZE = 16;
+
+const timDuAn = unstable_cache(
+  async (q: string, tinh: string, trang: number): Promise<{ items: DuAnThe[]; total: number }> => {
+    let truyVan = supabase
+      .from("projects")
+      .select("name, slug, developer, location_raw, province, handover, status_text, price_min, price_max, cover:images->>0", { count: "exact" });
+    if (tinh !== "all") truyVan = truyVan.eq("province", tinh);
+    // Từ khoá đi thẳng vào chuỗi `.or()` của PostgREST — bỏ ký tự ngữ pháp / wildcard.
+    const tu = q.replace(/[^\p{L}\p{N}\s.-]/gu, " ").replace(/\s+/g, " ").trim();
+    if (tu) truyVan = truyVan.or(`name.ilike.*${tu}*,developer.ilike.*${tu}*,location_raw.ilike.*${tu}*`);
+    const { data, count } = await truyVan.order("name").range((trang - 1) * PAGE_SIZE, trang * PAGE_SIZE - 1);
+    return { items: (data ?? []) as unknown as DuAnThe[], total: count ?? 0 };
+  },
+  ["du-an-danh-sach"],
+  { revalidate: 3600, tags: ["projects"] },
+);
+
+const demTheoTinh = unstable_cache(
+  async (): Promise<Record<string, number>> => {
+    const dem: Record<string, number> = {};
+    await Promise.all(
+      PROVINCE_TABS.map(async (t) => {
+        let truyVan = supabase.from("projects").select("id", { count: "exact", head: true });
+        if (t.id !== "all") truyVan = truyVan.eq("province", t.id);
+        const { count } = await truyVan;
+        dem[t.id] = count ?? 0;
+      }),
+    );
+    return dem;
+  },
+  ["du-an-dem-tinh"],
+  { revalidate: 3600, tags: ["projects"] },
+);
+
+function giaDuAn(p: DuAnThe): string | null {
+  const a = p.price_min, b = p.price_max;
+  if (a && b && a !== b) return `${formatPrice(a, null)} – ${formatPrice(b, null)}`;
+  if (a || b) return formatPrice((a || b) as number, null);
+  return null;
+}
+
 export default async function DuAnPage({
   searchParams,
 }: {
@@ -32,15 +82,9 @@ export default async function DuAnPage({
   const tinh = resolvedParams.tinh?.trim() || "all";
   const trang = Math.max(1, parseInt(resolvedParams.trang || "1", 10) || 1);
 
-  const PAGE_SIZE = 16;
-  const { items: projects, total: totalCount, totalPages } = searchCrawledProjects({
-    query: q,
-    province: tinh,
-    page: trang,
-    pageSize: PAGE_SIZE,
-  });
-
-  const provinceCounts = getProvinceCounts();
+  const { items: projects, total: totalCount } = await timDuAn(q, tinh, trang);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const provinceCounts = await demTheoTinh();
 
   return (
     <div className="min-h-screen bg-slate-50/70 pb-16">
@@ -87,7 +131,7 @@ export default async function DuAnPage({
         <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar">
           {PROVINCE_TABS.map((tab) => {
             const active = (tinh === tab.id) || (tab.id === "all" && tinh === "all");
-            const count = tab.id === "all" ? provinceCounts["Tất cả"] : (provinceCounts[tab.id] || 0);
+            const count = provinceCounts[tab.id] || 0;
             const href = tab.id === "all"
               ? `/du-an${q ? `?q=${encodeURIComponent(q)}` : ""}`
               : `/du-an?tinh=${encodeURIComponent(tab.id)}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
@@ -128,7 +172,7 @@ export default async function DuAnPage({
             {projects.length > 0 ? (
               <div className="space-y-4">
                 {projects.map((p) => {
-                  const hasPricePerM2 = Boolean(p.price_per_m2);
+                  const gia = giaDuAn(p);
                   return (
                     <article
                       key={p.slug}
@@ -139,17 +183,18 @@ export default async function DuAnPage({
                         href={`/du-an/${p.slug}`}
                         className="relative w-full sm:w-56 aspect-[16/10] sm:aspect-[4/3] rounded-md overflow-hidden bg-slate-100 shrink-0 block"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={p.cover_image || "/img/house1.jpg"}
-                          alt={p.name}
-                          loading="lazy"
-                          decoding="async"
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                        <span className="absolute top-2 right-2 rounded bg-emerald-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 backdrop-blur-xs shadow-xs">
-                          ✓ Xác thực
-                        </span>
+                        {p.cover ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={p.cover}
+                            alt={p.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <span className="grid h-full w-full place-items-center text-xs text-slate-400">Chưa có ảnh</span>
+                        )}
                       </Link>
 
                       {/* Info Body */}
@@ -165,9 +210,9 @@ export default async function DuAnPage({
                           </Link>
 
                           {/* Developer / Investor */}
-                          {p.investor && (
+                          {p.developer && (
                             <p className="mt-1 text-xs font-semibold uppercase text-slate-500 tracking-wide line-clamp-1">
-                              {p.investor}
+                              {p.developer}
                             </p>
                           )}
 
@@ -175,7 +220,7 @@ export default async function DuAnPage({
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
                             <span className="flex items-center gap-1 text-slate-500">
                               <IconPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              {p.address}
+                              {p.location_raw}
                             </span>
                             {p.handover && (
                               <>
@@ -188,27 +233,19 @@ export default async function DuAnPage({
                           {/* Price Range & Price/m2 */}
                           <div className="mt-2.5 flex items-baseline gap-2">
                             <span className="text-[#DC2626] font-extrabold text-base">
-                              {p.price_range || "Liên hệ báo giá"}
+                              {gia ?? "Liên hệ báo giá"}
                             </span>
-                            {hasPricePerM2 && (
-                              <span className="text-xs font-medium text-slate-500">
-                                ({p.price_per_m2})
-                              </span>
-                            )}
                           </div>
                         </div>
 
                         {/* Footer: Status Tags + Detail CTA */}
                         <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {p.status_tags.map((tag) => (
-                              <span
-                                key={tag}
-                                className="px-2 py-0.5 rounded bg-[#DDF2FD] text-[#0068FF] text-[11px] font-semibold"
-                              >
-                                {tag}
+                            {p.status_text && (
+                              <span className="px-2 py-0.5 rounded bg-[#DDF2FD] text-[#0068FF] text-[11px] font-semibold">
+                                {p.status_text}
                               </span>
-                            ))}
+                            )}
                             <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[11px] font-medium">
                               {p.province}
                             </span>
@@ -281,7 +318,7 @@ export default async function DuAnPage({
               </h2>
               <ul className="mt-3 divide-y divide-slate-100 text-sm">
                 {PROVINCE_TABS.map((tab) => {
-                  const count = tab.id === "all" ? provinceCounts["Tất cả"] : (provinceCounts[tab.id] || 0);
+                  const count = provinceCounts[tab.id] || 0;
                   const isCur = (tinh === tab.id) || (tab.id === "all" && tinh === "all");
                   return (
                     <li key={tab.id}>

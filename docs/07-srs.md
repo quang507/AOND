@@ -5861,6 +5861,27 @@ trước (khách vừa bổ sung phường → trigger tính trên dữ liệu m
 **Kiểm.** `tests/test_trang_thai_web.py`: lời theo bốn trạng thái; thiếu phường thì hỏi phường mới, không hỏi hẻm; engine đọc kho khi
 khách duyệt (đỏ khi `_trang_thai_web` không đọc kho — đã thử tắt); store tính ô thiếu từ dòng DB. pytest 288 đạt.
 
+### SRS-5.1zzzzzzz45 · Web bỏ tin demo, ảnh nhà mẫu và dữ liệu dự án bịa (18/10/2026)
+
+**Ca gốc.** Chủ dự án: "mình cần data đúng … các tin demo xóa đi, các dự án mà lỡ chèn ảnh của mình là demo cũng xóa ảnh đó lun". Cùng
+lượt chốt phần treo của 5.1zzzzzzz43: web KHÔNG hiện khoảng cách tới ngã tư (toạ độ tin chỉ đúng tới mức phường nên số mét lệch), và sau
+đó "Web không cần hiện 'gần ngã tư A – B'" — bảng `giao_lo` chỉ dùng cho bot (ngã tư → phường).
+
+**Lớp lỗi.** Web lấp chỗ trống bằng dữ liệu tự chế thay vì để trống: (1) trang chủ có khối 7 "căn tuyển chọn" viết tay (`lib/curated.ts`,
+vd `Q8-CL102`) và `/nha-dat/{mã}` mở được các mã đó như tin thật; (2) `placeholderImg` xoay vòng 5 ảnh nhà mẫu theo mã, tức gắn ảnh căn
+KHÁC vào tin / dự án thật chưa có ảnh; (3) `/du-an` đọc file tĩnh `data/mogi_projects.json` (bản crawl cũ), gắn "✓ Xác thực" cho mọi dự
+án; `/du-an/{slug}` không thấy trong DB thì dựng trang từ file đó với tiện ích viết cứng ("Hồ bơi tràn bờ"…) và pháp lý "Sổ hồng sở hữu
+lâu dài" bịa. **Chỗ cùng lớp đã soát.** Ảnh trong bảng `projects`: 9.796 URL đều `cloud.mogi.vn` (không có ảnh demo trong DB); ảnh hero
+trang chủ và ảnh OG của layout là ảnh trang trí, không gắn với tin nào — giữ `house1.jpg`.
+
+**Sửa.** Xoá `lib/curated.ts`, `components/CuratedShowcase.tsx`, `lib/crawled-projects.ts`, `data/mogi_projects.json`,
+`data/projects_vector_store.json` (không chỗ nào đọc), `public/img/house2…5.jpg`; `photos.ts` / `nha-dat/[code]` bỏ nhánh curated;
+`placeholderImg` trả khung "Chưa có ảnh" (`public/img/chua-co-anh.svg`); `/du-an` đọc bảng `projects` (lọc tỉnh, từ khoá tên / chủ đầu tư /
+địa chỉ, 16 dự án một trang, `unstable_cache` 1 giờ, đếm theo tỉnh bằng truy vấn `head`), bỏ nhãn "✓ Xác thực"; `/du-an/{slug}` chỉ đọc
+DB, slug không có → 404, không có ảnh → dòng chữ "Chưa có ảnh dự án".
+
+**Kiểm.** `bun run kieu` + `bun run build` sạch; bảng route `/du-an/[slug]`, `/nha-dat/[code]` vẫn ●.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -2,14 +2,13 @@
 // đường dẫn "<listing UUID>/<media UUID>.<đuôi>" — neo vào ID BẤT BIẾN của tin,
 // không neo vào mã tin (mã đổi được, đổi là ảnh rơi khỏi tin). Bảng
 // `listing_media` giữ metadata; web và bot đọc chung qua view `listing_photos_v`.
-// Tin chưa có ảnh thì rơi về ảnh minh hoạ (placeholderImg).
+// Tin chưa có ảnh thì hiện khung "Chưa có ảnh" (placeholderImg) — không mượn ảnh nhà khác (18/10/2026).
 //
 // THỨ TỰ: xếp theo (sort_order, created_at, media_id) — KHÔNG xếp theo tên file.
 // Xếp theo tên thì "1.jpg, 10.jpg, 2.jpg" ra 1, 10, 2, và ảnh bìa phụ thuộc
 // người đặt tên file. Ảnh bìa lấy thẳng cờ `is_cover` do DB giữ tất định.
 import { unstable_cache } from "next/cache";
 import { supabase } from "@/lib/supabase";
-import { getCuratedByCode } from "@/lib/curated";
 
 // Hai trang /mua-ban và /cho-thue đọc searchParams nên Next dựng chúng LẠI TỪ
 // ĐẦU mỗi request (build in ƒ, không ISR được vì tổ hợp bộ lọc là vô hạn).
@@ -40,12 +39,6 @@ async function _coverByCode(
   for (const r of data ?? []) {
     if (!cover[r.code as string]) cover[r.code as string] = r.url as string;
   }
-  for (const c of list) {
-    if (!cover[c]) {
-      const cur = getCuratedByCode(c);
-      if (cur) cover[c] = cur.image;
-    }
-  }
   return cover;
 }
 
@@ -67,12 +60,5 @@ async function _photosOfCode(code: string, limit = 12): Promise<string[]> {
     .order("created_at")
     .order("media_id")
     .limit(limit);
-  const urls = (data ?? []).map((r) => r.url as string);
-  if (urls.length > 0) return urls;
-
-  const cur = getCuratedByCode(code);
-  if (cur) {
-    return [cur.image, "/img/house1.jpg", "/img/house2.jpg", "/img/house3.jpg", "/img/house4.jpg"].filter((v, i, a) => a.indexOf(v) === i);
-  }
-  return [];
+  return (data ?? []).map((r) => r.url as string);
 }

@@ -1,4 +1,3 @@
-import { hashSeed } from "@/lib/geo";
 // Luật che liên hệ MỘT NGUỒN cho web và bot (tầng bốn, 11/09). Trước đây file
 // này và `chat-reply locLienHe` giữ hai bản regex chép tay, đồng bộ bằng lời
 // hứa "sửa một bên thì sửa bên kia" trong chú thích.
@@ -136,15 +135,16 @@ export function zaloLink(context?: string): string {
   return context ? `${ZALO_OA_URL}?ref=${encodeURIComponent(context)}` : ZALO_OA_URL;
 }
 
-// Ảnh placeholder xoay vòng theo mã tin (ảnh thật nằm OneDrive, chờ pipeline OPEN-18).
+// Tin / dự án chưa có ảnh thật → khung trung tính "Chưa có ảnh". 18/10/2026 (SRS-5.1zzzzzzz45, chủ dự án "mình cần data đúng"):
+// bản cũ xoay vòng 5 ảnh nhà mẫu theo mã tin, tức là gắn ảnh một căn KHÁC vào tin thật.
 // Serve TỪ CHÍNH SITE (`public/img/` được Next.js phục vụ ở gốc). Bản cũ trỏ
 // raw.githubusercontent.com: chạy được chừng nào repo còn public, nhưng buộc
 // ảnh của web phụ thuộc vào một thiết lập GitHub chẳng liên quan gì — set repo
 // private một cái là raw trả 404 và ảnh vỡ sạch. Đường dẫn tương đối cắt hẳn
 // ràng buộc đó, lại nhanh hơn (cùng origin, qua CDN của Vercel).
 const IMG_BASE = "/img";
-export function placeholderImg(seed: string): string {
-  return `${IMG_BASE}/house${(hashSeed(seed) % 5) + 1}.jpg`;
+export function placeholderImg(_seed?: string): string {
+  return `${IMG_BASE}/chua-co-anh.svg`;
 }
 
 export function fmtPrice(v: number | null, deal?: string): string {

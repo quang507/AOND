@@ -26,8 +26,7 @@ export const Q5_CENTER: [number, number] = [10.7561, 106.6703];
 // địa giới cũ đang dùng ở đây (INS-12), và là 15 phường có toạ độ.
 export const WARDS: string[] = Object.keys(WARD_CENTROIDS);
 
-// Băm chuỗi thành số 32-bit định trước — dùng cho jitter bản đồ và ảnh minh
-// hoạ xoay vòng (lib/format), cùng một hàm thay vì hai bản chép.
+// Băm chuỗi thành số 32-bit định trước — dùng cho jitter bản đồ.
 export function hashSeed(seed: string): number {
   let h = 0;
   for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
