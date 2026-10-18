@@ -5534,6 +5534,10 @@ trong `.env` nên bridge gọi vào cổng 8000 của chính VPS. Lớp lỗi: g
 "đổi nguồn code mà không soát chỗ đang chạy". Sửa: mặc định về chat-reply production (cùng project với `escalation-feed`). Chỗ cùng lớp: soát
 `127.0.0.1:8000` / `localhost:8000` toàn repo (trừ docs) — chỉ chỗ này. AMN-09 đỏ trên bản trước sửa.
 
+**Bỏ bước tự ghi đè secret VPS (18/10, quyết định chủ dự án).** Bước "Ghi đè thông tin VPS tạm trong Vault" của `apply-migration.yml` (ghi đè
+`VPS_HOST` / `VPS_ROOT_PASSWORD` thành `x` + đổi tên `DA_XOA_…` sau mỗi lượt `cai-vps`) đã gỡ: ba lượt hỏng liền nhau buộc nhập lại mật khẩu ba lần.
+Chủ dự án: "bỏ cái tự xóa đó đi". Hai secret ở lại Vault, chỉ đọc được bằng service_role / Management API.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
