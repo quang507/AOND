@@ -5587,6 +5587,20 @@ Supabase chỉ là tàn dư cũ… tránh việc hai con AI sửa chéo làm lo�
 **Kiểm.** `bun run test:bot` thoát 0; `deno check` ba function còn lại sạch; pytest 264 đạt; `truyvet` SẠCH. Sau khi chạy
 `go-ham-ts.yml`: danh sách function trên Supabase chỉ còn ba cái giữ.
 
+### SRS-5.1zzzzzzz32 · Gỡ trang chat thử trên VPS (18/10/2026)
+
+**Ca gốc.** Chủ dự án: "xóa trang chat thử luôn đi". Trang thử (`/opt/trang-thu`, cài bằng `bot/tests/chat/cai-vps.sh` — đã xoá ở
+SRS-5.1zzzzzzz31) chạy bộ não TypeScript đã gỡ, còn một đường hầm cloudflared mở ra ngoài và một khoá Anthropic riêng trong `/etc/trang-thu.env`.
+
+**Lớp lỗi.** Gỡ code mà không gỡ thứ đang CHẠY từ code đó — tiến trình, đường hầm công khai và khoá vẫn sống trên máy.
+
+**Sửa.** `apply-migration.yml` ô `dung_lai` = `go-trang-thu`: tắt + xoá 3 unit systemd (`trang-thu`, `trang-thu-ham`, `trang-thu-cap-nhat`
+service + timer), 2 lệnh `/usr/local/bin/trang-thu-*`, `/opt/trang-thu`, `/etc/trang-thu.env|.nhanh`, user `trangthu`. Giữ swapfile,
+cloudflared; không đụng `nhadat-bridge` / `aond-core`. Chỗ cùng lớp: 6 function TS đã xoá bản deploy (`go-ham-ts.yml`); 9 lịch cron TS
+đã tắt (SRS-5.1zzzzzzz30).
+
+**Kiểm.** Log lượt chạy in: 0 unit `trang-thu*`, `/opt/trang-thu` không còn, user `trangthu` không còn, bridge + aond-core `active`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
