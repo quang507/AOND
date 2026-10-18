@@ -163,7 +163,7 @@ Từ 24/08/2026 (quyết định chủ dự án) code nằm **trong repo này**,
   `when` bằng migration mới; `bot/tests/ten-nhan-sql.mjs` đỏ khi hai bên lệch. Từ 21/09 thêm **từ điển tên đường** bảng `duong` (FR-212, `20260921b`,
   ~5.200 tên lượt đầu 21/09; đếm 12/10/2026 sau `nap-duong`: TP.HCM 37.146 dòng gồm hẻm, đủ 168/168 phường — Đặc khu Côn Đảo nằm ngoài hộp bao chung, nạp nhờ `BBOX_RIENG`; Tây Ninh 1.598, Đồng Nai 677; OSM theo phường mới): bot gọi `tim_duong` ở MỌI chỗ ghi địa chỉ — không dấu → có dấu
   ngay, sai 1–2 ký tự → hỏi xác nhận (`boc_tach.duong_goi_y`), không có → giữ nguyên chữ khách; nạp lại
-  bằng `node scripts/nap-duong.mjs`, KHÔNG ghi tay. `listings` nay 67 cột (số "56 cột" cũ ở đây đã lệch từ lâu).
+  bằng `node scripts/nap-duong.mjs`, KHÔNG ghi tay. `listings` nay 70 cột (đếm trên DB 18/10/2026; số "56", "67" cũ đã lệch).
   (3) **Luật phá dữ liệu phải có bảng câu KHÔNG được kích** — `bot/tests/luat/khong-duoc-kich.json`:
   mỗi luật tìm-chuỗi mà khớp là ghi đè dữ liệu có `phai_kich` (để không vá quá tay) và
   ≥ 8 `khong_duoc_kich`. `luat-pha-du-lieu.mjs` còn đếm chỗ ghi đè trong chat-reply:
@@ -418,7 +418,7 @@ xếp A→Z mà mắt vẫn gom được theo việc. Thêm bảng hay cột m�
 Bản in ra giấy (sơ đồ quan hệ + đường bóc tách) ở `docs/07-srs.md §SRS-3.0`;
 đừng mở `docs/architecture/` song song với `07-srs.md`, hai nguồn sự thật là
 đúng cái bẫy đã đẻ ra OPEN-46. Mở rổ hàng bằng mắt người thì dùng view
-`ro_hang_ban` chứ đừng mở `listings` 67 cột — hoặc chọn schema **`so`** trong
+`ro_hang_ban` chứ đừng mở `listings` 70 cột — hoặc chọn schema **`so`** trong
 Table Editor (`20260907c`): ba view `so.ro_hang` (9 cột đầu đúng thứ tự
 sheet Excel gốc Q5 trong `masterDB/`), `so.nguoi_ban` và `so.hoi_thoai` (log chat đọc
 được, `20260907g` — muốn xem lại bot nói gì với khách thì mở đây, đừng mở `messages`

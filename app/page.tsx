@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { IconAsk, IconChart, IconCalc, IconClock, IconSearch, IconShield } from "@/components/icons";
-import { placeholderImg, zaloLink } from "@/lib/format";
+import { zaloLink } from "@/lib/format";
 import { WARDS } from "@/lib/geo";
 import { FEATURED_TAGS } from "@/lib/tags";
-import CuratedShowcase from "@/components/CuratedShowcase";
 import RadarMarketBlock from "@/components/RadarMarketBlock";
 
 export const revalidate = 10800; // 3 giờ
@@ -109,7 +108,7 @@ export default async function Home() {
             <div className="overflow-hidden rounded-lg border border-white/10 shadow-xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={placeholderImg("hero-q8")}
+                src="/img/house1.jpg"
                 alt="Nhà phố Sài Gòn & Long An"
                 fetchPriority="high"
                 decoding="async"
@@ -167,9 +166,6 @@ export default async function Home() {
           </div>
         ))}
       </section>
-
-      {/* 3. KHỐI 7 CĂN BĐS TUYỂN CHỌN ĐA DẠNG LOẠI HÌNH (XEN KẼ) */}
-      <CuratedShowcase />
 
       {/* 4. VÒNG HỎI 3 BƯỚC ĐI HỎI GIÙM CHỦ NHÀ */}
       <section className="mx-auto max-w-6xl px-4 py-8">
