@@ -1051,12 +1051,12 @@ function anhHopLe(url: string | null): string | null {
   return ok ? url : null;
 }
 
-// 18/10/2026 — VOICE trên Zalo CÁ NHÂN (bridge zca-js). Lớp lỗi: pipeline giải mã thoại
+// 18/10/2026 (SRS-5.1zzzzzzz20) — VOICE trên Zalo CÁ NHÂN (bridge zca-js). Lớp lỗi: pipeline giải mã thoại
 // (`transcribeVoiceUrl`, Groq Whisper → Gemini Flash) trước đây CHỈ được nối ở `zalo-webhook`
 // (kênh OA); nhánh bridge gửi placeholder "[Khách gửi tin nhắn thoại/ghi âm]" + `file_url`
 // (`tin_nhan_thoai.m4a`), file âm thanh rơi vào `loaiTep` → "khac" → bot trả "em chưa đọc được
-// định dạng". Nay nhận diện file thoại bằng ĐUÔI (và tên `tin_nhan_thoai`) để giải mã một chỗ
-// cho CẢ HAI kênh. Chỗ khác cùng lớp: zalo-webhook đã có (OA); đây là nửa còn thiếu (bridge).
+// định dạng". Nay chat-reply nhận diện file thoại bằng ĐUÔI (và tên `tin_nhan_thoai`) rồi giải mã bằng
+// CÙNG hàm. OA vẫn giải mã ở zalo-webhook (tới đây đã là chữ, không có `file_url` thoại → không giải mã hai lần).
 const DUOI_THOAI = /\.(m4a|aac|mp3|mpeg|wav|ogg|oga|opus|amr)(?:$|[?#])/i;
 function laTepThoai(url: string | null, ten: string | null): boolean {
   return DUOI_THOAI.test(url ?? "") || DUOI_THOAI.test(ten ?? "") || /tin_nhan_thoai/i.test(ten ?? "");
@@ -1238,7 +1238,7 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
     }
   }
 
-  // ─── FIX VOICE (18/10/2026): giải mã tin thoại TẠI chat-reply, SAU cổng (không ai chưa qua cổng
+  // ─── FIX VOICE (SRS-5.1zzzzzzz20, 18/10/2026): giải mã tin thoại TẠI chat-reply, SAU cổng (không ai chưa qua cổng
   // đốt credit Groq/Gemini), TRƯỚC khi tách vai / bóc tách. Giải mã xong thay `text` = lời nói và
   // XOÁ file_url/file_name để lượt chạy như tin chữ thường (cả nhánh mua lẫn bán). Một lượt / turn
   // (chạy một lần trong `xuLyLuot`, không lặp). Keys đọc qua Vault như zalo-webhook. Hỏng im / câm
@@ -4537,7 +4537,7 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
 
     // 02/10/2026 (test Zalo, ảnh chủ dự án): "[khách thả cảm xúc /-strong]" ngay sau tin rao bị lấy làm câu trả lời câu
     // "loại nhà" → bot hỏi lại lần ba. Thả cảm xúc chỉ là GẬT (FR-142): có nghĩa với câu xin đồng ý; câu cần NỘI DUNG thì im.
-    // 18/10/2026: sticker trung tính (`laStickerTrungTinh`) KHÁC thả cảm xúc — không bao giờ là gật, kể cả lúc chờ duyệt:
+    // SRS-5.1zzzzzzz22 (18/10/2026): sticker trung tính (`laStickerTrungTinh`) KHÁC thả cảm xúc — không bao giờ là gật, kể cả lúc chờ duyệt:
     // im lặng, không ghi gì, không coi là yêu cầu sửa tin (trước đó nó rơi xuống "sửa bản tin" → bo_sung → bài rao).
     if (!imageUrl && laStickerTrungTinh(text)) {
       return await traLoiSeller([], { sticker: true });
@@ -6751,15 +6751,15 @@ const xuLyLuot = async (req: Request): Promise<Response> => {
     // (địa chỉ rác, bổ sung rác, loại nhà không đổi); bước này là cơ chế 2 — đọc TOÀN BỘ tin chủ nhà một lần, đưa trạng thái cuối
     // qua ĐÚNG bộ bóc tách + lớp kiểm trích dẫn hiện có (`kiemDeXuat` → `docAiChinh`). Giá trị qua kiểm mà khác giá trị đang ghi →
     // AI thắng (địa chỉ qua `chonViTri` để không mất số nhà); AI để trống thì GIỮ, không xoá. Bổ sung: ý thêm AI lọc (`kiemKienThuc`)
-    // ghi nguồn ai_kiem, bản nháp bỏ ghi chú thô `seller_chat`. Chỉ chạy ở chế độ `ai` (production) và người rao MỘT căn (nhiều căn
-    // thì tin dễ lẫn giữa các căn); không chốt được → `docLaiGhiChu` như cũ. Một lượt model mỗi bản nháp.
+    // ghi nguồn ai_kiem, bản nháp bỏ ghi chú thô `seller_chat`. Chỉ chạy ở chế độ `ai` (production); người rao nhiều căn: xem
+    // SRS-5.1zzzzzzz21 ngay dưới. Không chốt được → `docLaiGhiChu` như cũ. Một lượt model mỗi bản nháp.
     async function chotTinAi(listingId: string): Promise<boolean> {
       if (!anthropicS) return false;
       try {
         // `cheDoBocAi` trả "chinh" cho công tắc `ai` (đường câu treo dùng chung) — chế độ thật nằm ở `laCheDoAi`, đặt khi nó chạy xong.
         const laAi = cheDoBocAi ? (await cheDoBocAi, laCheDoAi) : String((await client.rpc("cau_hinh", { p_key: "boc_tach_ai" })).data ?? "tat").trim() === "ai";
         if (!laAi) return false;
-        // 18/10/2026 — MỞ CHỐT TIN CHO NGƯỜI RAO NHIỀU CĂN (bỏ chặn cứng `nhieuCan`). Lý do guard cũ: lượt chốt đọc CẢ hội
+        // SRS-5.1zzzzzzz21 (18/10/2026) — MỞ CHỐT TIN CHO NGƯỜI RAO NHIỀU CĂN (bỏ chặn cứng `nhieuCan`). Lý do guard cũ: lượt chốt đọc CẢ hội
         // thoại (`tinChuNhaGoc()`) rồi dồn vào MỘT căn — nhiều căn thì fact căn B lẫn sang căn A. Nay vẫn chốt theo đúng
         // `listingId` đang soạn, nhưng khi nhiều căn thì CHỈ đọc tin chủ nhà VỪA nhắn lượt này (đã qua `gan-manh` định tuyến
         // về đúng căn), KHÔNG đọc lại cả hội thoại — facts từng căn đã lưu riêng, lớp dedup (`giaTriKhongDoi`,

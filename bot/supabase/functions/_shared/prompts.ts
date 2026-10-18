@@ -734,7 +734,7 @@ export function docCauTienDinh(json: string | null | undefined): { bang: Record<
 /** Điền ô cho một câu tiền định. Ô thiếu dữ liệu → trả chuỗi rỗng để tầng gọi bỏ câu. */
 export function dienCau(mau: string, o: Record<string, string | number | null | undefined>): string {
   let thieuO = false;
-  // 18/10/2026: thêm `ly_do` — `dang_xong_hang` ("… hạng {hang} bên em ({ly_do}).") truyền ô này từ chat-reply nhưng
+  // SRS-5.1zzzzzzz23 (18/10/2026): thêm `ly_do` — `dang_xong_hang` ("… hạng {hang} bên em ({ly_do}).") truyền ô này từ chat-reply nhưng
   // regex cũ không nhận, nên khách đọc nguyên văn "({ly_do})" mỗi lần tin lên kệ. Ô mới dùng ở câu tiền định nào thì
   // thêm tên ô vào đây, không thì nó lộ nguyên chữ ra Zalo.
   const ra = mau.replace(/\{(ac|Ac|diem|thieu|ds|web|ten|loai|hang|ly_do|goi_y)\}/g, (_, k: string) => {

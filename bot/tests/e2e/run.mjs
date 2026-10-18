@@ -2501,6 +2501,48 @@ fresh(seedKho);
   check("LYDO-01 câu báo hạng điền ô {ly_do}, không lộ ngoặc nhọn ra Zalo", cHang.includes("điểm tin 85/100") && !/[{}]/.test(cHang), cHang);
   const cThieu = dienCau(CAU_TIEN_DINH.dang_xong_hang, { Ac: "Chị", hang: "Vàng", ly_do: "" });
   check("LYDO-02 (đối chứng) thiếu lý do → bỏ cả câu, không in '({ly_do})'", cThieu === "", cThieu);
+  // SRS-5.1zzzzzzz23 — canh cả LỚP: mọi ô {x} trong mọi câu soạn sẵn phải là ô `dienCau` biết điền (thêm câu có ô mới mà quên regex là đỏ).
+  const loMo = Object.entries(CAU_TIEN_DINH).flatMap(([k, mau]) => {
+    const o = Object.fromEntries([...String(mau).matchAll(/\{([a-zA-Z_]+)\}/g)].map((m) => [m[1], "X"]));
+    return /\{[a-zA-Z_]+\}/.test(dienCau(String(mau), o)) ? [k] : [];
+  });
+  check("LYDO-03 mọi ô {x} trong CAU_TIEN_DINH đều được dienCau điền (không câu nào lộ ngoặc nhọn khi có đủ giá trị)", loMo.length === 0, loMo.join(", "));
+}
+
+// 18/10/2026 — tin THOẠI qua Zalo cá nhân: bridge gửi placeholder + file_url (`tin_nhan_thoai.m4a`); chat-reply giải mã (Groq Whisper →
+// Gemini) rồi chạy lượt như tin chữ. Trước bản sửa: chỉ zalo-webhook (OA) giải mã, file âm thanh của bridge rơi xuống nhánh tài liệu.
+{
+  const env = globalThis.Deno.env; const getCu = env.get;
+  env.get = (k) => k === "GROQ_API_KEY" ? "groq-test" : getCu(k);
+  const gocFetch = globalThis.fetch;
+  let loiNoi = "anh muốn ký gửi bán căn nhà"; let groqOk = true;
+  globalThis.fetch = async (url, opt) => {
+    const u = String(url);
+    globalThis.__fetches = [...(globalThis.__fetches ?? []), u];
+    if (/zdn\.vn\/.*\.(m4a|aac)/.test(u)) return new Response(new Uint8Array([0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70]), { status: 200, headers: { "content-type": "audio/mp4" } });
+    if (/api\.groq\.com\/openai\/v1\/audio\/transcriptions/.test(u)) return groqOk ? new Response(JSON.stringify({ text: loiNoi }), { status: 200, headers: { "content-type": "application/json" } }) : new Response("", { status: 500 });
+    if (/generativelanguage\.googleapis\.com/.test(u)) return new Response("", { status: 500 });
+    return gocFetch(url, opt);
+  };
+  const goiGroq = () => (globalThis.__fetches ?? []).some((u) => /api\.groq\.com/.test(u));
+  const soMsg = () => db().t.messages.map((m) => m.body);
+  fresh();
+  let rV = await send({ external_user_id: "z-voice-1", text: "[Khách gửi tin nhắn thoại/ghi âm]", file_url: "https://f9-zpg.zdn.vn/thoai-1.m4a", file_name: "tin_nhan_thoai.m4a" });
+  check("VOICE-01 (ca gốc) tin thoại qua bridge → giải mã, lượt chạy như tin chữ: sổ messages ghi LỜI NÓI, không 'chưa đọc được định dạng'",
+    goiGroq() && soMsg().includes(loiNoi) && !JSON.stringify(rV.body.replies ?? []).includes("chưa đọc được định dạng"),
+    JSON.stringify({ groq: goiGroq(), msgs: soMsg(), rep: rV.body.replies }));
+  fresh(); loiNoi = "nhà hẻm 4m quận 5 giá 5 tỷ";
+  rV = await send({ external_user_id: "z-voice-2", text: "", file_url: "https://f9-zpg.zdn.vn/ghi-am-2.aac" });
+  check("VOICE-02 (cách gửi mới: link .aac, không tên file, không chữ) → nhận theo đuôi file, giải mã, sổ ghi lời nói",
+    goiGroq() && soMsg().includes(loiNoi), JSON.stringify({ groq: goiGroq(), msgs: soMsg(), rep: rV.body.replies }));
+  fresh(); groqOk = false;
+  rV = await send({ external_user_id: "z-voice-3", text: "[Khách gửi tin nhắn thoại/ghi âm]", file_url: "https://f9-zpg.zdn.vn/thoai-3.m4a", file_name: "tin_nhan_thoai.m4a" });
+  check("VOICE-03 (đối chứng) giải mã hỏng (Groq 500, Gemini 500) → lượt không vỡ, không bịa lời nói",
+    goiGroq() && !rV.body.error && !soMsg().includes(loiNoi), JSON.stringify({ err: rV.body.error, msgs: soMsg(), rep: rV.body.replies }));
+  fresh(); groqOk = true;
+  rV = await send({ external_user_id: "z-voice-4", text: "", file_url: "https://f9-zpg.zdn.vn/bang-gia.pdf", file_name: "bang-gia.pdf" });
+  check("VOICE-04 (đối chứng) file PDF → KHÔNG gọi giải mã thoại", !goiGroq(), JSON.stringify({ fetches: globalThis.__fetches }));
+  globalThis.fetch = gocFetch; env.get = getCu;
 }
 
 // ── 14/09: nhánh mua KHÔNG còn structured output (chậm gấp đôi) — đọc JSON từ chữ ──
@@ -4452,6 +4494,55 @@ fresh(seedKho);
       goiChot === 1 && !!nhapC && lc.property_type === "nha_cap4" && kcMoi === "1 tầng" && /mặt tiền đẹp/.test(nhapC) &&
         !/không có mặt tiền/.test(nhapC) && !/phòng ngủ"|thôi em/.test(nhapC),
       JSON.stringify({ goiChot, pt: lc.property_type, kc: kcMoi, nhap: nhapC.slice(0, 600), rep: rC.body.replies.slice(0, 3) }));
+    globalThis.__khongNhoCauHinh = false;
+    globalThis.__cauHinh = cuCH;
+  }
+  // SRS-5.1zzzzzzz21 (18/10/2026): người rao NHIỀU căn trước đây bị chặn cứng khỏi lượt chốt tin (`nhieuCan` → return false), nên
+  // lỗi dồn từng lượt ở tin môi giới không bao giờ được AI lọc. Nay vẫn chốt, nhưng CHỈ đọc tin vừa nhắn (đã định tuyến về đúng căn)
+  // — không đọc cả hội thoại, nơi lẫn tin của căn khác. Cùng dữ liệu ca trên, người bán có thêm một căn ở địa chỉ khác.
+  {
+    fresh(seedKho);
+    const cuCH = globalThis.__cauHinh;
+    globalThis.__cauHinh = { test_reset_hello: "1", boc_tach_ai: "chinh", bao_lai_da_luu: "thay_doi" };
+    globalThis.__model.parse = (p) => laLuotBocRao(p) ? { so_can: 0, kien_thuc: [], truong: [] } : OUT();
+    await send({ external_user_id: "chot-nc", text: "anh cần bán nhà trong hẻm 12 Trần Bình Trọng quận 5" });
+    const LC = db().t.listings.at(-1);
+    await send({ external_user_id: "chot-nc", text: "nhà cấp 4 1 tầng thôi em, 3 phòng ngủ" });
+    Object.assign(db().t.listings.find((x) => x.id === LC.id), { property_type: "nha_pho", location_raw: "12 Trần Bình Trọng", ward: "Phường Chợ Quán",
+      district: "Quận 5", alley_width_m: 4, area_m2: 64, frontage_m: 4, floors: 1, bedrooms: 3, price_raw: "5 tỷ", price_vnd: 5000000000, legal_status: null });
+    db().t.listing_facts = db().t.listing_facts.filter((f) => f.listing_id !== LC.id);
+    for (const [q, a] of [["vi_tri", "12 Trần Bình Trọng"], ["dien_tich_dat", "4x16"], ["do_rong_hem", "4m"], ["gia", "5 tỷ"], ["phuong", "Phường Chợ Quán"],
+      ["so_phong_ngu", "3"], ["ket_cau", "cấp 4 1 tầng thôi em, 3 phòng ngủ"]]) {
+      db().insert("listing_facts", { listing_id: LC.id, question: q, answer: a, source: "seller_chat" });
+    }
+    // Căn thứ hai của cùng người bán → `nhieuCan`.
+    db().insert("listings", { seller_id: LC.seller_id, status: LC.status, property_type: "nha_pho", location_raw: "50 Hùng Vương", ward: "Phường Chợ Lớn",
+      district: "Quận 5", price_raw: "9 tỷ", price_vnd: 9000000000, created_at: new Date(Date.now() - 86400000).toISOString() });
+    db().t.info_requests.forEach((x) => { if (x.status === "pending") x.status = "expired"; });
+    daHtsd(LC);
+    db().insert("info_requests", { listing_id: LC.id, question: "phap_ly", status: "pending" });
+    globalThis.__cauHinh = { test_reset_hello: "1", boc_tach_ai: "ai", bao_lai_da_luu: "thay_doi" };
+    globalThis.__khongNhoCauHinh = true;
+    let goiChot = 0;
+    let dauVaoChot = "";
+    const laChot = (p) => (p?.system ?? []).some((x) => /CHẾ ĐỘ CHỐT TIN/.test(x.text ?? ""));
+    globalThis.__model.parse = (p) => {
+      if (!laLuotBocRao(p)) return OUT();
+      if (laChot(p)) {
+        goiChot++;
+        dauVaoChot = JSON.stringify(p.messages ?? []);
+        return { so_can: 0, kien_thuc: [], cap_nhat: [], truong: [
+          { khoa: "phap_ly", gia_tri: "sổ hồng riêng", trich_dan: "sổ riêng", can: null }] };
+      }
+      return { so_can: 0, kien_thuc: [], cap_nhat: [], truong: [{ khoa: "phap_ly", gia_tri: "sổ hồng riêng", trich_dan: "sổ riêng", can: null }],
+        tra_loi: { co_tra_loi: true, gia_tri: "sổ hồng riêng", trich_dan: "sổ riêng" } };
+    };
+    const rN = await send({ external_user_id: "chot-nc", text: "sổ riêng" });
+    check("CHOT-NC-01 người rao 2 căn soạn bản nháp → lượt CHỐT TIN có chạy (trước đây bị chặn cứng)",
+      goiChot === 1 && db().t.listings.filter((x) => x.seller_id === LC.seller_id).length === 2,
+      JSON.stringify({ goiChot, rep: (rN.body.replies ?? []).slice(0, 3) }));
+    check("CHOT-NC-02 lượt chốt của người nhiều căn CHỈ đọc tin vừa nhắn: có 'sổ riêng', KHÔNG có tin cũ của hội thoại ('cấp 4 1 tầng', 'Trần Bình Trọng')",
+      /sổ riêng/.test(dauVaoChot) && !/cấp 4 1 tầng|Trần Bình Trọng/.test(dauVaoChot), dauVaoChot.slice(0, 600));
     globalThis.__khongNhoCauHinh = false;
     globalThis.__cauHinh = cuCH;
   }

@@ -5284,6 +5284,83 @@ CI bắt thêm một lỗi của chính `20261014e` qua `bot/tests/null-ba-tri.m
 NULL khi tin chưa rõ loại → mất mọi câu còn thiếu của tin đó (cùng lớp 20260925b). Vá ở `20261014f` bằng `IS NOT DISTINCT FROM`; bài đó đỏ trên
 `schema.sql` cũ, xanh trên bản mới.
 
+### SRS-5.1zzzzzzz20 · Tin thoại qua Zalo cá nhân được giải mã như tin chữ (18/10/2026)
+
+**Ca gốc.** Soát code 18/10/2026 (bài review ba vai cho chủ dự án): khách nhắn thoại vào Zalo CÁ NHÂN (bridge zca-js) → bridge gửi chữ giữ chỗ
+"[Khách gửi tin nhắn thoại/ghi âm]" + `file_url` (`tin_nhan_thoai.m4a`); chat-reply coi đó là tệp lạ ("khac") → bot trả "em chưa đọc được định
+dạng". Kênh OA thì đã giải mã từ trước (`zalo-webhook` gọi `transcribeVoiceUrl`).
+
+**Lớp lỗi.** Xử lý LOẠI TIN đặt ở từng cửa vào thay vì ở lõi chung: cửa OA có giải mã, cửa bridge không, nên cùng một loại tin chạy hai kiểu
+tuỳ khách nhắn kênh nào.
+
+**Chỗ cùng lớp.** Đã đúng sẵn: ảnh, tệp, link — cả hai cửa chỉ chuyển `image_url` / `file_url` / `link_url`, chat-reply xử lý một chỗ. Đã sửa:
+thoại (bridge). **Còn lại:** OA vẫn giải mã ở `zalo-webhook` (cùng hàm `transcribeVoiceUrl`, không chép luật — chuyển hẳn vào chat-reply là đổi
+cửa OA, chưa làm); video chưa cửa nào xử lý; giải mã hỏng thì lượt chạy tiếp với chữ giữ chỗ + tệp như trước bản sửa (chưa có câu riêng "em chưa nghe được,
+nhắn chữ giúp em").
+
+**Sửa.** `chat-reply`: `laTepThoai` nhận tệp thoại bằng ĐUÔI (`m4a aac mp3 mpeg wav ogg oga opus amr`, cả khi URL có `?`/`#`) hoặc tên
+`tin_nhan_thoai`; sau cổng (người chưa qua cổng không tốn lượt giải mã), trước FR-162 `mark_sent`: lấy khoá Groq / Gemini qua `secretOf`, gọi
+`transcribeVoiceUrl` (Groq Whisper → Gemini Flash), có chữ thì lượt chạy như tin chữ (`text` cắt 12.000 ký tự, `file_url` bỏ); hỏng → `ghiLoi`,
+không bịa lời nói.
+
+**Kiểm (đỏ khi tắt).** e2e VOICE-01 (ca gốc: placeholder + `.m4a` → sổ `messages` ghi lời nói, không "chưa đọc được định dạng"), VOICE-02 (cách
+gửi mới: link `.aac`, không tên, không chữ), VOICE-03 (đối chứng: Groq 500 + Gemini 500 → lượt không vỡ, không bịa), VOICE-04 (đối chứng: PDF
+không gọi giải mã). Tắt điều kiện giải mã → VOICE-01/02/03 đỏ; bật → xanh.
+
+### SRS-5.1zzzzzzz21 · Lượt chốt tin chạy cho người rao nhiều căn, chỉ đọc tin vừa nhắn (18/10/2026)
+
+**Ca gốc.** Soát code 18/10/2026: `chotTinAi` (SRS-5.1zzzd) `return false` ngay khi `nhieuCan` — người rao từ hai căn (môi giới, đúng tập NMG)
+không bao giờ được AI lọc lỗi dồn từng lượt (địa chỉ rác, bổ sung rác, loại nhà không đổi) trước bản nháp.
+
+**Lớp lỗi.** Chặn cả TÍNH NĂNG để né một RỦI RO hẹp hơn: rủi ro thật là đầu vào (`tinChuNhaGoc()` = cả hội thoại, lẫn tin của căn khác), không
+phải việc chốt.
+
+**Chỗ cùng lớp.** Đã sửa: `chotTinAi`. **Còn lại:** `docLaiGhiChu` (đường đỡ khi không chốt được) vẫn đọc ghi chú của đúng căn — không cùng rủi ro;
+chưa soát các chỗ khác đọc `tinChuNhaGoc()` khi `nhieuCan`.
+
+**Sửa.** Bỏ `nhieuCan` khỏi điều kiện thoát; nhiều căn → nguồn chốt CHỈ là tin vừa nhắn (đã qua định tuyến mảnh về đúng `listingId`), một căn
+giữ nguyên (cả hội thoại). Lớp chặn ghi đè hiện có giữ nguyên (`giaTriKhongDoi`, `cungNoiDungDiaChi`, `docTien`, đếm `so_fact`).
+
+**Kiểm (đỏ khi tắt).** e2e CHOT-NC-01 (người rao 2 căn soạn nháp → lượt chốt có chạy), CHOT-NC-02 (đầu vào lượt chốt có tin vừa nhắn, KHÔNG có tin
+cũ của hội thoại). Khôi phục chặn cứng → cả hai đỏ; cho nhiều căn đọc cả hội thoại → CHOT-NC-02 đỏ.
+
+### SRS-5.1zzzzzzz22 · Sticker không rõ sắc thái không phải là gật, không vào bài rao (18/10/2026)
+
+**Ca gốc.** (1) Soát code 18/10: bridge gán MỌI sticker thành "[sticker cảm xúc]", chuỗi đó khớp `EMOJI_VUI` → `laDongY` hiểu là GẬT: chủ nhà gửi
+sticker bực lúc bot hỏi duyệt là tin tự lên kệ. (2) Bản sửa đầu (đổi chuỗi thành "[khách gửi sticker]") tự gây lỗi, bắt khi chat thử kịch bản ký
+gửi (`bun run chat`, DB giả): lúc chờ duyệt chuỗi mới không là gật cũng không là "không nội dung" → rơi xuống đường sửa bản tin, ghi `bo_sung`,
+bài rao công khai in "📝 Thêm: … · [khách gửi sticker]".
+
+**Lớp lỗi.** Chuỗi đánh dấu loại tin do cửa vào chế ra bị bộ luật đọc như LỜI KHÁCH; và `laThaCamXuc` mang hai nghĩa ("không nội dung" và "gật lúc
+hỏi duyệt"), nên thêm một loại tin mới phải chọn một trong hai nghĩa, mà sticker không thuộc cái nào.
+
+**Chỗ cùng lớp.** Đã sửa: sticker (bridge + chat-reply), sáu bộ lọc "không phải nội dung" (tin mới hơn, gộp cụm, đầu vào chốt tin, nhánh mua) dùng
+`laTinRongNghia`. Không đổi: nhánh gật vẫn `laThaCamXuc` (thả tim / like THẬT qua listener `reaction` vẫn là gật); `EMOJI_VUI` giữ `[sticker cảm
+xúc]` cho tin cũ. **Còn lại:** chữ giữ chỗ "[Vị trí GPS]: …", "[Khách gửi tin nhắn thoại/ghi âm]" (khi giải mã hỏng) chưa soát xem có lọt vào ô
+nào không.
+
+**Sửa.** `khop-cau-tra-loi.ts`: `laStickerTrungTinh` (không bao giờ là gật, nhận cả "khach" không dấu) + `laTinRongNghia` (thả cảm xúc HOẶC sticker).
+`chat-reply` nhánh bán: sticker trung tính, không ảnh → trả sớm một chỗ, trước nhánh gật (không gật, không ghi). Bridge gán "[khách gửi sticker]".
+
+**Kiểm (đỏ khi tắt).** e2e STK-01 (ca gốc: chờ duyệt, gửi sticker → tin không lên kệ, không ghi fact), STK-02 (cách gõ mới "khach" không dấu, đang
+hỏi pháp lý → không ghi pháp lý / bổ sung từ sticker). Không có bản sửa → cả hai đỏ (đã chạy bằng `git stash`).
+
+### SRS-5.1zzzzzzz23 · Ô {ly_do} câu báo hạng được điền, không lộ ngoặc nhọn ra Zalo (18/10/2026)
+
+**Ca gốc.** Chat thử kịch bản ký gửi 18/10/2026 (`bun run chat`, DB giả): mỗi lần tin lên kệ khách đọc nguyên văn "… hạng Bạc bên em ({ly_do})."
+— chat-reply truyền `ly_do` cho `dang_xong_hang` nhưng `dienCau` chỉ biết `ac Ac diem thieu ds web ten loai hang goi_y`.
+
+**Lớp lỗi.** Danh sách ô của `dienCau` là một regex viết tay, tách khỏi các câu mẫu dùng nó; thêm câu có ô mới mà quên regex thì không gì báo.
+
+**Chỗ cùng lớp.** Soát mọi `{x}` trong `prompts.ts`: còn lại là template literal của JS hoặc câu `phuong@goi_y` (điền riêng qua `cauXacNhanPhuong`)
+— không qua `dienCau`. Câu chủ dự án sửa ở dashboard (`bot_prompts`) có ô lạ vẫn lộ — bài LYDO-03 chỉ soi bản trong code. Hệ quả phụ: AOND-G2 có
+điều kiện quá rộng `!/hạng Vàng/`, xanh nhờ chính lỗi này (lời lý do soạn sẵn có "… để lên hạng Vàng"); thu hẹp về đúng ý ca.
+
+**Sửa.** `prompts.ts` `dienCau` thêm `ly_do` + chú thích danh sách ô.
+
+**Kiểm (đỏ khi tắt).** e2e LYDO-01 (ca gốc: điền lý do, không còn `{}`), LYDO-02 (đối chứng: thiếu lý do → bỏ cả câu), LYDO-03 (canh cả lớp: mọi
+ô trong mọi câu `CAU_TIEN_DINH` đều được điền khi có giá trị). Bỏ `ly_do` khỏi regex → LYDO-01 và LYDO-03 đỏ.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
