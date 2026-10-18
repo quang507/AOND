@@ -251,7 +251,7 @@ export async function giaiMaVoiceGroq(bytes: Uint8Array, mime: string, groqApiKe
   if (!groqApiKey || !bytes?.byteLength) return null;
   try {
     const ext = mime.includes("aac") ? "aac" : mime.includes("mp4") || mime.includes("m4a") ? "m4a" : mime.includes("ogg") ? "ogg" : "mp3";
-    const blob = new Blob([bytes], { type: mime || "audio/aac" });
+    const blob = new Blob([bytes as unknown as BlobPart], { type: mime || "audio/aac" });
     const fd = new FormData();
     fd.append("file", blob, `voice.${ext}`);
     fd.append("model", "whisper-large-v3-turbo");
