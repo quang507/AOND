@@ -24,6 +24,7 @@ from .schema import (
 FIELD_LABELS: dict[str, str] = {
     "loai_hinh": "loại hình BĐS",
     "dia_chi": "địa chỉ",
+    "phuong": "phường (phường cũ hay phường mới đều được, vd phường 1 quận 5 / phường Chợ Quán)",
     "ma_so_can": "mã số căn (vd căn số 42, block/tầng)",
     "du_an": "tên dự án / chung cư",
     "dien_tich": "diện tích",
@@ -1073,6 +1074,12 @@ QUAN TRỌNG — lý do bán và chuyện riêng tư: nếu người rao chia s�
 (con cái định cư/đi xa, vợ chồng không ở, nợ nần, bệnh tật, về quê...), hãy trích vào ly_do_ban
 để lưu trữ nội bộ cho CTV/Admin hỗ trợ. TUYỆT ĐỐI KHÔNG xếp các câu chuyện riêng tư này vào tiện ích
 hay mô tả công khai của căn nhà.
+QUAN TRỌNG — địa chỉ tách phần (18/10/2026): ngoài dia_chi (nguyên cụm địa chỉ khách nói), tách RIÊNG:
+- duong: TÊN ĐƯỜNG khách nêu (vd "Trần Hưng Đạo", "Đường số 5", "Hẻm 137 Lê Văn Sỹ" → "Lê Văn Sỹ"). Chỉ tên đường thật —
+  KHÔNG điền "hẻm", "mặt tiền", tên quận/phường, kích thước. Khách chưa nêu tên đường thì BỎ TRỐNG.
+- phuong: PHƯỜNG / XÃ khách nêu, chép đúng cách khách gọi, kiểu cũ hay kiểu mới đều được ("Phường 1", "P.13", "Phường Chợ
+  Quán", "xã Bình Mỹ"). Chưa nêu thì BỎ TRỐNG — KHÔNG tự suy phường từ tên đường.
+- quan: QUẬN / HUYỆN / THÀNH PHỐ (cũ) khách nêu ("Quận 5", "Q7", "Bình Thạnh", "Thủ Đức").
 Trả về JSON theo schema. Bỏ trống (không thêm key) cho thông tin chưa có."""
 
 
@@ -1106,6 +1113,20 @@ def property_field_props() -> dict[str, Any]:
         "type": "string",
         "description": "Tên dự án/chung cư nếu BĐS thuộc một dự án (vd: 'Botanic Tower'). "
         "Bỏ trống nếu là nhà lẻ/không thuộc dự án.",
+    }
+    # 18/10/2026 (SRS-5.1zzzzzzz41): địa chỉ tách phần do AI đọc — điều kiện ra bản nháp (schema.blocking_fields) và cột
+    # listings.street / ward / district đọc các ô này, không dò từ khoá trên chữ dia_chi.
+    properties["duong"] = {
+        "type": "string",
+        "description": "Tên đường khách nêu (không số nhà, không 'hẻm'/'mặt tiền', không phường/quận). Chưa nêu thì bỏ trống.",
+    }
+    properties["phuong"] = {
+        "type": "string",
+        "description": "Phường/xã khách nêu, chép đúng cách gọi (cũ 'Phường 1' hay mới 'Phường Chợ Quán'). Chưa nêu thì bỏ trống, KHÔNG suy từ tên đường.",
+    }
+    properties["quan"] = {
+        "type": "string",
+        "description": "Quận/huyện/thành phố (cũ) khách nêu ('Quận 5', 'Bình Thạnh', 'Thủ Đức').",
     }
     properties["unit_type"] = {
         "type": "string",

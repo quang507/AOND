@@ -45,7 +45,7 @@ def test_adding_house_number_keeps_the_rest_of_the_address():
 
 def test_missing_fields_excludes_captured():
     p = Property(loai_hinh="nha_pho")
-    p.update({"dia_chi": "hẻm 123 Lê Lợi"})
+    p.update({"dia_chi": "hẻm 123 Lê Lợi", "duong": "Lê Lợi", "phuong": "Phường Bến Thành"})
     missing = p.missing_fields()
     assert "dia_chi" not in missing
     assert "gia" in missing
@@ -97,7 +97,7 @@ def test_standalone_property_still_requires_address():
 
 def test_house_not_summary_ready_until_both_areas_known():
     p = Property(loai_hinh="nha_pho")
-    p.update({"dia_chi": "hẻm 123 Lê Lợi", "dien_tich_dat": "100m2"})
+    p.update({"dia_chi": "hẻm 123 Lê Lợi", "duong": "Lê Lợi", "phuong": "Phường Bến Thành", "dien_tich_dat": "100m2"})
     assert not p.summary_ready()  # gia still missing
     p.update({"gia": "5 tỷ", "dien_tich_nha": "80m2", "ket_cau": "1 trệt 1 lầu",
               "lo_gioi_hem": "hẻm 6m", "tinh_trang_ban_giao": "trống",

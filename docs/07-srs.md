@@ -5785,6 +5785,41 @@ dấu, gần trước theo toạ độ, quanh điểm 111 / 222 m, giữ / bỏ 
 giao lộ sau lượt `nap-giao-lo`. `bot/tests/sql/chay.sh` nạp `schema.sql` hai lượt: file tạo bảng trước hàm nên cột sinh gọi
 `bo_dau` (`giao_lo`, cả `duong` từ 20260921b) hỏng ở lượt đầu — CI đỏ "relation giao_lo does not exist" bắt được lỗi bộ chạy này.
 
+### SRS-5.1zzzzzzz41 · Tin không lên web mà bot báo "đã đăng"; địa chỉ tách phần do AI đọc (18/10/2026)
+
+**Ca gốc.** Soát hạ tầng 18/10 (chủ dự án: "đã đủ để … đăng lên chính trên web chưa"): tin thử `77BEF301` có giá 5,2 tỷ, 60 m², sổ
+hồng riêng nhưng `ward` trống → `listing_du_dang_tin` (giá + diện tích + phường) không đạt → `cho_thong_tin`, web không có tin nào;
+còn bot (build_fee_followup_system) báo khách "đã đăng lên aioinhadat.com". Lượt sửa đầu dò "có tên đường / có phường" bằng regex trên
+chữ `dia_chi` (`co_ten_duong`, 5.1zzzzzzz38) — chủ dự án: "ủa bắt bằng ai chứ ko phải là từ khóa mà".
+
+**Lớp lỗi.** (1) Hai cổng nói về cùng một việc ("tin đủ để đăng") ở hai tầng mà khác điều kiện: lõi Python soạn bản nháp khi chưa có
+phường, DB chỉ đăng khi có phường. (2) Đoán thành phần địa chỉ bằng từ khoá trên chữ thô trong khi bộ bóc tách là AI.
+**Chỗ cùng lớp.** `supabase_store` vốn đọc `fields["duong" / "phuong" / "quan"]` nhưng schema bóc tách không có ba ô đó (không ai điền);
+`_merge_dia_chi` dùng `_extract_ward` một chữ ("Phường Chợ Quán" → "Phường Chợ") và `_extract_district` bỏ sót "Q5" — câu trả lời
+"Phường Chợ Quán" thay mất cả địa chỉ cũ; đã sửa (chuỗi gộp, không phải đoán ý). Chưa sửa: phường cũ bị chia (`mo_ho`) vẫn để tin
+`cho_thong_tin` mà bot không hỏi lại; câu "đã đăng" của bot chưa đọc trạng thái thật của tin.
+
+**Sửa.** `prompts.EXTRACTION_SYSTEM` + `property_field_props`: AI tách `duong`, `phuong` (cũ hay mới, chép nguyên, không suy từ tên
+đường), `quan`. `schema.blocking_fields`: tên đường = `fields["duong"]`, thêm ô bắt buộc `phuong` cho mọi loại định vị bằng địa chỉ
+(căn hộ có dự án thì miễn — `supabase_store._dia_ban` lấy phường theo địa chỉ dự án qua `match_projects` + `chuan_dia_ban`); bỏ
+`co_ten_duong` và mọi luật chữ đi kèm. `FIELD_LABELS.phuong`, `followup.py` hỏi phường như hỏi địa chỉ.
+
+**Kiểm.** `tests/test_ban_nhap_du_dieu_kien.py` (ca gốc: hỏi đường → phường → kết cấu rồi mới ra bản nháp; `dia_chi` đủ chữ mà AI chưa
+tách ô vẫn chặn; căn hộ có dự án; đất nền / đất nông nghiệp; tám ô bắt buộc nằm trong schema bóc tách), `tests/test_supabase_store_luu_tin.py`
+(căn hộ lấy phường theo dự án), mẫu `test_engine.py` / `test_schema.py` thêm ô AI tách. pytest 280 đạt.
+
+### SRS-5.1zzzzzzz42 · Nhúng vector tất cả + gỡ lịch chết (18/10/2026)
+
+**Ca gốc.** Chủ dự án: "vector hóa hết"; "có phần nào dư ra ko … sửa hết đi". Đếm 18/10: 603 dự án tỉnh khác chờ ~3.000 tên đường
+TP.HCM (cổng 20261009e), hẻm 25.564 dòng không nhúng (cố ý), 9 lịch tắt trỏ tới function đã xoá.
+
+**Sửa.** Migration `20261018g_nhung_het.sql` (thân hàm lấy từ schema.sql, diff đúng ba chỗ): `nhung_tick` bỏ cổng TP.HCM trước;
+`nhung_dia_danh_tick` nhúng cả hẻm, thứ tự đường TP.HCM → đường tỉnh khác → hẻm; `nhung_dia_danh_moi_tick` 50. `20261018h_go_lich_chet.sql`
+gỡ 9 lịch đã tắt. Chỗ cùng lớp: `giao_lo` không nhúng — tra bằng tên hai đường / toạ độ, vector không thêm gì.
+
+**Kiểm.** `bun run test:sql` áp hai migration trên Postgres tạm; production: số dòng có vector theo bảng sau vài lượt tick, `cron.job`
+còn 10 lịch.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

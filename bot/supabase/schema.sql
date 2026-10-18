@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-18 22:19 (giờ VN)
+-- Sinh lúc: 2026-10-18 22:38 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -6065,8 +6065,8 @@ begin
     union all
     (select 'phuong_cu', p.id::text, p.nhung_md5 from public.phuong_cu p where p.nhung is null limit 50)
     union all
-    (select 'duong', d.id::text, d.nhung_md5 from public.duong d where d.nhung is null and d.loai <> 'hem'
-      order by (d.tinh <> 'TP.HCM') limit 100)
+    (select 'duong', d.id::text, d.nhung_md5 from public.duong d where d.nhung is null
+      order by (d.loai = 'hem'), (d.tinh <> 'TP.HCM') limit 100)
   loop
     exit when v_gui >= v_tran;
     v_txt := public.van_ban_dia_danh(r.bang, r.khoa);
@@ -6134,7 +6134,6 @@ declare
   v_ngay boolean := false;
   v_reset timestamp;
   v_ok boolean := false;
-  v_dia_danh_hcm_con boolean;
 begin
   -- (1) Thu kết quả lượt trước (tin + dự án). Chưa có phản hồi thì chờ; quá 10 phút thì bỏ, lượt sau gửi lại.
   for v in
@@ -6245,15 +6244,10 @@ begin
   -- 20261009e (chủ dự án 09/10: "địa danh TP.HCM trước"): còn địa danh TP.HCM chưa nhúng (quận cũ, phường mới, phường cũ, tên
   -- đường TP.HCM không tính hẻm) thì CHỈ nhúng dự án TP.HCM; dự án tỉnh khác chờ. Hàng dự án rỗng thì nhung_dia_danh_tick mới
   -- gửi mẻ (nó đợi nhung_viec_du_an trống), nên giữ dự án tỉnh khác lại là nhường hạn mức cho địa danh TP.HCM.
-  v_dia_danh_hcm_con := exists (select 1 from public.quan_cu where nhung is null)
-    or exists (select 1 from public.wards where nhung is null)
-    -- phường cũ chỉ tính dòng nhúng ĐƯỢC (van_ban_dia_danh cần phuong_moi khớp wards.ten) — dòng lệch không được giữ cửa mãi.
-    or exists (select 1 from public.phuong_cu p join public.wards w on w.ten = p.phuong_moi where p.nhung is null)
-    or exists (select 1 from public.duong where nhung is null and loai <> 'hem' and tinh = 'TP.HCM');
+  -- 20261018g (chủ dự án "vector hóa hết"): bỏ cổng "địa danh TP.HCM trước" — dự án mọi tỉnh nhúng ngay.
   for r in
     select p.id, p.nhung_md5 from public.projects p
      where (p.nhung_md5 is null or p.updated_at > coalesce(p.nhung_luc, '-infinity'::timestamptz))
-       and (p.province = 'Hồ Chí Minh' or not v_dia_danh_hcm_con)
      order by (p.province is distinct from 'Hồ Chí Minh'), p.is_partner desc nulls last, p.priority nulls last, p.updated_at desc nulls last
      limit 200
   loop
@@ -9904,22 +9898,13 @@ create policy storage_seller_own_insert on storage.objects as permissive for INS
 -- ══ Cron ══
 select cron.schedule('bot-health-tick', '*/15 * * * *', 'select public.bot_health_tick()');
 select cron.schedule('cron-don-so', '15 18 * * *', 'delete from cron.job_run_details where end_time < now() - interval ''7 days''');
-select cron.schedule('ctv-report-tick', '0 10 * * *', 'select public.ctv_report_tick()');
-select cron.schedule('ctv-sla-tick', '*/15 1-13 * * *', 'select public.info_request_sla_tick()');
 select cron.schedule('don-du-lieu-thu', '0 14 * * *', 'select public.don_du_lieu_thu()');
 select cron.schedule('geocode-tick', '*/10 * * * *', 'select public.geocode_tick()');
-select cron.schedule('inbound-sweep-tick', '* * * * *', 'select public.inbound_sweep_tick()');
-select cron.schedule('info-timeout-tick', '3 1-13 * * *', 'select public.info_request_timeout_tick()');
 select cron.schedule('listing-interest-decay', '0 20 * * *', 'update public.listings set status = ''dang_ban''
    where status = ''dang_quan_tam'' and last_interest_at < now() - interval ''7 days''');
 select cron.schedule('media-chet-tick', '0 * * * *', 'select public.chon_viec_don_chet()');
 select cron.schedule('media-cleanup-tick', '*/5 * * * *', 'select public.media_cleanup_tick()');
 select cron.schedule('nhung-dia-danh-tick', '1-59/2 * * * *', 'select public.nhung_dia_danh_tick()');
 select cron.schedule('nhung-tick', '*/2 * * * *', 'select public.nhung_tick()');
-select cron.schedule('nudge-tick', '7,37 1-13 * * *', 'select nudge_tick()');
-select cron.schedule('seller-drip-tick', '22,52 1-13 * * *', 'select seller_drip_tick()');
-select cron.schedule('seller-hoi-bu-tick', '*/5 1-13 * * *', 'select seller_hoi_bu_tick()');
-select cron.schedule('seller-keep-alive-tick', '30 2 * * *', 'select public.seller_keep_alive_tick()');
 select cron.schedule('soat-du-lieu-tick', '5 1 * * *', 'select public.soat_du_lieu_tick()');
-select cron.schedule('stale-listing-tick', '0 2 * * *', 'select public.stale_listing_tick()');
 

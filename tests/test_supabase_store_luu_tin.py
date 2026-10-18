@@ -19,7 +19,11 @@ class StoreGia(SupabaseConversationStore):
             return [{"id": "s1", "name": "A"}]
         if endpoint.startswith("conversations?"):
             return [{"id": "c1"}]
+        if endpoint.startswith("rpc/match_projects"):
+            return [{"location_raw": "23 Nguyễn Hữu Thọ, Phường Tân Hưng, Quận 7", "ward": None, "district": "Quận 7"}]
         if endpoint == "rpc/chuan_dia_ban":
+            if "Tân Hưng" in data["p_text"]:
+                return [{"phuong": "Phường Tân Hưng", "quan_cu": "Quận 7", "kieu": "moi"}]
             if "Phường 1" in data["p_text"]:
                 return [{"phuong": "Phường Chợ Quán", "quan_cu": "Quận 5", "kieu": "cu"}]
             return [{"phuong": None, "quan_cu": "Quận 5" if "quận 5" in data["p_text"].lower() else None, "kieu": "chi_quan"}]
@@ -75,3 +79,10 @@ def test_dia_ban_ca_hai_kieu_va_location_raw():
     st.save(_conv({"gia": "5 tỷ", "dia_chi": "hẻm Quận 5"}))
     [(_, _, d)] = _ghi_tin(st)
     assert "ward" not in d and d["district"] == "Quận 5"  # chỉ có quận: không bịa phường
+
+
+def test_can_ho_lay_phuong_theo_du_an():
+    st = StoreGia(co_san=False)
+    st.save(_conv({"gia": "3 tỷ", "du_an": "Sunrise City"}))
+    [(_, _, d)] = _ghi_tin(st)
+    assert (d["ward"], d["district"]) == ("Phường Tân Hưng", "Quận 7")
