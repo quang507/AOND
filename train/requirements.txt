@@ -1,0 +1,4 @@
+# Cài SAU unsloth (xem train/README.md). Pin lỏng: unsloth kéo torch/transformers đúng bản.
+datasets>=2.19
+trl>=0.9
+transformers>=4.44

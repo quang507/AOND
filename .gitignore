@@ -16,8 +16,9 @@ dist/
 aioi.db.bak*
 *.sqlite
 *.sqlite3
-# Local launch/preview config
-.claude/
+# Chỉ bỏ qua cấu hình LOCAL của máy; agents/skills/settings chung thì theo repo
+# (CLAUDE.md §7/§9 dựa vào .claude/skills/ba-pipeline + .claude/agents/).
+.claude/settings.local.json
 desktop.ini
 sharepoint_store/
 backups/
