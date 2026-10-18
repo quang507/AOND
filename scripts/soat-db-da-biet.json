@@ -3,16 +3,16 @@
   "vi_sao_khong_de_cong_do_san": "Cổng đỏ ngay từ ngày đầu là cổng sẽ bị bỏ qua — đúng bài học của chính hôm nay: 52 dòng cảnh báo kêu mãi thành tiếng ồn, rồi cái thứ 53 (trôi thật) chìm lẫn vào đó.",
   "da_biet": {
     "view_thieu_quyen": {
-      "chi_tiet": "bds_hot, bot_do_tre, ctv_ranks, hoi_thoai_phien, hoi_thoai_thong_ke, khach_can_nguoi_that, nmg_hoat_dong",
-      "ghi_chu": "Còn 7, tất cả đều tự chặn bằng la_admin()/admins ngay trong WHERE nên thiếu security_invoker không phơi gì — phép soát tự hạ xuống mức NHẸ vì không cái nào mang dấu (!). Hai cái từng mang dấu đó đã sửa 10/09 (20260910q): project_facts_cho_duyet bật security_invoker để RLS admin-only tự áp; listing_photos_v bật được sau khi mở url_kho_anh() thay cho truy vấn thẳng app_config."
+      "chi_tiet": "bds_hot, ctv_ranks, hoi_thoai_phien, hoi_thoai_thong_ke, khach_can_nguoi_that, nmg_hoat_dong",
+      "ghi_chu": "Còn 6 (bot_do_tre gỡ 18/10/2026 cùng inbound_ledger, 20261018i), tất cả đều tự chặn bằng la_admin()/admins ngay trong WHERE nên thiếu security_invoker không phơi gì — phép soát tự hạ xuống mức NHẸ vì không cái nào mang dấu (!). Hai cái từng mang dấu đó đã sửa 10/09 (20260910q): project_facts_cho_duyet bật security_invoker để RLS admin-only tự áp; listing_photos_v bật được sau khi mở url_kho_anh() thay cho truy vấn thẳng app_config."
     },
     "ham_trung_chu_ky": {
-      "chi_tiet": "ghi_fact_du_an, mark_listing_interest, next_listing_code",
-      "ghi_chu": "Ba hàm có hai chữ ký mà bộ TÊN THAM SỐ của bản cũ là tập con của bản mới — gọi bằng bộ nhỏ là PostgREST trả PGRST203. Hôm nay mọi lượt gọi đều dùng bộ ĐẦY ĐỦ nên chưa nổ; `duyet_fact_du_an` là cái đã nổ và đã drop bản cũ (20260910m). Ba cái này chờ quyết định."
+      "chi_tiet": "mark_listing_interest, next_listing_code",
+      "ghi_chu": "Hai hàm (ghi_fact_du_an gỡ 18/10/2026, 20261018i) có hai chữ ký mà bộ TÊN THAM SỐ của bản cũ là tập con của bản mới — gọi bằng bộ nhỏ là PostgREST trả PGRST203. Hôm nay mọi lượt gọi đều dùng bộ ĐẦY ĐỦ nên chưa nổ; `duyet_fact_du_an` là cái đã nổ và đã drop bản cũ (20260910m). Hai cái này chờ quyết định."
     },
     "rls_bat_khong_policy": {
-      "chi_tiet": "bot_prompts, ctv_daily_reports, deals, required_facts",
-      "ghi_chu": "Mức NHẸ, và là CHỦ ĐÍCH: bốn bảng nội bộ, web có quyền trên giấy nhưng RLS chặn sạch nên đọc ra rỗng. Ghi ở đây để lần sau bảng thứ năm xuất hiện thì thấy ngay."
+      "chi_tiet": "deals, required_facts",
+      "ghi_chu": "Mức NHẸ, và là CHỦ ĐÍCH: hai bảng nội bộ (bot_prompts, ctv_daily_reports gỡ 18/10/2026, 20261018i), web có quyền trên giấy nhưng RLS chặn sạch nên đọc ra rỗng. Ghi ở đây để lần sau bảng thứ ba xuất hiện thì thấy ngay."
     }
   }
 }

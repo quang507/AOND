@@ -5903,10 +5903,13 @@ thành câu chuẩn" ở `/admin/tin-nhan`, ô độ trễ ở `/admin`. TS-SEC:
 `bot_health_tick` / `soat_du_lieu_tick` (vẫn chỉ service_role). DB `20261018i`: chép `bot_prompts` (12 dòng), `mau_cau` (2),
 `du_an_tai_lieu` (1) sang `luu_tru.ts_*_20261018`; gỡ trigger `listing_insert_drip`, view `bot_do_tre` / `job_suc_khoe` /
 `van_kich_7_ngay`, 10 bảng (`ai_ghi_thu`, `ctv_daily_reports`, `van_kich`, `inbound_events`, `inbound_ledger`, `du_an_can`,
-`du_an_tai_lieu`, `project_fact_phieu`, `bot_prompts`, `mau_cau`) và 26 hàm, không CASCADE.
+`du_an_tai_lieu`, `project_fact_phieu`, `bot_prompts`, `mau_cau`) và 26 hàm, không CASCADE; `20261018j` gỡ thêm 4 hàm trigger mồ côi
+(`bot_prompts_touch`, `du_an_can_doc_gia`, `van_kich_che_so`, `listings_autopublish` — soát `pg_trigger` không trigger nào gọi) và ghi
+tên 26 hàm thành `drop function if exists` trần cho `soat-truy-vet.sh`. Bản nền `scripts/soat-db-da-biet.json` ngắn lại theo kết quả
+`soat_db_cong_khai()` sau khi áp (view thiếu quyền 7 → 6, hàm trùng chữ ký 3 → 2, bảng RLS không policy 4 → 2).
 
 **Kiểm.** `bun run kiem` thoát 0 (tsc, deno check 3 function, build, test:bot, truy vết); `bash bot/tests/sql/chay.sh
-20261018i_go_tan_du_ts.sql` TẤT CẢ ĐẠT (migration áp sạch trên schema.sql, các trigger listings còn lại chạy); pytest 288 đạt.
+20261018i_go_tan_du_ts.sql` (và `…j…`) TẤT CẢ ĐẠT (migration áp sạch trên schema.sql, các trigger listings còn lại chạy); pytest 288 đạt.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
