@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-18 22:13 (giờ VN)
+-- Sinh lúc: 2026-10-18 22:19 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -257,6 +257,25 @@ create table if not exists public.duong (
   nhung extensions.vector(768),
   nhung_md5 text,
   nhung_luc timestamp with time zone
+);
+
+create table if not exists public.giao_lo (
+  id bigint generated always as identity,
+  duong_a text not null,
+  duong_b text not null,
+  a_khong_dau text generated always as (bo_dau(duong_a)) stored,
+  b_khong_dau text generated always as (bo_dau(duong_b)) stored,
+  loai_a text not null,
+  loai_b text not null,
+  lat double precision not null,
+  lng double precision not null,
+  phuong text not null,
+  quan_cu text,
+  tinh text not null default 'TP.HCM'::text,
+  osm_node bigint not null,
+  so_nut integer not null default 1,
+  nguon text not null,
+  created_at timestamp with time zone not null default now()
 );
 
 create table if not exists public.inbound_events (
@@ -814,6 +833,18 @@ do $d$ begin
   alter table public.duong add constraint duong_tinh_cu_check CHECK ((tinh_cu = ANY (ARRAY['TP.HCM'::text, 'Bình Dương'::text, 'Bà Rịa – Vũng Tàu'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.giao_lo add constraint giao_lo_loai_a_check CHECK ((loai_a = ANY (ARRAY['duong'::text, 'so'::text, 'hem'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.giao_lo add constraint giao_lo_loai_b_check CHECK ((loai_b = ANY (ARRAY['duong'::text, 'so'::text, 'hem'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.giao_lo add constraint giao_lo_nut_cap_key UNIQUE (osm_node, duong_a, duong_b);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.giao_lo add constraint giao_lo_pkey PRIMARY KEY (id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.inbound_events add constraint inbound_events_pkey PRIMARY KEY (event_id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -1247,6 +1278,9 @@ create index if not exists duong_hem ON public.duong USING btree (upper(so_hem),
 create index if not exists duong_lat_lng ON public.duong USING btree (lat, lng);
 create index if not exists duong_nhung_hnsw ON public.duong USING hnsw (nhung extensions.vector_cosine_ops);
 create index if not exists duong_ten_khong_dau_idx ON public.duong USING btree (ten_khong_dau);
+create index if not exists giao_lo_a_idx ON public.giao_lo USING btree (a_khong_dau);
+create index if not exists giao_lo_b_idx ON public.giao_lo USING btree (b_khong_dau);
+create index if not exists giao_lo_lat_lng_idx ON public.giao_lo USING btree (lat, lng);
 create index if not exists idx_conversations_seller ON public.conversations USING btree (seller_id, started_at DESC);
 create index if not exists idx_listings_price_vnd ON public.listings USING btree (deal, price_vnd);
 create index if not exists inbound_events_first_seen_idx ON public.inbound_events USING btree (first_seen_at);
@@ -4072,6 +4106,45 @@ AS $function$
     set delivery_count = inbound_events.delivery_count + 1,
         last_seen_at   = now()
   returning delivery_count;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.giao_lo_cua(p_duong1 text, p_duong2 text, p_lat double precision DEFAULT NULL::double precision, p_lng double precision DEFAULT NULL::double precision)
+ RETURNS TABLE(duong_a text, duong_b text, phuong text, quan_cu text, lat double precision, lng double precision, cach_m double precision)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  with k as (
+    select regexp_replace(public.bo_dau(btrim(regexp_replace(coalesce(p_duong1, ''), '\s+', ' ', 'g'))), '^duong ', '') as k1,
+           regexp_replace(public.bo_dau(btrim(regexp_replace(coalesce(p_duong2, ''), '\s+', ' ', 'g'))), '^duong ', '') as k2
+  )
+  select g.duong_a, g.duong_b, g.phuong, g.quan_cu, g.lat, g.lng,
+         case when p_lat is not null and p_lng is not null then public.khoang_cach_m(p_lat, p_lng, g.lat, g.lng) end
+    from public.giao_lo g, k
+   where length(k.k1) >= 2 and length(k.k2) >= 2
+     and ((g.a_khong_dau = k.k1 and g.b_khong_dau = k.k2) or (g.a_khong_dau = k.k2 and g.b_khong_dau = k.k1))
+   order by 7 nulls last, g.phuong
+   limit 5;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.giao_lo_gan(p_lat double precision, p_lng double precision, p_ban_kinh_m double precision DEFAULT 300, p_limit integer DEFAULT 5, p_bo_hem boolean DEFAULT true)
+ RETURNS TABLE(duong_a text, duong_b text, loai_a text, loai_b text, phuong text, cach_m double precision)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  with r as (select greatest(20, least(coalesce(p_ban_kinh_m, 300), 3000)) as m)
+  select g.duong_a, g.duong_b, g.loai_a, g.loai_b, g.phuong, public.khoang_cach_m(p_lat, p_lng, g.lat, g.lng) as cach_m
+    from public.giao_lo g, r
+   where p_lat is not null and p_lng is not null
+     and g.lat between p_lat - r.m / 111000.0 and p_lat + r.m / 111000.0
+     and g.lng between p_lng - r.m / 109000.0 and p_lng + r.m / 109000.0
+     and (not coalesce(p_bo_hem, true) or (g.loai_a <> 'hem' and g.loai_b <> 'hem'))
+     and public.khoang_cach_m(p_lat, p_lng, g.lat, g.lng) <= r.m
+   order by cach_m
+   limit greatest(1, least(coalesce(p_limit, 5), 20));
 $function$
 ;
 
@@ -8944,6 +9017,7 @@ alter table public.deals enable row level security;
 alter table public.du_an_can enable row level security;
 alter table public.du_an_tai_lieu enable row level security;
 alter table public.duong enable row level security;
+alter table public.giao_lo enable row level security;
 alter table public.inbound_events enable row level security;
 alter table public.inbound_ledger enable row level security;
 alter table public.info_requests enable row level security;
@@ -9159,6 +9233,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.de
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.du_an_can to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.du_an_tai_lieu to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.duong to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.giao_lo to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.hoi_thoai_nhan to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.hoi_thoai_phien to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.hoi_thoai_thong_ke to service_role;
@@ -9491,6 +9566,10 @@ revoke all on function public.ghi_su_kien_bds(p_listing_id uuid, p_type text, p_
 grant execute on function public.ghi_su_kien_bds(p_listing_id uuid, p_type text, p_buyer_id uuid, p_meta jsonb) to service_role;
 revoke all on function public.ghi_su_kien_inbound(p_event_id text, p_zalo_user_id text, p_payload jsonb) from public, anon, authenticated;
 grant execute on function public.ghi_su_kien_inbound(p_event_id text, p_zalo_user_id text, p_payload jsonb) to service_role;
+revoke all on function public.giao_lo_cua(p_duong1 text, p_duong2 text, p_lat double precision, p_lng double precision) from public, anon, authenticated;
+grant execute on function public.giao_lo_cua(p_duong1 text, p_duong2 text, p_lat double precision, p_lng double precision) to service_role;
+revoke all on function public.giao_lo_gan(p_lat double precision, p_lng double precision, p_ban_kinh_m double precision, p_limit integer, p_bo_hem boolean) from public, anon, authenticated;
+grant execute on function public.giao_lo_gan(p_lat double precision, p_lng double precision, p_ban_kinh_m double precision, p_limit integer, p_bo_hem boolean) to service_role;
 revoke all on function public.giu_khach(p_conversation_id uuid, p_giu boolean) from public, anon, authenticated;
 grant execute on function public.giu_khach(p_conversation_id uuid, p_giu boolean) to authenticated;
 grant execute on function public.giu_khach(p_conversation_id uuid, p_giu boolean) to service_role;

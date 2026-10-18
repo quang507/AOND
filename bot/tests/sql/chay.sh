@@ -37,6 +37,9 @@ s = re.sub(r"(price_per_m2_vnd bigint) default \n(CASE.*?END),", r"\1 generated 
 open(sys.argv[1] + "/schema.sql", "w").write(s)
 PY
 $P -d thu -f "$D/schema.sql" >/dev/null 2>&1
+# 18/10/2026: schema.sql tạo BẢNG trước HÀM — cột sinh gọi hàm (duong.ten_khong_dau, giao_lo.a_khong_dau = bo_dau(...)) hỏng ở
+# lượt đầu vì bo_dau chưa có. Lượt hai (mọi lệnh đều if not exists / create or replace) dựng nốt các bảng đó.
+$P -d thu -f "$D/schema.sql" >/dev/null 2>&1
 for m in "$@"; do $P -d thu -v ON_ERROR_STOP=1 -f "$m" >/dev/null || { echo "SQL: áp $m hỏng"; exit 1; }; done
 hong=0
 for f in bot/tests/sql/*.sql; do
