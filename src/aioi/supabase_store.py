@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from typing import Any, TYPE_CHECKING
 
 from .kho_anh import BUCKET_CONG_KHAI, BUCKET_RIENG, la_uuid
+from .prompts import FIELD_LABELS
 from .schema import Property, _calc_area_from_dimension
 from .assistants import assign_assistant
 
@@ -52,6 +53,15 @@ def vai_tu_seller_type(raw: Any) -> "SellerRole":
 # chỉ đặt lúc TẠO tin (`cho_thong_tin`; trigger `listings_quyet_dinh_dang_tin` tự lên `dang_ban` khi đủ) — `dang_rao` cũ không
 # có trong CHECK, và ghi đè mỗi lượt sẽ xoá trạng thái admin đặt trên CRM (`an`, `da_chot`).
 MA_PHAP_LY = {"so_hong_rieng", "so_hong_chung", "so_hong", "hdmb", "giay_tay"}
+
+# Cột thông số `listings` lấy từ `boc_thong_so` (cùng bộ cột `ap_thong_so` của DB nhận), trừ legal_status (đi `_ma_phap_ly`) và
+# rent_income_vnd (chỉ tin bán, đọc tiền là việc của parse_vnd).
+COT_THONG_SO = ("frontage_m", "length_m", "rear_width_m", "legal_area_m2", "built_area_m2", "alley_width_m",
+                "distance_to_street_m", "floors", "floors_text", "floor", "bedrooms", "bathrooms", "year_built",
+                "has_completion", "has_elevator", "car_in_house", "corner_lot", "negotiable", "access_type",
+                "planning_status", "furnishing", "direction")
+_O_KHONG_PHAI_THONG_SO = {"dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "du_an", "ma_so_can", "unit_type", "gia",
+                          "loai_hinh", "phap_ly", "hinh_anh", "ly_do_ban", "trang_thai"}
 
 # Trạng thái tin: chữ của engine (STATUS_MAP) ↔ mã cột `listings.status` (SRS-5.1zzzzzzz63). Trước bản này save() không bao giờ ghi
 # status — khách nói "bán rồi / ngưng rao" chỉ đổi trong bộ nhớ, web vẫn hiện tin.
@@ -111,6 +121,7 @@ class SupabaseConversationStore:
         self._seller_cache: dict[str, str] = {}
         self._conv_cache: dict[str, str] = {}
         self._anh_da_ghi: set[str] = set()   # "bucket/khoá" đã có dòng listing_media — khỏi gửi lại mỗi lượt
+        self._thong_so_nho: dict[tuple[str, str], dict[str, Any]] = {}   # (loại, chữ đã gửi) → cột thông số boc_thong_so trả
         self._active_da_ghi: dict[str, str] = {}   # seller_id → id căn đang nói đã ghi lên sellers.active_listing_id
 
     @property
@@ -192,6 +203,32 @@ class SupabaseConversationStore:
             return None
         ma = kq.get("legal_status") if isinstance(kq, dict) else None
         return ma if ma in MA_PHAP_LY else None
+
+    def _thong_so(self, fields: dict[str, Any], loai: str | None) -> dict[str, Any]:
+        """Cột thông số (ngang · dài · tầng · phòng ngủ · WC · đường vào · hướng · nội thất …) đọc từ các ô AI đã bóc, qua cùng bộ đọc
+        `boc_thong_so` của DB (SRS-5.1zzzzzzz65). Trước bản này chỉ `listing_facts` (bot TypeScript, đã gỡ) điền các cột đó → tin
+        từ lõi Python lên web không có bảng thông số. Ô địa chỉ / giá / dự án không đưa vào (số nhà, "hẻm 123" không phải thông số);
+        pháp lý đi đường riêng `_ma_phap_ly`. Nhớ theo chữ đã gửi để không gọi lại mỗi lượt."""
+        dong = []
+        for k, v in fields.items():
+            if k in _O_KHONG_PHAI_THONG_SO or not isinstance(v, (str, int, float)) or not str(v).strip():
+                continue
+            nhan = FIELD_LABELS.get(k, k.replace("_", " ")).split(" (")[0]
+            dong.append(f"{nhan}: {v}")
+        chu = "; ".join(dong)
+        if not chu:
+            return {}
+        khoa = (loai or "", chu)
+        if khoa not in self._thong_so_nho:
+            try:
+                kq = self._request("POST", "rpc/boc_thong_so", data={"p_text": chu, "p_type": loai})
+            except Exception as e:  # noqa: BLE001 — thông số là phần thêm, tin vẫn lưu
+                log.warning("boc_thong_so (thông số) lỗi: %s", e)
+                return {}
+            if len(self._thong_so_nho) > 2000:
+                self._thong_so_nho.clear()
+            self._thong_so_nho[khoa] = {c: kq[c] for c in COT_THONG_SO if isinstance(kq, dict) and kq.get(c) is not None}
+        return dict(self._thong_so_nho[khoa])
 
     def _patch(self, endpoint: str, data: dict) -> None:
         self._request("PATCH", endpoint, data=data, prefer="return=minimal")
@@ -324,6 +361,7 @@ class SupabaseConversationStore:
                     listing_payload["ward"] = phuong
                 if quan:
                     listing_payload["district"] = quan
+                listing_payload.update(self._thong_so(fields, li.prop.loai_hinh))
                 ma_pl = self._ma_phap_ly(fields.get("phap_ly"))
                 if ma_pl:
                     listing_payload["legal_status"] = ma_pl

@@ -6331,6 +6331,25 @@ giữ nguyên khối khi lời có gạch đầu dòng hoặc `---` (`_is_format
 **Kiểm.** `tests/test_tin_rao_bo_cuc.py` (3/4 ca đỏ trên code cũ — đã chạy; ca còn lại khoá trần 16 lượt lịch sử, anh Luận e4cbf90),
 `tests/test_kho_tep.py` (8 ca hàm thuần kho tệp chép từ bản anh Luận), `tests/test_prompts.py` theo chữ luật mới.
 
+### SRS-5.1zzzzzzz65 · Thông số tin trên web một nguồn `boc_tach`; bỏ panel duyệt thông tin dự án (19/10/2026)
+
+**Ca gốc.** Soát chỗ thừa: bảng `listing_facts` (câu hỏi · câu trả lời theo từng ô) chỉ hàm `ghi_fact_listing` của bot TypeScript ghi,
+chuỗi trigger `listing_facts_sync_cols` điền cột thông số (ngang, dài, tầng, phòng ngủ, đường vào…) từ đó. Lõi Python ghi `boc_tach`
+(mọi ô đã bóc) + vài cột lõi (giá, diện tích, phường, pháp lý) — tin mới lên web không có bảng thông số, khối "Đã xác minh với chủ
+nhà" trống. Chủ dự án hỏi "listing_facts listings.boc_tach khác nhau hả, cho làm 1 dc ko"; panel `/admin` duyệt thông tin dự án
+(`project_facts_cho_duyet`) không còn ai ghi (gỡ `ghi_fact_du_an` 20261018i), chủ dự án đồng ý bỏ.
+
+**Lớp lỗi.** Gỡ người ghi mà để người đọc đọc tiếp một bảng sẽ không bao giờ có dòng mới. **Chỗ cùng lớp.** `scripts/xuat-ro-hang.mjs`
+còn xuất `listing_facts` (rỗng); 16 hàm DB còn nhắc `listing_facts` (`diem_tin`, `boc_tach_nhom`, `soat_du_lieu_tin`, xoá / khôi phục
+khách…) — gỡ bảng cùng các hàm đó ở lượt dọn thừa, cần viết lại từng hàm, không làm chung bản này.
+
+**Sửa.** `SupabaseConversationStore._thong_so`: ghép các ô đã bóc (trừ địa chỉ, giá, dự án, pháp lý, lý do bán…) thành "nhãn: giá trị",
+đọc qua `boc_thong_so` của DB (cùng bộ đọc câu rao, theo loại BĐS), ghi các cột thông số; nhớ theo chữ đã gửi. Web: khối "Đã xác minh
+với chủ nhà" đọc `listings.boc_tach` qua danh sách trắng `lib/thong-tin-xac-minh.ts` (ô địa chỉ / giá / lý do bán không bao giờ in ra).
+`/admin`: gỡ panel + truy vấn `project_facts_cho_duyet`.
+
+**Kiểm.** `tests/test_xac_minh_web.py` (ca điền cột đỏ trên code cũ — đã chạy; danh sách trắng chỉ gồm ô lõi có và không có ô cấm).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

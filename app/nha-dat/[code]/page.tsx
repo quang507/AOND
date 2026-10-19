@@ -11,6 +11,7 @@ import { CARD_COLS, supabase, type Listing, type ListingCard as CardRow, type Ma
 import { coverByCode, photosOfCode } from "@/lib/photos";
 import { IconArea, IconBed, IconHouse, IconPin } from "@/components/icons";
 import { ACCESS_LABEL, formatArea, formatDims, formatPrice, formatPricePerM2, FURNISH_LABEL, LEGAL_LABEL, placeholderImg, PLANNING_LABEL, sanitizeDescription, SITE_URL, TYPE_LABEL, zaloLink, oTheoLoai } from "@/lib/format";
+import { dongXacMinh } from "@/lib/thong-tin-xac-minh";
 
 export const revalidate = 3600; // SRS-5.1zl (03/10/2026): 5 phút → 1 giờ, giảm egress Supabase
 
@@ -169,11 +170,8 @@ export default async function Page({
   if (!listing) notFound();
 
   const [factsRes, relatedRes, photos, mauGia, duAnRes] = await Promise.all([
-    supabase
-      .from("listing_facts")
-      .select("question, answer")
-      .eq("listing_id", listing.id)
-      .limit(20),
+    // 19/10/2026 (SRS-5.1zzzzzzz65): "Đã xác minh với chủ nhà" đọc ô lõi Python bóc (`boc_tach`), không còn `listing_facts`.
+    supabase.from("listings").select("boc_tach").eq("id", listing.id).maybeSingle(),
     supabase
       .from("listings")
       .select(CARD_COLS)
@@ -191,7 +189,7 @@ export default async function Page({
       ? supabase.from("projects").select("slug, name").eq("id", listing.project_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
-  const facts = factsRes.data ?? [];
+  const facts = dongXacMinh((factsRes.data as { boc_tach?: unknown } | null)?.boc_tach);
   const soSanh = soSanhGia(listing, mauGia);
   const duAn = (duAnRes.data ?? null) as { slug: string; name: string } | null;
   const related = (relatedRes.data ?? []) as CardRow[];
@@ -452,8 +450,8 @@ export default async function Page({
                       phải lọc y như description, đừng in thẳng ra web. */}
                   {facts.map((f, i) => (
                     <li key={i} className="flex gap-4 py-3 text-sm">
-                      <span className="min-w-36 font-semibold text-mute">{f.question}</span>
-                      <span>{sanitizeDescription(f.answer)}</span>
+                      <span className="min-w-36 font-semibold text-mute">{f.nhan}</span>
+                      <span>{sanitizeDescription(f.giaTri)}</span>
                     </li>
                   ))}
                 </ul>
