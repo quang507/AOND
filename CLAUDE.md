@@ -112,6 +112,8 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > **19/10/2026 (SRS-5.1zzzzzzz56): kho tệp = Supabase Storage, SharePoint / OneDrive đã bỏ.** Ảnh căn → `listing-public/<uuid tin>/`
 > (web đọc qua `listing_media` + `listing_photos_v`), sổ đỏ / giấy tờ / PDF / tệp dự án → `listing-private` (`src/aioi/kho_anh.py`);
 > kiến thức dự án lõi học được → bảng `du_an_kien_thuc` (không còn chỉ ở SQLite trên VPS).
+> **19/10/2026 (SRS-5.1zzzzzzz66): bảng `listing_facts` đã gỡ** — ô tin một nguồn `listings.boc_tach`; hàm DB đọc ô qua `o_boc_tach()`.
+> Mọi đoạn bên dưới nói `listing_facts` / `ghi_fact_listing` / `listing_facts_sync_cols` / `listing_missing_facts` là LỊCH SỬ.
 > **Tra địa danh (SRS-5.1zzzzzzz60):** phường / quận / đường khách nói → `src/aioi/dia_danh.py` (chữ trước, vector Gemini sau, máy
 > kiểm tên gần chữ khách); vector do lịch `nhung-tick` / `nhung-dia-danh-tick` nuôi — đừng gỡ hai lịch đó.
 

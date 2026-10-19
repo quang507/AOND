@@ -6350,6 +6350,31 @@ với chủ nhà" đọc `listings.boc_tach` qua danh sách trắng `lib/thong-t
 
 **Kiểm.** `tests/test_xac_minh_web.py` (ca điền cột đỏ trên code cũ — đã chạy; danh sách trắng chỉ gồm ô lõi có và không có ô cấm).
 
+### SRS-5.1zzzzzzz66 · Gỡ bảng `listing_facts` và 36 hàm DB không ai gọi — ô tin một nguồn `boc_tach` (19/10/2026)
+
+**Ca gốc.** Lượt dọn thừa sau SRS-5.1zzzzzzz65 (chủ dự án: "cho làm 1 dc ko", "làm hết đi"). Bảng `listing_facts` 0 dòng — chỉ
+`ghi_fact_listing` của bot TypeScript (gỡ 18/10) ghi. Nhưng các hàm còn sống vẫn đọc nó: `diem_tin` (điểm 7 tiêu chí), `boc_tach_nhom`
+(JSON chia nhóm `/admin/ro-hang/json`), `van_ban_nhung` (văn bản nhúng vector), `listings_chuan_hoa_cot` (nở hậu), `soat_du_lieu_tin`,
+`soat_db_cong_khai` (phép 1), xoá / khôi phục khách, dọn dữ liệu thử. Hệ quả: ô lõi Python bóc (thổ cư, quy hoạch, lý do bán, phí quản
+lý…) không tới điểm tin, JSON admin, vector. Soát catalog DB + repo: 36 hàm không hàm / view / trigger / policy / cron / file nào gọi.
+
+**Lớp lỗi.** Như SRS-5.1zzzzzzz65: gỡ người ghi mà để người đọc đọc tiếp một bảng sẽ không bao giờ có dòng mới. **Chỗ cùng lớp.** Mọi hàm
+nhắc `listing_facts` (12 — 6 trigger của chính bảng, 6 hàm đọc) đã đổi hoặc gỡ; view `listing_missing_facts` (câu thiếu theo
+`required_facts`, chỉ bot TypeScript đọc) gỡ; `scripts/xuat-ro-hang.mjs` đọc `boc_tach`; probe `ts-sec-anon.mjs` bỏ bảng; bài
+`mock-trigger-du.mjs` (soi trigger `listing_facts_sync_cols`) gỡ. **Còn:** bảng `required_facts` (dựng lại vẫn nạp, `o-theo-loai.mjs`
+đối chiếu form admin qua mock) và mock e2e TypeScript `bot/tests/e2e/mock-supabase.mjs` còn mô phỏng bảng cũ — lượt dọn repo sau.
+Giữ: `reset_nguoi_test`, `so_nmg_cong_khai` (probe bảo mật gọi), ba hàm `tim_*_theo_nghia` (phía truy vấn của vector `nhung-tick` nuôi).
+
+**Sửa.** Migration `20261019f_go_listing_facts.sql`: hàm `o_boc_tach(jsonb)` (bỏ khoá `_…`, ô trống, mảng / đối tượng) là MỘT chỗ đọc ô;
+sáu hàm đọc đổi bằng thay chữ trên định nghĩa đang chạy, mỗi lần thay phải trúng (không trúng → raise, cả migration huỷ); ảnh trong điểm
+tin chỉ đếm `listing_media`; `van_ban_nhung` bỏ thêm các khoá lõi đã có cột / đã in (`dia_chi`, `phap_ly_*`, `kich_thuoc`…); phép 1 của
+`soat_db_cong_khai` gỡ cùng policy. Gỡ view, bảng (policy + 6 trigger đi theo), 6 hàm trigger, 27 hàm chết và 9 hàm chỉ chúng gọi.
+Bài SQL `nguong-hem.sql` bỏ nhánh `ghi_fact_listing`, `giao-lo.sql` bỏ ca `giao_lo_gan`.
+
+**Kiểm.** `bot/tests/sql/boc-tach-mot-nguon.sql` (trong `test:sql`): `o_boc_tach` bỏ khoá nội bộ, `diem_tin` đất có thổ cư ở `boc_tach`
+→ 15 điểm khung, `van_ban_nhung` có lý do bán và không lặp địa chỉ, bảng cũ không còn — đã chạy trên Postgres tạm: đạt khi áp migration,
+đỏ khi không áp. `scripts/xuat-ro-hang.tu-kiem.mjs` ca 2b (đỏ trên script cũ — đã chạy).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
