@@ -2938,6 +2938,11 @@ class Engine:
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
         conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
         plan = self._provider.extract(system, src, operations_schema())
+        if isinstance(plan.get("operations"), str):
+            # SRS-5.1zzzzzzz78: Haiku có lượt trả `operations` thành chuỗi mà giải dễ dãi cũng hỏng — gọi lại một lần thay vì mất
+            # mọi ô của lượt (lượt cuối hội thoại thì mất hẳn).
+            log.warning("Kế hoạch: operations là chuỗi không giải được — gọi lại lượt lập thao tác một lần")
+            plan = self._provider.extract(system, src, operations_schema())
         # SRS-5.1zzzzzzz78: Haiku hay đặt `bang_chung` LỌT VÀO TRONG `fields` (log bắn thử) — kéo ra cấp thao tác, không thì cụm trích
         # không được dùng và "bang_chung" thành một ô lạ.
         for o in plan.get("operations") or []:

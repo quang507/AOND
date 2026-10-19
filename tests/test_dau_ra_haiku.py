@@ -61,3 +61,21 @@ def test_chuoi_json_khong_chat_van_giai():
     tho = '[{"op": "update", "fields": {"dien_tich_nha": "170m2\n"}}]\nXong.'
     ra = chuan_theo_schema({"operations": tho}, operations_schema())["operations"]
     assert isinstance(ra, list) and ra[0]["fields"]["dien_tich_nha"].startswith("170m2")
+
+
+def test_operations_hong_thi_goi_lai_mot_lan():
+    class AiHong(AiGia):
+        lan = 0
+
+        def extract(self, system, messages, json_schema):
+            if "operations" in (json_schema.get("properties") or {}):
+                AiHong.lan += 1
+                if AiHong.lan == 1:
+                    return {"operations": "[{op: update, fields: ...", "user_intent": "sell"}
+            return super().extract(system, messages, json_schema)
+
+    eng = Engine(AiHong({"operations": [{"op": "update", "fields": {"dien_tich_nha": "170m2"}}], "user_intent": "sell"}))
+    eng.handle("k-2", "diện tích sàn tầm 170m vuông")
+    assert AiHong.lan == 2 and eng.conversation("k-2").active.prop.fields.get("dien_tich_nha") == "170m2"
+    khung = chuan_theo_schema({"operations": "[{op: 'nhà Q5', x: 170m2"}, operations_schema())["operations"]
+    assert isinstance(khung, str)                                   # không giải được thì để nguyên, chỗ dùng tự lọc

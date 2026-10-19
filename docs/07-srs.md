@@ -6777,10 +6777,13 @@ lớp đã soát:** mọi lượt gọi có ép công cụ của `ClaudeProvider
 trong `fields` thì kéo ra cấp thao tác (gộp với `bang_chung` sẵn có). Không đổi model, không đổi prompt.
 Bắn thử sau bản đầu (3/3 người bán, 3/3 người mua xanh) log vẫn có một lượt `operations` là chuỗi — chuỗi không phải JSON chặt
 (xuống dòng trần trong chuỗi / chữ thừa sau dấu đóng). Giải dễ dãi: `JSONDecoder(strict=False).raw_decode` từ dấu mở ngoặc đầu tiên, bỏ
-đuôi thừa; giải vẫn hỏng thì log cảnh báo kiểu lỗi + độ dài (không nội dung), `ban-thu-ban.sh` in dòng đó.
+đuôi thừa; giải vẫn hỏng thì log cảnh báo kiểu lỗi + vị trí + độ dài + KHUNG chuỗi (chữ / số thay bằng `x`, chỉ còn dấu
+ngoặc / nháy / phẩy — không lộ dữ liệu khách), `ban-thu-ban.sh` in dòng đó. Bắn thử lần 3 vẫn có một chuỗi 577 ký tự giải không được →
+`_lap_ke_hoach` gọi lại lượt lập thao tác MỘT lần khi `operations` vẫn là chuỗi (tốn thêm một lượt Haiku thỉnh thoảng, đổi lại không
+mất ô của lượt đó).
 
 **Kiểm.** `tests/test_dau_ra_haiku.py` (3 ca: chuỗi JSON → danh sách, `ClaudeProvider.extract` trả đúng dạng, `bang_chung` lọt vào `fields`
-thì vẫn nhận ô chữ theo cụm trích, chuỗi JSON không chặt vẫn giải — đỏ trên code cũ, ca `bang_chung` đỏ khi chỉ bỏ phần engine, đã chạy), pytest 410 đạt. Model thật: bắn thử
+thì vẫn nhận ô chữ theo cụm trích, chuỗi JSON không chặt vẫn giải, giải không được thì gọi lại một lần — đỏ trên code cũ, ca `bang_chung` / gọi lại đỏ khi chỉ bỏ phần engine, đã chạy), pytest 411 đạt. Model thật: bắn thử
 `ban-thu-ban` tuần tự, đọc lại dòng `Kế hoạch:`.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu

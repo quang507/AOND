@@ -7,6 +7,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import re
 from typing import Any
 
 from ..config import Settings
@@ -30,7 +31,10 @@ def chuan_theo_schema(v: Any, schema: dict[str, Any]) -> Any:
         try:
             v = json.JSONDecoder(strict=False).raw_decode(v[mo:] if mo >= 0 else v)[0]
         except ValueError as e:
-            log.warning("Đầu ra công cụ: ô %s là chuỗi không giải được (%s, dài %d)", t, type(e).__name__, len(v))
+            # Khung của chuỗi (chữ / số → x, gộp lặp) + vị trí lỗi: thấy hỏng kiểu gì mà không lộ dữ liệu khách.
+            khung = re.sub(r"x+", "x", re.sub(r"[^\[\]{}\":,'\\\n]", "x", v))[:240]
+            log.warning("Đầu ra công cụ: ô %s là chuỗi không giải được (%s tại %s, dài %d) khung=%r", t, type(e).__name__,
+                        getattr(e, "pos", "?"), len(v), khung)
             return v
     if t == "object" and isinstance(v, dict):
         props = schema.get("properties") or {}
