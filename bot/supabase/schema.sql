@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-19 14:07 (giờ VN)
+-- Sinh lúc: 2026-10-19 14:18 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -7199,6 +7199,7 @@ create policy storage_seller_own_insert on storage.objects as permissive for INS
 -- ══ Cron ══
 select cron.schedule('bot-health-tick', '*/15 * * * *', 'select public.bot_health_tick()');
 select cron.schedule('cron-don-so', '15 18 * * *', 'delete from cron.job_run_details where end_time < now() - interval ''7 days''');
+select cron.schedule('ctv-sla-tick', '*/15 1-13 * * *', 'select public.info_request_sla_tick()');
 select cron.schedule('don-du-lieu-thu', '0 14 * * *', 'select public.don_du_lieu_thu()');
 select cron.schedule('geocode-tick', '*/10 * * * *', 'select public.geocode_tick()');
 select cron.schedule('listing-interest-decay', '0 20 * * *', 'update public.listings set status = ''dang_ban''
