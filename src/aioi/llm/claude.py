@@ -13,6 +13,28 @@ from ..so_token import SoToken
 from .base import LLMProvider, Message, ToolCall, ToolTurn
 
 
+_GUI_KHACH: dict[str, Any] = {
+    "name": "gui_khach",
+    "description": "Gửi lời trả lời cho khách qua Zalo. Mọi lượt trả lời khách đều đi qua công cụ này.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "tu_soat": {
+                "type": "string",
+                "description": "Ghi chú NỘI BỘ, KHÔNG gửi khách: soát nhanh lời sắp gửi theo luật (đúng một ý hỏi, không khen bịa, "
+                               "xưng hô đúng, không hỏi lại điều khách đã nói). Sai thì sửa ngay trong loi_gui_khach. Ngắn.",
+            },
+            "loi_gui_khach": {
+                "type": "string",
+                "description": "NGUYÊN VĂN lời gửi khách, bản cuối đã theo mọi luật. Chỉ lời nói với khách — không ghi chú, không nói "
+                               "về luật hay về việc sửa lời.",
+            },
+        },
+        "required": ["tu_soat", "loi_gui_khach"],
+    },
+}
+
+
 class ClaudeProvider(LLMProvider):
     def __init__(self, settings: Settings):
         import anthropic  # imported lazily so offline/mock runs need no SDK
@@ -55,6 +77,24 @@ class ClaudeProvider(LLMProvider):
             messages=[{"role": m.role, "content": m.content} for m in messages],
         )
         self._so.ghi("chat", self._chat_model, resp)
+        return "".join(b.text for b in resp.content if b.type == "text").strip()
+
+    def reply(self, system: str, messages: list[Message], max_tokens: int = 256) -> str:
+        # 19/10/2026 (SRS-5.1zzzzzzz76): lời trả lời là chữ tự do thì model không có chỗ tự soát luật — khách từng nhận "Wait, the
+        # system prohibits…" và "Lưu ý: vi phạm quy tắc một câu hỏi. Sửa lại: …". Nay model PHẢI gọi công cụ hai ô: ghi chú tự soát
+        # (không gửi) rồi lời gửi khách; chỉ ô sau tới khách. Không lọc chữ ở đầu ra.
+        resp = self._tao("chat",
+            model=self._chat_model,
+            max_tokens=max_tokens + 300,
+            system=self._sys(system),
+            messages=[{"role": m.role, "content": m.content} for m in messages],
+            tools=[_GUI_KHACH],
+            tool_choice={"type": "tool", "name": _GUI_KHACH["name"]},
+        )
+        self._so.ghi("chat", self._chat_model, resp)
+        for block in resp.content:
+            if block.type == "tool_use":
+                return str((block.input or {}).get("loi_gui_khach") or "").strip()
         return "".join(b.text for b in resp.content if b.type == "text").strip()
 
     def extract(

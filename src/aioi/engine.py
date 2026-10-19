@@ -646,25 +646,9 @@ def _detect_customer_pronoun(conv: Conversation, current_text: str = "") -> str:
 
 
 def _bo_markdown(reply: str) -> str:
-    """Bỏ in đậm markdown (Zalo không hiển thị) và dòng ghi chú nội bộ lọt ra lời gửi khách (`_bo_loi_noi_bo`). Không sửa lời bot
-    theo từ khoá ("Dạ", "anh/chị") — SRS-5.1zzzzzzz55."""
-    return _bo_loi_noi_bo(re.sub(r"\*\*([^*]+)\*\*", r"\1", reply.strip()))
-
-
-_CO_DAU = re.compile(r"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", re.IGNORECASE)
-
-
-def _bo_loi_noi_bo(reply: str) -> str:
-    """Bỏ dòng ghi chú nội bộ của model lọt vào lời gửi khách (SRS-5.1zzzzzzz74; bắn thử 19/10 khách nhận "Wait, the system
-    prohibits "Dạ" at start… Rewrite."). Lời bot luôn là tiếng Việt CÓ DẤU: câu Việt nào cũng có nhiều chữ có dấu, còn dòng ghi chú
-    của model là câu tiếng Anh (có khi trích một chữ Việt). Dòng ≥ 5 chữ mà ≥ 85% chữ không dấu bị bỏ. Không đoán ý khách — chỉ chặn đầu
-    ra lạc ngôn ngữ."""
-    def la_ghi_chu(d: str) -> bool:
-        chu = re.findall(r"[^\W\d_]+", re.sub(r"(https?://|www\.)\S+|\S+@\S+", " ", d))   # link / email không phải chữ
-        khong_dau = [w for w in chu if not _CO_DAU.search(w)]
-        return len(khong_dau) >= 5 and len(khong_dau) >= 0.85 * len(chu)
-    giu = [d for d in reply.split("\n") if not la_ghi_chu(d)]
-    return "\n".join(giu).strip() or reply
+    """Bỏ in đậm markdown (Zalo không hiển thị). Không sửa lời bot theo từ khoá ("Dạ", "anh/chị") — SRS-5.1zzzzzzz55. Ghi chú nội bộ
+    của model không còn lọt vào lời bot: lượt trả lời đi qua công cụ hai ô (`ClaudeProvider.reply`, SRS-5.1zzzzzzz76)."""
+    return re.sub(r"\*\*([^*]+)\*\*", r"\1", reply.strip())
 
 
 class Engine:
@@ -1696,7 +1680,7 @@ class Engine:
                     "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
                     "Khách tự xưng là 'em'. TUYỆT ĐỐI CẤM DÙNG TỪ 'DẠ'! Gọi khách là 'em', bản thân xưng 'mình' hoặc 'anh/chị'.\n"
                 )
-            reply = self._provider.chat(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+            reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
                 reply = "Mình đây nhé! Bạn nhắn lại giúp mình với nha." if customer_is_em else "Em đây ạ! Anh/chị nhắn lại giúp em với nhé ạ."
             reply = _bo_markdown(reply)
@@ -1815,7 +1799,7 @@ class Engine:
         if project is not None and project.units:
             reply = self._agent_reply(conv, project, system, now)
         else:
-            reply = self._provider.chat(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+            reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
 
         if not reply:
             reply = "Mình đây nhé! Kết nối mạng vừa gián đoạn một chút, em nhắn lại giúp mình với nha." if customer_is_em else "Em đây ạ! Kết nối mạng vừa bị gián đoạn một chút, anh/chị nhắn lại giúp em với nhé ạ."
@@ -2048,7 +2032,7 @@ class Engine:
             "gọi khách \"anh/chị\", thân thiện. TUYỆT ĐỐI không bịa; nếu KHÔNG có trong tài liệu lẫn "
             "bảng giá thì mới nói \"em chưa có thông tin về ý này ạ\" rồi mời khách bổ sung."
         )
-        return self._provider.chat(system, [Message("user", text)], max_tokens=REPLY_MAX_TOKENS).strip()
+        return self._provider.reply(system, [Message("user", text)], max_tokens=REPLY_MAX_TOKENS).strip()
 
     def handle_link(self, user_key: str, url: str, now: float | None = None,
                     caption: str | None = None) -> TurnResult:

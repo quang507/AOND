@@ -6629,7 +6629,8 @@ regex (CLAUDE.md §6):
     trước mà vẫn thiếu thì lùi xuống cuối, hỏi ý khác trước, quay lại sau; còn mỗi một ô thì vẫn hỏi.
   - Khách nhận dòng ghi chú nội bộ của model: "Wait, the system prohibits "Dạ" at start… Rewrite.". `_bo_loi_noi_bo` (gọi trong
     `_bo_markdown`, chỗ dọn lời chung) bỏ dòng ≥ 5 chữ mà ≥ 85% chữ không dấu (link / email không tính) — lời bot luôn là tiếng Việt
-    có dấu. Đây là lưới chặn đầu ra lạc ngôn ngữ, không đoán ý khách.
+    có dấu. Đây là lưới chặn đầu ra lạc ngôn ngữ, không đoán ý khách. **[thay ở SRS-5.1zzzzzzz76** — lưới thủng với ghi chú tiếng Việt; nay tách ở
+    lượt gọi model bằng công cụ hai ô, hàm đã gỡ.]
 
 **Kiểm.** `tests/test_doc_dau_hieu.py` (4 ca: khối luật ở hai prompt, bỏ luật "đừng đoán", có tên đường thì không hỏi lại địa chỉ,
 câu hỏi giá không kèm thương lượng, khách nói phường thì nhận theo khách — đỏ trên code cũ, đã chạy), `tests/test_bot_bot_hoi_lap.py` (2 ca: không hỏi một ô hai lượt
@@ -6702,14 +6703,22 @@ rồi "làm hết đi" cho cả bảng bất thường.
   tích sàn sử dụng HOẶC số tầng/lầu", khách đã nói 5 tầng nên model coi ô đã xong và tự nghĩ câu khác. Gợi ý nay hỏi m² sàn (số tầng đã
   biết vẫn hỏi); câu lệnh hỏi ô thêm "CHỈ hỏi ý này — KHÔNG tự hỏi ý khác ngoài danh sách". Cùng lớp (gợi ý mơ hồ làm ô bị coi là
   xong): đã soát `NATURAL_QUESTIONS` — `dia_chi` / `gia` sửa ở SRS-5.1zzzzzzz74, còn lại mỗi gợi ý một ý.
+- Bắn thử lần 2: khách nhận nguyên ghi chú tự sửa của model, tiếng Việt — "Lưu ý: vi phạm quy tắc một câu hỏi. Sửa lại: …" kèm cả
+  bản trước lẫn bản sửa. Lưới `_bo_loi_noi_bo` của SRS-5.1zzzzzzz74 (bỏ dòng gần như không dấu) không bắt được — lọc chữ ở đầu ra là
+  vá ngọn. **Lớp lỗi:** lời trả lời là chữ tự do, model không có chỗ tự soát nên tự soát ngay trong lời gửi khách. **Sửa:**
+  `LLMProvider.reply` (lời GỬI KHÁCH, tách khỏi `chat` dùng cho văn bản nội bộ); bản Claude BẮT BUỘC gọi công cụ `gui_khach` hai ô —
+  `tu_soat` (ghi chú nội bộ, đứng trước) rồi `loi_gui_khach` — chỉ ô sau tới khách. Engine gọi `reply` ở cả ba chỗ trả lời khách
+  (người mua, người bán, câu hỏi dự án). Gỡ `_bo_loi_noi_bo`. **Chỗ cùng lớp còn lại:** vòng công cụ `_agent_reply` (người rao rổ hàng
+  dự án) vẫn lấy chữ tự do của lượt cuối — chưa đổi vì vòng đó cần chữ + công cụ trong cùng lượt; theo dõi khi bắn thử nhánh dự án.
 - Bản tin 15:31 hỏi lại "80m² đất hay sàn" ở cuối: là hệ quả của (b) cộng lỗi SRS-5.1zzzzzzz74 (đã sửa), không sửa thêm — khách bảo
   đăng mà tin còn thiếu một ô thì bot soạn bài rồi hỏi đúng ô còn thiếu là đúng thiết kế.
 
 **Kiểm.** `tests/test_hoi_it_truoc_ban_nhap.py` (2 ca, đỏ trên code cũ), `tests/test_xung_ho_qua_khoi_dong.py` (đỏ trên code cũ),
-`tests/test_voice.py::test_tin_thoai_khong_chep_duoc_vao_so_loi` (đỏ trên code cũ), `test_hoi_it_truoc_ban_nhap.py::test_cau_hoi_dien_tich_san_khong_bi_coi_la_xong_khi_da_biet_so_tang`
+`tests/test_voice.py::test_tin_thoai_khong_chep_duoc_vao_so_loi` (đỏ trên code cũ), `tests/test_loi_gui_khach.py` (2 ca: chỉ `loi_gui_khach`
+tới khách, công cụ ép buộc với ô tự soát đứng trước; engine trả lời khách qua `reply` — đỏ trên code cũ), `test_hoi_it_truoc_ban_nhap.py::test_cau_hoi_dien_tich_san_khong_bi_coi_la_xong_khi_da_biet_so_tang`
 (đỏ trên code cũ), `bot/tests/bridge-gui-lai.mjs` trong `test:bot`
 (máy chủ giả lên sau 2 giây; bản cũ trượt; lõi treo vẫn chỉ gửi ≤ 2 lần — đã chạy cả hai chiều); sửa theo luật mới
-`tests/test_ban_nhap_du_dieu_kien.py`, `tests/test_cau_hoi_theo_loai.py`. pytest 400 đạt. Model thật: `ban-thu-ban`.
+`tests/test_ban_nhap_du_dieu_kien.py`, `tests/test_cau_hoi_theo_loai.py`; ca lọc chữ trong `tests/test_bot_bot_hoi_lap.py` gỡ cùng hàm. pytest 401 đạt. Model thật: `ban-thu-ban`.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

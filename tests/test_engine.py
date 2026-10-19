@@ -1648,6 +1648,9 @@ def test_link_question_read_by_ai_with_quote():
             self.plan, self.last_system = plan, ""
         def extract(self, *a, **k):
             return dict(self.plan)
+        def reply(self, system, messages, **k):   # lời gửi khách (SRS-5.1zzzzzzz76)
+            return self.chat(system, messages, **k)
+
         def chat(self, system, messages, **k):
             self.last_system = system
             return "Anh xem tại https://aioinhadat.com nha"
