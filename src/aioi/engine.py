@@ -57,6 +57,8 @@ from .prompts import (
     build_fee_followup_system,
     _fee_hint,
     khoi_trang_thai_web,
+    TAI_LIEU_CHUNG_SYSTEM,
+    tai_lieu_chung_schema,
     build_greeting,
     build_listing_proposal_system,
     build_inventory_instruction,
@@ -115,39 +117,9 @@ def _image_count(media: list[dict[str, str]]) -> int:
     """How many of a listing's stored media are photos (not PDFs/docs)."""
     return sum(1 for r in media if not r.get("filename", "").lower().endswith(".pdf"))
 
-# Cheap pre-filter: does a seller's message plausibly DESCRIBE a project/model (worth an
-# extra extract to LEARN from), vs. small talk ("ok em", "phí bao nhiêu")? Avoids spending
-# an LLM call every turn just because the listing belongs to a project.
-_LEARN_HINTS = (
-    "phòng", "tầng", "lầu", "m2", "diện tích", "layout", "bố trí", "hướng", "mặt tiền",
-    "hồ bơi", "gym", "cổng", "tiện ích", "an ninh", "công viên", "sổ", "pháp lý", "thang máy",
-)
-
-
-def _looks_descriptive(text: str) -> bool:
-    t = (text or "").lower()
-    return any(h in t for h in _LEARN_HINTS)
-
-
-# Does the seller/buyer ask a FACTUAL QUESTION we should answer from the project's stored
-# source docs (phân lô/brochure/gói nội thất) rather than let the model recall/fabricate?
-# Requires BOTH a doc TOPIC and a QUESTION marker — so a seller STATING info ("căn này diện
-# tích 50m2") doesn't trigger the answer path; only a real question does.
-_DOC_TOPIC_HINTS = (
-    "diện tích", "lô ", "lô số", "mẫu nhà", "mẫu ", "gói ", "air", "max", "tiện ích", "hướng",
-    "vị trí", "kích thước", "mặt tiền", "pháp lý", "nội thất", "phân lô", "sơ đồ", "cosmo",
-    "fusion", "opus", "office", "cashmere", "signature",
-)
-_QUESTION_MARKERS = (
-    "?", "bao nhiêu", "là gì", "thế nào", "gồm gì", "gồm những", "khác nhau", "có gì",
-    "cho hỏi", "cho em hỏi", "cho anh hỏi", "cho chị hỏi", "ra sao", "mấy ", "như thế nào",
-)
-
-
-def _wants_project_facts(text: str) -> bool:
-    t = (text or "").lower()
-    return any(k in t for k in _DOC_TOPIC_HINTS) and any(q in t for q in _QUESTION_MARKERS)
-
+# 19/10/2026 (SRS-5.1zzzzzzz55): các bộ dò từ khoá _looks_descriptive / _wants_project_facts / _wants_media /
+# _looks_like_reference_doc / _affirms / _denies đã gỡ — lượt AI lập thao tác đọc theo nghĩa (xin_xem_ban_ve, cau_hoi_du_an,
+# mo_ta_du_an, xac_nhan_xoa, kèm trích dẫn) và _la_tai_lieu_chung đọc bản đọc ảnh.
 
 # Chuỗi bridge gán cho MỌI sticker Zalo (bot/bridge-zca/index.mjs, SRS-5.1zzzzzzz22): zca-js không cho biết sắc thái.
 STICKER_TRUNG_TINH = "[khách gửi sticker]"
@@ -182,51 +154,6 @@ _AGENT_TOOL_GUIDE = (
     "- Căn/mẫu/diện tích/quy cách bàn giao/quy hoạch là kiến thức CHUNG (dùng lại). Chỉ khẳng "
     "định thông tin công cộng khi CÓ NGUỒN.\n"
 )
-
-
-# A request to SEE a drawing / floor plan / render ("bản vẽ căn 24", "cho xem mặt bằng") — this
-# is NOT a basket edit; it must NEVER run listing operations (that once pruned the basket).
-_MEDIA_REQUEST_HINTS = (
-    "bản vẽ", "bản vẻ", "bản thiết kế", "mặt cắt", "sơ đồ", "phối cảnh",
-    "layout", "brochure", "mẫu thiết kế", "bản đồ",
-    "xem mặt bằng", "xin mặt bằng", "gửi mặt bằng", "mặt bằng tầng", "mặt bằng căn",
-    "mặt bằng tổng thể", "mặt bằng chi tiết", "sơ đồ mặt bằng",
-)
-
-_COMMERCIAL_PREMISES_HINTS = (
-    "cho thuê mặt bằng", "thuê mặt bằng", "mặt bằng kinh doanh", "mặt bằng buôn bán",
-    "bán mặt bằng", "mặt bằng cho thuê", "mặt bằng mặt tiền", "mặt bằng trệt",
-    "mặt bằng tầng trệt", "tìm mặt bằng", "kiếm mặt bằng",
-)
-
-
-def _wants_media(text: str) -> bool:
-    t = (text or "").lower()
-    # Commercial retail premises ("cho thuê mặt bằng kinh doanh", "bán mặt bằng...")
-    # is a property listing/inquiry, NOT a media request for an architectural floorplan drawing.
-    if any(p in t for p in _COMMERCIAL_PREMISES_HINTS):
-        if not any(k in t for k in ("xem bản vẽ", "cho xem", "gửi bản vẽ", "xin bản vẽ")):
-            return False
-    if "mặt bằng" in t:
-        if any(h in t for h in ("xem mặt bằng", "xin mặt bằng", "gửi mặt bằng", "mặt bằng tầng",
-                                "mặt bằng căn", "mặt bằng tổng thể", "mặt bằng chi tiết", "sơ đồ mặt bằng")):
-            return True
-        return any(h in t for h in ("bản vẽ", "bản vẻ", "bản thiết kế", "layout", "phối cảnh"))
-    return any(h in t for h in _MEDIA_REQUEST_HINTS)
-
-
-# A read-out description that indicates the file is SHARED REFERENCE knowledge (a phân-lô map,
-# floor plan, zoning, handover spec, brochure...) rather than a photo of one specific căn — so it
-# should be ingested to a grounded .md, even when it's an IMAGE (not just PDF).
-_REFERENCE_DOC_HINTS = (
-    "phân lô", "phan lo", "sơ đồ", "so do", "bản đồ", "ban do", "mặt bằng", "mat bang",
-    "quy hoạch", "quy cách", "phụ lục", "tiện ích", "layout", "tổng thể", "phối cảnh",
-    "bàn giao", "quy cach", "phu luc",
-)
-
-
-def _looks_like_reference_doc(description: str) -> bool:
-    return any(h in (description or "").lower() for h in _REFERENCE_DOC_HINTS)
 
 
 # A sổ đỏ / legal cert in a PROJECT is treated as SHARED knowledge for its LAND facts, but the
@@ -294,29 +221,6 @@ def _trich_dan_khop(trich: str | None, cau: str | None) -> bool:
 def _strip_accents(s: str) -> str:
     s = (s or "").replace("đ", "d").replace("Đ", "D")  # NFD won't decompose đ — map it first
     return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
-
-
-# Short-message confirm / cancel words (accent-insensitive) for a pending destructive action.
-_AFFIRM_WORDS = {"dung", "ung", "u", "uh", "um", "ok", "oke", "okay", "okie", "co", "phai", "chuan",
-                 "dong y", "xac nhan", "yes", "y", "duoc", "xoa", "xoa het", "xoa di", "bo", "dong ri"}
-_DENY_WORDS = {"khong", "ko", "k", "thoi", "dung lai", "khoan", "dung co", "huy", "no", "giu", "giu lai",
-               "dung xoa", "khong xoa", "sai"}
-
-
-def _affirms(text: str) -> bool:
-    t = _strip_accents((text or "").strip().lower())
-    t = re.sub(r"[^\w\s]", " ", t).strip()
-    if not t or len(t) > 40:          # a long message isn't a plain "yes" — don't risk a delete
-        return False
-    if any(w in _DENY_WORDS for w in t.split()) or t in _DENY_WORDS:
-        return False
-    return t in _AFFIRM_WORDS or any(w in _AFFIRM_WORDS for w in t.split())
-
-
-def _denies(text: str) -> bool:
-    t = _strip_accents((text or "").strip().lower())
-    t = re.sub(r"[^\w\s]", " ", t).strip()
-    return bool(t) and (t in _DENY_WORDS or any(w in _DENY_WORDS for w in t.split()))
 
 
 @dataclass
@@ -403,6 +307,9 @@ class Conversation:
     # "chu_co_bac", giữ qua các lượt) — lượt AI lập thao tác đọc theo nghĩa, code kiểm trích dẫn (SRS-5.1zzzzzzz54).
     hoi_ve_luot: str | None = None
     xung_ho: str | None = None
+    # Transient: điều lượt AI đọc được ở tin vừa nhắn, đã kiểm trích dẫn (SRS-5.1zzzzzzz55): "xin_xem_ban_ve", "cau_hoi_du_an",
+    # "mo_ta_du_an" (True khi có), "xac_nhan_xoa" ("dong_y" / "tu_choi").
+    y_luot: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.listings:
@@ -691,24 +598,6 @@ class SqliteConversationStore(ConversationStore):
         self._conn.commit()
 
 
-_CUSTOMER_IS_EM_RE = re.compile(
-    r"\b(?:em\s+(?:gửi|có|cần|muốn|đang|bán|thuê|chính\s+chủ|chào|là|ở|nhắn|hỏi)|nhà\s+em|căn\s+em|đất\s+em|bên\s+em|sổ\s+em|giá\s+em|của\s+em)\b",
-    re.IGNORECASE,
-)
-_CUSTOMER_IS_CHI_RE = re.compile(
-    r"\b(?:chị\s+(?:gửi|có|cần|muốn|đang|bán|thuê|chính\s+chủ|chào|là|ở|nhắn|hỏi)|nhà\s+chị|căn\s+chị|đất\s+chị|bên\s+chị|sổ\s+chị|giá\s+chị|của\s+chị)\b",
-    re.IGNORECASE,
-)
-_CUSTOMER_IS_ANH_RE = re.compile(
-    r"\b(?:anh\s+(?:gửi|có|cần|muốn|đang|bán|thuê|chính\s+chủ|chào|là|ở|nhắn|hỏi)|nhà\s+anh|căn\s+anh|đất\s+anh|bên\s+anh|sổ\s+anh|giá\s+anh|của\s+anh)\b",
-    re.IGNORECASE,
-)
-_CUSTOMER_IS_ELDER_RE = re.compile(
-    r"\b(?:(?:chú|cô|bác|dì)\s+(?:gửi|có|cần|muốn|đang|bán|thuê|chính\s+chủ|chào|là|ở)|nhà\s+(?:chú|cô|bác|dì))\b",
-    re.IGNORECASE,
-)
-
-
 def _detect_customer_pronoun(conv: Conversation, current_text: str = "") -> str:
     """Khách tự xưng gì: "em" / "anh" / "chi" / "elder" / "unknown". Do lượt AI lập thao tác đọc theo nghĩa (`xung_ho`, code kiểm
     trích dẫn trong lời khách) — không dò từ khoá (SRS-5.1zzzzzzz54; bản trước regex "em gửi|nhà em…" nhầm cả chữ "em" khách
@@ -716,33 +605,9 @@ def _detect_customer_pronoun(conv: Conversation, current_text: str = "") -> str:
     return {"em": "em", "anh": "anh", "chi": "chi", "chu_co_bac": "elder"}.get(conv.xung_ho or "", "unknown")
 
 
-def _clean_reply_tone(reply: str, conv: Conversation, customer_is_em: bool) -> str:
-    reply = reply.strip()
-    # Strip markdown bold asterisks
-    reply = re.sub(r"\*\*([^*]+)\*\*", r"\1", reply)
-
-    if customer_is_em:
-        # Strip any leading "Dạ" / "Dạ em" / "Dạ vâng" / etc.
-        reply = re.sub(r"^(?:dạ\s*(?:vâng|em|anh|chị|ơi|ạ)?[\s,.]*)+", "", reply, flags=re.IGNORECASE).strip()
-        # Strip trailing "ạ"
-        reply = re.sub(r"[\s,]+ạ([.!?]?)$", r"\1", reply, flags=re.IGNORECASE).strip()
-        # Replace accidental "anh/chị" with "em"
-        reply = re.sub(r"\b(?:anh/chị|anh\s*chị)\b", "em", reply, flags=re.IGNORECASE)
-        if reply:
-            reply = reply[0].upper() + reply[1:]
-    else:
-        # Prevent consecutive turns starting with "Dạ"
-        prev_ai_da = False
-        for t in reversed(conv.history):
-            if t.role == "assistant" and t.content:
-                if re.match(r"^\s*dạ\b", t.content, re.IGNORECASE):
-                    prev_ai_da = True
-                break
-        if prev_ai_da and re.match(r"^\s*dạ\b", reply, re.IGNORECASE):
-            reply = re.sub(r"^(?:dạ\s*(?:vâng|ơi|ạ)?[\s,.]*)+", "", reply, flags=re.IGNORECASE).strip()
-            if reply:
-                reply = reply[0].upper() + reply[1:]
-    return reply
+def _bo_markdown(reply: str) -> str:
+    """Bỏ in đậm markdown (Zalo không hiển thị). Không sửa lời bot theo từ khoá ("Dạ", "anh/chị") — SRS-5.1zzzzzzz55."""
+    return re.sub(r"\*\*([^*]+)\*\*", r"\1", reply.strip())
 
 
 class Engine:
@@ -1585,19 +1450,23 @@ class Engine:
 
         conv.history.append(Turn("user", text, now))
 
+        # Lượt AI đọc tin khách MỘT lần, trước mọi nhánh (SRS-5.1zzzzzzz55): xác nhận xoá, câu hỏi dự án, xin bản vẽ đều đọc từ
+        # đây thay cho bộ dò từ khoá. Thao tác rổ hàng chỉ áp ở bước 1, sau khi đã chắc tin này là sửa rổ hàng.
+        ke_hoach = self._lap_ke_hoach(conv)
+
         # 0−. PENDING DESTRUCTIVE CONFIRMATION: a clear/bỏ/chỉ-giữ proposed last turn waits here.
         #     Apply it ONLY on an explicit yes; a "thôi/không" cancels; anything else (the seller
         #     moved on) also cancels safely and falls through to normal handling — never delete
         #     without a clear confirm.
         if conv.pending_destructive:
-            if _affirms(text):
+            if conv.y_luot.get("xac_nhan_xoa") == "dong_y":
                 _changed, receipts = self._apply_pending_destructive(conv)
                 reply = self._receipt_reply(conv, receipts) or "Dạ em đã cập nhật rổ hàng rồi ạ."
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
                 return self._build_result(conv, reply, captured=[], now=now)
             conv.pending_destructive = []  # not a clear yes → keep the basket intact
-            if _denies(text):
+            if conv.y_luot.get("xac_nhan_xoa") == "tu_choi":
                 reply = "Dạ em giữ nguyên rổ hàng, không xóa gì đâu ạ 👍"
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
@@ -1609,7 +1478,7 @@ class Engine:
         #    edit to the basket, so it must not run listing extraction (else "lô 42 và 50" would
         #    be misread as adding 2 căn).
         q_project = self.project_for(conv.prop)
-        factual_q = _wants_project_facts(text)
+        factual_q = bool(conv.y_luot.get("cau_hoi_du_an"))
         # A seller whose project has an INVENTORY is handled by the agent loop (section 2). For a
         # factual question we do NOT divert to `_answer_from_docs` — that's a historyless, focused
         # call, so a pronoun question ("mẫu nhà NÀY thế nào?", "bạn không tra ra sao?") loses its
@@ -1627,7 +1496,7 @@ class Engine:
         #     request, not a basket edit — answer with the model's stored drawing if we have it,
         #     else offer to get it. Handled BEFORE extraction so it can never mutate the basket
         #     (a mis-parse once pruned the rổ hàng from "bản vẽ căn 24").
-        if _wants_media(text):
+        if conv.y_luot.get("xin_xem_ban_ve"):
             reply = self._media_request_reply(conv, q_project, text)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
@@ -1641,7 +1510,7 @@ class Engine:
         if agent_project and factual_q:
             captured = []
         else:
-            captured = self._extract(conv)
+            captured, conv.last_receipts = self._ap_dung_ke_hoach(conv, ke_hoach)
 
             # 1a-destructive. A DESTRUCTIVE basket op (xóa hết / bỏ căn / chỉ giữ) is confirmed
             #    with a reply built from the REAL post-action state, so the words match the deed —
@@ -1692,7 +1561,7 @@ class Engine:
         #     so it's not an extra LLM call every turn.
         du_an = conv.prop.fields.get("du_an")
         ut_name = conv.prop.fields.get("unit_type")
-        if du_an and _looks_descriptive(text):
+        if du_an and conv.y_luot.get("mo_ta_du_an"):
             if project is None or not project.facts():
                 self.register_project_from_text(text, project_name=du_an, voter=user_key)
             ut = self.unit_type_for(conv.prop)
@@ -1715,7 +1584,7 @@ class Engine:
             reply = self._provider.chat(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
                 reply = "Mình đây nhé! Bạn nhắn lại giúp mình với nha." if customer_is_em else "Em đây ạ! Anh/chị nhắn lại giúp em với nhé ạ."
-            reply = _clean_reply_tone(reply, conv, customer_is_em)
+            reply = _bo_markdown(reply)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured, now)
@@ -1823,7 +1692,7 @@ class Engine:
         if not reply:
             reply = "Mình đây nhé! Kết nối mạng vừa gián đoạn một chút, em nhắn lại giúp mình với nha." if customer_is_em else "Em đây ạ! Kết nối mạng vừa bị gián đoạn một chút, anh/chị nhắn lại giúp em với nhé ạ."
 
-        reply = _clean_reply_tone(reply, conv, customer_is_em)
+        reply = _bo_markdown(reply)
 
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
@@ -1982,12 +1851,6 @@ class Engine:
             break
         return final or "Dạ anh/chị nói rõ thêm giúp em căn nào ạ?"
 
-    # PROJECT-LEVEL map words (phân lô / bản đồ / quy hoạch / tổng thể). Distinct from a per-căn
-    # "bản vẽ/mặt bằng căn 24" — these refer to the whole-development map we often already hold as a
-    # grounded doc. Bare "sơ đồ" is left out on purpose ("sơ đồ căn" usually means a floor plan).
-    _MAP_HINTS = ("phân lô", "phan lo", "bản đồ", "ban do", "quy hoạch", "quy hoach",
-                  "tổng thể", "tong the")
-
     @staticmethod
     def _project_map_doc(project: Project | None) -> dict[str, str] | None:
         """The project's stored phân-lô / sơ-đồ / quy-hoạch map doc, if any (most recent)."""
@@ -2007,7 +1870,7 @@ class Engine:
         # The seller is asking about the PROJECT'S phân-lô/bản-đồ and we DO hold it as a grounded
         # doc → READ it to answer (they want us to consult the map), and offer the stored file. This
         # fixes AOND wrongly insisting "em CHƯA có bản vẽ" when the phân lô .md is right there.
-        if any(h in text.lower() for h in self._MAP_HINTS):
+        if conv.y_luot.get("ban_do_du_an"):   # AI đọc: khách xin bản đồ / phân lô của cả dự án (SRS-5.1zzzzzzz55)
             doc = self._project_map_doc(project)
             if doc is not None:
                 answer = self._answer_from_docs(conv, project, text)
@@ -2493,6 +2356,17 @@ class Engine:
                 continue
         return titles
 
+    def _la_tai_lieu_chung(self, description: str) -> bool:
+        """Bản đọc ảnh là tài liệu CHUNG của dự án (phân lô, sơ đồ, quy cách…) hay ảnh một căn — AI đọc theo nghĩa, thay bộ dò
+        từ khoá (SRS-5.1zzzzzzz55). Chỉ gọi khi có ảnh + đã biết dự án. Lỗi → coi là ảnh của căn (giữ ở căn, không mất)."""
+        if not (description or "").strip():
+            return False
+        try:
+            r = self._provider.extract(TAI_LIEU_CHUNG_SYSTEM, [Message("user", description[:6000])], tai_lieu_chung_schema())
+        except Exception:  # noqa: BLE001
+            return False
+        return r.get("tai_lieu_chung") is True
+
     def _route_readout_media(
         self, conv: Conversation, description: str, fetched: list[FetchedMedia],
         user_key: str, store: bool = True,
@@ -2515,7 +2389,8 @@ class Engine:
         # it's re-readable, not read-once-and-forgotten. PDFs always; IMAGES only when they read
         # as a REFERENCE doc (a phân-lô map, not a photo of one căn — that stays on the căn).
         du_an = (proj.name if proj is not None else None) or conv.prop.fields.get("du_an")
-        is_ref = _looks_like_reference_doc(description)
+        co_anh = any(m.kind == "image" for m in fetched)
+        is_ref = bool(store and du_an and co_anh) and self._la_tai_lieu_chung(description)
         to_ingest = [m for m in fetched if m.kind == "pdf" or (is_ref and m.kind == "image")]
         if store and du_an and to_ingest:
             for m in to_ingest:
@@ -2951,6 +2826,11 @@ class Engine:
         return captured
 
     def _plan_and_apply(self, conv: Conversation) -> tuple[list[str], list[tuple]]:
+        return self._ap_dung_ke_hoach(conv, self._lap_ke_hoach(conv))
+
+    def _lap_ke_hoach(self, conv: Conversation) -> dict:
+        """Lượt AI lập thao tác: đọc tin khách theo nghĩa, ghi các thuộc tính hội thoại (vai, ý mua / bán, duyệt, hỏi về,
+        xưng hô, y_luot) và TRẢ kế hoạch — chưa đụng rổ hàng (`_ap_dung_ke_hoach`)."""
         # With a BASKET (>1 căn) the seller acts on ONE căn per message, but a reference may span
         # turns ("...phải nó không?" → "nó đó em") — so read from just AFTER the PREVIOUS user
         # turn: the latest user line plus the bot's question(s) right before it (confirm context),
@@ -2972,6 +2852,8 @@ class Engine:
                 "operations RỖNG — phần trả lời sẽ hỏi xác nhận; chỉ 'add' sau khi khách xác nhận.\n"
             )
         system += self._basket_block(conv)
+        if conv.prop.fields.get("dia_chi"):
+            system += f"\nĐỊA CHỈ ĐANG GHI của căn đang nói tới: {conv.prop.fields['dia_chi']}\n"
         plan = self._provider.extract(system, src, operations_schema())
 
         # Sticky conversation attributes (never downgrade role to unknown).
@@ -3022,6 +2904,18 @@ class Engine:
             if any(_trich_dan_khop(plan.get("xung_ho_trich_dan"), c) for c in gan):
                 conv.xung_ho = x
 
+        # Xin xem bản vẽ / hỏi dự án / tả dự án / xác nhận xoá (SRS-5.1zzzzzzz55): nhận khi cụm trích có trong tin vừa nhắn.
+        conv.y_luot = {}
+        for k in ("xin_xem_ban_ve", "cau_hoi_du_an", "mo_ta_du_an"):
+            if _trich_dan_khop(plan.get(k), cuoi):
+                conv.y_luot[k] = True
+        if conv.y_luot.get("xin_xem_ban_ve") and plan.get("ban_do_du_an") is True:
+            conv.y_luot["ban_do_du_an"] = True
+        if plan.get("xac_nhan_xoa") in ("dong_y", "tu_choi") and _trich_dan_khop(plan.get("xac_nhan_trich_dan"), cuoi):
+            conv.y_luot["xac_nhan_xoa"] = plan["xac_nhan_xoa"]
+        return plan
+
+    def _ap_dung_ke_hoach(self, conv: Conversation, plan: dict) -> tuple[list[str], list[tuple]]:
         changed: set[str] = set()
         receipts: list[tuple] = []
         ops = [op for op in (plan.get("operations") or []) if isinstance(op, dict)]

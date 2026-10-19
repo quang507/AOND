@@ -32,8 +32,9 @@ def test_engine_dien_phuong_tu_nga_tu(monkeypatch):
 
     e = _engine()
     e._nga_tu = lambda v: {"phuong": "Phường Nhiêu Lộc", "quan": "Quận 3"} if v == "Lê Văn Sỹ | Trần Huy Liệu" else None
-    monkeypatch.setattr(Engine, "_extract", lambda self, conv: conv.prop.update(
-        {"loai_hinh": "nha_pho", "dia_chi": "Lê Văn Sỹ", "duong": "Lê Văn Sỹ", "gan_nga_tu": "Lê Văn Sỹ | Trần Huy Liệu"}))
+    # 19/10 (SRS-5.1zzzzzzz55): handle đọc kế hoạch một lần rồi áp ở bước 1 — giả bước áp.
+    monkeypatch.setattr(Engine, "_ap_dung_ke_hoach", lambda self, conv, plan: (conv.prop.update(
+        {"loai_hinh": "nha_pho", "dia_chi": "Lê Văn Sỹ", "duong": "Lê Văn Sỹ", "gan_nga_tu": "Lê Văn Sỹ | Trần Huy Liệu"}), []))
     r = e.handle("u-nga-tu", "nhà trên Lê Văn Sỹ gần ngã tư Trần Huy Liệu")
     p = e.conversation("u-nga-tu").prop
     assert p.fields.get("phuong") == "Phường Nhiêu Lộc" and p.fields.get("quan") == "Quận 3"

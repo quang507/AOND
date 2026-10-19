@@ -153,6 +153,7 @@ class MockProvider(LLMProvider):
         if "operations" in props:
             flat = self.extract(system, messages, {"properties": {}})  # reuse the flat brain
             plan = _flat_to_operations(flat)
+            _gia_lap_y_luot(plan, messages)
             # Giả lập lượt AI đọc "khách hỏi về gì" (hoi_ve, SRS-5.1zzzzzzz54) — bản thật đọc theo nghĩa; ở đây chỉ là đồ giả
             # cho test offline, trả kèm cụm trích có thật để qua kiểm trích dẫn của engine.
             cuoi = next((m.content for m in reversed(messages) if m.role == "user"), "")
@@ -165,6 +166,10 @@ class MockProvider(LLMProvider):
                     plan["hoi_ve"], plan["hoi_ve_trich_dan"] = hoi_ve, cuoi[i:i + len(k)]
                     break
             return plan
+
+        # Tài liệu chung của dự án hay ảnh một căn (SRS-5.1zzzzzzz55) — đồ giả theo từ khoá.
+        if "tai_lieu_chung" in props:
+            return {"tai_lieu_chung": any(h in text for h in _MOCK_REFERENCE_DOC)}
 
         # Column mapping (LLM-assisted spreadsheet import): map odd headers → field slugs.
         if "ánh xạ cột" in system:
@@ -391,3 +396,55 @@ def _flat_to_operations(flat: dict[str, Any]) -> dict[str, Any]:
     elif fields:  # ordinary data on the active căn
         ops.append({"op": "update", "fields": fields})
     return result
+
+
+# ── Đồ giả cho các ô lượt AI đọc theo nghĩa (SRS-5.1zzzzzzz55) ──────────────────────────────────────────────────────────
+# Bản thật (Claude) đọc theo NGHĨA; đây chỉ là đồ giả theo từ khoá để test offline chạy được — các danh sách này chính là bộ
+# dò từ khoá engine từng dùng ở production, nay chỉ còn ở đồ giả. Trả cụm trích CÓ THẬT trong tin để qua kiểm trích dẫn.
+_MOCK_MEDIA_REQUEST = ("bản vẽ", "bản vẻ", "bản thiết kế", "mặt cắt", "sơ đồ", "phối cảnh", "layout", "brochure", "mẫu thiết kế",
+                       "bản đồ", "xem mặt bằng", "xin mặt bằng", "gửi mặt bằng", "mặt bằng tầng", "mặt bằng căn",
+                       "mặt bằng tổng thể", "mặt bằng chi tiết")
+_MOCK_DOC_TOPIC = ("diện tích", "lô ", "lô số", "mẫu nhà", "mẫu ", "gói ", "air", "max", "tiện ích", "hướng", "vị trí",
+                   "kích thước", "mặt tiền", "pháp lý", "nội thất", "phân lô", "sơ đồ", "cosmo", "fusion", "opus", "office",
+                   "cashmere", "signature")
+_MOCK_QUESTION = ("?", "bao nhiêu", "là gì", "thế nào", "gồm gì", "gồm những", "khác nhau", "có gì", "cho hỏi", "cho em hỏi",
+                  "cho anh hỏi", "cho chị hỏi", "ra sao", "mấy ", "như thế nào")
+_MOCK_LEARN = ("phòng", "tầng", "lầu", "m2", "diện tích", "layout", "bố trí", "hướng", "mặt tiền", "hồ bơi", "gym", "cổng",
+               "tiện ích", "an ninh", "công viên", "sổ", "pháp lý", "thang máy")
+_MOCK_REFERENCE_DOC = ("phân lô", "phan lo", "sơ đồ", "so do", "bản đồ", "ban do", "mặt bằng", "mat bang", "quy hoạch",
+                       "quy cách", "phụ lục", "tiện ích", "layout", "tổng thể", "phối cảnh", "bàn giao", "quy cach", "phu luc")
+_MOCK_AFFIRM = {"dung", "ung", "u", "uh", "um", "ok", "oke", "okay", "okie", "co", "phai", "chuan", "dong y", "xac nhan", "yes",
+                "y", "duoc", "xoa", "xoa het", "xoa di", "bo", "dong ri"}
+_MOCK_DENY = {"khong", "ko", "k", "thoi", "dung lai", "khoan", "dung co", "huy", "no", "giu", "giu lai", "dung xoa",
+              "khong xoa", "sai"}
+
+
+def _mock_bo_dau(s: str) -> str:
+    import unicodedata
+    s = s.replace("đ", "d").replace("Đ", "D")
+    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+
+
+def _gia_lap_y_luot(plan: dict[str, Any], messages: list[Message]) -> None:
+    cuoi = next((m.content for m in reversed(messages) if m.role == "user"), "")
+    low = cuoi.lower()
+    commercial = any(p in low for p in ("cho thuê mặt bằng", "thuê mặt bằng", "mặt bằng kinh doanh", "bán mặt bằng",
+                                        "mặt bằng cho thuê", "mặt bằng mặt tiền", "tìm mặt bằng"))
+    if not commercial or any(k in low for k in ("xem bản vẽ", "cho xem", "gửi bản vẽ", "xin bản vẽ")):
+        if any(h in low for h in _MOCK_MEDIA_REQUEST + ("phân lô", "quy hoạch")):
+            plan["xin_xem_ban_ve"] = cuoi
+            plan["operations"] = []
+            if any(h in low for h in ("phân lô", "phan lo", "bản đồ", "ban do", "quy hoạch", "quy hoach", "tổng thể")):
+                plan["ban_do_du_an"] = True
+    if any(k in low for k in _MOCK_DOC_TOPIC) and any(q in low for q in _MOCK_QUESTION):
+        plan["cau_hoi_du_an"] = cuoi
+    if any(h in low for h in _MOCK_LEARN):
+        plan["mo_ta_du_an"] = cuoi
+    t = re.sub(r"[^\w\s]", " ", _mock_bo_dau(low)).strip()
+    if t and len(t) <= 40:
+        w = set(t.split())
+        if t in _MOCK_DENY or w & _MOCK_DENY:
+            plan["xac_nhan_xoa"], plan["xac_nhan_trich_dan"] = "tu_choi", cuoi
+        elif t in _MOCK_AFFIRM or w & _MOCK_AFFIRM:
+            plan["xac_nhan_xoa"], plan["xac_nhan_trich_dan"] = "dong_y", cuoi
+

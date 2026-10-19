@@ -1365,6 +1365,18 @@ QUY TẮC:
 - KHÁCH TỰ XƯNG (đọc cả các lượt trước): xung_ho = "em" khi khách tự xưng em ("nhà em", "em gửi"); "anh" / "chi" khi khách
   tự xưng anh / chị; "chu_co_bac" khi khách tự xưng chú / cô / bác / dì. Chữ "em" khách dùng để GỌI bot ("đăng đi em") không
   phải tự xưng. Chưa thấy khách tự xưng → bỏ trống. Có điền thì xung_ho_trich_dan = NGUYÊN VĂN cụm khách tự xưng.
+- XIN XEM BẢN VẼ (19/10/2026): xin_xem_ban_ve = NGUYÊN VĂN cụm khách XIN XEM / XIN GỬI bản vẽ, mặt bằng (bản vẽ tầng / căn /
+  tổng thể), sơ đồ, phối cảnh, layout, brochure. "cho thuê mặt bằng kinh doanh", "bán mặt bằng" là LOẠI BĐS, không phải xin bản
+  vẽ → bỏ trống. Có điền thì operations RỖNG (xin xem không phải sửa rổ hàng). Khách xin bản đồ / phân lô / quy hoạch / mặt
+  bằng tổng thể của cả DỰ ÁN (không phải bản vẽ một căn / một mẫu nhà) thì thêm ban_do_du_an = true.
+- HỎI THÔNG TIN DỰ ÁN: cau_hoi_du_an = NGUYÊN VĂN câu khách HỎI thông tin dự án / mẫu nhà / lô / gói nội thất ("lô 42 diện tích
+  bao nhiêu", "gói Max gồm gì", "mẫu này mấy phòng"). Khách KỂ thông tin căn của mình ("căn này 50m2") không phải câu hỏi → bỏ trống.
+- TẢ DỰ ÁN: mo_ta_du_an = NGUYÊN VĂN cụm khách TẢ kiến thức CHUNG của dự án / mẫu nhà (tiện ích, cổng, pháp lý dự án, bố trí mẫu
+  nhà, số tầng của mẫu…) để hệ thống học lại. Chỉ nói giá / căn riêng của mình → bỏ trống.
+- XÁC NHẬN XOÁ: chỉ khi tin NGAY TRƯỚC của bot hỏi xác nhận ẩn / bỏ / chỉ giữ căn: xac_nhan_xoa = "dong_y" (khách đồng ý làm) hoặc
+  "tu_choi" (khách không muốn, giữ nguyên), kèm xac_nhan_trich_dan = NGUYÊN VĂN cụm đó. Nói chuyện khác → bỏ trống.
+- ĐỊA CHỈ ĐẦY ĐỦ: fields.dia_chi luôn là địa chỉ ĐẦY ĐỦ của căn sau khi GHÉP phần khách vừa nói (số nhà, hẻm, phường, quận) vào
+  phần ĐANG GHI (khối "ĐỊA CHỈ ĐANG GHI" bên dưới, nếu có) và SỬA theo lời đính chính mới nhất — không trả một mảnh rời.
 - TIN HỆ THỐNG trong ngoặc vuông: "[Tin nhắn thoại của khách]: "…"" là lời khách NÓI, đọc như chữ khách gõ (chữ chép từ giọng
   nói có thể sai chính tả); "[khách gửi sticker]" là nhãn dán, không có thông tin BĐS.
 
@@ -1496,6 +1508,17 @@ def operations_schema() -> dict[str, Any]:
                 "description": "Khách TỰ XƯNG là gì (em / anh / chị / chú-cô-bác-dì). Chưa thấy khách tự xưng thì bỏ trống.",
             },
             "xung_ho_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách tự xưng (bắt buộc khi có xung_ho)."},
+            "xin_xem_ban_ve": {"type": "string", "description": "Nguyên văn cụm khách xin xem / xin gửi bản vẽ, mặt bằng (bản "
+                               "vẽ), sơ đồ, phối cảnh, layout, brochure. Không xin thì bỏ trống."},
+            "ban_do_du_an": {"type": "boolean", "description": "Có xin_xem_ban_ve VÀ thứ khách xin là bản đồ / phân lô / quy "
+                             "hoạch / mặt bằng tổng thể của cả dự án (không phải bản vẽ một căn)."},
+            "cau_hoi_du_an": {"type": "string", "description": "Nguyên văn câu khách HỎI thông tin dự án / mẫu nhà / lô / gói. "
+                              "Khách kể thông tin căn của mình thì bỏ trống."},
+            "mo_ta_du_an": {"type": "string", "description": "Nguyên văn cụm khách TẢ kiến thức chung của dự án / mẫu nhà. "
+                            "Không có thì bỏ trống."},
+            "xac_nhan_xoa": {"type": "string", "enum": ["dong_y", "tu_choi"],
+                             "description": "Chỉ khi bot vừa hỏi xác nhận ẩn / bỏ / chỉ giữ căn: khách đồng ý hay từ chối."},
+            "xac_nhan_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách đồng ý / từ chối (bắt buộc khi có xac_nhan_xoa)."},
             "user_intent": {
                 "type": "string",
                 "enum": ["sell", "buy", "unknown"],
@@ -1520,3 +1543,21 @@ def operations_schema() -> dict[str, Any]:
         },
         "required": ["operations"],
     }
+
+
+# ── Ảnh / tài liệu là kiến thức CHUNG của dự án hay ảnh của MỘT căn (19/10/2026, SRS-5.1zzzzzzz55) ──────────────────
+# Thay bộ dò từ khoá _looks_like_reference_doc ("phân lô", "sơ đồ", "mặt bằng"… trên bản đọc ảnh): đọc theo nghĩa bản đọc.
+TAI_LIEU_CHUNG_SYSTEM = """Dưới đây là BẢN ĐỌC (mô tả) một hoặc vài ảnh / tài liệu người rao vừa gửi. Cho biết đây có phải TÀI LIỆU
+CHUNG của dự án (bản đồ phân lô, mặt bằng tổng thể / tầng, sơ đồ, quy hoạch, quy cách bàn giao, phụ lục, tiện ích, phối cảnh,
+brochure) — thứ mọi căn trong dự án dùng chung — hay là ẢNH CỦA MỘT CĂN cụ thể (phòng, mặt tiền, giấy tờ của căn). Trả về JSON."""
+
+
+def tai_lieu_chung_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            "tai_lieu_chung": {"type": "boolean", "description": "true = tài liệu chung của dự án; false = ảnh của một căn."},
+        },
+        "required": ["tai_lieu_chung"],
+    }
+
