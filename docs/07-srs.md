@@ -6444,6 +6444,42 @@ máy trên DB còn chạy, lõi Python chưa gọi; đưa vào lõi ở mục k�
 
 **Kiểm.** Áp trên Postgres tạm (`bot/tests/sql/chay.sh`) — đạt, mọi bài SQL đạt; bước cuối migration raise nếu còn hàm nhắc tên bảng.
 
+### SRS-5.1zzzzzzz70 · Bốn việc phía người mua vào lõi Python: quan tâm căn, hẹn xem, câu hỏi chuyển chủ nhà / CTV, chốt kèo (19/10/2026)
+
+**Ca gốc.** Chủ dự án hỏi lõi Python còn thiếu gì so với bot TypeScript cũ; chốt "đưa 4 việc vào lõi python". Soát 19/10: nhánh mua
+của lõi chỉ hỏi nhu cầu (`BuyerLead`), không đưa căn thật nào cho khách, không tạo dòng `buyers`, không ghi `interests` / `viewings` /
+`info_requests` / `deals`. Máy phía sau trên DB vẫn còn (trigger giao chủ nhà / CTV / admin kèm hạn, nhắc, báo lại khách khi có trả lời,
+báo khách quan tâm khi căn chốt) nhưng không có dòng nào đổ vào. Lịch leo thang `ctv-sla-tick` đã tắt ở `20261018h` vì lý do đó.
+
+**Lớp lỗi.** Gỡ một bộ não (TypeScript) mà chưa chuyển hết việc nó GHI sang bộ não mới: máy phía sau còn sống nhưng không ai cấp
+dữ liệu, không lỗi nào kêu. **Chỗ cùng lớp.** Đã soát mọi bảng phía mua (`interests`, `viewings`, `info_requests`, `deals`, `buyers`)
+và đường trả lời ngược (chủ nhà trong chat, CTV / admin bằng "#mã: câu trả lời" — trước chỉ bot TypeScript đọc). **Còn:** lõi chưa tự
+nhắn khách khi có căn mới khớp nhu cầu (`bao_tin_moi_khop` cần `buyers.preferences` theo khuôn cũ — chưa đối chiếu khuôn); chưa đo trên
+Zalo thật.
+
+**Sửa.** `src/aioi/mua.py` (`KhoNguoiMua`, trộn vào `SupabaseConversationStore`):
+- Khách mua có dòng `buyers` (nhu cầu vào `preferences`).
+- Lượt lập thao tác và lời đáp nhận khối CĂN ĐANG CÓ: tối đa 3 căn đang hiện khớp loại, mua / thuê, khu vực, ngân sách
+  (`parse_vnd`), không có số nhà / mô tả gốc.
+- AI đọc việc khách (`mua`: mã căn, quan tâm, cụm giờ hẹn, câu hỏi chủ nhà, trích dẫn). Code kiểm cụm có nguyên trong tin, mã căn
+  có thật và đang hiện, rồi mới ghi:
+  - quan tâm → `rpc/mark_listing_interest(p_codes, p_buyer_id)`;
+  - hẹn xem → `viewings` (`proposed`, một lịch chờ mỗi khách / căn);
+  - câu hỏi → `info_requests` (`buyer_ask`, trùng câu đang chờ thì bỏ).
+  
+  Lời đáp nhận khối EM VỪA GHI để chỉ nói việc đã ghi thật.
+- Người rao thấy khối CÂU KHÁCH MUA ĐANG HỎI CHỦ NHÀ (nhớ 60 giây); AI chỉ `tra_loi_khach_hoi` (id + nguyên văn) → `answered`
+  → trigger `info_request_bao_lai_khach` báo khách.
+- Nhân viên (CTV đang hoạt động / admin theo Zalo ID) gõ "#mã: câu trả lời" (cú pháp hệ thống đặt trong tin nhắc, không đoán ý)
+  → trả lời câu chờ mới nhất của tin đó.
+- Tin chuyển `da_chot` → dòng `deals` (giá, % phí theo vai).
+
+Migration `20261019i_bat_lai_ctv_sla.sql` bật lại `ctv-sla-tick`.
+
+**Kiểm.** `tests/test_viec_mua.py` (8 ca: lệnh nhân viên, dòng căn không số nhà, khối căn + `buyers`, ba việc ghi đúng dòng, không ghi
+khi trích dẫn bịa / mã không có thật, người rao trả lời, nhân viên trả lời + người lạ gõ đúng cú pháp không được, chốt kèo) — đỏ khi bỏ
+phần nối trong engine (4 ca) hoặc trong kho (5 ca), đã chạy. pytest 369 đạt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

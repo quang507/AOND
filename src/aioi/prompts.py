@@ -1297,6 +1297,19 @@ PHÂN BIỆT Ý ĐỊNH KHÁCH ("user_intent") BẰNG TOÀN BỘ NGỮ CẢNH (S
 - "buy": Khách thể hiện rõ nhu cầu cá nhân ĐANG TÌM MUA hoặc TÌM THUÊ BĐS (vd: "tôi cần tìm mua căn nhà phố", "tìm thuê chung cư 2PN", "anh muốn mua đầu tư tầm 5 tỷ"). Nếu có thông tin nhu cầu thì trích xuất vào "buyer_lead".
 - "unknown": Chào hỏi chung, hỏi phí, hỏi công ty mà chưa rõ họ muốn bán hay mua.
 
+VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / thuê — 19/10/2026): đọc theo NGHĨA tin khách VỪA nhắn.
+- "ma_can": mã căn khách đang nói tới — chỉ lấy mã khách gõ (#ABCD1234, BDS-Q5-0012) hoặc mã trong danh sách CĂN ĐANG CÓ bot vừa
+  gửi khi khách chỉ rõ căn đó ("căn đầu", "căn 5 tỷ ở Q5"). Không chắc căn nào thì để trống.
+- "quan_tam": true khi khách tỏ ý thích / muốn tìm hiểu / muốn xem căn đó.
+- "hen_xem": nguyên văn cụm thời gian khách HẸN đi xem ("chiều mai 3h", "thứ 7 này"). Chỉ hỏi "xem được không" mà chưa nói giờ thì
+  để trống.
+- "hoi_chu_nha": nguyên văn câu khách hỏi về căn mà dòng của căn KHÔNG có câu trả lời (vd "sổ riêng hay chung", "chủ có bớt không").
+  Hỏi thứ dòng của căn đã có (giá, diện tích) thì để trống.
+- "trich_dan": nguyên văn cụm trong tin khách làm căn cứ cho các ô trên.
+
+TRẢ LỜI CÂU KHÁCH HỎI ("tra_loi_khach_hoi", chỉ khi có khối CÂU KHÁCH MUA ĐANG HỎI CHỦ NHÀ và người rao vừa trả lời đúng câu đó):
+"id" của câu, "tra_loi" là nguyên văn câu trả lời của người rao. Người rao nói chuyện khác thì để trống.
+
 QUY TẮC:
 - Người rao chỉ khai thông tin bình thường (chưa có gì đặc biệt) → MỘT op "update" target trống.
 - DUYỆT BẢN TIN / ĐỒNG Ý ĐĂNG TIN ("ừ em lên tin đi", "lên bài đi", "đăng đi em", "ok em đăng đi", "duyệt", "chuẩn rồi em", "được rồi em", "phí bao nhiêu đó em"):
@@ -1480,6 +1493,25 @@ def operations_schema() -> dict[str, Any]:
             "xac_nhan_xoa": {"type": "string", "enum": ["dong_y", "tu_choi"],
                              "description": "Chỉ khi bot vừa hỏi xác nhận ẩn / bỏ / chỉ giữ căn: khách đồng ý hay từ chối."},
             "xac_nhan_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách đồng ý / từ chối (bắt buộc khi có xac_nhan_xoa)."},
+            "mua": {
+                "type": "object",
+                "properties": {
+                    "ma_can": {"type": "array", "items": {"type": "string"}, "description": "Mã căn khách đang nói tới."},
+                    "quan_tam": {"type": "boolean", "description": "Khách tỏ ý quan tâm / muốn xem căn đó."},
+                    "hen_xem": {"type": "string", "description": "Nguyên văn cụm thời gian khách hẹn đi xem."},
+                    "hoi_chu_nha": {"type": "string", "description": "Nguyên văn câu khách hỏi mà dữ liệu căn không có."},
+                    "trich_dan": {"type": "string", "description": "Nguyên văn cụm trong tin khách làm căn cứ."},
+                },
+                "description": "Việc của khách mua (quan tâm, hẹn xem, hỏi chủ nhà) — xem VIỆC CỦA KHÁCH MUA.",
+            },
+            "tra_loi_khach_hoi": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "id câu khách hỏi (trong khối CÂU KHÁCH MUA ĐANG HỎI CHỦ NHÀ)."},
+                    "tra_loi": {"type": "string", "description": "Nguyên văn câu trả lời của người rao."},
+                },
+                "description": "Người rao vừa trả lời một câu khách mua hỏi.",
+            },
             "user_intent": {
                 "type": "string",
                 "enum": ["sell", "buy", "unknown"],
