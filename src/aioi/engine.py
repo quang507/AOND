@@ -2938,6 +2938,9 @@ class Engine:
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
         conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
         plan = self._provider.extract(system, src, operations_schema())
+        # SRS-5.1zzzzzzz77: bắn thử thấy ô khách vừa nói (vd "diện tích sàn tầm 170m vuông") có lượt không vào kế hoạch mà không dòng
+        # "Bỏ ô" nào — ghi TÊN ô lượt AI trả (không giá trị: log có thể chứa dữ liệu khách) để biết hụt ở AI hay ở code.
+        log.info("Kế hoạch: %s", [(o.get("op"), sorted((o.get("fields") or {}).keys())) for o in plan.get("operations") or []])
 
         # Sticky conversation attributes (never downgrade role to unknown).
         raw_role = plan.get("seller_role")

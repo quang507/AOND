@@ -45,10 +45,13 @@ q "with s as (insert into sellers (zalo_user_id, seller_type) values ('$BAN', 'c
           'Nhà phố 1 trệt 2 lầu, hẻm xe hơi (tin thử bắn tự động)' from s returning code, status" | jq -c '.'
 
 chat "$MUA" "Chào em, anh đang tìm mua nhà phố ở Quận 5, tài chính tầm 5 tỷ"
-co_ma=0; grep -q "$MA" <<<"$TRA" && co_ma=1
+# Nhiều lượt bắn thử chạy cùng lúc thì mỗi lượt có một căn thử cùng khu — bot kể căn của lượt khác cũng là đúng. Đạt khi bot đưa
+# ra ít nhất một mã căn; căn của chính lượt này được chọn ở lượt 2.
+co_ma=0; grep -qE "#?[0-9A-F]{8}" <<<"$TRA" && co_ma=1
 chat "$MUA" "Căn #$MA anh thấy được đó em. Chiều thứ 7 này 3h anh qua xem nhà được không, mà nhà này sổ hồng riêng không em?"
 sleep 2
 chat "$BAN" "Dạ căn đó sổ hồng riêng chính chủ nha em, công chứng ngay được"
+LOI_BAN="$TRA"
 sleep 2
 
 echo; echo "== soi DB"
@@ -66,7 +69,11 @@ jq '.[0]' <<<"$KQ"
 loi=0
 kiem() { if [ "$2" = 1 ]; then echo "ĐẠT  $1"; else echo "TRƯỢT $1"; loi=1; fi; }
 r=$(jq '.[0]' <<<"$KQ")
-kiem "lượt 1: bot đưa ra căn #$MA" "$co_ma"
+kiem "lượt 1: bot đưa ra căn (mã #…)" "$co_ma"
+# SRS-5.1zzzzzzz77: chủ nhà (có tin, chưa có hội thoại) trả lời câu khách mua → không bị hỏi lại loại nhà, không sinh tin rỗng.
+kiem "chủ nhà trả lời xong không bị hỏi loại nhà" "$(grep -qiE 'chung cư, nhà phố|nhà phố hay|hay lô đất|hay đất' <<<"$LOI_BAN" && echo 0 || echo 1)"
+SO_TIN=$(q "select count(*) as n from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = '$BAN'" | jq -r '.[0].n')
+kiem "người bán vẫn đúng 1 tin (không sinh tin rỗng) — có $SO_TIN" "$([ "$SO_TIN" = 1 ] && echo 1 || echo 0)"
 kiem "có dòng buyers cho khách mua" "$(jq '(.buyers|tonumber) >= 1 | if . then 1 else 0 end' <<<"$r")"
 kiem "ghi quan tâm căn (interests)" "$(jq '(.interests|tonumber) >= 1 | if . then 1 else 0 end' <<<"$r")"
 kiem "ghi hẹn xem (viewings)" "$(jq '(.viewings // []) | length >= 1 | if . then 1 else 0 end' <<<"$r")"
