@@ -6750,7 +6750,12 @@ sàn tầm 170m vuông" không vào kế hoạch lặp lại (3/8 lượt bắn 
 token ở SRS-5.1zzzzzzz76 không đúng ở lượt này); `ban-thu-ban.sh` in các dòng đó. `bot/tests/ban-thu-mua.sh`: đạt khi bot đưa ra một
 mã căn bất kỳ (chạy song song); thêm soát chủ nhà trả lời xong không bị hỏi loại nhà, người bán vẫn đúng 1 tin.
 
-**Kiểm.** `tests/test_trang_thai_va_nap_lai.py::test_load_nguoi_ban_co_tin_ma_chua_co_hoi_thoai` (đỏ trên code cũ, đã chạy), pytest 405
+**Lỗi do chính bản này (bắn thử 10:49, 2/6 lượt):** dòng log tên ô gọi `.get` trên mọi thao tác, model có lượt trả thao tác là CHUỖI
+→ 500 cả lượt chat (`AttributeError: 'str' object has no attribute 'get'`); chỗ áp dụng thao tác đã lọc `isinstance(op, dict)` từ trước,
+dòng log thì không. Sửa: log cùng lọc. Kiểm `tests/test_bang_chung_o_tin.py::test_ke_hoach_co_thao_tac_la_chuoi_khong_sap_luot` (đỏ trên
+code lỗi). Bài học: dòng chẩn đoán mới cũng phải đọc đầu ra model theo đúng cách code chính đọc.
+
+**Kiểm.** `tests/test_trang_thai_va_nap_lai.py::test_load_nguoi_ban_co_tin_ma_chua_co_hoi_thoai` (đỏ trên code cũ, đã chạy), pytest 406
 đạt. Model thật: `ban-thu-mua`.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu

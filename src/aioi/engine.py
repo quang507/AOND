@@ -2940,7 +2940,10 @@ class Engine:
         plan = self._provider.extract(system, src, operations_schema())
         # SRS-5.1zzzzzzz77: bắn thử thấy ô khách vừa nói (vd "diện tích sàn tầm 170m vuông") có lượt không vào kế hoạch mà không dòng
         # "Bỏ ô" nào — ghi TÊN ô lượt AI trả (không giá trị: log có thể chứa dữ liệu khách) để biết hụt ở AI hay ở code.
-        log.info("Kế hoạch: %s", [(o.get("op"), sorted((o.get("fields") or {}).keys())) for o in plan.get("operations") or []])
+        # Model có lúc trả thao tác không phải object (chuỗi) — chỗ áp dụng bỏ qua chúng (`isinstance(op, dict)`), log cũng vậy; bản đầu
+        # của dòng log này gọi .get trên chuỗi → 500 cả lượt chat (bắn thử 19/10 10:49).
+        log.info("Kế hoạch: %s", [(o.get("op"), sorted(o["fields"].keys()) if isinstance(o.get("fields"), dict) else o.get("fields"))
+                                   if isinstance(o, dict) else type(o).__name__ for o in plan.get("operations") or []])
 
         # Sticky conversation attributes (never downgrade role to unknown).
         raw_role = plan.get("seller_role")
