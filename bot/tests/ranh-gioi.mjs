@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 // Ranh giới BÓC TÁCH ⟂ AI — kiểm tĩnh, không mạng, không DB.
 //
-// Vì sao cần: hôm nay ranh giới này ĐÚNG nhưng chỉ đúng do may. `boc_thong_so()`
-// nằm trong SQL nên không thể gọi model được, còn `regexProfileFallback()` thì
-// nằm NGAY TRONG chat-reply/index.ts, cách chỗ gọi model hơn hai nghìn dòng.
-// Không có gì ngăn lượt sửa sau nối hai thứ lại, và khi đã nối thì mỗi tin
-// khách là một lượt đốt tiền model kể cả câu regex bóc được.
+// Vì sao cần: luật tiền / che liên hệ / nhãn trong `_shared/extraction/` được web nhập thẳng (`lib/`), nên phải là
+// hàm thuần. 19/10/2026 (SRS-5.1zzzzzzz67): chat-reply TypeScript và `_shared/ai/` đã gỡ (bộ não là lõi Python
+// `src/aioi/`) — luật AI còn soát `_shared/claude.ts` của ba edge function còn lại.
 //
 // Hai luật, ngược chiều nhau:
 //
@@ -32,12 +30,7 @@ const HAM = join(GOC, "bot", "supabase", "functions");
 
 const LUAT_BOC_TACH = {
   ten: "BÓC TÁCH không chạm model, không chạm DB",
-  // Thêm file vào đây khi rút thêm mã bóc tách ra khỏi chat-reply. Thư mục
-  // _shared/extraction/ (nếu dựng sau này) tự động thuộc luật này.
-  thuoc: (p) =>
-    p === "_shared/thong_so.ts" ||
-    p === "_shared/dia_ban.ts" ||
-    p.startsWith("_shared/extraction/"),
+  thuoc: (p) => p.startsWith("_shared/extraction/"),
   cam: [
     [/@anthropic-ai\/sdk/, "import SDK Anthropic"],
     [/from\s+["'][^"']*\/claude\.ts["']/, "import _shared/claude.ts"],
@@ -58,7 +51,7 @@ const RPC_DUOC_PHEP = ["get_secret", "log_loi", "cong_token", "beat"];
 
 const LUAT_AI = {
   ten: "AI không ghi bảng nghiệp vụ",
-  thuoc: (p) => p === "_shared/claude.ts" || p.startsWith("_shared/ai/"),
+  thuoc: (p) => p === "_shared/claude.ts",
   cam: [
     [/\.from\s*\(/, "truy vấn bảng trực tiếp — đi qua tầng db"],
     [/\.(insert|update|upsert|delete)\s*\(/, "ghi bảng trực tiếp"],
@@ -100,23 +93,23 @@ export function soat(duongDan, noiDung, luat) {
 const CA = [
   { ten: "bóc tách import SDK", luat: LUAT_BOC_TACH, p: "_shared/extraction/gia.ts",
     ma: `import Anthropic from "npm:@anthropic-ai/sdk";`, phaiBat: true },
-  { ten: "bóc tách import claude.ts", luat: LUAT_BOC_TACH, p: "_shared/thong_so.ts",
+  { ten: "bóc tách import claude.ts", luat: LUAT_BOC_TACH, p: "_shared/extraction/luat-tien.ts",
     ma: `import { goiModel } from "./claude.ts";`, phaiBat: true },
-  { ten: "bóc tách gọi RPC", luat: LUAT_BOC_TACH, p: "_shared/dia_ban.ts",
+  { ten: "bóc tách gọi RPC", luat: LUAT_BOC_TACH, p: "_shared/extraction/nhan.ts",
     ma: `const { data } = await db.rpc("boc_thong_so", { p: s });`, phaiBat: true },
-  { ten: "bóc tách hàm thuần — hợp lệ", luat: LUAT_BOC_TACH, p: "_shared/thong_so.ts",
+  { ten: "bóc tách hàm thuần — hợp lệ", luat: LUAT_BOC_TACH, p: "_shared/extraction/nhan.ts",
     ma: `export function thongSoNgan(l) { return l.frontage_m + "x" + l.length_m; }`, phaiBat: false },
   { ten: "bóc tách nhắc anthropic TRONG chú thích — hợp lệ", luat: LUAT_BOC_TACH,
-    p: "_shared/thong_so.ts",
+    p: "_shared/extraction/luat-tien.ts",
     ma: `// KHÔNG được import @anthropic-ai/sdk ở đây, xem bot/tests/ranh-gioi.mjs`,
     phaiBat: false },
   { ten: "AI ghi bảng", luat: LUAT_AI, p: "_shared/claude.ts",
     ma: `await db.from("listings").insert({ code });`, phaiBat: true },
-  { ten: "AI gọi RPC lạ", luat: LUAT_AI, p: "_shared/ai/output.ts",
+  { ten: "AI gọi RPC lạ", luat: LUAT_AI, p: "_shared/claude.ts",
     ma: `await db.rpc("tao_tin_rao", { p_code: code });`, phaiBat: true },
   { ten: "AI gọi log_loi — hợp lệ", luat: LUAT_AI, p: "_shared/claude.ts",
     ma: `await db.rpc("log_loi", { p_source: source, p_detail: text });`, phaiBat: false },
-  { ten: "file ngoài phạm vi luật", luat: LUAT_AI, p: "chat-reply/index.ts",
+  { ten: "file ngoài phạm vi luật", luat: LUAT_AI, p: "escalation-feed/index.ts",
     ma: `await db.from("listings").insert({ code });`, phaiBat: false },
 ];
 

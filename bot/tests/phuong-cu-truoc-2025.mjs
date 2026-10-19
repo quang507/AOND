@@ -8,7 +8,7 @@
 //   đổi phường cũ qua `rpc/chuan_dia_ban`, kiểm ở bot/tests/sql/chuan-dia-ban.sql.)
 // Ca gốc bắn production 09/10: "MTKD đường Võ Văn Tần phường 6 quận 3 cũ" → cột phường trống, bot hỏi lại.
 import { readFileSync } from "node:fs";
-import { napPhuongCuThat, napPhuongThat } from "./e2e/mock-supabase.mjs";
+import { napPhuongCuThat, napPhuongThat } from "./lib/phuong-that.mjs";
 import { tachDonViCu, tachPhuongCuTruoc2025 } from "../../scripts/lib/don-vi-cu.mjs";
 import { noiDungDsPhuong } from "../../scripts/sinh-ds-phuong.mjs";
 

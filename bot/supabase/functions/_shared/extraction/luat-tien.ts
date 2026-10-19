@@ -26,88 +26,12 @@
 export const TIEN_KD = "ty|ti|toi(?!\\s*\\d)|trieu|tr(?![a-z])|cu";
 
 /**
- * Đơn vị tiền trên chuỗi CÒN DẤU. "tỏi" có dấu thì luôn là tỷ — người gõ đủ dấu
- * đã tự phân biệt "tỏi" với "tới" giùm mình, khỏi đoán theo con số đứng sau.
- */
-export const TIEN_CD = "tỷ|tỉ|tỏi|triệu|ty|ti|toi(?!\\s*\\d)|trieu|tr(?![a-zA-ZÀ-ỹ])|củ|cu";
-
-/** Đơn vị vừa khớp là họ tỷ (1e9) hay họ triệu (1e6). */
-export function laDonViTy(u: string): boolean {
-  return /^(ty|ti|toi|tỷ|tỉ|tỏi)$/i.test(u.trim());
-}
-
-/** Câu (ĐÃ BỎ DẤU) có nhắc một lượng tiền không — số + đơn vị. */
-export const CO_TIEN_KD = new RegExp(`\\d\\s*(?:${TIEN_KD})(?![a-z])`);
-
-/**
- * Lóng "t" KẸP giữa hai số: "9t5" = 9,5 tỷ, "4t2" = 4,2 tỷ (lượt bắn 42 ca
- * 11/09/2026: hai câu này rơi giá vì cửa bắt giá chỉ biết `TIEN_CD`). Chỉ nhận
- * khi sau số thứ hai KHÔNG có chữ/số — "1t2l" là 1 trệt 2 lầu, không phải tiền.
- * Dùng được cho cả chuỗi còn dấu lẫn đã bỏ dấu.
- */
-export const TIEN_T_KEP = "\\d+(?:[.,]\\d+)?\\s*t\\s*\\d{1,3}(?![a-zA-ZÀ-ỹ0-9])";
-
-/**
  * Giá MỖI m² ("75 triệu/m2", "120tr một m2", "80 triệu mỗi mét"). Cả hai bản
  * luật tiền trả null cho chuỗi này: 75 triệu/m2 mà đọc thành 75 triệu thì căn
- * 50m2 lên web giá 75 triệu (lượt bắn 42 ca 11/09/2026). Muốn ra giá cả căn thì
- * tầng trên nhân với diện tích (`giaTheoM2`).
+ * 50m2 lên web giá 75 triệu (lượt bắn 42 ca 11/09/2026).
  */
 export const GIA_THEO_M2 =
   /(?:tỷ|tỉ|tỏi|triệu|trieu|tr|củ|cu|ty|ti)\s*(?:\/|mỗi|moi|một|mot|1)\s*(?:m2|m²|mét|met|m(?![\p{L}\p{N}]))/u;
-
-/** "75 triệu/m2" → 75_000_000 (giá một m²); null nếu chuỗi không phải giá mỗi m². */
-export function giaTheoM2(p: string | null | undefined): number | null {
-  if (!p) return null;
-  const t = p.toLowerCase();
-  const m = GIA_THEO_M2.exec(t);
-  if (!m) return null;
-  return docTien(t.slice(0, m.index + m[0].length).replace(/\s*(?:\/|mỗi|moi|một|mot|1)\s*(?:m2|m²|mét|met|m)$/u, ""));
-}
-
-/**
- * Giá THUÊ nói kèm kỳ hạn: "18 triệu một tháng" (tầng trên đã đổi "một" → "1")
- * → "18 triệu/tháng". Trước bản này bot đọc lại "giá 18 triệu 1 tháng" và cột
- * ghi "18 triệu 1" (13/09/2026). Chỉ họ triệu — "1 tỷ 1 năm" để nguyên. Cùng ý
- * với SQL `chuan_hoa_gia_raw` (20260913a).
- */
-/**
- * Đơn vị tiền gõ không dấu → có dấu, CHỈ để hiển thị (22/09/2026: 🤖 in "giá 4 ty 3" nguyên chữ khách
- * gõ; câu trả lời "giá mình đang rao là 4 ty 3"). `price_raw` trong DB giữ nguyên chữ khách.
- */
-export function donViGiaDep(s: string): string {
-  // 27/09/2026 (bắn thật lx-36): "8.000.000.000" in nguyên dãy số → "8 tỷ". Chỉ số chẵn triệu (vndThanhChu làm tròn triệu).
-  if (/^\s*(?:[1-9]\d{0,2}(?:[.,]\d{3}){2,}|[1-9]\d{6,12})\s*(?:đ|d|vnd|đồng|dong)?\s*$/iu.test(s)) {
-    const v = docTien(s);
-    if (v != null && v % 1e6 === 0) return vndThanhChu(v);
-  }
-  // 22/09/2026 (kịch bản C): "7ty2" — đơn vị dính số hai đầu, `\b` không thấy ("7ty2" in nguyên). Không dùng
-  // `\b`: sau đơn vị không được là chữ; số dính ngay sau thì chèn khoảng trắng. "toi" chỉ là tỏi khi sau nó
-  // KHÔNG có số ("5 toi 6 ty" là TỚI — cùng luật `TIEN_KD`).
-  // SRS-5.1zzzzzg (test Zalo 12/10: "16 tỏi" → bản nháp và tiêu đề in "giá 16 tỏi"): bảng đơn vị ở đây từng chép tay riêng, thiếu
-  // "tỏi" có dấu và "củ" mà `docTien` / `TIEN_CD` đều đọc. Đủ MỌI đơn vị của `TIEN_CD` — `bot/tests/don-vi-hien-thi.mjs` đỏ khi lệch.
-  return s
-    .replace(/(\d)\s*(?:ty|ti|tỏi|tị|tỹ)(?![\p{L}])\s*(?=\d)/giu, "$1 tỷ ")
-    .replace(/(\d)\s*(?:ty|ti|tỏi|tị|tỹ|toi(?!\s*\d))(?![\p{L}\p{N}])/giu, "$1 tỷ")
-    .replace(/(\d)\s*(?:trieu|tr|củ|cu)(?![\p{L}])\s*(?=\d)/giu, "$1 triệu ")
-    .replace(/(\d)\s*(?:trieu|tr|củ|cu)(?![\p{L}\p{N}])/giu, "$1 triệu")
-    .replace(/(?<![\p{L}])tỉ(?![\p{L}])/gu, "tỷ");
-}
-
-export function gonGiaKyHan(p: string): string {
-  return p.replace(
-    /((?:triệu|trieu|tr|củ|cu)(?![\p{L}])(?:\s*\d{1,3}(?!\d))?)\s*(?:\/|(?<![\p{L}\d])(?:1|một|mot|mỗi|moi)(?![\p{L}\d]))\s*(tháng|thang|năm|nam)(?![\p{L}])/iu,
-    (_m, dau: string, ky: string) => `${dau}/${/^th/i.test(ky) ? "tháng" : "năm"}`,
-  );
-}
-
-/** 3_750_000_000 → "3 tỷ 750 triệu"; 850_000_000 → "850 triệu". Đọc lại bằng `docTien` ra đúng số. */
-export function vndThanhChu(v: number): string {
-  const ty = Math.floor(v / 1e9);
-  const trieu = Math.round((v - ty * 1e9) / 1e6);
-  if (!ty) return `${trieu} triệu`;
-  return trieu ? `${ty} tỷ ${trieu} triệu` : `${ty} tỷ`;
-}
 
 /**
  * FR-241 (28/09/2026, bắn thật lx-72): "giá chín tỷ rưỡi" rơi giá — số viết bằng CHỮ. Đổi chữ số thành chữ số
@@ -175,8 +99,8 @@ export function docTien(p: string | null | undefined): number | null {
   t = t.replace(/([0-9])\s*t[yi]\s*([0-9])/g, "$1 _ty $2");
   // "3tr5" = 3,5 triệu (lượt bắn 42 ca 11/09: phòng trọ "3tr5 một tháng" rơi giá).
   t = t.replace(/([0-9])\s*tr\s*([0-9])/g, "$1 _trieu $2");
-  // 13/09/2026 (review code): "1t2l" / "1t 2l" là 1 trệt 2 lầu — `TIEN_T_KEP` ở
-  // trên đã chặn, còn hàm này thì không, đọc ra 1,2 tỷ. Số sau "t" mà dính chữ,
+  // 13/09/2026 (review code): "1t2l" / "1t 2l" là 1 trệt 2 lầu — hàm này từng
+  // đọc ra 1,2 tỷ. Số sau "t" mà dính chữ,
   // hoặc "t" trơ trọi mà sau là "<số> l/lầu" thì không phải tiền. SQL `parse_vnd`
   // cùng luật (20260913b), ca ở `bot/tests/luat/tien.json`.
   t = t.replace(/([0-9])\s*t\s*([0-9]{1,3})(?![\p{L}\p{N}])/gu, "$1 _ty $2");

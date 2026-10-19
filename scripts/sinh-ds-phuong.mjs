@@ -9,7 +9,7 @@
 //
 // Thêm dòng phường cũ = sửa migration dữ liệu (file mới), rồi chạy lệnh này. KHÔNG sửa tay ds-phuong.ts.
 import { readFileSync, writeFileSync } from "node:fs";
-import { napPhuongCuThat, napPhuongThat } from "../bot/tests/e2e/mock-supabase.mjs";
+import { napPhuongCuThat, napPhuongThat } from "../bot/tests/lib/phuong-that.mjs";
 
 const DICH = new URL("../bot/supabase/functions/_shared/extraction/ds-phuong.ts", import.meta.url);
 

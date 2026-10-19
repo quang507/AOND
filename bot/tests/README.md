@@ -10,11 +10,11 @@ Các bộ cũ (`e2e/run.mjs`, `webhook.mjs`, `giong/`, `do-boc/`, `mo-phong/`, `
 Đừng gõ lệnh rời. Người và CI dùng chung script trong `package.json`.
 
 ```bash
-bun run kiem       # cổng trước mọi commit: kieu (tsc) → kieu:bot (deno) → build → test:bot → test:rohang → test:masterdb → truyvet
+bun run kiem       # cổng trước mọi commit: kieu (tsc) → kieu:bot (deno) → build → test:bot → test:rohang → truyvet
 bun run test:sql   # trigger / hàm SQL thật trên Postgres tạm (bot/tests/sql/chay.sh)
 bun run test:sec   # TS-SEC thật, DB thật — KHÔNG nằm trong `kiem`, cần Internet
 bun run test:py    # lõi Python
 ```
 
-`test:bot` liệt kê từng file trong `package.json`. `e2e/mock-supabase.mjs` còn sống: vài bài nạp bảng phường / phường cũ
-thật qua nó. Hỏng thì thoát với mã khác 0. **Thoát 2 của `test:sec` / `test:sql` nghĩa là "chưa kiểm được", không phải "đạt".**
+`test:bot` liệt kê từng file trong `package.json`. Bảng phường / phường cũ thật cho bài kiểm nạp qua `lib/phuong-that.mjs`
+(mock e2e TypeScript gỡ 19/10/2026). Hỏng thì thoát với mã khác 0. **Thoát 2 của `test:sec` / `test:sql` nghĩa là "chưa kiểm được", không phải "đạt".**

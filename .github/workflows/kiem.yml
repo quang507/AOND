@@ -97,8 +97,9 @@ jobs:
       - name: Không có ID gãy, số đếm khớp README, không rò PII
         run: bun run truyvet
 
-  # Hai bài tự kiểm cho script GHI FILE, chạy trên máy chủ giả trong bộ nhớ —
+  # Bài tự kiểm cho script GHI FILE, chạy trên máy chủ giả trong bộ nhớ —
   # không chạm DB thật, không chạm bucket thật, không cần khoá.
+  # 19/10/2026: bài up-masterdb gỡ cùng script (masterDB/ không còn); tên job giữ nguyên vì có thể là required check.
   rohang:
     name: Rổ hàng + masterDB — tự kiểm trên máy chủ giả
     runs-on: ubuntu-latest
@@ -111,11 +112,6 @@ jobs:
       # repo public).
       - name: Bản xuất rổ hàng không ghi vào repo, không nuốt dòng thiếu
         run: bun run test:rohang
-      # `up-masterdb.mjs` đẩy bản gốc lên bucket, và cái phải chứng minh không
-      # phải "đẩy được" mà là "biết khi nào mình đẩy hụt" — bucket trả 200 mà
-      # không cất thì vòng lặp vẫn báo xong.
-      - name: Đẩy masterDB biết khi nào mình đẩy hụt
-        run: bun run test:masterdb
 
   # ── CỔNG THỨ 7: REPO ↔ DB CÓ CÙNG DANH SÁCH MIGRATION KHÔNG ────────────────
   # Chủ dự án 10/09/2026: "thêm một cổng CI so danh sách migration trên database

@@ -4,7 +4,7 @@
 // `listing_media` (migration 20260904g): admin ghi bucket `listing-public`
 // mọi đường dẫn; người bán chỉ ghi được `<uuid tin của mình>/…`.
 //
-// Đường đi giống `scripts/up-anh.mjs` (FR-165): UP FILE TRƯỚC, GHI DÒNG SAU;
+// Đường đi giống script `up-anh.mjs` cũ (FR-165; gỡ 19/10/2026 cùng masterDB/): UP FILE TRƯỚC, GHI DÒNG SAU;
 // ghi dòng hỏng thì xoá file vừa up để không để lại mồ côi. Tên file trên kho
 // là UUID của chính dòng media, sinh trước khi up. Ảnh bìa để DB tự chọn
 // (trigger `trg_listing_media_bia`) — không gửi `is_cover`.

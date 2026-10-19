@@ -124,7 +124,7 @@ Từ 24/08/2026 (quyết định chủ dự án) code nằm **trong repo này**,
   từ root, package manager **Bun** (`bun.lock`). Dữ liệu đọc Supabase bằng
   publishable key qua RLS; mô tả listing luôn qua `sanitizeDescription()`
   (lọc SĐT — FR-104) trước khi render.
-- **Bot**: bộ não là lõi Python `src/aioi/` (xem khung trên); `bot/` còn bridge Zalo (`bot/bridge-zca/`), migration + schema, và 3 edge function phụ (xem `bot/README.md`).
+- **Bot**: bộ não là lõi Python `src/aioi/` (xem khung trên); `bot/` còn bridge Zalo (`bot/bridge-zca/`), migration + schema, và 3 edge function phụ (`bot/README.md` không có trong repo AOND — bản cũ ở repo Nhadat.cc).
 - **Script vận hành** ở `scripts/` — chạy trên máy local, không deploy.
   `up-anh.mjs` đẩy ảnh thật lên bucket `listing-public` theo UUID của tin và
   ghi kèm dòng `listing_media` (FR-165; lối cũ theo mã tin của FR-148 đã bỏ);
@@ -211,7 +211,7 @@ Từ 24/08/2026 (quyết định chủ dự án) code nằm **trong repo này**,
   ồn, rồi cái thứ 53 — trôi THẬT — chìm lẫn vào đó. **Thêm dòng vào
   DA-DOI-CHIEU.json là một quyết định, không phải cách làm cổng xanh.**
   Dựng lại từ số không: chỉ nạp `schema.sql` (+ ba file schema `so`) theo
-  `bot/README.md §Dựng lại từ số không` — KHÔNG replay thư mục migration. Câu cũ ở
+  `scripts/dung-lai-db.mjs` (đầu file; chạy qua `apply-migration.yml` ô `dung_lai`) — KHÔNG replay thư mục migration. Câu cũ ở
   đây ("nạp schema.sql rồi áp migration từ 20260902") lệch với README; soát 13/09
   còn thấy 34 hàm trên DB có thân KHÁC file migration cuối cùng định nghĩa chúng
   (bản áp qua MCP không giống file), nên replay là dựng ra hàm cũ.
@@ -237,7 +237,7 @@ Từ 24/08/2026 (quyết định chủ dự án) code nằm **trong repo này**,
 
 **08/10/2026: project production cũ `tbcdpupiarkuxtntmosl` bị xoá nhầm** (gói Free — Supabase trả lời không khôi phục được;
 dữ liệu cũ toàn là dữ liệu thử). Project mới **`rqxmmqmctpklqcmbfxuj`** (Tokyo) dựng lại bằng `scripts/dung-lai-db.mjs` qua
-`apply-migration.yml` ô `dung_lai` — quy trình và những gì lượt diễn tập bắt được ở `bot/README.md §Dựng lại từ số không`.
+`apply-migration.yml` ô `dung_lai` — quy trình và những gì lượt diễn tập bắt được ở `scripts/dung-lai-db.mjs` (đầu file; chạy qua `apply-migration.yml` ô `dung_lai`).
 Mọi chỗ ghi mã project / khoá publishable trong repo đã đổi sang project mới (migration cũ giữ nguyên làm lịch sử).
 
 **Migration ghi THAY ĐỔI, `schema.sql` mới dựng lại được** (soát lại 07/09/2026).
@@ -249,7 +249,7 @@ vĩnh viễn (OPEN-46). Không ai thấy suốt hai tuần vì không có gì đ
 bên. Nay: thay đổi schema vẫn BẮT BUỘC đi qua một file trong
 `bot/supabase/migrations/`, `soat-migration.mjs` chặn trôi thêm, và
 `bot/supabase/schema.sql` là lưới an toàn để dựng lại từ số không (quy trình
-đầy đủ ở `bot/README.md §Dựng lại từ số không` — chỉ ra DB rỗng, vì không
+đầy đủ ở `scripts/dung-lai-db.mjs` (đầu file; chạy qua `apply-migration.yml` ô `dung_lai`) — chỉ ra DB rỗng, vì không
 còn sao lưu dữ liệu).
 
 **Vết đó suýt lặp lại 07/09.** `20260907a_sort_order_la_so_thu_tu` áp lên

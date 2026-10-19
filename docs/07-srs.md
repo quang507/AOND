@@ -6375,6 +6375,32 @@ Bài SQL `nguong-hem.sql` bỏ nhánh `ghi_fact_listing`, `giao-lo.sql` bỏ ca 
 → 15 điểm khung, `van_ban_nhung` có lý do bán và không lặp địa chỉ, bảng cũ không còn — đã chạy trên Postgres tạm: đạt khi áp migration,
 đỏ khi không áp. `scripts/xuat-ro-hang.tu-kiem.mjs` ca 2b (đỏ trên script cũ — đã chạy).
 
+### SRS-5.1zzzzzzz67 · Dọn repo: mock e2e TypeScript, `_shared` chết, script masterDB, tham chiếu gãy (19/10/2026)
+
+**Ca gốc.** Lượt dọn thừa phần repo sau SRS-5.1zzzzzzz66 (chủ dự án: "làm hết đi"). Soát: mỗi file / hàm export còn ai nhập không.
+
+**Lớp lỗi.** Gỡ một hệ (bot TypeScript, masterDB) mà để lại đồ phụ của nó: bài kiểm vẫn xanh nhưng kiểm thứ không còn chạy, tài liệu
+trỏ tới file không tồn tại. **Chỗ cùng lớp (đã gỡ / sửa).**
+- `bot/tests/e2e/mock-supabase.mjs` (979 dòng, Supabase giả cho chat-reply): chỉ còn hai hàm nạp phường thật được dùng → tách ra
+  `bot/tests/lib/phuong-that.mjs`; `phuong-cu-truoc-2025.mjs`, `scripts/sinh-ds-phuong.mjs` nhập từ đó. Gỡ `o-theo-loai.mjs`
+  (đối chiếu form admin với bộ câu bot TypeScript hỏi — bộ câu đó không còn ai hỏi).
+- `_shared/extraction/luat-tien.ts`: gỡ `TIEN_CD`, `laDonViTy`, `CO_TIEN_KD`, `TIEN_T_KEP`, `giaTheoM2`, `donViGiaDep`,
+  `gonGiaKyHan`, `vndThanhChu` (không file nào nhập) + bài `don-vi-hien-thi.mjs`. Giữ `docTien` / `TIEN_KD` / `SO_CHU` (web nhập,
+  `doi-chieu-tien.mjs` đối chiếu SQL).
+- `_shared/extraction/tien-ich.ts`: chỉ giữ `LoaiTienIch`, `kdTen` (`geocode.ts` dùng); gỡ phần đọc câu khách mua + mục 1 của
+  `tien-ich.mjs`.
+- `ranh-gioi.mjs`: luật bóc tách soát `_shared/extraction/`, luật AI soát `_shared/claude.ts` (đường dẫn cũ `thong_so.ts`,
+  `dia_ban.ts`, `_shared/ai/` đã không còn).
+- `scripts/up-anh.mjs`, `up-masterdb.mjs` (+ tự kiểm, `test:masterdb`, bước CI — tên job `rohang` giữ vì có thể là required
+  check): nguồn `masterDB/` đã xoá 09/09.
+- Tham chiếu `bot/README.md` (không có trong repo AOND): CLAUDE.md, `docs/11`, `scripts/dung-lai-db.mjs`, `deploy-bot.yml`.
+- `.env.example` thêm `GEMINI_API_KEY` (tra địa danh theo nghĩa), `GOOGLE_API_KEY` (thư mục Drive).
+**Còn (không gỡ, cần chủ dự án quyết):** `design-system/aioi-nhadat/MASTER.md` (sinh 17/10, nguồn thiết kế thứ hai cạnh `docs/06` +
+`app/globals.css`); `scripts/crawl_mogi_projects.py` (công cụ tay nạp kho dự án); `sharp` trong devDependencies (chỉ script đã gỡ
+dùng — đổi phải sinh lại `bun.lock`).
+
+**Kiểm.** `bun run kiem`, `bun run test:py`; `ranh-gioi.mjs` vẫn đếm file thật > 0 (luật không soát rỗng).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
