@@ -300,7 +300,7 @@ class InMemoryProjectStore(ProjectStore):
 class SqliteProjectStore(ProjectStore):
     """Persistent ProjectStore — projects survive restarts and are reused for later
     listings (same interface as InMemoryProjectStore; the first piece of the Store layer).
-    SQLite locally; a SharePoint/Postgres backend can replace it behind ProjectStore."""
+    Chỉ còn cho chạy thử trên máy và làm nguồn chép một lần sang SupabaseProjectStore (SRS-5.1zzzzzzz56)."""
 
     def __init__(self, path: str = "aioi.db"):
         self._conn = sqlite3.connect(path, check_same_thread=False)
@@ -378,3 +378,82 @@ class SqliteProjectStore(ProjectStore):
     def all(self) -> list[Project]:
         rows = self._conn.execute(f"SELECT {self._COLS} FROM projects")
         return [self._row_to_project(r) for r in rows]
+
+
+def project_to_dict(project: Project) -> dict:
+    """Project → JSON (cùng khuôn với cột SQLite cũ) — dùng chung cho kho Supabase và lượt chép từ SQLite."""
+    return {
+        "name": project.name, "amenities": project.amenities, "attributes": project.attributes,
+        "unit_types": [{"name": u.name, "specs": u.specs, "votes": u.votes, "media": u.media} for u in project.unit_types],
+        "votes": project.votes, "docs": project.docs,
+        "units": [{"ma_so_can": u.ma_so_can, "attrs": u.attrs, "votes": u.votes, "loai_hinh": u.loai_hinh}
+                  for u in project.units],
+    }
+
+
+def project_from_dict(d: dict) -> Project:
+    return Project(
+        d.get("name", ""), d.get("amenities") or [], d.get("attributes") or {},
+        [UnitType(u["name"], u.get("specs", {}), u.get("votes", {}), u.get("media", [])) for u in d.get("unit_types") or []],
+        d.get("votes") or {}, d.get("docs") or [],
+        [Unit(u["ma_so_can"], u.get("attrs", {}), u.get("votes", {}), u.get("loai_hinh", "")) for u in d.get("units") or []],
+    )
+
+
+class SupabaseProjectStore(ProjectStore):
+    """Kiến thức dự án lõi Python học được (tài liệu .md đã che thông tin cá nhân, mẫu nhà, rổ căn, phiếu bầu) — bảng
+    `du_an_kien_thuc` trên Supabase (20261019a, SRS-5.1zzzzzzz56). Trước 19/10 nằm trong SQLite trên VPS: không ai ngoài VPS
+    thấy, VPS hỏng là mất. `rpc(method, endpoint, body)` để test thay lời gọi mạng."""
+
+    def __init__(self, supabase_url: str, service_key: str, rpc=None):
+        self._goc = supabase_url.rstrip("/") + "/rest/v1/"
+        self._key = service_key
+        self._rpc = rpc or self._goi_that
+
+    def _goi_that(self, method: str, endpoint: str, body=None):
+        import urllib.request
+        req = urllib.request.Request(
+            self._goc + endpoint, method=method,
+            data=json.dumps(body, ensure_ascii=False).encode("utf-8") if body is not None else None,
+            headers={"apikey": self._key, "Authorization": f"Bearer {self._key}", "Content-Type": "application/json",
+                     "Prefer": "resolution=merge-duplicates,return=minimal"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            raw = r.read()
+        return json.loads(raw.decode("utf-8")) if raw else None
+
+    def save(self, project: Project) -> None:
+        from datetime import datetime, timezone
+        self._rpc("POST", "du_an_kien_thuc?on_conflict=khoa", {
+            "khoa": normalize_project_name(project.name), "ten": project.name,
+            "du_lieu": project_to_dict(project), "cap_nhat": datetime.now(timezone.utc).isoformat()})
+
+    def _khoa(self) -> list[str]:
+        return [r["khoa"] for r in (self._rpc("GET", "du_an_kien_thuc?select=khoa") or [])]
+
+    def get(self, name: str | None) -> Project | None:
+        if not name:
+            return None
+        key = find_matching_key(normalize_project_name(name), self._khoa())
+        if key is None:
+            return None
+        rows = self._rpc("GET", f"du_an_kien_thuc?select=du_lieu&khoa=eq.{_q(key)}") or []
+        return project_from_dict(rows[0]["du_lieu"]) if rows else None
+
+    def all(self) -> list[Project]:
+        return [project_from_dict(r["du_lieu"]) for r in (self._rpc("GET", "du_an_kien_thuc?select=du_lieu") or [])]
+
+    def chep_tu(self, cu: ProjectStore) -> int:
+        """Một lần: kho Supabase còn rỗng mà SQLite cũ có dự án → chép sang, không mất kiến thức đã học. Trả số dự án đã chép."""
+        if self._khoa():
+            return 0
+        n = 0
+        for p in cu.all():
+            self.save(p)
+            n += 1
+        return n
+
+
+def _q(s: str) -> str:
+    import urllib.parse
+    return urllib.parse.quote(s, safe="")
+

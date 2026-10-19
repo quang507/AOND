@@ -364,24 +364,11 @@ class Property:
         # SRS-5.1zzzzzzz52). Bản 16/10 cho một con số đứng thay cả hai → nhà phố ra bản nháp khi chưa biết diện tích nhà.
         return bool(self.fields.get(name))
 
-    def secondary_missing_fields(self) -> list[str]:
-        """Fields to ask AFTER core fields are completed (Làm rõ rồi thì hỏi thêm gì)."""
-        have = set(self.fields.keys())
-        sec = SECONDARY_FIELDS.get(self.group, [])
-        return [f for f in sec if f not in have]
-
     def next_question_field(self) -> str | None:
         """Determines the next targeted core field to ask."""
         missing = self.missing_fields()
         if missing:
             return missing[0]
-        return None
-
-    def next_secondary_field(self) -> str | None:
-        """Determines the next secondary question (Thế chấp, Thương lượng, Hình ảnh) once core is done."""
-        sec = self.secondary_missing_fields()
-        if sec:
-            return sec[0]
         return None
 
     def update(self, captured: dict[str, str]) -> list[str]:

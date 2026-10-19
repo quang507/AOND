@@ -3,7 +3,7 @@ from aioi.engine import Engine, SqliteConversationStore
 from aioi.fetch import FetchedMedia, FetchError
 from aioi.llm.mock import MockProvider
 from aioi.projects import Project, UnitType
-from aioi.sharepoint import MediaRef
+from aioi.kho_tep import MediaRef
 
 
 def _engine(fetcher=None, resolver=None, provider=None, folder_namer=None, media_store=None,
@@ -704,7 +704,7 @@ class _FakeMediaStore:
         self.moves = []  # (old_folder, new_folder)
         self.deletes = []  # item_ids
 
-    def upload(self, folder, filename, data, content_type):
+    def upload(self, folder, filename, data, content_type, rieng=False):
         self.calls.append((folder, filename))
         return MediaRef(item_id=f"id-{len(self.calls)}", web_url="https://sp/x",
                          path=f"{folder}/{filename}", filename=filename)
@@ -851,7 +851,7 @@ class _CapturingMediaStore:
     def __init__(self):
         self.uploads = []  # (filename, data, content_type)
 
-    def upload(self, folder, filename, data, content_type):
+    def upload(self, folder, filename, data, content_type, rieng=False):
         self.uploads.append((filename, data, content_type))
         return MediaRef(f"id{len(self.uploads)}", "https://sp/x", f"{folder}/{filename}", filename)
 

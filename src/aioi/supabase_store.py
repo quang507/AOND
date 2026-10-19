@@ -14,9 +14,11 @@ import os
 import re
 import urllib.request
 import urllib.parse
+import uuid
 from datetime import datetime, timezone
 from typing import Any, TYPE_CHECKING
 
+from .kho_anh import BUCKET_CONG_KHAI, BUCKET_RIENG, la_uuid
 from .schema import Property, _calc_area_from_dimension
 from .assistants import assign_assistant
 
@@ -82,6 +84,7 @@ class SupabaseConversationStore:
         self.fallback = fallback_store
         self._seller_cache: dict[str, str] = {}
         self._conv_cache: dict[str, str] = {}
+        self._anh_da_ghi: set[str] = set()   # "bucket/khoá" đã có dòng listing_media — khỏi gửi lại mỗi lượt
 
     @property
     def is_configured(self) -> bool:
@@ -226,6 +229,28 @@ class SupabaseConversationStore:
             log.error("Failed to create conversation in Supabase: %s", e)
         return None
 
+    def ghi_luot_chat(self, user_key: str, incoming_text: str, bot_reply: str, zalo_msg_id: str | None = None,
+                      role: str = "seller", user_name: str | None = None) -> None:
+        """Một lượt chat → hai dòng `messages` (khách, bot) + đẩy hội thoại lên đầu CRM. Dùng chung đường tìm / tạo người bán và
+        hội thoại với `save` (SRS-5.1zzzzzzz56 — trước đây supabase_sync có bản riêng)."""
+        if not (self.is_configured and user_key):
+            return
+        seller_id = self._get_or_create_seller(user_key, user_name)
+        conv_id = self._get_or_create_conversation(seller_id) if seller_id else None
+        if not conv_id:
+            return
+        now_iso = datetime.now(timezone.utc).isoformat()
+        if incoming_text:
+            msg = {"conversation_id": conv_id, "sender": "seller" if role == "seller" else "buyer",
+                   "body": incoming_text, "created_at": now_iso}
+            if zalo_msg_id:
+                msg["zalo_msg_id"] = str(zalo_msg_id)
+            self._post("messages", msg, prefer="return=minimal")
+        if bot_reply:
+            self._post("messages", {"conversation_id": conv_id, "sender": "bot", "body": bot_reply, "created_at": now_iso},
+                       prefer="return=minimal")
+        self._patch(f"conversations?id=eq.{conv_id}", {"last_message_at": now_iso})
+
     # --- ConversationStore Protocol --------------------------------------
 
     def save(self, conv: Conversation) -> None:
@@ -282,18 +307,52 @@ class SupabaseConversationStore:
                 if li.prop.loai_hinh:
                     listing_payload["property_type"] = li.prop.loai_hinh
 
-                # Upsert listing by (seller_id, code) or check existing
-                existing = self._get(f"listings?seller_id=eq.{seller_id}&code=eq.{listing_payload['code']}")
+                # Tin trên DB mang ĐÚNG id của Listing (uuid) — thư mục ảnh trên Storage là `<uuid>/…` và ràng buộc
+                # listing_media_duong_dan_theo_uuid đòi khớp (SRS-5.1zzzzzzz56). Tin cũ tạo trước bản này: tìm theo code.
+                lid_mong = str(uuid.UUID(li.listing_id)) if la_uuid(li.listing_id) else None
+                existing = self._get(f"listings?id=eq.{lid_mong}&select=id") if lid_mong else []
+                if not existing:
+                    existing = self._get(f"listings?seller_id=eq.{seller_id}&code=eq.{listing_payload['code']}&select=id")
                 if existing:
                     lid = existing[0]["id"]
                     self._patch(f"listings?id=eq.{lid}", listing_payload)
                 else:
                     # Tin tạo từ chat chỉ lên web khi khách đồng ý bản nháp (trigger listings_quyet_dinh_dang_tin đọc
                     # can_chu_duyet + chu_duyet_at; SRS-5.1zzzzzzz47). Admin / Excel tạo tin thì cờ này false như cũ.
-                    self._post("listings", {**listing_payload, "status": "cho_thong_tin", "can_chu_duyet": True})
+                    moi = {**listing_payload, "status": "cho_thong_tin", "can_chu_duyet": True}
+                    if lid_mong:
+                        moi["id"] = lid_mong
+                    tao = self._post("listings", moi)
+                    lid = (tao[0].get("id") if tao else None) or lid_mong
+                if lid:
+                    self._ghi_anh(lid, getattr(li, "media", None) or [])
 
         except Exception as e:
             log.error("Failed to save conversation to Supabase: %s", e)
+
+    def _ghi_anh(self, lid: str, media: list[dict]) -> None:
+        """Ảnh / giấy tờ đã lên Supabase Storage (`kho_anh.SupabaseMediaStore`) → dòng `listing_media` để web hiện ảnh (bucket
+        công khai) và admin xem giấy tờ (bucket riêng). Chỉ ghi tệp nằm đúng thư mục `<uuid tin>/`; trùng (bucket, khoá) thì bỏ qua."""
+        dong = []
+        for i, m in enumerate(media or []):
+            bucket, _, khoa = str(m.get("path") or "").partition("/")
+            if bucket not in (BUCKET_CONG_KHAI, BUCKET_RIENG) or not khoa.startswith(f"{lid}/"):
+                continue
+            if f"{bucket}/{khoa}" in self._anh_da_ghi:
+                continue
+            mime = m.get("content_type") or ("image/jpeg" if re.search(r"\.jpe?g$", khoa, re.I) else
+                                              "application/pdf" if khoa.lower().endswith(".pdf") else "application/octet-stream")
+            dong.append({"listing_id": lid, "bucket": bucket, "storage_path": khoa, "mime_type": mime,
+                         "media_type": "giay_to" if bucket == BUCKET_RIENG else "khac",
+                         "sort_order": min(i, 9999), "nguon": "chat"})
+        if not dong:
+            return
+        try:
+            self._request("POST", "listing_media?on_conflict=bucket,storage_path", data=dong,
+                          prefer="resolution=ignore-duplicates,return=minimal")
+            self._anh_da_ghi.update(f"{d['bucket']}/{d['storage_path']}" for d in dong)
+        except Exception as e:  # noqa: BLE001 — ghi ảnh hỏng thì tin vẫn lưu, lượt sau thử lại
+            log.warning("ghi listing_media lỗi: %s", e)
 
     def ghi_duyet(self, conv: Conversation, dong_y: bool) -> None:
         """Khách ĐỒNG Ý bản nháp → `chu_duyet_at` = bây giờ (trigger cho lên web nếu đủ giá / diện tích / phường); KHÔNG đồng ý →
@@ -379,8 +438,11 @@ class SupabaseConversationStore:
                     is_rental=(row.get("deal") == "thue"),
                     fields=boc_tach,
                 )
+                # listing_id = uuid của dòng (bỏ gạch) khi tin tạo từ bản 19/10 (code = 8 ký tự đầu id) — để ảnh ghi đúng thư
+                # mục `<uuid>/` và lượt sau cập nhật đúng dòng; tin cũ giữ code như trước (SRS-5.1zzzzzzz56).
+                rid = str(row.get("id") or "").replace("-", "")
                 li = Listing(
-                    listing_id=row.get("code", "") or row.get("id"),
+                    listing_id=rid if rid and (row.get("code") or "") == rid[:8].upper() else (row.get("code", "") or row.get("id")),
                     prop=prop,
                     listing_proposed=bool(row.get("status") == "dang_rao"),
                     status=row.get("status", "cho_thong_tin"),

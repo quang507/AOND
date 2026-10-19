@@ -2,7 +2,11 @@
 
 > Tài liệu thiết kế cho **milestone lưu trữ** (SRD §VII) và phía người mua (tìm căn cho nhánh mua). *Tên vai M•ai / T•ai của SRD AOND bỏ 14/10/2026 — trợ lý là một `chat-reply`, mỗi khách một tên người thật (SRS-5.1zzzzzzz9).*
 > Bản xuất từ ghi nhớ dự án — cập nhật 2026-06-28. Trạng thái build được ghi rõ trong từng mục.
-> Liên quan: tài liệu build engine (`docs/build-status.md` nếu xuất), `req + chat examples.docx`.
+> Liên quan: tài liệu build engine (`docs/build-status.md` nếu xuất), `req + chat examples.docx` (đã gỡ khỏi repo 19/10/2026 — xem
+> lại bằng `git log --diff-filter=D -- "req + chat examples.docx"`; nội dung đã chưng cất vào `docs/06 §6.8`, `docs/09`).
+> **19/10/2026 (SRS-5.1zzzzzzz56): SharePoint / OneDrive đã bỏ.** Kho tệp = Supabase Storage (`src/aioi/kho_anh.py`: ảnh căn ở
+> `listing-public/<uuid tin>/`, giấy tờ / tài liệu ở `listing-private/`, tham chiếu ở bảng `listing_media`); kiến thức dự án = bảng
+> `du_an_kien_thuc`. Các đoạn nói SharePoint bên dưới là thiết kế cũ, giữ làm lịch sử.
 
 ## Vì sao cần lưu bền
 Phải lưu **MỌI** chi tiết BĐS người rao cung cấp (toàn bộ listing có cấu trúc, không chỉ state chat), ở dạng **truy vấn được**. Mục đích: phục vụ bên mua/thuê — nhánh mua truy vấn dữ liệu này để khớp BĐS cho người mua. Claude là stateless; "trí nhớ" = thứ app lưu và phát lại.

@@ -6122,6 +6122,43 @@ tác nay chạy cả ở tin xin bản vẽ / câu hỏi dự án (trước bị
 đọc; prompt lập thao tác có địa chỉ đang ghi; "hẻm 5 lầu" không tự thành nhà phố; địa chỉ đầy đủ ghi nguyên) — 7/8 đỏ trên code cũ,
 đã thử. `test_conversational_and_deed.py::test_property_auto_inference` đổi: không đoán loại. pytest 331 đạt.
 
+### SRS-5.1zzzzzzz56 · Ảnh lên web qua Supabase Storage; bỏ SharePoint / OneDrive; dọn phần thừa (19/10/2026)
+
+**Ca gốc.** Soát "còn gì thừa" (chủ dự án 19/10): `listing_media` 0 dòng — VPS không cấu hình SharePoint nên lõi Python ghi ảnh khách
+gửi vào thư mục `sharepoint_store/` trên đĩa VPS, web không có ảnh nào; kèm `thong_tin.json` / `nhu_cau.json` (chứa cả lý do bán) mỗi
+lượt. Chủ dự án: "làm hết đi, ảnh lên web trước, ko dùng sharepoint nữa. lưu ảnh ở supabase dc ko", "xài onedriver nó bị giữ lại khi
+đồng bộ các kiểu mà", "hoặc cứ ở bộ nhớ của vps". Chọn Supabase: web (Vercel) đã đọc ảnh qua `listing_photos_v`; để trên VPS phải mở
+thêm cổng web công khai (lõi chỉ nghe 127.0.0.1) và VPS hỏng là mất ảnh. Phần thừa cùng soát: `vector_store.py` (không ai gọi),
+`llm/gemini.py` (chọn Gemini là lỗi `Settings` thiếu trường), `next_secondary_field` / `secondary_missing_fields`, `backup.py` (trái
+quyết định 11/09 bỏ sao lưu), `train/` (không train model), `scripts/reconcile_aioi.py` (chỉ dọn SharePoint), `supabase_sync.py`
+viết lại đường tạo `sellers` / `conversations` song song `SupabaseConversationStore`, kiến thức dự án chỉ ở SQLite trên VPS,
+`SRS.md` gốc repo song song `docs/07`, hai bản `req + chat examples.docx` (CLAUDE.md ghi đã xoá). Thẻ "Quota tiêu hao" không còn báo
+HẾT SỐ DƯ: tín hiệu `bot_health('model_chinh')` + dòng sổ lỗi "credit balance is too low" chỉ bot TS ghi.
+
+**Lớp lỗi.** Đổi bộ não / kho mà không nối lại đường ra (cùng lớp 5.1zzzzzzz47, 49, 53): ảnh, kiến thức dự án, tín hiệu hết số dư
+đều ghi vào chỗ không ai đọc. **Chỗ cùng lớp còn lại:** `SqliteConversationStore` vẫn là lưới đỡ khi Supabase lỗi lúc đọc
+(`fallback_store`, ghi song song mỗi lượt) — giữ: bỏ thì một lần Supabase chập là bot coi khách cũ như khách mới; `Listing.media` không
+được nạp lại từ `listing_media` khi tải hội thoại từ Supabase (trần 20 ảnh / căn đếm lại từ 0 sau khi khởi động lại) — chưa đổi.
+
+**Sửa.** (1) Ảnh: `src/aioi/kho_anh.py` `SupabaseMediaStore` — ảnh của một căn (thư mục = UUID tin, `thu_muc_can`) vào bucket công
+khai `listing-public/<uuid>/`; sổ đỏ / giấy tờ (`rieng=True`: nhánh đọc sổ, nhóm ảnh `giay_to` — ô bắt buộc mới trong
+`media_group_schema`, thiếu thì coi là giấy tờ), PDF, tài liệu và tệp cấp dự án vào `listing-private` (không link công khai, §5). Khoá
+Storage bỏ dấu / ký tự lạ. `SupabaseConversationStore.save` tạo tin với `id` = UUID của `Listing` (ràng buộc
+`listing_media_duong_dan_theo_uuid`), rồi `_ghi_anh` ghi `listing_media` (`media_type` `khac` / `giay_to`, trùng thì bỏ qua); tải
+hội thoại dùng lại uuid làm `listing_id`. Bỏ xuất `thong_tin.json` / `nhu_cau.json`. (2) Bỏ SharePoint: `sharepoint.py` →
+`kho_tep.py` (MediaRef thêm `content_type`, `LocalDirectoryMediaStore` chỉ cho chạy thử, `delete` chỉ trong thư mục kho), xoá
+`GraphAuth` / `SharePointMediaStore` / cấu hình Azure / `tests/test_sharepoint.py`. (3) Kiến thức dự án: bảng `du_an_kien_thuc`
+(`20261019a`, chỉ service_role) + `projects.SupabaseProjectStore`; lần đầu khởi động chép từ SQLite cũ (`chep_tu`, không đè nếu đã có);
+Supabase lỗi thì chạy tiếp bằng SQLite. (4) `supabase_sync` đi qua `SupabaseConversationStore.ghi_luot_chat` (một đường tạo người bán
+/ hội thoại). (5) `SoToken`: mỗi lượt Claude trả về → `beat('model_chinh')` (tiết chế 2 phút); `ClaudeProvider._tao` gọi lỗi →
+`log_loi('claude <nhãn>', tên lỗi + thông báo API)`. (6) Xoá các tệp thừa liệt kê ở trên; README / `.env.example` / `docs/data-model.md`
+sửa theo. Giữ `cli.py` (công cụ thử trên máy của anh Luận, nay ghi tệp ra `kho_tep_thu/`).
+
+**Kiểm.** `tests/test_kho_anh.py` (ảnh căn vào bucket công khai theo uuid, giấy tờ / PDF / tệp dự án vào bucket riêng, engine dùng uuid
+tin làm thư mục, `save` tạo tin đúng id + ghi `listing_media` một lần, bỏ tệp sai thư mục), `tests/test_kho_du_an.py` (lưu / đọc / tìm
+gần đúng; chép một lần từ kho cũ), `tests/test_so_token.py::test_dau_song_va_bao_het_so_du_cho_the_quota`. Chưa thử tải ảnh thật lên
+Storage từ máy kiểm (không có service_role) — kiểm trên Zalo: gửi ảnh nhà → `listing_media` có dòng, ảnh hiện trên web khi tin đăng.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

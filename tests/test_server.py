@@ -47,13 +47,6 @@ def test_zalo_bridge_chat_reply_endpoint():
     assert "assistant_name" in data
     assert "completeness" in data
 
-    # Verify that thong_tin.json was exported
-    from pathlib import Path
-    json_files = list(Path("sharepoint_store").glob("**/thong_tin.json"))
-    assert len(json_files) >= 1
-    contents = [f.read_text(encoding="utf-8") for f in json_files]
-    assert any("dien_tich" in c and "10 tỷ" in c for c in contents)
-
 
 def test_zalo_bridge_chat_reply_with_image_urls(monkeypatch):
     from aioi import server

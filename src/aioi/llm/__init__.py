@@ -1,4 +1,4 @@
-"""LLM provider abstraction ("Cắm Rút") — swap Claude / Gemini / local without touching the engine."""
+"""LLM provider abstraction — Claude (chạy thật) / mock (test offline). Bản Gemini đã gỡ 19/10/2026: hỏng cấu hình, không dùng."""
 from __future__ import annotations
 
 from ..config import Settings
@@ -11,10 +11,6 @@ def build_provider(settings: Settings) -> LLMProvider:
         from .claude import ClaudeProvider
 
         return ClaudeProvider(settings)
-    if provider == "gemini":
-        from .gemini import GeminiProvider
-
-        return GeminiProvider(settings)
     if provider == "mock":
         from .mock import MockProvider
 

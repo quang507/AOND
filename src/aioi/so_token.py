@@ -11,6 +11,7 @@ import json
 import os
 import sys
 import threading
+import time
 import urllib.request
 from typing import Any, Callable
 
@@ -28,27 +29,31 @@ def dem_token(resp: Any) -> dict[str, int] | None:
 
 
 class SoToken:
-    """`gui(body)` = gửi một dòng lên sổ (mặc định POST rpc cong_token bằng service_role); None = không có Supabase, chỉ log."""
+    """`gui(body)` = gửi một dòng lên sổ (mặc định POST rpc cong_token bằng service_role); None = không có Supabase, chỉ log.
+    `rpc(ten, body)` = gọi hàm khác của DB (beat / log_loi) cho tín hiệu "model chính sống / hết số dư" ở thẻ Quota tiêu hao."""
 
-    def __init__(self, gui: Callable[[dict[str, Any]], None] | None = None, nen: bool = True):
+    def __init__(self, gui: Callable[[dict[str, Any]], None] | None = None, nen: bool = True,
+                 rpc: Callable[[str, dict[str, Any]], None] | None = None):
         self._gui = gui
         self._nen = nen
+        self._rpc = rpc
+        self._beat_luc = 0.0
 
     @classmethod
     def tu_cau_hinh(cls, supabase_url: str | None, service_key: str | None) -> "SoToken":
         if not (supabase_url and service_key):
             return cls(None)
-        url = f"{supabase_url.rstrip('/')}/rest/v1/rpc/cong_token"
+        goc = f"{supabase_url.rstrip('/')}/rest/v1/rpc/"
 
-        def gui(body: dict[str, Any]) -> None:
+        def rpc(ten: str, body: dict[str, Any]) -> None:
             req = urllib.request.Request(
-                url, data=json.dumps(body).encode("utf-8"), method="POST",
+                goc + ten, data=json.dumps(body).encode("utf-8"), method="POST",
                 headers={"apikey": service_key, "Authorization": f"Bearer {service_key}",
                          "Content-Type": "application/json"})
             with urllib.request.urlopen(req, timeout=5) as r:
                 r.read()
 
-        return cls(gui)
+        return cls(lambda body: rpc("cong_token", body), rpc=rpc)
 
     def ghi(self, nhan: str, model_goi: str, resp: Any) -> dict[str, Any] | None:
         """Ghi một lượt gọi. `model_goi` = model đã yêu cầu; sổ lấy `resp.model` (model API thật sự chạy) khi có."""
@@ -60,11 +65,33 @@ class SoToken:
             print(f"   [💲 {nhan} · {body['p_model']} · in={so['p_in']} out={so['p_out']} "
                   f"cache_w={so['p_cache_write']} cache_r={so['p_cache_read']}]", file=sys.stderr, flush=True)
         if self._gui is not None:
-            if self._nen:
-                threading.Thread(target=self._gui_an_toan, args=(body,), daemon=True).start()
-            else:
-                self._gui_an_toan(body)
+            self._chay(self._gui_an_toan, body)
+        # Dấu sống model chính (bot_health 'model_chinh', tiết chế 2 phút) — thẻ Quota tiêu hao dùng để biết đã HẾT số dư
+        # hay đã gọi lại được (quota_tieu_hao, FR-192). Bot TS đóng dấu này; lõi Python từ 19/10 (SRS-5.1zzzzzzz56).
+        if self._rpc is not None and time.time() - self._beat_luc > 120:
+            self._beat_luc = time.time()
+            self._chay(self._rpc_an_toan, "beat", {"p_who": "model_chinh"})
         return body
+
+    def bao_loi(self, nhan: str, e: Exception) -> None:
+        """Lượt gọi Claude hỏng → một dòng sổ lỗi (log_loi). Chỉ tên lỗi + thông báo của API (vd "credit balance is too low"),
+        không có nội dung tin khách. Thẻ Quota tiêu hao đọc dòng có "credit balance is too low" để báo HẾT SỐ DƯ."""
+        if self._rpc is None:
+            return
+        self._chay(self._rpc_an_toan, "log_loi",
+                   {"p_source": f"claude {nhan}", "p_detail": f"{type(e).__name__}: {str(e)[:500]}"})
+
+    def _chay(self, ham: Callable[..., None], *args: Any) -> None:
+        if self._nen:
+            threading.Thread(target=ham, args=args, daemon=True).start()
+        else:
+            ham(*args)
+
+    def _rpc_an_toan(self, ten: str, body: dict[str, Any]) -> None:
+        try:
+            self._rpc(ten, body)  # type: ignore[misc]
+        except Exception as e:  # noqa: BLE001
+            print(f"   [💲 không gọi được {ten}: {type(e).__name__}]", file=sys.stderr, flush=True)
 
     def _gui_an_toan(self, body: dict[str, Any]) -> None:
         try:

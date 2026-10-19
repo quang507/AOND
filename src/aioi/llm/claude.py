@@ -31,6 +31,14 @@ class ClaudeProvider(LLMProvider):
         # Mỗi lượt gọi ghi token + model thật vào sổ Supabase (cong_token) để /admin quy ra đô (SRS-5.1zzzzzzz49).
         self._so = SoToken.tu_cau_hinh(settings.supabase_url, settings.supabase_service_role_key)
 
+    def _tao(self, nhan: str, **kw: Any) -> Any:
+        """messages.create + báo sổ lỗi khi API từ chối (hết số dư, quá tải…) rồi ném lên như cũ (SRS-5.1zzzzzzz56)."""
+        try:
+            return self._client.messages.create(**kw)
+        except Exception as e:
+            self._so.bao_loi(nhan, e)
+            raise
+
     @staticmethod
     def _sys(system: str) -> list[dict[str, Any]]:
         """Wrap the system prompt as a cacheable block. The system (persona + the big project
@@ -40,7 +48,7 @@ class ClaudeProvider(LLMProvider):
         return [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
 
     def chat(self, system: str, messages: list[Message], max_tokens: int = 256) -> str:
-        resp = self._client.messages.create(
+        resp = self._tao("chat",
             model=self._chat_model,
             max_tokens=max_tokens,
             system=self._sys(system),
@@ -54,7 +62,7 @@ class ClaudeProvider(LLMProvider):
     ) -> dict[str, Any]:
         # Tool-based extraction: force a single tool call whose input IS the
         # structured result. More robust and faster than output_config here.
-        resp = self._client.messages.create(
+        resp = self._tao("extract",
             model=self._extract_model,
             max_tokens=1024,
             system=self._sys(system),
@@ -81,7 +89,7 @@ class ClaudeProvider(LLMProvider):
         # One turn of native tool use. The engine appends the returned assistant_content and the
         # tool_results, then calls again — a manual agentic loop (fine-grained control so the
         # engine gates/verifies every tool). tools are plain Claude tool defs.
-        resp = self._client.messages.create(
+        resp = self._tao("agent",
             model=self._chat_model,
             max_tokens=max_tokens,
             system=self._sys(system),
@@ -118,7 +126,7 @@ class ClaudeProvider(LLMProvider):
                     "source": {"type": "base64", "media_type": small_type, "data": b64},
                 })
         content.append({"type": "text", "text": instruction})
-        resp = self._client.messages.create(
+        resp = self._tao("vision",
             model=self._vision_model,
             max_tokens=max_tokens,
             messages=[{"role": "user", "content": content}],
@@ -152,7 +160,7 @@ class ClaudeProvider(LLMProvider):
                     "source": {"type": "base64", "media_type": small_type, "data": b64},
                 })
         content.append({"type": "text", "text": instruction})
-        resp = self._client.messages.create(
+        resp = self._tao("group",
             model=self._vision_model,
             max_tokens=1536,
             messages=[{"role": "user", "content": content}],
@@ -190,7 +198,7 @@ class ClaudeProvider(LLMProvider):
                     "source": {"type": "base64", "media_type": small_type, "data": b64},
                 })
         content.append({"type": "text", "text": instruction})
-        resp = self._client.messages.create(
+        resp = self._tao("read-doc",
             model=self._vision_model,
             max_tokens=4096,  # a price list can have many rows
             messages=[{"role": "user", "content": content}],
