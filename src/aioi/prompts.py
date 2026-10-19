@@ -12,6 +12,7 @@ from .projects import Project, UnitType
 from .revenue import SellerRole
 from .schema import (
     CORE_FIELDS,
+    CORE_THEO_LOAI,
     HOUSE_AREA_FIELDS,
     IDENTITY_FIELDS,
     RENTAL_FIELDS,
@@ -88,6 +89,10 @@ FIELD_LABELS: dict[str, str] = {
     "gia_dien_nuoc": "giá điện nước và chi phí dịch vụ",
     "gio_giac": "giờ giấc tự do hay giới nghiêm",
     "tien_ich_phong": "tiện ích phòng (gác lửng, máy lạnh, bếp)",
+    # Đất nông nghiệp / đất kinh doanh (SRS-5.1zzzzzzz68)
+    "len_tho_cu": "lên thổ cư được không",
+    "nguon_nuoc": "nguồn nước (tưới, sinh hoạt)",
+    "muc_dich_su_dung_dat": "mục đích sử dụng đất trên sổ (SKC, TMD, đất ở…)",
     # Cho thuê chung
     "thoi_han_hd": "thời hạn hợp đồng",
     "muc_coc": "mức cọc",
@@ -161,6 +166,15 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "nganh_nghe": "Hỏi ngành nghề kinh doanh phù hợp hoặc ngành bị hạn chế",
     "thoi_han_hd": "Hỏi thời hạn hợp đồng thuê tối thiểu mấy năm",
     "muc_coc": "Hỏi mức cọc mấy tháng tiền thuê",
+    # Toà nhà / CHDV / Phòng trọ (SRS-5.1zzzzzzz68)
+    "so_phong": "Hỏi toà nhà có tổng cộng bao nhiêu phòng / căn cho thuê",
+    "dong_tien_thue": "Hỏi doanh thu cho thuê mỗi tháng hiện được bao nhiêu, đang lấp đầy mấy phòng",
+    "tien_ich_phong": "Hỏi phòng có gác lửng, máy lạnh, bếp, WC riêng không",
+    "gia_dien_nuoc": "Hỏi giá điện nước tính sao, phí dịch vụ bao nhiêu",
+    "gio_giac": "Hỏi giờ giấc tự do hay có giờ đóng cổng",
+    "len_tho_cu": "Hỏi đất có chuyển lên thổ cư được không",
+    "nguon_nuoc": "Hỏi nguồn nước tưới / sinh hoạt ở đó lấy từ đâu",
+    "muc_dich_su_dung_dat": "Hỏi trên sổ ghi mục đích sử dụng đất là gì (SKC, TMD hay đất khác)",
 }
 
 # Từ điển tiếng lóng BĐS thực chiến (thừa kế từ nhadat.cc) — giúp AI hiểu đúng từ lóng của người rao
@@ -1161,6 +1175,7 @@ def property_field_props() -> dict[str, Any]:
         list(IDENTITY_FIELDS)
         + list(HOUSE_AREA_FIELDS)
         + sum((CORE_FIELDS[g] for g in CORE_FIELDS), [])
+        + sum(CORE_THEO_LOAI.values(), [])
         + sum((SECONDARY_FIELDS[g] for g in SECONDARY_FIELDS), [])
         + list(RENTAL_FIELDS)
     )

@@ -11,10 +11,10 @@
 //   cau-truc  gỡ event trigger "tự bật RLS" của dashboard (nó bật RLS cả bảng production cố ý để tắt), rồi:
 //             20260929b (schema luu_tru) → schema.sql → 20261008a → bốn file schema `so`
 //   du-lieu   dữ liệu tham chiếu KHÔNG nằm trong schema.sql: chạy lại theo thứ tự file mọi câu insert/update/delete
-//             trên wards, phuong_cu, quan_cu, required_facts, app_config trong migrations/ (chỉ các câu đó — câu tạo
+//             trên wards, phuong_cu, quan_cu, app_config trong migrations/ (chỉ các câu đó — câu tạo
 //             hàm trong migration cũ là bản cũ, chạy lại là đè bản mới của schema.sql). Mã project cũ trong câu được
 //             thay bằng mã mới. Sau cùng đặt các khoá app_config phụ thuộc project + công tắc production.
-//   xac-minh  đếm dòng các bảng tham chiếu, in required_facts (khoá công khai) để đối chiếu
+//   xac-minh  đếm dòng các bảng tham chiếu để đối chiếu
 //
 // Câu lỗi KHÔNG dừng cả bước: in mã lỗi + 120 chữ đầu của câu, chạy tiếp, cuối bước chạy lại lượt hai các câu lỗi
 // (view chồng view phải tạo sau view nó dựa vào). Còn lỗi sau lượt hai thì thoát 1.
@@ -149,8 +149,7 @@ const docFile = (p) => {
 };
 // schema.sql do xuat_schema() bản trước 20261008b sinh ra: cột SINH thành `default <biểu thức>`, cột IDENTITY thành
 // `not null` trơn + sequence xuất riêng. Vá đúng các dòng đó (mỗi dòng phải khớp đúng một lần — lệch là dừng, không đoán).
-const COT_IDENTITY = [["boc_tach_bong", "id", "always"], ["messages", "seq", "always"], ["phuong_cu", "id", "always"],
-  ["required_facts", "id", "by default"]];
+const COT_IDENTITY = [["boc_tach_bong", "id", "always"], ["messages", "seq", "always"], ["phuong_cu", "id", "always"]];
 function vaSchema(s) {
   if (!/default bo_dau\(ten\)/.test(s)) return s; // schema.sql đã sinh bằng xuat_schema() mới
   const doi = (a, b) => { const n = s.split(a).length - 1; if (n !== 1) throw new Error(`vá schema.sql: "${a.slice(0, 50)}" khớp ${n} lần`); s = s.replace(a, b); };
@@ -294,7 +293,7 @@ if (buoc === "kiem") {
 } else if (buoc === "du-lieu") {
   // SRS-5.1zzzzs: bảng có dòng khởi tạo trong migration mà schema.sql không mang. Thêm bảng một dòng / bảng cấu hình mới
   // thì thêm ở đây — bot/tests/hat-giong-dung-lai.mjs đỏ khi một câu insert cấp cao nhất trong migration không được phủ.
-  const BANG = "(?:public\\.)?(wards|phuong_cu|quan_cu|required_facts|app_config|bridge_dang_nhap)\\b";
+  const BANG = "(?:public\\.)?(wards|phuong_cu|quan_cu|app_config|bridge_dang_nhap)\\b";
   const laDuLieu = new RegExp(`^(insert\\s+into\\s+${BANG}|update\\s+${BANG}|delete\\s+from\\s+${BANG})`, "i");
   const bangCua = (b) => new RegExp(BANG, "i").exec(b.replace(/^(insert\s+into|update|delete\s+from)\s+/i, ""))?.[1];
   const files = readdirSync(MIG).filter((f) => f.endsWith(".sql")).sort();
@@ -335,12 +334,10 @@ if (buoc === "kiem") {
     `insert into public.app_config (key, value) values (${q(k)}, ${q(v)}) on conflict (key) do update set value = excluded.value`));
   process.exit(hong ? 1 : 0);
 } else if (buoc === "xac-minh") {
-  for (const t of ["wards", "phuong_cu", "quan_cu", "required_facts", "app_config", "duong"]) {
+  for (const t of ["wards", "phuong_cu", "quan_cu", "app_config", "duong"]) {
     const r = await sql(`select count(*)::int as n from public.${t}`, true).catch((e) => [{ n: `lỗi ${e.message.slice(0, 80)}` }]);
     console.log(`${t}: ${r[0]?.n}`);
   }
-  console.log("required_facts:", JSON.stringify(await sql(
-    "select property_type::text as l, fact_key as k, priority as p, nhom as g, deal::text as d from public.required_facts order by 1, 3, 2", true)));
   console.log("app_config khoá:", JSON.stringify((await sql("select key from public.app_config order by 1", true)).map((r) => r.key)));
   console.log("cron:", JSON.stringify(await sql("select jobname, schedule from cron.job order by 1", true).catch((e) => e.message.slice(0, 120))));
   console.log("bucket:", JSON.stringify(await sql("select id, public from storage.buckets order by 1", true)));

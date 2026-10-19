@@ -6401,6 +6401,34 @@ dùng — đổi phải sinh lại `bun.lock`).
 
 **Kiểm.** `bun run kiem`, `bun run test:py`; `ranh-gioi.mjs` vẫn đếm file thật > 0 (luật không soát rỗng).
 
+### SRS-5.1zzzzzzz68 · Bộ câu hỏi theo loại BĐS một nguồn `schema.py`; gỡ bảng `required_facts` (19/10/2026)
+
+**Ca gốc.** Chủ dự án hỏi `required_facts` là gì, Python có gì thay; chốt "có nguồn duy nhất là dc". `required_facts` (278 dòng) là bộ
+câu bot TypeScript hỏi theo loại BĐS, đọc qua view `listing_missing_facts` (gỡ SRS-5.1zzzzzzz66). Lõi Python hỏi theo `src/aioi/schema.py`
+(nhận diện → `CORE_FIELDS` của nhóm → thuê thì `RENTAL_FIELDS`; `blocking_fields` chặn bản nháp) — không đọc bảng. Nhưng toà nhà /
+CHDV / khách sạn và phòng trọ nằm chung nhóm nhà ở nên bị hỏi y như nhà phố (tình trạng bàn giao, kết cấu, hoàn công), trong khi
+bảng cũ có bộ riêng (số phòng, doanh thu; tiện ích phòng, điện nước, giờ giấc). Nhãn cho các ô đó đã có trong `FIELD_LABELS` mà chưa
+nhóm nào dùng — cũng chưa có trong schema bóc tách, nên model không có chỗ ghi.
+
+**Lớp lỗi.** Hai nguồn cho cùng một quyết định (bảng DB ↔ code); bỏ người đọc nguồn cũ mà không chép phần nguồn mới thiếu.
+**Chỗ cùng lớp.** Ô của `CORE_THEO_LOAI` thêm vào `property_field_props` (schema bóc tách) và `NATURAL_QUESTIONS`. **Còn:** khối
+"KỊCH BẢN CHO …" theo nhóm trong `build_chat_system` (`group_guidance`) được tính nhưng không đưa vào prompt từ commit 16/10/2026 —
+chưa rõ có chủ ý không, không nối lại ở đây (chờ chủ dự án). `diem_tin` (DB) tính điểm toà nhà theo khoá cũ `doanh_thu` /
+`so_phong`, khoá lõi là `dong_tien_thue` / `so_phong` — điểm toà nhà có thể thiếu phần doanh thu.
+
+**Sửa.** `schema.CORE_THEO_LOAI` (toà nhà / chdv / khách sạn: kết cấu, số phòng, dòng tiền, hẻm, hoàn công; phòng trọ: tiện ích phòng,
+điện nước, giờ giấc; đất nông nghiệp: kích thước, đường vào, quy hoạch, lên thổ cư, nguồn nước; đất kinh doanh / SKC / TMD: kích
+thước, đường vào, thời hạn, mục đích sử dụng đất, quy hoạch — trước bị hỏi chiều cao trần, tải trọng sàn như kho xưởng) đè bộ của
+nhóm qua `Property.core_fields()`. Soát thêm khi đối chiếu 12 loại của CRM: lõi ghi `property_type` bằng mã lõi (26 mã) — `nha_cap_4`
+(enum DB là `nha_cap4`), `chdv`, `can_ho`… không có trong enum nên PostgREST trả 22P02 và cả dòng tin không ghi được; nạp lại thì
+`nha_cap4` không có trong `TYPE_TO_GROUP`, nhà cấp 4 rơi về nhóm chưa rõ. DB hiện mới 1 tin, sổ lỗi chưa có dòng nào — đường lỗi có
+thật, chưa thấy nổ. `supabase_store.LOAI_SANG_DB` / `ma_loai_db` / `loai_tu_db` là một chỗ đổi mã hai chiều (`du_an`,
+`shophouse_du_an` không chắc loại nào → không ghi cột, `[giả định BA]`). Migration `20261019g_go_required_facts.sql`: chép 278 dòng sang
+`luu_tru.required_facts_20261019`, gỡ bảng + hàm trigger. `scripts/dung-lai-db.mjs` thôi nạp / in bảng; bản nền `soat-db` bỏ
+`required_facts` khỏi dòng RLS-không-policy.
+
+**Kiểm.** `tests/test_cau_hoi_theo_loai.py` (đỏ khi bỏ `CORE_THEO_LOAI` hoặc bảng đổi mã — đã chạy cả hai), pytest 361 đạt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
