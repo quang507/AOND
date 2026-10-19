@@ -6244,6 +6244,26 @@ chỉ khác dấu / hoa thường. `khoi_dia_danh`: khi sắp hỏi phường m�
 kèm ca gần nghĩa mà khác tên ("bến thành" ↛ Bến Nghé), dưới ngưỡng, lỗi mạng, Gemini 429. `bot/tests/aond-mot-nguon.mjs` AMN-12.
 Đường nghĩa với Gemini thật chưa bắn được từ máy kiểm (không có khoá) — xem log `aond-core` dòng "theo nghĩa" sau khi cài.
 
+### SRS-5.1zzzzzzz61 · Tên đường gõ sai: hỏi xác nhận ở mọi lượt, khách gật thì AI ghi (19/10/2026)
+
+**Ca gốc.** Chủ dự án: "người ta nhắn trần ninh trọng có biết là đường trần bình trọng mà hỏi lại xác nhận ko". Tra thật
+`tim_duong('trần ninh trọng')` → "Trần Bình Trọng", khoảng cách 1, một tên — bản 5.1zzzzzzz60 nhận ra nhưng chỉ nhắc model hỏi xác
+nhận khi câu kế là phường / địa chỉ: khách nói đủ đường + quận một lượt (câu kế là giá, diện tích) hay đủ ý để soạn bản nháp thì
+không ai hỏi; khách có gật thì cũng không có đường nào ghi tên kho vào ô `duong`.
+
+**Lớp lỗi.** Gợi ý của hệ thống chỉ treo theo một ô câu hỏi, không theo trạng thái dữ liệu. **Chỗ cùng lớp.** Khối kể phường theo
+đường (5.1zzzzzzz60) cũng treo theo câu kế = phường — giữ, vì kể phường chỉ có nghĩa khi đang hỏi phường; ngã tư (`giao_lo.py`) điền
+thẳng khi chắc, không cần hỏi. Thay tên khác dấu trong ô `duong` mà để `dia_chi` giữ chữ cũ ("12 le van sy") — cùng lớp, sửa luôn.
+
+**Sửa.** `khoi_dia_danh` đưa dòng "hỏi xác nhận có phải đường X không TRƯỚC, thay cho câu hỏi kế" ở MỌI nhánh trả lời (cả lượt soạn
+bản nháp) chừng nào ô `duong` còn là chữ gần-mà-không-khớp; khách đã trả lời giữ tên của mình thì model thôi hỏi (đọc hội thoại).
+`goi_y_duong` đưa cho lượt AI lập thao tác: khách xác nhận → ghi `duong` = tên kho + sửa `dia_chi`; nói tên khác → theo lời khách;
+không nhắc → không đổi. Code không tự sửa khi chỉ "gần". `TraDiaDanh.duong` nhớ kết quả theo (tên, quận) để khối gọi lại mỗi lượt không
+tra / nhúng lại. Tên chỉ khác dấu: thay luôn trong `dia_chi` ("12 le van sy" → "12 Lê Văn Sỹ").
+
+**Kiểm.** `tests/test_dia_danh.py` thêm 4 ca (đỏ cả 4 trên bản 5.1zzzzzzz60 — đã chạy): xác nhận khi câu kế là giá / diện tích / bản
+nháp; lượt lập thao tác thấy gợi ý ở lượt "đúng rồi em"; code không tự sửa; nhớ kết quả tra.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

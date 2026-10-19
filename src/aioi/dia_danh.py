@@ -81,6 +81,7 @@ class TraDiaDanh:
         self._rpc = rpc
         self._doc = doc
         self._nhung = nhung
+        self._nho: dict[tuple, dict | None] = {}   # (tên, quận) → kết quả duong(): prompt hỏi lại mỗi lượt, khỏi tra / nhúng lại
 
     @classmethod
     def tu_cau_hinh(cls, url: str, key: str | None, khoa_gemini: list[str] | tuple[str, ...] = ()) -> "TraDiaDanh | None":
@@ -152,6 +153,14 @@ class TraDiaDanh:
     def duong(self, ten: str | None, quan: str | None = None) -> dict | None:
         """{"ten": tên đường trong kho, "chac": True khi chỉ khác dấu / hoa thường, "phuong": [phường mới]} — `phuong` theo quận
         khi biết quận. Không ra một tên duy nhất → None."""
+        khoa = ((ten or "").strip().lower(), quan)
+        if khoa not in self._nho:
+            if len(self._nho) > 500:
+                self._nho.clear()
+            self._nho[khoa] = self._duong(ten, quan)
+        return self._nho[khoa]
+
+    def _duong(self, ten: str | None, quan: str | None) -> dict | None:
         ten = (ten or "").strip()
         if not ten:
             return None
@@ -210,20 +219,38 @@ def nhung_gemini(khoa: list[str], han_giay: float = 2.5) -> Callable[[str], list
     return nhung
 
 
-def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: str | None) -> str:
-    """Khối cho prompt khi sắp hỏi phường / địa chỉ: đường khách nói đi qua những phường nào (hệ thống tra, không phải khách
-    nói), hoặc tên đường khách gõ gần với đường nào trong kho. Không có gì chắc → chuỗi rỗng."""
-    if tra is None or next_field not in ("phuong", "dia_chi") or not fields.get("duong"):
-        return ""
+def _goi_y(tra: TraDiaDanh | None, fields: dict[str, str]) -> dict | None:
+    """Tên đường khách gõ chưa khớp đúng kho mà gần MỘT tên trong kho ("trần ninh trọng" → Trần Bình Trọng)."""
+    if tra is None or not fields.get("duong"):
+        return None
     d = tra.duong(fields.get("duong"), fields.get("quan"))
+    return d if d and not d["chac"] and d["ten"] != fields.get("duong") else None
+
+
+def goi_y_duong(tra: TraDiaDanh | None, fields: dict[str, str]) -> str:
+    """Dòng cho lượt AI lập thao tác: khách xác nhận tên kho gợi ý (hay tự sửa) thì AI ghi lại ô duong / dia_chi theo lời khách."""
+    d = _goi_y(tra, fields)
     if not d:
         return ""
+    return (f'TÊN ĐƯỜNG CHƯA KHỚP KHO: ô duong đang ghi "{fields["duong"]}", kho đường có "{d["ten"]}" (bot đã / sẽ hỏi xác nhận). '
+            f'Khách xác nhận đúng là {d["ten"]} (vd "đúng rồi", "ừ", "phải") → ghi duong = "{d["ten"]}" và sửa tên đường trong '
+            "dia_chi cho khớp; khách nói tên khác → ghi theo lời khách; khách không nhắc tới → không đổi.\n")
+
+
+def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: str | None) -> str:
+    """Khối cho prompt trả lời: tên đường khách gõ gần với đường nào trong kho (hỏi xác nhận, lượt nào cũng được — không chỉ lúc
+    hỏi địa chỉ), và khi sắp hỏi phường thì đường đó đi qua những phường nào. Hệ thống tra, không phải khách nói."""
+    if tra is None or not fields.get("duong"):
+        return ""
     dong: list[str] = []
-    if not d["chac"]:
-        dong.append(f'Tên đường khách gõ "{fields["duong"]}" gần với đường "{d["ten"]}" trong kho — hỏi khách xác nhận có đúng '
-                    f'đường {d["ten"]} không.')
-    ph = d["phuong"]
-    if next_field == "phuong" and 1 <= len(ph) <= 4:
+    goi_y = _goi_y(tra, fields)
+    if goi_y:
+        dong.append(f'Tên đường khách gõ "{fields["duong"]}" gần với đường "{goi_y["ten"]}" trong kho, kho không có tên khách gõ. '
+                    f'Lượt này hỏi khéo xác nhận có phải đường "{goi_y["ten"]}" không TRƯỚC, thay cho câu hỏi kế (theo đúng cách xưng '
+                    "hô lượt này), không nhắc chữ khách gõ sai. Trong hội thoại khách đã trả lời giữ tên của mình thì thôi, không hỏi lại.")
+    d = tra.duong(fields.get("duong"), fields.get("quan"))
+    ph = d["phuong"] if d else []
+    if next_field == "phuong" and not goi_y and 1 <= len(ph) <= 4:
         if len(ph) == 1:
             dong.append(f"Kho đường: đường {d['ten']} nằm ở {ph[0]} — hỏi khách xác nhận nhà thuộc {ph[0]} đúng không.")
         else:
