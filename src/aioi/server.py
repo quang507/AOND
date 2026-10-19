@@ -38,12 +38,23 @@ def _kho_du_an(settings):
         return sqlite
     kho = SupabaseProjectStore(settings.supabase_url, settings.supabase_service_role_key)
     try:
-        n = kho.chep_tu(sqlite)
-        if n:
-            log.info("Đã chép %s dự án từ SQLite sang du_an_kien_thuc", n)
+        kho._khoa()   # bảng có, mạng tới được
     except Exception as e:  # noqa: BLE001 — bảng chưa có / mạng lỗi: chạy tiếp bằng SQLite, không câm bot
         log.warning("Kho dự án Supabase chưa dùng được (%s) — dùng SQLite", e)
         return sqlite
+
+    # Chép phần còn thiếu từ SQLite chạy NỀN: lượt chép đầu 19/10 chạy ngay lúc khởi động (hàng nghìn dự án, ~3 dự án / giây)
+    # nên lõi không trả lời /health trong nhiều phút, cai-vps báo hỏng và bot im suốt lúc đó.
+    def _chep() -> None:
+        try:
+            n = kho.chep_tu(sqlite)
+            if n:
+                log.info("Đã chép %s dự án từ SQLite sang du_an_kien_thuc", n)
+        except Exception as e:  # noqa: BLE001
+            log.warning("Chép dự án sang Supabase dừng giữa chừng (%s) — lần khởi động sau chép tiếp", e)
+
+    import threading
+    threading.Thread(target=_chep, daemon=True).start()
     return kho
 
 

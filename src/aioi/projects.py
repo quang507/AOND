@@ -443,11 +443,13 @@ class SupabaseProjectStore(ProjectStore):
         return [project_from_dict(r["du_lieu"]) for r in (self._rpc("GET", "du_an_kien_thuc?select=du_lieu") or [])]
 
     def chep_tu(self, cu: ProjectStore) -> int:
-        """Một lần: kho Supabase còn rỗng mà SQLite cũ có dự án → chép sang, không mất kiến thức đã học. Trả số dự án đã chép."""
-        if self._khoa():
-            return 0
+        """Chép những dự án SQLite cũ có mà Supabase CHƯA có (không đè bản trên Supabase) — chạy lại được: lượt chép bị cắt
+        giữa chừng thì lần khởi động sau chép tiếp phần còn thiếu. Trả số dự án đã chép."""
+        co = set(self._khoa())
         n = 0
         for p in cu.all():
+            if normalize_project_name(p.name) in co:
+                continue
             self.save(p)
             n += 1
         return n

@@ -37,3 +37,15 @@ def test_chep_mot_lan_tu_kho_cu():
     kho = SupabaseProjectStore("https://x.invalid", "k", rpc=db)
     assert kho.chep_tu(cu) == 2 and kho.get("Dự Án B") is not None
     assert kho.chep_tu(cu) == 0          # đã có dữ liệu thì không chép lại / không đè
+
+
+def test_chep_bi_cat_giua_chung_thi_lan_sau_chep_tiep():
+    # 19/10: lượt chép đầu bị cắt giữa chừng (khởi động lại khi đang chép) — bản cũ thấy kho đã có dòng là thôi, mất phần còn lại.
+    cu = InMemoryProjectStore()
+    for t in ("Dự Án A", "Dự Án B", "Dự Án C"):
+        cu.save(Project(t))
+    db = _Db()
+    kho = SupabaseProjectStore("https://x.invalid", "k", rpc=db)
+    kho.save(Project("Dự Án A", amenities=["bản trên Supabase"]))   # đã chép được một dự án thì bị cắt
+    assert kho.chep_tu(cu) == 2
+    assert kho.get("Dự Án A").amenities == ["bản trên Supabase"]     # không đè bản đã có
