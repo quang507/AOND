@@ -94,3 +94,17 @@ def test_loai_hinh_da_co_thi_gui_lai_khong_can_bang_chung():
     eng._provider.ke_hoach = {"operations": [{"op": "update", "fields": {"loai_hinh": "nha_pho"}}], "user_intent": "sell"}
     eng.handle("chu-6", "Nhà mặt tiền")
     assert eng.conversation("chu-6").active.prop.loai_hinh == "nha_pho"
+
+
+def test_thieu_cum_trich_thi_kiem_chinh_gia_tri_trong_loi_khach():
+    # Bắn thử 19/10: model không trích cho ô diện tích sàn → ô bị bỏ. Giá trị nằm trong lời khách thì nhận; giá trị chỉ có trong
+    # câu bot hỏi thì vẫn bỏ.
+    eng = Engine(AiGia({"operations": [], "user_intent": "sell"}))
+    from aioi.engine import Turn
+    eng.conversation("chu-7").history.append(Turn("assistant", "Anh/chị có muốn bán thương lượng nhẹ không ạ?", 0))
+    eng._provider.ke_hoach = {"operations": [{"op": "update", "fields": {"dien_tich_nha": "170m2", "phap_ly_hoan_cong": "đã hoàn công đủ",
+                                                                          "thuong_luong": "thương lượng nhẹ"}}], "user_intent": "sell"}
+    eng.handle("chu-7", "đã hoàn công đủ, diện tích sàn tầm 170m vuông")
+    f = eng.conversation("chu-7").active.prop.fields
+    assert f.get("dien_tich_nha") == "170m2" and f.get("phap_ly_hoan_cong") == "đã hoàn công đủ"
+    assert "thuong_luong" not in f

@@ -3098,8 +3098,11 @@ class Engine:
             thương lượng nhẹ không", khách trả lời chuyện khác, ô thuong_luong vẫn thành "thương lượng nhẹ" rồi lên tin)."""
             if any((li.prop.loai_hinh if k == "loai_hinh" else li.prop.fields.get(k)) == v for li in conv.listings):
                 return True   # loai_hinh nằm ở thuộc tính riêng, không trong fields
-            if _trich_dan_khop(bang_chung.get(k), conv.loi_khach_luot) or _so_khop(bang_chung.get(k), v, conv.loi_khach_luot):
-                return True
+            # Bằng chứng = cụm AI trích; model không phải lượt nào cũng trích (bắn thử 19/10: bỏ mất "diện tích sàn 170m²") nên
+            # thiếu cụm thì kiểm chính giá trị ô — vẫn phải nằm trong lời KHÁCH, nên câu bot tự hỏi không lọt.
+            for bc in (bang_chung.get(k), v):
+                if _trich_dan_khop(bc, conv.loi_khach_luot) or _so_khop(bc, v, conv.loi_khach_luot):
+                    return True
             log.warning("Bỏ ô %s: không có bằng chứng trong lời khách", k)   # không in giá trị: log có thể chứa dữ liệu khách
             return False
 

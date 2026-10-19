@@ -6571,6 +6571,9 @@ nhiều căn (`_group_media_batch` → `_apply_text_to_listing`), đọc một n
   lời khách của khung lượt (`conv.loi_khach_luot`, không tính lời bot, không tính lượt tả ảnh chụp); giá trị đã có ở rổ thì giữ. Ô có SỐ
   nhận cả khi model viết lại đơn vị trong cụm trích ("170m²" cho "170m vuông") miễn mọi số của cụm có trong lời khách (`_so_khop`);
   ô không có số (thương lượng, mới xây) vẫn phải khớp nguyên văn. Ô bị bỏ ghi log WARNING tên ô (không in giá trị).
+  Model không phải lượt nào cũng trích cụm (bắn thử lần 3 mất "diện tích sàn 170m²"): thiếu cụm thì kiểm chính GIÁ TRỊ ô trong lời
+  khách (cùng hai phép khớp) — câu bot tự hỏi vẫn không lọt. Ba lượt bắn thử `ban-thu-ban` trước bản này: lượt 1 lỗi script (diện
+  tích dạng chữ), lượt 2 đạt 8/8, lượt 3 mất ô diện tích sàn vì thiếu cụm trích.
 - Ảnh chụp thật (`giay_to = False`, không phải trang dữ liệu): lời tả ảnh vào lịch sử với dấu `DAU_TA_ANH_CHUP`, không làm bằng
   chứng; nhóm ảnh nhiều căn không gọi `_apply_text_to_listing` cho ảnh chụp. Giấy tờ / trang dữ liệu vẫn sinh ô như cũ.
 - Ví dụ mẫu bản nháp (`build_listing_proposal_system`) bỏ thương lượng / nhà mới / định cư; thêm luật "điều dữ liệu căn không có thì
@@ -6581,9 +6584,9 @@ nhiều căn (`_group_media_batch` → `_apply_text_to_listing`), đọc một n
   ngoài sáu nhóm đó đều rơi vào câu xin ảnh. Nhắc lại đúng câu bot vừa hỏi thì không cần câu mẫu nào).
 - Xưng hô: `engine` thêm luật cho "chưa biết" (gọi "anh/chị", không đoán); ví dụ mẫu trong `prompts.py` đổi sang "anh/chị".
 
-**Kiểm.** `tests/test_bang_chung_o_tin.py` (6 ca, có `loai_hinh` gửi lại: ô không bằng chứng bị bỏ, bằng chứng chỉ có trong câu bot hỏi bị bỏ, giá trị có sẵn
+**Kiểm.** `tests/test_bang_chung_o_tin.py` (7 ca, có `loai_hinh` gửi lại, thiếu cụm trích thì kiểm giá trị: ô không bằng chứng bị bỏ, bằng chứng chỉ có trong câu bot hỏi bị bỏ, giá trị có sẵn
 giữ, lời tả ảnh chụp không thành ô, ô có số nhận cụm viết lại đơn vị), `tests/test_tin_nhac.py` (4 ca), `tests/test_xung_ho_chua_ro.py` (2 ca) — đỏ trên code cũ
-(đã chạy), pytest 382 đạt. Bắn thử production bằng ID thử: `bot/tests/ban-thu-ban.sh` (`apply-migration` ô `ban-thu-ban`, kịch bản
+(đã chạy), pytest 383 đạt. Bắn thử production bằng ID thử: `bot/tests/ban-thu-ban.sh` (`apply-migration` ô `ban-thu-ban`, kịch bản
 đúng lượt chat 19/10) — soi phường, giá, diện tích, mặt tiền, sổ, kết cấu và KHÔNG có ô thương lượng.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
