@@ -523,6 +523,20 @@ trong lúc chat không phải dữ liệu.
 ĐỊNH DẠNG KHOẢNG CÁCH (bắt buộc): CÓ một dòng trống NGĂN tiêu đề với đoạn mô tả, và một dòng trống NGĂN đoạn mô tả với khối gạch đầu dòng. Trong khối gạch đầu dòng thì KHÔNG chèn dòng trống giữa các gạch. KHÔNG dùng dấu ** (Zalo không hiện in đậm). CẤM viết "đang cập nhật"."""
 
 
+# Dòng mở đầu cố định của bản nháp tin rao. Model hay viết thêm câu dẫn TRƯỚC dòng này ("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như
+# vầy nhé anh:") → khách đọc hai câu dẫn; `cat_truoc_mo_dau` bỏ phần trước (SRS-5.1zzzzzzz76).
+MO_DAU_NHAP = ("📋 Mình sẽ rao như vầy nhé em:", "📋 Em sẽ rao như vầy nhé anh chị:")
+
+
+def cat_truoc_mo_dau(reply: str) -> str:
+    """Bản nháp bắt đầu đúng ở dòng mở đầu cố định; chữ model viết trước dòng đó bỏ đi."""
+    for mo in MO_DAU_NHAP:
+        i = reply.find(mo)
+        if i > 0:
+            return reply[i:]
+    return reply
+
+
 def build_listing_proposal_system(
     assistant_name: str,
     prop: Property,
@@ -534,7 +548,7 @@ def build_listing_proposal_system(
     Used once the listing is "khá đầy đủ". This is NOT a 30-word chat reply, so the word
     cap does NOT apply. CRUCIALLY: do NOT mention the fee yet — that comes after approval.
     """
-    opener = "📋 Mình sẽ rao như vầy nhé em:" if customer_is_em else "📋 Em sẽ rao như vầy nhé anh chị:"
+    opener = MO_DAU_NHAP[0] if customer_is_em else MO_DAU_NHAP[1]
     closer = "Em thấy bản tin này hấp dẫn chưa?" if customer_is_em else "Anh/chị thấy bản tin này hấp dẫn chưa ạ?"
 
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).

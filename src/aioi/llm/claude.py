@@ -83,19 +83,25 @@ class ClaudeProvider(LLMProvider):
         # 19/10/2026 (SRS-5.1zzzzzzz76): lời trả lời là chữ tự do thì model không có chỗ tự soát luật — khách từng nhận "Wait, the
         # system prohibits…" và "Lưu ý: vi phạm quy tắc một câu hỏi. Sửa lại: …". Nay model PHẢI gọi công cụ hai ô: ghi chú tự soát
         # (không gửi) rồi lời gửi khách; chỉ ô sau tới khách. Không lọc chữ ở đầu ra.
-        resp = self._tao("chat",
-            model=self._chat_model,
-            max_tokens=max_tokens + 300,
-            system=self._sys(system),
-            messages=[{"role": m.role, "content": m.content} for m in messages],
-            tools=[_GUI_KHACH],
-            tool_choice={"type": "tool", "name": _GUI_KHACH["name"]},
-        )
-        self._so.ghi("chat", self._chat_model, resp)
-        for block in resp.content:
-            if block.type == "tool_use":
-                return str((block.input or {}).get("loi_gui_khach") or "").strip()
-        return "".join(b.text for b in resp.content if b.type == "text").strip()
+        # Bắn thử 19/10: một lượt ra rỗng → khách nhận câu dự phòng "kết nối mạng vừa gián đoạn". Ô lời gửi khách trống thì gọi lại một
+        # lần và ghi sổ lỗi (chỉ lý do + tên ô, không nội dung).
+        for lan in range(2):
+            resp = self._tao("chat",
+                model=self._chat_model,
+                max_tokens=max_tokens + 300,
+                system=self._sys(system),
+                messages=[{"role": m.role, "content": m.content} for m in messages],
+                tools=[_GUI_KHACH],
+                tool_choice={"type": "tool", "name": _GUI_KHACH["name"]},
+            )
+            self._so.ghi("chat", self._chat_model, resp)
+            o = next((dict(b.input or {}) for b in resp.content if b.type == "tool_use"), {})
+            loi = str(o.get("loi_gui_khach") or "").strip()
+            if loi:
+                return loi
+            self._so.ghi_loi("claude chat", f"lời gửi khách rỗng (lần {lan + 1}): stop={getattr(resp, 'stop_reason', '?')}, "
+                                            f"ô={sorted(o)}")
+        return ""
 
     def extract(
         self, system: str, messages: list[Message], json_schema: dict[str, Any]

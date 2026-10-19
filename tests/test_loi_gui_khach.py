@@ -52,3 +52,31 @@ def test_engine_tra_loi_khach_qua_reply_khong_qua_chat():
     m = Ghi(S)
     Engine(m).handle("k", "Mình cần bán nhà phố")
     assert "reply" in m.goi and "chat" not in m.goi
+
+
+def test_o_loi_gui_khach_rong_thi_goi_lai_mot_lan():
+    # Bắn thử 19/10: "Phường 9 em" nhận câu dự phòng "kết nối mạng vừa gián đoạn" — lượt model ra ô lời gửi khách trống.
+    from aioi.llm.claude import ClaudeProvider
+
+    class Api(_Api):
+        def create(self, **kw):
+            r = super().create(**kw)
+            if len(self.calls) == 1:
+                r.content[1].input = {"tu_soat": "…"}
+            return r
+
+    p = ClaudeProvider(Settings(provider="claude", anthropic_api_key="test", chat_model="claude-haiku-4-5", vision_model="v"))
+    p._client = SimpleNamespace(messages=Api())
+    loi_ghi = []
+    p._so = SoToken(None, nen=False)
+    p._so.ghi_loi = lambda nguon, chi_tiet: loi_ghi.append((nguon, chi_tiet))
+    assert p.reply("s", [Message("user", "Phường 9 em")]) == "Giá anh mong muốn bao nhiêu ạ?"
+    assert len(p._client.messages.calls) == 2 and loi_ghi and "rỗng" in loi_ghi[0][1]
+
+
+def test_ban_nhap_bo_cau_dan_truoc_dong_mo_dau():
+    from aioi.prompts import MO_DAU_NHAP, cat_truoc_mo_dau
+    nhap = f"{MO_DAU_NHAP[1]}\n\nBán nhà phố mặt tiền Âu Cơ…"
+    assert cat_truoc_mo_dau("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như vầy nhé anh:\n\n" + nhap) == nhap
+    assert cat_truoc_mo_dau(nhap) == nhap
+    assert cat_truoc_mo_dau("Anh cho em hỏi giá nhé?") == "Anh cho em hỏi giá nhé?"

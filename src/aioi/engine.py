@@ -61,6 +61,7 @@ from .prompts import (
     tai_lieu_chung_schema,
     build_greeting,
     build_listing_proposal_system,
+    cat_truoc_mo_dau,
     build_inventory_instruction,
     build_media_group_instruction,
     build_media_read_instruction,
@@ -1706,12 +1707,14 @@ class Engine:
             conv.prop.fields.get("unit_type"),
         )
         is_listing_post = conv.prop.summary_ready()
+        trinh_nhap = False
         if not is_listing_post:
             system = build_chat_system(
                 conv.assistant.name, conv.prop, next_field, conv.user_type, project_block
             )
         elif not conv.listing_proposed:
             conv.listing_proposed = True
+            trinh_nhap = True
             system = build_listing_proposal_system(
                 conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em
             )
@@ -1805,6 +1808,8 @@ class Engine:
             reply = "Mình đây nhé! Kết nối mạng vừa gián đoạn một chút, em nhắn lại giúp mình với nha." if customer_is_em else "Em đây ạ! Kết nối mạng vừa bị gián đoạn một chút, anh/chị nhắn lại giúp em với nhé ạ."
 
         reply = _bo_markdown(reply)
+        if trinh_nhap:
+            reply = cat_truoc_mo_dau(reply)
 
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now

@@ -6710,15 +6710,19 @@ rồi "làm hết đi" cho cả bảng bất thường.
   `tu_soat` (ghi chú nội bộ, đứng trước) rồi `loi_gui_khach` — chỉ ô sau tới khách. Engine gọi `reply` ở cả ba chỗ trả lời khách
   (người mua, người bán, câu hỏi dự án). Gỡ `_bo_loi_noi_bo`. **Chỗ cùng lớp còn lại:** vòng công cụ `_agent_reply` (người rao rổ hàng
   dự án) vẫn lấy chữ tự do của lượt cuối — chưa đổi vì vòng đó cần chữ + công cụ trong cùng lượt; theo dõi khi bắn thử nhánh dự án.
+- Bắn thử lần 3 (đường hai ô): "Phường 9 em" nhận câu dự phòng "kết nối mạng vừa gián đoạn" — lượt model ra ô `loi_gui_khach` trống.
+  `ClaudeProvider.reply` gọi lại một lần và ghi sổ lỗi (lý do dừng + tên ô, không nội dung). Bản nháp có hai câu dẫn ("Em sẽ rao
+  như vầy nhé anh:" rồi dòng mở đầu cố định) — `prompts.cat_truoc_mo_dau` bỏ chữ model viết trước dòng mở đầu cố định `MO_DAU_NHAP`
+  (so với hằng của chính hệ thống, không đọc lời khách).
 - Bản tin 15:31 hỏi lại "80m² đất hay sàn" ở cuối: là hệ quả của (b) cộng lỗi SRS-5.1zzzzzzz74 (đã sửa), không sửa thêm — khách bảo
   đăng mà tin còn thiếu một ô thì bot soạn bài rồi hỏi đúng ô còn thiếu là đúng thiết kế.
 
 **Kiểm.** `tests/test_hoi_it_truoc_ban_nhap.py` (2 ca, đỏ trên code cũ), `tests/test_xung_ho_qua_khoi_dong.py` (đỏ trên code cũ),
-`tests/test_voice.py::test_tin_thoai_khong_chep_duoc_vao_so_loi` (đỏ trên code cũ), `tests/test_loi_gui_khach.py` (2 ca: chỉ `loi_gui_khach`
-tới khách, công cụ ép buộc với ô tự soát đứng trước; engine trả lời khách qua `reply` — đỏ trên code cũ), `test_hoi_it_truoc_ban_nhap.py::test_cau_hoi_dien_tich_san_khong_bi_coi_la_xong_khi_da_biet_so_tang`
+`tests/test_voice.py::test_tin_thoai_khong_chep_duoc_vao_so_loi` (đỏ trên code cũ), `tests/test_loi_gui_khach.py` (4 ca: chỉ `loi_gui_khach`
+tới khách, công cụ ép buộc với ô tự soát đứng trước; engine trả lời khách qua `reply`; ô trống thì gọi lại; bản nháp bỏ câu dẫn thừa — đỏ trên code cũ), `test_hoi_it_truoc_ban_nhap.py::test_cau_hoi_dien_tich_san_khong_bi_coi_la_xong_khi_da_biet_so_tang`
 (đỏ trên code cũ), `bot/tests/bridge-gui-lai.mjs` trong `test:bot`
 (máy chủ giả lên sau 2 giây; bản cũ trượt; lõi treo vẫn chỉ gửi ≤ 2 lần — đã chạy cả hai chiều); sửa theo luật mới
-`tests/test_ban_nhap_du_dieu_kien.py`, `tests/test_cau_hoi_theo_loai.py`; ca lọc chữ trong `tests/test_bot_bot_hoi_lap.py` gỡ cùng hàm. pytest 401 đạt. Model thật: `ban-thu-ban`.
+`tests/test_ban_nhap_du_dieu_kien.py`, `tests/test_cau_hoi_theo_loai.py`; ca lọc chữ trong `tests/test_bot_bot_hoi_lap.py` gỡ cùng hàm. pytest 403 đạt. Model thật: `ban-thu-ban`.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
