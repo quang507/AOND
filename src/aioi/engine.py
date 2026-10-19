@@ -2942,7 +2942,8 @@ class Engine:
         # "Bỏ ô" nào — ghi TÊN ô lượt AI trả (không giá trị: log có thể chứa dữ liệu khách) để biết hụt ở AI hay ở code.
         # Model có lúc trả thao tác không phải object (chuỗi) — chỗ áp dụng bỏ qua chúng (`isinstance(op, dict)`), log cũng vậy; bản đầu
         # của dòng log này gọi .get trên chuỗi → 500 cả lượt chat (bắn thử 19/10 10:49).
-        log.info("Kế hoạch: %s", [(o.get("op"), sorted(o["fields"].keys()) if isinstance(o.get("fields"), dict) else o.get("fields"))
+        # warning chứ không info: lõi chạy dưới uvicorn chỉ in từ mức warning (bắn thử 19/10: dòng info không hiện trong journal).
+        log.warning("Kế hoạch: %s", [(o.get("op"), sorted(o["fields"].keys()) if isinstance(o.get("fields"), dict) else o.get("fields"))
                                    if isinstance(o, dict) else type(o).__name__ for o in plan.get("operations") or []])
 
         # Sticky conversation attributes (never downgrade role to unknown).
