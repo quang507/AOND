@@ -444,7 +444,8 @@ class SqliteConversationStore(ConversationStore):
             "active_listing_id TEXT, history_json TEXT, "
             "price_book_json TEXT NOT NULL DEFAULT '{}', "
             "role TEXT NOT NULL DEFAULT 'unknown', "
-            "active_lead_id TEXT NOT NULL DEFAULT '')"
+            "active_lead_id TEXT NOT NULL DEFAULT '', "
+            "xung_ho TEXT NOT NULL DEFAULT '')"
         )
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS listings ("
@@ -466,6 +467,7 @@ class SqliteConversationStore(ConversationStore):
             ("conversations", "price_book_json", "'{}'"),
             ("conversations", "role", "'unknown'"),
             ("conversations", "active_lead_id", "''"),
+            ("conversations", "xung_ho", "''"),   # SRS-5.1zzzzzzz76: khách tự xưng gì, giữ qua khởi động lại
         ):
             try:  # migrate older tables that predate this column
                 self._conn.execute(
@@ -480,12 +482,12 @@ class SqliteConversationStore(ConversationStore):
         active_lead_id = conv.buyer_lead.lead_id if conv.buyer_lead else ""
         self._conn.execute(
             "INSERT INTO conversations(user_key, user_type, last_ai_at, active_listing_id, "
-            "history_json, price_book_json, role, active_lead_id) VALUES (?,?,?,?,?,?,?,?) "
+            "history_json, price_book_json, role, active_lead_id, xung_ho) VALUES (?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(user_key) DO UPDATE SET "
             "user_type=excluded.user_type, last_ai_at=excluded.last_ai_at, "
             "active_listing_id=excluded.active_listing_id, history_json=excluded.history_json, "
             "price_book_json=excluded.price_book_json, role=excluded.role, "
-            "active_lead_id=excluded.active_lead_id",
+            "active_lead_id=excluded.active_lead_id, xung_ho=excluded.xung_ho",
             (
                 conv.user_key,
                 conv.user_type.value,
@@ -495,6 +497,7 @@ class SqliteConversationStore(ConversationStore):
                 json.dumps(conv.price_book, ensure_ascii=False),
                 conv.role,
                 active_lead_id,
+                conv.xung_ho or "",
             ),
         )
         if conv.buyer_lead is not None:
@@ -564,7 +567,7 @@ class SqliteConversationStore(ConversationStore):
     def load(self, user_key: str) -> Conversation | None:
         row = self._conn.execute(
             "SELECT user_type, last_ai_at, active_listing_id, history_json, price_book_json, "
-            "role, active_lead_id FROM conversations WHERE user_key=?",
+            "role, active_lead_id, xung_ho FROM conversations WHERE user_key=?",
             (user_key,),
         ).fetchone()
         if row is None:
@@ -625,6 +628,7 @@ class SqliteConversationStore(ConversationStore):
             price_book=json.loads(row[4]) if row[4] else {},  # the seller's uploaded prices survive restart
             role=row[5] if len(row) > 5 and row[5] else "unknown",
             buyer_lead=lead,
+            xung_ho=row[7] or None,
         )
 
     def reset(self, user_key: str) -> None:

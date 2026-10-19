@@ -34,6 +34,11 @@ fi
 apt-get install -y -qq git tmux >/dev/null
 command -v node >/dev/null && [ -x /usr/bin/node ] || ln -sf "$(command -v node)" /usr/bin/node
 
+# 19/10/2026 (SRS-5.1zzzzzzz76): dấu vân code bridge TRƯỚC khi lấy code mới — bước 5 chỉ khởi động lại bridge khi nó đổi. Bridge tắt là
+# acc Zalo rời mạng; tin khách tới trong lúc đó không qua bridge. Lượt cài chỉ đổi lõi Python không có lý do tắt nó.
+van_bridge() { cat "$BR/index.mjs" "$BR/nhadat-bridge.service" "$BR/node_modules/zca-js/package.json" 2>/dev/null | sha256sum; }
+VAN_TRUOC=$(van_bridge)
+
 buoc "2/5 user nhadat + $DIR"
 id nhadat >/dev/null 2>&1 || useradd -m -s /bin/bash nhadat
 mkdir -p "$DIR" && chown nhadat:nhadat "$DIR"
@@ -117,7 +122,9 @@ buoc "5/5 systemd nhadat-bridge"
 cp "$BR/nhadat-bridge.service" /etc/systemd/system/nhadat-bridge.service
 systemctl daemon-reload
 systemctl enable nhadat-bridge >/dev/null 2>&1
-if [ -f "$BR/zalo-session.json" ]; then
+if [ -f "$BR/zalo-session.json" ] && [ "$(van_bridge)" = "$VAN_TRUOC" ] && systemctl is-active --quiet nhadat-bridge; then
+  xong "code bridge không đổi → không khởi động lại (acc Zalo giữ kết nối)"
+elif [ -f "$BR/zalo-session.json" ]; then
   systemctl restart nhadat-bridge && xong "đã có zalo-session.json → service đang chạy"
   echo "  Xem log: journalctl -u nhadat-bridge -f"
 else

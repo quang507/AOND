@@ -658,12 +658,18 @@ def build_fee_followup_system(
             "hỏi ĐÚNG 1 câu nhẹ nhàng khách muốn chỉnh chỗ nào (tiêu đề, giá, mô tả, thông tin nhà) hay tạm thời chưa muốn đăng."
         )
     hoi_sau = ""
-    if (web is None or web.get("len_web")) and prop.cau_hoi_sau_ra_tin() == "lo_gioi_hem":
+    o_sau = prop.cau_hoi_sau_ra_tin() if (web is None or web.get("len_web")) else None
+    if o_sau == "lo_gioi_hem":
         y = ("hẻm trước nhà rộng khoảng mấy mét, xe hơi vào tận nhà được không" if prop.fields.get("lo_gioi_hem")
              else "nhà nằm mặt tiền hay trong hẻm, nếu hẻm thì rộng khoảng mấy mét")
         hoi_sau = (
             f"\n  • BỔ SUNG SAU KHI DUYỆT: sau câu xác nhận đăng, hỏi thêm ĐÚNG 1 câu ngắn: {y} — để bổ sung vào tin cho "
             "khách mua dễ hình dung. Chỉ hỏi 1 lần; khách đã nói độ rộng hẻm hoặc nhà mặt tiền thì không hỏi."
+        )
+    elif o_sau == "tinh_trang_ban_giao":   # SRS-5.1zzzzzzz76: hiện trạng hỏi sau bản nháp
+        hoi_sau = (
+            "\n  • BỔ SUNG SAU KHI DUYỆT: sau câu xác nhận đăng, hỏi thêm ĐÚNG 1 câu ngắn: nhà đang ở hay đang cho thuê — để "
+            "hẹn khách xem cho tiện. Khách đã nói rồi thì không hỏi."
         )
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 

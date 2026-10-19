@@ -6663,6 +6663,49 @@ bộ lọc chữ ở đầu ra — đây là sửa chỗ dạy model.
 tin rao — không còn nhận định thị trường; đỏ trên code cũ, đã chạy), pytest 395 đạt. Model thật: `bot/tests/ban-thu-ban.sh` kịch bản 2
 thêm phép soát lời bot không có "thanh khoản / tìm nhiều / hợp lý / vừa tầm".
 
+### SRS-5.1zzzzzzz76 · Hỏi ít trước bản nháp, không mất tin và xưng hô khi lõi khởi động lại, tin thoại hỏng vào sổ lỗi (19/10/2026)
+
+**Ca gốc.** Chat thử Âu Cơ Q11 (15:19–15:31) và lượt bắn thử sau SRS-5.1zzzzzzz74. Chủ dự án: "nó hỏi nhiều quá chán chết được",
+rồi "làm hết đi" cho cả bảng bất thường.
+- (a) Khách đã nói đường, phường, mặt tiền, số nhà, "80m 5 tầng", "sổ riêng", giá 16 tỷ, bot vẫn hỏi hoàn công, rồi đang ở hay cho
+  thuê, rồi diện tích sàn mới ra bản nháp.
+- (b) Tin 15:29 "diện tích đất, diện tích sàn là 240m" không được trả lời: lõi đang khởi động lại vì lượt cài code.
+- (c) Khách "anh cần bán…", bot gọi "anh" một lượt rồi "anh/chị" tới hết.
+- (d) Tin thoại 08:11 — không truy được bot đã nghe gì: "hello" lúc 09:29 xoá hội thoại, sổ lỗi không có dòng nào.
+
+**Lớp lỗi.**
+- (a) Ô không đổi nội dung tin rao vẫn chặn bản nháp. `tinh_trang_ban_giao` nằm trong % đầy đủ (ngưỡng 0,70) nên phải được trả lời
+  trước bản nháp; `phap_ly_hoan_cong` chỉ nhìn chính nó nên "sổ riêng" (AI ghi ô `phap_ly`) không đủ, bot hỏi thêm hoàn công.
+- (b), (c) Trạng thái chỉ sống trong một tiến trình. Bridge chỉ thử lại một lần sau 1,5 giây, lõi khởi động lại lâu hơn; `cai-vps.sh`
+  còn khởi động lại cả bridge ở mọi lượt cài, kể cả khi code bridge không đổi. `conv.xung_ho` không lưu vào kho, khởi động lại là mất.
+- (d) Đường hỏng đi vào journal, không vào sổ lỗi — đúng luật "mọi catch phải nối dây vào sổ" (FR-152 d).
+
+**Chỗ cùng lớp đã soát.**
+- (a) `lo_gioi_hem` đã hỏi sau bản nháp từ 18/10; nay `HOI_SAU_KHI_RA_TIN` ra khỏi cả % đầy đủ. `dien_tich_nha` của nhà phố giữ trước
+  bản nháp (SRS-5.1zzzzzzz52). Câu hỏi bộ riêng của toà nhà / phòng trọ không chứa hai ô này.
+- (b), (c) Các trạng thái khác của hội thoại lõi (`price_book`, `listing_proposed`, `media`, `history_start`) đã nằm trong SQLite; còn
+  lại `hoi_ve_luot`, `y_luot`, `duyet_luot`, `loi_khach_luot` là của MỘT lượt nên không cần giữ; `o_vua_hoi` mất khi khởi động lại chỉ
+  làm mất một lần xoay câu hỏi, chấp nhận. Trang chat thử không dùng bridge.
+- (d) Lượt Claude hỏng đã vào sổ (`SoToken.bao_loi`); STT là đường hỏng ngoài model duy nhất còn thiếu.
+
+**Sửa.**
+- (a) `src/aioi/schema.py`: `HOI_SAU_KHI_RA_TIN` thêm `tinh_trang_ban_giao`; `summary_ready` tính % trên các ô hỏi TRƯỚC bản nháp;
+  `_has("phap_ly_hoan_cong")` nhận cả ô `phap_ly`; `cau_hoi_sau_ra_tin` trả từng ô (hẻm rồi hiện trạng), `build_fee_followup_system` hỏi
+  hiện trạng một câu sau khi khách duyệt. Âu Cơ: sau giá chỉ còn một câu diện tích sàn rồi ra bản nháp.
+- (b) `bot/bridge-zca/index.mjs` `postJson`: kết nối bị TỪ CHỐI (`ECONNREFUSED`, request chưa tới lõi nên gửi lại an toàn) thì chờ 2 /
+  4 / 8 / 15 / 30 giây rồi gửi lại; hết giờ chờ vẫn chỉ thử lại một lần như cũ. `bot/bridge-zca/cai-vps.sh`: so dấu vân code bridge
+  (index.mjs, file service, phiên bản zca-js) trước và sau khi lấy code, không đổi thì không khởi động lại bridge.
+- (c) `src/aioi/engine.py`: cột `xung_ho` trong bảng `conversations` SQLite (lưu / nạp); `supabase_store.load` lấy lại từ bản SQLite.
+- (d) `src/aioi/server.py`: tin thoại không chép được (hoặc bridge báo tin thoại mà không kèm link) → `SoToken.ghi_loi("stt tin thoai",
+  …)`, ghi rõ khi chưa có GROQ_API_KEY; không mang nội dung tin.
+- Bản tin 15:31 hỏi lại "80m² đất hay sàn" ở cuối: là hệ quả của (b) cộng lỗi SRS-5.1zzzzzzz74 (đã sửa), không sửa thêm — khách bảo
+  đăng mà tin còn thiếu một ô thì bot soạn bài rồi hỏi đúng ô còn thiếu là đúng thiết kế.
+
+**Kiểm.** `tests/test_hoi_it_truoc_ban_nhap.py` (2 ca, đỏ trên code cũ), `tests/test_xung_ho_qua_khoi_dong.py` (đỏ trên code cũ),
+`tests/test_voice.py::test_tin_thoai_khong_chep_duoc_vao_so_loi` (đỏ trên code cũ), `bot/tests/bridge-gui-lai.mjs` trong `test:bot`
+(máy chủ giả lên sau 2 giây; bản cũ trượt; lõi treo vẫn chỉ gửi ≤ 2 lần — đã chạy cả hai chiều); sửa theo luật mới
+`tests/test_ban_nhap_du_dieu_kien.py`, `tests/test_cau_hoi_theo_loai.py`. pytest 399 đạt. Model thật: `ban-thu-ban`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

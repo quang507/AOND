@@ -19,7 +19,8 @@ def test_toa_nha_hoi_so_phong_va_dong_tien():
 
 
 def test_nha_pho_dat_can_ho_giu_bo_cua_nhom():
-    assert "tinh_trang_ban_giao" in Property(loai_hinh="nha_pho").missing_fields()
+    assert "phap_ly_hoan_cong" in Property(loai_hinh="nha_pho").missing_fields()
+    assert "tinh_trang_ban_giao" in Property(loai_hinh="nha_pho").expected_fields()   # hỏi sau bản nháp (SRS-5.1zzzzzzz76)
     assert "lo_gioi_duong" in Property(loai_hinh="dat").missing_fields()
     assert "so_phong_ngu" in Property(loai_hinh="chung_cu").missing_fields()
 
