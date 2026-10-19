@@ -52,10 +52,11 @@ loi=0
 kiem() { if [ "$2" = 1 ]; then echo "ĐẠT  $1"; else echo "TRƯỢT $1"; loi=1; fi; }
 kiem "phường chuẩn" "$(jq '.ward == "Phường Chánh Hưng" | if . then 1 else 0 end' <<<"$r")"
 kiem "giá 8,5 tỷ" "$(jq '.price_vnd == 8500000000 | if . then 1 else 0 end' <<<"$r")"
-kiem "diện tích đất 49,5" "$(jq '(.area_m2 // 0) == 49.5 | if . then 1 else 0 end' <<<"$r")"
+kiem "diện tích đất 49,5" "$(jq '((.area_m2 // 0) | tonumber) == 49.5 | if . then 1 else 0 end' <<<"$r")"
 kiem "mặt tiền" "$(jq '.access_type == "mat_tien" | if . then 1 else 0 end' <<<"$r")"
 kiem "sổ hồng riêng" "$(jq '.legal_status == "so_hong_rieng" | if . then 1 else 0 end' <<<"$r")"
 kiem "kết cấu có ghi" "$(jq '((.boc_tach.ket_cau // "") != "") or ((.floors // 0) > 0) | if . then 1 else 0 end' <<<"$r")"
+kiem "diện tích sàn 170 có ghi" "$(jq '[.boc_tach | to_entries[] | select(.value | tostring | test("170"))] | length > 0 | if . then 1 else 0 end' <<<"$r")"
 kiem "KHÔNG có ô thương lượng (chủ nhà không nói)" "$(jq '(.boc_tach.thuong_luong // "") == "" | if . then 1 else 0 end' <<<"$r")"
 echo "== số ô tin: $(jq '.boc_tach | length' <<<"$r")"
 vps "journalctl -u aond-core --since '-10 min' --no-pager -o cat | grep -E 'Bỏ ô' | sed -E 's/[0-9]{9,}/#/g' | tail -15" || true

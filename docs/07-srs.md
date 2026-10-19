@@ -6568,8 +6568,9 @@ nhiều căn (`_group_media_batch` → `_apply_text_to_listing`), đọc một n
 **Sửa.**
 - `operations_schema`: mỗi op có `bang_chung` {ô: nguyên văn cụm trong lời KHÁCH}; `OPERATIONS_SYSTEM` thêm luật "chỉ ghi điều khách
   nói, câu bot hỏi không phải lời khách". `engine._apply_operation`: ô MỚI / ĐỔI giá trị chỉ ghi khi cụm bằng chứng nằm nguyên trong
-  lời khách của khung lượt (`conv.loi_khach_luot`, không tính lời bot, không tính lượt tả ảnh chụp); giá trị đã có ở rổ thì giữ. Ô bị
-  bỏ ghi log tên ô (không in giá trị).
+  lời khách của khung lượt (`conv.loi_khach_luot`, không tính lời bot, không tính lượt tả ảnh chụp); giá trị đã có ở rổ thì giữ. Ô có SỐ
+  nhận cả khi model viết lại đơn vị trong cụm trích ("170m²" cho "170m vuông") miễn mọi số của cụm có trong lời khách (`_so_khop`);
+  ô không có số (thương lượng, mới xây) vẫn phải khớp nguyên văn. Ô bị bỏ ghi log WARNING tên ô (không in giá trị).
 - Ảnh chụp thật (`giay_to = False`, không phải trang dữ liệu): lời tả ảnh vào lịch sử với dấu `DAU_TA_ANH_CHUP`, không làm bằng
   chứng; nhóm ảnh nhiều căn không gọi `_apply_text_to_listing` cho ảnh chụp. Giấy tờ / trang dữ liệu vẫn sinh ô như cũ.
 - Ví dụ mẫu bản nháp (`build_listing_proposal_system`) bỏ thương lượng / nhà mới / định cư; thêm luật "điều dữ liệu căn không có thì
@@ -6580,9 +6581,9 @@ nhiều căn (`_group_media_batch` → `_apply_text_to_listing`), đọc một n
   ngoài sáu nhóm đó đều rơi vào câu xin ảnh. Nhắc lại đúng câu bot vừa hỏi thì không cần câu mẫu nào).
 - Xưng hô: `engine` thêm luật cho "chưa biết" (gọi "anh/chị", không đoán); ví dụ mẫu trong `prompts.py` đổi sang "anh/chị".
 
-**Kiểm.** `tests/test_bang_chung_o_tin.py` (4 ca: ô không bằng chứng bị bỏ, bằng chứng chỉ có trong câu bot hỏi bị bỏ, giá trị có sẵn
-giữ, lời tả ảnh chụp không thành ô), `tests/test_tin_nhac.py` (4 ca), `tests/test_xung_ho_chua_ro.py` (2 ca) — đỏ trên code cũ
-(đã chạy), pytest 380 đạt. Bắn thử production bằng ID thử: `bot/tests/ban-thu-ban.sh` (`apply-migration` ô `ban-thu-ban`, kịch bản
+**Kiểm.** `tests/test_bang_chung_o_tin.py` (5 ca: ô không bằng chứng bị bỏ, bằng chứng chỉ có trong câu bot hỏi bị bỏ, giá trị có sẵn
+giữ, lời tả ảnh chụp không thành ô, ô có số nhận cụm viết lại đơn vị), `tests/test_tin_nhac.py` (4 ca), `tests/test_xung_ho_chua_ro.py` (2 ca) — đỏ trên code cũ
+(đã chạy), pytest 381 đạt. Bắn thử production bằng ID thử: `bot/tests/ban-thu-ban.sh` (`apply-migration` ô `ban-thu-ban`, kịch bản
 đúng lượt chat 19/10) — soi phường, giá, diện tích, mặt tiền, sổ, kết cấu và KHÔNG có ô thương lượng.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu

@@ -226,6 +226,17 @@ def _trich_dan_khop(trich: str | None, cau: str | None) -> bool:
     return bool(t) and t in gon(cau)
 
 
+def _so_khop(trich: str | None, gia_tri: str | None, loi_khach: str) -> bool:
+    """Ô có SỐ: model hay viết lại đơn vị trong cụm trích ("170m²" khi khách gõ "170m vuông", "8.5 tỷ" khi khách gõ "8,5 tỷ").
+    Nhận khi cụm trích có số và mọi số của cụm trích đều có trong lời khách (SRS-5.1zzzzzzz73) — giá trị ô có thể là số TÍNH ra
+    (4,5x11 → 49,5m²) nên không đòi. Ô không có số (thương lượng, mới xây…) vẫn phải khớp nguyên văn."""
+    def so(x: str | None) -> set[str]:
+        x = re.sub(r"(?i)m\s*[2²]", "m", str(x or ""))          # "m2" / "m²" là đơn vị, không phải số
+        return {n.replace(",", ".") for n in re.findall(r"\d+(?:[.,]\d+)?", x)}
+    o_trich = so(trich)
+    return bool(o_trich) and o_trich <= so(loi_khach)
+
+
 def _strip_accents(s: str) -> str:
     s = (s or "").replace("đ", "d").replace("Đ", "D")  # NFD won't decompose đ — map it first
     return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
@@ -3087,9 +3098,9 @@ class Engine:
             thương lượng nhẹ không", khách trả lời chuyện khác, ô thuong_luong vẫn thành "thương lượng nhẹ" rồi lên tin)."""
             if any(li.prop.fields.get(k) == v for li in conv.listings):
                 return True
-            if _trich_dan_khop(bang_chung.get(k), conv.loi_khach_luot):
+            if _trich_dan_khop(bang_chung.get(k), conv.loi_khach_luot) or _so_khop(bang_chung.get(k), v, conv.loi_khach_luot):
                 return True
-            log.info("Bỏ ô %s: không có bằng chứng trong lời khách", k)   # không in giá trị: log có thể chứa dữ liệu khách
+            log.warning("Bỏ ô %s: không có bằng chứng trong lời khách", k)   # không in giá trị: log có thể chứa dữ liệu khách
             return False
 
         def _data(exclude_code: bool = False) -> dict[str, str]:

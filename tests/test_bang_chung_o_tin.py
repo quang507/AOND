@@ -75,3 +75,13 @@ def test_loi_ta_anh_chup_khong_thanh_o_tin():
     conv = eng.conversation("chu-4")
     assert "tinh_trang_ban_giao" not in conv.active.prop.fields
     assert any(t.content.startswith(DAU_TA_ANH_CHUP) for t in conv.history)   # lời tả ảnh vẫn ở lịch sử cho bot đọc
+
+
+def test_o_co_so_nhan_cum_trich_viet_lai_don_vi():
+    # Model hay đổi đơn vị trong cụm trích ("170m²" khi khách gõ "170m vuông") — số khớp thì nhận; số không có thì bỏ.
+    eng = Engine(AiGia({"operations": [{"op": "update", "fields": {"dien_tich_nha": "170m2", "gia": "9 tỷ"},
+                                        "bang_chung": {"dien_tich_nha": "170m²", "gia": "9 tỷ"}}], "user_intent": "sell"}))
+    eng.handle("chu-5", "diện tích sàn tầm 170m vuông")
+    f = eng.conversation("chu-5").active.prop.fields
+    assert f.get("dien_tich_nha") == "170m2"
+    assert "gia" not in f                                # "9" không có trong lời khách
