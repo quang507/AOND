@@ -6311,6 +6311,26 @@ lọc `["dang_ban", "dang_quan_tam"]`; nhãn "đã cọc" ở trang admin / ngư
 **Kiểm.** `tests/test_trang_thai_va_nap_lai.py` 6 ca (đỏ trên code cũ — đã chạy: thiếu `ma_trang_thai`; ca đường dẫn ảnh đỏ khi tắt
 riêng bản sửa `_sync_media_folder`). Migration chạy thử trong giao dịch hoàn tác trên DB thật: 7 view, 3 policy, 5 hàm nhận `da_coc`.
 
+### SRS-5.1zzzzzzz64 · Tin rao theo bản anh Luận: bố cục một nguồn, bài đầy đủ khi khách xin, một bong bóng (19/10/2026)
+
+**Ca gốc.** Đối chiếu phiên "AOND anh Luận" (16–19/10): tiêu đề 15–25 từ, mô tả 70–150 từ, 4–5 gạch không nhãn, "xuất 1 hàng trống
+giữa title với description với block của 4-5 gạch đầu dòng", tin rao gửi nguyên khối ("chẳng thấy chừa hàng trống, khó đọc"). Bên mình
+chép luật tin rao ở hai chỗ (bản nháp, bản sửa) lệch nhau, bắt đúng 4 gạch, dòng trống chỉ có trong ví dụ; lượt chat luôn bị ép 25–40 từ
+nên khách xin "nêu đầy đủ / xem lại tin" không ra bài; tin rao chỉ đi một bong bóng khi lời có chữ "Em sẽ rao như vầy". Chủ dự án:
+"mấy cái này theo anh Luận luôn".
+
+**Lớp lỗi.** Một luật viết tay ở nhiều chỗ; nhận dạng đầu ra bằng so chữ cố định. **Chỗ cùng lớp.** Luật độ dài 25–40 từ ở cả
+`CONVERSATION_POLICY` và `build_chat_system` — cả hai thêm ngoại lệ. Lệnh CLI `/sold`, `/status`, `/new`, `/switch` (đổi trạng thái /
+căn không qua lời nhắn) — bỏ theo anh Luận 84b0155 + 790cc18. Luật "tài liệu chung thì hỏi căn nào / bảng giá" của bản anh Luận đã có
+sẵn trong `build_media_read_instruction`.
+
+**Sửa.** `prompts.AD_FORMAT` (bản anh Luận, bỏ dấu ** vì Zalo không hiện in đậm) dùng chung cho `build_listing_proposal_system`,
+nhánh sửa tin của `build_fee_followup_system` và ngoại lệ "khách xin xem / đăng toàn bộ tin" của lượt chat. `delivery.chunk_reply`
+giữ nguyên khối khi lời có gạch đầu dòng hoặc `---` (`_is_formatted_post`, anh Luận ffd3684); `server` bỏ so chữ "Em sẽ rao như vầy".
+
+**Kiểm.** `tests/test_tin_rao_bo_cuc.py` (3/4 ca đỏ trên code cũ — đã chạy; ca còn lại khoá trần 16 lượt lịch sử, anh Luận e4cbf90),
+`tests/test_kho_tep.py` (8 ca hàm thuần kho tệp chép từ bản anh Luận), `tests/test_prompts.py` theo chữ luật mới.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

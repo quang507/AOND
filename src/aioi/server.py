@@ -298,8 +298,9 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     # Clean asterisks so Zalo displays clean text without markdown markup
     cleaned_reply = r.reply.replace("**", "").strip()
 
-    # Deliver via paced bubbles: Listing drafts stay as ONE whole message
-    if r.is_listing_post or "Em sẽ rao như vầy" in cleaned_reply or "Em sẽ đăng như vầy" in cleaned_reply:
+    # Deliver via paced bubbles: listing drafts and any formatted ad (bullets / '---') stay as ONE whole message — chunk_reply
+    # nhận tin rao theo bố cục, không so chữ "Em sẽ rao như vầy" (SRS-5.1zzzzzzz64).
+    if r.is_listing_post:
         bubbles = [cleaned_reply]
     else:
         bubbles = [c.replace("**", "") for c in chunk_reply(cleaned_reply)]
