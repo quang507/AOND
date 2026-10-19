@@ -81,5 +81,7 @@ kiem "Âu Cơ: không hỏi loại nhà" "$(grep -qiE 'nhà phố, chung cư|chu
 kiem "Âu Cơ: không hỏi lại tên đường" "$(grep -qiE 'đường nào|trên đường gì' <<<"$LOI_BOT" && echo 0 || echo 1)"
 kiem "Âu Cơ: không hỏi lại phường sau khi khách nói Phường 9" "$(grep -qiE 'Phường 9 hay|hay Phường 9' <<<"$LOI_BOT" && echo 0 || echo 1)"
 kiem "Âu Cơ: không hỏi đất hay sàn" "$(grep -qiE 'đất hay (diện tích )?(sàn|nhà)|sàn hay (diện tích )?đất' <<<"$LOI_BOT" && echo 0 || echo 1)"
+# SRS-5.1zzzzzzz75: bot không có số liệu thị trường — không được khen "thanh khoản", "người mua tìm nhiều", bình giá "hợp lý / vừa tầm".
+kiem "Âu Cơ: không nhận định thị trường / bình giá" "$(grep -qiE 'thanh khoản|tìm (mua )?nhiều|hợp lý|vừa tầm' <<<"$LOI_BOT" && echo 0 || echo 1)"
 vps "journalctl -u aond-core --since '-10 min' --no-pager -o cat | grep -E 'Bỏ ô' | sed -E 's/[0-9]{9,}/#/g' | tail -15" || true
 exit $loi

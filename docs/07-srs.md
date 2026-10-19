@@ -6637,6 +6637,32 @@ liền, bỏ dòng ghi chú tiếng Anh nhưng giữ link / chữ Anh rời — 
 (đúng lượt chat Âu Cơ của chủ dự án) — soát `property_type = nha_pho`, `area_m2 = 80` và `dien_tich_dat` mang 80, lời bot KHÔNG hỏi loại
 nhà, KHÔNG hỏi "đất hay sàn", KHÔNG hỏi lại tên đường, KHÔNG hỏi lại phường.
 
+### SRS-5.1zzzzzzz75 · Khen ít và có cơ sở: bỏ câu mẫu dạy bot khen thị trường (19/10/2026)
+
+**Ca gốc.** Chủ dự án chat thử 15:19–15:31 (nhà mặt tiền Âu Cơ, Q11): gần như lượt nào bot cũng khen — "đây là tuyến đường đi lại
+thuận tiện nên người tìm mua khá nhiều", "khu Phường 9 này thanh khoản khá tốt", "mức giá 16 tỷ… khá hợp lý, người mua tìm nhiều
+lắm"; bản tin 15:31 có "giữ gìn sạch đẹp". Bắn thử sau SRS-5.1zzzzzzz74 vẫn "Mức 16 tỷ… khá hợp lý anh ha". Chủ dự án: "khen quá
+nhiều, khen tào lao".
+
+**Lớp lỗi.** Câu mẫu trong prompt dạy ngược luật. Prompt lượt chat người bán (`build_chat_system` + `CONVERSATION_POLICY`) có luật
+"không khen thảo mai", nhưng ví dụ mẫu ngay dưới lại là đúng thứ bị cấm: "Nhà đang ở giữ gìn sạch đẹp là khách mua ưng ngay", "Nhà phố
+khu này thanh khoản khá tốt", "Mức giá 6 tỷ khu này rất vừa tầm tài chính", "Khu vực này thanh khoản rất tốt", "người mua tìm nhiều
+lắm"; luật khen còn bảo "gắn với thanh khoản người mua". Model chép ví dụ hơn là theo luật, và các câu đó là nhận định thị trường mà bot
+không có số liệu — tức là bịa. **Chỗ cùng lớp đã soát:** `SLANG_NOTES` ("nở hậu… thanh khoản cao" — sửa thành "điểm cộng"); luật
+khen ở `CONVERSATION_POLICY` và luật số 3 của `build_chat_system` trùng nhau, nay một nguồn `LUAT_KHEN`; prompt đọc ảnh (`build_media_read_instruction`)
+có "cấm khen nịnh giả tạo", câu mẫu tả ảnh không nhận định thị trường — giữ; prompt theo dõi phí khen "tinh thần đóng góp" của khách
+(không phải nhận định thị trường) — giữ; `AD_FORMAT` đã cấm "giữ gìn sạch đẹp" (SRS-5.1zzzzzzz73).
+
+**Sửa.** `src/aioi/prompts.py`: `LUAT_KHEN` (một nguồn, nằm ở luật số 3 lượt chat) — phần lớn các lượt không khen; chỉ khen điểm HIẾM
+khách vừa nói (mặt tiền kinh doanh, lô góc, nở hậu, hẻm xe hơi, sổ riêng đã hoàn công), mỗi điểm tối đa một lần cả cuộc trò chuyện, lượt
+trước đã khen thì lượt này không; cấm nhận định không có số liệu (thanh khoản, người mua tìm nhiều, giá hợp lý / vừa tầm, đắc địa) và
+không bình luận giá; cấm khen chung chung. Bốn câu mẫu viết lại không nhận định, bỏ hai câu mẫu "thanh khoản / tìm nhiều". Không thêm
+bộ lọc chữ ở đầu ra — đây là sửa chỗ dạy model.
+
+**Kiểm.** `tests/test_khen_co_co_so.py` (2 ca: luật khen có đúng một lần trong prompt chat; phần câu mẫu — trừ chính luật cấm và bố cục
+tin rao — không còn nhận định thị trường; đỏ trên code cũ, đã chạy), pytest 395 đạt. Model thật: `bot/tests/ban-thu-ban.sh` kịch bản 2
+thêm phép soát lời bot không có "thanh khoản / tìm nhiều / hợp lý / vừa tầm".
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
