@@ -54,3 +54,10 @@ def test_bang_chung_lot_vao_fields_thi_keo_ra():
     eng.handle("k-1", "nhà mình có sổ riêng")
     f = eng.conversation("k-1").active.prop.fields
     assert f.get("phap_ly") == "sổ hồng riêng" and "bang_chung" not in f
+
+
+def test_chuoi_json_khong_chat_van_giai():
+    # Bắn thử sau bản đầu: chuỗi vẫn lọt — xuống dòng trần trong chuỗi, chữ thừa sau dấu đóng ngoặc.
+    tho = '[{"op": "update", "fields": {"dien_tich_nha": "170m2\n"}}]\nXong.'
+    ra = chuan_theo_schema({"operations": tho}, operations_schema())["operations"]
+    assert isinstance(ra, list) and ra[0]["fields"]["dien_tich_nha"].startswith("170m2")

@@ -6775,9 +6775,12 @@ lớp đã soát:** mọi lượt gọi có ép công cụ của `ClaudeProvider
 **Sửa.** `src/aioi/llm/claude.py` `chuan_theo_schema`: duyệt đầu ra theo schema đã khai, ô object / array mà model trả chuỗi JSON thì giải
 (giải không được thì để nguyên cho chỗ dùng tự lọc) — áp ở cả ba lượt ép công cụ. `src/aioi/engine.py` `_lap_ke_hoach`: `bang_chung` nằm
 trong `fields` thì kéo ra cấp thao tác (gộp với `bang_chung` sẵn có). Không đổi model, không đổi prompt.
+Bắn thử sau bản đầu (3/3 người bán, 3/3 người mua xanh) log vẫn có một lượt `operations` là chuỗi — chuỗi không phải JSON chặt
+(xuống dòng trần trong chuỗi / chữ thừa sau dấu đóng). Giải dễ dãi: `JSONDecoder(strict=False).raw_decode` từ dấu mở ngoặc đầu tiên, bỏ
+đuôi thừa; giải vẫn hỏng thì log cảnh báo kiểu lỗi + độ dài (không nội dung), `ban-thu-ban.sh` in dòng đó.
 
 **Kiểm.** `tests/test_dau_ra_haiku.py` (3 ca: chuỗi JSON → danh sách, `ClaudeProvider.extract` trả đúng dạng, `bang_chung` lọt vào `fields`
-thì vẫn nhận ô chữ theo cụm trích — đỏ trên code cũ, ca cuối đỏ khi chỉ bỏ phần engine, đã chạy), pytest 409 đạt. Model thật: bắn thử
+thì vẫn nhận ô chữ theo cụm trích, chuỗi JSON không chặt vẫn giải — đỏ trên code cũ, ca `bang_chung` đỏ khi chỉ bỏ phần engine, đã chạy), pytest 410 đạt. Model thật: bắn thử
 `ban-thu-ban` tuần tự, đọc lại dòng `Kế hoạch:`.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu

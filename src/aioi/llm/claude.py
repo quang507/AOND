@@ -6,12 +6,15 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 from typing import Any
 
 from ..config import Settings
 from ..imaging import downscale_image
 from ..so_token import SoToken
 from .base import LLMProvider, Message, ToolCall, ToolTurn
+
+log = logging.getLogger(__name__)
 
 
 def chuan_theo_schema(v: Any, schema: dict[str, Any]) -> Any:
@@ -21,9 +24,13 @@ def chuan_theo_schema(v: Any, schema: dict[str, Any]) -> Any:
     nguyên cho chỗ dùng tự lọc. Chỉ đọc theo schema, không đoán nội dung."""
     t = (schema or {}).get("type")
     if t in ("object", "array") and isinstance(v, str):
+        # Bắn thử sau bản đầu: chuỗi vẫn còn — không phải JSON chặt (ký tự xuống dòng trần trong chuỗi, chữ thừa sau dấu đóng).
+        # Nhận ký tự điều khiển (strict=False) và đọc giá trị JSON đầu tiên từ dấu mở ngoặc, bỏ đuôi thừa.
+        mo = min((i for i in (v.find("["), v.find("{")) if i >= 0), default=-1)
         try:
-            v = json.loads(v)
-        except ValueError:
+            v = json.JSONDecoder(strict=False).raw_decode(v[mo:] if mo >= 0 else v)[0]
+        except ValueError as e:
+            log.warning("Đầu ra công cụ: ô %s là chuỗi không giải được (%s, dài %d)", t, type(e).__name__, len(v))
             return v
     if t == "object" and isinstance(v, dict):
         props = schema.get("properties") or {}
