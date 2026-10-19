@@ -122,3 +122,14 @@ def test_dien_tich_tinh_tu_kich_thuoc_khach_go():
     eng = Engine(AiGia({"operations": [{"op": "update", "fields": {"dien_tich_dat": "49,5m2", "kich_thuoc": "4,5x11"}}], "user_intent": "sell"}))
     eng.handle("chu-8", "dt 4,5x11")
     assert eng.conversation("chu-8").active.prop.fields.get("dien_tich_dat") == "49,5m2"
+
+
+def test_o_chu_khong_nhan_theo_so():
+    # Bắn thử 19/10 (SRS-5.1zzzzzzz76): khách "giá 8,5 tỷ" → AI ghi thuong_luong "thu về 8,5 tỷ"; số 8,5 có trong lời khách nên cổng
+    # nhận. Ô chữ phải khớp nguyên văn; ô số đo vẫn nhận theo số.
+    eng = Engine(AiGia({"operations": [{"op": "update", "fields": {"gia": "8.5 tỷ", "thuong_luong": "thu về 8,5 tỷ"}}],
+                        "user_intent": "sell"}))
+    eng.handle("chu-10", "giá 8,5 tỷ")
+    f = eng.conversation("chu-10").active.prop.fields
+    assert f.get("gia") == "8.5 tỷ"
+    assert "thuong_luong" not in f

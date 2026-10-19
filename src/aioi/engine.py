@@ -219,6 +219,12 @@ _DESTRUCTIVE_OPS = {"clear", "keep_only", "remove"}
 # Ô PHÂN LOẠI (mã slug AI đọc theo nghĩa) — không qua cổng bằng chứng lời khách (SRS-5.1zzzzzzz73; bắn thử lần 5: model không trích
 # cho loai_hinh, "nha_pho" không phải chữ khách gõ, tin thành chua_ro).
 _O_PHAN_LOAI = frozenset({"loai_hinh"})
+# Ô mang SỐ ĐO (diện tích, giá, kích thước, số tầng / phòng…) — chỉ những ô này được nhận theo số (`_so_khop`). Ô chữ (thương lượng,
+# pháp lý, hiện trạng…) phải khớp nguyên văn: bắn thử 19/10, khách "giá 8,5 tỷ" → AI ghi thuong_luong "thu về 8,5 tỷ", số 8,5 có
+# trong lời khách nên lọt (SRS-5.1zzzzzzz76). Danh sách theo schema ô của chính hệ thống, không đọc lời khách.
+_O_SO_DO = frozenset({"gia", "dien_tich", "dien_tich_dat", "dien_tich_nha", "kich_thuoc", "mat_tien", "so_tang", "so_phong_ngu",
+                      "so_phong", "lo_gioi_duong", "tho_cu", "chieu_cao_tran", "tai_trong_san", "phi_quan_ly", "phi_gui_xe",
+                      "muc_coc", "dong_tien_thue", "gia_dien_nuoc", "ket_cau", "tang_toa"})
 
 # Dấu đầu lượt "lời AI tả ảnh chụp thật" trong lịch sử — không phải lời khách, không làm bằng chứng ô tin (SRS-5.1zzzzzzz73).
 DAU_TA_ANH_CHUP = "[Khách gửi ảnh chụp:"
@@ -3130,7 +3136,7 @@ class Engine:
             # Bằng chứng = cụm AI trích; model không phải lượt nào cũng trích (bắn thử 19/10: bỏ mất "diện tích sàn 170m²") nên
             # thiếu cụm thì kiểm chính giá trị ô — vẫn phải nằm trong lời KHÁCH, nên câu bot tự hỏi không lọt.
             for bc in (bang_chung.get(k), v):
-                if _trich_dan_khop(bc, conv.loi_khach_luot) or _so_khop(bc, v, conv.loi_khach_luot):
+                if _trich_dan_khop(bc, conv.loi_khach_luot) or (k in _O_SO_DO and _so_khop(bc, v, conv.loi_khach_luot)):
                     return True
             log.warning("Bỏ ô %s: không có bằng chứng trong lời khách", k)   # không in giá trị: log có thể chứa dữ liệu khách
             return False
