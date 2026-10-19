@@ -55,6 +55,7 @@ from .prompts import (
     build_project_docs_block,
     build_transcribe_instruction,
     build_fee_followup_system,
+    _fee_hint,
     khoi_trang_thai_web,
     build_greeting,
     build_listing_proposal_system,
@@ -148,43 +149,8 @@ def _wants_project_facts(text: str) -> bool:
     return any(k in t for k in _DOC_TOPIC_HINTS) and any(q in t for q in _QUESTION_MARKERS)
 
 
-def _is_fee_question(text: str) -> bool:
-    t = (text or "").lower()
-    # Loại trừ các chi phí nội tại của BĐS (phí quản lý, thuế phí, phí bảo trì, phí gửi xe...)
-    if any(p in t for p in ("phí quản lý", "phi quan ly", "phí gửi xe", "phí giữ xe", "phí dịch vụ tòa", "thuế phí", "phí trước bạ", "phí sang tên", "phí bảo trì", "phí bảo dưỡng", "phí công chứng")):
-        return False
-    fee_inquiries = (
-        "phí môi giới", "phi moi gioi", "phí hoa hồng", "phi hoa hong", "hoa hồng", "hoa hong",
-        "phí bên em", "phi ben em", "phí dịch vụ bên em", "thu phí thế nào", "thu phi the nao",
-        "tốn phí không", "ton phi khong", "mất phí không", "mat phi khong", "mất tiền không",
-        "tốn tiền không", "thu bao nhiêu", "chi phí thế nào", "lấy phí bao nhiêu", "mấy % hoa hồng",
-        "bao nhiêu phần trăm", "đăng tin có mất tiền", "đăng tin có tốn phí", "đăng tin miễn phí", "chi phí"
-    )
-    return any(w in t for w in fee_inquiries)
-
-
-def _is_trust_question(text: str) -> bool:
-    t = (text or "").lower()
-    trust_inquiries = (
-        "lừa đảo", "lua dao", "công ty gì", "công ty nào", "ai ơi nhà đất là gì",
-        "aioinhadat là gì", "có uy tín không", "uy tín không", "sao tin được",
-        "văn phòng công ty ở đâu", "trụ sở ở đâu", "công ty ở đâu"
-    )
-    return any(w in t for w in trust_inquiries)
-
-
-def _is_link_question(text: str) -> bool:
-    t = (text or "").lower()
-    keywords = (
-        "link bài đăng", "link bai dang", "có link không", "co link khong",
-        "gửi link", "gui link", "xem bài đăng ở đâu", "link đâu", "link dau",
-        "link bài", "link xem", "link web", "link website", "cho xin link",
-        "cho em xin link", "xem tin ở đâu", "xem ở đâu", "xem o dau",
-        "đang đăng web như thế nào", "dang web nhu the nao", "đăng web như thế nào",
-        "tin đăng trên web", "xem trên web", "trên web như thế nào", "web đâu", "web dau",
-    )
-    return any(w in t for w in keywords)
-
+# Chuỗi bridge gán cho MỌI sticker Zalo (bot/bridge-zca/index.mjs, SRS-5.1zzzzzzz22): zca-js không cho biết sắc thái.
+STICKER_TRUNG_TINH = "[khách gửi sticker]"
 
 # Max tool-calling steps in one agent turn (a safety cap so the loop can't run away).
 MAX_AGENT_STEPS = 6
@@ -433,6 +399,10 @@ class Conversation:
     # Transient (not persisted): khách vừa ĐỒNG Ý / KHÔNG ĐỒNG Ý bản tin nháp ở lượt này ("dong_y" / "khong_dong_y"), do lượt AI
     # lập thao tác đọc theo nghĩa và code kiểm trích dẫn (SRS-5.1zzzzzzz47). None = không phải câu duyệt.
     duyet_luot: str | None = None
+    # Transient: khách HỎI VỀ gì ở lượt này ("phi" / "uy_tin" / "link_web") và khách TỰ XƯNG gì ("em" / "anh" / "chi" /
+    # "chu_co_bac", giữ qua các lượt) — lượt AI lập thao tác đọc theo nghĩa, code kiểm trích dẫn (SRS-5.1zzzzzzz54).
+    hoi_ve_luot: str | None = None
+    xung_ho: str | None = None
 
     def __post_init__(self) -> None:
         if not self.listings:
@@ -739,26 +709,11 @@ _CUSTOMER_IS_ELDER_RE = re.compile(
 )
 
 
-def _detect_customer_pronoun(conv: Conversation, current_text: str) -> str:
-    if _CUSTOMER_IS_EM_RE.search(current_text):
-        return "em"
-    if _CUSTOMER_IS_CHI_RE.search(current_text):
-        return "chi"
-    if _CUSTOMER_IS_ANH_RE.search(current_text):
-        return "anh"
-    if _CUSTOMER_IS_ELDER_RE.search(current_text):
-        return "elder"
-    for turn in reversed(conv.history[-6:]):
-        if turn.role == "user" and turn.content:
-            if _CUSTOMER_IS_EM_RE.search(turn.content):
-                return "em"
-            if _CUSTOMER_IS_CHI_RE.search(turn.content):
-                return "chi"
-            if _CUSTOMER_IS_ANH_RE.search(turn.content):
-                return "anh"
-            if _CUSTOMER_IS_ELDER_RE.search(turn.content):
-                return "elder"
-    return "unknown"
+def _detect_customer_pronoun(conv: Conversation, current_text: str = "") -> str:
+    """Khách tự xưng gì: "em" / "anh" / "chi" / "elder" / "unknown". Do lượt AI lập thao tác đọc theo nghĩa (`xung_ho`, code kiểm
+    trích dẫn trong lời khách) — không dò từ khoá (SRS-5.1zzzzzzz54; bản trước regex "em gửi|nhà em…" nhầm cả chữ "em" khách
+    dùng để GỌI bot). `current_text` giữ cho chỗ gọi cũ, không dùng."""
+    return {"em": "em", "anh": "anh", "chi": "chi", "chu_co_bac": "elder"}.get(conv.xung_ho or "", "unknown")
 
 
 def _clean_reply_tone(reply: str, conv: Conversation, customer_is_em: bool) -> str:
@@ -1823,25 +1778,26 @@ class Engine:
                 "Khách là người lớn tuổi (chú/cô/bác/dì). Lễ phép xưng 'cháu', gọi đúng 'chú/cô/bác/dì'.\n"
             )
 
-        if _is_fee_question(text):
+        # Khối ưu tiên theo điều khách HỎI — lượt AI lập thao tác đọc theo nghĩa (conv.hoi_ve_luot, SRS-5.1zzzzzzz54); bản trước
+        # dò từ khoá ("chi phí" nào cũng thành hỏi phí). Con số phí theo vai từ _fee_hint, không viết tay.
+        if conv.hoi_ve_luot == "phi":
             system += (
-                "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ PHÍ / CHI PHÍ: ===\n"
-                "Khách vừa hỏi về phí dịch vụ. Hãy TRẢ LỜI RÕ RÀNG, MINH BẠCH trước:\n"
-                "- Đăng tin HOÀN TOÀN MIỄN PHÍ.\n"
-                "- CHỈ thu phí khi giao dịch bán/thuê thành công (1% giá chốt cho chính chủ, 0.5% cho môi giới).\n"
-                "- Không bán được thì KHÔNG tốn một đồng nào.\n"
-                "Sau đó khéo léo kết nối tiếp tục nội dung BĐS đang trao đổi.\n"
+                "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ PHÍ: ===\n"
+                "Trả lời RÕ RÀNG trước: đăng tin MIỄN PHÍ; CHỈ thu phí khi giao dịch thành công, không thành thì không tốn đồng nào. "
+                "Con số phí đúng theo VAI NGƯỜI RAO / BỐI CẢNH ở trên (bán: 1% chính chủ, 0.5% môi giới; cho thuê: 3/4 của MỘT tháng "
+                "tiền thuê; chưa rõ vai thì nêu cả hai hoặc hỏi khéo khách là chủ nhà hay môi giới). Sau đó nối lại nội dung căn đang trao đổi.\n"
+                + ((_fee_hint(conv.user_type) + "\n") if _fee_hint(conv.user_type) else "")
             )
-        elif _is_trust_question(text):
+        elif conv.hoi_ve_luot == "uy_tin":
             system += (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ UY TÍN / CÔNG TY: ===\n"
                 "Khách vừa hỏi về danh tính công ty hoặc lo ngại an toàn/lừa đảo. Hãy TRẢ LỜI ẤM ÁP, TẠO NIỀM TIN:\n"
-                "- Giới thiệu AI Ơi Nhà Đất (aioinhadat.com) là nền tảng công nghệ kết nối mạng lưới hàng trăm môi giới và người mua thực tế tại TP.HCM.\n"
+                "- Giới thiệu AI Ơi Nhà Đất (aioinhadat.com) là nền tảng công nghệ kết nối mạng lưới môi giới và người mua thực tế.\n"
                 "- Cam kết bảo mật thông tin cá nhân và số điện thoại của khách, không làm phiền.\n"
                 "- Mọi giao dịch chỉ thu phí khi bán thành công.\n"
                 "Sau đó lịch sự mời khách an tâm chia sẻ tiếp thông tin căn nhà.\n"
             )
-        elif _is_link_question(text):
+        elif conv.hoi_ve_luot == "link_web":
             # Câu "tin đã lên web" do trạng thái THẬT quyết (khoi_trang_thai_web, SRS-5.1zzzzzzz44) — tin chưa ra bản nháp thì
             # chắc chắn chưa hiển thị.
             web = self._trang_thai_web(conv) if is_listing_post else {"len_web": False, "chua_ban_nhap": True}
@@ -3047,10 +3003,24 @@ class Engine:
         # Duyệt bản nháp (SRS-5.1zzzzzzz47): chỉ tính khi bản nháp ĐÃ gửi ở lượt trước và cụm trích có thật trong tin khách.
         conv.duyet_luot = None
         y = plan.get("duyet_ban_nhap")
-        if conv.listing_proposed and y in ("dong_y", "khong_dong_y"):
-            cuoi = next((t.content for t in reversed(conv.history) if t.role == "user"), "")
+        cuoi = next((t.content for t in reversed(conv.history) if t.role == "user"), "")
+        # Sticker trung tính của bridge ("[khách gửi sticker]", không rõ vui hay bực) KHÔNG bao giờ là đồng ý — dấu của kênh,
+        # không phải lời khách (bản TS: laStickerTrungTinh). Tim / like thật đến qua "[khách thả cảm xúc …]".
+        if conv.listing_proposed and y in ("dong_y", "khong_dong_y") and cuoi.strip() != STICKER_TRUNG_TINH:
             if _trich_dan_khop(plan.get("duyet_trich_dan"), cuoi):
                 conv.duyet_luot = y
+
+        # Hỏi về gì / tự xưng gì (SRS-5.1zzzzzzz54): nhận khi cụm trích có thật trong lời khách — tin vừa nhắn (hỏi về), hoặc
+        # một trong sáu lượt khách gần nhất (xưng hô giữ qua các lượt).
+        conv.hoi_ve_luot = None
+        h = plan.get("hoi_ve")
+        if h in ("phi", "uy_tin", "link_web") and _trich_dan_khop(plan.get("hoi_ve_trich_dan"), cuoi):
+            conv.hoi_ve_luot = h
+        x = plan.get("xung_ho")
+        if x in ("em", "anh", "chi", "chu_co_bac"):
+            gan = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
+            if any(_trich_dan_khop(plan.get("xung_ho_trich_dan"), c) for c in gan):
+                conv.xung_ho = x
 
         changed: set[str] = set()
         receipts: list[tuple] = []

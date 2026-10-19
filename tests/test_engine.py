@@ -1640,26 +1640,27 @@ def test_seller_assistant_stable_per_user():
     assert a == b
 
 
-def test_is_link_question_and_website_system():
-    from aioi.engine import _is_link_question
-    assert _is_link_question("đang đăng web như thế nào")
-    assert _is_link_question("cho xin link web với em")
-    assert _is_link_question("xem tin ở đâu vậy em")
-    assert _is_link_question("có link bài đăng không")
-
+def test_link_question_read_by_ai_with_quote():
+    # SRS-5.1zzzzzzz54: "khách hỏi link" do lượt AI lập thao tác đọc (hoi_ve + trích dẫn), không dò từ khoá.
     class SpyProvider:
-        def __init__(self):
-            self.last_system = ""
+        def __init__(self, plan):
+            self.plan, self.last_system = plan, ""
         def extract(self, *a, **k):
-            return {}
+            return dict(self.plan)
         def chat(self, system, messages, **k):
             self.last_system = system
-            return "Dạ vâng anh có thể xem tại https://aioinhadat.com ạ"
+            return "Anh xem tại https://aioinhadat.com nha"
 
-    spy = SpyProvider()
+    cau = "à mà tin của anh coi trên mạng chỗ nào vậy"      # không chứa chữ "link" — cách nói mới
+    spy = SpyProvider({"operations": [], "hoi_ve": "link_web", "hoi_ve_trich_dan": "coi trên mạng chỗ nào"})
     eng = Engine(spy, fetcher=_fetch_default)
-    eng.handle("test_user_link", "cho xin link web đang đăng như thế nào")
-    assert "https://aioinhadat.com" in spy.last_system
+    eng.handle("test_user_link", cau)
+    assert "KHÁCH HỎI VỀ LINK" in spy.last_system and "aioinhadat.com" in spy.last_system
+    # Trích dẫn bịa (không có trong lời khách) → không chèn khối.
+    spy2 = SpyProvider({"operations": [], "hoi_ve": "link_web", "hoi_ve_trich_dan": "cho xin link web"})
+    eng2 = Engine(spy2, fetcher=_fetch_default)
+    eng2.handle("test_user_link2", cau)
+    assert "KHÁCH HỎI VỀ LINK" not in spy2.last_system
 
 
 def test_post_approval_marks_status_dang_ban():

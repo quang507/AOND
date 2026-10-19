@@ -17,6 +17,7 @@ from .config import load_settings
 from .delivery import chunk_reply, typing_delay
 from .drive import khoa_drive, make_folder_namer, make_resolver
 from .giao_lo import dia_ban_tu_nga_tu
+from .han_muc import HanMuc
 from .engine import Engine, SqliteConversationStore
 from .followup import followup_manager
 from .llm import build_provider
@@ -77,6 +78,8 @@ def _init_engine() -> Engine:
 
 _settings = load_settings()
 _engine = _init_engine()
+# Trần lượt trả lời mỗi người + cả ngày (SRS-5.1zzzzzzz53) — chặn TRƯỚC mọi lượt gọi model / Whisper.
+_han_muc = HanMuc.tu_cau_hinh(_settings.supabase_url, _settings.supabase_service_role_key)
 
 app = FastAPI(title="AI Ơi Nhà Đất (AOND) API", version="0.2.0")
 
@@ -143,6 +146,9 @@ def health() -> dict[str, str]:
 
 @app.post("/message", response_model=Reply)
 def message(msg: IncomingMessage) -> Reply:
+    if not _han_muc.cho_phep(msg.user_key):
+        return Reply(assistant_name="", reply="", captured=[], next_field=None, property_score=0.0,
+                     user_score=0.0, tier="", completeness=0.0)
     incoming_text = msg.text or ""
     if msg.audio_url and is_audio_file(msg.audio_url):
         log.info("Voice note received at /message from %s", msg.user_key)
@@ -201,6 +207,11 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
             tier="",
             completeness=0.0,
         )
+
+    # Vượt trần người / ngày → bot im (bridge không gửi gì khi replies rỗng), không gọi model lẫn Whisper.
+    if not _han_muc.cho_phep(payload.external_user_id):
+        return ZaloBridgeResponse(reply="", replies=[], nhip_go=[], assistant_name="", captured=[], next_field=None,
+                                  property_score=0.0, user_score=0.0, tier="", completeness=0.0)
 
     # 1. Check if incoming file/message is a voice note
     audio_url = None
