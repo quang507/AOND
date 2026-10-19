@@ -639,7 +639,16 @@ Sau khi gộp: `bun run prompt --day` (khoá `tone_rules`, `seller_fewshot`).
 
 **Cấm dấu hiệu AI trên web** (song song với "Cấm dấu hiệu AI trong tin nhắn" §6.8): dấu gạch dài "—" (dùng "-" hoặc dấu chấm, chủ dự án 09/09); mũi tên "→ ↗ ←" trong nút và nhãn (dùng chữ: "Quay lại", "Xem bảng", "thành"); emoji làm icon; nút/ô nhập bo tròn hoàn toàn (`rounded-full`) trừ avatar và chấm trạng thái; `shadow-*` trên thẻ và nút (chỉ modal/menu nổi được `shadow-lg`); gradient; `animate-pulse`; chữ `font-extrabold` khắp nơi; nhãn kiểu "Admin Console", "✨"; mô tả sáo. Kiểm bằng `bun run truyvet`? — chưa; soát tay bằng lệnh đếm emoji trong `app/` + `components/` (0 là đạt, trừ `✓`/`✗` dạng chữ).
 
-**Nút bắt buộc có ở đúng chỗ (soát 09/09):** thanh trên: Đăng tin, chuông, tìm, đăng xuất có chữ · Tin nhắn: Làm mới, Đã xử lý (khi cần người thật), Xoá khách, Sửa thành câu chuẩn ở mỗi câu bot · Rổ hàng: Sửa, Xoá tin, Tải CSV, JSON, Đăng tin · Mẫu câu: Sửa, Xoá, Mở chat, Tải JSONL · Bàn làm việc: bốn thẻ KPI bấm được.
+**Nút bắt buộc có ở đúng chỗ (soát 09/09, khung đổi 19/10):** thanh trên: Đăng tin, chuông, tìm; cột trái: đăng xuất có chữ · Tin nhắn: Làm mới, Đã xử lý (khi cần người thật), Xoá khách, Sửa thành câu chuẩn ở mỗi câu bot · Rổ hàng: Sửa, Xoá tin, Tải CSV, JSON, Đăng tin · Mẫu câu: Sửa, Xoá, Mở chat, Tải JSONL · Bàn làm việc: bốn ô số liệu (ba ô là link tới Khách hàng / Rổ hàng / Vận hành, "Cần xử lý" là số).
+
+**Khung CRM (19/10/2026, SRS-5.1zzzzzzz72)** [nguồn: chủ dự án 19/10/2026 — "sửa lại nguyên cái layout crm đi chứ thấy hơi rối"]:
+điều hướng có MỘT chỗ — cột trái chia nhóm theo việc (Hằng ngày · Rổ hàng · Hệ thống), dưới 1024px thành một hàng cuộn ngang.
+Mỗi trang / tab có tiêu đề riêng (`PageHeader`), không lặp tiêu đề hay ô số liệu giữa các tab, không link "Quay lại" (cột trái lo).
+Thao tác huỷ hoại hàng loạt không đặt cạnh việc hằng ngày (khối "Dữ liệu thử" cuối Vận hành). Chân trang công khai không hiện trong
+CRM. Thẻ `rounded-lg`. Danh sách cần duyệt là DÒNG (một dòng thông tin, nút bên phải), không phải thẻ cao. Không trang nào được
+tràn ngang ở 390px.
+
+**Góc bo (19/10/2026)** [nguồn: chủ dự án 19/10/2026 — "mấy cái corner trên web đổi sang còn 2px hết cho sang"]: mọi góc bo trên web và CRM là **2px**, đặt ở MỘT chỗ — thang `--radius-*` trong `app/globals.css` (đè cả `rounded`, `-md`, `-lg`, `-xl`, `-2xl` của Tailwind). Không viết `rounded-[Npx]` hay `border-radius` tay. `rounded-full` chỉ cho hình tròn thật (avatar, chấm trạng thái, thanh tiến độ), không cho nút.
 
 ## 6.10 Accessibility
 

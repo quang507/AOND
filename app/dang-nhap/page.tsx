@@ -57,7 +57,7 @@ function LoginForm() {
 
       <button
         onClick={google}
-        className="mt-8 flex w-full items-center justify-center gap-3 rounded-full border border-line bg-white py-3 font-bold transition hover:border-brand active:scale-[0.98]"
+        className="mt-8 flex w-full items-center justify-center gap-3 rounded-md border border-line bg-white py-3 font-bold transition hover:border-brand active:scale-[0.98]"
       >
         <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
           <path fill="#4285F4" d="M23.5 12.3c0-.9-.1-1.5-.3-2.2H12v4.1h6.5c-.1 1.1-.8 2.7-2.4 3.8l3.7 2.9c2.3-2.1 3.7-5.1 3.7-8.6z"/>
@@ -93,7 +93,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={state === "sending"}
-            className="mt-4 w-full rounded-full bg-brand py-3 font-bold text-white transition hover:bg-brand-dark active:scale-[0.98] disabled:opacity-60"
+            className="mt-4 w-full rounded-md bg-brand py-3 font-bold text-white transition hover:bg-brand-dark active:scale-[0.98] disabled:opacity-60"
           >
             {state === "sending" ? "Đang gửi…" : "Gửi link đăng nhập"}
           </button>

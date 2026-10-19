@@ -127,7 +127,7 @@ function Calc() {
 
           <a
             href={zaloLink(`laivay:${price}`)}
-            className="block rounded-full bg-zalo py-3 text-center font-bold text-white transition hover:opacity-90 active:scale-[0.98]"
+            className="block rounded-md bg-zalo py-3 text-center font-bold text-white transition hover:opacity-90 active:scale-[0.98]"
           >
             Nhắn Zalo - tụi em tìm căn vừa túi tiền này
           </a>

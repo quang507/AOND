@@ -15,7 +15,7 @@ import { useSearchParams } from "next/navigation";
 import { supabase, type Listing } from "@/lib/supabase";
 import { formatArea, formatPrice, sanitizeDescription, TYPE_LABEL } from "@/lib/format";
 import UploadAnh from "@/components/UploadAnh";
-import { Btn } from "@/components/ui";
+import { Btn, PageHeader } from "@/components/ui";
 
 // Tin chờ duyệt: chỉ các cột thẻ duyệt cần, không kéo "*".
 type TinCho = Pick<
@@ -195,6 +195,14 @@ const linkZalo = (uid: string | null, phone: string | null = null) => {
   return uid ? "https://chat.zalo.me/" : null;
 };
 
+// Tiêu đề trang theo tab (19/10/2026, SRS-5.1zzzzzzz72) — một chỗ, cột trái AdminShell dùng cùng tên.
+const TIEU_DE_TAB: Record<"crm" | "todo" | "stats" | "ops", { ten: string; phu: string }> = {
+  todo: { ten: "Bàn làm việc", phu: "" },
+  crm: { ten: "Khách hàng", phu: "Người mua / thuê, người bán và khách vừa mua vừa bán; nhu cầu tìm và căn đang quan tâm" },
+  stats: { ten: "Báo cáo", phu: "Hội thoại 30 ngày, căn được hỏi nhiều, người bán mới, chi phí model" },
+  ops: { ten: "Vận hành", phu: "Trợ lý bot, Zalo clone, hạn mức model, danh sách riêng, giấy tờ bảo mật" },
+};
+
 // Khung CRM (09/09/2026): tab đi theo URL ?tab=todo|crm|stats|ops để thanh
 // trên (AdminShell) và các link chia sẻ được. useSearchParams cần Suspense.
 export default function Page() {
@@ -253,7 +261,8 @@ function BanLamViec() {
     tabUrl === "crm" || tabUrl === "stats" || tabUrl === "ops" ? tabUrl : "todo",
   );
   useEffect(() => {
-    if (tabUrl === "crm" || tabUrl === "stats" || tabUrl === "ops" || tabUrl === "todo") setActiveTab(tabUrl);
+    // /admin không có ?tab là Bàn làm việc — trước đây bấm từ tab khác về /admin vẫn đứng ở tab cũ.
+    setActiveTab(tabUrl === "crm" || tabUrl === "stats" || tabUrl === "ops" ? tabUrl : "todo");
   }, [tabUrl]);
 
   const [bdsHot, setBdsHot] = useState<BdsHot[] | null>(null);
@@ -801,25 +810,15 @@ function BanLamViec() {
     : null;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 pb-24 pt-8">
-      {/* ═══ ĐẦU TRANG & LỐI TẮT ═══ */}
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="rounded bg-brand/10 text-brand px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider">
-              Quản trị
-            </span>
-            <span className="text-xs text-mute font-medium">AI Ơi Nhà Đất</span>
-          </div>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-navy">Bàn làm việc Quản trị</h1>
-          <p className="mt-1 text-sm text-mute tabular-nums">
-            {counts
-              ? `${counts.tong} tin trong rổ · ${counts.active} đang rao · ${counts.cho} chờ duyệt`
-              : "đang đọc rổ hàng…"}
-          </p>
-        </div>
-        <p className="text-xs text-mute">Chuyển phân hệ bằng thanh trên; thẻ dưới đây cũng bấm được.</p>
-      </header>
+    <div className="mx-auto max-w-6xl px-4 pb-24 pt-6 lg:px-6">
+      {/* 19/10/2026 (SRS-5.1zzzzzzz72): mỗi tab một tiêu đề riêng — trước đó cả bốn tab cùng "Bàn làm việc Quản trị" + bốn
+          thẻ số liệu, nên không biết mình đang ở đâu. Điều hướng chỉ còn ở cột trái (AdminShell). */}
+      <PageHeader
+        title={TIEU_DE_TAB[activeTab].ten}
+        sub={activeTab === "todo"
+          ? (counts ? `${canXuLy} việc cần xử lý · ${counts.tong} tin trong rổ · ${counts.active} đang rao · ${counts.cho} chờ duyệt` : "đang đọc rổ hàng…")
+          : TIEU_DE_TAB[activeTab].phu}
+      />
 
       {loi.length > 0 && (
         <div className="mt-4 rounded-xl border border-brand/30 bg-brand/5 px-4 py-2.5 text-sm text-brand">
@@ -857,106 +856,47 @@ function BanLamViec() {
           này bot không nhận, không gửi được tin Zalo nào, không được để nó nằm
           khuất dưới đáy tab Vận hành. */}
       {zaloChet && (
-        <div className="mt-4 rounded-2xl border-2 border-brand bg-white p-6">
+        <div className="mt-4 rounded-lg border-2 border-brand bg-white p-6">
           <TheZaloClone dn={zaloDn} onDangNhapLai={dangNhapLaiZalo} />
         </div>
       )}
 
-      {/* ═══ TỔNG QUAN HỆ THỐNG (KPI OVERVIEW CARDS) ═══ */}
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {/* Card 1: Khách CRM */}
-        <button
-          type="button"
-          onClick={() => { setActiveTab("crm"); history.replaceState(null, "", "/admin?tab=crm"); }}
-          className={`text-left rounded-2xl p-4 border transition-all ${
-            activeTab === "crm"
-              ? "border-brand bg-brand/5 shadow ring-2 ring-brand/20"
-              : "border-line bg-white hover:border-brand/40 hover:"
-          }`}
-        >
-          <div className="text-xs font-semibold text-mute flex items-center justify-between">
-            <span>Khách hàng CRM</span>
-            <span className="rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5">
-              {dualCount} hai vai
-            </span>
+      {/* Bốn ô số liệu chỉ ở Bàn làm việc; ô nào dẫn đi đâu thì là link tới đó (docs/06 §6.11). */}
+      {activeTab === "todo" && (
+        <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className={`rounded-lg border bg-white p-4 ${canXuLy > 0 ? "border-brand/40" : "border-line"}`}>
+            <div className="text-xs font-semibold text-mute">Cần xử lý</div>
+            <div className={`mt-1.5 text-3xl font-bold tracking-tight tabular-nums ${canXuLy > 0 ? "text-brand" : "text-navy"}`}>{canXuLy}</div>
+            <div className="mt-1 truncate text-xs text-mute">{pending.length} tin chờ · {khachCan.length} cần người thật</div>
           </div>
-          <div className="mt-2 text-3xl font-bold tracking-tight text-navy">{danhSachCrm.length}</div>
-          <div className="mt-1 text-xs text-mute truncate">
-            {dualCount > 0 ? `${dualCount} vừa mua vừa bán · ` : ""}{buyerCount} mua/thuê
-          </div>
-        </button>
-
-        {/* Card 2: Việc cần xử lý */}
-        <button
-          type="button"
-          onClick={() => { setActiveTab("todo"); history.replaceState(null, "", "/admin?tab=todo"); }}
-          className={`text-left rounded-2xl p-4 border transition-all ${
-            activeTab === "todo"
-              ? "border-brand bg-brand/5 shadow ring-2 ring-brand/20"
-              : "border-line bg-white hover:border-brand/40 hover:"
-          }`}
-        >
-          <div className="text-xs font-semibold text-mute flex items-center justify-between">
-            <span>Cần xử lý</span>
-            {canXuLy > 0 ? (
-              <span className="rounded bg-brand text-white text-[10px] font-bold px-2 py-0.5">
-                {canXuLy} việc
+          <Link href="/admin?tab=crm" className="group rounded-lg border border-line bg-white p-4 hover:border-brand/40">
+            <div className="flex items-center justify-between text-xs font-semibold text-mute">
+              <span>Khách hàng</span><span className="text-brand group-hover:underline">Xem</span>
+            </div>
+            <div className="mt-1.5 text-3xl font-bold tracking-tight text-navy tabular-nums">{danhSachCrm.length}</div>
+            <div className="mt-1 truncate text-xs text-mute">{buyerCount} mua/thuê · {sellerCount} bán · {dualCount} hai vai</div>
+          </Link>
+          <Link href="/admin/ro-hang" className="group rounded-lg border border-line bg-white p-4 hover:border-brand/40">
+            <div className="flex items-center justify-between text-xs font-semibold text-mute">
+              <span>Rổ hàng</span><span className="text-brand group-hover:underline">Xem bảng</span>
+            </div>
+            <div className="mt-1.5 text-3xl font-bold tracking-tight text-navy tabular-nums">{counts?.active ?? "-"}</div>
+            <div className="mt-1 truncate text-xs text-mute">đang rao · {counts?.cho ?? 0} chờ duyệt · {counts?.tong ?? "-"} tổng</div>
+          </Link>
+          <Link href="/admin?tab=ops" className={`group rounded-lg border bg-white p-4 ${botLoi ? "border-brand" : "border-line hover:border-brand/40"}`}>
+            <div className="flex items-center justify-between text-xs font-semibold text-mute">
+              <span className="flex items-center gap-1.5">
+                <span className={`inline-block h-2 w-2 rounded-full ${botLoi || !health ? "bg-brand" : "bg-emerald-500"}`} /> Trợ lý AI
               </span>
-            ) : (
-              <span className="rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5">
-                sạch
-              </span>
-            )}
-          </div>
-          <div className={`mt-2 text-3xl font-bold tracking-tight ${canXuLy > 0 ? "text-brand" : "text-navy"}`}>
-            {canXuLy}
-          </div>
-          <div className="mt-1 text-xs text-mute truncate">
-            {pending.length} tin chờ · {khachCan.length} cần người thật
-          </div>
-        </button>
-
-        {/* Card 3: Rổ hàng */}
-        <Link
-          href="/admin/ro-hang"
-          className="text-left rounded-2xl p-4 border border-line bg-white hover:border-brand/40 hover: transition-all block group"
-        >
-          <div className="text-xs font-semibold text-mute flex items-center justify-between">
-            <span>Rổ hàng BĐS</span>
-            <span className="text-[10px] text-brand font-semibold group-hover:underline">Xem bảng</span>
-          </div>
-          <div className="mt-2 text-3xl font-bold tracking-tight text-navy">
-            {counts?.active ?? "-"}
-          </div>
-          <div className="mt-1 text-xs text-mute truncate">
-            đang rao · {counts?.cho ?? 0} chờ duyệt · {counts?.tong ?? "-"} tổng
-          </div>
-        </Link>
-
-        {/* Card 4: Trạng thái Bot */}
-        <button
-          type="button"
-          onClick={() => { setActiveTab("ops"); history.replaceState(null, "", "/admin?tab=ops"); }}
-          className={`text-left rounded-2xl p-4 transition-all ${
-            botLoi
-              ? "border-2 border-brand bg-brand/5"
-              : activeTab === "ops"
-              ? "border border-brand bg-brand/5 shadow ring-2 ring-brand/20"
-              : "border border-line bg-white hover:border-brand/40 hover:"
-          }`}
-        >
-          <div className="text-xs font-semibold text-mute flex items-center justify-between">
-            <span>Trợ lý AI Bot</span>
-            <span className={`inline-block w-2.5 h-2.5 rounded-full ${botLoi || !health ? "bg-brand" : "bg-emerald-500"}`} />
-          </div>
-          <div className={`mt-2 text-xl font-bold tracking-tight ${botLoi ? "text-brand" : "text-navy"}`}>
-            {!health ? "Đang đọc…" : botLoi ? "Đang lỗi" : "Đang trực"}
-          </div>
-          <div className={`mt-1 text-xs truncate ${botLoi ? "font-bold text-brand" : "text-mute"}`}>
-            {botLoi ?? `${health?.errs.length ?? 0} lỗi`}
-          </div>
-        </button>
-      </div>
+              <span className="text-brand group-hover:underline">Vận hành</span>
+            </div>
+            <div className={`mt-1.5 text-xl font-bold tracking-tight ${botLoi ? "text-brand" : "text-navy"}`}>
+              {!health ? "Đang đọc…" : botLoi ? "Đang lỗi" : "Đang trực"}
+            </div>
+            <div className={`mt-1 truncate text-xs ${botLoi ? "font-bold text-brand" : "text-mute"}`}>{botLoi ?? `${health?.errs.length ?? 0} lỗi gần đây`}</div>
+          </Link>
+        </div>
+      )}
 
       {/* Thanh chuyển phân hệ nằm trên khung CRM (AdminShell) - 09/09/2026 */}
 
@@ -965,44 +905,10 @@ function BanLamViec() {
          ═══════════════════════════════════════════════════════════════ */}
       {activeTab === "crm" && (
         <section className="mt-6 space-y-6">
-          <div className="rounded-2xl border border-line bg-white p-5 space-y-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <div>
-                <h2 className="text-xl font-bold tracking-tight text-navy">
-                  Hồ sơ Khách hàng & Phân hệ Hai Vai
-                </h2>
-                <p className="text-xs text-mute mt-0.5">
-                  Quản lý hồ sơ khách mua/thuê, người bán, khách hai vai (vừa mua vừa bán), nhu cầu tìm kiếm và BĐS quan tâm
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-mute">
-                  Hiển thị {filteredCrm.length} / {danhSachCrm.length} hồ sơ
-                </span>
-                {/* FR-210: xoá hàng loạt để test lại — chỉ admin, phải gõ XOA HET */}
-                <button
-                  type="button"
-                  onClick={() => void xoaHetKhachVaRoHang()}
-                  className="rounded-md border border-red-300 bg-red-50 px-3 py-1 text-xs font-bold text-red-700 hover:bg-red-100"
-                  title="Xoá mọi khách, người bán và tin rao để test lại từ đầu. Dữ liệu được chép vào kho lưu trước khi xoá."
-                >
-                  Xoá hàng loạt
-                </button>
-                {/* FR-245: khôi phục một lần xoá hàng loạt từ kho lưu luu_tru */}
-                <button
-                  type="button"
-                  onClick={() => void khoiPhucLanXoa()}
-                  className="rounded-md border border-line bg-white px-3 py-1 text-xs font-bold text-ink hover:bg-line/30"
-                  title="Chép lại dữ liệu của một lần Xoá hàng loạt từ kho lưu."
-                >
-                  Khôi phục lần xoá
-                </button>
-              </div>
-            </div>
-
+          <div className="rounded-lg border border-line bg-white p-5 space-y-4">
             {/* Role Filter Chips */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-line/60">
-              <span className="text-xs font-bold text-mute mr-1">Bộ lọc:</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-mute mr-1">Lọc:</span>
               <button
                 type="button"
                 onClick={() => setCrmFilterRole("all")}
@@ -1049,6 +955,9 @@ function BanLamViec() {
 
             {/* Search Input */}
             <div className="flex flex-wrap items-center gap-3">
+              <span className="order-last text-xs font-semibold text-mute tabular-nums">
+                Hiển thị {filteredCrm.length} / {danhSachCrm.length} hồ sơ
+              </span>
               <div className="relative flex-1 min-w-[240px]">
                 <input
                   value={qCrm}
@@ -1071,7 +980,7 @@ function BanLamViec() {
 
           {/* Customer Cards List */}
           {filteredCrm.length === 0 ? (
-            <div className="rounded-2xl border border-line bg-white p-8 text-center">
+            <div className="rounded-lg border border-line bg-white p-8 text-center">
               <p className="text-base font-bold text-navy">Không tìm thấy khách hàng nào khớp.</p>
               <p className="text-xs text-mute mt-1">Thử đổi từ khoá hoặc xoá lọc vai trò.</p>
             </div>
@@ -1089,7 +998,7 @@ function BanLamViec() {
                 return (
                   <article
                     key={k.id}
-                    className={`rounded-2xl border bg-white p-5 transition-all ${
+                    className={`rounded-lg border bg-white p-5 transition-all ${
                       isDual
                         ? "border-emerald-300 ring-1 ring-emerald-200/80"
                         : "border-line hover:border-slate-300"
@@ -1179,7 +1088,7 @@ function BanLamViec() {
                             {tin.location_raw && <div className="text-mute">{tin.location_raw}</div>}
                             <div className="flex items-center justify-between gap-2">
                               <span className="font-bold text-navy">{tin.price_raw ? `Giá: ${tin.price_raw}` : "Chưa có giá"}</span>
-                              <span className="font-bold text-brand">Sửa tin →</span>
+                              <span className="font-bold text-brand">Sửa tin</span>
                             </div>
                           </Link>
                         );
@@ -1436,7 +1345,7 @@ function BanLamViec() {
       {activeTab === "todo" && (
         <section className="mt-6 space-y-8">
           {/* Tin chờ duyệt */}
-          <div className="rounded-2xl border border-line bg-white p-6">
+          <div className="rounded-lg border border-line bg-white p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-3">
               <div className="flex items-center gap-2.5">
                 <h2 className="text-lg font-bold tracking-tight text-navy">Tin chờ duyệt</h2>
@@ -1446,71 +1355,71 @@ function BanLamViec() {
                   {pending.length}
                 </span>
               </div>
-              <span className="text-xs text-mute">bot bóc từ câu rao - duyệt thì mới lên kệ công khai</span>
+              <span className="text-xs text-mute">bot bóc từ câu rao · mở màn sửa xem đủ tin rồi mới duyệt lên web</span>
             </div>
 
             {pending.length === 0 ? (
               <Rong>Không còn tin nào chờ duyệt - rổ sạch.</Rong>
             ) : (
               <>
-                <div className="mt-4 space-y-3">
+                {/* 19/10/2026: mỗi tin một dòng (mã · phường · giá · m² · giờ, mô tả 1 dòng, nút bên phải) — thay thẻ cao
+                    ~120px lặp câu nhắc "mở màn sửa…" ở từng thẻ; câu nhắc nay nằm một lần ở đầu khối. */}
+                <ul className="mt-2 divide-y divide-line">
                   {ptTin.mot.map((l) => (
-                    <article key={l.id} className="rounded-xl border border-line bg-slate-50/50 p-4">
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <p className="font-bold text-navy text-base">
-                          #{l.code}
-                          {l.ward ? ` · ${l.ward}` : ""}
-                          {l.price_raw || l.price_vnd ? ` · ${formatPrice(l.price_vnd, l.price_raw)}` : " · Giá chưa có"}
-                          {l.area_m2 ? ` · ${formatArea(l.area_m2)}` : ""}
-                        </p>
-                        <span className="text-xs text-mute tabular-nums">
-                          {new Date(l.created_at).toLocaleString("vi-VN")}
-                        </span>
-                      </div>
-                      <p className="mt-2 line-clamp-3 max-w-[70ch] text-sm text-navy/80">
-                        {sanitizeDescription(l.description) || l.location_raw || (
-                          <span className="italic text-mute">Tin chưa có nội dung mô tả</span>
-                        )}
-                      </p>
-                      <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <Link
-                          href={`/admin/ro-hang?sua=${encodeURIComponent(l.code ?? "")}`}
-                          className="rounded-md bg-[#b3461a] px-5 py-2 text-sm font-bold text-white transition hover:bg-[#9a3c16]"
-                        >
-                          Xem &amp; duyệt →
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => anTin(l.id, l.code)}
-                          className="rounded-md border border-slate-400 px-5 py-2 text-sm font-semibold text-navy transition hover:border-navy bg-white"
-                        >
-                          Ẩn tin
-                        </button>
-                        <button
-                          onClick={() => setUpCho((c) => (c === l.id ? null : l.id))}
-                          className="rounded-md border border-line px-4 py-2 text-sm font-semibold transition hover:border-brand hover:text-brand bg-white"
-                        >
-                          {upCho === l.id ? "Đóng ảnh" : "Up ảnh"}
-                        </button>
-                        <span className="ml-auto text-xs text-mute">
-                          (Mở màn sửa để xem đủ tin rồi mới rao)
-                        </span>
+                    <li key={l.id} className="py-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                        <div className="min-w-0 sm:flex-1">
+                          <p className="text-sm font-bold text-navy">
+                            #{l.code}
+                            <span className="font-medium text-navy/80">
+                              {l.ward ? ` · ${l.ward}` : ""}
+                              {l.price_raw || l.price_vnd ? ` · ${formatPrice(l.price_vnd, l.price_raw)}` : " · Giá chưa có"}
+                              {l.area_m2 ? ` · ${formatArea(l.area_m2)}` : ""}
+                            </span>
+                            <span className="ml-2 text-xs font-normal text-mute tabular-nums">{new Date(l.created_at).toLocaleString("vi-VN")}</span>
+                          </p>
+                          <p className="mt-0.5 truncate text-sm text-mute">
+                            {sanitizeDescription(l.description) || l.location_raw || <span className="italic">Tin chưa có nội dung mô tả</span>}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Link
+                            href={`/admin/ro-hang?sua=${encodeURIComponent(l.code ?? "")}`}
+                            className="rounded-md bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-dark"
+                          >
+                            Xem và duyệt
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => anTin(l.id, l.code)}
+                            className="rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold text-navy hover:border-navy"
+                          >
+                            Ẩn tin
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setUpCho((c) => (c === l.id ? null : l.id))}
+                            className="rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold text-navy hover:border-brand hover:text-brand"
+                          >
+                            {upCho === l.id ? "Đóng ảnh" : "Up ảnh"}
+                          </button>
+                        </div>
                       </div>
                       {upCho === l.id && (
-                        <div className="mt-4">
+                        <div className="mt-3">
                           <UploadAnh listingId={l.id} code={l.code} />
                         </div>
                       )}
-                    </article>
+                    </li>
                   ))}
-                </div>
+                </ul>
                 <PhanTrang {...ptTin} />
               </>
             )}
           </div>
 
           {/* Khách cần người thật */}
-          <div className="rounded-2xl border border-line bg-white p-6">
+          <div className="rounded-lg border border-line bg-white p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-3">
               <div className="flex items-center gap-2.5">
                 <h2 className="text-lg font-bold tracking-tight text-navy">Khách cần người thật</h2>
@@ -1520,7 +1429,7 @@ function BanLamViec() {
                   {khachCan.length}
                 </span>
               </div>
-              <span className="text-xs text-mute">bot đã giơ cờ needs_human, chưa ai vào hỗ trợ</span>
+              <span className="text-xs text-mute">bot đã giơ cờ cần người thật, chưa ai vào hỗ trợ</span>
             </div>
 
             {khachCan.length === 0 ? (
@@ -1566,7 +1475,7 @@ function BanLamViec() {
           {/* Câu khách hỏi & Lịch xem nhà & Việc chờ admin */}
           <div className="grid gap-6 sm:grid-cols-2">
             {/* Câu khách hỏi */}
-            <div className="rounded-2xl border border-line bg-white p-5 space-y-3">
+            <div className="rounded-lg border border-line bg-white p-5 space-y-3">
               <div className="flex items-center justify-between border-b border-line pb-2">
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-navy">Câu khách hỏi</h3>
@@ -1603,7 +1512,7 @@ function BanLamViec() {
             </div>
 
             {/* Lịch xem nhà */}
-            <div className="rounded-2xl border border-line bg-white p-5 space-y-3">
+            <div className="rounded-lg border border-line bg-white p-5 space-y-3">
               <div className="flex items-center justify-between border-b border-line pb-2">
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-navy">Lịch xem nhà</h3>
@@ -1637,7 +1546,7 @@ function BanLamViec() {
           </div>
 
           {/* Việc chờ admin */}
-          <div className="rounded-2xl border border-line bg-white p-5 space-y-3">
+          <div className="rounded-lg border border-line bg-white p-5 space-y-3">
             <div className="flex items-center justify-between border-b border-line pb-2">
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-navy">Việc chờ admin</h3>
@@ -1679,7 +1588,7 @@ function BanLamViec() {
       {activeTab === "stats" && (
         <section className="mt-6 space-y-6">
           {/* Thống kê hội thoại 30 ngày */}
-          <div className="rounded-2xl border border-line bg-white p-6 space-y-4">
+          <div className="rounded-lg border border-line bg-white p-6 space-y-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-3">
               <div>
                 <h2 className="text-lg font-bold tracking-tight text-navy">Thống kê hội thoại · 30 ngày</h2>
@@ -1736,7 +1645,7 @@ function BanLamViec() {
           {/* BĐS Hot & Người bán mới */}
           <div className="grid gap-6 sm:grid-cols-2">
             {/* BĐS hot 60 ngày */}
-            <div className="rounded-2xl border border-line bg-white p-5 space-y-3">
+            <div className="rounded-lg border border-line bg-white p-5 space-y-3">
               <div className="flex items-center justify-between border-b border-line pb-2">
                 <h3 className="font-bold text-navy">BĐS hot · 60 ngày</h3>
                 <span className="text-xs text-mute">xem, hỏi, hẹn nhiều nhất</span>
@@ -1770,7 +1679,7 @@ function BanLamViec() {
             </div>
 
             {/* Người bán 14 ngày */}
-            <div className="rounded-2xl border border-line bg-white p-5 space-y-3">
+            <div className="rounded-lg border border-line bg-white p-5 space-y-3">
               <div className="flex items-center justify-between border-b border-line pb-2">
                 <h3 className="font-bold text-navy">Người bán mới · 14 ngày</h3>
                 <span className="text-xs text-mute">nhãn tính phí</span>
@@ -1826,7 +1735,7 @@ function BanLamViec() {
           </div>
 
           {/* Chi phí Model (Tiền bộ não 7 ngày) */}
-          <div className="rounded-2xl border border-line bg-white p-5">
+          <div className="rounded-lg border border-line bg-white p-5">
             <TheTien rows={tien} rowsModel={tienModel} />
           </div>
         </section>
@@ -1838,20 +1747,20 @@ function BanLamViec() {
       {activeTab === "ops" && (
         <section className="mt-6 space-y-6">
           {/* FR-192: Quota tiêu hao */}
-          <div className="rounded-2xl border border-line bg-white p-6">
+          <div className="rounded-lg border border-line bg-white p-6">
             <TheQuota q={quota} tokenTien={quota ? tongTien(tienModel.filter((r) => r.day === quota.ngay)).tien : null} />
           </div>
 
           {/* FR-203: đăng nhập Zalo clone — quét QR ngay trên CRM. Đang lỗi thì ô
               này đã nằm ở đầu trang (mọi tab), đừng hiện hai lần. */}
           {!zaloChet && (
-            <div className="rounded-2xl border border-line bg-white p-6">
+            <div className="rounded-lg border border-line bg-white p-6">
               <TheZaloClone dn={zaloDn} onDangNhapLai={dangNhapLaiZalo} />
             </div>
           )}
 
           {/* Tình trạng Bot AI */}
-          <div className="rounded-2xl border border-line bg-white p-6 space-y-4">
+          <div className="rounded-lg border border-line bg-white p-6 space-y-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-3">
               <div>
                 <h2 className="text-lg font-bold tracking-tight text-navy">Tình trạng Trợ lý Bot & Hạ tầng</h2>
@@ -1893,7 +1802,7 @@ function BanLamViec() {
           </div>
 
           {/* Tạo danh sách riêng cho khách */}
-          <div className="rounded-2xl border border-line bg-white p-6 space-y-4">
+          <div className="rounded-lg border border-line bg-white p-6 space-y-4">
             <div className="border-b border-line pb-3">
               <h2 className="text-lg font-bold tracking-tight text-navy">Tạo danh sách riêng cho khách</h2>
               <p className="text-xs text-mute mt-0.5">Tạo link /ds/… sống 30 ngày để gửi qua Zalo cho từng khách</p>
@@ -1947,7 +1856,7 @@ function BanLamViec() {
           </div>
 
           {/* Giấy tờ bảo mật (bucket riêng) */}
-          <div className="rounded-2xl border border-line bg-white p-6 space-y-4">
+          <div className="rounded-lg border border-line bg-white p-6 space-y-4">
             <div className="border-b border-line pb-3">
               <h2 className="text-lg font-bold tracking-tight text-navy">Giấy tờ & Sổ đỏ (Bucket bảo mật)</h2>
               <p className="text-xs text-mute mt-0.5">Link ký tạm thời 15 phút, không bao giờ công khai</p>
@@ -1974,6 +1883,30 @@ function BanLamViec() {
                 ))}
               </ul>
             )}
+          </div>
+          {/* Thao tác hàng loạt (19/10/2026): từng nằm ngay đầu danh sách Khách hàng, cạnh bộ lọc — chỗ bấm hằng ngày. Nay
+              ở cuối Vận hành, tách khỏi việc thường ngày; hàm vẫn bắt gõ XOA HET và chép kho lưu trước khi xoá. */}
+          <div className="rounded-lg border border-red-200 bg-white p-6">
+            <h2 className="text-lg font-bold tracking-tight text-navy">Dữ liệu thử</h2>
+            <p className="mt-0.5 text-xs text-mute">
+              Xoá mọi khách, người bán và tin rao để test lại từ đầu. Dữ liệu được chép vào kho lưu trước khi xoá và khôi phục được theo số lần xoá.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void xoaHetKhachVaRoHang()}
+                className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-100"
+              >
+                Xoá hàng loạt
+              </button>
+              <button
+                type="button"
+                onClick={() => void khoiPhucLanXoa()}
+                className="rounded-md border border-line bg-white px-3 py-2 text-sm font-bold text-navy hover:bg-cream"
+              >
+                Khôi phục lần xoá
+              </button>
+            </div>
           </div>
         </section>
       )}

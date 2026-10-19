@@ -26,15 +26,28 @@
   --color-surface-subtle: #f8fafc;
   --color-surface-tint: #ddf2fd;
 
-  --radius-king: 12px;
-  --radius-shot: 8px;
+  /* 19/10/2026 (SRS-5.1zzzzzzz72, chủ dự án: "mấy cái corner trên web đổi sang còn 2px hết cho sang"): MỌI góc bo 2px —
+     đè luôn thang mặc định của Tailwind nên rounded / -sm / -md / -lg / -xl / -2xl / -3xl đều ra 2px. Chỉ hình tròn thật
+     (avatar, chấm trạng thái, thanh tiến độ) còn rounded-full. Muốn đổi góc cả web thì đổi ở đây, không sửa từng lớp. */
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 2px;
+  --radius-3xl: 2px;
+  --radius-4xl: 2px;
 
-  --radius-zen-xs: 4px;
-  --radius-zen-sm: 6px;
-  --radius-zen-md: 8px;
-  --radius-zen-lg: 12px;
-  --radius-zen-xl: 16px;
-  --radius-zen-2xl: 24px;
+  --radius-king: 2px;
+  --radius-shot: 2px;
+
+  --radius-zen-xs: 2px;
+  --radius-zen-sm: 2px;
+  --radius-zen-md: 2px;
+  --radius-zen-lg: 2px;
+  --radius-zen-xl: 2px;
+  --radius-zen-2xl: 2px;
 
   --shadow-zen-1: 0 1px 2px 0 rgba(15, 23, 42, 0.04), 0 1px 3px 0 rgba(15, 23, 42, 0.03);
   --shadow-zen-2: 0 2px 4px -1px rgba(15, 23, 42, 0.06), 0 4px 6px -1px rgba(15, 23, 42, 0.05);

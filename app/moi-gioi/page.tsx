@@ -51,7 +51,7 @@ export default async function Page() {
         {agents.map((a) => {
           return (
             <div key={a.id} className="flex items-center gap-4 rounded-king border border-line bg-white p-5">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] bg-brand/10 text-lg font-extrabold text-brand">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-brand/10 text-lg font-extrabold text-brand">
                 {(a.name ?? "M").trim().charAt(0).toUpperCase()}
               </span>
               <div className="min-w-0">

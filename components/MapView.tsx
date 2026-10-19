@@ -51,7 +51,7 @@ export default function MapView({
         // Price badge marker matching Batdongsan.com.vn in Image 2
         const priceIcon = L.divIcon({
           className: "custom-price-badge",
-          html: `<div style="background:#0b192c;color:#ffffff;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;border:1.5px solid #0068ff;box-shadow:0 3px 8px rgba(0,0,0,0.3);white-space:nowrap;display:inline-flex;align-items:center;gap:3px;cursor:pointer;transform:translate(-50%,-50%);transition:all .15s ease;">
+          html: `<div style="background:#0b192c;color:#ffffff;padding:3px 8px;border-radius:2px;font-size:11px;font-weight:700;border:1.5px solid #0068ff;box-shadow:0 3px 8px rgba(0,0,0,0.3);white-space:nowrap;display:inline-flex;align-items:center;gap:3px;cursor:pointer;transform:translate(-50%,-50%);transition:all .15s ease;">
             <span>${esc(priceText)}</span>
           </div>`,
           iconSize: [0, 0],
@@ -70,7 +70,7 @@ export default function MapView({
             <div style="font-size:12px;color:#64748b;margin-bottom:6px;">
               ${esc(l.ward ? `${l.ward}, ` : "")}${esc(l.district ?? "Sài Gòn")}
             </div>
-            <a href="/nha-dat/${encodeURIComponent(code)}" style="display:inline-block;background:#0068ff;color:#fff;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;text-decoration:none;">
+            <a href="/nha-dat/${encodeURIComponent(code)}" style="display:inline-block;background:#0068ff;color:#fff;padding:4px 10px;border-radius:2px;font-size:11px;font-weight:700;text-decoration:none;">
               Xem chi tiết →
             </a>
           </div>`,
