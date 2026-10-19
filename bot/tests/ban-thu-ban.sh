@@ -89,4 +89,7 @@ kiem "Âu Cơ: sau khi khách nói sổ, không hỏi hoàn công / hiện trạ
 # SRS-5.1zzzzzzz75: bot không có số liệu thị trường — không được khen "thanh khoản", "người mua tìm nhiều", bình giá "hợp lý / vừa tầm".
 kiem "Âu Cơ: không nhận định thị trường / bình giá" "$(grep -qiE 'thanh khoản|tìm (mua )?nhiều|hợp lý|vừa tầm' <<<"$LOI_BOT" && echo 0 || echo 1)"
 vps "journalctl -u aond-core --since '-10 min' --no-pager -o cat | grep -E 'Bỏ ô' | sed -E 's/[0-9]{9,}/#/g' | tail -15" || true
+# SRS-5.1zzzzzzz76: lượt model bị cắt / ra rỗng ghi sổ lỗi (chỉ lý do, không nội dung khách) — in ra để biết lượt nào hụt.
+q "select to_char(at, 'HH24:MI:SS') as luc, source, left(detail, 160) as chi_tiet from bot_errors
+   where at > now() - interval '15 min' and (source like 'claude%' or source like 'stt%') order by at" | jq -c '.[]' || true
 exit $loi

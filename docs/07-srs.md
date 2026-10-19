@@ -6718,6 +6718,10 @@ rồi "làm hết đi" cho cả bảng bất thường.
   (số 8,5 có trong lời khách) — **lớp lỗi:** dung sai dành cho ô số đo áp cả cho ô chữ. Nay `_so_khop` chỉ áp cho ô số đo `_O_SO_DO`
   (theo schema ô của hệ thống); ô chữ phải khớp nguyên văn. Kiểm: `tests/test_bang_chung_o_tin.py::test_o_chu_khong_nhan_theo_so`
   (đỏ trên code cũ).
+- Bắn thử lần 4–5 (2/5 lượt): khách "diện tích sàn tầm 170m vuông", bot đáp "em ghi nhận" nhưng ô `dien_tich_nha` không vào kế hoạch,
+  không dòng "Bỏ ô" nào. **Giả thuyết (CHƯA kiểm chứng — sổ token chỉ cộng theo ngày):** lượt lập thao tác kê lại mọi ô kèm cụm trích
+  trên cả hội thoại, trần đầu ra 1024 token, tới lượt 9 bị cắt và ô cuối rơi. Nâng trần `extract` lên 4096; chạm trần thì ghi sổ lỗi
+  "claude extract"; `ban-thu-ban.sh` in các dòng sổ lỗi `claude*` / `stt*` 15 phút gần nhất để lượt sau có bằng chứng.
 - Bản tin 15:31 hỏi lại "80m² đất hay sàn" ở cuối: là hệ quả của (b) cộng lỗi SRS-5.1zzzzzzz74 (đã sửa), không sửa thêm — khách bảo
   đăng mà tin còn thiếu một ô thì bot soạn bài rồi hỏi đúng ô còn thiếu là đúng thiết kế.
 

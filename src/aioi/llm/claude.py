@@ -108,9 +108,11 @@ class ClaudeProvider(LLMProvider):
     ) -> dict[str, Any]:
         # Tool-based extraction: force a single tool call whose input IS the
         # structured result. More robust and faster than output_config here.
+        # 19/10/2026 (SRS-5.1zzzzzzz76): trần 1024 → 4096. Lượt lập thao tác kê lại MỌI ô kèm cụm trích bằng chứng (SRS-5.1zzzzzzz73)
+        # trên cả hội thoại; bắn thử: tới lượt 9 ô vừa nói ("diện tích sàn tầm 170m vuông") không vào kế hoạch, không dòng "Bỏ ô" nào.
         resp = self._tao("extract",
             model=self._extract_model,
-            max_tokens=1024,
+            max_tokens=4096,
             system=self._sys(system),
             messages=[{"role": m.role, "content": m.content} for m in messages],
             tools=[
@@ -123,6 +125,8 @@ class ClaudeProvider(LLMProvider):
             tool_choice={"type": "tool", "name": "save_property_data"},
         )
         self._so.ghi("extract", self._extract_model, resp)
+        if getattr(resp, "stop_reason", None) == "max_tokens":
+            self._so.ghi_loi("claude extract", "kết quả bóc tách bị cắt vì chạm trần token — ô cuối có thể mất")
         for block in resp.content:
             if block.type == "tool_use":
                 return dict(block.input)
