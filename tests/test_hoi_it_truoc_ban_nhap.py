@@ -23,3 +23,13 @@ def test_du_dien_tich_san_la_ra_ban_nhap_hien_trang_hoi_sau_khi_duyet():
     assert p.summary_ready()
     assert p.cau_hoi_sau_ra_tin() == "tinh_trang_ban_giao"
     assert "đang ở hay đang cho thuê" in build_fee_followup_system("Hằng", p)
+
+
+def test_cau_hoi_dien_tich_san_khong_bi_coi_la_xong_khi_da_biet_so_tang():
+    # Bắn thử 19/10 lần 2: gợi ý cũ "hỏi diện tích sàn HOẶC số tầng/lầu" — khách đã nói 5 tầng, model coi ô xong và tự hỏi
+    # "giá có thương lượng không".
+    from aioi.prompts import build_chat_system
+    p = _au_co()
+    s = build_chat_system("Hằng", p, p.missing_fields()[0])
+    assert "hoặc số tầng" not in s
+    assert "m² sàn" in s and "KHÔNG tự hỏi ý khác" in s

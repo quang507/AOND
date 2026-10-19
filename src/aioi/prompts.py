@@ -117,7 +117,8 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "du_an": "Hỏi tên chung cư hoặc khu đô thị/dự án",
     "dien_tich": "Hỏi diện tích sử dụng của căn mình khoảng bao nhiêu mét vuông",
     "dien_tich_dat": "Hỏi diện tích đất công nhận trên sổ (ngang x dài khoảng bao nhiêu mét)",
-    "dien_tich_nha": "Hỏi diện tích sàn sử dụng hoặc số tầng/lầu",
+    # SRS-5.1zzzzzzz76: bản cũ "…hoặc số tầng/lầu" — khách đã nói số tầng thì model coi ô này xong, tự hỏi chuyện khác (thương lượng).
+    "dien_tich_nha": "Hỏi tổng diện tích sàn xây dựng khoảng bao nhiêu m² (số tầng đã biết vẫn phải hỏi m² sàn)",
     "gia": "Hỏi mức giá bán mong muốn thu về",
     "ket_cau": "Hỏi nhà mình xây mấy lầu / mấy tầng, có mấy phòng ngủ",
     "lo_gioi_hem": "Hỏi nhà mình nằm ở mặt tiền đường hay trong hẻm (nếu hẻm thì xe hơi có vào tận cửa được không)",
@@ -399,7 +400,8 @@ def build_chat_system(
         label = FIELD_LABELS.get(next_field, next_field or "")
         natural = NATURAL_QUESTIONS.get(next_field, f"hỏi thêm {label}")
         ask_line = (
-            f'Thông tin cần hỏi tiếp theo: "{label}". Mục tiêu: {natural}. Tiếp nhận nhanh gọn, tự nhiên (TUYỆT ĐỐI KHÔNG nịnh bợ, KHÔNG mở đầu bằng từ "Dạ", KHÔNG khen các thông số kỹ thuật thông thường), rồi hỏi đúng 1 ý này một cách khéo léo.'
+            f'Thông tin cần hỏi tiếp theo: "{label}". Mục tiêu: {natural}. Tiếp nhận nhanh gọn, tự nhiên (TUYỆT ĐỐI KHÔNG nịnh bợ, KHÔNG mở đầu bằng từ "Dạ", KHÔNG khen các thông số kỹ thuật thông thường), rồi hỏi đúng 1 ý này một cách khéo léo. CHỈ hỏi ý này — KHÔNG tự hỏi ý khác ngoài danh sách (thương lượng, lý do bán, '
+            'thế chấp…); khách tự nói thì ghi nhận.'
             if next_field
             else "Dữ liệu đã khá đầy đủ. Cảm ơn anh/chị và xác nhận trạng thái tin một cách thân thiện."
         )

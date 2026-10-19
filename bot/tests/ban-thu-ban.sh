@@ -69,6 +69,7 @@ LOI_BOT=""
 for cau in "anh cần bán căn nhà ở đường âu cơ, quận 11 em biết đường đó ko" "Phường 9 em" "mặt tiền" "nhà số 110 em" "80m 5 tầng em" \
            "nhà mình ở lâu rồi, sổ riêng" "nhà mình đang ở giá 16 tỉ nhé" "diện tích sàn là 240m"; do
   chat "$BAN2" "$cau"
+  [ "$cau" = "nhà mình ở lâu rồi, sổ riêng" ] && LOI_BOT+=" ##DA_NOI_SO## "
   sleep 1
 done
 KQ2=$(q "select l.property_type, l.area_m2, l.boc_tach - '_cap_nhat' as boc_tach
@@ -83,7 +84,8 @@ kiem "Âu Cơ: không hỏi lại phường sau khi khách nói Phường 9" "$(
 kiem "Âu Cơ: không hỏi đất hay sàn" "$(grep -qiE 'đất hay (diện tích )?(sàn|nhà)|sàn hay (diện tích )?đất' <<<"$LOI_BOT" && echo 0 || echo 1)"
 # SRS-5.1zzzzzzz76: đủ đường, phường, đất, tầng, sổ, giá, sàn là ra bản nháp — không hỏi hoàn công / đang ở hay cho thuê trước đó.
 kiem "Âu Cơ: ra bản nháp sau câu diện tích sàn" "$(grep -q '📋' <<<"$LOI_BOT" && echo 1 || echo 0)"
-kiem "Âu Cơ: không hỏi hoàn công / hiện trạng trước bản nháp" "$(grep -qiE 'hoàn công|cho thuê|đang trống' <<<"${LOI_BOT%%📋*}" && echo 0 || echo 1)"
+SAU_SO="${LOI_BOT#*##DA_NOI_SO##}"; SAU_SO="${SAU_SO%%📋*}"
+kiem "Âu Cơ: sau khi khách nói sổ, không hỏi hoàn công / hiện trạng / thương lượng trước bản nháp" "$(grep -qiE 'hoàn công|cho thuê|đang trống|thương lượng' <<<"$SAU_SO" && echo 0 || echo 1)"
 # SRS-5.1zzzzzzz75: bot không có số liệu thị trường — không được khen "thanh khoản", "người mua tìm nhiều", bình giá "hợp lý / vừa tầm".
 kiem "Âu Cơ: không nhận định thị trường / bình giá" "$(grep -qiE 'thanh khoản|tìm (mua )?nhiều|hợp lý|vừa tầm' <<<"$LOI_BOT" && echo 0 || echo 1)"
 vps "journalctl -u aond-core --since '-10 min' --no-pager -o cat | grep -E 'Bỏ ô' | sed -E 's/[0-9]{9,}/#/g' | tail -15" || true

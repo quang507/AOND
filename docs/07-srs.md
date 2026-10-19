@@ -6698,13 +6698,18 @@ rồi "làm hết đi" cho cả bảng bất thường.
 - (c) `src/aioi/engine.py`: cột `xung_ho` trong bảng `conversations` SQLite (lưu / nạp); `supabase_store.load` lấy lại từ bản SQLite.
 - (d) `src/aioi/server.py`: tin thoại không chép được (hoặc bridge báo tin thoại mà không kèm link) → `SoToken.ghi_loi("stt tin thoai",
   …)`, ghi rõ khi chưa có GROQ_API_KEY; không mang nội dung tin.
+- Bắn thử lần 1 sau bản này: khách nói giá xong bot hỏi "giá có thương lượng thêm không" — gợi ý câu hỏi `dien_tich_nha` là "Hỏi diện
+  tích sàn sử dụng HOẶC số tầng/lầu", khách đã nói 5 tầng nên model coi ô đã xong và tự nghĩ câu khác. Gợi ý nay hỏi m² sàn (số tầng đã
+  biết vẫn hỏi); câu lệnh hỏi ô thêm "CHỈ hỏi ý này — KHÔNG tự hỏi ý khác ngoài danh sách". Cùng lớp (gợi ý mơ hồ làm ô bị coi là
+  xong): đã soát `NATURAL_QUESTIONS` — `dia_chi` / `gia` sửa ở SRS-5.1zzzzzzz74, còn lại mỗi gợi ý một ý.
 - Bản tin 15:31 hỏi lại "80m² đất hay sàn" ở cuối: là hệ quả của (b) cộng lỗi SRS-5.1zzzzzzz74 (đã sửa), không sửa thêm — khách bảo
   đăng mà tin còn thiếu một ô thì bot soạn bài rồi hỏi đúng ô còn thiếu là đúng thiết kế.
 
 **Kiểm.** `tests/test_hoi_it_truoc_ban_nhap.py` (2 ca, đỏ trên code cũ), `tests/test_xung_ho_qua_khoi_dong.py` (đỏ trên code cũ),
-`tests/test_voice.py::test_tin_thoai_khong_chep_duoc_vao_so_loi` (đỏ trên code cũ), `bot/tests/bridge-gui-lai.mjs` trong `test:bot`
+`tests/test_voice.py::test_tin_thoai_khong_chep_duoc_vao_so_loi` (đỏ trên code cũ), `test_hoi_it_truoc_ban_nhap.py::test_cau_hoi_dien_tich_san_khong_bi_coi_la_xong_khi_da_biet_so_tang`
+(đỏ trên code cũ), `bot/tests/bridge-gui-lai.mjs` trong `test:bot`
 (máy chủ giả lên sau 2 giây; bản cũ trượt; lõi treo vẫn chỉ gửi ≤ 2 lần — đã chạy cả hai chiều); sửa theo luật mới
-`tests/test_ban_nhap_du_dieu_kien.py`, `tests/test_cau_hoi_theo_loai.py`. pytest 399 đạt. Model thật: `ban-thu-ban`.
+`tests/test_ban_nhap_du_dieu_kien.py`, `tests/test_cau_hoi_theo_loai.py`. pytest 400 đạt. Model thật: `ban-thu-ban`.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
