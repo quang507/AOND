@@ -1078,9 +1078,18 @@ Tập trung vào BĐS đang nói ở các tin nhắn MỚI NHẤT.
 QUAN TRỌNG — diện tích: nhà phố/biệt thự/nhà cấp 4 (đất riêng) có 2 diện tích KHÁC NHAU.
 Nếu khách nói RÕ đâu là đất, đâu là nhà, dùng dien_tich_dat (diện tích đất) và dien_tich_nha
 (diện tích nhà/sử dụng/xây dựng, không cần phân biệt sâu hơn) tương ứng. Nếu khách CHỈ cho
-MỘT con số m2 mà KHÔNG rõ là đất hay nhà, ĐỪNG đoán đó là cái nào — cứ lưu tạm vào dien_tich
-(đừng bỏ trống, đừng bịa thêm số) để hệ thống hỏi lại xác nhận sau. Chung cư/CHDV/khách sạn/
-đất/kho xưởng chỉ có 1 diện tích — luôn dùng dien_tich cho các loại này.
+MỘT con số m2 mà KHÔNG có dấu hiệu nào (xem ĐỌC DẤU HIỆU dưới) thì lưu tạm vào dien_tich (đừng bỏ trống, đừng bịa
+thêm số) để hệ thống hỏi lại xác nhận sau. Chung cư/CHDV/khách sạn/đất/kho xưởng chỉ có 1 diện tích — luôn dùng dien_tich
+cho các loại này.
+ĐỌC DẤU HIỆU NHƯ MÔI GIỚI LÂU NĂM (19/10/2026, SRS-5.1zzzzzzz74 — chủ dự án: "bot thông minh phải hiểu dấu hiệu căn này thuộc về gì"):
+- Loại hình (loai_hinh) suy theo dấu hiệu, không chờ khách gọi tên: "căn nhà" / "nhà" kèm số tầng / lầu, mặt tiền, hẻm, hoặc nằm ở
+  các quận nội thành cũ của TP.HCM (Quận 1–12, Phú Nhuận, Bình Thạnh, Tân Bình, Tân Phú, Gò Vấp, Bình Tân, Thủ Đức…) → nha_pho.
+  "căn hộ", "chung cư", "block / tầng X căn Y", tên toà chung cư → chung_cu. "lô đất", "đất nền", "đất thổ cư", "đất trống" → dat.
+  Vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An, Bình Dương, Đồng Nai, Tây Ninh…) mà khách chỉ nói "nhà",
+  không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
+- Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
+  (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
+  nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Không có dấu hiệu nào mới để tạm dien_tich.
 QUAN TRỌNG — mã số căn: BĐS dự án lúc MỞ BÁN (chưa hoàn thành) thường được định danh bằng
 MÃ SỐ CĂN (vd "căn số 42", "A-15-03", "block B tầng 5 căn 3") và CHƯA có địa chỉ đường. Nếu
 người rao cho mã số căn thì trích vào ma_so_can. ĐỪNG nhầm mã số căn với số phòng ngủ hay số
@@ -1332,8 +1341,17 @@ QUY TẮC:
   chỉ vì tin nhắn có nhắc một mã căn.
 - remove / keep_only / clear CHỈ khi khách nói RÕ ý muốn bỏ/xóa/chỉ giữ (bỏ, xóa, không bán nữa,
   chỉ giữ, xóa hết...). Nhắc một mã căn trong câu hỏi KHÔNG BAO GIỜ là remove/keep_only/clear.
-- Diện tích: nhà phố/biệt thự/nhà cấp 4 có 2 diện tích. Rõ đất/nhà → dien_tich_dat/dien_tich_nha;
-  chỉ một số m2 không rõ → để tạm dien_tich. Loại khác chỉ có 1 dien_tich.
+- Diện tích: nhà phố/biệt thự/nhà cấp 4 có 2 diện tích. Rõ đất/nhà → dien_tich_dat/dien_tich_nha (xem ĐỌC DẤU HIỆU bên dưới);
+  không có dấu hiệu nào → để tạm dien_tich. Loại khác chỉ có 1 dien_tich.
+ĐỌC DẤU HIỆU NHƯ MÔI GIỚI LÂU NĂM (19/10/2026, SRS-5.1zzzzzzz74 — chủ dự án: "bot thông minh phải hiểu dấu hiệu căn này thuộc về gì"):
+- Loại hình (loai_hinh) suy theo dấu hiệu, không chờ khách gọi tên: "căn nhà" / "nhà" kèm số tầng / lầu, mặt tiền, hẻm, hoặc nằm ở
+  các quận nội thành cũ của TP.HCM (Quận 1–12, Phú Nhuận, Bình Thạnh, Tân Bình, Tân Phú, Gò Vấp, Bình Tân, Thủ Đức…) → nha_pho.
+  "căn hộ", "chung cư", "block / tầng X căn Y", tên toà chung cư → chung_cu. "lô đất", "đất nền", "đất thổ cư", "đất trống" → dat.
+  Vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An, Bình Dương, Đồng Nai, Tây Ninh…) mà khách chỉ nói "nhà",
+  không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
+- Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
+  (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
+  nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Không có dấu hiệu nào mới để tạm dien_tich.
 - Đừng nhầm mã số căn với số phòng ngủ/số tầng.
 - DUYỆT BẢN NHÁP (18/10/2026): chỉ khi tin nhắn NGAY TRƯỚC của bot là BẢN TIN NHÁP / bản tin cập nhật hỏi khách thấy được
   chưa, đọc theo NGHĨA tin khách vừa nhắn: đồng ý cho đăng (ok, được rồi, đăng đi, chuẩn rồi, thả tim / like…) →

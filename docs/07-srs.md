@@ -6595,6 +6595,32 @@ giữ, lời tả ảnh chụp không thành ô, ô có số nhận cụm viết
 (đã chạy), pytest 386 đạt. Bắn thử production bằng ID thử: `bot/tests/ban-thu-ban.sh` (`apply-migration` ô `ban-thu-ban`, kịch bản
 đúng lượt chat 19/10) — soi phường, giá, diện tích, mặt tiền, sổ, kết cấu và KHÔNG có ô thương lượng.
 
+### SRS-5.1zzzzzzz74 · Bot đọc dấu hiệu: nhà ở quận nội thành là nhà phố, "80m 5 tầng" là diện tích đất (19/10/2026)
+
+**Ca gốc.** Chủ dự án chat thử 15:19–15:31 (nhà mặt tiền Âu Cơ, Phường 9, Quận 11, "80m 5 tầng"). 15:28 bot hỏi "80m² đó là diện tích
+đất hay diện tích sàn". Chủ dự án: "nếu là ở trong các quận này thì tự hiểu là nhà phố mới thông minh… bot thông minh phải hiểu dấu
+hiệu căn này thuộc về gì để đưa ra câu hỏi tiếp theo". (Bản tin 15:31 hỏi lại lần nữa là chuyện khác: tin trả lời 15:29 rơi đúng lúc
+lõi khởi động lại vì lượt cài bản SRS-5.1zzzzzzz73.)
+
+**Lớp lỗi.** Luật prompt cấm AI suy: `EXTRACTION_SYSTEM` "một con số m2 không rõ là đất hay nhà, ĐỪNG đoán" và luật diện tích của
+`OPERATIONS_SYSTEM` "chỉ một số m2 không rõ → để tạm dien_tich" (bản anh Luận, SRS-5.1zzzzzzz52) → mọi nhà phố đều bị hỏi lại, kể
+cả khi dấu hiệu đủ rõ. Cùng lớp: loại hình — prompt không nói AI được suy loại từ dấu hiệu (địa bàn, số tầng, mặt tiền / hẻm), nên
+khách không gọi tên "nhà phố" thì có lượt bot hỏi "nhà phố, chung cư hay đất". **Chỗ cùng lớp đã soát:** hai prompt bóc tách (lượt
+lập thao tác, bóc tách rời dùng khi tách căn / nhóm ảnh); câu hỏi "đất hay nhà" ở `build_chat_system` giữ nguyên làm lưới cuối —
+chỉ bật khi AI vẫn để `dien_tich` mơ hồ.
+
+**Sửa.** Khối "ĐỌC DẤU HIỆU NHƯ MÔI GIỚI LÂU NĂM" trong `OPERATIONS_SYSTEM` và `EXTRACTION_SYSTEM` — AI đọc theo nghĩa, không thêm
+regex (CLAUDE.md §6):
+- "căn nhà" / "nhà" kèm số tầng / lầu, mặt tiền, hẻm, hoặc ở quận nội thành cũ của TP.HCM → `nha_pho`; "căn hộ / chung cư / block" →
+  `chung_cu`; "lô đất / đất nền / thổ cư" → `dat`; vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An…) chỉ nói
+  "nhà" không số tầng → để trống, bot hỏi (có thể là nhà cấp 4, nhà vườn).
+- Nhà phố: một số m² nói kèm số tầng / lầu / kích thước là diện tích ĐẤT; chỉ là diện tích nhà khi khách nói "sàn / sử dụng / xây
+  dựng". Thay luật "đừng đoán" của SRS-5.1zzzzzzz52 theo lời chủ dự án.
+
+**Kiểm.** `tests/test_doc_dau_hieu.py` (2 ca, đỏ khi bỏ khối luật), pytest 388 đạt. Model thật: `bot/tests/ban-thu-ban.sh` kịch bản 2
+(đúng lượt chat Âu Cơ của chủ dự án) — soát `property_type = nha_pho`, `area_m2 = 80` và `dien_tich_dat` mang 80, lời bot KHÔNG hỏi loại
+nhà, KHÔNG hỏi "đất hay sàn".
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
