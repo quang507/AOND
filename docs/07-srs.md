@@ -6177,6 +6177,20 @@ tên, bỏ `__pycache__`), chờ `/health` tới 60 giây, giữ 5 bản lõi c�
 **Kiểm.** `tests/test_kho_du_an.py::test_chep_bi_cat_giua_chung_thi_lan_sau_chep_tiep` (đỏ với bản "kho đã có dòng là thôi"). Chạy
 `cai-vps` sau khi merge: dòng "Only in …" phải hết.
 
+### SRS-5.1zzzzzzz58 · cai-vps tải script theo commit, không theo tên nhánh (19/10/2026)
+
+**Ca gốc.** Sau khi merge 5.1zzzzzzz57 (`aba250f`), `cai-vps` xanh, `/health` 200, nhưng log vẫn in "Only in /opt/aond_core/src/aioi:
+sharepoint.py, vector_store.py, llm/gemini.py" — tức VPS chạy bản `cai-vps.sh` CŨ (chép đè). Workflow tải script bằng
+`raw.githubusercontent.com/quang507/AOND/<tên nhánh>/…`; CDN của raw giữ bản cũ vài phút sau khi nhánh đổi, nên lượt chạy ngay sau
+merge nhận script trước merge [giả định BA — suy từ log, chưa đo được CDN].
+
+**Lớp lỗi.** Tải mã cài đặt theo TÊN (thay đổi) thay vì theo commit (bất biến). **Chỗ cùng lớp.** Trong `cai-vps.sh`, git lấy code theo
+`NHANH` qua `git fetch` — không qua CDN, giữ. Không còn chỗ nào khác tải script qua raw.
+
+**Sửa.** URL dùng `$GITHUB_SHA` (đúng commit workflow đang chạy). `NHANH` vẫn truyền cho script như cũ.
+
+**Kiểm.** `bot/tests/aond-mot-nguon.mjs` AMN-11 (đỏ khi URL quay về tên nhánh). Chạy `cai-vps` sau merge: dòng "Only in …" phải hết.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
