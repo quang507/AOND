@@ -9,6 +9,7 @@ from typing import Any
 
 from ..config import Settings
 from ..imaging import downscale_image
+from ..so_token import SoToken
 from .base import LLMProvider, Message, ToolCall, ToolTurn
 
 
@@ -27,6 +28,8 @@ class ClaudeProvider(LLMProvider):
         self._chat_model = settings.chat_model
         self._extract_model = settings.extract_model  # cheap model for structured extraction/ops
         self._vision_model = settings.vision_model  # Opus 4.8 for vision/OCR-grade reads
+        # Mỗi lượt gọi ghi token + model thật vào sổ Supabase (cong_token) để /admin quy ra đô (SRS-5.1zzzzzzz49).
+        self._so = SoToken.tu_cau_hinh(settings.supabase_url, settings.supabase_service_role_key)
 
     @staticmethod
     def _sys(system: str) -> list[dict[str, Any]]:
@@ -43,6 +46,7 @@ class ClaudeProvider(LLMProvider):
             system=self._sys(system),
             messages=[{"role": m.role, "content": m.content} for m in messages],
         )
+        self._so.ghi("chat", self._chat_model, resp)
         return "".join(b.text for b in resp.content if b.type == "text").strip()
 
     def extract(
@@ -64,6 +68,7 @@ class ClaudeProvider(LLMProvider):
             ],
             tool_choice={"type": "tool", "name": "save_property_data"},
         )
+        self._so.ghi("extract", self._extract_model, resp)
         for block in resp.content:
             if block.type == "tool_use":
                 return dict(block.input)
@@ -83,6 +88,7 @@ class ClaudeProvider(LLMProvider):
             messages=messages,
             tools=tools,
         )
+        self._so.ghi("agent", self._chat_model, resp)
         text = "".join(b.text for b in resp.content if b.type == "text").strip()
         calls = [ToolCall(id=b.id, name=b.name, input=dict(b.input))
                  for b in resp.content if b.type == "tool_use"]  # CUSTOM tools only (server tools
@@ -117,6 +123,7 @@ class ClaudeProvider(LLMProvider):
             max_tokens=max_tokens,
             messages=[{"role": "user", "content": content}],
         )
+        self._so.ghi("vision", self._vision_model, resp)
         return "".join(b.text for b in resp.content if b.type == "text").strip()
 
     def group_media(
@@ -158,6 +165,7 @@ class ClaudeProvider(LLMProvider):
             ],
             tool_choice={"type": "tool", "name": "nhom_tep_theo_can"},
         )
+        self._so.ghi("group", self._vision_model, resp)
         for block in resp.content:
             if block.type == "tool_use":
                 return dict(block.input)
@@ -190,6 +198,7 @@ class ClaudeProvider(LLMProvider):
                     "input_schema": json_schema}],
             tool_choice={"type": "tool", "name": "luu_du_lieu"},
         )
+        self._so.ghi("read-doc", self._vision_model, resp)
         for block in resp.content:
             if block.type == "tool_use":
                 return dict(block.input)

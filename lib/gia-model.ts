@@ -1,28 +1,45 @@
 // Bảng giá model — MỘT NGUỒN cho /admin (04/10/2026, SRS-5.1zv). Đô trên MỘT TRIỆU chữ-máy, giá niêm yết Anthropic
-// (bảng cached 25/09/2026 trong skill claude-api; kiểm lại khi đổi model). Để trong code, không nhét vào DB: giá đổi thì
+// (đối chiếu trang giá Anthropic 19/10/2026; kiểm lại khi đổi model). Để trong code, không nhét vào DB: giá đổi thì
 // sửa một chỗ, số chữ đã ghi trong `bot_usage_model` vẫn đúng mãi.
 //
 // Trước bản này /admin dùng một cặp hằng số GIA_VAO=5 / GIA_RA=25 (giá Opus) cho MỌI token → cao hơn thật 1,7× khi bot
 // chạy Sonnet 4.6, 5× khi chạy Haiku 4.5, và tính tiền cho cả lượt Groq/Gemini vốn không đụng credit Anthropic.
 
-export type GiaModel = { vao: number; ra: number; nhan: string };
+export type GiaModel = { vao: number; ra: number; nhan: string; doc?: number };
 
-/** Khớp theo tiền tố ID model (ID thật có đuôi ngày, vd `claude-haiku-4-5-20251001`). Thứ tự: cụ thể trước. */
+/**
+ * Khớp theo tiền tố ID model (ID thật có đuôi ngày, vd `claude-haiku-4-5-20251001`). Thứ tự: cụ thể trước.
+ * Đối chiếu bảng giá Anthropic 19/10/2026 (platform.claude.com/docs/en/about-claude/pricing, SRS-5.1zzzzzzz49). `doc` = giá
+ * đọc cache khi KHÁC 0,1× giá vào (Opus 5.5 / Sonnet 5.5 = 0,05×). Haiku 5.5 có hai bậc theo độ dài prompt; sổ chỉ cộng dồn
+ * theo ngày nên lấy bậc ≤ 100.000 token — prompt của lõi Python (system + 16 lượt) nằm xa dưới ngưỡng đó.
+ */
 const BANG_GIA: Array<[RegExp, GiaModel]> = [
+  [/^claude-haiku-5-5/, { vao: 0.1, ra: 0.5, nhan: "Haiku 5.5" }],
   [/^claude-haiku-4-5/, { vao: 1, ra: 5, nhan: "Haiku 4.5" }],
   [/^claude-sonnet-4-6/, { vao: 3, ra: 15, nhan: "Sonnet 4.6" }],
   [/^claude-sonnet-4-5/, { vao: 3, ra: 15, nhan: "Sonnet 4.5" }],
-  [/^claude-sonnet-5-5/, { vao: 2, ra: 10, nhan: "Sonnet 5.5" }],
+  [/^claude-sonnet-5-5/, { vao: 2, ra: 10, nhan: "Sonnet 5.5", doc: 0.1 }],
   [/^claude-sonnet-5/, { vao: 2, ra: 10, nhan: "Sonnet 5" }],
-  [/^claude-opus-5-5/, { vao: 4, ra: 20, nhan: "Opus 5.5" }],
-  [/^claude-opus-(5|4-[6-8])/, { vao: 5, ra: 25, nhan: "Opus" }],
+  [/^claude-opus-5-5/, { vao: 4, ra: 20, nhan: "Opus 5.5", doc: 0.2 }],
+  [/^claude-opus-4-8/, { vao: 5, ra: 25, nhan: "Opus 4.8" }],
+  [/^claude-opus-(5|4-[67])/, { vao: 5, ra: 25, nhan: "Opus" }],
   // Đường dự phòng (FR-194): bậc miễn phí, không trừ credit Anthropic → 0 đô, nhưng vẫn hiện số chữ để biết nó chạy bao nhiêu.
   [/^(Groq|Gemini):/, { vao: 0, ra: 0, nhan: "dự phòng (Groq/Gemini)" }],
 ];
 
-/** Hệ số bộ nhớ tạm: ghi cache nhớ 1 giờ = 2× giá vào (chat-reply dùng `ttl: "1h"`); đọc cache = 0,1× giá vào. */
+/**
+ * Hệ số ghi cache theo ngày: bot TypeScript (tới 18/10/2026) ghi cache nhớ 1 GIỜ = 2× giá vào; lõi Python (sổ ghi từ
+ * 19/10/2026, `src/aioi/so_token.py`) dùng cache 5 PHÚT mặc định (`cache_control: ephemeral`) = 1,25×. Sổ không lưu TTL nên
+ * phân theo ngày: trước 19/10 không có dòng nào của lõi Python. Đọc cache = 0,1× giá vào trừ model có `doc` riêng.
+ */
 export const HE_SO_NAP = 2;
+export const HE_SO_NAP_5M = 1.25;
+export const NGAY_CACHE_5M = "2026-10-19";
 export const HE_SO_DOC = 0.1;
+
+export function heSoNap(day: string | null | undefined): number {
+  return day && day >= NGAY_CACHE_5M ? HE_SO_NAP_5M : HE_SO_NAP;
+}
 
 /** Giá của một model; `null` = chưa có trong bảng (kể cả `khac` của dòng cũ) → không quy ra đô, không đoán. */
 export function giaCua(model: string | null | undefined): GiaModel | null {
@@ -40,6 +57,8 @@ export type DongToken = {
   cache_read_tokens: number;
   /** Số lượt gọi model (20261004b); thiếu ở dòng cũ. */
   calls?: number;
+  /** Ngày (giờ VN) của dòng — quyết hệ số ghi cache (`heSoNap`); thiếu = coi như dòng cũ (1 giờ). */
+  day?: string;
 };
 
 /**
@@ -79,7 +98,8 @@ export function canhBaoCache(t: DongToken, toiThieuChu = 20_000): string | null 
 export function tienDong(t: DongToken): number | null {
   const g = giaCua(t.model);
   if (!g) return null;
-  return (t.in_tokens * g.vao + t.out_tokens * g.ra + t.cache_write_tokens * g.vao * HE_SO_NAP + t.cache_read_tokens * g.vao * HE_SO_DOC) / 1_000_000;
+  const doc = g.doc ?? g.vao * HE_SO_DOC;
+  return (t.in_tokens * g.vao + t.out_tokens * g.ra + t.cache_write_tokens * g.vao * heSoNap(t.day) + t.cache_read_tokens * doc) / 1_000_000;
 }
 
 /** Tổng đô của nhiều dòng — chỉ cộng dòng có giá; `chuaRo` = số dòng bỏ qua vì chưa rõ model/giá. */

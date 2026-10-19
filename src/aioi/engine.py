@@ -23,6 +23,7 @@ from uuid import uuid4
 
 from . import gamification as g
 from .assistants import Assistant, assign_assistant
+from .drive import extract_drive_id
 from .fetch import (
     DEFAULT_BATCH_BUDGET,
     FetchedMedia,
@@ -2112,12 +2113,16 @@ class Engine:
         text: str | None = None
         data: bytes | None = None
         media_type: str | None = None
+        # Link Google Drive (file HAY thư mục) là TỆP khách gửi (ảnh / PDF), không phải trang web — phải đi đường media để
+        # bộ giải link đổi ra link tải thật. Tải thô link Drive chỉ nhận trang đăng nhập Drive, bị đọc nhầm thành "trang web
+        # dự án" ("đang rao dự án nào?"). Sheets là ngoại lệ (đã tách ở trên). Theo bản anh Luận 4ebeb18 (SRS-5.1zzzzzzz50).
+        is_drive = extract_drive_id(url) is not None
         if bulk.sheets_export_url(url) is not None:  # Google Sheets
             try:
                 text = self._spreadsheet_text(url)
             except FetchError:
                 text = None
-        elif not is_drive_folder(url):
+        elif not is_drive:
             try:
                 data, media_type = fetch_raw(url)
             except FetchError:
@@ -2808,16 +2813,20 @@ class Engine:
 
     def _drop_stub_listings(self, conv: Conversation) -> None:
         """Remove the leftover empty STARTER listing (a blank Listing() every conversation opens
-        with, that once lingered as junk 'căn 1 · nha_pho' in the rổ) once REAL căn exist,
-        and ensure active_listing_id never stays stuck on an empty stub."""
-        real_listings = [li for li in conv.listings if not self._is_stub_listing(li)]
-        if real_listings:
-            if self._is_stub_listing(conv.active) or all(li.listing_id != conv.active_listing_id for li in real_listings):
-                conv.active_listing_id = real_listings[-1].listing_id
-            conv.listings = real_listings
-        elif not conv.listings:
-            conv.listings = [Listing()]
-            conv.active_listing_id = conv.listings[0].listing_id
+        with, that once lingered as junk 'căn 1 · nha_pho' in the rổ) once REAL căn exist — but
+        never drop the one the seller is actively building (bản anh Luận, SRS-5.1zzzzzzz51: bản 16/10 bỏ cả căn đang khai
+        khi nó chưa có địa chỉ / giá, nên căn thứ hai vừa nói loại hình + diện tích mất ở lượt kế)."""
+        if not any(not self._is_stub_listing(li) for li in conv.listings):
+            if not conv.listings:
+                conv.listings = [Listing()]
+                conv.active_listing_id = conv.listings[0].listing_id
+            return  # nothing real yet — the seller is still starting their first căn
+        kept = [li for li in conv.listings
+                if not self._is_stub_listing(li) or li.listing_id == conv.active_listing_id]
+        if len(kept) != len(conv.listings):
+            conv.listings = kept or [Listing()]
+        if all(li.listing_id != conv.active_listing_id for li in conv.listings):
+            conv.active_listing_id = conv.listings[-1].listing_id
 
     def sync_listing_json_to_sharepoint(self, listing: Listing) -> None:
         """Export the listing's structured data as `thong_tin.json` and upload it to
@@ -3145,33 +3154,13 @@ class Engine:
             receipts.append(("remove", targets, self._rao_count(conv)))
             return
         if kind == "add":
-            # Guard against mis-parsed "add" on listing approval turns:
-            # If the user message is an approval to post ("lên tin đi", "đăng đi", "ok em", "duyệt")
-            # and no explicit new property indicator was provided, DO NOT create a new listing!
-            last_user_turn = ""
-            for t in reversed(conv.history):
-                if t.role == "user" and t.content:
-                    last_user_turn = t.content.lower()
-                    break
-
-            is_post_approval = bool(re.search(
-                r"\b(?:lên\s*tin|đăng\s*tin|lên\s*bài|đăng\s*bài|cho\s*lên|chào\s*đi|lên\s*đi|đăng\s*đi|lên\s*được\s*rồi|duyệt|ok|chuẩn|hấp\s*dẫn|được\s*đó|đăng\s*luôn|đăng\s*hộ|đăng\s*nhé|lên\s*nhé)\b",
-                last_user_turn,
-            ))
-            has_new_can_keywords = bool(re.search(
-                r"\b(?:căn\s+(?:nữa|khác|mới|tiếp|thứ|số\s*\d+)|thêm\s+căn|còn\s+căn|bán\s+thêm)\b",
-                last_user_turn,
-            ))
-
-            if is_post_approval and not has_new_can_keywords:
-                conv.active.status = "đang bán"
-                conv.listing_proposed = True
-                data = _data()
-                if data:
-                    changed.update(conv.active.prop.update(data))
-                return
-
+            # Theo bản anh Luận (SRS-5.1zzzzzzz51): tin "add" của lượt AI lập thao tác LÀ quyết định mở căn mới — không đoán
+            # lại bằng từ khoá trên lời khách. Bản 16/10 đọc lại tin khách bằng regex ("ok|chuẩn|duyệt…" = duyệt tin, chỉ
+            # "căn nữa|thêm căn…" mới là căn mới): "ok, còn nhà ở Q3 nữa" khớp "ok" nên nhà Q3 ĐÈ lên căn cũ. Duyệt bản nháp
+            # đã có đường riêng (duyet_ban_nhap, kiểm trích dẫn) và OPERATIONS_SYSTEM cấm "add" khi khách chỉ duyệt tin.
             # Multiple units of the SAME model ("2 căn 42 và 41") → one listing per mã số căn
+            # (an existing code UPDATES, never duplicates). A single add starts a fresh listing
+            # (filling the empty starter first) so its fields don't bleed onto the previous căn.
             if len(targets) >= 2:
                 changed.update(self._fan_out_units(conv, _data(exclude_code=True), targets))
             elif self._listing_empty(conv.active):
@@ -3180,20 +3169,16 @@ class Engine:
                 if targets:
                     data["ma_so_can"] = targets[0]
                 changed.update(conv.active.prop.update(data))
-            elif has_new_can_keywords:
-                # A genuinely NEW căn explicitly stated by customer ("căn nữa", "căn khác", "thêm căn")
+            else:
+                # A genuinely NEW căn alongside existing ones: open a fresh listing pointed at
+                # the describing message and RE-READ its fields from that clean slice, so nothing
+                # bleeds from the previous căn.
                 li = conv.new_listing()
                 li.history_start = max(0, len(conv.history) - 1)
                 data = self._extract_fields(conv)
                 if targets:
                     data["ma_so_can"] = targets[0]
                 changed.update(li.prop.update(data))
-            else:
-                # User is continuing, approving, or adding details to the ACTIVE căn
-                data = _data()
-                if targets:
-                    data.setdefault("ma_so_can", targets[0])
-                changed.update(conv.active.prop.update(data))
             receipts.append(("add", targets))
             return
         if kind == "set_status":

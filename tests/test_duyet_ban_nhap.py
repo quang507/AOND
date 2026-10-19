@@ -46,7 +46,7 @@ def _eng(plan, monkeypatch):
     conv = eng.conversation("u-duyet")
     conv.prop.loai_hinh = "nha_pho"
     conv.prop.fields.update({"dia_chi": "146 Trần Bình Trọng", "duong": "Trần Bình Trọng", "phuong": "Phường 2",
-                             "dien_tich_dat": "60m2", "gia": "10 tỷ", "ket_cau": "1 trệt 2 lầu", "lo_gioi_hem": "hẻm 4m"})
+                             "dien_tich_dat": "60m2", "dien_tich_nha": "150m2", "gia": "10 tỷ", "ket_cau": "1 trệt 2 lầu", "lo_gioi_hem": "hẻm 4m"})
     return eng, kho, seen, conv
 
 

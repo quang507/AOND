@@ -418,6 +418,14 @@ class Property:
         ra = [x for x in expected if x in identity and (not self._has(x) or x in chan)]
         ra += [x for x in chan if x not in expected]
         ra += [x for x in expected if x not in identity and (not self._has(x) or x in chan)]
+        # Phường hỏi NGAY sau địa chỉ (đường → phường; địa chỉ xong rồi thì phường lên đầu, sau loại hình), kể cả khi nhóm
+        # nhận diện còn ô khác (diện tích nhà) chen giữa.
+        if "phuong" in ra:
+            ra.remove("phuong")
+            if "dia_chi" in ra:
+                ra.insert(ra.index("dia_chi") + 1, "phuong")
+            else:
+                ra.insert(1 if ra[:1] == ["loai_hinh"] else 0, "phuong")
         return [x for x in ra if x not in HOI_SAU_KHI_RA_TIN]
 
     def cau_hoi_sau_ra_tin(self) -> str | None:
@@ -443,10 +451,10 @@ class Property:
             return self.loai_hinh is not None
         if name == "ma_so_can":
             return bool(self.fields.get("ma_so_can") or self.fields.get("tang_toa"))
-        if name in ("dien_tich", "dien_tich_dat"):
-            return bool(self.fields.get("dien_tich_dat") or self.fields.get("dien_tich") or self.fields.get("kich_thuoc"))
-        if name == "dien_tich_nha":
-            return bool(self.fields.get("dien_tich_nha") or self.fields.get("dien_tich") or self.fields.get("dien_tich_dat"))
+        if name == "dien_tich":   # BĐS một diện tích (chung cư / đất / công nghiệp)
+            return bool(self.fields.get("dien_tich") or self.fields.get("dien_tich_dat") or self.fields.get("kich_thuoc"))
+        # Nhà có đất riêng: diện tích ĐẤT và diện tích NHÀ là hai ô riêng, mỗi ô phải có chính nó (bản anh Luận,
+        # SRS-5.1zzzzzzz52). Bản 16/10 cho một con số đứng thay cả hai → nhà phố ra bản nháp khi chưa biết diện tích nhà.
         return bool(self.fields.get(name))
 
     def secondary_missing_fields(self) -> list[str]:
@@ -563,16 +571,14 @@ class Property:
                         self.fields["dien_tich"] = area_calc
                         newly.append("dien_tich")
 
-        # Đồng bộ diện tích đất cho nhà có đất riêng khi chỉ có dien_tich
-        if self.loai_hinh in HOUSE_TYPES:
-            if self.fields.get("dien_tich") and not self.fields.get("dien_tich_dat"):
-                self.fields["dien_tich_dat"] = self.fields["dien_tich"]
-                if "dien_tich_dat" not in newly:
-                    newly.append("dien_tich_dat")
-            elif self.fields.get("dien_tich_dat") and not self.fields.get("dien_tich"):
-                self.fields["dien_tich"] = self.fields["dien_tich_dat"]
-                if "dien_tich" not in newly:
-                    newly.append("dien_tich")
+        # Nhà có đất riêng: KHÔNG đồng bộ dien_tich ↔ dien_tich_dat (SRS-5.1zzzzzzz52, theo bản anh Luận). Một con số khách
+        # chưa nói là đất hay nhà nằm yên ở dien_tich; build_chat_system hỏi lại "80m2 đó là đất hay nhà". Riêng chuỗi
+        # kích thước ("4x15") đã chuyển sang kich_thuoc → diện tích đất ở trên, không phải con số mơ hồ nên bỏ khỏi dien_tich.
+        if self.loai_hinh in HOUSE_TYPES and re.search(r"\d+\s*[x*X]\s*\d+", self.fields.get("dien_tich") or "") \
+                and self.fields.get("kich_thuoc"):
+            del self.fields["dien_tich"]
+            if "dien_tich" in newly:
+                newly.remove("dien_tich")
 
         return newly
 
