@@ -20,7 +20,7 @@ from typing import Any, TYPE_CHECKING
 
 from .kho_anh import BUCKET_CONG_KHAI, BUCKET_RIENG, la_uuid
 from .prompts import FIELD_LABELS
-from .schema import Property, _calc_area_from_dimension
+from .schema import TYPE_TO_GROUP, Property, _calc_area_from_dimension
 from .assistants import assign_assistant
 
 if TYPE_CHECKING:
@@ -62,6 +62,33 @@ COT_THONG_SO = ("frontage_m", "length_m", "rear_width_m", "legal_area_m2", "buil
                 "planning_status", "furnishing", "direction")
 _O_KHONG_PHAI_THONG_SO = {"dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "du_an", "ma_so_can", "unit_type", "gia",
                           "loai_hinh", "phap_ly", "hinh_anh", "ly_do_ban", "trang_thai"}
+
+# Loại hình: mã lõi Python (schema.TYPE_TO_GROUP, 26 mã) → enum `listings.property_type` (12 mã của CRM) — SRS-5.1zzzzzzz68. Trước bản
+# này save() ghi thẳng mã lõi: "nha_cap_4" (DB là "nha_cap4"), "chdv", "can_ho"… không có trong enum → PostgREST 22P02, cả dòng tin
+# không ghi được. Mã không chắc thuộc loại nào (du_an, shophouse_du_an) thì không ghi cột — để DB giữ giá trị đang có.
+LOAI_SANG_DB = {
+    "nha_pho": "nha_pho", "nha_cap_4": "nha_cap4", "biet_thu": "biet_thu", "chung_cu": "chung_cu", "can_ho": "chung_cu",
+    "officetel": "chung_cu", "penthouse": "chung_cu", "dat": "dat", "dat_tho_cu": "dat", "dat_du_an": "dat",
+    "dat_nong_nghiep": "dat_nong_nghiep", "dat_kinh_doanh": "dat_kinh_doanh", "dat_skc": "dat_kinh_doanh",
+    "dat_tmd": "dat_kinh_doanh", "kho_xuong": "kho_xuong", "kho_bai": "kho_xuong", "nha_xuong": "kho_xuong",
+    "phong_tro": "phong_tro", "toa_nha": "toa_nha", "chdv": "toa_nha", "khach_san": "toa_nha", "mat_bang": "mat_bang",
+    "shophouse": "mat_bang", "chua_ro": "chua_ro",
+}
+DB_SANG_LOAI = {"nha_cap4": "nha_cap_4"}
+
+
+def ma_loai_db(loai: str | None) -> str | None:
+    """Mã lõi → mã enum DB; None = không ghi cột."""
+    return LOAI_SANG_DB.get(loai or "")
+
+
+def loai_tu_db(loai_db: str | None, boc_tach: dict[str, Any] | None = None) -> str | None:
+    """Mã enum DB → mã lõi; ô `loai_hinh` lõi đã ghi trong boc_tach (cụ thể hơn, vd chdv) đứng trước."""
+    cu = (boc_tach or {}).get("loai_hinh")
+    if isinstance(cu, str) and cu in TYPE_TO_GROUP:
+        return cu
+    return DB_SANG_LOAI.get(loai_db or "", loai_db) if loai_db else None
+
 
 # Trạng thái tin: chữ của engine (STATUS_MAP) ↔ mã cột `listings.status` (SRS-5.1zzzzzzz63). Trước bản này save() không bao giờ ghi
 # status — khách nói "bán rồi / ngưng rao" chỉ đổi trong bộ nhớ, web vẫn hiện tin.
@@ -361,7 +388,7 @@ class SupabaseConversationStore:
                     listing_payload["ward"] = phuong
                 if quan:
                     listing_payload["district"] = quan
-                listing_payload.update(self._thong_so(fields, li.prop.loai_hinh))
+                listing_payload.update(self._thong_so(fields, ma_loai_db(li.prop.loai_hinh)))
                 ma_pl = self._ma_phap_ly(fields.get("phap_ly"))
                 if ma_pl:
                     listing_payload["legal_status"] = ma_pl
@@ -370,8 +397,8 @@ class SupabaseConversationStore:
                     listing_payload["area_m2"] = dt
                 if fields.get("gia"):
                     listing_payload["price_raw"] = str(fields["gia"])
-                if li.prop.loai_hinh:
-                    listing_payload["property_type"] = li.prop.loai_hinh
+                if ma_loai_db(li.prop.loai_hinh):
+                    listing_payload["property_type"] = ma_loai_db(li.prop.loai_hinh)
 
                 # Tin trên DB mang ĐÚNG id của Listing (uuid) — thư mục ảnh trên Storage là `<uuid>/…` và ràng buộc
                 # listing_media_duong_dan_theo_uuid đòi khớp (SRS-5.1zzzzzzz56). Tin cũ tạo trước bản này: tìm theo code.
@@ -519,7 +546,7 @@ class SupabaseConversationStore:
             for row in db_listings:
                 boc_tach = row.get("boc_tach") or {}
                 prop = Property(
-                    loai_hinh=row.get("property_type") or boc_tach.get("loai_hinh"),
+                    loai_hinh=loai_tu_db(row.get("property_type"), boc_tach),
                     is_rental=(row.get("deal") == "thue"),
                     fields=boc_tach,
                 )

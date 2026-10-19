@@ -47,7 +47,7 @@ export const TYPE_LABEL: Record<string, string> = {
 
 // Ô thông số nào CÓ NGHĨA với loại BĐS nào (01/10/2026, chủ dự án xem form sửa tin của một lô đất: "các loại bds khác thì
 // bên trong tab này đâu phải là phòng ngủ"). Lớp lỗi: form admin / trang tin dùng MỘT bộ ô cho mọi loại, trong khi bot hỏi
-// theo loại (bảng required_facts). MỘT bảng ở đây cho form admin và trang tin (bài đối chiếu với
+// theo loại (nay `src/aioi/schema.py`; bảng required_facts gỡ 19/10/2026). MỘT bảng ở đây cho form admin và trang tin (bài đối chiếu với
 // bộ câu bot TypeScript `o-theo-loai.mjs` gỡ 19/10/2026 cùng bot đó). Chưa rõ loại → hiện đủ.
 // - phongNgu: loại có khái niệm phòng ngủ — trang tin / thẻ tin hiện số phòng ngủ khi có (⇔ bot có câu so_phong_ngu).
 // - oPhongNguTrong: form sửa tin hiện ô phòng ngủ cả khi TRỐNG (⇔ phòng ngủ là thông số CHÍNH bot hỏi sớm, như căn hộ).

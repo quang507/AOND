@@ -161,6 +161,23 @@ CORE_FIELDS: dict[PropertyGroup, list[str]] = {
     PropertyGroup.UNKNOWN: [],
 }
 
+# 19/10/2026 (SRS-5.1zzzzzzz68; chủ dự án: "có nguồn duy nhất là dc"): loại trong nhóm mà bộ câu khác hẳn cả nhóm — đè
+# `CORE_FIELDS[nhóm]`. Chép ý từ bảng DB `required_facts` (bot TypeScript, gỡ 20261019g): toà nhà / CHDV hỏi số phòng + dòng
+# tiền (thay phòng ngủ, hoàn công nhà ở), phòng trọ hỏi tiện ích phòng + điện nước + giờ giấc (thay kết cấu, sổ), đất nông
+# nghiệp / đất kinh doanh hỏi theo đất trống (thay chỉ tiêu xây dựng / trần, tải trọng sàn). Bộ câu hỏi chỉ còn ở file này.
+CORE_THEO_LOAI: dict[str, list[str]] = {
+    "toa_nha": ["ket_cau", "so_phong", "dong_tien_thue", "lo_gioi_hem", "phap_ly_hoan_cong"],
+    "chdv": ["ket_cau", "so_phong", "dong_tien_thue", "lo_gioi_hem", "phap_ly_hoan_cong"],
+    "khach_san": ["ket_cau", "so_phong", "dong_tien_thue", "lo_gioi_hem", "phap_ly_hoan_cong"],
+    "phong_tro": ["tien_ich_phong", "gia_dien_nuoc", "gio_giac"],
+    # Đất nông nghiệp: không hỏi chỉ tiêu xây dựng / thổ cư như đất ở — hỏi đường vào, quy hoạch, lên thổ cư được không, nước tưới.
+    "dat_nong_nghiep": ["kich_thuoc", "lo_gioi_duong", "quy_hoach", "len_tho_cu", "nguon_nuoc"],
+    # Đất kinh doanh / SKC / TMD là ĐẤT trống: không hỏi chiều cao trần, tải trọng sàn như kho xưởng.
+    "dat_kinh_doanh": ["kich_thuoc", "lo_gioi_duong", "thoi_han_su_dung", "muc_dich_su_dung_dat", "quy_hoach"],
+    "dat_skc": ["kich_thuoc", "lo_gioi_duong", "thoi_han_su_dung", "muc_dich_su_dung_dat", "quy_hoach"],
+    "dat_tmd": ["kich_thuoc", "lo_gioi_duong", "thoi_han_su_dung", "muc_dich_su_dung_dat", "quy_hoach"],
+}
+
 # Trường hỏi thêm khi đã làm rõ thông tin cơ bản (Secondary facts & Closing)
 SECONDARY_FIELDS: dict[PropertyGroup, list[str]] = {
     PropertyGroup.RESIDENTIAL: [
@@ -264,9 +281,13 @@ class Property:
             locator = ["dia_chi"]
         return ["loai_hinh", *locator, *areas, "gia"]
 
+    def core_fields(self) -> list[str]:
+        """Ô cốt lõi của loại này: bộ riêng của loại (`CORE_THEO_LOAI`) nếu có, không thì bộ của nhóm."""
+        return list(CORE_THEO_LOAI.get(self.loai_hinh or "", CORE_FIELDS[self.group]))
+
     def expected_fields(self) -> list[str]:
         """All fields this property should eventually have, given its type."""
-        expected = self.identity_fields() + list(CORE_FIELDS[self.group])
+        expected = self.identity_fields() + self.core_fields()
         if self.is_rental:
             expected += RENTAL_FIELDS
         return expected

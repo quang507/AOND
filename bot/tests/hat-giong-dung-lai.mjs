@@ -28,6 +28,7 @@ const MIEN = {
   bot_errors: "sổ lỗi",
   reminders: "hàng đợi tự sinh",
   duong: "nạp bằng bước nap-duong",
+  required_facts: "bảng gỡ 20261019g (bộ câu hỏi nay ở src/aioi/schema.py) — insert chỉ còn trong migration lịch sử",
   luu_tru: "kho lưu bản cũ trước khi xoá (vd app_config_ts_20261019, 20261019d) — không phải dữ liệu tham chiếu",
 };
 

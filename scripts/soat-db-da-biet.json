@@ -11,8 +11,8 @@
       "ghi_chu": "Hai hàm (ghi_fact_du_an gỡ 18/10/2026, 20261018i) có hai chữ ký mà bộ TÊN THAM SỐ của bản cũ là tập con của bản mới — gọi bằng bộ nhỏ là PostgREST trả PGRST203. Hôm nay mọi lượt gọi đều dùng bộ ĐẦY ĐỦ nên chưa nổ; `duyet_fact_du_an` là cái đã nổ và đã drop bản cũ (20260910m). Hai cái này chờ quyết định."
     },
     "rls_bat_khong_policy": {
-      "chi_tiet": "deals, required_facts",
-      "ghi_chu": "Mức NHẸ, và là CHỦ ĐÍCH: hai bảng nội bộ (bot_prompts, ctv_daily_reports gỡ 18/10/2026, 20261018i), web có quyền trên giấy nhưng RLS chặn sạch nên đọc ra rỗng. Ghi ở đây để lần sau bảng thứ ba xuất hiện thì thấy ngay."
+      "chi_tiet": "deals",
+      "ghi_chu": "Mức NHẸ, và là CHỦ ĐÍCH: bảng nội bộ (bot_prompts, ctv_daily_reports gỡ 18/10/2026, 20261018i; required_facts gỡ 19/10/2026, 20261019g), web có quyền trên giấy nhưng RLS chặn sạch nên đọc ra rỗng. Ghi ở đây để lần sau bảng thứ ba xuất hiện thì thấy ngay."
     }
   }
 }
