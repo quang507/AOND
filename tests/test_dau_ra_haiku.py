@@ -79,3 +79,9 @@ def test_operations_hong_thi_goi_lai_mot_lan():
     assert AiHong.lan == 2 and eng.conversation("k-2").active.prop.fields.get("dien_tich_nha") == "170m2"
     khung = chuan_theo_schema({"operations": "[{op: 'nhà Q5', x: 170m2"}, operations_schema())["operations"]
     assert isinstance(khung, str)                                   # không giải được thì để nguyên, chỗ dùng tự lọc
+
+
+def test_mang_thua_ngoac_dong_van_doc_duoc():
+    # Log khung bắn thử: '[{"x":"x","x":{…},"x":{…}}}]' — thừa một `}` trước `]`; gọi lại lượt ra y hệt nên phải đọc chịu lỗi.
+    tho = '[{"op":"update","fields":{"dien_tich_nha":"170m2"},"bang_chung":{"dien_tich_nha":"tầm 170m vuông"}}}]'
+    assert chuan_theo_schema({"operations": tho}, operations_schema())["operations"] == OPS

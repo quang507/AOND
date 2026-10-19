@@ -6780,10 +6780,12 @@ Bắn thử sau bản đầu (3/3 người bán, 3/3 người mua xanh) log vẫ
 đuôi thừa; giải vẫn hỏng thì log cảnh báo kiểu lỗi + vị trí + độ dài + KHUNG chuỗi (chữ / số thay bằng `x`, chỉ còn dấu
 ngoặc / nháy / phẩy — không lộ dữ liệu khách), `ban-thu-ban.sh` in dòng đó. Bắn thử lần 3 vẫn có một chuỗi 577 ký tự giải không được →
 `_lap_ke_hoach` gọi lại lượt lập thao tác MỘT lần khi `operations` vẫn là chuỗi (tốn thêm một lượt Haiku thỉnh thoảng, đổi lại không
-mất ô của lượt đó).
+mất ô của lượt đó). Log khung lần 4 chỉ ra dạng hỏng chính: THỪA một `}` trước `]` (`…}}}]`, lỗi ở 2 ký tự cuối) — và lượt gọi lại
+ra y hệt (cùng đầu vào, cùng đầu ra) nên gọi lại không cứu được dạng này. `_doc_mang_chiu_loi`: mảng giải chặt hỏng thì đọc lần lượt
+từng phần tử, bỏ qua `}` / `,` / khoảng trắng lạc giữa các phần tử; hỏng chỗ khác vẫn ném lỗi (và còn lượt gọi lại).
 
 **Kiểm.** `tests/test_dau_ra_haiku.py` (3 ca: chuỗi JSON → danh sách, `ClaudeProvider.extract` trả đúng dạng, `bang_chung` lọt vào `fields`
-thì vẫn nhận ô chữ theo cụm trích, chuỗi JSON không chặt vẫn giải, giải không được thì gọi lại một lần — đỏ trên code cũ, ca `bang_chung` / gọi lại đỏ khi chỉ bỏ phần engine, đã chạy), pytest 411 đạt. Model thật: bắn thử
+thì vẫn nhận ô chữ theo cụm trích, chuỗi JSON không chặt vẫn giải, thừa ngoặc đóng vẫn đọc được, giải không được thì gọi lại một lần — đỏ trên code cũ, ca `bang_chung` / gọi lại đỏ khi chỉ bỏ phần engine, đã chạy), pytest 412 đạt. Model thật: bắn thử
 `ban-thu-ban` tuần tự, đọc lại dòng `Kế hoạch:`.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
