@@ -379,6 +379,8 @@ class Property:
             return self.loai_hinh is not None
         if name == "ma_so_can":
             return bool(self.fields.get("ma_so_can") or self.fields.get("tang_toa"))
+        if name == "dia_chi":     # có tên đường là đã định vị được — không hỏi lại "đường nào" (SRS-5.1zzzzzzz74; 19/10 hỏi 3 lần)
+            return bool(self.fields.get("dia_chi") or self.fields.get("duong"))
         if name == "dien_tich":   # BĐS một diện tích (chung cư / đất / công nghiệp)
             return bool(self.fields.get("dien_tich") or self.fields.get("dien_tich_dat") or self.fields.get("kich_thuoc"))
         # Nhà có đất riêng: diện tích ĐẤT và diện tích NHÀ là hai ô riêng, mỗi ô phải có chính nó (bản anh Luận,

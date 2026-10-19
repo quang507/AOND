@@ -112,13 +112,13 @@ FIELD_LABELS: dict[str, str] = {
 NATURAL_QUESTIONS: dict[str, str] = {
     # Identity & chung
     "loai_hinh": "Xác nhận nhẹ căn này là chung cư, nhà phố hay đất",
-    "dia_chi": "Hỏi địa chỉ chính xác của nhà mình ở đường nào, phường mấy, quận nào",
+    "dia_chi": "Hỏi phần địa chỉ CÒN THIẾU (tên đường / phường / quận) — phần đã có trong dữ liệu đã biết thì KHÔNG hỏi lại",
     "ma_so_can": "Hỏi mã căn hộ hoặc số nhà, tầng và tòa",
     "du_an": "Hỏi tên chung cư hoặc khu đô thị/dự án",
     "dien_tich": "Hỏi diện tích sử dụng của căn mình khoảng bao nhiêu mét vuông",
     "dien_tich_dat": "Hỏi diện tích đất công nhận trên sổ (ngang x dài khoảng bao nhiêu mét)",
     "dien_tich_nha": "Hỏi diện tích sàn sử dụng hoặc số tầng/lầu",
-    "gia": "Hỏi mức giá bán mong muốn thu về (và giá có thương lượng bớt lộc không)",
+    "gia": "Hỏi mức giá bán mong muốn thu về",
     "ket_cau": "Hỏi nhà mình xây mấy lầu / mấy tầng, có mấy phòng ngủ",
     "lo_gioi_hem": "Hỏi nhà mình nằm ở mặt tiền đường hay trong hẻm (nếu hẻm thì xe hơi có vào tận cửa được không)",
     "tinh_trang_ban_giao": "Hỏi nhà hiện đang trống giao ngay hay đang cho thuê",

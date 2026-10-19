@@ -78,6 +78,7 @@ r2=$(jq '.[0] // {}' <<<"$KQ2")
 kiem "Âu Cơ: tự hiểu nhà phố" "$(jq '.property_type == "nha_pho" | if . then 1 else 0 end' <<<"$r2")"
 kiem "Âu Cơ: 80m 5 tầng là diện tích đất" "$(jq '((.area_m2 // 0) | tonumber) == 80 and ((.boc_tach.dien_tich_dat // "") | test("80")) | if . then 1 else 0 end' <<<"$r2")"
 kiem "Âu Cơ: không hỏi loại nhà" "$(grep -qiE 'nhà phố, chung cư|chung cư, nhà phố|chung cư hay|hay lô đất' <<<"$LOI_BOT" && echo 0 || echo 1)"
+kiem "Âu Cơ: không hỏi lại tên đường" "$(grep -qiE 'đường nào|trên đường gì' <<<"$LOI_BOT" && echo 0 || echo 1)"
 kiem "Âu Cơ: không hỏi đất hay sàn" "$(grep -qiE 'đất hay (diện tích )?(sàn|nhà)|sàn hay (diện tích )?đất' <<<"$LOI_BOT" && echo 0 || echo 1)"
 vps "journalctl -u aond-core --since '-10 min' --no-pager -o cat | grep -E 'Bỏ ô' | sed -E 's/[0-9]{9,}/#/g' | tail -15" || true
 exit $loi

@@ -6616,10 +6616,15 @@ regex (CLAUDE.md §6):
   "nhà" không số tầng → để trống, bot hỏi (có thể là nhà cấp 4, nhà vườn).
 - Nhà phố: một số m² nói kèm số tầng / lầu / kích thước là diện tích ĐẤT; chỉ là diện tích nhà khi khách nói "sàn / sử dụng / xây
   dựng". Thay luật "đừng đoán" của SRS-5.1zzzzzzz52 theo lời chủ dự án.
+- Hỏi lại nhiều (chủ dự án cùng lượt: "lượt này nó hỏi lại hơi nhiều"): tên đường bị hỏi 3 lần dù câu đầu đã nói "đường âu cơ, quận
+  11" — `Property._has("dia_chi")` chỉ nhìn ô `dia_chi`, AI ghi `duong` + `quan` mà chưa ghi `dia_chi` nên địa chỉ vẫn "thiếu", và gợi
+  ý câu hỏi `dia_chi` luôn là "đường nào, phường mấy, quận nào". Nay có `duong` là đã định vị; gợi ý chỉ hỏi phần CÒN THIẾU. Gợi ý câu
+  hỏi giá bỏ "(và giá có thương lượng bớt lộc không)" — chính gợi ý này làm bot tự hỏi thương lượng (gốc ca SRS-5.1zzzzzzz73).
 
-**Kiểm.** `tests/test_doc_dau_hieu.py` (2 ca, đỏ khi bỏ khối luật), pytest 388 đạt. Model thật: `bot/tests/ban-thu-ban.sh` kịch bản 2
+**Kiểm.** `tests/test_doc_dau_hieu.py` (4 ca: khối luật ở hai prompt, bỏ luật "đừng đoán", có tên đường thì không hỏi lại địa chỉ,
+câu hỏi giá không kèm thương lượng — đỏ trên code cũ, đã chạy), pytest 390 đạt. Model thật: `bot/tests/ban-thu-ban.sh` kịch bản 2
 (đúng lượt chat Âu Cơ của chủ dự án) — soát `property_type = nha_pho`, `area_m2 = 80` và `dien_tich_dat` mang 80, lời bot KHÔNG hỏi loại
-nhà, KHÔNG hỏi "đất hay sàn".
+nhà, KHÔNG hỏi "đất hay sàn", KHÔNG hỏi lại tên đường.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
