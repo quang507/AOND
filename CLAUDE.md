@@ -109,6 +109,9 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > và trigger `listing_insert_drip` (đang bắn tới `/ask-seller` đã xoá). Nội dung chủ dự án soạn chép sang `luu_tru.ts_*_20261018`. **Mọi đoạn bên dưới
 > nói về chat-reply / prompt TypeScript / bot_prompts / e2e 1440 ca / trang chat thử / bộ đo bóc tách / khách mô phỏng là LỊCH SỬ**,
 > không còn là chỗ sửa bot.
+> **19/10/2026 (SRS-5.1zzzzzzz56): kho tệp = Supabase Storage, SharePoint / OneDrive đã bỏ.** Ảnh căn → `listing-public/<uuid tin>/`
+> (web đọc qua `listing_media` + `listing_photos_v`), sổ đỏ / giấy tờ / PDF / tệp dự án → `listing-private` (`src/aioi/kho_anh.py`);
+> kiến thức dự án lõi học được → bảng `du_an_kien_thuc` (không còn chỉ ở SQLite trên VPS).
 
 Từ 24/08/2026 (quyết định chủ dự án) code nằm **trong repo này**, hai mảnh:
 
