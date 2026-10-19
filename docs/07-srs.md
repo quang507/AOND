@@ -6595,6 +6595,143 @@ giữ, lời tả ảnh chụp không thành ô, ô có số nhận cụm viết
 (đã chạy), pytest 386 đạt. Bắn thử production bằng ID thử: `bot/tests/ban-thu-ban.sh` (`apply-migration` ô `ban-thu-ban`, kịch bản
 đúng lượt chat 19/10) — soi phường, giá, diện tích, mặt tiền, sổ, kết cấu và KHÔNG có ô thương lượng.
 
+### SRS-5.1zzzzzzz74 · Bot đọc dấu hiệu: nhà ở quận nội thành là nhà phố, "80m 5 tầng" là diện tích đất (19/10/2026)
+
+**Ca gốc.** Chủ dự án chat thử 15:19–15:31 (nhà mặt tiền Âu Cơ, Phường 9, Quận 11, "80m 5 tầng"). 15:28 bot hỏi "80m² đó là diện tích
+đất hay diện tích sàn". Chủ dự án: "nếu là ở trong các quận này thì tự hiểu là nhà phố mới thông minh… bot thông minh phải hiểu dấu
+hiệu căn này thuộc về gì để đưa ra câu hỏi tiếp theo". (Bản tin 15:31 hỏi lại lần nữa là chuyện khác: tin trả lời 15:29 rơi đúng lúc
+lõi khởi động lại vì lượt cài bản SRS-5.1zzzzzzz73.)
+
+**Lớp lỗi.** Luật prompt cấm AI suy: `EXTRACTION_SYSTEM` "một con số m2 không rõ là đất hay nhà, ĐỪNG đoán" và luật diện tích của
+`OPERATIONS_SYSTEM` "chỉ một số m2 không rõ → để tạm dien_tich" (bản anh Luận, SRS-5.1zzzzzzz52) → mọi nhà phố đều bị hỏi lại, kể
+cả khi dấu hiệu đủ rõ. Cùng lớp: loại hình — prompt không nói AI được suy loại từ dấu hiệu (địa bàn, số tầng, mặt tiền / hẻm), nên
+khách không gọi tên "nhà phố" thì có lượt bot hỏi "nhà phố, chung cư hay đất". **Chỗ cùng lớp đã soát:** hai prompt bóc tách (lượt
+lập thao tác, bóc tách rời dùng khi tách căn / nhóm ảnh); câu hỏi "đất hay nhà" ở `build_chat_system` giữ nguyên làm lưới cuối —
+chỉ bật khi AI vẫn để `dien_tich` mơ hồ.
+
+**Sửa.** Khối "ĐỌC DẤU HIỆU NHƯ MÔI GIỚI LÂU NĂM" trong `OPERATIONS_SYSTEM` và `EXTRACTION_SYSTEM` — AI đọc theo nghĩa, không thêm
+regex (CLAUDE.md §6):
+- "căn nhà" / "nhà" kèm số tầng / lầu, mặt tiền, hẻm, hoặc ở quận nội thành cũ của TP.HCM → `nha_pho`; "căn hộ / chung cư / block" →
+  `chung_cu`; "lô đất / đất nền / thổ cư" → `dat`; vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An…) chỉ nói
+  "nhà" không số tầng → để trống, bot hỏi (có thể là nhà cấp 4, nhà vườn).
+- Nhà phố: một số m² nói kèm số tầng / lầu / kích thước là diện tích ĐẤT; chỉ là diện tích nhà khi khách nói "sàn / sử dụng / xây
+  dựng". Thay luật "đừng đoán" của SRS-5.1zzzzzzz52 theo lời chủ dự án.
+- Hỏi lại nhiều (chủ dự án cùng lượt: "lượt này nó hỏi lại hơi nhiều"): tên đường bị hỏi 3 lần dù câu đầu đã nói "đường âu cơ, quận
+  11" — `Property._has("dia_chi")` chỉ nhìn ô `dia_chi`, AI ghi `duong` + `quan` mà chưa ghi `dia_chi` nên địa chỉ vẫn "thiếu", và gợi
+  ý câu hỏi `dia_chi` luôn là "đường nào, phường mấy, quận nào". Nay có `duong` là đã định vị; gợi ý chỉ hỏi phần CÒN THIẾU. Gợi ý câu
+  hỏi giá bỏ "(và giá có thương lượng bớt lộc không)" — chính gợi ý này làm bot tự hỏi thương lượng (gốc ca SRS-5.1zzzzzzz73).
+- Phường hỏi lại (bắn thử kịch bản 2): kho đường thấy Âu Cơ / Q11 chỉ qua Phường Hòa Bình, luật tra cứu bảo bot "hỏi xác nhận nhà thuộc
+  Phường Hòa Bình đúng không"; khách nói "Phường 9" (phường số cũ) thì bot hỏi tiếp "Phường 9 hay Phường Hòa Bình". Nay gợi ý kho
+  chỉ là gợi ý, khách nói phường nào ghi theo khách (`dia_danh.khoi_dia_danh` + luật trong prompt người bán) — đúng luật "câu trả lời
+  câu phường có MỘT quyết định" của SRS-5.1zzzzzzzm.
+- Bắn thử kịch bản 2 lần 2 lộ thêm hai lỗi:
+  - Bot hỏi "ngang x dài trên sổ" 5 lượt liền khi khách lờ đi — lõi luôn chọn ô thiếu đầu tiên. `Engine._o_hoi_ke`: ô vừa hỏi ở lượt
+    trước mà vẫn thiếu thì lùi xuống cuối, hỏi ý khác trước, quay lại sau; còn mỗi một ô thì vẫn hỏi.
+  - Khách nhận dòng ghi chú nội bộ của model: "Wait, the system prohibits "Dạ" at start… Rewrite.". `_bo_loi_noi_bo` (gọi trong
+    `_bo_markdown`, chỗ dọn lời chung) bỏ dòng ≥ 5 chữ mà ≥ 85% chữ không dấu (link / email không tính) — lời bot luôn là tiếng Việt
+    có dấu. Đây là lưới chặn đầu ra lạc ngôn ngữ, không đoán ý khách. **[thay ở SRS-5.1zzzzzzz76** — lưới thủng với ghi chú tiếng Việt; nay tách ở
+    lượt gọi model bằng công cụ hai ô, hàm đã gỡ.]
+
+**Kiểm.** `tests/test_doc_dau_hieu.py` (4 ca: khối luật ở hai prompt, bỏ luật "đừng đoán", có tên đường thì không hỏi lại địa chỉ,
+câu hỏi giá không kèm thương lượng, khách nói phường thì nhận theo khách — đỏ trên code cũ, đã chạy), `tests/test_bot_bot_hoi_lap.py` (2 ca: không hỏi một ô hai lượt
+liền, bỏ dòng ghi chú tiếng Anh nhưng giữ link / chữ Anh rời — đỏ trên code cũ), pytest 393 đạt. Model thật: `bot/tests/ban-thu-ban.sh` kịch bản 2
+(đúng lượt chat Âu Cơ của chủ dự án) — soát `property_type = nha_pho`, `area_m2 = 80` và `dien_tich_dat` mang 80, lời bot KHÔNG hỏi loại
+nhà, KHÔNG hỏi "đất hay sàn", KHÔNG hỏi lại tên đường, KHÔNG hỏi lại phường.
+
+### SRS-5.1zzzzzzz75 · Khen ít và có cơ sở: bỏ câu mẫu dạy bot khen thị trường (19/10/2026)
+
+**Ca gốc.** Chủ dự án chat thử 15:19–15:31 (nhà mặt tiền Âu Cơ, Q11): gần như lượt nào bot cũng khen — "đây là tuyến đường đi lại
+thuận tiện nên người tìm mua khá nhiều", "khu Phường 9 này thanh khoản khá tốt", "mức giá 16 tỷ… khá hợp lý, người mua tìm nhiều
+lắm"; bản tin 15:31 có "giữ gìn sạch đẹp". Bắn thử sau SRS-5.1zzzzzzz74 vẫn "Mức 16 tỷ… khá hợp lý anh ha". Chủ dự án: "khen quá
+nhiều, khen tào lao".
+
+**Lớp lỗi.** Câu mẫu trong prompt dạy ngược luật. Prompt lượt chat người bán (`build_chat_system` + `CONVERSATION_POLICY`) có luật
+"không khen thảo mai", nhưng ví dụ mẫu ngay dưới lại là đúng thứ bị cấm: "Nhà đang ở giữ gìn sạch đẹp là khách mua ưng ngay", "Nhà phố
+khu này thanh khoản khá tốt", "Mức giá 6 tỷ khu này rất vừa tầm tài chính", "Khu vực này thanh khoản rất tốt", "người mua tìm nhiều
+lắm"; luật khen còn bảo "gắn với thanh khoản người mua". Model chép ví dụ hơn là theo luật, và các câu đó là nhận định thị trường mà bot
+không có số liệu — tức là bịa. **Chỗ cùng lớp đã soát:** `SLANG_NOTES` ("nở hậu… thanh khoản cao" — sửa thành "điểm cộng"); luật
+khen ở `CONVERSATION_POLICY` và luật số 3 của `build_chat_system` trùng nhau, nay một nguồn `LUAT_KHEN`; prompt đọc ảnh (`build_media_read_instruction`)
+có "cấm khen nịnh giả tạo", câu mẫu tả ảnh không nhận định thị trường — giữ; prompt theo dõi phí khen "tinh thần đóng góp" của khách
+(không phải nhận định thị trường) — giữ; `AD_FORMAT` đã cấm "giữ gìn sạch đẹp" (SRS-5.1zzzzzzz73).
+
+**Sửa.** `src/aioi/prompts.py`: `LUAT_KHEN` (một nguồn, nằm ở luật số 3 lượt chat) — phần lớn các lượt không khen; chỉ khen điểm HIẾM
+khách vừa nói (mặt tiền kinh doanh, lô góc, nở hậu, hẻm xe hơi, sổ riêng đã hoàn công), mỗi điểm tối đa một lần cả cuộc trò chuyện, lượt
+trước đã khen thì lượt này không; cấm nhận định không có số liệu (thanh khoản, người mua tìm nhiều, giá hợp lý / vừa tầm, đắc địa) và
+không bình luận giá; cấm khen chung chung. Bốn câu mẫu viết lại không nhận định, bỏ hai câu mẫu "thanh khoản / tìm nhiều". Không thêm
+bộ lọc chữ ở đầu ra — đây là sửa chỗ dạy model.
+
+**Kiểm.** `tests/test_khen_co_co_so.py` (2 ca: luật khen có đúng một lần trong prompt chat; phần câu mẫu — trừ chính luật cấm và bố cục
+tin rao — không còn nhận định thị trường; đỏ trên code cũ, đã chạy), pytest 395 đạt. Model thật: `bot/tests/ban-thu-ban.sh` kịch bản 2
+thêm phép soát lời bot không có "thanh khoản / tìm nhiều / hợp lý / vừa tầm".
+
+### SRS-5.1zzzzzzz76 · Hỏi ít trước bản nháp, không mất tin và xưng hô khi lõi khởi động lại, tin thoại hỏng vào sổ lỗi (19/10/2026)
+
+**Ca gốc.** Chat thử Âu Cơ Q11 (15:19–15:31) và lượt bắn thử sau SRS-5.1zzzzzzz74. Chủ dự án: "nó hỏi nhiều quá chán chết được",
+rồi "làm hết đi" cho cả bảng bất thường.
+- (a) Khách đã nói đường, phường, mặt tiền, số nhà, "80m 5 tầng", "sổ riêng", giá 16 tỷ, bot vẫn hỏi hoàn công, rồi đang ở hay cho
+  thuê, rồi diện tích sàn mới ra bản nháp.
+- (b) Tin 15:29 "diện tích đất, diện tích sàn là 240m" không được trả lời: lõi đang khởi động lại vì lượt cài code.
+- (c) Khách "anh cần bán…", bot gọi "anh" một lượt rồi "anh/chị" tới hết.
+- (d) Tin thoại 08:11 — không truy được bot đã nghe gì: "hello" lúc 09:29 xoá hội thoại, sổ lỗi không có dòng nào.
+
+**Lớp lỗi.**
+- (a) Ô không đổi nội dung tin rao vẫn chặn bản nháp. `tinh_trang_ban_giao` nằm trong % đầy đủ (ngưỡng 0,70) nên phải được trả lời
+  trước bản nháp; `phap_ly_hoan_cong` chỉ nhìn chính nó nên "sổ riêng" (AI ghi ô `phap_ly`) không đủ, bot hỏi thêm hoàn công.
+- (b), (c) Trạng thái chỉ sống trong một tiến trình. Bridge chỉ thử lại một lần sau 1,5 giây, lõi khởi động lại lâu hơn; `cai-vps.sh`
+  còn khởi động lại cả bridge ở mọi lượt cài, kể cả khi code bridge không đổi. `conv.xung_ho` không lưu vào kho, khởi động lại là mất.
+- (d) Đường hỏng đi vào journal, không vào sổ lỗi — đúng luật "mọi catch phải nối dây vào sổ" (FR-152 d).
+
+**Chỗ cùng lớp đã soát.**
+- (a) `lo_gioi_hem` đã hỏi sau bản nháp từ 18/10; nay `HOI_SAU_KHI_RA_TIN` ra khỏi cả % đầy đủ. `dien_tich_nha` của nhà phố giữ trước
+  bản nháp (SRS-5.1zzzzzzz52). Câu hỏi bộ riêng của toà nhà / phòng trọ không chứa hai ô này.
+- (b), (c) Các trạng thái khác của hội thoại lõi (`price_book`, `listing_proposed`, `media`, `history_start`) đã nằm trong SQLite; còn
+  lại `hoi_ve_luot`, `y_luot`, `duyet_luot`, `loi_khach_luot` là của MỘT lượt nên không cần giữ; `o_vua_hoi` mất khi khởi động lại chỉ
+  làm mất một lần xoay câu hỏi, chấp nhận. Trang chat thử không dùng bridge.
+- (d) Lượt Claude hỏng đã vào sổ (`SoToken.bao_loi`); STT là đường hỏng ngoài model duy nhất còn thiếu.
+
+**Sửa.**
+- (a) `src/aioi/schema.py`: `HOI_SAU_KHI_RA_TIN` thêm `tinh_trang_ban_giao`; `summary_ready` tính % trên các ô hỏi TRƯỚC bản nháp;
+  `_has("phap_ly_hoan_cong")` nhận cả ô `phap_ly`; `cau_hoi_sau_ra_tin` trả từng ô (hẻm rồi hiện trạng), `build_fee_followup_system` hỏi
+  hiện trạng một câu sau khi khách duyệt. Âu Cơ: sau giá chỉ còn một câu diện tích sàn rồi ra bản nháp.
+- (b) `bot/bridge-zca/index.mjs` `postJson`: kết nối bị TỪ CHỐI (`ECONNREFUSED`, request chưa tới lõi nên gửi lại an toàn) thì chờ 2 /
+  4 / 8 / 15 / 30 giây rồi gửi lại; hết giờ chờ vẫn chỉ thử lại một lần như cũ. `bot/bridge-zca/cai-vps.sh`: so dấu vân code bridge
+  (index.mjs, file service, phiên bản zca-js) trước và sau khi lấy code, không đổi thì không khởi động lại bridge.
+- (c) `src/aioi/engine.py`: cột `xung_ho` trong bảng `conversations` SQLite (lưu / nạp); `supabase_store.load` lấy lại từ bản SQLite.
+- (d) `src/aioi/server.py`: tin thoại không chép được (hoặc bridge báo tin thoại mà không kèm link) → `SoToken.ghi_loi("stt tin thoai",
+  …)`, ghi rõ khi chưa có GROQ_API_KEY; không mang nội dung tin.
+- Bắn thử lần 1 sau bản này: khách nói giá xong bot hỏi "giá có thương lượng thêm không" — gợi ý câu hỏi `dien_tich_nha` là "Hỏi diện
+  tích sàn sử dụng HOẶC số tầng/lầu", khách đã nói 5 tầng nên model coi ô đã xong và tự nghĩ câu khác. Gợi ý nay hỏi m² sàn (số tầng đã
+  biết vẫn hỏi); câu lệnh hỏi ô thêm "CHỈ hỏi ý này — KHÔNG tự hỏi ý khác ngoài danh sách". Cùng lớp (gợi ý mơ hồ làm ô bị coi là
+  xong): đã soát `NATURAL_QUESTIONS` — `dia_chi` / `gia` sửa ở SRS-5.1zzzzzzz74, còn lại mỗi gợi ý một ý.
+- Bắn thử lần 2: khách nhận nguyên ghi chú tự sửa của model, tiếng Việt — "Lưu ý: vi phạm quy tắc một câu hỏi. Sửa lại: …" kèm cả
+  bản trước lẫn bản sửa. Lưới `_bo_loi_noi_bo` của SRS-5.1zzzzzzz74 (bỏ dòng gần như không dấu) không bắt được — lọc chữ ở đầu ra là
+  vá ngọn. **Lớp lỗi:** lời trả lời là chữ tự do, model không có chỗ tự soát nên tự soát ngay trong lời gửi khách. **Sửa:**
+  `LLMProvider.reply` (lời GỬI KHÁCH, tách khỏi `chat` dùng cho văn bản nội bộ); bản Claude BẮT BUỘC gọi công cụ `gui_khach` hai ô —
+  `tu_soat` (ghi chú nội bộ, đứng trước) rồi `loi_gui_khach` — chỉ ô sau tới khách. Engine gọi `reply` ở cả ba chỗ trả lời khách
+  (người mua, người bán, câu hỏi dự án). Gỡ `_bo_loi_noi_bo`. **Chỗ cùng lớp còn lại:** vòng công cụ `_agent_reply` (người rao rổ hàng
+  dự án) vẫn lấy chữ tự do của lượt cuối — chưa đổi vì vòng đó cần chữ + công cụ trong cùng lượt; theo dõi khi bắn thử nhánh dự án.
+- Bắn thử lần 3 (đường hai ô): "Phường 9 em" nhận câu dự phòng "kết nối mạng vừa gián đoạn" — lượt model ra ô `loi_gui_khach` trống.
+  `ClaudeProvider.reply` gọi lại một lần và ghi sổ lỗi (lý do dừng + tên ô, không nội dung). Bản nháp có hai câu dẫn ("Em sẽ rao
+  như vầy nhé anh:" rồi dòng mở đầu cố định) — `prompts.cat_truoc_mo_dau` bỏ chữ model viết trước dòng mở đầu cố định `MO_DAU_NHAP`
+  (so với hằng của chính hệ thống, không đọc lời khách).
+- Bắn thử lần 4: khách "giá 8,5 tỷ" → ô `thuong_luong` = "thu về 8,5 tỷ" lên tin. Cổng bằng chứng SRS-5.1zzzzzzz73 nhận theo SỐ cho mọi ô
+  (số 8,5 có trong lời khách) — **lớp lỗi:** dung sai dành cho ô số đo áp cả cho ô chữ. Nay `_so_khop` chỉ áp cho ô số đo `_O_SO_DO`
+  (theo schema ô của hệ thống); ô chữ phải khớp nguyên văn. Kiểm: `tests/test_bang_chung_o_tin.py::test_o_chu_khong_nhan_theo_so`
+  (đỏ trên code cũ).
+- Bắn thử lần 4–5 (2/5 lượt): khách "diện tích sàn tầm 170m vuông", bot đáp "em ghi nhận" nhưng ô `dien_tich_nha` không vào kế hoạch,
+  không dòng "Bỏ ô" nào. **Giả thuyết (CHƯA kiểm chứng — sổ token chỉ cộng theo ngày):** lượt lập thao tác kê lại mọi ô kèm cụm trích
+  trên cả hội thoại, trần đầu ra 1024 token, tới lượt 9 bị cắt và ô cuối rơi. Nâng trần `extract` lên 4096; chạm trần thì ghi sổ lỗi
+  "claude extract"; `ban-thu-ban.sh` in các dòng sổ lỗi `claude*` / `stt*` 15 phút gần nhất để lượt sau có bằng chứng.
+- Bản tin 15:31 hỏi lại "80m² đất hay sàn" ở cuối: là hệ quả của (b) cộng lỗi SRS-5.1zzzzzzz74 (đã sửa), không sửa thêm — khách bảo
+  đăng mà tin còn thiếu một ô thì bot soạn bài rồi hỏi đúng ô còn thiếu là đúng thiết kế.
+
+**Kiểm.** `tests/test_hoi_it_truoc_ban_nhap.py` (2 ca, đỏ trên code cũ), `tests/test_xung_ho_qua_khoi_dong.py` (đỏ trên code cũ),
+`tests/test_voice.py::test_tin_thoai_khong_chep_duoc_vao_so_loi` (đỏ trên code cũ), `tests/test_loi_gui_khach.py` (4 ca: chỉ `loi_gui_khach`
+tới khách, công cụ ép buộc với ô tự soát đứng trước; engine trả lời khách qua `reply`; ô trống thì gọi lại; bản nháp bỏ câu dẫn thừa — đỏ trên code cũ), `test_hoi_it_truoc_ban_nhap.py::test_cau_hoi_dien_tich_san_khong_bi_coi_la_xong_khi_da_biet_so_tang`
+(đỏ trên code cũ), `bot/tests/bridge-gui-lai.mjs` trong `test:bot`
+(máy chủ giả lên sau 2 giây; bản cũ trượt; lõi treo vẫn chỉ gửi ≤ 2 lần — đã chạy cả hai chiều); sửa theo luật mới
+`tests/test_ban_nhap_du_dieu_kien.py`, `tests/test_cau_hoi_theo_loai.py`; ca lọc chữ trong `tests/test_bot_bot_hoi_lap.py` gỡ cùng hàm. pytest 404 đạt. Model thật: `ban-thu-ban`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -25,6 +25,7 @@ from .llm import build_provider
 from .projects import SqliteProjectStore, SupabaseProjectStore
 from .kho_anh import SupabaseMediaStore
 from .kho_tep import LocalDirectoryMediaStore, MediaStore
+from .so_token import SoToken
 from .supabase_sync import sync_to_supabase_async
 from .voice import is_audio_file, transcribe_voice_url
 
@@ -102,6 +103,8 @@ def _init_engine() -> Engine:
 
 _settings = load_settings()
 _engine = _init_engine()
+# Sổ lỗi cho sự cố ngoài lượt gọi model (SRS-5.1zzzzzzz76: tin thoại không chép được chỉ nằm ở journal, CRM không thấy).
+_so_loi = SoToken.tu_cau_hinh(_settings.supabase_url, _settings.supabase_service_role_key)
 # Trần lượt trả lời mỗi người + cả ngày (SRS-5.1zzzzzzz53) — chặn TRƯỚC mọi lượt gọi model / Whisper.
 _han_muc = HanMuc.tu_cau_hinh(_settings.supabase_url, _settings.supabase_service_role_key)
 
@@ -282,8 +285,11 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
             else:
                 log.warning("Voice note transcription failed for %s", payload.external_user_id)
                 incoming_text = "[Khách gửi tin nhắn thoại nhưng âm thanh bị rè hoặc không nghe rõ tiếng]"
+                _so_loi.ghi_loi("stt tin thoai", "không chép được tin thoại ra chữ"
+                                + ("" if _settings.groq_api_key else " (chưa có GROQ_API_KEY)"))
         else:
             incoming_text = "[Khách gửi tin nhắn thoại nhưng không tìm thấy file ghi âm]"
+            _so_loi.ghi_loi("stt tin thoai", "bridge báo tin thoại nhưng không kèm link ghi âm")
 
     # 4. Dispatch to Engine
     if media_urls:

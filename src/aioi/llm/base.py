@@ -51,6 +51,11 @@ class LLMProvider(ABC):
     def chat(self, system: str, messages: list[Message], max_tokens: int = 256) -> str:
         ...
 
+    def reply(self, system: str, messages: list[Message], max_tokens: int = 256) -> str:
+        """Lời GỬI KHÁCH (khác `chat` — văn bản nội bộ như tóm tắt trang web). Mặc định = `chat`; bản Claude tách ghi chú tự soát
+        của model ra khỏi lời gửi khách (SRS-5.1zzzzzzz76)."""
+        return self.chat(system, messages, max_tokens=max_tokens)
+
     @abstractmethod
     def extract(
         self, system: str, messages: list[Message], json_schema: dict[str, Any]

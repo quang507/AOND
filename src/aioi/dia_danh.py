@@ -252,7 +252,8 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
     ph = d["phuong"] if d else []
     if next_field == "phuong" and not goi_y and 1 <= len(ph) <= 4:
         if len(ph) == 1:
-            dong.append(f"Kho đường: đường {d['ten']} nằm ở {ph[0]} — hỏi khách xác nhận nhà thuộc {ph[0]} đúng không.")
+            dong.append(f"Kho đường: đường {d['ten']} nằm ở {ph[0]} — hỏi khách nhà thuộc phường nào, có thể gợi ý {ph[0]}; khách nói "
+                        "phường khác thì ghi theo khách, không hỏi lại (kho có thể thiếu đoạn).")
         else:
             dong.append(f"Kho đường: đường {d['ten']} đi qua {', '.join(ph)} — khi hỏi phường, kể các phường này cho khách chọn.")
     if not dong:

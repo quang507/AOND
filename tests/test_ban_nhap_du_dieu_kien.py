@@ -75,5 +75,6 @@ def test_do_rong_hem_hoi_sau_khi_ra_tin():
     assert "mặt tiền hay trong hẻm" in build_fee_followup_system("Hằng", chua_biet)
     for da_ro in ("hẻm 6m", "mặt tiền", "MT"):
         q = Property(loai_hinh="nha_pho", fields={"lo_gioi_hem": da_ro})
+        q.fields["tinh_trang_ban_giao"] = "đang ở"
         assert q.cau_hoi_sau_ra_tin() is None and "BỔ SUNG SAU KHI DUYỆT" not in build_fee_followup_system("Hằng", q)
     assert Property(loai_hinh="chung_cu").cau_hoi_sau_ra_tin() is None

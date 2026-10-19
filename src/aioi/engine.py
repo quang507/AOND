@@ -61,6 +61,7 @@ from .prompts import (
     tai_lieu_chung_schema,
     build_greeting,
     build_listing_proposal_system,
+    cat_truoc_mo_dau,
     build_inventory_instruction,
     build_media_group_instruction,
     build_media_read_instruction,
@@ -218,6 +219,12 @@ _DESTRUCTIVE_OPS = {"clear", "keep_only", "remove"}
 # Ô PHÂN LOẠI (mã slug AI đọc theo nghĩa) — không qua cổng bằng chứng lời khách (SRS-5.1zzzzzzz73; bắn thử lần 5: model không trích
 # cho loai_hinh, "nha_pho" không phải chữ khách gõ, tin thành chua_ro).
 _O_PHAN_LOAI = frozenset({"loai_hinh"})
+# Ô mang SỐ ĐO (diện tích, giá, kích thước, số tầng / phòng…) — chỉ những ô này được nhận theo số (`_so_khop`). Ô chữ (thương lượng,
+# pháp lý, hiện trạng…) phải khớp nguyên văn: bắn thử 19/10, khách "giá 8,5 tỷ" → AI ghi thuong_luong "thu về 8,5 tỷ", số 8,5 có
+# trong lời khách nên lọt (SRS-5.1zzzzzzz76). Danh sách theo schema ô của chính hệ thống, không đọc lời khách.
+_O_SO_DO = frozenset({"gia", "dien_tich", "dien_tich_dat", "dien_tich_nha", "kich_thuoc", "mat_tien", "so_tang", "so_phong_ngu",
+                      "so_phong", "lo_gioi_duong", "tho_cu", "chieu_cao_tran", "tai_trong_san", "phi_quan_ly", "phi_gui_xe",
+                      "muc_coc", "dong_tien_thue", "gia_dien_nuoc", "ket_cau", "tang_toa"})
 
 # Dấu đầu lượt "lời AI tả ảnh chụp thật" trong lịch sử — không phải lời khách, không làm bằng chứng ô tin (SRS-5.1zzzzzzz73).
 DAU_TA_ANH_CHUP = "[Khách gửi ảnh chụp:"
@@ -344,6 +351,8 @@ class Conversation:
     # Transient (SRS-5.1zzzzzzz73): lời KHÁCH trong khung lượt lập thao tác vừa đọc — ô tin mới / đổi giá trị chỉ được ghi khi
     # cụm bằng chứng AI đưa nằm trong đây (không tính lời bot).
     loi_khach_luot: str = ""
+    # Transient (SRS-5.1zzzzzzz74): ô bot hỏi ở lượt trả lời gần nhất — khách chưa trả lời thì lượt sau hỏi ý khác trước.
+    o_vua_hoi: str | None = None
 
     def __post_init__(self) -> None:
         if not self.listings:
@@ -442,7 +451,8 @@ class SqliteConversationStore(ConversationStore):
             "active_listing_id TEXT, history_json TEXT, "
             "price_book_json TEXT NOT NULL DEFAULT '{}', "
             "role TEXT NOT NULL DEFAULT 'unknown', "
-            "active_lead_id TEXT NOT NULL DEFAULT '')"
+            "active_lead_id TEXT NOT NULL DEFAULT '', "
+            "xung_ho TEXT NOT NULL DEFAULT '')"
         )
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS listings ("
@@ -464,6 +474,7 @@ class SqliteConversationStore(ConversationStore):
             ("conversations", "price_book_json", "'{}'"),
             ("conversations", "role", "'unknown'"),
             ("conversations", "active_lead_id", "''"),
+            ("conversations", "xung_ho", "''"),   # SRS-5.1zzzzzzz76: khách tự xưng gì, giữ qua khởi động lại
         ):
             try:  # migrate older tables that predate this column
                 self._conn.execute(
@@ -478,12 +489,12 @@ class SqliteConversationStore(ConversationStore):
         active_lead_id = conv.buyer_lead.lead_id if conv.buyer_lead else ""
         self._conn.execute(
             "INSERT INTO conversations(user_key, user_type, last_ai_at, active_listing_id, "
-            "history_json, price_book_json, role, active_lead_id) VALUES (?,?,?,?,?,?,?,?) "
+            "history_json, price_book_json, role, active_lead_id, xung_ho) VALUES (?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(user_key) DO UPDATE SET "
             "user_type=excluded.user_type, last_ai_at=excluded.last_ai_at, "
             "active_listing_id=excluded.active_listing_id, history_json=excluded.history_json, "
             "price_book_json=excluded.price_book_json, role=excluded.role, "
-            "active_lead_id=excluded.active_lead_id",
+            "active_lead_id=excluded.active_lead_id, xung_ho=excluded.xung_ho",
             (
                 conv.user_key,
                 conv.user_type.value,
@@ -493,6 +504,7 @@ class SqliteConversationStore(ConversationStore):
                 json.dumps(conv.price_book, ensure_ascii=False),
                 conv.role,
                 active_lead_id,
+                conv.xung_ho or "",
             ),
         )
         if conv.buyer_lead is not None:
@@ -562,7 +574,7 @@ class SqliteConversationStore(ConversationStore):
     def load(self, user_key: str) -> Conversation | None:
         row = self._conn.execute(
             "SELECT user_type, last_ai_at, active_listing_id, history_json, price_book_json, "
-            "role, active_lead_id FROM conversations WHERE user_key=?",
+            "role, active_lead_id, xung_ho FROM conversations WHERE user_key=?",
             (user_key,),
         ).fetchone()
         if row is None:
@@ -623,6 +635,7 @@ class SqliteConversationStore(ConversationStore):
             price_book=json.loads(row[4]) if row[4] else {},  # the seller's uploaded prices survive restart
             role=row[5] if len(row) > 5 and row[5] else "unknown",
             buyer_lead=lead,
+            xung_ho=row[7] or None,
         )
 
     def reset(self, user_key: str) -> None:
@@ -640,7 +653,8 @@ def _detect_customer_pronoun(conv: Conversation, current_text: str = "") -> str:
 
 
 def _bo_markdown(reply: str) -> str:
-    """Bỏ in đậm markdown (Zalo không hiển thị). Không sửa lời bot theo từ khoá ("Dạ", "anh/chị") — SRS-5.1zzzzzzz55."""
+    """Bỏ in đậm markdown (Zalo không hiển thị). Không sửa lời bot theo từ khoá ("Dạ", "anh/chị") — SRS-5.1zzzzzzz55. Ghi chú nội bộ
+    của model không còn lọt vào lời bot: lượt trả lời đi qua công cụ hai ô (`ClaudeProvider.reply`, SRS-5.1zzzzzzz76)."""
     return re.sub(r"\*\*([^*]+)\*\*", r"\1", reply.strip())
 
 
@@ -923,6 +937,15 @@ class Engine:
         if project is None:
             return None
         return project.find_unit_type(prop.fields.get("unit_type"))
+
+    @staticmethod
+    def _o_hoi_ke(conv: Conversation, missing: list[str]) -> str | None:
+        """Ô hỏi lượt này: ô thiếu đầu tiên, TRỪ khi đó là ô vừa hỏi ở lượt trước mà khách chưa trả lời — khi ấy hỏi ý khác trước, ô
+        đó lùi xuống cuối, quay lại sau (SRS-5.1zzzzzzz74; bắn thử 19/10 hỏi "ngang x dài trên sổ" 5 lượt liền khi khách lờ đi)."""
+        if len(missing) > 1 and missing[0] == conv.o_vua_hoi:
+            missing = missing[1:] + missing[:1]
+        conv.o_vua_hoi = missing[0] if missing else None
+        return conv.o_vua_hoi
 
     def conversation(self, user_key: str) -> Conversation:
         conv = self._conversations.get(user_key)
@@ -1664,7 +1687,7 @@ class Engine:
                     "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
                     "Khách tự xưng là 'em'. TUYỆT ĐỐI CẤM DÙNG TỪ 'DẠ'! Gọi khách là 'em', bản thân xưng 'mình' hoặc 'anh/chị'.\n"
                 )
-            reply = self._provider.chat(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+            reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
                 reply = "Mình đây nhé! Bạn nhắn lại giúp mình với nha." if customer_is_em else "Em đây ạ! Anh/chị nhắn lại giúp em với nhé ạ."
             reply = _bo_markdown(reply)
@@ -1679,8 +1702,7 @@ class Engine:
         customer_pronoun = _detect_customer_pronoun(conv, text)
         customer_is_em = (customer_pronoun == "em")
 
-        missing = conv.prop.missing_fields()
-        next_field = missing[0] if missing else None
+        next_field = self._o_hoi_ke(conv, conv.prop.missing_fields())
         # Project awareness: if the listing's project is registered, inherit its verified
         # facts (and lightly confirm); if it's named but unknown, prompt the bot to acquire
         # knowledge (ask the seller / request a link); if no project, nothing.
@@ -1691,12 +1713,14 @@ class Engine:
             conv.prop.fields.get("unit_type"),
         )
         is_listing_post = conv.prop.summary_ready()
+        trinh_nhap = False
         if not is_listing_post:
             system = build_chat_system(
                 conv.assistant.name, conv.prop, next_field, conv.user_type, project_block
             )
         elif not conv.listing_proposed:
             conv.listing_proposed = True
+            trinh_nhap = True
             system = build_listing_proposal_system(
                 conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em
             )
@@ -1784,12 +1808,14 @@ class Engine:
         if project is not None and project.units:
             reply = self._agent_reply(conv, project, system, now)
         else:
-            reply = self._provider.chat(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+            reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
 
         if not reply:
             reply = "Mình đây nhé! Kết nối mạng vừa gián đoạn một chút, em nhắn lại giúp mình với nha." if customer_is_em else "Em đây ạ! Kết nối mạng vừa bị gián đoạn một chút, anh/chị nhắn lại giúp em với nhé ạ."
 
         reply = _bo_markdown(reply)
+        if trinh_nhap:
+            reply = cat_truoc_mo_dau(reply)
 
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
@@ -2017,7 +2043,7 @@ class Engine:
             "gọi khách \"anh/chị\", thân thiện. TUYỆT ĐỐI không bịa; nếu KHÔNG có trong tài liệu lẫn "
             "bảng giá thì mới nói \"em chưa có thông tin về ý này ạ\" rồi mời khách bổ sung."
         )
-        return self._provider.chat(system, [Message("user", text)], max_tokens=REPLY_MAX_TOKENS).strip()
+        return self._provider.reply(system, [Message("user", text)], max_tokens=REPLY_MAX_TOKENS).strip()
 
     def handle_link(self, user_key: str, url: str, now: float | None = None,
                     caption: str | None = None) -> TurnResult:
@@ -2309,8 +2335,7 @@ class Engine:
                 if self._convstore is not None:
                     self._convstore.save(conv)
 
-                missing = conv.active.prop.missing_fields()
-                next_field = missing[0] if missing else None
+                next_field = self._o_hoi_ke(conv, conv.active.prop.missing_fields())
 
                 details = []
                 f_map = conv.active.prop.fields
@@ -3111,7 +3136,7 @@ class Engine:
             # Bằng chứng = cụm AI trích; model không phải lượt nào cũng trích (bắn thử 19/10: bỏ mất "diện tích sàn 170m²") nên
             # thiếu cụm thì kiểm chính giá trị ô — vẫn phải nằm trong lời KHÁCH, nên câu bot tự hỏi không lọt.
             for bc in (bang_chung.get(k), v):
-                if _trich_dan_khop(bc, conv.loi_khach_luot) or _so_khop(bc, v, conv.loi_khach_luot):
+                if _trich_dan_khop(bc, conv.loi_khach_luot) or (k in _O_SO_DO and _so_khop(bc, v, conv.loi_khach_luot)):
                     return True
             log.warning("Bỏ ô %s: không có bằng chứng trong lời khách", k)   # không in giá trị: log có thể chứa dữ liệu khách
             return False

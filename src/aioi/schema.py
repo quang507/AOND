@@ -239,9 +239,11 @@ SUMMARY_READY_COMPLETENESS: float = 0.70
 # không chặn theo tên đường để khỏi kẹt câu hỏi.
 LAND_GATED_TYPES: set[str] = {"dat", "dat_tho_cu"}
 
-# 18/10/2026 (chủ dự án: "độ rộng hẻm ko bắt buộc, hỏi sau khi ra tin"): ô KHÔNG hỏi trước bản nháp — vẫn tính vào % đầy đủ,
-# bỏ khỏi `missing_fields`, và được hỏi một câu sau khi khách duyệt tin (`cau_hoi_sau_ra_tin`, prompt build_fee_followup_system).
-HOI_SAU_KHI_RA_TIN: set[str] = {"lo_gioi_hem"}
+# 18/10/2026 (chủ dự án: "độ rộng hẻm ko bắt buộc, hỏi sau khi ra tin"): ô KHÔNG hỏi trước bản nháp — bỏ khỏi `missing_fields`
+# và khỏi % đầy đủ, được hỏi từng câu sau khi khách duyệt tin (`cau_hoi_sau_ra_tin`, prompt build_fee_followup_system).
+# 19/10/2026 (SRS-5.1zzzzzzz76; chủ dự án: "nó hỏi nhiều quá chán chết được"): thêm hiện trạng đang ở / cho thuê — không đổi nội
+# dung tin rao, người mua hỏi lúc hẹn xem; trước đó nó vẫn tính vào % nên nhà phố phải trả lời 7–8 câu mới thấy bản nháp.
+HOI_SAU_KHI_RA_TIN: set[str] = {"lo_gioi_hem", "tinh_trang_ban_giao"}
 
 # Thông số cho thuê (áp dụng chung khi là tin cho thuê) — SRD §III.
 RENTAL_FIELDS: list[str] = [
@@ -302,7 +304,8 @@ class Property:
             return False
         if self.blocking_fields():
             return False
-        return self.completeness() >= SUMMARY_READY_COMPLETENESS
+        expected = [x for x in self.expected_fields() if x not in HOI_SAU_KHI_RA_TIN]
+        return sum(1 for x in expected if self._has(x)) >= SUMMARY_READY_COMPLETENESS * len(expected)
 
     def blocking_fields(self) -> list[str]:
         """Ô BẮT BUỘC theo loại BĐS trước khi soạn bản nháp (ngoài ngưỡng %), theo thứ tự hỏi:
@@ -357,14 +360,16 @@ class Property:
         return [x for x in ra if x not in HOI_SAU_KHI_RA_TIN]
 
     def cau_hoi_sau_ra_tin(self) -> str | None:
-        """Ô hỏi SAU khi khách duyệt bản nháp: độ rộng hẻm của nhà ở trong hẻm khi chưa biết bề rộng (chưa có chữ số, không
-        phải mặt tiền)."""
+        """Ô hỏi SAU khi khách duyệt bản nháp, từng ô một: độ rộng hẻm của nhà ở trong hẻm khi chưa biết bề rộng (chưa có chữ
+        số, không phải mặt tiền), rồi hiện trạng đang ở / cho thuê."""
         if self.group is not PropertyGroup.RESIDENTIAL:
             return None
         v = (self.fields.get("lo_gioi_hem") or "").lower()
-        if "mặt tiền" in v or re.search(r"\bmt\b", v) or re.search(r"\d", v):
-            return None
-        return "lo_gioi_hem"
+        if not ("mặt tiền" in v or re.search(r"\bmt\b", v) or re.search(r"\d", v)):
+            return "lo_gioi_hem"
+        if "tinh_trang_ban_giao" in self.expected_fields() and not self._has("tinh_trang_ban_giao"):
+            return "tinh_trang_ban_giao"
+        return None
 
     def completeness(self) -> float:
         """Fraction of expected fields that are filled, in [0, 1]."""
@@ -379,6 +384,10 @@ class Property:
             return self.loai_hinh is not None
         if name == "ma_so_can":
             return bool(self.fields.get("ma_so_can") or self.fields.get("tang_toa"))
+        if name == "dia_chi":     # có tên đường là đã định vị được — không hỏi lại "đường nào" (SRS-5.1zzzzzzz74; 19/10 hỏi 3 lần)
+            return bool(self.fields.get("dia_chi") or self.fields.get("duong"))
+        if name == "phap_ly_hoan_cong":   # khách đã nói sổ (ô phap_ly) thì không hỏi riêng hoàn công (SRS-5.1zzzzzzz76)
+            return bool(self.fields.get("phap_ly_hoan_cong") or self.fields.get("phap_ly"))
         if name == "dien_tich":   # BĐS một diện tích (chung cư / đất / công nghiệp)
             return bool(self.fields.get("dien_tich") or self.fields.get("dien_tich_dat") or self.fields.get("kich_thuoc"))
         # Nhà có đất riêng: diện tích ĐẤT và diện tích NHÀ là hai ô riêng, mỗi ô phải có chính nó (bản anh Luận,

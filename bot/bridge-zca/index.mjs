@@ -271,8 +271,17 @@ const laPhienChet = (e) => /zpw_sek/i.test(errDetail(e));
 // trống, trong khi server đã trả lời xong từ giây thứ 25.
 // Nay tách hạn chờ theo loại việc: lượt gọi bộ não được 90 giây (đủ cho model),
 // còn lượt hỏi-lại và lượt ghi sổ chỉ 10 giây vì chúng trả về ngay.
+//
+// 19/10/2026 (SRS-5.1zzzzzzz76): lõi đang khởi động lại (cài code) thì cổng 8000 TỪ CHỐI kết nối vài giây đến vài chục giây — một lần
+// thử lại sau 1,5 giây không đủ, tin khách rơi mất (ca 15:29 "diện tích đất, diện tích sàn là 240m" không được trả lời). Kết nối bị
+// từ chối nghĩa là request CHƯA tới lõi nên gửi lại an toàn: thử tới khoảng một phút. Hết giờ chờ thì vẫn chỉ thử lại một lần như cũ
+// (lõi có thể đang chạy lượt đó).
+const CHO_LOI_KHOI_DONG = [2_000, 4_000, 8_000, 15_000, 30_000];
+const laTuChoiKetNoi = (e) => e?.cause?.code === "ECONNREFUSED";
+
 async function postJson(url, headers, payload, hanCho = 20_000) {
   let last;
+  let lanTuChoi = 0;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const res = await fetch(url, {
@@ -282,6 +291,12 @@ async function postJson(url, headers, payload, hanCho = 20_000) {
       return await res.json();
     } catch (e) {
       last = e;
+      if (laTuChoiKetNoi(e) && lanTuChoi < CHO_LOI_KHOI_DONG.length) {
+        console.warn(`[Bridge] Lõi chưa nhận kết nối (${e.cause.code}) — chờ ${CHO_LOI_KHOI_DONG[lanTuChoi] / 1000}s rồi gửi lại`);
+        await new Promise((r) => setTimeout(r, CHO_LOI_KHOI_DONG[lanTuChoi++]));
+        attempt--;
+        continue;
+      }
       if (attempt === 0) await new Promise((r) => setTimeout(r, 1500));
     }
   }

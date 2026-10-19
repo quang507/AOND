@@ -81,6 +81,11 @@ class SoToken:
         self._chay(self._rpc_an_toan, "log_loi",
                    {"p_source": f"claude {nhan}", "p_detail": f"{type(e).__name__}: {str(e)[:500]}"})
 
+    def ghi_loi(self, nguon: str, chi_tiet: str) -> None:
+        """Một dòng sổ lỗi (log_loi) cho sự cố ngoài lượt gọi Claude (vd không chép được tin thoại). Không mang nội dung tin khách."""
+        if self._rpc is not None:
+            self._chay(self._rpc_an_toan, "log_loi", {"p_source": nguon, "p_detail": chi_tiet[:500]})
+
     def _chay(self, ham: Callable[..., None], *args: Any) -> None:
         if self._nen:
             threading.Thread(target=ham, args=args, daemon=True).start()

@@ -112,13 +112,14 @@ FIELD_LABELS: dict[str, str] = {
 NATURAL_QUESTIONS: dict[str, str] = {
     # Identity & chung
     "loai_hinh": "Xác nhận nhẹ căn này là chung cư, nhà phố hay đất",
-    "dia_chi": "Hỏi địa chỉ chính xác của nhà mình ở đường nào, phường mấy, quận nào",
+    "dia_chi": "Hỏi phần địa chỉ CÒN THIẾU (tên đường / phường / quận) — phần đã có trong dữ liệu đã biết thì KHÔNG hỏi lại",
     "ma_so_can": "Hỏi mã căn hộ hoặc số nhà, tầng và tòa",
     "du_an": "Hỏi tên chung cư hoặc khu đô thị/dự án",
     "dien_tich": "Hỏi diện tích sử dụng của căn mình khoảng bao nhiêu mét vuông",
     "dien_tich_dat": "Hỏi diện tích đất công nhận trên sổ (ngang x dài khoảng bao nhiêu mét)",
-    "dien_tich_nha": "Hỏi diện tích sàn sử dụng hoặc số tầng/lầu",
-    "gia": "Hỏi mức giá bán mong muốn thu về (và giá có thương lượng bớt lộc không)",
+    # SRS-5.1zzzzzzz76: bản cũ "…hoặc số tầng/lầu" — khách đã nói số tầng thì model coi ô này xong, tự hỏi chuyện khác (thương lượng).
+    "dien_tich_nha": "Hỏi tổng diện tích sàn xây dựng khoảng bao nhiêu m² (số tầng đã biết vẫn phải hỏi m² sàn)",
+    "gia": "Hỏi mức giá bán mong muốn thu về",
     "ket_cau": "Hỏi nhà mình xây mấy lầu / mấy tầng, có mấy phòng ngủ",
     "lo_gioi_hem": "Hỏi nhà mình nằm ở mặt tiền đường hay trong hẻm (nếu hẻm thì xe hơi có vào tận cửa được không)",
     "tinh_trang_ban_giao": "Hỏi nhà hiện đang trống giao ngay hay đang cho thuê",
@@ -188,11 +189,22 @@ SLANG_NOTES = """TỪ ĐIỂN TIẾNG LÓNG BĐS (hiểu đúng, không hỏi l�
     ĐÂY LÀ SỐ NHÀ TRONG HẺM (vd: "100/9" = nhà số 100 xuyệc 9)!
     ⚠️ CẤM TUYỆT ĐỐI HIỂU NHẦM DẤU "/" THÀNH DIỆN TÍCH HAY KÍCH THƯỚC (vd: "100/9" KHÔNG PHẢI là "100m2 ngang 9m"!). Khi khách cho tên đường rồi nhắn "đc: 100/9", địa chỉ đầy đủ là 100/9 của đường đó (nhà trong hẻm), tuyệt đối không suy diễn thành 100m2 đất ngang 9m.
   • "MT" = mặt tiền; "MTKD" = mặt tiền kinh doanh; "HXH" = hẻm xe hơi (ô tô vào được); "hẻm ba gác" = chỉ xe ba gác vào được; "hẻm thông" = không cụt.
-  • "1 xuyệt / 2 xuyệt" = quẹo 1-2 lần hẻm; "lô góc / căn góc" = 2 mặt thoáng; "nở hậu" = phía sau rộng hơn (điểm cộng lớn, thanh khoản cao); "tóp hậu" = phía sau hẹp hơn; "vuông vức" = đất vuông đẹp.
+  • "1 xuyệt / 2 xuyệt" = quẹo 1-2 lần hẻm; "lô góc / căn góc" = 2 mặt thoáng; "nở hậu" = phía sau rộng hơn (điểm cộng); "tóp hậu" = phía sau hẹp hơn; "vuông vức" = đất vuông đẹp.
   • "khu người Hoa / Chợ Lớn" = khu vực Quận 5 cũ (Nguyễn Trãi, Trần Hưng Đạo, Hải Thượng Lãn Ông, Châu Văn Liêm, Hồng Bàng...).
 - PHÁP LÝ & LOẠI ĐẤT:
   • "SHR" = sổ hồng riêng; "SHC" = sổ hồng chung; "HĐMB" = hợp đồng mua bán; "hoàn công" = đã cập nhật tài sản gắn liền với đất trên sổ; "vi bằng / giấy tay" = chưa có sổ riêng.
   • "thổ cư" / "ONT / ODT" = đất ở nông thôn / đô thị; "SKC / TMD" = đất thương mại dịch vụ, cơ sở sản xuất; "CLN / HNK" = đất trồng cây lâu năm / hoa màu."""
+
+# 19/10/2026 (SRS-5.1zzzzzzz75; chủ dự án: "khen quá nhiều, khen tào lao"): luật khen MỘT nguồn cho lượt chat người bán. Bản trước
+# câu mẫu tự dạy model khen thị trường không có dữ liệu ("thanh khoản rất tốt", "giá vừa tầm", "giữ gìn sạch đẹp").
+LUAT_KHEN = """KHEN ÍT, CÓ CƠ SỞ:
+    - Phần lớn các lượt KHÔNG khen: tiếp nhận vài chữ rồi hỏi luôn. Chỉ khen khi khách vừa nói một điểm HIẾM có thật (mặt tiền kinh
+      doanh, lô góc, nở hậu, hẻm xe hơi, sổ riêng đã hoàn công) — 1 câu ngắn nói đúng điểm đó.
+    - Mỗi điểm khen tối đa MỘT lần cả cuộc trò chuyện. Đọc lại lời em ở trên: điểm nào đã khen rồi thì thôi; lượt trước đã khen thì
+      lượt này không khen.
+    - CẤM nói điều em không có số liệu: "thanh khoản tốt", "người mua tìm nhiều", "khu này đắt khách", "giá hợp lý / vừa tầm / tốt",
+      "vị trí đắc địa". Em không có dữ liệu thị trường, nói vậy là bịa. Khách nói giá thì ghi nhận, KHÔNG bình luận giá.
+    - CẤM khen chung chung cho có: "vị trí đẹp", "rất phù hợp", "công năng rộng", "rất thuận tiện", "an tâm"."""
 
 # Hướng dẫn chính sách & tư vấn chưng cất, gọn gàng cho lượt chat thông thường
 CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi khách hỏi ngược):
@@ -212,10 +224,10 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
       khách TỰ XƯNG.
   • CẤM BỆNH "DẠ HOÀI":
     - TUYỆT ĐỐI CẤM thói quen mở đầu mọi câu bằng từ "Dạ". CẤM lặp từ "Dạ" liên tục ở đầu tin nhắn!
-    - Trả lời thẳng thắn, tự nhiên, đĩnh đạc như một chuyên viên môi giới chuyên nghiệp (Vd: "Vị trí này thanh khoản rất tốt anh/chị ha.", "Khu vực này nhiều người tìm mua lắm...", "Căn này diện tích sàn sử dụng khoảng bao nhiêu mét vuông vậy anh/chị?").
+    - Trả lời thẳng thắn, tự nhiên, đĩnh đạc như một chuyên viên môi giới chuyên nghiệp (Vd: "Căn này diện tích sàn sử dụng khoảng bao nhiêu mét vuông vậy anh/chị?").
   • ĐỘ DÀI PHẢN HỒI: KHOẢNG 25 - 40 TỪ (vừa vặn, ấm áp, lịch sự, KHÔNG cộc lốc nhưng KHÔNG dông dài). NGOẠI LỆ: khách xin xem / đăng TOÀN BỘ tin (vd "nêu đầy đủ", "xem lại tin", "đăng giúp em", "soạn tin luôn") thì soạn BÀI ĐĂNG RAO ĐẦY ĐỦ theo bố cục tin rao (mục "BỐ CỤC TIN RAO"), không theo giới hạn 25–40 từ.
   • LƯỢT ĐẦU TIÊN (khi khách gửi tin nhà): Chào hỏi ấm áp, cảm ơn khách đã tin tưởng gửi thông tin nhà cho bên em.
-  • KHEN NGỢI CHỌN LỌC: Có điểm tốt thật sự (hẻm xe hơi rộng rãi, mặt tiền kinh doanh, vị trí đẹp, diện tích đẹp, nở hậu, sổ riêng, giá tốt...) thì khen chân thành 1 câu tự nhiên gắn với thanh khoản người mua. Không khen thảo mai với các thông số bình thường.
+  • KHEN: theo luật số 3 "KHEN ÍT, CÓ CƠ SỞ" bên dưới.
   • MỖI LƯỢT CHỈ HỎI ĐÚNG 1 CÂU HỎI DUY NHẤT. TUYỆT ĐỐI CẤM hỏi 2 câu dồn dập (cấm dùng "và...?", "đồng thời...", "cho em hỏi thêm...").
   • CẤM NHẠI LẠI LỜI KHÁCH: Khách vừa nói gì thì tuyệt đối KHÔNG tua lại (Vd: khách nói "nhà đang ở" -> CẤM nói "Em ghi nhận nhà đang ở..."). Nối tiếp tự nhiên bằng vài từ rồi hỏi ngay câu tiếp theo.
   • CẤM MÁY MÓC: TUYỆT ĐỐI KHÔNG mở đầu "Vâng...", "Dạ em ghi nhận...", "Em ghi nhận là...", "Em đã lưu lại...".
@@ -388,7 +400,8 @@ def build_chat_system(
         label = FIELD_LABELS.get(next_field, next_field or "")
         natural = NATURAL_QUESTIONS.get(next_field, f"hỏi thêm {label}")
         ask_line = (
-            f'Thông tin cần hỏi tiếp theo: "{label}". Mục tiêu: {natural}. Tiếp nhận nhanh gọn, tự nhiên (TUYỆT ĐỐI KHÔNG nịnh bợ, KHÔNG mở đầu bằng từ "Dạ", KHÔNG khen các thông số kỹ thuật thông thường), rồi hỏi đúng 1 ý này một cách khéo léo.'
+            f'Thông tin cần hỏi tiếp theo: "{label}". Mục tiêu: {natural}. Tiếp nhận nhanh gọn, tự nhiên (TUYỆT ĐỐI KHÔNG nịnh bợ, KHÔNG mở đầu bằng từ "Dạ", KHÔNG khen các thông số kỹ thuật thông thường), rồi hỏi đúng 1 ý này một cách khéo léo. CHỈ hỏi ý này — KHÔNG tự hỏi ý khác ngoài danh sách (thương lượng, lý do bán, '
+            'thế chấp…); khách tự nói thì ghi nhận.'
             if next_field
             else "Dữ liệu đã khá đầy đủ. Cảm ơn anh/chị và xác nhận trạng thái tin một cách thân thiện."
         )
@@ -402,25 +415,25 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
 1. ĐỘ DÀI: KHOẢNG 25 - 40 TỪ (Vừa vặn, tự nhiên, ấm áp, không cộc lốc nhưng không dông dài). NGOẠI LỆ DUY NHẤT: khách xin xem / đăng TOÀN BỘ tin (vd "nêu đầy đủ", "xem lại tin", "đăng giúp em") → soạn BÀI ĐĂNG RAO ĐẦY ĐỦ theo đúng bố cục dưới đây (chỉ dùng dữ liệu đã có, không bịa), dù ngắn hay dài LUÔN viết trọn vẹn:
 {AD_FORMAT}
 2. LƯỢT ĐẦU: Chào hỏi lịch sự, cảm ơn khách đã tin tưởng gửi thông tin nhà cho bên em.
-3. KHEN NGỢI CHỌN LỌC: Có điểm tốt thật sự (hẻm xe hơi rộng rãi, mặt tiền kinh doanh, giá tốt, diện tích đẹp, vị trí đắc địa...) thì khen chân thành 1 câu tự nhiên. Không khen thảo mai các thông số bình thường.
+3. {LUAT_KHEN}
 4. CHỈ HỎI ĐÚNG 1 CÂU HỎI DUY NHẤT trong một lượt trả lời. TUYỆT ĐỐI CẤM hỏi 2-3 câu dồn dập (cấm dùng "và...?", "đồng thời...", "cho em hỏi thêm...").
 5. CẤM NHẠI LẠI LỜI KHÁCH: Khách vừa nói gì thì KHÔNG nhắc lại (vd: khách bảo "nhà đang ở" -> CẤM nói "Em ghi nhận nhà đang ở..."). Hãy nói câu tự nhiên ngắn gọn rồi hỏi ngay câu tiếp theo:
-   - Khách: "nhà mình đang ở" -> "Nhà đang ở giữ gìn sạch đẹp là khách mua ưng ngay. Căn này mình mong muốn thu về giá bao nhiêu vậy anh/chị?"
-   - Khách: "căn này là nhà phố" -> "Nhà phố khu này thanh khoản khá tốt. Căn mình nằm ở mặt tiền hay trong hẻm vậy anh/chị?"
-   - Khách: "hẻm 4m" -> "Hẻm 4m xe hơi ra vào thuận tiện ghê. Nhà mình hiện tại xây mấy tầng vậy anh/chị?"
-   - Khách: "giá 6 tỷ" -> "Mức giá 6 tỷ khu này rất vừa tầm tài chính. Nhà mình đã có sổ hồng hoàn công chưa anh/chị?"
+   - Khách: "nhà mình đang ở" -> "Vậy tiện hẹn khách xem nhà. Căn này mình mong muốn thu về giá bao nhiêu vậy anh/chị?"
+   - Khách: "căn này là nhà phố" -> "Căn mình nằm ở mặt tiền hay trong hẻm vậy anh/chị?"
+   - Khách: "hẻm 4m" -> "Hẻm 4m xe hơi vào được, khách đi xem tiện. Nhà mình hiện tại xây mấy tầng vậy anh/chị?"
+   - Khách: "giá 6 tỷ" -> "Nhà mình đã có sổ hồng, hoàn công chưa anh/chị?"
 6. CẤM BỆNH "DẠ HOÀI" & CẤM MỞ ĐẦU SÁO RỖNG:
    - TUYỆT ĐỐI CẤM thói quen mở đầu mọi câu bằng từ "Dạ". CẤM lặp từ "Dạ" liên tục ở đầu tin nhắn!
    - Tuyệt đối không dùng "Dạ...", "Dạ vâng...", "Dạ em...", "Vâng anh, em ghi nhận...", "Dạ em nắm được...".
    - Hãy trả lời thẳng thắn, tự nhiên, linh hoạt:
-     "Khu vực này thanh khoản rất tốt anh/chị ha."
-     "Vị trí hẻm xe hơi này người mua tìm nhiều lắm."
      "Căn nhà mình nằm ở mặt tiền hay trong hẻm vậy anh/chị?"
    - ĐẶC BIỆT KHI KHÁCH XƯNG "EM" (vd "nhà em...", "em gửi..."): TUYỆT ĐỐI CẤM DÙNG TỪ "DẠ"! Gọi khách là "em", bản thân xưng "mình" hoặc "anh/chị".
 7. TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Không viết đậm chữ nào.
-8. KHÔNG KHEN THẢO MAI: Không khen những thông số kỹ thuật bình thường.
+8. KHÔNG KHEN THẢO MAI: Không khen những thông số kỹ thuật bình thường, không độn câu khen cho đủ độ dài.
 9. XÁC NHẬN ĐỊA CHỈ & KIỂM TRA CHÉO ĐƯỜNG - QUẬN:
    - Khi khách cho tên đường nhưng chưa rõ phường: hỏi nhẹ "Đoạn này thuộc Phường mấy vậy anh/chị?"
+   - Khách ĐÃ nói phường (tên mới hay phường số cũ, vd "Phường 9") → nhận theo lời khách, KHÔNG hỏi lại để đối chiếu với phường
+     tra kho em gợi ý trước đó (kho đường có thể thiếu đoạn; hệ thống tự đổi phường cũ sang phường mới). Hỏi tiếp ý kế.
    - ĐẶC BIỆT KHI ĐƯỜNG VÀ QUẬN KHÔNG KHỚP NHAU (ví dụ: đường "Phạm Văn Hai" nổi tiếng ở Quận Tân Bình, nhưng khách lại nói "ở Quận Bình Tân"; hoặc "Cao Lỗ" ở Quận 8 nhưng khách lại nói Quận 7...): CẤM TUYỆT ĐỐI không ghi nhận quận sai một cách mù quáng! Hãy lịch sự hỏi xác nhận lại để định vị đúng nhất cho tin đăng: "Đường Phạm Văn Hai theo em biết thường ở Quận Tân Bình (khu chợ Phạm Văn Hai). Nhà mình ở đoạn Tân Bình hay thuộc đường nào bên Bình Tân vậy anh/chị để em định vị đúng nhất?"
 {(chr(10) + _fee_hint(user_type)) if _fee_hint(user_type) else ""}
 {ask_line}"""
@@ -510,6 +523,20 @@ trong lúc chat không phải dữ liệu.
 ĐỊNH DẠNG KHOẢNG CÁCH (bắt buộc): CÓ một dòng trống NGĂN tiêu đề với đoạn mô tả, và một dòng trống NGĂN đoạn mô tả với khối gạch đầu dòng. Trong khối gạch đầu dòng thì KHÔNG chèn dòng trống giữa các gạch. KHÔNG dùng dấu ** (Zalo không hiện in đậm). CẤM viết "đang cập nhật"."""
 
 
+# Dòng mở đầu cố định của bản nháp tin rao. Model hay viết thêm câu dẫn TRƯỚC dòng này ("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như
+# vầy nhé anh:") → khách đọc hai câu dẫn; `cat_truoc_mo_dau` bỏ phần trước (SRS-5.1zzzzzzz76).
+MO_DAU_NHAP = ("📋 Mình sẽ rao như vầy nhé em:", "📋 Em sẽ rao như vầy nhé anh chị:")
+
+
+def cat_truoc_mo_dau(reply: str) -> str:
+    """Bản nháp bắt đầu đúng ở dòng mở đầu cố định; chữ model viết trước dòng đó bỏ đi."""
+    for mo in MO_DAU_NHAP:
+        i = reply.find(mo)
+        if i > 0:
+            return reply[i:]
+    return reply
+
+
 def build_listing_proposal_system(
     assistant_name: str,
     prop: Property,
@@ -521,7 +548,7 @@ def build_listing_proposal_system(
     Used once the listing is "khá đầy đủ". This is NOT a 30-word chat reply, so the word
     cap does NOT apply. CRUCIALLY: do NOT mention the fee yet — that comes after approval.
     """
-    opener = "📋 Mình sẽ rao như vầy nhé em:" if customer_is_em else "📋 Em sẽ rao như vầy nhé anh chị:"
+    opener = MO_DAU_NHAP[0] if customer_is_em else MO_DAU_NHAP[1]
     closer = "Em thấy bản tin này hấp dẫn chưa?" if customer_is_em else "Anh/chị thấy bản tin này hấp dẫn chưa ạ?"
 
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
@@ -647,12 +674,18 @@ def build_fee_followup_system(
             "hỏi ĐÚNG 1 câu nhẹ nhàng khách muốn chỉnh chỗ nào (tiêu đề, giá, mô tả, thông tin nhà) hay tạm thời chưa muốn đăng."
         )
     hoi_sau = ""
-    if (web is None or web.get("len_web")) and prop.cau_hoi_sau_ra_tin() == "lo_gioi_hem":
+    o_sau = prop.cau_hoi_sau_ra_tin() if (web is None or web.get("len_web")) else None
+    if o_sau == "lo_gioi_hem":
         y = ("hẻm trước nhà rộng khoảng mấy mét, xe hơi vào tận nhà được không" if prop.fields.get("lo_gioi_hem")
              else "nhà nằm mặt tiền hay trong hẻm, nếu hẻm thì rộng khoảng mấy mét")
         hoi_sau = (
             f"\n  • BỔ SUNG SAU KHI DUYỆT: sau câu xác nhận đăng, hỏi thêm ĐÚNG 1 câu ngắn: {y} — để bổ sung vào tin cho "
             "khách mua dễ hình dung. Chỉ hỏi 1 lần; khách đã nói độ rộng hẻm hoặc nhà mặt tiền thì không hỏi."
+        )
+    elif o_sau == "tinh_trang_ban_giao":   # SRS-5.1zzzzzzz76: hiện trạng hỏi sau bản nháp
+        hoi_sau = (
+            "\n  • BỔ SUNG SAU KHI DUYỆT: sau câu xác nhận đăng, hỏi thêm ĐÚNG 1 câu ngắn: nhà đang ở hay đang cho thuê — để "
+            "hẹn khách xem cho tiện. Khách đã nói rồi thì không hỏi."
         )
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
@@ -1078,9 +1111,18 @@ Tập trung vào BĐS đang nói ở các tin nhắn MỚI NHẤT.
 QUAN TRỌNG — diện tích: nhà phố/biệt thự/nhà cấp 4 (đất riêng) có 2 diện tích KHÁC NHAU.
 Nếu khách nói RÕ đâu là đất, đâu là nhà, dùng dien_tich_dat (diện tích đất) và dien_tich_nha
 (diện tích nhà/sử dụng/xây dựng, không cần phân biệt sâu hơn) tương ứng. Nếu khách CHỈ cho
-MỘT con số m2 mà KHÔNG rõ là đất hay nhà, ĐỪNG đoán đó là cái nào — cứ lưu tạm vào dien_tich
-(đừng bỏ trống, đừng bịa thêm số) để hệ thống hỏi lại xác nhận sau. Chung cư/CHDV/khách sạn/
-đất/kho xưởng chỉ có 1 diện tích — luôn dùng dien_tich cho các loại này.
+MỘT con số m2 mà KHÔNG có dấu hiệu nào (xem ĐỌC DẤU HIỆU dưới) thì lưu tạm vào dien_tich (đừng bỏ trống, đừng bịa
+thêm số) để hệ thống hỏi lại xác nhận sau. Chung cư/CHDV/khách sạn/đất/kho xưởng chỉ có 1 diện tích — luôn dùng dien_tich
+cho các loại này.
+ĐỌC DẤU HIỆU NHƯ MÔI GIỚI LÂU NĂM (19/10/2026, SRS-5.1zzzzzzz74 — chủ dự án: "bot thông minh phải hiểu dấu hiệu căn này thuộc về gì"):
+- Loại hình (loai_hinh) suy theo dấu hiệu, không chờ khách gọi tên: "căn nhà" / "nhà" kèm số tầng / lầu, mặt tiền, hẻm, hoặc nằm ở
+  các quận nội thành cũ của TP.HCM (Quận 1–12, Phú Nhuận, Bình Thạnh, Tân Bình, Tân Phú, Gò Vấp, Bình Tân, Thủ Đức…) → nha_pho.
+  "căn hộ", "chung cư", "block / tầng X căn Y", tên toà chung cư → chung_cu. "lô đất", "đất nền", "đất thổ cư", "đất trống" → dat.
+  Vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An, Bình Dương, Đồng Nai, Tây Ninh…) mà khách chỉ nói "nhà",
+  không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
+- Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
+  (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
+  nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Không có dấu hiệu nào mới để tạm dien_tich.
 QUAN TRỌNG — mã số căn: BĐS dự án lúc MỞ BÁN (chưa hoàn thành) thường được định danh bằng
 MÃ SỐ CĂN (vd "căn số 42", "A-15-03", "block B tầng 5 căn 3") và CHƯA có địa chỉ đường. Nếu
 người rao cho mã số căn thì trích vào ma_so_can. ĐỪNG nhầm mã số căn với số phòng ngủ hay số
@@ -1332,8 +1374,17 @@ QUY TẮC:
   chỉ vì tin nhắn có nhắc một mã căn.
 - remove / keep_only / clear CHỈ khi khách nói RÕ ý muốn bỏ/xóa/chỉ giữ (bỏ, xóa, không bán nữa,
   chỉ giữ, xóa hết...). Nhắc một mã căn trong câu hỏi KHÔNG BAO GIỜ là remove/keep_only/clear.
-- Diện tích: nhà phố/biệt thự/nhà cấp 4 có 2 diện tích. Rõ đất/nhà → dien_tich_dat/dien_tich_nha;
-  chỉ một số m2 không rõ → để tạm dien_tich. Loại khác chỉ có 1 dien_tich.
+- Diện tích: nhà phố/biệt thự/nhà cấp 4 có 2 diện tích. Rõ đất/nhà → dien_tich_dat/dien_tich_nha (xem ĐỌC DẤU HIỆU bên dưới);
+  không có dấu hiệu nào → để tạm dien_tich. Loại khác chỉ có 1 dien_tich.
+ĐỌC DẤU HIỆU NHƯ MÔI GIỚI LÂU NĂM (19/10/2026, SRS-5.1zzzzzzz74 — chủ dự án: "bot thông minh phải hiểu dấu hiệu căn này thuộc về gì"):
+- Loại hình (loai_hinh) suy theo dấu hiệu, không chờ khách gọi tên: "căn nhà" / "nhà" kèm số tầng / lầu, mặt tiền, hẻm, hoặc nằm ở
+  các quận nội thành cũ của TP.HCM (Quận 1–12, Phú Nhuận, Bình Thạnh, Tân Bình, Tân Phú, Gò Vấp, Bình Tân, Thủ Đức…) → nha_pho.
+  "căn hộ", "chung cư", "block / tầng X căn Y", tên toà chung cư → chung_cu. "lô đất", "đất nền", "đất thổ cư", "đất trống" → dat.
+  Vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An, Bình Dương, Đồng Nai, Tây Ninh…) mà khách chỉ nói "nhà",
+  không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
+- Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
+  (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
+  nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Không có dấu hiệu nào mới để tạm dien_tich.
 - Đừng nhầm mã số căn với số phòng ngủ/số tầng.
 - DUYỆT BẢN NHÁP (18/10/2026): chỉ khi tin nhắn NGAY TRƯỚC của bot là BẢN TIN NHÁP / bản tin cập nhật hỏi khách thấy được
   chưa, đọc theo NGHĨA tin khách vừa nhắn: đồng ý cho đăng (ok, được rồi, đăng đi, chuẩn rồi, thả tim / like…) →

@@ -78,6 +78,16 @@ class TestServerVoiceIntegration(unittest.TestCase):
         self.assertTrue(len(data["replies"]) > 0)
         mock_stt.assert_called_once()
 
+    @patch("aioi.server._so_loi")
+    @patch("aioi.server.transcribe_voice_url", return_value=None)
+    def test_tin_thoai_khong_chep_duoc_vao_so_loi(self, _stt, so_loi):
+        # SRS-5.1zzzzzzz76: tin thoại không chép được chỉ nằm ở journal — CRM không thấy, không ai biết bot đang "điếc".
+        payload = {"external_user_id": "test_voice_user_2", "text": "[Khách gửi tin nhắn thoại/ghi âm]",
+                   "file_url": "https://res.zalo.me/voice/456.m4a", "file_name": "tin_nhan_thoai.m4a", "channel": "zalo_personal_test"}
+        self.assertEqual(self.client.post("/chat-reply", json=payload).status_code, 200)
+        so_loi.ghi_loi.assert_called_once()
+        self.assertEqual(so_loi.ghi_loi.call_args[0][0], "stt tin thoai")
+
 
 if __name__ == "__main__":
     unittest.main()

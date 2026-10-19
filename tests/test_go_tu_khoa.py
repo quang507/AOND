@@ -15,6 +15,9 @@ class _Spy:
             return {"tai_lieu_chung": self.tai_lieu}
         return dict(self.plan)
 
+    def reply(self, system, messages, **k):   # lời gửi khách (SRS-5.1zzzzzzz76)
+        return self.chat(system, messages, **k)
+
     def chat(self, system, messages, **k):
         self.systems.append(system)
         return "Vâng anh."

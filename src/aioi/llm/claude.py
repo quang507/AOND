@@ -13,6 +13,28 @@ from ..so_token import SoToken
 from .base import LLMProvider, Message, ToolCall, ToolTurn
 
 
+_GUI_KHACH: dict[str, Any] = {
+    "name": "gui_khach",
+    "description": "Gửi lời trả lời cho khách qua Zalo. Mọi lượt trả lời khách đều đi qua công cụ này.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "tu_soat": {
+                "type": "string",
+                "description": "Ghi chú NỘI BỘ, KHÔNG gửi khách: soát nhanh lời sắp gửi theo luật (đúng một ý hỏi, không khen bịa, "
+                               "xưng hô đúng, không hỏi lại điều khách đã nói). Sai thì sửa ngay trong loi_gui_khach. Ngắn.",
+            },
+            "loi_gui_khach": {
+                "type": "string",
+                "description": "NGUYÊN VĂN lời gửi khách, bản cuối đã theo mọi luật. Chỉ lời nói với khách — không ghi chú, không nói "
+                               "về luật hay về việc sửa lời.",
+            },
+        },
+        "required": ["tu_soat", "loi_gui_khach"],
+    },
+}
+
+
 class ClaudeProvider(LLMProvider):
     def __init__(self, settings: Settings):
         import anthropic  # imported lazily so offline/mock runs need no SDK
@@ -57,14 +79,40 @@ class ClaudeProvider(LLMProvider):
         self._so.ghi("chat", self._chat_model, resp)
         return "".join(b.text for b in resp.content if b.type == "text").strip()
 
+    def reply(self, system: str, messages: list[Message], max_tokens: int = 256) -> str:
+        # 19/10/2026 (SRS-5.1zzzzzzz76): lời trả lời là chữ tự do thì model không có chỗ tự soát luật — khách từng nhận "Wait, the
+        # system prohibits…" và "Lưu ý: vi phạm quy tắc một câu hỏi. Sửa lại: …". Nay model PHẢI gọi công cụ hai ô: ghi chú tự soát
+        # (không gửi) rồi lời gửi khách; chỉ ô sau tới khách. Không lọc chữ ở đầu ra.
+        # Bắn thử 19/10: một lượt ra rỗng → khách nhận câu dự phòng "kết nối mạng vừa gián đoạn". Ô lời gửi khách trống thì gọi lại một
+        # lần và ghi sổ lỗi (chỉ lý do + tên ô, không nội dung).
+        for lan in range(2):
+            resp = self._tao("chat",
+                model=self._chat_model,
+                max_tokens=max_tokens + 300,
+                system=self._sys(system),
+                messages=[{"role": m.role, "content": m.content} for m in messages],
+                tools=[_GUI_KHACH],
+                tool_choice={"type": "tool", "name": _GUI_KHACH["name"]},
+            )
+            self._so.ghi("chat", self._chat_model, resp)
+            o = next((dict(b.input or {}) for b in resp.content if b.type == "tool_use"), {})
+            loi = str(o.get("loi_gui_khach") or "").strip()
+            if loi:
+                return loi
+            self._so.ghi_loi("claude chat", f"lời gửi khách rỗng (lần {lan + 1}): stop={getattr(resp, 'stop_reason', '?')}, "
+                                            f"ô={sorted(o)}")
+        return ""
+
     def extract(
         self, system: str, messages: list[Message], json_schema: dict[str, Any]
     ) -> dict[str, Any]:
         # Tool-based extraction: force a single tool call whose input IS the
         # structured result. More robust and faster than output_config here.
+        # 19/10/2026 (SRS-5.1zzzzzzz76): trần 1024 → 4096. Lượt lập thao tác kê lại MỌI ô kèm cụm trích bằng chứng (SRS-5.1zzzzzzz73)
+        # trên cả hội thoại; bắn thử: tới lượt 9 ô vừa nói ("diện tích sàn tầm 170m vuông") không vào kế hoạch, không dòng "Bỏ ô" nào.
         resp = self._tao("extract",
             model=self._extract_model,
-            max_tokens=1024,
+            max_tokens=4096,
             system=self._sys(system),
             messages=[{"role": m.role, "content": m.content} for m in messages],
             tools=[
@@ -77,6 +125,8 @@ class ClaudeProvider(LLMProvider):
             tool_choice={"type": "tool", "name": "save_property_data"},
         )
         self._so.ghi("extract", self._extract_model, resp)
+        if getattr(resp, "stop_reason", None) == "max_tokens":
+            self._so.ghi_loi("claude extract", "kết quả bóc tách bị cắt vì chạm trần token — ô cuối có thể mất")
         for block in resp.content:
             if block.type == "tool_use":
                 return dict(block.input)
