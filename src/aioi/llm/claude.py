@@ -5,12 +5,33 @@ Defaults: Haiku 4.5 for fast 30-word chat, Opus 4.8 for vision/OCR-grade extract
 from __future__ import annotations
 
 import base64
+import json
 from typing import Any
 
 from ..config import Settings
 from ..imaging import downscale_image
 from ..so_token import SoToken
 from .base import LLMProvider, Message, ToolCall, ToolTurn
+
+
+def chuan_theo_schema(v: Any, schema: dict[str, Any]) -> Any:
+    """Đưa đầu ra công cụ về đúng dạng schema đã khai. 19/10/2026 (SRS-5.1zzzzzzz78): Haiku có lượt trả cả danh sách `operations`
+    thành MỘT CHUỖI JSON (log bắn thử: 300 phần tử 'str') — code lọc `isinstance(op, dict)` bỏ sạch, mọi ô của lượt đó mất ("diện
+    tích sàn tầm 170m vuông" không được ghi). Ô schema là object / array mà model trả chuỗi JSON thì giải; giải không được thì để
+    nguyên cho chỗ dùng tự lọc. Chỉ đọc theo schema, không đoán nội dung."""
+    t = (schema or {}).get("type")
+    if t in ("object", "array") and isinstance(v, str):
+        try:
+            v = json.loads(v)
+        except ValueError:
+            return v
+    if t == "object" and isinstance(v, dict):
+        props = schema.get("properties") or {}
+        them = schema.get("additionalProperties")
+        return {k: chuan_theo_schema(x, props.get(k) or (them if isinstance(them, dict) else {})) for k, x in v.items()}
+    if t == "array" and isinstance(v, list):
+        return [chuan_theo_schema(x, schema.get("items") or {}) for x in v]
+    return v
 
 
 _GUI_KHACH: dict[str, Any] = {
@@ -129,7 +150,7 @@ class ClaudeProvider(LLMProvider):
             self._so.ghi_loi("claude extract", "kết quả bóc tách bị cắt vì chạm trần token — ô cuối có thể mất")
         for block in resp.content:
             if block.type == "tool_use":
-                return dict(block.input)
+                return chuan_theo_schema(dict(block.input), json_schema)
         return {}
 
     def converse(
@@ -226,7 +247,7 @@ class ClaudeProvider(LLMProvider):
         self._so.ghi("group", self._vision_model, resp)
         for block in resp.content:
             if block.type == "tool_use":
-                return dict(block.input)
+                return chuan_theo_schema(dict(block.input), json_schema)
         return {"nhom": []}
 
     def extract_media(
@@ -259,5 +280,5 @@ class ClaudeProvider(LLMProvider):
         self._so.ghi("read-doc", self._vision_model, resp)
         for block in resp.content:
             if block.type == "tool_use":
-                return dict(block.input)
+                return chuan_theo_schema(dict(block.input), json_schema)
         return {}

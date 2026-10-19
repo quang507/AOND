@@ -6758,6 +6758,28 @@ code lỗi). Bài học: dòng chẩn đoán mới cũng phải đọc đầu ra
 **Kiểm.** `tests/test_trang_thai_va_nap_lai.py::test_load_nguoi_ban_co_tin_ma_chua_co_hoi_thoai` (đỏ trên code cũ, đã chạy), pytest 406
 đạt. Model thật: `ban-thu-mua`.
 
+### SRS-5.1zzzzzzz78 · Đọc đầu ra công cụ của Haiku đúng theo schema (19/10/2026)
+
+**Ca gốc.** Chủ dự án giữ `claude-haiku-5-5` cho mọi lượt ("Vẫn haiku"). Ca "diện tích sàn tầm 170m vuông" không được ghi 4/11 lượt bắn
+thử. Log tên ô của SRS-5.1zzzzzzz77 (bắn thử 11:01) cho thấy hai dạng đầu ra lệch schema của Haiku:
+- một lượt `operations` về thành MỘT CHUỖI JSON (log: 300 phần tử `'str'`) — `_ap_dung_ke_hoach` lọc `isinstance(op, dict)` bỏ sạch, mọi
+  ô lượt đó mất; lượt giữa hội thoại thì lượt sau tự bù (model kê lại cả bộ ô), rơi vào lượt cuối thì mất hẳn;
+- `bang_chung` lọt vào TRONG `fields` thay vì ở cấp thao tác — cụm trích không được dùng, ô chữ mà model viết lại giá trị ("sổ hồng
+  riêng" khi khách gõ "sổ riêng") bị cổng bằng chứng bỏ oan.
+
+**Lớp lỗi.** Tin đầu ra công cụ đúng kiểu schema mà không kiểm: chỗ dùng lọc lặng lẽ thứ sai kiểu, mất dữ liệu không dấu vết. **Chỗ cùng
+lớp đã soát:** mọi lượt gọi có ép công cụ của `ClaudeProvider` — `extract` (lập thao tác, bóc tách rời, đọc dự án / mẫu nhà, ánh xạ cột),
+`extract_media` (đọc tài liệu), `group_media` (nhóm ảnh); các ô object khác của `operations_schema` (`mua`, `tra_loi_khach_hoi`,
+`buyer_lead`, `targets`) cùng được chuẩn hoá. Lượt `reply` (công cụ `gui_khach`) chỉ lấy một ô chuỗi — không cần.
+
+**Sửa.** `src/aioi/llm/claude.py` `chuan_theo_schema`: duyệt đầu ra theo schema đã khai, ô object / array mà model trả chuỗi JSON thì giải
+(giải không được thì để nguyên cho chỗ dùng tự lọc) — áp ở cả ba lượt ép công cụ. `src/aioi/engine.py` `_lap_ke_hoach`: `bang_chung` nằm
+trong `fields` thì kéo ra cấp thao tác (gộp với `bang_chung` sẵn có). Không đổi model, không đổi prompt.
+
+**Kiểm.** `tests/test_dau_ra_haiku.py` (3 ca: chuỗi JSON → danh sách, `ClaudeProvider.extract` trả đúng dạng, `bang_chung` lọt vào `fields`
+thì vẫn nhận ô chữ theo cụm trích — đỏ trên code cũ, ca cuối đỏ khi chỉ bỏ phần engine, đã chạy), pytest 409 đạt. Model thật: bắn thử
+`ban-thu-ban` tuần tự, đọc lại dòng `Kế hoạch:`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

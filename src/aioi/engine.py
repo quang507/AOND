@@ -2938,6 +2938,19 @@ class Engine:
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
         conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
         plan = self._provider.extract(system, src, operations_schema())
+        # SRS-5.1zzzzzzz78: Haiku hay đặt `bang_chung` LỌT VÀO TRONG `fields` (log bắn thử) — kéo ra cấp thao tác, không thì cụm trích
+        # không được dùng và "bang_chung" thành một ô lạ.
+        for o in plan.get("operations") or []:
+            f = o.get("fields") if isinstance(o, dict) else None
+            if isinstance(f, dict) and "bang_chung" in f:
+                bc = f.pop("bang_chung")
+                if isinstance(bc, str):
+                    try:
+                        bc = json.loads(bc)
+                    except ValueError:
+                        bc = None
+                if isinstance(bc, dict):
+                    o["bang_chung"] = {**bc, **(o.get("bang_chung") if isinstance(o.get("bang_chung"), dict) else {})}
         # SRS-5.1zzzzzzz77: bắn thử thấy ô khách vừa nói (vd "diện tích sàn tầm 170m vuông") có lượt không vào kế hoạch mà không dòng
         # "Bỏ ô" nào — ghi TÊN ô lượt AI trả (không giá trị: log có thể chứa dữ liệu khách) để biết hụt ở AI hay ở code.
         # Model có lúc trả thao tác không phải object (chuỗi) — chỗ áp dụng bỏ qua chúng (`isinstance(op, dict)`), log cũng vậy; bản đầu
