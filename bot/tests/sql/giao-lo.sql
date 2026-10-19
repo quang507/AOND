@@ -1,4 +1,4 @@
--- giao-lo.sql — giao_lo_cua / giao_lo_gan (20261018f, SRS-5.1zzzzzzz40). Dữ liệu mẫu dựng tay, rollback cuối. Sai → raise exception.
+-- giao-lo.sql — giao_lo_cua (20261018f, SRS-5.1zzzzzzz40; giao_lo_gan gỡ 20261019f — không ai gọi). Dữ liệu mẫu dựng tay, rollback cuối. Sai → raise exception.
 begin;
 set local client_min_messages = warning;
 delete from giao_lo;
@@ -14,12 +14,6 @@ insert into ca values
    'Phường Nhiêu Lộc | Phường Tân Sơn Hòa'),
   ('có toạ độ thì ngã tư gần trước',
    (select phuong from giao_lo_cua('Lê Văn Sỹ', 'Trần Huy Liệu', 10.7990, 106.6800) limit 1), 'Phường Tân Sơn Hòa'),
-  ('ngã tư gần một điểm, bỏ hẻm, gần trước',
-   (select string_agg(duong_b || ' ' || round(cach_m)::text, ' | ' order by cach_m) from giao_lo_gan(10.7910, 106.6800, 400)),
-   'Trần Huy Liệu 111 | Trần Quang Diệu 222'),
-  ('giữ hẻm khi p_bo_hem = false',
-   (select count(*)::text from giao_lo_gan(10.7910, 106.6800, 400, 5, false)), '3'),
-  ('ngoài bán kính → rỗng', (select count(*)::text from giao_lo_gan(10.7000, 106.6000, 300)), '0'),
   ('hai đường không giao → rỗng', (select count(*)::text from giao_lo_cua('Lê Văn Sỹ', 'Nguyễn Trãi')), '0'),
   ('tên quá ngắn / rỗng → rỗng', (select count(*)::text from giao_lo_cua('', 'Lê Văn Sỹ')), '0');
 do $$ declare r record; n int := 0; begin

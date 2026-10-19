@@ -158,7 +158,8 @@ for (const ten of [
   else if (r.status === 200) ko("agents_public: anon đọc ra RỖNG", `đây ĐÚNG lỗi làm /moi-gioi trắng 27/08→04/09 (DB có ${soNmg ?? "?"} NMG)`);
   else ko("agents_public: anon bị chặn", `siết quá tay — HTTP ${r.status} · ${String(r.tho).slice(0, 150)}`);
 }
-for (const bang of ["projects", "listing_facts", "listing_photos_v"]) {
+// 19/10/2026: bảng `listing_facts` gỡ (20261019f) — ô tin nay ở `listings.boc_tach`.
+for (const bang of ["projects", "listing_photos_v"]) {
   const r = await goi(`${bang}?select=*&limit=1`);
   if (r.status === 200) ok(`${bang}: anon đọc được`);
   else ko(`${bang}: anon bị chặn`, `siết quá tay — HTTP ${r.status} · ${String(r.tho).slice(0, 150)}`);

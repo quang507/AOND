@@ -9,7 +9,7 @@
 //
 //   ĐÂY KHÔNG PHẢI BẢN SAO LƯU.
 //
-// Nó chỉ xuất `listings` + `media` + `listing_facts` (3/31 bảng). KHÔNG có
+// Nó chỉ xuất `listings` (kèm ô `boc_tach`) + `media` (2 bảng). KHÔNG có
 // `conversations`, `messages`, `deals`, `buyers`, `sellers`.
 // Mất hội thoại là mất chính luận điểm sản phẩm. Và markdown không giữ UUID, khoá ngoại,
 // `status`, `*_source` — đọc lại được, DỰNG LẠI KHÔNG ĐƯỢC.
@@ -342,7 +342,7 @@ function vietCsv(ds) {
 const soTay = {
   xuat_luc: new Date().toISOString(),
   nguon: URL_DU_AN,
-  KHONG_PHAI_BAN_SAO_LUU: "Chỉ 3/31 bảng (listings, media, listing_facts). " +
+  KHONG_PHAI_BAN_SAO_LUU: "Chỉ 2 bảng (listings kèm ô boc_tach, media). " +
     "Không dựng lại được DB từ thư mục này. Dự án không còn sao lưu DB (bỏ 11/09/2026).",
   chi_ban, co_chep_anh: !!goc_anh, so_tin: 0, so_anh_chep: 0, so_anh_thieu: 0,
   trang_thai: "chua_xong",
@@ -357,10 +357,9 @@ const ghiSoTay = async () => {
 try {
   console.log(`Xuất rổ hàng → ${dich}\n`);
   const loc = chi_ban ? "&deal=eq.ban" : "";
-  const [listings, media, facts] = await Promise.all([
+  const [listings, media] = await Promise.all([
     keo("listings", "*", `${loc}&order=ward.asc,price_vnd.desc`),
     keo("media", "listing_id,storage_path,category,approved"),
-    keo("listing_facts", "listing_id,question,answer,source"),
   ]);
 
   const anhTheoTin = new Map();
@@ -368,10 +367,13 @@ try {
     if (!anhTheoTin.has(m.listing_id)) anhTheoTin.set(m.listing_id, []);
     anhTheoTin.get(m.listing_id).push(m);
   }
+  // 19/10/2026 (20261019f): ô chủ nhà trả lời nằm ở `listings.boc_tach` (lõi Python ghi), bảng `listing_facts` đã gỡ.
   const factTheoTin = new Map();
-  for (const f of facts) {
-    if (!factTheoTin.has(f.listing_id)) factTheoTin.set(f.listing_id, []);
-    factTheoTin.get(f.listing_id).push(f);
+  for (const l of listings) {
+    const o = Object.entries(l.boc_tach ?? {})
+      .filter(([k, v]) => !k.startsWith("_") && v != null && typeof v !== "object" && String(v).trim() !== "")
+      .map(([question, answer]) => ({ question, answer }));
+    if (o.length) factTheoTin.set(l.id, o);
   }
 
   await mkdir(join(dich, "tin"), { recursive: true });

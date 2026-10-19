@@ -74,7 +74,7 @@ function dungServer(canh) {
         // Cảnh 4: view trả rỗng — đúng kiểu hỏng của 27/08.
         return json(200, canh === "siet-qua-tay" || canh === "khong-nmg" ? [] : [{ id: 1 }, { id: 2 }, { id: 3 }]);
       }
-      if (["projects", "listing_facts", "listing_photos_v"].includes(bang)) return json(200, []);
+      if (["projects", "listing_photos_v"].includes(bang)) return json(200, []);
       if (NOI_BO.includes(bang)) {
         // Cảnh 2: bảng nội bộ ra dòng thật.
         return canh === "rls-thung" ? json(200, [{ id: 1, phone: "0903xxxxxx" }]) : json(403, TU_CHOI);

@@ -58,8 +58,8 @@ function chay(args, env) {
   });
 }
 
-function moServer({ listings, media = [], facts = [], tongGia = null }) {
-  const bang = { listings, media, listing_facts: facts };
+function moServer({ listings, media = [], tongGia = null }) {
+  const bang = { listings, media };
   const sv = createServer((req, res) => {
     const ten = req.url.split("?")[0].replace("/rest/v1/", "");
     const rows = bang[ten] ?? [];
@@ -73,9 +73,9 @@ function moServer({ listings, media = [], facts = [], tongGia = null }) {
 }
 
 const rac = [];
-async function canh(ten, { listings, media, facts, tongGia, dichLa, themArgv = [] }, maMong, dauHieu) {
+async function canh(ten, { listings, media, tongGia, dichLa, themArgv = [] }, maMong, dauHieu) {
   if (!dauHieu) throw new Error(`ca "${ten}" thiếu dauHieu — mã thoát một mình không chứng minh được gì`);
-  const sv = await moServer({ listings, media, facts, tongGia });
+  const sv = await moServer({ listings, media, tongGia });
   const cong = sv.address().port;
   const dich = dichLa ?? mkdtempSync(path.join(tmpdir(), "rohang-"));
   if (!dichLa) rac.push(dich);
@@ -102,7 +102,7 @@ console.log("TỰ KIỂM xuat-ro-hang.mjs — PostgREST giả, không chạm DB 
 // script luôn đỏ.
 const { dich: d1 } = await canh(
   "[đc] 2 tin lành → xuất XONG",
-  { listings: [TIN(1), TIN(2)], media: [], facts: [] },
+  { listings: [TIN(1), TIN(2)], media: [] },
   0, "XONG",
 );
 
@@ -134,6 +134,19 @@ const { dich: d1 } = await canh(
   String(mf.KHONG_PHAI_BAN_SAO_LUU ?? "").includes("Không dựng lại được DB")
     ? ok("manifest nói rõ ĐÂY KHÔNG PHẢI bản sao lưu")
     : no("manifest không cảnh báo — người ta sẽ tưởng đây là backup");
+}
+
+// ══ 2b. Ô chủ nhà trả lời đọc từ `listings.boc_tach` (20261019f — bảng listing_facts đã gỡ) ══
+{
+  const { dich } = await canh(
+    "tin có ô boc_tach → xuất XONG",
+    { listings: [TIN(3, { boc_tach: { tho_cu: "60m2", _cap_nhat: "2026-10-19", rong: "" } })], media: [] },
+    0, "XONG",
+  );
+  const md = readFileSync(path.join(dich, "tin", "BDS-Q5-0003", "tin.md"), "utf8");
+  md.includes("**tho_cu**: 60m2") && !md.includes("_cap_nhat") && !md.includes("**rong**")
+    ? ok("tin.md in ô boc_tach, bỏ khoá nội bộ (_…) và ô trống")
+    : no("tin.md không in đúng ô boc_tach", md.slice(0, 600));
 }
 
 // ══ 3. Cách hỏng IM LẶNG số 1: kéo thiếu dòng ══
