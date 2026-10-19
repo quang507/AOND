@@ -20,7 +20,6 @@ aioi.db.bak*
 # (CLAUDE.md §7/§9 dựa vào .claude/skills/ba-pipeline + .claude/agents/).
 .claude/settings.local.json
 desktop.ini
-sharepoint_store/
 kho_tep_thu/
 backups/
 *.log

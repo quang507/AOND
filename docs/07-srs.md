@@ -6191,6 +6191,28 @@ merge nhận script trước merge [giả định BA — suy từ log, chưa đo
 
 **Kiểm.** `bot/tests/aond-mot-nguon.mjs` AMN-11 (đỏ khi URL quay về tên nhánh). Chạy `cai-vps` sau merge: dòng "Only in …" phải hết.
 
+Kết quả lượt cài 19/10 (run 39194844094, commit `56451f2`): mục "khác repo" rỗng, `/health` 200.
+
+### SRS-5.1zzzzzzz59 · Dọn sau khi gỡ TypeScript: lịch nhúng vector, tệp thừa, log cài VPS (19/10/2026)
+
+**Ca gốc.** Chủ dự án: "làm sạch và cho hệ thống chạy xuyên suốt". Sổ lỗi 24 giờ còn `nhung-tick` / `nhung-dia-danh-tick` (Gemini
+embed 429 / 503): hai lịch mỗi 2 phút vẫn nhúng vector cho `duong`, `projects`, `wards`, `phuong_cu`… trong khi người đọc vector duy
+nhất (`tim_dia_danh_theo_nghia`, gọi từ chat-reply TypeScript) đã gỡ 18/10 — soát mã web, lõi Python, bridge, edge function còn lại:
+không chỗ nào gọi. Log `cai-vps` in ba dòng `fatal: not a git repository` cho `/opt/aond_core` (không phải bản git) mà không cho biết
+trong thư mục có gì.
+
+**Lớp lỗi.** Gỡ NGƯỜI ĐỌC mà không gỡ NGƯỜI GHI: việc nền nuôi dữ liệu cho tính năng đã bỏ. **Chỗ cùng lớp.** Soát `cron.job` (10 lịch):
+`geocode-tick` → `geocode-listings` (web đọc `tien_ich_gan`, giữ — overpass 403/406 là lỗi phía máy chủ ngoài, SRS-5.1zzzzzzn);
+`media-cleanup-tick` → `media-cleanup` (còn); các lịch còn lại là SQL thuần. Không hàm nào còn `http_post` tới edge function đã xoá.
+`app_config` còn khoá chỉ chat-reply TS đọc (`boc_tach_ai`, `luat_loi_bot`, `bao_lai_da_luu`, `tro_ly`) — không ai đọc nữa, vô hại, để
+nguyên. Vector đã nhúng (~100 MB gồm chỉ mục, DB 241 MB / 500 MB) GIỮ, chờ chủ dự án quyết xoá.
+
+**Sửa.** Migration `20261019b`: gỡ hai lịch, `tim_theo_nghia = tat`; `scripts/dung-lai-db.mjs` dựng lại cũng đặt `tat`. Log `cai-vps`
+in kích thước từng mục trong `/opt/aond_core`, tên biến `.env` (không in giá trị) và `EnvironmentFile` thay cho ba lệnh git hỏng.
+`pyproject.toml` khai `httpx` (`voice.py` nhập thẳng, trước chỉ có nhờ `anthropic` kéo theo). `.gitignore` bỏ `sharepoint_store/`.
+
+**Kiểm.** `cron.job` không còn hai lịch; sổ lỗi không còn nguồn `nhung%` sau mốc áp. `bun run kiem` xanh.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
