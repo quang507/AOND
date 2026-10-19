@@ -6480,6 +6480,27 @@ Migration `20261019i_bat_lai_ctv_sla.sql` bật lại `ctv-sla-tick`.
 khi trích dẫn bịa / mã không có thật, người rao trả lời, nhân viên trả lời + người lạ gõ đúng cú pháp không được, chốt kèo) — đỏ khi bỏ
 phần nối trong engine (4 ca) hoặc trong kho (5 ca), đã chạy. pytest 369 đạt.
 
+### SRS-5.1zzzzzzz71 · Bắn thử luồng người mua trên lõi production; khách mua không sinh tin rao rỗng (19/10/2026)
+
+**Ca gốc.** Chủ dự án "giờ bắn test đi". Lõi chỉ nghe `127.0.0.1:8000` trên VPS nên thêm `bot/tests/ban-thu-mua.sh` (workflow
+`apply-migration`, ô `dung_lai` = `ban-thu-mua`): tạo người bán thử + một tin thử Quận 5 bằng ID `thu-` (câu khách hỏi giao cho người
+bán thử, không tới chủ nhà / CTV thật), khách mua thử chat 2 lượt, người bán thử trả lời 1 lượt, soi DB, cuối cùng (kể cả khi hỏng)
+xoá qua `reset_nguoi_test` + `/reset` của lõi. Tiền thật: 3 lượt chat.
+
+**Kết quả lượt 2 (run 39216293106, 6/6 đạt).** Bot đưa đúng căn thử ở lượt 1; lượt 2 ghi `interests`, `viewings` (`proposed`,
+"Chiều thứ 7 này 3h"), `info_requests` câu sổ hồng giao `seller`; người bán trả lời → `answered`, nguyên văn câu trả lời; 3 dòng
+`reminders`; tin chuyển `dang_quan_tam`. Lượt 1 trượt vì chính script (mã tin sinh sai, tin thử thiếu phường nên trigger
+`listings_quyet_dinh_dang_tin` giữ `cho_thong_tin`).
+
+**Lỗi thật bắt được.** Mỗi khách mua chat là DB có thêm một dòng `listings` rỗng (căn mồi `Listing()` mọi hội thoại mở ra):
+`SupabaseConversationStore.save` ghi mọi căn trong hội thoại, không xét vai. **Lớp lỗi:** đường ghi tin rao không hỏi người đang chat
+có phải người rao không. **Chỗ cùng lớp:** khách mua vẫn có một dòng `sellers` vì hội thoại CRM (`conversations`) gắn theo
+`seller_id` (`ghi_luot_chat`, `save`) — đổi là đổi mô hình hội thoại CRM, chưa làm, ghi lại ở đây. **Sửa:** `save` bỏ vòng ghi tin khi
+`conv.role == "buyer"`. **Kiểm:** `tests/test_viec_mua.py::test_khach_mua_khong_sinh_tin_rao_rong` — đỏ khi bỏ bản sửa (đã chạy),
+pytest 370 đạt.
+
+**Ghi nhận, chưa đổi.** Lịch hẹn sinh câu `xac_nhan_lich` giao `admin` (trigger DB có sẵn), không giao người bán.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
