@@ -152,7 +152,19 @@ class MockProvider(LLMProvider):
         # keyword logic; only the OUTPUT shape changes.
         if "operations" in props:
             flat = self.extract(system, messages, {"properties": {}})  # reuse the flat brain
-            return _flat_to_operations(flat)
+            plan = _flat_to_operations(flat)
+            # Giả lập lượt AI đọc "khách hỏi về gì" (hoi_ve, SRS-5.1zzzzzzz54) — bản thật đọc theo nghĩa; ở đây chỉ là đồ giả
+            # cho test offline, trả kèm cụm trích có thật để qua kiểm trích dẫn của engine.
+            cuoi = next((m.content for m in reversed(messages) if m.role == "user"), "")
+            low = cuoi.lower()
+            for hoi_ve, cum in (("phi", ("phí bên em", "hoa hồng", "mất phí")), ("uy_tin", ("công ty gì", "lừa đảo")),
+                                ("link_web", ("link bài đăng", "link web", "xem tin ở đâu"))):
+                k = next((c for c in cum if c in low), None)
+                if k:
+                    i = low.index(k)
+                    plan["hoi_ve"], plan["hoi_ve_trich_dan"] = hoi_ve, cuoi[i:i + len(k)]
+                    break
+            return plan
 
         # Column mapping (LLM-assisted spreadsheet import): map odd headers → field slugs.
         if "ánh xạ cột" in system:

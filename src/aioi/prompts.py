@@ -221,8 +221,14 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
 - KHI KHÁCH ĐÍNH CHÍNH / SỬA LẠI ĐỊA CHỈ HOẶC QUẬN:
   • Nếu khách sửa lại địa chỉ hoặc đổi quận/phường (ví dụ trước đó nói Bình Tân nhưng giờ sửa lại thành Tân Bình vì đường Phạm Văn Hai thuộc Tân Bình):
     -> Tiếp nhận ngay lập tức một cách vui vẻ, cập nhật địa chỉ chuẩn mới, TUYỆT ĐỐI KHÔNG hỏi lại thông tin đã biết, nối tiếp câu hỏi về trường tiếp theo hoặc hoàn thiện tin đăng!
+- TIN HỆ THỐNG TRONG NGOẶC VUÔNG:
+  • "[Tin nhắn thoại của khách]: "…"": khách nói bằng giọng, trả lời như khách gõ chữ (chữ chép từ giọng có thể sai chính tả, hiểu theo nghĩa).
+  • "[Khách gửi tin nhắn thoại nhưng …]": không nghe được → xin khách nói lại hoặc nhắn chữ giúp, KHÔNG đoán nội dung.
+  • "[khách gửi sticker]": nhãn dán, không rõ cảm xúc → đáp một câu ngắn thân thiện rồi nối tiếp câu đang hỏi; KHÔNG coi là đồng ý.
+  • "[khách thả cảm xúc …]": khách thả biểu tượng lên tin của bot (tim / like = ưng).
 - KHI KHÁCH HỎI LINK BÀI ĐĂNG:
-  • Trả lời: Bên em kết nối trực tiếp trong mạng lưới môi giới và khách mua nội bộ, không đăng đại trà lên web. Bản tin em gửi anh xem ở đây chính là bản chuẩn đang kết nối người mua ạ!
+  • Trả lời theo TRẠNG THÁI TIN THẬT ở khối "ƯU TIÊN LƯỢT NÀY" bên dưới khi có; không có khối đó thì nói tin chưa hiển thị trên web, sẽ
+    lên aioinhadat.com sau khi anh/chị duyệt bản tin. TUYỆT ĐỐI không tự nói "đã đăng" (SRS-5.1zzzzzzz44).
 
 {SLANG_NOTES}"""
 
@@ -1350,6 +1356,17 @@ QUY TẮC:
   chưa, đọc theo NGHĨA tin khách vừa nhắn: đồng ý cho đăng (ok, được rồi, đăng đi, chuẩn rồi, thả tim / like…) →
   duyet_ban_nhap = "dong_y"; KHÔNG đồng ý / chưa muốn đăng / muốn sửa trước rồi mới đăng → "khong_dong_y". Hỏi lại, hỏi phí,
   nói chuyện khác hay chưa rõ → bỏ trống. Có điền thì duyet_trich_dan = NGUYÊN VĂN cụm trong tin khách cho thấy điều đó.
+  "[khách gửi sticker]" là nhãn dán KHÔNG rõ cảm xúc → KHÔNG phải đồng ý, bỏ trống. "[khách thả cảm xúc ❤️]" / 👍 / 👌 (thả
+  lên tin bot hoặc gõ trong tin) là đồng ý.
+- KHÁCH HỎI VỀ GÌ (19/10/2026, đọc theo NGHĨA tin khách vừa nhắn, không theo từ khoá): hoi_ve = "phi" khi khách hỏi phí / hoa
+  hồng / có mất tiền không của BÊN MÌNH (KHÔNG phải phí quản lý, thuế, phí sang tên của căn nhà); "uy_tin" khi khách hỏi công
+  ty là ai, có uy tín / lừa đảo không, trụ sở ở đâu; "link_web" khi khách hỏi link tin, xem tin ở đâu, tin trên web thế nào.
+  Không hỏi những điều đó → bỏ trống. Có điền thì hoi_ve_trich_dan = NGUYÊN VĂN cụm câu hỏi trong tin khách.
+- KHÁCH TỰ XƯNG (đọc cả các lượt trước): xung_ho = "em" khi khách tự xưng em ("nhà em", "em gửi"); "anh" / "chi" khi khách
+  tự xưng anh / chị; "chu_co_bac" khi khách tự xưng chú / cô / bác / dì. Chữ "em" khách dùng để GỌI bot ("đăng đi em") không
+  phải tự xưng. Chưa thấy khách tự xưng → bỏ trống. Có điền thì xung_ho_trich_dan = NGUYÊN VĂN cụm khách tự xưng.
+- TIN HỆ THỐNG trong ngoặc vuông: "[Tin nhắn thoại của khách]: "…"" là lời khách NÓI, đọc như chữ khách gõ (chữ chép từ giọng
+  nói có thể sai chính tả); "[khách gửi sticker]" là nhãn dán, không có thông tin BĐS.
 
 {SLANG_NOTES}
 
@@ -1466,6 +1483,19 @@ def operations_schema() -> dict[str, Any]:
                 "type": "string",
                 "description": "Nguyên văn cụm trong tin khách vừa nhắn cho thấy đồng ý / không đồng ý (bắt buộc khi có duyet_ban_nhap).",
             },
+            "hoi_ve": {
+                "type": "string",
+                "enum": ["phi", "uy_tin", "link_web"],
+                "description": "Khách vừa hỏi về: phi = phí / hoa hồng của bên mình; uy_tin = công ty / uy tín / lừa đảo; "
+                "link_web = link tin / xem tin trên web. Không hỏi những điều đó thì bỏ trống.",
+            },
+            "hoi_ve_trich_dan": {"type": "string", "description": "Nguyên văn cụm câu hỏi trong tin khách (bắt buộc khi có hoi_ve)."},
+            "xung_ho": {
+                "type": "string",
+                "enum": ["em", "anh", "chi", "chu_co_bac"],
+                "description": "Khách TỰ XƯNG là gì (em / anh / chị / chú-cô-bác-dì). Chưa thấy khách tự xưng thì bỏ trống.",
+            },
+            "xung_ho_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách tự xưng (bắt buộc khi có xung_ho)."},
             "user_intent": {
                 "type": "string",
                 "enum": ["sell", "buy", "unknown"],

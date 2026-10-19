@@ -6044,6 +6044,52 @@ diện tích đất / nhà đã có thì hết mơ hồ. Ngưỡng 0.70 và ô b
 `test_ambiguous_house_area_is_parked_not_dropped`, `test_completeness_and_update` nay đạt; `test_ban_nhap_du_dieu_kien.py`,
 `test_duyet_ban_nhap.py` thêm diện tích nhà vào dữ liệu ca.
 
+### SRS-5.1zzzzzzz53 · Trần lượt trả lời cho lõi Python: mỗi người và cả ngày (19/10/2026)
+
+**Ca gốc.** Soát sau 5.1zzzzzzz49: thẻ "Quota tiêu hao" (FR-192) đếm 0 lượt từ 19/10. Bot TypeScript cũ chặn hai tầng trước khi gọi
+model — `bump_user_quota(uid)` (30 lượt / giờ, 120 / 24 giờ; người rao / CTV / admin ×4) và `bump_model_quota(trần)` (Vault
+`DAILY_MODEL_CALL_CAP`, mặc định 1000; chạm trần thì DB báo admin một lần mỗi ngày). Lõi Python không gọi hàm nào → không có trần.
+Chủ dự án: "làm cả 2 đi".
+
+**Lớp lỗi.** Đổi bộ não mà không nối lại lưới an toàn của bộ cũ (cùng lớp 5.1zzzzzzz47, 49). **Chỗ cùng lớp.** Nhắc chủ động
+(`followup.py`, gọi model khi khách im 5 phút) không đi qua trần — một lượt nhắc mỗi lượt khách nhắn nên bị trần đầu vào chặn gián tiếp;
+chưa đổi.
+
+**Sửa.** `src/aioi/han_muc.py` `HanMuc`: `cho_phep(uid)` gọi `bump_user_quota` rồi `bump_model_quota(trần)`; trần đọc Vault lúc khởi
+động. `server.py` chặn ở đầu `/chat-reply` (sau `mark_sent`, TRƯỚC Whisper và model) và `/message`: vượt trần → `replies` rỗng, bridge
+không gửi gì (bot im như bản cũ). DB không trả lời → cho qua và ghi log: sổ hạn mức hỏng không được làm câm bot với khách thật.
+
+**Kiểm.** `tests/test_han_muc.py` (trong trần cộng cả hai sổ; vượt trần người thì không cộng sổ ngày; chạm trần ngày; DB hỏng cho qua;
+`/chat-reply` + `/message` vượt trần không gọi engine — ca cuối đỏ khi bỏ chốt ở `server.py`, đã thử).
+
+### SRS-5.1zzzzzzz54 · Hỏi phí / uy tín / link và xưng hô do AI đọc; sticker không phải đồng ý (19/10/2026)
+
+**Ca gốc.** So với repo anh Luận (5.1zzzzzzz51): `engine.py` còn bốn bộ dò từ khoá chèn khối vào prompt — `_is_fee_question` (có chữ
+"chi phí" là thành hỏi phí môi giới, kể cả "chi phí sửa hết 200 triệu"; con số 1% / 0.5% viết tay, sai với tin cho thuê),
+`_is_trust_question`, `_is_link_question`, `_detect_customer_pronoun` (regex "em gửi|nhà em…"; chữ "em" khách dùng để GỌI bot cũng
+dễ bị bắt). Chủ dự án: "ko có dùng từ khóa nữa", "làm cả 2 đi". Cùng câu hỏi "gửi voice và sticker, emoji nó hiểu ko": bridge gán mọi
+sticker chuỗi trung tính `[khách gửi sticker]` (5.1zzzzzzz22) nhưng lõi Python không có chốt `laStickerTrungTinh` của bản TS — lượt AI
+duyệt có thể đọc sticker thành đồng ý và trích đúng chuỗi đó; prompt không giải nghĩa các tin hệ thống trong ngoặc vuông. Câu
+`CONVERSATION_POLICY` về link ("không đăng đại trà lên web") trái 5.1zzzzzzz44 (tin lên aioinhadat.com sau khi khách duyệt).
+
+**Lớp lỗi.** Máy đoán ý khách bằng từ khoá (CLAUDE.md §6 01/10); dấu của kênh (sticker) không có chủ ở lõi mới. **Chỗ cùng lớp còn
+lại** (chưa đổi): `_wants_media`, `_wants_project_facts`, `_looks_descriptive` (cổng nhánh xin ảnh / trả lời từ tài liệu dự án),
+`_clean_reply_tone` (gọt "Dạ" / "anh/chị" ở lời bot — sửa văn đầu ra, nay đi theo xưng hô AI đọc), lệnh "hello" / "json" (giữ theo lệnh
+chủ dự án). Từ khoá trong `llm/mock.py` là đồ giả cho test offline, không chạy production.
+
+**Sửa.** `operations_schema` thêm `hoi_ve` (`phi` / `uy_tin` / `link_web`) + `hoi_ve_trich_dan`, `xung_ho` (`em` / `anh` / `chi` /
+`chu_co_bac`) + `xung_ho_trich_dan`; luật đọc theo nghĩa trong `OPERATIONS_SYSTEM`. `_plan_and_apply` nhận khi cụm trích có trong tin
+vừa nhắn (hỏi về) / một trong sáu lượt khách gần nhất (xưng hô, giữ qua các lượt ở `conv.xung_ho`). Khối phí lấy số theo vai
+(`_fee_hint`) + nhắc cho thuê 3/4 tháng. Gỡ `_is_fee_question` / `_is_trust_question` / `_is_link_question`; `_detect_customer_pronoun`
+đọc `conv.xung_ho`. `STICKER_TRUNG_TINH`: tin khách đúng bằng chuỗi đó không bao giờ là duyệt; `[khách thả cảm xúc ❤️]` vẫn là đồng ý.
+`CONVERSATION_POLICY` + `OPERATIONS_SYSTEM` giải nghĩa `[Tin nhắn thoại của khách]: "…"` (đọc như chữ khách gõ), thoại không nghe
+được (xin nói lại, không đoán), sticker, thả cảm xúc; câu link trả theo trạng thái thật.
+
+**Kiểm.** `tests/test_doc_y_khach.py` (chi phí sửa nhà không thành hỏi phí; hỏi phí cách nói mới "ăn bao nhiêu" + có số phí thuê; trích
+dẫn bịa không chèn khối; xưng hô AI đọc và giữ qua lượt; "đăng đi em" không thành tự xưng; sticker trung tính không duyệt, tim vẫn
+duyệt) — 5/6 đỏ trên code cũ, đã thử. `tests/test_engine.py::test_link_question_read_by_ai_with_quote` ("coi trên mạng chỗ nào", không
+có chữ "link") — đỏ trên code cũ. Chưa thử với model thật (không có khoá Anthropic ở máy kiểm); kiểm trên Zalo.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
