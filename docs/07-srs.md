@@ -6501,6 +6501,46 @@ pytest 370 đạt.
 
 **Ghi nhận, chưa đổi.** Lịch hẹn sinh câu `xac_nhan_lich` giao `admin` (trigger DB có sẵn), không giao người bán.
 
+### SRS-5.1zzzzzzz72 · Bố cục lại khung CRM `/admin/*` (19/10/2026)
+
+**Ca gốc.** Chủ dự án: "sửa lại nguyên cái layout crm đi chứ thấy hơi rối". Soát bằng ảnh chụp bản chạy thật (Supabase giả, 1440px và
+390px):
+- Hai lối điều hướng cho cùng một việc: 6 tab ngang trên thanh, cộng 4 thẻ số liệu cũng chuyển tab ("thẻ dưới đây cũng bấm được").
+- Bốn tab của `/admin` cùng một tiêu đề "Bàn làm việc Quản trị" + cùng 4 thẻ, không biết đang ở tab nào.
+- Chân trang công khai (thương hiệu, hotline) hiện dưới MỌI trang CRM — `Footer` là server component, không đọc được đường dẫn,
+  câu "Footer ẩn dưới /admin" ở docs/08 FR-175 sai từ đầu.
+- Mỗi trang một bề rộng / kiểu tiêu đề (`max-w-5xl` · `max-w-7xl` + "Quay lại Bàn quản trị" · lưới toàn màn).
+- Tin nhắn hiện mã `NEED_HUMAN` / `WAITING_HINT` / `AI_HANDLING`; lưới 3 cột cố định tràn ngang ở 390px.
+- "Xoá hàng loạt" nằm ngay đầu danh sách Khách hàng, cạnh bộ lọc dùng hằng ngày.
+- Tin chờ duyệt: thẻ cao, câu nhắc "(Mở màn sửa…)" lặp ở từng thẻ, nút có mũi tên "→" (trái §6.11).
+- Bấm từ tab khác về `/admin` (không `?tab`) vẫn đứng ở tab cũ.
+
+**Lớp lỗi.** Mỗi lần thêm một mảnh CRM thì thêm một lối vào ở chỗ gần nhất (thẻ số liệu, tab, link "quay lại") thay vì đặt vào MỘT
+khung điều hướng; trang không có tiêu đề riêng nên khung không nói được "đang ở đâu". **Chỗ cùng lớp đã soát:** `/admin` 4 tab,
+`/admin/tin-nhan`, `/admin/ro-hang`, `/admin/dang-tin`; `/admin/ro-hang/json` giữ nguyên (trang phụ của Rổ hàng).
+
+**Sửa.**
+- `components/AdminShell.tsx`: cột trái (≥1024px) ba nhóm theo việc — Hằng ngày (Bàn làm việc · Tin nhắn · Khách hàng), Rổ hàng
+  (Rổ hàng · Đăng tin), Hệ thống (Báo cáo · Vận hành, chấm đỏ khi Zalo clone chết) — tài khoản + Đăng xuất ở đáy. Thanh trên chỉ còn
+  tìm · Đăng tin · chuông. Dưới 1024px mục thành một hàng cuộn ngang, chữ luôn hiện. Số đếm chỉ còn ở chuông (bỏ số thứ ba lệch
+  với chuông và ô "Cần xử lý").
+- `components/ChiNgoaiAdmin.tsx` + `app/layout.tsx`: chân trang công khai không render dưới `/admin`.
+- `app/admin/page.tsx`: `PageHeader` theo tab (`TIEU_DE_TAB`); 4 ô số liệu chỉ ở Bàn làm việc, ô nào dẫn đi đâu là link tới đó
+  ("Cần xử lý" là số, không phải nút); tin chờ duyệt mỗi tin một dòng (mã · phường · giá · m² · giờ, mô tả 1 dòng, nút bên phải,
+  dưới 640px nút xuống dòng); "Xoá hàng loạt" / "Khôi phục lần xoá" sang khối "Dữ liệu thử" cuối Vận hành; thẻ `rounded-lg`;
+  `/admin` không `?tab` là Bàn làm việc.
+- `app/admin/tin-nhan/page.tsx`: 2 cột (bộ lọc gộp đầu danh sách: vai bằng nút, trạng thái bằng ô chọn), nhãn Việt `TEN_NHAN`
+  (Cần người thật · Đang chờ trả lời · Bot đang lo); dưới 1024px một cột, chọn hội thoại thì hiện hội thoại + nút "Danh sách".
+- `app/admin/ro-hang/page.tsx`, `app/admin/dang-tin/page.tsx`: cùng khuôn đầu trang (H1 `text-2xl`, bỏ "Quay lại Bàn quản trị").
+- **Góc bo 2px toàn web** (chủ dự án cùng ngày: "mấy cái corner trên web đổi sang còn 2px hết cho sang"): `app/globals.css` đè thang
+  `--radius-*` của Tailwind + `king` / `shot` / `zen-*` = 2px; 5 nút viên thuốc (`rounded-full`: đăng nhập, tính lãi vay, rao bán,
+  nút Zalo nổi) thành `rounded-md`; `rounded-[14px]` ở `/moi-gioi` và nhãn bản đồ (`MapView`) 2px. Chỉ hình tròn thật (avatar, chấm,
+  thanh tiến độ, nút tim) giữ `rounded-full`.
+
+**Kiểm.** Ảnh chụp trước / sau (1440px, 390px) bằng Playwright với Supabase giả (route mock, phiên admin giả) — không trang nào tràn
+ngang ở 390px (trước: Tin nhắn tràn). `rm -rf .next && bun run kiem` đạt; CSS đã dựng có đủ lớp mới (`w-60`, `360px_1fr`,
+`100dvh-101px`, `100dvh-57px` — bẫy Tailwind §6 CLAUDE.md). Chưa chụp với dữ liệu production (cần đăng nhập admin thật).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

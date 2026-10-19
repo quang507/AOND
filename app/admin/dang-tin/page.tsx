@@ -180,9 +180,9 @@ export default function Page() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="mx-auto max-w-3xl px-4 pb-24 pt-6 lg:px-6">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="text-2xl font-bold">Đăng tin thủ công</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-navy">Đăng tin</h1>
         <Link href="/admin" className="text-sm font-semibold text-mute hover:text-brand">
           Về trang duyệt tin
         </Link>

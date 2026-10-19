@@ -40,7 +40,7 @@ export default function Page() {
 
       <a
         href={zaloLink("raoban")}
-        className="mt-8 block rounded-full bg-zalo py-4 text-center text-lg font-bold text-white hover:opacity-90"
+        className="mt-8 block rounded-md bg-zalo py-4 text-center text-lg font-bold text-white hover:opacity-90"
       >
         Nhắn câu rao qua Zalo ngay
       </a>

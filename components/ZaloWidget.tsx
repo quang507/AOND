@@ -17,7 +17,7 @@ export default function ZaloWidget() {
       target="_blank"
       rel="noopener"
       aria-label="Chat Zalo với AI Ơi Nhà Đất"
-      className="fixed bottom-4 left-4 z-50 flex items-center gap-2 rounded-full bg-zalo py-2.5 pl-3 pr-4 font-bold text-white shadow-lg shadow-zalo/30 transition hover:opacity-90 active:scale-[0.97]"
+      className="fixed bottom-4 left-4 z-50 flex items-center gap-2 rounded-md bg-zalo py-2.5 pl-3 pr-4 font-bold text-white shadow-lg shadow-zalo/30 transition hover:opacity-90 active:scale-[0.97]"
     >
       {/* logo chat bubble tối giản, không kéo thư viện icon */}
       <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden>

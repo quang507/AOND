@@ -256,17 +256,11 @@ export default function Page() {
   const o = "rounded-md border border-line px-3.5 py-1.5 text-sm outline-none focus:border-brand bg-white";
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-24 pt-8">
+    <div className="mx-auto max-w-7xl px-4 pb-24 pt-6 lg:px-6">
+      {/* 19/10/2026 (SRS-5.1zzzzzzz72): cùng khuôn đầu trang với mọi mục CRM — điều hướng ở cột trái, bỏ "Quay lại". */}
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div>
-          <div className="flex items-center gap-2">
-            <Link href="/admin" className="text-sm font-semibold text-brand hover:underline">
-              Quay lại Bàn quản trị
-            </Link>
-            <span className="text-mute text-xs">/</span>
-            <span className="text-xs text-mute font-medium">Quản lý rổ hàng</span>
-          </div>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-navy">Rổ hàng BĐS (Dạng Excel)</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-navy">Rổ hàng</h1>
           <p className="mt-1 text-sm text-mute tabular-nums">
             {rows.length} tin trong rổ · đang lọc hiển thị {loc.length} · bấm mã tin để sửa · rao lên web chỉ qua màn sửa
           </p>
@@ -276,7 +270,7 @@ export default function Page() {
             href="/admin/dang-tin"
             className="rounded-md border border-line px-4 py-2 text-sm font-bold text-navy hover:border-brand hover:text-brand bg-white transition"
           >
-            + Đăng tin mới
+            Đăng tin mới
           </Link>
           <Link
             href="/admin/ro-hang/json"

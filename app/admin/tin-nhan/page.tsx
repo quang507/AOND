@@ -24,6 +24,11 @@ const MAU_NHAN: Record<NhanHT["nhan"], string> = {
   NEED_HUMAN: "bg-red-600 text-white", WAITING_HINT: "bg-amber-400 text-navy", AI_HANDLING: "bg-emerald-50 text-emerald-800",
 };
 
+// Nhãn trạng thái hội thoại (view hoi_thoai_nhan) đọc bằng chữ Việt — trước 19/10/2026 hiện nguyên mã NEED_HUMAN / WAITING_HINT / AI_HANDLING.
+const TEN_NHAN: Record<NhanHT["nhan"], string> = {
+  NEED_HUMAN: "Cần người thật", WAITING_HINT: "Đang chờ trả lời", AI_HANDLING: "Bot đang lo",
+};
+
 const AI_VI: Record<string, string> = {
   bot: "Trợ lý", buyer: "Khách", seller: "Chủ nhà", human: "Người thật", ctv: "CTV", system: "Hệ thống",
 };
@@ -183,29 +188,41 @@ export default function Page() {
     );
   }
 
-  const chip = (on: boolean) => `rounded-lg px-3 py-1.5 text-left text-sm font-semibold transition ${on ? "bg-navy text-white" : "bg-white text-navy hover:bg-slate-100"}`;
+  const chip = (on: boolean) => `shrink-0 rounded-md px-2.5 py-1 text-xs font-semibold transition ${on ? "bg-navy text-white" : "bg-cream/70 text-navy hover:bg-line"}`;
 
+  // 19/10/2026 (SRS-5.1zzzzzzz72): hai cột (danh sách · hội thoại) thay ba cột — bộ lọc lên đầu danh sách. Dưới 1024px chỉ
+  // hiện một cột: chưa chọn thì danh sách, chọn rồi thì hội thoại kèm nút quay lại (trước đó lưới 3 cột cố định tràn ngang).
   return (
-    <div className="mx-auto grid h-[calc(100vh-56px)] max-w-[1600px] grid-cols-[220px_340px_1fr] gap-0 border-x border-line bg-white">
-      {/* Cột 1: bộ lọc */}
-      <aside className="flex flex-col gap-1 overflow-y-auto border-r border-line bg-cream/40 p-3">
-        <div className="mb-1 px-1 text-[11px] font-bold uppercase tracking-wider text-mute">Phạm vi</div>
-        <button type="button" className={chip(!locPhia && !chiCanNguoi)} onClick={() => { setLocPhia(""); setChiCanNguoi(false); }}>Tất cả <span className="float-right text-xs opacity-70">{dem.tong}</span></button>
-        <button type="button" className={chip(locPhia === "ban")} onClick={() => setLocPhia(locPhia === "ban" ? "" : "ban")}>Người bán <span className="float-right text-xs opacity-70">{dem.ban}</span></button>
-        <button type="button" className={chip(locPhia === "mua")} onClick={() => setLocPhia(locPhia === "mua" ? "" : "mua")}>Người mua <span className="float-right text-xs opacity-70">{dem.tong - dem.ban}</span></button>
-        <div className="mb-1 mt-3 px-1 text-[11px] font-bold uppercase tracking-wider text-mute">Cần làm</div>
-        <button type="button" className={chip(chiCanNguoi)} onClick={() => setChiCanNguoi(!chiCanNguoi)}>Cần người thật <span className="float-right text-xs opacity-70">{dem.canNguoi}</span></button>
-        <div className="mb-1 mt-3 px-1 text-[11px] font-bold uppercase tracking-wider text-mute">Monitor</div>
-        {(["NEED_HUMAN", "WAITING_HINT", "AI_HANDLING"] as const).map((k) => (
-          <button key={k} type="button" className={chip(locNhan === k)} onClick={() => setLocNhan(locNhan === k ? "" : k)}>{k} <span className="float-right text-xs opacity-70">{dem.nhan(k)}</span></button>
-        ))}
-      </aside>
-
-      {/* Cột 2: hội thoại */}
-      <section className="flex flex-col overflow-hidden border-r border-line">
-        <div className="border-b border-line p-3">
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm theo tên, Zalo ID…" className="w-full rounded-lg border border-line bg-cream/60 px-3 py-2 text-sm outline-none focus:border-brand" />
-          <div className="mt-2 flex items-center justify-between text-xs text-mute tabular-nums">
+    <div className="grid h-[calc(100dvh-101px)] grid-cols-1 bg-white lg:h-[calc(100dvh-57px)] lg:grid-cols-[360px_1fr]">
+      {/* Cột 1: bộ lọc + hội thoại */}
+      <section className={`flex-col overflow-hidden border-r border-line ${chon ? "hidden lg:flex" : "flex"}`}>
+        <div className="space-y-2 border-b border-line p-3">
+          <label className="sr-only" htmlFor="tim-hoi-thoai">Tìm hội thoại</label>
+          <input id="tim-hoi-thoai" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm theo tên, Zalo ID" className="w-full rounded-md border border-line bg-cream/60 px-3 py-2 text-sm outline-none focus:border-brand focus:bg-white" />
+          <div className="flex gap-1 overflow-x-auto" role="group" aria-label="Lọc theo vai">
+            <button type="button" className={chip(!locPhia)} onClick={() => setLocPhia("")}>Tất cả {dem.tong}</button>
+            <button type="button" className={chip(locPhia === "ban")} onClick={() => setLocPhia(locPhia === "ban" ? "" : "ban")}>Người bán {dem.ban}</button>
+            <button type="button" className={chip(locPhia === "mua")} onClick={() => setLocPhia(locPhia === "mua" ? "" : "mua")}>Người mua {dem.tong - dem.ban}</button>
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="loc-trang-thai" className="text-xs font-semibold text-mute">Trạng thái</label>
+            <select
+              id="loc-trang-thai"
+              value={chiCanNguoi ? "can_nguoi" : locNhan}
+              onChange={(e) => {
+                const v = e.target.value;
+                setChiCanNguoi(v === "can_nguoi");
+                setLocNhan(v === "WAITING_HINT" || v === "AI_HANDLING" ? v : "");
+              }}
+              className="min-w-0 flex-1 rounded-md border border-line bg-white px-2 py-1 text-xs text-navy outline-none focus:border-brand"
+            >
+              <option value="">Mọi trạng thái</option>
+              <option value="can_nguoi">Cần người thật ({dem.canNguoi})</option>
+              <option value="WAITING_HINT">{TEN_NHAN.WAITING_HINT} ({dem.nhan("WAITING_HINT")})</option>
+              <option value="AI_HANDLING">{TEN_NHAN.AI_HANDLING} ({dem.nhan("AI_HANDLING")})</option>
+            </select>
+          </div>
+          <div className="flex items-center justify-between text-xs text-mute tabular-nums">
             <span>{danhSach.length} hội thoại · mới nhất lên trên</span>
             <button type="button" onClick={() => { napHoiThoai(); }} className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-medium text-navy hover:bg-cream/70" title="Tải lại danh sách">
               <IconRefresh className="h-3.5 w-3.5" /> Làm mới
@@ -216,7 +233,7 @@ export default function Page() {
           {danhSach.map((h) => {
             return (
               <li key={h.id}>
-                <button type="button" onClick={() => moHoiThoai(h)} className={`flex w-full flex-col gap-1 border-b border-line/70 px-3 py-2.5 text-left hover:bg-cream/60 ${chon?.id === h.id ? "bg-brand/5" : ""}`}>
+                <button type="button" onClick={() => moHoiThoai(h)} aria-current={chon?.id === h.id ? "true" : undefined} className={`flex w-full flex-col gap-1 border-b border-line/70 px-3 py-2.5 text-left hover:bg-cream/60 ${chon?.id === h.id ? "bg-brand/5" : ""}`}>
                   <div className="flex items-center gap-2">
                     <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold text-white ${h.seller_id ? "bg-amber-500" : "bg-zalo"}`}>{ten(h).slice(0, 1).toUpperCase()}</span>
                     <span className="min-w-0 flex-1 truncate text-sm font-bold text-navy">{ten(h)}</span>
@@ -224,7 +241,7 @@ export default function Page() {
                   </div>
                   <div className="flex flex-wrap gap-1 pl-10">
                     <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${h.seller_id ? "bg-amber-50 text-amber-800" : "bg-blue-50 text-blue-800"}`}>{nhanVai(h)}</span>
-                    {nhanHT[h.id] && <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${MAU_NHAN[nhanHT[h.id].nhan]}`} title={nhanHT[h.id].ly_do ?? ""}>{nhanHT[h.id].nhan}</span>}
+                    {nhanHT[h.id] && !(nhanHT[h.id].nhan === "NEED_HUMAN" && h.needs_human) && <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${MAU_NHAN[nhanHT[h.id].nhan]}`} title={nhanHT[h.id].ly_do ?? ""}>{TEN_NHAN[nhanHT[h.id].nhan]}</span>}
                     {h.needs_human && <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700">cần người thật</span>}
                     {h.human_hold && <span className="rounded bg-navy px-1.5 py-0.5 text-[10px] font-bold text-white">người thật giữ</span>}
                     {h.human_touch_at && !h.human_hold && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-mute">người thật đã vào</span>}
@@ -237,23 +254,24 @@ export default function Page() {
         </ul>
       </section>
 
-      {/* Cột 3: tin nhắn */}
-      <section className="flex flex-col overflow-hidden bg-cream/30">
+      {/* Cột 2: tin nhắn */}
+      <section className={`flex-col overflow-hidden bg-cream/30 ${chon ? "flex" : "hidden lg:flex"}`}>
         {!chon ? (
-          <div className="grid flex-1 place-items-center text-center text-sm text-mute"><div><IconChat className="mx-auto h-10 w-10 text-mute/60" /><div className="mt-2">Chọn một hội thoại ở cột giữa để đọc.</div></div></div>
+          <div className="grid flex-1 place-items-center text-center text-sm text-mute"><div><IconChat className="mx-auto h-10 w-10 text-mute/60" /><div className="mt-2">Chọn một hội thoại bên trái để đọc.</div></div></div>
         ) : (
           <>
-            <div className="flex items-center justify-between border-b border-line bg-white px-4 py-2.5">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-navy">{ten(chon)}</span>
-                <span className="text-xs text-mute">· {chon.seller_id && chon.buyer_id ? "vừa bán vừa mua" : chon.seller_id ? "người bán" : "người mua"} · {chon.channel}</span>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-white px-4 py-2.5">
+              <div className="flex min-w-0 items-center gap-2">
+                <button type="button" onClick={() => { setChon(null); setTin([]); }} className="shrink-0 rounded-md border border-line px-2 py-1 text-xs font-semibold text-navy hover:bg-cream lg:hidden">Danh sách</button>
+                <span className="truncate text-sm font-bold text-navy">{ten(chon)}</span>
+                <span className="hidden text-xs text-mute sm:inline">· {chon.seller_id && chon.buyer_id ? "vừa bán vừa mua" : chon.seller_id ? "người bán" : "người mua"} · {chon.channel}</span>
                 {chon.needs_human && <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-700">cần người thật</span>}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="mr-1 text-xs text-mute tabular-nums">{tin.length} lượt</span>
                 {chon.needs_human && <Btn onClick={daXuLy} className="py-1.5 text-xs">Đã xử lý</Btn>}
                 {chon.human_hold
-                  ? <Btn onClick={() => giuKhach(false)} className="py-1.5 text-xs" title="Bot đang im — bấm để bot chăm tiếp">Trả bot</Btn>
+                  ? <Btn onClick={() => giuKhach(false)} className="py-1.5 text-xs" title="Bot đang im, bấm để bot chăm tiếp">Trả bot</Btn>
                   : <Btn onClick={() => giuKhach(true)} className="py-1.5 text-xs" title="Bot im vô thời hạn, người thật nói chuyện">Giữ khách</Btn>}
                 <Btn variant="danger" onClick={xoaKhach} className="py-1.5 text-xs" title="Xoá vĩnh viễn khách này cùng tin, ảnh, hội thoại"><IconTrash className="h-3.5 w-3.5" /> Xoá khách</Btn>
               </div>
@@ -263,11 +281,11 @@ export default function Page() {
                 const bot = t.sender === "bot";
                 return (
                   <li key={t.id} className={`flex ${bot ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[78%] rounded-2xl px-3.5 py-2 ${bot ? "bg-navy text-white" : t.sender === "human" ? "bg-emerald-50 text-navy" : "bg-white text-navy"}`}>
+                    <div className={`max-w-[85%] rounded-lg px-3.5 py-2 sm:max-w-[78%] ${bot ? "bg-navy text-white" : t.sender === "human" ? "bg-emerald-50 text-navy" : "bg-white text-navy"}`}>
                       <div className={`flex items-center justify-between gap-3 text-[10px] ${bot ? "text-white/60" : "text-mute"}`}>
                         <span className="font-bold">{AI_VI[t.sender] ?? t.sender}</span><span className="tabular-nums">{luc(t.created_at)}</span>
                       </div>
-                      <div className="mt-0.5 whitespace-pre-wrap text-sm">{t.body}</div>
+                      <div className="mt-0.5 whitespace-pre-wrap break-words text-sm">{t.body}</div>
                     </div>
                   </li>
                 );
