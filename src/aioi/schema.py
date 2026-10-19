@@ -11,44 +11,8 @@ import re
 from dataclasses import dataclass, field
 from enum import Enum
 
-DISTRICT_PAIRS = [
-    "tân bình", "bình tân", "bình thạnh", "phú nhuận", "gò vấp", "tân phú",
-    "thủ đức", "bình chánh", "hóc môn", "củ chi", "nhà bè", "cần giờ",
-    "dĩ an", "thuận an", "biên hòa"
-]
-
 _HOUSE_NO_RE = re.compile(r"^(?:(?:đ/?c|dc|địa chỉ)\s*:?\s*)?(\d+[\d/\-.]*[A-Za-z]?)$", re.IGNORECASE)
 
-def _clean_address_filler(text: str) -> str:
-    t = text.strip()
-    t = re.sub(r"^(?:ở|tại|thuộc|nằm ở|địa chỉ(?:\s*là)?|đc:?)\s+", "", t, flags=re.IGNORECASE)
-    t = re.sub(r"\s+(?:đó|nha|nhé|ạ|em|ạ em|ấy em|nhe|đấy|đó)\s*$", "", t, flags=re.IGNORECASE)
-    return t.strip()
-
-def _extract_district(text: str) -> str | None:
-    # 1. Numbered districts: Quận 1..12 or Q.1..12 or Q 1..12
-    # 18/10/2026: "Q5" viết liền cũng là quận (luật cũ `q\b` đòi ranh giới ngay sau chữ q nên bỏ sót).
-    m_num = re.search(r"\b(?:quận|q\.?)\s*(?:1[0-2]|[1-9])\b", text, flags=re.IGNORECASE)
-    if m_num:
-        return m_num.group(0)
-    # 2. Named districts (with or without 'quận/q.')
-    tl = text.lower()
-    for d in sorted(DISTRICT_PAIRS, key=lambda x: -len(x)):
-        m = re.search(r"\b(?:(?:quận|q\b\.?)\s*)?" + re.escape(d) + r"\b", tl)
-        if m:
-            start, end = m.span()
-            return text[start:end]
-    return None
-
-def _extract_ward(text: str) -> str | None:
-    # 18/10/2026: phường MỚI có tên nhiều chữ ("Phường Chợ Quán") — luật cũ chỉ bắt một chữ, gộp địa chỉ coi phần còn lại là
-    # tên đường và thay mất địa chỉ cũ. Tên chữ lấy tối đa 3 chữ, dừng ở dấu phẩy / chữ số.
-    chu = r"(?!(?:quận|huyện|tp|thành)\b)[^\W\d_]{2,}"
-    ten = r"(?:\d{1,2}\b|" + chu + r"(?:[ ]+" + chu + r"){0,2})"
-    m = re.search(r"\b(?:phường|xã|thị trấn|đặc khu)\s+" + ten + r"|\bp\.\s*" + ten + r"|\bp\s*\d{1,2}\b", text, flags=re.IGNORECASE)
-    if m:
-        return m.group(0)
-    return None
 
 def _extract_house_num(text: str) -> str | None:
     m = re.search(r"^\s*(\d+[\d/\-.]*[A-Za-z]?)", text)
@@ -56,22 +20,19 @@ def _extract_house_num(text: str) -> str | None:
         return m.group(1)
     return None
 
-def _merge_dia_chi(old: str, new: str) -> str:
-    """Address fields ACCUMULATE & MERGE WITHOUT LOSS — adding house number, ward, or district
-    must never erase the components already captured. Supports corrections (e.g. correcting
-    Tân Bình vs Bình Tân)."""
-    old = (old or "").strip()
-    raw_new = (new or "").strip()
-    new = _clean_address_filler(raw_new)
 
+def _merge_dia_chi(old: str, new: str) -> str:
+    """Gộp địa chỉ không mất phần đã có (bản anh Luận b274582 + số nhà thay số nhà cũ). Lượt AI lập thao tác trả địa chỉ ĐẦY ĐỦ
+    sau khi ghép phần mới vào "ĐỊA CHỈ ĐANG GHI" và sửa theo lời đính chính (OPERATIONS_SYSTEM); tên đường / phường / quận lưu
+    DB đi qua ô riêng duong / phuong / quan + bảng duong / wards, không dò từ khoá trên chữ này (SRS-5.1zzzzzzz55). Code chỉ giữ
+    lưới: mảnh đã nằm trong địa chỉ cũ → giữ bản đầy đủ; số nhà đứng một mình → gắn / thay số nhà ở đầu."""
+    old, new = (old or "").strip(), (new or "").strip()
     if not old:
         return new
     if not new or new.lower() in old.lower():
         return old
     if old.lower() in new.lower():
         return new
-
-    # 1. Bare house number: '100/9', '120', 'số 120'
     m_house = _HOUSE_NO_RE.match(new)
     if m_house:
         num = m_house.group(1)
@@ -79,60 +40,6 @@ def _merge_dia_chi(old: str, new: str) -> str:
         if old_num:
             return re.sub(r"^\s*" + re.escape(old_num), num, old)
         return f"{num} {old}"
-
-    # 2. Explicit correction pattern: 'tân bình chứ không phải bình tân'
-    m_not = re.search(r"([A-ZÀ-Ỹa-zà-ỹ0-9\s]+?)\s+(?:chứ\s+)?không\s+phải\s+([A-ZÀ-Ỹa-zà-ỹ0-9\s]+)", new, re.IGNORECASE)
-    if m_not:
-        right_val = m_not.group(1).strip()
-        wrong_val = m_not.group(2).strip()
-        if wrong_val.lower() in old.lower():
-            return re.sub(re.escape(wrong_val), right_val, old, flags=re.IGNORECASE)
-
-    # 3. Ward / District analysis
-    old_dist = _extract_district(old)
-    new_dist = _extract_district(new)
-    old_ward = _extract_ward(old)
-    new_ward = _extract_ward(new)
-
-    # Check if new is ONLY ward / district (no street)
-    new_without_loc = new
-    if new_dist:
-        new_without_loc = re.sub(re.escape(new_dist), "", new_without_loc, flags=re.IGNORECASE)
-    if new_ward:
-        new_without_loc = re.sub(re.escape(new_ward), "", new_without_loc, flags=re.IGNORECASE)
-    new_without_loc = re.sub(r"[,\s]+", "", new_without_loc)
-    new_is_only_location = (len(new_without_loc) == 0)
-
-    if new_is_only_location:
-        res = old
-        # District update/replacement
-        if new_dist:
-            if old_dist and old_dist in res:
-                res = res.replace(old_dist, new_dist)
-            else:
-                res = f"{res}, {new_dist}"
-        # Ward update/insertion
-        if new_ward:
-            if old_ward and old_ward in res:
-                res = res.replace(old_ward, new_ward)
-            else:
-                cur_dist = new_dist or old_dist
-                if cur_dist and cur_dist in res:
-                    res = res.replace(cur_dist, f"{new_ward}, {cur_dist}")
-                else:
-                    res = f"{res}, {new_ward}"
-        return res
-
-    # 4. New has street and/or house number, but lacks ward/district that old has
-    if (old_dist and not new_dist) or (old_ward and not new_ward):
-        extras = []
-        if old_ward and not new_ward:
-            extras.append(old_ward)
-        if old_dist and not new_dist:
-            extras.append(old_dist)
-        suffix = ", ".join(extras)
-        return f"{new}, {suffix}"
-
     return new
 
 
@@ -511,44 +418,8 @@ class Property:
                 if "lo_gioi_hem" not in newly:
                     newly.append("lo_gioi_hem")
 
-        # 1. Tự động suy luận loại hình nếu chưa có (Auto-inference loai_hinh)
-        if self.loai_hinh is None:
-            dia_chi_l = (self.fields.get("dia_chi") or "").lower()
-            du_an_l = (self.fields.get("du_an") or "").lower()
-            raw_text = " ".join(str(v).lower() for v in self.fields.values())
-
-            if any(k in dia_chi_l or k in raw_text for k in ("kho xưởng", "kho xuong", "nhà xưởng", "nha xuong", "kho bãi")):
-                self.loai_hinh = "kho_xuong"
-                newly.append("loai_hinh")
-            elif any(k in dia_chi_l or k in du_an_l for k in ("chung cư", "chung cu", "căn hộ", "can ho", "officetel", "penthouse")):
-                self.loai_hinh = "chung_cu"
-                newly.append("loai_hinh")
-            elif self.fields.get("tang_toa") or self.fields.get("ban_cong_view") or self.fields.get("phi_quan_ly") or self.fields.get("ma_so_can"):
-                self.loai_hinh = "chung_cu"
-                newly.append("loai_hinh")
-            elif self.fields.get("du_an"):
-                condo_kw = ("tower", "residence", "park", "city", "apartment", "condo", "chung cư", "officetel", "sunrise", "masteri", "vinhomes", "safira", "feliz", "botanic", "jamona", "novaland")
-                if any(w in du_an_l for w in condo_kw) or not any(w in du_an_l for w in ("kdc", "khu dân cư", "đất nền", "kho xưởng")):
-                    self.loai_hinh = "chung_cu"
-                    newly.append("loai_hinh")
-            elif any(k in raw_text for k in ("đất thổ cư", "lô đất", "đất nền", "sào", "công đất")):
-                self.loai_hinh = "dat"
-                newly.append("loai_hinh")
-            elif self.fields.get("tho_cu") or self.fields.get("quy_hoach") or self.fields.get("chi_tieu_xay_dung"):
-                self.loai_hinh = "dat"
-                newly.append("loai_hinh")
-            elif any(k in raw_text for k in ("mặt bằng", "shophouse", "cửa hàng")):
-                self.loai_hinh = "mat_bang"
-                newly.append("loai_hinh")
-            elif self.fields.get("chieu_cao_tran") or self.fields.get("tai_trong_san") or self.fields.get("tram_bien_ap"):
-                self.loai_hinh = "kho_xuong"
-                newly.append("loai_hinh")
-            elif self.fields.get("mat_tien") or self.fields.get("vi_he_xe") or self.fields.get("loi_di"):
-                self.loai_hinh = "mat_bang"
-                newly.append("loai_hinh")
-            elif self.fields.get("lo_gioi_hem") or self.fields.get("ket_cau") or any(k in raw_text for k in ("nhà", "nhà phố", "trệt", "lầu", "tầng", "hẻm")):
-                self.loai_hinh = "nha_pho"
-                newly.append("loai_hinh")
+        # 19/10/2026 (SRS-5.1zzzzzzz55): bỏ khối đoán loai_hinh bằng từ khoá ("nhà / lầu / hẻm" → nhà phố, tên thương hiệu → chung
+        # cư…). Loại BĐS do lượt AI bóc tách đọc (ô loai_hinh); chưa rõ thì bot hỏi.
 
         # 2. Tự động tính diện tích từ kích thước (vd 4x15 -> 60m2) và đồng bộ diện tích
         dim_str = self.fields.get("kich_thuoc") or ""

@@ -6090,6 +6090,38 @@ dẫn bịa không chèn khối; xưng hô AI đọc và giữ qua lượt; "đ�
 duyệt) — 5/6 đỏ trên code cũ, đã thử. `tests/test_engine.py::test_link_question_read_by_ai_with_quote` ("coi trên mạng chỗ nào", không
 có chữ "link") — đỏ trên code cũ. Chưa thử với model thật (không có khoá Anthropic ở máy kiểm); kiểm trên Zalo.
 
+### SRS-5.1zzzzzzz55 · Gỡ nốt bộ dò từ khoá: xác nhận xoá, bản vẽ, câu hỏi dự án, ảnh tài liệu, loại BĐS, phường / quận (19/10/2026)
+
+**Ca gốc.** Chủ dự án: "gỡ nốt mấy chỗ từ khoá còn lại dc chưa, tại thông tin dự án với tên đường phường quận có rồi đúng k". Đúng:
+DB có 2.361 dự án (`projects`), 39.421 tên đường (`duong`), 168 phường (`wards`) + 544 phường cũ / 45 quận cũ, 58.413 giao lộ; lượt
+AI bóc tách đã tách `duong` / `phuong` / `quan` (5.1zzzzzzz41) và DB chuẩn hoá (`chuan_dia_ban`). Còn lại trong lõi Python (soát
+5.1zzzzzzz54): `_affirms` / `_denies` (bộ từ "ok / ừ / xoá / thôi / không" quyết XOÁ rổ hàng), `_wants_media` + `_MAP_HINTS` (xin
+bản vẽ / bản đồ), `_wants_project_facts` (câu hỏi dự án), `_looks_descriptive` (khách tả dự án → học), `_looks_like_reference_doc`
+(bản đọc ảnh là tài liệu chung), `_clean_reply_tone` (gọt "Dạ" / thay "anh/chị" trong lời bot), regex xưng hô thừa; `schema.update`
+đoán `loai_hinh` bằng từ khoá ("nhà / lầu / hẻm" → nhà phố, tên thương hiệu → chung cư); `_merge_dia_chi` dò phường / quận /
+"chứ không phải" / chữ đệm trên chữ địa chỉ.
+
+**Lớp lỗi.** Máy đoán ý / đoán dữ liệu bằng từ khoá (CLAUDE.md §6 01/10). **Chỗ cùng lớp giữ lại, có lý do:** che SĐT / CCCD
+(`_PII_*`, `_looks_personal_doc` — bảo mật phải tất định); lệnh "hello" / "json" (lệnh chủ dự án, "vẫn đang test"); quy tắc ĐỊNH DẠNG
+không đoán ý — "100/9" là số nhà không phải diện tích, địa chỉ có "/" là nhà hẻm, "4x15" = 60 m², mã căn bằng chữ số trong câu xin bản
+vẽ; ánh xạ cột bảng tính `bulk.COLUMN_ALIASES` (tất định theo quy ước CLAUDE.md); `_project_map_doc` (đọc nhãn tài liệu do hệ thống
+tự gắn); `boc_thong_so` / `chuan_dia_ban` trong DB (chuẩn hoá chữ AI đã đọc ra mã cột, không quyết ý); từ khoá trong `llm/mock.py`
+(đồ giả cho test offline).
+
+**Sửa.** `handle` gọi lượt AI lập thao tác MỘT lần ngay sau khi nhận tin (`_lap_ke_hoach`), trước mọi nhánh; thao tác rổ hàng chỉ áp
+ở bước 1 (`_ap_dung_ke_hoach`) — tin xin bản vẽ / câu hỏi dự án không đụng rổ hàng như cũ. `operations_schema` thêm `xin_xem_ban_ve`
+(+ `ban_do_du_an`), `cau_hoi_du_an`, `mo_ta_du_an`, `xac_nhan_xoa` + `xac_nhan_trich_dan`; `conv.y_luot` chỉ nhận khi cụm trích có
+trong tin vừa nhắn. Xác nhận xoá: AI không nói đồng ý → không xoá (bản cũ "ok" đứng một mình là xoá). Ảnh tài liệu chung:
+`_la_tai_lieu_chung` (một lượt AI nhỏ trên bản đọc, chỉ khi có ảnh + đã biết dự án; lỗi → giữ ở căn). Bỏ `_clean_reply_tone` (chỉ còn
+bỏ in đậm). `schema`: bỏ khối đoán `loai_hinh`; `_merge_dia_chi` về bản anh Luận + số nhà thay số nhà cũ — lượt AI trả địa chỉ ĐẦY ĐỦ
+sau khi ghép vào "ĐỊA CHỈ ĐANG GHI" (khối mới trong prompt lập thao tác) và sửa theo lời đính chính. Đổi được đã biết: lượt AI lập thao
+tác nay chạy cả ở tin xin bản vẽ / câu hỏi dự án (trước bị bỏ qua) — thêm một lượt Haiku ở các tin đó.
+
+**Kiểm.** `tests/test_go_tu_khoa.py` (8 ca: "ừa làm vậy đi em" xác nhận xoá; "ok để anh coi lại" không xoá; "gửi anh coi hình vẽ căn
+24" là xin bản vẽ, "cho thuê mặt bằng kinh doanh" không; tả dự án "hồ điều hoà, trường quốc tế" được học; ảnh tài liệu chung do AI
+đọc; prompt lập thao tác có địa chỉ đang ghi; "hẻm 5 lầu" không tự thành nhà phố; địa chỉ đầy đủ ghi nguyên) — 7/8 đỏ trên code cũ,
+đã thử. `test_conversational_and_deed.py::test_property_auto_inference` đổi: không đoán loại. pytest 331 đạt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

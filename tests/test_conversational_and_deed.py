@@ -9,14 +9,14 @@ client = TestClient(app)
 
 
 def test_property_auto_inference():
-    # 1. 2PN / chung cư inference
+    # 19/10 (SRS-5.1zzzzzzz55): loại BĐS do AI bóc tách đọc (ô loai_hinh) — code KHÔNG đoán bằng từ khoá / tên thương hiệu.
     p1 = Property()
     p1.update({"so_phong_ngu": "2", "du_an": "Vinhomes Grand Park"})
-    assert p1.loai_hinh == "chung_cu"
-
-    # 2. Kho xưởng inference
+    assert p1.loai_hinh is None
     p2 = Property()
     p2.update({"dia_chi": "Kho xưởng 500m2 KCN Tân Bình"})
+    assert p2.loai_hinh is None
+    p2.update({"loai_hinh": "kho_xuong"})
     assert p2.loai_hinh == "kho_xuong"
 
     # 3. Kích thước 4x15 calculation -> diện tích 60m2

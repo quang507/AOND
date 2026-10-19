@@ -110,6 +110,7 @@ def test_map_request_consults_stored_phan_lo_not_denies_it():
     eng._projects.save(p)
     conv = Conversation(user_key="m", assistant=assign_assistant("m"))
     assert eng._project_map_doc(p) is not None
+    conv.y_luot = {"xin_xem_ban_ve": True, "ban_do_du_an": True}   # AI đọc: xin bản đồ cả dự án (SRS-5.1zzzzzzz55)
     reply = eng._media_request_reply(conv, p, "em xem lại trong bản đồ phân lô xem")
     assert "CHƯA có bản vẽ" not in reply           # must not deny the map it holds
     assert "https://x/phanlo" in reply             # offers the stored file
