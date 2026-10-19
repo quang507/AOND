@@ -43,13 +43,14 @@ for cau in "Mình cần bán nhà phố" "Nhà đường Cao Lỗ, Phường Ch�
 done
 
 echo; echo "== soi DB"
-KQ=$(q "select l.code, l.status, l.ward, l.district, l.street, l.area_m2, l.price_vnd, l.floors, l.legal_status, l.access_type,
+KQ=$(q "select l.code, l.status, l.property_type, l.ward, l.district, l.street, l.area_m2, l.price_vnd, l.floors, l.legal_status, l.access_type,
           l.boc_tach - '_cap_nhat' as boc_tach
         from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = '$BAN' order by l.updated_at desc limit 1")
 jq '.[0]' <<<"$KQ"
 r=$(jq '.[0] // {}' <<<"$KQ")
 loi=0
 kiem() { if [ "$2" = 1 ]; then echo "ĐẠT  $1"; else echo "TRƯỢT $1"; loi=1; fi; }
+kiem "loại nhà phố" "$(jq '.property_type == "nha_pho" | if . then 1 else 0 end' <<<"$r")"
 kiem "phường chuẩn" "$(jq '.ward == "Phường Chánh Hưng" | if . then 1 else 0 end' <<<"$r")"
 kiem "giá 8,5 tỷ" "$(jq '.price_vnd == 8500000000 | if . then 1 else 0 end' <<<"$r")"
 kiem "diện tích đất 49,5" "$(jq '((.area_m2 // 0) | tonumber) == 49.5 | if . then 1 else 0 end' <<<"$r")"

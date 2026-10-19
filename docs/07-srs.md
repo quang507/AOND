@@ -6581,9 +6581,9 @@ nhiều căn (`_group_media_batch` → `_apply_text_to_listing`), đọc một n
   ngoài sáu nhóm đó đều rơi vào câu xin ảnh. Nhắc lại đúng câu bot vừa hỏi thì không cần câu mẫu nào).
 - Xưng hô: `engine` thêm luật cho "chưa biết" (gọi "anh/chị", không đoán); ví dụ mẫu trong `prompts.py` đổi sang "anh/chị".
 
-**Kiểm.** `tests/test_bang_chung_o_tin.py` (5 ca: ô không bằng chứng bị bỏ, bằng chứng chỉ có trong câu bot hỏi bị bỏ, giá trị có sẵn
+**Kiểm.** `tests/test_bang_chung_o_tin.py` (6 ca, có `loai_hinh` gửi lại: ô không bằng chứng bị bỏ, bằng chứng chỉ có trong câu bot hỏi bị bỏ, giá trị có sẵn
 giữ, lời tả ảnh chụp không thành ô, ô có số nhận cụm viết lại đơn vị), `tests/test_tin_nhac.py` (4 ca), `tests/test_xung_ho_chua_ro.py` (2 ca) — đỏ trên code cũ
-(đã chạy), pytest 381 đạt. Bắn thử production bằng ID thử: `bot/tests/ban-thu-ban.sh` (`apply-migration` ô `ban-thu-ban`, kịch bản
+(đã chạy), pytest 382 đạt. Bắn thử production bằng ID thử: `bot/tests/ban-thu-ban.sh` (`apply-migration` ô `ban-thu-ban`, kịch bản
 đúng lượt chat 19/10) — soi phường, giá, diện tích, mặt tiền, sổ, kết cấu và KHÔNG có ô thương lượng.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu

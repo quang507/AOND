@@ -85,3 +85,12 @@ def test_o_co_so_nhan_cum_trich_viet_lai_don_vi():
     f = eng.conversation("chu-5").active.prop.fields
     assert f.get("dien_tich_nha") == "170m2"
     assert "gia" not in f                                # "9" không có trong lời khách
+
+
+def test_loai_hinh_da_co_thi_gui_lai_khong_can_bang_chung():
+    eng = Engine(AiGia({"operations": [{"op": "update", "fields": {"loai_hinh": "nha_pho"}, "bang_chung": {"loai_hinh": "nhà phố"}}],
+                        "user_intent": "sell"}))
+    eng.handle("chu-6", "Mình cần bán nhà phố")
+    eng._provider.ke_hoach = {"operations": [{"op": "update", "fields": {"loai_hinh": "nha_pho"}}], "user_intent": "sell"}
+    eng.handle("chu-6", "Nhà mặt tiền")
+    assert eng.conversation("chu-6").active.prop.loai_hinh == "nha_pho"

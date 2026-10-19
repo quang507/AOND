@@ -3096,8 +3096,8 @@ class Engine:
             """Ô tin chỉ ghi điều KHÁCH nói (SRS-5.1zzzzzzz73): giá trị đã có sẵn ở rổ thì giữ; mới / đổi thì cụm bằng chứng AI
             đưa phải nằm nguyên trong lời khách. Bắt lớp lỗi "AI ghi ô từ câu bot tự hỏi / tự suy" (19/10: bot hỏi "có để
             thương lượng nhẹ không", khách trả lời chuyện khác, ô thuong_luong vẫn thành "thương lượng nhẹ" rồi lên tin)."""
-            if any(li.prop.fields.get(k) == v for li in conv.listings):
-                return True
+            if any((li.prop.loai_hinh if k == "loai_hinh" else li.prop.fields.get(k)) == v for li in conv.listings):
+                return True   # loai_hinh nằm ở thuộc tính riêng, không trong fields
             if _trich_dan_khop(bang_chung.get(k), conv.loi_khach_luot) or _so_khop(bang_chung.get(k), v, conv.loi_khach_luot):
                 return True
             log.warning("Bỏ ô %s: không có bằng chứng trong lời khách", k)   # không in giá trị: log có thể chứa dữ liệu khách
