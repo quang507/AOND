@@ -39,6 +39,7 @@ export const TRANG_THAI_TIN: Record<string, string> = {
   cho_thong_tin: "chờ thông tin",
   dang_ban: "đang rao trên web",
   dang_quan_tam: "đang có khách quan tâm",
+  da_coc: "đã nhận cọc (vẫn hiện trên web)",
   da_chot: "đã chốt (bán / thuê xong)",
   an: "đã gỡ khỏi web",
 };

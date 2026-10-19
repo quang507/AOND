@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { supabase } from "@/lib/supabase";
+import { supabase, TRANG_THAI_HIEN } from "@/lib/supabase";
 import { TAG_DEFS } from "@/lib/tags";
 import { SITE_URL } from "@/lib/format";
 
@@ -29,7 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     supabase
       .from("listings")
       .select("code, updated_at")
-      .in("status", ["dang_ban", "dang_quan_tam"])
+      .in("status", TRANG_THAI_HIEN)
       .not("code", "is", null)
       .order("updated_at", { ascending: false })
       .limit(5000),

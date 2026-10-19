@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ListingCard from "@/components/ListingCard";
 import { coverByCode } from "@/lib/photos";
-import { CARD_COLS, supabase, type ListingCard as CardRow } from "@/lib/supabase";
+import { CARD_COLS, supabase, type ListingCard as CardRow, TRANG_THAI_HIEN } from "@/lib/supabase";
 import { formatPrice, zaloLink } from "@/lib/format";
 import { TAG_DEFS, relatedTags, tagBySlug, type TagDef } from "@/lib/tags";
 
@@ -32,7 +32,7 @@ async function layTinTag(t: TagDef) {
     .from("listings")
     .select(CARD_COLS, { count: "exact" })
     .eq("deal", t.filter.deal)
-    .in("status", ["dang_ban", "dang_quan_tam"]) // FR-139: chỉ tin đang lên kệ
+    .in("status", TRANG_THAI_HIEN) // FR-139: chỉ tin đang lên kệ
     .not("price_raw", "is", null)
     .neq("price_raw", "")
     .gt("price_vnd", 0);

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { unstable_cache } from "next/cache";
 import { NHAN_HOP_LE } from "@/bot/supabase/functions/_shared/extraction/nhan";
 import { coverByCode } from "@/lib/photos";
-import { CARD_COLS, supabase, type ListingCard as CardRow } from "@/lib/supabase";
+import { CARD_COLS, supabase, type ListingCard as CardRow, TRANG_THAI_HIEN } from "@/lib/supabase";
 import { oTheoLoai, zaloLink } from "@/lib/format";
 import { parseQuery } from "@/lib/parse-query";
 import BrowseWithMap from "@/components/BrowseWithMap";
@@ -79,7 +79,7 @@ const layTin = unstable_cache(
       .from("listings")
       .select(CARD_COLS, { count: "exact" })
       .eq("deal", t.deal)
-      .in("status", ["dang_ban", "dang_quan_tam"])
+      .in("status", TRANG_THAI_HIEN)
       .not("price_raw", "is", null)
       .neq("price_raw", "");
 

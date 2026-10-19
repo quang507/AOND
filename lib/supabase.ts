@@ -10,6 +10,10 @@ const key =
 
 export const supabase = createClient(url, key);
 
+// Trạng thái tin HIỆN trên web (FR-139). `da_coc` (19/10/2026, SRS-5.1zzzzzzz63): khách đã nhận cọc, tin vẫn hiện như đang bán,
+// không nhãn. Một chỗ cho mọi trang — thêm trạng thái hiện mới thì sửa ở đây và ở policy anon_read_listings.
+export const TRANG_THAI_HIEN = ["dang_ban", "dang_quan_tam", "da_coc"];
+
 // FR-171 j — CỘT CHỌN LỌC thay cho select("*"). Thẻ tin (ListingCard) không
 // đọc `description` (cột text nặng nhất), `lat/lng`, `unit_status`,
 // `last_confirmed_at`; kéo "*" cho lưới 24 thẻ là kéo 24 mô tả rồi vứt — và

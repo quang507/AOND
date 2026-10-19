@@ -6282,6 +6282,35 @@ công tắc. Mock e2e TS (`bot/tests/e2e/mock-supabase.mjs`) và chữ SRD xuấ
 
 **Kiểm.** Sau khi áp: `app_config` còn 16 khoá, `luu_tru.app_config_ts_20261019` 6 dòng. `bun run kiem` xanh.
 
+### SRS-5.1zzzzzzz63 · Trạng thái tin xuống DB (+ `da_coc`), khởi động lại không quên, ảnh không mất bucket (19/10/2026)
+
+**Ca gốc.** Soát so với repo anh Luận (19/10, "mọi trạng thái của db phải được thể hiện qua tin nhắn", thêm "đã cọc") bắt ba lỗi của
+lõi Python ↔ Supabase: (1) `SupabaseConversationStore.save` không bao giờ ghi `listings.status` — khách nói "bán rồi / ngưng rao" chỉ
+đổi trong bộ nhớ, web vẫn hiện tin; (2) `load` dựng lại thiếu sau mỗi lần khởi động lại (mỗi lần `cai-vps`): `listing_proposed` so với
+"dang_rao" (không có trên DB) nên luôn sai → có thể trình lại bản nháp, căn đang nói luôn là căn đầu, bảng giá riêng / mốc lịch sử /
+ảnh đã cất rỗng; (3) `Engine._sync_media_folder` (tàn dư SharePoint) gọi `move_folder` no-op của kho Supabase rồi vẫn ghi đè đường
+dẫn ref, cắt mất tên bucket → `_ghi_anh` bỏ tệp, ảnh / sổ đỏ không vào `listing_media`. Chủ dự án chốt: "thêm hẳn trạng thái mới
+da_coc; tin đã cọc vẫn hiện trên web, ko kèm nhãn".
+
+**Lớp lỗi.** Chuyển nguồn lưu (SQLite → Supabase, SharePoint → Storage) mà không đối chiếu từng trường: trường nào không có cột thì im
+lặng rơi. **Chỗ cùng lớp.** Soát mọi thuộc tính `Conversation` / `Listing` mà SQLite lưu: `status`, `listing_proposed`,
+`history_start`, `media`, `price_book`, `role`, `active_listing_id`, `buyer_lead`, `last_ai_at`, `user_type` — nay đều đọc lại được
+(Supabase là nguồn cho tin + hội thoại, SQLite bù phần không có cột). `history` vẫn đọc từ `messages`. Thuộc tính chỉ sống một lượt
+(`y_luot`, `duyet_luot`, `hoi_ve_luot`) không cần giữ.
+
+**Sửa.** `supabase_store.ma_trang_thai`: đã bán / đã cho thuê → `da_chot`; đã cọc → `da_coc` (CHỈ khi tin đang hiện — tin chưa duyệt
+không vì "cọc rồi" mà lên web); dừng bán / không rao / thôi đăng ký → `an`; "đang bán" trên tin ẩn / chốt / cọc → `cho_thong_tin` để
+trigger `listings_quyet_dinh_dang_tin` xét lại; còn lại không ghi (không đè trạng thái admin / trigger). `save` ghi thêm
+`sellers.active_listing_id`. `load` đọc trạng thái thật (`trang_thai_tu_db`) và bù từ SQLite. `_sync_media_folder` bỏ qua kho có
+`thu_muc_can`. Lõi: `STATUS_MAP` + `operations_schema` + luật `set_status` thêm `da_coc` (theo bản anh Luận 84b0155). DB
+`20261019e`: CHECK `listings_status_check` thêm `da_coc`; thay chữ trên định nghĩa đang chạy — 7 view (ảnh công khai, đếm tin đang rao,
+nhãn "đã cọc" ở `ro_hang_ban` / `so.ro_hang`), 3 policy đọc công khai, 5 hàm (`can_cung_khu`, `doc_danh_sach`, `nhung_tick`,
+`chuan_nmg`, `diem_nguoi_ban`); không đụng hàm kéo tin sang `dang_quan_tam`. Web: hằng `TRANG_THAI_HIEN` (`lib/supabase.ts`) thay 9 chỗ
+lọc `["dang_ban", "dang_quan_tam"]`; nhãn "đã cọc" ở trang admin / người bán.
+
+**Kiểm.** `tests/test_trang_thai_va_nap_lai.py` 6 ca (đỏ trên code cũ — đã chạy: thiếu `ma_trang_thai`; ca đường dẫn ảnh đỏ khi tắt
+riêng bản sửa `_sync_media_folder`). Migration chạy thử trong giao dịch hoàn tác trên DB thật: 7 view, 3 policy, 5 hàm nhận `da_coc`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

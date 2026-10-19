@@ -17,6 +17,7 @@ const STATUS_LABEL: Record<string, string> = {
   cho_thong_tin: "Chờ đủ thông tin",
   dang_ban: "Đang rao trên web",
   dang_quan_tam: "Đang được khách quan tâm",
+  da_coc: "Đã nhận cọc (vẫn hiện trên web)",
   da_chot: "Đã chốt",
   an: "Đã ẩn",
 };
@@ -175,7 +176,7 @@ export default function Page() {
                 {upCho === l.id ? "Đóng" : "Thêm ảnh"}
               </button>
               <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${
-                l.status === "dang_ban" || l.status === "dang_quan_tam" ? "bg-brand/10 text-brand"
+                l.status === "dang_ban" || l.status === "dang_quan_tam" || l.status === "da_coc" ? "bg-brand/10 text-brand"
                 : l.status === "da_chot" ? "bg-navy/10 text-navy"
                 : "bg-cream text-mute"
               }`}>

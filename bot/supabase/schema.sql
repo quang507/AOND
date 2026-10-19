@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-19 10:12 (giờ VN)
+-- Sinh lúc: 2026-10-19 12:41 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -772,7 +772,7 @@ do $d$ begin
   alter table public.listings add constraint listings_specs_source_check CHECK (((specs_source IS NULL) OR (specs_source = ANY (ARRAY['boc_mo_ta'::text, 'admin'::text, 'chu_xac_nhan'::text]))));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.listings add constraint listings_status_check CHECK ((status = ANY (ARRAY['cho_thong_tin'::text, 'dang_ban'::text, 'dang_quan_tam'::text, 'da_chot'::text, 'an'::text])));
+  alter table public.listings add constraint listings_status_check CHECK ((status = ANY (ARRAY['cho_thong_tin'::text, 'dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text, 'an'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listings add constraint listings_toa_do_muc_check CHECK (((toa_do_muc IS NULL) OR (toa_do_muc = ANY (ARRAY['duong'::text, 'phuong'::text, 'quan'::text, 'du_an'::text, 'tay'::text]))));
@@ -2365,7 +2365,7 @@ begin
            || coalesce(' · ' || l.price_raw, '')
            || coalesce(' · ' || rtrim(to_char(l.area_m2, 'FM9999999990.99'), '.') || 'm2', '')
     from listings l
-   where l.status in ('dang_ban', 'dang_quan_tam')
+   where l.status in ('dang_ban', 'dang_quan_tam', 'da_coc')
      and l.id is distinct from p_listing_id
      and l.deal::text = v_deal
      and (v_price is null or l.price_vnd is null
@@ -2678,9 +2678,9 @@ CREATE OR REPLACE FUNCTION public.chuan_nmg(p_seller_id uuid)
  SET search_path TO 'public'
 AS $function$
   with t as (
-    select count(*) filter (where l.status in ('dang_ban', 'dang_quan_tam'))                                   as dang_rao,
+    select count(*) filter (where l.status in ('dang_ban', 'dang_quan_tam', 'da_coc'))                                   as dang_rao,
            count(*) filter (where l.status = 'da_chot' and coalesce(l.chu_noi_du_at, l.updated_at) >= now() - interval '6 months') as chot_6t,
-           count(*) filter (where l.created_at >= now() - interval '6 months' or l.status in ('dang_ban', 'dang_quan_tam', 'cho_thong_tin')) as tong_6t
+           count(*) filter (where l.created_at >= now() - interval '6 months' or l.status in ('dang_ban', 'dang_quan_tam', 'da_coc', 'cho_thong_tin')) as tong_6t
       from listings l where l.seller_id = p_seller_id
   )
   select jsonb_build_object(
@@ -2899,7 +2899,7 @@ begin
   select avg((public.diem_tin(l)->>'diem')::numeric), count(*)
     into v_tb, v_n
     from listings l
-   where l.seller_id = p_seller_id and l.status in ('dang_ban', 'dang_quan_tam', 'cho_thong_tin');
+   where l.seller_id = p_seller_id and l.status in ('dang_ban', 'dang_quan_tam', 'da_coc', 'cho_thong_tin');
   if coalesce(v_n, 0) = 0 then
     return jsonb_build_object('diem', 0, 'diem_tb', 0, 'so_tin', 0, 'he_so', 1, 'diem_phan_hoi', null, 'so_luot_phan_hoi', 0);
   end if;
@@ -3145,7 +3145,7 @@ AS $function$
       ) order by x.ord)
       from unnest(c.listing_ids) with ordinality as x(id, ord)
       join public.listings l on l.id = x.id
-      where l.status in ('dang_ban', 'dang_quan_tam')
+      where l.status in ('dang_ban', 'dang_quan_tam', 'da_coc')
     ), '[]'::jsonb)
   )
   from public.curated_lists c
@@ -5566,7 +5566,7 @@ begin
 
   for r in
     select l.id, l.nhung_md5 from public.listings l
-     where l.status in ('dang_ban', 'dang_quan_tam')
+     where l.status in ('dang_ban', 'dang_quan_tam', 'da_coc')
      order by l.updated_at desc nulls last
      limit 300
   loop
@@ -7676,11 +7676,11 @@ create or replace view public.agents_public with (security_invoker=false) as
     s.rating_count,
     ( SELECT count(*) AS count
            FROM listings l
-          WHERE l.seller_id = s.id AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'cho_thong_tin'::text]))) AS listing_count,
+          WHERE l.seller_id = s.id AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'cho_thong_tin'::text]))) AS listing_count,
     seller_rank(s.seller_type, c.active::integer, c.closed::integer, c.total::integer) AS rank,
     c.closed::integer AS closed_count
    FROM sellers s
-     LEFT JOIN LATERAL ( SELECT count(*) FILTER (WHERE l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text])) AS active,
+     LEFT JOIN LATERAL ( SELECT count(*) FILTER (WHERE l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text])) AS active,
             count(*) FILTER (WHERE l.status = 'da_chot'::text) AS closed,
             count(*) AS total
            FROM listings l
@@ -7695,7 +7695,7 @@ create or replace view public.nmg_hoat_dong as
     d.last_answer_at,
     COALESCE(t.active, 0::bigint) > 0 AND COALESCE(d.tra_loi_7d, 0::bigint) > 0 AS hoat_dong
    FROM sellers s
-     LEFT JOIN LATERAL ( SELECT count(*) FILTER (WHERE l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text])) AS active
+     LEFT JOIN LATERAL ( SELECT count(*) FILTER (WHERE l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text])) AS active
            FROM listings l
           WHERE l.seller_id = s.id) t ON true
      LEFT JOIN LATERAL ( SELECT count(*) AS tra_loi_7d,
@@ -7772,6 +7772,7 @@ create or replace view public.ro_hang_ban with (security_invoker=true) as
             WHEN 'cho_thong_tin'::text THEN 'chờ thông tin'::text
             WHEN 'dang_ban'::text THEN 'đang bán'::text
             WHEN 'dang_quan_tam'::text THEN 'đang quan tâm'::text
+            WHEN 'da_coc'::text THEN 'đã cọc'::text
             WHEN 'da_chot'::text THEN 'đã chốt'::text
             WHEN 'an'::text THEN 'ẩn'::text
             ELSE status
@@ -7859,7 +7860,7 @@ create or replace view public.listing_photos_v with (security_invoker=true) as
     l.legacy_code
    FROM listing_media m
      JOIN listings l ON l.id = m.listing_id
-  WHERE m.bucket = 'listing-public'::text AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_chot'::text]));
+  WHERE m.bucket = 'listing-public'::text AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text]));
 
 create or replace view public.seller_ranks with (security_invoker=true) as
  SELECT s.id,
@@ -7879,7 +7880,7 @@ create or replace view public.seller_ranks with (security_invoker=true) as
         END AS dat_chuan_nmg,
     s.ten_tro_ly
    FROM sellers s
-     LEFT JOIN LATERAL ( SELECT count(*) FILTER (WHERE l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text])) AS active,
+     LEFT JOIN LATERAL ( SELECT count(*) FILTER (WHERE l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text])) AS active,
             count(*) FILTER (WHERE l.status = 'da_chot'::text) AS closed,
             count(*) AS total
            FROM listings l
@@ -8085,13 +8086,13 @@ create policy interests_admin_select on public.interests as permissive for SELEC
 drop policy if exists anon_read_listing_facts on public.listing_facts;
 create policy anon_read_listing_facts on public.listing_facts as permissive for SELECT to anon, authenticated using (((question <> ALL (ARRAY['hinh_anh'::text, 'dia_chi_chi_tiet'::text, 'vi_tri'::text, 'dia_chi'::text, 'so_nha'::text, 'lien_he'::text, 'so_dien_thoai'::text, 'nguoi_dung_ten'::text, 'dong_so_huu_voi'::text])) AND (EXISTS ( SELECT 1
    FROM listings l
-  WHERE ((l.id = listing_facts.listing_id) AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_chot'::text])))))));
+  WHERE ((l.id = listing_facts.listing_id) AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text])))))));
 drop policy if exists listing_media_admin_all on public.listing_media;
 create policy listing_media_admin_all on public.listing_media as permissive for ALL to authenticated using (la_admin()) with check (la_admin());
 drop policy if exists listing_media_doc_cong_khai on public.listing_media;
 create policy listing_media_doc_cong_khai on public.listing_media as permissive for SELECT to anon, authenticated using (((bucket = 'listing-public'::text) AND (EXISTS ( SELECT 1
    FROM listings l
-  WHERE ((l.id = listing_media.listing_id) AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_chot'::text])))))));
+  WHERE ((l.id = listing_media.listing_id) AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text])))))));
 drop policy if exists listing_media_own_delete on public.listing_media;
 create policy listing_media_own_delete on public.listing_media as permissive for DELETE to authenticated using (((bucket = 'listing-public'::text) AND tin_cua_toi(listing_id)));
 drop policy if exists listing_media_own_insert on public.listing_media;
@@ -8101,7 +8102,7 @@ create policy listing_media_own_read on public.listing_media as permissive for S
 drop policy if exists views_own_all on public.listing_views;
 create policy views_own_all on public.listing_views as permissive for ALL to authenticated using ((auth_user_id = ( SELECT auth.uid() AS uid))) with check ((auth_user_id = ( SELECT auth.uid() AS uid)));
 drop policy if exists anon_read_listings on public.listings;
-create policy anon_read_listings on public.listings as permissive for SELECT to anon, authenticated using ((status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_chot'::text])));
+create policy anon_read_listings on public.listings as permissive for SELECT to anon, authenticated using ((status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text])));
 drop policy if exists listings_admin_delete on public.listings;
 create policy listings_admin_delete on public.listings as permissive for DELETE to authenticated using ((EXISTS ( SELECT 1
    FROM admins a

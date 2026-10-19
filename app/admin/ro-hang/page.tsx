@@ -57,6 +57,7 @@ const TRANG_THAI: Record<string, string> = {
   cho_thong_tin: "chờ thông tin",
   dang_ban: "đang bán",
   dang_quan_tam: "đang quan tâm",
+  da_coc: "đã cọc",
   da_chot: "đã chốt",
   an: "ẩn",
 };
@@ -65,6 +66,7 @@ const MAU_TRANG_THAI: Record<string, string> = {
   dang_ban: "bg-emerald-50 text-emerald-800 border-emerald-300",
   cho_thong_tin: "bg-amber-50 text-amber-800 border-amber-300",
   dang_quan_tam: "bg-blue-50 text-blue-800 border-blue-300",
+  da_coc: "bg-teal-50 text-teal-800 border-teal-300",
   da_chot: "bg-purple-50 text-purple-800 border-purple-300",
   an: "bg-slate-100 text-mute border-slate-300",
 };
