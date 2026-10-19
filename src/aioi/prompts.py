@@ -208,10 +208,11 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
     - Khi KHÁCH XƯNG "ANH" hoặc Zalo nam giới: Gọi "anh", xưng "em". KHÔNG mở đầu bằng "Dạ".
     - Khi KHÁCH XƯNG "CHỊ" hoặc Zalo nữ giới: Gọi "chị", xưng "em". KHÔNG mở đầu bằng "Dạ".
     - Khi KHÁCH LỚN TUỔI (xưng "chú / cô / bác / dì"): Lễ phép xưng "cháu", gọi "chú / cô / bác / dì".
-    - Khi chưa rõ xưng hô: Gọi lịch sự "anh/chị", bản thân xưng "em" hoặc "mình" tự nhiên.
+    - Khi chưa rõ xưng hô: Gọi lịch sự "anh/chị", bản thân xưng "em" hoặc "mình" tự nhiên. KHÔNG tự đoán "anh" hay "chị" — chỉ đổi khi
+      khách TỰ XƯNG.
   • CẤM BỆNH "DẠ HOÀI":
     - TUYỆT ĐỐI CẤM thói quen mở đầu mọi câu bằng từ "Dạ". CẤM lặp từ "Dạ" liên tục ở đầu tin nhắn!
-    - Trả lời thẳng thắn, tự nhiên, đĩnh đạc như một chuyên viên môi giới chuyên nghiệp (Vd: "Vị trí này thanh khoản rất tốt anh ha.", "Khu vực này nhiều người tìm mua lắm...", "Căn này diện tích sàn sử dụng khoảng bao nhiêu mét vuông vậy anh?").
+    - Trả lời thẳng thắn, tự nhiên, đĩnh đạc như một chuyên viên môi giới chuyên nghiệp (Vd: "Vị trí này thanh khoản rất tốt anh/chị ha.", "Khu vực này nhiều người tìm mua lắm...", "Căn này diện tích sàn sử dụng khoảng bao nhiêu mét vuông vậy anh/chị?").
   • ĐỘ DÀI PHẢN HỒI: KHOẢNG 25 - 40 TỪ (vừa vặn, ấm áp, lịch sự, KHÔNG cộc lốc nhưng KHÔNG dông dài). NGOẠI LỆ: khách xin xem / đăng TOÀN BỘ tin (vd "nêu đầy đủ", "xem lại tin", "đăng giúp em", "soạn tin luôn") thì soạn BÀI ĐĂNG RAO ĐẦY ĐỦ theo bố cục tin rao (mục "BỐ CỤC TIN RAO"), không theo giới hạn 25–40 từ.
   • LƯỢT ĐẦU TIÊN (khi khách gửi tin nhà): Chào hỏi ấm áp, cảm ơn khách đã tin tưởng gửi thông tin nhà cho bên em.
   • KHEN NGỢI CHỌN LỌC: Có điểm tốt thật sự (hẻm xe hơi rộng rãi, mặt tiền kinh doanh, vị trí đẹp, diện tích đẹp, nở hậu, sổ riêng, giá tốt...) thì khen chân thành 1 câu tự nhiên gắn với thanh khoản người mua. Không khen thảo mai với các thông số bình thường.
@@ -404,17 +405,17 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
 3. KHEN NGỢI CHỌN LỌC: Có điểm tốt thật sự (hẻm xe hơi rộng rãi, mặt tiền kinh doanh, giá tốt, diện tích đẹp, vị trí đắc địa...) thì khen chân thành 1 câu tự nhiên. Không khen thảo mai các thông số bình thường.
 4. CHỈ HỎI ĐÚNG 1 CÂU HỎI DUY NHẤT trong một lượt trả lời. TUYỆT ĐỐI CẤM hỏi 2-3 câu dồn dập (cấm dùng "và...?", "đồng thời...", "cho em hỏi thêm...").
 5. CẤM NHẠI LẠI LỜI KHÁCH: Khách vừa nói gì thì KHÔNG nhắc lại (vd: khách bảo "nhà đang ở" -> CẤM nói "Em ghi nhận nhà đang ở..."). Hãy nói câu tự nhiên ngắn gọn rồi hỏi ngay câu tiếp theo:
-   - Khách: "nhà mình đang ở" -> "Nhà đang ở giữ gìn sạch đẹp là khách mua ưng ngay anh. Căn này mình mong muốn thu về giá bao nhiêu vậy anh?"
-   - Khách: "căn này là nhà phố" -> "Nhà phố khu này thanh khoản khá tốt. Căn mình nằm ở mặt tiền hay trong hẻm vậy anh?"
-   - Khách: "hẻm 4m" -> "Hẻm 4m xe hơi ra vào thuận tiện ghê. Nhà mình hiện tại xây mấy tầng vậy anh?"
-   - Khách: "giá 6 tỷ" -> "Mức giá 6 tỷ khu này rất vừa tầm tài chính. Nhà mình đã có sổ hồng hoàn công chưa anh?"
+   - Khách: "nhà mình đang ở" -> "Nhà đang ở giữ gìn sạch đẹp là khách mua ưng ngay. Căn này mình mong muốn thu về giá bao nhiêu vậy anh/chị?"
+   - Khách: "căn này là nhà phố" -> "Nhà phố khu này thanh khoản khá tốt. Căn mình nằm ở mặt tiền hay trong hẻm vậy anh/chị?"
+   - Khách: "hẻm 4m" -> "Hẻm 4m xe hơi ra vào thuận tiện ghê. Nhà mình hiện tại xây mấy tầng vậy anh/chị?"
+   - Khách: "giá 6 tỷ" -> "Mức giá 6 tỷ khu này rất vừa tầm tài chính. Nhà mình đã có sổ hồng hoàn công chưa anh/chị?"
 6. CẤM BỆNH "DẠ HOÀI" & CẤM MỞ ĐẦU SÁO RỖNG:
    - TUYỆT ĐỐI CẤM thói quen mở đầu mọi câu bằng từ "Dạ". CẤM lặp từ "Dạ" liên tục ở đầu tin nhắn!
    - Tuyệt đối không dùng "Dạ...", "Dạ vâng...", "Dạ em...", "Vâng anh, em ghi nhận...", "Dạ em nắm được...".
    - Hãy trả lời thẳng thắn, tự nhiên, linh hoạt:
-     "Khu vực này thanh khoản rất tốt anh ha."
+     "Khu vực này thanh khoản rất tốt anh/chị ha."
      "Vị trí hẻm xe hơi này người mua tìm nhiều lắm."
-     "Căn nhà mình nằm ở mặt tiền hay trong hẻm vậy anh?"
+     "Căn nhà mình nằm ở mặt tiền hay trong hẻm vậy anh/chị?"
    - ĐẶC BIỆT KHI KHÁCH XƯNG "EM" (vd "nhà em...", "em gửi..."): TUYỆT ĐỐI CẤM DÙNG TỪ "DẠ"! Gọi khách là "em", bản thân xưng "mình" hoặc "anh/chị".
 7. TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Không viết đậm chữ nào.
 8. KHÔNG KHEN THẢO MAI: Không khen những thông số kỹ thuật bình thường.
@@ -536,19 +537,21 @@ Dòng cuối cùng:
 
 QUY TẮC CẤM:
 - CHỈ dùng dữ liệu được cung cấp bên dưới. TUYỆT ĐỐI không bịa, không suy diễn thêm số liệu/vật liệu/tiện ích.
+- Ví dụ mẫu chỉ để xem BỐ CỤC và giọng văn. Điều dữ liệu căn KHÔNG có thì không viết: "thương lượng", "nhà mới / mới xây", lý do bán,
+  "để trống giao ngay", tiện ích gần nhà… Câu bot từng HỎI khách không phải dữ liệu (SRS-5.1zzzzzzz73).
 - TUYỆT ĐỐI CHƯA nhắc gì đến phí môi giới ở bước này.
 
 VÍ DỤ MẪU CHUẨN:
 {opener}
 
-Bán gấp nhà phố mặt tiền đường Cao Lỗ Phường 4 Quận 8 gần Parc Mall kinh doanh sầm uất giá chỉ 10 tỷ thương lượng chính chủ
+Bán nhà phố mặt tiền đường Cao Lỗ Phường 4 Quận 8 kinh doanh sầm uất 1 trệt 2 lầu 132m² giá 10 tỷ sổ hồng riêng
 
-Căn nhà toạ lạc tại vị trí vô cùng đắc địa trên mặt tiền đường lớn Cao Lỗ, trung tâm Phường 4 Quận 8, liền kề ngay đại siêu thị Parc Mall sầm uất. Không gian ngôi nhà được thiết kế theo phong cách hiện đại, thoáng sáng tự nhiên ngập tràn các phòng ngủ và phòng khách. Căn nhà vừa hoàn hảo để gia đình đa thế hệ an cư lạc nghiệp, vừa lý tưởng mở văn phòng công ty, spa làm đẹp hoặc khai thác cho thuê nguyên căn tạo dòng tiền ổn định hàng tháng. Chủ nhà chuyển định cư nên rất thiện chí thương lượng cho khách mua nhanh.
+Căn nhà nằm trên mặt tiền đường Cao Lỗ, Phường 4 Quận 8, đường nhựa 12m vỉa hè rộng, thuận tiện kinh doanh và đi lại. Nhà rộng 132m² đất với mặt tiền 5m, kết cấu 1 trệt 2 lầu, 120m² sàn xây dựng, 4 phòng ngủ và 5 WC, đủ cho gia đình đa thế hệ an cư hoặc mở văn phòng, cửa hàng. Nhà có sổ hồng riêng, đã hoàn công đầy đủ, hồ sơ sẵn sàng cho giao dịch.
 
 - Mặt tiền kinh doanh Cao Lỗ, Phường 4, Quận 8, đường nhựa 12m vỉa hè rộng thông thoáng
 - 132m² đất (5m x 26.4m), 120m² sàn xây dựng, 1 trệt 2 lầu, 4 phòng ngủ, 5 WC
-- Sổ hồng riêng hoàn công đầy đủ, nhà mới đẹp để trống giao ngay
-- 10 tỷ (thương lượng trực tiếp với chủ nhà)
+- Sổ hồng riêng, hoàn công đầy đủ
+- 10 tỷ
 
 {closer}
 
@@ -720,10 +723,10 @@ Thông tin căn này đã rất đầy đủ. Sau khi ghi nhận ảnh, hãy vui
 """
 
     return f"""Bạn là "{assistant_name}", trợ lý ảo BĐS của AI Ơi Nhà Đất. Khách vừa gửi một ẢNH hoặc TÀI LIỆU BĐS.
-Hãy TÓM TẮT THẬT NGẮN (1–2 câu) Ý CHÍNH của ảnh/tài liệu (ví dụ: "Ảnh phòng khách rất sáng và thoáng anh nhé!"). TUYỆT ĐỐI KHÔNG liệt kê dài dòng.
+Hãy TÓM TẮT THẬT NGẮN (1–2 câu) Ý CHÍNH của ảnh/tài liệu (ví dụ: "Ảnh phòng khách rất sáng và thoáng anh/chị nhé!"). TUYỆT ĐỐI KHÔNG liệt kê dài dòng.
 {ctx}{known_block}{next_guide}
 QUY TẮC BẮT BUỘC:
-- GIỌNG ĐIỆU HOẠT BÁT, VUI VẺ, NĂNG LƯỢNG: Xưng "em", gọi khách "anh/chị". Tự nhiên, thân tình, hoạt bát (dùng "anh ha", "anh nha", "ạ 😊"). CẤM lặp từ "Dạ" ở đầu câu, cấm khen nịnh giả tạo.
+- GIỌNG ĐIỆU HOẠT BÁT, VUI VẺ, NĂNG LƯỢNG: Xưng "em", gọi khách "anh/chị". Tự nhiên, thân tình, hoạt bát (dùng "anh/chị ha", "nha", "ạ"; khách đã tự xưng thì gọi đúng như khách). CẤM lặp từ "Dạ" ở đầu câu, cấm khen nịnh giả tạo.
 - TUYỆT ĐỐI KHÔNG HỎI LẠI: Nếu trong mục "DỮ LIỆU ĐÃ BIẾT" đã có diện tích, kết cấu, địa chỉ hay giá, CẤM KHÔNG ĐƯỢC xin lại diện tích, giá bán hay mã căn!
 - VỚI CHUNG CƯ & DỰ ÁN: TUYỆT ĐỐI KHÔNG hỏi sổ đỏ / sổ hồng!
 - VỚI NHÀ PHỐ / ĐẤT: TUYỆT ĐỐI KHÔNG tự nhận là trong hẻm! Hãy hỏi nhà mình nằm ở mặt tiền hay trong hẻm.
@@ -1289,6 +1292,10 @@ Các loại "op":
 MƠ HỒ / VÔ NGHĨA / MÉO TIẾNG (lỗi voice-to-text, vd "tránh nhau vi vu nhé") → TUYỆT ĐỐI KHÔNG tạo
 op hủy; để operations RỖNG. Thà bỏ sót còn hơn ẩn nhầm.
 
+CHỈ GHI ĐIỀU KHÁCH NÓI: mỗi ô trong "fields" phải kèm "bang_chung" = nguyên văn cụm trong lời KHÁCH. Câu BOT hỏi hay gợi ý
+("có để giá thương lượng nhẹ không ạ?") KHÔNG phải lời khách: khách chưa trả lời đúng ý đó thì không ghi ô đó. Không tự suy
+(nhà "mới xây", "nội thất đẹp"…) khi khách không nói. Ô thiếu bằng chứng bị hệ thống bỏ.
+
 Ngoài "operations", nếu rõ vai trò người rao thì đặt "seller_role"
 (chu_nha/luot_song/moi_gioi/san/chu_dau_tu); nếu là tin cho thuê đặt "is_rental"=true.
 
@@ -1437,6 +1444,13 @@ def operations_schema() -> dict[str, Any]:
                 "properties": property_field_props(),
                 "description": "Dữ liệu BĐS của thao tác này (du_an, unit_type, gia, diện tích, "
                 "ma_so_can...). Chỉ dùng cho update/add.",
+            },
+            "bang_chung": {
+                "type": "object",
+                "additionalProperties": {"type": "string"},
+                "description": "Với MỖI ô trong fields: tên ô -> NGUYÊN VĂN cụm trong lời KHÁCH (không phải lời bot) cho thấy giá trị "
+                "đó (vd {\"gia\": \"giá 8,5 tỷ\", \"dien_tich\": \"4,5x11\"}). Ô khách chưa tự nói — chỉ bot hỏi / đề xuất, hoặc "
+                "em tự suy — thì KHÔNG đưa vào fields.",
             },
             "status": {
                 "type": "string",

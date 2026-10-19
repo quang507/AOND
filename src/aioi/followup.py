@@ -6,6 +6,7 @@ context fully preserved in SQLite and synced to Supabase CRM.
 from __future__ import annotations
 
 import json
+import re
 import logging
 import os
 import threading
@@ -13,8 +14,7 @@ import time
 import urllib.request
 from typing import TYPE_CHECKING
 
-from .engine import Turn, _detect_customer_pronoun
-from .prompts import FIELD_LABELS
+from .engine import Turn, _detect_customer_pronoun, _image_count
 from .supabase_sync import sync_to_supabase_async
 
 if TYPE_CHECKING:
@@ -24,6 +24,32 @@ log = logging.getLogger("aioi.followup")
 
 DEFAULT_FOLLOWUP_DELAY = int(os.environ.get("FOLLOWUP_DELAY_SECONDS", "300"))  # 300s = 5 minutes
 BRIDGE_SEND_URL = os.environ.get("BRIDGE_SEND_URL", "http://127.0.0.1:5005/send")
+
+
+_GOI = {"em": "Em", "anh": "Anh", "chi": "Chị"}
+
+
+def cau_hoi_cuoi_cua_bot(conv) -> str:
+    """Câu hỏi bot vừa hỏi mà khách CHƯA trả lời: lượt cuối của hội thoại là lời bot và có câu kết bằng '?' — lấy câu hỏi cuối
+    trong lời đó. Khách đã nhắn sau đó thì không còn gì chờ."""
+    if not conv.history or conv.history[-1].role != "assistant":
+        return ""
+    loi = conv.history[-1].content or ""
+    cau = [c.strip() for c in re.findall(r"[^.!?\n]*\?", loi) if c.strip()]
+    return cau[-1] if cau else ""
+
+
+def cau_nhac(conv, listing, pronoun: str) -> str:
+    """Tin nhắc khi khách im (SRS-5.1zzzzzzz73): hỏi lại câu đang chờ; không còn câu chờ thì xin ảnh khi căn chưa có ảnh."""
+    goi = _GOI.get(pronoun, "Anh/chị")
+    toi = "mình" if pronoun == "em" else "em"
+    hoi = cau_hoi_cuoi_cua_bot(conv)
+    if hoi:
+        return f"{goi} ơi, {toi} hỏi lại chút nha: {hoi}"
+    if not _image_count(listing.media):
+        return (f"Khi nào tiện {goi.lower()} chụp gửi {toi} vài tấm ảnh thực tế nhé, để tin đăng nổi bật và hút khách hơn"
+                + (" nè." if pronoun == "em" else " ạ."))
+    return ""
 
 
 class FollowUpManager:
@@ -121,44 +147,13 @@ class FollowUpManager:
                         "có cần điều chỉnh thêm thông tin nào không cứ nhắn em nhé ạ!"
                     )
             else:
-                missing_fields = prop.missing_fields()
-                next_f = missing_fields[0] if missing_fields else None
-
-                if next_f in ("gia", "gia_thue"):
-                    if customer_is_em:
-                        follow_up_msg = "Căn này em đang dự tính bán thu về tầm bao nhiêu để mình lên tin cho chuẩn nè em?"
-                    else:
-                        follow_up_msg = "Căn này mình đang dự tính bán thu về khoảng bao nhiêu tỷ vậy anh/chị ha, để em lên tin đăng cho chuẩn ạ?"
-                elif next_f in ("dia_chi", "phuong"):
-                    if customer_is_em:
-                        follow_up_msg = "Nhà em nằm ở đoạn đường nào, thuộc phường mấy vậy em ha?"
-                    else:
-                        follow_up_msg = "Nhà mình nằm ở đoạn đường nào, thuộc phường mấy vậy anh/chị ha để em định vị đúng khu vực ạ?"
-                elif next_f in ("ket_cau", "so_tang", "so_phong_ngu"):
-                    if customer_is_em:
-                        follow_up_msg = "Nhà em hiện tại xây mấy tầng, có mấy phòng ngủ vậy em?"
-                    else:
-                        follow_up_msg = "Nhà mình hiện tại xây mấy tầng, có mấy phòng ngủ vậy anh/chị ha?"
-                elif next_f in ("dien_tich", "dien_tich_dat", "kich_thuoc"):
-                    if customer_is_em:
-                        follow_up_msg = "Diện tích hoặc bề ngang x dài của căn nhà khoảng bao nhiêu mét vậy em?"
-                    else:
-                        follow_up_msg = "Diện tích hoặc bề ngang x dài của nhà mình khoảng bao nhiêu mét vậy anh/chị?"
-                elif next_f in ("lo_gioi_hem", "vi_tri"):
-                    if customer_is_em:
-                        follow_up_msg = "Đường trước nhà em là mặt tiền hay hẻm xe hơi vậy em?"
-                    else:
-                        follow_up_msg = "Đường trước nhà mình là mặt tiền hay hẻm xe hơi vậy anh/chị?"
-                elif next_f == "tinh_trang_ban_giao":
-                    if customer_is_em:
-                        follow_up_msg = "Hiện tại nhà em đang ở, để trống hay có khách thuê sẵn vậy em?"
-                    else:
-                        follow_up_msg = "Hiện tại nhà mình đang ở, để trống hay có khách thuê sẵn vậy anh/chị?"
-                else:
-                    if customer_is_em:
-                        follow_up_msg = "Khi nào tiện em chụp gửi mình vài tấm ảnh mặt tiền hoặc sổ hồng nhé, để tin đăng uy tín và hút khách hơn nè."
-                    else:
-                        follow_up_msg = "Khi nào tiện anh/chị chụp gửi em vài tấm ảnh thực tế hoặc sổ hồng nhé, để tin đăng nổi bật và hút khách mua hơn ạ."
+                # 19/10/2026 (SRS-5.1zzzzzzz73): nhắc lại ĐÚNG câu bot vừa hỏi. Bản trước lấy câu mẫu cố định theo ô thiếu đầu
+                # tiên; ô nào không có câu mẫu (vd diện tích sàn) rơi vào "chụp gửi em vài tấm ảnh" — chủ nhà vừa gửi 6 ảnh vẫn
+                # bị xin ảnh. Không còn câu nào đang chờ trả lời thì chỉ xin ảnh khi căn CHƯA có ảnh; có rồi thì không nhắc.
+                follow_up_msg = cau_nhac(conv, listing, customer_pronoun)
+                if not follow_up_msg:
+                    log.info("Follow-up for %s: không có câu đang chờ, căn đã có ảnh. Skipping.", user_key)
+                    return
 
             # 1. Send via local bridge HTTP endpoint (non-fatal if bridge fails / test UID)
             req_data = json.dumps({"threadId": user_key, "message": follow_up_msg}).encode("utf-8")

@@ -215,6 +215,10 @@ def _redact_doc_title(title: str) -> str:
 _DESTRUCTIVE_OPS = {"clear", "keep_only", "remove"}
 
 
+# Dấu đầu lượt "lời AI tả ảnh chụp thật" trong lịch sử — không phải lời khách, không làm bằng chứng ô tin (SRS-5.1zzzzzzz73).
+DAU_TA_ANH_CHUP = "[Khách gửi ảnh chụp:"
+
+
 def _trich_dan_khop(trich: str | None, cau: str | None) -> bool:
     """Cụm AI trích có nằm NGUYÊN trong câu khách không (bỏ dấu, gộp khoảng trắng) — AI đọc nghĩa, code chỉ kiểm bằng chứng."""
     gon = lambda s: re.sub(r"\s+", " ", _strip_accents(str(s or "")).lower()).strip()
@@ -318,6 +322,9 @@ class Conversation:
     # nạp ở lượt lập thao tác để AI chỉ đúng mã căn / id câu.
     can_mua: list = field(default_factory=list)
     cau_hoi_cho: list = field(default_factory=list)
+    # Transient (SRS-5.1zzzzzzz73): lời KHÁCH trong khung lượt lập thao tác vừa đọc — ô tin mới / đổi giá trị chỉ được ghi khi
+    # cụm bằng chứng AI đưa nằm trong đây (không tính lời bot).
+    loi_khach_luot: str = ""
 
     def __post_init__(self) -> None:
         if not self.listings:
@@ -1709,6 +1716,14 @@ class Engine:
                 "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
                 "Khách là người lớn tuổi (chú/cô/bác/dì). Lễ phép xưng 'cháu', gọi đúng 'chú/cô/bác/dì'.\n"
             )
+        else:
+            # 19/10/2026 (SRS-5.1zzzzzzz73): chưa biết khách anh hay chị thì không có luật nào — model chép chữ "anh" trong ví dụ
+            # mẫu, gọi khách "anh" suốt 10 lượt rồi đổi "chị" khi khách tự xưng.
+            system += (
+                "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
+                "CHƯA BIẾT khách là anh hay chị. Gọi khách 'anh/chị' (hoặc 'mình'), bản thân xưng 'em'. KHÔNG tự đoán 'anh' hoặc "
+                "'chị' từ tên, giọng văn hay ví dụ mẫu.\n"
+            )
 
         # Khối ưu tiên theo điều khách HỎI — lượt AI lập thao tác đọc theo nghĩa (conv.hoi_ve_luot, SRS-5.1zzzzzzz54); bản trước
         # dò từ khoá ("chi phí" nào cũng thành hỏi phí). Con số phí theo vai từ _fee_hint, không viết tay.
@@ -2612,13 +2627,17 @@ class Engine:
                 [(m.data, m.media_type) for m in fetched], instruction
             ).strip()
             names = ", ".join(labels)
-            conv.history.append(Turn(
-                "user",
-                f"[Khách gửi {len(fetched)} tệp ({names}). Nội dung em đọc được từ tài liệu của khách:]\n{description}",
-                now,
-            ))
             # A pure DATA page (bảng giá/thông số): extract the data, abandon the image.
             data_only = bool(groups and groups[0].get("chi_luu_du_lieu"))
+            # Ảnh chụp THẬT (không giấy tờ, không trang dữ liệu): lời AI tả ảnh vào lịch sử với dấu riêng — lượt lập thao tác
+            # không lấy nó làm bằng chứng ô tin (SRS-5.1zzzzzzz73; 19/10 "nhà mới xây" suy từ ảnh thành ô tin rồi lên bài).
+            anh_chup = bool(groups) and groups[0].get("giay_to") is False and not data_only
+            dau = DAU_TA_ANH_CHUP if anh_chup else "[Khách gửi"
+            conv.history.append(Turn(
+                "user",
+                f"{dau} {len(fetched)} tệp ({names}). Nội dung em đọc được từ tài liệu của khách:]\n{description}",
+                now,
+            ))
             captured, capped = self._route_readout_media(
                 conv, description, fetched, user_key, store=not data_only)
             tail = "\n\n(Em đã lấy thông tin từ tài liệu, không cần lưu ảnh bảng dữ liệu nha.)" if data_only else ""
@@ -2675,7 +2694,8 @@ class Engine:
                 idx = g.get("chi_so_can_da_co")
                 target = (conv.listings[idx - 1] if isinstance(idx, int) and 1 <= idx <= len(conv.listings)
                           else conv.active)
-                captured += self._apply_text_to_listing(target, mo_ta)
+                if giay_to or data_only:   # ảnh chụp thật: lời AI TẢ ảnh không phải lời khách → không sinh ô tin (SRS-5.1zzzzzzz73)
+                    captured += self._apply_text_to_listing(target, mo_ta)
                 refs, capped = self._upload_media(
                     self._folder_for(target), store_items,
                     image_slots=self._max_photos - _image_count(target.media), rieng=giay_to)
@@ -2685,7 +2705,8 @@ class Engine:
             else:  # "can_moi"
                 target = conv.active if not used_active and self._listing_empty(conv.active) else conv.new_listing()
                 used_active = True
-                captured += self._apply_text_to_listing(target, mo_ta)
+                if giay_to or data_only:   # ảnh chụp thật: lời AI TẢ ảnh không phải lời khách → không sinh ô tin (SRS-5.1zzzzzzz73)
+                    captured += self._apply_text_to_listing(target, mo_ta)
                 refs, capped = self._upload_media(
                     self._folder_for(target), store_items,
                     image_slots=self._max_photos - _image_count(target.media), rieng=giay_to)
@@ -2871,6 +2892,7 @@ class Engine:
         elif conv.role != "buyer" and getattr(kho, "cau_hoi_cho_nguoi_ban", None) is not None:
             conv.cau_hoi_cho = kho.cau_hoi_cho_nguoi_ban(conv.user_key)
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
+        conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
         plan = self._provider.extract(system, src, operations_schema())
 
         # Sticky conversation attributes (never downgrade role to unknown).
@@ -3057,9 +3079,22 @@ class Engine:
         targets = self._op_targets(op)
         fields = op.get("fields") if isinstance(op.get("fields"), dict) else {}
 
+        bang_chung = op.get("bang_chung") if isinstance(op.get("bang_chung"), dict) else {}
+
+        def _co_bang_chung(k: str, v: str) -> bool:
+            """Ô tin chỉ ghi điều KHÁCH nói (SRS-5.1zzzzzzz73): giá trị đã có sẵn ở rổ thì giữ; mới / đổi thì cụm bằng chứng AI
+            đưa phải nằm nguyên trong lời khách. Bắt lớp lỗi "AI ghi ô từ câu bot tự hỏi / tự suy" (19/10: bot hỏi "có để
+            thương lượng nhẹ không", khách trả lời chuyện khác, ô thuong_luong vẫn thành "thương lượng nhẹ" rồi lên tin)."""
+            if any(li.prop.fields.get(k) == v for li in conv.listings):
+                return True
+            if _trich_dan_khop(bang_chung.get(k), conv.loi_khach_luot):
+                return True
+            log.info("Bỏ ô %s: không có bằng chứng trong lời khách", k)   # không in giá trị: log có thể chứa dữ liệu khách
+            return False
+
         def _data(exclude_code: bool = False) -> dict[str, str]:
             return {k: v for k, v in fields.items()
-                    if isinstance(v, str) and v.strip() and not (exclude_code and k == "ma_so_can")}
+                    if isinstance(v, str) and v.strip() and not (exclude_code and k == "ma_so_can") and _co_bang_chung(k, v)}
 
         # "xóa/bỏ/chỉ giữ" NEVER delete — they move listings to 'không rao' (hidden, kept).
         if kind == "clear":
