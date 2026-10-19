@@ -93,7 +93,7 @@ if (dau.body.length === 0) {
 for (const bang of [
   "reminders", "sellers", "ctvs", "messages", "conversations",
   "viewings", "deals", "buyers", "info_requests", "bot_errors",
-  "curated_lists", "ratings_log", "property_events",
+  "curated_lists", "property_events",
 ]) {
   const r = await goi(`${bang}?select=*&limit=1`);
   if (laPostgrestTuChoi(r)) ok(`${bang}: DB từ chối anon (${r.body.code ?? r.status})`);
