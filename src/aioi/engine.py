@@ -215,6 +215,10 @@ def _redact_doc_title(title: str) -> str:
 _DESTRUCTIVE_OPS = {"clear", "keep_only", "remove"}
 
 
+# Ô PHÂN LOẠI (mã slug AI đọc theo nghĩa) — không qua cổng bằng chứng lời khách (SRS-5.1zzzzzzz73; bắn thử lần 5: model không trích
+# cho loai_hinh, "nha_pho" không phải chữ khách gõ, tin thành chua_ro).
+_O_PHAN_LOAI = frozenset({"loai_hinh"})
+
 # Dấu đầu lượt "lời AI tả ảnh chụp thật" trong lịch sử — không phải lời khách, không làm bằng chứng ô tin (SRS-5.1zzzzzzz73).
 DAU_TA_ANH_CHUP = "[Khách gửi ảnh chụp:"
 
@@ -3100,8 +3104,10 @@ class Engine:
             """Ô tin chỉ ghi điều KHÁCH nói (SRS-5.1zzzzzzz73): giá trị đã có sẵn ở rổ thì giữ; mới / đổi thì cụm bằng chứng AI
             đưa phải nằm nguyên trong lời khách. Bắt lớp lỗi "AI ghi ô từ câu bot tự hỏi / tự suy" (19/10: bot hỏi "có để
             thương lượng nhẹ không", khách trả lời chuyện khác, ô thuong_luong vẫn thành "thương lượng nhẹ" rồi lên tin)."""
-            if any((li.prop.loai_hinh if k == "loai_hinh" else li.prop.fields.get(k)) == v for li in conv.listings):
-                return True   # loai_hinh nằm ở thuộc tính riêng, không trong fields
+            if k in _O_PHAN_LOAI:
+                return True   # phân loại AI đọc theo nghĩa ("nhà phố" → nha_pho), không phải lời trích; sai loại không phải bịa
+            if any(li.prop.fields.get(k) == v for li in conv.listings):
+                return True
             # Bằng chứng = cụm AI trích; model không phải lượt nào cũng trích (bắn thử 19/10: bỏ mất "diện tích sàn 170m²") nên
             # thiếu cụm thì kiểm chính giá trị ô — vẫn phải nằm trong lời KHÁCH, nên câu bot tự hỏi không lọt.
             for bc in (bang_chung.get(k), v):

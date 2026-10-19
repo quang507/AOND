@@ -96,6 +96,14 @@ def test_loai_hinh_da_co_thi_gui_lai_khong_can_bang_chung():
     assert eng.conversation("chu-6").active.prop.loai_hinh == "nha_pho"
 
 
+
+def test_loai_hinh_khong_can_bang_chung():
+    # Bắn thử lần 5 (19/10): model không trích cho loai_hinh → tin thành chua_ro. Ô phân loại không qua cổng bằng chứng.
+    eng = Engine(AiGia({"operations": [{"op": "update", "fields": {"loai_hinh": "nha_pho"}}], "user_intent": "sell"}))
+    eng.handle("chu-9", "Mình cần bán nhà phố")
+    assert eng.conversation("chu-9").active.prop.loai_hinh == "nha_pho"
+
+
 def test_thieu_cum_trich_thi_kiem_chinh_gia_tri_trong_loi_khach():
     # Bắn thử 19/10: model không trích cho ô diện tích sàn → ô bị bỏ. Giá trị nằm trong lời khách thì nhận; giá trị chỉ có trong
     # câu bot hỏi thì vẫn bỏ.
