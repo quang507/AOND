@@ -23,7 +23,7 @@ from aioi.engine import Engine, SqliteConversationStore
 from aioi.fetch import FetchError
 from aioi.llm import build_provider
 from aioi.projects import SqliteProjectStore
-from aioi.sharepoint import GraphAuth, SharePointMediaStore
+from aioi.kho_tep import LocalDirectoryMediaStore
 
 USER = "demo-seller"
 
@@ -45,10 +45,7 @@ def _emit_reply(name: str, reply: str) -> None:
 def main() -> None:
     settings = load_settings()
     provider = build_provider(settings)
-    media_store = None
-    if settings.sharepoint_configured:
-        auth = GraphAuth(settings.azure_tenant_id, settings.azure_client_id, settings.azure_client_secret)
-        media_store = SharePointMediaStore(auth, settings.sharepoint_site_id)
+    media_store = LocalDirectoryMediaStore("kho_tep_thu")   # chạy thử trên máy: tệp ghi ra thư mục, không lên Supabase
     engine = Engine(
         provider,
         resolver=make_resolver(settings.google_api_key),

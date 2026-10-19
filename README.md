@@ -14,8 +14,8 @@ Dự án này là kho lưu trữ **DUY NHẤT VÀ CHÍNH THỨC** của toàn b�
 | `bot/bridge-zca/` | **Zalo Personal Bridge** | Node.js, `zca-js` | Cầu nối tài khoản Zalo cá nhân với Core Engine. Nhận tin nhắn, ảnh, giọng nói, sticker và phản hồi theo nhịp gõ tự nhiên. Chạy trên VPS Port 5005 (`nhadat-bridge.service`). |
 | `bot/supabase/` | **Database & Migrations** | PostgreSQL, Supabase, Deno | 9 edge functions, bộ di trú schema (`migrations/`), và schema chuẩn (`schema.sql`). |
 | `app/`, `components/`, `lib/` | **Web CRM Admin** | Next.js 15, Tailwind 4, React | Bảng điều khiển CRM (`aioinhadat.vercel.app/admin`) quản lý tin nhắn khách, rổ hàng BĐS theo thời gian thực. Deploy tự động qua Vercel. |
-| `SRS.md` | **Đặc tả yêu cầu phần mềm** | Markdown | Tài liệu đặc tả kỹ thuật chi tiết toàn diện (Data Flow, Catchy Formulas, Address Merger, Follow-up, Reset, Supabase Schemas). |
-| `tests/` | **Bộ kiểm thử tự động** | Pytest | 120 bài test tự động cho schema và engine (100% Passed). |
+| `docs/` | **Bộ tài liệu BA** | Markdown | Nguồn sự thật: yêu cầu, luồng, đặc tả `docs/07-srs.md`, truy vết `docs/08`. |
+| `tests/` | **Bộ kiểm thử tự động** | Pytest | Bài test lõi Python (`bun run test:py`). |
 | `scripts/` | **Công cụ quản trị DB** | Node.js / Python | Script nạp đường sá, rà soát di trú, xuất rổ hàng, đồng bộ prompt. |
 
 ---
@@ -57,7 +57,7 @@ python -m pytest tests/test_schema.py tests/test_engine.py -v
 ---
 
 ## 📜 Tài liệu kỹ thuật chi tiết
-* Đọc bản đặc tả toàn diện tại: [`SRS.md`](SRS.md)
+* Đặc tả phần mềm: [`docs/07-srs.md`](docs/07-srs.md) (bản `SRS.md` ở gốc repo đã gỡ 19/10/2026 — hai nguồn sự thật)
 * Quy chuẩn làm việc cho AI Agent: [`CLAUDE.md`](CLAUDE.md)
 * Mô hình dữ liệu BĐS: [`docs/data-model.md`](docs/data-model.md)
 

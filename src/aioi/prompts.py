@@ -1010,6 +1010,11 @@ def media_group_schema() -> dict[str, Any]:
                             "description": "Mô tả ngắn, trung thực, gồm mọi chi tiết BĐS đọc "
                             "được (địa chỉ, diện tích, giá, kết cấu, pháp lý, tiện ích...).",
                         },
+                        "giay_to": {
+                            "type": "boolean",
+                            "description": "true nếu nhóm là SỔ ĐỎ / SỔ HỒNG / GIẤY TỜ pháp lý / hợp đồng / CCCD — "
+                            "có thông tin chủ nhà, cất RIÊNG, không bao giờ đăng web. false cho ảnh nhà thật.",
+                        },
                         "chi_luu_du_lieu": {
                             "type": "boolean",
                             "description": "true nếu nhóm là TRANG DỮ LIỆU THUẦN (bảng giá/thông "
@@ -1018,7 +1023,7 @@ def media_group_schema() -> dict[str, Any]:
                             "vẽ (giữ ảnh). Phân vân thì false.",
                         },
                     },
-                    "required": ["pham_vi", "tep", "mo_ta"],
+                    "required": ["pham_vi", "tep", "mo_ta", "giay_to"],
                 },
             }
         },

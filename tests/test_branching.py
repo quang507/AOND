@@ -2,7 +2,7 @@ from aioi.schema import Property, PropertyGroup, BuyerLead
 from aioi.config import Settings
 from aioi.engine import Engine, Conversation, SqliteConversationStore
 from aioi.llm.mock import MockProvider
-from aioi.sharepoint import LocalDirectoryMediaStore
+from aioi.kho_tep import LocalDirectoryMediaStore
 
 
 def test_property_group_branching_fields():
@@ -107,10 +107,10 @@ def test_buyer_lead_questioning_sequence():
     assert proj_lead.next_question_field() == "muc_dich"
 
 
-def test_sqlite_and_sharepoint_buyer_sync(tmp_path):
+def test_sqlite_buyer_sync(tmp_path):
     import json
     db_file = str(tmp_path / "test_aioi.db")
-    store_dir = tmp_path / "sharepoint"
+    store_dir = tmp_path / "kho"
     conv_store = SqliteConversationStore(path=db_file)
     media_store = LocalDirectoryMediaStore(base_dir=store_dir)
     settings = Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")
@@ -120,7 +120,6 @@ def test_sqlite_and_sharepoint_buyer_sync(tmp_path):
         provider=provider,
         conversation_store=conv_store,
         media_store=media_store,
-        sync_json=True,
     )
 
     # Simulate buyer interaction
@@ -147,12 +146,5 @@ def test_sqlite_and_sharepoint_buyer_sync(tmp_path):
     assert reloaded_conv.buyer_lead is not None
     assert reloaded_conv.buyer_lead.khu_vuc == "Bình Thạnh"
     assert reloaded_conv.buyer_lead.ngan_sach == "5 tỷ"
-
-    # Verify synced to SharePoint mock store
-    lead_folder = f"Khách mua/{lead.lead_id}"
-    json_path = store_dir / lead_folder / "nhu_cau.json"
-    assert json_path.exists()
-    data = json.loads(json_path.read_text(encoding="utf-8"))
-    assert data["user_key"] == "u_buyer_99"
-    assert data["khu_vuc"] == "Bình Thạnh"
-    assert data["ngan_sach"] == "5 tỷ"
+    # 19/10 (SRS-5.1zzzzzzz56): không còn xuất nhu_cau.json ra kho tệp (tính năng của SharePoint đã bỏ).
+    assert not (store_dir / f"Khách mua/{lead.lead_id}" / "nhu_cau.json").exists()

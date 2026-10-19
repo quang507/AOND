@@ -21,13 +21,9 @@ from .han_muc import HanMuc
 from .engine import Engine, SqliteConversationStore
 from .followup import followup_manager
 from .llm import build_provider
-from .projects import SqliteProjectStore
-from .sharepoint import (
-    GraphAuth,
-    LocalDirectoryMediaStore,
-    MediaStore,
-    SharePointMediaStore,
-)
+from .projects import SqliteProjectStore, SupabaseProjectStore
+from .kho_anh import SupabaseMediaStore
+from .kho_tep import LocalDirectoryMediaStore, MediaStore
 from .supabase_sync import sync_to_supabase_async
 from .voice import is_audio_file, transcribe_voice_url
 
@@ -35,17 +31,33 @@ log = logging.getLogger("aioi.server")
 _co_khoa_drive = False  # /health báo có khoá Drive hay không (không bao giờ in giá trị khoá)
 
 
+def _kho_du_an(settings):
+    """Kiến thức dự án: Supabase (bảng du_an_kien_thuc) khi có service_role; lần đầu chép từ SQLite cũ trên VPS sang."""
+    sqlite = SqliteProjectStore(settings.db_path)
+    if not settings.supabase_service_role_key:
+        return sqlite
+    kho = SupabaseProjectStore(settings.supabase_url, settings.supabase_service_role_key)
+    try:
+        n = kho.chep_tu(sqlite)
+        if n:
+            log.info("Đã chép %s dự án từ SQLite sang du_an_kien_thuc", n)
+    except Exception as e:  # noqa: BLE001 — bảng chưa có / mạng lỗi: chạy tiếp bằng SQLite, không câm bot
+        log.warning("Kho dự án Supabase chưa dùng được (%s) — dùng SQLite", e)
+        return sqlite
+    return kho
+
+
 def _init_engine() -> Engine:
     settings = load_settings()
     provider = build_provider(settings)
 
+    # Ảnh / tài liệu: Supabase Storage khi có service_role (bản chạy thật — web đọc listing_media); không có thì thư mục trên
+    # máy cho chạy thử. SharePoint đã bỏ (SRS-5.1zzzzzzz56).
     media_store: MediaStore
-    if settings.sharepoint_configured:
-        auth = GraphAuth(settings.azure_tenant_id, settings.azure_client_id, settings.azure_client_secret)
-        media_store = SharePointMediaStore(auth, settings.sharepoint_site_id)
+    if settings.supabase_service_role_key:
+        media_store = SupabaseMediaStore(settings.supabase_url, settings.supabase_service_role_key)
     else:
-        # Graceful local fallback storing files + thong_tin.json matching SharePoint structure
-        media_store = LocalDirectoryMediaStore("sharepoint_store")
+        media_store = LocalDirectoryMediaStore("kho_tep_thu")
 
     sqlite_store = SqliteConversationStore(settings.db_path)
     if settings.supabase_service_role_key:
@@ -67,11 +79,10 @@ def _init_engine() -> Engine:
         provider,
         resolver=make_resolver(khoa),
         folder_namer=make_folder_namer(khoa),
-        project_store=SqliteProjectStore(settings.db_path),
+        project_store=_kho_du_an(settings),
         conversation_store=conv_store,
         media_store=media_store,
         max_photos_per_listing=settings.max_photos_per_listing,
-        sync_json=True,
         nga_tu_resolver=dia_ban_tu_nga_tu,
     )
 

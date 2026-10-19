@@ -3,7 +3,7 @@
 Per turn it: (1) silently extracts property data from the user's message into the
 dynamic schema, (2) recomputes gamification scores, (3) picks the next single field to
 ask about, and (4) generates a <=30-word persona reply. State is kept in-memory per
-conversation (a real deployment would persist to SharePoint per SRD §VII).
+conversation (persisted to Supabase via SupabaseConversationStore).
 """
 from __future__ import annotations
 
@@ -82,7 +82,8 @@ from .prompts import (
 from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import Property, BuyerLead, PropertyGroup
-from .sharepoint import MediaStore, SharePointError, extension_for, listing_folder, sanitize_filename
+from .kho_anh import la_uuid
+from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
 
 # Headroom so the token cap never truncates a reply. The model controls actual length
 # via the prompt (brief while chatting, full ad when asked / complete).
@@ -240,7 +241,7 @@ class Listing:
     listing_proposed: bool = False  # shown the draft ad & asked "hấp dẫn chưa"?
     history_start: int = 0  # index into the seller's history where THIS listing's turns begin
     status: str = "đang bán"  # đang bán / đã bán / dừng bán / đã cho thuê
-    media: list[dict[str, str]] = field(default_factory=list)  # SharePoint MediaRef.to_dict()s
+    media: list[dict[str, str]] = field(default_factory=list)  # MediaRef.to_dict()s (kho Supabase Storage)
 
     @property
     def display_status(self) -> str:
@@ -621,13 +622,11 @@ class Engine:
         conversation_store: ConversationStore | None = None,
         media_store: MediaStore | None = None,
         max_photos_per_listing: int = MAX_PHOTOS_PER_LISTING,
-        sync_json: bool = False,
         nga_tu_resolver: Callable[[str | None], dict[str, str] | None] | None = None,
     ):
         self._provider = provider
         self._fetcher = fetcher  # injectable so tests/offline don't hit the network
         self._max_photos = max_photos_per_listing  # cap photos KEPT per listing (storage cost)
-        self._sync_json = sync_json
         # url -> [(download_url, name|None)]; expands Google Drive folders/files when a
         # GOOGLE_API_KEY is configured. Default is a pass-through (one url, no name).
         self._resolve = resolver or (lambda url: [(url, None)])
@@ -635,7 +634,7 @@ class Engine:
         self._nga_tu = nga_tu_resolver
         # url -> the ENCLOSING folder's own name (a hint for grouping a multi-file batch).
         self._folder_name = folder_namer or (lambda url: None)
-        # SharePoint (kho gốc) — stores the seller's raw files; None = files aren't kept
+        # Kho tệp (Supabase Storage ở bản chạy thật, thư mục trên máy khi thử) — None = không giữ tệp
         # (only their vision read-out is), the behavior before this store existed.
         self._media_store = media_store
         self._projects = project_store or InMemoryProjectStore()
@@ -848,8 +847,8 @@ class Engine:
                     f"{project_name}/_Chung", f"{sanitize_filename(title)}.md",
                     markdown.encode("utf-8"), "text/markdown")
                 web_url, item_id = ref.web_url, ref.item_id
-            except SharePointError:
-                pass  # DB copy still kept; SharePoint is best-effort
+            except KhoTepError:
+                pass  # DB copy still kept; kho tệp is best-effort
         doc = {"kind": kind, "title": title, "markdown": markdown,
                "web_url": web_url, "item_id": item_id, "fetched_at": str(int(time.time()))}
         project = self._projects.get(project_name) or Project(name=project_name)
@@ -2203,9 +2202,9 @@ class Engine:
                     update_fields["ma_so_can"] = update_fields["ma_can"]
 
                 captured = conv.active.prop.update(update_fields)
-                refs, capped = self._upload_media(
+                refs, capped = self._upload_media(   # sổ đỏ / giấy tờ: kho RIÊNG, không bao giờ lên web (§5)
                     self._folder_for(conv.active), fetched,
-                    image_slots=self._max_photos - _image_count(conv.active.media),
+                    image_slots=self._max_photos - _image_count(conv.active.media), rieng=True,
                 )
                 conv.active.media += refs
                 self._sync_media_folder(conv.active)
@@ -2310,6 +2309,10 @@ class Engine:
         return ""
 
     def _folder_for(self, listing: Listing) -> str:
+        # Kho Supabase: thư mục ảnh căn = UUID tin (ràng buộc listing_media trên DB), không đổi theo địa chỉ (SRS-5.1zzzzzzz56).
+        thu_muc_can = getattr(self._media_store, "thu_muc_can", None)
+        if thu_muc_can is not None and la_uuid(listing.listing_id):
+            return thu_muc_can(listing.listing_id)
         return listing_folder(self._canonical_du_an(listing.prop.fields.get("du_an")),
                                listing.prop.fields.get("dia_chi"),
                                listing.listing_id, listing.prop.fields.get("ma_so_can"))
@@ -2352,7 +2355,7 @@ class Engine:
             try:
                 self._ingest_doc_bytes(m.data, m.media_type, project_name, kind=kind, title=title)
                 titles.append(title)
-            except (FetchError, SharePointError, ValueError):
+            except (FetchError, KhoTepError, ValueError):
                 continue
         return titles
 
@@ -2398,7 +2401,7 @@ class Engine:
                 try:
                     self._ingest_doc_bytes(m.data, m.media_type, du_an,
                                            kind="tài liệu dự án", title=title)
-                except (FetchError, SharePointError, ValueError):
+                except (FetchError, KhoTepError, ValueError):
                     pass
             return [], 0
         captured = self._extract(conv)
@@ -2433,15 +2436,15 @@ class Engine:
             return
         try:
             self._media_store.move_folder(old_folder, new_folder)
-        except SharePointError:
+        except KhoTepError:
             return  # leave refs on the old path (item_ids still resolve); retry a later turn
         for ref in listing.media:  # keep refs' folder in sync so the next move computes correctly
             ref["path"] = f"{new_folder}/{ref['filename']}"
 
     def _upload_media(
-        self, folder: str, items: list[FetchedMedia], image_slots: int | None = None
+        self, folder: str, items: list[FetchedMedia], image_slots: int | None = None, rieng: bool = False
     ) -> tuple[list[dict[str, str]], int]:
-        """Upload each fetched file to SharePoint (kho gốc) under `folder`. Returns
+        """Upload each fetched file to the kho tệp under `folder`. Returns
         `(refs, n_capped)` — the stored references (the DB keeps ONLY these, never the bytes)
         and how many PHOTOS were skipped because the per-listing cap was reached (so the bot
         can tell the seller). To keep storage cheap (see [[aioi-data-model]]): PHOTOS are
@@ -2474,8 +2477,8 @@ class Engine:
             else:
                 filename = f"{m.display_name}_{hashlib.sha1(data).hexdigest()[:8]}{ext}"
             try:
-                ref = self._media_store.upload(folder, filename, data, media_type)
-            except SharePointError:
+                ref = self._media_store.upload(folder, filename, data, media_type, rieng=rieng)
+            except KhoTepError:
                 continue
             refs.append(ref.to_dict())
         return refs, n_capped
@@ -2572,6 +2575,7 @@ class Engine:
             items = [by_label[f] for f in (g.get("tep") or []) if f in by_label]
             # A pure DATA page (bảng giá/thông số): keep the extracted data, abandon the image.
             data_only = bool(g.get("chi_luu_du_lieu"))
+            giay_to = g.get("giay_to") is not False   # thiếu cờ → coi như giấy tờ, cất RIÊNG (an toàn hơn lộ ảnh sổ, §5)
             store_items = [] if data_only else items
             tag = " (chỉ lấy dữ liệu, không lưu ảnh)" if data_only else ""
             if scope == "chung":
@@ -2606,7 +2610,7 @@ class Engine:
                 captured += self._apply_text_to_listing(target, mo_ta)
                 refs, capped = self._upload_media(
                     self._folder_for(target), store_items,
-                    image_slots=self._max_photos - _image_count(target.media))
+                    image_slots=self._max_photos - _image_count(target.media), rieng=giay_to)
                 target.media += refs
                 total_capped += capped
                 summary.append(f"🏠 Cập nhật căn: {target.label()} ({files}){tag}:\n{mo_ta}")
@@ -2616,7 +2620,7 @@ class Engine:
                 captured += self._apply_text_to_listing(target, mo_ta)
                 refs, capped = self._upload_media(
                     self._folder_for(target), store_items,
-                    image_slots=self._max_photos - _image_count(target.media))
+                    image_slots=self._max_photos - _image_count(target.media), rieng=giay_to)
                 target.media += refs
                 total_capped += capped
                 summary.append(f"🆕 Căn mới: {target.label()} ({files}){tag}:\n{mo_ta}")
@@ -2659,66 +2663,6 @@ class Engine:
         if all(li.listing_id != conv.active_listing_id for li in conv.listings):
             conv.active_listing_id = conv.listings[-1].listing_id
 
-    def sync_listing_json_to_sharepoint(self, listing: Listing) -> None:
-        """Export the listing's structured data as `thong_tin.json` and upload it to
-        the listing's SharePoint folder, ensuring every property folder holds BOTH
-        media bytes (photos/PDFs) and complete machine-readable JSON data."""
-        if self._media_store is None:
-            return
-        if not listing.prop.fields and not listing.prop.loai_hinh and not listing.media:
-            return
-        folder = self._folder_for(listing)
-        data = {
-            "listing_id": listing.listing_id,
-            "status": listing.display_status,
-            "loai_hinh": listing.prop.loai_hinh,
-            "is_rental": listing.prop.is_rental,
-            "du_an": listing.prop.fields.get("du_an"),
-            "fields": dict(listing.prop.fields),
-            "completeness": round(listing.prop.completeness(), 2),
-            "missing_fields": listing.prop.missing_fields(),
-            "summary_ready": listing.prop.summary_ready(),
-            "media_count": len(listing.media),
-            "media": listing.media,
-            "updated_at": int(time.time()),
-        }
-        json_bytes = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
-        try:
-            self._media_store.upload(folder, "thong_tin.json", json_bytes, "application/json")
-        except Exception as e:
-            log.warning("Không thể lưu thong_tin.json lên SharePoint: %s", e)
-
-    def sync_lead_json_to_sharepoint(self, lead: BuyerLead) -> None:
-        """Export the buyer's lead data as `nhu_cau.json` and upload it to
-        the SharePoint folder: `Khách mua/{lead.lead_id}`, ensuring enterprise
-        teams can access structured buyer profiles from OneDrive/SharePoint."""
-        if self._media_store is None:
-            return
-        folder = f"Khách mua/{lead.lead_id}"
-        data = {
-            "lead_id": lead.lead_id,
-            "user_key": lead.user_key,
-            "loai_giao_dich": lead.loai_giao_dich,
-            "loai_bds": lead.loai_bds,
-            "ngan_sach": lead.ngan_sach,
-            "khu_vuc": lead.khu_vuc,
-            "so_phong_ngu": lead.so_phong_ngu,
-            "yeu_cau_xe_hoi": lead.yeu_cau_xe_hoi,
-            "huong": lead.huong,
-            "muc_dich": lead.muc_dich,
-            "tien_do_mua": lead.tien_do_mua,
-            "vay_ngan_hang": lead.vay_ngan_hang,
-            "stage": lead.stage,
-            "notes": lead.notes,
-            "fields": dict(lead.fields),
-            "updated_at": int(lead.updated_at),
-        }
-        json_bytes = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
-        try:
-            self._media_store.upload(folder, "nhu_cau.json", json_bytes, "application/json")
-        except Exception as e:
-            log.warning("Không thể lưu nhu_cau.json lên SharePoint: %s", e)
-
     def _trang_thai_web(self, conv: Conversation) -> dict | None:
         """Trạng thái THẬT của tin đang nói trên web (kho Supabase). Kho không có khái niệm web → None (giữ lời cũ); có nhưng đọc
         lỗi → {"len_web": None}: bot nói trung tính, không bịa "đã đăng". Ghi lượt này xuống trước để trigger DB tính trên dữ liệu
@@ -2739,11 +2683,6 @@ class Engine:
         self._drop_stub_listings(conv)   # clean up the blank starter once real căn exist
         if self._convstore is not None:  # persist the listing after every turn
             self._convstore.save(conv)
-        if self._sync_json:
-            if conv.role == "buyer" and conv.buyer_lead:
-                self.sync_lead_json_to_sharepoint(conv.buyer_lead)
-            else:
-                self.sync_listing_json_to_sharepoint(conv.active)
         timeliness = self._timeliness(conv, now)
         completeness = conv.prop.completeness()  # the active listing
         prop_score = g.property_score(completeness, timeliness)

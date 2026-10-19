@@ -21,6 +21,7 @@ aioi.db.bak*
 .claude/settings.local.json
 desktop.ini
 sharepoint_store/
+kho_tep_thu/
 backups/
 *.log
 .next/

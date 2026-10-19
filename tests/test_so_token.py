@@ -65,3 +65,26 @@ def test_khong_co_supabase_thi_chi_log_khong_gui():
 def test_khong_co_usage_thi_khong_ghi():
     assert dem_token(SimpleNamespace(content=[])) is None
     assert SoToken(lambda b: None, nen=False).ghi("chat", "m", SimpleNamespace()) is None
+
+
+def test_dau_song_va_bao_het_so_du_cho_the_quota():
+    # SRS-5.1zzzzzzz56: thẻ Quota tiêu hao biết "hết số dư" nhờ bot_health('model_chinh') + dòng sổ lỗi "credit balance is too
+    # low" — bot TS ghi, lõi Python thì không.
+    goi = []
+    p = _provider([])
+    p._so = SoToken(lambda b: None, nen=False, rpc=lambda ten, body: goi.append((ten, body)))
+    p.chat("s", [Message("user", "hi")])
+    assert ("beat", {"p_who": "model_chinh"}) in goi
+
+    class HetTien(Exception):
+        pass
+
+    def tu_choi(**kw):
+        raise HetTien("Error code: 400 - Your credit balance is too low to access the Anthropic API.")
+    p._client = SimpleNamespace(messages=SimpleNamespace(create=tu_choi))
+    try:
+        p.chat("s", [Message("user", "hi")])
+    except HetTien:
+        pass
+    ten, body = goi[-1]
+    assert ten == "log_loi" and "credit balance is too low" in body["p_detail"] and body["p_source"] == "claude chat"
