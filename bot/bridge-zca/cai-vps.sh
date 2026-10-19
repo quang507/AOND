@@ -83,9 +83,15 @@ if [ -d /opt/aond_core/src/aioi ]; then
   buoc "lõi Python aond-core ← $DIR/src/aioi"
   LUU="/root/aond_core-aioi-$(date +%Y%m%d%H%M%S).tgz"
   tar -czf "$LUU" -C /opt/aond_core/src aioi
-  cp -r --no-preserve=ownership "$DIR/src/aioi/." /opt/aond_core/src/aioi/
+  ls -1t /root/aond_core-aioi-*.tgz 2>/dev/null | tail -n +6 | xargs -r rm -f   # giữ 5 bản lõi cũ gần nhất
+  # 19/10/2026: chép GƯƠNG — tệp đã gỡ khỏi repo cũng bị gỡ trên VPS (bản `cp -r` cũ để lại sharepoint.py, vector_store.py,
+  # llm/gemini.py sau khi repo xoá). Bản cũ vẫn nằm trong $LUU.
+  rm -rf /opt/aond_core/src/aioi.moi
+  cp -r --no-preserve=ownership "$DIR/src/aioi" /opt/aond_core/src/aioi.moi
+  find /opt/aond_core/src/aioi.moi -name __pycache__ -type d -prune -exec rm -rf {} +
+  rm -rf /opt/aond_core/src/aioi && mv /opt/aond_core/src/aioi.moi /opt/aond_core/src/aioi
   systemctl restart aond-core
-  for i in $(seq 1 20); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done
+  for i in $(seq 1 60); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done
   SUC_KHOE=$(curl -fsS -m 3 http://127.0.0.1:8000/health) || { echo "aond-core không trả /health sau khởi động lại — bản cũ ở $LUU"; exit 1; }
   # /health chỉ báo có / không (provider, model, stt, drive) — không mang giá trị khoá nào.
   xong "aond-core chạy code repo, /health: $SUC_KHOE (bản cũ: $LUU)"

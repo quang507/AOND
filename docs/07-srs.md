@@ -6159,6 +6159,24 @@ tin làm thư mục, `save` tạo tin đúng id + ghi `listing_media` một lầ
 gần đúng; chép một lần từ kho cũ), `tests/test_so_token.py::test_dau_song_va_bao_het_so_du_cho_the_quota`. Chưa thử tải ảnh thật lên
 Storage từ máy kiểm (không có service_role) — kiểm trên Zalo: gửi ảnh nhà → `listing_media` có dòng, ảnh hiện trên web khi tin đăng.
 
+### SRS-5.1zzzzzzz57 · Lõi khởi động chậm vì chép kiến thức dự án đồng bộ; cai-vps chép gương (19/10/2026)
+
+**Ca gốc.** Deploy 5.1zzzzzzz56: `cai-vps` thoát 1, `/health` không trả lời sau 20 giây. Lõi không sập — `SupabaseProjectStore.chep_tu`
+chạy ngay trong lúc khởi động, chép từng dự án SQLite cũ lên `du_an_kien_thuc` (~3 dự án / giây, hàng nghìn dự án), nên uvicorn chưa
+nhận tin cho tới khi chép xong; bot im suốt lúc đó. Cùng lượt: log cai-vps in "Only in /opt/aond_core/src/aioi: sharepoint.py,
+vector_store.py, llm/gemini.py" — `cp -r` chép đè chứ không gỡ tệp repo đã xoá. Chủ dự án hỏi "code đã sạch từ code đến vps chưa",
+"chép nhiều vậy có gây đầy ko" (không: ~1 KB / dự án, DB 239 MB / 500 MB).
+
+**Lớp lỗi.** Việc dài chạy trên đường khởi động; đường deploy chép một chiều. **Chỗ cùng lớp.** `khoa_drive` (một lượt Vault, timeout 5 s)
+và `HanMuc.tu_cau_hinh` (một lượt Vault) cũng chạy lúc khởi động — mỗi cái tối đa vài giây, giữ.
+
+**Sửa.** `server._kho_du_an`: chỉ thử bảng một lượt rồi chạy `chep_tu` trên luồng nền. `chep_tu` chép những dự án Supabase CHƯA có
+(không đè), nên lượt chép bị cắt giữa chừng thì lần khởi động sau chép tiếp. `cai-vps.sh`: chép gương `src/aioi` (thư mục mới rồi đổi
+tên, bỏ `__pycache__`), chờ `/health` tới 60 giây, giữ 5 bản lõi cũ gần nhất trong `/root`.
+
+**Kiểm.** `tests/test_kho_du_an.py::test_chep_bi_cat_giua_chung_thi_lan_sau_chep_tiep` (đỏ với bản "kho đã có dòng là thôi"). Chạy
+`cai-vps` sau khi merge: dòng "Only in …" phải hết.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
