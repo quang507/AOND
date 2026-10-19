@@ -6732,6 +6732,32 @@ tới khách, công cụ ép buộc với ô tự soát đứng trước; engine
 (máy chủ giả lên sau 2 giây; bản cũ trượt; lõi treo vẫn chỉ gửi ≤ 2 lần — đã chạy cả hai chiều); sửa theo luật mới
 `tests/test_ban_nhap_du_dieu_kien.py`, `tests/test_cau_hoi_theo_loai.py`; ca lọc chữ trong `tests/test_bot_bot_hoi_lap.py` gỡ cùng hàm. pytest 404 đạt. Model thật: `ban-thu-ban`.
 
+### SRS-5.1zzzzzzz77 · Chủ nhà có tin nhưng chưa có hội thoại vẫn được nạp tin; ghi tên ô lượt AI lập thao tác (19/10/2026)
+
+**Ca gốc.** Bắn thử e2e 3 lượt người mua (chủ dự án: "bắn test e2e 3 lần đi"). Cả 3 lượt: chủ nhà trả lời câu khách mua hỏi ("Dạ căn
+đó sổ hồng riêng chính chủ…") thì câu trả lời được chuyển cho khách đúng, nhưng bot quay sang hỏi chủ nhà "Căn này là chung cư, nhà phố
+hay lô đất?" và người bán có thêm một tin rỗng (dọn dữ liệu thấy 2 tin). Hai lượt đỏ thêm ở "bot đưa ra căn #mã" — do ba lượt chạy song
+song, mỗi lượt có một căn thử cùng khu, bot kể căn của lượt khác (lỗi cách bắn thử, không phải lỗi bot).
+
+**Lớp lỗi.** Trạng thái người bán lấy từ MỘT dấu hiệu phụ: `SupabaseConversationStore.load` thấy không có dòng `conversations` thì trả
+None — lõi coi như người mới, bỏ qua tin đang có trên DB. Người bán có tin mà chưa có hội thoại là chuyện thường: tin nhập từ CRM / rổ
+hàng, hội thoại đã xoá trên CRM, người rao chỉ nhắn để trả lời khách mua. **Chỗ cùng lớp đã soát:** `load` nhánh không có `sellers` (đúng
+là người mới — giữ); bản SQLite chỉ bù phần thiếu, không quyết người mới hay cũ.
+
+**Sửa.** `src/aioi/supabase_store.py` `load`: không có hội thoại nhưng có tin → vẫn nạp tin (lịch sử rỗng, bản SQLite reset như cũ);
+không tin không hội thoại → None như cũ. `src/aioi/engine.py` ghi log TÊN ô lượt AI lập thao tác trả (không giá trị) — ca "diện tích
+sàn tầm 170m vuông" không vào kế hoạch lặp lại (3/8 lượt bắn thử), không dòng "Bỏ ô", không dòng "chạm trần token" (giả thuyết trần
+token ở SRS-5.1zzzzzzz76 không đúng ở lượt này); `ban-thu-ban.sh` in các dòng đó. `bot/tests/ban-thu-mua.sh`: đạt khi bot đưa ra một
+mã căn bất kỳ (chạy song song); thêm soát chủ nhà trả lời xong không bị hỏi loại nhà, người bán vẫn đúng 1 tin.
+
+**Lỗi do chính bản này (bắn thử 10:49, 2/6 lượt):** dòng log tên ô gọi `.get` trên mọi thao tác, model có lượt trả thao tác là CHUỖI
+→ 500 cả lượt chat (`AttributeError: 'str' object has no attribute 'get'`); chỗ áp dụng thao tác đã lọc `isinstance(op, dict)` từ trước,
+dòng log thì không. Sửa: log cùng lọc. Kiểm `tests/test_bang_chung_o_tin.py::test_ke_hoach_co_thao_tac_la_chuoi_khong_sap_luot` (đỏ trên
+code lỗi). Bài học: dòng chẩn đoán mới cũng phải đọc đầu ra model theo đúng cách code chính đọc.
+
+**Kiểm.** `tests/test_trang_thai_va_nap_lai.py::test_load_nguoi_ban_co_tin_ma_chua_co_hoi_thoai` (đỏ trên code cũ, đã chạy), pytest 406
+đạt. Model thật: `ban-thu-mua`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

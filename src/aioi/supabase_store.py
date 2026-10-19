@@ -532,15 +532,18 @@ class SupabaseConversationStore(KhoNguoiMua):
 
             # 2. Check if conversation exists
             convs = self._get(f"conversations?seller_id=eq.{seller_id}&channel=eq.zalo_personal_test")
+            conv_id = None
             if not convs:
-                # Conversation was deleted/reset on CRM!
+                # Hội thoại bị xoá / reset trên CRM: bỏ lịch sử. 19/10/2026 (SRS-5.1zzzzzzz77): người bán vẫn có tin trên DB (tin
+                # nhập từ CRM, rổ hàng, hội thoại đã xoá) thì vẫn nạp tin — bản trước trả None, lõi coi như người mới: chủ nhà trả
+                # lời câu khách mua hỏi xong bị hỏi "căn này là chung cư, nhà phố hay đất" và sinh thêm một tin rỗng.
                 if self.fallback:
                     self.fallback.reset(user_key)
-                return None
-
-            conv_data = convs[0]
-            conv_id = conv_data["id"]
-            self._conv_cache[seller_id] = conv_id
+                if not self._get(f"listings?seller_id=eq.{seller_id}&select=id&limit=1"):
+                    return None
+            else:
+                conv_id = convs[0]["id"]
+                self._conv_cache[seller_id] = conv_id
 
             # Bản SQLite trên VPS giữ thứ Supabase không có cột (bảng giá riêng, mốc lịch sử, ảnh đã cất, đã trình bản nháp…) —
             # Supabase vẫn là nguồn cho tin và hội thoại, SQLite chỉ bù phần thiếu (SRS-5.1zzzzzzz63).
@@ -579,7 +582,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 listings.append(li)
 
             # 4. Load messages for history
-            history_rows = self._get(f"messages?conversation_id=eq.{conv_id}&order=created_at.asc")
+            history_rows = self._get(f"messages?conversation_id=eq.{conv_id}&order=created_at.asc") if conv_id else []
             history: list[Turn] = []
             for m in history_rows:
                 sender = m.get("sender", "")

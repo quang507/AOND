@@ -133,3 +133,11 @@ def test_o_chu_khong_nhan_theo_so():
     f = eng.conversation("chu-10").active.prop.fields
     assert f.get("gia") == "8.5 tỷ"
     assert "thuong_luong" not in f
+
+
+def test_ke_hoach_co_thao_tac_la_chuoi_khong_sap_luot():
+    # Bắn thử 19/10 10:49: model trả một thao tác là chuỗi → dòng log tên ô (SRS-5.1zzzzzzz77) gọi .get trên chuỗi → 500.
+    eng = Engine(AiGia({"operations": ["update gia", {"op": "update", "fields": "gia"},
+                                       {"op": "update", "fields": {"gia": "8,5 tỷ"}}], "user_intent": "sell"}))
+    eng.handle("chu-11", "giá 8,5 tỷ")
+    assert eng.conversation("chu-11").active.prop.fields.get("gia") == "8,5 tỷ"

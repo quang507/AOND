@@ -127,3 +127,26 @@ def test_kho_supabase_khong_doi_duong_dan_anh():
                  media=[{"path": f"listing-public/{UUID_GACH}/a.jpg", "filename": "a.jpg"}])
     Engine._sync_media_folder(e, li)
     assert li.media[0]["path"] == f"listing-public/{UUID_GACH}/a.jpg"
+
+
+class StoreChuaHoiThoai(StoreGia):
+    """Người bán có tin trên DB nhưng chưa có (hoặc đã xoá) dòng hội thoại — tin nhập từ CRM, người rao chỉ trả lời câu khách mua."""
+
+    def _request(self, method, endpoint, data=None, prefer=None):
+        if endpoint.startswith("conversations?"):
+            self.goi.append((method, endpoint, data))
+            return []
+        if endpoint.startswith("listings?seller_id") and "limit=1" in endpoint:
+            self.goi.append((method, endpoint, data))
+            return [{"id": UUID_GACH}] if self.rows else []
+        return super()._request(method, endpoint, data, prefer)
+
+
+def test_load_nguoi_ban_co_tin_ma_chua_co_hoi_thoai():
+    # SRS-5.1zzzzzzz77 (bắn thử người mua 19/10): chủ nhà trả lời câu khách mua → lõi coi như người mới, hỏi "chung cư, nhà phố hay
+    # đất" và sinh thêm một tin rỗng. Có tin trên DB thì phải nạp tin, chỉ bỏ lịch sử.
+    rows = [_dong(UUID_GACH, UUID[:8].upper())]
+    conv = StoreChuaHoiThoai(rows=rows).load("zalo-thu-1")
+    assert conv is not None and conv.role == "seller" and [li.listing_id for li in conv.listings] == [UUID]
+    assert conv.history == []
+    assert StoreChuaHoiThoai(rows=[]).load("zalo-thu-1") is None      # không tin, không hội thoại → như người mới (giữ như cũ)
