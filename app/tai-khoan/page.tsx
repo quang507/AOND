@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import ListingCard from "@/components/ListingCard";
 import { readRecent } from "@/components/TrackView";
-import { CARD_COLS, supabase, type ListingCard as CardRow } from "@/lib/supabase";
+import { CARD_COLS, supabase, type ListingCard as CardRow, TRANG_THAI_HIEN } from "@/lib/supabase";
 
 export default function Page() {
   const [email, setEmail] = useState<string | null | undefined>(undefined);
@@ -62,7 +62,7 @@ export default function Page() {
       if (anchor?.ward) {
         let q = supabase.from("listings").select(CARD_COLS)
           .eq("deal", anchor.deal).eq("ward", anchor.ward)
-          .in("status", ["dang_ban", "dang_quan_tam"]) // FR-139: chỉ tin đang lên kệ
+          .in("status", TRANG_THAI_HIEN) // FR-139: chỉ tin đang lên kệ
           .not("price_raw", "is", null).neq("price_raw", "")
           .limit(12);
         if (anchor.price_vnd && anchor.price_vnd > 0) {

@@ -164,7 +164,7 @@ type KhachCrm = {
   }[];
 };
 const TRANG_THAI_TIN: Record<string, string> = {
-  cho_thong_tin: "chờ thông tin", dang_ban: "đang bán", dang_quan_tam: "đang quan tâm", da_chot: "đã chốt", an: "ẩn",
+  cho_thong_tin: "chờ thông tin", dang_ban: "đang bán", dang_quan_tam: "đang quan tâm", da_coc: "đã cọc", da_chot: "đã chốt", an: "ẩn",
 };
 const TRANG_THAI_HOI: Record<string, string> = { pending: "đang chờ", answered: "đã trả lời" };
 const TRANG_THAI_XEM: Record<string, string> = {

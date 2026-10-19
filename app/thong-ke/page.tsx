@@ -2,7 +2,7 @@
 // tính từ chính kho tin Quận 5 của mình). SSR + ISR 1h.
 import type { Metadata } from "next";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { supabase, TRANG_THAI_HIEN } from "@/lib/supabase";
 import { zaloLink } from "@/lib/format";
 
 export const revalidate = 3600;
@@ -21,7 +21,7 @@ export default async function Page() {
     .from("listings")
     .select("ward, price_vnd, area_m2")
     .eq("deal", "ban")
-    .in("status", ["dang_ban", "dang_quan_tam"]) // FR-139: thống kê trên tin đang bán
+    .in("status", TRANG_THAI_HIEN) // FR-139: thống kê trên tin đang bán
     .gt("price_vnd", 0)
     .gt("area_m2", 0);
 

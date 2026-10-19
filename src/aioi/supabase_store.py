@@ -52,6 +52,32 @@ def vai_tu_seller_type(raw: Any) -> "SellerRole":
 # chỉ đặt lúc TẠO tin (`cho_thong_tin`; trigger `listings_quyet_dinh_dang_tin` tự lên `dang_ban` khi đủ) — `dang_rao` cũ không
 # có trong CHECK, và ghi đè mỗi lượt sẽ xoá trạng thái admin đặt trên CRM (`an`, `da_chot`).
 MA_PHAP_LY = {"so_hong_rieng", "so_hong_chung", "so_hong", "hdmb", "giay_tay"}
+
+# Trạng thái tin: chữ của engine (STATUS_MAP) ↔ mã cột `listings.status` (SRS-5.1zzzzzzz63). Trước bản này save() không bao giờ ghi
+# status — khách nói "bán rồi / ngưng rao" chỉ đổi trong bộ nhớ, web vẫn hiện tin.
+TRANG_THAI_SANG_DB = {"đã bán": "da_chot", "đã cho thuê": "da_chot", "đã cọc": "da_coc",
+                      "dừng bán": "an", "không rao": "an", "thôi đăng ký": "an"}
+DB_SANG_TRANG_THAI = {"da_chot": "đã bán", "da_coc": "đã cọc", "an": "không rao"}
+_DB_DANG_HIEN = ("dang_ban", "dang_quan_tam", "da_coc")
+
+
+def ma_trang_thai(trang_thai: str | None, db_hien_tai: str | None) -> str | None:
+    """Mã `listings.status` cần ghi, hoặc None = để nguyên (trigger `listings_quyet_dinh_dang_tin` tự quyết cho_thong_tin ↔ dang_ban).
+    "đã cọc" chỉ áp cho tin ĐANG HIỆN — tin chưa duyệt bản nháp không vì "cọc rồi" mà lên web. "đang bán" trên tin đang ẩn / đã chốt /
+    đã cọc → về cho_thong_tin để trigger xét lại điều kiện lên web (đủ giá · diện tích · phường + khách đã duyệt)."""
+    ma = TRANG_THAI_SANG_DB.get(trang_thai or "")
+    if ma == "da_coc" and db_hien_tai not in _DB_DANG_HIEN:
+        return None
+    if ma:
+        return None if ma == db_hien_tai else ma
+    if db_hien_tai in ("an", "da_chot", "da_coc"):
+        return "cho_thong_tin"
+    return None
+
+
+def trang_thai_tu_db(ma: str | None, la_thue: bool = False) -> str:
+    chu = DB_SANG_TRANG_THAI.get(ma or "", "đang bán")
+    return "đã cho thuê" if chu == "đã bán" and la_thue else chu
 def so_m2(fields: dict[str, str]) -> float | None:
     """Diện tích (m²) từ ô bóc tách: số đầu tiên của `dien_tich` / `dien_tich_dat`, không có thì tính từ `kich_thuoc` (4x15)."""
     for k in ("dien_tich", "dien_tich_dat"):
@@ -85,6 +111,7 @@ class SupabaseConversationStore:
         self._seller_cache: dict[str, str] = {}
         self._conv_cache: dict[str, str] = {}
         self._anh_da_ghi: set[str] = set()   # "bucket/khoá" đã có dòng listing_media — khỏi gửi lại mỗi lượt
+        self._active_da_ghi: dict[str, str] = {}   # seller_id → id căn đang nói đã ghi lên sellers.active_listing_id
 
     @property
     def is_configured(self) -> bool:
@@ -278,6 +305,7 @@ class SupabaseConversationStore:
                 self._patch(f"conversations?id=eq.{conv_id}", {"last_message_at": now_iso})
 
             # 2. Persist listings into Supabase `listings` table
+            lid_dang_noi = None
             for li in conv.listings:
                 fields = li.prop.fields
                 deal_type = "thue" if li.prop.is_rental else "ban"
@@ -310,11 +338,14 @@ class SupabaseConversationStore:
                 # Tin trên DB mang ĐÚNG id của Listing (uuid) — thư mục ảnh trên Storage là `<uuid>/…` và ràng buộc
                 # listing_media_duong_dan_theo_uuid đòi khớp (SRS-5.1zzzzzzz56). Tin cũ tạo trước bản này: tìm theo code.
                 lid_mong = str(uuid.UUID(li.listing_id)) if la_uuid(li.listing_id) else None
-                existing = self._get(f"listings?id=eq.{lid_mong}&select=id") if lid_mong else []
+                existing = self._get(f"listings?id=eq.{lid_mong}&select=id,status") if lid_mong else []
                 if not existing:
-                    existing = self._get(f"listings?seller_id=eq.{seller_id}&code=eq.{listing_payload['code']}&select=id")
+                    existing = self._get(f"listings?seller_id=eq.{seller_id}&code=eq.{listing_payload['code']}&select=id,status")
                 if existing:
                     lid = existing[0]["id"]
+                    ma = ma_trang_thai(getattr(li, "status", None), existing[0].get("status"))
+                    if ma:
+                        listing_payload["status"] = ma
                     self._patch(f"listings?id=eq.{lid}", listing_payload)
                 else:
                     # Tin tạo từ chat chỉ lên web khi khách đồng ý bản nháp (trigger listings_quyet_dinh_dang_tin đọc
@@ -326,6 +357,13 @@ class SupabaseConversationStore:
                     lid = (tao[0].get("id") if tao else None) or lid_mong
                 if lid:
                     self._ghi_anh(lid, getattr(li, "media", None) or [])
+                    if li.listing_id == getattr(conv, "active_listing_id", None):
+                        lid_dang_noi = lid
+
+            # 3. Căn đang nói tới → sellers.active_listing_id, để khởi động lại (mỗi lần cài VPS) không quay về căn đầu tiên.
+            if lid_dang_noi and self._active_da_ghi.get(seller_id) != lid_dang_noi:
+                self._patch(f"sellers?id=eq.{seller_id}", {"active_listing_id": lid_dang_noi})
+                self._active_da_ghi[seller_id] = lid_dang_noi
 
         except Exception as e:
             log.error("Failed to save conversation to Supabase: %s", e)
@@ -428,6 +466,15 @@ class SupabaseConversationStore:
             conv_id = conv_data["id"]
             self._conv_cache[seller_id] = conv_id
 
+            # Bản SQLite trên VPS giữ thứ Supabase không có cột (bảng giá riêng, mốc lịch sử, ảnh đã cất, đã trình bản nháp…) —
+            # Supabase vẫn là nguồn cho tin và hội thoại, SQLite chỉ bù phần thiếu (SRS-5.1zzzzzzz63).
+            cu = None
+            if self.fallback:
+                try:
+                    cu = self.fallback.load(user_key)
+                except Exception as e:  # noqa: BLE001
+                    log.warning("Fallback SQLite load failed: %s", e)
+
             # 3. Load listings for this seller
             db_listings = self._get(f"listings?seller_id=eq.{seller_id}&order=created_at.asc")
             listings: list[Listing] = []
@@ -441,11 +488,17 @@ class SupabaseConversationStore:
                 # listing_id = uuid của dòng (bỏ gạch) khi tin tạo từ bản 19/10 (code = 8 ký tự đầu id) — để ảnh ghi đúng thư
                 # mục `<uuid>/` và lượt sau cập nhật đúng dòng; tin cũ giữ code như trước (SRS-5.1zzzzzzz56).
                 rid = str(row.get("id") or "").replace("-", "")
+                lid_engine = rid if rid and (row.get("code") or "") == rid[:8].upper() else (row.get("code", "") or row.get("id"))
+                cu_li = next((x for x in (cu.listings if cu else []) if x.listing_id == lid_engine), None)
                 li = Listing(
-                    listing_id=rid if rid and (row.get("code") or "") == rid[:8].upper() else (row.get("code", "") or row.get("id")),
+                    listing_id=lid_engine,
                     prop=prop,
-                    listing_proposed=bool(row.get("status") == "dang_rao"),
-                    status=row.get("status", "cho_thong_tin"),
+                    # Đã trình bản nháp chưa: bản SQLite trên VPS nhớ đúng; không có thì suy từ DB (khách đã duyệt, hoặc tin đã đủ ý —
+                    # bản nháp đi ngay lượt đủ ý). Trước đây so với "dang_rao" (không có trên DB) nên luôn sai → trình lại bản nháp.
+                    listing_proposed=cu_li.listing_proposed if cu_li else bool(row.get("chu_duyet_at") or prop.summary_ready()),
+                    status=trang_thai_tu_db(row.get("status"), prop.is_rental),
+                    history_start=cu_li.history_start if cu_li else 0,
+                    media=cu_li.media if cu_li else [],
                 )
                 listings.append(li)
 
@@ -466,15 +519,25 @@ class SupabaseConversationStore:
                 history.append(Turn(role=role, content=body, at=ts))
 
             # 5. Reconstruct Conversation
+            ids = [li.listing_id for li in listings]
+            active = str(seller.get("active_listing_id") or "").replace("-", "")
+            if active not in ids:
+                active = cu.active_listing_id if cu and cu.active_listing_id in ids else (ids[-1] if ids else None)
             conv = Conversation(
                 user_key=user_key,
                 user_type=vai_tu_seller_type(seller.get("seller_type")),
                 assistant=assign_assistant(user_key),
                 history=history,
                 listings=listings if listings else [Listing(prop=Property())],
-                active_listing_id=listings[0].listing_id if listings else None,
-                role="seller" if listings else "unknown",
+                active_listing_id=active,
+                role="seller" if listings else (cu.role if cu else "unknown"),
             )
+            if cu:
+                conv.price_book = cu.price_book
+                conv.buyer_lead = cu.buyer_lead
+                conv.last_ai_at = cu.last_ai_at
+                if conv.user_type.value == "unknown":
+                    conv.user_type = cu.user_type
             return conv
 
         except Exception as e:

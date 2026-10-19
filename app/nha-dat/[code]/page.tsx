@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import ListingCard from "@/components/ListingCard";
 import TrackView from "@/components/TrackView";
 import WardMap from "@/components/WardMap";
-import { CARD_COLS, supabase, type Listing, type ListingCard as CardRow, type MapRow } from "@/lib/supabase";
+import { CARD_COLS, supabase, type Listing, type ListingCard as CardRow, type MapRow, TRANG_THAI_HIEN } from "@/lib/supabase";
 import { coverByCode, photosOfCode } from "@/lib/photos";
 import { IconArea, IconBed, IconHouse, IconPin } from "@/components/icons";
 import { ACCESS_LABEL, formatArea, formatDims, formatPrice, formatPricePerM2, FURNISH_LABEL, LEGAL_LABEL, placeholderImg, PLANNING_LABEL, sanitizeDescription, SITE_URL, TYPE_LABEL, zaloLink, oTheoLoai } from "@/lib/format";
@@ -71,7 +71,7 @@ const giaPhuong = unstable_cache(
       .select("id, price_per_m2_vnd")
       .eq("ward", ward)
       .eq("deal", deal)
-      .in("status", ["dang_ban", "dang_quan_tam"])
+      .in("status", TRANG_THAI_HIEN)
       .gt("price_per_m2_vnd", 0)
       .limit(500);
     return (data ?? []) as { id: string; price_per_m2_vnd: number }[];
@@ -179,7 +179,7 @@ export default async function Page({
       .select(CARD_COLS)
       .eq("deal", listing.deal)
       .neq("id", listing.id)
-      .in("status", ["dang_ban", "dang_quan_tam"])
+      .in("status", TRANG_THAI_HIEN)
       .not("price_raw", "is", null)
       .neq("price_raw", "")
       .eq("ward", listing.ward ?? "")

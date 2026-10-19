@@ -92,7 +92,8 @@ REPLY_MAX_TOKENS = 4096
 
 # Extracted trạng-thái intent → the stored Listing.status value.
 STATUS_MAP = {"da_ban": "đã bán", "dung_ban": "dừng bán", "da_cho_thue": "đã cho thuê",
-              "khong_rao": "không rao", "thoi_dang_ky": "thôi đăng ký", "rao": "đang bán"}
+              "da_coc": "đã cọc", "khong_rao": "không rao", "thoi_dang_ky": "thôi đăng ký",
+              "rao": "đang bán"}
 
 # AOND NEVER deletes a seller's data. A seller can only RAO (advertise), stop advertising
 # (KHÔNG RAO — hidden but kept), or withdraw (THÔI ĐĂNG KÝ — kept). The old "remove/clear" ops
@@ -2465,6 +2466,10 @@ class Engine:
         match — the stable listing_id keeps the folder identity, only the human label moves.
         Best-effort; the stored item_ids stay valid regardless (a move doesn't change them)."""
         if self._media_store is None or not listing.media:
+            return
+        # Kho Supabase cất theo `<uuid tin>/` — thư mục không bao giờ đổi, và đường dẫn ref mang tên bucket ở đầu. Không bỏ qua thì
+        # move_folder (no-op) xong vẫn ghi đè path mất bucket → `_ghi_anh` bỏ tệp, ảnh / sổ đỏ không vào listing_media (SRS-5.1zzzzzzz63).
+        if getattr(self._media_store, "thu_muc_can", None) is not None:
             return
         new_folder = self._folder_for(listing)
         old_folder = listing.media[0]["path"].rsplit("/", 1)[0]

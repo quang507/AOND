@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import MapView from "@/components/MapView";
 import ListingCard from "@/components/ListingCard";
-import { MAP_COLS, supabase, type MapRow } from "@/lib/supabase";
+import { MAP_COLS, supabase, type MapRow, TRANG_THAI_HIEN } from "@/lib/supabase";
 
 export const revalidate = 10800; // SRS-5.1zl (03/10/2026): 5 phút → 3 giờ, giảm egress Supabase
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export default async function Page() {
   const { data } = await supabase
     .from("listings")
     .select(MAP_COLS)
-    .in("status", ["dang_ban", "dang_quan_tam"]) // FR-139: chỉ tin đang lên kệ
+    .in("status", TRANG_THAI_HIEN) // FR-139: chỉ tin đang lên kệ
     .not("price_raw", "is", null)
     .neq("price_raw", "")
     .not("ward", "is", null)

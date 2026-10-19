@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ListingCard from "@/components/ListingCard";
 import { coverByCode } from "@/lib/photos";
-import { CARD_COLS, supabase, type ListingCard as CardRow } from "@/lib/supabase";
+import { CARD_COLS, supabase, type ListingCard as CardRow, TRANG_THAI_HIEN } from "@/lib/supabase";
 import { formatPrice, placeholderImg, sanitizeDescription, SITE_URL, zaloLink } from "@/lib/format";
 
 // FR-117 (dựng 04/09/2026) — trang dự án `/du-an/{slug}`, SSG từ bảng
@@ -103,7 +103,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     .from("listings")
     .select(`${CARD_COLS}, unit_code, unit_status`)
     .eq("project_id", p.id)
-    .in("status", ["dang_ban", "dang_quan_tam"]) // FR-139: chỉ tin đang lên kệ
+    .in("status", TRANG_THAI_HIEN) // FR-139: chỉ tin đang lên kệ
     .order("unit_code", { ascending: true, nullsFirst: false })
     .limit(60);
   const tin = (data ?? []) as unknown as TinDuAn[];
