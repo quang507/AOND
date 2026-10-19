@@ -160,3 +160,16 @@ def test_chot_keo_ghi_deals():
     st.save(_conv("đã bán"))
     deal = [(e, d) for m, e, d in st.goi if m == "POST" and e.startswith("deals")]
     assert deal and deal[0][1]["listing_id"] and "closed_at" in deal[0][1]
+
+
+def test_khach_mua_khong_sinh_tin_rao_rong():
+    """Bắn thử 19/10 (SRS-5.1zzzzzzz71): khách mua chat một lượt là DB có thêm một dòng `listings` rỗng (căn mồi Listing())."""
+    from tests.test_trang_thai_va_nap_lai import StoreGia, _conv
+    st = StoreGia(db_status="cho_thong_tin")
+    conv = _conv(None)
+    conv.role = "buyer"
+    st.save(conv)
+    assert not [e for m, e, d in st.goi if e.startswith("listings")]
+    st = StoreGia(db_status="cho_thong_tin")
+    st.save(_conv(None))                                                   # người bán: vẫn ghi tin như cũ
+    assert [e for m, e, d in st.goi if e.startswith("listings")]

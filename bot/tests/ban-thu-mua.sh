@@ -20,7 +20,7 @@ vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/nu
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
 BAN="thu-ban-$RUN"; MUA="thu-mua-$RUN"
-MA=$(printf '%08X' $(( (RUN * 2654435761) % 4294967296 )))
+MA=$(printf '%08X' $(( RUN % 4294967296 )))
 
 don() {
   echo "== dọn dữ liệu thử"
@@ -40,8 +40,8 @@ chat() {
 
 echo "== tạo người bán thử $BAN + tin thử #$MA (nhà phố Quận 5, 5 tỷ, đang bán)"
 q "with s as (insert into sellers (zalo_user_id, seller_type) values ('$BAN', 'ccrb') returning id)
-   insert into listings (code, seller_id, deal, property_type, district, street, area_m2, price_raw, price_vnd, status, source, description)
-   select '$MA', s.id, 'ban', 'nha_pho', 'Quận 5', 'Trần Bình Trọng', 60, '5 tỷ', 5000000000, 'dang_ban', 'chat',
+   insert into listings (code, seller_id, deal, property_type, district, ward, street, area_m2, price_raw, price_vnd, status, source, description)
+   select '$MA', s.id, 'ban', 'nha_pho', 'Quận 5', 'Phường Chợ Quán', 'Trần Bình Trọng', 60, '5 tỷ', 5000000000, 'dang_ban', 'chat',
           'Nhà phố 1 trệt 2 lầu, hẻm xe hơi (tin thử bắn tự động)' from s returning code, status" | jq -c '.'
 
 chat "$MUA" "Chào em, anh đang tìm mua nhà phố ở Quận 5, tài chính tầm 5 tỷ"
