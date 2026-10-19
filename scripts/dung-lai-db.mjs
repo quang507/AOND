@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // dung-lai-db.mjs — DỰNG LẠI DB từ số không trên một project Supabase RỖNG (08/10/2026).
 //
-// Vì sao có: project production cũ bị xoá nhầm 08/10/2026 (gói Free, không sao lưu). Quy trình tay ở
-// bot/README.md §Dựng lại từ số không chưa từng diễn tập; script này làm đúng các bước đó qua Management API
+// Vì sao có: project production cũ bị xoá nhầm 08/10/2026 (gói Free, không sao lưu). Quy trình tay (README bot
+// của repo Nhadat.cc cũ) chưa từng diễn tập; script này làm đúng các bước đó qua Management API
 // (`SUPABASE_ACCESS_TOKEN`, chạy trong apply-migration.yml), từng bước một, in SỐ ĐẾM chứ không in dữ liệu
 // (log Actions công khai).
 //
@@ -14,7 +14,7 @@
 //             trên wards, phuong_cu, quan_cu, required_facts, app_config trong migrations/ (chỉ các câu đó — câu tạo
 //             hàm trong migration cũ là bản cũ, chạy lại là đè bản mới của schema.sql). Mã project cũ trong câu được
 //             thay bằng mã mới. Sau cùng đặt các khoá app_config phụ thuộc project + công tắc production.
-//   xac-minh  đếm dòng các bảng tham chiếu, in required_facts (khoá công khai, đã có trong mock e2e) để đối chiếu
+//   xac-minh  đếm dòng các bảng tham chiếu, in required_facts (khoá công khai) để đối chiếu
 //
 // Câu lỗi KHÔNG dừng cả bước: in mã lỗi + 120 chữ đầu của câu, chạy tiếp, cuối bước chạy lại lượt hai các câu lỗi
 // (view chồng view phải tạo sau view nó dựa vào). Còn lỗi sau lượt hai thì thoát 1.

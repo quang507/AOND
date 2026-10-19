@@ -285,7 +285,7 @@ export default function Page() {
         )}
 
         {/* FR-96 (04/09/2026): vừa lưu xong là có UUID tin - up ảnh ngay tại đây,
-            khỏi phải chạy scripts/up-anh.mjs trên máy local. */}
+            khỏi phải chạy script đẩy ảnh trên máy local. */}
         {ketQua?.ok && ketQua.id && (
           <UploadAnh listingId={ketQua.id} code={ketQua.code} />
         )}

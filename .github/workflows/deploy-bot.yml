@@ -1,7 +1,7 @@
 # Deploy một edge function lên Supabase, chạy tay từ tab Actions.
 #
 # Vì sao có file này: đường deploy cũ đi qua MCP, tức nội dung file phải được
-# CHÉP TAY vào lời gọi tool. `bot/README.md §Deploy` đã đo tỉ lệ hỏng của lối
+# CHÉP TAY vào lời gọi tool. README bot (repo Nhadat.cc cũ) đã đo tỉ lệ hỏng của lối
 # đó: một lỗi mỗi 7 KB. `escalation-feed` 5 KB thì còn kiểm được bằng cách so
 # từng byte; `chat-reply` 120 KB thì không — 17 lỗi kỳ vọng, lỗi rơi vào regex
 # là hỏng im lặng, và chữa cũng phải chép tay 120 KB nữa. Ở đây runner tự
@@ -86,15 +86,15 @@ jobs:
           ma=$(curl -sS -o /tmp/ham.json -w '%{http_code}' -H "Authorization: Bearer $TOKEN" "$api")
           if [ "$ma" = "404" ]; then
             # 08/10/2026: project mới (project cũ bị xoá nhầm) chưa có function nào để đọc cờ. Lần deploy ĐẦU lấy đúng
-            # bảng verify_jwt ở bot/README.md §Function đang chạy — đổi cờ thì sửa bảng đó, đừng sửa ở đây.
+            # bảng verify_jwt dưới đây (19/10/2026: bot/README.md không có trong repo AOND — bảng này là nguồn duy nhất).
             case "${{ inputs.ham }}" in
               escalation-feed|geocode-listings) jwt=true ;;
               media-cleanup) jwt=false ;;
-              *) echo "::error::${{ inputs.ham }} chưa có trong bảng verify_jwt của bot/README.md"; exit 1 ;;
+              *) echo "::error::${{ inputs.ham }} chưa có trong bảng verify_jwt của deploy-bot.yml"; exit 1 ;;
             esac
             echo "verify_jwt=$jwt" >> "$GITHUB_OUTPUT"
             echo "version=0"       >> "$GITHUB_OUTPUT"
-            echo "Function chưa có (deploy lần đầu): verify_jwt=$jwt theo bot/README.md"
+            echo "Function chưa có (deploy lần đầu): verify_jwt=$jwt theo bảng trong deploy-bot.yml"
             exit 0
           fi
           if [ "$ma" != "200" ]; then

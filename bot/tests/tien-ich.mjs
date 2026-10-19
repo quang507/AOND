@@ -1,12 +1,10 @@
 #!/usr/bin/env bun
 // tien-ich.mjs — "TÌM NHÀ GẦN BỆNH VIỆN 1 KM" (11/09/2026).
 //
-// Hai nửa, cả hai là hàm thuần:
-//   1. `docGanTienIch` (_shared/extraction/tien-ich.ts): câu khách mua → {loai, ten_re, m}.
-//   2. `_shared/geocode.ts`: địa chỉ tin → câu tra Nominatim (BỎ số nhà, có nấc
+// Hàm thuần (19/10/2026: nửa đọc câu khách mua `docGanTienIch` gỡ cùng bot TypeScript):
+//   `_shared/geocode.ts`: địa chỉ tin → câu tra Nominatim (BỎ số nhà, có nấc
 //      không quận / không dấu), JSON Overpass → điểm tiện ích, khoảng cách.
 // SQL `tin_gan_tien_ich` / `khoang_cach_m` dùng cùng công thức khoảng cách.
-import { coMuiViTri, docGanTienIch, kdTen, nhanGan } from "../supabase/functions/_shared/extraction/tien-ich.ts";
 import {
   cauOverpass, docDiemOsm, ganNhatMoiLoai, khoangCachM, queriesDuAn, queriesFor, tenDuong, trongVung,
   trongVungQuan, viewboxQuan, vungQuan,
@@ -19,62 +17,8 @@ const la = (ten, thuc, mong) => {
   else { hong++; console.log(`\x1b[31m✗\x1b[0m ${ten}\n    thật ${JSON.stringify(thuc)}\n    mong ${JSON.stringify(mong)}`); }
 };
 const dung = (ten, ok, chiTiet = "") => la(ten + (ok ? "" : ` — ${chiTiet}`), !!ok, true);
-const gon = (g) => g && { loai: g.loai, ten: g.ten, ten_re: g.ten_re, m: g.m };
 
-console.log("1. ĐỌC CÂU KHÁCH MUA\n");
-const CA = [
-  ["tôi muốn tìm nhà gần bệnh viện cách 1 km", { loai: "benh_vien", ten: null, ten_re: null, m: 1000 }, "câu gốc của người dùng 11/09"],
-  ["tìm nhà gần bv chợ rẫy tầm 5 tỷ", { loai: "benh_vien", ten: "chợ rẫy", ten_re: "cho ray", m: 1000 }, "tên bệnh viện có chữ 'chợ' có dấu — vẫn là tên, không phải loại chợ"],
-  ["tim nha gan benh vien 115 trong vong 2km", { loai: "benh_vien", ten: "115", ten_re: "115", m: 2000 }, "tên là số (BV 115) khác bán kính"],
-  ["gần bệnh viện 1 km", { loai: "benh_vien", ten: null, ten_re: null, m: 1000 }, "'1 km' là bán kính, không phải tên"],
-  ["gần chợ Bình Tây 500m", { loai: "cho", ten: "Bình Tây", ten_re: "binh tay", m: 500 }],
-  ["gan cho con di hoc", null, "không dấu: 'cho con' là giới từ, không phải chợ"],
-  ["nhà gần trường cho con đi học", { loai: "truong_hoc", ten: null, ten_re: null, m: 1000 }],
-  ["gần trường cấp 2 khoảng 1,5km", { loai: "truong_hoc", ten: null, ten_re: "thcs|trung hoc co so", m: 1500 }, "cấp 2 → lọc tên THCS"],
-  ["gần mầm non", { loai: "truong_hoc", ten: null, ten_re: "mam non|mau giao|nha tre", m: 1000 }],
-  ["cần căn gần coopmart", { loai: "sieu_thi", ten: "coopmart", ten_re: "coopmart", m: 1000 }, "nhãn siêu thị thành bộ lọc tên"],
-  ["gần siêu thị", { loai: "sieu_thi", ten: null, ten_re: null, m: 1000 }],
-  ["đi bộ ra chợ 5 phút", { loai: "cho", ten: null, ten_re: null, m: 400 }, "5 phút đi bộ ≈ 400 m"],
-  ["sát bệnh viện", { loai: "benh_vien", ten: null, ten_re: null, m: 300 }, "'sát' hẹp hơn 'gần'"],
-  ["gần công viên Đầm Sen 2 cây số", { loai: "cong_vien", ten: "Đầm Sen", ten_re: "dam sen", m: 2000 }],
-  ["không cần gần bệnh viện đâu", null, "khách gỡ điều kiện"],
-  ["gần bệnh viện, hẻm 5m", { loai: "benh_vien", ten: null, ten_re: null, m: 1000 }, "'hẻm 5m' không phải bán kính"],
-  ["gần bệnh viện 10km", { loai: "benh_vien", ten: null, ten_re: null, m: 3000 }, "kẹp 3 km — bảng chỉ nạp 3 km quanh tin"],
-  ["thị trường nhà đất quận 5 sao rồi", null, "'thị trường' không phải trường học"],
-  ["gan cho", { loai: "cho", ten: null, ten_re: null, m: 1000 }, "không dấu, 'gần chợ' trần"],
-  ["nhà gần trung tâm quận 1", null, "'trung tâm' không phải tiện ích"],
-  ["cach benh vien cho ray 800m", { loai: "benh_vien", ten: null, ten_re: null, m: 800 }, "không dấu thì 'cho' là chữ dừng — mất tên, giữ loại + bán kính"],
-  ["gan truong le quy don", { loai: "truong_hoc", ten: "le quy don", ten_re: "le quy don", m: 1000 }],
-  ["gần bệnh viện lớn", { loai: "benh_vien", ten: null, ten_re: null, m: 1000 }, "'lớn' không phải tên"],
-  ["tầm 5 tỷ, gần bệnh viện Hùng Vương, 2pn", { loai: "benh_vien", ten: "Hùng Vương", ten_re: "hung vuong", m: 1000 }],
-  ["cách 1km tới bệnh viện là được", { loai: "benh_vien", ten: null, ten_re: null, m: 1000 }, "bán kính đứng trước loại"],
-  ["50 mét vuông gần chợ", { loai: "cho", ten: null, ten_re: null, m: 1000 }, "'50 mét vuông' là diện tích"],
-  ["gần bệnh viện".normalize("NFD"), { loai: "benh_vien", ten: null, ten_re: null, m: 1000 }, "chữ gõ tổ hợp (NFD)"],
-  ["mua nhà quận 8 tầm 4 tỷ", null, "không nhắc tiện ích"],
-  ["gần trạm y tế phường", { loai: "benh_vien", ten: null, ten_re: "y te", m: 1000 }],
-];
-for (const [cau, mong, vi] of CA) la(`${JSON.stringify(cau)}${vi ? ` (${vi})` : ""}`, gon(docGanTienIch(cau)), mong);
-
-la("nhanGan 1 km", nhanGan({ loai: "benh_vien", ten: "Chợ Rẫy", ten_re: "cho ray", m: 1000 }), "bệnh viện Chợ Rẫy, trong ~1 km");
-la("nhanGan 1,5 km", nhanGan({ loai: "truong_hoc", ten: null, ten_re: null, m: 1500 }), "trường học, trong ~1,5 km");
-la("nhanGan 500 m", nhanGan({ loai: "cho", ten: null, ten_re: null, m: 500 }), "chợ, trong ~500 m");
-la("kdTen bỏ dấu + ký tự lạ", kdTen("Co.opmart Phú Lâm"), "coopmart phu lam");
-la("nhanGan địa danh (model đọc ra)", nhanGan({ loai: "dia_diem", ten: "Landmark 81", ten_re: "landmark 81", m: 2000 }), "Landmark 81, trong ~2 km");
-la("nhanGan dự án", nhanGan({ loai: "du_an", ten: "Ehome 3", ten_re: "ehome 3", m: 1000 }), "dự án Ehome 3, trong ~1 km");
-
-// Cổng gọi model (hiểu NGHĨA — người dùng 11/09: "nó phải hiểu nghĩa, không phải
-// gần bệnh viện 1 câu"): câu nói vòng vẫn phải lọt cổng, câu thường thì không.
-for (const [cau, mong] of [
-  ["tiện đi khám bệnh không em", true],
-  ["muốn ở chỗ đi làm Landmark 81 cho gần", true],
-  ["nhà nào quanh Ehome 3 không", true],
-  ["con học lớp 1, có trường nào đi bộ được không", true],
-  ["đi chợ có xa không", true],
-  ["cho em hỏi giá căn này", false],
-  ["mua nhà quận 8 tầm 4 tỷ", false],
-]) la(`coMuiViTri ${JSON.stringify(cau)}`, coMuiViTri(cau), mong);
-
-console.log("\n2. ĐỊA CHỈ → CÂU TRA (không số nhà)\n");
+console.log("2. ĐỊA CHỈ → CÂU TRA (không số nhà)\n");
 la("tenDuong: hẻm + số", tenDuong("hẻm 12 Hồ Ngọc Lãm"), "Hồ Ngọc Lãm");
 la("tenDuong: số/số + phường sau phẩy", tenDuong("123/45 Nguyễn Trãi, P.3"), "Nguyễn Trãi");
 la("tenDuong: số nhà + hẻm", tenDuong("số 5 hẻm 12 Trần Hưng Đạo"), "Trần Hưng Đạo");

@@ -196,7 +196,7 @@ nó sẽ chặn thật, nên đừng ngạc nhiên rồi đi tắt nó lúc đan
 Không bật ✅ *Include administrators* thì chủ repo vẫn tự bỏ qua được — tuỳ chủ
 dự án, nhưng phải là lựa chọn có ý thức, không phải mặc định quên bật.
 
-**Cổng 3 — trước deploy edge function** (người, `bot/README.md §Deploy`):
+**Cổng 3 — trước deploy edge function** (người; README bot của repo Nhadat.cc cũ, không có trong AOND):
 bundle → deploy → kéo ngược → **so từng byte** → chạy e2e trên chính nội dung
 kéo ngược → gọi thử một lượt thật rồi dọn. Bỏ bước so byte là bỏ cả cổng: chép
 tay đo được một lỗi mỗi 7 KB, và lỗi rơi vào regex thì hỏng im lặng.
