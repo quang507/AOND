@@ -6429,6 +6429,21 @@ thật, chưa thấy nổ. `supabase_store.LOAI_SANG_DB` / `ma_loai_db` / `loai_
 
 **Kiểm.** `tests/test_cau_hoi_theo_loai.py` (đỏ khi bỏ `CORE_THEO_LOAI` hoặc bảng đổi mã — đã chạy cả hai), pytest 361 đạt.
 
+### SRS-5.1zzzzzzz69 · Gỡ ba bảng chết `boc_tach_bong`, `ratings_log`, `project_facts` (19/10/2026)
+
+**Ca gốc.** Chủ dự án hỏi DB còn gì của lõi TypeScript cũ; chốt "xoá 3 bảng chết đi". Soát 19/10: ba bảng 0 dòng, không khoá ngoại trỏ
+vào, không file nào trong repo đọc / ghi. `boc_tach_bong` là sổ AI chạy bóng của bot TypeScript; `ratings_log` chưa từng có người ghi;
+`project_facts` (phiếu kiến thức dự án chờ duyệt) đã thay bằng `du_an_kien_thuc`.
+
+**Lớp lỗi.** Gỡ người dùng (bot TypeScript, panel duyệt) mà để lại kho của họ. **Chỗ cùng lớp.** View `project_facts_cho_duyet` và hàm
+`duyet_fact_du_an` (chỉ panel đã gỡ ở SRS-5.1zzzzzzz65 gọi) gỡ cùng; hàm xoá hết / khôi phục / dọn dữ liệu thử bỏ ba tên; probe
+`ts-sec-anon` và `scripts/dung-lai-db.mjs` bỏ tên. Các bảng phía mua (`interests`, `viewings`, `info_requests`, `deals`) KHÔNG chết —
+máy trên DB còn chạy, lõi Python chưa gọi; đưa vào lõi ở mục kế.
+
+**Sửa.** Migration `20261019h_go_bang_chet.sql` (thay chữ trên định nghĩa đang chạy, mỗi lần thay phải trúng).
+
+**Kiểm.** Áp trên Postgres tạm (`bot/tests/sql/chay.sh`) — đạt, mọi bài SQL đạt; bước cuối migration raise nếu còn hàm nhắc tên bảng.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -149,7 +149,7 @@ const docFile = (p) => {
 };
 // schema.sql do xuat_schema() bản trước 20261008b sinh ra: cột SINH thành `default <biểu thức>`, cột IDENTITY thành
 // `not null` trơn + sequence xuất riêng. Vá đúng các dòng đó (mỗi dòng phải khớp đúng một lần — lệch là dừng, không đoán).
-const COT_IDENTITY = [["boc_tach_bong", "id", "always"], ["messages", "seq", "always"], ["phuong_cu", "id", "always"]];
+const COT_IDENTITY = [["messages", "seq", "always"], ["phuong_cu", "id", "always"]];
 function vaSchema(s) {
   if (!/default bo_dau\(ten\)/.test(s)) return s; // schema.sql đã sinh bằng xuat_schema() mới
   const doi = (a, b) => { const n = s.split(a).length - 1; if (n !== 1) throw new Error(`vá schema.sql: "${a.slice(0, 50)}" khớp ${n} lần`); s = s.replace(a, b); };
