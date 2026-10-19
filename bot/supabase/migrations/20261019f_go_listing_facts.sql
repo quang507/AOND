@@ -128,27 +128,55 @@ drop view public.listing_missing_facts;
 -- Bảng: policy + 6 trigger đi theo. Không có khoá ngoại nào trỏ vào nó.
 drop table public.listing_facts;
 
+-- Tên hàm là duy nhất (không có bản chồng) nên drop không cần chữ ký.
+-- Trigger của bảng vừa gỡ.
+drop function if exists public.listing_facts_sync_cols;
+drop function if exists public.listing_facts_soat_phuong;
+drop function if exists public.listing_facts_sync_deal;
+drop function if exists public.listing_facts_sync_gap;
+drop function if exists public.trg_fact_vao_boc_tach;
+drop function if exists public.trg_vi_tri_vao_cot;
+-- Không ai gọi (bot TypeScript / lịch cũ đã gỡ).
+drop function if exists public.ap_fact_du_an_vao_kho;
+drop function if exists public.bao_hong_nhac;
+drop function if exists public.bo_dem_nhac_treo;
+drop function if exists public.cat_truoc_phu_dinh;
+drop function if exists public.chuan_hoa_lai_gia;
+drop function if exists public.co_moc;
+drop function if exists public.con_duoc_rao;
+drop function if exists public.duong_gan_duong;
+drop function if exists public.ghi_boc_tach;
+drop function if exists public.ghi_danh_gia;
+drop function if exists public.ghi_fact_listing;
+drop function if exists public.giao_lo_gan;
+drop function if exists public.hang_cua_nguoi_ban;
+drop function if exists public.info_request_timeout_tick;
+drop function if exists public.listings_try_publish;
+drop function if exists public.merge_buyer_prefs;
+drop function if exists public.mo_ho_so_nguoi_ban;
+drop function if exists public.mo_viec_can_nguoi_that;
+drop function if exists public.ngu_canh_tin;
+drop function if exists public.nguoi_noi_bo;
+drop function if exists public.nha_viec_nhac;
+drop function if exists public.nhan_viec_nhac;
+drop function if exists public.phuong_giao_hai_duong;
+drop function if exists public.stale_listing_tick;
+drop function if exists public.tao_followup;
+drop function if exists public.them_nhan_tin;
+drop function if exists public.tim_hem;
+-- Chỉ các hàm trên gọi.
+drop function if exists public.ap_thong_so;
+drop function if exists public.bac_nguon;
+drop function if exists public.dia_danh_gan;
+drop function if exists public.doc_co_khong;
+drop function if exists public.doc_gap;
+drop function if exists public.guess_property_type_answer;
+drop function if exists public.khoa_du_an_danh_sach;
+drop function if exists public.lan_thu_ke;
+drop function if exists public.loc_thong_so_theo_khoa;
+
 do $$
-declare r record;
 begin
-  for r in
-    select p.oid::regprocedure as sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-     where n.nspname = 'public' and p.proname in (
-       -- trigger của bảng vừa gỡ
-       'listing_facts_sync_cols', 'listing_facts_soat_phuong', 'listing_facts_sync_deal', 'listing_facts_sync_gap',
-       'trg_fact_vao_boc_tach', 'trg_vi_tri_vao_cot',
-       -- không ai gọi (bot TypeScript / lịch cũ đã gỡ)
-       'ap_fact_du_an_vao_kho', 'bao_hong_nhac', 'bo_dem_nhac_treo', 'cat_truoc_phu_dinh', 'chuan_hoa_lai_gia', 'co_moc',
-       'con_duoc_rao', 'duong_gan_duong', 'ghi_boc_tach', 'ghi_danh_gia', 'ghi_fact_listing', 'giao_lo_gan',
-       'hang_cua_nguoi_ban', 'info_request_timeout_tick', 'listings_try_publish', 'merge_buyer_prefs', 'mo_ho_so_nguoi_ban',
-       'mo_viec_can_nguoi_that', 'ngu_canh_tin', 'nguoi_noi_bo', 'nha_viec_nhac', 'nhan_viec_nhac', 'phuong_giao_hai_duong',
-       'stale_listing_tick', 'tao_followup', 'them_nhan_tin', 'tim_hem',
-       -- chỉ các hàm trên gọi
-       'ap_thong_so', 'bac_nguon', 'dia_danh_gan', 'doc_co_khong', 'doc_gap', 'guess_property_type_answer',
-       'khoa_du_an_danh_sach', 'lan_thu_ke', 'loc_thong_so_theo_khoa')
-  loop
-    execute format('drop function %s', r.sig);
-  end loop;
   if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
               where n.nspname in ('public', 'so') and p.prosrc ~ '\m(listing_facts|listing_missing_facts)\M') then
     raise exception 'còn hàm nhắc bảng / view đã gỡ';
