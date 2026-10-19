@@ -5,12 +5,64 @@ Defaults: Haiku 4.5 for fast 30-word chat, Opus 4.8 for vision/OCR-grade extract
 from __future__ import annotations
 
 import base64
+import json
+import logging
+import re
 from typing import Any
 
 from ..config import Settings
 from ..imaging import downscale_image
 from ..so_token import SoToken
 from .base import LLMProvider, Message, ToolCall, ToolTurn
+
+log = logging.getLogger(__name__)
+
+
+def _doc_mang_chiu_loi(s: str) -> list[Any]:
+    """Đọc mảng JSON mà Haiku đóng ngoặc lệch: thừa `}` trước `]` (log khung bắn thử: `…}}}]`, lỗi ở 2 ký tự cuối, gọi lại ra y
+    hệt). Đọc lần lượt từng phần tử, bỏ qua dấu `}` / `,` / khoảng trắng lạc giữa các phần tử; hỏng chỗ khác thì ném ValueError."""
+    dec = json.JSONDecoder(strict=False)
+    i = s.index("[") + 1
+    ra: list[Any] = []
+    while True:
+        while i < len(s) and s[i] in " \t\r\n,}":
+            i += 1
+        if i >= len(s) or s[i] == "]":
+            return ra
+        x, i = dec.raw_decode(s, i)
+        ra.append(x)
+
+
+def chuan_theo_schema(v: Any, schema: dict[str, Any]) -> Any:
+    """Đưa đầu ra công cụ về đúng dạng schema đã khai. 19/10/2026 (SRS-5.1zzzzzzz78): Haiku có lượt trả cả danh sách `operations`
+    thành MỘT CHUỖI JSON (log bắn thử: 300 phần tử 'str') — code lọc `isinstance(op, dict)` bỏ sạch, mọi ô của lượt đó mất ("diện
+    tích sàn tầm 170m vuông" không được ghi). Ô schema là object / array mà model trả chuỗi JSON thì giải; giải không được thì để
+    nguyên cho chỗ dùng tự lọc. Chỉ đọc theo schema, không đoán nội dung."""
+    t = (schema or {}).get("type")
+    if t in ("object", "array") and isinstance(v, str):
+        # Bắn thử sau bản đầu: chuỗi vẫn còn — không phải JSON chặt (ký tự xuống dòng trần trong chuỗi, chữ thừa sau dấu đóng).
+        # Nhận ký tự điều khiển (strict=False) và đọc giá trị JSON đầu tiên từ dấu mở ngoặc, bỏ đuôi thừa.
+        mo = min((i for i in (v.find("["), v.find("{")) if i >= 0), default=-1)
+        try:
+            try:
+                v = json.JSONDecoder(strict=False).raw_decode(v[mo:] if mo >= 0 else v)[0]
+            except ValueError:
+                if t != "array":
+                    raise
+                v = _doc_mang_chiu_loi(v)
+        except ValueError as e:
+            # Khung của chuỗi (chữ / số → x, gộp lặp) + vị trí lỗi: thấy hỏng kiểu gì mà không lộ dữ liệu khách.
+            khung = re.sub(r"x+", "x", re.sub(r"[^\[\]{}\":,'\\\n]", "x", v))[:240]
+            log.warning("Đầu ra công cụ: ô %s là chuỗi không giải được (%s tại %s, dài %d) khung=%r", t, type(e).__name__,
+                        getattr(e, "pos", "?"), len(v), khung)
+            return v
+    if t == "object" and isinstance(v, dict):
+        props = schema.get("properties") or {}
+        them = schema.get("additionalProperties")
+        return {k: chuan_theo_schema(x, props.get(k) or (them if isinstance(them, dict) else {})) for k, x in v.items()}
+    if t == "array" and isinstance(v, list):
+        return [chuan_theo_schema(x, schema.get("items") or {}) for x in v]
+    return v
 
 
 _GUI_KHACH: dict[str, Any] = {
@@ -129,7 +181,7 @@ class ClaudeProvider(LLMProvider):
             self._so.ghi_loi("claude extract", "kết quả bóc tách bị cắt vì chạm trần token — ô cuối có thể mất")
         for block in resp.content:
             if block.type == "tool_use":
-                return dict(block.input)
+                return chuan_theo_schema(dict(block.input), json_schema)
         return {}
 
     def converse(
@@ -226,7 +278,7 @@ class ClaudeProvider(LLMProvider):
         self._so.ghi("group", self._vision_model, resp)
         for block in resp.content:
             if block.type == "tool_use":
-                return dict(block.input)
+                return chuan_theo_schema(dict(block.input), json_schema)
         return {"nhom": []}
 
     def extract_media(
@@ -259,5 +311,5 @@ class ClaudeProvider(LLMProvider):
         self._so.ghi("read-doc", self._vision_model, resp)
         for block in resp.content:
             if block.type == "tool_use":
-                return dict(block.input)
+                return chuan_theo_schema(dict(block.input), json_schema)
         return {}
