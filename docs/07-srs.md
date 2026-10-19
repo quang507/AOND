@@ -6624,9 +6624,16 @@ regex (CLAUDE.md §6):
   Phường Hòa Bình đúng không"; khách nói "Phường 9" (phường số cũ) thì bot hỏi tiếp "Phường 9 hay Phường Hòa Bình". Nay gợi ý kho
   chỉ là gợi ý, khách nói phường nào ghi theo khách (`dia_danh.khoi_dia_danh` + luật trong prompt người bán) — đúng luật "câu trả lời
   câu phường có MỘT quyết định" của SRS-5.1zzzzzzzm.
+- Bắn thử kịch bản 2 lần 2 lộ thêm hai lỗi:
+  - Bot hỏi "ngang x dài trên sổ" 5 lượt liền khi khách lờ đi — lõi luôn chọn ô thiếu đầu tiên. `Engine._o_hoi_ke`: ô vừa hỏi ở lượt
+    trước mà vẫn thiếu thì lùi xuống cuối, hỏi ý khác trước, quay lại sau; còn mỗi một ô thì vẫn hỏi.
+  - Khách nhận dòng ghi chú nội bộ của model: "Wait, the system prohibits "Dạ" at start… Rewrite.". `_bo_loi_noi_bo` (gọi trong
+    `_bo_markdown`, chỗ dọn lời chung) bỏ dòng ≥ 5 chữ mà ≥ 85% chữ không dấu (link / email không tính) — lời bot luôn là tiếng Việt
+    có dấu. Đây là lưới chặn đầu ra lạc ngôn ngữ, không đoán ý khách.
 
 **Kiểm.** `tests/test_doc_dau_hieu.py` (4 ca: khối luật ở hai prompt, bỏ luật "đừng đoán", có tên đường thì không hỏi lại địa chỉ,
-câu hỏi giá không kèm thương lượng, khách nói phường thì nhận theo khách — đỏ trên code cũ, đã chạy), pytest 391 đạt. Model thật: `bot/tests/ban-thu-ban.sh` kịch bản 2
+câu hỏi giá không kèm thương lượng, khách nói phường thì nhận theo khách — đỏ trên code cũ, đã chạy), `tests/test_bot_bot_hoi_lap.py` (2 ca: không hỏi một ô hai lượt
+liền, bỏ dòng ghi chú tiếng Anh nhưng giữ link / chữ Anh rời — đỏ trên code cũ), pytest 393 đạt. Model thật: `bot/tests/ban-thu-ban.sh` kịch bản 2
 (đúng lượt chat Âu Cơ của chủ dự án) — soát `property_type = nha_pho`, `area_m2 = 80` và `dien_tich_dat` mang 80, lời bot KHÔNG hỏi loại
 nhà, KHÔNG hỏi "đất hay sàn", KHÔNG hỏi lại tên đường, KHÔNG hỏi lại phường.
 

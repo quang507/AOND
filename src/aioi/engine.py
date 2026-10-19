@@ -344,6 +344,8 @@ class Conversation:
     # Transient (SRS-5.1zzzzzzz73): lời KHÁCH trong khung lượt lập thao tác vừa đọc — ô tin mới / đổi giá trị chỉ được ghi khi
     # cụm bằng chứng AI đưa nằm trong đây (không tính lời bot).
     loi_khach_luot: str = ""
+    # Transient (SRS-5.1zzzzzzz74): ô bot hỏi ở lượt trả lời gần nhất — khách chưa trả lời thì lượt sau hỏi ý khác trước.
+    o_vua_hoi: str | None = None
 
     def __post_init__(self) -> None:
         if not self.listings:
@@ -640,8 +642,25 @@ def _detect_customer_pronoun(conv: Conversation, current_text: str = "") -> str:
 
 
 def _bo_markdown(reply: str) -> str:
-    """Bỏ in đậm markdown (Zalo không hiển thị). Không sửa lời bot theo từ khoá ("Dạ", "anh/chị") — SRS-5.1zzzzzzz55."""
-    return re.sub(r"\*\*([^*]+)\*\*", r"\1", reply.strip())
+    """Bỏ in đậm markdown (Zalo không hiển thị) và dòng ghi chú nội bộ lọt ra lời gửi khách (`_bo_loi_noi_bo`). Không sửa lời bot
+    theo từ khoá ("Dạ", "anh/chị") — SRS-5.1zzzzzzz55."""
+    return _bo_loi_noi_bo(re.sub(r"\*\*([^*]+)\*\*", r"\1", reply.strip()))
+
+
+_CO_DAU = re.compile(r"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]", re.IGNORECASE)
+
+
+def _bo_loi_noi_bo(reply: str) -> str:
+    """Bỏ dòng ghi chú nội bộ của model lọt vào lời gửi khách (SRS-5.1zzzzzzz74; bắn thử 19/10 khách nhận "Wait, the system
+    prohibits "Dạ" at start… Rewrite."). Lời bot luôn là tiếng Việt CÓ DẤU: câu Việt nào cũng có nhiều chữ có dấu, còn dòng ghi chú
+    của model là câu tiếng Anh (có khi trích một chữ Việt). Dòng ≥ 5 chữ mà ≥ 85% chữ không dấu bị bỏ. Không đoán ý khách — chỉ chặn đầu
+    ra lạc ngôn ngữ."""
+    def la_ghi_chu(d: str) -> bool:
+        chu = re.findall(r"[^\W\d_]+", re.sub(r"(https?://|www\.)\S+|\S+@\S+", " ", d))   # link / email không phải chữ
+        khong_dau = [w for w in chu if not _CO_DAU.search(w)]
+        return len(khong_dau) >= 5 and len(khong_dau) >= 0.85 * len(chu)
+    giu = [d for d in reply.split("\n") if not la_ghi_chu(d)]
+    return "\n".join(giu).strip() or reply
 
 
 class Engine:
@@ -923,6 +942,15 @@ class Engine:
         if project is None:
             return None
         return project.find_unit_type(prop.fields.get("unit_type"))
+
+    @staticmethod
+    def _o_hoi_ke(conv: Conversation, missing: list[str]) -> str | None:
+        """Ô hỏi lượt này: ô thiếu đầu tiên, TRỪ khi đó là ô vừa hỏi ở lượt trước mà khách chưa trả lời — khi ấy hỏi ý khác trước, ô
+        đó lùi xuống cuối, quay lại sau (SRS-5.1zzzzzzz74; bắn thử 19/10 hỏi "ngang x dài trên sổ" 5 lượt liền khi khách lờ đi)."""
+        if len(missing) > 1 and missing[0] == conv.o_vua_hoi:
+            missing = missing[1:] + missing[:1]
+        conv.o_vua_hoi = missing[0] if missing else None
+        return conv.o_vua_hoi
 
     def conversation(self, user_key: str) -> Conversation:
         conv = self._conversations.get(user_key)
@@ -1679,8 +1707,7 @@ class Engine:
         customer_pronoun = _detect_customer_pronoun(conv, text)
         customer_is_em = (customer_pronoun == "em")
 
-        missing = conv.prop.missing_fields()
-        next_field = missing[0] if missing else None
+        next_field = self._o_hoi_ke(conv, conv.prop.missing_fields())
         # Project awareness: if the listing's project is registered, inherit its verified
         # facts (and lightly confirm); if it's named but unknown, prompt the bot to acquire
         # knowledge (ask the seller / request a link); if no project, nothing.
@@ -2309,8 +2336,7 @@ class Engine:
                 if self._convstore is not None:
                     self._convstore.save(conv)
 
-                missing = conv.active.prop.missing_fields()
-                next_field = missing[0] if missing else None
+                next_field = self._o_hoi_ke(conv, conv.active.prop.missing_fields())
 
                 details = []
                 f_map = conv.active.prop.fields
