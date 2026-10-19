@@ -119,8 +119,9 @@ def test_normal_missing_field_question_unaffected_by_ambiguous_area_check():
 def test_listing_proposal_system_contains_length_and_no_header_rules():
     from aioi.prompts import build_listing_proposal_system
     s = build_listing_proposal_system("T•ai", _prop())
-    assert "15 - 25 TỪ" in s
-    assert "70 - 150 TỪ" in s
-    assert "4 GẠCH ĐẦU DÒNG" in s
-    assert "KHÔNG DÙNG HEADER" in s
+    # 19/10/2026 (SRS-5.1zzzzzzz64): luật nằm ở AD_FORMAT một nguồn — 4–5 gạch (anh Luận 0b31235), không nhãn khi đã tự rõ.
+    assert "15–25 từ" in s
+    assert "70–150 từ" in s
+    assert "4–5 GẠCH ĐẦU DÒNG" in s
+    assert "KHÔNG ghi nhãn nếu dữ liệu đã TỰ RÕ" in s
     assert "132m²" in s

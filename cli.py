@@ -57,7 +57,9 @@ def main() -> None:
     )
 
     print(f"AI Ơi Nhà Đất — chế độ: {settings.effective_provider}")
-    print("Lệnh: /quit · /state · /new · /listings · /switch <n> · /sold · /status <tt> · "
+    # 19/10/2026 (anh Luận 84b0155 + 790cc18): bỏ /new, /switch, /sold, /status — mở căn mới, chuyển căn, đổi trạng thái đều đi
+    # từ lời nhắn ("anh có căn nữa", "qua căn 42", "bán rồi", "cọc rồi"), như khách thật trên Zalo.
+    print("Lệnh: /quit · /state · /listings · "
           "/import <file.csv> · /project <mô tả> · /link <url> · /seller <id> · /whoami.\n")
 
     # The ACTIVE seller identity. Each user_key is a separate seller (own basket, price_book,
@@ -104,11 +106,6 @@ def main() -> None:
         if text == "/state":
             _dump_state(engine, user)
             continue
-        if text == "/new":
-            li = engine.start_new_listing(user)
-            n = len(engine.conversation(user).listings)
-            print(f"   [bắt đầu căn mới — rổ hàng hiện có {n} căn]\n")
-            continue
         if text == "/listings":
             conv = engine.conversation(user)
             print(f"--- Rổ hàng ({len(conv.listings)} căn) ---")
@@ -116,18 +113,6 @@ def main() -> None:
                 active = " ← đang nhập" if li.listing_id == conv.active_listing_id else ""
                 print(f"  {i}. {li.label()}{active}")
             print()
-            continue
-        if text.startswith("/switch "):
-            li = engine.switch_listing(user, int(text.split()[1]))
-            print(f"   [đang nói tới: {li.label()}]\n" if li else "   [số căn không hợp lệ]\n")
-            continue
-        if text == "/sold":
-            li = engine.set_status(user, "đã bán")
-            print(f"   [đã cập nhật: {li.label()}]\n")
-            continue
-        if text.startswith("/status "):
-            li = engine.set_status(user, text[len("/status "):].strip())
-            print(f"   [đã cập nhật: {li.label()}]\n")
             continue
         if text.startswith("/import "):
             arg = text[len("/import "):].strip().strip('"')
