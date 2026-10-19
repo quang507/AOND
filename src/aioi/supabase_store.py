@@ -19,6 +19,8 @@ from datetime import datetime, timezone
 from typing import Any, TYPE_CHECKING
 
 from .kho_anh import BUCKET_CONG_KHAI, BUCKET_RIENG, la_uuid
+from .mua import KhoNguoiMua
+from .revenue import SALE_FEE_RATE
 from .prompts import FIELD_LABELS
 from .schema import TYPE_TO_GROUP, Property, _calc_area_from_dimension
 from .assistants import assign_assistant
@@ -127,7 +129,7 @@ def so_m2(fields: dict[str, str]) -> float | None:
     return float(tinh[:-2]) if tinh else None
 
 
-class SupabaseConversationStore:
+class SupabaseConversationStore(KhoNguoiMua):
     """Persistent ConversationStore storing state in Supabase REST API (PostgreSQL).
     Implements ConversationStore protocol: save, load, reset.
     """
@@ -412,6 +414,8 @@ class SupabaseConversationStore:
                     if ma:
                         listing_payload["status"] = ma
                     self._patch(f"listings?id=eq.{lid}", listing_payload)
+                    if ma == "da_chot":   # chốt kèo → dòng deals (SRS-5.1zzzzzzz70); báo khách quan tâm do trigger DB lo
+                        self.ghi_deal(lid, SALE_FEE_RATE.get(getattr(conv, "user_type", None)))
                 else:
                     # Tin tạo từ chat chỉ lên web khi khách đồng ý bản nháp (trigger listings_quyet_dinh_dang_tin đọc
                     # can_chu_duyet + chu_duyet_at; SRS-5.1zzzzzzz47). Admin / Excel tạo tin thì cờ này false như cũ.

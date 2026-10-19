@@ -83,6 +83,7 @@ from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import Property, BuyerLead, PropertyGroup
 from .dia_danh import TraDiaDanh, goi_y_duong, khoi_dia_danh
+from .mua import khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_viec_vua_ghi, lenh_tra_loi
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
 
@@ -313,6 +314,10 @@ class Conversation:
     # Transient: điều lượt AI đọc được ở tin vừa nhắn, đã kiểm trích dẫn (SRS-5.1zzzzzzz55): "xin_xem_ban_ve", "cau_hoi_du_an",
     # "mo_ta_du_an" (True khi có), "xac_nhan_xoa" ("dong_y" / "tu_choi").
     y_luot: dict = field(default_factory=dict)
+    # Transient (SRS-5.1zzzzzzz70): căn đang hiện khớp nhu cầu khách mua, và câu khách mua đang chờ người rao này trả lời —
+    # nạp ở lượt lập thao tác để AI chỉ đúng mã căn / id câu.
+    can_mua: list = field(default_factory=list)
+    cau_hoi_cho: list = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if not self.listings:
@@ -1476,11 +1481,27 @@ class Engine:
                 caption = clean_text.replace(cand_url, "").strip() or None
                 return self.handle_link(user_key, cand_url, now=now, caption=caption)
 
+        # Nhân viên (CTV / admin) trả lời câu khách mua hỏi bằng lệnh "#mã: câu trả lời" (SRS-5.1zzzzzzz70) — cú pháp hệ thống tự đặt
+        # trong tin nhắc (`notify_info_request_escalation`), không phải đoán ý khách; chỉ nhận từ Zalo ID của CTV / admin.
+        lenh = lenh_tra_loi(clean_text)
+        la_nhan_vien = getattr(self._convstore, "la_nhan_vien", None)
+        if lenh and la_nhan_vien is not None and la_nhan_vien(user_key):
+            conv.history.append(Turn("user", text, now))
+            cau = self._convstore.tra_loi_theo_ma(*lenh)
+            reply = (f"Dạ em đã chuyển câu trả lời về #{lenh[0]} cho khách rồi ạ." if cau is not None
+                     else f"Dạ tin #{lenh[0]} hiện không có câu khách hỏi nào đang chờ ạ.")
+            conv.history.append(Turn("assistant", reply, now))
+            conv.last_ai_at = now
+            return self._build_result(conv, reply, captured=[], now=now)
+
         conv.history.append(Turn("user", text, now))
 
         # Lượt AI đọc tin khách MỘT lần, trước mọi nhánh (SRS-5.1zzzzzzz55): xác nhận xoá, câu hỏi dự án, xin bản vẽ đều đọc từ
         # đây thay cho bộ dò từ khoá. Thao tác rổ hàng chỉ áp ở bước 1, sau khi đã chắc tin này là sửa rổ hàng.
         ke_hoach = self._lap_ke_hoach(conv)
+        tl = conv.y_luot.get("tra_loi_khach_hoi")
+        if tl and getattr(self._convstore, "tra_loi_cau_hoi", None) is not None:
+            conv.y_luot["da_tra_loi_khach"] = self._convstore.tra_loi_cau_hoi(tl["id"], tl["tra_loi"])
 
         # 0−. PENDING DESTRUCTIVE CONFIRMATION: a clear/bỏ/chỉ-giữ proposed last turn waits here.
         #     Apply it ONLY on an explicit yes; a "thôi/không" cancels; anything else (the seller
@@ -1609,6 +1630,9 @@ class Engine:
             customer_is_em = (customer_pronoun == "em")
             next_field = conv.buyer_lead.next_question_field()
             system = build_buyer_chat_system(conv.assistant.name, conv.buyer_lead, next_field)
+            viec, can = self._viec_mua(conv, text)
+            if getattr(self._convstore, "can_phu_hop", None) is not None:
+                system += khoi_can_cho_khach(can) + khoi_viec_vua_ghi(viec)
             if customer_is_em:
                 system += (
                     "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
@@ -1658,6 +1682,9 @@ class Engine:
 
         # Tra địa danh (SRS-5.1zzzzzzz60/61): hỏi xác nhận tên đường kho gợi ý ở MỌI nhánh (cả lượt soạn bản nháp), kể phường khi hỏi phường.
         system += khoi_dia_danh(self._dia_danh, conv.prop.fields, None if is_listing_post else next_field)
+        if conv.y_luot.get("da_tra_loi_khach"):
+            system += ("\nEM VỪA CHUYỂN câu trả lời của anh/chị cho khách mua đang hỏi (hệ thống báo khách ngay). Cảm ơn ngắn gọn, "
+                       "nói em đã báo khách rồi, rồi mới tiếp chuyện tin rao.\n")
 
         if customer_pronoun == "em":
             system += (
@@ -2835,6 +2862,15 @@ class Engine:
         if conv.prop.fields.get("dia_chi"):
             system += f"\nĐỊA CHỈ ĐANG GHI của căn đang nói tới: {conv.prop.fields['dia_chi']}\n"
         system += goi_y_duong(self._dia_danh, conv.prop.fields)   # SRS-5.1zzzzzzz61: khách xác nhận tên đường kho gợi ý → AI ghi
+        # Phía mua (SRS-5.1zzzzzzz70): khách mua thấy căn đang có (AI chỉ đúng mã); người rao thấy câu khách đang hỏi họ.
+        kho = self._convstore
+        conv.can_mua, conv.cau_hoi_cho = [], []
+        if conv.role == "buyer" and getattr(kho, "can_phu_hop", None) is not None:
+            conv.can_mua = kho.can_phu_hop(conv.buyer_lead)
+            system += khoi_can_cho_khach(conv.can_mua)
+        elif conv.role != "buyer" and getattr(kho, "cau_hoi_cho_nguoi_ban", None) is not None:
+            conv.cau_hoi_cho = kho.cau_hoi_cho_nguoi_ban(conv.user_key)
+            system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
         plan = self._provider.extract(system, src, operations_schema())
 
         # Sticky conversation attributes (never downgrade role to unknown).
@@ -2894,7 +2930,47 @@ class Engine:
             conv.y_luot["ban_do_du_an"] = True
         if plan.get("xac_nhan_xoa") in ("dong_y", "tu_choi") and _trich_dan_khop(plan.get("xac_nhan_trich_dan"), cuoi):
             conv.y_luot["xac_nhan_xoa"] = plan["xac_nhan_xoa"]
+        # Việc khách mua / người rao trả lời câu khách hỏi (SRS-5.1zzzzzzz70): nhận khi cụm trích có trong tin vừa nhắn.
+        mua = plan.get("mua")
+        if conv.role == "buyer" and isinstance(mua, dict) and _trich_dan_khop(mua.get("trich_dan"), cuoi):
+            conv.y_luot["mua"] = mua
+        tl = plan.get("tra_loi_khach_hoi")
+        if (isinstance(tl, dict) and tl.get("id") in {c.get("id") for c in conv.cau_hoi_cho}
+                and _trich_dan_khop(tl.get("tra_loi"), cuoi)):
+            conv.y_luot["tra_loi_khach_hoi"] = {"id": tl["id"], "tra_loi": str(tl["tra_loi"])}
         return plan
+
+    def _viec_mua(self, conv: Conversation, text: str) -> tuple[list[str], list[dict]]:
+        """Ghi việc khách mua vừa nói (quan tâm / hẹn xem / hỏi chủ nhà) lên DB — chỉ khi mã căn có thật và đang hiện, cụm thời gian
+        / câu hỏi có nguyên trong tin khách. Trả (câu tả việc đã ghi cho model, danh sách căn đưa vào lời đáp)."""
+        kho = self._convstore
+        if getattr(kho, "khach_mua", None) is None:
+            return [], []
+        lead = conv.buyer_lead
+        nhu_cau = {k: v for k, v in vars(lead).items()
+                   if k in ("loai_giao_dich", "loai_bds", "ngan_sach", "khu_vuc", "so_phong_ngu", "yeu_cau_xe_hoi", "huong",
+                            "muc_dich", "tien_do_mua", "vay_ngan_hang") and v} if lead else {}
+        bid = kho.khach_mua(conv.user_key, None, nhu_cau or None)
+        mua = conv.y_luot.get("mua") or {}
+        ma = [m for m in (mua.get("ma_can") or []) if isinstance(m, str) and m.strip()]
+        nhac = kho.can_theo_ma(ma) if ma else []
+        co_san = conv.can_mua or kho.can_phu_hop(lead)
+        can = nhac + [c for c in co_san if c.get("id") not in {n.get("id") for n in nhac}]
+        viec: list[str] = []
+        if not (bid and nhac):
+            return viec, can[:4]
+        dau = nhac[0]
+        hen = str(mua.get("hen_xem") or "").strip()
+        hoi = str(mua.get("hoi_chu_nha") or "").strip()
+        hen = hen if _trich_dan_khop(hen, text) else ""
+        hoi = hoi if _trich_dan_khop(hoi, text) else ""
+        if (mua.get("quan_tam") is True or hen or hoi) and kho.ghi_quan_tam(bid, [c["code"] for c in nhac if c.get("code")]):
+            viec.append("ghi khách quan tâm căn " + ", ".join(f"#{c.get('code')}" for c in nhac))
+        if hen and kho.ghi_hen_xem(bid, dau, hen):
+            viec.append(f"ghi lịch hẹn xem #{dau.get('code')} ({hen}) — chờ xác nhận với chủ nhà rồi báo lại khách")
+        if hoi and kho.ghi_hoi_chu_nha(bid, dau, hoi):
+            viec.append(f"chuyển câu \"{hoi}\" về #{dau.get('code')} cho chủ nhà — có trả lời em báo lại khách ngay")
+        return viec, can[:4]
 
     def _ap_dung_ke_hoach(self, conv: Conversation, plan: dict) -> tuple[list[str], list[tuple]]:
         changed: set[str] = set()
