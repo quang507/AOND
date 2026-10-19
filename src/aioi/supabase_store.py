@@ -118,8 +118,13 @@ def trang_thai_tu_db(ma: str | None, la_thue: bool = False) -> str:
     chu = DB_SANG_TRANG_THAI.get(ma or "", "đang bán")
     return "đã cho thuê" if chu == "đã bán" and la_thue else chu
 def so_m2(fields: dict[str, str]) -> float | None:
-    """Diện tích (m²) từ ô bóc tách: số đầu tiên của `dien_tich` / `dien_tich_dat`, không có thì tính từ `kich_thuoc` (4x15)."""
-    for k in ("dien_tich", "dien_tich_dat"):
+    """Diện tích (m²) cột `listings.area_m2`: ĐẤT trước (`dien_tich_dat`), rồi `dien_tich`, rồi `kich_thuoc`. Ô mang dạng ngang x dài
+    ("4,5x11") thì tính tích — bắn thử 19/10: `dien_tich_dat` = "4,5x11" thành 4,5 m², `dien_tich` = sàn 170 m² thành diện tích
+    đất (SRS-5.1zzzzzzz73)."""
+    for k in ("dien_tich_dat", "dien_tich"):
+        tinh = _calc_area_from_dimension(str(fields.get(k) or ""))
+        if tinh:
+            return float(tinh[:-2])
         m = re.search(r"\d+(?:[.,]\d+)?", str(fields.get(k) or ""))
         if m:
             v = float(m.group(0).replace(",", "."))

@@ -234,7 +234,11 @@ def _so_khop(trich: str | None, gia_tri: str | None, loi_khach: str) -> bool:
         x = re.sub(r"(?i)m\s*[2²]", "m", str(x or ""))          # "m2" / "m²" là đơn vị, không phải số
         return {n.replace(",", ".") for n in re.findall(r"\d+(?:[.,]\d+)?", x)}
     o_trich = so(trich)
-    return bool(o_trich) and o_trich <= so(loi_khach)
+    # Diện tích tính từ kích thước khách gõ ("4,5x11" → 49,5): tích là số có trong lời khách theo nghĩa, code tính, không đoán.
+    tich = {(str(int(a)) if a.is_integer() else str(a)) for a in (
+        round(float(x.replace(",", ".")) * float(y.replace(",", ".")), 2)
+        for x, y in re.findall(r"(\d+(?:[.,]\d+)?)\s*m?\s*[x*X×]\s*(\d+(?:[.,]\d+)?)", loi_khach or ""))}
+    return bool(o_trich) and o_trich <= so(loi_khach) | tich
 
 
 def _strip_accents(s: str) -> str:

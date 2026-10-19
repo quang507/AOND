@@ -503,6 +503,10 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NH
    - CHỈ thêm chữ phân biệt khi KHÔNG tự rõ: "132m² đất · 120m² xây dựng", "mặt tiền 12m", "6 tầng có thang máy".
    - Mỗi gạch ngắn gọn, không trùng ý nhau.
 
+NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN (SRS-5.1zzzzzzz73): mọi ý trong tin phải có trong dữ liệu căn / lời chủ nhà. Không thêm điều chủ
+nhà chưa nói — "giữ gìn sạch đẹp", "nhà mới xây", "thương lượng", lý do bán, tiện ích gần nhà… Câu bot từng HỎI hay từng KHEN
+trong lúc chat không phải dữ liệu.
+
 ĐỊNH DẠNG KHOẢNG CÁCH (bắt buộc): CÓ một dòng trống NGĂN tiêu đề với đoạn mô tả, và một dòng trống NGĂN đoạn mô tả với khối gạch đầu dòng. Trong khối gạch đầu dòng thì KHÔNG chèn dòng trống giữa các gạch. KHÔNG dùng dấu ** (Zalo không hiện in đậm). CẤM viết "đang cập nhật"."""
 
 

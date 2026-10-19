@@ -108,3 +108,9 @@ def test_thieu_cum_trich_thi_kiem_chinh_gia_tri_trong_loi_khach():
     f = eng.conversation("chu-7").active.prop.fields
     assert f.get("dien_tich_nha") == "170m2" and f.get("phap_ly_hoan_cong") == "đã hoàn công đủ"
     assert "thuong_luong" not in f
+
+
+def test_dien_tich_tinh_tu_kich_thuoc_khach_go():
+    eng = Engine(AiGia({"operations": [{"op": "update", "fields": {"dien_tich_dat": "49,5m2", "kich_thuoc": "4,5x11"}}], "user_intent": "sell"}))
+    eng.handle("chu-8", "dt 4,5x11")
+    assert eng.conversation("chu-8").active.prop.fields.get("dien_tich_dat") == "49,5m2"

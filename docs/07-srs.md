@@ -6578,6 +6578,10 @@ nhiều căn (`_group_media_batch` → `_apply_text_to_listing`), đọc một n
   chứng; nhóm ảnh nhiều căn không gọi `_apply_text_to_listing` cho ảnh chụp. Giấy tờ / trang dữ liệu vẫn sinh ô như cũ.
 - Ví dụ mẫu bản nháp (`build_listing_proposal_system`) bỏ thương lượng / nhà mới / định cư; thêm luật "điều dữ liệu căn không có thì
   không viết".
+- Luật "nội dung chỉ từ dữ liệu căn" đặt trong `AD_FORMAT` (khuôn tin rao MỘT NGUỒN cho bản nháp, bản sửa, và lượt "đăng tin đi") —
+  chat thật của chủ dự án 19/10 15:31 (đường "em đăng tin đi") vẫn ra "giữ gìn sạch đẹp".
+- Diện tích: `_so_khop` tính sẵn tích "AxB" khách gõ (4,5x11 → 49,5); `so_m2` (cột `area_m2`) lấy ĐẤT trước rồi `dien_tich`, ô
+  dạng ngang x dài thì tính tích (bắn thử lần 4: `dien_tich_dat` = "4,5x11" thành 4,5 m², sàn 170 m² thành diện tích đất).
 - `followup.py`: `cau_nhac` — nhắc lại câu hỏi CUỐI trong lời bot khi khách chưa trả lời; không có câu chờ thì chỉ xin ảnh khi căn
   chưa có ảnh, có rồi thì không nhắc. Bỏ bảng câu mẫu theo ô (trả lời chủ dự án "câu mẫu cái nào không có, cần thêm nhiều mẫu câu
   không": không thêm — bảng cũ chỉ có giá, địa chỉ / phường, kết cấu / số tầng, diện tích, hẻm / mặt tiền, tình trạng bàn giao; ô nào
@@ -6586,7 +6590,7 @@ nhiều căn (`_group_media_batch` → `_apply_text_to_listing`), đọc một n
 
 **Kiểm.** `tests/test_bang_chung_o_tin.py` (7 ca, có `loai_hinh` gửi lại, thiếu cụm trích thì kiểm giá trị: ô không bằng chứng bị bỏ, bằng chứng chỉ có trong câu bot hỏi bị bỏ, giá trị có sẵn
 giữ, lời tả ảnh chụp không thành ô, ô có số nhận cụm viết lại đơn vị), `tests/test_tin_nhac.py` (4 ca), `tests/test_xung_ho_chua_ro.py` (2 ca) — đỏ trên code cũ
-(đã chạy), pytest 383 đạt. Bắn thử production bằng ID thử: `bot/tests/ban-thu-ban.sh` (`apply-migration` ô `ban-thu-ban`, kịch bản
+(đã chạy), pytest 385 đạt. Bắn thử production bằng ID thử: `bot/tests/ban-thu-ban.sh` (`apply-migration` ô `ban-thu-ban`, kịch bản
 đúng lượt chat 19/10) — soi phường, giá, diện tích, mặt tiền, sổ, kết cấu và KHÔNG có ô thương lượng.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
