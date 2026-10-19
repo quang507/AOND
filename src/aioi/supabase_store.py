@@ -372,7 +372,9 @@ class SupabaseConversationStore(KhoNguoiMua):
 
             # 2. Persist listings into Supabase `listings` table
             lid_dang_noi = None
-            for li in conv.listings:
+            # Khách MUA không có tin rao: căn mồi rỗng Listing() mọi hội thoại mở ra không được thành một dòng `listings`
+            # (bắn thử 19/10, SRS-5.1zzzzzzz71). Việc của khách mua ghi qua KhoNguoiMua.
+            for li in ([] if getattr(conv, "role", None) == "buyer" else conv.listings):
                 fields = li.prop.fields
                 deal_type = "thue" if li.prop.is_rental else "ban"
                 listing_payload: dict[str, Any] = {
