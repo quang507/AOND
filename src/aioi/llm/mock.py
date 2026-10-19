@@ -153,6 +153,10 @@ class MockProvider(LLMProvider):
         if "operations" in props:
             flat = self.extract(system, messages, {"properties": {}})  # reuse the flat brain
             plan = _flat_to_operations(flat)
+            # Đồ giả bóc bằng từ khoá trên chính lời khách → bằng chứng là lời khách (SRS-5.1zzzzzzz73).
+            for op in plan["operations"]:
+                if isinstance(op.get("fields"), dict) and op["fields"]:
+                    op["bang_chung"] = {k: raw for k in op["fields"]}
             _gia_lap_y_luot(plan, messages)
             # Giả lập lượt AI đọc "khách hỏi về gì" (hoi_ve, SRS-5.1zzzzzzz54) — bản thật đọc theo nghĩa; ở đây chỉ là đồ giả
             # cho test offline, trả kèm cụm trích có thật để qua kiểm trích dẫn của engine.

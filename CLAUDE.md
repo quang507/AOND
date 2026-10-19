@@ -118,6 +118,9 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > bảng `required_facts` gỡ 19/10/2026 (`20261019g`), mọi đoạn bên dưới nhắc nó / `priority` / nhóm `sau_dang` là LỊCH SỬ.
 > **Phía người mua trong lõi (SRS-5.1zzzzzzz70):** `src/aioi/mua.py` ghi `buyers` / `interests` / `viewings` / `info_requests` / `deals`;
 > giao việc, nhắc, báo lại khách là trigger DB có sẵn. Lịch `ctv-sla-tick` bật lại (`20261019i`) — đừng tắt khi còn ghi `info_requests`.
+> **Ô tin chỉ ghi điều KHÁCH nói (SRS-5.1zzzzzzz73):** mỗi ô mới / đổi từ lượt lập thao tác phải có `bang_chung` nằm nguyên trong
+> lời khách (`_co_bang_chung`); câu bot hỏi và lời AI tả ảnh chụp (`DAU_TA_ANH_CHUP`) không phải bằng chứng. Thêm đường ghi ô mới thì
+> qua cùng cổng này. Bắn thử lõi production: `apply-migration` ô `ban-thu-mua` / `ban-thu-ban` (ID thử, tự dọn).
 > **Tra địa danh (SRS-5.1zzzzzzz60):** phường / quận / đường khách nói → `src/aioi/dia_danh.py` (chữ trước, vector Gemini sau, máy
 > kiểm tên gần chữ khách); vector do lịch `nhung-tick` / `nhung-dia-danh-tick` nuôi — đừng gỡ hai lịch đó.
 

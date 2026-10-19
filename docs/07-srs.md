@@ -6541,6 +6541,60 @@ khung điều hướng; trang không có tiêu đề riêng nên khung không n�
 ngang ở 390px (trước: Tin nhắn tràn). `rm -rf .next && bun run kiem` đạt; CSS đã dựng có đủ lớp mới (`w-60`, `360px_1fr`,
 `100dvh-101px`, `100dvh-57px` — bẫy Tailwind §6 CLAUDE.md). Chưa chụp với dữ liệu production (cần đăng nhập admin thật).
 
+### SRS-5.1zzzzzzz73 · Ô tin chỉ ghi điều khách nói; tin nhắc hỏi lại đúng câu đang chờ; không đoán "anh" / "chị" (19/10/2026)
+
+**Ca gốc.** Chủ dự án tự chat thử bán nhà phố mặt tiền Cao Lỗ Q8 (tin E6B09054 lên web đúng, đủ 6 ảnh, các cột chuẩn đúng). Chủ dự án
+chọn sửa ba lỗi ("sửa nhóm 1, 3, 5"):
+1. Bản tin có "thương lượng nhẹ" và "nhà mới xây" — chủ nhà không nói. Bot tự hỏi "có muốn để giá thương lượng nhẹ không", chủ nhà
+   trả lời chuyện hoàn công, ô `thuong_luong` vẫn thành "thương lượng nhẹ". 6 ảnh chụp → lời AI tả ảnh "nhà mới xây" thành ô
+   `tinh_trang_ban_giao`.
+2. Tin nhắc 5 phút xin "vài tấm ảnh thực tế hoặc sổ hồng" ngay sau khi chủ nhà gửi 6 ảnh, trong khi câu đang chờ là diện tích sàn.
+3. Bot gọi "anh" từ lượt trả lời thứ năm tới khi chủ nhà tự xưng "chị" (lúc đó đổi "chị" là ĐÚNG).
+Chủ dự án giữ nguyên: lời khen ("cứ để nó khen đi"), câu "đã chuyển tin cho mạng lưới" ("sau sẽ có mạng lưới").
+
+**Lớp lỗi.**
+- (1) Ô tin ghi thẳng từ đầu ra AI, không kiểm ô đó có nguồn trong LỜI KHÁCH; hai nguồn không phải lời khách lọt vào: câu bot tự hỏi
+  (lượt lập thao tác đọc cả hội thoại) và lời AI tả ảnh (ghi vào lịch sử như lượt "user"). Ví dụ mẫu bản nháp còn mồi sẵn
+  "thiện chí thương lượng", "nhà mới đẹp", "chuyển định cư".
+- (2) Tin nhắc chọn câu mẫu cố định theo ô thiếu đầu tiên — tách rời câu bot thật sự đang hỏi; ô không có câu mẫu rơi vào câu xin
+  ảnh mà không xét đã có ảnh chưa.
+- (3) Nhánh xưng hô "chưa biết" không có luật; mọi ví dụ mẫu trong prompt gọi khách "anh" nên model chép theo.
+
+**Chỗ cùng lớp đã soát.** (1) Mọi đường ghi ô: lượt lập thao tác (`_apply_operation`, mọi op update / add / set_status), nhóm ảnh
+nhiều căn (`_group_media_batch` → `_apply_text_to_listing`), đọc một nhóm ảnh (`_route_readout_media` → `_extract`), sổ đỏ / giấy tờ
+(`extract_media` — dữ liệu ĐỌC TỪ giấy tờ, giữ), nhập bảng (cột tất định, giữ). (2) Tin nhắc bản nháp chưa duyệt giữ câu cũ.
+(3) Ví dụ trong `TONE_RULES`, `SELLER_SCRIPT_RULES`, lời đọc ảnh.
+
+**Sửa.**
+- `operations_schema`: mỗi op có `bang_chung` {ô: nguyên văn cụm trong lời KHÁCH}; `OPERATIONS_SYSTEM` thêm luật "chỉ ghi điều khách
+  nói, câu bot hỏi không phải lời khách". `engine._apply_operation`: ô MỚI / ĐỔI giá trị chỉ ghi khi cụm bằng chứng nằm nguyên trong
+  lời khách của khung lượt (`conv.loi_khach_luot`, không tính lời bot, không tính lượt tả ảnh chụp); giá trị đã có ở rổ thì giữ. Ô có SỐ
+  nhận cả khi model viết lại đơn vị trong cụm trích ("170m²" cho "170m vuông") miễn mọi số của cụm có trong lời khách (`_so_khop`);
+  ô không có số (thương lượng, mới xây) vẫn phải khớp nguyên văn. Ô bị bỏ ghi log WARNING tên ô (không in giá trị).
+  Model không phải lượt nào cũng trích cụm (bắn thử lần 3 mất "diện tích sàn 170m²"): thiếu cụm thì kiểm chính GIÁ TRỊ ô trong lời
+  khách (cùng hai phép khớp) — câu bot tự hỏi vẫn không lọt. Ba lượt bắn thử `ban-thu-ban` trước bản này: lượt 1 lỗi script (diện
+  tích dạng chữ), lượt 2 đạt 8/8, lượt 3 mất ô diện tích sàn vì thiếu cụm trích.
+- Ảnh chụp thật (`giay_to = False`, không phải trang dữ liệu): lời tả ảnh vào lịch sử với dấu `DAU_TA_ANH_CHUP`, không làm bằng
+  chứng; nhóm ảnh nhiều căn không gọi `_apply_text_to_listing` cho ảnh chụp. Giấy tờ / trang dữ liệu vẫn sinh ô như cũ.
+- Ví dụ mẫu bản nháp (`build_listing_proposal_system`) bỏ thương lượng / nhà mới / định cư; thêm luật "điều dữ liệu căn không có thì
+  không viết".
+- Luật "nội dung chỉ từ dữ liệu căn" đặt trong `AD_FORMAT` (khuôn tin rao MỘT NGUỒN cho bản nháp, bản sửa, và lượt "đăng tin đi") —
+  chat thật của chủ dự án 19/10 15:31 (đường "em đăng tin đi") vẫn ra "giữ gìn sạch đẹp".
+- Diện tích: `_so_khop` tính sẵn tích "AxB" khách gõ (4,5x11 → 49,5); `so_m2` (cột `area_m2`) lấy ĐẤT trước rồi `dien_tich`, ô
+  dạng ngang x dài thì tính tích (bắn thử lần 4: `dien_tich_dat` = "4,5x11" thành 4,5 m², sàn 170 m² thành diện tích đất).
+- Ô PHÂN LOẠI (`_O_PHAN_LOAI` = `loai_hinh`) không qua cổng bằng chứng: mã slug AI đọc theo nghĩa, không phải chữ khách gõ; sai
+  loại không phải bịa (bắn thử lần 5: model không trích cho `loai_hinh`, tin thành `chua_ro`).
+- `followup.py`: `cau_nhac` — nhắc lại câu hỏi CUỐI trong lời bot khi khách chưa trả lời; không có câu chờ thì chỉ xin ảnh khi căn
+  chưa có ảnh, có rồi thì không nhắc. Bỏ bảng câu mẫu theo ô (trả lời chủ dự án "câu mẫu cái nào không có, cần thêm nhiều mẫu câu
+  không": không thêm — bảng cũ chỉ có giá, địa chỉ / phường, kết cấu / số tầng, diện tích, hẻm / mặt tiền, tình trạng bàn giao; ô nào
+  ngoài sáu nhóm đó đều rơi vào câu xin ảnh. Nhắc lại đúng câu bot vừa hỏi thì không cần câu mẫu nào).
+- Xưng hô: `engine` thêm luật cho "chưa biết" (gọi "anh/chị", không đoán); ví dụ mẫu trong `prompts.py` đổi sang "anh/chị".
+
+**Kiểm.** `tests/test_bang_chung_o_tin.py` (7 ca, có `loai_hinh` gửi lại, thiếu cụm trích thì kiểm giá trị: ô không bằng chứng bị bỏ, bằng chứng chỉ có trong câu bot hỏi bị bỏ, giá trị có sẵn
+giữ, lời tả ảnh chụp không thành ô, ô có số nhận cụm viết lại đơn vị), `tests/test_tin_nhac.py` (4 ca), `tests/test_xung_ho_chua_ro.py` (2 ca) — đỏ trên code cũ
+(đã chạy), pytest 386 đạt. Bắn thử production bằng ID thử: `bot/tests/ban-thu-ban.sh` (`apply-migration` ô `ban-thu-ban`, kịch bản
+đúng lượt chat 19/10) — soi phường, giá, diện tích, mặt tiền, sổ, kết cấu và KHÔNG có ô thương lượng.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
