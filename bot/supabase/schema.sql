@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-18 23:47 (giờ VN)
+-- Sinh lúc: 2026-10-19 10:12 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -177,6 +177,13 @@ create table if not exists public.deals (
   closed_at timestamp with time zone,
   created_at timestamp with time zone not null default now(),
   ctv_id uuid
+);
+
+create table if not exists public.du_an_kien_thuc (
+  khoa text not null,
+  ten text not null,
+  du_lieu jsonb not null default '{}'::jsonb,
+  cap_nhat timestamp with time zone not null default now()
 );
 
 create table if not exists public.duong (
@@ -661,6 +668,9 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.deals add constraint deals_pkey PRIMARY KEY (id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.du_an_kien_thuc add constraint du_an_kien_thuc_pkey PRIMARY KEY (khoa);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.duong add constraint duong_loai_check CHECK ((loai = ANY (ARRAY['duong'::text, 'so'::text, 'hem'::text])));
@@ -7983,6 +7993,7 @@ alter table public.conversations enable row level security;
 alter table public.ctvs enable row level security;
 alter table public.curated_lists enable row level security;
 alter table public.deals enable row level security;
+alter table public.du_an_kien_thuc enable row level security;
 alter table public.duong enable row level security;
 alter table public.giao_lo enable row level security;
 alter table public.info_requests enable row level security;
@@ -8176,6 +8187,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ct
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ctvs to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.curated_lists to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.deals to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.du_an_kien_thuc to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.duong to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.giao_lo to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.hoi_thoai_nhan to service_role;
