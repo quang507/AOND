@@ -200,7 +200,7 @@ if (buoc === "kiem") {
     (select count(*) from public.duong)::int as duong, (select count(nhung) from public.duong)::int as duong_vec,
     (select count(*) from public.projects)::int as projects, (select count(nhung) from public.projects)::int as projects_vec,
     (select count(*) from public.listings)::int as listings, (select count(nhung) from public.listings)::int as listings_vec`, true)));
-  console.log("công tắc:", JSON.stringify(await sql("select key, value from public.app_config where key in ('tim_theo_nghia','nhung_tam_dung_den','nhung_moi_tick','nhung_dia_danh_moi_tick','tro_ly','boc_tach_ai') order by 1", true)));
+  console.log("công tắc:", JSON.stringify(await sql("select key, value from public.app_config where key in ('tim_theo_nghia','nhung_tam_dung_den','nhung_moi_tick','nhung_dia_danh_moi_tick') order by 1", true)));
   // Chỉ TÊN secret trong Vault (không bao giờ đọc giá trị) — để biết còn thiếu khoá nào bot cần.
   console.log("vault (tên):", JSON.stringify((await sql("select name from vault.secrets order by 1", true)).map((r) => r.name)));
   console.log("extension có sẵn:", JSON.stringify(await sql(
@@ -322,8 +322,7 @@ if (buoc === "kiem") {
   const dat = [
     ["functions_base_url", `${base}/functions/v1`],
     ["storage_public_base_url", `${base}/storage/v1/object/public`],
-    // Công tắc production lúc bị xoá (CLAUDE.md §6, bản tóm tắt phiên 08/10/2026).
-    ["boc_tach_ai", "ai"], ["luat_loi_bot", "gon"], ["bao_lai_da_luu", "admin"],
+    // 19/10/2026 (SRS-5.1zzzzzzz62): bỏ boc_tach_ai / luat_loi_bot / bao_lai_da_luu — chỉ bot TypeScript đã gỡ đọc.
     // Tìm theo nghĩa: cron nhung-tick chỉ nhúng khi công tắc này = bat (docs/07 SRS FR-216 g). Thiếu GEMINI_API_KEY trong
     // Vault thì tim_nghia_san_sang() = false → bot đi đường cũ, không hỏng gì. 19/10/2026: lõi Python tra phường / đường theo nghĩa
     // (SRS-5.1zzzzzzz60) — bật.
