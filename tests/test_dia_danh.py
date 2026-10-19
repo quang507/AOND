@@ -130,3 +130,65 @@ def test_engine_khong_co_tra_thi_giu_chu_khach(monkeypatch):
     f = e.conversation("u-dia-danh-2").prop.fields
     assert (f.get("phuong"), f.get("duong")) == ("tan dinh", "hai ba trung")
     assert Property().fields == {}
+
+
+# --- 19/10/2026 (SRS-5.1zzzzzzz61): "trần ninh trọng" → kho có Trần Bình Trọng → hỏi xác nhận ở MỌI lượt, khách gật thì AI ghi ---
+
+TBT = {"trần ninh trọng": [{"ten": "Trần Bình Trọng", "khoang_cach": 1, "phuong": ["Phường Chợ Quán", "Phường Bàn Cờ"]}],
+       "Trần Bình Trọng": [{"ten": "Trần Bình Trọng", "khoang_cach": 0, "phuong": ["Phường Chợ Quán", "Phường Bàn Cờ"]}]}
+
+
+def test_ten_duong_go_sai_hoi_xac_nhan_ca_khi_cau_ke_khong_phai_dia_chi():
+    t, _ = _tra(duong=TBT)
+    f = {"duong": "trần ninh trọng", "quan": "Quận 5"}
+    for cau_ke in ("gia", "dien_tich_dat", None, "phuong"):
+        k = khoi_dia_danh(t, f, cau_ke)
+        assert '"Trần Bình Trọng"' in k and "TRƯỚC" in k, cau_ke
+    assert "Phường Chợ Quán" not in khoi_dia_danh(t, f, "phuong")   # chưa chốt đường thì chưa kể phường
+    from aioi.dia_danh import goi_y_duong
+    assert 'ghi duong = "Trần Bình Trọng"' in goi_y_duong(t, f)
+    # Khách đã xác nhận (AI ghi lại ô duong) → hết hỏi, khối lập thao tác rỗng.
+    f2 = {"duong": "Trần Bình Trọng", "quan": "Quận 5"}
+    assert "TRƯỚC" not in khoi_dia_danh(t, f2, "gia") and goi_y_duong(t, f2) == ""
+
+
+def test_tra_duong_nho_ket_qua_khoi_goi_lai_moi_luot():
+    t, goi = _tra(duong=TBT)
+    for _ in range(4):
+        t.duong("trần ninh trọng", "Quận 5")
+    assert goi.count("tim_duong") == 1
+
+
+def test_engine_dua_goi_y_vao_luot_lap_thao_tac_va_luot_tra_loi(monkeypatch):
+    from aioi.engine import Engine
+    from tests.test_engine import _engine
+
+    t, _ = _tra(duong=TBT)
+    e = _engine()
+    e._dia_danh = t
+    he_thong: list[str] = []
+    goc_extract, goc_chat = e._provider.extract, e._provider.chat
+    monkeypatch.setattr(e._provider, "extract", lambda system, *a, **k: (he_thong.append(system), goc_extract(system, *a, **k))[1])
+    monkeypatch.setattr(e._provider, "chat", lambda system, *a, **k: (he_thong.append(system), goc_chat(system, *a, **k))[1])
+    monkeypatch.setattr(Engine, "_ap_dung_ke_hoach", lambda self, conv, plan: (conv.prop.update(
+        {"loai_hinh": "nha_pho", "dia_chi": "12 trần ninh trọng", "duong": "trần ninh trọng", "quan": "Quận 5"}), []))
+    e.handle("u-tbt", "bán nhà 12 trần ninh trọng q5")
+    assert any("Trần Bình Trọng" in s and "TRƯỚC" in s for s in he_thong)       # lượt trả lời hỏi xác nhận
+    he_thong.clear()
+    e.handle("u-tbt", "đúng rồi em")
+    assert any("TÊN ĐƯỜNG CHƯA KHỚP KHO" in s for s in he_thong)                # lượt lập thao tác biết để ghi khi khách gật
+    assert e.conversation("u-tbt").prop.fields["duong"] == "trần ninh trọng"     # code không tự sửa khi chỉ "gần"
+
+
+def test_engine_thay_ten_duong_khac_dau_trong_dia_chi(monkeypatch):
+    from aioi.engine import Engine
+    from tests.test_engine import _engine
+
+    t, _ = _tra(duong={"le van sy": [{"ten": "Lê Văn Sỹ", "khoang_cach": 0, "phuong": ["Phường Nhiêu Lộc"]}]})
+    e = _engine()
+    e._dia_danh = t
+    monkeypatch.setattr(Engine, "_ap_dung_ke_hoach", lambda self, conv, plan: (conv.prop.update(
+        {"loai_hinh": "nha_pho", "dia_chi": "12 le van sy", "duong": "le van sy"}), []))
+    e.handle("u-lvs", "nhà 12 le van sy")
+    f = e.conversation("u-lvs").prop.fields
+    assert (f["duong"], f["dia_chi"]) == ("Lê Văn Sỹ", "12 Lê Văn Sỹ")

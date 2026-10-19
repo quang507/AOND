@@ -82,7 +82,7 @@ from .prompts import (
 from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import Property, BuyerLead, PropertyGroup
-from .dia_danh import TraDiaDanh, khoi_dia_danh
+from .dia_danh import TraDiaDanh, goi_y_duong, khoi_dia_danh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
 
@@ -668,6 +668,11 @@ class Engine:
             d = self._dia_danh.duong(f["duong"], quan)
             if d and d["chac"] and d["ten"] != f["duong"]:
                 moi["duong"] = d["ten"]
+                # Cùng tên trong dia_chi ("12 le van sy" → "12 Lê Văn Sỹ"): chỉ khác dấu / hoa thường nên thay tại chỗ, giữ phần còn lại.
+                if f.get("dia_chi"):
+                    moi_dc = re.sub(re.escape(f["duong"]), d["ten"], f["dia_chi"], count=1, flags=re.IGNORECASE)
+                    if moi_dc != f["dia_chi"]:
+                        f["dia_chi"] = moi_dc
         return prop.update(moi) if moi else []
 
     # --- projects (condos/developments) ---------------------------------
@@ -1638,7 +1643,7 @@ class Engine:
         if not is_listing_post:
             system = build_chat_system(
                 conv.assistant.name, conv.prop, next_field, conv.user_type, project_block
-            ) + khoi_dia_danh(self._dia_danh, conv.prop.fields, next_field)
+            )
         elif not conv.listing_proposed:
             conv.listing_proposed = True
             system = build_listing_proposal_system(
@@ -1649,6 +1654,9 @@ class Engine:
                 conv.assistant.name, conv.prop, conv.user_type, project_block, web=self._trang_thai_web(conv),
                 duyet=conv.duyet_luot,
             )
+
+        # Tra địa danh (SRS-5.1zzzzzzz60/61): hỏi xác nhận tên đường kho gợi ý ở MỌI nhánh (cả lượt soạn bản nháp), kể phường khi hỏi phường.
+        system += khoi_dia_danh(self._dia_danh, conv.prop.fields, None if is_listing_post else next_field)
 
         if customer_pronoun == "em":
             system += (
@@ -2821,6 +2829,7 @@ class Engine:
         system += self._basket_block(conv)
         if conv.prop.fields.get("dia_chi"):
             system += f"\nĐỊA CHỈ ĐANG GHI của căn đang nói tới: {conv.prop.fields['dia_chi']}\n"
+        system += goi_y_duong(self._dia_danh, conv.prop.fields)   # SRS-5.1zzzzzzz61: khách xác nhận tên đường kho gợi ý → AI ghi
         plan = self._provider.extract(system, src, operations_schema())
 
         # Sticky conversation attributes (never downgrade role to unknown).
