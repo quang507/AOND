@@ -17,7 +17,6 @@ from .schema import (
     IDENTITY_FIELDS,
     RENTAL_FIELDS,
     SECONDARY_FIELDS,
-    PropertyGroup,
     Property,
     BuyerLead,
 )
@@ -391,59 +390,6 @@ def build_chat_system(
             f'Thông tin cần hỏi tiếp theo: "{label}". Mục tiêu: {natural}. Tiếp nhận nhanh gọn, tự nhiên (TUYỆT ĐỐI KHÔNG nịnh bợ, KHÔNG mở đầu bằng từ "Dạ", KHÔNG khen các thông số kỹ thuật thông thường), rồi hỏi đúng 1 ý này một cách khéo léo.'
             if next_field
             else "Dữ liệu đã khá đầy đủ. Cảm ơn anh/chị và xác nhận trạng thái tin một cách thân thiện."
-        )
-
-    group_guidance = ""
-    if prop.group == PropertyGroup.RESIDENTIAL:
-        group_guidance = (
-            "KỊCH BẢN CHO NHÀ ĐẤT (Nhà phố / Biệt thự / Nhà cấp 4):\n"
-            "- Tập trung khai thác: kích thước ngang x dài, vị trí mặt tiền hay trong hẻm (nếu hẻm thì xe hơi vào được không - TUYỆT ĐỐI KHÔNG tự đoán là hẻm), "
-            "kết cấu số tầng/lầu/phòng ngủ, và pháp lý hoàn công sổ hồng riêng.\n"
-            "- Khi thông tin cơ bản đã rõ, hỏi thêm: nhà có đang thế chấp ngân hàng không, "
-            "giá có thương lượng bớt lộc không, và xin gửi hình ảnh thực tế / sổ hồng.\n"
-        )
-    elif prop.group == PropertyGroup.CONDO:
-        group_guidance = (
-            "KỊCH BẢN CHO CHUNG CƯ (Căn hộ / Penthouse / Officetel):\n"
-            "- TUYỆT ĐỐI KHÔNG hỏi về 'lộ giới/hẻm' (chung cư không có hẻm).\n"
-            "- TUYỆT ĐỐI KHÔNG hỏi về sổ đỏ / sổ hồng riêng (chung cư đa số theo HĐMB hoặc tiến độ, tuyệt đối không làm khó khách).\n"
-            "- Tập trung khai thác: tên dự án, tòa/block, tầng, số phòng ngủ & WC, hướng ban công & view, "
-            "nội thất bàn giao, và phí quản lý dịch vụ.\n"
-            "- Khi thông tin cơ bản đã rõ, hỏi thêm: căn góc không, phí gửi xe máy/ô tô, "
-            "hiện trạng đang ở hay có khách thuê sẵn, và xin ảnh view ban công/căn hộ.\n"
-        )
-    elif prop.group == PropertyGroup.PROJECT:
-        group_guidance = (
-            "KỊCH BẢN CHO BĐS DỰ ÁN (Đất dự án, Liền kề / Shophouse CĐT):\n"
-            "- TUYỆT ĐỐI KHÔNG hỏi về sổ đỏ / sổ hồng riêng.\n"
-            "- Tập trung khai thác: Chủ đầu tư, phân khu, tiến độ thi công thực tế, chính sách & tiến độ thanh toán "
-            "(gói vay ưu đãi ân hạn nợ gốc), pháp lý 1/500 và GPXD, thời gian dự kiến bàn giao.\n"
-            "- Khi thông tin cơ bản đã rõ, hỏi thêm: chiết khấu thanh toán sớm, phí chuyển nhượng hợp đồng, "
-            "và xin gửi brochure / layout thiết kế.\n"
-        )
-    elif prop.group == PropertyGroup.COMMERCIAL:
-        group_guidance = (
-            "KỊCH BẢN CHO MẶT BẰNG KINH DOANH (Mặt bằng / Shophouse / Cửa hàng cho thuê):\n"
-            "- Tập trung khai thác: bề ngang mặt tiền (rất quan trọng để nhận diện thương hiệu, đặt bảng hiệu), "
-            "lối đi (chung chủ hay hoàn toàn riêng biệt độc lập), vỉa hè rộng mấy mét và chỗ để xe (xe máy / ô tô), "
-            "ngành nghề kinh doanh phù hợp hoặc hạn chế (chủ nhà cho phép F&B ăn uống, thời trang, văn phòng... hay cấm ngành nào).\n"
-            "- Về điều khoản thuê: thời hạn hợp đồng tối thiểu mấy năm, mức cọc, trượt giá, và thời gian cho sửa chữa (fit-out miễn phí tiền nhà).\n"
-            "- Khi thông tin cơ bản đã rõ, hỏi thêm: hiện trạng bàn giao (trống suốt hay có sẵn vách kính/nội thất), điện 3 pha, và xin gửi ảnh mặt tiền/vỉa hè.\n"
-        )
-    elif prop.group == PropertyGroup.INDUSTRIAL:
-        group_guidance = (
-            "KỊCH BẢN CHO KHO XƯỞNG / ĐẤT CÔNG NGHIỆP (Kho bãi / Nhà xưởng / Đất SKC, TMD, Đất kinh doanh):\n"
-            "- Tập trung khai thác: chiều cao trần, tải trọng sàn (tấn/m2), đường xe container 20ft/40ft ra vào tới cửa không, "
-            "trạm biến áp công suất bao nhiêu kVA (nguồn điện 3 pha), hệ thống PCCC đã nghiệm thu chưa.\n"
-            "- Về pháp lý: thời hạn sử dụng đất (đến năm nào), đất SKC hay TMD, giấy phép xây dựng nhà xưởng.\n"
-        )
-    elif prop.group == PropertyGroup.LAND:
-        group_guidance = (
-            "KỊCH BẢN CHO ĐẤT (Đất thổ cư / Đất nông nghiệp / Đất nền):\n"
-            "- Tập trung khai thác: kích thước (ngang x dài), diện tích thổ cư công nhận trên sổ (và đất nông nghiệp nếu có), "
-            "lộ giới đường trước đất (đường nhựa/bê tông mấy mét, ô tô/xe tải vào tận đất không), quy hoạch đất ở hay đất gì.\n"
-            "- Khi thông tin cơ bản đã rõ, hỏi thêm: ranh mốc cắm cọc rõ ràng chưa, có vướng cột điện/hố ga không, "
-            "pháp lý sổ đỏ riêng chính chủ, và xin hình sổ đỏ / trích lục quy hoạch.\n"
         )
 
     return f"""Bạn là "{assistant_name}", chuyên viên tư vấn bất động sản của AI Ơi Nhà Đất (aioinhadat.com).

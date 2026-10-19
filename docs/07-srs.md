@@ -6413,7 +6413,7 @@ nhóm nào dùng — cũng chưa có trong schema bóc tách, nên model không 
 **Lớp lỗi.** Hai nguồn cho cùng một quyết định (bảng DB ↔ code); bỏ người đọc nguồn cũ mà không chép phần nguồn mới thiếu.
 **Chỗ cùng lớp.** Ô của `CORE_THEO_LOAI` thêm vào `property_field_props` (schema bóc tách) và `NATURAL_QUESTIONS`. **Còn:** khối
 "KỊCH BẢN CHO …" theo nhóm trong `build_chat_system` (`group_guidance`) được tính nhưng không đưa vào prompt từ commit 16/10/2026 —
-chưa rõ có chủ ý không, không nối lại ở đây (chờ chủ dự án). `diem_tin` (DB) tính điểm toà nhà theo khoá cũ `doanh_thu` /
+chủ dự án 19/10 chốt xoá ("ừ xoá đi") — đã gỡ khỏi `prompts.py`, câu hỏi chỉ theo `schema.py`. `diem_tin` (DB) tính điểm toà nhà theo khoá cũ `doanh_thu` /
 `so_phong`, khoá lõi là `dong_tien_thue` / `so_phong` — điểm toà nhà có thể thiếu phần doanh thu.
 
 **Sửa.** `schema.CORE_THEO_LOAI` (toà nhà / chdv / khách sạn: kết cấu, số phòng, dòng tiền, hẻm, hoàn công; phòng trọ: tiện ích phòng,
