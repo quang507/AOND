@@ -208,6 +208,18 @@ def test_so_do_personal_data_redacted_but_land_facts_kept():
     assert _redact_personal_data(phan_lo) == phan_lo
 
 
+def test_drive_file_link_is_read_as_media_not_a_web_page():
+    # SRS-5.1zzzzzzz50 (bản anh Luận 4ebeb18): link ẢNH trên Google Drive từng bị tải thô, nhận trang đăng nhập Drive rồi bị
+    # đọc nhầm thành "trang web dự án" ("đang rao dự án nào?"). Link Drive (file hay thư mục) phải đi đường media / vision.
+    eng = _engine(fetcher=lambda u: FetchedMedia(b"\xff\xd8\xff", "image/jpeg", u, filename="nha.jpg"))
+    r = eng.handle_link(
+        "d1", "https://drive.google.com/open?id=1vMvOLSURsd6UyBtTGr62qja6NCcDAAa0&usp=drive_fs")
+    assert "📎 Em đã nhận" in r.reply          # đi đường đọc media
+    assert "dự án nào" not in r.reply.lower()  # KHÔNG bị đọc như trang web dự án
+    r2 = eng.handle_link("d2", "https://drive.google.com/file/d/1AbCdEfGhIjKlMnOp/view?usp=sharing")
+    assert "📎 Em đã nhận" in r2.reply and "drive.google.com" not in r2.reply   # cách viết link khác, chưa từng bắn
+
+
 def test_reply_is_complete_and_not_truncated():
     # We no longer hard-cap; the reply must be a complete sentence, never ending in "…".
     eng = _engine()
@@ -243,8 +255,10 @@ def test_ambiguous_house_area_is_parked_not_dropped():
     conv = eng.conversation("u4b")
     assert conv.prop.loai_hinh == "nha_pho"
     assert conv.prop.fields.get("dien_tich") == "80m2"
-    assert conv.prop.fields.get("dien_tich_dat") == "80m2"
+    # 19/10 (SRS-5.1zzzzzzz52, theo bản anh Luận): con số chưa rõ đất hay nhà KHÔNG tự thành diện tích đất; bot hỏi lại.
+    assert conv.prop.fields.get("dien_tich_dat") is None
     assert conv.prop.fields.get("dien_tich_nha") is None
+    assert "dien_tich_dat" in conv.prop.missing_fields()
 
 
 def test_chat_turn_is_not_a_listing_post_while_data_missing():

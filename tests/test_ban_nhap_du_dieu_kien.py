@@ -14,14 +14,18 @@ def _nha(**f):
 
 def test_ca_that_hoi_duong_roi_phuong_roi_ket_cau():
     p = _nha()
-    assert p.completeness() >= 0.70  # chỉ nâng ngưỡng thì vẫn lọt — cổng theo loại mới là chỗ chặn
+    assert p.completeness() >= 0.65  # câu đầu đã gần ngưỡng — cổng theo loại / đủ hai diện tích mới là chỗ chặn
     assert not p.summary_ready()
-    assert p.missing_fields()[:3] == ["dia_chi", "phuong", "ket_cau"]
+    # 19/10 (SRS-5.1zzzzzzz52, theo bản anh Luận): nhà phố cần CẢ diện tích đất lẫn diện tích nhà — "60m2 đất" không đứng
+    # thay diện tích nhà. Thứ tự hỏi vẫn đường → phường, rồi diện tích nhà.
+    assert p.missing_fields()[:3] == ["dia_chi", "phuong", "dien_tich_nha"]
     p.update({"duong": "Trần Hưng Đạo", "dia_chi": "Trần Hưng Đạo"})
-    assert not p.summary_ready() and p.missing_fields()[:2] == ["phuong", "ket_cau"]
+    assert not p.summary_ready() and p.missing_fields()[:2] == ["phuong", "dien_tich_nha"]
     p.update({"phuong": "Phường 1", "dia_chi": "phường 1"})
-    assert not p.summary_ready() and p.missing_fields()[0] == "ket_cau"
+    assert not p.summary_ready() and p.missing_fields()[0] == "dien_tich_nha"
     p.update({"ket_cau": "1 trệt 2 lầu, 3PN"})
+    assert not p.summary_ready() and p.missing_fields()[0] == "dien_tich_nha"   # kết cấu không thay được diện tích nhà
+    p.update({"dien_tich_nha": "150m2 sàn"})
     assert p.summary_ready()
 
 
@@ -30,7 +34,9 @@ def test_khong_doan_bang_tu_khoa_tren_dia_chi():
     p = _nha(dia_chi="123 Trần Hưng Đạo, Phường 1, Quận 5", ket_cau="3 tầng")
     assert p.blocking_fields() == ["dia_chi", "phuong"]
     p.update({"duong": "Trần Hưng Đạo", "phuong": "Phường 1"})
-    assert p.blocking_fields() == [] and p.summary_ready()
+    assert p.blocking_fields() == [] and not p.summary_ready()   # còn thiếu diện tích nhà (SRS-5.1zzzzzzz52)
+    p.update({"dien_tich_nha": "180m2"})
+    assert p.summary_ready()
 
 
 def test_chung_cu_can_ten_du_an_va_so_phong_ngu_phuong_lay_tu_du_an():

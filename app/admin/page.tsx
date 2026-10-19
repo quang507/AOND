@@ -2230,7 +2230,14 @@ function TheTien({ rows, rowsModel }: { rows: Tien[]; rowsModel: TienModel[] }) 
   const theoNgay = new Map<string, TienModel[]>();
   for (const r of rowsModel) theoNgay.set(r.day, [...(theoNgay.get(r.day) ?? []), r]);
   const tongAll = tongTien(rowsModel);
-  const tongLuot = rows.reduce((s, t) => s + t.model_calls, 0);
+  // Lượt = số lần gọi model trong `bot_usage_model` (lõi Python ghi qua cong_token, SRS-5.1zzzzzzz49); `model_calls` của
+  // bot_usage chỉ bot TypeScript cũ đếm (bump_model_quota) nên từ 19/10 luôn 0 — chỉ dùng cho ngày chưa có cột calls.
+  const luotNgay = (t: Tien) => {
+    const ds = theoNgay.get(t.day) ?? [];
+    const c = ds.reduce((s, r) => s + (r.calls ?? 0), 0);
+    return c > 0 ? c : t.model_calls;
+  };
+  const tongLuot = rows.reduce((s, t) => s + luotNgay(t), 0);
   const tongNap = rows.reduce((s, t) => s + t.cache_write_tokens, 0);
   const tongDoc = rows.reduce((s, t) => s + t.cache_read_tokens, 0);
   const daDo = rows.some((t) => t.in_tokens + t.out_tokens + tongNap + tongDoc > 0);
@@ -2248,7 +2255,7 @@ function TheTien({ rows, rowsModel }: { rows: Tien[]; rowsModel: TienModel[] }) 
         </span>
       </div>
       <p className="text-[11px] text-mute">
-        Giá theo từng model (Anthropic niêm yết), Groq/Gemini = 0 đô (bậc miễn phí). Dòng ghi trước 04/10 không có model → không quy ra đô.
+        Giá theo từng model (Anthropic niêm yết, đối chiếu 19/10/2026), Groq/Gemini = 0 đô (bậc miễn phí). Dòng ghi trước 04/10 không có model → không quy ra đô. Lượt = số lần gọi model; một tin khách thường gọi 2–3 lần (lập thao tác, bóc tách, trả lời).
       </p>
       {/* SRS-5.1zw (#4): cache không chạy = trả giá đầy đủ mỗi lượt. Haiku 4.5 chỉ cache prompt ≥ 4.096 token. */}
       {rowsModel.map((r) => canhBaoCache(r)).filter((x): x is string => !!x).slice(0, 3).map((cb, i) => (
@@ -2269,7 +2276,7 @@ function TheTien({ rows, rowsModel }: { rows: Tien[]; rowsModel: TienModel[] }) 
                 <span className="tabular-nums text-mute w-24">
                   {new Date(t.day).toLocaleDateString("vi-VN")}
                 </span>
-                <span className="tabular-nums w-16">{t.model_calls} lượt</span>
+                <span className="tabular-nums w-16">{luotNgay(t)} lượt</span>
                 <span className="tabular-nums font-bold text-navy w-20">
                   {ds.length ? `$${tn.tien.toFixed(3)}` : chu(t) > 0 ? "chưa rõ" : "-"}
                 </span>

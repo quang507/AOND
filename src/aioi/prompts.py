@@ -5,6 +5,7 @@ images, friendly local tone, and the assistant's assigned persona.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from .projects import Project, UnitType
@@ -349,6 +350,13 @@ def build_chat_system(
     project_block: str = "",
 ) -> str:
     ambiguous_area = prop.fields.get("dien_tich")
+    # Con số đó khách đã nói là đất (hoặc nhà) rồi thì hết mơ hồ — hỏi ô còn lại, đừng hỏi lại "80m2 là đất hay nhà"
+    # (SRS-5.1zzzzzzz52: nhà phố cần đủ hai diện tích, con số mơ hồ nằm yên ở dien_tich).
+    def _so(v: str | None) -> str | None:
+        m = re.search(r"\d+(?:[.,]\d+)?", v or "")
+        return m.group(0).replace(",", ".") if m else None
+    if ambiguous_area and _so(ambiguous_area) in (_so(prop.fields.get("dien_tich_dat")), _so(prop.fields.get("dien_tich_nha"))):
+        ambiguous_area = None
     if next_field in ("dien_tich_dat", "dien_tich_nha") and ambiguous_area:
         ask_line = (
             f'Khách đã cho biết diện tích {ambiguous_area} nhưng CHƯA RÕ là diện tích ĐẤT hay '

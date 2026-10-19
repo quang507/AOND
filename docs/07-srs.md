@@ -5959,6 +5959,91 @@ như cũ (không đoán theo thứ tự).
 **Kiểm.** `bot/tests/giao-lo.mjs` thêm 4 ca (theo tên; theo toạ độ; thiếu toạ độ thì theo tên; tên có nháy kép). Chạy thật qua
 `apply-migration` `dung_lai=nap-giao-lo` (chỉ phường còn thiếu).
 
+### SRS-5.1zzzzzzz49 · Sổ token + chi phí của lõi Python lên CRM; bảng giá đối chiếu 19/10 (19/10/2026)
+
+**Ca gốc.** Chủ dự án hỏi "in số token và ước tính tiền mình có trên crm chưa, nếu chưa làm cho đúng" (sau khi so với repo anh Luận,
+commit `418f63b` in token + $ mỗi lượt gọi Claude). /admin đã có thẻ "Chi phí Model" đọc `bot_usage` / `bot_usage_model`, nhưng sổ đó
+chỉ bot TypeScript ghi (rpc `cong_token`); lõi Python thay bộ não từ 18/10 mà không ghi dòng nào → CRM như thể bot không tốn đồng nào
+(dòng cuối: 18/10, 27 lượt — của bot TS). Bảng giá `lib/gia-model.ts` thiếu Haiku 5.5, tính ghi cache 2× (TTL 1 giờ của bot TS) trong khi
+lõi Python dùng cache 5 phút (1,25×), và đọc cache Opus 5.5 / Sonnet 5.5 tính 0,1× thay vì 0,05×. Bảng giá trong code anh Luận ghi
+Opus 4.8 = 15/75 (giá Opus 4.1); trang giá Anthropic 19/10 ghi Opus 4.8 = 5/25 — không chép bảng đó.
+
+**Lớp lỗi.** Đổi bộ não mà không nối lại đường đo (cùng lớp 5.1zzzzzzz47: cấu hình bot cũ không sang lõi mới). **Chỗ cùng lớp.**
+`bump_model_quota` (trần lượt gọi model / ngày, FR-192) cũng chỉ bot TS gọi — lõi Python KHÔNG có trần ngày nào, thẻ "Quota tiêu hao"
+đếm 0 lượt từ 19/10; chưa sửa, ghi vào việc còn lại. Cột `bot_usage.model_calls` cùng lý do → /admin đếm lượt từ `bot_usage_model.calls`.
+
+**Sửa.** `src/aioi/so_token.py` `SoToken`: mỗi phản hồi Messages API → `cong_token(p_in, p_out, p_cache_write, p_cache_read, p_model)` với
+`p_model = resp.model` (model API thật sự chạy, để thấy lượt nào chạy Opus), luồng nền, lỗi thì bỏ qua; dòng stderr `[💲 nhãn · model ·
+in= out= cache_w= cache_r=]` (tắt bằng `AIOI_LOG_COST=0`). Chỉ con số + tên model, không nội dung tin. `llm/claude.py` gọi ở cả sáu chỗ
+(chat, extract, agent, vision, group, read-doc). Giá ở MỘT chỗ (`lib/gia-model.ts`, không chép sang Python): thêm Haiku 5.5 (0,10 / 0,50,
+bậc prompt ≤ 100K), Opus 4.8 nhãn riêng, `doc` riêng cho Opus 5.5 (0,20) / Sonnet 5.5 (0,10), `heSoNap(day)`: dòng trước 19/10 = 2×
+(bot TS), từ 19/10 = 1,25× (lõi Python). /admin: lượt/ngày = tổng `calls` của `bot_usage_model`.
+
+**Kiểm.** `tests/test_so_token.py` (sáu chỗ gọi đều vào sổ với model thật — đỏ khi bỏ dòng ghi ở `claude.py`, đã thử; sổ hỏng không
+làm hỏng lượt chat; không có Supabase thì chỉ log). `bot/tests/gia-model.mjs` thêm 5 ca (Haiku 5.5, Opus 4.8 = 5/25, hệ số ghi theo ngày,
+ghi 1M cache Haiku 4.5 ngày 20/10 = 1,25 đô, Opus 5.5 đọc 1M = 0,2 đô).
+
+### SRS-5.1zzzzzzz50 · Link Google Drive dạng file đi đường ảnh / tài liệu, không đọc như trang web (19/10/2026)
+
+**Ca gốc.** Repo anh Luận commit `4ebeb18`: người bán dán link ẢNH trên Drive, bot đáp "em đọc trang drive.google.com… đang rao dự án
+nào?". Chạy bài kiểm của anh Luận trên lõi mình: hỏng đúng như vậy. `handle_link` chỉ tách link THƯ MỤC Drive (`is_drive_folder`); link
+file bị `fetch_raw` tải thô → trang đăng nhập Drive (HTML) → `_ingest_web_link`. Bên mình nặng hơn: từ 5.1zzzzzzz47 mọi link
+`drive.google.com` trong tin chữ đều vào `handle_link`. Khoá Drive trong Vault (5.1zzzzzzz47) không liên quan: nó chỉ dùng ở bộ giải link
+của đường media, mà link file chưa bao giờ tới đường đó.
+
+**Lớp lỗi.** Nhận dạng loại link bằng một dạng URL hẹp hơn dạng thật. **Chỗ cùng lớp.** `handle` (bước chuyển link sang `handle_link`) và
+`handle_media_batch` dùng `extract_drive_id` (đủ dạng) — đúng; `fetch.is_drive_folder` chỉ còn quyết "thư mục cần khoá API".
+
+**Sửa.** `engine.handle_link`: `is_drive = extract_drive_id(url) is not None` → link Drive (file hay thư mục, trừ Sheets đã tách trước)
+đi `handle_media_batch`.
+
+**Kiểm.** `tests/test_engine.py::test_drive_file_link_is_read_as_media_not_a_web_page` (ca của anh Luận + dạng `/file/d/…/view` chưa
+từng bắn) — đỏ trên code cũ, đã thử.
+
+### SRS-5.1zzzzzzz51 · Nhiều căn không mất căn: theo bản anh Luận, bỏ regex đoán ý (19/10/2026)
+
+**Ca gốc.** So với repo anh Luận: (1) op `add` của lượt AI lập thao tác bị code đọc lại bằng regex trên tin khách — có "ok / chuẩn /
+duyệt / hấp dẫn / đăng đi…" mà không có "căn nữa / thêm căn…" thì coi là duyệt tin và GỘP vào căn đang khai: "ok, còn nhà ở Q3 nữa" →
+nhà Q3 đè lên căn cũ. (2) `_drop_stub_listings` bỏ mọi căn chưa có mã căn / địa chỉ / giá, kể cả căn khách vừa mở và đang khai loại hình +
+diện tích → lượt kế câu trả lời rơi về căn cũ. Bản anh Luận không có cả hai. Chủ dự án: "học theo, ko có dùng từ khóa nữa".
+
+**Lớp lỗi.** Máy đoán ý khách bằng từ khoá để sửa quyết định của AI (CLAUDE.md §6 01/10). **Chỗ cùng lớp** (soát `engine.py`): khối chèn
+prompt theo từ khoá `_is_fee_question`, `_is_trust_question`, `_is_link_question`, `_detect_customer_pronoun` / `_clean_reply_tone` — còn,
+chưa đổi (chỉ thêm chữ vào prompt / gọt lời, không đổi dữ liệu); lệnh "hello" xoá phiên và "json / thong tin" — giữ theo lệnh chủ dự án
+("vẫn đang test"). Đoạn `is_post_approval` mà 5.1zzzzzzz47 ghi "giữ làm lưới đỡ" nay gỡ: duyệt bản nháp đã có `duyet_ban_nhap` (kiểm trích
+dẫn), và `OPERATIONS_SYSTEM` cấm `add` khi khách chỉ duyệt tin.
+
+**Sửa.** `engine._apply_operation` nhánh `add` = bản anh Luận: nhiều mã căn → `_fan_out_units`; căn đang khai rỗng → điền vào; còn lại →
+`new_listing()` + đọc lại trường từ đoạn hội thoại riêng của căn mới. `_drop_stub_listings` = bản anh Luận (không bỏ căn đang khai), giữ thêm
+chốt `active_listing_id` luôn trỏ vào căn còn trong rổ.
+
+**Kiểm.** `tests/test_nhieu_can.py`: "ok, còn nhà ở Lê Văn Sỹ quận 3 nữa" mở căn thứ hai, căn Q5 nguyên vẹn; cách nói mới "chuẩn rồi, à
+anh có thêm miếng đất Củ Chi"; căn đang khai chỉ có loại hình + diện tích không bị bỏ; căn khởi đầu rỗng vẫn được dọn — ba ca đầu đỏ
+trên code cũ, đã thử.
+
+### SRS-5.1zzzzzzz52 · Nhà có đất riêng cần đủ diện tích đất và diện tích nhà (19/10/2026)
+
+**Ca gốc.** Chủ dự án: "Nhà phố có phải đủ cả diện tích đất lẫn diện tích nhà không. xem anh Luận làm ntn thì làm theo". Bản anh Luận:
+nhà phố / biệt thự / cấp 4 có hai ô `dien_tich_dat` + `dien_tich_nha` trong nhóm nhận diện, mỗi ô phải có chính nó; một con số khách
+không nói đất hay nhà nằm ở `dien_tich` và bot hỏi lại. Bản 16/10 bên mình: `_has` cho `dien_tich` / `dien_tich_dat` đứng thay
+`dien_tich_nha`, và `update` đồng bộ `dien_tich` ↔ `dien_tich_dat` → một con số đủ cả hai ô, nhà phố ra bản nháp khi chưa biết diện tích
+nhà, con số mơ hồ tự thành diện tích đất.
+
+**Lớp lỗi.** Bí danh / đồng bộ ô cho một giá trị đứng thay ô khác nghĩa. **Chỗ cùng lớp.** `_has("ma_so_can")` nhận `tang_toa` (căn hộ:
+tầng / toà là cách định vị căn) — giữ; `_has("dien_tich")` cho BĐS một diện tích nhận `dien_tich_dat` / `kich_thuoc` — giữ (cùng nghĩa).
+Lỗi đi kèm, bản anh Luận cũng có: khách đã nói "80m2 đó là đất" mà `dien_tich` vẫn còn "80m2" → câu hỏi diện tích nhà lại hỏi "80m2 là đất
+hay nhà" — sửa cùng lượt.
+
+**Sửa.** `schema._has`: `dien_tich_dat` / `dien_tich_nha` chỉ đạt khi chính ô có giá trị; bỏ đồng bộ `dien_tich` ↔ `dien_tich_dat` cho nhà
+có đất riêng (kích thước "4x15" vẫn ra diện tích đất, chuỗi kích thước bỏ khỏi `dien_tich`). `missing_fields`: phường luôn hỏi ngay sau
+địa chỉ (giữ thứ tự đường → phường của 5.1zzzzzzz41 khi diện tích nhà chen vào nhóm nhận diện). `prompts.build_chat_system`: con số trùng
+diện tích đất / nhà đã có thì hết mơ hồ. Ngưỡng 0.70 và ô bắt buộc đường / phường giữ nguyên (khác bản anh Luận 0.75, có chủ đích).
+
+**Kiểm.** `tests/test_hai_dien_tich.py` (chỉ diện tích đất thì chưa ra bản nháp; con số mơ hồ không thành diện tích đất; "4x15" vẫn ra 60m2
+đất; không hỏi lại con số đã rõ; chung cư vẫn một diện tích) — bốn ca đỏ trên code cũ, đã thử. Bài của anh Luận
+`test_ambiguous_house_area_is_parked_not_dropped`, `test_completeness_and_update` nay đạt; `test_ban_nhap_du_dieu_kien.py`,
+`test_duyet_ban_nhap.py` thêm diện tích nhà vào dữ liệu ca.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
