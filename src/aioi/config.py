@@ -26,6 +26,7 @@ class Settings:
     groq_whisper_model: str = "whisper-large-v3-turbo"
     supabase_url: str = "https://rqxmmqmctpklqcmbfxuj.supabase.co"
     supabase_service_role_key: str | None = None
+    gemini_api_keys: tuple[str, ...] = ()  # nhúng câu tìm địa danh theo nghĩa (dia_danh.py); không có = chỉ tra theo chữ
 
     @property
     def effective_provider(self) -> str:
@@ -51,7 +52,14 @@ def load_settings() -> Settings:
         groq_whisper_model=os.getenv("GROQ_WHISPER_MODEL", "whisper-large-v3-turbo"),
         supabase_url=os.getenv("SUPABASE_URL", "https://rqxmmqmctpklqcmbfxuj.supabase.co"),
         supabase_service_role_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY") or None,
+        gemini_api_keys=_ds_khoa("GEMINI_API_KEY", "GEMINI_API_KEYS"),
     )
+
+
+def _ds_khoa(*ten: str) -> tuple[str, ...]:
+    """Các khoá từ biến môi trường (biến có thể mang nhiều khoá cách nhau dấu phẩy), bỏ trùng, giữ thứ tự."""
+    ds = [k.strip() for t in ten for k in (os.getenv(t) or "").split(",") if k.strip()]
+    return tuple(dict.fromkeys(ds))
 
 
 def _int_env(name: str, default: int) -> int:

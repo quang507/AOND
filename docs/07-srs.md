@@ -6213,6 +6213,37 @@ in kích thước từng mục trong `/opt/aond_core`, tên biến `.env` (khôn
 
 **Kiểm.** `cron.job` không còn hai lịch; sổ lỗi không còn nguồn `nhung%` sau mốc áp. `bun run kiem` xanh.
 
+**Đảo lại cùng ngày (SRS-5.1zzzzzzz60).** Chủ dự án: "tôi muốn tra địa chỉ, tra tên đường phường bằng schematic" — vector
+được dùng lại, hai lịch bật lại ở `20261019c`. Phần dọn `cai-vps` / `httpx` / `.gitignore` giữ.
+
+### SRS-5.1zzzzzzz60 · Lõi Python tra phường / quận / đường theo chữ rồi theo nghĩa; dọn tàn dư /opt/aond_core (19/10/2026)
+
+**Ca gốc.** Chủ dự án: "ủa sao bảo lõi python vector hóa hết, tôi muốn tra địa chỉ, tra tên đường phường bằng schematic mà".
+Soát: lõi Python chỉ chuẩn hoá phường khi GHI DB (`chuan_dia_ban`); ô `duong` / `phuong` / `quan` AI đọc ra giữ nguyên chữ khách
+("le van sy", "tan dinh", "q1"), bot không biết đường khách nói đi qua phường nào để hỏi, và người đọc vector duy nhất (chat-reply
+TypeScript, `dia-danh.ts` + `khop-ten-nghia.ts`) đã gỡ 18/10 mà không có bản Python. Cùng lượt, log `cai-vps` (5.1zzzzzzz59) cho
+thấy `/opt/aond_core` còn `sharepoint_store/` (3 MB), `backup.py` + `backups/` (6,5 MB), `tests/` cũ, `.env.bak-gemini`,
+`aioi.db.bak_before_test_reset`.
+
+**Lớp lỗi.** Gỡ một tầng (TS) mà chức năng của nó không có chủ mới ở tầng còn lại. **Chỗ cùng lớp.** Soát các thứ chat-reply TS làm
+mà lõi Python chưa có: tra ngã tư → phường đã có (`giao_lo.py`, 5.1zzzzzzz43); tra dự án theo tên có (`match_projects`); tra tên
+đường / phường theo chữ + nghĩa: CHƯA — bản này; tra dự án THEO NGHĨA (`tim_du_an_theo_nghia`) chưa nối, `match_projects` theo chữ
+vẫn chạy.
+
+**Sửa.** `src/aioi/dia_danh.py` (`TraDiaDanh`): chữ trước (`tim_dia_danh`, `tim_duong` — bỏ dấu, sai 1–2 ký tự), chữ không ra mới
+nhúng câu tìm bằng Gemini (`gemini-embedding-001`, RETRIEVAL_QUERY, 768 chiều, khoá `GEMINI_API_KEY` / `GEMINI_API_KEYS` trong
+`.env` lõi, 429 thì thử khoá sau) rồi `tim_dia_danh_theo_nghia`. Vector tìm, MÁY xác nhận: chỉ nhận ứng viên đủ gần nghĩa (≥ 0,55),
+cùng quận nếu biết, TÊN còn gần chữ khách (`ten_gan`, luật của bản TS) và ra đúng MỘT giá trị — không chắc thì giữ chữ khách.
+`Engine._chuan_dia_danh` (bước 1a-địa danh, sau ngã tư): ô `quan` / `phuong` vừa bắt → tên chuẩn (phường MỚI); `duong` chỉ đổi khi
+chỉ khác dấu / hoa thường. `khoi_dia_danh`: khi sắp hỏi phường mà đã biết đường, prompt nhận "đường X đi qua phường A, B (kho
+đường, KHÔNG phải khách nói)" để kể cho khách chọn; tên đường gõ sai thì nhắc hỏi xác nhận. Lỗi mạng / Gemini → không đổi gì.
+`20261019c` bật lại hai lịch nhúng (`duong` mới nhúng 11.950 / 39.421). `/health` thêm `dia_danh: tat|chu|chu+nghia`.
+`cai-vps.sh` dọn tàn dư `/opt/aond_core` (nén vào `/root`, chmod 600, trước khi xoá) và gỡ lịch `backup.py` khỏi crontab root.
+
+**Kiểm.** `tests/test_dia_danh.py` (9 ca; `test_engine_chuan_hoa_phuong_va_duong_khi_vua_bat` đỏ khi tắt bước 1a-địa danh — đã chạy),
+kèm ca gần nghĩa mà khác tên ("bến thành" ↛ Bến Nghé), dưới ngưỡng, lỗi mạng, Gemini 429. `bot/tests/aond-mot-nguon.mjs` AMN-12.
+Đường nghĩa với Gemini thật chưa bắn được từ máy kiểm (không có khoá) — xem log `aond-core` dòng "theo nghĩa" sau khi cài.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -16,6 +16,7 @@ from .anh_du_an import anh_gui_kem
 from .config import load_settings
 from .delivery import chunk_reply, typing_delay
 from .drive import khoa_drive, make_folder_namer, make_resolver
+from .dia_danh import TraDiaDanh
 from .giao_lo import dia_ban_tu_nga_tu
 from .han_muc import HanMuc
 from .engine import Engine, SqliteConversationStore
@@ -95,6 +96,7 @@ def _init_engine() -> Engine:
         media_store=media_store,
         max_photos_per_listing=settings.max_photos_per_listing,
         nga_tu_resolver=dia_ban_tu_nga_tu,
+        dia_danh=TraDiaDanh.tu_cau_hinh(settings.supabase_url, settings.supabase_service_role_key, settings.gemini_api_keys),
     )
 
 
@@ -163,6 +165,7 @@ def health() -> dict[str, str]:
         "chat_model": _settings.chat_model,
         "stt": "groq-whisper" if _settings.groq_api_key else "disabled",
         "drive": "api-key" if _co_khoa_drive else "khong-khoa",
+        "dia_danh": ("tat" if not _settings.supabase_service_role_key else "chu+nghia" if _settings.gemini_api_keys else "chu"),
     }
 
 

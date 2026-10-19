@@ -90,6 +90,22 @@ if [ -d /opt/aond_core/src/aioi ]; then
   cp -r --no-preserve=ownership "$DIR/src/aioi" /opt/aond_core/src/aioi.moi
   find /opt/aond_core/src/aioi.moi -name __pycache__ -type d -prune -exec rm -rf {} +
   rm -rf /opt/aond_core/src/aioi && mv /opt/aond_core/src/aioi.moi /opt/aond_core/src/aioi
+  # 19/10/2026 (SRS-5.1zzzzzzz60): dọn tàn dư bản dựng tay — kho SharePoint giả, bộ test cũ, backup.py + bản sao SQLite của nó, tệp
+  # .env.bak-gemini. Không thứ nào lõi đọc. Nén vào /root (chmod 600) trước khi xoá, lượt sau không còn gì thì bỏ qua.
+  DON=(sharepoint_store tests .pytest_cache backup.py backup.log backups .env.bak-gemini aioi.db.bak_before_test_reset)
+  CO=(); for f in "${DON[@]}"; do [ -e "/opt/aond_core/$f" ] && CO+=("$f"); done
+  if [ ${#CO[@]} -gt 0 ]; then
+    CAT="/root/aond_core-don-$(date +%Y%m%d%H%M%S).tgz"
+    tar -czf "$CAT" -C /opt/aond_core "${CO[@]}"
+    chmod 600 "$CAT"
+    (cd /opt/aond_core && rm -rf -- "${CO[@]}")
+    xong "dọn /opt/aond_core: ${CO[*]} (cất ở $CAT)"
+  fi
+  if crontab -l 2>/dev/null | grep -q 'aond_core/backup'; then
+    crontab -l | grep -v 'aond_core/backup' | crontab -
+    xong "gỡ lịch backup.py khỏi crontab root"
+  fi
+  grep -rls 'aond_core/backup' /etc/cron.d /etc/crontab /etc/systemd/system 2>/dev/null | sed 's/^/  còn nhắc backup.py: /' || true
   systemctl restart aond-core
   for i in $(seq 1 60); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done
   SUC_KHOE=$(curl -fsS -m 3 http://127.0.0.1:8000/health) || { echo "aond-core không trả /health sau khởi động lại — bản cũ ở $LUU"; exit 1; }
