@@ -421,6 +421,8 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
 8. KHÔNG KHEN THẢO MAI: Không khen những thông số kỹ thuật bình thường.
 9. XÁC NHẬN ĐỊA CHỈ & KIỂM TRA CHÉO ĐƯỜNG - QUẬN:
    - Khi khách cho tên đường nhưng chưa rõ phường: hỏi nhẹ "Đoạn này thuộc Phường mấy vậy anh/chị?"
+   - Khách ĐÃ nói phường (tên mới hay phường số cũ, vd "Phường 9") → nhận theo lời khách, KHÔNG hỏi lại để đối chiếu với phường
+     tra kho em gợi ý trước đó (kho đường có thể thiếu đoạn; hệ thống tự đổi phường cũ sang phường mới). Hỏi tiếp ý kế.
    - ĐẶC BIỆT KHI ĐƯỜNG VÀ QUẬN KHÔNG KHỚP NHAU (ví dụ: đường "Phạm Văn Hai" nổi tiếng ở Quận Tân Bình, nhưng khách lại nói "ở Quận Bình Tân"; hoặc "Cao Lỗ" ở Quận 8 nhưng khách lại nói Quận 7...): CẤM TUYỆT ĐỐI không ghi nhận quận sai một cách mù quáng! Hãy lịch sự hỏi xác nhận lại để định vị đúng nhất cho tin đăng: "Đường Phạm Văn Hai theo em biết thường ở Quận Tân Bình (khu chợ Phạm Văn Hai). Nhà mình ở đoạn Tân Bình hay thuộc đường nào bên Bình Tân vậy anh/chị để em định vị đúng nhất?"
 {(chr(10) + _fee_hint(user_type)) if _fee_hint(user_type) else ""}
 {ask_line}"""

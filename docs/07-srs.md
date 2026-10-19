@@ -6620,11 +6620,15 @@ regex (CLAUDE.md §6):
   11" — `Property._has("dia_chi")` chỉ nhìn ô `dia_chi`, AI ghi `duong` + `quan` mà chưa ghi `dia_chi` nên địa chỉ vẫn "thiếu", và gợi
   ý câu hỏi `dia_chi` luôn là "đường nào, phường mấy, quận nào". Nay có `duong` là đã định vị; gợi ý chỉ hỏi phần CÒN THIẾU. Gợi ý câu
   hỏi giá bỏ "(và giá có thương lượng bớt lộc không)" — chính gợi ý này làm bot tự hỏi thương lượng (gốc ca SRS-5.1zzzzzzz73).
+- Phường hỏi lại (bắn thử kịch bản 2): kho đường thấy Âu Cơ / Q11 chỉ qua Phường Hòa Bình, luật tra cứu bảo bot "hỏi xác nhận nhà thuộc
+  Phường Hòa Bình đúng không"; khách nói "Phường 9" (phường số cũ) thì bot hỏi tiếp "Phường 9 hay Phường Hòa Bình". Nay gợi ý kho
+  chỉ là gợi ý, khách nói phường nào ghi theo khách (`dia_danh.khoi_dia_danh` + luật trong prompt người bán) — đúng luật "câu trả lời
+  câu phường có MỘT quyết định" của SRS-5.1zzzzzzzm.
 
 **Kiểm.** `tests/test_doc_dau_hieu.py` (4 ca: khối luật ở hai prompt, bỏ luật "đừng đoán", có tên đường thì không hỏi lại địa chỉ,
-câu hỏi giá không kèm thương lượng — đỏ trên code cũ, đã chạy), pytest 390 đạt. Model thật: `bot/tests/ban-thu-ban.sh` kịch bản 2
+câu hỏi giá không kèm thương lượng, khách nói phường thì nhận theo khách — đỏ trên code cũ, đã chạy), pytest 391 đạt. Model thật: `bot/tests/ban-thu-ban.sh` kịch bản 2
 (đúng lượt chat Âu Cơ của chủ dự án) — soát `property_type = nha_pho`, `area_m2 = 80` và `dien_tich_dat` mang 80, lời bot KHÔNG hỏi loại
-nhà, KHÔNG hỏi "đất hay sàn", KHÔNG hỏi lại tên đường.
+nhà, KHÔNG hỏi "đất hay sàn", KHÔNG hỏi lại tên đường, KHÔNG hỏi lại phường.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

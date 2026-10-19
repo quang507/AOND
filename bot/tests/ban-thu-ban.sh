@@ -66,7 +66,7 @@ echo "== số ô tin: $(jq '.boc_tach | length' <<<"$r")"
 # Kịch bản 2 (SRS-5.1zzzzzzz74, chat thử chủ dự án 19/10 15:19): nhà Âu Cơ Q11 — bot phải TỰ hiểu nhà phố và "80m 5 tầng" là đất,
 # không hỏi "nhà phố, chung cư hay đất" / "80m² là đất hay sàn".
 LOI_BOT=""
-for cau in "anh cần bán căn nhà ở đường âu cơ, quận 11 em biết đường đó ko" "Phường 9 em" "mặt tiền" "110" "80m 5 tầng em" \
+for cau in "anh cần bán căn nhà ở đường âu cơ, quận 11 em biết đường đó ko" "Phường 9 em" "mặt tiền" "nhà số 110 em" "80m 5 tầng em" \
            "nhà mình ở lâu rồi, sổ riêng" "nhà mình đang ở giá 16 tỉ nhé"; do
   chat "$BAN2" "$cau"
   sleep 1
@@ -79,6 +79,7 @@ kiem "Âu Cơ: tự hiểu nhà phố" "$(jq '.property_type == "nha_pho" | if .
 kiem "Âu Cơ: 80m 5 tầng là diện tích đất" "$(jq '((.area_m2 // 0) | tonumber) == 80 and ((.boc_tach.dien_tich_dat // "") | test("80")) | if . then 1 else 0 end' <<<"$r2")"
 kiem "Âu Cơ: không hỏi loại nhà" "$(grep -qiE 'nhà phố, chung cư|chung cư, nhà phố|chung cư hay|hay lô đất' <<<"$LOI_BOT" && echo 0 || echo 1)"
 kiem "Âu Cơ: không hỏi lại tên đường" "$(grep -qiE 'đường nào|trên đường gì' <<<"$LOI_BOT" && echo 0 || echo 1)"
+kiem "Âu Cơ: không hỏi lại phường sau khi khách nói Phường 9" "$(grep -qiE 'Phường 9 hay|hay Phường 9' <<<"$LOI_BOT" && echo 0 || echo 1)"
 kiem "Âu Cơ: không hỏi đất hay sàn" "$(grep -qiE 'đất hay (diện tích )?(sàn|nhà)|sàn hay (diện tích )?đất' <<<"$LOI_BOT" && echo 0 || echo 1)"
 vps "journalctl -u aond-core --since '-10 min' --no-pager -o cat | grep -E 'Bỏ ô' | sed -E 's/[0-9]{9,}/#/g' | tail -15" || true
 exit $loi
