@@ -82,6 +82,7 @@ from .prompts import (
 from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import Property, BuyerLead, PropertyGroup
+from .dia_danh import TraDiaDanh, khoi_dia_danh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
 
@@ -623,6 +624,7 @@ class Engine:
         media_store: MediaStore | None = None,
         max_photos_per_listing: int = MAX_PHOTOS_PER_LISTING,
         nga_tu_resolver: Callable[[str | None], dict[str, str] | None] | None = None,
+        dia_danh: TraDiaDanh | None = None,
     ):
         self._provider = provider
         self._fetcher = fetcher  # injectable so tests/offline don't hit the network
@@ -632,6 +634,8 @@ class Engine:
         self._resolve = resolver or (lambda url: [(url, None)])
         # "A | B" (ô AI gan_nga_tu) → {"phuong", "quan"} qua bảng giao_lo (giao_lo.dia_ban_tu_nga_tu). Mặc định tắt (test offline).
         self._nga_tu = nga_tu_resolver
+        # Tra phường / quận / đường theo chữ rồi theo nghĩa (dia_danh.TraDiaDanh, SRS-5.1zzzzzzz60). Mặc định tắt (test offline).
+        self._dia_danh = dia_danh
         # url -> the ENCLOSING folder's own name (a hint for grouping a multi-file batch).
         self._folder_name = folder_namer or (lambda url: None)
         # Kho tệp (Supabase Storage ở bản chạy thật, thư mục trên máy khi thử) — None = không giữ tệp
@@ -646,6 +650,25 @@ class Engine:
         # the ingest reply drains it into conv.pending_name_note so AOND ASKS ("nghi ngờ thì hỏi")
         # instead of silently forking a duplicate project/folder.
         self._pending_name_concern = ""
+
+    def _chuan_dia_danh(self, prop: Property, captured: list[str]) -> list[str]:
+        """Ô quan / phuong / duong vừa bắt → tên chuẩn trong kho; trả các ô đổi. Đường chỉ đổi khi chỉ khác dấu / hoa thường
+        (sai chữ thì để prompt hỏi khách xác nhận — khoi_dia_danh)."""
+        f, moi = prop.fields, {}
+        if "quan" in captured and f.get("quan"):
+            q = self._dia_danh.quan(f["quan"])
+            if q and q != f["quan"]:
+                moi["quan"] = q
+        quan = moi.get("quan") or f.get("quan")
+        if "phuong" in captured and f.get("phuong"):
+            p = self._dia_danh.phuong(f["phuong"], quan)
+            if p and p != f["phuong"]:
+                moi["phuong"] = p
+        if "duong" in captured and f.get("duong"):
+            d = self._dia_danh.duong(f["duong"], quan)
+            if d and d["chac"] and d["ten"] != f["duong"]:
+                moi["duong"] = d["ten"]
+        return prop.update(moi) if moi else []
 
     # --- projects (condos/developments) ---------------------------------
 
@@ -1539,6 +1562,11 @@ class Engine:
                         dia_ban.pop("quan", None)
                     captured = list(dict.fromkeys(list(captured) + conv.prop.update(dia_ban)))
 
+            # 1a-địa danh (19/10/2026, SRS-5.1zzzzzzz60): ô phường / quận / đường AI vừa đọc → tên chuẩn trong kho (chữ trước, nghĩa
+            #     sau; máy kiểm tên còn gần chữ khách). Không chắc thì giữ chữ khách.
+            if self._dia_danh and captured:
+                captured = list(dict.fromkeys(list(captured) + self._chuan_dia_danh(conv.prop, captured)))
+
             # 1a. A newly-captured address/project makes a listing's folder name readable — if it
             #     already has files stored under the old (id-only) folder, rename it to match.
             if captured:
@@ -1610,7 +1638,7 @@ class Engine:
         if not is_listing_post:
             system = build_chat_system(
                 conv.assistant.name, conv.prop, next_field, conv.user_type, project_block
-            )
+            ) + khoi_dia_danh(self._dia_danh, conv.prop.fields, next_field)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
             system = build_listing_proposal_system(
