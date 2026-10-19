@@ -6264,6 +6264,24 @@ tra / nhúng lại. Tên chỉ khác dấu: thay luôn trong `dia_chi` ("12 le v
 **Kiểm.** `tests/test_dia_danh.py` thêm 4 ca (đỏ cả 4 trên bản 5.1zzzzzzz60 — đã chạy): xác nhận khi câu kế là giá / diện tích / bản
 nháp; lượt lập thao tác thấy gợi ý ở lượt "đúng rồi em"; code không tự sửa; nhớ kết quả tra.
 
+### SRS-5.1zzzzzzz62 · Gỡ sáu công tắc app_config của bot TypeScript (19/10/2026)
+
+**Ca gốc.** Chủ dự án hỏi code và prompt trên Supabase có đá nhau không ("hay chỉ cần 1 bản thôi"), rồi "kiểm tra nếu ko xài dc thì
+xóa". Prompt: một bản duy nhất `src/aioi/prompts.py` (`bot_prompts` / `mau_cau` gỡ 18/10, nội dung ở `luu_tru.ts_*_20261018`). Còn
+`app_config` giữ sáu công tắc mà người đọc duy nhất là chat-reply TypeScript: `boc_tach_ai`, `luat_loi_bot`, `bao_lai_da_luu`,
+`tro_ly`, `lenh_json`, `test_reset_hello` — đổi ở Table Editor không có tác dụng ("hello" / "json" nằm cứng trong `engine.py`).
+
+**Lớp lỗi.** Gỡ người đọc mà để lại núm điều khiển: trông như còn điều được mà không điều được gì. **Chỗ cùng lớp.** Soát cả 22 khoá:
+dò tên khoá trong thân mọi hàm / view SQL (`public`, `so`, `luu_tru`) và trong mã web / lõi / bridge / edge function / script. 16 khoá
+còn người đọc (`admin_email`, `chu_nha_han_gio`, `ctv_tran_ca`, `functions_base_url`, `publishable_key`, `storage_public_base_url`,
+`nhung_*`, `tim_theo_nghia`, `don_thu_lan_cuoi`, `xoa_het_lan_cuoi`), giữ. `tro_ly` trong `boc_tach_nhom` là tên khoá jsonb, không phải
+công tắc. Mock e2e TS (`bot/tests/e2e/mock-supabase.mjs`) và chữ SRD xuất (`scripts/sinh-srd-docx.mjs`) còn nhắc tên — lịch sử, không
+đọc DB thật.
+
+**Sửa.** `20261019d`: chép sáu dòng sang `luu_tru.app_config_ts_20261019` rồi xoá. `scripts/dung-lai-db.mjs` thôi đặt / in chúng.
+
+**Kiểm.** Sau khi áp: `app_config` còn 16 khoá, `luu_tru.app_config_ts_20261019` 6 dòng. `bun run kiem` xanh.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
