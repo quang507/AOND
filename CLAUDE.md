@@ -121,6 +121,8 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > **Ô tin chỉ ghi điều KHÁCH nói (SRS-5.1zzzzzzz73):** mỗi ô mới / đổi từ lượt lập thao tác phải có `bang_chung` nằm nguyên trong
 > lời khách (`_co_bang_chung`); câu bot hỏi và lời AI tả ảnh chụp (`DAU_TA_ANH_CHUP`) không phải bằng chứng. Thêm đường ghi ô mới thì
 > qua cùng cổng này. Bắn thử lõi production: `apply-migration` ô `ban-thu-mua` / `ban-thu-ban` (ID thử, tự dọn).
+> **Câu chuẩn (SRS-5.1zzzzzzz88, 20/10/2026):** chủ dự án / tester chấm điểm và sửa tay câu bot ở `/admin/cau-chuan` (bảng `cau_chuan`,
+> ngữ cảnh chép kèm); lõi đọc 8 dòng đã sửa / chấm làm ví dụ (`khoi_cau_chuan`, nhớ 60 giây). Đổi giọng bot theo ca cụ thể thì sửa ở đó trước.
 > **Tra địa danh (SRS-5.1zzzzzzz60):** phường / quận / đường khách nói → `src/aioi/dia_danh.py` (chữ trước, vector Gemini sau, máy
 > kiểm tên gần chữ khách); vector do lịch `nhung-tick` / `nhung-dia-danh-tick` nuôi — đừng gỡ hai lịch đó.
 

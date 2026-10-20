@@ -58,13 +58,13 @@ class MockProvider(LLMProvider):
         if "XỬ LÝ SAU KHI XEM BẢN TIN RAO" in system or "DẪN DẮT PHÍ" in system:
             # Step 2: customer approved -> confirm published to website & network immediately (skip fee gate)
             return (
-                "Dạ tuyệt vời! Bản tin của anh/chị đã được duyệt và chính thức đăng lên hệ thống website "
+                "Tuyệt vời! Bản tin của anh/chị đã được duyệt và chính thức đăng lên hệ thống website "
                 "https://aioinhadat.com cũng như chuyển tới mạng lưới khách mua ngay ạ! Anh/chị có thể xem và "
                 "theo dõi tin tại https://aioinhadat.com nhé ạ. (offline)"
             )
         # A friendly, complete, <30-word templated reply that praises then asks one thing.
         return (
-            "Dạ em ghi nhận rồi ạ! Anh/chị cho em xin thêm 1 thông tin "
+            "Em ghi nhận rồi ạ! Anh/chị cho em xin thêm 1 thông tin "
             "để hoàn thiện hồ sơ nhé? (offline)"
         )
 

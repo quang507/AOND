@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 import urllib.parse
@@ -181,6 +182,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         self._conv_cache: dict[str, str] = {}
         self._anh_da_ghi: set[str] = set()   # "bucket/khoá" đã có dòng listing_media — khỏi gửi lại mỗi lượt
         self._thong_so_nho: dict[tuple[str, str], dict[str, Any]] = {}   # (loại, chữ đã gửi) → cột thông số boc_thong_so trả
+        self._cau_chuan_nho: tuple[float, list[dict[str, Any]]] | None = None   # (lúc đọc, dòng) — đọc lại sau 60 giây
         self._du_an_nho: dict[str, dict[str, Any] | None] = {}   # tên dự án khách nói → dòng `projects` khớp rõ (hoặc None)
         self._active_da_ghi: dict[str, str] = {}   # seller_id → id căn đang nói đã ghi lên sellers.active_listing_id
 
@@ -226,11 +228,38 @@ class SupabaseConversationStore(KhoNguoiMua):
         phuong, quan = self._chuan_dia_ban(chu)
         # Căn hộ trong dự án: khách thường chỉ nói tên dự án — lấy phường theo địa chỉ dự án trong kho (SRS-5.1zzzzzzz41), chỉ
         # khi tên khớp rõ một dự án (`_du_an`, SRS-5.1zzzzzzz86 — bản trước lấy dòng đầu của tìm gần đúng).
+        # Cột phường của dự án (đã là tên chuẩn) tra TRƯỚC, chữ địa chỉ dài chỉ là lưới đỡ (SRS-5.1zzzzzzz87): bắn thử KB5 20/10 —
+        # địa chỉ Ny'ah ghi "Phường Phú Định (Phường 16, Quận 8 cũ)", đọc chung với cột phường thành hai phường → `mo_ho`, tin
+        # không bao giờ có phường, bot hỏi phường mãi dù kho đã biết.
         d = self._du_an(fields)
         if not phuong and d:
-            p2, q2 = self._chuan_dia_ban(", ".join(str(d[k]) for k in ("location_raw", "ward", "district") if d.get(k)))
-            phuong, quan = p2, quan or q2
+            for khoa in (("ward", "district"), ("location_raw", "ward", "district")):
+                chu2 = ", ".join(str(d[k]) for k in khoa if d.get(k))
+                if not chu2:
+                    continue
+                p2, q2 = self._chuan_dia_ban(chu2)
+                quan = quan or q2
+                if p2:
+                    phuong = p2
+                    break
         return phuong, quan
+
+    def cau_chuan_mau(self) -> list[dict[str, Any]]:
+        """Câu chuẩn người chấm đã sửa / đã chấm (bảng `cau_chuan`, SRS-5.1zzzzzzz88) — 8 dòng mới nhất, làm ví dụ trong prompt. Sửa ở
+        CRM là bot đổi trong vòng 60 giây, không cần cài lại. Lỗi đọc → [] (bot vẫn trả lời, không ví dụ)."""
+        if not self.is_configured:
+            return []
+        nho = getattr(self, "_cau_chuan_nho", None)
+        if nho and time.time() - nho[0] < 60:
+            return nho[1]
+        try:
+            rows = self._get("cau_chuan?select=ngu_canh,cau_bot,cau_chuan,diem,ghi_chu&dung_lam_mau=eq.true"
+                             "&or=(cau_chuan.not.is.null,diem.not.is.null)&order=updated_at.desc&limit=8")
+        except Exception as e:  # noqa: BLE001
+            log.warning("cau_chuan_mau lỗi: %s", e)
+            rows = nho[1] if nho else []
+        self._cau_chuan_nho = (time.time(), rows)
+        return rows
 
     def _du_an(self, fields: dict[str, Any]) -> dict[str, Any] | None:
         """Dự án trong kho `projects` mà tin thuộc về — MỘT chỗ quyết cho cả `project_id` lẫn phường theo dự án (SRS-5.1zzzzzzz86).
@@ -240,7 +269,9 @@ class SupabaseConversationStore(KhoNguoiMua):
         ten = str(fields.get("du_an") or "").strip()
         if not ten:
             return None
-        if ten not in self._du_an_nho:
+        # Chỉ nhớ lần TÌM RA (SRS-5.1zzzzzzz87): chat chị N. 20/10 nhắc "Nyah Phú Định" lúc dự án chưa nạp vào kho, lần hụt bị nhớ
+        # tới khi lõi khởi động lại nên tin không bao giờ gắn `project_id` dù dự án vào kho 35 phút sau.
+        if self._du_an_nho.get(ten) is None:
             try:
                 da = self._request("POST", "rpc/match_projects?select=id,name,location_raw,ward,district", data={"p_text": ten})
             except Exception as e:  # noqa: BLE001 — không gắn dự án lượt này, lượt sau thử lại
