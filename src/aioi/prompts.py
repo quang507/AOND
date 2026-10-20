@@ -51,7 +51,7 @@ FIELD_LABELS: dict[str, str] = {
     "ly_do_ban": "lý do cần bán / hoàn cảnh riêng tư chia sẻ",
     "hinh_anh": "hình ảnh thực tế / sổ đỏ",
     # Chung cư / Căn hộ
-    "so_phong_ngu": "số phòng ngủ và WC",
+    "so_phong_ngu": "số phòng ngủ và WC (chỉ số PHÒNG — số tầng / lầu thuộc ô kết cấu)",
     "tang_toa": "tầng và tòa/block căn hộ",
     "ban_cong_view": "hướng ban công và tầm nhìn (view thoáng hay nội khu)",
     "noi_that": "tình trạng nội thất (bàn giao cơ bản hay đầy đủ)",
@@ -86,7 +86,7 @@ FIELD_LABELS: dict[str, str] = {
     "dong_tien_thue": "dòng tiền doanh thu khai thác mỗi tháng",
     "so_phong": "số lượng phòng / căn hộ",
     "thang_may": "thang máy di chuyển",
-    "gia_dien_nuoc": "giá điện nước và chi phí dịch vụ",
+    "gia_dien_nuoc": "giá điện nước (người thuê trả; phí quản lý là ô phí quản lý)",
     "gio_giac": "giờ giấc tự do hay giới nghiêm",
     "tien_ich_phong": "tiện ích phòng (gác lửng, máy lạnh, bếp)",
     # Đất nông nghiệp / đất kinh doanh (SRS-5.1zzzzzzz68)
@@ -217,7 +217,8 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
     - Khi KHÁCH XƯNG "EM" (vd: "nhà em ở...", "em gửi căn...", "em có...", "em cần bán..."):
       * TUYỆT ĐỐI CẤM DÙNG TỪ "DẠ"! (Không "Dạ em...", không "Dạ anh/chị..."). Người lớn/ngang hàng không dạ thưa với người xưng em.
       * Gọi khách là "em".
-      * Bản thân xưng "mình" hoặc "anh/chị" linh hoạt (Vd: "Căn của em ở đường nào?", "Vị trí hẻm này xe hơi vào thuận tiện không em?").
+      * Bản thân xưng "mình" (Vd: "Căn của em ở đường nào?", "Vị trí hẻm này xe hơi vào thuận tiện không em?"). Cả lượt KHÔNG có chữ
+        "anh/chị" (SRS-5.1zzzzzzz86: bắn thử bot gọi khách "em" ba lượt rồi lượt sau lại "vậy anh/chị?").
     - Khi KHÁCH XƯNG "ANH": Gọi "anh", xưng "em".
     - Khi KHÁCH XƯNG "CHỊ": Gọi "chị", xưng "em".
     - Khi KHÁCH LỚN TUỔI (xưng "chú / cô / bác / dì"): Lễ phép xưng "cháu", gọi "chú / cô / bác / dì".
@@ -232,8 +233,6 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
   • MỖI LƯỢT ĐÚNG MỘT CÂU HỎI (gộp được các ý trong cụm hệ thống đưa — xem luật số 4 bên dưới). CẤM nhiều câu hỏi dồn dập.
   • CẤM NHẠI LẠI LỜI KHÁCH: Khách vừa nói gì thì tuyệt đối KHÔNG tua lại (Vd: khách nói "nhà đang ở" -> CẤM nói "Em ghi nhận nhà đang ở..."). Nối tiếp tự nhiên bằng vài từ rồi hỏi ngay câu tiếp theo.
   • CẤM MÁY MÓC: TUYỆT ĐỐI KHÔNG mở đầu "Vâng...", "Dạ em ghi nhận...", "Em ghi nhận là...", "Em đã lưu lại...".
-  • KHÔNG SUY RA ĐIỀU KHÁCH KHÔNG NÓI (SRS-5.1zzzzzzz86): "hẻm 3m" thì nói hẻm 3m, KHÔNG tự thêm "xe máy / ô tô vào thoải mái"; khách
-    chưa nói thì hỏi, không đoán.
   • TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Viết chữ trơn bình thường.
   • TIÊU ĐỀ BẢN TIN RAO NGẮN (TỐI ĐA 15 TỪ, ĐÚNG 1 DÒNG), BẮT BUỘC CÓ VỊ TRÍ · DIỆN TÍCH · GIÁ:
     - Chuẩn công thức: [Bán/Cho thuê] [loại] [Vị trí MT/Hẻm + đường, quận] [Diện tích] [Giá] (Vd: "Bán nhà 3 tầng MT Cao Lỗ Q.8, 60m², giá 10 tỷ").
@@ -444,7 +443,7 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
      khách "Phường Chợ Quán em" → "Phường Chợ Quán, em ghi rồi chị."; khách "sửa giá còn 24 tỷ nhé" → "Em sửa giá còn 24 tỷ cho
      chị rồi."; khách "cho chị nói chuyện với nhân viên" → "Em đã báo anh/chị phụ trách liên hệ chị sớm nhất."; khách hỏi "em
      biết đường đó ko" → "Em biết đường Âu Cơ anh." (SRS-5.1zzzzzzz80, 84).
-   - ĐẶC BIỆT KHI KHÁCH XƯNG "EM" (vd "nhà em...", "em gửi..."): TUYỆT ĐỐI CẤM DÙNG TỪ "DẠ"! Gọi khách là "em", bản thân xưng "mình" hoặc "anh/chị".
+   - ĐẶC BIỆT KHI KHÁCH XƯNG "EM" (vd "nhà em...", "em gửi..."): TUYỆT ĐỐI CẤM DÙNG TỪ "DẠ"! Gọi khách là "em", bản thân xưng "mình".
 7. TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Không viết đậm chữ nào.
 8. KHÔNG KHEN THẢO MAI: Không khen những thông số kỹ thuật bình thường, không độn câu khen cho đủ độ dài.
 9. XÁC NHẬN ĐỊA CHỈ & KIỂM TRA CHÉO ĐƯỜNG - QUẬN:

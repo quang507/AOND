@@ -27,3 +27,11 @@ def test_cau_viet_cung_trong_code_khong_mo_bang_da():
     for p in GOC.glob("*.py"):
         if p.name != "prompts.py":   # prompts.py chứa luật cấm có trích "Dạ em..." làm ví dụ sai
             assert not re.findall(r'(?<!\\)"Dạ [a-zđA-ZĐ]', p.read_text(encoding="utf-8")), p.name
+
+
+def test_khach_xung_em_bot_xung_minh_khong_anh_chi():
+    # Bắn thử lần 3 KB2: khách "Em gửi căn…", bot gọi "em" ba lượt rồi lượt "đăng đi" lại "vậy anh/chị?" — luật cũ cho bot tự xưng
+    # "mình hoặc anh/chị", trùng chữ với cách gọi khách. Đỏ trên bản trước.
+    k = khoi_xung_ho("em")
+    assert "hoặc 'anh/chị'" not in k and "KHÔNG có chữ 'anh/chị'" in k
+    assert 'xưng "mình" hoặc "anh/chị"' not in prompts.CONVERSATION_POLICY

@@ -162,6 +162,8 @@ class ZaloBridgeResponse(BaseModel):
     completeness: float
     # Ảnh dự án khách vừa nhắc tên (anh_du_an.py) — bridge tải về và gửi sau các bong bóng chữ (FR-143).
     photos: list[str] = []
+    # ms từng khâu của lượt (lap_thao_tac / tra_loi / ghi_kho / con_lai / tong) — chỉ con số, để đo chỗ chậm (SRS-5.1zzzzzzz86).
+    thoi_gian_ms: dict[str, int] = {}
 
 
 @app.get("/health")
@@ -384,11 +386,17 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     # SRS-5.1zzzzzzz84: một khách — một lượt một lúc (Engine.khoa_luot); tin nhắn tới lúc bot còn soạn thì chờ lượt trước xong.
     with _engine.khoa_luot(uk):
         moc = len(_engine.conversation(uk).history)
+        t0 = time.perf_counter()
         try:
             r = lam()
             loi_luot = None
         except Exception as e:  # noqa: BLE001
             loi_luot, sau_hong = e, len(_engine.conversation(uk).history)
+        tong = int((time.perf_counter() - t0) * 1000)
+        thoi_gian = dict(getattr(_engine.conversation(uk), "do_luot", {}) or {})
+    thoi_gian["con_lai"] = max(0, tong - sum(thoi_gian.values()))
+    thoi_gian["tong"] = tong
+    log.info("thời gian lượt (ms): %s", thoi_gian)   # chỉ con số — không dữ liệu khách
     if loi_luot is not None:
         e = loi_luot
         _so_loi.ghi_loi("chat-reply", f"lượt trả lời hỏng, giữ chỗ rồi thử lại: {type(e).__name__}: {e}"[:200])
@@ -453,6 +461,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         tier=r.tier,
         completeness=r.completeness,
         photos=photos,
+        thoi_gian_ms=thoi_gian,
     )
 
 

@@ -7136,6 +7136,26 @@ bước thiếu `ban-thu-kb`) — sửa `apply-migration.yml`. Còn mở (model,
 nhỏ vào được" dù có luật (ô tin không bị ghi); một cụm vào ô sai nghĩa lặp lại (`so_phong_ngu` = "7 tầng" ở KB1 / KB4,
 `yeu_cau_xe_hoi` = "hẻm trước nhà rộng 3m", `gia_dien_nuoc` = "phí quản lý…") — cột DB `bedrooms` không bị ghi sai ở cả ba lượt.
 
+**Chủ dự án duyệt kết quả lần 3 (20/10):** lời chat suy từ dữ kiện ("hẻm 3m thì ô tô nhỏ vào được") là OK → bỏ luật "không suy" khỏi
+`CONVERSATION_POLICY` (mục 12 trên); Bình Phước cũ không nhận (bỏ chữ "giả định"); giữ tiêu đề ≤ 15 từ; mã căn không bắt buộc. Sửa
+tiếp (chưa bắn production):
+17. *Mã căn chặn bản nháp* (KB2: khách lờ câu mã căn 2 lần, ô này không được để sau → hỏi mãi): căn dự án chưa có địa chỉ định vị bằng
+   tên dự án; `ma_so_can` thành ô mong đợi thường (`expected_fields`), lờ 2 lần thì để sau (`hoan_duoc`). Kiểm `tests/test_schema.py`
+   `test_presale_project_unit_located_by_project_code_optional`.
+18. *Một cụm vào ô sai nghĩa* (mục 16): gốc ở schema của mình — nhãn ô (cũng là mô tả ô trong schema lượt lập thao tác) chồng nghĩa:
+   `ket_cau` "kết cấu (số lầu, phòng ngủ)" / `so_phong_ngu` "số phòng ngủ và WC"; `gia_dien_nuoc` "…và chi phí dịch vụ" / `phi_quan_ly`
+   "phí quản lý dịch vụ". Lớp: hai ô của cùng schema nói cùng một nghĩa. Sửa nhãn nói rõ ranh giới (`so_phong_ngu` chỉ số PHÒNG;
+   `gia_dien_nuoc` không gồm phí quản lý). Phần trước ngoặc là chữ gửi `boc_thong_so` — đã gọi trên DB: "giá điện nước: x",
+   "số phòng ngủ và WC: x" → {} (không tự bật cột). Chỗ cùng lớp còn: `tinh_trang_ban_giao` / `hien_trang_su_dung` cùng nghĩa (đang ở /
+   trống / có khách thuê) — ghi cả hai không sai dữ liệu, để nguyên. Kiểm `tests/test_nhan_o_khong_chong.py` (đỏ trên bản trước).
+   Hiệu quả thật phải đo bằng bắn thử.
+19. *Xưng hô đổi giữa chừng* (KB2: "em" ba lượt rồi "vậy anh/chị?"): nguyên nhân chưa chứng minh được (không có log lượt đó); nghi vấn
+   — luật khách xưng em cho bot tự xưng "mình HOẶC anh/chị", trùng chữ với cách gọi khách. Bỏ "hoặc anh/chị" ở khối xưng hô và
+   `CONVERSATION_POLICY`, thêm "cả lượt không có chữ anh/chị". Kiểm `tests/test_giong_chung.py` (đỏ trên bản trước).
+20. *Chậm (14–17 s / lượt)*: chưa biết chậm ở khâu nào → đo trước: `/chat-reply` trả `thoi_gian_ms` (lap_thao_tac / tra_loi /
+   tra_loi_lai / ghi_kho / con_lai / tong — chỉ con số), log một dòng số, `ban-thu-kb.sh` in trung bình từng khâu. Kiểm
+   `tests/test_thoi_gian_luot.py`. Sửa tốc độ sau khi có số đo.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

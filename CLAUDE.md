@@ -136,7 +136,10 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > - **Model:** mọi lượt dùng Haiku (chủ dự án: "Vẫn haiku").
 > - **Vùng nhận tin (20/10/2026, SRS-5.1zzzzzzz86):** chỉ TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai (chủ dự
 >   án: "hcm long an tây ninh bình dương đồng nai vũng tàu thôi"); nơi khác bot nói khéo chưa nhận, không hỏi, không soạn tin. Một nguồn:
->   `prompts.VUNG_NHAN_TIN`. Bình Phước cũ (nay thuộc Đồng Nai) đang xếp NGOÀI vùng — giả định, chờ chủ dự án.
+>   `prompts.VUNG_NHAN_TIN`. Bình Phước cũ (nay thuộc Đồng Nai): KHÔNG nhận (chủ dự án 20/10: "bỏ").
+> - **Cũng 20/10 (SRS-5.1zzzzzzz86):** tiêu đề tin tối đa 15 từ — giữ ("có"); mã căn của căn trong dự án "có thì tốt, không có thì vẫn
+>   nhận" (hỏi, không chặn bản nháp); lời chat suy từ dữ kiện khách nói (vd "hẻm 3m thì ô tô nhỏ vào được") là OK — "trả lời này vẫn
+>   ok mà", đừng chấm là lỗi. Ô tin vẫn chỉ ghi điều khách nói (cổng `_gia_tri_ghi`).
 
 Từ 24/08/2026 (quyết định chủ dự án) code nằm **trong repo này**, hai mảnh:
 

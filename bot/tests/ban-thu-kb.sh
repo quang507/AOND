@@ -36,7 +36,7 @@ so_token() { q "select coalesce(sum(calls),0) as calls, coalesce(sum(in_tokens),
                 from bot_usage_model where day >= current_date - 1" | jq -c '.[0] | map_values(tonumber)'; }   # bigint về dạng chuỗi
 TRUOC=$(so_token)
 
-loi=0; LUOT_TONG=0; GIAY_TONG=0; GIAY_MAX=0; MOI_LOI=""
+loi=0; LUOT_TONG=0; GIAY_TONG=0; GIAY_MAX=0; MOI_LOI=""; TG_ALL=""
 kiem() { if [ "$2" = 1 ]; then echo "ĐẠT  $1"; else echo "TRƯỢT $1"; loi=1; fi; }
 chat() {
   local uid="$1" text="$2" t0 t1 g
@@ -46,7 +46,8 @@ chat() {
         | vps "curl -sS -m 120 -X POST http://127.0.0.1:8000/chat-reply -H 'Content-Type: application/json' -d @-")
   t1=$(date +%s%N); g=$(( (t1 - t0) / 1000000 ))
   jq -r '.replies[]? | "<< " + .' <<<"$TRA" || echo "<< (không đọc được JSON) $TRA"
-  echo "   (${g} ms)"
+  echo "   (${g} ms) khâu: $(jq -c '.thoi_gian_ms // {}' <<<"$TRA" 2>/dev/null || echo '{}')"
+  TG_ALL+="$(jq -c '.thoi_gian_ms // {}' <<<"$TRA" 2>/dev/null || echo '{}')"$'\n'
   MOI_LOI+=$'\n'"$(jq -r '.replies[]?' <<<"$TRA" 2>/dev/null || true)"
   LUOT_TONG=$((LUOT_TONG + 1)); GIAY_TONG=$((GIAY_TONG + g)); [ "$g" -gt "$GIAY_MAX" ] && GIAY_MAX=$g
   if grep -q '📋' <<<"$TRA"; then
@@ -155,6 +156,9 @@ jq -n --argjson a "$TRUOC" --argjson b "$SAU" --argjson n "$LUOT_TONG" '
   {luot_chat: $n, luot_goi_model: $c, token_vao: $i, token_ra: $o, ghi_cache: $cw, doc_cache: $cr,
    usd_tong: ($usd*10000|round/10000), usd_moi_luot_chat: (if $n > 0 then ($usd/$n*100000|round/100000) else null end),
    ghi_chu: "giá Haiku 5.5 bậc thấp (lib/gia-model.ts); gồm cả khách thật nhắn cùng khung nếu có"}'
+echo "== trung bình ms từng khâu trong lõi (lap_thao_tac / tra_loi / ghi_kho / con_lai / tong):"
+jq -s -c 'map(select(length > 0)) as $a | ($a | length) as $n | if $n == 0 then {} else
+  ([$a[] | keys[]] | unique) as $k | reduce $k[] as $x ({}; .[$x] = (([$a[] | .[$x] // 0] | add) / $n | round)) end' <<<"$TG_ALL" || true
 echo "== thời gian bot trả lời: trung bình $(( GIAY_TONG / (LUOT_TONG > 0 ? LUOT_TONG : 1) )) ms / lượt, chậm nhất $GIAY_MAX ms ($LUOT_TONG lượt)"
 q "select to_char(at, 'HH24:MI:SS') as luc, source, left(detail, 160) as chi_tiet from bot_errors
    where at > now() - interval '20 min' and source not in ('geocode-listings') order by at" | jq -c '.[]' || true

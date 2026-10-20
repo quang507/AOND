@@ -68,13 +68,19 @@ def test_non_house_types_keep_single_area():
         assert "dien_tich_nha" not in p.identity_fields()
 
 
-def test_presale_project_unit_located_by_code_not_address():
-    # A project unit still in pre-sale (du_an known, no address) is located by mã số căn.
+def test_presale_project_unit_located_by_project_code_optional():
+    # A project unit still in pre-sale (du_an known, no address) is located by the project. Mã số căn: chủ dự án 20/10/2026 "có thì
+    # tốt, không có thì vẫn nhận" (SRS-5.1zzzzzzz86; bắn thử KB2 khách lờ câu mã căn 2 lần, bot hỏi mãi, không ra bản nháp) — vẫn
+    # hỏi, lờ 2 lần thì để sau, không chặn bản nháp.
     p = Property(loai_hinh="chung_cu")
     p.fields["du_an"] = "Nyah Phú Định"
     idf = p.identity_fields()
-    assert "du_an" in idf and "ma_so_can" in idf
-    assert "dia_chi" not in idf
+    assert "du_an" in idf and "ma_so_can" not in idf and "dia_chi" not in idf
+    assert "ma_so_can" in p.expected_fields() and "ma_so_can" in p.missing_fields()
+    assert p.hoan_duoc("ma_so_can")
+    nha = Property(loai_hinh="nha_pho", fields={"du_an": "LakeView City", "dien_tich_dat": "5x20", "dien_tich_nha": "300m2",
+                                                "gia": "27 tỷ", "ket_cau": "1 trệt 3 lầu"})
+    assert "ma_so_can" not in nha.thieu_toi_thieu()
 
 
 def test_unit_graduates_to_address_once_it_has_one():

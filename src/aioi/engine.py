@@ -19,6 +19,7 @@ import unicodedata
 from urllib.parse import urlparse
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from uuid import uuid4
 
@@ -377,6 +378,8 @@ class Conversation:
     # Transient (SRS-5.1zzzzzzz73): lời KHÁCH trong khung lượt lập thao tác vừa đọc — ô tin mới / đổi giá trị chỉ được ghi khi
     # cụm bằng chứng AI đưa nằm trong đây (không tính lời bot).
     loi_khach_luot: str = ""
+    # Transient (SRS-5.1zzzzzzz86): ms từng khâu của lượt đang chạy (lập thao tác / trả lời / ghi kho) — server trả kèm để đo chỗ chậm.
+    do_luot: dict = field(default_factory=dict)
     # Transient (SRS-5.1zzzzzzz74): ô bot hỏi ở lượt trả lời gần nhất — khách chưa trả lời thì lượt sau hỏi ý khác trước.
     o_vua_hoi: str | None = None
     # Transient (SRS-5.1zzzzzzz80): số lần khách lờ từng ô (bot hỏi, lượt sau ô vẫn trống) — đủ 2 thì để sau bản nháp.
@@ -454,7 +457,8 @@ def _khoi_xung_ho_rieng(p: str) -> str:
             "Khách tự xưng là 'em' (vd: 'nhà em...', 'em gửi...', 'em có...', 'em bán...').\n"
             "1. TUYỆT ĐỐI CẤM DÙNG TỪ 'DẠ' HOẶC 'DẠ VÂNG' Ở BẤT KỲ ĐÂU! Không dạ thưa với người xưng em.\n"
             "2. TUYỆT ĐỐI CẤM gọi khách là 'anh' hay 'chị'. Hãy gọi khách là 'em'.\n"
-            "3. Bản thân xưng là 'mình' hoặc 'anh/chị' (Ví dụ: 'Căn của em ở đường nào vậy?', 'Nhà em nằm ở mặt tiền hay trong hẻm em ha?').\n"
+            "3. Bản thân xưng là 'mình' (Ví dụ: 'Căn của em ở đường nào vậy?', 'Nhà em nằm ở mặt tiền hay trong hẻm em ha?'). Cả lượt "
+            "KHÔNG có chữ 'anh/chị' — kể cả khi câu mẫu / gợi ý câu hỏi ở trên viết 'anh/chị', đổi thành 'em'.\n"
         )
     elif p == "chi":
         return (
@@ -743,6 +747,16 @@ def _detect_customer_pronoun(conv: Conversation, current_text: str = "") -> str:
     trích dẫn trong lời khách) — không dò từ khoá (SRS-5.1zzzzzzz54; bản trước regex "em gửi|nhà em…" nhầm cả chữ "em" khách
     dùng để GỌI bot). `current_text` giữ cho chỗ gọi cũ, không dùng."""
     return {"em": "em", "anh": "anh", "chi": "chi", "chu_co_bac": "elder"}.get(conv.xung_ho or "", "unknown")
+
+
+@contextmanager
+def _do(conv: "Conversation", khau: str):
+    """Cộng thời gian (ms) của một khâu vào `conv.do_luot` — chỉ con số, không dữ liệu khách (SRS-5.1zzzzzzz86)."""
+    t = time.perf_counter()
+    try:
+        yield
+    finally:
+        conv.do_luot[khau] = conv.do_luot.get(khau, 0) + int((time.perf_counter() - t) * 1000)
 
 
 def _so_trong(x: str | None) -> set[str]:
@@ -1548,6 +1562,7 @@ class Engine:
     def handle(self, user_key: str, text: str, now: float | None = None) -> TurnResult:
         now = now if now is not None else time.time()
         conv = self.conversation(user_key)
+        conv.do_luot = {}
 
         clean_text = text.strip()
         cmd = clean_text.lower()
@@ -1932,10 +1947,11 @@ class Engine:
         # listing (no project inventory) uses the single chat call, unchanged.
         # Length is model-decided from the prompt (short while chatting, full ad when complete) —
         # NOT clamped by a token cap (Vietnamese is token-dense; a tight cap hard-cuts mid-word).
-        if project is not None and project.units:
-            reply = self._agent_reply(conv, project, system, now)
-        else:
-            reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+        with _do(conv, "tra_loi"):
+            if project is not None and project.units:
+                reply = self._agent_reply(conv, project, system, now)
+            else:
+                reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
 
         if not reply:   # SRS-5.1zzzzzzz82: không gửi "kết nối mạng gián đoạn, nhắn lại giúp em" — server giữ chỗ rồi tự thử lại
             raise LoiTraLoi("lời gửi khách rỗng")
@@ -1946,10 +1962,11 @@ class Engine:
         thieu_td = _tieu_de_thieu(reply, conv.prop)
         if thieu_td:
             log.warning("Tiêu đề bản tin thiếu %s — gọi lại model", ", ".join(x.split(" (")[0] for x in thieu_td))
-            lai = self._provider.reply(
-                system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\nBản tin vừa viết có TIÊU ĐỀ thiếu " + ", ".join(thieu_td)
-                + ". Viết lại TOÀN BỘ lượt trả lời; tiêu đề tối đa 15 từ, đủ vị trí · diện tích · giá.\n",
-                conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+            with _do(conv, "tra_loi_lai"):
+                lai = self._provider.reply(
+                    system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\nBản tin vừa viết có TIÊU ĐỀ thiếu " + ", ".join(thieu_td)
+                    + ". Viết lại TOÀN BỘ lượt trả lời; tiêu đề tối đa 15 từ, đủ vị trí · diện tích · giá.\n",
+                    conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if lai:
                 reply = _bo_markdown(lai)
         if trinh_nhap:
@@ -2945,8 +2962,9 @@ class Engine:
         if doc is None:
             return None
         try:
-            self._convstore.save(conv)
-            return doc(conv) or {"len_web": None}
+            with _do(conv, "ghi_kho"):
+                self._convstore.save(conv)
+                return doc(conv) or {"len_web": None}
         except Exception as e:  # noqa: BLE001
             log.warning("trang_thai_web lỗi: %s", e)
             return {"len_web": None}
@@ -2956,7 +2974,8 @@ class Engine:
     ) -> TurnResult:
         self._drop_stub_listings(conv)   # clean up the blank starter once real căn exist
         if self._convstore is not None:  # persist the listing after every turn
-            self._convstore.save(conv)
+            with _do(conv, "ghi_kho"):
+                self._convstore.save(conv)
         timeliness = self._timeliness(conv, now)
         completeness = conv.prop.completeness()  # the active listing
         prop_score = g.property_score(completeness, timeliness)
@@ -3079,12 +3098,14 @@ class Engine:
             conv.cau_hoi_cho = kho.cau_hoi_cho_nguoi_ban(conv.user_key)
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
         conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
-        plan = self._provider.extract(system, src, operations_schema())
+        with _do(conv, "lap_thao_tac"):
+            plan = self._provider.extract(system, src, operations_schema())
         if isinstance(plan.get("operations"), str):
             # SRS-5.1zzzzzzz78: Haiku có lượt trả `operations` thành chuỗi mà giải dễ dãi cũng hỏng — gọi lại một lần thay vì mất
             # mọi ô của lượt (lượt cuối hội thoại thì mất hẳn).
             log.warning("Kế hoạch: operations là chuỗi không giải được — gọi lại lượt lập thao tác một lần")
-            plan = self._provider.extract(system, src, operations_schema())
+            with _do(conv, "lap_thao_tac"):
+                plan = self._provider.extract(system, src, operations_schema())
         # SRS-5.1zzzzzzz78: Haiku hay đặt `bang_chung` LỌT VÀO TRONG `fields` (log bắn thử) — kéo ra cấp thao tác, không thì cụm trích
         # không được dùng và "bang_chung" thành một ô lạ.
         # SRS-5.1zzzzzzz86: cùng hình lỗi với MỌI khoá cấp kế hoạch — bắn thử KB1 lần 2, Haiku đặt `ngoai_vung` vào `fields` của thao tác,

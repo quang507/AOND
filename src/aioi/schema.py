@@ -298,7 +298,9 @@ class Property:
           identity-handle-decay note in [[aioi-data-model]]."""
         areas = HOUSE_AREA_FIELDS if self.loai_hinh in HOUSE_TYPES else ["dien_tich"]
         if self.fields.get("du_an") and not self.fields.get("dia_chi"):
-            locator = ["du_an", "ma_so_can"]   # pre-sale project unit: no address yet
+            # Căn dự án chưa có địa chỉ: định vị bằng tên dự án. Mã căn "có thì tốt, không có vẫn nhận" (chủ dự án 20/10/2026,
+            # SRS-5.1zzzzzzz86) — hỏi như ô thường (`expected_fields`), lờ 2 lần thì để sau, không chặn bản nháp.
+            locator = ["du_an"]
         else:
             locator = ["dia_chi"]
         return ["loai_hinh", *locator, *areas, "gia"]
@@ -315,6 +317,8 @@ class Property:
     def expected_fields(self) -> list[str]:
         """All fields this property should eventually have, given its type."""
         expected = self.identity_fields() + self.core_fields()
+        if self.fields.get("du_an") and not self.fields.get("dia_chi"):
+            expected.insert(len(self.identity_fields()), "ma_so_can")
         if self.is_rental:
             expected += RENTAL_FIELDS
         return expected
@@ -401,7 +405,7 @@ class Property:
     def hoan_duoc(self, o: str) -> bool:
         """Ô được để sau bản nháp khi khách lờ 2 lần (SRS-5.1zzzzzzz80). Loại, chỗ (địa chỉ / dự án / mã căn), giá và ô bắt buộc thì
         không: thiếu chúng thì không có tin để rao."""
-        return o not in ("loai_hinh", "dia_chi", "du_an", "ma_so_can", "gia") and o not in self.blocking_fields()
+        return o not in ("loai_hinh", "dia_chi", "du_an", "gia") and o not in self.blocking_fields()
 
     def cau_hoi_sau_ra_tin(self) -> str | None:
         """Ô hỏi SAU khi khách duyệt bản nháp: chỉ còn ô khách đã lờ 2 lần (SRS-5.1zzzzzzz80). Hẻm và hiện trạng từ 20/10 hỏi trước
