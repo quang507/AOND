@@ -7226,6 +7226,38 @@ sửa ở đó không đổi được lõi Python. Bản này đi đủ vòng:
 Chưa làm: chọn ví dụ theo độ giống tình huống (đang lấy 8 dòng mới nhất); thống kê điểm trung bình theo ngày. Kiểm:
 `tests/test_cau_chuan.py` (khối có ngữ cảnh / điểm / câu chuẩn / che SĐT; lượt trả lời có khối; kho lỗi thì không có khối).
 
+### SRS-5.1zzzzzzz89 · BA soát màn Sửa tin: mô tả trống, "Lưu" tự rao, "chờ thông tin" hai nghĩa, cột nguồn (20/10/2026)
+
+Ca gốc: chủ dự án mở tin #715B4B3E (nhà MT Âu Cơ Q.11, 16 tỷ, 80m², Phường Bình Thới) ở rổ hàng, hỏi "đã code đúng hết logic chưa";
+đối chiếu với dòng DB và code. Chủ dự án: "sửa hết đi".
+
+1. *Mô tả luôn trống với tin chat* — lõi không ghi `listings.description` ở đâu cả; bản tin 📋 khách duyệt chỉ nằm trong chat, web
+   (đọc `description` qua `sanitizeDescription`) không có mô tả. **Lớp**: đầu ra khách đã duyệt không có đường xuống DB. **Sửa**: khi
+   khách đồng ý bản nháp (`duyet_luot = dong_y`), engine lấy bản 📋 cuối của căn đang nói (`_ban_tin_da_trinh`, cắt theo bố cục AD_FORMAT:
+   bỏ dòng đầu, đoạn đầu là tiêu đề, bỏ đoạn hỏi khách) và ghi thân tin qua `ghi_ban_tin` — đúng chữ khách đã thấy. Không đồng ý → giữ
+   mô tả cũ. Tin duyệt trước bản này không được ghi bù.
+2. *Nút "Lưu" cũng rao* — màn Sửa luôn gửi `can_chu_duyet = false`; trigger `trg_zz_listings_dang_tin` thấy đủ giá · diện tích ·
+   phường là đưa lên web, ngược với dòng "Rao lên web bằng nút dưới cùng". **Cùng lớp**: đổi trạng thái nhanh ở bảng rổ hàng cũng gửi
+   `false` (chọn "chờ thông tin" là tin đủ ý tự lên web). **Sửa**: chỉ nhánh "Lưu & rao" bỏ dấu; cả hai đường báo lại trạng thái DB
+   TRẢ VỀ, không phải cái vừa gửi. "Rao" khi thiếu giá / diện tích / phường thì chặn tại màn (trước đây hỏi "vẫn rao?" rồi báo "đã
+   rao" trong khi trigger trả tin về `cho_thong_tin`); thiếu mô tả / quận chỉ hỏi.
+3. *"chờ thông tin" mang hai nghĩa* — tin đủ ý nhưng chờ khách duyệt bản nháp cũng hiện "chờ thông tin". **Sửa**: `lib/trang-thai-tin.ts`
+   (một nguồn, cùng điều kiện `listing_du_dang_tin`) — nhãn "chờ khách duyệt" ở bảng và màn Sửa; "chờ thông tin — thiếu …" nói rõ thiếu
+   gì. Không thêm trạng thái vào DB.
+4. *Ô Ngang / Dài hiện "4,2" / "18"* là chữ gợi ý nhưng nhìn như dữ liệu (DB trống) → "vd 4,2" / "vd 18"; ô phường gợi ý tên phường
+   mới ("vd Phường Chợ Quán") thay "Phường 3".
+5. *Địa chỉ "Phường 9" cạnh ô phường "Phường Bình Thới"* — đúng (`chuan_dia_ban`: Phường 9 cũ Q.11 → Bình Thới, kiểu `cu`) nhưng dễ
+   tưởng sai → ghi chú dưới ô "Địa chỉ hiển thị": nguyên văn khách gõ, có thể còn phường cũ; lọc / lên web theo ô Phường.
+6. *Cột nguồn luôn `suy_doan`, ô admin sửa bị lượt chat ghi đè* — lõi không ghi `price_source` / `ward_source`, và mỗi lượt chat PATCH
+   lại `ward` / `price_raw` theo bản lõi nên sửa tay của admin mất. **Sửa**: lõi ghi `price_source = chu_xac_nhan` (ô giá chỉ ghi khi có
+   bằng chứng lời khách), `ward_source = chu_xac_nhan` khi phường tra từ chữ khách, `suy_doan` khi lấy theo dự án; `property_type_source`
+   để `suy_doan` (loại BĐS do AI phân loại). Màn Sửa ghi `admin` cho ô giá / phường / loại admin đổi; lõi gặp nguồn `admin` thì không ghi
+   đè ô đó.
+
+Kiểm: `tests/test_sua_tin_admin.py` (cắt bản tin; đồng ý thì ghi mô tả, không đồng ý thì không; cột nguồn; giữ ô admin — tắt bản sửa
+lõi thì đỏ), `bot/tests/sua-tin-admin.mjs` (trong `test:bot`: nhãn chờ khách duyệt theo đúng điều kiện DB; chỉ nhánh rao bỏ dấu duyệt;
+đổi nhanh không bỏ dấu; rao thiếu thì chặn — 3 ca đỏ trên bản trước).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

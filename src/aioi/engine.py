@@ -776,6 +776,26 @@ def _tieu_de_thieu(reply: str, prop: "Property") -> list[str]:
     return [f"giá ({gia})"] if so_gia and not (so_gia & _so_trong(tieu_de)) else []
 
 
+def _than_ban_tin(reply: str) -> tuple[str, str] | None:
+    """(tiêu đề, thân) của một bản tin 📋: bỏ dòng đầu ("📋 Em sẽ rao như vầy…"), đoạn đầu là tiêu đề, đoạn cuối có dấu hỏi là câu hỏi
+    khách (không phải tin rao). Chỉ cắt theo bố cục AD_FORMAT, không đọc ý. Không đủ tiêu đề + thân → None."""
+    if "📋" not in (reply or ""):
+        return None
+    sau = reply.split("📋", 1)[1].split("\n", 1)
+    doan = [d.strip() for d in re.split(r"\n\s*\n", sau[1] if len(sau) > 1 else "") if d.strip()]
+    if doan and "?" in doan[-1]:
+        doan = doan[:-1]
+    return (doan[0], "\n\n".join(doan[1:])) if len(doan) >= 2 else None
+
+
+def _ban_tin_da_trinh(conv: "Conversation") -> tuple[str, str] | None:
+    """Bản tin 📋 cuối cùng bot gửi cho căn đang nói (từ lượt căn này bắt đầu) — chính bản khách vừa duyệt."""
+    for t in reversed(conv.history[conv.active.history_start:]):
+        if t.role == "assistant" and "📋" in t.content:
+            return _than_ban_tin(t.content)
+    return None
+
+
 def _mo_dau_da(reply: str) -> bool:
     """Lời bot mở đầu bằng "Dạ" — luật chủ dự án (cấm mở đầu "Dạ", CLAUDE.md §6) mà model có lượt không theo (chat chị N. 20/10: hai
     lượt sau khi đăng tin mở đầu bằng Dạ). Chỉ kiểm chữ đầu; không sửa lời — lệch thì gọi lại model (SRS-5.1zzzzzzz87)."""
@@ -1784,6 +1804,12 @@ class Engine:
                 try:
                     self._convstore.save(conv)
                     ghi_duyet(conv, conv.duyet_luot == "dong_y")
+                    # Mô tả trên web = ĐÚNG bản tin khách vừa duyệt (SRS-5.1zzzzzzz89): trước đây lõi không ghi `description` ở đâu
+                    # cả — tin lên web không có mô tả, CRM báo "thiếu mô tả" dù khách đã duyệt cả bài.
+                    ban = _ban_tin_da_trinh(conv)
+                    ghi_ban_tin = getattr(self._convstore, "ghi_ban_tin", None)
+                    if conv.duyet_luot == "dong_y" and ban and ghi_ban_tin is not None:
+                        ghi_ban_tin(conv, ban[1])
                 except Exception as e:  # noqa: BLE001 — ghi duyệt hỏng thì lời bot vẫn đọc trạng thái thật
                     log.warning("ghi_duyet lỗi: %s", e)
 

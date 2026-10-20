@@ -220,12 +220,14 @@ class SupabaseConversationStore(KhoNguoiMua):
         res = self._request("POST", endpoint, data=data, prefer=prefer)
         return res if isinstance(res, list) else []
 
-    def _dia_ban(self, fields: dict[str, str]) -> tuple[str | None, str | None]:
+    def _dia_ban(self, fields: dict[str, str]) -> tuple[str | None, str | None, str]:
         """(phường mới = wards.ten_day_du, quận cũ) từ chữ khách gõ — nhận cả kiểu trước gộp ("P.1, Q.5") và sau gộp ("Phường Chợ
         Quán") qua `rpc/chuan_dia_ban` (20261018e, SRS-5.1zzzzzzz39). Phường cũ bị chia (mo_ho) / không nhận ra → không ghi phường;
         lỗi mạng → không ghi gì (cột cũ giữ nguyên)."""
         chu = ", ".join(str(fields[k]) for k in ("dia_chi", "phuong", "quan") if fields.get(k))
         phuong, quan = self._chuan_dia_ban(chu)
+        # Nguồn phường (cột `ward_source`, SRS-5.1zzzzzzz89): tra từ chữ khách gõ = khách nói; lấy theo dự án = suy đoán.
+        nguon = "chu_xac_nhan" if phuong else "suy_doan"
         # Căn hộ trong dự án: khách thường chỉ nói tên dự án — lấy phường theo địa chỉ dự án trong kho (SRS-5.1zzzzzzz41), chỉ
         # khi tên khớp rõ một dự án (`_du_an`, SRS-5.1zzzzzzz86 — bản trước lấy dòng đầu của tìm gần đúng).
         # Cột phường của dự án (đã là tên chuẩn) tra TRƯỚC, chữ địa chỉ dài chỉ là lưới đỡ (SRS-5.1zzzzzzz87): bắn thử KB5 20/10 —
@@ -242,7 +244,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 if p2:
                     phuong = p2
                     break
-        return phuong, quan
+        return phuong, quan, nguon
 
     def cau_chuan_mau(self) -> list[dict[str, Any]]:
         """Câu chuẩn người chấm đã sửa / đã chấm (bảng `cau_chuan`, SRS-5.1zzzzzzz88) — 8 dòng mới nhất, làm ví dụ trong prompt. Sửa ở
@@ -553,9 +555,10 @@ class SupabaseConversationStore(KhoNguoiMua):
                 }
                 if fields.get("dia_chi"):
                     listing_payload["location_raw"] = fields["dia_chi"]
-                phuong, quan = self._dia_ban(fields)
+                phuong, quan, nguon_phuong = self._dia_ban(fields)
                 if phuong:
                     listing_payload["ward"] = phuong
+                    listing_payload["ward_source"] = nguon_phuong
                 du_an = self._du_an(fields)
                 if du_an and du_an.get("id"):
                     listing_payload["project_id"] = du_an["id"]
@@ -570,20 +573,29 @@ class SupabaseConversationStore(KhoNguoiMua):
                     listing_payload["area_m2"] = dt
                 if fields.get("gia"):
                     listing_payload["price_raw"] = str(fields["gia"])
+                    listing_payload["price_source"] = "chu_xac_nhan"   # ô giá chỉ ghi khi có bằng chứng trong lời khách (SRS-5.1zzzzzzz73)
                 if ma_loai_db(li.prop.loai_hinh):
                     listing_payload["property_type"] = ma_loai_db(li.prop.loai_hinh)
 
                 # Tin trên DB mang ĐÚNG id của Listing (uuid) — thư mục ảnh trên Storage là `<uuid>/…` và ràng buộc
                 # listing_media_duong_dan_theo_uuid đòi khớp (SRS-5.1zzzzzzz56). Tin cũ tạo trước bản này: tìm theo code.
                 lid_mong = str(uuid.UUID(li.listing_id)) if la_uuid(li.listing_id) else None
-                existing = self._get(f"listings?id=eq.{lid_mong}&select=id,status") if lid_mong else []
+                cot_doc = "id,status,price_source,ward_source,property_type_source"
+                existing = self._get(f"listings?id=eq.{lid_mong}&select={cot_doc}") if lid_mong else []
                 if not existing:
-                    existing = self._get(f"listings?seller_id=eq.{seller_id}&code=eq.{listing_payload['code']}&select=id,status")
+                    existing = self._get(f"listings?seller_id=eq.{seller_id}&code=eq.{listing_payload['code']}&select={cot_doc}")
                 # Căn ngoài vùng nhận tin (SRS-5.1zzzzzzz86): đã có dòng (tạo lượt trước, khi chưa biết tỉnh) thì ẩn; chưa có thì
                 # không tạo — trigger đăng tin không đụng tới `an`.
                 ngoai_vung = bool(fields.get("_ngoai_vung"))
                 if existing:
                     lid = existing[0]["id"]
+                    # Admin đã sửa tay ô nào trên CRM (nguồn = admin, SRS-5.1zzzzzzz89) thì lượt chat sau KHÔNG ghi đè ô đó — trước
+                    # đây phường / giá admin sửa bị lượt chat kế tiếp ghi lại theo bản lõi.
+                    for nguon, cots in (("price_source", ("price_raw", "price_source")), ("ward_source", ("ward", "ward_source")),
+                                        ("property_type_source", ("property_type",))):
+                        if existing[0].get(nguon) == "admin":
+                            for c in cots:
+                                listing_payload.pop(c, None)
                     ma = "an" if ngoai_vung else ma_trang_thai(getattr(li, "status", None), existing[0].get("status"))
                     if ma:
                         listing_payload["status"] = ma
@@ -652,6 +664,17 @@ class SupabaseConversationStore(KhoNguoiMua):
         code = conv.active.listing_id[:8].upper()
         self._patch(f"listings?seller_id=eq.{sid}&code=eq.{code}",
                     {"chu_duyet_at": datetime.now(timezone.utc).isoformat() if dong_y else None})
+
+    def ghi_ban_tin(self, conv: Conversation, mo_ta: str) -> None:
+        """Thân bản tin khách vừa duyệt → `listings.description` (web hiện qua sanitizeDescription — lọc SĐT, FR-104). Ghi đúng chữ
+        khách đã thấy, không viết lại (SRS-5.1zzzzzzz89)."""
+        if not self.is_configured or not (mo_ta or "").strip():
+            return
+        sid = self._get_or_create_seller(conv.user_key)
+        if not sid:
+            return
+        code = conv.active.listing_id[:8].upper()
+        self._patch(f"listings?seller_id=eq.{sid}&code=eq.{code}", {"description": mo_ta.strip()})
 
     # Cột → ô bot hỏi: đúng ba điều kiện của `listing_du_dang_tin` (giá · diện tích · phường).
     _COT_DANG_TIN = (("phuong", "ward"), ("dien_tich", "area_m2"), ("gia", "price_vnd"))

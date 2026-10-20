@@ -101,4 +101,4 @@ def test_phuong_du_an_tra_cot_chuan_truoc_dia_chi_dai():
     kho._chuan_dia_ban = lambda chu: ((None, "Quận 8") if ("Phường 16" in chu or not chu.startswith("Phường"))
                                       else ("Phường Phú Định", "Quận 8"))
     assert kho._dia_ban({"dia_chi": "Trương Đình Hội, khu dân cư Nyah Phú Định", "du_an": "Nyah Phú Định"}) == \
-        ("Phường Phú Định", "Quận 8")
+        ("Phường Phú Định", "Quận 8", "suy_doan")

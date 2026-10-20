@@ -13,6 +13,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { formatPrice, oTheoLoai, TYPE_LABEL } from "@/lib/format";
 import { docTien } from "@/bot/supabase/functions/_shared/extraction/luat-tien";
+import { choKhachDuyet, thieuDeDang } from "@/lib/trang-thai-tin";
 
 export type TinSua = {
   id: string;
@@ -33,6 +34,8 @@ export type TinSua = {
   ward: string | null;
   street: string | null;
   description: string | null;
+  can_chu_duyet?: boolean | null;
+  chu_duyet_at?: string | null;
 };
 
 export const TRANG_THAI_TIN: Record<string, string> = {
@@ -129,10 +132,13 @@ export default function SuaTinModal({
     if (coLoiSo) { setLoiTrong("Còn ô số nhập sai (tô đỏ) — sửa rồi lưu lại."); return; }
     setLoiTrong(null);
     if (hanhDong === "rao") {
-      const thieu = [!f.price_raw.trim() && "giá", !so.area_m2.gt && "diện tích", !f.district.trim() && "quận/huyện", !f.description.trim() && "mô tả"]
-        .filter(Boolean) as string[];
-      const hoi = thieu.length
-        ? `Tin còn THIẾU: ${thieu.join(", ")}.\n\nVẫn rao #${tin.code} lên web?`
+      // SRS-5.1zzzzzzz89: DB chỉ đưa tin lên web khi có đủ giá · diện tích · phường (`listing_du_dang_tin`) — thiếu thì chặn tại
+      // đây, không hỏi "vẫn rao?" rồi báo "đã rao" trong khi trigger trả tin về "chờ thông tin".
+      const chan = thieuDeDang({ price_vnd: giaDoc, area_m2: so.area_m2.gt, ward: f.ward });
+      if (chan.length) { setLoiTrong(`Chưa rao được: thiếu ${chan.join(", ")}. Web chỉ hiện tin có đủ giá, diện tích, phường.`); return; }
+      const nen = [!f.description.trim() && "mô tả", !f.district.trim() && "quận / huyện"].filter(Boolean) as string[];
+      const hoi = nen.length
+        ? `Tin chưa có ${nen.join(", ")}.\n\nVẫn rao #${tin.code} lên web?`
         : `Rao #${tin.code} lên web AI Ơi Nhà Đất? Ai cũng xem được tin này.`;
       if (!confirm(hoi)) return;
     }
@@ -148,13 +154,26 @@ export default function SuaTinModal({
       bedrooms: so.bedrooms.gt,
       location_raw: f.location_raw.trim() || null, district: f.district.trim() || null,
       ward: f.ward.trim() || null, street: f.street.trim() || null, description: f.description.trim() || null,
-      can_chu_duyet: false, updated_at: new Date().toISOString(),
+      // SRS-5.1zzzzzzz89: chỉ "Lưu & rao" mới bỏ dấu chờ khách duyệt — trước đây nút "Lưu" cũng gửi false, trigger thấy tin đủ ý
+      // là tự đưa lên web dù khách chưa duyệt, ngược với dòng "Rao lên web bằng nút dưới cùng".
+      ...(hanhDong === "rao" ? { can_chu_duyet: false } : {}),
+      // Ô admin sửa tay mang nguồn `admin` — lõi đọc nguồn này để lượt chat sau không ghi đè.
+      ...(f.price_raw.trim() !== (tin.price_raw ?? "").trim() ? { price_source: "admin" } : {}),
+      ...(f.ward.trim() !== (tin.ward ?? "").trim() ? { ward_source: "admin" } : {}),
+      ...(f.property_type !== (tin.property_type ?? "") ? { property_type_source: "admin" } : {}),
+      updated_at: new Date().toISOString(),
     };
-    const { data, error } = await supabase.from("listings").update(updates).eq("id", tin.id).select("price_vnd").maybeSingle();
+    const { data, error } = await supabase.from("listings").update(updates).eq("id", tin.id).select("price_vnd, status").maybeSingle();
     setDangLuu(false);
     if (error) { setLoiTrong(`Chưa lưu được #${tin.code}: ${error.message}`); return; }
-    onDaLuu(tin.id, { ...updates, price_vnd: (data as { price_vnd?: number | null } | null)?.price_vnd ?? null } as Partial<TinSua>);
-    baoTin(hanhDong === "rao" ? `Đã lưu và rao #${tin.code} lên web.` : hanhDong === "go" ? `Đã gỡ #${tin.code} khỏi web.` : `Đã lưu #${tin.code}.`);
+    // Trạng thái báo lại là trạng thái DB trả về (trigger có thể đổi), không phải cái vừa gửi.
+    const that = (data as { price_vnd?: number | null; status?: string } | null) ?? {};
+    onDaLuu(tin.id, { ...updates, status: that.status ?? status, price_vnd: that.price_vnd ?? null } as Partial<TinSua>);
+    if (hanhDong === "rao" && that.status !== "dang_ban") {
+      baoTin(`Đã lưu #${tin.code} nhưng CHƯA lên web (hệ thống để "${TRANG_THAI_TIN[that.status ?? ""] ?? that.status}").`, true);
+    } else {
+      baoTin(hanhDong === "rao" ? `Đã lưu và rao #${tin.code} lên web.` : hanhDong === "go" ? `Đã gỡ #${tin.code} khỏi web.` : `Đã lưu #${tin.code}.`);
+    }
     onDong();
   };
 
@@ -213,7 +232,9 @@ export default function SuaTinModal({
           <div>
             <h2 id={id("tieu-de")} className="text-lg font-bold">Sửa tin <span className="font-mono">#{tin.code}</span></h2>
             <p className="mt-0.5 text-xs text-slate-600">
-              Đang: <b>{TRANG_THAI_TIN[tin.status] ?? tin.status}</b>
+              Đang: <b>{choKhachDuyet(tin) ? "chờ khách duyệt bản nháp (đủ giá, diện tích, phường)"
+                : tin.status === "cho_thong_tin" && thieuDeDang(tin).length ? `chờ thông tin — thiếu ${thieuDeDang(tin).join(", ")}`
+                : TRANG_THAI_TIN[tin.status] ?? tin.status}</b>
             </p>
           </div>
           <button type="button" onClick={dong} aria-label="Đóng" className="grid h-9 w-9 place-items-center rounded-md text-xl font-bold text-slate-600 hover:bg-slate-100 hover:text-navy">×</button>
@@ -264,8 +285,8 @@ export default function SuaTinModal({
             ngủ trống (chủ dự án 01/10). Ô đang có giá trị thì vẫn hiện để admin thấy, sửa và xoá được. */}
         {(oLoai.ngangDai || f.frontage_m || f.length_m || oLoai.oPhongNguTrong || f.bedrooms || oLoai.ketCau || f.floors_text) && (
         <div className="grid gap-4 border-t border-line/60 pt-3 sm:grid-cols-3">
-          {(oLoai.ngangDai || f.frontage_m) && oSo("frontage_m", "Ngang (m)", "4,2")}
-          {(oLoai.ngangDai || f.length_m) && oSo("length_m", "Dài (m)", "18")}
+          {(oLoai.ngangDai || f.frontage_m) && oSo("frontage_m", "Ngang (m)", "vd 4,2")}
+          {(oLoai.ngangDai || f.length_m) && oSo("length_m", "Dài (m)", "vd 18")}
           {(oLoai.oPhongNguTrong || f.bedrooms) && oSo("bedrooms", "Phòng ngủ", "3")}
           {(oLoai.ketCau || f.floors_text) && (
           <div className="sm:col-span-3">
@@ -281,7 +302,10 @@ export default function SuaTinModal({
           <div>
             <label htmlFor={id("vitri")} className={nhan}>Địa chỉ hiển thị</label>
             <input id={id("vitri")} value={f.location_raw} onChange={(e) => setF({ ...f, location_raw: e.target.value })}
-              placeholder="Ví dụ: hẻm 102 Nguyễn Trãi" className={o} />
+              placeholder="Ví dụ: hẻm 102 Nguyễn Trãi" aria-describedby={id("vitri-ghi")} className={o} />
+            <p id={id("vitri-ghi")} className="mt-1 text-xs text-slate-600">
+              Nguyên văn khách gõ — có thể còn tên phường cũ (vd &quot;Phường 9, Quận 11&quot;). Lọc tin và đưa lên web theo ô Phường / xã bên dưới (tên phường mới).
+            </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             <div>
@@ -290,7 +314,7 @@ export default function SuaTinModal({
             </div>
             <div>
               <label htmlFor={id("phuong")} className={nhan}>Phường / xã</label>
-              <input id={id("phuong")} value={f.ward} onChange={(e) => setF({ ...f, ward: e.target.value })} placeholder="Phường 3" className={o} />
+              <input id={id("phuong")} value={f.ward} onChange={(e) => setF({ ...f, ward: e.target.value })} placeholder="vd Phường Chợ Quán" className={o} />
             </div>
             <div>
               <label htmlFor={id("quan")} className={nhan}>Quận / huyện</label>
