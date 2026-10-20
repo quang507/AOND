@@ -79,7 +79,9 @@ _GUI_KHACH: dict[str, Any] = {
             "tu_soat": {
                 "type": "string",
                 "description": "Ghi chú NỘI BỘ, KHÔNG gửi khách: soát nhanh lời sắp gửi theo luật (đúng một ý hỏi, không khen bịa, "
-                               "xưng hô đúng, không hỏi lại điều khách đã nói). Sai thì sửa ngay trong loi_gui_khach. Ngắn.",
+                               "xưng hô đúng, không hỏi lại điều khách đã nói; câu ĐẦU đi thẳng vào điều khách vừa nói — không "
+                               "mở bằng \"Dạ\", và chỉ mở bằng \"không\" khi đang đáp \"không\" cho câu khách hỏi). Sai thì sửa "
+                               "ngay trong loi_gui_khach. Ngắn.",
             },
             "loi_gui_khach": {
                 "type": "string",

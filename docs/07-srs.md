@@ -6936,6 +6936,39 @@ khách đã nhắn mới); `tests/test_conversational_and_deed.py::test_loi_sau_
 đã chạy); `bot/tests/bridge-dang-soan.mjs` (trong `test:bot`; đỏ khi bỏ nhắc lại / bỏ bọc lượt — đã chạy). pytest 431 đạt, `test:bot`
 đạt. Model thật: `ban-thu-ban` có thêm lượt xin gặp người.
 
+### SRS-5.1zzzzzzz83 · Đánh giá DB 20/10: tin cho thuê không xuống DB, nguồn tin, tin mua vào hội thoại mua, chặn số vô lý (20/10/2026)
+
+**Ca gốc.** Chủ dự án: "xem bạn là 1 data analyst… vừa mua vừa bán vừa nhiều kiểu bds… có thiếu cái gì cần kiểm soát ko, DB đang như
+thế nào". Soát bằng số trên DB + bắn thử SRS-5.1zzzzzzz82: (1) kịch bản cho thuê không có dòng `listings` nào — lõi ghi `deal = "thue"`,
+enum `listing_deal` là ban / cho_thue → 22P02, cả dòng hỏng, lỗi chỉ ở journal (`log.error`), sổ lỗi trống: MỌI tin cho thuê từ chat
+chưa từng xuống DB; chiều nạp lại cũng so `"thue"` → tin thuê đọc thành tin bán, "đã cho thuê" đọc thành "đã bán"; (2) 7/7 tin mang
+`source = import_excel` (mặc định cột) dù đến từ chat; (3) lượt chat MUA ghi vào hội thoại BÁN (tạo luôn dòng `sellers` cho người chỉ
+đi mua) — 2 hội thoại thật có tin mua lẫn trong hội thoại bán, tab Tin nhắn của người mua thiếu lịch sử; (4) không chốt chặn giá /
+diện tích vô lý (chỉ có `listings_bedrooms_check`).
+
+**Lớp lỗi.** Hai bên của một ranh giới (mã lõi ↔ enum / mặc định DB) không có bài kiểm đối chiếu, và lỗi ghi DB đi vào journal thay vì
+sổ lỗi — hỏng im lặng. **Chỗ cùng lớp đã soát:** mã loại BĐS (lõi 26 → enum 12, đã có bảng `LOAI_SANG_DB` từ SRS-5.1zzzzzzz68, đúng);
+trạng thái (`TRANG_THAI_SANG_DB`, đúng; "đã cho thuê" nay đọc đúng nhờ sửa deal); `mua.py` lọc căn theo `cho_thue` (đúng); form nhu
+cầu người mua trên /admin dùng giá trị riêng (`thue`) cho `buyers.preferences` — không phải cột `listings.deal`, để nguyên.
+
+**Sửa.**
+- `src/aioi/supabase_store.py`: ghi `deal = cho_thue`; nạp lại nhận `cho_thue` (và `thue` cũ); tin chat mới ghi `source = chat_zalo`;
+  `save()` hỏng → `log_loi("supabase save", …)` (`_ghi_so_loi`, DB che SĐT); lượt `role = buyer` ghi vào hội thoại mua
+  (`_hoi_thoai_mua`: `buyers` qua `khach_mua` + `conversations.buyer_id`); `dang_giu_hoi_thoai` / `bao_can_nguoi` (SRS-5.1zzzzzzz82)
+  xét cả hội thoại mua (trigger `conversations_email_upset` có sẵn còn gửi email admin khi người mua cần người).
+- `bot/supabase/migrations/20261020a_nguon_chat_chan_so_vo_ly.sql`: sửa nhãn nguồn các tin chat cũ (`can_chu_duyet`); trigger
+  `trg_zy_listings_chan_so` — giá ≤ 0 / ≥ 10 nghìn tỷ, diện tích ≤ 0 / ≥ 1.000 ha → để trống ô + `log_loi`, KHÔNG từ chối cả dòng
+  (CHECK cứng làm khách mất tin); tên xếp sau `trg_listings_price_vnd` / `trg_y_listings_boc_thong_so`, trước `trg_zz_listings_dang_tin`.
+- `src/aioi/llm/claude.py` ô `tu_soat`: thêm điểm soát câu đầu (không mở "Dạ", "không" chỉ khi đáp câu khách hỏi) — bắn thử
+  SRS-5.1zzzzzzz82 còn một "Dạ không, em đã báo…" khi khách xin gặp người; model tự soát, code không sửa chữ.
+
+**Chưa làm (cần chủ dự án quyết):** gộp `sellers` / `buyers` thành một bảng người theo Zalo ID (một người vừa mua vừa bán hiện là hai
+dòng) — đổi schema lớn, đụng web /admin; bản này chỉ đưa tin mua về đúng hội thoại mua.
+
+**Kiểm.** `tests/test_luu_db_dung.py` (4 ca: deal + source khi tạo tin thuê, nạp lại đúng enum, lượt mua vào hội thoại mua, ghi hỏng
+vào sổ lỗi — cả 4 đỏ trên code cũ, đã chạy). pytest 435 đạt. Migration áp qua `apply-migration.yml`, `schema.sql` sinh lại bằng ô
+`commit_schema`. Model thật: `ban-thu-ban` kịch bản cho thuê phải có dòng `deal = cho_thue`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

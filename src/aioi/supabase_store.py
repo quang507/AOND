@@ -327,14 +327,44 @@ class SupabaseConversationStore(KhoNguoiMua):
             log.error("Failed to create conversation in Supabase: %s", e)
         return None
 
+    def _ghi_so_loi(self, nguon: str, chi_tiet: str) -> None:
+        """Một dòng sổ lỗi qua `log_loi` (DB che SĐT). Không bao giờ ném — ghi sổ hỏng thì chỉ còn journal."""
+        try:
+            self._request("POST", "rpc/log_loi", data={"p_source": nguon, "p_detail": chi_tiet[:500]})
+        except Exception as e:  # noqa: BLE001
+            log.warning("log_loi lỗi: %s", e)
+
+    def _hoi_thoai_mua(self, user_key: str, ten: str | None = None) -> str | None:
+        """Hội thoại MUA của khách (`conversations.buyer_id`, tạo nếu chưa có) — SRS-5.1zzzzzzz83: trước đây mọi lượt chat ghi vào
+        hội thoại BÁN (tạo luôn dòng `sellers` cho người chỉ đi mua), tab Tin nhắn của người mua thiếu lịch sử."""
+        bid = self.khach_mua(user_key, ten)
+        if not bid:
+            return None
+        khoa = f"mua:{bid}"
+        if khoa in self._conv_cache:
+            return self._conv_cache[khoa]
+        rows = self._get(f"conversations?buyer_id=eq.{bid}&select=id&limit=1")
+        if rows:
+            self._conv_cache[khoa] = rows[0]["id"]
+            return rows[0]["id"]
+        tao = self._post("conversations", {"buyer_id": bid, "channel": "zalo_personal_test",
+                                           "started_at": datetime.now(timezone.utc).isoformat()})
+        if tao:
+            self._conv_cache[khoa] = tao[0]["id"]
+            return tao[0]["id"]
+        return None
+
     def ghi_luot_chat(self, user_key: str, incoming_text: str, bot_reply: str, zalo_msg_id: str | None = None,
                       role: str = "seller", user_name: str | None = None, nhan_luc: str | None = None) -> None:
         """Một lượt chat → hai dòng `messages` (khách, bot) + đẩy hội thoại lên đầu CRM. Dùng chung đường tìm / tạo người bán và
-        hội thoại với `save` (SRS-5.1zzzzzzz56 — trước đây supabase_sync có bản riêng)."""
+        hội thoại với `save` (SRS-5.1zzzzzzz56 — trước đây supabase_sync có bản riêng). Lượt MUA ghi vào hội thoại mua."""
         if not (self.is_configured and user_key):
             return
-        seller_id = self._get_or_create_seller(user_key, user_name)
-        conv_id = self._get_or_create_conversation(seller_id) if seller_id else None
+        if role == "buyer":
+            conv_id = self._hoi_thoai_mua(user_key, user_name)
+        else:
+            seller_id = self._get_or_create_seller(user_key, user_name)
+            conv_id = self._get_or_create_conversation(seller_id) if seller_id else None
         if not conv_id:
             return
         now_iso = datetime.now(timezone.utc).isoformat()
@@ -357,13 +387,15 @@ class SupabaseConversationStore(KhoNguoiMua):
         (bot vẫn trả lời, không bỏ khách) và ghi log."""
         if not (self.is_configured and user_key):
             return False
+        uk = urllib.parse.quote(user_key)
         try:
-            rows = self._get("conversations?select=human_hold,sellers!conversations_seller_id_fkey!inner(zalo_user_id)"
-                             f"&sellers.zalo_user_id=eq.{urllib.parse.quote(user_key)}&channel=eq.zalo_personal_test&human_hold=is.true&limit=1")
+            for vai, fk in (("sellers", "conversations_seller_id_fkey"), ("buyers", "conversations_buyer_id_fkey")):
+                if self._get(f"conversations?select=human_hold,{vai}!{fk}!inner(zalo_user_id)"
+                             f"&{vai}.zalo_user_id=eq.{uk}&human_hold=is.true&limit=1"):
+                    return True
         except Exception as e:  # noqa: BLE001
             log.warning("Đọc human_hold lỗi: %s", e)
-            return False
-        return bool(rows)
+        return False
 
     def bao_can_nguoi(self, user_key: str, trich: str, ten: str | None = None, role: str = "seller") -> bool:
         """Khách xin gặp người thật (SRS-5.1zzzzzzz82): bật `needs_human` (khung "khách cần người thật" trên /admin) và xếp một tin
@@ -371,8 +403,11 @@ class SupabaseConversationStore(KhoNguoiMua):
         chủ nhà, `laTinNoiBo`). ID thử (`la_id_thu`) chỉ bật cờ, không nhắn admin. Trả True khi đã xếp tin / bật cờ."""
         if not (self.is_configured and user_key):
             return False
-        seller_id = self._get_or_create_seller(user_key, ten)
-        conv_id = self._get_or_create_conversation(seller_id) if seller_id else None
+        if role == "buyer":   # hội thoại mua (SRS-5.1zzzzzzz83) — trigger conversations_email_upset còn gửi email admin
+            seller_id, conv_id = None, self._hoi_thoai_mua(user_key, ten)
+        else:
+            seller_id = self._get_or_create_seller(user_key, ten)
+            conv_id = self._get_or_create_conversation(seller_id) if seller_id else None
         if not conv_id:
             return False
         now_iso = datetime.now(timezone.utc).isoformat()
@@ -383,6 +418,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         loi = re.sub(r"\d[\d .-]{7,}\d", "[số]", str(trich or ""))[:160]   # không đẩy SĐT khách vào tin nội bộ
         self._post("reminders", {
             "kind": "escalation", "status": "pending", "due_at": now_iso, "seller_id": seller_id,
+            "buyer_id": self.khach_mua(user_key, ten) if role == "buyer" else None,
             "note": f"🙋 Khách cần người thật — {ten or 'khách Zalo'} ({vai}): “{loi}”. Mở /admin/tin-nhan để nhận khách.",
         }, prefer="return=minimal")
         return True
@@ -419,7 +455,9 @@ class SupabaseConversationStore(KhoNguoiMua):
             # (bắn thử 19/10, SRS-5.1zzzzzzz71). Việc của khách mua ghi qua KhoNguoiMua.
             for li in ([] if getattr(conv, "role", None) == "buyer" else conv.listings):
                 fields = li.prop.fields
-                deal_type = "thue" if li.prop.is_rental else "ban"
+                # 20/10/2026 (SRS-5.1zzzzzzz83): enum `listing_deal` là ban / cho_thue — bản trước ghi "thue" → 22P02, cả dòng tin
+                # cho thuê không bao giờ xuống DB (không lên web, không có trên /admin), lỗi chỉ nằm ở journal.
+                deal_type = "cho_thue" if li.prop.is_rental else "ban"
                 listing_payload: dict[str, Any] = {
                     "seller_id": seller_id,
                     "code": li.listing_id[:8].upper(),
@@ -464,7 +502,8 @@ class SupabaseConversationStore(KhoNguoiMua):
                 else:
                     # Tin tạo từ chat chỉ lên web khi khách đồng ý bản nháp (trigger listings_quyet_dinh_dang_tin đọc
                     # can_chu_duyet + chu_duyet_at; SRS-5.1zzzzzzz47). Admin / Excel tạo tin thì cờ này false như cũ.
-                    moi = {**listing_payload, "status": "cho_thong_tin", "can_chu_duyet": True}
+                    # source: cột mặc định 'import_excel' → mọi tin chat bị gắn nhãn nhập Excel (SRS-5.1zzzzzzz83).
+                    moi = {**listing_payload, "status": "cho_thong_tin", "can_chu_duyet": True, "source": "chat_zalo"}
                     if lid_mong:
                         moi["id"] = lid_mong
                     tao = self._post("listings", moi)
@@ -481,6 +520,8 @@ class SupabaseConversationStore(KhoNguoiMua):
 
         except Exception as e:
             log.error("Failed to save conversation to Supabase: %s", e)
+            # SRS-5.1zzzzzzz83: ghi hỏng mà chỉ có journal là im lặng (tin cho thuê mất suốt mà không ai thấy) → sổ lỗi.
+            self._ghi_so_loi("supabase save", f"{type(e).__name__}: {e}")
 
     def _ghi_anh(self, lid: str, media: list[dict]) -> None:
         """Ảnh / giấy tờ đã lên Supabase Storage (`kho_anh.SupabaseMediaStore`) → dòng `listing_media` để web hiện ảnh (bucket
@@ -599,7 +640,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 boc_tach = row.get("boc_tach") or {}
                 prop = Property(
                     loai_hinh=loai_tu_db(row.get("property_type"), boc_tach),
-                    is_rental=(row.get("deal") == "thue"),
+                    is_rental=(row.get("deal") in ("cho_thue", "thue")),
                     fields=boc_tach,
                 )
                 # listing_id = uuid của dòng (bỏ gạch) khi tin tạo từ bản 19/10 (code = 8 ký tự đầu id) — để ảnh ghi đúng thư
