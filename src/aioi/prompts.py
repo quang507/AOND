@@ -1203,6 +1203,8 @@ cho các loại này.
   Viết tắt (20/10): "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
   "dts" có thể là diện tích sổ hoặc sàn: con số bằng ngang × dài khách đã nói (4x11 → 44) là ĐẤT; còn lại để tạm dien_tich. Số
   bằng ngang × dài luôn là diện tích ĐẤT, không bao giờ là diện tích sàn của nhà nhiều tầng.
+  "MT 20m" / "mặt tiền đường 20m" nói cạnh TÊN ĐƯỜNG là độ rộng con ĐƯỜNG → lo_gioi_duong; mat_tien là bề ngang của chính căn
+  nhà (lô 4x11 → ngang 4m), không bao giờ lớn hơn chiều của lô.
 QUAN TRỌNG — mã số căn: BĐS dự án lúc MỞ BÁN (chưa hoàn thành) thường được định danh bằng
 MÃ SỐ CĂN (vd "căn số 42", "A-15-03", "block B tầng 5 căn 3") và CHƯA có địa chỉ đường. Nếu
 người rao cho mã số căn thì trích vào ma_so_can. ĐỪNG nhầm mã số căn với số phòng ngủ hay số
@@ -1473,6 +1475,8 @@ QUY TẮC:
   Viết tắt (20/10): "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
   "dts" có thể là diện tích sổ hoặc sàn: con số bằng ngang × dài khách đã nói (4x11 → 44) là ĐẤT; còn lại để tạm dien_tich. Số
   bằng ngang × dài luôn là diện tích ĐẤT, không bao giờ là diện tích sàn của nhà nhiều tầng.
+  "MT 20m" / "mặt tiền đường 20m" nói cạnh TÊN ĐƯỜNG là độ rộng con ĐƯỜNG → lo_gioi_duong; mat_tien là bề ngang của chính căn
+  nhà (lô 4x11 → ngang 4m), không bao giờ lớn hơn chiều của lô.
 - Đừng nhầm mã số căn với số phòng ngủ/số tầng.
 - DUYỆT BẢN NHÁP (18/10/2026; 20/10 theo trạng thái): chỉ khi có dòng "TRẠNG THÁI: bot ĐÃ gửi bản tin nháp" bên dưới (bot đã gửi
   bản nháp — kể cả khi sau đó bot nhắc hay hỏi xác nhận "đã ổn chưa"), đọc theo NGHĨA tin khách vừa nhắn: đồng ý cho đăng (ok, được rồi, đăng đi, chuẩn rồi, thả tim / like…) →

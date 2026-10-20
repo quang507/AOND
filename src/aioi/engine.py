@@ -3354,6 +3354,34 @@ class Engine:
                 g = self._gia_tri_ghi(conv, k, v, bc)
                 if g:
                     out[k] = g
+        return self._mot_cum_mot_o(conv, out)
+
+    @staticmethod
+    def _mot_cum_mot_o(conv: "Conversation", out: dict[str, str]) -> dict[str, str]:
+        """Ô tin không tự mâu thuẫn (SRS-5.1zzzzzzz87, chat chị N. 20/10). Không đọc ý — chỉ so chữ / số đã ghi:
+        (1) cùng một giá trị (≥ 2 từ) vào hai ô → giữ ô đứng trước trong bộ ô của loại BĐS (schema), bỏ ô kia: "Garege trong nhà" vào
+        cả `tien_ich_phong` lẫn `dien_tich_trang_thiet_bi`, "SHR Hoàn Công Đầy Đủ" vào cả `phap_ly` lẫn `phap_ly_hoan_cong`;
+        (2) bề ngang mặt tiền lớn hơn cả hai chiều của kích thước lô là không thể → bỏ `mat_tien` ("Trương Đình Hội • MT 20 mét" là
+        đường rộng 20m, lô 4x11)."""
+        thu_tu = conv.prop.expected_fields()
+        hang = lambda o: thu_tu.index(o) if o in thu_tu else len(thu_tu)
+        gon = lambda x: " ".join(_strip_accents(x).lower().split())
+        da_co = {gon(v): k for k, v in conv.prop.fields.items() if isinstance(v, str) and not k.startswith("_")}
+        nhom: dict[str, list[str]] = {}
+        for k, v in out.items():
+            if k not in _O_PHAN_LOAI and k not in _O_GHEP and len(_tu(v)) >= 2:
+                nhom.setdefault(gon(v), []).append(k)
+        for g, ks in nhom.items():
+            giu = da_co.get(g) if da_co.get(g) not in (None, *ks) else min(ks, key=hang)
+            for k in ks:
+                if k != giu:
+                    log.warning("Bỏ ô %s: cùng cụm khách đã vào ô %s", k, giu)
+                    out.pop(k, None)
+        mt, kt = out.get("mat_tien"), out.get("kich_thuoc") or conv.prop.fields.get("kich_thuoc")
+        so_mt, so_kt = [float(x) for x in _so_trong(mt)], [float(x) for x in _so_trong(kt)]
+        if so_mt and so_kt and min(so_mt) > max(so_kt):
+            log.warning("Bỏ ô mat_tien: lớn hơn cả hai chiều kích thước lô")
+            out.pop("mat_tien", None)
         return out
 
     def _extract_fields(self, conv: Conversation) -> dict[str, str]:

@@ -72,3 +72,21 @@ def test_mo_dau_da_thi_goi_lai_mot_lan():
     eng.handle("da1", "chưa tiện")
     assert len(spy.systems) == 2 and "VIẾT LẠI LƯỢT NÀY" in spy.systems[-1] and "Dạ" in spy.systems[-1]
     assert conv.history[-1].content == "Em hiểu ạ."
+
+
+def test_mot_cum_mot_o_va_mat_tien_khong_lon_hon_lo():
+    from aioi.engine import Engine as E
+    eng = E(_SpyLan({"operations": []}, []))
+    conv = eng.conversation("mc1")
+    conv.prop.loai_hinh = "nha_pho"
+    out = E._mot_cum_mot_o(conv, {"phap_ly": "SHR Hoàn Công Đầy Đủ", "phap_ly_hoan_cong": "SHR Hoàn Công Đầy Đủ",
+                                  "kich_thuoc": "4x11m", "mat_tien": "20m", "so_tang": "3 lầu", "ket_cau": "1 trệt 3 lầu"})
+    assert len({"phap_ly", "phap_ly_hoan_cong"} & set(out)) == 1
+    assert "mat_tien" not in out and out["kich_thuoc"] == "4x11m" and out["ket_cau"] == "1 trệt 3 lầu"
+    # giá trị đã nằm ở một ô từ lượt trước → ô mới cùng chữ bị bỏ, ô cũ giữ
+    conv.prop.fields["tien_ich_phong"] = "Garege trong nhà"
+    out2 = E._mot_cum_mot_o(conv, {"dien_tich_trang_thiet_bi": "Garege trong nhà"})
+    assert out2 == {}
+    # ngang hợp lệ, "có" một từ ở hai ô thì không đụng
+    assert E._mot_cum_mot_o(conv, {"mat_tien": "4m", "kich_thuoc": "4x11"})["mat_tien"] == "4m"
+    assert E._mot_cum_mot_o(conv, {"co_gara": "có", "co_san_thuong": "có"}) == {"co_gara": "có", "co_san_thuong": "có"}
