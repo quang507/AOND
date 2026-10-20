@@ -64,7 +64,14 @@ COT_THONG_SO = ("frontage_m", "length_m", "rear_width_m", "legal_area_m2", "buil
                 "has_completion", "has_elevator", "car_in_house", "corner_lot", "negotiable", "access_type",
                 "planning_status", "furnishing", "direction")
 _O_KHONG_PHAI_THONG_SO = {"dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "du_an", "ma_so_can", "unit_type", "gia",
-                          "loai_hinh", "phap_ly", "hinh_anh", "ly_do_ban", "trang_thai"}
+                          "loai_hinh", "phap_ly", "hinh_anh", "ly_do_ban", "trang_thai", "phi_gui_xe", "yeu_cau_xe_hoi"}
+# Nhãn ô là chữ CỦA MÌNH, không phải lời khách — mà `boc_thong_so` dò chữ khoá trên cả chuỗi "nhãn: giá trị". Soát 20/10/2026
+# (SRS-5.1zzzzzzz85: gọi boc_thong_so("<nhãn>: x") cho mọi nhãn FIELD_LABELS) — 10/74 nhãn tự bật một cột dù giá trị vô nghĩa: tin đất
+# "giá chỉ áp dụng trong tháng 10" lên web thành "thương lượng"; "vị trí mặt tiền hay hẻm: hẻm 3m" → mặt tiền; "căn thường hay căn
+# góc: căn thường" → căn góc; "thang máy di chuyển: không có" → có thang máy; "bề ngang mặt tiền: 4m" → mặt tiền. Các ô đó gửi giá trị
+# trơn (ô bề ngang kèm chữ "ngang" để còn đọc ra số đo); phí gửi xe / yêu cầu xe hơi của người mua không phải thông số căn.
+NHAN_TRUNG_TINH = {"lo_gioi_hem": "", "mat_tien": "ngang", "thuong_luong": "", "can_goc": "", "thang_may": "",
+                   "phap_ly_hoan_cong": "", "phap_ly_so_do": ""}
 
 # Loại hình: mã lõi Python (schema.TYPE_TO_GROUP, 26 mã) → enum `listings.property_type` (12 mã của CRM) — SRS-5.1zzzzzzz68. Trước bản
 # này save() ghi thẳng mã lõi: "nha_cap_4" (DB là "nha_cap4"), "chdv", "can_ho"… không có trong enum → PostgREST 22P02, cả dòng tin
@@ -248,8 +255,8 @@ class SupabaseConversationStore(KhoNguoiMua):
         for k, v in fields.items():
             if k in _O_KHONG_PHAI_THONG_SO or not isinstance(v, (str, int, float)) or not str(v).strip():
                 continue
-            nhan = FIELD_LABELS.get(k, k.replace("_", " ")).split(" (")[0]
-            dong.append(f"{nhan}: {v}")
+            nhan = NHAN_TRUNG_TINH[k] if k in NHAN_TRUNG_TINH else FIELD_LABELS.get(k, k.replace("_", " ")).split(" (")[0]
+            dong.append(f"{nhan}: {v}" if nhan else str(v))
         chu = "; ".join(dong)
         if not chu:
             return {}

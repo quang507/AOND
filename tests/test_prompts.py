@@ -120,7 +120,7 @@ def test_listing_proposal_system_contains_length_and_no_header_rules():
     from aioi.prompts import build_listing_proposal_system
     s = build_listing_proposal_system("T•ai", _prop())
     # 19/10/2026 (SRS-5.1zzzzzzz64): luật nằm ở AD_FORMAT một nguồn — 4–5 gạch (anh Luận 0b31235), không nhãn khi đã tự rõ.
-    assert "15–25 từ" in s
+    assert "tối đa 15 từ" in s and "VỊ TRÍ" in s and "DIỆN TÍCH" in s and "GIÁ" in s   # SRS-5.1zzzzzzz85
     assert "70–150 từ" in s
     assert "4–5 GẠCH ĐẦU DÒNG" in s
     assert "KHÔNG ghi nhãn nếu dữ liệu đã TỰ RÕ" in s

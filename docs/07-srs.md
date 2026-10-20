@@ -7013,6 +7013,38 @@ chen khi khách vừa nhắn; hội thoại trong cache đã xoá → tìm lại
 42 lượt chat bắn thử VÀ lượt chủ dự án nhắn cùng lúc (không tách được vì tin của chủ dự án chưa vào `messages`), nên ≤ $0,0024 / lượt
 chat, ≈ $0,0008 / lượt gọi model. Haiku 5.5 có hai bậc giá theo độ dài prompt, sổ không tách bậc — số trên tính bậc thấp.
 
+### SRS-5.1zzzzzzz85 · Người test 20/10: tiêu đề tin dài, tin đất bị gắn "thương lượng" do nhãn ô tự kích bộ đọc (20/10/2026)
+
+**Ca gốc.** Người test (chị N.) nhắn Zalo sáng 20/10, chủ dự án chuyển lại: "Qua 2 tin chị thấy chưa tóm gọn được tiêu đề, nó còn dài
+quá"; "Tiêu đề ngắn thôi — chọn mấy cái hấp dẫn đưa dô thôi, ví dụ: vị trí, diện tích, giá — 3 cái đó cần trong tiêu đề"; chủ dự án:
+"Vậy chắc còn 15 từ thôi". Soát DB: tin thật còn lại sáng đó (đất An Dương Vương, `097BB55F`) — tiêu đề 18 từ, KHÔNG có giá; cột
+`negotiable = true` trong khi chủ nhà nói "giá 8,8 tỷ chỉ áp dụng trong tháng 10" (giá có hạn, không phải thương lượng). Hai cuộc chat
+không có trong `messages` (lỗi ghi tin SRS-5.1zzzzzzz84, vá sau giờ test) — chỉ soi được dòng `listings`.
+
+**Nguyên nhân & lớp lỗi.**
+1. *Tiêu đề:* `AD_FORMAT` (SRS-5.1zzzzzzz64, theo bản anh Luận) đòi 15–25 từ và "dồn điểm mạnh nhất" — không bắt buộc ý nào, nên model
+   nhồi chữ rào đón, bỏ giá. Bắn thử 20/10 cùng ngày: tiêu đề Nguyễn Trãi 24 từ.
+2. *Cờ thông số:* lõi gửi `boc_thong_so` (bộ đọc chữ khoá của DB) chuỗi "nhãn ô: giá trị". Nhãn là chữ CỦA MÌNH chứ không phải lời
+   khách, nhưng bộ đọc dò trên cả chuỗi. **Lớp lỗi:** chữ hệ thống trộn vào chữ khách trước khi máy đọc ý. **Chỗ cùng lớp — soát hết**
+   bằng `boc_thong_so('<nhãn>: x')` cho 74 nhãn `FIELD_LABELS` trên DB: 10 nhãn tự bật cột — `lo_gioi_hem` ("vị trí mặt tiền hay
+   hẻm: hẻm 3m" → `mat_tien`!), `mat_tien` (bề ngang → `mat_tien`), `thuong_luong`, `can_goc` ("căn thường" → căn góc), `thang_may`
+   ("không có" → có), `phap_ly_hoan_cong`, `phap_ly_so_do`, `hinh_anh`, `phi_gui_xe`, `yeu_cau_xe_hoi`. Trigger
+   `listings_boc_thong_so` chỉ đọc `description` (tin chat để trống) — không cùng lỗi.
+
+**Sửa.**
+- `src/aioi/prompts.py` `AD_FORMAT` + luật tiêu đề trong luật chat: tối đa 15 từ, BẮT BUỘC vị trí · diện tích · giá, thêm tối đa 1 điểm
+  mạnh; không chữ rào đón; ví dụ đúng.
+- `src/aioi/supabase_store.py` `NHAN_TRUNG_TINH`: 7 ô tự kích gửi giá trị trơn (ô bề ngang kèm chữ "ngang" để còn đọc số đo);
+  `phi_gui_xe` / `yeu_cau_xe_hoi` không gửi (không phải thông số căn); `hinh_anh` vốn đã không gửi.
+- `bot/supabase/migrations/20261020b_chua_co_thong_so_nhan_o.sql`: đọc lại `negotiable` / `corner_lot` / `has_elevator` / `access_type`
+  của tin chat từ chính giá trị ô (cột đã ghi không tự xoá).
+- `bot/tests/ban-thu-ban.sh`: kiểm tiêu đề bản nháp ≤ 15 từ, có đường, diện tích, giá.
+
+**Kiểm.** `tests/test_nhan_o_khong_kich.py` — chuỗi gửi `boc_thong_so` không còn nhãn tự kích, nhãn trung tính vẫn đọc được số đo
+(ĐỎ trên code cũ — đã chạy); `tests/test_prompts.py`, `tests/test_tin_rao_bo_cuc.py` đổi theo luật mới. pytest 443 đạt. Kiểm bắn thử
+tiêu đề ĐỎ với tiêu đề 24 từ của lượt 20/10 (đã chạy với chuỗi đó). Model thật: `ban-thu-ban` sau `cai-vps`. Thêm nhãn ô mới thì chạy lại
+phép soát `boc_thong_so('<nhãn>: x')` trên DB.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
