@@ -232,8 +232,8 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
   • CẤM NHẠI LẠI LỜI KHÁCH: Khách vừa nói gì thì tuyệt đối KHÔNG tua lại (Vd: khách nói "nhà đang ở" -> CẤM nói "Em ghi nhận nhà đang ở..."). Nối tiếp tự nhiên bằng vài từ rồi hỏi ngay câu tiếp theo.
   • CẤM MÁY MÓC: TUYỆT ĐỐI KHÔNG mở đầu "Vâng...", "Dạ em ghi nhận...", "Em ghi nhận là...", "Em đã lưu lại...".
   • TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Viết chữ trơn bình thường.
-  • TIÊU ĐỀ BẢN TIN RAO PHẢI TINH GỌN (15 - 25 TỪ, ĐÚNG 1 DÒNG):
-    - Chuẩn công thức: [Bán/Cho thuê] [Số tầng/Kết cấu] [Vị trí MT/Hẻm] [Điểm nhấn] [Giá] (Vd: "Bán nhà 3 tầng MT Cao Lỗ gần Parc Mall giá 10 tỷ" hoặc "Chỉ 10 tỷ có ngay nhà 3 tầng MT Cao Lỗ Q.8 gần Parc Mall").
+  • TIÊU ĐỀ BẢN TIN RAO NGẮN (TỐI ĐA 15 TỪ, ĐÚNG 1 DÒNG), BẮT BUỘC CÓ VỊ TRÍ · DIỆN TÍCH · GIÁ:
+    - Chuẩn công thức: [Bán/Cho thuê] [loại] [Vị trí MT/Hẻm + đường, quận] [Diện tích] [Giá] (Vd: "Bán nhà 3 tầng MT Cao Lỗ Q.8, 60m², giá 10 tỷ").
     - TUYỆT ĐỐI CẤM NHỒI NHÉT VÀO TIÊU ĐỀ: Cấm nhét số phòng ngủ/WC (4PN 5WC), hướng nhà (hướng Tây), tình trạng đang trống, mô tả hẻm dài dòng (ô tô vào tận nhà, hẻm nội bộ)... vào tiêu đề! Chi tiết đó để dành cho các dòng thông số bên dưới.
     - Khi khách cho số nhà có dấu "/" (như "100/9", "391/34", "đc: 100/9"): Hiểu ngay đây là SỐ NHÀ TRONG HẺM (địa chỉ 100/9). CẤM tuyệt đối đoán là diện tích hay kích thước. Cảm ơn và hỏi diện tích sàn hoặc kết cấu/giá.
     - Nếu khách chưa nói hẻm hay mặt tiền (và địa chỉ không có dấu "/"): Hỏi nhẹ "Nhà mình ở mặt tiền hay trong hẻm vậy anh/chị?"
@@ -521,7 +521,13 @@ def describe_captured(prop: Property) -> str:
 # Bố cục tin rao MỘT NGUỒN (anh Luận 802b957 + 0b31235, 17–19/10/2026; SRS-5.1zzzzzzz64): bản nháp, bản sửa sau khi xem nháp, và lượt
 # chat khi khách xin "xem / đăng tin đầy đủ" cùng đọc khối này — sửa luật tin rao là sửa ở đây.
 AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NHAU bằng MỘT DÒNG TRỐNG giữa 3 khối):
-1) TIÊU ĐỀ: 15–25 từ, đúng 1 dòng, viết gây chú ý, dồn điểm mạnh nhất (loại hình · vị trí · kết cấu / diện tích · giá · điểm hiếm). Tối đa 1–2 emoji.
+1) TIÊU ĐỀ: NGẮN, tối đa 15 từ, đúng 1 dòng. BẮT BUỘC đủ 3 ý: VỊ TRÍ (đường + quận, hoặc tên dự án) · DIỆN TÍCH · GIÁ — thiếu ý
+   nào thì tiêu đề chưa đạt. Còn chỗ thì thêm tối đa 1 điểm mạnh nhất (kết cấu, mặt tiền / hẻm xe hơi, số phòng khi cho thuê).
+   Đếm từ theo khoảng trắng. Viết gọn như tin rao: "MT" (mặt tiền), "HXH", "Q.5", "P.Chợ Quán"; không viết chữ "đường",
+   "Phường", "Quận" đầy đủ; phường dài thì bỏ (mô tả đã có). Không chêm chữ rào đón ("chính chủ", "sẵn sổ công chứng
+   ngay", "sổ hồng", "nội thất đầy đủ"…) — để ở mô tả / gạch đầu dòng. Vd: "Bán nhà MT Cao Lỗ Q.8, 49,5m², 1 trệt 3 lầu,
+   8,5 tỷ"; "Cho thuê nhà hẻm 3m Nguyễn Thị Tần Q.8, 60m², 2PN, 7 triệu/tháng". (Người test 20/10:
+   "tiêu đề ngắn thôi, chọn mấy cái hấp dẫn — vị trí, diện tích, giá, 3 cái đó cần trong tiêu đề"; SRS-5.1zzzzzzz85.)
 
 2) MÔ TẢ: MỘT đoạn văn 70–150 từ, liền mạch (không xuống dòng sau mỗi câu), văn phong tự nhiên, thuyết phục — kể vị trí & kết nối, công năng, điểm nổi bật, pháp lý. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này.
 
@@ -545,13 +551,17 @@ MO_DAU_NHAP = ("📋 Mình sẽ rao như vầy nhé em:", "📋 Em sẽ rao như
 def cat_truoc_mo_dau(reply: str) -> str:
     """Bản nháp bắt đầu đúng ở dòng mở đầu cố định; chữ model viết trước dòng đó bỏ đi. Model chép dòng mở đầu thiếu "📋" (bắn thử
     20/10: "Em ghi nhận đủ thông tin rồi anh ạ. Em sẽ rao như vầy nhé anh chị:") vẫn nhận ra và gắn lại đúng dòng cố định
-    (SRS-5.1zzzzzzz80)."""
-    for mo in MO_DAU_NHAP:
-        for m in (mo, mo.removeprefix("📋 ")):
-            i = reply.find(m)
-            if i >= 0:
-                return mo + reply[i + len(m):]
-    return reply
+    (SRS-5.1zzzzzzz80). Bắn thử 20/10 lần 3: model đổi luôn chữ gọi khách ("Em sẽ rao như vầy nhé anh:") — so nguyên văn thì trượt,
+    câu dẫn còn nguyên và lượt không được nhận là bản nháp. Nhận dòng mở đầu với bất kỳ chữ gọi khách nào (lấy dòng CUỐI — tin rao nằm
+    ngay sau nó) rồi thay bằng dòng cố định theo cách xưng "Mình" / "Em" (SRS-5.1zzzzzzz85)."""
+    khop = list(_MO_DAU_RE.finditer(reply))
+    if not khop:
+        return reply
+    m = khop[-1]
+    return (MO_DAU_NHAP[0] if m.group(1) == "Mình" else MO_DAU_NHAP[1]) + reply[m.end():]
+
+
+_MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em) sẽ rao như vầy nhé[^:\n]{0,20}:")
 
 
 def build_listing_proposal_system(

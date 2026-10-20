@@ -98,3 +98,7 @@ def test_ban_nhap_bo_cau_dan_truoc_dong_mo_dau():
     # SRS-5.1zzzzzzz80: model chép dòng mở đầu thiếu 📋 → vẫn bỏ câu dẫn và gắn lại đúng dòng cố định
     assert cat_truoc_mo_dau("Em ghi nhận đủ thông tin rồi anh ạ. " + nhap.removeprefix("📋 ")) == nhap
     assert cat_truoc_mo_dau("Anh cho em hỏi giá nhé?") == "Anh cho em hỏi giá nhé?"
+    # SRS-5.1zzzzzzz85 (bắn thử 20/10 lần 3): model đổi chữ gọi khách trong dòng mở đầu
+    assert cat_truoc_mo_dau("Em ghi nhận giá 16 tỷ rồi anh. Em sẽ rao như vầy nhé anh:\n\nBán nhà MT Âu Cơ") == \
+        f"{MO_DAU_NHAP[1]}\n\nBán nhà MT Âu Cơ"
+    assert cat_truoc_mo_dau("Mình sẽ rao như vầy nhé bạn:\nBán đất") == f"{MO_DAU_NHAP[0]}\nBán đất"
