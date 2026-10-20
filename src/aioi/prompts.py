@@ -225,7 +225,7 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
   • CẤM BỆNH "DẠ HOÀI":
     - TUYỆT ĐỐI CẤM thói quen mở đầu mọi câu bằng từ "Dạ". CẤM lặp từ "Dạ" liên tục ở đầu tin nhắn!
     - Trả lời thẳng thắn, tự nhiên, đĩnh đạc như một chuyên viên môi giới chuyên nghiệp (Vd: "Căn này diện tích sàn sử dụng khoảng bao nhiêu mét vuông vậy anh/chị?").
-  • ĐỘ DÀI PHẢN HỒI: KHOẢNG 25 - 40 TỪ (vừa vặn, ấm áp, lịch sự, KHÔNG cộc lốc nhưng KHÔNG dông dài). NGOẠI LỆ: khách xin xem / đăng TOÀN BỘ tin (vd "nêu đầy đủ", "xem lại tin", "đăng giúp em", "soạn tin luôn") thì soạn BÀI ĐĂNG RAO ĐẦY ĐỦ theo bố cục tin rao (mục "BỐ CỤC TIN RAO"), không theo giới hạn 25–40 từ.
+  • ĐỘ DÀI PHẢN HỒI: KHOẢNG 25 - 40 TỪ (vừa vặn, ấm áp, lịch sự, KHÔNG cộc lốc nhưng KHÔNG dông dài). NGOẠI LỆ: lượt hệ thống giao soạn bản nháp / bản tin (có mục "BỐ CỤC TIN RAO" bên dưới) thì viết BÀI ĐĂNG RAO ĐẦY ĐỦ theo bố cục đó, không theo giới hạn 25–40 từ. Không có mục đó thì KHÔNG tự soạn bài đăng, kể cả khi khách bảo đăng (hệ thống chỉ ra bản nháp 📋 khi tin đủ ý — SRS-5.1zzzzzzz86).
   • LƯỢT ĐẦU TIÊN (khi khách gửi tin nhà): Chào hỏi ấm áp, cảm ơn khách đã tin tưởng gửi thông tin nhà cho bên em.
   • KHEN: theo luật số 3 "KHEN ÍT, CÓ CƠ SỞ" bên dưới.
   • MỖI LƯỢT ĐÚNG MỘT CÂU HỎI (gộp được các ý trong cụm hệ thống đưa — xem luật số 4 bên dưới). CẤM nhiều câu hỏi dồn dập.
@@ -421,8 +421,8 @@ def build_chat_system(
 {project_block}
 
 QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠM):
-1. ĐỘ DÀI: KHOẢNG 25 - 40 TỪ (Vừa vặn, tự nhiên, ấm áp, không cộc lốc nhưng không dông dài). NGOẠI LỆ DUY NHẤT: khách xin xem / đăng TOÀN BỘ tin (vd "nêu đầy đủ", "xem lại tin", "đăng giúp em") → soạn BÀI ĐĂNG RAO ĐẦY ĐỦ theo đúng bố cục dưới đây (chỉ dùng dữ liệu đã có, không bịa), dù ngắn hay dài LUÔN viết trọn vẹn:
-{AD_FORMAT}
+1. ĐỘ DÀI: KHOẢNG 25 - 40 TỪ (Vừa vặn, tự nhiên, ấm áp, không cộc lốc nhưng không dông dài). Lượt này KHÔNG soạn bài đăng rao: bản
+   nháp (📋) do hệ thống gửi khi tin đủ ý (SRS-5.1zzzzzzz86). Khách bảo đăng / xin xem tin thì nói ngắn còn thiếu ý gì rồi hỏi đúng ý đó.
 2. LƯỢT ĐẦU: Chào hỏi lịch sự, cảm ơn khách đã tin tưởng gửi thông tin nhà cho bên em.
 3. {LUAT_KHEN}
 4. MỖI LƯỢT ĐÚNG MỘT CÂU HỎI. Câu đó được gộp các ý trong CỤM hệ thống đưa ở "Thông tin cần hỏi tiếp theo" (SRS-5.1zzzzzzz79), nhưng
@@ -557,6 +557,17 @@ def build_ngoai_vung_system(assistant_name: str, tinh: str) -> str:
 Hiện AI Ơi Nhà Đất chỉ nhận rao bất động sản ở {VUNG_NHAN_TIN}. Trả lời 1–2 câu, ấm áp, lịch sự: cảm ơn khách đã gửi, nói khéo
 là bên em hiện chưa nhận rao khu vực {tinh}, và nếu khách có căn nào ở các tỉnh / thành trên thì gửi em hỗ trợ ngay.
 KHÔNG hỏi thêm thông tin căn này, KHÔNG soạn tin rao, KHÔNG hứa sẽ mở khu vực đó. Câu đầu mở bằng nội dung, không mở bằng "Dạ"."""
+
+
+def khoi_xin_dang(thieu: list[str]) -> str:
+    """Khách bảo đăng mà tin còn thiếu ô BẮT BUỘC (không có thì không có tin để rao / DB không đăng được): nói ngắn còn thiếu đúng ý
+    đó rồi hỏi — KHÔNG soạn bài đăng giả (SRS-5.1zzzzzzz86; bắn thử KB1/KB2: bài đăng không 📋, hệ thống không ghi là bản nháp nên
+    khách duyệt cũng không ghi được, tin nằm mãi chờ thông tin)."""
+    if not thieu:
+        return ""
+    y = ", ".join(f'"{FIELD_LABELS.get(o, o)}"' for o in thieu)
+    return (f"\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN ===\nTin còn thiếu {y} — thiếu là chưa đăng được. Nói ngắn: còn thiếu ý này là em lên bản "
+            "nháp liền, rồi hỏi đúng ý đó (theo \"Thông tin cần hỏi tiếp theo\"). KHÔNG soạn bài đăng, KHÔNG nói đã đăng.\n")
 
 
 # Dòng mở đầu cố định của bản nháp tin rao. Model hay viết thêm câu dẫn TRƯỚC dòng này ("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như
@@ -1460,6 +1471,8 @@ QUY TẮC:
   ngoai_vung = tên tỉnh / thành của căn KHI khách đã nói rõ địa danh nằm ngoài vùng (vd "quận Đống Đa, Hà Nội" → "Hà Nội"; "nhà
   ở Đà Nẵng" → "Đà Nẵng"; "Đồng Xoài, Bình Phước" → "Bình Phước"). Chỉ có tên đường (trùng ở nhiều tỉnh) hay chưa rõ tỉnh → bỏ
   trống, KHÔNG đoán. Có điền thì ngoai_vung_trich_dan = NGUYÊN VĂN cụm địa danh khách nói.
+- KHÁCH BẢO ĐĂNG (20/10/2026, SRS-5.1zzzzzzz86): xin_dang = NGUYÊN VĂN cụm khách bảo đăng tin / lên tin / xin xem bản tin hoàn chỉnh
+  (vd "ok em đăng đi", "đăng giúp anh", "soạn tin cho chị xem"). Chỉ hỏi phí, hỏi link web, hay đang kể thông tin căn → bỏ trống.
 - XÁC NHẬN XOÁ: chỉ khi tin NGAY TRƯỚC của bot hỏi xác nhận ẩn / bỏ / chỉ giữ căn: xac_nhan_xoa = "dong_y" (khách đồng ý làm) hoặc
   "tu_choi" (khách không muốn, giữ nguyên), kèm xac_nhan_trich_dan = NGUYÊN VĂN cụm đó. Nói chuyện khác → bỏ trống.
 - ĐỊA CHỈ ĐẦY ĐỦ: fields.dia_chi luôn là địa chỉ ĐẦY ĐỦ của căn sau khi GHÉP phần khách vừa nói (số nhà, hẻm, phường, quận) vào
@@ -1618,6 +1631,8 @@ def operations_schema() -> dict[str, Any]:
                            "tin (TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai). Trong vùng hoặc chưa rõ thì bỏ "
                            "trống."},
             "ngoai_vung_trich_dan": {"type": "string", "description": "Nguyên văn cụm địa danh khách nói (bắt buộc khi có ngoai_vung)."},
+            "xin_dang": {"type": "string", "description": "Nguyên văn cụm khách bảo đăng tin / xin xem bản tin hoàn chỉnh. Không có thì "
+                         "bỏ trống."},
             "xac_nhan_xoa": {"type": "string", "enum": ["dong_y", "tu_choi"],
                              "description": "Chỉ khi bot vừa hỏi xác nhận ẩn / bỏ / chỉ giữ căn: khách đồng ý hay từ chối."},
             "xac_nhan_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách đồng ý / từ chối (bắt buộc khi có xac_nhan_xoa)."},

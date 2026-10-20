@@ -63,6 +63,7 @@ from .prompts import (
     build_greeting,
     build_listing_proposal_system,
     build_ngoai_vung_system,
+    khoi_xin_dang,
     cat_truoc_mo_dau,
     build_inventory_instruction,
     build_media_group_instruction,
@@ -1829,6 +1830,16 @@ class Engine:
         next_field = self._o_hoi_ke(conv, conv.prop.missing_fields())
         thieu = conv.prop.missing_fields()   # sau _o_hoi_ke: ô khách lờ 2 lần đã để sau (SRS-5.1zzzzzzz80)
         cum_hoi = conv.prop.cum_hoi(next_field, thieu)   # SRS-5.1zzzzzzz79: các ô hỏi gộp một câu lượt này
+        # Khách bảo đăng (SRS-5.1zzzzzzz86): đủ ô tối thiểu thì ra bản nháp 📋 thật ngay, ô còn lại hỏi sau khi duyệt; còn thiếu thì
+        # hỏi đúng ô tối thiểu — bản trước prompt hỏi chuyện tự soạn "bài đăng" không 📋, hệ thống không ghi là bản nháp.
+        xin_dang = bool(conv.y_luot.get("xin_dang")) and not conv.listing_proposed
+        toi_thieu = conv.prop.thieu_toi_thieu() if xin_dang else []
+        if xin_dang and not toi_thieu:
+            conv.prop.hoan |= {x for x in thieu if conv.prop.hoan_duoc(x)}
+        elif toi_thieu and next_field not in toi_thieu:
+            next_field = toi_thieu[0]
+            cum_hoi = [o for o in conv.prop.cum_hoi(next_field, thieu) if o in toi_thieu] or [next_field]
+            conv.o_vua_hoi, conv.cum_vua_hoi = next_field, cum_hoi
         # Project awareness: if the listing's project is registered, inherit its verified
         # facts (and lightly confirm); if it's named but unknown, prompt the bot to acquire
         # knowledge (ask the seller / request a link); if no project, nothing.
@@ -1838,12 +1849,12 @@ class Engine:
             self.unit_type_for(conv.prop),
             conv.prop.fields.get("unit_type"),
         )
-        is_listing_post = conv.prop.summary_ready()
+        is_listing_post = conv.prop.summary_ready() or conv.listing_proposed or (xin_dang and not toi_thieu)
         trinh_nhap = False
         if not is_listing_post:
             system = build_chat_system(
                 conv.assistant.name, conv.prop, next_field, conv.user_type, project_block, cum=cum_hoi
-            )
+            ) + khoi_xin_dang(toi_thieu)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
             trinh_nhap = True
@@ -3125,6 +3136,9 @@ class Engine:
             conv.y_luot["can_nguoi_that"] = str(plan["can_nguoi_that"]).strip()
         # Căn nằm ngoài vùng nhận tin (SRS-5.1zzzzzzz86): AI đọc tỉnh / thành, code kiểm cụm địa danh có trong một trong sáu lượt
         # khách gần nhất (tỉnh có thể đã nói ở lượt trước). Cờ gắn lên căn SAU khi áp thao tác (căn mới có thể vừa được tạo).
+        # Khách bảo đăng tin (SRS-5.1zzzzzzz86): AI đọc theo nghĩa, code kiểm cụm trích có trong tin vừa nhắn.
+        if _trich_dan_khop(plan.get("xin_dang"), cuoi):
+            conv.y_luot["xin_dang"] = str(plan["xin_dang"]).strip()
         nv = str(plan.get("ngoai_vung") or "").strip()
         if nv and conv.role != "buyer":
             gan = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]

@@ -325,12 +325,16 @@ class Property:
         Requires ALL identity fields (type, address, area(s), price) AND a high overall
         completeness, so the draft includes core details, not just the basics.
         """
-        if not all(self._has(f) or f in self.hoan for f in self.identity_fields()):
-            return False
-        if self.blocking_fields():
+        if self.thieu_toi_thieu():
             return False
         # Ô hỏi sau bản nháp vẫn tính vào % (như bản anh Luận) nhưng không hỏi trước — hết ô để hỏi trước bản nháp thì ra nháp, không kẹt.
         return self.completeness() >= SUMMARY_READY_COMPLETENESS or not self.missing_fields()
+
+    def thieu_toi_thieu(self) -> list[str]:
+        """Ô phải có trước MỌI bản nháp — nhận diện (trừ ô khách lờ 2 lần đã để sau) và ô bắt buộc theo loại. Khách bảo đăng sớm thì
+        chỉ còn chờ các ô này (SRS-5.1zzzzzzz86)."""
+        ra = [f for f in self.identity_fields() if not self._has(f) and f not in self.hoan]
+        return ra + [f for f in self.blocking_fields() if f not in ra]
 
     def cum_hoi(self, o: str | None, missing: list[str]) -> list[str]:
         """Các ô hỏi gộp trong lượt có ô `o` (SRS-5.1zzzzzzz79): ô còn thiếu cùng cụm với `o`, theo thứ tự hỏi, tối đa `CUM_TOI_DA`."""
