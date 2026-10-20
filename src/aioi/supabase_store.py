@@ -228,10 +228,20 @@ class SupabaseConversationStore(KhoNguoiMua):
         phuong, quan = self._chuan_dia_ban(chu)
         # Căn hộ trong dự án: khách thường chỉ nói tên dự án — lấy phường theo địa chỉ dự án trong kho (SRS-5.1zzzzzzz41), chỉ
         # khi tên khớp rõ một dự án (`_du_an`, SRS-5.1zzzzzzz86 — bản trước lấy dòng đầu của tìm gần đúng).
+        # Cột phường của dự án (đã là tên chuẩn) tra TRƯỚC, chữ địa chỉ dài chỉ là lưới đỡ (SRS-5.1zzzzzzz87): bắn thử KB5 20/10 —
+        # địa chỉ Ny'ah ghi "Phường Phú Định (Phường 16, Quận 8 cũ)", đọc chung với cột phường thành hai phường → `mo_ho`, tin
+        # không bao giờ có phường, bot hỏi phường mãi dù kho đã biết.
         d = self._du_an(fields)
         if not phuong and d:
-            p2, q2 = self._chuan_dia_ban(", ".join(str(d[k]) for k in ("location_raw", "ward", "district") if d.get(k)))
-            phuong, quan = p2, quan or q2
+            for khoa in (("ward", "district"), ("location_raw", "ward", "district")):
+                chu2 = ", ".join(str(d[k]) for k in khoa if d.get(k))
+                if not chu2:
+                    continue
+                p2, q2 = self._chuan_dia_ban(chu2)
+                quan = quan or q2
+                if p2:
+                    phuong = p2
+                    break
         return phuong, quan
 
     def cau_chuan_mau(self) -> list[dict[str, Any]]:

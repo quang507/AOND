@@ -90,3 +90,15 @@ def test_mot_cum_mot_o_va_mat_tien_khong_lon_hon_lo():
     # ngang hợp lệ, "có" một từ ở hai ô thì không đụng
     assert E._mot_cum_mot_o(conv, {"mat_tien": "4m", "kich_thuoc": "4x11"})["mat_tien"] == "4m"
     assert E._mot_cum_mot_o(conv, {"co_gara": "có", "co_san_thuong": "có"}) == {"co_gara": "có", "co_san_thuong": "có"}
+
+
+def test_phuong_du_an_tra_cot_chuan_truoc_dia_chi_dai():
+    kho = SupabaseConversationStore.__new__(SupabaseConversationStore)
+    kho._du_an_nho = {}
+    kho._du_an = lambda f: {"id": "p1", "name": "Ny'ah Phú Định", "ward": "Phường Phú Định", "district": "Quận 8",
+                            "location_raw": "58A Trương Đình Hội, Phường Phú Định (Phường 16, Quận 8 cũ), TP.HCM"}
+    # địa chỉ dài nhắc cả phường cũ → bộ tra báo mơ hồ; cột phường chuẩn thì ra một phường
+    kho._chuan_dia_ban = lambda chu: ((None, "Quận 8") if ("Phường 16" in chu or not chu.startswith("Phường"))
+                                      else ("Phường Phú Định", "Quận 8"))
+    assert kho._dia_ban({"dia_chi": "Trương Đình Hội, khu dân cư Nyah Phú Định", "du_an": "Nyah Phú Định"}) == \
+        ("Phường Phú Định", "Quận 8")

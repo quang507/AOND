@@ -7195,6 +7195,14 @@ nháp). Tin thử của chị N. (diện tích ghi sai) đã xoá theo lệnh ch
 Bắn lại: `bot/tests/ban-thu-kb.sh` KB5 dựng lại chat này (gõ không dấu "Nyah Phu Dinh", dtsd, MT 20 mét, "rao tin này giúp mình",
 "ok" hai lần) — kiểm gắn dự án, ô sàn / đất, bề ngang, hai ô pháp lý, tin lên web, không hỏi xác nhận lại.
 
+**Bắn lần 1 (20/10, lượt 181): 35/36 đạt.** KB5 đạt gắn Ny'ah khi gõ không dấu, sàn 245 / đất 44, không bề ngang 20m, không cụm vào
+hai ô, không hỏi xác nhận lại; giọng không "Dạ". Trượt: tin KB5 không có phường → không lên web, bot hỏi phường 3 lần. Gốc (mục 7):
+7. *Phường của dự án không được điền* — `_dia_ban` đọc chung chữ địa chỉ dài của dự án với cột phường; địa chỉ Ny'ah ghi "Phường Phú
+   Định (Phường 16, Quận 8 cũ)" → `chuan_dia_ban` thấy hai phường → `mo_ho`. **Lớp**: tra lại chữ tự do khi đã có cột chuẩn. Sửa: tra
+   cột `ward` + `district` của dự án trước, địa chỉ dài chỉ là lưới đỡ. Cùng lớp: dự án mogi có `location_raw` nhắc phường cũ cũng
+   dính — nay hết theo cùng bản sửa. Kiểm: `test_phuong_du_an_tra_cot_chuan_truoc_dia_chi_dai` (đỏ trên bản trước).
+   Ghi lại để chấm: lượt đầu KB5 ("bán nhà trong khu dự án …") bot hỏi "tòa nào, tầng mấy" — loại BĐS chưa chốt là nhà phố.
+
 ### SRS-5.1zzzzzzz88 · Câu chuẩn: chấm điểm và sửa tay câu bot kèm ngữ cảnh, lõi đọc làm ví dụ (20/10/2026)
 
 Chủ dự án: "chị tester và tui sẽ chấm điểm phản hồi của AI… ở đâu"; "bắn lên chỗ câu chuẩn cách bot đã ghi để tôi sửa tay từ từ, và
