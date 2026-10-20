@@ -7042,8 +7042,10 @@ không có trong `messages` (lỗi ghi tin SRS-5.1zzzzzzz84, vá sau giờ test)
 
 **Kiểm.** `tests/test_nhan_o_khong_kich.py` — chuỗi gửi `boc_thong_so` không còn nhãn tự kích, nhãn trung tính vẫn đọc được số đo
 (ĐỎ trên code cũ — đã chạy); `tests/test_prompts.py`, `tests/test_tin_rao_bo_cuc.py` đổi theo luật mới. pytest 443 đạt. Kiểm bắn thử
-tiêu đề ĐỎ với tiêu đề 24 từ của lượt 20/10 (đã chạy với chuỗi đó). Model thật: `ban-thu-ban` sau `cai-vps`. Thêm nhãn ô mới thì chạy lại
-phép soát `boc_thong_so('<nhãn>: x')` trên DB.
+tiêu đề ĐỎ với tiêu đề 24 từ của lượt 20/10 (đã chạy với chuỗi đó). Model thật: bắn thử 1 sau `cai-vps` (run 39371367332) — mọi tiêu đề đã có đủ vị trí · diện tích · giá nhưng Nguyễn Trãi còn 17
+từ ("…đường Nguyễn Trãi Phường Chợ Quán Quận 5…"), căn hộ chêm 2 điểm mạnh → thêm luật viết gọn (MT, Q.5, bỏ chữ "đường" /
+"Phường" / "Quận"; không chêm sổ hồng / nội thất) rồi bắn lại. Thêm nhãn ô mới thì chạy lại phép soát `boc_thong_so('<nhãn>: x')`
+trên DB.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

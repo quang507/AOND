@@ -523,8 +523,10 @@ def describe_captured(prop: Property) -> str:
 AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NHAU bằng MỘT DÒNG TRỐNG giữa 3 khối):
 1) TIÊU ĐỀ: NGẮN, tối đa 15 từ, đúng 1 dòng. BẮT BUỘC đủ 3 ý: VỊ TRÍ (đường + quận, hoặc tên dự án) · DIỆN TÍCH · GIÁ — thiếu ý
    nào thì tiêu đề chưa đạt. Còn chỗ thì thêm tối đa 1 điểm mạnh nhất (kết cấu, mặt tiền / hẻm xe hơi, số phòng khi cho thuê).
-   Không chêm chữ rào đón ("chính chủ", "sẵn sổ công chứng ngay"…) — để ở mô tả / gạch đầu dòng. Vd: "Bán nhà 4 tầng MT Cao
-   Lỗ Q.8, 49,5m², giá 8,5 tỷ"; "Cho thuê nhà hẻm 3m Nguyễn Thị Tần Q.8, 60m², 2PN, 7 triệu/tháng". (Người test 20/10:
+   Đếm từ theo khoảng trắng. Viết gọn như tin rao: "MT" (mặt tiền), "HXH", "Q.5", "P.Chợ Quán"; không viết chữ "đường",
+   "Phường", "Quận" đầy đủ; phường dài thì bỏ (mô tả đã có). Không chêm chữ rào đón ("chính chủ", "sẵn sổ công chứng
+   ngay", "sổ hồng", "nội thất đầy đủ"…) — để ở mô tả / gạch đầu dòng. Vd: "Bán nhà MT Cao Lỗ Q.8, 49,5m², 1 trệt 3 lầu,
+   8,5 tỷ"; "Cho thuê nhà hẻm 3m Nguyễn Thị Tần Q.8, 60m², 2PN, 7 triệu/tháng". (Người test 20/10:
    "tiêu đề ngắn thôi, chọn mấy cái hấp dẫn — vị trí, diện tích, giá, 3 cái đó cần trong tiêu đề"; SRS-5.1zzzzzzz85.)
 
 2) MÔ TẢ: MỘT đoạn văn 70–150 từ, liền mạch (không xuống dòng sau mỗi câu), văn phong tự nhiên, thuyết phục — kể vị trí & kết nối, công năng, điểm nổi bật, pháp lý. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này.
