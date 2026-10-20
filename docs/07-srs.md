@@ -6884,6 +6884,11 @@ cho DB).
   vẫn đi kèm mọi lượt nên chuyện cũ hơn 30 tin không mất dữ kiện, chỉ mất lời nguyên văn.
 - `bot/tests/ban-thu-ban.sh`: Âu Cơ thôi soát "không hỏi hiện trạng"; Nguyễn Trãi thêm lượt "ok em, đăng đi" → soát câu phí (khi tin
   đã lên web), không tự báo con số %.
+- Bắn thử cb345ae (run 39358553275) xanh; lượt duyệt ra đúng câu bản anh Luận ("Em sẽ cho chào căn nhà của chị ngay ạ, mà chị có
+  biết phí môi giới của tụi em chưa ạ?"). Sổ lỗi bắt Haiku gõ tên ô có dấu (`loi_gui_khách`) → lời rỗng, gọi lại một lượt:
+  `src/aioi/llm/claude.py` nhận tên ô theo chữ bỏ dấu (`tests/test_loi_gui_khach.py::test_ten_o_go_co_dau_van_nhan_khong_goi_lai`, đỏ
+  trên code cũ — đã chạy). Chỗ cùng lớp: lượt lập thao tác / bóc tách đọc ô qua `chuan_theo_schema` (SRS-5.1zzzzzzz77) — ô lạ tên bị
+  bỏ, chưa đối chiếu chữ bỏ dấu; chưa thấy ca thật, để nguyên.
 
 **Kiểm.** `tests/test_ban_nhap_du_dieu_kien.py::test_hem_va_hien_trang_hoi_truoc_ban_nhap` (thay test hẻm hỏi sau), `test_trang_thai_web`
 (câu phí khi duyệt, không câu phí khi tin chưa lên web), `test_tin_rao_bo_cuc::test_tran_lich_su_gui_model` (30), `test_hoi_it_truoc_ban_nhap`
