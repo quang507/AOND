@@ -242,7 +242,7 @@ SUMMARY_READY_COMPLETENESS: float = 0.75
 # nào hỏi riêng như cũ.
 CUM_HOI: list[tuple[str, ...]] = [
     ("dia_chi", "phuong"),
-    ("dien_tich_dat", "dien_tich_nha", "kich_thuoc", "ket_cau"),
+    ("dien_tich_dat", "dien_tich_nha", "ket_cau"),   # kích thước = cách nói khác của diện tích đất, không hỏi thêm
     ("dien_tich", "so_phong_ngu"),
     ("phap_ly_hoan_cong", "gia"),
     ("du_an", "tang_toa"),

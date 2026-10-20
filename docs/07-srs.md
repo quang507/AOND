@@ -6809,7 +6809,11 @@ kèm ảnh vốn ngắn); lời nhắc khi khách im (`followup.cau_nhac` — nh
   (bản mình trước: 0.70 trên ô hỏi trước bản nháp). Giữ ô bắt buộc riêng (tên đường, phường — DB cần mới đăng) và thêm chốt: hết ô để hỏi
   trước bản nháp thì ra nháp, không kẹt (ô hỏi sau bản nháp vẫn tính vào % nhưng không hỏi trước). Nhà phố: ngoài 5 ô nhận diện cần thêm
   ≥ 2 trong kết cấu / hẻm-mặt tiền / pháp lý / hiện trạng.
-- `bot/tests/ban-thu-ban.sh` in chỉ số "số lượt tới bản nháp" cho cả hai kịch bản.
+- `bot/tests/ban-thu-ban.sh` in chỉ số "số lượt tới bản nháp". Hai kịch bản cũ mỗi lượt khách chỉ nói một ý nên luôn ra nháp ở lượt
+  cuối (bắn thử: 9/9, 8/8) — không đo được lợi ích; thêm kịch bản 3 khách trả lời ĐÚNG THEO CỤM, phải ra nháp trong ≤ 4 lượt.
+- Bắn thử lần 1: câu hỏi cụm diện tích ra 4 ý ("ngang dài, sàn, mấy tầng, mấy phòng ngủ") — bỏ `kich_thuoc` khỏi cụm (cách nói khác của
+  diện tích đất). Cùng lượt: lượt đầu bot nói "đường Âu Cơ thuộc khu vực Phường Hòa Bình" rồi hỏi phường — `dia_danh.khoi_dia_danh` nay
+  chỉ cho nhắc phường kho ở dạng HỎI, không khẳng định; kịch bản 3 soát lượt đầu.
 
 **Kiểm.** `tests/test_hoi_theo_cum.py` (3 ca: cụm diện tích + kết cấu hỏi gộp, ô ngoài cụm hỏi riêng, ngưỡng bản anh Luận — đỏ trên code
 cũ, đã chạy); `tests/test_bot_bot_hoi_lap.py` sửa theo luật lùi cả cụm. pytest 415 đạt. Model thật: `ban-thu-ban` tuần tự.

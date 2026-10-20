@@ -7,10 +7,10 @@ from aioi.assistants import assign_assistant
 
 def test_khong_hoi_cung_mot_o_hai_luot_lien():
     c = Conversation(user_key="k", assistant=assign_assistant("k"))
-    thieu = ["kich_thuoc", "dien_tich_nha", "gia"]
-    assert Engine._o_hoi_ke(c, thieu) == "kich_thuoc"
-    # khách chưa trả lời → hỏi ý khác trước; từ SRS-5.1zzzzzzz79 hỏi theo cụm, kich_thuoc + dien_tich_nha cùng cụm nên lùi CẢ CỤM
+    thieu = ["dien_tich_dat", "dien_tich_nha", "gia"]
+    assert Engine._o_hoi_ke(c, thieu) == "dien_tich_dat"
+    # khách chưa trả lời → hỏi ý khác trước; từ SRS-5.1zzzzzzz79 hỏi theo cụm, dien_tich_dat + dien_tich_nha cùng cụm nên lùi CẢ CỤM
     assert Engine._o_hoi_ke(c, thieu) == "gia"
-    assert Engine._o_hoi_ke(c, thieu) == "kich_thuoc"          # rồi mới quay lại
+    assert Engine._o_hoi_ke(c, thieu) == "dien_tich_dat"       # rồi mới quay lại
     assert Engine._o_hoi_ke(c, ["gia"]) == "gia" and Engine._o_hoi_ke(c, ["gia"]) == "gia"   # còn mỗi một ô thì vẫn hỏi
 

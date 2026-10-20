@@ -18,12 +18,12 @@ export SSHPASS="$PW"; unset PW
 vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 -o LogLevel=ERROR "root@$HOST" "$@"; }
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
-BAN="thu-ban-$RUN"; BAN2="thu-ban2-$RUN"
+BAN="thu-ban-$RUN"; BAN2="thu-ban2-$RUN"; BAN3="thu-ban3-$RUN"
 
 don() {
   echo "== dọn dữ liệu thử"
-  q "select reset_nguoi_test('$BAN') as ban, reset_nguoi_test('$BAN2') as ban2" | jq -c '.[0]' || true
-  vps "curl -sS -X POST http://127.0.0.1:8000/reset/$BAN >/dev/null; curl -sS -X POST http://127.0.0.1:8000/reset/$BAN2 >/dev/null" || true
+  q "select reset_nguoi_test('$BAN') as ban, reset_nguoi_test('$BAN2') as ban2, reset_nguoi_test('$BAN3') as ban3" | jq -c '.[0]' || true
+  vps "for u in $BAN $BAN2 $BAN3; do curl -sS -X POST http://127.0.0.1:8000/reset/\$u >/dev/null; done" || true
 }
 trap don EXIT
 
@@ -93,6 +93,20 @@ SAU_SO="${LOI_BOT#*##DA_NOI_SO##}"; SAU_SO="${SAU_SO%%📋*}"
 kiem "Âu Cơ: sau khi khách nói sổ, không hỏi hoàn công / hiện trạng / thương lượng trước bản nháp" "$(grep -qiE 'hoàn công|cho thuê|đang trống|thương lượng' <<<"$SAU_SO" && echo 0 || echo 1)"
 # SRS-5.1zzzzzzz75: bot không có số liệu thị trường — không được khen "thanh khoản", "người mua tìm nhiều", bình giá "hợp lý / vừa tầm".
 kiem "Âu Cơ: không nhận định thị trường / bình giá" "$(grep -qiE 'thanh khoản|tìm (mua )?nhiều|hợp lý|vừa tầm' <<<"$LOI_BOT" && echo 0 || echo 1)"
+# Kịch bản 3 (SRS-5.1zzzzzzz79): khách trả lời ĐÚNG THEO CỤM bot hỏi — bản nháp phải ra trong ≤ 4 lượt (chỉ số hỏi theo cụm; hai kịch
+# bản trên mỗi lượt chỉ nói một ý nên luôn ra nháp ở lượt cuối, không đo được).
+LOI_BOT=""; LUOT=0; LUOT_NHAP=""
+for cau in "chị bán nhà mặt tiền đường Nguyễn Trãi quận 5" "Phường Chợ Quán em" "ngang 4 dài 20, 1 trệt 3 lầu, sàn tầm 300m" \
+           "sổ hồng riêng, giá 25 tỷ"; do
+  chat "$BAN3" "$cau"
+  [ "$LUOT" = 1 ] && LOI_DAU=$(jq -r '.reply // ""' <<<"$TRA")
+  sleep 1
+done
+echo "== Nguyễn Trãi (trả lời theo cụm): số lượt tới bản nháp: ${LUOT_NHAP:-chưa ra} / $LUOT lượt"
+kiem "Nguyễn Trãi: trả lời theo cụm thì ra bản nháp trong ≤ 4 lượt" "$([ -n "$LUOT_NHAP" ] && [ "$LUOT_NHAP" -le 4 ] && echo 1 || echo 0)"
+# Lượt đầu khách chưa nói phường: phường từ kho chỉ được nhắc dạng hỏi, không khẳng định.
+kiem "Nguyễn Trãi: lượt đầu không khẳng định phường từ kho" "$(grep -qiE '(thuộc|nằm ở|ở) (khu vực )?Phường' <<<"$LOI_DAU" && echo 0 || echo 1)"
+
 vps "journalctl -u aond-core --since '-10 min' --no-pager -o cat | grep -E 'Bỏ ô|Kế hoạch:|Đầu ra công cụ' | sed -E 's/[0-9]{9,}/#/g' | tail -40" || true
 # SRS-5.1zzzzzzz76: lượt model bị cắt / ra rỗng ghi sổ lỗi (chỉ lý do, không nội dung khách) — in ra để biết lượt nào hụt.
 q "select to_char(at, 'HH24:MI:SS') as luc, source, left(detail, 160) as chi_tiet from bot_errors
