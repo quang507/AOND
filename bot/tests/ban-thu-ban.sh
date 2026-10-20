@@ -35,15 +35,19 @@ chat() {
         | vps "curl -sS -m 120 -X POST http://127.0.0.1:8000/chat-reply -H 'Content-Type: application/json' -d @-")
   jq -r '.replies[]? | "<< " + .' <<<"$TRA" || echo "<< (không đọc được JSON) $TRA"
   LOI_BOT+=" $(jq -r '.reply // ""' <<<"$TRA")"
+  MOI_LOI+=$'\n'"$(jq -r '.replies[]?' <<<"$TRA" 2>/dev/null || true)"
   LUOT=$((LUOT + 1))
   # SRS-5.1zzzzzzz79: chỉ số "số lượt tới bản nháp" — đo hỏi theo cụm có làm cuộc chat ngắn đi không.
   if [ -z "$LUOT_NHAP" ] && grep -q '📋' <<<"$TRA"; then LUOT_NHAP=$LUOT; fi
 }
-LOI_BOT=""; LUOT=0; LUOT_NHAP=""
+LOI_BOT=""; LUOT=0; LUOT_NHAP=""; MOI_LOI=""; HOI_SAN=0
 
 for cau in "Mình cần bán nhà phố" "Nhà đường Cao Lỗ, Phường Chánh Hưng, Quận 8" "Nhà mặt tiền" "dt 4,5x11" "Nhà xây 1 trệt 3 lầu" \
            "nhà mình có sổ riêng" "giá 8,5 tỷ" "đã hoàn công đủ" "diện tích sàn tầm 170m vuông"; do
   chat "$BAN" "$cau"
+  # SRS-5.1zzzzzzz80: đếm số lượt bot hỏi diện tích sàn trước khi khách nói (kịch bản này khách lờ câu sàn mấy lượt liền).
+  if [ "$cau" != "diện tích sàn tầm 170m vuông" ] && [ -z "$LUOT_NHAP" ] && grep -qi 'sàn' <<<"$(jq -r '.reply // ""' <<<"$TRA")"; then
+    HOI_SAN=$((HOI_SAN + 1)); fi
   sleep 1
 done
 
@@ -57,6 +61,7 @@ loi=0
 kiem() { if [ "$2" = 1 ]; then echo "ĐẠT  $1"; else echo "TRƯỢT $1"; loi=1; fi; }
 kiem "loại nhà phố" "$(jq '.property_type == "nha_pho" | if . then 1 else 0 end' <<<"$r")"
 kiem "phường chuẩn" "$(jq '.ward == "Phường Chánh Hưng" | if . then 1 else 0 end' <<<"$r")"
+kiem "Cao Lỗ: khách lờ câu diện tích sàn thì hỏi tối đa 2 lần trước bản nháp (hỏi $HOI_SAN)" "$([ "$HOI_SAN" -le 2 ] && echo 1 || echo 0)"
 kiem "giá 8,5 tỷ" "$(jq '.price_vnd == 8500000000 | if . then 1 else 0 end' <<<"$r")"
 kiem "diện tích đất 49,5" "$(jq '((.area_m2 // 0) | tonumber) == 49.5 | if . then 1 else 0 end' <<<"$r")"
 kiem "mặt tiền" "$(jq '.access_type == "mat_tien" | if . then 1 else 0 end' <<<"$r")"
@@ -106,6 +111,8 @@ echo "== Nguyễn Trãi (trả lời theo cụm): số lượt tới bản nháp
 kiem "Nguyễn Trãi: trả lời theo cụm thì ra bản nháp trong ≤ 4 lượt" "$([ -n "$LUOT_NHAP" ] && [ "$LUOT_NHAP" -le 4 ] && echo 1 || echo 0)"
 # Lượt đầu khách chưa nói phường: phường từ kho chỉ được nhắc dạng hỏi, không khẳng định.
 kiem "Nguyễn Trãi: lượt đầu không khẳng định phường từ kho" "$(grep -oiE '(thuộc|nằm ở|ở) (khu vực )?phường [^?.!]*([.!]|$)' <<<"$LOI_DAU" | grep -qviE 'phường nào' && echo 0 || echo 1)"
+# SRS-5.1zzzzzzz80: bắn thử 20/10 có 2/3 kịch bản bot mở đầu "Dạ không, em ghi nhận…" khi khách không hỏi gì.
+kiem "mọi kịch bản: không bong bóng nào mở đầu \"Dạ không\"" "$(grep -qE '^Dạ không' <<<"$MOI_LOI" && echo 0 || echo 1)"
 
 vps "journalctl -u aond-core --since '-10 min' --no-pager -o cat | grep -E 'Bỏ ô|Kế hoạch:|Đầu ra công cụ' | sed -E 's/[0-9]{9,}/#/g' | tail -40" || true
 # SRS-5.1zzzzzzz76: lượt model bị cắt / ra rỗng ghi sổ lỗi (chỉ lý do, không nội dung khách) — in ra để biết lượt nào hụt.

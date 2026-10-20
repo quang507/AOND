@@ -275,6 +275,9 @@ class Property:
     loai_hinh: str | None = None        # detected type slug (key of TYPE_TO_GROUP)
     is_rental: bool = False             # tin cho thuê?
     fields: dict[str, str] = field(default_factory=dict)  # all captured values
+    # Transient (SRS-5.1zzzzzzz80; chủ dự án: "khách lờ 2 lần thì để sau"): ô khách đã lờ 2 lần — không hỏi trước bản nháp nữa,
+    # không chặn bản nháp, hỏi lại sau khi khách duyệt (`cau_hoi_sau_ra_tin`). Không lưu DB: khởi động lại thì có thể hỏi lại một lần.
+    hoan: set[str] = field(default_factory=set)
 
     @property
     def group(self) -> PropertyGroup:
@@ -314,7 +317,7 @@ class Property:
         Requires ALL identity fields (type, address, area(s), price) AND a high overall
         completeness, so the draft includes core details, not just the basics.
         """
-        if not all(self._has(f) for f in self.identity_fields()):
+        if not all(self._has(f) or f in self.hoan for f in self.identity_fields()):
             return False
         if self.blocking_fields():
             return False
@@ -381,7 +384,12 @@ class Property:
                 ra.insert(ra.index("dia_chi") + 1, "phuong")
             else:
                 ra.insert(1 if ra[:1] == ["loai_hinh"] else 0, "phuong")
-        return [x for x in ra if x not in HOI_SAU_KHI_RA_TIN]
+        return [x for x in ra if x not in HOI_SAU_KHI_RA_TIN and x not in self.hoan]
+
+    def hoan_duoc(self, o: str) -> bool:
+        """Ô được để sau bản nháp khi khách lờ 2 lần (SRS-5.1zzzzzzz80). Loại, chỗ (địa chỉ / dự án / mã căn), giá và ô bắt buộc thì
+        không: thiếu chúng thì không có tin để rao."""
+        return o not in ("loai_hinh", "dia_chi", "du_an", "ma_so_can", "gia") and o not in self.blocking_fields()
 
     def cau_hoi_sau_ra_tin(self) -> str | None:
         """Ô hỏi SAU khi khách duyệt bản nháp, từng ô một: độ rộng hẻm của nhà ở trong hẻm khi chưa biết bề rộng (chưa có chữ
@@ -393,7 +401,7 @@ class Property:
             return "lo_gioi_hem"
         if "tinh_trang_ban_giao" in self.expected_fields() and not self._has("tinh_trang_ban_giao"):
             return "tinh_trang_ban_giao"
-        return None
+        return next((o for o in self.expected_fields() if o in self.hoan and not self._has(o)), None)
 
     def completeness(self) -> float:
         """Fraction of expected fields that are filled, in [0, 1]."""

@@ -6818,6 +6818,37 @@ kèm ảnh vốn ngắn); lời nhắc khi khách im (`followup.cau_nhac` — nh
 **Kiểm.** `tests/test_hoi_theo_cum.py` (3 ca: cụm diện tích + kết cấu hỏi gộp, ô ngoài cụm hỏi riêng, ngưỡng bản anh Luận — đỏ trên code
 cũ, đã chạy); `tests/test_bot_bot_hoi_lap.py` sửa theo luật lùi cả cụm. pytest 415 đạt. Model thật: `ban-thu-ban` tuần tự.
 
+### SRS-5.1zzzzzzz80 · Khách lờ 2 lần thì để sau bản nháp; bỏ mở đầu "Dạ không" (20/10/2026)
+
+**Ca gốc.** Chủ dự án: "khách lờ 2 lần thì để sau". Bắn thử 20/10 (run 39354622826, kịch bản Cao Lỗ): bot hỏi diện tích sàn ở 4 lượt
+liền trong lúc khách cứ trả lời ý khác (sổ, giá, hoàn công). Cùng run, 2/3 kịch bản có bong bóng mở đầu "Dạ không, em ghi nhận…" khi
+khách chỉ báo phường / số nhà, không hỏi gì — đọc như bot trả lời "không".
+
+**Lớp lỗi 1.** Chọn ô hỏi chỉ nhìn "ô nào còn trống", không nhớ khách đã lờ ô đó bao nhiêu lần. `_o_hoi_ke` (SRS-5.1zzzzzzz74) chỉ
+lùi ô vừa hỏi khi còn ô khác; khi ô bị lờ là ô CUỐI CÙNG trước bản nháp thì lượt nào cũng bốc lại nó, và bản nháp bị chặn vì ô đó.
+**Chỗ cùng lớp đã soát:** lời nhắc khi khách im (`followup.cau_nhac` — khách im là chưa nhắn gì, không phải trả lời ý khác; nhắc đúng câu vừa hỏi, giữ); câu hỏi
+sau bản nháp (`cau_hoi_sau_ra_tin` — mỗi ô hỏi một lần, giữ); lượt có ảnh (`handle_media_batch` — dùng cùng `missing_fields`, nên ô
+để sau cũng không bị hỏi ở đó).
+
+**Lớp lỗi 2.** Prompt nhắc "KHÔNG mở đầu bằng 'Dạ'" 6 lần mà không nói câu đầu nên là gì; Haiku vẫn viết "Dạ" rồi nối "không". **Chỗ
+cùng lớp:** luật cấm khác cũng chỉ nói phủ định (cấm nhại lời khách, cấm khen) — đã có ví dụ câu đúng đi kèm, giữ.
+
+**Sửa.**
+- `src/aioi/schema.py`: `Property.hoan` (tạm, không lưu DB) — ô khách đã lờ 2 lần. `missing_fields` bỏ chúng, `summary_ready` không đòi
+  ô nhận diện nằm trong đó, `cau_hoi_sau_ra_tin` hỏi lại chúng một lần sau khi duyệt. `hoan_duoc`: loại, địa chỉ, dự án, mã căn, giá
+  và ô bắt buộc (tên đường, phường…) không bao giờ để sau — thiếu chúng thì không có tin để rao.
+- `src/aioi/engine.py` `_o_hoi_ke`: ô vừa hỏi mà lượt sau vẫn trống là một lần lờ (`Conversation.lo`); lần thứ 2 thì cả cụm của ô đó để
+  sau. Lượt trả lời tính lại `missing_fields` sau `_o_hoi_ke`, nên lượt đó ra bản nháp luôn nếu hết ô.
+- `src/aioi/prompts.py`: luật số 6 thêm câu nói nên làm gì ("câu đầu đi thẳng vào điều khách vừa nói", có ví dụ; chữ "không" đầu câu
+  chỉ để trả lời câu khách hỏi). `build_fee_followup_system` có nhánh hỏi lại ô để sau.
+- `bot/tests/ban-thu-ban.sh`: Cao Lỗ đếm số lượt hỏi sàn trước bản nháp (≤ 2); mọi kịch bản: không bong bóng nào mở đầu "Dạ không".
+
+**Giới hạn.** `hoan` và `lo` không lưu DB: lõi khởi động lại giữa chừng thì ô đó có thể bị hỏi lại thêm một lần.
+
+**Kiểm.** `tests/test_lo_hai_lan_de_sau.py` (3 ca: lờ 2 lần thì để sau và ra bản nháp; hỏi lại sau khi duyệt; giá / địa chỉ không để
+sau). Ca 1 đỏ khi tắt đếm lờ (đã chạy). pytest 418 đạt. Lỗi "Dạ không" là hành vi model, không kiểm offline được — kiểm bằng
+`ban-thu-ban`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -353,6 +353,8 @@ class Conversation:
     loi_khach_luot: str = ""
     # Transient (SRS-5.1zzzzzzz74): ô bot hỏi ở lượt trả lời gần nhất — khách chưa trả lời thì lượt sau hỏi ý khác trước.
     o_vua_hoi: str | None = None
+    # Transient (SRS-5.1zzzzzzz80): số lần khách lờ từng ô (bot hỏi, lượt sau ô vẫn trống) — đủ 2 thì để sau bản nháp.
+    lo: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.listings:
@@ -942,6 +944,13 @@ class Engine:
     def _o_hoi_ke(conv: Conversation, missing: list[str]) -> str | None:
         """Ô hỏi lượt này: ô thiếu đầu tiên, TRỪ khi đó là ô vừa hỏi ở lượt trước mà khách chưa trả lời — khi ấy hỏi ý khác trước, ô
         đó lùi xuống cuối, quay lại sau (SRS-5.1zzzzzzz74; bắn thử 19/10 hỏi "ngang x dài trên sổ" 5 lượt liền khi khách lờ đi)."""
+        if conv.o_vua_hoi and conv.o_vua_hoi in missing:
+            # SRS-5.1zzzzzzz80 (chủ dự án: "khách lờ 2 lần thì để sau"): lờ lần 2 thì cả cụm ô đó để sau bản nháp, không hỏi nữa.
+            conv.lo[conv.o_vua_hoi] = conv.lo.get(conv.o_vua_hoi, 0) + 1
+            if conv.lo[conv.o_vua_hoi] >= 2:
+                hoan = {x for x in conv.prop.cum_hoi(conv.o_vua_hoi, missing) if conv.prop.hoan_duoc(x)}
+                conv.prop.hoan |= hoan
+                missing = [x for x in missing if x not in hoan]
         if len(missing) > 1 and missing[0] == conv.o_vua_hoi:
             # SRS-5.1zzzzzzz79: hỏi theo cụm — khách lờ cả cụm thì lùi CẢ CỤM xuống cuối, không hỏi tiếp ô cùng cụm.
             cum = set(conv.prop.cum_hoi(missing[0], missing))
@@ -1705,8 +1714,8 @@ class Engine:
         customer_pronoun = _detect_customer_pronoun(conv, text)
         customer_is_em = (customer_pronoun == "em")
 
-        thieu = conv.prop.missing_fields()
-        next_field = self._o_hoi_ke(conv, thieu)
+        next_field = self._o_hoi_ke(conv, conv.prop.missing_fields())
+        thieu = conv.prop.missing_fields()   # sau _o_hoi_ke: ô khách lờ 2 lần đã để sau (SRS-5.1zzzzzzz80)
         cum_hoi = conv.prop.cum_hoi(next_field, thieu)   # SRS-5.1zzzzzzz79: các ô hỏi gộp một câu lượt này
         # Project awareness: if the listing's project is registered, inherit its verified
         # facts (and lightly confirm); if it's named but unknown, prompt the bot to acquire
