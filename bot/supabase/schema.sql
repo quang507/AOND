@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-20 14:14 (giờ VN)
+-- Sinh lúc: 2026-10-20 16:31 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -107,6 +107,21 @@ create table if not exists public.buyers (
   last_contact_at timestamp with time zone,
   notes text,
   auth_user_id uuid
+);
+
+create table if not exists public.cau_chuan (
+  id uuid not null default gen_random_uuid(),
+  message_id uuid,
+  conversation_id uuid,
+  ngu_canh jsonb not null default '[]'::jsonb,
+  cau_bot text not null,
+  cau_chuan text,
+  diem smallint,
+  ghi_chu text,
+  nguon text not null default 'that'::text,
+  dung_lam_mau boolean not null default true,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now()
 );
 
 create table if not exists public.chat_quota (
@@ -579,6 +594,18 @@ do $d$ begin
   alter table public.buyers add constraint buyers_zalo_user_id_key UNIQUE (zalo_user_id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.cau_chuan add constraint cau_chuan_diem_check CHECK (((diem >= 1) AND (diem <= 5)));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.cau_chuan add constraint cau_chuan_message_id_key UNIQUE (message_id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.cau_chuan add constraint cau_chuan_nguon_check CHECK ((nguon = ANY (ARRAY['that'::text, 'ban_thu'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.cau_chuan add constraint cau_chuan_pkey PRIMARY KEY (id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.chat_quota add constraint chat_quota_pkey PRIMARY KEY (zalo_user_id, gio);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -836,6 +863,12 @@ do $d$ begin
   alter table public.buyers add constraint buyers_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES auth.users(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.cau_chuan add constraint cau_chuan_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE SET NULL;
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.cau_chuan add constraint cau_chuan_message_id_fkey FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE SET NULL;
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.conversations add constraint conversations_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES buyers(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -938,6 +971,7 @@ exception when duplicate_object then null; end $d$;
 -- ══ Index ══
 create index if not exists bot_errors_at_idx ON public.bot_errors USING btree (at DESC);
 create index if not exists bot_errors_source_at_idx ON public.bot_errors USING btree (source, at DESC);
+create index if not exists cau_chuan_mau_idx ON public.cau_chuan USING btree (updated_at DESC) WHERE dung_lam_mau;
 create index if not exists chat_quota_gio_idx ON public.chat_quota USING btree (gio);
 create index if not exists conversations_buyer_id_idx ON public.conversations USING btree (buyer_id);
 CREATE UNIQUE INDEX conversations_buyer_uniq ON public.conversations USING btree (buyer_id) WHERE (buyer_id IS NOT NULL);
@@ -2146,6 +2180,54 @@ begin
                        timeout_milliseconds := 15000) into v_id;
   return v_id;
 end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.cau_chuan_cap_nhat_luc()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+begin new.updated_at := now(); return new; end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.cau_chuan_tu_tin(p_message_ids uuid[])
+ RETURNS integer
+ LANGUAGE sql
+ SET search_path TO 'public'
+AS $function$
+  with vao as (
+    insert into public.cau_chuan (message_id, conversation_id, ngu_canh, cau_bot, nguon)
+    select m.id, m.conversation_id,
+           coalesce((select jsonb_agg(jsonb_build_object('ai', t.sender, 'noi_dung', t.body) order by t.seq)
+                     from (select p.sender, p.body, p.seq from public.messages p
+                           where p.conversation_id = m.conversation_id and p.seq < m.seq
+                           order by p.seq desc limit 8) t), '[]'::jsonb),
+           m.body,
+           case when public.la_id_thu(coalesce(s.zalo_user_id, b.zalo_user_id)) then 'ban_thu' else 'that' end
+    from public.messages m
+    join public.conversations c on c.id = m.conversation_id
+    left join public.sellers s on s.id = c.seller_id
+    left join public.buyers b on b.id = c.buyer_id
+    where m.id = any(p_message_ids) and m.sender = 'bot' and coalesce(m.body, '') <> ''
+    on conflict (message_id) do update set ngu_canh = excluded.ngu_canh
+    returning 1
+  )
+  select count(*)::integer from vao
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.cau_chuan_tu_zalo(p_zalo text)
+ RETURNS integer
+ LANGUAGE sql
+ SET search_path TO 'public'
+AS $function$
+  select public.cau_chuan_tu_tin(coalesce(array_agg(m.id), '{}'))
+  from public.messages m
+  join public.conversations c on c.id = m.conversation_id
+  left join public.sellers s on s.id = c.seller_id
+  left join public.buyers b on b.id = c.buyer_id
+  where m.sender = 'bot' and p_zalo in (s.zalo_user_id, b.zalo_user_id)
+$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.cau_hinh(p_key text)
@@ -6493,6 +6575,8 @@ create or replace view public.seller_ranks with (security_invoker=true) as
 -- ══ Trigger ══
 drop trigger if exists trg_bot_errors_het_tien on public.bot_errors;
 CREATE TRIGGER trg_bot_errors_het_tien AFTER INSERT ON public.bot_errors FOR EACH ROW EXECUTE FUNCTION bat_het_tien_api();
+drop trigger if exists cau_chuan_cap_nhat_luc on public.cau_chuan;
+CREATE TRIGGER cau_chuan_cap_nhat_luc BEFORE UPDATE ON public.cau_chuan FOR EACH ROW EXECUTE FUNCTION cau_chuan_cap_nhat_luc();
 drop trigger if exists trg_conversations_assign_ctv on public.conversations;
 CREATE TRIGGER trg_conversations_assign_ctv BEFORE INSERT ON public.conversations FOR EACH ROW EXECUTE FUNCTION assign_ctv_round_robin();
 drop trigger if exists trg_conversations_email_upset on public.conversations;
@@ -6579,6 +6663,7 @@ alter table public.bot_usage enable row level security;
 alter table public.bot_usage_model enable row level security;
 alter table public.bridge_dang_nhap enable row level security;
 alter table public.buyers enable row level security;
+alter table public.cau_chuan enable row level security;
 alter table public.chat_quota enable row level security;
 alter table public.conversations enable row level security;
 alter table public.ctvs enable row level security;
@@ -6645,6 +6730,8 @@ drop policy if exists buyers_self_read on public.buyers;
 create policy buyers_self_read on public.buyers as permissive for SELECT to authenticated using ((auth_user_id = ( SELECT auth.uid() AS uid)));
 drop policy if exists buyers_self_update on public.buyers;
 create policy buyers_self_update on public.buyers as permissive for UPDATE to authenticated using ((auth_user_id = ( SELECT auth.uid() AS uid))) with check ((auth_user_id = ( SELECT auth.uid() AS uid)));
+drop policy if exists cau_chuan_admin on public.cau_chuan;
+create policy cau_chuan_admin on public.cau_chuan as permissive for ALL to authenticated using (la_admin()) with check (la_admin());
 drop policy if exists conversations_admin_read on public.conversations;
 create policy conversations_admin_read on public.conversations as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
@@ -6760,6 +6847,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.bo
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.bot_usage_model to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.bridge_dang_nhap to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.buyers to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.cau_chuan to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.chat_quota to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.conversations to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ctv_ranks to authenticated;
@@ -6819,6 +6907,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.reminders to
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.sellers to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.viewings to authenticated;
 grant DELETE, INSERT, SELECT on public.listing_media to authenticated;
+grant DELETE, INSERT, SELECT, UPDATE on public.cau_chuan to authenticated;
 grant REFERENCES, SELECT, TRIGGER on public.admins to anon;
 grant REFERENCES, SELECT, TRIGGER on public.agents_public to anon;
 grant REFERENCES, SELECT, TRIGGER on public.agents_public to authenticated;
@@ -6915,6 +7004,16 @@ revoke all on function public.can_cung_khu(p_buyer_id uuid, p_listing_id uuid, p
 grant execute on function public.can_cung_khu(p_buyer_id uuid, p_listing_id uuid, p_limit integer) to service_role;
 revoke all on function public.canh_bao_ngoai(p_title text, p_text text, p_priority integer, p_email boolean) from public, anon, authenticated;
 grant execute on function public.canh_bao_ngoai(p_title text, p_text text, p_priority integer, p_email boolean) to service_role;
+revoke all on function public.cau_chuan_cap_nhat_luc() from public, anon, authenticated;
+grant execute on function public.cau_chuan_cap_nhat_luc() to anon;
+grant execute on function public.cau_chuan_cap_nhat_luc() to authenticated;
+grant execute on function public.cau_chuan_cap_nhat_luc() to service_role;
+revoke all on function public.cau_chuan_tu_tin(p_message_ids uuid[]) from public, anon, authenticated;
+grant execute on function public.cau_chuan_tu_tin(p_message_ids uuid[]) to authenticated;
+grant execute on function public.cau_chuan_tu_tin(p_message_ids uuid[]) to service_role;
+revoke all on function public.cau_chuan_tu_zalo(p_zalo text) from public, anon, authenticated;
+grant execute on function public.cau_chuan_tu_zalo(p_zalo text) to authenticated;
+grant execute on function public.cau_chuan_tu_zalo(p_zalo text) to service_role;
 revoke all on function public.cau_hinh(p_key text) from public, anon, authenticated;
 grant execute on function public.cau_hinh(p_key text) to service_role;
 revoke all on function public.che_sdt(p text) from public, anon, authenticated;
