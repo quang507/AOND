@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { formatArea, formatPrice, sanitizeDescription, TYPE_LABEL } from "@/lib/format";
 import BocTachNhom, { useBocTach } from "@/components/admin/BocTachNhom";
 import SuaTinModal, { TRANG_THAI_TIN } from "@/components/admin/SuaTinModal";
+import { choKhachDuyet } from "@/lib/trang-thai-tin";
 
 // FR-187: dòng JSON chia nhóm mở dưới một tin (đọc `boc_tach_v` khi bấm, không tải cả rổ).
 function DongJson({ id, ma, cot }: { id: string; ma: string | null; cot: number }) {
@@ -44,6 +45,8 @@ type Dong = {
   description: string | null;
   property_type: string | null;
   status: string;
+  can_chu_duyet?: boolean | null;
+  chu_duyet_at?: string | null;
   created_at: string;
   sellers: { name: string | null; phone: string | null; seller_type: string } | null;
   media: { count: number }[] | null;
@@ -51,7 +54,7 @@ type Dong = {
 };
 
 const COT_CHON =
-  "id, code, legacy_code, legacy_sst, deal, district, ward, street, location_raw, area_m2, frontage_m, length_m, floors, floors_text, bedrooms, price_vnd, price_raw, description, property_type, status, created_at, sellers!listings_seller_id_fkey(name, phone, seller_type), media(count), listing_media(count)";
+  "id, code, legacy_code, legacy_sst, deal, district, ward, street, location_raw, area_m2, frontage_m, length_m, floors, floors_text, bedrooms, price_vnd, price_raw, description, property_type, status, can_chu_duyet, chu_duyet_at, created_at, sellers!listings_seller_id_fkey(name, phone, seller_type), media(count), listing_media(count)";
 
 const TRANG_THAI: Record<string, string> = {
   cho_thong_tin: "chờ thông tin",
@@ -100,7 +103,7 @@ const COT: Cot[] = [
   { key: "sdt", ten: "SĐT người bán", lay: (d) => d.sellers?.phone ?? "", sap: (d) => d.sellers?.phone ?? "" },
   { key: "ma", ten: "Mã tin", lay: (d) => d.code ?? "", sap: (d) => d.code ?? "" },
   { key: "loai", ten: "Loại", lay: (d) => TYPE_LABEL[d.property_type ?? ""] ?? "chưa rõ", sap: (d) => d.property_type ?? "" },
-  { key: "trang_thai", ten: "Trạng thái", lay: (d) => TRANG_THAI[d.status] ?? d.status, sap: (d) => d.status },
+  { key: "trang_thai", ten: "Trạng thái", lay: (d) => choKhachDuyet(d) ? "chờ khách duyệt" : TRANG_THAI[d.status] ?? d.status, sap: (d) => d.status },
   { key: "anh", ten: "Ảnh", lay: (d) => String(soAnh(d)), sap: soAnh },
 ];
 
@@ -209,16 +212,19 @@ export default function Page() {
   const doiTrangThaiNhanh = async (d: Dong, newStatus: string) => {
     if (d.status === "dang_ban" && newStatus !== "dang_ban" &&
         !confirm(`Gỡ #${d.code} khỏi web (chuyển sang "${TRANG_THAI_TIN[newStatus] ?? newStatus}")?`)) return;
-    const { error } = await supabase.from("listings").update({
+    // SRS-5.1zzzzzzz89: không xoá dấu "chờ khách duyệt" (`can_chu_duyet`) ở đây — xoá là trigger tự đưa tin đủ ý lên web, tức đổi
+    // nhanh thành đường rao tắt. Trạng thái báo lại là trạng thái DB trả về (trigger có thể đổi), không phải cái vừa chọn.
+    const { data, error } = await supabase.from("listings").update({
       status: newStatus,
-      can_chu_duyet: false,
       updated_at: new Date().toISOString(),
-    }).eq("id", d.id);
+    }).eq("id", d.id).select("status").maybeSingle();
     if (error) {
       baoTin(`Chưa đổi được trạng thái #${d.code}: ${error.message}`, true);
     } else {
-      setRows((prev) => prev.map((r) => (r.id === d.id ? { ...r, status: newStatus } : r)));
-      baoTin(`#${d.code} → ${TRANG_THAI_TIN[newStatus] ?? newStatus}.`);
+      const that = (data as { status?: string } | null)?.status ?? newStatus;
+      setRows((prev) => prev.map((r) => (r.id === d.id ? { ...r, status: that } : r)));
+      baoTin(that === newStatus ? `#${d.code} → ${TRANG_THAI_TIN[that] ?? that}.`
+        : `#${d.code} → ${TRANG_THAI_TIN[that] ?? that} (hệ thống tự đặt: tin đủ giá, diện tích, phường và không chờ khách duyệt).`, that !== newStatus);
     }
   };
 
@@ -390,7 +396,7 @@ export default function Page() {
                             onChange={(e) => doiTrangThaiNhanh(d, e.target.value)}
                             aria-label={`Trạng thái #${d.code}`}
                             className={`rounded-md px-2.5 py-1 text-xs font-bold border outline-none cursor-pointer transition ${
-                              MAU_TRANG_THAI[d.status] ?? "bg-slate-100 text-mute border-slate-300"
+                              choKhachDuyet(d) ? "bg-sky-50 text-sky-800 border-sky-300" : MAU_TRANG_THAI[d.status] ?? "bg-slate-100 text-mute border-slate-300"
                             }`}
                             title={d.status === "dang_ban"
                               ? "Đổi nhanh trạng thái"
@@ -401,11 +407,12 @@ export default function Page() {
                                 key={val}
                                 value={val}
                                 className="bg-white text-navy font-medium"
+                                // SRS-5.1zzzzzzz89: "chờ thông tin" của tin đã đủ ý mà chưa được khách duyệt đọc là "chờ khách duyệt".
                                 // Rao tin chỉ đi qua màn Sửa (10/09). Ở đây một cú
                                 // trượt chuột là tin ra web mà chưa ai đọc lại nó.
                                 disabled={val === "dang_ban" && d.status !== "dang_ban"}
                               >
-                                {label}{val === "dang_ban" && d.status !== "dang_ban" ? " — qua nút Sửa" : ""}
+                                {val === "cho_thong_tin" && choKhachDuyet(d) ? "chờ khách duyệt" : label}{val === "dang_ban" && d.status !== "dang_ban" ? " — qua nút Sửa" : ""}
                               </option>
                             ))}
                           </select>

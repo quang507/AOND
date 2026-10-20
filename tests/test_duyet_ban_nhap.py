@@ -63,7 +63,7 @@ def test_khong_dong_y_thi_xoa_duyet_va_prompt_hoi_sua(monkeypatch):
     conv.listing_proposed = True
     eng.handle("u-duyet", "không đồng ý em ơi")
     assert kho.duyet == [False]
-    assert "KHÁCH VỪA KHÔNG ĐỒNG Ý ĐĂNG BẢN TIN" in seen[-1] and "chính thức đăng lên hệ thống website" not in seen[-1]
+    assert "KHÁCH VỪA KHÔNG ĐỒNG Ý ĐĂNG BẢN TIN" in seen[-1] and "XÁC NHẬN NGẮN, ĐÚNG 1 CÂU: tin đã lên web" not in seen[-1]
 
 
 def test_khong_ghi_khi_bia_trich_dan_hoac_chua_co_ban_nhap(monkeypatch):
@@ -79,7 +79,7 @@ def test_khong_ghi_khi_bia_trich_dan_hoac_chua_co_ban_nhap(monkeypatch):
 
 def test_prompt_cho_duyet_khong_noi_da_dang():
     s = build_fee_followup_system("Hằng", Property(loai_hinh="nha_pho"), web={"len_web": False, "thieu": [], "cho_duyet": True})
-    assert "chờ khách duyệt bản tin" in s and "chính thức đăng lên hệ thống website" not in s
+    assert "chờ khách duyệt bản tin" in s and "XÁC NHẬN NGẮN, ĐÚNG 1 CÂU: tin đã lên web" not in s
 
 
 class _StoreGia(SupabaseConversationStore):

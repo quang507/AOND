@@ -264,8 +264,8 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
 BUSINESS_CONTEXT = """BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ — chỉ nói ra khi khách hỏi, đừng thuyết giảng):
 - Người rao bán/cho thuê BĐS bằng cách chat Zalo tự nhiên (KHÔNG form). Nhiệm vụ của bạn: lặng lẽ gom đủ dữ liệu listing, giữ khách quay lại, và dùng gamification để khích lệ.
 - HAI loại khách — hãy nhận biết qua hội thoại rồi tư vấn cho đúng:
-  • Bên SỞ HỮU (chủ nhà; hoặc nhà đầu tư lướt sóng giữ HĐMB): phí 1% giá chốt khi bán, hoặc 0.75 tháng tiền thuê (tức ba phần tư của 1 tháng tiền thuê, tuyệt đối không nói nhầm thành 3 hay 4 tháng).
-  • Bên MÔI GIỚI (nhân viên môi giới; hoặc sàn giao dịch): phí 0.5% giá chốt khi bán, hoặc 0.75 tháng tiền thuê. Khích lệ đăng thêm hàng (≥10 căn) để lên Top.
+  • Bên SỞ HỮU (chủ nhà; hoặc nhà đầu tư lướt sóng giữ HĐMB): phí 1% giá chốt khi bán, hoặc 3/4 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê, tuyệt đối không nói nhầm thành 3 hay 4 tháng; không viết dạng số thập phân).
+  • Bên MÔI GIỚI (nhân viên môi giới; hoặc sàn giao dịch): phí 0.5% giá chốt khi bán, hoặc 3/4 tháng tiền thuê. Khích lệ đăng thêm hàng (≥10 căn) để lên Top.
   • CHỦ ĐẦU TƯ: phí KHÔNG theo 1%/0.5% — thoả thuận riêng với dự án; đừng tự báo con số.
 - PHÍ CHỈ thu khi giao dịch THÀNH CÔNG. TUYỆT ĐỐI không bịa con số phí/ưu đãi/cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì đừng báo phí, cứ hỏi khéo hoặc tư vấn chung.
 - Gamification: có Điểm uy tín và hạng Đồng/Bạc/Vàng; nên khen điểm mạnh và gợi ý cách tăng điểm (bổ sung ảnh, sổ hồng, thông tin còn thiếu)."""
@@ -277,13 +277,13 @@ def _fee_hint(role: SellerRole) -> str:
         who = "CHÍNH CHỦ" if role == SellerRole.CHU_NHA else "NHÀ ĐẦU TƯ (chủ HĐMB)"
         return (
             f"VAI NGƯỜI RAO: {who} (bên sở hữu). Nếu được hỏi phí, báo 1% giá chốt khi bán, "
-            "hoặc 0.75 tháng tiền thuê (tức 3/4 của 1 tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng), chỉ thu khi giao dịch thành công."
+            "hoặc 3/4 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng; không viết dạng số thập phân), chỉ thu khi giao dịch thành công."
         )
     if role in (SellerRole.MOI_GIOI, SellerRole.SAN):
         who = "MÔI GIỚI" if role == SellerRole.MOI_GIOI else "SÀN GIAO DỊCH"
         return (
             f"VAI NGƯỜI RAO: {who} (bên môi giới). Nếu được hỏi phí, báo 0.5% giá chốt khi bán, "
-            "hoặc 0.75 tháng tiền thuê (tức 3/4 của 1 tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng), chỉ thu khi thành công; khích lệ đăng thêm hàng (≥10 căn) để lên Top hiển thị."
+            "hoặc 3/4 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng; không viết dạng số thập phân), chỉ thu khi thành công; khích lệ đăng thêm hàng (≥10 căn) để lên Top hiển thị."
         )
     if role == SellerRole.CHU_DAU_TU:
         return (
@@ -589,6 +589,12 @@ def khoi_xin_dang(thieu: list[str], prop: Property | None = None) -> str:
     khách duyệt cũng không ghi được, tin nằm mãi chờ thông tin)."""
     if not thieu:
         return ""
+    # Khách bảo "đăng giúp theo nội dung này" khi căn CHƯA có ý gì (thường là sắp dán tin rao) — mời khách dán nội dung, đừng hỏi
+    # từng ô (SRS-5.1zzzzzzz91; chat tester 20/10 hai lần bot hỏi giá / địa chỉ đúng lúc khách đang dán bài).
+    if prop is not None and not any(prop.fields.get(k) for k in ("gia", "dien_tich", "dien_tich_dat", "dien_tich_nha", "dia_chi",
+                                                                 "duong", "kich_thuoc")):
+        return ("\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN (CHƯA CÓ THÔNG TIN CĂN) ===\nMời khách gửi / dán nội dung tin rao hoặc vài thông "
+                "tin chính (địa chỉ, giá, diện tích) trong ĐÚNG 1 câu ngắn. KHÔNG hỏi từng ô, KHÔNG soạn bài đăng.\n")
     y = ", ".join(f'"{nhan_o(o, prop)}"' for o in thieu)
     return (f"\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN ===\nTin còn thiếu {y} — thiếu là chưa đăng được. Nói ngắn: còn thiếu ý này là em lên bản "
             "nháp liền, rồi hỏi đúng ý đó (theo \"Thông tin cần hỏi tiếp theo\"). KHÔNG soạn bài đăng, KHÔNG nói đã đăng.\n")
@@ -597,9 +603,17 @@ def khoi_xin_dang(thieu: list[str], prop: Property | None = None) -> str:
 # Dòng mở đầu cố định của bản nháp tin rao. Model hay viết thêm câu dẫn TRƯỚC dòng này ("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như
 # vầy nhé anh:") → khách đọc hai câu dẫn; `cat_truoc_mo_dau` bỏ phần trước (SRS-5.1zzzzzzz76).
 MO_DAU_NHAP = ("📋 Mình sẽ rao như vầy nhé em:", "📋 Em sẽ rao như vầy nhé anh chị:")
+_GOI_KHACH = {"anh": "anh", "chi": "chị"}
 
 
-def cat_truoc_mo_dau(reply: str) -> str:
+def mo_dau_nhap(xung_ho: str = "unknown") -> str:
+    """Dòng mở đầu bản nháp theo cách khách tự xưng (SRS-5.1zzzzzzz90: khách xưng "chị" mà dòng này vẫn "anh chị")."""
+    if xung_ho == "em":
+        return MO_DAU_NHAP[0]
+    return f"📋 Em sẽ rao như vầy nhé {_GOI_KHACH[xung_ho]}:" if xung_ho in _GOI_KHACH else MO_DAU_NHAP[1]
+
+
+def cat_truoc_mo_dau(reply: str, xung_ho: str = "unknown") -> str:
     """Bản nháp bắt đầu đúng ở dòng mở đầu cố định; chữ model viết trước dòng đó bỏ đi. Model chép dòng mở đầu thiếu "📋" (bắn thử
     20/10: "Em ghi nhận đủ thông tin rồi anh ạ. Em sẽ rao như vầy nhé anh chị:") vẫn nhận ra và gắn lại đúng dòng cố định
     (SRS-5.1zzzzzzz80). Bắn thử 20/10 lần 3: model đổi luôn chữ gọi khách ("Em sẽ rao như vầy nhé anh:") — so nguyên văn thì trượt,
@@ -609,7 +623,7 @@ def cat_truoc_mo_dau(reply: str) -> str:
     if not khop:
         return reply
     m = khop[-1]
-    return (MO_DAU_NHAP[0] if m.group(1) == "Mình" else MO_DAU_NHAP[1]) + reply[m.end():]
+    return (MO_DAU_NHAP[0] if m.group(1) == "Mình" else mo_dau_nhap(xung_ho if xung_ho != "em" else "unknown")) + reply[m.end():]
 
 
 _MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em) sẽ rao như vầy nhé[^:\n]{0,20}:")
@@ -620,14 +634,16 @@ def build_listing_proposal_system(
     prop: Property,
     project_block: str = "",
     customer_is_em: bool = False,
+    xung_ho: str = "unknown",
 ) -> str:
     """Step 1: show the customer the draft ad and ask if it looks appealing (SRD §II).
 
     Used once the listing is "khá đầy đủ". This is NOT a 30-word chat reply, so the word
     cap does NOT apply. CRUCIALLY: do NOT mention the fee yet — that comes after approval.
     """
-    opener = MO_DAU_NHAP[0] if customer_is_em else MO_DAU_NHAP[1]
-    closer = "Em thấy bản tin này hấp dẫn chưa?" if customer_is_em else "Anh/chị thấy bản tin này hấp dẫn chưa ạ?"
+    opener = MO_DAU_NHAP[0] if customer_is_em else mo_dau_nhap(xung_ho)
+    goi = _GOI_KHACH.get(xung_ho, "anh/chị")
+    closer = "Em thấy bản tin này hấp dẫn chưa?" if customer_is_em else f"{goi[0].upper() + goi[1:]} thấy bản tin này hấp dẫn chưa ạ?"
 
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
@@ -688,9 +704,8 @@ def khoi_trang_thai_web(web: dict | None) -> tuple[str, str]:
         vua = ("\n  • Nếu lượt trước em báo tin CHƯA lên web vì thiếu thông tin và khách vừa bổ sung: báo tin nay ĐÃ hiển thị trên "
                f"{_WEB}." if web is not None else "")
         return (
-            "  • XÁC NHẬN ĐĂNG TIN LÊN HỆ THỐNG VÀ WEB NGAY: Vui vẻ chúc mừng và xác nhận bản tin đã được duyệt và chính thức đăng "
-            f"lên hệ thống website {_WEB} cũng như chuyển cho mạng lưới kết nối khách mua ngay.\n"
-            f"  • Hướng dẫn khách truy cập {_WEB} để xem và theo dõi tin rao.{vua}",
+            # 20/10 (SRS-5.1zzzzzzz90, tester: "nghe dài mệt quá"): một câu xác nhận ngắn, không kể "mạng lưới", không hướng dẫn.
+            f"  • XÁC NHẬN NGẮN, ĐÚNG 1 CÂU: tin đã lên web {_WEB}. KHÔNG kể thêm (mạng lưới khách, cách theo dõi tin…).{vua}",
             f"  • Gửi ngay link website: {_WEB}\n"
             "  • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng "
             "như môi giới dễ dàng tìm kiếm, kết nối.",
@@ -755,7 +770,7 @@ def build_fee_followup_system(
     hoi_phi = (
         "\n  • RỒI HỎI PHÍ NHẸ NHÀNG như bản anh Luận: hỏi khách đã biết phí môi giới bên mình chưa, theo tinh thần \"Em sẽ cho chào "
         "căn nhà của anh/chị ngay ạ, mà anh/chị có biết phí môi giới của tụi em chưa ạ?\" — đây là câu hỏi DUY NHẤT của lượt này. "
-        "Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách."
+        "Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách. Cả lượt tối đa 2 câu ngắn."
         if (web is None or web.get("len_web")) else ""
     )
     hoi_sau = ""
@@ -777,6 +792,8 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
 - NẾU khách muốn CHỈNH SỬA THẬT SỰ (vd "tiêu đề nhiều thông tin quá", "đổi tiêu đề...", "giá sửa lại...", "nhà có 3 lầu..."):
   • Tiếp thu ngay và khen tinh thần đóng góp của khách (vd "Tiêu đề này ngắn gọn và hút khách hơn hẳn ạ!"), cập nhật dữ liệu, KHÔNG nhắc phí.
   • RAO LẠI BẢN TIN ĐÃ SỬA (mở đầu "📋 Bản tin cập nhật:") theo ĐÚNG bố cục tin rao dưới đây.
+- NẾU khách trả lời CHƯA BIẾT PHÍ (sau câu hỏi phí): báo NGẮN trong 1–2 câu — con số phí đúng vai + chỉ thu khi giao dịch thành công.
+  Không thêm câu giải thích, không chào kết dài.
 - NẾU khách CHỦ ĐỘNG HỎI PHÍ HOẶC CHÊ PHÍ CAO / DO DỰ / TỪ CHỐI trả phí: hãy THUYẾT PHỤC một cách khéo léo, ấm áp:
   • Đồng cảm trước ("Em hiểu băn khoăn của anh/chị..."), KHÔNG tranh cãi, KHÔNG chê khách.
   • Mỗi lượt nhấn 1–2 lợi ích mạnh nhất phù hợp với mối lo của khách (xem DANH SÁCH GIÁ TRỊ), rồi nhẹ nhàng chốt lại.
@@ -1195,6 +1212,11 @@ cho các loại này.
 - Loại hình (loai_hinh) suy theo dấu hiệu, không chờ khách gọi tên: "căn nhà" / "nhà" kèm số tầng / lầu, mặt tiền, hẻm, hoặc nằm ở
   các quận nội thành cũ của TP.HCM (Quận 1–12, Phú Nhuận, Bình Thạnh, Tân Bình, Tân Phú, Gò Vấp, Bình Tân, Thủ Đức…) → nha_pho.
   "căn hộ", "chung cư", "block / tầng X căn Y", tên toà chung cư → chung_cu. "lô đất", "đất nền", "đất thổ cư", "đất trống" → dat.
+  Cho thuê NGUYÊN CĂN ("nhà nguyên căn", "nhà trọ nguyên căn", "thuê nguyên căn" — cả căn nhà có trệt / lầu / phòng ngủ) → nha_pho;
+  phong_tro chỉ khi cho thuê TỪNG PHÒNG trong dãy / nhà trọ (20/10: khách "cho thuê nhà trọ nguyên căn, 1 trệt 1 lầu 2PN" bị xếp
+  phòng trọ, bot hỏi gác lửng / WC riêng).
+  "Nhà" / "căn nhà" trong khu dự án / khu dân cư (vd "bán nhà trong khu dự án Nyah Phú Định") → nha_pho; chung_cu chỉ khi khách nói
+  căn hộ / chung cư / tòa / block / tầng X (20/10: bot hỏi "tòa nào, tầng mấy" cho nhà phố trong dự án).
   Vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An, Bình Dương, Đồng Nai, Tây Ninh…) mà khách chỉ nói "nhà",
   không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
 - Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
@@ -1467,6 +1489,11 @@ QUY TẮC:
 - Loại hình (loai_hinh) suy theo dấu hiệu, không chờ khách gọi tên: "căn nhà" / "nhà" kèm số tầng / lầu, mặt tiền, hẻm, hoặc nằm ở
   các quận nội thành cũ của TP.HCM (Quận 1–12, Phú Nhuận, Bình Thạnh, Tân Bình, Tân Phú, Gò Vấp, Bình Tân, Thủ Đức…) → nha_pho.
   "căn hộ", "chung cư", "block / tầng X căn Y", tên toà chung cư → chung_cu. "lô đất", "đất nền", "đất thổ cư", "đất trống" → dat.
+  Cho thuê NGUYÊN CĂN ("nhà nguyên căn", "nhà trọ nguyên căn", "thuê nguyên căn" — cả căn nhà có trệt / lầu / phòng ngủ) → nha_pho;
+  phong_tro chỉ khi cho thuê TỪNG PHÒNG trong dãy / nhà trọ (20/10: khách "cho thuê nhà trọ nguyên căn, 1 trệt 1 lầu 2PN" bị xếp
+  phòng trọ, bot hỏi gác lửng / WC riêng).
+  "Nhà" / "căn nhà" trong khu dự án / khu dân cư (vd "bán nhà trong khu dự án Nyah Phú Định") → nha_pho; chung_cu chỉ khi khách nói
+  căn hộ / chung cư / tòa / block / tầng X (20/10: bot hỏi "tòa nào, tầng mấy" cho nhà phố trong dự án).
   Vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An, Bình Dương, Đồng Nai, Tây Ninh…) mà khách chỉ nói "nhà",
   không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
 - Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT

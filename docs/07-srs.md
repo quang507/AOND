@@ -7226,6 +7226,95 @@ sửa ở đó không đổi được lõi Python. Bản này đi đủ vòng:
 Chưa làm: chọn ví dụ theo độ giống tình huống (đang lấy 8 dòng mới nhất); thống kê điểm trung bình theo ngày. Kiểm:
 `tests/test_cau_chuan.py` (khối có ngữ cảnh / điểm / câu chuẩn / che SĐT; lượt trả lời có khối; kho lỗi thì không có khối).
 
+### SRS-5.1zzzzzzz89 · BA soát màn Sửa tin: mô tả trống, "Lưu" tự rao, "chờ thông tin" hai nghĩa, cột nguồn (20/10/2026)
+
+Ca gốc: chủ dự án mở tin #715B4B3E (nhà MT Âu Cơ Q.11, 16 tỷ, 80m², Phường Bình Thới) ở rổ hàng, hỏi "đã code đúng hết logic chưa";
+đối chiếu với dòng DB và code. Chủ dự án: "sửa hết đi".
+
+1. *Mô tả luôn trống với tin chat* — lõi không ghi `listings.description` ở đâu cả; bản tin 📋 khách duyệt chỉ nằm trong chat, web
+   (đọc `description` qua `sanitizeDescription`) không có mô tả. **Lớp**: đầu ra khách đã duyệt không có đường xuống DB. **Sửa**: khi
+   khách đồng ý bản nháp (`duyet_luot = dong_y`), engine lấy bản 📋 cuối của căn đang nói (`_ban_tin_da_trinh`, cắt theo bố cục AD_FORMAT:
+   bỏ dòng đầu, đoạn đầu là tiêu đề, bỏ đoạn hỏi khách) và ghi thân tin qua `ghi_ban_tin` — đúng chữ khách đã thấy. Không đồng ý → giữ
+   mô tả cũ. Tin duyệt trước bản này không được ghi bù.
+2. *Nút "Lưu" cũng rao* — màn Sửa luôn gửi `can_chu_duyet = false`; trigger `trg_zz_listings_dang_tin` thấy đủ giá · diện tích ·
+   phường là đưa lên web, ngược với dòng "Rao lên web bằng nút dưới cùng". **Cùng lớp**: đổi trạng thái nhanh ở bảng rổ hàng cũng gửi
+   `false` (chọn "chờ thông tin" là tin đủ ý tự lên web). **Sửa**: chỉ nhánh "Lưu & rao" bỏ dấu; cả hai đường báo lại trạng thái DB
+   TRẢ VỀ, không phải cái vừa gửi. "Rao" khi thiếu giá / diện tích / phường thì chặn tại màn (trước đây hỏi "vẫn rao?" rồi báo "đã
+   rao" trong khi trigger trả tin về `cho_thong_tin`); thiếu mô tả / quận chỉ hỏi.
+3. *"chờ thông tin" mang hai nghĩa* — tin đủ ý nhưng chờ khách duyệt bản nháp cũng hiện "chờ thông tin". **Sửa**: `lib/trang-thai-tin.ts`
+   (một nguồn, cùng điều kiện `listing_du_dang_tin`) — nhãn "chờ khách duyệt" ở bảng và màn Sửa; "chờ thông tin — thiếu …" nói rõ thiếu
+   gì. Không thêm trạng thái vào DB.
+4. *Ô Ngang / Dài hiện "4,2" / "18"* là chữ gợi ý nhưng nhìn như dữ liệu (DB trống) → "vd 4,2" / "vd 18"; ô phường gợi ý tên phường
+   mới ("vd Phường Chợ Quán") thay "Phường 3".
+5. *Địa chỉ "Phường 9" cạnh ô phường "Phường Bình Thới"* — đúng (`chuan_dia_ban`: Phường 9 cũ Q.11 → Bình Thới, kiểu `cu`) nhưng dễ
+   tưởng sai → ghi chú dưới ô "Địa chỉ hiển thị": nguyên văn khách gõ, có thể còn phường cũ; lọc / lên web theo ô Phường.
+6. *Cột nguồn luôn `suy_doan`, ô admin sửa bị lượt chat ghi đè* — lõi không ghi `price_source` / `ward_source`, và mỗi lượt chat PATCH
+   lại `ward` / `price_raw` theo bản lõi nên sửa tay của admin mất. **Sửa**: lõi ghi `price_source = chu_xac_nhan` (ô giá chỉ ghi khi có
+   bằng chứng lời khách), `ward_source = chu_xac_nhan` khi phường tra từ chữ khách, `suy_doan` khi lấy theo dự án; `property_type_source`
+   để `suy_doan` (loại BĐS do AI phân loại). Màn Sửa ghi `admin` cho ô giá / phường / loại admin đổi; lõi gặp nguồn `admin` thì không ghi
+   đè ô đó.
+
+Kiểm: `tests/test_sua_tin_admin.py` (cắt bản tin; đồng ý thì ghi mô tả, không đồng ý thì không; cột nguồn; giữ ô admin — tắt bản sửa
+lõi thì đỏ), `bot/tests/sua-tin-admin.mjs` (trong `test:bot`: nhãn chờ khách duyệt theo đúng điều kiện DB; chỉ nhánh rao bỏ dấu duyệt;
+đổi nhanh không bỏ dấu; rao thiếu thì chặn — 3 ca đỏ trên bản trước).
+
+### SRS-5.1zzzzzzz90 · Chat tester chị N. 20/10 ca cho thuê nhà nguyên căn: lời dài, xưng hô, loại nhà, ô để sau mất (20/10/2026)
+
+Ca gốc (17:01–17:20): "Cho thuê nhà trọ nguyên căn Âu Dương Lân P3 Q8, 4m x 4.5m, 1 trệt 1 lầu… 3.7 triệu/tháng". Bản sửa SRS-5.1zzzzzzz89
+chạy đúng (khách "ok" là lên web, mô tả = bản tin vừa duyệt, nguồn ghi `chu_xac_nhan`). Tester: "đoạn dưới này nghe dài mệt quá"; chủ dự
+án: sửa nhưng chỉ cài khi tester bấm "hello" (không khởi động lại lõi giữa phiên test).
+
+1. *Lời sau khi duyệt và lời báo phí dài* — prompt bắt "vui vẻ chúc mừng… chuyển cho mạng lưới… hướng dẫn truy cập". **Sửa**:
+   `khoi_trang_thai_web` chỉ đòi 1 câu xác nhận; lượt duyệt tối đa 2 câu; khách "chưa biết phí" → 1–2 câu (con số + chỉ thu khi thành
+   công). Phí thuê viết "3/4 tháng tiền thuê" ở mọi chỗ prompt (bot từng viết "0.75 tháng").
+2. *Xưng hô* — khách xưng "chị" mà dòng mở bản tin cố định "📋 Em sẽ rao như vầy nhé anh chị:" và tin nhắc viết cứng "anh/chị".
+   **Lớp**: câu cố định viết cho hai kiểu khách (em / không rõ). **Sửa**: `mo_dau_nhap(xung_ho)` (anh / chị / em / không rõ) cho dòng mở,
+   câu hỏi cuối bản nháp và `cat_truoc_mo_dau`; tin nhắc (`followup.py`) gọi theo `xung_ho`. Cùng lớp còn: câu chào lúc làm mới phiên
+   ("anh/chị") — khi đó chưa biết khách xưng gì, đúng.
+3. *"Nhà trọ nguyên căn" xếp thành phòng trọ* → hỏi gác lửng / máy lạnh / WC riêng / giờ giấc. Loại BĐS do AI đọc theo nghĩa (không
+   regex); sửa ở luật của AI: cho thuê NGUYÊN CĂN → `nha_pho`, `phong_tro` chỉ khi thuê từng phòng.
+4. *Hỏi lặp một câu 3 lần* (gác lửng / máy lạnh / bếp / WC) — luật "lờ 2 lần thì để sau" (SRS-5.1zzzzzzz80) lẽ ra chặn lần 3.
+   **Chưa chứng minh được nguyên nhân**: journal không ghi lượt nào hệ thống chọn ô nào. Hai việc: (a) log TÊN ô hỏi / cụm / số lần
+   lờ / ô để sau mỗi lượt (không giá trị khách) để lần sau truy được; (b) ô để sau (`Property.hoan`) đi kèm tin dưới khoá nội bộ
+   `boc_tach._hoan` — trước đây chỉ nằm trong bộ nhớ, lõi khởi động lại (mỗi lần cài VPS) là quên và hỏi lại từ đầu.
+5. Ghi lại, chưa sửa: khách gõ liền 3 tin → bot gửi 3 bản tin trong 20 giây (cần bridge gom tin gõ liền nhau); tiêu đề ghi 35m² (sàn)
+   trong khi cột diện tích web là 18m² (đất 4 × 4,5).
+
+Kiểm: `tests/test_cho_thue_nguyen_can.py` (dòng mở / câu hỏi cuối theo xưng hô; lời duyệt 1 câu, phí 1–2 câu, không còn "0.75 tháng";
+luật nguyên căn; `_hoan` đi kèm tin — đỏ trên bản trước).
+
+### SRS-5.1zzzzzzz91 · Sửa nốt lỗi tester 20/10: tin gõ lúc bot đang soạn, diện tích tin thuê, xưng hô lật, tiêu đề "5x20m²", tin nhắc không bản nháp (20/10/2026)
+
+Chủ dự án: "sửa mấy lỗi đó đi" (các mục ghi lại ở SRS-5.1zzzzzzz87 / 89 / 90 và điểm chấm sơ bộ ở trang Câu chuẩn). Cài lên VPS khi
+tester gõ "hello" mở phiên mới.
+
+1. *Khách nhắn tiếp lúc bot còn soạn → mỗi tin một lượt* (3 tin trong 18 giây → 3 bản tin trong 20 giây). Bridge đã gom tin gõ liền
+   trong 2,5 s; chỗ hở là tin tới khi lượt trước đang chạy: mỗi tin chờ khoá lượt (`khoa_luot`, SRS-5.1zzzzzzz84) rồi chạy riêng.
+   **Sửa** (`server.py`): tin chữ xếp hàng theo khách (`_xep_cho`); lượt nào giữ khoá thì gom MỌI tin đang chờ thành một lượt
+   (`_lay_cho`), tin đã được gom trả rỗng (bridge không gửi gì) nhưng vẫn ghi vào CRM đúng vai. Ảnh / tệp không gom.
+2. *Tin cho thuê: tiêu đề 35m² (sàn), web 18m² (đất)* — `so_m2` lấy đất trước cho mọi tin. **Sửa**: tin CHO THUÊ lấy diện tích sử dụng
+   trước (người thuê tìm theo chỗ ở được) [giả định BA — chủ dự án đổi lại được]; tin bán giữ đất trước.
+3. *Xưng hô lật* (KB2: "mình… em" rồi "anh/chị") — cổng chỉ đòi cụm trích có thật trong 6 tin khách gần nhất, nên một cụm cũ đỡ được
+   cả cách xưng khác. **Lớp**: kiểm trích dẫn không kiểm cụm có NÓI điều được trích ra không. **Sửa**: cụm phải chứa đúng chữ xưng
+   (em / anh / chị / chú…), và đổi cách xưng đã chốt thì cụm phải ở tin vừa nhắn. Cùng lớp đã soát: duyệt bản nháp và hỏi về kiểm cụm ở
+   tin vừa nhắn (không dính); ngoài vùng kiểm trong 6 tin gần nhất nhưng chỉ bật cờ theo tỉnh khách đã nói — để nguyên.
+4. *Tiêu đề "5x20m²"* — code kiểm bố cục dòng tiêu đề (`_tieu_de_sai_don_vi`), lệch thì gọi lại model một lần cùng chỗ kiểm giá /
+   "Dạ" (`_soat_hinh_thuc`); không tự sửa chữ.
+5. *Tin nhắc "bản tin nháp em soạn ở trên" cho hội thoại chưa có bản nháp* — tin nhắc coi "đủ ý" là đã có bản nháp. **Sửa**: chỉ khi
+   bản nháp ĐÃ gửi (`listing_proposed`). Hội thoại "Khách thử" 20/10 chỉ có đúng một tin nhắc — nhiều khả năng do script bắn thử dọn
+   DB trước rồi mới /reset lõi (tin nhắc hẹn giờ của lõi vẫn chạy và tạo lại hội thoại); ba script `ban-thu-*.sh` nay /reset lõi trước.
+6. *"Đăng giúp mình theo nội dung này" khi căn chưa có ý gì* → bot hỏi giá / địa chỉ đúng lúc khách đang dán bài. **Sửa**:
+   `khoi_xin_dang` — căn chưa có giá / diện tích / địa chỉ thì mời khách dán nội dung trong 1 câu, không hỏi từng ô.
+7. *"Bán nhà trong khu dự án …" bị hỏi "tòa nào, tầng mấy"* — luật loại BĐS của AI: "nhà" trong khu dự án / khu dân cư → `nha_pho`;
+   `chung_cu` chỉ khi khách nói căn hộ / chung cư / tòa / block / tầng.
+8. Giữ nguyên, không sửa: câu "65m2 đó là đất hay sàn" khi khách chưa nói rõ — đúng SRS-5.1zzzzzzz52 (theo bản anh Luận: code không tự
+   gán con số mơ hồ thành đất; AI đã có luật "số m² kèm số tầng là đất"). Bản thử gán bằng code làm đỏ
+   `test_mot_con_so_mo_ho_khong_tu_thanh_dien_tich_dat` nên đã bỏ.
+
+Kiểm: `tests/test_mot_luot_mot_luc.py::test_tin_cho_luc_bot_dang_soan_gom_thanh_mot_luot`, `tests/test_cho_thue_nguyen_can.py::
+test_dien_tich_tin_thue_la_dien_tich_su_dung`, `tests/test_xung_ho_khong_lat.py`, `tests/test_tieu_de_va_xin_dang_trong.py` (đỏ trên
+bản trước).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

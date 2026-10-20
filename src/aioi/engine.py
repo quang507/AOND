@@ -764,6 +764,15 @@ def _so_trong(x: str | None) -> set[str]:
     return {n.replace(",", ".") for n in re.findall(r"\d+(?:[.,]\d+)?", re.sub(r"(?i)m\s*[2²]", "m", str(x or "")))}
 
 
+def _tieu_de_sai_don_vi(reply: str) -> bool:
+    """Tiêu đề bản tin ghi kích thước kèm m² ("5x20m²") — sai đơn vị: 5x20 là kích thước lô, diện tích là 100m² (bắn thử KB2 20/10,
+    SRS-5.1zzzzzzz91). Chỉ so bố cục chữ của dòng tiêu đề."""
+    if "📋" not in (reply or ""):
+        return False
+    tieu_de = next((d for d in reply.split("📋", 1)[1].splitlines()[1:] if d.strip()), "")
+    return re.search(r"\d\s*[x×*]\s*\d+(?:[.,]\d+)?\s*m\s*[²2]", tieu_de) is not None
+
+
 def _tieu_de_thieu(reply: str, prop: "Property") -> list[str]:
     """Ý bắt buộc mà dòng tiêu đề bản tin (dòng có chữ đầu tiên sau dòng 📋) không có — hiện kiểm GIÁ: con số của ô giá phải có trong
     tiêu đề (SRS-5.1zzzzzzz86). Không có 📋 hay căn chưa có giá → []. Không đọc ý: chỉ so số."""
@@ -774,6 +783,26 @@ def _tieu_de_thieu(reply: str, prop: "Property") -> list[str]:
     gia = prop.fields["gia"]
     so_gia = _so_trong(gia)
     return [f"giá ({gia})"] if so_gia and not (so_gia & _so_trong(tieu_de)) else []
+
+
+def _than_ban_tin(reply: str) -> tuple[str, str] | None:
+    """(tiêu đề, thân) của một bản tin 📋: bỏ dòng đầu ("📋 Em sẽ rao như vầy…"), đoạn đầu là tiêu đề, đoạn cuối có dấu hỏi là câu hỏi
+    khách (không phải tin rao). Chỉ cắt theo bố cục AD_FORMAT, không đọc ý. Không đủ tiêu đề + thân → None."""
+    if "📋" not in (reply or ""):
+        return None
+    sau = reply.split("📋", 1)[1].split("\n", 1)
+    doan = [d.strip() for d in re.split(r"\n\s*\n", sau[1] if len(sau) > 1 else "") if d.strip()]
+    if doan and "?" in doan[-1]:
+        doan = doan[:-1]
+    return (doan[0], "\n\n".join(doan[1:])) if len(doan) >= 2 else None
+
+
+def _ban_tin_da_trinh(conv: "Conversation") -> tuple[str, str] | None:
+    """Bản tin 📋 cuối cùng bot gửi cho căn đang nói (từ lượt căn này bắt đầu) — chính bản khách vừa duyệt."""
+    for t in reversed(conv.history[conv.active.history_start:]):
+        if t.role == "assistant" and "📋" in t.content:
+            return _than_ban_tin(t.content)
+    return None
 
 
 def _mo_dau_da(reply: str) -> bool:
@@ -1098,6 +1127,10 @@ class Engine:
             missing = khac + [x for x in missing if x in cum] if khac else missing[1:] + missing[:1]
         conv.o_vua_hoi = missing[0] if missing else None
         conv.cum_vua_hoi = conv.prop.cum_hoi(conv.o_vua_hoi, missing)
+        # Chỉ TÊN ô (không giá trị khách) — để truy được "bot hỏi lặp" từ journal (SRS-5.1zzzzzzz90: chat tester 20/10 hỏi một câu 3
+        # lần mà không có gì cho biết lượt nào hệ thống chọn ô nào).
+        log.info("ô hỏi: %s · cụm: %s · lờ: %s · để sau: %s", conv.o_vua_hoi, conv.cum_vua_hoi,
+                 {k: v for k, v in conv.lo.items() if v}, sorted(conv.prop.hoan))
         return conv.o_vua_hoi
 
     def conversation(self, user_key: str) -> Conversation:
@@ -1784,6 +1817,12 @@ class Engine:
                 try:
                     self._convstore.save(conv)
                     ghi_duyet(conv, conv.duyet_luot == "dong_y")
+                    # Mô tả trên web = ĐÚNG bản tin khách vừa duyệt (SRS-5.1zzzzzzz89): trước đây lõi không ghi `description` ở đâu
+                    # cả — tin lên web không có mô tả, CRM báo "thiếu mô tả" dù khách đã duyệt cả bài.
+                    ban = _ban_tin_da_trinh(conv)
+                    ghi_ban_tin = getattr(self._convstore, "ghi_ban_tin", None)
+                    if conv.duyet_luot == "dong_y" and ban and ghi_ban_tin is not None:
+                        ghi_ban_tin(conv, ban[1])
                 except Exception as e:  # noqa: BLE001 — ghi duyệt hỏng thì lời bot vẫn đọc trạng thái thật
                     log.warning("ghi_duyet lỗi: %s", e)
 
@@ -1901,7 +1940,7 @@ class Engine:
             conv.listing_proposed = True
             trinh_nhap = True
             system = build_listing_proposal_system(
-                conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em
+                conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em, xung_ho=customer_pronoun
             )
         else:
             system = build_fee_followup_system(
@@ -1966,7 +2005,7 @@ class Engine:
 
         reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply))
         if trinh_nhap:
-            reply = cat_truoc_mo_dau(reply)
+            reply = cat_truoc_mo_dau(reply, customer_pronoun)
 
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
@@ -1994,9 +2033,11 @@ class Engine:
                          + "; tiêu đề tối đa 15 từ, đủ vị trí · diện tích · giá.")
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
+        if _tieu_de_sai_don_vi(reply):
+            ly_do.append("Tiêu đề ghi kích thước kèm m² (vd \"5x20m²\") — sai: viết diện tích bằng m² (vd \"100m²\") hoặc kích thước "
+                         "không kèm m² (vd \"5x20m\").")
         if ly_do:
-            log.warning("Lời bot lệch luật hình thức (%s) — gọi lại model",
-                        ", ".join(["tiêu đề"] * bool(thieu_td) + ["mở đầu Dạ"] * _mo_dau_da(reply)))
+            log.warning("Lời bot lệch luật hình thức (%d lý do) — gọi lại model", len(ly_do))
             with _do(conv, "tra_loi_lai"):
                 lai = self._provider.reply(
                     system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\n" + " ".join(ly_do) + " Viết lại TOÀN BỘ lượt trả lời.\n",
@@ -3214,7 +3255,13 @@ class Engine:
         x = plan.get("xung_ho")
         if x in ("em", "anh", "chi", "chu_co_bac"):
             gan = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
-            if any(_trich_dan_khop(plan.get("xung_ho_trich_dan"), c) for c in gan):
+            trich = plan.get("xung_ho_trich_dan")
+            # SRS-5.1zzzzzzz91 (bắn thử KB2 20/10: "mình… em" rồi lượt sau "anh/chị"): cụm trích phải CHỨA chữ xưng đó (không chỉ có
+            # thật trong lời khách), và ĐỔI cách xưng đã chốt thì cụm phải ở tin vừa nhắn — cụm cũ không lật được cách xưng.
+            chu = {"em": ("em",), "anh": ("anh",), "chi": ("chi",), "chu_co_bac": ("chu", "co", "bac", "di", "cau", "thim", "ong", "ba")}[x]
+            hop = bool(set(chu) & set(re.findall(r"[a-z]+", _strip_accents(str(trich or "")).lower())))
+            nguon = [cuoi] if (conv.xung_ho and conv.xung_ho != x) else gan
+            if hop and any(_trich_dan_khop(trich, c) for c in nguon):
                 conv.xung_ho = x
 
         # Xin xem bản vẽ / hỏi dự án / tả dự án / xác nhận xoá (SRS-5.1zzzzzzz55): nhận khi cụm trích có trong tin vừa nhắn.

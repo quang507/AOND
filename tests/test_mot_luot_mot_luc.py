@@ -93,3 +93,33 @@ def test_hoi_thoai_trong_cache_da_bi_xoa_thi_tim_lai_va_van_ghi_tin():
     k.ghi_luot_chat("u", "giá 5 tỷ", "Em ghi rồi ạ")
     tin = [d for m, e, d in k.goi if m == "POST" and e == "messages" and d["conversation_id"] == "c-moi"]
     assert [t["sender"] for t in tin] == ["seller", "bot"]
+
+
+def test_tin_cho_luc_bot_dang_soan_gom_thanh_mot_luot(monkeypatch):
+    """SRS-5.1zzzzzzz91 (chat tester 20/10): khách nhắn 3 tin lúc bot còn soạn → trước đây 3 lượt, 3 bản tin trong 20 giây. Nay lượt kế
+    tiếp gom mọi tin đang chờ; tin đã gom trả rỗng (bridge không gửi gì). Đỏ khi bỏ `_lay_cho`."""
+    monkeypatch.setattr(srv._engine, "_convstore", _Kho())
+    ghi = []
+    monkeypatch.setattr(srv, "sync_to_supabase_async", lambda **k: ghi.append((k["incoming_text"], k["bot_reply"])))
+    monkeypatch.setattr(srv, "_thu_lai_nen", lambda *a, **k: None)
+    luot = []
+
+    def handle(uk, text, now=None):
+        luot.append(text)
+        time.sleep(0.4)
+        return _tr(reply="ok")
+    monkeypatch.setattr(srv._engine, "handle", handle)
+    tl = TestClient(srv.app)
+    kq = {}
+
+    def gui(t):
+        kq[t] = tl.post("/chat-reply", json={"external_user_id": "gom-1", "text": t}).json()["replies"]
+
+    ts = [threading.Thread(target=gui, args=(t,)) for t in ("1 bếp, 3wc", "giá này không bớt", "không nuôi thú cưng")]
+    ts[0].start(); time.sleep(0.1); ts[1].start(); time.sleep(0.05); ts[2].start()
+    for t in ts:
+        t.join()
+    assert luot[0] == "1 bếp, 3wc" and len(luot) == 2
+    assert luot[1] == "giá này không bớt\nkhông nuôi thú cưng"
+    assert sorted(len(v) for v in kq.values()) == [0, 1, 1]
+    assert sorted(t for t, _ in ghi) == sorted(["1 bếp, 3wc", "giá này không bớt", "không nuôi thú cưng"])   # CRM đủ từng tin
