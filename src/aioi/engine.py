@@ -3060,8 +3060,16 @@ class Engine:
             plan = self._provider.extract(system, src, operations_schema())
         # SRS-5.1zzzzzzz78: Haiku hay đặt `bang_chung` LỌT VÀO TRONG `fields` (log bắn thử) — kéo ra cấp thao tác, không thì cụm trích
         # không được dùng và "bang_chung" thành một ô lạ.
+        # SRS-5.1zzzzzzz86: cùng hình lỗi với MỌI khoá cấp kế hoạch — bắn thử KB1 lần 2, Haiku đặt `ngoai_vung` vào `fields` của thao tác,
+        # cờ vùng không bật và "ngoai_vung" thành một ô tin. Kéo hết khoá cấp kế hoạch (theo schema, không liệt kê tay) ra ngoài.
+        cap_ke_hoach = set((operations_schema().get("properties") or {})) - {"operations"}
         for o in plan.get("operations") or []:
             f = o.get("fields") if isinstance(o, dict) else None
+            if isinstance(f, dict):
+                for k in cap_ke_hoach & set(f):
+                    v = f.pop(k)
+                    if v not in (None, "", [], {}) and plan.get(k) in (None, "", [], {}):
+                        plan[k] = v
             if isinstance(f, dict) and "bang_chung" in f:
                 bc = f.pop("bang_chung")
                 if isinstance(bc, str):

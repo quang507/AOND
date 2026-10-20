@@ -72,3 +72,15 @@ def test_khoa_noi_bo_khong_vao_phan_da_biet_va_bo_doc_thong_so():
     st._thong_so({"kich_thuoc": "4x15", "_ngoai_vung": "Hà Nội"}, "nha_pho")
     chu = [d for m, e, d in st.goi if e == "rpc/boc_thong_so"][0]["p_text"]
     assert "Hà Nội" not in chu and "4x15" in chu
+
+
+def test_khoa_cap_ke_hoach_lot_vao_fields_thi_keo_ra():
+    # Bắn thử KB1 lần 2 (run 39387897732): Haiku đặt ngoai_vung + cụm trích TRONG fields của thao tác → cờ không bật, DB có ô
+    # "ngoai_vung". Đỏ khi bỏ bước kéo khoá cấp kế hoạch ra.
+    eng, spy = _eng({"operations": [{"op": "update", "fields": {"gia": "22,5 tỷ", "ngoai_vung": "Hà Nội",
+                                                                 "ngoai_vung_trich_dan": "quận Đống Đa, Hà Nội"},
+                                     "bang_chung": {"gia": "22,5 tỷ"}}]})
+    eng.handle("nv4", "nhà ở quận Đống Đa, Hà Nội em, giá 22,5 tỷ")
+    f = eng.conversation("nv4").prop.fields
+    assert f.get("_ngoai_vung") == "Hà Nội" and "ngoai_vung" not in f and "ngoai_vung_trich_dan" not in f
+    assert "NGOÀI KHU VỰC NHẬN TIN" in spy.systems[-1]

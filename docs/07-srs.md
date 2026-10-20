@@ -7104,7 +7104,20 @@ bài đăng không 📋, tin nằm `cho_thong_tin`, khách duyệt không ghi đ
 `bot/tests/sql/chuan-dia-ban.sql` (3 ca đỏ khi không có `20261020c`), `tests/test_bang_chung_o_tin.py` (4 ca mới đỏ; 1 ca "không quá
 tay" xanh cả hai), `tests/test_xin_dang.py` (3), `tests/test_tin_rao_bo_cuc.py` (chat không tự soạn bài), `tests/test_cau_hoi_theo_loai_o.py`
 (2 đỏ), `tests/test_giong_chung.py` (3 đỏ). `tests/test_dau_ra_haiku.py` đổi kỳ vọng: "sổ riêng" không còn thành "sổ hồng riêng" (chữ AI
-thêm). pytest 466 đạt; SQL tests đạt. Bắn lại production sau `cai-vps`: ghi kết quả bên dưới khi chạy.
+thêm). pytest 466 đạt; SQL tests đạt.
+
+**Bắn lại production lần 1 sau `cai-vps` (run 39387897732, 14 lượt, 28 lượt model, ≈ 0,022 USD — 0,0016 USD / lượt chat; trung bình
+14,9 s / lượt, chậm nhất 21,0 s).** Đạt: KB2 gắn dự án + phường An Phú, không hỏi tầng / tòa, gọi khách "em" đúng; KB3 gắn dự án, phường
+An Khánh, khách duyệt → `dang_ban`, trang web mở được; KB4 không ô nào có "ô tô", "đăng đi" hỏi đúng phường còn thiếu; không bong bóng
+nào mở "Dạ" hay gọi "bạn". Trượt / thấy thêm:
+11. *KB1 cờ vùng không bật* — DB có Ô `ngoai_vung` = "Hà Nội": Haiku đặt khoá CẤP KẾ HOẠCH vào trong `fields` của thao tác — cùng hình
+   lỗi `bang_chung` (SRS-5.1zzzzzzz78), lần trước chỉ vá riêng khoá đó. Lớp: model lồng khoá sai cấp, code vá từng khoá. Sửa: kéo MỌI
+   khoá cấp kế hoạch (lấy từ `operations_schema()`, không liệt kê tay) ra khỏi `fields`. Kiểm `tests/test_ngoai_vung.py`
+   `test_khoa_cap_ke_hoach_lot_vao_fields_thi_keo_ra` (đỏ trên bản trước — đã chạy).
+12. *Lời chat KB4 tự suy* "hẻm 3m là xe máy vào thoải mái" (ô không bị ghi — cổng (5) chặn — nhưng khách đọc lời suy): thêm luật "không
+   suy ra điều khách không nói" vào `CONVERSATION_POLICY` (chung mọi nhánh).
+13. *Tiêu đề căn hộ chèn "MT"* (bản tin cập nhật KB3): luật viết gọn "MT" chỉ khi dữ liệu ghi nhà mặt tiền.
+14. KB2 không ra bản nháp vì còn thiếu ô tối thiểu (mã căn, diện tích sàn) — đúng luật; script chỉ kiểm tiêu đề khi có 📋.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

@@ -232,6 +232,8 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
   • MỖI LƯỢT ĐÚNG MỘT CÂU HỎI (gộp được các ý trong cụm hệ thống đưa — xem luật số 4 bên dưới). CẤM nhiều câu hỏi dồn dập.
   • CẤM NHẠI LẠI LỜI KHÁCH: Khách vừa nói gì thì tuyệt đối KHÔNG tua lại (Vd: khách nói "nhà đang ở" -> CẤM nói "Em ghi nhận nhà đang ở..."). Nối tiếp tự nhiên bằng vài từ rồi hỏi ngay câu tiếp theo.
   • CẤM MÁY MÓC: TUYỆT ĐỐI KHÔNG mở đầu "Vâng...", "Dạ em ghi nhận...", "Em ghi nhận là...", "Em đã lưu lại...".
+  • KHÔNG SUY RA ĐIỀU KHÁCH KHÔNG NÓI (SRS-5.1zzzzzzz86): "hẻm 3m" thì nói hẻm 3m, KHÔNG tự thêm "xe máy / ô tô vào thoải mái"; khách
+    chưa nói thì hỏi, không đoán.
   • TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Viết chữ trơn bình thường.
   • TIÊU ĐỀ BẢN TIN RAO NGẮN (TỐI ĐA 15 TỪ, ĐÚNG 1 DÒNG), BẮT BUỘC CÓ VỊ TRÍ · DIỆN TÍCH · GIÁ:
     - Chuẩn công thức: [Bán/Cho thuê] [loại] [Vị trí MT/Hẻm + đường, quận] [Diện tích] [Giá] (Vd: "Bán nhà 3 tầng MT Cao Lỗ Q.8, 60m², giá 10 tỷ").
@@ -546,7 +548,7 @@ def describe_captured(prop: Property) -> str:
 AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NHAU bằng MỘT DÒNG TRỐNG giữa 3 khối):
 1) TIÊU ĐỀ: NGẮN, tối đa 15 từ, đúng 1 dòng. BẮT BUỘC đủ 3 ý: VỊ TRÍ (đường + quận, hoặc tên dự án) · DIỆN TÍCH · GIÁ — thiếu ý
    nào thì tiêu đề chưa đạt. Còn chỗ thì thêm tối đa 1 điểm mạnh nhất (kết cấu, mặt tiền / hẻm xe hơi, số phòng khi cho thuê).
-   Đếm từ theo khoảng trắng. Viết gọn như tin rao: "MT" (mặt tiền), "HXH", "Q.5", "P.Chợ Quán"; không viết chữ "đường",
+   Đếm từ theo khoảng trắng. Viết gọn như tin rao: "MT" (CHỈ khi dữ liệu căn ghi nhà mặt tiền — căn hộ, nhà hẻm KHÔNG có "MT"), "HXH", "Q.5", "P.Chợ Quán"; không viết chữ "đường",
    "Phường", "Quận" đầy đủ; phường dài thì bỏ (mô tả đã có). Không chêm chữ rào đón ("chính chủ", "sẵn sổ công chứng
    ngay", "sổ hồng", "nội thất đầy đủ"…) — để ở mô tả / gạch đầu dòng. Vd: "Bán nhà MT Cao Lỗ Q.8, 49,5m², 1 trệt 3 lầu,
    8,5 tỷ"; "Cho thuê nhà hẻm 3m Nguyễn Thị Tần Q.8, 60m², 2PN, 7 triệu/tháng". (Người test 20/10:
