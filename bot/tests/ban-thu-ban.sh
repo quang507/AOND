@@ -152,7 +152,7 @@ LOI_BOT=""
 for cau in "chị cho thuê nhà nguyên căn hẻm xe hơi đường Lê Văn Sỹ quận 3" "giá 25 triệu một tháng em" \
            "ngang 4 dài 16, 1 trệt 2 lầu, 3 phòng ngủ" "cọc 2 tháng, hợp đồng tối thiểu 1 năm"; do chat "$BAN5" "$cau"; sleep 1; done
 r5=$(dong "$BAN5"); echo "$r5"
-kiem "Cho thuê: tin cho thuê" "$(jq '.deal == "thue" | if . then 1 else 0 end' <<<"$r5")"
+kiem "Cho thuê: tin cho thuê" "$(jq '.deal == "cho_thue" | if . then 1 else 0 end' <<<"$r5")"
 kiem "Cho thuê: giá 25 triệu / tháng" "$(jq '.price_vnd == 25000000 | if . then 1 else 0 end' <<<"$r5")"
 kiem "Cho thuê: không nói phí 1% giá bán" "$(grep -qE '1 ?% ?(giá|giao)' <<<"$LOI_BOT" && echo 0 || echo 1)"
 
