@@ -436,9 +436,18 @@ class Conversation:
         return [Message(t.role, t.content) for t in turns]
 
 
+# Luật giọng chung mọi cách xưng hô (SRS-5.1zzzzzzz86; quyết định chủ dự án: cấm mở đầu "Dạ"). Bắn thử 20/10: KB3 khách chưa tự
+# xưng → khối "chưa biết" không có luật "Dạ", bot mở "Dạ, phí quản lý…"; KB2 khách xưng em → chính sách chung cho phép gọi "bạn".
+_GIONG_CHUNG = ("KHÔNG mở đầu câu bằng \"Dạ\" / \"Dạ vâng\" — câu đầu vào thẳng nội dung. KHÔNG gọi khách là \"bạn\".\n")
+
+
 def khoi_xung_ho(p: str) -> str:
     """Khối luật xưng hô của lượt theo cách khách tự xưng (`_detect_customer_pronoun`). Một nguồn cho lượt chat và lượt ảnh sổ
     (SRS-5.1zzzzzzz82 — trước đó câu sau ảnh sổ viết cứng, luôn "anh/chị", có nhánh "vậy anh?")."""
+    return _khoi_xung_ho_rieng(p) + _GIONG_CHUNG
+
+
+def _khoi_xung_ho_rieng(p: str) -> str:
     if p == "em":
         return (
             "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC LƯỢT NÀY (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
@@ -467,7 +476,7 @@ def khoi_xung_ho(p: str) -> str:
         # mẫu, gọi khách "anh" suốt 10 lượt rồi đổi "chị" khi khách tự xưng.
         return (
             "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "CHƯA BIẾT khách là anh hay chị. Gọi khách 'anh/chị' (hoặc 'mình'), bản thân xưng 'em'. KHÔNG tự đoán 'anh' hoặc "
+            "CHƯA BIẾT khách là anh hay chị. Gọi khách 'anh/chị', bản thân xưng 'em'. KHÔNG tự đoán 'anh' hoặc "
             "'chị' từ tên, giọng văn hay ví dụ mẫu.\n"
         )
 
@@ -1556,7 +1565,7 @@ class Engine:
             
             if had_prior_history and cmd in ("/reset", "/clear", "/xoa", "reset session", "xóa hết"):
                 reply = (
-                    f"Dạ em chào anh/chị! Em là {conv.assistant.name} từ AI Ơi Nhà Đất.\n"
+                    f"Em chào anh/chị! Em là {conv.assistant.name} từ AI Ơi Nhà Đất.\n"
                     "Em đã làm mới phiên chat và xóa toàn bộ thông tin nháp trước đó rồi ạ. "
                     "Anh/chị có thể bắt đầu gửi thông tin nhà đất cần rao bán hoặc cho thuê nhé! 🏡✨"
                 )
@@ -1646,8 +1655,8 @@ class Engine:
         if lenh and la_nhan_vien is not None and la_nhan_vien(user_key):
             conv.history.append(Turn("user", text, now))
             cau = self._convstore.tra_loi_theo_ma(*lenh)
-            reply = (f"Dạ em đã chuyển câu trả lời về #{lenh[0]} cho khách rồi ạ." if cau is not None
-                     else f"Dạ tin #{lenh[0]} hiện không có câu khách hỏi nào đang chờ ạ.")
+            reply = (f"Em đã chuyển câu trả lời về #{lenh[0]} cho khách rồi ạ." if cau is not None
+                     else f"Tin #{lenh[0]} hiện không có câu khách hỏi nào đang chờ ạ.")
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured=[], now=now)
@@ -1668,13 +1677,13 @@ class Engine:
         if conv.pending_destructive:
             if conv.y_luot.get("xac_nhan_xoa") == "dong_y":
                 _changed, receipts = self._apply_pending_destructive(conv)
-                reply = self._receipt_reply(conv, receipts) or "Dạ em đã cập nhật rổ hàng rồi ạ."
+                reply = self._receipt_reply(conv, receipts) or "Em đã cập nhật rổ hàng rồi ạ."
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
                 return self._build_result(conv, reply, captured=[], now=now)
             conv.pending_destructive = []  # not a clear yes → keep the basket intact
             if conv.y_luot.get("xac_nhan_xoa") == "tu_choi":
-                reply = "Dạ em giữ nguyên rổ hàng, không xóa gì đâu ạ 👍"
+                reply = "Em giữ nguyên rổ hàng, không xóa gì đâu ạ 👍"
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
                 return self._build_result(conv, reply, captured=[], now=now)
@@ -1787,18 +1796,12 @@ class Engine:
         # 1d. Buyer branch routing
         if conv.role == "buyer" and conv.buyer_lead is not None:
             customer_pronoun = _detect_customer_pronoun(conv, text)
-            customer_is_em = (customer_pronoun == "em")
             next_field = conv.buyer_lead.next_question_field()
             system = build_buyer_chat_system(conv.assistant.name, conv.buyer_lead, next_field)
             viec, can = self._viec_mua(conv, text)
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += khoi_can_cho_khach(can) + khoi_viec_vua_ghi(viec)
-            system += khoi_can_nguoi(conv)
-            if customer_is_em:
-                system += (
-                    "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
-                    "Khách tự xưng là 'em'. TUYỆT ĐỐI CẤM DÙNG TỪ 'DẠ'! Gọi khách là 'em', bản thân xưng 'mình' hoặc 'anh/chị'.\n"
-                )
+            system += khoi_can_nguoi(conv) + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
                 raise LoiTraLoi("lời gửi khách rỗng")
@@ -2080,7 +2083,7 @@ class Engine:
                 messages.append({"role": "assistant", "content": turn.assistant_content})
                 continue
             break
-        return final or "Dạ anh/chị nói rõ thêm giúp em căn nào ạ?"
+        return final or "Anh/chị nói rõ thêm giúp em căn nào ạ?"
 
     @staticmethod
     def _project_map_doc(project: Project | None) -> dict[str, str] | None:
@@ -2129,8 +2132,8 @@ class Engine:
         if ut is not None and ut.media:
             link = next((m.get("web_url") for m in ut.media if m.get("web_url")), "")
             tail = f" đây ạ: {link}" if link else " em có lưu, để em gửi lại nha."
-            return f"Dạ bản vẽ/mặt bằng mẫu {ut.name}{tail} 📐"
-        return (f"Dạ em CHƯA có bản vẽ/mặt bằng {who} ạ 😅. Anh/chị gửi giúp em file bản vẽ, "
+            return f"Bản vẽ/mặt bằng mẫu {ut.name}{tail} 📐"
+        return (f"Em CHƯA có bản vẽ/mặt bằng {who} ạ 😅. Anh/chị gửi giúp em file bản vẽ, "
                 "hoặc để em xin bên dự án rồi gửi lại nhé! (Em không đụng gì tới rổ hàng đâu ạ.)")
 
     def _answer_from_docs(self, conv: Conversation, project: Project, text: str) -> str:
@@ -2147,9 +2150,9 @@ class Engine:
             + self._seller_price_block(conv)
             + "\nTrả lời câu hỏi của khách NGẮN GỌN, ĐÚNG theo tài liệu / mẫu nhà / bảng giá trên. Khi "
             "khách hỏi chi tiết MẪU NHÀ (số tầng, số phòng, bố trí), TRẢ LỜI NGAY từ mục MẪU NHÀ — đó "
-            "là kiến thức chung em ĐÃ CÓ, KHÔNG nói 'em không tra cứu được'. Xưng \"em\", "
-            "gọi khách \"anh/chị\", thân thiện. TUYỆT ĐỐI không bịa; nếu KHÔNG có trong tài liệu lẫn "
-            "bảng giá thì mới nói \"em chưa có thông tin về ý này ạ\" rồi mời khách bổ sung."
+            "là kiến thức chung em ĐÃ CÓ, KHÔNG nói 'em không tra cứu được'. Thân thiện. TUYỆT ĐỐI không bịa; "
+            "nếu KHÔNG có trong tài liệu lẫn bảng giá thì mới nói \"em chưa có thông tin về ý này ạ\" rồi mời khách bổ sung."
+            + khoi_xung_ho(_detect_customer_pronoun(conv))
         )
         return self._provider.reply(system, [Message("user", text)], max_tokens=REPLY_MAX_TOKENS).strip()
 
@@ -2188,10 +2191,10 @@ class Engine:
             conv = self.conversation(user_key)
             n = self.import_csv(user_key, text)
             reply = (
-                f"Dạ em nhận được bảng tính rồi, đã nhập {n} căn vào rổ hàng của mình ạ! 🎉 "
+                f"Em nhận được bảng tính rồi, đã nhập {n} căn vào rổ hàng của mình ạ! 🎉 "
                 "Anh/chị xem lại giúp em nhé."
                 if n else
-                "Dạ em có nhận bảng tính nhưng chưa đọc ra căn nào — anh/chị kiểm tra lại "
+                "Em có nhận bảng tính nhưng chưa đọc ra căn nào — anh/chị kiểm tra lại "
                 "các cột (loại hình, địa chỉ, diện tích, giá...) giúp em nhé."
             )
             conv.history.append(Turn("user", f"[Khách gửi bảng tính qua link: {url}]", now))
@@ -2241,7 +2244,7 @@ class Engine:
         page = self._html_to_text(data)[:20000]
         conv.history.append(Turn("user", f"[Khách gửi link trang web: {url}]", now))
         if not page:
-            reply = ("Dạ em mở link nhưng chưa đọc được nội dung ạ 😅. Anh/chị gửi link khác, "
+            reply = ("Em mở link nhưng chưa đọc được nội dung ạ 😅. Anh/chị gửi link khác, "
                      "hoặc dán nội dung giúp em nhé.")
         else:
             system = (
@@ -2257,11 +2260,11 @@ class Engine:
                 markdown = f"# Tham khảo web — {du_an}\n\n*(Nguồn: {url})*\n\n{summary}"
                 self._save_project_doc(du_an, kind="tham khảo web",
                                        title=f"tham khảo web — {host}", markdown=markdown)
-                reply = (f"Dạ em đọc trang **{host}** rồi ạ:\n\n{summary}\n\n"
+                reply = (f"Em đọc trang **{host}** rồi ạ:\n\n{summary}\n\n"
                          f"Em đã lưu vào kiến thức dự án (nguồn: {url}) — lần sau anh/chị hỏi là "
                          "có ngay ạ 😊")
             else:
-                reply = (f"Dạ em đọc trang **{host}** rồi ạ:\n\n{summary}\n\n"
+                reply = (f"Em đọc trang **{host}** rồi ạ:\n\n{summary}\n\n"
                          "Anh/chị đang rao dự án nào để em gắn thông tin này vào cho đúng ạ?")
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
@@ -2277,7 +2280,7 @@ class Engine:
         log.warning("Oversize media send (>%d bytes) escalated to admin for %s: %s",
                     MAX_SEND_BYTES, conv.user_key, urls)
         reply = (
-            "Dạ file to quá ạ (>20MB), xin lỗi em chưa xử lý được 😔. Em đã báo admin rồi ạ — "
+            "File to quá ạ (>20MB), xin lỗi em chưa xử lý được 😔. Em đã báo admin rồi ạ — "
             "anh/chị không cần làm gì thêm đâu. Admin của em sẽ vào chat này đọc file/link của "
             "mình rồi xử lý sau nhé!"
         )
@@ -2325,10 +2328,10 @@ class Engine:
         if not fetched:
             # Folder links get a specific nudge; everything else gets the friendly fallback.
             if any(is_drive_folder(u) for u in urls):
-                reply = ("Dạ đây là link thư mục Drive ạ. Anh/chị gửi từng ảnh/file "
+                reply = ("Đây là link thư mục Drive ạ. Anh/chị gửi từng ảnh/file "
                          "(hoặc link từng tấm) giúp em nhé!")
             else:
-                reply = ("Dạ em chưa mở được link này ạ. Anh/chị chụp và gửi thẳng "
+                reply = ("Em chưa mở được link này ạ. Anh/chị chụp và gửi thẳng "
                          "giúp em vài tấm nhé!")
             conv.history.append(Turn("user", f"[Khách gửi link không đọc được: {', '.join(urls)}]", now))
             conv.history.append(Turn("assistant", reply, now))
@@ -3414,11 +3417,11 @@ class Engine:
                     "Nhắn **\"đúng\"** để em làm, hoặc **\"thôi\"** để giữ nguyên nhé. "
                     "(Em KHÔNG xóa dữ liệu đâu — chỉ ẩn tin, rao lại lúc nào cũng được.)")
         if "clear" in kinds:
-            return ("Dạ em đã NGƯNG RAO toàn bộ rổ hàng ạ — các tin giờ ở trạng thái **không rao** "
+            return ("Em đã NGƯNG RAO toàn bộ rổ hàng ạ — các tin giờ ở trạng thái **không rao** "
                     "(em vẫn giữ nguyên dữ liệu, anh/chị muốn rao lại căn nào cứ nhắn em). 🙈")
         if kinds & {"remove", "keep_only"}:
             n = self._rao_count(conv)
-            return (f"Dạ em đã cập nhật — giờ còn **{n} căn đang rao** ạ. Các căn kia em chuyển sang "
+            return (f"Em đã cập nhật — giờ còn **{n} căn đang rao** ạ. Các căn kia em chuyển sang "
                     "**không rao** (vẫn giữ dữ liệu, rao lại được bất cứ lúc nào nha). ✅")
         return None
 
