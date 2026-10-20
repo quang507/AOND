@@ -233,7 +233,21 @@ HOUSE_AREA_FIELDS: list[str] = ["dien_tich_dat", "dien_tich_nha"]
 # A listing is "khá đầy đủ" (ready to draft an ad) at this fraction of expected fields,
 # on top of having every identity field AND the per-type required fields (`blocking_fields`).
 # 18/10/2026 (SRS-5.1zzzzzzz38): 0.55 → 0.70 — bản nháp ra ngay lượt đầu khi mới có "Quận 5".
-SUMMARY_READY_COMPLETENESS: float = 0.70
+# 20/10/2026 (SRS-5.1zzzzzzz79; chủ dự án: "nên ra bản nháp khi nào học theo anh Luận"): 0.75 tính trên MỌI ô mong đợi — đúng bản anh
+# Luận (`summary_ready`: đủ ô nhận diện + completeness ≥ 0.75); giữ ô bắt buộc riêng của mình (tên đường, phường — DB cần mới đăng).
+SUMMARY_READY_COMPLETENESS: float = 0.75
+
+# 20/10/2026 (SRS-5.1zzzzzzz79; chủ dự án: "hỏi theo cụm"): ô hỏi GỘP một câu như môi giới ("nhà ngang dài bao nhiêu, xây mấy tầng
+# anh?") thay vì mỗi lượt một ô. Ô thiếu đầu tiên quyết cụm; lượt đó hỏi các ô còn thiếu trong cùng cụm (tối đa 3). Ô không thuộc cụm
+# nào hỏi riêng như cũ.
+CUM_HOI: list[tuple[str, ...]] = [
+    ("dia_chi", "phuong"),
+    ("dien_tich_dat", "dien_tich_nha", "kich_thuoc", "ket_cau"),
+    ("dien_tich", "so_phong_ngu"),
+    ("phap_ly_hoan_cong", "gia"),
+    ("du_an", "tang_toa"),
+]
+CUM_TOI_DA = 3
 
 # Đất nền / thổ cư phải có tên đường + lộ giới hoặc thổ cư mới soạn tin; đất nông nghiệp thường ở xã, không có tên đường —
 # không chặn theo tên đường để khỏi kẹt câu hỏi.
@@ -304,8 +318,18 @@ class Property:
             return False
         if self.blocking_fields():
             return False
-        expected = [x for x in self.expected_fields() if x not in HOI_SAU_KHI_RA_TIN]
-        return sum(1 for x in expected if self._has(x)) >= SUMMARY_READY_COMPLETENESS * len(expected)
+        # Ô hỏi sau bản nháp vẫn tính vào % (như bản anh Luận) nhưng không hỏi trước — hết ô để hỏi trước bản nháp thì ra nháp, không kẹt.
+        return self.completeness() >= SUMMARY_READY_COMPLETENESS or not self.missing_fields()
+
+    def cum_hoi(self, o: str | None, missing: list[str]) -> list[str]:
+        """Các ô hỏi gộp trong lượt có ô `o` (SRS-5.1zzzzzzz79): ô còn thiếu cùng cụm với `o`, theo thứ tự hỏi, tối đa `CUM_TOI_DA`."""
+        if not o:
+            return []
+        for cum in CUM_HOI:
+            if o in cum:
+                ra = [o] + [x for x in missing if x in cum and x != o]
+                return ra[:CUM_TOI_DA]
+        return [o]
 
     def blocking_fields(self) -> list[str]:
         """Ô BẮT BUỘC theo loại BĐS trước khi soạn bản nháp (ngoài ngưỡng %), theo thứ tự hỏi:

@@ -6788,6 +6788,32 @@ từng phần tử, bỏ qua `}` / `,` / khoảng trắng lạc giữa các ph�
 thì vẫn nhận ô chữ theo cụm trích, chuỗi JSON không chặt vẫn giải, thừa ngoặc đóng vẫn đọc được, giải không được thì gọi lại một lần — đỏ trên code cũ, ca `bang_chung` / gọi lại đỏ khi chỉ bỏ phần engine, đã chạy), pytest 412 đạt. Model thật: bắn thử
 `ban-thu-ban` tuần tự, đọc lại dòng `Kế hoạch:`.
 
+### SRS-5.1zzzzzzz79 · Hỏi theo cụm; ra bản nháp theo công thức bản anh Luận (20/10/2026)
+
+**Ca gốc.** Chủ dự án: "nó hỏi nhiều quá chán chết được" (19/10), rồi "hỏi theo cụm… giờ nên ra bản nháp khi nào học theo anh Luận".
+Bắn thử 19/10: nhà phố cần 7–9 lượt mới thấy bản nháp — mỗi lượt bot hỏi đúng một ô (luật "CHỈ HỎI ĐÚNG 1 CÂU HỎI… cấm 'và'").
+
+**Lớp lỗi.** Đơn vị hỏi là MỘT Ô, không phải một ý môi giới: các ô luôn đi cùng nhau (ngang dài · diện tích sàn · số tầng; sổ · giá)
+bị tách ra từng lượt, và luật prompt cấm gộp. **Chỗ cùng lớp đã soát:** lượt trả lời có ảnh (`handle_media_batch` — vẫn hỏi một ô, câu
+kèm ảnh vốn ngắn); lời nhắc khi khách im (`followup.cau_nhac` — nhắc đúng câu bot vừa hỏi, giữ); câu hỏi sau bản nháp (từng ô, giữ).
+
+**Sửa.**
+- `src/aioi/schema.py` `CUM_HOI` + `Property.cum_hoi`: ô thiếu đầu tiên quyết cụm, lượt đó hỏi các ô còn thiếu cùng cụm (tối đa 3):
+  (địa chỉ · phường), (diện tích đất · diện tích nhà · kích thước · kết cấu), (diện tích · phòng ngủ — căn hộ), (pháp lý · giá),
+  (dự án · tầng/toà). Ô ngoài cụm hỏi riêng như cũ.
+- `src/aioi/engine.py`: lượt trả lời đưa cụm cho prompt; `_o_hoi_ke` — khách lờ cả cụm thì lùi CẢ CỤM xuống cuối (bản trước chỉ lùi một ô,
+  nay ô cùng cụm sẽ bị hỏi tiếp ngay).
+- `src/aioi/prompts.py` `build_chat_system(cum=…)`: khối "MỘT CỤM, hỏi gộp" — một câu ngắn kiểu môi giới; luật số 4 và `CONVERSATION_POLICY`
+  đổi từ "chỉ một ý" sang "một câu hỏi, gộp được các ý trong cụm, không hỏi ý ngoài cụm".
+- Ra bản nháp theo bản anh Luận (`luan8560/AOND` `schema.summary_ready`): đủ ô nhận diện + completeness ≥ **0.75 trên MỌI ô mong đợi**
+  (bản mình trước: 0.70 trên ô hỏi trước bản nháp). Giữ ô bắt buộc riêng (tên đường, phường — DB cần mới đăng) và thêm chốt: hết ô để hỏi
+  trước bản nháp thì ra nháp, không kẹt (ô hỏi sau bản nháp vẫn tính vào % nhưng không hỏi trước). Nhà phố: ngoài 5 ô nhận diện cần thêm
+  ≥ 2 trong kết cấu / hẻm-mặt tiền / pháp lý / hiện trạng.
+- `bot/tests/ban-thu-ban.sh` in chỉ số "số lượt tới bản nháp" cho cả hai kịch bản.
+
+**Kiểm.** `tests/test_hoi_theo_cum.py` (3 ca: cụm diện tích + kết cấu hỏi gộp, ô ngoài cụm hỏi riêng, ngưỡng bản anh Luận — đỏ trên code
+cũ, đã chạy); `tests/test_bot_bot_hoi_lap.py` sửa theo luật lùi cả cụm. pytest 415 đạt. Model thật: `ban-thu-ban` tuần tự.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

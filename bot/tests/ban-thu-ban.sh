@@ -35,8 +35,11 @@ chat() {
         | vps "curl -sS -m 120 -X POST http://127.0.0.1:8000/chat-reply -H 'Content-Type: application/json' -d @-")
   jq -r '.replies[]? | "<< " + .' <<<"$TRA" || echo "<< (không đọc được JSON) $TRA"
   LOI_BOT+=" $(jq -r '.reply // ""' <<<"$TRA")"
+  LUOT=$((LUOT + 1))
+  # SRS-5.1zzzzzzz79: chỉ số "số lượt tới bản nháp" — đo hỏi theo cụm có làm cuộc chat ngắn đi không.
+  if [ -z "$LUOT_NHAP" ] && grep -q '📋' <<<"$TRA"; then LUOT_NHAP=$LUOT; fi
 }
-LOI_BOT=""
+LOI_BOT=""; LUOT=0; LUOT_NHAP=""
 
 for cau in "Mình cần bán nhà phố" "Nhà đường Cao Lỗ, Phường Chánh Hưng, Quận 8" "Nhà mặt tiền" "dt 4,5x11" "Nhà xây 1 trệt 3 lầu" \
            "nhà mình có sổ riêng" "giá 8,5 tỷ" "đã hoàn công đủ" "diện tích sàn tầm 170m vuông"; do
@@ -62,10 +65,11 @@ kiem "kết cấu có ghi" "$(jq '((.boc_tach.ket_cau // "") != "") or ((.floors
 kiem "diện tích sàn 170 có ghi" "$(jq '[.boc_tach | to_entries[] | select(.value | tostring | test("170"))] | length > 0 | if . then 1 else 0 end' <<<"$r")"
 kiem "KHÔNG có ô thương lượng (chủ nhà không nói)" "$(jq '(.boc_tach.thuong_luong // "") == "" | if . then 1 else 0 end' <<<"$r")"
 echo "== số ô tin: $(jq '.boc_tach | length' <<<"$r")"
+echo "== Cao Lỗ: số lượt tới bản nháp: ${LUOT_NHAP:-chưa ra} / $LUOT lượt"
 
 # Kịch bản 2 (SRS-5.1zzzzzzz74, chat thử chủ dự án 19/10 15:19): nhà Âu Cơ Q11 — bot phải TỰ hiểu nhà phố và "80m 5 tầng" là đất,
 # không hỏi "nhà phố, chung cư hay đất" / "80m² là đất hay sàn".
-LOI_BOT=""
+LOI_BOT=""; LUOT=0; LUOT_NHAP=""
 for cau in "anh cần bán căn nhà ở đường âu cơ, quận 11 em biết đường đó ko" "Phường 9 em" "mặt tiền" "nhà số 110 em" "80m 5 tầng em" \
            "nhà mình ở lâu rồi, sổ riêng" "nhà mình đang ở giá 16 tỉ nhé" "diện tích sàn là 240m"; do
   chat "$BAN2" "$cau"
@@ -84,6 +88,7 @@ kiem "Âu Cơ: không hỏi lại phường sau khi khách nói Phường 9" "$(
 kiem "Âu Cơ: không hỏi đất hay sàn" "$(grep -qiE 'đất hay (diện tích )?(sàn|nhà)|sàn hay (diện tích )?đất' <<<"$LOI_BOT" && echo 0 || echo 1)"
 # SRS-5.1zzzzzzz76: đủ đường, phường, đất, tầng, sổ, giá, sàn là ra bản nháp — không hỏi hoàn công / đang ở hay cho thuê trước đó.
 kiem "Âu Cơ: ra bản nháp sau câu diện tích sàn" "$(grep -q '📋' <<<"$LOI_BOT" && echo 1 || echo 0)"
+echo "== Âu Cơ: số lượt tới bản nháp: ${LUOT_NHAP:-chưa ra} / $LUOT lượt"
 SAU_SO="${LOI_BOT#*##DA_NOI_SO##}"; SAU_SO="${SAU_SO%%📋*}"
 kiem "Âu Cơ: sau khi khách nói sổ, không hỏi hoàn công / hiện trạng / thương lượng trước bản nháp" "$(grep -qiE 'hoàn công|cho thuê|đang trống|thương lượng' <<<"$SAU_SO" && echo 0 || echo 1)"
 # SRS-5.1zzzzzzz75: bot không có số liệu thị trường — không được khen "thanh khoản", "người mua tìm nhiều", bình giá "hợp lý / vừa tầm".

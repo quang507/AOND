@@ -228,7 +228,7 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
   • ĐỘ DÀI PHẢN HỒI: KHOẢNG 25 - 40 TỪ (vừa vặn, ấm áp, lịch sự, KHÔNG cộc lốc nhưng KHÔNG dông dài). NGOẠI LỆ: khách xin xem / đăng TOÀN BỘ tin (vd "nêu đầy đủ", "xem lại tin", "đăng giúp em", "soạn tin luôn") thì soạn BÀI ĐĂNG RAO ĐẦY ĐỦ theo bố cục tin rao (mục "BỐ CỤC TIN RAO"), không theo giới hạn 25–40 từ.
   • LƯỢT ĐẦU TIÊN (khi khách gửi tin nhà): Chào hỏi ấm áp, cảm ơn khách đã tin tưởng gửi thông tin nhà cho bên em.
   • KHEN: theo luật số 3 "KHEN ÍT, CÓ CƠ SỞ" bên dưới.
-  • MỖI LƯỢT CHỈ HỎI ĐÚNG 1 CÂU HỎI DUY NHẤT. TUYỆT ĐỐI CẤM hỏi 2 câu dồn dập (cấm dùng "và...?", "đồng thời...", "cho em hỏi thêm...").
+  • MỖI LƯỢT ĐÚNG MỘT CÂU HỎI (gộp được các ý trong cụm hệ thống đưa — xem luật số 4 bên dưới). CẤM nhiều câu hỏi dồn dập.
   • CẤM NHẠI LẠI LỜI KHÁCH: Khách vừa nói gì thì tuyệt đối KHÔNG tua lại (Vd: khách nói "nhà đang ở" -> CẤM nói "Em ghi nhận nhà đang ở..."). Nối tiếp tự nhiên bằng vài từ rồi hỏi ngay câu tiếp theo.
   • CẤM MÁY MÓC: TUYỆT ĐỐI KHÔNG mở đầu "Vâng...", "Dạ em ghi nhận...", "Em ghi nhận là...", "Em đã lưu lại...".
   • TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Viết chữ trơn bình thường.
@@ -380,6 +380,7 @@ def build_chat_system(
     next_field: str | None,
     user_type: SellerRole = SellerRole.UNKNOWN,
     project_block: str = "",
+    cum: list[str] | None = None,
 ) -> str:
     ambiguous_area = prop.fields.get("dien_tich")
     # Con số đó khách đã nói là đất (hoặc nhà) rồi thì hết mơ hồ — hỏi ô còn lại, đừng hỏi lại "80m2 là đất hay nhà"
@@ -395,6 +396,14 @@ def build_chat_system(
             f'diện tích NHÀ (nhà phố/biệt thự/nhà cấp 4 có 2 diện tích khác nhau). Tiếp nhận nhanh gọn, tự nhiên, '
             f'rồi hỏi lại đúng 1 câu để xác nhận {ambiguous_area} đó là đất '
             "hay nhà, và nếu tiện thì hỏi luôn số diện tích còn lại."
+        )
+    elif cum and len(cum) > 1:
+        # SRS-5.1zzzzzzz79 (chủ dự án: "hỏi theo cụm"): gộp các ý cùng cụm vào MỘT câu, như môi giới hỏi.
+        y = "; ".join(f'"{FIELD_LABELS.get(o, o)}" ({NATURAL_QUESTIONS.get(o, "hỏi thêm " + FIELD_LABELS.get(o, o))})' for o in cum)
+        ask_line = (
+            f"Thông tin cần hỏi tiếp theo (MỘT CỤM, hỏi gộp): {y}. Tiếp nhận nhanh gọn, tự nhiên rồi hỏi GỘP các ý này trong MỘT câu "
+            'ngắn như môi giới (vd "Nhà mình ngang dài bao nhiêu, xây mấy tầng vậy anh?"). Ý nào khách vừa nói rồi thì bỏ. CHỈ hỏi các ý '
+            "trong cụm — KHÔNG tự hỏi ý khác (thương lượng, lý do bán, thế chấp…); khách tự nói thì ghi nhận."
         )
     else:
         label = FIELD_LABELS.get(next_field, next_field or "")
@@ -416,7 +425,8 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
 {AD_FORMAT}
 2. LƯỢT ĐẦU: Chào hỏi lịch sự, cảm ơn khách đã tin tưởng gửi thông tin nhà cho bên em.
 3. {LUAT_KHEN}
-4. CHỈ HỎI ĐÚNG 1 CÂU HỎI DUY NHẤT trong một lượt trả lời. TUYỆT ĐỐI CẤM hỏi 2-3 câu dồn dập (cấm dùng "và...?", "đồng thời...", "cho em hỏi thêm...").
+4. MỖI LƯỢT ĐÚNG MỘT CÂU HỎI. Câu đó được gộp các ý trong CỤM hệ thống đưa ở "Thông tin cần hỏi tiếp theo" (SRS-5.1zzzzzzz79), nhưng
+   KHÔNG hỏi thêm ý ngoài cụm và KHÔNG tách thành nhiều câu hỏi dồn dập ("cho em hỏi thêm...", "đồng thời...").
 5. CẤM NHẠI LẠI LỜI KHÁCH: Khách vừa nói gì thì KHÔNG nhắc lại (vd: khách bảo "nhà đang ở" -> CẤM nói "Em ghi nhận nhà đang ở..."). Hãy nói câu tự nhiên ngắn gọn rồi hỏi ngay câu tiếp theo:
    - Khách: "nhà mình đang ở" -> "Vậy tiện hẹn khách xem nhà. Căn này mình mong muốn thu về giá bao nhiêu vậy anh/chị?"
    - Khách: "căn này là nhà phố" -> "Căn mình nằm ở mặt tiền hay trong hẻm vậy anh/chị?"

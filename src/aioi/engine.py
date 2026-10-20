@@ -943,7 +943,10 @@ class Engine:
         """Ô hỏi lượt này: ô thiếu đầu tiên, TRỪ khi đó là ô vừa hỏi ở lượt trước mà khách chưa trả lời — khi ấy hỏi ý khác trước, ô
         đó lùi xuống cuối, quay lại sau (SRS-5.1zzzzzzz74; bắn thử 19/10 hỏi "ngang x dài trên sổ" 5 lượt liền khi khách lờ đi)."""
         if len(missing) > 1 and missing[0] == conv.o_vua_hoi:
-            missing = missing[1:] + missing[:1]
+            # SRS-5.1zzzzzzz79: hỏi theo cụm — khách lờ cả cụm thì lùi CẢ CỤM xuống cuối, không hỏi tiếp ô cùng cụm.
+            cum = set(conv.prop.cum_hoi(missing[0], missing))
+            khac = [x for x in missing if x not in cum]
+            missing = khac + [x for x in missing if x in cum] if khac else missing[1:] + missing[:1]
         conv.o_vua_hoi = missing[0] if missing else None
         return conv.o_vua_hoi
 
@@ -1702,7 +1705,9 @@ class Engine:
         customer_pronoun = _detect_customer_pronoun(conv, text)
         customer_is_em = (customer_pronoun == "em")
 
-        next_field = self._o_hoi_ke(conv, conv.prop.missing_fields())
+        thieu = conv.prop.missing_fields()
+        next_field = self._o_hoi_ke(conv, thieu)
+        cum_hoi = conv.prop.cum_hoi(next_field, thieu)   # SRS-5.1zzzzzzz79: các ô hỏi gộp một câu lượt này
         # Project awareness: if the listing's project is registered, inherit its verified
         # facts (and lightly confirm); if it's named but unknown, prompt the bot to acquire
         # knowledge (ask the seller / request a link); if no project, nothing.
@@ -1716,7 +1721,7 @@ class Engine:
         trinh_nhap = False
         if not is_listing_post:
             system = build_chat_system(
-                conv.assistant.name, conv.prop, next_field, conv.user_type, project_block
+                conv.assistant.name, conv.prop, next_field, conv.user_type, project_block, cum=cum_hoi
             )
         elif not conv.listing_proposed:
             conv.listing_proposed = True
