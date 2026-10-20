@@ -307,6 +307,11 @@ class Property:
         """Ô cốt lõi của loại này: bộ riêng của loại (`CORE_THEO_LOAI`) nếu có, không thì bộ của nhóm."""
         return list(CORE_THEO_LOAI.get(self.loai_hinh or "", CORE_FIELDS[self.group]))
 
+    def fields_khach(self) -> dict[str, str]:
+        """Ô tin từ lời khách — bỏ khoá NỘI BỘ bắt đầu bằng "_" (cờ hệ thống như `_ngoai_vung`; khoá DB tự thêm vào `boc_tach` như
+        `_cap_nhat`, theo về khi nạp lại). Mọi chỗ đưa ô tin cho model / bộ đọc thông số / khách xem đi qua đây (SRS-5.1zzzzzzz86)."""
+        return {k: v for k, v in self.fields.items() if not str(k).startswith("_")}
+
     def expected_fields(self) -> list[str]:
         """All fields this property should eventually have, given its type."""
         expected = self.identity_fields() + self.core_fields()

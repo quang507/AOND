@@ -25,6 +25,7 @@ from .revenue import SALE_FEE_RATE
 from .prompts import FIELD_LABELS
 from .schema import TYPE_TO_GROUP, Property, _calc_area_from_dimension
 from .assistants import assign_assistant
+from .dia_danh import bo_dau
 
 if TYPE_CHECKING:
     from .engine import Conversation, Listing, Turn, BuyerLead
@@ -85,6 +86,22 @@ LOAI_SANG_DB = {
     "shophouse": "mat_bang", "chua_ro": "chua_ro",
 }
 DB_SANG_LOAI = {"nha_cap4": "nha_cap_4"}
+
+
+# Tiền tố chung của tên dự án — "Khu đô thị Sala" và "Sala" là một; phần còn lại phải trùng hẳn (SRS-5.1zzzzzzz86).
+_TIEN_TO_DU_AN = re.compile(r"^(khu do thi|khu dan cu|khu can ho|kdc|kdt|du an|chung cu|can ho|cao oc|toa nha)\s+")
+
+
+def _khoa_ten_du_an(ten: str | None) -> str:
+    t = re.sub(r"[^a-z0-9]+", " ", bo_dau(str(ten or ""))).strip()
+    return re.sub(r"\s+", "", _TIEN_TO_DU_AN.sub("", t))
+
+
+def cung_ten_du_an(khach: str | None, kho: str | None) -> bool:
+    """Tên dự án khách nói và tên trong kho là MỘT dự án: bỏ dấu, bỏ tiền tố chung, trùng hẳn. "LakeView City" ≡ "Lakeview city";
+    "Vinhomes Grand Park" ≠ "Glory Heights - Vinhomes Grand Park" (toà con — không đoán)."""
+    a, b = _khoa_ten_du_an(khach), _khoa_ten_du_an(kho)
+    return bool(a) and a == b
 
 
 def ma_loai_db(loai: str | None) -> str | None:
@@ -164,6 +181,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         self._conv_cache: dict[str, str] = {}
         self._anh_da_ghi: set[str] = set()   # "bucket/khoá" đã có dòng listing_media — khỏi gửi lại mỗi lượt
         self._thong_so_nho: dict[tuple[str, str], dict[str, Any]] = {}   # (loại, chữ đã gửi) → cột thông số boc_thong_so trả
+        self._du_an_nho: dict[str, dict[str, Any] | None] = {}   # tên dự án khách nói → dòng `projects` khớp rõ (hoặc None)
         self._active_da_ghi: dict[str, str] = {}   # seller_id → id căn đang nói đã ghi lên sellers.active_listing_id
 
     @property
@@ -206,19 +224,32 @@ class SupabaseConversationStore(KhoNguoiMua):
         lỗi mạng → không ghi gì (cột cũ giữ nguyên)."""
         chu = ", ".join(str(fields[k]) for k in ("dia_chi", "phuong", "quan") if fields.get(k))
         phuong, quan = self._chuan_dia_ban(chu)
-        # Căn hộ trong dự án: khách thường chỉ nói tên dự án — lấy phường theo địa chỉ dự án trong kho (SRS-5.1zzzzzzz41).
-        if not phuong and fields.get("du_an"):
-            try:
-                da = self._request("POST", "rpc/match_projects?select=location_raw,ward,district",
-                                   data={"p_text": str(fields["du_an"])})
-            except Exception as e:
-                log.warning("match_projects lỗi: %s", e)
-                da = None
-            if isinstance(da, list) and da:
-                d = da[0]
-                p2, q2 = self._chuan_dia_ban(", ".join(str(d[k]) for k in ("location_raw", "ward", "district") if d.get(k)))
-                phuong, quan = p2, quan or q2
+        # Căn hộ trong dự án: khách thường chỉ nói tên dự án — lấy phường theo địa chỉ dự án trong kho (SRS-5.1zzzzzzz41), chỉ
+        # khi tên khớp rõ một dự án (`_du_an`, SRS-5.1zzzzzzz86 — bản trước lấy dòng đầu của tìm gần đúng).
+        d = self._du_an(fields)
+        if not phuong and d:
+            p2, q2 = self._chuan_dia_ban(", ".join(str(d[k]) for k in ("location_raw", "ward", "district") if d.get(k)))
+            phuong, quan = p2, quan or q2
         return phuong, quan
+
+    def _du_an(self, fields: dict[str, Any]) -> dict[str, Any] | None:
+        """Dự án trong kho `projects` mà tin thuộc về — MỘT chỗ quyết cho cả `project_id` lẫn phường theo dự án (SRS-5.1zzzzzzz86).
+        Bắn thử 20/10: căn LakeView City / Masteri Thảo Điền có tên dự án trùng kho mà `project_id` không bao giờ được ghi (trang dự
+        án không thấy tin), còn phường thì lấy từ dòng ĐẦU của `match_projects` (tìm gần đúng) — "Vinhomes Grand Park" có thể ra
+        "Glory Heights - Vinhomes Grand Park" (một toà khác). Chỉ nhận khi tên khớp rõ (`cung_ten_du_an`); không chắc thì không gắn."""
+        ten = str(fields.get("du_an") or "").strip()
+        if not ten:
+            return None
+        if ten not in self._du_an_nho:
+            try:
+                da = self._request("POST", "rpc/match_projects?select=id,name,location_raw,ward,district", data={"p_text": ten})
+            except Exception as e:  # noqa: BLE001 — không gắn dự án lượt này, lượt sau thử lại
+                log.warning("match_projects lỗi: %s", e)
+                return None
+            if len(self._du_an_nho) > 500:
+                self._du_an_nho.clear()
+            self._du_an_nho[ten] = next((x for x in (da if isinstance(da, list) else []) if cung_ten_du_an(ten, x.get("name"))), None)
+        return self._du_an_nho[ten]
 
     def _chuan_dia_ban(self, chu: str) -> tuple[str | None, str | None]:
         if not chu:
@@ -253,7 +284,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         pháp lý đi đường riêng `_ma_phap_ly`. Nhớ theo chữ đã gửi để không gọi lại mỗi lượt."""
         dong = []
         for k, v in fields.items():
-            if k in _O_KHONG_PHAI_THONG_SO or not isinstance(v, (str, int, float)) or not str(v).strip():
+            if k in _O_KHONG_PHAI_THONG_SO or str(k).startswith("_") or not isinstance(v, (str, int, float)) or not str(v).strip():
                 continue
             nhan = NHAN_TRUNG_TINH[k] if k in NHAN_TRUNG_TINH else FIELD_LABELS.get(k, k.replace("_", " ")).split(" (")[0]
             dong.append(f"{nhan}: {v}" if nhan else str(v))
@@ -494,6 +525,9 @@ class SupabaseConversationStore(KhoNguoiMua):
                 phuong, quan = self._dia_ban(fields)
                 if phuong:
                     listing_payload["ward"] = phuong
+                du_an = self._du_an(fields)
+                if du_an and du_an.get("id"):
+                    listing_payload["project_id"] = du_an["id"]
                 if quan:
                     listing_payload["district"] = quan
                 listing_payload.update(self._thong_so(fields, ma_loai_db(li.prop.loai_hinh)))
@@ -514,14 +548,19 @@ class SupabaseConversationStore(KhoNguoiMua):
                 existing = self._get(f"listings?id=eq.{lid_mong}&select=id,status") if lid_mong else []
                 if not existing:
                     existing = self._get(f"listings?seller_id=eq.{seller_id}&code=eq.{listing_payload['code']}&select=id,status")
+                # Căn ngoài vùng nhận tin (SRS-5.1zzzzzzz86): đã có dòng (tạo lượt trước, khi chưa biết tỉnh) thì ẩn; chưa có thì
+                # không tạo — trigger đăng tin không đụng tới `an`.
+                ngoai_vung = bool(fields.get("_ngoai_vung"))
                 if existing:
                     lid = existing[0]["id"]
-                    ma = ma_trang_thai(getattr(li, "status", None), existing[0].get("status"))
+                    ma = "an" if ngoai_vung else ma_trang_thai(getattr(li, "status", None), existing[0].get("status"))
                     if ma:
                         listing_payload["status"] = ma
                     self._patch(f"listings?id=eq.{lid}", listing_payload)
                     if ma == "da_chot":   # chốt kèo → dòng deals (SRS-5.1zzzzzzz70); báo khách quan tâm do trigger DB lo
                         self.ghi_deal(lid, SALE_FEE_RATE.get(getattr(conv, "user_type", None)))
+                elif ngoai_vung:
+                    continue
                 else:
                     # Tin tạo từ chat chỉ lên web khi khách đồng ý bản nháp (trigger listings_quyet_dinh_dang_tin đọc
                     # can_chu_duyet + chu_duyet_at; SRS-5.1zzzzzzz47). Admin / Excel tạo tin thì cờ này false như cũ.

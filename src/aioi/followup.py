@@ -132,6 +132,9 @@ class FollowUpManager:
 
             listing = conv.active
             prop = listing.prop
+            if prop.fields.get("_ngoai_vung"):   # căn ngoài vùng nhận tin — không nhắc hỏi tiếp (SRS-5.1zzzzzzz86)
+                log.info("Follow-up for %s: căn ngoài vùng nhận tin. Skipping.", user_key)
+                return
             completeness = prop.completeness()
             if completeness >= 1.0:
                 log.info("User %s listing is 100%% complete. Skipping follow-up.", user_key)

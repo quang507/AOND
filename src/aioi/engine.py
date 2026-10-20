@@ -62,6 +62,7 @@ from .prompts import (
     tai_lieu_chung_schema,
     build_greeting,
     build_listing_proposal_system,
+    build_ngoai_vung_system,
     cat_truoc_mo_dau,
     build_inventory_instruction,
     build_media_group_instruction,
@@ -1573,7 +1574,7 @@ class Engine:
                             "ma_can": li.listing_id,
                             "loai_hinh": li.prop.loai_hinh,
                             "du_an": li.prop.fields.get("du_an"),
-                            "thong_tin": dict(li.prop.fields),
+                            "thong_tin": li.prop.fields_khach(),
                             "do_day_du": f"{int(li.prop.completeness() * 100)}%",
                             "thieu_truong": li.prop.missing_fields(),
                             "hinh_anh": len(li.media),
@@ -1588,7 +1589,7 @@ class Engine:
                     "ma_can": li.listing_id,
                     "loai_hinh": li.prop.loai_hinh,
                     "du_an": li.prop.fields.get("du_an"),
-                    "thong_tin": dict(li.prop.fields),
+                    "thong_tin": li.prop.fields_khach(),
                     "do_day_du": f"{int(li.prop.completeness() * 100)}%",
                     "thieu_truong": li.prop.missing_fields(),
                     "du_dieu_kien_tin_nhap": li.prop.summary_ready(),
@@ -1693,6 +1694,8 @@ class Engine:
             captured = []
         else:
             captured, conv.last_receipts = self._ap_dung_ke_hoach(conv, ke_hoach)
+            if conv.y_luot.get("ngoai_vung"):   # khoá nội bộ `_` — theo căn qua lưu / nạp lại, không vào ô tin (fields_khach)
+                conv.prop.fields["_ngoai_vung"] = conv.y_luot["ngoai_vung"]
 
             # 1a-destructive. A DESTRUCTIVE basket op (xóa hết / bỏ căn / chỉ giữ) is confirmed
             #    with a reply built from the REAL post-action state, so the words match the deed —
@@ -1786,6 +1789,19 @@ class Engine:
         #    - draft already shown            -> react to approval & pivot to the fee (§V)
         customer_pronoun = _detect_customer_pronoun(conv, text)
         customer_is_em = (customer_pronoun == "em")
+
+        # Căn ngoài vùng nhận tin (SRS-5.1zzzzzzz86, chủ dự án 20/10: chỉ TP.HCM, Bình Dương, Vũng Tàu, Long An, Tây Ninh, Đồng Nai):
+        # nói khéo chưa nhận khu vực đó — không hỏi tiếp ô thiếu, không soạn tin, không đăng (kho ẩn tin, tin nhắc bỏ qua).
+        if conv.prop.fields.get("_ngoai_vung"):
+            system = (build_ngoai_vung_system(conv.assistant.name, conv.prop.fields["_ngoai_vung"])
+                      + khoi_xung_ho(customer_pronoun) + khoi_can_nguoi(conv))
+            reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+            if not reply:
+                raise LoiTraLoi("lời gửi khách rỗng")
+            reply = _bo_markdown(reply)
+            conv.history.append(Turn("assistant", reply, now))
+            conv.last_ai_at = now
+            return self._build_result(conv, reply, captured, now)
 
         next_field = self._o_hoi_ke(conv, conv.prop.missing_fields())
         thieu = conv.prop.missing_fields()   # sau _o_hoi_ke: ô khách lờ 2 lần đã để sau (SRS-5.1zzzzzzz80)
@@ -3084,6 +3100,13 @@ class Engine:
         # Xin gặp người thật (SRS-5.1zzzzzzz82): giữ nguyên cụm trích để báo admin kèm lời khách.
         if _trich_dan_khop(plan.get("can_nguoi_that"), cuoi):
             conv.y_luot["can_nguoi_that"] = str(plan["can_nguoi_that"]).strip()
+        # Căn nằm ngoài vùng nhận tin (SRS-5.1zzzzzzz86): AI đọc tỉnh / thành, code kiểm cụm địa danh có trong một trong sáu lượt
+        # khách gần nhất (tỉnh có thể đã nói ở lượt trước). Cờ gắn lên căn SAU khi áp thao tác (căn mới có thể vừa được tạo).
+        nv = str(plan.get("ngoai_vung") or "").strip()
+        if nv and conv.role != "buyer":
+            gan = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
+            if any(_trich_dan_khop(plan.get("ngoai_vung_trich_dan"), c) for c in gan):
+                conv.y_luot["ngoai_vung"] = nv
         if plan.get("xac_nhan_xoa") in ("dong_y", "tu_choi") and _trich_dan_khop(plan.get("xac_nhan_trich_dan"), cuoi):
             conv.y_luot["xac_nhan_xoa"] = plan["xac_nhan_xoa"]
         # Việc khách mua / người rao trả lời câu khách hỏi (SRS-5.1zzzzzzz70): nhận khi cụm trích có trong tin vừa nhắn.

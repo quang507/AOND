@@ -134,6 +134,9 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > - **Giữ của mình, không theo anh Luận:** hỏi gộp theo cụm (SRS-5.1zzzzzzz79), khách lờ một ô 2 lần thì để sau (SRS-5.1zzzzzzz80), khen
 >   ít / có cơ sở, cấm mở đầu "Dạ", tên trợ lý người thật (FR-181), kênh vừa mua vừa bán (lời chào hai lựa chọn).
 > - **Model:** mọi lượt dùng Haiku (chủ dự án: "Vẫn haiku").
+> - **Vùng nhận tin (20/10/2026, SRS-5.1zzzzzzz86):** chỉ TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai (chủ dự
+>   án: "hcm long an tây ninh bình dương đồng nai vũng tàu thôi"); nơi khác bot nói khéo chưa nhận, không hỏi, không soạn tin. Một nguồn:
+>   `prompts.VUNG_NHAN_TIN`. Bình Phước cũ (nay thuộc Đồng Nai) đang xếp NGOÀI vùng — giả định, chờ chủ dự án.
 
 Từ 24/08/2026 (quyết định chủ dự án) code nằm **trong repo này**, hai mảnh:
 

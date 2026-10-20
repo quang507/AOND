@@ -511,7 +511,7 @@ def describe_captured(prop: Property) -> str:
         value = prop.fields.get(slug)
         if value:
             lines.append(f"- {FIELD_LABELS.get(slug, slug)}: {value}")
-    for slug, value in prop.fields.items():
+    for slug, value in prop.fields_khach().items():
         if slug not in seen and value:
             seen.add(slug)
             lines.append(f"- {FIELD_LABELS.get(slug, slug)}: {value}")
@@ -541,6 +541,22 @@ nhà chưa nói — "giữ gìn sạch đẹp", "nhà mới xây", "thương lư
 trong lúc chat không phải dữ liệu.
 
 ĐỊNH DẠNG KHOẢNG CÁCH (bắt buộc): CÓ một dòng trống NGĂN tiêu đề với đoạn mô tả, và một dòng trống NGĂN đoạn mô tả với khối gạch đầu dòng. Trong khối gạch đầu dòng thì KHÔNG chèn dòng trống giữa các gạch. KHÔNG dùng dấu ** (Zalo không hiện in đậm). CẤM viết "đang cập nhật"."""
+
+
+# Vùng nhận rao (chủ dự án 20/10/2026: "hcm long an tây ninh bình dương đồng nai vũng tàu thôi"; SRS-5.1zzzzzzz86). Một nguồn cho
+# lượt AI lập thao tác (đọc căn có nằm ngoài vùng không) và lời bot nói khéo khi ngoài vùng.
+VUNG_NHAN_TIN = "TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai"
+
+
+def build_ngoai_vung_system(assistant_name: str, tinh: str) -> str:
+    """Căn khách rao nằm ngoài vùng nhận tin: cảm ơn, nói khéo bên mình chưa nhận khu vực đó, mời gửi căn trong vùng nếu có. Không
+    hỏi tiếp thông tin căn, không soạn tin rao (SRS-5.1zzzzzzz86)."""
+    return f"""Bạn là "{assistant_name}", chuyên viên tư vấn bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
+
+=== CĂN KHÁCH RAO NẰM NGOÀI KHU VỰC NHẬN TIN ({tinh}) ===
+Hiện AI Ơi Nhà Đất chỉ nhận rao bất động sản ở {VUNG_NHAN_TIN}. Trả lời 1–2 câu, ấm áp, lịch sự: cảm ơn khách đã gửi, nói khéo
+là bên em hiện chưa nhận rao khu vực {tinh}, và nếu khách có căn nào ở các tỉnh / thành trên thì gửi em hỗ trợ ngay.
+KHÔNG hỏi thêm thông tin căn này, KHÔNG soạn tin rao, KHÔNG hứa sẽ mở khu vực đó. Câu đầu mở bằng nội dung, không mở bằng "Dạ"."""
 
 
 # Dòng mở đầu cố định của bản nháp tin rao. Model hay viết thêm câu dẫn TRƯỚC dòng này ("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như
@@ -1436,6 +1452,11 @@ QUY TẮC:
 - XIN GẶP NGƯỜI THẬT (20/10/2026, SRS-5.1zzzzzzz82): can_nguoi_that = NGUYÊN VĂN cụm khách XIN nói chuyện / gặp / gọi điện với
   NGƯỜI (nhân viên, quản lý, môi giới, "người thật", "không muốn chat với máy"). Hỏi bot là người hay máy, hay chỉ than chậm, KHÔNG
   phải xin gặp người → bỏ trống. Có điền thì vẫn ghi các ô tin khác như thường.
+- NGOÀI VÙNG NHẬN TIN (20/10/2026, SRS-5.1zzzzzzz86): bên mình chỉ nhận rao ở TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai — tính theo địa giới cũ lẫn mới (TP.HCM
+  mới gồm Bình Dương và Bà Rịa – Vũng Tàu cũ; Tây Ninh mới gồm Long An cũ; Bình Phước cũ dù nay thuộc Đồng Nai vẫn là NGOÀI vùng).
+  ngoai_vung = tên tỉnh / thành của căn KHI khách đã nói rõ địa danh nằm ngoài vùng (vd "quận Đống Đa, Hà Nội" → "Hà Nội"; "nhà
+  ở Đà Nẵng" → "Đà Nẵng"; "Đồng Xoài, Bình Phước" → "Bình Phước"). Chỉ có tên đường (trùng ở nhiều tỉnh) hay chưa rõ tỉnh → bỏ
+  trống, KHÔNG đoán. Có điền thì ngoai_vung_trich_dan = NGUYÊN VĂN cụm địa danh khách nói.
 - XÁC NHẬN XOÁ: chỉ khi tin NGAY TRƯỚC của bot hỏi xác nhận ẩn / bỏ / chỉ giữ căn: xac_nhan_xoa = "dong_y" (khách đồng ý làm) hoặc
   "tu_choi" (khách không muốn, giữ nguyên), kèm xac_nhan_trich_dan = NGUYÊN VĂN cụm đó. Nói chuyện khác → bỏ trống.
 - ĐỊA CHỈ ĐẦY ĐỦ: fields.dia_chi luôn là địa chỉ ĐẦY ĐỦ của căn sau khi GHÉP phần khách vừa nói (số nhà, hẻm, phường, quận) vào
@@ -1590,6 +1611,10 @@ def operations_schema() -> dict[str, Any]:
                             "Không có thì bỏ trống."},
             "can_nguoi_that": {"type": "string", "description": "Nguyên văn cụm khách XIN nói chuyện / gặp / gọi điện với người "
                                "thật (nhân viên, quản lý). Không xin thì bỏ trống."},
+            "ngoai_vung": {"type": "string", "description": "Tên tỉnh / thành của căn khi khách đã nói rõ căn nằm NGOÀI vùng nhận "
+                           "tin (TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai). Trong vùng hoặc chưa rõ thì bỏ "
+                           "trống."},
+            "ngoai_vung_trich_dan": {"type": "string", "description": "Nguyên văn cụm địa danh khách nói (bắt buộc khi có ngoai_vung)."},
             "xac_nhan_xoa": {"type": "string", "enum": ["dong_y", "tu_choi"],
                              "description": "Chỉ khi bot vừa hỏi xác nhận ẩn / bỏ / chỉ giữ căn: khách đồng ý hay từ chối."},
             "xac_nhan_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách đồng ý / từ chối (bắt buộc khi có xac_nhan_xoa)."},
