@@ -39,3 +39,17 @@ def test_gia_dia_chi_khong_bao_gio_de_sau():
         Engine._o_hoi_ke(c, ["gia"])
     assert "gia" not in c.prop.hoan and c.prop.missing_fields()[:1] != []
     assert not c.prop.hoan_duoc("loai_hinh") and not c.prop.hoan_duoc("dia_chi")
+
+
+def test_o_giua_cum_cung_duoc_dem():
+    """Bắn thử 20/10 lần 3: bot hỏi gộp "ngang dài, sàn, mấy tầng" (ô đầu cụm là diện tích đất); khách chỉ trả lời ngang dài rồi
+    kết cấu, câu sàn vẫn hiện 3 lần vì bộ đếm chỉ tính ô đầu cụm. Nay ô nào trong cụm bị lờ cũng được đếm."""
+    c = _conv(duong="Cao Lỗ", dia_chi="Cao Lỗ", phuong="Phường Chánh Hưng", quan="Quận 8", lo_gioi_hem="mặt tiền")
+    p = c.prop
+    hoi = []
+    for khach_noi in ({}, {"dien_tich_dat": "4,5x11"}, {"ket_cau": "1 trệt 3 lầu"}, {"phap_ly": "sổ riêng"}, {"gia": "8,5 tỷ"}):
+        p.fields.update(khach_noi)
+        o = Engine._o_hoi_ke(c, p.missing_fields())
+        hoi.append(c.cum_vua_hoi)
+    assert sum("dien_tich_nha" in cum for cum in hoi) <= 2
+    assert "dien_tich_nha" in p.hoan and p.summary_ready()

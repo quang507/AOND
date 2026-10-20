@@ -6848,6 +6848,10 @@ cùng lớp:** luật cấm khác cũng chỉ nói phủ định (cấm nhại l
   không thấy bản nháp. Dòng mở đầu là chữ cố định của code: nay nhận cả bản thiếu "📋" và gắn lại đúng dòng cố định
   (`tests/test_loi_gui_khach.py` thêm ca, đỏ trên code cũ — đã chạy).
 
+- Bắn thử lần 3 (run 39357092816): Cao Lỗ vẫn thấy câu diện tích sàn 3 lần — bộ đếm lờ chỉ tính ô ĐẦU cụm, câu sàn nằm giữa cụm
+  "ngang dài · sàn · số tầng" nên lờ không được đếm. Nay `_o_hoi_ke` nhớ cả cụm vừa hỏi (`Conversation.cum_vua_hoi`) và đếm từng ô
+  (`tests/test_lo_hai_lan_de_sau.py::test_o_giua_cum_cung_duoc_dem`, đỏ khi chỉ đếm ô đầu cụm — đã chạy).
+
 **Giới hạn.** `hoan` và `lo` không lưu DB: lõi khởi động lại giữa chừng thì ô đó có thể bị hỏi lại thêm một lần.
 
 **Kiểm.** `tests/test_lo_hai_lan_de_sau.py` (3 ca: lờ 2 lần thì để sau và ra bản nháp; hỏi lại sau khi duyệt; giá / địa chỉ không để
