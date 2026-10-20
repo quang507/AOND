@@ -254,6 +254,29 @@ def _so_khop(trich: str | None, gia_tri: str | None, loi_khach: str) -> bool:
     return bool(o_trich) and o_trich <= so(loi_khach) | tich
 
 
+# Ô GHÉP / ĐỐI CHIẾU KHO — giá trị không đòi nằm trong lời khách (SRS-5.1zzzzzzz86): địa chỉ là bản GHÉP nhiều lượt và có cổng chuẩn
+# hoá một cửa phía DB (chuan_dia_ban, tim_duong); tên dự án đối chiếu kho `projects` (`cung_ten_du_an`) — kho là bằng chứng.
+_O_GHEP = frozenset({"dia_chi", "phuong", "quan", "duong", "du_an"})
+# Đơn vị của ô số đo — model hay viết lại ("tỉ" → "tỷ", "3 lầu" → "4 tầng", "4,5x11" → "49,5m²"); chữ khác trong giá trị số đo vẫn
+# phải có trong lời khách. Bảng theo schema ô số đo của hệ thống, không đọc ý khách.
+_DON_VI = frozenset({"m", "met", "ty", "ti", "trieu", "tr", "k", "ngan", "nghin", "usd", "thang", "nam", "ha", "tang", "lau", "x"})
+
+
+def _tu(s: str | None) -> set[str]:
+    return set(re.findall(r"[a-z0-9]+", _strip_accents(re.sub(r"(?i)m\s*[2²]", "m", str(s or ""))).lower()))
+
+
+def _gia_tri_chong_do(k: str, v: str, loi_khach: str) -> bool:
+    """Giá trị ô có được lời khách CHỐNG ĐỠ không (SRS-5.1zzzzzzz86): mọi từ của giá trị phải có trong lời khách (ô số đo: trừ số —
+    `_so_khop` lo — và đơn vị). Bắn thử KB1 20/10: khách "ngõ trước nhà rộng 3m", AI trích đúng cụm đó nhưng GHI ô `vi_he_xe` =
+    "Ngõ rộng 3m, xe máy hoặc ô tô con vào được" rồi tin rao in "ô tô con vào thuận tiện" — cổng cũ chỉ kiểm cụm trích, không kiểm
+    giá trị. Không đọc ý: chỉ so từ của giá trị với từ khách gõ."""
+    du = _tu(loi_khach)
+    if k in _O_SO_DO:
+        return {w for w in _tu(v) if not w[0].isdigit()} <= du | _DON_VI
+    return _tu(v) <= du
+
+
 def _strip_accents(s: str) -> str:
     s = (s or "").replace("đ", "d").replace("Đ", "D")  # NFD won't decompose đ — map it first
     return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
@@ -3204,6 +3227,41 @@ class Engine:
         start = (user_idxs[-2] + 1) if len(user_idxs) >= 2 else 0
         return [Message(t.role, t.content) for t in conv.history[start:]]
 
+    @staticmethod
+    def _gia_tri_ghi(conv: "Conversation", k: str, v: str, bang_chung: dict) -> str | None:
+        """Giá trị được ghi vào ô, hoặc None = bỏ. Ô tin chỉ ghi điều KHÁCH nói (SRS-5.1zzzzzzz73): giá trị đã có sẵn ở rổ thì
+        giữ; mới / đổi thì cụm bằng chứng AI đưa phải nằm nguyên trong lời khách. Bắt lớp lỗi "AI ghi ô từ câu bot tự hỏi / tự
+        suy" (19/10: bot hỏi "có để thương lượng nhẹ không", khách trả lời chuyện khác, ô thuong_luong vẫn thành "thương lượng
+        nhẹ" rồi lên tin). SRS-5.1zzzzzzz86: cụm trích đúng mà GIÁ TRỊ thêm điều khách không nói (`_gia_tri_chong_do`) → ghi
+        chính cụm khách nói, không ghi lời AI suy."""
+        if k in _O_PHAN_LOAI:
+            return v   # phân loại AI đọc theo nghĩa ("nhà phố" → nha_pho), không phải lời trích; sai loại không phải bịa
+        if any(li.prop.fields.get(k) == v for li in conv.listings):
+            return v
+        loi = conv.loi_khach_luot
+        bc = bang_chung.get(k) if isinstance(bang_chung.get(k), str) else None
+        # Bằng chứng = cụm AI trích; model không phải lượt nào cũng trích (bắn thử 19/10: bỏ mất "diện tích sàn 170m²") nên
+        # thiếu cụm thì kiểm chính giá trị ô — vẫn phải nằm trong lời KHÁCH, nên câu bot tự hỏi không lọt.
+        co_bc = any(_trich_dan_khop(x, loi) or (k in _O_SO_DO and _so_khop(x, v, loi)) for x in (bc, v))
+        if co_bc and (k in _O_GHEP or _trich_dan_khop(v, loi) or _gia_tri_chong_do(k, v, loi)):
+            return v
+        if co_bc and bc and _trich_dan_khop(bc, loi) and (k not in _O_SO_DO or _so_khop(bc, bc, loi)):
+            log.warning("Ô %s: giá trị AI có ý khách không nói — ghi nguyên cụm khách", k)   # không in giá trị (dữ liệu khách)
+            return bc.strip()
+        log.warning("Bỏ ô %s: không có bằng chứng trong lời khách", k)
+        return None
+
+    def _loc_o_tin(self, conv: "Conversation", fields: dict, bang_chung: dict | None = None) -> dict[str, str]:
+        """MỘT cổng cho mọi đường AI ghi ô tin từ lời chat (lượt lập thao tác, đọc lại căn mới tách ra) — SRS-5.1zzzzzzz73/86."""
+        bc = bang_chung if isinstance(bang_chung, dict) else {}
+        out: dict[str, str] = {}
+        for k, v in (fields or {}).items():
+            if isinstance(v, str) and v.strip():
+                g = self._gia_tri_ghi(conv, k, v, bc)
+                if g:
+                    out[k] = g
+        return out
+
     def _extract_fields(self, conv: Conversation) -> dict[str, str]:
         """Fields-only extraction of the ACTIVE listing's clean history slice (used when a new
         căn is split off, so its data is read fresh from just its own messages)."""
@@ -3238,25 +3296,8 @@ class Engine:
 
         bang_chung = op.get("bang_chung") if isinstance(op.get("bang_chung"), dict) else {}
 
-        def _co_bang_chung(k: str, v: str) -> bool:
-            """Ô tin chỉ ghi điều KHÁCH nói (SRS-5.1zzzzzzz73): giá trị đã có sẵn ở rổ thì giữ; mới / đổi thì cụm bằng chứng AI
-            đưa phải nằm nguyên trong lời khách. Bắt lớp lỗi "AI ghi ô từ câu bot tự hỏi / tự suy" (19/10: bot hỏi "có để
-            thương lượng nhẹ không", khách trả lời chuyện khác, ô thuong_luong vẫn thành "thương lượng nhẹ" rồi lên tin)."""
-            if k in _O_PHAN_LOAI:
-                return True   # phân loại AI đọc theo nghĩa ("nhà phố" → nha_pho), không phải lời trích; sai loại không phải bịa
-            if any(li.prop.fields.get(k) == v for li in conv.listings):
-                return True
-            # Bằng chứng = cụm AI trích; model không phải lượt nào cũng trích (bắn thử 19/10: bỏ mất "diện tích sàn 170m²") nên
-            # thiếu cụm thì kiểm chính giá trị ô — vẫn phải nằm trong lời KHÁCH, nên câu bot tự hỏi không lọt.
-            for bc in (bang_chung.get(k), v):
-                if _trich_dan_khop(bc, conv.loi_khach_luot) or (k in _O_SO_DO and _so_khop(bc, v, conv.loi_khach_luot)):
-                    return True
-            log.warning("Bỏ ô %s: không có bằng chứng trong lời khách", k)   # không in giá trị: log có thể chứa dữ liệu khách
-            return False
-
         def _data(exclude_code: bool = False) -> dict[str, str]:
-            return {k: v for k, v in fields.items()
-                    if isinstance(v, str) and v.strip() and not (exclude_code and k == "ma_so_can") and _co_bang_chung(k, v)}
+            return self._loc_o_tin(conv, {k: v for k, v in fields.items() if not (exclude_code and k == "ma_so_can")}, bang_chung)
 
         # "xóa/bỏ/chỉ giữ" NEVER delete — they move listings to 'không rao' (hidden, kept).
         if kind == "clear":
@@ -3293,7 +3334,7 @@ class Engine:
                 # bleeds from the previous căn.
                 li = conv.new_listing()
                 li.history_start = max(0, len(conv.history) - 1)
-                data = self._extract_fields(conv)
+                data = self._loc_o_tin(conv, self._extract_fields(conv))   # cùng cổng bằng chứng (SRS-5.1zzzzzzz86)
                 if targets:
                     data["ma_so_can"] = targets[0]
                 changed.update(li.prop.update(data))

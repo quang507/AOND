@@ -141,3 +141,61 @@ def test_ke_hoach_co_thao_tac_la_chuoi_khong_sap_luot():
                                        {"op": "update", "fields": {"gia": "8,5 tỷ"}}], "user_intent": "sell"}))
     eng.handle("chu-11", "giá 8,5 tỷ")
     assert eng.conversation("chu-11").active.prop.fields.get("gia") == "8,5 tỷ"
+
+
+# 20/10/2026 (SRS-5.1zzzzzzz86) — cụm trích đúng mà GIÁ TRỊ ô thêm điều khách không nói. Ca gốc bắn thử KB1: khách "ngõ trước nhà rộng
+# 3m", AI trích đúng cụm đó nhưng ghi `vi_he_xe` = "Ngõ rộng 3m, xe máy hoặc ô tô con vào được" và tin rao in "ô tô con vào thuận
+# tiện". Đỏ trên bản cũ (cổng chỉ kiểm cụm trích).
+def test_gia_tri_them_y_khach_khong_noi_thi_ghi_nguyen_cum_khach():
+    eng = Engine(AiGia({"operations": [{"op": "update",
+                                        "fields": {"vi_he_xe": "Ngõ rộng 3m, xe máy hoặc ô tô con vào được"},
+                                        "bang_chung": {"vi_he_xe": "ngõ trước nhà rộng 3m"}}], "user_intent": "sell"}))
+    eng.handle("chu-12", "ngõ trước nhà rộng 3m, nhà 7 tầng")
+    assert eng.conversation("chu-12").active.prop.fields.get("vi_he_xe") == "ngõ trước nhà rộng 3m"
+
+
+def test_o_so_do_them_chu_khach_khong_noi_thi_ghi_nguyen_cum_khach():
+    # Cách nói mới: số khớp nhưng chữ thêm "thang máy" (lỗi tin thật: không thang máy thành có thang máy).
+    eng = Engine(AiGia({"operations": [{"op": "update", "fields": {"ket_cau": "1 trệt 3 lầu, có thang máy"},
+                                        "bang_chung": {"ket_cau": "1 trệt 3 lầu"}}], "user_intent": "sell"}))
+    eng.handle("chu-13", "nhà 1 trệt 3 lầu, 4 phòng ngủ")
+    assert eng.conversation("chu-13").active.prop.fields.get("ket_cau") == "1 trệt 3 lầu"
+
+
+def test_hem_khong_thanh_mat_tien():
+    eng = Engine(AiGia({"operations": [{"op": "update", "fields": {"lo_gioi_hem": "mặt tiền hẻm xe hơi"},
+                                        "bang_chung": {"lo_gioi_hem": "hẻm 4m"}}], "user_intent": "sell"}))
+    eng.handle("chu-14", "nhà trong hẻm 4m")
+    assert eng.conversation("chu-14").active.prop.fields.get("lo_gioi_hem") == "hẻm 4m"
+
+
+def test_gia_tri_chi_sap_lai_chu_khach_thi_giu():
+    # Không quá tay: giá trị chỉ dùng từ khách gõ (thêm dấu phẩy, hoa) giữ nguyên; đơn vị viết lại của ô số đo vẫn nhận.
+    eng = Engine(AiGia({"operations": [{"op": "update", "fields": {"phap_ly": "Sổ hồng riêng, hoàn công đủ", "gia": "22,5 tỷ",
+                                                                    "so_tang": "4 tầng"},
+                                        "bang_chung": {"phap_ly": "sổ hồng riêng hoàn công đủ", "gia": "22,5 tỉ",
+                                                       "so_tang": "1 trệt 3 lầu"}}], "user_intent": "sell"}))
+    eng.handle("chu-15", "sổ hồng riêng hoàn công đủ, giá 22,5 tỉ, 1 trệt 3 lầu")
+    f = eng.conversation("chu-15").active.prop.fields
+    assert f.get("phap_ly") == "Sổ hồng riêng, hoàn công đủ" and f.get("gia") == "22,5 tỷ" and f.get("so_tang") == "4 tầng"
+
+
+class AiTachCan(AiGia):
+    """Lượt đọc lại căn mới tách ra (`_extract_fields`) trả một ô bịa — đường này trước đây không qua cổng."""
+
+    def extract(self, system, messages, json_schema):
+        if "operations" in (json_schema.get("properties") or {}):
+            return dict(self.ke_hoach)
+        return {"gia": "9 tỷ", "thuong_luong": "thương lượng nhẹ", "dien_tich": "60m2"}
+
+
+def test_can_moi_tach_ra_cung_qua_cong_bang_chung():
+    eng = Engine(AiTachCan({"operations": [{"op": "update", "fields": {"gia": "5 tỷ"}, "bang_chung": {"gia": "5 tỷ"}}],
+                            "user_intent": "sell"}))
+    eng.handle("chu-16", "bán nhà giá 5 tỷ")
+    eng._provider.ke_hoach = {"operations": [{"op": "add"}], "user_intent": "sell"}
+    eng.handle("chu-16", "còn căn nữa 60m2")
+    conv = eng.conversation("chu-16")
+    moi = conv.listings[-1].prop.fields
+    assert len(conv.listings) == 2 and moi.get("dien_tich") == "60m2"
+    assert "gia" not in moi and "thuong_luong" not in moi

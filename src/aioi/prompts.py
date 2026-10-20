@@ -538,7 +538,7 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NH
 
 NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN (SRS-5.1zzzzzzz73): mọi ý trong tin phải có trong dữ liệu căn / lời chủ nhà. Không thêm điều chủ
 nhà chưa nói — "giữ gìn sạch đẹp", "nhà mới xây", "thương lượng", lý do bán, tiện ích gần nhà… Câu bot từng HỎI hay từng KHEN
-trong lúc chat không phải dữ liệu.
+trong lúc chat không phải dữ liệu. Không suy từ con số ra điều khác: "ngõ 3m" viết "ngõ 3m", KHÔNG thêm "ô tô vào thuận tiện".
 
 ĐỊNH DẠNG KHOẢNG CÁCH (bắt buộc): CÓ một dòng trống NGĂN tiêu đề với đoạn mô tả, và một dòng trống NGĂN đoạn mô tả với khối gạch đầu dòng. Trong khối gạch đầu dòng thì KHÔNG chèn dòng trống giữa các gạch. KHÔNG dùng dấu ** (Zalo không hiện in đậm). CẤM viết "đang cập nhật"."""
 
@@ -1383,6 +1383,9 @@ op hủy; để operations RỖNG. Thà bỏ sót còn hơn ẩn nhầm.
 CHỈ GHI ĐIỀU KHÁCH NÓI: mỗi ô trong "fields" phải kèm "bang_chung" = nguyên văn cụm trong lời KHÁCH. Câu BOT hỏi hay gợi ý
 ("có để giá thương lượng nhẹ không ạ?") KHÔNG phải lời khách: khách chưa trả lời đúng ý đó thì không ghi ô đó. Không tự suy
 (nhà "mới xây", "nội thất đẹp"…) khi khách không nói. Ô thiếu bằng chứng bị hệ thống bỏ.
+GIÁ TRỊ Ô CŨNG CHỈ LÀ ĐIỀU KHÁCH NÓI (SRS-5.1zzzzzzz86): không suy thêm từ một con số hay một chữ — "ngõ rộng 3m" KHÔNG thành "ô tô
+vào được", "hẻm 4m" KHÔNG thành "mặt tiền", "3 lầu" KHÔNG thành "có thang máy". Giá trị có từ khách không gõ thì hệ thống ghi
+nguyên cụm bang_chung thay cho giá trị.
 
 Ngoài "operations", nếu rõ vai trò người rao thì đặt "seller_role"
 (chu_nha/luot_song/moi_gioi/san/chu_dau_tu); nếu là tin cho thuê đặt "is_rental"=true.
