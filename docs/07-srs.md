@@ -7044,7 +7044,10 @@ không có trong `messages` (lỗi ghi tin SRS-5.1zzzzzzz84, vá sau giờ test)
 (ĐỎ trên code cũ — đã chạy); `tests/test_prompts.py`, `tests/test_tin_rao_bo_cuc.py` đổi theo luật mới. pytest 443 đạt. Kiểm bắn thử
 tiêu đề ĐỎ với tiêu đề 24 từ của lượt 20/10 (đã chạy với chuỗi đó). Model thật: bắn thử 1 sau `cai-vps` (run 39371367332) — mọi tiêu đề đã có đủ vị trí · diện tích · giá nhưng Nguyễn Trãi còn 17
 từ ("…đường Nguyễn Trãi Phường Chợ Quán Quận 5…"), căn hộ chêm 2 điểm mạnh → thêm luật viết gọn (MT, Q.5, bỏ chữ "đường" /
-"Phường" / "Quận"; không chêm sổ hồng / nội thất) rồi bắn lại. Thêm nhãn ô mới thì chạy lại phép soát `boc_thong_so('<nhãn>: x')`
+"Phường" / "Quận"; không chêm sổ hồng / nội thất) rồi bắn lại. Bắn thử 2 (run 39372331760): cả 4 tiêu đề đạt (vd "Bán nhà MT Nguyễn
+Trãi Q.5, 80m², 1 trệt 3 lầu, 25 tỷ", 13 từ); một lượt bản nháp trượt vì model viết dòng mở đầu "Em sẽ rao như vầy nhé anh:" — `cat_truoc_mo_dau`
+so nguyên văn hai dòng cố định nên không nhận ra (câu dẫn còn, lượt không được đánh dấu là bản nháp) → nay nhận dòng mở đầu với
+mọi chữ gọi khách, lấy dòng cuối (`tests/test_loi_gui_khach.py`, đỏ trên code cũ — đã chạy). Thêm nhãn ô mới thì chạy lại phép soát `boc_thong_so('<nhãn>: x')`
 trên DB.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu

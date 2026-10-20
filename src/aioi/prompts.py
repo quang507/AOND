@@ -551,13 +551,17 @@ MO_DAU_NHAP = ("📋 Mình sẽ rao như vầy nhé em:", "📋 Em sẽ rao như
 def cat_truoc_mo_dau(reply: str) -> str:
     """Bản nháp bắt đầu đúng ở dòng mở đầu cố định; chữ model viết trước dòng đó bỏ đi. Model chép dòng mở đầu thiếu "📋" (bắn thử
     20/10: "Em ghi nhận đủ thông tin rồi anh ạ. Em sẽ rao như vầy nhé anh chị:") vẫn nhận ra và gắn lại đúng dòng cố định
-    (SRS-5.1zzzzzzz80)."""
-    for mo in MO_DAU_NHAP:
-        for m in (mo, mo.removeprefix("📋 ")):
-            i = reply.find(m)
-            if i >= 0:
-                return mo + reply[i + len(m):]
-    return reply
+    (SRS-5.1zzzzzzz80). Bắn thử 20/10 lần 3: model đổi luôn chữ gọi khách ("Em sẽ rao như vầy nhé anh:") — so nguyên văn thì trượt,
+    câu dẫn còn nguyên và lượt không được nhận là bản nháp. Nhận dòng mở đầu với bất kỳ chữ gọi khách nào (lấy dòng CUỐI — tin rao nằm
+    ngay sau nó) rồi thay bằng dòng cố định theo cách xưng "Mình" / "Em" (SRS-5.1zzzzzzz85)."""
+    khop = list(_MO_DAU_RE.finditer(reply))
+    if not khop:
+        return reply
+    m = khop[-1]
+    return (MO_DAU_NHAP[0] if m.group(1) == "Mình" else MO_DAU_NHAP[1]) + reply[m.end():]
+
+
+_MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em) sẽ rao như vầy nhé[^:\n]{0,20}:")
 
 
 def build_listing_proposal_system(
