@@ -6843,6 +6843,11 @@ cùng lớp:** luật cấm khác cũng chỉ nói phủ định (cấm nhại l
   chỉ để trả lời câu khách hỏi). `build_fee_followup_system` có nhánh hỏi lại ô để sau.
 - `bot/tests/ban-thu-ban.sh`: Cao Lỗ đếm số lượt hỏi sàn trước bản nháp (≤ 2); mọi kịch bản: không bong bóng nào mở đầu "Dạ không".
 
+- Bắn thử lần 1 (run 39355757153): Âu Cơ ra bản nháp với câu dẫn "Em ghi nhận đủ thông tin rồi anh ạ. Em sẽ rao như vầy nhé anh chị:"
+  — model chép dòng mở đầu thiếu "📋" nên `cat_truoc_mo_dau` (SRS-5.1zzzzzzz76) không nhận ra, khách đọc hai câu dẫn và bài bắn thử
+  không thấy bản nháp. Dòng mở đầu là chữ cố định của code: nay nhận cả bản thiếu "📋" và gắn lại đúng dòng cố định
+  (`tests/test_loi_gui_khach.py` thêm ca, đỏ trên code cũ — đã chạy).
+
 **Giới hạn.** `hoan` và `lo` không lưu DB: lõi khởi động lại giữa chừng thì ô đó có thể bị hỏi lại thêm một lần.
 
 **Kiểm.** `tests/test_lo_hai_lan_de_sau.py` (3 ca: lờ 2 lần thì để sau và ra bản nháp; hỏi lại sau khi duyệt; giá / địa chỉ không để

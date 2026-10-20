@@ -542,11 +542,14 @@ MO_DAU_NHAP = ("📋 Mình sẽ rao như vầy nhé em:", "📋 Em sẽ rao như
 
 
 def cat_truoc_mo_dau(reply: str) -> str:
-    """Bản nháp bắt đầu đúng ở dòng mở đầu cố định; chữ model viết trước dòng đó bỏ đi."""
+    """Bản nháp bắt đầu đúng ở dòng mở đầu cố định; chữ model viết trước dòng đó bỏ đi. Model chép dòng mở đầu thiếu "📋" (bắn thử
+    20/10: "Em ghi nhận đủ thông tin rồi anh ạ. Em sẽ rao như vầy nhé anh chị:") vẫn nhận ra và gắn lại đúng dòng cố định
+    (SRS-5.1zzzzzzz80)."""
     for mo in MO_DAU_NHAP:
-        i = reply.find(mo)
-        if i > 0:
-            return reply[i:]
+        for m in (mo, mo.removeprefix("📋 ")):
+            i = reply.find(m)
+            if i >= 0:
+                return mo + reply[i + len(m):]
     return reply
 
 
