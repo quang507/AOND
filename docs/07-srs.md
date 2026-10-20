@@ -7129,6 +7129,13 @@ nào mở "Dạ" hay gọi "bạn". Trượt / thấy thêm:
 16. *Một cụm vào hai ô* (KB1 `so_phong_ngu` = "7 tầng"; KB3 `gia_dien_nuoc` = "phí quản lý khoảng 1,2 triệu") — cổng (5) không bắt được
    vì giá trị đúng là lời khách, sai ở chỗ ô. Chỉ thêm luật prompt "mỗi cụm vào đúng một ô"; chưa có kiểm bằng code — để mở.
 
+**Bắn lại lần 3 (run 39389679661, 14 lượt, ≈ 0,022 USD — 0,0016 USD / lượt chat; trung bình 14,0 s, chậm nhất 19,0 s).** Mọi ca kiểm
+ĐẠT: KB1 từ chối khéo cả lượt "đăng đi", tin `an`; KB3 bản tin cập nhật giữ giá ở tiêu đề ("…view sông 6,8 tỷ", 13 từ), lên web;
+KB2 / KB4 đúng như lần 2; không "Dạ", không "bạn". Job đỏ vì bước `dung-lai-db.mjs` của workflow chạy nhầm sau `ban-thu-kb` (điều kiện
+bước thiếu `ban-thu-kb`) — sửa `apply-migration.yml`. Còn mở (model, chưa có kiểm bằng code): lời chat KB4 vẫn tự suy "hẻm 3m thì ô tô
+nhỏ vào được" dù có luật (ô tin không bị ghi); một cụm vào ô sai nghĩa lặp lại (`so_phong_ngu` = "7 tầng" ở KB1 / KB4,
+`yeu_cau_xe_hoi` = "hẻm trước nhà rộng 3m", `gia_dien_nuoc` = "phí quản lý…") — cột DB `bedrooms` không bị ghi sai ở cả ba lượt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
