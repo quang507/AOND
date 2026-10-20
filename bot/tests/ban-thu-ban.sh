@@ -2,7 +2,7 @@
 # ban-thu-ban.sh — bắn thử luồng NGƯỜI BÁN trên lõi Python production (SRS-5.1zzzzzzz73), chạy trong apply-migration.yml ô
 # `dung_lai` = ban-thu-ban. Kịch bản theo lượt chat thử của chủ dự án 19/10 (nhà phố mặt tiền Cao Lỗ Q8): soi ô tin ghi đủ, và ô
 # bot TỰ HỎI mà chủ nhà không trả lời (thương lượng) không được ghi. Chỉ dùng Zalo ID thử (`thu-`); cuối script xoá sạch.
-# Cần: TOKEN (Management API), PROJECT_REF. Tiền thật: ~8 lượt chat × vài lượt AI.
+# Cần: TOKEN (Management API), PROJECT_REF. Tiền thật: ~40 lượt chat × vài lượt AI (8 kịch bản, chạy tuần tự).
 set -euo pipefail
 
 q() { curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
@@ -19,11 +19,13 @@ vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/nu
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
 BAN="thu-ban-$RUN"; BAN2="thu-ban2-$RUN"; BAN3="thu-ban3-$RUN"
+BAN4="thu-ban4-$RUN"; BAN5="thu-ban5-$RUN"; BAN6="thu-ban6-$RUN"; BAN7="thu-ban7-$RUN"; BAN8="thu-ban8-$RUN"
+TAT_CA="$BAN $BAN2 $BAN3 $BAN4 $BAN5 $BAN6 $BAN7 $BAN8"
 
 don() {
   echo "== dọn dữ liệu thử"
-  q "select reset_nguoi_test('$BAN') as ban, reset_nguoi_test('$BAN2') as ban2, reset_nguoi_test('$BAN3') as ban3" | jq -c '.[0]' || true
-  vps "for u in $BAN $BAN2 $BAN3; do curl -sS -X POST http://127.0.0.1:8000/reset/\$u >/dev/null; done" || true
+  for u in $TAT_CA; do q "select reset_nguoi_test('$u') as kq" | jq -c '.[0]' || true; done
+  vps "for u in $TAT_CA; do curl -sS -X POST http://127.0.0.1:8000/reset/\$u >/dev/null; done" || true
 }
 trap don EXIT
 
@@ -118,7 +120,66 @@ DUYET=$(jq -r '.reply // ""' <<<"$TRA")
 if grep -qi 'aioinhadat' <<<"$DUYET"; then
   kiem "Nguyễn Trãi: khách duyệt → hỏi biết phí môi giới chưa, không tự báo con số" "$(grep -qi 'phí' <<<"$DUYET" && ! grep -qE '[0-9] ?%' <<<"$DUYET" && echo 1 || echo 0)"
 else echo "== Nguyễn Trãi: tin chưa lên web sau khi duyệt — không soát câu phí lượt này"; fi
+# SRS-5.1zzzzzzz82: tin đã duyệt hiện trên web đúng phường; khách quay lại sửa giá → DB cập nhật.
+CODE3=$(q "select l.code, l.status from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = '$BAN3'
+           order by l.updated_at desc limit 1" | jq -r '.[0] | "\(.code) \(.status)"')
+read -r MA3 TT3 <<<"$CODE3"
+echo "== Nguyễn Trãi: mã $MA3, trạng thái $TT3"
+if [[ "$TT3" =~ ^(dang_ban|dang_quan_tam|da_coc)$ ]]; then
+  WEB=$(curl -sS -m 30 "https://aioinhadat.vercel.app/nha-dat/$MA3" || true)
+  kiem "Nguyễn Trãi: trang tin trên web có đường và phường" "$(grep -q 'Nguyễn Trãi' <<<"$WEB" && grep -q 'Chợ Quán' <<<"$WEB" && echo 1 || echo 0)"
+else echo "== Nguyễn Trãi: tin chưa ở trạng thái hiện web — không soát trang web"; fi
+chat "$BAN3" "à em ơi, sửa giá căn này còn 24 tỷ nhé"
+sleep 3
+GIA3=$(q "select l.price_vnd from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = '$BAN3'
+          order by l.updated_at desc limit 1" | jq -r '.[0].price_vnd')
+kiem "Nguyễn Trãi: khách quay lại sửa giá → giá 24 tỷ ($GIA3)" "$([ "$GIA3" = 24000000000 ] && echo 1 || echo 0)"
 kiem "Nguyễn Trãi: lượt đầu không khẳng định phường từ kho" "$(grep -oiE '(thuộc|nằm ở|ở) (khu vực )?phường [^?.!]*([.!]|$)' <<<"$LOI_DAU" | grep -qviE 'phường nào' && echo 0 || echo 1)"
+# ==== Các loại BĐS khác + nhiều căn + xin gặp người (SRS-5.1zzzzzzz82). Kiểm điều tất định (loại, giá, câu hỏi sai loại), không
+# chấm câu chữ model.
+dong() { q "select l.property_type, l.deal, l.price_vnd, l.bedrooms, l.boc_tach - '_cap_nhat' as boc_tach from listings l
+             join sellers s on s.id = l.seller_id where s.zalo_user_id = '$1' order by l.updated_at desc limit 1" | jq -c '.[0] // {}'; }
+
+LOI_BOT=""
+for cau in "em bán căn hộ chung cư Sunrise City quận 7, 2 phòng ngủ 76m2" "tầng 12 block V3, giá 4,2 tỷ" \
+           "sổ hồng rồi, nội thất đầy đủ" "view sông, phí quản lý tầm 1 triệu 5"; do chat "$BAN4" "$cau"; sleep 1; done
+r4=$(dong "$BAN4"); echo "$r4"
+kiem "Chung cư: loại căn hộ / chung cư" "$(jq '(.property_type // "") | test("chung_cu|can_ho") | if . then 1 else 0 end' <<<"$r4")"
+kiem "Chung cư: giá 4,2 tỷ" "$(jq '.price_vnd == 4200000000 | if . then 1 else 0 end' <<<"$r4")"
+kiem "Chung cư: không hỏi hẻm / mặt tiền / mấy tầng lầu" "$(grep -qiE 'hẻm|mặt tiền hay|mấy lầu|trệt' <<<"$LOI_BOT" && echo 0 || echo 1)"
+
+LOI_BOT=""
+for cau in "chị cho thuê nhà nguyên căn hẻm xe hơi đường Lê Văn Sỹ quận 3" "giá 25 triệu một tháng em" \
+           "ngang 4 dài 16, 1 trệt 2 lầu, 3 phòng ngủ" "cọc 2 tháng, hợp đồng tối thiểu 1 năm"; do chat "$BAN5" "$cau"; sleep 1; done
+r5=$(dong "$BAN5"); echo "$r5"
+kiem "Cho thuê: tin cho thuê" "$(jq '.deal == "thue" | if . then 1 else 0 end' <<<"$r5")"
+kiem "Cho thuê: giá 25 triệu / tháng" "$(jq '.price_vnd == 25000000 | if . then 1 else 0 end' <<<"$r5")"
+kiem "Cho thuê: không nói phí 1% giá bán" "$(grep -qE '1 ?% ?(giá|giao)' <<<"$LOI_BOT" && echo 0 || echo 1)"
+
+LOI_BOT=""
+for cau in "bán lô đất thổ cư đường Trần Văn Giàu huyện Bình Chánh" "ngang 5 dài 20, full thổ cư, sổ riêng" \
+           "đường trước đất rộng 8m, giá 3 tỷ"; do chat "$BAN6" "$cau"; sleep 1; done
+r6=$(dong "$BAN6"); echo "$r6"
+kiem "Đất: loại đất" "$(jq '(.property_type // "") | test("dat") | if . then 1 else 0 end' <<<"$r6")"
+kiem "Đất: giá 3 tỷ" "$(jq '.price_vnd == 3000000000 | if . then 1 else 0 end' <<<"$r6")"
+kiem "Đất: không hỏi tầng / phòng ngủ" "$(grep -qiE 'mấy tầng|mấy lầu|phòng ngủ' <<<"$LOI_BOT" && echo 0 || echo 1)"
+
+chat "$BAN7" "anh có 2 căn cần bán: căn 1 nhà hẻm đường Bùi Minh Trực quận 8 giá 5 tỷ, căn 2 nhà mặt tiền đường Phạm Hùng quận 8 giá 12 tỷ"
+sleep 3
+SO7=$(q "select count(*) as n from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = '$BAN7'" | jq -r '.[0].n')
+kiem "Nhiều căn: một tin nhắn hai căn → hai tin rao ($SO7)" "$([ "$SO7" = 2 ] && echo 1 || echo 0)"
+
+chat "$BAN8" "chị muốn nói chuyện trực tiếp với nhân viên bên em"
+NGUOI=$(jq -r '.reply // ""' <<<"$TRA")
+sleep 4
+CN=$(q "select coalesce(bool_or(c.needs_human), false) as cn,
+               (select count(*) from reminders r join sellers s2 on s2.id = r.seller_id where s2.zalo_user_id = '$BAN8') as nhac
+          from conversations c join sellers s on s.id = c.seller_id where s.zalo_user_id = '$BAN8'" | jq -c '.[0]')
+echo "== xin gặp người: $CN"
+kiem "Xin gặp người: bot nói đã báo người phụ trách" "$(grep -qi 'báo' <<<"$NGUOI" && echo 1 || echo 0)"
+kiem "Xin gặp người: bật needs_human" "$(jq '.cn == true | if . then 1 else 0 end' <<<"$CN")"
+kiem "Xin gặp người: ID thử không nhắn admin" "$(jq '.nhac == 0 | if . then 1 else 0 end' <<<"$CN")"
+
 # SRS-5.1zzzzzzz80: bắn thử 20/10 có 2/3 kịch bản bot mở đầu "Dạ không, em ghi nhận…" khi khách không hỏi gì.
 kiem "mọi kịch bản: không bong bóng nào mở đầu \"Dạ không\"" "$(grep -qE '^Dạ không' <<<"$MOI_LOI" && echo 0 || echo 1)"
 
