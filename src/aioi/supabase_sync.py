@@ -36,7 +36,12 @@ def _sync_worker(external_user_id: str, incoming_text: str, bot_reply: str, zalo
     try:
         kho.ghi_luot_chat(external_user_id, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc)
     except Exception as e:  # noqa: BLE001
+        # SRS-5.1zzzzzzz84: lỗi ghi tin trước đây chỉ ở journal — CRM mất tin khách thật suốt một ngày mà sổ lỗi không có dòng nào.
         log.warning("Supabase sync failed (non-blocking): %s", e)
+        try:
+            kho._ghi_so_loi("supabase sync", f"ghi tin vào messages hỏng: {type(e).__name__}: {e}"[:200])
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def sync_to_supabase_async(

@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import re
+import urllib.error
 import urllib.request
 import urllib.parse
 import uuid
@@ -357,9 +358,24 @@ class SupabaseConversationStore(KhoNguoiMua):
     def ghi_luot_chat(self, user_key: str, incoming_text: str, bot_reply: str, zalo_msg_id: str | None = None,
                       role: str = "seller", user_name: str | None = None, nhan_luc: str | None = None) -> None:
         """Một lượt chat → hai dòng `messages` (khách, bot) + đẩy hội thoại lên đầu CRM. Dùng chung đường tìm / tạo người bán và
-        hội thoại với `save` (SRS-5.1zzzzzzz56 — trước đây supabase_sync có bản riêng). Lượt MUA ghi vào hội thoại mua."""
+        hội thoại với `save` (SRS-5.1zzzzzzz56 — trước đây supabase_sync có bản riêng). Lượt MUA ghi vào hội thoại mua.
+        20/10/2026 (SRS-5.1zzzzzzz84): hội thoại trong cache có thể đã bị xoá ở chỗ khác — khách gõ "hello" (reset ở bản kho của
+        engine, không phải bản này), admin xoá khách, bắn thử dọn. Chèn tin vào hội thoại đã xoá → 409 (khoá ngoại) → mọi tin của
+        khách đó rơi im tới lần khởi động lại (DB: hội thoại thật 0 tin trong khi last_message_at vẫn chạy). Gặp 409 thì bỏ cache,
+        tìm / tạo lại hội thoại, ghi lại một lần."""
         if not (self.is_configured and user_key):
             return
+        try:
+            self._ghi_luot_chat_mot_lan(user_key, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc)
+        except urllib.error.HTTPError as e:
+            if e.code != 409:
+                raise
+            self._seller_cache.pop(user_key, None)
+            self._conv_cache.clear()
+            self._ghi_luot_chat_mot_lan(user_key, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc)
+
+    def _ghi_luot_chat_mot_lan(self, user_key: str, incoming_text: str, bot_reply: str, zalo_msg_id: str | None,
+                               role: str, user_name: str | None, nhan_luc: str | None) -> None:
         if role == "buyer":
             conv_id = self._hoi_thoai_mua(user_key, user_name)
         else:

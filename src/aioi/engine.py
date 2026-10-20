@@ -13,6 +13,7 @@ import json
 import logging
 import re
 import sqlite3
+import threading
 import time
 import unicodedata
 from urllib.parse import urlparse
@@ -754,6 +755,16 @@ class Engine:
         # the ingest reply drains it into conv.pending_name_note so AOND ASKS ("nghi ngờ thì hỏi")
         # instead of silently forking a duplicate project/folder.
         self._pending_name_concern = ""
+        # 20/10/2026 (SRS-5.1zzzzzzz84): một khách — một lượt một lúc. Bridge gom tin 2,5 s rồi gửi, KHÔNG xếp hàng theo khách: chủ
+        # nhà nhắn tiếp lúc bot còn soạn (lượt 10–18 s) là hai lượt chạy song song trên cùng lịch sử — lượt sau gọi model khi lượt
+        # trước vừa ghi lời bot → lịch sử kết thúc bằng tin bot → API 400 "assistant prefill". Lượt chat, luồng thử lại, tin nhắc
+        # đều giữ khoá này khi đọc / ghi lịch sử. RLock: đường ảnh có thể gọi lại handle trong cùng luồng.
+        self._khoa_luot: dict[str, threading.RLock] = {}
+        self._khoa_tao = threading.Lock()
+
+    def khoa_luot(self, user_key: str) -> threading.RLock:
+        with self._khoa_tao:
+            return self._khoa_luot.setdefault(user_key, threading.RLock())
 
     def _chuan_dia_danh(self, prop: Property, captured: list[str]) -> list[str]:
         """Ô quan / phuong / duong vừa bắt → tên chuẩn trong kho; trả các ô đổi. Đường chỉ đổi khi chỉ khác dấu / hoa thường

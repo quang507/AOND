@@ -6969,6 +6969,50 @@ dòng) — đổi schema lớn, đụng web /admin; bản này chỉ đưa tin m
 vào sổ lỗi — cả 4 đỏ trên code cũ, đã chạy). pytest 435 đạt. Migration áp qua `apply-migration.yml`, `schema.sql` sinh lại bằng ô
 `commit_schema`. Model thật: `ban-thu-ban` kịch bản cho thuê phải có dòng `deal = cho_thue`.
 
+### SRS-5.1zzzzzzz84 · Hai lượt cùng khách chạy chồng, CRM mất tin sau "hello", "Dạ không" do prompt trích mẫu xấu (20/10/2026)
+
+**Ca gốc.** Bắn thử `ban-thu-ban` 20/10 (run 39366398134, 8 kịch bản): DB ghi đúng `deal = cho_thue` (kiểm trượt chỉ vì script còn so
+`"thue"` — đã sửa script), nhưng sổ lỗi có 4 dòng `claude chat` "This model does not support assistant message prefill" (03:48 → 03:56)
+kèm 4 dòng `chat-reply` giữ chỗ, KHÔNG lượt thử nào nhận câu giữ chỗ — lỗi nằm ở hội thoại thật của chủ dự án đang nhắn Zalo cùng lúc.
+Soát hội thoại đó: `conversations.last_message_at` chạy tới 04:04 mà bảng `messages` 0 dòng; cả DB không có tin thật nào từ 19/10
+08:31. Và vẫn 2 bong bóng mở đầu "Dạ không" (lượt sửa giá sau bản nháp, lượt xin gặp người).
+
+**Nguyên nhân & lớp lỗi.**
+1. *Trạng thái dùng chung không có khoá.* Bridge gom tin 2,5 s rồi gửi lõi nhưng không xếp hàng theo khách; FastAPI chạy mỗi request
+   một luồng. Khách nhắn tiếp lúc bot còn soạn (lượt 10–18 s) → hai `Engine.handle` chạy song song trên cùng `conv.history`: lượt sau
+   gọi model đúng lúc lượt trước vừa ghi lời bot → lịch sử kết thúc bằng tin bot → 400. Bắn thử nhắn tuần tự nên không bao giờ thấy.
+   **Chỗ cùng lớp:** luồng thử lại nền (`_thu_lai_nen`, SRS-5.1zzzzzzz82) và tin nhắc 5 phút (`followup.py`) cũng đọc / ghi lịch sử
+   ngoài lượt chat — đã đưa vào cùng khoá; endpoint `/message` cũ — cùng khoá.
+2. *Cache hai bản kho lệch nhau + lỗi nuốt ở journal.* "hello" (cố ý, CLAUDE.md §6) gọi `reset` trên bản kho của ENGINE — xoá hội
+   thoại, bỏ cache của bản đó. Lượt ghi tin (`supabase_sync._kho_ghi`) là bản kho KHÁC, cache vẫn trỏ hội thoại đã xoá → mọi lần chèn
+   `messages` 409 (khoá ngoại) → `log.warning` → CRM mất sạch tin của khách đó tới lần khởi động lại; `save()` (bản engine) vẫn đẩy
+   `last_message_at` nên trông như đang chạy. **Chỗ cùng lớp:** admin xoá khách (`admin_xoa_khach`), bắn thử dọn (`reset_nguoi_test`)
+   cũng xoá hội thoại dưới chân cache — cùng nhánh tự lành; `save()` của bản engine sau khi admin xoá người bán: cache `_seller_cache`
+   cũ → chèn tin lỗi khoá ngoại → đã vào sổ lỗi (`supabase save`, SRS-5.1zzzzzzz83), chưa tự lành — để lại.
+3. *Prompt trích nguyên văn mẫu cấm.* Luật 6 (SRS-5.1zzzzzzz80) viết "bắn thử 20/10: "Dạ không, em ghi nhận…"…" làm ví dụ CẤM; Haiku
+   bắt chước chuỗi được trích. Luật chỉ có ở `build_chat_system`, lượt sau bản nháp (`build_fee_followup_system`) không có.
+
+**Sửa.**
+- `src/aioi/engine.py` `Engine.khoa_luot(user_key)` (RLock theo khách); `src/aioi/server.py`: `/chat-reply` chạy `lam()` dưới khoá, lỗi
+  xử lý ngoài khoá; `_thu_lai_nen` kiểm + cắt lịch sử + chạy lại dưới khoá; `/message` dưới khoá. `src/aioi/followup.py`: tin nhắc chạy
+  dưới khoá, có lượt mới sau lúc hẹn (`hen`) thì thôi nhắc.
+- `src/aioi/supabase_store.py` `ghi_luot_chat`: gặp 409 → bỏ `_seller_cache` / `_conv_cache`, tìm / tạo lại hội thoại, ghi lại một lần.
+  `src/aioi/supabase_sync.py`: lượt ghi tin hỏng → `log_loi("supabase sync", …)` (chỉ tên lỗi, không nội dung).
+- `src/aioi/prompts.py` luật 6: bỏ chuỗi mẫu xấu, nói điều NÊN làm — "câu đầu mở bằng chính nội dung" kèm ví dụ đúng cho báo thông tin,
+  sửa giá, xin gặp người, hỏi có/không. `src/aioi/llm/claude.py`: luật câu đầu + ví dụ nằm ở mô tả ô `loi_gui_khach` (mọi lượt `reply`,
+  một chỗ), `tu_soat` soát "chữ đầu là nội dung, không phải từ đệm". Không lọc chữ ở đầu ra.
+- `bot/tests/ban-thu-ban.sh`: kiểm tin cho thuê theo enum `cho_thue`.
+
+**Kiểm.** `tests/test_mot_luot_mot_luc.py`: hai tin cùng khách tới song song → chạy lần lượt, không lỗi, lịch sử user/assistant xen kẽ
+(ĐỎ khi `khoa_luot` trả khoá mới mỗi lần — đã chạy, tái hiện đúng lỗi thật: tin thứ hai dính "400 assistant prefill"); tin nhắc không
+chen khi khách vừa nhắn; hội thoại trong cache đã xoá → tìm lại và vẫn ghi đủ hai tin (ĐỎ khi bỏ nhánh 409 — đã chạy).
+`tests/test_cau_dau_noi_dung.py`: prompt không trích "Dạ không", ô gửi khách mang luật câu đầu (ĐỎ trên prompt cũ — đã chạy). pytest 441
+đạt. Model thật: bắn thử lại sau `cai-vps`; "Dạ không" là hành vi model — chỉ bắn thử production mới đo được.
+
+**Chi phí đo được (Haiku 5.5, `bot_usage_model`, giá `lib/gia-model.ts`).** Từ 03:50:33 tới ~04:15: 124 lượt gọi model, ≈ $0,10 — gồm
+42 lượt chat bắn thử VÀ lượt chủ dự án nhắn cùng lúc (không tách được vì tin của chủ dự án chưa vào `messages`), nên ≤ $0,0024 / lượt
+chat, ≈ $0,0008 / lượt gọi model. Haiku 5.5 có hai bậc giá theo độ dài prompt, sổ không tách bậc — số trên tính bậc thấp.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

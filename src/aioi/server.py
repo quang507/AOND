@@ -194,7 +194,8 @@ def message(msg: IncomingMessage) -> Reply:
         else:
             incoming_text = "[Khách gửi tin nhắn thoại nhưng âm thanh bị rè hoặc không nghe rõ tiếng]"
 
-    r = _engine.handle(msg.user_key, incoming_text)
+    with _engine.khoa_luot(msg.user_key):   # SRS-5.1zzzzzzz84
+        r = _engine.handle(msg.user_key, incoming_text)
     cleaned_reply = r.reply.replace("**", "")
 
     # Cancel previous follow-up timer for this user and schedule a new 5-minute inactivity follow-up
@@ -247,12 +248,13 @@ def _thu_lai_nen(user_key: str, lam, moc: int, sau_hong: int, ten: str | None) -
     cũ. Trước khi chạy lại, cắt lịch sử về mốc trước lượt hỏng để tin khách không bị ghi hai lần. Vẫn hỏng → xin lỗi + báo người."""
     def chay() -> None:
         time.sleep(THU_LAI_SAU)
-        conv = _engine.conversation(user_key)
-        if len(conv.history) != sau_hong:
-            return
-        del conv.history[moc:]
         try:
-            r = lam()
+            with _engine.khoa_luot(user_key):   # SRS-5.1zzzzzzz84: không chạy chồng lên lượt khách vừa nhắn
+                conv = _engine.conversation(user_key)
+                if len(conv.history) != sau_hong:
+                    return
+                del conv.history[moc:]
+                r = lam()
             loi = r.reply.replace("**", "").strip()
             _gui_bridge(user_key, loi)
             sync_to_supabase_async(external_user_id=user_key, incoming_text="", bot_reply=loi, role=r.role, user_name=ten)
@@ -379,14 +381,20 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         lam = lambda: _engine.handle(uk, incoming_text)  # noqa: E731
     # SRS-5.1zzzzzzz82: lượt hỏng (API quá tải / mạng / model trả rỗng) trước đây ra 500 → bridge không gửi gì, khách bị bỏ lơ
     # (sổ lỗi "bridge xử lý tin gom"), hoặc nhận "kết nối mạng gián đoạn, nhắn lại giúp em". Nay: câu giữ chỗ + tự thử lại nền.
-    moc = len(_engine.conversation(uk).history)
-    try:
-        r = lam()
-    except Exception as e:  # noqa: BLE001
+    # SRS-5.1zzzzzzz84: một khách — một lượt một lúc (Engine.khoa_luot); tin nhắn tới lúc bot còn soạn thì chờ lượt trước xong.
+    with _engine.khoa_luot(uk):
+        moc = len(_engine.conversation(uk).history)
+        try:
+            r = lam()
+            loi_luot = None
+        except Exception as e:  # noqa: BLE001
+            loi_luot, sau_hong = e, len(_engine.conversation(uk).history)
+    if loi_luot is not None:
+        e = loi_luot
         _so_loi.ghi_loi("chat-reply", f"lượt trả lời hỏng, giữ chỗ rồi thử lại: {type(e).__name__}: {e}"[:200])
         sync_to_supabase_async(external_user_id=uk, incoming_text=incoming_text, bot_reply=CAU_GIU_CHO,
                                zalo_msg_id=payload.msg_id, user_name=zalo_name, nhan_luc=nhan_luc)
-        _thu_lai_nen(uk, lam, moc, len(_engine.conversation(uk).history), zalo_name)
+        _thu_lai_nen(uk, lam, moc, sau_hong, zalo_name)
         return ZaloBridgeResponse(reply=CAU_GIU_CHO, replies=[CAU_GIU_CHO], nhip_go=[0], assistant_name="", captured=[],
                                   next_field=None, property_score=0.0, user_score=0.0, tier="", completeness=0.0)
 
