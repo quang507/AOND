@@ -1,6 +1,6 @@
 """19/10/2026 (SRS-5.1zzzzzzz64, theo anh Luận 802b957 + 0b31235 + ffd3684): bố cục tin rao MỘT nguồn `AD_FORMAT` — tiêu đề 15–25 từ,
-mô tả 70–150 từ, 4–5 gạch không nhãn, một dòng trống giữa 3 khối — cho bản nháp, bản sửa sau khi xem nháp, và lượt chat khi khách
-xin "xem / đăng tin đầy đủ"; tin rao có gạch đầu dòng đi MỘT bong bóng để giữ dòng trống. Đỏ khi một trong ba nơi tự viết luật riêng
+mô tả 70–150 từ, 4–5 gạch không nhãn, một dòng trống giữa 3 khối — cho bản nháp và bản sửa sau khi xem nháp (từ 20/10, SRS-5.1zzzzzzz86, lượt
+chat KHÔNG còn tự soạn bài đăng khi khách xin — bài đó không 📋, không ghi là bản nháp); tin rao có gạch đầu dòng đi MỘT bong bóng để giữ dòng trống. Đỏ khi một trong ba nơi tự viết luật riêng
 (đúng 4 gạch, thiếu luật dòng trống) hay khi chunk_reply cắt tin rao ra nhiều bong bóng."""
 from aioi import prompts
 from aioi.delivery import chunk_reply
@@ -15,16 +15,16 @@ def test_ad_format_mot_nguon_o_ca_ba_noi():
     he_thong = [
         prompts.build_listing_proposal_system("Lan", P),
         prompts.build_fee_followup_system("Lan", P),
-        prompts.build_chat_system("Lan", P, "phap_ly"),
     ]
     for s in he_thong:
         assert prompts.AD_FORMAT in s
         assert "đúng 4 gạch" not in s.lower()
 
 
-def test_chat_cho_phep_bai_day_du_khi_khach_xin():
+def test_chat_khong_tu_soan_bai_dang():
+    # SRS-5.1zzzzzzz86: bắn thử KB1/KB2 "ok em đăng đi" khi tin còn thiếu → lượt chat soạn bài đăng không 📋, khách duyệt không ghi.
     s = prompts.build_chat_system("Lan", P, "phap_ly")
-    assert "xem / đăng TOÀN BỘ tin" in s and "25 - 40 TỪ" in s
+    assert prompts.AD_FORMAT not in s and "xem / đăng TOÀN BỘ tin" not in s and "25 - 40 TỪ" in s
 
 
 def test_tin_rao_di_mot_bong_giu_dong_trong():

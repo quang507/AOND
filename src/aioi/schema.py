@@ -298,7 +298,9 @@ class Property:
           identity-handle-decay note in [[aioi-data-model]]."""
         areas = HOUSE_AREA_FIELDS if self.loai_hinh in HOUSE_TYPES else ["dien_tich"]
         if self.fields.get("du_an") and not self.fields.get("dia_chi"):
-            locator = ["du_an", "ma_so_can"]   # pre-sale project unit: no address yet
+            # Căn dự án chưa có địa chỉ: định vị bằng tên dự án. Mã căn "có thì tốt, không có vẫn nhận" (chủ dự án 20/10/2026,
+            # SRS-5.1zzzzzzz86) — hỏi như ô thường (`expected_fields`), lờ 2 lần thì để sau, không chặn bản nháp.
+            locator = ["du_an"]
         else:
             locator = ["dia_chi"]
         return ["loai_hinh", *locator, *areas, "gia"]
@@ -307,9 +309,16 @@ class Property:
         """Ô cốt lõi của loại này: bộ riêng của loại (`CORE_THEO_LOAI`) nếu có, không thì bộ của nhóm."""
         return list(CORE_THEO_LOAI.get(self.loai_hinh or "", CORE_FIELDS[self.group]))
 
+    def fields_khach(self) -> dict[str, str]:
+        """Ô tin từ lời khách — bỏ khoá NỘI BỘ bắt đầu bằng "_" (cờ hệ thống như `_ngoai_vung`; khoá DB tự thêm vào `boc_tach` như
+        `_cap_nhat`, theo về khi nạp lại). Mọi chỗ đưa ô tin cho model / bộ đọc thông số / khách xem đi qua đây (SRS-5.1zzzzzzz86)."""
+        return {k: v for k, v in self.fields.items() if not str(k).startswith("_")}
+
     def expected_fields(self) -> list[str]:
         """All fields this property should eventually have, given its type."""
         expected = self.identity_fields() + self.core_fields()
+        if self.fields.get("du_an") and not self.fields.get("dia_chi"):
+            expected.insert(len(self.identity_fields()), "ma_so_can")
         if self.is_rental:
             expected += RENTAL_FIELDS
         return expected
@@ -320,12 +329,16 @@ class Property:
         Requires ALL identity fields (type, address, area(s), price) AND a high overall
         completeness, so the draft includes core details, not just the basics.
         """
-        if not all(self._has(f) or f in self.hoan for f in self.identity_fields()):
-            return False
-        if self.blocking_fields():
+        if self.thieu_toi_thieu():
             return False
         # Ô hỏi sau bản nháp vẫn tính vào % (như bản anh Luận) nhưng không hỏi trước — hết ô để hỏi trước bản nháp thì ra nháp, không kẹt.
         return self.completeness() >= SUMMARY_READY_COMPLETENESS or not self.missing_fields()
+
+    def thieu_toi_thieu(self) -> list[str]:
+        """Ô phải có trước MỌI bản nháp — nhận diện (trừ ô khách lờ 2 lần đã để sau) và ô bắt buộc theo loại. Khách bảo đăng sớm thì
+        chỉ còn chờ các ô này (SRS-5.1zzzzzzz86)."""
+        ra = [f for f in self.identity_fields() if not self._has(f) and f not in self.hoan]
+        return ra + [f for f in self.blocking_fields() if f not in ra]
 
     def cum_hoi(self, o: str | None, missing: list[str]) -> list[str]:
         """Các ô hỏi gộp trong lượt có ô `o` (SRS-5.1zzzzzzz79): ô còn thiếu cùng cụm với `o`, theo thứ tự hỏi, tối đa `CUM_TOI_DA`."""
@@ -392,7 +405,7 @@ class Property:
     def hoan_duoc(self, o: str) -> bool:
         """Ô được để sau bản nháp khi khách lờ 2 lần (SRS-5.1zzzzzzz80). Loại, chỗ (địa chỉ / dự án / mã căn), giá và ô bắt buộc thì
         không: thiếu chúng thì không có tin để rao."""
-        return o not in ("loai_hinh", "dia_chi", "du_an", "ma_so_can", "gia") and o not in self.blocking_fields()
+        return o not in ("loai_hinh", "dia_chi", "du_an", "gia") and o not in self.blocking_fields()
 
     def cau_hoi_sau_ra_tin(self) -> str | None:
         """Ô hỏi SAU khi khách duyệt bản nháp: chỉ còn ô khách đã lờ 2 lần (SRS-5.1zzzzzzz80). Hẻm và hiện trạng từ 20/10 hỏi trước

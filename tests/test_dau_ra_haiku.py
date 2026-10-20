@@ -48,12 +48,13 @@ class AiGia(MockProvider):
 
 
 def test_bang_chung_lot_vao_fields_thi_keo_ra():
-    # Ô chữ: giá trị AI viết lại ("sổ hồng riêng") không nằm nguyên trong lời khách — chỉ cụm trích ("sổ riêng") cứu được.
+    # Ô chữ: giá trị AI viết lại ("sổ hồng riêng") không nằm nguyên trong lời khách — chỉ cụm trích ("sổ riêng") cứu được; và từ
+    # 20/10 (SRS-5.1zzzzzzz86) ô ghi chính cụm khách nói — "hồng" là chữ AI thêm.
     eng = Engine(AiGia({"operations": [{"op": "update", "fields": {"phap_ly": "sổ hồng riêng", "bang_chung": {"phap_ly": "sổ riêng"}}}],
                         "user_intent": "sell"}))
     eng.handle("k-1", "nhà mình có sổ riêng")
     f = eng.conversation("k-1").active.prop.fields
-    assert f.get("phap_ly") == "sổ hồng riêng" and "bang_chung" not in f
+    assert f.get("phap_ly") == "sổ riêng" and "bang_chung" not in f
 
 
 def test_chuoi_json_khong_chat_van_giai():

@@ -7050,6 +7050,112 @@ so nguyên văn hai dòng cố định nên không nhận ra (câu dẫn còn, l
 mọi chữ gọi khách, lấy dòng cuối (`tests/test_loi_gui_khach.py`, đỏ trên code cũ — đã chạy). Thêm nhãn ô mới thì chạy lại phép soát `boc_thong_so('<nhãn>: x')`
 trên DB.
 
+### SRS-5.1zzzzzzz86 · Bắn thử 3 kịch bản tester 20/10: tỉnh ngoài vùng, dự án không gắn, ô bịa từ con số, "đăng đi" ra bài giả, giọng (20/10/2026)
+
+**Ca gốc.** Chủ dự án: "tester 20 năm exp bắn lại 3 kịch bản" — KB1 nhà phân lô mặt ngõ Nguyễn Chí Thanh, Đống Đa, Hà Nội (dữ kiện từ
+một tin batdongsan chủ dự án gửi; trang trả 403, lời nhắn do tester viết lại), KB2 nhà phố LakeView City, KB3 căn hộ Masteri Thảo Điền
+(`bot/tests/ban-thu-kb.sh`, run 39376029609). Kết quả: (a) KB1 bot hỏi phường ba lượt cho nhà Hà Nội; chủ dự án chốt "hcm long an tây
+ninh bình dương đồng nai vũng tàu thôi". (b) KB2 / KB3 `project_id` trống; KB3 phường trống. (c) KB1 ô `vi_he_xe` = "Ngõ rộng 3m, xe máy
+hoặc ô tô con vào được" từ lời "ngõ trước nhà rộng 3m", tin rao in "ô tô con vào thuận tiện". (d) "ok em đăng đi" khi tin còn thiếu →
+bài đăng không 📋, tin nằm `cho_thong_tin`, khách duyệt không ghi được (KB1, KB2). (e) KB2 nhà phố bị hỏi "mã căn, tầng và tòa".
+(f) KB2 gọi khách "bạn", xưng "mình"; KB3 mở "Dạ,". (g) Câu diện tích sàn KB1 thấy 3 lần. Trung bình 17,6 s / lượt; chi phí không đo
+được vì script trừ chuỗi (`jq`).
+
+**Nguyên nhân, lớp lỗi, chỗ cùng lớp, sửa.**
+1. *Vùng nhận tin* — chưa có luật (quyết định mới). AI lập thao tác đọc tỉnh (`ngoai_vung` + cụm trích, code kiểm cụm nằm trong một
+   trong sáu lượt khách gần nhất); cờ nội bộ `_ngoai_vung` theo căn → lời nói khéo riêng (`build_ngoai_vung_system`), không hỏi, không
+   soạn; kho ẩn tin đã có (`an`), chưa có thì không tạo; tin nhắc bỏ qua. Vùng một nguồn `prompts.VUNG_NHAN_TIN`. Bình Phước cũ xếp
+   NGOÀI vùng — giả định, chờ chủ dự án (ghi ở CLAUDE.md §6).
+2. *Khoá nội bộ lọt vào ô tin* (thấy khi làm 1): `boc_tach` mang khoá DB `_cap_nhat`, nạp lại thành một "ô" trong phần ĐÃ BIẾT của
+   model và chữ gửi `boc_thong_so`. Lớp: dữ liệu hệ thống trộn vào dữ liệu khách. Một chỗ lọc `Property.fields_khach()`; chỗ cùng lớp đã
+   đổi: `describe_captured`, JSON rổ hàng cho model (hai chỗ), `_thong_so`.
+3. *Dự án không gắn / phường sai dự án* — `project_id` không có đường ghi nào; phường lấy từ dòng ĐẦU của `match_projects` (tìm gần
+   đúng). Lớp: kết quả tìm gần đúng dùng như kết quả chắc chắn. Một chỗ quyết `supabase_store._du_an` (tên trùng hẳn sau bỏ dấu, bỏ tiền
+   tố "khu đô thị / dự án…" — `cung_ten_du_an`), dùng cho cả `project_id` lẫn phường theo dự án.
+4. *`chuan_dia_ban` Quận 2 / 9 / Thủ Đức ra rỗng* — `phuong_cu.quan_cu` ghi "Thành phố Thủ Đức", `wards` / `quan_cu` ghi "Quận 2", so
+   bằng `=`. Lớp: hai bảng cùng khái niệm đặt tên khác nhau, so chuỗi trần. Một hàm `cung_quan_cu()` (`20261020c`); chỗ cùng lớp đã đổi:
+   `chuan_dia_ban` (hai chỗ + thứ tự), `tim_duong`, `van_ban_dia_danh`.
+5. *Ô bịa từ con số* — cổng `_co_bang_chung` (SRS-5.1zzzzzzz73) chỉ kiểm CỤM TRÍCH nằm trong lời khách, ghi GIÁ TRỊ không kiểm. Lớp: kiểm
+   bằng chứng một nửa — bằng chứng đúng, giá trị tuỳ ý. Sửa: `_gia_tri_ghi` — giá trị ô chữ phải gồm toàn từ khách gõ
+   (`_gia_tri_chong_do`; ô số đo trừ số và đơn vị); không thì ghi chính cụm khách nói. Ô ghép / đối chiếu kho (`dia_chi`, `phuong`,
+   `quan`, `duong`, `du_an`) có cổng riêng nên miễn. Chỗ cùng lớp: đường đọc lại căn mới tách ra (`_extract_fields`) trước đây KHÔNG qua
+   cổng nào — nay qua cùng `_loc_o_tin`; đường giấy tờ / bảng giá (`_apply_text_to_listing`) lấy dữ liệu từ TÀI LIỆU, không phải lời
+   chat — để nguyên. Không bắt được: phủ định ("không có thang máy" → giá trị "có" vẫn gồm từ khách gõ) — vẫn trông vào prompt.
+   Thêm luật prompt (lập thao tác + `AD_FORMAT`): không suy từ con số ra điều khác.
+6. *"Đăng đi" ra bài giả* — luật chat và `CONVERSATION_POLICY` có NGOẠI LỆ "khách xin đăng thì soạn bài đăng đầy đủ" trong khi chỉ
+   nhánh bản nháp mới có 📋 và ghi `listing_proposed`. Lớp: hai đường cùng sinh "bản tin", chỉ một đường được hệ thống ghi nhận. Sửa:
+   bỏ ngoại lệ (chỉ soạn bài khi prompt có `BỐ CỤC TIN RAO`, tức nhánh bản nháp / sau bản nháp); AI đọc "khách bảo đăng" (`xin_dang`,
+   code kiểm trích dẫn) → đủ ô tối thiểu (`Property.thieu_toi_thieu`: nhận diện + bắt buộc theo loại) thì ra bản nháp 📋 thật, ô còn lại
+   để hỏi sau khi duyệt; thiếu thì hỏi đúng ô tối thiểu (`khoi_xin_dang`), không soạn bài.
+7. *Nhà phố trong dự án bị hỏi tầng / tòa* — nhãn và câu hỏi ô `ma_so_can` viết theo căn hộ mà dùng cho mọi loại. Lớp: một chữ cho
+   nhiều loại BĐS. Một chỗ chọn `nhan_o` / `cau_hoi_o` (đè bằng `O_NGOAI_CAN_HO` ngoài nhóm căn hộ); chỗ cùng lớp đã đổi: câu hỏi chat
+   (đơn + cụm), lượt ảnh, câu hỏi sau duyệt, ĐÃ BIẾT, `khoi_xin_dang`. Soát các ô còn lại trong `NATURAL_QUESTIONS`: chưa thấy ô dùng
+   chung nào khác viết riêng một loại.
+8. *Giọng* — `CONVERSATION_POLICY` viết `Gọi khách là "em" (hoặc "bạn")` và "Zalo nam giới / nữ giới" (trái luật không đoán); khối
+   xưng hô "chưa biết" không có luật "Dạ". Lớp: luật giọng rải theo từng nhánh, nhánh thiếu thì model tự chọn. Sửa: `_GIONG_CHUNG` đi
+   kèm MỌI khối `khoi_xung_ho`; nhánh người mua và trả lời từ tài liệu dự án nay dùng cùng khối (trước có khối riêng / viết cứng
+   "anh/chị"); 18 câu viết cứng trong `engine.py` và một câu mẫu trong prompt ảnh sổ mở bằng "Dạ" → bỏ "Dạ".
+9. *Câu sàn 3 lần* — không phải lỗi đếm: luật lờ 2 lần chạy đúng (hỏi lượt 2 và 4, lờ lần 2 ở lượt 5); lần thứ 3 là bài đăng giả của (6)
+   tự hỏi. Hết cùng (6).
+10. *Script* — `bot_usage_model` trả bigint dạng chuỗi; ép số (`map_values(tonumber)`). KB1 đổi kỳ vọng theo luật vùng; thêm KB4 (cùng
+   kiểu nhà, hẻm 3m Quận 5) kiểm ô bịa "ô tô" và "đăng đi"; kiểm KB2 không hỏi tòa; kiểm không gọi "bạn".
+
+**Kiểm (đã chạy, ĐỎ trên code cũ).** `tests/test_ngoai_vung.py` (6), `tests/test_supabase_store_luu_tin.py` (3 ca dự án),
+`bot/tests/sql/chuan-dia-ban.sql` (3 ca đỏ khi không có `20261020c`), `tests/test_bang_chung_o_tin.py` (4 ca mới đỏ; 1 ca "không quá
+tay" xanh cả hai), `tests/test_xin_dang.py` (3), `tests/test_tin_rao_bo_cuc.py` (chat không tự soạn bài), `tests/test_cau_hoi_theo_loai_o.py`
+(2 đỏ), `tests/test_giong_chung.py` (3 đỏ). `tests/test_dau_ra_haiku.py` đổi kỳ vọng: "sổ riêng" không còn thành "sổ hồng riêng" (chữ AI
+thêm). pytest 466 đạt; SQL tests đạt.
+
+**Bắn lại production lần 1 sau `cai-vps` (run 39387897732, 14 lượt, 28 lượt model, ≈ 0,022 USD — 0,0016 USD / lượt chat; trung bình
+14,9 s / lượt, chậm nhất 21,0 s).** Đạt: KB2 gắn dự án + phường An Phú, không hỏi tầng / tòa, gọi khách "em" đúng; KB3 gắn dự án, phường
+An Khánh, khách duyệt → `dang_ban`, trang web mở được; KB4 không ô nào có "ô tô", "đăng đi" hỏi đúng phường còn thiếu; không bong bóng
+nào mở "Dạ" hay gọi "bạn". Trượt / thấy thêm:
+11. *KB1 cờ vùng không bật* — DB có Ô `ngoai_vung` = "Hà Nội": Haiku đặt khoá CẤP KẾ HOẠCH vào trong `fields` của thao tác — cùng hình
+   lỗi `bang_chung` (SRS-5.1zzzzzzz78), lần trước chỉ vá riêng khoá đó. Lớp: model lồng khoá sai cấp, code vá từng khoá. Sửa: kéo MỌI
+   khoá cấp kế hoạch (lấy từ `operations_schema()`, không liệt kê tay) ra khỏi `fields`. Kiểm `tests/test_ngoai_vung.py`
+   `test_khoa_cap_ke_hoach_lot_vao_fields_thi_keo_ra` (đỏ trên bản trước — đã chạy).
+12. *Lời chat KB4 tự suy* "hẻm 3m là xe máy vào thoải mái" (ô không bị ghi — cổng (5) chặn — nhưng khách đọc lời suy): thêm luật "không
+   suy ra điều khách không nói" vào `CONVERSATION_POLICY` (chung mọi nhánh).
+13. *Tiêu đề căn hộ chèn "MT"* (bản tin cập nhật KB3): luật viết gọn "MT" chỉ khi dữ liệu ghi nhà mặt tiền.
+14. KB2 không ra bản nháp vì còn thiếu ô tối thiểu (mã căn, diện tích sàn) — đúng luật; script chỉ kiểm tiêu đề khi có 📋.
+
+**Bắn lại lần 2 (run 39388772530, 14 lượt, ≈ 0,020 USD — 0,0014 USD / lượt chat; trung bình 15,6 s, chậm nhất 19,1 s).** KB1 đạt hết:
+"Hiện AI Ơi Nhà Đất chưa nhận rao bất động sản khu vực Hà Nội…", "đăng đi" vẫn từ chối khéo, tin `an`, không 📋. KB2, KB4 đạt (KB4
+"đăng đi" kể đúng ba ô còn thiếu rồi hỏi phường). Còn:
+15. *Bản tin CẬP NHẬT của KB3 mất giá ở tiêu đề* ("…68m² 2PN full nội thất view sông") — model không theo `AD_FORMAT` ở nhánh sửa bản
+   tin. Lớp: luật đầu ra chỉ nằm trong prompt, không có gì kiểm. Sửa: `_tieu_de_thieu` (code so CON SỐ của ô giá với dòng tiêu đề sau
+   📋 — không đọc ý) → thiếu thì gọi lại model MỘT lần kèm lý do, áp cho mọi lượt có 📋 (bản nháp đầu và bản cập nhật). Kiểm
+   `tests/test_tieu_de_co_gia.py` (đỏ trên bản trước — đã chạy).
+16. *Một cụm vào hai ô* (KB1 `so_phong_ngu` = "7 tầng"; KB3 `gia_dien_nuoc` = "phí quản lý khoảng 1,2 triệu") — cổng (5) không bắt được
+   vì giá trị đúng là lời khách, sai ở chỗ ô. Chỉ thêm luật prompt "mỗi cụm vào đúng một ô"; chưa có kiểm bằng code — để mở.
+
+**Bắn lại lần 3 (run 39389679661, 14 lượt, ≈ 0,022 USD — 0,0016 USD / lượt chat; trung bình 14,0 s, chậm nhất 19,0 s).** Mọi ca kiểm
+ĐẠT: KB1 từ chối khéo cả lượt "đăng đi", tin `an`; KB3 bản tin cập nhật giữ giá ở tiêu đề ("…view sông 6,8 tỷ", 13 từ), lên web;
+KB2 / KB4 đúng như lần 2; không "Dạ", không "bạn". Job đỏ vì bước `dung-lai-db.mjs` của workflow chạy nhầm sau `ban-thu-kb` (điều kiện
+bước thiếu `ban-thu-kb`) — sửa `apply-migration.yml`. Còn mở (model, chưa có kiểm bằng code): lời chat KB4 vẫn tự suy "hẻm 3m thì ô tô
+nhỏ vào được" dù có luật (ô tin không bị ghi); một cụm vào ô sai nghĩa lặp lại (`so_phong_ngu` = "7 tầng" ở KB1 / KB4,
+`yeu_cau_xe_hoi` = "hẻm trước nhà rộng 3m", `gia_dien_nuoc` = "phí quản lý…") — cột DB `bedrooms` không bị ghi sai ở cả ba lượt.
+
+**Chủ dự án duyệt kết quả lần 3 (20/10):** lời chat suy từ dữ kiện ("hẻm 3m thì ô tô nhỏ vào được") là OK → bỏ luật "không suy" khỏi
+`CONVERSATION_POLICY` (mục 12 trên); Bình Phước cũ không nhận (bỏ chữ "giả định"); giữ tiêu đề ≤ 15 từ; mã căn không bắt buộc. Sửa
+tiếp (chưa bắn production):
+17. *Mã căn chặn bản nháp* (KB2: khách lờ câu mã căn 2 lần, ô này không được để sau → hỏi mãi): căn dự án chưa có địa chỉ định vị bằng
+   tên dự án; `ma_so_can` thành ô mong đợi thường (`expected_fields`), lờ 2 lần thì để sau (`hoan_duoc`). Kiểm `tests/test_schema.py`
+   `test_presale_project_unit_located_by_project_code_optional`.
+18. *Một cụm vào ô sai nghĩa* (mục 16): gốc ở schema của mình — nhãn ô (cũng là mô tả ô trong schema lượt lập thao tác) chồng nghĩa:
+   `ket_cau` "kết cấu (số lầu, phòng ngủ)" / `so_phong_ngu` "số phòng ngủ và WC"; `gia_dien_nuoc` "…và chi phí dịch vụ" / `phi_quan_ly`
+   "phí quản lý dịch vụ". Lớp: hai ô của cùng schema nói cùng một nghĩa. Sửa nhãn nói rõ ranh giới (`so_phong_ngu` chỉ số PHÒNG;
+   `gia_dien_nuoc` không gồm phí quản lý). Phần trước ngoặc là chữ gửi `boc_thong_so` — đã gọi trên DB: "giá điện nước: x",
+   "số phòng ngủ và WC: x" → {} (không tự bật cột). Chỗ cùng lớp còn: `tinh_trang_ban_giao` / `hien_trang_su_dung` cùng nghĩa (đang ở /
+   trống / có khách thuê) — ghi cả hai không sai dữ liệu, để nguyên. Kiểm `tests/test_nhan_o_khong_chong.py` (đỏ trên bản trước).
+   Hiệu quả thật phải đo bằng bắn thử.
+19. *Xưng hô đổi giữa chừng* (KB2: "em" ba lượt rồi "vậy anh/chị?"): nguyên nhân chưa chứng minh được (không có log lượt đó); nghi vấn
+   — luật khách xưng em cho bot tự xưng "mình HOẶC anh/chị", trùng chữ với cách gọi khách. Bỏ "hoặc anh/chị" ở khối xưng hô và
+   `CONVERSATION_POLICY`, thêm "cả lượt không có chữ anh/chị". Kiểm `tests/test_giong_chung.py` (đỏ trên bản trước).
+20. *Chậm (14–17 s / lượt)*: chưa biết chậm ở khâu nào → đo trước: `/chat-reply` trả `thoi_gian_ms` (lap_thao_tac / tra_loi /
+   tra_loi_lai / ghi_kho / con_lai / tong — chỉ con số), log một dòng số, `ban-thu-kb.sh` in trung bình từng khâu. Kiểm
+   `tests/test_thoi_gian_luot.py`. Sửa tốc độ sau khi có số đo.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
