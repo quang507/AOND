@@ -5,6 +5,7 @@
 # Từ bản sửa: KB1 Hà Nội là NGOÀI vùng nhận tin (bot nói khéo, không đăng); KB4 cùng kiểu nhà ở Quận 5 (bịa "ô tô vào", "đăng đi").
 # KB2: nhà phố trong dự án LakeView City. KB3: căn hộ trong dự án Masteri Thảo Điền. Mỗi lượt đo thời gian bot trả lời; cuối script in
 # số token / chi phí của khung chạy (sổ bot_usage_model — gồm cả khách thật nhắn cùng lúc nếu có), soi DB, trang web, sổ lỗi.
+# KB5 (SRS-5.1zzzzzzz87): dựng lại chat tester chị N. Câu bot của mọi kịch bản vào trang Câu chuẩn trước khi dọn (SRS-5.1zzzzzzz88).
 # Chỉ Zalo ID thử (`thu-`), cuối script xoá sạch. Tiền thật: ~17 lượt chat × vài lượt AI.
 set -euo pipefail
 
@@ -21,10 +22,13 @@ export SSHPASS="$PW"; unset PW
 vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 -o LogLevel=ERROR "root@$HOST" "$@"; }
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
-KB1="thu-kb1-$RUN"; KB2="thu-kb2-$RUN"; KB3="thu-kb3-$RUN"; KB4="thu-kb4-$RUN"
-TAT_CA="$KB1 $KB2 $KB3 $KB4"
+KB1="thu-kb1-$RUN"; KB2="thu-kb2-$RUN"; KB3="thu-kb3-$RUN"; KB4="thu-kb4-$RUN"; KB5="thu-kb5-$RUN"
+TAT_CA="$KB1 $KB2 $KB3 $KB4 $KB5"
 
 don() {
+  # SRS-5.1zzzzzzz88: mọi câu bot của lượt bắn vào trang Câu chuẩn (CRM) kèm ngữ cảnh TRƯỚC khi dọn — chủ dự án chấm / sửa tay dần.
+  echo "== đưa câu bot vào Câu chuẩn"
+  for u in $TAT_CA; do q "select cau_chuan_tu_zalo('$u') as so_cau" | jq -c '.[0]' || true; done
   echo "== dọn dữ liệu thử"
   for u in $TAT_CA; do q "select reset_nguoi_test('$u') as kq" | jq -c '.[0]' || true; done
   vps "for u in $TAT_CA; do curl -sS -X POST http://127.0.0.1:8000/reset/\$u >/dev/null; done" || true
@@ -136,8 +140,26 @@ kiem "KB3: tiêu đề ≤ 15 từ, có Masteri, diện tích, giá" "$(tieu_de_
 kiem "KB3: tiêu đề căn hộ không có \"MT\"" "$(grep -qw 'MT' <<<"$TIEU_DE" && echo 0 || echo 1)"
 kiem "KB3: không hỏi hẻm / mặt tiền" "$(grep -qiE 'hẻm|mặt tiền' <<<"$(jq -r '.reply' <<<"$TRA")" && echo 0 || echo 1)"
 
+echo; echo "=================== KB5 — chat tester chị N. 20/10: nhà trong Ny'ah Phú Định, dtsd, MT 20m, ok liên tục ==================="
+# SRS-5.1zzzzzzz87: duyệt bản nháp hỏi lại mãi; "dtsd: 245m" vào ô đất; "MT 20 mét" (đường) thành bề ngang; tên dự án không dấu.
+TIEU_DE=""; MOC_KB5=${#MOI_LOI}
+for cau in "mình cần bán nhà trong khu dự án Nyah Phu Dinh"            "Bán nhà trong khu dân cư Nyah Phú Định, Trương Đình Hội • MT 20 mét, giá 6,95 tỷ, DT 4 x 11m, 1 trệt 1 lửng 3 lầu sân thượng, garage trong nhà, SHR hoàn công đầy đủ"            "dtsd: 245m vuông" "rao tin này giúp mình" "ok"; do
+  chat "$KB5" "$cau"
+done
+LOI_KB5_CUOI=$(jq -r '.reply // ""' <<<"$TRA")
+chat "$KB5" "ok"
+r5=$(dong "$KB5"); echo "$r5"
+kiem "KB5: gắn dự án Ny'ah Phú Định (khách gõ không dấu)" "$(jq "(.du_an // \"\") | test(\"(?i)ny.?ah\") | if . then 1 else 0 end" <<<"$r5")"
+kiem "KB5: dtsd 245 vào diện tích sàn, không vào ô đất" \
+     "$(jq '((.boc_tach.dien_tich_nha // "") | test("245")) and (((.boc_tach.dien_tich_dat // "") | test("245")) | not) | if . then 1 else 0 end' <<<"$r5")"
+kiem "KB5: diện tích đất 44 (4x11)" "$(jq '((.area_m2 // 0) | tonumber) == 44 | if . then 1 else 0 end' <<<"$r5")"
+kiem "KB5: \"MT 20 mét\" không thành bề ngang 20m" "$(jq '((.frontage_m // 0) | tonumber) != 20 and (((.boc_tach.mat_tien // "") | test("20")) | not) | if . then 1 else 0 end' <<<"$r5")"
+kiem "KB5: một cụm không vào hai ô pháp lý" "$(jq '(.boc_tach.phap_ly // "x") != (.boc_tach.phap_ly_hoan_cong // "y") | if . then 1 else 0 end' <<<"$r5")"
+kiem "KB5: khách ok rồi thì tin lên web" "$(jq '.status == "dang_ban" | if . then 1 else 0 end' <<<"$r5")"
+kiem "KB5: sau \"ok\" bot không hỏi xác nhận lại" "$(grep -qiE 'xác nhận (giúp|lại|lần)|đã ổn chưa' <<<"$LOI_KB5_CUOI$(jq -r '.reply // ""' <<<"$TRA")" && echo 0 || echo 1)"
+
 echo; echo "=================== web, giọng, chi phí, thời gian, sổ lỗi ==================="
-for r in "$r1" "$r2" "$r3" "$r4"; do
+for r in "$r1" "$r2" "$r3" "$r4" "$r5"; do
   ma=$(jq -r '.code // empty' <<<"$r"); st=$(jq -r '.status // empty' <<<"$r")
   [ -z "$ma" ] && continue
   if [ "$st" = dang_ban ] || [ "$st" = dang_quan_tam ]; then

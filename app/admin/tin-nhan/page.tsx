@@ -2,7 +2,8 @@
 // /admin/tin-nhan — màn chat 3 cột của khung CRM (09/09/2026, bố cục theo
 // ZaloCRM): trái = bộ lọc, giữa = hội thoại, phải = tin nhắn. Mỗi câu bot có
 // 18/10/2026 (SRS-5.1zzzzzzz46): bỏ "Sửa thành câu chuẩn" (FR-180, bảng `mau_cau`) — mẫu đó chỉ bot TypeScript cũ đọc làm
-// few-shot; lõi Python không đọc nên lưu mẫu không đổi được giọng bot.
+// few-shot; lõi Python không đọc nên lưu mẫu không đổi được giọng bot. 20/10 (SRS-5.1zzzzzzz88): nút "Chấm / sửa câu này" đưa câu
+// vào bảng `cau_chuan` mà lõi Python CÓ đọc (trang /admin/cau-chuan).
 // Đọc `conversations`/`messages` qua RLS admin; không gọi RPC nào của bot.
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -152,6 +153,12 @@ export default function Page() {
     setChon(null); setTin([]);
     await napHoiThoai();
   };
+  // SRS-5.1zzzzzzz88: đưa một câu bot (kèm 8 tin ngữ cảnh trước nó) vào /admin/cau-chuan để chấm điểm và sửa tay.
+  const chamCau = async (t: Tin) => {
+    const { error } = await supabase.rpc("cau_chuan_tu_tin", { p_message_ids: [t.id] });
+    if (error) { setLoi(error.message); return; }
+    setThongBao("Đã đưa câu vào trang Câu chuẩn (mục Chưa chấm).");
+  };
   // Cần người thật → đã xử lý: hạ cờ để bot tiếp sức lại (FR-147).
   const daXuLy = async () => {
     if (!chon) return;
@@ -286,6 +293,11 @@ export default function Page() {
                         <span className="font-bold">{AI_VI[t.sender] ?? t.sender}</span><span className="tabular-nums">{luc(t.created_at)}</span>
                       </div>
                       <div className="mt-0.5 whitespace-pre-wrap break-words text-sm">{t.body}</div>
+                      {bot && (
+                        <button type="button" onClick={() => chamCau(t)} className="mt-1 text-[11px] font-semibold text-white/70 underline-offset-2 hover:text-white hover:underline" title="Đưa câu này (kèm ngữ cảnh) vào trang Câu chuẩn để chấm điểm, sửa tay">
+                          Chấm / sửa câu này
+                        </button>
+                      )}
                     </div>
                   </li>
                 );

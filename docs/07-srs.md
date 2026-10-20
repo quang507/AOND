@@ -7183,8 +7183,40 @@ Ca gốc (kênh thử, 15:16–16:07): người bán nhà phố trong Ny'ah Phú
    gọi lại model một lần kèm lý do, cùng chỗ với kiểm giá trong tiêu đề; không tự sửa chữ. Hai câu mẫu offline (`llm/mock.py`) bỏ "Dạ".
 
 Kiểm: `tests/test_duyet_theo_trang_thai.py` (6 ca; tắt bản sửa thì 5 ca đỏ — ca còn lại canh không tính khi trích dẫn bịa / chưa có bản
-nháp). Chưa sửa (ghi lại): bot ghi "mặt tiền rộng 20m" từ "Trương Đình Hội • MT 20 mét" (độ rộng đường, trong khi ngang 4m); cùng một
-cụm vào hai ô (`tien_ich_phong` + `dien_tich_trang_thiet_bi`, `phap_ly` + `phap_ly_hoan_cong`) — luật "mỗi cụm một ô" mới ở prompt.
+nháp). Tin thử của chị N. (diện tích ghi sai) đã xoá theo lệnh chủ dự án.
+6. *"Trương Đình Hội • MT 20 mét" thành bề ngang 20m* (lô 4x11) và *một cụm vào hai ô* ("Garege trong nhà" → `tien_ich_phong` +
+   `dien_tich_trang_thiet_bi`; "SHR Hoàn Công Đầy Đủ" → `phap_ly` + `phap_ly_hoan_cong`). **Lớp**: ô tin tự mâu thuẫn — luật "mỗi
+   cụm một ô" chỉ nằm ở prompt, code không kiểm. **Sửa** (`_mot_cum_mot_o`, sau cổng bằng chứng trong `_loc_o_tin` — mọi đường AI ghi
+   ô): cùng giá trị (≥ 2 từ) vào hai ô → giữ ô đứng trước trong bộ ô của loại BĐS (hoặc ô đã giữ chữ đó từ lượt trước); bề ngang mặt
+   tiền lớn hơn cả hai chiều của kích thước lô → bỏ `mat_tien`. Không đọc ý: chỉ so chữ / số. Prompt thêm: "MT 20m" cạnh tên đường là
+   độ rộng đường → `lo_gioi_duong`. **Cùng lớp còn**: hai ô nghĩa chồng (`phap_ly` / `phap_ly_hoan_cong`, `tinh_trang_ban_giao` /
+   `hien_trang_su_dung`) vẫn nhận GIÁ TRỊ KHÁC nhau — đúng ý khách thì không sai, để nguyên. Kiểm: `test_mot_cum_mot_o_va_mat_tien_khong_lon_hon_lo`.
+
+Bắn lại: `bot/tests/ban-thu-kb.sh` KB5 dựng lại chat này (gõ không dấu "Nyah Phu Dinh", dtsd, MT 20 mét, "rao tin này giúp mình",
+"ok" hai lần) — kiểm gắn dự án, ô sàn / đất, bề ngang, hai ô pháp lý, tin lên web, không hỏi xác nhận lại.
+
+### SRS-5.1zzzzzzz88 · Câu chuẩn: chấm điểm và sửa tay câu bot kèm ngữ cảnh, lõi đọc làm ví dụ (20/10/2026)
+
+Chủ dự án: "chị tester và tui sẽ chấm điểm phản hồi của AI… ở đâu"; "bắn lên chỗ câu chuẩn cách bot đã ghi để tôi sửa tay từ từ, và
+chấm điểm nữa phải có trong ngữ cảnh". Vết cũ: trang sửa câu chuẩn (FR-180, bảng `mau_cau`) gỡ 18/10 vì CHỈ bot TypeScript đọc —
+sửa ở đó không đổi được lõi Python. Bản này đi đủ vòng:
+
+- **DB** (`20261020d_cau_chuan.sql`): bảng `cau_chuan` — câu bot, NGỮ CẢNH chép lúc đưa vào (8 tin trước nó, nên xoá khách / dọn dữ
+  liệu thử vẫn đọc được), điểm 1–5, câu chuẩn, ghi chú, nguồn (`that` / `ban_thu` theo `la_id_thu`), `dung_lam_mau`. RLS chỉ admin
+  (`la_admin()`); `anon` bị revoke. Hàm `cau_chuan_tu_tin(uuid[])` (nút CRM) và `cau_chuan_tu_zalo(text)` (script bắn thử) — quyền
+  người gọi, không `security definer`.
+- **CRM**: trang `/admin/cau-chuan` (mục "Câu chuẩn" ở cột trái) — lọc chưa chấm / đã chấm / nguồn; mỗi thẻ hiện ngữ cảnh, câu bot, ô
+  câu chuẩn điền sẵn câu bot để sửa dần, nút điểm 1–5, ghi chú, "Bot dùng làm ví dụ". `/admin/tin-nhan`: nút "Chấm / sửa câu này"
+  dưới mỗi câu bot.
+- **Lõi**: `SupabaseConversationStore.cau_chuan_mau()` đọc 8 dòng đã sửa / đã chấm mới nhất (nhớ 60 giây — sửa ở CRM là bot đổi trong
+  1 phút, không cần cài lại); `prompts.khoi_cau_chuan()` đưa vào lượt trả lời CẢ HAI nhánh (bán, mua): ngữ cảnh 3 tin, câu bot cũ, điểm,
+  câu chuẩn, ghi chú. Ví dụ là hội thoại của khách khác: SĐT che `0xxxxxxxxx`, dặn model không nhắc lại địa chỉ / giá / tên trong ví
+  dụ. Kho đọc lỗi → không có khối, lượt trả lời không hỏng.
+- **Bắn thử**: `ban-thu-kb.sh` gọi `cau_chuan_tu_zalo` cho mọi Zalo ID thử TRƯỚC khi dọn — câu bot của lượt bắn hiện ở mục "Bắn thử".
+- Kèm: kiểm hình thức (giá trong tiêu đề, mở đầu "Dạ") chạy cả nhánh mua (`_soat_hinh_thuc`).
+
+Chưa làm: chọn ví dụ theo độ giống tình huống (đang lấy 8 dòng mới nhất); thống kê điểm trung bình theo ngày. Kiểm:
+`tests/test_cau_chuan.py` (khối có ngữ cảnh / điểm / câu chuẩn / che SĐT; lượt trả lời có khối; kho lỗi thì không có khối).
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

@@ -65,6 +65,7 @@ from .prompts import (
     build_listing_proposal_system,
     build_ngoai_vung_system,
     khoi_xin_dang,
+    khoi_cau_chuan,
     cat_truoc_mo_dau,
     build_inventory_instruction,
     build_media_group_instruction,
@@ -1839,10 +1840,11 @@ class Engine:
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += khoi_can_cho_khach(can) + khoi_viec_vua_ghi(viec)
             system += khoi_can_nguoi(conv) + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
+            system += self._khoi_cau_chuan()
             reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
                 raise LoiTraLoi("lời gửi khách rỗng")
-            reply = _bo_markdown(reply)
+            reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply))
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured, now)
@@ -1913,7 +1915,7 @@ class Engine:
             system += ("\nEM VỪA CHUYỂN câu trả lời của anh/chị cho khách mua đang hỏi (hệ thống báo khách ngay). Cảm ơn ngắn gọn, "
                        "nói em đã báo khách rồi, rồi mới tiếp chuyện tin rao.\n")
 
-        system += khoi_xung_ho(customer_pronoun)
+        system += khoi_xung_ho(customer_pronoun) + self._khoi_cau_chuan()
 
         # Khối ưu tiên theo điều khách HỎI — lượt AI lập thao tác đọc theo nghĩa (conv.hoi_ve_luot, SRS-5.1zzzzzzz54); bản trước
         # dò từ khoá ("chi phí" nào cũng thành hỏi phí). Con số phí theo vai từ _fee_hint, không viết tay.
@@ -1962,9 +1964,29 @@ class Engine:
         if not reply:   # SRS-5.1zzzzzzz82: không gửi "kết nối mạng gián đoạn, nhắn lại giúp em" — server giữ chỗ rồi tự thử lại
             raise LoiTraLoi("lời gửi khách rỗng")
 
-        reply = _bo_markdown(reply)
-        # Bản tin (📋) phải có giá trong tiêu đề (SRS-5.1zzzzzzz86): bắn thử 20/10, bản tin CẬP NHẬT của KB3 bỏ giá dù AD_FORMAT bắt
-        # buộc. Code chỉ kiểm con số giá của căn có trong dòng tiêu đề — thiếu thì gọi lại model MỘT lần kèm lý do, không tự sửa chữ.
+        reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply))
+        if trinh_nhap:
+            reply = cat_truoc_mo_dau(reply)
+
+        conv.history.append(Turn("assistant", reply, now))
+        conv.last_ai_at = now
+        return self._build_result(conv, reply, captured, now)
+
+    def _khoi_cau_chuan(self) -> str:
+        """Câu chuẩn người chấm sửa ở CRM làm ví dụ (SRS-5.1zzzzzzz88). Kho không có bảng / đọc lỗi → "" (prompt như cũ)."""
+        doc = getattr(self._convstore, "cau_chuan_mau", None)
+        if doc is None:
+            return ""
+        try:
+            return khoi_cau_chuan(doc())
+        except Exception as e:  # noqa: BLE001 — thiếu ví dụ không được làm hỏng lượt trả lời
+            log.warning("khoi_cau_chuan lỗi: %s", e)
+            return ""
+
+    def _soat_hinh_thuc(self, conv: Conversation, system: str, reply: str) -> str:
+        """Luật HÌNH THỨC code kiểm được mà không đọc ý — lệch thì gọi lại model MỘT lần kèm lý do, không tự sửa chữ.
+        Bản tin (📋) phải có giá trong tiêu đề (SRS-5.1zzzzzzz86: bắn thử 20/10, bản tin CẬP NHẬT của KB3 bỏ giá dù AD_FORMAT bắt
+        buộc); không mở đầu "Dạ" (SRS-5.1zzzzzzz87). Cả nhánh bán lẫn nhánh mua."""
         thieu_td = _tieu_de_thieu(reply, conv.prop)
         ly_do = []
         if thieu_td:
@@ -1981,12 +2003,7 @@ class Engine:
                     conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if lai:
                 reply = _bo_markdown(lai)
-        if trinh_nhap:
-            reply = cat_truoc_mo_dau(reply)
-
-        conv.history.append(Turn("assistant", reply, now))
-        conv.last_ai_at = now
-        return self._build_result(conv, reply, captured, now)
+        return reply
 
     @staticmethod
     def _inventory_tools() -> list[dict]:

@@ -9,7 +9,7 @@ import { Suspense, useEffect, useState, type FormEvent, type ReactNode } from "r
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { IconBell, IconChart, IconChat, IconGrid, IconList, IconLogout, IconPlus, IconSettings, IconUsers } from "@/components/icons";
+import { IconBell, IconChart, IconChat, IconEdit, IconGrid, IconList, IconLogout, IconPlus, IconSettings, IconUsers } from "@/components/icons";
 
 type Tab = { href: string; label: string; Icon: (p: { className?: string }) => ReactNode; khop: (p: string, tab: string | null) => boolean };
 type Nhom = { ten: string; tabs: Tab[] };
@@ -21,6 +21,7 @@ const NHOM: Nhom[] = [
     tabs: [
       { href: "/admin", label: "Bàn làm việc", Icon: IconGrid, khop: (p, t) => p === "/admin" && (!t || t === "todo") },
       { href: "/admin/tin-nhan", label: "Tin nhắn", Icon: IconChat, khop: (p) => p.startsWith("/admin/tin-nhan") },
+      { href: "/admin/cau-chuan", label: "Câu chuẩn", Icon: IconEdit, khop: (p) => p.startsWith("/admin/cau-chuan") },
       { href: "/admin?tab=crm", label: "Khách hàng", Icon: IconUsers, khop: (p, t) => p === "/admin" && t === "crm" },
     ],
   },

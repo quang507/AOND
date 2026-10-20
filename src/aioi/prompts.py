@@ -1733,3 +1733,33 @@ def tai_lieu_chung_schema() -> dict[str, Any]:
         "required": ["tai_lieu_chung"],
     }
 
+
+
+_SDT = re.compile(r"(?<!\d)(?:\+?84|0)(?:[\s.\-]?\d){8,10}(?!\d)")
+_AI_CAU_CHUAN = {"buyer": "Khách", "seller": "Khách", "bot": "Bot", "human": "Người thật", "ctv": "CTV"}
+
+
+def khoi_cau_chuan(rows: list[dict] | None) -> str:
+    """Câu chuẩn người chấm sửa / chấm ở CRM (`cau_chuan`, SRS-5.1zzzzzzz88) → khối ví dụ cho lượt trả lời. Mỗi ví dụ kèm NGỮ CẢNH
+    (3 tin trước câu bot), câu bot cũ, điểm, câu chuẩn, ghi chú. Ví dụ là hội thoại của khách khác: che SĐT, dặn model không nhắc lại
+    dữ kiện trong ví dụ. Không có dòng → "" (prompt như cũ)."""
+    if not rows:
+        return ""
+    cat = lambda x, n: (lambda t: t if len(t) <= n else t[:n].rstrip() + "…")(_SDT.sub("0xxxxxxxxx", " ".join(str(x or "").split())))
+    khoi = []
+    for i, r in enumerate(rows, 1):
+        dong = [f"[{i}]" + (f" Điểm câu bot cũ: {r['diem']}/5" if r.get("diem") else "")]
+        for t in (r.get("ngu_canh") or [])[-3:]:
+            if isinstance(t, dict) and t.get("noi_dung"):
+                dong.append(f"  {_AI_CAU_CHUAN.get(t.get('ai'), 'Khách')}: {cat(t['noi_dung'], 300)}")
+        dong.append(f"  Câu bot cũ: {cat(r.get('cau_bot'), 500)}")
+        if r.get("cau_chuan") and cat(r["cau_chuan"], 900) != cat(r.get("cau_bot"), 900):
+            dong.append(f"  CÂU CHUẨN (nên nói thế này): {cat(r['cau_chuan'], 900)}")
+        elif r.get("cau_chuan") or (r.get("diem") or 0) >= 4:
+            dong.append("  → Câu bot cũ đã chuẩn, giữ cách nói này.")
+        if r.get("ghi_chu"):
+            dong.append(f"  Ghi chú người chấm: {cat(r['ghi_chu'], 300)}")
+        khoi.append("\n".join(dong))
+    return ("\n\n=== CÂU CHUẨN NGƯỜI CHẤM ĐÃ SỬA / CHẤM (học giọng và cách xử lý; gặp tình huống giống thì làm như câu chuẩn; điểm thấp "
+            "là cách nói cần tránh) ===\nĐây là hội thoại của KHÁCH KHÁC: KHÔNG nhắc lại địa chỉ, giá, tên, số liệu trong ví dụ.\n"
+            + "\n".join(khoi) + "\n")
