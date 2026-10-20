@@ -240,7 +240,9 @@ class SupabaseConversationStore(KhoNguoiMua):
         ten = str(fields.get("du_an") or "").strip()
         if not ten:
             return None
-        if ten not in self._du_an_nho:
+        # Chỉ nhớ lần TÌM RA (SRS-5.1zzzzzzz87): chat chị N. 20/10 nhắc "Nyah Phú Định" lúc dự án chưa nạp vào kho, lần hụt bị nhớ
+        # tới khi lõi khởi động lại nên tin không bao giờ gắn `project_id` dù dự án vào kho 35 phút sau.
+        if self._du_an_nho.get(ten) is None:
             try:
                 da = self._request("POST", "rpc/match_projects?select=id,name,location_raw,ward,district", data={"p_text": ten})
             except Exception as e:  # noqa: BLE001 — không gắn dự án lượt này, lượt sau thử lại

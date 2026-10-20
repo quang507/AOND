@@ -7156,6 +7156,36 @@ tiếp (chưa bắn production):
    tra_loi_lai / ghi_kho / con_lai / tong — chỉ con số), log một dòng số, `ban-thu-kb.sh` in trung bình từng khâu. Kiểm
    `tests/test_thoi_gian_luot.py`. Sửa tốc độ sau khi có số đo.
 
+### SRS-5.1zzzzzzz87 · Chat tester chị N. 20/10: duyệt bản nháp lặp, "dtsd" vào ô đất, dự án không gắn, mở đầu "Dạ" (20/10/2026)
+
+Ca gốc (kênh thử, 15:16–16:07): người bán nhà phố trong Ny'ah Phú Định dán tin rao, sửa tiêu đề hai lần, rồi:
+
+1. *Hỏi xác nhận lặp* — bot nhắc xem bản tin; khách "rao tin này giúp mình" → bot "xác nhận giúp em bản tin đã ổn"; "ổn", "ok đăng
+   tin này nhé", "ok" → bot hỏi lại cùng câu ba lần; tới "đã ổn" mới đăng. **Lớp lỗi**: quyết định đọc theo VỊ TRÍ tin chứ không theo
+   TRẠNG THÁI — luật duyệt cho lượt lập thao tác chỉ nhận khi tin NGAY TRƯỚC của bot là bản nháp; chính câu "xác nhận giúp em" của bot
+   (nhánh `cho_duyet`) và tin nhắc làm tin ngay trước không còn là bản nháp, nên mỗi lần hỏi lại là thêm một lần không nhận. Kèm:
+   `xin_dang` bị bỏ khi bản nháp đã gửi (`and not listing_proposed`) mà không chuyển thành duyệt. **Sửa**: khi `listing_proposed`, lượt
+   lập thao tác nhận dòng "TRẠNG THÁI: bot ĐÃ gửi bản tin nháp…" (engine), luật duyệt đọc theo dòng đó; lời bảo đăng (cụm trích có thật)
+   sau bản nháp = `dong_y`. Code vẫn chỉ kiểm cụm trích; chưa có bản nháp thì không tính. **Chỗ cùng lớp**: `xac_nhan_xoa` (cũng "chỉ
+   khi tin NGAY TRƯỚC của bot hỏi xác nhận ẩn") — chưa soát có lượt nào chèn tin khác giữa câu hỏi xác nhận và lời khách; để
+   nguyên, ghi lại để soát khi bắn thử. Khách gõ "ok" liên tục khi bot chưa kịp trả lời: mỗi tin là một lượt (khoá theo khách, SRS-5.1zzzzzzz84), nay lượt nào
+   cũng tính duyệt nên không còn vòng; gộp tin gõ liền nhau là việc của bridge — chưa làm.
+2. *"dtsd: 245m vuông" vào ô đất, "dts 44m vuông" vào ô sàn* (4x11 = 44 là đất) — **lớp**: model không biết viết tắt của giới rao
+   tin. Sửa ở prompt (lượt lập thao tác + lượt bóc tách): `dtsd` = diện tích sử dụng → `dien_tich_nha`; `dts` mơ hồ — số bằng ngang × dài
+   là đất. Không thêm regex. Cổng `_gia_tri_chong_do` không bắt được vì "sàn" bỏ dấu trùng "sân" (sân thượng) của khách — so từ bỏ dấu
+   là giới hạn đã biết của cổng, không vá thêm. Hiệu quả phải đo bằng bắn thử.
+3. *Tin trong Ny'ah không gắn `project_id`* — khách nhắc dự án lúc 15:16, dự án vào kho `projects` 15:51; `_du_an` nhớ cả lần HỤT tới khi
+   lõi khởi động lại. **Lớp**: bộ nhớ đệm nhớ kết quả rỗng của dữ liệu đang được nạp. Sửa: chỉ nhớ lần tìm ra. Cùng lớp: kho kiến thức
+   (`SupabaseProjectStore`) đọc DB mỗi lượt, không đệm — không dính.
+4. *Tên dự án không dấu* ("nyah phu dinh") không khớp kho kiến thức — `find_matching_key` so không khoảng trắng nhưng còn dấu. Sửa: so
+   sau khi bỏ dấu (cả tiền tố chung không dấu). Vẫn là khớp TRÙNG sau làm sạch, không gần đúng.
+5. *Mở đầu "Dạ"* ở hai lượt sau khi đăng (luật chủ dự án; prompt đã có, model không theo) — code kiểm chữ đầu (`_mo_dau_da`), lệch thì
+   gọi lại model một lần kèm lý do, cùng chỗ với kiểm giá trong tiêu đề; không tự sửa chữ. Hai câu mẫu offline (`llm/mock.py`) bỏ "Dạ".
+
+Kiểm: `tests/test_duyet_theo_trang_thai.py` (6 ca; tắt bản sửa thì 5 ca đỏ — ca còn lại canh không tính khi trích dẫn bịa / chưa có bản
+nháp). Chưa sửa (ghi lại): bot ghi "mặt tiền rộng 20m" từ "Trương Đình Hội • MT 20 mét" (độ rộng đường, trong khi ngang 4m); cùng một
+cụm vào hai ô (`tien_ich_phong` + `dien_tich_trang_thiet_bi`, `phap_ly` + `phap_ly_hoan_cong`) — luật "mỗi cụm một ô" mới ở prompt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

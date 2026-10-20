@@ -1200,6 +1200,9 @@ cho các loại này.
 - Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
   (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
   nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Không có dấu hiệu nào mới để tạm dien_tich.
+  Viết tắt (20/10): "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
+  "dts" có thể là diện tích sổ hoặc sàn: con số bằng ngang × dài khách đã nói (4x11 → 44) là ĐẤT; còn lại để tạm dien_tich. Số
+  bằng ngang × dài luôn là diện tích ĐẤT, không bao giờ là diện tích sàn của nhà nhiều tầng.
 QUAN TRỌNG — mã số căn: BĐS dự án lúc MỞ BÁN (chưa hoàn thành) thường được định danh bằng
 MÃ SỐ CĂN (vd "căn số 42", "A-15-03", "block B tầng 5 căn 3") và CHƯA có địa chỉ đường. Nếu
 người rao cho mã số căn thì trích vào ma_so_can. ĐỪNG nhầm mã số căn với số phòng ngủ hay số
@@ -1467,9 +1470,12 @@ QUY TẮC:
 - Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
   (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
   nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Không có dấu hiệu nào mới để tạm dien_tich.
+  Viết tắt (20/10): "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
+  "dts" có thể là diện tích sổ hoặc sàn: con số bằng ngang × dài khách đã nói (4x11 → 44) là ĐẤT; còn lại để tạm dien_tich. Số
+  bằng ngang × dài luôn là diện tích ĐẤT, không bao giờ là diện tích sàn của nhà nhiều tầng.
 - Đừng nhầm mã số căn với số phòng ngủ/số tầng.
-- DUYỆT BẢN NHÁP (18/10/2026): chỉ khi tin nhắn NGAY TRƯỚC của bot là BẢN TIN NHÁP / bản tin cập nhật hỏi khách thấy được
-  chưa, đọc theo NGHĨA tin khách vừa nhắn: đồng ý cho đăng (ok, được rồi, đăng đi, chuẩn rồi, thả tim / like…) →
+- DUYỆT BẢN NHÁP (18/10/2026; 20/10 theo trạng thái): chỉ khi có dòng "TRẠNG THÁI: bot ĐÃ gửi bản tin nháp" bên dưới (bot đã gửi
+  bản nháp — kể cả khi sau đó bot nhắc hay hỏi xác nhận "đã ổn chưa"), đọc theo NGHĨA tin khách vừa nhắn: đồng ý cho đăng (ok, được rồi, đăng đi, chuẩn rồi, thả tim / like…) →
   duyet_ban_nhap = "dong_y"; KHÔNG đồng ý / chưa muốn đăng / muốn sửa trước rồi mới đăng → "khong_dong_y". Hỏi lại, hỏi phí,
   nói chuyện khác hay chưa rõ → bỏ trống. Có điền thì duyet_trich_dan = NGUYÊN VĂN cụm trong tin khách cho thấy điều đó.
   "[khách gửi sticker]" là nhãn dán KHÔNG rõ cảm xúc → KHÔNG phải đồng ý, bỏ trống. "[khách thả cảm xúc ❤️]" / 👍 / 👌 (thả

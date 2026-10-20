@@ -228,11 +228,19 @@ _GENERIC_PREFIX = (
 )
 
 
+def _bo_dau(s: str) -> str:
+    s = s.replace("đ", "d").replace("Đ", "D")
+    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+
+
+_GENERIC_PREFIX_BO_DAU = tuple(_bo_dau(p) for p in _GENERIC_PREFIX)
+
+
 def _strip_generic_prefix(name: str) -> str:
     changed = True
     while changed:
         changed = False
-        for pre in _GENERIC_PREFIX:
+        for pre in _GENERIC_PREFIX_BO_DAU if name.isascii() else _GENERIC_PREFIX:
             if name == pre:
                 return name  # the name is ONLY generic words — don't erase it
             if name.startswith(pre + " "):
@@ -260,7 +268,9 @@ def find_matching_key(query: str, stored_keys: Iterable[str]) -> str | None:
             return k
     # spaceless + generic-prefix-stripped exact match (catches the duplicate-project variants)
     def canon(s: str) -> str:
-        return _strip_generic_prefix(s).replace(" ", "")
+        # (3) bỏ dấu (SRS-5.1zzzzzzz87): khách gõ không dấu "nyah phu dinh" vẫn là "Ny'ah Phú Định".
+        s = _strip_generic_prefix(_bo_dau(s))
+        return s.replace(" ", "")
     q = canon(query)
     if q:
         for k in keys:

@@ -43,7 +43,7 @@ def test_agent_loop_resolves_by_characteristic_and_adds_to_basket(tmp_path):
     script = [
         ToolTurn("", [ToolCall("t1", "tim_can", {"lon_nhat": "dien_tich_dat"})]),
         ToolTurn("", [ToolCall("t2", "them_can_vao_ro", {"ma_so_can": "26"})]),
-        ToolTurn("Dạ em thêm căn 26 (Office 2, 16.566 tỷ) vào rổ rồi ạ!", []),
+        ToolTurn("Em thêm căn 26 (Office 2, 16.566 tỷ) vào rổ rồi ạ!", []),
     ]
     eng = _engine(script, tmp_path)
     r = eng.handle("s", "à quên, tôi bán luôn căn góc diện tích lớn nhất nữa nha em")
@@ -60,7 +60,7 @@ def test_agent_loop_learns_a_fact_into_the_project(tmp_path):
     # on the project (shared for the next seller), and becomes queryable.
     script = [
         ToolTurn("", [ToolCall("t1", "ghi_nho_can", {"ma_so_can": "26", "thuoc_tinh": {"vi_tri": "góc"}})]),
-        ToolTurn("Dạ em ghi nhớ căn 26 là lô góc rồi ạ!", []),
+        ToolTurn("Em ghi nhớ căn 26 là lô góc rồi ạ!", []),
     ]
     eng = _engine(script, tmp_path)
     eng.handle("s", "căn 26 là lô góc đó nha em")

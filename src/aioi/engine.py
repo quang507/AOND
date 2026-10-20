@@ -775,6 +775,12 @@ def _tieu_de_thieu(reply: str, prop: "Property") -> list[str]:
     return [f"giá ({gia})"] if so_gia and not (so_gia & _so_trong(tieu_de)) else []
 
 
+def _mo_dau_da(reply: str) -> bool:
+    """Lời bot mở đầu bằng "Dạ" — luật chủ dự án (cấm mở đầu "Dạ", CLAUDE.md §6) mà model có lượt không theo (chat chị N. 20/10: hai
+    lượt sau khi đăng tin mở đầu bằng Dạ). Chỉ kiểm chữ đầu; không sửa lời — lệch thì gọi lại model (SRS-5.1zzzzzzz87)."""
+    return re.match(r"(?i)\s*dạ(?![a-zà-ỹđ])", reply or "") is not None
+
+
 def _bo_markdown(reply: str) -> str:
     """Bỏ in đậm markdown (Zalo không hiển thị). Không sửa lời bot theo từ khoá ("Dạ", "anh/chị") — SRS-5.1zzzzzzz55. Ghi chú nội bộ
     của model không còn lọt vào lời bot: lượt trả lời đi qua công cụ hai ô (`ClaudeProvider.reply`, SRS-5.1zzzzzzz76)."""
@@ -1960,12 +1966,18 @@ class Engine:
         # Bản tin (📋) phải có giá trong tiêu đề (SRS-5.1zzzzzzz86): bắn thử 20/10, bản tin CẬP NHẬT của KB3 bỏ giá dù AD_FORMAT bắt
         # buộc. Code chỉ kiểm con số giá của căn có trong dòng tiêu đề — thiếu thì gọi lại model MỘT lần kèm lý do, không tự sửa chữ.
         thieu_td = _tieu_de_thieu(reply, conv.prop)
+        ly_do = []
         if thieu_td:
-            log.warning("Tiêu đề bản tin thiếu %s — gọi lại model", ", ".join(x.split(" (")[0] for x in thieu_td))
+            ly_do.append("Bản tin vừa viết có TIÊU ĐỀ thiếu " + ", ".join(thieu_td)
+                         + "; tiêu đề tối đa 15 từ, đủ vị trí · diện tích · giá.")
+        if _mo_dau_da(reply):
+            ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
+        if ly_do:
+            log.warning("Lời bot lệch luật hình thức (%s) — gọi lại model",
+                        ", ".join(["tiêu đề"] * bool(thieu_td) + ["mở đầu Dạ"] * _mo_dau_da(reply)))
             with _do(conv, "tra_loi_lai"):
                 lai = self._provider.reply(
-                    system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\nBản tin vừa viết có TIÊU ĐỀ thiếu " + ", ".join(thieu_td)
-                    + ". Viết lại TOÀN BỘ lượt trả lời; tiêu đề tối đa 15 từ, đủ vị trí · diện tích · giá.\n",
+                    system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\n" + " ".join(ly_do) + " Viết lại TOÀN BỘ lượt trả lời.\n",
                     conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if lai:
                 reply = _bo_markdown(lai)
@@ -3085,6 +3097,11 @@ class Engine:
                 "operations RỖNG — phần trả lời sẽ hỏi xác nhận; chỉ 'add' sau khi khách xác nhận.\n"
             )
         system += self._basket_block(conv)
+        if conv.listing_proposed:
+            # Duyệt bản nháp đọc theo TRẠNG THÁI, không theo vị trí tin (SRS-5.1zzzzzzz87): chat chị N. 20/10 — bot tự hỏi "xác nhận
+            # giúp em bản tin đã ổn" thì tin ngay trước không còn là bản nháp, "ổn" / "ok" bị bỏ trống, bot hỏi lại mãi.
+            system += ("\nTRẠNG THÁI: bot ĐÃ gửi bản tin nháp của căn đang nói. Các tin bot gửi sau đó (nhắc xem bản tin, hỏi xác "
+                       "nhận đã ổn chưa, hỏi phí) vẫn là đang chờ khách duyệt CHÍNH bản nháp này.\n")
         if conv.prop.fields.get("dia_chi"):
             system += f"\nĐỊA CHỈ ĐANG GHI của căn đang nói tới: {conv.prop.fields['dia_chi']}\n"
         system += goi_y_duong(self._dia_danh, conv.prop.fields)   # SRS-5.1zzzzzzz61: khách xác nhận tên đường kho gợi ý → AI ghi
@@ -3198,6 +3215,10 @@ class Engine:
         # Khách bảo đăng tin (SRS-5.1zzzzzzz86): AI đọc theo nghĩa, code kiểm cụm trích có trong tin vừa nhắn.
         if _trich_dan_khop(plan.get("xin_dang"), cuoi):
             conv.y_luot["xin_dang"] = str(plan["xin_dang"]).strip()
+            # Bản nháp đã gửi mà khách bảo "rao tin này giúp mình" = đồng ý bản nháp (SRS-5.1zzzzzzz87) — trước đây xin_dang bị bỏ
+            # khi đã trình bản nháp, duyet_ban_nhap thì trống, nên lời bảo đăng thành một vòng hỏi xác nhận nữa.
+            if conv.listing_proposed and conv.duyet_luot is None and cuoi.strip() != STICKER_TRUNG_TINH:
+                conv.duyet_luot = "dong_y"
         nv = str(plan.get("ngoai_vung") or "").strip()
         if nv and conv.role != "buyer":
             gan = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
