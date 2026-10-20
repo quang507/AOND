@@ -620,7 +620,8 @@ def test_handle_media_reads_link_and_replies():
     r = eng.handle_media("u11", "https://example.com/x.jpg")
     assert r.reply  # a confirmation reply was produced
     assert "So_Hong.jpg" in r.reply  # the filename is shown back to the seller
-    assert "xác nhận" in r.reply  # mock vision reply asks to confirm
+    # SRS-5.1zzzzzzz82: câu sau danh sách đọc từ sổ do model viết (không còn câu viết cứng "xác nhận… pháp lý sổ chuẩn chỉnh")
+    assert "(offline)" in r.reply and "chuẩn chỉnh" not in r.reply
     conv = eng.conversation("u11")
     assert len(conv.history) == 2  # one user (the read content) + one assistant turn
 

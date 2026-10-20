@@ -124,6 +124,17 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > **Tra địa danh (SRS-5.1zzzzzzz60):** phường / quận / đường khách nói → `src/aioi/dia_danh.py` (chữ trước, vector Gemini sau, máy
 > kiểm tên gần chữ khách); vector do lịch `nhung-tick` / `nhung-dia-danh-tick` nuôi — đừng gỡ hai lịch đó.
 
+> **QUYẾT ĐỊNH CHỦ DỰ ÁN — KHÔNG ĐƯA RA BÀN LẠI, KHÔNG CHẤM LÀ LỖI KHI REVIEW / ĐÁNH GIÁ UX (20/10/2026).** Chủ dự án: "supabase
+> free và zalo clone là ý chí của tui, ko cần bàn lại"; "hello là tôi đang test, đó là ý của tôi".
+> - **Supabase gói Free** (không tự sao lưu) và **bridge zca-js trên tài khoản Zalo clone** là lựa chọn có chủ đích.
+> - **"hello / hi / alo / chào em / 👋 / /reset" làm mới phiên** (`Engine.handle`, `is_greeting_reset`) là cố ý để chủ dự án test.
+> - **Văn tin rao** thêm ý chung ("phù hợp ở kết hợp kinh doanh") — chủ dự án: "kệ".
+> - **Theo bản anh Luận** (`luan8560/AOND`, SRS-5.1zzzzzzz81): khách duyệt bản nháp thì hỏi "có biết phí môi giới của tụi em chưa"; hẻm /
+>   mặt tiền và hiện trạng hỏi TRƯỚC bản nháp; gửi model 30 tin gần nhất.
+> - **Giữ của mình, không theo anh Luận:** hỏi gộp theo cụm (SRS-5.1zzzzzzz79), khách lờ một ô 2 lần thì để sau (SRS-5.1zzzzzzz80), khen
+>   ít / có cơ sở, cấm mở đầu "Dạ", tên trợ lý người thật (FR-181), kênh vừa mua vừa bán (lời chào hai lựa chọn).
+> - **Model:** mọi lượt dùng Haiku (chủ dự án: "Vẫn haiku").
+
 Từ 24/08/2026 (quyết định chủ dự án) code nằm **trong repo này**, hai mảnh:
 
 - **Web** (Next.js 15 + TS + Tailwind 4, App Router) ở **root repo**:

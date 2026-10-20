@@ -328,7 +328,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         return None
 
     def ghi_luot_chat(self, user_key: str, incoming_text: str, bot_reply: str, zalo_msg_id: str | None = None,
-                      role: str = "seller", user_name: str | None = None) -> None:
+                      role: str = "seller", user_name: str | None = None, nhan_luc: str | None = None) -> None:
         """Một lượt chat → hai dòng `messages` (khách, bot) + đẩy hội thoại lên đầu CRM. Dùng chung đường tìm / tạo người bán và
         hội thoại với `save` (SRS-5.1zzzzzzz56 — trước đây supabase_sync có bản riêng)."""
         if not (self.is_configured and user_key):
@@ -339,8 +339,10 @@ class SupabaseConversationStore(KhoNguoiMua):
             return
         now_iso = datetime.now(timezone.utc).isoformat()
         if incoming_text:
+            # 20/10/2026 (SRS-5.1zzzzzzz82): giờ tin khách là lúc lõi NHẬN tin (`nhan_luc`), không phải lúc bot trả lời xong — hai
+            # dòng cùng giờ thì CRM không đo được bot trả lời mất bao lâu.
             msg = {"conversation_id": conv_id, "sender": "seller" if role == "seller" else "buyer",
-                   "body": incoming_text, "created_at": now_iso}
+                   "body": incoming_text, "created_at": nhan_luc or now_iso}
             if zalo_msg_id:
                 msg["zalo_msg_id"] = str(zalo_msg_id)
             self._post("messages", msg, prefer="return=minimal")
@@ -348,6 +350,42 @@ class SupabaseConversationStore(KhoNguoiMua):
             self._post("messages", {"conversation_id": conv_id, "sender": "bot", "body": bot_reply, "created_at": now_iso},
                        prefer="return=minimal")
         self._patch(f"conversations?id=eq.{conv_id}", {"last_message_at": now_iso})
+
+    def dang_giu_hoi_thoai(self, user_key: str) -> bool:
+        """Admin đang GIỮ hội thoại (`conversations.human_hold`, nút "giữ" trên /admin/tin-nhan → `giu_khach`) → bot im
+        (SRS-5.1zzzzzzz82). Trước đó lõi không đọc cờ này: admin nhắn tay, bot vẫn trả lời chồng. Lỗi đọc → coi như không giữ
+        (bot vẫn trả lời, không bỏ khách) và ghi log."""
+        if not (self.is_configured and user_key):
+            return False
+        try:
+            rows = self._get("conversations?select=human_hold,sellers!conversations_seller_id_fkey!inner(zalo_user_id)"
+                             f"&sellers.zalo_user_id=eq.{urllib.parse.quote(user_key)}&channel=eq.zalo_personal_test&human_hold=is.true&limit=1")
+        except Exception as e:  # noqa: BLE001
+            log.warning("Đọc human_hold lỗi: %s", e)
+            return False
+        return bool(rows)
+
+    def bao_can_nguoi(self, user_key: str, trich: str, ten: str | None = None, role: str = "seller") -> bool:
+        """Khách xin gặp người thật (SRS-5.1zzzzzzz82): bật `needs_human` (khung "khách cần người thật" trên /admin) và xếp một tin
+        nội bộ "🙋" vào `reminders` — bridge kéo qua escalation-feed rồi nhắn Zalo cho CTV / admin (tin nội bộ không bao giờ tới
+        chủ nhà, `laTinNoiBo`). ID thử (`la_id_thu`) chỉ bật cờ, không nhắn admin. Trả True khi đã xếp tin / bật cờ."""
+        if not (self.is_configured and user_key):
+            return False
+        seller_id = self._get_or_create_seller(user_key, ten)
+        conv_id = self._get_or_create_conversation(seller_id) if seller_id else None
+        if not conv_id:
+            return False
+        now_iso = datetime.now(timezone.utc).isoformat()
+        self._patch(f"conversations?id=eq.{conv_id}", {"needs_human": True, "needs_human_at": now_iso})
+        if self._request("POST", "rpc/la_id_thu", data={"p": user_key}) is True:
+            return True
+        vai = "người mua" if role == "buyer" else "người bán"
+        loi = re.sub(r"\d[\d .-]{7,}\d", "[số]", str(trich or ""))[:160]   # không đẩy SĐT khách vào tin nội bộ
+        self._post("reminders", {
+            "kind": "escalation", "status": "pending", "due_at": now_iso, "seller_id": seller_id,
+            "note": f"🙋 Khách cần người thật — {ten or 'khách Zalo'} ({vai}): “{loi}”. Mở /admin/tin-nhan để nhận khách.",
+        }, prefer="return=minimal")
+        return True
 
     # --- ConversationStore Protocol --------------------------------------
 

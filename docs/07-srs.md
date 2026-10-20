@@ -6894,6 +6894,48 @@ cho DB).
 (câu phí khi duyệt, không câu phí khi tin chưa lên web), `test_tin_rao_bo_cuc::test_tran_lich_su_gui_model` (30), `test_hoi_it_truoc_ban_nhap`
 — 5 ca đỏ trên code cũ (đã chạy). pytest 419 đạt. Model thật: `ban-thu-ban`.
 
+### SRS-5.1zzzzzzz82 · Đánh giá UX/CRM 20/10: "đang soạn", chuyển người, giờ tin khách, lượt hỏng, lời sau ảnh sổ (20/10/2026)
+
+**Ca gốc.** Đánh giá UX chatbot + CRM theo yêu cầu chủ dự án ("đánh giá Ai của tôi theo các tiêu chí này"), rồi "lưu lại tất cả yêu cầu
+và làm hết luôn". Phát hiện có bằng chứng (code, bắn thử production, DB): (1) mỗi lượt bot im 9–25 giây, không có dấu hiệu đang soạn;
+(2) /admin có khung "khách cần người thật" và nút giữ hội thoại nhưng lõi không bật `needs_human` (DB: 0 cuộc) và không đọc `human_hold`
+— admin nhắn tay, bot vẫn trả lời chồng; (3) tin khách và tin bot ghi cùng một giờ → CRM không đo được thời gian trả lời; (4) lượt
+hỏng ra 500 → bridge không gửi gì, khách bị bỏ lơ (sổ lỗi 3 ngày: 2 dòng "bridge xử lý tin gom"), hoặc nhận "kết nối mạng gián đoạn,
+nhắn lại giúp em"; (5) lời sau ảnh sổ viết cứng: ghép `NATURAL_QUESTIONS` (lời dặn model) vào lời gửi khách, luôn khen "pháp lý sổ
+chuẩn chỉnh", có nhánh "vậy anh?". Quyết định chủ dự án ghi ở CLAUDE.md §6 (không bàn lại: Supabase Free, Zalo clone, "hello" làm mới
+phiên để test, văn tin rao — kệ).
+
+**Lớp lỗi.** (a) Hạ tầng CRM có mà lõi không nối (handoff, hold, giờ tin) — lõi Python thay TypeScript (18/10) mang sang lời chat
+nhưng không mang các điểm nối CRM. (b) Lỗi lượt chỉ có một đường ra là "hỏng" (500 / câu bắt khách gõ lại), không có đường "giữ chỗ +
+tự làm lại". (c) Lời gửi khách ghép tay ngoài model ở nhánh ảnh sổ, đi vòng qua mọi luật lời (xưng hô, khen, cụm). **Chỗ cùng lớp đã
+soát:** các câu viết cứng khác còn trong engine — lời chào làm mới phiên (cố ý, giữ), câu nhận ảnh `_friendly_media_receipt` (không
+hỏi, không khen, giữ), câu nhắc 5 phút `cau_nhac` (chép câu bot vừa hỏi, giữ); cổng `/message` (chạy thử) gặp `LoiTraLoi` thì 500 —
+chỉ dùng thử, để nguyên.
+
+**Sửa.**
+- `bot/bridge-zca/index.mjs` `batDangSoan`: bật "đang soạn" (zca-js 2.2.0 `sendTypingEvent`) lúc gửi bộ não, nhắc lại mỗi 4 giây, tắt
+  trong `finally`; lỗi chỉ ghi sổ lần đầu của tiến trình.
+- Chuyển người: lượt AI lập thao tác đọc `can_nguoi_that` (nguyên văn cụm khách xin gặp người, kiểm trích dẫn như các ý khác —
+  `src/aioi/prompts.py`); engine chèn `khoi_can_nguoi` (đã báo người phụ trách, không hứa giờ, không xin SĐT) ở nhánh bán và mua,
+  `TurnResult.can_nguoi_that`; `src/aioi/server.py` gọi `SupabaseConversationStore.bao_can_nguoi` ở luồng nền: bật `needs_human` +
+  một dòng `reminders` kind `escalation`, ghi chú "🙋 …" (tin nội bộ — escalation-feed đưa CTV / admin, không bao giờ tới chủ nhà),
+  SĐT trong lời khách che "[số]"; ID thử (`la_id_thu`) chỉ bật cờ, không nhắn admin.
+- Admin giữ hội thoại: `server.chat_reply` đọc `dang_giu_hoi_thoai` (`conversations.human_hold`) trước khi gọi bot → bot im, lời
+  khách vẫn ghi vào CRM, huỷ nhắc 5 phút. Lỗi đọc → coi như không giữ (bot không bỏ khách).
+- Giờ tin khách: `ghi_luot_chat(..., nhan_luc=)` — `messages.created_at` của tin khách = lúc lõi nhận.
+- Lượt hỏng: engine ném `LoiTraLoi` khi lời gửi khách rỗng (bỏ câu "kết nối mạng gián đoạn"); `server.chat_reply` bắt mọi lỗi lượt →
+  sổ lỗi, trả câu giữ chỗ (`CAU_GIU_CHO`, không đổ lỗi mạng, không bắt gõ lại), luồng nền `_thu_lai_nen` sau 20 giây cắt lịch sử về mốc
+  trước lượt hỏng rồi chạy lại đúng tin đó, gửi qua bridge `/send`; khách đã nhắn tin mới thì thôi (lượt mới đọc cả tin cũ); vẫn hỏng
+  → lời xin lỗi + báo người phụ trách (đường chuyển người ở trên).
+- Lời sau ảnh sổ: model viết (cùng `build_chat_system` + cụm + `khoi_xung_ho`, lệnh "không khen sổ, không nói chuẩn / đầy đủ"); khối
+  xưng hô tách thành `khoi_xung_ho` dùng chung.
+
+**Kiểm.** `tests/test_chuyen_nguoi.py` (10 ca: đọc ý có / không trích dẫn, khối rỗng, admin giữ → bot im + CRM vẫn ghi, server báo
+admin, bật cờ + tin 🙋 che SĐT, ID thử không nhắn, giờ tin khách, lượt hỏng giữ chỗ + thử lại không ghi tin hai lần, thử lại bỏ khi
+khách đã nhắn mới); `tests/test_conversational_and_deed.py::test_loi_sau_anh_so_qua_model_khong_lo_loi_dan_noi_bo` (đỏ trên code cũ —
+đã chạy); `bot/tests/bridge-dang-soan.mjs` (trong `test:bot`; đỏ khi bỏ nhắc lại / bỏ bọc lượt — đã chạy). pytest 431 đạt, `test:bot`
+đạt. Model thật: `ban-thu-ban` có thêm lượt xin gặp người.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

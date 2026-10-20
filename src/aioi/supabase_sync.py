@@ -29,12 +29,12 @@ def _kho_ghi():
 
 
 def _sync_worker(external_user_id: str, incoming_text: str, bot_reply: str, zalo_msg_id: str | None = None,
-                 role: str = "seller", user_name: str | None = None) -> None:
+                 role: str = "seller", user_name: str | None = None, nhan_luc: str | None = None) -> None:
     kho = _kho_ghi()
     if kho is None:
         return
     try:
-        kho.ghi_luot_chat(external_user_id, incoming_text, bot_reply, zalo_msg_id, role, user_name)
+        kho.ghi_luot_chat(external_user_id, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc)
     except Exception as e:  # noqa: BLE001
         log.warning("Supabase sync failed (non-blocking): %s", e)
 
@@ -46,12 +46,13 @@ def sync_to_supabase_async(
     zalo_msg_id: str | None = None,
     role: str = "seller",
     user_name: str | None = None,
+    nhan_luc: str | None = None,
 ) -> None:
-    """Non-blocking asynchronous sync of conversation turn to Supabase CRM."""
+    """Non-blocking asynchronous sync of conversation turn to Supabase CRM. `nhan_luc` = giờ lõi nhận tin khách (ISO)."""
     if not external_user_id:
         return
     threading.Thread(
         target=_sync_worker,
-        args=(external_user_id, incoming_text, bot_reply, zalo_msg_id, role, user_name),
+        args=(external_user_id, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc),
         daemon=True,
     ).start()

@@ -410,6 +410,59 @@ class Conversation:
         return [Message(t.role, t.content) for t in turns]
 
 
+def khoi_xung_ho(p: str) -> str:
+    """Khối luật xưng hô của lượt theo cách khách tự xưng (`_detect_customer_pronoun`). Một nguồn cho lượt chat và lượt ảnh sổ
+    (SRS-5.1zzzzzzz82 — trước đó câu sau ảnh sổ viết cứng, luôn "anh/chị", có nhánh "vậy anh?")."""
+    if p == "em":
+        return (
+            "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC LƯỢT NÀY (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
+            "Khách tự xưng là 'em' (vd: 'nhà em...', 'em gửi...', 'em có...', 'em bán...').\n"
+            "1. TUYỆT ĐỐI CẤM DÙNG TỪ 'DẠ' HOẶC 'DẠ VÂNG' Ở BẤT KỲ ĐÂU! Không dạ thưa với người xưng em.\n"
+            "2. TUYỆT ĐỐI CẤM gọi khách là 'anh' hay 'chị'. Hãy gọi khách là 'em'.\n"
+            "3. Bản thân xưng là 'mình' hoặc 'anh/chị' (Ví dụ: 'Căn của em ở đường nào vậy?', 'Nhà em nằm ở mặt tiền hay trong hẻm em ha?').\n"
+        )
+    elif p == "chi":
+        return (
+            "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
+            "Khách xưng 'chị'. Gọi khách là 'chị', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu.\n"
+        )
+    elif p == "anh":
+        return (
+            "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
+            "Khách xưng 'anh'. Gọi khách là 'anh', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu.\n"
+        )
+    elif p == "elder":
+        return (
+            "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
+            "Khách là người lớn tuổi (chú/cô/bác/dì). Lễ phép xưng 'cháu', gọi đúng 'chú/cô/bác/dì'.\n"
+        )
+    else:
+        # 19/10/2026 (SRS-5.1zzzzzzz73): chưa biết khách anh hay chị thì không có luật nào — model chép chữ "anh" trong ví dụ
+        # mẫu, gọi khách "anh" suốt 10 lượt rồi đổi "chị" khi khách tự xưng.
+        return (
+            "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
+            "CHƯA BIẾT khách là anh hay chị. Gọi khách 'anh/chị' (hoặc 'mình'), bản thân xưng 'em'. KHÔNG tự đoán 'anh' hoặc "
+            "'chị' từ tên, giọng văn hay ví dụ mẫu.\n"
+        )
+
+
+class LoiTraLoi(RuntimeError):
+    """Lượt trả lời không ra được lời gửi khách (model trả rỗng sau lượt gọi lại). Server bắt, gửi câu giữ chỗ và tự thử lại
+    (SRS-5.1zzzzzzz82) — trước đó khách nhận "kết nối mạng vừa gián đoạn, nhắn lại giúp em"."""
+
+
+def khoi_can_nguoi(conv: "Conversation") -> str:
+    """Khối lệnh khi lượt AI lập thao tác đọc được khách XIN gặp người thật (SRS-5.1zzzzzzz82). Server bật `needs_human` và xếp tin
+    báo admin ở cùng lượt, nên lời "đã báo" là thật; không hứa giờ cụ thể."""
+    if not conv.y_luot.get("can_nguoi_that"):
+        return ""
+    return (
+        "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH XIN GẶP NGƯỜI THẬT (hệ thống đã đọc, ĐÃ BÁO người phụ trách): ===\n"
+        "Nói ngắn, ấm: em đã báo anh/chị phụ trách, anh/chị ấy sẽ nhắn khách sớm. KHÔNG hứa giờ cụ thể, KHÔNG xin số điện thoại. "
+        "Trong lúc chờ, nếu khách muốn em vẫn hỗ trợ tiếp. Không hỏi thêm thông tin căn ở lượt này.\n"
+    )
+
+
 @dataclass
 class TurnResult:
     reply: str
@@ -423,6 +476,7 @@ class TurnResult:
     user_score: float          # 0..100
     tier: str
     escalated: bool = False    # True when this turn was handed to a human admin (oversize media)
+    can_nguoi_that: str | None = None   # cụm khách xin gặp người thật (đã kiểm trích dẫn) → server báo admin (SRS-5.1zzzzzzz82)
     role: str = "seller"       # "seller" hoặc "buyer"
     lead: BuyerLead | None = None
 
@@ -1438,6 +1492,8 @@ class Engine:
         cmd = clean_text.lower()
 
         # Explicit reset command or greeting restart (hello, sticker greeting, /reset)
+        # CỐ Ý (chủ dự án 20/10/2026: "hello là tôi đang test, đó là ý của tôi"): lời chào làm mới phiên để test — không phải lỗi,
+        # đừng chấm là lỗi khi review / đánh giá UX (CLAUDE.md §6, khối quyết định chủ dự án).
         is_greeting_reset = (
             cmd in (
                 "/reset", "/clear", "/xoa", "reset session", "xóa hết",
@@ -1699,6 +1755,7 @@ class Engine:
             viec, can = self._viec_mua(conv, text)
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += khoi_can_cho_khach(can) + khoi_viec_vua_ghi(viec)
+            system += khoi_can_nguoi(conv)
             if customer_is_em:
                 system += (
                     "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
@@ -1706,7 +1763,7 @@ class Engine:
                 )
             reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
-                reply = "Mình đây nhé! Bạn nhắn lại giúp mình với nha." if customer_is_em else "Em đây ạ! Anh/chị nhắn lại giúp em với nhé ạ."
+                raise LoiTraLoi("lời gửi khách rỗng")
             reply = _bo_markdown(reply)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
@@ -1755,37 +1812,7 @@ class Engine:
             system += ("\nEM VỪA CHUYỂN câu trả lời của anh/chị cho khách mua đang hỏi (hệ thống báo khách ngay). Cảm ơn ngắn gọn, "
                        "nói em đã báo khách rồi, rồi mới tiếp chuyện tin rao.\n")
 
-        if customer_pronoun == "em":
-            system += (
-                "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC LƯỢT NÀY (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
-                "Khách tự xưng là 'em' (vd: 'nhà em...', 'em gửi...', 'em có...', 'em bán...').\n"
-                "1. TUYỆT ĐỐI CẤM DÙNG TỪ 'DẠ' HOẶC 'DẠ VÂNG' Ở BẤT KỲ ĐÂU! Không dạ thưa với người xưng em.\n"
-                "2. TUYỆT ĐỐI CẤM gọi khách là 'anh' hay 'chị'. Hãy gọi khách là 'em'.\n"
-                "3. Bản thân xưng là 'mình' hoặc 'anh/chị' (Ví dụ: 'Căn của em ở đường nào vậy?', 'Nhà em nằm ở mặt tiền hay trong hẻm em ha?').\n"
-            )
-        elif customer_pronoun == "chi":
-            system += (
-                "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-                "Khách xưng 'chị'. Gọi khách là 'chị', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu.\n"
-            )
-        elif customer_pronoun == "anh":
-            system += (
-                "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-                "Khách xưng 'anh'. Gọi khách là 'anh', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu.\n"
-            )
-        elif customer_pronoun == "elder":
-            system += (
-                "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-                "Khách là người lớn tuổi (chú/cô/bác/dì). Lễ phép xưng 'cháu', gọi đúng 'chú/cô/bác/dì'.\n"
-            )
-        else:
-            # 19/10/2026 (SRS-5.1zzzzzzz73): chưa biết khách anh hay chị thì không có luật nào — model chép chữ "anh" trong ví dụ
-            # mẫu, gọi khách "anh" suốt 10 lượt rồi đổi "chị" khi khách tự xưng.
-            system += (
-                "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-                "CHƯA BIẾT khách là anh hay chị. Gọi khách 'anh/chị' (hoặc 'mình'), bản thân xưng 'em'. KHÔNG tự đoán 'anh' hoặc "
-                "'chị' từ tên, giọng văn hay ví dụ mẫu.\n"
-            )
+        system += khoi_xung_ho(customer_pronoun)
 
         # Khối ưu tiên theo điều khách HỎI — lượt AI lập thao tác đọc theo nghĩa (conv.hoi_ve_luot, SRS-5.1zzzzzzz54); bản trước
         # dò từ khoá ("chi phí" nào cũng thành hỏi phí). Con số phí theo vai từ _fee_hint, không viết tay.
@@ -1815,6 +1842,7 @@ class Engine:
                 "Khách vừa hỏi xem link bài đăng, xem tin ở đâu hoặc tin trên web đang hiển thị như thế nào. Hãy TRẢ LỜI RÕ RÀNG, CHUYÊN NGHIỆP:\n"
                 + khoi_trang_thai_web(web)[1] + "\n"
             )
+        system += khoi_can_nguoi(conv)
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
         system += self._project_memory_block(project)  # remember the price list + phân lô; reason over it
         system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
@@ -1829,8 +1857,8 @@ class Engine:
         else:
             reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
 
-        if not reply:
-            reply = "Mình đây nhé! Kết nối mạng vừa gián đoạn một chút, em nhắn lại giúp mình với nha." if customer_is_em else "Em đây ạ! Kết nối mạng vừa bị gián đoạn một chút, anh/chị nhắn lại giúp em với nhé ạ."
+        if not reply:   # SRS-5.1zzzzzzz82: không gửi "kết nối mạng gián đoạn, nhắn lại giúp em" — server giữ chỗ rồi tự thử lại
+            raise LoiTraLoi("lời gửi khách rỗng")
 
         reply = _bo_markdown(reply)
         if trinh_nhap:
@@ -2374,19 +2402,22 @@ class Engine:
                     details.append(f"• Pháp lý: {f_map['phap_ly']}")
 
                 detail_lines = "\n".join(details)
-                if next_field:
-                    natural_ask = NATURAL_QUESTIONS.get(next_field, f"cho em xin thêm {FIELD_LABELS.get(next_field, next_field)}")
-                    if next_field == "gia":
-                        ask_tail = "Pháp lý sổ chuẩn chỉnh rồi anh/chị nha! Anh/chị xác nhận giúp em thông tin trên, và căn này mình dự tính bán với mức giá bao nhiêu ạ? 😊"
-                    elif next_field == "ket_cau":
-                        ask_tail = "Pháp lý sổ chuẩn chỉnh rồi anh/chị nhé! Anh/chị xác nhận giúp em thông tin trên, và nhà mình hiện tại xây mấy tầng/lầu, có mấy phòng ngủ vậy anh? 😊"
-                    else:
-                        ask_tail = f"Pháp lý sổ chuẩn chỉnh rồi anh/chị nhé! Anh/chị xác nhận giúp em và {natural_ask.lower()} để em hoàn thiện tin rao nha ạ 😊"
-                else:
-                    ask_tail = "Hồ sơ pháp lý căn này rất đầy đủ rồi ạ! Anh/chị xem xác nhận lại giúp em thông tin có cần điều chỉnh gì không nhé 😊"
-
-                reply = f"📎 Em đã nhận ({names}) — em xem ảnh sổ của mình rồi ạ 📄✨\n{detail_lines}\n\n{ask_tail}" + self._cap_note(capped)
                 seller_turn = f"[Khách gửi ảnh giấy tờ BĐS: {names}]" + (f" kèm tin nhắn: “{caption.strip()}”" if caption and caption.strip() else "")
+                # SRS-5.1zzzzzzz82: câu sau danh sách đọc từ sổ do model viết (cùng khung hỏi theo cụm + xưng hô), không viết cứng —
+                # bản cũ ghép NATURAL_QUESTIONS (lời dặn cho model) vào lời gửi khách, luôn khen "pháp lý sổ chuẩn chỉnh", gọi "anh".
+                cum = conv.active.prop.cum_hoi(next_field, conv.active.prop.missing_fields())
+                he = (build_chat_system(conv.assistant.name, conv.active.prop, next_field, conv.user_type, "", cum=cum)
+                      + khoi_xung_ho(_detect_customer_pronoun(conv, caption or ""))
+                      + "\n\n=== LƯỢT NÀY: KHÁCH VỪA GỬI ẢNH SỔ / GIẤY TỜ ===\nHệ thống đã đọc ảnh và GỬI KHÁCH các dòng sau, ngay "
+                        f"trước lời em:\n{detail_lines or '(chưa đọc được dòng nào)'}\nViết 1–2 câu tiếp theo: mời khách xem các dòng "
+                        "trên đã đúng chưa, rồi hỏi tiếp đúng ý ở \"Thông tin cần hỏi tiếp theo\" (nếu có). KHÔNG khen sổ / pháp lý, "
+                        "KHÔNG nói sổ \"chuẩn\", \"đầy đủ\" — em mới đọc ảnh, chưa kiểm sổ. Không lặp lại các dòng trên.\n")
+                ask_tail = self._provider.reply(he, conv.messages() + [Message("user", seller_turn)],
+                                                max_tokens=REPLY_MAX_TOKENS).strip()
+                if not ask_tail:
+                    raise LoiTraLoi("lời sau ảnh sổ rỗng")
+
+                reply = f"📎 Em đã nhận ({names}) — em xem ảnh sổ của mình rồi ạ 📄✨\n{detail_lines}\n\n{_bo_markdown(ask_tail)}" + self._cap_note(capped)
                 conv.history.append(Turn("user", seller_turn, now))
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
@@ -2861,6 +2892,7 @@ class Engine:
             tier=g.tier_for(u_score).value,
             role=conv.role,
             lead=conv.buyer_lead,
+            can_nguoi_that=conv.y_luot.get("can_nguoi_that") if isinstance(conv.y_luot.get("can_nguoi_that"), str) else None,
         )
 
     def _match_listing(self, conv: Conversation, ref: str) -> Listing | None:
@@ -3038,6 +3070,9 @@ class Engine:
                 conv.y_luot[k] = True
         if conv.y_luot.get("xin_xem_ban_ve") and plan.get("ban_do_du_an") is True:
             conv.y_luot["ban_do_du_an"] = True
+        # Xin gặp người thật (SRS-5.1zzzzzzz82): giữ nguyên cụm trích để báo admin kèm lời khách.
+        if _trich_dan_khop(plan.get("can_nguoi_that"), cuoi):
+            conv.y_luot["can_nguoi_that"] = str(plan["can_nguoi_that"]).strip()
         if plan.get("xac_nhan_xoa") in ("dong_y", "tu_choi") and _trich_dan_khop(plan.get("xac_nhan_trich_dan"), cuoi):
             conv.y_luot["xac_nhan_xoa"] = plan["xac_nhan_xoa"]
         # Việc khách mua / người rao trả lời câu khách hỏi (SRS-5.1zzzzzzz70): nhận khi cụm trích có trong tin vừa nhắn.

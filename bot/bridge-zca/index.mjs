@@ -324,6 +324,23 @@ async function layTenZalo(tid) {
   return "";
 }
 
+// Trạng thái "đang soạn" của Zalo (zca-js `sendTypingEvent`) tắt sau vài giây nên nhắc lại mỗi 4 giây tới khi có lời. Hỏng thì
+// chỉ ghi sổ lỗi LẦN ĐẦU của tiến trình — đây là tô điểm, không chặn lượt trả lời, ghi mỗi 4 giây là thành tiếng ồn.
+const NHAC_DANG_SOAN_MS = 4000;
+let daGhiLoiDangSoan = false;
+function batDangSoan(threadId) {
+  if (typeof api.sendTypingEvent !== "function") return () => {};
+  const go = () =>
+    api.sendTypingEvent(String(threadId), ThreadType.User).catch(async (e) => {
+      if (daGhiLoiDangSoan) return;
+      daGhiLoiDangSoan = true;
+      await ghiLoi("đang soạn", errDetail(e));
+    });
+  go();
+  const t = setInterval(go, NHAC_DANG_SOAN_MS);
+  return () => clearInterval(t);
+}
+
 async function handleIncoming(threadId, text, imageUrls, msgId, tep) {
   const imgList = Array.isArray(imageUrls) ? imageUrls : (imageUrls ? [imageUrls] : []);
   const imgDesc = imgList.length > 1 ? `[${imgList.length} ?nh]` : (imgList.length === 1 ? "[?nh]" : "");
@@ -343,14 +360,21 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep) {
     channel: "zalo_personal_test",
   };
 
-  let out = await postJson(CHAT_REPLY_URL, brainHeaders, payload, HAN_CHO_BO_NAO);
-  // FR-162: in_flight = một bản sao của CÙNG tin này đang được xử lý — thường
-  // là chính lượt đầu của postJson bị timeout 20s nên lượt thử lại chạm mặt nó.
-  // Đừng bỏ đi tay không: chờ rồi hỏi lại (tối đa 3 lần), lượt kia xong là
-  // server PHÁT LẠI câu trả lời đã lưu trong sổ — không gọi model lần hai.
-  for (let i = 0; i < 3 && out?.in_flight; i++) {
-    await new Promise((r) => setTimeout(r, 5000));
-    out = await postJson(CHAT_REPLY_URL, brainHeaders, payload, HAN_CHO_NGAN);
+  // 20/10/2026 (đánh giá UX: lượt bot 9–25 giây im lặng, khách tưởng treo): hiện "đang soạn" từ lúc gửi bộ não tới lúc có lời.
+  const tatDangSoan = batDangSoan(threadId);
+  let out;
+  try {
+    out = await postJson(CHAT_REPLY_URL, brainHeaders, payload, HAN_CHO_BO_NAO);
+    // FR-162: in_flight = một bản sao của CÙNG tin này đang được xử lý — thường
+    // là chính lượt đầu của postJson bị timeout 20s nên lượt thử lại chạm mặt nó.
+    // Đừng bỏ đi tay không: chờ rồi hỏi lại (tối đa 3 lần), lượt kia xong là
+    // server PHÁT LẠI câu trả lời đã lưu trong sổ — không gọi model lần hai.
+    for (let i = 0; i < 3 && out?.in_flight; i++) {
+      await new Promise((r) => setTimeout(r, 5000));
+      out = await postJson(CHAT_REPLY_URL, brainHeaders, payload, HAN_CHO_NGAN);
+    }
+  } finally {
+    tatDangSoan();
   }
   const { reply, replies, photos, error, replayed, already_sent } = out ?? {};
   if (error) return await ghiLoi("chat-reply", error);
