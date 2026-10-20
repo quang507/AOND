@@ -1419,6 +1419,8 @@ op hủy; để operations RỖNG. Thà bỏ sót còn hơn ẩn nhầm.
 CHỈ GHI ĐIỀU KHÁCH NÓI: mỗi ô trong "fields" phải kèm "bang_chung" = nguyên văn cụm trong lời KHÁCH. Câu BOT hỏi hay gợi ý
 ("có để giá thương lượng nhẹ không ạ?") KHÔNG phải lời khách: khách chưa trả lời đúng ý đó thì không ghi ô đó. Không tự suy
 (nhà "mới xây", "nội thất đẹp"…) khi khách không nói. Ô thiếu bằng chứng bị hệ thống bỏ.
+MỖI CỤM KHÁCH NÓI VÀO ĐÚNG MỘT Ô theo nghĩa (SRS-5.1zzzzzzz86; bắn thử: "7 tầng" vào cả ô số phòng ngủ, "phí quản lý" vào cả ô
+giá điện nước) — không chép một cụm sang ô khác nghĩa.
 GIÁ TRỊ Ô CŨNG CHỈ LÀ ĐIỀU KHÁCH NÓI (SRS-5.1zzzzzzz86): không suy thêm từ một con số hay một chữ — "ngõ rộng 3m" KHÔNG thành "ô tô
 vào được", "hẻm 4m" KHÔNG thành "mặt tiền", "3 lầu" KHÔNG thành "có thang máy". Giá trị có từ khách không gõ thì hệ thống ghi
 nguyên cụm bang_chung thay cho giá trị.

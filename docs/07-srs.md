@@ -7119,6 +7119,16 @@ nào mở "Dạ" hay gọi "bạn". Trượt / thấy thêm:
 13. *Tiêu đề căn hộ chèn "MT"* (bản tin cập nhật KB3): luật viết gọn "MT" chỉ khi dữ liệu ghi nhà mặt tiền.
 14. KB2 không ra bản nháp vì còn thiếu ô tối thiểu (mã căn, diện tích sàn) — đúng luật; script chỉ kiểm tiêu đề khi có 📋.
 
+**Bắn lại lần 2 (run 39388772530, 14 lượt, ≈ 0,020 USD — 0,0014 USD / lượt chat; trung bình 15,6 s, chậm nhất 19,1 s).** KB1 đạt hết:
+"Hiện AI Ơi Nhà Đất chưa nhận rao bất động sản khu vực Hà Nội…", "đăng đi" vẫn từ chối khéo, tin `an`, không 📋. KB2, KB4 đạt (KB4
+"đăng đi" kể đúng ba ô còn thiếu rồi hỏi phường). Còn:
+15. *Bản tin CẬP NHẬT của KB3 mất giá ở tiêu đề* ("…68m² 2PN full nội thất view sông") — model không theo `AD_FORMAT` ở nhánh sửa bản
+   tin. Lớp: luật đầu ra chỉ nằm trong prompt, không có gì kiểm. Sửa: `_tieu_de_thieu` (code so CON SỐ của ô giá với dòng tiêu đề sau
+   📋 — không đọc ý) → thiếu thì gọi lại model MỘT lần kèm lý do, áp cho mọi lượt có 📋 (bản nháp đầu và bản cập nhật). Kiểm
+   `tests/test_tieu_de_co_gia.py` (đỏ trên bản trước — đã chạy).
+16. *Một cụm vào hai ô* (KB1 `so_phong_ngu` = "7 tầng"; KB3 `gia_dien_nuoc` = "phí quản lý khoảng 1,2 triệu") — cổng (5) không bắt được
+   vì giá trị đúng là lời khách, sai ở chỗ ô. Chỉ thêm luật prompt "mỗi cụm vào đúng một ô"; chưa có kiểm bằng code — để mở.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

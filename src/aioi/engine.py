@@ -745,6 +745,22 @@ def _detect_customer_pronoun(conv: Conversation, current_text: str = "") -> str:
     return {"em": "em", "anh": "anh", "chi": "chi", "chu_co_bac": "elder"}.get(conv.xung_ho or "", "unknown")
 
 
+def _so_trong(x: str | None) -> set[str]:
+    return {n.replace(",", ".") for n in re.findall(r"\d+(?:[.,]\d+)?", re.sub(r"(?i)m\s*[2²]", "m", str(x or "")))}
+
+
+def _tieu_de_thieu(reply: str, prop: "Property") -> list[str]:
+    """Ý bắt buộc mà dòng tiêu đề bản tin (dòng có chữ đầu tiên sau dòng 📋) không có — hiện kiểm GIÁ: con số của ô giá phải có trong
+    tiêu đề (SRS-5.1zzzzzzz86). Không có 📋 hay căn chưa có giá → []. Không đọc ý: chỉ so số."""
+    if "📋" not in (reply or "") or not prop.fields.get("gia"):
+        return []
+    sau = reply.split("📋", 1)[1].splitlines()[1:]
+    tieu_de = next((d for d in sau if d.strip()), "")
+    gia = prop.fields["gia"]
+    so_gia = _so_trong(gia)
+    return [f"giá ({gia})"] if so_gia and not (so_gia & _so_trong(tieu_de)) else []
+
+
 def _bo_markdown(reply: str) -> str:
     """Bỏ in đậm markdown (Zalo không hiển thị). Không sửa lời bot theo từ khoá ("Dạ", "anh/chị") — SRS-5.1zzzzzzz55. Ghi chú nội bộ
     của model không còn lọt vào lời bot: lượt trả lời đi qua công cụ hai ô (`ClaudeProvider.reply`, SRS-5.1zzzzzzz76)."""
@@ -1925,6 +1941,17 @@ class Engine:
             raise LoiTraLoi("lời gửi khách rỗng")
 
         reply = _bo_markdown(reply)
+        # Bản tin (📋) phải có giá trong tiêu đề (SRS-5.1zzzzzzz86): bắn thử 20/10, bản tin CẬP NHẬT của KB3 bỏ giá dù AD_FORMAT bắt
+        # buộc. Code chỉ kiểm con số giá của căn có trong dòng tiêu đề — thiếu thì gọi lại model MỘT lần kèm lý do, không tự sửa chữ.
+        thieu_td = _tieu_de_thieu(reply, conv.prop)
+        if thieu_td:
+            log.warning("Tiêu đề bản tin thiếu %s — gọi lại model", ", ".join(x.split(" (")[0] for x in thieu_td))
+            lai = self._provider.reply(
+                system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\nBản tin vừa viết có TIÊU ĐỀ thiếu " + ", ".join(thieu_td)
+                + ". Viết lại TOÀN BỘ lượt trả lời; tiêu đề tối đa 15 từ, đủ vị trí · diện tích · giá.\n",
+                conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+            if lai:
+                reply = _bo_markdown(lai)
         if trinh_nhap:
             reply = cat_truoc_mo_dau(reply)
 
