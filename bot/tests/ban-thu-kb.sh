@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# ban-thu-kb.sh — 3 kịch bản tester 20/10/2026 (SRS-5.1zzzzzzz86) trên lõi Python production, chạy trong apply-migration.yml ô
+# `dung_lai` = ban-thu-kb. KB1: nhà riêng phân lô mặt ngõ Nguyễn Chí Thanh (Hà Nội — dữ kiện lấy từ đường link tin batdongsan chủ
+# dự án gửi: 65m², 7 tầng, MT 4,5m, 22,5 tỷ có thương lượng; trang tin trả 403 nên lời nhắn do tester viết lại, không chép tin).
+# KB2: nhà phố trong dự án LakeView City. KB3: căn hộ trong dự án Masteri Thảo Điền. Mỗi lượt đo thời gian bot trả lời; cuối script in
+# số token / chi phí của khung chạy (sổ bot_usage_model — gồm cả khách thật nhắn cùng lúc nếu có), soi DB, trang web, sổ lỗi.
+# Chỉ Zalo ID thử (`thu-`), cuối script xoá sạch. Tiền thật: ~14 lượt chat × vài lượt AI.
+set -euo pipefail
+
+q() { curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+        -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$(jq -n --arg q "$1" '{query:$q}')"; }
+
+J=$(q "select json_object_agg(name, decrypted_secret) as s from vault.decrypted_secrets where name in ('VPS_HOST','VPS_ROOT_PASSWORD')")
+HOST=$(jq -r '.[0].s.VPS_HOST // empty' <<<"$J"); PW=$(jq -r '.[0].s.VPS_ROOT_PASSWORD // empty' <<<"$J")
+unset J
+for v in "$HOST" "$PW"; do [ -n "$v" ] && echo "::add-mask::$v"; done
+if [ -z "$HOST" ] || [ -z "$PW" ]; then echo "::error::Thiếu VPS_HOST / VPS_ROOT_PASSWORD trong Vault"; exit 1; fi
+command -v sshpass >/dev/null || sudo apt-get install -y -qq sshpass >/dev/null
+export SSHPASS="$PW"; unset PW
+vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 -o LogLevel=ERROR "root@$HOST" "$@"; }
+
+RUN="${GITHUB_RUN_ID:-$(date +%s)}"
+KB1="thu-kb1-$RUN"; KB2="thu-kb2-$RUN"; KB3="thu-kb3-$RUN"
+TAT_CA="$KB1 $KB2 $KB3"
+
+don() {
+  echo "== dọn dữ liệu thử"
+  for u in $TAT_CA; do q "select reset_nguoi_test('$u') as kq" | jq -c '.[0]' || true; done
+  vps "for u in $TAT_CA; do curl -sS -X POST http://127.0.0.1:8000/reset/\$u >/dev/null; done" || true
+}
+trap don EXIT
+
+so_token() { q "select coalesce(sum(calls),0) as calls, coalesce(sum(in_tokens),0) as i, coalesce(sum(out_tokens),0) as o,
+                coalesce(sum(cache_write_tokens),0) as cw, coalesce(sum(cache_read_tokens),0) as cr
+                from bot_usage_model where day >= current_date - 1" | jq -c '.[0]'; }
+TRUOC=$(so_token)
+
+loi=0; LUOT_TONG=0; GIAY_TONG=0; GIAY_MAX=0; MOI_LOI=""
+kiem() { if [ "$2" = 1 ]; then echo "ĐẠT  $1"; else echo "TRƯỢT $1"; loi=1; fi; }
+chat() {
+  local uid="$1" text="$2" t0 t1 g
+  echo; echo ">> [$uid] $text"
+  t0=$(date +%s%N)
+  TRA=$(jq -n --arg u "$uid" --arg t "$text" '{external_user_id:$u, text:$t, sender_name:"Khách thử"}' \
+        | vps "curl -sS -m 120 -X POST http://127.0.0.1:8000/chat-reply -H 'Content-Type: application/json' -d @-")
+  t1=$(date +%s%N); g=$(( (t1 - t0) / 1000000 ))
+  jq -r '.replies[]? | "<< " + .' <<<"$TRA" || echo "<< (không đọc được JSON) $TRA"
+  echo "   (${g} ms)"
+  MOI_LOI+=$'\n'"$(jq -r '.replies[]?' <<<"$TRA" 2>/dev/null || true)"
+  LUOT_TONG=$((LUOT_TONG + 1)); GIAY_TONG=$((GIAY_TONG + g)); [ "$g" -gt "$GIAY_MAX" ] && GIAY_MAX=$g
+  if grep -q '📋' <<<"$TRA"; then
+    TIEU_DE=$(jq -r '.reply // ""' <<<"$TRA" | sed -n '/📋/,$p' | sed 1d | awk 'NF{print; exit}')
+  fi
+  sleep 1
+}
+dong() { q "select l.code, l.status, l.property_type, l.deal, l.price_vnd, l.area_m2, l.floors, l.frontage_m, l.bedrooms,
+              l.access_type, l.alley_width_m, l.negotiable, l.legal_status, l.ward, l.district, l.street, p.name as du_an,
+              l.boc_tach - '_cap_nhat' as boc_tach
+            from listings l join sellers s on s.id = l.seller_id left join projects p on p.id = l.project_id
+            where s.zalo_user_id = '$1' order by l.updated_at desc limit 1" | jq -c '.[0] // {}'; }
+tieu_de_dat() {   # $1 = chữ phải có (vị trí); tiêu đề ≤ 15 từ, có vị trí, diện tích, giá
+  [ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 15 ] && grep -qiE "$1" <<<"$TIEU_DE" \
+    && grep -qE 'm²|m2' <<<"$TIEU_DE" && grep -qE 'tỷ|triệu' <<<"$TIEU_DE" && echo 1 || echo 0
+}
+web_co() {   # trang tin trên web có chữ $2 (tin mã $1)
+  curl -sS -m 30 "https://aioinhadat.vercel.app/nha-dat/$1" | grep -qi "$2" && echo 1 || echo 0
+}
+
+echo "=================== KB1 — nhà riêng phân lô mặt ngõ Nguyễn Chí Thanh (Hà Nội) ==================="
+TIEU_DE=""
+for cau in "Bán nhà riêng phân lô mặt ngõ đường Nguyễn Chí Thanh, kinh doanh được, 65m2, 7 tầng, mặt tiền 4,5m, giá 22,5 tỷ có thương lượng" \
+           "nhà ở quận Đống Đa, Hà Nội em" "sổ đỏ chính chủ, nhà đang ở" "ngõ trước nhà rộng 3m" "ok em đăng đi"; do
+  chat "$KB1" "$cau"
+done
+r1=$(dong "$KB1"); echo "$r1"
+echo "== KB1 tiêu đề: \"$TIEU_DE\" ($(wc -w <<<"$TIEU_DE") từ)"
+kiem "KB1: giá 22,5 tỷ" "$(jq '.price_vnd == 22500000000 | if . then 1 else 0 end' <<<"$r1")"
+kiem "KB1: diện tích 65" "$(jq '((.area_m2 // 0) | tonumber) == 65 | if . then 1 else 0 end' <<<"$r1")"
+kiem "KB1: 7 tầng" "$(jq '.floors == 7 | if . then 1 else 0 end' <<<"$r1")"
+kiem "KB1: mặt tiền 4,5m" "$(jq '((.frontage_m // 0) | tonumber) == 4.5 | if . then 1 else 0 end' <<<"$r1")"
+kiem "KB1: có thương lượng" "$(jq '.negotiable == true | if . then 1 else 0 end' <<<"$r1")"
+kiem "KB1: mặt NGÕ là hẻm, không phải mặt tiền đường" "$(jq '(.access_type // "") | test("hem") | if . then 1 else 0 end' <<<"$r1")"
+kiem "KB1: không gán phường TP.HCM cho nhà Hà Nội" "$(jq '((.ward // "") | test("Đống Đa|Hà Nội|^$")) or (.ward == null) | if . then 1 else 0 end' <<<"$r1")"
+kiem "KB1: tiêu đề ≤ 15 từ, có Nguyễn Chí Thanh, diện tích, giá" "$(tieu_de_dat 'Nguyễn Chí Thanh')"
+
+echo; echo "=================== KB2 — nhà phố trong dự án LakeView City ==================="
+TIEU_DE=""
+for cau in "Em gửi căn nhà phố LakeView City, 5x20, 1 trệt 3 lầu, 4 phòng ngủ, giá 27 tỷ" \
+           "sổ hồng riêng, đang cho thuê 50 triệu/tháng" "hướng Đông Nam, nội thất cơ bản" "ok đăng đi em"; do
+  chat "$KB2" "$cau"
+done
+r2=$(dong "$KB2"); echo "$r2"
+echo "== KB2 tiêu đề: \"$TIEU_DE\" ($(wc -w <<<"$TIEU_DE") từ)"
+kiem "KB2: nhà phố" "$(jq '.property_type == "nha_pho" | if . then 1 else 0 end' <<<"$r2")"
+kiem "KB2: gắn dự án LakeView City" "$(jq '(.du_an // "") | test("(?i)lake ?view") | if . then 1 else 0 end' <<<"$r2")"
+kiem "KB2: phường An Phú (từ dự án)" "$(jq '(.ward // "") | test("An Phú|An Khánh") | if . then 1 else 0 end' <<<"$r2")"
+kiem "KB2: giá 27 tỷ" "$(jq '.price_vnd == 27000000000 | if . then 1 else 0 end' <<<"$r2")"
+kiem "KB2: diện tích 100" "$(jq '((.area_m2 // 0) | tonumber) == 100 | if . then 1 else 0 end' <<<"$r2")"
+kiem "KB2: 4 tầng" "$(jq '.floors == 4 | if . then 1 else 0 end' <<<"$r2")"
+kiem "KB2: 4 phòng ngủ" "$(jq '.bedrooms == 4 | if . then 1 else 0 end' <<<"$r2")"
+kiem "KB2: tiêu đề ≤ 15 từ, có LakeView, diện tích, giá" "$(tieu_de_dat 'lake ?view')"
+
+echo; echo "=================== KB3 — căn hộ trong dự án Masteri Thảo Điền ==================="
+TIEU_DE=""
+for cau in "Cần bán căn hộ Masteri Thảo Điền 2PN 2WC 68m2, tháp T3 tầng 15, view sông, giá 6,8 tỷ còn thương lượng" \
+           "sổ hồng rồi em, full nội thất" "phí quản lý khoảng 1,2 triệu" "ok đăng đi"; do
+  chat "$KB3" "$cau"
+done
+r3=$(dong "$KB3"); echo "$r3"
+echo "== KB3 tiêu đề: \"$TIEU_DE\" ($(wc -w <<<"$TIEU_DE") từ)"
+kiem "KB3: căn hộ / chung cư" "$(jq '(.property_type // "") | test("chung_cu|can_ho") | if . then 1 else 0 end' <<<"$r3")"
+kiem "KB3: gắn dự án Masteri Thảo Điền" "$(jq '(.du_an // "") | test("(?i)masteri th") | if . then 1 else 0 end' <<<"$r3")"
+kiem "KB3: phường Thảo Điền (từ dự án)" "$(jq '(.ward // "") | test("Thảo Điền|An Khánh") | if . then 1 else 0 end' <<<"$r3")"
+kiem "KB3: giá 6,8 tỷ" "$(jq '.price_vnd == 6800000000 | if . then 1 else 0 end' <<<"$r3")"
+kiem "KB3: 2 phòng ngủ" "$(jq '.bedrooms == 2 | if . then 1 else 0 end' <<<"$r3")"
+kiem "KB3: có thương lượng" "$(jq '.negotiable == true | if . then 1 else 0 end' <<<"$r3")"
+kiem "KB3: tiêu đề ≤ 15 từ, có Masteri, diện tích, giá" "$(tieu_de_dat 'masteri')"
+kiem "KB3: không hỏi hẻm / mặt tiền" "$(grep -qiE 'hẻm|mặt tiền' <<<"$(jq -r '.reply' <<<"$TRA")" && echo 0 || echo 1)"
+
+echo; echo "=================== web, giọng, chi phí, thời gian, sổ lỗi ==================="
+for r in "$r1" "$r2" "$r3"; do
+  ma=$(jq -r '.code // empty' <<<"$r"); st=$(jq -r '.status // empty' <<<"$r")
+  [ -z "$ma" ] && continue
+  if [ "$st" = dang_ban ] || [ "$st" = dang_quan_tam ]; then
+    kiem "web: trang tin $ma (status $st) mở được, có giá" "$(web_co "$ma" 'tỷ')"
+  else
+    echo "== web: tin $ma status $st — chưa lên web"
+  fi
+done
+kiem "giọng: không bong bóng nào mở đầu \"Dạ\"" "$(grep -qE '^Dạ' <<<"$MOI_LOI" && echo 0 || echo 1)"
+sleep 5   # sổ token ghi nền
+SAU=$(so_token)
+jq -n --argjson a "$TRUOC" --argjson b "$SAU" --argjson n "$LUOT_TONG" '
+  ($b.calls - $a.calls) as $c | ($b.i - $a.i) as $i | ($b.o - $a.o) as $o | ($b.cw - $a.cw) as $cw | ($b.cr - $a.cr) as $cr |
+  (($i*0.1 + $o*0.5 + $cw*0.125 + $cr*0.01) / 1000000) as $usd |
+  {luot_chat: $n, luot_goi_model: $c, token_vao: $i, token_ra: $o, ghi_cache: $cw, doc_cache: $cr,
+   usd_tong: ($usd*10000|round/10000), usd_moi_luot_chat: (if $n > 0 then ($usd/$n*100000|round/100000) else null end),
+   ghi_chu: "giá Haiku 5.5 bậc thấp (lib/gia-model.ts); gồm cả khách thật nhắn cùng khung nếu có"}'
+echo "== thời gian bot trả lời: trung bình $(( GIAY_TONG / (LUOT_TONG > 0 ? LUOT_TONG : 1) )) ms / lượt, chậm nhất $GIAY_MAX ms ($LUOT_TONG lượt)"
+q "select to_char(at, 'HH24:MI:SS') as luc, source, left(detail, 160) as chi_tiet from bot_errors
+   where at > now() - interval '20 min' and source not in ('geocode-listings') order by at" | jq -c '.[]' || true
+exit $loi
