@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-20 10:48 (giờ VN)
+-- Sinh lúc: 2026-10-20 14:14 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -2247,7 +2247,7 @@ begin
   if v_so is not null and v_quan is not null then
     select array_agg(distinct w.ten_day_du) into v_moi
       from public.phuong_cu p join public.wards w on w.ten = p.phuong_moi
-     where p.quan_cu = v_quan and p.ten = 'Phường ' || v_so::int;
+     where public.cung_quan_cu(p.quan_cu, v_quan) and p.ten = 'Phường ' || v_so::int;
     if coalesce(array_length(v_moi, 1), 0) = 1 then
       v_phuong := v_moi[1]; v_kieu := 'cu';
     elsif coalesce(array_length(v_moi, 1), 0) > 1 then
@@ -2263,7 +2263,7 @@ begin
                                  when public.bo_dau(w.ten_day_du) like 'dac khu %' then 'dac khu'
                                  else 'phuong' end) || ' ' || public.bo_dau(w.ten) || ' ' in k) > 0
         or position(' p ' || public.bo_dau(w.ten) || ' ' in k) > 0
-     order by (v_quan is not null and w.quan_cu = v_quan) desc, length(w.ten) desc
+     order by (v_quan is not null and public.cung_quan_cu(w.quan_cu, v_quan)) desc, length(w.ten) desc
      limit 1;
     if v_phuong is not null then v_kieu := 'moi'; end if;
   end if;
@@ -2273,7 +2273,7 @@ begin
     select array_agg(distinct w.ten_day_du) into v_moi
       from public.phuong_cu p join public.wards w on w.ten = p.phuong_moi
      where p.ten !~ '^(Phường|Xã|Thị trấn) [0-9]+$'
-       and (v_quan is null or p.quan_cu = v_quan)
+       and (v_quan is null or public.cung_quan_cu(p.quan_cu, v_quan))
        and (position(' ' || public.bo_dau(p.ten) || ' ' in k) > 0
             or position(' p ' || regexp_replace(public.bo_dau(p.ten), '^(phuong|xa|thi tran) ', '') || ' ' in k) > 0);
     if coalesce(array_length(v_moi, 1), 0) = 1 then
@@ -2440,6 +2440,19 @@ CREATE OR REPLACE FUNCTION public.ctv_sla_phut()
  IMMUTABLE
  SET search_path TO ''
 AS $function$ select 120 $function$
+;
+
+CREATE OR REPLACE FUNCTION public.cung_quan_cu(a text, b text)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO 'public'
+AS $function$
+  select a is not null and b is not null and (
+    with k as (select regexp_replace(public.bo_dau(x), '^(quan|huyen|thanh pho|thi xa|tp)\s+', '') as v from unnest(array[a, b]) x),
+         n as (select case when v in ('2', '9', 'thu duc') then 'thu duc' else v end as v from k)
+    select count(distinct v) = 1 from n)
+$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.day_ro_ccrb_toi_nmg(p_listing_id uuid)
@@ -5335,7 +5348,7 @@ AS $function$
    where c.kc <= greatest(coalesce(p_toi_da, 0), 0)
    group by c.ten
    order by min(c.kc),
-            (p_quan is not null and p_quan = any(array_remove(array_agg(distinct c.quan_cu), null))) desc,
+            (p_quan is not null and bool_or(public.cung_quan_cu(c.quan_cu, p_quan))) desc,
             c.ten
    limit 8;
 $function$
@@ -5599,7 +5612,7 @@ AS $function$
         from public.phuong_cu p join public.wards w on w.ten = p.phuong_moi where p.id::text = p_khoa)
     when 'quan_cu' then (
       select q.ten || ' (cũ, trước 07/2025), TP.HCM. Nay gồm các phường: '
-             || coalesce((select string_agg(distinct w.ten_day_du, ', ') from public.wards w where w.quan_cu = q.ten), '')
+             || coalesce((select string_agg(distinct w.ten_day_du, ', ') from public.wards w where public.cung_quan_cu(w.quan_cu, q.ten)), '')
         from public.quan_cu q where q.ten = p_khoa)
     when 'duong' then (
       select concat_ws(', ', case when d.loai = 'duong' then 'Đường ' || d.ten else d.ten end,
@@ -6940,6 +6953,10 @@ revoke all on function public.ctv_sla_phut() from public, anon, authenticated;
 grant execute on function public.ctv_sla_phut() to anon;
 grant execute on function public.ctv_sla_phut() to authenticated;
 grant execute on function public.ctv_sla_phut() to service_role;
+revoke all on function public.cung_quan_cu(a text, b text) from public, anon, authenticated;
+grant execute on function public.cung_quan_cu(a text, b text) to anon;
+grant execute on function public.cung_quan_cu(a text, b text) to authenticated;
+grant execute on function public.cung_quan_cu(a text, b text) to service_role;
 revoke all on function public.day_ro_ccrb_toi_nmg(p_listing_id uuid) from public, anon, authenticated;
 grant execute on function public.day_ro_ccrb_toi_nmg(p_listing_id uuid) to service_role;
 revoke all on function public.deals_chan_xoa_da_chot() from public, anon, authenticated;
