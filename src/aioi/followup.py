@@ -5,6 +5,7 @@ context fully preserved in SQLite and synced to Supabase CRM.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import logging
@@ -85,8 +86,10 @@ class FollowUpManager:
 
         self.cancel_followup(user_key)
 
+        hen = time.time()
+
         def _callback() -> None:
-            self._execute_followup(user_key, engine, user_name, role)
+            self._execute_followup(user_key, engine, user_name, role, hen=hen)
 
         with self._lock:
             timer = threading.Timer(delay, _callback)
@@ -102,14 +105,25 @@ class FollowUpManager:
         engine: Engine,
         user_name: str | None = None,
         role: str = "seller",
+        hen: float | None = None,
     ) -> None:
         with self._lock:
             self._timers.pop(user_key, None)
             self._scheduled_times.pop(user_key, None)
 
+        # SRS-5.1zzzzzzz84: đọc / ghi lịch sử dưới khoá lượt của khách (Engine.khoa_luot) — tin nhắc từng có thể chen giữa một lượt
+        # đang chạy. Chờ khoá xong mà đã có lượt mới sau lúc hẹn nhắc → khách vừa nói chuyện, không nhắc.
+        khoa = getattr(engine, "khoa_luot", None)
+        with (khoa(user_key) if khoa else contextlib.nullcontext()):
+            self._nhac_trong_khoa(user_key, engine, user_name, role, hen)
+
+    def _nhac_trong_khoa(self, user_key: str, engine: Engine, user_name: str | None, role: str, hen: float | None) -> None:
         try:
             conv = engine.conversation(user_key)
             if not conv:
+                return
+            if hen is not None and conv.history and conv.history[-1].at > hen:
+                log.info("Follow-up for %s: có lượt mới sau lúc hẹn. Skipping.", user_key)
                 return
 
             # Check if user has an active listing in basket

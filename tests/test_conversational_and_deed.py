@@ -90,7 +90,7 @@ def test_deed_vision_handling_via_engine():
     assert "so_hong_quan_7.jpg" in r.reply
     assert "123 Nguyễn Thị Thập" in r.reply
     assert "75m2" in r.reply
-    assert "xác nhận" in r.reply.lower()
+    assert "chuẩn chỉnh" not in r.reply and "đầy đủ rồi" not in r.reply   # SRS-5.1zzzzzzz82: không khen sổ khi mới đọc ảnh
     # Active property fields should be populated from deed
     active_prop = eng.conversation("u_deed").active.prop
     assert active_prop.fields.get("dia_chi") == "123 Nguyễn Thị Thập, P. Tân Phú, Quận 7"
@@ -166,3 +166,28 @@ def test_lo_gioi_hem_does_not_assume_alley():
     from aioi.prompts import FIELD_LABELS, NATURAL_QUESTIONS
     assert "mặt tiền" in FIELD_LABELS["lo_gioi_hem"]
     assert "mặt tiền" in NATURAL_QUESTIONS["lo_gioi_hem"]
+
+
+def test_loi_sau_anh_so_qua_model_khong_lo_loi_dan_noi_bo():
+    """SRS-5.1zzzzzzz82: câu sau danh sách đọc từ sổ trước đây viết cứng — ghép NATURAL_QUESTIONS (lời DẶN model, vd "Hỏi nhà mình
+    nằm ở mặt tiền…") vào lời gửi khách, luôn khen "pháp lý sổ chuẩn chỉnh", có nhánh "vậy anh?". Nay model viết, cùng khung cụm +
+    xưng hô. Đỏ khi quay lại câu viết cứng."""
+    from aioi.prompts import NATURAL_QUESTIONS
+
+    class Ghi(MockProvider):
+        he: list = []
+
+        def reply(self, system, messages, max_tokens=256):
+            self.he.append(system)
+            return "Chị xem giúp em mấy dòng trên đúng chưa, căn này chị muốn bán giá bao nhiêu ạ?"
+
+    def deed_fetcher(url):
+        return FetchedMedia(b"\xff\xd8\xff", "image/jpeg", url, filename="so_hong_quan_7.jpg")
+
+    settings = Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")
+    m = Ghi(settings)
+    eng = Engine(m, fetcher=deed_fetcher)
+    r = eng.handle_media("u_deed2", "https://example.com/so_hong_quan_7.jpg")
+    assert r.reply.endswith("chị muốn bán giá bao nhiêu ạ?")
+    assert not any(q[:25] in r.reply for q in NATURAL_QUESTIONS.values())          # không lộ lời dặn
+    assert m.he and "KHÔNG khen sổ" in m.he[-1] and "QUY TẮC XƯNG HÔ" in m.he[-1]

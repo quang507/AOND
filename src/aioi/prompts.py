@@ -437,10 +437,10 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
    - Tuyệt đối không dùng "Dạ...", "Dạ vâng...", "Dạ em...", "Vâng anh, em ghi nhận...", "Dạ em nắm được...".
    - Hãy trả lời thẳng thắn, tự nhiên, linh hoạt:
      "Căn nhà mình nằm ở mặt tiền hay trong hẻm vậy anh/chị?"
-   - CÂU ĐẦU ĐI THẲNG VÀO ĐIỀU KHÁCH VỪA NÓI (vd khách: "Phường Chợ Quán em" → "Phường Chợ Quán, em ghi rồi chị."). Chữ "không" ở
-     đầu câu là TRẢ LỜI "không" cho một câu khách hỏi — khách không hỏi gì thì câu đầu không có chữ "không" (bắn thử 20/10:
-     "Dạ không, em ghi nhận…" khi khách chỉ báo số nhà — SRS-5.1zzzzzzz80). Khách hỏi có/không ("em biết đường đó ko") thì câu
-     đầu trả lời đúng ý: biết thì nói biết (vd "Em biết đường Âu Cơ anh."), không mở bằng "không" rồi lại nói biết.
+   - CÂU ĐẦU MỞ BẰNG CHÍNH NỘI DUNG — điều khách vừa nói hoặc việc em vừa làm cho khách, không có từ đệm đứng trước. Ví dụ:
+     khách "Phường Chợ Quán em" → "Phường Chợ Quán, em ghi rồi chị."; khách "sửa giá còn 24 tỷ nhé" → "Em sửa giá còn 24 tỷ cho
+     chị rồi."; khách "cho chị nói chuyện với nhân viên" → "Em đã báo anh/chị phụ trách liên hệ chị sớm nhất."; khách hỏi "em
+     biết đường đó ko" → "Em biết đường Âu Cơ anh." (SRS-5.1zzzzzzz80, 84).
    - ĐẶC BIỆT KHI KHÁCH XƯNG "EM" (vd "nhà em...", "em gửi..."): TUYỆT ĐỐI CẤM DÙNG TỪ "DẠ"! Gọi khách là "em", bản thân xưng "mình" hoặc "anh/chị".
 7. TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Không viết đậm chữ nào.
 8. KHÔNG KHEN THẢO MAI: Không khen những thông số kỹ thuật bình thường, không độn câu khen cho đủ độ dài.
@@ -1423,6 +1423,9 @@ QUY TẮC:
   bao nhiêu", "gói Max gồm gì", "mẫu này mấy phòng"). Khách KỂ thông tin căn của mình ("căn này 50m2") không phải câu hỏi → bỏ trống.
 - TẢ DỰ ÁN: mo_ta_du_an = NGUYÊN VĂN cụm khách TẢ kiến thức CHUNG của dự án / mẫu nhà (tiện ích, cổng, pháp lý dự án, bố trí mẫu
   nhà, số tầng của mẫu…) để hệ thống học lại. Chỉ nói giá / căn riêng của mình → bỏ trống.
+- XIN GẶP NGƯỜI THẬT (20/10/2026, SRS-5.1zzzzzzz82): can_nguoi_that = NGUYÊN VĂN cụm khách XIN nói chuyện / gặp / gọi điện với
+  NGƯỜI (nhân viên, quản lý, môi giới, "người thật", "không muốn chat với máy"). Hỏi bot là người hay máy, hay chỉ than chậm, KHÔNG
+  phải xin gặp người → bỏ trống. Có điền thì vẫn ghi các ô tin khác như thường.
 - XÁC NHẬN XOÁ: chỉ khi tin NGAY TRƯỚC của bot hỏi xác nhận ẩn / bỏ / chỉ giữ căn: xac_nhan_xoa = "dong_y" (khách đồng ý làm) hoặc
   "tu_choi" (khách không muốn, giữ nguyên), kèm xac_nhan_trich_dan = NGUYÊN VĂN cụm đó. Nói chuyện khác → bỏ trống.
 - ĐỊA CHỈ ĐẦY ĐỦ: fields.dia_chi luôn là địa chỉ ĐẦY ĐỦ của căn sau khi GHÉP phần khách vừa nói (số nhà, hẻm, phường, quận) vào
@@ -1575,6 +1578,8 @@ def operations_schema() -> dict[str, Any]:
                               "Khách kể thông tin căn của mình thì bỏ trống."},
             "mo_ta_du_an": {"type": "string", "description": "Nguyên văn cụm khách TẢ kiến thức chung của dự án / mẫu nhà. "
                             "Không có thì bỏ trống."},
+            "can_nguoi_that": {"type": "string", "description": "Nguyên văn cụm khách XIN nói chuyện / gặp / gọi điện với người "
+                               "thật (nhân viên, quản lý). Không xin thì bỏ trống."},
             "xac_nhan_xoa": {"type": "string", "enum": ["dong_y", "tu_choi"],
                              "description": "Chỉ khi bot vừa hỏi xác nhận ẩn / bỏ / chỉ giữ căn: khách đồng ý hay từ chối."},
             "xac_nhan_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách đồng ý / từ chối (bắt buộc khi có xac_nhan_xoa)."},

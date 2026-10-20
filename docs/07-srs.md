@@ -6894,6 +6894,125 @@ cho DB).
 (câu phí khi duyệt, không câu phí khi tin chưa lên web), `test_tin_rao_bo_cuc::test_tran_lich_su_gui_model` (30), `test_hoi_it_truoc_ban_nhap`
 — 5 ca đỏ trên code cũ (đã chạy). pytest 419 đạt. Model thật: `ban-thu-ban`.
 
+### SRS-5.1zzzzzzz82 · Đánh giá UX/CRM 20/10: "đang soạn", chuyển người, giờ tin khách, lượt hỏng, lời sau ảnh sổ (20/10/2026)
+
+**Ca gốc.** Đánh giá UX chatbot + CRM theo yêu cầu chủ dự án ("đánh giá Ai của tôi theo các tiêu chí này"), rồi "lưu lại tất cả yêu cầu
+và làm hết luôn". Phát hiện có bằng chứng (code, bắn thử production, DB): (1) mỗi lượt bot im 9–25 giây, không có dấu hiệu đang soạn;
+(2) /admin có khung "khách cần người thật" và nút giữ hội thoại nhưng lõi không bật `needs_human` (DB: 0 cuộc) và không đọc `human_hold`
+— admin nhắn tay, bot vẫn trả lời chồng; (3) tin khách và tin bot ghi cùng một giờ → CRM không đo được thời gian trả lời; (4) lượt
+hỏng ra 500 → bridge không gửi gì, khách bị bỏ lơ (sổ lỗi 3 ngày: 2 dòng "bridge xử lý tin gom"), hoặc nhận "kết nối mạng gián đoạn,
+nhắn lại giúp em"; (5) lời sau ảnh sổ viết cứng: ghép `NATURAL_QUESTIONS` (lời dặn model) vào lời gửi khách, luôn khen "pháp lý sổ
+chuẩn chỉnh", có nhánh "vậy anh?". Quyết định chủ dự án ghi ở CLAUDE.md §6 (không bàn lại: Supabase Free, Zalo clone, "hello" làm mới
+phiên để test, văn tin rao — kệ).
+
+**Lớp lỗi.** (a) Hạ tầng CRM có mà lõi không nối (handoff, hold, giờ tin) — lõi Python thay TypeScript (18/10) mang sang lời chat
+nhưng không mang các điểm nối CRM. (b) Lỗi lượt chỉ có một đường ra là "hỏng" (500 / câu bắt khách gõ lại), không có đường "giữ chỗ +
+tự làm lại". (c) Lời gửi khách ghép tay ngoài model ở nhánh ảnh sổ, đi vòng qua mọi luật lời (xưng hô, khen, cụm). **Chỗ cùng lớp đã
+soát:** các câu viết cứng khác còn trong engine — lời chào làm mới phiên (cố ý, giữ), câu nhận ảnh `_friendly_media_receipt` (không
+hỏi, không khen, giữ), câu nhắc 5 phút `cau_nhac` (chép câu bot vừa hỏi, giữ); cổng `/message` (chạy thử) gặp `LoiTraLoi` thì 500 —
+chỉ dùng thử, để nguyên.
+
+**Sửa.**
+- `bot/bridge-zca/index.mjs` `batDangSoan`: bật "đang soạn" (zca-js 2.2.0 `sendTypingEvent`) lúc gửi bộ não, nhắc lại mỗi 4 giây, tắt
+  trong `finally`; lỗi chỉ ghi sổ lần đầu của tiến trình.
+- Chuyển người: lượt AI lập thao tác đọc `can_nguoi_that` (nguyên văn cụm khách xin gặp người, kiểm trích dẫn như các ý khác —
+  `src/aioi/prompts.py`); engine chèn `khoi_can_nguoi` (đã báo người phụ trách, không hứa giờ, không xin SĐT) ở nhánh bán và mua,
+  `TurnResult.can_nguoi_that`; `src/aioi/server.py` gọi `SupabaseConversationStore.bao_can_nguoi` ở luồng nền: bật `needs_human` +
+  một dòng `reminders` kind `escalation`, ghi chú "🙋 …" (tin nội bộ — escalation-feed đưa CTV / admin, không bao giờ tới chủ nhà),
+  SĐT trong lời khách che "[số]"; ID thử (`la_id_thu`) chỉ bật cờ, không nhắn admin.
+- Admin giữ hội thoại: `server.chat_reply` đọc `dang_giu_hoi_thoai` (`conversations.human_hold`) trước khi gọi bot → bot im, lời
+  khách vẫn ghi vào CRM, huỷ nhắc 5 phút. Lỗi đọc → coi như không giữ (bot không bỏ khách).
+- Giờ tin khách: `ghi_luot_chat(..., nhan_luc=)` — `messages.created_at` của tin khách = lúc lõi nhận.
+- Lượt hỏng: engine ném `LoiTraLoi` khi lời gửi khách rỗng (bỏ câu "kết nối mạng gián đoạn"); `server.chat_reply` bắt mọi lỗi lượt →
+  sổ lỗi, trả câu giữ chỗ (`CAU_GIU_CHO`, không đổ lỗi mạng, không bắt gõ lại), luồng nền `_thu_lai_nen` sau 20 giây cắt lịch sử về mốc
+  trước lượt hỏng rồi chạy lại đúng tin đó, gửi qua bridge `/send`; khách đã nhắn tin mới thì thôi (lượt mới đọc cả tin cũ); vẫn hỏng
+  → lời xin lỗi + báo người phụ trách (đường chuyển người ở trên).
+- Lời sau ảnh sổ: model viết (cùng `build_chat_system` + cụm + `khoi_xung_ho`, lệnh "không khen sổ, không nói chuẩn / đầy đủ"); khối
+  xưng hô tách thành `khoi_xung_ho` dùng chung.
+
+**Kiểm.** `tests/test_chuyen_nguoi.py` (10 ca: đọc ý có / không trích dẫn, khối rỗng, admin giữ → bot im + CRM vẫn ghi, server báo
+admin, bật cờ + tin 🙋 che SĐT, ID thử không nhắn, giờ tin khách, lượt hỏng giữ chỗ + thử lại không ghi tin hai lần, thử lại bỏ khi
+khách đã nhắn mới); `tests/test_conversational_and_deed.py::test_loi_sau_anh_so_qua_model_khong_lo_loi_dan_noi_bo` (đỏ trên code cũ —
+đã chạy); `bot/tests/bridge-dang-soan.mjs` (trong `test:bot`; đỏ khi bỏ nhắc lại / bỏ bọc lượt — đã chạy). pytest 431 đạt, `test:bot`
+đạt. Model thật: `ban-thu-ban` có thêm lượt xin gặp người.
+
+### SRS-5.1zzzzzzz83 · Đánh giá DB 20/10: tin cho thuê không xuống DB, nguồn tin, tin mua vào hội thoại mua, chặn số vô lý (20/10/2026)
+
+**Ca gốc.** Chủ dự án: "xem bạn là 1 data analyst… vừa mua vừa bán vừa nhiều kiểu bds… có thiếu cái gì cần kiểm soát ko, DB đang như
+thế nào". Soát bằng số trên DB + bắn thử SRS-5.1zzzzzzz82: (1) kịch bản cho thuê không có dòng `listings` nào — lõi ghi `deal = "thue"`,
+enum `listing_deal` là ban / cho_thue → 22P02, cả dòng hỏng, lỗi chỉ ở journal (`log.error`), sổ lỗi trống: MỌI tin cho thuê từ chat
+chưa từng xuống DB; chiều nạp lại cũng so `"thue"` → tin thuê đọc thành tin bán, "đã cho thuê" đọc thành "đã bán"; (2) 7/7 tin mang
+`source = import_excel` (mặc định cột) dù đến từ chat; (3) lượt chat MUA ghi vào hội thoại BÁN (tạo luôn dòng `sellers` cho người chỉ
+đi mua) — 2 hội thoại thật có tin mua lẫn trong hội thoại bán, tab Tin nhắn của người mua thiếu lịch sử; (4) không chốt chặn giá /
+diện tích vô lý (chỉ có `listings_bedrooms_check`).
+
+**Lớp lỗi.** Hai bên của một ranh giới (mã lõi ↔ enum / mặc định DB) không có bài kiểm đối chiếu, và lỗi ghi DB đi vào journal thay vì
+sổ lỗi — hỏng im lặng. **Chỗ cùng lớp đã soát:** mã loại BĐS (lõi 26 → enum 12, đã có bảng `LOAI_SANG_DB` từ SRS-5.1zzzzzzz68, đúng);
+trạng thái (`TRANG_THAI_SANG_DB`, đúng; "đã cho thuê" nay đọc đúng nhờ sửa deal); `mua.py` lọc căn theo `cho_thue` (đúng); form nhu
+cầu người mua trên /admin dùng giá trị riêng (`thue`) cho `buyers.preferences` — không phải cột `listings.deal`, để nguyên.
+
+**Sửa.**
+- `src/aioi/supabase_store.py`: ghi `deal = cho_thue`; nạp lại nhận `cho_thue` (và `thue` cũ); tin chat mới ghi `source = chat_zalo`;
+  `save()` hỏng → `log_loi("supabase save", …)` (`_ghi_so_loi`, DB che SĐT); lượt `role = buyer` ghi vào hội thoại mua
+  (`_hoi_thoai_mua`: `buyers` qua `khach_mua` + `conversations.buyer_id`); `dang_giu_hoi_thoai` / `bao_can_nguoi` (SRS-5.1zzzzzzz82)
+  xét cả hội thoại mua (trigger `conversations_email_upset` có sẵn còn gửi email admin khi người mua cần người).
+- `bot/supabase/migrations/20261020a_nguon_chat_chan_so_vo_ly.sql`: sửa nhãn nguồn các tin chat cũ (`can_chu_duyet`); trigger
+  `trg_zy_listings_chan_so` — giá ≤ 0 / ≥ 10 nghìn tỷ, diện tích ≤ 0 / ≥ 1.000 ha → để trống ô + `log_loi`, KHÔNG từ chối cả dòng
+  (CHECK cứng làm khách mất tin); tên xếp sau `trg_listings_price_vnd` / `trg_y_listings_boc_thong_so`, trước `trg_zz_listings_dang_tin`.
+- `src/aioi/llm/claude.py` ô `tu_soat`: thêm điểm soát câu đầu (không mở "Dạ", "không" chỉ khi đáp câu khách hỏi) — bắn thử
+  SRS-5.1zzzzzzz82 còn một "Dạ không, em đã báo…" khi khách xin gặp người; model tự soát, code không sửa chữ.
+
+**Chưa làm (cần chủ dự án quyết):** gộp `sellers` / `buyers` thành một bảng người theo Zalo ID (một người vừa mua vừa bán hiện là hai
+dòng) — đổi schema lớn, đụng web /admin; bản này chỉ đưa tin mua về đúng hội thoại mua.
+
+**Kiểm.** `tests/test_luu_db_dung.py` (4 ca: deal + source khi tạo tin thuê, nạp lại đúng enum, lượt mua vào hội thoại mua, ghi hỏng
+vào sổ lỗi — cả 4 đỏ trên code cũ, đã chạy). pytest 435 đạt. Migration áp qua `apply-migration.yml`, `schema.sql` sinh lại bằng ô
+`commit_schema`. Model thật: `ban-thu-ban` kịch bản cho thuê phải có dòng `deal = cho_thue`.
+
+### SRS-5.1zzzzzzz84 · Hai lượt cùng khách chạy chồng, CRM mất tin sau "hello", "Dạ không" do prompt trích mẫu xấu (20/10/2026)
+
+**Ca gốc.** Bắn thử `ban-thu-ban` 20/10 (run 39366398134, 8 kịch bản): DB ghi đúng `deal = cho_thue` (kiểm trượt chỉ vì script còn so
+`"thue"` — đã sửa script), nhưng sổ lỗi có 4 dòng `claude chat` "This model does not support assistant message prefill" (03:48 → 03:56)
+kèm 4 dòng `chat-reply` giữ chỗ, KHÔNG lượt thử nào nhận câu giữ chỗ — lỗi nằm ở hội thoại thật của chủ dự án đang nhắn Zalo cùng lúc.
+Soát hội thoại đó: `conversations.last_message_at` chạy tới 04:04 mà bảng `messages` 0 dòng; cả DB không có tin thật nào từ 19/10
+08:31. Và vẫn 2 bong bóng mở đầu "Dạ không" (lượt sửa giá sau bản nháp, lượt xin gặp người).
+
+**Nguyên nhân & lớp lỗi.**
+1. *Trạng thái dùng chung không có khoá.* Bridge gom tin 2,5 s rồi gửi lõi nhưng không xếp hàng theo khách; FastAPI chạy mỗi request
+   một luồng. Khách nhắn tiếp lúc bot còn soạn (lượt 10–18 s) → hai `Engine.handle` chạy song song trên cùng `conv.history`: lượt sau
+   gọi model đúng lúc lượt trước vừa ghi lời bot → lịch sử kết thúc bằng tin bot → 400. Bắn thử nhắn tuần tự nên không bao giờ thấy.
+   **Chỗ cùng lớp:** luồng thử lại nền (`_thu_lai_nen`, SRS-5.1zzzzzzz82) và tin nhắc 5 phút (`followup.py`) cũng đọc / ghi lịch sử
+   ngoài lượt chat — đã đưa vào cùng khoá; endpoint `/message` cũ — cùng khoá.
+2. *Cache hai bản kho lệch nhau + lỗi nuốt ở journal.* "hello" (cố ý, CLAUDE.md §6) gọi `reset` trên bản kho của ENGINE — xoá hội
+   thoại, bỏ cache của bản đó. Lượt ghi tin (`supabase_sync._kho_ghi`) là bản kho KHÁC, cache vẫn trỏ hội thoại đã xoá → mọi lần chèn
+   `messages` 409 (khoá ngoại) → `log.warning` → CRM mất sạch tin của khách đó tới lần khởi động lại; `save()` (bản engine) vẫn đẩy
+   `last_message_at` nên trông như đang chạy. **Chỗ cùng lớp:** admin xoá khách (`admin_xoa_khach`), bắn thử dọn (`reset_nguoi_test`)
+   cũng xoá hội thoại dưới chân cache — cùng nhánh tự lành; `save()` của bản engine sau khi admin xoá người bán: cache `_seller_cache`
+   cũ → chèn tin lỗi khoá ngoại → đã vào sổ lỗi (`supabase save`, SRS-5.1zzzzzzz83), chưa tự lành — để lại.
+3. *Prompt trích nguyên văn mẫu cấm.* Luật 6 (SRS-5.1zzzzzzz80) viết "bắn thử 20/10: "Dạ không, em ghi nhận…"…" làm ví dụ CẤM; Haiku
+   bắt chước chuỗi được trích. Luật chỉ có ở `build_chat_system`, lượt sau bản nháp (`build_fee_followup_system`) không có.
+
+**Sửa.**
+- `src/aioi/engine.py` `Engine.khoa_luot(user_key)` (RLock theo khách); `src/aioi/server.py`: `/chat-reply` chạy `lam()` dưới khoá, lỗi
+  xử lý ngoài khoá; `_thu_lai_nen` kiểm + cắt lịch sử + chạy lại dưới khoá; `/message` dưới khoá. `src/aioi/followup.py`: tin nhắc chạy
+  dưới khoá, có lượt mới sau lúc hẹn (`hen`) thì thôi nhắc.
+- `src/aioi/supabase_store.py` `ghi_luot_chat`: gặp 409 → bỏ `_seller_cache` / `_conv_cache`, tìm / tạo lại hội thoại, ghi lại một lần.
+  `src/aioi/supabase_sync.py`: lượt ghi tin hỏng → `log_loi("supabase sync", …)` (chỉ tên lỗi, không nội dung).
+- `src/aioi/prompts.py` luật 6: bỏ chuỗi mẫu xấu, nói điều NÊN làm — "câu đầu mở bằng chính nội dung" kèm ví dụ đúng cho báo thông tin,
+  sửa giá, xin gặp người, hỏi có/không. `src/aioi/llm/claude.py`: luật câu đầu + ví dụ nằm ở mô tả ô `loi_gui_khach` (mọi lượt `reply`,
+  một chỗ), `tu_soat` soát "chữ đầu là nội dung, không phải từ đệm". Không lọc chữ ở đầu ra.
+- `bot/tests/ban-thu-ban.sh`: kiểm tin cho thuê theo enum `cho_thue`.
+
+**Kiểm.** `tests/test_mot_luot_mot_luc.py`: hai tin cùng khách tới song song → chạy lần lượt, không lỗi, lịch sử user/assistant xen kẽ
+(ĐỎ khi `khoa_luot` trả khoá mới mỗi lần — đã chạy, tái hiện đúng lỗi thật: tin thứ hai dính "400 assistant prefill"); tin nhắc không
+chen khi khách vừa nhắn; hội thoại trong cache đã xoá → tìm lại và vẫn ghi đủ hai tin (ĐỎ khi bỏ nhánh 409 — đã chạy).
+`tests/test_cau_dau_noi_dung.py`: prompt không trích "Dạ không", ô gửi khách mang luật câu đầu (ĐỎ trên prompt cũ — đã chạy). pytest 441
+đạt. Model thật: bắn thử lại sau `cai-vps`; "Dạ không" là hành vi model — chỉ bắn thử production mới đo được.
+
+**Chi phí đo được (Haiku 5.5, `bot_usage_model`, giá `lib/gia-model.ts`).** Từ 03:50:33 tới ~04:15: 124 lượt gọi model, ≈ $0,10 — gồm
+42 lượt chat bắn thử VÀ lượt chủ dự án nhắn cùng lúc (không tách được vì tin của chủ dự án chưa vào `messages`), nên ≤ $0,0024 / lượt
+chat, ≈ $0,0008 / lượt gọi model. Haiku 5.5 có hai bậc giá theo độ dài prompt, sổ không tách bậc — số trên tính bậc thấp.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
