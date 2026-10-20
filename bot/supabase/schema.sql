@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-19 14:18 (giờ VN)
+-- Sinh lúc: 2026-10-20 10:48 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -3547,6 +3547,25 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.listings_chan_so_vo_ly()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+begin
+  if new.price_vnd is not null and (new.price_vnd <= 0 or new.price_vnd >= 10000000000000) then
+    perform public.log_loi('listings chan so', format('tin %s: giá %s ngoài khoảng hợp lệ — để trống', coalesce(new.code, '?'), new.price_vnd));
+    new.price_vnd := null;
+  end if;
+  if new.area_m2 is not null and (new.area_m2 <= 0 or new.area_m2 >= 10000000) then
+    perform public.log_loi('listings chan so', format('tin %s: diện tích %s ngoài khoảng hợp lệ — để trống', coalesce(new.code, '?'), new.area_m2));
+    new.area_m2 := null;
+  end if;
+  return new;
+end
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.listings_chuan_hoa_cot()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -6515,6 +6534,8 @@ drop trigger if exists trg_y_listings_boc_thong_so on public.listings;
 CREATE TRIGGER trg_y_listings_boc_thong_so BEFORE INSERT OR UPDATE OF description, location_raw, property_type ON public.listings FOR EACH ROW EXECUTE FUNCTION listings_boc_thong_so();
 drop trigger if exists trg_z_listings_normalize_status on public.listings;
 CREATE TRIGGER trg_z_listings_normalize_status BEFORE INSERT OR UPDATE ON public.listings FOR EACH ROW EXECUTE FUNCTION listings_normalize_status();
+drop trigger if exists trg_zy_listings_chan_so on public.listings;
+CREATE TRIGGER trg_zy_listings_chan_so BEFORE INSERT OR UPDATE ON public.listings FOR EACH ROW EXECUTE FUNCTION listings_chan_so_vo_ly();
 drop trigger if exists trg_zz_listings_dang_tin on public.listings;
 CREATE TRIGGER trg_zz_listings_dang_tin BEFORE INSERT OR UPDATE ON public.listings FOR EACH ROW EXECUTE FUNCTION listings_quyet_dinh_dang_tin();
 drop trigger if exists trg_media_cleanup_trang_thai on public.media_cleanup_queue;
@@ -7028,6 +7049,10 @@ revoke all on function public.listings_bao_tin_moi_khop() from public, anon, aut
 grant execute on function public.listings_bao_tin_moi_khop() to service_role;
 revoke all on function public.listings_boc_thong_so() from public, anon, authenticated;
 grant execute on function public.listings_boc_thong_so() to service_role;
+revoke all on function public.listings_chan_so_vo_ly() from public, anon, authenticated;
+grant execute on function public.listings_chan_so_vo_ly() to anon;
+grant execute on function public.listings_chan_so_vo_ly() to authenticated;
+grant execute on function public.listings_chan_so_vo_ly() to service_role;
 revoke all on function public.listings_chuan_hoa_cot() from public, anon, authenticated;
 grant execute on function public.listings_chuan_hoa_cot() to service_role;
 revoke all on function public.listings_doi_ma_theo_quan_loai() from public, anon, authenticated;
