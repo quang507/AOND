@@ -764,6 +764,15 @@ def _so_trong(x: str | None) -> set[str]:
     return {n.replace(",", ".") for n in re.findall(r"\d+(?:[.,]\d+)?", re.sub(r"(?i)m\s*[2²]", "m", str(x or "")))}
 
 
+def _tieu_de_sai_don_vi(reply: str) -> bool:
+    """Tiêu đề bản tin ghi kích thước kèm m² ("5x20m²") — sai đơn vị: 5x20 là kích thước lô, diện tích là 100m² (bắn thử KB2 20/10,
+    SRS-5.1zzzzzzz91). Chỉ so bố cục chữ của dòng tiêu đề."""
+    if "📋" not in (reply or ""):
+        return False
+    tieu_de = next((d for d in reply.split("📋", 1)[1].splitlines()[1:] if d.strip()), "")
+    return re.search(r"\d\s*[x×*]\s*\d+(?:[.,]\d+)?\s*m\s*[²2]", tieu_de) is not None
+
+
 def _tieu_de_thieu(reply: str, prop: "Property") -> list[str]:
     """Ý bắt buộc mà dòng tiêu đề bản tin (dòng có chữ đầu tiên sau dòng 📋) không có — hiện kiểm GIÁ: con số của ô giá phải có trong
     tiêu đề (SRS-5.1zzzzzzz86). Không có 📋 hay căn chưa có giá → []. Không đọc ý: chỉ so số."""
@@ -2024,9 +2033,11 @@ class Engine:
                          + "; tiêu đề tối đa 15 từ, đủ vị trí · diện tích · giá.")
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
+        if _tieu_de_sai_don_vi(reply):
+            ly_do.append("Tiêu đề ghi kích thước kèm m² (vd \"5x20m²\") — sai: viết diện tích bằng m² (vd \"100m²\") hoặc kích thước "
+                         "không kèm m² (vd \"5x20m\").")
         if ly_do:
-            log.warning("Lời bot lệch luật hình thức (%s) — gọi lại model",
-                        ", ".join(["tiêu đề"] * bool(thieu_td) + ["mở đầu Dạ"] * _mo_dau_da(reply)))
+            log.warning("Lời bot lệch luật hình thức (%d lý do) — gọi lại model", len(ly_do))
             with _do(conv, "tra_loi_lai"):
                 lai = self._provider.reply(
                     system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\n" + " ".join(ly_do) + " Viết lại TOÀN BỘ lượt trả lời.\n",
@@ -3244,7 +3255,13 @@ class Engine:
         x = plan.get("xung_ho")
         if x in ("em", "anh", "chi", "chu_co_bac"):
             gan = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
-            if any(_trich_dan_khop(plan.get("xung_ho_trich_dan"), c) for c in gan):
+            trich = plan.get("xung_ho_trich_dan")
+            # SRS-5.1zzzzzzz91 (bắn thử KB2 20/10: "mình… em" rồi lượt sau "anh/chị"): cụm trích phải CHỨA chữ xưng đó (không chỉ có
+            # thật trong lời khách), và ĐỔI cách xưng đã chốt thì cụm phải ở tin vừa nhắn — cụm cũ không lật được cách xưng.
+            chu = {"em": ("em",), "anh": ("anh",), "chi": ("chi",), "chu_co_bac": ("chu", "co", "bac", "di", "cau", "thim", "ong", "ba")}[x]
+            hop = bool(set(chu) & set(re.findall(r"[a-z]+", _strip_accents(str(trich or "")).lower())))
+            nguon = [cuoi] if (conv.xung_ho and conv.xung_ho != x) else gan
+            if hop and any(_trich_dan_khop(trich, c) for c in nguon):
                 conv.xung_ho = x
 
         # Xin xem bản vẽ / hỏi dự án / tả dự án / xác nhận xoá (SRS-5.1zzzzzzz55): nhận khi cụm trích có trong tin vừa nhắn.

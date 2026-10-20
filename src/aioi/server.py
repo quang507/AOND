@@ -287,6 +287,32 @@ def _bao_can_nguoi_nen(user_key: str, trich: str, ten: str | None, role: str) ->
     threading.Thread(target=chay, daemon=True).start()
 
 
+# Tin chữ xếp hàng chờ lượt của từng khách (SRS-5.1zzzzzzz91). Bridge đã gom tin gõ liền trong 2,5 s, nhưng khách nhắn tiếp LÚC BOT
+# CÒN SOẠN thì mỗi tin chờ khoá lượt rồi chạy thành một lượt riêng — chat tester 20/10: 3 tin trong 18 giây → 3 bản tin trong 20 giây.
+# Nay lượt nào giữ khoá thì gom MỌI tin chữ đang chờ của khách đó vào một lượt; tin đã được gom thì không chạy lượt nữa.
+_cho_khoa = threading.Lock()
+_cho_tin: dict[str, list[tuple[int, str]]] = {}
+_cho_so = 0
+
+
+def _xep_cho(uk: str, text: str) -> int:
+    global _cho_so
+    with _cho_khoa:
+        _cho_so += 1
+        _cho_tin.setdefault(uk, []).append((_cho_so, text))
+        return _cho_so
+
+
+def _lay_cho(uk: str, so: int) -> list[str] | None:
+    """Trong khoá lượt: mọi tin chữ đang chờ của khách, theo thứ tự đến. Tin `so` đã được lượt trước gom → None."""
+    with _cho_khoa:
+        ds = _cho_tin.get(uk) or []
+        if all(n != so for n, _ in ds):
+            return None
+        _cho_tin.pop(uk, None)
+        return [t for _, t in ds]
+
+
 @app.post("/chat-reply", response_model=ZaloBridgeResponse)
 def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     if payload.mark_sent:
@@ -381,10 +407,23 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     else:
         incoming_text = incoming_text or "[Khách gửi tin nhắn]"
         lam = lambda: _engine.handle(uk, incoming_text)  # noqa: E731
+        so_cho = _xep_cho(uk, incoming_text)
     # SRS-5.1zzzzzzz82: lượt hỏng (API quá tải / mạng / model trả rỗng) trước đây ra 500 → bridge không gửi gì, khách bị bỏ lơ
     # (sổ lỗi "bridge xử lý tin gom"), hoặc nhận "kết nối mạng gián đoạn, nhắn lại giúp em". Nay: câu giữ chỗ + tự thử lại nền.
     # SRS-5.1zzzzzzz84: một khách — một lượt một lúc (Engine.khoa_luot); tin nhắn tới lúc bot còn soạn thì chờ lượt trước xong.
     with _engine.khoa_luot(uk):
+        if not media_urls:
+            gom = _lay_cho(uk, so_cho)
+            if gom is None:   # tin này đã nằm trong lượt trước — chỉ ghi lời khách vào CRM, không trả lời riêng
+                sync_to_supabase_async(external_user_id=uk, incoming_text=incoming_text, bot_reply="",
+                                       zalo_msg_id=payload.msg_id, role=_engine.conversation(uk).role, user_name=zalo_name,
+                                       nhan_luc=nhan_luc)
+                return ZaloBridgeResponse(reply="", replies=[], nhip_go=[], assistant_name="", captured=[], next_field=None,
+                                          property_score=0.0, user_score=0.0, tier="", completeness=0.0)
+            if len(gom) > 1:
+                log.info("gom %d tin chờ thành một lượt", len(gom))
+                van_gom = "\n".join(gom)
+                lam = lambda: _engine.handle(uk, van_gom)  # noqa: E731
         moc = len(_engine.conversation(uk).history)
         t0 = time.perf_counter()
         try:

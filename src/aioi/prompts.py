@@ -589,6 +589,12 @@ def khoi_xin_dang(thieu: list[str], prop: Property | None = None) -> str:
     khách duyệt cũng không ghi được, tin nằm mãi chờ thông tin)."""
     if not thieu:
         return ""
+    # Khách bảo "đăng giúp theo nội dung này" khi căn CHƯA có ý gì (thường là sắp dán tin rao) — mời khách dán nội dung, đừng hỏi
+    # từng ô (SRS-5.1zzzzzzz91; chat tester 20/10 hai lần bot hỏi giá / địa chỉ đúng lúc khách đang dán bài).
+    if prop is not None and not any(prop.fields.get(k) for k in ("gia", "dien_tich", "dien_tich_dat", "dien_tich_nha", "dia_chi",
+                                                                 "duong", "kich_thuoc")):
+        return ("\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN (CHƯA CÓ THÔNG TIN CĂN) ===\nMời khách gửi / dán nội dung tin rao hoặc vài thông "
+                "tin chính (địa chỉ, giá, diện tích) trong ĐÚNG 1 câu ngắn. KHÔNG hỏi từng ô, KHÔNG soạn bài đăng.\n")
     y = ", ".join(f'"{nhan_o(o, prop)}"' for o in thieu)
     return (f"\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN ===\nTin còn thiếu {y} — thiếu là chưa đăng được. Nói ngắn: còn thiếu ý này là em lên bản "
             "nháp liền, rồi hỏi đúng ý đó (theo \"Thông tin cần hỏi tiếp theo\"). KHÔNG soạn bài đăng, KHÔNG nói đã đăng.\n")
@@ -1209,6 +1215,8 @@ cho các loại này.
   Cho thuê NGUYÊN CĂN ("nhà nguyên căn", "nhà trọ nguyên căn", "thuê nguyên căn" — cả căn nhà có trệt / lầu / phòng ngủ) → nha_pho;
   phong_tro chỉ khi cho thuê TỪNG PHÒNG trong dãy / nhà trọ (20/10: khách "cho thuê nhà trọ nguyên căn, 1 trệt 1 lầu 2PN" bị xếp
   phòng trọ, bot hỏi gác lửng / WC riêng).
+  "Nhà" / "căn nhà" trong khu dự án / khu dân cư (vd "bán nhà trong khu dự án Nyah Phú Định") → nha_pho; chung_cu chỉ khi khách nói
+  căn hộ / chung cư / tòa / block / tầng X (20/10: bot hỏi "tòa nào, tầng mấy" cho nhà phố trong dự án).
   Vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An, Bình Dương, Đồng Nai, Tây Ninh…) mà khách chỉ nói "nhà",
   không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
 - Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
@@ -1484,6 +1492,8 @@ QUY TẮC:
   Cho thuê NGUYÊN CĂN ("nhà nguyên căn", "nhà trọ nguyên căn", "thuê nguyên căn" — cả căn nhà có trệt / lầu / phòng ngủ) → nha_pho;
   phong_tro chỉ khi cho thuê TỪNG PHÒNG trong dãy / nhà trọ (20/10: khách "cho thuê nhà trọ nguyên căn, 1 trệt 1 lầu 2PN" bị xếp
   phòng trọ, bot hỏi gác lửng / WC riêng).
+  "Nhà" / "căn nhà" trong khu dự án / khu dân cư (vd "bán nhà trong khu dự án Nyah Phú Định") → nha_pho; chung_cu chỉ khi khách nói
+  căn hộ / chung cư / tòa / block / tầng X (20/10: bot hỏi "tòa nào, tầng mấy" cho nhà phố trong dự án).
   Vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An, Bình Dương, Đồng Nai, Tây Ninh…) mà khách chỉ nói "nhà",
   không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
 - Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT

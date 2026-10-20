@@ -37,3 +37,10 @@ def test_o_de_sau_di_kem_tin_qua_khoi_dong_lai():
     st.save(conv)
     [(_, _, d)] = _ghi_tin(st)
     assert d["boc_tach"]["_hoan"] == ["tien_ich_phong"] and d["boc_tach"]["gia"] == "3,7 triệu/tháng"
+
+
+def test_dien_tich_tin_thue_la_dien_tich_su_dung():
+    from aioi.supabase_store import so_m2
+    f = {"dien_tich_dat": "4m x 4.5m", "dien_tich_nha": "35m2", "dien_tich": "35m2"}
+    assert so_m2(f, thue=True) == 35.0 and so_m2(f) == 18.0
+    assert so_m2({"dien_tich_dat": "4x4.5"}, thue=True) == 18.0   # thuê mà khách chỉ nói đất thì vẫn có số

@@ -150,7 +150,9 @@ class FollowUpManager:
             customer_is_em = (customer_pronoun == "em")
 
             # Determine missing item or draft status
-            is_draft_ready = bool(getattr(conv, "listing_proposed", False) or prop.summary_ready())
+            # Chỉ nói "bản tin nháp em soạn ở trên" khi bản nháp ĐÃ gửi thật (SRS-5.1zzzzzzz91) — trước đây đủ ý (summary_ready) cũng
+            # tính, nên khách chưa thấy bản nháp nào vẫn được nhắc "xem bản tin ở trên".
+            is_draft_ready = bool(getattr(conv, "listing_proposed", False))
 
             if is_draft_ready:
                 if customer_is_em:

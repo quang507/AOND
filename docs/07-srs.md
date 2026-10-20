@@ -7283,6 +7283,38 @@ chạy đúng (khách "ok" là lên web, mô tả = bản tin vừa duyệt, ngu
 Kiểm: `tests/test_cho_thue_nguyen_can.py` (dòng mở / câu hỏi cuối theo xưng hô; lời duyệt 1 câu, phí 1–2 câu, không còn "0.75 tháng";
 luật nguyên căn; `_hoan` đi kèm tin — đỏ trên bản trước).
 
+### SRS-5.1zzzzzzz91 · Sửa nốt lỗi tester 20/10: tin gõ lúc bot đang soạn, diện tích tin thuê, xưng hô lật, tiêu đề "5x20m²", tin nhắc không bản nháp (20/10/2026)
+
+Chủ dự án: "sửa mấy lỗi đó đi" (các mục ghi lại ở SRS-5.1zzzzzzz87 / 89 / 90 và điểm chấm sơ bộ ở trang Câu chuẩn). Cài lên VPS khi
+tester gõ "hello" mở phiên mới.
+
+1. *Khách nhắn tiếp lúc bot còn soạn → mỗi tin một lượt* (3 tin trong 18 giây → 3 bản tin trong 20 giây). Bridge đã gom tin gõ liền
+   trong 2,5 s; chỗ hở là tin tới khi lượt trước đang chạy: mỗi tin chờ khoá lượt (`khoa_luot`, SRS-5.1zzzzzzz84) rồi chạy riêng.
+   **Sửa** (`server.py`): tin chữ xếp hàng theo khách (`_xep_cho`); lượt nào giữ khoá thì gom MỌI tin đang chờ thành một lượt
+   (`_lay_cho`), tin đã được gom trả rỗng (bridge không gửi gì) nhưng vẫn ghi vào CRM đúng vai. Ảnh / tệp không gom.
+2. *Tin cho thuê: tiêu đề 35m² (sàn), web 18m² (đất)* — `so_m2` lấy đất trước cho mọi tin. **Sửa**: tin CHO THUÊ lấy diện tích sử dụng
+   trước (người thuê tìm theo chỗ ở được) [giả định BA — chủ dự án đổi lại được]; tin bán giữ đất trước.
+3. *Xưng hô lật* (KB2: "mình… em" rồi "anh/chị") — cổng chỉ đòi cụm trích có thật trong 6 tin khách gần nhất, nên một cụm cũ đỡ được
+   cả cách xưng khác. **Lớp**: kiểm trích dẫn không kiểm cụm có NÓI điều được trích ra không. **Sửa**: cụm phải chứa đúng chữ xưng
+   (em / anh / chị / chú…), và đổi cách xưng đã chốt thì cụm phải ở tin vừa nhắn. Cùng lớp đã soát: duyệt bản nháp và hỏi về kiểm cụm ở
+   tin vừa nhắn (không dính); ngoài vùng kiểm trong 6 tin gần nhất nhưng chỉ bật cờ theo tỉnh khách đã nói — để nguyên.
+4. *Tiêu đề "5x20m²"* — code kiểm bố cục dòng tiêu đề (`_tieu_de_sai_don_vi`), lệch thì gọi lại model một lần cùng chỗ kiểm giá /
+   "Dạ" (`_soat_hinh_thuc`); không tự sửa chữ.
+5. *Tin nhắc "bản tin nháp em soạn ở trên" cho hội thoại chưa có bản nháp* — tin nhắc coi "đủ ý" là đã có bản nháp. **Sửa**: chỉ khi
+   bản nháp ĐÃ gửi (`listing_proposed`). Hội thoại "Khách thử" 20/10 chỉ có đúng một tin nhắc — nhiều khả năng do script bắn thử dọn
+   DB trước rồi mới /reset lõi (tin nhắc hẹn giờ của lõi vẫn chạy và tạo lại hội thoại); ba script `ban-thu-*.sh` nay /reset lõi trước.
+6. *"Đăng giúp mình theo nội dung này" khi căn chưa có ý gì* → bot hỏi giá / địa chỉ đúng lúc khách đang dán bài. **Sửa**:
+   `khoi_xin_dang` — căn chưa có giá / diện tích / địa chỉ thì mời khách dán nội dung trong 1 câu, không hỏi từng ô.
+7. *"Bán nhà trong khu dự án …" bị hỏi "tòa nào, tầng mấy"* — luật loại BĐS của AI: "nhà" trong khu dự án / khu dân cư → `nha_pho`;
+   `chung_cu` chỉ khi khách nói căn hộ / chung cư / tòa / block / tầng.
+8. Giữ nguyên, không sửa: câu "65m2 đó là đất hay sàn" khi khách chưa nói rõ — đúng SRS-5.1zzzzzzz52 (theo bản anh Luận: code không tự
+   gán con số mơ hồ thành đất; AI đã có luật "số m² kèm số tầng là đất"). Bản thử gán bằng code làm đỏ
+   `test_mot_con_so_mo_ho_khong_tu_thanh_dien_tich_dat` nên đã bỏ.
+
+Kiểm: `tests/test_mot_luot_mot_luc.py::test_tin_cho_luc_bot_dang_soan_gom_thanh_mot_luot`, `tests/test_cho_thue_nguyen_can.py::
+test_dien_tich_tin_thue_la_dien_tich_su_dung`, `tests/test_xung_ho_khong_lat.py`, `tests/test_tieu_de_va_xin_dang_trong.py` (đỏ trên
+bản trước).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -143,11 +143,12 @@ def ma_trang_thai(trang_thai: str | None, db_hien_tai: str | None) -> str | None
 def trang_thai_tu_db(ma: str | None, la_thue: bool = False) -> str:
     chu = DB_SANG_TRANG_THAI.get(ma or "", "đang bán")
     return "đã cho thuê" if chu == "đã bán" and la_thue else chu
-def so_m2(fields: dict[str, str]) -> float | None:
+def so_m2(fields: dict[str, str], thue: bool = False) -> float | None:
     """Diện tích (m²) cột `listings.area_m2`: ĐẤT trước (`dien_tich_dat`), rồi `dien_tich`, rồi `kich_thuoc`. Ô mang dạng ngang x dài
     ("4,5x11") thì tính tích — bắn thử 19/10: `dien_tich_dat` = "4,5x11" thành 4,5 m², `dien_tich` = sàn 170 m² thành diện tích
-    đất (SRS-5.1zzzzzzz73)."""
-    for k in ("dien_tich_dat", "dien_tich"):
+    đất (SRS-5.1zzzzzzz73). Tin CHO THUÊ: diện tích SỬ DỤNG (sàn) trước — người thuê tìm theo chỗ ở được, và tiêu đề tin thuê ghi số
+    đó (chat tester 20/10: tiêu đề 35m², web 18m² đất 4 × 4,5; SRS-5.1zzzzzzz91, [giả định BA])."""
+    for k in (("dien_tich_nha", "dien_tich", "dien_tich_dat") if thue else ("dien_tich_dat", "dien_tich")):
         tinh = _calc_area_from_dimension(str(fields.get(k) or ""))
         if tinh:
             return float(tinh[:-2])
@@ -570,7 +571,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 ma_pl = self._ma_phap_ly(fields.get("phap_ly"))
                 if ma_pl:
                     listing_payload["legal_status"] = ma_pl
-                dt = so_m2(fields)
+                dt = so_m2(fields, li.prop.is_rental)
                 if dt is not None:
                     listing_payload["area_m2"] = dt
                 if fields.get("gia"):
