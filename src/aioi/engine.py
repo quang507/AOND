@@ -1118,6 +1118,10 @@ class Engine:
             missing = khac + [x for x in missing if x in cum] if khac else missing[1:] + missing[:1]
         conv.o_vua_hoi = missing[0] if missing else None
         conv.cum_vua_hoi = conv.prop.cum_hoi(conv.o_vua_hoi, missing)
+        # Chỉ TÊN ô (không giá trị khách) — để truy được "bot hỏi lặp" từ journal (SRS-5.1zzzzzzz90: chat tester 20/10 hỏi một câu 3
+        # lần mà không có gì cho biết lượt nào hệ thống chọn ô nào).
+        log.info("ô hỏi: %s · cụm: %s · lờ: %s · để sau: %s", conv.o_vua_hoi, conv.cum_vua_hoi,
+                 {k: v for k, v in conv.lo.items() if v}, sorted(conv.prop.hoan))
         return conv.o_vua_hoi
 
     def conversation(self, user_key: str) -> Conversation:
@@ -1927,7 +1931,7 @@ class Engine:
             conv.listing_proposed = True
             trinh_nhap = True
             system = build_listing_proposal_system(
-                conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em
+                conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em, xung_ho=customer_pronoun
             )
         else:
             system = build_fee_followup_system(
@@ -1992,7 +1996,7 @@ class Engine:
 
         reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply))
         if trinh_nhap:
-            reply = cat_truoc_mo_dau(reply)
+            reply = cat_truoc_mo_dau(reply, customer_pronoun)
 
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now

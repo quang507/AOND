@@ -7258,6 +7258,31 @@ Kiểm: `tests/test_sua_tin_admin.py` (cắt bản tin; đồng ý thì ghi mô 
 lõi thì đỏ), `bot/tests/sua-tin-admin.mjs` (trong `test:bot`: nhãn chờ khách duyệt theo đúng điều kiện DB; chỉ nhánh rao bỏ dấu duyệt;
 đổi nhanh không bỏ dấu; rao thiếu thì chặn — 3 ca đỏ trên bản trước).
 
+### SRS-5.1zzzzzzz90 · Chat tester chị N. 20/10 ca cho thuê nhà nguyên căn: lời dài, xưng hô, loại nhà, ô để sau mất (20/10/2026)
+
+Ca gốc (17:01–17:20): "Cho thuê nhà trọ nguyên căn Âu Dương Lân P3 Q8, 4m x 4.5m, 1 trệt 1 lầu… 3.7 triệu/tháng". Bản sửa SRS-5.1zzzzzzz89
+chạy đúng (khách "ok" là lên web, mô tả = bản tin vừa duyệt, nguồn ghi `chu_xac_nhan`). Tester: "đoạn dưới này nghe dài mệt quá"; chủ dự
+án: sửa nhưng chỉ cài khi tester bấm "hello" (không khởi động lại lõi giữa phiên test).
+
+1. *Lời sau khi duyệt và lời báo phí dài* — prompt bắt "vui vẻ chúc mừng… chuyển cho mạng lưới… hướng dẫn truy cập". **Sửa**:
+   `khoi_trang_thai_web` chỉ đòi 1 câu xác nhận; lượt duyệt tối đa 2 câu; khách "chưa biết phí" → 1–2 câu (con số + chỉ thu khi thành
+   công). Phí thuê viết "3/4 tháng tiền thuê" ở mọi chỗ prompt (bot từng viết "0.75 tháng").
+2. *Xưng hô* — khách xưng "chị" mà dòng mở bản tin cố định "📋 Em sẽ rao như vầy nhé anh chị:" và tin nhắc viết cứng "anh/chị".
+   **Lớp**: câu cố định viết cho hai kiểu khách (em / không rõ). **Sửa**: `mo_dau_nhap(xung_ho)` (anh / chị / em / không rõ) cho dòng mở,
+   câu hỏi cuối bản nháp và `cat_truoc_mo_dau`; tin nhắc (`followup.py`) gọi theo `xung_ho`. Cùng lớp còn: câu chào lúc làm mới phiên
+   ("anh/chị") — khi đó chưa biết khách xưng gì, đúng.
+3. *"Nhà trọ nguyên căn" xếp thành phòng trọ* → hỏi gác lửng / máy lạnh / WC riêng / giờ giấc. Loại BĐS do AI đọc theo nghĩa (không
+   regex); sửa ở luật của AI: cho thuê NGUYÊN CĂN → `nha_pho`, `phong_tro` chỉ khi thuê từng phòng.
+4. *Hỏi lặp một câu 3 lần* (gác lửng / máy lạnh / bếp / WC) — luật "lờ 2 lần thì để sau" (SRS-5.1zzzzzzz80) lẽ ra chặn lần 3.
+   **Chưa chứng minh được nguyên nhân**: journal không ghi lượt nào hệ thống chọn ô nào. Hai việc: (a) log TÊN ô hỏi / cụm / số lần
+   lờ / ô để sau mỗi lượt (không giá trị khách) để lần sau truy được; (b) ô để sau (`Property.hoan`) đi kèm tin dưới khoá nội bộ
+   `boc_tach._hoan` — trước đây chỉ nằm trong bộ nhớ, lõi khởi động lại (mỗi lần cài VPS) là quên và hỏi lại từ đầu.
+5. Ghi lại, chưa sửa: khách gõ liền 3 tin → bot gửi 3 bản tin trong 20 giây (cần bridge gom tin gõ liền nhau); tiêu đề ghi 35m² (sàn)
+   trong khi cột diện tích web là 18m² (đất 4 × 4,5).
+
+Kiểm: `tests/test_cho_thue_nguyen_can.py` (dòng mở / câu hỏi cuối theo xưng hô; lời duyệt 1 câu, phí 1–2 câu, không còn "0.75 tháng";
+luật nguyên căn; `_hoan` đi kèm tin — đỏ trên bản trước).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -550,7 +550,9 @@ class SupabaseConversationStore(KhoNguoiMua):
                     "code": li.listing_id[:8].upper(),
                     "deal": deal_type,
                     "street": fields.get("duong"),
-                    "boc_tach": fields,
+                    # Ô khách lờ 2 lần (để sau bản nháp) đi kèm tin dưới khoá nội bộ `_hoan` — lõi khởi động lại (mỗi lần cài VPS)
+                    # không quên rồi hỏi lại từ đầu (SRS-5.1zzzzzzz90). Khoá `_` không ra khách (`fields_khach`, `_thong_so`).
+                    "boc_tach": {**fields, **({"_hoan": sorted(li.prop.hoan)} if getattr(li.prop, "hoan", None) else {})},
                     "updated_at": now_iso,
                 }
                 if fields.get("dia_chi"):
@@ -753,12 +755,15 @@ class SupabaseConversationStore(KhoNguoiMua):
             db_listings = self._get(f"listings?seller_id=eq.{seller_id}&order=created_at.asc")
             listings: list[Listing] = []
             for row in db_listings:
-                boc_tach = row.get("boc_tach") or {}
+                boc_tach = dict(row.get("boc_tach") or {})
+                hoan = boc_tach.pop("_hoan", None)
                 prop = Property(
                     loai_hinh=loai_tu_db(row.get("property_type"), boc_tach),
                     is_rental=(row.get("deal") in ("cho_thue", "thue")),
                     fields=boc_tach,
                 )
+                if isinstance(hoan, list):
+                    prop.hoan = {str(x) for x in hoan}
                 # listing_id = uuid của dòng (bỏ gạch) khi tin tạo từ bản 19/10 (code = 8 ký tự đầu id) — để ảnh ghi đúng thư
                 # mục `<uuid>/` và lượt sau cập nhật đúng dòng; tin cũ giữ code như trước (SRS-5.1zzzzzzz56).
                 rid = str(row.get("id") or "").replace("-", "")
