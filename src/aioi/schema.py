@@ -241,10 +241,10 @@ SUMMARY_READY_COMPLETENESS: float = 0.75
 # anh?") thay vì mỗi lượt một ô. Ô thiếu đầu tiên quyết cụm; lượt đó hỏi các ô còn thiếu trong cùng cụm (tối đa 3). Ô không thuộc cụm
 # nào hỏi riêng như cũ.
 CUM_HOI: list[tuple[str, ...]] = [
-    ("dia_chi", "phuong"),
+    ("dia_chi", "phuong", "lo_gioi_hem"),            # 20/10 (SRS-5.1zzzzzzz81): hẻm / mặt tiền hỏi trước bản nháp như anh Luận
     ("dien_tich_dat", "dien_tich_nha", "ket_cau"),   # kích thước = cách nói khác của diện tích đất, không hỏi thêm
     ("dien_tich", "so_phong_ngu"),
-    ("phap_ly_hoan_cong", "gia"),
+    ("phap_ly_hoan_cong", "gia", "tinh_trang_ban_giao"),
     ("du_an", "tang_toa"),
 ]
 CUM_TOI_DA = 3
@@ -257,7 +257,10 @@ LAND_GATED_TYPES: set[str] = {"dat", "dat_tho_cu"}
 # và khỏi % đầy đủ, được hỏi từng câu sau khi khách duyệt tin (`cau_hoi_sau_ra_tin`, prompt build_fee_followup_system).
 # 19/10/2026 (SRS-5.1zzzzzzz76; chủ dự án: "nó hỏi nhiều quá chán chết được"): thêm hiện trạng đang ở / cho thuê — không đổi nội
 # dung tin rao, người mua hỏi lúc hẹn xem; trước đó nó vẫn tính vào % nên nhà phố phải trả lời 7–8 câu mới thấy bản nháp.
-HOI_SAU_KHI_RA_TIN: set[str] = {"lo_gioi_hem", "tinh_trang_ban_giao"}
+# 20/10/2026 (SRS-5.1zzzzzzz81; chủ dự án: "Hẻm / mặt tiền và hiện trạng… theo anh Luận"): bỏ hai quyết định trên — hai ô này lại
+# hỏi TRƯỚC bản nháp như bản anh Luận (gộp cụm: hẻm cùng địa chỉ / phường, hiện trạng cùng giá / pháp lý). Tập để trống, giữ tên để
+# chỗ nào cần lại thì thêm vào đây.
+HOI_SAU_KHI_RA_TIN: set[str] = set()
 
 # Thông số cho thuê (áp dụng chung khi là tin cho thuê) — SRD §III.
 RENTAL_FIELDS: list[str] = [
@@ -392,15 +395,8 @@ class Property:
         return o not in ("loai_hinh", "dia_chi", "du_an", "ma_so_can", "gia") and o not in self.blocking_fields()
 
     def cau_hoi_sau_ra_tin(self) -> str | None:
-        """Ô hỏi SAU khi khách duyệt bản nháp, từng ô một: độ rộng hẻm của nhà ở trong hẻm khi chưa biết bề rộng (chưa có chữ
-        số, không phải mặt tiền), rồi hiện trạng đang ở / cho thuê."""
-        if self.group is not PropertyGroup.RESIDENTIAL:
-            return None
-        v = (self.fields.get("lo_gioi_hem") or "").lower()
-        if not ("mặt tiền" in v or re.search(r"\bmt\b", v) or re.search(r"\d", v)):
-            return "lo_gioi_hem"
-        if "tinh_trang_ban_giao" in self.expected_fields() and not self._has("tinh_trang_ban_giao"):
-            return "tinh_trang_ban_giao"
+        """Ô hỏi SAU khi khách duyệt bản nháp: chỉ còn ô khách đã lờ 2 lần (SRS-5.1zzzzzzz80). Hẻm và hiện trạng từ 20/10 hỏi trước
+        bản nháp như bản anh Luận (SRS-5.1zzzzzzz81)."""
         return next((o for o in self.expected_fields() if o in self.hoan and not self._has(o)), None)
 
     def completeness(self) -> float:

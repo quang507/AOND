@@ -95,7 +95,8 @@ kiem "Âu Cơ: không hỏi đất hay sàn" "$(grep -qiE 'đất hay (diện t�
 kiem "Âu Cơ: ra bản nháp sau câu diện tích sàn" "$(grep -q '📋' <<<"$LOI_BOT" && echo 1 || echo 0)"
 echo "== Âu Cơ: số lượt tới bản nháp: ${LUOT_NHAP:-chưa ra} / $LUOT lượt"
 SAU_SO="${LOI_BOT#*##DA_NOI_SO##}"; SAU_SO="${SAU_SO%%📋*}"
-kiem "Âu Cơ: sau khi khách nói sổ, không hỏi hoàn công / hiện trạng / thương lượng trước bản nháp" "$(grep -qiE 'hoàn công|cho thuê|đang trống|thương lượng' <<<"$SAU_SO" && echo 0 || echo 1)"
+# 20/10 (SRS-5.1zzzzzzz81): hiện trạng lại hỏi trước bản nháp như bản anh Luận — chỉ còn soát hoàn công / thương lượng.
+kiem "Âu Cơ: sau khi khách nói sổ, không hỏi hoàn công / thương lượng trước bản nháp" "$(grep -qiE 'hoàn công|thương lượng' <<<"$SAU_SO" && echo 0 || echo 1)"
 # SRS-5.1zzzzzzz75: bot không có số liệu thị trường — không được khen "thanh khoản", "người mua tìm nhiều", bình giá "hợp lý / vừa tầm".
 kiem "Âu Cơ: không nhận định thị trường / bình giá" "$(grep -qiE 'thanh khoản|tìm (mua )?nhiều|hợp lý|vừa tầm' <<<"$LOI_BOT" && echo 0 || echo 1)"
 # Kịch bản 3 (SRS-5.1zzzzzzz79): khách trả lời ĐÚNG THEO CỤM bot hỏi — bản nháp phải ra trong ≤ 4 lượt (chỉ số hỏi theo cụm; hai kịch
@@ -110,6 +111,13 @@ done
 echo "== Nguyễn Trãi (trả lời theo cụm): số lượt tới bản nháp: ${LUOT_NHAP:-chưa ra} / $LUOT lượt"
 kiem "Nguyễn Trãi: trả lời theo cụm thì ra bản nháp trong ≤ 4 lượt" "$([ -n "$LUOT_NHAP" ] && [ "$LUOT_NHAP" -le 4 ] && echo 1 || echo 0)"
 # Lượt đầu khách chưa nói phường: phường từ kho chỉ được nhắc dạng hỏi, không khẳng định.
+# SRS-5.1zzzzzzz81: khách duyệt bản nháp → bot hỏi khách biết phí môi giới chưa (như bản anh Luận), không tự báo con số. Tin chưa
+# lên web (còn thiếu ô) thì lượt đó hỏi ô thiếu trước, không hỏi phí.
+chat "$BAN3" "ok em, đăng đi"
+DUYET=$(jq -r '.reply // ""' <<<"$TRA")
+if grep -qi 'aioinhadat' <<<"$DUYET"; then
+  kiem "Nguyễn Trãi: khách duyệt → hỏi biết phí môi giới chưa, không tự báo con số" "$(grep -qi 'phí' <<<"$DUYET" && ! grep -qE '[0-9] ?%' <<<"$DUYET" && echo 1 || echo 0)"
+else echo "== Nguyễn Trãi: tin chưa lên web sau khi duyệt — không soát câu phí lượt này"; fi
 kiem "Nguyễn Trãi: lượt đầu không khẳng định phường từ kho" "$(grep -oiE '(thuộc|nằm ở|ở) (khu vực )?phường [^?.!]*([.!]|$)' <<<"$LOI_DAU" | grep -qviE 'phường nào' && echo 0 || echo 1)"
 # SRS-5.1zzzzzzz80: bắn thử 20/10 có 2/3 kịch bản bot mở đầu "Dạ không, em ghi nhận…" khi khách không hỏi gì.
 kiem "mọi kịch bản: không bong bóng nào mở đầu \"Dạ không\"" "$(grep -qE '^Dạ không' <<<"$MOI_LOI" && echo 0 || echo 1)"

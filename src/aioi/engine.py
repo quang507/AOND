@@ -400,9 +400,10 @@ class Conversation:
     def listing_proposed(self, value: bool) -> None:
         self.active.listing_proposed = value
 
-    def messages(self, limit: int = 16) -> list[Message]:
+    def messages(self, limit: int = 30) -> list[Message]:
         # Only the ACTIVE listing's turns — so a new listing doesn't inherit the prior
         # one's address/details (the Zalo thread is shared, but each căn reads clean).
+        # 20/10/2026 (SRS-5.1zzzzzzz81; chủ dự án "Bot nhớ 30, theo anh Luận"): 16 → 30 tin như MAX_HISTORY_TURNS bản anh Luận.
         turns = self.history[self.active.history_start:]
         if limit and len(turns) > limit:
             turns = turns[-limit:]

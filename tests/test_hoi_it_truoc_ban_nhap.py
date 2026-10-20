@@ -11,18 +11,17 @@ def _au_co(**them):
     return Property(loai_hinh="nha_pho", fields=f)
 
 
-def test_so_rieng_thi_khong_hoi_rieng_hoan_cong_va_hien_trang_hoi_sau():
+def test_so_rieng_thi_khong_hoi_rieng_hoan_cong():
     p = _au_co()
-    assert p.missing_fields() == ["dien_tich_nha"]          # chỉ còn diện tích sàn, không hoàn công, không đang ở / cho thuê
+    # 20/10 (SRS-5.1zzzzzzz81): hiện trạng lại hỏi trước bản nháp như bản anh Luận; hoàn công vẫn không hỏi riêng khi đã nói sổ.
+    assert p.missing_fields() == ["dien_tich_nha", "tinh_trang_ban_giao"]
     assert not p.summary_ready()
 
 
-def test_du_dien_tich_san_la_ra_ban_nhap_hien_trang_hoi_sau_khi_duyet():
-    from aioi.prompts import build_fee_followup_system
+def test_du_dien_tich_san_la_ra_ban_nhap():
     p = _au_co(dien_tich_nha="240m2")
-    assert p.summary_ready()
-    assert p.cau_hoi_sau_ra_tin() == "tinh_trang_ban_giao"
-    assert "đang ở hay đang cho thuê" in build_fee_followup_system("Hằng", p)
+    assert p.summary_ready()                                 # 8/9 ô ≥ 75% như bản anh Luận, hiện trạng không chặn
+    assert p.cau_hoi_sau_ra_tin() is None
 
 
 def test_cau_hoi_dien_tich_san_khong_bi_coi_la_xong_khi_da_biet_so_tang():

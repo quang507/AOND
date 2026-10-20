@@ -6858,6 +6858,37 @@ cùng lớp:** luật cấm khác cũng chỉ nói phủ định (cấm nhại l
 sau). Ca 1 đỏ khi tắt đếm lờ (đã chạy). pytest 418 đạt. Lỗi "Dạ không" là hành vi model, không kiểm offline được — kiểm bằng
 `ban-thu-ban`.
 
+### SRS-5.1zzzzzzz81 · Theo bản anh Luận: hỏi phí khi duyệt, hẻm + hiện trạng trước bản nháp, nhớ 30 tin (20/10/2026)
+
+**Ca gốc.** So luồng chat người bán với `luan8560/AOND` `ffd3684` (19/10). Chủ dự án chốt từng điểm: "anh Luận hỏi luôn 'anh có biết phí
+môi giới của tụi em chưa ạ?' — theo anh Luận"; "Hẻm / mặt tiền và hiện trạng (đang ở hay cho thuê): anh Luận hỏi trước bản nháp, theo anh
+Luận"; "Bot nhớ 30, theo anh Luận". Giữ nguyên bên mình: "hello / chào em" làm mới phiên (chủ dự án: "cái này giữ nguyên"), lời chào
+hai lựa chọn bán / mua ("vừa mua vừa bán luôn"), hỏi theo cụm, khen ít, cấm "Dạ", tên trợ lý người thật.
+
+**Quyết định đè.** Quyết định 18/10 ("độ rộng hẻm ko bắt buộc, hỏi sau khi ra tin") và 19/10 (SRS-5.1zzzzzzz76 — hiện trạng hỏi sau bản
+nháp) bỏ; lượt duyệt "TẠM BỎ QUA BƯỚC HỎI PHÍ" bỏ.
+
+**Lớp lỗi.** Không phải lỗi máy: hai bản lệch nhau vì mỗi bên chốt riêng mà không có bảng đối chiếu. **Chỗ cùng lớp đã soát** (bảng so
+đủ 7 mục ở phiên 20/10): khung bản nháp (giống: tiêu đề 15–25 từ, mô tả 70–150 từ, 4–5 gạch, không phí), một bong bóng cho tin rao
+(`ffd3684` — bên mình đã có), thuyết phục khi chê phí (giống), điều kiện ra nháp 0.75 (giống; bên mình thêm ô bắt buộc tên đường / phường
+cho DB).
+
+**Sửa.**
+- `src/aioi/schema.py`: `HOI_SAU_KHI_RA_TIN` để trống — hẻm / mặt tiền và hiện trạng lại nằm trong `missing_fields`. Gộp cụm: hẻm cùng
+  (địa chỉ · phường), hiện trạng cùng (pháp lý · giá). `cau_hoi_sau_ra_tin` chỉ còn ô khách lờ 2 lần (SRS-5.1zzzzzzz80).
+- `src/aioi/prompts.py` `build_fee_followup_system`: khách duyệt → xác nhận theo trạng thái web thật rồi hỏi "anh/chị có biết phí môi
+  giới của tụi em chưa ạ?" (câu hỏi duy nhất của lượt), chỉ báo con số khi khách hỏi — như bản anh Luận. Tin chưa lên web (còn thiếu
+  ô) thì lượt đó hỏi ô thiếu, không thêm câu phí. Ô để sau hỏi từ lượt sau lượt phí. Luật 6 thêm ví dụ câu hỏi có/không ("em biết
+  đường đó ko" → "Em biết đường Âu Cơ anh.") — bắn thử cd1fd1c: "Dạ không, em biết đường Âu Cơ…".
+- `src/aioi/engine.py` `Conversation.messages`: 16 → 30 tin gửi model, như `MAX_HISTORY_TURNS` bản anh Luận. Ô tin đã ghi (`ĐÃ BIẾT`)
+  vẫn đi kèm mọi lượt nên chuyện cũ hơn 30 tin không mất dữ kiện, chỉ mất lời nguyên văn.
+- `bot/tests/ban-thu-ban.sh`: Âu Cơ thôi soát "không hỏi hiện trạng"; Nguyễn Trãi thêm lượt "ok em, đăng đi" → soát câu phí (khi tin
+  đã lên web), không tự báo con số %.
+
+**Kiểm.** `tests/test_ban_nhap_du_dieu_kien.py::test_hem_va_hien_trang_hoi_truoc_ban_nhap` (thay test hẻm hỏi sau), `test_trang_thai_web`
+(câu phí khi duyệt, không câu phí khi tin chưa lên web), `test_tin_rao_bo_cuc::test_tran_lich_su_gui_model` (30), `test_hoi_it_truoc_ban_nhap`
+— 5 ca đỏ trên code cũ (đã chạy). pytest 419 đạt. Model thật: `ban-thu-ban`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

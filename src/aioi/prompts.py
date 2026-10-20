@@ -439,7 +439,8 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
      "Căn nhà mình nằm ở mặt tiền hay trong hẻm vậy anh/chị?"
    - CÂU ĐẦU ĐI THẲNG VÀO ĐIỀU KHÁCH VỪA NÓI (vd khách: "Phường Chợ Quán em" → "Phường Chợ Quán, em ghi rồi chị."). Chữ "không" ở
      đầu câu là TRẢ LỜI "không" cho một câu khách hỏi — khách không hỏi gì thì câu đầu không có chữ "không" (bắn thử 20/10:
-     "Dạ không, em ghi nhận…" khi khách chỉ báo số nhà — SRS-5.1zzzzzzz80).
+     "Dạ không, em ghi nhận…" khi khách chỉ báo số nhà — SRS-5.1zzzzzzz80). Khách hỏi có/không ("em biết đường đó ko") thì câu
+     đầu trả lời đúng ý: biết thì nói biết (vd "Em biết đường Âu Cơ anh."), không mở bằng "không" rồi lại nói biết.
    - ĐẶC BIỆT KHI KHÁCH XƯNG "EM" (vd "nhà em...", "em gửi..."): TUYỆT ĐỐI CẤM DÙNG TỪ "DẠ"! Gọi khách là "em", bản thân xưng "mình" hoặc "anh/chị".
 7. TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Không viết đậm chữ nào.
 8. KHÔNG KHEN THẢO MAI: Không khen những thông số kỹ thuật bình thường, không độn câu khen cho đủ độ dài.
@@ -680,7 +681,6 @@ def build_fee_followup_system(
     """
     fee_hint = _fee_hint(user_type)
     fee_block = ("\n" + fee_hint) if fee_hint else ""
-    # 18/10/2026: độ rộng hẻm không chặn bản nháp — hỏi MỘT câu sau khi khách duyệt tin (schema.HOI_SAU_KHI_RA_TIN).
     xac_nhan, hoi_link = khoi_trang_thai_web(web)
     khong_dong_y = ""
     if duyet == "khong_dong_y":
@@ -689,24 +689,20 @@ def build_fee_followup_system(
             "đồng ý. Nếu khách đã nói cần sửa gì thì sửa và rao lại bản tin cập nhật rồi hỏi lại đã được chưa; nếu chưa nói thì "
             "hỏi ĐÚNG 1 câu nhẹ nhàng khách muốn chỉnh chỗ nào (tiêu đề, giá, mô tả, thông tin nhà) hay tạm thời chưa muốn đăng."
         )
+    # SRS-5.1zzzzzzz81 (chủ dự án: "theo anh Luận"): khách duyệt → hỏi khách biết phí chưa. Tin chưa lên web thì lượt đó đã phải hỏi
+    # ô còn thiếu (`khoi_trang_thai_web`) — không thêm câu phí cho khỏi thành hai câu hỏi.
+    hoi_phi = (
+        "\n  • RỒI HỎI PHÍ NHẸ NHÀNG như bản anh Luận: hỏi khách đã biết phí môi giới bên mình chưa, theo tinh thần \"Em sẽ cho chào "
+        "căn nhà của anh/chị ngay ạ, mà anh/chị có biết phí môi giới của tụi em chưa ạ?\" — đây là câu hỏi DUY NHẤT của lượt này. "
+        "Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách."
+        if (web is None or web.get("len_web")) else ""
+    )
     hoi_sau = ""
     o_sau = prop.cau_hoi_sau_ra_tin() if (web is None or web.get("len_web")) else None
-    if o_sau == "lo_gioi_hem":
-        y = ("hẻm trước nhà rộng khoảng mấy mét, xe hơi vào tận nhà được không" if prop.fields.get("lo_gioi_hem")
-             else "nhà nằm mặt tiền hay trong hẻm, nếu hẻm thì rộng khoảng mấy mét")
+    if o_sau:   # SRS-5.1zzzzzzz80: ô khách lờ 2 lần trước bản nháp — hỏi lại một lần, SAU lượt nói chuyện phí (lượt duyệt chỉ hỏi phí)
         hoi_sau = (
-            f"\n  • BỔ SUNG SAU KHI DUYỆT: sau câu xác nhận đăng, hỏi thêm ĐÚNG 1 câu ngắn: {y} — để bổ sung vào tin cho "
-            "khách mua dễ hình dung. Chỉ hỏi 1 lần; khách đã nói độ rộng hẻm hoặc nhà mặt tiền thì không hỏi."
-        )
-    elif o_sau == "tinh_trang_ban_giao":   # SRS-5.1zzzzzzz76: hiện trạng hỏi sau bản nháp
-        hoi_sau = (
-            "\n  • BỔ SUNG SAU KHI DUYỆT: sau câu xác nhận đăng, hỏi thêm ĐÚNG 1 câu ngắn: nhà đang ở hay đang cho thuê — để "
-            "hẹn khách xem cho tiện. Khách đã nói rồi thì không hỏi."
-        )
-    elif o_sau:   # SRS-5.1zzzzzzz80: ô khách lờ 2 lần trước bản nháp — hỏi lại một lần sau khi duyệt
-        hoi_sau = (
-            f"\n  • BỔ SUNG SAU KHI DUYỆT: sau câu xác nhận đăng, hỏi thêm ĐÚNG 1 câu ngắn về \"{FIELD_LABELS.get(o_sau, o_sau)}\" "
-            f"({NATURAL_QUESTIONS.get(o_sau, '')}) — để tin đầy đủ hơn. Khách chưa tiện thì thôi, không hỏi lại."
+            f"\n- TỪ LƯỢT SAU LƯỢT DUYỆT (khách đã trả lời chuyện phí): tin còn thiếu \"{FIELD_LABELS.get(o_sau, o_sau)}\" — hỏi thêm ĐÚNG "
+            f"1 câu ngắn ({NATURAL_QUESTIONS.get(o_sau, '')}) để tin đầy đủ hơn. Khách chưa tiện thì thôi, không hỏi lại."
         )
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
@@ -714,8 +710,7 @@ def build_fee_followup_system(
 {project_block}
 NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem bản tin rao và hỏi họ thấy hấp dẫn chưa. Hãy đọc phản hồi MỚI NHẤT của khách:{khong_dong_y}
 - NẾU khách ĐỒNG Ý / DUYỆT / BẢO ĐĂNG TIN (vd: "đăng đi", "lên bài đi", "lên tin đi", "đăng tin đi", "ok em", "được rồi", "chuẩn rồi em", "không cần sửa gì", hoặc thả tim/like):
-  • TẠM BỎ QUA BƯỚC HỎI PHÍ: Tuyệt đối KHÔNG hỏi phí môi giới ở lượt này (không hỏi "anh có biết phí môi giới của tụi em chưa ạ?").
-{xac_nhan}{hoi_sau}
+{xac_nhan}{hoi_phi}{hoi_sau}
 - NẾU khách HỎI LINK BÀI ĐĂNG HOẶC HỎI TRÊN WEB ĐĂNG NHƯ THẾ NÀO (vd: "đang đăng web như thế nào", "xem tin ở đâu", "cho xin link web", "link đâu"):
 {hoi_link}
 - NẾU khách muốn CHỈNH SỬA THẬT SỰ (vd "tiêu đề nhiều thông tin quá", "đổi tiêu đề...", "giá sửa lại...", "nhà có 3 lầu..."):

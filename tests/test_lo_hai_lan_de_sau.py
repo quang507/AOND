@@ -16,21 +16,21 @@ def _conv(**f):
 
 def test_lo_hai_lan_thi_de_sau_va_ra_ban_nhap():
     c = _conv(duong="Cao Lỗ", dia_chi="Cao Lỗ", phuong="Phường Chánh Hưng", quan="Quận 8", lo_gioi_hem="mặt tiền",
-              dien_tich_dat="4,5x11", ket_cau="1 trệt 3 lầu", phap_ly="sổ riêng", gia="8,5 tỷ")
+              dien_tich_dat="4,5x11", ket_cau="1 trệt 3 lầu", phap_ly="sổ riêng", gia="8,5 tỷ", tinh_trang_ban_giao="đang ở")
     p = c.prop
     assert p.missing_fields() == ["dien_tich_nha"] and not p.summary_ready()
     assert Engine._o_hoi_ke(c, p.missing_fields()) == "dien_tich_nha"     # hỏi lần 1
     assert Engine._o_hoi_ke(c, p.missing_fields()) == "dien_tich_nha"     # khách lờ lần 1: còn mỗi ô này nên hỏi lại
     assert Engine._o_hoi_ke(c, p.missing_fields()) is None                # lờ lần 2: để sau
     assert "dien_tich_nha" in p.hoan and p.missing_fields() == [] and p.summary_ready()
-    assert p.cau_hoi_sau_ra_tin() in ("tinh_trang_ban_giao", "dien_tich_nha")
+    assert p.cau_hoi_sau_ra_tin() == "dien_tich_nha"
 
 
 def test_hoi_lai_sau_khi_duyet():
     p = Property(loai_hinh="nha_pho", fields=dict(lo_gioi_hem="mặt tiền", tinh_trang_ban_giao="đang ở"))
     p.hoan.add("dien_tich_nha")
     assert p.cau_hoi_sau_ra_tin() == "dien_tich_nha"
-    assert "BỔ SUNG SAU KHI DUYỆT" in build_fee_followup_system("Hằng", p)
+    assert "TỪ LƯỢT SAU LƯỢT DUYỆT" in build_fee_followup_system("Hằng", p)
 
 
 def test_gia_dia_chi_khong_bao_gio_de_sau():
