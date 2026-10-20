@@ -18,6 +18,7 @@ from .schema import (
     RENTAL_FIELDS,
     SECONDARY_FIELDS,
     Property,
+    PropertyGroup,
     BuyerLead,
 )
 
@@ -399,15 +400,15 @@ def build_chat_system(
         )
     elif cum and len(cum) > 1:
         # SRS-5.1zzzzzzz79 (chủ dự án: "hỏi theo cụm"): gộp các ý cùng cụm vào MỘT câu, như môi giới hỏi.
-        y = "; ".join(f'"{FIELD_LABELS.get(o, o)}" ({NATURAL_QUESTIONS.get(o, "hỏi thêm " + FIELD_LABELS.get(o, o))})' for o in cum)
+        y = "; ".join(f'"{nhan_o(o, prop)}" ({cau_hoi_o(o, prop)})' for o in cum)
         ask_line = (
             f"Thông tin cần hỏi tiếp theo (MỘT CỤM, hỏi gộp): {y}. Tiếp nhận nhanh gọn, tự nhiên rồi hỏi GỘP các ý này trong MỘT câu "
             'ngắn như môi giới (vd "Nhà mình ngang dài bao nhiêu, xây mấy tầng vậy anh?"). Ý nào khách vừa nói rồi thì bỏ. CHỈ hỏi các ý '
             "trong cụm — KHÔNG tự hỏi ý khác (thương lượng, lý do bán, thế chấp…); khách tự nói thì ghi nhận."
         )
     else:
-        label = FIELD_LABELS.get(next_field, next_field or "")
-        natural = NATURAL_QUESTIONS.get(next_field, f"hỏi thêm {label}")
+        label = nhan_o(next_field, prop) if next_field else ""
+        natural = cau_hoi_o(next_field, prop) if next_field else ""
         ask_line = (
             f'Thông tin cần hỏi tiếp theo: "{label}". Mục tiêu: {natural}. Tiếp nhận nhanh gọn, tự nhiên (TUYỆT ĐỐI KHÔNG nịnh bợ, KHÔNG mở đầu bằng từ "Dạ", KHÔNG khen các thông số kỹ thuật thông thường), rồi hỏi đúng 1 ý này một cách khéo léo. CHỈ hỏi ý này — KHÔNG tự hỏi ý khác ngoài danh sách (thương lượng, lý do bán, '
             'thế chấp…); khách tự nói thì ghi nhận.'
@@ -496,6 +497,28 @@ def build_greeting(assistant_name: str) -> str:
     )
 
 
+# Ô dùng chung nhiều loại BĐS mà nhãn / câu hỏi viết theo căn hộ (SRS-5.1zzzzzzz86): bắn thử KB2 nhà phố LakeView City bị hỏi "mã
+# căn hoặc số nhà, tầng và tòa" — nhà phố, đất nền trong dự án không có tầng, tòa. Ngoài nhóm căn hộ thì dùng nhãn / câu ở đây.
+O_NGOAI_CAN_HO: dict[str, tuple[str, str]] = {
+    "ma_so_can": ("mã căn / số lô hoặc số nhà trong dự án",
+                  "Hỏi mã căn (số lô) hoặc số nhà của căn trong dự án — KHÔNG hỏi tầng, tòa (chỉ căn hộ chung cư mới có)"),
+}
+
+
+def nhan_o(o: str, prop: Property | None = None) -> str:
+    """Nhãn ô cho model theo loại căn — MỘT chỗ chọn (FIELD_LABELS, đè bằng O_NGOAI_CAN_HO ngoài nhóm căn hộ)."""
+    if prop is not None and prop.group is not PropertyGroup.CONDO and o in O_NGOAI_CAN_HO:
+        return O_NGOAI_CAN_HO[o][0]
+    return FIELD_LABELS.get(o, o)
+
+
+def cau_hoi_o(o: str, prop: Property | None = None) -> str:
+    """Gợi ý câu hỏi cho ô theo loại căn (NATURAL_QUESTIONS, đè bằng O_NGOAI_CAN_HO ngoài nhóm căn hộ)."""
+    if prop is not None and prop.group is not PropertyGroup.CONDO and o in O_NGOAI_CAN_HO:
+        return O_NGOAI_CAN_HO[o][1]
+    return NATURAL_QUESTIONS.get(o, f"hỏi thêm {nhan_o(o, prop)}")
+
+
 def describe_captured(prop: Property) -> str:
     """Render every filled field as 'Nhãn: giá trị' lines for the listing-post prompt."""
     lines: list[str] = []
@@ -510,11 +533,11 @@ def describe_captured(prop: Property) -> str:
         seen.add(slug)
         value = prop.fields.get(slug)
         if value:
-            lines.append(f"- {FIELD_LABELS.get(slug, slug)}: {value}")
+            lines.append(f"- {nhan_o(slug, prop)}: {value}")
     for slug, value in prop.fields_khach().items():
         if slug not in seen and value:
             seen.add(slug)
-            lines.append(f"- {FIELD_LABELS.get(slug, slug)}: {value}")
+            lines.append(f"- {nhan_o(slug, prop)}: {value}")
     return "\n".join(lines)
 
 
@@ -559,13 +582,13 @@ là bên em hiện chưa nhận rao khu vực {tinh}, và nếu khách có căn 
 KHÔNG hỏi thêm thông tin căn này, KHÔNG soạn tin rao, KHÔNG hứa sẽ mở khu vực đó. Câu đầu mở bằng nội dung, không mở bằng "Dạ"."""
 
 
-def khoi_xin_dang(thieu: list[str]) -> str:
+def khoi_xin_dang(thieu: list[str], prop: Property | None = None) -> str:
     """Khách bảo đăng mà tin còn thiếu ô BẮT BUỘC (không có thì không có tin để rao / DB không đăng được): nói ngắn còn thiếu đúng ý
     đó rồi hỏi — KHÔNG soạn bài đăng giả (SRS-5.1zzzzzzz86; bắn thử KB1/KB2: bài đăng không 📋, hệ thống không ghi là bản nháp nên
     khách duyệt cũng không ghi được, tin nằm mãi chờ thông tin)."""
     if not thieu:
         return ""
-    y = ", ".join(f'"{FIELD_LABELS.get(o, o)}"' for o in thieu)
+    y = ", ".join(f'"{nhan_o(o, prop)}"' for o in thieu)
     return (f"\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN ===\nTin còn thiếu {y} — thiếu là chưa đăng được. Nói ngắn: còn thiếu ý này là em lên bản "
             "nháp liền, rồi hỏi đúng ý đó (theo \"Thông tin cần hỏi tiếp theo\"). KHÔNG soạn bài đăng, KHÔNG nói đã đăng.\n")
 
@@ -738,8 +761,8 @@ def build_fee_followup_system(
     o_sau = prop.cau_hoi_sau_ra_tin() if (web is None or web.get("len_web")) else None
     if o_sau:   # SRS-5.1zzzzzzz80: ô khách lờ 2 lần trước bản nháp — hỏi lại một lần, SAU lượt nói chuyện phí (lượt duyệt chỉ hỏi phí)
         hoi_sau = (
-            f"\n- TỪ LƯỢT SAU LƯỢT DUYỆT (khách đã trả lời chuyện phí): tin còn thiếu \"{FIELD_LABELS.get(o_sau, o_sau)}\" — hỏi thêm ĐÚNG "
-            f"1 câu ngắn ({NATURAL_QUESTIONS.get(o_sau, '')}) để tin đầy đủ hơn. Khách chưa tiện thì thôi, không hỏi lại."
+            f"\n- TỪ LƯỢT SAU LƯỢT DUYỆT (khách đã trả lời chuyện phí): tin còn thiếu \"{nhan_o(o_sau, prop)}\" — hỏi thêm ĐÚNG "
+            f"1 câu ngắn ({cau_hoi_o(o_sau, prop)}) để tin đầy đủ hơn. Khách chưa tiện thì thôi, không hỏi lại."
         )
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
@@ -800,8 +823,8 @@ DỮ LIỆU ĐÃ BIẾT VỀ CĂN NÀY (ĐÃ THU THẬP TỪ TRƯỚC - TUYỆT 
 
     next_guide = ""
     if next_field:
-        label = FIELD_LABELS.get(next_field, next_field)
-        natural = NATURAL_QUESTIONS.get(next_field, f"hỏi thêm {label}")
+        label = nhan_o(next_field, prop)
+        natural = cau_hoi_o(next_field, prop)
         next_guide = f"""
 MỤC TIÊU HỎI TIẾP THEO: Sau khi ghi nhận ngắn gọn ảnh, hãy hỏi tiếp thông tin: "{label}".
 Gợi ý câu hỏi: {natural}.

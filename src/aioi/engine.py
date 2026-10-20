@@ -1854,7 +1854,7 @@ class Engine:
         if not is_listing_post:
             system = build_chat_system(
                 conv.assistant.name, conv.prop, next_field, conv.user_type, project_block, cum=cum_hoi
-            ) + khoi_xin_dang(toi_thieu)
+            ) + khoi_xin_dang(toi_thieu, conv.prop)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
             trinh_nhap = True
