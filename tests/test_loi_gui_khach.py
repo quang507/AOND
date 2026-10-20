@@ -74,9 +74,27 @@ def test_o_loi_gui_khach_rong_thi_goi_lai_mot_lan():
     assert len(p._client.messages.calls) == 2 and loi_ghi and "rỗng" in loi_ghi[0][1]
 
 
+def test_ten_o_go_co_dau_van_nhan_khong_goi_lai():
+    # Bắn thử 20/10 (run 39358553275): Haiku trả ô "loi_gui_khách" (có dấu) → lời rỗng, tốn một lượt gọi lại (SRS-5.1zzzzzzz81).
+    from aioi.llm.claude import ClaudeProvider
+
+    class Api(_Api):
+        def create(self, **kw):
+            r = super().create(**kw)
+            r.content[1].input = {"tu_soat": "…", "loi_gui_khách": "Giá anh mong muốn bao nhiêu ạ?"}
+            return r
+
+    p = ClaudeProvider(Settings(provider="claude", anthropic_api_key="test", chat_model="claude-haiku-4-5", vision_model="v"))
+    p._client = SimpleNamespace(messages=Api())
+    p._so = SoToken(None, nen=False)
+    assert p.reply("s", [Message("user", "Phường 9 em")]) == "Giá anh mong muốn bao nhiêu ạ?"
+    assert len(p._client.messages.calls) == 1
+
 def test_ban_nhap_bo_cau_dan_truoc_dong_mo_dau():
     from aioi.prompts import MO_DAU_NHAP, cat_truoc_mo_dau
     nhap = f"{MO_DAU_NHAP[1]}\n\nBán nhà phố mặt tiền Âu Cơ…"
     assert cat_truoc_mo_dau("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như vầy nhé anh:\n\n" + nhap) == nhap
     assert cat_truoc_mo_dau(nhap) == nhap
+    # SRS-5.1zzzzzzz80: model chép dòng mở đầu thiếu 📋 → vẫn bỏ câu dẫn và gắn lại đúng dòng cố định
+    assert cat_truoc_mo_dau("Em ghi nhận đủ thông tin rồi anh ạ. " + nhap.removeprefix("📋 ")) == nhap
     assert cat_truoc_mo_dau("Anh cho em hỏi giá nhé?") == "Anh cho em hỏi giá nhé?"

@@ -53,8 +53,8 @@ def test_dynamic_pivoting_mid_conversation():
     prop.update({"dia_chi": "45 Lê Duẩn, Quận 1", "dien_tich_dat": "100m2"})
     assert prop.group == PropertyGroup.RESIDENTIAL
     assert "ket_cau" in prop.missing_fields()
-    # 18/10/2026: độ rộng hẻm hỏi SAU khi ra tin, không nằm trong câu hỏi trước bản nháp.
-    assert prop.cau_hoi_sau_ra_tin() == "lo_gioi_hem"
+    # 20/10/2026 (SRS-5.1zzzzzzz81): hẻm / mặt tiền hỏi TRƯỚC bản nháp như bản anh Luận.
+    assert "lo_gioi_hem" in prop.missing_fields() and prop.cau_hoi_sau_ra_tin() is None
 
     # Customer changes mind: "Thực ra anh chỉ cho thuê mặt bằng tầng trệt giá 50tr"
     prop.update({"loai_hinh": "mat_bang", "gia": "50 triệu/tháng"})

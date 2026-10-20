@@ -6788,6 +6788,112 @@ từng phần tử, bỏ qua `}` / `,` / khoảng trắng lạc giữa các ph�
 thì vẫn nhận ô chữ theo cụm trích, chuỗi JSON không chặt vẫn giải, thừa ngoặc đóng vẫn đọc được, giải không được thì gọi lại một lần — đỏ trên code cũ, ca `bang_chung` / gọi lại đỏ khi chỉ bỏ phần engine, đã chạy), pytest 412 đạt. Model thật: bắn thử
 `ban-thu-ban` tuần tự, đọc lại dòng `Kế hoạch:`.
 
+### SRS-5.1zzzzzzz79 · Hỏi theo cụm; ra bản nháp theo công thức bản anh Luận (20/10/2026)
+
+**Ca gốc.** Chủ dự án: "nó hỏi nhiều quá chán chết được" (19/10), rồi "hỏi theo cụm… giờ nên ra bản nháp khi nào học theo anh Luận".
+Bắn thử 19/10: nhà phố cần 7–9 lượt mới thấy bản nháp — mỗi lượt bot hỏi đúng một ô (luật "CHỈ HỎI ĐÚNG 1 CÂU HỎI… cấm 'và'").
+
+**Lớp lỗi.** Đơn vị hỏi là MỘT Ô, không phải một ý môi giới: các ô luôn đi cùng nhau (ngang dài · diện tích sàn · số tầng; sổ · giá)
+bị tách ra từng lượt, và luật prompt cấm gộp. **Chỗ cùng lớp đã soát:** lượt trả lời có ảnh (`handle_media_batch` — vẫn hỏi một ô, câu
+kèm ảnh vốn ngắn); lời nhắc khi khách im (`followup.cau_nhac` — nhắc đúng câu bot vừa hỏi, giữ); câu hỏi sau bản nháp (từng ô, giữ).
+
+**Sửa.**
+- `src/aioi/schema.py` `CUM_HOI` + `Property.cum_hoi`: ô thiếu đầu tiên quyết cụm, lượt đó hỏi các ô còn thiếu cùng cụm (tối đa 3):
+  (địa chỉ · phường), (diện tích đất · diện tích nhà · kích thước · kết cấu), (diện tích · phòng ngủ — căn hộ), (pháp lý · giá),
+  (dự án · tầng/toà). Ô ngoài cụm hỏi riêng như cũ.
+- `src/aioi/engine.py`: lượt trả lời đưa cụm cho prompt; `_o_hoi_ke` — khách lờ cả cụm thì lùi CẢ CỤM xuống cuối (bản trước chỉ lùi một ô,
+  nay ô cùng cụm sẽ bị hỏi tiếp ngay).
+- `src/aioi/prompts.py` `build_chat_system(cum=…)`: khối "MỘT CỤM, hỏi gộp" — một câu ngắn kiểu môi giới; luật số 4 và `CONVERSATION_POLICY`
+  đổi từ "chỉ một ý" sang "một câu hỏi, gộp được các ý trong cụm, không hỏi ý ngoài cụm".
+- Ra bản nháp theo bản anh Luận (`luan8560/AOND` `schema.summary_ready`): đủ ô nhận diện + completeness ≥ **0.75 trên MỌI ô mong đợi**
+  (bản mình trước: 0.70 trên ô hỏi trước bản nháp). Giữ ô bắt buộc riêng (tên đường, phường — DB cần mới đăng) và thêm chốt: hết ô để hỏi
+  trước bản nháp thì ra nháp, không kẹt (ô hỏi sau bản nháp vẫn tính vào % nhưng không hỏi trước). Nhà phố: ngoài 5 ô nhận diện cần thêm
+  ≥ 2 trong kết cấu / hẻm-mặt tiền / pháp lý / hiện trạng.
+- `bot/tests/ban-thu-ban.sh` in chỉ số "số lượt tới bản nháp". Hai kịch bản cũ mỗi lượt khách chỉ nói một ý nên luôn ra nháp ở lượt
+  cuối (bắn thử: 9/9, 8/8) — không đo được lợi ích; thêm kịch bản 3 khách trả lời ĐÚNG THEO CỤM, phải ra nháp trong ≤ 4 lượt.
+- Bắn thử lần 1: câu hỏi cụm diện tích ra 4 ý ("ngang dài, sàn, mấy tầng, mấy phòng ngủ") — bỏ `kich_thuoc` khỏi cụm (cách nói khác của
+  diện tích đất). Cùng lượt: lượt đầu bot nói "đường Âu Cơ thuộc khu vực Phường Hòa Bình" rồi hỏi phường — `dia_danh.khoi_dia_danh` nay
+  chỉ cho nhắc phường kho ở dạng HỎI, không khẳng định; kịch bản 3 soát lượt đầu.
+
+**Kiểm.** `tests/test_hoi_theo_cum.py` (3 ca: cụm diện tích + kết cấu hỏi gộp, ô ngoài cụm hỏi riêng, ngưỡng bản anh Luận — đỏ trên code
+cũ, đã chạy); `tests/test_bot_bot_hoi_lap.py` sửa theo luật lùi cả cụm. pytest 415 đạt. Model thật: `ban-thu-ban` tuần tự.
+
+### SRS-5.1zzzzzzz80 · Khách lờ 2 lần thì để sau bản nháp; bỏ mở đầu "Dạ không" (20/10/2026)
+
+**Ca gốc.** Chủ dự án: "khách lờ 2 lần thì để sau". Bắn thử 20/10 (run 39354622826, kịch bản Cao Lỗ): bot hỏi diện tích sàn ở 4 lượt
+liền trong lúc khách cứ trả lời ý khác (sổ, giá, hoàn công). Cùng run, 2/3 kịch bản có bong bóng mở đầu "Dạ không, em ghi nhận…" khi
+khách chỉ báo phường / số nhà, không hỏi gì — đọc như bot trả lời "không".
+
+**Lớp lỗi 1.** Chọn ô hỏi chỉ nhìn "ô nào còn trống", không nhớ khách đã lờ ô đó bao nhiêu lần. `_o_hoi_ke` (SRS-5.1zzzzzzz74) chỉ
+lùi ô vừa hỏi khi còn ô khác; khi ô bị lờ là ô CUỐI CÙNG trước bản nháp thì lượt nào cũng bốc lại nó, và bản nháp bị chặn vì ô đó.
+**Chỗ cùng lớp đã soát:** lời nhắc khi khách im (`followup.cau_nhac` — khách im là chưa nhắn gì, không phải trả lời ý khác; nhắc đúng câu vừa hỏi, giữ); câu hỏi
+sau bản nháp (`cau_hoi_sau_ra_tin` — mỗi ô hỏi một lần, giữ); lượt có ảnh (`handle_media_batch` — dùng cùng `missing_fields`, nên ô
+để sau cũng không bị hỏi ở đó).
+
+**Lớp lỗi 2.** Prompt nhắc "KHÔNG mở đầu bằng 'Dạ'" 6 lần mà không nói câu đầu nên là gì; Haiku vẫn viết "Dạ" rồi nối "không". **Chỗ
+cùng lớp:** luật cấm khác cũng chỉ nói phủ định (cấm nhại lời khách, cấm khen) — đã có ví dụ câu đúng đi kèm, giữ.
+
+**Sửa.**
+- `src/aioi/schema.py`: `Property.hoan` (tạm, không lưu DB) — ô khách đã lờ 2 lần. `missing_fields` bỏ chúng, `summary_ready` không đòi
+  ô nhận diện nằm trong đó, `cau_hoi_sau_ra_tin` hỏi lại chúng một lần sau khi duyệt. `hoan_duoc`: loại, địa chỉ, dự án, mã căn, giá
+  và ô bắt buộc (tên đường, phường…) không bao giờ để sau — thiếu chúng thì không có tin để rao.
+- `src/aioi/engine.py` `_o_hoi_ke`: ô vừa hỏi mà lượt sau vẫn trống là một lần lờ (`Conversation.lo`); lần thứ 2 thì cả cụm của ô đó để
+  sau. Lượt trả lời tính lại `missing_fields` sau `_o_hoi_ke`, nên lượt đó ra bản nháp luôn nếu hết ô.
+- `src/aioi/prompts.py`: luật số 6 thêm câu nói nên làm gì ("câu đầu đi thẳng vào điều khách vừa nói", có ví dụ; chữ "không" đầu câu
+  chỉ để trả lời câu khách hỏi). `build_fee_followup_system` có nhánh hỏi lại ô để sau.
+- `bot/tests/ban-thu-ban.sh`: Cao Lỗ đếm số lượt hỏi sàn trước bản nháp (≤ 2); mọi kịch bản: không bong bóng nào mở đầu "Dạ không".
+
+- Bắn thử lần 1 (run 39355757153): Âu Cơ ra bản nháp với câu dẫn "Em ghi nhận đủ thông tin rồi anh ạ. Em sẽ rao như vầy nhé anh chị:"
+  — model chép dòng mở đầu thiếu "📋" nên `cat_truoc_mo_dau` (SRS-5.1zzzzzzz76) không nhận ra, khách đọc hai câu dẫn và bài bắn thử
+  không thấy bản nháp. Dòng mở đầu là chữ cố định của code: nay nhận cả bản thiếu "📋" và gắn lại đúng dòng cố định
+  (`tests/test_loi_gui_khach.py` thêm ca, đỏ trên code cũ — đã chạy).
+
+- Bắn thử lần 3 (run 39357092816): Cao Lỗ vẫn thấy câu diện tích sàn 3 lần — bộ đếm lờ chỉ tính ô ĐẦU cụm, câu sàn nằm giữa cụm
+  "ngang dài · sàn · số tầng" nên lờ không được đếm. Nay `_o_hoi_ke` nhớ cả cụm vừa hỏi (`Conversation.cum_vua_hoi`) và đếm từng ô
+  (`tests/test_lo_hai_lan_de_sau.py::test_o_giua_cum_cung_duoc_dem`, đỏ khi chỉ đếm ô đầu cụm — đã chạy).
+
+**Giới hạn.** `hoan` và `lo` không lưu DB: lõi khởi động lại giữa chừng thì ô đó có thể bị hỏi lại thêm một lần.
+
+**Kiểm.** `tests/test_lo_hai_lan_de_sau.py` (3 ca: lờ 2 lần thì để sau và ra bản nháp; hỏi lại sau khi duyệt; giá / địa chỉ không để
+sau). Ca 1 đỏ khi tắt đếm lờ (đã chạy). pytest 418 đạt. Lỗi "Dạ không" là hành vi model, không kiểm offline được — kiểm bằng
+`ban-thu-ban`.
+
+### SRS-5.1zzzzzzz81 · Theo bản anh Luận: hỏi phí khi duyệt, hẻm + hiện trạng trước bản nháp, nhớ 30 tin (20/10/2026)
+
+**Ca gốc.** So luồng chat người bán với `luan8560/AOND` `ffd3684` (19/10). Chủ dự án chốt từng điểm: "anh Luận hỏi luôn 'anh có biết phí
+môi giới của tụi em chưa ạ?' — theo anh Luận"; "Hẻm / mặt tiền và hiện trạng (đang ở hay cho thuê): anh Luận hỏi trước bản nháp, theo anh
+Luận"; "Bot nhớ 30, theo anh Luận". Giữ nguyên bên mình: "hello / chào em" làm mới phiên (chủ dự án: "cái này giữ nguyên"), lời chào
+hai lựa chọn bán / mua ("vừa mua vừa bán luôn"), hỏi theo cụm, khen ít, cấm "Dạ", tên trợ lý người thật.
+
+**Quyết định đè.** Quyết định 18/10 ("độ rộng hẻm ko bắt buộc, hỏi sau khi ra tin") và 19/10 (SRS-5.1zzzzzzz76 — hiện trạng hỏi sau bản
+nháp) bỏ; lượt duyệt "TẠM BỎ QUA BƯỚC HỎI PHÍ" bỏ.
+
+**Lớp lỗi.** Không phải lỗi máy: hai bản lệch nhau vì mỗi bên chốt riêng mà không có bảng đối chiếu. **Chỗ cùng lớp đã soát** (bảng so
+đủ 7 mục ở phiên 20/10): khung bản nháp (giống: tiêu đề 15–25 từ, mô tả 70–150 từ, 4–5 gạch, không phí), một bong bóng cho tin rao
+(`ffd3684` — bên mình đã có), thuyết phục khi chê phí (giống), điều kiện ra nháp 0.75 (giống; bên mình thêm ô bắt buộc tên đường / phường
+cho DB).
+
+**Sửa.**
+- `src/aioi/schema.py`: `HOI_SAU_KHI_RA_TIN` để trống — hẻm / mặt tiền và hiện trạng lại nằm trong `missing_fields`. Gộp cụm: hẻm cùng
+  (địa chỉ · phường), hiện trạng cùng (pháp lý · giá). `cau_hoi_sau_ra_tin` chỉ còn ô khách lờ 2 lần (SRS-5.1zzzzzzz80).
+- `src/aioi/prompts.py` `build_fee_followup_system`: khách duyệt → xác nhận theo trạng thái web thật rồi hỏi "anh/chị có biết phí môi
+  giới của tụi em chưa ạ?" (câu hỏi duy nhất của lượt), chỉ báo con số khi khách hỏi — như bản anh Luận. Tin chưa lên web (còn thiếu
+  ô) thì lượt đó hỏi ô thiếu, không thêm câu phí. Ô để sau hỏi từ lượt sau lượt phí. Luật 6 thêm ví dụ câu hỏi có/không ("em biết
+  đường đó ko" → "Em biết đường Âu Cơ anh.") — bắn thử cd1fd1c: "Dạ không, em biết đường Âu Cơ…".
+- `src/aioi/engine.py` `Conversation.messages`: 16 → 30 tin gửi model, như `MAX_HISTORY_TURNS` bản anh Luận. Ô tin đã ghi (`ĐÃ BIẾT`)
+  vẫn đi kèm mọi lượt nên chuyện cũ hơn 30 tin không mất dữ kiện, chỉ mất lời nguyên văn.
+- `bot/tests/ban-thu-ban.sh`: Âu Cơ thôi soát "không hỏi hiện trạng"; Nguyễn Trãi thêm lượt "ok em, đăng đi" → soát câu phí (khi tin
+  đã lên web), không tự báo con số %.
+- Bắn thử cb345ae (run 39358553275) xanh; lượt duyệt ra đúng câu bản anh Luận ("Em sẽ cho chào căn nhà của chị ngay ạ, mà chị có
+  biết phí môi giới của tụi em chưa ạ?"). Sổ lỗi bắt Haiku gõ tên ô có dấu (`loi_gui_khách`) → lời rỗng, gọi lại một lượt:
+  `src/aioi/llm/claude.py` nhận tên ô theo chữ bỏ dấu (`tests/test_loi_gui_khach.py::test_ten_o_go_co_dau_van_nhan_khong_goi_lai`, đỏ
+  trên code cũ — đã chạy). Chỗ cùng lớp: lượt lập thao tác / bóc tách đọc ô qua `chuan_theo_schema` (SRS-5.1zzzzzzz78) — ô lạ tên được
+  giữ nguyên tên, chỗ dùng đọc theo tên đúng nên không thấy nó; chưa đối chiếu chữ bỏ dấu, chưa thấy ca thật, để nguyên.
+
+**Kiểm.** `tests/test_ban_nhap_du_dieu_kien.py::test_hem_va_hien_trang_hoi_truoc_ban_nhap` (thay test hẻm hỏi sau), `test_trang_thai_web`
+(câu phí khi duyệt, không câu phí khi tin chưa lên web), `test_tin_rao_bo_cuc::test_tran_lich_su_gui_model` (30), `test_hoi_it_truoc_ban_nhap`
+— 5 ca đỏ trên code cũ (đã chạy). pytest 419 đạt. Model thật: `ban-thu-ban`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

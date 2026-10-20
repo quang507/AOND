@@ -233,7 +233,21 @@ HOUSE_AREA_FIELDS: list[str] = ["dien_tich_dat", "dien_tich_nha"]
 # A listing is "khá đầy đủ" (ready to draft an ad) at this fraction of expected fields,
 # on top of having every identity field AND the per-type required fields (`blocking_fields`).
 # 18/10/2026 (SRS-5.1zzzzzzz38): 0.55 → 0.70 — bản nháp ra ngay lượt đầu khi mới có "Quận 5".
-SUMMARY_READY_COMPLETENESS: float = 0.70
+# 20/10/2026 (SRS-5.1zzzzzzz79; chủ dự án: "nên ra bản nháp khi nào học theo anh Luận"): 0.75 tính trên MỌI ô mong đợi — đúng bản anh
+# Luận (`summary_ready`: đủ ô nhận diện + completeness ≥ 0.75); giữ ô bắt buộc riêng của mình (tên đường, phường — DB cần mới đăng).
+SUMMARY_READY_COMPLETENESS: float = 0.75
+
+# 20/10/2026 (SRS-5.1zzzzzzz79; chủ dự án: "hỏi theo cụm"): ô hỏi GỘP một câu như môi giới ("nhà ngang dài bao nhiêu, xây mấy tầng
+# anh?") thay vì mỗi lượt một ô. Ô thiếu đầu tiên quyết cụm; lượt đó hỏi các ô còn thiếu trong cùng cụm (tối đa 3). Ô không thuộc cụm
+# nào hỏi riêng như cũ.
+CUM_HOI: list[tuple[str, ...]] = [
+    ("dia_chi", "phuong", "lo_gioi_hem"),            # 20/10 (SRS-5.1zzzzzzz81): hẻm / mặt tiền hỏi trước bản nháp như anh Luận
+    ("dien_tich_dat", "dien_tich_nha", "ket_cau"),   # kích thước = cách nói khác của diện tích đất, không hỏi thêm
+    ("dien_tich", "so_phong_ngu"),
+    ("phap_ly_hoan_cong", "gia", "tinh_trang_ban_giao"),
+    ("du_an", "tang_toa"),
+]
+CUM_TOI_DA = 3
 
 # Đất nền / thổ cư phải có tên đường + lộ giới hoặc thổ cư mới soạn tin; đất nông nghiệp thường ở xã, không có tên đường —
 # không chặn theo tên đường để khỏi kẹt câu hỏi.
@@ -243,7 +257,10 @@ LAND_GATED_TYPES: set[str] = {"dat", "dat_tho_cu"}
 # và khỏi % đầy đủ, được hỏi từng câu sau khi khách duyệt tin (`cau_hoi_sau_ra_tin`, prompt build_fee_followup_system).
 # 19/10/2026 (SRS-5.1zzzzzzz76; chủ dự án: "nó hỏi nhiều quá chán chết được"): thêm hiện trạng đang ở / cho thuê — không đổi nội
 # dung tin rao, người mua hỏi lúc hẹn xem; trước đó nó vẫn tính vào % nên nhà phố phải trả lời 7–8 câu mới thấy bản nháp.
-HOI_SAU_KHI_RA_TIN: set[str] = {"lo_gioi_hem", "tinh_trang_ban_giao"}
+# 20/10/2026 (SRS-5.1zzzzzzz81; chủ dự án: "Hẻm / mặt tiền và hiện trạng… theo anh Luận"): bỏ hai quyết định trên — hai ô này lại
+# hỏi TRƯỚC bản nháp như bản anh Luận (gộp cụm: hẻm cùng địa chỉ / phường, hiện trạng cùng giá / pháp lý). Tập để trống, giữ tên để
+# chỗ nào cần lại thì thêm vào đây.
+HOI_SAU_KHI_RA_TIN: set[str] = set()
 
 # Thông số cho thuê (áp dụng chung khi là tin cho thuê) — SRD §III.
 RENTAL_FIELDS: list[str] = [
@@ -261,6 +278,9 @@ class Property:
     loai_hinh: str | None = None        # detected type slug (key of TYPE_TO_GROUP)
     is_rental: bool = False             # tin cho thuê?
     fields: dict[str, str] = field(default_factory=dict)  # all captured values
+    # Transient (SRS-5.1zzzzzzz80; chủ dự án: "khách lờ 2 lần thì để sau"): ô khách đã lờ 2 lần — không hỏi trước bản nháp nữa,
+    # không chặn bản nháp, hỏi lại sau khi khách duyệt (`cau_hoi_sau_ra_tin`). Không lưu DB: khởi động lại thì có thể hỏi lại một lần.
+    hoan: set[str] = field(default_factory=set)
 
     @property
     def group(self) -> PropertyGroup:
@@ -300,12 +320,22 @@ class Property:
         Requires ALL identity fields (type, address, area(s), price) AND a high overall
         completeness, so the draft includes core details, not just the basics.
         """
-        if not all(self._has(f) for f in self.identity_fields()):
+        if not all(self._has(f) or f in self.hoan for f in self.identity_fields()):
             return False
         if self.blocking_fields():
             return False
-        expected = [x for x in self.expected_fields() if x not in HOI_SAU_KHI_RA_TIN]
-        return sum(1 for x in expected if self._has(x)) >= SUMMARY_READY_COMPLETENESS * len(expected)
+        # Ô hỏi sau bản nháp vẫn tính vào % (như bản anh Luận) nhưng không hỏi trước — hết ô để hỏi trước bản nháp thì ra nháp, không kẹt.
+        return self.completeness() >= SUMMARY_READY_COMPLETENESS or not self.missing_fields()
+
+    def cum_hoi(self, o: str | None, missing: list[str]) -> list[str]:
+        """Các ô hỏi gộp trong lượt có ô `o` (SRS-5.1zzzzzzz79): ô còn thiếu cùng cụm với `o`, theo thứ tự hỏi, tối đa `CUM_TOI_DA`."""
+        if not o:
+            return []
+        for cum in CUM_HOI:
+            if o in cum:
+                ra = [o] + [x for x in missing if x in cum and x != o]
+                return ra[:CUM_TOI_DA]
+        return [o]
 
     def blocking_fields(self) -> list[str]:
         """Ô BẮT BUỘC theo loại BĐS trước khi soạn bản nháp (ngoài ngưỡng %), theo thứ tự hỏi:
@@ -357,19 +387,17 @@ class Property:
                 ra.insert(ra.index("dia_chi") + 1, "phuong")
             else:
                 ra.insert(1 if ra[:1] == ["loai_hinh"] else 0, "phuong")
-        return [x for x in ra if x not in HOI_SAU_KHI_RA_TIN]
+        return [x for x in ra if x not in HOI_SAU_KHI_RA_TIN and x not in self.hoan]
+
+    def hoan_duoc(self, o: str) -> bool:
+        """Ô được để sau bản nháp khi khách lờ 2 lần (SRS-5.1zzzzzzz80). Loại, chỗ (địa chỉ / dự án / mã căn), giá và ô bắt buộc thì
+        không: thiếu chúng thì không có tin để rao."""
+        return o not in ("loai_hinh", "dia_chi", "du_an", "ma_so_can", "gia") and o not in self.blocking_fields()
 
     def cau_hoi_sau_ra_tin(self) -> str | None:
-        """Ô hỏi SAU khi khách duyệt bản nháp, từng ô một: độ rộng hẻm của nhà ở trong hẻm khi chưa biết bề rộng (chưa có chữ
-        số, không phải mặt tiền), rồi hiện trạng đang ở / cho thuê."""
-        if self.group is not PropertyGroup.RESIDENTIAL:
-            return None
-        v = (self.fields.get("lo_gioi_hem") or "").lower()
-        if not ("mặt tiền" in v or re.search(r"\bmt\b", v) or re.search(r"\d", v)):
-            return "lo_gioi_hem"
-        if "tinh_trang_ban_giao" in self.expected_fields() and not self._has("tinh_trang_ban_giao"):
-            return "tinh_trang_ban_giao"
-        return None
+        """Ô hỏi SAU khi khách duyệt bản nháp: chỉ còn ô khách đã lờ 2 lần (SRS-5.1zzzzzzz80). Hẻm và hiện trạng từ 20/10 hỏi trước
+        bản nháp như bản anh Luận (SRS-5.1zzzzzzz81)."""
+        return next((o for o in self.expected_fields() if o in self.hoan and not self._has(o)), None)
 
     def completeness(self) -> float:
         """Fraction of expected fields that are filled, in [0, 1]."""

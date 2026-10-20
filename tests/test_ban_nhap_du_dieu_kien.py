@@ -65,16 +65,16 @@ def test_o_bat_buoc_boc_duoc():
         assert k in props, k  # ô chặn mà bộ bóc không ghi được thì bot kẹt mãi
 
 
-def test_do_rong_hem_hoi_sau_khi_ra_tin():
+def test_hem_va_hien_trang_hoi_truoc_ban_nhap():
+    """20/10/2026 (SRS-5.1zzzzzzz81; chủ dự án: "theo anh Luận"): hẻm / mặt tiền và hiện trạng hỏi TRƯỚC bản nháp, gộp cụm với địa
+    chỉ / phường và giá / pháp lý; lượt khách duyệt chỉ hỏi phí. Thay test cũ "độ rộng hẻm hỏi sau khi ra tin" (18/10)."""
     from aioi.prompts import build_fee_followup_system
-    p = Property(loai_hinh="nha_pho", fields={"dia_chi": "Trần Hưng Đạo, Quận 5", "lo_gioi_hem": "hẻm"})
-    assert "lo_gioi_hem" not in p.missing_fields()  # không hỏi trước bản nháp
-    assert p.cau_hoi_sau_ra_tin() == "lo_gioi_hem"
-    assert "rộng khoảng mấy mét" in build_fee_followup_system("Hằng", p)
-    chua_biet = Property(loai_hinh="nha_pho", fields={})
-    assert "mặt tiền hay trong hẻm" in build_fee_followup_system("Hằng", chua_biet)
-    for da_ro in ("hẻm 6m", "mặt tiền", "MT"):
-        q = Property(loai_hinh="nha_pho", fields={"lo_gioi_hem": da_ro})
-        q.fields["tinh_trang_ban_giao"] = "đang ở"
-        assert q.cau_hoi_sau_ra_tin() is None and "BỔ SUNG SAU KHI DUYỆT" not in build_fee_followup_system("Hằng", q)
+    p = Property(loai_hinh="nha_pho", fields={"dia_chi": "Trần Hưng Đạo, Quận 5", "duong": "Trần Hưng Đạo"})
+    thieu = p.missing_fields()
+    assert "lo_gioi_hem" in thieu and "tinh_trang_ban_giao" in thieu
+    assert p.cum_hoi("phuong", thieu) == ["phuong", "lo_gioi_hem"]
+    assert set(p.cum_hoi("gia", thieu)) == {"gia", "phap_ly_hoan_cong", "tinh_trang_ban_giao"}
+    assert p.cau_hoi_sau_ra_tin() is None
+    s = build_fee_followup_system("Hằng", p)
+    assert "phí môi giới của tụi em chưa" in s and "BỔ SUNG SAU KHI DUYỆT" not in s
     assert Property(loai_hinh="chung_cu").cau_hoi_sau_ra_tin() is None

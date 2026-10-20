@@ -43,4 +43,5 @@ def test_tran_lich_su_gui_model():
     c = Conversation(user_key="u", assistant=assign_assistant("u"))
     c.history = [Turn("user" if i % 2 else "assistant", f"lượt {i}", float(i)) for i in range(305)]
     m = c.messages()
-    assert len(m) == 16 and m[-1].content == "lượt 304"       # anh Luận e4cbf90: không gửi cả lịch sử nhiều tháng
+    assert len(m) == 30 and m[-1].content == "lượt 304"       # anh Luận e4cbf90: không gửi cả lịch sử nhiều tháng; 30 tin như
+    # MAX_HISTORY_TURNS bản anh Luận (SRS-5.1zzzzzzz81)

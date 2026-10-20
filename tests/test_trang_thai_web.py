@@ -27,11 +27,11 @@ def test_chi_noi_da_dang_khi_tin_dang_hien_thi():
 def test_thieu_phuong_thi_hoi_phuong_moi_khong_hoi_hem():
     s = build_fee_followup_system("Hằng", _nha(), web={"len_web": False, "thieu": ["phuong"]})
     assert DA_DANG not in s and "phường MỚI sau sáp nhập" in s
-    assert "BỔ SUNG SAU KHI DUYỆT" not in s  # một lượt một câu: hỏi phường trước, hẻm để sau
+    assert "phí môi giới của tụi em chưa" not in s  # SRS-5.1zzzzzzz81: tin chưa lên web → hỏi ô thiếu, không thêm câu phí
     s = build_fee_followup_system("Hằng", _nha(), web={"len_web": False, "thieu": ["gia", "dien_tich"]})
     assert "còn thiếu giá, diện tích" in s and "hỏi ĐÚNG 1 câu về giá" in s
     s = build_fee_followup_system("Hằng", _nha(), web={"len_web": True, "thieu": []})
-    assert DA_DANG in s and "BỔ SUNG SAU KHI DUYỆT" in s
+    assert DA_DANG in s and "phí môi giới của tụi em chưa" in s and "TẠM BỎ QUA BƯỚC HỎI PHÍ" not in s
 
 
 def test_engine_doc_trang_thai_that_khi_khach_duyet():

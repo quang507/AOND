@@ -8,6 +8,7 @@ import base64
 import json
 import logging
 import re
+import unicodedata
 from typing import Any
 
 from ..config import Settings
@@ -63,6 +64,10 @@ def chuan_theo_schema(v: Any, schema: dict[str, Any]) -> Any:
     if t == "array" and isinstance(v, list):
         return [chuan_theo_schema(x, schema.get("items") or {}) for x in v]
     return v
+
+
+def _bo_dau(s: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn").replace("đ", "d")
 
 
 _GUI_KHACH: dict[str, Any] = {
@@ -148,7 +153,8 @@ class ClaudeProvider(LLMProvider):
             )
             self._so.ghi("chat", self._chat_model, resp)
             o = next((dict(b.input or {}) for b in resp.content if b.type == "tool_use"), {})
-            loi = str(o.get("loi_gui_khach") or "").strip()
+            # Bắn thử 20/10: Haiku gõ tên ô có dấu ("loi_gui_khách") → lời rỗng, tốn một lượt gọi lại. Nhận tên ô theo chữ bỏ dấu.
+            loi = str(next((v for k, v in o.items() if _bo_dau(k) == "loi_gui_khach"), "") or "").strip()
             if loi:
                 return loi
             self._so.ghi_loi("claude chat", f"lời gửi khách rỗng (lần {lan + 1}): stop={getattr(resp, 'stop_reason', '?')}, "
