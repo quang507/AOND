@@ -7935,6 +7935,24 @@ Bắn thử production lúc Anthropic còn hết số dư (run 39585339448, `ban
 lượt dự phòng kém Haiku rõ: người bán không ra được bản nháp 📋 (5 lượt "em soạn bản nháp nhé?" mà không soạn), câu "có ai hỏi mua chưa"
 model nói "đang tiếp cận nhiều khách hàng quan tâm" dù khối số liệu cấm. Phía người mua đạt đủ (xem SRS-5.1zzzzzzz116).
 
+### SRS-5.1zzzzzzz118 · Không mở đầu hai lượt liền bằng câu ghi nhận (21/10/2026)
+
+Lê Quang 21/10 gửi ảnh chat lúc 17:57 (lượt chạy dự phòng Gemini, SRS-5.1zzzzzzz117): ba lượt liền bot mở "Em đã ghi nhận đầy đủ thông tin…",
+"Em ghi nhận Phường An Phú Đông rồi…", "Em ghi nhận sổ hồng riêng…" — "sao nó ghi nhận lắm thế".
+
+1. **Lớp**: luật giọng `LUAT_GHI_NHAN` (SRS-5.1zzzzzzz102, "ngắn không thì nó láo") bắt đáp nhận MỖI lượt khách cho thông tin và đưa
+   câu mẫu "Em ghi rồi ạ." mà không cấm lặp; model yếu theo đúng chữ nên lượt nào cũng một khuôn. Lời dặn không có bước soát đầu ra —
+   cùng lớp với tiêu đề thiếu giá / mở đầu "Dạ" / phường kho hẻm (đã có `_soat_hinh_thuc`).
+2. **Sửa**: `LUAT_GHI_NHAN` thêm: không mở hai lượt liền bằng cùng kiểu ghi nhận; lượt trước đã ghi nhận thì cảm ơn ngắn / nối thẳng câu
+   hỏi kế / nói chi tiết có ích; khách chỉ xác nhận ngắn thì không cần câu ghi nhận riêng (vẫn giữ lễ phép, vẫn cấm "Dạ").
+   `_mo_dau_ghi_nhan` (kiểm HÌNH THỨC lời của chính bot, không đoán ý khách) + `_soat_hinh_thuc`: lượt này và lượt bot trước cùng mở
+   bằng câu ghi nhận ("Em (đã) ghi nhận / ghi rồi / ghi lại / nhận thông tin") → gọi lại model một lần kèm lý do. Câu "Em sửa giá còn…"
+   (sửa theo lời khách) không tính; bản tin 📋 không kiểm.
+3. **Cùng lớp còn lại**: các khuôn mở đầu khác ("Em cảm ơn…") chưa soát lặp; chưa đo được bao nhiêu lượt Haiku lặp kiểu này (ảnh là
+   lượt Gemini).
+
+Kiểm: `tests/test_ghi_nhan_lap.py` (3 ca: nhận diện, hai lượt liền → gọi lại, một lượt → không) — đỏ khi gỡ bản sửa.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
