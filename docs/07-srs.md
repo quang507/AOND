@@ -7553,6 +7553,24 @@ Chat tester chị N. với chủ dự án 21/10 11:30–11:39:
 
 Kiểm: `tests/test_trang_thai_web.py` (`test_xac_nhan_noi_dung_loai_tin_khong_gop_ban_cho_thue`), `tests/test_xung_ho_khong_lat.py`.
 
+### SRS-5.1zzzzzzz102 · Ghi nhận vừa ngắn vừa lịch sự (21/10/2026)
+
+Chat tester chị N. với chủ dự án 21/10 11:44: tester "đang suy nghĩ tới phần ghi nhận, sao để rút gọn"; chủ dự án: "ngắn không thì nó
+láo, nên phải sửa vừa ngắn vừa lịch sự á". Đếm 280 câu bot 3 ngày trong `cau_chuan`: 59 câu có "ghi nhận", 32 câu MỞ ĐẦU "Em ghi
+nhận…", gần hết tua lại cả tin (diện tích, tầng, ngang, giá, pháp lý) trước câu hỏi.
+
+**Lớp lỗi**: luật trong prompt mâu thuẫn nhau, và ví dụ thắng luật. Luật 5 cấm nhại lời khách; luật 6 ("câu đầu mở bằng chính nội dung
+— điều khách vừa nói…", ví dụ "Phường Chợ Quán, em ghi rồi chị.") cùng mô tả ô `tu_soat` / `loi_gui_khach` của công cụ gửi khách (model
+đọc ở MỌI lượt) dạy ngược lại. Model dung hoà bằng cách mở câu bằng lời khách, kể hết. **Sửa**: một luật "GHI NHẬN VỪA NGẮN VỪA LỊCH SỰ"
+ở `CONVERSATION_POLICY` — đáp nhận một vế ngắn lễ phép ("Em ghi rồi ạ.", "Em cảm ơn anh/chị ạ."), không kể lại con số / chi tiết,
+không hỏi cộc; nhắc MỘT chi tiết chỉ khi kèm ý có ích hoặc khi em vừa sửa theo lời khách. Luật 6 đổi thành "mở bằng việc em vừa làm",
+ví dụ Chợ Quán thành "Em ghi rồi chị. …"; hai mô tả ô công cụ nói cùng điều đó. Không thêm van lọc chữ ở đầu ra.
+**Cùng lớp đã soát**: dòng "CẤM NHẠI" ở khối giọng (trỏ về luật mới); khối ảnh "Sau khi ghi nhận ngắn gọn ảnh" (giữ — đã nói ngắn, không
+dạy tua lại); ví dụ "Hẻm 4m xe hơi vào được, khách đi xem tiện." ở luật 5 (giữ — một chi tiết kèm ý có ích, đúng luật mới).
+**Đo sau deploy**: đếm lại tỉ lệ câu mở "Em ghi nhận" / kể lại ≥ 3 chi tiết trong `cau_chuan` (nền 32/280).
+
+Kiểm: `tests/test_ghi_nhan_ngan.py` (đỏ trên code cũ: còn "điều khách vừa nói" / ví dụ Chợ Quán, thiếu luật mới).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
