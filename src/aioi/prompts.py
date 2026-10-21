@@ -575,6 +575,17 @@ trong lúc chat không phải dữ liệu. Không suy từ con số ra điều k
 VUNG_NHAN_TIN = "TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai"
 
 
+def khoi_hoi_mat_tien(gia_tri: str) -> str:
+    """Lượt vừa ghi ô bề ngang căn mà chưa có hai chiều lô để đối chiếu (SRS-5.1zzzzzzz96): "mặt tiền 5m" / "MT 5m" có thể là bề
+    ngang căn hoặc độ rộng con đường trước nhà — hỏi lại một lần. Engine chỉ bật khối này một lần mỗi căn."""
+    return (
+        f"\nBỀ NGANG HAY ĐƯỜNG (hệ thống đã kiểm): lượt này em ghi \"{gia_tri}\" là BỀ NGANG của căn, nhưng chưa có kích thước lô "
+        "(ngang × dài) để đối chiếu. Nếu khách nói kiểu \"mặt tiền … m\" / \"MT … m\" (có thể là độ rộng con đường trước nhà), gộp "
+        "vào câu hỏi lượt này MỘT ý hỏi lại cho chắc: số đó là bề ngang của căn hay đường trước nhà rộng chừng đó. Khách đã nói rõ "
+        "\"ngang\" / \"bề ngang\" / \"đường rộng\" thì KHÔNG hỏi.\n"
+    )
+
+
 def build_ngoai_vung_system(assistant_name: str, tinh: str) -> str:
     """Căn khách rao nằm ngoài vùng nhận tin: cảm ơn, nói khéo bên mình chưa nhận khu vực đó, mời gửi căn trong vùng nếu có. Không
     hỏi tiếp thông tin căn, không soạn tin rao (SRS-5.1zzzzzzz86)."""

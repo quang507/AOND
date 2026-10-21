@@ -23,7 +23,9 @@ vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/nu
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
 KB1="thu-kb1-$RUN"; KB2="thu-kb2-$RUN"; KB3="thu-kb3-$RUN"; KB4="thu-kb4-$RUN"; KB5="thu-kb5-$RUN"
-TAT_CA="$KB1 $KB2 $KB3 $KB4 $KB5"
+# SRS-5.1zzzzzzz96: 8 ca một lượt đo nhận vùng — 5 ngoài vùng, 3 trong vùng dễ nhầm (Thủ Đức, Dĩ An, Long Thành).
+KV=""; for i in 1 2 3 4 5 6 7 8; do KV+=" thu-kv$i-$RUN"; done
+TAT_CA="$KB1 $KB2 $KB3 $KB4 $KB5$KV"
 BAT_DAU=$(date -u +%s)
 
 don() {
@@ -58,7 +60,8 @@ chat() {
   t1=$(date +%s%N); g=$(( (t1 - t0) / 1000000 ))
   jq -r '.replies[]? | "<< " + .' <<<"$TRA" || echo "<< (không đọc được JSON) $TRA"
   echo "   (${g} ms) khâu: $(jq -c '.thoi_gian_ms // {}' <<<"$TRA" 2>/dev/null || echo '{}')"
-  TG_ALL+="$(jq -c '.thoi_gian_ms // {}' <<<"$TRA" 2>/dev/null || echo '{}')"$'\n'
+  # SRS-5.1zzzzzzz96: "ngoai_may_chu" = thời gian đo ở runner trừ thời gian máy chủ báo (ssh + mạng), không phải của bot.
+  TG_ALL+="$(jq -c --argjson g "$g" '(.thoi_gian_ms // {}) | if .may_chu then . + {ngoai_may_chu: ($g - .may_chu)} else . end' <<<"$TRA" 2>/dev/null || echo '{}')"$'\n'
   MOI_LOI+=$'\n'"$(jq -r '.replies[]?' <<<"$TRA" 2>/dev/null || true)"
   LUOT_TONG=$((LUOT_TONG + 1)); GIAY_TONG=$((GIAY_TONG + g)); [ "$g" -gt "$GIAY_MAX" ] && GIAY_MAX=$g
   if grep -q '📋' <<<"$TRA"; then
@@ -182,6 +185,29 @@ kiem "KB5: \"MT 20 mét\" là đường rộng 20 m (cột đường vào)" "$(j
 kiem "KB5: khách ok rồi thì tin lên web" "$(jq '.status == "dang_ban" | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: sau \"ok\" bot không hỏi xác nhận lại" "$(grep -qiE 'xác nhận (giúp|lại|lần)|đã ổn chưa' <<<"$LOI_KB5_CUOI$(jq -r '.reply // ""' <<<"$TRA")" && echo 0 || echo 1)"
 
+echo; echo "=================== KV — nhận vùng nhận tin (8 ca, một lượt) ==================="
+# SRS-5.1zzzzzzz96 (chủ dự án 21/10: "đo thêm"): lượt 194 KB1 Hà Nội lọt một lần — đo tỷ lệ thay vì một ca.
+KV_CA=("ngoai|Bán nhà mặt phố Hoàng Quốc Việt, Cầu Giấy, Hà Nội, 50m2, 5 tầng, giá 15 tỷ"
+       "ngoai|Cần bán căn hộ 2PN ở Sơn Trà, Đà Nẵng, view biển, giá 3,2 tỷ"
+       "ngoai|Bán lô đất 100m2 ở Ninh Kiều, Cần Thơ, giá 2 tỷ"
+       "ngoai|Nhà 4x15 đường Lạch Tray, Ngô Quyền, Hải Phòng, 3 tầng, giá 6 tỷ"
+       "ngoai|Bán nhà hẻm 3m đường Trần Phú, Nha Trang, 60m2, giá 4,5 tỷ"
+       "trong|Bán nhà hẻm xe hơi đường Võ Văn Ngân, Thủ Đức, 4x16, 2 lầu, giá 7 tỷ"
+       "trong|Bán nhà 1 trệt 1 lầu ở Dĩ An, 5x20, giá 3,5 tỷ"
+       "trong|Bán đất 200m2 ở Long Thành, Đồng Nai, giá 2,8 tỷ")
+KV_DUNG=0; i=0
+for ca in "${KV_CA[@]}"; do
+  i=$((i + 1)); loai="${ca%%|*}"; u="thu-kv$i-$RUN"
+  chat "$u" "${ca#*|}"
+  st=$(dong "$u" | jq -r '.status // "khong_tao"')
+  if [ "$loai" = ngoai ]; then ok=$([ "$st" = an ] || [ "$st" = khong_tao ] && echo 1 || echo 0)
+  else ok=$([ "$st" != an ] && [ "$st" != khong_tao ] && echo 1 || echo 0); fi
+  echo "   KV$i ($loai vùng): tin $st → $([ "$ok" = 1 ] && echo đúng || echo SAI)"
+  KV_DUNG=$((KV_DUNG + ok))
+done
+echo "== nhận vùng: đúng $KV_DUNG / ${#KV_CA[@]}"
+kiem "KV: nhận vùng đúng ≥ 7/8 ca" "$([ "$KV_DUNG" -ge 7 ] && echo 1 || echo 0)"
+
 echo; echo "=================== web, giọng, chi phí, thời gian, sổ lỗi ==================="
 for r in "$r1" "$r2" "$r3" "$r4" "$r5"; do
   ma=$(jq -r '.code // empty' <<<"$r"); st=$(jq -r '.status // empty' <<<"$r")
@@ -205,6 +231,10 @@ jq -n --argjson a "$TRUOC" --argjson b "$SAU" --argjson n "$LUOT_TONG" '
 echo "== trung bình ms từng khâu trong lõi (lap_thao_tac / tra_loi / ghi_kho / con_lai / tong):"
 jq -s -c 'map(select(length > 0)) as $a | ($a | length) as $n | if $n == 0 then {} else
   ([$a[] | keys[]] | unique) as $k | reduce $k[] as $x ({}; .[$x] = (([$a[] | .[$x] // 0] | add) / $n | round)) end' <<<"$TG_ALL" || true
+echo "== chậm nhất từng khâu (ms):"
+jq -s -c 'map(select(length > 0)) as $a | ([$a[] | keys[]] | unique) as $k | reduce $k[] as $x ({}; .[$x] = ([$a[] | .[$x] // 0] | max))' <<<"$TG_ALL" || true
+echo "== 3 lượt chậm nhất (theo máy chủ):"
+jq -s -c 'map(select(length > 0)) | sort_by(-(.may_chu // .tong // 0)) | .[:3][]' <<<"$TG_ALL" || true
 echo "== thời gian bot trả lời: trung bình $(( GIAY_TONG / (LUOT_TONG > 0 ? LUOT_TONG : 1) )) ms / lượt, chậm nhất $GIAY_MAX ms ($LUOT_TONG lượt)"
 q "select to_char(at, 'HH24:MI:SS') as luc, source, left(detail, 160) as chi_tiet from bot_errors
    where at > now() - interval '20 min' and source not in ('geocode-listings') order by at" | jq -c '.[]' || true

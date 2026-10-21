@@ -315,6 +315,7 @@ def _lay_cho(uk: str, so: int) -> list[str] | None:
 
 @app.post("/chat-reply", response_model=ZaloBridgeResponse)
 def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
+    t_vao = time.perf_counter()   # SRS-5.1zzzzzzz96: tổng thời gian máy chủ (gồm chờ khoá lượt, đọc ảnh / tin thoại, sau lượt)
     if payload.mark_sent:
         return ZaloBridgeResponse(
             reply="ok",
@@ -411,7 +412,9 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     # SRS-5.1zzzzzzz82: lượt hỏng (API quá tải / mạng / model trả rỗng) trước đây ra 500 → bridge không gửi gì, khách bị bỏ lơ
     # (sổ lỗi "bridge xử lý tin gom"), hoặc nhận "kết nối mạng gián đoạn, nhắn lại giúp em". Nay: câu giữ chỗ + tự thử lại nền.
     # SRS-5.1zzzzzzz84: một khách — một lượt một lúc (Engine.khoa_luot); tin nhắn tới lúc bot còn soạn thì chờ lượt trước xong.
+    t_khoa = time.perf_counter()
     with _engine.khoa_luot(uk):
+        cho_luot = int((time.perf_counter() - t_khoa) * 1000)
         if not media_urls:
             gom = _lay_cho(uk, so_cho)
             if gom is None:   # tin này đã nằm trong lượt trước — chỉ ghi lời khách vào CRM, không trả lời riêng
@@ -435,6 +438,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         thoi_gian = dict(getattr(_engine.conversation(uk), "do_luot", {}) or {})
     thoi_gian["con_lai"] = max(0, tong - sum(thoi_gian.values()))
     thoi_gian["tong"] = tong
+    thoi_gian["cho_luot"] = cho_luot          # chờ lượt trước của cùng khách xong (khoa_luot)
     log.info("thời gian lượt (ms): %s", thoi_gian)   # chỉ con số — không dữ liệu khách
     if loi_luot is not None:
         e = loi_luot
@@ -500,7 +504,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         tier=r.tier,
         completeness=r.completeness,
         photos=photos,
-        thoi_gian_ms=thoi_gian,
+        thoi_gian_ms={**thoi_gian, "may_chu": int((time.perf_counter() - t_vao) * 1000)},
     )
 
 

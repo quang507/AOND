@@ -7410,6 +7410,39 @@ Chủ dự án hỏi: "số mét mặt tiền và số mét độ rộng đườ
 Kiểm: `tests/test_duyet_mo_ta_truong.py` (độ rộng đường giữ với nhà mặt tiền; chữ gửi DB không đổi theo nhãn; nhãn / câu hỏi nói rõ),
 đỏ 2 ca trên bản trước. `tests/test_conversational_and_deed.py` theo nhãn mới.
 
+### SRS-5.1zzzzzzz96 · Phiếu "chắc chắn" cho dữ liệu chủ dự án nhập tay; kho dự án quá 1.000 dòng không tra được; hỏi lại "mặt tiền X m"; đo thời gian từng khâu (21/10/2026)
+
+Chủ dự án gửi bảng giá Ny'ah Phú Định (T3/2026, RH v12, 9 căn) và chốt: "phải có trường để người ta biểu quyết đủ thì thay dữ liệu
+cũ"; "cái này tôi nhập tay nên là chắc chắn"; "4 có cho hỏi"; "2 việc đó đo thêm đi". Bảng giá nạp vào `du_an_kien_thuc` (kho riêng,
+không vào repo — giá chỉ nằm ở đó). Hôm 20/10 đã nạp rổ hàng (50 lô, mẫu nhà từng lô), chưa có giá.
+
+1. *Phiếu chắc chắn.* Kiến thức dự án đã có phiếu bầu theo người nói (`merge_facts`): giá trị nhiều phiếu khác nhau nhất thì dẫn, đủ
+   `SETTLE_N` thì chốt. Bảng giá ghi mẫu nhà khác rổ hàng cũ ở 7 lô (vd lô 1–2: Opus ↔ Office 1). Một phiếu đấu một phiếu thì giữ giá
+   trị cũ và gắn "CHƯA CHẮC", trái ý chủ dự án. **Sửa**: phiếu có tiền tố `chac_chan:` (nguồn chủ dự án nhập tay) thắng ngay và coi như
+   đã chốt. Phiếu khách vẫn bầu như cũ, nhiều phiếu khách không lật được nguồn chắc chắn. Bảng giá nạp bằng chính `Unit.learn` với phiếu
+   `chac_chan:chu_du_an_nhap_tay_bang_gia_T3_2026_RH_v12`: mẫu nhà theo bảng giá, giá theo từng gói (khoá ghi rõ "T3_2026"), phiếu cũ
+   giữ nguyên làm lịch sử, thêm một tài liệu `bang_gia` vào `docs`.
+2. *Kho dự án quá 1.000 dòng không tra được.* PostgREST của project trả tối đa 1.000 dòng mỗi lần đọc (đo bằng bảng `projects`: đúng
+   1.000). `SupabaseProjectStore._khoa()` đọc khoá một lần, mà kho có 2.352 dự án; Ny'ah Phú Định ở dòng 1.645 nên lõi **không thấy**
+   kiến thức đã nạp. Lượt chép SQLite → Supabase lúc khởi động cũng tưởng các dự án sau dòng 1.000 chưa có nên ghi lại (Sun Wah, One
+   Verandah… đổi `cap_nhat` mỗi lần cài). Lượt chép còn so khoá nguyên văn, nên "nyah phú định" (học từ chat 20/10, chỉ có "vị trí:
+   Quận 8") được chép thành dòng thứ hai; tra "Nyah Phú Định" khớp nguyên văn dòng rỗng đó. **Lớp**: đọc cả bảng qua PostgREST mà
+   không chia trang (giới hạn 1.000 dòng cắt im lặng). **Cùng lớp**: web `/du-an` đã chia trang (`range`), đúng. `app/sitemap.ts` chủ
+   động giới hạn 500 dự án và 5.000 tin (tin hiện ít, chưa chạm 1.000) — ghi lại, chưa sửa. Các bảng lớn khác (`duong`, `giao_lo`)
+   lõi tra qua RPC phía DB, không đọc cả bảng. **Sửa**: đọc theo trang (`order=khoa&limit=1000&offset=`), danh sách khoá nhớ 60 giây
+   (bỏ nhớ khi ghi), tra khoá nguyên văn trước (một lần gọi). `all()` chỉ lấy tên + mẫu nhà (soi tên mơ hồ), không kéo tài liệu của
+   2.352 dự án. Lượt chép so bằng `find_matching_key`. Đã xoá dòng rỗng "nyah phú định".
+3. *Hỏi lại "mặt tiền X m".* Lượt vừa ghi ô bề ngang căn mà chưa có hai chiều lô để đối chiếu (luật bề ngang ≤ lô của SRS-5.1zzzzzzz87
+   không kiểm được) → khối `khoi_hoi_mat_tien`: gộp vào câu hỏi lượt đó một ý hỏi số ấy là bề ngang căn hay đường rộng chừng đó. Model
+   tự bỏ qua khi khách đã nói rõ "ngang" / "đường rộng". Mỗi căn chỉ hỏi một lần (dấu nội bộ `_mt_da_hoi`).
+4. *Đo thêm.* Thời gian lõi chia thêm khâu `dia_danh`, `du_an`, `kho_doc`, `cau_chuan` (trước gộp trong "còn lại"); máy chủ báo
+   `cho_luot` (chờ lượt trước của cùng khách) và `may_chu` (từ lúc nhận tới lúc trả). Script `ban-thu-kb.sh` in `ngoai_may_chu` (ssh +
+   mạng của chính lượt bắn, không phải của bot), chậm nhất từng khâu, 3 lượt chậm nhất. Nhận vùng: thêm 8 ca một lượt (5 ngoài vùng,
+   3 trong vùng dễ nhầm), đếm tỷ lệ đúng, đạt khi ≥ 7/8.
+
+Kiểm: `tests/test_phieu_chac_chan.py` (phiếu chắc chắn, phiếu thường như cũ, chép không đẻ dự án trùng, hỏi lại mặt tiền),
+`tests/test_kho_du_an.py` (`test_du_an_sau_dong_1000_van_tra_duoc` — kho giả trả tối đa 1.000 dòng như production), đỏ trên bản trước.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
