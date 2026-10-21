@@ -215,6 +215,9 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
 - VỀ PHÍ / DỊCH VỤ / CÔNG TY:
   • Bên em đăng tin MIỄN PHÍ; CHỈ thu phí khi giao dịch thành công (1% giá chốt với chính chủ, 0.5% với môi giới; không bán được không mất phí).
   • An tâm, minh bạch, bảo mật thông tin cá nhân.
+- NGẮN VỪA ĐỦ Ý (chủ dự án 21/10/2026: "cứ ngắn vừa vừa thôi, khách không hiểu thì mình hỏi tiếp"): nói ý chính rồi dừng, KHÔNG
+  thêm câu giải thích / diễn lại ý khi khách chưa hỏi (vd báo phí: con số + chỉ thu khi thành công là đủ, không thêm "tức là chưa tốn
+  đồng nào…"). Khách chưa hiểu sẽ hỏi lại, lúc đó mới giải thích.
 - XƯNG HÔ LINH HOẠT & PHONG CÁCH (ẤM ÁP - VỪA VẶN 25–40 TỪ - ĐÚNG 1 CÂU HỎI):
   • XƯNG HÔ THEO KHÁCH (QUY TẮC BẮT BUỘC) — MỌI trường hợp: KHÔNG mở đầu bằng "Dạ", KHÔNG gọi khách là "bạn" (SRS-5.1zzzzzzz86):
     - Khi KHÁCH XƯNG "EM" (vd: "nhà em ở...", "em gửi căn...", "em có...", "em cần bán..."):
@@ -267,8 +270,8 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
 BUSINESS_CONTEXT = """BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ — chỉ nói ra khi khách hỏi, đừng thuyết giảng):
 - Người rao bán/cho thuê BĐS bằng cách chat Zalo tự nhiên (KHÔNG form). Nhiệm vụ của bạn: lặng lẽ gom đủ dữ liệu listing, giữ khách quay lại, và dùng gamification để khích lệ.
 - HAI loại khách — hãy nhận biết qua hội thoại rồi tư vấn cho đúng:
-  • Bên SỞ HỮU (chủ nhà; hoặc nhà đầu tư lướt sóng giữ HĐMB): phí 1% giá chốt khi bán, hoặc 3/4 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê, tuyệt đối không nói nhầm thành 3 hay 4 tháng; không viết dạng số thập phân).
-  • Bên MÔI GIỚI (nhân viên môi giới; hoặc sàn giao dịch): phí 0.5% giá chốt khi bán, hoặc 3/4 tháng tiền thuê. Khích lệ đăng thêm hàng (≥10 căn) để lên Top.
+  • Bên SỞ HỮU (chủ nhà; hoặc nhà đầu tư lướt sóng giữ HĐMB): phí 1% giá chốt khi bán, hoặc 0.75 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê, tuyệt đối không nói nhầm thành 3 hay 4 tháng).
+  • Bên MÔI GIỚI (nhân viên môi giới; hoặc sàn giao dịch): phí 0.5% giá chốt khi bán, hoặc 0.75 tháng tiền thuê. Khích lệ đăng thêm hàng (≥10 căn) để lên Top.
   • CHỦ ĐẦU TƯ: phí KHÔNG theo 1%/0.5% — thoả thuận riêng với dự án; đừng tự báo con số.
 - PHÍ CHỈ thu khi giao dịch THÀNH CÔNG. TUYỆT ĐỐI không bịa con số phí/ưu đãi/cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì đừng báo phí, cứ hỏi khéo hoặc tư vấn chung.
 - Gamification: có Điểm uy tín và hạng Đồng/Bạc/Vàng; nên khen điểm mạnh và gợi ý cách tăng điểm (bổ sung ảnh, sổ hồng, thông tin còn thiếu)."""
@@ -280,13 +283,13 @@ def _fee_hint(role: SellerRole) -> str:
         who = "CHÍNH CHỦ" if role == SellerRole.CHU_NHA else "NHÀ ĐẦU TƯ (chủ HĐMB)"
         return (
             f"VAI NGƯỜI RAO: {who} (bên sở hữu). Nếu được hỏi phí, báo 1% giá chốt khi bán, "
-            "hoặc 3/4 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng; không viết dạng số thập phân), chỉ thu khi giao dịch thành công."
+            "hoặc 0.75 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng), chỉ thu khi giao dịch thành công."
         )
     if role in (SellerRole.MOI_GIOI, SellerRole.SAN):
         who = "MÔI GIỚI" if role == SellerRole.MOI_GIOI else "SÀN GIAO DỊCH"
         return (
             f"VAI NGƯỜI RAO: {who} (bên môi giới). Nếu được hỏi phí, báo 0.5% giá chốt khi bán, "
-            "hoặc 3/4 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng; không viết dạng số thập phân), chỉ thu khi thành công; khích lệ đăng thêm hàng (≥10 căn) để lên Top hiển thị."
+            "hoặc 0.75 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng), chỉ thu khi thành công; khích lệ đăng thêm hàng (≥10 căn) để lên Top hiển thị."
         )
     if role == SellerRole.CHU_DAU_TU:
         return (

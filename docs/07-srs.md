@@ -7459,6 +7459,28 @@ Kiểm: `tests/test_phieu_chac_chan.py` (phiếu chắc chắn, phiếu thườn
 `tests/test_ngoai_vung.py` (`test_ai_bao_ngoai_vung_mot_tinh_trong_vung_thi_bo`), `tests/test_duyet_theo_trang_thai.py` (hụt nhớ
 5 phút), đỏ trên bản trước.
 
+### SRS-5.1zzzzzzz97 · Ngắn vừa đủ ý; phí thuê viết "0.75 tháng tiền thuê" (21/10/2026)
+
+Tester chị N. gửi câu báo phí bot viết hôm 20/10 (gửi trước khi cài SRS-5.1zzzzzzz90): "…phí môi giới bên em là 0.75 tháng tiền thuê,
+và chỉ thu khi giao dịch thành công. Tức là chị chưa tốn đồng nào trước, nhà chưa cho thuê được thì không mất phí ạ. Khi nào chị cần
+hỏi thêm, cứ nhắn em nhé." Chị viết lại ngắn: "Em xin phép báo phí bên em: phí môi giới bên em là 0.75 tháng tiền thuê. Chỉ thu khi
+giao dịch thành công. Mình cần biết thêm thông tin, nhắn em hỗ trợ ạ." Chủ dự án duyệt: "vầy hợp lý"; "cứ ngắn vừa vừa thôi, khách
+không hiểu thì mình hỏi tiếp".
+
+1. **Luật chung "ngắn vừa đủ ý"** ở `CONVERSATION_POLICY`: nói ý chính rồi dừng, không thêm câu giải thích khi khách chưa hỏi; khách
+   chưa hiểu sẽ hỏi lại. Luật "CHƯA BIẾT PHÍ 1–2 câu" của SRS-5.1zzzzzzz90 giữ nguyên.
+2. **Phí thuê viết "0.75 tháng tiền thuê"** ở mọi chỗ prompt (`BUSINESS_CONTEXT`, `_fee_hint`, khối hỏi phí trong engine, nhãn
+   `revenue.FeeQuote`). Đổi lại quyết định của tôi hôm 20/10 ("3/4 tháng", cấm số thập phân) — đó là quyết định BA, chưa phải của chủ
+   dự án. Vẫn cấm hiểu nhầm thành 3 hay 4 tháng.
+3. **Câu chuẩn**: câu của tester vào trang Câu chuẩn (điểm 2 cho câu cũ, bật "Bot dùng làm ví dụ"). "Mình" đổi thành gọi khách theo
+   xưng hô ("Chị…"), đúng luật giọng.
+
+**Lớp**: lời bot dài vì prompt có luật độ dài cho từng tình huống mà thiếu một luật chung. **Cùng lớp**: các luật độ dài riêng (xác nhận
+lên web 1 câu, phí 1–2 câu, tóm ảnh 1–2 câu) giữ nguyên, nay có luật chung đỡ cho các tình huống chưa có luật riêng.
+
+Kiểm: `tests/test_cho_thue_nguyen_can.py` (prompt nói "0.75 tháng tiền thuê", không còn "3/4 tháng tiền thuê", còn câu cấm 3 hay 4
+tháng), `tests/test_doc_y_khach.py`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -22,8 +22,11 @@ def test_loi_sau_duyet_ngan_va_phi_thue_ba_phan_tu():
     assert "ĐÚNG 1 CÂU" in xac_nhan and "mạng lưới kết nối khách mua ngay" not in xac_nhan
     he = build_fee_followup_system("Đạt", Property(loai_hinh="nha_pho", is_rental=True), web={"len_web": True})
     assert "CHƯA BIẾT PHÍ" in he and "tối đa 2 câu" in he
+    # 21/10 (SRS-5.1zzzzzzz97): chủ dự án duyệt câu tester "phí môi giới bên em là 0.75 tháng tiền thuê" — đổi lại quyết định 20/10
+    # ("3/4 tháng"), vẫn cấm hiểu nhầm thành 3 / 4 tháng.
     import aioi.prompts as P
-    assert "0.75 tháng" not in open(P.__file__, encoding="utf-8").read()
+    nguon = open(P.__file__, encoding="utf-8").read()
+    assert "0.75 tháng tiền thuê" in nguon and "3/4 tháng tiền thuê" not in nguon and "không nói nhầm thành 3 hay 4 tháng" in nguon
 
 
 def test_nha_tro_nguyen_can_la_nha_pho_trong_luat_lap_thao_tac():
