@@ -7668,6 +7668,29 @@ câu nhận ảnh. Muốn đưa thêm thì thêm khoá vào `MAC_DINH` + một m
 Kiểm: `tests/test_cau_mau.py` (6 ca — câu sửa tới lời bot, câu sửa hỏng / đọc lỗi dùng câu gốc, không file nào còn viết tay câu mẫu,
 migration nạp đúng câu gốc; đỏ khi bỏ phần nối — đã thử, 2 ca đỏ).
 
+### SRS-5.1zzzzzzz107 · Bắn thử 207: cụm trích lệch dấu câu, câu duyệt lọt lượt chưa đăng, "đang cho thuê" thành tin thuê (21/10/2026)
+
+Lượt `ban-thu-kb` 207 (commit `62bb41a`): chấm sao chạy trọn vòng (KB3 xin chấm sau khi nói phí, "5 sao" → `danh_gia_ai.sao = 5`), KB5 hết
+đòi số lô ("rao tin này giúp mình" thành duyệt), nhận vùng 8/8 theo cách chấm mới. Ba lỗi thật:
+
+1. **KB1 — tin Hà Nội lọt vùng.** Khách "nhà ở quận Đống Đa, Hà Nội em"; nhật ký `Vùng: AI=True trích_khớp=False` — AI đọc đúng ngoài vùng,
+   cụm AI trích lệch dấu câu nên code bỏ. **Lớp**: kiểm bằng chứng đòi khớp cả dấu câu, trong khi model hay thêm / bớt dấu phẩy, dấu chấm khi
+   chép lại — mọi ô kiểm bằng `_trich_dan_khop` (duyệt, hỏi về, xưng hô, xin đăng, gặp người, chấm sao, việc mua…) cùng lớp. **Sửa** ở MỘT
+   chỗ `_trich_dan_khop`: so như cũ, không khớp thì so lại sau khi bỏ dấu câu (chữ và số vẫn phải khớp nguyên; giữ "/" của số nhà trong
+   hẻm; cụm chỉ có ký hiệu như tim "❤️" vẫn so kiểu cũ). Ngoài vùng còn nhận thêm khi chính tên tỉnh AI đọc ra nằm trong lời khách (tỉnh suy
+   từ tên thành phố thì vẫn cần cụm trích).
+2. **KB1 — câu duyệt lọt lượt chưa đăng.** Khách "ok em đăng đi" khi tin còn thiếu phường → bot "Em xin phép đăng tin ạ. … cho em xin
+   thêm phường" — khách tưởng đã đăng. Câu duyệt có trong ví dụ câu chuẩn; khối `khoi_xin_dang` và nhánh tin chưa lên web
+   (`khoi_trang_thai_web`) chỉ cấm "nói đã đăng". **Sửa**: hai khối đó cấm luôn câu duyệt (đọc từ `cau_mau`, chủ dự án sửa câu thì lời cấm
+   đổi theo). **Cùng lớp**: ví dụ câu chuẩn có ngữ cảnh duyệt bị model dùng ngoài ngữ cảnh — chặn ở lời dặn của lượt, không lọc chữ đầu ra.
+3. **KB2 — "đang cho thuê" thành tin cho thuê.** "giá 27 tỷ… đang cho thuê 50 triệu/tháng" → `deal = cho_thue` (lượt 205 cùng ca ra
+   `ban`). Mô tả ô `is_rental` ở cả lượt bóc tách lẫn lượt lập thao tác chỉ là "Có phải tin cho thuê không". **Sửa**: một nguồn
+   `MO_TA_CHO_THUE` cho hai schema + câu trong `OPERATIONS_SYSTEM` — hiện trạng có người thuê khi rao BÁN không phải tin cho thuê.
+   **Chưa sửa**: `is_rental` chỉ bật được, không tắt (`engine.py`, `data.pop("is_rental")`) — đọc nhầm một lần thì kẹt tới khi admin sửa;
+   để lượt sau nếu còn gặp.
+
+Kiểm: `tests/test_ban_thu_207.py` (4 ca, 3 đỏ trên code cũ — đã thử), `tests/test_trang_thai_web.py` (dòng lệnh câu duyệt).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -212,6 +212,12 @@ LUAT_KHEN = """KHEN ÍT, CÓ CƠ SỞ:
     - CẤM khen chung chung cho có: "vị trí đẹp", "rất phù hợp", "công năng rộng", "rất thuận tiện", "an tâm"."""
 
 # Hướng dẫn chính sách & tư vấn chưng cất, gọn gàng cho lượt chat thông thường
+# Một nguồn cho ô is_rental ở lượt bóc tách lẫn lượt lập thao tác (SRS-5.1zzzzzzz107, bắn thử 207 KB2: "giá 27 tỷ… đang cho thuê 50
+# triệu/tháng" thành tin CHO THUÊ — mô tả cũ chỉ "Có phải tin cho thuê không"). Hiện trạng có người thuê không phải ý muốn cho thuê.
+MO_TA_CHO_THUE = ("true CHỈ KHI khách muốn CHO THUÊ căn này (rao cho thuê, giá thuê theo tháng). Khách rao BÁN (giá bán, vd \"27 tỷ\") "
+                  "mà nói \"đang cho thuê 50 triệu/tháng\" là HIỆN TRẠNG (nhà đang có người thuê) → false.")
+
+
 # Một nguồn cho mọi lượt trả lời người rao (SRS-5.1zzzzzzz102, nối thêm lượt sau bản nháp ở SRS-5.1zzzzzzz105).
 LUAT_GHI_NHAN = """GHI NHẬN VỪA NGẮN VỪA LỊCH SỰ (chủ dự án 21/10/2026: "ngắn không thì nó láo, nên phải sửa vừa ngắn vừa lịch sự"): khách vừa cho
   thông tin thì đáp nhận bằng MỘT vế ngắn có lời lễ phép ("Em ghi rồi ạ.", "Em cảm ơn anh/chị ạ.", "Em cập nhật rồi nha anh/chị.")
@@ -640,8 +646,11 @@ def khoi_xin_dang(thieu: list[str], prop: Property | None = None) -> str:
         return ("\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN (CHƯA CÓ THÔNG TIN CĂN) ===\nMời khách gửi / dán nội dung tin rao hoặc vài thông "
                 "tin chính (địa chỉ, giá, diện tích) trong ĐÚNG 1 câu ngắn. KHÔNG hỏi từng ô, KHÔNG soạn bài đăng.\n")
     y = ", ".join(f'"{nhan_o(o, prop)}"' for o in thieu)
+    # SRS-5.1zzzzzzz107 (bắn thử 207, KB1): lượt này bot mở bằng câu duyệt tin (cau_mau duyet_tin, chép từ ví dụ câu chuẩn) rồi mới hỏi ô
+    # thiếu — khách tưởng tin đã đăng. Câu duyệt chỉ dành cho lượt khách duyệt bản nháp đã lên web.
     return (f"\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN ===\nTin còn thiếu {y} — thiếu là chưa đăng được. Nói ngắn: còn thiếu ý này là em lên bản "
-            "nháp liền, rồi hỏi đúng ý đó (theo \"Thông tin cần hỏi tiếp theo\"). KHÔNG soạn bài đăng, KHÔNG nói đã đăng.\n")
+            "nháp liền, rồi hỏi đúng ý đó (theo \"Thông tin cần hỏi tiếp theo\"). KHÔNG soạn bài đăng, KHÔNG nói đã đăng, KHÔNG nói "
+            f"\"{cau_mau.cau('duyet_tin')}\" hay \"em đăng ngay\" (chưa có bản nháp thì chưa đăng được).\n")
 
 
 # Dòng mở đầu cố định của bản nháp tin rao. Model hay viết thêm câu dẫn TRƯỚC dòng này ("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như
@@ -760,7 +769,8 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
             "  • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng "
             "như môi giới dễ dàng tìm kiếm, kết nối.",
         )
-    cam = "TUYỆT ĐỐI KHÔNG nói tin đã đăng / đã lên web / đang hiển thị, KHÔNG bảo khách vào web xem tin của mình."
+    cam = ("TUYỆT ĐỐI KHÔNG nói tin đã đăng / đã lên web / đang hiển thị, KHÔNG bảo khách vào web xem tin của mình, KHÔNG nói "
+           f"\"{cau_mau.cau('duyet_tin')}\" (SRS-5.1zzzzzzz107).")
     thieu = [o for o in (web.get("thieu") or []) if o in FIELD_LABELS]
     if thieu:
         nhan = ", ".join(FIELD_LABELS[o].split(" (")[0] for o in thieu)
@@ -1379,7 +1389,9 @@ def property_field_props() -> dict[str, Any]:
 def extraction_schema() -> dict[str, Any]:
     """JSON schema covering every capturable field across all groups + rental terms."""
     properties = property_field_props()
-    properties["is_rental"] = {"type": "boolean", "description": "Có phải tin cho thuê không"}
+    # SRS-5.1zzzzzzz107 (bắn thử 207, KB2): "giá 27 tỷ… đang cho thuê 50 triệu/tháng" thành tin CHO THUÊ — mô tả cũ chỉ "Có phải tin cho
+    # thuê không". Hiện trạng có người thuê không phải ý khách muốn cho thuê.
+    properties["is_rental"] = {"type": "boolean", "description": MO_TA_CHO_THUE}
     properties["is_new_listing"] = {
         "type": "boolean",
         "description": "Đặt true CHỈ KHI khách rõ ràng bắt đầu nói về MỘT BĐS KHÁC (vd 'còn một "
@@ -1504,7 +1516,7 @@ vào được", "hẻm 4m" KHÔNG thành "mặt tiền", "3 lầu" KHÔNG thành
 nguyên cụm bang_chung thay cho giá trị.
 
 Ngoài "operations", nếu rõ vai trò người rao thì đặt "seller_role"
-(chu_nha/luot_song/moi_gioi/san/chu_dau_tu); nếu là tin cho thuê đặt "is_rental"=true.
+(chu_nha/luot_song/moi_gioi/san/chu_dau_tu); nếu là tin cho thuê đặt "is_rental"=true ("đang cho thuê X/tháng" khi rao BÁN là hiện trạng, không phải tin cho thuê).
 
 PHÂN BIỆT Ý ĐỊNH KHÁCH ("user_intent") BẰNG TOÀN BỘ NGỮ CẢNH (Semantic Understanding):
 - "sell": Người bán / cho thuê gửi thông tin BĐS của họ, HOẶC người bán hỏi thăm tình hình bán/thị trường (vd: "giá này có khách mua không em?", "có ai hỏi mua chưa?", "bên mua có trả giá không?"). Việc nhắc tới chữ "mua" trong câu hỏi VẪN LÀ "sell"!
@@ -1711,7 +1723,7 @@ def operations_schema() -> dict[str, Any]:
                 "enum": ["chu_nha", "luot_song", "moi_gioi", "san", "chu_dau_tu"],
                 "description": "Vai trò người rao khi đã rõ. Bỏ trống nếu chưa chắc.",
             },
-            "is_rental": {"type": "boolean", "description": "Có phải tin cho thuê không."},
+            "is_rental": {"type": "boolean", "description": MO_TA_CHO_THUE},
             "duyet_ban_nhap": {
                 "type": "string",
                 "enum": ["dong_y", "khong_dong_y"],

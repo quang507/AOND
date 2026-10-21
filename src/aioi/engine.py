@@ -250,10 +250,17 @@ def _hai_chieu_lo(fields: dict) -> str | None:
 
 
 def _trich_dan_khop(trich: str | None, cau: str | None) -> bool:
-    """Cụm AI trích có nằm NGUYÊN trong câu khách không (bỏ dấu, gộp khoảng trắng) — AI đọc nghĩa, code chỉ kiểm bằng chứng."""
+    """Cụm AI trích có nằm NGUYÊN trong câu khách không (bỏ dấu, bỏ dấu câu, gộp khoảng trắng) — AI đọc nghĩa, code chỉ kiểm bằng
+    chứng. Dấu câu bỏ từ SRS-5.1zzzzzzz107 (bắn thử 207: khách "quận Đống Đa, Hà Nội", AI trích bỏ dấu phẩy → trượt, tin Hà Nội lọt
+    vùng); chữ và số vẫn phải khớp nguyên."""
     gon = lambda s: re.sub(r"\s+", " ", _strip_accents(str(s or "")).lower()).strip()
     t = gon(trich)
-    return bool(t) and t in gon(cau)
+    if t and t in gon(cau):
+        return True
+    # Cụm chỉ có ký hiệu (tim "❤️" khi khách thả cảm xúc) bỏ dấu câu là rỗng — chỉ so kiểu trên.
+    tron = lambda s: re.sub(r"\s+", " ", re.sub(r"[^\w\s/]", " ", s)).strip()
+    t2 = tron(t)
+    return bool(t2) and t2 in tron(gon(cau))
 
 
 def _so_khop(trich: str | None, gia_tri: str | None, loi_khach: str) -> bool:
@@ -3401,14 +3408,17 @@ class Engine:
             # Một dòng mỗi lượt người bán (SRS-5.1zzzzzzz96, đo nhận vùng): chỉ cờ — không ghi tên tỉnh / lời khách.
             gan_nv = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
             log.warning("Vùng: AI=%s trích_khớp=%s trong_danh_sách=%s", bool(nv),
-                        any(_trich_dan_khop(plan.get("ngoai_vung_trich_dan"), c) for c in gan_nv) if nv else "-",
+                        any(_trich_dan_khop(plan.get("ngoai_vung_trich_dan"), c) or _trich_dan_khop(nv, c) for c in gan_nv)
+                        if nv else "-",
                         trong_vung_nhan_tin(nv) if nv else "-")
         if nv and trong_vung_nhan_tin(nv):   # SRS-5.1zzzzzzz96: AI báo "ngoài vùng" một tỉnh nằm TRONG danh sách → bỏ
             log.warning("Bỏ cờ ngoài vùng: tỉnh AI đọc nằm trong vùng nhận tin")
             nv = ""
         if nv and conv.role != "buyer":
             gan = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
-            if any(_trich_dan_khop(plan.get("ngoai_vung_trich_dan"), c) for c in gan):
+            # Bằng chứng: cụm AI trích, HOẶC chính tên tỉnh AI đọc ra nằm trong lời khách (SRS-5.1zzzzzzz107) — tỉnh suy từ tên thành
+            # phố ("Nha Trang" → Khánh Hòa) thì vẫn cần cụm trích.
+            if any(_trich_dan_khop(plan.get("ngoai_vung_trich_dan"), c) or _trich_dan_khop(nv, c) for c in gan):
                 conv.y_luot["ngoai_vung"] = nv
         if plan.get("xac_nhan_xoa") in ("dong_y", "tu_choi") and _trich_dan_khop(plan.get("xac_nhan_trich_dan"), cuoi):
             conv.y_luot["xac_nhan_xoa"] = plan["xac_nhan_xoa"]
