@@ -7315,6 +7315,101 @@ Kiểm: `tests/test_mot_luot_mot_luc.py::test_tin_cho_luc_bot_dang_soan_gom_than
 test_dien_tich_tin_thue_la_dien_tich_su_dung`, `tests/test_xung_ho_khong_lat.py`, `tests/test_tieu_de_va_xin_dang_trong.py` (đỏ trên
 bản trước).
 
+### SRS-5.1zzzzzzz92 · Hỏi lặp do loại BĐS lật giữa các lượt; bot trả lời chậm vì chờ lưu DB (21/10/2026)
+
+Chủ dự án hỏi "hôm qua lỗi fix hết chưa" → "fix đê". Hai việc còn treo từ SRS-5.1zzzzzzz90 / 86:
+
+1. *Câu gác lửng / WC hỏi 3 lần* (chat tester 20/10). Bằng chứng mới: lượt 3 bot hỏi "4m x 4.5m là đất hay sàn" — câu chỉ nhánh NHÀ
+   PHỐ có (`ambiguous_area`, cần `dien_tich_dat` / `dien_tich_nha`), trong khi tin cuối là `phong_tro`. Tức loại BĐS LẬT giữa các
+   lượt: AI phân loại lại mỗi lượt và ô phân loại đi thẳng qua cổng (`_O_PHAN_LOAI`), khách chỉ kể "1 trệt 1 lầu 2pn" là thành nhà
+   phố, lượt sau về phòng trọ. Mỗi lần lật, bộ ô hỏi đổi, ô vừa hỏi không còn trong cụm nên bộ đếm "lờ 2 lần" (SRS-5.1zzzzzzz80) không
+   đếm, ô cũ quay lại đầu hàng. **Lớp**: quyết định đã chốt bị lượt AI sau lật mà không cần bằng chứng — cùng lớp với xưng hô lật
+   (SRS-5.1zzzzzzz91). **Sửa**: lần đầu vẫn ghi thẳng; ĐỔI loại đã chốt phải có cụm bằng chứng trong tin khách vừa nhắn
+   (`_gia_tri_ghi`). Cùng lớp còn: ô `loai_hinh` từ đọc ảnh sổ (`deed_data`) — đường khác, giữ nguyên. Không tái hiện được nguyên lượt
+   chat (model thật); log "ô hỏi" (SRS-5.1zzzzzzz90) sẽ cho biết chắc nếu còn lặp.
+2. *Chậm (trung bình 9,3 s trong lõi, ghi kho 2,8 s)* — mỗi lượt lưu Supabase 2–3 lần, mỗi lần ~5 lần gọi mạng, và lần lưu CUỐI nằm
+   trước lời gửi khách. **Sửa**: (a) lần lưu cuối của lượt chạy nền (`SupabaseConversationStore.luu_nen`) theo hàng đợi MỖI KHÁCH một
+   luồng — đúng thứ tự (khoá trần không bảo đảm vào trước ra trước: bản chụp cũ có thể đè bản mới); lần lưu thường (`save`, vd
+   `_trang_thai_web` lưu rồi đọc trạng thái) chờ hàng đợi của khách xong trước; lưu một bản chụp (`deepcopy`), chụp hỏng thì lưu ngay
+   như cũ. (b) hàm tra cố định của DB (`chuan_dia_ban`, `boc_thong_so`) nhớ kết quả theo chữ vào; lỗi mạng không nhớ. Rủi ro đã biết:
+   lõi khởi động lại đúng lúc đang lưu nền thì mất lần lưu đó — lượt kế của khách lưu lại toàn bộ.
+
+Kiểm: `tests/test_loai_khong_lat.py` (đỏ trên bản trước), `tests/test_luu_nen.py` (thứ tự lưu, lượt trả lời không chờ lưu, nhớ kết quả
+tra). Đo thật bằng `ban-thu-kb.sh` (dòng "trung bình ms từng khâu").
+
+### SRS-5.1zzzzzzz93 · Căn trong dự án hỏi phường mãi; "MT 20m" lọt khi kích thước lô nằm ở ô diện tích đất (21/10/2026)
+
+Bắn thử `ban-thu-kb.sh` lượt 186 trên bản SRS-5.1zzzzzzz92: 31/35 đạt, bốn ca trượt do ba nguyên nhân.
+
+1. *Căn trong dự án, khách không nói phường, bot hỏi phường mãi, không ra bản nháp* (KB5 Ny'ah Phú Định, KB2). Kho đã điền cột `ward`
+   từ dự án lúc lưu (SRS-5.1zzzzzzz86), nhưng ô `phuong` của bot vẫn trống, nên lõi vẫn coi là thiếu phường. **Lớp**: dữ kiện suy ra
+   được ghi ở tầng lưu (cột DB) mà không ghi về ô tin, nên hai bên lệch nhau. **Cùng lớp**: ngã tư → phường (`_nga_tu`, SRS-5.1zzzzzzz43)
+   đã ghi về ô tin, đúng. Quận suy từ phường thì tầng lưu tự điền, bot không hỏi quận nên không lặp. **Sửa**: thêm
+   `phuong_theo_du_an` trong kho, dùng cùng đường `_du_an` (tên dự án phải khớp rõ) và `_chuan_dia_ban` (cột phường / quận chuẩn trước,
+   địa chỉ dài sau). Lõi gọi hàm này khi tin có `du_an` mà ô `phuong` trống. Phường khách đã nói thì không bị đè. Tra hỏng thì bot hỏi
+   như cũ.
+2. *"MT 20m" vẫn vào ô mặt tiền* (KB5): luật bề ngang ≤ lô (SRS-5.1zzzzzzz87) chỉ đọc hai chiều lô từ ô `kich_thuoc`, trong khi khách
+   gõ "4 x 11m" và AI ghi vào `dien_tich_dat`. **Sửa**: hai chiều lô lấy từ ô đầu tiên có dạng `a x b`, gồm kích thước rồi diện tích
+   đất, trong lượt này hoặc đã có. Diện tích đất chỉ ghi một số (vd "44m2") thì không đủ cơ sở bỏ.
+3. *Script kiểm web báo trượt dù trang có chữ*: `curl | grep -q` dưới `pipefail`. grep thoát sớm, curl ghi vào ống đã đóng (lỗi 23).
+   **Sửa**: đọc hết trang rồi mới dò (`web_co`).
+
+Kiểm: `tests/test_phuong_du_an_o_tin.py`, đỏ 3/4 ca trên bản trước. Ca còn lại canh không đè phường khách nói và tra hỏng thì hỏi như
+cũ. Bắn lại bằng `ban-thu-kb.sh` sau khi cài.
+
+### SRS-5.1zzzzzzz94 · Khách bảo đăng sau bản nháp mà tin không lên; nhà mặt tiền mang độ rộng hẻm (21/10/2026)
+
+Bắn thử `ban-thu-kb.sh` lượt 188 trên bản SRS-5.1zzzzzzz93: script báo 36/37 đạt, nhưng đọc log thấy hai lỗi script chưa kiểm.
+
+1. *KB3*: sau bản nháp, bot ghi thêm phí quản lý. Khách nhắn "ok đăng đi", bot cảm ơn rồi hỏi xác nhận lại, tin không lên web.
+   *KB5*: "rao tin này giúp mình" ngay sau bản nháp cũng chưa thành duyệt, phải thêm một "ok" nữa. **Lớp**: hai chỗ dặn model
+   ngược nhau. Luật DUYỆT trong `OPERATIONS_SYSTEM` đổi sang đọc theo trạng thái ở SRS-5.1zzzzzzz87, nhưng mô tả trường
+   `duyet_ban_nhap` trong schema vẫn ghi "Chỉ khi bot VỪA gửi bản tin nháp". Model đọc cả hai, tin ngay trước không phải bản nháp
+   thì bỏ trống. **Cùng lớp**: soát các mô tả trường khác trong `operations_schema`. `xac_nhan_xoa` ("chỉ khi bot vừa hỏi xác nhận
+   ẩn") đúng theo vị trí, vì câu xác nhận ẩn luôn là tin ngay trước, nên giữ. `xin_dang` không ràng vị trí. **Sửa**: mô tả trường
+   duyệt trỏ đúng dòng TRẠNG THÁI. Thêm một dòng journal mỗi lượt chờ duyệt (AI trả gì, cụm trích có khớp, có lời bảo đăng, kết quả;
+   không ghi lời khách) để lần sau biết hụt ở AI hay ở code. Riêng lượt KB5, lượt lập thao tác mất 5,9 s (có thể đã gọi lại) — không
+   có dòng log nên **không chắc** cùng nguyên nhân; dòng log mới sẽ cho biết.
+2. *KB5*: cột `alley_width_m` = 20 trên một căn mặt tiền (**đọc sai — cột này là độ rộng đường vào, 20 m là ĐÚNG; bất biến
+   dưới đây gỡ ở SRS-5.1zzzzzzz95**). Lượt 188: AI ghi "MT 20 mét" (độ rộng đường) vào cả ô lộ giới hẻm.
+   **Sửa**: một bất biến ở chỗ đọc thông số (`_thong_so`): `access_type = mat_tien` thì không ghi độ rộng hẻm. Lượt 191 vẫn ra 20,
+   dù ô hẻm trống. Gốc thật: trigger `listings_boc_thong_so` đọc lại MÔ TẢ tin (bản nháp khách duyệt, "lộ giới 20m") bằng regex và
+   điền cột lõi để trống. **Lớp**: regex DB đọc lại chữ AI đã viết, đè quyết định của tầng AI. Quy ước đã có từ 20261002a: tin mang
+   dấu `boc_tach._thong_so_ai` thì hai trigger đoán bằng regex (thông số, loại BĐS — `listings_fill_property_type`) đứng ngoài.
+   Chat-reply TypeScript cũ đặt dấu này, còn lõi Python thì chưa bao giờ. **Cùng lớp**: hai trigger đó là hai chỗ duy nhất đọc
+   dấu này (soát `schema.sql`). Trigger đoán tên đường từ `location_raw` chạy trước dấu, giữ vì lõi ghi `street` khi có ô đường.
+   **Sửa thêm**: lõi ghi `_thong_so_ai = true` vào `boc_tach` mỗi lần lưu tin; nạp lại thì bỏ dấu khỏi ô tin. Web chỉ đọc các khoá
+   cố định (`O_XAC_MINH`), nên dấu không lộ.
+3. Script: tiêu đề ghi kích thước lô ("5x20m") nay được tính là có diện tích, vì đó là cách ghi quen của tin nhà phố [giả định BA].
+   Thêm ba ca kiểm: KB3 "ok đăng đi" làm tin lên web; KB5 "rao tin này giúp mình" — đã có bản nháp thì tin lên web
+   ngay lượt đó, chưa có thì phải ra 📋 (lượt 190: bot hỏi mã căn trước, nên câu đó là lời xin soạn tin, đúng); KB5 không có độ rộng
+   hẻm.
+
+Kiểm: `tests/test_duyet_mo_ta_truong.py`, đỏ 2/3 ca trên bản trước. Ca còn lại canh luật duyệt theo trạng thái trong code, vốn
+đã đúng.
+
+### SRS-5.1zzzzzzz95 · Bề ngang căn và độ rộng đường trước nhà: nhãn, câu hỏi, chữ trên web; gỡ bất biến sai của SRS-94 (21/10/2026)
+
+Chủ dự án hỏi: "số mét mặt tiền và số mét độ rộng đường trước mặt giờ làm rõ chưa, hoặc cách hỏi cho rõ". Soát ba ô hay lẫn:
+`mat_tien` (bề ngang CĂN), `lo_gioi_duong` (độ rộng CON ĐƯỜNG), `lo_gioi_hem` (mặt tiền hay hẻm).
+
+1. *Nhãn và câu hỏi nói chưa rõ cái nào của căn, cái nào của đường.* Nhãn `mat_tien` là "bề ngang mặt tiền (m)", câu hỏi là "bề ngang
+   mặt tiền kinh doanh mấy mét" (khách dễ trả lời đường rộng bao nhiêu). Câu `lo_gioi_hem` hỏi mặt tiền hay hẻm nhưng không hỏi độ rộng.
+   Mô tả `mat_tien` của bộ đọc brochure ghi "Kích thước mặt tiền / chiều sâu". **Lớp**: một chữ "mặt tiền" mang hai nghĩa (vị trí giáp
+   đường / bề ngang căn), nhãn ô dùng nguyên chữ đó. **Sửa**: nhãn ô ghi rõ "của CĂN … không phải độ rộng con đường" / "của CON ĐƯỜNG …
+   không phải bề ngang căn". Nhãn tới cả mô tả ô cho lượt AI bóc. Câu `lo_gioi_hem` hỏi luôn đường / hẻm rộng mấy mét. Câu `mat_tien`
+   nói rõ là ngang của căn. Chữ gửi bộ đọc thông số của DB ghim ở `NHAN_TRUNG_TINH` ("lộ giới đường"), không trôi theo nhãn. Đã kiểm
+   `boc_thong_so` trên DB với "mặt tiền đường 20m", "hẻm 3m xe hơi vào được", "ngang: 4m; lộ giới đường: 20m" — đọc đúng loại đường
+   vào, độ rộng và bề ngang.
+2. *Web in "Đường vào: Mặt tiền · rộng 20 m"* — đọc như bề ngang căn 20 m. **Sửa**: "Mặt tiền đường · đường rộng 20 m" / "Hẻm xe hơi ·
+   hẻm rộng 3 m" (`lib/format.ts`, `app/nha-dat/[code]/page.tsx`).
+3. *Gỡ bất biến sai của SRS-5.1zzzzzzz94 mục 2.* Cột `alley_width_m` là độ rộng ĐƯỜNG VÀO: hẻm, hoặc con đường với nhà mặt tiền (web in
+   dưới dòng "Đường vào"). Bản 94 bỏ cột này với nhà mặt tiền là đọc sai nghĩa cột, nên KB5 mất "đường rộng 20 m". Dấu `_thong_so_ai`
+   của bản 94 giữ nguyên, vì regex DB vẫn không được đọc lại chữ AI viết. Ca kiểm KB5 đổi thành: `alley_width_m` = 20.
+
+Kiểm: `tests/test_duyet_mo_ta_truong.py` (độ rộng đường giữ với nhà mặt tiền; chữ gửi DB không đổi theo nhãn; nhãn / câu hỏi nói rõ),
+đỏ 2 ca trên bản trước. `tests/test_conversational_and_deed.py` theo nhãn mới.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -35,7 +35,9 @@ FIELD_LABELS: dict[str, str] = {
     "dien_tich_nha": "diện tích nhà",
     "gia": "giá",
     "ket_cau": "kết cấu (số lầu, phòng ngủ)",
-    "lo_gioi_hem": "vị trí mặt tiền hay hẻm (đường trước nhà)",
+    # 21/10 (SRS-5.1zzzzzzz95): ba ô hay lẫn — bề ngang CĂN (mat_tien), độ rộng con ĐƯỜNG (lo_gioi_duong), mặt tiền hay HẺM
+    # (lo_gioi_hem). Nhãn nói rõ cái nào là của căn, cái nào là của đường; nhãn tới cả mô tả ô cho lượt AI bóc.
+    "lo_gioi_hem": "vị trí: mặt tiền đường hay trong hẻm, kèm độ rộng hẻm nếu là hẻm (đường trước nhà)",
     "tinh_trang_ban_giao": "tình trạng bàn giao (đang trống hay có khách thuê)",
     "phap_ly_hoan_cong": "pháp lý, hoàn công (sổ hồng)",
     # Nhà đất & Đất
@@ -44,7 +46,7 @@ FIELD_LABELS: dict[str, str] = {
     "quy_hoach": "quy hoạch",
     "yeu_to_ha_tang": "yếu tố hạ tầng (cột điện, hố ga)",
     "tho_cu": "diện tích đất thổ cư",
-    "lo_gioi_duong": "lộ giới đường trước đất",
+    "lo_gioi_duong": "độ rộng / lộ giới của CON ĐƯỜNG trước nhà, đất (m — không phải bề ngang căn)",
     "phap_ly_so_do": "sổ đỏ riêng chính chủ",
     "the_chap": "tình trạng thế chấp ngân hàng",
     "thuong_luong": "khả năng thương lượng, bớt lộc",
@@ -76,7 +78,7 @@ FIELD_LABELS: dict[str, str] = {
     "tieu_chuan_container": "tiêu chuẩn container",
     "pccc": "hệ thống PCCC nghiệm thu",
     # Mặt bằng & Thương mại
-    "mat_tien": "bề ngang mặt tiền (m)",
+    "mat_tien": "bề ngang của CĂN (chiều ngang lô phía giáp đường, m — không phải độ rộng con đường)",
     "loi_di": "lối đi (chung chủ hay riêng biệt độc lập)",
     "vi_he_xe": "vỉa hè và chỗ để xe (máy/ô tô)",
     "nganh_nghe": "ngành nghề kinh doanh phù hợp hoặc hạn chế",
@@ -122,7 +124,8 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "dien_tich_nha": "Hỏi tổng diện tích sàn xây dựng khoảng bao nhiêu m² (số tầng đã biết vẫn phải hỏi m² sàn)",
     "gia": "Hỏi mức giá bán mong muốn thu về",
     "ket_cau": "Hỏi nhà mình xây mấy lầu / mấy tầng, có mấy phòng ngủ",
-    "lo_gioi_hem": "Hỏi nhà mình nằm ở mặt tiền đường hay trong hẻm (nếu hẻm thì xe hơi có vào tận cửa được không)",
+    "lo_gioi_hem": ("Hỏi nhà mình ở mặt tiền đường hay trong hẻm, và đường (hoặc hẻm) trước nhà rộng khoảng mấy mét; hẻm thì "
+                    "xe hơi vào tận cửa được không"),
     "tinh_trang_ban_giao": "Hỏi nhà hiện đang trống giao ngay hay đang cho thuê",
     "phap_ly_hoan_cong": "Hỏi sổ hồng riêng đã hoàn công đầy đủ chưa",
     # Nhà đất & Đất
@@ -131,7 +134,7 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "quy_hoach": "Hỏi tình trạng quy hoạch lộ giới",
     "yeu_to_ha_tang": "Hỏi trước nhà có vướng cột điện hay hố ga không",
     "tho_cu": "Hỏi diện tích đất thổ cư công nhận trên sổ là bao nhiêu mét vuông",
-    "lo_gioi_duong": "Hỏi đường trước đất rộng mấy mét, xe tải/ô tô vào tận nơi không",
+    "lo_gioi_duong": "Hỏi con đường trước nhà / đất rộng mấy mét (độ rộng con đường, không phải bề ngang lô), ô tô / xe tải vào tận nơi không",
     "phap_ly_so_do": "Hỏi sổ đỏ riêng chính chủ sẵn sàng công chứng chưa",
     "the_chap": "Hỏi sổ đang cất ở nhà hay đang thế chấp ngân hàng",
     "thuong_luong": "Hỏi giá này có thương lượng bớt lộc cho khách thiện chí không",
@@ -161,7 +164,7 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "tieu_chuan_container": "Hỏi xe container 20ft/40ft vào tận cửa xưởng được không",
     "pccc": "Hỏi hệ thống PCCC đã nghiệm thu chưa",
     # Mặt bằng & Thương mại
-    "mat_tien": "Hỏi bề ngang mặt tiền kinh doanh mấy mét",
+    "mat_tien": "Hỏi bề ngang của căn (chiều ngang phía giáp đường) mấy mét — nói rõ là ngang của căn, không phải đường rộng bao nhiêu",
     "loi_di": "Hỏi lối đi chung chủ hay hoàn toàn riêng biệt",
     "vi_he_xe": "Hỏi vỉa hè rộng mấy mét và chỗ để xe cho khách",
     "nganh_nghe": "Hỏi ngành nghề kinh doanh phù hợp hoặc ngành bị hạn chế",
@@ -1189,7 +1192,7 @@ def unit_type_extraction_schema() -> dict[str, Any]:
             "dien_tich": {"type": "string", "description": "Diện tích (sàn/đất)"},
             "so_phong_ngu": {"type": "string", "description": "Số phòng ngủ"},
             "so_tang": {"type": "string", "description": "Số tầng"},
-            "mat_tien": {"type": "string", "description": "Kích thước mặt tiền / chiều sâu"},
+            "mat_tien": {"type": "string", "description": "Bề ngang × chiều sâu lô của mẫu nhà (m) — không phải độ rộng con đường"},
             "huong": {"type": "string", "description": "Hướng"},
             "layout": {"type": "string", "description": "Tóm tắt bố trí công năng các tầng"},
         },
@@ -1660,8 +1663,11 @@ def operations_schema() -> dict[str, Any]:
             "duyet_ban_nhap": {
                 "type": "string",
                 "enum": ["dong_y", "khong_dong_y"],
-                "description": "Chỉ khi bot vừa gửi bản tin nháp hỏi khách thấy được chưa: dong_y = khách đồng ý đăng; "
-                "khong_dong_y = khách không đồng ý / chưa muốn đăng / muốn sửa trước. Còn lại bỏ trống.",
+                # Theo TRẠNG THÁI, không theo vị trí tin (SRS-5.1zzzzzzz94): bản cũ "Chỉ khi bot vừa gửi bản tin nháp" trái luật DUYỆT
+                # của OPERATIONS_SYSTEM (đổi 20/10) — bắn thử KB3 21/10: bot vừa ghi nhận phí quản lý, khách "ok đăng đi", ô bỏ trống.
+                "description": "Chỉ khi có dòng 'TRẠNG THÁI: bot ĐÃ gửi bản tin nháp' (kể cả khi sau bản nháp bot đã nhắc, hỏi lại hay "
+                "ghi thêm ý): dong_y = khách đồng ý / bảo đăng; khong_dong_y = khách không đồng ý / chưa muốn đăng / muốn sửa trước. "
+                "Còn lại bỏ trống.",
             },
             "duyet_trich_dan": {
                 "type": "string",

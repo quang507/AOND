@@ -24,8 +24,13 @@ vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/nu
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
 KB1="thu-kb1-$RUN"; KB2="thu-kb2-$RUN"; KB3="thu-kb3-$RUN"; KB4="thu-kb4-$RUN"; KB5="thu-kb5-$RUN"
 TAT_CA="$KB1 $KB2 $KB3 $KB4 $KB5"
+BAT_DAU=$(date -u +%s)
 
 don() {
+  # SRS-5.1zzzzzzz94: dòng journal "Duyệt:" của lượt bắn — chỉ cờ (AI trả gì, cụm trích có khớp, có lời bảo đăng, kết quả), không có lời
+  # khách, để biết lượt bảo đăng hụt ở AI hay ở code.
+  echo "== nhật ký duyệt bản nháp (lõi)"
+  vps "journalctl -u aond-core --since @$BAT_DAU -o cat --no-pager | grep -o 'Duyệt: AI=.*' | tail -20" || true
   # SRS-5.1zzzzzzz88: mọi câu bot của lượt bắn vào trang Câu chuẩn (CRM) kèm ngữ cảnh TRƯỚC khi dọn — chủ dự án chấm / sửa tay dần.
   echo "== đưa câu bot vào Câu chuẩn"
   for u in $TAT_CA; do q "select cau_chuan_tu_zalo('$u') as so_cau" | jq -c '.[0]' || true; done
@@ -68,10 +73,13 @@ dong() { q "select l.code, l.status, l.property_type, l.deal, l.price_vnd, l.are
             where s.zalo_user_id = '$1' order by l.updated_at desc limit 1" | jq -c '.[0] // {}'; }
 tieu_de_dat() {   # $1 = chữ phải có (vị trí); tiêu đề ≤ 15 từ, có vị trí, diện tích, giá
   [ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 15 ] && grep -qiE "$1" <<<"$TIEU_DE" \
-    && grep -qE 'm²|m2' <<<"$TIEU_DE" && grep -qE 'tỷ|triệu' <<<"$TIEU_DE" && echo 1 || echo 0
+    && grep -qE 'm²|m2|[0-9]+([.,][0-9]+)? ?x ?[0-9]+([.,][0-9]+)? ?m' <<<"$TIEU_DE" && grep -qE 'tỷ|triệu' <<<"$TIEU_DE" && echo 1 || echo 0
 }
 web_co() {   # trang tin trên web có chữ $2 (tin mã $1)
-  curl -sS -m 30 "https://aioinhadat.vercel.app/nha-dat/$1" | grep -qi "$2" && echo 1 || echo 0
+  # Đọc hết trang rồi mới dò (SRS-5.1zzzzzzz93): `curl | grep -q` dưới pipefail — grep thoát sớm, curl ghi vào ống đã đóng (lỗi 23),
+  # cả ống thành "trượt" dù trang có chữ cần tìm (bắn thử 21/10).
+  local trang; trang=$(curl -sS -m 30 "https://aioinhadat.vercel.app/nha-dat/$1" || true)
+  grep -qi "$2" <<<"$trang" && echo 1 || echo 0
 }
 
 echo "=================== KB1 — nhà phân lô mặt ngõ Nguyễn Chí Thanh, Đống Đa, Hà Nội (ngoài vùng nhận tin) ==================="
@@ -141,13 +149,20 @@ kiem "KB3: có thương lượng" "$(jq '.negotiable == true | if . then 1 else 
 kiem "KB3: tiêu đề ≤ 15 từ, có Masteri, diện tích, giá" "$(tieu_de_dat 'masteri')"
 kiem "KB3: tiêu đề căn hộ không có \"MT\"" "$(grep -qw 'MT' <<<"$TIEU_DE" && echo 0 || echo 1)"
 kiem "KB3: không hỏi hẻm / mặt tiền" "$(grep -qiE 'hẻm|mặt tiền' <<<"$(jq -r '.reply' <<<"$TRA")" && echo 0 || echo 1)"
+# SRS-5.1zzzzzzz94: sau bản nháp bot ghi thêm phí quản lý (tin ngay trước không còn là bản nháp) — "ok đăng đi" vẫn là duyệt.
+kiem "KB3: \"ok đăng đi\" sau khi bot ghi thêm ý vẫn là duyệt — tin lên web" "$(jq '.status == "dang_ban" | if . then 1 else 0 end' <<<"$r3")"
 
 echo; echo "=================== KB5 — chat tester chị N. 20/10: nhà trong Ny'ah Phú Định, dtsd, MT 20m, ok liên tục ==================="
 # SRS-5.1zzzzzzz87: duyệt bản nháp hỏi lại mãi; "dtsd: 245m" vào ô đất; "MT 20 mét" (đường) thành bề ngang; tên dự án không dấu.
 TIEU_DE=""; MOC_KB5=${#MOI_LOI}
-for cau in "mình cần bán nhà trong khu dự án Nyah Phu Dinh"            "Bán nhà trong khu dân cư Nyah Phú Định, Trương Đình Hội • MT 20 mét, giá 6,95 tỷ, DT 4 x 11m, 1 trệt 1 lửng 3 lầu sân thượng, garage trong nhà, SHR hoàn công đầy đủ"            "dtsd: 245m vuông" "rao tin này giúp mình" "ok"; do
+for cau in "mình cần bán nhà trong khu dự án Nyah Phu Dinh"            "Bán nhà trong khu dân cư Nyah Phú Định, Trương Đình Hội • MT 20 mét, giá 6,95 tỷ, DT 4 x 11m, 1 trệt 1 lửng 3 lầu sân thượng, garage trong nhà, SHR hoàn công đầy đủ"            "dtsd: 245m vuông"; do
   chat "$KB5" "$cau"
 done
+# SRS-5.1zzzzzzz94: "rao tin này giúp mình" — đã có bản nháp thì là DUYỆT (tin lên web ngay lượt đó); chưa có thì là xin soạn tin (ra 📋).
+NHAP_TRUOC=$(grep -c '📋' <<<"${MOI_LOI:$MOC_KB5}" || true)
+chat "$KB5" "rao tin này giúp mình"
+TT_RAO=$(dong "$KB5" | jq -r '.status // ""'); LOI_RAO=$(jq -r '.reply // ""' <<<"$TRA")
+chat "$KB5" "ok"
 LOI_KB5_CUOI=$(jq -r '.reply // ""' <<<"$TRA")
 chat "$KB5" "ok"
 r5=$(dong "$KB5"); echo "$r5"
@@ -157,6 +172,13 @@ kiem "KB5: dtsd 245 vào diện tích sàn, không vào ô đất" \
 kiem "KB5: diện tích đất 44 (4x11)" "$(jq '((.area_m2 // 0) | tonumber) == 44 | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: \"MT 20 mét\" không thành bề ngang 20m" "$(jq '((.frontage_m // 0) | tonumber) != 20 and (((.boc_tach.mat_tien // "") | test("20")) | not) | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: một cụm không vào hai ô pháp lý" "$(jq '(.boc_tach.phap_ly // "x") != (.boc_tach.phap_ly_hoan_cong // "y") | if . then 1 else 0 end' <<<"$r5")"
+if [ "${NHAP_TRUOC:-0}" -gt 0 ]; then
+  kiem "KB5: \"rao tin này giúp mình\" sau bản nháp là duyệt (tin lên web ngay lượt đó)" "$([ "$TT_RAO" = dang_ban ] && echo 1 || echo 0)"
+else
+  kiem "KB5: \"rao tin này giúp mình\" khi chưa có bản nháp thì ra bản nháp" "$(grep -q '📋' <<<"$LOI_RAO" && echo 1 || echo 0)"
+fi
+# SRS-5.1zzzzzzz95: `alley_width_m` = độ rộng ĐƯỜNG VÀO; "MT 20 mét" cạnh tên đường là đường rộng 20 m, không phải ngang căn 20 m.
+kiem "KB5: \"MT 20 mét\" là đường rộng 20 m (cột đường vào)" "$(jq '((.alley_width_m // 0) | tonumber) == 20 | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: khách ok rồi thì tin lên web" "$(jq '.status == "dang_ban" | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: sau \"ok\" bot không hỏi xác nhận lại" "$(grep -qiE 'xác nhận (giúp|lại|lần)|đã ổn chưa' <<<"$LOI_KB5_CUOI$(jq -r '.reply // ""' <<<"$TRA")" && echo 0 || echo 1)"
 

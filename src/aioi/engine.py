@@ -1835,6 +1835,19 @@ class Engine:
                         dia_ban.pop("quan", None)
                     captured = list(dict.fromkeys(list(captured) + conv.prop.update(dia_ban)))
 
+            # 1a-phường dự án (21/10/2026, SRS-5.1zzzzzzz93): căn trong dự án mà khách chưa nói phường → phường của dự án trong kho vào
+            #     CHÍNH ô tin. Trước đây chỉ kho ghi cột `ward` lúc lưu; ô `phuong` của bot vẫn trống nên bot tưởng thiếu phường, hỏi mãi
+            #     và không ra bản nháp (bắn thử KB5 / KB2 21/10).
+            tra_phuong = getattr(self._convstore, "phuong_theo_du_an", None)
+            if tra_phuong is not None and conv.prop.fields.get("du_an") and not conv.prop.fields.get("phuong"):
+                try:
+                    p_du_an = tra_phuong(conv.prop.fields)
+                except Exception as e:  # noqa: BLE001 — tra hỏng thì bot hỏi phường như cũ
+                    log.warning("phuong_theo_du_an lỗi: %s", e)
+                    p_du_an = None
+                if p_du_an:
+                    captured = list(dict.fromkeys(list(captured) + conv.prop.update({"phuong": p_du_an})))
+
             # 1a-địa danh (19/10/2026, SRS-5.1zzzzzzz60): ô phường / quận / đường AI vừa đọc → tên chuẩn trong kho (chữ trước, nghĩa
             #     sau; máy kiểm tên còn gần chữ khách). Không chắc thì giữ chữ khách.
             if self._dia_danh and captured:
@@ -3044,8 +3057,10 @@ class Engine:
     ) -> TurnResult:
         self._drop_stub_listings(conv)   # clean up the blank starter once real căn exist
         if self._convstore is not None:  # persist the listing after every turn
+            # Kho có lưu nền (Supabase) → lần lưu cuối của lượt không chặn lời gửi khách (SRS-5.1zzzzzzz92); kho khác lưu ngay.
+            luu_nen = getattr(self._convstore, "luu_nen", None)
             with _do(conv, "ghi_kho"):
-                self._convstore.save(conv)
+                (luu_nen or self._convstore.save)(conv)
         timeliness = self._timeliness(conv, now)
         completeness = conv.prop.completeness()  # the active listing
         prop_score = g.property_score(completeness, timeliness)
@@ -3283,6 +3298,11 @@ class Engine:
             # khi đã trình bản nháp, duyet_ban_nhap thì trống, nên lời bảo đăng thành một vòng hỏi xác nhận nữa.
             if conv.listing_proposed and conv.duyet_luot is None and cuoi.strip() != STICKER_TRUNG_TINH:
                 conv.duyet_luot = "dong_y"
+        if conv.listing_proposed:
+            # Một dòng mỗi lượt chờ duyệt (SRS-5.1zzzzzzz94): bắn thử 21/10 có hai lượt khách bảo đăng mà không thành duyệt, journal không
+            # cho biết hụt ở AI (bỏ trống) hay ở code (cụm trích không khớp). Chỉ ghi tên / cờ, không ghi lời khách.
+            log.warning("Duyệt: AI=%s trích_khớp=%s xin_đăng=%s → %s", y or "-", _trich_dan_khop(plan.get("duyet_trich_dan"), cuoi),
+                        bool(conv.y_luot.get("xin_dang")), conv.duyet_luot or "-")
         nv = str(plan.get("ngoai_vung") or "").strip()
         if nv and conv.role != "buyer":
             gan = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
@@ -3393,7 +3413,17 @@ class Engine:
         nhẹ" rồi lên tin). SRS-5.1zzzzzzz86: cụm trích đúng mà GIÁ TRỊ thêm điều khách không nói (`_gia_tri_chong_do`) → ghi
         chính cụm khách nói, không ghi lời AI suy."""
         if k in _O_PHAN_LOAI:
-            return v   # phân loại AI đọc theo nghĩa ("nhà phố" → nha_pho), không phải lời trích; sai loại không phải bịa
+            # Phân loại AI đọc theo nghĩa ("nhà phố" → nha_pho), không phải lời trích — lần ĐẦU ghi thẳng. ĐỔI loại đã chốt thì cụm
+            # bằng chứng phải nằm trong tin khách VỪA nhắn (SRS-5.1zzzzzzz92): chat tester 20/10 loại lật phòng trọ ↔ nhà phố giữa các
+            # lượt (khách chỉ kể "1 trệt 1 lầu 2pn"), bộ ô hỏi đổi theo, bộ đếm "lờ 2 lần" đếm sai, một câu bị hỏi 3 lần.
+            cu = conv.prop.loai_hinh if k == "loai_hinh" else conv.prop.fields.get(k)
+            if cu and cu != v:
+                cuoi = next((t.content for t in reversed(conv.history) if t.role == "user"), "")
+                bc = bang_chung.get(k) if isinstance(bang_chung.get(k), str) else None
+                if not _trich_dan_khop(bc, cuoi):
+                    log.warning("Giữ loại BĐS đã chốt: đổi loại cần cụm khách nói ở tin vừa nhắn")
+                    return None
+            return v
         if any(li.prop.fields.get(k) == v for li in conv.listings):
             return v
         loi = conv.loi_khach_luot
@@ -3441,7 +3471,10 @@ class Engine:
                 if k != giu:
                     log.warning("Bỏ ô %s: cùng cụm khách đã vào ô %s", k, giu)
                     out.pop(k, None)
-        mt, kt = out.get("mat_tien"), out.get("kich_thuoc") or conv.prop.fields.get("kich_thuoc")
+        # Kích thước lô có thể nằm ở ô kích thước hoặc ở ô diện tích đất dạng "4 x 11m" (bắn thử KB5 21/10, SRS-5.1zzzzzzz93).
+        kt = next((x for x in (out.get("kich_thuoc"), conv.prop.fields.get("kich_thuoc"), out.get("dien_tich_dat"),
+                               conv.prop.fields.get("dien_tich_dat")) if x and re.search(r"\d\s*[x×*]\s*\d", str(x))), None)
+        mt = out.get("mat_tien")
         so_mt, so_kt = [float(x) for x in _so_trong(mt)], [float(x) for x in _so_trong(kt)]
         if so_mt and so_kt and min(so_mt) > max(so_kt):
             log.warning("Bỏ ô mat_tien: lớn hơn cả hai chiều kích thước lô")

@@ -74,7 +74,7 @@ export const oTheoLoai = (loai: string | null | undefined): OTheoLoai => (loai &
 // FR-172 — nhãn cho các cột thông số có cấu trúc (migration 20260902e). Một
 // bảng cho thẻ tin, trang chi tiết, bộ lọc và form admin.
 export const ACCESS_LABEL: Record<string, string> = {
-  mat_tien: "Mặt tiền",
+  mat_tien: "Mặt tiền đường",
   hem_xe_tai: "Hẻm xe tải",
   hem_xe_hoi: "Hẻm xe hơi",
   hem_xe_may: "Hẻm xe máy",

@@ -11,14 +11,17 @@ from __future__ import annotations
 import json
 import logging
 import os
+import copy
+import queue
 import re
+import threading
 import time
 import urllib.error
 import urllib.request
 import urllib.parse
 import uuid
 from datetime import datetime, timezone
-from typing import Any, TYPE_CHECKING
+from typing import Callable, Any, TYPE_CHECKING
 
 from .kho_anh import BUCKET_CONG_KHAI, BUCKET_RIENG, la_uuid
 from .mua import KhoNguoiMua
@@ -72,7 +75,8 @@ _O_KHONG_PHAI_THONG_SO = {"dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "d
 # "giá chỉ áp dụng trong tháng 10" lên web thành "thương lượng"; "vị trí mặt tiền hay hẻm: hẻm 3m" → mặt tiền; "căn thường hay căn
 # góc: căn thường" → căn góc; "thang máy di chuyển: không có" → có thang máy; "bề ngang mặt tiền: 4m" → mặt tiền. Các ô đó gửi giá trị
 # trơn (ô bề ngang kèm chữ "ngang" để còn đọc ra số đo); phí gửi xe / yêu cầu xe hơi của người mua không phải thông số căn.
-NHAN_TRUNG_TINH = {"lo_gioi_hem": "", "mat_tien": "ngang", "thuong_luong": "", "can_goc": "", "thang_may": "",
+# `lo_gioi_duong` ghim "lộ giới đường" (SRS-5.1zzzzzzz95): nhãn ô cho người / AI đọc đổi chữ thì chữ gửi bộ đọc thông số của DB không đổi.
+NHAN_TRUNG_TINH = {"lo_gioi_hem": "", "mat_tien": "ngang", "lo_gioi_duong": "lộ giới đường", "thuong_luong": "", "can_goc": "", "thang_may": "",
                    "phap_ly_hoan_cong": "", "phap_ly_so_do": ""}
 
 # Loại hình: mã lõi Python (schema.TYPE_TO_GROUP, 26 mã) → enum `listings.property_type` (12 mã của CRM) — SRS-5.1zzzzzzz68. Trước bản
@@ -247,6 +251,19 @@ class SupabaseConversationStore(KhoNguoiMua):
                     break
         return phuong, quan, nguon
 
+    def phuong_theo_du_an(self, fields: dict[str, Any]) -> str | None:
+        """Phường (tên chuẩn) của dự án khách nói, khi tên khớp rõ một dự án trong kho — cùng đường với `_dia_ban` (SRS-5.1zzzzzzz93)."""
+        d = self._du_an(fields)
+        if not d:
+            return None
+        for khoa in (("ward", "district"), ("location_raw", "ward", "district")):
+            chu = ", ".join(str(d[k]) for k in khoa if d.get(k))
+            if chu:
+                p, _ = self._chuan_dia_ban(chu)
+                if p:
+                    return p
+        return None
+
     def cau_chuan_mau(self) -> list[dict[str, Any]]:
         """Câu chuẩn người chấm đã sửa / đã chấm (bảng `cau_chuan`, SRS-5.1zzzzzzz88) — 8 dòng mới nhất, làm ví dụ trong prompt. Sửa ở
         CRM là bot đổi trong vòng 60 giây, không cần cài lại. Lỗi đọc → [] (bot vẫn trả lời, không ví dụ)."""
@@ -285,11 +302,22 @@ class SupabaseConversationStore(KhoNguoiMua):
             self._du_an_nho[ten] = next((x for x in (da if isinstance(da, list) else []) if cung_ten_du_an(ten, x.get("name"))), None)
         return self._du_an_nho[ten]
 
+    def _nho_tra(self, ten: str, chu: str, goi: Callable[[], Any]) -> Any:
+        """Kết quả hàm tra CỐ ĐỊNH của DB (cùng chữ vào → cùng kết quả ra) nhớ trong bộ nhớ (SRS-5.1zzzzzzz92: mỗi lượt lưu 2–3 lần, mỗi
+        lần gọi lại `chuan_dia_ban` + `boc_thong_so` với đúng chữ cũ — khâu ghi kho trung bình 2,8 s). Lỗi mạng không nhớ."""
+        nho = self.__dict__.setdefault("_nho_ham", {})
+        khoa = (ten, chu)
+        if khoa not in nho:
+            if len(nho) > 2000:
+                nho.clear()
+            nho[khoa] = goi()
+        return nho[khoa]
+
     def _chuan_dia_ban(self, chu: str) -> tuple[str | None, str | None]:
         if not chu:
             return None, None
         try:
-            kq = self._request("POST", "rpc/chuan_dia_ban", data={"p_text": chu})
+            kq = self._nho_tra("chuan_dia_ban", chu, lambda: self._request("POST", "rpc/chuan_dia_ban", data={"p_text": chu}))
         except Exception as e:
             log.warning("chuan_dia_ban lỗi: %s", e)
             return None, None
@@ -304,7 +332,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         if chu in MA_PHAP_LY:
             return chu
         try:
-            kq = self._request("POST", "rpc/boc_thong_so", data={"p_text": chu})
+            kq = self._nho_tra("boc_thong_so", chu, lambda: self._request("POST", "rpc/boc_thong_so", data={"p_text": chu}))
         except Exception as e:
             log.warning("boc_thong_so lỗi: %s", e)
             return None
@@ -335,6 +363,8 @@ class SupabaseConversationStore(KhoNguoiMua):
             if len(self._thong_so_nho) > 2000:
                 self._thong_so_nho.clear()
             self._thong_so_nho[khoa] = {c: kq[c] for c in COT_THONG_SO if isinstance(kq, dict) and kq.get(c) is not None}
+        # `alley_width_m` là độ rộng ĐƯỜNG VÀO — hẻm, hoặc con đường với nhà mặt tiền (web in "Đường vào: Mặt tiền đường · đường
+        # rộng 20 m"). Bản SRS-5.1zzzzzzz94 bỏ cột này với nhà mặt tiền là đọc sai nghĩa cột — gỡ ở SRS-5.1zzzzzzz95.
         return dict(self._thong_so_nho[khoa])
 
     def _patch(self, endpoint: str, data: dict) -> None:
@@ -513,7 +543,47 @@ class SupabaseConversationStore(KhoNguoiMua):
 
     # --- ConversationStore Protocol --------------------------------------
 
+    def _hang_luu(self, user_key: str) -> "queue.Queue":
+        """Mỗi khách MỘT hàng đợi lưu + một luồng xử lý — giữ đúng thứ tự (khoá trần không bảo đảm vào trước ra trước: bản chụp cũ có
+        thể ghi SAU bản mới, đè dữ liệu mới)."""
+        with self.__dict__.setdefault("_khoa_tao_luu", threading.Lock()):
+            hang = self.__dict__.setdefault("_hang_luu_khach", {})
+            if user_key not in hang:
+                q: queue.Queue = queue.Queue()
+
+                def chay() -> None:
+                    while True:
+                        chup = q.get()
+                        try:
+                            self._save(chup)
+                        except Exception as e:  # noqa: BLE001 — _save đã tự ghi sổ lỗi; luồng không được chết
+                            log.error("Lưu nền lỗi: %s", e)
+                        finally:
+                            q.task_done()
+                threading.Thread(target=chay, daemon=True, name=f"luu-{user_key[-4:]}").start()
+                hang[user_key] = q
+            return hang[user_key]
+
+    def luu_nen(self, conv: Conversation) -> None:
+        """Lần lưu CUỐI mỗi lượt chạy nền (SRS-5.1zzzzzzz92): bot gửi lời ngay, không chờ 5+ lần gọi Supabase. Lưu một BẢN CHỤP của
+        hội thoại (lượt sau có thể đang sửa conv), theo hàng đợi của khách."""
+        try:
+            chup = copy.deepcopy(conv)
+        except Exception as e:  # noqa: BLE001 — không chụp được thì lưu ngay như cũ, lượt trả lời không được hỏng vì việc lưu
+            log.warning("Không chụp được hội thoại để lưu nền (%s) — lưu ngay", type(e).__name__)
+            self.save(conv)
+            return
+        self._hang_luu(conv.user_key).put(chup)
+
     def save(self, conv: Conversation) -> None:
+        """Lưu ngay — chờ hàng lưu nền của khách xong trước, để lượt sau (`_trang_thai_web` lưu rồi đọc trạng thái) không bị bản chụp
+        cũ ghi đè sau đó."""
+        hang = self.__dict__.get("_hang_luu_khach", {}).get(conv.user_key)
+        if hang is not None:
+            hang.join()
+        self._save(conv)
+
+    def _save(self, conv: Conversation) -> None:
         """Persist conversation, listings, and leads into Supabase."""
         # Always mirror into local fallback first if configured for backup/safety
         if self.fallback:
@@ -553,7 +623,11 @@ class SupabaseConversationStore(KhoNguoiMua):
                     "street": fields.get("duong"),
                     # Ô khách lờ 2 lần (để sau bản nháp) đi kèm tin dưới khoá nội bộ `_hoan` — lõi khởi động lại (mỗi lần cài VPS)
                     # không quên rồi hỏi lại từ đầu (SRS-5.1zzzzzzz90). Khoá `_` không ra khách (`fields_khach`, `_thong_so`).
-                    "boc_tach": {**fields, **({"_hoan": sorted(li.prop.hoan)} if getattr(li.prop, "hoan", None) else {})},
+                    # `_thong_so_ai` (SRS-5.1zzzzzzz94): thông số / loại BĐS do lõi AI quyết — hai trigger đoán bằng regex trên mô tả
+                    # (`listings_boc_thong_so`, `listings_fill_property_type`, 20261002a) đứng ngoài. Bắn thử KB5 21/10: mô tả bản nháp
+                    # "lộ giới 20m" bị regex đọc lại thành `alley_width_m` = 20 trên căn mặt tiền, đè chỗ lõi để trống.
+                    "boc_tach": {**fields, **({"_hoan": sorted(li.prop.hoan)} if getattr(li.prop, "hoan", None) else {}),
+                                 "_thong_so_ai": True},
                     "updated_at": now_iso,
                 }
                 if fields.get("dia_chi"):
@@ -758,6 +832,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             for row in db_listings:
                 boc_tach = dict(row.get("boc_tach") or {})
                 hoan = boc_tach.pop("_hoan", None)
+                boc_tach.pop("_thong_so_ai", None)   # dấu cho DB, không phải ô tin
                 prop = Property(
                     loai_hinh=loai_tu_db(row.get("property_type"), boc_tach),
                     is_rental=(row.get("deal") in ("cho_thue", "thue")),
