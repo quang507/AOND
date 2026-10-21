@@ -1828,6 +1828,14 @@ class Engine:
             captured, conv.last_receipts = self._ap_dung_ke_hoach(conv, ke_hoach)
             if conv.y_luot.get("ngoai_vung"):   # khoá nội bộ `_` — theo căn qua lưu / nạp lại, không vào ô tin (fields_khach)
                 conv.prop.fields["_ngoai_vung"] = conv.y_luot["ngoai_vung"]
+                # Cùng một căn bị mở hai lần (bắn thử 209 KB1: lượt làm rõ "quận Đống Đa, Hà Nội" thành "add") — căn chưa trình bản
+                # nháp trùng ĐÚNG tên đường và giá với căn vừa biết ngoài vùng là chính căn đó: ẩn theo (SRS-5.1zzzzzzz108).
+                f0 = conv.prop.fields
+                for li in conv.listings:
+                    f = li.prop.fields
+                    if (li is not conv.active and not li.listing_proposed and f.get("duong") and f.get("gia")
+                            and f.get("duong") == f0.get("duong") and f.get("gia") == f0.get("gia")):
+                        f["_ngoai_vung"] = conv.y_luot["ngoai_vung"]
 
             # 1a-destructive. A DESTRUCTIVE basket op (xóa hết / bỏ căn / chỉ giữ) is confirmed
             #    with a reply built from the REAL post-action state, so the words match the deed —
@@ -1952,7 +1960,8 @@ class Engine:
             reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
                 raise LoiTraLoi("lời gửi khách rỗng")
-            reply = _bo_markdown(reply)
+            # Cùng luật hình thức như mọi nhánh (SRS-5.1zzzzzzz108 — bắn thử 209: "Dạ, em rất tiếc…" ở nhánh này lọt vì bỏ qua bước kiểm).
+            reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply))
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured, now)

@@ -7691,6 +7691,25 @@ Lượt `ban-thu-kb` 207 (commit `62bb41a`): chấm sao chạy trọn vòng (KB3
 
 Kiểm: `tests/test_ban_thu_207.py` (4 ca, 3 đỏ trên code cũ — đã thử), `tests/test_trang_thai_web.py` (dòng lệnh câu duyệt).
 
+### SRS-5.1zzzzzzz108 · Bắn thử 209: làm rõ địa chỉ thành căn mới, nhánh ngoài vùng bỏ kiểm "Dạ" (21/10/2026)
+
+Lượt 209 (commit `e4ec232`): KB2 hết thành tin cho thuê, KB5 / chấm sao đạt, KB1 nhận ra Hà Nội ở lượt "quận Đống Đa, Hà Nội" (nhật ký
+`Vùng: AI=True trích_khớp=True` — bản sửa SRS-5.1zzzzzzz107 có tác dụng). Còn:
+
+1. **KB1 — tin vẫn mở.** Nhật ký lượt đó `Kế hoạch: [('add', …)]`: khách chỉ làm rõ quận / tỉnh mà AI lập thao tác mở căn MỚI; cờ ngoài vùng
+   gắn căn mới (`active`), căn cũ cùng đường, cùng giá ở lại `cho_thong_tin`. **Lớp**: cờ theo căn chỉ gắn căn đang nói, trong khi một căn
+   có thể bị mở hai lần. **Sửa**: (a) `OPERATIONS_SYSTEM` — làm rõ địa chỉ của căn đang khai là "update", không "add"; (b) lưới ở code:
+   khi biết ngoài vùng, căn chưa trình bản nháp trùng ĐÚNG tên đường và giá với căn đó cũng gắn cờ (kho ẩn). Không đoán ý bằng từ khoá —
+   so dữ kiện đã ghi.
+2. **Nhánh ngoài vùng mở đầu "Dạ".** "Dạ, em rất tiếc…" — nhánh `build_ngoai_vung_system` bỏ qua `_soat_hinh_thuc`. **Sửa**: đi qua cùng
+   bước kiểm như mọi nhánh. **Cùng lớp đã soát**: nhánh bán, mua, bản nháp đều qua `_soat_hinh_thuc`; câu viết sẵn (`cau_mau`) không qua
+   model nên không cần.
+3. **KV1 — AI không đọc ra Hà Nội** ("Bán nhà mặt phố Hoàng Quốc Việt, Cầu Giấy, Hà Nội…", `Vùng: AI=False`; lượt 207 cùng câu thì đúng).
+   **Chưa sửa**: lỗi của lượt đọc model, không phải của code kiểm. Không thêm lưới tên tỉnh bằng chữ — "Xa lộ Hà Nội" ở TP.HCM sẽ bị chặn
+   oan. Theo dõi tỷ lệ ở các lượt bắn thử sau (207: 8/8, 209: 7/8).
+
+Kiểm: `tests/test_ban_thu_209.py` (3 ca, đỏ trên code cũ — đã thử).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

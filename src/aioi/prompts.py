@@ -1486,7 +1486,9 @@ Các loại "op":
 - "add": THÊM (những) căn MỚI vào rổ. 1 căn: "fields" chứa thông tin, "target" = mã số căn nếu
   có. NHIỀU căn cùng mẫu/dự án trong 1 tin (vd "2 căn 42 và 41 cùng mẫu Fusion"): đặt "targets"
   = ["42","41"] và thông tin CHUNG trong "fields". CHỈ dùng "add" khi rõ ràng là căn KHÁC căn
-  đang khai (vd "còn một căn nữa", "qua căn khác", địa chỉ hoàn toàn khác).
+  đang khai (vd "còn một căn nữa", "qua căn khác", địa chỉ hoàn toàn khác). Khách BỔ SUNG / LÀM RÕ địa chỉ của căn đang
+  khai (thêm quận, tỉnh / thành, phường, số nhà cho cùng con đường — vd vừa nói "đường Nguyễn Chí Thanh" rồi "nhà ở quận Đống
+  Đa, Hà Nội") là "update" căn đó, KHÔNG "add", dù địa danh khác điều em đoán (SRS-5.1zzzzzzz108).
 - "set_status": người rao đổi TRẠNG THÁI một căn — HỄ TIN NHẮN THỂ HIỆN là tạo op này (mọi trạng
   thái của hệ thống đều đến từ lời nhắn, không có nút bấm). "status":
     • da_ban = "bán rồi / đã bán / bán xong / chốt rồi"; da_cho_thue = "cho thuê rồi / đã cho thuê".
