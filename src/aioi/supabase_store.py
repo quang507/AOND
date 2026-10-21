@@ -555,6 +555,51 @@ class SupabaseConversationStore(KhoNguoiMua):
         }, prefer="return=minimal")
         return True
 
+    # --- Khách chấm sao cho AI (SRS-5.1zzzzzzz104) --------------------------
+
+    def da_xin_danh_gia(self, user_key: str) -> bool:
+        """Khách đã được xin chấm sao chưa (một dòng mỗi khách ở `danh_gia_ai`). ID thử (`la_id_thu`) luôn False — bắn thử lần nào
+        cũng thấy câu xin. Đọc kho lỗi thì ném lên — engine coi như không xin (không làm phiền khách vì lỗi kho)."""
+        if not (self.is_configured and user_key):
+            return True
+        if self._request("POST", "rpc/la_id_thu", data={"p": user_key}) is True:
+            return False
+        return bool(self._get(f"danh_gia_ai?select=id&zalo_user_id=eq.{urllib.parse.quote(user_key)}&limit=1"))
+
+    def ghi_xin_danh_gia(self, user_key: str, role: str = "seller", ten: str | None = None) -> bool:
+        """Ghi lúc xin chấm sao. Dòng đã có (ID thử bắn lại) thì làm mới: điểm cũ xoá, giờ xin mới."""
+        if not (self.is_configured and user_key):
+            return False
+        now_iso = datetime.now(timezone.utc).isoformat()
+        self._post("danh_gia_ai?on_conflict=zalo_user_id", {
+            "zalo_user_id": user_key, "vai": "mua" if role == "buyer" else "ban", "ten_khach": (ten or None),
+            "hoi_luc": now_iso, "sao": None, "loi_khach": None, "tra_loi_luc": None, "da_bao_admin": False,
+        }, prefer="resolution=merge-duplicates,return=minimal")
+        return True
+
+    def ghi_danh_gia(self, user_key: str, sao: int, trich: str, ten: str | None = None, role: str = "seller") -> bool:
+        """Ghi điểm khách chấm. ≤ 2 sao → xếp tin nội bộ "⭐" vào `reminders` (bridge kéo qua escalation-feed nhắn CTV / admin, như
+        `bao_can_nguoi`); ID thử chỉ ghi điểm, không nhắn admin."""
+        if not (self.is_configured and user_key and 1 <= int(sao) <= 5):
+            return False
+        now_iso = datetime.now(timezone.utc).isoformat()
+        loi = re.sub(r"\d[\d .-]{7,}\d", "[số]", str(trich or ""))[:300]   # không lưu SĐT khách
+        bao = int(sao) <= 2 and self._request("POST", "rpc/la_id_thu", data={"p": user_key}) is not True
+        vai = "mua" if role == "buyer" else "ban"
+        self._post("danh_gia_ai?on_conflict=zalo_user_id", {
+            "zalo_user_id": user_key, "vai": vai, "ten_khach": (ten or None), "sao": int(sao), "loi_khach": loi,
+            "tra_loi_luc": now_iso, "da_bao_admin": bool(bao),
+        }, prefer="resolution=merge-duplicates,return=minimal")
+        if bao:
+            seller_id = None if role == "buyer" else self._get_or_create_seller(user_key, ten)
+            self._post("reminders", {
+                "kind": "escalation", "status": "pending", "due_at": now_iso, "seller_id": seller_id,
+                "buyer_id": self.khach_mua(user_key, ten) if role == "buyer" else None,
+                "note": f"⭐ Khách chấm {int(sao)} sao cho AI — {ten or 'khách Zalo'} "
+                        f"({'người mua' if role == 'buyer' else 'người bán'}): “{loi[:160]}”. Xem /admin/danh-gia, mở /admin/tin-nhan để hỗ trợ.",
+            }, prefer="return=minimal")
+        return True
+
     # --- ConversationStore Protocol --------------------------------------
 
     def _hang_luu(self, user_key: str) -> "queue.Queue":

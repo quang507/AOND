@@ -1752,6 +1752,15 @@ def operations_schema() -> dict[str, Any]:
             "xac_nhan_xoa": {"type": "string", "enum": ["dong_y", "tu_choi"],
                              "description": "Chỉ khi bot vừa hỏi xác nhận ẩn / bỏ / chỉ giữ căn: khách đồng ý hay từ chối."},
             "xac_nhan_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách đồng ý / từ chối (bắt buộc khi có xac_nhan_xoa)."},
+            # SRS-5.1zzzzzzz104: khách chấm sao cho AI — đọc theo nghĩa, code kiểm trích dẫn + lời bot trước là câu xin chấm sao.
+            "danh_gia_sao": {"type": "integer", "minimum": 1, "maximum": 5,
+                             "description": "CHỈ khi lời bot ngay trước xin khách chấm 1–5 sao và khách trả lời: số sao khách cho, "
+                             "đọc theo nghĩa (\"5 sao\", \"⭐⭐⭐⭐\" = 4, \"tốt lắm\" ≈ 5, \"tạm được\" ≈ 3, \"tệ quá\" ≈ 1). "
+                             "Khách không chấm thì bỏ trống."},
+            "danh_gia_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách chấm (bắt buộc khi có danh_gia_sao)."},
+            "xong_viec_mua": {"type": "string", "description": "KHÁCH MUA cho biết đã nhận đủ thông tin căn, không cần hỏi thêm (vd "
+                              "\"ok cảm ơn em, vậy đủ rồi\", \"để anh sắp xếp đi xem\"): chép NGUYÊN VĂN cụm đó. Khách còn hỏi "
+                              "hay đang là người bán thì bỏ trống."},
             "mua": {
                 "type": "object",
                 "properties": {

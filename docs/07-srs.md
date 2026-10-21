@@ -7583,6 +7583,40 @@ nguyên văn câu tester). **Cùng lớp đã soát**: tin nhắc bản nháp (�
 
 Kiểm: `tests/test_trang_thai_web.py` (`test_xac_nhan_ngan_mot_cau_khong_mo_dau_da` — đỏ trên code cũ), `tests/test_cho_thue_nguyen_can.py`.
 
+### SRS-5.1zzzzzzz104 · Khách chấm sao cho AI sau khi xong việc (21/10/2026)
+
+Chủ dự án 21/10 hỏi "có hệ thống chấm điểm ở trên zalo sau khi người ta xong xuôi chưa, kiểu AOND anh Luận… chấm điểm cho AI á". Soát:
+chưa có — bảng `ratings_log` (chấm sao sau buổi xem, FR-65 thời bot TypeScript) chưa từng có dòng, gỡ 19/10 (SRS-5.1zzzzzzz69); bản anh Luận
+(`luan8560/AOND` commit `ffd3684`) cũng không có (điểm Đồng / Bạc / Vàng ở đó là điểm tin và người rao, chỉ in ở cửa sổ chạy thử). Chủ dự án
+chốt năm ý: hỏi một lần; bên bán sau khi tin đã đăng và nói xong phí, bên mua khi khách nhận đủ thông tin căn; câu "Anh/chị chấm giúp em
+1–5 sao cho lần hỗ trợ này nha, để em làm tốt hơn ạ."; AI đọc câu trả lời theo nghĩa, không regex; điểm vào bảng mới, hiện trên CRM,
+≤ 2 sao báo admin.
+
+**Làm**:
+- `src/aioi/danh_gia.py` — câu xin chấm sao (code sinh, khách xưng "em" thì bot xưng "mình"), khối dặn model cảm ơn / xin lỗi.
+- Lượt AI lập thao tác (`operations_schema`) thêm `danh_gia_sao` + `danh_gia_trich_dan` và `xong_viec_mua`. Code nhận điểm khi cụm trích
+  có trong tin vừa nhắn VÀ lời bot ngay trước là câu xin chấm sao (so chuỗi tất định vì chính code sinh câu đó — không cần đọc DB để biết
+  khách đang được hỏi).
+- Bên bán: lượt duyệt tin (đã lên web) gắn `_phi_da_hoi`; lượt kế mà khách không hỏi gì mới (`hoi_ve`), không đổi gì trên tin, không còn
+  ô hỏi sau bản nháp → model được dặn không đặt câu hỏi, code nối câu xin chấm sao thành tin nhắn riêng. Khách hỏi phí thì trả lời phí
+  trước, lượt sau mới xin.
+- Bên mua: khách báo đã đủ thông tin (`xong_viec_mua`, cụm trích) và lượt đó có căn khớp nhu cầu đang hiện → xin chấm sao.
+- Hỏi một lần: bảng `danh_gia_ai` (`20261021a`, `zalo_user_id` unique) — engine hỏi `da_xin_danh_gia` trước khi xin, server ghi dòng
+  (`ghi_xin_danh_gia`) và điểm (`ghi_danh_gia`) chạy nền kèm tên Zalo. ID thử (`la_id_thu`) lần bắn nào cũng được xin (để bắn thử thấy
+  câu), không nhắn admin; cột `la_thu` tách trên CRM.
+- ≤ 2 sao: tin nội bộ "⭐ Khách chấm N sao cho AI…" vào `reminders` (`kind = escalation`) — cùng đường `bao_can_nguoi`, bridge kéo qua
+  escalation-feed nhắn CTV / admin; tin mở đầu bằng ký hiệu nên không bao giờ tới khách (`laTinNoiBo`). Lời khách che dãy số dài trước
+  khi lưu / nhắn.
+- CRM: trang `/admin/danh-gia` (cột trái, nhóm Hằng ngày) — số đã hỏi / đã chấm / điểm trung bình / số ≤ 2 sao, phân bố điểm, lọc theo
+  điểm và nguồn (khách thật / bắn thử). Chỉ đọc qua RLS admin.
+
+**Lớp / cùng lớp**: tính năng mới, không phải sửa lỗi. Chỗ cùng cơ chế "AI đọc theo nghĩa, code kiểm trích dẫn" đã có: `duyet_ban_nhap`,
+`hoi_ve`, `can_nguoi_that`, `xin_dang` — ô mới đi đúng khuôn đó, không thêm từ khoá. Ba chỗ không làm: xoá khách bằng `admin_xoa_khach` /
+Xoá hàng loạt không xoá dòng `danh_gia_ai` (không có khoá ngoại; dòng giữ điểm lịch sử); lượt hỏng phải thử lại nền (`_thu_lai_nen`) không ghi
+điểm; nhánh SQLite (chạy thử trên máy) không xin chấm sao vì không có bảng.
+
+Kiểm: `tests/test_danh_gia_ai.py` (8 ca — đỏ khi tắt phần nối kho hoặc bỏ điều kiện "bot vừa xin": đã thử, 4 ca đỏ).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

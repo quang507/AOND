@@ -24,6 +24,7 @@ from dataclasses import dataclass, field, replace
 from uuid import uuid4
 
 from . import gamification as g
+from .danh_gia import KHOI_SAP_XIN_SAO, cau_xin_sao, doc_sao, khoi_cam_on_sao, vua_xin_sao
 from .assistants import Assistant, assign_assistant
 from .drive import extract_drive_id
 from .fetch import (
@@ -525,6 +526,9 @@ class TurnResult:
     tier: str
     escalated: bool = False    # True when this turn was handed to a human admin (oversize media)
     can_nguoi_that: str | None = None   # cụm khách xin gặp người thật (đã kiểm trích dẫn) → server báo admin (SRS-5.1zzzzzzz82)
+    # Chấm sao cho AI (SRS-5.1zzzzzzz104): lượt này vừa gửi câu xin chấm sao / khách vừa chấm (sao, cụm trích) → server ghi kho.
+    xin_danh_gia: bool = False
+    danh_gia: tuple[int, str] | None = None
     role: str = "seller"       # "seller" hoặc "buyer"
     lead: BuyerLead | None = None
 
@@ -841,6 +845,7 @@ class Engine:
     ):
         self._provider = provider
         self._fetcher = fetcher  # injectable so tests/offline don't hit the network
+        self._da_xin_sao: set[str] = set()   # khách đã được xin chấm sao trong tiến trình này (kho ghi nền, SRS-5.1zzzzzzz104)
         self._max_photos = max_photos_per_listing  # cap photos KEPT per listing (storage cost)
         # url -> [(download_url, name|None)]; expands Google Drive folders/files when a
         # GOOGLE_API_KEY is configured. Default is a pass-through (one url, no name).
@@ -1905,11 +1910,17 @@ class Engine:
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += khoi_can_cho_khach(can) + khoi_viec_vua_ghi(viec)
             system += khoi_can_nguoi(conv) + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
-            system += self._khoi_cau_chuan(conv)
+            system += self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
+            # Khách mua báo đã đủ thông tin căn đang xem (SRS-5.1zzzzzzz104) → xin chấm sao một lần.
+            xin_sao = bool(conv.y_luot.get("xong_viec_mua") and can) and self._nen_xin_sao(conv)
+            if xin_sao:
+                system += KHOI_SAP_XIN_SAO
             reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
                 raise LoiTraLoi("lời gửi khách rỗng")
             reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply))
+            if xin_sao:
+                reply = self._gan_xin_sao(conv, reply)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured, now)
@@ -1958,6 +1969,7 @@ class Engine:
         )
         is_listing_post = conv.prop.summary_ready() or conv.listing_proposed or (xin_dang and not toi_thieu)
         trinh_nhap = False
+        xin_sao = False
         if not is_listing_post:
             system = build_chat_system(
                 conv.assistant.name, conv.prop, next_field, conv.user_type, project_block, cum=cum_hoi
@@ -1969,10 +1981,19 @@ class Engine:
                 conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em, xung_ho=customer_pronoun
             )
         else:
+            web_tin = self._trang_thai_web(conv)
             system = build_fee_followup_system(
-                conv.assistant.name, conv.prop, conv.user_type, project_block, web=self._trang_thai_web(conv),
+                conv.assistant.name, conv.prop, conv.user_type, project_block, web=web_tin,
                 duyet=conv.duyet_luot,
             )
+            len_web = bool(web_tin and web_tin.get("len_web"))
+            if conv.duyet_luot == "dong_y" and len_web:
+                conv.prop.fields["_phi_da_hoi"] = "1"   # lượt duyệt hỏi phí (hoi_phi) — lượt sau là lúc xin chấm sao
+            # Xin chấm sao (SRS-5.1zzzzzzz104, chủ dự án 21/10): tin đã lên web, đã hỏi phí ở lượt duyệt, lượt này khách không hỏi gì
+            # mới, không đổi gì trên tin, không còn ô hỏi sau bản nháp → hết việc; mỗi khách một lần (kho quyết).
+            xin_sao = (len_web and conv.prop.fields.get("_phi_da_hoi") == "1" and conv.duyet_luot is None
+                       and conv.hoi_ve_luot is None and not captured and conv.prop.cau_hoi_sau_ra_tin() is None
+                       and self._nen_xin_sao(conv))
 
         # Tra địa danh (SRS-5.1zzzzzzz60/61): hỏi xác nhận tên đường kho gợi ý ở MỌI nhánh (cả lượt soạn bản nháp), kể phường khi hỏi phường.
         with _do(conv, "dia_danh"):
@@ -1987,7 +2008,9 @@ class Engine:
             conv.prop.fields["_mt_da_hoi"] = "1"
             system += khoi_hoi_mat_tien(conv.prop.fields.get("mat_tien", ""))
 
-        system += khoi_xung_ho(customer_pronoun) + self._khoi_cau_chuan(conv)
+        system += khoi_xung_ho(customer_pronoun) + self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
+        if xin_sao:
+            system += KHOI_SAP_XIN_SAO
 
         # Khối ưu tiên theo điều khách HỎI — lượt AI lập thao tác đọc theo nghĩa (conv.hoi_ve_luot, SRS-5.1zzzzzzz54); bản trước
         # dò từ khoá ("chi phí" nào cũng thành hỏi phí). Con số phí theo vai từ _fee_hint, không viết tay.
@@ -2039,6 +2062,8 @@ class Engine:
         reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply))
         if trinh_nhap:
             reply = cat_truoc_mo_dau(reply, customer_pronoun)
+        if xin_sao:
+            reply = self._gan_xin_sao(conv, reply)
 
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
@@ -2057,6 +2082,31 @@ class Engine:
         except Exception as e:  # noqa: BLE001 — thiếu ví dụ không được làm hỏng lượt trả lời
             log.warning("khoi_cau_chuan lỗi: %s", e)
             return ""
+
+    def _khoi_danh_gia(self, conv: Conversation) -> str:
+        """Khách vừa chấm sao (đã kiểm trích dẫn) → dặn model cảm ơn / xin lỗi. Kho ghi ở server (có tên khách, chạy nền)."""
+        dg = conv.y_luot.get("danh_gia")
+        return khoi_cam_on_sao(dg[0]) if dg else ""
+
+    def _nen_xin_sao(self, conv: Conversation) -> bool:
+        """Mỗi khách xin chấm sao MỘT lần (SRS-5.1zzzzzzz104): kho có bảng `danh_gia_ai` mới quyết; kho khác (SQLite / thử) không xin.
+        Lượt khách vừa chấm / xin gặp người thật thì không xin."""
+        da_xin = getattr(self._convstore, "da_xin_danh_gia", None)
+        if da_xin is None or conv.y_luot.get("danh_gia") or conv.y_luot.get("can_nguoi_that") or conv.user_key in self._da_xin_sao:
+            return False
+        try:
+            return not da_xin(conv.user_key)
+        except Exception as e:  # noqa: BLE001 — đọc kho lỗi thì thôi không xin, không làm hỏng lượt
+            log.warning("da_xin_danh_gia lỗi: %s", e)
+            return False
+
+    def _gan_xin_sao(self, conv: Conversation, reply: str) -> str:
+        """Nối câu xin chấm sao (code sinh, đúng câu chủ dự án duyệt) thành đoạn riêng — bộ chia gửi thành tin nhắn riêng."""
+        self._da_xin_sao.add(conv.user_key)
+        conv.y_luot["xin_danh_gia"] = True
+        x = conv.xung_ho or ""
+        cau = cau_xin_sao({"anh": "anh", "chi": "chị"}.get(x, "anh/chị"), em_xung_minh=(x == "em"))
+        return f"{reply.rstrip()}\n\n{cau}"
 
     def _soat_hinh_thuc(self, conv: Conversation, system: str, reply: str) -> str:
         """Luật HÌNH THỨC code kiểm được mà không đọc ý — lệch thì gọi lại model MỘT lần kèm lý do, không tự sửa chữ.
@@ -3111,6 +3161,8 @@ class Engine:
             role=conv.role,
             lead=conv.buyer_lead,
             can_nguoi_that=conv.y_luot.get("can_nguoi_that") if isinstance(conv.y_luot.get("can_nguoi_that"), str) else None,
+            xin_danh_gia=bool(conv.y_luot.get("xin_danh_gia")),
+            danh_gia=conv.y_luot.get("danh_gia"),
         )
 
     def _match_listing(self, conv: Conversation, ref: str) -> Listing | None:
@@ -3315,6 +3367,14 @@ class Engine:
         # Xin gặp người thật (SRS-5.1zzzzzzz82): giữ nguyên cụm trích để báo admin kèm lời khách.
         if _trich_dan_khop(plan.get("can_nguoi_that"), cuoi):
             conv.y_luot["can_nguoi_that"] = str(plan["can_nguoi_that"]).strip()
+        # Khách chấm sao cho AI (SRS-5.1zzzzzzz104): AI đọc số sao theo nghĩa; nhận khi lời bot NGAY TRƯỚC là câu xin chấm sao (code
+        # sinh, so chuỗi tất định) và cụm trích có trong tin vừa nhắn. Khách mua báo đã đủ thông tin căn: cụm trích trong tin vừa nhắn.
+        bot_truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant"), "")
+        sao = doc_sao(plan.get("danh_gia_sao"))
+        if sao and vua_xin_sao(bot_truoc) and _trich_dan_khop(plan.get("danh_gia_trich_dan"), cuoi):
+            conv.y_luot["danh_gia"] = (sao, str(plan["danh_gia_trich_dan"]).strip())
+        if _trich_dan_khop(plan.get("xong_viec_mua"), cuoi):
+            conv.y_luot["xong_viec_mua"] = True
         # Căn nằm ngoài vùng nhận tin (SRS-5.1zzzzzzz86): AI đọc tỉnh / thành, code kiểm cụm địa danh có trong một trong sáu lượt
         # khách gần nhất (tỉnh có thể đã nói ở lượt trước). Cờ gắn lên căn SAU khi áp thao tác (căn mới có thể vừa được tạo).
         # Khách bảo đăng tin (SRS-5.1zzzzzzz86): AI đọc theo nghĩa, code kiểm cụm trích có trong tin vừa nhắn.

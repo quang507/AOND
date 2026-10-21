@@ -287,6 +287,23 @@ def _bao_can_nguoi_nen(user_key: str, trich: str, ten: str | None, role: str) ->
     threading.Thread(target=chay, daemon=True).start()
 
 
+def _ghi_danh_gia_nen(user_key: str, xin: bool, danh_gia: tuple[int, str] | None, ten: str | None, role: str) -> None:
+    kho = _engine._convstore
+    if getattr(kho, "ghi_danh_gia", None) is None:
+        return
+
+    def chay() -> None:
+        try:
+            if danh_gia:
+                kho.ghi_danh_gia(user_key, danh_gia[0], danh_gia[1], ten, role)
+            if xin:
+                kho.ghi_xin_danh_gia(user_key, role, ten)
+        except Exception as e:  # noqa: BLE001 — khách đã được trả lời; lỗi ghi điểm phải nằm trong sổ, không im
+            _so_loi.ghi_loi("danh gia ai", f"{type(e).__name__}: {e}"[:200])
+
+    threading.Thread(target=chay, daemon=True).start()
+
+
 # Tin chữ xếp hàng chờ lượt của từng khách (SRS-5.1zzzzzzz91). Bridge đã gom tin gõ liền trong 2,5 s, nhưng khách nhắn tiếp LÚC BOT
 # CÒN SOẠN thì mỗi tin chờ khoá lượt rồi chạy thành một lượt riêng — chat tester 20/10: 3 tin trong 18 giây → 3 bản tin trong 20 giây.
 # Nay lượt nào giữ khoá thì gom MỌI tin chữ đang chờ của khách đó vào một lượt; tin đã được gom thì không chạy lượt nữa.
@@ -479,6 +496,9 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     # Khách xin gặp người thật (lượt AI đọc, đã kiểm trích dẫn) → bật cờ + nhắn admin, chạy nền (SRS-5.1zzzzzzz82).
     if r.can_nguoi_that:
         _bao_can_nguoi_nen(payload.external_user_id, r.can_nguoi_that, zalo_name, r.role)
+    # Chấm sao cho AI (SRS-5.1zzzzzzz104): ghi lúc xin / điểm khách chấm (≤ 2 sao báo admin), chạy nền.
+    if r.xin_danh_gia or r.danh_gia:
+        _ghi_danh_gia_nen(payload.external_user_id, r.xin_danh_gia, r.danh_gia, zalo_name, r.role)
 
     # Cancel previous follow-up timer for this user and schedule a new 5-minute inactivity follow-up
     followup_manager.cancel_followup(payload.external_user_id)

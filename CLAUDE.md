@@ -140,6 +140,9 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 >   không thêm câu giải thích khi khách chưa hỏi. Phí thuê viết "0.75 tháng tiền thuê" (chủ dự án duyệt câu tester). Câu chữ thực như môi
 >   giới nhắn Zalo, không văn mẫu (tester: "AI quá khách ngán"); câu tester sửa thì dùng nguyên văn. Ghi nhận "vừa ngắn vừa lịch sự" ("ngắn không thì nó láo", SRS-5.1zzzzzzz102); khách duyệt tin → "Em xin phép đăng
 >   tin ạ!" (bỏ "Dạ", "ngắn thì tốt", SRS-5.1zzzzzzz103).
+> - **Khách chấm sao cho AI (21/10/2026, SRS-5.1zzzzzzz104, chủ dự án "chốt"):** hỏi MỘT lần mỗi khách (bán: sau tin lên web + nói phí;
+>   mua: khách báo đủ thông tin căn), câu code sinh "Anh/chị chấm giúp em 1–5 sao…", AI đọc điểm theo nghĩa, bảng `danh_gia_ai`,
+>   CRM `/admin/danh-gia`, ≤ 2 sao báo admin qua escalation.
 > - **Dữ liệu dự án chủ dự án nhập tay là chắc chắn (21/10/2026, SRS-5.1zzzzzzz96):** phiếu `chac_chan:` thắng ngay, phiếu khách vẫn bầu.
 > - **Vùng nhận tin (20/10/2026, SRS-5.1zzzzzzz86):** chỉ TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai (chủ dự
 >   án: "hcm long an tây ninh bình dương đồng nai vũng tàu thôi"); nơi khác bot nói khéo chưa nhận, không hỏi, không soạn tin. Một nguồn:
