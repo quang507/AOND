@@ -34,8 +34,21 @@ def _count(tally: Tally, value: str) -> int:
     return len(tally.get(value, []))
 
 
+# Phiếu CHẮC CHẮN (21/10/2026, SRS-5.1zzzzzzz96): nguồn chủ dự án nhập tay (bảng giá, rổ hàng chính thức) — chủ dự án: "cái này tôi
+# nhập tay nên là chắc chắn". Giá trị có phiếu này thắng ngay và coi như đã chốt; phiếu khách vẫn bầu như cũ, nhiều phiếu khách KHÔNG
+# lật được nó. Hai nguồn chắc chắn khác nhau thì giá trị được ghi SAU (đứng sau trong tally) thắng.
+CHAC_CHAN = "chac_chan:"
+
+
+def _chac_chan(voters: list[str]) -> bool:
+    return any(str(v).startswith(CHAC_CHAN) for v in voters)
+
+
 def _leading(tally: Tally) -> str:
-    """Value with the most distinct-seller votes; ties keep the earliest-seen value."""
+    """Value with the most distinct-seller votes; ties keep the earliest-seen value. A value backed by a CHẮC CHẮN voter wins."""
+    chac = [v for v, vs in tally.items() if _chac_chan(vs)]
+    if chac:
+        return chac[-1]
     return max(tally, key=lambda v: len(tally[v]))
 
 
@@ -43,6 +56,8 @@ def _is_settled(tally: Tally) -> bool:
     """True once one value wins decisively (see SETTLE_N) — the bot may stop asking."""
     if not tally:
         return False
+    if _chac_chan(tally[_leading(tally)]):
+        return True
     lead = _leading(tally)
     opposing = sum(len(vs) for v, vs in tally.items() if v != lead)
     return len(tally[lead]) >= SETTLE_N and opposing <= SETTLE_N / 3
@@ -431,26 +446,55 @@ class SupabaseProjectStore(ProjectStore):
             raw = r.read()
         return json.loads(raw.decode("utf-8")) if raw else None
 
+    # PostgREST của project trả TỐI ĐA 1.000 dòng mỗi lần đọc (đo 21/10/2026, SRS-5.1zzzzzzz96). Kho có 2.352 dự án: bản cũ đọc khoá
+    # một lần nên dự án từ dòng 1.001 không bao giờ tra được (Ny'ah Phú Định nằm dòng 1.645 — bot không thấy kiến thức đã nạp), và lượt
+    # chép SQLite lúc khởi động tưởng chúng chưa có nên ghi lại mỗi lần. Đọc theo trang, khoá nhớ 60 giây, tra khoá nguyên văn trước.
+    _TRANG = 1000
+
+    def _doc_het(self, endpoint: str) -> list[dict]:
+        ra: list[dict] = []
+        tu = 0
+        while True:
+            trang = self._rpc("GET", f"{endpoint}&order=khoa&limit={self._TRANG}&offset={tu}") or []
+            ra += trang
+            if len(trang) < self._TRANG:
+                return ra
+            tu += self._TRANG
+
     def save(self, project: Project) -> None:
         from datetime import datetime, timezone
         self._rpc("POST", "du_an_kien_thuc?on_conflict=khoa", {
             "khoa": normalize_project_name(project.name), "ten": project.name,
             "du_lieu": project_to_dict(project), "cap_nhat": datetime.now(timezone.utc).isoformat()})
+        self._khoa_nho = None
 
     def _khoa(self) -> list[str]:
-        return [r["khoa"] for r in (self._rpc("GET", "du_an_kien_thuc?select=khoa") or [])]
+        import time
+        nho = getattr(self, "_khoa_nho", None)
+        if nho and time.time() - nho[0] < 60:
+            return nho[1]
+        khoa = [r["khoa"] for r in self._doc_het("du_an_kien_thuc?select=khoa")]
+        self._khoa_nho = (time.time(), khoa)
+        return khoa
+
+    def _mot(self, khoa: str) -> Project | None:
+        rows = self._rpc("GET", f"du_an_kien_thuc?select=du_lieu&khoa=eq.{_q(khoa)}") or []
+        return project_from_dict(rows[0]["du_lieu"]) if rows else None
 
     def get(self, name: str | None) -> Project | None:
         if not name:
             return None
-        key = find_matching_key(normalize_project_name(name), self._khoa())
-        if key is None:
-            return None
-        rows = self._rpc("GET", f"du_an_kien_thuc?select=du_lieu&khoa=eq.{_q(key)}") or []
-        return project_from_dict(rows[0]["du_lieu"]) if rows else None
+        q = normalize_project_name(name)
+        p = self._mot(q)                     # khoá nguyên văn: một lần gọi, không tải danh sách
+        if p is not None:
+            return p
+        key = find_matching_key(q, self._khoa())
+        return self._mot(key) if key else None
 
     def all(self) -> list[Project]:
-        return [project_from_dict(r["du_lieu"]) for r in (self._rpc("GET", "du_an_kien_thuc?select=du_lieu") or [])]
+        """Mọi dự án NHƯNG chỉ tên + mẫu nhà (soi tên mơ hồ `project_name_concern`) — không kéo tài liệu / rổ căn của 2.352 dự án."""
+        return [project_from_dict({"name": r.get("ten") or "", "unit_types": r.get("unit_types") or []})
+                for r in self._doc_het("du_an_kien_thuc?select=ten,unit_types:du_lieu->unit_types")]
 
     def chep_tu(self, cu: ProjectStore) -> int:
         """Chép những dự án SQLite cũ có mà Supabase CHƯA có (không đè bản trên Supabase) — chạy lại được: lượt chép bị cắt
@@ -458,9 +502,13 @@ class SupabaseProjectStore(ProjectStore):
         co = set(self._khoa())
         n = 0
         for p in cu.all():
-            if normalize_project_name(p.name) in co:
+            # So bằng `find_matching_key` (cùng luật tra dự án), không so khoá nguyên văn (SRS-5.1zzzzzzz96): SQLite cũ trên VPS
+            # có "nyah phú định" (học từ chat 20/10, chỉ có vị trí) — mỗi lần khởi động lại được chép thành dòng thứ hai cạnh
+            # "ny ah phú định" đầy đủ; tra "Nyah Phú Định" khớp NGUYÊN VĂN dòng rỗng trước, bot mất hết kiến thức dự án.
+            if find_matching_key(normalize_project_name(p.name), co) is not None:
                 continue
             self.save(p)
+            co.add(normalize_project_name(p.name))
             n += 1
         return n
 

@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-20 16:31 (giờ VN)
+-- Sinh lúc: 2026-10-21 12:29 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -124,6 +124,16 @@ create table if not exists public.cau_chuan (
   updated_at timestamp with time zone not null default now()
 );
 
+create table if not exists public.cau_mau (
+  khoa text not null,
+  cau text not null,
+  mac_dinh text not null,
+  dung_o text not null,
+  nguon text,
+  thu_tu smallint not null default 0,
+  updated_at timestamp with time zone not null default now()
+);
+
 create table if not exists public.chat_quota (
   zalo_user_id text not null,
   gio timestamp with time zone not null,
@@ -164,6 +174,19 @@ create table if not exists public.curated_lists (
   title text,
   created_at timestamp with time zone not null default now(),
   expires_at timestamp with time zone not null default (now() + '30 days'::interval)
+);
+
+create table if not exists public.danh_gia_ai (
+  id uuid not null default gen_random_uuid(),
+  zalo_user_id text not null,
+  vai text not null,
+  ten_khach text,
+  hoi_luc timestamp with time zone not null default now(),
+  sao smallint,
+  loi_khach text,
+  tra_loi_luc timestamp with time zone,
+  da_bao_admin boolean not null default false,
+  la_thu boolean generated always as (la_id_thu(zalo_user_id)) stored
 );
 
 create table if not exists public.deals (
@@ -606,6 +629,12 @@ do $d$ begin
   alter table public.cau_chuan add constraint cau_chuan_pkey PRIMARY KEY (id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.cau_mau add constraint cau_mau_cau_check CHECK ((length(btrim(cau)) > 0));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.cau_mau add constraint cau_mau_pkey PRIMARY KEY (khoa);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.chat_quota add constraint chat_quota_pkey PRIMARY KEY (zalo_user_id, gio);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -628,6 +657,18 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.curated_lists add constraint curated_lists_token_key UNIQUE (token);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.danh_gia_ai add constraint danh_gia_ai_pkey PRIMARY KEY (id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.danh_gia_ai add constraint danh_gia_ai_sao_check CHECK (((sao >= 1) AND (sao <= 5)));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.danh_gia_ai add constraint danh_gia_ai_vai_check CHECK ((vai = ANY (ARRAY['ban'::text, 'mua'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.danh_gia_ai add constraint danh_gia_ai_zalo_user_id_key UNIQUE (zalo_user_id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.deals add constraint deals_listing_buyer_key UNIQUE NULLS NOT DISTINCT (listing_id, buyer_id);
@@ -978,6 +1019,7 @@ CREATE UNIQUE INDEX conversations_buyer_uniq ON public.conversations USING btree
 create index if not exists conversations_ctv_id_idx ON public.conversations USING btree (ctv_id);
 CREATE UNIQUE INDEX conversations_seller_uniq ON public.conversations USING btree (seller_id) WHERE (seller_id IS NOT NULL);
 create index if not exists curated_lists_buyer_idx ON public.curated_lists USING btree (buyer_id);
+create index if not exists danh_gia_ai_hoi_luc_idx ON public.danh_gia_ai USING btree (hoi_luc DESC);
 create index if not exists deals_buyer_id_idx ON public.deals USING btree (buyer_id);
 create index if not exists deals_ctv_id_idx ON public.deals USING btree (ctv_id);
 create index if not exists deals_listing_id_idx ON public.deals USING btree (listing_id);
@@ -2236,6 +2278,14 @@ CREATE OR REPLACE FUNCTION public.cau_hinh(p_key text)
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$ select value from public.app_config where key = p_key $function$
+;
+
+CREATE OR REPLACE FUNCTION public.cau_mau_cap_nhat_luc()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+begin new.updated_at := now(); return new; end $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.che_sdt(p text)
@@ -6577,6 +6627,8 @@ drop trigger if exists trg_bot_errors_het_tien on public.bot_errors;
 CREATE TRIGGER trg_bot_errors_het_tien AFTER INSERT ON public.bot_errors FOR EACH ROW EXECUTE FUNCTION bat_het_tien_api();
 drop trigger if exists cau_chuan_cap_nhat_luc on public.cau_chuan;
 CREATE TRIGGER cau_chuan_cap_nhat_luc BEFORE UPDATE ON public.cau_chuan FOR EACH ROW EXECUTE FUNCTION cau_chuan_cap_nhat_luc();
+drop trigger if exists cau_mau_cap_nhat_luc on public.cau_mau;
+CREATE TRIGGER cau_mau_cap_nhat_luc BEFORE UPDATE ON public.cau_mau FOR EACH ROW EXECUTE FUNCTION cau_mau_cap_nhat_luc();
 drop trigger if exists trg_conversations_assign_ctv on public.conversations;
 CREATE TRIGGER trg_conversations_assign_ctv BEFORE INSERT ON public.conversations FOR EACH ROW EXECUTE FUNCTION assign_ctv_round_robin();
 drop trigger if exists trg_conversations_email_upset on public.conversations;
@@ -6664,10 +6716,12 @@ alter table public.bot_usage_model enable row level security;
 alter table public.bridge_dang_nhap enable row level security;
 alter table public.buyers enable row level security;
 alter table public.cau_chuan enable row level security;
+alter table public.cau_mau enable row level security;
 alter table public.chat_quota enable row level security;
 alter table public.conversations enable row level security;
 alter table public.ctvs enable row level security;
 alter table public.curated_lists enable row level security;
+alter table public.danh_gia_ai enable row level security;
 alter table public.deals enable row level security;
 alter table public.du_an_kien_thuc enable row level security;
 alter table public.duong enable row level security;
@@ -6732,6 +6786,10 @@ drop policy if exists buyers_self_update on public.buyers;
 create policy buyers_self_update on public.buyers as permissive for UPDATE to authenticated using ((auth_user_id = ( SELECT auth.uid() AS uid))) with check ((auth_user_id = ( SELECT auth.uid() AS uid)));
 drop policy if exists cau_chuan_admin on public.cau_chuan;
 create policy cau_chuan_admin on public.cau_chuan as permissive for ALL to authenticated using (la_admin()) with check (la_admin());
+drop policy if exists cau_mau_admin_doc on public.cau_mau;
+create policy cau_mau_admin_doc on public.cau_mau as permissive for SELECT to authenticated using (la_admin());
+drop policy if exists cau_mau_admin_sua on public.cau_mau;
+create policy cau_mau_admin_sua on public.cau_mau as permissive for UPDATE to authenticated using (la_admin()) with check (la_admin());
 drop policy if exists conversations_admin_read on public.conversations;
 create policy conversations_admin_read on public.conversations as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
@@ -6740,6 +6798,8 @@ drop policy if exists ctvs_admin_read on public.ctvs;
 create policy ctvs_admin_read on public.ctvs as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
   WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text)))));
+drop policy if exists danh_gia_ai_admin_doc on public.danh_gia_ai;
+create policy danh_gia_ai_admin_doc on public.danh_gia_ai as permissive for SELECT to authenticated using (la_admin());
 drop policy if exists info_requests_admin_read on public.info_requests;
 create policy info_requests_admin_read on public.info_requests as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
@@ -6848,12 +6908,14 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.bo
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.bridge_dang_nhap to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.buyers to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.cau_chuan to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.cau_mau to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.chat_quota to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.conversations to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ctv_ranks to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ctv_ranks to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ctvs to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.curated_lists to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.danh_gia_ai to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.deals to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.du_an_kien_thuc to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.duong to service_role;
@@ -6933,6 +6995,7 @@ grant SELECT on public.bot_health to authenticated;
 grant SELECT on public.bot_usage to authenticated;
 grant SELECT on public.bot_usage_model to authenticated;
 grant SELECT on public.bridge_dang_nhap to authenticated;
+grant SELECT on public.danh_gia_ai to authenticated;
 grant SELECT on public.hoi_thoai_nhan to authenticated;
 grant SELECT on public.hoi_thoai_phien to authenticated;
 grant SELECT on public.hoi_thoai_thong_ke to authenticated;
@@ -6943,6 +7006,7 @@ grant SELECT on public.listing_photos_v to authenticated;
 grant SELECT on public.ro_hang_ban to authenticated;
 grant SELECT on public.seller_ranks to authenticated;
 grant SELECT on public.tien_ich to authenticated;
+grant SELECT, UPDATE on public.cau_mau to authenticated;
 
 -- ══ Quyền hàm (FR-167) ══
 revoke all on function public.admin_cap_nhat_khach(p_buyer_id uuid, p_preferences jsonb, p_notes text) from public, anon, authenticated;
@@ -7016,6 +7080,10 @@ grant execute on function public.cau_chuan_tu_zalo(p_zalo text) to authenticated
 grant execute on function public.cau_chuan_tu_zalo(p_zalo text) to service_role;
 revoke all on function public.cau_hinh(p_key text) from public, anon, authenticated;
 grant execute on function public.cau_hinh(p_key text) to service_role;
+revoke all on function public.cau_mau_cap_nhat_luc() from public, anon, authenticated;
+grant execute on function public.cau_mau_cap_nhat_luc() to anon;
+grant execute on function public.cau_mau_cap_nhat_luc() to authenticated;
+grant execute on function public.cau_mau_cap_nhat_luc() to service_role;
 revoke all on function public.che_sdt(p text) from public, anon, authenticated;
 grant execute on function public.che_sdt(p text) to anon;
 grant execute on function public.che_sdt(p text) to authenticated;

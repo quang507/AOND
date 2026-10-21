@@ -3,20 +3,28 @@ from aioi.projects import InMemoryProjectStore, Project, SupabaseProjectStore, U
 
 
 class _Db:
+    TRAN = 1000   # như PostgREST production: tối đa 1.000 dòng mỗi lần đọc
+
     def __init__(self):
         self.rows = {}
+        self.goi: list[str] = []
 
     def __call__(self, method, endpoint, body=None):
+        self.goi.append(endpoint)
         if method == "POST":
             self.rows[body["khoa"]] = body
             return None
-        if "select=khoa" in endpoint:
-            return [{"khoa": k} for k in self.rows]
         if "khoa=eq." in endpoint:
             from urllib.parse import unquote
             k = unquote(endpoint.split("khoa=eq.", 1)[1])
             return [{"du_lieu": self.rows[k]["du_lieu"]}] if k in self.rows else []
-        return [{"du_lieu": r["du_lieu"]} for r in self.rows.values()]
+        import re
+        tu = int((re.search(r"offset=(\d+)", endpoint) or [0, 0])[1])
+        lim = min(int((re.search(r"limit=(\d+)", endpoint) or [0, self.TRAN])[1]), self.TRAN)
+        khoa = sorted(self.rows)[tu:tu + lim]
+        if "select=khoa" in endpoint:
+            return [{"khoa": k} for k in khoa]
+        return [{"ten": self.rows[k]["ten"], "unit_types": self.rows[k]["du_lieu"].get("unit_types")} for k in khoa]
 
 
 def test_luu_doc_lai_va_tim_gan_dung():
@@ -49,3 +57,18 @@ def test_chep_bi_cat_giua_chung_thi_lan_sau_chep_tiep():
     kho.save(Project("Dự Án A", amenities=["bản trên Supabase"]))   # đã chép được một dự án thì bị cắt
     assert kho.chep_tu(cu) == 2
     assert kho.get("Dự Án A").amenities == ["bản trên Supabase"]     # không đè bản đã có
+
+
+def test_du_an_sau_dong_1000_van_tra_duoc():
+    """SRS-5.1zzzzzzz96: PostgREST trả tối đa 1.000 dòng — Ny'ah Phú Định ở dòng 1.645 thì bản cũ không bao giờ tra được."""
+    db = _Db()
+    for i in range(1500):
+        db.rows[f"du an {i:04d}"] = {"khoa": f"du an {i:04d}", "ten": f"Dự án {i:04d}", "du_lieu": {"name": f"Dự án {i:04d}"}}
+    db.rows["ny ah phú định"] = {"khoa": "ny ah phú định", "ten": "Ny'ah Phú Định", "du_lieu": {"name": "Ny'ah Phú Định"}}
+    kho = SupabaseProjectStore("https://x.invalid", "k", rpc=db)
+    assert kho.get("Nyah Phú Định").name == "Ny'ah Phú Định"       # không dấu nháy: tra gần đúng qua đủ 1.501 khoá
+    assert kho.get("Ny'ah Phú Định").name == "Ny'ah Phú Định"      # đúng khoá: một lần gọi, không tải danh sách
+    assert len(kho.all()) == 1501
+    db.goi.clear()
+    kho.get("Nyah Phú Định")
+    assert not any("select=khoa" in g for g in db.goi)               # danh sách khoá nhớ 60 giây

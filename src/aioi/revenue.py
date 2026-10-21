@@ -80,7 +80,7 @@ def quote_fee(
     if is_rental:
         if monthly_rent is None or monthly_rent <= 0:
             return FeeQuote(role, None, "Cho thuê — chưa có giá thuê/tháng để tính phí")
-        return FeeQuote(role, RENTAL_FEE_MONTHS * monthly_rent, "3/4 tháng tiền thuê")
+        return FeeQuote(role, RENTAL_FEE_MONTHS * monthly_rent, "0.75 tháng tiền thuê")
 
     if closing_price is None or closing_price <= 0:
         return FeeQuote(role, None, "Chưa có giá chốt để tính phí")

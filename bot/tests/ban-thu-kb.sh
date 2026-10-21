@@ -23,14 +23,17 @@ vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/nu
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
 KB1="thu-kb1-$RUN"; KB2="thu-kb2-$RUN"; KB3="thu-kb3-$RUN"; KB4="thu-kb4-$RUN"; KB5="thu-kb5-$RUN"
-TAT_CA="$KB1 $KB2 $KB3 $KB4 $KB5"
+# SRS-5.1zzzzzzz96: 8 ca một lượt đo nhận vùng — 5 ngoài vùng, 3 trong vùng dễ nhầm (Thủ Đức, Dĩ An, Long Thành).
+KV=""; for i in 1 2 3 4 5 6 7 8; do KV+=" thu-kv$i-$RUN"; done
+TAT_CA="$KB1 $KB2 $KB3 $KB4 $KB5$KV"
 BAT_DAU=$(date -u +%s)
 
 don() {
   # SRS-5.1zzzzzzz94: dòng journal "Duyệt:" của lượt bắn — chỉ cờ (AI trả gì, cụm trích có khớp, có lời bảo đăng, kết quả), không có lời
   # khách, để biết lượt bảo đăng hụt ở AI hay ở code.
-  echo "== nhật ký duyệt bản nháp (lõi)"
-  vps "journalctl -u aond-core --since @$BAT_DAU -o cat --no-pager | grep -o 'Duyệt: AI=.*' | tail -20" || true
+  echo "== nhật ký lõi: duyệt, vùng, kế hoạch (chỉ cờ + tên ô)"
+  # SRS-5.1zzzzzzz96: thêm "Vùng:" / "Kế hoạch:" (tên ô) / "Bỏ …" / "Giữ …" — đều chỉ cờ và tên ô, không có giá trị khách nói.
+  vps "journalctl -u aond-core --since @$BAT_DAU -o cat --no-pager | grep -oE '(Duyệt: AI=|Xin đăng: |Vùng: AI=|Kế hoạch: |Bỏ ô |Bỏ cờ |Giữ loại ).*' | tail -120" || true
   # SRS-5.1zzzzzzz88: mọi câu bot của lượt bắn vào trang Câu chuẩn (CRM) kèm ngữ cảnh TRƯỚC khi dọn — chủ dự án chấm / sửa tay dần.
   echo "== đưa câu bot vào Câu chuẩn"
   for u in $TAT_CA; do q "select cau_chuan_tu_zalo('$u') as so_cau" | jq -c '.[0]' || true; done
@@ -39,6 +42,7 @@ don() {
   # (20/10: hội thoại "Khách thử" chỉ có một tin nhắc "bản tin nháp em soạn ở trên").
   vps "for u in $TAT_CA; do curl -sS -X POST http://127.0.0.1:8000/reset/\$u >/dev/null; done" || true
   for u in $TAT_CA; do q "select reset_nguoi_test('$u') as kq" | jq -c '.[0]' || true; done
+  q "delete from danh_gia_ai where la_thu and zalo_user_id like 'thu-k%-$RUN'" >/dev/null || true   # SRS-5.1zzzzzzz104
 }
 trap don EXIT
 
@@ -58,11 +62,14 @@ chat() {
   t1=$(date +%s%N); g=$(( (t1 - t0) / 1000000 ))
   jq -r '.replies[]? | "<< " + .' <<<"$TRA" || echo "<< (không đọc được JSON) $TRA"
   echo "   (${g} ms) khâu: $(jq -c '.thoi_gian_ms // {}' <<<"$TRA" 2>/dev/null || echo '{}')"
-  TG_ALL+="$(jq -c '.thoi_gian_ms // {}' <<<"$TRA" 2>/dev/null || echo '{}')"$'\n'
+  # SRS-5.1zzzzzzz96: "ngoai_may_chu" = thời gian đo ở runner trừ thời gian máy chủ báo (ssh + mạng), không phải của bot.
+  TG_ALL+="$(jq -c --argjson g "$g" '(.thoi_gian_ms // {}) | if .may_chu then . + {ngoai_may_chu: ($g - .may_chu)} else . end' <<<"$TRA" 2>/dev/null || echo '{}')"$'\n'
   MOI_LOI+=$'\n'"$(jq -r '.replies[]?' <<<"$TRA" 2>/dev/null || true)"
   LUOT_TONG=$((LUOT_TONG + 1)); GIAY_TONG=$((GIAY_TONG + g)); [ "$g" -gt "$GIAY_MAX" ] && GIAY_MAX=$g
   if grep -q '📋' <<<"$TRA"; then
-    TIEU_DE=$(jq -r '.reply // ""' <<<"$TRA" | sed -n '/📋/,$p' | sed 1d | awk 'NF{print; exit}')
+    # Bản tin cập nhật ghi tiêu đề NGAY trên dòng 📋 ("📋 Bản tin cập nhật: <tiêu đề>"); bản nháp đầu thì tiêu đề ở dòng kế
+    # (SRS-5.1zzzzzzz105: lượt 205 đọc nhầm đoạn mô tả thành tiêu đề 111 từ).
+    TIEU_DE=$(jq -r '.reply // ""' <<<"$TRA" | sed -n '/📋/,$p' | awk 'NR==1{sub(/^.*📋[^:]*:[ ]*/,""); if (NF) {print; exit} next} NF{print; exit}')
   fi
   sleep 1
 }
@@ -151,6 +158,18 @@ kiem "KB3: tiêu đề căn hộ không có \"MT\"" "$(grep -qw 'MT' <<<"$TIEU_D
 kiem "KB3: không hỏi hẻm / mặt tiền" "$(grep -qiE 'hẻm|mặt tiền' <<<"$(jq -r '.reply' <<<"$TRA")" && echo 0 || echo 1)"
 # SRS-5.1zzzzzzz94: sau bản nháp bot ghi thêm phí quản lý (tin ngay trước không còn là bản nháp) — "ok đăng đi" vẫn là duyệt.
 kiem "KB3: \"ok đăng đi\" sau khi bot ghi thêm ý vẫn là duyệt — tin lên web" "$(jq '.status == "dang_ban" | if . then 1 else 0 end' <<<"$r3")"
+# SRS-5.1zzzzzzz104: tin đã lên web + đã hỏi phí → khách trả lời xong thì bot xin chấm sao (một lần); khách chấm thì có dòng danh_gia_ai.
+XIN_SAO=0
+for cau in "chưa biết em" "ok em cảm ơn"; do
+  chat "$KB3" "$cau"
+  grep -q 'chấm giúp' <<<"$(jq -r '.reply // ""' <<<"$TRA")" && { XIN_SAO=1; break; }
+done
+kiem "KB3: sau khi nói xong phí, bot xin chấm 1–5 sao" "$XIN_SAO"
+if [ "$XIN_SAO" = 1 ]; then
+  chat "$KB3" "5 sao nha em"
+  sao=""; for _ in 1 2 3 4 5; do sleep 3; sao=$(q "select sao from danh_gia_ai where zalo_user_id = '$KB3'" | jq -r '.[0].sao // empty'); [ -n "$sao" ] && break; done
+  kiem "KB3: khách chấm \"5 sao\" → danh_gia_ai.sao = 5" "$([ "$sao" = 5 ] && echo 1 || echo 0)"
+fi
 
 echo; echo "=================== KB5 — chat tester chị N. 20/10: nhà trong Ny'ah Phú Định, dtsd, MT 20m, ok liên tục ==================="
 # SRS-5.1zzzzzzz87: duyệt bản nháp hỏi lại mãi; "dtsd: 245m" vào ô đất; "MT 20 mét" (đường) thành bề ngang; tên dự án không dấu.
@@ -182,6 +201,34 @@ kiem "KB5: \"MT 20 mét\" là đường rộng 20 m (cột đường vào)" "$(j
 kiem "KB5: khách ok rồi thì tin lên web" "$(jq '.status == "dang_ban" | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: sau \"ok\" bot không hỏi xác nhận lại" "$(grep -qiE 'xác nhận (giúp|lại|lần)|đã ổn chưa' <<<"$LOI_KB5_CUOI$(jq -r '.reply // ""' <<<"$TRA")" && echo 0 || echo 1)"
 
+echo; echo "=================== KV — nhận vùng nhận tin (8 ca, một lượt) ==================="
+# SRS-5.1zzzzzzz96 (chủ dự án 21/10: "đo thêm"): lượt 194 KB1 Hà Nội lọt một lần — đo tỷ lệ thay vì một ca.
+KV_CA=("ngoai|Bán nhà mặt phố Hoàng Quốc Việt, Cầu Giấy, Hà Nội, 50m2, 5 tầng, giá 15 tỷ"
+       "ngoai|Cần bán căn hộ 2PN ở Sơn Trà, Đà Nẵng, view biển, giá 3,2 tỷ"
+       "ngoai|Bán lô đất 100m2 ở Ninh Kiều, Cần Thơ, giá 2 tỷ"
+       "ngoai|Nhà 4x15 đường Lạch Tray, Ngô Quyền, Hải Phòng, 3 tầng, giá 6 tỷ"
+       "ngoai|Bán nhà hẻm 3m đường Trần Phú, Nha Trang, 60m2, giá 4,5 tỷ"
+       "trong|Bán nhà hẻm xe hơi đường Võ Văn Ngân, Thủ Đức, 4x16, 2 lầu, giá 7 tỷ"
+       "trong|Bán nhà 1 trệt 1 lầu ở Dĩ An, 5x20, giá 3,5 tỷ"
+       "trong|Bán đất 200m2 ở Long Thành, Đồng Nai, giá 2,8 tỷ")
+KV_DUNG=0; i=0
+for ca in "${KV_CA[@]}"; do
+  i=$((i + 1)); loai="${ca%%|*}"; u="thu-kv$i-$RUN"
+  chat "$u" "${ca#*|}"
+  # Lần lưu cuối của lượt chạy nền (SRS-5.1zzzzzzz92) — đọc DB ngay thì tin chưa kịp tạo (lượt 198: 3 ca "khong_tao" oan; lượt
+  # 203: chờ 4 giây vẫn hụt một ca). Chờ có giới hạn: tin trong vùng phải có dòng trong 15 giây; ngoài vùng thì đợi đủ 15 giây.
+  for _ in 1 2 3 4 5; do sleep 3; st=$(dong "$u" | jq -r '.status // "khong_tao"'); [ "$st" != khong_tao ] && break; done
+  # Trong vùng mà khách chưa nói tên đường thì tin chưa có dòng (lượt 205: Dĩ An, Long Thành — bot hỏi đường đúng nhưng chấm SAI).
+  # Chấm theo lời bot: ngoài vùng phải nói "chưa nhận" và không có tin đang mở; trong vùng thì không nói "chưa nhận" và tin không ẩn.
+  loi_kv=$(jq -r '[.replies[]?] | join(" ")' <<<"$TRA" 2>/dev/null || true)
+  if [ "$loai" = ngoai ]; then ok=$({ [ "$st" = an ] || [ "$st" = khong_tao ]; } && grep -qi 'chưa nhận' <<<"$loi_kv" && echo 1 || echo 0)
+  else ok=$([ "$st" != an ] && ! grep -qi 'chưa nhận' <<<"$loi_kv" && echo 1 || echo 0); fi
+  echo "   KV$i ($loai vùng): tin $st → $([ "$ok" = 1 ] && echo đúng || echo SAI)"
+  KV_DUNG=$((KV_DUNG + ok))
+done
+echo "== nhận vùng: đúng $KV_DUNG / ${#KV_CA[@]}"
+kiem "KV: nhận vùng đúng ≥ 7/8 ca" "$([ "$KV_DUNG" -ge 7 ] && echo 1 || echo 0)"
+
 echo; echo "=================== web, giọng, chi phí, thời gian, sổ lỗi ==================="
 for r in "$r1" "$r2" "$r3" "$r4" "$r5"; do
   ma=$(jq -r '.code // empty' <<<"$r"); st=$(jq -r '.status // empty' <<<"$r")
@@ -205,6 +252,10 @@ jq -n --argjson a "$TRUOC" --argjson b "$SAU" --argjson n "$LUOT_TONG" '
 echo "== trung bình ms từng khâu trong lõi (lap_thao_tac / tra_loi / ghi_kho / con_lai / tong):"
 jq -s -c 'map(select(length > 0)) as $a | ($a | length) as $n | if $n == 0 then {} else
   ([$a[] | keys[]] | unique) as $k | reduce $k[] as $x ({}; .[$x] = (([$a[] | .[$x] // 0] | add) / $n | round)) end' <<<"$TG_ALL" || true
+echo "== chậm nhất từng khâu (ms):"
+jq -s -c 'map(select(length > 0)) as $a | ([$a[] | keys[]] | unique) as $k | reduce $k[] as $x ({}; .[$x] = ([$a[] | .[$x] // 0] | max))' <<<"$TG_ALL" || true
+echo "== 3 lượt chậm nhất (theo máy chủ):"
+jq -s -c 'map(select(length > 0)) | sort_by(-(.may_chu // .tong // 0)) | .[:3][]' <<<"$TG_ALL" || true
 echo "== thời gian bot trả lời: trung bình $(( GIAY_TONG / (LUOT_TONG > 0 ? LUOT_TONG : 1) )) ms / lượt, chậm nhất $GIAY_MAX ms ($LUOT_TONG lượt)"
 q "select to_char(at, 'HH24:MI:SS') as luc, source, left(detail, 160) as chi_tiet from bot_errors
    where at > now() - interval '20 min' and source not in ('geocode-listings') order by at" | jq -c '.[]' || true

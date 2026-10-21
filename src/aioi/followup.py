@@ -15,6 +15,7 @@ import time
 import urllib.request
 from typing import TYPE_CHECKING
 
+from . import cau_mau
 from .engine import Turn, _detect_customer_pronoun, _image_count
 from .supabase_sync import sync_to_supabase_async
 
@@ -156,17 +157,13 @@ class FollowUpManager:
 
             if is_draft_ready:
                 if customer_is_em:
-                    follow_up_msg = (
-                        "Bản tin nháp căn nhà mình soạn ở trên em xem qua thấy ưng ý chưa nè, "
-                        "có cần sửa thêm thông tin nào không cứ nhắn mình hỗ trợ nhé!"
-                    )
+                    # 21/10 (SRS-5.1zzzzzzz99, câu tester sửa): một câu ngắn, không hỏi "ưng ý chưa" kèm "có cần điều chỉnh không".
+                    follow_up_msg = cau_mau.cau("nhac_ban_nhap_em")   # sửa câu ở CRM (SRS-5.1zzzzzzz106)
                 else:
                     # Gọi khách đúng cách khách tự xưng (SRS-5.1zzzzzzz90: khách xưng "chị" mà tin nhắc vẫn "anh/chị").
                     goi = {"anh": "anh", "chi": "chị"}.get(customer_pronoun, "anh/chị")
-                    follow_up_msg = (
-                        f"Bản tin nháp căn nhà em soạn ở trên {goi} xem qua thấy ưng ý chưa ạ, "
-                        "có cần điều chỉnh thêm thông tin nào không cứ nhắn em nhé ạ!"
-                    )
+                    # Đúng câu tester (chủ dự án: "đúng rồi vậy giống người hơn"); "mình" ở đây là gọi khách, như "nhà mình".
+                    follow_up_msg = cau_mau.cau("nhac_ban_nhap", goi)
             else:
                 # 19/10/2026 (SRS-5.1zzzzzzz73): nhắc lại ĐÚNG câu bot vừa hỏi. Bản trước lấy câu mẫu cố định theo ô thiếu đầu
                 # tiên; ô nào không có câu mẫu (vd diện tích sàn) rơi vào "chụp gửi em vài tấm ảnh" — chủ nhà vừa gửi 6 ảnh vẫn

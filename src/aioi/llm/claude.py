@@ -79,14 +79,15 @@ _GUI_KHACH: dict[str, Any] = {
             "tu_soat": {
                 "type": "string",
                 "description": "Ghi chú NỘI BỘ, KHÔNG gửi khách: soát nhanh lời sắp gửi theo luật (đúng một ý hỏi, không khen bịa, "
-                               "xưng hô đúng, không hỏi lại điều khách đã nói; chữ ĐẦU TIÊN của lời là nội dung — điều khách vừa nói "
-                               "hoặc việc em vừa làm, không phải từ đệm). Sai thì sửa ngay trong loi_gui_khach. Ngắn.",
+                               "xưng hô đúng, không hỏi lại điều khách đã nói; chữ ĐẦU TIÊN của lời là việc em vừa làm, không phải từ đệm; "
+                               "ghi nhận một vế ngắn lễ phép, KHÔNG kể lại con số / chi tiết khách vừa nói). Sai thì sửa ngay trong "
+                               "loi_gui_khach. Ngắn.",
             },
             "loi_gui_khach": {
                 "type": "string",
                 "description": "NGUYÊN VĂN lời gửi khách, bản cuối đã theo mọi luật. Chỉ lời nói với khách — không ghi chú, không nói "
-                               "về luật hay về việc sửa lời. Câu đầu mở bằng nội dung (vd \"Em sửa giá còn 24 tỷ cho chị rồi.\", "
-                               "\"Phường Chợ Quán, em ghi rồi chị.\").",
+                               "về luật hay về việc sửa lời. Câu đầu mở bằng nội dung — việc em vừa làm, gọn, lễ phép, không tua lại lời "
+                               "khách (vd \"Em sửa giá còn 24 tỷ cho chị rồi.\", \"Em ghi rồi chị.\").",
             },
         },
         "required": ["tu_soat", "loi_gui_khach"],

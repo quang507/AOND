@@ -84,3 +84,14 @@ def test_khoa_cap_ke_hoach_lot_vao_fields_thi_keo_ra():
     f = eng.conversation("nv4").prop.fields
     assert f.get("_ngoai_vung") == "Hà Nội" and "ngoai_vung" not in f and "ngoai_vung_trich_dan" not in f
     assert "NGOÀI KHU VỰC NHẬN TIN" in spy.systems[-1]
+
+
+def test_ai_bao_ngoai_vung_mot_tinh_trong_vung_thi_bo():
+    """SRS-5.1zzzzzzz96: bắn thử 21/10 "Bán đất 200m2 ở Long Thành, Đồng Nai" → AI trả ngoai_vung "Đồng Nai", bot báo chưa nhận."""
+    from aioi.prompts import trong_vung_nhan_tin
+    eng, spy = _eng({"operations": [], "ngoai_vung": "Đồng Nai", "ngoai_vung_trich_dan": "Long Thành, Đồng Nai"})
+    eng.handle("nv9", "Bán đất 200m2 ở Long Thành, Đồng Nai, giá 2,8 tỷ")
+    assert "_ngoai_vung" not in eng.conversation("nv9").prop.fields and "NGOÀI KHU VỰC" not in spy.systems[-1]
+    assert all(trong_vung_nhan_tin(t) for t in ("TP.HCM", "Hồ Chí Minh", "Bình Dương", "Bà Rịa – Vũng Tàu", "Long An", "Tây Ninh",
+                                                "Đồng Nai", "dong nai", "Sài Gòn"))
+    assert not any(trong_vung_nhan_tin(t) for t in ("Hà Nội", "Đà Nẵng", "Bình Phước", "Đồng Nai (Bình Phước cũ)", "Cần Thơ", ""))

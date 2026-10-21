@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from . import cau_mau
 from .anh_du_an import anh_gui_kem
 from .config import load_settings
 from .delivery import chunk_reply, typing_delay
@@ -85,6 +86,7 @@ def _init_engine() -> Engine:
             fallback_store=sqlite_store,
         )
         log.info("Initialized SupabaseConversationStore (Single Source of Truth) at %s", settings.supabase_url)
+        cau_mau.dang_ky(conv_store.cau_mau_tu_kho)   # câu mẫu chủ dự án sửa ở CRM (SRS-5.1zzzzzzz106)
     else:
         conv_store = sqlite_store
         log.info("Initialized local SqliteConversationStore at %s", settings.db_path)
@@ -228,9 +230,9 @@ def message(msg: IncomingMessage) -> Reply:
 
 
 # Lượt hỏng (SRS-5.1zzzzzzz82): câu giữ chỗ không đổ lỗi cho mạng, không bắt khách gõ lại; luồng nền thử lại sau THU_LAI_SAU giây.
-CAU_GIU_CHO = "Em đang xem kỹ thông tin anh/chị gửi, anh/chị chờ em một chút nhé, em trả lời ngay ạ."
-CAU_THU_LAI_HONG = ("Em xin lỗi anh/chị, hệ thống bên em đang chậm. Em đã báo anh/chị phụ trách xem tin của mình, "
-                    "anh/chị ấy sẽ nhắn lại sớm ạ.")
+# Câu mặc định; câu đang dùng đọc qua cau_mau (chủ dự án sửa ở CRM, SRS-5.1zzzzzzz106).
+CAU_GIU_CHO = cau_mau.MAC_DINH["giu_cho"][0]
+CAU_THU_LAI_HONG = cau_mau.MAC_DINH["thu_lai_hong"][0]
 THU_LAI_SAU = 20
 
 
@@ -263,10 +265,10 @@ def _thu_lai_nen(user_key: str, lam, moc: int, sau_hong: int, ten: str | None) -
         except Exception as e:  # noqa: BLE001
             _so_loi.ghi_loi("chat-reply thu lai", f"thử lại vẫn hỏng: {type(e).__name__}: {e}"[:200])
             try:
-                _gui_bridge(user_key, CAU_THU_LAI_HONG)
+                _gui_bridge(user_key, cau_mau.cau("thu_lai_hong"))
             except Exception as e2:  # noqa: BLE001
                 _so_loi.ghi_loi("chat-reply thu lai", f"gửi lời xin lỗi qua bridge hỏng: {type(e2).__name__}"[:200])
-            sync_to_supabase_async(external_user_id=user_key, incoming_text="", bot_reply=CAU_THU_LAI_HONG, user_name=ten)
+            sync_to_supabase_async(external_user_id=user_key, incoming_text="", bot_reply=cau_mau.cau("thu_lai_hong"), user_name=ten)
             _bao_can_nguoi_nen(user_key, "(hệ thống: lượt trả lời hỏng hai lần)", ten, "seller")
 
     threading.Thread(target=chay, daemon=True).start()
@@ -283,6 +285,23 @@ def _bao_can_nguoi_nen(user_key: str, trich: str, ten: str | None, role: str) ->
                 _so_loi.ghi_loi("bao can nguoi", "không tìm / tạo được hội thoại để bật cờ cần người")
         except Exception as e:  # noqa: BLE001 — khách đã được trả lời; lỗi báo admin phải nằm trong sổ, không im
             _so_loi.ghi_loi("bao can nguoi", f"{type(e).__name__}: {e}"[:200])
+
+    threading.Thread(target=chay, daemon=True).start()
+
+
+def _ghi_danh_gia_nen(user_key: str, xin: bool, danh_gia: tuple[int, str] | None, ten: str | None, role: str) -> None:
+    kho = _engine._convstore
+    if getattr(kho, "ghi_danh_gia", None) is None:
+        return
+
+    def chay() -> None:
+        try:
+            if danh_gia:
+                kho.ghi_danh_gia(user_key, danh_gia[0], danh_gia[1], ten, role)
+            if xin:
+                kho.ghi_xin_danh_gia(user_key, role, ten)
+        except Exception as e:  # noqa: BLE001 — khách đã được trả lời; lỗi ghi điểm phải nằm trong sổ, không im
+            _so_loi.ghi_loi("danh gia ai", f"{type(e).__name__}: {e}"[:200])
 
     threading.Thread(target=chay, daemon=True).start()
 
@@ -315,6 +334,7 @@ def _lay_cho(uk: str, so: int) -> list[str] | None:
 
 @app.post("/chat-reply", response_model=ZaloBridgeResponse)
 def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
+    t_vao = time.perf_counter()   # SRS-5.1zzzzzzz96: tổng thời gian máy chủ (gồm chờ khoá lượt, đọc ảnh / tin thoại, sau lượt)
     if payload.mark_sent:
         return ZaloBridgeResponse(
             reply="ok",
@@ -411,7 +431,9 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     # SRS-5.1zzzzzzz82: lượt hỏng (API quá tải / mạng / model trả rỗng) trước đây ra 500 → bridge không gửi gì, khách bị bỏ lơ
     # (sổ lỗi "bridge xử lý tin gom"), hoặc nhận "kết nối mạng gián đoạn, nhắn lại giúp em". Nay: câu giữ chỗ + tự thử lại nền.
     # SRS-5.1zzzzzzz84: một khách — một lượt một lúc (Engine.khoa_luot); tin nhắn tới lúc bot còn soạn thì chờ lượt trước xong.
+    t_khoa = time.perf_counter()
     with _engine.khoa_luot(uk):
+        cho_luot = int((time.perf_counter() - t_khoa) * 1000)
         if not media_urls:
             gom = _lay_cho(uk, so_cho)
             if gom is None:   # tin này đã nằm trong lượt trước — chỉ ghi lời khách vào CRM, không trả lời riêng
@@ -435,14 +457,16 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         thoi_gian = dict(getattr(_engine.conversation(uk), "do_luot", {}) or {})
     thoi_gian["con_lai"] = max(0, tong - sum(thoi_gian.values()))
     thoi_gian["tong"] = tong
+    thoi_gian["cho_luot"] = cho_luot          # chờ lượt trước của cùng khách xong (khoa_luot)
     log.info("thời gian lượt (ms): %s", thoi_gian)   # chỉ con số — không dữ liệu khách
     if loi_luot is not None:
         e = loi_luot
         _so_loi.ghi_loi("chat-reply", f"lượt trả lời hỏng, giữ chỗ rồi thử lại: {type(e).__name__}: {e}"[:200])
-        sync_to_supabase_async(external_user_id=uk, incoming_text=incoming_text, bot_reply=CAU_GIU_CHO,
+        giu_cho = cau_mau.cau("giu_cho")
+        sync_to_supabase_async(external_user_id=uk, incoming_text=incoming_text, bot_reply=giu_cho,
                                zalo_msg_id=payload.msg_id, user_name=zalo_name, nhan_luc=nhan_luc)
         _thu_lai_nen(uk, lam, moc, sau_hong, zalo_name)
-        return ZaloBridgeResponse(reply=CAU_GIU_CHO, replies=[CAU_GIU_CHO], nhip_go=[0], assistant_name="", captured=[],
+        return ZaloBridgeResponse(reply=giu_cho, replies=[giu_cho], nhip_go=[0], assistant_name="", captured=[],
                                   next_field=None, property_score=0.0, user_score=0.0, tier="", completeness=0.0)
 
     # Clean asterisks so Zalo displays clean text without markdown markup
@@ -475,6 +499,9 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     # Khách xin gặp người thật (lượt AI đọc, đã kiểm trích dẫn) → bật cờ + nhắn admin, chạy nền (SRS-5.1zzzzzzz82).
     if r.can_nguoi_that:
         _bao_can_nguoi_nen(payload.external_user_id, r.can_nguoi_that, zalo_name, r.role)
+    # Chấm sao cho AI (SRS-5.1zzzzzzz104): ghi lúc xin / điểm khách chấm (≤ 2 sao báo admin), chạy nền.
+    if r.xin_danh_gia or r.danh_gia:
+        _ghi_danh_gia_nen(payload.external_user_id, r.xin_danh_gia, r.danh_gia, zalo_name, r.role)
 
     # Cancel previous follow-up timer for this user and schedule a new 5-minute inactivity follow-up
     followup_manager.cancel_followup(payload.external_user_id)
@@ -500,7 +527,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         tier=r.tier,
         completeness=r.completeness,
         photos=photos,
-        thoi_gian_ms=thoi_gian,
+        thoi_gian_ms={**thoi_gian, "may_chu": int((time.perf_counter() - t_vao) * 1000)},
     )
 
 

@@ -123,6 +123,9 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > qua cùng cổng này. Bắn thử lõi production: `apply-migration` ô `ban-thu-mua` / `ban-thu-ban` (ID thử, tự dọn).
 > **Câu chuẩn (SRS-5.1zzzzzzz88, 20/10/2026):** chủ dự án / tester chấm điểm và sửa tay câu bot ở `/admin/cau-chuan` (bảng `cau_chuan`,
 > ngữ cảnh chép kèm); lõi đọc 8 dòng đã sửa / chấm làm ví dụ (`khoi_cau_chuan`, nhớ 60 giây). Đổi giọng bot theo ca cụ thể thì sửa ở đó trước.
+> **Câu mẫu cố định (SRS-5.1zzzzzzz106, 21/10/2026):** câu bot nói NGUYÊN VĂN (duyệt tin, hỏi phí, nhắc bản nháp, xin chấm sao, giữ chỗ khi
+> lỗi) chỉ ở `src/aioi/cau_mau.py` (`MAC_DINH`) — chủ dự án sửa ở khung "Câu mẫu cố định" trang `/admin/cau-chuan` (bảng `cau_mau`, đè câu gốc,
+> nhớ 60 giây). Đừng viết tay câu đó ở chỗ khác (`tests/test_cau_mau.py` đỏ); thêm câu mới = thêm khoá + migration nạp dòng.
 > **Tra địa danh (SRS-5.1zzzzzzz60):** phường / quận / đường khách nói → `src/aioi/dia_danh.py` (chữ trước, vector Gemini sau, máy
 > kiểm tên gần chữ khách); vector do lịch `nhung-tick` / `nhung-dia-danh-tick` nuôi — đừng gỡ hai lịch đó.
 
@@ -136,6 +139,14 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > - **Giữ của mình, không theo anh Luận:** hỏi gộp theo cụm (SRS-5.1zzzzzzz79), khách lờ một ô 2 lần thì để sau (SRS-5.1zzzzzzz80), khen
 >   ít / có cơ sở, cấm mở đầu "Dạ", tên trợ lý người thật (FR-181), kênh vừa mua vừa bán (lời chào hai lựa chọn).
 > - **Model:** mọi lượt dùng Haiku (chủ dự án: "Vẫn haiku").
+> - **Độ dài lời bot (21/10/2026, SRS-5.1zzzzzzz97):** "cứ ngắn vừa vừa thôi, khách không hiểu thì mình hỏi tiếp" — nói ý chính rồi dừng,
+>   không thêm câu giải thích khi khách chưa hỏi. Phí thuê viết "0.75 tháng tiền thuê" (chủ dự án duyệt câu tester). Câu chữ thực như môi
+>   giới nhắn Zalo, không văn mẫu (tester: "AI quá khách ngán"); câu tester sửa thì dùng nguyên văn. Ghi nhận "vừa ngắn vừa lịch sự" ("ngắn không thì nó láo", SRS-5.1zzzzzzz102); khách duyệt tin → "Em xin phép đăng
+>   tin ạ!" (bỏ "Dạ", "ngắn thì tốt", SRS-5.1zzzzzzz103).
+> - **Khách chấm sao cho AI (21/10/2026, SRS-5.1zzzzzzz104, chủ dự án "chốt"):** hỏi MỘT lần mỗi khách (bán: sau tin lên web + nói phí;
+>   mua: khách báo đủ thông tin căn), câu code sinh "Anh/chị chấm giúp em 1–5 sao…", AI đọc điểm theo nghĩa, bảng `danh_gia_ai`,
+>   CRM `/admin/danh-gia`, ≤ 2 sao báo admin qua escalation.
+> - **Dữ liệu dự án chủ dự án nhập tay là chắc chắn (21/10/2026, SRS-5.1zzzzzzz96):** phiếu `chac_chan:` thắng ngay, phiếu khách vẫn bầu.
 > - **Vùng nhận tin (20/10/2026, SRS-5.1zzzzzzz86):** chỉ TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai (chủ dự
 >   án: "hcm long an tây ninh bình dương đồng nai vũng tàu thôi"); nơi khác bot nói khéo chưa nhận, không hỏi, không soạn tin. Một nguồn:
 >   `prompts.VUNG_NHAN_TIN`. Bình Phước cũ (nay thuộc Đồng Nai): KHÔNG nhận (chủ dự án 20/10: "bỏ").

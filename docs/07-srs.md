@@ -7410,6 +7410,264 @@ Chủ dự án hỏi: "số mét mặt tiền và số mét độ rộng đườ
 Kiểm: `tests/test_duyet_mo_ta_truong.py` (độ rộng đường giữ với nhà mặt tiền; chữ gửi DB không đổi theo nhãn; nhãn / câu hỏi nói rõ),
 đỏ 2 ca trên bản trước. `tests/test_conversational_and_deed.py` theo nhãn mới.
 
+### SRS-5.1zzzzzzz96 · Phiếu "chắc chắn" cho dữ liệu chủ dự án nhập tay; kho dự án quá 1.000 dòng không tra được; hỏi lại "mặt tiền X m"; đo thời gian từng khâu (21/10/2026)
+
+Chủ dự án gửi bảng giá Ny'ah Phú Định (T3/2026, RH v12, 9 căn) và chốt: "phải có trường để người ta biểu quyết đủ thì thay dữ liệu
+cũ"; "cái này tôi nhập tay nên là chắc chắn"; "4 có cho hỏi"; "2 việc đó đo thêm đi". Bảng giá nạp vào `du_an_kien_thuc` (kho riêng,
+không vào repo — giá chỉ nằm ở đó). Hôm 20/10 đã nạp rổ hàng (50 lô, mẫu nhà từng lô), chưa có giá.
+
+1. *Phiếu chắc chắn.* Kiến thức dự án đã có phiếu bầu theo người nói (`merge_facts`): giá trị nhiều phiếu khác nhau nhất thì dẫn, đủ
+   `SETTLE_N` thì chốt. Bảng giá ghi mẫu nhà khác rổ hàng cũ ở 7 lô (vd lô 1–2: Opus ↔ Office 1). Một phiếu đấu một phiếu thì giữ giá
+   trị cũ và gắn "CHƯA CHẮC", trái ý chủ dự án. **Sửa**: phiếu có tiền tố `chac_chan:` (nguồn chủ dự án nhập tay) thắng ngay và coi như
+   đã chốt. Phiếu khách vẫn bầu như cũ, nhiều phiếu khách không lật được nguồn chắc chắn. Bảng giá nạp bằng chính `Unit.learn` với phiếu
+   `chac_chan:chu_du_an_nhap_tay_bang_gia_T3_2026_RH_v12`: mẫu nhà theo bảng giá, giá theo từng gói (khoá ghi rõ "T3_2026"), phiếu cũ
+   giữ nguyên làm lịch sử, thêm một tài liệu `bang_gia` vào `docs`.
+2. *Kho dự án quá 1.000 dòng không tra được.* PostgREST của project trả tối đa 1.000 dòng mỗi lần đọc (đo bằng bảng `projects`: đúng
+   1.000). `SupabaseProjectStore._khoa()` đọc khoá một lần, mà kho có 2.352 dự án; Ny'ah Phú Định ở dòng 1.645 nên lõi **không thấy**
+   kiến thức đã nạp. Lượt chép SQLite → Supabase lúc khởi động cũng tưởng các dự án sau dòng 1.000 chưa có nên ghi lại (Sun Wah, One
+   Verandah… đổi `cap_nhat` mỗi lần cài). Lượt chép còn so khoá nguyên văn, nên "nyah phú định" (học từ chat 20/10, chỉ có "vị trí:
+   Quận 8") được chép thành dòng thứ hai; tra "Nyah Phú Định" khớp nguyên văn dòng rỗng đó. **Lớp**: đọc cả bảng qua PostgREST mà
+   không chia trang (giới hạn 1.000 dòng cắt im lặng). **Cùng lớp**: web `/du-an` đã chia trang (`range`), đúng. `app/sitemap.ts` chủ
+   động giới hạn 500 dự án và 5.000 tin (tin hiện ít, chưa chạm 1.000) — ghi lại, chưa sửa. Các bảng lớn khác (`duong`, `giao_lo`)
+   lõi tra qua RPC phía DB, không đọc cả bảng. **Sửa**: đọc theo trang (`order=khoa&limit=1000&offset=`), danh sách khoá nhớ 60 giây
+   (bỏ nhớ khi ghi), tra khoá nguyên văn trước (một lần gọi). `all()` chỉ lấy tên + mẫu nhà (soi tên mơ hồ), không kéo tài liệu của
+   2.352 dự án. Lượt chép so bằng `find_matching_key`. Đã xoá dòng rỗng "nyah phú định".
+3. *Hỏi lại "mặt tiền X m".* Lượt vừa ghi ô bề ngang căn mà chưa có hai chiều lô để đối chiếu (luật bề ngang ≤ lô của SRS-5.1zzzzzzz87
+   không kiểm được) → khối `khoi_hoi_mat_tien`: gộp vào câu hỏi lượt đó một ý hỏi số ấy là bề ngang căn hay đường rộng chừng đó. Model
+   tự bỏ qua khi khách đã nói rõ "ngang" / "đường rộng". Mỗi căn chỉ hỏi một lần (dấu nội bộ `_mt_da_hoi`).
+4. *Đo thêm.* Thời gian lõi chia thêm khâu `dia_danh`, `du_an`, `kho_doc`, `cau_chuan` (trước gộp trong "còn lại"); máy chủ báo
+   `cho_luot` (chờ lượt trước của cùng khách) và `may_chu` (từ lúc nhận tới lúc trả). Script `ban-thu-kb.sh` in `ngoai_may_chu` (ssh +
+   mạng của chính lượt bắn, không phải của bot), chậm nhất từng khâu, 3 lượt chậm nhất. Nhận vùng: thêm 8 ca một lượt (5 ngoài vùng,
+   3 trong vùng dễ nhầm), đếm tỷ lệ đúng, đạt khi ≥ 7/8.
+
+5. *Kết quả đo lần 1 (bắn thử lượt 198).*
+   - Thời gian máy chủ trung bình 10,6 s mỗi lượt: trả lời 2,5 s · lập thao tác 2,2 s · tra địa danh 1,4 s (tối đa 9,5 s) · tra dự án
+     1,0 s (tối đa 6,8 s) · còn lại 0,9 s · ghi kho 0,4 s. Phần `ngoai_may_chu` 3,6 s là ssh của chính lượt bắn, khách thật không có.
+   - `pg_stat_statements`: `match_projects` mất 2–3 s mỗi lần (tối đa 7,4 s), vì mỗi lần bỏ dấu / tách từ lại cả 2.362 dự án.
+     Lõi gọi 2–4 lần mỗi lượt cho cùng tên chưa có trong kho, do lần hụt không được nhớ (SRS-5.1zzzzzzz87). **Sửa**: lần hụt nhớ
+     5 phút (ca 20/10 là 35 phút). Chưa sửa ở DB: tính sẵn tên bỏ dấu thành cột có chỉ mục — việc riêng, cần migration.
+   - `tra_nominatim` 6.692 lần, khoảng 2 giờ thời gian DB, do lịch `geocode-tick` gọi (định vị tin), không nằm trên đường chat — ghi lại.
+6. *Nhận vùng: 5/5 ngoài vùng đúng; trong vùng thì "Long Thành, Đồng Nai" bị báo chưa nhận Đồng Nai.* AI trả `ngoai_vung =
+   "Đồng Nai"` (câu luật về Bình Phước cũ "nay thuộc Đồng Nai" dễ đọc lẫn). **Lớp**: đầu ra AI về một quyết định có danh sách cố định
+   của chủ dự án mà code không đối chiếu. **Cùng lớp**: vai người rao, loại BĐS đều đi qua enum của schema, đã có chốt. **Sửa**: tỉnh
+   AI báo "ngoài vùng" mà nằm trong danh sách vùng (`trong_vung_nhan_tin`, cạnh `VUNG_NHAN_TIN`, trừ Bình Phước cũ) thì bỏ cờ; câu
+   luật nói rõ Biên Hòa / Long Thành / Nhơn Trạch là trong vùng. Script: Thủ Đức, Dĩ An bị chấm sai vì đọc DB trước khi lần lưu nền
+   ghi xong — nay chờ 4 giây.
+
+Kiểm: `tests/test_phieu_chac_chan.py` (phiếu chắc chắn, phiếu thường như cũ, chép không đẻ dự án trùng, hỏi lại mặt tiền),
+`tests/test_kho_du_an.py` (`test_du_an_sau_dong_1000_van_tra_duoc` — kho giả trả tối đa 1.000 dòng như production),
+`tests/test_ngoai_vung.py` (`test_ai_bao_ngoai_vung_mot_tinh_trong_vung_thi_bo`), `tests/test_duyet_theo_trang_thai.py` (hụt nhớ
+5 phút), đỏ trên bản trước.
+
+### SRS-5.1zzzzzzz97 · Ngắn vừa đủ ý; phí thuê viết "0.75 tháng tiền thuê" (21/10/2026)
+
+Tester chị N. gửi câu báo phí bot viết hôm 20/10 (gửi trước khi cài SRS-5.1zzzzzzz90): "…phí môi giới bên em là 0.75 tháng tiền thuê,
+và chỉ thu khi giao dịch thành công. Tức là chị chưa tốn đồng nào trước, nhà chưa cho thuê được thì không mất phí ạ. Khi nào chị cần
+hỏi thêm, cứ nhắn em nhé." Chị viết lại ngắn: "Em xin phép báo phí bên em: phí môi giới bên em là 0.75 tháng tiền thuê. Chỉ thu khi
+giao dịch thành công. Mình cần biết thêm thông tin, nhắn em hỗ trợ ạ." Chủ dự án duyệt: "vầy hợp lý"; "cứ ngắn vừa vừa thôi, khách
+không hiểu thì mình hỏi tiếp".
+
+1. **Luật chung "ngắn vừa đủ ý"** ở `CONVERSATION_POLICY`: nói ý chính rồi dừng, không thêm câu giải thích khi khách chưa hỏi; khách
+   chưa hiểu sẽ hỏi lại. Luật "CHƯA BIẾT PHÍ 1–2 câu" của SRS-5.1zzzzzzz90 giữ nguyên.
+2. **Phí thuê viết "0.75 tháng tiền thuê"** ở mọi chỗ prompt (`BUSINESS_CONTEXT`, `_fee_hint`, khối hỏi phí trong engine, nhãn
+   `revenue.FeeQuote`). Đổi lại quyết định của tôi hôm 20/10 ("3/4 tháng", cấm số thập phân) — đó là quyết định BA, chưa phải của chủ
+   dự án. Vẫn cấm hiểu nhầm thành 3 hay 4 tháng.
+3. **Câu chuẩn**: câu của tester vào trang Câu chuẩn (điểm 2 cho câu cũ, bật "Bot dùng làm ví dụ"). "Mình" đổi thành gọi khách theo
+   xưng hô ("Chị…"), đúng luật giọng.
+
+**Lớp**: lời bot dài vì prompt có luật độ dài cho từng tình huống mà thiếu một luật chung. **Cùng lớp**: các luật độ dài riêng (xác nhận
+lên web 1 câu, phí 1–2 câu, tóm ảnh 1–2 câu) giữ nguyên, nay có luật chung đỡ cho các tình huống chưa có luật riêng.
+
+Kiểm: `tests/test_cho_thue_nguyen_can.py` (prompt nói "0.75 tháng tiền thuê", không còn "3/4 tháng tiền thuê", còn câu cấm 3 hay 4
+tháng), `tests/test_doc_y_khach.py`.
+
+### SRS-5.1zzzzzzz98 · Lời sau khi khách duyệt: hai đoạn, câu hỏi phí thành tin nhắn riêng (21/10/2026)
+
+Tester chị N. sửa lời bot gửi 20/10 lúc khách duyệt bản tin (gửi trước khi cài SRS-5.1zzzzzzz90), lý do "rút gọn câu chữ lại để nhìn
+đỡ nhiều và rối mắt, gây sự chán nản cho người đọc". Câu chị viết: "Em cảm ơn chị đã duyệt bản tin ạ! Tin bán/cho thuê của mình đã
+được đăng lên hệ thống và hiển thị chính thức lên trên website https://aioinhadat.com, đồng thời em chuyển cho mạng lưới khách thuê
+đang tìm kiếm. / Chị có thể vào aioinhadat.com để theo dõi tin rao ạ. Chị biết phí môi giới bên em chưa ạ?" Chủ dự án: "hoặc có thể
+ngắt ra hoặc có thể hỏi thêm sau".
+
+1. **Đoạn 1** (`khoi_trang_thai_web`, tin đã lên web): cảm ơn, rồi ĐÚNG 1 câu xác nhận theo câu tester — đã đăng + hiển thị trên web +
+   chuyển mạng lưới khách đang tìm. Không tả lại căn, không hướng dẫn dài. SRS-5.1zzzzzzz90 bỏ hẳn ý "mạng lưới"; tester giữ lại ý này,
+   nên theo tester.
+2. **Đoạn 2** (`build_fee_followup_system`): sau một dòng trống — mời vào web theo dõi tin + hỏi khách biết phí chưa. Giữ tinh thần
+   bản anh Luận ("anh/chị có biết phí môi giới của tụi em chưa ạ?", quyết định chủ dự án 20/10). `chunk_reply` gửi mỗi đoạn thành tin
+   nhắn riêng (đoạn đầu dài thì tách thêm theo câu), câu hỏi phí luôn ở tin cuối.
+3. **Câu chuẩn**: câu tester vào trang Câu chuẩn (câu cũ 3 điểm — lúc chấm sơ bộ tôi cho 5, tester không đồng ý — bật "Bot dùng
+   làm ví dụ").
+
+**Lớp**: như SRS-5.1zzzzzzz97 — lời dồn mọi ý vào một khối chữ. **Cùng lớp**: lời tóm ảnh, lời báo thiếu ô đều đã có luật 1–2 câu.
+
+Kiểm: `tests/test_cho_thue_nguyen_can.py` (`test_loi_sau_duyet_hai_doan_cau_phi_tin_rieng`: câu hỏi phí ở tin cuối, không tin nào
+trộn xác nhận với hỏi phí), `tests/test_trang_thai_web.py`, `tests/test_ban_nhap_du_dieu_kien.py`.
+
+### SRS-5.1zzzzzzz99 · Tin nhắc xem bản nháp theo câu tester (21/10/2026)
+
+Tester chị N. sửa tin nhắc tự động khi khách chưa trả lời bản nháp: "Bản tin nháp căn nhà em soạn ở trên anh/chị xem qua thấy ưng ý
+chưa ạ, có cần điều chỉnh thêm thông tin nào không cứ nhắn em nhé ạ!" → "Em gửi anh/chị bản nháp tin đăng, mình có cần chỉnh sửa
+thêm nhắn em hỗ trợ ạ!". Tin nhắc là câu CỐ ĐỊNH trong `followup.py` (không qua model, nên trang Câu chuẩn không đổi được nó) —
+sửa thẳng chữ: "Em gửi {anh / chị / anh/chị} bản nháp tin đăng, {…} có cần chỉnh sửa thêm thì nhắn em hỗ trợ ạ!" (gọi khách theo
+xưng hô như SRS-5.1zzzzzzz90, thay "mình"); khách xưng "em": "Mình gửi em bản nháp tin đăng, em có cần chỉnh sửa thêm thì nhắn mình
+hỗ trợ nhé!". Cùng lớp: các câu cố định khác trong `followup.py` (`cau_nhac` nhắc lại đúng câu bot vừa hỏi, xin ảnh) — chưa có góp ý.
+
+Kiểm: `tests/test_xung_ho_khong_lat.py` (`test_tin_nhac_ban_nhap_theo_cau_tester` — chạy thật `_execute_followup`, đỏ trên bản trước).
+
+Kèm (chủ dự án: "gắn trạng thái luôn thành câu mẫu đã sửa luôn nha"): trang `/admin/cau-chuan` có nhãn trạng thái đầu mỗi thẻ —
+**Câu mẫu đã sửa** (câu chuẩn đã lưu khác câu bot), **Bot dùng làm ví dụ**, **N điểm** — và nút lọc "Câu mẫu đã sửa". Các câu tester
+sửa 21/10 (báo phí, lời sau duyệt, 4 dòng tin nhắc bản nháp) đã ghi câu chuẩn; tin nhắc bản nháp là câu cố định trong code nên để
+tắt "Bot dùng làm ví dụ" (chỉ ghi lại để tra).
+
+### SRS-5.1zzzzzzz100 · Ô tính bằng mét ghi số trần; nhận vùng theo tên thành phố / quận (21/10/2026)
+
+Kết quả đo lượt 203 (nhật ký "Vùng:" chỉ cờ, SRS-5.1zzzzzzz96):
+
+1. *KB5: độ rộng đường vào trống.* AI ghi ô `lo_gioi_duong` = "20" (số trần, lượt này còn ghi "44", "245" cho diện tích). Bộ đọc
+   `boc_thong_so` của DB chỉ nhận "20m" (đã thử trên DB: "lộ giới đường: 20" → trống, "20m" → 20). **Lớp**: chữ gửi bộ đọc DB phụ
+   thuộc AI có viết đơn vị hay không. **Cùng lớp**: diện tích đi đường riêng `so_m2` (tính được số trần), giá đi `parse_vnd` (ô giá
+   luôn có "tỷ / triệu" vì bằng chứng phải nằm trong lời khách). **Sửa**: ô luôn tính bằng mét (`_O_MET`: bề ngang, độ rộng đường /
+   hẻm) mà là số trần thì thêm "m" trước khi gửi (đơn vị theo định nghĩa ô, không đoán).
+2. *Nhận vùng: mọi lượt hụt đều là AI không báo (`AI=False`), chốt kiểm của code không bỏ nhầm lượt nào.* Ca hụt: khách chỉ nói thành
+   phố / quận ("Trần Phú, Nha Trang"; lượt 200: "Ngô Quyền, Hải Phòng", "Đống Đa, Hà Nội"). Câu luật cũ "chưa rõ tỉnh → bỏ trống, KHÔNG
+   đoán" làm model dè dặt. **Sửa**: câu luật nói rõ tên thành phố / thị xã / quận / huyện / đảo đủ biết tỉnh là ĐÃ RÕ (kèm ví dụ Nha
+   Trang → Khánh Hòa, Phú Quốc → Kiên Giang). Đây vẫn là AI quyết; đo lại bằng 8 ca KV.
+3. *Script*: tin trong vùng (Long Thành) chờ 4 giây vẫn chưa có dòng → chờ có giới hạn, tối đa 15 giây.
+
+Kiểm: `tests/test_duyet_mo_ta_truong.py` (`test_o_met_so_tran_them_don_vi_truoc_khi_doc_thong_so`, đỏ trên bản trước); bắn thử
+`ban-thu-kb.sh` (8 ca KV).
+
+### SRS-5.1zzzzzzz101 · "Bán" hay "cho thuê" theo loại tin; câu tester nguyên văn; câu chữ thực (21/10/2026)
+
+Chat tester chị N. với chủ dự án 21/10 11:30–11:39:
+- "nếu bán nó sẽ hiển thị bán, cho thuê nó sẽ hiển thị cho thuê, chứ ko phải bán/cho thuê" — câu luật SRS-5.1zzzzzzz98 viết "tin bán / cho
+  thuê", model dễ chép nguyên cụm. **Sửa**: `khoi_trang_thai_web(web, thue)` — code chọn "bán" / "cho thuê" (và "khách mua" / "khách
+  thuê") theo `prop.is_rental`. **Lớp**: câu luật đưa cho model một cụm gộp mà code biết rõ giá trị. **Cùng lớp**: soát `prompts.py`
+  không còn "bán / cho thuê" trong câu bot được bảo nói ra (chỗ còn lại là mô tả vai cho lượt lập thao tác, không phải lời gửi khách).
+- Tin nhắc bản nháp: dùng nguyên văn câu tester "Em gửi anh/chị bản nháp tin đăng, mình cần chỉnh sửa thêm nhắn em hỗ trợ ạ!" (chủ dự
+  án: "đúng rồi vậy giống người hơn") — bỏ bản đổi "mình" thành tên gọi của SRS-5.1zzzzzzz99. Câu chuẩn báo phí cũng giữ "Mình cần
+  biết thêm thông tin". "mình" ở đây là gọi khách, như "nhà mình" đã dùng trong prompt.
+- "giờ cố gắng đưa câu chữ cho thực… AI quá khách ngán" → luật chung "câu chữ thực, như môi giới nhắn Zalo" ở `CONVERSATION_POLICY`.
+- **Chưa làm, chờ chủ dự án**: tester đề xuất khách nhắn "ok" sau bản nháp thì bot đáp "Dạ em xin phép đăng tin ạ!" — trái quyết định
+  "cấm mở đầu Dạ" (CLAUDE.md §6, giữ của mình); và cần chốt câu đó thay hay đi trước lời xác nhận đã đăng (SRS-5.1zzzzzzz98).
+
+Kiểm: `tests/test_trang_thai_web.py` (`test_xac_nhan_noi_dung_loai_tin_khong_gop_ban_cho_thue`), `tests/test_xung_ho_khong_lat.py`.
+
+### SRS-5.1zzzzzzz102 · Ghi nhận vừa ngắn vừa lịch sự (21/10/2026)
+
+Chat tester chị N. với chủ dự án 21/10 11:44: tester "đang suy nghĩ tới phần ghi nhận, sao để rút gọn"; chủ dự án: "ngắn không thì nó
+láo, nên phải sửa vừa ngắn vừa lịch sự á". Đếm 280 câu bot 3 ngày trong `cau_chuan`: 59 câu có "ghi nhận", 32 câu MỞ ĐẦU "Em ghi
+nhận…", gần hết tua lại cả tin (diện tích, tầng, ngang, giá, pháp lý) trước câu hỏi.
+
+**Lớp lỗi**: luật trong prompt mâu thuẫn nhau, và ví dụ thắng luật. Luật 5 cấm nhại lời khách; luật 6 ("câu đầu mở bằng chính nội dung
+— điều khách vừa nói…", ví dụ "Phường Chợ Quán, em ghi rồi chị.") cùng mô tả ô `tu_soat` / `loi_gui_khach` của công cụ gửi khách (model
+đọc ở MỌI lượt) dạy ngược lại. Model dung hoà bằng cách mở câu bằng lời khách, kể hết. **Sửa**: một luật "GHI NHẬN VỪA NGẮN VỪA LỊCH SỰ"
+ở `CONVERSATION_POLICY` — đáp nhận một vế ngắn lễ phép ("Em ghi rồi ạ.", "Em cảm ơn anh/chị ạ."), không kể lại con số / chi tiết,
+không hỏi cộc; nhắc MỘT chi tiết chỉ khi kèm ý có ích hoặc khi em vừa sửa theo lời khách. Luật 6 đổi thành "mở bằng việc em vừa làm",
+ví dụ Chợ Quán thành "Em ghi rồi chị. …"; hai mô tả ô công cụ nói cùng điều đó. Không thêm van lọc chữ ở đầu ra.
+**Cùng lớp đã soát**: dòng "CẤM NHẠI" ở khối giọng (trỏ về luật mới); khối ảnh "Sau khi ghi nhận ngắn gọn ảnh" (giữ — đã nói ngắn, không
+dạy tua lại); ví dụ "Hẻm 4m xe hơi vào được, khách đi xem tiện." ở luật 5 (giữ — một chi tiết kèm ý có ích, đúng luật mới).
+**Đo sau deploy**: đếm lại tỉ lệ câu mở "Em ghi nhận" / kể lại ≥ 3 chi tiết trong `cau_chuan` (nền 32/280).
+
+Kiểm: `tests/test_ghi_nhan_ngan.py` (đỏ trên code cũ: còn "điều khách vừa nói" / ví dụ Chợ Quán, thiếu luật mới).
+
+### SRS-5.1zzzzzzz103 · Khách duyệt tin: "Em xin phép đăng tin ạ!" (21/10/2026)
+
+Tester chị N. 21/10: "nếu khách nhắn ok thì mình nhắn lại 'Dạ em xin phép đăng tin ạ!' vậy xong"; chủ dự án: "ừ đổi, ngắn thì tốt"
+(bỏ "Dạ" theo luật cấm mở đầu "Dạ"). **Sửa**: `khoi_trang_thai_web` — đoạn đầu lời duyệt là đúng câu "Em xin phép đăng tin ạ!", bỏ câu
+kể "đã đăng lên hệ thống, hiển thị trên website, chuyển mạng lưới khách" của SRS-5.1zzzzzzz98; đoạn hỏi phí (mời vào web theo dõi + "biết
+phí môi giới bên em chưa", quyết định theo bản anh Luận) giữ nguyên làm tin nhắn thứ hai, nên link web vẫn tới khách. Chỉ nhánh tin ĐÃ
+lên web; tin chưa lên web vẫn nói thật còn thiếu gì. Dòng câu chuẩn duyệt tin (`cau_chuan`, ví dụ bot đọc) đổi theo cùng câu để ví dụ không
+dạy ngược. **Lớp**: câu luật dài do người viết luật soạn, trong khi người dùng thật đã đưa câu ngắn — cùng lớp với SRS-5.1zzzzzzz101 (dùng
+nguyên văn câu tester). **Cùng lớp đã soát**: tin nhắc bản nháp (đã nguyên văn, SRS-5.1zzzzzzz101), câu phí (SRS-5.1zzzzzzz97).
+
+Kiểm: `tests/test_trang_thai_web.py` (`test_xac_nhan_ngan_mot_cau_khong_mo_dau_da` — đỏ trên code cũ), `tests/test_cho_thue_nguyen_can.py`.
+
+### SRS-5.1zzzzzzz104 · Khách chấm sao cho AI sau khi xong việc (21/10/2026)
+
+Chủ dự án 21/10 hỏi "có hệ thống chấm điểm ở trên zalo sau khi người ta xong xuôi chưa, kiểu AOND anh Luận… chấm điểm cho AI á". Soát:
+chưa có — bảng `ratings_log` (chấm sao sau buổi xem, FR-65 thời bot TypeScript) chưa từng có dòng, gỡ 19/10 (SRS-5.1zzzzzzz69); bản anh Luận
+(`luan8560/AOND` commit `ffd3684`) cũng không có (điểm Đồng / Bạc / Vàng ở đó là điểm tin và người rao, chỉ in ở cửa sổ chạy thử). Chủ dự án
+chốt năm ý: hỏi một lần; bên bán sau khi tin đã đăng và nói xong phí, bên mua khi khách nhận đủ thông tin căn; câu "Anh/chị chấm giúp em
+1–5 sao cho lần hỗ trợ này nha, để em làm tốt hơn ạ."; AI đọc câu trả lời theo nghĩa, không regex; điểm vào bảng mới, hiện trên CRM,
+≤ 2 sao báo admin.
+
+**Làm**:
+- `src/aioi/danh_gia.py` — câu xin chấm sao (code sinh, khách xưng "em" thì bot xưng "mình"), khối dặn model cảm ơn / xin lỗi.
+- Lượt AI lập thao tác (`operations_schema`) thêm `danh_gia_sao` + `danh_gia_trich_dan` và `xong_viec_mua`. Code nhận điểm khi cụm trích
+  có trong tin vừa nhắn VÀ lời bot ngay trước là câu xin chấm sao (so chuỗi tất định vì chính code sinh câu đó — không cần đọc DB để biết
+  khách đang được hỏi).
+- Bên bán: lượt duyệt tin (đã lên web) gắn `_phi_da_hoi`; lượt kế mà khách không hỏi gì mới (`hoi_ve`), không đổi gì trên tin, không còn
+  ô hỏi sau bản nháp → model được dặn không đặt câu hỏi, code nối câu xin chấm sao thành tin nhắn riêng. Khách hỏi phí thì trả lời phí
+  trước, lượt sau mới xin.
+- Bên mua: khách báo đã đủ thông tin (`xong_viec_mua`, cụm trích) và lượt đó có căn khớp nhu cầu đang hiện → xin chấm sao.
+- Hỏi một lần: bảng `danh_gia_ai` (`20261021a`, `zalo_user_id` unique) — engine hỏi `da_xin_danh_gia` trước khi xin, server ghi dòng
+  (`ghi_xin_danh_gia`) và điểm (`ghi_danh_gia`) chạy nền kèm tên Zalo. ID thử (`la_id_thu`) lần bắn nào cũng được xin (để bắn thử thấy
+  câu), không nhắn admin; cột `la_thu` tách trên CRM.
+- ≤ 2 sao: tin nội bộ "⭐ Khách chấm N sao cho AI…" vào `reminders` (`kind = escalation`) — cùng đường `bao_can_nguoi`, bridge kéo qua
+  escalation-feed nhắn CTV / admin; tin mở đầu bằng ký hiệu nên không bao giờ tới khách (`laTinNoiBo`). Lời khách che dãy số dài trước
+  khi lưu / nhắn.
+- CRM: trang `/admin/danh-gia` (cột trái, nhóm Hằng ngày) — số đã hỏi / đã chấm / điểm trung bình / số ≤ 2 sao, phân bố điểm, lọc theo
+  điểm và nguồn (khách thật / bắn thử). Chỉ đọc qua RLS admin.
+
+**Lớp / cùng lớp**: tính năng mới, không phải sửa lỗi. Chỗ cùng cơ chế "AI đọc theo nghĩa, code kiểm trích dẫn" đã có: `duyet_ban_nhap`,
+`hoi_ve`, `can_nguoi_that`, `xin_dang` — ô mới đi đúng khuôn đó, không thêm từ khoá. Ba chỗ không làm: xoá khách bằng `admin_xoa_khach` /
+Xoá hàng loạt không xoá dòng `danh_gia_ai` (không có khoá ngoại; dòng giữ điểm lịch sử); lượt hỏng phải thử lại nền (`_thu_lai_nen`) không ghi
+điểm; nhánh SQLite (chạy thử trên máy) không xin chấm sao vì không có bảng.
+
+Kiểm: `tests/test_danh_gia_ai.py` (8 ca — đỏ khi tắt phần nối kho hoặc bỏ điều kiện "bot vừa xin": đã thử, 4 ca đỏ).
+
+### SRS-5.1zzzzzzz105 · Bắn thử 205 sau deploy: số lệch kho chặn đăng, ghi nhận sau bản nháp, script chấm sai (21/10/2026)
+
+Lượt `ban-thu-kb` 205 (commit `af7568c`) xác nhận hai bản sửa trước: ghi nhận ngắn ("Em ghi rồi anh/chị ạ.", "Em ghi 245m² ạ.") và lời
+duyệt "Em xin phép đăng tin ạ!" + tin hỏi phí. Còn bốn chỗ:
+
+1. **KB5 — số lệch kho chặn đăng.** Khách nói dtsd 245 m², mẫu Fusion Gen 5 trong kho Ny'ah 195 m² → bot đòi số lô "để đối chiếu trước
+   khi đăng"; khách "rao tin này giúp mình", "ok", "ok" — ba lượt không đăng. **Lớp**: kho dự án (kiến thức chung) được model dùng làm
+   cổng chặn lời người rao, trong khi ô tin chỉ ghi điều khách nói (SRS-5.1zzzzzzz73) và mã căn không chặn bản nháp (quyết định 20/10).
+   Khối `_AGENT_TOOL_GUIDE` (đường agent, chỉ khi dự án có rổ căn) không nói gì về số lệch. **Sửa**: thêm luật "lệch kho thì hỏi lại MỘT
+   lần; khách giữ / lờ / bảo đăng thì theo lời khách, không đòi số lô, không từ chối soạn". **Cùng lớp**: `_project_memory_block` chỉ
+   đưa dữ liệu, không ra lệnh chặn; `_seller_price_block` là giá của chính người rao — không cùng lớp. Nhật ký thêm dòng `Xin đăng:
+   thiếu tối thiểu=[tên ô]` (chỉ tên ô) để lượt sau biết khách bảo đăng mà không ra bản nháp là vì thiếu ô hay vì model.
+2. **Ghi nhận sau bản nháp** (KB3): "Em ghi nhận, căn đã có sổ hồng và full nội thất rồi anh/chị." — luật SRS-5.1zzzzzzz102 chỉ nằm
+   trong `CONVERSATION_POLICY` (prompt lượt hỏi). **Sửa**: một nguồn `LUAT_GHI_NHAN`, nối vào cả `build_fee_followup_system` (lượt sau
+   bản nháp). Đây là chỗ cùng lớp bản 102 bỏ sót.
+3. **Script — tiêu đề bản tin cập nhật**: bản cập nhật ghi tiêu đề NGAY trên dòng 📋 ("📋 Bản tin cập nhật: …"), script bỏ dòng đó
+   nên đọc nhầm đoạn mô tả (111 từ) thành tiêu đề. Tiêu đề thật 12 từ, đạt.
+4. **Script — vùng nhận tin**: Dĩ An, Long Thành (trong vùng) chấm SAI vì khách chưa nói tên đường nên chưa có dòng tin; bot hỏi đường
+   đúng. Nay chấm theo lời bot: ngoài vùng phải nói "chưa nhận" và không có tin mở; trong vùng không nói "chưa nhận" và tin không ẩn.
+   Đo lại theo lời bot: 8/8.
+
+Kiểm: `tests/test_so_lech_kho_du_an.py`, `tests/test_ghi_nhan_ngan.py` (`test_luot_sau_ban_nhap_cung_mot_luat_ghi_nhan`) — cả hai đỏ
+trên code cũ (đã thử).
+
+### SRS-5.1zzzzzzz106 · Câu mẫu cố định: một nguồn, chủ dự án sửa ở CRM (21/10/2026)
+
+Chủ dự án 21/10: "trên chỗ mẫu câu đưa thêm 1 bảng nhỏ ở 1 bên là các câu đã sửa thành mẫu từ lúc lấy lại các yêu cầu của anh Luận
+đến bây giờ nữa, cứ ghi vào có gì vào sửa tiếp". Từ SRS-5.1zzzzzzz81 (20/10) tới nay có tám câu bot nói NGUYÊN VĂN, viết tay rải ở bốn
+file: duyệt tin "Em xin phép đăng tin ạ!" (103), câu hỏi phí sau khi duyệt (81 / 98), hai câu nhắc bản nháp (99 / 101), hai câu xin chấm
+sao (104), câu giữ chỗ khi lượt lỗi và câu xin lỗi khi làm lại vẫn lỗi (82). Câu chấm điểm / sửa ở `cau_chuan` chỉ là VÍ DỤ cho model —
+không đổi được các câu này.
+
+**Làm**:
+- `src/aioi/cau_mau.py` — MỘT nguồn: `MAC_DINH` (câu gốc, dùng ở đâu, nguồn quyết định) + `cau(khoa, goi)`. Bảng `cau_mau` (`20261021b`,
+  nạp sẵn tám câu sinh từ `MAC_DINH`) đè câu gốc, đọc lại sau 60 giây (`SupabaseConversationStore.cau_mau_tu_kho`, server gắn lúc khởi
+  động). Chỗ giữ chữ `{goi}` / `{Goi}` (anh / chị / anh/chị). Câu sửa hỏng (ngoặc nhọn lạ, trống) hay đọc kho lỗi → câu gốc; bot không
+  gửi câu lỗi vì một lần sửa tay.
+- Chỗ dùng đổi sang `cau_mau.cau(...)`: `khoi_trang_thai_web` (duyệt tin), `build_fee_followup_system` (câu hỏi phí — model nói theo
+  câu mẫu), `followup.py` (nhắc bản nháp), `danh_gia.py` (xin chấm sao; nhận câu vừa gửi theo cả câu đang dùng lẫn câu gốc để sửa giữa hai
+  lượt vẫn đọc được điểm), `server.py` (giữ chỗ, xin lỗi).
+- CRM: khung "Câu mẫu cố định" bên phải trang `/admin/cau-chuan` (dưới màn hẹp thì xuống cuối trang) — mỗi câu: dùng ở đâu, nguồn, ô sửa,
+  Lưu / Huỷ sửa / Về câu gốc, nhãn "Đã sửa" khi khác câu gốc. RLS: admin đọc + sửa, không thêm / xoá dòng.
+
+**Lớp / cùng lớp**: câu khách đọc nguyên văn viết tay ở nhiều file, chủ dự án không sửa được, sửa một chỗ thì chỗ khác lệch (vd câu xin
+chấm sao phải khớp chỗ nhận câu trả lời). Chỗ khác còn câu viết tay, CHƯA đưa vào (ngoài phạm vi "từ khi theo anh Luận"): dòng mở bản nháp
+`MO_DAU_NHAP` (code dùng để cắt câu dẫn — sửa sai là hỏng bản nháp), câu chốt "thấy bản tin này hấp dẫn chưa", lời chào làm mới phiên,
+câu nhận ảnh. Muốn đưa thêm thì thêm khoá vào `MAC_DINH` + một migration nạp dòng.
+
+Kiểm: `tests/test_cau_mau.py` (6 ca — câu sửa tới lời bot, câu sửa hỏng / đọc lỗi dùng câu gốc, không file nào còn viết tay câu mẫu,
+migration nạp đúng câu gốc; đỏ khi bỏ phần nối — đã thử, 2 ca đỏ).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
