@@ -42,6 +42,7 @@ don() {
   # (20/10: hội thoại "Khách thử" chỉ có một tin nhắc "bản tin nháp em soạn ở trên").
   vps "for u in $TAT_CA; do curl -sS -X POST http://127.0.0.1:8000/reset/\$u >/dev/null; done" || true
   for u in $TAT_CA; do q "select reset_nguoi_test('$u') as kq" | jq -c '.[0]' || true; done
+  q "delete from danh_gia_ai where la_thu and zalo_user_id like 'thu-k%-$RUN'" >/dev/null || true   # SRS-5.1zzzzzzz104
 }
 trap don EXIT
 
@@ -157,6 +158,18 @@ kiem "KB3: tiêu đề căn hộ không có \"MT\"" "$(grep -qw 'MT' <<<"$TIEU_D
 kiem "KB3: không hỏi hẻm / mặt tiền" "$(grep -qiE 'hẻm|mặt tiền' <<<"$(jq -r '.reply' <<<"$TRA")" && echo 0 || echo 1)"
 # SRS-5.1zzzzzzz94: sau bản nháp bot ghi thêm phí quản lý (tin ngay trước không còn là bản nháp) — "ok đăng đi" vẫn là duyệt.
 kiem "KB3: \"ok đăng đi\" sau khi bot ghi thêm ý vẫn là duyệt — tin lên web" "$(jq '.status == "dang_ban" | if . then 1 else 0 end' <<<"$r3")"
+# SRS-5.1zzzzzzz104: tin đã lên web + đã hỏi phí → khách trả lời xong thì bot xin chấm sao (một lần); khách chấm thì có dòng danh_gia_ai.
+XIN_SAO=0
+for cau in "chưa biết em" "ok em cảm ơn"; do
+  chat "$KB3" "$cau"
+  grep -q 'chấm giúp' <<<"$(jq -r '.reply // ""' <<<"$TRA")" && { XIN_SAO=1; break; }
+done
+kiem "KB3: sau khi nói xong phí, bot xin chấm 1–5 sao" "$XIN_SAO"
+if [ "$XIN_SAO" = 1 ]; then
+  chat "$KB3" "5 sao nha em"
+  sao=""; for _ in 1 2 3 4 5; do sleep 3; sao=$(q "select sao from danh_gia_ai where zalo_user_id = '$KB3'" | jq -r '.[0].sao // empty'); [ -n "$sao" ] && break; done
+  kiem "KB3: khách chấm \"5 sao\" → danh_gia_ai.sao = 5" "$([ "$sao" = 5 ] && echo 1 || echo 0)"
+fi
 
 echo; echo "=================== KB5 — chat tester chị N. 20/10: nhà trong Ny'ah Phú Định, dtsd, MT 20m, ok liên tục ==================="
 # SRS-5.1zzzzzzz87: duyệt bản nháp hỏi lại mãi; "dtsd: 245m" vào ô đất; "MT 20 mét" (đường) thành bề ngang; tên dự án không dấu.
