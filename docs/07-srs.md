@@ -7710,6 +7710,25 @@ Lượt 209 (commit `e4ec232`): KB2 hết thành tin cho thuê, KB5 / chấm sao
 
 Kiểm: `tests/test_ban_thu_209.py` (3 ca, đỏ trên code cũ — đã thử).
 
+### SRS-5.1zzzzzzz109 · Bắn thử 211: tiêu đề căn hộ có "MT"; bước kiểm tiêu đề đọc nhầm bản tin cập nhật (21/10/2026)
+
+Lượt 211 (commit `f0d3985`): lượt khách làm rõ địa chỉ nay là "update" (không còn căn trùng — SRS-5.1zzzzzzz108 có tác dụng), không bong
+bóng nào mở đầu "Dạ". Còn:
+
+1. **Tiêu đề căn hộ có "MT"** ("Bán căn hộ Masteri MT Q.2, 68m², 2PN, 6,8 tỷ") — người mua đọc "MT" là mặt tiền. **Sửa**:
+   `_tieu_de_can_ho_co_mt` trong `_soat_hinh_thuc` (luật hình thức code kiểm được, lệch thì gọi lại model một lần kèm lý do — cùng khuôn
+   tiêu đề thiếu giá / "5x20m²"); chỉ căn hộ, "MT" đứng riêng ("MTA Tower" không tính).
+2. **Cùng lớp soát ra**: mọi bước kiểm tiêu đề (`_tieu_de_thieu`, `_tieu_de_sai_don_vi`) lấy dòng KẾ dòng 📋, nhưng bản tin cập nhật ghi
+   tiêu đề NGAY trên dòng 📋 ("📋 Bản tin cập nhật: <tiêu đề>") → với bản cập nhật chúng soi nhầm đoạn mô tả (giá có trong mô tả thì kiểm
+   "tiêu đề có giá" luôn đạt). Đây là lỗi script bắn thử đã gặp ở SRS-5.1zzzzzzz105, nay ở chính lõi. **Sửa**: một hàm `_dong_tieu_de` cho
+   cả hai kiểu bản tin, ba bước kiểm dùng chung.
+3. **Nhận vùng vẫn chập chờn**: KB1 ("quận Đống Đa, Hà Nội") và KV1 ("Cầu Giấy, Hà Nội") đều `Vùng: AI=False` — ba lượt 207 / 209 / 211
+   thì KB1 trượt hai. Code kiểm đúng; ô `ngoai_vung` là một ô phụ trong lượt AI lập thao tác lo nhiều việc. **Đề xuất, chờ chủ dự án**: một
+   lượt AI nhỏ riêng khi khách nói địa chỉ mới mà chưa biết tỉnh ("căn này thuộc tỉnh / thành nào", kèm cụm trích), code so với danh sách
+   vùng — thêm ~1 lượt Haiku mỗi hội thoại, ~1 giây ở lượt đó.
+
+Kiểm: `tests/test_tieu_de_ban_tin.py` (3 ca, đỏ trên code cũ — đã thử).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -788,12 +788,21 @@ def _so_trong(x: str | None) -> set[str]:
     return {n.replace(",", ".") for n in re.findall(r"\d+(?:[.,]\d+)?", re.sub(r"(?i)m\s*[2²]", "m", str(x or "")))}
 
 
+def _dong_tieu_de(reply: str) -> str:
+    """Dòng tiêu đề của bản tin 📋 — một chỗ cho mọi bước kiểm (SRS-5.1zzzzzzz109). Bản nháp đầu: dòng mở "📋 Em sẽ rao như vầy…:" rồi
+    tiêu đề ở dòng chữ kế; bản cập nhật ghi tiêu đề NGAY trên dòng 📋 ("📋 Bản tin cập nhật: <tiêu đề>"). Bản trước luôn lấy dòng kế,
+    nên với bản cập nhật các bước kiểm soi nhầm đoạn mô tả. Không có 📋 → ""."""
+    if "📋" not in (reply or ""):
+        return ""
+    dong = reply.split("📋", 1)[1].splitlines()
+    tren = dong[0].split(":", 1)[1].strip() if dong and ":" in dong[0] else ""
+    return tren or next((d for d in dong[1:] if d.strip()), "")
+
+
 def _tieu_de_sai_don_vi(reply: str) -> bool:
     """Tiêu đề bản tin ghi kích thước kèm m² ("5x20m²") — sai đơn vị: 5x20 là kích thước lô, diện tích là 100m² (bắn thử KB2 20/10,
     SRS-5.1zzzzzzz91). Chỉ so bố cục chữ của dòng tiêu đề."""
-    if "📋" not in (reply or ""):
-        return False
-    tieu_de = next((d for d in reply.split("📋", 1)[1].splitlines()[1:] if d.strip()), "")
+    tieu_de = _dong_tieu_de(reply)
     return re.search(r"\d\s*[x×*]\s*\d+(?:[.,]\d+)?\s*m\s*[²2]", tieu_de) is not None
 
 
@@ -802,11 +811,16 @@ def _tieu_de_thieu(reply: str, prop: "Property") -> list[str]:
     tiêu đề (SRS-5.1zzzzzzz86). Không có 📋 hay căn chưa có giá → []. Không đọc ý: chỉ so số."""
     if "📋" not in (reply or "") or not prop.fields.get("gia"):
         return []
-    sau = reply.split("📋", 1)[1].splitlines()[1:]
-    tieu_de = next((d for d in sau if d.strip()), "")
+    tieu_de = _dong_tieu_de(reply)
     gia = prop.fields["gia"]
     so_gia = _so_trong(gia)
     return [f"giá ({gia})"] if so_gia and not (so_gia & _so_trong(tieu_de)) else []
+
+
+def _tieu_de_can_ho_co_mt(reply: str, prop: "Property") -> bool:
+    """Tiêu đề căn hộ / chung cư có chữ "MT" đứng riêng (bắn thử 211 KB3: "Bán căn hộ Masteri MT Q.2…") — người mua đọc "MT" là mặt
+    tiền, căn hộ không có mặt tiền (SRS-5.1zzzzzzz109). Chỉ so chữ của dòng tiêu đề."""
+    return prop.group is PropertyGroup.CONDO and re.search(r"(?<![\wÀ-ỹ])MT(?![\wÀ-ỹ])", _dong_tieu_de(reply)) is not None
 
 
 def _than_ban_tin(reply: str) -> tuple[str, str] | None:
@@ -2142,6 +2156,9 @@ class Engine:
                          + "; tiêu đề tối đa 15 từ, đủ vị trí · diện tích · giá.")
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
+        if _tieu_de_can_ho_co_mt(reply, conv.prop):
+            ly_do.append("Tiêu đề căn hộ có chữ \"MT\" — người mua đọc là mặt tiền; căn hộ không có mặt tiền, viết đủ tên dự án, không "
+                         "viết tắt \"MT\".")
         if _tieu_de_sai_don_vi(reply):
             ly_do.append("Tiêu đề ghi kích thước kèm m² (vd \"5x20m²\") — sai: viết diện tích bằng m² (vd \"100m²\") hoặc kích thước "
                          "không kèm m² (vd \"5x20m\").")
