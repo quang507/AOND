@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-21 15:12 (giờ VN)
+-- Sinh lúc: 2026-10-21 17:12 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -285,6 +285,12 @@ create table if not exists public.listing_media (
   nguon text not null default 'kho'::text,
   mo_ta text,
   ocr jsonb
+);
+
+create table if not exists public.listing_noi_bo (
+  listing_id uuid not null,
+  du_lieu jsonb not null default '{}'::jsonb,
+  updated_at timestamp with time zone not null default now()
 );
 
 create table if not exists public.listing_views (
@@ -748,6 +754,9 @@ do $d$ begin
   alter table public.listing_media add constraint listing_media_sort_order_hop_le CHECK (((sort_order IS NULL) OR ((sort_order >= 0) AND (sort_order <= 9999))));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.listing_noi_bo add constraint listing_noi_bo_pkey PRIMARY KEY (listing_id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.listing_views add constraint listing_views_pkey PRIMARY KEY (auth_user_id, listing_id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -949,6 +958,9 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listing_media add constraint listing_media_listing_id_fkey FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.listing_noi_bo add constraint listing_noi_bo_listing_id_fkey FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE;
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listing_views add constraint listing_views_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES auth.users(id);
@@ -1253,7 +1265,7 @@ begin
   -- thứ tự (sellers ↔ listings vòng tròn qua active_listing_id).
   set local session_replication_role = replica;
   foreach t in array array['sellers', 'buyers', 'listings', 'conversations', 'messages', 'info_requests', 'media', 'listing_media', 'listing_views', 'property_events', 'interests',
-                           'viewings', 'deals', 'curated_lists', 'chat_quota', 'reminders'] loop
+                           'viewings', 'deals', 'curated_lists', 'chat_quota', 'reminders', 'listing_noi_bo'] loop
     -- Cột sinh (generated) không chèn được — chỉ lấy cột thường của bảng HIỆN TẠI.
     select string_agg(quote_ident(a.attname), ', ' order by a.attnum), string_agg('r.' || quote_ident(a.attname), ', ' order by a.attnum)
       into v_cot, v_r
@@ -1324,7 +1336,7 @@ begin
   -- không đỡ được mất cả DB (không có sao lưu ngoài — OPEN-25).
   insert into luu_tru.lan_xoa (ai) values (coalesce(auth.uid()::text, current_user)) returning lan into v_lan;
   foreach t in array array['sellers', 'buyers', 'listings', 'conversations', 'messages', 'info_requests', 'media', 'listing_media', 'listing_views', 'property_events', 'interests',
-                           'viewings', 'deals', 'curated_lists', 'chat_quota'] loop
+                           'viewings', 'deals', 'curated_lists', 'chat_quota', 'listing_noi_bo'] loop
     execute format('insert into luu_tru.ban_ghi (lan, bang, du_lieu) select $1, %L, to_jsonb(x) from public.%I x', t, t)
       using v_lan;
   end loop;
@@ -6732,6 +6744,7 @@ alter table public.giao_lo enable row level security;
 alter table public.info_requests enable row level security;
 alter table public.interests enable row level security;
 alter table public.listing_media enable row level security;
+alter table public.listing_noi_bo enable row level security;
 alter table public.listing_views enable row level security;
 alter table public.listings enable row level security;
 alter table public.media enable row level security;
@@ -6831,6 +6844,8 @@ drop policy if exists listing_media_own_insert on public.listing_media;
 create policy listing_media_own_insert on public.listing_media as permissive for INSERT to authenticated with check (((bucket = 'listing-public'::text) AND tin_cua_toi(listing_id)));
 drop policy if exists listing_media_own_read on public.listing_media;
 create policy listing_media_own_read on public.listing_media as permissive for SELECT to authenticated using (((bucket = 'listing-public'::text) AND tin_cua_toi(listing_id)));
+drop policy if exists listing_noi_bo_admin_read on public.listing_noi_bo;
+create policy listing_noi_bo_admin_read on public.listing_noi_bo as permissive for SELECT to authenticated using (la_admin());
 drop policy if exists views_own_all on public.listing_views;
 create policy views_own_all on public.listing_views as permissive for ALL to authenticated using ((auth_user_id = ( SELECT auth.uid() AS uid))) with check ((auth_user_id = ( SELECT auth.uid() AS uid)));
 drop policy if exists anon_read_listings on public.listings;
@@ -6930,6 +6945,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.in
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.interests to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.khach_can_nguoi_that to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listing_media to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listing_noi_bo to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listing_photos_v to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listing_views to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listings to service_role;
@@ -7004,6 +7020,7 @@ grant SELECT on public.hoi_thoai_phien to authenticated;
 grant SELECT on public.hoi_thoai_thong_ke to authenticated;
 grant SELECT on public.khach_can_nguoi_that to authenticated;
 grant SELECT on public.listing_media to anon;
+grant SELECT on public.listing_noi_bo to authenticated;
 grant SELECT on public.listing_photos_v to anon;
 grant SELECT on public.listing_photos_v to authenticated;
 grant SELECT on public.ro_hang_ban to authenticated;
