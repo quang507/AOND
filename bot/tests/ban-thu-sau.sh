@@ -26,7 +26,7 @@ BAT_DAU=$(date -u +%s)
 
 don() {
   echo "== nhật ký lõi: cụm hỏi thêm, duyệt, kế hoạch (chỉ cờ + tên ô)"
-  vps "journalctl -u aond-core --since @$BAT_DAU -o cat --no-pager | grep -oE '(Hỏi sau đăng: |Duyệt: AI=|Kế hoạch: |ghi listing_noi_bo lỗi|đọc listing_noi_bo lỗi|tinh_hinh_tin lỗi).*' | tail -60" || true
+  vps "journalctl -u aond-core --since @$BAT_DAU -o cat --no-pager | grep -oE '(Hỏi sau đăng: |Duyệt: AI=|Kế hoạch: |Dự phòng[: ]|ghi listing_noi_bo lỗi|đọc listing_noi_bo lỗi|tinh_hinh_tin lỗi).*' | sort | uniq -c | sort -rn | head -60" || true
   echo "== đưa câu bot vào Câu chuẩn"
   for u in $TAT_CA; do q "select cau_chuan_tu_zalo('$u') as so_cau" | jq -c '.[0]' || true; done
   echo "== dọn dữ liệu thử"
