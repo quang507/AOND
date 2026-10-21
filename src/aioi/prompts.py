@@ -735,8 +735,11 @@ def khoi_trang_thai_web(web: dict | None) -> tuple[str, str]:
         vua = ("\n  • Nếu lượt trước em báo tin CHƯA lên web vì thiếu thông tin và khách vừa bổ sung: báo tin nay ĐÃ hiển thị trên "
                f"{_WEB}." if web is not None else "")
         return (
-            # 20/10 (SRS-5.1zzzzzzz90, tester: "nghe dài mệt quá"): một câu xác nhận ngắn, không kể "mạng lưới", không hướng dẫn.
-            f"  • XÁC NHẬN NGẮN, ĐÚNG 1 CÂU: tin đã lên web {_WEB}. KHÔNG kể thêm (mạng lưới khách, cách theo dõi tin…).{vua}",
+            # 20/10 (SRS-5.1zzzzzzz90, tester: "nghe dài mệt quá"); 21/10 (SRS-5.1zzzzzzz98) theo câu tester sửa: cảm ơn + ĐÚNG 1 câu
+            # xác nhận (đã đăng + hiển thị trên web + chuyển mạng lưới khách đang tìm), không kể thêm.
+            f"  • CẢM ƠN khách đã duyệt, rồi XÁC NHẬN ĐÚNG 1 CÂU: tin bán / cho thuê của khách đã được đăng lên hệ thống và hiển thị "
+            f"trên website {_WEB}, đồng thời em chuyển cho mạng lưới khách mua / thuê đang tìm. KHÔNG kể thêm gì khác (không tả lại "
+            f"căn, không hướng dẫn dài).{vua}",
             f"  • Gửi ngay link website: {_WEB}\n"
             "  • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng "
             "như môi giới dễ dàng tìm kiếm, kết nối.",
@@ -799,9 +802,11 @@ def build_fee_followup_system(
     # SRS-5.1zzzzzzz81 (chủ dự án: "theo anh Luận"): khách duyệt → hỏi khách biết phí chưa. Tin chưa lên web thì lượt đó đã phải hỏi
     # ô còn thiếu (`khoi_trang_thai_web`) — không thêm câu phí cho khỏi thành hai câu hỏi.
     hoi_phi = (
-        "\n  • RỒI HỎI PHÍ NHẸ NHÀNG như bản anh Luận: hỏi khách đã biết phí môi giới bên mình chưa, theo tinh thần \"Em sẽ cho chào "
-        "căn nhà của anh/chị ngay ạ, mà anh/chị có biết phí môi giới của tụi em chưa ạ?\" — đây là câu hỏi DUY NHẤT của lượt này. "
-        "Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách. Cả lượt tối đa 2 câu ngắn."
+        "\n  • RỒI XUỐNG MỘT DÒNG TRỐNG (đoạn riêng — hệ thống gửi thành tin nhắn riêng cho đỡ rối mắt; SRS-5.1zzzzzzz98) và HỎI "
+        "PHÍ NHẸ NHÀNG như bản anh Luận (tinh thần \"anh/chị có biết phí môi giới của tụi em chưa ạ?\"): mời khách vào web theo dõi "
+        "tin rồi hỏi khách đã biết phí môi giới bên em chưa (vd câu tester: \"Chị có thể vào aioinhadat.com để theo dõi tin rao ạ. Chị "
+        "biết phí môi giới bên em chưa ạ?\") — đây là câu hỏi DUY NHẤT của lượt "
+        "này. Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách. Đoạn này tối đa 2 câu ngắn."
         if (web is None or web.get("len_web")) else ""
     )
     hoi_sau = ""

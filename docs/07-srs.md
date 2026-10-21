@@ -7481,6 +7481,28 @@ lên web 1 câu, phí 1–2 câu, tóm ảnh 1–2 câu) giữ nguyên, nay có 
 Kiểm: `tests/test_cho_thue_nguyen_can.py` (prompt nói "0.75 tháng tiền thuê", không còn "3/4 tháng tiền thuê", còn câu cấm 3 hay 4
 tháng), `tests/test_doc_y_khach.py`.
 
+### SRS-5.1zzzzzzz98 · Lời sau khi khách duyệt: hai đoạn, câu hỏi phí thành tin nhắn riêng (21/10/2026)
+
+Tester chị N. sửa lời bot gửi 20/10 lúc khách duyệt bản tin (gửi trước khi cài SRS-5.1zzzzzzz90), lý do "rút gọn câu chữ lại để nhìn
+đỡ nhiều và rối mắt, gây sự chán nản cho người đọc". Câu chị viết: "Em cảm ơn chị đã duyệt bản tin ạ! Tin bán/cho thuê của mình đã
+được đăng lên hệ thống và hiển thị chính thức lên trên website https://aioinhadat.com, đồng thời em chuyển cho mạng lưới khách thuê
+đang tìm kiếm. / Chị có thể vào aioinhadat.com để theo dõi tin rao ạ. Chị biết phí môi giới bên em chưa ạ?" Chủ dự án: "hoặc có thể
+ngắt ra hoặc có thể hỏi thêm sau".
+
+1. **Đoạn 1** (`khoi_trang_thai_web`, tin đã lên web): cảm ơn, rồi ĐÚNG 1 câu xác nhận theo câu tester — đã đăng + hiển thị trên web +
+   chuyển mạng lưới khách đang tìm. Không tả lại căn, không hướng dẫn dài. SRS-5.1zzzzzzz90 bỏ hẳn ý "mạng lưới"; tester giữ lại ý này,
+   nên theo tester.
+2. **Đoạn 2** (`build_fee_followup_system`): sau một dòng trống — mời vào web theo dõi tin + hỏi khách biết phí chưa. Giữ tinh thần
+   bản anh Luận ("anh/chị có biết phí môi giới của tụi em chưa ạ?", quyết định chủ dự án 20/10). `chunk_reply` gửi mỗi đoạn thành tin
+   nhắn riêng (đoạn đầu dài thì tách thêm theo câu), câu hỏi phí luôn ở tin cuối.
+3. **Câu chuẩn**: câu tester vào trang Câu chuẩn (câu cũ 3 điểm — lúc chấm sơ bộ tôi cho 5, tester không đồng ý — bật "Bot dùng
+   làm ví dụ").
+
+**Lớp**: như SRS-5.1zzzzzzz97 — lời dồn mọi ý vào một khối chữ. **Cùng lớp**: lời tóm ảnh, lời báo thiếu ô đều đã có luật 1–2 câu.
+
+Kiểm: `tests/test_cho_thue_nguyen_can.py` (`test_loi_sau_duyet_hai_doan_cau_phi_tin_rieng`: câu hỏi phí ở tin cuối, không tin nào
+trộn xác nhận với hỏi phí), `tests/test_trang_thai_web.py`, `tests/test_ban_nhap_du_dieu_kien.py`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

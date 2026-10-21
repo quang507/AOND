@@ -5,7 +5,7 @@ from aioi.prompts import build_fee_followup_system, khoi_trang_thai_web
 from aioi.schema import Property
 from aioi.supabase_store import SupabaseConversationStore
 
-DA_DANG = "XÁC NHẬN NGẮN, ĐÚNG 1 CÂU: tin đã lên web"
+DA_DANG = "XÁC NHẬN ĐÚNG 1 CÂU: tin bán / cho thuê của khách đã được đăng"   # câu tester sửa 21/10 (SRS-5.1zzzzzzz98)
 
 
 def _nha():
