@@ -5,7 +5,7 @@ from aioi.prompts import build_fee_followup_system, khoi_trang_thai_web
 from aioi.schema import Property
 from aioi.supabase_store import SupabaseConversationStore
 
-DA_DANG = "XÁC NHẬN ĐÚNG 1 CÂU: tin bán / cho thuê của khách đã được đăng"   # câu tester sửa 21/10 (SRS-5.1zzzzzzz98)
+DA_DANG = "XÁC NHẬN ĐÚNG 1 CÂU: tin bán của khách đã được đăng"   # câu tester sửa 21/10 (SRS-5.1zzzzzzz98)
 
 
 def _nha():
@@ -92,3 +92,12 @@ def test_store_doc_status_va_o_thieu():
     assert StoreGia([{"status": "cho_thong_tin", "ward": "P", "area_m2": 1, "price_vnd": 1, "can_chu_duyet": True,
                       "chu_duyet_at": None}]).trang_thai_tin(_conv())["cho_duyet"] is True
     assert StoreGia([]).trang_thai_tin(_conv()) is None
+
+
+def test_xac_nhan_noi_dung_loai_tin_khong_gop_ban_cho_thue():
+    """SRS-5.1zzzzzzz101 (tester 21/10): "nếu bán nó sẽ hiển thị bán, cho thuê nó sẽ hiển thị cho thuê, chứ không phải bán/cho thuê"."""
+    ban, _ = khoi_trang_thai_web({"len_web": True})
+    thue, _ = khoi_trang_thai_web({"len_web": True}, thue=True)
+    assert "tin bán của khách" in ban and "khách mua đang tìm" in ban
+    assert "tin cho thuê của khách" in thue and "khách thuê đang tìm" in thue
+    assert "bán / cho thuê" not in ban + thue and "bán/cho thuê" not in ban + thue

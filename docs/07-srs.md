@@ -7537,6 +7537,22 @@ Kết quả đo lượt 203 (nhật ký "Vùng:" chỉ cờ, SRS-5.1zzzzzzz96):
 Kiểm: `tests/test_duyet_mo_ta_truong.py` (`test_o_met_so_tran_them_don_vi_truoc_khi_doc_thong_so`, đỏ trên bản trước); bắn thử
 `ban-thu-kb.sh` (8 ca KV).
 
+### SRS-5.1zzzzzzz101 · "Bán" hay "cho thuê" theo loại tin; câu tester nguyên văn; câu chữ thực (21/10/2026)
+
+Chat tester chị N. với chủ dự án 21/10 11:30–11:39:
+- "nếu bán nó sẽ hiển thị bán, cho thuê nó sẽ hiển thị cho thuê, chứ ko phải bán/cho thuê" — câu luật SRS-5.1zzzzzzz98 viết "tin bán / cho
+  thuê", model dễ chép nguyên cụm. **Sửa**: `khoi_trang_thai_web(web, thue)` — code chọn "bán" / "cho thuê" (và "khách mua" / "khách
+  thuê") theo `prop.is_rental`. **Lớp**: câu luật đưa cho model một cụm gộp mà code biết rõ giá trị. **Cùng lớp**: soát `prompts.py`
+  không còn "bán / cho thuê" trong câu bot được bảo nói ra (chỗ còn lại là mô tả vai cho lượt lập thao tác, không phải lời gửi khách).
+- Tin nhắc bản nháp: dùng nguyên văn câu tester "Em gửi anh/chị bản nháp tin đăng, mình cần chỉnh sửa thêm nhắn em hỗ trợ ạ!" (chủ dự
+  án: "đúng rồi vậy giống người hơn") — bỏ bản đổi "mình" thành tên gọi của SRS-5.1zzzzzzz99. Câu chuẩn báo phí cũng giữ "Mình cần
+  biết thêm thông tin". "mình" ở đây là gọi khách, như "nhà mình" đã dùng trong prompt.
+- "giờ cố gắng đưa câu chữ cho thực… AI quá khách ngán" → luật chung "câu chữ thực, như môi giới nhắn Zalo" ở `CONVERSATION_POLICY`.
+- **Chưa làm, chờ chủ dự án**: tester đề xuất khách nhắn "ok" sau bản nháp thì bot đáp "Dạ em xin phép đăng tin ạ!" — trái quyết định
+  "cấm mở đầu Dạ" (CLAUDE.md §6, giữ của mình); và cần chốt câu đó thay hay đi trước lời xác nhận đã đăng (SRS-5.1zzzzzzz98).
+
+Kiểm: `tests/test_trang_thai_web.py` (`test_xac_nhan_noi_dung_loai_tin_khong_gop_ban_cho_thue`), `tests/test_xung_ho_khong_lat.py`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

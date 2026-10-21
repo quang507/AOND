@@ -2015,7 +2015,7 @@ class Engine:
             system += (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ LINK HOẶC CÁCH ĐĂNG TRÊN WEB: ===\n"
                 "Khách vừa hỏi xem link bài đăng, xem tin ở đâu hoặc tin trên web đang hiển thị như thế nào. Hãy TRẢ LỜI RÕ RÀNG, CHUYÊN NGHIỆP:\n"
-                + khoi_trang_thai_web(web)[1] + "\n"
+                + khoi_trang_thai_web(web, conv.prop.is_rental)[1] + "\n"
             )
         system += khoi_can_nguoi(conv)
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"

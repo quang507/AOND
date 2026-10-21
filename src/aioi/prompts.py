@@ -218,6 +218,9 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
 - NGẮN VỪA ĐỦ Ý (chủ dự án 21/10/2026: "cứ ngắn vừa vừa thôi, khách không hiểu thì mình hỏi tiếp"): nói ý chính rồi dừng, KHÔNG
   thêm câu giải thích / diễn lại ý khi khách chưa hỏi (vd báo phí: con số + chỉ thu khi thành công là đủ, không thêm "tức là chưa tốn
   đồng nào…"). Khách chưa hiểu sẽ hỏi lại, lúc đó mới giải thích.
+- CÂU CHỮ THỰC, NHƯ MÔI GIỚI NHẮN ZALO (tester 21/10/2026: "câu chữ cho thực để tạo sự hấp dẫn cho khách, AI quá khách ngán"): câu đời
+  thường, gọn, một ý một câu; KHÔNG văn mẫu kiểu "xem qua thấy ưng ý chưa ạ, có cần điều chỉnh thêm thông tin nào không cứ nhắn em nhé
+  ạ" (nói: "Em gửi anh/chị bản nháp tin đăng, mình cần chỉnh sửa thêm nhắn em hỗ trợ ạ!").
 - XƯNG HÔ LINH HOẠT & PHONG CÁCH (ẤM ÁP - VỪA VẶN 25–40 TỪ - ĐÚNG 1 CÂU HỎI):
   • XƯNG HÔ THEO KHÁCH (QUY TẮC BẮT BUỘC) — MỌI trường hợp: KHÔNG mở đầu bằng "Dạ", KHÔNG gọi khách là "bạn" (SRS-5.1zzzzzzz86):
     - Khi KHÁCH XƯNG "EM" (vd: "nhà em ở...", "em gửi căn...", "em có...", "em cần bán..."):
@@ -727,7 +730,7 @@ FEE_VALUE_POINTS = """- CHỈ thu phí KHI giao dịch thành công — khách k
 _WEB = "https://aioinhadat.com"
 
 
-def khoi_trang_thai_web(web: dict | None) -> tuple[str, str]:
+def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]:
     """(lời khi khách DUYỆT tin, lời khi khách HỎI LINK) theo trạng thái THẬT của tin trên DB — một chỗ duy nhất quyết câu
     "đã đăng / đang hiển thị" của nhánh người bán (SRS-5.1zzzzzzz44). Trước đó prompt luôn bảo "xác nhận đã đăng lên web" kể cả
     khi trigger DB giữ tin ở `cho_thong_tin` (thiếu phường chuẩn / giá / diện tích) → khách tin đã đăng mà web không có."""
@@ -737,9 +740,11 @@ def khoi_trang_thai_web(web: dict | None) -> tuple[str, str]:
         return (
             # 20/10 (SRS-5.1zzzzzzz90, tester: "nghe dài mệt quá"); 21/10 (SRS-5.1zzzzzzz98) theo câu tester sửa: cảm ơn + ĐÚNG 1 câu
             # xác nhận (đã đăng + hiển thị trên web + chuyển mạng lưới khách đang tìm), không kể thêm.
-            f"  • CẢM ƠN khách đã duyệt, rồi XÁC NHẬN ĐÚNG 1 CÂU: tin bán / cho thuê của khách đã được đăng lên hệ thống và hiển thị "
-            f"trên website {_WEB}, đồng thời em chuyển cho mạng lưới khách mua / thuê đang tìm. KHÔNG kể thêm gì khác (không tả lại "
-            f"căn, không hướng dẫn dài).{vua}",
+            # 21/10 (SRS-5.1zzzzzzz101, tester: "nếu bán nó sẽ hiển thị bán, cho thuê nó sẽ hiển thị cho thuê, chứ không phải
+            # bán/cho thuê"): code chọn đúng chữ theo loại tin, không để model chép cụm gộp.
+            f"  • CẢM ƠN khách đã duyệt, rồi XÁC NHẬN ĐÚNG 1 CÂU: tin {'cho thuê' if thue else 'bán'} của khách đã được đăng lên hệ "
+            f"thống và hiển thị trên website {_WEB}, đồng thời em chuyển cho mạng lưới khách {'thuê' if thue else 'mua'} đang tìm. "
+            f"KHÔNG kể thêm gì khác (không tả lại căn, không hướng dẫn dài).{vua}",
             f"  • Gửi ngay link website: {_WEB}\n"
             "  • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng "
             "như môi giới dễ dàng tìm kiếm, kết nối.",
@@ -791,7 +796,7 @@ def build_fee_followup_system(
     """
     fee_hint = _fee_hint(user_type)
     fee_block = ("\n" + fee_hint) if fee_hint else ""
-    xac_nhan, hoi_link = khoi_trang_thai_web(web)
+    xac_nhan, hoi_link = khoi_trang_thai_web(web, prop.is_rental)
     khong_dong_y = ""
     if duyet == "khong_dong_y":
         khong_dong_y = (

@@ -157,11 +157,12 @@ class FollowUpManager:
             if is_draft_ready:
                 if customer_is_em:
                     # 21/10 (SRS-5.1zzzzzzz99, câu tester sửa): một câu ngắn, không hỏi "ưng ý chưa" kèm "có cần điều chỉnh không".
-                    follow_up_msg = "Mình gửi em bản nháp tin đăng, em có cần chỉnh sửa thêm thì nhắn mình hỗ trợ nhé!"
+                    follow_up_msg = "Mình gửi em bản nháp tin đăng, em cần chỉnh sửa thêm nhắn mình hỗ trợ nhé!"
                 else:
                     # Gọi khách đúng cách khách tự xưng (SRS-5.1zzzzzzz90: khách xưng "chị" mà tin nhắc vẫn "anh/chị").
                     goi = {"anh": "anh", "chi": "chị"}.get(customer_pronoun, "anh/chị")
-                    follow_up_msg = f"Em gửi {goi} bản nháp tin đăng, {goi} có cần chỉnh sửa thêm thì nhắn em hỗ trợ ạ!"
+                    # Đúng câu tester (chủ dự án: "đúng rồi vậy giống người hơn"); "mình" ở đây là gọi khách, như "nhà mình".
+                    follow_up_msg = f"Em gửi {goi} bản nháp tin đăng, mình cần chỉnh sửa thêm nhắn em hỗ trợ ạ!"
             else:
                 # 19/10/2026 (SRS-5.1zzzzzzz73): nhắc lại ĐÚNG câu bot vừa hỏi. Bản trước lấy câu mẫu cố định theo ô thiếu đầu
                 # tiên; ô nào không có câu mẫu (vd diện tích sàn) rơi vào "chụp gửi em vài tấm ảnh" — chủ nhà vừa gửi 6 ảnh vẫn
