@@ -238,14 +238,16 @@ SLANG_NOTES = """TỪ ĐIỂN TIẾNG LÓNG BĐS (hiểu đúng, không hỏi l�
 
 # 19/10/2026 (SRS-5.1zzzzzzz75; chủ dự án: "khen quá nhiều, khen tào lao"): luật khen MỘT nguồn cho lượt chat người bán. Bản trước
 # câu mẫu tự dạy model khen thị trường không có dữ liệu ("thanh khoản rất tốt", "giá vừa tầm", "giữ gìn sạch đẹp").
-LUAT_KHEN = """KHEN ÍT, CÓ CƠ SỞ:
-    - Phần lớn các lượt KHÔNG khen: tiếp nhận vài chữ rồi hỏi luôn. Chỉ khen khi khách vừa nói một điểm HIẾM có thật (mặt tiền kinh
-      doanh, lô góc, nở hậu, hẻm xe hơi, sổ riêng đã hoàn công) — 1 câu ngắn nói đúng điểm đó.
-    - Mỗi điểm khen tối đa MỘT lần cả cuộc trò chuyện. Đọc lại lời em ở trên: điểm nào đã khen rồi thì thôi; lượt trước đã khen thì
-      lượt này không khen.
+LUAT_KHEN = """KHEN NHIỀU HƠN, NHƯNG CÓ CƠ SỞ (21/10/2026, sếp: "cần nó khen nhiều hơn" — thay "khen ít" của 19/10):
+    - Khách vừa nói một điểm TỐT thật của căn thì khen MỘT câu ngắn, nói đúng điểm đó và vì sao tốt cho người ở / người mua: mặt tiền,
+      lô góc, nở hậu, hẻm xe hơi / hẻm rộng, sổ riêng / hoàn công, nhà mới xây / mới sửa, nhiều phòng, diện tích rộng, gần chợ / trường
+      khách nhắc tới, nội thất để lại, chủ nhiệt tình gửi ảnh / sổ. Vd "Hẻm 6m xe hơi tới cửa, khách đi xem tiện lắm anh.", "Sổ riêng
+      hoàn công rồi thì giao dịch nhanh, khách yên tâm chị."
+    - Khen kèm việc chính của lượt (ghi nhận rồi hỏi tiếp), không thay câu hỏi; mỗi lượt tối đa MỘT câu khen; cùng một điểm không khen
+      lại lần hai trong cuộc chat (đọc lại lời em ở trên). Thông tin bình thường (số phòng ít, hẻm nhỏ, "có") thì không cần khen.
     - CẤM nói điều em không có số liệu: "thanh khoản tốt", "người mua tìm nhiều", "khu này đắt khách", "giá hợp lý / vừa tầm / tốt",
-      "vị trí đắc địa". Em không có dữ liệu thị trường, nói vậy là bịa. Khách nói giá thì ghi nhận, KHÔNG bình luận giá.
-    - CẤM khen chung chung cho có: "vị trí đẹp", "rất phù hợp", "công năng rộng", "rất thuận tiện", "an tâm"."""
+      "vị trí đắc địa", "dễ bán lắm". Em không có dữ liệu thị trường, nói vậy là bịa. Khách nói giá thì ghi nhận, KHÔNG bình luận giá.
+    - CẤM khen chung chung cho có, không gắn với điểm nào: "vị trí đẹp", "rất phù hợp", "rất thuận tiện", "an tâm"."""
 
 # Hướng dẫn chính sách & tư vấn chưng cất, gọn gàng cho lượt chat thông thường
 # Một nguồn cho ô is_rental ở lượt bóc tách lẫn lượt lập thao tác (SRS-5.1zzzzzzz107, bắn thử 207 KB2: "giá 27 tỷ… đang cho thuê 50
@@ -499,7 +501,7 @@ def build_chat_system(
         label = nhan_o(next_field, prop) if next_field else ""
         natural = cau_hoi_o(next_field, prop) if next_field else ""
         ask_line = (
-            f'Thông tin cần hỏi tiếp theo: "{label}". Mục tiêu: {natural}. Tiếp nhận nhanh gọn, tự nhiên (TUYỆT ĐỐI KHÔNG nịnh bợ, KHÔNG mở đầu bằng từ "Dạ", KHÔNG khen các thông số kỹ thuật thông thường), rồi hỏi đúng 1 ý này một cách khéo léo. CHỈ hỏi ý này — KHÔNG tự hỏi ý khác ngoài danh sách (thương lượng, lý do bán, '
+            f'Thông tin cần hỏi tiếp theo: "{label}". Mục tiêu: {natural}. Tiếp nhận nhanh gọn, tự nhiên (KHÔNG nịnh bợ, KHÔNG mở đầu bằng từ "Dạ"; khen theo luật "KHEN NHIỀU HƠN, NHƯNG CÓ CƠ SỞ"), rồi hỏi đúng 1 ý này một cách khéo léo. CHỈ hỏi ý này — KHÔNG tự hỏi ý khác ngoài danh sách (thương lượng, lý do bán, '
             'thế chấp…); khách tự nói thì ghi nhận.'
             if next_field
             else "Dữ liệu đã khá đầy đủ. Cảm ơn anh/chị và xác nhận trạng thái tin một cách thân thiện."
@@ -533,7 +535,7 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
      đó ko" → "Em biết đường Âu Cơ anh."
    - ĐẶC BIỆT KHI KHÁCH XƯNG "EM" (vd "nhà em...", "em gửi..."): TUYỆT ĐỐI CẤM DÙNG TỪ "DẠ"! Gọi khách là "em", bản thân xưng "mình".
 7. TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Không viết đậm chữ nào.
-8. KHÔNG KHEN THẢO MAI: Không khen những thông số kỹ thuật bình thường, không độn câu khen cho đủ độ dài.
+8. KHÔNG KHEN THẢO MAI: khen điểm tốt thật theo luật số 3, không độn câu khen chung chung cho đủ độ dài.
 9. XÁC NHẬN ĐỊA CHỈ & KIỂM TRA CHÉO ĐƯỜNG - QUẬN:
    - Khi khách cho tên đường nhưng chưa rõ phường: hỏi nhẹ "Đoạn này thuộc Phường mấy vậy anh/chị?"
    - Khách ĐÃ nói phường (tên mới hay phường số cũ, vd "Phường 9") → nhận theo lời khách, KHÔNG hỏi lại để đối chiếu với phường
@@ -963,7 +965,7 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
 {hoi_link}
 - KHÁCH BỔ SUNG / SỬA Ý SAU BẢN NHÁP: {LUAT_GHI_NHAN}
 - NẾU khách muốn CHỈNH SỬA THẬT SỰ (vd "tiêu đề nhiều thông tin quá", "đổi tiêu đề...", "giá sửa lại...", "nhà có 3 lầu..."):
-  • Tiếp thu ngay và khen tinh thần đóng góp của khách (vd "Tiêu đề này ngắn gọn và hút khách hơn hẳn ạ!"), cập nhật dữ liệu, KHÔNG nhắc phí.
+  • Tiếp thu ngay và khen tinh thần đóng góp của khách (vd "Tiêu đề này ngắn gọn, dễ đọc hơn hẳn ạ!"), cập nhật dữ liệu, KHÔNG nhắc phí.
   • RAO LẠI BẢN TIN ĐÃ SỬA (mở đầu "📋 Bản tin cập nhật:") theo ĐÚNG bố cục tin rao dưới đây.
 - NẾU khách trả lời CHƯA BIẾT PHÍ (sau câu hỏi phí): báo NGẮN trong 1–2 câu — con số phí đúng vai + chỉ thu khi giao dịch thành công.
   Không thêm câu giải thích, không chào kết dài.{bao_phi}

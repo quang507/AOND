@@ -24,3 +24,13 @@ def test_cau_mau_khong_day_nhan_dinh_thi_truong():
         con_lai = _phan_day_model(prompts.build_chat_system("Lan", P, next_field)).lower()
         lot = [c for c in NHAN_DINH_THI_TRUONG if c in con_lai]
         assert not lot, lot
+
+
+def test_khen_nhieu_hon_van_co_co_so():
+    """21/10/2026 (SRS-5.1zzzzzzz119), sếp: "cần nó khen nhiều hơn" — khen điểm tốt thật mỗi lượt có điểm tốt, vẫn cấm bịa thị trường.
+    Đỏ khi luật còn bảo "phần lớn các lượt KHÔNG khen", hoặc mất phần cấm bịa."""
+    k = prompts.LUAT_KHEN
+    assert "KHEN NHIỀU HƠN" in k and "Phần lớn các lượt KHÔNG khen" not in k
+    assert "thanh khoản tốt" in k and "KHÔNG bình luận giá" in k          # vẫn cấm nói điều không có số liệu
+    s = prompts.build_chat_system("Hằng", prompts.Property(loai_hinh="nha_pho"), "gia", prompts.SellerRole.UNKNOWN, "")
+    assert "KHÔNG khen các thông số kỹ thuật thông thường" not in s       # câu cũ ngược luật mới đã bỏ

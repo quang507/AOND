@@ -7959,6 +7959,24 @@ việc em làm (luật không từ đệm, SRS-5.1zzzzzzz80/84/102) và không "
 Kiểm: `tests/test_ghi_nhan_lap.py` (4 ca: nhận diện, hai lượt liền ghi nhận → gọi lại, một lượt → không, cùng ba chữ đầu → gọi lại) — đỏ
 khi gỡ bản sửa.
 
+### SRS-5.1zzzzzzz119 · Khen nhiều hơn, vẫn có cơ sở (21/10/2026)
+
+Lê Quang 21/10 chuyển ý sếp: "sếp tôi cần nó khen nhiều hơn" — thay quyết định 19/10 (SRS-5.1zzzzzzz75, "khen quá nhiều, khen tào lao" →
+"khen ít, có cơ sở").
+
+1. **Lớp**: đổi quyết định giọng, không phải lỗi. Luật khen MỘT nguồn (`LUAT_KHEN`) vẫn là chỗ duy nhất quyết khen; hai câu khác trong
+   prompt người bán ("KHÔNG khen các thông số kỹ thuật thông thường" ở dòng hỏi ý kế, luật số 8) nói ngược luật mới nên sửa theo; câu ví
+   dụ lượt khách sửa tin "hút khách hơn hẳn" là nói điều không có số liệu — đổi "dễ đọc hơn hẳn".
+2. **Sửa** (`src/aioi/prompts.py`): khách vừa nói một điểm TỐT thật (mặt tiền, lô góc, nở hậu, hẻm xe hơi / rộng, sổ riêng / hoàn công,
+   nhà mới, nhiều phòng, diện tích rộng, gần chợ / trường khách nhắc, nội thất để lại, chủ nhiệt tình gửi ảnh / sổ) thì khen MỘT câu
+   ngắn nói đúng điểm đó và vì sao tốt; tối đa một câu khen mỗi lượt, cùng một điểm không khen lại; thông tin bình thường không cần khen.
+   GIỮ nguyên phần cấm bịa thị trường ("thanh khoản tốt", "giá hợp lý", "dễ bán lắm"…), không bình luận giá, cấm khen chung chung.
+   Khen sổ khi mới đọc ẢNH sổ vẫn cấm (chưa kiểm sổ, SRS-5.1zzzzzzz82).
+3. **Cùng lớp còn lại**: phía người mua không có luật khen riêng (bắn thử 21/10: "Vay khoảng 50% là phương án rất hợp lý" — nhận xét tài
+   chính không có cơ sở); không có bước code soát lời khen (soát nghĩa lời khen là đoán bằng từ khoá — không làm).
+
+Kiểm: `tests/test_khen_co_co_so.py` thêm `test_khen_nhieu_hon_van_co_co_so` — đỏ trên prompt cũ.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
