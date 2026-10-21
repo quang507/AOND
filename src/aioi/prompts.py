@@ -10,6 +10,7 @@ from typing import Any
 
 from .projects import Project, UnitType
 from .revenue import SellerRole
+from . import cau_mau
 from .schema import (
     CORE_FIELDS,
     CORE_THEO_LOAI,
@@ -753,7 +754,7 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
             # bán/cho thuê"): code chọn đúng chữ theo loại tin, không để model chép cụm gộp.
             # 21/10 (SRS-5.1zzzzzzz103): tester "khách nhắn ok thì mình nhắn lại 'Dạ em xin phép đăng tin ạ!' vậy xong"; chủ dự án
             # "ừ đổi, ngắn thì tốt" — bỏ "Dạ" (luật cấm mở đầu Dạ), bỏ câu kể đã đăng + chuyển mạng lưới; link web ở đoạn phí.
-            f"  • Đoạn đầu ĐÚNG 1 câu, nguyên văn: \"Em xin phép đăng tin ạ!\" — KHÔNG thêm câu cảm ơn, KHÔNG kể tin "
+            f"  • Đoạn đầu ĐÚNG 1 câu, nguyên văn: \"{cau_mau.cau('duyet_tin')}\" — KHÔNG thêm câu cảm ơn, KHÔNG kể tin "
             f"{'cho thuê' if thue else 'bán'} đã đăng ở đâu, không tả lại căn.{vua}",
             f"  • Gửi ngay link website: {_WEB}\n"
             "  • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng "
@@ -819,9 +820,8 @@ def build_fee_followup_system(
     hoi_phi = (
         "\n  • RỒI XUỐNG MỘT DÒNG TRỐNG (đoạn riêng — hệ thống gửi thành tin nhắn riêng cho đỡ rối mắt; SRS-5.1zzzzzzz98) và HỎI "
         "PHÍ NHẸ NHÀNG như bản anh Luận (tinh thần \"anh/chị có biết phí môi giới của tụi em chưa ạ?\"): mời khách vào web theo dõi "
-        "tin rồi hỏi khách đã biết phí môi giới bên em chưa (vd câu tester: \"Chị có thể vào aioinhadat.com để theo dõi tin rao ạ. Chị "
-        "biết phí môi giới bên em chưa ạ?\") — đây là câu hỏi DUY NHẤT của lượt "
-        "này. Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách. Đoạn này tối đa 2 câu ngắn."
+        f"tin rồi hỏi khách đã biết phí môi giới bên em chưa (câu mẫu: \"{cau_mau.cau('hoi_phi')}\") — đây là câu hỏi DUY NHẤT "
+        "của lượt này. Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách. Đoạn này tối đa 2 câu ngắn."
         if (web is None or web.get("len_web")) else ""
     )
     hoi_sau = ""

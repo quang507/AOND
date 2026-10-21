@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from . import cau_mau
 from .anh_du_an import anh_gui_kem
 from .config import load_settings
 from .delivery import chunk_reply, typing_delay
@@ -85,6 +86,7 @@ def _init_engine() -> Engine:
             fallback_store=sqlite_store,
         )
         log.info("Initialized SupabaseConversationStore (Single Source of Truth) at %s", settings.supabase_url)
+        cau_mau.dang_ky(conv_store.cau_mau_tu_kho)   # câu mẫu chủ dự án sửa ở CRM (SRS-5.1zzzzzzz106)
     else:
         conv_store = sqlite_store
         log.info("Initialized local SqliteConversationStore at %s", settings.db_path)
@@ -228,9 +230,9 @@ def message(msg: IncomingMessage) -> Reply:
 
 
 # Lượt hỏng (SRS-5.1zzzzzzz82): câu giữ chỗ không đổ lỗi cho mạng, không bắt khách gõ lại; luồng nền thử lại sau THU_LAI_SAU giây.
-CAU_GIU_CHO = "Em đang xem kỹ thông tin anh/chị gửi, anh/chị chờ em một chút nhé, em trả lời ngay ạ."
-CAU_THU_LAI_HONG = ("Em xin lỗi anh/chị, hệ thống bên em đang chậm. Em đã báo anh/chị phụ trách xem tin của mình, "
-                    "anh/chị ấy sẽ nhắn lại sớm ạ.")
+# Câu mặc định; câu đang dùng đọc qua cau_mau (chủ dự án sửa ở CRM, SRS-5.1zzzzzzz106).
+CAU_GIU_CHO = cau_mau.MAC_DINH["giu_cho"][0]
+CAU_THU_LAI_HONG = cau_mau.MAC_DINH["thu_lai_hong"][0]
 THU_LAI_SAU = 20
 
 
@@ -263,10 +265,10 @@ def _thu_lai_nen(user_key: str, lam, moc: int, sau_hong: int, ten: str | None) -
         except Exception as e:  # noqa: BLE001
             _so_loi.ghi_loi("chat-reply thu lai", f"thử lại vẫn hỏng: {type(e).__name__}: {e}"[:200])
             try:
-                _gui_bridge(user_key, CAU_THU_LAI_HONG)
+                _gui_bridge(user_key, cau_mau.cau("thu_lai_hong"))
             except Exception as e2:  # noqa: BLE001
                 _so_loi.ghi_loi("chat-reply thu lai", f"gửi lời xin lỗi qua bridge hỏng: {type(e2).__name__}"[:200])
-            sync_to_supabase_async(external_user_id=user_key, incoming_text="", bot_reply=CAU_THU_LAI_HONG, user_name=ten)
+            sync_to_supabase_async(external_user_id=user_key, incoming_text="", bot_reply=cau_mau.cau("thu_lai_hong"), user_name=ten)
             _bao_can_nguoi_nen(user_key, "(hệ thống: lượt trả lời hỏng hai lần)", ten, "seller")
 
     threading.Thread(target=chay, daemon=True).start()
@@ -460,10 +462,11 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     if loi_luot is not None:
         e = loi_luot
         _so_loi.ghi_loi("chat-reply", f"lượt trả lời hỏng, giữ chỗ rồi thử lại: {type(e).__name__}: {e}"[:200])
-        sync_to_supabase_async(external_user_id=uk, incoming_text=incoming_text, bot_reply=CAU_GIU_CHO,
+        giu_cho = cau_mau.cau("giu_cho")
+        sync_to_supabase_async(external_user_id=uk, incoming_text=incoming_text, bot_reply=giu_cho,
                                zalo_msg_id=payload.msg_id, user_name=zalo_name, nhan_luc=nhan_luc)
         _thu_lai_nen(uk, lam, moc, sau_hong, zalo_name)
-        return ZaloBridgeResponse(reply=CAU_GIU_CHO, replies=[CAU_GIU_CHO], nhip_go=[0], assistant_name="", captured=[],
+        return ZaloBridgeResponse(reply=giu_cho, replies=[giu_cho], nhip_go=[0], assistant_name="", captured=[],
                                   next_field=None, property_score=0.0, user_score=0.0, tier="", completeness=0.0)
 
     # Clean asterisks so Zalo displays clean text without markdown markup

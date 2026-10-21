@@ -555,6 +555,13 @@ class SupabaseConversationStore(KhoNguoiMua):
         }, prefer="return=minimal")
         return True
 
+    def cau_mau_tu_kho(self) -> dict[str, str]:
+        """Câu mẫu cố định chủ dự án sửa ở CRM (bảng `cau_mau`, SRS-5.1zzzzzzz106) — khoá → câu. Lỗi đọc thì ném lên (cau_mau
+        giữ bản lần trước / mặc định)."""
+        if not self.is_configured:
+            return {}
+        return {r["khoa"]: r["cau"] for r in self._get("cau_mau?select=khoa,cau") if r.get("khoa") and r.get("cau")}
+
     # --- Khách chấm sao cho AI (SRS-5.1zzzzzzz104) --------------------------
 
     def da_xin_danh_gia(self, user_key: str) -> bool:

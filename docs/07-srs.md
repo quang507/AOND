@@ -7641,6 +7641,33 @@ duyệt "Em xin phép đăng tin ạ!" + tin hỏi phí. Còn bốn chỗ:
 Kiểm: `tests/test_so_lech_kho_du_an.py`, `tests/test_ghi_nhan_ngan.py` (`test_luot_sau_ban_nhap_cung_mot_luat_ghi_nhan`) — cả hai đỏ
 trên code cũ (đã thử).
 
+### SRS-5.1zzzzzzz106 · Câu mẫu cố định: một nguồn, chủ dự án sửa ở CRM (21/10/2026)
+
+Chủ dự án 21/10: "trên chỗ mẫu câu đưa thêm 1 bảng nhỏ ở 1 bên là các câu đã sửa thành mẫu từ lúc lấy lại các yêu cầu của anh Luận
+đến bây giờ nữa, cứ ghi vào có gì vào sửa tiếp". Từ SRS-5.1zzzzzzz81 (20/10) tới nay có tám câu bot nói NGUYÊN VĂN, viết tay rải ở bốn
+file: duyệt tin "Em xin phép đăng tin ạ!" (103), câu hỏi phí sau khi duyệt (81 / 98), hai câu nhắc bản nháp (99 / 101), hai câu xin chấm
+sao (104), câu giữ chỗ khi lượt lỗi và câu xin lỗi khi làm lại vẫn lỗi (82). Câu chấm điểm / sửa ở `cau_chuan` chỉ là VÍ DỤ cho model —
+không đổi được các câu này.
+
+**Làm**:
+- `src/aioi/cau_mau.py` — MỘT nguồn: `MAC_DINH` (câu gốc, dùng ở đâu, nguồn quyết định) + `cau(khoa, goi)`. Bảng `cau_mau` (`20261021b`,
+  nạp sẵn tám câu sinh từ `MAC_DINH`) đè câu gốc, đọc lại sau 60 giây (`SupabaseConversationStore.cau_mau_tu_kho`, server gắn lúc khởi
+  động). Chỗ giữ chữ `{goi}` / `{Goi}` (anh / chị / anh/chị). Câu sửa hỏng (ngoặc nhọn lạ, trống) hay đọc kho lỗi → câu gốc; bot không
+  gửi câu lỗi vì một lần sửa tay.
+- Chỗ dùng đổi sang `cau_mau.cau(...)`: `khoi_trang_thai_web` (duyệt tin), `build_fee_followup_system` (câu hỏi phí — model nói theo
+  câu mẫu), `followup.py` (nhắc bản nháp), `danh_gia.py` (xin chấm sao; nhận câu vừa gửi theo cả câu đang dùng lẫn câu gốc để sửa giữa hai
+  lượt vẫn đọc được điểm), `server.py` (giữ chỗ, xin lỗi).
+- CRM: khung "Câu mẫu cố định" bên phải trang `/admin/cau-chuan` (dưới màn hẹp thì xuống cuối trang) — mỗi câu: dùng ở đâu, nguồn, ô sửa,
+  Lưu / Huỷ sửa / Về câu gốc, nhãn "Đã sửa" khi khác câu gốc. RLS: admin đọc + sửa, không thêm / xoá dòng.
+
+**Lớp / cùng lớp**: câu khách đọc nguyên văn viết tay ở nhiều file, chủ dự án không sửa được, sửa một chỗ thì chỗ khác lệch (vd câu xin
+chấm sao phải khớp chỗ nhận câu trả lời). Chỗ khác còn câu viết tay, CHƯA đưa vào (ngoài phạm vi "từ khi theo anh Luận"): dòng mở bản nháp
+`MO_DAU_NHAP` (code dùng để cắt câu dẫn — sửa sai là hỏng bản nháp), câu chốt "thấy bản tin này hấp dẫn chưa", lời chào làm mới phiên,
+câu nhận ảnh. Muốn đưa thêm thì thêm khoá vào `MAC_DINH` + một migration nạp dòng.
+
+Kiểm: `tests/test_cau_mau.py` (6 ca — câu sửa tới lời bot, câu sửa hỏng / đọc lỗi dùng câu gốc, không file nào còn viết tay câu mẫu,
+migration nạp đúng câu gốc; đỏ khi bỏ phần nối — đã thử, 2 ca đỏ).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -93,7 +93,9 @@ export default function Page() {
   const chip = (on: boolean) => `shrink-0 rounded-md px-2.5 py-1 text-xs font-semibold transition ${on ? "bg-navy text-white" : "bg-cream/70 text-navy hover:bg-line"}`;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6">
+    <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-6">
+      <div className="min-w-0">
       <h1 className="text-xl font-bold text-navy">Câu chuẩn</h1>
       <p className="mt-1 max-w-[70ch] text-sm text-mute">
         Mỗi thẻ là một câu bot đã trả lời, kèm các tin ngay trước nó. Chấm điểm, sửa câu cho đúng cách bot nên nói rồi bấm Lưu —
@@ -186,6 +188,11 @@ export default function Page() {
           {loc === "chua" ? "Không còn câu nào chưa chấm." : "Chưa có câu nào."} Mở <Link href="/admin/tin-nhan" className="font-semibold text-brand hover:underline">Tin nhắn</Link> và bấm &quot;Chấm / sửa&quot; dưới một câu bot để đưa vào đây.
         </li>}
       </ol>
+      </div>
+      <aside className="mt-8 lg:mt-0" aria-labelledby="cau-mau-tieu-de">
+        <div className="lg:sticky lg:top-4"><CauMauCoDinh onLoi={setLoi} onBao={setThongBao} /></div>
+      </aside>
+      </div>
 
       {loi && (
         <div role="alert" className="fixed bottom-4 right-4 flex items-center gap-3 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800">
@@ -200,5 +207,73 @@ export default function Page() {
         </div>
       )}
     </div>
+  );
+}
+
+// Câu mẫu cố định (21/10/2026, SRS-5.1zzzzzzz106). Chủ dự án: "đưa thêm 1 bảng nhỏ ở 1 bên là các câu đã sửa thành mẫu từ lúc lấy lại
+// các yêu cầu của anh Luận đến bây giờ… có gì vào sửa tiếp". Bảng `cau_mau` (RLS admin); lõi đọc câu ở đây đè câu trong code, nhớ 60 giây.
+type CauMau = { khoa: string; cau: string; mac_dinh: string; dung_o: string; nguon: string | null; updated_at: string };
+
+function CauMauCoDinh({ onLoi, onBao }: { onLoi: (s: string) => void; onBao: (s: string) => void }) {
+  const [ds, setDs] = useState<CauMau[] | null>(null);
+  const [nhap, setNhap] = useState<Record<string, string>>({});
+  const [dangLuu, setDangLuu] = useState<string | null>(null);
+
+  const nap = async () => {
+    const { data, error } = await supabase.from("cau_mau").select("khoa, cau, mac_dinh, dung_o, nguon, updated_at").order("thu_tu");
+    if (error) { onLoi(error.message); setDs([]); return; }
+    const d = (data ?? []) as CauMau[];
+    setDs(d);
+    setNhap(Object.fromEntries(d.map((c) => [c.khoa, c.cau])));
+  };
+  useEffect(() => { void nap(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const luu = async (c: CauMau, cau: string) => {
+    const moi = cau.trim();
+    if (!moi) { onLoi("Câu mẫu đang trống — viết câu bot nên nói, hoặc bấm Về câu gốc."); return; }
+    setDangLuu(c.khoa);
+    const { error } = await supabase.from("cau_mau").update({ cau: moi }).eq("khoa", c.khoa);
+    setDangLuu(null);
+    if (error) { onLoi(error.message); return; }
+    onBao("Đã lưu câu mẫu. Bot dùng câu mới trong vòng 1 phút.");
+    await nap();
+  };
+
+  return (
+    <section className="rounded-lg border border-line bg-white">
+      <div className="border-b border-line px-4 py-3">
+        <h2 id="cau-mau-tieu-de" className="text-base font-bold text-navy">Câu mẫu cố định</h2>
+        <p className="mt-1 text-xs text-mute">
+          Các câu bot nói nguyên văn, chốt từ lúc theo lại bản anh Luận (20/10) tới nay. Sửa rồi Lưu — bot dùng câu mới trong vòng 1 phút.
+          Viết <code className="rounded bg-cream px-1">{"{goi}"}</code> chỗ gọi khách (anh / chị / anh/chị), <code className="rounded bg-cream px-1">{"{Goi}"}</code> khi đứng đầu câu.
+        </p>
+      </div>
+      {ds === null && <p className="px-4 py-6 text-sm text-mute">Đang tải…</p>}
+      {ds !== null && ds.length === 0 && <p className="px-4 py-6 text-sm text-mute">Chưa có câu mẫu nào.</p>}
+      <ul className="divide-y divide-line">
+        {(ds ?? []).map((c) => {
+          const v = nhap[c.khoa] ?? c.cau;
+          const doi = v.trim() !== c.cau.trim();
+          const khacGoc = c.cau.trim() !== c.mac_dinh.trim();
+          return (
+            <li key={c.khoa} className="space-y-1.5 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <label htmlFor={`cm-${c.khoa}`} className="text-xs font-semibold text-navy">{c.dung_o}</label>
+                {khacGoc && <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[11px] font-bold text-brand">Đã sửa</span>}
+              </div>
+              <textarea id={`cm-${c.khoa}`} value={v} onChange={(e) => setNhap((n) => ({ ...n, [c.khoa]: e.target.value }))}
+                rows={Math.min(6, Math.max(2, Math.ceil(v.length / 42)))}
+                className="w-full rounded-md border border-line bg-white px-2.5 py-1.5 text-sm text-navy outline-none focus:border-brand" />
+              {c.nguon && <p className="text-[11px] text-mute">{c.nguon}</p>}
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {khacGoc && !doi && <Btn variant="ghost" onClick={() => { if (confirm("Đưa câu này về câu gốc trong code?")) void luu(c, c.mac_dinh); }}>Về câu gốc</Btn>}
+                {doi && <Btn variant="ghost" onClick={() => setNhap((n) => ({ ...n, [c.khoa]: c.cau }))}>Huỷ sửa</Btn>}
+                <Btn variant="primary" onClick={() => luu(c, v)} disabled={!doi || dangLuu === c.khoa}>{dangLuu === c.khoa ? "Đang lưu…" : "Lưu"}</Btn>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

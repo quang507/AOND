@@ -8,6 +8,8 @@
 - Lưu ở bảng `danh_gia_ai` (một dòng mỗi khách); ≤ 2 sao thì xếp tin nội bộ "⭐" cho admin (cùng đường escalation-feed)."""
 from __future__ import annotations
 
+from . import cau_mau
+
 # Dấu nhận ra câu xin chấm sao trong lời bot vừa gửi — đúng một chỗ sinh câu (cau_xin_sao), nên so chuỗi là tất định.
 DAU_XIN_SAO = "chấm giúp"
 NGUONG_BAO_ADMIN = 2
@@ -15,15 +17,17 @@ NGUONG_BAO_ADMIN = 2
 
 def cau_xin_sao(goi: str = "anh/chị", em_xung_minh: bool = False) -> str:
     """Câu chủ dự án duyệt 21/10: "Anh/chị chấm giúp em 1–5 sao cho lần hỗ trợ này nha, để em làm tốt hơn ạ." Khách xưng "em"
-    thì bot xưng "mình" (luật xưng hô, SRS-5.1zzzzzzz86)."""
-    if em_xung_minh:
-        return "Em chấm giúp mình 1–5 sao cho lần hỗ trợ này nha, để mình làm tốt hơn nhé."
-    goi = (goi or "anh/chị").strip()
-    return f"{goi[:1].upper()}{goi[1:]} {DAU_XIN_SAO} em 1–5 sao cho lần hỗ trợ này nha, để em làm tốt hơn ạ."
+    thì bot xưng "mình" (luật xưng hô, SRS-5.1zzzzzzz86). Sửa câu ở CRM (`cau_mau`, SRS-5.1zzzzzzz106)."""
+    return cau_mau.cau("xin_cham_sao_em") if em_xung_minh else cau_mau.cau("xin_cham_sao", goi)
 
 
 def vua_xin_sao(loi_bot_truoc: str | None) -> bool:
-    return bool(loi_bot_truoc) and DAU_XIN_SAO in loi_bot_truoc and "1–5 sao" in loi_bot_truoc
+    """Lời bot vừa gửi có câu xin chấm sao — câu đang dùng hay câu mặc định (vừa sửa ở CRM giữa hai lượt vẫn nhận)."""
+    if not loi_bot_truoc:
+        return False
+    if any(c in loi_bot_truoc for c in cau_mau.moi_cach_goi("xin_cham_sao") + cau_mau.moi_cach_goi("xin_cham_sao_em")):
+        return True
+    return DAU_XIN_SAO in loi_bot_truoc and "1–5 sao" in loi_bot_truoc
 
 
 def doc_sao(gia_tri) -> int | None:
