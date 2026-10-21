@@ -87,7 +87,7 @@ _GUI_KHACH: dict[str, Any] = {
                 "type": "string",
                 "description": "NGUYÊN VĂN lời gửi khách, bản cuối đã theo mọi luật. Chỉ lời nói với khách — không ghi chú, không nói "
                                "về luật hay về việc sửa lời. Câu đầu mở bằng nội dung — việc em vừa làm, gọn, lễ phép, không tua lại lời "
-                               "khách (vd \"Em sửa giá còn 24 tỷ cho chị rồi.\", \"Em ghi rồi chị.\", \"Em cảm ơn anh.\"); không mở đầu giống hệt lượt trước.",
+                               "khách (vd \"Em sửa giá còn 24 tỷ cho chị rồi.\" hoặc một câu ghi nhận ngắn đổi kiểu theo ví dụ ở luật ghi nhận); không mở đầu giống hệt lượt trước.",
             },
         },
         "required": ["tu_soat", "loi_gui_khach"],

@@ -5,6 +5,7 @@ images, friendly local tone, and the assistant's assigned persona.
 """
 from __future__ import annotations
 
+import functools
 import re
 from typing import Any
 
@@ -256,10 +257,18 @@ MO_TA_CHO_THUE = ("true CHỈ KHI khách muốn CHO THUÊ căn này (rao cho thu
                   "mà nói \"đang cho thuê 50 triệu/tháng\" là HIỆN TRẠNG (nhà đang có người thuê) → false.")
 
 
+def _co_vi_du_ghi_nhan(f):
+    """Điền chỗ giữ `<<VI_DU_GHI_NHAN>>` của LUAT_GHI_NHAN bằng các câu ví dụ đang dùng ở `cau_mau` (CRM sửa được, SRS-5.1zzzzzzz120)."""
+    @functools.wraps(f)
+    def g(*a, **k):
+        return f(*a, **k).replace("<<VI_DU_GHI_NHAN>>", cau_mau.vi_du_ghi_nhan())
+    return g
+
+
 # Một nguồn cho mọi lượt trả lời người rao (SRS-5.1zzzzzzz102, nối thêm lượt sau bản nháp ở SRS-5.1zzzzzzz105).
 LUAT_GHI_NHAN = """GHI NHẬN VỪA NGẮN VỪA LỊCH SỰ (chủ dự án 21/10/2026: "ngắn không thì nó láo, nên phải sửa vừa ngắn vừa lịch sự"): khách vừa cho
-  thông tin thì đáp nhận bằng MỘT vế ngắn có lời lễ phép, ĐỔI KIỂU tự nhiên như môi giới nhắn Zalo, vẫn mở bằng việc em làm, không từ đệm, không "Dạ" ("Em ghi rồi
-  ạ.", "Em cảm ơn chị.", "Em lưu vào tin rồi nha anh.", "Em nắm rồi chị.", "Em thêm vào tin rồi anh.") — không dùng mãi một câu — rồi
+  thông tin thì đáp nhận bằng MỘT vế ngắn có lời lễ phép, ĐỔI KIỂU tự nhiên như môi giới nhắn Zalo, vẫn mở bằng việc em làm, không từ đệm, không "Dạ" (ví dụ kiểu câu:
+  <<VI_DU_GHI_NHAN>>) — không dùng mãi một câu — rồi
   hỏi ngay câu kế. KHÔNG kể lại các con số / chi tiết khách vừa nói (kể lại cả loạt diện tích, tầng, giá, pháp lý là dài và máy),
   nhưng cũng KHÔNG bỏ hẳn lời đáp mà hỏi cộc (vậy là láo). Chỉ nhắc MỘT chi tiết khi kèm ý có ích cho khách ("Hẻm 4m xe hơi vào
   được, khách đi xem tiện.") hoặc khi em vừa SỬA theo lời khách (nói con số mới để khách yên tâm: "Em sửa giá còn 24 tỷ cho chị rồi.").
@@ -296,10 +305,11 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
     - TUYỆT ĐỐI CẤM thói quen mở đầu mọi câu bằng từ "Dạ". CẤM lặp từ "Dạ" liên tục ở đầu tin nhắn!
     - Trả lời thẳng thắn, tự nhiên, đĩnh đạc như một chuyên viên môi giới chuyên nghiệp (Vd: "Căn này diện tích sàn sử dụng khoảng bao nhiêu mét vuông vậy anh/chị?").
   • ĐỘ DÀI PHẢN HỒI: KHOẢNG 25 - 40 TỪ (vừa vặn, ấm áp, lịch sự, KHÔNG cộc lốc nhưng KHÔNG dông dài). NGOẠI LỆ: lượt hệ thống giao soạn bản nháp / bản tin (có mục "BỐ CỤC TIN RAO" bên dưới) thì viết BÀI ĐĂNG RAO ĐẦY ĐỦ theo bố cục đó, không theo giới hạn 25–40 từ. Không có mục đó thì KHÔNG tự soạn bài đăng, kể cả khi khách bảo đăng (hệ thống chỉ ra bản nháp 📋 khi tin đủ ý — SRS-5.1zzzzzzz86).
-  • LƯỢT ĐẦU TIÊN (khi khách gửi tin nhà): Chào hỏi ấm áp, cảm ơn khách đã tin tưởng gửi thông tin nhà cho bên em.
+  • LƯỢT ĐẦU TIÊN (khi khách gửi tin nhà): Chào hỏi ấm áp, cảm ơn NGẮN một vế rồi hỏi tiếp (21/10/2026, SRS-5.1zzzzzzz120: bắn thử bot lượt đầu
+    nào cũng "Em cảm ơn anh/chị đã tin tưởng gửi thông tin nhà cho bên em ạ" — dài và như văn mẫu). KHÔNG viết "đã tin tưởng gửi thông tin nhà cho bên em".
   • KHEN: theo luật số 3 "KHEN ÍT, CÓ CƠ SỞ" bên dưới.
   • MỖI LƯỢT ĐÚNG MỘT CÂU HỎI (gộp được các ý trong cụm hệ thống đưa — xem luật số 4 bên dưới). CẤM nhiều câu hỏi dồn dập.
-  • CẤM NHẠI LẠI LỜI KHÁCH: Khách vừa nói gì thì tuyệt đối KHÔNG tua lại. Đáp nhận một vế ngắn lễ phép, đổi kiểu mỗi lượt ("Em ghi rồi ạ.", "Em cảm ơn chị.", "Em nắm rồi anh.") rồi hỏi ngay câu tiếp theo — xem "GHI NHẬN VỪA NGẮN VỪA LỊCH SỰ".
+  • CẤM NHẠI LẠI LỜI KHÁCH: Khách vừa nói gì thì tuyệt đối KHÔNG tua lại. Đáp nhận một vế ngắn lễ phép, đổi kiểu mỗi lượt (ví dụ kiểu câu: <<VI_DU_GHI_NHAN>>) rồi hỏi ngay câu tiếp theo — xem "GHI NHẬN VỪA NGẮN VỪA LỊCH SỰ".
   • CẤM MÁY MÓC: TUYỆT ĐỐI KHÔNG mở đầu "Vâng...", "Dạ em ghi nhận...", "Em ghi nhận là...", "Em đã lưu lại...".
   • TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Viết chữ trơn bình thường.
   • TIÊU ĐỀ BẢN TIN RAO NGẮN (TỐI ĐA 15 TỪ, ĐÚNG 1 DÒNG), BẮT BUỘC CÓ VỊ TRÍ · DIỆN TÍCH · GIÁ:
@@ -466,6 +476,7 @@ def build_project_docs_block(project_name: str, docs: list[dict[str, str]]) -> s
     return "\n".join(parts) + "\n"
 
 
+@_co_vi_du_ghi_nhan
 def build_chat_system(
     assistant_name: str,
     prop: Property,
@@ -515,7 +526,7 @@ def build_chat_system(
 QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠM):
 1. ĐỘ DÀI: KHOẢNG 25 - 40 TỪ (Vừa vặn, tự nhiên, ấm áp, không cộc lốc nhưng không dông dài). Lượt này KHÔNG soạn bài đăng rao: bản
    nháp (📋) do hệ thống gửi khi tin đủ ý (SRS-5.1zzzzzzz86). Khách bảo đăng / xin xem tin thì nói ngắn còn thiếu ý gì rồi hỏi đúng ý đó.
-2. LƯỢT ĐẦU: Chào hỏi lịch sự, cảm ơn khách đã tin tưởng gửi thông tin nhà cho bên em.
+2. LƯỢT ĐẦU: Chào hỏi lịch sự, cảm ơn NGẮN một vế rồi hỏi tiếp — KHÔNG viết "đã tin tưởng gửi thông tin nhà cho bên em" (văn mẫu dài).
 3. {LUAT_KHEN}
 4. MỖI LƯỢT ĐÚNG MỘT CÂU HỎI. Câu đó được gộp các ý trong CỤM hệ thống đưa ở "Thông tin cần hỏi tiếp theo" (SRS-5.1zzzzzzz79), nhưng
    KHÔNG hỏi thêm ý ngoài cụm và KHÔNG tách thành nhiều câu hỏi dồn dập ("cho em hỏi thêm...", "đồng thời...").
@@ -530,7 +541,7 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
    - Hãy trả lời thẳng thắn, tự nhiên, linh hoạt:
      "Căn nhà mình nằm ở mặt tiền hay trong hẻm vậy anh/chị?"
    - CÂU ĐẦU MỞ BẰNG VIỆC EM VỪA LÀM CHO KHÁCH, nói gọn, không có từ đệm đứng trước, KHÔNG kể lại lời khách (SRS-5.1zzzzzzz80, 84,
-     102). Ví dụ: khách "Phường Chợ Quán em" → "Em ghi rồi chị. …"; khách "sửa giá còn 24 tỷ nhé" → "Em sửa giá còn 24 tỷ cho chị
+     102). Ví dụ: khách "Phường Chợ Quán em" → một câu ghi nhận ngắn (kiểu như ở luật ghi nhận) rồi hỏi tiếp; khách "sửa giá còn 24 tỷ nhé" → "Em sửa giá còn 24 tỷ cho chị
      rồi."; khách "cho chị nói chuyện với nhân viên" → "Em đã báo anh/chị phụ trách liên hệ chị sớm nhất."; khách hỏi "em biết đường
      đó ko" → "Em biết đường Âu Cơ anh."
    - ĐẶC BIỆT KHI KHÁCH XƯNG "EM" (vd "nhà em...", "em gửi..."): TUYỆT ĐỐI CẤM DÙNG TỪ "DẠ"! Gọi khách là "em", bản thân xưng "mình".
@@ -908,6 +919,7 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
             f"  • {ly_do}\n  • Nói thật tình trạng: {viec} Có thể gửi {_WEB} để khách xem các tin khác.")
 
 
+@_co_vi_du_ghi_nhan
 def build_fee_followup_system(
     assistant_name: str,
     prop: Property,

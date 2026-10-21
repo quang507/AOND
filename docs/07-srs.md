@@ -7977,6 +7977,25 @@ Lê Quang 21/10 chuyển ý sếp: "sếp tôi cần nó khen nhiều hơn" — 
 
 Kiểm: `tests/test_khen_co_co_so.py` thêm `test_khen_nhieu_hon_van_co_co_so` — đỏ trên prompt cũ.
 
+### SRS-5.1zzzzzzz120 · Câu ghi nhận ví dụ ở bảng câu mẫu; lượt đầu bỏ văn mẫu cảm ơn dài (21/10/2026)
+
+Lê Quang 21/10: "mấy cái em ghi nhận sửa ở chỗ mẫu câu luôn đi và xem phản hồi của nó để sửa thêm mỗi chỗ khác". Sổ `cau_chuan` hôm đó
+(342 câu bot): mở bằng "Em cảm ơn" 46 lượt, "Cảm ơn anh/chị" 44, "Em ghi nhận" 42, "Em ghi rồi" 21; lượt đầu tiên của người rao hầu như
+luôn "Em cảm ơn anh/chị đã tin tưởng gửi thông tin nhà cho bên em ạ. Em ghi rồi, …".
+
+1. **Lớp lỗi**: model chép NGUYÊN câu ví dụ / câu dặn có trong prompt. Câu ghi nhận ví dụ nằm cứng ở ba chỗ (`LUAT_GHI_NHAN`, dòng "CẤM NHẠI
+   LẠI" của `CONVERSATION_POLICY`, ví dụ "Em ghi rồi chị. …" ở luật số 6 và mô tả công cụ `_GUI_KHACH` ở `llm/claude.py`), và luật "LƯỢT ĐẦU:
+   cảm ơn khách đã tin tưởng gửi thông tin nhà cho bên em" (có từ commit đầu) dặn đúng câu văn mẫu dài đó, trái quyết định "ngắn vừa vừa" (SRS-97).
+2. **Sửa**: (a) khoá `ghi_nhan_mau` ở `src/aioi/cau_mau.py` (migration `20261021h`, hiện ở khung "Câu mẫu cố định" thu_tu 10): các câu VÍ DỤ cách nhau
+   bằng "|", KHÔNG phải câu nói nguyên văn; `cau_mau.vi_du_ghi_nhan()` điền vào chỗ giữ `<<VI_DU_GHI_NHAN>>` lúc dựng prompt (decorator
+   `_co_vi_du_ghi_nhan` trên `build_chat_system` / `build_fee_followup_system`). Câu mở đầu "Dạ" / "Vâng" bị bỏ (luật cấm Dạ); sửa hỏng → mặc định.
+   (b) các ví dụ cứng còn lại thay bằng chỗ giữ / lời chỉ dẫn chung. (c) luật lượt đầu: cảm ơn NGẮN một vế rồi hỏi tiếp, cấm câu "đã tin tưởng
+   gửi thông tin nhà cho bên em".
+3. **Cùng lớp còn lại**: ví dụ trong prompt cho các kiểu câu khác (khen, hỏi địa chỉ, tin nhắc) vẫn có câu cứng — chưa có bằng chứng chép lặp nên
+   không đụng; chưa kiểm sau khi lên production vì Claude hết số dư (chỉ có Gemini lite trả lời). Việc "Dạ oke" mở đầu chờ sếp bỏ luật cấm Dạ.
+
+Kiểm: `tests/test_ghi_nhan_mau.py` (6 ca; đỏ trên prompt cũ — 3 ca vỡ khi bỏ bản sửa), `tests/test_ghi_nhan_ngan.py` cập nhật theo chỗ giữ.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -125,7 +125,7 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > ngữ cảnh chép kèm); lõi đọc 8 dòng đã sửa / chấm làm ví dụ (`khoi_cau_chuan`, nhớ 60 giây). Đổi giọng bot theo ca cụ thể thì sửa ở đó trước.
 > **Câu mẫu cố định (SRS-5.1zzzzzzz106, 21/10/2026):** câu bot nói NGUYÊN VĂN (duyệt tin, hỏi phí, nhắc bản nháp, xin chấm sao, giữ chỗ khi
 > lỗi; từ SRS-5.1zzzzzzz110 cả lời chào, dòng mở bản nháp, ẩn / giữ rổ hàng, nhận ảnh / link / tệp, tin nhắc; SRS-5.1zzzzzzz111 câu báo phí `{phi}`) chỉ ở `src/aioi/cau_mau.py` (`MAC_DINH`) — chủ dự án sửa ở khung "Câu mẫu cố định" trang `/admin/cau-chuan` (bảng `cau_mau`, đè câu gốc,
-> nhớ 60 giây). Đừng viết tay câu đó ở chỗ khác (`tests/test_cau_mau.py` đỏ); thêm câu mới = thêm khoá + migration nạp dòng.
+> nhớ 60 giây). Đừng viết tay câu đó ở chỗ khác (`tests/test_cau_mau.py` đỏ); thêm câu mới = thêm khoá + migration nạp dòng. Khoá `ghi_nhan_mau` (SRS-5.1zzzzzzz120) là các câu VÍ DỤ ghi nhận cách nhau bằng "|", không nói nguyên văn; lượt đầu cảm ơn NGẮN, không "đã tin tưởng gửi thông tin nhà cho bên em".
 > **Ô riêng của chủ nhà (SRS-5.1zzzzzzz116, 21/10/2026):** `listings.boc_tach` ĐỌC CÔNG KHAI qua API với tin đang bán — ô chủ nói riêng
 > (người đứng tên, lý do bán / bán gấp, giờ dẫn khách xem, chìa khoá) là `schema.O_NOI_BO`, lõi ghi bảng `listing_noi_bo` (chỉ admin), không
 > vào bản tin. Thêm ô riêng mới = thêm khoá vào `O_NOI_BO` (+ nhãn ở `SuaTinModal`). Câu hỏi thêm sau khi tin lên web: `schema.CUM_SAU_DANG`.
