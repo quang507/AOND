@@ -62,6 +62,82 @@ def test_khong_con_cho_nao_viet_tay_cau_mau():
 
 
 def test_migration_nap_dung_cau_mac_dinh():
-    sql = (pathlib.Path(__file__).parents[1] / "bot/supabase/migrations/20261021b_cau_mau.sql").read_text()
+    sql = "".join(f.read_text() for f in sorted((pathlib.Path(__file__).parents[1] / "bot/supabase/migrations").glob("*_cau_mau*.sql")))
     for khoa, (mau, _, _) in cau_mau.MAC_DINH.items():
         assert f"('{khoa}', '{mau}'" in sql.replace("''", "'"), khoa
+
+
+def test_cau_cu_truoc_anh_luan_sua_o_crm_toi_loi_bot():
+    """SRS-5.1zzzzzzz110 (chủ dự án: "đưa luôn mấy câu trước đó nữa đi"): lời chào, ẩn rổ hàng, tin nhắc… cũng đi qua cau_mau."""
+    from tests.test_doc_y_khach import _eng
+    cau_mau.dang_ky(lambda: {"chao_lan_dau": "Em chào {goi}, em là {ten} ạ. {Goi} cần bán hay mua ạ?",
+                             "xac_nhan_an": "{Goi} chắc muốn em {viec} không ạ?",
+                             "nhac_hoi_lai": "{Goi} ơi, {toi} hỏi lại nha: {hoi}"})
+    eng, _ = _eng({"operations": []})
+    r = eng.handle("cm1", "hello")
+    assert r.reply.startswith("Em chào anh/chị, em là ") and r.reply.endswith("Anh/chị cần bán hay mua ạ?")
+    from aioi.engine import Engine
+    assert Engine._receipt_reply(eng, eng.conversation("cm1"), [("confirm_destructive", "NGƯNG RAO căn A12")]) == \
+        "Anh/chị chắc muốn em NGƯNG RAO căn A12 không ạ?"
+    from aioi.followup import cau_nhac
+    from types import SimpleNamespace
+    from aioi.engine import Turn
+    conv = SimpleNamespace(history=[Turn("assistant", "Nhà mình mấy tầng vậy chị?", 0.0)])
+    assert cau_nhac(conv, SimpleNamespace(media=[]), "chi") == "Chị ơi, em hỏi lại nha: Nhà mình mấy tầng vậy chị?"
+
+
+def test_dong_mo_ban_nhap_sua_o_crm_van_cat_cau_dan():
+    from aioi.prompts import cat_truoc_mo_dau, mo_dau_nhap
+    cau_mau.dang_ky(lambda: {"mo_dau_nhap": "📋 Tin của {goi} em soạn như sau:"})
+    assert mo_dau_nhap("chi") == "📋 Tin của chị em soạn như sau:"
+    loi = "Em ghi đủ rồi ạ. Tin của anh chị em soạn như sau:\n\nBán nhà MT Cao Lỗ Q.8 60m² 10 tỷ"
+    assert cat_truoc_mo_dau(loi, "chi") == "📋 Tin của chị em soạn như sau:\n\nBán nhà MT Cao Lỗ Q.8 60m² 10 tỷ"
+    # Khuôn cũ vẫn nhận (model còn nhớ câu cũ)
+    assert cat_truoc_mo_dau("Ok ạ. Em sẽ rao như vầy nhé anh:\n\nBán nhà", "anh").startswith("📋 Tin của anh em soạn như sau:\n\nBán")
+
+
+def test_dong_mo_ban_nhap_sai_khung_thi_dung_cau_goc():
+    from aioi.prompts import MO_DAU_NHAP, mo_dau_nhap
+    cau_mau.dang_ky(lambda: {"mo_dau_nhap": "Tin của {goi} em soạn như sau", "mo_dau_nhap_em": "📋 Mình soạn\nnhư sau:"})
+    assert mo_dau_nhap("unknown") == MO_DAU_NHAP[1] and mo_dau_nhap("em") == MO_DAU_NHAP[0]
+
+
+def test_lenh_xem_json_khong_mang_dau_ban_nhap():
+    """SRS-5.1zzzzzzz110: khối JSON của lệnh "thong tin" mở bằng 📋 → sau bản nháp, khách duyệt là đăng khối JSON lên web."""
+    from aioi.engine import Turn, _ban_tin_da_trinh
+    from tests.test_doc_y_khach import _eng
+    eng, _ = _eng({"operations": []})
+    conv = eng.conversation("js1")
+    conv.history.append(Turn("assistant", "📋 Em sẽ rao như vầy nhé anh chị:\n\nBán nhà MT Cao Lỗ Q.8 60m² 10 tỷ\n\nNhà đẹp.", 0.0))
+    r = eng.handle("js1", "thong tin")
+    assert "📋" not in r.reply and _ban_tin_da_trinh(conv)[0] == "Bán nhà MT Cao Lỗ Q.8 60m² 10 tỷ"
+
+
+def test_cau_bao_phi_tester_sua_toi_loi_bot():
+    """SRS-5.1zzzzzzz111 (chủ dự án: "mấy câu mẫu đã sửa cũng cho lên trên câu mẫu lun"): câu báo phí tester sửa ở Câu chuẩn là câu
+    mẫu `bao_phi` — model được dặn nói nguyên văn, code điền mức phí theo vai + bán / thuê."""
+    from aioi.prompts import khoi_bao_phi
+    from aioi.revenue import SellerRole
+    thue = build_fee_followup_system("x", Property(loai_hinh="nha_pho", is_rental=True), user_type=SellerRole.CHU_NHA,
+                                     web={"len_web": True})
+    assert ("Em xin phép báo phí bên em: phí môi giới bên em là 0.75 tháng tiền thuê. Chỉ thu khi giao dịch thành công. "
+            "Mình cần biết thêm thông tin, nhắn em hỗ trợ ạ.") in thue
+    assert "phí môi giới bên em là 1% giá chốt." in khoi_bao_phi(SellerRole.CHU_NHA, False)
+    assert "phí môi giới bên em là 0.5% giá chốt." in khoi_bao_phi(SellerRole.MOI_GIOI, False)
+    assert khoi_bao_phi(SellerRole.CHU_DAU_TU, False) == ""   # chủ đầu tư: phí thoả thuận riêng, không báo con số
+
+
+def test_cau_bao_phi_sua_o_crm_phai_giu_cho_muc_phi():
+    from aioi.prompts import khoi_bao_phi
+    from aioi.revenue import SellerRole
+    cau_mau.dang_ky(lambda: {"bao_phi": "Phí bên em là {phi}, chỉ thu khi thành công ạ."})
+    assert '"Phí bên em là 1% giá chốt, chỉ thu khi thành công ạ."' in khoi_bao_phi(SellerRole.CHU_NHA, False)
+    cau_mau.dang_ky(lambda: {"bao_phi": "Phí bên em rẻ lắm ạ."})   # sửa mất {phi} → bot nói câu không có con số: dùng câu gốc
+    assert "phí môi giới bên em là 1% giá chốt." in khoi_bao_phi(SellerRole.CHU_NHA, False)
+
+
+def test_khach_hoi_phi_cung_doc_cau_bao_phi():
+    """Nhánh khách chủ động hỏi phí (engine) dùng cùng câu mẫu, không viết câu phí riêng."""
+    goc = (pathlib.Path(cau_mau.__file__).parent / "engine.py").read_text()
+    khoi = goc[goc.index('if conv.hoi_ve_luot == "phi":'):goc.index('elif conv.hoi_ve_luot == "uy_tin":')]
+    assert "khoi_bao_phi(conv.user_type, conv.prop.is_rental)" in khoi

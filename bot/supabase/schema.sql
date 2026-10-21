@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-21 12:29 (giờ VN)
+-- Sinh lúc: 2026-10-21 14:31 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -121,7 +121,9 @@ create table if not exists public.cau_chuan (
   nguon text not null default 'that'::text,
   dung_lam_mau boolean not null default true,
   created_at timestamp with time zone not null default now(),
-  updated_at timestamp with time zone not null default now()
+  updated_at timestamp with time zone not null default now(),
+  phien uuid,
+  seq bigint
 );
 
 create table if not exists public.cau_mau (
@@ -1013,6 +1015,7 @@ exception when duplicate_object then null; end $d$;
 create index if not exists bot_errors_at_idx ON public.bot_errors USING btree (at DESC);
 create index if not exists bot_errors_source_at_idx ON public.bot_errors USING btree (source, at DESC);
 create index if not exists cau_chuan_mau_idx ON public.cau_chuan USING btree (updated_at DESC) WHERE dung_lam_mau;
+create index if not exists cau_chuan_phien_idx ON public.cau_chuan USING btree (phien, seq);
 create index if not exists chat_quota_gio_idx ON public.chat_quota USING btree (gio);
 create index if not exists conversations_buyer_id_idx ON public.conversations USING btree (buyer_id);
 CREATE UNIQUE INDEX conversations_buyer_uniq ON public.conversations USING btree (buyer_id) WHERE (buyer_id IS NOT NULL);
@@ -2238,8 +2241,8 @@ CREATE OR REPLACE FUNCTION public.cau_chuan_tu_tin(p_message_ids uuid[])
  SET search_path TO 'public'
 AS $function$
   with vao as (
-    insert into public.cau_chuan (message_id, conversation_id, ngu_canh, cau_bot, nguon)
-    select m.id, m.conversation_id,
+    insert into public.cau_chuan (message_id, conversation_id, phien, seq, ngu_canh, cau_bot, nguon)
+    select m.id, m.conversation_id, m.conversation_id, m.seq,
            coalesce((select jsonb_agg(jsonb_build_object('ai', t.sender, 'noi_dung', t.body) order by t.seq)
                      from (select p.sender, p.body, p.seq from public.messages p
                            where p.conversation_id = m.conversation_id and p.seq < m.seq
@@ -2251,7 +2254,7 @@ AS $function$
     left join public.sellers s on s.id = c.seller_id
     left join public.buyers b on b.id = c.buyer_id
     where m.id = any(p_message_ids) and m.sender = 'bot' and coalesce(m.body, '') <> ''
-    on conflict (message_id) do update set ngu_canh = excluded.ngu_canh
+    on conflict (message_id) do update set ngu_canh = excluded.ngu_canh, phien = excluded.phien, seq = excluded.seq
     returning 1
   )
   select count(*)::integer from vao

@@ -46,11 +46,10 @@ def cau_nhac(conv, listing, pronoun: str) -> str:
     goi = _GOI.get(pronoun, "Anh/chị")
     toi = "mình" if pronoun == "em" else "em"
     hoi = cau_hoi_cuoi_cua_bot(conv)
-    if hoi:
-        return f"{goi} ơi, {toi} hỏi lại chút nha: {hoi}"
+    if hoi:   # câu mẫu sửa ở CRM (SRS-5.1zzzzzzz110)
+        return cau_mau.cau("nhac_hoi_lai", goi.lower(), toi=toi, hoi=hoi)
     if not _image_count(listing.media):
-        return (f"Khi nào tiện {goi.lower()} chụp gửi {toi} vài tấm ảnh thực tế nhé, để tin đăng nổi bật và hút khách hơn"
-                + (" nè." if pronoun == "em" else " ạ."))
+        return cau_mau.cau("nhac_xin_anh_em") if pronoun == "em" else cau_mau.cau("nhac_xin_anh", goi.lower())
     return ""
 
 

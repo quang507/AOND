@@ -7668,6 +7668,134 @@ câu nhận ảnh. Muốn đưa thêm thì thêm khoá vào `MAC_DINH` + một m
 Kiểm: `tests/test_cau_mau.py` (6 ca — câu sửa tới lời bot, câu sửa hỏng / đọc lỗi dùng câu gốc, không file nào còn viết tay câu mẫu,
 migration nạp đúng câu gốc; đỏ khi bỏ phần nối — đã thử, 2 ca đỏ).
 
+### SRS-5.1zzzzzzz107 · Bắn thử 207: cụm trích lệch dấu câu, câu duyệt lọt lượt chưa đăng, "đang cho thuê" thành tin thuê (21/10/2026)
+
+Lượt `ban-thu-kb` 207 (commit `62bb41a`): chấm sao chạy trọn vòng (KB3 xin chấm sau khi nói phí, "5 sao" → `danh_gia_ai.sao = 5`), KB5 hết
+đòi số lô ("rao tin này giúp mình" thành duyệt), nhận vùng 8/8 theo cách chấm mới. Ba lỗi thật:
+
+1. **KB1 — tin Hà Nội lọt vùng.** Khách "nhà ở quận Đống Đa, Hà Nội em"; nhật ký `Vùng: AI=True trích_khớp=False` — AI đọc đúng ngoài vùng,
+   cụm AI trích lệch dấu câu nên code bỏ. **Lớp**: kiểm bằng chứng đòi khớp cả dấu câu, trong khi model hay thêm / bớt dấu phẩy, dấu chấm khi
+   chép lại — mọi ô kiểm bằng `_trich_dan_khop` (duyệt, hỏi về, xưng hô, xin đăng, gặp người, chấm sao, việc mua…) cùng lớp. **Sửa** ở MỘT
+   chỗ `_trich_dan_khop`: so như cũ, không khớp thì so lại sau khi bỏ dấu câu (chữ và số vẫn phải khớp nguyên; giữ "/" của số nhà trong
+   hẻm; cụm chỉ có ký hiệu như tim "❤️" vẫn so kiểu cũ). Ngoài vùng còn nhận thêm khi chính tên tỉnh AI đọc ra nằm trong lời khách (tỉnh suy
+   từ tên thành phố thì vẫn cần cụm trích).
+2. **KB1 — câu duyệt lọt lượt chưa đăng.** Khách "ok em đăng đi" khi tin còn thiếu phường → bot "Em xin phép đăng tin ạ. … cho em xin
+   thêm phường" — khách tưởng đã đăng. Câu duyệt có trong ví dụ câu chuẩn; khối `khoi_xin_dang` và nhánh tin chưa lên web
+   (`khoi_trang_thai_web`) chỉ cấm "nói đã đăng". **Sửa**: hai khối đó cấm luôn câu duyệt (đọc từ `cau_mau`, chủ dự án sửa câu thì lời cấm
+   đổi theo). **Cùng lớp**: ví dụ câu chuẩn có ngữ cảnh duyệt bị model dùng ngoài ngữ cảnh — chặn ở lời dặn của lượt, không lọc chữ đầu ra.
+3. **KB2 — "đang cho thuê" thành tin cho thuê.** "giá 27 tỷ… đang cho thuê 50 triệu/tháng" → `deal = cho_thue` (lượt 205 cùng ca ra
+   `ban`). Mô tả ô `is_rental` ở cả lượt bóc tách lẫn lượt lập thao tác chỉ là "Có phải tin cho thuê không". **Sửa**: một nguồn
+   `MO_TA_CHO_THUE` cho hai schema + câu trong `OPERATIONS_SYSTEM` — hiện trạng có người thuê khi rao BÁN không phải tin cho thuê.
+   **Chưa sửa**: `is_rental` chỉ bật được, không tắt (`engine.py`, `data.pop("is_rental")`) — đọc nhầm một lần thì kẹt tới khi admin sửa;
+   để lượt sau nếu còn gặp.
+
+Kiểm: `tests/test_ban_thu_207.py` (4 ca, 3 đỏ trên code cũ — đã thử), `tests/test_trang_thai_web.py` (dòng lệnh câu duyệt).
+
+### SRS-5.1zzzzzzz108 · Bắn thử 209: làm rõ địa chỉ thành căn mới, nhánh ngoài vùng bỏ kiểm "Dạ" (21/10/2026)
+
+Lượt 209 (commit `e4ec232`): KB2 hết thành tin cho thuê, KB5 / chấm sao đạt, KB1 nhận ra Hà Nội ở lượt "quận Đống Đa, Hà Nội" (nhật ký
+`Vùng: AI=True trích_khớp=True` — bản sửa SRS-5.1zzzzzzz107 có tác dụng). Còn:
+
+1. **KB1 — tin vẫn mở.** Nhật ký lượt đó `Kế hoạch: [('add', …)]`: khách chỉ làm rõ quận / tỉnh mà AI lập thao tác mở căn MỚI; cờ ngoài vùng
+   gắn căn mới (`active`), căn cũ cùng đường, cùng giá ở lại `cho_thong_tin`. **Lớp**: cờ theo căn chỉ gắn căn đang nói, trong khi một căn
+   có thể bị mở hai lần. **Sửa**: (a) `OPERATIONS_SYSTEM` — làm rõ địa chỉ của căn đang khai là "update", không "add"; (b) lưới ở code:
+   khi biết ngoài vùng, căn chưa trình bản nháp trùng ĐÚNG tên đường và giá với căn đó cũng gắn cờ (kho ẩn). Không đoán ý bằng từ khoá —
+   so dữ kiện đã ghi.
+2. **Nhánh ngoài vùng mở đầu "Dạ".** "Dạ, em rất tiếc…" — nhánh `build_ngoai_vung_system` bỏ qua `_soat_hinh_thuc`. **Sửa**: đi qua cùng
+   bước kiểm như mọi nhánh. **Cùng lớp đã soát**: nhánh bán, mua, bản nháp đều qua `_soat_hinh_thuc`; câu viết sẵn (`cau_mau`) không qua
+   model nên không cần.
+3. **KV1 — AI không đọc ra Hà Nội** ("Bán nhà mặt phố Hoàng Quốc Việt, Cầu Giấy, Hà Nội…", `Vùng: AI=False`; lượt 207 cùng câu thì đúng).
+   **Chưa sửa**: lỗi của lượt đọc model, không phải của code kiểm. Không thêm lưới tên tỉnh bằng chữ — "Xa lộ Hà Nội" ở TP.HCM sẽ bị chặn
+   oan. Theo dõi tỷ lệ ở các lượt bắn thử sau (207: 8/8, 209: 7/8).
+
+Kiểm: `tests/test_ban_thu_209.py` (3 ca, đỏ trên code cũ — đã thử).
+
+### SRS-5.1zzzzzzz109 · Bắn thử 211: tiêu đề căn hộ có "MT"; bước kiểm tiêu đề đọc nhầm bản tin cập nhật (21/10/2026)
+
+Lượt 211 (commit `f0d3985`): lượt khách làm rõ địa chỉ nay là "update" (không còn căn trùng — SRS-5.1zzzzzzz108 có tác dụng), không bong
+bóng nào mở đầu "Dạ". Còn:
+
+1. **Tiêu đề căn hộ có "MT"** ("Bán căn hộ Masteri MT Q.2, 68m², 2PN, 6,8 tỷ") — người mua đọc "MT" là mặt tiền. **Sửa**:
+   `_tieu_de_can_ho_co_mt` trong `_soat_hinh_thuc` (luật hình thức code kiểm được, lệch thì gọi lại model một lần kèm lý do — cùng khuôn
+   tiêu đề thiếu giá / "5x20m²"); chỉ căn hộ, "MT" đứng riêng ("MTA Tower" không tính).
+2. **Cùng lớp soát ra**: mọi bước kiểm tiêu đề (`_tieu_de_thieu`, `_tieu_de_sai_don_vi`) lấy dòng KẾ dòng 📋, nhưng bản tin cập nhật ghi
+   tiêu đề NGAY trên dòng 📋 ("📋 Bản tin cập nhật: <tiêu đề>") → với bản cập nhật chúng soi nhầm đoạn mô tả (giá có trong mô tả thì kiểm
+   "tiêu đề có giá" luôn đạt). Đây là lỗi script bắn thử đã gặp ở SRS-5.1zzzzzzz105, nay ở chính lõi. **Sửa**: một hàm `_dong_tieu_de` cho
+   cả hai kiểu bản tin, ba bước kiểm dùng chung.
+3. **Nhận vùng vẫn chập chờn**: KB1 ("quận Đống Đa, Hà Nội") và KV1 ("Cầu Giấy, Hà Nội") đều `Vùng: AI=False` — ba lượt 207 / 209 / 211
+   thì KB1 trượt hai. Code kiểm đúng; ô `ngoai_vung` là một ô phụ trong lượt AI lập thao tác lo nhiều việc. **Đề xuất, chờ chủ dự án**: một
+   lượt AI nhỏ riêng khi khách nói địa chỉ mới mà chưa biết tỉnh ("căn này thuộc tỉnh / thành nào", kèm cụm trích), code so với danh sách
+   vùng — thêm ~1 lượt Haiku mỗi hội thoại, ~1 giây ở lượt đó.
+
+Kiểm: `tests/test_tieu_de_ban_tin.py` (3 ca, đỏ trên code cũ — đã thử).
+
+### SRS-5.1zzzzzzz110 · Câu mẫu cố định: thêm 23 câu có từ trước; lệnh xem JSON mang dấu bản nháp (21/10/2026)
+
+Chủ dự án 21/10: "đưa luôn mấy câu trước đó nữa đi" (sau khung tám câu của SRS-5.1zzzzzzz106). Soát cả lõi: ngoài tám câu đó còn 31 câu bot
+gửi khách nguyên văn. Đưa vào `cau_mau` 23 câu khách hay gặp, chia hai nhóm trên CRM ("Chốt từ 20/10" / "Có từ trước"):
+- chào lần đầu / chào làm mới phiên / lệnh làm mới (`{ten}` = tên trợ lý);
+- dòng mở bản nháp (hai bản theo cách xưng) và câu hỏi cuối bản nháp;
+- hỏi xác nhận ẩn (`{viec}`), đã ẩn hết, đã ẩn bớt (`{n}`), đã cập nhật, giữ nguyên rổ hàng;
+- nhận ảnh (`{n}`), file quá 20 MB, link thư mục Drive, link không mở được, trang web trống, nhập bảng tính (`{n}`), bảng tính trống;
+- chưa có bản vẽ (`{can}`);
+- tin nhắc 5 phút: hỏi lại câu vừa hỏi (`{toi}`, `{hoi}`), xin ảnh (hai bản theo cách xưng).
+
+**Để ngoài** (không đưa vào khung): câu chỉ gửi nhân viên ("#mã: trả lời"), lệnh xem dữ liệu, các khối ghép nhiều số liệu (đọc bảng giá,
+tách nhóm ảnh, dòng tóm tắt sổ đỏ), lời bọc khi đọc trang web, câu hỏi tên dự án trùng.
+
+**Khung bắt buộc**: dòng mở bản nháp phải bắt đầu "📋" và kết thúc ":" trên một dòng (`cau_mau._KHUNG`) — code tìm tiêu đề bản tin và cắt câu
+dẫn theo dòng này; sửa sai khung thì dùng câu gốc. `cat_truoc_mo_dau` nhận dòng mở theo khuôn cũ VÀ theo câu đang dùng ở CRM, rồi thay bằng
+câu đang dùng.
+
+**Lỗi soát ra cùng lượt**: lệnh "json" / "thong tin" in khối dữ liệu mở bằng "📋" — đúng dấu bản nháp; `_ban_tin_da_trinh` lấy lượt có 📋
+cuối cùng làm bản khách duyệt, nên khách gõ "thong tin" sau bản nháp rồi duyệt là đăng khối JSON lên web. **Lớp**: dấu nhận dạng bản nháp
+(📋) dùng chung cho thứ không phải bản nháp. **Cùng lớp đã soát**: dòng đọc bảng giá dùng "📊", nhận ảnh / tệp dùng "📎" — không trùng;
+chỉ lệnh JSON trùng. **Sửa**: đổi sang "🧾".
+
+Kiểm: `tests/test_cau_mau.py` (thêm 4 ca: câu cũ sửa ở CRM tới lời bot; dòng mở sửa vẫn cắt câu dẫn; sai khung dùng câu gốc; lệnh JSON không
+mang 📋 — ca này đỏ trên code cũ, đã chạy).
+
+### SRS-5.1zzzzzzz111 · Câu báo phí tester sửa thành câu mẫu `bao_phi` (21/10/2026)
+
+Chủ dự án 21/10: "mấy câu mẫu đã sửa cũng cho lên trên câu mẫu lun". Bảng `cau_chuan` có 6 dòng tester sửa tay, gồm 3 câu khác nhau:
+câu nhắc bản nháp (đã là `nhac_ban_nhap`), câu duyệt + hỏi phí (đã là `duyet_tin` / `hoi_phi`), và câu BÁO PHÍ ("Em xin phép báo phí
+bên em: phí môi giới bên em là 0.75 tháng tiền thuê. Chỉ thu khi giao dịch thành công. Mình cần biết thêm thông tin, nhắn em hỗ trợ ạ.")
+— câu này chưa có trong khung câu mẫu, chỉ tới model qua ví dụ câu chuẩn (`khoi_cau_chuan`, 8 dòng gần nhất) nên trôi khi có dòng mới.
+
+1. **Lớp**: câu tester sửa nằm ở ví dụ câu chuẩn thay vì câu mẫu — model chỉ "học theo", câu không chắc tới khách, và chủ dự án không
+   thấy nó ở khung câu mẫu để sửa tiếp.
+2. **Sửa**: khoá `bao_phi` trong `cau_mau.MAC_DINH`, chỗ giữ `{phi}` do code điền (`prompts.muc_phi`: thuê "0.75 tháng tiền thuê",
+   chính chủ / lướt sóng "1% giá chốt", môi giới / sàn "0.5% giá chốt", chưa rõ vai nêu cả hai, chủ đầu tư không có câu). `khoi_bao_phi`
+   dặn model nói nguyên văn ở cả hai chỗ báo phí: khách trả lời chưa biết phí (`build_fee_followup_system`) và khách chủ động hỏi phí
+   (`engine`, `hoi_ve_luot == "phi"`). Câu sửa ở CRM phải giữ `{phi}` (`_BAT_BUOC`), thiếu thì dùng câu gốc. Migration `20261021d`
+   nạp dòng, đặt thứ tự 3 (sau câu hỏi phí) trong nhóm "Chốt từ 20/10"; trang `/admin/cau-chuan` gom nhóm theo `thu_tu ≤ 9`.
+3. **Cùng lớp**: soát 6 dòng `cau_chuan` đã sửa — hai câu còn lại đã là câu mẫu; không còn câu tester sửa nào chỉ sống ở ví dụ.
+   Nhánh thuyết phục khi khách chê phí vẫn để model nói tự do (không phải câu nguyên văn).
+
+Kiểm: `tests/test_cau_mau.py` (thêm 3 ca: câu tới lời dặn bản thuê / bán / chủ đầu tư; câu sửa ở CRM tới lời bot, mất `{phi}` thì dùng câu
+gốc; nhánh khách hỏi phí đọc cùng câu). Bỏ `{bao_phi}` khỏi lời dặn thì ca đầu đỏ.
+
+### SRS-5.1zzzzzzz112 · Trang Câu chuẩn xem cả cuộc chat từ đầu đến cuối (21/10/2026)
+
+Chủ dự án 21/10, xem thẻ bắn thử "Cần bán căn hộ 2PN ở Sơn Trà, Đà Nẵng…": "có câu đầu ko có mấy câu phía sau nó bắn à để t sửa, t
+nghĩ nên là từ đầu đến cuối". Mỗi câu bot là một thẻ rời, kèm tối đa 8 tin trước nó; các câu sau của cùng cuộc chat nằm ở thẻ khác, xếp
+lẫn theo giờ chép. Ca Sơn Trà là ca vùng (KV) chỉ một tin — bot từ chối ngay nên cuộc chat chỉ có một câu; các ca KB nhiều lượt thì bị
+cắt ra 5–19 thẻ.
+
+1. **Lớp**: bảng `cau_chuan` lưu từng câu mà không lưu câu đó thuộc cuộc chat nào một cách bền — `conversation_id` là khoá ngoại
+   `on delete set null`, script bắn thử dọn dữ liệu thử xong thì 322/322 dòng bắn thử mất cột này, trang không gom lại được.
+2. **Sửa**: migration `20261021e` thêm hai cột CHÉP `phien` (cuộc chat) và `seq` (thứ tự tin), `cau_chuan_tu_tin` ghi cả hai lúc đưa
+   vào. Dòng cũ: còn hội thoại thì lấy thẳng; đã mất thì gom theo `created_at` (mọi câu của một Zalo ID được chép trong một câu lệnh)
+   và xếp theo chuỗi "tin bot cuối trong ngữ cảnh = câu trước" — chạy thử trên DB: 335/353 dòng nối được vào 107 cuộc chat, 18 dòng
+   còn lại xếp cuối cuộc chat theo độ dài ngữ cảnh. Trang `/admin/cau-chuan`: mỗi thẻ là một cuộc chat, đọc từ tin đầu tới câu bot
+   cuối; dưới mỗi câu bot có nút "Chấm / sửa" (câu khớp bộ lọc đang chọn thì mở sẵn). Bộ lọc vẫn đếm theo câu, nhưng hiện cả cuộc chat
+   có ít nhất một câu khớp.
+3. **Cùng lớp**: `cau_chuan.message_id` cũng `on delete set null` — chỉ dùng để chống chép trùng, không cần bền. Bảng `danh_gia_ai`
+   lưu `zalo_user_id` chữ, không khoá ngoại — không dính.
+
+Kiểm: chạy thử khối backfill dạng chỉ đọc trên DB trước khi áp (số ở trên); `bun run kieu`, `bun run build` sạch, trang vẫn là `○`.
+Chưa chụp màn hình bản dựng thật: trang cần đăng nhập admin.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

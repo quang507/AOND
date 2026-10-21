@@ -212,6 +212,12 @@ LUAT_KHEN = """KHEN ÍT, CÓ CƠ SỞ:
     - CẤM khen chung chung cho có: "vị trí đẹp", "rất phù hợp", "công năng rộng", "rất thuận tiện", "an tâm"."""
 
 # Hướng dẫn chính sách & tư vấn chưng cất, gọn gàng cho lượt chat thông thường
+# Một nguồn cho ô is_rental ở lượt bóc tách lẫn lượt lập thao tác (SRS-5.1zzzzzzz107, bắn thử 207 KB2: "giá 27 tỷ… đang cho thuê 50
+# triệu/tháng" thành tin CHO THUÊ — mô tả cũ chỉ "Có phải tin cho thuê không"). Hiện trạng có người thuê không phải ý muốn cho thuê.
+MO_TA_CHO_THUE = ("true CHỈ KHI khách muốn CHO THUÊ căn này (rao cho thuê, giá thuê theo tháng). Khách rao BÁN (giá bán, vd \"27 tỷ\") "
+                  "mà nói \"đang cho thuê 50 triệu/tháng\" là HIỆN TRẠNG (nhà đang có người thuê) → false.")
+
+
 # Một nguồn cho mọi lượt trả lời người rao (SRS-5.1zzzzzzz102, nối thêm lượt sau bản nháp ở SRS-5.1zzzzzzz105).
 LUAT_GHI_NHAN = """GHI NHẬN VỪA NGẮN VỪA LỊCH SỰ (chủ dự án 21/10/2026: "ngắn không thì nó láo, nên phải sửa vừa ngắn vừa lịch sự"): khách vừa cho
   thông tin thì đáp nhận bằng MỘT vế ngắn có lời lễ phép ("Em ghi rồi ạ.", "Em cảm ơn anh/chị ạ.", "Em cập nhật rồi nha anh/chị.")
@@ -288,6 +294,28 @@ BUSINESS_CONTEXT = """BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ �
   • CHỦ ĐẦU TƯ: phí KHÔNG theo 1%/0.5% — thoả thuận riêng với dự án; đừng tự báo con số.
 - PHÍ CHỈ thu khi giao dịch THÀNH CÔNG. TUYỆT ĐỐI không bịa con số phí/ưu đãi/cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì đừng báo phí, cứ hỏi khéo hoặc tư vấn chung.
 - Gamification: có Điểm uy tín và hạng Đồng/Bạc/Vàng; nên khen điểm mạnh và gợi ý cách tăng điểm (bổ sung ảnh, sổ hồng, thông tin còn thiếu)."""
+
+
+def muc_phi(role: SellerRole, thue: bool) -> str | None:
+    """Mức phí điền vào câu mẫu `bao_phi` (SRS-5.1zzzzzzz111) — theo vai + bán hay thuê, cùng chính sách với `_fee_hint`.
+    Chủ đầu tư: None (phí theo thoả thuận riêng, không báo con số)."""
+    if role == SellerRole.CHU_DAU_TU:
+        return None
+    if thue:
+        return "0.75 tháng tiền thuê"
+    if role in (SellerRole.CHU_NHA, SellerRole.LUOT_SONG):
+        return "1% giá chốt"
+    if role in (SellerRole.MOI_GIOI, SellerRole.SAN):
+        return "0.5% giá chốt"
+    return "1% giá chốt nếu là chủ nhà, 0.5% nếu là môi giới"
+
+
+def khoi_bao_phi(role: SellerRole, thue: bool) -> str:
+    """Dặn model báo phí bằng NGUYÊN VĂN câu mẫu `bao_phi` (câu tester sửa, chủ dự án sửa tiếp ở CRM). Rỗng khi không có con số."""
+    phi = muc_phi(role, thue)
+    if not phi:
+        return ""
+    return f'Báo phí bằng NGUYÊN VĂN câu mẫu: "{cau_mau.cau("bao_phi", phi=phi)}"'
 
 
 def _fee_hint(role: SellerRole) -> str:
@@ -640,21 +668,25 @@ def khoi_xin_dang(thieu: list[str], prop: Property | None = None) -> str:
         return ("\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN (CHƯA CÓ THÔNG TIN CĂN) ===\nMời khách gửi / dán nội dung tin rao hoặc vài thông "
                 "tin chính (địa chỉ, giá, diện tích) trong ĐÚNG 1 câu ngắn. KHÔNG hỏi từng ô, KHÔNG soạn bài đăng.\n")
     y = ", ".join(f'"{nhan_o(o, prop)}"' for o in thieu)
+    # SRS-5.1zzzzzzz107 (bắn thử 207, KB1): lượt này bot mở bằng câu duyệt tin (cau_mau duyet_tin, chép từ ví dụ câu chuẩn) rồi mới hỏi ô
+    # thiếu — khách tưởng tin đã đăng. Câu duyệt chỉ dành cho lượt khách duyệt bản nháp đã lên web.
     return (f"\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN ===\nTin còn thiếu {y} — thiếu là chưa đăng được. Nói ngắn: còn thiếu ý này là em lên bản "
-            "nháp liền, rồi hỏi đúng ý đó (theo \"Thông tin cần hỏi tiếp theo\"). KHÔNG soạn bài đăng, KHÔNG nói đã đăng.\n")
+            "nháp liền, rồi hỏi đúng ý đó (theo \"Thông tin cần hỏi tiếp theo\"). KHÔNG soạn bài đăng, KHÔNG nói đã đăng, KHÔNG nói "
+            f"\"{cau_mau.cau('duyet_tin')}\" hay \"em đăng ngay\" (chưa có bản nháp thì chưa đăng được).\n")
 
 
 # Dòng mở đầu cố định của bản nháp tin rao. Model hay viết thêm câu dẫn TRƯỚC dòng này ("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như
 # vầy nhé anh:") → khách đọc hai câu dẫn; `cat_truoc_mo_dau` bỏ phần trước (SRS-5.1zzzzzzz76).
-MO_DAU_NHAP = ("📋 Mình sẽ rao như vầy nhé em:", "📋 Em sẽ rao như vầy nhé anh chị:")
+# Câu đang dùng ở `cau_mau` (chủ dự án sửa ở CRM, SRS-5.1zzzzzzz110); hằng này là câu MẶC ĐỊNH.
+MO_DAU_NHAP = (cau_mau.MAC_DINH["mo_dau_nhap_em"][0], cau_mau._dien(cau_mau.MAC_DINH["mo_dau_nhap"][0], "anh chị"))
 _GOI_KHACH = {"anh": "anh", "chi": "chị"}
 
 
 def mo_dau_nhap(xung_ho: str = "unknown") -> str:
     """Dòng mở đầu bản nháp theo cách khách tự xưng (SRS-5.1zzzzzzz90: khách xưng "chị" mà dòng này vẫn "anh chị")."""
     if xung_ho == "em":
-        return MO_DAU_NHAP[0]
-    return f"📋 Em sẽ rao như vầy nhé {_GOI_KHACH[xung_ho]}:" if xung_ho in _GOI_KHACH else MO_DAU_NHAP[1]
+        return cau_mau.cau("mo_dau_nhap_em")
+    return cau_mau.cau("mo_dau_nhap", _GOI_KHACH.get(xung_ho, "anh chị"))
 
 
 def cat_truoc_mo_dau(reply: str, xung_ho: str = "unknown") -> str:
@@ -663,11 +695,17 @@ def cat_truoc_mo_dau(reply: str, xung_ho: str = "unknown") -> str:
     (SRS-5.1zzzzzzz80). Bắn thử 20/10 lần 3: model đổi luôn chữ gọi khách ("Em sẽ rao như vầy nhé anh:") — so nguyên văn thì trượt,
     câu dẫn còn nguyên và lượt không được nhận là bản nháp. Nhận dòng mở đầu với bất kỳ chữ gọi khách nào (lấy dòng CUỐI — tin rao nằm
     ngay sau nó) rồi thay bằng dòng cố định theo cách xưng "Mình" / "Em" (SRS-5.1zzzzzzz85)."""
-    khop = list(_MO_DAU_RE.finditer(reply))
+    # Nhận dòng mở theo khuôn cũ VÀ theo câu đang dùng ở CRM (SRS-5.1zzzzzzz110: chủ dự án sửa chữ thì khuôn cũ có thể trượt).
+    khop: list[tuple[int, int, bool]] = [(m.start(), m.end(), m.group(1) == "Mình") for m in _MO_DAU_RE.finditer(reply)]
+    for khoa, la_em in (("mo_dau_nhap", False), ("mo_dau_nhap_em", True)):
+        for c in cau_mau.moi_cach_goi(khoa, ("anh chị", "anh", "chị")):
+            than = c.lstrip("📋").strip()
+            if than:
+                khop += [(m.start(), m.end(), la_em) for m in re.finditer(r"(?:📋\s*)?" + re.escape(than), reply)]
     if not khop:
         return reply
-    m = khop[-1]
-    return (MO_DAU_NHAP[0] if m.group(1) == "Mình" else mo_dau_nhap(xung_ho if xung_ho != "em" else "unknown")) + reply[m.end():]
+    _, cuoi, la_em = max(khop, key=lambda k: k[1])
+    return (mo_dau_nhap("em") if la_em else mo_dau_nhap(xung_ho if xung_ho != "em" else "unknown")) + reply[cuoi:]
 
 
 _MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em) sẽ rao như vầy nhé[^:\n]{0,20}:")
@@ -685,9 +723,9 @@ def build_listing_proposal_system(
     Used once the listing is "khá đầy đủ". This is NOT a 30-word chat reply, so the word
     cap does NOT apply. CRUCIALLY: do NOT mention the fee yet — that comes after approval.
     """
-    opener = MO_DAU_NHAP[0] if customer_is_em else mo_dau_nhap(xung_ho)
+    opener = mo_dau_nhap("em") if customer_is_em else mo_dau_nhap(xung_ho)
     goi = _GOI_KHACH.get(xung_ho, "anh/chị")
-    closer = "Em thấy bản tin này hấp dẫn chưa?" if customer_is_em else f"{goi[0].upper() + goi[1:]} thấy bản tin này hấp dẫn chưa ạ?"
+    closer = cau_mau.cau("hoi_ban_nhap_em") if customer_is_em else cau_mau.cau("hoi_ban_nhap", goi)   # sửa ở CRM (SRS-5.1zzzzzzz110)
 
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
@@ -760,7 +798,8 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
             "  • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng "
             "như môi giới dễ dàng tìm kiếm, kết nối.",
         )
-    cam = "TUYỆT ĐỐI KHÔNG nói tin đã đăng / đã lên web / đang hiển thị, KHÔNG bảo khách vào web xem tin của mình."
+    cam = ("TUYỆT ĐỐI KHÔNG nói tin đã đăng / đã lên web / đang hiển thị, KHÔNG bảo khách vào web xem tin của mình, KHÔNG nói "
+           f"\"{cau_mau.cau('duyet_tin')}\" (SRS-5.1zzzzzzz107).")
     thieu = [o for o in (web.get("thieu") or []) if o in FIELD_LABELS]
     if thieu:
         nhan = ", ".join(FIELD_LABELS[o].split(" (")[0] for o in thieu)
@@ -824,6 +863,8 @@ def build_fee_followup_system(
         "của lượt này. Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách. Đoạn này tối đa 2 câu ngắn."
         if (web is None or web.get("len_web")) else ""
     )
+    bao_phi = khoi_bao_phi(user_type, prop.is_rental)
+    bao_phi = f"\n  {bao_phi}" if bao_phi else ""
     hoi_sau = ""
     o_sau = prop.cau_hoi_sau_ra_tin() if (web is None or web.get("len_web")) else None
     if o_sau:   # SRS-5.1zzzzzzz80: ô khách lờ 2 lần trước bản nháp — hỏi lại một lần, SAU lượt nói chuyện phí (lượt duyệt chỉ hỏi phí)
@@ -845,7 +886,7 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
   • Tiếp thu ngay và khen tinh thần đóng góp của khách (vd "Tiêu đề này ngắn gọn và hút khách hơn hẳn ạ!"), cập nhật dữ liệu, KHÔNG nhắc phí.
   • RAO LẠI BẢN TIN ĐÃ SỬA (mở đầu "📋 Bản tin cập nhật:") theo ĐÚNG bố cục tin rao dưới đây.
 - NẾU khách trả lời CHƯA BIẾT PHÍ (sau câu hỏi phí): báo NGẮN trong 1–2 câu — con số phí đúng vai + chỉ thu khi giao dịch thành công.
-  Không thêm câu giải thích, không chào kết dài.
+  Không thêm câu giải thích, không chào kết dài.{bao_phi}
 - NẾU khách CHỦ ĐỘNG HỎI PHÍ HOẶC CHÊ PHÍ CAO / DO DỰ / TỪ CHỐI trả phí: hãy THUYẾT PHỤC một cách khéo léo, ấm áp:
   • Đồng cảm trước ("Em hiểu băn khoăn của anh/chị..."), KHÔNG tranh cãi, KHÔNG chê khách.
   • Mỗi lượt nhấn 1–2 lợi ích mạnh nhất phù hợp với mối lo của khách (xem DANH SÁCH GIÁ TRỊ), rồi nhẹ nhàng chốt lại.
@@ -1379,7 +1420,9 @@ def property_field_props() -> dict[str, Any]:
 def extraction_schema() -> dict[str, Any]:
     """JSON schema covering every capturable field across all groups + rental terms."""
     properties = property_field_props()
-    properties["is_rental"] = {"type": "boolean", "description": "Có phải tin cho thuê không"}
+    # SRS-5.1zzzzzzz107 (bắn thử 207, KB2): "giá 27 tỷ… đang cho thuê 50 triệu/tháng" thành tin CHO THUÊ — mô tả cũ chỉ "Có phải tin cho
+    # thuê không". Hiện trạng có người thuê không phải ý khách muốn cho thuê.
+    properties["is_rental"] = {"type": "boolean", "description": MO_TA_CHO_THUE}
     properties["is_new_listing"] = {
         "type": "boolean",
         "description": "Đặt true CHỈ KHI khách rõ ràng bắt đầu nói về MỘT BĐS KHÁC (vd 'còn một "
@@ -1474,7 +1517,9 @@ Các loại "op":
 - "add": THÊM (những) căn MỚI vào rổ. 1 căn: "fields" chứa thông tin, "target" = mã số căn nếu
   có. NHIỀU căn cùng mẫu/dự án trong 1 tin (vd "2 căn 42 và 41 cùng mẫu Fusion"): đặt "targets"
   = ["42","41"] và thông tin CHUNG trong "fields". CHỈ dùng "add" khi rõ ràng là căn KHÁC căn
-  đang khai (vd "còn một căn nữa", "qua căn khác", địa chỉ hoàn toàn khác).
+  đang khai (vd "còn một căn nữa", "qua căn khác", địa chỉ hoàn toàn khác). Khách BỔ SUNG / LÀM RÕ địa chỉ của căn đang
+  khai (thêm quận, tỉnh / thành, phường, số nhà cho cùng con đường — vd vừa nói "đường Nguyễn Chí Thanh" rồi "nhà ở quận Đống
+  Đa, Hà Nội") là "update" căn đó, KHÔNG "add", dù địa danh khác điều em đoán (SRS-5.1zzzzzzz108).
 - "set_status": người rao đổi TRẠNG THÁI một căn — HỄ TIN NHẮN THỂ HIỆN là tạo op này (mọi trạng
   thái của hệ thống đều đến từ lời nhắn, không có nút bấm). "status":
     • da_ban = "bán rồi / đã bán / bán xong / chốt rồi"; da_cho_thue = "cho thuê rồi / đã cho thuê".
@@ -1504,7 +1549,7 @@ vào được", "hẻm 4m" KHÔNG thành "mặt tiền", "3 lầu" KHÔNG thành
 nguyên cụm bang_chung thay cho giá trị.
 
 Ngoài "operations", nếu rõ vai trò người rao thì đặt "seller_role"
-(chu_nha/luot_song/moi_gioi/san/chu_dau_tu); nếu là tin cho thuê đặt "is_rental"=true.
+(chu_nha/luot_song/moi_gioi/san/chu_dau_tu); nếu là tin cho thuê đặt "is_rental"=true ("đang cho thuê X/tháng" khi rao BÁN là hiện trạng, không phải tin cho thuê).
 
 PHÂN BIỆT Ý ĐỊNH KHÁCH ("user_intent") BẰNG TOÀN BỘ NGỮ CẢNH (Semantic Understanding):
 - "sell": Người bán / cho thuê gửi thông tin BĐS của họ, HOẶC người bán hỏi thăm tình hình bán/thị trường (vd: "giá này có khách mua không em?", "có ai hỏi mua chưa?", "bên mua có trả giá không?"). Việc nhắc tới chữ "mua" trong câu hỏi VẪN LÀ "sell"!
@@ -1711,7 +1756,7 @@ def operations_schema() -> dict[str, Any]:
                 "enum": ["chu_nha", "luot_song", "moi_gioi", "san", "chu_dau_tu"],
                 "description": "Vai trò người rao khi đã rõ. Bỏ trống nếu chưa chắc.",
             },
-            "is_rental": {"type": "boolean", "description": "Có phải tin cho thuê không."},
+            "is_rental": {"type": "boolean", "description": MO_TA_CHO_THUE},
             "duyet_ban_nhap": {
                 "type": "string",
                 "enum": ["dong_y", "khong_dong_y"],

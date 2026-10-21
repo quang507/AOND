@@ -24,6 +24,7 @@ from dataclasses import dataclass, field, replace
 from uuid import uuid4
 
 from . import gamification as g
+from . import cau_mau
 from .danh_gia import KHOI_SAP_XIN_SAO, cau_xin_sao, doc_sao, khoi_cam_on_sao, vua_xin_sao
 from .assistants import Assistant, assign_assistant
 from .drive import extract_drive_id
@@ -59,6 +60,7 @@ from .prompts import (
     build_transcribe_instruction,
     build_fee_followup_system,
     _fee_hint,
+    khoi_bao_phi,
     khoi_trang_thai_web,
     TAI_LIEU_CHUNG_SYSTEM,
     tai_lieu_chung_schema,
@@ -250,10 +252,17 @@ def _hai_chieu_lo(fields: dict) -> str | None:
 
 
 def _trich_dan_khop(trich: str | None, cau: str | None) -> bool:
-    """Cụm AI trích có nằm NGUYÊN trong câu khách không (bỏ dấu, gộp khoảng trắng) — AI đọc nghĩa, code chỉ kiểm bằng chứng."""
+    """Cụm AI trích có nằm NGUYÊN trong câu khách không (bỏ dấu, bỏ dấu câu, gộp khoảng trắng) — AI đọc nghĩa, code chỉ kiểm bằng
+    chứng. Dấu câu bỏ từ SRS-5.1zzzzzzz107 (bắn thử 207: khách "quận Đống Đa, Hà Nội", AI trích bỏ dấu phẩy → trượt, tin Hà Nội lọt
+    vùng); chữ và số vẫn phải khớp nguyên."""
     gon = lambda s: re.sub(r"\s+", " ", _strip_accents(str(s or "")).lower()).strip()
     t = gon(trich)
-    return bool(t) and t in gon(cau)
+    if t and t in gon(cau):
+        return True
+    # Cụm chỉ có ký hiệu (tim "❤️" khi khách thả cảm xúc) bỏ dấu câu là rỗng — chỉ so kiểu trên.
+    tron = lambda s: re.sub(r"\s+", " ", re.sub(r"[^\w\s/]", " ", s)).strip()
+    t2 = tron(t)
+    return bool(t2) and t2 in tron(gon(cau))
 
 
 def _so_khop(trich: str | None, gia_tri: str | None, loi_khach: str) -> bool:
@@ -781,12 +790,21 @@ def _so_trong(x: str | None) -> set[str]:
     return {n.replace(",", ".") for n in re.findall(r"\d+(?:[.,]\d+)?", re.sub(r"(?i)m\s*[2²]", "m", str(x or "")))}
 
 
+def _dong_tieu_de(reply: str) -> str:
+    """Dòng tiêu đề của bản tin 📋 — một chỗ cho mọi bước kiểm (SRS-5.1zzzzzzz109). Bản nháp đầu: dòng mở "📋 Em sẽ rao như vầy…:" rồi
+    tiêu đề ở dòng chữ kế; bản cập nhật ghi tiêu đề NGAY trên dòng 📋 ("📋 Bản tin cập nhật: <tiêu đề>"). Bản trước luôn lấy dòng kế,
+    nên với bản cập nhật các bước kiểm soi nhầm đoạn mô tả. Không có 📋 → ""."""
+    if "📋" not in (reply or ""):
+        return ""
+    dong = reply.split("📋", 1)[1].splitlines()
+    tren = dong[0].split(":", 1)[1].strip() if dong and ":" in dong[0] else ""
+    return tren or next((d for d in dong[1:] if d.strip()), "")
+
+
 def _tieu_de_sai_don_vi(reply: str) -> bool:
     """Tiêu đề bản tin ghi kích thước kèm m² ("5x20m²") — sai đơn vị: 5x20 là kích thước lô, diện tích là 100m² (bắn thử KB2 20/10,
     SRS-5.1zzzzzzz91). Chỉ so bố cục chữ của dòng tiêu đề."""
-    if "📋" not in (reply or ""):
-        return False
-    tieu_de = next((d for d in reply.split("📋", 1)[1].splitlines()[1:] if d.strip()), "")
+    tieu_de = _dong_tieu_de(reply)
     return re.search(r"\d\s*[x×*]\s*\d+(?:[.,]\d+)?\s*m\s*[²2]", tieu_de) is not None
 
 
@@ -795,11 +813,16 @@ def _tieu_de_thieu(reply: str, prop: "Property") -> list[str]:
     tiêu đề (SRS-5.1zzzzzzz86). Không có 📋 hay căn chưa có giá → []. Không đọc ý: chỉ so số."""
     if "📋" not in (reply or "") or not prop.fields.get("gia"):
         return []
-    sau = reply.split("📋", 1)[1].splitlines()[1:]
-    tieu_de = next((d for d in sau if d.strip()), "")
+    tieu_de = _dong_tieu_de(reply)
     gia = prop.fields["gia"]
     so_gia = _so_trong(gia)
     return [f"giá ({gia})"] if so_gia and not (so_gia & _so_trong(tieu_de)) else []
+
+
+def _tieu_de_can_ho_co_mt(reply: str, prop: "Property") -> bool:
+    """Tiêu đề căn hộ / chung cư có chữ "MT" đứng riêng (bắn thử 211 KB3: "Bán căn hộ Masteri MT Q.2…") — người mua đọc "MT" là mặt
+    tiền, căn hộ không có mặt tiền (SRS-5.1zzzzzzz109). Chỉ so chữ của dòng tiêu đề."""
+    return prop.group is PropertyGroup.CONDO and re.search(r"(?<![\wÀ-ỹ])MT(?![\wÀ-ỹ])", _dong_tieu_de(reply)) is not None
 
 
 def _than_ban_tin(reply: str) -> tuple[str, str] | None:
@@ -1656,21 +1679,11 @@ class Engine:
                 self._convstore.reset(user_key)
             
             if had_prior_history and cmd in ("/reset", "/clear", "/xoa", "reset session", "xóa hết"):
-                reply = (
-                    f"Em chào anh/chị! Em là {conv.assistant.name} từ AI Ơi Nhà Đất.\n"
-                    "Em đã làm mới phiên chat và xóa toàn bộ thông tin nháp trước đó rồi ạ. "
-                    "Anh/chị có thể bắt đầu gửi thông tin nhà đất cần rao bán hoặc cho thuê nhé! 🏡✨"
-                )
+                reply = cau_mau.cau("lenh_lam_moi", ten=conv.assistant.name)   # câu mẫu sửa ở CRM (SRS-5.1zzzzzzz110)
             elif had_prior_history:
-                reply = (
-                    f"Chào anh/chị ạ! Em là {conv.assistant.name}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n"
-                    "Em đã làm mới cuộc trò chuyện rồi ạ. Anh/chị đang có căn chung cư, nhà phố hay đất cần gửi bán hoặc cho thuê vậy ạ?"
-                )
+                reply = cau_mau.cau("chao_lam_moi", ten=conv.assistant.name)
             else:
-                reply = (
-                    f"Chào anh/chị ạ! Em là {conv.assistant.name}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n"
-                    "Anh/chị đang có căn chung cư, nhà phố hay đất cần gửi bán hoặc cho thuê vậy ạ?"
-                )
+                reply = cau_mau.cau("chao_lan_dau", ten=conv.assistant.name)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured=[], now=now)
@@ -1721,7 +1734,9 @@ class Engine:
                     "hinh_anh": len(li.media),
                 }
             json_str = json.dumps(dump_data, ensure_ascii=False, indent=2)
-            reply = f"📋 Dữ liệu trích xuất hiện tại (JSON):\n```json\n{json_str}\n```"
+            # Không mở bằng "📋" — dấu đó là dấu bản nháp tin rao; `_ban_tin_da_trinh` lấy lượt có 📋 cuối cùng làm bản khách duyệt, nên
+            # gõ "thong tin" sau bản nháp rồi duyệt là đăng khối JSON lên web (SRS-5.1zzzzzzz110).
+            reply = f"🧾 Dữ liệu trích xuất hiện tại (JSON):\n```json\n{json_str}\n```"
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured=[], now=now)
@@ -1769,13 +1784,13 @@ class Engine:
         if conv.pending_destructive:
             if conv.y_luot.get("xac_nhan_xoa") == "dong_y":
                 _changed, receipts = self._apply_pending_destructive(conv)
-                reply = self._receipt_reply(conv, receipts) or "Em đã cập nhật rổ hàng rồi ạ."
+                reply = self._receipt_reply(conv, receipts) or cau_mau.cau("da_cap_nhat_ro")
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
                 return self._build_result(conv, reply, captured=[], now=now)
             conv.pending_destructive = []  # not a clear yes → keep the basket intact
             if conv.y_luot.get("xac_nhan_xoa") == "tu_choi":
-                reply = "Em giữ nguyên rổ hàng, không xóa gì đâu ạ 👍"
+                reply = cau_mau.cau("giu_nguyen_ro")
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
                 return self._build_result(conv, reply, captured=[], now=now)
@@ -1821,6 +1836,14 @@ class Engine:
             captured, conv.last_receipts = self._ap_dung_ke_hoach(conv, ke_hoach)
             if conv.y_luot.get("ngoai_vung"):   # khoá nội bộ `_` — theo căn qua lưu / nạp lại, không vào ô tin (fields_khach)
                 conv.prop.fields["_ngoai_vung"] = conv.y_luot["ngoai_vung"]
+                # Cùng một căn bị mở hai lần (bắn thử 209 KB1: lượt làm rõ "quận Đống Đa, Hà Nội" thành "add") — căn chưa trình bản
+                # nháp trùng ĐÚNG tên đường và giá với căn vừa biết ngoài vùng là chính căn đó: ẩn theo (SRS-5.1zzzzzzz108).
+                f0 = conv.prop.fields
+                for li in conv.listings:
+                    f = li.prop.fields
+                    if (li is not conv.active and not li.listing_proposed and f.get("duong") and f.get("gia")
+                            and f.get("duong") == f0.get("duong") and f.get("gia") == f0.get("gia")):
+                        f["_ngoai_vung"] = conv.y_luot["ngoai_vung"]
 
             # 1a-destructive. A DESTRUCTIVE basket op (xóa hết / bỏ căn / chỉ giữ) is confirmed
             #    with a reply built from the REAL post-action state, so the words match the deed —
@@ -1945,7 +1968,8 @@ class Engine:
             reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
                 raise LoiTraLoi("lời gửi khách rỗng")
-            reply = _bo_markdown(reply)
+            # Cùng luật hình thức như mọi nhánh (SRS-5.1zzzzzzz108 — bắn thử 209: "Dạ, em rất tiếc…" ở nhánh này lọt vì bỏ qua bước kiểm).
+            reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply))
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured, now)
@@ -2028,6 +2052,7 @@ class Engine:
                 "Con số phí đúng theo VAI NGƯỜI RAO / BỐI CẢNH ở trên (bán: 1% chính chủ, 0.5% môi giới; cho thuê: 0.75 tháng tiền thuê "
                 "= 3/4 của MỘT tháng tiền thuê; chưa rõ vai thì nêu cả hai hoặc hỏi khéo khách là chủ nhà hay môi giới). Sau đó nối lại nội dung căn đang trao đổi.\n"
                 + ((_fee_hint(conv.user_type) + "\n") if _fee_hint(conv.user_type) else "")
+                + ((khoi_bao_phi(conv.user_type, conv.prop.is_rental) + "\n") if khoi_bao_phi(conv.user_type, conv.prop.is_rental) else "")
             )
         elif conv.hoi_ve_luot == "uy_tin":
             system += (
@@ -2126,6 +2151,9 @@ class Engine:
                          + "; tiêu đề tối đa 15 từ, đủ vị trí · diện tích · giá.")
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
+        if _tieu_de_can_ho_co_mt(reply, conv.prop):
+            ly_do.append("Tiêu đề căn hộ có chữ \"MT\" — người mua đọc là mặt tiền; căn hộ không có mặt tiền, viết đủ tên dự án, không "
+                         "viết tắt \"MT\".")
         if _tieu_de_sai_don_vi(reply):
             ly_do.append("Tiêu đề ghi kích thước kèm m² (vd \"5x20m²\") — sai: viết diện tích bằng m² (vd \"100m²\") hoặc kích thước "
                          "không kèm m² (vd \"5x20m\").")
@@ -2340,8 +2368,7 @@ class Engine:
             link = next((m.get("web_url") for m in ut.media if m.get("web_url")), "")
             tail = f" đây ạ: {link}" if link else " em có lưu, để em gửi lại nha."
             return f"Bản vẽ/mặt bằng mẫu {ut.name}{tail} 📐"
-        return (f"Em CHƯA có bản vẽ/mặt bằng {who} ạ 😅. Anh/chị gửi giúp em file bản vẽ, "
-                "hoặc để em xin bên dự án rồi gửi lại nhé! (Em không đụng gì tới rổ hàng đâu ạ.)")
+        return cau_mau.cau("chua_co_ban_ve", can=who)
 
     def _answer_from_docs(self, conv: Conversation, project: Project, text: str) -> str:
         """Answer a factual question STRICTLY from the project's stored source docs — a focused
@@ -2397,13 +2424,7 @@ class Engine:
         if text is not None:  # it's a spreadsheet → bulk import
             conv = self.conversation(user_key)
             n = self.import_csv(user_key, text)
-            reply = (
-                f"Em nhận được bảng tính rồi, đã nhập {n} căn vào rổ hàng của mình ạ! 🎉 "
-                "Anh/chị xem lại giúp em nhé."
-                if n else
-                "Em có nhận bảng tính nhưng chưa đọc ra căn nào — anh/chị kiểm tra lại "
-                "các cột (loại hình, địa chỉ, diện tích, giá...) giúp em nhé."
-            )
+            reply = cau_mau.cau("nhap_bang_tinh", n=n) if n else cau_mau.cau("bang_tinh_trong")
             conv.history.append(Turn("user", f"[Khách gửi bảng tính qua link: {url}]", now))
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
@@ -2451,8 +2472,7 @@ class Engine:
         page = self._html_to_text(data)[:20000]
         conv.history.append(Turn("user", f"[Khách gửi link trang web: {url}]", now))
         if not page:
-            reply = ("Em mở link nhưng chưa đọc được nội dung ạ 😅. Anh/chị gửi link khác, "
-                     "hoặc dán nội dung giúp em nhé.")
+            reply = cau_mau.cau("link_web_trong")
         else:
             system = (
                 "Bạn là trợ lý BĐS của AI Ơi Nhà Đất. Đọc NỘI DUNG TRANG WEB dưới đây và tóm tắt "
@@ -2486,11 +2506,7 @@ class Engine:
              "urls": list(urls), "at": now})
         log.warning("Oversize media send (>%d bytes) escalated to admin for %s: %s",
                     MAX_SEND_BYTES, conv.user_key, urls)
-        reply = (
-            "File to quá ạ (>20MB), xin lỗi em chưa xử lý được 😔. Em đã báo admin rồi ạ — "
-            "anh/chị không cần làm gì thêm đâu. Admin của em sẽ vào chat này đọc file/link của "
-            "mình rồi xử lý sau nhé!"
-        )
+        reply = cau_mau.cau("file_qua_lon")
         conv.history.append(Turn("user", f"[Khách gửi file/link >20MB: {', '.join(urls)}]", now))
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
@@ -2535,11 +2551,9 @@ class Engine:
         if not fetched:
             # Folder links get a specific nudge; everything else gets the friendly fallback.
             if any(is_drive_folder(u) for u in urls):
-                reply = ("Đây là link thư mục Drive ạ. Anh/chị gửi từng ảnh/file "
-                         "(hoặc link từng tấm) giúp em nhé!")
+                reply = cau_mau.cau("link_thu_muc_drive")
             else:
-                reply = ("Em chưa mở được link này ạ. Anh/chị chụp và gửi thẳng "
-                         "giúp em vài tấm nhé!")
+                reply = cau_mau.cau("link_khong_mo_duoc")
             conv.history.append(Turn("user", f"[Khách gửi link không đọc được: {', '.join(urls)}]", now))
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
@@ -2736,7 +2750,7 @@ class Engine:
             for p in parts
         ) if parts else False
         if is_hash:
-            return f"📎 Em đã nhận {count} ảnh của nhà mình rồi nhé! 📸✨"
+            return cau_mau.cau("nhan_anh", n=count)
         return f"📎 Em đã nhận: {names}"
 
     @staticmethod
@@ -3401,14 +3415,17 @@ class Engine:
             # Một dòng mỗi lượt người bán (SRS-5.1zzzzzzz96, đo nhận vùng): chỉ cờ — không ghi tên tỉnh / lời khách.
             gan_nv = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
             log.warning("Vùng: AI=%s trích_khớp=%s trong_danh_sách=%s", bool(nv),
-                        any(_trich_dan_khop(plan.get("ngoai_vung_trich_dan"), c) for c in gan_nv) if nv else "-",
+                        any(_trich_dan_khop(plan.get("ngoai_vung_trich_dan"), c) or _trich_dan_khop(nv, c) for c in gan_nv)
+                        if nv else "-",
                         trong_vung_nhan_tin(nv) if nv else "-")
         if nv and trong_vung_nhan_tin(nv):   # SRS-5.1zzzzzzz96: AI báo "ngoài vùng" một tỉnh nằm TRONG danh sách → bỏ
             log.warning("Bỏ cờ ngoài vùng: tỉnh AI đọc nằm trong vùng nhận tin")
             nv = ""
         if nv and conv.role != "buyer":
             gan = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
-            if any(_trich_dan_khop(plan.get("ngoai_vung_trich_dan"), c) for c in gan):
+            # Bằng chứng: cụm AI trích, HOẶC chính tên tỉnh AI đọc ra nằm trong lời khách (SRS-5.1zzzzzzz107) — tỉnh suy từ tên thành
+            # phố ("Nha Trang" → Khánh Hòa) thì vẫn cần cụm trích.
+            if any(_trich_dan_khop(plan.get("ngoai_vung_trich_dan"), c) or _trich_dan_khop(nv, c) for c in gan):
                 conv.y_luot["ngoai_vung"] = nv
         if plan.get("xac_nhan_xoa") in ("dong_y", "tu_choi") and _trich_dan_khop(plan.get("xac_nhan_trich_dan"), cuoi):
             conv.y_luot["xac_nhan_xoa"] = plan["xac_nhan_xoa"]
@@ -3716,16 +3733,11 @@ class Engine:
         kinds = {r[0] for r in receipts}
         if "confirm_destructive" in kinds:  # ask BEFORE changing anything
             what = next((r[1] for r in receipts if r[0] == "confirm_destructive"), "đổi trạng thái rao")
-            return (f"Anh/chị muốn em **{what}** — đúng không ạ? "
-                    "Nhắn **\"đúng\"** để em làm, hoặc **\"thôi\"** để giữ nguyên nhé. "
-                    "(Em KHÔNG xóa dữ liệu đâu — chỉ ẩn tin, rao lại lúc nào cũng được.)")
+            return cau_mau.cau("xac_nhan_an", viec=what)   # câu mẫu sửa ở CRM (SRS-5.1zzzzzzz110)
         if "clear" in kinds:
-            return ("Em đã NGƯNG RAO toàn bộ rổ hàng ạ — các tin giờ ở trạng thái **không rao** "
-                    "(em vẫn giữ nguyên dữ liệu, anh/chị muốn rao lại căn nào cứ nhắn em). 🙈")
+            return cau_mau.cau("da_an_het")
         if kinds & {"remove", "keep_only"}:
-            n = self._rao_count(conv)
-            return (f"Em đã cập nhật — giờ còn **{n} căn đang rao** ạ. Các căn kia em chuyển sang "
-                    "**không rao** (vẫn giữ dữ liệu, rao lại được bất cứ lúc nào nha). ✅")
+            return cau_mau.cau("da_an_bot", n=self._rao_count(conv))
         return None
 
     def _fan_out_units(self, conv: Conversation, shared: dict[str, str], codes: list[str]) -> list[str]:

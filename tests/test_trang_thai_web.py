@@ -5,7 +5,8 @@ from aioi.prompts import build_fee_followup_system, khoi_trang_thai_web
 from aioi.schema import Property
 from aioi.supabase_store import SupabaseConversationStore
 
-DA_DANG = "Em xin phép đăng tin ạ!"   # câu tester, chủ dự án duyệt bỏ "Dạ" 21/10 (SRS-5.1zzzzzzz103)
+# Câu tester, chủ dự án duyệt bỏ "Dạ" 21/10 (SRS-5.1zzzzzzz103) — dòng LỆNH nói câu đó; nhánh chưa lên web có câu đó trong lời CẤM.
+DA_DANG = 'nguyên văn: "Em xin phép đăng tin ạ!"'
 
 
 def _nha():
