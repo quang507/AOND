@@ -59,9 +59,13 @@ for c in "${CA[@]}"; do
   IFS='|' read -r i tin dung cam <<<"$c"
   chat "thu-dc$i-$RUN" "$tin"
   echo "   ô tin: $(dong "thu-dc$i-$RUN")"
+  # Ô bot đang giữ trong phiên (lệnh "json", không gọi AI) — để biết gợi ý phường theo hẻm có đủ dữ kiện không.
+  jq -n --arg u "thu-dc$i-$RUN" '{external_user_id:$u, text:"json", sender_name:"Khách thử"}' \
+    | vps "curl -sS -m 60 -X POST http://127.0.0.1:8000/chat-reply -H 'Content-Type: application/json' -d @-" \
+    | jq -r '.replies[]?' | sed -n '/```json/,/```/p' | grep -E '"(dia_chi|duong|phuong|quan|lo_gioi_hem)"' | sed 's/^/   phiên: /' || true
   if [ -n "$dung" ]; then kiem "DC$i: bot nhắc đúng phường kho hẻm ($dung)" "$(grep -q "$dung" <<<"$LOI" && echo 1 || echo 0)"; fi
   if [ -n "$cam" ]; then kiem "DC$i: nhà mặt tiền — không lấy phường của hẻm cùng số ($cam)" "$(grep -q "$cam" <<<"$LOI" && echo 0 || echo 1)"; fi
 done
 echo "== nhật ký lõi: địa danh"
-vps "journalctl -u aond-core --since @$BAT_DAU -o cat --no-pager | grep -oE '(phường theo hẻm|đường theo nghĩa|phường theo nghĩa).*' | tail -20" || true
+vps "journalctl -u aond-core --since @$BAT_DAU -o cat --no-pager | grep -oE '(phường theo hẻm|đọc kho hẻm lỗi|đường theo nghĩa|phường theo nghĩa).*' | tail -20" || true
 exit $loi
