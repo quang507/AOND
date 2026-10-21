@@ -7514,6 +7514,11 @@ hỗ trợ nhé!". Cùng lớp: các câu cố định khác trong `followup.py`
 
 Kiểm: `tests/test_xung_ho_khong_lat.py` (`test_tin_nhac_ban_nhap_theo_cau_tester` — chạy thật `_execute_followup`, đỏ trên bản trước).
 
+Kèm (chủ dự án: "gắn trạng thái luôn thành câu mẫu đã sửa luôn nha"): trang `/admin/cau-chuan` có nhãn trạng thái đầu mỗi thẻ —
+**Câu mẫu đã sửa** (câu chuẩn đã lưu khác câu bot), **Bot dùng làm ví dụ**, **N điểm** — và nút lọc "Câu mẫu đã sửa". Các câu tester
+sửa 21/10 (báo phí, lời sau duyệt, 4 dòng tin nhắc bản nháp) đã ghi câu chuẩn; tin nhắc bản nháp là câu cố định trong code nên để
+tắt "Bot dùng làm ví dụ" (chỉ ghi lại để tra).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

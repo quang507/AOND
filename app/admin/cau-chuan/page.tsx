@@ -25,7 +25,7 @@ export default function Page() {
   const [role, setRole] = useState<"loading" | "anon" | "user" | "admin">("loading");
   const [dong, setDong] = useState<Dong[]>([]);
   const [nhap, setNhap] = useState<Record<string, Nhap>>({});
-  const [loc, setLoc] = useState<"chua" | "da" | "tat_ca">("chua");
+  const [loc, setLoc] = useState<"chua" | "da" | "da_sua" | "tat_ca">("chua");
   const [nguon, setNguon] = useState<"" | "that" | "ban_thu">("");
   const [dangLuu, setDangLuu] = useState<string | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
@@ -52,9 +52,12 @@ export default function Page() {
   }, []);
 
   const daCham = (d: Dong) => d.cau_chuan != null || d.diem != null;
+  // "Câu mẫu đã sửa" (chủ dự án 21/10): câu chuẩn đã lưu KHÁC câu bot — người chấm đã viết lại câu, không chỉ chấm điểm.
+  const daSua = (d: Dong) => d.cau_chuan != null && d.cau_chuan.trim() !== d.cau_bot.trim();
   const danhSach = useMemo(() => dong.filter((d) =>
-    (loc === "tat_ca" || (loc === "da" ? daCham(d) : !daCham(d))) && (!nguon || d.nguon === nguon)), [dong, loc, nguon]);
-  const dem = { chua: dong.filter((d) => !daCham(d)).length, da: dong.filter(daCham).length };
+    (loc === "tat_ca" || (loc === "da_sua" ? daSua(d) : loc === "da" ? daCham(d) : !daCham(d))) && (!nguon || d.nguon === nguon)),
+  [dong, loc, nguon]);
+  const dem = { chua: dong.filter((d) => !daCham(d)).length, da: dong.filter(daCham).length, da_sua: dong.filter(daSua).length };
 
   const sua = (id: string, p: Partial<Nhap>) => setNhap((n) => ({ ...n, [id]: { ...n[id], ...p } }));
   const luu = async (d: Dong) => {
@@ -101,6 +104,7 @@ export default function Page() {
         <div className="flex gap-1" role="group" aria-label="Lọc theo trạng thái chấm">
           <button type="button" className={chip(loc === "chua")} onClick={() => setLoc("chua")}>Chưa chấm {dem.chua}</button>
           <button type="button" className={chip(loc === "da")} onClick={() => setLoc("da")}>Đã chấm {dem.da}</button>
+          <button type="button" className={chip(loc === "da_sua")} onClick={() => setLoc("da_sua")}>Câu mẫu đã sửa {dem.da_sua}</button>
           <button type="button" className={chip(loc === "tat_ca")} onClick={() => setLoc("tat_ca")}>Tất cả {dong.length}</button>
         </div>
         <label htmlFor="loc-nguon" className="ml-2 text-xs font-semibold text-mute">Nguồn</label>
@@ -121,7 +125,12 @@ export default function Page() {
           return (
             <li key={d.id} className="rounded-lg border border-line bg-white">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2 text-xs text-mute">
-                <span>{d.nguon === "ban_thu" ? "Bắn thử" : "Khách thật"} · {luc(d.created_at)}</span>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <span>{d.nguon === "ban_thu" ? "Bắn thử" : "Khách thật"} · {luc(d.created_at)}</span>
+                  {daSua(d) && <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[11px] font-bold text-brand">Câu mẫu đã sửa</span>}
+                  {d.dung_lam_mau && (d.cau_chuan != null || d.diem != null) && <span className="rounded bg-navy/10 px-1.5 py-0.5 text-[11px] font-bold text-navy">Bot dùng làm ví dụ</span>}
+                  {d.diem != null && <span className="rounded bg-cream px-1.5 py-0.5 text-[11px] font-bold text-navy tabular-nums">{d.diem} điểm</span>}
+                </span>
                 {d.conversation_id && <Link href={`/admin/tin-nhan?hoi_thoai=${d.conversation_id}`} className="font-semibold text-brand hover:underline">Mở hội thoại</Link>}
               </div>
               <div className="space-y-1.5 bg-cream/30 px-4 py-3">
