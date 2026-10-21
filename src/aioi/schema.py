@@ -262,6 +262,24 @@ LAND_GATED_TYPES: set[str] = {"dat", "dat_tho_cu"}
 # chỗ nào cần lại thì thêm vào đây.
 HOI_SAU_KHI_RA_TIN: set[str] = set()
 
+# 21/10/2026 (SRS-5.1zzzzzzz116; chủ dự án gửi bộ câu môi giới hỏi chủ nhà — pháp lý, giá, dẫn khách xem, chi tiết nhà): hỏi SAU khi tin
+# đã lên web và đã nói chuyện phí, mỗi lượt MỘT cụm, mỗi cụm hỏi MỘT lần (khách lờ thì thôi). Không thuộc `expected_fields` — không
+# tính % đầy đủ, không chặn / không làm chậm bản nháp ("hỏi ít, ra bản nháp sớm"). Ô đã có thì bỏ; ô đã hỏi trước bản nháp (ô cốt lõi
+# của loại) thì bỏ. Thứ tự = thứ tự quan trọng (pháp lý trước — "phần quan trọng nhất").
+CUM_SAU_DANG: list[tuple[str, tuple[str, ...]]] = [
+    ("phap_ly", ("dung_ten_so", "the_chap", "quy_hoach")),
+    ("gia", ("thuong_luong", "ly_do_ban")),
+    ("thue_phi", ("thue_phi", "thanh_toan")),
+    ("xem_nha", ("gio_xem", "chia_khoa")),
+    ("chi_tiet", ("huong", "nam_xay", "noi_that")),
+]
+O_SAU_DANG: frozenset[str] = frozenset(k for _, cum in CUM_SAU_DANG for k in cum) | {"hd_thue_con"}
+
+# Ô RIÊNG của chủ nhà (SRS-5.1zzzzzzz116): không ghi vào `listings.boc_tach` (đọc công khai qua API cho tin đang bán), không vào bản tin
+# rao — lưu bảng `listing_noi_bo` (chỉ admin đọc). Lý do bán / mức gấp cho người mua biết là mất thế thương lượng của chủ; ai đứng tên,
+# ai giữ chìa khoá, giờ xem là chuyện nhà người ta.
+O_NOI_BO: frozenset[str] = frozenset({"dung_ten_so", "ly_do_ban", "gio_xem", "chia_khoa"})
+
 # Thông số cho thuê (áp dụng chung khi là tin cho thuê) — SRD §III.
 RENTAL_FIELDS: list[str] = [
     "thoi_han_hd",   # Thời hạn hợp đồng
@@ -410,7 +428,24 @@ class Property:
     def cau_hoi_sau_ra_tin(self) -> str | None:
         """Ô hỏi SAU khi khách duyệt bản nháp: chỉ còn ô khách đã lờ 2 lần (SRS-5.1zzzzzzz80). Hẻm và hiện trạng từ 20/10 hỏi trước
         bản nháp như bản anh Luận (SRS-5.1zzzzzzz81)."""
-        return next((o for o in self.expected_fields() if o in self.hoan and not self._has(o)), None)
+        # SRS-5.1zzzzzzz116: mỗi ô hỏi lại MỘT lần (`_sau_da_hoi` ghi "hoan:<ô>" lúc hỏi) — trước đây khách không trả lời thì ô còn đó,
+        # lượt nào prompt cũng hỏi lại và chặn luôn các bước sau (xin chấm sao, hỏi thêm sau khi đăng).
+        da_hoi = set((self.fields.get("_sau_da_hoi") or "").split(","))
+        return next((o for o in self.expected_fields() if o in self.hoan and not self._has(o) and f"hoan:{o}" not in da_hoi), None)
+
+    def cum_sau_dang(self, da_hoi: set[str] | frozenset[str] = frozenset()) -> tuple[str, list[str]] | None:
+        """Cụm hỏi kế SAU khi tin lên web (SRS-5.1zzzzzzz116): (mã cụm, các ô còn thiếu) — cụm chưa hỏi lần nào, còn ít nhất một ô
+        chưa có. Tin cho thuê chỉ hỏi dẫn khách xem; chi tiết nhà chỉ cho nhà có đất riêng / toà nhà (căn hộ, đất đã có bộ riêng)."""
+        mong = set(self.expected_fields())
+        for ma, cum in CUM_SAU_DANG:
+            if ma in da_hoi or (self.is_rental and ma != "xem_nha"):
+                continue
+            if ma == "chi_tiet" and self.group is not PropertyGroup.RESIDENTIAL:
+                continue
+            con = [k for k in cum if k not in mong and not self._has(k)]
+            if con:
+                return ma, con
+        return None
 
     def completeness(self) -> float:
         """Fraction of expected fields that are filled, in [0, 1]."""
@@ -512,6 +547,11 @@ class Property:
         return newly
 
 
+# Câu tư vấn khách mua (SRS-5.1zzzzzzz116), theo thứ tự hỏi — sau khu vực / ngân sách / loại (đủ để lọc căn) và mục đích.
+O_TU_VAN_MUA: tuple[str, ...] = ("moi_truong_song", "thanh_vien", "noi_lam_viec", "dien_tich_mong_muon", "thang_may",
+                                 "nguoi_quyet_dinh", "vay_ngan_hang")
+
+
 @dataclass
 class BuyerLead:
     """Hồ sơ nhu cầu của Người Mua / Người Thuê (Buyer Lead)."""
@@ -562,6 +602,16 @@ class BuyerLead:
 
         if not self.muc_dich and not self.fields.get("muc_dich"):
             return "muc_dich"
+
+        # Giai đoạn 2b (SRS-5.1zzzzzzz116; chủ dự án gửi 7 câu môi giới hỏi khách mua): hiểu cách khách sống để chọn căn — mỗi câu hỏi
+        # MỘT lần (`_da_hoi`, engine ghi lúc hỏi), khách lờ thì qua câu kế, không kẹt. Thang máy chỉ hỏi khi tìm nhà đất (căn hộ có sẵn).
+        da_hoi = set((self.fields.get("_da_hoi") or "").split(","))
+        for o in O_TU_VAN_MUA:
+            if o == "thang_may" and loai not in ("nha_pho", "biet_thu", "nha_cap_4"):
+                continue
+            if o in da_hoi or getattr(self, o, None) or self.fields.get(o):
+                continue
+            return o
 
         # Giai đoạn 3: Làm rõ rồi thì hỏi thêm gì? (Closing & Hẹn xem)
         if not self.tien_do_mua and not self.fields.get("tien_do_mua"):

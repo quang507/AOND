@@ -91,9 +91,12 @@ def test_buyer_lead_questioning_sequence():
     assert lead.next_question_field() == "nhan_nha_khi_nao"
     lead.fields["nhan_nha_khi_nao"] = "ở ngay"
 
-    # Then purpose and buying timeline (closing)
+    # Then purpose, the consulting questions (SRS-5.1zzzzzzz116 — asked once each; condo skips elevator), then timeline (closing)
     assert lead.next_question_field() == "muc_dich"
     lead.muc_dich = "để ở"
+    for o in ("moi_truong_song", "thanh_vien", "noi_lam_viec", "dien_tich_mong_muon", "nguoi_quyet_dinh", "vay_ngan_hang"):
+        assert lead.next_question_field() == o
+        lead.fields["_da_hoi"] = ",".join(x for x in ((lead.fields.get("_da_hoi") or "") + "," + o).split(",") if x)
     assert lead.next_question_field() == "tien_do_mua"
     lead.tien_do_mua = "mua trong tháng"
     assert lead.next_question_field() is None

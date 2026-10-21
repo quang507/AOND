@@ -18,6 +18,8 @@ from .schema import (
     IDENTITY_FIELDS,
     RENTAL_FIELDS,
     SECONDARY_FIELDS,
+    O_NOI_BO,
+    O_SAU_DANG,
     Property,
     PropertyGroup,
     BuyerLead,
@@ -44,14 +46,23 @@ FIELD_LABELS: dict[str, str] = {
     # Nhà đất & Đất
     "kich_thuoc": "kích thước (ngang x dài)",
     "chi_tieu_xay_dung": "chỉ tiêu xây dựng",
-    "quy_hoach": "quy hoạch",
+    "quy_hoach": "quy hoạch, lộ giới, tranh chấp",
     "yeu_to_ha_tang": "yếu tố hạ tầng (cột điện, hố ga)",
     "tho_cu": "diện tích đất thổ cư",
     "lo_gioi_duong": "độ rộng / lộ giới của CON ĐƯỜNG trước nhà, đất (m — không phải bề ngang căn)",
     "phap_ly_so_do": "sổ đỏ riêng chính chủ",
     "the_chap": "tình trạng thế chấp ngân hàng",
     "thuong_luong": "khả năng thương lượng, bớt lộc",
-    "ly_do_ban": "lý do cần bán / hoàn cảnh riêng tư chia sẻ",
+    "ly_do_ban": "lý do cần bán / bán gấp hay thong thả (riêng của chủ)",
+    # SRS-5.1zzzzzzz116: hỏi sau khi tin lên web (schema.CUM_SAU_DANG). Ô riêng (schema.O_NOI_BO) không lên web / bản tin.
+    "dung_ten_so": "người đứng tên sổ (chính chủ / vợ chồng / đồng sở hữu) và mọi người đứng tên đồng ý bán chưa (riêng của chủ)",
+    "thue_phi": "thuế phí sang tên bên nào chịu, giá đã gồm thuế phí chưa",
+    "thanh_toan": "cách nhận tiền (một lần / chia đợt) và có cho người mua vay ngân hàng không",
+    "gio_xem": "khung giờ tiện dẫn khách xem nhà (riêng của chủ)",
+    "chia_khoa": "khi dẫn khách xem thì liên hệ ai, ai giữ chìa khoá (riêng của chủ)",
+    "huong": "hướng nhà",
+    "nam_xay": "năm xây / năm sửa lại",
+    "hd_thue_con": "hợp đồng thuê hiện tại còn bao lâu",
     "hinh_anh": "hình ảnh thực tế / sổ đỏ",
     # Chung cư / Căn hộ
     "so_phong_ngu": "số phòng ngủ và WC (chỉ số PHÒNG — số tầng / lầu thuộc ô kết cấu)",
@@ -110,6 +121,13 @@ FIELD_LABELS: dict[str, str] = {
     "tien_do_mua": "thời gian dự kiến chốt mua / xem nhà",
     "vay_ngan_hang": "nhu cầu vay vốn ngân hàng",
     "nhan_nha_khi_nao": "thời gian muốn nhận nhà vào ở",
+    # SRS-5.1zzzzzzz116: 7 câu tư vấn khách mua (schema.O_TU_VAN_MUA)
+    "moi_truong_song": "muốn sống ở khu như thế nào (yên tĩnh, gần chợ / trường / công viên…)",
+    "thanh_vien": "nhà gồm những ai sẽ ở (vợ chồng, con nhỏ, ông bà…)",
+    "noi_lam_viec": "đi làm / con đi học ở khu vực nào",
+    "dien_tich_mong_muon": "cần mấy phòng, diện tích tầm bao nhiêu thì thoải mái",
+    "thang_may": "có cần nhà có thang máy không",
+    "nguoi_quyet_dinh": "ngoài anh/chị còn ai cùng quyết định mua",
 }
 
 # Lời hỏi tự nhiên như môi giới thực tế (tránh đọc tên slug khô cứng)
@@ -124,15 +142,15 @@ NATURAL_QUESTIONS: dict[str, str] = {
     # SRS-5.1zzzzzzz76: bản cũ "…hoặc số tầng/lầu" — khách đã nói số tầng thì model coi ô này xong, tự hỏi chuyện khác (thương lượng).
     "dien_tich_nha": "Hỏi tổng diện tích sàn xây dựng khoảng bao nhiêu m² (số tầng đã biết vẫn phải hỏi m² sàn)",
     "gia": "Hỏi mức giá bán mong muốn thu về",
-    "ket_cau": "Hỏi nhà mình xây mấy lầu / mấy tầng, có mấy phòng ngủ",
+    "ket_cau": "Hỏi nhà mình xây mấy lầu / mấy tầng, có mấy phòng ngủ, mấy WC",
     "lo_gioi_hem": ("Hỏi nhà mình ở mặt tiền đường hay trong hẻm, và đường (hoặc hẻm) trước nhà rộng khoảng mấy mét; hẻm thì "
                     "xe hơi vào tận cửa được không"),
-    "tinh_trang_ban_giao": "Hỏi nhà hiện đang trống giao ngay hay đang cho thuê",
+    "tinh_trang_ban_giao": "Hỏi nhà hiện đang trống giao ngay hay đang cho thuê (đang cho thuê thì hợp đồng còn bao lâu)",
     "phap_ly_hoan_cong": "Hỏi sổ hồng riêng đã hoàn công đầy đủ chưa",
     # Nhà đất & Đất
     "kich_thuoc": "Hỏi bề ngang và chiều dài nhà/đất khoảng bao nhiêu mét",
     "chi_tieu_xay_dung": "Hỏi chỉ tiêu quy hoạch được phép xây mấy tầng",
-    "quy_hoach": "Hỏi tình trạng quy hoạch lộ giới",
+    "quy_hoach": "Hỏi nhà / đất có dính quy hoạch, lộ giới hay tranh chấp gì không",
     "yeu_to_ha_tang": "Hỏi trước nhà có vướng cột điện hay hố ga không",
     "tho_cu": "Hỏi diện tích đất thổ cư công nhận trên sổ là bao nhiêu mét vuông",
     "lo_gioi_duong": "Hỏi con đường trước nhà / đất rộng mấy mét (độ rộng con đường, không phải bề ngang lô), ô tô / xe tải vào tận nơi không",
@@ -140,6 +158,15 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "the_chap": "Hỏi sổ đang cất ở nhà hay đang thế chấp ngân hàng",
     "thuong_luong": "Hỏi giá này có thương lượng bớt lộc cho khách thiện chí không",
     "ly_do_ban": "Hỏi thăm lý do bán hoặc tiến độ cần bán nhanh hay thong thả",
+    "dung_ten_so": "Hỏi sổ đang đứng tên ai (một mình chính chủ, vợ chồng hay nhiều người thừa kế) và mọi người đứng tên đã đồng ý bán "
+                   "chưa — chỉ hỏi quan hệ, KHÔNG xin họ tên",
+    "thue_phi": "Hỏi thuế phí sang tên bên nào chịu (bên bán, bên mua hay chia đôi) — giá đã gồm thuế phí chưa",
+    "thanh_toan": "Hỏi muốn nhận tiền một lần hay chia đợt, có đồng ý để người mua vay ngân hàng không",
+    "gio_xem": "Hỏi khung giờ nào tiện để bên em dẫn khách tới xem nhà",
+    "chia_khoa": "Hỏi lúc dẫn khách xem thì bên em liên hệ ai (chủ nhà hay người nhà) và ai giữ chìa khoá — KHÔNG xin số điện thoại",
+    "huong": "Hỏi nhà hướng gì",
+    "nam_xay": "Hỏi nhà xây năm nào, đã sửa lại lần nào chưa",
+    "hd_thue_con": "Hỏi hợp đồng thuê hiện tại còn bao lâu",
     "hinh_anh": "Mời gửi hình ảnh thực tế hoặc hình sổ để hồ sơ được chấm điểm cao",
     # Chung cư / Căn hộ
     "so_phong_ngu": "Hỏi căn mình thiết kế mấy phòng ngủ và mấy WC",
@@ -180,6 +207,15 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "len_tho_cu": "Hỏi đất có chuyển lên thổ cư được không",
     "nguon_nuoc": "Hỏi nguồn nước tưới / sinh hoạt ở đó lấy từ đâu",
     "muc_dich_su_dung_dat": "Hỏi trên sổ ghi mục đích sử dụng đất là gì (SKC, TMD hay đất khác)",
+    # Khách mua (SRS-5.1zzzzzzz116)
+    "moi_truong_song": "Hỏi anh/chị muốn mình sống ở một khu như thế nào (yên tĩnh, gần chợ, trường, công viên…)",
+    "thanh_vien": "Hỏi nhà mình gồm những ai sẽ ở",
+    "noi_lam_viec": "Hỏi mình đi làm (con đi học) ở khu vực nào để chọn chỗ tiện đi lại",
+    "dien_tich_mong_muon": "Hỏi cần khoảng mấy phòng, diện tích tầm bao nhiêu thì thoải mái (số phòng khách đã nói thì chỉ hỏi diện tích)",
+    "thang_may": ("Dựa vào thành viên gia đình khách đã kể: có ông bà / người lớn tuổi thì gợi ý nhà có thang máy sẽ tiện hơn và hỏi "
+                  "khách thấy sao; không có thì hỏi nhẹ có cần thang máy không. Không nói bên em có mẫu nào nếu danh sách căn không có"),
+    "nguoi_quyet_dinh": "Hỏi ngoài anh/chị còn ai cùng quyết định mua không (để em gửi thông tin cho đủ người xem)",
+    "vay_ngan_hang": "Hỏi mình có cần em tư vấn thêm phần vay ngân hàng không",
 }
 
 # Từ điển tiếng lóng BĐS thực chiến (thừa kế từ nhadat.cc) — giúp AI hiểu đúng từ lóng của người rao
@@ -508,11 +544,14 @@ def build_buyer_chat_system(
     next_field: str | None,
 ) -> str:
     """System prompt dành riêng cho nhánh Người Mua / Người Thuê."""
+    # SRS-5.1zzzzzzz116: bỏ "xin số điện thoại" — người mua không phải để lại số (bất biến §1, CLAUDE.md); gợi ý câu theo môi giới.
     ask_line = (
-        f'Thông tin cần khai thác tiếp theo: "{FIELD_LABELS.get(next_field, next_field)}". '
-        "Hãy lắng nghe, đồng cảm với nhu cầu của khách trước, rồi hỏi đúng 1 câu này một cách tự nhiên, thân tình."
+        f'Thông tin cần khai thác tiếp theo: "{FIELD_LABELS.get(next_field, next_field)}" ({NATURAL_QUESTIONS.get(next_field, "")}). '
+        "Hãy lắng nghe, đồng cảm với nhu cầu của khách trước, rồi hỏi đúng 1 câu này một cách tự nhiên, thân tình. Khách đã kể ý "
+        "này rồi (trong hội thoại) thì không hỏi lại, hỏi tiếp chuyện khác."
         if next_field
-        else "Nhu cầu của khách đã rất rõ ràng. Cảm ơn anh/chị, gợi ý rằng hệ thống đang có quỹ căn phù hợp và hẹn lịch đi xem thực tế hoặc xin số điện thoại để gửi bảng chi tiết qua Zalo."
+        else "Nhu cầu của khách đã rất rõ ràng. Cảm ơn anh/chị, gợi ý căn phù hợp trong danh sách (nếu có) và hẹn lịch đi xem thực tế "
+             "ngay trên Zalo — KHÔNG xin số điện thoại."
     )
     return f"""Bạn là "{assistant_name}", trợ lý tư vấn tìm mua/thuê bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
@@ -567,6 +606,38 @@ def cau_hoi_o(o: str, prop: Property | None = None) -> str:
     return NATURAL_QUESTIONS.get(o, f"hỏi thêm {nhan_o(o, prop)}")
 
 
+def khoi_hoi_sau_dang(keys: list[str], prop: Property | None = None) -> str:
+    """Khối hỏi thêm MỘT cụm sau khi tin đã lên web (SRS-5.1zzzzzzz116) — engine chọn cụm (`Property.cum_sau_dang`), model đặt câu."""
+    if not keys:
+        return ""
+    y = "; ".join(cau_hoi_o(k, prop) for k in keys)
+    return ("\n\n=== HỎI THÊM LƯỢT NÀY (tin đã lên web — để tư vấn khách mua cho sát): ===\n"
+            "Đáp điều khách vừa nói trước (ngắn). Rồi XUỐNG MỘT DÒNG TRỐNG (đoạn riêng) và hỏi GỘP MỘT câu ngắn, tự nhiên như môi giới "
+            f"nhắn Zalo, về các ý sau: {y}. Đây là câu hỏi DUY NHẤT của lượt này. Khách không tiện trả lời / lờ đi thì thôi, KHÔNG hỏi "
+            "lại, KHÔNG nài. Thông tin riêng (người đứng tên, lý do bán, giờ xem, chìa khoá) chỉ để bên em nắm, không đưa lên tin.\n")
+
+
+def khoi_tinh_hinh_ban(so: dict | None, len_web: bool) -> str:
+    """Chủ nhà hỏi đã có khách chưa (SRS-5.1zzzzzzz116): đọc SỐ THẬT hệ thống đếm, không để model đoán ("có nhiều khách hỏi lắm")."""
+    dau = "\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI TÌNH HÌNH BÁN: ===\n"
+    if not len_web:
+        return dau + ("Tin của chủ CHƯA hiển thị trên web nên chưa có khách mua nào thấy. Nói thật như vậy (ngắn) và nói tin lên web "
+                      "thì bên em báo ngay khi có khách hỏi. KHÔNG nói đã có khách.\n")
+    if so is None:
+        return dau + ("Hệ thống CHƯA đọc được số liệu của tin lượt này. Nói em kiểm lại rồi báo chủ sau. KHÔNG nói có / chưa có khách, "
+                      "KHÔNG đoán.\n")
+    return dau + (f"Số liệu THẬT hệ thống đếm cho tin này: {so.get('quan_tam', 0)} khách bấm quan tâm, {so.get('hoi', 0)} câu hỏi từ "
+                  f"khách mua, {so.get('hen_xem', 0)} lịch hẹn xem. Nói ĐÚNG các con số này (số 0 thì nói thật là chưa có, bên em "
+                  "đang đẩy tin tới khách phù hợp). KHÔNG thêm số khác, KHÔNG nói \"nhiều khách\", KHÔNG hứa bao lâu bán được.\n")
+
+
+KHOI_DINH_GIA = (
+    "\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI GIÁ THỊ TRƯỜNG / GIÁ CAO HAY THẤP: ===\n"
+    "Bên em CHƯA có dữ liệu định giá (SRS-5.1zzzzzzz116): KHÔNG nêu con số giá thị trường, KHÔNG nhận xét giá chủ đưa cao / thấp / hợp "
+    "lý, KHÔNG so với căn khác. Nói ngắn: chuyên viên bên em sẽ xem khu vực và báo lại chủ; tin vẫn rao theo giá chủ muốn.\n"
+)
+
+
 def describe_captured(prop: Property) -> str:
     """Render every filled field as 'Nhãn: giá trị' lines for the listing-post prompt."""
     lines: list[str] = []
@@ -582,10 +653,14 @@ def describe_captured(prop: Property) -> str:
         value = prop.fields.get(slug)
         if value:
             lines.append(f"- {nhan_o(slug, prop)}: {value}")
+    rieng: list[str] = []
     for slug, value in prop.fields_khach().items():
         if slug not in seen and value:
             seen.add(slug)
-            lines.append(f"- {nhan_o(slug, prop)}: {value}")
+            (rieng if slug in O_NOI_BO else lines).append(f"- {nhan_o(slug, prop)}: {value}")
+    if rieng:   # SRS-5.1zzzzzzz116: để em biết (khỏi hỏi lại), KHÔNG vào bản tin rao
+        lines.append("THÔNG TIN RIÊNG CỦA CHỦ (chỉ để em biết, KHÔNG BAO GIỜ đưa vào bản tin rao / nói với khách mua):")
+        lines += rieng
     return "\n".join(lines)
 
 
@@ -1370,7 +1445,9 @@ def property_field_props() -> dict[str, Any]:
         + sum(CORE_THEO_LOAI.values(), [])
         + sum((SECONDARY_FIELDS[g] for g in SECONDARY_FIELDS), [])
         + list(RENTAL_FIELDS)
+        + sorted(O_SAU_DANG)
     )
+    all_fields = list(dict.fromkeys(all_fields))
     properties: dict[str, Any] = {
         f: {"type": "string", "description": FIELD_LABELS.get(f, f)}
         for f in all_fields
@@ -1610,7 +1687,9 @@ QUY TẮC:
   lên tin bot hoặc gõ trong tin) là đồng ý.
 - KHÁCH HỎI VỀ GÌ (19/10/2026, đọc theo NGHĨA tin khách vừa nhắn, không theo từ khoá): hoi_ve = "phi" khi khách hỏi phí / hoa
   hồng / có mất tiền không của BÊN MÌNH (KHÔNG phải phí quản lý, thuế, phí sang tên của căn nhà); "uy_tin" khi khách hỏi công
-  ty là ai, có uy tín / lừa đảo không, trụ sở ở đâu; "link_web" khi khách hỏi link tin, xem tin ở đâu, tin trên web thế nào.
+  ty là ai, có uy tín / lừa đảo không, trụ sở ở đâu; "link_web" khi khách hỏi link tin, xem tin ở đâu, tin trên web thế nào;
+  "tinh_hinh_ban" (21/10) khi CHỦ NHÀ hỏi căn của mình đã có ai hỏi / quan tâm / hẹn xem chưa, bán tới đâu rồi; "dinh_gia" khi
+  chủ nhà hỏi giá mình đưa cao hay thấp, giá thị trường khu đó bao nhiêu, nên bán giá nào.
   Không hỏi những điều đó → bỏ trống. Có điền thì hoi_ve_trich_dan = NGUYÊN VĂN cụm câu hỏi trong tin khách.
 - KHÁCH TỰ XƯNG (đọc cả các lượt trước): xung_ho = "em" khi khách tự xưng em ("nhà em", "em gửi"); "anh" / "chi" khi khách
   tự xưng anh / chị; "chu_co_bac" khi khách tự xưng chú / cô / bác / dì. Chữ "em" khách dùng để GỌI bot ("đăng đi em") không
@@ -1772,9 +1851,11 @@ def operations_schema() -> dict[str, Any]:
             },
             "hoi_ve": {
                 "type": "string",
-                "enum": ["phi", "uy_tin", "link_web"],
+                "enum": ["phi", "uy_tin", "link_web", "tinh_hinh_ban", "dinh_gia"],
                 "description": "Khách vừa hỏi về: phi = phí / hoa hồng của bên mình; uy_tin = công ty / uy tín / lừa đảo; "
-                "link_web = link tin / xem tin trên web. Không hỏi những điều đó thì bỏ trống.",
+                "link_web = link tin / xem tin trên web; tinh_hinh_ban = chủ nhà hỏi đã có ai hỏi / quan tâm / xem căn mình chưa, "
+                "bán tới đâu; dinh_gia = chủ nhà hỏi giá mình đưa cao hay thấp, giá thị trường khu đó bao nhiêu. Không hỏi những điều "
+                "đó thì bỏ trống.",
             },
             "hoi_ve_trich_dan": {"type": "string", "description": "Nguyên văn cụm câu hỏi trong tin khách (bắt buộc khi có hoi_ve)."},
             "xung_ho": {
@@ -1848,6 +1929,12 @@ def operations_schema() -> dict[str, Any]:
                     "muc_dich": {"type": "string", "description": "ở, đầu tư lướt, đầu tư cho thuê, kinh doanh"},
                     "tien_do_mua": {"type": "string", "description": "mua ngay trong tháng, chuẩn bị tài chính, tham khảo"},
                     "vay_ngan_hang": {"type": "string", "description": "nhu cầu vay ngân hàng"},
+                    "moi_truong_song": {"type": "string", "description": "khu muốn sống như thế nào (yên tĩnh, gần chợ / trường…)"},
+                    "thanh_vien": {"type": "string", "description": "nhà gồm những ai sẽ ở (vợ chồng, con nhỏ, ông bà…) — không ghi họ tên"},
+                    "noi_lam_viec": {"type": "string", "description": "khu vực đi làm / con đi học"},
+                    "dien_tich_mong_muon": {"type": "string", "description": "số phòng, diện tích mong muốn"},
+                    "thang_may": {"type": "string", "description": "có cần thang máy không"},
+                    "nguoi_quyet_dinh": {"type": "string", "description": "ai cùng quyết định mua (vợ / chồng / bố mẹ…) — không ghi họ tên"},
                 },
                 "description": "Dữ liệu nhu cầu người mua/thuê khi khách có ý định mua hoặc thuê.",
             },

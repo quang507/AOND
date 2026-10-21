@@ -61,6 +61,9 @@ from .prompts import (
     build_fee_followup_system,
     _fee_hint,
     khoi_bao_phi,
+    khoi_hoi_sau_dang,
+    khoi_tinh_hinh_ban,
+    KHOI_DINH_GIA,
     khoi_trang_thai_web,
     TAI_LIEU_CHUNG_SYSTEM,
     tai_lieu_chung_schema,
@@ -92,7 +95,7 @@ from .prompts import (
 )
 from .imaging import downscale_image
 from .revenue import SellerRole
-from .schema import Property, BuyerLead, PropertyGroup
+from .schema import O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .mua import khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_viec_vua_ghi, lenh_tra_loi
 from .kho_anh import la_uuid
@@ -788,6 +791,16 @@ def _do(conv: "Conversation", khau: str):
 
 def _so_trong(x: str | None) -> set[str]:
     return {n.replace(",", ".") for n in re.findall(r"\d+(?:[.,]\d+)?", re.sub(r"(?i)m\s*[2²]", "m", str(x or "")))}
+
+
+def _lo_thong_tin_rieng(reply: str, prop: Property) -> list[str]:
+    """Ô riêng của chủ (schema.O_NOI_BO — lý do bán, người đứng tên, giờ xem, chìa khoá) mà giá trị khách nói nằm NGUYÊN VĂN trong bản
+    tin 📋 (SRS-5.1zzzzzzz116). So chuỗi giá trị đã ghi, không đoán ý; giá trị quá ngắn (< 6 ký tự) bỏ qua cho khỏi trùng tình cờ."""
+    if "📋" not in reply:
+        return []
+    thap = reply.lower()
+    return [k for k in sorted(O_NOI_BO) if len((prop.fields.get(k) or "").strip()) >= 6
+            and prop.fields[k].strip().lower() in thap]
 
 
 def _dong_tieu_de(reply: str) -> str:
@@ -1933,6 +1946,9 @@ class Engine:
         if conv.role == "buyer" and conv.buyer_lead is not None:
             customer_pronoun = _detect_customer_pronoun(conv, text)
             next_field = conv.buyer_lead.next_question_field()
+            if next_field in O_TU_VAN_MUA:   # SRS-5.1zzzzzzz116: câu tư vấn hỏi một lần — khách lờ thì lượt sau qua câu kế
+                da = [x for x in (conv.buyer_lead.fields.get("_da_hoi") or "").split(",") if x]
+                conv.buyer_lead.fields["_da_hoi"] = ",".join(sorted(set(da) | {next_field}))
             system = build_buyer_chat_system(conv.assistant.name, conv.buyer_lead, next_field)
             viec, can = self._viec_mua(conv, text)
             if getattr(self._convstore, "can_phu_hop", None) is not None:
@@ -2020,11 +2036,25 @@ class Engine:
             len_web = bool(web_tin and web_tin.get("len_web"))
             if conv.duyet_luot == "dong_y" and len_web:
                 conv.prop.fields["_phi_da_hoi"] = "1"   # lượt duyệt hỏi phí (hoi_phi) — lượt sau là lúc xin chấm sao
-            # Xin chấm sao (SRS-5.1zzzzzzz104, chủ dự án 21/10): tin đã lên web, đã hỏi phí ở lượt duyệt, lượt này khách không hỏi gì
-            # mới, không đổi gì trên tin, không còn ô hỏi sau bản nháp → hết việc; mỗi khách một lần (kho quyết).
-            xin_sao = (len_web and conv.prop.fields.get("_phi_da_hoi") == "1" and conv.duyet_luot is None
-                       and conv.hoi_ve_luot is None and not captured and conv.prop.cau_hoi_sau_ra_tin() is None
-                       and self._nen_xin_sao(conv))
+            # Hết việc của tin (tin đã lên web, đã hỏi phí ở lượt duyệt, lượt này khách không hỏi gì mới, không sửa tin — chỉ trả lời cụm
+            # vừa hỏi, không còn ô để sau bản nháp).
+            da_hoi = {x for x in (conv.prop.fields.get("_sau_da_hoi") or "").split(",") if x}
+            o_hoan = conv.prop.cau_hoi_sau_ra_tin()   # ô khách lờ 2 lần trước bản nháp: prompt (hoi_sau) hỏi lại lượt này, một lần
+            if o_hoan and len_web and conv.prop.fields.get("_phi_da_hoi") == "1" and conv.duyet_luot is None:
+                da_hoi.add(f"hoan:{o_hoan}")
+                conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi))
+            sau_dang = (len_web and conv.prop.fields.get("_phi_da_hoi") == "1" and conv.duyet_luot is None
+                        and conv.hoi_ve_luot is None and set(captured) <= O_SAU_DANG and not o_hoan)
+            # Xin chấm sao (SRS-5.1zzzzzzz104, chủ dự án 21/10): lượt đầu hết việc; mỗi khách một lần (kho quyết).
+            xin_sao = sau_dang and self._nen_xin_sao(conv)
+            # Hỏi thêm sau khi tin lên web (SRS-5.1zzzzzzz116): từ lượt SAU lượt xin sao (giữ đúng lúc xin sao chủ dự án chốt), lượt khách
+            # chấm sao thì chỉ cảm ơn; mỗi lượt MỘT cụm, mỗi cụm MỘT lần (`_sau_da_hoi`, lưu cùng tin).
+            if sau_dang and not xin_sao and not conv.y_luot.get("danh_gia"):
+                cum_sau = conv.prop.cum_sau_dang(da_hoi)
+                if cum_sau:
+                    conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi | {cum_sau[0]}))
+                    system += khoi_hoi_sau_dang(cum_sau[1], conv.prop)
+                    log.warning("Hỏi sau đăng: cụm %s", cum_sau[0])
 
         # Tra địa danh (SRS-5.1zzzzzzz60/61): hỏi xác nhận tên đường kho gợi ý ở MỌI nhánh (cả lượt soạn bản nháp), kể phường khi hỏi phường.
         with _do(conv, "dia_danh"):
@@ -2076,6 +2106,11 @@ class Engine:
                 "Khách vừa hỏi xem link bài đăng, xem tin ở đâu hoặc tin trên web đang hiển thị như thế nào. Hãy TRẢ LỜI RÕ RÀNG, CHUYÊN NGHIỆP:\n"
                 + khoi_trang_thai_web(web, conv.prop.is_rental)[1] + "\n"
             )
+        elif conv.hoi_ve_luot == "tinh_hinh_ban":
+            web = self._trang_thai_web(conv) if is_listing_post else {"len_web": False}
+            system += khoi_tinh_hinh_ban(self._tinh_hinh_tin(conv), bool(web and web.get("len_web")))
+        elif conv.hoi_ve_luot == "dinh_gia":
+            system += KHOI_DINH_GIA
         system += khoi_can_nguoi(conv)
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
         system += self._project_memory_block(project)  # remember the price list + phân lô; reason over it
@@ -2104,6 +2139,18 @@ class Engine:
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
         return self._build_result(conv, reply, captured, now)
+
+    def _tinh_hinh_tin(self, conv: Conversation) -> dict | None:
+        """Số khách quan tâm / câu hỏi / lịch xem THẬT của tin đang nói (SRS-5.1zzzzzzz116). Kho không có / đọc lỗi → None (bot nói
+        kiểm lại rồi báo, không đoán)."""
+        doc = getattr(self._convstore, "tinh_hinh_tin", None)
+        if doc is None:
+            return None
+        try:
+            return doc(conv)
+        except Exception as e:  # noqa: BLE001
+            log.warning("tinh_hinh_tin lỗi: %s", e)
+            return None
 
     def _khoi_cau_chuan(self, conv: "Conversation | None" = None) -> str:
         """Câu chuẩn người chấm sửa ở CRM làm ví dụ (SRS-5.1zzzzzzz88). Kho không có bảng / đọc lỗi → "" (prompt như cũ)."""
@@ -2159,6 +2206,10 @@ class Engine:
         if thieu_td:
             ly_do.append("Bản tin vừa viết có TIÊU ĐỀ thiếu " + ", ".join(thieu_td)
                          + "; tiêu đề tối đa 15 từ, đủ vị trí · diện tích · giá.")
+        lo_rieng = _lo_thong_tin_rieng(reply, conv.prop)
+        if lo_rieng:
+            ly_do.append("Bản tin rao vừa viết có thông tin RIÊNG của chủ (" + ", ".join(lo_rieng) + ") — bản tin lên web cho người mua "
+                         "đọc, bỏ hẳn các ý đó khỏi bản tin.")
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
         if _tieu_de_can_ho_co_mt(reply, conv.prop):
@@ -3374,7 +3425,7 @@ class Engine:
         # một trong sáu lượt khách gần nhất (xưng hô giữ qua các lượt).
         conv.hoi_ve_luot = None
         h = plan.get("hoi_ve")
-        if h in ("phi", "uy_tin", "link_web") and _trich_dan_khop(plan.get("hoi_ve_trich_dan"), cuoi):
+        if h in ("phi", "uy_tin", "link_web", "tinh_hinh_ban", "dinh_gia") and _trich_dan_khop(plan.get("hoi_ve_trich_dan"), cuoi):
             conv.hoi_ve_luot = h
         x = plan.get("xung_ho")
         if x in ("em", "anh", "chi", "chu_co_bac"):
@@ -3459,6 +3510,8 @@ class Engine:
         nhu_cau = {k: v for k, v in vars(lead).items()
                    if k in ("loai_giao_dich", "loai_bds", "ngan_sach", "khu_vuc", "so_phong_ngu", "yeu_cau_xe_hoi", "huong",
                             "muc_dich", "tien_do_mua", "vay_ngan_hang") and v} if lead else {}
+        if lead:   # 7 câu tư vấn (SRS-5.1zzzzzzz116) nằm ở lead.fields — không phải thuộc tính riêng
+            nhu_cau.update({k: lead.fields[k] for k in O_TU_VAN_MUA if lead.fields.get(k) and k not in nhu_cau})
         bid = kho.khach_mua(conv.user_key, None, nhu_cau or None)
         mua = conv.y_luot.get("mua") or {}
         ma = [m for m in (mua.get("ma_can") or []) if isinstance(m, str) and m.strip()]

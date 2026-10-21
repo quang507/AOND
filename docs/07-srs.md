@@ -7861,6 +7861,47 @@ sau bước 1 vẫn 4/4 hỏi trống (lý do ở mục 4); sau bước 2 (run 3
 không chị?", DC2 An Hội Tây, DC3 Chợ Quán, DC5 Tân Mỹ, DC4 mặt tiền hỏi phường trống (không lấy Hòa Hưng); journal có 4 dòng
 "phường theo hẻm: 1 phường". Cùng lượt sửa ô `ban-thu-dc` lọt vào bước `dung-lai-db.mjs` của workflow (thiếu trong danh sách loại trừ).
 
+### SRS-5.1zzzzzzz116 · Bộ câu môi giới: hỏi thêm sau khi đăng, ô riêng của chủ, số khách thật, 7 câu khách mua (21/10/2026)
+
+Chủ dự án 21/10 gửi bộ câu môi giới hỏi chủ nhà (thông tin căn, pháp lý "phần quan trọng nhất", giá và mong muốn, dẫn khách xem) và 7 câu
+hỏi khách mua; "tạo plan để làm đi, 4 5 6 từ từ, đừng để làm cái này hư cái kia"; "không phải thêm từ khóa nha". Mục 4–6 (thương lượng
+phí, hợp đồng môi giới / độc quyền, chia hoa hồng) và cụm "điều kiện hợp tác" treo ở OPEN-63.
+
+1. **Lớp**: bot chỉ hỏi những ô có trong bộ ô trước bản nháp; mọi ý khác chỉ có nhãn (`SECONDARY_FIELDS` khai mà không đường nào hỏi,
+   `ly_do_ban` thậm chí không có trong lược đồ AI ghi). Người bán hỏi lại ("có ai hỏi mua chưa", "giá này cao không") thì model không có
+   số liệu nên tự nói. Và ô tin nào cũng ghi vào `listings.boc_tach` — cột đó **đọc công khai qua API** với tin đang bán (policy
+   `anon_read_listings`, trang tin đọc nó): lý do bán gấp lọt tới người mua là chủ mất thế thương lượng.
+2. **Sửa — bán** (`src/aioi/schema.py`, `engine.py`, `prompts.py`):
+   - `CUM_SAU_DANG`: 5 cụm hỏi SAU khi tin lên web và đã hỏi phí — pháp lý (người đứng tên / đồng sở hữu đồng ý bán, thế chấp, quy hoạch
+     / tranh chấp) → giá (thương lượng, lý do bán / mức gấp) → thuế phí + cách nhận tiền / cho vay → giờ dẫn khách xem + ai giữ chìa khoá
+     → hướng, năm xây, nội thất. Mỗi lượt MỘT cụm, mỗi cụm MỘT lần (`_sau_da_hoi`, lưu cùng tin), ô đã có / ô cốt lõi đã hỏi trước bản
+     nháp thì bỏ; cho thuê chỉ hỏi dẫn khách xem; căn hộ / đất không có cụm chi tiết nhà. Không thuộc `expected_fields` → không tính % đầy
+     đủ, không chặn, không làm chậm bản nháp. Lượt khách sửa tin, hỏi điều khác, hay chấm sao thì không chen câu hỏi.
+   - Thứ tự với chấm sao giữ đúng quyết định SRS-5.1zzzzzzz104 (xin sao ngay lượt hết việc sau khi nói phí); các cụm chạy từ lượt sau.
+   - Cùng lượt sửa một lỗi có sẵn: ô khách lờ 2 lần để sau bản nháp (`cau_hoi_sau_ra_tin`) bị prompt hỏi lại MỌI lượt cho tới khi khách
+     trả lời — chặn luôn xin sao. Nay hỏi lại đúng một lần (`hoan:<ô>` trong `_sau_da_hoi`).
+   - Ô riêng `O_NOI_BO` (người đứng tên, lý do bán, giờ xem, chìa khoá): `supabase_store` tách khỏi `boc_tach`, ghi bảng `listing_noi_bo`
+     (migration `20261021g`, RLS chỉ admin, SĐT che lúc ghi), nạp lại khi đọc tin; `describe_captured` đưa chúng vào khối "THÔNG TIN
+     RIÊNG… KHÔNG đưa vào bản tin"; `_soat_hinh_thuc` gọi lại model khi bản tin 📋 chứa nguyên văn một giá trị riêng. CRM: khung "Thông tin
+     riêng của chủ" trong màn Sửa tin. Ô công khai mới (thuế phí, thanh toán, hợp đồng thuê) thêm vào danh sách trắng web.
+   - "Có ai hỏi mua chưa" / "giá cao không": AI đọc theo nghĩa (`hoi_ve` = `tinh_hinh_ban` / `dinh_gia`, code kiểm trích dẫn — không từ
+     khoá). `tinh_hinh_ban` → khối số THẬT (`tinh_hinh_tin`: interests, info_requests, viewings chưa huỷ của tin đang nói; tin chưa lên
+     web thì nói chưa có khách thấy; đọc lỗi thì nói kiểm lại, không đoán). `dinh_gia` → không nêu con số, không nhận xét cao / thấp.
+3. **Sửa — mua** (`schema.O_TU_VAN_MUA`, `BuyerLead.next_question_field`): sau khu vực / ngân sách / loại / mục đích hỏi khu muốn sống →
+   nhà gồm những ai → nơi làm việc → mấy phòng / diện tích → thang máy (chỉ nhà đất; có ông bà thì gợi ý thang máy, không nói "bên em có
+   mẫu" khi danh sách căn không có) → ai cùng quyết định → vay ngân hàng (trước đây chỉ hỏi khách tìm dự án) → tiến độ mua. Mỗi câu một
+   lần (`_da_hoi`), khách lờ thì qua câu kế. Nhu cầu mới xuống `buyers.preferences`. Lời chốt bỏ "xin số điện thoại" (người mua không phải
+   để lại số — bất biến §1).
+4. **Cùng lớp còn lại**: `SECONDARY_FIELDS` còn các ô chưa đường nào hỏi (căn góc, phí gửi xe, PCCC, chiết khấu, ranh mốc…) — AI ghi được
+   khi khách tự nói, bot không hỏi. Các ô nhu cầu khách mua cũ (`tien_do_mua`…) vẫn hỏi lại tới khi khách trả lời (chưa áp "một lần").
+   Nút "Xoá hàng loạt" đã chép / khôi phục `listing_noi_bo`; `admin_xoa_khach` (xoá một khách) xoá theo tin qua `on delete cascade`.
+
+Kiểm: `tests/test_hoi_sau_dang.py` (8 ca: ô mới không vào % bản nháp ở 6 loại; thứ tự cụm, bỏ ô đã có; theo loại; AI ghi được ô mới; ô
+riêng không vào bản tin; kho ghi bảng riêng và che SĐT; 5 cụm mỗi cụm đúng một lần sau lượt xin sao; khách sửa tin không chen câu hỏi),
+`tests/test_hoi_tinh_hinh_ban.py` (5 ca), `tests/test_tu_van_mua.py` (5 ca), `tests/test_branching.py` cập nhật thứ tự hỏi khách mua — ba
+file mới đỏ khi gỡ phần sửa ở `src/`. Bắn thử production: `apply-migration` ô `ban-thu-sau` (SD1 người bán, SM1 người mua; kiểm ô riêng
+không nằm trong `boc_tach`, có trong `listing_noi_bo`, mô tả web không có lý do bán, không tự định giá, không xin số).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
