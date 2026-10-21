@@ -870,6 +870,17 @@ def _mo_dau_ghi_nhan(reply: str) -> bool:
     return re.match(r"(?i)\s*em\s+(?:đã\s+)?(?:ghi\s+nhận|ghi\s+rồi|ghi\s+lại|nhận\s+thông\s+tin)", reply or "") is not None
 
 
+def _ba_chu_dau(reply: str) -> tuple[str, ...]:
+    return tuple(re.findall(r"\w+", (reply or "").lower())[:3])
+
+
+def _cung_mo_dau(reply: str, truoc: str) -> bool:
+    """Hai lượt bot liền nhau cùng mở bằng ba chữ đầu (vd "Em ghi nhận…" / "Em ghi nhận…") — kiểm HÌNH THỨC lời của chính bot
+    (SRS-5.1zzzzzzz118; Lê Quang 21/10: "flexible vào")."""
+    a = _ba_chu_dau(reply)
+    return len(a) == 3 and a == _ba_chu_dau(truoc)
+
+
 def _bo_markdown(reply: str) -> str:
     """Bỏ in đậm markdown (Zalo không hiển thị). Không sửa lời bot theo từ khoá ("Dạ", "anh/chị") — SRS-5.1zzzzzzz55. Ghi chú nội bộ
     của model không còn lọt vào lời bot: lượt trả lời đi qua công cụ hai ô (`ClaudeProvider.reply`, SRS-5.1zzzzzzz76)."""
@@ -2219,7 +2230,7 @@ class Engine:
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
         truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant"), "")
-        if _mo_dau_ghi_nhan(reply) and _mo_dau_ghi_nhan(truoc) and "📋" not in reply:
+        if (_cung_mo_dau(reply, truoc) or (_mo_dau_ghi_nhan(reply) and _mo_dau_ghi_nhan(truoc))) and "📋" not in reply:
             ly_do.append("Lượt trước em đã mở đầu bằng câu ghi nhận (\"Em ghi nhận…\"); lượt này đổi cách đáp — cảm ơn ngắn, nối thẳng vào câu "
                          "hỏi kế hoặc nói một chi tiết có ích — không mở lại bằng \"Em ghi nhận / Em ghi rồi\".")
         if _tieu_de_can_ho_co_mt(reply, conv.prop):

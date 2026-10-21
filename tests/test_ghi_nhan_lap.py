@@ -33,3 +33,15 @@ def test_mot_luot_ghi_nhan_thi_khong_goi_lai(monkeypatch):
     e.handle("gn2", "anh bán nhà phố")
     e.handle("gn2", "đường số 59")
     assert len(m.systems) == 2
+
+
+def test_cung_ba_chu_dau_thi_goi_lai(monkeypatch):
+    from aioi.engine import _cung_mo_dau
+    assert _cung_mo_dau("Em cảm ơn chị. Nhà mấy lầu?", "Em cảm ơn chị nhiều ạ.")
+    assert not _cung_mo_dau("Em cảm ơn chị.", "Em ghi rồi chị.")
+    e, m = _lam(monkeypatch, ["Em cảm ơn anh. Nhà mình ở đường nào vậy anh?",
+                              "Em cảm ơn anh. Nhà có sổ hồng riêng chưa anh?",
+                              "Vậy nhà mình đã có sổ hồng riêng chưa anh?"])
+    e.handle("gn3", "anh bán nhà phố")
+    e.handle("gn3", "đường số 59")
+    assert "VIẾT LẠI LƯỢT NÀY" in m.systems[-1]

@@ -7951,7 +7951,13 @@ Lê Quang 21/10 gửi ảnh chat lúc 17:57 (lượt chạy dự phòng Gemini, 
 3. **Cùng lớp còn lại**: các khuôn mở đầu khác ("Em cảm ơn…") chưa soát lặp; chưa đo được bao nhiêu lượt Haiku lặp kiểu này (ảnh là
    lượt Gemini).
 
-Kiểm: `tests/test_ghi_nhan_lap.py` (3 ca: nhận diện, hai lượt liền → gọi lại, một lượt → không) — đỏ khi gỡ bản sửa.
+Cùng ngày, Lê Quang: "oke hoặc cái gì đó flexible vào" — câu mẫu ghi nhận trong prompt (bốn chỗ cùng gieo "Em ghi rồi…") đổi thành
+nhiều kiểu ("Em ghi rồi ạ.", "Em cảm ơn chị.", "Em lưu vào tin rồi nha anh.", "Em nắm rồi chị.", "Em thêm vào tin rồi anh."), vẫn mở bằng
+việc em làm (luật không từ đệm, SRS-5.1zzzzzzz80/84/102) và không "Dạ" (quyết định chủ dự án) — "Oke…" / "Dạ oke…" mở đầu cần chủ dự
+án gỡ hai luật đó trước, chưa làm. Bước soát mở rộng: hai lượt liền cùng BA CHỮ ĐẦU (`_cung_mo_dau`) cũng gọi lại model.
+
+Kiểm: `tests/test_ghi_nhan_lap.py` (4 ca: nhận diện, hai lượt liền ghi nhận → gọi lại, một lượt → không, cùng ba chữ đầu → gọi lại) — đỏ
+khi gỡ bản sửa.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

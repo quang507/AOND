@@ -84,7 +84,7 @@ def test_luot_hoi_them_sau_luot_xin_sao_moi_cum_mot_lan(monkeypatch):
     truoc = len(seen)
     for _ in range(9):
         eng.handle("u-sao", "ừ em")
-    hoi = [x for x in seen[truoc:] if "HỎI THÊM LƯỢT NÀY" in x]
+    hoi = [x for x in seen[truoc:] if "HỎI THÊM LƯỢT NÀY" in x and "VIẾT LẠI LƯỢT NÀY" not in x]
     da = conv.prop.fields["_sau_da_hoi"].split(",")
     assert {m for m, _ in CUM_SAU_DANG} <= set(da) and len(hoi) == len(CUM_SAU_DANG)   # đủ 5 cụm, mỗi cụm đúng một lần
     assert "HỎI THÊM LƯỢT NÀY" not in seen[-1]                     # hết cụm thì thôi
