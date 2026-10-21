@@ -7370,7 +7370,8 @@ Bắn thử `ban-thu-kb.sh` lượt 188 trên bản SRS-5.1zzzzzzz93: script bá
    duyệt trỏ đúng dòng TRẠNG THÁI. Thêm một dòng journal mỗi lượt chờ duyệt (AI trả gì, cụm trích có khớp, có lời bảo đăng, kết quả;
    không ghi lời khách) để lần sau biết hụt ở AI hay ở code. Riêng lượt KB5, lượt lập thao tác mất 5,9 s (có thể đã gọi lại) — không
    có dòng log nên **không chắc** cùng nguyên nhân; dòng log mới sẽ cho biết.
-2. *KB5*: cột `alley_width_m` = 20 trên một căn mặt tiền. Lượt 188: AI ghi "MT 20 mét" (độ rộng đường) vào cả ô lộ giới hẻm.
+2. *KB5*: cột `alley_width_m` = 20 trên một căn mặt tiền (**đọc sai — cột này là độ rộng đường vào, 20 m là ĐÚNG; bất biến
+   dưới đây gỡ ở SRS-5.1zzzzzzz95**). Lượt 188: AI ghi "MT 20 mét" (độ rộng đường) vào cả ô lộ giới hẻm.
    **Sửa**: một bất biến ở chỗ đọc thông số (`_thong_so`): `access_type = mat_tien` thì không ghi độ rộng hẻm. Lượt 191 vẫn ra 20,
    dù ô hẻm trống. Gốc thật: trigger `listings_boc_thong_so` đọc lại MÔ TẢ tin (bản nháp khách duyệt, "lộ giới 20m") bằng regex và
    điền cột lõi để trống. **Lớp**: regex DB đọc lại chữ AI đã viết, đè quyết định của tầng AI. Quy ước đã có từ 20261002a: tin mang
@@ -7386,6 +7387,28 @@ Bắn thử `ban-thu-kb.sh` lượt 188 trên bản SRS-5.1zzzzzzz93: script bá
 
 Kiểm: `tests/test_duyet_mo_ta_truong.py`, đỏ 2/3 ca trên bản trước. Ca còn lại canh luật duyệt theo trạng thái trong code, vốn
 đã đúng.
+
+### SRS-5.1zzzzzzz95 · Bề ngang căn và độ rộng đường trước nhà: nhãn, câu hỏi, chữ trên web; gỡ bất biến sai của SRS-94 (21/10/2026)
+
+Chủ dự án hỏi: "số mét mặt tiền và số mét độ rộng đường trước mặt giờ làm rõ chưa, hoặc cách hỏi cho rõ". Soát ba ô hay lẫn:
+`mat_tien` (bề ngang CĂN), `lo_gioi_duong` (độ rộng CON ĐƯỜNG), `lo_gioi_hem` (mặt tiền hay hẻm).
+
+1. *Nhãn và câu hỏi nói chưa rõ cái nào của căn, cái nào của đường.* Nhãn `mat_tien` là "bề ngang mặt tiền (m)", câu hỏi là "bề ngang
+   mặt tiền kinh doanh mấy mét" (khách dễ trả lời đường rộng bao nhiêu). Câu `lo_gioi_hem` hỏi mặt tiền hay hẻm nhưng không hỏi độ rộng.
+   Mô tả `mat_tien` của bộ đọc brochure ghi "Kích thước mặt tiền / chiều sâu". **Lớp**: một chữ "mặt tiền" mang hai nghĩa (vị trí giáp
+   đường / bề ngang căn), nhãn ô dùng nguyên chữ đó. **Sửa**: nhãn ô ghi rõ "của CĂN … không phải độ rộng con đường" / "của CON ĐƯỜNG …
+   không phải bề ngang căn". Nhãn tới cả mô tả ô cho lượt AI bóc. Câu `lo_gioi_hem` hỏi luôn đường / hẻm rộng mấy mét. Câu `mat_tien`
+   nói rõ là ngang của căn. Chữ gửi bộ đọc thông số của DB ghim ở `NHAN_TRUNG_TINH` ("lộ giới đường"), không trôi theo nhãn. Đã kiểm
+   `boc_thong_so` trên DB với "mặt tiền đường 20m", "hẻm 3m xe hơi vào được", "ngang: 4m; lộ giới đường: 20m" — đọc đúng loại đường
+   vào, độ rộng và bề ngang.
+2. *Web in "Đường vào: Mặt tiền · rộng 20 m"* — đọc như bề ngang căn 20 m. **Sửa**: "Mặt tiền đường · đường rộng 20 m" / "Hẻm xe hơi ·
+   hẻm rộng 3 m" (`lib/format.ts`, `app/nha-dat/[code]/page.tsx`).
+3. *Gỡ bất biến sai của SRS-5.1zzzzzzz94 mục 2.* Cột `alley_width_m` là độ rộng ĐƯỜNG VÀO: hẻm, hoặc con đường với nhà mặt tiền (web in
+   dưới dòng "Đường vào"). Bản 94 bỏ cột này với nhà mặt tiền là đọc sai nghĩa cột, nên KB5 mất "đường rộng 20 m". Dấu `_thong_so_ai`
+   của bản 94 giữ nguyên, vì regex DB vẫn không được đọc lại chữ AI viết. Ca kiểm KB5 đổi thành: `alley_width_m` = 20.
+
+Kiểm: `tests/test_duyet_mo_ta_truong.py` (độ rộng đường giữ với nhà mặt tiền; chữ gửi DB không đổi theo nhãn; nhãn / câu hỏi nói rõ),
+đỏ 2 ca trên bản trước. `tests/test_conversational_and_deed.py` theo nhãn mới.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

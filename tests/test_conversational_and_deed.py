@@ -148,7 +148,7 @@ def test_build_media_read_instruction_injects_known_fields_and_forbids_reask():
     assert "4x15.5m" in inst
     assert "1 trệt 4 lầu" in inst
     assert "TUYỆT ĐỐI KHÔNG ĐƯỢC HỎI LẠI" in inst
-    assert "vị trí mặt tiền hay hẻm" in inst
+    assert "mặt tiền đường hay trong hẻm" in inst   # nhãn ô lo_gioi_hem (SRS-5.1zzzzzzz95)
 
 
 def test_friendly_media_receipt_hash_cleaning():

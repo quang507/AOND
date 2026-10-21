@@ -232,7 +232,8 @@ export default async function Page({
   push("Tầng (chung cư)", listing.floor != null && listing.property_type === "chung_cu" ? `Tầng ${listing.floor}` : null);
   push("Phòng", [listing.bedrooms && oTheoLoai(listing.property_type).phongNgu ? `${listing.bedrooms} PN` : null, listing.bathrooms ? `${listing.bathrooms} WC` : null].filter(Boolean).join(" · ") || null);
   push("Đường vào", listing.access_type
-    ? `${ACCESS_LABEL[listing.access_type] ?? listing.access_type}${listing.alley_width_m ? ` · rộng ${n(listing.alley_width_m)} m` : ""}${listing.distance_to_street_m ? ` · cách mặt tiền ${n(listing.distance_to_street_m)} m` : ""}`
+    // SRS-5.1zzzzzzz95: "Mặt tiền · rộng 20 m" đọc thành bề ngang căn 20 m — nói rõ là ĐƯỜNG (hoặc HẺM) rộng bao nhiêu.
+    ? `${ACCESS_LABEL[listing.access_type] ?? listing.access_type}${listing.alley_width_m ? ` · ${listing.access_type === "mat_tien" ? "đường" : "hẻm"} rộng ${n(listing.alley_width_m)} m` : ""}${listing.distance_to_street_m ? ` · cách mặt tiền ${n(listing.distance_to_street_m)} m` : ""}`
     : null);
   push("Pháp lý", listing.legal_status
     ? `${LEGAL_LABEL[listing.legal_status] ?? listing.legal_status}${listing.has_completion === true ? " · đã hoàn công" : listing.has_completion === false ? " · chưa hoàn công" : ""}`

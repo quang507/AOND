@@ -75,7 +75,8 @@ _O_KHONG_PHAI_THONG_SO = {"dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "d
 # "giá chỉ áp dụng trong tháng 10" lên web thành "thương lượng"; "vị trí mặt tiền hay hẻm: hẻm 3m" → mặt tiền; "căn thường hay căn
 # góc: căn thường" → căn góc; "thang máy di chuyển: không có" → có thang máy; "bề ngang mặt tiền: 4m" → mặt tiền. Các ô đó gửi giá trị
 # trơn (ô bề ngang kèm chữ "ngang" để còn đọc ra số đo); phí gửi xe / yêu cầu xe hơi của người mua không phải thông số căn.
-NHAN_TRUNG_TINH = {"lo_gioi_hem": "", "mat_tien": "ngang", "thuong_luong": "", "can_goc": "", "thang_may": "",
+# `lo_gioi_duong` ghim "lộ giới đường" (SRS-5.1zzzzzzz95): nhãn ô cho người / AI đọc đổi chữ thì chữ gửi bộ đọc thông số của DB không đổi.
+NHAN_TRUNG_TINH = {"lo_gioi_hem": "", "mat_tien": "ngang", "lo_gioi_duong": "lộ giới đường", "thuong_luong": "", "can_goc": "", "thang_may": "",
                    "phap_ly_hoan_cong": "", "phap_ly_so_do": ""}
 
 # Loại hình: mã lõi Python (schema.TYPE_TO_GROUP, 26 mã) → enum `listings.property_type` (12 mã của CRM) — SRS-5.1zzzzzzz68. Trước bản
@@ -362,12 +363,9 @@ class SupabaseConversationStore(KhoNguoiMua):
             if len(self._thong_so_nho) > 2000:
                 self._thong_so_nho.clear()
             self._thong_so_nho[khoa] = {c: kq[c] for c in COT_THONG_SO if isinstance(kq, dict) and kq.get(c) is not None}
-        ra = dict(self._thong_so_nho[khoa])
-        # Nhà mặt tiền không có hẻm (SRS-5.1zzzzzzz94): bắn thử KB5 21/10 — AI ghi "MT 20 mét" (độ rộng đường) vào cả ô lộ giới hẻm,
-        # cột `alley_width_m` thành 20 trên một căn mặt tiền, web có thể in "hẻm 20m".
-        if ra.get("access_type") == "mat_tien":
-            ra.pop("alley_width_m", None)
-        return ra
+        # `alley_width_m` là độ rộng ĐƯỜNG VÀO — hẻm, hoặc con đường với nhà mặt tiền (web in "Đường vào: Mặt tiền đường · đường
+        # rộng 20 m"). Bản SRS-5.1zzzzzzz94 bỏ cột này với nhà mặt tiền là đọc sai nghĩa cột — gỡ ở SRS-5.1zzzzzzz95.
+        return dict(self._thong_so_nho[khoa])
 
     def _patch(self, endpoint: str, data: dict) -> None:
         self._request("PATCH", endpoint, data=data, prefer="return=minimal")

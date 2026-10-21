@@ -21,15 +21,24 @@ def test_ok_dang_di_sau_tin_ghi_them_y_van_la_duyet(monkeypatch):
     assert kho.duyet == [True]
 
 
-def test_nha_mat_tien_khong_co_do_rong_hem():
+def test_nha_mat_tien_giu_do_rong_duong():
+    """SRS-5.1zzzzzzz95: `alley_width_m` là độ rộng ĐƯỜNG VÀO (hẻm, hoặc con đường với nhà mặt tiền) — bản 94 bỏ nó với nhà mặt
+    tiền là đọc sai nghĩa cột; KB5 mất "đường rộng 20 m" trên web."""
     kho = SupabaseConversationStore.__new__(SupabaseConversationStore)
     kho._thong_so_nho = {}
-    kho._request = lambda *a, **k: {"access_type": "mat_tien", "alley_width_m": 20, "frontage_m": 4}
-    ra = kho._thong_so({"lo_gioi_hem": "MT 20 mét", "lo_gioi_duong": "20m"}, "nha_pho")
-    assert "alley_width_m" not in ra and ra["frontage_m"] == 4
-    kho._thong_so_nho = {}
-    kho._request = lambda *a, **k: {"access_type": "hem", "alley_width_m": 3}
-    assert kho._thong_so({"lo_gioi_hem": "hẻm 3m"}, "nha_pho")["alley_width_m"] == 3
+    gui: list[str] = []
+    kho._request = lambda m, e, data=None, **k: gui.append(data["p_text"]) or {"access_type": "mat_tien", "alley_width_m": 20,
+                                                                                 "frontage_m": 4}
+    ra = kho._thong_so({"mat_tien": "4m", "lo_gioi_duong": "20m"}, "nha_pho")
+    assert ra["alley_width_m"] == 20 and ra["frontage_m"] == 4
+    assert gui == ["ngang: 4m; lộ giới đường: 20m"]          # chữ gửi bộ đọc DB không đổi theo nhãn ô
+
+
+def test_nhan_o_noi_ro_cua_can_hay_cua_duong():
+    from aioi.prompts import FIELD_LABELS, cau_hoi_o
+    assert "CĂN" in FIELD_LABELS["mat_tien"] and "không phải độ rộng con đường" in FIELD_LABELS["mat_tien"]
+    assert "CON ĐƯỜNG" in FIELD_LABELS["lo_gioi_duong"] and "không phải bề ngang" in FIELD_LABELS["lo_gioi_duong"]
+    assert "rộng khoảng mấy mét" in cau_hoi_o("lo_gioi_hem")
 
 
 def test_tin_cua_loi_mang_dau_thong_so_ai():

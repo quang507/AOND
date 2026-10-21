@@ -177,7 +177,8 @@ if [ "${NHAP_TRUOC:-0}" -gt 0 ]; then
 else
   kiem "KB5: \"rao tin này giúp mình\" khi chưa có bản nháp thì ra bản nháp" "$(grep -q '📋' <<<"$LOI_RAO" && echo 1 || echo 0)"
 fi
-kiem "KB5: nhà mặt tiền không có độ rộng hẻm" "$(jq '.alley_width_m == null | if . then 1 else 0 end' <<<"$r5")"
+# SRS-5.1zzzzzzz95: `alley_width_m` = độ rộng ĐƯỜNG VÀO; "MT 20 mét" cạnh tên đường là đường rộng 20 m, không phải ngang căn 20 m.
+kiem "KB5: \"MT 20 mét\" là đường rộng 20 m (cột đường vào)" "$(jq '((.alley_width_m // 0) | tonumber) == 20 | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: khách ok rồi thì tin lên web" "$(jq '.status == "dang_ban" | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: sau \"ok\" bot không hỏi xác nhận lại" "$(grep -qiE 'xác nhận (giúp|lại|lần)|đã ổn chưa' <<<"$LOI_KB5_CUOI$(jq -r '.reply // ""' <<<"$TRA")" && echo 0 || echo 1)"
 
