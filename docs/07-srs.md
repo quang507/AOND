@@ -7796,6 +7796,18 @@ cắt ra 5–19 thẻ.
 Kiểm: chạy thử khối backfill dạng chỉ đọc trên DB trước khi áp (số ở trên); `bun run kieu`, `bun run build` sạch, trang vẫn là `○`.
 Chưa chụp màn hình bản dựng thật: trang cần đăng nhập admin.
 
+### SRS-5.1zzzzzzz113 · Thêm admin chỉ đăng nhập CRM không làm tin báo admin mất đích (21/10/2026)
+
+Chủ dự án 21/10: "cho cái mail này làm admin" — thêm một email vào `admins` (chỉ email, không Zalo ID / SĐT Zalo) để đăng nhập CRM.
+Soát mọi chỗ đọc `admins`: các hàm SQL chỉ hỏi "có tồn tại" theo email / Zalo ID (không dính); `escalation-feed` lấy đích Zalo cho tin
+nội bộ (⭐ khách chấm ≤ 2 sao, 🩺 sức khoẻ bot, khách cần người thật) bằng `admins … limit(1)` KHÔNG lọc, không thứ tự — có hai dòng thì
+có thể bốc trúng dòng không có Zalo, tin báo admin mất đích.
+
+1. **Lớp**: lấy "một dòng bất kỳ" của bảng nhiều dòng làm đích gửi — đúng khi bảng chỉ có một dòng, sai ngay khi thêm dòng.
+2. **Sửa**: chỉ lấy dòng có `zalo_user_id` hoặc `zalo_phone`, xếp dòng có Zalo ID trước. Thêm admin chỉ để vào CRM không đổi người nhận
+   tin. **Cùng lớp**: `src/aioi/mua.py` đọc `admins` theo đúng Zalo ID (không dính); không còn chỗ `limit(1)` nào khác trên bảng này.
+3. **Kiểm**: `tests/test_escalation_admin_dich.py` — đỏ trên bản cũ (đã chạy), xanh sau sửa; `bun run kieu:bot` sạch.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
