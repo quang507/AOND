@@ -3248,7 +3248,7 @@ class Engine:
         # Model có lúc trả thao tác không phải object (chuỗi) — chỗ áp dụng bỏ qua chúng (`isinstance(op, dict)`), log cũng vậy; bản đầu
         # của dòng log này gọi .get trên chuỗi → 500 cả lượt chat (bắn thử 19/10 10:49).
         # warning chứ không info: lõi chạy dưới uvicorn chỉ in từ mức warning (bắn thử 19/10: dòng info không hiện trong journal).
-        log.warning("Kế hoạch: %s", [(o.get("op"), sorted(o["fields"].keys()) if isinstance(o.get("fields"), dict) else o.get("fields"))
+        log.warning("Kế hoạch: %s", [(o.get("op"), sorted(o["fields"].keys()) if isinstance(o.get("fields"), dict) else type(o.get("fields")).__name__)
                                    if isinstance(o, dict) else type(o).__name__ for o in plan.get("operations") or []])
 
         # Sticky conversation attributes (never downgrade role to unknown).
@@ -3330,6 +3330,12 @@ class Engine:
             log.warning("Duyệt: AI=%s trích_khớp=%s xin_đăng=%s → %s", y or "-", _trich_dan_khop(plan.get("duyet_trich_dan"), cuoi),
                         bool(conv.y_luot.get("xin_dang")), conv.duyet_luot or "-")
         nv = str(plan.get("ngoai_vung") or "").strip()
+        if conv.role != "buyer":
+            # Một dòng mỗi lượt người bán (SRS-5.1zzzzzzz96, đo nhận vùng): chỉ cờ — không ghi tên tỉnh / lời khách.
+            gan_nv = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
+            log.warning("Vùng: AI=%s trích_khớp=%s trong_danh_sách=%s", bool(nv),
+                        any(_trich_dan_khop(plan.get("ngoai_vung_trich_dan"), c) for c in gan_nv) if nv else "-",
+                        trong_vung_nhan_tin(nv) if nv else "-")
         if nv and trong_vung_nhan_tin(nv):   # SRS-5.1zzzzzzz96: AI báo "ngoài vùng" một tỉnh nằm TRONG danh sách → bỏ
             log.warning("Bỏ cờ ngoài vùng: tỉnh AI đọc nằm trong vùng nhận tin")
             nv = ""

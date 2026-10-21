@@ -31,8 +31,9 @@ BAT_DAU=$(date -u +%s)
 don() {
   # SRS-5.1zzzzzzz94: dòng journal "Duyệt:" của lượt bắn — chỉ cờ (AI trả gì, cụm trích có khớp, có lời bảo đăng, kết quả), không có lời
   # khách, để biết lượt bảo đăng hụt ở AI hay ở code.
-  echo "== nhật ký duyệt bản nháp (lõi)"
-  vps "journalctl -u aond-core --since @$BAT_DAU -o cat --no-pager | grep -o 'Duyệt: AI=.*' | tail -20" || true
+  echo "== nhật ký lõi: duyệt, vùng, kế hoạch (chỉ cờ + tên ô)"
+  # SRS-5.1zzzzzzz96: thêm "Vùng:" / "Kế hoạch:" (tên ô) / "Bỏ …" / "Giữ …" — đều chỉ cờ và tên ô, không có giá trị khách nói.
+  vps "journalctl -u aond-core --since @$BAT_DAU -o cat --no-pager | grep -oE '(Duyệt: AI=|Vùng: AI=|Kế hoạch: |Bỏ ô |Bỏ cờ |Giữ loại ).*' | tail -120" || true
   # SRS-5.1zzzzzzz88: mọi câu bot của lượt bắn vào trang Câu chuẩn (CRM) kèm ngữ cảnh TRƯỚC khi dọn — chủ dự án chấm / sửa tay dần.
   echo "== đưa câu bot vào Câu chuẩn"
   for u in $TAT_CA; do q "select cau_chuan_tu_zalo('$u') as so_cau" | jq -c '.[0]' || true; done
