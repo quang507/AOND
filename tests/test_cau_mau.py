@@ -111,3 +111,33 @@ def test_lenh_xem_json_khong_mang_dau_ban_nhap():
     conv.history.append(Turn("assistant", "📋 Em sẽ rao như vầy nhé anh chị:\n\nBán nhà MT Cao Lỗ Q.8 60m² 10 tỷ\n\nNhà đẹp.", 0.0))
     r = eng.handle("js1", "thong tin")
     assert "📋" not in r.reply and _ban_tin_da_trinh(conv)[0] == "Bán nhà MT Cao Lỗ Q.8 60m² 10 tỷ"
+
+
+def test_cau_bao_phi_tester_sua_toi_loi_bot():
+    """SRS-5.1zzzzzzz111 (chủ dự án: "mấy câu mẫu đã sửa cũng cho lên trên câu mẫu lun"): câu báo phí tester sửa ở Câu chuẩn là câu
+    mẫu `bao_phi` — model được dặn nói nguyên văn, code điền mức phí theo vai + bán / thuê."""
+    from aioi.prompts import khoi_bao_phi
+    from aioi.revenue import SellerRole
+    thue = build_fee_followup_system("x", Property(loai_hinh="nha_pho", is_rental=True), user_type=SellerRole.CHU_NHA,
+                                     web={"len_web": True})
+    assert ("Em xin phép báo phí bên em: phí môi giới bên em là 0.75 tháng tiền thuê. Chỉ thu khi giao dịch thành công. "
+            "Mình cần biết thêm thông tin, nhắn em hỗ trợ ạ.") in thue
+    assert "phí môi giới bên em là 1% giá chốt." in khoi_bao_phi(SellerRole.CHU_NHA, False)
+    assert "phí môi giới bên em là 0.5% giá chốt." in khoi_bao_phi(SellerRole.MOI_GIOI, False)
+    assert khoi_bao_phi(SellerRole.CHU_DAU_TU, False) == ""   # chủ đầu tư: phí thoả thuận riêng, không báo con số
+
+
+def test_cau_bao_phi_sua_o_crm_phai_giu_cho_muc_phi():
+    from aioi.prompts import khoi_bao_phi
+    from aioi.revenue import SellerRole
+    cau_mau.dang_ky(lambda: {"bao_phi": "Phí bên em là {phi}, chỉ thu khi thành công ạ."})
+    assert '"Phí bên em là 1% giá chốt, chỉ thu khi thành công ạ."' in khoi_bao_phi(SellerRole.CHU_NHA, False)
+    cau_mau.dang_ky(lambda: {"bao_phi": "Phí bên em rẻ lắm ạ."})   # sửa mất {phi} → bot nói câu không có con số: dùng câu gốc
+    assert "phí môi giới bên em là 1% giá chốt." in khoi_bao_phi(SellerRole.CHU_NHA, False)
+
+
+def test_khach_hoi_phi_cung_doc_cau_bao_phi():
+    """Nhánh khách chủ động hỏi phí (engine) dùng cùng câu mẫu, không viết câu phí riêng."""
+    goc = (pathlib.Path(cau_mau.__file__).parent / "engine.py").read_text()
+    khoi = goc[goc.index('if conv.hoi_ve_luot == "phi":'):goc.index('elif conv.hoi_ve_luot == "uy_tin":')]
+    assert "khoi_bao_phi(conv.user_type, conv.prop.is_rental)" in khoi

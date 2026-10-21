@@ -60,6 +60,7 @@ from .prompts import (
     build_transcribe_instruction,
     build_fee_followup_system,
     _fee_hint,
+    khoi_bao_phi,
     khoi_trang_thai_web,
     TAI_LIEU_CHUNG_SYSTEM,
     tai_lieu_chung_schema,
@@ -2051,6 +2052,7 @@ class Engine:
                 "Con số phí đúng theo VAI NGƯỜI RAO / BỐI CẢNH ở trên (bán: 1% chính chủ, 0.5% môi giới; cho thuê: 0.75 tháng tiền thuê "
                 "= 3/4 của MỘT tháng tiền thuê; chưa rõ vai thì nêu cả hai hoặc hỏi khéo khách là chủ nhà hay môi giới). Sau đó nối lại nội dung căn đang trao đổi.\n"
                 + ((_fee_hint(conv.user_type) + "\n") if _fee_hint(conv.user_type) else "")
+                + ((khoi_bao_phi(conv.user_type, conv.prop.is_rental) + "\n") if khoi_bao_phi(conv.user_type, conv.prop.is_rental) else "")
             )
         elif conv.hoi_ve_luot == "uy_tin":
             system += (

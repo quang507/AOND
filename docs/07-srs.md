@@ -7755,6 +7755,26 @@ chỉ lệnh JSON trùng. **Sửa**: đổi sang "🧾".
 Kiểm: `tests/test_cau_mau.py` (thêm 4 ca: câu cũ sửa ở CRM tới lời bot; dòng mở sửa vẫn cắt câu dẫn; sai khung dùng câu gốc; lệnh JSON không
 mang 📋 — ca này đỏ trên code cũ, đã chạy).
 
+### SRS-5.1zzzzzzz111 · Câu báo phí tester sửa thành câu mẫu `bao_phi` (21/10/2026)
+
+Chủ dự án 21/10: "mấy câu mẫu đã sửa cũng cho lên trên câu mẫu lun". Bảng `cau_chuan` có 6 dòng tester sửa tay, gồm 3 câu khác nhau:
+câu nhắc bản nháp (đã là `nhac_ban_nhap`), câu duyệt + hỏi phí (đã là `duyet_tin` / `hoi_phi`), và câu BÁO PHÍ ("Em xin phép báo phí
+bên em: phí môi giới bên em là 0.75 tháng tiền thuê. Chỉ thu khi giao dịch thành công. Mình cần biết thêm thông tin, nhắn em hỗ trợ ạ.")
+— câu này chưa có trong khung câu mẫu, chỉ tới model qua ví dụ câu chuẩn (`khoi_cau_chuan`, 8 dòng gần nhất) nên trôi khi có dòng mới.
+
+1. **Lớp**: câu tester sửa nằm ở ví dụ câu chuẩn thay vì câu mẫu — model chỉ "học theo", câu không chắc tới khách, và chủ dự án không
+   thấy nó ở khung câu mẫu để sửa tiếp.
+2. **Sửa**: khoá `bao_phi` trong `cau_mau.MAC_DINH`, chỗ giữ `{phi}` do code điền (`prompts.muc_phi`: thuê "0.75 tháng tiền thuê",
+   chính chủ / lướt sóng "1% giá chốt", môi giới / sàn "0.5% giá chốt", chưa rõ vai nêu cả hai, chủ đầu tư không có câu). `khoi_bao_phi`
+   dặn model nói nguyên văn ở cả hai chỗ báo phí: khách trả lời chưa biết phí (`build_fee_followup_system`) và khách chủ động hỏi phí
+   (`engine`, `hoi_ve_luot == "phi"`). Câu sửa ở CRM phải giữ `{phi}` (`_BAT_BUOC`), thiếu thì dùng câu gốc. Migration `20261021d`
+   nạp dòng, đặt thứ tự 3 (sau câu hỏi phí) trong nhóm "Chốt từ 20/10"; trang `/admin/cau-chuan` gom nhóm theo `thu_tu ≤ 9`.
+3. **Cùng lớp**: soát 6 dòng `cau_chuan` đã sửa — hai câu còn lại đã là câu mẫu; không còn câu tester sửa nào chỉ sống ở ví dụ.
+   Nhánh thuyết phục khi khách chê phí vẫn để model nói tự do (không phải câu nguyên văn).
+
+Kiểm: `tests/test_cau_mau.py` (thêm 3 ca: câu tới lời dặn bản thuê / bán / chủ đầu tư; câu sửa ở CRM tới lời bot, mất `{phi}` thì dùng câu
+gốc; nhánh khách hỏi phí đọc cùng câu). Bỏ `{bao_phi}` khỏi lời dặn thì ca đầu đỏ.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

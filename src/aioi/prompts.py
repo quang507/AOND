@@ -296,6 +296,28 @@ BUSINESS_CONTEXT = """BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ �
 - Gamification: có Điểm uy tín và hạng Đồng/Bạc/Vàng; nên khen điểm mạnh và gợi ý cách tăng điểm (bổ sung ảnh, sổ hồng, thông tin còn thiếu)."""
 
 
+def muc_phi(role: SellerRole, thue: bool) -> str | None:
+    """Mức phí điền vào câu mẫu `bao_phi` (SRS-5.1zzzzzzz111) — theo vai + bán hay thuê, cùng chính sách với `_fee_hint`.
+    Chủ đầu tư: None (phí theo thoả thuận riêng, không báo con số)."""
+    if role == SellerRole.CHU_DAU_TU:
+        return None
+    if thue:
+        return "0.75 tháng tiền thuê"
+    if role in (SellerRole.CHU_NHA, SellerRole.LUOT_SONG):
+        return "1% giá chốt"
+    if role in (SellerRole.MOI_GIOI, SellerRole.SAN):
+        return "0.5% giá chốt"
+    return "1% giá chốt nếu là chủ nhà, 0.5% nếu là môi giới"
+
+
+def khoi_bao_phi(role: SellerRole, thue: bool) -> str:
+    """Dặn model báo phí bằng NGUYÊN VĂN câu mẫu `bao_phi` (câu tester sửa, chủ dự án sửa tiếp ở CRM). Rỗng khi không có con số."""
+    phi = muc_phi(role, thue)
+    if not phi:
+        return ""
+    return f'Báo phí bằng NGUYÊN VĂN câu mẫu: "{cau_mau.cau("bao_phi", phi=phi)}"'
+
+
 def _fee_hint(role: SellerRole) -> str:
     """A targeted fee line once the seller's role is known, so the bot quotes correctly."""
     if role in (SellerRole.CHU_NHA, SellerRole.LUOT_SONG):
@@ -841,6 +863,8 @@ def build_fee_followup_system(
         "của lượt này. Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách. Đoạn này tối đa 2 câu ngắn."
         if (web is None or web.get("len_web")) else ""
     )
+    bao_phi = khoi_bao_phi(user_type, prop.is_rental)
+    bao_phi = f"\n  {bao_phi}" if bao_phi else ""
     hoi_sau = ""
     o_sau = prop.cau_hoi_sau_ra_tin() if (web is None or web.get("len_web")) else None
     if o_sau:   # SRS-5.1zzzzzzz80: ô khách lờ 2 lần trước bản nháp — hỏi lại một lần, SAU lượt nói chuyện phí (lượt duyệt chỉ hỏi phí)
@@ -862,7 +886,7 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
   • Tiếp thu ngay và khen tinh thần đóng góp của khách (vd "Tiêu đề này ngắn gọn và hút khách hơn hẳn ạ!"), cập nhật dữ liệu, KHÔNG nhắc phí.
   • RAO LẠI BẢN TIN ĐÃ SỬA (mở đầu "📋 Bản tin cập nhật:") theo ĐÚNG bố cục tin rao dưới đây.
 - NẾU khách trả lời CHƯA BIẾT PHÍ (sau câu hỏi phí): báo NGẮN trong 1–2 câu — con số phí đúng vai + chỉ thu khi giao dịch thành công.
-  Không thêm câu giải thích, không chào kết dài.
+  Không thêm câu giải thích, không chào kết dài.{bao_phi}
 - NẾU khách CHỦ ĐỘNG HỎI PHÍ HOẶC CHÊ PHÍ CAO / DO DỰ / TỪ CHỐI trả phí: hãy THUYẾT PHỤC một cách khéo léo, ấm áp:
   • Đồng cảm trước ("Em hiểu băn khoăn của anh/chị..."), KHÔNG tranh cãi, KHÔNG chê khách.
   • Mỗi lượt nhấn 1–2 lợi ích mạnh nhất phù hợp với mối lo của khách (xem DANH SÁCH GIÁ TRỊ), rồi nhẹ nhàng chốt lại.

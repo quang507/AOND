@@ -8,7 +8,10 @@ bản nháp phải bắt đầu "📋" và kết thúc ":") thì dùng mặc đ�
 
 21/10/2026 (SRS-5.1zzzzzzz110, chủ dự án "đưa luôn mấy câu trước đó nữa đi"): thêm 22 câu nguyên văn có từ trước khi theo anh Luận —
 chào / làm mới phiên, dòng mở + câu hỏi cuối bản nháp, ẩn / giữ rổ hàng, nhận ảnh, link / file không mở được, bản vẽ, bảng tính,
-tin nhắc 5 phút."""
+tin nhắc 5 phút.
+
+21/10/2026 (SRS-5.1zzzzzzz111, chủ dự án "mấy câu mẫu đã sửa cũng cho lên trên câu mẫu lun"): câu báo phí tester sửa ở trang Câu chuẩn
+thành câu mẫu `bao_phi` — hai câu tester sửa còn lại (nhắc bản nháp, duyệt tin) đã có sẵn."""
 from __future__ import annotations
 
 import logging
@@ -24,6 +27,10 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "hoi_phi": ("{Goi} có thể vào aioinhadat.com để theo dõi tin rao ạ. {Goi} biết phí môi giới bên em chưa ạ?",
                 "Ngay sau câu duyệt tin — tin nhắn thứ hai, câu hỏi phí (bot nói theo tinh thần câu này)",
                 "SRS-5.1zzzzzzz81 / 98 · bản anh Luận + câu tester 21/10"),
+    "bao_phi": ("Em xin phép báo phí bên em: phí môi giới bên em là {phi}. Chỉ thu khi giao dịch thành công. Mình cần biết thêm thông "
+                "tin, nhắn em hỗ trợ ạ.",
+                "Báo con số phí (khách chưa biết phí / hỏi phí). {phi} = mức phí theo vai + bán hay thuê, code điền (vd \"0.75 tháng "
+                "tiền thuê\") — câu sửa phải giữ {phi}", "SRS-5.1zzzzzzz111 · câu tester sửa ở Câu chuẩn 21/10"),
     "nhac_ban_nhap": ("Em gửi {goi} bản nháp tin đăng, mình cần chỉnh sửa thêm nhắn em hỗ trợ ạ!",
                       "Tin nhắc sau 5 phút khách chưa trả lời bản nháp", "SRS-5.1zzzzzzz99 / 101 · câu tester 21/10"),
     "nhac_ban_nhap_em": ("Mình gửi em bản nháp tin đăng, em cần chỉnh sửa thêm nhắn mình hỗ trợ nhé!",
@@ -93,6 +100,9 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
 }
 
 # Khung bắt buộc của vài câu — code dựa vào khung đó (dòng mở bản nháp: tìm tiêu đề, cắt câu dẫn). Câu sửa sai khung → mặc định.
+# Chỗ giữ chữ câu sửa tay BẮT BUỘC giữ (thiếu thì bot nói câu không có con số) — kiểm trên câu sửa, trước khi điền.
+_BAT_BUOC = {"bao_phi": ("{phi}",)}
+
 _KHUNG = {
     "mo_dau_nhap": lambda c: c.startswith("📋") and c.rstrip().endswith(":") and "\n" not in c,
     "mo_dau_nhap_em": lambda c: c.startswith("📋") and c.rstrip().endswith(":") and "\n" not in c,
@@ -133,6 +143,9 @@ def cau(khoa: str, goi: str = "anh/chị", **bien) -> str:
     """Câu mẫu đang dùng (đã sửa ở CRM nếu có), điền cách gọi khách và chỗ giữ riêng (`bien`). Câu sửa hỏng → mặc định."""
     mac_dinh = MAC_DINH[khoa][0]
     sua = _da_sua().get(khoa)
+    if sua and any(c not in sua for c in _BAT_BUOC.get(khoa, ())):
+        log.warning("Câu mẫu %s sửa tay thiếu chỗ giữ bắt buộc — dùng mặc định", khoa)
+        sua = None
     if sua:
         try:
             ra = _dien(sua, goi, **bien)
