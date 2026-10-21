@@ -150,10 +150,13 @@ kiem "KB3: \"ok đăng đi\" sau khi bot ghi thêm ý vẫn là duyệt — tin 
 echo; echo "=================== KB5 — chat tester chị N. 20/10: nhà trong Ny'ah Phú Định, dtsd, MT 20m, ok liên tục ==================="
 # SRS-5.1zzzzzzz87: duyệt bản nháp hỏi lại mãi; "dtsd: 245m" vào ô đất; "MT 20 mét" (đường) thành bề ngang; tên dự án không dấu.
 TIEU_DE=""; MOC_KB5=${#MOI_LOI}
-for cau in "mình cần bán nhà trong khu dự án Nyah Phu Dinh"            "Bán nhà trong khu dân cư Nyah Phú Định, Trương Đình Hội • MT 20 mét, giá 6,95 tỷ, DT 4 x 11m, 1 trệt 1 lửng 3 lầu sân thượng, garage trong nhà, SHR hoàn công đầy đủ"            "dtsd: 245m vuông" "rao tin này giúp mình"; do
+for cau in "mình cần bán nhà trong khu dự án Nyah Phu Dinh"            "Bán nhà trong khu dân cư Nyah Phú Định, Trương Đình Hội • MT 20 mét, giá 6,95 tỷ, DT 4 x 11m, 1 trệt 1 lửng 3 lầu sân thượng, garage trong nhà, SHR hoàn công đầy đủ"            "dtsd: 245m vuông"; do
   chat "$KB5" "$cau"
 done
-TT_RAO=$(dong "$KB5" | jq -r '.status // ""')   # SRS-5.1zzzzzzz94: "rao tin này giúp mình" ngay sau bản nháp là duyệt
+# SRS-5.1zzzzzzz94: "rao tin này giúp mình" — đã có bản nháp thì là DUYỆT (tin lên web ngay lượt đó); chưa có thì là xin soạn tin (ra 📋).
+NHAP_TRUOC=$(grep -c '📋' <<<"${MOI_LOI:$MOC_KB5}" || true)
+chat "$KB5" "rao tin này giúp mình"
+TT_RAO=$(dong "$KB5" | jq -r '.status // ""'); LOI_RAO=$(jq -r '.reply // ""' <<<"$TRA")
 chat "$KB5" "ok"
 LOI_KB5_CUOI=$(jq -r '.reply // ""' <<<"$TRA")
 chat "$KB5" "ok"
@@ -164,7 +167,11 @@ kiem "KB5: dtsd 245 vào diện tích sàn, không vào ô đất" \
 kiem "KB5: diện tích đất 44 (4x11)" "$(jq '((.area_m2 // 0) | tonumber) == 44 | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: \"MT 20 mét\" không thành bề ngang 20m" "$(jq '((.frontage_m // 0) | tonumber) != 20 and (((.boc_tach.mat_tien // "") | test("20")) | not) | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: một cụm không vào hai ô pháp lý" "$(jq '(.boc_tach.phap_ly // "x") != (.boc_tach.phap_ly_hoan_cong // "y") | if . then 1 else 0 end' <<<"$r5")"
-kiem "KB5: \"rao tin này giúp mình\" ngay sau bản nháp là duyệt (tin lên web ngay lượt đó)" "$([ "$TT_RAO" = dang_ban ] && echo 1 || echo 0)"
+if [ "${NHAP_TRUOC:-0}" -gt 0 ]; then
+  kiem "KB5: \"rao tin này giúp mình\" sau bản nháp là duyệt (tin lên web ngay lượt đó)" "$([ "$TT_RAO" = dang_ban ] && echo 1 || echo 0)"
+else
+  kiem "KB5: \"rao tin này giúp mình\" khi chưa có bản nháp thì ra bản nháp" "$(grep -q '📋' <<<"$LOI_RAO" && echo 1 || echo 0)"
+fi
 kiem "KB5: nhà mặt tiền không có độ rộng hẻm" "$(jq '.alley_width_m == null | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: khách ok rồi thì tin lên web" "$(jq '.status == "dang_ban" | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: sau \"ok\" bot không hỏi xác nhận lại" "$(grep -qiE 'xác nhận (giúp|lại|lần)|đã ổn chưa' <<<"$LOI_KB5_CUOI$(jq -r '.reply // ""' <<<"$TRA")" && echo 0 || echo 1)"
