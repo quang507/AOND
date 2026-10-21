@@ -7370,8 +7370,15 @@ Bắn thử `ban-thu-kb.sh` lượt 188 trên bản SRS-5.1zzzzzzz93: script bá
    duyệt trỏ đúng dòng TRẠNG THÁI. Thêm một dòng journal mỗi lượt chờ duyệt (AI trả gì, cụm trích có khớp, có lời bảo đăng, kết quả;
    không ghi lời khách) để lần sau biết hụt ở AI hay ở code. Riêng lượt KB5, lượt lập thao tác mất 5,9 s (có thể đã gọi lại) — không
    có dòng log nên **không chắc** cùng nguyên nhân; dòng log mới sẽ cho biết.
-2. *KB5*: AI ghi "MT 20 mét" (độ rộng đường) vào cả ô lộ giới hẻm, nên cột `alley_width_m` = 20 trên một căn mặt tiền. **Sửa**: một
-   bất biến ở chỗ đọc thông số (`_thong_so`): `access_type = mat_tien` thì không ghi độ rộng hẻm.
+2. *KB5*: cột `alley_width_m` = 20 trên một căn mặt tiền. Lượt 188: AI ghi "MT 20 mét" (độ rộng đường) vào cả ô lộ giới hẻm.
+   **Sửa**: một bất biến ở chỗ đọc thông số (`_thong_so`): `access_type = mat_tien` thì không ghi độ rộng hẻm. Lượt 191 vẫn ra 20,
+   dù ô hẻm trống. Gốc thật: trigger `listings_boc_thong_so` đọc lại MÔ TẢ tin (bản nháp khách duyệt, "lộ giới 20m") bằng regex và
+   điền cột lõi để trống. **Lớp**: regex DB đọc lại chữ AI đã viết, đè quyết định của tầng AI. Quy ước đã có từ 20261002a: tin mang
+   dấu `boc_tach._thong_so_ai` thì hai trigger đoán bằng regex (thông số, loại BĐS — `listings_fill_property_type`) đứng ngoài.
+   Chat-reply TypeScript cũ đặt dấu này, còn lõi Python thì chưa bao giờ. **Cùng lớp**: hai trigger đó là hai chỗ duy nhất đọc
+   dấu này (soát `schema.sql`). Trigger đoán tên đường từ `location_raw` chạy trước dấu, giữ vì lõi ghi `street` khi có ô đường.
+   **Sửa thêm**: lõi ghi `_thong_so_ai = true` vào `boc_tach` mỗi lần lưu tin; nạp lại thì bỏ dấu khỏi ô tin. Web chỉ đọc các khoá
+   cố định (`O_XAC_MINH`), nên dấu không lộ.
 3. Script: tiêu đề ghi kích thước lô ("5x20m") nay được tính là có diện tích, vì đó là cách ghi quen của tin nhà phố [giả định BA].
    Thêm ba ca kiểm: KB3 "ok đăng đi" làm tin lên web; KB5 "rao tin này giúp mình" — đã có bản nháp thì tin lên web
    ngay lượt đó, chưa có thì phải ra 📋 (lượt 190: bot hỏi mã căn trước, nên câu đó là lời xin soạn tin, đúng); KB5 không có độ rộng

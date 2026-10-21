@@ -30,3 +30,18 @@ def test_nha_mat_tien_khong_co_do_rong_hem():
     kho._thong_so_nho = {}
     kho._request = lambda *a, **k: {"access_type": "hem", "alley_width_m": 3}
     assert kho._thong_so({"lo_gioi_hem": "hẻm 3m"}, "nha_pho")["alley_width_m"] == 3
+
+
+def test_tin_cua_loi_mang_dau_thong_so_ai():
+    from tests.test_supabase_store_luu_tin import StoreGia, _conv, _ghi_tin
+    st = StoreGia(co_san=False)
+    st.save(_conv({"gia": "6,95 tỷ", "dien_tich_dat": "4x11m", "lo_gioi_duong": "20m"}))
+    [(_, _, d)] = _ghi_tin(st)
+    assert d["boc_tach"]["_thong_so_ai"] is True and d["boc_tach"]["lo_gioi_duong"] == "20m"
+
+
+def test_nap_lai_bo_dau_thong_so_ai_khoi_o_tin():
+    from tests.test_trang_thai_va_nap_lai import UUID, UUID_GACH, StoreGia as StoreNap, _dong
+    rows = [_dong(UUID_GACH, UUID[:8].upper(), fields={"gia": "5 tỷ", "_thong_so_ai": True})]
+    li = StoreNap(rows=rows).load("zalo-thu-1").listings[0]
+    assert li.prop.fields == {"gia": "5 tỷ"}

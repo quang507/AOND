@@ -625,7 +625,11 @@ class SupabaseConversationStore(KhoNguoiMua):
                     "street": fields.get("duong"),
                     # Ô khách lờ 2 lần (để sau bản nháp) đi kèm tin dưới khoá nội bộ `_hoan` — lõi khởi động lại (mỗi lần cài VPS)
                     # không quên rồi hỏi lại từ đầu (SRS-5.1zzzzzzz90). Khoá `_` không ra khách (`fields_khach`, `_thong_so`).
-                    "boc_tach": {**fields, **({"_hoan": sorted(li.prop.hoan)} if getattr(li.prop, "hoan", None) else {})},
+                    # `_thong_so_ai` (SRS-5.1zzzzzzz94): thông số / loại BĐS do lõi AI quyết — hai trigger đoán bằng regex trên mô tả
+                    # (`listings_boc_thong_so`, `listings_fill_property_type`, 20261002a) đứng ngoài. Bắn thử KB5 21/10: mô tả bản nháp
+                    # "lộ giới 20m" bị regex đọc lại thành `alley_width_m` = 20 trên căn mặt tiền, đè chỗ lõi để trống.
+                    "boc_tach": {**fields, **({"_hoan": sorted(li.prop.hoan)} if getattr(li.prop, "hoan", None) else {}),
+                                 "_thong_so_ai": True},
                     "updated_at": now_iso,
                 }
                 if fields.get("dia_chi"):
@@ -830,6 +834,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             for row in db_listings:
                 boc_tach = dict(row.get("boc_tach") or {})
                 hoan = boc_tach.pop("_hoan", None)
+                boc_tach.pop("_thong_so_ai", None)   # dấu cho DB, không phải ô tin
                 prop = Property(
                     loai_hinh=loai_tu_db(row.get("property_type"), boc_tach),
                     is_rental=(row.get("deal") in ("cho_thue", "thue")),
