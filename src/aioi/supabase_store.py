@@ -291,6 +291,11 @@ class SupabaseConversationStore(KhoNguoiMua):
             return None
         # Chỉ nhớ lần TÌM RA (SRS-5.1zzzzzzz87): chat chị N. 20/10 nhắc "Nyah Phú Định" lúc dự án chưa nạp vào kho, lần hụt bị nhớ
         # tới khi lõi khởi động lại nên tin không bao giờ gắn `project_id` dù dự án vào kho 35 phút sau.
+        # Lần HỤT nhớ 5 phút (SRS-5.1zzzzzzz96): `match_projects` mất 2–3 s mỗi lần (tối đa 7,4 s — pg_stat_statements 21/10), mỗi lượt
+        # gọi 2–4 lần cho cùng tên chưa có trong kho; 5 phút vẫn ngắn hơn nhiều so với 35 phút của ca 20/10.
+        hut = self.__dict__.setdefault("_du_an_hut", {})
+        if self._du_an_nho.get(ten) is None and time.time() - hut.get(ten, 0) < 300:
+            return None
         if self._du_an_nho.get(ten) is None:
             try:
                 da = self._request("POST", "rpc/match_projects?select=id,name,location_raw,ward,district", data={"p_text": ten})
@@ -300,6 +305,10 @@ class SupabaseConversationStore(KhoNguoiMua):
             if len(self._du_an_nho) > 500:
                 self._du_an_nho.clear()
             self._du_an_nho[ten] = next((x for x in (da if isinstance(da, list) else []) if cung_ten_du_an(ten, x.get("name"))), None)
+            if self._du_an_nho[ten] is None:
+                if len(hut) > 500:
+                    hut.clear()
+                hut[ten] = time.time()
         return self._du_an_nho[ten]
 
     def _nho_tra(self, ten: str, chu: str, goi: Callable[[], Any]) -> Any:

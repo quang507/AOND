@@ -60,7 +60,9 @@ def test_tra_du_an_hut_khong_nho():
     tra = [[], [{"id": "p1", "name": "Ny'ah Phú Định"}]]
     kho._request = lambda *a, **k: tra.pop(0)
     assert kho._du_an({"du_an": "Nyah Phú Định"}) is None        # dự án chưa vào kho
-    assert kho._du_an({"du_an": "Nyah Phú Định"})["id"] == "p1"   # vào kho rồi thì lượt sau gắn được
+    assert kho._du_an({"du_an": "Nyah Phú Định"}) is None and len(tra) == 1   # hụt nhớ 5 phút: không gọi lại ngay (SRS-5.1zzzzzzz96)
+    kho._du_an_hut["Nyah Phú Định"] -= 301
+    assert kho._du_an({"du_an": "Nyah Phú Định"})["id"] == "p1"   # vào kho rồi thì lượt sau 5 phút gắn được
 
 
 def test_mo_dau_da_thi_goi_lai_mot_lan():

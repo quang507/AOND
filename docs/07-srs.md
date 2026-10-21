@@ -7440,8 +7440,24 @@ không vào repo — giá chỉ nằm ở đó). Hôm 20/10 đã nạp rổ hàn
    mạng của chính lượt bắn, không phải của bot), chậm nhất từng khâu, 3 lượt chậm nhất. Nhận vùng: thêm 8 ca một lượt (5 ngoài vùng,
    3 trong vùng dễ nhầm), đếm tỷ lệ đúng, đạt khi ≥ 7/8.
 
+5. *Kết quả đo lần 1 (bắn thử lượt 198).*
+   - Thời gian máy chủ trung bình 10,6 s mỗi lượt: trả lời 2,5 s · lập thao tác 2,2 s · tra địa danh 1,4 s (tối đa 9,5 s) · tra dự án
+     1,0 s (tối đa 6,8 s) · còn lại 0,9 s · ghi kho 0,4 s. Phần `ngoai_may_chu` 3,6 s là ssh của chính lượt bắn, khách thật không có.
+   - `pg_stat_statements`: `match_projects` mất 2–3 s mỗi lần (tối đa 7,4 s), vì mỗi lần bỏ dấu / tách từ lại cả 2.362 dự án.
+     Lõi gọi 2–4 lần mỗi lượt cho cùng tên chưa có trong kho, do lần hụt không được nhớ (SRS-5.1zzzzzzz87). **Sửa**: lần hụt nhớ
+     5 phút (ca 20/10 là 35 phút). Chưa sửa ở DB: tính sẵn tên bỏ dấu thành cột có chỉ mục — việc riêng, cần migration.
+   - `tra_nominatim` 6.692 lần, khoảng 2 giờ thời gian DB, do lịch `geocode-tick` gọi (định vị tin), không nằm trên đường chat — ghi lại.
+6. *Nhận vùng: 5/5 ngoài vùng đúng; trong vùng thì "Long Thành, Đồng Nai" bị báo chưa nhận Đồng Nai.* AI trả `ngoai_vung =
+   "Đồng Nai"` (câu luật về Bình Phước cũ "nay thuộc Đồng Nai" dễ đọc lẫn). **Lớp**: đầu ra AI về một quyết định có danh sách cố định
+   của chủ dự án mà code không đối chiếu. **Cùng lớp**: vai người rao, loại BĐS đều đi qua enum của schema, đã có chốt. **Sửa**: tỉnh
+   AI báo "ngoài vùng" mà nằm trong danh sách vùng (`trong_vung_nhan_tin`, cạnh `VUNG_NHAN_TIN`, trừ Bình Phước cũ) thì bỏ cờ; câu
+   luật nói rõ Biên Hòa / Long Thành / Nhơn Trạch là trong vùng. Script: Thủ Đức, Dĩ An bị chấm sai vì đọc DB trước khi lần lưu nền
+   ghi xong — nay chờ 4 giây.
+
 Kiểm: `tests/test_phieu_chac_chan.py` (phiếu chắc chắn, phiếu thường như cũ, chép không đẻ dự án trùng, hỏi lại mặt tiền),
-`tests/test_kho_du_an.py` (`test_du_an_sau_dong_1000_van_tra_duoc` — kho giả trả tối đa 1.000 dòng như production), đỏ trên bản trước.
+`tests/test_kho_du_an.py` (`test_du_an_sau_dong_1000_van_tra_duoc` — kho giả trả tối đa 1.000 dòng như production),
+`tests/test_ngoai_vung.py` (`test_ai_bao_ngoai_vung_mot_tinh_trong_vung_thi_bo`), `tests/test_duyet_theo_trang_thai.py` (hụt nhớ
+5 phút), đỏ trên bản trước.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

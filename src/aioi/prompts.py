@@ -573,6 +573,20 @@ trong lúc chat không phải dữ liệu. Không suy từ con số ra điều k
 # Vùng nhận rao (chủ dự án 20/10/2026: "hcm long an tây ninh bình dương đồng nai vũng tàu thôi"; SRS-5.1zzzzzzz86). Một nguồn cho
 # lượt AI lập thao tác (đọc căn có nằm ngoài vùng không) và lời bot nói khéo khi ngoài vùng.
 VUNG_NHAN_TIN = "TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai"
+# Tên tỉnh / thành TRONG vùng (bỏ dấu) — chốt kiểm đầu ra `ngoai_vung` của AI (SRS-5.1zzzzzzz96): bắn thử 21/10 "Bán đất 200m2 ở Long
+# Thành, Đồng Nai" → AI trả ngoai_vung = "Đồng Nai", bot báo chưa nhận Đồng Nai. Bình Phước cũ (nay thuộc Đồng Nai) vẫn NGOÀI vùng.
+_TEN_TRONG_VUNG = ("ho chi minh", "hcm", "sai gon", "binh duong", "ba ria", "vung tau", "long an", "tay ninh", "dong nai")
+_NGOAI_VUNG_DU_TEN_TRONG = ("binh phuoc",)
+
+
+def trong_vung_nhan_tin(tinh: str | None) -> bool:
+    """Tên tỉnh / thành (AI đọc) có nằm trong vùng nhận tin của chủ dự án không — đối chiếu danh sách cố định, không đoán ý."""
+    import unicodedata
+    s = unicodedata.normalize("NFD", (tinh or "").replace("đ", "d").replace("Đ", "D").lower())
+    s = " " + re.sub(r"[^a-z0-9]+", " ", "".join(c for c in s if unicodedata.category(c) != "Mn")) + " "
+    if any(f" {x} " in s for x in _NGOAI_VUNG_DU_TEN_TRONG):
+        return False
+    return any(f" {x} " in s for x in _TEN_TRONG_VUNG)
 
 
 def khoi_hoi_mat_tien(gia_tri: str) -> str:
@@ -1544,7 +1558,8 @@ QUY TẮC:
   NGƯỜI (nhân viên, quản lý, môi giới, "người thật", "không muốn chat với máy"). Hỏi bot là người hay máy, hay chỉ than chậm, KHÔNG
   phải xin gặp người → bỏ trống. Có điền thì vẫn ghi các ô tin khác như thường.
 - NGOÀI VÙNG NHẬN TIN (20/10/2026, SRS-5.1zzzzzzz86): bên mình chỉ nhận rao ở TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai — tính theo địa giới cũ lẫn mới (TP.HCM
-  mới gồm Bình Dương và Bà Rịa – Vũng Tàu cũ; Tây Ninh mới gồm Long An cũ; Bình Phước cũ dù nay thuộc Đồng Nai vẫn là NGOÀI vùng).
+  mới gồm Bình Dương và Bà Rịa – Vũng Tàu cũ; Tây Ninh mới gồm Long An cũ; Đồng Nai cũ — Biên Hòa, Long Thành, Nhơn Trạch, Trảng Bom… —
+  là TRONG vùng; chỉ phần Bình Phước cũ — Đồng Xoài, Bình Long, Phước Long… — dù nay thuộc Đồng Nai vẫn là NGOÀI vùng).
   ngoai_vung = tên tỉnh / thành của căn KHI khách đã nói rõ địa danh nằm ngoài vùng (vd "quận Đống Đa, Hà Nội" → "Hà Nội"; "nhà
   ở Đà Nẵng" → "Đà Nẵng"; "Đồng Xoài, Bình Phước" → "Bình Phước"). Chỉ có tên đường (trùng ở nhiều tỉnh) hay chưa rõ tỉnh → bỏ
   trống, KHÔNG đoán. Có điền thì ngoai_vung_trich_dan = NGUYÊN VĂN cụm địa danh khách nói.

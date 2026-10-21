@@ -65,6 +65,7 @@ from .prompts import (
     build_listing_proposal_system,
     build_ngoai_vung_system,
     khoi_hoi_mat_tien,
+    trong_vung_nhan_tin,
     khoi_xin_dang,
     khoi_cau_chuan,
     cat_truoc_mo_dau,
@@ -3329,6 +3330,9 @@ class Engine:
             log.warning("Duyệt: AI=%s trích_khớp=%s xin_đăng=%s → %s", y or "-", _trich_dan_khop(plan.get("duyet_trich_dan"), cuoi),
                         bool(conv.y_luot.get("xin_dang")), conv.duyet_luot or "-")
         nv = str(plan.get("ngoai_vung") or "").strip()
+        if nv and trong_vung_nhan_tin(nv):   # SRS-5.1zzzzzzz96: AI báo "ngoài vùng" một tỉnh nằm TRONG danh sách → bỏ
+            log.warning("Bỏ cờ ngoài vùng: tỉnh AI đọc nằm trong vùng nhận tin")
+            nv = ""
         if nv and conv.role != "buyer":
             gan = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
             if any(_trich_dan_khop(plan.get("ngoai_vung_trich_dan"), c) for c in gan):

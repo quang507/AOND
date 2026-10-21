@@ -199,6 +199,7 @@ KV_DUNG=0; i=0
 for ca in "${KV_CA[@]}"; do
   i=$((i + 1)); loai="${ca%%|*}"; u="thu-kv$i-$RUN"
   chat "$u" "${ca#*|}"
+  sleep 4   # lần lưu cuối của lượt chạy nền (SRS-5.1zzzzzzz92) — đọc DB ngay thì tin chưa kịp tạo (lượt 198: 3 ca "khong_tao" oan)
   st=$(dong "$u" | jq -r '.status // "khong_tao"')
   if [ "$loai" = ngoai ]; then ok=$([ "$st" = an ] || [ "$st" = khong_tao ] && echo 1 || echo 0)
   else ok=$([ "$st" != an ] && [ "$st" != khong_tao ] && echo 1 || echo 0); fi
