@@ -7337,6 +7337,26 @@ Chủ dự án hỏi "hôm qua lỗi fix hết chưa" → "fix đê". Hai việc
 Kiểm: `tests/test_loai_khong_lat.py` (đỏ trên bản trước), `tests/test_luu_nen.py` (thứ tự lưu, lượt trả lời không chờ lưu, nhớ kết quả
 tra). Đo thật bằng `ban-thu-kb.sh` (dòng "trung bình ms từng khâu").
 
+### SRS-5.1zzzzzzz93 · Căn trong dự án hỏi phường mãi; "MT 20m" lọt khi kích thước lô nằm ở ô diện tích đất (21/10/2026)
+
+Bắn thử `ban-thu-kb.sh` lượt 186 trên bản SRS-5.1zzzzzzz92: 31/35 đạt, bốn ca trượt do ba nguyên nhân.
+
+1. *Căn trong dự án, khách không nói phường, bot hỏi phường mãi, không ra bản nháp* (KB5 Ny'ah Phú Định, KB2). Kho đã điền cột `ward`
+   từ dự án lúc lưu (SRS-5.1zzzzzzz86), nhưng ô `phuong` của bot vẫn trống, nên lõi vẫn coi là thiếu phường. **Lớp**: dữ kiện suy ra
+   được ghi ở tầng lưu (cột DB) mà không ghi về ô tin, nên hai bên lệch nhau. **Cùng lớp**: ngã tư → phường (`_nga_tu`, SRS-5.1zzzzzzz43)
+   đã ghi về ô tin, đúng. Quận suy từ phường thì tầng lưu tự điền, bot không hỏi quận nên không lặp. **Sửa**: thêm
+   `phuong_theo_du_an` trong kho, dùng cùng đường `_du_an` (tên dự án phải khớp rõ) và `_chuan_dia_ban` (cột phường / quận chuẩn trước,
+   địa chỉ dài sau). Lõi gọi hàm này khi tin có `du_an` mà ô `phuong` trống. Phường khách đã nói thì không bị đè. Tra hỏng thì bot hỏi
+   như cũ.
+2. *"MT 20m" vẫn vào ô mặt tiền* (KB5): luật bề ngang ≤ lô (SRS-5.1zzzzzzz87) chỉ đọc hai chiều lô từ ô `kich_thuoc`, trong khi khách
+   gõ "4 x 11m" và AI ghi vào `dien_tich_dat`. **Sửa**: hai chiều lô lấy từ ô đầu tiên có dạng `a x b`, gồm kích thước rồi diện tích
+   đất, trong lượt này hoặc đã có. Diện tích đất chỉ ghi một số (vd "44m2") thì không đủ cơ sở bỏ.
+3. *Script kiểm web báo trượt dù trang có chữ*: `curl | grep -q` dưới `pipefail`. grep thoát sớm, curl ghi vào ống đã đóng (lỗi 23).
+   **Sửa**: đọc hết trang rồi mới dò (`web_co`).
+
+Kiểm: `tests/test_phuong_du_an_o_tin.py`, đỏ 3/4 ca trên bản trước. Ca còn lại canh không đè phường khách nói và tra hỏng thì hỏi như
+cũ. Bắn lại bằng `ban-thu-kb.sh` sau khi cài.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

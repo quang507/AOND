@@ -71,7 +71,10 @@ tieu_de_dat() {   # $1 = chữ phải có (vị trí); tiêu đề ≤ 15 từ, 
     && grep -qE 'm²|m2' <<<"$TIEU_DE" && grep -qE 'tỷ|triệu' <<<"$TIEU_DE" && echo 1 || echo 0
 }
 web_co() {   # trang tin trên web có chữ $2 (tin mã $1)
-  curl -sS -m 30 "https://aioinhadat.vercel.app/nha-dat/$1" | grep -qi "$2" && echo 1 || echo 0
+  # Đọc hết trang rồi mới dò (SRS-5.1zzzzzzz93): `curl | grep -q` dưới pipefail — grep thoát sớm, curl ghi vào ống đã đóng (lỗi 23),
+  # cả ống thành "trượt" dù trang có chữ cần tìm (bắn thử 21/10).
+  local trang; trang=$(curl -sS -m 30 "https://aioinhadat.vercel.app/nha-dat/$1" || true)
+  grep -qi "$2" <<<"$trang" && echo 1 || echo 0
 }
 
 echo "=================== KB1 — nhà phân lô mặt ngõ Nguyễn Chí Thanh, Đống Đa, Hà Nội (ngoài vùng nhận tin) ==================="

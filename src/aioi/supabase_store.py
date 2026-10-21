@@ -250,6 +250,19 @@ class SupabaseConversationStore(KhoNguoiMua):
                     break
         return phuong, quan, nguon
 
+    def phuong_theo_du_an(self, fields: dict[str, Any]) -> str | None:
+        """Phường (tên chuẩn) của dự án khách nói, khi tên khớp rõ một dự án trong kho — cùng đường với `_dia_ban` (SRS-5.1zzzzzzz93)."""
+        d = self._du_an(fields)
+        if not d:
+            return None
+        for khoa in (("ward", "district"), ("location_raw", "ward", "district")):
+            chu = ", ".join(str(d[k]) for k in khoa if d.get(k))
+            if chu:
+                p, _ = self._chuan_dia_ban(chu)
+                if p:
+                    return p
+        return None
+
     def cau_chuan_mau(self) -> list[dict[str, Any]]:
         """Câu chuẩn người chấm đã sửa / đã chấm (bảng `cau_chuan`, SRS-5.1zzzzzzz88) — 8 dòng mới nhất, làm ví dụ trong prompt. Sửa ở
         CRM là bot đổi trong vòng 60 giây, không cần cài lại. Lỗi đọc → [] (bot vẫn trả lời, không ví dụ)."""

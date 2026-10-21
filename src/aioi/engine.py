@@ -1835,6 +1835,19 @@ class Engine:
                         dia_ban.pop("quan", None)
                     captured = list(dict.fromkeys(list(captured) + conv.prop.update(dia_ban)))
 
+            # 1a-phường dự án (21/10/2026, SRS-5.1zzzzzzz93): căn trong dự án mà khách chưa nói phường → phường của dự án trong kho vào
+            #     CHÍNH ô tin. Trước đây chỉ kho ghi cột `ward` lúc lưu; ô `phuong` của bot vẫn trống nên bot tưởng thiếu phường, hỏi mãi
+            #     và không ra bản nháp (bắn thử KB5 / KB2 21/10).
+            tra_phuong = getattr(self._convstore, "phuong_theo_du_an", None)
+            if tra_phuong is not None and conv.prop.fields.get("du_an") and not conv.prop.fields.get("phuong"):
+                try:
+                    p_du_an = tra_phuong(conv.prop.fields)
+                except Exception as e:  # noqa: BLE001 — tra hỏng thì bot hỏi phường như cũ
+                    log.warning("phuong_theo_du_an lỗi: %s", e)
+                    p_du_an = None
+                if p_du_an:
+                    captured = list(dict.fromkeys(list(captured) + conv.prop.update({"phuong": p_du_an})))
+
             # 1a-địa danh (19/10/2026, SRS-5.1zzzzzzz60): ô phường / quận / đường AI vừa đọc → tên chuẩn trong kho (chữ trước, nghĩa
             #     sau; máy kiểm tên còn gần chữ khách). Không chắc thì giữ chữ khách.
             if self._dia_danh and captured:
@@ -3453,7 +3466,10 @@ class Engine:
                 if k != giu:
                     log.warning("Bỏ ô %s: cùng cụm khách đã vào ô %s", k, giu)
                     out.pop(k, None)
-        mt, kt = out.get("mat_tien"), out.get("kich_thuoc") or conv.prop.fields.get("kich_thuoc")
+        # Kích thước lô có thể nằm ở ô kích thước hoặc ở ô diện tích đất dạng "4 x 11m" (bắn thử KB5 21/10, SRS-5.1zzzzzzz93).
+        kt = next((x for x in (out.get("kich_thuoc"), conv.prop.fields.get("kich_thuoc"), out.get("dien_tich_dat"),
+                               conv.prop.fields.get("dien_tich_dat")) if x and re.search(r"\d\s*[x×*]\s*\d", str(x))), None)
+        mt = out.get("mat_tien")
         so_mt, so_kt = [float(x) for x in _so_trong(mt)], [float(x) for x in _so_trong(kt)]
         if so_mt and so_kt and min(so_mt) > max(so_kt):
             log.warning("Bỏ ô mat_tien: lớn hơn cả hai chiều kích thước lô")
