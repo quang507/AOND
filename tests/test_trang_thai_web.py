@@ -5,7 +5,7 @@ from aioi.prompts import build_fee_followup_system, khoi_trang_thai_web
 from aioi.schema import Property
 from aioi.supabase_store import SupabaseConversationStore
 
-DA_DANG = "XÁC NHẬN ĐÚNG 1 CÂU: tin bán của khách đã được đăng"   # câu tester sửa 21/10 (SRS-5.1zzzzzzz98)
+DA_DANG = "Em xin phép đăng tin ạ!"   # câu tester, chủ dự án duyệt bỏ "Dạ" 21/10 (SRS-5.1zzzzzzz103)
 
 
 def _nha():
@@ -98,6 +98,13 @@ def test_xac_nhan_noi_dung_loai_tin_khong_gop_ban_cho_thue():
     """SRS-5.1zzzzzzz101 (tester 21/10): "nếu bán nó sẽ hiển thị bán, cho thuê nó sẽ hiển thị cho thuê, chứ không phải bán/cho thuê"."""
     ban, _ = khoi_trang_thai_web({"len_web": True})
     thue, _ = khoi_trang_thai_web({"len_web": True}, thue=True)
-    assert "tin bán của khách" in ban and "khách mua đang tìm" in ban
-    assert "tin cho thuê của khách" in thue and "khách thuê đang tìm" in thue
+    assert "tin bán" in ban and "tin cho thuê" in thue
     assert "bán / cho thuê" not in ban + thue and "bán/cho thuê" not in ban + thue
+
+
+def test_xac_nhan_ngan_mot_cau_khong_mo_dau_da():
+    """SRS-5.1zzzzzzz103: tester "khách nhắn ok thì mình nhắn lại 'Dạ em xin phép đăng tin ạ!' vậy xong"; chủ dự án "ừ đổi, ngắn
+    thì tốt". Đỏ khi lời duyệt quay lại câu dài (kể đã đăng + mạng lưới) hoặc giữ chữ "Dạ"."""
+    ban, _ = khoi_trang_thai_web({"len_web": True})
+    assert '"Em xin phép đăng tin ạ!"' in ban and "Dạ em xin phép" not in ban
+    assert "mạng lưới" not in ban and "đã được đăng lên hệ thống" not in ban

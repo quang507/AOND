@@ -138,7 +138,8 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > - **Model:** mọi lượt dùng Haiku (chủ dự án: "Vẫn haiku").
 > - **Độ dài lời bot (21/10/2026, SRS-5.1zzzzzzz97):** "cứ ngắn vừa vừa thôi, khách không hiểu thì mình hỏi tiếp" — nói ý chính rồi dừng,
 >   không thêm câu giải thích khi khách chưa hỏi. Phí thuê viết "0.75 tháng tiền thuê" (chủ dự án duyệt câu tester). Câu chữ thực như môi
->   giới nhắn Zalo, không văn mẫu (tester: "AI quá khách ngán"); câu tester sửa thì dùng nguyên văn.
+>   giới nhắn Zalo, không văn mẫu (tester: "AI quá khách ngán"); câu tester sửa thì dùng nguyên văn. Ghi nhận "vừa ngắn vừa lịch sự" ("ngắn không thì nó láo", SRS-5.1zzzzzzz102); khách duyệt tin → "Em xin phép đăng
+>   tin ạ!" (bỏ "Dạ", "ngắn thì tốt", SRS-5.1zzzzzzz103).
 > - **Dữ liệu dự án chủ dự án nhập tay là chắc chắn (21/10/2026, SRS-5.1zzzzzzz96):** phiếu `chac_chan:` thắng ngay, phiếu khách vẫn bầu.
 > - **Vùng nhận tin (20/10/2026, SRS-5.1zzzzzzz86):** chỉ TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai (chủ dự
 >   án: "hcm long an tây ninh bình dương đồng nai vũng tàu thôi"); nơi khác bot nói khéo chưa nhận, không hỏi, không soạn tin. Một nguồn:

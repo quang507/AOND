@@ -7571,6 +7571,18 @@ dạy tua lại); ví dụ "Hẻm 4m xe hơi vào được, khách đi xem tiệ
 
 Kiểm: `tests/test_ghi_nhan_ngan.py` (đỏ trên code cũ: còn "điều khách vừa nói" / ví dụ Chợ Quán, thiếu luật mới).
 
+### SRS-5.1zzzzzzz103 · Khách duyệt tin: "Em xin phép đăng tin ạ!" (21/10/2026)
+
+Tester chị N. 21/10: "nếu khách nhắn ok thì mình nhắn lại 'Dạ em xin phép đăng tin ạ!' vậy xong"; chủ dự án: "ừ đổi, ngắn thì tốt"
+(bỏ "Dạ" theo luật cấm mở đầu "Dạ"). **Sửa**: `khoi_trang_thai_web` — đoạn đầu lời duyệt là đúng câu "Em xin phép đăng tin ạ!", bỏ câu
+kể "đã đăng lên hệ thống, hiển thị trên website, chuyển mạng lưới khách" của SRS-5.1zzzzzzz98; đoạn hỏi phí (mời vào web theo dõi + "biết
+phí môi giới bên em chưa", quyết định theo bản anh Luận) giữ nguyên làm tin nhắn thứ hai, nên link web vẫn tới khách. Chỉ nhánh tin ĐÃ
+lên web; tin chưa lên web vẫn nói thật còn thiếu gì. Dòng câu chuẩn duyệt tin (`cau_chuan`, ví dụ bot đọc) đổi theo cùng câu để ví dụ không
+dạy ngược. **Lớp**: câu luật dài do người viết luật soạn, trong khi người dùng thật đã đưa câu ngắn — cùng lớp với SRS-5.1zzzzzzz101 (dùng
+nguyên văn câu tester). **Cùng lớp đã soát**: tin nhắc bản nháp (đã nguyên văn, SRS-5.1zzzzzzz101), câu phí (SRS-5.1zzzzzzz97).
+
+Kiểm: `tests/test_trang_thai_web.py` (`test_xac_nhan_ngan_mot_cau_khong_mo_dau_da` — đỏ trên code cũ), `tests/test_cho_thue_nguyen_can.py`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

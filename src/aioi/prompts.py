@@ -747,9 +747,10 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
             # xác nhận (đã đăng + hiển thị trên web + chuyển mạng lưới khách đang tìm), không kể thêm.
             # 21/10 (SRS-5.1zzzzzzz101, tester: "nếu bán nó sẽ hiển thị bán, cho thuê nó sẽ hiển thị cho thuê, chứ không phải
             # bán/cho thuê"): code chọn đúng chữ theo loại tin, không để model chép cụm gộp.
-            f"  • CẢM ƠN khách đã duyệt, rồi XÁC NHẬN ĐÚNG 1 CÂU: tin {'cho thuê' if thue else 'bán'} của khách đã được đăng lên hệ "
-            f"thống và hiển thị trên website {_WEB}, đồng thời em chuyển cho mạng lưới khách {'thuê' if thue else 'mua'} đang tìm. "
-            f"KHÔNG kể thêm gì khác (không tả lại căn, không hướng dẫn dài).{vua}",
+            # 21/10 (SRS-5.1zzzzzzz103): tester "khách nhắn ok thì mình nhắn lại 'Dạ em xin phép đăng tin ạ!' vậy xong"; chủ dự án
+            # "ừ đổi, ngắn thì tốt" — bỏ "Dạ" (luật cấm mở đầu Dạ), bỏ câu kể đã đăng + chuyển mạng lưới; link web ở đoạn phí.
+            f"  • Đoạn đầu ĐÚNG 1 câu, nguyên văn: \"Em xin phép đăng tin ạ!\" — KHÔNG thêm câu cảm ơn, KHÔNG kể tin "
+            f"{'cho thuê' if thue else 'bán'} đã đăng ở đâu, không tả lại căn.{vua}",
             f"  • Gửi ngay link website: {_WEB}\n"
             "  • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng "
             "như môi giới dễ dàng tìm kiếm, kết nối.",
