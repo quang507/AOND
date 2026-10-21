@@ -7826,6 +7826,27 @@ thì có thể lưu ở chỗ khác để vector hóa". Số đo trước khi đ
 Kiểm: chạy thử trên DB trong giao dịch huỷ ngay — MCP cắt ở 60 giây, DB quay lại nguyên (cột vẫn `vector`, đủ sáu chỉ mục), nên migration
 tự nới giờ chờ 15 phút trong giao dịch của nó; sau khi áp đo lại dung lượng và thời gian tìm.
 
+### SRS-5.1zzzzzzz115 · Số hẻm trong địa chỉ thu hẹp phường (21/10/2026)
+
+Chủ dự án 21/10: "họ nói 137/28 đường số 59 con bot có hiểu ko … cứ làm theo plan của bạn đi, sau người ta nhắn thì nó thông minh là
+dc". Tra kho: "Đường số 59" đi qua 7 phường (Gò Vấp, Quận 2, 6, 7, Thủ Đức cũ, Bình Dương) — quá 4 phường nên bot chỉ hỏi phường trống;
+nhưng kho hẻm (bảng `duong`, `loai = hem`, nạp từ OSM) có hẻm 137 của Đường số 59 ở MỘT phường (An Hội Tây, Gò Vấp cũ).
+
+1. **Lớp**: bot tra địa danh theo tên đường mà bỏ phần số trong địa chỉ — kho có 25.564 hẻm kèm phường, lõi chưa đọc.
+2. **Sửa** (`src/aioi/dia_danh.py`): `so_hem_cua` đọc KHUÔN SỐ của ô `dia_chi` (đã do AI ghi, qua cổng bằng chứng) — "137/28" → hẻm 137
+   (phần cuối là số nhà), "hẻm 965" → 965, "285 Cách Mạng Tháng Tám" (không chữ hẻm, không "/") → không có hẻm; số đi sau chữ "hẻm" thắng,
+   không thì số có "/" đầu tiên ("Đường số 59, nhà 137/28" không lấy "59"); số trong chính tên đường bị gỡ trước khi đọc. Bắn thử
+   trước khi sửa (DC2) cho thấy khách gõ "hẻm 965 Quang Trung" mà AI ghi ô dia_chi "965 Quang Trung" — nên khi ô `lo_gioi_hem` nói căn
+   trong hẻm thì số trần đầu địa chỉ cũng là số hẻm (chưa biết hẻm hay mặt tiền thì không đoán). `TraDiaDanh.phuong_theo_hem` đọc bảng `duong` theo đường mẹ +
+   số hẻm, lọc theo quận khách nói. `khoi_dia_danh`: chưa có phường mà hẻm ra 1 phường → dặn model hỏi xác nhận dạng HỎI ("nhà mình ở
+   An Hội Tây đúng không anh/chị?"), 2–4 phường → kể cho khách chọn; thay cho gợi ý theo đường, có ở mọi lượt (cả lượt tin rao đầu).
+3. **Cùng lớp**: gợi ý phường theo đường (`_phuong_cua_duong`) vẫn giữ cho địa chỉ không có số hẻm; ngã tư (`giao_lo.py`) đã dùng kho
+   giao lộ riêng. Kho hẻm OSM có thể thiếu / lệch → chỉ gợi ý dạng hỏi, khách nói phường khác thì ghi theo khách.
+
+Kiểm: `tests/test_phuong_theo_hem.py` (6 ca, thêm ca AI bỏ chữ "hẻm"; đọc số hẻm; 137/28 Đường số 59 → An Hội Tây, không kể 7 phường; nhà mặt tiền 285 không lấy
+phường của hẻm 285; đã có phường thì không tra; quận khách nói lọc hẻm) — hàm mới, bản cũ không có nên đỏ. Bắn thử production
+`apply-migration` ô `ban-thu-dc` (5 ca địa chỉ thật trong kho): TRƯỚC khi cài 4/4 ca có số hẻm bot hỏi phường trống, ca mặt tiền đạt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
