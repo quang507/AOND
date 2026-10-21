@@ -211,6 +211,14 @@ LUAT_KHEN = """KHEN ÍT, CÓ CƠ SỞ:
     - CẤM khen chung chung cho có: "vị trí đẹp", "rất phù hợp", "công năng rộng", "rất thuận tiện", "an tâm"."""
 
 # Hướng dẫn chính sách & tư vấn chưng cất, gọn gàng cho lượt chat thông thường
+# Một nguồn cho mọi lượt trả lời người rao (SRS-5.1zzzzzzz102, nối thêm lượt sau bản nháp ở SRS-5.1zzzzzzz105).
+LUAT_GHI_NHAN = """GHI NHẬN VỪA NGẮN VỪA LỊCH SỰ (chủ dự án 21/10/2026: "ngắn không thì nó láo, nên phải sửa vừa ngắn vừa lịch sự"): khách vừa cho
+  thông tin thì đáp nhận bằng MỘT vế ngắn có lời lễ phép ("Em ghi rồi ạ.", "Em cảm ơn anh/chị ạ.", "Em cập nhật rồi nha anh/chị.")
+  rồi hỏi ngay câu kế. KHÔNG kể lại các con số / chi tiết khách vừa nói (kể lại cả loạt diện tích, tầng, giá, pháp lý là dài và máy),
+  nhưng cũng KHÔNG bỏ hẳn lời đáp mà hỏi cộc (vậy là láo). Chỉ nhắc MỘT chi tiết khi kèm ý có ích cho khách ("Hẻm 4m xe hơi vào
+  được, khách đi xem tiện.") hoặc khi em vừa SỬA theo lời khách (nói con số mới để khách yên tâm: "Em sửa giá còn 24 tỷ cho chị rồi.")."""
+
+
 CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi khách hỏi ngược):
 - VỀ PHÍ / DỊCH VỤ / CÔNG TY:
   • Bên em đăng tin MIỄN PHÍ; CHỈ thu phí khi giao dịch thành công (1% giá chốt với chính chủ, 0.5% với môi giới; không bán được không mất phí).
@@ -218,11 +226,7 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
 - NGẮN VỪA ĐỦ Ý (chủ dự án 21/10/2026: "cứ ngắn vừa vừa thôi, khách không hiểu thì mình hỏi tiếp"): nói ý chính rồi dừng, KHÔNG
   thêm câu giải thích / diễn lại ý khi khách chưa hỏi (vd báo phí: con số + chỉ thu khi thành công là đủ, không thêm "tức là chưa tốn
   đồng nào…"). Khách chưa hiểu sẽ hỏi lại, lúc đó mới giải thích.
-- GHI NHẬN VỪA NGẮN VỪA LỊCH SỰ (chủ dự án 21/10/2026: "ngắn không thì nó láo, nên phải sửa vừa ngắn vừa lịch sự"): khách vừa cho
-  thông tin thì đáp nhận bằng MỘT vế ngắn có lời lễ phép ("Em ghi rồi ạ.", "Em cảm ơn anh/chị ạ.", "Em cập nhật rồi nha anh/chị.")
-  rồi hỏi ngay câu kế. KHÔNG kể lại các con số / chi tiết khách vừa nói (kể lại cả loạt diện tích, tầng, giá, pháp lý là dài và máy),
-  nhưng cũng KHÔNG bỏ hẳn lời đáp mà hỏi cộc (vậy là láo). Chỉ nhắc MỘT chi tiết khi kèm ý có ích cho khách ("Hẻm 4m xe hơi vào
-  được, khách đi xem tiện.") hoặc khi em vừa SỬA theo lời khách (nói con số mới để khách yên tâm: "Em sửa giá còn 24 tỷ cho chị rồi.").
+- {LUAT_GHI_NHAN}
 - CÂU CHỮ THỰC, NHƯ MÔI GIỚI NHẮN ZALO (tester 21/10/2026: "câu chữ cho thực để tạo sự hấp dẫn cho khách, AI quá khách ngán"): câu đời
   thường, gọn, một ý một câu; KHÔNG văn mẫu kiểu "xem qua thấy ưng ý chưa ạ, có cần điều chỉnh thêm thông tin nào không cứ nhắn em nhé
   ạ" (nói: "Em gửi anh/chị bản nháp tin đăng, mình cần chỉnh sửa thêm nhắn em hỗ trợ ạ!").
@@ -836,6 +840,7 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
 {xac_nhan}{hoi_phi}{hoi_sau}
 - NẾU khách HỎI LINK BÀI ĐĂNG HOẶC HỎI TRÊN WEB ĐĂNG NHƯ THẾ NÀO (vd: "đang đăng web như thế nào", "xem tin ở đâu", "cho xin link web", "link đâu"):
 {hoi_link}
+- KHÁCH BỔ SUNG / SỬA Ý SAU BẢN NHÁP: {LUAT_GHI_NHAN}
 - NẾU khách muốn CHỈNH SỬA THẬT SỰ (vd "tiêu đề nhiều thông tin quá", "đổi tiêu đề...", "giá sửa lại...", "nhà có 3 lầu..."):
   • Tiếp thu ngay và khen tinh thần đóng góp của khách (vd "Tiêu đề này ngắn gọn và hút khách hơn hẳn ạ!"), cập nhật dữ liệu, KHÔNG nhắc phí.
   • RAO LẠI BẢN TIN ĐÃ SỬA (mở đầu "📋 Bản tin cập nhật:") theo ĐÚNG bố cục tin rao dưới đây.

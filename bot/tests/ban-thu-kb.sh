@@ -33,7 +33,7 @@ don() {
   # khách, để biết lượt bảo đăng hụt ở AI hay ở code.
   echo "== nhật ký lõi: duyệt, vùng, kế hoạch (chỉ cờ + tên ô)"
   # SRS-5.1zzzzzzz96: thêm "Vùng:" / "Kế hoạch:" (tên ô) / "Bỏ …" / "Giữ …" — đều chỉ cờ và tên ô, không có giá trị khách nói.
-  vps "journalctl -u aond-core --since @$BAT_DAU -o cat --no-pager | grep -oE '(Duyệt: AI=|Vùng: AI=|Kế hoạch: |Bỏ ô |Bỏ cờ |Giữ loại ).*' | tail -120" || true
+  vps "journalctl -u aond-core --since @$BAT_DAU -o cat --no-pager | grep -oE '(Duyệt: AI=|Xin đăng: |Vùng: AI=|Kế hoạch: |Bỏ ô |Bỏ cờ |Giữ loại ).*' | tail -120" || true
   # SRS-5.1zzzzzzz88: mọi câu bot của lượt bắn vào trang Câu chuẩn (CRM) kèm ngữ cảnh TRƯỚC khi dọn — chủ dự án chấm / sửa tay dần.
   echo "== đưa câu bot vào Câu chuẩn"
   for u in $TAT_CA; do q "select cau_chuan_tu_zalo('$u') as so_cau" | jq -c '.[0]' || true; done
@@ -66,7 +66,9 @@ chat() {
   MOI_LOI+=$'\n'"$(jq -r '.replies[]?' <<<"$TRA" 2>/dev/null || true)"
   LUOT_TONG=$((LUOT_TONG + 1)); GIAY_TONG=$((GIAY_TONG + g)); [ "$g" -gt "$GIAY_MAX" ] && GIAY_MAX=$g
   if grep -q '📋' <<<"$TRA"; then
-    TIEU_DE=$(jq -r '.reply // ""' <<<"$TRA" | sed -n '/📋/,$p' | sed 1d | awk 'NF{print; exit}')
+    # Bản tin cập nhật ghi tiêu đề NGAY trên dòng 📋 ("📋 Bản tin cập nhật: <tiêu đề>"); bản nháp đầu thì tiêu đề ở dòng kế
+    # (SRS-5.1zzzzzzz105: lượt 205 đọc nhầm đoạn mô tả thành tiêu đề 111 từ).
+    TIEU_DE=$(jq -r '.reply // ""' <<<"$TRA" | sed -n '/📋/,$p' | awk 'NR==1{sub(/^.*📋[^:]*:[ ]*/,""); if (NF) {print; exit} next} NF{print; exit}')
   fi
   sleep 1
 }
@@ -203,8 +205,11 @@ for ca in "${KV_CA[@]}"; do
   # Lần lưu cuối của lượt chạy nền (SRS-5.1zzzzzzz92) — đọc DB ngay thì tin chưa kịp tạo (lượt 198: 3 ca "khong_tao" oan; lượt
   # 203: chờ 4 giây vẫn hụt một ca). Chờ có giới hạn: tin trong vùng phải có dòng trong 15 giây; ngoài vùng thì đợi đủ 15 giây.
   for _ in 1 2 3 4 5; do sleep 3; st=$(dong "$u" | jq -r '.status // "khong_tao"'); [ "$st" != khong_tao ] && break; done
-  if [ "$loai" = ngoai ]; then ok=$([ "$st" = an ] || [ "$st" = khong_tao ] && echo 1 || echo 0)
-  else ok=$([ "$st" != an ] && [ "$st" != khong_tao ] && echo 1 || echo 0); fi
+  # Trong vùng mà khách chưa nói tên đường thì tin chưa có dòng (lượt 205: Dĩ An, Long Thành — bot hỏi đường đúng nhưng chấm SAI).
+  # Chấm theo lời bot: ngoài vùng phải nói "chưa nhận" và không có tin đang mở; trong vùng thì không nói "chưa nhận" và tin không ẩn.
+  loi_kv=$(jq -r '[.replies[]?] | join(" ")' <<<"$TRA" 2>/dev/null || true)
+  if [ "$loai" = ngoai ]; then ok=$({ [ "$st" = an ] || [ "$st" = khong_tao ]; } && grep -qi 'chưa nhận' <<<"$loi_kv" && echo 1 || echo 0)
+  else ok=$([ "$st" != an ] && ! grep -qi 'chưa nhận' <<<"$loi_kv" && echo 1 || echo 0); fi
   echo "   KV$i ($loai vùng): tin $st → $([ "$ok" = 1 ] && echo đúng || echo SAI)"
   KV_DUNG=$((KV_DUNG + ok))
 done

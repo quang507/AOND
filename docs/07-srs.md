@@ -7617,6 +7617,30 @@ Xoá hàng loạt không xoá dòng `danh_gia_ai` (không có khoá ngoại; dò
 
 Kiểm: `tests/test_danh_gia_ai.py` (8 ca — đỏ khi tắt phần nối kho hoặc bỏ điều kiện "bot vừa xin": đã thử, 4 ca đỏ).
 
+### SRS-5.1zzzzzzz105 · Bắn thử 205 sau deploy: số lệch kho chặn đăng, ghi nhận sau bản nháp, script chấm sai (21/10/2026)
+
+Lượt `ban-thu-kb` 205 (commit `af7568c`) xác nhận hai bản sửa trước: ghi nhận ngắn ("Em ghi rồi anh/chị ạ.", "Em ghi 245m² ạ.") và lời
+duyệt "Em xin phép đăng tin ạ!" + tin hỏi phí. Còn bốn chỗ:
+
+1. **KB5 — số lệch kho chặn đăng.** Khách nói dtsd 245 m², mẫu Fusion Gen 5 trong kho Ny'ah 195 m² → bot đòi số lô "để đối chiếu trước
+   khi đăng"; khách "rao tin này giúp mình", "ok", "ok" — ba lượt không đăng. **Lớp**: kho dự án (kiến thức chung) được model dùng làm
+   cổng chặn lời người rao, trong khi ô tin chỉ ghi điều khách nói (SRS-5.1zzzzzzz73) và mã căn không chặn bản nháp (quyết định 20/10).
+   Khối `_AGENT_TOOL_GUIDE` (đường agent, chỉ khi dự án có rổ căn) không nói gì về số lệch. **Sửa**: thêm luật "lệch kho thì hỏi lại MỘT
+   lần; khách giữ / lờ / bảo đăng thì theo lời khách, không đòi số lô, không từ chối soạn". **Cùng lớp**: `_project_memory_block` chỉ
+   đưa dữ liệu, không ra lệnh chặn; `_seller_price_block` là giá của chính người rao — không cùng lớp. Nhật ký thêm dòng `Xin đăng:
+   thiếu tối thiểu=[tên ô]` (chỉ tên ô) để lượt sau biết khách bảo đăng mà không ra bản nháp là vì thiếu ô hay vì model.
+2. **Ghi nhận sau bản nháp** (KB3): "Em ghi nhận, căn đã có sổ hồng và full nội thất rồi anh/chị." — luật SRS-5.1zzzzzzz102 chỉ nằm
+   trong `CONVERSATION_POLICY` (prompt lượt hỏi). **Sửa**: một nguồn `LUAT_GHI_NHAN`, nối vào cả `build_fee_followup_system` (lượt sau
+   bản nháp). Đây là chỗ cùng lớp bản 102 bỏ sót.
+3. **Script — tiêu đề bản tin cập nhật**: bản cập nhật ghi tiêu đề NGAY trên dòng 📋 ("📋 Bản tin cập nhật: …"), script bỏ dòng đó
+   nên đọc nhầm đoạn mô tả (111 từ) thành tiêu đề. Tiêu đề thật 12 từ, đạt.
+4. **Script — vùng nhận tin**: Dĩ An, Long Thành (trong vùng) chấm SAI vì khách chưa nói tên đường nên chưa có dòng tin; bot hỏi đường
+   đúng. Nay chấm theo lời bot: ngoài vùng phải nói "chưa nhận" và không có tin mở; trong vùng không nói "chưa nhận" và tin không ẩn.
+   Đo lại theo lời bot: 8/8.
+
+Kiểm: `tests/test_so_lech_kho_du_an.py`, `tests/test_ghi_nhan_ngan.py` (`test_luot_sau_ban_nhap_cung_mot_luat_ghi_nhan`) — cả hai đỏ
+trên code cũ (đã thử).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

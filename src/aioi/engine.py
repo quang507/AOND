@@ -166,6 +166,11 @@ _AGENT_TOOL_GUIDE = (
     "án, và đừng lấy giá của người rao KHÁC áp lên. KHÔNG có nghĩa là né người rao đang chat.\n"
     "- Căn/mẫu/diện tích/quy cách bàn giao/quy hoạch là kiến thức CHUNG (dùng lại). Chỉ khẳng "
     "định thông tin công cộng khi CÓ NGUỒN.\n"
+    # SRS-5.1zzzzzzz105 (bắn thử KB5 21/10: khách nói dtsd 245 m², mẫu Fusion trong kho 195 m² → bot đòi số lô, khách "rao tin này
+    # giúp mình", "ok", "ok" mà ba lượt vẫn không đăng). Kho dự án là để GỢI Ý, lời người rao về căn CỦA HỌ là nguồn của ô tin.
+    "- Số khách nói về căn của họ KHÁC thông số chung của mẫu / dự án (diện tích sàn, số tầng…): được hỏi lại MỘT lần cho chắc. "
+    "Khách giữ số đó, lờ đi hay bảo đăng thì THEO LỜI KHÁCH và đi tiếp — KHÔNG đòi số lô / mã căn mới chịu đăng, KHÔNG từ chối "
+    "soạn bản tin vì lệch kho (mã căn có thì tốt, không có vẫn nhận — chủ dự án 20/10/2026).\n"
 )
 
 
@@ -1952,6 +1957,8 @@ class Engine:
         # hỏi đúng ô tối thiểu — bản trước prompt hỏi chuyện tự soạn "bài đăng" không 📋, hệ thống không ghi là bản nháp.
         xin_dang = bool(conv.y_luot.get("xin_dang")) and not conv.listing_proposed
         toi_thieu = conv.prop.thieu_toi_thieu() if xin_dang else []
+        if xin_dang:   # SRS-5.1zzzzzzz105: một dòng mỗi lượt khách bảo đăng khi chưa có bản nháp — chỉ tên ô, không lời khách
+            log.warning("Xin đăng: thiếu tối thiểu=%s", toi_thieu or "-")
         if xin_dang and not toi_thieu:
             conv.prop.hoan |= {x for x in thieu if conv.prop.hoan_duoc(x)}
         elif toi_thieu and next_field not in toi_thieu:
