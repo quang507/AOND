@@ -7900,7 +7900,12 @@ Kiểm: `tests/test_hoi_sau_dang.py` (8 ca: ô mới không vào % bản nháp �
 riêng không vào bản tin; kho ghi bảng riêng và che SĐT; 5 cụm mỗi cụm đúng một lần sau lượt xin sao; khách sửa tin không chen câu hỏi),
 `tests/test_hoi_tinh_hinh_ban.py` (5 ca), `tests/test_tu_van_mua.py` (5 ca), `tests/test_branching.py` cập nhật thứ tự hỏi khách mua — ba
 file mới đỏ khi gỡ phần sửa ở `src/`. Bắn thử production: `apply-migration` ô `ban-thu-sau` (SD1 người bán, SM1 người mua; kiểm ô riêng
-không nằm trong `boc_tach`, có trong `listing_noi_bo`, mô tả web không có lý do bán, không tự định giá, không xin số).
+không nằm trong `boc_tach`, có trong `listing_noi_bo`, mô tả web không có lý do bán, không tự định giá, không xin số). Lượt chạy
+39585339448 (Anthropic hết số dư — mọi lượt đi Gemini dự phòng, SRS-5.1zzzzzzz117): ĐẠT ô riêng vào `listing_noi_bo` (người đứng tên, lý do
+bán, giờ xem), `boc_tach` không có ô riêng, mô tả web không có lý do bán, ô công khai mới ghi đủ (hướng, năm xây, thuế phí, thanh toán,
+thương lượng), không tự định giá; người mua ĐẠT cả 7 câu theo thứ tự, có ông bà thì gợi ý thang máy, không xin số, 14 ô nhu cầu xuống
+`buyers.preferences`. CHƯA kiểm được: 5 cụm hỏi sau đăng và câu "có ai hỏi mua chưa" — model dự phòng không ra bản nháp nên tin không lên
+web; chạy lại khi Anthropic có số dư.
 
 ### SRS-5.1zzzzzzz117 · Claude hỏng thì trả lời bằng Gemini, rồi Groq (21/10/2026)
 
@@ -7925,7 +7930,10 @@ Tài khoản Anthropic hết số dư lúc 10:14 UTC 21/10 — từ đó mọi l
 
 Kiểm: `tests/test_du_phong.py` (7 ca: hết tiền → Gemini + ghi sổ; nghỉ Claude; Gemini 429 → Groq, bỏ đoạn nghĩ; extract đọc JSON, schema
 không strict → xin bằng lời; lỗi sai schema ném lên; ảnh bỏ qua Groq, PDF không gọi; chỉ bọc khi có khoá) — file mới, đỏ trên code cũ.
-Bắn thử production lúc Anthropic còn hết số dư: `apply-migration` ô `ban-thu-sau` (mọi lượt đi đường dự phòng).
+Bắn thử production lúc Anthropic còn hết số dư (run 39585339448, `ban-thu-sau`): 26 lượt trả lời + 26 lượt lập thao tác đều đi
+`Gemini/gemini-flash-lite-latest` (biến `GEMINI_MODEL` trên VPS đè mặc định), không lượt nào còn câu giữ chỗ — bot nói lại được. Chất lượng
+lượt dự phòng kém Haiku rõ: người bán không ra được bản nháp 📋 (5 lượt "em soạn bản nháp nhé?" mà không soạn), câu "có ai hỏi mua chưa"
+model nói "đang tiếp cận nhiều khách hàng quan tâm" dù khối số liệu cấm. Phía người mua đạt đủ (xem SRS-5.1zzzzzzz116).
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
