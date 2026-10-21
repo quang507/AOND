@@ -11,14 +11,17 @@ from __future__ import annotations
 import json
 import logging
 import os
+import copy
+import queue
 import re
+import threading
 import time
 import urllib.error
 import urllib.request
 import urllib.parse
 import uuid
 from datetime import datetime, timezone
-from typing import Any, TYPE_CHECKING
+from typing import Callable, Any, TYPE_CHECKING
 
 from .kho_anh import BUCKET_CONG_KHAI, BUCKET_RIENG, la_uuid
 from .mua import KhoNguoiMua
@@ -285,11 +288,22 @@ class SupabaseConversationStore(KhoNguoiMua):
             self._du_an_nho[ten] = next((x for x in (da if isinstance(da, list) else []) if cung_ten_du_an(ten, x.get("name"))), None)
         return self._du_an_nho[ten]
 
+    def _nho_tra(self, ten: str, chu: str, goi: Callable[[], Any]) -> Any:
+        """Kết quả hàm tra CỐ ĐỊNH của DB (cùng chữ vào → cùng kết quả ra) nhớ trong bộ nhớ (SRS-5.1zzzzzzz92: mỗi lượt lưu 2–3 lần, mỗi
+        lần gọi lại `chuan_dia_ban` + `boc_thong_so` với đúng chữ cũ — khâu ghi kho trung bình 2,8 s). Lỗi mạng không nhớ."""
+        nho = self.__dict__.setdefault("_nho_ham", {})
+        khoa = (ten, chu)
+        if khoa not in nho:
+            if len(nho) > 2000:
+                nho.clear()
+            nho[khoa] = goi()
+        return nho[khoa]
+
     def _chuan_dia_ban(self, chu: str) -> tuple[str | None, str | None]:
         if not chu:
             return None, None
         try:
-            kq = self._request("POST", "rpc/chuan_dia_ban", data={"p_text": chu})
+            kq = self._nho_tra("chuan_dia_ban", chu, lambda: self._request("POST", "rpc/chuan_dia_ban", data={"p_text": chu}))
         except Exception as e:
             log.warning("chuan_dia_ban lỗi: %s", e)
             return None, None
@@ -304,7 +318,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         if chu in MA_PHAP_LY:
             return chu
         try:
-            kq = self._request("POST", "rpc/boc_thong_so", data={"p_text": chu})
+            kq = self._nho_tra("boc_thong_so", chu, lambda: self._request("POST", "rpc/boc_thong_so", data={"p_text": chu}))
         except Exception as e:
             log.warning("boc_thong_so lỗi: %s", e)
             return None
@@ -513,7 +527,47 @@ class SupabaseConversationStore(KhoNguoiMua):
 
     # --- ConversationStore Protocol --------------------------------------
 
+    def _hang_luu(self, user_key: str) -> "queue.Queue":
+        """Mỗi khách MỘT hàng đợi lưu + một luồng xử lý — giữ đúng thứ tự (khoá trần không bảo đảm vào trước ra trước: bản chụp cũ có
+        thể ghi SAU bản mới, đè dữ liệu mới)."""
+        with self.__dict__.setdefault("_khoa_tao_luu", threading.Lock()):
+            hang = self.__dict__.setdefault("_hang_luu_khach", {})
+            if user_key not in hang:
+                q: queue.Queue = queue.Queue()
+
+                def chay() -> None:
+                    while True:
+                        chup = q.get()
+                        try:
+                            self._save(chup)
+                        except Exception as e:  # noqa: BLE001 — _save đã tự ghi sổ lỗi; luồng không được chết
+                            log.error("Lưu nền lỗi: %s", e)
+                        finally:
+                            q.task_done()
+                threading.Thread(target=chay, daemon=True, name=f"luu-{user_key[-4:]}").start()
+                hang[user_key] = q
+            return hang[user_key]
+
+    def luu_nen(self, conv: Conversation) -> None:
+        """Lần lưu CUỐI mỗi lượt chạy nền (SRS-5.1zzzzzzz92): bot gửi lời ngay, không chờ 5+ lần gọi Supabase. Lưu một BẢN CHỤP của
+        hội thoại (lượt sau có thể đang sửa conv), theo hàng đợi của khách."""
+        try:
+            chup = copy.deepcopy(conv)
+        except Exception as e:  # noqa: BLE001 — không chụp được thì lưu ngay như cũ, lượt trả lời không được hỏng vì việc lưu
+            log.warning("Không chụp được hội thoại để lưu nền (%s) — lưu ngay", type(e).__name__)
+            self.save(conv)
+            return
+        self._hang_luu(conv.user_key).put(chup)
+
     def save(self, conv: Conversation) -> None:
+        """Lưu ngay — chờ hàng lưu nền của khách xong trước, để lượt sau (`_trang_thai_web` lưu rồi đọc trạng thái) không bị bản chụp
+        cũ ghi đè sau đó."""
+        hang = self.__dict__.get("_hang_luu_khach", {}).get(conv.user_key)
+        if hang is not None:
+            hang.join()
+        self._save(conv)
+
+    def _save(self, conv: Conversation) -> None:
         """Persist conversation, listings, and leads into Supabase."""
         # Always mirror into local fallback first if configured for backup/safety
         if self.fallback:

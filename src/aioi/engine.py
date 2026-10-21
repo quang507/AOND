@@ -3044,8 +3044,10 @@ class Engine:
     ) -> TurnResult:
         self._drop_stub_listings(conv)   # clean up the blank starter once real căn exist
         if self._convstore is not None:  # persist the listing after every turn
+            # Kho có lưu nền (Supabase) → lần lưu cuối của lượt không chặn lời gửi khách (SRS-5.1zzzzzzz92); kho khác lưu ngay.
+            luu_nen = getattr(self._convstore, "luu_nen", None)
             with _do(conv, "ghi_kho"):
-                self._convstore.save(conv)
+                (luu_nen or self._convstore.save)(conv)
         timeliness = self._timeliness(conv, now)
         completeness = conv.prop.completeness()  # the active listing
         prop_score = g.property_score(completeness, timeliness)
@@ -3393,7 +3395,17 @@ class Engine:
         nhẹ" rồi lên tin). SRS-5.1zzzzzzz86: cụm trích đúng mà GIÁ TRỊ thêm điều khách không nói (`_gia_tri_chong_do`) → ghi
         chính cụm khách nói, không ghi lời AI suy."""
         if k in _O_PHAN_LOAI:
-            return v   # phân loại AI đọc theo nghĩa ("nhà phố" → nha_pho), không phải lời trích; sai loại không phải bịa
+            # Phân loại AI đọc theo nghĩa ("nhà phố" → nha_pho), không phải lời trích — lần ĐẦU ghi thẳng. ĐỔI loại đã chốt thì cụm
+            # bằng chứng phải nằm trong tin khách VỪA nhắn (SRS-5.1zzzzzzz92): chat tester 20/10 loại lật phòng trọ ↔ nhà phố giữa các
+            # lượt (khách chỉ kể "1 trệt 1 lầu 2pn"), bộ ô hỏi đổi theo, bộ đếm "lờ 2 lần" đếm sai, một câu bị hỏi 3 lần.
+            cu = conv.prop.loai_hinh if k == "loai_hinh" else conv.prop.fields.get(k)
+            if cu and cu != v:
+                cuoi = next((t.content for t in reversed(conv.history) if t.role == "user"), "")
+                bc = bang_chung.get(k) if isinstance(bang_chung.get(k), str) else None
+                if not _trich_dan_khop(bc, cuoi):
+                    log.warning("Giữ loại BĐS đã chốt: đổi loại cần cụm khách nói ở tin vừa nhắn")
+                    return None
+            return v
         if any(li.prop.fields.get(k) == v for li in conv.listings):
             return v
         loi = conv.loi_khach_luot

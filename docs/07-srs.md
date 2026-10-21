@@ -7315,6 +7315,28 @@ Kiểm: `tests/test_mot_luot_mot_luc.py::test_tin_cho_luc_bot_dang_soan_gom_than
 test_dien_tich_tin_thue_la_dien_tich_su_dung`, `tests/test_xung_ho_khong_lat.py`, `tests/test_tieu_de_va_xin_dang_trong.py` (đỏ trên
 bản trước).
 
+### SRS-5.1zzzzzzz92 · Hỏi lặp do loại BĐS lật giữa các lượt; bot trả lời chậm vì chờ lưu DB (21/10/2026)
+
+Chủ dự án hỏi "hôm qua lỗi fix hết chưa" → "fix đê". Hai việc còn treo từ SRS-5.1zzzzzzz90 / 86:
+
+1. *Câu gác lửng / WC hỏi 3 lần* (chat tester 20/10). Bằng chứng mới: lượt 3 bot hỏi "4m x 4.5m là đất hay sàn" — câu chỉ nhánh NHÀ
+   PHỐ có (`ambiguous_area`, cần `dien_tich_dat` / `dien_tich_nha`), trong khi tin cuối là `phong_tro`. Tức loại BĐS LẬT giữa các
+   lượt: AI phân loại lại mỗi lượt và ô phân loại đi thẳng qua cổng (`_O_PHAN_LOAI`), khách chỉ kể "1 trệt 1 lầu 2pn" là thành nhà
+   phố, lượt sau về phòng trọ. Mỗi lần lật, bộ ô hỏi đổi, ô vừa hỏi không còn trong cụm nên bộ đếm "lờ 2 lần" (SRS-5.1zzzzzzz80) không
+   đếm, ô cũ quay lại đầu hàng. **Lớp**: quyết định đã chốt bị lượt AI sau lật mà không cần bằng chứng — cùng lớp với xưng hô lật
+   (SRS-5.1zzzzzzz91). **Sửa**: lần đầu vẫn ghi thẳng; ĐỔI loại đã chốt phải có cụm bằng chứng trong tin khách vừa nhắn
+   (`_gia_tri_ghi`). Cùng lớp còn: ô `loai_hinh` từ đọc ảnh sổ (`deed_data`) — đường khác, giữ nguyên. Không tái hiện được nguyên lượt
+   chat (model thật); log "ô hỏi" (SRS-5.1zzzzzzz90) sẽ cho biết chắc nếu còn lặp.
+2. *Chậm (trung bình 9,3 s trong lõi, ghi kho 2,8 s)* — mỗi lượt lưu Supabase 2–3 lần, mỗi lần ~5 lần gọi mạng, và lần lưu CUỐI nằm
+   trước lời gửi khách. **Sửa**: (a) lần lưu cuối của lượt chạy nền (`SupabaseConversationStore.luu_nen`) theo hàng đợi MỖI KHÁCH một
+   luồng — đúng thứ tự (khoá trần không bảo đảm vào trước ra trước: bản chụp cũ có thể đè bản mới); lần lưu thường (`save`, vd
+   `_trang_thai_web` lưu rồi đọc trạng thái) chờ hàng đợi của khách xong trước; lưu một bản chụp (`deepcopy`), chụp hỏng thì lưu ngay
+   như cũ. (b) hàm tra cố định của DB (`chuan_dia_ban`, `boc_thong_so`) nhớ kết quả theo chữ vào; lỗi mạng không nhớ. Rủi ro đã biết:
+   lõi khởi động lại đúng lúc đang lưu nền thì mất lần lưu đó — lượt kế của khách lưu lại toàn bộ.
+
+Kiểm: `tests/test_loai_khong_lat.py` (đỏ trên bản trước), `tests/test_luu_nen.py` (thứ tự lưu, lượt trả lời không chờ lưu, nhớ kết quả
+tra). Đo thật bằng `ban-thu-kb.sh` (dòng "trung bình ms từng khâu").
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
