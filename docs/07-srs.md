@@ -7857,7 +7857,9 @@ Kiểm: `tests/test_phuong_theo_hem.py` (9 ca: thêm ca AI bỏ chữ "hẻm"; �
 phường của hẻm 285; đã có phường thì không tra; quận khách nói lọc hẻm; lời hỏi phường trống → gọi lại model, lời đã nhắc phường
 → không gọi lại, đã có phường → không soát) — ca gọi lại đỏ khi gỡ bước soát ở `engine.py`. Bắn thử production
 `apply-migration` ô `ban-thu-dc` (5 ca địa chỉ thật trong kho): TRƯỚC khi cài 4/4 ca có số hẻm bot hỏi phường trống, ca mặt tiền đạt;
-sau bước 1 vẫn 4/4 hỏi trống (lý do ở mục 4).
+sau bước 1 vẫn 4/4 hỏi trống (lý do ở mục 4); sau bước 2 (run 39572650424) **5/5 đạt**: DC1 "Nhà mình ở Phường An Hội Tây đúng
+không chị?", DC2 An Hội Tây, DC3 Chợ Quán, DC5 Tân Mỹ, DC4 mặt tiền hỏi phường trống (không lấy Hòa Hưng); journal có 4 dòng
+"phường theo hẻm: 1 phường". Cùng lượt sửa ô `ban-thu-dc` lọt vào bước `dung-lai-db.mjs` của workflow (thiếu trong danh sách loại trừ).
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
