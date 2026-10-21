@@ -73,6 +73,12 @@ class SoToken:
             self._chay(self._rpc_an_toan, "beat", {"p_who": "model_chinh"})
         return body
 
+    def ghi_du_phong(self, model: str, vao: int, ra: int) -> None:
+        """Lượt gọi qua đường dự phòng (SRS-5.1zzzzzzz117: "Gemini:<model>" / "Groq:<model>") — chỉ số token, KHÔNG đóng dấu sống
+        model chính (dấu đó để biết Claude đã gọi lại được)."""
+        if self._gui is not None:
+            self._chay(self._gui_an_toan, {"p_in": vao, "p_out": ra, "p_cache_write": 0, "p_cache_read": 0, "p_model": model})
+
     def bao_loi(self, nhan: str, e: Exception) -> None:
         """Lượt gọi Claude hỏng → một dòng sổ lỗi (log_loi). Chỉ tên lỗi + thông báo của API (vd "credit balance is too low"),
         không có nội dung tin khách. Thẻ Quota tiêu hao đọc dòng có "credit balance is too low" để báo HẾT SỐ DƯ."""

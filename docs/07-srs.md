@@ -7902,6 +7902,31 @@ riêng không vào bản tin; kho ghi bảng riêng và che SĐT; 5 cụm mỗi 
 file mới đỏ khi gỡ phần sửa ở `src/`. Bắn thử production: `apply-migration` ô `ban-thu-sau` (SD1 người bán, SM1 người mua; kiểm ô riêng
 không nằm trong `boc_tach`, có trong `listing_noi_bo`, mô tả web không có lý do bán, không tự định giá, không xin số).
 
+### SRS-5.1zzzzzzz117 · Claude hỏng thì trả lời bằng Gemini, rồi Groq (21/10/2026)
+
+Tài khoản Anthropic hết số dư lúc 10:14 UTC 21/10 — từ đó mọi lượt là câu giữ chỗ "em đang xem kỹ…", bot câm với cả khách thật (sổ lỗi
+42 dòng trong 3 phút bắn thử). Lê Quang: "cho key anthropic hết thì qua gemini, hết lun thì qua groq".
+
+1. **Lớp**: lõi Python chỉ có MỘT đường gọi model (`llm/claude.py`); lưới Groq / Gemini của bot TypeScript gỡ 18/10 (b2f2d44) cùng bot cũ,
+   không chép sang lõi. Mọi hỏng ở nhà cung cấp (hết tiền, quá tải, quá hạn) thành bot câm.
+2. **Sửa** (`src/aioi/llm/du_phong.py`, `llm/__init__.py`, `config.py`, `so_token.py`): `DuPhongProvider` bọc Claude — Claude vẫn là đường
+   chính (quyết định "Vẫn haiku" giữ nguyên); lượt gọi Claude hỏng vì lỗi đổi model chữa được (`nen_doi_sang`: hết số dư / hạn mức, 401–403,
+   429, 5xx, 529, quá hạn — cùng danh sách `nenDoiSang` bot cũ) thì thử Gemini (`GEMINI_MODEL`, mặc định `gemini-3.8-flash`) rồi Groq
+   (`GROQ_MODEL`, mặc định `qwen/qwen3.8-27b`, `openai/gpt-oss-120b`), mỗi nguồn xoay khoá + model. Lỗi khác (sai schema, sai prompt) ném
+   lên như cũ. Hết số dư thì nghỉ Claude 5 phút (khỏi tốn một lượt gọi hỏng mỗi tin), hết khoảng thì thử lại. Cùng prompt, cùng mọi bước
+   kiểm của engine sau lượt model. Bài học bot cũ chép theo: Gemini `reasoning_effort: "low"` + trần chữ ≥ 1500 (phần nghĩ ăn chung trần);
+   Groq `reasoning_format: "hidden"` và vẫn cắt `<think>`; schema không theo khuôn strict → 400 thì xin JSON bằng lời rồi đọc giá trị JSON
+   đầu tiên; ảnh chỉ Gemini đọc, PDF chỉ Claude (không nguồn nào đọc được thì ném lỗi gốc của Claude — còi "hết tiền" vẫn kêu). Vòng công
+   cụ (`converse`) chỉ Claude chạy; dự phòng trả lời chữ. Sổ token ghi "Gemini:<model>" / "Groq:<model>" (không đóng dấu sống model chính);
+   sổ lỗi một dòng "du phong" mỗi 10 phút đang chạy dự phòng. Chỉ bọc khi VPS có khoá Gemini / Groq.
+3. **Cùng lớp còn lại**: nhúng vector địa danh (Gemini) và chép tin thoại (Groq) mỗi thứ một nhà cung cấp, hỏng thì phần đó tắt (đã có
+   đường đỡ: tra theo chữ; nói thẳng chưa nghe được). Giọng / độ chính xác bóc tách của Gemini, Groq khác Haiku — lượt dự phòng có thể kém
+   hơn; chưa có bộ đo riêng cho đường dự phòng.
+
+Kiểm: `tests/test_du_phong.py` (7 ca: hết tiền → Gemini + ghi sổ; nghỉ Claude; Gemini 429 → Groq, bỏ đoạn nghĩ; extract đọc JSON, schema
+không strict → xin bằng lời; lỗi sai schema ném lên; ảnh bỏ qua Groq, PDF không gọi; chỉ bọc khi có khoá) — file mới, đỏ trên code cũ.
+Bắn thử production lúc Anthropic còn hết số dư: `apply-migration` ô `ban-thu-sau` (mọi lượt đi đường dự phòng).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

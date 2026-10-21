@@ -141,7 +141,8 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 >   mặt tiền và hiện trạng hỏi TRƯỚC bản nháp; gửi model 30 tin gần nhất.
 > - **Giữ của mình, không theo anh Luận:** hỏi gộp theo cụm (SRS-5.1zzzzzzz79), khách lờ một ô 2 lần thì để sau (SRS-5.1zzzzzzz80), khen
 >   ít / có cơ sở, cấm mở đầu "Dạ", tên trợ lý người thật (FR-181), kênh vừa mua vừa bán (lời chào hai lựa chọn).
-> - **Model:** mọi lượt dùng Haiku (chủ dự án: "Vẫn haiku").
+> - **Model:** mọi lượt dùng Haiku (chủ dự án: "Vẫn haiku"). Claude hỏng (hết số dư, quá tải…) thì lượt đó trả lời bằng Gemini rồi Groq
+>   (`llm/du_phong.py`, SRS-5.1zzzzzzz117, 21/10/2026) — Claude vẫn là đường chính.
 > - **Độ dài lời bot (21/10/2026, SRS-5.1zzzzzzz97):** "cứ ngắn vừa vừa thôi, khách không hiểu thì mình hỏi tiếp" — nói ý chính rồi dừng,
 >   không thêm câu giải thích khi khách chưa hỏi. Phí thuê viết "0.75 tháng tiền thuê" (chủ dự án duyệt câu tester). Câu chữ thực như môi
 >   giới nhắn Zalo, không văn mẫu (tester: "AI quá khách ngán"); câu tester sửa thì dùng nguyên văn. Ghi nhận "vừa ngắn vừa lịch sự" ("ngắn không thì nó láo", SRS-5.1zzzzzzz102); khách duyệt tin → "Em xin phép đăng
