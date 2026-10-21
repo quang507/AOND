@@ -7519,6 +7519,24 @@ Kèm (chủ dự án: "gắn trạng thái luôn thành câu mẫu đã sửa lu
 sửa 21/10 (báo phí, lời sau duyệt, 4 dòng tin nhắc bản nháp) đã ghi câu chuẩn; tin nhắc bản nháp là câu cố định trong code nên để
 tắt "Bot dùng làm ví dụ" (chỉ ghi lại để tra).
 
+### SRS-5.1zzzzzzz100 · Ô tính bằng mét ghi số trần; nhận vùng theo tên thành phố / quận (21/10/2026)
+
+Kết quả đo lượt 203 (nhật ký "Vùng:" chỉ cờ, SRS-5.1zzzzzzz96):
+
+1. *KB5: độ rộng đường vào trống.* AI ghi ô `lo_gioi_duong` = "20" (số trần, lượt này còn ghi "44", "245" cho diện tích). Bộ đọc
+   `boc_thong_so` của DB chỉ nhận "20m" (đã thử trên DB: "lộ giới đường: 20" → trống, "20m" → 20). **Lớp**: chữ gửi bộ đọc DB phụ
+   thuộc AI có viết đơn vị hay không. **Cùng lớp**: diện tích đi đường riêng `so_m2` (tính được số trần), giá đi `parse_vnd` (ô giá
+   luôn có "tỷ / triệu" vì bằng chứng phải nằm trong lời khách). **Sửa**: ô luôn tính bằng mét (`_O_MET`: bề ngang, độ rộng đường /
+   hẻm) mà là số trần thì thêm "m" trước khi gửi (đơn vị theo định nghĩa ô, không đoán).
+2. *Nhận vùng: mọi lượt hụt đều là AI không báo (`AI=False`), chốt kiểm của code không bỏ nhầm lượt nào.* Ca hụt: khách chỉ nói thành
+   phố / quận ("Trần Phú, Nha Trang"; lượt 200: "Ngô Quyền, Hải Phòng", "Đống Đa, Hà Nội"). Câu luật cũ "chưa rõ tỉnh → bỏ trống, KHÔNG
+   đoán" làm model dè dặt. **Sửa**: câu luật nói rõ tên thành phố / thị xã / quận / huyện / đảo đủ biết tỉnh là ĐÃ RÕ (kèm ví dụ Nha
+   Trang → Khánh Hòa, Phú Quốc → Kiên Giang). Đây vẫn là AI quyết; đo lại bằng 8 ca KV.
+3. *Script*: tin trong vùng (Long Thành) chờ 4 giây vẫn chưa có dòng → chờ có giới hạn, tối đa 15 giây.
+
+Kiểm: `tests/test_duyet_mo_ta_truong.py` (`test_o_met_so_tran_them_don_vi_truoc_khi_doc_thong_so`, đỏ trên bản trước); bắn thử
+`ban-thu-kb.sh` (8 ca KV).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

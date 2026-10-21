@@ -1569,7 +1569,9 @@ QUY TẮC:
   mới gồm Bình Dương và Bà Rịa – Vũng Tàu cũ; Tây Ninh mới gồm Long An cũ; Đồng Nai cũ — Biên Hòa, Long Thành, Nhơn Trạch, Trảng Bom… —
   là TRONG vùng; chỉ phần Bình Phước cũ — Đồng Xoài, Bình Long, Phước Long… — dù nay thuộc Đồng Nai vẫn là NGOÀI vùng).
   ngoai_vung = tên tỉnh / thành của căn KHI khách đã nói rõ địa danh nằm ngoài vùng (vd "quận Đống Đa, Hà Nội" → "Hà Nội"; "nhà
-  ở Đà Nẵng" → "Đà Nẵng"; "Đồng Xoài, Bình Phước" → "Bình Phước"). Chỉ có tên đường (trùng ở nhiều tỉnh) hay chưa rõ tỉnh → bỏ
+  ở Đà Nẵng" → "Đà Nẵng"; "Đồng Xoài, Bình Phước" → "Bình Phước"). Tên thành phố / thị xã / quận / huyện / đảo đủ biết tỉnh là ĐÃ
+  RÕ, điền luôn dù khách không nói tên tỉnh (21/10, SRS-5.1zzzzzzz100: "Trần Phú, Nha Trang" → "Khánh Hòa"; "Ngô Quyền, Hải Phòng" →
+  "Hải Phòng"; Đà Lạt → "Lâm Đồng"; Phú Quốc → "Kiên Giang"). Chỉ có tên đường (trùng ở nhiều tỉnh) hay chưa rõ nơi nào → bỏ
   trống, KHÔNG đoán. Có điền thì ngoai_vung_trich_dan = NGUYÊN VĂN cụm địa danh khách nói.
 - KHÁCH BẢO ĐĂNG (20/10/2026, SRS-5.1zzzzzzz86): xin_dang = NGUYÊN VĂN cụm khách bảo đăng tin / lên tin / xin xem bản tin hoàn chỉnh
   (vd "ok em đăng đi", "đăng giúp anh", "soạn tin cho chị xem"). Chỉ hỏi phí, hỏi link web, hay đang kể thông tin căn → bỏ trống.

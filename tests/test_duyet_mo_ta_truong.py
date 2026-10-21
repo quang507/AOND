@@ -54,3 +54,13 @@ def test_nap_lai_bo_dau_thong_so_ai_khoi_o_tin():
     rows = [_dong(UUID_GACH, UUID[:8].upper(), fields={"gia": "5 tỷ", "_thong_so_ai": True})]
     li = StoreNap(rows=rows).load("zalo-thu-1").listings[0]
     assert li.prop.fields == {"gia": "5 tỷ"}
+
+
+def test_o_met_so_tran_them_don_vi_truoc_khi_doc_thong_so():
+    """SRS-5.1zzzzzzz100: AI ghi "lộ giới đường" = "20" (số trần) — bộ đọc DB chỉ nhận "20m", cột độ rộng đường vào bỏ trống."""
+    kho = SupabaseConversationStore.__new__(SupabaseConversationStore)
+    kho._thong_so_nho = {}
+    gui: list[str] = []
+    kho._request = lambda m, e, data=None, **k: gui.append(data["p_text"]) or {}
+    kho._thong_so({"mat_tien": "4", "lo_gioi_duong": "20", "so_tang": "4"}, "nha_pho")
+    assert "lộ giới đường: 20m" in gui[0] and "ngang: 4m" in gui[0] and "4m;" not in gui[0].split("lộ giới")[1]   # số tầng không thêm m

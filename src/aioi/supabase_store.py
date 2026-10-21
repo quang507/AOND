@@ -76,6 +76,7 @@ _O_KHONG_PHAI_THONG_SO = {"dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "d
 # góc: căn thường" → căn góc; "thang máy di chuyển: không có" → có thang máy; "bề ngang mặt tiền: 4m" → mặt tiền. Các ô đó gửi giá trị
 # trơn (ô bề ngang kèm chữ "ngang" để còn đọc ra số đo); phí gửi xe / yêu cầu xe hơi của người mua không phải thông số căn.
 # `lo_gioi_duong` ghim "lộ giới đường" (SRS-5.1zzzzzzz95): nhãn ô cho người / AI đọc đổi chữ thì chữ gửi bộ đọc thông số của DB không đổi.
+_O_MET = ("mat_tien", "lo_gioi_duong", "lo_gioi_hem")   # ô luôn tính bằng mét (bề ngang, độ rộng đường / hẻm)
 NHAN_TRUNG_TINH = {"lo_gioi_hem": "", "mat_tien": "ngang", "lo_gioi_duong": "lộ giới đường", "thuong_luong": "", "can_goc": "", "thang_may": "",
                    "phap_ly_hoan_cong": "", "phap_ly_so_do": ""}
 
@@ -358,6 +359,10 @@ class SupabaseConversationStore(KhoNguoiMua):
             if k in _O_KHONG_PHAI_THONG_SO or str(k).startswith("_") or not isinstance(v, (str, int, float)) or not str(v).strip():
                 continue
             nhan = NHAN_TRUNG_TINH[k] if k in NHAN_TRUNG_TINH else FIELD_LABELS.get(k, k.replace("_", " ")).split(" (")[0]
+            # Ô tính bằng MÉT mà AI ghi số trần ("20") → thêm "m" (SRS-5.1zzzzzzz100: bắn thử 21/10 "lộ giới đường: 20" — bộ đọc DB
+            # chỉ nhận "20m", cột độ rộng đường vào bỏ trống). Đơn vị theo định nghĩa ô, không đoán.
+            if k in _O_MET and re.fullmatch(r"\d+(?:[.,]\d+)?", str(v).strip()):
+                v = f"{str(v).strip()}m"
             dong.append(f"{nhan}: {v}" if nhan else str(v))
         chu = "; ".join(dong)
         if not chu:
