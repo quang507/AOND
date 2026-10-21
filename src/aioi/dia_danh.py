@@ -37,6 +37,11 @@ def bo_dau(s: str) -> str:
     return "".join(c for c in s if unicodedata.category(c) != "Mn").lower()
 
 
+def ten_tran(ten: str | None) -> str:
+    """Tên phường / xã bỏ dấu, bỏ chữ loại đứng đầu: "Phường An Hội Tây" → "an hoi tay" — để soát lời bot có nhắc phường đó không."""
+    return re.sub(r"^(phuong|xa|thi tran|dac khu)\s+", "", bo_dau(ten or "").strip())
+
+
 def _loi(s: str, bo: frozenset[str]) -> str:
     return "".join(w for w in re.sub(r"[^a-z0-9]+", " ", bo_dau(s)).split() if w not in bo)
 
@@ -200,8 +205,8 @@ class TraDiaDanh:
                 log.warning("đọc kho hẻm lỗi: %s", e)
                 dong = []
             self._nho_hem[khoa] = sorted({d.get("phuong") for d in dong if d.get("phuong") and _cung_quan(d.get("quan_cu"), quan)})
-            if self._nho_hem[khoa]:
-                log.info("phường theo hẻm: %d phường", len(self._nho_hem[khoa]))
+            # warning, không phải info: lõi production chỉ in từ warning (bắn thử 21/10 không thấy dòng này dù đã tra). Chỉ con số.
+            log.warning("phường theo hẻm: %d phường", len(self._nho_hem[khoa]))
         return self._nho_hem[khoa]
 
     def _phuong_cua_duong(self, ten: str, quan: str | None, mac_dinh: list) -> list[str]:
@@ -283,6 +288,17 @@ def goi_y_duong(tra: TraDiaDanh | None, fields: dict[str, str]) -> str:
             "dia_chi cho khớp; khách nói tên khác → ghi theo lời khách; khách không nhắc tới → không đổi.\n")
 
 
+def phuong_kho_hem(tra: TraDiaDanh | None, fields: dict[str, str]) -> list[str]:
+    """SRS-5.1zzzzzzz115: số hẻm trong địa chỉ thu hẹp phường — chủ dự án 21/10 "họ nói 137/28 đường số 59 con bot có hiểu ko"
+    (Đường số 59 qua 7 phường, hẻm 137 của nó chỉ ở An Hội Tây). Chưa có phường thì gợi ý ở MỌI lượt (cả lượt tin rao đầu) và
+    thay cho gợi ý theo đường; luôn ở dạng HỎI — kho hẻm từ OSM có thể thiếu / lệch. Engine dùng cùng danh sách để kiểm lời bot."""
+    if tra is None or not fields.get("duong") or fields.get("phuong") or _goi_y(tra, fields):
+        return []
+    d = tra.duong(fields.get("duong"), fields.get("quan"))
+    return tra.phuong_theo_hem(fields.get("dia_chi"), d["ten"] if d else fields.get("duong"), fields.get("quan"),
+                               "hem" in bo_dau(fields.get("lo_gioi_hem") or ""))
+
+
 def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: str | None) -> str:
     """Khối cho prompt trả lời: tên đường khách gõ gần với đường nào trong kho (hỏi xác nhận, lượt nào cũng được — không chỉ lúc
     hỏi địa chỉ), và khi sắp hỏi phường thì đường đó đi qua những phường nào. Hệ thống tra, không phải khách nói."""
@@ -296,12 +312,7 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
                     "hô lượt này), không nhắc chữ khách gõ sai. Trong hội thoại khách đã trả lời giữ tên của mình thì thôi, không hỏi lại.")
     d = tra.duong(fields.get("duong"), fields.get("quan"))
     ph = d["phuong"] if d else []
-    # SRS-5.1zzzzzzz115: số hẻm trong địa chỉ thu hẹp phường — chủ dự án 21/10 "họ nói 137/28 đường số 59 con bot có hiểu ko"
-    # (Đường số 59 qua 7 phường, hẻm 137 của nó chỉ ở An Hội Tây). Chưa có phường thì gợi ý ở MỌI lượt (cả lượt tin rao đầu) và
-    # thay cho gợi ý theo đường; luôn ở dạng HỎI — kho hẻm từ OSM có thể thiếu / lệch.
-    ph_hem = [] if (fields.get("phuong") or goi_y) else \
-        tra.phuong_theo_hem(fields.get("dia_chi"), d["ten"] if d else fields.get("duong"), fields.get("quan"),
-                            "hem" in bo_dau(fields.get("lo_gioi_hem") or ""))
+    ph_hem = phuong_kho_hem(tra, fields)
     if len(ph_hem) == 1:
         dong.append(f"Kho hẻm: hẻm trong địa chỉ khách chỉ có ở {ph_hem[0]} — khi hỏi phường, hỏi xác nhận dạng HỎI (\"nhà mình ở "
                     f"{ph_hem[0]} đúng không anh/chị?\"), KHÔNG khẳng định; khách nói phường khác thì ghi theo khách, không hỏi lại.")

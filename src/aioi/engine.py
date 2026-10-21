@@ -93,7 +93,7 @@ from .prompts import (
 from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import Property, BuyerLead, PropertyGroup
-from .dia_danh import TraDiaDanh, goi_y_duong, khoi_dia_danh
+from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .mua import khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_viec_vua_ghi, lenh_tra_loi
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
@@ -2029,6 +2029,10 @@ class Engine:
         # Tra địa danh (SRS-5.1zzzzzzz60/61): hỏi xác nhận tên đường kho gợi ý ở MỌI nhánh (cả lượt soạn bản nháp), kể phường khi hỏi phường.
         with _do(conv, "dia_danh"):
             system += khoi_dia_danh(self._dia_danh, conv.prop.fields, None if is_listing_post else next_field)
+            # SRS-5.1zzzzzzz115: lượt này hỏi phường mà kho hẻm thu được 1–4 phường → lời bot phải nhắc (dạng hỏi) — bắn thử 21/10
+            # Haiku có khối "Kho hẻm" trong prompt vẫn hỏi trống "nhà mình thuộc phường nào". Kiểm ở _soat_hinh_thuc.
+            hem_phai_nhac = ([] if is_listing_post or "phuong" not in (cum_hoi or [next_field])
+                             else phuong_kho_hem(self._dia_danh, conv.prop.fields))
         if conv.y_luot.get("da_tra_loi_khach"):
             system += ("\nEM VỪA CHUYỂN câu trả lời của anh/chị cho khách mua đang hỏi (hệ thống báo khách ngay). Cảm ơn ngắn gọn, "
                        "nói em đã báo khách rồi, rồi mới tiếp chuyện tin rao.\n")
@@ -2091,7 +2095,7 @@ class Engine:
         if not reply:   # SRS-5.1zzzzzzz82: không gửi "kết nối mạng gián đoạn, nhắn lại giúp em" — server giữ chỗ rồi tự thử lại
             raise LoiTraLoi("lời gửi khách rỗng")
 
-        reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply))
+        reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply), hem_phai_nhac if len(hem_phai_nhac) <= 4 else [])
         if trinh_nhap:
             reply = cat_truoc_mo_dau(reply, customer_pronoun)
         if xin_sao:
@@ -2140,12 +2144,18 @@ class Engine:
         cau = cau_xin_sao({"anh": "anh", "chi": "chị"}.get(x, "anh/chị"), em_xung_minh=(x == "em"))
         return f"{reply.rstrip()}\n\n{cau}"
 
-    def _soat_hinh_thuc(self, conv: Conversation, system: str, reply: str) -> str:
+    def _soat_hinh_thuc(self, conv: Conversation, system: str, reply: str, phuong_phai_nhac: list[str] | None = None) -> str:
         """Luật HÌNH THỨC code kiểm được mà không đọc ý — lệch thì gọi lại model MỘT lần kèm lý do, không tự sửa chữ.
         Bản tin (📋) phải có giá trong tiêu đề (SRS-5.1zzzzzzz86: bắn thử 20/10, bản tin CẬP NHẬT của KB3 bỏ giá dù AD_FORMAT bắt
-        buộc); không mở đầu "Dạ" (SRS-5.1zzzzzzz87). Cả nhánh bán lẫn nhánh mua."""
+        buộc); không mở đầu "Dạ" (SRS-5.1zzzzzzz87). Cả nhánh bán lẫn nhánh mua. `phuong_phai_nhac` (SRS-5.1zzzzzzz115): phường kho
+        hẻm của lượt hỏi phường — lời không nhắc phường nào trong đó thì viết lại."""
         thieu_td = _tieu_de_thieu(reply, conv.prop)
         ly_do = []
+        if phuong_phai_nhac and not any(ten_tran(p) in bo_dau(reply) for p in phuong_phai_nhac):
+            ds = ", ".join(phuong_phai_nhac)
+            ly_do.append(f"Lời vừa viết hỏi phường mà không nhắc phường kho hẻm ({ds}) — câu hỏi phường phải nêu "
+                         + (f"{ds} ở dạng hỏi xác nhận (\"nhà mình ở {ds} đúng không …?\")" if len(phuong_phai_nhac) == 1
+                            else "các phường này cho khách chọn") + ", không hỏi trống \"thuộc phường nào\".")
         if thieu_td:
             ly_do.append("Bản tin vừa viết có TIÊU ĐỀ thiếu " + ", ".join(thieu_td)
                          + "; tiêu đề tối đa 15 từ, đủ vị trí · diện tích · giá.")

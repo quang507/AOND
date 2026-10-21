@@ -7843,9 +7843,21 @@ nhưng kho hẻm (bảng `duong`, `loai = hem`, nạp từ OSM) có hẻm 137 c�
 3. **Cùng lớp**: gợi ý phường theo đường (`_phuong_cua_duong`) vẫn giữ cho địa chỉ không có số hẻm; ngã tư (`giao_lo.py`) đã dùng kho
    giao lộ riêng. Kho hẻm OSM có thể thiếu / lệch → chỉ gợi ý dạng hỏi, khách nói phường khác thì ghi theo khách.
 
-Kiểm: `tests/test_phuong_theo_hem.py` (6 ca, thêm ca AI bỏ chữ "hẻm"; đọc số hẻm; 137/28 Đường số 59 → An Hội Tây, không kể 7 phường; nhà mặt tiền 285 không lấy
-phường của hẻm 285; đã có phường thì không tra; quận khách nói lọc hẻm) — hàm mới, bản cũ không có nên đỏ. Bắn thử production
-`apply-migration` ô `ban-thu-dc` (5 ca địa chỉ thật trong kho): TRƯỚC khi cài 4/4 ca có số hẻm bot hỏi phường trống, ca mặt tiền đạt.
+4. **Bước 2 — model bỏ qua lời dặn** (bắn thử sau khi cài, run 39571332332): ô phiên đủ dữ kiện (dia_chi "137/28 Đường số 59",
+   lo_gioi_hem "Nhà hẻm"), kho trả đúng 4/4 hẻm (soát trực tiếp trên DB), vậy mà 4/4 lời bot vẫn hỏi trống "Nhà mình thuộc phường nào".
+   Hai lý do: dòng log "phường theo hẻm" ở mức info nên lõi production không in (không biết gợi ý đã vào prompt hay chưa), và Haiku
+   có khối "Kho hẻm" vẫn viết câu hỏi phường theo thói quen. **Lớp**: lời dặn trong prompt mà code không soát đầu ra — cùng lớp với
+   tiêu đề thiếu giá / mở đầu "Dạ" (SRS-5.1zzzzzzz86/87), đã có `_soat_hinh_thuc`. **Sửa**: `phuong_kho_hem` (một chỗ tính, khối prompt
+   và bước soát cùng dùng); lượt này hỏi phường mà kho hẻm ra 1–4 phường thì `_soat_hinh_thuc` đòi lời bot nhắc ít nhất một phường đó
+   (so tên bỏ dấu, `ten_tran`) — thiếu thì gọi lại model MỘT lần kèm lý do, không tự sửa chữ. Log "phường theo hẻm" lên mức warning
+   (chỉ con số). **Cùng lớp còn lại**: gợi ý phường theo đường (1 phường, "Kho đường") và gợi ý tên đường gần đúng cũng chỉ là lời dặn,
+   chưa soát — để nguyên tới khi bắn thử thấy lệch.
+
+Kiểm: `tests/test_phuong_theo_hem.py` (9 ca: thêm ca AI bỏ chữ "hẻm"; đọc số hẻm; 137/28 Đường số 59 → An Hội Tây, không kể 7 phường; nhà mặt tiền 285 không lấy
+phường của hẻm 285; đã có phường thì không tra; quận khách nói lọc hẻm; lời hỏi phường trống → gọi lại model, lời đã nhắc phường
+→ không gọi lại, đã có phường → không soát) — ca gọi lại đỏ khi gỡ bước soát ở `engine.py`. Bắn thử production
+`apply-migration` ô `ban-thu-dc` (5 ca địa chỉ thật trong kho): TRƯỚC khi cài 4/4 ca có số hẻm bot hỏi phường trống, ca mặt tiền đạt;
+sau bước 1 vẫn 4/4 hỏi trống (lý do ở mục 4).
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

@@ -71,3 +71,48 @@ def test_ai_bo_chu_hem_van_tra_duoc_khi_can_trong_hem():
     k = khoi_dia_danh(_tra(), {"duong": "Quang Trung", "dia_chi": "965 Quang Trung"}, None)   # chưa biết hẻm hay mặt tiền
     assert "Kho hẻm" not in k
     assert so_hem_cua("đường số 59", "Đường số 59", la_hem=True) == []                       # số trong tên đường không phải hẻm
+
+
+class _Model:
+    """Model giả: lần lượt trả các lời đã định, ghi lại system mỗi lượt."""
+    def __init__(self, loi):
+        self.loi, self.systems = list(loi), []
+
+    def extract(self, *a, **k):
+        return {"operations": []}
+
+    def reply(self, system, messages, **k):
+        self.systems.append(system)
+        return self.loi.pop(0) if self.loi else "Nhà mình thuộc phường nào vậy chị?"
+
+    chat = reply
+
+
+def _lam(monkeypatch, loi, them=None):
+    from aioi.engine import Engine
+    f = {"loai_hinh": "nha_pho", "dia_chi": "137/28 đường số 59", "duong": "đường số 59", "gia": "6 tỷ 2", **(them or {})}
+    monkeypatch.setattr(Engine, "_ap_dung_ke_hoach", lambda self, conv, plan: (conv.prop.update(f), []))
+    m = _Model(loi)
+    e = Engine(m)
+    e._dia_danh = _tra()
+    r = e.handle("hem1", "Chị bán nhà 137/28 đường số 59, 4x15m, 1 trệt 2 lầu, giá 6 tỷ 2")
+    return m, r
+
+
+def test_loi_hoi_phuong_trong_thi_goi_lai_model(monkeypatch):
+    """Bắn thử 21/10 (DC1): khối "Kho hẻm" đã vào prompt, Haiku vẫn hỏi trống "Nhà mình thuộc phường nào" → gọi lại một lần."""
+    m, r = _lam(monkeypatch, ["Em ghi rồi chị. Nhà mình thuộc phường nào vậy chị?",
+                              "Em ghi rồi chị. Nhà mình ở An Hội Tây đúng không chị?"])
+    assert "Kho hẻm" in m.systems[0]
+    assert len(m.systems) == 2 and "VIẾT LẠI LƯỢT NÀY" in m.systems[1] and "An Hội Tây" in m.systems[1]
+    assert "An Hội Tây" in r.reply
+
+
+def test_loi_da_nhac_phuong_thi_khong_goi_lai(monkeypatch):
+    m, _ = _lam(monkeypatch, ["Nhà mình ở phường An Hội Tây đúng không chị?"])
+    assert len(m.systems) == 1
+
+
+def test_da_co_phuong_khong_soat(monkeypatch):
+    m, _ = _lam(monkeypatch, ["Nhà mình mấy phòng ngủ vậy chị?"], {"phuong": "Phường An Hội Tây"})
+    assert len(m.systems) == 1
