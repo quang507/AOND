@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-20 16:31 (giờ VN)
+-- Sinh lúc: 2026-10-21 12:13 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -164,6 +164,19 @@ create table if not exists public.curated_lists (
   title text,
   created_at timestamp with time zone not null default now(),
   expires_at timestamp with time zone not null default (now() + '30 days'::interval)
+);
+
+create table if not exists public.danh_gia_ai (
+  id uuid not null default gen_random_uuid(),
+  zalo_user_id text not null,
+  vai text not null,
+  ten_khach text,
+  hoi_luc timestamp with time zone not null default now(),
+  sao smallint,
+  loi_khach text,
+  tra_loi_luc timestamp with time zone,
+  da_bao_admin boolean not null default false,
+  la_thu boolean generated always as (la_id_thu(zalo_user_id)) stored
 );
 
 create table if not exists public.deals (
@@ -630,6 +643,18 @@ do $d$ begin
   alter table public.curated_lists add constraint curated_lists_token_key UNIQUE (token);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.danh_gia_ai add constraint danh_gia_ai_pkey PRIMARY KEY (id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.danh_gia_ai add constraint danh_gia_ai_sao_check CHECK (((sao >= 1) AND (sao <= 5)));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.danh_gia_ai add constraint danh_gia_ai_vai_check CHECK ((vai = ANY (ARRAY['ban'::text, 'mua'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.danh_gia_ai add constraint danh_gia_ai_zalo_user_id_key UNIQUE (zalo_user_id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.deals add constraint deals_listing_buyer_key UNIQUE NULLS NOT DISTINCT (listing_id, buyer_id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -978,6 +1003,7 @@ CREATE UNIQUE INDEX conversations_buyer_uniq ON public.conversations USING btree
 create index if not exists conversations_ctv_id_idx ON public.conversations USING btree (ctv_id);
 CREATE UNIQUE INDEX conversations_seller_uniq ON public.conversations USING btree (seller_id) WHERE (seller_id IS NOT NULL);
 create index if not exists curated_lists_buyer_idx ON public.curated_lists USING btree (buyer_id);
+create index if not exists danh_gia_ai_hoi_luc_idx ON public.danh_gia_ai USING btree (hoi_luc DESC);
 create index if not exists deals_buyer_id_idx ON public.deals USING btree (buyer_id);
 create index if not exists deals_ctv_id_idx ON public.deals USING btree (ctv_id);
 create index if not exists deals_listing_id_idx ON public.deals USING btree (listing_id);
@@ -6668,6 +6694,7 @@ alter table public.chat_quota enable row level security;
 alter table public.conversations enable row level security;
 alter table public.ctvs enable row level security;
 alter table public.curated_lists enable row level security;
+alter table public.danh_gia_ai enable row level security;
 alter table public.deals enable row level security;
 alter table public.du_an_kien_thuc enable row level security;
 alter table public.duong enable row level security;
@@ -6740,6 +6767,8 @@ drop policy if exists ctvs_admin_read on public.ctvs;
 create policy ctvs_admin_read on public.ctvs as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
   WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text)))));
+drop policy if exists danh_gia_ai_admin_doc on public.danh_gia_ai;
+create policy danh_gia_ai_admin_doc on public.danh_gia_ai as permissive for SELECT to authenticated using (la_admin());
 drop policy if exists info_requests_admin_read on public.info_requests;
 create policy info_requests_admin_read on public.info_requests as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
@@ -6854,6 +6883,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ct
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ctv_ranks to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ctvs to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.curated_lists to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.danh_gia_ai to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.deals to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.du_an_kien_thuc to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.duong to service_role;
@@ -6933,6 +6963,7 @@ grant SELECT on public.bot_health to authenticated;
 grant SELECT on public.bot_usage to authenticated;
 grant SELECT on public.bot_usage_model to authenticated;
 grant SELECT on public.bridge_dang_nhap to authenticated;
+grant SELECT on public.danh_gia_ai to authenticated;
 grant SELECT on public.hoi_thoai_nhan to authenticated;
 grant SELECT on public.hoi_thoai_phien to authenticated;
 grant SELECT on public.hoi_thoai_thong_ke to authenticated;
