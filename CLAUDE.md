@@ -124,7 +124,7 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > **Câu chuẩn (SRS-5.1zzzzzzz88, 20/10/2026):** chủ dự án / tester chấm điểm và sửa tay câu bot ở `/admin/cau-chuan` (bảng `cau_chuan`,
 > ngữ cảnh chép kèm); lõi đọc 8 dòng đã sửa / chấm làm ví dụ (`khoi_cau_chuan`, nhớ 60 giây). Đổi giọng bot theo ca cụ thể thì sửa ở đó trước.
 > **Câu mẫu cố định (SRS-5.1zzzzzzz106, 21/10/2026):** câu bot nói NGUYÊN VĂN (duyệt tin, hỏi phí, nhắc bản nháp, xin chấm sao, giữ chỗ khi
-> lỗi) chỉ ở `src/aioi/cau_mau.py` (`MAC_DINH`) — chủ dự án sửa ở khung "Câu mẫu cố định" trang `/admin/cau-chuan` (bảng `cau_mau`, đè câu gốc,
+> lỗi; từ SRS-5.1zzzzzzz110 cả lời chào, dòng mở bản nháp, ẩn / giữ rổ hàng, nhận ảnh / link / tệp, tin nhắc) chỉ ở `src/aioi/cau_mau.py` (`MAC_DINH`) — chủ dự án sửa ở khung "Câu mẫu cố định" trang `/admin/cau-chuan` (bảng `cau_mau`, đè câu gốc,
 > nhớ 60 giây). Đừng viết tay câu đó ở chỗ khác (`tests/test_cau_mau.py` đỏ); thêm câu mới = thêm khoá + migration nạp dòng.
 > **Tra địa danh (SRS-5.1zzzzzzz60):** phường / quận / đường khách nói → `src/aioi/dia_danh.py` (chữ trước, vector Gemini sau, máy
 > kiểm tên gần chữ khách); vector do lịch `nhung-tick` / `nhung-dia-danh-tick` nuôi — đừng gỡ hai lịch đó.

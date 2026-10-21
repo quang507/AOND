@@ -190,7 +190,7 @@ export default function Page() {
       </ol>
       </div>
       <aside className="mt-8 lg:mt-0" aria-labelledby="cau-mau-tieu-de">
-        <div className="lg:sticky lg:top-4"><CauMauCoDinh onLoi={setLoi} onBao={setThongBao} /></div>
+        <div className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto"><CauMauCoDinh onLoi={setLoi} onBao={setThongBao} /></div>
       </aside>
       </div>
 
@@ -212,7 +212,9 @@ export default function Page() {
 
 // Câu mẫu cố định (21/10/2026, SRS-5.1zzzzzzz106). Chủ dự án: "đưa thêm 1 bảng nhỏ ở 1 bên là các câu đã sửa thành mẫu từ lúc lấy lại
 // các yêu cầu của anh Luận đến bây giờ… có gì vào sửa tiếp". Bảng `cau_mau` (RLS admin); lõi đọc câu ở đây đè câu trong code, nhớ 60 giây.
-type CauMau = { khoa: string; cau: string; mac_dinh: string; dung_o: string; nguon: string | null; updated_at: string };
+type CauMau = { khoa: string; cau: string; mac_dinh: string; dung_o: string; nguon: string | null; thu_tu: number; updated_at: string };
+// 8 câu đầu (thu_tu ≤ 8) chốt từ khi theo lại bản anh Luận 20/10; các câu sau có từ trước (SRS-5.1zzzzzzz110).
+const NHOM_CAU_MAU = (t: number) => (t <= 8 ? "Chốt từ 20/10 (theo bản anh Luận)" : "Có từ trước");
 
 function CauMauCoDinh({ onLoi, onBao }: { onLoi: (s: string) => void; onBao: (s: string) => void }) {
   const [ds, setDs] = useState<CauMau[] | null>(null);
@@ -220,7 +222,7 @@ function CauMauCoDinh({ onLoi, onBao }: { onLoi: (s: string) => void; onBao: (s:
   const [dangLuu, setDangLuu] = useState<string | null>(null);
 
   const nap = async () => {
-    const { data, error } = await supabase.from("cau_mau").select("khoa, cau, mac_dinh, dung_o, nguon, updated_at").order("thu_tu");
+    const { data, error } = await supabase.from("cau_mau").select("khoa, cau, mac_dinh, dung_o, nguon, thu_tu, updated_at").order("thu_tu");
     if (error) { onLoi(error.message); setDs([]); return; }
     const d = (data ?? []) as CauMau[];
     setDs(d);
@@ -244,19 +246,22 @@ function CauMauCoDinh({ onLoi, onBao }: { onLoi: (s: string) => void; onBao: (s:
       <div className="border-b border-line px-4 py-3">
         <h2 id="cau-mau-tieu-de" className="text-base font-bold text-navy">Câu mẫu cố định</h2>
         <p className="mt-1 text-xs text-mute">
-          Các câu bot nói nguyên văn, chốt từ lúc theo lại bản anh Luận (20/10) tới nay. Sửa rồi Lưu — bot dùng câu mới trong vòng 1 phút.
-          Viết <code className="rounded bg-cream px-1">{"{goi}"}</code> chỗ gọi khách (anh / chị / anh/chị), <code className="rounded bg-cream px-1">{"{Goi}"}</code> khi đứng đầu câu.
+          Các câu bot nói nguyên văn — nhóm chốt từ khi theo bản anh Luận (20/10) và nhóm có từ trước. Sửa rồi Lưu — bot dùng câu mới trong
+          vòng 1 phút. Viết <code className="rounded bg-cream px-1">{"{goi}"}</code> chỗ gọi khách (anh / chị / anh/chị), <code className="rounded bg-cream px-1">{"{Goi}"}</code> khi
+          đứng đầu câu; chữ trong ngoặc nhọn khác (vd <code className="rounded bg-cream px-1">{"{ten}"}</code>, <code className="rounded bg-cream px-1">{"{n}"}</code>) ghi ở dòng mô tả từng câu — giữ nguyên.
         </p>
       </div>
       {ds === null && <p className="px-4 py-6 text-sm text-mute">Đang tải…</p>}
       {ds !== null && ds.length === 0 && <p className="px-4 py-6 text-sm text-mute">Chưa có câu mẫu nào.</p>}
       <ul className="divide-y divide-line">
-        {(ds ?? []).map((c) => {
+        {(ds ?? []).map((c, i, mang) => {
           const v = nhap[c.khoa] ?? c.cau;
+          const dauNhom = i === 0 || NHOM_CAU_MAU(mang[i - 1].thu_tu) !== NHOM_CAU_MAU(c.thu_tu);
           const doi = v.trim() !== c.cau.trim();
           const khacGoc = c.cau.trim() !== c.mac_dinh.trim();
           return (
             <li key={c.khoa} className="space-y-1.5 px-4 py-3">
+              {dauNhom && <div className="-mx-4 -mt-3 mb-2 bg-cream/60 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wide text-mute">{NHOM_CAU_MAU(c.thu_tu)}</div>}
               <div className="flex flex-wrap items-center gap-1.5">
                 <label htmlFor={`cm-${c.khoa}`} className="text-xs font-semibold text-navy">{c.dung_o}</label>
                 {khacGoc && <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[11px] font-bold text-brand">Đã sửa</span>}

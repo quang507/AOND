@@ -24,6 +24,7 @@ from dataclasses import dataclass, field, replace
 from uuid import uuid4
 
 from . import gamification as g
+from . import cau_mau
 from .danh_gia import KHOI_SAP_XIN_SAO, cau_xin_sao, doc_sao, khoi_cam_on_sao, vua_xin_sao
 from .assistants import Assistant, assign_assistant
 from .drive import extract_drive_id
@@ -1677,21 +1678,11 @@ class Engine:
                 self._convstore.reset(user_key)
             
             if had_prior_history and cmd in ("/reset", "/clear", "/xoa", "reset session", "xóa hết"):
-                reply = (
-                    f"Em chào anh/chị! Em là {conv.assistant.name} từ AI Ơi Nhà Đất.\n"
-                    "Em đã làm mới phiên chat và xóa toàn bộ thông tin nháp trước đó rồi ạ. "
-                    "Anh/chị có thể bắt đầu gửi thông tin nhà đất cần rao bán hoặc cho thuê nhé! 🏡✨"
-                )
+                reply = cau_mau.cau("lenh_lam_moi", ten=conv.assistant.name)   # câu mẫu sửa ở CRM (SRS-5.1zzzzzzz110)
             elif had_prior_history:
-                reply = (
-                    f"Chào anh/chị ạ! Em là {conv.assistant.name}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n"
-                    "Em đã làm mới cuộc trò chuyện rồi ạ. Anh/chị đang có căn chung cư, nhà phố hay đất cần gửi bán hoặc cho thuê vậy ạ?"
-                )
+                reply = cau_mau.cau("chao_lam_moi", ten=conv.assistant.name)
             else:
-                reply = (
-                    f"Chào anh/chị ạ! Em là {conv.assistant.name}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n"
-                    "Anh/chị đang có căn chung cư, nhà phố hay đất cần gửi bán hoặc cho thuê vậy ạ?"
-                )
+                reply = cau_mau.cau("chao_lan_dau", ten=conv.assistant.name)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured=[], now=now)
@@ -1742,7 +1733,9 @@ class Engine:
                     "hinh_anh": len(li.media),
                 }
             json_str = json.dumps(dump_data, ensure_ascii=False, indent=2)
-            reply = f"📋 Dữ liệu trích xuất hiện tại (JSON):\n```json\n{json_str}\n```"
+            # Không mở bằng "📋" — dấu đó là dấu bản nháp tin rao; `_ban_tin_da_trinh` lấy lượt có 📋 cuối cùng làm bản khách duyệt, nên
+            # gõ "thong tin" sau bản nháp rồi duyệt là đăng khối JSON lên web (SRS-5.1zzzzzzz110).
+            reply = f"🧾 Dữ liệu trích xuất hiện tại (JSON):\n```json\n{json_str}\n```"
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured=[], now=now)
@@ -1790,13 +1783,13 @@ class Engine:
         if conv.pending_destructive:
             if conv.y_luot.get("xac_nhan_xoa") == "dong_y":
                 _changed, receipts = self._apply_pending_destructive(conv)
-                reply = self._receipt_reply(conv, receipts) or "Em đã cập nhật rổ hàng rồi ạ."
+                reply = self._receipt_reply(conv, receipts) or cau_mau.cau("da_cap_nhat_ro")
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
                 return self._build_result(conv, reply, captured=[], now=now)
             conv.pending_destructive = []  # not a clear yes → keep the basket intact
             if conv.y_luot.get("xac_nhan_xoa") == "tu_choi":
-                reply = "Em giữ nguyên rổ hàng, không xóa gì đâu ạ 👍"
+                reply = cau_mau.cau("giu_nguyen_ro")
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
                 return self._build_result(conv, reply, captured=[], now=now)
@@ -2373,8 +2366,7 @@ class Engine:
             link = next((m.get("web_url") for m in ut.media if m.get("web_url")), "")
             tail = f" đây ạ: {link}" if link else " em có lưu, để em gửi lại nha."
             return f"Bản vẽ/mặt bằng mẫu {ut.name}{tail} 📐"
-        return (f"Em CHƯA có bản vẽ/mặt bằng {who} ạ 😅. Anh/chị gửi giúp em file bản vẽ, "
-                "hoặc để em xin bên dự án rồi gửi lại nhé! (Em không đụng gì tới rổ hàng đâu ạ.)")
+        return cau_mau.cau("chua_co_ban_ve", can=who)
 
     def _answer_from_docs(self, conv: Conversation, project: Project, text: str) -> str:
         """Answer a factual question STRICTLY from the project's stored source docs — a focused
@@ -2430,13 +2422,7 @@ class Engine:
         if text is not None:  # it's a spreadsheet → bulk import
             conv = self.conversation(user_key)
             n = self.import_csv(user_key, text)
-            reply = (
-                f"Em nhận được bảng tính rồi, đã nhập {n} căn vào rổ hàng của mình ạ! 🎉 "
-                "Anh/chị xem lại giúp em nhé."
-                if n else
-                "Em có nhận bảng tính nhưng chưa đọc ra căn nào — anh/chị kiểm tra lại "
-                "các cột (loại hình, địa chỉ, diện tích, giá...) giúp em nhé."
-            )
+            reply = cau_mau.cau("nhap_bang_tinh", n=n) if n else cau_mau.cau("bang_tinh_trong")
             conv.history.append(Turn("user", f"[Khách gửi bảng tính qua link: {url}]", now))
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
@@ -2484,8 +2470,7 @@ class Engine:
         page = self._html_to_text(data)[:20000]
         conv.history.append(Turn("user", f"[Khách gửi link trang web: {url}]", now))
         if not page:
-            reply = ("Em mở link nhưng chưa đọc được nội dung ạ 😅. Anh/chị gửi link khác, "
-                     "hoặc dán nội dung giúp em nhé.")
+            reply = cau_mau.cau("link_web_trong")
         else:
             system = (
                 "Bạn là trợ lý BĐS của AI Ơi Nhà Đất. Đọc NỘI DUNG TRANG WEB dưới đây và tóm tắt "
@@ -2519,11 +2504,7 @@ class Engine:
              "urls": list(urls), "at": now})
         log.warning("Oversize media send (>%d bytes) escalated to admin for %s: %s",
                     MAX_SEND_BYTES, conv.user_key, urls)
-        reply = (
-            "File to quá ạ (>20MB), xin lỗi em chưa xử lý được 😔. Em đã báo admin rồi ạ — "
-            "anh/chị không cần làm gì thêm đâu. Admin của em sẽ vào chat này đọc file/link của "
-            "mình rồi xử lý sau nhé!"
-        )
+        reply = cau_mau.cau("file_qua_lon")
         conv.history.append(Turn("user", f"[Khách gửi file/link >20MB: {', '.join(urls)}]", now))
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
@@ -2568,11 +2549,9 @@ class Engine:
         if not fetched:
             # Folder links get a specific nudge; everything else gets the friendly fallback.
             if any(is_drive_folder(u) for u in urls):
-                reply = ("Đây là link thư mục Drive ạ. Anh/chị gửi từng ảnh/file "
-                         "(hoặc link từng tấm) giúp em nhé!")
+                reply = cau_mau.cau("link_thu_muc_drive")
             else:
-                reply = ("Em chưa mở được link này ạ. Anh/chị chụp và gửi thẳng "
-                         "giúp em vài tấm nhé!")
+                reply = cau_mau.cau("link_khong_mo_duoc")
             conv.history.append(Turn("user", f"[Khách gửi link không đọc được: {', '.join(urls)}]", now))
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
@@ -2769,7 +2748,7 @@ class Engine:
             for p in parts
         ) if parts else False
         if is_hash:
-            return f"📎 Em đã nhận {count} ảnh của nhà mình rồi nhé! 📸✨"
+            return cau_mau.cau("nhan_anh", n=count)
         return f"📎 Em đã nhận: {names}"
 
     @staticmethod
@@ -3752,16 +3731,11 @@ class Engine:
         kinds = {r[0] for r in receipts}
         if "confirm_destructive" in kinds:  # ask BEFORE changing anything
             what = next((r[1] for r in receipts if r[0] == "confirm_destructive"), "đổi trạng thái rao")
-            return (f"Anh/chị muốn em **{what}** — đúng không ạ? "
-                    "Nhắn **\"đúng\"** để em làm, hoặc **\"thôi\"** để giữ nguyên nhé. "
-                    "(Em KHÔNG xóa dữ liệu đâu — chỉ ẩn tin, rao lại lúc nào cũng được.)")
+            return cau_mau.cau("xac_nhan_an", viec=what)   # câu mẫu sửa ở CRM (SRS-5.1zzzzzzz110)
         if "clear" in kinds:
-            return ("Em đã NGƯNG RAO toàn bộ rổ hàng ạ — các tin giờ ở trạng thái **không rao** "
-                    "(em vẫn giữ nguyên dữ liệu, anh/chị muốn rao lại căn nào cứ nhắn em). 🙈")
+            return cau_mau.cau("da_an_het")
         if kinds & {"remove", "keep_only"}:
-            n = self._rao_count(conv)
-            return (f"Em đã cập nhật — giờ còn **{n} căn đang rao** ạ. Các căn kia em chuyển sang "
-                    "**không rao** (vẫn giữ dữ liệu, rao lại được bất cứ lúc nào nha). ✅")
+            return cau_mau.cau("da_an_bot", n=self._rao_count(conv))
         return None
 
     def _fan_out_units(self, conv: Conversation, shared: dict[str, str], codes: list[str]) -> list[str]:

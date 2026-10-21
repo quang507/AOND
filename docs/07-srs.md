@@ -7729,6 +7729,32 @@ bóng nào mở đầu "Dạ". Còn:
 
 Kiểm: `tests/test_tieu_de_ban_tin.py` (3 ca, đỏ trên code cũ — đã thử).
 
+### SRS-5.1zzzzzzz110 · Câu mẫu cố định: thêm 23 câu có từ trước; lệnh xem JSON mang dấu bản nháp (21/10/2026)
+
+Chủ dự án 21/10: "đưa luôn mấy câu trước đó nữa đi" (sau khung tám câu của SRS-5.1zzzzzzz106). Soát cả lõi: ngoài tám câu đó còn 31 câu bot
+gửi khách nguyên văn. Đưa vào `cau_mau` 23 câu khách hay gặp, chia hai nhóm trên CRM ("Chốt từ 20/10" / "Có từ trước"):
+- chào lần đầu / chào làm mới phiên / lệnh làm mới (`{ten}` = tên trợ lý);
+- dòng mở bản nháp (hai bản theo cách xưng) và câu hỏi cuối bản nháp;
+- hỏi xác nhận ẩn (`{viec}`), đã ẩn hết, đã ẩn bớt (`{n}`), đã cập nhật, giữ nguyên rổ hàng;
+- nhận ảnh (`{n}`), file quá 20 MB, link thư mục Drive, link không mở được, trang web trống, nhập bảng tính (`{n}`), bảng tính trống;
+- chưa có bản vẽ (`{can}`);
+- tin nhắc 5 phút: hỏi lại câu vừa hỏi (`{toi}`, `{hoi}`), xin ảnh (hai bản theo cách xưng).
+
+**Để ngoài** (không đưa vào khung): câu chỉ gửi nhân viên ("#mã: trả lời"), lệnh xem dữ liệu, các khối ghép nhiều số liệu (đọc bảng giá,
+tách nhóm ảnh, dòng tóm tắt sổ đỏ), lời bọc khi đọc trang web, câu hỏi tên dự án trùng.
+
+**Khung bắt buộc**: dòng mở bản nháp phải bắt đầu "📋" và kết thúc ":" trên một dòng (`cau_mau._KHUNG`) — code tìm tiêu đề bản tin và cắt câu
+dẫn theo dòng này; sửa sai khung thì dùng câu gốc. `cat_truoc_mo_dau` nhận dòng mở theo khuôn cũ VÀ theo câu đang dùng ở CRM, rồi thay bằng
+câu đang dùng.
+
+**Lỗi soát ra cùng lượt**: lệnh "json" / "thong tin" in khối dữ liệu mở bằng "📋" — đúng dấu bản nháp; `_ban_tin_da_trinh` lấy lượt có 📋
+cuối cùng làm bản khách duyệt, nên khách gõ "thong tin" sau bản nháp rồi duyệt là đăng khối JSON lên web. **Lớp**: dấu nhận dạng bản nháp
+(📋) dùng chung cho thứ không phải bản nháp. **Cùng lớp đã soát**: dòng đọc bảng giá dùng "📊", nhận ảnh / tệp dùng "📎" — không trùng;
+chỉ lệnh JSON trùng. **Sửa**: đổi sang "🧾".
+
+Kiểm: `tests/test_cau_mau.py` (thêm 4 ca: câu cũ sửa ở CRM tới lời bot; dòng mở sửa vẫn cắt câu dẫn; sai khung dùng câu gốc; lệnh JSON không
+mang 📋 — ca này đỏ trên code cũ, đã chạy).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

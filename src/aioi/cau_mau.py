@@ -2,8 +2,13 @@
 các câu đã sửa thành mẫu từ lúc lấy lại các yêu cầu của anh Luận đến bây giờ… có gì vào sửa tiếp").
 
 Câu trong code (`MAC_DINH`) là MẶC ĐỊNH; dòng ở bảng `cau_mau` (trang /admin/cau-chuan, khung "Câu mẫu cố định") đè lên, đọc lại sau
-60 giây. Chỗ giữ chữ: `{goi}` = cách gọi khách (anh / chị / anh/chị), `{Goi}` = như trên, viết hoa chữ đầu. Câu sửa hỏng (ngoặc
-nhọn lạ, rỗng) thì dùng mặc định — bot không bao giờ gửi câu lỗi vì một lần sửa tay."""
+60 giây. Chỗ giữ chữ: `{goi}` = cách gọi khách (anh / chị / anh/chị), `{Goi}` = như trên, viết hoa chữ đầu; vài câu có thêm chỗ giữ
+riêng (ghi ở cột "dùng ở đâu", vd `{ten}` tên trợ lý, `{n}` số căn). Câu sửa hỏng (ngoặc nhọn lạ, rỗng, sai khung bắt buộc như dòng mở
+bản nháp phải bắt đầu "📋" và kết thúc ":") thì dùng mặc định — bot không bao giờ gửi câu lỗi vì một lần sửa tay.
+
+21/10/2026 (SRS-5.1zzzzzzz110, chủ dự án "đưa luôn mấy câu trước đó nữa đi"): thêm 22 câu nguyên văn có từ trước khi theo anh Luận —
+chào / làm mới phiên, dòng mở + câu hỏi cuối bản nháp, ẩn / giữ rổ hàng, nhận ảnh, link / file không mở được, bản vẽ, bảng tính,
+tin nhắc 5 phút."""
 from __future__ import annotations
 
 import logging
@@ -32,6 +37,65 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                 "Lượt trả lời bị lỗi — giữ chỗ, bot tự làm lại sau 20 giây", "SRS-5.1zzzzzzz82 · đánh giá UX 20/10"),
     "thu_lai_hong": ("Em xin lỗi anh/chị, hệ thống bên em đang chậm. Em đã báo anh/chị phụ trách xem tin của mình, anh/chị ấy sẽ "
                      "nhắn lại sớm ạ.", "Làm lại vẫn lỗi — xin lỗi và báo người phụ trách", "SRS-5.1zzzzzzz82"),
+    # --- Câu có từ trước khi theo anh Luận (SRS-5.1zzzzzzz110) ---
+    "chao_lan_dau": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n{Goi} đang có căn chung cư, nhà phố hay "
+                     "đất cần gửi bán hoặc cho thuê vậy ạ?",
+                     "Khách chào (hello / hi / alo / 👋) lần đầu. {ten} = tên trợ lý", "Lời chào cũ, giữ (quyết định 20/10)"),
+    "chao_lam_moi": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\nEm đã làm mới cuộc trò chuyện rồi ạ. {Goi} "
+                     "đang có căn chung cư, nhà phố hay đất cần gửi bán hoặc cho thuê vậy ạ?",
+                     "Khách chào khi đã có chuyện cũ — làm mới phiên. {ten} = tên trợ lý", "Quyết định 20/10: hello làm mới phiên"),
+    "lenh_lam_moi": ("Em chào {goi}! Em là {ten} từ AI Ơi Nhà Đất.\nEm đã làm mới phiên chat và xóa toàn bộ thông tin nháp trước đó "
+                     "rồi ạ. {Goi} có thể bắt đầu gửi thông tin nhà đất cần rao bán hoặc cho thuê nhé! 🏡✨",
+                     "Lệnh /reset, /xoa, \"xóa hết\". {ten} = tên trợ lý", "Lệnh thử của chủ dự án"),
+    "mo_dau_nhap": ("📋 Em sẽ rao như vầy nhé {goi}:",
+                    "Dòng mở bản nháp tin rao — phải bắt đầu 📋 và kết thúc dấu \":\" (code cắt câu dẫn theo dòng này)",
+                    "SRS-5.1zzzzzzz76 / 85 / 90"),
+    "mo_dau_nhap_em": ("📋 Mình sẽ rao như vầy nhé em:", "Như trên, khi khách xưng \"em\" — phải bắt đầu 📋, kết thúc \":\"",
+                       "SRS-5.1zzzzzzz76"),
+    "hoi_ban_nhap": ("{Goi} thấy bản tin này hấp dẫn chưa ạ?", "Câu hỏi cuối bản nháp (bot được dặn kết bản nháp bằng câu này)",
+                     "Kịch bản người bán"),
+    "hoi_ban_nhap_em": ("Em thấy bản tin này hấp dẫn chưa?", "Như trên, khi khách xưng \"em\"", "Kịch bản người bán"),
+    "xac_nhan_an": ("{Goi} muốn em **{viec}** — đúng không ạ? Nhắn **\"đúng\"** để em làm, hoặc **\"thôi\"** để giữ nguyên nhé. (Em "
+                    "KHÔNG xóa dữ liệu đâu — chỉ ẩn tin, rao lại lúc nào cũng được.)",
+                    "Khách bảo gỡ / ẩn căn — hỏi xác nhận trước. {viec} = việc sắp làm (vd \"NGƯNG RAO căn A12\")",
+                    "Hỏi trước khi ẩn"),
+    "da_an_het": ("Em đã NGƯNG RAO toàn bộ rổ hàng ạ — các tin giờ ở trạng thái **không rao** (em vẫn giữ nguyên dữ liệu, {goi} muốn "
+                  "rao lại căn nào cứ nhắn em). 🙈", "Khách đồng ý ẩn hết", "Hỏi trước khi ẩn"),
+    "da_an_bot": ("Em đã cập nhật — giờ còn **{n} căn đang rao** ạ. Các căn kia em chuyển sang **không rao** (vẫn giữ dữ liệu, rao lại "
+                  "được bất cứ lúc nào nha). ✅", "Khách đồng ý ẩn bớt / chỉ giữ vài căn. {n} = số căn còn rao", "Hỏi trước khi ẩn"),
+    "da_cap_nhat_ro": ("Em đã cập nhật rổ hàng rồi ạ.", "Khách đồng ý, việc khác ngoài ẩn", "Hỏi trước khi ẩn"),
+    "giu_nguyen_ro": ("Em giữ nguyên rổ hàng, không xóa gì đâu ạ 👍", "Khách không đồng ý ẩn", "Hỏi trước khi ẩn"),
+    "nhan_anh": ("📎 Em đã nhận {n} ảnh của nhà mình rồi nhé! 📸✨", "Dòng đầu khi khách gửi ảnh (tên file là mã máy). {n} = số ảnh",
+                 "Nhận ảnh"),
+    "file_qua_lon": ("File to quá ạ (>20MB), xin lỗi em chưa xử lý được 😔. Em đã báo admin rồi ạ — {goi} không cần làm gì thêm đâu. "
+                     "Admin của em sẽ vào chat này đọc file/link của mình rồi xử lý sau nhé!",
+                     "Khách gửi file / ảnh quá 20 MB — đã báo admin", "Nhận tệp"),
+    "link_thu_muc_drive": ("Đây là link thư mục Drive ạ. {Goi} gửi từng ảnh/file (hoặc link từng tấm) giúp em nhé!",
+                           "Khách gửi link THƯ MỤC Google Drive (chưa đọc được)", "Nhận tệp"),
+    "link_khong_mo_duoc": ("Em chưa mở được link này ạ. {Goi} chụp và gửi thẳng giúp em vài tấm nhé!",
+                           "Khách gửi link ảnh / tệp không tải được", "Nhận tệp"),
+    "link_web_trong": ("Em mở link nhưng chưa đọc được nội dung ạ 😅. {Goi} gửi link khác, hoặc dán nội dung giúp em nhé.",
+                       "Khách gửi link trang web mà trang trống", "Nhận tệp"),
+    "nhap_bang_tinh": ("Em nhận được bảng tính rồi, đã nhập {n} căn vào rổ hàng của mình ạ! 🎉 {Goi} xem lại giúp em nhé.",
+                       "Khách gửi link bảng tính (rổ hàng). {n} = số căn đã nhập", "Nhận tệp"),
+    "bang_tinh_trong": ("Em có nhận bảng tính nhưng chưa đọc ra căn nào — {goi} kiểm tra lại các cột (loại hình, địa chỉ, diện tích, "
+                        "giá...) giúp em nhé.", "Bảng tính không đọc ra căn nào", "Nhận tệp"),
+    "chua_co_ban_ve": ("Em CHƯA có bản vẽ/mặt bằng {can} ạ 😅. {Goi} gửi giúp em file bản vẽ, hoặc để em xin bên dự án rồi gửi lại "
+                       "nhé! (Em không đụng gì tới rổ hàng đâu ạ.)",
+                       "Khách xin bản vẽ / mặt bằng mà chưa có. {can} = căn đang nói (vd \"căn A12 (mẫu Fusion)\")", "Bản vẽ"),
+    "nhac_hoi_lai": ("{Goi} ơi, {toi} hỏi lại chút nha: {hoi}",
+                     "Tin nhắc sau 5 phút khách im — hỏi lại câu bot vừa hỏi. {toi} = em / mình, {hoi} = câu bot vừa hỏi",
+                     "SRS-5.1zzzzzzz73"),
+    "nhac_xin_anh": ("Khi nào tiện {goi} chụp gửi em vài tấm ảnh thực tế nhé, để tin đăng nổi bật và hút khách hơn ạ.",
+                     "Tin nhắc sau 5 phút khi không còn câu chờ và căn chưa có ảnh", "SRS-5.1zzzzzzz73"),
+    "nhac_xin_anh_em": ("Khi nào tiện em chụp gửi mình vài tấm ảnh thực tế nhé, để tin đăng nổi bật và hút khách hơn nè.",
+                        "Như trên, khi khách xưng \"em\"", "SRS-5.1zzzzzzz73"),
+}
+
+# Khung bắt buộc của vài câu — code dựa vào khung đó (dòng mở bản nháp: tìm tiêu đề, cắt câu dẫn). Câu sửa sai khung → mặc định.
+_KHUNG = {
+    "mo_dau_nhap": lambda c: c.startswith("📋") and c.rstrip().endswith(":") and "\n" not in c,
+    "mo_dau_nhap_em": lambda c: c.startswith("📋") and c.rstrip().endswith(":") and "\n" not in c,
 }
 
 NHO_GIAY = 60
@@ -60,28 +124,29 @@ def _da_sua() -> dict[str, str]:
     return bang
 
 
-def _dien(mau: str, goi: str) -> str:
+def _dien(mau: str, goi: str, **bien) -> str:
     goi = (goi or "anh/chị").strip()
-    return mau.format(goi=goi, Goi=goi[:1].upper() + goi[1:]).strip()
+    return mau.format(goi=goi, Goi=goi[:1].upper() + goi[1:], **bien).strip()
 
 
-def cau(khoa: str, goi: str = "anh/chị") -> str:
-    """Câu mẫu đang dùng (đã sửa ở CRM nếu có), điền cách gọi khách. Câu sửa hỏng → mặc định."""
+def cau(khoa: str, goi: str = "anh/chị", **bien) -> str:
+    """Câu mẫu đang dùng (đã sửa ở CRM nếu có), điền cách gọi khách và chỗ giữ riêng (`bien`). Câu sửa hỏng → mặc định."""
     mac_dinh = MAC_DINH[khoa][0]
     sua = _da_sua().get(khoa)
     if sua:
         try:
-            ra = _dien(sua, goi)
-            if ra:
+            ra = _dien(sua, goi, **bien)
+            if ra and _KHUNG.get(khoa, lambda c: True)(ra):
                 return ra
+            log.warning("Câu mẫu %s sửa tay sai khung — dùng mặc định", khoa)
         except (KeyError, IndexError, ValueError) as e:
             log.warning("Câu mẫu %s sửa tay lỗi chỗ giữ chữ (%s) — dùng mặc định", khoa, e)
-    return _dien(mac_dinh, goi)
+    return _dien(mac_dinh, goi, **bien)
 
 
-def moi_cach_goi(khoa: str) -> list[str]:
+def moi_cach_goi(khoa: str, goi_co: tuple[str, ...] = ("anh/chị", "anh", "chị"), **bien) -> list[str]:
     """Câu mẫu với mọi cách gọi — cả bản đang dùng lẫn bản mặc định (để nhận ra câu bot vừa gửi dù vừa sửa ở CRM)."""
     ra = []
-    for goi in ("anh/chị", "anh", "chị"):
-        ra += [cau(khoa, goi), _dien(MAC_DINH[khoa][0], goi)]
+    for goi in goi_co:
+        ra += [cau(khoa, goi, **bien), _dien(MAC_DINH[khoa][0], goi, **bien)]
     return list(dict.fromkeys(ra))

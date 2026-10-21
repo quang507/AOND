@@ -655,15 +655,16 @@ def khoi_xin_dang(thieu: list[str], prop: Property | None = None) -> str:
 
 # Dòng mở đầu cố định của bản nháp tin rao. Model hay viết thêm câu dẫn TRƯỚC dòng này ("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như
 # vầy nhé anh:") → khách đọc hai câu dẫn; `cat_truoc_mo_dau` bỏ phần trước (SRS-5.1zzzzzzz76).
-MO_DAU_NHAP = ("📋 Mình sẽ rao như vầy nhé em:", "📋 Em sẽ rao như vầy nhé anh chị:")
+# Câu đang dùng ở `cau_mau` (chủ dự án sửa ở CRM, SRS-5.1zzzzzzz110); hằng này là câu MẶC ĐỊNH.
+MO_DAU_NHAP = (cau_mau.MAC_DINH["mo_dau_nhap_em"][0], cau_mau._dien(cau_mau.MAC_DINH["mo_dau_nhap"][0], "anh chị"))
 _GOI_KHACH = {"anh": "anh", "chi": "chị"}
 
 
 def mo_dau_nhap(xung_ho: str = "unknown") -> str:
     """Dòng mở đầu bản nháp theo cách khách tự xưng (SRS-5.1zzzzzzz90: khách xưng "chị" mà dòng này vẫn "anh chị")."""
     if xung_ho == "em":
-        return MO_DAU_NHAP[0]
-    return f"📋 Em sẽ rao như vầy nhé {_GOI_KHACH[xung_ho]}:" if xung_ho in _GOI_KHACH else MO_DAU_NHAP[1]
+        return cau_mau.cau("mo_dau_nhap_em")
+    return cau_mau.cau("mo_dau_nhap", _GOI_KHACH.get(xung_ho, "anh chị"))
 
 
 def cat_truoc_mo_dau(reply: str, xung_ho: str = "unknown") -> str:
@@ -672,11 +673,17 @@ def cat_truoc_mo_dau(reply: str, xung_ho: str = "unknown") -> str:
     (SRS-5.1zzzzzzz80). Bắn thử 20/10 lần 3: model đổi luôn chữ gọi khách ("Em sẽ rao như vầy nhé anh:") — so nguyên văn thì trượt,
     câu dẫn còn nguyên và lượt không được nhận là bản nháp. Nhận dòng mở đầu với bất kỳ chữ gọi khách nào (lấy dòng CUỐI — tin rao nằm
     ngay sau nó) rồi thay bằng dòng cố định theo cách xưng "Mình" / "Em" (SRS-5.1zzzzzzz85)."""
-    khop = list(_MO_DAU_RE.finditer(reply))
+    # Nhận dòng mở theo khuôn cũ VÀ theo câu đang dùng ở CRM (SRS-5.1zzzzzzz110: chủ dự án sửa chữ thì khuôn cũ có thể trượt).
+    khop: list[tuple[int, int, bool]] = [(m.start(), m.end(), m.group(1) == "Mình") for m in _MO_DAU_RE.finditer(reply)]
+    for khoa, la_em in (("mo_dau_nhap", False), ("mo_dau_nhap_em", True)):
+        for c in cau_mau.moi_cach_goi(khoa, ("anh chị", "anh", "chị")):
+            than = c.lstrip("📋").strip()
+            if than:
+                khop += [(m.start(), m.end(), la_em) for m in re.finditer(r"(?:📋\s*)?" + re.escape(than), reply)]
     if not khop:
         return reply
-    m = khop[-1]
-    return (MO_DAU_NHAP[0] if m.group(1) == "Mình" else mo_dau_nhap(xung_ho if xung_ho != "em" else "unknown")) + reply[m.end():]
+    _, cuoi, la_em = max(khop, key=lambda k: k[1])
+    return (mo_dau_nhap("em") if la_em else mo_dau_nhap(xung_ho if xung_ho != "em" else "unknown")) + reply[cuoi:]
 
 
 _MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em) sẽ rao như vầy nhé[^:\n]{0,20}:")
@@ -694,9 +701,9 @@ def build_listing_proposal_system(
     Used once the listing is "khá đầy đủ". This is NOT a 30-word chat reply, so the word
     cap does NOT apply. CRUCIALLY: do NOT mention the fee yet — that comes after approval.
     """
-    opener = MO_DAU_NHAP[0] if customer_is_em else mo_dau_nhap(xung_ho)
+    opener = mo_dau_nhap("em") if customer_is_em else mo_dau_nhap(xung_ho)
     goi = _GOI_KHACH.get(xung_ho, "anh/chị")
-    closer = "Em thấy bản tin này hấp dẫn chưa?" if customer_is_em else f"{goi[0].upper() + goi[1:]} thấy bản tin này hấp dẫn chưa ạ?"
+    closer = cau_mau.cau("hoi_ban_nhap_em") if customer_is_em else cau_mau.cau("hoi_ban_nhap", goi)   # sửa ở CRM (SRS-5.1zzzzzzz110)
 
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
