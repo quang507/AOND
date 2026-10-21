@@ -178,8 +178,11 @@ Deno.serve(async (req) => {
     .limit(10);
   // Đích admin chỉ cần khi có việc — 99% lượt kéo là rỗng, đọc `admins` ở đó
   // là một truy vấn thừa mỗi phút (FR-171 c).
+  // Chỉ dòng admin CÓ đích Zalo (21/10/2026, SRS-5.1zzzzzzz113): bảng có thêm admin chỉ đăng nhập CRM (email, không Zalo) thì
+  // `limit(1)` không thứ tự có thể bốc trúng dòng đó và tin nội bộ ⭐ 🩺 mất đích.
   const { data: adm } = due?.length
-    ? await client.from("admins").select("zalo_user_id, zalo_phone").limit(1).maybeSingle()
+    ? await client.from("admins").select("zalo_user_id, zalo_phone")
+      .or("zalo_user_id.not.is.null,zalo_phone.not.is.null").order("zalo_user_id", { nullsFirst: false }).limit(1).maybeSingle()
     : { data: null };
 
   type Target = { name?: string | null; zalo_user_id?: string | null; phone?: string | null } | null;

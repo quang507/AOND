@@ -28,11 +28,13 @@ create function auth.uid() returns uuid language sql as 'select null::uuid';
 create function auth.role() returns text language sql as 'select null::text';
 create function auth.jwt() returns jsonb language sql as 'select null::jsonb';
 SQL
-# vector → text; cột sinh `price_per_m2_vnd` được xuat_schema() in thành "default <biểu thức>" (Postgres từ chối) → generated.
+# vector / halfvec → text; cột sinh `price_per_m2_vnd` được xuat_schema() in thành "default <biểu thức>" (Postgres từ chối) → generated.
 python3 - "$D" <<'PY'
 import re, sys
 s = open("bot/supabase/schema.sql").read()
 s = re.sub(r"extensions\.vector\(\d+\)|extensions\.vector|vector\(768\)", "text", s)
+# 21/10/2026 (20261021f): cột vector đổi sang halfvec — cũng thay bằng text (giữ nguyên tên lớp toán tử halfvec_cosine_ops).
+s = re.sub(r"extensions\.halfvec(\(\d+\))?(?!_)", "text", s)
 s = re.sub(r"(price_per_m2_vnd bigint) default \n(CASE.*?END),", r"\1 generated always as (\n\2) stored,", s, flags=re.S)
 open(sys.argv[1] + "/schema.sql", "w").write(s)
 PY

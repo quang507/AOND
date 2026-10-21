@@ -7796,6 +7796,71 @@ cắt ra 5–19 thẻ.
 Kiểm: chạy thử khối backfill dạng chỉ đọc trên DB trước khi áp (số ở trên); `bun run kieu`, `bun run build` sạch, trang vẫn là `○`.
 Chưa chụp màn hình bản dựng thật: trang cần đăng nhập admin.
 
+### SRS-5.1zzzzzzz113 · Thêm admin chỉ đăng nhập CRM không làm tin báo admin mất đích (21/10/2026)
+
+Chủ dự án 21/10: "cho cái mail này làm admin" — thêm một email vào `admins` (chỉ email, không Zalo ID / SĐT Zalo) để đăng nhập CRM.
+Soát mọi chỗ đọc `admins`: các hàm SQL chỉ hỏi "có tồn tại" theo email / Zalo ID (không dính); `escalation-feed` lấy đích Zalo cho tin
+nội bộ (⭐ khách chấm ≤ 2 sao, 🩺 sức khoẻ bot, khách cần người thật) bằng `admins … limit(1)` KHÔNG lọc, không thứ tự — có hai dòng thì
+có thể bốc trúng dòng không có Zalo, tin báo admin mất đích.
+
+1. **Lớp**: lấy "một dòng bất kỳ" của bảng nhiều dòng làm đích gửi — đúng khi bảng chỉ có một dòng, sai ngay khi thêm dòng.
+2. **Sửa**: chỉ lấy dòng có `zalo_user_id` hoặc `zalo_phone`, xếp dòng có Zalo ID trước. Thêm admin chỉ để vào CRM không đổi người nhận
+   tin. **Cùng lớp**: `src/aioi/mua.py` đọc `admins` theo đúng Zalo ID (không dính); không còn chỗ `limit(1)` nào khác trên bảng này.
+3. **Kiểm**: `tests/test_escalation_admin_dich.py` — đỏ trên bản cũ (đã chạy), xanh sau sửa; `bun run kieu:bot` sạch.
+
+### SRS-5.1zzzzzzz114 · Vector tìm theo nghĩa đổi sang halfvec; tra phường không quét chỉ mục đường (21/10/2026)
+
+Chủ dự án 21/10 (sau khi soát vai DBA): "dùng halfvec đi, tôi muốn sau con bot sẽ cover hết các trường hợp người ta chat, sau nếu cần
+thì có thể lưu ở chỗ khác để vector hóa". Số đo trước khi đổi: DB 293 MB trên trần gói Free khoảng 500 MB; bảng `duong` 198 MB (vector
+87 MB + chỉ mục HNSW 86 MB), mới nhúng 22.104 / 39.421 dòng (còn 17.317 hẻm, lịch `nhung-dia-danh-tick` vẫn nhúng tiếp). Chỉ mục
+`duong_nhung_hnsw` chỉ chạy khi tra chữ (`tim_duong`) không ra; từ 02/10 chưa lượt nào. Có chỉ mục ~0,4 s, quét cả bảng ~6,9 s → giữ.
+
+1. **Lớp**: lưu vector 4 byte / chiều cho việc so gần đúng — thừa độ chính xác, đẩy DB về sát trần gói Free khi nhúng đủ địa danh.
+2. **Sửa** (`20261021f`, một giao dịch): sáu cột `nhung` (`listings`, `projects`, `wards`, `phuong_cu`, `quan_cu`, `duong`) đổi
+   `vector(768)` → `halfvec(768)` (giá trị đã nhúng giữ, không gọi Gemini lại), dựng lại sáu chỉ mục HNSW `halfvec_cosine_ops`; sáu hàm
+   ghi / tìm vector đổi chỗ ép kiểu (đổi chữ trong thân hàm đang chạy trên DB); `tim_dia_danh_theo_nghia` thêm điều kiện một lần
+   `p_loai && {duong, hem, so}` — tra PHƯỜNG không còn quét chỉ mục bảng đường rồi lọc bỏ hết. Vẫn nhúng cả hẻm (bao hết cách khách nói).
+3. **Cùng lớp**: lõi Python và web không đụng kiểu vector (gửi mảng số qua RPC; trang tin không chọn cột `nhung`). Hướng sau nếu DB
+   vẫn chật: chuyển vector ra chỗ khác (VPS) theo lời chủ dự án — chưa làm.
+
+Kiểm: chạy thử trên DB trong giao dịch huỷ ngay — MCP cắt ở 60 giây, DB quay lại nguyên (cột vẫn `vector`, đủ sáu chỉ mục), nên migration
+tự nới giờ chờ 15 phút trong giao dịch của nó; sau khi áp đo lại dung lượng và thời gian tìm.
+
+### SRS-5.1zzzzzzz115 · Số hẻm trong địa chỉ thu hẹp phường (21/10/2026)
+
+Chủ dự án 21/10: "họ nói 137/28 đường số 59 con bot có hiểu ko … cứ làm theo plan của bạn đi, sau người ta nhắn thì nó thông minh là
+dc". Tra kho: "Đường số 59" đi qua 7 phường (Gò Vấp, Quận 2, 6, 7, Thủ Đức cũ, Bình Dương) — quá 4 phường nên bot chỉ hỏi phường trống;
+nhưng kho hẻm (bảng `duong`, `loai = hem`, nạp từ OSM) có hẻm 137 của Đường số 59 ở MỘT phường (An Hội Tây, Gò Vấp cũ).
+
+1. **Lớp**: bot tra địa danh theo tên đường mà bỏ phần số trong địa chỉ — kho có 25.564 hẻm kèm phường, lõi chưa đọc.
+2. **Sửa** (`src/aioi/dia_danh.py`): `so_hem_cua` đọc KHUÔN SỐ của ô `dia_chi` (đã do AI ghi, qua cổng bằng chứng) — "137/28" → hẻm 137
+   (phần cuối là số nhà), "hẻm 965" → 965, "285 Cách Mạng Tháng Tám" (không chữ hẻm, không "/") → không có hẻm; số đi sau chữ "hẻm" thắng,
+   không thì số có "/" đầu tiên ("Đường số 59, nhà 137/28" không lấy "59"); số trong chính tên đường bị gỡ trước khi đọc. Bắn thử
+   trước khi sửa (DC2) cho thấy khách gõ "hẻm 965 Quang Trung" mà AI ghi ô dia_chi "965 Quang Trung" — nên khi ô `lo_gioi_hem` nói căn
+   trong hẻm thì số trần đầu địa chỉ cũng là số hẻm (chưa biết hẻm hay mặt tiền thì không đoán). `TraDiaDanh.phuong_theo_hem` đọc bảng `duong` theo đường mẹ +
+   số hẻm, lọc theo quận khách nói. `khoi_dia_danh`: chưa có phường mà hẻm ra 1 phường → dặn model hỏi xác nhận dạng HỎI ("nhà mình ở
+   An Hội Tây đúng không anh/chị?"), 2–4 phường → kể cho khách chọn; thay cho gợi ý theo đường, có ở mọi lượt (cả lượt tin rao đầu).
+3. **Cùng lớp**: gợi ý phường theo đường (`_phuong_cua_duong`) vẫn giữ cho địa chỉ không có số hẻm; ngã tư (`giao_lo.py`) đã dùng kho
+   giao lộ riêng. Kho hẻm OSM có thể thiếu / lệch → chỉ gợi ý dạng hỏi, khách nói phường khác thì ghi theo khách.
+
+4. **Bước 2 — model bỏ qua lời dặn** (bắn thử sau khi cài, run 39571332332): ô phiên đủ dữ kiện (dia_chi "137/28 Đường số 59",
+   lo_gioi_hem "Nhà hẻm"), kho trả đúng 4/4 hẻm (soát trực tiếp trên DB), vậy mà 4/4 lời bot vẫn hỏi trống "Nhà mình thuộc phường nào".
+   Hai lý do: dòng log "phường theo hẻm" ở mức info nên lõi production không in (không biết gợi ý đã vào prompt hay chưa), và Haiku
+   có khối "Kho hẻm" vẫn viết câu hỏi phường theo thói quen. **Lớp**: lời dặn trong prompt mà code không soát đầu ra — cùng lớp với
+   tiêu đề thiếu giá / mở đầu "Dạ" (SRS-5.1zzzzzzz86/87), đã có `_soat_hinh_thuc`. **Sửa**: `phuong_kho_hem` (một chỗ tính, khối prompt
+   và bước soát cùng dùng); lượt này hỏi phường mà kho hẻm ra 1–4 phường thì `_soat_hinh_thuc` đòi lời bot nhắc ít nhất một phường đó
+   (so tên bỏ dấu, `ten_tran`) — thiếu thì gọi lại model MỘT lần kèm lý do, không tự sửa chữ. Log "phường theo hẻm" lên mức warning
+   (chỉ con số). **Cùng lớp còn lại**: gợi ý phường theo đường (1 phường, "Kho đường") và gợi ý tên đường gần đúng cũng chỉ là lời dặn,
+   chưa soát — để nguyên tới khi bắn thử thấy lệch.
+
+Kiểm: `tests/test_phuong_theo_hem.py` (9 ca: thêm ca AI bỏ chữ "hẻm"; đọc số hẻm; 137/28 Đường số 59 → An Hội Tây, không kể 7 phường; nhà mặt tiền 285 không lấy
+phường của hẻm 285; đã có phường thì không tra; quận khách nói lọc hẻm; lời hỏi phường trống → gọi lại model, lời đã nhắc phường
+→ không gọi lại, đã có phường → không soát) — ca gọi lại đỏ khi gỡ bước soát ở `engine.py`. Bắn thử production
+`apply-migration` ô `ban-thu-dc` (5 ca địa chỉ thật trong kho): TRƯỚC khi cài 4/4 ca có số hẻm bot hỏi phường trống, ca mặt tiền đạt;
+sau bước 1 vẫn 4/4 hỏi trống (lý do ở mục 4); sau bước 2 (run 39572650424) **5/5 đạt**: DC1 "Nhà mình ở Phường An Hội Tây đúng
+không chị?", DC2 An Hội Tây, DC3 Chợ Quán, DC5 Tân Mỹ, DC4 mặt tiền hỏi phường trống (không lấy Hòa Hưng); journal có 4 dòng
+"phường theo hẻm: 1 phường". Cùng lượt sửa ô `ban-thu-dc` lọt vào bước `dung-lai-db.mjs` của workflow (thiếu trong danh sách loại trừ).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
