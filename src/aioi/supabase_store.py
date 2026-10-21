@@ -362,7 +362,12 @@ class SupabaseConversationStore(KhoNguoiMua):
             if len(self._thong_so_nho) > 2000:
                 self._thong_so_nho.clear()
             self._thong_so_nho[khoa] = {c: kq[c] for c in COT_THONG_SO if isinstance(kq, dict) and kq.get(c) is not None}
-        return dict(self._thong_so_nho[khoa])
+        ra = dict(self._thong_so_nho[khoa])
+        # Nhà mặt tiền không có hẻm (SRS-5.1zzzzzzz94): bắn thử KB5 21/10 — AI ghi "MT 20 mét" (độ rộng đường) vào cả ô lộ giới hẻm,
+        # cột `alley_width_m` thành 20 trên một căn mặt tiền, web có thể in "hẻm 20m".
+        if ra.get("access_type") == "mat_tien":
+            ra.pop("alley_width_m", None)
+        return ra
 
     def _patch(self, endpoint: str, data: dict) -> None:
         self._request("PATCH", endpoint, data=data, prefer="return=minimal")

@@ -7357,6 +7357,27 @@ Bắn thử `ban-thu-kb.sh` lượt 186 trên bản SRS-5.1zzzzzzz92: 31/35 đ�
 Kiểm: `tests/test_phuong_du_an_o_tin.py`, đỏ 3/4 ca trên bản trước. Ca còn lại canh không đè phường khách nói và tra hỏng thì hỏi như
 cũ. Bắn lại bằng `ban-thu-kb.sh` sau khi cài.
 
+### SRS-5.1zzzzzzz94 · Khách bảo đăng sau bản nháp mà tin không lên; nhà mặt tiền mang độ rộng hẻm (21/10/2026)
+
+Bắn thử `ban-thu-kb.sh` lượt 188 trên bản SRS-5.1zzzzzzz93: script báo 36/37 đạt, nhưng đọc log thấy hai lỗi script chưa kiểm.
+
+1. *KB3*: sau bản nháp, bot ghi thêm phí quản lý. Khách nhắn "ok đăng đi", bot cảm ơn rồi hỏi xác nhận lại, tin không lên web.
+   *KB5*: "rao tin này giúp mình" ngay sau bản nháp cũng chưa thành duyệt, phải thêm một "ok" nữa. **Lớp**: hai chỗ dặn model
+   ngược nhau. Luật DUYỆT trong `OPERATIONS_SYSTEM` đổi sang đọc theo trạng thái ở SRS-5.1zzzzzzz87, nhưng mô tả trường
+   `duyet_ban_nhap` trong schema vẫn ghi "Chỉ khi bot VỪA gửi bản tin nháp". Model đọc cả hai, tin ngay trước không phải bản nháp
+   thì bỏ trống. **Cùng lớp**: soát các mô tả trường khác trong `operations_schema`. `xac_nhan_xoa` ("chỉ khi bot vừa hỏi xác nhận
+   ẩn") đúng theo vị trí, vì câu xác nhận ẩn luôn là tin ngay trước, nên giữ. `xin_dang` không ràng vị trí. **Sửa**: mô tả trường
+   duyệt trỏ đúng dòng TRẠNG THÁI. Thêm một dòng journal mỗi lượt chờ duyệt (AI trả gì, cụm trích có khớp, có lời bảo đăng, kết quả;
+   không ghi lời khách) để lần sau biết hụt ở AI hay ở code. Riêng lượt KB5, lượt lập thao tác mất 5,9 s (có thể đã gọi lại) — không
+   có dòng log nên **không chắc** cùng nguyên nhân; dòng log mới sẽ cho biết.
+2. *KB5*: AI ghi "MT 20 mét" (độ rộng đường) vào cả ô lộ giới hẻm, nên cột `alley_width_m` = 20 trên một căn mặt tiền. **Sửa**: một
+   bất biến ở chỗ đọc thông số (`_thong_so`): `access_type = mat_tien` thì không ghi độ rộng hẻm.
+3. Script: tiêu đề ghi kích thước lô ("5x20m") nay được tính là có diện tích, vì đó là cách ghi quen của tin nhà phố [giả định BA].
+   Thêm ba ca kiểm: KB3 "ok đăng đi" làm tin lên web; KB5 tin lên web ngay lượt "rao tin này giúp mình"; KB5 không có độ rộng hẻm.
+
+Kiểm: `tests/test_duyet_mo_ta_truong.py`, đỏ 2/3 ca trên bản trước. Ca còn lại canh luật duyệt theo trạng thái trong code, vốn
+đã đúng.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -68,7 +68,7 @@ dong() { q "select l.code, l.status, l.property_type, l.deal, l.price_vnd, l.are
             where s.zalo_user_id = '$1' order by l.updated_at desc limit 1" | jq -c '.[0] // {}'; }
 tieu_de_dat() {   # $1 = chữ phải có (vị trí); tiêu đề ≤ 15 từ, có vị trí, diện tích, giá
   [ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 15 ] && grep -qiE "$1" <<<"$TIEU_DE" \
-    && grep -qE 'm²|m2' <<<"$TIEU_DE" && grep -qE 'tỷ|triệu' <<<"$TIEU_DE" && echo 1 || echo 0
+    && grep -qE 'm²|m2|[0-9]+([.,][0-9]+)? ?x ?[0-9]+([.,][0-9]+)? ?m' <<<"$TIEU_DE" && grep -qE 'tỷ|triệu' <<<"$TIEU_DE" && echo 1 || echo 0
 }
 web_co() {   # trang tin trên web có chữ $2 (tin mã $1)
   # Đọc hết trang rồi mới dò (SRS-5.1zzzzzzz93): `curl | grep -q` dưới pipefail — grep thoát sớm, curl ghi vào ống đã đóng (lỗi 23),
@@ -144,13 +144,17 @@ kiem "KB3: có thương lượng" "$(jq '.negotiable == true | if . then 1 else 
 kiem "KB3: tiêu đề ≤ 15 từ, có Masteri, diện tích, giá" "$(tieu_de_dat 'masteri')"
 kiem "KB3: tiêu đề căn hộ không có \"MT\"" "$(grep -qw 'MT' <<<"$TIEU_DE" && echo 0 || echo 1)"
 kiem "KB3: không hỏi hẻm / mặt tiền" "$(grep -qiE 'hẻm|mặt tiền' <<<"$(jq -r '.reply' <<<"$TRA")" && echo 0 || echo 1)"
+# SRS-5.1zzzzzzz94: sau bản nháp bot ghi thêm phí quản lý (tin ngay trước không còn là bản nháp) — "ok đăng đi" vẫn là duyệt.
+kiem "KB3: \"ok đăng đi\" sau khi bot ghi thêm ý vẫn là duyệt — tin lên web" "$(jq '.status == "dang_ban" | if . then 1 else 0 end' <<<"$r3")"
 
 echo; echo "=================== KB5 — chat tester chị N. 20/10: nhà trong Ny'ah Phú Định, dtsd, MT 20m, ok liên tục ==================="
 # SRS-5.1zzzzzzz87: duyệt bản nháp hỏi lại mãi; "dtsd: 245m" vào ô đất; "MT 20 mét" (đường) thành bề ngang; tên dự án không dấu.
 TIEU_DE=""; MOC_KB5=${#MOI_LOI}
-for cau in "mình cần bán nhà trong khu dự án Nyah Phu Dinh"            "Bán nhà trong khu dân cư Nyah Phú Định, Trương Đình Hội • MT 20 mét, giá 6,95 tỷ, DT 4 x 11m, 1 trệt 1 lửng 3 lầu sân thượng, garage trong nhà, SHR hoàn công đầy đủ"            "dtsd: 245m vuông" "rao tin này giúp mình" "ok"; do
+for cau in "mình cần bán nhà trong khu dự án Nyah Phu Dinh"            "Bán nhà trong khu dân cư Nyah Phú Định, Trương Đình Hội • MT 20 mét, giá 6,95 tỷ, DT 4 x 11m, 1 trệt 1 lửng 3 lầu sân thượng, garage trong nhà, SHR hoàn công đầy đủ"            "dtsd: 245m vuông" "rao tin này giúp mình"; do
   chat "$KB5" "$cau"
 done
+TT_RAO=$(dong "$KB5" | jq -r '.status // ""')   # SRS-5.1zzzzzzz94: "rao tin này giúp mình" ngay sau bản nháp là duyệt
+chat "$KB5" "ok"
 LOI_KB5_CUOI=$(jq -r '.reply // ""' <<<"$TRA")
 chat "$KB5" "ok"
 r5=$(dong "$KB5"); echo "$r5"
@@ -160,6 +164,8 @@ kiem "KB5: dtsd 245 vào diện tích sàn, không vào ô đất" \
 kiem "KB5: diện tích đất 44 (4x11)" "$(jq '((.area_m2 // 0) | tonumber) == 44 | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: \"MT 20 mét\" không thành bề ngang 20m" "$(jq '((.frontage_m // 0) | tonumber) != 20 and (((.boc_tach.mat_tien // "") | test("20")) | not) | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: một cụm không vào hai ô pháp lý" "$(jq '(.boc_tach.phap_ly // "x") != (.boc_tach.phap_ly_hoan_cong // "y") | if . then 1 else 0 end' <<<"$r5")"
+kiem "KB5: \"rao tin này giúp mình\" ngay sau bản nháp là duyệt (tin lên web ngay lượt đó)" "$([ "$TT_RAO" = dang_ban ] && echo 1 || echo 0)"
+kiem "KB5: nhà mặt tiền không có độ rộng hẻm" "$(jq '.alley_width_m == null | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: khách ok rồi thì tin lên web" "$(jq '.status == "dang_ban" | if . then 1 else 0 end' <<<"$r5")"
 kiem "KB5: sau \"ok\" bot không hỏi xác nhận lại" "$(grep -qiE 'xác nhận (giúp|lại|lần)|đã ổn chưa' <<<"$LOI_KB5_CUOI$(jq -r '.reply // ""' <<<"$TRA")" && echo 0 || echo 1)"
 

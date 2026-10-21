@@ -1660,8 +1660,11 @@ def operations_schema() -> dict[str, Any]:
             "duyet_ban_nhap": {
                 "type": "string",
                 "enum": ["dong_y", "khong_dong_y"],
-                "description": "Chỉ khi bot vừa gửi bản tin nháp hỏi khách thấy được chưa: dong_y = khách đồng ý đăng; "
-                "khong_dong_y = khách không đồng ý / chưa muốn đăng / muốn sửa trước. Còn lại bỏ trống.",
+                # Theo TRẠNG THÁI, không theo vị trí tin (SRS-5.1zzzzzzz94): bản cũ "Chỉ khi bot vừa gửi bản tin nháp" trái luật DUYỆT
+                # của OPERATIONS_SYSTEM (đổi 20/10) — bắn thử KB3 21/10: bot vừa ghi nhận phí quản lý, khách "ok đăng đi", ô bỏ trống.
+                "description": "Chỉ khi có dòng 'TRẠNG THÁI: bot ĐÃ gửi bản tin nháp' (kể cả khi sau bản nháp bot đã nhắc, hỏi lại hay "
+                "ghi thêm ý): dong_y = khách đồng ý / bảo đăng; khong_dong_y = khách không đồng ý / chưa muốn đăng / muốn sửa trước. "
+                "Còn lại bỏ trống.",
             },
             "duyet_trich_dan": {
                 "type": "string",

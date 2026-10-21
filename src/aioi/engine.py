@@ -3298,6 +3298,11 @@ class Engine:
             # khi đã trình bản nháp, duyet_ban_nhap thì trống, nên lời bảo đăng thành một vòng hỏi xác nhận nữa.
             if conv.listing_proposed and conv.duyet_luot is None and cuoi.strip() != STICKER_TRUNG_TINH:
                 conv.duyet_luot = "dong_y"
+        if conv.listing_proposed:
+            # Một dòng mỗi lượt chờ duyệt (SRS-5.1zzzzzzz94): bắn thử 21/10 có hai lượt khách bảo đăng mà không thành duyệt, journal không
+            # cho biết hụt ở AI (bỏ trống) hay ở code (cụm trích không khớp). Chỉ ghi tên / cờ, không ghi lời khách.
+            log.warning("Duyệt: AI=%s trích_khớp=%s xin_đăng=%s → %s", y or "-", _trich_dan_khop(plan.get("duyet_trich_dan"), cuoi),
+                        bool(conv.y_luot.get("xin_dang")), conv.duyet_luot or "-")
         nv = str(plan.get("ngoai_vung") or "").strip()
         if nv and conv.role != "buyer":
             gan = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
