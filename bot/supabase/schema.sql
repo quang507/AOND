@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-21 14:31 (giờ VN)
+-- Sinh lúc: 2026-10-21 15:12 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -224,7 +224,7 @@ create table if not exists public.duong (
   duong_me text,
   lat double precision,
   lng double precision,
-  nhung extensions.vector(768),
+  nhung extensions.halfvec(768),
   nhung_md5 text,
   nhung_luc timestamp with time zone
 );
@@ -365,7 +365,7 @@ END) stored,
   tien_ich_gan jsonb,
   tien_ich_at timestamp with time zone,
   nhan text[] not null default '{}'::text[],
-  nhung extensions.vector(768),
+  nhung extensions.halfvec(768),
   nhung_md5 text,
   nhung_luc timestamp with time zone
 );
@@ -433,7 +433,7 @@ create table if not exists public.phuong_cu (
   toan_bo boolean not null,
   lat double precision,
   lng double precision,
-  nhung extensions.vector(768),
+  nhung extensions.halfvec(768),
   nhung_md5 text,
   nhung_luc timestamp with time zone,
   nguon text
@@ -469,7 +469,7 @@ create table if not exists public.projects (
   specs jsonb,
   unit_types jsonb,
   geocode_at timestamp with time zone,
-  nhung extensions.vector(768),
+  nhung extensions.halfvec(768),
   nhung_md5 text,
   nhung_luc timestamp with time zone
 );
@@ -488,7 +488,7 @@ create table if not exists public.quan_cu (
   lat double precision,
   lng double precision,
   so_phuong_moi integer not null default 0,
-  nhung extensions.vector(768),
+  nhung extensions.halfvec(768),
   nhung_md5 text,
   nhung_luc timestamp with time zone
 );
@@ -573,7 +573,7 @@ create table if not exists public.wards (
   nguon text not null,
   ghi_chu text,
   created_at timestamp with time zone not null default now(),
-  nhung extensions.vector(768),
+  nhung extensions.halfvec(768),
   nhung_md5 text,
   nhung_luc timestamp with time zone
 );
@@ -1028,7 +1028,7 @@ create index if not exists deals_ctv_id_idx ON public.deals USING btree (ctv_id)
 create index if not exists deals_listing_id_idx ON public.deals USING btree (listing_id);
 create index if not exists duong_hem ON public.duong USING btree (upper(so_hem), bo_dau(duong_me)) WHERE (loai = 'hem'::text);
 create index if not exists duong_lat_lng ON public.duong USING btree (lat, lng);
-create index if not exists duong_nhung_hnsw ON public.duong USING hnsw (nhung extensions.vector_cosine_ops);
+create index if not exists duong_nhung_hnsw ON public.duong USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists duong_ten_khong_dau_idx ON public.duong USING btree (ten_khong_dau);
 create index if not exists giao_lo_a_idx ON public.giao_lo USING btree (a_khong_dau);
 create index if not exists giao_lo_b_idx ON public.giao_lo USING btree (b_khong_dau);
@@ -1048,7 +1048,7 @@ create index if not exists listings_access_idx ON public.listings USING btree (d
 create index if not exists listings_district_status_idx ON public.listings USING btree (district, status);
 create index if not exists listings_floors_idx ON public.listings USING btree (deal, status, floors);
 create index if not exists listings_nhan_gin_idx ON public.listings USING gin (nhan);
-create index if not exists listings_nhung_hnsw ON public.listings USING hnsw (nhung extensions.vector_cosine_ops);
+create index if not exists listings_nhung_hnsw ON public.listings USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists listings_project_idx ON public.listings USING btree (project_id) WHERE (project_id IS NOT NULL);
 CREATE UNIQUE INDEX listings_project_unit_uniq ON public.listings USING btree (project_id, unit_code) WHERE ((project_id IS NOT NULL) AND (unit_code IS NOT NULL));
 create index if not exists listings_seller_id_idx ON public.listings USING btree (seller_id);
@@ -1056,13 +1056,13 @@ create index if not exists media_cleanup_can_lam_idx ON public.media_cleanup_que
 create index if not exists media_listing_id_idx ON public.media USING btree (listing_id);
 create index if not exists messages_conv_seq_idx ON public.messages USING btree (conversation_id, seq DESC);
 create index if not exists messages_conv_time_idx ON public.messages USING btree (conversation_id, created_at);
-create index if not exists phuong_cu_nhung_hnsw ON public.phuong_cu USING hnsw (nhung extensions.vector_cosine_ops);
-create index if not exists projects_nhung_hnsw ON public.projects USING hnsw (nhung extensions.vector_cosine_ops);
+create index if not exists phuong_cu_nhung_hnsw ON public.phuong_cu USING hnsw (nhung extensions.halfvec_cosine_ops);
+create index if not exists projects_nhung_hnsw ON public.projects USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists projects_priority_idx ON public.projects USING btree (priority, district);
 create index if not exists property_events_at_idx ON public.property_events USING btree (at DESC);
 create index if not exists property_events_buyer_idx ON public.property_events USING btree (buyer_id);
 create index if not exists property_events_listing_at_idx ON public.property_events USING btree (listing_id, at DESC);
-create index if not exists quan_cu_nhung_hnsw ON public.quan_cu USING hnsw (nhung extensions.vector_cosine_ops);
+create index if not exists quan_cu_nhung_hnsw ON public.quan_cu USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists reminders_buyer_id_idx ON public.reminders USING btree (buyer_id);
 create index if not exists reminders_ctv_id_idx ON public.reminders USING btree (ctv_id);
 create index if not exists reminders_den_han_idx ON public.reminders USING btree (due_at) WHERE (status = 'pending'::text);
@@ -1081,7 +1081,7 @@ create index if not exists viewings_buyer_id_idx ON public.viewings USING btree 
 create index if not exists viewings_listing_id_idx ON public.viewings USING btree (listing_id);
 CREATE UNIQUE INDEX viewings_mot_hen_cho_moi_can_idx ON public.viewings USING btree (buyer_id, COALESCE(listing_code, (listing_id)::text)) WHERE (status = 'pending'::text);
 create index if not exists viewings_status_slot_idx ON public.viewings USING btree (status, slot);
-create index if not exists wards_nhung_hnsw ON public.wards USING hnsw (nhung extensions.vector_cosine_ops);
+create index if not exists wards_nhung_hnsw ON public.wards USING hnsw (nhung extensions.halfvec_cosine_ops);
 
 -- ══ Hàm ══
 CREATE OR REPLACE FUNCTION public.admin_cap_nhat_khach(p_buyer_id uuid, p_preferences jsonb, p_notes text)
@@ -4302,13 +4302,13 @@ begin
       if jsonb_typeof(v_vals) = 'array' and jsonb_array_length(v_vals) = 768 then
         v_ok := true;
         if v.bang = 'wards' then
-          update public.wards set nhung = (v_vals::text)::extensions.vector, nhung_md5 = v.md5, nhung_luc = now() where ten = v.khoa;
+          update public.wards set nhung = (v_vals::text)::extensions.halfvec, nhung_md5 = v.md5, nhung_luc = now() where ten = v.khoa;
         elsif v.bang = 'phuong_cu' then
-          update public.phuong_cu set nhung = (v_vals::text)::extensions.vector, nhung_md5 = v.md5, nhung_luc = now() where id::text = v.khoa;
+          update public.phuong_cu set nhung = (v_vals::text)::extensions.halfvec, nhung_md5 = v.md5, nhung_luc = now() where id::text = v.khoa;
         elsif v.bang = 'quan_cu' then
-          update public.quan_cu set nhung = (v_vals::text)::extensions.vector, nhung_md5 = v.md5, nhung_luc = now() where ten = v.khoa;
+          update public.quan_cu set nhung = (v_vals::text)::extensions.halfvec, nhung_md5 = v.md5, nhung_luc = now() where ten = v.khoa;
         else
-          update public.duong set nhung = (v_vals::text)::extensions.vector, nhung_md5 = v.md5, nhung_luc = now() where id::text = v.khoa;
+          update public.duong set nhung = (v_vals::text)::extensions.halfvec, nhung_md5 = v.md5, nhung_luc = now() where id::text = v.khoa;
         end if;
       else
         perform public.log_loi('nhung-dia-danh-tick', 'Gemini embed trả khuôn lạ cho ' || v.bang || ' ' || v.khoa, null);
@@ -4471,9 +4471,9 @@ begin
       v_vals := (v.content::jsonb) -> 'embedding' -> 'values';
       if jsonb_typeof(v_vals) = 'array' and jsonb_array_length(v_vals) = 768 then
         if v.loai = 'tin' then
-          update public.listings set nhung = (v_vals::text)::extensions.vector, nhung_md5 = v.md5, nhung_luc = now() where id = v.id;
+          update public.listings set nhung = (v_vals::text)::extensions.halfvec, nhung_md5 = v.md5, nhung_luc = now() where id = v.id;
         else
-          update public.projects set nhung = (v_vals::text)::extensions.vector, nhung_md5 = v.md5, nhung_luc = now() where id = v.id;
+          update public.projects set nhung = (v_vals::text)::extensions.halfvec, nhung_md5 = v.md5, nhung_luc = now() where id = v.id;
         end if;
         v_ok := true;
       else
@@ -5407,7 +5407,7 @@ CREATE OR REPLACE FUNCTION public.tim_dia_danh_theo_nghia(p_vec double precision
  STABLE SECURITY DEFINER
  SET search_path TO 'public', 'extensions', 'pg_temp'
 AS $function$
-  with v as (select p_vec::extensions.vector(768) as q),
+  with v as (select p_vec::extensions.halfvec(768) as q),
   ung as (
     (select 'phuong_moi'::text as loai, w.ten as khoa, w.ten, w.ten_day_du, w.ten_day_du as phuong, w.quan_cu,
             w.lat::double precision as lat, w.lng::double precision as lng, 1 - (w.nhung <=> v.q) as do_gan
@@ -5425,7 +5425,7 @@ AS $function$
     union all
     (select d.loai, d.id::text, d.ten, d.ten || coalesce(', ' || nullif(d.phuong, ''), ''), nullif(d.phuong, ''), d.quan_cu, d.lat, d.lng,
             1 - (d.nhung <=> v.q)
-       from public.duong d, v where d.nhung is not null and (p_loai is null or d.loai = any(p_loai))
+       from public.duong d, v where d.nhung is not null and (p_loai is null or p_loai && array['duong', 'hem', 'so']::text[]) and (p_loai is null or d.loai = any(p_loai))
       order by d.nhung <=> v.q limit 40)
     union all
     (select 'du_an', pr.id::text, pr.name, pr.name, pr.ward, pr.district, pr.lat::double precision, pr.lng::double precision,
@@ -5450,10 +5450,10 @@ CREATE OR REPLACE FUNCTION public.tim_du_an_theo_nghia(p_vec double precision[],
  STABLE SECURITY DEFINER
  SET search_path TO 'public', 'extensions', 'pg_temp'
 AS $function$
-  select p.id, p.name, 1 - (p.nhung <=> (p_vec::extensions.vector(768)))
+  select p.id, p.name, 1 - (p.nhung <=> (p_vec::extensions.halfvec(768)))
     from public.projects p
    where p.nhung is not null
-   order by p.nhung <=> (p_vec::extensions.vector(768))
+   order by p.nhung <=> (p_vec::extensions.halfvec(768))
    limit greatest(1, least(coalesce(p_limit, 5), 30));
 $function$
 ;
@@ -5509,10 +5509,10 @@ CREATE OR REPLACE FUNCTION public.tim_phuong_theo_nghia(p_vec double precision[]
  STABLE SECURITY DEFINER
  SET search_path TO 'public', 'extensions', 'pg_temp'
 AS $function$
-  select w.ten, w.ten_day_du, w.quan_cu, 1 - (w.nhung <=> (p_vec::extensions.vector(768)))
+  select w.ten, w.ten_day_du, w.quan_cu, 1 - (w.nhung <=> (p_vec::extensions.halfvec(768)))
     from public.wards w
    where w.nhung is not null
-   order by w.nhung <=> (p_vec::extensions.vector(768))
+   order by w.nhung <=> (p_vec::extensions.halfvec(768))
    limit greatest(1, least(coalesce(p_limit, 3), 10));
 $function$
 ;
@@ -5523,12 +5523,12 @@ CREATE OR REPLACE FUNCTION public.tim_tin_theo_nghia(p_vec double precision[], p
  STABLE SECURITY DEFINER
  SET search_path TO 'public', 'extensions', 'pg_temp'
 AS $function$
-  select l.code, 1 - (l.nhung <=> (p_vec::extensions.vector(768)))
+  select l.code, 1 - (l.nhung <=> (p_vec::extensions.halfvec(768)))
     from public.listings l
    where l.nhung is not null
      and l.status in ('dang_ban', 'dang_quan_tam')
      and (p_codes is null or l.code = any (p_codes))
-   order by l.nhung <=> (p_vec::extensions.vector(768))
+   order by l.nhung <=> (p_vec::extensions.halfvec(768))
    limit greatest(1, least(coalesce(p_limit, 10), 50));
 $function$
 ;
