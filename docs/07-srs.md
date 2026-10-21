@@ -7775,6 +7775,27 @@ bên em: phí môi giới bên em là 0.75 tháng tiền thuê. Chỉ thu khi gi
 Kiểm: `tests/test_cau_mau.py` (thêm 3 ca: câu tới lời dặn bản thuê / bán / chủ đầu tư; câu sửa ở CRM tới lời bot, mất `{phi}` thì dùng câu
 gốc; nhánh khách hỏi phí đọc cùng câu). Bỏ `{bao_phi}` khỏi lời dặn thì ca đầu đỏ.
 
+### SRS-5.1zzzzzzz112 · Trang Câu chuẩn xem cả cuộc chat từ đầu đến cuối (21/10/2026)
+
+Chủ dự án 21/10, xem thẻ bắn thử "Cần bán căn hộ 2PN ở Sơn Trà, Đà Nẵng…": "có câu đầu ko có mấy câu phía sau nó bắn à để t sửa, t
+nghĩ nên là từ đầu đến cuối". Mỗi câu bot là một thẻ rời, kèm tối đa 8 tin trước nó; các câu sau của cùng cuộc chat nằm ở thẻ khác, xếp
+lẫn theo giờ chép. Ca Sơn Trà là ca vùng (KV) chỉ một tin — bot từ chối ngay nên cuộc chat chỉ có một câu; các ca KB nhiều lượt thì bị
+cắt ra 5–19 thẻ.
+
+1. **Lớp**: bảng `cau_chuan` lưu từng câu mà không lưu câu đó thuộc cuộc chat nào một cách bền — `conversation_id` là khoá ngoại
+   `on delete set null`, script bắn thử dọn dữ liệu thử xong thì 322/322 dòng bắn thử mất cột này, trang không gom lại được.
+2. **Sửa**: migration `20261021e` thêm hai cột CHÉP `phien` (cuộc chat) và `seq` (thứ tự tin), `cau_chuan_tu_tin` ghi cả hai lúc đưa
+   vào. Dòng cũ: còn hội thoại thì lấy thẳng; đã mất thì gom theo `created_at` (mọi câu của một Zalo ID được chép trong một câu lệnh)
+   và xếp theo chuỗi "tin bot cuối trong ngữ cảnh = câu trước" — chạy thử trên DB: 335/353 dòng nối được vào 107 cuộc chat, 18 dòng
+   còn lại xếp cuối cuộc chat theo độ dài ngữ cảnh. Trang `/admin/cau-chuan`: mỗi thẻ là một cuộc chat, đọc từ tin đầu tới câu bot
+   cuối; dưới mỗi câu bot có nút "Chấm / sửa" (câu khớp bộ lọc đang chọn thì mở sẵn). Bộ lọc vẫn đếm theo câu, nhưng hiện cả cuộc chat
+   có ít nhất một câu khớp.
+3. **Cùng lớp**: `cau_chuan.message_id` cũng `on delete set null` — chỉ dùng để chống chép trùng, không cần bền. Bảng `danh_gia_ai`
+   lưu `zalo_user_id` chữ, không khoá ngoại — không dính.
+
+Kiểm: chạy thử khối backfill dạng chỉ đọc trên DB trước khi áp (số ở trên); `bun run kieu`, `bun run build` sạch, trang vẫn là `○`.
+Chưa chụp màn hình bản dựng thật: trang cần đăng nhập admin.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

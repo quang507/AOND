@@ -1,7 +1,8 @@
 "use client";
 // /admin/cau-chuan — chấm điểm và sửa tay câu bot (20/10/2026, SRS-5.1zzzzzzz88). Chủ dự án: "bắn lên chỗ câu chuẩn cách bot đã ghi
-// để tôi sửa tay từ từ, và chấm điểm nữa phải có trong ngữ cảnh". Mỗi thẻ: ngữ cảnh (8 tin trước câu bot, chép lúc đưa vào), câu bot
-// cũ, ô câu chuẩn (điền sẵn câu bot để sửa dần), điểm 1–5, ghi chú. Lõi Python đọc dòng đã sửa / đã chấm làm ví dụ trong vòng 60 giây.
+// để tôi sửa tay từ từ, và chấm điểm nữa phải có trong ngữ cảnh". Mỗi thẻ là MỘT cuộc chat từ đầu đến cuối (21/10, SRS-5.1zzzzzzz112:
+// "t nghĩ nên là từ đầu đến cuối") — gom các câu cùng `phien`, xếp theo `seq`; dưới mỗi câu bot: điểm 1–5, ô câu chuẩn (điền sẵn câu
+// bot để sửa dần), ghi chú. Lõi Python đọc dòng đã sửa / đã chấm làm ví dụ trong vòng 60 giây.
 // Đưa câu vào: nút "Chấm / sửa" ở /admin/tin-nhan, hoặc script bắn thử (`cau_chuan_tu_zalo`). Đọc / ghi bảng `cau_chuan` qua RLS admin.
 
 import { useEffect, useMemo, useState } from "react";
@@ -12,7 +13,7 @@ import { IconRefresh, IconTrash } from "@/components/icons";
 
 type Luot = { ai: string; noi_dung: string };
 type Dong = {
-  id: string; conversation_id: string | null; ngu_canh: Luot[]; cau_bot: string; cau_chuan: string | null;
+  id: string; conversation_id: string | null; phien: string | null; seq: number | null; ngu_canh: Luot[]; cau_bot: string; cau_chuan: string | null;
   diem: number | null; ghi_chu: string | null; nguon: "that" | "ban_thu"; dung_lam_mau: boolean; created_at: string; updated_at: string;
 };
 type Nhap = { cau_chuan: string; diem: number | null; ghi_chu: string; dung_lam_mau: boolean };
@@ -20,6 +21,24 @@ type Nhap = { cau_chuan: string; diem: number | null; ghi_chu: string; dung_lam_
 const AI_VI: Record<string, string> = { bot: "Trợ lý", buyer: "Khách", seller: "Chủ nhà", human: "Người thật", ctv: "CTV", system: "Hệ thống" };
 const luc = (s: string) => new Date(s).toLocaleString("vi-VN", { hour12: false });
 const nhapTu = (d: Dong): Nhap => ({ cau_chuan: d.cau_chuan ?? d.cau_bot, diem: d.diem, ghi_chu: d.ghi_chu ?? "", dung_lam_mau: d.dung_lam_mau });
+
+type Phien = { khoa: string; cau: Dong[]; moi_nhat: string };
+// Gom câu cùng cuộc chat, xếp theo thứ tự tin; cuộc chat mới nhất lên trước.
+function gomPhien(ds: Dong[]): Phien[] {
+  const m = new Map<string, Dong[]>();
+  for (const d of ds) { const k = d.phien ?? d.id; m.set(k, [...(m.get(k) ?? []), d]); }
+  return [...m.entries()].map(([khoa, cau]) => {
+    cau.sort((a, b) => (a.seq ?? 1e9) - (b.seq ?? 1e9) || a.ngu_canh.length - b.ngu_canh.length);
+    return { khoa, cau, moi_nhat: cau.reduce((x, d) => (d.created_at > x ? d.created_at : x), cau[0].created_at) };
+  }).sort((a, b) => b.moi_nhat.localeCompare(a.moi_nhat));
+}
+// Tin nằm GIỮA câu bot trước và câu này: phần ngữ cảnh sau lần cuối câu bot trước xuất hiện. Không thấy (ngữ cảnh bị cắt) → cả ngữ cảnh.
+function tinGiua(d: Dong, truoc: Dong | null): { tin: Luot[]; cat: boolean } {
+  if (!truoc) return { tin: d.ngu_canh, cat: false };
+  let i = -1;
+  d.ngu_canh.forEach((t, j) => { if (t.ai === "bot" && t.noi_dung.trim() === truoc.cau_bot.trim()) i = j; });
+  return i >= 0 ? { tin: d.ngu_canh.slice(i + 1), cat: false } : { tin: d.ngu_canh, cat: true };
+}
 
 export default function Page() {
   const [role, setRole] = useState<"loading" | "anon" | "user" | "admin">("loading");
@@ -33,8 +52,8 @@ export default function Page() {
 
   const nap = async () => {
     const { data, error } = await supabase.from("cau_chuan")
-      .select("id, conversation_id, ngu_canh, cau_bot, cau_chuan, diem, ghi_chu, nguon, dung_lam_mau, created_at, updated_at")
-      .order("created_at", { ascending: false }).limit(300);
+      .select("id, conversation_id, phien, seq, ngu_canh, cau_bot, cau_chuan, diem, ghi_chu, nguon, dung_lam_mau, created_at, updated_at")
+      .order("created_at", { ascending: false }).limit(800);
     if (error) { setLoi(error.message); return; }
     const ds = (data ?? []) as Dong[];
     setDong(ds);
@@ -54,9 +73,9 @@ export default function Page() {
   const daCham = (d: Dong) => d.cau_chuan != null || d.diem != null;
   // "Câu mẫu đã sửa" (chủ dự án 21/10): câu chuẩn đã lưu KHÁC câu bot — người chấm đã viết lại câu, không chỉ chấm điểm.
   const daSua = (d: Dong) => d.cau_chuan != null && d.cau_chuan.trim() !== d.cau_bot.trim();
-  const danhSach = useMemo(() => dong.filter((d) =>
-    (loc === "tat_ca" || (loc === "da_sua" ? daSua(d) : loc === "da" ? daCham(d) : !daCham(d))) && (!nguon || d.nguon === nguon)),
-  [dong, loc, nguon]);
+  const khop = (d: Dong) => (loc === "tat_ca" || (loc === "da_sua" ? daSua(d) : loc === "da" ? daCham(d) : !daCham(d))) && (!nguon || d.nguon === nguon);
+  // Lọc theo câu nhưng hiện CẢ cuộc chat có ít nhất một câu khớp — người sửa đọc từ đầu đến cuối.
+  const danhSach = useMemo(() => gomPhien(dong).filter((p) => p.cau.some(khop)), [dong, loc, nguon]); // eslint-disable-line react-hooks/exhaustive-deps
   const dem = { chua: dong.filter((d) => !daCham(d)).length, da: dong.filter(daCham).length, da_sua: dong.filter(daSua).length };
 
   const sua = (id: string, p: Partial<Nhap>) => setNhap((n) => ({ ...n, [id]: { ...n[id], ...p } }));
@@ -98,7 +117,7 @@ export default function Page() {
       <div className="min-w-0">
       <h1 className="text-xl font-bold text-navy">Câu chuẩn</h1>
       <p className="mt-1 max-w-[70ch] text-sm text-mute">
-        Mỗi thẻ là một câu bot đã trả lời, kèm các tin ngay trước nó. Chấm điểm, sửa câu cho đúng cách bot nên nói rồi bấm Lưu —
+        Mỗi thẻ là một cuộc chat từ đầu đến cuối. Dưới mỗi câu bot: chấm điểm, sửa câu cho đúng cách bot nên nói rồi bấm Lưu —
         bot đọc các câu đã lưu làm ví dụ (trong vòng 1 phút). Đưa thêm câu vào từ trang <Link href="/admin/tin-nhan" className="font-semibold text-brand hover:underline">Tin nhắn</Link> (nút &quot;Chấm / sửa&quot; dưới câu bot).
       </p>
 
@@ -121,65 +140,27 @@ export default function Page() {
       </div>
 
       <ol className="mt-4 space-y-4">
-        {danhSach.map((d) => {
-          const n = nhap[d.id] ?? nhapTu(d);
-          const doi = n.cau_chuan.trim() !== d.cau_bot.trim();
+        {danhSach.map((ph) => {
+          const dau = ph.cau[0];
           return (
-            <li key={d.id} className="rounded-lg border border-line bg-white">
+            <li key={ph.khoa} className="rounded-lg border border-line bg-white">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2 text-xs text-mute">
-                <span className="flex flex-wrap items-center gap-1.5">
-                  <span>{d.nguon === "ban_thu" ? "Bắn thử" : "Khách thật"} · {luc(d.created_at)}</span>
-                  {daSua(d) && <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[11px] font-bold text-brand">Câu mẫu đã sửa</span>}
-                  {d.dung_lam_mau && (d.cau_chuan != null || d.diem != null) && <span className="rounded bg-navy/10 px-1.5 py-0.5 text-[11px] font-bold text-navy">Bot dùng làm ví dụ</span>}
-                  {d.diem != null && <span className="rounded bg-cream px-1.5 py-0.5 text-[11px] font-bold text-navy tabular-nums">{d.diem} điểm</span>}
-                </span>
-                {d.conversation_id && <Link href={`/admin/tin-nhan?hoi_thoai=${d.conversation_id}`} className="font-semibold text-brand hover:underline">Mở hội thoại</Link>}
+                <span>{dau.nguon === "ban_thu" ? "Bắn thử" : "Khách thật"} · {luc(dau.created_at)} · {ph.cau.length} câu bot</span>
+                {dau.conversation_id && <Link href={`/admin/tin-nhan?hoi_thoai=${dau.conversation_id}`} className="font-semibold text-brand hover:underline">Mở hội thoại</Link>}
               </div>
-              <div className="space-y-1.5 bg-cream/30 px-4 py-3">
-                <div className="text-[11px] font-bold uppercase tracking-wide text-mute">Ngữ cảnh</div>
-                {d.ngu_canh.length === 0 && <div className="text-sm text-mute">Câu đầu hội thoại.</div>}
-                {d.ngu_canh.map((t, i) => (
-                  <div key={i} className={`flex ${t.ai === "bot" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[85%] rounded-lg px-3 py-1.5 text-sm ${t.ai === "bot" ? "bg-navy/90 text-white" : "bg-white text-navy"}`}>
-                      <div className={`text-[10px] font-bold ${t.ai === "bot" ? "text-white/60" : "text-mute"}`}>{AI_VI[t.ai] ?? t.ai}</div>
-                      <div className="whitespace-pre-wrap break-words">{t.noi_dung}</div>
+              <div className="space-y-2 px-4 py-3">
+                {ph.cau.map((d, i) => {
+                  const { tin, cat } = tinGiua(d, i > 0 ? ph.cau[i - 1] : null);
+                  return (
+                    <div key={d.id} className="space-y-1.5">
+                      {i === 0 && d.ngu_canh.length === 0 && <div className="text-sm text-mute">Bot mở lời trước.</div>}
+                      {cat && <div className="text-center text-[11px] text-mute">… một đoạn chat không còn lưu …</div>}
+                      {tin.map((t, j) => <Bong key={j} t={t} />)}
+                      <CauBot d={d} n={nhap[d.id] ?? nhapTu(d)} sua={(q) => sua(d.id, q)} luu={() => luu(d)} xoa={() => xoa(d)} dangLuu={dangLuu === d.id}
+                        moRong={khop(d)} />
                     </div>
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-3 px-4 py-3">
-                <div>
-                  <div className="text-[11px] font-bold uppercase tracking-wide text-mute">Bot đã trả lời</div>
-                  <div className="mt-1 whitespace-pre-wrap break-words rounded-md border border-line bg-cream/40 px-3 py-2 text-sm text-navy">{d.cau_bot}</div>
-                </div>
-                <fieldset>
-                  <legend className="text-[11px] font-bold uppercase tracking-wide text-mute">Điểm câu bot</legend>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <button key={s} type="button" aria-pressed={n.diem === s} onClick={() => sua(d.id, { diem: n.diem === s ? null : s })}
-                        className={`h-9 w-9 rounded-md border text-sm font-bold tabular-nums transition ${n.diem === s ? "border-navy bg-navy text-white" : "border-line bg-white text-navy hover:border-brand"}`}>{s}</button>
-                    ))}
-                    <span className="ml-2 self-center text-xs text-mute">1 = sai / hại · 5 = chuẩn</span>
-                  </div>
-                </fieldset>
-                <div>
-                  <label htmlFor={`cc-${d.id}`} className="text-[11px] font-bold uppercase tracking-wide text-mute">Câu chuẩn {doi && <span className="font-semibold normal-case text-brand">(đã sửa)</span>}</label>
-                  <textarea id={`cc-${d.id}`} value={n.cau_chuan} onChange={(e) => sua(d.id, { cau_chuan: e.target.value })} rows={Math.min(12, Math.max(3, n.cau_chuan.split("\n").length + 1))}
-                    className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-navy outline-none focus:border-brand" />
-                </div>
-                <div>
-                  <label htmlFor={`gc-${d.id}`} className="text-[11px] font-bold uppercase tracking-wide text-mute">Ghi chú cho bot (vì sao sửa)</label>
-                  <input id={`gc-${d.id}`} value={n.ghi_chu} onChange={(e) => sua(d.id, { ghi_chu: e.target.value })} placeholder="vd: khách đã ok thì đăng luôn, đừng hỏi lại"
-                    className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-navy outline-none focus:border-brand" />
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="mr-auto inline-flex items-center gap-2 text-sm text-navy">
-                    <input type="checkbox" checked={n.dung_lam_mau} onChange={(e) => sua(d.id, { dung_lam_mau: e.target.checked })} /> Bot dùng làm ví dụ
-                  </label>
-                  {doi && <Btn variant="ghost" onClick={() => sua(d.id, { cau_chuan: d.cau_chuan ?? d.cau_bot })}>Huỷ sửa</Btn>}
-                  <Btn variant="danger" onClick={() => xoa(d)} title="Bỏ câu này khỏi danh sách"><IconTrash className="h-3.5 w-3.5" /> Xoá</Btn>
-                  <Btn variant="primary" onClick={() => luu(d)} disabled={dangLuu === d.id}>{dangLuu === d.id ? "Đang lưu…" : "Lưu câu chuẩn"}</Btn>
-                </div>
+                  );
+                })}
               </div>
             </li>
           );
@@ -204,6 +185,73 @@ export default function Page() {
         <div role="status" className="fixed bottom-4 right-4 flex items-center gap-3 rounded-md border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
           <span>{thongBao}</span>
           <button type="button" onClick={() => setThongBao(null)} aria-label="Đóng" className="font-bold">×</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Bong({ t }: { t: Luot }) {
+  const bot = t.ai === "bot";
+  return (
+    <div className={`flex ${bot ? "justify-end" : "justify-start"}`}>
+      <div className={`max-w-[85%] rounded-lg px-3 py-1.5 text-sm ${bot ? "bg-navy/90 text-white" : "bg-cream/70 text-navy"}`}>
+        <div className={`text-[10px] font-bold ${bot ? "text-white/60" : "text-mute"}`}>{AI_VI[t.ai] ?? t.ai}</div>
+        <div className="whitespace-pre-wrap break-words">{t.noi_dung}</div>
+      </div>
+    </div>
+  );
+}
+
+// Một câu bot trong cuộc chat + khung chấm / sửa. Câu không khớp bộ lọc đang chọn thì thu gọn (bấm để mở).
+function CauBot({ d, n, sua, luu, xoa, dangLuu, moRong }: {
+  d: Dong; n: Nhap; sua: (p: Partial<Nhap>) => void; luu: () => void; xoa: () => void; dangLuu: boolean; moRong: boolean;
+}) {
+  const [mo, setMo] = useState(moRong);
+  const doi = n.cau_chuan.trim() !== d.cau_bot.trim();
+  const daSua = d.cau_chuan != null && d.cau_chuan.trim() !== d.cau_bot.trim();
+  return (
+    <div className="ml-auto max-w-[92%] rounded-lg border border-navy/20 bg-white">
+      <div className="flex flex-wrap items-center gap-1.5 px-3 pt-2 text-[10px] font-bold text-mute">
+        <span>TRỢ LÝ</span>
+        {daSua && <span className="rounded bg-brand/10 px-1.5 py-0.5 text-[11px] text-brand">Câu mẫu đã sửa</span>}
+        {d.dung_lam_mau && (d.cau_chuan != null || d.diem != null) && <span className="rounded bg-navy/10 px-1.5 py-0.5 text-[11px] text-navy">Bot dùng làm ví dụ</span>}
+        {d.diem != null && <span className="rounded bg-cream px-1.5 py-0.5 text-[11px] text-navy tabular-nums">{d.diem} điểm</span>}
+        <button type="button" onClick={() => setMo(!mo)} aria-expanded={mo} className="ml-auto rounded px-1.5 py-0.5 text-xs font-semibold text-brand hover:bg-cream/70">
+          {mo ? "Thu gọn" : "Chấm / sửa"}
+        </button>
+      </div>
+      <div className="whitespace-pre-wrap break-words px-3 pb-2 pt-1 text-sm text-navy">{d.cau_bot}</div>
+      {mo && (
+        <div className="space-y-3 border-t border-line px-3 py-3">
+          <fieldset>
+            <legend className="text-[11px] font-bold uppercase tracking-wide text-mute">Điểm câu bot</legend>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button key={s} type="button" aria-pressed={n.diem === s} onClick={() => sua({ diem: n.diem === s ? null : s })}
+                  className={`h-9 w-9 rounded-md border text-sm font-bold tabular-nums transition ${n.diem === s ? "border-navy bg-navy text-white" : "border-line bg-white text-navy hover:border-brand"}`}>{s}</button>
+              ))}
+              <span className="ml-2 self-center text-xs text-mute">1 = sai / hại · 5 = chuẩn</span>
+            </div>
+          </fieldset>
+          <div>
+            <label htmlFor={`cc-${d.id}`} className="text-[11px] font-bold uppercase tracking-wide text-mute">Câu chuẩn {doi && <span className="font-semibold normal-case text-brand">(đã sửa)</span>}</label>
+            <textarea id={`cc-${d.id}`} value={n.cau_chuan} onChange={(e) => sua({ cau_chuan: e.target.value })} rows={Math.min(12, Math.max(3, n.cau_chuan.split("\n").length + 1))}
+              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-navy outline-none focus:border-brand" />
+          </div>
+          <div>
+            <label htmlFor={`gc-${d.id}`} className="text-[11px] font-bold uppercase tracking-wide text-mute">Ghi chú cho bot (vì sao sửa)</label>
+            <input id={`gc-${d.id}`} value={n.ghi_chu} onChange={(e) => sua({ ghi_chu: e.target.value })} placeholder="vd: khách đã ok thì đăng luôn, đừng hỏi lại"
+              className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-navy outline-none focus:border-brand" />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="mr-auto inline-flex items-center gap-2 text-sm text-navy">
+              <input type="checkbox" checked={n.dung_lam_mau} onChange={(e) => sua({ dung_lam_mau: e.target.checked })} /> Bot dùng làm ví dụ
+            </label>
+            {doi && <Btn variant="ghost" onClick={() => sua({ cau_chuan: d.cau_chuan ?? d.cau_bot })}>Huỷ sửa</Btn>}
+            <Btn variant="danger" onClick={xoa} title="Bỏ câu này khỏi danh sách"><IconTrash className="h-3.5 w-3.5" /> Xoá</Btn>
+            <Btn variant="primary" onClick={luu} disabled={dangLuu}>{dangLuu ? "Đang lưu…" : "Lưu câu chuẩn"}</Btn>
+          </div>
         </div>
       )}
     </div>
