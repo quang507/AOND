@@ -7808,6 +7808,24 @@ có thể bốc trúng dòng không có Zalo, tin báo admin mất đích.
    tin. **Cùng lớp**: `src/aioi/mua.py` đọc `admins` theo đúng Zalo ID (không dính); không còn chỗ `limit(1)` nào khác trên bảng này.
 3. **Kiểm**: `tests/test_escalation_admin_dich.py` — đỏ trên bản cũ (đã chạy), xanh sau sửa; `bun run kieu:bot` sạch.
 
+### SRS-5.1zzzzzzz114 · Vector tìm theo nghĩa đổi sang halfvec; tra phường không quét chỉ mục đường (21/10/2026)
+
+Chủ dự án 21/10 (sau khi soát vai DBA): "dùng halfvec đi, tôi muốn sau con bot sẽ cover hết các trường hợp người ta chat, sau nếu cần
+thì có thể lưu ở chỗ khác để vector hóa". Số đo trước khi đổi: DB 293 MB trên trần gói Free khoảng 500 MB; bảng `duong` 198 MB (vector
+87 MB + chỉ mục HNSW 86 MB), mới nhúng 22.104 / 39.421 dòng (còn 17.317 hẻm, lịch `nhung-dia-danh-tick` vẫn nhúng tiếp). Chỉ mục
+`duong_nhung_hnsw` chỉ chạy khi tra chữ (`tim_duong`) không ra; từ 02/10 chưa lượt nào. Có chỉ mục ~0,4 s, quét cả bảng ~6,9 s → giữ.
+
+1. **Lớp**: lưu vector 4 byte / chiều cho việc so gần đúng — thừa độ chính xác, đẩy DB về sát trần gói Free khi nhúng đủ địa danh.
+2. **Sửa** (`20261021f`, một giao dịch): sáu cột `nhung` (`listings`, `projects`, `wards`, `phuong_cu`, `quan_cu`, `duong`) đổi
+   `vector(768)` → `halfvec(768)` (giá trị đã nhúng giữ, không gọi Gemini lại), dựng lại sáu chỉ mục HNSW `halfvec_cosine_ops`; sáu hàm
+   ghi / tìm vector đổi chỗ ép kiểu (đổi chữ trong thân hàm đang chạy trên DB); `tim_dia_danh_theo_nghia` thêm điều kiện một lần
+   `p_loai && {duong, hem, so}` — tra PHƯỜNG không còn quét chỉ mục bảng đường rồi lọc bỏ hết. Vẫn nhúng cả hẻm (bao hết cách khách nói).
+3. **Cùng lớp**: lõi Python và web không đụng kiểu vector (gửi mảng số qua RPC; trang tin không chọn cột `nhung`). Hướng sau nếu DB
+   vẫn chật: chuyển vector ra chỗ khác (VPS) theo lời chủ dự án — chưa làm.
+
+Kiểm: chạy thử trên DB trong giao dịch huỷ ngay — MCP cắt ở 60 giây, DB quay lại nguyên (cột vẫn `vector`, đủ sáu chỉ mục), nên migration
+tự nới giờ chờ 15 phút trong giao dịch của nó; sau khi áp đo lại dung lượng và thời gian tìm.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
