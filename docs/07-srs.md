@@ -7503,6 +7503,17 @@ ngắt ra hoặc có thể hỏi thêm sau".
 Kiểm: `tests/test_cho_thue_nguyen_can.py` (`test_loi_sau_duyet_hai_doan_cau_phi_tin_rieng`: câu hỏi phí ở tin cuối, không tin nào
 trộn xác nhận với hỏi phí), `tests/test_trang_thai_web.py`, `tests/test_ban_nhap_du_dieu_kien.py`.
 
+### SRS-5.1zzzzzzz99 · Tin nhắc xem bản nháp theo câu tester (21/10/2026)
+
+Tester chị N. sửa tin nhắc tự động khi khách chưa trả lời bản nháp: "Bản tin nháp căn nhà em soạn ở trên anh/chị xem qua thấy ưng ý
+chưa ạ, có cần điều chỉnh thêm thông tin nào không cứ nhắn em nhé ạ!" → "Em gửi anh/chị bản nháp tin đăng, mình có cần chỉnh sửa
+thêm nhắn em hỗ trợ ạ!". Tin nhắc là câu CỐ ĐỊNH trong `followup.py` (không qua model, nên trang Câu chuẩn không đổi được nó) —
+sửa thẳng chữ: "Em gửi {anh / chị / anh/chị} bản nháp tin đăng, {…} có cần chỉnh sửa thêm thì nhắn em hỗ trợ ạ!" (gọi khách theo
+xưng hô như SRS-5.1zzzzzzz90, thay "mình"); khách xưng "em": "Mình gửi em bản nháp tin đăng, em có cần chỉnh sửa thêm thì nhắn mình
+hỗ trợ nhé!". Cùng lớp: các câu cố định khác trong `followup.py` (`cau_nhac` nhắc lại đúng câu bot vừa hỏi, xin ảnh) — chưa có góp ý.
+
+Kiểm: `tests/test_xung_ho_khong_lat.py` (`test_tin_nhac_ban_nhap_theo_cau_tester` — chạy thật `_execute_followup`, đỏ trên bản trước).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

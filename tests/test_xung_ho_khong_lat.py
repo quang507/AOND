@@ -27,3 +27,22 @@ def test_tin_nhac_ban_nhap_chi_khi_da_gui_ban_nhap():
     import aioi.followup as F
     src = open(F.__file__, encoding="utf-8").read()
     assert 'is_draft_ready = bool(getattr(conv, "listing_proposed", False))' in src
+
+
+def test_tin_nhac_ban_nhap_theo_cau_tester():
+    """SRS-5.1zzzzzzz99: tester sửa "Bản tin nháp căn nhà em soạn ở trên anh/chị xem qua thấy ưng ý chưa ạ, có cần điều chỉnh thêm
+    thông tin nào không cứ nhắn em nhé ạ!" → "Em gửi anh/chị bản nháp tin đăng, mình có cần chỉnh sửa thêm nhắn em hỗ trợ ạ!"."""
+    import threading
+    from types import SimpleNamespace
+    from aioi.assistants import assign_assistant
+    from aioi.engine import Conversation, Turn
+    from aioi.followup import FollowUpManager
+    conv = Conversation(user_key="bn-1", assistant=assign_assistant("bn-1"))
+    conv.prop.loai_hinh = "nha_pho"
+    conv.listing_proposed = True
+    conv.xung_ho = "chi"
+    conv.history.append(Turn("user", "chị bán nhà", 0.0))
+    eng = SimpleNamespace(conversation=lambda uk: conv, khoa_luot=lambda uk: threading.RLock(), _convstore=None)
+    FollowUpManager()._execute_followup("bn-1", eng, None, "seller", hen=None)
+    nhac = conv.history[-1].content
+    assert nhac == "Em gửi chị bản nháp tin đăng, chị có cần chỉnh sửa thêm thì nhắn em hỗ trợ ạ!"
