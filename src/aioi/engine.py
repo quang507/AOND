@@ -146,6 +146,11 @@ def _image_count(media: list[dict[str, str]]) -> int:
 # mo_ta_du_an, xac_nhan_xoa, kèm trích dẫn) và _la_tai_lieu_chung đọc bản đọc ảnh.
 
 # Chuỗi bridge gán cho MỌI sticker Zalo (bot/bridge-zca/index.mjs, SRS-5.1zzzzzzz22): zca-js không cho biết sắc thái.
+def _ten_tep_that(ten: str | None) -> bool:
+    """Tên tệp có nghĩa. Máy chủ ảnh Zalo trả tên "undefined" (22/10/2026: "Em đã nhận: undefined") — tên rác coi như không có tên."""
+    return bool(ten) and str(ten).strip().lower() not in ("undefined", "null", "none", "nan", "unknown", "file", "image")
+
+
 LENH_LAM_MOI = "$$$$$"   # lệnh làm mới phiên (SRS-5.1zzzzzzz123)
 from .sticker import STICKER_TRUNG_TINH, la_sticker  # noqa: E402,F401  (một nguồn ở sticker.py, SRS-5.1zzzzzzz122)
 
@@ -2710,9 +2715,9 @@ class Engine:
 
         # Show real filenames individually; collapse unnamed files into "N ảnh / N tài liệu"
         # (Drive often stores mojibake names we drop) so the list stays readable.
-        named = [m.filename for m in fetched if m.filename]
-        n_img = sum(1 for m in fetched if not m.filename and m.kind == "image")
-        n_pdf = sum(1 for m in fetched if not m.filename and m.kind == "pdf")
+        named = [m.filename for m in fetched if _ten_tep_that(m.filename)]
+        n_img = sum(1 for m in fetched if not _ten_tep_that(m.filename) and m.kind == "image")
+        n_pdf = sum(1 for m in fetched if not _ten_tep_that(m.filename) and m.kind == "pdf")
         parts = list(named)
         if n_img:
             parts.append(f"{n_img} ảnh")
@@ -3131,7 +3136,7 @@ class Engine:
         ảnh for a căn already in the basket — read filenames+folder name+image content
         TOGETHER and route each group to the right place (never guess silently; ask to
         verify when unsure) instead of blending everything into one listing."""
-        labels = [m.filename or f"{'ảnh' if m.kind == 'image' else 'tài liệu'} {i}"
+        labels = [(m.filename if _ten_tep_that(m.filename) else None) or f"{'ảnh' if m.kind == 'image' else 'tài liệu'} {i}"
                   for i, m in enumerate(fetched, 1)]
         folder_name = next((n for u in urls if (n := self._folder_name(u))), None)
         basket_labels = [li.label() for li in conv.listings]

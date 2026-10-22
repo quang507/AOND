@@ -9,8 +9,8 @@ def test_khong_hoi_cung_mot_o_hai_luot_lien():
     c = Conversation(user_key="k", assistant=assign_assistant("k"))
     thieu = ["dien_tich_dat", "dien_tich_nha", "gia"]
     assert Engine._o_hoi_ke(c, thieu) == "dien_tich_dat"
-    # khách chưa trả lời → hỏi ý khác trước; từ SRS-5.1zzzzzzz79 hỏi theo cụm, dien_tich_dat + dien_tich_nha cùng cụm nên lùi CẢ CỤM
-    assert Engine._o_hoi_ke(c, thieu) == "gia"
+    # khách chưa trả lời → hỏi ý khác trước; từ SRS-5.1zzzzzzz136 mỗi lượt một ô (không hỏi gộp) nên chỉ lùi đúng ô vừa hỏi
+    assert Engine._o_hoi_ke(c, thieu) == "dien_tich_nha"
     assert Engine._o_hoi_ke(c, thieu) == "dien_tich_dat"       # rồi mới quay lại
     assert Engine._o_hoi_ke(c, ["gia"]) == "gia" and Engine._o_hoi_ke(c, ["gia"]) == "gia"   # còn mỗi một ô thì vẫn hỏi
 

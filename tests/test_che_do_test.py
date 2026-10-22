@@ -78,7 +78,8 @@ def test_server_gui_tin_phu_sau_loi_tra_loi_nhung_khong_ghi_vao_crm(monkeypatch)
     r0 = cl.post("/chat-reply", json={"external_user_id": "t7", "text": "$$$$$"}).json()
     assert r0["replies"] == [] and r0["nhip_go"] == [] and r0["reply"] == ""       # bridge không gửi gì
     r1 = cl.post("/chat-reply", json={"external_user_id": "t7", "text": "em ơi nhà 12 Lê Văn Sỹ giá 6,95 tỷ"}).json()
-    assert r1["replies"][-1].startswith("$$$$$ Đã trích xuất:") and "$$$$$" not in r1["reply"]
+    assert r1["replies"][0].startswith("$$$$$ Đã trích xuất:") and "$$$$$" not in r1["reply"]     # SRS-5.1zzzzzzz136: tin debug đi TRƯỚC
+    assert all(not b.startswith("$$$$$") for b in r1["replies"][1:])                          # các tin sau là lời cho khách thật
     assert all("$$$$$ Đã trích xuất" not in g["bot_reply"] for g in ghi) and len(r1["nhip_go"]) == len(r1["replies"])
 
 
