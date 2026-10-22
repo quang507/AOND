@@ -216,7 +216,7 @@ Từ 24/08/2026 (quyết định chủ dự án) code nằm **trong repo này**,
   `when` bằng migration mới; `bot/tests/ten-nhan-sql.mjs` đỏ khi hai bên lệch. Từ 21/09 thêm **từ điển tên đường** bảng `duong` (FR-212, `20260921b`,
   ~5.200 tên lượt đầu 21/09; đếm 12/10/2026 sau `nap-duong`: TP.HCM 37.146 dòng gồm hẻm, đủ 168/168 phường — Đặc khu Côn Đảo nằm ngoài hộp bao chung, nạp nhờ `BBOX_RIENG`; Tây Ninh 1.598, Đồng Nai 677; OSM theo phường mới): bot gọi `tim_duong` ở MỌI chỗ ghi địa chỉ — không dấu → có dấu
   ngay, sai 1–2 ký tự → hỏi xác nhận (`boc_tach.duong_goi_y`), không có → giữ nguyên chữ khách; nạp lại
-  bằng `node scripts/nap-duong.mjs`, KHÔNG ghi tay. `listings` nay 70 cột (đếm trên DB 18/10/2026; số "56", "67" cũ đã lệch).
+  bằng `node scripts/nap-duong.mjs`, KHÔNG ghi tay. `listings` nay 63 cột (đếm lại 22/10/2026 sau khi gỡ 7 cột chết, SRS-5.1zzzzzzz140; số "56", "67", "70" cũ đã lệch).
   (3) **Luật phá dữ liệu phải có bảng câu KHÔNG được kích** — `bot/tests/luat/khong-duoc-kich.json`:
   mỗi luật tìm-chuỗi mà khớp là ghi đè dữ liệu có `phai_kich` (để không vá quá tay) và
   ≥ 8 `khong_duoc_kich`. `luat-pha-du-lieu.mjs` còn đếm chỗ ghi đè trong chat-reply:
