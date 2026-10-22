@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-22 15:57 (giờ VN)
+-- Sinh lúc: 2026-10-22 16:35 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -302,7 +302,6 @@ create table if not exists public.listing_views (
 create table if not exists public.listings (
   id uuid not null default gen_random_uuid(),
   code text not null,
-  legacy_sst integer,
   seller_id uuid,
   deal listing_deal not null default 'ban'::listing_deal,
   district text,
@@ -313,17 +312,13 @@ create table if not exists public.listings (
   price_raw text,
   description text,
   source text not null default 'import_excel'::text,
-  source_url text,
-  cc_link text,
   status text not null default 'cho_thong_tin'::text,
-  last_confirmed_at timestamp with time zone,
   created_at timestamp with time zone not null default now(),
   updated_at timestamp with time zone not null default now(),
   project_id uuid,
   unit_code text,
   floor integer,
   direction text,
-  unit_status unit_status,
   property_type property_type default 'chua_ro'::property_type,
   lat numeric,
   lng numeric,
@@ -354,7 +349,6 @@ create table if not exists public.listings (
   year_built integer,
   negotiable boolean,
   rent_income_vnd bigint,
-  specs_source text,
   price_per_m2_vnd bigint generated always as (
 CASE
     WHEN ((price_vnd IS NOT NULL) AND (area_m2 > (0)::numeric)) THEN (((price_vnd)::numeric / area_m2))::bigint
@@ -363,7 +357,6 @@ END) stored,
   can_chu_duyet boolean not null default false,
   chu_duyet_at timestamp with time zone,
   legacy_code text,
-  chu_noi_du_at timestamp with time zone,
   gap boolean,
   boc_tach jsonb,
   toa_do_muc text,
@@ -792,9 +785,6 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listings add constraint listings_property_type_source_check CHECK ((property_type_source = ANY (ARRAY['suy_doan'::text, 'chu_xac_nhan'::text, 'admin'::text])));
-exception when duplicate_object then null; end $d$;
-do $d$ begin
-  alter table public.listings add constraint listings_specs_source_check CHECK (((specs_source IS NULL) OR (specs_source = ANY (ARRAY['boc_mo_ta'::text, 'admin'::text, 'chu_xac_nhan'::text]))));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listings add constraint listings_status_check CHECK ((status = ANY (ARRAY['cho_thong_tin'::text, 'dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text, 'an'::text])));
@@ -1672,7 +1662,7 @@ begin
       'ma', l.code, 'ma_cu', l.legacy_code, 'loai_giao_dich', l.deal,
       'loai_bds', nullif(l.property_type::text, 'chua_ro'), 'trang_thai', l.status, 'gap', l.gap,
       'nguon', l.source, 'tu_chat', l.can_chu_duyet, 'chu_duyet_luc', l.chu_duyet_at,
-      'chu_noi_du_luc', l.chu_noi_du_at, 'tao_luc', l.created_at, 'sua_luc', l.updated_at, 'id', l.id),
+      'tao_luc', l.created_at, 'sua_luc', l.updated_at, 'id', l.id),
     'nguoi_rao', jsonb_build_object('ten', s.name, 'vai', s.seller_type, 'tro_ly', s.ten_tro_ly),
     'vi_tri', jsonb_build_object(
       'dia_chi', l.location_raw, 'duong', l.street, 'phuong', l.ward, 'quan', l.district,
@@ -2522,7 +2512,7 @@ CREATE OR REPLACE FUNCTION public.chuan_nmg(p_seller_id uuid)
 AS $function$
   with t as (
     select count(*) filter (where l.status in ('dang_ban', 'dang_quan_tam', 'da_coc'))                                   as dang_rao,
-           count(*) filter (where l.status = 'da_chot' and coalesce(l.chu_noi_du_at, l.updated_at) >= now() - interval '6 months') as chot_6t,
+           count(*) filter (where l.status = 'da_chot' and l.updated_at >= now() - interval '6 months') as chot_6t,
            count(*) filter (where l.created_at >= now() - interval '6 months' or l.status in ('dang_ban', 'dang_quan_tam', 'da_coc', 'cho_thong_tin')) as tong_6t
       from listings l where l.seller_id = p_seller_id
   )
@@ -3690,8 +3680,7 @@ begin
   -- 20261002a (đợt 1 chuyển luật sang AI): tin do AI quyết thông số (dấu `_thong_so_ai`, chat-reply chế độ `ai`) → KHÔNG đọc
   -- câu rao bằng regex. Bắn thử lx-t5-05: "nằm trong khu công nghiệp nên không có hẻm" → `\mhem\M` → access_type = 'hem'.
   if coalesce(new.boc_tach->>'_thong_so_ai', '') = 'true' then return new; end if;
-  de := tg_op = 'UPDATE' and new.description is distinct from old.description
-        and coalesce(new.specs_source, 'boc_mo_ta') = 'boc_mo_ta';
+  de := tg_op = 'UPDATE' and new.description is distinct from old.description;
   j := public.boc_thong_so(new.description, new.property_type::text);
 
   if j ? 'frontage_m'           and (de or new.frontage_m is null)           then new.frontage_m := (j->>'frontage_m')::numeric; co := true; end if;
@@ -3718,7 +3707,6 @@ begin
   if j ? 'negotiable'           and (de or new.negotiable is null)           then new.negotiable := (j->>'negotiable')::boolean; co := true; end if;
   if j ? 'rent_income_vnd' and new.deal = 'ban' and (de or new.rent_income_vnd is null) then new.rent_income_vnd := (j->>'rent_income_vnd')::bigint; co := true; end if;
 
-  if co and new.specs_source is null then new.specs_source := 'boc_mo_ta'; end if;
   return new;
 end $function$
 ;
@@ -6490,21 +6478,6 @@ create or replace view public.hoi_thoai_nhan with (security_invoker=true) as
            FROM admins a
           WHERE a.email = ((( SELECT auth.jwt() AS jwt)) ->> 'email'::text)));
 
-create or replace view public.public_listings with (security_invoker=true) as
- SELECT id,
-    code,
-    district,
-    ward,
-    deal,
-    area_m2,
-    price_vnd,
-    price_raw,
-    description,
-    status,
-    last_confirmed_at,
-    legacy_code
-   FROM listings;
-
 create or replace view public.agents_public with (security_invoker=false) as
  SELECT s.id,
     s.name,
@@ -6563,6 +6536,77 @@ create or replace view public.bds_hot as
   GROUP BY l.id, l.code, l.ward, l.district, l.status
   ORDER BY (count(e.id) FILTER (WHERE e.at > (now() - '60 days'::interval))::integer) DESC, (max(e.at)) DESC NULLS LAST;
 
+create or replace view public.listing_photos_v with (security_invoker=true) as
+ SELECT l.code,
+    (((url_kho_anh() || '/'::text) || m.bucket) || '/'::text) || m.storage_path AS url,
+    m.storage_path AS path,
+    m.sort_order,
+    m.is_cover,
+    m.created_at,
+    m.listing_id,
+    m.id AS media_id,
+    l.legacy_code
+   FROM listing_media m
+     JOIN listings l ON l.id = m.listing_id
+  WHERE m.bucket = 'listing-public'::text AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text]));
+
+create or replace view public.seller_ranks with (security_invoker=true) as
+ SELECT s.id,
+    s.name,
+    s.seller_type,
+    COALESCE(c.active, 0::bigint)::integer AS active_count,
+    COALESCE(c.closed, 0::bigint)::integer AS closed_count,
+    COALESCE(c.total, 0::bigint)::integer AS total_count,
+    hang_theo_diem((d.j ->> 'diem'::text)::integer) AS rank,
+    (d.j ->> 'diem'::text)::integer AS diem_nguoi_rao,
+    (d.j ->> 'diem_tb'::text)::numeric AS diem_hoan_chinh,
+    (d.j ->> 'diem_phan_hoi'::text)::integer AS diem_phan_hoi,
+    (d.j ->> 'so_luot_phan_hoi'::text)::integer AS so_luot_phan_hoi,
+        CASE
+            WHEN s.seller_type = 'nmg'::seller_type THEN (chuan_nmg(s.id) ->> 'dat_chuan'::text)::boolean
+            ELSE NULL::boolean
+        END AS dat_chuan_nmg,
+    s.ten_tro_ly
+   FROM sellers s
+     LEFT JOIN LATERAL ( SELECT count(*) FILTER (WHERE l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text])) AS active,
+            count(*) FILTER (WHERE l.status = 'da_chot'::text) AS closed,
+            count(*) AS total
+           FROM listings l
+          WHERE l.seller_id = s.id) c ON true
+     LEFT JOIN LATERAL ( SELECT diem_nguoi_ban(s.id) AS j) d ON true;
+
+create or replace view public.boc_tach_v with (security_invoker=true) as
+ SELECT id,
+    code,
+    legacy_code,
+    seller_id,
+    status,
+    deal,
+    property_type,
+    location_raw,
+    ward,
+    district,
+    price_raw,
+    gap,
+    created_at,
+    updated_at,
+    boc_tach_nhom(l.*) AS nhom
+   FROM listings l;
+
+create or replace view public.public_listings with (security_invoker=true) as
+ SELECT id,
+    code,
+    district,
+    ward,
+    deal,
+    area_m2,
+    price_vnd,
+    price_raw,
+    description,
+    status,
+    legacy_code
+   FROM listings;
+
 create or replace view public.ro_hang_ban with (security_invoker=true) as
  SELECT code AS ma,
         CASE property_type
@@ -6620,10 +6664,6 @@ create or replace view public.ro_hang_ban with (security_invoker=true) as
             ELSE NULL::text
         END,
         CASE
-            WHEN specs_source = 'boc_mo_ta'::text THEN 'THÔNG SỐ bóc từ mô tả'::text
-            ELSE NULL::text
-        END,
-        CASE
             WHEN price_source = 'suy_doan'::text THEN 'GIÁ do máy đoán'::text
             ELSE NULL::text
         END,
@@ -6635,64 +6675,6 @@ create or replace view public.ro_hang_ban with (security_invoker=true) as
     id
    FROM listings l
   WHERE deal = 'ban'::listing_deal;
-
-create or replace view public.boc_tach_v with (security_invoker=true) as
- SELECT id,
-    code,
-    legacy_code,
-    seller_id,
-    status,
-    deal,
-    property_type,
-    location_raw,
-    ward,
-    district,
-    price_raw,
-    gap,
-    chu_noi_du_at,
-    created_at,
-    updated_at,
-    boc_tach_nhom(l.*) AS nhom
-   FROM listings l;
-
-create or replace view public.listing_photos_v with (security_invoker=true) as
- SELECT l.code,
-    (((url_kho_anh() || '/'::text) || m.bucket) || '/'::text) || m.storage_path AS url,
-    m.storage_path AS path,
-    m.sort_order,
-    m.is_cover,
-    m.created_at,
-    m.listing_id,
-    m.id AS media_id,
-    l.legacy_code
-   FROM listing_media m
-     JOIN listings l ON l.id = m.listing_id
-  WHERE m.bucket = 'listing-public'::text AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text]));
-
-create or replace view public.seller_ranks with (security_invoker=true) as
- SELECT s.id,
-    s.name,
-    s.seller_type,
-    COALESCE(c.active, 0::bigint)::integer AS active_count,
-    COALESCE(c.closed, 0::bigint)::integer AS closed_count,
-    COALESCE(c.total, 0::bigint)::integer AS total_count,
-    hang_theo_diem((d.j ->> 'diem'::text)::integer) AS rank,
-    (d.j ->> 'diem'::text)::integer AS diem_nguoi_rao,
-    (d.j ->> 'diem_tb'::text)::numeric AS diem_hoan_chinh,
-    (d.j ->> 'diem_phan_hoi'::text)::integer AS diem_phan_hoi,
-    (d.j ->> 'so_luot_phan_hoi'::text)::integer AS so_luot_phan_hoi,
-        CASE
-            WHEN s.seller_type = 'nmg'::seller_type THEN (chuan_nmg(s.id) ->> 'dat_chuan'::text)::boolean
-            ELSE NULL::boolean
-        END AS dat_chuan_nmg,
-    s.ten_tro_ly
-   FROM sellers s
-     LEFT JOIN LATERAL ( SELECT count(*) FILTER (WHERE l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text])) AS active,
-            count(*) FILTER (WHERE l.status = 'da_chot'::text) AS closed,
-            count(*) AS total
-           FROM listings l
-          WHERE l.seller_id = s.id) c ON true
-     LEFT JOIN LATERAL ( SELECT diem_nguoi_ban(s.id) AS j) d ON true;
 
 -- ══ Trigger ══
 drop trigger if exists trg_bot_errors_het_tien on public.bot_errors;
