@@ -73,6 +73,16 @@ kiem "sổ hồng riêng" "$(jq '.legal_status == "so_hong_rieng" | if . then 1 
 kiem "kết cấu có ghi" "$(jq '((.boc_tach.ket_cau // "") != "") or ((.floors // 0) > 0) | if . then 1 else 0 end' <<<"$r")"
 kiem "diện tích sàn 170 có ghi" "$(jq '[.boc_tach | to_entries[] | select(.value | tostring | test("170"))] | length > 0 | if . then 1 else 0 end' <<<"$r")"
 kiem "KHÔNG có ô thương lượng (chủ nhà không nói)" "$(jq '(.boc_tach.thuong_luong // "") == "" | if . then 1 else 0 end' <<<"$r")"
+# SRS-5.1zzzzzzz142: tin nhắn gốc của chủ nhà nằm trong listing_noi_bo.du_lieu.tin_goc (không thêm cột) và đi vào văn bản nhúng.
+# Bot hỏi từng ô nên câu trả lời ngắn ("giá 8,5 tỷ", "Nhà mặt tiền") là thông tin chính — bộ lọc không được bỏ chúng.
+TG=$(q "select n.du_lieu->>'tin_goc' as tg, public.van_ban_nhung(l.id) as vb from listings l join sellers s on s.id = l.seller_id
+        left join listing_noi_bo n on n.listing_id = l.id where s.zalo_user_id = '$BAN' order by l.updated_at desc limit 1")
+TIN_GOC=$(jq -r '.[0].tg // ""' <<<"$TG"); VAN_BAN=$(jq -r '.[0].vb // ""' <<<"$TG")
+echo "== tin gốc đã lưu:"; echo "$TIN_GOC"
+kiem "tin gốc: lời ngắn của chủ nhà giữ nguyên văn (giá 8,5 tỷ · Nhà mặt tiền · dt 4,5x11)" \
+  "$(grep -q 'giá 8,5 tỷ' <<<"$TIN_GOC" && grep -q 'Nhà mặt tiền' <<<"$TIN_GOC" && grep -q 'dt 4,5x11' <<<"$TIN_GOC" && echo 1 || echo 0)"
+kiem "tin gốc: không lẫn lời bot / bản nháp" "$(grep -q '📋' <<<"$TIN_GOC" && echo 0 || echo 1)"
+kiem "văn bản nhúng dùng tin gốc (dòng \"Người bán nhắn\")" "$(grep -q 'Người bán nhắn' <<<"$VAN_BAN" && echo 1 || echo 0)"
 echo "== số ô tin: $(jq '.boc_tach | length' <<<"$r")"
 echo "== Cao Lỗ: số lượt tới bản nháp: ${LUOT_NHAP:-chưa ra} / $LUOT lượt"
 
