@@ -8221,6 +8221,27 @@ AI ghi cả `kich_thuoc` lẫn `dien_tich_trang_thiet_bi` = "5x10", cổng bằn
 4. **Kiểm**: `tests/test_binh_luan_gia_kich_thuoc.py` (4 ca): nhận diện bình luận giá (3 câu phạm, 3 câu nhắc giá / "giờ xem hợp lý" / "hướng tốt" không bị oan); lượt
    phạm bị gọi lại (hệ thống gọi lại nói "nhận xét giá"); `_la_kich_thuoc` 7 đúng / 7 sai; "5x10" chỉ còn ở `kich_thuoc`, "50m2" + "4m" giữ, "4x12m" ở `ket_cau` bị bỏ.
 
+### SRS-5.1zzzzzzz133 · Vòng dự phòng Gemini / Groq có hạn — theo dõi thật 13:36 22/10/2026
+
+Theo dõi lượt test của Lê Quang sau khi xoá sạch dữ liệu (ID Zalo …3339): `$$$$$` lúc 13:36:12 im lặng đúng thiết kế; tin kế tiếp gọi Claude 13:36:54 báo hết số
+dư; 13:38:23 lượt Gemini dự phòng đầu tiên mới thành công (riêng bóc tách 90 s); 13:39:51 bridge ghi sổ "bridge xử lý tin gom: The operation was aborted due to
+timeout" (hạn chờ `HAN_CHO_BO_NAO` 90 s); tới 13:41 `messages` vẫn 0 dòng — lượt chưa xong hoặc xong mà bridge không còn chờ để gửi. Khách không nhận được lời nào.
+Chủ dự án: "rút ngắn đi".
+
+1. **Lớp**: đường dự phòng không có TRẦN THỜI GIAN — `DuPhongProvider._thu` thử từng khoá × từng model × từng nguồn, mỗi lần chờ tới 30 s (`_hoi`: `han =
+   min(30, 8 + trần chữ × 0,008)`), nên một lượt gọi model có thể kéo nhiều phút, vượt xa hạn chờ của bridge; model chậm (quá hạn) vẫn được thử lại với khoá khác
+   dù chậm là tại model / tải, không tại khoá. Cùng lớp với NFR-18 ("cái gì chứng minh nó tới nơi") ở chiều ngược: lời có mà không tới.
+2. **Sửa** (`src/aioi/llm/du_phong.py`): `HAN_MOT_LAN_GIAY = 20` (hạn mỗi lần gọi, thay 30); `NGAN_SACH_GIAY = 40` — cả vòng dự phòng của MỘT lượt gọi model quá
+   ngân sách thì dừng, ném lỗi cuối (engine đã có câu giữ chỗ + thử lại nền, SRS-5.1zzzzzzz82); `_qua_han(e)` (TimeoutError / URLError bọc socket.timeout / chữ
+   "timed out") → bỏ các khoá còn lại của model đó, sang model / nguồn kế. Lỗi theo khoá (429 quá nhịp, hết hạn mức) vẫn thử khoá kế như cũ.
+3. **Chỗ khác cùng lớp, chưa sửa**: (a) bridge `HAN_CHO_BO_NAO` 90 s — một lượt có nhiều lần gọi model (bóc tách, trả lời, chốt tin…), mỗi lần tối đa 40 s dự phòng
+   nên lượt xấu vẫn có thể vượt 90 s; đường chữa thật là lõi ĐẨY lời sang bridge khi lượt xong muộn (như `_thu_lai_nen` đã làm cho lượt hỏng) — chưa làm, ghi
+   OPEN; (b) Gemini `reasoning_effort: low` + trần 1.500 chữ cho câu trả lời 256 chữ — có thể là nguyên nhân chậm, chưa đo được từ ngoài VPS. Nguyên nhân gốc vẫn
+   là tài khoản Anthropic hết số dư: Claude là đường chính, dự phòng chỉ để không câm.
+4. **Kiểm**: `tests/test_du_phong.py` (+3 ca): hạn mỗi lần gọi ≤ 20 s cả extract (4.096 chữ) lẫn chat; model quá hạn ở khoá 1 → không thử khoá 2–3 của model đó,
+   model kế quá nhịp thì vẫn đi hết ba khoá rồi sang Groq (thứ tự gọi khớp từng cặp model / khoá); đồng hồ giả mỗi lần gọi "mất" 25 s → sau hai lần (50 s > 40 s)
+   dừng, không chạy hết bảy đường. Bản cũ: ca 2 thử thêm hai khoá, ca 3 chạy đủ bảy lần.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

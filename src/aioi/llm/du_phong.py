@@ -31,6 +31,12 @@ URL_GEMINI = "https://generativelanguage.googleapis.com/v1beta/openai/chat/compl
 URL_GROQ = "https://api.groq.com/openai/v1/chat/completions"
 # Claude báo hết số dư → bỏ qua Claude trong khoảng này (khỏi tốn một lượt gọi hỏng mỗi tin khách); hết khoảng thì thử lại.
 NGHI_CLAUDE_GIAY = 300
+# SRS-5.1zzzzzzz133 (22/10/2026, Lê Quang: "rút ngắn đi"): theo dõi thật 13:36 — Claude hết số dư, một lượt khách mất hơn 4 phút vì
+# vòng dự phòng thử từng khoá × từng model, mỗi lần chờ tới 30 s; bridge chỉ chờ 90 s nên lời bot không bao giờ tới Zalo. Nay: mỗi lần
+# gọi tối đa HAN_MOT_LAN_GIAY, cả vòng dự phòng của MỘT lượt gọi model không quá NGAN_SACH_GIAY, và model nào quá hạn thì bỏ luôn các
+# khoá còn lại của model đó (chậm là tại model / tải, không tại khoá).
+HAN_MOT_LAN_GIAY = 20.0
+NGAN_SACH_GIAY = 40.0
 
 
 @dataclass
@@ -59,6 +65,12 @@ def nen_doi_sang(e: BaseException) -> bool:
 
 def _het_so_du(e: BaseException) -> bool:
     return bool(re.search(r"credit balance is too low|billing", str(e), re.I))
+
+
+def _qua_han(e: BaseException) -> bool:
+    """Lượt gọi nguồn dự phòng quá hạn chờ (urllib: URLError bọc socket.timeout, hoặc TimeoutError thẳng từ lúc đọc)."""
+    ly_do = getattr(e, "reason", None)
+    return isinstance(e, TimeoutError) or isinstance(ly_do, TimeoutError) or bool(re.search(r"timed? ?out", f"{e} {ly_do or ''}", re.I))
 
 
 def _bo_nghi(chu: str) -> str:
@@ -102,11 +114,15 @@ class DuPhongProvider(LLMProvider):
                 if _het_so_du(e):
                     self._nghi_den, self._loi_nghi = time.time() + NGHI_CLAUDE_GIAY, e
         loi = loi_chinh
+        bat_dau = time.time()
         for n in self._nguon:
             if can_anh and not n.nhin_anh:
                 continue
             for model in n.models:
                 for khoa in n.khoa:
+                    if time.time() - bat_dau > NGAN_SACH_GIAY:
+                        log.warning("Dự phòng (%s): quá ngân sách %.0f s — dừng, không thử tiếp", viec, NGAN_SACH_GIAY)
+                        raise loi or RuntimeError("dự phòng quá ngân sách thời gian")
                     try:
                         kq = goi_phu(n, model, khoa)
                         self._bao(viec, n, model, loi_chinh)
@@ -116,6 +132,8 @@ class DuPhongProvider(LLMProvider):
                         log.warning("Dự phòng %s/%s (%s) hỏng: %s", n.ten, model, viec, type(e).__name__)
                         if not nen_doi_sang(e) and not isinstance(e, (ValueError, LoiNguon, urllib.error.URLError, OSError)):
                             raise
+                        if _qua_han(e):
+                            break   # model này chậm → khoá khác cũng chậm như vậy; sang model / nguồn kế
         raise loi_chinh or loi or RuntimeError("không còn đường gọi model")
 
     def _bao(self, viec: str, n: Nguon, model: str, loi_chinh: BaseException | None) -> None:
@@ -148,7 +166,7 @@ class DuPhongProvider(LLMProvider):
             than["max_completion_tokens"] = max(max_tokens, 1500)
         if schema is not None:
             than["response_format"] = {"type": "json_schema", "json_schema": {"name": "ket_qua", "schema": schema, "strict": False}}
-        han = min(30.0, max(10.0, 8.0 + than["max_completion_tokens"] * 0.008))
+        han = min(HAN_MOT_LAN_GIAY, max(10.0, 8.0 + than["max_completion_tokens"] * 0.008))
         try:
             j = self._goi_http(n, khoa, than, han)
         except LoiNguon as e:

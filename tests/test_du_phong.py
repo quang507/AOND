@@ -127,3 +127,52 @@ def test_build_provider_chi_boc_khi_co_khoa():
     khong = Settings(provider="claude", anthropic_api_key="k", chat_model="a", vision_model="b")
     assert isinstance(build_provider(co), DuPhongProvider)
     assert not isinstance(build_provider(khong), DuPhongProvider)
+
+
+# --- SRS-5.1zzzzzzz133 (22/10/2026, Lê Quang: "rút ngắn đi"): theo dõi thật 13:36 — Claude hết số dư, vòng dự phòng thử từng khoá × model,
+# mỗi lần chờ 30 s, một lượt khách hơn 4 phút; bridge chờ 90 s rồi bỏ → lời bot không tới Zalo. Đỏ khi hạn một lần gọi dài lại, khi model
+# quá hạn mà vẫn thử khoá khác của cùng model, hay khi cả vòng chạy quá ngân sách mà không dừng. -----------------------------------------
+import socket
+import urllib.error
+
+from aioi.llm import du_phong
+
+
+def test_han_moi_lan_goi_khong_qua_20s():
+    hans = []
+    p = DuPhongProvider(ClaudeGia(HetTien()), _nguon(), goi=lambda n, k, than, han: hans.append(han) or _dap('{"tu": "g"}'))
+    p.extract("s", M, {"type": "object"})          # extract xin 4096 token — trước đây tới 30 s
+    p.chat("s", M)
+    assert max(hans) <= du_phong.HAN_MOT_LAN_GIAY == 20.0 and min(hans) >= 10.0
+
+
+def test_model_qua_han_thi_bo_khoa_con_lai_sang_model_ke():
+    goi = []
+    nguon = [Nguon("Gemini", URL_GEMINI, ["k1", "k2", "k3"], ["g-lite", "g-flash"], True), Nguon("Groq", URL_GROQ, ["kq"], ["qwen-x"], False)]
+
+    def g(n, k, than, han):
+        goi.append((than["model"], k))
+        if than["model"] == "g-lite":
+            raise urllib.error.URLError(socket.timeout("timed out"))     # model chậm: quá hạn
+        if than["model"] == "g-flash":
+            raise LoiNguon("Gemini HTTP 429", 429)                       # quá nhịp: lỗi theo khoá → thử khoá kế
+        return _dap("Em ghi rồi chị.")
+    p = DuPhongProvider(ClaudeGia(HetTien()), nguon, goi=g)
+    assert p.chat("s", M) == "Em ghi rồi chị."
+    assert goi == [("g-lite", "k1"), ("g-flash", "k1"), ("g-flash", "k2"), ("g-flash", "k3"), ("qwen-x", "kq")]
+
+
+def test_ca_vong_du_phong_qua_ngan_sach_thi_dung(monkeypatch):
+    dong_ho = [1000.0]
+    monkeypatch.setattr(du_phong.time, "time", lambda: dong_ho[0])
+    goi = []
+
+    def g(n, k, than, han):
+        goi.append(than["model"])
+        dong_ho[0] += 25.0                                                # mỗi lần gọi "mất" 25 s rồi hỏng
+        raise LoiNguon(f"{n.ten} HTTP 503", 503)
+    nguon = [Nguon("Gemini", URL_GEMINI, ["k1", "k2"], ["g1", "g2", "g3"], True), Nguon("Groq", URL_GROQ, ["kq"], ["q1"], False)]
+    p = DuPhongProvider(ClaudeGia(HetTien()), nguon, goi=g)
+    with pytest.raises(LoiNguon):
+        p.chat("s", M)
+    assert len(goi) == 2 and goi == ["g1", "g1"]                          # 25 s + 25 s > 40 s → dừng, không chạy hết 7 đường
