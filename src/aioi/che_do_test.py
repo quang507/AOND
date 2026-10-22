@@ -1,6 +1,6 @@
 """Chế độ test (SRS-5.1zzzzzzz130). Chủ dự án 22/10/2026: gõ `$$$$$` rồi "mỗi tin nhắn đều có 1 tin `$$$$$` … đã trích xuất thông tin gì, đã hiểu gì",
-"từ tin nhắn đầu luôn, viết từ code". Gõ `$$$$$` (làm mới phiên) bật chế độ cho người đó; sau MỖI lượt bot trả lời, server gửi thêm MỘT tin phụ bắt
-đầu bằng `$$$$$`, ghép HOÀN TOÀN từ dữ liệu lõi đã ghi (ô tin, cờ lượt AI đã đọc và code đã kiểm trích dẫn) — không có lượt AI nào viết tin này nên
+"từ tin nhắn đầu luôn, viết từ code"; sau đó: "gõ $$$$$ lúc chào thì mới vào chế độ test, xóa hết data cũ, không cần thông báo". Gõ `$$$$$` xoá
+phiên + bật chế độ cho người đó, bot IM (không trả lời lệnh); từ tin kế tiếp, sau MỖI lượt bot trả lời, server gửi thêm MỘT tin phụ bắt đầu bằng `$$$$$`, ghép HOÀN TOÀN từ dữ liệu lõi đã ghi (ô tin, cờ lượt AI đã đọc và code đã kiểm trích dẫn) — không có lượt AI nào viết tin này nên
 không bịa được và không tốn thêm tiền.
 
 Tin phụ KHÔNG vào lịch sử hội thoại, kho tin nhắn CRM hay `_ban_tin_da_trinh` (chỉ nằm trong `replies` của phản hồi), nên model không đọc lại nó.
@@ -19,8 +19,6 @@ if TYPE_CHECKING:  # tránh vòng nhập: engine nhập module này
 log = logging.getLogger("aioi.che_do_test")
 
 DAU = "$$$$$"
-TIN_BAT = (f"{DAU} Chế độ test BẬT. Sau mỗi câu em trả lời sẽ có thêm một tin bắt đầu bằng {DAU}: em đã trích xuất ô nào (kèm câu anh/chị nói), "
-           f"đã hiểu gì, còn thiếu gì, lượt đó tốn bao nhiêu tiền (code ghép từ dữ liệu đã ghi, không phải AI viết). Gõ {DAU} lần nữa để làm mới phiên.")
 
 _VAI = {"seller": "người bán / cho thuê", "buyer": "người mua", "unknown": "chưa rõ"}
 _XUNG_HO = {"em": "em", "anh": "anh", "chi": "chị", "chu_co_bac": "chú / cô / bác"}

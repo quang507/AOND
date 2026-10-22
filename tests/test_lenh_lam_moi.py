@@ -10,13 +10,18 @@ def _co_chuyen(eng, uid="r1"):
     return eng.conversation(uid)
 
 
-def test_lenh_nam_dau_do_lam_moi_phien_va_noi_la_da_lam_moi():
-    eng, _ = _eng({"operations": []})
+def test_lenh_nam_dau_do_xoa_sach_phien_va_im_lang():
+    """SRS-5.1zzzzzzz130 (22/10, lần ba): "$$$$$" xoá hết data cũ, KHÔNG thông báo; tin kế tiếp đi như người mới (khối lời chào lượt đầu)."""
+    eng, spy = _eng({"operations": [{"op": "update", "fields": {"gia": "6 tỷ"}, "bang_chung": {"gia": "giá 6 tỷ"}}], "user_intent": "sell"})
     conv = _co_chuyen(eng)
-    assert conv.history
+    assert conv.history and conv.prop.fields.get("gia") == "6 tỷ"
+    n = len(spy.systems)
     r = eng.handle("r1", "$$$$$")
-    assert r.reply == cau_mau.cau("lenh_lam_moi", ten=conv.assistant.name)
-    assert [t.role for t in eng.conversation("r1").history] == ["assistant"]          # chuyện cũ đã xoá, chỉ còn lời bot
+    assert r.reply == "" and r.chu_thich == "" and len(spy.systems) == n            # im lặng, không gọi model
+    conv = eng.conversation("r1")
+    assert conv.history == [] and not conv.prop.fields and len(conv.listings) == 1    # sạch
+    eng.handle("r1", "chào em")
+    assert "LƯỢT ĐẦU TIÊN CỦA CUỘC CHAT" in spy.systems[-1]                        # chào lại như người mới
 
 
 def test_chi_dung_nam_dau_do():
@@ -53,10 +58,10 @@ def test_loi_chao_dau_tien_do_ai_doc_khong_con_danh_sach_tu_khoa():
     assert "LƯỢT ĐẦU TIÊN CỦA CUỘC CHAT" not in spy.systems[-1]
 
 
-def test_lenh_lam_moi_chua_co_chuyen_van_la_cau_chao_co_dinh():
+def test_lenh_lam_moi_chua_co_chuyen_cung_im_lang():
     eng, spy = _eng({"operations": []})
     r = eng.handle("r3", "$$$$$")
-    assert r.reply == cau_mau.cau("chao_lan_dau", ten=eng.conversation("r3").assistant.name) and spy.systems == []
+    assert r.reply == "" and spy.systems == [] and eng.conversation("r3").history == []
 
 
 def test_lenh_cu_khong_con_lam_moi_chi_con_nam_dau_do():

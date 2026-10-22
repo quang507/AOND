@@ -1713,7 +1713,6 @@ class Engine:
         # "reset session", "xóa hết") đã bỏ: khách thật gõ đúng "xóa hết" là mất cả phiên.
         la_lenh_lam_moi = cmd == LENH_LAM_MOI
         if la_lenh_lam_moi:
-            had_prior_history = len(conv.history) > 0
             new_li = Listing(prop=Property())
             conv.listings = [new_li]
             conv.active_listing_id = new_li.listing_id
@@ -1726,15 +1725,11 @@ class Engine:
             if self._convstore is not None:
                 self._convstore.reset(user_key)
 
-            if had_prior_history:
-                reply = cau_mau.cau("lenh_lam_moi", ten=conv.assistant.name)   # câu mẫu sửa ở CRM (SRS-5.1zzzzzzz110)
-            else:
-                reply = cau_mau.cau("chao_lan_dau", ten=conv.assistant.name)
-            conv.history.append(Turn("assistant", reply, now))
-            conv.last_ai_at = now
-            conv.che_do_test = True   # SRS-5.1zzzzzzz130: "$$$$$" làm mới phiên VÀ bật chế độ test (tin phụ sau mỗi lượt)
-            kq = self._build_result(conv, reply, captured=[], now=now)
-            kq.chu_thich = che_do_test.TIN_BAT
+            # SRS-5.1zzzzzzz130 (Lê Quang 22/10): "$$$$$" xoá hết dữ liệu cũ + bật chế độ test, KHÔNG thông báo gì (replies rỗng → bridge không gửi);
+            # tin kế tiếp của khách đi như người mới (lời chào lượt đầu do AI đọc) và từ đó mỗi lượt kèm tin phụ "$$$$$ đã trích xuất / đã hiểu…".
+            conv.che_do_test = True
+            kq = self._build_result(conv, "", captured=[], now=now)   # cờ bật TRƯỚC khi lưu kho (sống qua khởi động lại)
+            kq.chu_thich = ""                                          # tin phụ chỉ bắt đầu từ tin kế tiếp của khách
             return kq
 
         # Command: json / thong tin — Inspect current extracted structured data

@@ -12,19 +12,22 @@ PLAN = {"operations": [{"op": "update", "fields": {"gia": "6,95 tỷ", "dia_chi"
         "user_intent": "sell", "xung_ho": "em", "xung_ho_trich_dan": "em ơi"}
 
 
-def test_lenh_lam_moi_bat_che_do_test_va_co_tin_phu_ngay_tin_dau():
+def test_lenh_lam_moi_bat_che_do_test_im_lang_roi_tin_ke_co_tin_phu():
     eng, _ = _eng({"operations": []})
     r = eng.handle("t1", "$$$$$")
     assert eng.conversation("t1").che_do_test is True
-    assert r.chu_thich == che_do_test.TIN_BAT and r.chu_thich.startswith("$$$$$") and "không phải AI viết" in r.chu_thich
+    assert r.reply == "" and r.chu_thich == ""                          # không thông báo gì (22/10: "không cần thông báo")
+    r1 = eng.handle("t1", "chào em")
+    assert r1.chu_thich.startswith("$$$$$ Đã trích xuất:") and r1.reply   # tin phụ bắt đầu từ tin kế tiếp
 
 
 def test_tin_phu_khong_vao_lich_su_va_khong_vao_loi_tra_loi():
     eng, _ = _eng({"operations": []})
-    r = eng.handle("t2", "$$$$$")
+    eng.handle("t2", "$$$$$")
+    r = eng.handle("t2", "chào em")
     conv = eng.conversation("t2")
     assert all("$$$$$" not in t.content for t in conv.history)          # model không đọc lại tin phụ
-    assert "Chế độ test" not in r.reply
+    assert "$$$$$" not in r.reply
 
 
 def test_khong_go_lenh_thi_khong_co_tin_phu():
@@ -73,7 +76,7 @@ def test_server_gui_tin_phu_sau_loi_tra_loi_nhung_khong_ghi_vao_crm(monkeypatch)
     monkeypatch.setattr(srv, "_thu_lai_nen", lambda *a, **k: None)
     cl = TestClient(srv.app)
     r0 = cl.post("/chat-reply", json={"external_user_id": "t7", "text": "$$$$$"}).json()
-    assert r0["replies"][-1] == che_do_test.TIN_BAT and len(r0["nhip_go"]) == len(r0["replies"])
+    assert r0["replies"] == [] and r0["nhip_go"] == [] and r0["reply"] == ""       # bridge không gửi gì
     r1 = cl.post("/chat-reply", json={"external_user_id": "t7", "text": "em ơi nhà 12 Lê Văn Sỹ giá 6,95 tỷ"}).json()
     assert r1["replies"][-1].startswith("$$$$$ Đã trích xuất:") and "$$$$$" not in r1["reply"]
     assert all("$$$$$ Đã trích xuất" not in g["bot_reply"] for g in ghi) and len(r1["nhip_go"]) == len(r1["replies"])
