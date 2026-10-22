@@ -28,7 +28,6 @@ type Dong = {
   id: string;
   code: string | null;
   legacy_code?: string | null;
-  legacy_sst: number | null;
   deal: "ban" | "cho_thue";
   district: string | null;
   ward: string | null;
@@ -54,7 +53,7 @@ type Dong = {
 };
 
 const COT_CHON =
-  "id, code, legacy_code, legacy_sst, deal, district, ward, street, location_raw, area_m2, frontage_m, length_m, floors, floors_text, bedrooms, price_vnd, price_raw, description, property_type, status, can_chu_duyet, chu_duyet_at, created_at, sellers!listings_seller_id_fkey(name, phone, seller_type), media(count), listing_media(count)";
+  "id, code, legacy_code, deal, district, ward, street, location_raw, area_m2, frontage_m, length_m, floors, floors_text, bedrooms, price_vnd, price_raw, description, property_type, status, can_chu_duyet, chu_duyet_at, created_at, sellers!listings_seller_id_fkey(name, phone, seller_type), media(count), listing_media(count)";
 
 const TRANG_THAI: Record<string, string> = {
   cho_thong_tin: "chờ thông tin",
@@ -91,7 +90,6 @@ const moTa = (d: Dong) =>
 const soAnh = (d: Dong) => (d.media?.[0]?.count ?? 0) + (d.listing_media?.[0]?.count ?? 0);
 
 const COT: Cot[] = [
-  { key: "stt", ten: "STT", lay: (d) => (d.legacy_sst != null ? String(d.legacy_sst) : ""), sap: (d) => d.legacy_sst ?? 1e9 },
   // 09/09 tối: ngày vào đứng ĐẦU (mặc định sắp mới nhất trước) — trước đây nằm cuối, tràn khỏi màn hình.
   { key: "ngay", ten: "Ngày vào", lay: (d) => d.created_at.slice(0, 10), sap: (d) => d.created_at },
   { key: "deal", ten: "Bán / thuê", lay: (d) => (d.deal === "ban" ? "Bán" : "Cho thuê"), sap: (d) => d.deal },
@@ -109,8 +107,8 @@ const COT: Cot[] = [
 
 // 14/09/2026 — chủ dự án: "cột loại bị cắt rồi". Bảng rộng hơn màn hình, cột "Thao tác" dính
 // bên phải đè lên các cột CUỐI — mà Loại / Trạng thái lại nằm cuối. Thứ nhận ra tin và việc cần
-// làm đứng đầu; STT / ngày / SĐT / ảnh xuống cuối. CSV vẫn theo thứ tự COT (sheet Excel gốc).
-const THU_TU_HIEN = ["ma", "loai", "trang_thai", "deal", "gia", "dien_tich", "vi_tri", "nguoi_ban", "mo_ta", "sdt", "anh", "ngay", "stt"];
+// làm đứng đầu; ngày / SĐT / ảnh xuống cuối. CSV vẫn theo thứ tự COT.
+const THU_TU_HIEN = ["ma", "loai", "trang_thai", "deal", "gia", "dien_tich", "vi_tri", "nguoi_ban", "mo_ta", "sdt", "anh", "ngay"];
 const COT_HIEN = THU_TU_HIEN.map((k) => COT.find((c) => c.key === k)!).filter(Boolean);
 
 const khongDau = (s: string) =>
@@ -161,7 +159,7 @@ export default function Page() {
     let xs = rows.filter((d) => (!deal || d.deal === deal) && (!trangThai || d.status === trangThai));
     if (kq) {
       xs = xs.filter((d) =>
-        khongDau([d.code ?? "", viTri(d), d.description ?? "", d.sellers?.name ?? "", String(d.legacy_sst ?? "")].join(" ")).includes(kq),
+        khongDau([d.code ?? "", viTri(d), d.description ?? "", d.sellers?.name ?? ""].join(" ")).includes(kq),
       );
     }
     const cot = COT.find((c) => c.key === sap.key);

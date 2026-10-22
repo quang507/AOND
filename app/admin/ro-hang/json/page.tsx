@@ -24,7 +24,6 @@ type Tin = {
   district: string | null;
   price_raw: string | null;
   gap: boolean | null;
-  chu_noi_du_at: string | null;
   created_at: string;
   nhom: Nhom;
 };
@@ -52,7 +51,7 @@ export default function Page() {
       setRole("admin");
       const { data, error } = await supabase
         .from("boc_tach_v")
-        .select("id, code, legacy_code, status, deal, property_type, location_raw, ward, district, price_raw, gap, chu_noi_du_at, created_at, nhom")
+        .select("id, code, legacy_code, status, deal, property_type, location_raw, ward, district, price_raw, gap, created_at, nhom")
         .order("created_at", { ascending: false })
         .limit(2000);
       if (error) setLoi(error.message);
@@ -155,7 +154,6 @@ export default function Page() {
                 </span>
                 <span className="text-xs text-mute">{t.deal === "ban" ? "Bán" : "Cho thuê"} · {t.price_raw ?? "-"} · {t.status}</span>
                 {t.gap === true && <span className="rounded bg-red-50 px-2 py-0.5 text-xs font-bold text-red-700">gấp</span>}
-                {t.chu_noi_du_at && <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-mute">chủ nói đủ</span>}
                 <span className="ml-auto text-xs text-mute tabular-nums">
                   {soNhom(t.nhom ?? {})} nhóm{typeof diem === "number" ? ` · ${diem} điểm` : ""} · {dangMo ? "thu gọn ▲" : "xem JSON ▼"}
                 </span>

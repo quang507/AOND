@@ -72,4 +72,4 @@ Nguồn sự thật của yêu cầu hệ thống nằm trong [`docs/`](docs/REA
 | 2 | [Requirements](docs/02-requirements.md) | 9 BR · 225 FR · 18 NFR |
 | 3 | [User Flows](docs/03-user-flows.md) | 13 luồng end-to-end |
 | 5 | [Wireframes](docs/05-wireframes.md) | 14 màn hình low-fi |
-| 9 | [Open Issues](docs/09-open-issues.md) | 63 vấn đề |
+| 9 | [Open Issues](docs/09-open-issues.md) | 64 vấn đề |

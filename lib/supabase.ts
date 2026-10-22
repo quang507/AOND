@@ -15,8 +15,7 @@ export const supabase = createClient(url, key);
 export const TRANG_THAI_HIEN = ["dang_ban", "dang_quan_tam", "da_coc"];
 
 // FR-171 j — CỘT CHỌN LỌC thay cho select("*"). Thẻ tin (ListingCard) không
-// đọc `description` (cột text nặng nhất), `lat/lng`, `unit_status`,
-// `last_confirmed_at`; kéo "*" cho lưới 24 thẻ là kéo 24 mô tả rồi vứt — và
+// đọc `description` (cột text nặng nhất), `lat/lng`; kéo "*" cho lưới 24 thẻ là kéo 24 mô tả rồi vứt — và
 // với /ban-do là 300 mô tả bị serialize vào HTML. Trang chi tiết mới cần "*".
 // FR-172: thẻ tin thêm ba cột thông số nhẹ (đường vào, số tầng, WC) — đúng thứ
 // khách Quận 5 nhìn đầu tiên ("HXH hay MT? mấy tầng?"), không kéo mô tả.
@@ -49,13 +48,11 @@ export type Listing = {
   description: string | null;
   status: string;
   property_type: string | null;
-  unit_status: string | null;
-  last_confirmed_at: string | null;
   created_at: string;
   lat: number | null;
   lng: number | null;
   bedrooms: number | null;
-  // FR-172 — thông số có cấu trúc (migration 20260902e). Bậc nguồn ở specs_source.
+  // FR-172 — thông số có cấu trúc (migration 20260902e).
   street: string | null;
   access_type: AccessType | null;
   alley_width_m: number | null;
@@ -80,7 +77,6 @@ export type Listing = {
   year_built: number | null;
   negotiable: boolean | null;
   rent_income_vnd: number | null;
-  specs_source: string | null;
   price_per_m2_vnd: number | null;
   // FR-113/FR-117 — tin thuộc dự án (SRS-3.10): null với hàng lẻ.
   project_id: string | null;
