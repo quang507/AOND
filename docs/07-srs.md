@@ -8366,6 +8366,15 @@ Chủ dự án: "đúng, làm công cụ tìm nhà cho bot, lưu db sao cho bot 
    Chưa đo chất lượng với dữ liệu thật — DB đã xoá sạch 22/10; cần nạp 20–30 tin mẫu để thử.
 5. **Kiểm**: `tests/test_tim_nha.py` (6 ca): không lời tả → không nhúng; có lời tả → nhúng một lần và nhớ, một lượt DB; nhúng lỗi vẫn tìm; hàm DB lỗi về lọc cứng; lý do vào dòng căn và khối cho bot; ký tự đại diện bị bỏ. Sửa `tests/test_viec_mua.py` theo lời gọi mới.
 
+### SRS-5.1zzzzzzz139 · Tin debug `$$$$$` rút còn tối đa 4 dòng — 22/10/2026
+
+Chủ dự án (22/10): "cái tin nhắn debug này sếp tôi bảo cũng cần ngắn thôi" → "rút ngắn tin debug 4 dòng".
+
+1. **Lớp**: tin phụ chế độ test (SRS-130) kể quá nhiều thứ (ô ghi, ô bỏ, AI đề xuất, đã hiểu, còn thiếu, tiền chi tiết cache) nên mỗi lượt là một bức tường chữ; người test không đọc.
+2. **Sửa** (`src/aioi/che_do_test.py`): tối đa 4 dòng — `$$$$$ Ghi:` (ô vừa ghi, kèm cụm khách nói, `→ "giá trị chuẩn"`, `(đổi từ …)`) · `Bỏ:` (chỉ khi có, kèm lý do) · `Thiếu: … · Hỏi tiếp: … · NGOÀI vùng: …` (chỉ phần có) · `Tốn: $… (model vào … ra …)`. Bỏ các dòng "AI đề xuất" và "Đã hiểu"; bỏ chi tiết cache của dòng tiền. Vẫn do code ghép, không vào lịch sử / CRM.
+3. **Chỗ khác cùng lớp**: tin nội bộ 🙋 ⭐ 🩺 (SRS-134) chưa đụng — vẫn dài theo nội dung báo cáo; nếu sếp muốn ngắn nữa thì làm riêng.
+4. **Kiểm**: `tests/test_che_do_test.py` (đỏ khi tin phụ > 4 dòng hoặc quay lại dòng "Đã hiểu" / "AI đề xuất"), `bot/tests/ban-thu-92.sh` (mẫu grep đổi theo định dạng mới).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

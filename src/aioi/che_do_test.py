@@ -20,15 +20,6 @@ log = logging.getLogger("aioi.che_do_test")
 
 DAU = "$$$$$"
 
-_VAI = {"seller": "người bán / cho thuê", "buyer": "người mua", "unknown": "chưa rõ"}
-_XUNG_HO = {"em": "em", "anh": "anh", "chi": "chị", "chu_co_bac": "chú / cô / bác"}
-_HOI_VE = {"phi": "phí", "uy_tin": "uy tín", "link_web": "link web", "tinh_hinh_ban": "tình hình bán", "dinh_gia": "định giá"}
-_Y_LUOT = {
-    "xin_dang": "khách bảo đăng tin", "can_nguoi_that": "khách xin gặp người thật", "cau_hoi_du_an": "khách hỏi về dự án",
-    "mo_ta_du_an": "khách tả dự án", "xin_xem_ban_ve": "khách xin xem bản vẽ", "xong_viec_mua": "khách mua báo đủ thông tin căn",
-}
-_DUYET = {"dong_y": "khách ĐỒNG Ý bản nháp", "khong_dong_y": "khách CHƯA ưng bản nháp"}
-
 
 # Bảng giá MỘT NGUỒN là lib/gia-model.ts (đô / 1 triệu chữ-máy). Chép lại ở đây vì VPS chỉ có src/aioi; tests/test_che_do_test.py so từng dòng
 # với file đó và đỏ khi lệch. Khớp theo tiền tố ID model, cụ thể trước. (tiền tố, vào, ra, đọc-cache-nếu-khác-0,1×)
@@ -70,9 +61,9 @@ def _k(n: int) -> str:
 
 
 def dong_tien(token: dict[str, dict[str, int]] | None) -> str:
-    """Một dòng "Tốn lượt này": đô + token theo model. Không có lượt gọi AI nào → nói rõ, không đoán."""
+    """Một dòng "Tốn": đô + token vào / ra theo model. Không có lượt gọi AI nào → nói rõ, không đoán."""
     if not token:
-        return "Tốn lượt này: $0 (không gọi AI)."
+        return "Tốn: $0 (không gọi AI)"
     tong, ro, phan = 0.0, True, []
     for model, so in sorted(token.items()):
         t = tien_usd(model, so)
@@ -80,9 +71,8 @@ def dong_tien(token: dict[str, dict[str, int]] | None) -> str:
             ro = False
         else:
             tong += t
-        phan.append(f"{model}: vào {_k(so['p_in'])} · ra {_k(so['p_out'])} · cache ghi {_k(so['p_cache_write'])}/đọc {_k(so['p_cache_read'])} "
-                    f"· {so['calls']} lượt gọi" + ("" if t is not None else " · chưa rõ giá"))
-    return f"Tốn lượt này: ${tong:.4f}" + ("" if ro else " (chưa tính model chưa rõ giá)") + " — " + " | ".join(phan) + "."
+        phan.append(f"{model} vào {_k(so['p_in'])} ra {_k(so['p_out'])}" + ("" if t is not None else " chưa rõ giá"))
+    return f"Tốn: ${tong:.4f}" + ("" if ro else "+") + " (" + " | ".join(phan) + ")"
 
 
 def _cat(x: object, n: int = 70) -> str:
@@ -101,14 +91,14 @@ def _giong(a: object, b: object) -> bool:
 
 
 def _o_vua_ghi(conv: "Conversation", captured: list[str]) -> list[str]:
-    """Các dòng ô lượt này ghi, kiểu bản cũ: `• nhãn: "cụm khách nói" → làm chuẩn "giá trị ghi"` (+ mới / đổi từ "cũ"). Người mua: ô phiếu."""
+    """Ô lượt này ghi, mỗi ô một đoạn ngắn: `nhãn "cụm khách nói" → "giá trị chuẩn" (đổi từ "cũ")`. Người mua: ô phiếu."""
     ra: list[str] = []
     if conv.role == "buyer" and conv.buyer_lead is not None:
         bl = conv.buyer_lead
         gom = {"loai_giao_dich": bl.loai_giao_dich, "loai_bds": bl.loai_bds, "ngan_sach": bl.ngan_sach, "khu_vuc": bl.khu_vuc, **dict(bl.fields)}
         for k, v in gom.items():
             if v and (not captured or k in captured):
-                ra.append(f"• {_nhan(k)}: \"{_cat(v)}\"")
+                ra.append(f"{_nhan(k)} \"{_cat(v, 40)}\"")
         return ra
     khach = conv.prop.fields_khach()
     cung_can = conv.truoc_id == conv.active_listing_id
@@ -116,79 +106,42 @@ def _o_vua_ghi(conv: "Conversation", captured: list[str]) -> list[str]:
         if k not in khach or khach[k] in (None, ""):
             continue
         trich = conv.bc_luot.get(k)
-        dong = f"• {_nhan(k)}: \"{_cat(trich or khach[k])}\""
+        dong = f"{_nhan(k)} \"{_cat(trich or khach[k], 40)}\""
         if trich and not _giong(trich, khach[k]):
-            dong += f" → làm chuẩn \"{_cat(khach[k])}\""
+            dong += f" → \"{_cat(khach[k], 40)}\""
         cu = conv.truoc_luot.get(k) if cung_can else None
-        dong += f" (đổi từ \"{_cat(cu, 40)}\")" if cu and not _giong(cu, khach[k]) else " (mới)" if cung_can else ""
+        if cu and not _giong(cu, khach[k]):
+            dong += f" (đổi từ \"{_cat(cu, 30)}\")"
         ra.append(dong)
     return ra
 
 
 def _da_bo(conv: "Conversation") -> list[str]:
     """Ô AI đề xuất mà code bỏ — trả lời "vì sao nó không nhớ"."""
-    return [f"• {_nhan(k)}: AI đọc \"{_cat(v, 40)}\"" + (f" (trích \"{_cat(bc, 40)}\")" if bc else "") + f" → BỎ vì {ly}"
-            for k, v, bc, ly in conv.bo_luot]
-
-
-def _hieu(conv: "Conversation", captured: list[str]) -> list[str]:
-    hieu = [f"vai: {_VAI.get(conv.role, conv.role)}"]
-    if conv.role != "buyer" and conv.truoc_id == conv.active_listing_id:
-        khach = conv.prop.fields_khach()
-        doi = [_nhan(k) + (f" → \"{_cat(conv.bc_luot[k], 40)}\"" if conv.bc_luot.get(k) else "")
-               for k in captured if conv.truoc_luot.get(k) and not _giong(conv.truoc_luot.get(k), khach.get(k))]
-        moi = [_nhan(k) for k in captured if k in khach and not conv.truoc_luot.get(k)]
-        if doi:
-            hieu.append("yêu cầu ĐỔI thông tin: " + ", ".join(doi))
-        if moi:
-            hieu.append("thêm thông tin mới (" + ", ".join(moi) + ")")
-    if conv.role != "buyer":
-        loai = conv.prop.loai_hinh
-        if loai:
-            hieu.append(f"loại: {_cat(loai, 30)}" + (" · cho thuê" if conv.prop.is_rental else ""))
-        if len(conv.listings) > 1:
-            hieu.append(f"{len(conv.listings)} căn trong rổ")
-    if conv.xung_ho:
-        hieu.append(f"khách xưng: {_XUNG_HO.get(conv.xung_ho, conv.xung_ho)}")
-    if conv.duyet_luot in _DUYET:
-        hieu.append(_DUYET[conv.duyet_luot])
-    if conv.hoi_ve_luot:
-        hieu.append(f"khách hỏi về: {_HOI_VE.get(conv.hoi_ve_luot, conv.hoi_ve_luot)}")
-    for k, nhan in _Y_LUOT.items():
-        v = conv.y_luot.get(k)
-        if v:
-            hieu.append(nhan + (f" — khách nói: \"{_cat(v, 60)}\"" if isinstance(v, str) else ""))
-    if conv.y_luot.get("ngoai_vung"):
-        hieu.append(f"NGOÀI vùng nhận tin: {_cat(conv.y_luot['ngoai_vung'], 30)}")
-    elif conv.role != "buyer" and conv.prop.fields.get("_ngoai_vung"):
-        hieu.append(f"NGOÀI vùng nhận tin: {_cat(conv.prop.fields['_ngoai_vung'], 30)}")
-    dg = conv.y_luot.get("danh_gia")
-    if dg:
-        hieu.append(f"khách chấm {dg[0]} sao")
-    if conv.y_luot.get("xac_nhan_xoa"):
-        hieu.append("khách " + ("đồng ý" if conv.y_luot["xac_nhan_xoa"] == "dong_y" else "từ chối") + " xoá")
-    if conv.pending_destructive:
-        hieu.append("đang chờ khách xác nhận thao tác xoá")
-    return hieu
+    return [f"{_nhan(k)} \"{_cat(v, 30)}\" vì {ly}" for k, v, _bc, ly in conv.bo_luot]
 
 
 def chu_thich(conv: "Conversation", captured: list[str], next_field: str | None = None,
               token: dict[str, dict[str, int]] | None = None) -> str:
-    """Tin phụ sau một lượt: ô vừa ghi (kèm câu khách nói), điều đã hiểu, còn thiếu / hỏi tiếp, tiền lượt này. Lỗi bất kỳ → "" (không chặn lượt)."""
+    """Tin phụ sau một lượt, tối đa 4 dòng: Ghi · Bỏ (nếu có) · Thiếu / hỏi tiếp · Tốn. Lỗi bất kỳ → "" (không chặn lượt)."""
     try:
         ghi = _o_vua_ghi(conv, list(captured or []))
-        dong = [f"{DAU} Đã trích xuất:"] + (ghi or ["• (không có ô mới)"])
+        dong = [f"{DAU} Ghi: " + (" · ".join(ghi) if ghi else "không có ô mới")]
         bo = _da_bo(conv)
         if bo:
-            dong += ["Đã BỎ (AI đề xuất nhưng code không ghi):"] + bo
-        dong.append("AI đề xuất: " + (", ".join(conv.de_xuat_luot) if conv.de_xuat_luot else "không đọc ra thao tác nào từ tin này") + ".")
-        dong.append("Đã hiểu: " + "; ".join(_hieu(conv, list(captured or []))) + ".")
+            dong.append("Bỏ: " + " · ".join(bo))
+        phan: list[str] = []
         if conv.role != "buyer":
             thieu = conv.prop.missing_fields()
-            sau = "sẵn sàng soạn bản nháp" if conv.prop.summary_ready() else "chưa đủ để soạn bản nháp"
-            dong.append(f"Còn thiếu: {', '.join(_nhan(x) for x in thieu[:6]) or 'không'}" + (" …" if len(thieu) > 6 else "") + f" ({sau}).")
+            phan.append("Thiếu: " + (", ".join(_nhan(x) for x in thieu[:5]) or "không") + (" …" if len(thieu) > 5 else "")
+                        + ("" if conv.prop.summary_ready() else " (chưa đủ soạn nháp)"))
         if next_field:
-            dong.append(f"Đang hỏi tiếp: {_nhan(next_field)}.")
+            phan.append(f"Hỏi tiếp: {_nhan(next_field)}")
+        ngoai = conv.y_luot.get("ngoai_vung") or (conv.prop.fields.get("_ngoai_vung") if conv.role != "buyer" else None)
+        if ngoai:
+            phan.append(f"NGOÀI vùng: {_cat(ngoai, 30)}")
+        if phan:
+            dong.append(" · ".join(phan))
         dong.append(dong_tien(token))
         return "\n".join(dong)
     except Exception as e:  # noqa: BLE001 — tin phụ chỉ để soi, không được làm hỏng lời trả lời khách

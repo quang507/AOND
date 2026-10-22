@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ban-thu-92.sh — bắn thử ca "giá 9.2 không nhớ" + chế độ test $$$$$ + bỏ ghi nhận / khen 100% (SRS-5.1zzzzzzz130–131), chạy trong
 # apply-migration.yml ô `dung_lai` = ban-thu-92. Tái hiện chat Lê Quang 22/10 11:54–12:05: khách nói giá ngay tin đầu ("Bán nhà chính chủ ở
-# quận 10 giá 9.2") mà đến lượt 6 bot vẫn hỏi "giá bán mong muốn". Kiểm bằng TIN PHỤ "$$$$$ Đã trích xuất…" (code ghép): lệnh $$$$$ im lặng;
+# quận 10 giá 9.2") mà đến lượt 6 bot vẫn hỏi "giá bán mong muốn". Kiểm bằng TIN PHỤ "$$$$$ Ghi…" (code ghép): lệnh $$$$$ im lặng;
 # lượt 1 ô giá được ghi (hoặc tin phụ nói rõ AI không đề xuất / code bỏ vì sao); không lượt nào mở bằng "Em ghi nhận / lưu rồi"; không hỏi lại
 # giá; không bịa "hẻm xe hơi" khi khách chỉ nói "hẻm 130". Chỉ Zalo ID thử (`thu-`), cuối script xoá sạch. Log chỉ in lời bot + tin phụ — tin
 # thử không có dữ liệu khách thật. Tiền thật ~7 lượt chat (đang chạy Gemini khi Claude hết số dư).
@@ -57,8 +57,8 @@ kiem "lệnh \$\$\$\$\$ im lặng (0 tin)" "$([ "$SO_TRA" = 0 ] && echo 1 || ech
 
 chat "Bán nhà chính chủ ở quận 10 giá 9.2"
 kiem "L1: có tin phụ" "$([ -n "$PHU" ] && echo 1 || echo 0)"
-kiem "L1: tin phụ có dòng tiền" "$(grep -q 'Tốn lượt này' <<<"$PHU" && echo 1 || echo 0)"
-kiem "L1: ô giá được ghi (tin phụ liệt kê giá)" "$(grep -qE '^• giá:' <<<"$PHU" && echo 1 || echo 0)"
+kiem "L1: tin phụ có dòng tiền" "$(grep -q 'Tốn: \$' <<<"$PHU" && echo 1 || echo 0)"
+kiem "L1: ô giá được ghi (tin phụ liệt kê giá)" "$(grep -qE '^[$][$][$][$][$] Ghi:.*giá "' <<<"$PHU" && echo 1 || echo 0)"
 kiem "L1: không mở bằng câu ghi nhận" "$([ "$(ghi_nhan "$LOI")" = 0 ] && echo 1 || echo 0)"
 kiem "L1: có khen (không chỉ hỏi cộc)" "$([ "$(wc -w <<<"$LOI")" -ge 8 ] && echo 1 || echo 0)"
 
@@ -68,7 +68,7 @@ chat "hẻm 130 Cách Mạng Tháng 8, Phường Nhiêu Lộc Tp. Hồ Chí Minh
 kiem "L3: không bịa 'hẻm xe hơi' khi khách chưa nói rộng" "$(grep -qiE 'hẻm xe hơi|xe hơi' <<<"$LOI" && echo 0 || echo 1)"
 kiem "L3: không mở bằng câu ghi nhận" "$([ "$(ghi_nhan "$LOI")" = 0 ] && echo 1 || echo 0)"
 chat "5x10"
-kiem "L4: '5x10' không rơi vào ô trang thiết bị" "$(grep -qE '^• hiện trạng bàn giao và trang thiết bị.*5x10' <<<"$PHU" && echo 0 || echo 1)"
+kiem "L4: '5x10' không rơi vào ô trang thiết bị" "$(grep -qE 'hiện trạng bàn giao và trang thiết bị "[^"]*5x10' <<<"$PHU" && echo 0 || echo 1)"
 chat "nhà 6 tầng, mới xây hoàn công 2025, đang trống"
 kiem "L5: không hỏi lại giá (đã nói từ L1)" "$(grep -qiE 'giá bán mong muốn|mong muốn thu về|giá bao nhiêu|mức giá' <<<"$LOI" && echo 0 || echo 1)"
 chat "không nhớ giá sao?"
