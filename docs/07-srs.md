@@ -8267,6 +8267,13 @@ Cùng lượt, chủ dự án đưa một khoá Gemini mới (Vault `GEMINI_API_
 4. **Kiểm**: `tests/test_tin_noi_bo_tien_to.py` (3 ca): cờ `noi_bo` đúng đích (soạn sẵn cho khách = `false`); bridge gắn `"$$$$$ "` đúng một chỗ; workflow + `cai-vps.sh` đưa khoá
    Gemini từ Vault vào `.env` lõi, che log, không in giá trị. Chưa kiểm sống: cần deploy `escalation-feed` + chạy `cai-vps` (bridge khởi động lại vì code đổi).
 
+### SRS-5.1zzzzzzz135 · Khoá Claude một nguồn Vault → `.env` lõi — 22/10/2026
+
+Lê Quang: "đổi lại key anthropic đi, và theo dõi". `kiem-khoa.yml` (lượt 15:15 giờ VN): khoá `ANTHROPIC_API_KEY` trong Vault trả 200 (còn dùng), trong khi lõi trên VPS vẫn bắn
+"credit balance is too low" — khoá trong `/opt/aond_core/.env` là bản khác, đặt tay từ trước. **Lớp**: cùng một khoá có hai chỗ ở (Vault, `.env` VPS) không ai đồng bộ — SRS-134 đã làm cho
+Gemini. **Sửa**: workflow đọc thêm `ANTHROPIC_API_KEY` từ Vault, che log, đưa qua stdin; `cai-vps.sh` ghi đè đúng dòng `ANTHROPIC_API_KEY` trong `.env` lõi (chmod 600, không in giá trị) trước khi
+khởi động lại. **Chưa làm**: `GROQ_API_KEY` chưa có trong Vault nên Groq không được đồng bộ (dự phòng cuối vẫn dùng khoá `.env` cũ). **Kiểm**: `tests/test_tin_noi_bo_tien_to.py` (+1 ca).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

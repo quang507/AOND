@@ -34,3 +34,11 @@ def test_cai_vps_dua_khoa_gemini_tu_vault_vao_env_loi():
     assert "read -r GEMINI_API_KEYS_MOI" in yml
     assert "GEMINI_API_KEYS=%s" in sh and "chmod 600 /opt/aond_core/.env.moi" in sh
     assert "echo \"$GEMINI_API_KEYS_MOI\"" not in sh                 # không in giá trị khoá
+
+
+def test_cai_vps_dua_khoa_anthropic_tu_vault_vao_env_loi():
+    """SRS-5.1zzzzzzz135: khoá Claude trong .env lõi hết số dư mà Vault có khoá còn dùng → cai-vps ghi đè từ Vault (qua stdin, che log)."""
+    yml = _doc(".github/workflows/apply-migration.yml")
+    sh = _doc("bot/bridge-zca/cai-vps.sh")
+    assert "'ANTHROPIC_API_KEY'" in yml and 'read -r ANTHROPIC_KEY_MOI' in yml and '"$AK"' in yml
+    assert "ANTHROPIC_API_KEY=%s" in sh and "echo \"$ANTHROPIC_KEY_MOI\"" not in sh
