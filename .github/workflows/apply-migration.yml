@@ -14,7 +14,7 @@ on:
         required: false
         default: ''
       dung_lai:
-        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-du-an | nap-duong | nap-giao-lo | cai-vps | go-trang-thu | ban-thu-mua | ban-thu-ban | ban-thu-kb | ban-thu-dc | ban-thu-sau | ban-thu-xa | ban-thu-92. Trống = áp migration_file như thường"
+        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-du-an | nap-duong | nap-giao-lo | cai-vps | go-trang-thu | ban-thu-mua | ban-thu-ban | ban-thu-kb | ban-thu-dc | ban-thu-sau | ban-thu-xa | ban-thu-92 | ban-thu-nhieu-can. Trống = áp migration_file như thường"
         required: false
         default: ''
       commit_schema:
@@ -133,6 +133,13 @@ jobs:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
         run: bash bot/tests/ban-thu-ban.sh
 
+      # SRS-5.1zzzzzzz142: ca một tin nhắn hai căn chạy riêng (ban-thu-ban 22/10 trượt vì chờ lưu nền quá ngắn), in thời gian thật tới lúc đủ 2 tin.
+      - name: Bắn thử ca một tin nhắn hai căn (ban-thu-nhieu-can)
+        if: ${{ inputs.dung_lai == 'ban-thu-nhieu-can' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: bash bot/tests/ban-thu-nhieu-can.sh
+
       # SRS-5.1zzzzzzz86: 3 kịch bản tester 20/10 (nhà phân lô mặt ngõ Hà Nội, nhà phố dự án, căn hộ dự án) + chi phí / thời gian.
       - name: Bắn thử 3 kịch bản tester (ban-thu-kb)
         if: ${{ inputs.dung_lai == 'ban-thu-kb' }}
@@ -203,7 +210,7 @@ jobs:
 
       # 08/10/2026: project production cũ bị xoá nhầm — dựng lại từng bước trên project mới rỗng.
       - name: Dựng lại DB (dung_lai)
-        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-du-an' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'nap-giao-lo' && inputs.dung_lai != 'cai-vps' && inputs.dung_lai != 'go-trang-thu' && inputs.dung_lai != 'ban-thu-mua' && inputs.dung_lai != 'ban-thu-ban' && inputs.dung_lai != 'ban-thu-kb' && inputs.dung_lai != 'ban-thu-dc' && inputs.dung_lai != 'ban-thu-sau' && inputs.dung_lai != 'ban-thu-xa' && inputs.dung_lai != 'ban-thu-92' }}
+        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-du-an' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'nap-giao-lo' && inputs.dung_lai != 'cai-vps' && inputs.dung_lai != 'go-trang-thu' && inputs.dung_lai != 'ban-thu-mua' && inputs.dung_lai != 'ban-thu-ban' && inputs.dung_lai != 'ban-thu-kb' && inputs.dung_lai != 'ban-thu-dc' && inputs.dung_lai != 'ban-thu-sau' && inputs.dung_lai != 'ban-thu-xa' && inputs.dung_lai != 'ban-thu-92' && inputs.dung_lai != 'ban-thu-nhieu-can' }}
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
           BUOC: ${{ inputs.dung_lai }}

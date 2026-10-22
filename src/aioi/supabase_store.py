@@ -421,6 +421,16 @@ class SupabaseConversationStore(KhoNguoiMua):
                 return seller_id
         except Exception as e:
             log.error("Failed to create seller in Supabase: %s", e)
+            # 409: luồng khác (lưu nền / ghi token / xưng hô) vừa tạo CÙNG khách giữa lúc ta đọc và ghi — dòng đã có, đọc lại. Trả None ở
+            # đây làm `_save` thoát sớm: tin của lượt đầu không xuống DB tới khi khách nhắn lượt sau (SRS-5.1zzzzzzz143).
+            try:
+                da_co = self._get(f"sellers?zalo_user_id=eq.{urllib.parse.quote(user_key)}")
+            except Exception as e2:  # noqa: BLE001
+                log.error("Đọc lại seller sau lỗi tạo cũng lỗi: %s", e2)
+                da_co = []
+            if da_co:
+                self._seller_cache[user_key] = da_co[0]["id"]
+                return da_co[0]["id"]
         return None
 
     def _get_or_create_conversation(self, seller_id: str) -> str | None:
