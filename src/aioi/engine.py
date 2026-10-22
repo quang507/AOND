@@ -26,6 +26,7 @@ from uuid import uuid4
 from . import gamification as g
 from . import cau_mau
 from . import che_do_test
+from . import nhom_json
 from . import so_token
 from .delivery import _is_formatted_post
 from .prompts import _MO_DAU_RE   # dòng mở bản nháp "(📋) Em/Mình sẽ rao như vầy nhé…:" (SRS-5.1zzzzzzz132)
@@ -1779,48 +1780,29 @@ class Engine:
         # Command: json / thong tin — Inspect current extracted structured data
         if cmd in ("json", "/json", "xem json", "check json", "thong tin", "thong_tin"):
             conv.history.append(Turn("user", text, now))
+            # SRS-5.1zzzzzzz141: 2 tầng — tầng lớn (tin / vi_tri / quy_mo / gia / phap_ly / su_dung / nhap) chứa ô nhỏ; xem nhom_json.py.
             if conv.role == "buyer" and conv.buyer_lead:
-                dump_data = {
-                    "vai_tro": "buyer",
-                    "lead_id": conv.buyer_lead.lead_id,
-                    "stage": conv.buyer_lead.stage,
-                    "loai_giao_dich": conv.buyer_lead.loai_giao_dich,
-                    "loai_bds": conv.buyer_lead.loai_bds,
-                    "ngan_sach": conv.buyer_lead.ngan_sach,
-                    "khu_vuc": conv.buyer_lead.khu_vuc,
-                    "thong_tin": dict(conv.buyer_lead.fields),
-                }
+                bl = conv.buyer_lead
+                dump_data = nhom_json.json_nguoi_mua(bl.lead_id, bl.stage, bl.loai_giao_dich, bl.loai_bds, bl.ngan_sach, bl.khu_vuc,
+                                                     dict(bl.fields))
             elif len(conv.listings) > 1:
                 dump_data = {
                     "vai_tro": "seller",
                     "so_can_trong_gio": len(conv.listings),
                     "can_hien_tai": conv.active_listing_id,
                     "gio_hang": [
-                        {
-                            "ma_can": li.listing_id,
-                            "loai_hinh": li.prop.loai_hinh,
-                            "du_an": li.prop.fields.get("du_an"),
-                            "thong_tin": li.prop.fields_khach(),
-                            "do_day_du": f"{int(li.prop.completeness() * 100)}%",
-                            "thieu_truong": li.prop.missing_fields(),
-                            "hinh_anh": len(li.media),
-                        }
+                        nhom_json.json_tin_ban(li.listing_id, li.prop.loai_hinh, li.prop.fields.get("du_an"), li.prop.fields_khach(),
+                                               do_day_du=f"{int(li.prop.completeness() * 100)}%", thieu=li.prop.missing_fields(),
+                                               du_dieu_kien=None, so_anh=len(li.media))
                         for li in conv.listings
                     ],
                 }
             else:
                 li = conv.active
-                dump_data = {
-                    "vai_tro": "seller",
-                    "ma_can": li.listing_id,
-                    "loai_hinh": li.prop.loai_hinh,
-                    "du_an": li.prop.fields.get("du_an"),
-                    "thong_tin": li.prop.fields_khach(),
-                    "do_day_du": f"{int(li.prop.completeness() * 100)}%",
-                    "thieu_truong": li.prop.missing_fields(),
-                    "du_dieu_kien_tin_nhap": li.prop.summary_ready(),
-                    "hinh_anh": len(li.media),
-                }
+                dump_data = {"vai_tro": "seller", **nhom_json.json_tin_ban(
+                    li.listing_id, li.prop.loai_hinh, li.prop.fields.get("du_an"), li.prop.fields_khach(),
+                    do_day_du=f"{int(li.prop.completeness() * 100)}%", thieu=li.prop.missing_fields(),
+                    du_dieu_kien=li.prop.summary_ready(), so_anh=len(li.media))}
             json_str = json.dumps(dump_data, ensure_ascii=False, indent=2)
             # Không mở bằng "📋" — dấu đó là dấu bản nháp tin rao; `_ban_tin_da_trinh` lấy lượt có 📋 cuối cùng làm bản khách duyệt, nên
             # gõ "thong tin" sau bản nháp rồi duyệt là đăng khối JSON lên web (SRS-5.1zzzzzzz110).
