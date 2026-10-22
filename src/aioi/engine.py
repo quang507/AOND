@@ -140,6 +140,7 @@ def _image_count(media: list[dict[str, str]]) -> int:
 # mo_ta_du_an, xac_nhan_xoa, kèm trích dẫn) và _la_tai_lieu_chung đọc bản đọc ảnh.
 
 # Chuỗi bridge gán cho MỌI sticker Zalo (bot/bridge-zca/index.mjs, SRS-5.1zzzzzzz22): zca-js không cho biết sắc thái.
+LENH_LAM_MOI = "$$$$$"   # lệnh làm mới phiên (SRS-5.1zzzzzzz123)
 from .sticker import STICKER_TRUNG_TINH, la_sticker  # noqa: E402,F401  (một nguồn ở sticker.py, SRS-5.1zzzzzzz122)
 
 # Max tool-calling steps in one agent turn (a safety cap so the loop can't run away).
@@ -1681,12 +1682,12 @@ class Engine:
         clean_text = text.strip()
         cmd = clean_text.lower()
 
-        # Explicit reset command or greeting restart (hello, sticker greeting, /reset)
-        # CỐ Ý (chủ dự án 20/10/2026: "hello là tôi đang test, đó là ý của tôi"): lời chào làm mới phiên để test — không phải lỗi,
-        # đừng chấm là lỗi khi review / đánh giá UX (CLAUDE.md §6, khối quyết định chủ dự án).
-        is_greeting_reset = (
+        # LỆNH LÀM MỚI PHIÊN = "$$$$$" (năm dấu đô, chủ dự án 22/10/2026: "đừng để hello thành reset nữa, lệnh reset sẽ là $$$$$").
+        # Trước đây "hello / hi / alo / chào em / 👋 / sticker chào" xoá phiên (quyết định 20/10 để test) — khách thật chào giữa chừng là mất
+        # hết tin đang soạn; nay lời chào chỉ được CHÀO. Các lệnh gõ tay cũ (/reset, /clear, /xoa, "reset session", "xóa hết") giữ nguyên.
+        la_lenh_lam_moi = cmd == LENH_LAM_MOI or cmd in ("/reset", "/clear", "/xoa", "reset session", "xóa hết")
+        la_loi_chao = (
             cmd in (
-                "/reset", "/clear", "/xoa", "reset session", "xóa hết",
                 "hello", "hi", "alo", "helo", "hế lô", "halo",
                 "hello em", "hi em", "chào em", "chào bot",
                 "hello bot", "hi bot", "[sticker cảm xúc]", "👋", "🙋", "🙋‍♂️", "🙋‍♀️",
@@ -1694,7 +1695,7 @@ class Engine:
             or (cmd.startswith("hello") and len(cmd) <= 10)
             or (cmd.startswith("hi ") and len(cmd) <= 8)
         )
-        if is_greeting_reset:
+        if la_lenh_lam_moi:
             had_prior_history = len(conv.history) > 0
             new_li = Listing(prop=Property())
             conv.listings = [new_li]
@@ -1707,13 +1708,19 @@ class Engine:
             conv.last_receipts = []
             if self._convstore is not None:
                 self._convstore.reset(user_key)
-            
-            if had_prior_history and cmd in ("/reset", "/clear", "/xoa", "reset session", "xóa hết"):
+
+            if had_prior_history:
                 reply = cau_mau.cau("lenh_lam_moi", ten=conv.assistant.name)   # câu mẫu sửa ở CRM (SRS-5.1zzzzzzz110)
-            elif had_prior_history:
-                reply = cau_mau.cau("chao_lam_moi", ten=conv.assistant.name)
             else:
                 reply = cau_mau.cau("chao_lan_dau", ten=conv.assistant.name)
+            conv.history.append(Turn("assistant", reply, now))
+            conv.last_ai_at = now
+            return self._build_result(conv, reply, captured=[], now=now)
+
+        # Lời chào ĐẦU TIÊN (chưa có chuyện gì): câu chào cố định, không xoá gì. Đã có chuyện thì lời chào đi thẳng vào lượt trả lời
+        # thường (model đáp ngắn rồi nối câu đang hỏi) — không mất tin đang soạn.
+        if la_loi_chao and not conv.history:
+            reply = cau_mau.cau("chao_lan_dau", ten=conv.assistant.name)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured=[], now=now)

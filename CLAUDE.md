@@ -135,7 +135,7 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > **QUYẾT ĐỊNH CHỦ DỰ ÁN — KHÔNG ĐƯA RA BÀN LẠI, KHÔNG CHẤM LÀ LỖI KHI REVIEW / ĐÁNH GIÁ UX (20/10/2026).** Chủ dự án: "supabase
 > free và zalo clone là ý chí của tui, ko cần bàn lại"; "hello là tôi đang test, đó là ý của tôi".
 > - **Supabase gói Free** (không tự sao lưu) và **bridge zca-js trên tài khoản Zalo clone** là lựa chọn có chủ đích.
-> - **"hello / hi / alo / chào em / 👋 / /reset" làm mới phiên** (`Engine.handle`, `is_greeting_reset`) là cố ý để chủ dự án test.
+> - **Làm mới phiên = gõ đúng `$$$$$` (năm dấu đô)** (`Engine.handle`, `LENH_LAM_MOI`; chủ dự án 22/10/2026: "đừng để hello thành reset nữa"). "hello / hi / chào em / 👋 / sticker chào" chỉ CHÀO, không xoá phiên (thay quyết định 20/10). Lệnh cũ `/reset`, `/clear`, `/xoa`, "reset session", "xóa hết" vẫn dùng được.
 > - **Văn tin rao** thêm ý chung ("phù hợp ở kết hợp kinh doanh") — chủ dự án: "kệ".
 > - **Theo bản anh Luận** (`luan8560/AOND`, SRS-5.1zzzzzzz81): khách duyệt bản nháp thì hỏi "có biết phí môi giới của tụi em chưa"; hẻm /
 >   mặt tiền và hiện trạng hỏi TRƯỚC bản nháp; gửi model 30 tin gần nhất.

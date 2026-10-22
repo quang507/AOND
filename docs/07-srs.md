@@ -8028,8 +8028,7 @@ sticker thôi à, ko biết là hello à" → "thì dùng gemini đi").
 2. **Sửa**: (a) bridge gọi `api.getStickersDetail(id)` (zca-js 2.2.0, hạn 4 giây, hụt thì thôi) lấy `stickerUrl` + nhãn chữ, gửi `sticker_url` /
    `sticker_text`; (b) `src/aioi/sticker.py`: tải ảnh qua `fetch_media` (rào SSRF) → MỘT lượt đọc ảnh rẻ
    (`DuPhongProvider.extract_media_re`: Gemini trước, Claude chỉ khi mọi nguồn hỏng) trả `y_nghia` (chao / cam_on / tam_biet / dong_y / vui /
-   buon_gian / khac) + mô tả ≤ 12 từ; (c) `server.py` thay chuỗi trung tính bằng kết quả: `chao` → "hello" (cùng đường làm mới phiên như khách gõ
-   hello, quyết định chủ dự án 20/10), loại khác → "[khách gửi sticker: mô tả]"; hỏng ở bước nào cũng về chuỗi trung tính. AI đọc nghĩa,
+   buon_gian / khac) + mô tả ≤ 12 từ; (c) `server.py` thay chuỗi trung tính bằng kết quả: `chao` → "hello" (đường lời chào như khách gõ hello; từ SRS-5.1zzzzzzz123 lời chào không còn xoá phiên), loại khác → "[khách gửi sticker: mô tả]"; hỏng ở bước nào cũng về chuỗi trung tính. AI đọc nghĩa,
    code chỉ nối chữ — không luật từ khoá.
 3. **Giữ**: sticker KHÔNG BAO GIỜ là đồng ý / ghi vào tin dù AI đọc ra "đồng ý" — `engine.py` nhận dấu sticker bằng `la_sticker` (tiền tố
    "[khách gửi sticker"), trước đây so NGUYÊN chuỗi nên dạng có mô tả sẽ lọt thành "gật". Chỗ khác cùng lớp: lời nhắn thoại (đã có STT riêng,
@@ -8038,6 +8037,22 @@ sticker thôi à, ko biết là hello à" → "thì dùng gemini đi").
    báo của zca-js, không bắn thử được ở đây. Cần gửi một sticker thật sau khi cài bridge và đọc `[Bridge Sticker]` trong log.
 
 Kiểm: `tests/test_sticker.py` (6 ca; ca `test_sticker_da_doc_van_khong_bao_gio_la_dong_y` đỏ khi quay về so nguyên chuỗi).
+
+### SRS-5.1zzzzzzz123 · Lời chào không còn làm mới phiên; lệnh làm mới là "$$$$$" (22/10/2026)
+
+Lê Quang: "giờ đừng để hello thành reset nữa, lệnh reset sẽ là $$$$$ người ta nhắn 5 dấu này". Thay quyết định 20/10/2026 ("hello là tôi đang test, đó
+là ý của tôi" — `is_greeting_reset`).
+
+1. **Lớp lỗi**: một lời khách THƯỜNG (chào) gắn với thao tác PHÁ DỮ LIỆU (xoá phiên) — khách thật chào giữa chừng, hay sticker chào (SRS-5.1zzzzzzz122)
+   đọc ra "hello", là mất hết tin đang soạn. Lệnh phá dữ liệu phải là chuỗi khách không gõ nhầm.
+2. **Sửa** (`engine.py`, `Engine.handle`): `$$$$$` (đúng năm dấu đô, `LENH_LAM_MOI`) làm mới phiên như trước (chuyện cũ → `lenh_lam_moi`,
+   chưa có chuyện → `chao_lan_dau`). Các lệnh gõ tay cũ `/reset`, `/clear`, `/xoa`, "reset session", "xóa hết" giữ nguyên. Lời chào (hello / hi / chào em / 👋 …):
+   lần ĐẦU (chưa có chuyện) → câu chào cố định `chao_lan_dau`, không gọi model; đã có chuyện → đi thẳng vào lượt trả lời thường, không xoá gì.
+3. **Chỗ khác cùng lớp**: "xóa hết" gõ đúng nguyên chuỗi vẫn xoá phiên (giữ vì là lệnh thử cũ của chủ dự án — nếu muốn chỉ còn `$$$$$` thì bỏ khỏi
+   danh sách); `/reset/{user_key}` (HTTP, chỉ máy gọi). Gom tin (bridge ghép tin gần nhau bằng xuống dòng) làm "$$$$$" gõ liền sau tin khác không còn là
+   lệnh — chưa xử lý.
+
+Kiểm: `tests/test_lenh_lam_moi.py` (5 ca; 2 ca đỏ khi quay về bản cũ). CLAUDE.md §6 khối quyết định chủ dự án đã cập nhật.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

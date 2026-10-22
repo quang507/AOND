@@ -6,8 +6,8 @@ tiếp câu đang dở, không biết khách đang CHÀO ("hello này nó biết
 `y_nghia` (một trong vài loại) + mô tả ngắn. Code chỉ NỐI chữ: AI đọc nghĩa, không có luật từ khoá nào đoán sticker.
 
 Sticker KHÔNG BAO GIỜ là đồng ý / ghi vào tin (SRS-5.1zzzzzzz22): dù AI đọc ra "đồng ý", chữ đưa vào hội thoại vẫn mang dấu
-"[khách gửi sticker", engine nhận dấu đó bằng `la_sticker` (tiền tố, không so nguyên chuỗi). Chỉ `chao` đổi thành lời chào "hello" — cùng
-đường làm mới phiên như khách gõ "hello" (quyết định chủ dự án 20/10).
+"[khách gửi sticker", engine nhận dấu đó bằng `la_sticker` (tiền tố, không so nguyên chuỗi). Chỉ `chao` đổi thành lời chào "hello" — đi
+đường lời chào như khách gõ "hello" (từ 22/10 lời chào KHÔNG còn xoá phiên; lệnh làm mới là "$$$$$", SRS-5.1zzzzzzz123).
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 
 STICKER_TRUNG_TINH = "[khách gửi sticker]"      # bridge gán khi chưa đọc được nghĩa (zca-js không cho sắc thái)
 DAU_STICKER = "[khách gửi sticker"              # mọi dạng chữ về sticker đều mở bằng tiền tố này
-CHAO_NHU_GO = "hello"                           # sticker chào → như khách gõ lời chào (đường làm mới phiên cũ)
+CHAO_NHU_GO = "hello"                           # sticker chào → như khách gõ lời chào
 
 Y_NGHIA = ("chao", "cam_on", "tam_biet", "dong_y", "vui", "buon_gian", "khac")
 
