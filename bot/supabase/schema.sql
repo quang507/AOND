@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-22 16:35 (giờ VN)
+-- Sinh lúc: 2026-10-22 17:02 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -5855,7 +5855,14 @@ AS $function$
       case when position(lower(l.district) in lower(coalesce(l.location_raw, ''))) = 0 then l.district end), ''),
     -- 20260923g: câu rao GỐC của người bán — chi tiết bot không lưu vào ô nào ("sau nhà có đất trống cho chó mèo
     -- chạy", "phòng nào cũng có cửa sổ") vẫn vào vector. SĐT che bởi che_sdt() bọc ngoài cả đoạn.
-    case when coalesce(btrim(l.description), '') <> '' then 'Người bán tả: ' || left(l.description, 3000) end,
+    -- 20261022h (SRS-5.1zzzzzzz142): tin nhắn GỐC của người bán (lõi ghi `listing_noi_bo.du_lieu->'tin_goc'`, đã che SĐT, nguyên văn không
+    -- chuẩn hoá) đứng thay bản tin AI viết lại — bản đó cùng một khuôn nên vector các căn giống nhau, còn lời gốc giữ chi tiết riêng.
+    -- Tin không có tin gốc (admin / Excel tạo) vẫn dùng `description` như cũ.
+    (select 'Người bán nhắn: ' || left(n.du_lieu->>'tin_goc', 3000) from public.listing_noi_bo n
+      where n.listing_id = l.id and coalesce(btrim(n.du_lieu->>'tin_goc'), '') <> ''),
+    case when coalesce(btrim(l.description), '') <> ''
+          and not exists (select 1 from public.listing_noi_bo n where n.listing_id = l.id and coalesce(btrim(n.du_lieu->>'tin_goc'), '') <> '')
+      then 'Người bán tả: ' || left(l.description, 3000) end,
     (select 'Dự án ' || p.name from public.projects p where p.id = l.project_id),
     -- 20260924b: bỏ diện tích / ngang dài / giá / phòng ngủ / WC — đã LỌC CỨNG bằng cột, và lặp lại 2–3 lần (câu rao +
     -- cột + fact) làm các căn cùng khoảng giá, cùng kiểu nhà giống nhau tới 0,99; chi tiết riêng từng căn mới là nghĩa.
