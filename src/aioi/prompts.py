@@ -30,7 +30,7 @@ from .schema import (
 FIELD_LABELS: dict[str, str] = {
     "loai_hinh": "loại hình BĐS",
     "dia_chi": "địa chỉ",
-    "phuong": "phường (phường cũ hay phường mới đều được, vd phường 1 quận 5 / phường Chợ Quán)",
+    "phuong": "phường / xã (cũ hay mới đều được, vd phường 1 quận 5 / phường Chợ Quán / xã Phước Lý)",
     "gan_nga_tu": "gần ngã tư nào",
     "ma_so_can": "mã số căn (vd căn số 42, block/tầng)",
     "du_an": "tên dự án / chung cư",
@@ -135,7 +135,7 @@ FIELD_LABELS: dict[str, str] = {
 NATURAL_QUESTIONS: dict[str, str] = {
     # Identity & chung
     "loai_hinh": "Xác nhận nhẹ căn này là chung cư, nhà phố hay đất",
-    "dia_chi": "Hỏi phần địa chỉ CÒN THIẾU (tên đường / phường / quận) — phần đã có trong dữ liệu đã biết thì KHÔNG hỏi lại",
+    "dia_chi": "Hỏi phần địa chỉ CÒN THIẾU (tên đường, phường / xã, tỉnh nếu chưa rõ; KHÔNG hỏi quận / huyện — đã bỏ từ 1/7/2025). Đất ở xã chưa có tên đường: hỏi đất gần chỗ nào hoặc đường nào — phần đã có trong dữ liệu đã biết thì KHÔNG hỏi lại",
     "ma_so_can": "Hỏi mã căn hộ hoặc số nhà, tầng và tòa",
     "du_an": "Hỏi tên chung cư hoặc khu đô thị/dự án",
     "dien_tich": "Hỏi diện tích sử dụng của căn mình khoảng bao nhiêu mét vuông",
@@ -548,6 +548,8 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
 7. TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Không viết đậm chữ nào.
 8. KHÔNG KHEN THẢO MAI: khen điểm tốt thật theo luật số 3, không độn câu khen chung chung cho đủ độ dài.
 9. XÁC NHẬN ĐỊA CHỈ & KIỂM TRA CHÉO ĐƯỜNG - QUẬN:
+   - Khách nói XÃ / phường + tỉnh (vd "xã Phước Lý, Long An") là ĐỦ cấp hành chính — từ 1/7/2025 không còn cấp quận / huyện, KHÔNG hỏi "thuộc
+     huyện / quận nào". Đất chưa có tên đường thì hỏi "gần chỗ nào hoặc đường nào" (quốc lộ, khu công nghiệp, chợ, trường…).
    - Khi khách cho tên đường nhưng chưa rõ phường: hỏi nhẹ "Đoạn này thuộc Phường mấy vậy anh/chị?"
    - Khách ĐÃ nói phường (tên mới hay phường số cũ, vd "Phường 9") → nhận theo lời khách, KHÔNG hỏi lại để đối chiếu với phường
      tra kho em gợi ý trước đó (kho đường có thể thiếu đoạn; hệ thống tự đổi phường cũ sang phường mới). Hỏi tiếp ý kế.

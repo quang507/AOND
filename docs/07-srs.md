@@ -8089,6 +8089,22 @@ Lê Quang trả lời câu hỏi "chỗ nào còn bắt theo từ khoá": "cho l
 Kiểm: `tests/test_lenh_lam_moi.py::test_loi_chao_dau_tien_do_ai_doc_khong_con_danh_sach_tu_khoa` (năm cách chào, kể cả "xin chào ạ" / "hế lô bạn ơi" — ngoài danh sách cũ),
 `test_lenh_lam_moi_chua_co_chuyen_van_la_cau_chao_co_dinh`; `tests/test_cau_mau.py` cập nhật.
 
+### SRS-5.1zzzzzzz126 · Địa chỉ xã + tỉnh là đủ, không hỏi quận / huyện; đất hỏi "gần chỗ nào hoặc đường nào" (22/10/2026)
+
+Lê Quang test đất 31.314 m² "ở xã phước lý" (Long An): bot xin "tên đường, phường và quận", rồi hỏi "Xã Phước Lý thuộc huyện nào của Long An vậy anh?". Phản hồi:
+"xã phước lý tức là hết huyện rồi, kiểu giờ địa chỉ thì nó có thể coi rõ hơn. về ở gần chỗ nào, hoặc đường nào, khi nào bên em đi xem dc ko".
+
+1. **Lớp lỗi**: câu hỏi địa chỉ viết theo hệ hành chính BA CẤP cũ (đường / phường / quận) trong khi từ 1/7/2025 chỉ còn hai cấp (tỉnh / thành → xã /
+   phường / đặc khu). Nguồn: `NATURAL_QUESTIONS["dia_chi"]` ("tên đường / phường / quận") là lời dặn cho model — model chép theo; nhãn ô `phuong` chỉ nói "phường".
+2. **Sửa** (`src/aioi/prompts.py`): câu hỏi địa chỉ KHÔNG hỏi quận / huyện (khách tự nói thì nhận); nhãn ô `phuong` = "phường / xã"; luật số 9 của prompt người rao:
+   khách nói xã / phường + tỉnh là ĐỦ cấp hành chính; đất ở xã chưa có tên đường thì hỏi "gần chỗ nào hoặc đường nào" (quốc lộ, khu công nghiệp, chợ, trường…).
+3. **Chỗ khác cùng lớp / chưa làm**: (a) kho `wards` / `duong` chỉ phủ TP.HCM (đủ 168 phường), Tây Ninh, Đồng Nai — xã ở Long An không tra được nên chữ khách giữ nguyên (không
+   "coi rõ" được); nạp thêm xã các tỉnh còn lại là việc riêng; (b) mô tả khuôn bóc tách (`khu_vuc` bên mua: "Quận, huyện, tên dự án") và vài câu ví dụ còn nói quận — bên mua,
+   chưa đụng; (c) câu "khi nào bên em đi xem được không" đã có ở cụm hỏi sau khi tin lên web (`CUM_SAU_DANG.xem_nha`: giờ xem + giữ chìa khoá) — chờ chủ dự án nói có muốn hỏi sớm hơn.
+4. **Chưa kiểm** với model thật (Claude hết số dư; chỉ có Gemini lite).
+
+Kiểm: `tests/test_dia_chi_xa.py` (2 ca, đỏ trên prompt cũ).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
