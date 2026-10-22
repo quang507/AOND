@@ -8070,6 +8070,25 @@ Lê Quang hỏi lại: "cho nó khen nhiều hơn dc ko" (sau SRS-5.1zzzzzzz119)
 
 Kiểm: `tests/test_khen_co_co_so.py::test_khen_nhieu_hon_lan_hai_khen_ca_cach_khach_lam_viec_va_ben_mua` (đỏ trên prompt cũ).
 
+### SRS-5.1zzzzzzz125 · Lời chào đầu tiên do AI đọc, bỏ danh sách từ khoá (22/10/2026)
+
+Lê Quang trả lời câu hỏi "chỗ nào còn bắt theo từ khoá": "cho lời chào đầu tiên đi thẳng qua AI thay vì danh sách từ khoá, và bỏ danh sách ở chỗ 2 —
+đúng; json chả ai bấm nhầm đâu" (lệnh `json` / `thong tin` giữ nguyên).
+
+1. **Lớp lỗi**: máy đoán "khách đang chào" bằng danh sách chữ cố định (hello, hi, alo, helo, hế lô, halo, chào em / bot, 👋, "[sticker cảm xúc]" + hai
+   luật tiền tố) — chào bằng chữ khác ("xin chào ạ", "hế lô bạn ơi") rơi ra khỏi danh sách; chính là lớp "đoán ý bằng từ khoá" đã quyết bỏ (SRS-5.1q).
+2. **Sửa**: `engine.py` bỏ `la_loi_chao` và nhánh trả câu chào cố định; lượt ĐẦU (chưa có lời bot nào) của người rao thường nối khối
+   `prompts.khoi_chao_lan_dau` vào prompt: khách CHỈ chào (kể cả sticker / biểu tượng) → AI chào lại ngắn, giới thiệu tên, hỏi bán / cho thuê hay mua,
+   lấy câu mẫu `cau_mau.chao_lan_dau` (CRM sửa được) làm mẫu — KHÔNG chép nguyên; khách đã nói nhu cầu ngay thì bỏ qua. Hết số dư / quá tải thì
+   đường dự phòng (Gemini) cũng đọc khối này như mọi lượt.
+3. **Còn lại bắt theo chữ trong `Engine.handle`**: lệnh làm mới (`$$$$$` + `/reset`, `/clear`, `/xoa`, "reset session", "xóa hết"), lệnh xem dữ liệu (`json`,
+   `/json`, "xem json", "check json", "thong tin", "thong_tin") — là lệnh của người vận hành, không đoán ý; nhận link `https?://`; `voice.py` nhận tệp thoại
+   bằng đuôi / chữ trong đường link. Chưa soát hết regex ở `schema.py`, `bulk.py`, `inventory.py`, `mua.py`.
+4. **Đánh đổi**: lời chào đầu tiên không còn là câu cố định từng chữ — model có thể đổi chữ (có mẫu để bám). Chưa kiểm với Haiku (Claude hết số dư).
+
+Kiểm: `tests/test_lenh_lam_moi.py::test_loi_chao_dau_tien_do_ai_doc_khong_con_danh_sach_tu_khoa` (năm cách chào, kể cả "xin chào ạ" / "hế lô bạn ơi" — ngoài danh sách cũ),
+`test_lenh_lam_moi_chua_co_chuyen_van_la_cau_chao_co_dinh`; `tests/test_cau_mau.py` cập nhật.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

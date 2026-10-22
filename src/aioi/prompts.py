@@ -594,6 +594,14 @@ QUY TẮC PHẢN HỒI:
 {ask_line}"""
 
 
+def khoi_chao_lan_dau(assistant_name: str, mau: str) -> str:
+    """Lượt ĐẦU của cuộc chat: khách chỉ chào thì AI chào lại theo mẫu ở `cau_mau.chao_lan_dau` (CRM sửa được) rồi hỏi bán / thuê hay
+    mua — thay danh sách từ khoá hello / hi / 👋 (SRS-5.1zzzzzzz125). AI đọc nghĩa: khách đã nói nhu cầu ngay thì bỏ qua khối này."""
+    return ("\n\n=== LƯỢT ĐẦU TIÊN CỦA CUỘC CHAT ===\nNếu khách CHỈ chào hỏi (kể cả chào bằng sticker hay biểu tượng), chưa nói nhu cầu nhà đất: "
+            f"chào lại ngắn, giới thiệu em là {assistant_name}, rồi hỏi khách đang có căn cần gửi bán / cho thuê hay đang tìm mua. Mẫu câu "
+            f"(đổi chữ cho tự nhiên, giữ ý, KHÔNG chép nguyên): \"{mau}\"\nKhách đã nói nhu cầu ngay trong tin đầu thì bỏ qua đoạn này.\n")
+
+
 def build_greeting(assistant_name: str) -> str:
     """The opening message AOND sends before the user says anything."""
     return (

@@ -68,6 +68,7 @@ from .prompts import (
     TAI_LIEU_CHUNG_SYSTEM,
     tai_lieu_chung_schema,
     build_greeting,
+    khoi_chao_lan_dau,
     build_listing_proposal_system,
     build_ngoai_vung_system,
     khoi_hoi_mat_tien,
@@ -1686,15 +1687,6 @@ class Engine:
         # Trước đây "hello / hi / alo / chào em / 👋 / sticker chào" xoá phiên (quyết định 20/10 để test) — khách thật chào giữa chừng là mất
         # hết tin đang soạn; nay lời chào chỉ được CHÀO. Các lệnh gõ tay cũ (/reset, /clear, /xoa, "reset session", "xóa hết") giữ nguyên.
         la_lenh_lam_moi = cmd == LENH_LAM_MOI or cmd in ("/reset", "/clear", "/xoa", "reset session", "xóa hết")
-        la_loi_chao = (
-            cmd in (
-                "hello", "hi", "alo", "helo", "hế lô", "halo",
-                "hello em", "hi em", "chào em", "chào bot",
-                "hello bot", "hi bot", "[sticker cảm xúc]", "👋", "🙋", "🙋‍♂️", "🙋‍♀️",
-            )
-            or (cmd.startswith("hello") and len(cmd) <= 10)
-            or (cmd.startswith("hi ") and len(cmd) <= 8)
-        )
         if la_lenh_lam_moi:
             had_prior_history = len(conv.history) > 0
             new_li = Listing(prop=Property())
@@ -1713,14 +1705,6 @@ class Engine:
                 reply = cau_mau.cau("lenh_lam_moi", ten=conv.assistant.name)   # câu mẫu sửa ở CRM (SRS-5.1zzzzzzz110)
             else:
                 reply = cau_mau.cau("chao_lan_dau", ten=conv.assistant.name)
-            conv.history.append(Turn("assistant", reply, now))
-            conv.last_ai_at = now
-            return self._build_result(conv, reply, captured=[], now=now)
-
-        # Lời chào ĐẦU TIÊN (chưa có chuyện gì): câu chào cố định, không xoá gì. Đã có chuyện thì lời chào đi thẳng vào lượt trả lời
-        # thường (model đáp ngắn rồi nối câu đang hỏi) — không mất tin đang soạn.
-        if la_loi_chao and not conv.history:
-            reply = cau_mau.cau("chao_lan_dau", ten=conv.assistant.name)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured=[], now=now)
@@ -2097,6 +2081,8 @@ class Engine:
             conv.prop.fields["_mt_da_hoi"] = "1"
             system += khoi_hoi_mat_tien(conv.prop.fields.get("mat_tien", ""))
 
+        if not is_listing_post and not any(t.role == "assistant" for t in conv.history):
+            system += khoi_chao_lan_dau(conv.assistant.name, cau_mau.cau("chao_lan_dau", ten=conv.assistant.name))
         system += khoi_xung_ho(customer_pronoun) + self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
         if xin_sao:
             system += KHOI_SAP_XIN_SAO

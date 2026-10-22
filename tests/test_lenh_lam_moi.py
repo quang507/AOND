@@ -39,10 +39,24 @@ def test_loi_chao_giua_chuyen_khong_xoa_phien_va_di_qua_model():
     assert len(h) > 5 and h[0].content.startswith("nhà anh ở hẻm 4m")                 # chuyện cũ còn nguyên
 
 
-def test_loi_chao_dau_tien_van_la_cau_chao_co_dinh_khong_goi_model():
+def test_loi_chao_dau_tien_do_ai_doc_khong_con_danh_sach_tu_khoa():
+    """SRS-5.1zzzzzzz125: lời chào đầu đi qua model, prompt có khối "LƯỢT ĐẦU TIÊN" kèm câu mẫu `chao_lan_dau` (CRM sửa được); chào bằng chữ
+    nào cũng vậy (không còn danh sách hello / hi / 👋). Giữa chuyện thì không có khối đó."""
+    for chao in ("hello", "chào em nhé", "xin chào ạ", "👋", "hế lô bạn ơi"):
+        eng, spy = _eng({"operations": []})
+        eng.handle("r2", chao)
+        assert spy.systems and "LƯỢT ĐẦU TIÊN CỦA CUỘC CHAT" in spy.systems[0], chao
+        assert cau_mau.cau("chao_lan_dau", ten=eng.conversation("r2").assistant.name) in spy.systems[0]
     eng, spy = _eng({"operations": []})
-    r = eng.handle("r2", "hello")
-    assert r.reply == cau_mau.cau("chao_lan_dau", ten=eng.conversation("r2").assistant.name) and spy.systems == []
+    _co_chuyen(eng)
+    eng.handle("r1", "hello")
+    assert "LƯỢT ĐẦU TIÊN CỦA CUỘC CHAT" not in spy.systems[-1]
+
+
+def test_lenh_lam_moi_chua_co_chuyen_van_la_cau_chao_co_dinh():
+    eng, spy = _eng({"operations": []})
+    r = eng.handle("r3", "$$$$$")
+    assert r.reply == cau_mau.cau("chao_lan_dau", ten=eng.conversation("r3").assistant.name) and spy.systems == []
 
 
 def test_lenh_cu_van_lam_moi():
