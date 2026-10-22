@@ -8352,6 +8352,20 @@ KHÔNG đưa: giá, diện tích, phòng ngủ, số tầng, pháp lý (lọc b�
 (d) migration hai pha — pha 1 thêm `listing_embeddings`, `buyer_needs`, `listing_matches` và hàm tìm lai, KHÔNG đụng `listings`; pha 2 mới rút gọn cột sau khi đo được kết quả tìm.
 **Không làm khi chưa duyệt**: không migration, không đổi bộ câu hỏi, không đổi tìm kiếm trên production.
 
+### SRS-5.1zzzzzzz138 · Công cụ tìm nhà cho bot — bản gọn nhất của pha 1 — 22/10/2026
+
+Chủ dự án: "đúng, làm công cụ tìm nhà cho bot, lưu db sao cho bot dễ tìm nhất, tìm tốn ít quota nhất, làm đi, ít hơn càng tốt". Đây là phần đầu của SRS-5.1zzzzzzz137, cắt tối thiểu: MỘT hàm DB, không bảng mới, không đụng `listings`.
+
+1. **Lớp**: gợi ý căn cho khách mua chỉ lọc cứng và lấy "3 căn mới nhất" (`mua.can_phu_hop`), vector `listings.nhung` có sẵn mà không ai gọi; câu như "nhà yên tĩnh cho ông bà ở" không tác động gì tới kết quả.
+2. **Sửa**: `public.tim_nha(...)` (`20261022f_tim_nha.sql`): lọc cứng CHỈ trạng thái đang hiện, bán / thuê, loại, giá ≤ ngân sách × 1,2; khu vực / diện tích / phòng ngủ / xe hơi chỉ CỘNG ĐIỂM (khu vực +3, xe hơi +2, diện tích +1, phòng ngủ +1), vector cộng tối đa +4; mỗi căn
+   kèm `ly_do` ghép từ cột thật ("đúng khu vực khách chọn", "KHÁC khu vực khách chọn", "xe hơi vào được"…). Chỉ `service_role` gọi. Lõi: `mua.KhoNguoiMua.tim_nha` / `can_phu_hop` gọi hàm này (một lượt DB), khối "CĂN ĐANG CÓ TRONG RỔ" nhắc bot chỉ kể lại "vì sao hợp",
+   căn khác khu vực phải nói rõ. Hàm DB lỗi thì về cách lọc cứng cũ (`_can_phu_hop_loc_cung`).
+3. **Quota**: không có lời tả nhu cầu (`moi_truong_song`, `thanh_vien`, `noi_lam_viec`, `muc_dich`, ghi chú) thì KHÔNG gọi Gemini; có thì nhúng một lần, nhớ theo chữ (tối đa 256); lỗi / hết hạn mức thì tìm không vector; kết quả nhớ 60 giây; `parse_vnd` nhớ theo chữ.
+   Không thêm lượt gọi model nào — nhu cầu lấy từ bóc tách có sẵn của lượt chat.
+4. **Chưa làm (cố ý)**: bảng `listing_embeddings` / `buyer_needs` / `listing_matches`, rút gọn cột `listings`, báo khách khi có tin mới khớp, bước lấy ứng viên bằng chỉ mục vector (tin hiện còn ít nên quét thẳng; thêm khi quá vài nghìn tin), công cụ Claude gọi tay (đường dự phòng Gemini / Groq không có công cụ nên dùng đường code).
+   Chưa đo chất lượng với dữ liệu thật — DB đã xoá sạch 22/10; cần nạp 20–30 tin mẫu để thử.
+5. **Kiểm**: `tests/test_tim_nha.py` (6 ca): không lời tả → không nhúng; có lời tả → nhúng một lần và nhớ, một lượt DB; nhúng lỗi vẫn tìm; hàm DB lỗi về lọc cứng; lý do vào dòng căn và khối cho bot; ký tự đại diện bị bỏ. Sửa `tests/test_viec_mua.py` theo lời gọi mới.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

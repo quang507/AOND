@@ -20,7 +20,7 @@ import logging
 import re
 import time
 import urllib.parse
-from typing import Any
+from typing import Any, Callable
 
 log = logging.getLogger("aioi.mua")
 
@@ -46,6 +46,35 @@ def lenh_tra_loi(text: str) -> tuple[str, str] | None:
 
 def _q(s: str) -> str:
     return urllib.parse.quote(str(s), safe="")
+
+
+def _sach_khu(chu: str) -> str | None:
+    """Chữ khu vực khách nói → mẫu tìm: bỏ ký tự đại diện của ILIKE, lấy cụm đầu."""
+    k = re.sub(r"[%_\\,()*\"]+", " ", chu).strip()
+    return re.split(r"\s{2,}", k)[0].strip() or None
+
+
+def _so_dau(v: Any) -> float | None:
+    """Số đầu tiên trong chữ ("2PN" → 2, "60m2" → 60, "3,5" → 3.5); không có → None."""
+    m = re.search(r"\d+(?:[.,]\d+)?", str(v or ""))
+    return float(m.group(0).replace(",", ".")) if m else None
+
+
+def _can_xe_hoi(v: Any) -> bool:
+    t = str(v or "").strip()
+    return bool(t) and not re.match(r"(?i)\s*(không|khong|ko)\b", t)
+
+
+# Ô nhu cầu mang NGHĨA (khách tả bằng lời) — những ô này mới đáng nhúng; số / khu vực / giá đã lọc hoặc tính điểm bằng cột.
+_O_NGHIA = ("moi_truong_song", "thanh_vien", "noi_lam_viec", "muc_dich")
+
+
+def _chu_nhu_cau(lead: Any) -> str:
+    """Câu tả nhu cầu để so nghĩa ("yên tĩnh. ông bà. ở"); rỗng nếu khách chưa tả gì — khi đó không nhúng."""
+    f = getattr(lead, "fields", {}) or {}
+    phan = [str(getattr(lead, k, None) or f.get(k) or "").strip() for k in _O_NGHIA]
+    phan.append(str(getattr(lead, "notes", "") or "").strip())
+    return ". ".join(p for p in phan if p)
 
 
 class KhoNguoiMua:
@@ -91,8 +120,90 @@ class KhoNguoiMua:
             log.warning("can_theo_ma lỗi: %s", e)
             return []
 
+    # --- Công cụ tìm nhà (SRS-5.1zzzzzzz138) -------------------------------------------------------------------------------
     def can_phu_hop(self, lead: Any, toi_da: int = 3) -> list[dict]:
-        """Tối đa `toi_da` căn đang hiện khớp nhu cầu (loại BĐS, thuê / mua, khu vực, ngân sách) — mới cập nhật trước."""
+        """Căn gợi ý cho khách: `tim_nha` (lọc cứng bán / thuê / loại / giá, điểm mềm khu vực / diện tích / phòng ngủ / xe hơi + vector).
+        Hàm DB lỗi / chưa có thì về cách lọc cứng cũ — bot không mất rổ hàng."""
+        if not self.is_configured or lead is None:
+            return []
+        try:
+            return self.tim_nha(lead, toi_da)
+        except Exception as e:  # noqa: BLE001
+            log.warning("tim_nha lỗi, về lọc cứng: %s", e)
+            return self._can_phu_hop_loc_cung(lead, toi_da)
+
+    def tim_nha(self, lead: Any, toi_da: int = 3) -> list[dict]:
+        """MỘT lượt gọi DB. Quota: chỉ nhúng khi khách có lời tả nhu cầu (yên tĩnh, ông bà…); nhúng nhớ theo chữ; kết quả nhớ 60 giây."""
+        f = getattr(lead, "fields", {}) or {}
+        tham_so = {
+            "p_deal": "cho_thue" if getattr(lead, "loai_giao_dich", "mua") == "thue" else "ban",
+            "p_loai": _LOAI_MUA_SANG_DB.get(str(getattr(lead, "loai_bds", None) or f.get("loai_bds") or "").strip().lower()),
+            "p_gia_max": self._gia_toi_da(str(getattr(lead, "ngan_sach", None) or f.get("ngan_sach") or "")),
+            "p_khu": _sach_khu(str(getattr(lead, "khu_vuc", None) or f.get("khu_vuc") or "")),
+            "p_dt_min": _so_dau(f.get("dien_tich_mong_muon")),
+            "p_pn_min": (int(_so_dau(getattr(lead, "so_phong_ngu", None) or f.get("so_phong_ngu")) or 0) or None),
+            "p_xe_hoi": _can_xe_hoi(getattr(lead, "yeu_cau_xe_hoi", None) or f.get("yeu_cau_xe_hoi")),
+            "p_limit": toi_da,
+        }
+        tham_so["p_vec"] = self._vec_nhu_cau(lead)
+        khoa = repr(sorted((k, v) for k, v in tham_so.items() if k != "p_vec")) + "|" + _chu_nhu_cau(lead)
+        nho = self.__dict__.setdefault("_nho_tim_nha", {})
+        hien = time.time()
+        if khoa in nho and hien - nho[khoa][0] < 60:
+            return nho[khoa][1]
+        kq = self._request("POST", "rpc/tim_nha", data=tham_so)
+        can: list[dict] = []
+        for r in kq if isinstance(kq, list) else []:
+            c = dict(r.get("can") or {})
+            c["_ly_do"] = r.get("ly_do") or ""
+            can.append(c)
+        if len(nho) > 200:
+            nho.clear()
+        nho[khoa] = (hien, can)
+        return can
+
+    def _gia_toi_da(self, ns: str) -> int | None:
+        """Trần giá (đồng) từ chữ ngân sách của khách, nới 20 % — `parse_vnd` là hàm cố định của DB nên nhớ theo chữ (khỏi gọi mỗi lượt)."""
+        ns = ns.strip()
+        if not ns:
+            return None
+        nho = self.__dict__.setdefault("_nho_parse_vnd", {})
+        if ns not in nho:
+            try:
+                nho[ns] = self._request("POST", "rpc/parse_vnd", data={"p": ns})
+            except Exception as e:  # noqa: BLE001
+                log.warning("parse_vnd lỗi: %s", e)
+                return None
+        tran = nho[ns]
+        return int(tran * 1.2) if isinstance(tran, (int, float)) and tran > 0 else None
+
+    def _vec_nhu_cau(self, lead: Any) -> list[float] | None:
+        """Vector câu tả nhu cầu của khách. Không có lời tả → KHÔNG gọi Gemini (tiết kiệm quota). Lỗi / hết hạn mức → không vector, vẫn tìm."""
+        text = _chu_nhu_cau(lead)
+        if not text:
+            return None
+        nho = self.__dict__.setdefault("_nho_vec_nhu_cau", {})
+        if text in nho:
+            return nho[text]
+        try:
+            nhung = self.__dict__.get("_nhung_nhu_cau")
+            if nhung is None:
+                from .config import load_settings
+                from .dia_danh import nhung_gemini
+                khoa = [k for k in load_settings().gemini_api_keys if k]
+                nhung = nhung_gemini(khoa) if khoa else (lambda _t: None)
+                self.__dict__["_nhung_nhu_cau"] = nhung
+            v = nhung(text)
+        except Exception as e:  # noqa: BLE001
+            log.warning("nhúng nhu cầu lỗi (tìm không vector): %s", type(e).__name__)
+            return None
+        if len(nho) > 256:
+            nho.clear()
+        nho[text] = v
+        return v
+
+    def _can_phu_hop_loc_cung(self, lead: Any, toi_da: int = 3) -> list[dict]:
+        """Cách lọc cứng cũ (SRS-5.1zzzzzzz70) — dự phòng khi `tim_nha` lỗi. Tối đa `toi_da` căn khớp loại, thuê / mua, khu vực, ngân sách."""
         if not self.is_configured or lead is None:
             return []
         loc = [f"status=in.({','.join(TRANG_THAI_HIEN)})",
@@ -270,6 +381,8 @@ def dong_can(c: dict) -> str:
         phan.append(f"hướng {c['direction']}")
     if c.get("status") == "da_coc":
         phan.append("(đã có khách cọc)")
+    if c.get("_ly_do"):
+        phan.append(f"vì sao hợp: {c['_ly_do']}")
     return " · ".join(p for p in phan if p)
 
 
@@ -278,7 +391,8 @@ def khoi_can_cho_khach(can: list[dict]) -> str:
         return ("\nRỔ HÀNG: chưa có căn nào đang rao khớp nhu cầu khách. KHÔNG giới thiệu căn nào, KHÔNG bịa căn; nói em sẽ báo khi "
                 "có căn phù hợp.\n")
     return ("\nCĂN ĐANG CÓ TRONG RỔ (chỉ được giới thiệu các căn dưới đây, luôn kèm mã #; không đọc số nhà; thông tin không có "
-            "ở dòng của căn thì nói em hỏi chủ nhà rồi báo lại, KHÔNG đoán):\n" + "\n".join(f"- {dong_can(c)}" for c in can) + "\n")
+            "ở dòng của căn thì nói em hỏi chủ nhà rồi báo lại, KHÔNG đoán). Mỗi căn có \"vì sao hợp\" ghép từ dữ liệu: chỉ kể lại ĐÚNG, không thêm; "
+            "căn ghi \"KHÁC khu vực khách chọn\" thì nói rõ cho khách biết đây là căn khu khác:\n" + "\n".join(f"- {dong_can(c)}" for c in can) + "\n")
 
 
 def khoi_viec_vua_ghi(viec: list[str]) -> str:
