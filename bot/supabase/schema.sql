@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-22 09:47 (giờ VN)
+-- Sinh lúc: 2026-10-22 09:57 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -590,7 +590,8 @@ create table if not exists public.xa_tinh_khac (
   loai text not null,
   tinh text not null,
   don_vi_cu jsonb not null default '[]'::jsonb,
-  nguon text not null
+  nguon text not null,
+  tinh_cu text
 );
 
 -- ══ Ràng buộc (PK / UNIQUE / CHECK) ══
@@ -922,7 +923,7 @@ do $d$ begin
   alter table public.xa_tinh_khac add constraint xa_tinh_khac_loai_check CHECK ((loai = ANY (ARRAY['xa'::text, 'phuong'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.xa_tinh_khac add constraint xa_tinh_khac_pkey PRIMARY KEY (ten_day_du);
+  alter table public.xa_tinh_khac add constraint xa_tinh_khac_pkey PRIMARY KEY (tinh, ten_day_du);
 exception when duplicate_object then null; end $d$;
 
 -- ══ Khoá ngoại ══
