@@ -885,9 +885,11 @@ def _mo_dau_da(reply: str) -> bool:
 
 
 def _mo_dau_ghi_nhan(reply: str) -> bool:
-    """Câu đầu của lời bot là câu ghi nhận ("Em ghi nhận…", "Em đã ghi rồi…") — kiểm HÌNH THỨC lời của chính bot, không
-    đoán ý khách (SRS-5.1zzzzzzz118). Hai lượt liền nhau cùng mở như vậy thì gọi lại model."""
-    return re.match(r"(?i)\s*em\s+(?:đã\s+)?(?:ghi\s+nhận|ghi\s+rồi|ghi\s+lại|nhận\s+thông\s+tin)", reply or "") is not None
+    """Câu đầu của lời bot là câu ghi nhận ("Em ghi nhận…", "Em đã ghi rồi…", "Em lưu vào tin rồi…", "Em nắm rồi…") — kiểm HÌNH THỨC lời
+    của chính bot, không đoán ý khách (SRS-5.1zzzzzzz118). Từ 22/10 (SRS-5.1zzzzzzz131, chủ dự án bỏ hẳn kiểu ghi nhận) MỌI lượt mở như vậy
+    đều gọi lại model; "Em sửa giá còn…" (nói con số vừa sửa) không phải ghi nhận."""
+    return re.match(r"(?i)\s*em\s+(?:đã\s+)?(?:ghi\s+nhận|ghi\s+rồi|ghi\s+lại|ghi\s+vào|nhận\s+thông\s+tin|lưu\s+(?:vào|lại|rồi)|nắm\s+(?:rồi|được)|"
+                    r"thêm\s+vào\s+tin)", reply or "") is not None
 
 
 def _ba_chu_dau(reply: str) -> tuple[str, ...]:
@@ -2247,9 +2249,11 @@ class Engine:
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
         truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant"), "")
-        if (_cung_mo_dau(reply, truoc) or (_mo_dau_ghi_nhan(reply) and _mo_dau_ghi_nhan(truoc))) and "📋" not in reply:
-            ly_do.append("Lượt trước em đã mở đầu bằng câu ghi nhận (\"Em ghi nhận…\"); lượt này đổi cách đáp — cảm ơn ngắn, nối thẳng vào câu "
-                         "hỏi kế hoặc nói một chi tiết có ích — không mở lại bằng \"Em ghi nhận / Em ghi rồi\".")
+        if _mo_dau_ghi_nhan(reply) and "📋" not in reply:
+            ly_do.append("Lời vừa viết mở đầu bằng câu ghi nhận (\"Em ghi nhận / Em ghi rồi / Em lưu rồi…\") — chủ dự án đã bỏ hẳn kiểu này (22/10): "
+                         "mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói (vị trí, diện tích, pháp lý, cách khách trả lời…) rồi hỏi câu kế.")
+        elif _cung_mo_dau(reply, truoc) and "📋" not in reply:
+            ly_do.append("Lượt trước em đã mở đầu bằng cùng mấy chữ này; lượt này đổi cách mở — khen điểm khác, hoặc nối thẳng vào câu hỏi kế.")
         if _tieu_de_can_ho_co_mt(reply, conv.prop):
             ly_do.append("Tiêu đề căn hộ có chữ \"MT\" — người mua đọc là mặt tiền; căn hộ không có mặt tiền, viết đủ tên dự án, không "
                          "viết tắt \"MT\".")

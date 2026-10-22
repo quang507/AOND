@@ -8176,6 +8176,26 @@ Trước đó tester phải gõ `json` riêng mỗi lượt để soi ô đã b�
 **Bản 3 (cùng ngày, Lê Quang: "nếu người ta có gõ $$$$$ lúc chào thì mới vào chế độ test, xóa hết data cũ, không cần thông báo, và sau đó mới có câu phụ … còn người mới chào bình thường thì ko cần")**:
 lệnh `$$$$$` nay IM LẶNG — xoá phiên + bật `che_do_test`, `reply` rỗng, không ghi lượt bot vào lịch sử, không gọi model (server trả `replies = []`, bridge không gửi gì, như đường "vượt trần"). Tin kế tiếp của khách đi đúng đường người mới (khối "LƯỢT ĐẦU TIÊN", lời chào do AI đọc — SRS-125) và từ đó mỗi lượt kèm tin phụ. Khách chào bình thường không gõ `$$$$$` thì không có gì khác. Câu mẫu `lenh_lam_moi` không còn chỗ dùng → bỏ khỏi `MAC_DINH`, xoá dòng DB (`20261022d`). Kiểm: `tests/test_lenh_lam_moi.py` (im lặng, sạch, chào lại như người mới; không gọi model), `tests/test_che_do_test.py` (tin phụ bắt đầu từ tin kế tiếp; server `replies == []`).
 
+### SRS-5.1zzzzzzz131 · Bỏ hẳn câu ghi nhận; 100% lượt mở bằng lời khen, kể cả vị trí (22/10/2026)
+
+Lê Quang (sau khi đọc chat 11:54–12:05 toàn "Em ghi nhận vị trí này rồi anh", "Em lưu lại thông tin nhà phố rồi anh"): "giờ xóa hết mấy cái em ghi nhận em bla bla đi,
+và khen nhiều hơn vị trí các thứ cũng 100% khen".
+
+1. **Lớp**: cùng lớp SRS-102/118/120 (giọng đáp đầu lượt). Trước: đáp nhận một vế rồi hỏi, ví dụ lấy từ câu mẫu `ghi_nhan_mau`, lưới chỉ bắt HAI lượt liền
+   nhau cùng ghi nhận. Nay chủ dự án bỏ hẳn kiểu đáp nhận — chỗ đó là lời khen.
+2. **Sửa**: (a) `prompts.LUAT_GHI_NHAN` → `LUAT_MO_LUOT` ("mở lượt bằng lời khen, không câu ghi nhận"; vẫn không kể lại số liệu, chỉ nhắc con số khi vừa sửa; xác nhận cụt
+   thì nối thẳng câu hỏi; vẫn cấm "Dạ"), dùng ở `CONVERSATION_POLICY` và nhánh sau bản nháp. (b) `LUAT_KHEN` bản 3: 100% lượt có thông tin mở bằng MỘT lời khen gắn đúng điều
+   khách nói, kể cả VỊ TRÍ (đường / phường / khu / gần tiện ích khách nhắc — lợi ích người ở thấy ngay), tối đa hai ý; GIỮ nguyên các cấm của sếp 21/10: không số liệu thị trường,
+   không bình luận giá, không khen chung chung, không thêm chi tiết khách chưa nói ("hẻm xe hơi rộng rãi" khi khách chỉ nói "hẻm 130 CMT8" — chat 22/10). Bên mua: mỗi lượt nêu
+   thêm nhu cầu đều khen (cách nêu hoặc khu vực chọn). Bỏ "KHÔNG nịnh bợ" ở dòng hỏi. (c) `engine._mo_dau_ghi_nhan` nhận thêm "lưu vào/lại/rồi", "nắm rồi", "thêm vào tin";
+   lưới hình thức gọi lại model ở MỌI lượt mở bằng ghi nhận (trước: chỉ khi hai lượt liền), lý do nêu rõ "mở bằng lời khen"; lưới "cùng ba chữ đầu" giữ. (d) Câu mẫu
+   `ghi_nhan_mau` + `cau_mau.vi_du_ghi_nhan` + chỗ giữ `<<VI_DU_GHI_NHAN>>` gỡ (migration `20261022e` xoá dòng DB); mô tả công cụ `gui_khach` (`llm/claude.py`) sửa theo.
+3. **Giả định BA**: "100% khen" hiểu là mọi lượt khách CHO THÔNG TIN đều mở bằng khen; khách chỉ "có / đúng rồi" thì nối thẳng câu hỏi (không khen gượng). Các cấm bịa thị trường /
+   giá là quyết định chủ dự án 21/10 chưa bị bỏ nên giữ — nếu "100%" nghĩa là được nói "vị trí đắc địa, dễ bán" thì phải chủ dự án chốt lại.
+4. **Kiểm**: `tests/test_khen_100.py` (6 ca): không còn câu mẫu / chỗ giữ chữ / luật cũ; LUAT_MO_LUOT ở cả hai nhánh; LUAT_KHEN có 100% + vị trí + đủ cấm cũ; nhận diện ghi nhận
+   rộng hơn ("Em sửa giá còn…" không tính); MỘT lượt mở bằng ghi nhận → gọi lại ngay (hệ thống gọi lại nói "lời khen"); lời mở bằng khen không bị gọi lại. Gỡ ba file test
+   của luật cũ (`test_ghi_nhan_mau/ngan/lap.py`); `test_khen_co_co_so.py` giữ (các cấm cũ còn nguyên chữ).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
