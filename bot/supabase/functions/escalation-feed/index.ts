@@ -200,6 +200,9 @@ Deno.serve(async (req) => {
       // ra ngoài (OA và bridge) phải nói y hệt nhau.
       text: escalationText(r),
       name: chuNha?.name ?? ctv?.name ?? "admin",
+      // SRS-5.1zzzzzzz134 (22/10/2026, chủ dự án: "tin cho debug phải bắt đầu với $$$$$"): tin đi tới CTV / admin là TIN NỘI BỘ,
+      // bridge mở bằng "$$$$$ " để người cầm máy phân biệt với tin cho khách thật. Tin tới chủ nhà (chuNha) thì không.
+      noi_bo: !chuNha,
       zalo_user_id: uid,
       // SEC-07 — CHỈ trả SĐT khi CHƯA biết uid Zalo.
       // Bridge cần số điện thoại đúng một việc: `findUser` để đổi ra uid lần
@@ -220,7 +223,7 @@ Deno.serve(async (req) => {
     if (!uid && !phone) continue;
     items.push({
       id: r.id, note: r.note, text: String(r.noi_dung_gui),
-      name: mua?.name ?? ban?.name ?? "khách", zalo_user_id: uid, phone,
+      name: mua?.name ?? ban?.name ?? "khách", noi_bo: false, zalo_user_id: uid, phone,
     });
   }
 

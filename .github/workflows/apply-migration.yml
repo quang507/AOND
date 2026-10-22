@@ -87,10 +87,13 @@ jobs:
           set -euo pipefail
           q() { curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
                   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$(jq -n --arg q "$1" '{query:$q}')"; }
-          J=$(q "select json_object_agg(name, decrypted_secret) as s from vault.decrypted_secrets where name in ('VPS_HOST','VPS_ROOT_PASSWORD','BRIDGE_SECRET')")
+          # 22/10/2026 (SRS-5.1zzzzzzz134): kéo luôn khoá Gemini chat (GEMINI_API_KEY, _2, _3, _4) — cai-vps.sh ghi vào .env lõi.
+          J=$(q "select json_object_agg(name, decrypted_secret) as s from vault.decrypted_secrets where name in ('VPS_HOST','VPS_ROOT_PASSWORD','BRIDGE_SECRET','GEMINI_API_KEY','GEMINI_API_KEY_2','GEMINI_API_KEY_3','GEMINI_API_KEY_4')")
           HOST=$(jq -r '.[0].s.VPS_HOST // empty' <<<"$J"); PW=$(jq -r '.[0].s.VPS_ROOT_PASSWORD // empty' <<<"$J"); BS=$(jq -r '.[0].s.BRIDGE_SECRET // empty' <<<"$J")
+          GK=$(jq -r '[.[0].s.GEMINI_API_KEY, .[0].s.GEMINI_API_KEY_2, .[0].s.GEMINI_API_KEY_3, .[0].s.GEMINI_API_KEY_4] | map(select(. != null and . != "")) | join(",")' <<<"$J")
           unset J
-          for v in "$HOST" "$PW" "$BS"; do [ -n "$v" ] && echo "::add-mask::$v"; done
+          for v in "$HOST" "$PW" "$BS" ${GK//,/ }; do [ -n "$v" ] && echo "::add-mask::$v"; done
+          echo "Khoá Gemini chat từ Vault: $(awk -F, '{print ($0==""?0:NF)}' <<<"$GK")"
           if [ -z "$HOST" ] || [ -z "$PW" ] || [ -z "$BS" ]; then echo "::error::Thiếu VPS_HOST / VPS_ROOT_PASSWORD / BRIDGE_SECRET trong Vault"; exit 1; fi
           sudo apt-get install -y -qq sshpass >/dev/null
           export SSHPASS="$PW"
@@ -102,10 +105,10 @@ jobs:
           # 18/10/2026: lượt cài hỏng (git checkout / quyền .git) vẫn báo xanh — lệnh từ xa thoát theo mã của `tail` cuối chuỗi. Nay giữ
           # mã thoát của cai-vps.sh (rc_cai) và in commit + origin đang chạy để thấy VPS đã lên code mới chưa.
           # 19/10 (SRS-5.1zzzzzzz58): script tải theo $GITHUB_SHA — CDN raw giữ bản cũ theo tên nhánh vài phút sau merge.
-          printf '%s\n' "$BS" | sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 "root@$HOST" \
-            "read -r BRIDGE_SECRET; export BRIDGE_SECRET; curl -fsSL https://raw.githubusercontent.com/quang507/AOND/$GITHUB_SHA/bot/bridge-zca/cai-vps.sh -o /root/cai-vps.sh && NHANH='$NHANH_VPS' bash /root/cai-vps.sh </dev/null; rc_cai=\$?; unset BRIDGE_SECRET; sleep 25; echo \"== service: \$(systemctl is-active nhadat-bridge)\"; echo \"== code: \$(sudo -u nhadat git -C /opt/nhadat rev-parse --short HEAD) \$(sudo -u nhadat git -C /opt/nhadat remote get-url origin)\"; journalctl -u nhadat-bridge -n 40 --no-pager -o cat | grep -viE 'qr-|http://|https://' | tail -25; echo \"== aond-core: \$(systemctl is-active aond-core)\"; systemctl cat aond-core 2>/dev/null | grep -E '^(WorkingDirectory|ExecStart|User|EnvironmentFile)='; journalctl -u aond-core -n 120 --no-pager -o cat | grep -viE 'key|token|secret|password|bearer' | tail -15; echo \"== /opt/aond_core (không phải bản git):\"; du -sh /opt/aond_core/* /opt/aond_core/.[!.]* 2>/dev/null | sort -h | tail -20; echo \"== tên biến .env lõi (không in giá trị):\"; sed -nE 's/^([A-Za-z_][A-Za-z0-9_]*)=.*/\\1/p' /opt/aond_core/.env 2>/dev/null | tr '\\n' ' '; echo; echo \"== khác repo (/opt/nhadat/src/aioi vs /opt/aond_core/src/aioi):\"; diff -rq /opt/nhadat/src/aioi /opt/aond_core/src/aioi 2>&1 | grep -v __pycache__ | head -40; echo \"== cai-vps.sh thoát \$rc_cai\"; exit \$rc_cai" \
+          printf '%s\n%s\n' "$BS" "$GK" | sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 "root@$HOST" \
+            "read -r BRIDGE_SECRET; read -r GEMINI_API_KEYS_MOI; export BRIDGE_SECRET GEMINI_API_KEYS_MOI; curl -fsSL https://raw.githubusercontent.com/quang507/AOND/$GITHUB_SHA/bot/bridge-zca/cai-vps.sh -o /root/cai-vps.sh && NHANH='$NHANH_VPS' bash /root/cai-vps.sh </dev/null; rc_cai=\$?; unset BRIDGE_SECRET GEMINI_API_KEYS_MOI; sleep 25; echo \"== service: \$(systemctl is-active nhadat-bridge)\"; echo \"== code: \$(sudo -u nhadat git -C /opt/nhadat rev-parse --short HEAD) \$(sudo -u nhadat git -C /opt/nhadat remote get-url origin)\"; journalctl -u nhadat-bridge -n 40 --no-pager -o cat | grep -viE 'qr-|http://|https://' | tail -25; echo \"== aond-core: \$(systemctl is-active aond-core)\"; systemctl cat aond-core 2>/dev/null | grep -E '^(WorkingDirectory|ExecStart|User|EnvironmentFile)='; journalctl -u aond-core -n 120 --no-pager -o cat | grep -viE 'key|token|secret|password|bearer' | tail -15; echo \"== /opt/aond_core (không phải bản git):\"; du -sh /opt/aond_core/* /opt/aond_core/.[!.]* 2>/dev/null | sort -h | tail -20; echo \"== tên biến .env lõi (không in giá trị):\"; sed -nE 's/^([A-Za-z_][A-Za-z0-9_]*)=.*/\\1/p' /opt/aond_core/.env 2>/dev/null | tr '\\n' ' '; echo; echo \"== khác repo (/opt/nhadat/src/aioi vs /opt/aond_core/src/aioi):\"; diff -rq /opt/nhadat/src/aioi /opt/aond_core/src/aioi 2>&1 | grep -v __pycache__ | head -40; echo \"== cai-vps.sh thoát \$rc_cai\"; exit \$rc_cai" \
             > /tmp/vps.log 2>&1 || rc=$?
-          unset SSHPASS PW BS
+          unset SSHPASS PW BS GK
           # Che dãy số ≥ 9 chữ số (Zalo ID của acc clone / khách, SĐT) — log repo này công khai.
           sach() { grep -viE "qr-[a-z0-9]|password|secret=" /tmp/vps.log | sed -E 's/[0-9]{9,}/#/g; s/\r//g'; }
           sach | tail -90
