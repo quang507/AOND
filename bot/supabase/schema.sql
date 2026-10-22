@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-22 00:45 (giờ VN)
+-- Sinh lúc: 2026-10-22 09:47 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -584,6 +584,15 @@ create table if not exists public.wards (
   nhung_luc timestamp with time zone
 );
 
+create table if not exists public.xa_tinh_khac (
+  ten_day_du text not null,
+  ten text not null,
+  loai text not null,
+  tinh text not null,
+  don_vi_cu jsonb not null default '[]'::jsonb,
+  nguon text not null
+);
+
 -- ══ Ràng buộc (PK / UNIQUE / CHECK) ══
 do $d$ begin
   alter table public.admins add constraint admins_pkey PRIMARY KEY (email);
@@ -908,6 +917,12 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.wards add constraint wards_tinh_cu_check CHECK ((tinh_cu = ANY (ARRAY['TP.HCM'::text, 'Bình Dương'::text, 'Bà Rịa – Vũng Tàu'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.xa_tinh_khac add constraint xa_tinh_khac_loai_check CHECK ((loai = ANY (ARRAY['xa'::text, 'phuong'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.xa_tinh_khac add constraint xa_tinh_khac_pkey PRIMARY KEY (ten_day_du);
 exception when duplicate_object then null; end $d$;
 
 -- ══ Khoá ngoại ══
@@ -6762,6 +6777,7 @@ alter table public.sellers enable row level security;
 alter table public.tien_ich enable row level security;
 alter table public.viewings enable row level security;
 alter table public.wards enable row level security;
+alter table public.xa_tinh_khac enable row level security;
 
 -- ══ Policy ══
 drop policy if exists admins_self_read on public.admins;
@@ -6972,6 +6988,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.se
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.tien_ich to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.viewings to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.wards to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.xa_tinh_khac to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.admins to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.buyers to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.conversations to authenticated;
