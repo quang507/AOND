@@ -1685,8 +1685,9 @@ class Engine:
 
         # LỆNH LÀM MỚI PHIÊN = "$$$$$" (năm dấu đô, chủ dự án 22/10/2026: "đừng để hello thành reset nữa, lệnh reset sẽ là $$$$$").
         # Trước đây "hello / hi / alo / chào em / 👋 / sticker chào" xoá phiên (quyết định 20/10 để test) — khách thật chào giữa chừng là mất
-        # hết tin đang soạn; nay lời chào chỉ được CHÀO. Các lệnh gõ tay cũ (/reset, /clear, /xoa, "reset session", "xóa hết") giữ nguyên.
-        la_lenh_lam_moi = cmd == LENH_LAM_MOI or cmd in ("/reset", "/clear", "/xoa", "reset session", "xóa hết")
+        # hết tin đang soạn; nay lời chào chỉ được CHÀO. Chủ dự án 22/10 (lần hai): "giờ chỉ còn cái $$$$$ mới xóa hết thôi" — các lệnh gõ tay cũ (/reset, /clear, /xoa,
+        # "reset session", "xóa hết") đã bỏ: khách thật gõ đúng "xóa hết" là mất cả phiên.
+        la_lenh_lam_moi = cmd == LENH_LAM_MOI
         if la_lenh_lam_moi:
             had_prior_history = len(conv.history) > 0
             new_li = Listing(prop=Property())

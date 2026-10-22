@@ -8105,6 +8105,19 @@ Lê Quang test đất 31.314 m² "ở xã phước lý" (Long An): bot xin "tên
 
 Kiểm: `tests/test_dia_chi_xa.py` (2 ca, đỏ trên prompt cũ).
 
+### SRS-5.1zzzzzzz127 · Chỉ còn `$$$$$` làm mới phiên; script bắn thử đất ở xã (22/10/2026)
+
+Lê Quang (trả lời câu hỏi ở SRS-123): "giờ chỉ còn cái $$$$$ mới xóa hết thôi" — bỏ cả các lệnh gõ tay cũ.
+
+1. **Lớp lỗi**: như SRS-123 — một câu khách có thể gõ thường ("xóa hết", "reset session") gắn với thao tác PHÁ DỮ LIỆU (xoá cả phiên).
+2. **Sửa** (`engine.py`): `la_lenh_lam_moi = cmd == LENH_LAM_MOI` (`$$$$$`); `/reset`, `/clear`, `/xoa`, "reset session", "xóa hết" thành lời thường — "xóa hết" đi qua lượt AI
+   lập thao tác (gỡ hết rổ hàng có hỏi xác nhận rồi mới làm, `xac_nhan_ngung_hang_loat`). Endpoint HTTP `/reset/{user_key}` (máy gọi, dọn dữ liệu thử) giữ nguyên.
+3. **Còn lại bắt theo chữ trong `Engine.handle`** (cập nhật SRS-125): lệnh `$$$$$`, lệnh xem dữ liệu (`json`, `/json`, "xem json", "check json", "thong tin", "thong_tin" — chủ dự án:
+   "json chả ai bấm nhầm đâu"), nhận link `https?://`.
+4. **Bắn thử**: `bot/tests/ban-thu-xa.sh` (ô `dung_lai` = `ban-thu-xa`): đất ở xã Long An, cả cục thông tin → lời bot không hỏi quận / huyện, có hỏi tiếp, không bịa thị trường.
+
+Kiểm: `tests/test_lenh_lam_moi.py::test_lenh_cu_khong_con_lam_moi_chi_con_nam_dau_do` (đỏ khi trả lại danh sách lệnh cũ).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

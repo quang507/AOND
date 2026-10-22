@@ -59,8 +59,13 @@ def test_lenh_lam_moi_chua_co_chuyen_van_la_cau_chao_co_dinh():
     assert r.reply == cau_mau.cau("chao_lan_dau", ten=eng.conversation("r3").assistant.name) and spy.systems == []
 
 
-def test_lenh_cu_van_lam_moi():
-    eng, _ = _eng({"operations": []})
-    _co_chuyen(eng)
-    eng.handle("r1", "/reset")
-    assert [t.role for t in eng.conversation("r1").history] == ["assistant"]
+def test_lenh_cu_khong_con_lam_moi_chi_con_nam_dau_do():
+    """22/10/2026 (SRS-5.1zzzzzzz127), chủ dự án: "giờ chỉ còn cái $$$$$ mới xóa hết thôi". /reset, /clear, /xoa, "reset session", "xóa hết" là lời
+    khách / lệnh thường — không xoá phiên nữa."""
+    for lenh in ("/reset", "/clear", "/xoa", "reset session", "xóa hết"):
+        eng, _ = _eng({"operations": []})
+        _co_chuyen(eng)
+        n = len(eng.conversation("r1").history)
+        eng.handle("r1", lenh)
+        h = eng.conversation("r1").history
+        assert len(h) > n and h[0].content.startswith("nhà anh ở hẻm 4m"), lenh   # chuyện cũ còn nguyên
