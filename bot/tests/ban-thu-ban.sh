@@ -182,8 +182,13 @@ kiem "Đất: giá 3 tỷ" "$(jq '.price_vnd == 3000000000 | if . then 1 else 0 
 kiem "Đất: không hỏi tầng / phòng ngủ" "$(grep -qiE 'mấy tầng|mấy lầu|phòng ngủ' <<<"$LOI_BOT" && echo 0 || echo 1)"
 
 chat "$BAN7" "anh có 2 căn cần bán: căn 1 nhà hẻm đường Bùi Minh Trực quận 8 giá 5 tỷ, căn 2 nhà mặt tiền đường Phạm Hùng quận 8 giá 12 tỷ"
-sleep 3
-SO7=$(q "select count(*) as n from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = '$BAN7'" | jq -r '.[0].n')
+# Lưu nền hai căn mất nhiều giây hơn một căn (22/10: sleep 3 cứng làm kịch bản trượt "(0)" dù lõi đã lập đủ hai căn) — chờ tới 15 s như các kịch bản khác.
+SO7=0
+for _ in $(seq 1 15); do
+  SO7=$(q "select count(*) as n from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = '$BAN7'" | jq -r '.[0].n')
+  [ "$SO7" = 2 ] && break
+  sleep 1
+done
 kiem "Nhiều căn: một tin nhắn hai căn → hai tin rao ($SO7)" "$([ "$SO7" = 2 ] && echo 1 || echo 0)"
 
 chat "$BAN8" "chị muốn nói chuyện trực tiếp với nhân viên bên em"
