@@ -160,6 +160,10 @@ def test_tin_phu_noi_ro_o_ai_de_xuat_nhung_bi_bo_va_ly_do():
     ct = eng.handle("t10", "nhà hẻm 4m nha").chu_thich
     assert "Đã BỎ (AI đề xuất nhưng code không ghi):" in ct and '• giá: AI đọc "9,2 tỷ" (trích "9.2") → BỎ vì không có bằng chứng' in ct
     assert "AI đề xuất: update(gia)." in ct and "• (không có ô mới)" in ct
+    eng3, _ = _eng({"operations": [{"op": "update", "fields": {"gia": "9,2 tỷ", "gan_nga_tu": None, "unit_type": ""}, "bang_chung": {"gia": "9.2"}}], "user_intent": "sell"})
+    eng3.handle("t12", "$$$$$")
+    ct3 = eng3.handle("t12", "giá 9.2 nha em").chu_thich
+    assert "AI đề xuất: update(gia) · rỗng: gan_nga_tu, unit_type." in ct3      # khoá AI trả null không bị kể là đề xuất thật (bắn thử 22/10)
     eng2, _ = _eng({"operations": []})
     eng2.handle("t11", "$$$$$")
     assert "AI đề xuất: không đọc ra thao tác nào từ tin này." in eng2.handle("t11", "giá 9.2 nha em").chu_thich    # AI không đọc ra gì → nói thẳng

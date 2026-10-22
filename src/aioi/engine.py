@@ -3425,8 +3425,14 @@ class Engine:
         # Model có lúc trả thao tác không phải object (chuỗi) — chỗ áp dụng bỏ qua chúng (`isinstance(op, dict)`), log cũng vậy; bản đầu
         # của dòng log này gọi .get trên chuỗi → 500 cả lượt chat (bắn thử 19/10 10:49).
         # warning chứ không info: lõi chạy dưới uvicorn chỉ in từ mức warning (bắn thử 19/10: dòng info không hiện trong journal).
-        conv.de_xuat_luot = [f"{o.get('op')}({', '.join(sorted(o['fields'].keys())) if isinstance(o.get('fields'), dict) else '-'})"
-                             for o in (plan.get("operations") or []) if isinstance(o, dict)]
+        # Tin phụ chế độ test (SRS-5.1zzzzzzz130): kể ô AI đề xuất CÓ giá trị; khoá AI trả rỗng / null tách riêng — chúng không qua cổng bằng
+        # chứng nên không có dòng "Bỏ ô" nào (bắn thử 22/10: Gemini trả gan_nga_tu / unit_type = null, tin phụ cũ kể như AI đề xuất thật).
+        def _mo_ta(o: dict) -> str:
+            f = o.get("fields") if isinstance(o.get("fields"), dict) else {}
+            co = sorted(k for k, v in f.items() if isinstance(v, str) and v.strip())
+            rong = sorted(k for k in f if k not in co)
+            return f"{o.get('op')}({', '.join(co) or '-'})" + (f" · rỗng: {', '.join(rong)}" if rong else "")
+        conv.de_xuat_luot = [_mo_ta(o) for o in (plan.get("operations") or []) if isinstance(o, dict)]
         log.warning("Kế hoạch: %s", [(o.get("op"), sorted(o["fields"].keys()) if isinstance(o.get("fields"), dict) else type(o.get("fields")).__name__)
                                    if isinstance(o, dict) else type(o).__name__ for o in plan.get("operations") or []])
 

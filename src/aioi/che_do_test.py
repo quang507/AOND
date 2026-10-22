@@ -120,7 +120,7 @@ def _o_vua_ghi(conv: "Conversation", captured: list[str]) -> list[str]:
         if trich and not _giong(trich, khach[k]):
             dong += f" → làm chuẩn \"{_cat(khach[k])}\""
         cu = conv.truoc_luot.get(k) if cung_can else None
-        dong += f" (đổi từ \"{_cat(cu, 40)}\")" if cu and cu != khach[k] else " (mới)" if cung_can else ""
+        dong += f" (đổi từ \"{_cat(cu, 40)}\")" if cu and not _giong(cu, khach[k]) else " (mới)" if cung_can else ""
         ra.append(dong)
     return ra
 
@@ -136,7 +136,7 @@ def _hieu(conv: "Conversation", captured: list[str]) -> list[str]:
     if conv.role != "buyer" and conv.truoc_id == conv.active_listing_id:
         khach = conv.prop.fields_khach()
         doi = [_nhan(k) + (f" → \"{_cat(conv.bc_luot[k], 40)}\"" if conv.bc_luot.get(k) else "")
-               for k in captured if conv.truoc_luot.get(k) and conv.truoc_luot.get(k) != khach.get(k)]
+               for k in captured if conv.truoc_luot.get(k) and not _giong(conv.truoc_luot.get(k), khach.get(k))]
         moi = [_nhan(k) for k in captured if k in khach and not conv.truoc_luot.get(k)]
         if doi:
             hieu.append("yêu cầu ĐỔI thông tin: " + ", ".join(doi))
