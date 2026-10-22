@@ -27,6 +27,9 @@ def _is_formatted_post(text: str) -> bool:
     # "Kết cấu … Hướng …") vẫn phải đi MỘT tin nhắn — trước đây chỉ nhận bản có gạch nên bản không gạch bị tách năm bong bóng.
     if "📋" in text:
         return True
+    # Khối mã ``` (lệnh `json` của tester, SRS-5.1zzzzzzz141): cắt giữa khối là hỏng cú pháp — đi MỘT tin.
+    if "```" in text:
+        return True
     for raw in text.split("\n"):
         s = raw.strip()
         if s.startswith(("- ", "• ", "* ", "– ")) or s in ("---", "***", "___"):

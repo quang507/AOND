@@ -8386,6 +8386,15 @@ Chủ dự án (22/10): "làm bản gọn khoảng 30 cột". Khảo sát DB + t
 4. **Để xuống ~30 cột** phải làm thêm: bỏ bộ đọc thông số SQL cũ (`boc_thong_so` + trigger), chuyển 15 cột thông số + vài cột nguồn vào `boc_tach` / `notes`, sửa trang chi tiết đọc từ JSON, sửa `tim_nha`. Số cột đo lại ngày làm.
 5. **Kiểm**: `bun run kieu` (tsc) sạch; `tests` 669 đạt; `scripts/xuat-ro-hang.tu-kiem.mjs` đạt. Lỗi lúc soát: lần đầu tôi coi `distance_to_street_m` là chết (web không hiện) — sai, trang chi tiết có dòng "cách mặt tiền"; đã giữ lại.
 
+### SRS-5.1zzzzzzz141 · Lệnh `json` hiện 2 tầng, một tin duy nhất — 22/10/2026
+
+Chủ dự án (22/10, sếp nhắn `json` thấy quá dài): "làm nhiều tầng đi, vài tầng lớn, trong đó có tầng nhỏ".
+
+1. **Lớp lỗi**: (a) JSON là danh sách phẳng ~20 ô lẫn lộn (`thong_tin`), người đọc không thấy nhóm; (b) khối ``` không có 📋 hay gạch đầu dòng nên `delivery._is_formatted_post` coi là văn thường và `chunk_reply` cắt mỗi 100 ký tự → JSON bị chặt thành 5–6 bong bóng, cú pháp hỏng.
+2. **Sửa**: `src/aioi/nhom_json.py` — bảng `NHOM_O` xếp ô vào tầng lớn `tin · vi_tri · quy_mo · gia · phap_ly · su_dung` + khối `nhap` (độ đầy đủ, thiếu gì, đủ soạn nháp, số ảnh); tầng rỗng không in; ô lạ vào `khac` (không rơi mất); ô riêng của chủ (`schema.O_NOI_BO`) và ảnh không in. Người mua cũng 2 tầng (`tin · nhu_cau · them`). `delivery._is_formatted_post` nhận khối ``` → đi MỘT tin. Chỉ là cách HIỂN THỊ: ô vẫn lưu phẳng ở `Property.fields` / `listings.boc_tach`.
+3. **Chỗ khác cùng lớp**: lưu 2 tầng trong `boc_tach` CHƯA làm — đụng lõi Python, hàm DB (`o_boc_tach`, `diem_tin`, `van_ban_nhung`) và web cùng lúc; gộp vào việc gom cột nếu chủ dự án chọn (OPEN-64).
+4. **Kiểm**: `tests/test_json_2_tang.py` (5 ca; đỏ khi tắt sửa delivery hoặc khi một ô `FIELD_LABELS` chưa có tầng — thêm ô mới thì thêm vào `NHOM_O`).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
