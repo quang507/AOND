@@ -25,6 +25,8 @@ from uuid import uuid4
 
 from . import gamification as g
 from . import cau_mau
+from . import che_do_test
+from . import so_token
 from .danh_gia import KHOI_SAP_XIN_SAO, cau_xin_sao, doc_sao, khoi_cam_on_sao, vua_xin_sao
 from .assistants import Assistant, assign_assistant
 from .drive import extract_drive_id
@@ -397,6 +399,16 @@ class Conversation:
     # "chu_co_bac", giữ qua các lượt) — lượt AI lập thao tác đọc theo nghĩa, code kiểm trích dẫn (SRS-5.1zzzzzzz54).
     hoi_ve_luot: str | None = None
     xung_ho: str | None = None
+    # Persisted (SRS-5.1zzzzzzz130): chế độ test — gõ "$$$$$" bật; sau mỗi lượt server gửi thêm tin phụ "$$$$$ … đã trích xuất / đã hiểu gì"
+    # (che_do_test.py, code ghép, không phải AI).
+    che_do_test: bool = False
+    # Transient (SRS-5.1zzzzzzz130): ô tin của căn đang nói TRƯỚC khi áp thao tác lượt này, và cụm khách nói làm bằng chứng cho ô vừa ghi —
+    # chỉ để tin phụ chế độ test nói "mới" hay "đổi từ …", kèm câu khách trích.
+    truoc_luot: dict = field(default_factory=dict)
+    truoc_id: str = ""
+    bc_luot: dict = field(default_factory=dict)
+    de_xuat_luot: list = field(default_factory=list)   # thao tác lượt AI lập thao tác đề xuất ("update(gia)") — tin phụ chế độ test
+    bo_luot: list = field(default_factory=list)        # (ô, lý do) ô AI đề xuất mà code bỏ — tin phụ chế độ test nói "vì sao không nhớ"
     # Transient: điều lượt AI đọc được ở tin vừa nhắn, đã kiểm trích dẫn (SRS-5.1zzzzzzz55): "xin_xem_ban_ve", "cau_hoi_du_an",
     # "mo_ta_du_an" (True khi có), "xac_nhan_xoa" ("dong_y" / "tu_choi").
     y_luot: dict = field(default_factory=dict)
@@ -550,6 +562,8 @@ class TurnResult:
     danh_gia: tuple[int, str] | None = None
     role: str = "seller"       # "seller" hoặc "buyer"
     lead: BuyerLead | None = None
+    # Chế độ test (SRS-5.1zzzzzzz130): tin phụ "$$$$$ … đã trích xuất / đã hiểu gì" — server gửi thêm sau lời trả lời, KHÔNG vào lịch sử / CRM.
+    chu_thich: str = ""
 
 
 class ConversationStore(ABC):
@@ -581,7 +595,8 @@ class SqliteConversationStore(ConversationStore):
             "price_book_json TEXT NOT NULL DEFAULT '{}', "
             "role TEXT NOT NULL DEFAULT 'unknown', "
             "active_lead_id TEXT NOT NULL DEFAULT '', "
-            "xung_ho TEXT NOT NULL DEFAULT '')"
+            "xung_ho TEXT NOT NULL DEFAULT '', "
+            "che_do_test TEXT NOT NULL DEFAULT '')"
         )
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS listings ("
@@ -604,6 +619,7 @@ class SqliteConversationStore(ConversationStore):
             ("conversations", "role", "'unknown'"),
             ("conversations", "active_lead_id", "''"),
             ("conversations", "xung_ho", "''"),   # SRS-5.1zzzzzzz76: khách tự xưng gì, giữ qua khởi động lại
+            ("conversations", "che_do_test", "''"),   # SRS-5.1zzzzzzz130: chế độ test ($$$$$), giữ qua khởi động lại
         ):
             try:  # migrate older tables that predate this column
                 self._conn.execute(
@@ -618,12 +634,12 @@ class SqliteConversationStore(ConversationStore):
         active_lead_id = conv.buyer_lead.lead_id if conv.buyer_lead else ""
         self._conn.execute(
             "INSERT INTO conversations(user_key, user_type, last_ai_at, active_listing_id, "
-            "history_json, price_book_json, role, active_lead_id, xung_ho) VALUES (?,?,?,?,?,?,?,?,?) "
+            "history_json, price_book_json, role, active_lead_id, xung_ho, che_do_test) VALUES (?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(user_key) DO UPDATE SET "
             "user_type=excluded.user_type, last_ai_at=excluded.last_ai_at, "
             "active_listing_id=excluded.active_listing_id, history_json=excluded.history_json, "
             "price_book_json=excluded.price_book_json, role=excluded.role, "
-            "active_lead_id=excluded.active_lead_id, xung_ho=excluded.xung_ho",
+            "active_lead_id=excluded.active_lead_id, xung_ho=excluded.xung_ho, che_do_test=excluded.che_do_test",
             (
                 conv.user_key,
                 conv.user_type.value,
@@ -634,6 +650,7 @@ class SqliteConversationStore(ConversationStore):
                 conv.role,
                 active_lead_id,
                 conv.xung_ho or "",
+                "1" if conv.che_do_test else "",
             ),
         )
         if conv.buyer_lead is not None:
@@ -703,7 +720,7 @@ class SqliteConversationStore(ConversationStore):
     def load(self, user_key: str) -> Conversation | None:
         row = self._conn.execute(
             "SELECT user_type, last_ai_at, active_listing_id, history_json, price_book_json, "
-            "role, active_lead_id, xung_ho FROM conversations WHERE user_key=?",
+            "role, active_lead_id, xung_ho, che_do_test FROM conversations WHERE user_key=?",
             (user_key,),
         ).fetchone()
         if row is None:
@@ -765,6 +782,7 @@ class SqliteConversationStore(ConversationStore):
             role=row[5] if len(row) > 5 and row[5] else "unknown",
             buyer_lead=lead,
             xung_ho=row[7] or None,
+            che_do_test=bool(row[8]),
         )
 
     def reset(self, user_key: str) -> None:
@@ -1684,6 +1702,7 @@ class Engine:
         now = now if now is not None else time.time()
         conv = self.conversation(user_key)
         conv.do_luot = {}
+        so_token.bat_dau_luot()   # đếm token của lượt này cho tin phụ chế độ test (SRS-5.1zzzzzzz130)
 
         clean_text = text.strip()
         cmd = clean_text.lower()
@@ -1713,7 +1732,10 @@ class Engine:
                 reply = cau_mau.cau("chao_lan_dau", ten=conv.assistant.name)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
-            return self._build_result(conv, reply, captured=[], now=now)
+            conv.che_do_test = True   # SRS-5.1zzzzzzz130: "$$$$$" làm mới phiên VÀ bật chế độ test (tin phụ sau mỗi lượt)
+            kq = self._build_result(conv, reply, captured=[], now=now)
+            kq.chu_thich = che_do_test.TIN_BAT
+            return kq
 
         # Command: json / thong tin — Inspect current extracted structured data
         if cmd in ("json", "/json", "xem json", "check json", "thong tin", "thong_tin"):
@@ -1860,6 +1882,7 @@ class Engine:
         if agent_project and factual_q:
             captured = []
         else:
+            conv.truoc_luot, conv.truoc_id, conv.bc_luot, conv.bo_luot = dict(conv.prop.fields_khach()), conv.active_listing_id, {}, []
             captured, conv.last_receipts = self._ap_dung_ke_hoach(conv, ke_hoach)
             if conv.y_luot.get("ngoai_vung"):   # khoá nội bộ `_` — theo căn qua lưu / nạp lại, không vào ô tin (fields_khach)
                 conv.prop.fields["_ngoai_vung"] = conv.y_luot["ngoai_vung"]
@@ -3265,6 +3288,7 @@ class Engine:
             can_nguoi_that=conv.y_luot.get("can_nguoi_that") if isinstance(conv.y_luot.get("can_nguoi_that"), str) else None,
             xin_danh_gia=bool(conv.y_luot.get("xin_danh_gia")),
             danh_gia=conv.y_luot.get("danh_gia"),
+            chu_thich=che_do_test.chu_thich(conv, captured, next_f, so_token.tong_luot()) if conv.che_do_test else "",
         )
 
     def _match_listing(self, conv: Conversation, ref: str) -> Listing | None:
@@ -3402,6 +3426,8 @@ class Engine:
         # Model có lúc trả thao tác không phải object (chuỗi) — chỗ áp dụng bỏ qua chúng (`isinstance(op, dict)`), log cũng vậy; bản đầu
         # của dòng log này gọi .get trên chuỗi → 500 cả lượt chat (bắn thử 19/10 10:49).
         # warning chứ không info: lõi chạy dưới uvicorn chỉ in từ mức warning (bắn thử 19/10: dòng info không hiện trong journal).
+        conv.de_xuat_luot = [f"{o.get('op')}({', '.join(sorted(o['fields'].keys())) if isinstance(o.get('fields'), dict) else '-'})"
+                             for o in (plan.get("operations") or []) if isinstance(o, dict)]
         log.warning("Kế hoạch: %s", [(o.get("op"), sorted(o["fields"].keys()) if isinstance(o.get("fields"), dict) else type(o.get("fields")).__name__)
                                    if isinstance(o, dict) else type(o).__name__ for o in plan.get("operations") or []])
 
@@ -3624,6 +3650,7 @@ class Engine:
                 bc = bang_chung.get(k) if isinstance(bang_chung.get(k), str) else None
                 if not _trich_dan_khop(bc, cuoi):
                     log.warning("Giữ loại BĐS đã chốt: đổi loại cần cụm khách nói ở tin vừa nhắn")
+                    conv.bo_luot.append((k, v, bc, "đã chốt loại khác; đổi loại cần cụm khách nói ở tin vừa nhắn"))
                     return None
             return v
         if any(li.prop.fields.get(k) == v for li in conv.listings):
@@ -3639,6 +3666,7 @@ class Engine:
             log.warning("Ô %s: giá trị AI có ý khách không nói — ghi nguyên cụm khách", k)   # không in giá trị (dữ liệu khách)
             return bc.strip()
         log.warning("Bỏ ô %s: không có bằng chứng trong lời khách", k)
+        conv.bo_luot.append((k, v, bc, "không có bằng chứng — cụm AI trích và giá trị đều không nằm trong lời khách"))
         return None
 
     def _loc_o_tin(self, conv: "Conversation", fields: dict, bang_chung: dict | None = None) -> dict[str, str]:
@@ -3650,6 +3678,8 @@ class Engine:
                 g = self._gia_tri_ghi(conv, k, v, bc)
                 if g:
                     out[k] = g
+                    if isinstance(bc.get(k), str) and bc[k].strip():
+                        conv.bc_luot[k] = bc[k].strip()   # cụm khách nói làm căn cứ — tin phụ chế độ test trích lại
         return self._mot_cum_mot_o(conv, out)
 
     @staticmethod
@@ -3672,6 +3702,7 @@ class Engine:
             for k in ks:
                 if k != giu:
                     log.warning("Bỏ ô %s: cùng cụm khách đã vào ô %s", k, giu)
+                    conv.bo_luot.append((k, out.get(k), None, f"cùng cụm đã vào ô {giu}"))
                     out.pop(k, None)
         # Kích thước lô có thể nằm ở ô kích thước hoặc ở ô diện tích đất dạng "4 x 11m" (bắn thử KB5 21/10, SRS-5.1zzzzzzz93).
         kt = _hai_chieu_lo(out) or _hai_chieu_lo(conv.prop.fields)
@@ -3679,6 +3710,7 @@ class Engine:
         so_mt, so_kt = [float(x) for x in _so_trong(mt)], [float(x) for x in _so_trong(kt)]
         if so_mt and so_kt and min(so_mt) > max(so_kt):
             log.warning("Bỏ ô mat_tien: lớn hơn cả hai chiều kích thước lô")
+            conv.bo_luot.append(("mat_tien", out.get("mat_tien"), None, "bề ngang lớn hơn cả hai chiều kích thước lô"))
             out.pop("mat_tien", None)
         return out
 

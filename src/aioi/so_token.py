@@ -17,6 +17,30 @@ from typing import Any, Callable
 
 _LOG = os.getenv("AIOI_LOG_COST", "1") != "0"   # AIOI_LOG_COST=0 để tắt dòng log stderr
 
+# Token của MỘT lượt chat (SRS-5.1zzzzzzz130, chế độ test): engine.handle chạy cả lượt trên một luồng, nên cộng vào bộ nhớ của luồng đó.
+# Chỉ để tin phụ "$$$$$" báo lượt này tốn bao nhiêu — sổ Supabase ở dưới vẫn là nguồn chi phí thật.
+_LUOT = threading.local()
+
+
+def bat_dau_luot() -> None:
+    """Bắt đầu đếm token cho lượt chat đang chạy trên luồng này (xoá số của lượt trước)."""
+    _LUOT.tong = {}
+
+
+def tong_luot() -> dict[str, dict[str, int]]:
+    """Token đã tiêu từ lúc `bat_dau_luot` trên luồng này, theo model ({p_in, p_out, p_cache_write, p_cache_read, calls}); chưa bắt đầu → {}."""
+    return {m: dict(v) for m, v in (getattr(_LUOT, "tong", None) or {}).items()}
+
+
+def _cong_luot(model: str, so: dict[str, int]) -> None:
+    tong = getattr(_LUOT, "tong", None)
+    if tong is None:
+        return
+    d = tong.setdefault(model, {"p_in": 0, "p_out": 0, "p_cache_write": 0, "p_cache_read": 0, "calls": 0})
+    for k in ("p_in", "p_out", "p_cache_write", "p_cache_read"):
+        d[k] += int(so.get(k, 0) or 0)
+    d["calls"] += 1
+
 
 def dem_token(resp: Any) -> dict[str, int] | None:
     """Số token của một phản hồi Messages API; None khi không có `usage` (mock / lỗi)."""
@@ -61,6 +85,7 @@ class SoToken:
         if so is None:
             return None
         body = {**so, "p_model": str(getattr(resp, "model", None) or model_goi)}
+        _cong_luot(body["p_model"], so)
         if _LOG:
             print(f"   [💲 {nhan} · {body['p_model']} · in={so['p_in']} out={so['p_out']} "
                   f"cache_w={so['p_cache_write']} cache_r={so['p_cache_read']}]", file=sys.stderr, flush=True)
@@ -76,6 +101,7 @@ class SoToken:
     def ghi_du_phong(self, model: str, vao: int, ra: int) -> None:
         """Lượt gọi qua đường dự phòng (SRS-5.1zzzzzzz117: "Gemini:<model>" / "Groq:<model>") — chỉ số token, KHÔNG đóng dấu sống
         model chính (dấu đó để biết Claude đã gọi lại được)."""
+        _cong_luot(model, {"p_in": vao, "p_out": ra})
         if self._gui is not None:
             self._chay(self._gui_an_toan, {"p_in": vao, "p_out": ra, "p_cache_write": 0, "p_cache_read": 0, "p_model": model})
 
