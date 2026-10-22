@@ -487,6 +487,11 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     else:
         bubbles = [c.replace("**", "") for c in chunk_reply(cleaned_reply)]
     nhip_go = [int(typing_delay(c) * 1000) for c in bubbles]
+    # Chế độ test (SRS-5.1zzzzzzz130): tin phụ "$$$$$ đã trích xuất / đã hiểu gì" gửi SAU lời trả lời. Chỉ nằm trong `replies` — không vào
+    # `reply`, lịch sử hội thoại hay kho tin nhắn CRM (model không đọc lại nó).
+    if r.chu_thich:
+        bubbles.append(r.chu_thich)
+        nhip_go.append(400)
 
     captured = r.captured
     if r.role == "buyer" and r.lead:

@@ -44,10 +44,6 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                 "Lượt trả lời bị lỗi — giữ chỗ, bot tự làm lại sau 20 giây", "SRS-5.1zzzzzzz82 · đánh giá UX 20/10"),
     "thu_lai_hong": ("Em xin lỗi anh/chị, hệ thống bên em đang chậm. Em đã báo anh/chị phụ trách xem tin của mình, anh/chị ấy sẽ "
                      "nhắn lại sớm ạ.", "Làm lại vẫn lỗi — xin lỗi và báo người phụ trách", "SRS-5.1zzzzzzz82"),
-    "ghi_nhan_mau": ("Em ghi rồi ạ. | Em cảm ơn {goi}. | Em lưu vào tin rồi nha {goi}. | Em nắm rồi {goi}. | Em thêm vào tin rồi {goi}.",
-                     "KHÔNG phải câu nói nguyên văn: các câu VÍ DỤ cho kiểu ghi nhận ngắn khi khách vừa cho thông tin — cách nhau bằng dấu \"|\", "
-                     "bot đổi kiểu mỗi lượt, không lặp. Không bắt đầu bằng \"Dạ\" / \"Vâng\" (luật cấm Dạ — câu như vậy bị bỏ qua)",
-                     "SRS-5.1zzzzzzz120 · Lê Quang 21/10: \"mấy cái em ghi nhận sửa ở chỗ mẫu câu\""),
     # --- Câu có từ trước khi theo anh Luận (SRS-5.1zzzzzzz110) ---
     "chao_lan_dau": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n{Goi} đang có căn chung cư, nhà phố hay "
                      "đất cần gửi bán hoặc cho thuê vậy ạ?",
@@ -55,9 +51,6 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "chao_lam_moi": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\nEm đã làm mới cuộc trò chuyện rồi ạ. {Goi} "
                      "đang có căn chung cư, nhà phố hay đất cần gửi bán hoặc cho thuê vậy ạ?",
                      "Khách chào khi đã có chuyện cũ — làm mới phiên. {ten} = tên trợ lý", "Quyết định 20/10: hello làm mới phiên"),
-    "lenh_lam_moi": ("Em chào {goi}! Em là {ten} từ AI Ơi Nhà Đất.\nEm đã làm mới phiên chat và xóa toàn bộ thông tin nháp trước đó "
-                     "rồi ạ. {Goi} có thể bắt đầu gửi thông tin nhà đất cần rao bán hoặc cho thuê nhé! 🏡✨",
-                     "Lệnh /reset, /xoa, \"xóa hết\". {ten} = tên trợ lý", "Lệnh thử của chủ dự án"),
     "mo_dau_nhap": ("📋 Em sẽ rao như vầy nhé {goi}:",
                     "Dòng mở bản nháp tin rao — phải bắt đầu 📋 và kết thúc dấu \":\" (code cắt câu dẫn theo dòng này)",
                     "SRS-5.1zzzzzzz76 / 85 / 90"),
@@ -167,29 +160,3 @@ def moi_cach_goi(khoa: str, goi_co: tuple[str, ...] = ("anh/chị", "anh", "ch�
     for goi in goi_co:
         ra += [cau(khoa, goi, **bien), _dien(MAC_DINH[khoa][0], goi, **bien)]
     return list(dict.fromkeys(ra))
-
-
-_CAM_MO_DAU = ("dạ", "vâng", "da ", "vang")
-
-
-def vi_du_ghi_nhan(goi: str = "anh/chị") -> str:
-    """Các câu ghi nhận VÍ DỤ đưa cho model ("A", "B", …) — đọc ở `ghi_nhan_mau` (CRM sửa được, mặc định ở MAC_DINH). Model chỉ lấy làm
-    mẫu để đổi kiểu mỗi lượt, không phải câu nói nguyên văn. Câu mở đầu "Dạ" / "Vâng" bị bỏ (luật cấm Dạ của chủ dự án, SRS-5.1zzzzzzz80 /
-    102); sửa hỏng (rỗng, ngoặc nhọn lạ, bỏ hết câu) → mặc định."""
-    def _tach(mau: str) -> list[str]:
-        ra = []
-        for c in mau.replace("\n", "|").split("|"):
-            c = _dien(c.strip(), goi) if c.strip() else ""
-            if c and not c.lower().startswith(_CAM_MO_DAU):
-                ra.append(c)
-        return list(dict.fromkeys(ra))
-    sua = _da_sua().get("ghi_nhan_mau")
-    if sua:
-        try:
-            ra = _tach(sua)
-            if ra:
-                return ", ".join(f'"{c}"' for c in ra)
-            log.warning("Câu mẫu ghi_nhan_mau sửa tay không còn câu nào dùng được — dùng mặc định")
-        except (KeyError, IndexError, ValueError) as e:
-            log.warning("Câu mẫu ghi_nhan_mau sửa tay lỗi chỗ giữ chữ (%s) — dùng mặc định", e)
-    return ", ".join(f'"{c}"' for c in _tach(MAC_DINH["ghi_nhan_mau"][0]))

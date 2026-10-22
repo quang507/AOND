@@ -293,7 +293,7 @@ if (buoc === "kiem") {
 } else if (buoc === "du-lieu") {
   // SRS-5.1zzzzs: bảng có dòng khởi tạo trong migration mà schema.sql không mang. Thêm bảng một dòng / bảng cấu hình mới
   // thì thêm ở đây — bot/tests/hat-giong-dung-lai.mjs đỏ khi một câu insert cấp cao nhất trong migration không được phủ.
-  const BANG = "(?:public\\.)?(wards|phuong_cu|quan_cu|app_config|bridge_dang_nhap|cau_mau)\\b";
+  const BANG = "(?:public\\.)?(wards|phuong_cu|quan_cu|app_config|bridge_dang_nhap|cau_mau|xa_tinh_khac)\\b";
   const laDuLieu = new RegExp(`^(insert\\s+into\\s+${BANG}|update\\s+${BANG}|delete\\s+from\\s+${BANG})`, "i");
   const bangCua = (b) => new RegExp(BANG, "i").exec(b.replace(/^(insert\s+into|update|delete\s+from)\s+/i, ""))?.[1];
   const files = readdirSync(MIG).filter((f) => f.endsWith(".sql")).sort();
@@ -334,7 +334,7 @@ if (buoc === "kiem") {
     `insert into public.app_config (key, value) values (${q(k)}, ${q(v)}) on conflict (key) do update set value = excluded.value`));
   process.exit(hong ? 1 : 0);
 } else if (buoc === "xac-minh") {
-  for (const t of ["wards", "phuong_cu", "quan_cu", "app_config", "duong"]) {
+  for (const t of ["wards", "phuong_cu", "quan_cu", "app_config", "duong", "xa_tinh_khac"]) {
     const r = await sql(`select count(*)::int as n from public.${t}`, true).catch((e) => [{ n: `lỗi ${e.message.slice(0, 80)}` }]);
     console.log(`${t}: ${r[0]?.n}`);
   }

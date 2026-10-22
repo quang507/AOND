@@ -8105,6 +8105,116 @@ Lê Quang test đất 31.314 m² "ở xã phước lý" (Long An): bot xin "tên
 
 Kiểm: `tests/test_dia_chi_xa.py` (2 ca, đỏ trên prompt cũ).
 
+### SRS-5.1zzzzzzz127 · Chỉ còn `$$$$$` làm mới phiên; script bắn thử đất ở xã (22/10/2026)
+
+Lê Quang (trả lời câu hỏi ở SRS-123): "giờ chỉ còn cái $$$$$ mới xóa hết thôi" — bỏ cả các lệnh gõ tay cũ.
+
+1. **Lớp lỗi**: như SRS-123 — một câu khách có thể gõ thường ("xóa hết", "reset session") gắn với thao tác PHÁ DỮ LIỆU (xoá cả phiên).
+2. **Sửa** (`engine.py`): `la_lenh_lam_moi = cmd == LENH_LAM_MOI` (`$$$$$`); `/reset`, `/clear`, `/xoa`, "reset session", "xóa hết" thành lời thường — "xóa hết" đi qua lượt AI
+   lập thao tác (gỡ hết rổ hàng có hỏi xác nhận rồi mới làm, `xac_nhan_ngung_hang_loat`). Endpoint HTTP `/reset/{user_key}` (máy gọi, dọn dữ liệu thử) giữ nguyên.
+3. **Còn lại bắt theo chữ trong `Engine.handle`** (cập nhật SRS-125): lệnh `$$$$$`, lệnh xem dữ liệu (`json`, `/json`, "xem json", "check json", "thong tin", "thong_tin" — chủ dự án:
+   "json chả ai bấm nhầm đâu"), nhận link `https?://`.
+4. **Bắn thử**: `bot/tests/ban-thu-xa.sh` (ô `dung_lai` = `ban-thu-xa`): đất ở xã Long An, cả cục thông tin → lời bot không hỏi quận / huyện, có hỏi tiếp, không bịa thị trường.
+
+Kiểm: `tests/test_lenh_lam_moi.py::test_lenh_cu_khong_con_lam_moi_chi_con_nam_dau_do` (đỏ khi trả lại danh sách lệnh cũ).
+
+### SRS-5.1zzzzzzz128 · Nạp 96 xã / phường tỉnh Tây Ninh (Long An cũ); bot nhận "xã Phước Lý" là xã của Tây Ninh (22/10/2026)
+
+Lê Quang: "xã phước lý tức là hết huyện rồi, kiểu giờ địa chỉ thì nó có thể coi rõ hơn… nạp danh sách xã Long An đi". Sau bắn thử `ban-thu-xa` (Gemini, 22/10): bot không còn hỏi
+huyện (SRS-126) nhưng `listings.ward` vẫn null và lời bot chưa biết xã ấy thuộc tỉnh nào.
+
+1. **Lớp lỗi**: kho địa danh chỉ phủ TP.HCM (`wards` 168 phường, khoá chính là tên ngắn, ràng buộc `tinh_cu` ∈ {TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu}, và là nguồn DUY NHẤT của cột
+   `listings.ward` — bất biến SRS-5.1zzzzj) nên địa chỉ xã ở tỉnh khác "không có chỗ ghi". Tỉnh mới Tây Ninh (hợp nhất Long An + Tây Ninh từ 01/07/2025, NQ 1682/NQ-UBTVQH15) có 96 đơn vị
+   cấp xã (82 xã + 14 phường), tên nhiều chỗ trùng tên cũ / tên tỉnh ("Long An" vừa là tên tỉnh cũ, vừa là xã cũ, vừa là phường mới).
+2. **Sửa**: (a) bảng RIÊNG `xa_tinh_khac` (migration `20261022a`, sinh TỰ ĐỘNG bằng `scripts/sinh-xa-tay-ninh.py` từ toàn văn NQ do hoatieu.vn đăng lại — soát đúng 96 = 82 + 14, 302 đơn vị cũ gộp vào);
+   KHÔNG đụng `wards`; RLS bật, anon / authenticated bị thu quyền; nạp lại khi dựng DB: `dung-lai-db.mjs` bước `du-lieu` + `xac-minh`. (b) `dia_danh.tra_xa` / `TraDiaDanh.xa`: nhận khi khách gõ KÈM chữ loại
+   (xã / phường / thị trấn) và ra đúng MỘT đơn vị — tên mới trước, tên cũ gộp vào sau; không đoán gần đúng; "Long An" trần không nhận. (c) `engine._chuan_dia_danh`: ô `phuong` không phải phường TP.HCM → tên đầy đủ trong
+   `xa_tinh_khac` ("xã phước lý" → "Xã Phước Lý"); (d) `khoi_dia_danh`: khối "xã / phường khách nói là Xã Phước Lý, tỉnh Tây Ninh (hợp nhất từ …). Địa chỉ cấp xã + tỉnh là ĐỦ: KHÔNG hỏi quận / huyện / tỉnh".
+3. **Chưa làm / hạn chế**: (a) cột `listings.ward` vẫn null cho xã (guard `chuan_hoa_phuong` chỉ biết `wards`) — muốn ghi được thì phải sửa bất biến, cần chủ dự án quyết; (b) `quan` do AI điền "Long An" không bị
+   động tới; (c) nguồn là bản đăng lại của hoatieu.vn, chưa đối chiếu file chính thức moj.gov.vn — số 96 = 82 + 14 khớp công bố; (d) chưa nạp các tỉnh khác ngoài vùng (Bình Dương / Vũng Tàu đã nằm trong `wards`).
+4. **Kiểm**: `tests/test_xa_tay_ninh.py` đọc đúng file migration (5 ca): đủ 96 dòng, "xã Phước Lý" mới / cũ / không dấu, "xã Long Thượng" → Xã Phước Lý, "Long An" trần không nhận, "Phường Long An" ≠ "xã Long An".
+   Ca `Long An` bắt ngay một bẫy thật: bản đầu nhận tên trần làm "Phường Long An".
+
+Kiểm thêm: `bot/tests/ban-thu-xa.sh` (production, Gemini): không hỏi huyện, không bịa thị trường.
+
+### SRS-5.1zzzzzzz129 · Nạp 95 xã / phường tỉnh Đồng Nai; xã Bình Phước cũ vẫn NGOÀI vùng nhận tin (22/10/2026)
+
+Lê Quang hỏi bot đã biết xã phường Bình Dương / Đồng Nai / Vũng Tàu chưa; đọc DB: Bình Dương + Vũng Tàu nằm sẵn trong `wards` (168 = 102 TP.HCM cũ + 36 + 30) và `duong`, còn Đồng Nai chỉ có
+677 tên đường, chưa có bảng xã. Lê Quang: "chạy … để bot biết đi về bình phước đúng". Bình Phước cũ nay thuộc tỉnh Đồng Nai nhưng vẫn ngoài vùng (chủ dự án 20/10: "bỏ").
+
+1. **Lớp lỗi**: cùng SRS-128 — kho địa danh không phủ xã ngoài TP.HCM. Thêm một lớp riêng: tỉnh MỚI không nói được tỉnh CŨ, trong khi luật vùng nhận tin tính theo tỉnh cũ; và cùng tên xã có ở hai tỉnh
+   (Xã Tân Hưng, Xã Lộc Ninh: Tây Ninh và Đồng Nai/Bình Phước cũ) nên khoá chính tên đầy đủ một mình sẽ ghi đè dòng của tỉnh kia.
+2. **Sửa**: (a) migration `20261022b`: bảng `xa_tinh_khac` thêm cột `tinh_cu`, khoá chính đổi thành `(tinh, ten_day_du)` (file `20261022a` sửa theo dạng cuối vì PR chưa gộp; dung-lai chỉ chạy câu insert),
+   nạp 95 dòng = 72 xã + 23 phường (88 đơn vị sắp xếp + 7 đơn vị không sắp xếp của NQ 1662/NQ-UBTVQH15), sinh TỰ ĐỘNG bằng `scripts/sinh-xa-dong-nai.py` (dùng lại bộ đọc của `sinh-xa-tay-ninh.py`; sửa luôn
+   lỗi bộ đọc khi NQ viết "diện tích tự nhiên quy mô dân số" không dấu phẩy — khoản 74 Long Hưng mất đơn vị cũ; Tây Ninh sinh lại không đổi byte nào). (b) `dia_danh.tra_xa` trả thêm `tinh_cu` + `ngoai_vung`
+   (`TINH_CU_NGOAI_VUNG = {Bình Phước}`); cùng tên ở hai tỉnh thì KHÔNG đoán (trả None). (c) `engine._chuan_dia_danh`: xã tra ra thuộc Bình Phước cũ và khách chưa nói quận → `_ngoai_vung = "Bình Phước"`
+   (đường sẵn có của SRS-86: bot nói khéo chưa nhận, không hỏi tiếp, không soạn tin). (d) `khoi_dia_danh`: khối riêng cho Bình Phước cũ ("NẰM NGOÀI khu vực nhận tin") và câu "gồm cả Bình Phước cũ" cho phần Đồng Nai cũ.
+3. **Giả định BA / hạn chế**: (a) `tinh_cu` KHÔNG có trong NQ — suy từ thứ tự khoản (NQ liệt kê Đồng Nai cũ trước, Bình Phước cũ sau: xã 1–37 | 38–67, phường 68–81 | 82–88) cộng 2 đơn vị không sắp xếp
+   (Bù Gia Mập, Đăk Ơ = Bình Phước); script chặn bằng danh sách tên mốc mỗi bên, chưa đối chiếu nguồn chính thức; (b) nguồn là bản đăng lại hoatieu.vn (file moj.gov.vn trả 403); số 95 = 72 + 23 khớp công bố NQ;
+   (c) `listings.ward` vẫn null cho xã (như SRS-128); (d) tên xã Bình Phước cũ trùng tên phường cũ TP.HCM thì `phuong()` TP.HCM được tra trước — khách đã nói quận thì không cờ ngoài vùng; (e) không cần cron:
+   danh sách đơn vị hành chính do nghị quyết cố định, nạp một lần; bảng không có cột vector nên lịch `nhung-dia-danh-tick` không liên quan.
+4. **Kiểm**: `tests/test_xa_dong_nai.py` (6 ca, đọc đúng file migration): 95 dòng / 72 + 23 / 39 Bình Phước cũ / 7 đơn vị không sắp xếp; xã Bình Phước cũ ngoài vùng cả tên mới lẫn tên cũ; xã Đồng Nai cũ vẫn trong vùng;
+   "xã Tân Hưng", "xã Lộc Ninh" không đoán; khối prompt; engine đặt cờ ngoài vùng (đỏ khi bỏ đoạn sửa ở `engine.py`, đã thử), không đặt khi khách nói quận.
+
+### SRS-5.1zzzzzzz130 · Chế độ test: gõ `$$$$$` rồi mỗi lượt có thêm tin phụ "đã trích xuất / đã hiểu gì" (22/10/2026)
+
+Lê Quang: "thêm 1 đoạn tin nhắn ban đầu người ta bắt đầu với $$$$$ sau đó là đã trích xuất gì, đã hiểu gì … mỗi tin nhắn đều có 1 tin $$$$$ trích xuất thông tin gì … từ tin nhắn đầu luôn, viết từ code".
+Trước đó tester phải gõ `json` riêng mỗi lượt để soi ô đã bóc.
+
+1. **Lớp lỗi / nhu cầu**: bóc tách là bước thấy được ít nhất — lời bot đúng mà ô ghi sai (SRS-87, 109…) chỉ lộ khi mở `json`; mỗi lần soi là một lượt chat. Cần tin soi đi cùng lượt, KHÔNG do AI viết (AI viết thì lại phải soát nó).
+2. **Sửa**: (a) `src/aioi/che_do_test.py` (mới): `chu_thich(conv, captured, next_field)` ghép CHỮ từ dữ liệu đã ghi — ô lượt này ghi (nhãn `FIELD_LABELS` + giá trị cắt 70 ký tự), điều đã hiểu (vai, loại hình / cho thuê, khách xưng gì, duyệt / chưa ưng bản nháp, hỏi về gì, bảo đăng, xin gặp người, ngoài vùng, khách chấm sao, xoá chờ xác nhận), ô còn thiếu, ô đang hỏi tiếp, đã đủ soạn bản nháp chưa. Lỗi bất kỳ → "" (không chặn lượt). (b) `Conversation.che_do_test` (lưu SQLite cột mới `che_do_test`, nạp lại ở `SupabaseConversationStore.load` như `xung_ho`): lệnh `$$$$$` làm mới phiên VÀ bật chế độ; tin trả lời lệnh kèm tin phụ mở đầu `che_do_test.TIN_BAT`. (c) `TurnResult.chu_thich` điền ở `_build_result` khi chế độ bật; `server.py` thêm nó vào CUỐI `replies` (nhịp gõ 400 ms). Tin phụ KHÔNG vào `reply`, lịch sử hội thoại, `sync_to_supabase_async` (CRM) hay `_ban_tin_da_trinh` — model không đọc lại, khách duyệt bản nháp không nhầm sang nó.
+3. **Chưa làm / hạn chế**: (a) không có lệnh tắt — thoát chế độ bằng xoá khách đó trên CRM (hoặc `reset_nguoi_test`); khách thật nào gõ đúng `$$$$$` cũng nhận tin phụ; (b) lệnh `json`, tin nhắc và đường chuyển người không qua server lượt thường nên có thể không kèm tin phụ; (c) phía người mua chỉ liệt kê ô phiếu đang có, chưa phân biệt ô lượt này.
+4. **Kiểm**: `tests/test_che_do_test.py` (8 ca): `$$$$$` bật chế độ + tin phụ ngay tin đầu; tin phụ không vào lịch sử / lời trả lời; không gõ lệnh thì không có; ô trích xuất + "em hiểu" + "còn thiếu"; ngoài vùng; lỗi trả rỗng; sống qua mở lại SQLite; qua server `/chat-reply` tin phụ là tin cuối của `replies` và không ghi vào CRM. Đã thử gỡ đoạn sửa ở `engine.py` / `server.py`: 5/8 đỏ.
+
+**Bản 2 (cùng ngày, Lê Quang: "trong mỗi tin phụ … gửi luôn đã tốn bao nhiêu tiền", "như đợt trước đã trích xuất", "xem vì sao giá 9.2 nó không nhớ")**:
+(a) dòng "Tốn lượt này: $… — model: vào / ra / cache ghi / đọc / số lượt gọi": `so_token.bat_dau_luot()` đầu `Engine.handle`, mỗi `SoToken.ghi` / `ghi_du_phong` cộng vào bộ nhớ của luồng (cả lượt chạy trên một luồng), `che_do_test.tien_usd` quy ra đô bằng `BANG_GIA` — bản chép của `lib/gia-model.ts` (VPS chỉ có `src/aioi`), `tests/test_che_do_test.py` so từng dòng với file TS và đỏ khi lệch. Không có giá (model lạ) thì nói "chưa rõ giá", không đoán; Groq / Gemini = $0 theo bảng. Chỉ tính các lượt gọi AI TRONG `Engine.handle` (chưa tính chép tin thoại Whisper, đọc ảnh ở server nếu có).
+(b) Ô trích xuất viết theo kiểu bản TS cũ (bong bóng 🤖): `• giá: "9.2" → làm chuẩn "9,2 tỷ" (mới | đổi từ "…")` — cụm khách nói là bằng chứng AI đưa (`conv.bc_luot`), dòng "Đã hiểu: yêu cầu ĐỔI thông tin: giá → "9.5"" khi ô đã có giá trị khác.
+(c) "AI đề xuất: update(gia)" (thao tác lượt lập thao tác trả về) và khối "Đã BỎ (AI đề xuất nhưng code không ghi)" kèm lý do từ ba cổng bỏ ô (`_gia_tri_ghi`: không có bằng chứng / đổi loại đã chốt; `_mot_cum_mot_o`: trùng cụm / bề ngang lớn hơn lô). Nhờ đó "vì sao bot không nhớ ô X" đọc được ngay trên chat: AI không đề xuất, hay code bỏ, hay ghi rồi mất.
+(d) **"Giá 9.2 không nhớ" — chưa tìm ra nguyên nhân thật.** Hội thoại gốc không còn (DB `conversations` / `messages` trống, lịch sử nằm ở SQLite trên VPS). Thử offline 17 cách khách gõ ("9.2", "giá 9.2 nha em", "9 rưỡi", "9.2 tỷ", AI trả "9,2 tỷ" / "9.2" / "9200000000", cụm trích thiếu hoặc lệch…) đều ghi được `gia` qua cổng bằng chứng và `Property._has("gia")` đúng. Nên nguyên nhân nằm ngoài cổng đó (lượt AI không đưa ô `gia` — nhất là khi Claude hết tiền và lượt lập thao tác chạy bằng Gemini bản nhẹ — hoặc đổi sang căn khác trong rổ). Tin phụ bản 2 sinh ra để bắt đúng ca này ở lần sau.
+(e) **Chat thật 22/10 11:54–12:05 sau khi lên VPS (Lê Quang dán lại)**: khách nói "Bán nhà chính chủ ở quận 10 giá 9.2" ngay tin đầu, nhưng đến 12:03 bot vẫn hỏi "mức giá bán mong muốn" và 12:04 trả lời "không nhớ giá sao?" bằng "để em kiểm tra giao dịch gần đây" — giá chỉ vào tin khi khách nhắc lại "giá 9.2" (12:05). Xác nhận lỗi có thật ở lượt đầu; nguyên nhân vẫn chưa xác định (xem d) — cần một ca bắn lại với tin phụ để thấy "AI đề xuất" có `gia` hay không. Cùng đoạn chat thấy thêm: bot nói "hẻm xe hơi rộng rãi" khi khách chỉ nói "hẻm 130 Cách Mạng Tháng 8" (tự thêm ý), và lời chào `$$$$$` có câu "Em đã làm mới phiên chat và xóa toàn bộ thông tin nháp trước đó rồi ạ" — chủ dự án: "bỏ câu này luôn" → câu mẫu `lenh_lam_moi` bỏ câu đó (migration `20261022c`, chỉ đổi dòng chưa bị sửa ở CRM).
+
+**Bản 3 (cùng ngày, Lê Quang: "nếu người ta có gõ $$$$$ lúc chào thì mới vào chế độ test, xóa hết data cũ, không cần thông báo, và sau đó mới có câu phụ … còn người mới chào bình thường thì ko cần")**:
+lệnh `$$$$$` nay IM LẶNG — xoá phiên + bật `che_do_test`, `reply` rỗng, không ghi lượt bot vào lịch sử, không gọi model (server trả `replies = []`, bridge không gửi gì, như đường "vượt trần"). Tin kế tiếp của khách đi đúng đường người mới (khối "LƯỢT ĐẦU TIÊN", lời chào do AI đọc — SRS-125) và từ đó mỗi lượt kèm tin phụ. Khách chào bình thường không gõ `$$$$$` thì không có gì khác. Câu mẫu `lenh_lam_moi` không còn chỗ dùng → bỏ khỏi `MAC_DINH`, xoá dòng DB (`20261022d`). Kiểm: `tests/test_lenh_lam_moi.py` (im lặng, sạch, chào lại như người mới; không gọi model), `tests/test_che_do_test.py` (tin phụ bắt đầu từ tin kế tiếp; server `replies == []`).
+
+### SRS-5.1zzzzzzz131 · Bỏ hẳn câu ghi nhận; 100% lượt mở bằng lời khen, kể cả vị trí (22/10/2026)
+
+Lê Quang (sau khi đọc chat 11:54–12:05 toàn "Em ghi nhận vị trí này rồi anh", "Em lưu lại thông tin nhà phố rồi anh"): "giờ xóa hết mấy cái em ghi nhận em bla bla đi,
+và khen nhiều hơn vị trí các thứ cũng 100% khen".
+
+1. **Lớp**: cùng lớp SRS-102/118/120 (giọng đáp đầu lượt). Trước: đáp nhận một vế rồi hỏi, ví dụ lấy từ câu mẫu `ghi_nhan_mau`, lưới chỉ bắt HAI lượt liền
+   nhau cùng ghi nhận. Nay chủ dự án bỏ hẳn kiểu đáp nhận — chỗ đó là lời khen.
+2. **Sửa**: (a) `prompts.LUAT_GHI_NHAN` → `LUAT_MO_LUOT` ("mở lượt bằng lời khen, không câu ghi nhận"; vẫn không kể lại số liệu, chỉ nhắc con số khi vừa sửa; xác nhận cụt
+   thì nối thẳng câu hỏi; vẫn cấm "Dạ"), dùng ở `CONVERSATION_POLICY` và nhánh sau bản nháp. (b) `LUAT_KHEN` bản 3: 100% lượt có thông tin mở bằng MỘT lời khen gắn đúng điều
+   khách nói, kể cả VỊ TRÍ (đường / phường / khu / gần tiện ích khách nhắc — lợi ích người ở thấy ngay), tối đa hai ý; GIỮ nguyên các cấm của sếp 21/10: không số liệu thị trường,
+   không bình luận giá, không khen chung chung, không thêm chi tiết khách chưa nói ("hẻm xe hơi rộng rãi" khi khách chỉ nói "hẻm 130 CMT8" — chat 22/10). Bên mua: mỗi lượt nêu
+   thêm nhu cầu đều khen (cách nêu hoặc khu vực chọn). Bỏ "KHÔNG nịnh bợ" ở dòng hỏi. (c) `engine._mo_dau_ghi_nhan` nhận thêm "lưu vào/lại/rồi", "nắm rồi", "thêm vào tin";
+   lưới hình thức gọi lại model ở MỌI lượt mở bằng ghi nhận (trước: chỉ khi hai lượt liền), lý do nêu rõ "mở bằng lời khen"; lưới "cùng ba chữ đầu" giữ. (d) Câu mẫu
+   `ghi_nhan_mau` + `cau_mau.vi_du_ghi_nhan` + chỗ giữ `<<VI_DU_GHI_NHAN>>` gỡ (migration `20261022e` xoá dòng DB); mô tả công cụ `gui_khach` (`llm/claude.py`) sửa theo.
+3. **Giả định BA**: "100% khen" hiểu là mọi lượt khách CHO THÔNG TIN đều mở bằng khen; khách chỉ "có / đúng rồi" thì nối thẳng câu hỏi (không khen gượng). Các cấm bịa thị trường /
+   giá là quyết định chủ dự án 21/10 chưa bị bỏ nên giữ — nếu "100%" nghĩa là được nói "vị trí đắc địa, dễ bán" thì phải chủ dự án chốt lại.
+4. **Kiểm**: `tests/test_khen_100.py` (6 ca): không còn câu mẫu / chỗ giữ chữ / luật cũ; LUAT_MO_LUOT ở cả hai nhánh; LUAT_KHEN có 100% + vị trí + đủ cấm cũ; nhận diện ghi nhận
+   rộng hơn ("Em sửa giá còn…" không tính); MỘT lượt mở bằng ghi nhận → gọi lại ngay (hệ thống gọi lại nói "lời khen"); lời mở bằng khen không bị gọi lại. Gỡ ba file test
+   của luật cũ (`test_ghi_nhan_mau/ngan/lap.py`); `test_khen_co_co_so.py` giữ (các cấm cũ còn nguyên chữ).
+
+### SRS-5.1zzzzzzz132 · Lưới bình luận giá và lưới giá trị dạng kích thước — từ bắn thử ban-thu-92 (22/10/2026)
+
+Bắn thử `ban-thu-92` (kịch bản tái hiện chat Lê Quang 11:54–12:05, Gemini lite vì Claude hết số dư): 13/13 phép kiểm đạt — `$$$$$` im lặng, giá vào ô ngay lượt 1
+(ca "không nhớ giá" KHÔNG tái hiện), không "em ghi nhận", không "hẻm xe hơi", không hỏi lại giá — nhưng đọc lời bot thấy hai lỗi phép kiểm chưa phủ:
+(a) "không nhớ giá sao?" → "Mức giá 9,2 tỷ cho căn nhà 6 tầng trung tâm này quá hợp lý rồi anh/chị nhỉ!" (bình luận giá, luật KHEN cấm); (b) khách gõ "5x10" →
+AI ghi cả `kich_thuoc` lẫn `dien_tich_trang_thiet_bi` = "5x10", cổng bằng chứng nhận (cụm có thật), lưới trùng cụm bỏ qua vì giá trị một từ.
+
+1. **Lớp**: (a) model (nhất là đường dự phòng) phạm luật đã viết trong prompt — lớp đã có lưới hình thức `_soat_hinh_thuc` (Dạ, ghi nhận, tiêu đề…); (b) ô ghi sai
+   chỗ dù có bằng chứng — lớp `_mot_cum_mot_o` (SRS-87). Không vá từng câu: thêm vào đúng hai hàm chủ đó.
+2. **Sửa**: (a) `engine._binh_luan_gia` (regex trên LỜI BOT: thanh khoản / đắt khách / dễ bán / đắc địa / nhiều người tìm / "giá … hợp lý | vừa tầm | cạnh tranh |
+   mềm | quá tốt | quá rẻ") → `_soat_hinh_thuc` gọi lại model một lần, lý do nêu "nhắc con số khách đưa thì được, không đánh giá"; nhắc lại giá ("Em đã để sẵn giá
+   9,2 tỷ trong bản tin") không khớp; bản tin rao (bố cục gạch đầu dòng / dòng mở "sẽ rao như vầy" / 📋) được miễn — văn tin có ý chung "đắc địa / sầm uất" là
+   quyết định "kệ" của chủ dự án. (b) `_O_KICH_THUOC` + `_la_kich_thuoc` ("AxB[m/m²]", "NN m²"; "4m" / "5m" KHÔNG tính): giá trị dạng đó ở ô ngoài kích thước /
+   diện tích → bỏ, ghi `bo_luot` (tin phụ chế độ test nói rõ). (c) `ban-thu-92.sh` thêm hai phép kiểm L4 / L6 cho đúng hai lỗi này.
+3. **Chưa làm**: tin phụ chế độ test chưa đếm lượt gọi lại model vào tiền (đã có — `so_token` cộng mọi lượt gọi); chưa bắn lại production (chủ dự án: "bắn 1 lượt thôi
+   kẻo hết") — bản này mới qua test offline.
+4. **Kiểm**: `tests/test_binh_luan_gia_kich_thuoc.py` (4 ca): nhận diện bình luận giá (3 câu phạm, 3 câu nhắc giá / "giờ xem hợp lý" / "hướng tốt" không bị oan); lượt
+   phạm bị gọi lại (hệ thống gọi lại nói "nhận xét giá"); `_la_kich_thuoc` 7 đúng / 7 sai; "5x10" chỉ còn ở `kich_thuoc`, "50m2" + "4m" giữ, "4x12m" ở `ket_cau` bị bỏ.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

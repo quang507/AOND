@@ -42,6 +42,7 @@ def test_khen_nhieu_hon_lan_hai_khen_ca_cach_khach_lam_viec_va_ben_mua():
     k = prompts.LUAT_KHEN
     assert "CÁCH khách cung cấp thông tin" in k and "tối đa HAI ý khen" in k and "MỘT câu khen" not in k
     assert "thanh khoản tốt" in k and "KHÔNG bình luận giá" in k
+    assert "CHỈ khen đúng điều khách VỪA NÓI" in k and "xe cộ tấp nập" in k      # bắn thử 22/10: khen thêm chi tiết khách chưa nói
     from aioi.schema import BuyerLead
     b = prompts.build_buyer_chat_system("Hằng", BuyerLead(), "khu_vuc")
     assert "KHEN NHIỀU HƠN" in b and 'CẤM nhận xét tài chính' in b and "đáng mua" in b

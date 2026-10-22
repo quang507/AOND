@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import time
 import unicodedata
 import urllib.error
 import urllib.parse
@@ -77,6 +78,52 @@ def _mot(gia_tri: list[str | None]) -> str | None:
     return ds.pop() if len(ds) == 1 else None
 
 
+LOAI_XA_GO = {"xa": "xa", "phuong": "phuong", "p": "phuong", "thi tran": "thi tran", "tt": "thi tran"}
+# Tỉnh CŨ (cột `xa_tinh_khac.tinh_cu`) nằm NGOÀI vùng nhận tin dù nay thuộc tỉnh trong vùng (chủ dự án 20/10: "Bình Phước cũ — bỏ"; prompts.VUNG_NHAN_TIN).
+TINH_CU_NGOAI_VUNG = frozenset({"Bình Phước"})
+
+
+def _loai_khach_go(ten: str) -> str | None:
+    """Chữ loại ở ĐẦU tên khách gõ ("xã phước lý" → "xa"); không có chữ loại → None. Đọc hình thức chữ, không đoán ý."""
+    m = re.match(r"\s*(xa|phuong|thi\s+tran|tt|p)\b\.?\s", bo_dau(ten or "") + " ")
+    return LOAI_XA_GO.get(re.sub(r"\s+", " ", m.group(1))) if m else None
+
+
+def _loi_xa(s: str) -> str:
+    return _loi(re.sub(r"\(.*?\)", " ", s or ""), TU_CHUNG_PHUONG)
+
+
+def tra_xa(kho: list[dict], ten: str | None) -> dict | None:
+    """Xã / phường MỚI của tỉnh Tây Ninh (hợp nhất Long An, NQ 1682/NQ-UBTVQH15) hoặc Đồng Nai (hợp nhất Bình Phước, NQ 1662/NQ-UBTVQH15; bảng
+    `xa_tinh_khac`, 01/07/2025) của chữ khách gõ.
+    {"ten_day_du", "loai", "tinh", "tinh_cu", "ngoai_vung": bool, "tu_ten_cu": bool, "don_vi_cu": [tên cũ]} hoặc None. `ngoai_vung` = đơn vị thuộc
+    tỉnh CŨ ngoài vùng nhận tin (Bình Phước). Chỉ nhận khi ra ĐÚNG MỘT đơn vị mới (cùng tên ở hai tỉnh — vd "xã Tân Hưng" — thì không đoán):
+      · khách PHẢI gõ kèm chữ loại (xã / phường / thị trấn) — "Long An" trần là tên tỉnh, còn "Phường Long An" là một phường mới;
+      · tên khớp tên một đơn vị MỚI (bỏ dấu, bỏ chữ loại) VÀ cùng loại khách gõ;
+      · không khớp tên mới thì khớp tên một đơn vị CŨ gộp vào, cùng chữ loại của đơn vị cũ.
+    Không đoán gần đúng: sai chính tả thì để prompt hỏi khách."""
+    go = _loi_xa(ten or "")
+    loai_go = _loai_khach_go(ten or "")
+    if len(go) < 3 or loai_go is None:     # phải có chữ loại: "Long An" trần là tên tỉnh, trong khi "Phường Long An" là một phường mới
+        return None
+
+    def ra(x: dict, cu: bool) -> dict:
+        return {"ten_day_du": x["ten_day_du"], "loai": x["loai"], "tinh": x.get("tinh") or "Tây Ninh", "tinh_cu": x.get("tinh_cu"),
+                "ngoai_vung": x.get("tinh_cu") in TINH_CU_NGOAI_VUNG, "tu_ten_cu": cu,
+                "don_vi_cu": [c.get("ten", "") for c in (x.get("don_vi_cu") or []) if isinstance(c, dict)]}
+
+    moi = [x for x in kho if _loi_xa(x.get("ten", "")) == go]
+    if loai_go in ("xa", "phuong"):
+        moi = [x for x in moi if x.get("loai") == loai_go]      # "xã Long An" không phải "Phường Long An"
+    if len(moi) == 1:
+        return ra(moi[0], False)
+    if moi:
+        return None
+    cu = {x["ten_day_du"]: x for x in kho for c in (x.get("don_vi_cu") or [])
+          if isinstance(c, dict) and _loi_xa(c.get("ten", "")) == go and _loai_khach_go(c.get("ten", "")) == loai_go}
+    return ra(next(iter(cu.values())), True) if len(cu) == 1 else None
+
+
 class TraDiaDanh:
     """`rpc(tên, payload) -> list`, `doc(bảng, tham số) -> list` (PostgREST), `nhung(text) -> list[float]` (Gemini; None = chỉ
     tra theo chữ). Mọi lỗi → None."""
@@ -88,6 +135,7 @@ class TraDiaDanh:
         self._nhung = nhung
         self._nho: dict[tuple, dict | None] = {}   # (tên, quận) → kết quả duong(): prompt hỏi lại mỗi lượt, khỏi tra / nhúng lại
         self._nho_hem: dict[tuple, list[str]] = {}   # (đường, số hẻm, quận) → phường của hẻm
+        self._kho_xa: tuple[float, list[dict]] | None = None   # (lúc đọc, các dòng xa_tinh_khac)
 
     @classmethod
     def tu_cau_hinh(cls, url: str, key: str | None, khoa_gemini: list[str] | tuple[str, ...] = ()) -> "TraDiaDanh | None":
@@ -155,6 +203,21 @@ class TraDiaDanh:
         if kq:
             log.info("phường theo nghĩa: %r → %s", ten, kq)
         return kq
+
+    def xa(self, ten: str | None) -> dict | None:
+        """Xã / phường mới của tỉnh Tây Ninh (hợp nhất Long An) hoặc Đồng Nai (hợp nhất Bình Phước) theo chữ khách gõ — xem `tra_xa`. Bảng 191 dòng,
+        nhớ 10 phút; lỗi → None."""
+        if self._doc is None or not (ten or "").strip():
+            return None
+        hom_nay = time.time()
+        if self._kho_xa is None or hom_nay - self._kho_xa[0] > 600:
+            try:
+                dong = self._doc("xa_tinh_khac", {"select": "ten_day_du,ten,loai,tinh,tinh_cu,don_vi_cu", "limit": "500"})
+            except Exception as e:  # noqa: BLE001 — tra địa danh là phần thêm
+                log.warning("đọc xa_tinh_khac lỗi: %s", e)
+                dong = self._kho_xa[1] if self._kho_xa else []
+            self._kho_xa = (hom_nay, dong)
+        return tra_xa(self._kho_xa[1], ten)
 
     def duong(self, ten: str | None, quan: str | None = None) -> dict | None:
         """{"ten": tên đường trong kho, "chac": True khi chỉ khác dấu / hoa thường, "phuong": [phường mới]} — `phuong` theo quận
@@ -302,9 +365,22 @@ def phuong_kho_hem(tra: TraDiaDanh | None, fields: dict[str, str]) -> list[str]:
 def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: str | None) -> str:
     """Khối cho prompt trả lời: tên đường khách gõ gần với đường nào trong kho (hỏi xác nhận, lượt nào cũng được — không chỉ lúc
     hỏi địa chỉ), và khi sắp hỏi phường thì đường đó đi qua những phường nào. Hệ thống tra, không phải khách nói."""
-    if tra is None or not fields.get("duong"):
+    if tra is None:
         return ""
     dong: list[str] = []
+    x = tra.xa(fields.get("phuong"))
+    if x:   # SRS-5.1zzzzzzz128: xã đã tra ra tỉnh mới — bot không hỏi huyện / quận / tỉnh nữa
+        cu = [t for t in x["don_vi_cu"] if _loi_xa(t) != _loi_xa(x["ten_day_du"])]
+        gop = {"Tây Ninh": "Long An cũ", "Đồng Nai": "Bình Phước cũ"}.get(x["tinh"], "tỉnh cũ")
+        if x.get("ngoai_vung"):   # SRS-5.1zzzzzzz129: đơn vị này thuộc Bình Phước cũ — ngoài vùng nhận tin dù nay nằm trong tỉnh Đồng Nai
+            dong.append(f'Xã / phường khách nói là {x["ten_day_du"]}, trước 01/07/2025 thuộc tỉnh {x["tinh_cu"]}, nay gộp vào tỉnh {x["tinh"]}: '
+                        f'căn này vẫn tính là {x["tinh_cu"]} CŨ nên NẰM NGOÀI khu vực nhận tin của bên mình.')
+        else:
+            dong.append(f'Xã / phường khách nói là {x["ten_day_du"]}, tỉnh {x["tinh"]} (từ 01/07/2025 tỉnh {x["tinh"]} gồm cả {gop}; '
+                        f'hợp nhất từ: {", ".join(x["don_vi_cu"]) or "giữ nguyên, không sáp nhập"}). Địa chỉ cấp xã + tỉnh là ĐỦ: KHÔNG hỏi quận / huyện / tỉnh, '
+                        f'ghi đúng tên {x["ten_day_du"]}.' + (" Khách gọi bằng tên đơn vị cũ thì nhận, không bắt sửa." if x["tu_ten_cu"] or cu else ""))
+    if not fields.get("duong"):
+        return ("\n\nTRA CỨU ĐỊA DANH (hệ thống tra kho đường / phường, KHÔNG phải khách nói; không tự chọn thay khách):\n- " + dong[0]) if dong else ""
     goi_y = _goi_y(tra, fields)
     if goi_y:
         dong.append(f'Tên đường khách gõ "{fields["duong"]}" gần với đường "{goi_y["ten"]}" trong kho, kho không có tên khách gõ. '

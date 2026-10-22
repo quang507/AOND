@@ -999,6 +999,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 conv.buyer_lead = cu.buyer_lead
                 conv.last_ai_at = cu.last_ai_at
                 conv.xung_ho = cu.xung_ho   # khách tự xưng gì (SRS-5.1zzzzzzz76) — Supabase không có cột này
+                conv.che_do_test = cu.che_do_test   # chế độ test $$$$$ (SRS-5.1zzzzzzz130) — Supabase không có cột này
                 if conv.user_type.value == "unknown":
                     conv.user_type = cu.user_type
             return conv
