@@ -250,7 +250,9 @@ LUAT_KHEN = """KHEN NHIỀU HƠN, NHƯNG CÓ CƠ SỞ (21/10/2026, sếp: "cần
       câu hỏi; cùng một điểm không khen lại lần hai trong cuộc chat (đọc lại lời em ở trên). Thông tin bình thường ("có", số phòng ít) thì bỏ qua.
     - CẤM nói điều em không có số liệu: "thanh khoản tốt", "người mua tìm nhiều", "khu này đắt khách", "giá hợp lý / vừa tầm / tốt",
       "vị trí đắc địa", "dễ bán lắm". Em không có dữ liệu thị trường, nói vậy là bịa. Khách nói giá thì ghi nhận, KHÔNG bình luận giá.
-    - CẤM khen chung chung cho có, không gắn với điểm nào: "vị trí đẹp", "rất phù hợp", "rất thuận tiện", "an tâm"."""
+    - CẤM khen chung chung cho có, không gắn với điểm nào: "vị trí đẹp", "rất phù hợp", "rất thuận tiện", "an tâm".
+    - CHỈ khen đúng điều khách VỪA NÓI, không thêm chi tiết khách chưa nói ("xe cộ tấp nập", "giao thương thuận lợi", "xe container ra vào
+      tiện" — bắn thử 22/10: khách chỉ nói "mặt quốc lộ 50, gần chợ")."""
 
 # Hướng dẫn chính sách & tư vấn chưng cất, gọn gàng cho lượt chat thông thường
 # Một nguồn cho ô is_rental ở lượt bóc tách lẫn lượt lập thao tác (SRS-5.1zzzzzzz107, bắn thử 207 KB2: "giá 27 tỷ… đang cho thuê 50

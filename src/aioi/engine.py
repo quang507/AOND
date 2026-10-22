@@ -950,6 +950,9 @@ class Engine:
         quan = moi.get("quan") or f.get("quan")
         if "phuong" in captured and f.get("phuong"):
             p = self._dia_danh.phuong(f["phuong"], quan)
+            if p is None and hasattr(self._dia_danh, "xa"):   # không phải phường TP.HCM → xã / phường Tây Ninh (hợp nhất Long An, SRS-5.1zzzzzzz128)
+                x = self._dia_danh.xa(f["phuong"])
+                p = x["ten_day_du"] if x else None
             if p and p != f["phuong"]:
                 moi["phuong"] = p
         if "duong" in captured and f.get("duong"):

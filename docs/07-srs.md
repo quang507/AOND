@@ -8118,6 +8118,25 @@ Lê Quang (trả lời câu hỏi ở SRS-123): "giờ chỉ còn cái $$$$$ m�
 
 Kiểm: `tests/test_lenh_lam_moi.py::test_lenh_cu_khong_con_lam_moi_chi_con_nam_dau_do` (đỏ khi trả lại danh sách lệnh cũ).
 
+### SRS-5.1zzzzzzz128 · Nạp 96 xã / phường tỉnh Tây Ninh (Long An cũ); bot nhận "xã Phước Lý" là xã của Tây Ninh (22/10/2026)
+
+Lê Quang: "xã phước lý tức là hết huyện rồi, kiểu giờ địa chỉ thì nó có thể coi rõ hơn… nạp danh sách xã Long An đi". Sau bắn thử `ban-thu-xa` (Gemini, 22/10): bot không còn hỏi
+huyện (SRS-126) nhưng `listings.ward` vẫn null và lời bot chưa biết xã ấy thuộc tỉnh nào.
+
+1. **Lớp lỗi**: kho địa danh chỉ phủ TP.HCM (`wards` 168 phường, khoá chính là tên ngắn, ràng buộc `tinh_cu` ∈ {TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu}, và là nguồn DUY NHẤT của cột
+   `listings.ward` — bất biến SRS-5.1zzzzj) nên địa chỉ xã ở tỉnh khác "không có chỗ ghi". Tỉnh mới Tây Ninh (hợp nhất Long An + Tây Ninh từ 01/07/2025, NQ 1682/NQ-UBTVQH15) có 96 đơn vị
+   cấp xã (82 xã + 14 phường), tên nhiều chỗ trùng tên cũ / tên tỉnh ("Long An" vừa là tên tỉnh cũ, vừa là xã cũ, vừa là phường mới).
+2. **Sửa**: (a) bảng RIÊNG `xa_tinh_khac` (migration `20261022a`, sinh TỰ ĐỘNG bằng `scripts/sinh-xa-tay-ninh.py` từ toàn văn NQ do hoatieu.vn đăng lại — soát đúng 96 = 82 + 14, 302 đơn vị cũ gộp vào);
+   KHÔNG đụng `wards`; RLS bật, anon / authenticated bị thu quyền; nạp lại khi dựng DB: `dung-lai-db.mjs` bước `du-lieu` + `xac-minh`. (b) `dia_danh.tra_xa` / `TraDiaDanh.xa`: nhận khi khách gõ KÈM chữ loại
+   (xã / phường / thị trấn) và ra đúng MỘT đơn vị — tên mới trước, tên cũ gộp vào sau; không đoán gần đúng; "Long An" trần không nhận. (c) `engine._chuan_dia_danh`: ô `phuong` không phải phường TP.HCM → tên đầy đủ trong
+   `xa_tinh_khac` ("xã phước lý" → "Xã Phước Lý"); (d) `khoi_dia_danh`: khối "xã / phường khách nói là Xã Phước Lý, tỉnh Tây Ninh (hợp nhất từ …). Địa chỉ cấp xã + tỉnh là ĐỦ: KHÔNG hỏi quận / huyện / tỉnh".
+3. **Chưa làm / hạn chế**: (a) cột `listings.ward` vẫn null cho xã (guard `chuan_hoa_phuong` chỉ biết `wards`) — muốn ghi được thì phải sửa bất biến, cần chủ dự án quyết; (b) `quan` do AI điền "Long An" không bị
+   động tới; (c) nguồn là bản đăng lại của hoatieu.vn, chưa đối chiếu file chính thức moj.gov.vn — số 96 = 82 + 14 khớp công bố; (d) chưa nạp các tỉnh khác ngoài vùng (Bình Dương / Vũng Tàu đã nằm trong `wards`).
+4. **Kiểm**: `tests/test_xa_tay_ninh.py` đọc đúng file migration (5 ca): đủ 96 dòng, "xã Phước Lý" mới / cũ / không dấu, "xã Long Thượng" → Xã Phước Lý, "Long An" trần không nhận, "Phường Long An" ≠ "xã Long An".
+   Ca `Long An` bắt ngay một bẫy thật: bản đầu nhận tên trần làm "Phường Long An".
+
+Kiểm thêm: `bot/tests/ban-thu-xa.sh` (production, Gemini): không hỏi huyện, không bịa thị trường.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

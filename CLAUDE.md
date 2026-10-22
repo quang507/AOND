@@ -130,7 +130,7 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > (người đứng tên, lý do bán / bán gấp, giờ dẫn khách xem, chìa khoá) là `schema.O_NOI_BO`, lõi ghi bảng `listing_noi_bo` (chỉ admin), không
 > vào bản tin. Thêm ô riêng mới = thêm khoá vào `O_NOI_BO` (+ nhãn ở `SuaTinModal`). Câu hỏi thêm sau khi tin lên web: `schema.CUM_SAU_DANG`.
 > **Tra địa danh (SRS-5.1zzzzzzz60):** phường / quận / đường khách nói → `src/aioi/dia_danh.py` (chữ trước, vector Gemini sau, máy
-> kiểm tên gần chữ khách); vector do lịch `nhung-tick` / `nhung-dia-danh-tick` nuôi — đừng gỡ hai lịch đó.
+> kiểm tên gần chữ khách); vector do lịch `nhung-tick` / `nhung-dia-danh-tick` nuôi — đừng gỡ hai lịch đó. **Xã / phường tỉnh Tây Ninh (Long An cũ, SRS-5.1zzzzzzz128):** bảng RIÊNG `xa_tinh_khac` (96 dòng, NQ 1682/NQ-UBTVQH15, sinh bằng `scripts/sinh-xa-tay-ninh.py`), `dia_danh.tra_xa` — KHÔNG nhét vào `wards` (TP.HCM, nguồn duy nhất của `listings.ward`); từ 01/07/2025 không còn cấp quận / huyện.
 
 > **QUYẾT ĐỊNH CHỦ DỰ ÁN — KHÔNG ĐƯA RA BÀN LẠI, KHÔNG CHẤM LÀ LỖI KHI REVIEW / ĐÁNH GIÁ UX (20/10/2026).** Chủ dự án: "supabase
 > free và zalo clone là ý chí của tui, ko cần bàn lại"; "hello là tôi đang test, đó là ý của tôi".
