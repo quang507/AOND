@@ -685,7 +685,10 @@ async function pumpEscalations() {
           }
         }
         if (!uid) { await ghiLoi("escalation", `${it.id}: không resolve được ${it.name}`); continue; }
-        const msg = it.text ?? `🔔 nhadat.cc: ${it.note}. Anh/chị check giúp rồi trả lời khách sớm nha.`;
+        // SRS-5.1zzzzzzz134 (22/10/2026): tin NỘI BỘ (admin / CTV: 🙋 khách cần người thật, ⭐ chấm sao thấp, 🩺 sức khoẻ, 📊 báo cáo)
+        // mở bằng "$$$$$ " như tin phụ chế độ test — chủ dự án: "tin nào là tin debug tin nào là tin cho khách thật phải phân tách rõ".
+        // Tin cho khách thật (chủ nhà / người mua) không có tiền tố. Cờ do escalation-feed quyết theo đích (`noi_bo`).
+        const msg = (it.noi_bo ? "$$$$$ " : "") + (it.text ?? `🔔 nhadat.cc: ${it.note}. Anh/chị check giúp rồi trả lời khách sớm nha.`);
         rememberSent(msg);
         await api.sendMessage(msg, String(uid), ThreadType.User);
         // Gửi kèm uid vừa resolve từ SĐT: server ghi ngược vào sellers/ctvs/admins

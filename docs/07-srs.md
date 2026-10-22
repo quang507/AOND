@@ -8249,6 +8249,24 @@ câu xin lỗi + báo admin (`needs_human`). Lê Quang: "sao nó lại trả l�
 `NGHI_MODEL_GIAY = 600` — cặp (nguồn, model) quá hạn thì nghỉ 10 phút, lượt sau đi thẳng model / nguồn kế (cùng ý `NGHI_CLAUDE_GIAY`). Kiểm (+2 ca): hai
 model Gemini cùng quá hạn (đồng hồ giả cộng đúng `han`) → thứ tự gọi `g-lite, g-flash, qwen-x`; model quá hạn → lượt kế bỏ qua nó, hết giờ nghỉ mới thử lại.
 
+### SRS-5.1zzzzzzz134 · Tin nội bộ mở bằng `$$$$$`; khoá Gemini chat một nguồn Vault — 22/10/2026
+
+Lê Quang thấy trên Zalo test một tin "🙋 Khách cần người thật — Lê Quang (người bán): “(hệ thống: lượt trả lời hỏng hai lần)”. Mở /admin/tin-nhan để nhận
+khách." nằm lẫn với lời bot gửi khách, rồi nói: "tin nào là tin debug tin nào là tin cho khách thật phải phân tách rõ ra, tin cho debug phải bắt đầu với $$$$$".
+Cùng lượt, chủ dự án đưa một khoá Gemini mới (Vault `GEMINI_API_KEY_4`; khoá KHÔNG ghi vào repo, đã gửi qua chat — nên xoay khoá sau khi test xong).
+
+1. **Lớp**: tin hệ thống đi tới CTV / admin (🙋 khách cần người thật, ⭐ chấm sao thấp, 🩺 sức khoẻ bot, báo cáo) và tin cho khách thật cùng đi một đường
+   (`escalation-feed` → bridge → `api.sendMessage`) và cùng một dáng chữ, nên người cầm máy không phân biệt được. Chế độ test đã có quy ước `$$$$$` cho tin phụ
+   (SRS-130); các tin nội bộ chưa theo.
+2. **Sửa**: `escalation-feed` đánh cờ `noi_bo` theo ĐÍCH: đích CTV / admin = `true`, đích chủ nhà / người mua = `false`; bridge (`index.mjs`, vòng kéo việc) mở tin nội bộ
+   bằng `"$$$$$ "`. Một chỗ gắn tiền tố duy nhất. Khoá Gemini: workflow `apply-migration` đọc Vault (`GEMINI_API_KEY`, `_2`, `_3`, `_4`), che trong log, đưa qua stdin
+   (không qua dòng lệnh) sang `cai-vps.sh`, nơi ghi dòng `GEMINI_API_KEYS=` trong `/opt/aond_core/.env` (chmod 600; lõi gộp với `GEMINI_API_KEY`, bỏ trùng — `config._ds_khoa`).
+3. **Chỗ khác cùng lớp, chưa sửa**: (a) tin phụ test (`che_do_test`) và tin lỗi giữ chỗ do CODE ghép — tin phụ đã có `$$$$$`, câu giữ chỗ "Em đang xem kỹ thông tin…" là câu
+   cho khách thật nên KHÔNG gắn; (b) khung xanh trên CRM `/admin` vẫn ghi "chưa có đường dự phòng" dù từ SRS-117 đã có Gemini / Groq — chữ cũ, chưa sửa; (c) `ack` của tin
+   nội bộ không phân biệt — không cần.
+4. **Kiểm**: `tests/test_tin_noi_bo_tien_to.py` (3 ca): cờ `noi_bo` đúng đích (soạn sẵn cho khách = `false`); bridge gắn `"$$$$$ "` đúng một chỗ; workflow + `cai-vps.sh` đưa khoá
+   Gemini từ Vault vào `.env` lõi, che log, không in giá trị. Chưa kiểm sống: cần deploy `escalation-feed` + chạy `cai-vps` (bridge khởi động lại vì code đổi).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -111,6 +111,17 @@ if [ -d /opt/aond_core/src/aioi ]; then
     xong "gỡ lịch backup.py khỏi crontab root"
   fi
   grep -rls 'aond_core/backup' /etc/cron.d /etc/crontab /etc/systemd/system 2>/dev/null | sed 's/^/  còn nhắc backup.py: /' || true
+  # 22/10/2026 (SRS-5.1zzzzzzz134): khoá Gemini chat MỘT NGUỒN = Vault (GEMINI_API_KEY, _2, _3, _4). Workflow đọc Vault, đưa qua stdin
+  # thành GEMINI_API_KEYS_MOI; ở đây ghi đè đúng dòng GEMINI_API_KEYS trong .env lõi (dòng GEMINI_API_KEY giữ nguyên — lõi gộp cả hai,
+  # bỏ trùng, `config._ds_khoa`). Không có biến (chạy tay) thì .env giữ nguyên. Không in giá trị khoá.
+  if [ -n "${GEMINI_API_KEYS_MOI:-}" ] && [ -f /opt/aond_core/.env ]; then
+    umask 077
+    grep -vE '^GEMINI_API_KEYS=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
+    printf 'GEMINI_API_KEYS=%s\n' "$GEMINI_API_KEYS_MOI" >> /opt/aond_core/.env.moi
+    chown --reference=/opt/aond_core/.env /opt/aond_core/.env.moi; chmod 600 /opt/aond_core/.env.moi
+    mv /opt/aond_core/.env.moi /opt/aond_core/.env
+    xong "GEMINI_API_KEYS trong .env lõi ← Vault ($(awk -F, '{print NF}' <<<"$GEMINI_API_KEYS_MOI") khoá)"
+  fi
   systemctl restart aond-core
   for i in $(seq 1 60); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done
   SUC_KHOE=$(curl -fsS -m 3 http://127.0.0.1:8000/health) || { echo "aond-core không trả /health sau khởi động lại — bản cũ ở $LUU"; exit 1; }
