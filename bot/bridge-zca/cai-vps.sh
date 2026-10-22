@@ -122,6 +122,15 @@ if [ -d /opt/aond_core/src/aioi ]; then
     mv /opt/aond_core/.env.moi /opt/aond_core/.env
     xong "GEMINI_API_KEYS trong .env lõi ← Vault ($(awk -F, '{print NF}' <<<"$GEMINI_API_KEYS_MOI") khoá)"
   fi
+  # SRS-5.1zzzzzzz135: khoá Claude cũng từ Vault. Khoá trong .env lõi hết số dư mà Vault đã có khoá còn dùng được → ghi đè dòng ANTHROPIC_API_KEY.
+  if [ -n "${ANTHROPIC_KEY_MOI:-}" ] && [ -f /opt/aond_core/.env ]; then
+    umask 077
+    grep -vE '^ANTHROPIC_API_KEY=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
+    printf 'ANTHROPIC_API_KEY=%s\n' "$ANTHROPIC_KEY_MOI" >> /opt/aond_core/.env.moi
+    chown --reference=/opt/aond_core/.env /opt/aond_core/.env.moi; chmod 600 /opt/aond_core/.env.moi
+    mv /opt/aond_core/.env.moi /opt/aond_core/.env
+    xong "ANTHROPIC_API_KEY trong .env lõi ← Vault"
+  fi
   systemctl restart aond-core
   for i in $(seq 1 60); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done
   SUC_KHOE=$(curl -fsS -m 3 http://127.0.0.1:8000/health) || { echo "aond-core không trả /health sau khởi động lại — bản cũ ở $LUU"; exit 1; }
