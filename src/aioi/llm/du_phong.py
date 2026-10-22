@@ -35,8 +35,12 @@ NGHI_CLAUDE_GIAY = 300
 # vòng dự phòng thử từng khoá × từng model, mỗi lần chờ tới 30 s; bridge chỉ chờ 90 s nên lời bot không bao giờ tới Zalo. Nay: mỗi lần
 # gọi tối đa HAN_MOT_LAN_GIAY, cả vòng dự phòng của MỘT lượt gọi model không quá NGAN_SACH_GIAY, và model nào quá hạn thì bỏ luôn các
 # khoá còn lại của model đó (chậm là tại model / tải, không tại khoá).
-HAN_MOT_LAN_GIAY = 20.0
+HAN_MOT_LAN_GIAY = 15.0
 NGAN_SACH_GIAY = 40.0
+# Bản 2 (theo dõi tiếp 13:52): Gemini trả lời quá hạn ở CẢ HAI model → 2 × 20 s chạm ngân sách, Groq chưa bao giờ được thử; lượt thử lại
+# nền cũng vậy → khách nhận câu xin lỗi. Nay model quá hạn NGHỈ một lúc (lượt sau đi thẳng model / nguồn kế), và hạn mỗi lần 15 s để hai
+# lần quá hạn (30 s) vẫn còn chỗ cho Groq trong 40 s.
+NGHI_MODEL_GIAY = 600.0
 
 
 @dataclass
@@ -99,6 +103,7 @@ class DuPhongProvider(LLMProvider):
         self._nghi_den = 0.0
         self._loi_nghi: BaseException | None = None
         self._bao_luc = 0.0
+        self._nghi_model: dict[tuple[str, str], float] = {}   # (nguồn, model) quá hạn → bỏ qua tới mốc này
 
     # --- chọn đường -----------------------------------------------------------------------------
 
@@ -119,6 +124,8 @@ class DuPhongProvider(LLMProvider):
             if can_anh and not n.nhin_anh:
                 continue
             for model in n.models:
+                if time.time() < self._nghi_model.get((n.ten, model), 0.0):
+                    continue   # model này vừa quá hạn — nghỉ, khỏi tốn thêm một lần chờ
                 for khoa in n.khoa:
                     if time.time() - bat_dau > NGAN_SACH_GIAY:
                         log.warning("Dự phòng (%s): quá ngân sách %.0f s — dừng, không thử tiếp", viec, NGAN_SACH_GIAY)
@@ -133,6 +140,7 @@ class DuPhongProvider(LLMProvider):
                         if not nen_doi_sang(e) and not isinstance(e, (ValueError, LoiNguon, urllib.error.URLError, OSError)):
                             raise
                         if _qua_han(e):
+                            self._nghi_model[(n.ten, model)] = time.time() + NGHI_MODEL_GIAY
                             break   # model này chậm → khoá khác cũng chậm như vậy; sang model / nguồn kế
         raise loi_chinh or loi or RuntimeError("không còn đường gọi model")
 

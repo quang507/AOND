@@ -8242,6 +8242,13 @@ Chủ dự án: "rút ngắn đi".
    model kế quá nhịp thì vẫn đi hết ba khoá rồi sang Groq (thứ tự gọi khớp từng cặp model / khoá); đồng hồ giả mỗi lần gọi "mất" 25 s → sau hai lần (50 s > 40 s)
    dừng, không chạy hết bảy đường. Bản cũ: ca 2 thử thêm hai khoá, ca 3 chạy đủ bảy lần.
 
+**Bản 2 (cùng ngày, theo dõi tiếp 13:52 sau khi lên VPS):** "chào em" 13:52:24 → bóc tách qua Gemini 3 s; bước TRẢ LỜI Gemini quá hạn ở cả hai model
+(2 × 20 s) → chạm ngân sách 40 s, Groq chưa bao giờ được thử → câu giữ chỗ 13:53:15; lượt thử lại nền (`_thu_lai_nen`) đi đúng đường đó lần nữa → 13:54:19
+câu xin lỗi + báo admin (`needs_human`). Lê Quang: "sao nó lại trả lời thế, hết cả key gemini à" — không phải hết hạn mức, là Gemini chậm ở lượt trả lời
+(bóc tách vẫn nhanh; chưa đo được vì sao từ ngoài VPS). Sửa: `HAN_MOT_LAN_GIAY = 15` (hai lần quá hạn = 30 s vẫn còn chỗ cho Groq trong 40 s) và
+`NGHI_MODEL_GIAY = 600` — cặp (nguồn, model) quá hạn thì nghỉ 10 phút, lượt sau đi thẳng model / nguồn kế (cùng ý `NGHI_CLAUDE_GIAY`). Kiểm (+2 ca): hai
+model Gemini cùng quá hạn (đồng hồ giả cộng đúng `han`) → thứ tự gọi `g-lite, g-flash, qwen-x`; model quá hạn → lượt kế bỏ qua nó, hết giờ nghỉ mới thử lại.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

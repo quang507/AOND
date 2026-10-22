@@ -143,7 +143,7 @@ def test_han_moi_lan_goi_khong_qua_20s():
     p = DuPhongProvider(ClaudeGia(HetTien()), _nguon(), goi=lambda n, k, than, han: hans.append(han) or _dap('{"tu": "g"}'))
     p.extract("s", M, {"type": "object"})          # extract xin 4096 token — trước đây tới 30 s
     p.chat("s", M)
-    assert max(hans) <= du_phong.HAN_MOT_LAN_GIAY == 20.0 and min(hans) >= 10.0
+    assert max(hans) <= du_phong.HAN_MOT_LAN_GIAY == 15.0 and min(hans) >= 10.0
 
 
 def test_model_qua_han_thi_bo_khoa_con_lai_sang_model_ke():
@@ -176,3 +176,44 @@ def test_ca_vong_du_phong_qua_ngan_sach_thi_dung(monkeypatch):
     with pytest.raises(LoiNguon):
         p.chat("s", M)
     assert len(goi) == 2 and goi == ["g1", "g1"]                          # 25 s + 25 s > 40 s → dừng, không chạy hết 7 đường
+
+
+# --- SRS-5.1zzzzzzz133 bản 2: Gemini quá hạn ở cả hai model, 2 × 20 s chạm ngân sách, Groq chưa được thử; lượt thử lại nền cũng vậy. ---------
+def _nguon_hai_gemini():
+    return [Nguon("Gemini", URL_GEMINI, ["k1", "k2"], ["g-lite", "g-flash"], True), Nguon("Groq", URL_GROQ, ["kq"], ["qwen-x"], False)]
+
+
+def test_hai_model_gemini_qua_han_van_con_cho_cho_groq_trong_ngan_sach(monkeypatch):
+    dong_ho = [1000.0]
+    monkeypatch.setattr(du_phong.time, "time", lambda: dong_ho[0])
+    goi = []
+
+    def g(n, k, than, han):
+        goi.append(than["model"])
+        if n.ten == "Gemini":
+            dong_ho[0] += han                                              # chờ hết hạn rồi mới hỏng
+            raise urllib.error.URLError(socket.timeout("timed out"))
+        return _dap("Em ghi rồi chị.")
+    p = DuPhongProvider(ClaudeGia(HetTien()), _nguon_hai_gemini(), goi=g)
+    assert p.chat("s", M) == "Em ghi rồi chị."
+    assert goi == ["g-lite", "g-flash", "qwen-x"]                           # 15 + 15 = 30 s < 40 s → Groq còn được thử
+
+
+def test_model_qua_han_thi_nghi_luot_sau_di_thang_model_ke(monkeypatch):
+    dong_ho = [1000.0]
+    monkeypatch.setattr(du_phong.time, "time", lambda: dong_ho[0])
+    goi = []
+
+    def g(n, k, than, han):
+        goi.append(than["model"])
+        if than["model"] == "g-lite":
+            dong_ho[0] += han
+            raise urllib.error.URLError(socket.timeout("timed out"))
+        return _dap("ok")
+    p = DuPhongProvider(ClaudeGia(HetTien()), _nguon_hai_gemini(), goi=g)
+    p.chat("s", M)
+    p.chat("s", M)                                                          # lượt kế: g-lite đang nghỉ → g-flash ngay
+    assert goi == ["g-lite", "g-flash", "g-flash"]
+    dong_ho[0] += du_phong.NGHI_MODEL_GIAY + 1                              # hết giờ nghỉ → thử lại g-lite
+    p.chat("s", M)
+    assert goi[-2:] == ["g-lite", "g-flash"]
