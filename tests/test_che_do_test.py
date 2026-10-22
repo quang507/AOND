@@ -18,7 +18,7 @@ def test_lenh_lam_moi_bat_che_do_test_im_lang_roi_tin_ke_co_tin_phu():
     assert eng.conversation("t1").che_do_test is True
     assert r.reply == "" and r.chu_thich == ""                          # không thông báo gì (22/10: "không cần thông báo")
     r1 = eng.handle("t1", "chào em")
-    assert r1.chu_thich.startswith("$$$$$ Đã trích xuất:") and r1.reply   # tin phụ bắt đầu từ tin kế tiếp
+    assert r1.chu_thich.startswith("$$$$$ Ghi:") and r1.reply   # tin phụ bắt đầu từ tin kế tiếp
 
 
 def test_tin_phu_khong_vao_lich_su_va_khong_vao_loi_tra_loi():
@@ -41,8 +41,8 @@ def test_sau_moi_luot_co_tin_phu_ghi_o_da_trich_xuat_va_dieu_da_hieu():
     eng.handle("t4", "$$$$$")
     r = eng.handle("t4", "em ơi nhà 12 Lê Văn Sỹ giá 6,95 tỷ")
     ct = r.chu_thich
-    assert ct.startswith("$$$$$ Đã trích xuất:") and "6,95 tỷ" in ct and "12 Lê Văn Sỹ" in ct
-    assert "Đã hiểu: vai: người bán / cho thuê" in ct and "khách xưng: em" in ct and "Còn thiếu:" in ct
+    assert ct.startswith("$$$$$ Ghi:") and "6,95 tỷ" in ct and "12 Lê Văn Sỹ" in ct and "Thiếu:" in ct
+    assert len(ct.split("\n")) <= 4 and "Đã hiểu" not in ct and "AI đề xuất" not in ct         # SRS-5.1zzzzzzz139: sếp bảo tin debug cũng ngắn
 
 
 def test_khong_co_o_moi_thi_noi_ro_va_ngoai_vung_duoc_ghi():
@@ -51,7 +51,7 @@ def test_khong_co_o_moi_thi_noi_ro_va_ngoai_vung_duoc_ghi():
     conv = eng.conversation("t5")
     conv.prop.fields["_ngoai_vung"] = "Bình Phước"
     ct = che_do_test.chu_thich(conv, [], "gia")
-    assert "• (không có ô mới)" in ct and "NGOÀI vùng nhận tin: Bình Phước" in ct and "Đang hỏi tiếp:" in ct
+    assert "Ghi: không có ô mới" in ct and "NGOÀI vùng: Bình Phước" in ct and "Hỏi tiếp:" in ct
 
 
 def test_chu_thich_loi_thi_tra_rong_khong_lam_hong_luot():
@@ -78,9 +78,9 @@ def test_server_gui_tin_phu_sau_loi_tra_loi_nhung_khong_ghi_vao_crm(monkeypatch)
     r0 = cl.post("/chat-reply", json={"external_user_id": "t7", "text": "$$$$$"}).json()
     assert r0["replies"] == [] and r0["nhip_go"] == [] and r0["reply"] == ""       # bridge không gửi gì
     r1 = cl.post("/chat-reply", json={"external_user_id": "t7", "text": "em ơi nhà 12 Lê Văn Sỹ giá 6,95 tỷ"}).json()
-    assert r1["replies"][0].startswith("$$$$$ Đã trích xuất:") and "$$$$$" not in r1["reply"]     # SRS-5.1zzzzzzz136: tin debug đi TRƯỚC
+    assert r1["replies"][0].startswith("$$$$$ Ghi:") and "$$$$$" not in r1["reply"]     # SRS-5.1zzzzzzz136: tin debug đi TRƯỚC
     assert all(not b.startswith("$$$$$") for b in r1["replies"][1:])                          # các tin sau là lời cho khách thật
-    assert all("$$$$$ Đã trích xuất" not in g["bot_reply"] for g in ghi) and len(r1["nhip_go"]) == len(r1["replies"])
+    assert all("$$$$$ Ghi:" not in g["bot_reply"] for g in ghi) and len(r1["nhip_go"]) == len(r1["replies"])
 
 
 # --- SRS-5.1zzzzzzz130 (bản 2): tiền lượt này, câu khách nói → làm chuẩn, ô bị bỏ và lý do ---------------------------------------------------
@@ -111,8 +111,8 @@ def test_tien_va_dong_tien():
     assert abs(che_do_test.tien_usd("claude-haiku-5-5-20260101", so) - 0.000735) < 1e-12
     assert che_do_test.tien_usd("Gemini:gemini-flash-lite-latest", so) == 0 and che_do_test.tien_usd("model-la", so) is None
     d = che_do_test.dong_tien({"claude-haiku-5-5": so})
-    assert d.startswith("Tốn lượt này: $0.0007 — claude-haiku-5-5: vào 1.0k · ra 1.0k · cache ghi 1.0k/đọc 1.0k · 2 lượt gọi")
-    assert "chưa rõ giá" in che_do_test.dong_tien({"model-la": so}) and che_do_test.dong_tien({}) == "Tốn lượt này: $0 (không gọi AI)."
+    assert d == "Tốn: $0.0007 (claude-haiku-5-5 vào 1.0k ra 1.0k)"
+    assert "chưa rõ giá" in che_do_test.dong_tien({"model-la": so}) and che_do_test.dong_tien({}) == "Tốn: $0 (không gọi AI)"
 
 
 def test_so_token_cong_dung_theo_luot_cua_luong():
@@ -139,32 +139,30 @@ def test_tin_phu_co_tien_cua_dung_luot_do():
     spy.extract = extract
     eng.handle("t8", "$$$$$")
     r = eng.handle("t8", "giá 9.2 nha em")
-    assert "Tốn lượt này: $0.0006 — claude-haiku-5-5: vào 2.0k · ra 400 · cache ghi 1.0k/đọc 5.0k · 1 lượt gọi" in r.chu_thich
+    assert "Tốn: $0.0006 (claude-haiku-5-5 vào 2.0k ra 400)" in r.chu_thich
     r2 = eng.handle("t8", "ok em")
-    assert "Tốn lượt này: $0.0006" in r2.chu_thich                              # lượt sau tính riêng, không cộng dồn lượt trước
+    assert "Tốn: $0.0006" in r2.chu_thich                              # lượt sau tính riêng, không cộng dồn lượt trước
 
 
 def test_tin_phu_cum_khach_noi_lam_chuan_moi_va_doi():
     eng, spy = _eng(_plan("9,2 tỷ", "9.2"))
     eng.handle("t9", "$$$$$")
     ct = eng.handle("t9", "giá 9.2 nha em").chu_thich
-    assert '• giá: "9.2" → làm chuẩn "9,2 tỷ" (mới)' in ct and "thêm thông tin mới (giá)" in ct
+    assert 'giá "9.2" → "9,2 tỷ"' in ct and "đổi từ" not in ct
     spy.plan = _plan("9,5 tỷ", "9.5")
     ct2 = eng.handle("t9", "à nhầm, giá 9.5 nha").chu_thich
-    assert '• giá: "9.5" → làm chuẩn "9,5 tỷ" (đổi từ "9,2 tỷ")' in ct2
-    assert 'yêu cầu ĐỔI thông tin: giá → "9.5"' in ct2
+    assert 'giá "9.5" → "9,5 tỷ" (đổi từ "9,2 tỷ")' in ct2
 
 
 def test_tin_phu_noi_ro_o_ai_de_xuat_nhung_bi_bo_va_ly_do():
     eng, _ = _eng(_plan("9,2 tỷ", "9.2"))                                       # AI "đọc" ra giá mà khách KHÔNG nói
     eng.handle("t10", "$$$$$")
     ct = eng.handle("t10", "nhà hẻm 4m nha").chu_thich
-    assert "Đã BỎ (AI đề xuất nhưng code không ghi):" in ct and '• giá: AI đọc "9,2 tỷ" (trích "9.2") → BỎ vì không có bằng chứng' in ct
-    assert "AI đề xuất: update(gia)." in ct and "• (không có ô mới)" in ct
+    assert 'Bỏ: giá "9,2 tỷ" vì không có bằng chứng' in ct and "Ghi: không có ô mới" in ct
     eng3, _ = _eng({"operations": [{"op": "update", "fields": {"gia": "9,2 tỷ", "gan_nga_tu": None, "unit_type": ""}, "bang_chung": {"gia": "9.2"}}], "user_intent": "sell"})
     eng3.handle("t12", "$$$$$")
     ct3 = eng3.handle("t12", "giá 9.2 nha em").chu_thich
-    assert "AI đề xuất: update(gia) · rỗng: gan_nga_tu, unit_type." in ct3      # khoá AI trả null không bị kể là đề xuất thật (bắn thử 22/10)
+    assert "Bỏ:" not in ct3 and "gan_nga_tu" not in ct3 and "unit_type" not in ct3   # khoá AI trả null không bị kể là bỏ (bắn thử 22/10)
     eng2, _ = _eng({"operations": []})
     eng2.handle("t11", "$$$$$")
-    assert "AI đề xuất: không đọc ra thao tác nào từ tin này." in eng2.handle("t11", "giá 9.2 nha em").chu_thich    # AI không đọc ra gì → nói thẳng
+    assert "Ghi: không có ô mới" in eng2.handle("t11", "giá 9.2 nha em").chu_thich    # AI không đọc ra gì → nói thẳng
