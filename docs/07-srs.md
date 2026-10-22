@@ -8405,6 +8405,15 @@ Chủ dự án (22/10, ý sếp): "lưu tin nhắn gốc của người ta nhắ
 4. **Chưa đo**: chưa biết tìm có tốt hơn bao nhiêu — DB mới có 4 tin; lý do kỳ vọng tốt hơn ở trả lời chat (lời gốc cùng văn phong với câu hỏi, giữ chi tiết hiếm, ít trùng vector); rủi ro: lời gốc nhiễu / đổi ý ("7 tỷ … à nhầm 6 tỷ") nên lọc theo số vẫn theo cột.
 5. **Kiểm**: `tests/test_tin_goc.py` (6 ca: nguyên văn + che SĐT, bỏ lượt toàn từ đưa đẩy nhưng GIỮ câu ngắn có thông tin, đúng khoảng từng căn + giữ tin mới khi quá trần, `_ghi_noi_bo` không cắt 500 chữ, `save` ghi `listing_noi_bo` và KHÔNG ghi vào `boc_tach`; đỏ khi bỏ dòng nối trong `save`). **Bắn thử production 22/10** (`ban-thu-ban`, SRS-142 bản sau): tin gốc ghi đúng ở kịch bản Cao Lỗ (9 lượt nguyên văn, kể cả câu ngắn; văn bản nhúng dùng "Người bán nhắn"); 1 phép trượt — ca một tin nhắn hai căn đếm 0 tin sau `sleep 3` (lõi đã lập đủ hai căn; chờ nền quá ngắn). Sửa: chờ tới 15 s trong `ban-thu-ban.sh`; kịch bản riêng `bot/tests/ban-thu-nhieu-can.sh` (workflow `dung_lai` = `ban-thu-nhieu-can`) chờ tới 25 s, in thời gian thật tới lúc đủ 2 tin và kiểm tin gốc của từng căn.
 
+### SRS-5.1zzzzzzz143 · Hai luồng cùng tạo seller của khách mới: luồng thua làm mất lượt lưu tin — 22/10/2026
+
+Ca gốc: bắn thử production 22/10 (`ban-thu-nhieu-can`, hai lần): bot trả lời đủ, DB có đúng 1 dòng `sellers` của khách thử nhưng 0 dòng `listings` sau 52 giây; log lõi có `Failed to create seller in Supabase: HTTP Error 409: Conflict` đúng lượt đầu của khách.
+
+1. **Lớp lỗi**: "đọc rồi ghi" không khoá — `_get_or_create_seller` đọc (chưa có) rồi chèn; hai luồng cùng làm một lúc thì luồng thua nhận 409, lỗi bị nuốt thành `None`, và `_save` coi `None` là "bỏ lượt lưu". Lượt đầu của khách mới là lượt duy nhất có nhiều luồng ghi cùng lúc, và lượt đó cũng là lượt tạo tin — tin không xuống DB tới khi khách nhắn lượt sau.
+2. **Sửa**: `src/aioi/supabase_store.py` `_get_or_create_seller` — chèn lỗi thì ĐỌC LẠI theo `zalo_user_id`, có dòng thì dùng (và nhớ cache); đọc lại vẫn không có thì trả `None` như cũ (không bịa id).
+3. **Chỗ khác cùng lớp**: `_get_or_create_conversation` cùng khuôn đọc-rồi-chèn (chưa thấy 409 ở đó, chưa sửa — sửa khi có bằng chứng); các `_post` khác dùng `on_conflict` hoặc khoá riêng. Chưa chứng minh được luồng nào đua với luồng lưu tin (suy từ log, không từ vết luồng) — nên kiểm lại bằng bắn thử.
+4. **Kiểm**: `tests/test_seller_dua_tao.py` (2 ca; ca đua đỏ khi bỏ đoạn đọc lại, đã thử). Bắn thử production `apply-migration` ô `ban-thu-nhieu-can` — script in log lõi khi trượt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
