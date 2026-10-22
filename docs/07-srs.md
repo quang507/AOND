@@ -7861,6 +7861,250 @@ sau bước 1 vẫn 4/4 hỏi trống (lý do ở mục 4); sau bước 2 (run 3
 không chị?", DC2 An Hội Tây, DC3 Chợ Quán, DC5 Tân Mỹ, DC4 mặt tiền hỏi phường trống (không lấy Hòa Hưng); journal có 4 dòng
 "phường theo hẻm: 1 phường". Cùng lượt sửa ô `ban-thu-dc` lọt vào bước `dung-lai-db.mjs` của workflow (thiếu trong danh sách loại trừ).
 
+### SRS-5.1zzzzzzz116 · Bộ câu môi giới: hỏi thêm sau khi đăng, ô riêng của chủ, số khách thật, 7 câu khách mua (21/10/2026)
+
+Chủ dự án 21/10 gửi bộ câu môi giới hỏi chủ nhà (thông tin căn, pháp lý "phần quan trọng nhất", giá và mong muốn, dẫn khách xem) và 7 câu
+hỏi khách mua; "tạo plan để làm đi, 4 5 6 từ từ, đừng để làm cái này hư cái kia"; "không phải thêm từ khóa nha". Mục 4–6 (thương lượng
+phí, hợp đồng môi giới / độc quyền, chia hoa hồng) và cụm "điều kiện hợp tác" treo ở OPEN-63.
+
+1. **Lớp**: bot chỉ hỏi những ô có trong bộ ô trước bản nháp; mọi ý khác chỉ có nhãn (`SECONDARY_FIELDS` khai mà không đường nào hỏi,
+   `ly_do_ban` thậm chí không có trong lược đồ AI ghi). Người bán hỏi lại ("có ai hỏi mua chưa", "giá này cao không") thì model không có
+   số liệu nên tự nói. Và ô tin nào cũng ghi vào `listings.boc_tach` — cột đó **đọc công khai qua API** với tin đang bán (policy
+   `anon_read_listings`, trang tin đọc nó): lý do bán gấp lọt tới người mua là chủ mất thế thương lượng.
+2. **Sửa — bán** (`src/aioi/schema.py`, `engine.py`, `prompts.py`):
+   - `CUM_SAU_DANG`: 5 cụm hỏi SAU khi tin lên web và đã hỏi phí — pháp lý (người đứng tên / đồng sở hữu đồng ý bán, thế chấp, quy hoạch
+     / tranh chấp) → giá (thương lượng, lý do bán / mức gấp) → thuế phí + cách nhận tiền / cho vay → giờ dẫn khách xem + ai giữ chìa khoá
+     → hướng, năm xây, nội thất. Mỗi lượt MỘT cụm, mỗi cụm MỘT lần (`_sau_da_hoi`, lưu cùng tin), ô đã có / ô cốt lõi đã hỏi trước bản
+     nháp thì bỏ; cho thuê chỉ hỏi dẫn khách xem; căn hộ / đất không có cụm chi tiết nhà. Không thuộc `expected_fields` → không tính % đầy
+     đủ, không chặn, không làm chậm bản nháp. Lượt khách sửa tin, hỏi điều khác, hay chấm sao thì không chen câu hỏi.
+   - Thứ tự với chấm sao giữ đúng quyết định SRS-5.1zzzzzzz104 (xin sao ngay lượt hết việc sau khi nói phí); các cụm chạy từ lượt sau.
+   - Cùng lượt sửa một lỗi có sẵn: ô khách lờ 2 lần để sau bản nháp (`cau_hoi_sau_ra_tin`) bị prompt hỏi lại MỌI lượt cho tới khi khách
+     trả lời — chặn luôn xin sao. Nay hỏi lại đúng một lần (`hoan:<ô>` trong `_sau_da_hoi`).
+   - Ô riêng `O_NOI_BO` (người đứng tên, lý do bán, giờ xem, chìa khoá): `supabase_store` tách khỏi `boc_tach`, ghi bảng `listing_noi_bo`
+     (migration `20261021g`, RLS chỉ admin, SĐT che lúc ghi), nạp lại khi đọc tin; `describe_captured` đưa chúng vào khối "THÔNG TIN
+     RIÊNG… KHÔNG đưa vào bản tin"; `_soat_hinh_thuc` gọi lại model khi bản tin 📋 chứa nguyên văn một giá trị riêng. CRM: khung "Thông tin
+     riêng của chủ" trong màn Sửa tin. Ô công khai mới (thuế phí, thanh toán, hợp đồng thuê) thêm vào danh sách trắng web.
+   - "Có ai hỏi mua chưa" / "giá cao không": AI đọc theo nghĩa (`hoi_ve` = `tinh_hinh_ban` / `dinh_gia`, code kiểm trích dẫn — không từ
+     khoá). `tinh_hinh_ban` → khối số THẬT (`tinh_hinh_tin`: interests, info_requests, viewings chưa huỷ của tin đang nói; tin chưa lên
+     web thì nói chưa có khách thấy; đọc lỗi thì nói kiểm lại, không đoán). `dinh_gia` → không nêu con số, không nhận xét cao / thấp.
+3. **Sửa — mua** (`schema.O_TU_VAN_MUA`, `BuyerLead.next_question_field`): sau khu vực / ngân sách / loại / mục đích hỏi khu muốn sống →
+   nhà gồm những ai → nơi làm việc → mấy phòng / diện tích → thang máy (chỉ nhà đất; có ông bà thì gợi ý thang máy, không nói "bên em có
+   mẫu" khi danh sách căn không có) → ai cùng quyết định → vay ngân hàng (trước đây chỉ hỏi khách tìm dự án) → tiến độ mua. Mỗi câu một
+   lần (`_da_hoi`), khách lờ thì qua câu kế. Nhu cầu mới xuống `buyers.preferences`. Lời chốt bỏ "xin số điện thoại" (người mua không phải
+   để lại số — bất biến §1).
+4. **Cùng lớp còn lại**: `SECONDARY_FIELDS` còn các ô chưa đường nào hỏi (căn góc, phí gửi xe, PCCC, chiết khấu, ranh mốc…) — AI ghi được
+   khi khách tự nói, bot không hỏi. Các ô nhu cầu khách mua cũ (`tien_do_mua`…) vẫn hỏi lại tới khi khách trả lời (chưa áp "một lần").
+   Nút "Xoá hàng loạt" đã chép / khôi phục `listing_noi_bo`; `admin_xoa_khach` (xoá một khách) xoá theo tin qua `on delete cascade`.
+
+Kiểm: `tests/test_hoi_sau_dang.py` (8 ca: ô mới không vào % bản nháp ở 6 loại; thứ tự cụm, bỏ ô đã có; theo loại; AI ghi được ô mới; ô
+riêng không vào bản tin; kho ghi bảng riêng và che SĐT; 5 cụm mỗi cụm đúng một lần sau lượt xin sao; khách sửa tin không chen câu hỏi),
+`tests/test_hoi_tinh_hinh_ban.py` (5 ca), `tests/test_tu_van_mua.py` (5 ca), `tests/test_branching.py` cập nhật thứ tự hỏi khách mua — ba
+file mới đỏ khi gỡ phần sửa ở `src/`. Bắn thử production: `apply-migration` ô `ban-thu-sau` (SD1 người bán, SM1 người mua; kiểm ô riêng
+không nằm trong `boc_tach`, có trong `listing_noi_bo`, mô tả web không có lý do bán, không tự định giá, không xin số). Lượt chạy
+39585339448 (Anthropic hết số dư — mọi lượt đi Gemini dự phòng, SRS-5.1zzzzzzz117): ĐẠT ô riêng vào `listing_noi_bo` (người đứng tên, lý do
+bán, giờ xem), `boc_tach` không có ô riêng, mô tả web không có lý do bán, ô công khai mới ghi đủ (hướng, năm xây, thuế phí, thanh toán,
+thương lượng), không tự định giá; người mua ĐẠT cả 7 câu theo thứ tự, có ông bà thì gợi ý thang máy, không xin số, 14 ô nhu cầu xuống
+`buyers.preferences`. CHƯA kiểm được: 5 cụm hỏi sau đăng và câu "có ai hỏi mua chưa" — model dự phòng không ra bản nháp nên tin không lên
+web; chạy lại khi Anthropic có số dư.
+
+### SRS-5.1zzzzzzz117 · Claude hỏng thì trả lời bằng Gemini, rồi Groq (21/10/2026)
+
+Tài khoản Anthropic hết số dư lúc 10:14 UTC 21/10 — từ đó mọi lượt là câu giữ chỗ "em đang xem kỹ…", bot câm với cả khách thật (sổ lỗi
+42 dòng trong 3 phút bắn thử). Lê Quang: "cho key anthropic hết thì qua gemini, hết lun thì qua groq".
+
+1. **Lớp**: lõi Python chỉ có MỘT đường gọi model (`llm/claude.py`); lưới Groq / Gemini của bot TypeScript gỡ 18/10 (b2f2d44) cùng bot cũ,
+   không chép sang lõi. Mọi hỏng ở nhà cung cấp (hết tiền, quá tải, quá hạn) thành bot câm.
+2. **Sửa** (`src/aioi/llm/du_phong.py`, `llm/__init__.py`, `config.py`, `so_token.py`): `DuPhongProvider` bọc Claude — Claude vẫn là đường
+   chính (quyết định "Vẫn haiku" giữ nguyên); lượt gọi Claude hỏng vì lỗi đổi model chữa được (`nen_doi_sang`: hết số dư / hạn mức, 401–403,
+   429, 5xx, 529, quá hạn — cùng danh sách `nenDoiSang` bot cũ) thì thử Gemini (`GEMINI_MODEL`, mặc định `gemini-3.8-flash`) rồi Groq
+   (`GROQ_MODEL`, mặc định `qwen/qwen3.8-27b`, `openai/gpt-oss-120b`), mỗi nguồn xoay khoá + model. Lỗi khác (sai schema, sai prompt) ném
+   lên như cũ. Hết số dư thì nghỉ Claude 5 phút (khỏi tốn một lượt gọi hỏng mỗi tin), hết khoảng thì thử lại. Cùng prompt, cùng mọi bước
+   kiểm của engine sau lượt model. Bài học bot cũ chép theo: Gemini `reasoning_effort: "low"` + trần chữ ≥ 1500 (phần nghĩ ăn chung trần);
+   Groq `reasoning_format: "hidden"` và vẫn cắt `<think>`; schema không theo khuôn strict → 400 thì xin JSON bằng lời rồi đọc giá trị JSON
+   đầu tiên; ảnh chỉ Gemini đọc, PDF chỉ Claude (không nguồn nào đọc được thì ném lỗi gốc của Claude — còi "hết tiền" vẫn kêu). Vòng công
+   cụ (`converse`) chỉ Claude chạy; dự phòng trả lời chữ. Sổ token ghi "Gemini:<model>" / "Groq:<model>" (không đóng dấu sống model chính);
+   sổ lỗi một dòng "du phong" mỗi 10 phút đang chạy dự phòng. Chỉ bọc khi VPS có khoá Gemini / Groq.
+3. **Cùng lớp còn lại**: nhúng vector địa danh (Gemini) và chép tin thoại (Groq) mỗi thứ một nhà cung cấp, hỏng thì phần đó tắt (đã có
+   đường đỡ: tra theo chữ; nói thẳng chưa nghe được). Giọng / độ chính xác bóc tách của Gemini, Groq khác Haiku — lượt dự phòng có thể kém
+   hơn; chưa có bộ đo riêng cho đường dự phòng.
+
+Kiểm: `tests/test_du_phong.py` (7 ca: hết tiền → Gemini + ghi sổ; nghỉ Claude; Gemini 429 → Groq, bỏ đoạn nghĩ; extract đọc JSON, schema
+không strict → xin bằng lời; lỗi sai schema ném lên; ảnh bỏ qua Groq, PDF không gọi; chỉ bọc khi có khoá) — file mới, đỏ trên code cũ.
+Bắn thử production lúc Anthropic còn hết số dư (run 39585339448, `ban-thu-sau`): 26 lượt trả lời + 26 lượt lập thao tác đều đi
+`Gemini/gemini-flash-lite-latest` (biến `GEMINI_MODEL` trên VPS đè mặc định), không lượt nào còn câu giữ chỗ — bot nói lại được. Chất lượng
+lượt dự phòng kém Haiku rõ: người bán không ra được bản nháp 📋 (5 lượt "em soạn bản nháp nhé?" mà không soạn), câu "có ai hỏi mua chưa"
+model nói "đang tiếp cận nhiều khách hàng quan tâm" dù khối số liệu cấm. Phía người mua đạt đủ (xem SRS-5.1zzzzzzz116).
+
+### SRS-5.1zzzzzzz118 · Không mở đầu hai lượt liền bằng câu ghi nhận (21/10/2026)
+
+Lê Quang 21/10 gửi ảnh chat lúc 17:57 (lượt chạy dự phòng Gemini, SRS-5.1zzzzzzz117): ba lượt liền bot mở "Em đã ghi nhận đầy đủ thông tin…",
+"Em ghi nhận Phường An Phú Đông rồi…", "Em ghi nhận sổ hồng riêng…" — "sao nó ghi nhận lắm thế".
+
+1. **Lớp**: luật giọng `LUAT_GHI_NHAN` (SRS-5.1zzzzzzz102, "ngắn không thì nó láo") bắt đáp nhận MỖI lượt khách cho thông tin và đưa
+   câu mẫu "Em ghi rồi ạ." mà không cấm lặp; model yếu theo đúng chữ nên lượt nào cũng một khuôn. Lời dặn không có bước soát đầu ra —
+   cùng lớp với tiêu đề thiếu giá / mở đầu "Dạ" / phường kho hẻm (đã có `_soat_hinh_thuc`).
+2. **Sửa**: `LUAT_GHI_NHAN` thêm: không mở hai lượt liền bằng cùng kiểu ghi nhận; lượt trước đã ghi nhận thì cảm ơn ngắn / nối thẳng câu
+   hỏi kế / nói chi tiết có ích; khách chỉ xác nhận ngắn thì không cần câu ghi nhận riêng (vẫn giữ lễ phép, vẫn cấm "Dạ").
+   `_mo_dau_ghi_nhan` (kiểm HÌNH THỨC lời của chính bot, không đoán ý khách) + `_soat_hinh_thuc`: lượt này và lượt bot trước cùng mở
+   bằng câu ghi nhận ("Em (đã) ghi nhận / ghi rồi / ghi lại / nhận thông tin") → gọi lại model một lần kèm lý do. Câu "Em sửa giá còn…"
+   (sửa theo lời khách) không tính; bản tin 📋 không kiểm.
+3. **Cùng lớp còn lại**: các khuôn mở đầu khác ("Em cảm ơn…") chưa soát lặp; chưa đo được bao nhiêu lượt Haiku lặp kiểu này (ảnh là
+   lượt Gemini).
+
+Cùng ngày, Lê Quang: "oke hoặc cái gì đó flexible vào" — câu mẫu ghi nhận trong prompt (bốn chỗ cùng gieo "Em ghi rồi…") đổi thành
+nhiều kiểu ("Em ghi rồi ạ.", "Em cảm ơn chị.", "Em lưu vào tin rồi nha anh.", "Em nắm rồi chị.", "Em thêm vào tin rồi anh."), vẫn mở bằng
+việc em làm (luật không từ đệm, SRS-5.1zzzzzzz80/84/102) và không "Dạ" (quyết định chủ dự án) — "Oke…" / "Dạ oke…" mở đầu cần chủ dự
+án gỡ hai luật đó trước, chưa làm. Bước soát mở rộng: hai lượt liền cùng BA CHỮ ĐẦU (`_cung_mo_dau`) cũng gọi lại model.
+
+Kiểm: `tests/test_ghi_nhan_lap.py` (4 ca: nhận diện, hai lượt liền ghi nhận → gọi lại, một lượt → không, cùng ba chữ đầu → gọi lại) — đỏ
+khi gỡ bản sửa.
+
+### SRS-5.1zzzzzzz119 · Khen nhiều hơn, vẫn có cơ sở (21/10/2026)
+
+Lê Quang 21/10 chuyển ý sếp: "sếp tôi cần nó khen nhiều hơn" — thay quyết định 19/10 (SRS-5.1zzzzzzz75, "khen quá nhiều, khen tào lao" →
+"khen ít, có cơ sở").
+
+1. **Lớp**: đổi quyết định giọng, không phải lỗi. Luật khen MỘT nguồn (`LUAT_KHEN`) vẫn là chỗ duy nhất quyết khen; hai câu khác trong
+   prompt người bán ("KHÔNG khen các thông số kỹ thuật thông thường" ở dòng hỏi ý kế, luật số 8) nói ngược luật mới nên sửa theo; câu ví
+   dụ lượt khách sửa tin "hút khách hơn hẳn" là nói điều không có số liệu — đổi "dễ đọc hơn hẳn".
+2. **Sửa** (`src/aioi/prompts.py`): khách vừa nói một điểm TỐT thật (mặt tiền, lô góc, nở hậu, hẻm xe hơi / rộng, sổ riêng / hoàn công,
+   nhà mới, nhiều phòng, diện tích rộng, gần chợ / trường khách nhắc, nội thất để lại, chủ nhiệt tình gửi ảnh / sổ) thì khen MỘT câu
+   ngắn nói đúng điểm đó và vì sao tốt; tối đa một câu khen mỗi lượt, cùng một điểm không khen lại; thông tin bình thường không cần khen.
+   GIỮ nguyên phần cấm bịa thị trường ("thanh khoản tốt", "giá hợp lý", "dễ bán lắm"…), không bình luận giá, cấm khen chung chung.
+   Khen sổ khi mới đọc ẢNH sổ vẫn cấm (chưa kiểm sổ, SRS-5.1zzzzzzz82).
+3. **Cùng lớp còn lại**: phía người mua không có luật khen riêng (bắn thử 21/10: "Vay khoảng 50% là phương án rất hợp lý" — nhận xét tài
+   chính không có cơ sở); không có bước code soát lời khen (soát nghĩa lời khen là đoán bằng từ khoá — không làm).
+
+Kiểm: `tests/test_khen_co_co_so.py` thêm `test_khen_nhieu_hon_van_co_co_so` — đỏ trên prompt cũ.
+
+### SRS-5.1zzzzzzz120 · Câu ghi nhận ví dụ ở bảng câu mẫu; lượt đầu bỏ văn mẫu cảm ơn dài (21/10/2026)
+
+Lê Quang 21/10: "mấy cái em ghi nhận sửa ở chỗ mẫu câu luôn đi và xem phản hồi của nó để sửa thêm mỗi chỗ khác". Sổ `cau_chuan` hôm đó
+(342 câu bot): mở bằng "Em cảm ơn" 46 lượt, "Cảm ơn anh/chị" 44, "Em ghi nhận" 42, "Em ghi rồi" 21; lượt đầu tiên của người rao hầu như
+luôn "Em cảm ơn anh/chị đã tin tưởng gửi thông tin nhà cho bên em ạ. Em ghi rồi, …".
+
+1. **Lớp lỗi**: model chép NGUYÊN câu ví dụ / câu dặn có trong prompt. Câu ghi nhận ví dụ nằm cứng ở ba chỗ (`LUAT_GHI_NHAN`, dòng "CẤM NHẠI
+   LẠI" của `CONVERSATION_POLICY`, ví dụ "Em ghi rồi chị. …" ở luật số 6 và mô tả công cụ `_GUI_KHACH` ở `llm/claude.py`), và luật "LƯỢT ĐẦU:
+   cảm ơn khách đã tin tưởng gửi thông tin nhà cho bên em" (có từ commit đầu) dặn đúng câu văn mẫu dài đó, trái quyết định "ngắn vừa vừa" (SRS-97).
+2. **Sửa**: (a) khoá `ghi_nhan_mau` ở `src/aioi/cau_mau.py` (migration `20261021h`, hiện ở khung "Câu mẫu cố định" thu_tu 10): các câu VÍ DỤ cách nhau
+   bằng "|", KHÔNG phải câu nói nguyên văn; `cau_mau.vi_du_ghi_nhan()` điền vào chỗ giữ `<<VI_DU_GHI_NHAN>>` lúc dựng prompt (decorator
+   `_co_vi_du_ghi_nhan` trên `build_chat_system` / `build_fee_followup_system`). Câu mở đầu "Dạ" / "Vâng" bị bỏ (luật cấm Dạ); sửa hỏng → mặc định.
+   (b) các ví dụ cứng còn lại thay bằng chỗ giữ / lời chỉ dẫn chung. (c) luật lượt đầu: cảm ơn NGẮN một vế rồi hỏi tiếp, cấm câu "đã tin tưởng
+   gửi thông tin nhà cho bên em".
+3. **Cùng lớp còn lại**: ví dụ trong prompt cho các kiểu câu khác (khen, hỏi địa chỉ, tin nhắc) vẫn có câu cứng — chưa có bằng chứng chép lặp nên
+   không đụng; chưa kiểm sau khi lên production vì Claude hết số dư (chỉ có Gemini lite trả lời). Việc "Dạ oke" mở đầu chờ sếp bỏ luật cấm Dạ.
+
+Kiểm: `tests/test_ghi_nhan_mau.py` (6 ca; đỏ trên prompt cũ — 3 ca vỡ khi bỏ bản sửa), `tests/test_ghi_nhan_ngan.py` cập nhật theo chỗ giữ.
+
+### SRS-5.1zzzzzzz121 · Bản nháp không gạch đầu dòng vẫn một tin nhắn; prompt lượt hỏi bớt ví dụ lặp (22/10/2026)
+
+Lê Quang gửi ảnh bản nháp nhà phố Thạnh Lộc ra NĂM bong bóng: "bản nháp này ổn rồi, nhưng cần gộp vào 1 ô chat thôi". Cùng lượt: "còn cái nào
+ko flexible nữa ko fix luôn, bot prompt cho ngắn hơn có linh hoạt hơn ko".
+
+1. **Lớp lỗi (bong bóng)**: bộ chia tin nhắn (`delivery.chunk_reply`) nhận bản tin rao bằng HÌNH DÁNG (có gạch đầu dòng / `---`), còn cờ
+   `is_listing_post` ở `server.py` là trạng thái tin (`summary_ready`), không phải thuộc tính của lời vừa gửi. Model viết bản nháp thành đoạn
+   liền (không gạch) khi tin chưa đủ 100% thì cả hai đều trượt → tách theo dòng trống thành năm bong bóng.
+2. **Sửa (bong bóng)**: `_is_formatted_post` nhận thêm dấu 📋 — dấu bot tự đặt ở dòng mở bản nháp (và "📋 Bản tin cập nhật:"), kiểm HÌNH THỨC
+   lời của chính bot, không đoán ý khách. Chỗ khác cùng lớp: `server.py` vẫn xét `is_listing_post` (không đổi, chunk_reply đỡ phía sau);
+   dòng dẫn "Em soạn bản nháp tin đăng để anh xem qua nhé:" do Gemini lite tự viết thay dòng mở cố định (lượt dự phòng khi Claude hết số dư),
+   chưa kiểm với Haiku.
+3. **Lớp lỗi (prompt)**: model chép câu có trong prompt. Sổ `cau_chuan` 20–21/10: cùng một câu lặp 5–25 lần ("Nếu đồng ý / Nếu ổn, em đăng lên web
+   ngay" ×19 từ lời dặn "đồng ý là em đăng lên web ngay"). Prompt lượt hỏi (≈14.800 chữ) có 26 câu ví dụ trích dẫn, vài câu lặp hai ba chỗ.
+   **Sửa**: bỏ ví dụ trùng (câu hỏi mặt tiền / hẻm ×3, sổ hồng hoàn công, diện tích sàn), thêm "chỉ minh hoạ, tự đặt câu, không chép", câu cảm ơn
+   lượt đầu chỉ một chỗ, lời dặn hỏi duyệt bản tin đổi từ ngữ ("đã ưng bản tin chưa") để không có cụm để chép. Prompt gọn hơn chỉ vài trăm chữ
+   (14.775 → 14.439) — rút mạnh hơn (khối "Chính sách" 7.600 chữ, bản trùng ở `OPERATIONS_SYSTEM`) cần đo trên model thật, chưa làm.
+   **Chưa kiểm**: bot có linh hoạt hơn thật không — Claude hết số dư, chỉ có Gemini lite; đo lại bằng sổ `cau_chuan` sau khi nạp.
+
+Kiểm: `tests/test_delivery.py::test_ban_nhap_khong_gach_dau_dong_van_mot_tin_nhan` (đỏ khi bỏ bản sửa), `tests/test_ghi_nhan_mau.py::test_prompt_gon_khong_lap_cau_vi_du`.
+
+### SRS-5.1zzzzzzz122 · Đọc nghĩa sticker (khách gửi sticker "HI!" = lời chào) (22/10/2026)
+
+Lê Quang gửi ảnh: sticker thỏ vẫy tay "HI!" → bot đáp "Em nhận được sticker của anh rồi ạ. Anh cho em hỏi thêm diện tích…" ("hello này nó biết là
+sticker thôi à, ko biết là hello à" → "thì dùng gemini đi").
+
+1. **Lớp lỗi**: kênh làm mất NGHĨA của tin rồi để lõi đoán — bridge (SRS-5.1zzzzzzz22) gán MỌI sticker chuỗi trung tính "[khách gửi sticker]" vì
+   zca-js không cho sắc thái, nên bot chỉ biết "có sticker". Đó là chỗ cố ý (sticker bực không được thành đồng ý), nhưng giá phải trả là sticker
+   chào / cảm ơn / tạm biệt cũng thành vô nghĩa.
+2. **Sửa**: (a) bridge gọi `api.getStickersDetail(id)` (zca-js 2.2.0, hạn 4 giây, hụt thì thôi) lấy `stickerUrl` + nhãn chữ, gửi `sticker_url` /
+   `sticker_text`; (b) `src/aioi/sticker.py`: tải ảnh qua `fetch_media` (rào SSRF) → MỘT lượt đọc ảnh rẻ
+   (`DuPhongProvider.extract_media_re`: Gemini trước, Claude chỉ khi mọi nguồn hỏng) trả `y_nghia` (chao / cam_on / tam_biet / dong_y / vui /
+   buon_gian / khac) + mô tả ≤ 12 từ; (c) `server.py` thay chuỗi trung tính bằng kết quả: `chao` → "hello" (đường lời chào như khách gõ hello; từ SRS-5.1zzzzzzz123 lời chào không còn xoá phiên), loại khác → "[khách gửi sticker: mô tả]"; hỏng ở bước nào cũng về chuỗi trung tính. AI đọc nghĩa,
+   code chỉ nối chữ — không luật từ khoá.
+3. **Giữ**: sticker KHÔNG BAO GIỜ là đồng ý / ghi vào tin dù AI đọc ra "đồng ý" — `engine.py` nhận dấu sticker bằng `la_sticker` (tiền tố
+   "[khách gửi sticker"), trước đây so NGUYÊN chuỗi nên dạng có mô tả sẽ lọt thành "gật". Chỗ khác cùng lớp: lời nhắn thoại (đã có STT riêng,
+   SRS-5.1zzzzzzz22), ảnh (đã đọc bằng vision) — không đụng.
+4. **Chưa kiểm**: chưa chạy với sticker Zalo thật — `getStickersDetail` / `stickerUrl` (định dạng ảnh, có cần cookie không) mới đọc từ kiểu khai
+   báo của zca-js, không bắn thử được ở đây. Cần gửi một sticker thật sau khi cài bridge và đọc `[Bridge Sticker]` trong log.
+
+Kiểm: `tests/test_sticker.py` (6 ca; ca `test_sticker_da_doc_van_khong_bao_gio_la_dong_y` đỏ khi quay về so nguyên chuỗi).
+
+### SRS-5.1zzzzzzz123 · Lời chào không còn làm mới phiên; lệnh làm mới là "$$$$$" (22/10/2026)
+
+Lê Quang: "giờ đừng để hello thành reset nữa, lệnh reset sẽ là $$$$$ người ta nhắn 5 dấu này". Thay quyết định 20/10/2026 ("hello là tôi đang test, đó
+là ý của tôi" — `is_greeting_reset`).
+
+1. **Lớp lỗi**: một lời khách THƯỜNG (chào) gắn với thao tác PHÁ DỮ LIỆU (xoá phiên) — khách thật chào giữa chừng, hay sticker chào (SRS-5.1zzzzzzz122)
+   đọc ra "hello", là mất hết tin đang soạn. Lệnh phá dữ liệu phải là chuỗi khách không gõ nhầm.
+2. **Sửa** (`engine.py`, `Engine.handle`): `$$$$$` (đúng năm dấu đô, `LENH_LAM_MOI`) làm mới phiên như trước (chuyện cũ → `lenh_lam_moi`,
+   chưa có chuyện → `chao_lan_dau`). Các lệnh gõ tay cũ `/reset`, `/clear`, `/xoa`, "reset session", "xóa hết" giữ nguyên. Lời chào (hello / hi / chào em / 👋 …):
+   lần ĐẦU (chưa có chuyện) → câu chào cố định `chao_lan_dau`, không gọi model; đã có chuyện → đi thẳng vào lượt trả lời thường, không xoá gì.
+3. **Chỗ khác cùng lớp**: "xóa hết" gõ đúng nguyên chuỗi vẫn xoá phiên (giữ vì là lệnh thử cũ của chủ dự án — nếu muốn chỉ còn `$$$$$` thì bỏ khỏi
+   danh sách); `/reset/{user_key}` (HTTP, chỉ máy gọi). Gom tin (bridge ghép tin gần nhau bằng xuống dòng) làm "$$$$$" gõ liền sau tin khác không còn là
+   lệnh — chưa xử lý.
+
+Kiểm: `tests/test_lenh_lam_moi.py` (5 ca; 2 ca đỏ khi quay về bản cũ). CLAUDE.md §6 khối quyết định chủ dự án đã cập nhật.
+
+### SRS-5.1zzzzzzz124 · Khen nhiều hơn lần hai: khen cả cách khách làm việc, bên mua có luật khen (22/10/2026)
+
+Lê Quang hỏi lại: "cho nó khen nhiều hơn dc ko" (sau SRS-5.1zzzzzzz119).
+
+1. **Lớp lỗi**: không phải lỗi — đổi mức độ giọng. Luật khen MỘT nguồn (`LUAT_KHEN`) vẫn là chỗ duy nhất quyết khen; tồn đọng từ SRS-119 ghi
+   rõ "phía người mua chưa có luật khen riêng" (bắn thử 21/10: "Vay khoảng 50% là phương án rất hợp lý" — nhận xét tài chính không có cơ sở).
+2. **Sửa** (`src/aioi/prompts.py`): (a) khen thêm CÁCH khách cung cấp thông tin khi nó thật sự rõ / đủ / nhanh, hoặc khách gửi ảnh / sổ / nhiệt
+   tình — điều em tận mắt thấy nên luôn có cơ sở, dùng được ở nhiều lượt hơn khen căn; (b) tối đa HAI ý khen ngắn mỗi lượt (một về căn, một về
+   cách khách làm việc), thay "tối đa MỘT câu"; (c) mở rộng danh sách điểm tốt (nhiều tầng, sân thượng, ô chờ thang máy, phòng thờ); (d) bên mua:
+   dòng khen cách khách nêu nhu cầu khi rõ, CẤM nhận xét tài chính và khen lựa chọn "đáng mua / sinh lời". GIỮ nguyên phần cấm bịa thị trường,
+   không bình luận giá, cấm khen chung chung.
+3. **Chưa kiểm**: model có khen nhiều hơn thật không — Claude hết số dư, chỉ có Gemini lite trả lời; đo lại bằng sổ `cau_chuan` sau khi nạp.
+   Không có bước code soát lời khen (soát nghĩa lời khen là đoán bằng từ khoá — không làm).
+
+Kiểm: `tests/test_khen_co_co_so.py::test_khen_nhieu_hon_lan_hai_khen_ca_cach_khach_lam_viec_va_ben_mua` (đỏ trên prompt cũ).
+
+### SRS-5.1zzzzzzz125 · Lời chào đầu tiên do AI đọc, bỏ danh sách từ khoá (22/10/2026)
+
+Lê Quang trả lời câu hỏi "chỗ nào còn bắt theo từ khoá": "cho lời chào đầu tiên đi thẳng qua AI thay vì danh sách từ khoá, và bỏ danh sách ở chỗ 2 —
+đúng; json chả ai bấm nhầm đâu" (lệnh `json` / `thong tin` giữ nguyên).
+
+1. **Lớp lỗi**: máy đoán "khách đang chào" bằng danh sách chữ cố định (hello, hi, alo, helo, hế lô, halo, chào em / bot, 👋, "[sticker cảm xúc]" + hai
+   luật tiền tố) — chào bằng chữ khác ("xin chào ạ", "hế lô bạn ơi") rơi ra khỏi danh sách; chính là lớp "đoán ý bằng từ khoá" đã quyết bỏ (SRS-5.1q).
+2. **Sửa**: `engine.py` bỏ `la_loi_chao` và nhánh trả câu chào cố định; lượt ĐẦU (chưa có lời bot nào) của người rao thường nối khối
+   `prompts.khoi_chao_lan_dau` vào prompt: khách CHỈ chào (kể cả sticker / biểu tượng) → AI chào lại ngắn, giới thiệu tên, hỏi bán / cho thuê hay mua,
+   lấy câu mẫu `cau_mau.chao_lan_dau` (CRM sửa được) làm mẫu — KHÔNG chép nguyên; khách đã nói nhu cầu ngay thì bỏ qua. Hết số dư / quá tải thì
+   đường dự phòng (Gemini) cũng đọc khối này như mọi lượt.
+3. **Còn lại bắt theo chữ trong `Engine.handle`**: lệnh làm mới (`$$$$$` + `/reset`, `/clear`, `/xoa`, "reset session", "xóa hết"), lệnh xem dữ liệu (`json`,
+   `/json`, "xem json", "check json", "thong tin", "thong_tin") — là lệnh của người vận hành, không đoán ý; nhận link `https?://`; `voice.py` nhận tệp thoại
+   bằng đuôi / chữ trong đường link. Chưa soát hết regex ở `schema.py`, `bulk.py`, `inventory.py`, `mua.py`.
+4. **Đánh đổi**: lời chào đầu tiên không còn là câu cố định từng chữ — model có thể đổi chữ (có mẫu để bám). Chưa kiểm với Haiku (Claude hết số dư).
+
+Kiểm: `tests/test_lenh_lam_moi.py::test_loi_chao_dau_tien_do_ai_doc_khong_con_danh_sach_tu_khoa` (năm cách chào, kể cả "xin chào ạ" / "hế lô bạn ơi" — ngoài danh sách cũ),
+`test_lenh_lam_moi_chua_co_chuyen_van_la_cau_chao_co_dinh`; `tests/test_cau_mau.py` cập nhật.
+
+### SRS-5.1zzzzzzz126 · Địa chỉ xã + tỉnh là đủ, không hỏi quận / huyện; đất hỏi "gần chỗ nào hoặc đường nào" (22/10/2026)
+
+Lê Quang test đất 31.314 m² "ở xã phước lý" (Long An): bot xin "tên đường, phường và quận", rồi hỏi "Xã Phước Lý thuộc huyện nào của Long An vậy anh?". Phản hồi:
+"xã phước lý tức là hết huyện rồi, kiểu giờ địa chỉ thì nó có thể coi rõ hơn. về ở gần chỗ nào, hoặc đường nào, khi nào bên em đi xem dc ko".
+
+1. **Lớp lỗi**: câu hỏi địa chỉ viết theo hệ hành chính BA CẤP cũ (đường / phường / quận) trong khi từ 1/7/2025 chỉ còn hai cấp (tỉnh / thành → xã /
+   phường / đặc khu). Nguồn: `NATURAL_QUESTIONS["dia_chi"]` ("tên đường / phường / quận") là lời dặn cho model — model chép theo; nhãn ô `phuong` chỉ nói "phường".
+2. **Sửa** (`src/aioi/prompts.py`): câu hỏi địa chỉ KHÔNG hỏi quận / huyện (khách tự nói thì nhận); nhãn ô `phuong` = "phường / xã"; luật số 9 của prompt người rao:
+   khách nói xã / phường + tỉnh là ĐỦ cấp hành chính; đất ở xã chưa có tên đường thì hỏi "gần chỗ nào hoặc đường nào" (quốc lộ, khu công nghiệp, chợ, trường…).
+3. **Chỗ khác cùng lớp / chưa làm**: (a) kho `wards` / `duong` chỉ phủ TP.HCM (đủ 168 phường), Tây Ninh, Đồng Nai — xã ở Long An không tra được nên chữ khách giữ nguyên (không
+   "coi rõ" được); nạp thêm xã các tỉnh còn lại là việc riêng; (b) mô tả khuôn bóc tách (`khu_vuc` bên mua: "Quận, huyện, tên dự án") và vài câu ví dụ còn nói quận — bên mua,
+   chưa đụng; (c) câu "khi nào bên em đi xem được không" đã có ở cụm hỏi sau khi tin lên web (`CUM_SAU_DANG.xem_nha`: giờ xem + giữ chìa khoá) — chờ chủ dự án nói có muốn hỏi sớm hơn.
+4. **Chưa kiểm** với model thật (Claude hết số dư; chỉ có Gemini lite).
+
+Kiểm: `tests/test_dia_chi_xa.py` (2 ca, đỏ trên prompt cũ).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

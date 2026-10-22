@@ -10,7 +10,15 @@ def build_provider(settings: Settings) -> LLMProvider:
     if provider == "claude":
         from .claude import ClaudeProvider
 
-        return ClaudeProvider(settings)
+        chinh = ClaudeProvider(settings)
+        # SRS-5.1zzzzzzz117: Claude hỏng (hết số dư, quá tải…) thì Gemini rồi Groq — chỉ khi có khoá.
+        from .du_phong import URL_GEMINI, URL_GROQ, DuPhongProvider, Nguon
+
+        nguon = [Nguon("Gemini", URL_GEMINI, list(settings.gemini_api_keys), list(settings.gemini_chat_models), True),
+                 Nguon("Groq", URL_GROQ, list(settings.groq_api_keys), list(settings.groq_chat_models), False)]
+        if not any(n.khoa for n in nguon):
+            return chinh
+        return DuPhongProvider(chinh, nguon, so=getattr(chinh, "_so", None))
     if provider == "mock":
         from .mock import MockProvider
 

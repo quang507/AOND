@@ -27,7 +27,7 @@ from .kho_anh import BUCKET_CONG_KHAI, BUCKET_RIENG, la_uuid
 from .mua import KhoNguoiMua
 from .revenue import SALE_FEE_RATE
 from .prompts import FIELD_LABELS
-from .schema import TYPE_TO_GROUP, Property, _calc_area_from_dimension
+from .schema import O_NOI_BO, TYPE_TO_GROUP, Property, _calc_area_from_dimension
 from .assistants import assign_assistant
 from .dia_danh import bo_dau
 
@@ -69,7 +69,9 @@ COT_THONG_SO = ("frontage_m", "length_m", "rear_width_m", "legal_area_m2", "buil
                 "has_completion", "has_elevator", "car_in_house", "corner_lot", "negotiable", "access_type",
                 "planning_status", "furnishing", "direction")
 _O_KHONG_PHAI_THONG_SO = {"dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "du_an", "ma_so_can", "unit_type", "gia",
-                          "loai_hinh", "phap_ly", "hinh_anh", "ly_do_ban", "trang_thai", "phi_gui_xe", "yeu_cau_xe_hoi"}
+                          "loai_hinh", "phap_ly", "hinh_anh", "ly_do_ban", "trang_thai", "phi_gui_xe", "yeu_cau_xe_hoi",
+                          # SRS-5.1zzzzzzz116: chuyện thanh toán / thuế phí / hợp đồng thuê, không phải thông số căn
+                          "thue_phi", "thanh_toan", "hd_thue_con"}
 # Nhãn ô là chữ CỦA MÌNH, không phải lời khách — mà `boc_thong_so` dò chữ khoá trên cả chuỗi "nhãn: giá trị". Soát 20/10/2026
 # (SRS-5.1zzzzzzz85: gọi boc_thong_so("<nhãn>: x") cho mọi nhãn FIELD_LABELS) — 10/74 nhãn tự bật một cột dù giá trị vô nghĩa: tin đất
 # "giá chỉ áp dụng trong tháng 10" lên web thành "thương lượng"; "vị trí mặt tiền hay hẻm: hẻm 3m" → mặt tiền; "căn thường hay căn
@@ -573,6 +575,38 @@ class SupabaseConversationStore(KhoNguoiMua):
             return False
         return bool(self._get(f"danh_gia_ai?select=id&zalo_user_id=eq.{urllib.parse.quote(user_key)}&limit=1"))
 
+    def tinh_hinh_tin(self, conv: Conversation) -> dict[str, int] | None:
+        """Đếm THẬT cho tin đang nói (SRS-5.1zzzzzzz116 — chủ nhà hỏi "có ai hỏi mua chưa"): khách bấm quan tâm (`interests`), câu
+        hỏi của khách mua (`info_requests`), lịch hẹn xem chưa huỷ (`viewings`). Chỉ con số, không danh tính khách mua."""
+        li = getattr(conv, "active", None)
+        if not (self.is_configured and li is not None and la_uuid(li.listing_id)):
+            return None
+        lid = str(uuid.UUID(li.listing_id))
+        dem = lambda bang, them="": len(self._get(f"{bang}?listing_id=eq.{lid}{them}&select=listing_id&limit=500"))  # noqa: E731
+        return {"quan_tam": dem("interests"), "hoi": dem("info_requests"), "hen_xem": dem("viewings", "&status=neq.cancelled")}
+
+    def _ghi_noi_bo(self, lid: str, rieng: dict[str, Any]) -> None:
+        """Ô riêng của chủ → `listing_noi_bo` (SRS-5.1zzzzzzz116). Không lưu SĐT (che như `ghi_danh_gia`). Lỗi chỉ ghi log — tin vẫn
+        lưu, ô vẫn còn trong phiên (SQLite trên VPS giữ bản đầy đủ)."""
+        du_lieu = {k: re.sub(r"\d[\d .-]{7,}\d", "[số]", str(v))[:500] for k, v in rieng.items()}
+        try:
+            self._post("listing_noi_bo?on_conflict=listing_id", {
+                "listing_id": lid, "du_lieu": du_lieu, "updated_at": datetime.now(timezone.utc).isoformat(),
+            }, prefer="resolution=merge-duplicates,return=minimal")
+        except Exception as e:  # noqa: BLE001
+            log.warning("ghi listing_noi_bo lỗi: %s", e)
+
+    def _doc_noi_bo(self, ids: list[str]) -> dict[str, dict[str, Any]]:
+        """listing id → ô riêng đã lưu (SRS-5.1zzzzzzz116). Lỗi → {} (bot hỏi lại cụm đó cùng lắm một lần)."""
+        if not ids:
+            return {}
+        try:
+            dong = self._get(f"listing_noi_bo?listing_id=in.({','.join(ids)})&select=listing_id,du_lieu")
+        except Exception as e:  # noqa: BLE001
+            log.warning("đọc listing_noi_bo lỗi: %s", e)
+            return {}
+        return {str(d.get("listing_id")): {k: v for k, v in (d.get("du_lieu") or {}).items() if k in O_NOI_BO} for d in dong}
+
     def ghi_xin_danh_gia(self, user_key: str, role: str = "seller", ten: str | None = None) -> bool:
         """Ghi lúc xin chấm sao. Dòng đã có (ID thử bắn lại) thì làm mới: điểm cũ xoá, giờ xin mới."""
         if not (self.is_configured and user_key):
@@ -678,7 +712,10 @@ class SupabaseConversationStore(KhoNguoiMua):
             # Khách MUA không có tin rao: căn mồi rỗng Listing() mọi hội thoại mở ra không được thành một dòng `listings`
             # (bắn thử 19/10, SRS-5.1zzzzzzz71). Việc của khách mua ghi qua KhoNguoiMua.
             for li in ([] if getattr(conv, "role", None) == "buyer" else conv.listings):
-                fields = li.prop.fields
+                # Ô riêng của chủ (SRS-5.1zzzzzzz116: lý do bán, người đứng tên, giờ xem, chìa khoá) không vào `boc_tach` — cột đó
+                # đọc công khai qua API với tin đang bán — mà vào bảng `listing_noi_bo` (chỉ admin) sau khi có id tin.
+                fields = {k: v for k, v in li.prop.fields.items() if k not in O_NOI_BO}
+                rieng = {k: li.prop.fields[k] for k in sorted(O_NOI_BO) if li.prop.fields.get(k)}
                 # 20/10/2026 (SRS-5.1zzzzzzz83): enum `listing_deal` là ban / cho_thue — bản trước ghi "thue" → 22P02, cả dòng tin
                 # cho thuê không bao giờ xuống DB (không lên web, không có trên /admin), lỗi chỉ nằm ở journal.
                 deal_type = "cho_thue" if li.prop.is_rental else "ban"
@@ -758,6 +795,8 @@ class SupabaseConversationStore(KhoNguoiMua):
                     lid = (tao[0].get("id") if tao else None) or lid_mong
                 if lid:
                     self._ghi_anh(lid, getattr(li, "media", None) or [])
+                    if rieng:
+                        self._ghi_noi_bo(lid, rieng)
                     if li.listing_id == getattr(conv, "active_listing_id", None):
                         lid_dang_noi = lid
 
@@ -894,11 +933,13 @@ class SupabaseConversationStore(KhoNguoiMua):
 
             # 3. Load listings for this seller
             db_listings = self._get(f"listings?seller_id=eq.{seller_id}&order=created_at.asc")
+            noi_bo = self._doc_noi_bo([str(r["id"]) for r in db_listings if r.get("id")])
             listings: list[Listing] = []
             for row in db_listings:
                 boc_tach = dict(row.get("boc_tach") or {})
                 hoan = boc_tach.pop("_hoan", None)
                 boc_tach.pop("_thong_so_ai", None)   # dấu cho DB, không phải ô tin
+                boc_tach.update(noi_bo.get(str(row.get("id")), {}))
                 prop = Property(
                     loai_hinh=loai_tu_db(row.get("property_type"), boc_tach),
                     is_rental=(row.get("deal") in ("cho_thue", "thue")),

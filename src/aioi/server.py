@@ -20,6 +20,7 @@ from . import cau_mau
 from .anh_du_an import anh_gui_kem
 from .config import load_settings
 from .delivery import chunk_reply, typing_delay
+from .sticker import STICKER_TRUNG_TINH, doc_sticker
 from .drive import khoa_drive, make_folder_namer, make_resolver
 from .dia_danh import TraDiaDanh
 from .giao_lo import dia_ban_tu_nga_tu
@@ -144,6 +145,8 @@ class ZaloBridgePayload(BaseModel):
     image_url: str | None = None
     file_url: str | None = None
     file_name: str | None = None
+    sticker_url: str | None = None      # link ảnh sticker (bridge, zca-js getStickersDetail) — SRS-5.1zzzzzzz122
+    sticker_text: str | None = None     # nhãn chữ Zalo gắn cho sticker (có thể trống)
     msg_id: str | None = None
     channel: str | None = None
     mark_sent: str | None = None
@@ -416,6 +419,11 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         else:
             incoming_text = "[Khách gửi tin nhắn thoại nhưng không tìm thấy file ghi âm]"
             _so_loi.ghi_loi("stt tin thoai", "bridge báo tin thoại nhưng không kèm link ghi âm")
+
+    # 3b. Sticker: một lượt đọc ảnh rẻ (Gemini trước) cho biết khách CHÀO / cảm ơn / … — thay chuỗi trung tính của bridge (SRS-5.1zzzzzzz122).
+    if payload.sticker_url and STICKER_TRUNG_TINH in incoming_text:
+        incoming_text = incoming_text.replace(
+            STICKER_TRUNG_TINH, doc_sticker(_engine._provider, payload.sticker_url, payload.sticker_text or ""), 1)
 
     # 4. Dispatch to Engine
     uk = payload.external_user_id

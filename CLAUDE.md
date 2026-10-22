@@ -125,20 +125,24 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > ngữ cảnh chép kèm); lõi đọc 8 dòng đã sửa / chấm làm ví dụ (`khoi_cau_chuan`, nhớ 60 giây). Đổi giọng bot theo ca cụ thể thì sửa ở đó trước.
 > **Câu mẫu cố định (SRS-5.1zzzzzzz106, 21/10/2026):** câu bot nói NGUYÊN VĂN (duyệt tin, hỏi phí, nhắc bản nháp, xin chấm sao, giữ chỗ khi
 > lỗi; từ SRS-5.1zzzzzzz110 cả lời chào, dòng mở bản nháp, ẩn / giữ rổ hàng, nhận ảnh / link / tệp, tin nhắc; SRS-5.1zzzzzzz111 câu báo phí `{phi}`) chỉ ở `src/aioi/cau_mau.py` (`MAC_DINH`) — chủ dự án sửa ở khung "Câu mẫu cố định" trang `/admin/cau-chuan` (bảng `cau_mau`, đè câu gốc,
-> nhớ 60 giây). Đừng viết tay câu đó ở chỗ khác (`tests/test_cau_mau.py` đỏ); thêm câu mới = thêm khoá + migration nạp dòng.
+> nhớ 60 giây). Đừng viết tay câu đó ở chỗ khác (`tests/test_cau_mau.py` đỏ); thêm câu mới = thêm khoá + migration nạp dòng. Khoá `ghi_nhan_mau` (SRS-5.1zzzzzzz120) là các câu VÍ DỤ ghi nhận cách nhau bằng "|", không nói nguyên văn; lượt đầu cảm ơn NGẮN, không "đã tin tưởng gửi thông tin nhà cho bên em".
+> **Ô riêng của chủ nhà (SRS-5.1zzzzzzz116, 21/10/2026):** `listings.boc_tach` ĐỌC CÔNG KHAI qua API với tin đang bán — ô chủ nói riêng
+> (người đứng tên, lý do bán / bán gấp, giờ dẫn khách xem, chìa khoá) là `schema.O_NOI_BO`, lõi ghi bảng `listing_noi_bo` (chỉ admin), không
+> vào bản tin. Thêm ô riêng mới = thêm khoá vào `O_NOI_BO` (+ nhãn ở `SuaTinModal`). Câu hỏi thêm sau khi tin lên web: `schema.CUM_SAU_DANG`.
 > **Tra địa danh (SRS-5.1zzzzzzz60):** phường / quận / đường khách nói → `src/aioi/dia_danh.py` (chữ trước, vector Gemini sau, máy
 > kiểm tên gần chữ khách); vector do lịch `nhung-tick` / `nhung-dia-danh-tick` nuôi — đừng gỡ hai lịch đó.
 
 > **QUYẾT ĐỊNH CHỦ DỰ ÁN — KHÔNG ĐƯA RA BÀN LẠI, KHÔNG CHẤM LÀ LỖI KHI REVIEW / ĐÁNH GIÁ UX (20/10/2026).** Chủ dự án: "supabase
 > free và zalo clone là ý chí của tui, ko cần bàn lại"; "hello là tôi đang test, đó là ý của tôi".
 > - **Supabase gói Free** (không tự sao lưu) và **bridge zca-js trên tài khoản Zalo clone** là lựa chọn có chủ đích.
-> - **"hello / hi / alo / chào em / 👋 / /reset" làm mới phiên** (`Engine.handle`, `is_greeting_reset`) là cố ý để chủ dự án test.
+> - **Làm mới phiên = gõ đúng `$$$$$` (năm dấu đô)** (`Engine.handle`, `LENH_LAM_MOI`; chủ dự án 22/10/2026: "đừng để hello thành reset nữa"). "hello / hi / chào em / 👋 / sticker chào" chỉ CHÀO, không xoá phiên (thay quyết định 20/10); lời chào đầu tiên do AI đọc (`khoi_chao_lan_dau`, mẫu `chao_lan_dau`), không còn danh sách từ khoá (SRS-5.1zzzzzzz125). Lệnh cũ `/reset`, `/clear`, `/xoa`, "reset session", "xóa hết" vẫn dùng được.
 > - **Văn tin rao** thêm ý chung ("phù hợp ở kết hợp kinh doanh") — chủ dự án: "kệ".
 > - **Theo bản anh Luận** (`luan8560/AOND`, SRS-5.1zzzzzzz81): khách duyệt bản nháp thì hỏi "có biết phí môi giới của tụi em chưa"; hẻm /
 >   mặt tiền và hiện trạng hỏi TRƯỚC bản nháp; gửi model 30 tin gần nhất.
 > - **Giữ của mình, không theo anh Luận:** hỏi gộp theo cụm (SRS-5.1zzzzzzz79), khách lờ một ô 2 lần thì để sau (SRS-5.1zzzzzzz80), khen
->   ít / có cơ sở, cấm mở đầu "Dạ", tên trợ lý người thật (FR-181), kênh vừa mua vừa bán (lời chào hai lựa chọn).
-> - **Model:** mọi lượt dùng Haiku (chủ dự án: "Vẫn haiku").
+>   có cơ sở (21/10/2026 sếp: "cần nó khen nhiều hơn" — khen điểm tốt thật mỗi lượt có điểm tốt, vẫn cấm bịa thị trường, SRS-5.1zzzzzzz119; 22/10 khen thêm cách khách cung cấp thông tin, tối đa hai ý khen mỗi lượt, bên mua có luật khen riêng, SRS-5.1zzzzzzz124), cấm mở đầu "Dạ", tên trợ lý người thật (FR-181), kênh vừa mua vừa bán (lời chào hai lựa chọn).
+> - **Model:** mọi lượt dùng Haiku (chủ dự án: "Vẫn haiku"). Claude hỏng (hết số dư, quá tải…) thì lượt đó trả lời bằng Gemini rồi Groq
+>   (`llm/du_phong.py`, SRS-5.1zzzzzzz117, 21/10/2026) — Claude vẫn là đường chính.
 > - **Độ dài lời bot (21/10/2026, SRS-5.1zzzzzzz97):** "cứ ngắn vừa vừa thôi, khách không hiểu thì mình hỏi tiếp" — nói ý chính rồi dừng,
 >   không thêm câu giải thích khi khách chưa hỏi. Phí thuê viết "0.75 tháng tiền thuê" (chủ dự án duyệt câu tester). Câu chữ thực như môi
 >   giới nhắn Zalo, không văn mẫu (tester: "AI quá khách ngán"); câu tester sửa thì dùng nguyên văn. Ghi nhận "vừa ngắn vừa lịch sự" ("ngắn không thì nó láo", SRS-5.1zzzzzzz102); khách duyệt tin → "Em xin phép đăng

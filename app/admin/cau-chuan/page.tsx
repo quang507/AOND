@@ -261,9 +261,9 @@ function CauBot({ d, n, sua, luu, xoa, dangLuu, moRong }: {
 // Câu mẫu cố định (21/10/2026, SRS-5.1zzzzzzz106). Chủ dự án: "đưa thêm 1 bảng nhỏ ở 1 bên là các câu đã sửa thành mẫu từ lúc lấy lại
 // các yêu cầu của anh Luận đến bây giờ… có gì vào sửa tiếp". Bảng `cau_mau` (RLS admin); lõi đọc câu ở đây đè câu trong code, nhớ 60 giây.
 type CauMau = { khoa: string; cau: string; mac_dinh: string; dung_o: string; nguon: string | null; thu_tu: number; updated_at: string };
-// 9 câu đầu (thu_tu ≤ 9) chốt từ khi theo lại bản anh Luận 20/10, kể cả câu báo phí tester sửa (SRS-5.1zzzzzzz111); các câu sau có
-// từ trước (SRS-5.1zzzzzzz110).
-const NHOM_CAU_MAU = (t: number) => (t <= 9 ? "Chốt từ 20/10 (theo bản anh Luận)" : "Có từ trước");
+// 10 câu đầu (thu_tu ≤ 10) chốt từ khi theo lại bản anh Luận 20/10, kể cả câu báo phí tester sửa (SRS-5.1zzzzzzz111) và câu ví dụ
+// ghi nhận (SRS-5.1zzzzzzz120); các câu sau có từ trước (SRS-5.1zzzzzzz110).
+const NHOM_CAU_MAU = (t: number) => (t <= 10 ? "Chốt từ 20/10 (theo bản anh Luận)" : "Có từ trước");
 
 function CauMauCoDinh({ onLoi, onBao }: { onLoi: (s: string) => void; onBao: (s: string) => void }) {
   const [ds, setDs] = useState<CauMau[] | null>(null);

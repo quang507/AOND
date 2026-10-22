@@ -73,9 +73,9 @@ def test_cau_cu_truoc_anh_luan_sua_o_crm_toi_loi_bot():
     cau_mau.dang_ky(lambda: {"chao_lan_dau": "Em chào {goi}, em là {ten} ạ. {Goi} cần bán hay mua ạ?",
                              "xac_nhan_an": "{Goi} chắc muốn em {viec} không ạ?",
                              "nhac_hoi_lai": "{Goi} ơi, {toi} hỏi lại nha: {hoi}"})
-    eng, _ = _eng({"operations": []})
-    r = eng.handle("cm1", "hello")
-    assert r.reply.startswith("Em chào anh/chị, em là ") and r.reply.endswith("Anh/chị cần bán hay mua ạ?")
+    eng, spy = _eng({"operations": []})
+    eng.handle("cm1", "hello")          # lời chào đầu do AI đọc (SRS-5.1zzzzzzz125): câu mẫu sửa ở CRM nằm trong khối mẫu của prompt
+    assert "Em chào anh/chị, em là " in spy.systems[0] and "Anh/chị cần bán hay mua ạ?" in spy.systems[0]
     from aioi.engine import Engine
     assert Engine._receipt_reply(eng, eng.conversation("cm1"), [("confirm_destructive", "NGƯNG RAO căn A12")]) == \
         "Anh/chị chắc muốn em NGƯNG RAO căn A12 không ạ?"

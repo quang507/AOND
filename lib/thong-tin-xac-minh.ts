@@ -47,6 +47,11 @@ export const O_XAC_MINH: ReadonlyArray<readonly [string, string]> = [
   ["muc_coc", "Mức cọc"],
   ["truot_gia", "Trượt giá"],
   ["thoi_gian_fitout", "Thời gian fit-out"],
+  // SRS-5.1zzzzzzz116: bot hỏi chủ sau khi tin lên web. Ô RIÊNG của chủ (lý do bán, người đứng tên, giờ xem, chìa khoá) không có ở đây
+  // và không nằm trong `boc_tach` (bảng `listing_noi_bo`, chỉ admin).
+  ["thue_phi", "Thuế phí sang tên"],
+  ["thanh_toan", "Thanh toán"],
+  ["hd_thue_con", "Hợp đồng thuê hiện tại"],
 ];
 
 export function dongXacMinh(boc: unknown): Array<{ nhan: string; giaTri: string }> {

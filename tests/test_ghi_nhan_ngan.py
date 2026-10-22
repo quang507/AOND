@@ -31,6 +31,8 @@ def test_luat_ghi_nhan_ngan_ma_lich_su_co_trong_prompt_va_o_gui_khach():
 def test_luot_sau_ban_nhap_cung_mot_luat_ghi_nhan():
     """SRS-5.1zzzzzzz105 (bắn thử 205, KB3): lượt khách bổ sung sau bản nháp vẫn "Em ghi nhận, căn đã có sổ hồng và full nội thất
     rồi…" — luật ghi nhận chỉ nằm ở prompt lượt hỏi (CONVERSATION_POLICY), không ở prompt sau bản nháp. Nay một nguồn LUAT_GHI_NHAN."""
+    from aioi import cau_mau
     from aioi.prompts import CONVERSATION_POLICY, LUAT_GHI_NHAN, build_fee_followup_system
     assert LUAT_GHI_NHAN in CONVERSATION_POLICY
-    assert LUAT_GHI_NHAN in build_fee_followup_system("x", Property(loai_hinh="nha_pho"), web={"len_web": False, "cho_duyet": True})
+    luat = LUAT_GHI_NHAN.replace("<<VI_DU_GHI_NHAN>>", cau_mau.vi_du_ghi_nhan())     # ví dụ lấy ở cau_mau (SRS-5.1zzzzzzz120)
+    assert luat in build_fee_followup_system("x", Property(loai_hinh="nha_pho"), web={"len_web": False, "cho_duyet": True})
