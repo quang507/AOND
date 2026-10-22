@@ -330,7 +330,7 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
 - TIN HỆ THỐNG TRONG NGOẶC VUÔNG:
   • "[Tin nhắn thoại của khách]: "…"": khách nói bằng giọng, trả lời như khách gõ chữ (chữ chép từ giọng có thể sai chính tả, hiểu theo nghĩa).
   • "[Khách gửi tin nhắn thoại nhưng …]": không nghe được → xin khách nói lại hoặc nhắn chữ giúp, KHÔNG đoán nội dung.
-  • "[khách gửi sticker]": nhãn dán, không rõ cảm xúc → đáp một câu ngắn thân thiện rồi nối tiếp câu đang hỏi; KHÔNG coi là đồng ý.
+  • "[khách gửi sticker]" (chưa đọc được hình) hoặc "[khách gửi sticker: mô tả hình]" (đã đọc): nhãn dán → đáp một câu ngắn thân thiện hợp với hình (nếu có mô tả) rồi nối tiếp câu đang hỏi; KHÔNG coi là đồng ý.
   • "[khách thả cảm xúc …]": khách thả biểu tượng lên tin của bot (tim / like = ưng).
 - KHI KHÁCH HỎI LINK BÀI ĐĂNG:
   • Trả lời theo TRẠNG THÁI TIN THẬT ở khối "ƯU TIÊN LƯỢT NÀY" bên dưới khi có; không có khối đó thì nói tin chưa hiển thị trên web, sẽ
@@ -1700,7 +1700,7 @@ QUY TẮC:
   bản nháp — kể cả khi sau đó bot nhắc hay hỏi xác nhận "đã ổn chưa"), đọc theo NGHĨA tin khách vừa nhắn: đồng ý cho đăng (ok, được rồi, đăng đi, chuẩn rồi, thả tim / like…) →
   duyet_ban_nhap = "dong_y"; KHÔNG đồng ý / chưa muốn đăng / muốn sửa trước rồi mới đăng → "khong_dong_y". Hỏi lại, hỏi phí,
   nói chuyện khác hay chưa rõ → bỏ trống. Có điền thì duyet_trich_dan = NGUYÊN VĂN cụm trong tin khách cho thấy điều đó.
-  "[khách gửi sticker]" là nhãn dán KHÔNG rõ cảm xúc → KHÔNG phải đồng ý, bỏ trống. "[khách thả cảm xúc ❤️]" / 👍 / 👌 (thả
+  "[khách gửi sticker]" / "[khách gửi sticker: …]" là nhãn dán → KHÔNG phải đồng ý, bỏ trống. "[khách thả cảm xúc ❤️]" / 👍 / 👌 (thả
   lên tin bot hoặc gõ trong tin) là đồng ý.
 - KHÁCH HỎI VỀ GÌ (19/10/2026, đọc theo NGHĨA tin khách vừa nhắn, không theo từ khoá): hoi_ve = "phi" khi khách hỏi phí / hoa
   hồng / có mất tiền không của BÊN MÌNH (KHÔNG phải phí quản lý, thuế, phí sang tên của căn nhà); "uy_tin" khi khách hỏi công
@@ -1737,7 +1737,7 @@ QUY TẮC:
 - ĐỊA CHỈ ĐẦY ĐỦ: fields.dia_chi luôn là địa chỉ ĐẦY ĐỦ của căn sau khi GHÉP phần khách vừa nói (số nhà, hẻm, phường, quận) vào
   phần ĐANG GHI (khối "ĐỊA CHỈ ĐANG GHI" bên dưới, nếu có) và SỬA theo lời đính chính mới nhất — không trả một mảnh rời.
 - TIN HỆ THỐNG trong ngoặc vuông: "[Tin nhắn thoại của khách]: "…"" là lời khách NÓI, đọc như chữ khách gõ (chữ chép từ giọng
-  nói có thể sai chính tả); "[khách gửi sticker]" là nhãn dán, không có thông tin BĐS.
+  nói có thể sai chính tả); "[khách gửi sticker]" / "[khách gửi sticker: …]" là nhãn dán, không có thông tin BĐS.
 
 {SLANG_NOTES}
 

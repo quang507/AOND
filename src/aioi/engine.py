@@ -140,7 +140,7 @@ def _image_count(media: list[dict[str, str]]) -> int:
 # mo_ta_du_an, xac_nhan_xoa, kèm trích dẫn) và _la_tai_lieu_chung đọc bản đọc ảnh.
 
 # Chuỗi bridge gán cho MỌI sticker Zalo (bot/bridge-zca/index.mjs, SRS-5.1zzzzzzz22): zca-js không cho biết sắc thái.
-STICKER_TRUNG_TINH = "[khách gửi sticker]"
+from .sticker import STICKER_TRUNG_TINH, la_sticker  # noqa: E402,F401  (một nguồn ở sticker.py, SRS-5.1zzzzzzz122)
 
 # Max tool-calling steps in one agent turn (a safety cap so the loop can't run away).
 MAX_AGENT_STEPS = 6
@@ -3438,7 +3438,7 @@ class Engine:
         cuoi = next((t.content for t in reversed(conv.history) if t.role == "user"), "")
         # Sticker trung tính của bridge ("[khách gửi sticker]", không rõ vui hay bực) KHÔNG bao giờ là đồng ý — dấu của kênh,
         # không phải lời khách (bản TS: laStickerTrungTinh). Tim / like thật đến qua "[khách thả cảm xúc …]".
-        if conv.listing_proposed and y in ("dong_y", "khong_dong_y") and cuoi.strip() != STICKER_TRUNG_TINH:
+        if conv.listing_proposed and y in ("dong_y", "khong_dong_y") and not la_sticker(cuoi):
             if _trich_dan_khop(plan.get("duyet_trich_dan"), cuoi):
                 conv.duyet_luot = y
 
@@ -3485,7 +3485,7 @@ class Engine:
             conv.y_luot["xin_dang"] = str(plan["xin_dang"]).strip()
             # Bản nháp đã gửi mà khách bảo "rao tin này giúp mình" = đồng ý bản nháp (SRS-5.1zzzzzzz87) — trước đây xin_dang bị bỏ
             # khi đã trình bản nháp, duyet_ban_nhap thì trống, nên lời bảo đăng thành một vòng hỏi xác nhận nữa.
-            if conv.listing_proposed and conv.duyet_luot is None and cuoi.strip() != STICKER_TRUNG_TINH:
+            if conv.listing_proposed and conv.duyet_luot is None and not la_sticker(cuoi):
                 conv.duyet_luot = "dong_y"
         if conv.listing_proposed:
             # Một dòng mỗi lượt chờ duyệt (SRS-5.1zzzzzzz94): bắn thử 21/10 có hai lượt khách bảo đăng mà không thành duyệt, journal không

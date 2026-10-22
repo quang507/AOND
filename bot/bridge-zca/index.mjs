@@ -341,7 +341,7 @@ function batDangSoan(threadId) {
   return () => clearInterval(t);
 }
 
-async function handleIncoming(threadId, text, imageUrls, msgId, tep) {
+async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker) {
   const imgList = Array.isArray(imageUrls) ? imageUrls : (imageUrls ? [imageUrls] : []);
   const imgDesc = imgList.length > 1 ? `[${imgList.length} ?nh]` : (imgList.length === 1 ? "[?nh]" : "");
   console.log(`? [${threadId}] ${text || (tep ? `[file ${tep.ten ?? ""}]` : (imgDesc || "[tin nh?n]"))}`);
@@ -356,6 +356,9 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep) {
     // SRS-5.1zzj (05/10/2026): file (PDF / CSV / XLSX) ng??i b?n g?i qua Zalo c? nh?n ? b? n?o t?i v? v? ??c.
     file_url: tep?.url,
     file_name: tep?.ten,
+    // SRS-5.1zzzzzzz122 (22/10/2026): link ảnh sticker để bộ não ĐỌC nghĩa (khách gửi sticker "HI!" = lời chào).
+    sticker_url: sticker?.url,
+    sticker_text: sticker?.text,
     msg_id: msgId,
     channel: "zalo_personal_test",
   };
@@ -458,13 +461,14 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep) {
 const bufferTin = new Map();
 const DEBOUNCE_MS = 2500;
 
-function queueIncoming(threadId, text, imageUrl, msgId, tep) {
+function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker) {
   const tid = String(threadId);
   const hienTai = bufferTin.get(tid) || {
     texts: [],
     imageUrls: [],
     timer: null,
     tep: null,
+    sticker: null,
     lastMsgId: null,
   };
   if (text) hienTai.texts.push(text.trim());
@@ -472,6 +476,7 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep) {
     hienTai.imageUrls.push(imageUrl);
   }
   if (tep) hienTai.tep = tep;
+  if (sticker?.url) hienTai.sticker = sticker;
   hienTai.lastMsgId = msgId || hienTai.lastMsgId;
 
   if (hienTai.timer) clearTimeout(hienTai.timer);
@@ -481,7 +486,7 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep) {
     const textGom = hienTai.texts.filter(Boolean).join("\n");
     if (!textGom && !hienTai.imageUrls.length && !hienTai.tep) return;
     try {
-      await handleIncoming(tid, textGom, hienTai.imageUrls, hienTai.lastMsgId, hienTai.tep);
+      await handleIncoming(tid, textGom, hienTai.imageUrls, hienTai.lastMsgId, hienTai.tep, hienTai.sticker);
     } catch (e) {
       if (laPhienChet(e)) return await phienChet(errDetail(e));
       await ghiLoi("xử lý tin gom", errDetail(e));
@@ -519,6 +524,7 @@ api.listener.on("message", async (message) => {
     }
 
     let text = message.data?.content;
+    let sticker;
     let imageUrl;
     let tep; // SRS-5.1zzj: file đính kèm {url, ten}
     const msgType = String(message.data?.msgType ?? "");
@@ -559,7 +565,21 @@ api.listener.on("message", async (message) => {
         // sticker tin cậy được, nên gán chuỗi TRUNG TÍNH `[khách gửi sticker]` (không khớp EMOJI_VUI,
         // không khớp `laThaCamXuc`); chat-reply nhận nó bằng `laStickerTrungTinh`: không gật, không ghi vào tin. Tim / like THẬT đi
         // qua listener `reaction` riêng (bên dưới) với icon rõ ràng, vẫn là tín hiệu đồng ý như cũ.
+        const stickerId = text.id;
         text = "[khách gửi sticker]";
+        // SRS-5.1zzzzzzz122: lấy link ảnh sticker (zca-js getStickersDetail) cho bộ não đọc nghĩa; hụt / quá 4 giây thì thôi,
+        // vẫn là chuỗi trung tính — sticker không được làm chậm hay hỏng lượt chat.
+        try {
+          const sid = Number(stickerId);
+          if (Number.isFinite(sid) && typeof api.getStickersDetail === "function") {
+            const ct = await Promise.race([api.getStickersDetail(sid), new Promise((_, rj) => setTimeout(() => rj(new Error("quá 4 giây")), 4000))]);
+            const d = Array.isArray(ct) ? ct[0] : ct;
+            const url = d?.stickerUrl || d?.stickerWebpUrl || d?.stickerSpriteUrl;
+            if (url) sticker = { url: String(url), text: d?.text ? String(d.text).slice(0, 60) : undefined };
+          }
+        } catch (e) {
+          console.log(`[Bridge Sticker] không lấy được chi tiết sticker: ${errDetail(e)}`);
+        }
       } else {
         text = "";
       }
@@ -571,6 +591,7 @@ api.listener.on("message", async (message) => {
       imageUrl,
       message.data?.msgId ? String(message.data.msgId) : undefined,
       tep,
+      sticker,
     );
   } catch (e) {
     if (laPhienChet(e)) return await phienChet(errDetail(e));

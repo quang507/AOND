@@ -8017,6 +8017,28 @@ ko flexible nữa ko fix luôn, bot prompt cho ngắn hơn có linh hoạt hơn 
 
 Kiểm: `tests/test_delivery.py::test_ban_nhap_khong_gach_dau_dong_van_mot_tin_nhan` (đỏ khi bỏ bản sửa), `tests/test_ghi_nhan_mau.py::test_prompt_gon_khong_lap_cau_vi_du`.
 
+### SRS-5.1zzzzzzz122 · Đọc nghĩa sticker (khách gửi sticker "HI!" = lời chào) (22/10/2026)
+
+Lê Quang gửi ảnh: sticker thỏ vẫy tay "HI!" → bot đáp "Em nhận được sticker của anh rồi ạ. Anh cho em hỏi thêm diện tích…" ("hello này nó biết là
+sticker thôi à, ko biết là hello à" → "thì dùng gemini đi").
+
+1. **Lớp lỗi**: kênh làm mất NGHĨA của tin rồi để lõi đoán — bridge (SRS-5.1zzzzzzz22) gán MỌI sticker chuỗi trung tính "[khách gửi sticker]" vì
+   zca-js không cho sắc thái, nên bot chỉ biết "có sticker". Đó là chỗ cố ý (sticker bực không được thành đồng ý), nhưng giá phải trả là sticker
+   chào / cảm ơn / tạm biệt cũng thành vô nghĩa.
+2. **Sửa**: (a) bridge gọi `api.getStickersDetail(id)` (zca-js 2.2.0, hạn 4 giây, hụt thì thôi) lấy `stickerUrl` + nhãn chữ, gửi `sticker_url` /
+   `sticker_text`; (b) `src/aioi/sticker.py`: tải ảnh qua `fetch_media` (rào SSRF) → MỘT lượt đọc ảnh rẻ
+   (`DuPhongProvider.extract_media_re`: Gemini trước, Claude chỉ khi mọi nguồn hỏng) trả `y_nghia` (chao / cam_on / tam_biet / dong_y / vui /
+   buon_gian / khac) + mô tả ≤ 12 từ; (c) `server.py` thay chuỗi trung tính bằng kết quả: `chao` → "hello" (cùng đường làm mới phiên như khách gõ
+   hello, quyết định chủ dự án 20/10), loại khác → "[khách gửi sticker: mô tả]"; hỏng ở bước nào cũng về chuỗi trung tính. AI đọc nghĩa,
+   code chỉ nối chữ — không luật từ khoá.
+3. **Giữ**: sticker KHÔNG BAO GIỜ là đồng ý / ghi vào tin dù AI đọc ra "đồng ý" — `engine.py` nhận dấu sticker bằng `la_sticker` (tiền tố
+   "[khách gửi sticker"), trước đây so NGUYÊN chuỗi nên dạng có mô tả sẽ lọt thành "gật". Chỗ khác cùng lớp: lời nhắn thoại (đã có STT riêng,
+   SRS-5.1zzzzzzz22), ảnh (đã đọc bằng vision) — không đụng.
+4. **Chưa kiểm**: chưa chạy với sticker Zalo thật — `getStickersDetail` / `stickerUrl` (định dạng ảnh, có cần cookie không) mới đọc từ kiểu khai
+   báo của zca-js, không bắn thử được ở đây. Cần gửi một sticker thật sau khi cài bridge và đọc `[Bridge Sticker]` trong log.
+
+Kiểm: `tests/test_sticker.py` (6 ca; ca `test_sticker_da_doc_van_khong_bao_gio_la_dong_y` đỏ khi quay về so nguyên chuỗi).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

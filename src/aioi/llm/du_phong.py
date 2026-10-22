@@ -226,12 +226,30 @@ class DuPhongProvider(LLMProvider):
             return chuan_theo_schema(v, json_schema) if isinstance(v, dict) else {}
         return self._thu("group_media", lambda: self._chinh.group_media(items, labels, instruction, json_schema), phu, can_anh=True)
 
-    def extract_media(self, items: list[tuple[bytes, str]], instruction: str, json_schema: dict[str, Any]) -> dict[str, Any]:
+    def _phu_doc_anh(self, items: list[tuple[bytes, str]], instruction: str, json_schema: dict[str, Any]):
         def phu(n: Nguon, model: str, khoa: str) -> dict[str, Any]:
             tin = [{"role": "user", "content": [*self._anh(items), {"type": "text", "text": instruction}]}]
             v = _json_dau(self._hoi(n, model, khoa, instruction, tin, 4096, json_schema))
             return chuan_theo_schema(v, json_schema) if isinstance(v, dict) else {}
-        return self._thu("extract_media", lambda: self._chinh.extract_media(items, instruction, json_schema), phu, can_anh=True)
+        return phu
+
+    def extract_media(self, items: list[tuple[bytes, str]], instruction: str, json_schema: dict[str, Any]) -> dict[str, Any]:
+        return self._thu("extract_media", lambda: self._chinh.extract_media(items, instruction, json_schema),
+                         self._phu_doc_anh(items, instruction, json_schema), can_anh=True)
+
+    def extract_media_re(self, items: list[tuple[bytes, str]], instruction: str, json_schema: dict[str, Any]) -> dict[str, Any]:
+        """Đọc ảnh RẺ (sticker, SRS-5.1zzzzzzz122): nguồn dự phòng miễn phí nhìn được ảnh (Gemini) TRƯỚC, Claude sau cùng khi tất cả hỏng."""
+        phu = self._phu_doc_anh(items, instruction, json_schema)
+        for n in self._nguon:
+            if not n.nhin_anh:
+                continue
+            for model in n.models:
+                for khoa in n.khoa:
+                    try:
+                        return phu(n, model, khoa)
+                    except Exception as e:  # noqa: BLE001
+                        log.warning("đọc ảnh rẻ: %s lỗi (%s) — thử tiếp", n.ten, type(e).__name__)
+        return self._chinh.extract_media(items, instruction, json_schema)
 
     def __getattr__(self, ten: str) -> Any:   # thuộc tính riêng của Claude (vd _so, _chat_model) — chuyển xuống đường chính
         if ten == "_chinh":
