@@ -8137,6 +8137,25 @@ huyện (SRS-126) nhưng `listings.ward` vẫn null và lời bot chưa biết x
 
 Kiểm thêm: `bot/tests/ban-thu-xa.sh` (production, Gemini): không hỏi huyện, không bịa thị trường.
 
+### SRS-5.1zzzzzzz129 · Nạp 95 xã / phường tỉnh Đồng Nai; xã Bình Phước cũ vẫn NGOÀI vùng nhận tin (22/10/2026)
+
+Lê Quang hỏi bot đã biết xã phường Bình Dương / Đồng Nai / Vũng Tàu chưa; đọc DB: Bình Dương + Vũng Tàu nằm sẵn trong `wards` (168 = 102 TP.HCM cũ + 36 + 30) và `duong`, còn Đồng Nai chỉ có
+677 tên đường, chưa có bảng xã. Lê Quang: "chạy … để bot biết đi về bình phước đúng". Bình Phước cũ nay thuộc tỉnh Đồng Nai nhưng vẫn ngoài vùng (chủ dự án 20/10: "bỏ").
+
+1. **Lớp lỗi**: cùng SRS-128 — kho địa danh không phủ xã ngoài TP.HCM. Thêm một lớp riêng: tỉnh MỚI không nói được tỉnh CŨ, trong khi luật vùng nhận tin tính theo tỉnh cũ; và cùng tên xã có ở hai tỉnh
+   (Xã Tân Hưng, Xã Lộc Ninh: Tây Ninh và Đồng Nai/Bình Phước cũ) nên khoá chính tên đầy đủ một mình sẽ ghi đè dòng của tỉnh kia.
+2. **Sửa**: (a) migration `20261022b`: bảng `xa_tinh_khac` thêm cột `tinh_cu`, khoá chính đổi thành `(tinh, ten_day_du)` (file `20261022a` sửa theo dạng cuối vì PR chưa gộp; dung-lai chỉ chạy câu insert),
+   nạp 95 dòng = 72 xã + 23 phường (88 đơn vị sắp xếp + 7 đơn vị không sắp xếp của NQ 1662/NQ-UBTVQH15), sinh TỰ ĐỘNG bằng `scripts/sinh-xa-dong-nai.py` (dùng lại bộ đọc của `sinh-xa-tay-ninh.py`; sửa luôn
+   lỗi bộ đọc khi NQ viết "diện tích tự nhiên quy mô dân số" không dấu phẩy — khoản 74 Long Hưng mất đơn vị cũ; Tây Ninh sinh lại không đổi byte nào). (b) `dia_danh.tra_xa` trả thêm `tinh_cu` + `ngoai_vung`
+   (`TINH_CU_NGOAI_VUNG = {Bình Phước}`); cùng tên ở hai tỉnh thì KHÔNG đoán (trả None). (c) `engine._chuan_dia_danh`: xã tra ra thuộc Bình Phước cũ và khách chưa nói quận → `_ngoai_vung = "Bình Phước"`
+   (đường sẵn có của SRS-86: bot nói khéo chưa nhận, không hỏi tiếp, không soạn tin). (d) `khoi_dia_danh`: khối riêng cho Bình Phước cũ ("NẰM NGOÀI khu vực nhận tin") và câu "gồm cả Bình Phước cũ" cho phần Đồng Nai cũ.
+3. **Giả định BA / hạn chế**: (a) `tinh_cu` KHÔNG có trong NQ — suy từ thứ tự khoản (NQ liệt kê Đồng Nai cũ trước, Bình Phước cũ sau: xã 1–37 | 38–67, phường 68–81 | 82–88) cộng 2 đơn vị không sắp xếp
+   (Bù Gia Mập, Đăk Ơ = Bình Phước); script chặn bằng danh sách tên mốc mỗi bên, chưa đối chiếu nguồn chính thức; (b) nguồn là bản đăng lại hoatieu.vn (file moj.gov.vn trả 403); số 95 = 72 + 23 khớp công bố NQ;
+   (c) `listings.ward` vẫn null cho xã (như SRS-128); (d) tên xã Bình Phước cũ trùng tên phường cũ TP.HCM thì `phuong()` TP.HCM được tra trước — khách đã nói quận thì không cờ ngoài vùng; (e) không cần cron:
+   danh sách đơn vị hành chính do nghị quyết cố định, nạp một lần; bảng không có cột vector nên lịch `nhung-dia-danh-tick` không liên quan.
+4. **Kiểm**: `tests/test_xa_dong_nai.py` (6 ca, đọc đúng file migration): 95 dòng / 72 + 23 / 39 Bình Phước cũ / 7 đơn vị không sắp xếp; xã Bình Phước cũ ngoài vùng cả tên mới lẫn tên cũ; xã Đồng Nai cũ vẫn trong vùng;
+   "xã Tân Hưng", "xã Lộc Ninh" không đoán; khối prompt; engine đặt cờ ngoài vùng (đỏ khi bỏ đoạn sửa ở `engine.py`, đã thử), không đặt khi khách nói quận.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

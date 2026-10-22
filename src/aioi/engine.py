@@ -953,6 +953,8 @@ class Engine:
             if p is None and hasattr(self._dia_danh, "xa"):   # không phải phường TP.HCM → xã / phường Tây Ninh (hợp nhất Long An, SRS-5.1zzzzzzz128)
                 x = self._dia_danh.xa(f["phuong"])
                 p = x["ten_day_du"] if x else None
+                if x and x.get("ngoai_vung") and not f.get("quan"):   # Bình Phước cũ (nay thuộc Đồng Nai): ngoài vùng nhận tin, SRS-5.1zzzzzzz129
+                    f["_ngoai_vung"] = x["tinh_cu"]
             if p and p != f["phuong"]:
                 moi["phuong"] = p
         if "duong" in captured and f.get("duong"):

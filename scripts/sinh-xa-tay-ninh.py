@@ -40,8 +40,8 @@ def tach_don_vi_cu(trai: str) -> list[tuple[str, str]]:
     trai = re.sub(r"(?i)^sắp xếp\s+", "", trai.strip())
     ra: list[tuple[str, str]] = []
     # tách theo cụm "toàn bộ ... của" / "một phần ... của" / "phần còn lại của"
-    cum = re.split(r"(?i)(toàn bộ diện tích tự nhiên, quy mô dân số(?: của)?|một phần diện tích tự nhiên, quy mô dân số(?: của)?|"
-                   r"phần còn lại(?: diện tích tự nhiên, quy mô dân số)?(?: của)?)", trai)
+    cum = re.split(r"(?i)(toàn bộ diện tích tự nhiên,? quy mô dân số(?: của)?|một phần diện tích tự nhiên,? quy mô dân số(?: của)?|"
+                   r"phần còn lại(?: diện tích tự nhiên,? quy mô dân số)?(?: của)?)", trai)
     che_do = "toan_bo"
     for ph in cum:
         low = ph.lower().strip()
@@ -107,12 +107,14 @@ def main() -> None:
         "-- NGUỒN: Nghị quyết 1682/NQ-UBTVQH15 (16/06/2025) Điều 1, toàn văn hoatieu.vn — SINH TỰ ĐỘNG bằng scripts/sinh-xa-tay-ninh.py, không nhập tay.",
         "",
         "create table if not exists public.xa_tinh_khac (",
-        "  ten_day_du text primary key,                 -- \"Xã Phước Lý\" / \"Phường Gia Lộc\"",
+        "  ten_day_du text not null,                    -- \"Xã Phước Lý\" / \"Phường Gia Lộc\"",
         "  ten text not null,                           -- tên ngắn: \"Phước Lý\"",
         "  loai text not null check (loai in ('xa', 'phuong')),",
         "  tinh text not null,                          -- tỉnh MỚI",
         "  don_vi_cu jsonb not null default '[]'::jsonb, -- [{\"ten\": \"xã Long Thượng\", \"toan_bo\": true}, …] — đơn vị cũ gộp vào",
-        "  nguon text not null",
+        "  tinh_cu text,                                -- tỉnh CŨ của đơn vị (chỉ nạp khi cần: Đồng Nai / Bình Phước); null = chưa nạp",
+        "  nguon text not null,",
+        "  primary key (tinh, ten_day_du)               -- cùng tên ở hai tỉnh (vd Xã Tân Hưng) vẫn là hai dòng",
         ");",
         "comment on table public.xa_tinh_khac is '[RỔ HÀNG] Xã / phường MỚI của tỉnh Tây Ninh sau hợp nhất Long An (NQ 1682/NQ-UBTVQH15, 01/07/2025) + đơn vị cũ gộp vào. Lõi tra để nhận địa chỉ xã, không hỏi huyện. Không phải wards (TP.HCM).';",
         "comment on column public.xa_tinh_khac.don_vi_cu is 'Đơn vị cấp xã cũ gộp vào (kèm \"toan_bo\": false khi chỉ một phần diện tích). NQ không ghi huyện cũ.';",
@@ -130,7 +132,7 @@ def main() -> None:
         dong.append(f"  ({q(tien_to + ' ' + d['ten'])}, {q(d['ten'])}, {q(d['loai'])}, {q(TINH)}, {q(json.dumps(cu, ensure_ascii=False))}::jsonb, "
                     f"{q('NQ 1682/NQ-UBTVQH15 k.' + str(d['so']) + ' (hoatieu.vn)')})")
     out.append(",\n".join(dong))
-    out.append("on conflict (ten_day_du) do update set don_vi_cu = excluded.don_vi_cu, nguon = excluded.nguon, tinh = excluded.tinh;")
+    out.append("on conflict (tinh, ten_day_du) do update set don_vi_cu = excluded.don_vi_cu, nguon = excluded.nguon, tinh = excluded.tinh;")
     print("\n".join(out))
 
 

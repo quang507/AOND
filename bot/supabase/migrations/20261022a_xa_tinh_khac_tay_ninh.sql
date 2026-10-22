@@ -5,12 +5,14 @@
 -- NGUỒN: Nghị quyết 1682/NQ-UBTVQH15 (16/06/2025) Điều 1, toàn văn hoatieu.vn — SINH TỰ ĐỘNG bằng scripts/sinh-xa-tay-ninh.py, không nhập tay.
 
 create table if not exists public.xa_tinh_khac (
-  ten_day_du text primary key,                 -- "Xã Phước Lý" / "Phường Gia Lộc"
+  ten_day_du text not null,                    -- "Xã Phước Lý" / "Phường Gia Lộc"
   ten text not null,                           -- tên ngắn: "Phước Lý"
   loai text not null check (loai in ('xa', 'phuong')),
   tinh text not null,                          -- tỉnh MỚI
   don_vi_cu jsonb not null default '[]'::jsonb, -- [{"ten": "xã Long Thượng", "toan_bo": true}, …] — đơn vị cũ gộp vào
-  nguon text not null
+  tinh_cu text,                                -- tỉnh CŨ của đơn vị (chỉ nạp khi cần: Đồng Nai / Bình Phước); null = chưa nạp
+  nguon text not null,
+  primary key (tinh, ten_day_du)               -- cùng tên ở hai tỉnh (vd Xã Tân Hưng) vẫn là hai dòng
 );
 comment on table public.xa_tinh_khac is '[RỔ HÀNG] Xã / phường MỚI của tỉnh Tây Ninh sau hợp nhất Long An (NQ 1682/NQ-UBTVQH15, 01/07/2025) + đơn vị cũ gộp vào. Lõi tra để nhận địa chỉ xã, không hỏi huyện. Không phải wards (TP.HCM).';
 comment on column public.xa_tinh_khac.don_vi_cu is 'Đơn vị cấp xã cũ gộp vào (kèm "toan_bo": false khi chỉ một phần diện tích). NQ không ghi huyện cũ.';
@@ -115,4 +117,4 @@ insert into public.xa_tinh_khac (ten_day_du, ten, loai, tinh, don_vi_cu, nguon) 
   ('Phường An Tịnh', 'An Tịnh', 'phuong', 'Tây Ninh', '[{"ten": "phường Lộc Hưng", "toan_bo": true}, {"ten": "phường An Tịnh", "toan_bo": true}]'::jsonb, 'NQ 1682/NQ-UBTVQH15 k.94 (hoatieu.vn)'),
   ('Phường Gò Dầu', 'Gò Dầu', 'phuong', 'Tây Ninh', '[{"ten": "phường Gia Bình", "toan_bo": true}, {"ten": "thị trấn Gò Dầu", "toan_bo": true}, {"ten": "xã Thanh Phước", "toan_bo": true}]'::jsonb, 'NQ 1682/NQ-UBTVQH15 k.95 (hoatieu.vn)'),
   ('Phường Gia Lộc', 'Gia Lộc', 'phuong', 'Tây Ninh', '[{"ten": "xã Phước Đông (huyện Gò Dầu)", "toan_bo": true}, {"ten": "phường Gia Lộc", "toan_bo": true}]'::jsonb, 'NQ 1682/NQ-UBTVQH15 k.96 (hoatieu.vn)')
-on conflict (ten_day_du) do update set don_vi_cu = excluded.don_vi_cu, nguon = excluded.nguon, tinh = excluded.tinh;
+on conflict (tinh, ten_day_du) do update set don_vi_cu = excluded.don_vi_cu, nguon = excluded.nguon, tinh = excluded.tinh;
