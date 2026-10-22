@@ -40,10 +40,10 @@ export async function generateStaticParams() {
 // vector(768) (~9 KB dạng chữ), `boc_tach`, `tien_ich_gan` - mỗi trang tin dựng ra là vài chục KB egress Supabase
 // chỉ để vứt đi. Thêm cột mới cho trang này thì thêm vào đây.
 const DETAIL_COLS =
-  "id, code, deal, district, ward, location_raw, area_m2, price_vnd, price_raw, description, status, property_type, unit_status, " +
-  "last_confirmed_at, created_at, lat, lng, bedrooms, street, access_type, alley_width_m, distance_to_street_m, frontage_m, length_m, " +
+  "id, code, deal, district, ward, location_raw, area_m2, price_vnd, price_raw, description, status, property_type, " +
+  "created_at, lat, lng, bedrooms, street, access_type, alley_width_m, distance_to_street_m, frontage_m, length_m, " +
   "rear_width_m, legal_area_m2, built_area_m2, floors, floors_text, floor, bathrooms, direction, legal_status, has_completion, " +
-  "planning_status, has_elevator, car_in_house, corner_lot, furnishing, year_built, negotiable, rent_income_vnd, specs_source, " +
+  "planning_status, has_elevator, car_in_house, corner_lot, furnishing, year_built, negotiable, rent_income_vnd, " +
   "price_per_m2_vnd, project_id, unit_code, nhan";
 
 
@@ -387,9 +387,7 @@ export default async function Page({
                     ))}
                   </dl>
                   <p className="mt-2 text-xs text-mute/80">
-                    {listing.specs_source === "chu_xac_nhan"
-                      ? "Thông số do chủ nhà xác nhận qua Zalo."
-                      : "Thông số đọc từ tin rao, chưa xác minh với chủ nhà - hỏi qua Zalo là tụi em đi hỏi giùm."}
+                    Thông số đọc từ tin rao, chưa xác minh với chủ nhà - hỏi qua Zalo là tụi em đi hỏi giùm.
                   </p>
                 </>
               )}

@@ -11,8 +11,8 @@ import { formatPrice, placeholderImg, sanitizeDescription, SITE_URL, zaloLink } 
 // `projects` (SRS-3.10; anon đọc được qua `anon_read_projects`). Có
 // generateStaticParams (rỗng, xem dưới) nên build ra ● (NFR-17); mọi slug
 // render on-demand rồi nằm cache — dự án mới không cần build lại.
-// Phần "quản lý giỏ hàng cho admin/NMG" của FR-117 CHƯA dựng: `unit_status`
-// hiện chỉ đọc; đổi qua bảng `deals`/sửa tin (SRS-3.10).
+// Phần "quản lý giỏ hàng cho admin/NMG" của FR-117 CHƯA dựng; cột `unit_status` đã gỡ
+// (SRS-5.1zzzzzzz140), trạng thái căn đổi qua bảng `deals`/sửa tin (SRS-3.10).
 //
 // TTL THẬT LÀ 5 PHÚT, không phải 1 giờ (soát build 05/09/2026 — bảng route báo
 // `5m`). Cùng nguyên nhân với /[tag]: `coverByCode` đặt `unstable_cache` TTL
@@ -29,8 +29,7 @@ type DuAn = {
 };
 
 // Tin trong dự án: thẻ + mã căn / tình trạng căn (FR-113).
-type TinDuAn = CardRow & { unit_code: string | null; unit_status: string | null };
-const TT_CAN: Record<string, string> = { con_ban: "còn bán", giu_cho: "giữ chỗ", da_coc: "đã cọc", da_ban: "đã bán" };
+type TinDuAn = CardRow & { unit_code: string | null };
 
 // 02/10/2026 (đo Supabase, workflow do-supabase.yml): bản cũ trả slug của CẢ 1.639 dự án nên MỖI lượt build (CI mỗi PR,
 // Vercel preview, Vercel production) dựng sẵn 1.639 trang × 2 truy vấn. pg_stat_statements từ 22/08: hai truy vấn của trang
@@ -101,7 +100,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   const { data } = await supabase
     .from("listings")
-    .select(`${CARD_COLS}, unit_code, unit_status`)
+    .select(`${CARD_COLS}, unit_code`)
     .eq("project_id", p.id)
     .in("status", TRANG_THAI_HIEN) // FR-139: chỉ tin đang lên kệ
     .order("unit_code", { ascending: true, nullsFirst: false })
@@ -258,7 +257,6 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                   <ListingCard listing={l} photo={l.code ? covers[l.code] : null} />
                   <p className="px-2 text-xs text-mute">
                     {l.unit_code ? `Căn ${l.unit_code}` : "Chưa ghi mã căn"}
-                    {l.unit_status ? ` · ${TT_CAN[l.unit_status] ?? l.unit_status}` : ""}
                   </p>
                 </div>
               ))}

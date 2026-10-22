@@ -33,7 +33,7 @@ const TIN = (i, thua = {}) => ({
   id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
   code: `BDS-Q5-${String(i).padStart(4, "0")}`,
   deal: "ban", status: "dang_ban", property_type: "nha_pho",
-  property_type_source: "suy_doan", specs_source: "boc_mo_ta",
+  property_type_source: "suy_doan",
   price_source: "admin", ward_source: "admin",
   ward: "Phường 4", district: "Quận 5", street: "Trần Hưng Đạo",
   location_raw: "Số 12 Trần Hưng Đạo", price_raw: "5 tỷ", price_vnd: 5e9,

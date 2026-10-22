@@ -212,9 +212,6 @@ function vietTinMd(l, anh, facts) {
   if (l.property_type_source === "suy_doan") {
     ngo.push(`Loại BĐS (**${LOAI[l.property_type] ?? l.property_type}**) là **máy đoán**, chưa ai xác nhận.`);
   }
-  if (l.specs_source === "boc_mo_ta") {
-    ngo.push("Thông số bên dưới do **máy bóc từ mô tả**, chưa ai xác nhận.");
-  }
   if (l.status === "cho_thong_tin") ngo.push("Tin **chưa lên web** (thiếu giá / diện tích / phường).");
   if (ngo.length) {
     out.push("> ⚠️ " + ngo.join(" "));
@@ -272,7 +269,7 @@ function vietTinMd(l, anh, facts) {
   out.push("|---|---|");
   for (const [k, v] of [
     ["Loại BĐS", l.property_type_source], ["Giá", l.price_source],
-    ["Phường", l.ward_source], ["Thông số", l.specs_source],
+    ["Phường", l.ward_source],
   ]) if (v) out.push(`| ${k} | ${NGUON[v] ?? v} |`);
   out.push("");
 
@@ -322,7 +319,6 @@ const CSV_COT = [
   ["Pháp lý", (l) => PHAP_LY[l.legal_status] ?? l.legal_status],
   ["Hoàn công", (l) => l.has_completion === true ? "x" : ""],
   ["Hướng", (l) => l.direction], ["Năm xây", (l) => l.year_built],
-  ["Nguồn thông số", (l) => NGUON[l.specs_source] ?? l.specs_source],
   ["Số ảnh", (l) => l._so_anh], ["Ngày vào kho", (l) => String(l.created_at ?? "").slice(0, 10)],
   ["Thư mục", (l) => `tin/${anToan(l.code)}`],
 ];
