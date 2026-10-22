@@ -44,6 +44,15 @@ for i in $(seq 1 25); do
 done
 echo "== số tin trong DB sau $(( $(date +%s) - T0 )) giây: $SO (lúc ~3 giây: ${DEM3:-chưa đo})"
 kiem "Nhiều căn: một tin nhắn hai căn → hai tin rao ($SO)" "$([ "$SO" = 2 ] && echo 1 || echo 0)"
+if [ "$SO" != 2 ]; then
+  # Không đủ 2 tin sau 25 s thì không phải "chậm": in log lõi quanh lượt này (lỗi lưu nếu có) và hiện trạng DB của khách thử.
+  echo "== log lõi (dòng nhắc lưu / lỗi / số căn)"
+  vps "journalctl -u aond-core --since '5 minutes ago' --no-pager 2>/dev/null | grep -iE 'save|lưu|Supabase|error|Traceback|listing|căn' | tail -40" || true
+  echo "== DB: seller / hội thoại / tin của khách thử"
+  q "select (select count(*) from sellers where zalo_user_id='$BAN') as sellers,
+            (select count(*) from listings l join sellers s on s.id=l.seller_id where s.zalo_user_id='$BAN') as listings,
+            (select count(*) from bot_errors where at > now() - interval '5 minutes') as loi_5_phut" | jq -c '.[0]' || true
+fi
 
 TG=$(q "select l.code, n.du_lieu->>'tin_goc' as tg from listings l join sellers s on s.id = l.seller_id
         left join listing_noi_bo n on n.listing_id = l.id where s.zalo_user_id = '$BAN' order by l.code")
