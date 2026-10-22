@@ -28,6 +28,7 @@ from .mua import KhoNguoiMua
 from .revenue import SALE_FEE_RATE
 from .prompts import FIELD_LABELS
 from .schema import O_NOI_BO, TYPE_TO_GROUP, Property, _calc_area_from_dimension
+from .tin_goc import gom_tin_goc
 from .assistants import assign_assistant
 from .dia_danh import bo_dau
 
@@ -585,10 +586,21 @@ class SupabaseConversationStore(KhoNguoiMua):
         dem = lambda bang, them="": len(self._get(f"{bang}?listing_id=eq.{lid}{them}&select=listing_id&limit=500"))  # noqa: E731
         return {"quan_tam": dem("interests"), "hoi": dem("info_requests"), "hen_xem": dem("viewings", "&status=neq.cancelled")}
 
-    def _ghi_noi_bo(self, lid: str, rieng: dict[str, Any]) -> None:
-        """Ô riêng của chủ → `listing_noi_bo` (SRS-5.1zzzzzzz116). Không lưu SĐT (che như `ghi_danh_gia`). Lỗi chỉ ghi log — tin vẫn
-        lưu, ô vẫn còn trong phiên (SQLite trên VPS giữ bản đầy đủ)."""
-        du_lieu = {k: re.sub(r"\d[\d .-]{7,}\d", "[số]", str(v))[:500] for k, v in rieng.items()}
+    @staticmethod
+    def _tin_goc_cua(conv: Conversation, li: Any) -> str:
+        """Tin nhắn nguyên văn người bán thuộc ĐÚNG căn này: từ `history_start` của căn tới chỗ căn kế bắt đầu (SRS-5.1zzzzzzz142)."""
+        lich_su = getattr(conv, "history", None) or []
+        bd = max(0, int(getattr(li, "history_start", 0) or 0))
+        sau = [int(getattr(x, "history_start", 0) or 0) for x in conv.listings if int(getattr(x, "history_start", 0) or 0) > bd]
+        return gom_tin_goc(lich_su, bd, min(sau) if sau else len(lich_su))
+
+    def _ghi_noi_bo(self, lid: str, rieng: dict[str, Any], tin_goc: str = "") -> None:
+        """Ô riêng của chủ + tin nhắn gốc → `listing_noi_bo` (SRS-5.1zzzzzzz116, 142). Không lưu SĐT (che như `ghi_danh_gia`). Lỗi chỉ ghi log —
+        tin vẫn lưu, ô vẫn còn trong phiên (SQLite trên VPS giữ bản đầy đủ). `tin_goc` tính lại từ lịch sử mỗi lần nên ghi đè cả cột `du_lieu`
+        là an toàn; nó đã che SĐT và có trần riêng (không bị cắt 500 chữ như ô riêng)."""
+        du_lieu: dict[str, Any] = {k: re.sub(r"\d[\d .-]{7,}\d", "[số]", str(v))[:500] for k, v in rieng.items()}
+        if tin_goc:
+            du_lieu["tin_goc"] = tin_goc
         try:
             self._post("listing_noi_bo?on_conflict=listing_id", {
                 "listing_id": lid, "du_lieu": du_lieu, "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -795,8 +807,9 @@ class SupabaseConversationStore(KhoNguoiMua):
                     lid = (tao[0].get("id") if tao else None) or lid_mong
                 if lid:
                     self._ghi_anh(lid, getattr(li, "media", None) or [])
-                    if rieng:
-                        self._ghi_noi_bo(lid, rieng)
+                    tin_goc = self._tin_goc_cua(conv, li)
+                    if rieng or tin_goc:
+                        self._ghi_noi_bo(lid, rieng, tin_goc)
                     if li.listing_id == getattr(conv, "active_listing_id", None):
                         lid_dang_noi = lid
 

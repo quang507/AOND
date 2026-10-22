@@ -8395,6 +8395,16 @@ Chủ dự án (22/10, sếp nhắn `json` thấy quá dài): "làm nhiều tầ
 3. **Chỗ khác cùng lớp**: lưu 2 tầng trong `boc_tach` CHƯA làm — đụng lõi Python, hàm DB (`o_boc_tach`, `diem_tin`, `van_ban_nhung`) và web cùng lúc; gộp vào việc gom cột nếu chủ dự án chọn (OPEN-64).
 4. **Kiểm**: `tests/test_json_2_tang.py` (5 ca; đỏ khi tắt sửa delivery hoặc khi một ô `FIELD_LABELS` chưa có tầng — thêm ô mới thì thêm vào `NHOM_O`).
 
+### SRS-5.1zzzzzzz142 · Lưu tin nhắn gốc của người bán để nhúng vector — 22/10/2026
+
+Chủ dự án (22/10, ý sếp): "lưu tin nhắn gốc của người ta nhắn để sau dễ tìm hơn", "lưu luôn vào trường, không cần sửa làm chuẩn", "không thêm cột".
+
+1. **Lớp lỗi**: văn bản nhúng của tin (`van_ban_nhung`) lấy `listings.description` — bản tin do AI viết lại, nhãn "Người bán tả" nhưng không phải lời người bán. Mọi bản tin cùng một khuôn nên vector các căn gần giống nhau (từng đo tới 0,99, `20260924b`), và chi tiết người bán chỉ nói bằng lời mình ("sau nhà có đất trống cho chó mèo chạy") không vào vector. Tin nhắn nguyên văn chỉ nằm ở `messages`, gắn theo hội thoại, không gắn căn.
+2. **Sửa**: lõi gom tin nhắn `user` của ĐÚNG căn (từ `Listing.history_start` tới chỗ căn kế bắt đầu) bằng `src/aioi/tin_goc.py` — nguyên văn, không chuẩn hoá; bỏ lượt ngắn < 20 chữ, lệnh (`json`, `$$$$$`), dấu `[Khách gửi …]`; che SĐT (bắt buộc, §5); trần 3.000 chữ, quá thì bỏ tin CŨ nhất. Ghi vào `listing_noi_bo.du_lieu->'tin_goc'` (bảng chỉ admin đọc; **không** vào `listings.boc_tach` vì cột đó đọc công khai) qua `SupabaseConversationStore._ghi_noi_bo`, tính lại từ lịch sử mỗi lần lưu nên ghi lặp không đẻ trùng. **Không thêm cột nào.** Migration `20261022h_tin_goc_vao_vector.sql`: `van_ban_nhung` có tin gốc thì dùng dòng "Người bán nhắn: …" thay dòng "Người bán tả" (chưa có tin gốc — tin admin / Excel — giữ `description` như cũ). `nhung_tick` tự nhúng lại vì md5 văn bản đổi.
+3. **Chỗ khác cùng lớp**: câu khách MUA tả nhu cầu chưa lưu nguyên văn (chưa có `buyer_needs`, SRS-137); văn bản nhúng DỰ ÁN (`van_ban_du_an`) không đụng. Ô như giá / phường vẫn chuẩn hoá — cột `ward` phải là tên phường chuẩn, giá phải đổi ra số (SRS-5.1zzzzj).
+4. **Chưa đo**: chưa biết tìm có tốt hơn bao nhiêu — DB mới có 4 tin; lý do kỳ vọng tốt hơn ở trả lời chat (lời gốc cùng văn phong với câu hỏi, giữ chi tiết hiếm, ít trùng vector); rủi ro: lời gốc nhiễu / đổi ý ("7 tỷ … à nhầm 6 tỷ") nên lọc theo số vẫn theo cột.
+5. **Kiểm**: `tests/test_tin_goc.py` (6 ca: nguyên văn + che SĐT, bỏ lượt rỗng, đúng khoảng từng căn + giữ tin mới khi quá trần, `_ghi_noi_bo` không cắt 500 chữ, `save` ghi `listing_noi_bo` và KHÔNG ghi vào `boc_tach`; đỏ khi bỏ dòng nối trong `save`).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
