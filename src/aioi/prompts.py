@@ -239,10 +239,11 @@ SLANG_NOTES = """TỪ ĐIỂN TIẾNG LÓNG BĐS (hiểu đúng, không hỏi l�
 
 # 19/10/2026 (SRS-5.1zzzzzzz75; chủ dự án: "khen quá nhiều, khen tào lao"): luật khen MỘT nguồn cho lượt chat người bán. Bản trước
 # câu mẫu tự dạy model khen thị trường không có dữ liệu ("thanh khoản rất tốt", "giá vừa tầm", "giữ gìn sạch đẹp").
-LUAT_KHEN = """KHEN NHIỀU HƠN — MỖI LƯỢT ĐỀU KHEN, NHƯNG CÓ CƠ SỞ (21/10/2026 sếp: "cần nó khen nhiều hơn"; 22/10 Lê Quang: "khen nhiều hơn,
-    vị trí các thứ cũng 100% khen"):
-    - 100% lượt khách vừa cho thông tin thì MỞ ĐẦU bằng MỘT lời khen ngắn gắn đúng điều khách vừa nói, rồi hỏi câu kế — thay cho câu ghi
-      nhận (không còn "Em ghi nhận / Em ghi rồi / Em lưu rồi"). Khen được: VỊ TRÍ khách nêu (đường, phường, khu, gần chợ / trường / bùng
+LUAT_KHEN = """KHEN NHIỀU HƠN, CÓ CƠ SỞ (21/10/2026 sếp: "cần nó khen nhiều hơn"; 22/10 Lê Quang: "khen nhiều hơn, vị trí các thứ cũng 100% khen" —
+    "3 lần khách đưa thông tin đầu tiên thì 100% khen hết"):
+    - BA LƯỢT ĐẦU khách cho thông tin: MỖI lượt MỞ ĐẦU bằng MỘT lời khen ngắn gắn đúng điều khách vừa nói, rồi hỏi câu kế (hệ thống báo lượt
+      thứ mấy ở khối "LƯỢT THÔNG TIN THỨ N"). Từ lượt thứ tư: khen khi có điểm tốt thật hoặc cách khách làm việc đáng khen, không khen gượng.
+      Lượt nào cũng KHÔNG thay bằng câu ghi nhận ("Em ghi nhận / Em ghi rồi / Em lưu rồi"). Khen được: VỊ TRÍ khách nêu (đường, phường, khu, gần chợ / trường / bùng
       binh khách nhắc — nói điều người ở thấy ngay: đi lại tiện, gần tiện ích đó, khu quen thuộc), diện tích / kích thước, mặt tiền, lô góc,
       nở hậu, hẻm rộng (theo số khách nói), sổ riêng / hoàn công, nhà mới, số tầng / phòng, sân thượng, nội thất, giờ xem linh hoạt…
       Vd "Gần bùng binh Dân Chủ thì đi các quận tiện lắm anh.", "Sổ riêng hoàn công rồi thì giao dịch nhanh, khách yên tâm chị."
@@ -589,6 +590,18 @@ QUY TẮC PHẢN HỒI:
   đáng mua / sinh lời (em không có số liệu thị trường).
 
 {ask_line}"""
+
+
+def khoi_khen_theo_luot(n: int) -> str:
+    """Khối báo model đang ở lượt thông tin thứ mấy (SRS-5.1zzzzzzz131 bản 2, Lê Quang 22/10: "3 lần khách đưa thông tin đầu tiên thì 100% khen
+    hết"). `n` = số lượt khách đã cho thông tin kể cả lượt này (engine đếm khi lượt ghi được ô; `$$$$$` về 0). n ≤ 0 → ""."""
+    if n <= 0:
+        return ""
+    if n <= 3:
+        return (f"\n\n=== LƯỢT THÔNG TIN THỨ {n} CỦA KHÁCH (trong 3 lượt đầu) ===\nBẮT BUỘC mở đầu bằng MỘT lời khen ngắn gắn đúng điều khách "
+                "vừa nói (vị trí, diện tích, pháp lý, kết cấu, cách khách cung cấp…) rồi mới hỏi câu kế. Không câu ghi nhận.\n")
+    return (f"\n\n=== LƯỢT THÔNG TIN THỨ {n} CỦA KHÁCH (đã qua 3 lượt đầu) ===\nKhen khi có điểm tốt thật hoặc cách khách làm việc đáng khen; "
+            "không khen gượng, không lặp ý đã khen. Vẫn không câu ghi nhận.\n")
 
 
 def khoi_chao_lan_dau(assistant_name: str, mau: str) -> str:

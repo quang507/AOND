@@ -8192,6 +8192,12 @@ và khen nhiều hơn vị trí các thứ cũng 100% khen".
    `ghi_nhan_mau` + `cau_mau.vi_du_ghi_nhan` + chỗ giữ `<<VI_DU_GHI_NHAN>>` gỡ (migration `20261022e` xoá dòng DB); mô tả công cụ `gui_khach` (`llm/claude.py`) sửa theo.
 3. **Giả định BA**: "100% khen" hiểu là mọi lượt khách CHO THÔNG TIN đều mở bằng khen; khách chỉ "có / đúng rồi" thì nối thẳng câu hỏi (không khen gượng). Các cấm bịa thị trường /
    giá là quyết định chủ dự án 21/10 chưa bị bỏ nên giữ — nếu "100%" nghĩa là được nói "vị trí đắc địa, dễ bán" thì phải chủ dự án chốt lại.
+**Bản 2 (cùng ngày, Lê Quang: "100% khen là 3 lần khách đưa thông tin đầu tiên thì 100% khen hết")**: "100%" áp cho BA LƯỢT ĐẦU khách cho thông tin; từ lượt
+thứ tư khen khi có điểm tốt thật / cách khách làm việc, không gượng. Lõi đếm `Conversation.so_luot_thong_tin` (tăng khi lượt ghi được ô — `captured` sau
+`_ap_dung_ke_hoach`; `$$$$$` về 0; lưu SQLite cột `so_luot_thong_tin`, nạp lại qua Supabase load như `xung_ho`), chèn `prompts.khoi_khen_theo_luot(n)`
+("LƯỢT THÔNG TIN THỨ N — trong / đã qua 3 lượt đầu") vào system lượt trả lời; `LUAT_KHEN` viết lại theo đúng câu chủ dự án. Kiểm: `tests/test_khen_3_luot.py`
+(3 ca): khối theo n; đếm đúng (lượt không ghi ô không đếm, lượt 4 đổi khối); `$$$$$` về 0 và số đếm sống qua mở lại SQLite.
+
 4. **Kiểm**: `tests/test_khen_100.py` (6 ca): không còn câu mẫu / chỗ giữ chữ / luật cũ; LUAT_MO_LUOT ở cả hai nhánh; LUAT_KHEN có 100% + vị trí + đủ cấm cũ; nhận diện ghi nhận
    rộng hơn ("Em sửa giá còn…" không tính); MỘT lượt mở bằng ghi nhận → gọi lại ngay (hệ thống gọi lại nói "lời khen"); lời mở bằng khen không bị gọi lại. Gỡ ba file test
    của luật cũ (`test_ghi_nhan_mau/ngan/lap.py`); `test_khen_co_co_so.py` giữ (các cấm cũ còn nguyên chữ).

@@ -30,7 +30,7 @@ def test_luat_mo_luot_bang_khen_o_ca_luot_thuong_lan_sau_ban_nhap():
 
 def test_luat_khen_100_phan_tram_ke_ca_vi_tri_nhung_van_cam_bia():
     k = LUAT_KHEN
-    assert "100% lượt" in k and "VỊ TRÍ khách nêu" in k and "bùng binh Dân Chủ" in k
+    assert "BA LƯỢT ĐẦU" in k and "100% khen hết" in k and "VỊ TRÍ khách nêu" in k and "bùng binh Dân Chủ" in k
     assert "thanh khoản tốt" in k and "KHÔNG bình luận giá" in k and "CHỈ khen đúng điều khách VỪA NÓI" in k and "hẻm xe hơi" in k
     assert "tối đa HAI ý khen" in k and "CÁCH khách cung cấp thông tin" in k
     assert build_chat_system("Hằng", Property(loai_hinh="nha_pho"), "gia").count(LUAT_KHEN) == 1

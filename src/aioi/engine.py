@@ -29,6 +29,7 @@ from . import che_do_test
 from . import so_token
 from .delivery import _is_formatted_post
 from .prompts import _MO_DAU_RE   # dòng mở bản nháp "(📋) Em/Mình sẽ rao như vầy nhé…:" (SRS-5.1zzzzzzz132)
+from .prompts import khoi_khen_theo_luot
 from .danh_gia import KHOI_SAP_XIN_SAO, cau_xin_sao, doc_sao, khoi_cam_on_sao, vua_xin_sao
 from .assistants import Assistant, assign_assistant
 from .drive import extract_drive_id
@@ -404,6 +405,8 @@ class Conversation:
     # Persisted (SRS-5.1zzzzzzz130): chế độ test — gõ "$$$$$" bật; sau mỗi lượt server gửi thêm tin phụ "$$$$$ … đã trích xuất / đã hiểu gì"
     # (che_do_test.py, code ghép, không phải AI).
     che_do_test: bool = False
+    # Persisted (SRS-5.1zzzzzzz131 bản 2): số lượt khách đã CHO THÔNG TIN (lượt ghi được ô) — 3 lượt đầu bắt buộc mở bằng lời khen; "$$$$$" về 0.
+    so_luot_thong_tin: int = 0
     # Transient (SRS-5.1zzzzzzz130): ô tin của căn đang nói TRƯỚC khi áp thao tác lượt này, và cụm khách nói làm bằng chứng cho ô vừa ghi —
     # chỉ để tin phụ chế độ test nói "mới" hay "đổi từ …", kèm câu khách trích.
     truoc_luot: dict = field(default_factory=dict)
@@ -598,7 +601,8 @@ class SqliteConversationStore(ConversationStore):
             "role TEXT NOT NULL DEFAULT 'unknown', "
             "active_lead_id TEXT NOT NULL DEFAULT '', "
             "xung_ho TEXT NOT NULL DEFAULT '', "
-            "che_do_test TEXT NOT NULL DEFAULT '')"
+            "che_do_test TEXT NOT NULL DEFAULT '', "
+            "so_luot_thong_tin TEXT NOT NULL DEFAULT '0')"
         )
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS listings ("
@@ -622,6 +626,7 @@ class SqliteConversationStore(ConversationStore):
             ("conversations", "active_lead_id", "''"),
             ("conversations", "xung_ho", "''"),   # SRS-5.1zzzzzzz76: khách tự xưng gì, giữ qua khởi động lại
             ("conversations", "che_do_test", "''"),   # SRS-5.1zzzzzzz130: chế độ test ($$$$$), giữ qua khởi động lại
+            ("conversations", "so_luot_thong_tin", "'0'"),   # SRS-5.1zzzzzzz131 bản 2: lượt thông tin thứ mấy (3 lượt đầu khen 100%)
         ):
             try:  # migrate older tables that predate this column
                 self._conn.execute(
@@ -636,12 +641,13 @@ class SqliteConversationStore(ConversationStore):
         active_lead_id = conv.buyer_lead.lead_id if conv.buyer_lead else ""
         self._conn.execute(
             "INSERT INTO conversations(user_key, user_type, last_ai_at, active_listing_id, "
-            "history_json, price_book_json, role, active_lead_id, xung_ho, che_do_test) VALUES (?,?,?,?,?,?,?,?,?,?) "
+            "history_json, price_book_json, role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin) VALUES (?,?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(user_key) DO UPDATE SET "
             "user_type=excluded.user_type, last_ai_at=excluded.last_ai_at, "
             "active_listing_id=excluded.active_listing_id, history_json=excluded.history_json, "
             "price_book_json=excluded.price_book_json, role=excluded.role, "
-            "active_lead_id=excluded.active_lead_id, xung_ho=excluded.xung_ho, che_do_test=excluded.che_do_test",
+            "active_lead_id=excluded.active_lead_id, xung_ho=excluded.xung_ho, che_do_test=excluded.che_do_test, "
+            "so_luot_thong_tin=excluded.so_luot_thong_tin",
             (
                 conv.user_key,
                 conv.user_type.value,
@@ -653,6 +659,7 @@ class SqliteConversationStore(ConversationStore):
                 active_lead_id,
                 conv.xung_ho or "",
                 "1" if conv.che_do_test else "",
+                str(int(conv.so_luot_thong_tin or 0)),
             ),
         )
         if conv.buyer_lead is not None:
@@ -722,7 +729,7 @@ class SqliteConversationStore(ConversationStore):
     def load(self, user_key: str) -> Conversation | None:
         row = self._conn.execute(
             "SELECT user_type, last_ai_at, active_listing_id, history_json, price_book_json, "
-            "role, active_lead_id, xung_ho, che_do_test FROM conversations WHERE user_key=?",
+            "role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin FROM conversations WHERE user_key=?",
             (user_key,),
         ).fetchone()
         if row is None:
@@ -785,6 +792,7 @@ class SqliteConversationStore(ConversationStore):
             buyer_lead=lead,
             xung_ho=row[7] or None,
             che_do_test=bool(row[8]),
+            so_luot_thong_tin=int(row[9] or 0) if len(row) > 9 else 0,
         )
 
     def reset(self, user_key: str) -> None:
@@ -1758,6 +1766,7 @@ class Engine:
             # SRS-5.1zzzzzzz130 (Lê Quang 22/10): "$$$$$" xoá hết dữ liệu cũ + bật chế độ test, KHÔNG thông báo gì (replies rỗng → bridge không gửi);
             # tin kế tiếp của khách đi như người mới (lời chào lượt đầu do AI đọc) và từ đó mỗi lượt kèm tin phụ "$$$$$ đã trích xuất / đã hiểu…".
             conv.che_do_test = True
+            conv.so_luot_thong_tin = 0                                 # SRS-5.1zzzzzzz131 bản 2: đếm lại 3 lượt khen từ đầu
             kq = self._build_result(conv, "", captured=[], now=now)   # cờ bật TRƯỚC khi lưu kho (sống qua khởi động lại)
             kq.chu_thich = ""                                          # tin phụ chỉ bắt đầu từ tin kế tiếp của khách
             return kq
@@ -1909,6 +1918,8 @@ class Engine:
         else:
             conv.truoc_luot, conv.truoc_id, conv.bc_luot, conv.bo_luot = dict(conv.prop.fields_khach()), conv.active_listing_id, {}, []
             captured, conv.last_receipts = self._ap_dung_ke_hoach(conv, ke_hoach)
+            if captured:   # lượt khách CHO THÔNG TIN (SRS-5.1zzzzzzz131 bản 2): 3 lượt đầu bắt buộc mở bằng lời khen
+                conv.so_luot_thong_tin = int(conv.so_luot_thong_tin or 0) + 1
             if conv.y_luot.get("ngoai_vung"):   # khoá nội bộ `_` — theo căn qua lưu / nạp lại, không vào ô tin (fields_khach)
                 conv.prop.fields["_ngoai_vung"] = conv.y_luot["ngoai_vung"]
                 # Cùng một căn bị mở hai lần (bắn thử 209 KB1: lượt làm rõ "quận Đống Đa, Hà Nội" thành "add") — căn chưa trình bản
@@ -2137,7 +2148,7 @@ class Engine:
 
         if not is_listing_post and not any(t.role == "assistant" for t in conv.history):
             system += khoi_chao_lan_dau(conv.assistant.name, cau_mau.cau("chao_lan_dau", ten=conv.assistant.name))
-        system += khoi_xung_ho(customer_pronoun) + self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
+        system += khoi_xung_ho(customer_pronoun) + self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv) + khoi_khen_theo_luot(conv.so_luot_thong_tin)
         if xin_sao:
             system += KHOI_SAP_XIN_SAO
 
