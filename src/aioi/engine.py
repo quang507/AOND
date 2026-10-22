@@ -27,6 +27,8 @@ from . import gamification as g
 from . import cau_mau
 from . import che_do_test
 from . import so_token
+from .delivery import _is_formatted_post
+from .prompts import _MO_DAU_RE   # dòng mở bản nháp "(📋) Em/Mình sẽ rao như vầy nhé…:" (SRS-5.1zzzzzzz132)
 from .danh_gia import KHOI_SAP_XIN_SAO, cau_xin_sao, doc_sao, khoi_cam_on_sao, vua_xin_sao
 from .assistants import Assistant, assign_assistant
 from .drive import extract_drive_id
@@ -832,6 +834,32 @@ def _dong_tieu_de(reply: str) -> str:
     dong = reply.split("📋", 1)[1].splitlines()
     tren = dong[0].split(":", 1)[1].strip() if dong and ":" in dong[0] else ""
     return tren or next((d for d in dong[1:] if d.strip()), "")
+
+
+# SRS-5.1zzzzzzz132 (bắn thử 22/10: "Mức giá 9,2 tỷ cho căn nhà 6 tầng trung tâm này quá hợp lý rồi anh/chị nhỉ!"): lời bot nhận xét giá /
+# thị trường dù luật KHEN cấm — kiểm HÌNH THỨC lời của chính bot (không đoán ý khách), cùng lớp lưới chống bịa đang có. Nhắc lại con số khách
+# đưa ("Em đã để sẵn giá 9,2 tỷ trong bản tin") không khớp — chỉ bắt cụm ĐÁNH GIÁ.
+_BINH_LUAN_GIA = re.compile(
+    r"(thanh khoản|đắt khách|dễ bán|đắc địa|người mua tìm nhiều|nhiều người (?:hỏi|tìm|quan tâm)|"
+    r"(?:mức giá|giá)(?:(?!,\s)[^.!?;\n]){0,50}?(?:hợp lý|vừa tầm|cạnh tranh|mềm|quá tốt|rất tốt|tốt lắm|tốt rồi|quá rẻ|rẻ lắm)|"
+    r"(?:hợp lý|vừa tầm)(?:(?!,\s)[^.!?;\n]){0,25}?(?:mức giá|giá))", re.I)   # cửa sổ dừng ở ", " (vế khác), "9,2 tỷ" vẫn qua
+
+
+def _binh_luan_gia(reply: str) -> str | None:
+    """Cụm nhận xét giá / thị trường trong lời bot, hoặc None."""
+    m = _BINH_LUAN_GIA.search(reply or "")
+    return m.group(0).strip() if m else None
+
+
+# Giá trị DẠNG KÍCH THƯỚC chỉ thuộc ô kích thước / diện tích (SRS-5.1zzzzzzz132; bắn thử 22/10: khách gõ "5x10", AI nhét cả vào
+# `dien_tich_trang_thiet_bi` và cổng bằng chứng nhận vì cụm có thật). "4m" / "5m" KHÔNG tính (hẻm 4m, ngang 5m là hợp lệ ở ô riêng).
+_O_KICH_THUOC = frozenset({"kich_thuoc", "dien_tich", "dien_tich_dat", "dien_tich_nha", "dien_tich_mong_muon", "tho_cu", "mat_tien",
+                           "lo_gioi_hem", "lo_gioi_duong", "chieu_cao_tran"})
+_DANG_KICH_THUOC = re.compile(r"^\s*\d+(?:[.,]\d+)?\s*(?:x|×|\*)\s*\d+(?:[.,]\d+)?\s*(?:m2|m²|m)?\s*$|^\s*\d+(?:[.,]\d+)?\s*(?:m2|m²|mét vuông|m vuông|met vuong)\s*$", re.I)
+
+
+def _la_kich_thuoc(v: object) -> bool:
+    return isinstance(v, str) and _DANG_KICH_THUOC.match(v) is not None
 
 
 def _tieu_de_sai_don_vi(reply: str) -> bool:
@@ -2260,6 +2288,13 @@ class Engine:
         if _tieu_de_sai_don_vi(reply):
             ly_do.append("Tiêu đề ghi kích thước kèm m² (vd \"5x20m²\") — sai: viết diện tích bằng m² (vd \"100m²\") hoặc kích thước "
                          "không kèm m² (vd \"5x20m\").")
+        # Bản tin rao có ý chung ("đắc địa", "sầm uất") — chủ dự án: "kệ"; chỉ soát lời CHAT. Lúc này dấu 📋 có thể chưa được chèn (code thêm
+        # sau), nên nhận bản tin theo bố cục (gạch đầu dòng / ---) hoặc dòng mở "sẽ rao như vầy".
+        la_ban_tin = "📋" in reply or _is_formatted_post(reply) or _MO_DAU_RE.search(reply) is not None
+        bl = None if la_ban_tin else _binh_luan_gia(reply)
+        if bl:
+            ly_do.append(f"Lời vừa viết nhận xét giá / thị trường (\"{bl}\") — em không có dữ liệu thị trường, CẤM bình luận giá hợp lý / "
+                         "đắt khách / dễ bán (luật KHEN). Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn.")
         if ly_do:
             log.warning("Lời bot lệch luật hình thức (%d lý do) — gọi lại model", len(ly_do))
             with _do(conv, "tra_loi_lai"):
@@ -3717,6 +3752,12 @@ class Engine:
             log.warning("Bỏ ô mat_tien: lớn hơn cả hai chiều kích thước lô")
             conv.bo_luot.append(("mat_tien", out.get("mat_tien"), None, "bề ngang lớn hơn cả hai chiều kích thước lô"))
             out.pop("mat_tien", None)
+        # (3) Giá trị dạng kích thước ("5x10", "50m²") ở ô KHÔNG phải kích thước / diện tích → bỏ (SRS-5.1zzzzzzz132): lưới (1) chỉ bắt
+        # cụm ≥ 2 từ nên "5x10" vào cả `kich_thuoc` lẫn `dien_tich_trang_thiet_bi` lọt (bắn thử 22/10).
+        for k in [k for k in out if k not in _O_KICH_THUOC and k not in _O_PHAN_LOAI and _la_kich_thuoc(out[k])]:
+            log.warning("Bỏ ô %s: giá trị dạng kích thước, không phải ô kích thước / diện tích", k)
+            conv.bo_luot.append((k, out.get(k), None, "giá trị dạng kích thước (AxB / NNm²) chỉ thuộc ô kích thước / diện tích"))
+            out.pop(k, None)
         return out
 
     def _extract_fields(self, conv: Conversation) -> dict[str, str]:

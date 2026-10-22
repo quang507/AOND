@@ -8196,6 +8196,25 @@ và khen nhiều hơn vị trí các thứ cũng 100% khen".
    rộng hơn ("Em sửa giá còn…" không tính); MỘT lượt mở bằng ghi nhận → gọi lại ngay (hệ thống gọi lại nói "lời khen"); lời mở bằng khen không bị gọi lại. Gỡ ba file test
    của luật cũ (`test_ghi_nhan_mau/ngan/lap.py`); `test_khen_co_co_so.py` giữ (các cấm cũ còn nguyên chữ).
 
+### SRS-5.1zzzzzzz132 · Lưới bình luận giá và lưới giá trị dạng kích thước — từ bắn thử ban-thu-92 (22/10/2026)
+
+Bắn thử `ban-thu-92` (kịch bản tái hiện chat Lê Quang 11:54–12:05, Gemini lite vì Claude hết số dư): 13/13 phép kiểm đạt — `$$$$$` im lặng, giá vào ô ngay lượt 1
+(ca "không nhớ giá" KHÔNG tái hiện), không "em ghi nhận", không "hẻm xe hơi", không hỏi lại giá — nhưng đọc lời bot thấy hai lỗi phép kiểm chưa phủ:
+(a) "không nhớ giá sao?" → "Mức giá 9,2 tỷ cho căn nhà 6 tầng trung tâm này quá hợp lý rồi anh/chị nhỉ!" (bình luận giá, luật KHEN cấm); (b) khách gõ "5x10" →
+AI ghi cả `kich_thuoc` lẫn `dien_tich_trang_thiet_bi` = "5x10", cổng bằng chứng nhận (cụm có thật), lưới trùng cụm bỏ qua vì giá trị một từ.
+
+1. **Lớp**: (a) model (nhất là đường dự phòng) phạm luật đã viết trong prompt — lớp đã có lưới hình thức `_soat_hinh_thuc` (Dạ, ghi nhận, tiêu đề…); (b) ô ghi sai
+   chỗ dù có bằng chứng — lớp `_mot_cum_mot_o` (SRS-87). Không vá từng câu: thêm vào đúng hai hàm chủ đó.
+2. **Sửa**: (a) `engine._binh_luan_gia` (regex trên LỜI BOT: thanh khoản / đắt khách / dễ bán / đắc địa / nhiều người tìm / "giá … hợp lý | vừa tầm | cạnh tranh |
+   mềm | quá tốt | quá rẻ") → `_soat_hinh_thuc` gọi lại model một lần, lý do nêu "nhắc con số khách đưa thì được, không đánh giá"; nhắc lại giá ("Em đã để sẵn giá
+   9,2 tỷ trong bản tin") không khớp; bản tin rao (bố cục gạch đầu dòng / dòng mở "sẽ rao như vầy" / 📋) được miễn — văn tin có ý chung "đắc địa / sầm uất" là
+   quyết định "kệ" của chủ dự án. (b) `_O_KICH_THUOC` + `_la_kich_thuoc` ("AxB[m/m²]", "NN m²"; "4m" / "5m" KHÔNG tính): giá trị dạng đó ở ô ngoài kích thước /
+   diện tích → bỏ, ghi `bo_luot` (tin phụ chế độ test nói rõ). (c) `ban-thu-92.sh` thêm hai phép kiểm L4 / L6 cho đúng hai lỗi này.
+3. **Chưa làm**: tin phụ chế độ test chưa đếm lượt gọi lại model vào tiền (đã có — `so_token` cộng mọi lượt gọi); chưa bắn lại production (chủ dự án: "bắn 1 lượt thôi
+   kẻo hết") — bản này mới qua test offline.
+4. **Kiểm**: `tests/test_binh_luan_gia_kich_thuoc.py` (4 ca): nhận diện bình luận giá (3 câu phạm, 3 câu nhắc giá / "giờ xem hợp lý" / "hướng tốt" không bị oan); lượt
+   phạm bị gọi lại (hệ thống gọi lại nói "nhận xét giá"); `_la_kich_thuoc` 7 đúng / 7 sai; "5x10" chỉ còn ở `kich_thuoc`, "50m2" + "4m" giữ, "4x12m" ở `ket_cau` bị bỏ.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

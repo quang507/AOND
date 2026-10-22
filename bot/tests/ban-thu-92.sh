@@ -68,11 +68,13 @@ chat "hẻm 130 Cách Mạng Tháng 8, Phường Nhiêu Lộc Tp. Hồ Chí Minh
 kiem "L3: không bịa 'hẻm xe hơi' khi khách chưa nói rộng" "$(grep -qiE 'hẻm xe hơi|xe hơi' <<<"$LOI" && echo 0 || echo 1)"
 kiem "L3: không mở bằng câu ghi nhận" "$([ "$(ghi_nhan "$LOI")" = 0 ] && echo 1 || echo 0)"
 chat "5x10"
+kiem "L4: '5x10' không rơi vào ô trang thiết bị" "$(grep -qE '^• hiện trạng bàn giao và trang thiết bị.*5x10' <<<"$PHU" && echo 0 || echo 1)"
 chat "nhà 6 tầng, mới xây hoàn công 2025, đang trống"
 kiem "L5: không hỏi lại giá (đã nói từ L1)" "$(grep -qiE 'giá bán mong muốn|mong muốn thu về|giá bao nhiêu|mức giá' <<<"$LOI" && echo 0 || echo 1)"
 chat "không nhớ giá sao?"
 kiem "L6: nhắc lại giá 9.2 đã ghi, không đi kiểm tra giao dịch" "$(grep -q '9[.,]2' <<<"$LOI" && ! grep -qi 'kiểm tra các giao dịch' <<<"$LOI" && echo 1 || echo 0)"
 kiem "L6: không mở bằng câu ghi nhận" "$([ "$(ghi_nhan "$LOI")" = 0 ] && echo 1 || echo 0)"
+kiem "L6: không bình luận giá (hợp lý / đắt khách / dễ bán…)" "$(grep -qiE 'hợp lý|đắt khách|dễ bán|thanh khoản|đắc địa|vừa tầm' <<<"$LOI" && echo 0 || echo 1)"
 
 echo "== sổ lỗi lõi trong khung chạy"
 q "select count(*) as so_loi from bot_errors where at >= to_timestamp($BAT_DAU)" | jq -c '.[0]' || true
