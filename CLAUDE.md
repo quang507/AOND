@@ -116,6 +116,7 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > Mọi đoạn bên dưới nói `listing_facts` / `ghi_fact_listing` / `listing_facts_sync_cols` / `listing_missing_facts` là LỊCH SỬ.
 > **Bộ câu hỏi theo loại BĐS chỉ ở `src/aioi/schema.py`** (`CORE_FIELDS` theo nhóm, `CORE_THEO_LOAI` đè cho loại riêng — SRS-5.1zzzzzzz68);
 > bảng `required_facts` gỡ 19/10/2026 (`20261019g`), mọi đoạn bên dưới nhắc nó / `priority` / nhóm `sau_dang` là LỊCH SỬ.
+> **Tìm nhà cho khách mua (SRS-5.1zzzzzzz138, 22/10/2026):** `mua.can_phu_hop` → hàm DB `tim_nha` (lọc cứng bán / thuê / loại / giá, khu vực + diện tích + phòng ngủ + xe hơi chỉ cộng điểm, vector `listings.nhung` cộng điểm; mỗi căn kèm `ly_do` từ cột thật). Quota: không lời tả nhu cầu thì không nhúng; nhúng nhớ theo chữ; kết quả nhớ 60 s. Thiết kế đầy đủ (chưa làm hết): SRS-5.1zzzzzzz137.
 > **Phía người mua trong lõi (SRS-5.1zzzzzzz70):** `src/aioi/mua.py` ghi `buyers` / `interests` / `viewings` / `info_requests` / `deals`;
 > giao việc, nhắc, báo lại khách là trigger DB có sẵn. Lịch `ctv-sla-tick` bật lại (`20261019i`) — đừng tắt khi còn ghi `info_requests`.
 > **Ô tin chỉ ghi điều KHÁCH nói (SRS-5.1zzzzzzz73):** mỗi ô mới / đổi từ lượt lập thao tác phải có `bang_chung` nằm nguyên trong

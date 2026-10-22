@@ -24,6 +24,8 @@ class KhoGia(SupabaseConversationStore):
         self.goi.append((method, endpoint, data))
         if endpoint.startswith("rpc/parse_vnd"):
             return 5_000_000_000
+        if endpoint.startswith("rpc/tim_nha"):   # SRS-5.1zzzzzzz138: công cụ tìm nhà trả `{can, diem, ly_do}`
+            return [{"can": CAN, "diem": 3, "ly_do": "đúng khu vực khách chọn"}]
         if endpoint.startswith("rpc/"):
             return 1
         if method == "POST" and endpoint.startswith("buyers"):
@@ -101,8 +103,8 @@ def test_khach_mua_thay_can_dang_co_va_tao_dong_buyers():
     eng.handle("mua-1", "Em tìm nhà phố quận 5 tầm 5 tỷ")
     assert kho.ghi("POST", "buyers")                                     # khách mua có dòng buyers
     assert any("CĂN ĐANG CÓ TRONG RỔ" in s and "#ABCD1234" in s for s in ai.system)
-    tim = [e for m, e, d in kho.goi if m == "GET" and e.startswith("listings?status=in.")]
-    assert tim and "deal=eq.ban" in tim[0] and "property_type=eq.nha_pho" in tim[0] and "price_vnd=lte." in tim[0]
+    tim = [d for m, e, d in kho.goi if m == "POST" and e.startswith("rpc/tim_nha")]   # SRS-5.1zzzzzzz138: công cụ tìm nhà (một lượt gọi DB)
+    assert tim and tim[0]["p_deal"] == "ban" and tim[0]["p_loai"] == "nha_pho" and tim[0]["p_gia_max"] == 6_000_000_000
 
 
 def test_quan_tam_hen_xem_hoi_chu_nha_ghi_xuong_db():
