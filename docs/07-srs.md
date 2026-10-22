@@ -8274,6 +8274,21 @@ Lê Quang: "đổi lại key anthropic đi, và theo dõi". `kiem-khoa.yml` (lư
 Gemini. **Sửa**: workflow đọc thêm `ANTHROPIC_API_KEY` từ Vault, che log, đưa qua stdin; `cai-vps.sh` ghi đè đúng dòng `ANTHROPIC_API_KEY` trong `.env` lõi (chmod 600, không in giá trị) trước khi
 khởi động lại. **Chưa làm**: `GROQ_API_KEY` chưa có trong Vault nên Groq không được đồng bộ (dự phòng cuối vẫn dùng khoá `.env` cũ). **Kiểm**: `tests/test_tin_noi_bo_tien_to.py` (+1 ca).
 
+### SRS-5.1zzzzzzz136 · Mỗi lượt một câu hỏi ngắn, tách ý, tin `$$$$$` đi trước — 22/10/2026
+
+Chủ dự án (sau khi sếp / anh Luận nói "vẫn dài quá") nhìn ảnh CRM lượt gửi ảnh mặt tiền: "Em đã nhận: undefined", mô tả ảnh dài kèm chi tiết bịa, rồi hỏi "mặt tiền hay hẻm" dù ảnh đã thấy mặt tiền.
+Quyết định: bỏ hỏi gộp (đảo SRS-79), mỗi lượt đúng một ô; hỏi sổ đứng tên thật ngắn; lời dài tách thành tin riêng; bỏ câu dẫn "Còn một điểm em cần nắm thêm:"; tin debug `$$$$$` gửi
+TRƯỚC ("câu thật là câu không có $$$$$"); ảnh mặt tiền thì hỏi xác nhận, không tự ghi.
+
+1. **Lớp**: lời bot dài vì gộp nhiều ý một tin và model tự thêm câu dẫn / chi tiết; tên tệp rác của máy chủ ảnh Zalo lọt qua bộ lọc "tên băm" (chỉ lọc tên ≥ 20 ký tự).
+2. **Sửa**: `schema.CUM_TOI_DA = 1` (`CUM_HOI` giữ nguyên, nâng số này nếu cần hỏi gộp lại); `prompts.LUAT_TACH_Y` (tối đa hai ý, hai đoạn cách dòng trống, câu hỏi ≤ ~12 từ, cấm câu dẫn)
+   chèn vào `build_chat_system`; `dung_ten_so` hỏi "Sổ đứng tên ai vậy ạ?"; `build_media_read_instruction` mô tả ảnh MỘT câu điều nhìn rõ, cấm khen vật liệu, nhà phố / đất thấy rõ mặt tiền / hẻm thì
+   hỏi xác nhận "đúng không ạ?", không ghi ô; `engine._ten_tep_that` bỏ tên "undefined / null / none…"; `delivery.DEFAULT_MAX_CHARS` 160 → 100 (câu khen dài tách khỏi câu hỏi);
+   `server`: tin `chu_thich` chèn đầu `replies`, `_CAU_DAN_THUA` cắt câu dẫn thừa ở lối ra.
+3. **Chỗ khác cùng lớp, chưa sửa**: tin phụ `$$$$$` vẫn dài (chủ dự án chưa chốt rút gọn — chỉ đổi thứ tự); lượt thứ hai 14:18:08 "em hỏi lại chút nha" 1 giây sau khi khách trả lời (bắn thử 22/10) chưa tìm ra nguyên nhân —
+   không phải bộ nhắc 5 phút; khen vẫn có thể thêm chi tiết khách chưa nói.
+4. **Kiểm**: `tests/test_tach_y_hoi_ngan.py` (6 ca); sửa `test_hoi_theo_cum`, `test_ban_nhap_du_dieu_kien`, `test_bot_bot_hoi_lap`, `test_che_do_test` theo luật mới.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

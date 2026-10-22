@@ -12,9 +12,9 @@ def _nha(**f):
 def test_o_thieu_dau_tien_quyet_cum_va_hoi_gop():
     p = _nha(duong="Âu Cơ", dia_chi="110 Âu Cơ", phuong="Phường 9", quan="Quận 11", lo_gioi_hem="mặt tiền")
     thieu = p.missing_fields()
-    assert p.cum_hoi(thieu[0], thieu) == ["dien_tich_dat", "dien_tich_nha", "ket_cau"]
+    assert p.cum_hoi(thieu[0], thieu) == ["dien_tich_dat"]    # SRS-5.1zzzzzzz136 (22/10: "bỏ hỏi gộp"): mỗi lượt đúng một ô
     s = build_chat_system("Hằng", p, thieu[0], cum=p.cum_hoi(thieu[0], thieu))
-    assert "MỘT CỤM, hỏi gộp" in s and "diện tích đất" in s and "kết cấu" in s.lower()
+    assert "MỘT CỤM, hỏi gộp" not in s and "diện tích đất" in s
 
 
 def test_o_ngoai_cum_hoi_rieng():

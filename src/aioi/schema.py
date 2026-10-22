@@ -247,7 +247,9 @@ CUM_HOI: list[tuple[str, ...]] = [
     ("phap_ly_hoan_cong", "gia", "tinh_trang_ban_giao"),
     ("du_an", "tang_toa"),
 ]
-CUM_TOI_DA = 3
+# 22/10/2026 (SRS-5.1zzzzzzz136; chủ dự án: "bỏ hỏi gộp", "mỗi lần hỏi thì hỏi 1 câu cho đơn giản"): mỗi lượt đúng MỘT ô. CUM_HOI giữ nguyên
+# (chỗ nào cần hỏi gộp lại thì nâng số này), chỉ tối đa 1 nên `cum_hoi` trả đúng ô đang hỏi.
+CUM_TOI_DA = 1
 
 # Đất nền / thổ cư phải có tên đường + lộ giới hoặc thổ cư mới soạn tin; đất nông nghiệp thường ở xã, không có tên đường —
 # không chặn theo tên đường để khỏi kẹt câu hỏi.

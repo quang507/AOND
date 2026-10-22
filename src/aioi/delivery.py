@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 
 # A comfortable single Zalo bubble. Shorter replies are sent whole; longer ones split.
-DEFAULT_MAX_CHARS = 160
+DEFAULT_MAX_CHARS = 100   # SRS-5.1zzzzzzz136 (22/10: "nhắn dài thì tách ra"): 160 → 100, câu khen dài và câu hỏi thành hai tin
 
 _SENTENCE_BREAK = re.compile(r"(?<=[.!?…])\s+")
 

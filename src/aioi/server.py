@@ -9,6 +9,7 @@ Run: uvicorn aioi.server:app --reload --port 8000
 from __future__ import annotations
 
 import logging
+import re
 import threading
 import time
 from datetime import datetime, timezone
@@ -250,6 +251,9 @@ def _gui_bridge(user_key: str, text: str) -> None:
         pass
 
 
+_CAU_DAN_THUA = re.compile(r"(?is)(?:^|(?<=\n))\s*Còn\s+(?:một|1)\s+điểm\s+em\s+cần\s+nắm\s+thêm\s*[:：]\s*")
+
+
 def _thu_lai_nen(user_key: str, lam, moc: int, sau_hong: int, ten: str | None) -> None:
     """Thử lại lượt hỏng ở luồng nền. Khách đã nhắn tin mới trong lúc chờ (lịch sử dài hơn lúc hỏng) thì thôi — lượt mới đã đọc cả tin
     cũ. Trước khi chạy lại, cắt lịch sử về mốc trước lượt hỏng để tin khách không bị ghi hai lần. Vẫn hỏng → xin lỗi + báo người."""
@@ -479,6 +483,8 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
 
     # Clean asterisks so Zalo displays clean text without markdown markup
     cleaned_reply = r.reply.replace("**", "").strip()
+    # SRS-5.1zzzzzzz136 (Lê Quang 22/10: "Còn một điểm em cần nắm thêm: cái này bỏ đi"): câu dẫn thừa của model, bỏ cứng ở lối ra.
+    cleaned_reply = _CAU_DAN_THUA.sub("", cleaned_reply).lstrip()
 
     # Deliver via paced bubbles: listing drafts and any formatted ad (bullets / '---') stay as ONE whole message — chunk_reply
     # nhận tin rao theo bố cục, không so chữ "Em sẽ rao như vầy" (SRS-5.1zzzzzzz64).
@@ -487,11 +493,12 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     else:
         bubbles = [c.replace("**", "") for c in chunk_reply(cleaned_reply)]
     nhip_go = [int(typing_delay(c) * 1000) for c in bubbles]
-    # Chế độ test (SRS-5.1zzzzzzz130): tin phụ "$$$$$ đã trích xuất / đã hiểu gì" gửi SAU lời trả lời. Chỉ nằm trong `replies` — không vào
-    # `reply`, lịch sử hội thoại hay kho tin nhắn CRM (model không đọc lại nó).
+    # Chế độ test (SRS-5.1zzzzzzz130): tin phụ "$$$$$ đã trích xuất / đã hiểu gì". Chỉ nằm trong `replies` — không vào `reply`, lịch sử
+    # hội thoại hay kho tin nhắn CRM (model không đọc lại nó). SRS-5.1zzzzzzz136 (Lê Quang 22/10: "câu thật là câu không có $$$$$"): tin
+    # debug gửi TRƯỚC, các tin cho khách thật sau — người cầm máy thấy ngay đâu là debug, đâu là lời bot nói với khách.
     if r.chu_thich:
-        bubbles.append(r.chu_thich)
-        nhip_go.append(400)
+        bubbles.insert(0, r.chu_thich)
+        nhip_go.insert(0, 0)
 
     captured = r.captured
     if r.role == "buyer" and r.lead:

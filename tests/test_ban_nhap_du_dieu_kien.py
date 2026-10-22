@@ -72,8 +72,8 @@ def test_hem_va_hien_trang_hoi_truoc_ban_nhap():
     p = Property(loai_hinh="nha_pho", fields={"dia_chi": "Trần Hưng Đạo, Quận 5", "duong": "Trần Hưng Đạo"})
     thieu = p.missing_fields()
     assert "lo_gioi_hem" in thieu and "tinh_trang_ban_giao" in thieu
-    assert p.cum_hoi("phuong", thieu) == ["phuong", "lo_gioi_hem"]
-    assert set(p.cum_hoi("gia", thieu)) == {"gia", "phap_ly_hoan_cong", "tinh_trang_ban_giao"}
+    assert p.cum_hoi("phuong", thieu) == ["phuong"]          # SRS-5.1zzzzzzz136: mỗi lượt một ô, không hỏi gộp
+    assert p.cum_hoi("gia", thieu) == ["gia"]
     assert p.cau_hoi_sau_ra_tin() is None
     s = build_fee_followup_system("Hằng", p)
     assert "phí môi giới của tụi em chưa" in s and "BỔ SUNG SAU KHI DUYỆT" not in s
