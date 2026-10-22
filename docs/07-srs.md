@@ -7996,6 +7996,27 @@ luôn "Em cảm ơn anh/chị đã tin tưởng gửi thông tin nhà cho bên e
 
 Kiểm: `tests/test_ghi_nhan_mau.py` (6 ca; đỏ trên prompt cũ — 3 ca vỡ khi bỏ bản sửa), `tests/test_ghi_nhan_ngan.py` cập nhật theo chỗ giữ.
 
+### SRS-5.1zzzzzzz121 · Bản nháp không gạch đầu dòng vẫn một tin nhắn; prompt lượt hỏi bớt ví dụ lặp (22/10/2026)
+
+Lê Quang gửi ảnh bản nháp nhà phố Thạnh Lộc ra NĂM bong bóng: "bản nháp này ổn rồi, nhưng cần gộp vào 1 ô chat thôi". Cùng lượt: "còn cái nào
+ko flexible nữa ko fix luôn, bot prompt cho ngắn hơn có linh hoạt hơn ko".
+
+1. **Lớp lỗi (bong bóng)**: bộ chia tin nhắn (`delivery.chunk_reply`) nhận bản tin rao bằng HÌNH DÁNG (có gạch đầu dòng / `---`), còn cờ
+   `is_listing_post` ở `server.py` là trạng thái tin (`summary_ready`), không phải thuộc tính của lời vừa gửi. Model viết bản nháp thành đoạn
+   liền (không gạch) khi tin chưa đủ 100% thì cả hai đều trượt → tách theo dòng trống thành năm bong bóng.
+2. **Sửa (bong bóng)**: `_is_formatted_post` nhận thêm dấu 📋 — dấu bot tự đặt ở dòng mở bản nháp (và "📋 Bản tin cập nhật:"), kiểm HÌNH THỨC
+   lời của chính bot, không đoán ý khách. Chỗ khác cùng lớp: `server.py` vẫn xét `is_listing_post` (không đổi, chunk_reply đỡ phía sau);
+   dòng dẫn "Em soạn bản nháp tin đăng để anh xem qua nhé:" do Gemini lite tự viết thay dòng mở cố định (lượt dự phòng khi Claude hết số dư),
+   chưa kiểm với Haiku.
+3. **Lớp lỗi (prompt)**: model chép câu có trong prompt. Sổ `cau_chuan` 20–21/10: cùng một câu lặp 5–25 lần ("Nếu đồng ý / Nếu ổn, em đăng lên web
+   ngay" ×19 từ lời dặn "đồng ý là em đăng lên web ngay"). Prompt lượt hỏi (≈14.800 chữ) có 26 câu ví dụ trích dẫn, vài câu lặp hai ba chỗ.
+   **Sửa**: bỏ ví dụ trùng (câu hỏi mặt tiền / hẻm ×3, sổ hồng hoàn công, diện tích sàn), thêm "chỉ minh hoạ, tự đặt câu, không chép", câu cảm ơn
+   lượt đầu chỉ một chỗ, lời dặn hỏi duyệt bản tin đổi từ ngữ ("đã ưng bản tin chưa") để không có cụm để chép. Prompt gọn hơn chỉ vài trăm chữ
+   (14.775 → 14.439) — rút mạnh hơn (khối "Chính sách" 7.600 chữ, bản trùng ở `OPERATIONS_SYSTEM`) cần đo trên model thật, chưa làm.
+   **Chưa kiểm**: bot có linh hoạt hơn thật không — Claude hết số dư, chỉ có Gemini lite; đo lại bằng sổ `cau_chuan` sau khi nạp.
+
+Kiểm: `tests/test_delivery.py::test_ban_nhap_khong_gach_dau_dong_van_mot_tin_nhan` (đỏ khi bỏ bản sửa), `tests/test_ghi_nhan_mau.py::test_prompt_gon_khong_lap_cau_vi_du`.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

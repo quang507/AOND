@@ -62,3 +62,17 @@ def test_luot_dau_khong_con_ep_van_mau_cam_on_dai():
 def test_khong_con_ban_sao_vi_du_ghi_nhan_nao_viet_cung():
     nguon = open(prompts.__file__, encoding="utf-8").read()
     assert '"Em nắm rồi anh."' not in nguon and '"Em cảm ơn chị."' not in nguon.replace(cau_mau.MAC_DINH["ghi_nhan_mau"][0], "")
+
+
+def test_prompt_gon_khong_lap_cau_vi_du():
+    """SRS-5.1zzzzzzz121: model chép câu có trong prompt — một câu ví dụ xuất hiện hai ba chỗ thì lời bot lặp theo. Câu ví dụ trích dẫn trong
+    prompt lượt hỏi không được lặp (trừ các câu ghi nhận lấy từ bảng câu mẫu, nằm một chỗ)."""
+    import re
+    s = _he_thong()
+    cau = [c for c in re.findall(r'"([^"\n]{30,220})"', s) if re.search(r"\b(em|anh|chị|mình)\b", c, re.I)]
+    lap = sorted({c for c in cau if cau.count(c) > 1})
+    assert not lap, lap
+    assert "Căn này diện tích sàn sử dụng khoảng bao nhiêu mét vuông" not in s
+    assert "KHÔNG chép nguyên câu mẫu" in s
+    f = build_fee_followup_system("x", Property(loai_hinh="nha_pho"), web={"len_web": False, "cho_duyet": True})
+    assert "đồng ý là em đăng lên web ngay" not in f

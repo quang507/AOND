@@ -19,10 +19,14 @@ _SENTENCE_BREAK = re.compile(r"(?<=[.!?…])\s+")
 
 
 def _is_formatted_post(text: str) -> bool:
-    """A listing AD / structured post — has a bullet list or a '---' divider. These must be
+    """A listing AD / structured post — has the 📋 draft marker, a bullet list or a '---' divider. These must be
     delivered as ONE message so their blank lines and bullet layout survive; splitting them into
     bubbles (and dropping the blank lines between bubbles) is what made ads unreadable
     (anh Luận ffd3684, 19/10/2026)."""
+    # Bản nháp 📋 (dấu bot tự đặt ở dòng mở, SRS-5.1zzzzzzz121): bản tin không có gạch đầu dòng (model viết đoạn liền, vd tin nhà phố
+    # "Kết cấu … Hướng …") vẫn phải đi MỘT tin nhắn — trước đây chỉ nhận bản có gạch nên bản không gạch bị tách năm bong bóng.
+    if "📋" in text:
+        return True
     for raw in text.split("\n"):
         s = raw.strip()
         if s.startswith(("- ", "• ", "* ", "– ")) or s in ("---", "***", "___"):
