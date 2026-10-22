@@ -8054,6 +8054,22 @@ là ý của tôi" — `is_greeting_reset`).
 
 Kiểm: `tests/test_lenh_lam_moi.py` (5 ca; 2 ca đỏ khi quay về bản cũ). CLAUDE.md §6 khối quyết định chủ dự án đã cập nhật.
 
+### SRS-5.1zzzzzzz124 · Khen nhiều hơn lần hai: khen cả cách khách làm việc, bên mua có luật khen (22/10/2026)
+
+Lê Quang hỏi lại: "cho nó khen nhiều hơn dc ko" (sau SRS-5.1zzzzzzz119).
+
+1. **Lớp lỗi**: không phải lỗi — đổi mức độ giọng. Luật khen MỘT nguồn (`LUAT_KHEN`) vẫn là chỗ duy nhất quyết khen; tồn đọng từ SRS-119 ghi
+   rõ "phía người mua chưa có luật khen riêng" (bắn thử 21/10: "Vay khoảng 50% là phương án rất hợp lý" — nhận xét tài chính không có cơ sở).
+2. **Sửa** (`src/aioi/prompts.py`): (a) khen thêm CÁCH khách cung cấp thông tin khi nó thật sự rõ / đủ / nhanh, hoặc khách gửi ảnh / sổ / nhiệt
+   tình — điều em tận mắt thấy nên luôn có cơ sở, dùng được ở nhiều lượt hơn khen căn; (b) tối đa HAI ý khen ngắn mỗi lượt (một về căn, một về
+   cách khách làm việc), thay "tối đa MỘT câu"; (c) mở rộng danh sách điểm tốt (nhiều tầng, sân thượng, ô chờ thang máy, phòng thờ); (d) bên mua:
+   dòng khen cách khách nêu nhu cầu khi rõ, CẤM nhận xét tài chính và khen lựa chọn "đáng mua / sinh lời". GIỮ nguyên phần cấm bịa thị trường,
+   không bình luận giá, cấm khen chung chung.
+3. **Chưa kiểm**: model có khen nhiều hơn thật không — Claude hết số dư, chỉ có Gemini lite trả lời; đo lại bằng sổ `cau_chuan` sau khi nạp.
+   Không có bước code soát lời khen (soát nghĩa lời khen là đoán bằng từ khoá — không làm).
+
+Kiểm: `tests/test_khen_co_co_so.py::test_khen_nhieu_hon_lan_hai_khen_ca_cach_khach_lam_viec_va_ben_mua` (đỏ trên prompt cũ).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

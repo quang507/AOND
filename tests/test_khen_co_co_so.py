@@ -34,3 +34,14 @@ def test_khen_nhieu_hon_van_co_co_so():
     assert "thanh khoản tốt" in k and "KHÔNG bình luận giá" in k          # vẫn cấm nói điều không có số liệu
     s = prompts.build_chat_system("Hằng", prompts.Property(loai_hinh="nha_pho"), "gia", prompts.SellerRole.UNKNOWN, "")
     assert "KHÔNG khen các thông số kỹ thuật thông thường" not in s       # câu cũ ngược luật mới đã bỏ
+
+
+def test_khen_nhieu_hon_lan_hai_khen_ca_cach_khach_lam_viec_va_ben_mua():
+    """22/10/2026 (SRS-5.1zzzzzzz124), Lê Quang hỏi lại "cho nó khen nhiều hơn dc ko": khen thêm CÁCH khách cung cấp thông tin (luôn có cơ sở),
+    tối đa hai ý khen mỗi lượt, bên mua có luật khen riêng nhưng cấm nhận xét tài chính / khen lựa chọn đáng mua. Vẫn cấm bịa thị trường."""
+    k = prompts.LUAT_KHEN
+    assert "CÁCH khách cung cấp thông tin" in k and "tối đa HAI ý khen" in k and "MỘT câu khen" not in k
+    assert "thanh khoản tốt" in k and "KHÔNG bình luận giá" in k
+    from aioi.schema import BuyerLead
+    b = prompts.build_buyer_chat_system("Hằng", BuyerLead(), "khu_vuc")
+    assert "KHEN NHIỀU HƠN" in b and 'CẤM nhận xét tài chính' in b and "đáng mua" in b

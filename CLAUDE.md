@@ -140,7 +140,7 @@ danh** khi trích vào `docs/` (`0903xxxxxx`, `chị D.`).
 > - **Theo bản anh Luận** (`luan8560/AOND`, SRS-5.1zzzzzzz81): khách duyệt bản nháp thì hỏi "có biết phí môi giới của tụi em chưa"; hẻm /
 >   mặt tiền và hiện trạng hỏi TRƯỚC bản nháp; gửi model 30 tin gần nhất.
 > - **Giữ của mình, không theo anh Luận:** hỏi gộp theo cụm (SRS-5.1zzzzzzz79), khách lờ một ô 2 lần thì để sau (SRS-5.1zzzzzzz80), khen
->   có cơ sở (21/10/2026 sếp: "cần nó khen nhiều hơn" — khen điểm tốt thật mỗi lượt có điểm tốt, vẫn cấm bịa thị trường, SRS-5.1zzzzzzz119), cấm mở đầu "Dạ", tên trợ lý người thật (FR-181), kênh vừa mua vừa bán (lời chào hai lựa chọn).
+>   có cơ sở (21/10/2026 sếp: "cần nó khen nhiều hơn" — khen điểm tốt thật mỗi lượt có điểm tốt, vẫn cấm bịa thị trường, SRS-5.1zzzzzzz119; 22/10 khen thêm cách khách cung cấp thông tin, tối đa hai ý khen mỗi lượt, bên mua có luật khen riêng, SRS-5.1zzzzzzz124), cấm mở đầu "Dạ", tên trợ lý người thật (FR-181), kênh vừa mua vừa bán (lời chào hai lựa chọn).
 > - **Model:** mọi lượt dùng Haiku (chủ dự án: "Vẫn haiku"). Claude hỏng (hết số dư, quá tải…) thì lượt đó trả lời bằng Gemini rồi Groq
 >   (`llm/du_phong.py`, SRS-5.1zzzzzzz117, 21/10/2026) — Claude vẫn là đường chính.
 > - **Độ dài lời bot (21/10/2026, SRS-5.1zzzzzzz97):** "cứ ngắn vừa vừa thôi, khách không hiểu thì mình hỏi tiếp" — nói ý chính rồi dừng,
