@@ -8289,6 +8289,69 @@ TRƯỚC ("câu thật là câu không có $$$$$"); ảnh mặt tiền thì hỏ
    không phải bộ nhắc 5 phút; khen vẫn có thể thêm chi tiết khách chưa nói.
 4. **Kiểm**: `tests/test_tach_y_hoi_ngan.py` (6 ca); sửa `test_hoi_theo_cum`, `test_ban_nhap_du_dieu_kien`, `test_bot_bot_hoi_lap`, `test_che_do_test` theo luật mới.
 
+### SRS-5.1zzzzzzz137 · ĐỀ XUẤT thiết kế lại DB tin + vector hoá + tìm kiếm lai — 22/10/2026 · **CHƯA DUYỆT, chưa có migration**
+
+Chủ dự án (22/10): "nếu lưu ít trường hơn được không — vị trí, giá, quy mô, pháp lý, phù hợp mục đích"; "giá mong muốn cứ lưu vào giá"; "hỏi thì vẫn chia hướng hỏi, hỏi xong ghi vào các chỗ này";
+"ghi chú vẫn vector hoá để tìm (nhà làm spa → mặt tiền)"; "tìm cứng quá khó, vector đổi được theo ngữ nghĩa". Tài liệu này CHỈ là thiết kế để duyệt.
+
+**Hiện trạng đọc được (22/10)**: `listings` ~70 cột + `boc_tach` JSON; web lọc theo cột, ô trong JSON không lọc được. Vector `listings.nhung` (halfvec 768) + hàm `tim_tin_theo_nghia` có trên DB nhưng KHÔNG nơi nào gọi
+(lõi Python `mua.can_phu_hop` chỉ lọc cứng trạng thái / bán-thuê / loại / khu vực khớp chữ / giá ≤ 110 % rồi lấy 3 căn mới cập nhật nhất). Văn bản nhúng hiện gồm loại, địa chỉ, câu rao gốc, dự án, số tầng, vị thế, pháp lý, hướng, nhãn,
+mọi fact chữ tự do; cố ý BỎ giá / diện tích / phòng ngủ (đã lọc bằng cột, lặp lại làm vector giống nhau tới 0,99 — `20260924b`).
+
+**Nguyên tắc**: (1) tách CÁCH HỎI khỏi CÁCH LƯU — hỏi theo luồng, mỗi câu trả lời đổ vào một trong sáu chỗ; (2) thứ phải LỌC / SẮP XẾP là cột thật có kiểu; thứ để HIỂU là chữ và nằm trong vector; (3) không có chỗ thứ ba: JSON không ai tìm
+được thì bỏ, điều khách nói thêm ghi thành chữ vào `notes`; (4) giá khách nhắn lúc nào lưu vào đúng một cột giá, kèm ghi chú "thương lượng"; (5) vector chỉ mang "ý", không mang số.
+
+```mermaid
+erDiagram
+  sellers ||--o{ listings : dang
+  listings ||--|| listing_embeddings : vector
+  listings ||--o{ listing_media : anh
+  listings ||--o| listing_noi_bo : rieng_cua_chu
+  listings }o--|| wards : phuong
+  listings }o--o| projects : du_an
+  buyers ||--o{ buyer_needs : nhu_cau
+  buyer_needs ||--o{ listing_matches : goi_y
+  listings ||--o{ listing_matches : duoc_goi_y
+```
+
+**1. `listings` rút gọn — sáu chỗ lưu** (dùng lại tên cột hiện có, chỉ thêm 4 cột mới *)
+
+| Chỗ | Cột | Ghi chú |
+|---|---|---|
+| Định danh | `id, code, seller_id, deal, property_type, status, project_id, created_at, updated_at` | `deal` bán / thuê |
+| 1 Vị trí | `province*, district, ward, street, house_no (nội bộ), location_raw (hiển thị), lat, lng` | `ward` chỉ mang `wards.ten_day_du` (bất biến SRS-5.1zzzzj) |
+| 2 Vị thế | `access_type` (mat_tien · hem_xe_tai · hem_xe_hoi · hem_xe_may · hem_nho), `alley_width_m`, `frontage_m` | một cột lọc được, hết lệch với ô JSON |
+| 3 Giá | `price_vnd`, `price_raw`, `price_note*` (vd "thương lượng được") | giá khách nhắn lúc nào lưu vào đây; "giá mong muốn" không còn cột riêng; tìm theo `price_vnd` |
+| 4 Quy mô | `area_m2` (đất), `built_area_m2` (sàn), `floors`, `bedrooms`, `bathrooms*` | |
+| 5 Pháp lý | `legal_status`, `has_completion` | |
+| 6 Mục đích | `muc_dich*` text[] (o · kinh_doanh · cho_thue · dau_tu · van_phong), `nhan` text[] (đặc điểm: yen_tinh, xe_hoi_vao_nha…) | nhãn dùng chung từ điển `nhan.ts` |
+| Chữ | `notes*` (mọi điều khách nói thêm, mỗi lượt một dòng có ngày), `description` (bản tin công khai) | `notes` KHÔNG công khai, nhưng ĐI VÀO vector |
+
+Bỏ khỏi `listings`: `boc_tach` làm chỗ lưu chính (hướng, nội thất, phí quản lý… thành chữ trong `notes`), `price_per_m2_vnd`/`floors_text` thừa, các cột nguồn `*_source` chuyển sang một bảng sổ nguồn nếu còn cần. Ô riêng của chủ nhà (đứng tên sổ, lý do bán, giờ xem, chìa khoá) giữ ở `listing_noi_bo`, không vector hoá.
+
+**2. Bảng vector tách riêng `listing_embeddings`**: `listing_id` (khoá chính), `doc` (văn bản đã nhúng), `doc_md5`, `embedding` halfvec(768), `model`, `embedded_at`; chỉ mục HNSW cosine. Tách khỏi `listings` để bảng nóng gọn và để nhúng lại không chạm tin.
+Chỉ nhúng lại khi `doc_md5` đổi (cơ chế `nhung_tick` có sẵn).
+
+**3. Văn bản nhúng của một tin** (mẫu):
+`{Bán|Cho thuê} {loại}. {Vị thế, vd "Hẻm xe hơi rộng 4 m"}. Phù hợp: {mục đích}. Đặc điểm: {nhãn}. Khu vực: {đường}, {phường}, {quận}. Dự án {tên}. Ghi chú: {notes}. Người bán tả: {description}.`
+KHÔNG đưa: giá, diện tích, phòng ngủ, số tầng, pháp lý (lọc bằng cột), số điện thoại (che), thông tin riêng của chủ nhà.
+
+**4. `buyer_needs`** (một dòng mỗi nhu cầu của khách mua): `buyer_id, deal, property_type, budget_max_vnd, wards text[]` (phường chuẩn, kèm lân cận), `area_min_m2, bedrooms_min`, `soft_tags text[]`, `intent_text` (câu khách nói, vd "nhà yên tĩnh cho ông bà ở"), `embedding`, `status`. Vector của nhu cầu cũng dùng để báo khách khi có tin mới khớp.
+
+**5. Luồng tìm "ít cứng, nhiều mềm"**:
+1. Một lượt model rẻ đổi câu khách thành `buyer_needs` (điều kiện cứng / mềm / câu để so nghĩa); khu vực qua `dia_danh` ra phường chuẩn, không khớp chữ.
+2. Lọc cứng CHỈ ba thứ: `deal`, `property_type`, `price_vnd ≤ ngân sách × 1,2`.
+3. Vector lấy 30 ứng viên gần nghĩa nhất (`listing_embeddings`), trong nhóm đã lọc.
+4. Xếp lại: điểm = số điều kiện mềm khớp (phường đúng / lân cận, diện tích, phòng ngủ, `access_type`, `nhan`, `muc_dich`) + độ gần vector; lấy 3.
+5. Mỗi căn kèm một dòng "vì sao hợp" ghép từ dữ liệu có thật; điều chưa biết (vd "yên tĩnh") nói thẳng là chưa biết. Không đủ căn thì nới dần điều kiện mềm và nói rõ.
+6. Ghi `listing_matches(need_id, listing_id, score, why, shown_at, clicked?)` để đo chất lượng.
+
+**Chi phí**: nhúng một tin ≈ một đoạn ngắn, chỉ khi `doc_md5` đổi; mỗi lần khách tìm = một lượt model nhỏ + một lần nhúng câu hỏi. Nhúng đang dùng khoá Gemini free (Vault `GEMINI_NHUNG_*`). Chưa đo số token thật. Tiền chính vẫn ở các lượt chat; bỏ hỏi gộp và bớt ô là chỗ giảm lớn nhất.
+
+**Chưa quyết (cần chủ dự án)**: (a) giữ hay bỏ nhóm câu hỏi riêng theo loại (căn hộ, đất, kho xưởng — mỗi loại ~2 ô); (b) `muc_dich` do khách nói hay AI suy từ loại + vị thế; (c) hướng nhà, nội thất có cần cột lọc không (đề xuất: không, để trong `notes`);
+(d) migration hai pha — pha 1 thêm `listing_embeddings`, `buyer_needs`, `listing_matches` và hàm tìm lai, KHÔNG đụng `listings`; pha 2 mới rút gọn cột sau khi đo được kết quả tìm.
+**Không làm khi chưa duyệt**: không migration, không đổi bộ câu hỏi, không đổi tìm kiếm trên production.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
