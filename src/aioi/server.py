@@ -269,26 +269,43 @@ def _xung_ho_khach(zalo_id: str) -> str:
         return "unknown"
 
 
+NHIP_BAO_CAN_MOI_GIAY = float(os.environ.get("NHIP_BAO_CAN_MOI_GIAY", "1.5"))   # nghỉ giữa các tin báo căn: nghe như người nhắn, Zalo giao đúng thứ tự
+
+
 def _gui_bao_can_moi(zalo_id: str, tin: str, ten: str | None, can: dict, anh: list[str] | None = None) -> bool:
-    """Gửi tin báo căn mới qua bridge. Bridge nhận thì ghi vào lịch sử hội thoại (khách trả lời "căn đó giá sao" bot còn nhớ vừa báo gì) và
-    CRM như bộ nhắc 5 phút. Bridge hụt → False để lượt sau thử lại; ghi lịch sử hụt thì tin đã đi nên vẫn True."""
+    """Gửi tin báo căn mới qua bridge — SRS-5.1zzzzzzz159: MỖI ĐOẠN (cách nhau dòng trống) là MỘT tin Zalo, nghỉ `NHIP_BAO_CAN_MOI_GIAY` giữa các
+    tin; ảnh đi ngay sau tin có link căn. Tin đầu hụt → False (chưa gì tới khách, lượt sau thử lại); các tin sau hụt → dừng nhưng vẫn True (khách
+    đã nhận phần đầu, gửi lại là báo đúp). Gửi xong ghi vào lịch sử hội thoại (khách trả lời "căn đó giá sao" bot còn nhớ vừa báo gì) và CRM
+    như bộ nhắc 5 phút — đúng những đoạn đã đi."""
+    from .bao_can_moi import tach_tin
     from .engine import Turn
+    phan = tach_tin(tin) or [tin]
+    i_anh = next((i for i, p in enumerate(phan) if f"/nha-dat/{can.get('code')}" in p), len(phan) - 1)
+    da_gui: list[str] = []
     with _engine.khoa_luot(zalo_id):
-        try:
-            kq = _gui_bridge(zalo_id, tin, anh)
-            if anh:
-                log.info("báo căn mới %s: bridge gửi %s/%d ảnh", can.get("code"), kq.get("anh_da_gui"), len(anh))
-        except Exception as e:  # noqa: BLE001
-            log.warning("báo căn mới: bridge hụt (%s)", type(e).__name__)
-            return False
+        for i, p in enumerate(phan):
+            ban_anh = anh if (anh and i == i_anh) else None
+            try:
+                kq = _gui_bridge(zalo_id, p, ban_anh)
+            except Exception as e:  # noqa: BLE001
+                log.warning("báo căn mới: bridge hụt ở tin %d/%d (%s)", i + 1, len(phan), type(e).__name__)
+                if not da_gui:
+                    return False
+                break
+            da_gui.append(p)
+            if ban_anh:
+                log.info("báo căn mới %s: bridge gửi %s/%d ảnh", can.get("code"), kq.get("anh_da_gui"), len(ban_anh))
+            if i < len(phan) - 1:
+                time.sleep(NHIP_BAO_CAN_MOI_GIAY)
+        da_noi = "\n\n".join(da_gui)
         try:
             conv = _engine.conversation(zalo_id)
-            conv.history.append(Turn(role="assistant", content=tin, at=time.time()))
+            conv.history.append(Turn(role="assistant", content=da_noi, at=time.time()))
             if _engine._convstore is not None:
                 _engine._convstore.save(conv)
         except Exception as e:  # noqa: BLE001
             _so_loi.ghi_loi("bao can moi", f"đã gửi nhưng ghi lịch sử hụt: {type(e).__name__}"[:200])
-    sync_to_supabase_async(external_user_id=zalo_id, incoming_text="", bot_reply=tin, role="buyer", user_name=ten)
+    sync_to_supabase_async(external_user_id=zalo_id, incoming_text="", bot_reply=da_noi, role="buyer", user_name=ten)
     return True
 
 

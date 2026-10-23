@@ -96,8 +96,14 @@ def test_bao_can_dung_ngan_sach_ghi_so_va_xung_ho():
     ra, gui = chay(kho)
     assert len(ra) == 1 and len(gui) == 1 and gui[0][0] == "zl-ngan"
     t = gui[0][1]
-    assert t.startswith("Chị ơi, em vừa có căn mới hợp nhu cầu của chị: nhà phố Trần Phú, Phường 4, Quận 5, 60m², giá 6.8 tỷ, 3 phòng ngủ.")
-    assert "/nha-dat/SEED0001" in t and t.rstrip().endswith("không ạ?") and "nhỉnh" not in t
+    # SRS-5.1zzzzzzz159: bốn đoạn = bốn tin Zalo — mở lời · thông số + vì sao hợp · link · câu hỏi lịch xem
+    d = bao_can_moi.tach_tin(t)
+    assert len(d) == 4
+    assert d[0] == "Chị ơi, em đang có căn này hợp với nhu cầu của chị nè, chị xem qua nha."
+    assert d[1] == ("Nhà phố Trần Phú, Phường 4, Quận 5, 60m², giá 6.8 tỷ, 3 phòng ngủ. "
+                    "Hợp vì đúng khu Quận 5, đúng loại nhà phố, giá trong ngân sách tầm 7 tỷ, xe hơi vào được.")
+    assert d[2].startswith("Xem hình và chi tiết ở đây ạ: ") and d[2].endswith("/nha-dat/SEED0001")
+    assert d[3] == "Chị có muốn em sắp lịch xem thử không ạ?" and "nhỉnh" not in t
     assert len(kho.reminders) == 1 and kho.reminders[0]["kind"] == "match" and kho.reminders[0]["status"] == "sent"
     assert kho.reminders[0]["listing_id"] == "l1" and kho.reminders[0]["noi_dung_gui"] == t
 
@@ -106,7 +112,9 @@ def test_can_vuot_ngan_sach_mot_chut_van_bao_va_noi_ro_phan_tram():
     kho = KhoGia([tin("l1", "SEED0002", 7.7e9)])    # 7,7 / 7 = +10 %
     ra, gui = chay(kho)
     assert len(ra) == 1 and ra[0]["vuot"] == 10
-    assert "Giá nhỉnh hơn ngân sách chị nêu khoảng 10%" in gui[0][1] and gui[0][1].rstrip().endswith("nhé?")
+    d = bao_can_moi.tach_tin(gui[0][1])
+    assert len(d) == 4 and d[1].endswith("Hợp vì đúng khu Quận 5, đúng loại nhà phố, xe hơi vào được. Giá nhỉnh hơn ngân sách chị nêu khoảng 10%.")
+    assert "giá trong ngân sách" not in gui[0][1] and d[3].endswith("nhé?")
 
 
 def test_khong_bao_can_vuot_qua_15_phan_tram_khac_khu_vuc_hay_thieu_xe_hoi():
@@ -152,7 +160,7 @@ def test_gui_hut_thi_go_dong_giu_cho_de_lan_sau_thu_lai():
 def test_khach_xung_em_thi_bot_xung_minh():
     kho = KhoGia([tin("l1", "A", 6.8e9)])
     _, gui = chay(kho, xung_ho="em")
-    assert gui[0][1].startswith("Em ơi, mình vừa có căn mới hợp nhu cầu của em:") and "Em có muốn mình sắp lịch" in gui[0][1]
+    assert gui[0][1].startswith("Em ơi, mình đang có căn này hợp với nhu cầu của em nè, em xem qua nha.") and "Em có muốn mình sắp lịch" in gui[0][1]
 
 
 def test_khach_chua_neu_khu_vuc_hay_ngan_sach_thi_khong_bao():
@@ -171,11 +179,15 @@ def test_khong_co_tin_moi_thi_khong_goi_them_truy_van():
 U = "https://x.supabase.co/storage/v1/object/public/listing-public/"
 
 
-def test_can_co_anh_thi_gui_kem_toi_da_hai_anh_https():
+def test_can_co_anh_thi_gui_kem_toi_da_bon_anh_https():
     kho = KhoGia([tin("l1", "A", 6.8e9)])
     kho.anh["A"] = [U + "1.jpg", "http://khong-https/2.jpg", U + "1.jpg", U + "3.jpg", U + "4.jpg"]
     ra, gui = chay(kho)
-    assert len(ra) == 1 and kho.anh_da_gui == [U + "1.jpg", U + "3.jpg"]      # bỏ http, bỏ trùng, tối đa 2
+    assert len(ra) == 1 and kho.anh_da_gui == [U + "1.jpg", U + "3.jpg", U + "4.jpg"]      # bỏ http, bỏ trùng
+    kho2 = KhoGia([tin("l1", "B", 6.8e9)])
+    kho2.anh["B"] = [U + f"{i}.jpg" for i in range(1, 7)]
+    chay(kho2)
+    assert kho2.anh_da_gui == [U + f"{i}.jpg" for i in range(1, 5)]                          # tối đa 4 ảnh
 
 
 def test_can_chua_co_anh_hoac_loi_anh_thi_van_gui_chu():
@@ -196,3 +208,42 @@ def test_bridge_send_nhan_photos_chi_https_va_dung_chung_ham_gui_anh():
     assert "photos" in send.split("res.end")[0] and "startsWith('https://')" in send and ".slice(0, 4)" in send and "guiAnhQuaUrl" in send
     assert js.count("api.sendMessage({ msg: \"\", attachments: [f] }") == 1       # chỉ MỘT chỗ tải-và-gửi ảnh
     assert "for (const url of Array.isArray(photos) ? photos : []) await guiAnhQuaUrl(threadId, url);" in js
+
+
+def test_gui_nhieu_tin_lan_luot_anh_di_sau_tin_co_link(monkeypatch):
+    """SRS-5.1zzzzzzz159: `_gui_bao_can_moi` gửi MỖI đoạn một tin, nghỉ giữa các tin, ảnh gắn vào tin có link; lịch sử ghi đúng những đoạn đã đi."""
+    from aioi import server
+    di, ngu = [], []
+    monkeypatch.setattr(server, "_gui_bridge", lambda zalo, text, photos=None: di.append((text, photos)) or {"anh_da_gui": len(photos or [])})
+    monkeypatch.setattr(server.time, "sleep", lambda g: ngu.append(g))
+    monkeypatch.setattr(server, "sync_to_supabase_async", lambda **k: None)
+    tin_bao = bao_can_moi.viet_tin(tin("l1", "SEED0001", 6.8e9), "chi", bao_can_moi.nhu_cau_tu_ho_so(NGAN["preferences"]))
+    ok = server._gui_bao_can_moi("zl-gui-nhieu", tin_bao, "Ngân", {"code": "SEED0001"}, [U + "1.jpg", U + "2.jpg"])
+    assert ok and [t.split("\n")[0][:22] for t, _ in di] == [t.split("\n")[0][:22] for t in bao_can_moi.tach_tin(tin_bao)] and len(di) == 4
+    assert [p for _, p in di] == [None, None, [U + "1.jpg", U + "2.jpg"], None]            # ảnh đi cùng tin có link (tin thứ ba), tin sau đó là câu hỏi
+    assert len(ngu) == 3                                                                    # nghỉ giữa 4 tin
+    assert server._engine.conversation("zl-gui-nhieu").history[-1].content == tin_bao        # lịch sử = đủ bốn đoạn
+
+
+def test_tin_dau_hut_thi_khong_gui_gi_va_tin_sau_hut_thi_van_tinh_la_da_bao(monkeypatch):
+    from aioi import server
+    monkeypatch.setattr(server.time, "sleep", lambda g: None)
+    monkeypatch.setattr(server, "sync_to_supabase_async", lambda **k: None)
+    tin_bao = bao_can_moi.viet_tin(tin("l1", "SEED0002", 6.8e9), "chi", bao_can_moi.nhu_cau_tu_ho_so(NGAN["preferences"]))
+
+    def hut_tu(n):
+        goi = []
+
+        def gui(zalo, text, photos=None):
+            goi.append(text)
+            if len(goi) >= n:
+                raise OSError("bridge")
+            return {}
+        return goi, gui
+    goi, gui = hut_tu(1)
+    monkeypatch.setattr(server, "_gui_bridge", gui)
+    assert server._gui_bao_can_moi("zl-hut-1", tin_bao, None, {"code": "SEED0002"}, []) is False and len(goi) == 1   # chưa gì tới khách → thử lại lượt sau
+    goi, gui = hut_tu(3)
+    monkeypatch.setattr(server, "_gui_bridge", gui)
+    assert server._gui_bao_can_moi("zl-hut-3", tin_bao, None, {"code": "SEED0002"}, []) is True and len(goi) == 3      # khách đã nhận 2 tin: không gửi lại
+    assert server._engine.conversation("zl-hut-3").history[-1].content == "\n\n".join(bao_can_moi.tach_tin(tin_bao)[:2])
