@@ -2054,7 +2054,7 @@ class Engine:
             viec, can = self._viec_mua(conv, text)
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
-                           + khoi_lich_dang_cho(conv.y_luot.get("lich_cho")))
+                           + khoi_lich_dang_cho(conv.y_luot.get("lich_cho"), customer_pronoun))
             system += khoi_can_nguoi(conv) + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
             system += self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)

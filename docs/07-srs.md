@@ -8543,6 +8543,15 @@ Ca gốc: chat thật của chị Ngân (khách thử) 14:19–14:48 giờ VN, �
 3. **Chỗ khác cùng lớp**: còn — câu xác nhận lịch do MODEL viết theo khối trên, không phải câu mẫu cố định (`cau_mau.py`); nếu muốn đúng từng chữ như câu người xem góp ý thì cần thêm khoá câu mẫu (chưa làm). Lời đáp phía người bán không có khối lịch (không có lịch hẹn ở phía bán). Luật mặt tiền theo tên đường là quyết định của chủ dự án, có thể ghi sai cho nhà trong hẻm mà khách chỉ nói tên đường (khách nói hẻm sau thì sửa được; lưới SRS-155 vẫn chỉ tin ô đã ghi). Chưa kiểm: model có theo khối mới không — chỉ kiểm được bằng bắn thử thật.
 4. **Kiểm**: `tests/test_lich_hen_va_mat_tien.py` (5 ca: gộp giờ; giờ nói thêm PATCH vào lịch cũ, không tạo lịch hai, không ghi khi không có gì mới; nội dung khối lịch; engine đưa khối + PATCH khi khách nói "4h"; địa chỉ chỉ có tên đường → "Mặt tiền", có "/" → "Nhà hẻm", có hẻm / ngõ / ngách → không ghi, chưa có tên đường không ghi, ô đã có không đè) — gỡ từng phần (gộp giờ, khối trong engine, luật mặt tiền) thì ca tương ứng đỏ.
 
+### SRS-5.1zzzzzzz158 · Câu xác nhận lịch hẹn xem là câu mẫu cố định (23/10/2026)
+
+Ca gốc: người xem chat chị Ngân góp ý câu bot hỏi xác nhận lịch ("Chị xác nhận giúp em, 4 giờ chiều nay xem căn Quang Trung có phù hợp với chị không ạ?" — "hỏi nhọc nhằn quá") nên viết "Chị xác nhận giúp em, 4 giờ chiều nay mình đến xem căn Quang Trung đúng không ạ?"; chủ dự án: "lấy câu mẫu nè". Ở SRS-157 câu này do model tự viết theo khối lệnh nên không đảm bảo đúng chữ.
+
+1. **Lớp lỗi**: câu bot cần nói đúng từng chữ nhưng nằm trong lệnh cho model, không ở `cau_mau.py` — chủ dự án không sửa được ở CRM, mỗi lượt model diễn đạt một kiểu.
+2. **Sửa**: `cau_mau.MAC_DINH["xac_nhan_lich"]` = "{Goi} xác nhận giúp {toi}, {gio} mình đến xem căn {can} đúng không ạ?" (bắt buộc giữ {gio} và {can} khi sửa ở CRM, thiếu thì dùng mặc định); migration `20261023d_cau_mau_xac_nhan_lich.sql` nạp dòng bảng `cau_mau`; `mua.khoi_lich_dang_cho` đưa câu (đã điền cách gọi / xưng hô theo `mua.goi_toi`: khách xưng "em" thì bot xưng "mình") và dặn model chép NGUYÊN VĂN, chỉ thay phần `<…>` bằng ngày giờ khách đã nói và đường / khu của căn.
+3. **Chỗ khác cùng lớp**: còn — model vẫn là bên QUYẾT ĐỊNH lúc nào đã đủ ngày + giờ để hỏi xác nhận (đọc theo nghĩa; không có từ khoá), chỉ chữ của câu là cố định, nên model vẫn có thể diễn đạt lại khi nó "nhớ" không đủ — kiểm được bằng bắn thử thật, chưa kiểm. Các câu khác phía mua do model viết (gợi ý căn, hỏi nhu cầu) vẫn không phải câu mẫu.
+4. **Kiểm**: `tests/test_lich_hen_va_mat_tien.py::test_cau_xac_nhan_lich_la_cau_mau_nguyen_van` (khối chứa câu nguyên văn; khách xưng "em" thì đổi xưng hô; câu điền đủ đúng như câu góp ý; sửa ở CRM có hiệu lực; sửa thiếu {gio} / {can} thì về mặc định) — bỏ phần bắt buộc giữ chỗ thì đỏ; `tests/test_cau_mau.py` (mọi khoá có dòng trong migration `*_cau_mau*.sql`).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
