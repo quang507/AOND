@@ -8433,6 +8433,15 @@ Ca gốc: chat thử Zalo 23/10 (khách mua, "Gò Vấp hẻm xe hơi dưới 6 
 3. **Chỗ khác cùng lớp**: còn — `khoi_viec_vua_ghi` (engine) vẫn đưa `#mã` vào chữ model đọc; các khối phía người bán vẫn dùng chữ "rổ hàng" (thuật ngữ nói với người bán, chưa đổi); chữ viết tắt khác ("Đ.", "ĐH.") chưa chặn; câu mẫu cứng chứa "em" ở chỗ khác chưa soát hết. **Chưa làm / dữ liệu**: ảnh chỉ gửi được khi tin có ảnh trong `listing_media` — hiện cả DB có 1 ảnh (tên tệp `undefined.jpg`, nghi lỗi đặt tên khi lưu ảnh) và 130 tin mẫu không có ảnh nên chưa kiểm được đường gửi ảnh trên production; bridge gửi ảnh SAU các bong bóng chữ (không xen kẽ từng căn). Lời bot vẫn do model viết: bài kiểm chỉ chặn chữ trong prompt, không bảo đảm câu chữ — cần xem lại bằng chat thật.
 4. **Kiểm**: `tests/test_goi_y_can_tu_nhien.py` (8 ca; đã thử tắt từng bản sửa — tách tin, xếp theo ngân sách, khối chữ nội bộ — mỗi cái làm đúng một ca đỏ). Câu "nghĩa" mới chưa từng bắn: "…vượt 6 tỷ…" kèm "TP. Hồ Chí Minh".
 
+### SRS-5.1zzzzzzz146 · Khách mua: gợi ý căn TRƯỚC, hỏi thêm SAU, câu hỏi ngắn — 23/10/2026
+
+Ca gốc: chat thử Zalo 23/10, lỗi 4 sau khi sửa SRS-145. Chủ dự án: "nó hỏi thêm thông tin hơi dài, nếu người ta pm thì sau tin nhắn có thể gửi luôn căn gợi ý cho người ta rồi sau mới hỏi thêm".
+
+1. **Lớp lỗi**: prompt phía mua đặt câu hỏi (`ask_line`) ở vai chính và dạy "đồng cảm → hỏi", còn khối căn chỉ là phụ lục; lời khen kèm "vì sao giúp em lọc căn sát hơn" kéo tin dài; khối căn dạy khen ở CUỐI trong khi luật khen lượt đầu dạy khen ở ĐẦU (hai chỉ dẫn ngược thứ tự). Model theo vai chính nên hỏi trước, căn xuống sau.
+2. **Sửa**: `src/aioi/prompts.py` `build_buyer_chat_system` — thêm luật "GỢI Ý TRƯỚC, HỎI SAU" và "một câu ngắn (~15 chữ, không giải thích vì sao hỏi)"; `ask_line` đặt câu hỏi ở CUỐI tin; bỏ "vì sao giúp em lọc căn sát hơn" khỏi luật khen. `src/aioi/mua.py` — `khoi_can_cho_khach`: thứ tự tin khen → căn → một câu hỏi, một lời khen mỗi tin, không nhắc lại căn đã giới thiệu ở tin trước; `co_tieu_chi(lead)` (khách đã nêu KHU VỰC hoặc NGÂN SÁCH; loại BĐS một mình chưa đủ vì "nhà phố" thì căn nào cũng khớp); `can_phu_hop` trả `[]` khi chưa có tiêu chí (không gọi DB, không đoán căn); khối riêng cho trường hợp đó ("chưa tìm căn", cấm nói "chưa có căn"). `src/aioi/engine.py` — hai chỗ dựng khối căn truyền cờ `chua_co_tieu_chi`.
+3. **Chỗ khác cùng lớp**: còn — phía NGƯỜI BÁN vẫn theo khuôn "ĐÃ BIẾT / CẦN HỎI" (không có thứ gì để gợi ý trước nên không đổi); câu hỏi tư vấn 7 ô (`O_TU_VAN_MUA`, SRS-116) đi qua cùng `ask_line` nên cũng được ngắn hơn nhưng chưa đo; chưa có số đo độ dài thật trên production — lời bot do model viết, bài kiểm chỉ chặn chữ trong prompt.
+4. **Kiểm**: `tests/test_goi_y_can_tu_nhien.py` (+4 ca: `co_tieu_chi`, chưa có tiêu chí thì không gọi DB và khối nói "chưa tìm căn", thứ tự tin, prompt có luật mới và không còn chữ cũ). Đã thử tắt bản sửa (stash `src/`): cả 4 ca đỏ. Cách nói mới chưa từng bắn: khách chỉ nói "nhà phố" (không khu, không giá) — bot phải hỏi, không giới thiệu căn.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

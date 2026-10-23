@@ -129,8 +129,8 @@ class KhoNguoiMua:
     def can_phu_hop(self, lead: Any, toi_da: int = 3) -> list[dict]:
         """Căn gợi ý cho khách: `tim_nha` (lọc cứng bán / thuê / loại / giá, điểm mềm khu vực / diện tích / phòng ngủ / xe hơi + vector).
         Hàm DB lỗi / chưa có thì về cách lọc cứng cũ — bot không mất rổ hàng."""
-        if not self.is_configured or lead is None:
-            return []
+        if not self.is_configured or lead is None or not co_tieu_chi(lead):
+            return []   # SRS-5.1zzzzzzz146: chưa có khu vực / ngân sách thì không đoán căn — hỏi trước
         try:
             return self.tim_nha(lead, toi_da)
         except Exception as e:  # noqa: BLE001
@@ -409,9 +409,19 @@ def dong_can(c: dict) -> str:
     return " · ".join(p for p in phan if p)
 
 
-def khoi_can_cho_khach(can: list[dict]) -> str:
+def co_tieu_chi(lead: Any) -> bool:
+    """Đủ tiêu chí để gợi ý căn: khách đã nêu KHU VỰC hoặc NGÂN SÁCH (loại BĐS một mình chưa đủ — "nhà phố" thì căn nào cũng khớp)."""
+    f = getattr(lead, "fields", {}) or {}
+    return any(str(getattr(lead, k, None) or f.get(k) or "").strip() for k in ("khu_vuc", "ngan_sach"))
+
+
+def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
     """Khối căn đưa cho model phía mua. SRS-5.1zzzzzzz145 (chủ dự án 23/10: "sợ sếp chửi", "sếp thích trả lời như người"): bản trước dạy model
-    "luôn kèm mã #" và đặt tên khối "RỔ" — model đọc mã tin, nói "trong rổ", liệt kê bằng dấu "·"; và viết "em" giữa lời xưng "cháu"."""
+    "luôn kèm mã #" và đặt tên khối "RỔ" — model đọc mã tin, nói "trong rổ", liệt kê bằng dấu "·"; và viết "em" giữa lời xưng "cháu".
+    SRS-5.1zzzzzzz146 (cùng ngày: "gửi luôn căn gợi ý rồi sau mới hỏi thêm"): thứ tự tin là khen → căn → MỘT câu hỏi ngắn."""
+    if not can and chua_co_tieu_chi:
+        return ("\nCĂN ĐANG RAO: khách chưa nêu khu vực hay ngân sách nên chưa tìm căn. Lượt này CHƯA giới thiệu căn nào và KHÔNG nói \"chưa có "
+                "căn\"; chỉ hỏi đúng câu thông tin ở trên, thật ngắn (xưng hô y như các lượt trước).\n")
     if not can:
         return ("\nCĂN ĐANG RAO: chưa có căn nào khớp nhu cầu khách. KHÔNG giới thiệu căn nào, KHÔNG bịa căn; nói sẽ báo khi có căn phù hợp "
                 "(xưng hô y như các lượt trước).\n")
@@ -426,8 +436,11 @@ def khoi_can_cho_khach(can: list[dict]) -> str:
             "này khi chưa đủ 2 căn đúng.\n"
             "  • Xưng hô GIỮ NGUYÊN như các lượt trước, không đổi qua lại giữa em / cháu / tôi trong cùng một tin. Không tua lại toàn bộ yêu cầu "
             "của khách.\n"
-            "  • Cuối cùng MỘT lời khen ngắn về cách khách chọn, gắn đúng điều khách ĐÃ nói (số người trong nhà, khu, ngân sách) — không bịa "
-            "thị trường, không bình luận giá, không thêm chi tiết khách chưa nói — rồi tối đa MỘT câu hỏi:\n"
+            "  • THỨ TỰ TIN: (1) mở bằng MỘT lời khen ngắn gắn đúng điều khách ĐÃ nói (khu, ngân sách, số người trong nhà) — chỉ một lời khen "
+            "mỗi tin, không khen lần hai ở cuối; không bịa thị trường, không bình luận giá, không thêm chi tiết khách chưa nói; (2) các căn; "
+            "(3) CUỐI TIN mới tới câu hỏi thêm: đúng MỘT câu, thật ngắn (khoảng 15 chữ), không giải thích vì sao hỏi — chính là câu thông tin "
+            "cần hỏi tiếp ở trên, chuyển xuống cuối tin. Căn đã giới thiệu ở các tin trước thì KHÔNG nhắc lại, trừ khi khách hỏi; nếu không "
+            "còn căn mới thì chỉ hỏi câu kế:\n"
             + "\n".join(f"- {dong_can(c)}" for c in can) + "\n")
 
 

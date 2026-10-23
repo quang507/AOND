@@ -60,7 +60,7 @@ def test_can_vuot_ngan_sach_xep_sau_va_ghi_ro_muc_vuot():
 
 def test_khong_co_ngan_sach_thi_giu_nguyen_thu_tu():
     kho = _Kho(_hang(_can("C44", 6.2e9), _can("C16", 5.5e9)))
-    can = kho.can_phu_hop(BuyerLead(loai_giao_dich="mua"))
+    can = kho.can_phu_hop(BuyerLead(loai_giao_dich="mua", khu_vuc="Gò Vấp"))
     assert [c["code"] for c in can] == ["C44", "C16"] and not any("_vuot_ngan_sach" in c for c in can)
 
 
@@ -118,3 +118,37 @@ def test_anh_khong_gui_lai_khong_gui_cho_nguoi_ban_loi_thi_bo_qua():
 @pytest.mark.parametrize("ten", ["SITE_URL"])
 def test_site_url_khong_phai_nhadat_cc_chua_tro_ve_web(ten):
     assert SITE_URL.startswith("https://") and "nhadat.cc" not in SITE_URL
+
+
+# --- SRS-5.1zzzzzzz146: gợi ý căn TRƯỚC, hỏi thêm SAU, câu hỏi NGẮN (chủ dự án 23/10: "hỏi thêm thông tin hơi dài… gửi luôn căn gợi ý rồi sau mới hỏi") ---
+def test_co_tieu_chi_can_khu_vuc_hoac_ngan_sach_loai_bds_mot_minh_chua_du():
+    from aioi.mua import co_tieu_chi
+    assert not co_tieu_chi(BuyerLead(loai_giao_dich="mua", loai_bds="nha_pho"))
+    assert co_tieu_chi(BuyerLead(khu_vuc="Gò Vấp")) and co_tieu_chi(BuyerLead(ngan_sach="5 tỷ"))
+    b = BuyerLead()
+    b.fields["khu_vuc"] = "Quận 5"
+    assert co_tieu_chi(b) and not co_tieu_chi(BuyerLead(khu_vuc="  "))
+
+
+def test_chua_co_tieu_chi_thi_khong_goi_y_can_khong_goi_db():
+    kho = _Kho(_hang(_can("C16", 5.5e9)))
+    assert kho.can_phu_hop(BuyerLead(loai_giao_dich="mua", loai_bds="nha_pho")) == []   # "nhà phố" một mình: căn nào cũng khớp → không đoán
+    assert kho.so_parse == 0
+    chua = khoi_can_cho_khach([], chua_co_tieu_chi=True)
+    assert "chưa nêu khu vực hay ngân sách" in chua and "KHÔNG nói \"chưa có căn\"" in chua
+    assert "báo khi có căn" not in chua                                             # câu "chưa có căn" chỉ dành cho khách ĐÃ nêu tiêu chí
+    assert "báo khi có căn" in khoi_can_cho_khach([], chua_co_tieu_chi=False)
+
+
+def test_khoi_can_dat_thu_tu_khen_can_roi_moi_hoi_ngan():
+    khoi = khoi_can_cho_khach([_can("A1", 5.5e9)])
+    assert "THỨ TỰ TIN" in khoi and "CUỐI TIN" in khoi and "khoảng 15 chữ" in khoi
+    assert "không khen lần hai ở cuối" in khoi and "KHÔNG nhắc lại" in khoi         # một lời khen mở tin, không lặp căn đã gửi
+
+
+def test_prompt_mua_noi_can_truoc_hoi_sau_va_cau_hoi_ngan():
+    from aioi.prompts import build_buyer_chat_system
+    p = build_buyer_chat_system("Hằng", BuyerLead(khu_vuc="Gò Vấp"), "ngan_sach")
+    assert "GỢI Ý TRƯỚC, HỎI SAU" in p and "CUỐI tin" in p and "khoảng 15 chữ" in p
+    assert "vì sao giúp em lọc căn sát hơn" not in p                              # lời khen kèm giải thích làm tin dài
+    assert "rồi hỏi đúng 1 câu này một cách" not in p
