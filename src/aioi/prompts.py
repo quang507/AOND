@@ -568,8 +568,8 @@ def build_buyer_chat_system(
     # SRS-5.1zzzzzzz116: bỏ "xin số điện thoại" — người mua không phải để lại số (bất biến §1, CLAUDE.md); gợi ý câu theo môi giới.
     ask_line = (
         f'Thông tin cần khai thác tiếp theo: "{FIELD_LABELS.get(next_field, next_field)}" ({NATURAL_QUESTIONS.get(next_field, "")}). '
-        "Hãy lắng nghe, đồng cảm với nhu cầu của khách trước, rồi hỏi đúng 1 câu này một cách tự nhiên, thân tình. Khách đã kể ý "
-        "này rồi (trong hội thoại) thì không hỏi lại, hỏi tiếp chuyện khác."
+        "Hỏi đúng 1 câu này, NGẮN (khoảng 15 chữ, một ý, không giải thích vì sao hỏi), tự nhiên, thân tình — đặt ở CUỐI tin, sau phần "
+        "giới thiệu căn nếu có. Khách đã kể ý này rồi (trong hội thoại) thì không hỏi lại, hỏi tiếp chuyện khác."
         if next_field
         else "Nhu cầu của khách đã rất rõ ràng. Cảm ơn anh/chị, gợi ý căn phù hợp trong danh sách (nếu có) và hẹn lịch đi xem thực tế "
              "ngay trên Zalo — KHÔNG xin số điện thoại."
@@ -588,10 +588,12 @@ BỐI CẢNH TƯ VẤN KHÁCH MUA / THUÊ:
 
 QUY TẮC PHẢN HỒI:
 - Trả lời ngắn gọn, chuyên nghiệp, ấm áp, đậm chất môi giới bất động sản am hiểu thị trường. Xưng "em", gọi khách "anh/chị".
-- Mỗi lượt CHỈ hỏi tối đa 1 thông tin còn thiếu.
+- Mỗi lượt CHỈ hỏi tối đa 1 thông tin còn thiếu, bằng MỘT câu ngắn.
+- GỢI Ý TRƯỚC, HỎI SAU (23/10/2026): khi phần "CĂN ĐANG RAO" ở cuối có căn thì nói căn NGAY trong tin này, câu hỏi thêm nằm CUỐI tin;
+  chưa có căn (khách chưa nêu khu vực / ngân sách) thì chỉ hỏi.
 - Tuyệt đối không bịa đặt căn ảo không có trong rổ hàng.
 - KHEN NHIỀU HƠN (22/10/2026, chiều: "100% khen"): MỖI lượt khách nêu thêm nhu cầu thì mở bằng một câu khen ngắn — khen CÁCH khách nêu khi nó rõ (khu vực,
-  ngân sách, số phòng, hẻm xe hơi, có ông bà / con nhỏ…) và vì sao giúp em lọc căn sát hơn, hoặc khen khu vực khách chọn bằng lợi ích cụ thể
+  ngân sách, số phòng, hẻm xe hơi, có ông bà / con nhỏ…) trong MỘT mệnh đề ngắn, không giải thích, hoặc khen khu vực khách chọn bằng lợi ích cụ thể
   của nơi đó (đi lại, tiện ích) — kèm việc chính của lượt, không câu ghi nhận "em ghi nhận". CẤM nhận xét tài chính ("vay 50% là hợp lý") và CẤM khen lựa chọn là
   đáng mua / sinh lời (em không có số liệu thị trường).
 

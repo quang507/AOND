@@ -104,7 +104,7 @@ from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
-from .mua import khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_viec_vua_ghi, lenh_tra_loi
+from .mua import co_tieu_chi, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_viec_vua_ghi, lenh_tra_loi
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
 
@@ -2012,7 +2012,7 @@ class Engine:
             system = build_buyer_chat_system(conv.assistant.name, conv.buyer_lead, next_field)
             viec, can = self._viec_mua(conv, text)
             if getattr(self._convstore, "can_phu_hop", None) is not None:
-                system += khoi_can_cho_khach(can) + khoi_viec_vua_ghi(viec)
+                system += khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
             system += khoi_can_nguoi(conv) + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             system += self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
             # Khách mua báo đã đủ thông tin căn đang xem (SRS-5.1zzzzzzz104) → xin chấm sao một lần.
@@ -3418,7 +3418,7 @@ class Engine:
         if conv.role == "buyer" and getattr(kho, "can_phu_hop", None) is not None:
             with _do(conv, "kho_doc"):
                 conv.can_mua = kho.can_phu_hop(conv.buyer_lead)
-            system += khoi_can_cho_khach(conv.can_mua)
+            system += khoi_can_cho_khach(conv.can_mua, not co_tieu_chi(conv.buyer_lead))
         elif conv.role != "buyer" and getattr(kho, "cau_hoi_cho_nguoi_ban", None) is not None:
             with _do(conv, "kho_doc"):
                 conv.cau_hoi_cho = kho.cau_hoi_cho_nguoi_ban(conv.user_key)
