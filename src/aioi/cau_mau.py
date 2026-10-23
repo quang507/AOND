@@ -95,13 +95,16 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "nhac_xin_anh_em": ("Khi nào tiện em chụp gửi mình vài tấm ảnh thực tế nhé, để tin đăng nổi bật và hút khách hơn nè.",
                         "Như trên, khi khách xưng \"em\"", "SRS-5.1zzzzzzz73"),
     # --- Báo khách mua khi có căn mới vừa nhu cầu (SRS-5.1zzzzzzz150) ---
-    "bao_can_moi": ("{Goi} ơi, {toi} vừa có căn mới hợp nhu cầu của {goi}: {mo_ta}.\nXem hình và chi tiết ở đây ạ: {link}\n{Goi} có muốn "
-                    "{toi} sắp lịch xem thử không ạ?",
-                    "Tin chủ động báo khách mua có căn mới vừa nhu cầu (8–20 giờ, tối đa 1 tin / khách / 24 giờ). {toi} = em / mình, "
-                    "{mo_ta} = loại, đường, phường, quận, diện tích, giá, phòng ngủ, {link} = link căn", "SRS-5.1zzzzzzz150 · chủ dự án 23/10"),
-    "bao_can_moi_vuot": ("{Goi} ơi, {toi} vừa có căn mới gần với nhu cầu của {goi}: {mo_ta}. Giá nhỉnh hơn ngân sách {goi} nêu khoảng "
-                         "{pct}% ạ.\nXem hình và chi tiết ở đây ạ: {link}\n{Goi} thấy sao, {toi} sắp lịch xem thử giúp {goi} nhé?",
-                         "Như trên, khi giá vượt ngân sách một chút (tới 15 %). {pct} = % vượt, code tính", "SRS-5.1zzzzzzz150 · chủ dự án 23/10"),
+    "bao_can_moi": ("{Goi} ơi, {toi} đang có căn này hợp với nhu cầu của {goi} nè, {goi} xem qua nha.\n\n{Mo_ta}. {vi_sao}\n\n"
+                    "Xem hình và chi tiết ở đây ạ: {link}\n\n{Goi} có muốn {toi} sắp lịch xem thử không ạ?",
+                    "Tin chủ động báo khách mua có căn mới vừa nhu cầu (8–20 giờ, tối đa 1 tin / khách / 24 giờ). MỖI ĐOẠN cách nhau một dòng trống là "
+                    "MỘT tin Zalo (ảnh căn gửi ngay sau đoạn có {link}). {toi} = em / mình, {Mo_ta} (hoặc {mo_ta}, chữ thường) = loại, đường, phường, quận, diện tích, "
+                    "giá, phòng ngủ, {vi_sao} = vì sao hợp (khu, loại, ngân sách, xe hơi — code ghép từ dữ liệu), {link} = link căn",
+                    "SRS-5.1zzzzzzz150 / 159 · chủ dự án 23/10"),
+    "bao_can_moi_vuot": ("{Goi} ơi, {toi} đang có căn này gần với nhu cầu của {goi} nè, {goi} xem qua nha.\n\n{Mo_ta}. {vi_sao} Giá nhỉnh hơn "
+                         "ngân sách {goi} nêu khoảng {pct}%.\n\nXem hình và chi tiết ở đây ạ: {link}\n\n{Goi} thấy sao, {toi} sắp lịch xem thử "
+                         "giúp {goi} nhé?",
+                         "Như trên, khi giá vượt ngân sách một chút (tới 15 %). {pct} = % vượt, code tính", "SRS-5.1zzzzzzz150 / 159 · chủ dự án 23/10"),
     # --- Xác nhận lịch hẹn xem với khách mua (SRS-5.1zzzzzzz158) ---
     "xac_nhan_lich": ("{Goi} xác nhận giúp {toi}, {gio} mình đến xem căn {can} đúng không ạ?",
                       "Khách mua đã nói đủ ngày và giờ xem nhà — bot hỏi xác nhận MỘT lần (model chép câu này, chỉ điền chỗ giữ chữ). {toi} = em / "

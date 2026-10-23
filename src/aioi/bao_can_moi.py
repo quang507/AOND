@@ -9,16 +9,20 @@ trượt — và tin nó đẻ ra không ai gửi vì edge function `nudge` đã
   4. MỖI khách tối đa một tin / 24 giờ và MỘT căn / tin; một căn không báo hai lần cho một khách (sổ: `reminders` kind `match`);
   5. khớp cứng: bán / thuê, loại, khu vực, giá ≤ ngân sách × 1,15 — căn vượt ngân sách vẫn báo, nói rõ vượt khoảng bao nhiêu %.
 Câu chữ do code ghép từ cột thật (không gọi AI, không tốn quota): câu mẫu `bao_can_moi` / `bao_can_moi_vuot` (chủ dự án sửa ở CRM).
-SRS-5.1zzzzzzz151: căn có ảnh công khai (`listing_photos_v`) thì gửi kèm tối đa 2 ảnh sau tin chữ; căn chưa có ảnh thì chỉ gửi chữ."""
+SRS-5.1zzzzzzz151: căn có ảnh công khai (`listing_photos_v`) thì gửi kèm ảnh sau tin chữ; căn chưa có ảnh thì chỉ gửi chữ.
+
+SRS-5.1zzzzzzz159 (chủ dự án 23/10: "3 4 tin gì đó, nghe người hơn tí"): tin báo tách 4 tin Zalo ngắn — mở lời · thông số + vì sao hợp · link (ảnh tối đa 4 đi
+ngay sau) · câu hỏi lịch xem; mỗi đoạn cách nhau một dòng trống trong câu mẫu là một tin."""
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Any, Callable
 
 from . import cau_mau
-from .mua import SITE_URL, _TEN_LOAI, _q, co_tieu_chi
+from .mua import SITE_URL, _LOAI_MUA_SANG_DB, _TEN_LOAI, _can_xe_hoi, _q, co_tieu_chi
 
 log = logging.getLogger(__name__)
 
@@ -30,7 +34,7 @@ KHACH_NHAN_TRONG_NGAY = 30
 VAN_GIO = 24
 TRAN_VUOT = 1.15
 TOI_DA_KHACH_MOI_LUOT = 20
-TOI_DA_ANH = 2         # ảnh đính kèm mỗi tin báo (SRS-5.1zzzzzzz151, như tin giới thiệu căn trong chat: tối đa 2 ảnh mỗi căn)
+TOI_DA_ANH = 4         # ảnh đính kèm mỗi tin báo (SRS-5.1zzzzzzz159, chủ dự án 23/10: "3 4 tấm ảnh"; bridge /send cũng chặn ở 4)
 
 _O_NHU_CAU = ("loai_giao_dich", "loai_bds", "ngan_sach", "khu_vuc", "so_phong_ngu", "yeu_cau_xe_hoi")
 
@@ -61,14 +65,41 @@ def mo_ta_can(c: dict) -> str:
     return ", ".join(phan)
 
 
-def viet_tin(c: dict, xung_ho: str = "unknown") -> str:
-    """Tin báo một căn. `xung_ho`: khách tự xưng gì (engine) — "em" thì bot xưng "mình" và gọi khách "em"."""
+def vi_sao_hop(c: dict, lead: Any = None) -> str:
+    """Một câu "Hợp vì …" ghép từ ĐÚNG những điều bộ lọc cứng của `can_moi_khop` đã kiểm (khu vực, loại, giá, xe hơi) — không bịa, không gọi AI.
+    Giá chỉ nêu khi căn trong ngân sách (căn vượt ngân sách thì câu mẫu `bao_can_moi_vuot` tự nói phần vượt). Không có gì để nói → ""."""
+    if lead is None:
+        return ""
+    f = getattr(lead, "fields", {}) or {}
+    g = lambda k: str(getattr(lead, k, None) or f.get(k) or "").strip()   # noqa: E731
+    phan: list[str] = []
+    if g("khu_vuc"):
+        phan.append(f"đúng khu {g('khu_vuc')}")
+    ten_loai = _TEN_LOAI.get(_LOAI_MUA_SANG_DB.get(g("loai_bds").lower(), ""))
+    if ten_loai:
+        phan.append(f"đúng loại {ten_loai}")
+    if g("ngan_sach") and not c.get("_vuot_ngan_sach"):
+        phan.append(f"giá trong ngân sách {g('ngan_sach')}")
+    if _can_xe_hoi(g("yeu_cau_xe_hoi")):
+        phan.append("xe hơi vào được")
+    return ("Hợp vì " + ", ".join(phan) + ".") if phan else ""
+
+
+def viet_tin(c: dict, xung_ho: str = "unknown", lead: Any = None) -> str:
+    """Tin báo một căn — nhiều đoạn cách nhau một dòng trống, MỖI ĐOẠN là một tin Zalo (mở lời · thông số + vì sao hợp · link · câu hỏi lịch xem).
+    `xung_ho`: khách tự xưng gì (engine) — "em" thì bot xưng "mình" và gọi khách "em"."""
     goi = {"anh": "anh", "chi": "chị", "em": "em"}.get(xung_ho, "anh/chị")
     toi = "mình" if xung_ho == "em" else "em"
-    bien = {"toi": toi, "mo_ta": mo_ta_can(c), "link": f"{SITE_URL}/nha-dat/{c.get('code')}"}
-    if c.get("_vuot_ngan_sach"):
-        return cau_mau.cau("bao_can_moi_vuot", goi, pct=c["_vuot_ngan_sach"], **bien)
-    return cau_mau.cau("bao_can_moi", goi, **bien)
+    mo_ta = mo_ta_can(c)
+    bien = {"toi": toi, "mo_ta": mo_ta, "Mo_ta": mo_ta[:1].upper() + mo_ta[1:], "vi_sao": vi_sao_hop(c, lead),
+            "link": f"{SITE_URL}/nha-dat/{c.get('code')}"}
+    mau = cau_mau.cau("bao_can_moi_vuot", goi, pct=c["_vuot_ngan_sach"], **bien) if c.get("_vuot_ngan_sach") else cau_mau.cau("bao_can_moi", goi, **bien)
+    return "\n\n".join(d.strip() for d in re.split(r"\n\s*\n", mau) if d.strip())
+
+
+def tach_tin(tin: str) -> list[str]:
+    """Tin báo → các tin Zalo gửi lần lượt (mỗi đoạn một tin). Chỉ tách theo dòng trống, không đọc ý."""
+    return [d.strip() for d in re.split(r"\n\s*\n", tin or "") if d.strip()]
 
 
 def anh_cua_can(kho: Any, code: str | None) -> list[str]:
@@ -129,7 +160,7 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
         if not can:
             continue
         c = can[0]
-        tin = viet_tin(c, xung_ho_cua(k["zalo_user_id"]) if xung_ho_cua else "unknown")
+        tin = viet_tin(c, xung_ho_cua(k["zalo_user_id"]) if xung_ho_cua else "unknown", lead)
         # Giữ chỗ TRƯỚC khi gửi: hai lượt chạy chồng nhau không báo đúp (khoá duy nhất khách + tin cho kind `match`). Gửi hụt thì xoá để thử lại.
         try:
             giu = kho._post("reminders", {"kind": "match", "buyer_id": bid, "listing_id": c["id"], "due_at": _iso(bay_gio),
