@@ -848,6 +848,36 @@ def _lo_thong_tin_rieng(reply: str, prop: Property) -> list[str]:
             and prop.fields[k].strip().lower() in thap]
 
 
+_HEM_MT_RE = re.compile(r"(?<![\wÀ-ỹ])(hẻm|hxh|ngõ|mặt tiền|mt)(?![\wÀ-ỹ])", re.I)
+
+
+def _hem_mt_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
+    """Bản tin 📋 nói HẺM / HXH / NGÕ / MẶT TIỀN / MT mà căn chưa có loại đường vào và khách chưa hề nói chữ đó (SRS-5.1zzzzzzz155; chat thử
+    23/10: khách chỉ nói "Lê Lai", "39m2, 1 trệt 3 lầu", "7 tỷ 3" — tiêu đề bản nháp ghi "Bán nhà hẻm Lê Lai"). Chỉ so chữ của bản tin với ô đã ghi
+    (`lo_gioi_hem`, `mat_tien`) và lời KHÁCH của căn đang nói; câu hỏi cuối bản tin không tính. Không có 📋 → []."""
+    if "📋" not in (reply or ""):
+        return []
+    if conv.prop.fields.get("lo_gioi_hem") or conv.prop.fields.get("mat_tien"):
+        return []
+    tin = _than_ban_tin(reply)
+    phan = f"{tin[0]}\n{tin[1]}" if tin else _dong_tieu_de(reply)
+    bat = {m.lower() for m in _HEM_MT_RE.findall(phan)}
+    if not bat:
+        return []
+    bd = max(0, getattr(getattr(conv, "active", None), "history_start", 0) or 0)
+    khach = bo_dau(" ".join(t.content for t in conv.history[bd:] if t.role == "user" and t.content)).lower()
+    # Địa chỉ có dấu "/" ("12/3 Lê Lai") là nhà trong hẻm — cùng dấu hiệu `Property.update` dùng để gán `lo_gioi_hem` (chủ dự án 23/10: "hẻm thì là có /").
+    co_gach = re.search(r"\b\d+[a-z]*/[\da-z/]+", khach) is not None
+    ra = []
+    for tu in sorted(bat):
+        goc = bo_dau(tu).lower()
+        co = {"mt": "mat tien" in khach or re.search(r"(?<![a-z0-9])mt(?![a-z0-9])", khach) is not None,
+              "hxh": "hxh" in khach or "hem xe hoi" in khach}.get(goc, goc in khach or (goc in ("hem", "ngo") and co_gach))
+        if not co:
+            ra.append(tu)
+    return ra
+
+
 def _dong_tieu_de(reply: str) -> str:
     """Dòng tiêu đề của bản tin 📋 — một chỗ cho mọi bước kiểm (SRS-5.1zzzzzzz109). Bản nháp đầu: dòng mở "📋 Em sẽ rao như vầy…:" rồi
     tiêu đề ở dòng chữ kế; bản cập nhật ghi tiêu đề NGAY trên dòng 📋 ("📋 Bản tin cập nhật: <tiêu đề>"). Bản trước luôn lấy dòng kế,
@@ -2284,6 +2314,11 @@ class Engine:
         if lo_rieng:
             ly_do.append("Bản tin rao vừa viết có thông tin RIÊNG của chủ (" + ", ".join(lo_rieng) + ") — bản tin lên web cho người mua "
                          "đọc, bỏ hẳn các ý đó khỏi bản tin.")
+        bia_hem = _hem_mt_khong_co_du_lieu(reply, conv)
+        if bia_hem:
+            ly_do.append("Bản tin rao vừa viết có chữ " + ", ".join(f"\"{x}\"" for x in bia_hem) + " nhưng chủ nhà CHƯA nói nhà ở hẻm / mặt tiền "
+                         "(dữ liệu căn chưa có) — bỏ hẳn các chữ đó khỏi tiêu đề và mô tả, KHÔNG đoán loại đường vào; ví dụ trong luật chỉ để "
+                         "minh hoạ cách viết gọn.")
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
         truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant"), "")
