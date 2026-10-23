@@ -8,7 +8,8 @@ trượt — và tin nó đẻ ra không ai gửi vì edge function `nudge` đã
   3. khách: có hội thoại mua nhắn trong 30 ngày, không đang chờ người (`needs_human` / `human_hold`), có khu vực hoặc ngân sách;
   4. MỖI khách tối đa một tin / 24 giờ và MỘT căn / tin; một căn không báo hai lần cho một khách (sổ: `reminders` kind `match`);
   5. khớp cứng: bán / thuê, loại, khu vực, giá ≤ ngân sách × 1,15 — căn vượt ngân sách vẫn báo, nói rõ vượt khoảng bao nhiêu %.
-Câu chữ do code ghép từ cột thật (không gọi AI, không tốn quota): câu mẫu `bao_can_moi` / `bao_can_moi_vuot` (chủ dự án sửa ở CRM)."""
+Câu chữ do code ghép từ cột thật (không gọi AI, không tốn quota): câu mẫu `bao_can_moi` / `bao_can_moi_vuot` (chủ dự án sửa ở CRM).
+SRS-5.1zzzzzzz151: căn có ảnh công khai (`listing_photos_v`) thì gửi kèm tối đa 2 ảnh sau tin chữ; căn chưa có ảnh thì chỉ gửi chữ."""
 from __future__ import annotations
 
 import logging
@@ -29,6 +30,7 @@ KHACH_NHAN_TRONG_NGAY = 30
 VAN_GIO = 24
 TRAN_VUOT = 1.15
 TOI_DA_KHACH_MOI_LUOT = 20
+TOI_DA_ANH = 2         # ảnh đính kèm mỗi tin báo (SRS-5.1zzzzzzz151, như tin giới thiệu căn trong chat: tối đa 2 ảnh mỗi căn)
 
 _O_NHU_CAU = ("loai_giao_dich", "loai_bds", "ngan_sach", "khu_vuc", "so_phong_ngu", "yeu_cau_xe_hoi")
 
@@ -69,13 +71,30 @@ def viet_tin(c: dict, xung_ho: str = "unknown") -> str:
     return cau_mau.cau("bao_can_moi", goi, **bien)
 
 
+def anh_cua_can(kho: Any, code: str | None) -> list[str]:
+    """Ảnh công khai của căn (ảnh bìa trước), tối đa `TOI_DA_ANH`, chỉ https. Không có ảnh / lỗi mạng → [] (tin báo vẫn đi, chỉ có chữ)."""
+    if not code:
+        return []
+    try:
+        dong = kho._get(f"listing_photos_v?code=eq.{_q(str(code))}&select=url&order=is_cover.desc.nullslast,sort_order.asc&limit=6")
+    except Exception as e:  # noqa: BLE001 — ảnh là phần thêm
+        log.warning("bao_can_moi: đọc ảnh căn lỗi (%s)", type(e).__name__)
+        return []
+    ra: list[str] = []
+    for d in dong:
+        u = d.get("url")
+        if isinstance(u, str) and u.startswith("https://") and u not in ra:
+            ra.append(u)
+    return ra[:TOI_DA_ANH]
+
+
 def _iso(t: datetime) -> str:
     return t.astimezone(timezone.utc).isoformat()
 
 
-def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict], bool], xung_ho_cua: Callable[[str], str] | None = None,
+def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]], bool], xung_ho_cua: Callable[[str], str] | None = None,
                   bay_gio: datetime | None = None) -> list[dict]:
-    """Một lượt quét. `gui(zalo_id, tin, ten, can)` gửi thật và trả True nếu bridge nhận; hụt thì lượt sau thử lại. Trả danh sách đã báo."""
+    """Một lượt quét. `gui(zalo_id, tin, ten, can, anh)` gửi thật (chữ rồi tới ảnh `anh`) và trả True nếu bridge nhận; hụt thì lượt sau thử lại. Trả danh sách đã báo."""
     bay_gio = bay_gio or datetime.now(timezone.utc)
     if not (getattr(kho, "is_configured", False) and trong_khung_gio(bay_gio)):
         return []
@@ -120,7 +139,7 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict], bool], x
             continue
         ok = False
         try:
-            ok = gui(k["zalo_user_id"], tin, k.get("name"), c)
+            ok = gui(k["zalo_user_id"], tin, k.get("name"), c, anh_cua_can(kho, c.get("code")))
         except Exception as e:  # noqa: BLE001
             log.warning("bao_can_moi: gửi hụt (%s)", type(e).__name__)
         if not ok:

@@ -432,24 +432,7 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker) {
 
   // FR-143: đính kèm hình thật (URL chính chủ gửi, bộ não chọn) — tải về file
   // tạm rồi gửi như ảnh đính kèm; lỗi một tấm thì bỏ qua tấm đó.
-  for (const url of Array.isArray(photos) ? photos : []) {
-    try {
-      // Hạn chờ BẮT BUỘC: một URL ảnh treo mà không có hạn là kẹt luôn cả vòng
-      // gửi ảnh, khách chờ mãi không thấy tấm nào.
-      const img = await fetch(url, { signal: AbortSignal.timeout(15_000) });
-      if (!img.ok) continue;
-      const f = path.join(
-        os.tmpdir(),
-        `nhadat-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`,
-      );
-      fs.writeFileSync(f, Buffer.from(await img.arrayBuffer()));
-      await api.sendMessage({ msg: "", attachments: [f] }, String(threadId), ThreadType.User);
-      fs.unlinkSync(f);
-      console.log(`→ 📷 ${url.slice(0, 70)}…`);
-    } catch (e) {
-      await ghiLoi("gửi ảnh", errDetail(e));
-    }
-  }
+  for (const url of Array.isArray(photos) ? photos : []) await guiAnhQuaUrl(threadId, url);
 
   // SRS-5.1zzzzzzz26 (18/10/2026): bỏ lượt POST `sync_turn` gửi sau mỗi lượt — chat-reply đã ghi lời khách và lời bot vào
   // `messages` ngay trong lượt chính, lượt đồng bộ thêm làm mỗi câu bot nằm hai lần trong sổ hội thoại (CRM + lịch sử model).
@@ -729,6 +712,29 @@ try {
 vongKeo();
 
 
+// Tải một ảnh theo URL về file tạm rồi gửi như ảnh đính kèm. Dùng chung cho lượt chat (`photos` của chat-reply, FR-143) và tin chủ động
+// (`photos` của /send, SRS-5.1zzzzzzz151). Trả true nếu đã gửi; lỗi thì ghi sổ và trả false — một tấm hỏng không chặn các tấm sau.
+async function guiAnhQuaUrl(threadId, url) {
+  try {
+    // Hạn chờ BẮT BUỘC: một URL ảnh treo mà không có hạn là kẹt luôn cả vòng
+    // gửi ảnh, khách chờ mãi không thấy tấm nào.
+    const img = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+    if (!img.ok) return false;
+    const f = path.join(
+      os.tmpdir(),
+      `nhadat-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`,
+    );
+    fs.writeFileSync(f, Buffer.from(await img.arrayBuffer()));
+    await api.sendMessage({ msg: "", attachments: [f] }, String(threadId), ThreadType.User);
+    fs.unlinkSync(f);
+    console.log(`→ 📷 ${String(url).slice(0, 70)}…`);
+    return true;
+  } catch (e) {
+    await ghiLoi("gửi ảnh", errDetail(e));
+    return false;
+  }
+}
+
 // Local HTTP Send API on 127.0.0.1:5005 for proactive messages (follow-up, reminders)
 const SEND_PORT = process.env.SEND_PORT || 5005;
 try {
@@ -738,7 +744,7 @@ try {
       req.on('data', (chunk) => { body += chunk; });
       req.on('end', async () => {
         try {
-          const { threadId, message } = JSON.parse(body || '{}');
+          const { threadId, message, photos } = JSON.parse(body || '{}');
           if (threadId && message) {
             rememberSent(message);
             if (/^\d{6,}$/.test(String(threadId))) {
@@ -747,8 +753,14 @@ try {
               console.log('📡 [Proactive Mock Test] -> [' + threadId + ']: ' + message.slice(0, 80));
             }
             console.log(`📡 [Proactive Send] -> [${threadId}]: ${message.slice(0, 80)}…`);
+            // SRS-5.1zzzzzzz151: ảnh kèm tin chủ động (báo căn mới) — chỉ https, tối đa 4, sau bong bóng chữ.
+            let anhDaGui = 0;
+            if (/^\d{6,}$/.test(String(threadId))) {
+              const anh = (Array.isArray(photos) ? photos : []).filter((u) => typeof u === 'string' && u.startsWith('https://')).slice(0, 4);
+              for (const u of anh) if (await guiAnhQuaUrl(threadId, u)) anhDaGui++;
+            }
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ ok: true }));
+            res.end(JSON.stringify({ ok: true, anh_da_gui: anhDaGui }));
             return;
           }
           res.writeHead(400, { 'Content-Type': 'application/json' });

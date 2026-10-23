@@ -8478,6 +8478,24 @@ Ca gốc: chủ dự án hỏi "lúc người ta tìm mua có cơ chế nhắc k
 3. **Chỗ khác cùng lớp**: còn — tin báo chưa kèm ảnh căn (`anh_can.py` có sẵn, chưa nối); `bao_can_da_chot` (FR-108, tin `da_chot` → `reminders.sold`) cũng cần `nudge` để gửi nên khả năng đứt cùng chỗ — chưa kiểm, chưa sửa; khách chỉ có Zalo ID, chưa có kênh khác. Giờ gửi tính theo Việt Nam cố định UTC+7.
 4. **Kiểm**: `tests/test_bao_can_moi.py` (11 ca trên PostgREST giả có trạng thái: khung giờ, đúng ngân sách, vượt 10 % có nói rõ, vượt > 15 % / khác quận / thiếu xe hơi không báo, đúng ngân sách xếp trước, ngoài khung không xếp hàng, 1 tin / 24 giờ + không báo lại căn, gửi hụt gỡ dòng giữ chỗ, khách xưng "em", chưa có tiêu chí) — tắt từng van (`TRAN_VUOT`, khung giờ, van 24 giờ) thì ca tương ứng đỏ; `tests/test_cau_mau.py` canh migration nạp đúng câu. Chưa đo trên Zalo thật khi viết mục này — kết quả bắn thử ghi ở PR.
 
+### SRS-5.1zzzzzzz151 · Tin báo căn mới gửi kèm ảnh căn (23/10/2026)
+
+Ca gốc: sau khi chị N. nhận tin báo căn mới (SRS-150), chủ dự án: "thêm ảnh vào tin báo căn mới". Tin báo chỉ có chữ + link; ảnh căn (`listing_photos_v`) chỉ đi kèm tin giới thiệu trong chat (`/chat-reply` → `photos`), còn cổng gửi chủ động `/send` của bridge chỉ nhận chữ.
+
+1. **Lớp lỗi**: hai đường gửi ra Zalo (trả lời chat / tin chủ động) có năng lực khác nhau vì mỗi đường tự viết phần gửi — ảnh chỉ được viết cho đường chat. Cùng lớp với "bridge chỉ trả 200 là đủ" ở NFR-18.
+2. **Sửa**: `bot/bridge-zca/index.mjs` — gom vòng tải ảnh thành MỘT hàm `guiAnhQuaUrl` dùng cho cả luồng chat lẫn `/send`; `/send` nhận thêm `photos` (chỉ https, tối đa 4, gửi sau bong bóng chữ, trả `anh_da_gui`). `src/aioi/bao_can_moi.py` (`anh_cua_can`: ảnh bìa trước, tối đa 2, chỉ https, bỏ trùng; lỗi / chưa có ảnh thì vẫn gửi chữ), `src/aioi/server.py` (`_gui_bridge(…, photos)`, ghi log số ảnh đã đi).
+3. **Chỗ khác cùng lớp**: còn — tin nhắc 5 phút (`followup.py`) và lời xin lỗi vẫn chỉ chữ (đúng ý nghĩa, không cần ảnh); `anh_can_gui_kem` của chat vẫn có luật "mỗi (khách, căn) một lần / 24 giờ" riêng, tin báo căn mới không dùng vì đã có van một căn không báo hai lần. **Hạn chế**: 130 tin mẫu `SEED` chưa có ảnh nào (`listing_photos_v` mới có 1 tin có ảnh) — tin báo cho các căn đó vẫn chỉ có chữ; kho ảnh gốc `masterdb-raw` / `listing-public` rỗng từ 09/09.
+4. **Kiểm**: `tests/test_bao_can_moi.py` (căn có ảnh → gửi tối đa 2 ảnh https, bỏ http / trùng; chưa có ảnh hoặc truy vấn ảnh hỏng → vẫn gửi chữ; bridge `/send` đọc `photos` chỉ https và chỉ còn MỘT chỗ tải-và-gửi ảnh) — các test bridge cũ (`bridge-gui-lai`, `bridge-dang-soan`) vẫn đạt.
+
+### SRS-5.1zzzzzzz152 · Sổ lỗi `geocode-listings` lặp mỗi 10 phút: gọi Overpass từ DB (23/10/2026)
+
+Ca gốc: sổ `bot_errors` lặp mỗi tick 10 phút "overpass: N tin không nạp được tiện ích, mọi máy hỏng — openstreetmap.fr → HTTP 403; overpass-api.de → HTTP 406; maps.mail.ru → 504 / quá giờ; private.coffee → quá giờ". Đo 23/10 từ chính DB (extension `http`): `overpass.openstreetmap.fr` trả 200 kèm dữ liệu, trong khi từ edge function cùng máy đó trả 403.
+
+1. **Lớp lỗi**: gọi một dịch vụ công cộng trực tiếp từ dải IP hạ tầng của edge function — các dịch vụ OSM chặn dải đó. Đã gặp đúng hình này ở Nominatim (25/09, FR-227) và sửa bằng gọi qua DB; Overpass chỉ được "đổi thứ tự máy" (14/10, SRS-5.1zzzzzzn) chứ không đổi đường gọi, nên 4 máy cùng hỏng.
+2. **Sửa**: migration `20261023b_tra_overpass.sql` — hàm `tra_overpass(p_q, p_may, p_cho_giay)` gọi Overpass từ DB (extension `http`), chỉ nhận đúng 4 máy trong danh sách cố định, chỉ `service_role` gọi được, `search_path` đặt sẵn; `geocode-listings/index.ts` gọi `db.rpc("tra_overpass")` thay `fetch`. Danh sách máy và logic chuyển máy / tổng một dòng sổ lỗi giữ nguyên.
+3. **Chỗ khác cùng lớp**: Nominatim đã sửa (FR-227); còn `media-cleanup` và `escalation-feed` không gọi dịch vụ ngoài; geocode vẫn có thể báo lỗi nếu cả bốn máy Overpass hỏng từ DB (khi đó là sự cố thật, một dòng tổng). Chưa kiểm: ba máy phụ từ DB (mới đo máy `.fr`).
+4. **Kiểm**: `bot/tests/tien-ich.mjs` (+4 ca: edge gọi RPC và không `fetch(base…)`; có migration; mọi máy của edge nằm trong danh sách cho phép của hàm DB; quyền chỉ `service_role`). Chạy thật: sau khi deploy `geocode-listings`, sổ lỗi nguồn `geocode-listings` ngừng lặp "overpass …" và `tin_can_geocode` hết tồn.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -242,15 +242,22 @@ CAU_THU_LAI_HONG = cau_mau.MAC_DINH["thu_lai_hong"][0]
 THU_LAI_SAU = 20
 
 
-def _gui_bridge(user_key: str, text: str) -> None:
-    """Gửi một tin chủ động qua bridge (cùng cổng /send bộ nhắc 5 phút dùng)."""
+def _gui_bridge(user_key: str, text: str, photos: list[str] | None = None) -> dict:
+    """Gửi một tin chủ động qua bridge (cùng cổng /send bộ nhắc 5 phút dùng). `photos`: link ảnh https gửi kèm sau chữ (SRS-5.1zzzzzzz151).
+    Trả phản hồi của bridge (`anh_da_gui` = số ảnh đã đi)."""
     import json
     import urllib.request
     from .followup import BRIDGE_SEND_URL
-    req = urllib.request.Request(BRIDGE_SEND_URL, data=json.dumps({"threadId": user_key, "message": text}).encode("utf-8"),
-                                 headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=10):
-        pass
+    goi = {"threadId": user_key, "message": text}
+    if photos:
+        goi["photos"] = photos
+    # Ảnh được tải rồi gửi từng tấm (mỗi tấm tới 15 s) — hạn chờ dài hơn tin chữ thuần.
+    req = urllib.request.Request(BRIDGE_SEND_URL, data=json.dumps(goi).encode("utf-8"), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=10 + 20 * len(photos or [])) as resp:
+        try:
+            return json.loads(resp.read().decode("utf-8")) or {}
+        except ValueError:
+            return {}
 
 
 def _xung_ho_khach(zalo_id: str) -> str:
@@ -262,13 +269,15 @@ def _xung_ho_khach(zalo_id: str) -> str:
         return "unknown"
 
 
-def _gui_bao_can_moi(zalo_id: str, tin: str, ten: str | None, can: dict) -> bool:
+def _gui_bao_can_moi(zalo_id: str, tin: str, ten: str | None, can: dict, anh: list[str] | None = None) -> bool:
     """Gửi tin báo căn mới qua bridge. Bridge nhận thì ghi vào lịch sử hội thoại (khách trả lời "căn đó giá sao" bot còn nhớ vừa báo gì) và
     CRM như bộ nhắc 5 phút. Bridge hụt → False để lượt sau thử lại; ghi lịch sử hụt thì tin đã đi nên vẫn True."""
     from .engine import Turn
     with _engine.khoa_luot(zalo_id):
         try:
-            _gui_bridge(zalo_id, tin)
+            kq = _gui_bridge(zalo_id, tin, anh)
+            if anh:
+                log.info("báo căn mới %s: bridge gửi %s/%d ảnh", can.get("code"), kq.get("anh_da_gui"), len(anh))
         except Exception as e:  # noqa: BLE001
             log.warning("báo căn mới: bridge hụt (%s)", type(e).__name__)
             return False

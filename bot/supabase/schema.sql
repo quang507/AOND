@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-22 17:02 (giờ VN)
+-- Sinh lúc: 2026-10-23 14:00 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -5692,6 +5692,32 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.tra_overpass(p_q text, p_may text, p_cho_giay integer DEFAULT 25)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+declare res extensions.http_response;
+begin
+  if coalesce(btrim(p_q), '') = '' or length(p_q) > 4000 then return null; end if;
+  if p_may is null or p_may not in (
+       'https://overpass.openstreetmap.fr/api/interpreter',
+       'https://overpass-api.de/api/interpreter',
+       'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+       'https://overpass.private.coffee/api/interpreter') then
+    raise exception 'máy Overpass không nằm trong danh sách';
+  end if;
+  perform extensions.http_set_curlopt('CURLOPT_TIMEOUT', greatest(1, least(coalesce(p_cho_giay, 25), 35))::text);
+  res := extensions.http(('POST', p_may,
+           array[extensions.http_header('User-Agent', 'nhadatcc-geocoder/1.0 (admin.buyerside@nhadat.cc)'),
+                 extensions.http_header('Accept', 'application/json')],
+           'application/x-www-form-urlencoded', 'data=' || extensions.urlencode(p_q))::extensions.http_request);
+  if res.status <> 200 then raise exception 'overpass HTTP %: %', res.status, left(res.content, 120); end if;
+  return res.content::jsonb;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.trg_info_request_thong_bao_khach_hoi()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -7431,6 +7457,8 @@ revoke all on function public.tin_gan_moc(p_loai text, p_ten_re text, p_lat doub
 grant execute on function public.tin_gan_moc(p_loai text, p_ten_re text, p_lat double precision, p_lng double precision, p_ten text, p_ban_kinh_m integer, p_deal text) to service_role;
 revoke all on function public.tra_nominatim(p_q text, p_viewbox text, p_limit integer, p_chi_tiet boolean, p_cho_giay integer) from public, anon, authenticated;
 grant execute on function public.tra_nominatim(p_q text, p_viewbox text, p_limit integer, p_chi_tiet boolean, p_cho_giay integer) to service_role;
+revoke all on function public.tra_overpass(p_q text, p_may text, p_cho_giay integer) from public, anon, authenticated;
+grant execute on function public.tra_overpass(p_q text, p_may text, p_cho_giay integer) to service_role;
 revoke all on function public.trg_info_request_thong_bao_khach_hoi() from public, anon, authenticated;
 grant execute on function public.trg_info_request_thong_bao_khach_hoi() to service_role;
 revoke all on function public.trg_listings_day_ro_ccrb() from public, anon, authenticated;

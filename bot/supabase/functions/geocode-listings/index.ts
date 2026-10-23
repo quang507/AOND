@@ -22,7 +22,6 @@ import {
   trongVungQuan, viewboxQuan, type VungQuan, vungQuan,
 } from "../_shared/geocode.ts";
 
-const UA = "nhadatcc-geocoder/1.0 (admin.buyerside@nhadat.cc)";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // Máy chủ chính hay "too busy" (đo 11/09 từ máy văn phòng); gọi từ hạ tầng
 // Supabase thì chạy. Có máy phụ để một lần bận không làm trễ cả lượt.
@@ -134,22 +133,16 @@ Deno.serve(async (req) => {
     for (const base of OVERPASS) {
       if (conLai() < 5_000) return "het_gio";
       try {
-        // POST dạng form, như tài liệu Overpass khuyên (GET dài dễ bị chặn).
-        const res = await fetch(base, {
-          method: "POST",
-          headers: {
-            "User-Agent": UA,
-            "Accept": "application/json",
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: `data=${encodeURIComponent(q)}`,
-          signal: AbortSignal.timeout(Math.min(35_000, Math.max(1_000, conLai()))),
+        // 23/10/2026 (SRS-5.1zzzzzzz152): gọi qua DB (`tra_overpass`, 20261023b) — gọi thẳng từ edge thì máy công cộng chặn dải IP
+        // (403 / 406 mỗi tick, sổ lỗi lặp), cùng nguyên nhân Nominatim 25/09 (FR-227). Từ DB cùng máy openstreetmap.fr trả 200.
+        const { data, error } = await db.rpc("tra_overpass", {
+          p_q: q, p_may: base, p_cho_giay: Math.ceil(Math.min(35_000, Math.max(1_000, conLai())) / 1000),
         });
-        if (!res.ok) {
-          hong(base, `HTTP ${res.status}`);
+        if (error) {
+          hong(base, error.message.slice(0, 80));
           continue;
         }
-        return docDiemOsm(await res.json());
+        return docDiemOsm(data);
       } catch (e) {
         hong(base, loiChu(e));
       }
