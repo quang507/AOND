@@ -1,0 +1,37 @@
+{
+  "ghi_chu": "Bộ câu hỏi chuẩn cho rổ hàng mẫu seed_thu (SEED0001..SEED0030, SRS-5.1zzzzzzz144). ĐÁP ÁN VIẾT TRƯỚC KHI CHẠY ĐO và không sửa theo kết quả; muốn sửa một đáp án thì ghi lý do vào ghi_chu của câu đó. Nhóm A = lọc rõ (khu vực / giá / loại / hẻm), B = thiên về nghĩa (chi tiết hiếm chỉ có trong lời chủ nhà), C = mơ hồ. `loc` là các tham số bot rút ra từ lời khách (giả định rút đúng) đưa vào tim_nha; `cau` là lời khách nguyên văn đưa vào vector. dap_an = mã tin được coi là ĐÚNG (có thể nhiều).",
+  "cau_hoi": [
+    { "id": "A01", "nhom": "A", "cau": "tìm nhà phố Quận 5 giá dưới 7 tỷ hẻm xe hơi vào được", "loc": { "deal": "ban", "loai": "nha_pho", "gia_max": 7000000000, "khu": "Quận 5", "xe_hoi": true }, "dap_an": ["SEED0001"] },
+    { "id": "A02", "nhom": "A", "cau": "căn hộ 2 phòng ngủ Quận 7 dưới 4 tỷ", "loc": { "deal": "ban", "loai": "chung_cu", "gia_max": 4000000000, "khu": "Quận 7", "pn_min": 2 }, "dap_an": ["SEED0004"] },
+    { "id": "A03", "nhom": "A", "cau": "nhà nhỏ hẻm xe máy dưới 3 tỷ ở Quận 8", "loc": { "deal": "ban", "gia_max": 3000000000, "khu": "Quận 8" }, "dap_an": ["SEED0003"] },
+    { "id": "A04", "nhom": "A", "cau": "đất nền thổ cư Bình Chánh dưới 3 tỷ", "loc": { "deal": "ban", "gia_max": 3000000000, "khu": "Bình Chánh" }, "dap_an": ["SEED0006"] },
+    { "id": "A05", "nhom": "A", "cau": "thuê phòng trọ Gò Vấp dưới 15 triệu", "loc": { "deal": "cho_thue", "gia_max": 15000000, "khu": "Gò Vấp" }, "dap_an": ["SEED0011"] },
+    { "id": "A06", "nhom": "A", "cau": "thuê căn hộ 2 phòng ngủ Quận 10 dưới 20 triệu", "loc": { "deal": "cho_thue", "gia_max": 20000000, "khu": "Quận 10", "pn_min": 2 }, "dap_an": ["SEED0012"] },
+    { "id": "A07", "nhom": "A", "cau": "cần mua kho xưởng container vào được khu Bình Tân", "loc": { "deal": "ban", "khu": "Bình Tân" }, "dap_an": ["SEED0009"] },
+    { "id": "A08", "nhom": "A", "cau": "thuê mặt bằng Quận 1 làm showroom", "loc": { "deal": "cho_thue", "khu": "Quận 1" }, "dap_an": ["SEED0010"] },
+    { "id": "A09", "nhom": "A", "cau": "mua đất vườn trồng cây ăn trái ở Hóc Môn", "loc": { "deal": "ban", "khu": "Hóc Môn" }, "dap_an": ["SEED0007"] },
+    { "id": "A10", "nhom": "A", "cau": "nhà phố Gò Vấp hẻm xe hơi dưới 6 tỷ ít nhất 4 phòng ngủ", "loc": { "deal": "ban", "loai": "nha_pho", "gia_max": 6000000000, "khu": "Gò Vấp", "pn_min": 4, "xe_hoi": true }, "dap_an": ["SEED0016"] },
+
+    { "id": "B01", "nhom": "B", "cau": "nhà có chỗ cho chó mèo chạy chơi, hẻm xe hơi", "loc": { "deal": "ban" }, "dap_an": ["SEED0001"] },
+    { "id": "B02", "nhom": "B", "cau": "nhà đang cho thuê sẵn có dòng tiền mỗi tháng", "loc": { "deal": "ban" }, "dap_an": ["SEED0002", "SEED0025", "SEED0026"] },
+    { "id": "B03", "nhom": "B", "cau": "nhà mới xây có thang máy gần sân bay", "loc": { "deal": "ban", "loai": "nha_pho" }, "dap_an": ["SEED0013"] },
+    { "id": "B04", "nhom": "B", "cau": "nhà cũ để xây lại, gần trường học", "loc": { "deal": "ban" }, "dap_an": ["SEED0015"] },
+    { "id": "B05", "nhom": "B", "cau": "nhà khu người Hoa gần chợ Bình Tây", "loc": { "deal": "ban" }, "dap_an": ["SEED0017"] },
+    { "id": "B06", "nhom": "B", "cau": "nhà để lại nội thất gần công viên Gia Định", "loc": { "deal": "ban" }, "dap_an": ["SEED0014"] },
+    { "id": "B07", "nhom": "B", "cau": "nhà nhỏ xinh cho vợ chồng trẻ, gần công viên", "loc": { "deal": "ban", "loai": "nha_pho" }, "dap_an": ["SEED0029"] },
+    { "id": "B08", "nhom": "B", "cau": "căn hộ view sông nhận nhà ngay", "loc": { "deal": "ban", "loai": "chung_cu" }, "dap_an": ["SEED0004", "SEED0022"] },
+    { "id": "B09", "nhom": "B", "cau": "mua nhà đang làm căn hộ dịch vụ, cho thuê phòng", "loc": { "deal": "ban" }, "dap_an": ["SEED0026"] },
+    { "id": "B10", "nhom": "B", "cau": "đất mặt tiền quốc lộ làm kho bãi hoặc cây xăng", "loc": { "deal": "ban" }, "dap_an": ["SEED0024"] },
+    { "id": "B11", "nhom": "B", "cau": "biệt thự có hồ bơi riêng và sân vườn", "loc": { "deal": "ban" }, "dap_an": ["SEED0008"] },
+    { "id": "B12", "nhom": "B", "cau": "căn hộ gần siêu thị Lotte Mart", "loc": { "deal": "ban", "loai": "chung_cu" }, "dap_an": ["SEED0030"] },
+    { "id": "B13", "nhom": "B", "cau": "nhà khu dân cư an ninh gần Aeon", "loc": { "deal": "ban" }, "dap_an": ["SEED0019"] },
+    { "id": "B14", "nhom": "B", "cau": "căn hộ góc thoáng mát, view không bị chắn", "loc": { "deal": "ban", "loai": "chung_cu" }, "dap_an": ["SEED0021"] },
+    { "id": "B15", "nhom": "B", "cau": "studio nhỏ gần Landmark, đầy đủ nội thất", "loc": { "deal": "ban", "loai": "chung_cu" }, "dap_an": ["SEED0005"] },
+
+    { "id": "C01", "nhom": "C", "cau": "nhà ở thoáng, có sân vườn rộng trồng cây ăn trái", "loc": { "deal": "ban" }, "dap_an": ["SEED0027", "SEED0008"] },
+    { "id": "C02", "nhom": "C", "cau": "mua nguyên tòa nhà để cho thuê văn phòng", "loc": { "deal": "ban" }, "dap_an": ["SEED0025"] },
+    { "id": "C03", "nhom": "C", "cau": "nhà mặt tiền buôn bán sầm uất, vỉa hè rộng", "loc": { "deal": "ban" }, "dap_an": ["SEED0018", "SEED0002"] },
+    { "id": "C04", "nhom": "C", "cau": "nhà hẻm xe hơi Quận 1 dưới 13 tỷ, chủ bán gấp", "loc": { "deal": "ban", "gia_max": 13000000000, "khu": "Quận 1", "xe_hoi": true }, "dap_an": ["SEED0023"] },
+    { "id": "C05", "nhom": "C", "cau": "thuê nguyên căn nhà để mở phòng khám", "loc": { "deal": "cho_thue" }, "dap_an": ["SEED0028"] }
+  ]
+}
