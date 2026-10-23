@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-23 16:42 (giờ VN)
+-- Sinh lúc: 2026-10-23 16:51 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -5954,15 +5954,10 @@ begin
   select code into v_code from listings where id = v_listing;
   v_code := coalesce(v_code, new.listing_code, '?');
   select b.zalo_user_id, b.name into v_uid, v_ten from buyers b where b.id = new.buyer_id;
-  select c.ctv_id into v_ctv from conversations c
-   where c.buyer_id = new.buyer_id and c.ctv_id is not null
-   order by c.started_at desc limit 1;
-  if v_ctv is not null and not exists (select 1 from ctvs where id = v_ctv and active) then
-    v_ctv := null;
-  end if;
+  v_ctv := null;   -- 20261023g: bỏ bước CTV, lịch xem đi thẳng admin
   v_gio := coalesce(to_char(new.slot at time zone 'Asia/Ho_Chi_Minh', 'HH24:MI DD/MM'), new.time_text, '?');
 
-  -- (a) nhắc CTV/admin ngay
+  -- (a) nhắc admin ngay
   begin
     v_note := 'Lịch xem #' || v_code || ' · ' || v_gio || ' · khách ' || coalesce(v_ten, '(chưa biết tên)')
            || ', xác nhận với chủ nhà rồi nhắn lại em "#' || v_code || ': ok ' || coalesce(to_char(new.slot at time zone 'Asia/Ho_Chi_Minh', 'HH24"h"'), 'giờ') || '" nha';
@@ -5972,15 +5967,11 @@ begin
     perform public.log_loi('viewings_bao_ctv', left(sqlerrm, 400), null::integer);
   end;
 
-  -- (b) câu xác nhận lịch — assignee đặt sẵn nên `route_info_request` không
-  --     đụng; sla_due_at theo CTV để `info_request_sla_tick` leo thang nếu 2h
-  --     chưa ai xác nhận.
+  -- (b) câu xác nhận lịch giao admin để lời "#mã: ok giờ" đóng được nó (info_request_bao_lai_khach chốt lịch + báo khách)
   if v_listing is not null and new.buyer_id is not null and new.status in ('proposed', 'pending') then
     begin
       insert into info_requests (listing_id, buyer_id, question, status, source, assignee, ctv_id, sla_due_at)
-      values (v_listing, new.buyer_id, 'xac_nhan_lich', 'pending', 'buyer_ask',
-              case when v_ctv is null then 'admin' else 'ctv' end, v_ctv,
-              case when v_ctv is null then null else now() + make_interval(mins => public.ctv_sla_phut()) end);
+      values (v_listing, new.buyer_id, 'xac_nhan_lich', 'pending', 'buyer_ask', 'admin', null, null);
     exception when others then
       perform public.log_loi('viewings_xac_nhan_lich', left(sqlerrm, 400), null::integer);
     end;
