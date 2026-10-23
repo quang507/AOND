@@ -8579,6 +8579,15 @@ Ca gốc: chat chị Ngân 23/10 15:47 — bot xin số lúc chốt lịch xem, 
 3. **Chỗ khác cùng lớp**: còn — các đường ghi khác cũng chỉ ghi khi đạt cổng (mã căn, giờ hẹn) và đã có dòng "CHƯA GHI" cho lượt không ghi gì; riêng giờ hẹn nói không rõ chưa có dòng báo riêng. Lời "chú ý điện thoại" vẫn do model viết (không phải câu mẫu cố định); khối lịch vẫn nói "người phụ trách sẽ gọi" cả khi lịch chưa có số (chưa đọc cột `viewings.phone` ở `lich_dang_cho`).
 4. **Kiểm**: `tests/test_sdt_hen_xem_tai_chinh.py` — `giong_sdt_sai` (số thiếu / thừa là sai; số đúng, giá "0,5 tỷ", "0.75 tháng", giờ "9h - 10h" không phải); khách gõ "070772473" sau khi bot xin số → không PATCH `viewings`, không đẻ nhắc, lời dặn model có "KHÔNG cảm ơn"; gõ lại đủ số thì ghi và có "chú ý điện thoại". Tắt nhánh `giong_sdt_sai` thì ca đỏ (đã thử). Chưa thử trên Zalo thật.
 
+### SRS-5.1zzzzzzz162 · Khách gõ "ok" liên tiếp sau khi lịch hẹn đã xác nhận (23/10/2026)
+
+Ca gốc: chủ dự án hỏi "nếu khách Ok ok liên tục bot có bị rối ko". Ảnh chat chị Ngân 15:48: khách gõ "ok" sau khi lịch đã ghi, bot lại viết câu xác nhận "Chị xác nhận giúp em, chủ nhật… đúng không ạ?". Khối `LỊCH HẸN XEM ĐÃ GHI` nằm trong lời dặn model ở MỌI lượt sau khi ghi lịch mà không có trạng thái "đã xác nhận xong", nên mỗi "ok" là một cơ hội để model lặp câu xác nhận / lặp "người phụ trách sẽ gọi".
+
+1. **Lớp lỗi**: lời dặn model mô tả việc cần làm mà không nói khi nào việc đã xong — model chỉ có lịch sử chat để tự suy. Cùng lớp SRS-157 (model không thấy lịch đã ghi).
+2. **Sửa**: `mua.khoi_lich_dang_cho` thêm một ý: khách chỉ đáp ngắn đồng ý / cảm ơn, không thêm thông tin mới, và lời em trước đó đã xác nhận lịch → đáp đúng MỘT câu rất ngắn, không lặp câu xác nhận, không nhắc lại ngày giờ / căn / người phụ trách, không hỏi thêm; "ok" nhiều lần thì mỗi lần vẫn một câu ngắn. Cố ý KHÔNG dò chữ "ok" bằng từ khoá ở code (lớp "máy đoán ý bằng từ khoá", CLAUDE.md §6) — model đọc nghĩa và đọc lời em trước trong lịch sử.
+3. **Chỗ khác cùng lớp**: còn — các khối dặn khác (căn gợi ý, hẹn xem) cũng không có trạng thái "đã xong"; khách gõ "ok" khi chưa có lịch (sau lời gợi ý căn) chưa có lời dặn riêng. Model có làm đúng không chỉ kiểm được bằng chat thật.
+4. **Kiểm**: `tests/test_lich_hen_va_mat_tien.py` — khối lịch có ý "ok ok", "MỘT câu rất ngắn", "KHÔNG lặp lại câu xác nhận", "KHÔNG hỏi thêm câu nào"; bỏ ý đó thì ca đỏ (đã thử). Chưa thử trên Zalo thật.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

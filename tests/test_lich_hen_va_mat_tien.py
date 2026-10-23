@@ -42,6 +42,8 @@ def test_khoi_lich_dang_cho_dan_khong_tu_them_ngay_va_khong_hoi_lai():
     assert "#SEED0044" in k and "chiều, 4h" in k
     assert "KHÔNG tự thêm \"nay\"" in k and "KHÔNG hỏi lại ngày / giờ" in k and "đúng không ạ" in k
     assert khoi_lich_dang_cho([]) == "" and khoi_lich_dang_cho(None) == ""
+    # SRS-5.1zzzzzzz162: khách gõ "ok" liên tiếp sau khi lịch đã xác nhận → mỗi lần MỘT câu rất ngắn, không lặp câu xác nhận
+    assert "ok ok" in k and "MỘT câu rất ngắn" in k and "KHÔNG lặp lại câu xác nhận" in k and "KHÔNG hỏi thêm câu nào" in k
 
 
 def test_engine_dua_lich_da_ghi_vao_loi_dap_khach_mua():
