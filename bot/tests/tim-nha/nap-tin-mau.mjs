@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// nap-tin-mau.mjs — nạp thêm 100 tin mẫu `seed_thu` (SEED0031..SEED0130) bằng SQL qua Management API (SRS-5.1zzzzzzz144). Chạy trong
+// nap-tin-mau.mjs — nạp rổ 130 tin mẫu `seed_thu` (SEED0001..SEED0130) bằng SQL qua Management API (SRS-5.1zzzzzzz144, 167). Tạo người bán thử
+// `thu-seed-001` nếu chưa có; 30 tin đầu là bản SINH LẠI (bản nạp tay hồi sáng 23/10 đã mất khỏi DB). Chạy trong
 // apply-migration.yml ô `dung_lai` = nap-tin-mau. KHÔNG gọi AI chat; vector do cron `nhung-tick` nhúng dần (10 tin / 2 phút, khi hạn mức Gemini cho phép).
 // Chạy lại được: bỏ qua mã đã có. Xoá hết khi cần: select reset_nguoi_test('thu-seed-001') (cả 130 tin mẫu).
-import { sinhTin, sqlNapTin } from "./nap-tin-mau-lib.mjs";
+import { sinhTatCa, sqlNapTin } from "./nap-tin-mau-lib.mjs";
 
 const TOKEN = process.env.TOKEN, REF = process.env.PROJECT_REF;
 if (!TOKEN || !REF) { console.error("::error::Thiếu TOKEN / PROJECT_REF"); process.exit(2); }
@@ -17,9 +18,12 @@ async function q(sql) {
 
 try {
   const ban = await q("select count(*)::int as n from sellers where zalo_user_id = 'thu-seed-001'");
-  if (!ban[0].n) throw new Error("Chưa có người bán thử thu-seed-001 (nạp 30 tin đầu trước)");
+  if (!ban[0].n) {
+    await q("insert into sellers (name, zalo_user_id) values ('Người bán thử (rổ mẫu)', 'thu-seed-001')");
+    console.log("== đã tạo người bán thử thu-seed-001");
+  }
   const co = new Set((await q("select code from listings where code like 'SEED%'")).map((r) => r.code));
-  const can = sinhTin(100, 31).filter((t) => !co.has(t.code));
+  const can = sinhTatCa().filter((t) => !co.has(t.code));
   console.log(`== đã có ${co.size} mã SEED; cần nạp ${can.length} tin`);
   for (let i = 0; i < can.length; i += 25) {
     const mau = can.slice(i, i + 25);

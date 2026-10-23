@@ -1,4 +1,5 @@
-// Bộ sinh 100 tin mẫu `seed_thu` (SEED0031..SEED0130) để mở rộng rổ đo tìm nhà (SRS-5.1zzzzzzz144). Hàm thuần, TẤT ĐỊNH (cùng hạt giống → cùng dữ liệu) nên
+// Bộ sinh tin mẫu `seed_thu`: 100 tin SEED0031..SEED0130 (mở rộng rổ đo tìm nhà, SRS-5.1zzzzzzz144) + 30 tin SEED0001..SEED0030 sinh lại
+// (SRS-5.1zzzzzzz167 — 30 tin đầu hồi sáng 23/10 nạp tay bằng SQL, mất khỏi DB, không còn bản gốc). Hàm thuần, TẤT ĐỊNH (cùng hạt giống → cùng dữ liệu) nên
 // chạy lại không đẻ dữ liệu khác. Mục tiêu khác 30 tin đầu: mỗi nhóm có NHIỀU tin gần giống nhau (cùng quận / loại / khoảng giá) để phép đo có đối thủ thật,
 // và các chi tiết riêng (thang máy, gara, sân thượng, view sông…) lặp ở vài tin chứ không duy nhất một tin.
 import { esc } from "./do-tim-nha-lib.mjs";
@@ -37,6 +38,12 @@ export const KE_HOACH = [
   ["ban", "dat_kinh_doanh", "mat_tien", 3], ["ban", "biet_thu", null, 4], ["ban", "kho_xuong", "hem_xe_tai", 4], ["ban", "toa_nha", "mat_tien", 3],
   ["cho_thue", "nha_pho", "mat_tien", 5], ["cho_thue", "chung_cu", null, 5], ["cho_thue", "phong_tro", null, 4], ["cho_thue", "mat_bang", "mat_tien", 2],
 ];
+// 30 tin SEED0001..0030 SINH LẠI (SRS-5.1zzzzzzz167). Hạt giống riêng nên không trùng tin SEED0031..0130; KHÔNG phải bản gốc hồi sáng 23/10.
+export const KE_HOACH_DAU_30 = [
+  ["ban", "nha_pho", "hem_xe_hoi", 5], ["ban", "nha_pho", "mat_tien", 3], ["ban", "nha_pho", "hem_xe_may", 3], ["ban", "chung_cu", null, 6],
+  ["ban", "nha_cap4", "hem_xe_may", 2], ["ban", "dat", "hem_xe_hoi", 2], ["ban", "biet_thu", null, 1], ["ban", "kho_xuong", "hem_xe_tai", 1],
+  ["cho_thue", "nha_pho", "mat_tien", 2], ["cho_thue", "chung_cu", null, 3], ["cho_thue", "phong_tro", null, 1], ["cho_thue", "mat_bang", "mat_tien", 1],
+];
 const CHI_TIET = {
   nha_pho: ["gần chợ", "gần trường tiểu học", "sân thượng trồng rau được", "có gara ô tô", "nhà mới sơn sửa", "giếng trời thoáng mát", "bếp rộng nấu ăn thoải mái",
     "gần bệnh viện", "khu yên tĩnh dân trí cao", "sân trước để được 2 xe", "nhà góc 2 mặt hẻm",
@@ -59,11 +66,11 @@ const giaChu = (vnd, thang) => {
   return vnd >= 1e9 ? `${lam(vnd / 1e9, 1)} tỷ`.replace(".", ",") : `${Math.round(vnd / 1e6)} triệu`;
 };
 
-/** `soLuong` tin bắt đầu từ SEED(batDau). Tổng KE_HOACH = 100; soLuong < 100 thì cắt bớt từ cuối. */
-export function sinhTin(soLuong = 100, batDau = 31) {
-  const rnd = hatGiong(23102026), chon = (a) => a[Math.floor(rnd() * a.length)], hon = (a, b) => a + rnd() * (b - a);
+/** `soLuong` tin bắt đầu từ SEED(batDau) theo kế hoạch `ke`. Tổng KE_HOACH = 100; soLuong < tổng kế hoạch thì cắt bớt từ cuối. */
+export function sinhTin(soLuong = 100, batDau = 31, ke = KE_HOACH, hat = 23102026) {
+  const rnd = hatGiong(hat), chon = (a) => a[Math.floor(rnd() * a.length)], hon = (a, b) => a + rnd() * (b - a);
   const ra = [];
-  for (const [deal, loai, access, n] of KE_HOACH) {
+  for (const [deal, loai, access, n] of ke) {
     for (let i = 0; i < n; i++) {
       const quan = chon(QUAN_THEO_LOAI[loai] || DO_THI), q = QUAN[quan], phuong = chon(q.phuong), duong = chon(q.duong);
       const thue = deal === "cho_thue";
@@ -104,6 +111,11 @@ export function sinhTin(soLuong = 100, batDau = 31) {
     }
   }
   return ra.slice(0, soLuong);
+}
+
+/** Đủ 130 tin: SEED0001..0030 (sinh lại) + SEED0031..0130. */
+export function sinhTatCa() {
+  return [...sinhTin(30, 1, KE_HOACH_DAU_30, 23102001), ...sinhTin(100, 31)];
 }
 
 const sv = (v) => (v === null || v === undefined ? "null" : typeof v === "number" ? String(v) : esc(v));
