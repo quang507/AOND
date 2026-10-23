@@ -8607,6 +8607,15 @@ Ca gốc: soát chat chị Ngân 15:46–15:49 (ca CŨ, trước SRS-161): lịc
 3. **Kèm**: bridge ghi giá trị thô của `gender` hồ sơ Zalo (một dòng log khi lấy hồ sơ) để biết Zalo trả gì cho tài khoản ẩn giới tính — SRS-163 chưa kiểm được điều này.
 4. **Chưa làm / còn hở**: (a) nhắn THẲNG chủ nhà khi lịch đặt cho căn có người bán (cần soạn câu cho chủ nhà + đường nhận lời "ok" của chủ nhà) — chưa quyết; (b) lời xác nhận của khách ("đúng rồi em") vẫn không ghi vào DB; (c) trigger kiểm bằng chạy thật trên DB trong giao dịch hoàn tác, không có test tự động.
 
+### SRS-5.1zzzzzzz165 · Lịch xem đi thẳng admin, bỏ bước CTV (23/10/2026)
+
+Ca gốc: chủ dự án (23/10): "bỏ qua bước ctv luôn để đưa thông tin cho admin luôn". Trước đó `viewings_bao_ctv_va_email` lấy CTV của hội thoại (còn hoạt động) làm người nhận nhắc `escalation` và người được giao câu `xac_nhan_lich` (kèm hạn leo thang 2 giờ `ctv_sla_phut`); không có CTV mới tới admin. Prod hiện có 0 CTV (bảng `ctvs` rỗng) nên thực tế đã đi thẳng admin, nhưng chỉ vì chưa ai thêm CTV.
+
+1. **Sửa**: migration `20261023g` — `viewings_bao_ctv_va_email` đặt `v_ctv := null`: nhắc `escalation` không gắn ctv (bridge đưa về admin), câu `xac_nhan_lich` giao `admin`, không `sla_due_at`. Giữ nguyên email `[VIEWING]` và đường admin trả lời `#mã: ok giờ` (lịch → `confirmed` + báo khách). Khối "CTV xác nhận thì báo admin" của SRS-164 vẫn còn trong `info_request_bao_lai_khach` nhưng không còn kích hoạt cho lịch xem (không còn câu giao CTV) — để đó, vô hại.
+2. **Phạm vi**: CHỈ lịch xem. Các đường khác có bước CTV (câu khách hỏi chủ nhà `route_info_request`, báo cáo CTV 17h, `ctv-sla-tick`) không đụng — chưa hỏi chủ dự án có bỏ luôn không.
+3. **Còn hở**: nhắc của lịch xem vẫn chưa nhắn thẳng chủ nhà (không gắn `seller_id`); ràng buộc duy nhất `info_requests_mot_cau_cho_idx (listing_id, question)` chỉ cho một câu `xac_nhan_lich` chờ mỗi căn — căn còn câu chờ cũ thì lịch mới không tạo câu mới (nhắc admin vẫn tạo).
+4. **Kiểm**: `tests/test_lich_xem_thang_admin.py` soi chữ migration (bản chạy thật không có test tự động); kiểm thật trên DB trong giao dịch hoàn tác (kết quả trong PR).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
