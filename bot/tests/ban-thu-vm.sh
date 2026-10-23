@@ -81,5 +81,5 @@ kiem "số điện thoại khách gõ được ghi vào lịch hẹn" "$(jq '[(.
 kiem "phía bán còn nguyên (≥ 1 tin bán thật)" "$(jq '(.tin_ban_that|tonumber) >= 1 | if . then 1 else 0 end' <<<"$r")"
 kiem "một khách một hội thoại (đúng 1)" "$(jq '(.hoi_thoai|tonumber) == 1 | if . then 1 else 0 end' <<<"$r")"
 echo "== lõi trên VPS: $(vps 'systemctl is-active aond-core')"
-vps "journalctl -u aond-core --since '-5 min' --no-pager -o cat | grep -iE 'error|exception|traceback' | grep -viE 'key|token|secret|password|bearer' | sed -E 's/[0-9]{9,}/#/g' | tail -15" || true
+vps "journalctl -u aond-core --since '-5 min' --no-pager -o cat | grep -E 'Mua: |Failed to|ghi_hen_xem|ghi_sdt|error|Error|exception|traceback' | grep -viE 'key|token|secret|password|bearer' | sed -E 's/[0-9]{9,}/#/g' | tail -30" || true
 exit $loi

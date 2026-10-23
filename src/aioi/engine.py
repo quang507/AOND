@@ -102,7 +102,7 @@ from .prompts import (
 )
 from .imaging import downscale_image
 from .revenue import SellerRole
-from .schema import O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup
+from .schema import O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .mua import co_tieu_chi, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_viec_vua_ghi, lenh_tra_loi, tim_sdt
 from .tai_chinh import khoi_tai_chinh
@@ -2015,6 +2015,8 @@ class Engine:
         if conv.role == "buyer" and conv.buyer_lead is not None:
             customer_pronoun = _detect_customer_pronoun(conv, text)
             next_field = conv.buyer_lead.next_question_field()
+            if next_field:   # SRS-5.1zzzzzzz154: đếm câu hỏi nhu cầu — đủ MAX_CAU_HOI_MUA thì thôi hỏi (xem next_question_field)
+                conv.buyer_lead.fields["_so_cau_hoi"] = str(_so_nguyen(conv.buyer_lead.fields.get("_so_cau_hoi")) + 1)
             if next_field in O_TU_VAN_MUA:   # SRS-5.1zzzzzzz116: câu tư vấn hỏi một lần — khách lờ thì lượt sau qua câu kế
                 da = [x for x in (conv.buyer_lead.fields.get("_da_hoi") or "").split(",") if x]
                 conv.buyer_lead.fields["_da_hoi"] = ",".join(sorted(set(da) | {next_field}))
@@ -3599,6 +3601,9 @@ class Engine:
         if conv.role == "buyer" and isinstance(mua, dict) and (
                 _trich_dan_khop(mua.get("trich_dan"), cuoi) or _chu_co_trong_loi_khach(mua.get("trich_dan"), self._loi_khach_gan(conv))):
             conv.y_luot["mua"] = mua
+        elif isinstance(mua, dict) and mua:
+            log.warning("Mua: AI có đọc việc (hẹn=%s) nhưng bị bỏ — vai=%s trích_dẫn_khớp=%s", bool(mua.get("hen_xem")), conv.role,
+                        _trich_dan_khop(mua.get("trich_dan"), cuoi))
         tl = plan.get("tra_loi_khach_hoi")
         if (isinstance(tl, dict) and tl.get("id") in {c.get("id") for c in conv.cau_hoi_cho}
                 and _trich_dan_khop(tl.get("tra_loi"), cuoi)):
@@ -3649,6 +3654,12 @@ class Engine:
         sdt = tim_sdt(text)
         if bid and sdt and kho.ghi_sdt_hen_xem(bid, sdt):
             viec.append("ghi số điện thoại khách vào lịch hẹn để người phụ trách gọi xác nhận (cảm ơn ngắn, KHÔNG đọc lại số)")
+        # Một dòng mỗi lượt khách mua có ý hẹn / quan tâm (SRS-5.1zzzzzzz153, bắn thử 23/10 `ban-thu-vm` hụt lịch mà journal không nói hụt ở
+        # AI đọc ra, ở mã căn hay ở ghi DB): chỉ cờ — không ghi lời khách.
+        if mua:
+            log.warning("Mua: AI hẹn=%s quan_tâm=%s mã_AI=%d mã_link=%s căn_khớp=%d khách_id=%s", bool(mua.get("hen_xem")),
+                        mua.get("quan_tam") is True, len([m for m in (mua.get("ma_can") or []) if isinstance(m, str)]),
+                        bool(self._ma_can_bot_vua_nhac(conv)), len(nhac), bool(bid))
         if not (bid and nhac):
             return viec, can[:4]
         dau = nhac[0]

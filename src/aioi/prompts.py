@@ -571,8 +571,9 @@ def build_buyer_chat_system(
         "Hỏi đúng 1 câu này, NGẮN (khoảng 15 chữ, một ý, không giải thích vì sao hỏi), tự nhiên, thân tình — đặt ở CUỐI tin, sau phần "
         "giới thiệu căn nếu có. Khách đã kể ý này rồi (trong hội thoại) thì không hỏi lại, hỏi tiếp chuyện khác."
         if next_field
-        else "Nhu cầu của khách đã rất rõ ràng. Cảm ơn anh/chị, gợi ý căn phù hợp trong danh sách (nếu có) và hẹn lịch đi xem thực tế "
-             "ngay trên Zalo — KHÔNG xin số điện thoại, trừ khi phần \"EM VỪA GHI LƯỢT NÀY\" bảo xin lúc khách chốt lịch xem."
+        else "Em đã hỏi đủ về nhu cầu của khách — KHÔNG hỏi thêm câu nào về nhu cầu nữa (SRS-5.1zzzzzzz154). Cảm ơn anh/chị, giới thiệu căn "
+             "phù hợp trong danh sách (nếu có), rồi hỏi khách có muốn xem căn nào không và hẹn lịch đi xem thực tế ngay trên Zalo — KHÔNG xin "
+             "số điện thoại, trừ khi phần \"EM VỪA GHI LƯỢT NÀY\" bảo xin lúc khách chốt lịch xem."
     )
     return f"""Bạn là "{assistant_name}", trợ lý tư vấn tìm mua/thuê bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
