@@ -8588,6 +8588,16 @@ Ca gốc: chủ dự án hỏi "nếu khách Ok ok liên tục bot có bị rố
 3. **Chỗ khác cùng lớp**: còn — các khối dặn khác (căn gợi ý, hẹn xem) cũng không có trạng thái "đã xong"; khách gõ "ok" khi chưa có lịch (sau lời gợi ý căn) chưa có lời dặn riêng. Model có làm đúng không chỉ kiểm được bằng chat thật.
 4. **Kiểm**: `tests/test_lich_hen_va_mat_tien.py` — khối lịch có ý "ok ok", "MỘT câu rất ngắn", "KHÔNG lặp lại câu xác nhận", "KHÔNG hỏi thêm câu nào"; bỏ ý đó thì ca đỏ (đã thử). Chưa thử trên Zalo thật.
 
+### SRS-5.1zzzzzzz163 · Thả tim lên tin khách + gọi anh / chị theo giới tính hồ sơ Zalo (23/10/2026)
+
+Ca gốc: chủ dự án (23/10): "thả tim ở câu chào, câu xác nhận tin đăng, câu ok, câu nhắn thông tin địa chỉ, biết hồ sơ rồi thì sau em chào anh hoặc em chào chị luôn khỏi phải anh/chị".
+
+1. **Thả tim**: lõi trả `tha_tim` (`TurnResult` → `ZaloBridgeResponse`); bridge gọi zca-js `api.addReaction(Reactions.HEART, {data:{msgId, cliMsgId}, threadId, type})` lên tin khách CUỐI của lượt (gom tin 2,5 s) TRƯỚC khi gửi lời trả lời. Bốn trường hợp: (a) lời chào, (b) lời đáp ngắn đồng ý / cảm ơn ("ok") — AI đọc theo nghĩa qua hai ô mới của lượt lập thao tác `loi_xa_giao` (`chao` / `dong_y`) + `loi_xa_giao_trich_dan` (cụm phải nằm trong tin khách, code kiểm bằng `_trich_dan_khop`); (c) khách duyệt bản nháp (`conv.duyet_luot == "dong_y"`, cơ chế có sẵn SRS-47); (d) lượt vừa ghi ô địa chỉ (`captured` ∩ `CAC_O_DIA_CHI = {dia_chi, duong}`). KHÔNG dò từ khoá ở code (lớp "máy đoán ý bằng từ khoá"). Thiếu `cliMsgId` (tin đến từ đường thả cảm xúc) hoặc bản zca-js không có `addReaction` → bỏ qua; hỏng thì ghi sổ lỗi MỘT lần mỗi tiến trình, không chặn lượt trả lời.
+2. **Giới tính → xưng hô**: bridge đọc `gender` (0 nam / 1 nữ) trong hồ sơ Zalo (`getUserInfo`, cùng lượt đã lấy tên), gửi `gioi_tinh` ("nam" / "nu") mỗi tin; lõi đặt `conv.xung_ho_goi_y` ("anh" / "chi", không lưu DB) và `_detect_customer_pronoun` dùng `conv.xung_ho or conv.xung_ho_goi_y` — khách TỰ xưng thì lời khách thắng. Lời chào đầu điền `{goi}` theo cách gọi suy ra ("Chào chị ạ!") và khối xưng hô anh / chị cấm chữ "anh/chị" cả khi câu mẫu viết vậy. Tắt bằng env `XUNG_HO_THEO_ZALO=tat` ở lõi.
+3. **Lớp lỗi / rủi ro**: (1) gợi ý giới tính là DỮ LIỆU KHÁCH TỰ KHAI trên Zalo, có thể ẩn hoặc sai; chưa kiểm được Zalo trả `gender` thế nào cho người ẩn giới tính (nếu mặc định 0 thì nữ ẩn bị gọi "anh") — vì vậy chỉ là gợi ý, lời khách tự xưng ghi đè, có công tắc tắt. (2) Thả tim phụ thuộc zca-js 2.2.0 (đọc trong gói tải về, chưa chạy trên VPS); bản zca-js trên VPS chưa kiểm. (3) Chỗ cùng lớp còn: sticker chào không có cụm trích nên không thả tim.
+4. **Phần kèm**: lời dặn xin lại số điện thoại sai độ dài nay nhắc cấu trúc (10 số, bắt đầu bằng 0) — nối SRS-161.
+5. **Kiểm**: `tests/test_tha_tim_gioi_tinh.py` — lời chào / "ok" do AI đọc → `tha_tim`; cụm trích không có trong tin khách → không thả; duyệt bản nháp / ô địa chỉ → thả; gợi ý Zalo bị lời khách tự xưng ghi đè; lời chào đầu "Chào chị ạ!"; công tắc tắt. Đã thử đỏ khi bỏ kiểm cụm trích, khi cho gợi ý Zalo đè lời khách, khi bỏ cờ ở `_build_result`. Bridge chỉ kiểm cú pháp (`node --check`); CHƯA thử thả tim và đọc giới tính trên Zalo thật.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

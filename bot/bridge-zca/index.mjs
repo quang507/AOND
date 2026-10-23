@@ -308,12 +308,15 @@ const HAN_CHO_NGAN = 10_000;   // hỏi lại / ghi sổ — trả về ngay
 
 // G?i m?t tin (k?m ?nh n?u b? n?o tr? v?) ? d?ng chung cho tin nh?n v? reaction
 const userProfileCache = new Map();
+// SRS-5.1zzzzzzz163: giới tính trên hồ sơ Zalo ("nam" / "nu") — gợi ý gọi khách anh / chị từ câu chào đầu; không có thì không gửi.
+const userGenderCache = new Map();
 async function layTenZalo(tid) {
   if (userProfileCache.has(tid)) return userProfileCache.get(tid);
   try {
     const res = await api.getUserInfo(String(tid));
     const p = res?.changed_profiles?.[tid] || res?.unchanged_profiles?.[tid];
     const ten = p?.displayName || p?.zaloName || "";
+    if (p?.gender === 0 || p?.gender === 1) userGenderCache.set(tid, p.gender === 1 ? "nu" : "nam");
     if (ten) {
       userProfileCache.set(tid, ten);
       return ten;
@@ -341,7 +344,26 @@ function batDangSoan(threadId) {
   return () => clearInterval(t);
 }
 
-async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker) {
+// SRS-5.1zzzzzzz163: thả tim lên tin khách (lời chào / duyệt tin / "ok" / vừa cho địa chỉ — lõi trả `tha_tim`). zca-js addReaction cần cả
+// msgId lẫn cliMsgId của tin; thiếu thì thôi. Là tô điểm: hỏng chỉ ghi sổ LẦN ĐẦU của tiến trình, không chặn lượt trả lời.
+let daGhiLoiThaTim = false;
+async function thaTim(threadId, dich) {
+  if (!dich?.msgId || !dich?.cliMsgId) return;
+  try {
+    if (typeof api.addReaction !== "function" || !zca.Reactions?.HEART) return;
+    await api.addReaction(zca.Reactions.HEART, {
+      data: { msgId: String(dich.msgId), cliMsgId: String(dich.cliMsgId) },
+      threadId: String(threadId),
+      type: ThreadType.User,
+    });
+  } catch (e) {
+    if (daGhiLoiThaTim) return;
+    daGhiLoiThaTim = true;
+    await ghiLoi("thả tim", errDetail(e));
+  }
+}
+
+async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cliMsgId) {
   const imgList = Array.isArray(imageUrls) ? imageUrls : (imageUrls ? [imageUrls] : []);
   const imgDesc = imgList.length > 1 ? `[${imgList.length} ?nh]` : (imgList.length === 1 ? "[?nh]" : "");
   console.log(`? [${threadId}] ${text || (tep ? `[file ${tep.ten ?? ""}]` : (imgDesc || "[tin nh?n]"))}`);
@@ -359,6 +381,7 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker) {
     // SRS-5.1zzzzzzz122 (22/10/2026): link ảnh sticker để bộ não ĐỌC nghĩa (khách gửi sticker "HI!" = lời chào).
     sticker_url: sticker?.url,
     sticker_text: sticker?.text,
+    gioi_tinh: userGenderCache.get(String(threadId)),
     msg_id: msgId,
     channel: "zalo_personal_test",
   };
@@ -391,6 +414,8 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker) {
     console.log(`↩ [${threadId}] ${msgId} đã trả lời và đã gửi xong — bỏ bản trùng`);
     return;
   }
+
+  if (out?.tha_tim) await thaTim(threadId, { msgId, cliMsgId });
 
   const bubbles = Array.isArray(replies) && replies.length ? replies : reply ? [reply] : [];
 
@@ -444,7 +469,7 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker) {
 const bufferTin = new Map();
 const DEBOUNCE_MS = 2500;
 
-function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker) {
+function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId) {
   const tid = String(threadId);
   const hienTai = bufferTin.get(tid) || {
     texts: [],
@@ -453,6 +478,7 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker) {
     tep: null,
     sticker: null,
     lastMsgId: null,
+    lastCliMsgId: null,
   };
   if (text) hienTai.texts.push(text.trim());
   if (imageUrl && !hienTai.imageUrls.includes(imageUrl)) {
@@ -461,6 +487,7 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker) {
   if (tep) hienTai.tep = tep;
   if (sticker?.url) hienTai.sticker = sticker;
   hienTai.lastMsgId = msgId || hienTai.lastMsgId;
+  hienTai.lastCliMsgId = cliMsgId || hienTai.lastCliMsgId;
 
   if (hienTai.timer) clearTimeout(hienTai.timer);
 
@@ -469,7 +496,7 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker) {
     const textGom = hienTai.texts.filter(Boolean).join("\n");
     if (!textGom && !hienTai.imageUrls.length && !hienTai.tep) return;
     try {
-      await handleIncoming(tid, textGom, hienTai.imageUrls, hienTai.lastMsgId, hienTai.tep, hienTai.sticker);
+      await handleIncoming(tid, textGom, hienTai.imageUrls, hienTai.lastMsgId, hienTai.tep, hienTai.sticker, hienTai.lastCliMsgId);
     } catch (e) {
       if (laPhienChet(e)) return await phienChet(errDetail(e));
       await ghiLoi("xử lý tin gom", errDetail(e));
@@ -575,6 +602,7 @@ api.listener.on("message", async (message) => {
       message.data?.msgId ? String(message.data.msgId) : undefined,
       tep,
       sticker,
+      message.data?.cliMsgId ? String(message.data.cliMsgId) : undefined,
     );
   } catch (e) {
     if (laPhienChet(e)) return await phienChet(errDetail(e));
