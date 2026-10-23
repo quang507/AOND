@@ -102,7 +102,7 @@ def test_khach_mua_thay_can_dang_co_va_tao_dong_buyers():
     eng, ai = _engine(kho, KHACH_MUA)
     eng.handle("mua-1", "Em tìm nhà phố quận 5 tầm 5 tỷ")
     assert kho.ghi("POST", "buyers")                                     # khách mua có dòng buyers
-    assert any("CĂN ĐANG CÓ TRONG RỔ" in s and "#ABCD1234" in s for s in ai.system)
+    assert any("CĂN ĐANG RAO" in s and "#ABCD1234" in s for s in ai.system)
     tim = [d for m, e, d in kho.goi if m == "POST" and e.startswith("rpc/tim_nha")]   # SRS-5.1zzzzzzz138: công cụ tìm nhà (một lượt gọi DB)
     assert tim and tim[0]["p_deal"] == "ban" and tim[0]["p_loai"] == "nha_pho" and tim[0]["p_gia_max"] == 6_000_000_000
 

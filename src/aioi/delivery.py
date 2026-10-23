@@ -15,7 +15,8 @@ import re
 # A comfortable single Zalo bubble. Shorter replies are sent whole; longer ones split.
 DEFAULT_MAX_CHARS = 100   # SRS-5.1zzzzzzz136 (22/10: "nhắn dài thì tách ra"): 160 → 100, câu khen dài và câu hỏi thành hai tin
 
-_SENTENCE_BREAK = re.compile(r"(?<=[.!?…])\s+")
+# SRS-5.1zzzzzzz145: không cắt sau chữ viết tắt địa chỉ ("P. An Nhơn" bị cắt thành hai bong bóng "…Quang Trung, P." / "An Nhơn…", chat thử 23/10).
+_SENTENCE_BREAK = re.compile(r"(?<!\bP\.)(?<!\bQ\.)(?<!\bTP\.)(?<!\bTp\.)(?<!\bTT\.)(?<=[.!?…])\s+")
 
 
 def _is_formatted_post(text: str) -> bool:

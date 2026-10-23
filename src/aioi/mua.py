@@ -17,12 +17,17 @@ có thật, đang hiện trên web, rồi mới ghi.
 from __future__ import annotations
 
 import logging
+import os
 import re
 import time
 import urllib.parse
 from typing import Any, Callable
 
 log = logging.getLogger("aioi.mua")
+
+# Link trang chi tiết căn đưa cho khách (SRS-5.1zzzzzzz145). `nhadat.cc` chưa trỏ về web (mọi đường dẫn 404, kiểm 23/10/2026) nên dùng cùng mặc định
+# với `lib/format.ts` SITE_URL; đổi tên miền thì đặt biến môi trường AIOI_SITE_URL trên VPS, không sửa chữ ở chỗ khác.
+SITE_URL = os.environ.get("AIOI_SITE_URL", "https://aioinhadat.vercel.app").rstrip("/")
 
 # Trạng thái tin còn hiện cho khách (cùng bộ với `lib/supabase.ts` TRANG_THAI_HIEN).
 TRANG_THAI_HIEN = ("dang_ban", "dang_quan_tam", "da_coc")
@@ -157,13 +162,22 @@ class KhoNguoiMua:
             c = dict(r.get("can") or {})
             c["_ly_do"] = r.get("ly_do") or ""
             can.append(c)
+        # SRS-5.1zzzzzzz145: `tim_nha` nới trần giá 20 % nhưng giá không là điểm — căn vượt ngân sách có thể đứng TRÊN căn đúng ngân sách
+        # (chat thử 23/10: "dưới 6 tỷ" → 6,2 tỷ xếp trước 5,5 tỷ). Đánh dấu mức vượt và xếp căn đúng ngân sách lên trước (sắp ổn định).
+        ns = self._ngan_sach_vnd(str(getattr(lead, "ngan_sach", None) or f.get("ngan_sach") or ""))
+        if ns:
+            for c in can:
+                g = c.get("price_vnd")
+                if isinstance(g, (int, float)) and g > ns:
+                    c["_vuot_ngan_sach"] = max(1, round((g / ns - 1) * 100))
+            can.sort(key=lambda c: 1 if c.get("_vuot_ngan_sach") else 0)
         if len(nho) > 200:
             nho.clear()
         nho[khoa] = (hien, can)
         return can
 
-    def _gia_toi_da(self, ns: str) -> int | None:
-        """Trần giá (đồng) từ chữ ngân sách của khách, nới 20 % — `parse_vnd` là hàm cố định của DB nên nhớ theo chữ (khỏi gọi mỗi lượt)."""
+    def _ngan_sach_vnd(self, ns: str) -> int | None:
+        """Ngân sách khách nêu (đồng) — `parse_vnd` là hàm cố định của DB nên nhớ theo chữ (khỏi gọi mỗi lượt)."""
         ns = ns.strip()
         if not ns:
             return None
@@ -174,8 +188,13 @@ class KhoNguoiMua:
             except Exception as e:  # noqa: BLE001
                 log.warning("parse_vnd lỗi: %s", e)
                 return None
-        tran = nho[ns]
-        return int(tran * 1.2) if isinstance(tran, (int, float)) and tran > 0 else None
+        v = nho[ns]
+        return int(v) if isinstance(v, (int, float)) and v > 0 else None
+
+    def _gia_toi_da(self, ns: str) -> int | None:
+        """Trần giá (đồng) đưa vào `tim_nha`: ngân sách nới 20 %."""
+        v = self._ngan_sach_vnd(ns)
+        return int(v * 1.2) if v else None
 
     def _vec_nhu_cau(self, lead: Any) -> list[float] | None:
         """Vector câu tả nhu cầu của khách. Không có lời tả → KHÔNG gọi Gemini (tiết kiệm quota). Lỗi / hết hạn mức → không vector, vẫn tìm."""
@@ -383,16 +402,33 @@ def dong_can(c: dict) -> str:
         phan.append("(đã có khách cọc)")
     if c.get("_ly_do"):
         phan.append(f"vì sao hợp: {c['_ly_do']}")
+    if c.get("_vuot_ngan_sach"):
+        phan.append(f"VƯỢT ngân sách khách nêu khoảng {c['_vuot_ngan_sach']}%")
+    if c.get("code"):
+        phan.append(f"link {SITE_URL}/nha-dat/{c['code']}")
     return " · ".join(p for p in phan if p)
 
 
 def khoi_can_cho_khach(can: list[dict]) -> str:
+    """Khối căn đưa cho model phía mua. SRS-5.1zzzzzzz145 (chủ dự án 23/10: "sợ sếp chửi", "sếp thích trả lời như người"): bản trước dạy model
+    "luôn kèm mã #" và đặt tên khối "RỔ" — model đọc mã tin, nói "trong rổ", liệt kê bằng dấu "·"; và viết "em" giữa lời xưng "cháu"."""
     if not can:
-        return ("\nRỔ HÀNG: chưa có căn nào đang rao khớp nhu cầu khách. KHÔNG giới thiệu căn nào, KHÔNG bịa căn; nói em sẽ báo khi "
-                "có căn phù hợp.\n")
-    return ("\nCĂN ĐANG CÓ TRONG RỔ (chỉ được giới thiệu các căn dưới đây, luôn kèm mã #; không đọc số nhà; thông tin không có "
-            "ở dòng của căn thì nói em hỏi chủ nhà rồi báo lại, KHÔNG đoán). Mỗi căn có \"vì sao hợp\" ghép từ dữ liệu: chỉ kể lại ĐÚNG, không thêm; "
-            "căn ghi \"KHÁC khu vực khách chọn\" thì nói rõ cho khách biết đây là căn khu khác:\n" + "\n".join(f"- {dong_can(c)}" for c in can) + "\n")
+        return ("\nCĂN ĐANG RAO: chưa có căn nào khớp nhu cầu khách. KHÔNG giới thiệu căn nào, KHÔNG bịa căn; nói sẽ báo khi có căn phù hợp "
+                "(xưng hô y như các lượt trước).\n")
+    return ("\nCĂN ĐANG RAO (chỉ được giới thiệu các căn dưới đây; không đọc số nhà; thông tin không có ở dòng của căn thì nói sẽ hỏi chủ nhà "
+            "rồi báo lại, KHÔNG đoán). CÁCH NÓI — như người môi giới nhắn Zalo cho khách, không như bảng liệt kê:\n"
+            "  • Mã # CHỈ để ghi thao tác: KHÔNG nói mã ra lời, không viết dấu #. Không nói chữ \"rổ\".\n"
+            "  • Giới thiệu TỐI ĐA 2 căn tốt nhất (khách đòi thêm mới đưa thêm). Mỗi căn MỘT câu ngắn: khu vực, diện tích, giá, phòng ngủ, điểm hợp "
+            "nhu cầu — rồi dán đúng LINK của căn đó (nguyên văn dòng \"link …\" của căn) để khách xem hình và chi tiết. Không dùng dấu \"·\" "
+            "hay gạch đầu dòng, không viết tắt \"P.\" \"Q.\" (viết \"phường\", \"quận\").\n"
+            "  • Mỗi căn có \"vì sao hợp\" ghép từ dữ liệu: chỉ kể lại ĐÚNG, không thêm. Căn ghi \"KHÁC khu vực khách chọn\" hoặc \"VƯỢT ngân "
+            "sách\" thì đặt SAU các căn đúng và nói một câu ngắn cho khách biết (khác khu nào / vượt khoảng bao nhiêu phần trăm); chỉ đưa các căn "
+            "này khi chưa đủ 2 căn đúng.\n"
+            "  • Xưng hô GIỮ NGUYÊN như các lượt trước, không đổi qua lại giữa em / cháu / tôi trong cùng một tin. Không tua lại toàn bộ yêu cầu "
+            "của khách.\n"
+            "  • Cuối cùng MỘT lời khen ngắn về cách khách chọn, gắn đúng điều khách ĐÃ nói (số người trong nhà, khu, ngân sách) — không bịa "
+            "thị trường, không bình luận giá, không thêm chi tiết khách chưa nói — rồi tối đa MỘT câu hỏi:\n"
+            + "\n".join(f"- {dong_can(c)}" for c in can) + "\n")
 
 
 def khoi_viec_vua_ghi(viec: list[str]) -> str:

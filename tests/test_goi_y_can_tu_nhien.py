@@ -1,0 +1,120 @@
+"""SRS-5.1zzzzzzz145: bot giới thiệu căn cho khách MUA phải nói như người, không lộ chữ nội bộ. Chủ dự án 23/10/2026 xem chat thử: "đưa cả mã tin vậy sợ sếp chửi,
+sếp thích trả lời như người", "đưa luôn link trên web", "mỗi tin 1–2 hình", "khen một cái". Lớp lỗi: prompt đưa model chữ NỘI BỘ ("RỔ", "luôn kèm mã #", "em" giữa lời
+xưng "cháu") và model nói lại nguyên văn; bộ tách tin cắt sau "P." làm đứt địa chỉ; `tim_nha` nới giá 20 % mà giá không là điểm nên căn vượt ngân sách đứng trên căn đúng
+ngân sách. Đỏ khi: lộ mã / "rổ" / "em" trong khối, thiếu link, căn vượt giá đứng trước, địa chỉ bị cắt giữa chừng, ảnh gửi nhầm căn / quá số lượng / gửi lại / cho người bán."""
+import pytest
+
+from aioi.anh_can import anh_can_gui_kem, ma_can_trong_loi
+from aioi.anh_du_an import BoNhoAnhDaGui
+from aioi.delivery import chunk_reply
+from aioi.mua import SITE_URL, KhoNguoiMua, dong_can, khoi_can_cho_khach
+from aioi.schema import BuyerLead
+
+
+def _can(code, gia, **kw):
+    return {"code": code, "property_type": "nha_pho", "street": "Phạm Văn Chiêu", "ward": "Phường An Hội Tây", "district": "Quận Gò Vấp",
+            "area_m2": 56, "price_raw": f"{gia / 1e9:g} tỷ".replace(".", ","), "price_vnd": int(gia), "bedrooms": 4, **kw}
+
+
+def test_khoi_can_noi_nhu_nguoi_khong_lo_chu_noi_bo():
+    khoi = khoi_can_cho_khach([_can("A1", 5.5e9)])
+    assert f"link {SITE_URL}/nha-dat/A1" in khoi                      # mỗi căn có link để khách xem hình / chi tiết
+    assert "#A1" in khoi                                              # mã vẫn có cho thao tác (quan tâm / hẹn xem), nhưng...
+    assert "KHÔNG nói mã ra lời" in khoi and "Không nói chữ \"rổ\"" in khoi   # ...cấm nói ra
+    assert "RỔ" not in khoi and "luôn kèm mã" not in khoi            # chữ nội bộ cũ đã bỏ
+    assert "TỐI ĐA 2 căn" in khoi and "MỘT lời khen" in khoi          # ngắn + khen một câu
+    assert "nói em" not in khoi.lower()                               # "em" cứng làm model xưng lẫn với "cháu"
+    rong = khoi_can_cho_khach([])
+    assert "RỔ" not in rong and "nói em" not in rong.lower() and "KHÔNG bịa căn" in rong
+
+
+class _Kho(KhoNguoiMua):
+    is_configured = True
+
+    def __init__(self, hang):
+        self._hang = hang
+        self.so_parse = 0
+
+    def _request(self, method, endpoint, data=None, prefer=None):
+        if endpoint == "rpc/parse_vnd":
+            self.so_parse += 1
+            return 6_000_000_000
+        if endpoint == "rpc/tim_nha":
+            return self._hang
+        return []
+
+
+def _hang(*c):
+    return [{"can": x, "diem": 9 - i, "ly_do": "đúng khu vực khách chọn"} for i, x in enumerate(c)]
+
+
+def test_can_vuot_ngan_sach_xep_sau_va_ghi_ro_muc_vuot():
+    # đúng như chat thử 23/10: "dưới 6 tỷ" — tim_nha trả 6,2 tỷ đứng trước 5,5 tỷ
+    kho = _Kho(_hang(_can("C44", 6.2e9), _can("C16", 5.5e9), _can("C43", 6.5e9)))
+    can = kho.can_phu_hop(BuyerLead(loai_giao_dich="mua", ngan_sach="dưới 6 tỷ", khu_vuc="Gò Vấp"))
+    assert [c["code"] for c in can] == ["C16", "C44", "C43"]          # đúng ngân sách lên trước, trong nhóm vượt giữ thứ hạng của tim_nha
+    assert "_vuot_ngan_sach" not in can[0] and can[1]["_vuot_ngan_sach"] == 3 and can[2]["_vuot_ngan_sach"] == 8
+    assert "VƯỢT ngân sách khách nêu khoảng 3%" in dong_can(can[1]) and "VƯỢT" not in dong_can(can[0])
+    assert kho.so_parse == 1                                          # vẫn MỘT lượt parse_vnd (nhớ theo chữ), không thêm lượt gọi DB
+
+
+def test_khong_co_ngan_sach_thi_giu_nguyen_thu_tu():
+    kho = _Kho(_hang(_can("C44", 6.2e9), _can("C16", 5.5e9)))
+    can = kho.can_phu_hop(BuyerLead(loai_giao_dich="mua"))
+    assert [c["code"] for c in can] == ["C44", "C16"] and not any("_vuot_ngan_sach" in c for c in can)
+
+
+def test_dia_chi_viet_tat_khong_bi_cat_giua_chung():
+    cau = ("1. Nhà phố Quang Trung, P. An Nhơn, Gò Vấp · 75 m² · 6,2 tỷ · 4 phòng ngủ · sổ hồng · xe hơi vào tận nơi. "
+           "Lưu ý giá này hơi vượt 6 tỷ một chút.")
+    chunks = chunk_reply(cau)
+    assert len(chunks) >= 2 and not any(c.endswith(("P.", "Q.", "TP.")) for c in chunks)
+    assert any("P. An Nhơn" in c for c in chunks)                     # địa chỉ nằm trọn trong MỘT bong bóng
+    assert not any(c.endswith("TP.") for c in chunk_reply("Căn này ở TP. Hồ Chí Minh, gần chợ Bến Thành, sổ hồng riêng, hẻm xe hơi vào tận nơi nhé anh. Anh xem thử nha."))
+    # câu thường vẫn tách như cũ
+    assert chunk_reply("Em gửi anh hai căn nhé. Anh xem giúp em căn đầu trước, rồi mình chọn tiếp ạ. Anh rảnh lúc nào để đi xem?" * 2)[1:]
+
+
+L = lambda ma: f"{SITE_URL}/nha-dat/{ma}"   # noqa: E731
+
+
+def test_ma_can_doc_tu_link_theo_thu_tu_bo_trung():
+    r = f"Căn này nha cô: {L('SEED0016')} còn căn này {L('seed0044')} và lại {L('SEED0016')}"
+    assert ma_can_trong_loi(r) == ["SEED0016", "SEED0044"]
+    assert ma_can_trong_loi("em chưa có căn nào") == []
+
+
+def _goi(dong):
+    def goi(ma):
+        return [d for d in dong if d["code"] in ma]
+    return goi
+
+
+KHO_ANH = [{"code": "SEED0016", "url": f"https://x/{i}.jpg"} for i in range(5)] + [{"code": "SEED0044", "url": "https://x/44.jpg"},
+                                                                                 {"code": "SEED0044", "url": "http://x/loi.jpg"}, {"code": "KHAC", "url": "https://x/k.jpg"}]
+
+
+def test_anh_toi_da_hai_moi_can_dung_can_dung_thu_tu_va_chi_https():
+    r = f"cô xem {L('SEED0044')} và {L('SEED0016')}"
+    anh = anh_can_gui_kem("k1", "buyer", r, goi=_goi(KHO_ANH), bo_nho=BoNhoAnhDaGui())
+    assert anh == ["https://x/44.jpg", "https://x/0.jpg", "https://x/1.jpg"]   # theo thứ tự bot nhắc; 0044 chỉ có 1 ảnh https; 0016 cắt còn 2
+    assert not any("KHAC" in a or a.startswith("http://") for a in anh)
+
+
+def test_anh_khong_gui_lai_khong_gui_cho_nguoi_ban_loi_thi_bo_qua():
+    bn, r = BoNhoAnhDaGui(), f"xem {L('SEED0016')}"
+    assert anh_can_gui_kem("k1", "buyer", r, goi=_goi(KHO_ANH), bo_nho=bn)
+    assert anh_can_gui_kem("k1", "buyer", r, goi=_goi(KHO_ANH), bo_nho=bn) == []          # cùng khách, cùng căn: không gửi lại
+    assert anh_can_gui_kem("k2", "buyer", r, goi=_goi(KHO_ANH), bo_nho=bn)                # khách khác vẫn nhận
+    assert anh_can_gui_kem("k3", "seller", r, goi=_goi(KHO_ANH), bo_nho=BoNhoAnhDaGui()) == []
+    assert anh_can_gui_kem("k4", "buyer", "em chưa có căn nào", goi=_goi(KHO_ANH), bo_nho=BoNhoAnhDaGui()) == []
+
+    def hong(_):
+        raise RuntimeError("mạng")
+    assert anh_can_gui_kem("k5", "buyer", r, goi=hong, bo_nho=BoNhoAnhDaGui()) == []      # lỗi → không ảnh, không ném
+    assert len(anh_can_gui_kem("k6", "buyer", " ".join(L(f"SEED00{n}") for n in (16, 44, 17, 18)), goi=_goi(KHO_ANH), bo_nho=BoNhoAnhDaGui())) <= 4
+
+
+@pytest.mark.parametrize("ten", ["SITE_URL"])
+def test_site_url_khong_phai_nhadat_cc_chua_tro_ve_web(ten):
+    assert SITE_URL.startswith("https://") and "nhadat.cc" not in SITE_URL
