@@ -104,7 +104,7 @@ from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
-from .mua import co_tieu_chi, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_viec_vua_ghi, lenh_tra_loi, tim_sdt
+from .mua import co_tieu_chi, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_viec_vua_ghi, lenh_tra_loi, tim_sdt
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
@@ -2053,7 +2053,8 @@ class Engine:
             system = build_buyer_chat_system(conv.assistant.name, conv.buyer_lead, next_field)
             viec, can = self._viec_mua(conv, text)
             if getattr(self._convstore, "can_phu_hop", None) is not None:
-                system += khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
+                system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
+                           + khoi_lich_dang_cho(conv.y_luot.get("lich_cho")))
             system += khoi_can_nguoi(conv) + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
             system += self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
@@ -3696,6 +3697,7 @@ class Engine:
                         mua.get("quan_tam") is True, len([m for m in (mua.get("ma_can") or []) if isinstance(m, str)]),
                         bool(self._ma_can_bot_vua_nhac(conv)), len(nhac), bool(bid))
         if not (bid and nhac):
+            conv.y_luot["lich_cho"] = self._lich_cho(kho, bid)
             return viec, can[:4]
         dau = nhac[0]
         hen = str(mua.get("hen_xem") or "").strip()
@@ -3714,7 +3716,14 @@ class Engine:
                 viec.append("xin khách MỘT số điện thoại để người phụ trách gọi xác nhận lịch (một câu ngắn; khách không muốn để thì thôi, đừng nài)")
         if hoi and kho.ghi_hoi_chu_nha(bid, dau, hoi):
             viec.append(f"chuyển câu \"{hoi}\" về #{dau.get('code')} cho chủ nhà — có trả lời em báo lại khách ngay")
+        conv.y_luot["lich_cho"] = self._lich_cho(kho, bid)
         return viec, can[:4]
+
+    @staticmethod
+    def _lich_cho(kho, bid) -> list[dict]:
+        """Lịch hẹn xem khách đang chờ xác nhận (đã ghi DB) — đưa vào lời đáp để bot không hỏi lại / tự thêm ngày (SRS-5.1zzzzzzz157)."""
+        lay = getattr(kho, "lich_dang_cho", None)
+        return lay(bid) if lay is not None and bid else []
 
     def _ap_dung_ke_hoach(self, conv: Conversation, plan: dict) -> tuple[list[str], list[tuple]]:
         changed: set[str] = set()

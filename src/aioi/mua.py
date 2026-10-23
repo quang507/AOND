@@ -324,10 +324,15 @@ class KhoNguoiMua:
             return False
 
     def ghi_hen_xem(self, buyer_id: str, can: dict, gio: str) -> bool:
-        """Một lịch đang chờ cho mỗi (khách, căn): đã có lịch `proposed` / `pending` thì không tạo thêm."""
+        """Một lịch đang chờ cho mỗi (khách, căn): đã có lịch `proposed` / `pending` thì không tạo thêm — nhưng giờ khách nói THÊM sau đó
+        ("chiều" rồi "4h") được gộp vào lịch cũ (SRS-5.1zzzzzzz157: chị Ngân 23/10 nói "chiều" lúc ghi lịch, "4h" nói sau không vào DB nên
+        người phụ trách chỉ thấy "chiều")."""
         try:
-            co = self._get(f"viewings?buyer_id=eq.{buyer_id}&listing_id=eq.{can['id']}&status=in.(proposed,pending)&select=id")
+            co = self._get(f"viewings?buyer_id=eq.{buyer_id}&listing_id=eq.{can['id']}&status=in.(proposed,pending)&select=id,time_text")
             if co:
+                gop = gop_gio_hen(co[0].get("time_text"), gio)
+                if gop != (co[0].get("time_text") or ""):
+                    self._request("PATCH", f"viewings?id=eq.{co[0]['id']}", data={"time_text": gop}, prefer="return=minimal")
                 return True
             self._post("viewings", {"listing_id": can["id"], "listing_code": can.get("code"), "buyer_id": buyer_id,
                                     "time_text": gio[:200], "status": "proposed", "source": "bot_python"},
@@ -336,6 +341,16 @@ class KhoNguoiMua:
         except Exception as e:  # noqa: BLE001
             log.warning("ghi_hen_xem lỗi: %s", e)
             return False
+
+    def lich_dang_cho(self, buyer_id: str) -> list[dict]:
+        """Lịch hẹn xem khách này đang chờ xác nhận (mã căn + chữ giờ đã ghi) — cho lời đáp biết lịch đã có gì, khỏi hỏi lại / tự thêm ngày."""
+        try:
+            rows = self._get(f"viewings?buyer_id=eq.{buyer_id}&status=in.(proposed,pending)&select=listing_code,time_text"
+                             "&order=created_at.desc&limit=3")
+            return [r for r in rows if isinstance(r, dict) and r.get("time_text")]
+        except Exception as e:  # noqa: BLE001
+            log.warning("lich_dang_cho lỗi: %s", e)
+            return []
 
     def ghi_sdt_hen_xem(self, buyer_id: str, sdt: str) -> bool:
         """Khách để số điện thoại sau khi hẹn xem (SRS-5.1zzzzzzz148, chủ dự án 23/10: lúc hẹn xem thì lấy được số): ghi vào lịch đang chờ
@@ -527,6 +542,34 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
             "cần hỏi tiếp ở trên, chuyển xuống cuối tin. Căn đã giới thiệu ở các tin trước thì KHÔNG nhắc lại, trừ khi khách hỏi; nếu không "
             "còn căn mới thì chỉ hỏi câu kế:\n"
             + "\n".join(f"- {dong_can(c)}" for c in can) + "\n")
+
+
+def gop_gio_hen(cu: str | None, moi: str) -> str:
+    """Gộp chữ giờ hẹn khách nói thêm vào chữ đã ghi: đã có trong chữ cũ thì giữ, chữ cũ nằm trong chữ mới thì lấy chữ mới, còn lại nối
+    ("chiều" + "4h" → "chiều, 4h"). Chỉ so chữ, không đoán ý; tối đa 200 ký tự như cột."""
+    cu, moi = (cu or "").strip(), (moi or "").strip()
+    if not moi or moi.lower() in cu.lower():
+        return cu
+    if not cu or cu.lower() in moi.lower():
+        return moi[:200]
+    return f"{cu}, {moi}"[:200]
+
+
+def khoi_lich_dang_cho(lich: list[dict] | None) -> str:
+    """Khối đưa lịch hẹn xem ĐÃ GHI cho model phía mua (SRS-5.1zzzzzzz157). Chat chị Ngân 23/10: khách chỉ nói "ngày nào cũng rảnh", "chiều",
+    "4h", bot tự viết "chiều nay" rồi "xác nhận giúp em 4 giờ chiều nay…", khách đáp "có" thì bot hỏi "ngày nào" — tự mâu thuẫn vì model không
+    thấy lịch đã ghi gì và tự thêm "nay"."""
+    if not lich:
+        return ""
+    dong = "\n".join(f"- #{x.get('listing_code') or '?'}: \"{x['time_text']}\"" for x in lich if x.get("time_text"))
+    return ("\nLỊCH HẸN XEM ĐÃ GHI (đọc kỹ trước khi hỏi giờ / ngày; chữ trong ngoặc là đúng những gì khách đã nói):\n" + dong + "\n"
+            "  • CHỈ nói ngày (hôm nay / chiều nay / ngày mai / thứ …) khi chữ ở trên hoặc lời khách có ngày đó. Khách mới nói \"chiều\" hay \"4h\" "
+            "thì CHƯA có ngày — KHÔNG tự thêm \"nay\", hỏi ngày MỘT câu ngắn; khách nói ngày nào cũng được thì gợi ý MỘT ngày gần nhất cho khách "
+            "gật.\n"
+            "  • Đã đủ ngày VÀ giờ thì chốt, KHÔNG hỏi lại ngày / giờ; xác nhận đúng MỘT lần dạng \"Chị xác nhận giúp em, <ngày giờ> mình đến xem "
+            "căn <đường / khu> đúng không ạ?\" (không hỏi \"có phù hợp không\"). Khách đã đáp \"có / đúng\" thì cảm ơn ngắn và nói người phụ trách "
+            "sẽ gọi xác nhận — không hỏi thêm ngày giờ.\n"
+            "  • Lịch mới ghi chờ xác nhận: KHÔNG nói đã chốt với chủ nhà.\n")
 
 
 def khoi_viec_vua_ghi(viec: list[str]) -> str:
