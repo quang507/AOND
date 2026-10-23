@@ -8616,6 +8616,16 @@ Ca gốc: chủ dự án (23/10): "bỏ qua bước ctv luôn để đưa thông
 3. **Còn hở**: nhắc của lịch xem vẫn chưa nhắn thẳng chủ nhà (không gắn `seller_id`); ràng buộc duy nhất `info_requests_mot_cau_cho_idx (listing_id, question)` chỉ cho một câu `xac_nhan_lich` chờ mỗi căn — căn còn câu chờ cũ thì lịch mới không tạo câu mới (nhắc admin vẫn tạo).
 4. **Kiểm**: `tests/test_lich_xem_thang_admin.py` soi chữ migration (bản chạy thật không có test tự động); kiểm thật trên DB trong giao dịch hoàn tác (kết quả trong PR).
 
+### SRS-5.1zzzzzzz166 · Prompt caching theo ranh giới ổn định / đổi mỗi lượt (23/10/2026)
+
+Ca gốc: chủ dự án (23/10): "Prompt Caching và Batch API cái nào áp dụng dc thì áp dụng". Số đo `bot_usage_model` (claude-haiku-5-5): 23/10 `cache_write` 1.732.406 ≥ `cache_read` 1.407.930 token (218 lượt); 22/10 1.593.604 / 1.463.452. Nguyên nhân: `ClaudeProvider._sys` bọc CẢ chuỗi system thành MỘT khối có điểm cache ở cuối, mà đuôi chuỗi đổi mỗi lượt (ô hỏi tiếp, khối căn, khối lịch hẹn…) nên khác lượt trước là ghi lại cả chuỗi (giá ghi 1,25× giá thường) và chỉ đọc được khi gọi lại NGUYÊN chuỗi trong cùng lượt.
+
+1. **Lớp lỗi**: điểm cache đặt ở cuối chuỗi có đuôi đổi — mọi byte phía trước đuôi (chính sách 9 nghìn chữ, `OPERATIONS_SYSTEM` 16,7 nghìn chữ) bị ghi lại thay vì đọc.
+2. **Sửa**: `llm/base.py` thêm `RANH_GIOI_CACHE`, `tach_on_dinh`, `bo_ranh_gioi`. Chỗ dựng prompt đặt dấu SAU đoạn chữ cố định: `build_chat_system` (sau `LUAT_TACH_Y`, trước khối dự án), `build_buyer_chat_system` (trước `ask_line`), lượt lập thao tác `_lap_ke_hoach` (sau `OPERATIONS_SYSTEM`, chung mọi khách). `ClaudeProvider._sys` cắt hai khối, điểm cache ở cuối khối ổn định và cuối cả chuỗi (gọi lại trong cùng lượt vẫn trúng như trước); không có dấu thì một khối như cũ; khối rỗng bỏ. `DuPhongProvider._hoi` bỏ dấu trước khi gửi Gemini / Groq. Không đổi chữ prompt, không đổi thứ tự.
+3. **Chỗ khác cùng lớp (chưa làm)**: `build_listing_proposal_system`, `build_fee_followup_system`, `EXTRACTION_SYSTEM` (6,4 nghìn chữ, lượt bóc tách) và tin nhắn hội thoại (điểm cache theo lịch sử) chưa đặt dấu. Phần chính sách của `build_chat_system` đứng SAU khối dự án (quy tắc phản hồi + `LUAT_KHEN`, khoảng 5,5 nghìn chữ) chưa vào khối ổn định vì phải đổi thứ tự prompt — cần bắn thử trước.
+4. **Batch API**: không áp dụng — chat Zalo cần trả lời trong vài giây, Batch xử lý bất đồng bộ (tới 24 giờ). Việc đọc ảnh / tài liệu (`describe_media`, `extract_media`) chạy ngay khi khách gửi nên cũng không hợp. Chưa có công việc nền nào gọi Claude để dồn vào Batch.
+5. **Kiểm**: `tests/test_cache_ranh_gioi.py` (6 ca; tắt phần cắt trong `_sys` thì đỏ 2 ca). Hiệu quả thật CHƯA đo — sau khi triển khai so `cache_write` / `cache_read` mỗi ngày ở `bot_usage_model`; Haiku 5.5 có mức tối thiểu 512 token một điểm cache (theo tài liệu skill claude-api, nhắc kiểm lại với tài liệu chính thức).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

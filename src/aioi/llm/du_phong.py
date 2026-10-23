@@ -22,7 +22,7 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-from .base import LLMProvider, Message, ToolTurn
+from .base import LLMProvider, Message, ToolTurn, bo_ranh_gioi
 from .claude import chuan_theo_schema
 
 log = logging.getLogger(__name__)
@@ -165,6 +165,7 @@ class DuPhongProvider(LLMProvider):
 
     def _hoi(self, n: Nguon, model: str, khoa: str, system: str, tin: list[dict[str, Any]], max_tokens: int,
              schema: dict[str, Any] | None = None) -> str:
+        system = bo_ranh_gioi(system)   # dấu cắt cache chỉ dành cho Claude (SRS-5.1zzzzzzz166)
         than: dict[str, Any] = {"model": model, "messages": [{"role": "system", "content": system}, *tin],
                                 "max_completion_tokens": max(max_tokens, 900), "temperature": 0.6}
         if n.ten == "Groq":

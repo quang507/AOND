@@ -12,6 +12,7 @@ from typing import Any
 from .projects import Project, UnitType
 from .revenue import SellerRole
 from . import cau_mau
+from .llm.base import RANH_GIOI_CACHE
 from .schema import (
     CORE_FIELDS,
     CORE_THEO_LOAI,
@@ -524,7 +525,7 @@ def build_chat_system(
 {CONVERSATION_POLICY}
 
 {LUAT_TACH_Y}
-{project_block}
+{RANH_GIOI_CACHE}{project_block}
 
 QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠM):
 1. ĐỘ DÀI: KHOẢNG 25 - 40 TỪ (Vừa vặn, tự nhiên, ấm áp, không cộc lốc nhưng không dông dài). Lượt này KHÔNG soạn bài đăng rao: bản
@@ -598,7 +599,7 @@ QUY TẮC PHẢN HỒI:
   của nơi đó (đi lại, tiện ích) — kèm việc chính của lượt, không câu ghi nhận "em ghi nhận". CẤM nhận xét tài chính ("vay 50% là hợp lý") và CẤM khen lựa chọn là
   đáng mua / sinh lời (em không có số liệu thị trường). Khách TỰ hỏi lãi suất / sinh lời thì chỉ nói số ở khối SỐ LIỆU THAM KHẢO bên dưới (nếu có), kèm "tham khảo".
 
-{ask_line}"""
+{RANH_GIOI_CACHE}{ask_line}"""
 
 
 def khoi_khen_theo_luot(n: int) -> str:

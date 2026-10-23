@@ -14,7 +14,7 @@ from typing import Any
 from ..config import Settings
 from ..imaging import downscale_image
 from ..so_token import SoToken
-from .base import LLMProvider, Message, ToolCall, ToolTurn
+from .base import LLMProvider, Message, ToolCall, ToolTurn, tach_on_dinh
 
 log = logging.getLogger(__name__)
 
@@ -123,11 +123,17 @@ class ClaudeProvider(LLMProvider):
 
     @staticmethod
     def _sys(system: str) -> list[dict[str, Any]]:
-        """Wrap the system prompt as a cacheable block. The system (persona + the big project
+        """Wrap the system prompt as cacheable block(s). The system (persona + the big project
         MEMORY block) is re-sent on every extract call and every agent-loop step; prompt caching
         makes those repeats ~10% of the input cost, with NO change to the output. Ephemeral cache
-        lives ~5 min — long enough for a loop turn and back-to-back messages in one conversation."""
-        return [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
+        lives ~5 min — long enough for a loop turn and back-to-back messages in one conversation.
+
+        SRS-5.1zzzzzzz166: chỗ dựng prompt đặt `RANH_GIOI_CACHE` sau đoạn chữ cố định thì cắt hai khối — điểm cache thứ nhất ở cuối
+        khối ổn định (lượt sau, khách khác dùng lại được dù đuôi đổi), điểm thứ hai ở cuối cả chuỗi (gọi lại trong CÙNG lượt vẫn trúng
+        như trước). Không có dấu thì một khối như cũ. Khối rỗng bị API từ chối nên bỏ."""
+        on_dinh, dong = tach_on_dinh(system)
+        khoi = [{"type": "text", "text": t, "cache_control": {"type": "ephemeral"}} for t in (on_dinh, dong) if t.strip()]
+        return khoi or [{"type": "text", "text": system or " ", "cache_control": {"type": "ephemeral"}}]
 
     def chat(self, system: str, messages: list[Message], max_tokens: int = 256) -> str:
         resp = self._tao("chat",

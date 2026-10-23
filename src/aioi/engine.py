@@ -44,6 +44,7 @@ from .fetch import (
     sniff_media_type,
 )
 from .llm import LLMProvider, Message
+from .llm.base import RANH_GIOI_CACHE
 from . import bulk
 from . import inventory as inv
 from .projects import (
@@ -3455,7 +3456,7 @@ class Engine:
         # data) instead of fabricating a blank căn. When the reference needs a guess it isn't
         # sure of, it leaves operations empty so the reply can confirm first.
         project = self.project_for(conv.prop, conv)
-        system = OPERATIONS_SYSTEM + self._project_memory_block(project)
+        system = OPERATIONS_SYSTEM + RANH_GIOI_CACHE + self._project_memory_block(project)   # SRS-5.1zzzzzzz166: 16 nghìn chữ cố định chung mọi khách
         if project is not None and project.docs:
             system += (
                 "KHI LẬP THAO TÁC từ bộ nhớ: khi khách rõ ràng THÊM/nhắc một căn CÓ trong bảng "

@@ -6,6 +6,24 @@ from dataclasses import dataclass
 from typing import Any
 
 
+# Ranh giới "phần ỔN ĐỊNH | phần ĐỔI MỖI LƯỢT" trong chuỗi system (SRS-5.1zzzzzzz166, prompt caching). Chỗ dựng prompt đặt dấu này ngay
+# SAU đoạn chữ cố định; bản Claude cắt tại đó thành hai khối và đặt điểm cache ở cuối khối ổn định, các bản khác (Gemini / Groq / mock)
+# bỏ dấu đi — chữ đưa cho model sau khi bỏ dấu giống HỆT chữ lúc chưa có dấu.
+RANH_GIOI_CACHE = "<<RANH_GIOI_CACHE>>"
+
+
+def tach_on_dinh(system: str) -> tuple[str, str]:
+    """(phần ổn định, phần còn lại) cắt ở dấu đầu tiên; không có dấu thì (system, "")."""
+    truoc, dau, sau = system.partition(RANH_GIOI_CACHE)
+    if not dau:
+        return system, ""
+    return truoc, sau.replace(RANH_GIOI_CACHE, "")
+
+
+def bo_ranh_gioi(system: str) -> str:
+    return system.replace(RANH_GIOI_CACHE, "")
+
+
 @dataclass
 class Message:
     role: str  # "user" | "assistant"
