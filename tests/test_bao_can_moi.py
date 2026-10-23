@@ -27,6 +27,7 @@ class KhoGia(SupabaseConversationStore):
     def __init__(self, tins, khach=(NGAN,)):
         super().__init__(url="https://x.invalid", key="k")
         self.tins, self.khach, self.reminders, self.n = list(tins), list(khach), [], 0
+        self.anh, self.loi_anh = {}, False   # mã căn → link ảnh; loi_anh: truy vấn ảnh hỏng
 
     def _request(self, method, endpoint, data=None, prefer=None):
         bang = endpoint.split("?")[0]
@@ -64,15 +65,21 @@ class KhoGia(SupabaseConversationStore):
             return self.khach
         if bang == "reminders":
             return list(self.reminders)
+        if bang == "listing_photos_v":
+            if self.loi_anh:
+                raise OSError("mạng")
+            ma = re.search(r"code=eq\.([^&]+)", q).group(1)
+            return [{"url": u} for u in self.anh.get(ma, [])]
         return []
 
 
 def chay(kho, bay_gio=TRUA, gui=None, xung_ho="chi"):
     daGui = []
 
-    def _gui(zalo, noi_dung, ten, can):
+    def _gui(zalo, noi_dung, ten, can, anh):
         daGui.append((zalo, noi_dung))
-        return True if gui is None else gui(zalo, noi_dung, ten, can)
+        kho.anh_da_gui = list(anh)
+        return True if gui is None else gui(zalo, noi_dung, ten, can, anh)
     ra = bao_can_moi.chay_mot_luot(kho, _gui, lambda _z: xung_ho, bay_gio)
     return ra, daGui
 
@@ -159,3 +166,33 @@ def test_khong_co_tin_moi_thi_khong_goi_them_truy_van():
     kho = KhoGia([])
     ra, gui = chay(kho)
     assert ra == [] and gui == []
+
+
+U = "https://x.supabase.co/storage/v1/object/public/listing-public/"
+
+
+def test_can_co_anh_thi_gui_kem_toi_da_hai_anh_https():
+    kho = KhoGia([tin("l1", "A", 6.8e9)])
+    kho.anh["A"] = [U + "1.jpg", "http://khong-https/2.jpg", U + "1.jpg", U + "3.jpg", U + "4.jpg"]
+    ra, gui = chay(kho)
+    assert len(ra) == 1 and kho.anh_da_gui == [U + "1.jpg", U + "3.jpg"]      # bỏ http, bỏ trùng, tối đa 2
+
+
+def test_can_chua_co_anh_hoac_loi_anh_thi_van_gui_chu():
+    kho = KhoGia([tin("l1", "A", 6.8e9)])
+    ra, gui = chay(kho)
+    assert len(ra) == 1 and kho.anh_da_gui == [] and len(gui) == 1            # chưa có ảnh: chỉ chữ
+    kho2 = KhoGia([tin("l1", "B", 6.8e9)])
+    kho2.anh["B"], kho2.loi_anh = [U + "1.jpg"], True
+    ra, gui = chay(kho2)
+    assert len(ra) == 1 and kho2.anh_da_gui == [] and len(gui) == 1           # truy vấn ảnh hỏng không chặn tin báo
+
+
+def test_bridge_send_nhan_photos_chi_https_va_dung_chung_ham_gui_anh():
+    """SRS-5.1zzzzzzz151: /send của bridge nhận `photos` (chỉ https, tối đa 4) và dùng CHUNG `guiAnhQuaUrl` với luồng chat — không viết lại vòng tải ảnh."""
+    import pathlib
+    js = (pathlib.Path(__file__).parents[1] / "bot/bridge-zca/index.mjs").read_text()
+    send = js[js.index("req.url === '/send'"):]
+    assert "photos" in send.split("res.end")[0] and "startsWith('https://')" in send and ".slice(0, 4)" in send and "guiAnhQuaUrl" in send
+    assert js.count("api.sendMessage({ msg: \"\", attachments: [f] }") == 1       # chỉ MỘT chỗ tải-và-gửi ảnh
+    assert "for (const url of Array.isArray(photos) ? photos : []) await guiAnhQuaUrl(threadId, url);" in js

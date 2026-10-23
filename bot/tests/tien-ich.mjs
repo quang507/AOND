@@ -117,6 +117,18 @@ console.log("\n4. MÁY OVERPASS (geocode-listings)\n");
     ds.indexOf("overpass.openstreetmap.fr") < ds.indexOf("overpass-api.de"), ds.join(", "));
   dung("OVERPASS: không có osm.ch (chỉ dữ liệu Thuỵ Sĩ, trả 200 rỗng → tin lên 'không có tiện ích' oan)", !ds.includes("overpass.osm.ch"), ds.join(", "));
   dung("OVERPASS: ≥ 3 máy để một máy bận không làm trễ cả lượt", ds.length >= 3, String(ds.length));
+  // SRS-5.1zzzzzzz152 (23/10/2026): máy công cộng chặn dải IP của edge (403 / 406 mỗi tick, sổ lỗi lặp) — chỉ gọi được từ DB, như Nominatim (FR-227).
+  // Đỏ khi: edge gọi thẳng `fetch(base…)` tới Overpass, hoặc hàm DB `tra_overpass` thiếu / lệch danh sách máy (máy nào ngoài danh sách bị từ chối).
+  dung("OVERPASS: edge gọi qua RPC tra_overpass, không fetch thẳng tới máy công cộng",
+    /rpc\("tra_overpass"/.test(src) && !/fetch\(\s*base\b/.test(src), "geocode-listings/index.ts");
+  const { readdirSync } = await import("node:fs");
+  const dir = new URL("../supabase/migrations/", import.meta.url);
+  const mig = readdirSync(dir).filter((f) => /tra_overpass/.test(f)).map((f) => readFileSync(new URL(f, dir), "utf8")).join("\n");
+  dung("OVERPASS: có migration tra_overpass", /function public\.tra_overpass/.test(mig), "bot/supabase/migrations");
+  const dsMay = [...src.matchAll(/"(https:\/\/[^"]*interpreter)"/g)].map((m) => m[1]);
+  dung("OVERPASS: mọi máy của edge đều nằm trong danh sách cho phép của tra_overpass", dsMay.length >= 3 && dsMay.every((u) => mig.includes(`'${u}'`)), dsMay.join(", "));
+  dung("OVERPASS: tra_overpass chỉ service_role gọi được", /revoke all on function public\.tra_overpass[^;]*from public, anon, authenticated/.test(mig)
+    && /grant execute on function public\.tra_overpass[^;]*to service_role/.test(mig), "quyền");
 }
 
 console.log(hong ? `\n${hong}/${dat + hong} CA HỎNG` : `\nTẤT CẢ ${dat} CA ĐẠT`);
