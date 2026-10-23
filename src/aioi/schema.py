@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 _HOUSE_NO_RE = re.compile(r"^(?:(?:đ/?c|dc|địa chỉ)\s*:?\s*)?(\d+[\d/\-.]*[A-Za-z]?)$", re.IGNORECASE)
 
@@ -554,6 +555,17 @@ O_TU_VAN_MUA: tuple[str, ...] = ("moi_truong_song", "thanh_vien", "noi_lam_viec"
                                  "nguoi_quyet_dinh", "vay_ngan_hang")
 
 
+# Khách mua chỉ bị hỏi tối đa chừng này câu về nhu cầu khi đã đủ tiêu chí để gợi ý căn (SRS-5.1zzzzzzz154).
+MAX_CAU_HOI_MUA = 2
+
+
+def _so_nguyen(v: Any) -> int:
+    try:
+        return int(str(v or "0").strip() or 0)
+    except ValueError:
+        return 0
+
+
 @dataclass
 class BuyerLead:
     """Hồ sơ nhu cầu của Người Mua / Người Thuê (Buyer Lead)."""
@@ -576,6 +588,12 @@ class BuyerLead:
 
     def next_question_field(self) -> str | None:
         """Quyết định thông tin cần hỏi tiếp theo theo cây phân nhánh người mua."""
+        # SRS-5.1zzzzzzz154 (chủ dự án 23/10: "hỏi nhiều quá, 1 hoặc 2 câu hỏi thôi"): đã có khu vực hoặc ngân sách (đủ để gợi ý căn) mà bot
+        # đã hỏi đủ MAX_CAU_HOI_MUA câu thì thôi hỏi nhu cầu — từ đó chỉ gợi ý căn và hẹn xem. Chưa có khu vực / ngân sách thì vẫn hỏi (không
+        # có gì để gợi ý). Engine cộng `_so_cau_hoi` mỗi lượt có câu hỏi.
+        co_tieu_chi = any((getattr(self, k, None) or self.fields.get(k) or "").strip() for k in ("khu_vuc", "ngan_sach"))
+        if co_tieu_chi and _so_nguyen(self.fields.get("_so_cau_hoi")) >= MAX_CAU_HOI_MUA:
+            return None
         # Giai đoạn 1: Nhu cầu & Ngân sách cốt lõi (Discovery)
         if not self.khu_vuc and not self.fields.get("khu_vuc"):
             return "khu_vuc"
