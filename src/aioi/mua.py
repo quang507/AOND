@@ -531,7 +531,11 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
 
 def khoi_viec_vua_ghi(viec: list[str]) -> str:
     if not viec:
-        return ""
+        # SRS-5.1zzzzzzz153: lượt không ghi gì thì cũng phải DẶN — bản trước im lặng nên model tự nói "em chuyển lịch cho chủ nhà rồi / giữ sẵn
+        # lịch rồi" (ảnh chat chị N. 23/10) trong khi DB không có lịch hẹn nào, không ai được báo.
+        return ("\nLƯỢT NÀY EM CHƯA GHI VIỆC GÌ lên hệ thống: TUYỆT ĐỐI KHÔNG nói đã chuyển / đã báo / đã giữ / đã xếp lịch, không nói chủ nhà hay "
+                "admin đã nhận được gì, không hứa sẽ báo lại. Khách muốn xem nhà mà còn thiếu căn nào hoặc ngày giờ nào thì hỏi đúng chỗ thiếu "
+                "bằng MỘT câu ngắn.\n")
     return ("\nEM VỪA GHI LƯỢT NÀY (nói đúng các việc này, không hứa thêm việc khác): " + "; ".join(viec) + ".\n")
 
 
