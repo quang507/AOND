@@ -50,7 +50,7 @@ jobs:
       # 08/10/2026: nạp dữ liệu tham chiếu cần service_role (kho dự án, từ điển tên đường). Khoá lấy qua Management API
       # bằng chính token này lúc chạy, che trong log, chỉ ghi vào scripts/.env TRÊN MÁY RUNNER (gitignore, không commit).
       - name: Nạp dữ liệu (nap-du-an / nap-duong)
-        if: ${{ inputs.dung_lai == 'nap-du-an' || inputs.dung_lai == 'nap-duong' || inputs.dung_lai == 'nap-giao-lo' }}
+        if: ${{ inputs.dung_lai == 'nap-du-an' || inputs.dung_lai == 'nap-duong' || inputs.dung_lai == 'nap-giao-lo' || inputs.dung_lai == 'nap-anh-mau' }}
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
           BUOC: ${{ inputs.dung_lai }}
@@ -67,6 +67,7 @@ jobs:
           case "$BUOC" in
             nap-du-an) node scripts/thu-du-an.mjs > /tmp/nap.log 2>&1 || rc=$? ;;
             nap-giao-lo) node scripts/nap-giao-lo.mjs --thieu > /tmp/nap.log 2>&1 || rc=$? ;;
+            nap-anh-mau) node bot/tests/tim-nha/nap-anh-mau.mjs > /tmp/nap.log 2>&1 || rc=$? ;;   # SRS-5.1zzzzzzz168: ảnh minh hoạ cho tin mẫu seed_thu
             *) node scripts/nap-duong.mjs --thieu > /tmp/nap.log 2>&1 || rc=$? ;;
           esac
           rm -f scripts/.env
@@ -147,8 +148,8 @@ jobs:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
         run: bash bot/tests/ban-thu-vm.sh
 
-      # SRS-5.1zzzzzzz144: nạp thêm 100 tin mẫu seed_thu (SEED0031..0130) bằng SQL, không gọi AI chat; vector do cron nhung-tick nhúng dần.
-      - name: Nạp thêm 100 tin mẫu (nap-tin-mau)
+      # SRS-5.1zzzzzzz144, 167, 168: nạp rổ tin mẫu seed_thu (SEED0001..0228) bằng SQL, không gọi AI chat; vector do cron nhung-tick nhúng dần. Ảnh: ô nap-anh-mau.
+      - name: Nạp rổ tin mẫu (nap-tin-mau)
         if: ${{ inputs.dung_lai == 'nap-tin-mau' }}
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
@@ -231,7 +232,7 @@ jobs:
 
       # 08/10/2026: project production cũ bị xoá nhầm — dựng lại từng bước trên project mới rỗng.
       - name: Dựng lại DB (dung_lai)
-        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-du-an' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'nap-giao-lo' && inputs.dung_lai != 'cai-vps' && inputs.dung_lai != 'go-trang-thu' && inputs.dung_lai != 'ban-thu-mua' && inputs.dung_lai != 'ban-thu-ban' && inputs.dung_lai != 'ban-thu-kb' && inputs.dung_lai != 'ban-thu-dc' && inputs.dung_lai != 'ban-thu-sau' && inputs.dung_lai != 'ban-thu-xa' && inputs.dung_lai != 'ban-thu-92' && inputs.dung_lai != 'ban-thu-nhieu-can' && inputs.dung_lai != 'ban-thu-vm' && inputs.dung_lai != 'do-tim-nha' && inputs.dung_lai != 'nap-tin-mau' }}
+        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-du-an' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'nap-giao-lo' && inputs.dung_lai != 'cai-vps' && inputs.dung_lai != 'go-trang-thu' && inputs.dung_lai != 'ban-thu-mua' && inputs.dung_lai != 'ban-thu-ban' && inputs.dung_lai != 'ban-thu-kb' && inputs.dung_lai != 'ban-thu-dc' && inputs.dung_lai != 'ban-thu-sau' && inputs.dung_lai != 'ban-thu-xa' && inputs.dung_lai != 'ban-thu-92' && inputs.dung_lai != 'ban-thu-nhieu-can' && inputs.dung_lai != 'ban-thu-vm' && inputs.dung_lai != 'do-tim-nha' && inputs.dung_lai != 'nap-tin-mau' && inputs.dung_lai != 'nap-anh-mau' }}
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
           BUOC: ${{ inputs.dung_lai }}

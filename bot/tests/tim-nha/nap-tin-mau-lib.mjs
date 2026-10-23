@@ -1,5 +1,6 @@
 // Bộ sinh tin mẫu `seed_thu`: 100 tin SEED0031..SEED0130 (mở rộng rổ đo tìm nhà, SRS-5.1zzzzzzz144) + 30 tin SEED0001..SEED0030 sinh lại
-// (SRS-5.1zzzzzzz167 — 30 tin đầu hồi sáng 23/10 nạp tay bằng SQL, mất khỏi DB, không còn bản gốc). Hàm thuần, TẤT ĐỊNH (cùng hạt giống → cùng dữ liệu) nên
+// (SRS-5.1zzzzzzz167 — 30 tin đầu hồi sáng 23/10 nạp tay bằng SQL, mất khỏi DB, không còn bản gốc) + 98 tin SEED0131..SEED0228 phủ đều từng quận
+// (SRS-5.1zzzzzzz168 — chat thử 24/10: "nhà phố Quận 5 hẻm xe hơi", "căn hộ 2PN Quận 10 thuê 15 triệu", "nhà phố Gò Vấp ≥ 4 phòng ngủ" không ra căn). Hàm thuần, TẤT ĐỊNH (cùng hạt giống → cùng dữ liệu) nên
 // chạy lại không đẻ dữ liệu khác. Mục tiêu khác 30 tin đầu: mỗi nhóm có NHIỀU tin gần giống nhau (cùng quận / loại / khoảng giá) để phép đo có đối thủ thật,
 // và các chi tiết riêng (thang máy, gara, sân thượng, view sông…) lặp ở vài tin chứ không duy nhất một tin.
 import { esc } from "./do-tim-nha-lib.mjs";
@@ -44,6 +45,14 @@ export const KE_HOACH_DAU_30 = [
   ["ban", "nha_cap4", "hem_xe_may", 2], ["ban", "dat", "hem_xe_hoi", 2], ["ban", "biet_thu", null, 1], ["ban", "kho_xuong", "hem_xe_tai", 1],
   ["cho_thue", "nha_pho", "mat_tien", 2], ["cho_thue", "chung_cu", null, 3], ["cho_thue", "phong_tro", null, 1], ["cho_thue", "mat_bang", "mat_tien", 1],
 ];
+// 98 tin SEED0131..0228: MỖI quận đô thị có đủ bảy kiểu hay bị hỏi — nhà phố hẻm xe hơi (một tin ép ≥ 4 phòng ngủ), căn hộ bán (một tin ép 2PN),
+// căn hộ thuê (một tin ép 2PN, 12–17 triệu), nhà phố thuê mặt tiền. Phần tử thứ 5 = quận cố định, thứ 6 = ép phòng ngủ (`pn`).
+export const KE_HOACH_BO_SUNG = Object.keys(QUAN).filter((q) => !q.startsWith("Huyện")).flatMap((q) => [
+  ["ban", "nha_pho", "hem_xe_hoi", 1, q, { pn: 4 }], ["ban", "nha_pho", "hem_xe_hoi", 1, q],
+  ["ban", "chung_cu", null, 1, q, { pn: 2 }], ["ban", "chung_cu", null, 1, q],
+  ["cho_thue", "chung_cu", null, 1, q, { pn: 2 }], ["cho_thue", "chung_cu", null, 1, q],
+  ["cho_thue", "nha_pho", "mat_tien", 1, q],
+]);
 const CHI_TIET = {
   nha_pho: ["gần chợ", "gần trường tiểu học", "sân thượng trồng rau được", "có gara ô tô", "nhà mới sơn sửa", "giếng trời thoáng mát", "bếp rộng nấu ăn thoải mái",
     "gần bệnh viện", "khu yên tĩnh dân trí cao", "sân trước để được 2 xe", "nhà góc 2 mặt hẻm",
@@ -66,13 +75,14 @@ const giaChu = (vnd, thang) => {
   return vnd >= 1e9 ? `${lam(vnd / 1e9, 1)} tỷ`.replace(".", ",") : `${Math.round(vnd / 1e6)} triệu`;
 };
 
-/** `soLuong` tin bắt đầu từ SEED(batDau) theo kế hoạch `ke`. Tổng KE_HOACH = 100; soLuong < tổng kế hoạch thì cắt bớt từ cuối. */
+/** `soLuong` tin bắt đầu từ SEED(batDau) theo kế hoạch `ke`. Tổng KE_HOACH = 100; soLuong < tổng kế hoạch thì cắt bớt từ cuối.
+ *  Mục kế hoạch có quận cố định / `pn` chỉ dùng cho KE_HOACH_BO_SUNG — mục không có hai phần tử đó sinh y hệt bản đã nạp. */
 export function sinhTin(soLuong = 100, batDau = 31, ke = KE_HOACH, hat = 23102026) {
   const rnd = hatGiong(hat), chon = (a) => a[Math.floor(rnd() * a.length)], hon = (a, b) => a + rnd() * (b - a);
   const ra = [];
-  for (const [deal, loai, access, n] of ke) {
+  for (const [deal, loai, access, n, quanCo, opt] of ke) {
     for (let i = 0; i < n; i++) {
-      const quan = chon(QUAN_THEO_LOAI[loai] || DO_THI), q = QUAN[quan], phuong = chon(q.phuong), duong = chon(q.duong);
+      const quan = quanCo || chon(QUAN_THEO_LOAI[loai] || DO_THI), q = QUAN[quan], phuong = chon(q.phuong), duong = chon(q.duong);
       const thue = deal === "cho_thue";
       let area, vnd, beds = null, floors = null, alley = null, ngang = null, dai = null;
       if (loai === "nha_pho") {
@@ -91,6 +101,13 @@ export function sinhTin(soLuong = 100, batDau = 31, ke = KE_HOACH, hat = 2310202
       else if (loai === "toa_nha") { area = Math.round(hon(150, 300)); floors = 5 + Math.floor(rnd() * 4); vnd = area * q.ppm * 1e6 * 2.2 * hon(0.85, 1.15); }
       else if (loai === "phong_tro") { area = Math.round(hon(15, 30)); beds = 1; vnd = hon(2, 5) * 1e6; }
       else { area = Math.round(hon(40, 150)); floors = 1 + Math.floor(rnd() * 3); vnd = hon(30, 150) * 1e6; }   // mat_bang thuê
+      if (opt?.pn && loai === "nha_pho" && !thue) {   // ép đủ phòng ngủ cho câu "nhà phố ≥ N phòng ngủ": lô vừa phải để giá không vọt
+        area = Math.round(hon(55, 72)); ngang = lam(hon(3.8, 5)); dai = lam(area / ngang, 0); floors = Math.max(floors, opt.pn >= 4 ? 4 : floors);
+        beds = opt.pn + Math.floor(rnd() * 2); vnd = area * q.ppm * 1e6 * hon(0.85, 1.15);
+      }
+      if (opt?.pn && loai === "chung_cu") {
+        area = Math.round(hon(58, 80)); beds = opt.pn; vnd = thue ? hon(12, 17) * 1e6 : area * q.ppm * 1e6 * 0.55 * hon(0.85, 1.15);
+      }
       vnd = thue ? Math.round(vnd / 5e5) * 5e5 : Math.round(vnd / 1e8) * 1e8;
       if (access === "hem_xe_hoi" || access === "hem_xe_may" || access === "hem_xe_tai" || access === "hem") alley = access === "hem_xe_hoi" ? lam(hon(3.5, 6)) : access === "hem" ? 3 : lam(hon(1.5, 2.5));
       const cd = CHI_TIET[loai] || (loai.startsWith("dat") || loai === "kho_xuong" ? CHI_TIET.dat : CHI_TIET.khac);
@@ -113,9 +130,9 @@ export function sinhTin(soLuong = 100, batDau = 31, ke = KE_HOACH, hat = 2310202
   return ra.slice(0, soLuong);
 }
 
-/** Đủ 130 tin: SEED0001..0030 (sinh lại) + SEED0031..0130. */
+/** Đủ 228 tin: SEED0001..0030 (sinh lại) + SEED0031..0130 + SEED0131..0228 (phủ từng quận). */
 export function sinhTatCa() {
-  return [...sinhTin(30, 1, KE_HOACH_DAU_30, 23102001), ...sinhTin(100, 31)];
+  return [...sinhTin(30, 1, KE_HOACH_DAU_30, 23102001), ...sinhTin(100, 31), ...sinhTin(98, 131, KE_HOACH_BO_SUNG, 23102002)];
 }
 
 const sv = (v) => (v === null || v === undefined ? "null" : typeof v === "number" ? String(v) : esc(v));

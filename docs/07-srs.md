@@ -8635,6 +8635,16 @@ Ca gốc: chủ dự án (23/10): "xóa tin nhắn thôi còn nhà trong kho v�
 3. **Lớp lỗi**: dữ liệu mẫu nạp tay bằng SQL không để lại file nên không dựng lại được khi mất. Nay mọi 130 tin sinh tất định từ repo.
 4. **Kiểm**: `bot/tests/tim-nha/nap-tin-mau.tu-kiem.mjs` (offline: 130 mã liên tục, tin gốc khác nhau, 100 tin sau y hệt bản cũ, tất định). Nạp thật: ô `nap-tin-mau`, kết quả trong PR.
 
+### SRS-5.1zzzzzzz168 · Bot nói thật về ảnh căn; rổ mẫu phủ từng quận + ảnh minh hoạ (24/10/2026)
+
+Ca gốc: chủ dự án Lê Quang chat thử 24/10 ~01:00 (ảnh chụp CRM + Zalo). (a) Hỏi "căn này có ảnh không em" → bot: "Có ảnh anh ạ, ảnh căn này em gửi ngay sau tin nhắn này" — không ảnh nào tới, vì 130 căn mẫu `seed_thu` chưa có dòng `listing_media`. (b) Hỏi "nhà phố Quận 5 dưới 7 tỷ hẻm xe hơi", "căn hộ 2PN Quận 10 thuê 15 triệu", "nhà phố Gò Vấp hẻm xe hơi dưới 6 tỷ ≥ 4 phòng ngủ" → bot nói chưa có căn. Đối chiếu DB: (b) đúng với dữ liệu lúc đó — Quận 5 chỉ có SEED0005 (đúng 7,0 tỷ, không "dưới 7") và SEED0010 (hẻm xe máy), Quận 10 không có căn hộ thuê nào, Gò Vấp không có căn ≥ 4PN dưới 6 tỷ; `tim_nha` chạy đúng (kiểm bằng gọi thẳng hàm). Chỉ (a) là lỗi của bot.
+
+1. **Lớp lỗi**: lời dặn model hứa một việc hệ thống làm có điều kiện (gửi ảnh khi căn có ảnh) như thể luôn làm, và model không được biết điều kiện (căn nào có ảnh). Cùng lớp với "đã chuyển / đã giữ lịch" khi chưa ghi gì (SRS-5.1zzzzzzz153, `khoi_viec_vua_ghi([])`).
+2. **Sửa (bot)**: `KhoNguoiMua._so_anh_theo_ma` / `_gan_so_anh` đếm ảnh của từng căn ở `listing_photos_v` — đúng nguồn ảnh gửi kèm (`anh_can`) — một lượt đọc cho cả danh sách, gắn `_so_anh` trong `tim_nha` và `can_theo_ma`; `dong_can` ghi "ảnh: có N ảnh" hoặc "ảnh: CHƯA có ảnh nào"; không đọc được thì không ghi gì. `khoi_can_cho_khach`: bỏ câu "ảnh căn tự gửi kèm ngay sau", dặn nói thật khi CHƯA có ảnh, không hứa ảnh khi dòng căn không nói gì về ảnh.
+3. **Sửa (dữ liệu mẫu)**: `nap-tin-mau-lib.mjs` thêm `KE_HOACH_BO_SUNG` — 98 tin `SEED0131..0228`, MỖI quận đô thị đủ 7 kiểu (nhà phố hẻm xe hơi bán ×2 trong đó một tin ép ≥ 4PN, căn hộ bán ×2 một tin ép 2PN, căn hộ thuê ×2 một tin ép 2PN 12–17 triệu, nhà phố thuê mặt tiền); `sinhTatCa()` = 228 tin, 130 tin đầu y hệt bản đã nạp. Ô `nap-anh-mau` (`nap-anh-mau.mjs`): 4 ảnh minh hoạ vẽ bằng Pillow (`sinh-anh-mau.py`, dải chữ "ẢNH MẪU — tin thử, không phải ảnh nhà thật") lên bucket `listing-public/<uuid tin>/` + 4 dòng `listing_media`/tin, đối chiếu `listing_photos_v` và tải thử một URL công khai rồi mới báo xong.
+4. **Chỗ khác cùng lớp (chưa làm)**: ảnh gửi kèm chỉ đi khi lời bot có link căn và mỗi (khách, căn) một lần / 24 giờ (`BoNhoAnhDaGui`) — khách xin lại ảnh trong 24 giờ thì bot chỉ nhắc "ảnh em đã gửi ở trên", không gửi lại. Soát nhanh bằng grep ở `src/aioi`: phía mua CHƯA có xử lý riêng cho huỷ / đổi lịch hẹn, so sánh hai căn, tiện ích quanh khu (công cụ cũ `tim_tien_ich_quanh` của TS đã gỡ cùng chat-reply), video / bản đồ — chưa soát sâu hơn grep.
+5. **Kiểm**: `tests/test_anh_can_trung_thuc.py` (4 ca; bỏ `_gan_so_anh` thì đỏ), `bot/tests/tim-nha/nap-tin-mau.tu-kiem.mjs` (228 tin, mỗi quận đủ kiểu), `nap-anh-mau.tu-kiem.mjs` (ảnh JPEG thật, dòng media đúng ràng buộc DB). Nạp thật + gọi thử `tim_nha` ghi ở PR.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

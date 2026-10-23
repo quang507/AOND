@@ -157,10 +157,36 @@ class KhoNguoiMua:
         ds = ",".join(_q(m) for m in ma)
         hien = ",".join(TRANG_THAI_HIEN)
         try:
-            return self._get(f"listings?or=(code.in.({ds}),legacy_code.in.({ds}))&status=in.({hien})&select={COT_CAN}")
+            can = self._get(f"listings?or=(code.in.({ds}),legacy_code.in.({ds}))&status=in.({hien})&select={COT_CAN}")
         except Exception as e:  # noqa: BLE001
             log.warning("can_theo_ma lỗi: %s", e)
             return []
+        self._gan_so_anh(can)
+        return can
+
+    def _so_anh_theo_ma(self, ma: list[str]) -> dict[str, int] | None:
+        """Số ảnh công khai của từng căn, đếm từ view `listing_photos_v` — CHÍNH nguồn ảnh gửi kèm (`anh_can`). None = không đọc được: lúc đó
+        không khẳng định căn có hay không có ảnh (SRS-5.1zzzzzzz168 — bot từng hứa "ảnh em gửi ngay" cho căn chưa có ảnh nào)."""
+        ma = [str(m) for m in ma if m]
+        if not ma:
+            return {}
+        try:
+            dong = self._get(f"listing_photos_v?code=in.({','.join(_q(m) for m in ma)})&select=code")
+        except Exception as e:  # noqa: BLE001 — ảnh là phần thêm
+            log.warning("đếm ảnh căn lỗi: %s", e)
+            return None
+        dem = {m: 0 for m in ma}
+        for d in dong or []:
+            c = str(d.get("code") or "")
+            if c in dem:
+                dem[c] += 1
+        return dem
+
+    def _gan_so_anh(self, can: list[dict]) -> None:
+        dem = self._so_anh_theo_ma([c.get("code") for c in can])
+        if dem is not None:
+            for c in can:
+                c["_so_anh"] = dem.get(str(c.get("code")), 0)
 
     # --- Công cụ tìm nhà (SRS-5.1zzzzzzz138) -------------------------------------------------------------------------------
     def can_phu_hop(self, lead: Any, toi_da: int = 3) -> list[dict]:
@@ -208,6 +234,7 @@ class KhoNguoiMua:
                 if isinstance(g, (int, float)) and g > ns:
                     c["_vuot_ngan_sach"] = max(1, round((g / ns - 1) * 100))
             can.sort(key=lambda c: 1 if c.get("_vuot_ngan_sach") else 0)
+        self._gan_so_anh(can)
         if len(nho) > 200:
             nho.clear()
         nho[khoa] = (hien, can)
@@ -515,6 +542,9 @@ def dong_can(c: dict) -> str:
         phan.append(f"vì sao hợp: {c['_ly_do']}")
     if c.get("_vuot_ngan_sach"):
         phan.append(f"VƯỢT ngân sách khách nêu khoảng {c['_vuot_ngan_sach']}%")
+    so_anh = c.get("_so_anh")
+    if isinstance(so_anh, int):
+        phan.append(f"ảnh: có {so_anh} ảnh, tự gửi kèm khi dán link" if so_anh else "ảnh: CHƯA có ảnh nào trên hệ thống")
     if c.get("code"):
         phan.append(f"link {SITE_URL}/nha-dat/{c['code']}")
     return " · ".join(p for p in phan if p)
@@ -547,11 +577,15 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
             "      (2) Thông số ngắn (khu vực, diện tích, giá, phòng ngủ) rồi VÌ SAO HỢP — kể lại ĐÚNG phần \"vì sao hợp\" của căn, không thêm. "
             "Căn ghi \"KHÁC khu vực khách chọn\" hoặc \"VƯỢT ngân sách\" thì nói thẳng một câu ngắn ở đoạn này (khác khu nào / vượt khoảng bao "
             "nhiêu phần trăm); chỉ đưa căn như vậy khi không có căn đúng.\n"
-            "      (3) Link: dán nguyên văn dòng \"link …\" của căn để khách xem hình và chi tiết (ảnh căn tự gửi kèm ngay sau, không cần nhắc).\n"
+            "      (3) Link: dán nguyên văn dòng \"link …\" của căn để khách xem chi tiết. Dòng căn ghi \"có … ảnh\" thì ảnh tự gửi kèm ngay sau, không "
+            "cần nhắc; ghi \"CHƯA có ảnh\" thì sẽ KHÔNG có ảnh nào gửi kèm.\n"
             "      (4) Đúng MỘT câu hỏi, thật ngắn (khoảng 15 chữ), không giải thích vì sao hỏi — chính là câu thông tin cần hỏi tiếp ở trên "
             "(hoặc hỏi khách có muốn xem thử không).\n"
             "  • Xưng hô GIỮ NGUYÊN như các lượt trước, không đổi qua lại giữa em / cháu / tôi trong cùng một tin. Không tua lại toàn bộ yêu cầu "
             "của khách; không khen lần hai ở cuối tin.\n"
+            "  • Khách hỏi ảnh / hình của căn: dòng căn ghi CÓ ảnh thì nói ảnh em đã gửi kèm link ở tin trên (khách kéo lên xem), cần thì dán lại "
+            "link; ghi \"CHƯA có ảnh\" thì nói THẬT là căn này chưa có ảnh trên hệ thống, em xin chủ nhà bổ sung hoặc hẹn khách xem trực tiếp — "
+            "KHÔNG nói \"em gửi ảnh ngay\". Dòng căn không ghi gì về ảnh thì KHÔNG hứa gửi ảnh.\n"
             "  • Căn đã giới thiệu ở các tin trước thì KHÔNG nhắc lại, trừ khi khách hỏi; nếu không còn căn mới thì chỉ hỏi câu kế:\n"
             + "\n".join(f"- {dong_can(c)}" for c in can) + "\n")
 
