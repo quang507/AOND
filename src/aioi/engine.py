@@ -104,7 +104,7 @@ from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
-from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_viec_vua_ghi, lenh_tra_loi,
+from .mua import (co_tieu_chi, giong_sdt_sai, goi_toi as goi_toi_khach, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_viec_vua_ghi, lenh_tra_loi,
                   tim_sdt)
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
@@ -418,6 +418,9 @@ class Conversation:
     # "chu_co_bac", giữ qua các lượt) — lượt AI lập thao tác đọc theo nghĩa, code kiểm trích dẫn (SRS-5.1zzzzzzz54).
     hoi_ve_luot: str | None = None
     xung_ho: str | None = None
+    # Transient (SRS-5.1zzzzzzz163): gợi ý xưng hô từ giới tính trên hồ sơ Zalo ("anh" nam / "chi" nữ), bridge gửi kèm mỗi tin. Chỉ dùng
+    # khi khách CHƯA tự xưng (`xung_ho` trống) — lời khách tự nói luôn thắng; không lưu DB.
+    xung_ho_goi_y: str | None = None
     # Persisted (SRS-5.1zzzzzzz130): chế độ test — gõ "$$$$$" bật; sau mỗi lượt server gửi thêm tin phụ "$$$$$ … đã trích xuất / đã hiểu gì"
     # (che_do_test.py, code ghép, không phải AI).
     che_do_test: bool = False
@@ -525,12 +528,14 @@ def _khoi_xung_ho_rieng(p: str) -> str:
     elif p == "chi":
         return (
             "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "Khách xưng 'chị'. Gọi khách là 'chị', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu.\n"
+            "Khách xưng 'chị'. Gọi khách là 'chị', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu. Cả lượt KHÔNG có chữ 'anh/chị' — kể cả "
+            "khi câu mẫu ở trên viết 'anh/chị', đổi thành 'chị' (vd lời chào: \"Em chào chị ạ\").\n"
         )
     elif p == "anh":
         return (
             "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "Khách xưng 'anh'. Gọi khách là 'anh', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu.\n"
+            "Khách xưng 'anh'. Gọi khách là 'anh', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu. Cả lượt KHÔNG có chữ 'anh/chị' — kể cả "
+            "khi câu mẫu ở trên viết 'anh/chị', đổi thành 'anh' (vd lời chào: \"Em chào anh ạ\").\n"
         )
     elif p == "elder":
         return (
@@ -578,6 +583,8 @@ class TurnResult:
     tier: str
     escalated: bool = False    # True when this turn was handed to a human admin (oversize media)
     can_nguoi_that: str | None = None   # cụm khách xin gặp người thật (đã kiểm trích dẫn) → server báo admin (SRS-5.1zzzzzzz82)
+    # Thả tim lên tin khách vừa nhắn (SRS-5.1zzzzzzz163): lời chào, đồng ý duyệt tin, "ok", hoặc tin vừa cho địa chỉ → bridge gọi addReaction.
+    tha_tim: bool = False
     # Chấm sao cho AI (SRS-5.1zzzzzzz104): lượt này vừa gửi câu xin chấm sao / khách vừa chấm (sao, cụm trích) → server ghi kho.
     xin_danh_gia: bool = False
     danh_gia: tuple[int, str] | None = None
@@ -818,11 +825,15 @@ class SqliteConversationStore(ConversationStore):
         self._conn.commit()
 
 
+# Ô địa chỉ: lượt khách vừa cho một trong các ô này thì bot thả tim lên tin đó (SRS-5.1zzzzzzz163).
+CAC_O_DIA_CHI = frozenset({"dia_chi", "duong"})
+
+
 def _detect_customer_pronoun(conv: Conversation, current_text: str = "") -> str:
     """Khách tự xưng gì: "em" / "anh" / "chi" / "elder" / "unknown". Do lượt AI lập thao tác đọc theo nghĩa (`xung_ho`, code kiểm
     trích dẫn trong lời khách) — không dò từ khoá (SRS-5.1zzzzzzz54; bản trước regex "em gửi|nhà em…" nhầm cả chữ "em" khách
     dùng để GỌI bot). `current_text` giữ cho chỗ gọi cũ, không dùng."""
-    return {"em": "em", "anh": "anh", "chi": "chi", "chu_co_bac": "elder"}.get(conv.xung_ho or "", "unknown")
+    return {"em": "em", "anh": "anh", "chi": "chi", "chu_co_bac": "elder"}.get(conv.xung_ho or conv.xung_ho_goi_y or "", "unknown")
 
 
 @contextmanager
@@ -2178,7 +2189,7 @@ class Engine:
             system += khoi_hoi_mat_tien(conv.prop.fields.get("mat_tien", ""))
 
         if not is_listing_post and not any(t.role == "assistant" for t in conv.history):
-            system += khoi_chao_lan_dau(conv.assistant.name, cau_mau.cau("chao_lan_dau", ten=conv.assistant.name))
+            system += khoi_chao_lan_dau(conv.assistant.name, cau_mau.cau("chao_lan_dau", goi_toi_khach(customer_pronoun)[0], ten=conv.assistant.name))
         system += khoi_xung_ho(customer_pronoun) + self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv) + khoi_khen_theo_luot(conv.so_luot_thong_tin)
         if xin_sao:
             system += KHOI_SAP_XIN_SAO
@@ -3367,6 +3378,7 @@ class Engine:
             role=conv.role,
             lead=conv.buyer_lead,
             can_nguoi_that=conv.y_luot.get("can_nguoi_that") if isinstance(conv.y_luot.get("can_nguoi_that"), str) else None,
+            tha_tim=bool(conv.y_luot.get("tha_tim")) or bool(set(captured) & CAC_O_DIA_CHI),
             xin_danh_gia=bool(conv.y_luot.get("xin_danh_gia")),
             danh_gia=conv.y_luot.get("danh_gia"),
             chu_thich=che_do_test.chu_thich(conv, captured, next_f, so_token.tong_luot()) if conv.che_do_test else "",
@@ -3592,6 +3604,12 @@ class Engine:
         # Xin gặp người thật (SRS-5.1zzzzzzz82): giữ nguyên cụm trích để báo admin kèm lời khách.
         if _trich_dan_khop(plan.get("can_nguoi_that"), cuoi):
             conv.y_luot["can_nguoi_that"] = str(plan["can_nguoi_that"]).strip()
+        # Thả tim (SRS-5.1zzzzzzz163): lời chào / lời đáp ngắn đồng ý do AI đọc theo nghĩa (cụm trích có trong tin vừa nhắn), hoặc khách vừa
+        # duyệt bản nháp. Không dò từ khoá ở code.
+        if plan.get("loi_xa_giao") in ("chao", "dong_y") and _trich_dan_khop(plan.get("loi_xa_giao_trich_dan"), cuoi):
+            conv.y_luot["tha_tim"] = str(plan["loi_xa_giao"])
+        if conv.duyet_luot == "dong_y":
+            conv.y_luot["tha_tim"] = "duyet"
         # Khách chấm sao cho AI (SRS-5.1zzzzzzz104): AI đọc số sao theo nghĩa; nhận khi lời bot NGAY TRƯỚC là câu xin chấm sao (code
         # sinh, so chuỗi tất định) và cụm trích có trong tin vừa nhắn. Khách mua báo đã đủ thông tin căn: cụm trích trong tin vừa nhắn.
         bot_truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant"), "")
@@ -3694,9 +3712,9 @@ class Engine:
                         "\"chú ý điện thoại\", KHÔNG dùng chữ \"máy\")")
         elif bid and lead is not None and lead.fields.get("_da_xin_sdt") and giong_sdt_sai(text):
             # SRS-5.1zzzzzzz161: bot đã xin số mà khách gõ dãy giống số điện thoại nhưng sai độ dài / đầu số — không ghi, không cảm ơn như đã nhận.
-            viec.append("số điện thoại khách vừa gõ KHÔNG đúng (số di động VN phải đủ 10 số, thiếu hoặc thừa chữ số) nên em CHƯA ghi được: "
+            viec.append("số điện thoại khách vừa gõ KHÔNG đúng (số điện thoại di động VN gồm đúng 10 chữ số và bắt đầu bằng số 0, số khách gõ đang thiếu hoặc thừa chữ số) nên em CHƯA ghi được: "
                         "KHÔNG cảm ơn, KHÔNG nói đã nhận / đã ghi số, KHÔNG hứa người phụ trách sẽ gọi; nói nhẹ số chưa đủ và xin khách gõ lại "
-                        "một lần (một câu ngắn)")
+                        "lại cho đúng (một câu ngắn, nhắc nhẹ cấu trúc: 10 số, bắt đầu bằng 0)")
         # Một dòng mỗi lượt khách mua có ý hẹn / quan tâm (SRS-5.1zzzzzzz153, bắn thử 23/10 `ban-thu-vm` hụt lịch mà journal không nói hụt ở
         # AI đọc ra, ở mã căn hay ở ghi DB): chỉ cờ — không ghi lời khách.
         if mua:

@@ -1737,6 +1737,9 @@ QUY TẮC:
   nói chuyện khác hay chưa rõ → bỏ trống. Có điền thì duyet_trich_dan = NGUYÊN VĂN cụm trong tin khách cho thấy điều đó.
   "[khách gửi sticker]" / "[khách gửi sticker: …]" là nhãn dán → KHÔNG phải đồng ý, bỏ trống. "[khách thả cảm xúc ❤️]" / 👍 / 👌 (thả
   lên tin bot hoặc gõ trong tin) là đồng ý.
+- LỜI XÃ GIAO (23/10/2026, đọc theo NGHĨA tin khách vừa nhắn, không theo từ khoá): loi_xa_giao = "chao" khi tin CHỈ là lời chào hỏi
+  (hello, hi, chào em, xin chào…) chưa nói nhu cầu nhà đất; "dong_y" khi tin CHỈ là lời đáp ngắn đồng ý / cảm ơn (ok, vâng, ừ, được rồi,
+  cảm ơn…) KHÔNG kèm thông tin hay câu hỏi mới. Còn lại bỏ trống. Có điền thì loi_xa_giao_trich_dan = NGUYÊN VĂN cụm đó trong tin khách.
 - KHÁCH HỎI VỀ GÌ (19/10/2026, đọc theo NGHĨA tin khách vừa nhắn, không theo từ khoá): hoi_ve = "phi" khi khách hỏi phí / hoa
   hồng / có mất tiền không của BÊN MÌNH (KHÔNG phải phí quản lý, thuế, phí sang tên của căn nhà); "uy_tin" khi khách hỏi công
   ty là ai, có uy tín / lừa đảo không, trụ sở ở đâu; "link_web" khi khách hỏi link tin, xem tin ở đâu, tin trên web thế nào;
@@ -1900,6 +1903,16 @@ def operations_schema() -> dict[str, Any]:
             "duyet_trich_dan": {
                 "type": "string",
                 "description": "Nguyên văn cụm trong tin khách vừa nhắn cho thấy đồng ý / không đồng ý (bắt buộc khi có duyet_ban_nhap).",
+            },
+            "loi_xa_giao": {
+                "type": "string",
+                "enum": ["chao", "dong_y"],
+                "description": "chao = tin khách CHỈ là lời chào hỏi, chưa nói nhu cầu; dong_y = tin khách CHỈ là lời đáp ngắn đồng ý / cảm ơn "
+                "(ok, vâng, ừ…), không kèm thông tin hay câu hỏi mới. Còn lại bỏ trống.",
+            },
+            "loi_xa_giao_trich_dan": {
+                "type": "string",
+                "description": "Nguyên văn cụm trong tin khách vừa nhắn (bắt buộc khi có loi_xa_giao).",
             },
             "hoi_ve": {
                 "type": "string",

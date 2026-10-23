@@ -150,6 +150,7 @@ class ZaloBridgePayload(BaseModel):
     file_name: str | None = None
     sticker_url: str | None = None      # link ảnh sticker (bridge, zca-js getStickersDetail) — SRS-5.1zzzzzzz122
     sticker_text: str | None = None     # nhãn chữ Zalo gắn cho sticker (có thể trống)
+    gioi_tinh: str | None = None        # "nam" / "nu" theo hồ sơ Zalo (bridge) — chỉ gợi ý xưng hô khi khách chưa tự xưng (SRS-5.1zzzzzzz163)
     msg_id: str | None = None
     channel: str | None = None
     mark_sent: str | None = None
@@ -170,8 +171,18 @@ class ZaloBridgeResponse(BaseModel):
     completeness: float
     # Ảnh dự án khách vừa nhắc tên (anh_du_an.py) — bridge tải về và gửi sau các bong bóng chữ (FR-143).
     photos: list[str] = []
+    # Bridge thả tim (zca-js addReaction) lên tin khách vừa nhắn — lời chào / duyệt tin / "ok" / vừa cho địa chỉ (SRS-5.1zzzzzzz163).
+    tha_tim: bool = False
     # ms từng khâu của lượt (lap_thao_tac / tra_loi / ghi_kho / con_lai / tong) — chỉ con số, để đo chỗ chậm (SRS-5.1zzzzzzz86).
     thoi_gian_ms: dict[str, int] = {}
+
+
+def _dat_goi_y_xung_ho(user_key: str, gioi_tinh: str | None) -> None:
+    """Giới tính trên hồ sơ Zalo → gợi ý gọi khách "anh" / "chị" từ câu chào đầu (SRS-5.1zzzzzzz163). Chỉ gợi ý: khách tự xưng thì lời khách
+    thắng (`_detect_customer_pronoun`). Tắt bằng env XUNG_HO_THEO_ZALO=tat. Không biết giới tính thì xoá gợi ý (khách đổi hồ sơ)."""
+    if os.environ.get("XUNG_HO_THEO_ZALO", "").strip().lower() == "tat":
+        return
+    _engine.conversation(user_key).xung_ho_goi_y = {"nam": "anh", "nu": "chi"}.get((gioi_tinh or "").strip().lower())
 
 
 @app.get("/health")
@@ -527,6 +538,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     t_khoa = time.perf_counter()
     with _engine.khoa_luot(uk):
         cho_luot = int((time.perf_counter() - t_khoa) * 1000)
+        _dat_goi_y_xung_ho(uk, payload.gioi_tinh)
         if not media_urls:
             gom = _lay_cho(uk, so_cho)
             if gom is None:   # tin này đã nằm trong lượt trước — chỉ ghi lời khách vào CRM, không trả lời riêng
@@ -630,6 +642,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         tier=r.tier,
         completeness=r.completeness,
         photos=photos,
+        tha_tim=bool(r.tha_tim),
         thoi_gian_ms={**thoi_gian, "may_chu": int((time.perf_counter() - t_vao) * 1000)},
     )
 
