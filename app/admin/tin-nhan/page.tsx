@@ -180,6 +180,7 @@ export default function Page() {
   const dem = {
     tong: hoiThoai.length,
     ban: hoiThoai.filter((h) => !!h.seller_id).length,
+    mua: hoiThoai.filter((h) => !!h.buyer_id).length,   // một khách vừa bán vừa mua đếm ở cả hai chip, tổng vẫn là một hội thoại
     canNguoi: hoiThoai.filter((h) => !!h.needs_human).length,
     nhan: (k: NhanHT["nhan"]) => hoiThoai.filter((h) => nhanHT[h.id]?.nhan === k).length,
   };
@@ -209,7 +210,7 @@ export default function Page() {
           <div className="flex gap-1 overflow-x-auto" role="group" aria-label="Lọc theo vai">
             <button type="button" className={chip(!locPhia)} onClick={() => setLocPhia("")}>Tất cả {dem.tong}</button>
             <button type="button" className={chip(locPhia === "ban")} onClick={() => setLocPhia(locPhia === "ban" ? "" : "ban")}>Người bán {dem.ban}</button>
-            <button type="button" className={chip(locPhia === "mua")} onClick={() => setLocPhia(locPhia === "mua" ? "" : "mua")}>Người mua {dem.tong - dem.ban}</button>
+            <button type="button" className={chip(locPhia === "mua")} onClick={() => setLocPhia(locPhia === "mua" ? "" : "mua")}>Người mua {dem.mua}</button>
           </div>
           <div className="flex items-center gap-2">
             <label htmlFor="loc-trang-thai" className="text-xs font-semibold text-mute">Trạng thái</label>

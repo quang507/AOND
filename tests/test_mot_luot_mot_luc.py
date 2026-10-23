@@ -85,8 +85,8 @@ def test_hoi_thoai_trong_cache_da_bi_xoa_thi_tim_lai_va_van_ghi_tin():
                 raise urllib.error.HTTPError("u", 409, "Conflict", {}, io.BytesIO(b""))
             if endpoint.startswith("sellers?"):
                 return [{"id": "s1"}]
-            if endpoint.startswith("conversations?seller_id"):
-                return [{"id": "c-moi"}]
+            if endpoint.startswith("conversations?or="):   # hội thoại chung của khách (SRS-5.1zzzzzzz149)
+                return [{"id": "c-moi", "seller_id": "s1", "buyer_id": None}]
             return []
 
     k = _K()

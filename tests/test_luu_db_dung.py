@@ -20,8 +20,8 @@ class _Kho(SupabaseConversationStore):
             raise self.loi
         if endpoint.startswith("buyers?"):
             return [{"id": "b1"}]
-        if endpoint.startswith("conversations?buyer_id"):
-            return [{"id": "c-mua"}]
+        if endpoint.startswith("conversations?or="):   # một hội thoại chung cho cả hai vai (SRS-5.1zzzzzzz149)
+            return [{"id": "c-mua", "seller_id": "s1", "buyer_id": "b1"}]
         if method == "POST" and endpoint == "listings":
             return [{"id": (data or {}).get("id")}]
         return []
