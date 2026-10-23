@@ -2,7 +2,7 @@
 
 Chủ dự án: "mỗi tin đưa ra 1–2 hình thì tốt nhỉ". Bot dán LINK trang căn trong lời giới thiệu (`mua.dong_can`), nên căn nào đã được NÓI tới chính là
 căn có link trong câu trả lời — đọc mã căn từ link đó, không đoán từ danh sách căn tìm được (danh sách đó có thể chưa được nhắc tới). Ảnh lấy từ view
-`listing_photos_v` (bucket công khai, tin đang hiện), tối đa 2 ảnh mỗi căn và 4 ảnh mỗi lượt, mỗi (khách, căn) một lần trong 24 giờ.
+`listing_photos_v` (bucket công khai, tin đang hiện), tối đa 4 ảnh mỗi lượt (một căn: cả 4; nhiều căn: chia đều — SRS-5.1zzzzzzz160), mỗi (khách, căn) một lần trong 24 giờ.
 Không có ảnh / lỗi mạng → không gửi, không làm hỏng lượt trả lời. Đường gửi là `photos` của `/chat-reply` (bridge tải về và gửi đính kèm, FR-143).
 """
 from __future__ import annotations
@@ -17,7 +17,7 @@ from .anh_du_an import BoNhoAnhDaGui, _thong_tin
 
 log = logging.getLogger("aioi.anh_can")
 
-TOI_DA_ANH_MOI_CAN = 2
+TOI_DA_ANH_MOI_CAN = 4   # SRS-5.1zzzzzzz160: chỉ MỘT căn trong lượt thì được cả 4 ảnh (chủ dự án 23/10: "3 4 tấm ảnh"); nhiều căn chia đều
 TOI_DA_ANH = 4
 TOI_DA_CAN = 3
 _LINK_CAN = re.compile(r"/nha-dat/([A-Za-z0-9][A-Za-z0-9-]{3,})")
@@ -61,12 +61,13 @@ def anh_can_gui_kem(khach: str, vai: str, reply: str, goi=_goi_anh_can, bo_nho: 
     except Exception as e:  # noqa: BLE001 — ảnh là phần thêm
         log.warning("listing_photos_v lỗi: %s", e)
         return []
+    moi_can = max(1, min(TOI_DA_ANH_MOI_CAN, TOI_DA_ANH // len(ma)))   # 1 căn: 4 ảnh · 2 căn: 2 ảnh mỗi căn · 3 căn: 1 ảnh mỗi căn
     theo_can: dict[str, list[str]] = {}
     for d in dong:
         c, u = str(d.get("code") or "").upper(), d.get("url")
         if c in ma and isinstance(u, str) and u.startswith("https://"):
             ds = theo_can.setdefault(c, [])
-            if u not in ds and len(ds) < TOI_DA_ANH_MOI_CAN:
+            if u not in ds and len(ds) < moi_can:
                 ds.append(u)
     bn = bo_nho or _bo_nho
     ra: list[str] = []

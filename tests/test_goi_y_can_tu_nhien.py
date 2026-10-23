@@ -22,7 +22,7 @@ def test_khoi_can_noi_nhu_nguoi_khong_lo_chu_noi_bo():
     assert "#A1" in khoi                                              # mã vẫn có cho thao tác (quan tâm / hẹn xem), nhưng...
     assert "KHÔNG nói mã ra lời" in khoi and "Không nói chữ \"rổ\"" in khoi   # ...cấm nói ra
     assert "RỔ" not in khoi and "luôn kèm mã" not in khoi            # chữ nội bộ cũ đã bỏ
-    assert "TỐI ĐA 2 căn" in khoi and "MỘT lời khen" in khoi          # ngắn + khen một câu
+    assert "MỘT căn tốt nhất" in khoi and "MỘT lời khen" in khoi      # SRS-160: mỗi lượt một căn, mở bằng một lời khen ngắn
     assert "nói em" not in khoi.lower()                               # "em" cứng làm model xưng lẫn với "cháu"
     rong = khoi_can_cho_khach([])
     assert "RỔ" not in rong and "nói em" not in rong.lower() and "KHÔNG bịa căn" in rong
@@ -142,8 +142,9 @@ def test_chua_co_tieu_chi_thi_khong_goi_y_can_khong_goi_db():
 
 def test_khoi_can_dat_thu_tu_khen_can_roi_moi_hoi_ngan():
     khoi = khoi_can_cho_khach([_can("A1", 5.5e9)])
-    assert "THỨ TỰ TIN" in khoi and "CUỐI TIN" in khoi and "khoảng 15 chữ" in khoi
+    assert "BỐN ĐOẠN" in khoi and "MỘT DÒNG TRỐNG" in khoi and "khoảng 15 chữ" in khoi          # SRS-160: bốn tin, câu hỏi ngắn ở đoạn cuối
     assert "không khen lần hai ở cuối" in khoi and "KHÔNG nhắc lại" in khoi         # một lời khen mở tin, không lặp căn đã gửi
+    assert khoi.index("(1) Mở lời") < khoi.index("(2) Thông số") < khoi.index("(3) Link") < khoi.index("(4) Đúng MỘT câu hỏi")   # thứ tự: mở lời · thông số + vì sao hợp · link · hỏi
 
 
 def test_prompt_mua_noi_can_truoc_hoi_sau_va_cau_hoi_ngan():
@@ -152,3 +153,13 @@ def test_prompt_mua_noi_can_truoc_hoi_sau_va_cau_hoi_ngan():
     assert "GỢI Ý TRƯỚC, HỎI SAU" in p and "CUỐI tin" in p and "khoảng 15 chữ" in p
     assert "vì sao giúp em lọc căn sát hơn" not in p                              # lời khen kèm giải thích làm tin dài
     assert "rồi hỏi đúng 1 câu này một cách" not in p
+
+
+def test_mot_can_thi_gui_toi_bon_anh_nhieu_can_chia_deu():
+    """SRS-5.1zzzzzzz160 (chủ dự án 23/10: "đến link đến 3 4 tấm ảnh"): lượt chỉ giới thiệu MỘT căn được cả 4 ảnh; hai căn chia đều 2 ảnh mỗi căn."""
+    nhieu = [{"code": "SEED0016", "url": f"https://x/{i}.jpg"} for i in range(1, 7)]
+    anh = anh_can_gui_kem("k7", "buyer", f"xem {L('SEED0016')}", goi=lambda ma: nhieu, bo_nho=BoNhoAnhDaGui())
+    assert anh == [f"https://x/{i}.jpg" for i in range(1, 5)]
+    hai = nhieu + [{"code": "SEED0044", "url": f"https://y/{i}.jpg"} for i in range(1, 4)]
+    anh = anh_can_gui_kem("k8", "buyer", f"xem {L('SEED0016')} và {L('SEED0044')}", goi=lambda ma: hai, bo_nho=BoNhoAnhDaGui())
+    assert anh == ["https://x/1.jpg", "https://x/2.jpg", "https://y/1.jpg", "https://y/2.jpg"]
