@@ -9,6 +9,7 @@ Run: uvicorn aioi.server:app --reload --port 8000
 from __future__ import annotations
 
 import logging
+import os
 import re
 import threading
 import time
@@ -250,6 +251,59 @@ def _gui_bridge(user_key: str, text: str) -> None:
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=10):
         pass
+
+
+def _xung_ho_khach(zalo_id: str) -> str:
+    """Khách tự xưng gì (engine đã đọc theo nghĩa ở các lượt trước); chưa rõ → "unknown" (gọi "anh/chị")."""
+    from .engine import _detect_customer_pronoun
+    try:
+        return _detect_customer_pronoun(_engine.conversation(zalo_id), "")
+    except Exception:  # noqa: BLE001
+        return "unknown"
+
+
+def _gui_bao_can_moi(zalo_id: str, tin: str, ten: str | None, can: dict) -> bool:
+    """Gửi tin báo căn mới qua bridge. Bridge nhận thì ghi vào lịch sử hội thoại (khách trả lời "căn đó giá sao" bot còn nhớ vừa báo gì) và
+    CRM như bộ nhắc 5 phút. Bridge hụt → False để lượt sau thử lại; ghi lịch sử hụt thì tin đã đi nên vẫn True."""
+    from .engine import Turn
+    with _engine.khoa_luot(zalo_id):
+        try:
+            _gui_bridge(zalo_id, tin)
+        except Exception as e:  # noqa: BLE001
+            log.warning("báo căn mới: bridge hụt (%s)", type(e).__name__)
+            return False
+        try:
+            conv = _engine.conversation(zalo_id)
+            conv.history.append(Turn(role="assistant", content=tin, at=time.time()))
+            if _engine._convstore is not None:
+                _engine._convstore.save(conv)
+        except Exception as e:  # noqa: BLE001
+            _so_loi.ghi_loi("bao can moi", f"đã gửi nhưng ghi lịch sử hụt: {type(e).__name__}"[:200])
+    sync_to_supabase_async(external_user_id=zalo_id, incoming_text="", bot_reply=tin, role="buyer", user_name=ten)
+    return True
+
+
+BAO_CAN_MOI_CHU_KY_GIAY = int(os.environ.get("BAO_CAN_MOI_CHU_KY_GIAY", "600"))
+
+
+def _vong_bao_can_moi() -> None:
+    """SRS-5.1zzzzzzz150: quét định kỳ báo khách mua có căn mới vừa nhu cầu (khung 8–20 giờ nằm trong `bao_can_moi`). Tắt: BAO_CAN_MOI=tat."""
+    from . import bao_can_moi
+    time.sleep(90)   # để lõi khởi động xong, bridge nối lại
+    while True:
+        try:
+            kho = _engine._convstore
+            if getattr(kho, "can_moi_khop", None) is not None:
+                ra = bao_can_moi.chay_mot_luot(kho, _gui_bao_can_moi, _xung_ho_khach)
+                if ra:
+                    log.info("Báo căn mới: đã nhắn %d khách (%s)", len(ra), ", ".join(str(r["code"]) for r in ra))
+        except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ để CRM thấy
+            _so_loi.ghi_loi("bao can moi", f"{type(e).__name__}: {e}"[:200])
+        time.sleep(BAO_CAN_MOI_CHU_KY_GIAY)
+
+
+if os.environ.get("BAO_CAN_MOI", "bat") != "tat" and _settings.supabase_service_role_key:
+    threading.Thread(target=_vong_bao_can_moi, daemon=True, name="bao-can-moi").start()
 
 
 _CAU_DAN_THUA = re.compile(r"(?is)(?:^|(?<=\n))\s*Còn\s+(?:một|1)\s+điểm\s+em\s+cần\s+nắm\s+thêm\s*[:：]\s*")
