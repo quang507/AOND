@@ -53,6 +53,9 @@ export const KE_HOACH_BO_SUNG = Object.keys(QUAN).filter((q) => !q.startsWith("H
   ["cho_thue", "chung_cu", null, 1, q, { pn: 2 }], ["cho_thue", "chung_cu", null, 1, q],
   ["cho_thue", "nha_pho", "mat_tien", 1, q],
 ]);
+// 14 tin SEED0229..0242 (SRS-5.1zzzzzzz168, chat thử 24/10: "nhà phố Quận 5 dưới 7 tỷ hẻm xe hơi" không ra căn — nhà 55–72 m² ở Quận 5 đã trên 8 tỷ):
+// MỖI quận đô thị một nhà phố hẻm xe hơi lô NHỎ (32–44 m², 3–4 tầng) cho khách ngân sách vừa; riêng Quận 1 giá vẫn cao.
+export const KE_HOACH_NHO = Object.keys(QUAN).filter((q) => !q.startsWith("Huyện")).map((q) => ["ban", "nha_pho", "hem_xe_hoi", 1, q, { nho: true }]);
 const CHI_TIET = {
   nha_pho: ["gần chợ", "gần trường tiểu học", "sân thượng trồng rau được", "có gara ô tô", "nhà mới sơn sửa", "giếng trời thoáng mát", "bếp rộng nấu ăn thoải mái",
     "gần bệnh viện", "khu yên tĩnh dân trí cao", "sân trước để được 2 xe", "nhà góc 2 mặt hẻm",
@@ -105,6 +108,10 @@ export function sinhTin(soLuong = 100, batDau = 31, ke = KE_HOACH, hat = 2310202
         area = Math.round(hon(55, 72)); ngang = lam(hon(3.8, 5)); dai = lam(area / ngang, 0); floors = Math.max(floors, opt.pn >= 4 ? 4 : floors);
         beds = opt.pn + Math.floor(rnd() * 2); vnd = area * q.ppm * 1e6 * hon(0.85, 1.15);
       }
+      if (opt?.nho && loai === "nha_pho" && !thue) {
+        area = Math.round(hon(32, 44)); ngang = lam(hon(3.2, 4.2)); dai = lam(area / ngang, 0); floors = 3 + Math.floor(rnd() * 2);
+        beds = floors - 1; vnd = area * q.ppm * 1e6 * hon(0.85, 1.15);
+      }
       if (opt?.pn && loai === "chung_cu") {
         area = Math.round(hon(58, 80)); beds = opt.pn; vnd = thue ? hon(12, 17) * 1e6 : area * q.ppm * 1e6 * 0.55 * hon(0.85, 1.15);
       }
@@ -130,9 +137,10 @@ export function sinhTin(soLuong = 100, batDau = 31, ke = KE_HOACH, hat = 2310202
   return ra.slice(0, soLuong);
 }
 
-/** Đủ 228 tin: SEED0001..0030 (sinh lại) + SEED0031..0130 + SEED0131..0228 (phủ từng quận). */
+/** Đủ 242 tin: SEED0001..0030 (sinh lại) + SEED0031..0130 + SEED0131..0228 (phủ từng quận) + SEED0229..0242 (nhà phố lô nhỏ mỗi quận). */
 export function sinhTatCa() {
-  return [...sinhTin(30, 1, KE_HOACH_DAU_30, 23102001), ...sinhTin(100, 31), ...sinhTin(98, 131, KE_HOACH_BO_SUNG, 23102002)];
+  return [...sinhTin(30, 1, KE_HOACH_DAU_30, 23102001), ...sinhTin(100, 31), ...sinhTin(98, 131, KE_HOACH_BO_SUNG, 23102002),
+    ...sinhTin(14, 229, KE_HOACH_NHO, 23102003)];
 }
 
 const sv = (v) => (v === null || v === undefined ? "null" : typeof v === "number" ? String(v) : esc(v));
