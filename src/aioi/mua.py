@@ -65,6 +65,15 @@ def tim_sdt(text: str) -> str | None:
     return None
 
 
+_SO_GIONG_SDT = re.compile(r"(?<!\d)(?:\+?84|0)(?:[\s.\-]?\d){6,12}(?!\d)")
+
+
+def giong_sdt_sai(text: str) -> bool:
+    """Khách gõ một dãy số GIỐNG số điện thoại (đầu 0 / +84, 7–13 số) nhưng `tim_sdt` không nhận — thiếu hoặc thừa chữ số, hoặc sai đầu số
+    (SRS-5.1zzzzzzz161, chat chị Ngân 23/10: gõ thiếu một số "070772473", bot vẫn "cảm ơn chị đã gửi số" mà DB không ghi gì)."""
+    return tim_sdt(text) is None and bool(_SO_GIONG_SDT.search(text or ""))
+
+
 def _q(s: str) -> str:
     return urllib.parse.quote(str(s), safe="")
 
@@ -579,7 +588,8 @@ def khoi_lich_dang_cho(lich: list[dict] | None, pronoun: str | None = None) -> s
             "gật.\n"
             "  • Đã đủ ngày VÀ giờ thì chốt, KHÔNG hỏi lại ngày / giờ; xác nhận đúng MỘT lần bằng NGUYÊN VĂN câu mẫu: \"" + mau + "\" (thay "
             "chỗ <…> bằng đúng chữ ngày giờ khách đã nói và tên đường / khu của căn; không hỏi \"có phù hợp không\"). Khách đã đáp \"có / đúng\" "
-            "thì cảm ơn ngắn và nói người phụ trách sẽ gọi xác nhận — không hỏi thêm ngày giờ.\n"
+            "thì cảm ơn ngắn và nói người phụ trách sẽ gọi xác nhận, nhắc khách \"chú ý điện thoại\" (KHÔNG viết \"chú ý máy\", không dùng chữ "
+            "\"máy\") — không hỏi thêm ngày giờ.\n"
             "  • Lịch mới ghi chờ xác nhận: KHÔNG nói đã chốt với chủ nhà.\n")
 
 

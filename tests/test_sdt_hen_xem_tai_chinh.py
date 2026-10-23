@@ -76,6 +76,37 @@ def test_so_khach_go_ngoai_ngu_canh_hen_xem_khong_duoc_luu():
     assert not [1 for m, e, d in kho.goi if m == "PATCH" and e.startswith("viewings")] and not kho.ghi("POST", "reminders")
 
 
+@pytest.mark.parametrize("chu, sai", [
+    ("070772473", True), ("0900 000 00", True), ("09000000012", True), ("+84 900 000", True),     # giống số điện thoại nhưng sai độ dài
+    ("0900000001", False), ("+84 900-000-001", False),                                            # số đúng: tim_sdt nhận
+    ("tầm 6 tỷ", False), ("căn 0,5 tỷ", False), ("0.75 tháng", False), ("chủ nhật 9h - 10h", False), ("ok", False),
+])
+def test_giong_sdt_sai(chu, sai):
+    from aioi.mua import giong_sdt_sai
+    assert giong_sdt_sai(chu) is sai
+
+
+def test_so_thieu_chu_so_thi_khong_cam_on_nhu_da_nhan():
+    """SRS-5.1zzzzzzz161 (chat chị Ngân 23/10): khách cố ý gõ thiếu một số "070772473", bot vẫn "cảm ơn chị đã gửi số" và hứa người phụ trách gọi."""
+    kho = KhoSdt()
+    eng, ai = _engine(kho, KHACH_MUA)
+    _luot_hen(eng, kho, "mua-s6")                                                            # bot xin số (cờ _da_xin_sdt)
+    eng._provider.ke_hoach = KHACH_MUA
+    eng.handle("mua-s6", "070772473")
+    assert not [1 for m, e, d in kho.goi if m == "PATCH" and e.startswith("viewings?id=eq.v1")] and not kho.ghi("POST", "reminders")
+    assert "KHÔNG đúng" in ai.system[-1] and "KHÔNG cảm ơn" in ai.system[-1] and "CHƯA ghi được" in ai.system[-1]
+    eng.handle("mua-s6", "0900000001")                                                       # gõ lại đủ số thì ghi bình thường
+    assert [1 for m, e, d in kho.goi if m == "PATCH" and e.startswith("viewings?id=eq.v1")]
+    assert "KHÔNG đúng" not in ai.system[-1] and "chú ý điện thoại" in ai.system[-1]         # và nhắc "điện thoại", không "máy"
+
+
+def test_so_sai_khi_chua_xin_so_thi_khong_nhac_gi():
+    kho = KhoSdt()
+    eng, ai = _engine(kho, KHACH_MUA)
+    eng.handle("mua-s7", "Em tìm nhà phố quận 5 tầm 5 tỷ, mã 070772473")
+    assert "KHÔNG đúng" not in ai.system[-1]
+
+
 def test_khoi_tai_chinh_mot_nguon_chi_noi_khi_khach_hoi():
     k = tai_chinh.khoi_tai_chinh()
     assert tai_chinh.SINH_LOI_THAM_KHAO in k and tai_chinh.LAI_SUAT_VAY_THAM_KHAO in k and "THAM KHẢO" in k and "tham khảo" in k

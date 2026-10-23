@@ -104,7 +104,8 @@ from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
-from .mua import co_tieu_chi, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_viec_vua_ghi, lenh_tra_loi, tim_sdt
+from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_viec_vua_ghi, lenh_tra_loi,
+                  tim_sdt)
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
@@ -3689,7 +3690,13 @@ class Engine:
         # lấy từ lời khách (số là dữ liệu có khuôn, không phải đoán ý); không có lịch chờ thì số khách gõ không được lưu.
         sdt = tim_sdt(text)
         if bid and sdt and kho.ghi_sdt_hen_xem(bid, sdt):
-            viec.append("ghi số điện thoại khách vào lịch hẹn để người phụ trách gọi xác nhận (cảm ơn ngắn, KHÔNG đọc lại số)")
+            viec.append("ghi số điện thoại khách vào lịch hẹn để người phụ trách gọi xác nhận (cảm ơn ngắn, KHÔNG đọc lại số; nhắc khách "
+                        "\"chú ý điện thoại\", KHÔNG dùng chữ \"máy\")")
+        elif bid and lead is not None and lead.fields.get("_da_xin_sdt") and giong_sdt_sai(text):
+            # SRS-5.1zzzzzzz161: bot đã xin số mà khách gõ dãy giống số điện thoại nhưng sai độ dài / đầu số — không ghi, không cảm ơn như đã nhận.
+            viec.append("số điện thoại khách vừa gõ KHÔNG đúng (số di động VN phải đủ 10 số, thiếu hoặc thừa chữ số) nên em CHƯA ghi được: "
+                        "KHÔNG cảm ơn, KHÔNG nói đã nhận / đã ghi số, KHÔNG hứa người phụ trách sẽ gọi; nói nhẹ số chưa đủ và xin khách gõ lại "
+                        "một lần (một câu ngắn)")
         # Một dòng mỗi lượt khách mua có ý hẹn / quan tâm (SRS-5.1zzzzzzz153, bắn thử 23/10 `ban-thu-vm` hụt lịch mà journal không nói hụt ở
         # AI đọc ra, ở mã căn hay ở ghi DB): chỉ cờ — không ghi lời khách.
         if mua:
