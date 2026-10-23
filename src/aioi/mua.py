@@ -23,6 +23,8 @@ import time
 import urllib.parse
 from typing import Any, Callable
 
+from . import cau_mau
+
 log = logging.getLogger("aioi.mua")
 
 # Link trang chi tiết căn đưa cho khách (SRS-5.1zzzzzzz145). `nhadat.cc` chưa trỏ về web (mọi đường dẫn 404, kiểm 23/10/2026) nên dùng cùng mặc định
@@ -555,20 +557,28 @@ def gop_gio_hen(cu: str | None, moi: str) -> str:
     return f"{cu}, {moi}"[:200]
 
 
-def khoi_lich_dang_cho(lich: list[dict] | None) -> str:
+def goi_toi(pronoun: str | None) -> tuple[str, str]:
+    """(cách gọi khách, cách bot tự xưng) theo cách khách tự xưng — cùng quy ước `followup.cau_nhac`: khách xưng "em" thì gọi "em", bot xưng
+    "mình"; còn lại bot xưng "em"; chưa rõ thì "anh/chị"."""
+    return {"em": "em", "anh": "anh", "chi": "chị"}.get(pronoun or "", "anh/chị"), ("mình" if pronoun == "em" else "em")
+
+
+def khoi_lich_dang_cho(lich: list[dict] | None, pronoun: str | None = None) -> str:
     """Khối đưa lịch hẹn xem ĐÃ GHI cho model phía mua (SRS-5.1zzzzzzz157). Chat chị Ngân 23/10: khách chỉ nói "ngày nào cũng rảnh", "chiều",
     "4h", bot tự viết "chiều nay" rồi "xác nhận giúp em 4 giờ chiều nay…", khách đáp "có" thì bot hỏi "ngày nào" — tự mâu thuẫn vì model không
     thấy lịch đã ghi gì và tự thêm "nay"."""
     if not lich:
         return ""
     dong = "\n".join(f"- #{x.get('listing_code') or '?'}: \"{x['time_text']}\"" for x in lich if x.get("time_text"))
+    goi, toi = goi_toi(pronoun)
+    mau = cau_mau.cau("xac_nhan_lich", goi, toi=toi, gio="<ngày giờ khách đã nói>", can="<đường / khu của căn>")   # sửa ở CRM (SRS-5.1zzzzzzz158)
     return ("\nLỊCH HẸN XEM ĐÃ GHI (đọc kỹ trước khi hỏi giờ / ngày; chữ trong ngoặc là đúng những gì khách đã nói):\n" + dong + "\n"
             "  • CHỈ nói ngày (hôm nay / chiều nay / ngày mai / thứ …) khi chữ ở trên hoặc lời khách có ngày đó. Khách mới nói \"chiều\" hay \"4h\" "
             "thì CHƯA có ngày — KHÔNG tự thêm \"nay\", hỏi ngày MỘT câu ngắn; khách nói ngày nào cũng được thì gợi ý MỘT ngày gần nhất cho khách "
             "gật.\n"
-            "  • Đã đủ ngày VÀ giờ thì chốt, KHÔNG hỏi lại ngày / giờ; xác nhận đúng MỘT lần dạng \"Chị xác nhận giúp em, <ngày giờ> mình đến xem "
-            "căn <đường / khu> đúng không ạ?\" (không hỏi \"có phù hợp không\"). Khách đã đáp \"có / đúng\" thì cảm ơn ngắn và nói người phụ trách "
-            "sẽ gọi xác nhận — không hỏi thêm ngày giờ.\n"
+            "  • Đã đủ ngày VÀ giờ thì chốt, KHÔNG hỏi lại ngày / giờ; xác nhận đúng MỘT lần bằng NGUYÊN VĂN câu mẫu: \"" + mau + "\" (thay "
+            "chỗ <…> bằng đúng chữ ngày giờ khách đã nói và tên đường / khu của căn; không hỏi \"có phù hợp không\"). Khách đã đáp \"có / đúng\" "
+            "thì cảm ơn ngắn và nói người phụ trách sẽ gọi xác nhận — không hỏi thêm ngày giờ.\n"
             "  • Lịch mới ghi chờ xác nhận: KHÔNG nói đã chốt với chủ nhà.\n")
 
 

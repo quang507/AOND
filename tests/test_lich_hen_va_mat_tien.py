@@ -71,3 +71,22 @@ def test_dia_chi_chi_co_ten_duong_tu_ghi_mat_tien():
     p = Property(loai_hinh="nha_pho")
     p.update({"lo_gioi_hem": "hẻm 3m", "duong": "Lê Lai", "dia_chi": "Lê Lai"})
     assert p.fields["lo_gioi_hem"] == "hẻm 3m"
+
+
+def test_cau_xac_nhan_lich_la_cau_mau_nguyen_van():
+    """SRS-5.1zzzzzzz158: người xem chat chị Ngân góp ý đúng câu "Chị xác nhận giúp em, 4 giờ chiều nay mình đến xem căn Quang Trung đúng không ạ?" —
+    nay là câu mẫu cố định (`xac_nhan_lich`), sửa ở CRM; khối lịch bảo model chép NGUYÊN VĂN, chỉ điền ngày giờ khách nói và đường / khu."""
+    from aioi import cau_mau
+    lich = [{"listing_code": "SEED0044", "time_text": "chiều, 4h"}]
+    k = khoi_lich_dang_cho(lich, "chi")
+    assert "Chị xác nhận giúp em, <ngày giờ khách đã nói> mình đến xem căn <đường / khu của căn> đúng không ạ?" in k and "NGUYÊN VĂN" in k
+    assert "Em xác nhận giúp mình, <ngày giờ khách đã nói> mình đến xem căn" in khoi_lich_dang_cho(lich, "em")     # khách xưng "em": bot xưng "mình"
+    assert cau_mau.cau("xac_nhan_lich", "chị", toi="em", gio="4 giờ chiều nay", can="Quang Trung") == (
+        "Chị xác nhận giúp em, 4 giờ chiều nay mình đến xem căn Quang Trung đúng không ạ?")
+    try:
+        cau_mau.dang_ky(lambda: {"xac_nhan_lich": "{Goi} chốt giúp {toi}: {gio} xem căn {can} nhé?"})     # chủ dự án sửa ở CRM → có hiệu lực
+        assert "Chị chốt giúp em: <ngày giờ khách đã nói> xem căn <đường / khu của căn> nhé?" in khoi_lich_dang_cho(lich, "chi")
+        cau_mau.dang_ky(lambda: {"xac_nhan_lich": "{Goi} xác nhận giúp {toi} lịch xem nhé?"})            # sửa thiếu {gio} / {can} → về mặc định
+        assert "đúng không ạ?" in khoi_lich_dang_cho(lich, "chi")
+    finally:
+        cau_mau.dang_ky(None)

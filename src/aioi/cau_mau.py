@@ -102,11 +102,16 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "bao_can_moi_vuot": ("{Goi} ơi, {toi} vừa có căn mới gần với nhu cầu của {goi}: {mo_ta}. Giá nhỉnh hơn ngân sách {goi} nêu khoảng "
                          "{pct}% ạ.\nXem hình và chi tiết ở đây ạ: {link}\n{Goi} thấy sao, {toi} sắp lịch xem thử giúp {goi} nhé?",
                          "Như trên, khi giá vượt ngân sách một chút (tới 15 %). {pct} = % vượt, code tính", "SRS-5.1zzzzzzz150 · chủ dự án 23/10"),
+    # --- Xác nhận lịch hẹn xem với khách mua (SRS-5.1zzzzzzz158) ---
+    "xac_nhan_lich": ("{Goi} xác nhận giúp {toi}, {gio} mình đến xem căn {can} đúng không ạ?",
+                      "Khách mua đã nói đủ ngày và giờ xem nhà — bot hỏi xác nhận MỘT lần (model chép câu này, chỉ điền chỗ giữ chữ). {toi} = em / "
+                      "mình, {gio} = ngày giờ khách đã nói (vd \"4 giờ chiều nay\"), {can} = đường hoặc khu của căn — câu sửa phải giữ {gio} và {can}",
+                      "SRS-5.1zzzzzzz158 · câu người xem chat chị Ngân góp ý 23/10"),
 }
 
 # Khung bắt buộc của vài câu — code dựa vào khung đó (dòng mở bản nháp: tìm tiêu đề, cắt câu dẫn). Câu sửa sai khung → mặc định.
 # Chỗ giữ chữ câu sửa tay BẮT BUỘC giữ (thiếu thì bot nói câu không có con số) — kiểm trên câu sửa, trước khi điền.
-_BAT_BUOC = {"bao_phi": ("{phi}",)}
+_BAT_BUOC = {"bao_phi": ("{phi}",), "xac_nhan_lich": ("{gio}", "{can}")}
 
 _KHUNG = {
     "mo_dau_nhap": lambda c: c.startswith("📋") and c.rstrip().endswith(":") and "\n" not in c,
