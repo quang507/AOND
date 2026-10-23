@@ -590,7 +590,11 @@ def khoi_lich_dang_cho(lich: list[dict] | None, pronoun: str | None = None) -> s
             "chỗ <…> bằng đúng chữ ngày giờ khách đã nói và tên đường / khu của căn; không hỏi \"có phù hợp không\"). Khách đã đáp \"có / đúng\" "
             "thì cảm ơn ngắn và nói người phụ trách sẽ gọi xác nhận, nhắc khách \"chú ý điện thoại\" (KHÔNG viết \"chú ý máy\", không dùng chữ "
             "\"máy\") — không hỏi thêm ngày giờ.\n"
-            "  • Lịch mới ghi chờ xác nhận: KHÔNG nói đã chốt với chủ nhà.\n")
+            "  • Lịch mới ghi chờ xác nhận: KHÔNG nói đã chốt với chủ nhà.\n"
+            "  • Khách chỉ đáp ngắn đồng ý / cảm ơn (ok, vâng, ừ, ok ok…) mà KHÔNG thêm thông tin mới, và trong lời em trước đó ĐÃ xác nhận lịch "
+            "(hoặc đã nói người phụ trách sẽ gọi): đáp đúng MỘT câu rất ngắn (vd \"Vâng ạ.\") — KHÔNG lặp lại câu xác nhận, KHÔNG nhắc lại ngày giờ "
+            "hay căn, KHÔNG nhắc lại người phụ trách sẽ gọi, KHÔNG hỏi thêm câu nào. Khách gõ \"ok\" nhiều lần thì mỗi lần vẫn chỉ một câu ngắn, "
+            "không dài ra, không lặp nguyên văn câu trước.\n")
 
 
 def khoi_viec_vua_ghi(viec: list[str]) -> str:
