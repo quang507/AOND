@@ -8626,6 +8626,15 @@ Ca gốc: chủ dự án (23/10): "Prompt Caching và Batch API cái nào áp d�
 4. **Batch API**: không áp dụng — chat Zalo cần trả lời trong vài giây, Batch xử lý bất đồng bộ (tới 24 giờ). Việc đọc ảnh / tài liệu (`describe_media`, `extract_media`) chạy ngay khi khách gửi nên cũng không hợp. Chưa có công việc nền nào gọi Claude để dồn vào Batch.
 5. **Kiểm**: `tests/test_cache_ranh_gioi.py` (6 ca; tắt phần cắt trong `_sys` thì đỏ 2 ca). Hiệu quả thật CHƯA đo — sau khi triển khai so `cache_write` / `cache_read` mỗi ngày ở `bot_usage_model`; Haiku 5.5 có mức tối thiểu 512 token một điểm cache (theo tài liệu skill claude-api, nhắc kiểm lại với tài liệu chính thức).
 
+### SRS-5.1zzzzzzz167 · Sinh lại 30 tin mẫu đầu, nạp đủ 130 căn thử mua (23/10/2026)
+
+Ca gốc: chủ dự án (23/10): "xóa tin nhắn thôi còn nhà trong kho vẫn để 130 căn đó để test mua" — lúc kiểm, `listings` chỉ còn 5 tin thật, 0 tin `SEED`, người bán thử `thu-seed-001` không còn, `luu_tru` không có tin `SEED` nào (không phải lượt xoá có lưu bản sao); lượt xoá tin nhắn của phiên này đếm `listings` = 5 TRƯỚC khi xoá. Nguyên nhân mất CHƯA biết (script bắn thử chỉ `reset_nguoi_test` ID thử của chính chúng; chưa thấy chỗ nào nhắm `thu-seed-001`).
+
+1. **Sửa**: `nap-tin-mau-lib.mjs` thêm `KE_HOACH_DAU_30` + `sinhTatCa()` (SEED0001..0030 hạt giống riêng + SEED0031..0130 y hệt bản đã nạp); `nap-tin-mau.mjs` tạo `thu-seed-001` nếu chưa có rồi nạp mọi mã chưa có (chạy lại được). Ô `nap-tin-mau` của `apply-migration.yml` giữ nguyên.
+2. **30 tin đầu là bản SINH LẠI, không phải bản hồi sáng 23/10** (bản đó nạp tay bằng SQL, không có file, nội dung mất cùng DB). Hệ quả: đáp án 30 câu ở `bot/tests/tim-nha/cau-hoi.json` được soạn cho 30 tin cũ (mã SEED0001..0030) — với tin mới CHƯA còn giá trị; đừng chạy `do-tim-nha` rồi đọc số cho tới khi đáp án soạn lại.
+3. **Lớp lỗi**: dữ liệu mẫu nạp tay bằng SQL không để lại file nên không dựng lại được khi mất. Nay mọi 130 tin sinh tất định từ repo.
+4. **Kiểm**: `bot/tests/tim-nha/nap-tin-mau.tu-kiem.mjs` (offline: 130 mã liên tục, tin gốc khác nhau, 100 tin sau y hệt bản cũ, tất định). Nạp thật: ô `nap-tin-mau`, kết quả trong PR.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
