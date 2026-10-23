@@ -8570,6 +8570,15 @@ Ca gốc: chủ dự án muốn tin báo căn mới nghe như người nhắn (S
 3. **Chỗ khác cùng lớp**: còn — thứ tự "ảnh trước câu hỏi" chỉ có ở tin báo căn mới; muốn chat giống phải cho bridge xen ảnh giữa các bong bóng (đổi giao thức `/chat-reply`, chưa làm). Model có theo đủ bốn đoạn không chỉ kiểm được bằng chat thật (test chỉ kiểm nội dung khối lệnh). Mỗi lượt một căn thay cho "tối đa 2 căn" của SRS-145: khách muốn so sánh phải đòi thêm.
 4. **Kiểm**: `tests/test_goi_y_can_tu_nhien.py` — khối nêu MỘT căn, BỐN ĐOẠN, dòng trống, câu hỏi ~15 chữ, đúng thứ tự (1)→(4), không nhắc lại căn đã gửi; một căn có 6 ảnh thì gửi 4, hai căn chia đều 2 + 2 — bỏ chia đều thì ca ảnh đỏ.
 
+### SRS-5.1zzzzzzz161 · Số điện thoại gõ sai độ dài không được "cảm ơn như đã nhận"; nhắc "chú ý điện thoại", không "máy" (23/10/2026)
+
+Ca gốc: chat chị Ngân 23/10 15:47 — bot xin số lúc chốt lịch xem, chị CỐ TÌNH gõ thiếu một số ("070772473", 9 số). `tim_sdt` đã loại đúng (không ghi DB, không báo người phụ trách) nhưng lượt đó model không biết có một dãy số bị loại nên tự viết "Cảm ơn chị đã gửi số điện thoại ạ… em đã ghi lịch…"; sau đó còn nhắn "Chị chú ý máy giúp em nhé" (chủ dự án: "sửa lại chị chú ý điện thoại, ko dùng từ máy").
+
+1. **Lớp lỗi**: code từ chối một đầu vào nhưng không cho model biết đã từ chối — model chỉ thấy lời khách nên mặc định "đã nhận". Cùng lớp SRS-153 (lượt không ghi gì mà vẫn nói đã giữ lịch).
+2. **Sửa**: `mua.giong_sdt_sai(text)` — dãy số đầu 0 / +84, 7–13 số mà `tim_sdt` không nhận (thiếu / thừa số, sai đầu số). `engine._viec_mua`: bot đã xin số (cờ `_da_xin_sdt`) và khách gõ dãy như vậy → thêm một dòng việc "số vừa gõ KHÔNG đúng… CHƯA ghi được: KHÔNG cảm ơn, KHÔNG nói đã nhận, KHÔNG hứa người phụ trách gọi; xin gõ lại một lần". Chưa xin số thì không nhắc (khách gõ mã tin, giá… không bị coi là số). Lời dặn ghi số / khối lịch hẹn thêm "nhắc khách 'chú ý điện thoại', KHÔNG dùng chữ 'máy'".
+3. **Chỗ khác cùng lớp**: còn — các đường ghi khác cũng chỉ ghi khi đạt cổng (mã căn, giờ hẹn) và đã có dòng "CHƯA GHI" cho lượt không ghi gì; riêng giờ hẹn nói không rõ chưa có dòng báo riêng. Lời "chú ý điện thoại" vẫn do model viết (không phải câu mẫu cố định); khối lịch vẫn nói "người phụ trách sẽ gọi" cả khi lịch chưa có số (chưa đọc cột `viewings.phone` ở `lich_dang_cho`).
+4. **Kiểm**: `tests/test_sdt_hen_xem_tai_chinh.py` — `giong_sdt_sai` (số thiếu / thừa là sai; số đúng, giá "0,5 tỷ", "0.75 tháng", giờ "9h - 10h" không phải); khách gõ "070772473" sau khi bot xin số → không PATCH `viewings`, không đẻ nhắc, lời dặn model có "KHÔNG cảm ơn"; gõ lại đủ số thì ghi và có "chú ý điện thoại". Tắt nhánh `giong_sdt_sai` thì ca đỏ (đã thử). Chưa thử trên Zalo thật.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
