@@ -8414,6 +8414,16 @@ Ca gốc: bắn thử production 22/10 (`ban-thu-nhieu-can`, hai lần): bot tr�
 3. **Chỗ khác cùng lớp**: `_get_or_create_conversation` cùng khuôn đọc-rồi-chèn (chưa thấy 409 ở đó, chưa sửa — sửa khi có bằng chứng); các `_post` khác dùng `on_conflict` hoặc khoá riêng. Chưa chứng minh được luồng nào đua với luồng lưu tin (suy từ log, không từ vết luồng) — nên kiểm lại bằng bắn thử.
 4. **Kiểm**: `tests/test_seller_dua_tao.py` (2 ca; ca đua đỏ khi bỏ đoạn đọc lại, đã thử). Bắn thử production `apply-migration` ô `ban-thu-nhieu-can` — script in log lõi khi trượt.
 
+### SRS-5.1zzzzzzz144 · Bộ đo chất lượng tìm nhà trên rổ mẫu — 23/10/2026
+
+Chủ dự án (23/10): "soạn vài bộ câu hỏi tìm nhà và script". Lớp lỗi cần chặn: nói "tin gốc dễ tìm hơn" / "tìm theo nghĩa tốt" mà không có số — chỉnh trọng số `tim_nha` bằng cảm giác.
+
+1. **Rổ mẫu**: 30 tin `seed_thu` (`SEED0001..0030`, người bán thử `thu-seed-001`, nạp thẳng SQL 23/10, đang nằm trên production, xoá khi chủ dự án bảo — `reset_nguoi_test('thu-seed-001')`). Mỗi tin có tin gốc nguyên văn trong `listing_noi_bo` và vector.
+2. **Bộ câu hỏi** `bot/tests/tim-nha/cau-hoi.json`: 30 câu, nhóm A lọc rõ (10), B thiên về nghĩa (15), C mơ hồ (5). **Đáp án viết trước khi chạy**, không sửa theo kết quả (sửa phải ghi lý do ở câu đó). Nhập cho `tim_nha` là các tham số đã rút sẵn (giả định bot rút đúng) — đo khâu TÌM, không đo khâu rút ý khách.
+3. **Script** `bot/tests/tim-nha/do-tim-nha.mjs` (workflow `apply-migration` ô `dung_lai` = `do-tim-nha`): chỉ đọc DB, nhúng bằng khoá chính Gemini (~60 lượt). Bốn chế độ: `loc_cung` (tim_nha không vector), `tim_nha` (production), `nghia_goc` (chỉ cosine, văn bản = tin gốc), `nghia_mota` (chỉ cosine, văn bản = bản mô tả AI viết lại). Ra hit@3, hit@5, MRR theo chế độ và theo nhóm, danh sách câu trượt, số câu tin gốc thắng / mô tả thắng. Thoát 2 = chưa đo được (hết hạn mức…), không phải "đạt".
+4. **Chỗ khác cùng lớp**: trọng số `tim_nha` (khu vực +3, vector ≤ +4) chưa hiệu chỉnh — một câu thử tay 23/10 cho thấy điểm vector các tin chênh nhau chỉ khoảng 0,35 so với điểm khu vực cố định 3; cần số đo trước khi đổi. Cỡ mẫu 30 / 30 chỉ để SO SÁNH giữa các chế độ, không phải con số tuyệt đối.
+5. **Kiểm**: `bot/tests/tim-nha/do-tim-nha.tu-kiem.mjs` (trong `test:bot`): hàm thuần, câu SQL đúng chữ ký `tim_nha`, và MỌI đáp án thoả điều kiện cứng của chính câu hỏi (đã thử phá một đáp án — đỏ). Hạn mức nhúng: 5 khoá nhúng nền cạn hằng ngày, khoá chính `GEMINI_API_KEY` để dành cho câu tìm của khách — script chỉ dùng khoá chính ~60 lượt.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
