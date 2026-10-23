@@ -110,11 +110,14 @@ class KhoNguoiMua:
         try:
             bid = cache.get(user_key)
             if not bid:
-                rows = self._get(f"buyers?zalo_user_id=eq.{_q(user_key)}&select=id")
+                rows = self._get(f"buyers?zalo_user_id=eq.{_q(user_key)}&select=id,name")
+                ten_zalo = ten or self._ten_ban_neu_co(user_key)   # SRS-5.1zzzzzzz149: một Zalo một tên — dùng tên Zalo của khách
                 if rows:
                     bid = rows[0]["id"]
+                    if ten_zalo and str(rows[0].get("name") or "").startswith("Khách Zalo"):
+                        self._patch(f"buyers?id=eq.{bid}", {"name": ten_zalo})
                 else:
-                    tao = self._post("buyers", {"zalo_user_id": user_key, "name": ten or f"Khách Zalo {user_key[-4:]}"})
+                    tao = self._post("buyers", {"zalo_user_id": user_key, "name": ten_zalo or f"Khách Zalo {user_key[-4:]}"})
                     bid = tao[0]["id"] if tao else None
                 if bid:
                     cache[user_key] = bid
@@ -124,6 +127,15 @@ class KhoNguoiMua:
         except Exception as e:  # noqa: BLE001
             log.warning("khach_mua lỗi: %s", e)
             return None
+
+    def _ten_ban_neu_co(self, user_key: str) -> str | None:
+        """Tên thật của khách ở dòng `sellers` (nếu đã có và không phải tên giữ chỗ "Khách Zalo ####") — để dòng mua dùng cùng tên."""
+        try:
+            rows = self._get(f"sellers?zalo_user_id=eq.{_q(user_key)}&select=name")
+        except Exception:  # noqa: BLE001
+            return None
+        ten = str((rows[0].get("name") if rows else "") or "").strip()
+        return ten if ten and not ten.startswith("Khách Zalo") else None
 
     # --- Căn cho khách ----------------------------------------------------------------------------------------------
     def can_theo_ma(self, ma: list[str]) -> list[dict]:

@@ -433,29 +433,98 @@ class SupabaseConversationStore(KhoNguoiMua):
                 return da_co[0]["id"]
         return None
 
+    def _id_ban_neu_co(self, user_key: str) -> str | None:
+        """id dòng `sellers` của khách nếu đã có (KHÔNG tạo)."""
+        sid = self._seller_cache.get(user_key)
+        if sid:
+            return sid
+        rows = self._get(f"sellers?zalo_user_id=eq.{urllib.parse.quote(user_key)}&select=id")
+        if rows:
+            self._seller_cache[user_key] = rows[0]["id"]
+            return rows[0]["id"]
+        return None
+
+    def _id_mua_neu_co(self, user_key: str) -> str | None:
+        """id dòng `buyers` của khách nếu đã có (KHÔNG tạo)."""
+        cache = self.__dict__.setdefault("_buyer_cache", {})
+        bid = cache.get(user_key)
+        if bid:
+            return bid
+        rows = self._get(f"buyers?zalo_user_id=eq.{urllib.parse.quote(user_key)}&select=id")
+        if rows:
+            cache[user_key] = rows[0]["id"]
+            return rows[0]["id"]
+        return None
+
+    def _tim_hoi_thoai(self, seller_id: str | None, buyer_id: str | None) -> dict | None:
+        """MỘT hội thoại cho mỗi khách Zalo (SRS-5.1zzzzzzz149): tìm theo `seller_id` HOẶC `buyer_id`, lấy cái bắt đầu sớm nhất."""
+        dk = ([f"seller_id.eq.{seller_id}"] if seller_id else []) + ([f"buyer_id.eq.{buyer_id}"] if buyer_id else [])
+        if not dk:
+            return None
+        rows = self._get(f"conversations?or=({','.join(dk)})&channel=eq.zalo_personal_test&select=id,seller_id,buyer_id"
+                         "&order=started_at.asc&limit=1")
+        return rows[0] if rows else None
+
+    def _hoi_thoai_chung(self, user_key: str, ten: str | None = None, vai: str = "seller") -> str | None:
+        """Hội thoại DUY NHẤT của khách Zalo, dù khách nói chuyện ở vai bán hay vai mua (SRS-5.1zzzzzzz149, chủ dự án 23/10: "1 zalo
+        tính là 1 khách, 1 chỗ trong tin nhắn thôi, không tách ra"). Bản trước mỗi vai tự tạo hội thoại riêng (`seller_id` hoặc
+        `buyer_id`) nên một người hiện hai dòng trên CRM và lịch sử mua / bán đứt nhau sau khi lõi khởi động lại. Nay: tìm theo
+        cả hai id, gắn thêm id còn thiếu vào hội thoại đã có, chỉ tạo mới khi khách chưa có hội thoại nào. Vai bán tạo dòng
+        `sellers`, vai mua tạo dòng `buyers`; dòng kia chỉ được gắn nếu ĐÃ có."""
+        if vai == "buyer":
+            bid = self.khach_mua(user_key, ten)
+            if not bid:
+                return None
+            sid = self._id_ban_neu_co(user_key)
+            khoa = f"mua:{bid}"
+        else:
+            sid = self._get_or_create_seller(user_key, ten)
+            if not sid:
+                return None
+            bid = self._id_mua_neu_co(user_key)
+            khoa = sid
+        if khoa in self._conv_cache:
+            return self._conv_cache[khoa]
+        row = self._tim_hoi_thoai(sid, bid)
+        if row:
+            va = {k: v for k, v in (("seller_id", sid), ("buyer_id", bid)) if v and not row.get(k)}
+            if va:
+                self._patch(f"conversations?id=eq.{row['id']}", va)
+            conv_id = row["id"]
+        else:
+            body: dict[str, Any] = {"channel": "zalo_personal_test", "started_at": datetime.now(timezone.utc).isoformat()}
+            if sid:
+                body["seller_id"] = sid
+            if bid:
+                body["buyer_id"] = bid
+            try:
+                tao = self._post("conversations", body)
+            except Exception as e:  # noqa: BLE001
+                log.error("Failed to create conversation in Supabase: %s", e)
+                return None
+            conv_id = tao[0]["id"] if tao else None
+            if not conv_id:
+                return None
+        if sid:
+            self._conv_cache[sid] = conv_id
+        if bid:
+            self._conv_cache[f"mua:{bid}"] = conv_id
+        return conv_id
+
     def _get_or_create_conversation(self, seller_id: str) -> str | None:
+        """Giữ tên cũ cho chỗ gọi theo `seller_id` (đã có dòng `sellers`): tìm cả hội thoại gắn `buyer_id` của cùng khách."""
         if seller_id in self._conv_cache:
             return self._conv_cache[seller_id]
-
-        convs = self._get(f"conversations?seller_id=eq.{seller_id}&channel=eq.zalo_personal_test")
-        if convs:
-            conv_id = convs[0]["id"]
-            self._conv_cache[seller_id] = conv_id
-            return conv_id
-
-        now_iso = datetime.now(timezone.utc).isoformat()
-        try:
-            res = self._post(
-                "conversations",
-                {"seller_id": seller_id, "channel": "zalo_personal_test", "started_at": now_iso}
-            )
-            if res:
-                conv_id = res[0]["id"]
-                self._conv_cache[seller_id] = conv_id
-                return conv_id
-        except Exception as e:
-            log.error("Failed to create conversation in Supabase: %s", e)
+        rows = self._get(f"sellers?id=eq.{seller_id}&select=zalo_user_id")
+        if rows and rows[0].get("zalo_user_id"):
+            uk = rows[0]["zalo_user_id"]
+            self._seller_cache.setdefault(uk, seller_id)
+            return self._hoi_thoai_chung(uk, None, "seller")
         return None
+
+    def _hoi_thoai_mua(self, user_key: str, ten: str | None = None) -> str | None:
+        """Hội thoại của khách khi nói chuyện ở vai MUA — cùng MỘT hội thoại với vai bán (SRS-5.1zzzzzzz149)."""
+        return self._hoi_thoai_chung(user_key, ten, "buyer")
 
     def _ghi_so_loi(self, nguon: str, chi_tiet: str) -> None:
         """Một dòng sổ lỗi qua `log_loi` (DB che SĐT). Không bao giờ ném — ghi sổ hỏng thì chỉ còn journal."""
@@ -505,11 +574,7 @@ class SupabaseConversationStore(KhoNguoiMua):
 
     def _ghi_luot_chat_mot_lan(self, user_key: str, incoming_text: str, bot_reply: str, zalo_msg_id: str | None,
                                role: str, user_name: str | None, nhan_luc: str | None) -> None:
-        if role == "buyer":
-            conv_id = self._hoi_thoai_mua(user_key, user_name)
-        else:
-            seller_id = self._get_or_create_seller(user_key, user_name)
-            conv_id = self._get_or_create_conversation(seller_id) if seller_id else None
+        conv_id = self._hoi_thoai_chung(user_key, user_name, "buyer" if role == "buyer" else "seller")
         if not conv_id:
             return
         now_iso = datetime.now(timezone.utc).isoformat()
@@ -548,11 +613,9 @@ class SupabaseConversationStore(KhoNguoiMua):
         chủ nhà, `laTinNoiBo`). ID thử (`la_id_thu`) chỉ bật cờ, không nhắn admin. Trả True khi đã xếp tin / bật cờ."""
         if not (self.is_configured and user_key):
             return False
-        if role == "buyer":   # hội thoại mua (SRS-5.1zzzzzzz83) — trigger conversations_email_upset còn gửi email admin
-            seller_id, conv_id = None, self._hoi_thoai_mua(user_key, ten)
-        else:
-            seller_id = self._get_or_create_seller(user_key, ten)
-            conv_id = self._get_or_create_conversation(seller_id) if seller_id else None
+        # Một hội thoại chung cho cả hai vai (SRS-5.1zzzzzzz149) — trigger conversations_email_upset còn gửi email admin.
+        seller_id = None if role == "buyer" else self._get_or_create_seller(user_key, ten)
+        conv_id = self._hoi_thoai_chung(user_key, ten, "buyer" if role == "buyer" else "seller")
         if not conv_id:
             return False
         now_iso = datetime.now(timezone.utc).isoformat()
@@ -717,12 +780,16 @@ class SupabaseConversationStore(KhoNguoiMua):
         if not self.is_configured:
             return
 
+        # SRS-5.1zzzzzzz149: khách đang ở vai MUA không có tin rao — không tạo dòng `sellers` + hội thoại bán rỗng cho họ (đó là chỗ
+        # một người bị tách làm hai trên CRM). Hội thoại và tin nhắn của họ ghi ở `ghi_luot_chat` (cùng một hội thoại chung).
+        if getattr(conv, "role", None) == "buyer":
+            return
         try:
             seller_id = self._get_or_create_seller(conv.user_key)
             if not seller_id:
                 return
 
-            conv_id = self._get_or_create_conversation(seller_id)
+            conv_id = self._hoi_thoai_chung(conv.user_key, None, "seller")
             now_iso = datetime.now(timezone.utc).isoformat()
 
             # 1. Update conversation timestamp
@@ -907,6 +974,11 @@ class SupabaseConversationStore(KhoNguoiMua):
                 "cho_duyet": not thieu and bool(r.get("can_chu_duyet")) and not r.get("chu_duyet_at")}
 
     @staticmethod
+    def _nguoi_noi_cuoi(rows: list[dict]) -> str | None:
+        """Vai của khách ở tin KHÁCH gần nhất trong hội thoại chung (`messages.sender` = buyer / seller) — để nạp lại phiên đúng phía."""
+        return next((m.get("sender") for m in reversed(rows) if m.get("sender") in ("buyer", "seller")), None)
+
+    @staticmethod
     def _tin_that(row: dict) -> bool:
         """Dòng `listings` có nội dung thật (khác ô nháp rỗng tạo ở lượt chào: loại `chua_ro`, không diện tích / giá, `boc_tach` chỉ có dấu nội bộ)."""
         bt = row.get("boc_tach") or {}
@@ -932,10 +1004,10 @@ class SupabaseConversationStore(KhoNguoiMua):
         bs = self._get(f"buyers?zalo_user_id=eq.{urllib.parse.quote(user_key)}&select=id")
         if not bs:
             return []
-        cs = self._get(f"conversations?buyer_id=eq.{bs[0]['id']}&channel=eq.zalo_personal_test&select=id&order=started_at.desc&limit=1")
-        if not cs:
+        hoi = self._tim_hoi_thoai(None, bs[0]["id"])
+        if not hoi:
             return []
-        return self._lich_su(self._get(f"messages?conversation_id=eq.{cs[0]['id']}&order=created_at.asc"))
+        return self._lich_su(self._get(f"messages?conversation_id=eq.{hoi['id']}&order=created_at.asc"))
 
     def _conv_tu_phien_mua(self, user_key: str, mua: list) -> Any:
         """Hội thoại của khách chỉ đi mua: lịch sử từ Supabase, hồ sơ nhu cầu / xưng hô / chế độ test từ SQLite (Supabase không có cột đó)."""
@@ -987,9 +1059,10 @@ class SupabaseConversationStore(KhoNguoiMua):
             self._seller_cache[user_key] = seller_id
 
             # 2. Check if conversation exists
-            convs = self._get(f"conversations?seller_id=eq.{seller_id}&channel=eq.zalo_personal_test")
+            bid = self._id_mua_neu_co(user_key)
+            hoi = self._tim_hoi_thoai(seller_id, bid)   # MỘT hội thoại chung cho cả vai bán và vai mua (SRS-5.1zzzzzzz149)
             conv_id = None
-            if not convs:
+            if not hoi:
                 # Hội thoại bị xoá / reset trên CRM: bỏ lịch sử. 19/10/2026 (SRS-5.1zzzzzzz77): người bán vẫn có tin trên DB (tin
                 # nhập từ CRM, rổ hàng, hội thoại đã xoá) thì vẫn nạp tin — bản trước trả None, lõi coi như người mới: chủ nhà trả
                 # lời câu khách mua hỏi xong bị hỏi "căn này là chung cư, nhà phố hay đất" và sinh thêm một tin rỗng.
@@ -998,8 +1071,10 @@ class SupabaseConversationStore(KhoNguoiMua):
                 if not self._get(f"listings?seller_id=eq.{seller_id}&select=id&limit=1"):
                     return None
             else:
-                conv_id = convs[0]["id"]
+                conv_id = hoi["id"]
                 self._conv_cache[seller_id] = conv_id
+                if bid:
+                    self._conv_cache[f"mua:{bid}"] = conv_id
 
             # Bản SQLite trên VPS giữ thứ Supabase không có cột (bảng giá riêng, mốc lịch sử, ảnh đã cất, đã trình bản nháp…) —
             # Supabase vẫn là nguồn cho tin và hội thoại, SQLite chỉ bù phần thiếu (SRS-5.1zzzzzzz63).
@@ -1061,7 +1136,8 @@ class SupabaseConversationStore(KhoNguoiMua):
                 active_listing_id=active,
                 # SRS-5.1zzzzzzz147: dòng tin RỖNG (ô nháp tạo ở lượt chào) không làm khách thành người bán — bản trước
                 # `if listings` nên sau khi lõi khởi động lại khách đang đi mua bị nạp thành người bán.
-                role="seller" if any(self._tin_that(r) for r in db_listings) else (cu.role if cu else "unknown"),
+                role=("seller" if any(self._tin_that(r) for r in db_listings)
+                      else "buyer" if self._nguoi_noi_cuoi(history_rows) == "buyer" else (cu.role if cu else "unknown")),
             )
             if cu:
                 conv.price_book = cu.price_book
@@ -1072,16 +1148,9 @@ class SupabaseConversationStore(KhoNguoiMua):
                 conv.so_luot_thong_tin = cu.so_luot_thong_tin   # lượt thông tin thứ mấy (SRS-5.1zzzzzzz131 bản 2)
                 if conv.user_type.value == "unknown":
                     conv.user_type = cu.user_type
-            # Cùng một Zalo có thể vừa là người bán vừa là người mua: hội thoại MUA nằm ở `conversations.buyer_id`, trước đây
-            # `load` chỉ đọc hội thoại bán nên lịch sử mua mất sạch sau khi khởi động lại. Nay: chưa có tin thật và lượt mua gần
-            # nhất MỚI hơn lượt bán thì khách đang ở phía mua — nạp hội thoại mua.
-            mua = self._phien_mua(user_key)
-            if mua and not any(self._tin_that(r) for r in db_listings) and mua[-1].at >= (history[-1].at if history else 0.0):
+            if conv.role == "buyer" and conv.buyer_lead is None:
                 from .schema import BuyerLead
-                conv.history = mua
-                conv.role = "buyer"
-                if conv.buyer_lead is None:
-                    conv.buyer_lead = BuyerLead(user_key=user_key)
+                conv.buyer_lead = BuyerLead(user_key=user_key)
             return conv
 
         except Exception as e:
@@ -1110,7 +1179,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             self._delete(f"listings?seller_id=eq.{seller_id}")
 
             # 2. Delete conversations and messages
-            convs = self._get(f"conversations?seller_id=eq.{seller_id}")
+            convs = self._get(f"conversations?seller_id=eq.{seller_id}")   # hội thoại chung gắn cả buyer_id: xoá luôn tin vai mua
             for c in convs:
                 cid = c["id"]
                 self._delete(f"messages?conversation_id=eq.{cid}")
@@ -1118,6 +1187,8 @@ class SupabaseConversationStore(KhoNguoiMua):
 
             # 3. Clear cache
             self._conv_cache.pop(seller_id, None)
+            for k in [k for k in self._conv_cache if k.startswith("mua:")]:   # khoá phía mua cũng trỏ vào hội thoại vừa xoá
+                self._conv_cache.pop(k, None)
             log.info("Successfully reset user %s in Supabase", user_key)
         except Exception as e:
             log.error("Failed to reset user %s in Supabase: %s", user_key, e)
