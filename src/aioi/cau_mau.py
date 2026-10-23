@@ -94,6 +94,14 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                      "Tin nhắc sau 5 phút khi không còn câu chờ và căn chưa có ảnh", "SRS-5.1zzzzzzz73"),
     "nhac_xin_anh_em": ("Khi nào tiện em chụp gửi mình vài tấm ảnh thực tế nhé, để tin đăng nổi bật và hút khách hơn nè.",
                         "Như trên, khi khách xưng \"em\"", "SRS-5.1zzzzzzz73"),
+    # --- Báo khách mua khi có căn mới vừa nhu cầu (SRS-5.1zzzzzzz150) ---
+    "bao_can_moi": ("{Goi} ơi, {toi} vừa có căn mới hợp nhu cầu của {goi}: {mo_ta}.\nXem hình và chi tiết ở đây ạ: {link}\n{Goi} có muốn "
+                    "{toi} sắp lịch xem thử không ạ?",
+                    "Tin chủ động báo khách mua có căn mới vừa nhu cầu (8–20 giờ, tối đa 1 tin / khách / 24 giờ). {toi} = em / mình, "
+                    "{mo_ta} = loại, đường, phường, quận, diện tích, giá, phòng ngủ, {link} = link căn", "SRS-5.1zzzzzzz150 · chủ dự án 23/10"),
+    "bao_can_moi_vuot": ("{Goi} ơi, {toi} vừa có căn mới gần với nhu cầu của {goi}: {mo_ta}. Giá nhỉnh hơn ngân sách {goi} nêu khoảng "
+                         "{pct}% ạ.\nXem hình và chi tiết ở đây ạ: {link}\n{Goi} thấy sao, {toi} sắp lịch xem thử giúp {goi} nhé?",
+                         "Như trên, khi giá vượt ngân sách một chút (tới 15 %). {pct} = % vượt, code tính", "SRS-5.1zzzzzzz150 · chủ dự án 23/10"),
 }
 
 # Khung bắt buộc của vài câu — code dựa vào khung đó (dòng mở bản nháp: tìm tiêu đề, cắt câu dẫn). Câu sửa sai khung → mặc định.

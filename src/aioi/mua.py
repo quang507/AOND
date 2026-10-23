@@ -277,6 +277,43 @@ class KhoNguoiMua:
             log.warning("can_phu_hop lỗi: %s", e)
             return []
 
+    def can_moi_khop(self, lead: Any, ids: list[str], tran: float = 1.15) -> list[dict]:
+        """Báo căn mới (SRS-5.1zzzzzzz150): trong `ids` (các tin vừa lên kệ) căn nào khớp CỨNG nhu cầu khách — đúng bán / thuê, loại, KHU VỰC
+        (khách đã nêu thì phải trúng), giá ≤ ngân sách × `tran` (vượt nhẹ thì có `_vuot_ngan_sach` = % vượt), xe hơi vào được nếu khách cần.
+        Đúng ngân sách xếp trước, rồi tin mới cập nhật trước. Không dùng vector (một lượt gọi DB, không tốn quota)."""
+        if not (self.is_configured and lead is not None and ids and co_tieu_chi(lead)):
+            return []
+        f = getattr(lead, "fields", {}) or {}
+        loc = ["status=eq.dang_ban", f"id=in.({','.join(_q(i) for i in ids[:50])})",
+               "deal=eq." + ("cho_thue" if getattr(lead, "loai_giao_dich", "mua") == "thue" else "ban")]
+        loai = _LOAI_MUA_SANG_DB.get(str(getattr(lead, "loai_bds", None) or f.get("loai_bds") or "").strip().lower())
+        if loai:
+            loc.append(f"property_type=eq.{loai}")
+        khu = _sach_khu(str(getattr(lead, "khu_vuc", None) or f.get("khu_vuc") or ""))
+        if khu:
+            mau = _q(f"*{khu}*")
+            loc.append(f"or=(district.ilike.{mau},ward.ilike.{mau},street.ilike.{mau})")
+        ns_chu = str(getattr(lead, "ngan_sach", None) or f.get("ngan_sach") or "")
+        ns = self._ngan_sach_vnd(ns_chu)
+        if ns:
+            loc.append(f"price_vnd=lte.{int(ns * tran)}")
+        elif ns_chu.strip():
+            return []   # khách nêu ngân sách mà không đọc ra số → không đoán
+        try:
+            rows = self._get(f"listings?{'&'.join(loc)}&select={COT_CAN},car_in_house,updated_at&order=updated_at.desc&limit=30")
+        except Exception as e:  # noqa: BLE001
+            log.warning("can_moi_khop lỗi: %s", e)
+            return []
+        if _can_xe_hoi(getattr(lead, "yeu_cau_xe_hoi", None) or f.get("yeu_cau_xe_hoi")):
+            rows = [r for r in rows if str(r.get("access_type")) in ("mat_tien", "hem_xe_tai", "hem_xe_hoi") or r.get("car_in_house")]
+        if ns:
+            for r in rows:
+                g = r.get("price_vnd")
+                if isinstance(g, (int, float)) and g > ns:
+                    r["_vuot_ngan_sach"] = max(1, round((g / ns - 1) * 100))
+        rows.sort(key=lambda r: 1 if r.get("_vuot_ngan_sach") else 0)   # sắp ổn định: giữ thứ tự mới cập nhật trước
+        return rows
+
     # --- Ghi việc của khách ------------------------------------------------------------------------------------------
     def ghi_quan_tam(self, buyer_id: str, ma: list[str]) -> bool:
         try:
