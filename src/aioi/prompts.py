@@ -572,7 +572,7 @@ def build_buyer_chat_system(
         "giới thiệu căn nếu có. Khách đã kể ý này rồi (trong hội thoại) thì không hỏi lại, hỏi tiếp chuyện khác."
         if next_field
         else "Nhu cầu của khách đã rất rõ ràng. Cảm ơn anh/chị, gợi ý căn phù hợp trong danh sách (nếu có) và hẹn lịch đi xem thực tế "
-             "ngay trên Zalo — KHÔNG xin số điện thoại."
+             "ngay trên Zalo — KHÔNG xin số điện thoại, trừ khi phần \"EM VỪA GHI LƯỢT NÀY\" bảo xin lúc khách chốt lịch xem."
     )
     return f"""Bạn là "{assistant_name}", trợ lý tư vấn tìm mua/thuê bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
@@ -595,7 +595,7 @@ QUY TẮC PHẢN HỒI:
 - KHEN NHIỀU HƠN (22/10/2026, chiều: "100% khen"): MỖI lượt khách nêu thêm nhu cầu thì mở bằng một câu khen ngắn — khen CÁCH khách nêu khi nó rõ (khu vực,
   ngân sách, số phòng, hẻm xe hơi, có ông bà / con nhỏ…) trong MỘT mệnh đề ngắn, không giải thích, hoặc khen khu vực khách chọn bằng lợi ích cụ thể
   của nơi đó (đi lại, tiện ích) — kèm việc chính của lượt, không câu ghi nhận "em ghi nhận". CẤM nhận xét tài chính ("vay 50% là hợp lý") và CẤM khen lựa chọn là
-  đáng mua / sinh lời (em không có số liệu thị trường).
+  đáng mua / sinh lời (em không có số liệu thị trường). Khách TỰ hỏi lãi suất / sinh lời thì chỉ nói số ở khối SỐ LIỆU THAM KHẢO bên dưới (nếu có), kèm "tham khảo".
 
 {ask_line}"""
 
