@@ -316,6 +316,8 @@ async function layTenZalo(tid) {
     const res = await api.getUserInfo(String(tid));
     const p = res?.changed_profiles?.[tid] || res?.unchanged_profiles?.[tid];
     const ten = p?.displayName || p?.zaloName || "";
+    // Ghi GIÁ TRỊ THÔ (chỉ con số / null, không dữ liệu khác) để biết Zalo trả gì cho tài khoản ẩn giới tính — chưa kiểm được (SRS-5.1zzzzzzz164).
+    console.log(`[Bridge] hồ sơ Zalo ${tid}: gender=${JSON.stringify(p?.gender ?? null)}`);
     if (p?.gender === 0 || p?.gender === 1) userGenderCache.set(tid, p.gender === 1 ? "nu" : "nam");
     if (ten) {
       userProfileCache.set(tid, ten);

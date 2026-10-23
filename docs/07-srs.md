@@ -8598,6 +8598,15 @@ Ca gốc: chủ dự án (23/10): "thả tim ở câu chào, câu xác nhận ti
 4. **Phần kèm**: lời dặn xin lại số điện thoại sai độ dài nay nhắc cấu trúc (10 số, bắt đầu bằng 0) — nối SRS-161.
 5. **Kiểm**: `tests/test_tha_tim_gioi_tinh.py` — lời chào / "ok" do AI đọc → `tha_tim`; cụm trích không có trong tin khách → không thả; duyệt bản nháp / ô địa chỉ → thả; gợi ý Zalo bị lời khách tự xưng ghi đè; lời chào đầu "Chào chị ạ!"; công tắc tắt. Đã thử đỏ khi bỏ kiểm cụm trích, khi cho gợi ý Zalo đè lời khách, khi bỏ cờ ở `_build_result`. Bridge chỉ kiểm cú pháp (`node --check`); CHƯA thử thả tim và đọc giới tính trên Zalo thật.
 
+### SRS-5.1zzzzzzz164 · Lịch xem đã chốt thì báo admin; log giới tính Zalo thô (23/10/2026)
+
+Ca gốc: soát chat chị Ngân 15:46–15:49 (ca CŨ, trước SRS-161): lịch `proposed`, nhắc `escalation` chỉ tới admin (căn mẫu `SEED0016` không gắn người bán, hội thoại không có CTV), khách xác nhận giờ rồi không có gì ghi / báo thêm. Chủ dự án: "nếu 2 bên đã chốt giờ thì báo admin cũng được"; "có thể kiểm tra và gọi ở Zalo cũng được" (nên lời "người phụ trách sẽ gọi" giữ nguyên dù lịch chưa có số).
+
+1. **Đã có sẵn (đọc code)**: `viewings_bao_ctv_va_email` đẻ một nhắc `escalation` (gắn `ctv_id` nếu hội thoại có CTV, không thì admin) + câu `xac_nhan_lich`; bridge chọn đích `chủ nhà (seller_id) → CTV → admin` (`escalation-feed`), nhưng nhắc của lịch xem KHÔNG gắn `seller_id` nên chưa hề nhắn thẳng chủ nhà — chỉ CTV hoặc admin. CTV nhắn `#mã: ok giờ` → lịch `confirmed` + báo khách.
+2. **Sửa**: migration `20261023f` — `info_request_bao_lai_khach`: câu `xac_nhan_lich` do CTV trả lời (ctv_id có, assignee không phải admin) và có lịch → thêm MỘT nhắc `escalation` không gắn seller / ctv (bridge đưa về admin): "Lịch xem #mã đã chốt … báo để admin nắm". Admin tự trả lời thì không báo thêm. Bọc `begin … exception` + `log_loi('lich_chot_bao_admin')`.
+3. **Kèm**: bridge ghi giá trị thô của `gender` hồ sơ Zalo (một dòng log khi lấy hồ sơ) để biết Zalo trả gì cho tài khoản ẩn giới tính — SRS-163 chưa kiểm được điều này.
+4. **Chưa làm / còn hở**: (a) nhắn THẲNG chủ nhà khi lịch đặt cho căn có người bán (cần soạn câu cho chủ nhà + đường nhận lời "ok" của chủ nhà) — chưa quyết; (b) lời xác nhận của khách ("đúng rồi em") vẫn không ghi vào DB; (c) trigger kiểm bằng chạy thật trên DB trong giao dịch hoàn tác, không có test tự động.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
