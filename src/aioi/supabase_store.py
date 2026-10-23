@@ -1136,8 +1136,10 @@ class SupabaseConversationStore(KhoNguoiMua):
                 active_listing_id=active,
                 # SRS-5.1zzzzzzz147: dòng tin RỖNG (ô nháp tạo ở lượt chào) không làm khách thành người bán — bản trước
                 # `if listings` nên sau khi lõi khởi động lại khách đang đi mua bị nạp thành người bán.
-                role=("seller" if any(self._tin_that(r) for r in db_listings)
-                      else "buyer" if self._nguoi_noi_cuoi(history_rows) == "buyer" else (cu.role if cu else "unknown")),
+                # SRS-5.1zzzzzzz153: khách vừa mua vừa bán — vai theo TIN KHÁCH GẦN NHẤT (messages.sender). Bản trước thấy có tin bán thật là
+                # "seller" mãi, nên người từng rao bán rồi quay lại đi mua luôn bị nạp thành người bán sau mỗi lần lõi khởi động lại.
+                role=(self._nguoi_noi_cuoi(history_rows)
+                      or ("seller" if any(self._tin_that(r) for r in db_listings) else (cu.role if cu else "unknown"))),
             )
             if cu:
                 conv.price_book = cu.price_book

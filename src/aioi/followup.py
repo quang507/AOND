@@ -126,6 +126,12 @@ class FollowUpManager:
                 log.info("Follow-up for %s: có lượt mới sau lúc hẹn. Skipping.", user_key)
                 return
 
+            # SRS-5.1zzzzzzz153: tin nhắc này là của NGƯỜI BÁN (hỏi ô thiếu / xin ảnh). Khách đang nói chuyện ở vai mua (hẹn xem nhà) mà vẫn
+            # có rổ bán dở thì KHÔNG nhắc — chị N. 23/10 đang chốt lịch xem nhà nhận "chụp gửi em vài tấm ảnh thực tế".
+            if getattr(conv, "role", "") == "buyer":
+                log.info("Follow-up for %s: đang ở vai người mua. Skipping.", user_key)
+                return
+
             # Check if user has an active listing in basket
             if not conv.listings:
                 return

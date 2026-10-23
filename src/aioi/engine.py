@@ -282,6 +282,14 @@ def _trich_dan_khop(trich: str | None, cau: str | None) -> bool:
     return bool(t2) and t2 in tron(gon(cau))
 
 
+def _chu_co_trong_loi_khach(cum: str | None, loi_khach: list[str]) -> bool:
+    """Cụm AI GHÉP từ nhiều tin ngắn của khách ("9h sáng thứ 7" từ "thứ 7" / "sáng nhé" / "9h", SRS-5.1zzzzzzz153) có bằng chứng không:
+    MỌI chữ / số của cụm đều nằm trong lời KHÁCH (vài lượt gần nhất, không tính lời bot). Cụm có chữ khách chưa từng nói thì không nhận."""
+    tach = lambda s: set(re.findall(r"[0-9a-z]+", re.sub(r"\s+", " ", _strip_accents(str(s or "")).lower())))
+    can = tach(cum)
+    return bool(can) and can <= set().union(*(tach(x) for x in loi_khach)) if loi_khach else False
+
+
 def _so_khop(trich: str | None, gia_tri: str | None, loi_khach: str) -> bool:
     """Ô có SỐ: model hay viết lại đơn vị trong cụm trích ("170m²" khi khách gõ "170m vuông", "8.5 tỷ" khi khách gõ "8,5 tỷ").
     Nhận khi cụm trích có số và mọi số của cụm trích đều có trong lời khách (SRS-5.1zzzzzzz73) — giá trị ô có thể là số TÍNH ra
@@ -3486,15 +3494,25 @@ class Engine:
             or any(not self._is_stub_listing(li) for li in conv.listings)
         )
 
-        # Định tuyến theo ngữ nghĩa thực tế (Semantic Intent do Gemini hiểu toàn câu):
-        # Chỉ chuyển sang buyer khi khách thực sự có nhu cầu tìm mua và HOÀN TOÀN KHÔNG có hồ sơ bán dở dang.
-        if intent == "buy" and not has_seller_context:
+        # Định tuyến theo ngữ nghĩa thực tế (Semantic Intent do Gemini hiểu toàn câu).
+        # SRS-5.1zzzzzzz153 (chủ dự án 23/10/2026: khách vừa mua vừa bán vài căn): MỘT Zalo là một khách, vai theo Ý ĐỊNH CỦA LƯỢT NÀY chứ
+        # không bị dính vào phía bán mãi. Bản trước chỉ cho sang vai mua khi khách HOÀN TOÀN không có dấu vết bán — chị N. (tester) từng thử vai
+        # bán nên mọi lượt sau, kể cả lúc hẹn xem nhà, đều chạy nhánh bán: lịch hẹn / số điện thoại không được ghi, bot vẫn nói "em chuyển
+        # chủ nhà rồi", và tin nhắc xin ảnh của người bán gửi nhầm cho người đang đi xem nhà. Nay: ý định "buy" sang vai mua (trừ lúc đang
+        # chờ khách duyệt bản nháp / xác nhận ẩn tin — câu nói đó thuộc việc bán), "sell" sang vai bán, lượt mơ hồ ở lại vai mua nếu đang
+        # ở đó. Tin / rổ hàng của phía bán và hồ sơ nhu cầu phía mua đều giữ nguyên, chỉ vai của lượt đổi.
+        dang_giua_viec_ban = bool(conv.listing_proposed or conv.pending_destructive)
+        if intent == "buy" and not (has_seller_context and dang_giua_viec_ban):
             conv.role = "buyer"
             if conv.buyer_lead is None:
                 conv.buyer_lead = BuyerLead(user_key=conv.user_key)
             if plan.get("buyer_lead"):
                 conv.buyer_lead.update(plan["buyer_lead"])
-        elif intent == "sell" or has_seller_context:
+        elif intent == "sell":
+            conv.role = "seller"
+        elif conv.role == "buyer" and conv.buyer_lead is not None:
+            pass   # lượt mơ hồ ("ok", "xem được không") của người đang nói chuyện mua: ở lại nhánh mua
+        elif has_seller_context:
             conv.role = "seller"
 
         # Duyệt bản nháp (SRS-5.1zzzzzzz47): chỉ tính khi bản nháp ĐÃ gửi ở lượt trước và cụm trích có thật trong tin khách.
@@ -3578,13 +3596,30 @@ class Engine:
             conv.y_luot["xac_nhan_xoa"] = plan["xac_nhan_xoa"]
         # Việc khách mua / người rao trả lời câu khách hỏi (SRS-5.1zzzzzzz70): nhận khi cụm trích có trong tin vừa nhắn.
         mua = plan.get("mua")
-        if conv.role == "buyer" and isinstance(mua, dict) and _trich_dan_khop(mua.get("trich_dan"), cuoi):
+        if conv.role == "buyer" and isinstance(mua, dict) and (
+                _trich_dan_khop(mua.get("trich_dan"), cuoi) or _chu_co_trong_loi_khach(mua.get("trich_dan"), self._loi_khach_gan(conv))):
             conv.y_luot["mua"] = mua
         tl = plan.get("tra_loi_khach_hoi")
         if (isinstance(tl, dict) and tl.get("id") in {c.get("id") for c in conv.cau_hoi_cho}
                 and _trich_dan_khop(tl.get("tra_loi"), cuoi)):
             conv.y_luot["tra_loi_khach_hoi"] = {"id": tl["id"], "tra_loi": str(tl["tra_loi"])}
         return plan
+
+    @staticmethod
+    def _loi_khach_gan(conv: Conversation, so_luot: int = 3) -> list[str]:
+        """Lời KHÁCH ở `so_luot` lượt gần nhất (kể cả lượt vừa nhắn) — bằng chứng cho cụm ghép từ nhiều tin ngắn. Không tính lời bot."""
+        return [t.content for t in conv.history if t.role == "user" and t.content][-so_luot:]
+
+    @staticmethod
+    def _ma_can_bot_vua_nhac(conv: Conversation) -> list[str]:
+        """Mã căn trong link bot dán ở vài lượt gần nhất (mới nhất trước) — căn khách đang đáp lại."""
+        from .anh_can import ma_can_trong_loi
+        for t in reversed(conv.history[-6:]):
+            if t.role == "assistant" and t.content:
+                ma = ma_can_trong_loi(t.content)
+                if ma:
+                    return ma[:1]
+        return []
 
     def _viec_mua(self, conv: Conversation, text: str) -> tuple[list[str], list[dict]]:
         """Ghi việc khách mua vừa nói (quan tâm / hẹn xem / hỏi chủ nhà) lên DB — chỉ khi mã căn có thật và đang hiện, cụm thời gian
@@ -3601,6 +3636,10 @@ class Engine:
         bid = kho.khach_mua(conv.user_key, None, nhu_cau or None)
         mua = conv.y_luot.get("mua") or {}
         ma = [m for m in (mua.get("ma_can") or []) if isinstance(m, str) and m.strip()]
+        if not ma and (mua.get("hen_xem") or mua.get("quan_tam") is True or mua.get("hoi_chu_nha")):
+            # SRS-5.1zzzzzzz153: khách đáp lại căn bot VỪA giới thiệu (tin báo căn mới / lời gợi ý có link) mà không gõ mã — lấy mã từ link trong
+            # lời bot gần nhất. Bản trước chỉ nhận mã AI đọc ra, nên "xem thử thứ 7 được không" sau tin báo căn mới không ghi được lịch.
+            ma = self._ma_can_bot_vua_nhac(conv)
         nhac = kho.can_theo_ma(ma) if ma else []
         co_san = conv.can_mua or kho.can_phu_hop(lead)
         can = nhac + [c for c in co_san if c.get("id") not in {n.get("id") for n in nhac}]
@@ -3615,7 +3654,9 @@ class Engine:
         dau = nhac[0]
         hen = str(mua.get("hen_xem") or "").strip()
         hoi = str(mua.get("hoi_chu_nha") or "").strip()
-        hen = hen if _trich_dan_khop(hen, text) else ""
+        # Giờ hẹn khách hay nhắn rời từng tin ("thứ 7" / "sáng nhé" / "9h"): nhận khi nằm nguyên trong tin này HOẶC mọi chữ của cụm có trong
+        # vài tin khách gần nhất (SRS-5.1zzzzzzz153).
+        hen = hen if (_trich_dan_khop(hen, text) or _chu_co_trong_loi_khach(hen, self._loi_khach_gan(conv))) else ""
         hoi = hoi if _trich_dan_khop(hoi, text) else ""
         if (mua.get("quan_tam") is True or hen or hoi) and kho.ghi_quan_tam(bid, [c["code"] for c in nhac if c.get("code")]):
             viec.append("ghi khách quan tâm căn " + ", ".join(f"#{c.get('code')}" for c in nhac))

@@ -4,6 +4,7 @@ thoại BÁN (2 tin chào) và gán role = "seller" vì có dòng tin rỗng →
 vào hội thoại bán; CRM tách một khách thành hai. Từ 149 mỗi khách Zalo chỉ có MỘT hội thoại (gắn cả `seller_id` và `buyer_id`), vai của phiên suy từ
 người KHÁCH nói cuối (`messages.sender`). Đỏ khi: dòng tin rỗng làm khách thành người bán, lịch sử mua không được nạp, khách chỉ đi mua (không có
 `sellers`) bị coi là người mới, hoặc sửa quá tay (người bán có tin thật bị kéo sang mua, người bán nói cuối vẫn là người bán)."""
+from aioi.engine import Engine
 from aioi.supabase_store import SupabaseConversationStore
 
 CAU_MUA = ["mình mua để ở", "Mua để ở thì em ưu tiên căn thoải mái", "mình đi làm quận 1", "Quận 5 cách Quận 1 không xa. Anh/chị muốn diện tích bao nhiêu ạ?"]
@@ -53,9 +54,13 @@ def test_khach_chi_di_mua_khong_co_sellers_van_duoc_nap():
     assert _Kho(co_seller=False, co_buyer=False).load("u") is None                        # xoá cả hai ở CRM → phiên mới như cũ
 
 
-def test_nguoi_ban_co_tin_that_van_la_nguoi_ban_khong_keo_sang_mua():
+def test_khach_vua_mua_vua_ban_vai_theo_tin_khach_gan_nhat_va_tin_ban_van_con():
+    """SRS-5.1zzzzzzz153: có tin bán thật mà tin khách gần nhất ở vai MUA thì nạp lại vai mua (bản cũ: có tin bán là "seller" mãi, nên người
+    từng rao bán rồi quay lại đi mua luôn bị nạp thành người bán sau mỗi lần lõi khởi động lại — lịch xem nhà không ghi được). Tin bán không mất."""
     conv = _Kho(tin_that=True).load("u")
-    assert conv.role == "seller"
+    assert conv.role == "buyer" and conv.buyer_lead is not None
+    assert any(not Engine._is_stub_listing(li) for li in conv.listings)                    # rổ bán vẫn nguyên
+    assert _Kho(tin_that=True, nguoi_cuoi="seller").load("u").role == "seller"             # tin khách cuối ở vai bán thì vẫn là người bán
 
 
 def test_khach_noi_cuoi_o_vai_ban_thi_khong_bi_keo_sang_mua():

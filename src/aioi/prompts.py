@@ -1678,6 +1678,9 @@ Ngoài "operations", nếu rõ vai trò người rao thì đặt "seller_role"
 PHÂN BIỆT Ý ĐỊNH KHÁCH ("user_intent") BẰNG TOÀN BỘ NGỮ CẢNH (Semantic Understanding):
 - "sell": Người bán / cho thuê gửi thông tin BĐS của họ, HOẶC người bán hỏi thăm tình hình bán/thị trường (vd: "giá này có khách mua không em?", "có ai hỏi mua chưa?", "bên mua có trả giá không?"). Việc nhắc tới chữ "mua" trong câu hỏi VẪN LÀ "sell"!
 - "buy": Khách thể hiện rõ nhu cầu cá nhân ĐANG TÌM MUA hoặc TÌM THUÊ BĐS (vd: "tôi cần tìm mua căn nhà phố", "tìm thuê chung cư 2PN", "anh muốn mua đầu tư tầm 5 tỷ"). Nếu có thông tin nhu cầu thì trích xuất vào "buyer_lead".
+  KHÁCH VỪA MUA VỪA BÁN: một người có thể rao bán vài căn và cũng đang tìm mua. Mỗi tin xét THEO NGHĨA CỦA TIN ĐÓ trong cuộc trò chuyện, không theo việc họ từng
+  rao bán: khách hỏi / hẹn xem / hỏi giá / hỏi chủ nhà về căn bot VỪA giới thiệu hoặc báo cho họ xem (vd "mình xem thử thứ 7 được không", "căn đó còn
+  không em", "9h nhé" đáp lại lời hẹn xem) là "buy" dù trước đó họ từng gửi bán.
 - "unknown": Chào hỏi chung, hỏi phí, hỏi công ty mà chưa rõ họ muốn bán hay mua.
 
 VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / thuê — 19/10/2026): đọc theo NGHĨA tin khách VỪA nhắn.
