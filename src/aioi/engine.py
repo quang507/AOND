@@ -104,7 +104,8 @@ from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
-from .mua import co_tieu_chi, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_viec_vua_ghi, lenh_tra_loi
+from .mua import co_tieu_chi, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_viec_vua_ghi, lenh_tra_loi, tim_sdt
+from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
 
@@ -2014,6 +2015,7 @@ class Engine:
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
             system += khoi_can_nguoi(conv) + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
+            system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
             system += self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
             # Khách mua báo đã đủ thông tin căn đang xem (SRS-5.1zzzzzzz104) → xin chấm sao một lần.
             xin_sao = bool(conv.y_luot.get("xong_viec_mua") and can) and self._nen_xin_sao(conv)
@@ -3603,6 +3605,11 @@ class Engine:
         co_san = conv.can_mua or kho.can_phu_hop(lead)
         can = nhac + [c for c in co_san if c.get("id") not in {n.get("id") for n in nhac}]
         viec: list[str] = []
+        # SRS-5.1zzzzzzz148 (chủ dự án 23/10: lúc hẹn xem thì lấy được số điện thoại khách): số CHỈ được ghi vào lịch hẹn đang chờ chưa có số,
+        # lấy từ lời khách (số là dữ liệu có khuôn, không phải đoán ý); không có lịch chờ thì số khách gõ không được lưu.
+        sdt = tim_sdt(text)
+        if bid and sdt and kho.ghi_sdt_hen_xem(bid, sdt):
+            viec.append("ghi số điện thoại khách vào lịch hẹn để người phụ trách gọi xác nhận (cảm ơn ngắn, KHÔNG đọc lại số)")
         if not (bid and nhac):
             return viec, can[:4]
         dau = nhac[0]
@@ -3614,6 +3621,10 @@ class Engine:
             viec.append("ghi khách quan tâm căn " + ", ".join(f"#{c.get('code')}" for c in nhac))
         if hen and kho.ghi_hen_xem(bid, dau, hen):
             viec.append(f"ghi lịch hẹn xem #{dau.get('code')} ({hen}) — chờ xác nhận với chủ nhà rồi báo lại khách")
+            if lead is not None and not lead.fields.get("_da_xin_sdt") and not sdt:
+                # Xin số MỘT lần (cờ ở hồ sơ nhu cầu, qua khởi động lại vẫn nhớ); khách không muốn thì thôi, không ép, không hứa gì thêm.
+                lead.fields["_da_xin_sdt"] = "1"
+                viec.append("xin khách MỘT số điện thoại để người phụ trách gọi xác nhận lịch (một câu ngắn; khách không muốn để thì thôi, đừng nài)")
         if hoi and kho.ghi_hoi_chu_nha(bid, dau, hoi):
             viec.append(f"chuyển câu \"{hoi}\" về #{dau.get('code')} cho chủ nhà — có trả lời em báo lại khách ngay")
         return viec, can[:4]

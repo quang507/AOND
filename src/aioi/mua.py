@@ -49,6 +49,20 @@ def lenh_tra_loi(text: str) -> tuple[str, str] | None:
     return (m.group(1).upper(), m.group(2).strip()) if m and m.group(2).strip() else None
 
 
+_SDT_KHACH = re.compile(r"(?<!\d)(?:\+?84|0)(?:[\s.\-]?\d){8,9}(?!\d)")
+
+
+def tim_sdt(text: str) -> str | None:
+    """Số điện thoại di động VN trong lời khách (SRS-5.1zzzzzzz148): chấp nhận cách gõ có khoảng trắng / chấm / gạch và +84; trả dạng 0xxxxxxxxx."""
+    for m in _SDT_KHACH.finditer(text or ""):
+        so = re.sub(r"\D", "", m.group(0))
+        if so.startswith("84"):
+            so = "0" + so[2:]
+        if len(so) == 10 and so[:2] in ("03", "05", "07", "08", "09"):
+            return so
+    return None
+
+
 def _q(s: str) -> str:
     return urllib.parse.quote(str(s), safe="")
 
@@ -272,6 +286,28 @@ class KhoNguoiMua:
             return True
         except Exception as e:  # noqa: BLE001
             log.warning("ghi_hen_xem lỗi: %s", e)
+            return False
+
+    def ghi_sdt_hen_xem(self, buyer_id: str, sdt: str) -> bool:
+        """Khách để số điện thoại sau khi hẹn xem (SRS-5.1zzzzzzz148, chủ dự án 23/10: lúc hẹn xem thì lấy được số): ghi vào lịch đang chờ
+        mới nhất CHƯA có số, rồi báo người phụ trách (cùng CTV với lời nhắc lịch; không có CTV thì admin). Không có lịch chờ → không ghi gì:
+        số khách gõ ngoài ngữ cảnh hẹn xem không được lưu."""
+        try:
+            co = self._get(f"viewings?buyer_id=eq.{buyer_id}&status=in.(proposed,pending)&phone=is.null"
+                           "&order=created_at.desc&limit=1&select=id,listing_id,listing_code")
+            if not co:
+                return False
+            lich = co[0]
+            self._request("PATCH", f"viewings?id=eq.{lich['id']}", data={"phone": sdt}, prefer="return=minimal")
+            cu = self._get(f"reminders?viewing_id=eq.{lich['id']}&kind=eq.escalation&select=ctv_id&limit=1")
+            self._post("reminders", {"kind": "escalation", "buyer_id": buyer_id, "listing_id": lich.get("listing_id"),
+                                     "viewing_id": lich["id"], "ctv_id": (cu[0].get("ctv_id") if cu else None),
+                                     "due_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                                     "note": f"Khách lịch xem #{lich.get('listing_code') or '?'} để lại SĐT {sdt}, gọi xác nhận giúp em nha"},
+                       prefer="return=minimal")
+            return True
+        except Exception as e:  # noqa: BLE001
+            log.warning("ghi_sdt_hen_xem lỗi: %s", e)
             return False
 
     def ghi_hoi_chu_nha(self, buyer_id: str, can: dict, cau_hoi: str) -> bool:
