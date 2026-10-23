@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from . import cau_mau
 from .anh_du_an import anh_gui_kem
+from .anh_can import anh_can_gui_kem
 from .config import load_settings
 from .delivery import chunk_reply, typing_delay
 from .sticker import STICKER_TRUNG_TINH, doc_sticker
@@ -534,6 +535,8 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         )
 
     photos = anh_gui_kem(payload.external_user_id, r.role, payload.text)
+    # SRS-5.1zzzzzzz145: căn bot vừa giới thiệu (có link trong lời) → 1–2 ảnh mỗi căn nếu căn đã có ảnh công khai
+    photos = (photos + anh_can_gui_kem(payload.external_user_id, r.role, cleaned_reply))[:6]
 
     return ZaloBridgeResponse(
         reply=cleaned_reply,
