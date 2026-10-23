@@ -514,6 +514,16 @@ class Property:
                 if "lo_gioi_hem" not in newly:
                     newly.append("lo_gioi_hem")
 
+        # SRS-5.1zzzzzzz157 (chủ dự án 23/10/2026: "hẻm thì là có /", "tên riêng tên đường thì là đường lớn", "địa chỉ chỉ có tên đường thì tự ghi
+        # là mặt tiền"): có tên đường mà địa chỉ không có dấu "/" và khách không nhắc hẻm / ngõ / ngách / kiệt thì ghi "Mặt tiền" — khỏi hỏi
+        # "mặt tiền hay hẻm" với mọi nhà chỉ nói tên đường. Khách nói hẻm sau đó thì AI ghi đè (ô đã có giá trị đổi được khi có bằng chứng).
+        if (not self.fields.get("lo_gioi_hem") and self.fields.get("duong") and "lo_gioi_hem" in self.core_fields()
+                and not re.search(r"/|h[ẻe]m|ng[õo](?![a-zà-ỹ])|ng[áa]ch|ki[ệe]t",
+                                  f"{self.fields.get('dia_chi') or ''} {self.fields.get('duong') or ''}".lower())):
+            self.fields["lo_gioi_hem"] = "Mặt tiền"
+            if "lo_gioi_hem" not in newly:
+                newly.append("lo_gioi_hem")
+
         # 19/10/2026 (SRS-5.1zzzzzzz55): bỏ khối đoán loai_hinh bằng từ khoá ("nhà / lầu / hẻm" → nhà phố, tên thương hiệu → chung
         # cư…). Loại BĐS do lượt AI bóc tách đọc (ô loai_hinh); chưa rõ thì bot hỏi.
 

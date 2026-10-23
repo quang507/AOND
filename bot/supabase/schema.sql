@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-23 14:00 (giờ VN)
+-- Sinh lúc: 2026-10-23 15:08 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -5189,13 +5189,15 @@ begin
   -- đếm. Hàm này mở cho `anon` nên chính chỗ này là chỗ dễ biến một cổng kiểm
   -- thành một lỗ rò.
   return query
+  -- 23/10/2026 (SRS-5.1zzzzzzz156): dòng `escalation` đi tới chủ nhà / CTV / admin (escalation-feed), KHÔNG tới người mua — `buyer_id` ở đó
+  -- chỉ nói việc về khách nào. Đếm nó vào người mua làm lịch hẹn xem thật (2 việc báo admin + 1 tin báo căn mới) hiện thành "3 tin" oan.
   with gui as (
-    select coalesce(s.zalo_user_id, b.zalo_user_id) as uid, count(*) as so_tin
+    select coalesce(s.zalo_user_id, case when r.kind <> 'escalation' then b.zalo_user_id end) as uid, count(*) as so_tin
       from reminders r
       left join sellers s on s.id = r.seller_id
       left join buyers  b on b.id = r.buyer_id
      where r.status = 'sent' and r.sent_at > now() - interval '24 hours'
-       and coalesce(s.zalo_user_id, b.zalo_user_id) is not null
+       and coalesce(s.zalo_user_id, case when r.kind <> 'escalation' then b.zalo_user_id end) is not null
      group by 1 having count(*) > 2
   )
   select 'gui_qua_hai_tin_mot_ngay', 'NANG', count(*)::int,

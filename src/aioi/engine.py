@@ -104,7 +104,7 @@ from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
-from .mua import co_tieu_chi, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_viec_vua_ghi, lenh_tra_loi, tim_sdt
+from .mua import co_tieu_chi, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_viec_vua_ghi, lenh_tra_loi, tim_sdt
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
@@ -846,6 +846,36 @@ def _lo_thong_tin_rieng(reply: str, prop: Property) -> list[str]:
     thap = reply.lower()
     return [k for k in sorted(O_NOI_BO) if len((prop.fields.get(k) or "").strip()) >= 6
             and prop.fields[k].strip().lower() in thap]
+
+
+_HEM_MT_RE = re.compile(r"(?<![\wÀ-ỹ])(hẻm|hxh|ngõ|mặt tiền|mt)(?![\wÀ-ỹ])", re.I)
+
+
+def _hem_mt_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
+    """Bản tin 📋 nói HẺM / HXH / NGÕ / MẶT TIỀN / MT mà căn chưa có loại đường vào và khách chưa hề nói chữ đó (SRS-5.1zzzzzzz155; chat thử
+    23/10: khách chỉ nói "Lê Lai", "39m2, 1 trệt 3 lầu", "7 tỷ 3" — tiêu đề bản nháp ghi "Bán nhà hẻm Lê Lai"). Chỉ so chữ của bản tin với ô đã ghi
+    (`lo_gioi_hem`, `mat_tien`) và lời KHÁCH của căn đang nói; câu hỏi cuối bản tin không tính. Không có 📋 → []."""
+    if "📋" not in (reply or ""):
+        return []
+    if conv.prop.fields.get("lo_gioi_hem") or conv.prop.fields.get("mat_tien"):
+        return []
+    tin = _than_ban_tin(reply)
+    phan = f"{tin[0]}\n{tin[1]}" if tin else _dong_tieu_de(reply)
+    bat = {m.lower() for m in _HEM_MT_RE.findall(phan)}
+    if not bat:
+        return []
+    bd = max(0, getattr(getattr(conv, "active", None), "history_start", 0) or 0)
+    khach = bo_dau(" ".join(t.content for t in conv.history[bd:] if t.role == "user" and t.content)).lower()
+    # Địa chỉ có dấu "/" ("12/3 Lê Lai") là nhà trong hẻm — cùng dấu hiệu `Property.update` dùng để gán `lo_gioi_hem` (chủ dự án 23/10: "hẻm thì là có /").
+    co_gach = re.search(r"\b\d+[a-z]*/[\da-z/]+", khach) is not None
+    ra = []
+    for tu in sorted(bat):
+        goc = bo_dau(tu).lower()
+        co = {"mt": "mat tien" in khach or re.search(r"(?<![a-z0-9])mt(?![a-z0-9])", khach) is not None,
+              "hxh": "hxh" in khach or "hem xe hoi" in khach}.get(goc, goc in khach or (goc in ("hem", "ngo") and co_gach))
+        if not co:
+            ra.append(tu)
+    return ra
 
 
 def _dong_tieu_de(reply: str) -> str:
@@ -2023,7 +2053,8 @@ class Engine:
             system = build_buyer_chat_system(conv.assistant.name, conv.buyer_lead, next_field)
             viec, can = self._viec_mua(conv, text)
             if getattr(self._convstore, "can_phu_hop", None) is not None:
-                system += khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
+                system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
+                           + khoi_lich_dang_cho(conv.y_luot.get("lich_cho")))
             system += khoi_can_nguoi(conv) + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
             system += self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
@@ -2284,6 +2315,11 @@ class Engine:
         if lo_rieng:
             ly_do.append("Bản tin rao vừa viết có thông tin RIÊNG của chủ (" + ", ".join(lo_rieng) + ") — bản tin lên web cho người mua "
                          "đọc, bỏ hẳn các ý đó khỏi bản tin.")
+        bia_hem = _hem_mt_khong_co_du_lieu(reply, conv)
+        if bia_hem:
+            ly_do.append("Bản tin rao vừa viết có chữ " + ", ".join(f"\"{x}\"" for x in bia_hem) + " nhưng chủ nhà CHƯA nói nhà ở hẻm / mặt tiền "
+                         "(dữ liệu căn chưa có) — bỏ hẳn các chữ đó khỏi tiêu đề và mô tả, KHÔNG đoán loại đường vào; ví dụ trong luật chỉ để "
+                         "minh hoạ cách viết gọn.")
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
         truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant"), "")
@@ -3661,6 +3697,7 @@ class Engine:
                         mua.get("quan_tam") is True, len([m for m in (mua.get("ma_can") or []) if isinstance(m, str)]),
                         bool(self._ma_can_bot_vua_nhac(conv)), len(nhac), bool(bid))
         if not (bid and nhac):
+            conv.y_luot["lich_cho"] = self._lich_cho(kho, bid)
             return viec, can[:4]
         dau = nhac[0]
         hen = str(mua.get("hen_xem") or "").strip()
@@ -3679,7 +3716,14 @@ class Engine:
                 viec.append("xin khách MỘT số điện thoại để người phụ trách gọi xác nhận lịch (một câu ngắn; khách không muốn để thì thôi, đừng nài)")
         if hoi and kho.ghi_hoi_chu_nha(bid, dau, hoi):
             viec.append(f"chuyển câu \"{hoi}\" về #{dau.get('code')} cho chủ nhà — có trả lời em báo lại khách ngay")
+        conv.y_luot["lich_cho"] = self._lich_cho(kho, bid)
         return viec, can[:4]
+
+    @staticmethod
+    def _lich_cho(kho, bid) -> list[dict]:
+        """Lịch hẹn xem khách đang chờ xác nhận (đã ghi DB) — đưa vào lời đáp để bot không hỏi lại / tự thêm ngày (SRS-5.1zzzzzzz157)."""
+        lay = getattr(kho, "lich_dang_cho", None)
+        return lay(bid) if lay is not None and bid else []
 
     def _ap_dung_ke_hoach(self, conv: Conversation, plan: dict) -> tuple[list[str], list[tuple]]:
         changed: set[str] = set()
