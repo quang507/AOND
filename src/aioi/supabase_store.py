@@ -906,6 +906,58 @@ class SupabaseConversationStore(KhoNguoiMua):
         return {"len_web": r.get("status") == "dang_ban", "thieu": thieu,
                 "cho_duyet": not thieu and bool(r.get("can_chu_duyet")) and not r.get("chu_duyet_at")}
 
+    @staticmethod
+    def _tin_that(row: dict) -> bool:
+        """Dòng `listings` có nội dung thật (khác ô nháp rỗng tạo ở lượt chào: loại `chua_ro`, không diện tích / giá, `boc_tach` chỉ có dấu nội bộ)."""
+        bt = row.get("boc_tach") or {}
+        return bool(row.get("area_m2") or row.get("price_vnd") or row.get("property_type") not in (None, "chua_ro")
+                    or any(k not in ("_thong_so_ai", "_hoan") for k in bt))
+
+    @staticmethod
+    def _lich_su(rows: list[dict]) -> list:
+        from .engine import Turn
+        ra = []
+        for m in rows:
+            ts = 0.0
+            if m.get("created_at"):
+                try:
+                    ts = datetime.fromisoformat(m["created_at"].replace("Z", "+00:00")).timestamp()
+                except Exception:  # noqa: BLE001
+                    pass
+            ra.append(Turn(role="assistant" if m.get("sender", "") in ("bot", "assistant") else "user", content=m.get("body", ""), at=ts))
+        return ra
+
+    def _phien_mua(self, user_key: str) -> list:
+        """Lịch sử hội thoại MUA của khách (chỉ ĐỌC, không tạo); rỗng nếu khách không có dòng `buyers` / hội thoại mua / tin nào."""
+        bs = self._get(f"buyers?zalo_user_id=eq.{urllib.parse.quote(user_key)}&select=id")
+        if not bs:
+            return []
+        cs = self._get(f"conversations?buyer_id=eq.{bs[0]['id']}&channel=eq.zalo_personal_test&select=id&order=started_at.desc&limit=1")
+        if not cs:
+            return []
+        return self._lich_su(self._get(f"messages?conversation_id=eq.{cs[0]['id']}&order=created_at.asc"))
+
+    def _conv_tu_phien_mua(self, user_key: str, mua: list) -> Any:
+        """Hội thoại của khách chỉ đi mua: lịch sử từ Supabase, hồ sơ nhu cầu / xưng hô / chế độ test từ SQLite (Supabase không có cột đó)."""
+        from .engine import Conversation, Listing
+        from .schema import BuyerLead
+        cu = None
+        if self.fallback:
+            try:
+                cu = self.fallback.load(user_key)
+            except Exception as e:  # noqa: BLE001
+                log.warning("Fallback SQLite load failed: %s", e)
+        conv = Conversation(user_key=user_key, assistant=assign_assistant(user_key), history=mua,
+                            listings=[Listing(prop=Property())], role="buyer")
+        conv.buyer_lead = (cu.buyer_lead if cu and cu.buyer_lead is not None else None) or BuyerLead(user_key=user_key)
+        if cu:
+            conv.price_book = cu.price_book
+            conv.last_ai_at = cu.last_ai_at
+            conv.xung_ho = cu.xung_ho
+            conv.che_do_test = cu.che_do_test
+            conv.so_luot_thong_tin = cu.so_luot_thong_tin
+        return conv
+
     def load(self, user_key: str) -> Any:
         """Load conversation from Supabase.
         CRITICAL: If the seller or conversation was deleted on CRM (aioinhadat.vercel.app),
@@ -920,6 +972,10 @@ class SupabaseConversationStore(KhoNguoiMua):
             # 1. Check if seller exists in Supabase
             sellers = self._get(f"sellers?zalo_user_id=eq.{urllib.parse.quote(user_key)}")
             if not sellers:
+                # SRS-5.1zzzzzzz147: khách chỉ đi MUA không có dòng `sellers` nhưng có hội thoại mua — nạp lại, đừng coi là người mới.
+                mua = self._phien_mua(user_key)
+                if mua:
+                    return self._conv_tu_phien_mua(user_key, mua)
                 # User was deleted on CRM! Drop any cache and return None (reset bot session)
                 self._seller_cache.pop(user_key, None)
                 if self.fallback:
@@ -989,19 +1045,7 @@ class SupabaseConversationStore(KhoNguoiMua):
 
             # 4. Load messages for history
             history_rows = self._get(f"messages?conversation_id=eq.{conv_id}&order=created_at.asc") if conv_id else []
-            history: list[Turn] = []
-            for m in history_rows:
-                sender = m.get("sender", "")
-                role = "assistant" if sender in ("bot", "assistant") else "user"
-                body = m.get("body", "")
-                # Parse timestamp if available
-                ts = 0.0
-                if m.get("created_at"):
-                    try:
-                        ts = datetime.fromisoformat(m["created_at"].replace("Z", "+00:00")).timestamp()
-                    except Exception:
-                        pass
-                history.append(Turn(role=role, content=body, at=ts))
+            history = self._lich_su(history_rows)
 
             # 5. Reconstruct Conversation
             ids = [li.listing_id for li in listings]
@@ -1015,7 +1059,9 @@ class SupabaseConversationStore(KhoNguoiMua):
                 history=history,
                 listings=listings if listings else [Listing(prop=Property())],
                 active_listing_id=active,
-                role="seller" if listings else (cu.role if cu else "unknown"),
+                # SRS-5.1zzzzzzz147: dòng tin RỖNG (ô nháp tạo ở lượt chào) không làm khách thành người bán — bản trước
+                # `if listings` nên sau khi lõi khởi động lại khách đang đi mua bị nạp thành người bán.
+                role="seller" if any(self._tin_that(r) for r in db_listings) else (cu.role if cu else "unknown"),
             )
             if cu:
                 conv.price_book = cu.price_book
@@ -1026,6 +1072,16 @@ class SupabaseConversationStore(KhoNguoiMua):
                 conv.so_luot_thong_tin = cu.so_luot_thong_tin   # lượt thông tin thứ mấy (SRS-5.1zzzzzzz131 bản 2)
                 if conv.user_type.value == "unknown":
                     conv.user_type = cu.user_type
+            # Cùng một Zalo có thể vừa là người bán vừa là người mua: hội thoại MUA nằm ở `conversations.buyer_id`, trước đây
+            # `load` chỉ đọc hội thoại bán nên lịch sử mua mất sạch sau khi khởi động lại. Nay: chưa có tin thật và lượt mua gần
+            # nhất MỚI hơn lượt bán thì khách đang ở phía mua — nạp hội thoại mua.
+            mua = self._phien_mua(user_key)
+            if mua and not any(self._tin_that(r) for r in db_listings) and mua[-1].at >= (history[-1].at if history else 0.0):
+                from .schema import BuyerLead
+                conv.history = mua
+                conv.role = "buyer"
+                if conv.buyer_lead is None:
+                    conv.buyer_lead = BuyerLead(user_key=user_key)
             return conv
 
         except Exception as e:
