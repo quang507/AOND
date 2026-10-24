@@ -628,7 +628,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
 
     photos = anh_gui_kem(payload.external_user_id, r.role, payload.text)
     # SRS-5.1zzzzzzz145: căn bot vừa giới thiệu (có link trong lời) → 1–2 ảnh mỗi căn nếu căn đã có ảnh công khai
-    photos = (photos + anh_can_gui_kem(payload.external_user_id, r.role, cleaned_reply))[:6]
+    photos = (photos + anh_can_gui_kem(payload.external_user_id, r.role, cleaned_reply, xin=r.xin_anh))[:6]
 
     return ZaloBridgeResponse(
         reply=cleaned_reply,

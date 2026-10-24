@@ -544,7 +544,7 @@ def dong_can(c: dict) -> str:
         phan.append(f"VƯỢT ngân sách khách nêu khoảng {c['_vuot_ngan_sach']}%")
     so_anh = c.get("_so_anh")
     if isinstance(so_anh, int):
-        phan.append(f"ảnh: có {so_anh} ảnh, tự gửi kèm khi dán link" if so_anh else "ảnh: CHƯA có ảnh nào trên hệ thống")
+        phan.append(f"ảnh: có {so_anh} ảnh, tự gửi kèm khi dán link; khách xin ảnh thì hệ thống gửi (kể cả xin lại)" if so_anh else "ảnh: CHƯA có ảnh nào trên hệ thống")
     if c.get("code"):
         phan.append(f"link {SITE_URL}/nha-dat/{c['code']}")
     return " · ".join(p for p in phan if p)

@@ -593,6 +593,8 @@ class TurnResult:
     lead: BuyerLead | None = None
     # Chế độ test (SRS-5.1zzzzzzz130): tin phụ "$$$$$ … đã trích xuất / đã hiểu gì" — server gửi thêm sau lời trả lời, KHÔNG vào lịch sử / CRM.
     chu_thich: str = ""
+    # Khách mua xin ảnh (SRS-5.1zzzzzzz169): mã căn cần gửi ảnh ngay cả khi lời bot không dán link / ảnh đã gửi trong 24 giờ.
+    xin_anh: list[str] = field(default_factory=list)
 
 
 class ConversationStore(ABC):
@@ -3383,6 +3385,7 @@ class Engine:
             xin_danh_gia=bool(conv.y_luot.get("xin_danh_gia")),
             danh_gia=conv.y_luot.get("danh_gia"),
             chu_thich=che_do_test.chu_thich(conv, captured, next_f, so_token.tong_luot()) if conv.che_do_test else "",
+            xin_anh=list(conv.y_luot.get("xin_anh") or []),
         )
 
     def _match_listing(self, conv: Conversation, ref: str) -> Listing | None:
@@ -3697,7 +3700,7 @@ class Engine:
         bid = kho.khach_mua(conv.user_key, None, nhu_cau or None)
         mua = conv.y_luot.get("mua") or {}
         ma = [m for m in (mua.get("ma_can") or []) if isinstance(m, str) and m.strip()]
-        if not ma and (mua.get("hen_xem") or mua.get("quan_tam") is True or mua.get("hoi_chu_nha")):
+        if not ma and (mua.get("hen_xem") or mua.get("quan_tam") is True or mua.get("hoi_chu_nha") or mua.get("xin_anh") is True):
             # SRS-5.1zzzzzzz153: khách đáp lại căn bot VỪA giới thiệu (tin báo căn mới / lời gợi ý có link) mà không gõ mã — lấy mã từ link trong
             # lời bot gần nhất. Bản trước chỉ nhận mã AI đọc ra, nên "xem thử thứ 7 được không" sau tin báo căn mới không ghi được lịch.
             ma = self._ma_can_bot_vua_nhac(conv)
@@ -3722,6 +3725,20 @@ class Engine:
             log.warning("Mua: AI hẹn=%s quan_tâm=%s mã_AI=%d mã_link=%s căn_khớp=%d khách_id=%s", bool(mua.get("hen_xem")),
                         mua.get("quan_tam") is True, len([m for m in (mua.get("ma_can") or []) if isinstance(m, str)]),
                         bool(self._ma_can_bot_vua_nhac(conv)), len(nhac), bool(bid))
+        # SRS-5.1zzzzzzz169: khách xin ảnh (kể cả xin lại trong 24 giờ) → server gửi ảnh qua `xin_anh`; bản trước chỉ gửi khi lời bot có link và
+        # chặn 24 giờ, nên khách xin lại thì bot chỉ nhắc "ảnh em gửi ở trên".
+        if mua.get("xin_anh") is True:
+            if not nhac:
+                viec.append("khách xin xem ảnh nhưng chưa rõ căn nào: hỏi lại MỘT câu ngắn xem khách muốn xem ảnh căn nào, KHÔNG hứa gửi ảnh")
+            else:
+                co_anh = [c for c in nhac if c.get("code") and c.get("_so_anh") != 0]
+                if co_anh:
+                    conv.y_luot["xin_anh"] = [str(c["code"]) for c in co_anh]
+                    viec.append("hệ thống gửi ảnh " + ", ".join(f"#{c['code']}" for c in co_anh) + " NGAY SAU tin này: nói ngắn là em gửi ảnh "
+                                "(KHÔNG dán lại link, KHÔNG nói \"đã gửi ở trên\" hay \"ảnh ở trên\")")
+                else:
+                    viec.append("căn khách xin ảnh CHƯA có ảnh nào trên hệ thống: nói thật là chưa có, em xin chủ nhà bổ sung hoặc hẹn khách xem "
+                                "trực tiếp, KHÔNG hứa gửi ảnh")
         if not (bid and nhac):
             conv.y_luot["lich_cho"] = self._lich_cho(kho, bid)
             return viec, can[:4]
