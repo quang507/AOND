@@ -8654,6 +8654,14 @@ Ca gốc: chủ dự án Lê Quang chat thử 24/10: "Khách xin lại ảnh tro
 3. **Chỗ khác cùng lớp**: ảnh dự án (`anh_du_an.anh_gui_kem`) cũng chặn theo thời gian — CHƯA đổi (chưa ai báo). Xin video / bản đồ / ảnh sổ đỏ: không có đường (chủ nhà chưa cho phép công khai sổ đỏ, giữ nguyên).
 4. **Kiểm**: `tests/test_xin_anh_can.py` (7 ca; đã thử đột biến: engine không trả `xin_anh`, `anh_can_gui_kem` bỏ `xin`, bỏ lấy mã từ link — mỗi cái làm ít nhất một ca đỏ). Chưa thử trên Zalo thật.
 
+### SRS-5.1zzzzzzz170 · Bỏ bước CTV cho câu khách hỏi chủ nhà: giao thẳng admin (24/10/2026)
+
+Chủ dự án 24/10: "Bỏ bước CTV luôn đi" — sau khi hỏi lại, chọn "Báo thẳng admin". Tiếp SRS-5.1zzzzzzz165 (lịch xem đã bỏ CTV).
+
+1. **Lớp lỗi / chỗ cùng lớp**: bước CTV nằm rải ở nhiều hàm DB, mỗi hàm tự chọn CTV. Đã soát: `route_info_request` (tin không có chủ nhà → `chon_ctv`), `info_request_sla_tick` (chủ nhà quá hạn → chuyển CTV rồi 2 giờ sau mới tới admin), `notify_info_request_escalation` (câu nhắc admin ghi "không có CTV nào đang hoạt động"), `viewings_bao_ctv_va_email` (đã bỏ ở SRS-165), `assign_ctv_round_robin` (gán `conversations.ctv_id` — CHƯA đổi, không tạo nhắc).
+2. **Sửa** (`20261024a_cau_hoi_chu_nha_bo_ctv.sql`): không có chủ nhà trên hệ thống → `assignee = 'admin'`; chủ nhà quá `chu_nha_han_gio()` giờ chưa trả lời → nhắc `escalation` về admin ngay (không `ctv_id`); câu nhắc admin đổi thành "tin không có chủ nhà trên hệ thống". Vòng 2 của `info_request_sla_tick` và nhánh `ctv` của `notify_info_request_escalation` giữ cho dòng CŨ còn giao CTV. Không có báo cáo 17h của CTV nào còn chạy (edge function `ctv-report` đã gỡ ở SRS-5.1zzzzzzz31).
+3. **Kiểm**: sau khi áp migration, soát thân hàm trên DB không còn `chon_ctv` trong `route_info_request` / `info_request_sla_tick`; `schema.sql` sinh lại. Chưa có bài kiểm tự động riêng cho hàm DB này (ghi nhận).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
