@@ -8645,6 +8645,15 @@ Ca gốc: chủ dự án Lê Quang chat thử 24/10 ~01:00 (ảnh chụp CRM + Z
 4. **Chỗ khác cùng lớp (chưa làm)**: ảnh gửi kèm chỉ đi khi lời bot có link căn và mỗi (khách, căn) một lần / 24 giờ (`BoNhoAnhDaGui`) — khách xin lại ảnh trong 24 giờ thì bot chỉ nhắc "ảnh em đã gửi ở trên", không gửi lại. Soát nhanh bằng grep ở `src/aioi`: phía mua CHƯA có xử lý riêng cho huỷ / đổi lịch hẹn, so sánh hai căn, tiện ích quanh khu (công cụ cũ `tim_tien_ich_quanh` của TS đã gỡ cùng chat-reply), video / bản đồ — chưa soát sâu hơn grep.
 5. **Kiểm**: `tests/test_anh_can_trung_thuc.py` (4 ca; bỏ `_gan_so_anh` thì đỏ), `bot/tests/tim-nha/nap-tin-mau.tu-kiem.mjs` (228 tin, mỗi quận đủ kiểu), `nap-anh-mau.tu-kiem.mjs` (ảnh JPEG thật, dòng media đúng ràng buộc DB). Nạp thật + gọi thử `tim_nha` ghi ở PR.
 
+### SRS-5.1zzzzzzz169 · Khách mua xin ảnh thì được gửi ảnh, kể cả xin lại trong 24 giờ (24/10/2026)
+
+Ca gốc: chủ dự án Lê Quang chat thử 24/10: "Khách xin lại ảnh trong 24 giờ: bot không gửi lại, chỉ nhắc ảnh đã gửi ở trên. Fix đi và người mua hỏi ảnh cũng đưa cho họ dc".
+
+1. **Lớp lỗi**: đường gửi ảnh chỉ có MỘT cò — lời bot có link căn (`anh_can_gui_kem` đọc mã từ link) — kèm chặn 24 giờ mỗi (khách, căn). Việc khách CHỦ ĐỘNG xin ảnh không có đường nào; model chỉ còn cách nhắc "ảnh em đã gửi ở trên". Cùng lớp với SRS-5.1zzzzzzz168 (lời bot hứa một việc hệ thống làm có điều kiện) và SRS-5.1zzzzzzz153 (bot nói đã làm khi hệ thống chưa làm).
+2. **Sửa**: (a) lượt lập thao tác có thêm `mua.xin_anh` (boolean, AI đọc theo nghĩa — không dò từ khoá), nhận khi cụm trích có trong tin khách (cùng cổng với các việc mua khác). (b) `Engine._viec_mua`: mã căn lấy từ `mua.ma_can`, thiếu thì từ link trong lời bot gần nhất; căn có ảnh (`_so_anh` khác 0) → `conv.y_luot["xin_anh"]` + dặn model "hệ thống gửi ảnh NGAY SAU tin này, KHÔNG nói đã gửi ở trên"; căn chưa có ảnh → nói thật, không hứa; không rõ căn nào → hỏi lại MỘT câu. (c) `TurnResult.xin_anh` → `server.py` truyền `xin=` cho `anh_can_gui_kem`: căn khách xin luôn gửi, bỏ chặn 24 giờ; `SoAnhDaGui` nhớ đã gửi bao nhiêu ảnh, xin tiếp thì gửi các ảnh CHƯA gửi, hết thì quay lại từ đầu (tối đa 4 ảnh một lượt như cũ). Tin bot tự giới thiệu căn vẫn chặn 24 giờ như SRS-5.1zzzzzzz145.
+3. **Chỗ khác cùng lớp**: ảnh dự án (`anh_du_an.anh_gui_kem`) cũng chặn theo thời gian — CHƯA đổi (chưa ai báo). Xin video / bản đồ / ảnh sổ đỏ: không có đường (chủ nhà chưa cho phép công khai sổ đỏ, giữ nguyên).
+4. **Kiểm**: `tests/test_xin_anh_can.py` (7 ca; đã thử đột biến: engine không trả `xin_anh`, `anh_can_gui_kem` bỏ `xin`, bỏ lấy mã từ link — mỗi cái làm ít nhất một ca đỏ). Chưa thử trên Zalo thật.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

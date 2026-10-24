@@ -1694,6 +1694,8 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
   để trống.
 - "hoi_chu_nha": nguyên văn câu khách hỏi về căn mà dòng của căn KHÔNG có câu trả lời (vd "sổ riêng hay chung", "chủ có bớt không").
   Hỏi thứ dòng của căn đã có (giá, diện tích) thì để trống.
+- "xin_anh": true khi khách xin XEM ẢNH / HÌNH của căn (vd "cho xem ảnh", "gửi hình đi em", "có hình thật không", "gửi lại ảnh giúp anh"),
+  kể cả khi bot đã gửi ảnh ở trên rồi. Khách chỉ hỏi chung "căn này đẹp không" thì để trống.
 - "trich_dan": nguyên văn cụm trong tin khách làm căn cứ cho các ô trên.
 
 TRẢ LỜI CÂU KHÁCH HỎI ("tra_loi_khach_hoi", chỉ khi có khối CÂU KHÁCH MUA ĐANG HỎI CHỦ NHÀ và người rao vừa trả lời đúng câu đó):
@@ -1965,6 +1967,7 @@ def operations_schema() -> dict[str, Any]:
                     "quan_tam": {"type": "boolean", "description": "Khách tỏ ý quan tâm / muốn xem căn đó."},
                     "hen_xem": {"type": "string", "description": "Nguyên văn cụm thời gian khách hẹn đi xem."},
                     "hoi_chu_nha": {"type": "string", "description": "Nguyên văn câu khách hỏi mà dữ liệu căn không có."},
+                    "xin_anh": {"type": "boolean", "description": "Khách xin xem ảnh / hình của căn (kể cả xin gửi lại)."},
                     "trich_dan": {"type": "string", "description": "Nguyên văn cụm trong tin khách làm căn cứ."},
                 },
                 "description": "Việc của khách mua (quan tâm, hẹn xem, hỏi chủ nhà) — xem VIỆC CỦA KHÁCH MUA.",
