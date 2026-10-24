@@ -8662,6 +8662,15 @@ Chủ dự án 24/10: "Bỏ bước CTV luôn đi" — sau khi hỏi lại, ch�
 2. **Sửa** (`20261024a_cau_hoi_chu_nha_bo_ctv.sql`): không có chủ nhà trên hệ thống → `assignee = 'admin'`; chủ nhà quá `chu_nha_han_gio()` giờ chưa trả lời → nhắc `escalation` về admin ngay (không `ctv_id`); câu nhắc admin đổi thành "tin không có chủ nhà trên hệ thống". Vòng 2 của `info_request_sla_tick` và nhánh `ctv` của `notify_info_request_escalation` giữ cho dòng CŨ còn giao CTV. Không có báo cáo 17h của CTV nào còn chạy (edge function `ctv-report` đã gỡ ở SRS-5.1zzzzzzz31).
 3. **Kiểm**: sau khi áp migration, soát thân hàm trên DB không còn `chon_ctv` trong `route_info_request` / `info_request_sla_tick`; `schema.sql` sinh lại. Chưa có bài kiểm tự động riêng cho hàm DB này (ghi nhận).
 
+### SRS-5.1zzzzzzz171 · Cấm bot gọi khách là "mình" khi khách chưa xưng "em" (24/10/2026)
+
+Ca gốc: chủ dự án 24/10 chat thử (khách chưa tự xưng): bot đáp "Cái này em chưa nắm được thông tin, em xin lỗi mình nhé. Mình đang cần gửi bán hay cho thuê căn nhà nào…" — hỏi "sao nó xưng mình z". Trả lời hỏi lại: chọn "Cấm gọi khách là \"mình\"" (vẫn cho "nhà mình / căn mình").
+
+1. **Lớp lỗi**: luật xưng hô chỉ nói gọi gì ("anh/chị"), không cấm đại từ "mình" ngôi hai; chỉ nhánh khách xưng "em" mới dặn bot xưng "mình" (SRS-5.1zzzzzzz86) nên model chép "mình" sang các nhánh khác. Không có lưới hình thức nào kiểm.
+2. **Chỗ khác cùng lớp**: `_soat_hinh_thuc` phủ ba nhánh chat (bán, mua, ngoài vùng); tin nhắc / báo căn mới / chấm sao (`followup.py`, `bao_can_moi.py`, `danh_gia.py`) là câu mẫu code ghép, đã chọn "mình" / "em" theo cách khách xưng — không đổi. Lượt ảnh sổ dùng chung `khoi_xung_ho`.
+3. **Sửa**: `khoi_xung_ho` thêm dòng cấm gọi khách là "mình" cho mọi cách xưng trừ "em" (`_CAM_GOI_MINH`); `engine._goi_khach_la_minh` + một lý do trong `_soat_hinh_thuc` — lời còn "mình" đứng riêng (không sau nhà / căn / đất / lô / phố / phòng / tin / bên / dự án / hàng / cư / khu / của / kho) khi khách không xưng "em" thì gọi lại model một lần. Là kiểm hình thức lời của chính bot, không đoán ý khách. Lưới kiểm bằng chữ nên "mình" sau danh từ khác (vd "thông tin mình") bị coi là sai và gọi lại model — chấp nhận, đổi lấy ít bỏ sót.
+4. **Kiểm**: `tests/test_cam_goi_minh.py` (13 ca; đã thử đột biến: bỏ lưới → ca lượt chat đỏ, bỏ dòng cấm → ca khối xưng hô đỏ). Chưa thử Zalo thật.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
