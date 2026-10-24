@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-23 16:51 (giờ VN)
+-- Sinh lúc: 2026-10-24 22:22 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -3358,7 +3358,7 @@ CREATE OR REPLACE FUNCTION public.info_request_sla_tick()
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-declare r record; n int := 0; v_ctv ctvs%rowtype;
+declare r record; n int := 0;
 begin
   for r in
     select q.id, q.question, q.listing_id, l.code, coalesce(nullif(btrim(l.location_raw), ''), l.ward, '?') as dia_chi
@@ -3367,28 +3367,12 @@ begin
       and q.sla_due_at < now() and q.chu_nha_qua_han_at is null
     limit 50
   loop
-    select * into v_ctv from ctvs
-    where active and (zalo_user_id is not null or phone is not null)
-    order by last_assigned_at nulls first, created_at limit 1;
-    if found then
-      update info_requests
-         set assignee = 'ctv', ctv_id = v_ctv.id, chu_nha_qua_han_at = now(),
-             sla_due_at = now() + make_interval(mins => public.ctv_sla_phut())
-       where id = r.id;
-      update ctvs set last_assigned_at = now() where id = v_ctv.id;
-      insert into reminders (kind, listing_id, ctv_id, due_at, note)
-      values ('escalation', r.listing_id, v_ctv.id, now(),
-        'khách hỏi #' || coalesce(r.code, '?') || ' (' || r.dia_chi || '): "' || coalesce(r.question, '')
-        || '". Chủ nhà ' || public.chu_nha_han_gio() || ' giờ chưa trả lời. Anh/chị hỏi chủ rồi nhắn lại em "#'
-        || coalesce(r.code, '?') || ': câu trả lời" trong ' || public.ctv_sla_phut() || ' phút nha.');
-    else
-      update info_requests set assignee = 'admin', chu_nha_qua_han_at = now(), sla_due_at = null where id = r.id;
-      insert into reminders (kind, listing_id, due_at, note)
-      values ('escalation', r.listing_id, now(),
-        '❓ Khách hỏi căn #' || coalesce(r.code, '?') || ': "' || coalesce(r.question, '')
-        || '" — chủ nhà ' || public.chu_nha_han_gio() || ' giờ chưa trả lời, không có CTV. Admin hỏi chủ rồi nhắn bot "#'
-        || coalesce(r.code, '?') || ': câu trả lời".');
-    end if;
+    update info_requests set assignee = 'admin', chu_nha_qua_han_at = now(), sla_due_at = null where id = r.id;
+    insert into reminders (kind, listing_id, due_at, note)
+    values ('escalation', r.listing_id, now(),
+      '❓ Khách hỏi căn #' || coalesce(r.code, '?') || ': "' || coalesce(r.question, '')
+      || '" — chủ nhà ' || public.chu_nha_han_gio() || ' giờ chưa trả lời. Admin hỏi chủ rồi nhắn bot "#'
+      || coalesce(r.code, '?') || ': câu trả lời".');
     n := n + 1;
   end loop;
 
@@ -4646,7 +4630,7 @@ begin
       insert into reminders (kind, listing_id, due_at, note)
       values ('escalation', new.listing_id, now(),
         '❓ Khách hỏi căn #' || coalesce(v_code, '?') || ': "' || v_hoi
-        || '" — không có CTV nào đang hoạt động. Admin hỏi chủ rồi nhắn bot "#'
+        || '" — tin không có chủ nhà trên hệ thống. Admin hỏi chủ rồi nhắn bot "#'
         || coalesce(v_code, '?') || ': câu trả lời".');
     end if;
 
@@ -4992,7 +4976,7 @@ CREATE OR REPLACE FUNCTION public.route_info_request()
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-declare v_seller_zalo text; v_district text; v_ctv uuid;
+declare v_seller_zalo text; v_district text;
 begin
   if new.assignee is not null then return new; end if;
   select s.zalo_user_id, l.district into v_seller_zalo, v_district
@@ -5004,16 +4988,7 @@ begin
     end if;
     return new;
   end if;
-  v_ctv := public.chon_ctv(v_district);
-  if v_ctv is not null then
-    new.assignee := 'ctv'; new.ctv_id := v_ctv;
-    update ctvs set last_assigned_at = now() where id = v_ctv;
-    if new.source = 'buyer_ask' then
-      new.sla_due_at := now() + make_interval(mins => public.ctv_sla_phut());
-    end if;
-  else
-    new.assignee := 'admin';
-  end if;
+  new.assignee := 'admin';   -- 20261024a: bỏ bước CTV, không có chủ nhà trên hệ thống thì giao thẳng admin
   return new;
 end $function$
 ;
