@@ -510,10 +510,16 @@ class Conversation:
 _GIONG_CHUNG = ("KHÔNG mở đầu câu bằng \"Dạ\" / \"Dạ vâng\" — câu đầu vào thẳng nội dung. KHÔNG gọi khách là \"bạn\".\n")
 
 
+# SRS-5.1zzzzzzz171 (chủ dự án 24/10/2026: "sao nó xưng mình z"): bot gọi khách là "mình" ("em xin lỗi mình nhé. Mình đang cần gửi…") dù khách
+# chưa xưng "em" — khối "chưa biết" bảo gọi "anh/chị" nhưng không cấm "mình". Chỉ khi khách xưng "em" bot mới xưng "mình" (xem `_khoi_xung_ho_rieng`).
+_CAM_GOI_MINH = ("KHÔNG gọi khách là \"mình\" (đại từ ngôi hai: \"em xin lỗi mình\", \"Mình đang cần…\") — gọi đúng cách khách xưng, chưa rõ thì "
+                 "\"anh/chị\". Chỉ được \"nhà mình / căn mình / đất mình\" khi nói về căn của khách.\n")
+
+
 def khoi_xung_ho(p: str) -> str:
     """Khối luật xưng hô của lượt theo cách khách tự xưng (`_detect_customer_pronoun`). Một nguồn cho lượt chat và lượt ảnh sổ
     (SRS-5.1zzzzzzz82 — trước đó câu sau ảnh sổ viết cứng, luôn "anh/chị", có nhánh "vậy anh?")."""
-    return _khoi_xung_ho_rieng(p) + _GIONG_CHUNG
+    return _khoi_xung_ho_rieng(p) + _GIONG_CHUNG + ("" if p == "em" else _CAM_GOI_MINH)
 
 
 def _khoi_xung_ho_rieng(p: str) -> str:
@@ -978,6 +984,19 @@ def _mo_dau_da(reply: str) -> bool:
     """Lời bot mở đầu bằng "Dạ" — luật chủ dự án (cấm mở đầu "Dạ", CLAUDE.md §6) mà model có lượt không theo (chat chị N. 20/10: hai
     lượt sau khi đăng tin mở đầu bằng Dạ). Chỉ kiểm chữ đầu; không sửa lời — lệch thì gọi lại model (SRS-5.1zzzzzzz87)."""
     return re.match(r"(?i)\s*dạ(?![a-zà-ỹđ])", reply or "") is not None
+
+
+# "mình" đứng sau các danh từ này là "căn của mình" (gọi căn của khách) — được phép; còn lại là đại từ gọi khách.
+_MINH_SAU_DANH_TU = re.compile(r"(?i)\b(?:nhà|căn|đất|lô|phố|phòng|tin|bên|dự\s+án|hàng|cư|khu|của|kho)\s+mình\b")
+
+
+def _goi_khach_la_minh(reply: str, pronoun: str) -> bool:
+    """Lời bot gọi khách là "mình" như đại từ ("em xin lỗi mình nhé", "Mình đang cần…") khi khách KHÔNG xưng "em" (SRS-5.1zzzzzzz171).
+    Khách xưng "em" thì bot xưng "mình" (luật SRS-5.1zzzzzzz86) nên bỏ qua. "nhà mình / căn mình…" không tính. Kiểm HÌNH THỨC lời của
+    chính bot, không đoán ý khách."""
+    if pronoun == "em":
+        return False
+    return re.search(r"(?i)(?<![\wà-ỹđ])mình(?![\wà-ỹđ])", _MINH_SAU_DANH_TU.sub(" ", reply or "")) is not None
 
 
 def _mo_dau_ghi_nhan(reply: str) -> bool:
@@ -2337,6 +2356,9 @@ class Engine:
                          "minh hoạ cách viết gọn.")
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
+        if _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
+            ly_do.append("Lời vừa viết gọi khách là \"mình\" (\"em xin lỗi mình\", \"Mình đang cần…\") — khách chưa xưng \"em\" nên KHÔNG dùng \"mình\" "
+                         "gọi khách: gọi đúng cách khách xưng, chưa rõ thì \"anh/chị\". Chỉ \"nhà mình / căn mình\" khi nói về căn của khách.")
         truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant"), "")
         if _mo_dau_ghi_nhan(reply) and "📋" not in reply:
             ly_do.append("Lời vừa viết mở đầu bằng câu ghi nhận (\"Em ghi nhận / Em ghi rồi / Em lưu rồi…\") — chủ dự án đã bỏ hẳn kiểu này (22/10): "
