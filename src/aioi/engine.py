@@ -2162,7 +2162,7 @@ class Engine:
             uu_tien = khoi_can_nguoi(conv) or khoi_phap_ly(conv, self._can_dang_noi(conv, can))   # SRS-5.1zzzzzzz178: một khối ưu tiên
             system += ((uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else "") + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
-            system += self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
+            system = self._ghep_cau_chuan(system, conv) + self._khoi_danh_gia(conv)
             # Khách mua báo đã đủ thông tin căn đang xem (SRS-5.1zzzzzzz104) → xin chấm sao một lần.
             xin_sao = bool(conv.y_luot.get("xong_viec_mua") and can) and self._nen_xin_sao(conv)
             if xin_sao:
@@ -2284,7 +2284,7 @@ class Engine:
 
         if not is_listing_post and not any(t.role == "assistant" for t in conv.history):
             system += khoi_chao_lan_dau(conv.assistant.name, cau_mau.cau("chao_lan_dau", goi_toi_khach(customer_pronoun)[0], ten=conv.assistant.name))
-        system += khoi_xung_ho(customer_pronoun) + self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
+        system = self._ghep_cau_chuan(system + khoi_xung_ho(customer_pronoun), conv) + self._khoi_danh_gia(conv)
         if xin_sao:
             system += KHOI_SAP_XIN_SAO
 
@@ -2380,6 +2380,17 @@ class Engine:
         except Exception as e:  # noqa: BLE001 — thiếu ví dụ không được làm hỏng lượt trả lời
             log.warning("khoi_cau_chuan lỗi: %s", e)
             return ""
+
+    def _ghep_cau_chuan(self, system: str, conv: "Conversation | None" = None) -> str:
+        """Ghép khối câu chuẩn vào system TRƯỚC `RANH_GIOI_CACHE` (SRS-5.1zzzzzzz180): khối giống nhau cho mọi khách và chỉ đổi khi người
+        chấm sửa (nhớ 60 giây), nên nằm trong phần được cache — lấy 16 dòng thay vì 8 mà lượt sau đọc lại gần như miễn phí. Prompt không
+        có dấu (nhánh cũ) thì nối cuối như trước."""
+        k = self._khoi_cau_chuan(conv)
+        if not k:
+            return system
+        if RANH_GIOI_CACHE in system:
+            return system.replace(RANH_GIOI_CACHE, k + RANH_GIOI_CACHE, 1)
+        return system + k
 
     def _khoi_danh_gia(self, conv: Conversation) -> str:
         """Khách vừa chấm sao (đã kiểm trích dẫn) → dặn model cảm ơn / xin lỗi. Kho ghi ở server (có tên khách, chạy nền)."""

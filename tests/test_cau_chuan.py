@@ -43,3 +43,20 @@ def test_kho_loi_thi_khong_vi_du():
     eng = Engine(_SpyLan({"operations": []}, ["Em ghi nhận ạ."]))
     eng._convstore = _Hong()
     assert eng._khoi_cau_chuan() == ""
+
+
+# ── SRS-5.1zzzzzzz180 (25/10/2026, chủ dự án: "Câu chuẩn 460 dòng sao lại lấy 8 dòng") ─────────────────────────────────────
+def test_lay_du_dong_cau_sua_tay_truoc_va_nam_trong_phan_cache():
+    import inspect
+    from aioi.llm.base import RANH_GIOI_CACHE
+    from aioi.supabase_store import CAU_CHUAN_TOI_DA, SupabaseConversationStore
+    src = inspect.getsource(SupabaseConversationStore.cau_chuan_mau)
+    assert CAU_CHUAN_TOI_DA >= 16 and "limit=8" not in src and "order=cau_chuan.desc.nullslast,updated_at.desc" in src
+    spy = _SpyLan({"operations": []}, ["Em ghi nhận ạ.", "Em ghi nhận ạ."])
+    eng = Engine(spy)
+    eng._convstore = _Kho()
+    conv = eng.conversation("cc2")
+    conv.prop.loai_hinh = "nha_pho"
+    eng.handle("cc2", "nhà hẻm 3m quận 5")
+    s = spy.systems[-1]
+    assert 0 < s.index("CÂU CHUẨN NGƯỜI CHẤM") < s.index(RANH_GIOI_CACHE)       # trong phần được cache
