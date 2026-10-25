@@ -233,8 +233,78 @@ def _thang(cap_nhat: str) -> str:
     return f"tháng {int(p[1])}/{p[0]}" if len(p) >= 2 and p[1].isdigit() else cap_nhat
 
 
-def khoi_luot(khoa: str | None, nhay_cam: bool = False) -> str:
-    """Khối dặn model ở lượt trả lời khi lượt lập thao tác đọc được khách hỏi pháp lý. `khoa` None → ""."""
+# ── Thuế phí tính theo giá căn (SRS-5.1zzzzzzz179 mục 3, 25/10/2026; MOSO AI nhân ra số theo giá căn đang xem, mình chỉ nói tỷ lệ) ──
+# Tỷ lệ là quy định chung (TNCN 2 % giá chuyển nhượng — Luật Thuế TNCN; trước bạ 0,5 % — NĐ 10/2022; công chứng theo biểu giá trị tài sản —
+# TT 257/2016/TT-BTC Điều 4). Cũng như MAC_DINH: bản AI soạn, CHƯA người có chuyên môn duyệt — bot luôn nói "tham khảo". Chỉ tính khi khách hỏi
+# đúng các mục dưới và hội thoại có căn đã biết giá; không có căn thì giữ câu tỷ lệ.
+PHI_THEO_GIA = ("thue_phi_sang_ten", "thue_tncn", "le_phi_truoc_ba", "phi_cong_chung")
+TY_LE_TNCN = 0.02
+TY_LE_TRUOC_BA = 0.005
+# Biểu phí công chứng hợp đồng theo giá trị (TT 257/2016, Điều 4 khoản 2 điểm a): (ngưỡng trên, phí cố định, tỷ lệ phần vượt ngưỡng dưới).
+_BIEU_CONG_CHUNG = (
+    (50_000_000, 50_000, 0.0),
+    (100_000_000, 100_000, 0.0),
+    (1_000_000_000, 0, 0.001),                 # 0,1 % giá trị
+    (3_000_000_000, 1_000_000, 0.0006),        # 1 triệu + 0,06 % phần vượt 1 tỷ
+    (5_000_000_000, 2_200_000, 0.0005),        # 2,2 triệu + 0,05 % phần vượt 3 tỷ
+    (10_000_000_000, 3_200_000, 0.0004),       # 3,2 triệu + 0,04 % phần vượt 5 tỷ
+    (100_000_000_000, 5_200_000, 0.0003),      # 5,2 triệu + 0,03 % phần vượt 10 tỷ
+)
+_CONG_CHUNG_TOI_DA = 70_000_000
+
+
+def phi_cong_chung(gia: float) -> int:
+    """Phí công chứng hợp đồng mua bán theo biểu TT 257/2016 (tham khảo). gia ≤ 0 → 0."""
+    if gia <= 0:
+        return 0
+    duoi = 0
+    for tran, co_dinh, ty_le in _BIEU_CONG_CHUNG:
+        if gia <= tran:
+            if ty_le == 0.001:
+                return int(round(gia * ty_le))
+            return int(round(co_dinh + (gia - duoi) * ty_le))
+        duoi = tran
+    return min(_CONG_CHUNG_TOI_DA, int(round(32_200_000 + (gia - 100_000_000_000) * 0.0002)))
+
+
+def tinh_phi(gia_vnd: float) -> dict[str, int]:
+    """Ba khoản theo giá căn: thuế TNCN bên bán, lệ phí trước bạ bên mua, phí công chứng (tham khảo)."""
+    gia = float(gia_vnd or 0)
+    return {"tncn": int(round(gia * TY_LE_TNCN)), "truoc_ba": int(round(gia * TY_LE_TRUOC_BA)), "cong_chung": phi_cong_chung(gia)}
+
+
+def tien(v: float) -> str:
+    """Số tiền đọc như môi giới nhắn: 100 triệu, 4,2 triệu, 2,5 tỷ, 350 nghìn."""
+    v = float(v or 0)
+    def _s(x: float) -> str:
+        return (f"{x:.1f}".rstrip("0").rstrip(".")).replace(".", ",")
+    if v >= 1_000_000_000:
+        return f"{_s(v / 1_000_000_000)} tỷ"
+    if v >= 1_000_000:
+        return f"{_s(v / 1_000_000)} triệu"
+    return f"{_s(v / 1_000)} nghìn"
+
+
+def khoi_phi_theo_can(khoa: str | None, gia_vnd: float | None, ma_can: str | None = None) -> str:
+    """Dòng số tính sẵn theo giá căn — chỉ cho 4 mục thuế phí và khi đã biết giá; khoá khác / không giá → ""."""
+    if khoa not in PHI_THEO_GIA or not gia_vnd or float(gia_vnd) <= 0:
+        return ""
+    p = tinh_phi(float(gia_vnd))
+    ten = f"căn {ma_can}" if ma_can else "căn khách đang xem"
+    dong = []
+    if khoa in ("thue_phi_sang_ten", "thue_tncn"):
+        dong.append(f"thuế TNCN bên bán 2 % ≈ {tien(p['tncn'])}")
+    if khoa in ("thue_phi_sang_ten", "le_phi_truoc_ba"):
+        dong.append(f"lệ phí trước bạ bên mua 0,5 % ≈ {tien(p['truoc_ba'])}")
+    if khoa in ("thue_phi_sang_ten", "phi_cong_chung"):
+        dong.append(f"phí công chứng theo biểu ≈ {tien(p['cong_chung'])}")
+    return (f"SỐ TÍNH THEO CĂN (giá {tien(float(gia_vnd))} của {ten}, tham khảo — code tính, được nói đúng các số này): "
+            + "; ".join(dong) + ". Hồ sơ cụ thể có thể khác; không tự tính thêm số nào ngoài các số này.\n")
+
+
+def khoi_luot(khoa: str | None, nhay_cam: bool = False, gia_can: float | None = None, ma_can: str | None = None) -> str:
+    """Khối dặn model ở lượt trả lời khi lượt lập thao tác đọc được khách hỏi pháp lý. `khoa` None → "". `gia_can` (SRS-5.1zzzzzzz179):
+    giá căn đang nói tới — có thì nối dòng số tính sẵn cho các mục thuế phí."""
     if not khoa:
         return ""
     if nhay_cam:
@@ -253,4 +323,5 @@ def khoi_luot(khoa: str | None, nhay_cam: bool = False) -> str:
             "KHÔNG thêm con số khác, KHÔNG nói mức phí môi giới). Kết bằng MỘT câu: đây là thông tin tham khảo theo quy định chung, hồ sơ cụ "
             "thể anh/chị kiểm lại với văn phòng công chứng hoặc văn phòng đăng ký đất đai; cần thì em nối người phụ trách. Không nêu tên văn "
             "bản luật trừ khi khách hỏi nguồn"
-            + (f" (nguồn: {d['nguon']})" if d.get("nguon") else "") + ".\n")
+            + (f" (nguồn: {d['nguon']})" if d.get("nguon") else "") + ".\n"
+            + khoi_phi_theo_can(khoa, gia_can, ma_can))

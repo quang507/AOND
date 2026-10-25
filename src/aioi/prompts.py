@@ -129,6 +129,7 @@ FIELD_LABELS: dict[str, str] = {
     "thanh_vien": "nhà gồm những ai sẽ ở (vợ chồng, con nhỏ, ông bà…)",
     "noi_lam_viec": "đi làm / con đi học ở khu vực nào",
     "dien_tich_mong_muon": "cần mấy phòng, diện tích tầm bao nhiêu thì thoải mái",
+    "tien_ich_mong_muon": "muốn gần tiện ích nào (trường học, bệnh viện, chợ, siêu thị, công viên)",
     "thang_may": "có cần nhà có thang máy không",
     "nguoi_quyet_dinh": "ngoài anh/chị còn ai cùng quyết định mua",
 }
@@ -2044,6 +2045,8 @@ def operations_schema() -> dict[str, Any]:
                     "thanh_vien": {"type": "string", "description": "nhà gồm những ai sẽ ở (vợ chồng, con nhỏ, ông bà…) — không ghi họ tên"},
                     "noi_lam_viec": {"type": "string", "description": "khu vực đi làm / con đi học"},
                     "dien_tich_mong_muon": {"type": "string", "description": "số phòng, diện tích mong muốn"},
+                    "tien_ich_mong_muon": {"type": "string", "description": "NGUYÊN VĂN cụm khách nói muốn gần tiện ích nào: trường học, bệnh viện, "
+                                           "chợ, siêu thị, công viên (vd \"gần trường học\", \"gần chợ với bệnh viện\"). Không nói thì bỏ trống."},
                     "thang_may": {"type": "string", "description": "có cần thang máy không"},
                     "nguoi_quyet_dinh": {"type": "string", "description": "ai cùng quyết định mua (vợ / chồng / bố mẹ…) — không ghi họ tên"},
                 },
