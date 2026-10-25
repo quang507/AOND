@@ -24,6 +24,7 @@ from dataclasses import dataclass, field, replace
 from uuid import uuid4
 
 from . import gamification as g
+from . import phap_ly
 from . import cau_mau
 from . import che_do_test
 from . import nhom_json
@@ -566,14 +567,20 @@ class LoiTraLoi(RuntimeError):
 
 def khoi_can_nguoi(conv: "Conversation") -> str:
     """Khối lệnh khi lượt AI lập thao tác đọc được khách XIN gặp người thật (SRS-5.1zzzzzzz82). Server bật `needs_human` và xếp tin
-    báo admin ở cùng lượt, nên lời "đã báo" là thật; không hứa giờ cụ thể."""
-    if not conv.y_luot.get("can_nguoi_that"):
+    báo admin ở cùng lượt, nên lời "đã báo" là thật; không hứa giờ cụ thể. Câu pháp lý nhạy cảm đi cùng đường báo nhưng lời dặn ở
+    `khoi_phap_ly` (SRS-5.1zzzzzzz176)."""
+    if not conv.y_luot.get("can_nguoi_that") or conv.y_luot.get("phap_ly_nhay_cam"):
         return ""
     return (
         "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH XIN GẶP NGƯỜI THẬT (hệ thống đã đọc, ĐÃ BÁO người phụ trách): ===\n"
         "Nói ngắn, ấm: em đã báo anh/chị phụ trách, anh/chị ấy sẽ nhắn khách sớm. KHÔNG hứa giờ cụ thể, KHÔNG xin số điện thoại. "
         "Trong lúc chờ, nếu khách muốn em vẫn hỗ trợ tiếp. Không hỏi thêm thông tin căn ở lượt này.\n"
     )
+
+
+def khoi_phap_ly(conv: "Conversation") -> str:
+    """Khối dặn model khi khách hỏi pháp lý / thủ tục (SRS-5.1zzzzzzz176) — nội dung từ kho `phap_ly`, luôn kèm "tham khảo"."""
+    return phap_ly.khoi_luot(conv.y_luot.get("hoi_phap_ly"), bool(conv.y_luot.get("phap_ly_nhay_cam")))
 
 
 @dataclass
@@ -2089,7 +2096,7 @@ class Engine:
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
                            + khoi_lich_dang_cho(conv.y_luot.get("lich_cho"), customer_pronoun))
-            system += khoi_can_nguoi(conv) + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
+            system += khoi_can_nguoi(conv) + khoi_phap_ly(conv) + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
             system += self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
             # Khách mua báo đã đủ thông tin căn đang xem (SRS-5.1zzzzzzz104) → xin chấm sao một lần.
@@ -2117,7 +2124,7 @@ class Engine:
         # nói khéo chưa nhận khu vực đó — không hỏi tiếp ô thiếu, không soạn tin, không đăng (kho ẩn tin, tin nhắc bỏ qua).
         if conv.prop.fields.get("_ngoai_vung"):
             system = (build_ngoai_vung_system(conv.assistant.name, conv.prop.fields["_ngoai_vung"])
-                      + khoi_xung_ho(customer_pronoun) + khoi_can_nguoi(conv))
+                      + khoi_xung_ho(customer_pronoun) + khoi_can_nguoi(conv) + khoi_phap_ly(conv))
             reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
                 raise LoiTraLoi("lời gửi khách rỗng")
@@ -2250,7 +2257,7 @@ class Engine:
             system += khoi_tinh_hinh_ban(self._tinh_hinh_tin(conv), bool(web and web.get("len_web")))
         elif conv.hoi_ve_luot == "dinh_gia":
             system += KHOI_DINH_GIA
-        system += khoi_can_nguoi(conv)
+        system += khoi_can_nguoi(conv) + khoi_phap_ly(conv)
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
         system += self._project_memory_block(project)  # remember the price list + phân lô; reason over it
         system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
@@ -3630,6 +3637,14 @@ class Engine:
         # Xin gặp người thật (SRS-5.1zzzzzzz82): giữ nguyên cụm trích để báo admin kèm lời khách.
         if _trich_dan_khop(plan.get("can_nguoi_that"), cuoi):
             conv.y_luot["can_nguoi_that"] = str(plan["can_nguoi_that"]).strip()
+        # Hỏi pháp lý / thủ tục (SRS-5.1zzzzzzz176): khoá phải có trong kho (hoặc "khac"), câu hỏi phải nằm nguyên trong tin khách. Nhạy cảm
+        # → báo admin cùng đường khách xin gặp người thật (server đọc `can_nguoi_that`).
+        hp = plan.get("hoi_phap_ly")
+        if isinstance(hp, str) and (hp in phap_ly.KHOA or hp == phap_ly.KHAC) and _trich_dan_khop(plan.get("phap_ly_trich_dan"), cuoi):
+            conv.y_luot["hoi_phap_ly"] = hp
+            if plan.get("phap_ly_nhay_cam") is True:
+                conv.y_luot["phap_ly_nhay_cam"] = True
+                conv.y_luot["can_nguoi_that"] = str(plan.get("phap_ly_trich_dan")).strip()
         # Thả tim (SRS-5.1zzzzzzz163): lời chào / lời đáp ngắn đồng ý do AI đọc theo nghĩa (cụm trích có trong tin vừa nhắn), hoặc khách vừa
         # duyệt bản nháp. Không dò từ khoá ở code.
         if plan.get("loi_xa_giao") in ("chao", "dong_y") and _trich_dan_khop(plan.get("loi_xa_giao_trich_dan"), cuoi):

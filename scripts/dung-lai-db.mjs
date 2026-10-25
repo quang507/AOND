@@ -293,7 +293,7 @@ if (buoc === "kiem") {
 } else if (buoc === "du-lieu") {
   // SRS-5.1zzzzs: bảng có dòng khởi tạo trong migration mà schema.sql không mang. Thêm bảng một dòng / bảng cấu hình mới
   // thì thêm ở đây — bot/tests/hat-giong-dung-lai.mjs đỏ khi một câu insert cấp cao nhất trong migration không được phủ.
-  const BANG = "(?:public\\.)?(wards|phuong_cu|quan_cu|app_config|bridge_dang_nhap|cau_mau|xa_tinh_khac)\\b";
+  const BANG = "(?:public\\.)?(wards|phuong_cu|quan_cu|app_config|bridge_dang_nhap|cau_mau|xa_tinh_khac|kien_thuc_phap_ly)\\b";
   const laDuLieu = new RegExp(`^(insert\\s+into\\s+${BANG}|update\\s+${BANG}|delete\\s+from\\s+${BANG})`, "i");
   const bangCua = (b) => new RegExp(BANG, "i").exec(b.replace(/^(insert\s+into|update|delete\s+from)\s+/i, ""))?.[1];
   const files = readdirSync(MIG).filter((f) => f.endsWith(".sql")).sort();

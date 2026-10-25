@@ -12,6 +12,7 @@ from typing import Any
 from .projects import Project, UnitType
 from .revenue import SellerRole
 from . import cau_mau
+from . import phap_ly
 from .llm.base import RANH_GIOI_CACHE
 from .schema import (
     CORE_FIELDS,
@@ -1755,6 +1756,14 @@ QUY TẮC:
   "tinh_hinh_ban" (21/10) khi CHỦ NHÀ hỏi căn của mình đã có ai hỏi / quan tâm / hẹn xem chưa, bán tới đâu rồi; "dinh_gia" khi
   chủ nhà hỏi giá mình đưa cao hay thấp, giá thị trường khu đó bao nhiêu, nên bán giá nào.
   Không hỏi những điều đó → bỏ trống. Có điền thì hoi_ve_trich_dan = NGUYÊN VĂN cụm câu hỏi trong tin khách.
+- HỎI PHÁP LÝ / THỦ TỤC / THUẾ PHÍ (25/10/2026, SRS-5.1zzzzzzz176, đọc theo NGHĨA): khách (mua hay bán) hỏi một điều về thủ tục, giấy tờ,
+  thuế phí, quy định mua bán / thuê nhà đất nói chung — KHÔNG phải hỏi về một căn cụ thể đang rao, KHÔNG phải phí môi giới bên mình (đó là
+  hoi_ve = "phi") → hoi_phap_ly = khoá hợp nhất trong DANH MỤC PHÁP LÝ bên dưới; không mục nào hợp → "khac". Kèm phap_ly_trich_dan =
+  NGUYÊN VĂN câu hỏi của khách. Câu thuộc nhóm TRANH CHẤP / KIỆN TỤNG / THỪA KẾ, CHIA DI SẢN / LY HÔN CHIA TÀI SẢN / NGHI GIẤY TỜ GIẢ, LỪA
+  ĐẢO / CÁCH GIẢM, TRÁNH THUẾ / hồ sơ cụ thể cần người đọc giấy tờ → phap_ly_nhay_cam = true (vẫn điền hoi_phap_ly nếu có khoá hợp).
+  Khách chỉ kể tình trạng pháp lý căn của mình ("sổ hồng riêng", "chưa hoàn công") KHÔNG phải câu hỏi → bỏ trống.
+  DANH MỤC PHÁP LÝ (khoá: nội dung):
+{DANH_MUC_PHAP_LY}
 - KHÁCH TỰ XƯNG (đọc cả các lượt trước): xung_ho = "em" khi khách tự xưng em ("nhà em", "em gửi"); "anh" / "chi" khi khách
   tự xưng anh / chị; "chu_co_bac" khi khách tự xưng chú / cô / bác / dì. Chữ "em" khách dùng để GỌI bot ("đăng đi em") không
   phải tự xưng. Chưa thấy khách tự xưng → bỏ trống. Có điền thì xung_ho_trich_dan = NGUYÊN VĂN cụm khách tự xưng.
@@ -1792,6 +1801,8 @@ Trả về JSON đúng schema."""
 # 18/10/2026: chuỗi trên không phải f-string nên model từng nhận nguyên chữ "{SLANG_NOTES}" — thay ở đây (trong chuỗi còn
 # ngoặc nhọn của ví dụ JSON nên không đổi cả chuỗi thành f-string).
 OPERATIONS_SYSTEM = OPERATIONS_SYSTEM.replace("{SLANG_NOTES}", SLANG_NOTES)
+# SRS-5.1zzzzzzz176: danh mục khoá pháp lý lấy từ phap_ly.MAC_DINH (khoá cố định trong code; DB chỉ sửa câu trả lời).
+OPERATIONS_SYSTEM = OPERATIONS_SYSTEM.replace("{DANH_MUC_PHAP_LY}", phap_ly.danh_muc_cho_prompt())
 
 
 # ── Scoping a price-list import by what the seller actually sells ─────────────────────
@@ -1932,6 +1943,12 @@ def operations_schema() -> dict[str, Any]:
                 "đó thì bỏ trống.",
             },
             "hoi_ve_trich_dan": {"type": "string", "description": "Nguyên văn cụm câu hỏi trong tin khách (bắt buộc khi có hoi_ve)."},
+            "hoi_phap_ly": {"type": "string", "enum": list(phap_ly.KHOA) + [phap_ly.KHAC],
+                            "description": "Khách hỏi pháp lý / thủ tục / thuế phí nhà đất nói chung: khoá trong DANH MỤC PHÁP LÝ, "
+                            "hoặc khac khi không mục nào hợp. Không hỏi thì bỏ trống."},
+            "phap_ly_trich_dan": {"type": "string", "description": "Nguyên văn câu hỏi pháp lý của khách (bắt buộc khi có hoi_phap_ly)."},
+            "phap_ly_nhay_cam": {"type": "boolean", "description": "true khi câu pháp lý thuộc nhóm tranh chấp / thừa kế / ly hôn / nghi "
+                                 "giấy tờ giả / tránh thuế / hồ sơ cụ thể cần người đọc."},
             "xung_ho": {
                 "type": "string",
                 "enum": ["em", "anh", "chi", "chu_co_bac"],
