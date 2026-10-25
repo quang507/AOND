@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-24 22:22 (giờ VN)
+-- Sinh lúc: 2026-10-25 11:37 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -1397,30 +1397,6 @@ begin
     raise exception 'chỉ admin được xoá khách' using errcode = '42501';
   end if;
   return public.xoa_nguoi_theo_zalo(p_zalo);
-end $function$
-;
-
-CREATE OR REPLACE FUNCTION public.assign_ctv_round_robin()
- RETURNS trigger
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
-AS $function$
-declare picked uuid; v_district text;
-begin
-  if new.ctv_id is not null then return new; end if;
-  -- khu của khách mua: quận trong hồ sơ (preferences.area) nếu có; người bán: quận tin mới nhất
-  if new.buyer_id is not null then
-    select coalesce(b.preferences->>'district', b.preferences->>'area') into v_district from buyers b where b.id = new.buyer_id;
-  elsif new.seller_id is not null then
-    select l.district into v_district from listings l where l.seller_id = new.seller_id order by l.created_at desc limit 1;
-  end if;
-  picked := public.chon_ctv(v_district);
-  if picked is not null then
-    new.ctv_id := picked;
-    update public.ctvs set last_assigned_at = now() where id = picked;
-  end if;
-  return new;
 end $function$
 ;
 
@@ -6695,8 +6671,6 @@ drop trigger if exists cau_chuan_cap_nhat_luc on public.cau_chuan;
 CREATE TRIGGER cau_chuan_cap_nhat_luc BEFORE UPDATE ON public.cau_chuan FOR EACH ROW EXECUTE FUNCTION cau_chuan_cap_nhat_luc();
 drop trigger if exists cau_mau_cap_nhat_luc on public.cau_mau;
 CREATE TRIGGER cau_mau_cap_nhat_luc BEFORE UPDATE ON public.cau_mau FOR EACH ROW EXECUTE FUNCTION cau_mau_cap_nhat_luc();
-drop trigger if exists trg_conversations_assign_ctv on public.conversations;
-CREATE TRIGGER trg_conversations_assign_ctv BEFORE INSERT ON public.conversations FOR EACH ROW EXECUTE FUNCTION assign_ctv_round_robin();
 drop trigger if exists trg_conversations_email_upset on public.conversations;
 CREATE TRIGGER trg_conversations_email_upset AFTER UPDATE OF needs_human ON public.conversations FOR EACH ROW EXECUTE FUNCTION conversations_email_upset();
 drop trigger if exists trg_deals_chan_xoa on public.deals;
@@ -7103,8 +7077,6 @@ grant execute on function public.admin_xoa_het_khach_va_ro_hang(p_xac_nhan text)
 revoke all on function public.admin_xoa_khach(p_zalo text) from public, anon, authenticated;
 grant execute on function public.admin_xoa_khach(p_zalo text) to authenticated;
 grant execute on function public.admin_xoa_khach(p_zalo text) to service_role;
-revoke all on function public.assign_ctv_round_robin() from public, anon, authenticated;
-grant execute on function public.assign_ctv_round_robin() to service_role;
 revoke all on function public.bao_can_da_chot(p_listing_id uuid) from public, anon, authenticated;
 grant execute on function public.bao_can_da_chot(p_listing_id uuid) to service_role;
 revoke all on function public.bao_tin_moi_khop(p_listing_id uuid) from public, anon, authenticated;

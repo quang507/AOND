@@ -894,7 +894,7 @@ DỮ LIỆU BĐS:
 # Concrete value props (from the SRD) the bot can use to justify the fee when a
 # customer pushes back. These are the honest differentiators — no fabricated perks.
 FEE_VALUE_POINTS = """- CHỈ thu phí KHI giao dịch thành công — khách không tốn đồng nào trước, không rủi ro.
-- Hệ thống tự điều cộng tác viên (CTV) dẫn khách tới xem nhà, chủ không phải tự tìm khách.
+- Bên em sắp xếp người dẫn khách tới xem nhà, chủ không phải tự tìm khách.
 - Tin được đẩy tới mạng lưới 20 nhà môi giới lõi + rổ khách mua đã được lọc, tiếp cận khách "nét".
 - Tin được chuẩn hóa, chấm điểm và ưu tiên lên Top hiển thị khu vực của căn nhà.
 - Tiết kiệm thời gian, sàng lọc khách ảo, giữ liên lạc tự động qua Zalo."""
