@@ -1,7 +1,6 @@
 -- duyet-ban-nhap.sql — tin từ chat (can_chu_duyet) chỉ lên web khi chu_duyet_at có; xoá dấu duyệt là hạ xuống (20261018k, SRS-5.1zzzzzzz47).
 begin;
 set local client_min_messages = warning;
-alter table listings disable trigger trg_listings_bao_tin_moi_khop;
 alter table listings disable trigger trg_listings_zz_toa_do;
 insert into quan_cu (ten) values ('Quận 5') on conflict do nothing;
 insert into wards (ten, loai, ten_day_du, quan_cu, don_vi_2025, tinh_cu, nguon)

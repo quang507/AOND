@@ -2,7 +2,6 @@
 -- Bắn production 12/10 (thu-kb-thue): "căn hộ Sunrise City quận 7" → street = "Sunrise City". Đỏ khi tắt bản sửa trong trigger.
 begin;
 set local client_min_messages = warning;
-alter table listings disable trigger trg_listings_bao_tin_moi_khop;
 alter table listings disable trigger trg_listings_zz_toa_do;
 alter table listings disable trigger trg_pe_listings;
 insert into sellers (id, zalo_user_id, seller_type) values ('00000000-0000-0000-0000-0000000000c1', 'thu-sql-st', 'ccrb');
