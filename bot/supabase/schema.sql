@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-25 15:22 (giờ VN)
+-- Sinh lúc: 2026-10-25 15:23 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -5494,7 +5494,7 @@ AS $function$
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.tim_nha(p_deal text, p_loai text DEFAULT NULL::text, p_gia_max bigint DEFAULT NULL::bigint, p_khu text DEFAULT NULL::text, p_dt_min numeric DEFAULT NULL::numeric, p_pn_min integer DEFAULT NULL::integer, p_xe_hoi boolean DEFAULT false, p_vec double precision[] DEFAULT NULL::double precision[], p_limit integer DEFAULT 3)
+CREATE OR REPLACE FUNCTION public.tim_nha(p_deal text, p_loai text DEFAULT NULL::text, p_gia_max bigint DEFAULT NULL::bigint, p_khu text DEFAULT NULL::text, p_dt_min numeric DEFAULT NULL::numeric, p_pn_min integer DEFAULT NULL::integer, p_xe_hoi boolean DEFAULT false, p_vec double precision[] DEFAULT NULL::double precision[], p_limit integer DEFAULT 3, p_tien_ich text[] DEFAULT NULL::text[])
  RETURNS TABLE(can jsonb, diem numeric, ly_do text)
  LANGUAGE sql
  STABLE SECURITY DEFINER
@@ -5510,7 +5510,11 @@ AS $function$
       case when coalesce(p_xe_hoi, false)
                 and (l.access_type::text in ('mat_tien', 'hem_xe_tai', 'hem_xe_hoi') or coalesce(l.car_in_house, false)) then 2 else 0 end as d_xe,
       case when p_vec is not null and l.nhung is not null
-           then greatest(0, 1 - (l.nhung <=> (p_vec::extensions.halfvec(768)))) * 4 else 0 end as d_vec
+           then greatest(0, 1 - (l.nhung <=> (p_vec::extensions.halfvec(768)))) * 4 else 0 end as d_vec,
+      case when p_tien_ich is not null and jsonb_typeof(l.tien_ich_gan) = 'array'
+           then (select count(*) from jsonb_array_elements(l.tien_ich_gan) t
+                  where t->>'loai' = any(p_tien_ich) and coalesce((t->>'m')::numeric, 99999) <= 1000) * 2
+           else 0 end as d_ti
       from public.listings l
      where l.status in ('dang_ban', 'dang_quan_tam', 'da_coc')
        and l.deal::text = p_deal
@@ -5521,16 +5525,21 @@ AS $function$
            'id', c.id, 'code', c.code, 'property_type', c.property_type, 'deal', c.deal, 'street', c.street, 'ward', c.ward,
            'district', c.district, 'area_m2', c.area_m2, 'price_raw', c.price_raw, 'price_vnd', c.price_vnd, 'bedrooms', c.bedrooms,
            'floors_text', c.floors_text, 'legal_status', c.legal_status, 'direction', c.direction, 'access_type', c.access_type,
-           'alley_width_m', c.alley_width_m, 'status', c.status) as can,
-         (c.d_khu + c.d_dt + c.d_pn + c.d_xe + c.d_vec)::numeric as diem,
+           'alley_width_m', c.alley_width_m, 'status', c.status, 'tien_ich_gan', c.tien_ich_gan,
+           'chinh_chu', (select s.seller_type = 'ccrb' from public.sellers s where s.id = c.seller_id)) as can,
+         (c.d_khu + c.d_dt + c.d_pn + c.d_xe + c.d_vec + c.d_ti)::numeric as diem,
          nullif(concat_ws('; ',
            case when c.d_khu > 0 then 'đúng khu vực khách chọn'
                 when nullif(btrim(p_khu), '') is not null then 'KHÁC khu vực khách chọn' end,
            case when c.d_xe > 0 then 'xe hơi vào được' end,
            case when c.d_dt > 0 then 'đủ diện tích' end,
-           case when c.d_pn > 0 then 'đủ phòng ngủ' end), '') as ly_do
+           case when c.d_pn > 0 then 'đủ phòng ngủ' end,
+           case when c.d_ti > 0 then
+             (select string_agg('gần ' || (t->>'ten') || ' ~' || (t->>'m') || ' m', ', ' order by (t->>'m')::numeric)
+                from jsonb_array_elements(c.tien_ich_gan) t
+               where t->>'loai' = any(p_tien_ich) and coalesce((t->>'m')::numeric, 99999) <= 1000) end), '') as ly_do
     from chon c
-   order by (c.d_khu + c.d_dt + c.d_pn + c.d_xe + c.d_vec) desc, c.updated_at desc
+   order by (c.d_khu + c.d_dt + c.d_pn + c.d_xe + c.d_vec + c.d_ti) desc, c.updated_at desc
    limit greatest(1, least(coalesce(p_limit, 3), 10));
 $function$
 ;
@@ -7411,8 +7420,8 @@ revoke all on function public.tim_duong(p_ten text, p_quan text, p_toi_da intege
 grant execute on function public.tim_duong(p_ten text, p_quan text, p_toi_da integer) to service_role;
 revoke all on function public.tim_nghia_san_sang() from public, anon, authenticated;
 grant execute on function public.tim_nghia_san_sang() to service_role;
-revoke all on function public.tim_nha(p_deal text, p_loai text, p_gia_max bigint, p_khu text, p_dt_min numeric, p_pn_min integer, p_xe_hoi boolean, p_vec double precision[], p_limit integer) from public, anon, authenticated;
-grant execute on function public.tim_nha(p_deal text, p_loai text, p_gia_max bigint, p_khu text, p_dt_min numeric, p_pn_min integer, p_xe_hoi boolean, p_vec double precision[], p_limit integer) to service_role;
+revoke all on function public.tim_nha(p_deal text, p_loai text, p_gia_max bigint, p_khu text, p_dt_min numeric, p_pn_min integer, p_xe_hoi boolean, p_vec double precision[], p_limit integer, p_tien_ich text[]) from public, anon, authenticated;
+grant execute on function public.tim_nha(p_deal text, p_loai text, p_gia_max bigint, p_khu text, p_dt_min numeric, p_pn_min integer, p_xe_hoi boolean, p_vec double precision[], p_limit integer, p_tien_ich text[]) to service_role;
 revoke all on function public.tim_phuong_theo_nghia(p_vec double precision[], p_limit integer) from public, anon, authenticated;
 grant execute on function public.tim_phuong_theo_nghia(p_vec double precision[], p_limit integer) to service_role;
 revoke all on function public.tim_tin_theo_nghia(p_vec double precision[], p_codes text[], p_limit integer) from public, anon, authenticated;
