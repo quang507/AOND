@@ -24,7 +24,7 @@ def test_ad_format_mot_nguon_o_ca_ba_noi():
 def test_chat_khong_tu_soan_bai_dang():
     # SRS-5.1zzzzzzz86: bắn thử KB1/KB2 "ok em đăng đi" khi tin còn thiếu → lượt chat soạn bài đăng không 📋, khách duyệt không ghi.
     s = prompts.build_chat_system("Lan", P, "phap_ly")
-    assert prompts.AD_FORMAT not in s and "xem / đăng TOÀN BỘ tin" not in s and "25 - 40 TỪ" in s
+    assert prompts.AD_FORMAT not in s and "xem / đăng TOÀN BỘ tin" not in s and "TỐI ĐA ~40 TỪ" in s
 
 
 def test_tin_rao_di_mot_bong_giu_dong_trong():
