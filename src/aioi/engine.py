@@ -3889,7 +3889,8 @@ class Engine:
         if ten_da and _trich_dan_khop(ten_da, text) and getattr(kho, "tra_du_an", None) is not None:
             try:
                 with _do(conv, "du_an"):
-                    conv.y_luot["du_an_mua"] = kho.tra_du_an(ten_da)
+                    nghia = getattr(self._dia_danh, "du_an_theo_nghia", None)
+                    conv.y_luot["du_an_mua"] = kho.tra_du_an(ten_da, theo_nghia=nghia) if nghia else kho.tra_du_an(ten_da)
             except Exception as e:  # noqa: BLE001 — không có khối dự án thì bot không có dữ kiện, nhưng lượt vẫn đi
                 log.warning("tra_du_an lỗi: %s", e)
         if getattr(kho, "khach_mua", None) is None:
