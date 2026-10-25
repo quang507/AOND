@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-25 11:37 (giờ VN)
+-- Sinh lúc: 2026-10-25 11:42 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -3286,17 +3286,6 @@ begin
       insert into reminders (kind, buyer_id, listing_id, viewing_id, due_at, note)
       values ('followup', new.buyer_id, new.listing_id, v_vw, now(),
         'lịch xem #' || coalesce(v_code, '?') || ' đã được xác nhận: ' || left(coalesce(new.answer, ''), 200));
-      -- 20261023f: lịch đã chốt do CTV xác nhận → báo admin nắm (không cần làm gì thêm)
-      if v_vw is not null and new.ctv_id is not null and coalesce(new.assignee, '') <> 'admin' then
-        begin
-          insert into reminders (kind, buyer_id, listing_id, viewing_id, due_at, note)
-          values ('escalation', new.buyer_id, new.listing_id, v_vw, now(),
-            'Lịch xem #' || coalesce(v_code, '?') || ' đã chốt (khách và chủ nhà thống nhất, CTV xác nhận): '
-            || left(coalesce(new.answer, ''), 150) || ' — báo để admin nắm, không cần làm gì thêm.');
-        exception when others then
-          perform public.log_loi('lich_chot_bao_admin', left(sqlerrm, 400), null::integer);
-        end;
-      end if;
     else
       insert into reminders (kind, buyer_id, listing_id, due_at, note)
       values ('followup', new.buyer_id, new.listing_id, now(),
