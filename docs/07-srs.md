@@ -8679,6 +8679,14 @@ Chủ dự án 24/10: "Bỏ luôn assign_ctv_round_robin đi"; "sau khi chốt t
 2. **Sửa** (`20261025a_bo_gan_ctv_cho_hoi_thoai.sql`): gỡ trigger `trg_conversations_assign_ctv` và hàm `assign_ctv_round_robin()` — trước đó mỗi hội thoại mới tự điền `conversations.ctv_id` theo vòng, không đẻ nhắc nào. Giữ cột `conversations.ctv_id` + dữ liệu cũ (`ctv_dang_ganh` còn đếm) và hàm `chon_ctv`.
 3. **Kiểm**: sau khi áp migration, soát catalog DB không còn trigger / hàm; pytest 807 xanh. Chưa thử Zalo thật.
 
+### SRS-5.1zzzzzzz173 · Bỏ nhánh "CTV xác nhận lịch → báo admin nắm" (25/10/2026)
+
+Chủ dự án 25/10: "Bỏ luôn nhánh CTV xác nhận lịch đi". Dọn nốt phần còn lại của SRS-5.1zzzzzzz164 sau khi SRS-165 / 170 / 172 bỏ CTV khỏi phía mua.
+
+1. **Soát**: nhánh nằm trong `info_request_bao_lai_khach` (thêm ở `20261023f`), chỉ chạy khi dòng `info_requests` có `ctv_id` và không giao admin; từ SRS-165 (lịch xem) và SRS-170 (câu hỏi chủ nhà) không còn dòng mới nào như vậy. Lời "#mã: ok giờ" của admin vẫn đóng câu xác nhận, chuyển lịch sang `confirmed` và nhắc báo khách như cũ.
+2. **Sửa** (`20261025b_bo_nhanh_ctv_xac_nhan_lich.sql`): viết lại `info_request_bao_lai_khach` bỏ khối "lịch đã chốt do CTV xác nhận → nhắc `escalation` về admin"; phần còn lại giữ nguyên bản `schema.sql`. Còn nguyên vòng 2 của `info_request_sla_tick` (CTV quá hạn) và nhánh `ctv` của `notify_info_request_escalation` cho dòng CŨ.
+3. **Kiểm**: sau khi áp migration, soát thân hàm trên DB không còn `lich_chot_bao_admin`; `schema.sql` sinh lại. Chưa có bài kiểm tự động riêng cho hàm DB này.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
