@@ -1717,6 +1717,9 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
 - "ngung_bao" (25/10/2026, SRS-5.1zzzzzzz175): "tat" khi khách bảo ĐỪNG gửi / đừng nhắn / đừng báo căn nữa, ngưng tin tự động ("đừng gửi
   nữa em", "thôi khỏi báo căn", "ngưng nhắn anh nha"); "bat" khi khách XIN được báo lại khi có căn mới ("có căn mới thì nhắn anh"). Khách
   chỉ từ chối MỘT căn (khong_hop) không phải ngưng báo → bỏ trống.
+- "hoi_du_an" (25/10/2026, SRS-5.1zzzzzzz184): NGUYÊN VĂN tên dự án khi khách hỏi THÔNG TIN về một dự án (chủ đầu tư là ai, tiện ích, pháp lý,
+  giá, bàn giao, "dự án X có gì / tốt không / của ai"). Chỉ lấy tên khách gõ, không tự suy tên đầy đủ. Khách chỉ nhắc tên dự án như vị trí tìm
+  nhà (không hỏi về dự án) thì để trống.
 - "trich_dan": nguyên văn cụm trong tin khách làm căn cứ cho các ô trên.
 
 TRẢ LỜI CÂU KHÁCH HỎI ("tra_loi_khach_hoi", chỉ khi có khối CÂU KHÁCH MUA ĐANG HỎI CHỦ NHÀ và người rao vừa trả lời đúng câu đó):
@@ -2009,6 +2012,7 @@ def operations_schema() -> dict[str, Any]:
                     "ly_do": {"type": "string", "description": "Nguyên văn cụm khách nêu lý do căn không hợp (nếu có)."},
                     "ngung_bao": {"type": "string", "enum": ["tat", "bat"],
                                   "description": "tat = khách bảo đừng gửi / báo căn mới nữa; bat = khách xin được báo khi có căn mới."},
+                    "hoi_du_an": {"type": "string", "description": "Nguyên văn tên dự án khách MUA hỏi thông tin (chủ đầu tư, tiện ích, pháp lý, giá, bàn giao)."},
                     "trich_dan": {"type": "string", "description": "Nguyên văn cụm trong tin khách làm căn cứ."},
                 },
                 "description": "Việc của khách mua (quan tâm, hẹn xem, hỏi chủ nhà) — xem VIỆC CỦA KHÁCH MUA.",

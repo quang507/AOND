@@ -361,6 +361,52 @@ class SupabaseConversationStore(KhoNguoiMua):
         return [d for d in (dong if isinstance(dong, list) else [])
                 if not (phuong and d.get("ward") and _khoa_ten_du_an(str(d["ward"])) != phuong)]
 
+    _COT_DU_AN_MUA = ("id,name,developer,province,district,ward,location_raw,legal_status,handover_date,handover,status_text,"
+                      "price_min,price_max,amenities,specs,unit_types")
+
+    def tra_du_an(self, ten: str) -> dict[str, Any]:
+        """Khách MUA hỏi thông tin dự án → dữ kiện trong kho `projects` + kiến thức chủ dự án duyệt `du_an_kien_thuc` (SRS-5.1zzzzzzz184).
+        `khop`: "ro" (tên trùng hẳn) · "gan" (đúng MỘT dự án gần tên — bot nhắc tên đầy đủ để khách xác nhận) · "nhieu" (từ hai dự án — hỏi
+        lại, chưa kể) · "khong" (kho chưa có) · "loi" (tra lỗi mạng). Chỉ ĐỌC; không ghi gì lên DB."""
+        ten = str(ten or "").strip()
+        kq: dict[str, Any] = {"ten_khach": ten, "khop": "khong"}
+        if len(ten) < 3:
+            return kq
+        try:
+            ds = self._nho_tra("tra_du_an", ten, lambda: self._request(
+                "POST", f"rpc/match_projects?select={self._COT_DU_AN_MUA}", data={"p_text": ten}))
+        except Exception as e:  # noqa: BLE001 — bot nói thật là tra lỗi, không đoán
+            log.warning("tra_du_an lỗi: %s", e)
+            kq["khop"] = "loi"
+            return kq
+        ds = [x for x in (ds if isinstance(ds, list) else []) if isinstance(x, dict)]
+        if not ds and len(ten) >= 4:
+            # `match_projects` đòi tên dự án nằm trọn trong chữ khách ("Masteri" một mình không ra dòng nào dù kho có "Masteri Thảo Điền"):
+            # thử khớp MỘT PHẦN tên — có đúng một dự án thì "gan", từ hai thì hỏi lại, không có mới nói kho chưa có.
+            try:
+                ds = [x for x in self._get(f"projects?name=ilike.*{urllib.parse.quote(re.sub(r'[*%,()&]', ' ', ten).strip())}*"
+                                           f"&select={self._COT_DU_AN_MUA}&order=priority.asc.nullslast&limit=4") if isinstance(x, dict)]
+            except Exception as e:  # noqa: BLE001 — coi như kho chưa có, bot nói thật
+                log.warning("tra_du_an khớp một phần lỗi: %s", e)
+                ds = []
+        ro = next((x for x in ds if cung_ten_du_an(ten, x.get("name"))), None)
+        if ro:
+            kq["khop"], kq["du_an"] = "ro", ro
+        elif len(ds) == 1:
+            kq["khop"], kq["du_an"] = "gan", ds[0]
+        elif len(ds) >= 2:
+            kq["khop"], kq["ung_vien"] = "nhieu", [x.get("name") for x in ds if x.get("name")]
+            return kq
+        else:
+            return kq
+        try:   # kiến thức chủ dự án duyệt (docs[].markdown) — mới nhất, không nhớ: chủ dự án sửa là bot thấy ngay
+            dong = self._get(f"du_an_kien_thuc?ten=eq.{urllib.parse.quote(str(kq['du_an'].get('name') or ''))}&select=du_lieu&limit=1")
+            docs = ((dong[0].get("du_lieu") or {}).get("docs") if dong else None) or []
+            kq["kien_thuc"] = "\n\n".join(str(d.get("markdown") or "").strip() for d in docs if isinstance(d, dict) and d.get("markdown"))
+        except Exception as e:  # noqa: BLE001 — còn dữ kiện `projects`, thiếu phần kiến thức
+            log.warning("tra_du_an kiến thức lỗi: %s", e)
+        return kq
+
     def du_an_goi_y(self, fields: dict[str, Any]) -> dict[str, Any] | None:
         """Dự án trong kho CÓ THỂ là nơi căn này nằm, để bot HỎI xác nhận một lần (SRS-5.1zzzzzzz181). Chat chị N. 20/10: "Khu nhà phố NYAL"
         ở 198 Trương Đình Hội — kho có "Ny'ah Phú Định" (58A Trương Đình Hội). Tên đã khớp (rõ hoặc gần giống + cùng đường) thì `_du_an`
