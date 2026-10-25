@@ -46,11 +46,11 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                      "nhắn lại sớm ạ.", "Làm lại vẫn lỗi — xin lỗi và báo người phụ trách", "SRS-5.1zzzzzzz82"),
     # --- Câu có từ trước khi theo anh Luận (SRS-5.1zzzzzzz110) ---
     "chao_lan_dau": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n{Goi} đang có căn chung cư, nhà phố hay "
-                     "đất cần gửi bán hoặc cho thuê vậy ạ?",
-                     "Khách chào (hello / hi / alo / 👋) lần đầu. {ten} = tên trợ lý", "Lời chào cũ, giữ (quyết định 20/10)"),
+                     "đất cần gửi bán, cho thuê, hay đang tìm mua vậy ạ?",
+                     "Khách chào (hello / hi / alo / 👋) lần đầu. {ten} = tên trợ lý", "Lời chào cũ, giữ (quyết định 20/10); 25/10 thêm \"tìm mua\" (SRS-5.1zzzzzzz174)"),
     "chao_lam_moi": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\nEm đã làm mới cuộc trò chuyện rồi ạ. {Goi} "
-                     "đang có căn chung cư, nhà phố hay đất cần gửi bán hoặc cho thuê vậy ạ?",
-                     "Khách chào khi đã có chuyện cũ — làm mới phiên. {ten} = tên trợ lý", "Quyết định 20/10: hello làm mới phiên"),
+                     "đang có căn chung cư, nhà phố hay đất cần gửi bán, cho thuê, hay đang tìm mua vậy ạ?",
+                     "Khách chào khi đã có chuyện cũ — làm mới phiên. {ten} = tên trợ lý", "Quyết định 20/10: hello làm mới phiên; 25/10 thêm \"tìm mua\" (SRS-5.1zzzzzzz174)"),
     "mo_dau_nhap": ("📋 Em sẽ rao như vầy nhé {goi}:",
                     "Dòng mở bản nháp tin rao — phải bắt đầu 📋 và kết thúc dấu \":\" (code cắt câu dẫn theo dòng này)",
                     "SRS-5.1zzzzzzz76 / 85 / 90"),

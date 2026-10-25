@@ -189,16 +189,44 @@ class KhoNguoiMua:
                 c["_so_anh"] = dem.get(str(c.get("code")), 0)
 
     # --- Công cụ tìm nhà (SRS-5.1zzzzzzz138) -------------------------------------------------------------------------------
-    def can_phu_hop(self, lead: Any, toi_da: int = 3) -> list[dict]:
+    def can_phu_hop(self, lead: Any, toi_da: int = 3, loai_tru: set[str] | None = None) -> list[dict]:
         """Căn gợi ý cho khách: `tim_nha` (lọc cứng bán / thuê / loại / giá, điểm mềm khu vực / diện tích / phòng ngủ / xe hơi + vector).
-        Hàm DB lỗi / chưa có thì về cách lọc cứng cũ — bot không mất rổ hàng."""
+        Hàm DB lỗi / chưa có thì về cách lọc cứng cũ — bot không mất rổ hàng. `loai_tru` = id căn khách đã chê (SRS-5.1zzzzzzz175): không
+        đưa lại — xin thêm bấy nhiêu căn rồi lọc ở đây (hàm DB không nhận danh sách loại trừ)."""
         if not self.is_configured or lead is None or not co_tieu_chi(lead):
             return []   # SRS-5.1zzzzzzz146: chưa có khu vực / ngân sách thì không đoán căn — hỏi trước
+        loai_tru = set(loai_tru or ())
         try:
-            return self.tim_nha(lead, toi_da)
+            can = self.tim_nha(lead, toi_da + len(loai_tru))
         except Exception as e:  # noqa: BLE001
             log.warning("tim_nha lỗi, về lọc cứng: %s", e)
-            return self._can_phu_hop_loc_cung(lead, toi_da)
+            can = self._can_phu_hop_loc_cung(lead, toi_da + len(loai_tru))
+        return [c for c in can if c.get("id") not in loai_tru][:toi_da]
+
+    def can_khong_hop(self, user_key: str) -> set[str]:
+        """id các căn khách đã CHÊ (`interests.trang_thai = khong_hop`, SRS-5.1zzzzzzz175) — `can_phu_hop` và `bao_can_moi` không đưa lại.
+        Nhớ 60 giây theo khách; lỗi mạng → rỗng (thà gợi lại một căn còn hơn câm). Không tạo dòng `buyers` ở đây."""
+        if not (self.is_configured and user_key):
+            return set()
+        nho = self.__dict__.setdefault("_nho_khong_hop", {})
+        hien = time.time()
+        if user_key in nho and hien - nho[user_key][0] < 60:
+            return nho[user_key][1]
+        ra: set[str] = set()
+        try:
+            bid = self.__dict__.setdefault("_buyer_cache", {}).get(user_key)
+            if not bid:
+                rows = self._get(f"buyers?zalo_user_id=eq.{_q(user_key)}&select=id")
+                bid = rows[0]["id"] if rows else None
+            if bid:
+                ra = {r["listing_id"] for r in self._get(f"interests?buyer_id=eq.{bid}&trang_thai=eq.khong_hop&select=listing_id")
+                      if r.get("listing_id")}
+        except Exception as e:  # noqa: BLE001
+            log.warning("can_khong_hop lỗi: %s", e)
+        if len(nho) > 500:
+            nho.clear()
+        nho[user_key] = (hien, ra)
+        return ra
 
     def tim_nha(self, lead: Any, toi_da: int = 3) -> list[dict]:
         """MỘT lượt gọi DB. Quota: chỉ nhúng khi khách có lời tả nhu cầu (yên tĩnh, ông bà…); nhúng nhớ theo chữ; kết quả nhớ 60 giây."""
@@ -359,6 +387,31 @@ class KhoNguoiMua:
             return True
         except Exception as e:  # noqa: BLE001
             log.warning("ghi_quan_tam lỗi: %s", e)
+            return False
+
+    def ghi_khong_hop(self, buyer_id: str, can: list[dict], ly_do: str = "", user_key: str | None = None) -> bool:
+        """Khách chê căn (SRS-5.1zzzzzzz175): `interests` (khách, căn) → `trang_thai = khong_hop` + `ly_do` nguyên văn khách nói (có thể rỗng).
+        Dòng "quan tâm" cũ của cùng căn bị đè — khách đổi ý quan tâm lại thì `mark_listing_interest` đè ngược về `quan_tam`."""
+        dong = [{"buyer_id": buyer_id, "listing_id": c["id"], "trang_thai": "khong_hop", "ly_do": (ly_do or "")[:300] or None}
+                for c in can if c.get("id")]
+        if not dong:
+            return False
+        try:
+            self._request("POST", "interests?on_conflict=buyer_id,listing_id", data=dong, prefer="resolution=merge-duplicates,return=minimal")
+        except Exception as e:  # noqa: BLE001
+            log.warning("ghi_khong_hop lỗi: %s", e)
+            return False
+        if user_key:
+            self.__dict__.setdefault("_nho_khong_hop", {}).pop(user_key, None)
+        return True
+
+    def ngung_bao_can(self, buyer_id: str, tat: bool) -> bool:
+        """Khách bảo đừng báo căn mới nữa (hoặc xin báo lại) — `buyers.bao_can_moi` (SRS-5.1zzzzzzz175); `bao_can_moi.chay_mot_luot` đọc cờ này."""
+        try:
+            self._patch(f"buyers?id=eq.{buyer_id}", {"bao_can_moi": not tat})
+            return True
+        except Exception as e:  # noqa: BLE001
+            log.warning("ngung_bao_can lỗi: %s", e)
             return False
 
     def ghi_hen_xem(self, buyer_id: str, can: dict, gio: str) -> bool:

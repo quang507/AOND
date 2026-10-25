@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-25 11:42 (giờ VN)
+-- Sinh lúc: 2026-10-25 13:33 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -106,7 +106,8 @@ create table if not exists public.buyers (
   preferences jsonb default '{}'::jsonb,
   last_contact_at timestamp with time zone,
   notes text,
-  auth_user_id uuid
+  auth_user_id uuid,
+  bao_can_moi boolean not null default true
 );
 
 create table if not exists public.cau_chuan (
@@ -269,7 +270,9 @@ create table if not exists public.info_requests (
 create table if not exists public.interests (
   buyer_id uuid not null,
   listing_id uuid not null,
-  created_at timestamp with time zone not null default now()
+  created_at timestamp with time zone not null default now(),
+  trang_thai text not null default 'quan_tam'::text,
+  ly_do text
 );
 
 create table if not exists public.listing_media (
@@ -728,6 +731,9 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.interests add constraint interests_pkey PRIMARY KEY (buyer_id, listing_id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.interests add constraint interests_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['quan_tam'::text, 'khong_hop'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listing_media add constraint listing_media_bia_phai_cong_khai CHECK (((NOT is_cover) OR (bucket = 'listing-public'::text)));
@@ -1414,6 +1420,7 @@ begin
       from interests i
       join buyers b on b.id = i.buyer_id
      where i.listing_id = p_listing_id
+       and i.trang_thai = 'quan_tam'
        and b.zalo_user_id is not null
        and not exists (select 1 from deals d where d.listing_id = p_listing_id and d.buyer_id = i.buyer_id)
        and not exists (select 1 from reminders x
@@ -3920,7 +3927,7 @@ begin
     select p_buyer_id, l.id from listings l
      where (l.code = any(p_codes) or l.legacy_code = any(p_codes))
        and l.status in ('dang_ban', 'dang_quan_tam', 'da_chot')
-    on conflict (buyer_id, listing_id) do nothing;
+    on conflict (buyer_id, listing_id) do update set trang_thai = 'quan_tam', ly_do = null;
   end if;
   return n;
 end $function$
