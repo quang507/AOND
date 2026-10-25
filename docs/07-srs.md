@@ -8767,6 +8767,14 @@ Chủ dự án 25/10: "trước giờ tưởng có sẵn rồi, vector hóa nó"
 4. **Chưa làm / không chắc**: ngưỡng 0,55 và biên 0,04 là số của địa danh dùng chung, CHƯA đo riêng cho tên dự án (sandbox không có khoá Gemini để đo) — cần bắn thử vài câu mô tả trên VPS rồi chỉnh; vector chỉ nhúng tên + trường đã nhúng sẵn, chất lượng tuỳ văn bản lịch `nhung-tick` dựng. Chưa thử Zalo thật.
 5. **Kiểm**: `tests/test_du_an_mua.py` thêm 3 ca (vector → gan / nhieu / không bao giờ ro; không gọi vector khi chữ đã ra, Gemini hỏng, rỗng; lọc ngưỡng + biên + loại khác) và 1 ca engine nối hàm (đỏ khi bỏ dòng nối trong `_viec_mua`, đã thử).
 
+### SRS-5.1zzzzzzz186 · Soát toạ độ từ điển tên đường, xoá 19 dòng nhầm tỉnh (25/10/2026)
+Chủ dự án 25/10: "giờ tên đường vừa có vector vừa có bản đồ số đúng ko" → "kiểm nhanh toạ độ đi" → "uk" (xoá / sửa 19 dòng nhầm).
+1. **Đo trên DB thật**: bảng `duong` 39.421 dòng đều có vector (`nhung`) và `lat`/`lng`; không dòng nào bằng 0 hay ngoài khung tỉnh. Với TP.HCM, khoảng cách tới tâm phường (`wards.lat/lng`): đường p50 1,7 km / p90 4,2 km / p99 10 km; hẻm p50 1,0 km / p99 4,1 km; số p50 1,9 km / p99 7,5 km. Tây Ninh (1.598) và Đồng Nai (677) lưu `phuong = ''` theo thiết kế của `nap-duong` (nạp theo đa giác tỉnh) nên không so được với tâm phường — chỉ kiểm khung toạ độ.
+2. **Lỗi thật**: 19 dòng đường dưới "Phường Tân Phú / Quận Tân Phú" (TP.HCM) có toạ độ ở huyện Tân Phú, Đồng Nai (~100 km; có cả dòng tên `"Huyện Tân Phú, Đồng Nai"`). **Lớp lỗi**: `nap-duong` chỉ kiểm "đúng một đa giác cùng tên trong hộp bao" mà không kiểm toạ độ đường có nằm gần phường mà nó gán; hộp bao TP.HCM (tới 11,50°N) phủ cả Tân Phú, Đồng Nai. Nguyên nhân đúng của việc đa giác khớp sai CHƯA xác định (không mở lại Overpass). **Chỗ khác cùng lớp**: 5 dòng lệch 16–20 km (Củ Chi, Hiệp Phước, Dầu Tiếng, Thanh An, Tây Nam) là đường dài trong xã lớn — để nguyên; hẻm lệch tối đa 14,1 km và đường số 11,7 km so với tâm phường, không dòng nào nghi nhầm tỉnh.
+3. **Sửa**: migration `20261025i_xoa_duong_nham_tinh.sql` xoá dòng TP.HCM cách tâm phường > 50 km (đếm trước: đúng 19, tất cả Tân Phú); `scripts/nap-duong.mjs` + `scripts/lib/phan-loai-duong.mjs` (`locTheoTamPhuong`, `khoangCachKm`) bỏ dòng cách tâm phường > 50 km ngay lúc nạp và in cảnh báo.
+4. **Chưa làm**: chưa đối chiếu toạ độ với bản đồ thật (chỉ kiểm nhất quán trong DB); toạ độ mỗi dòng là một điểm cấp đường (`out center` trung bình), chưa đủ cho quy tắc "trong 100 m thì hỏi" (SRS-181).
+5. **Kiểm**: `bot/tests/phan-loai-duong.mjs` thêm 4 ca (bỏ đường cách ~100 km, giữ dòng thiếu toạ độ, giữ khi phường chưa có tâm, giữ đường dài 20 km).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // phan-loai-duong.mjs — từ điển đường giữ cả đường số + hẻm, kèm toạ độ (30/09/2026, chạy offline).
-import { gomDuong, phanLoaiDuong } from "../../scripts/lib/phan-loai-duong.mjs";
+import { gomDuong, phanLoaiDuong, khoangCachKm, locTheoTamPhuong } from "../../scripts/lib/phan-loai-duong.mjs";
 
 let dat = 0, hong = 0;
 const ok = (ten, dk, chi = "") => { if (dk) dat++; else { hong++; console.log(`✗ ${ten}${chi ? `\n    ${chi}` : ""}`); } };
@@ -47,6 +47,18 @@ ok("gom: hai đoạn 'Số 59' + 'Đường số 59' → một dòng, toạ đ�
 ok("gom: hẻm có mẹ + toạ độ", g.dong.some((d) => d.loai === "hem" && d.duong_me === "Đường số 59" && d.lat === 10.8425));
 ok("gom: đếm 1 đa giác phường", g.soArea === 1);
 ok("gom: cầu bị bỏ, còn 3 dòng", g.dong.length === 3, JSON.stringify(g.dong.map((d) => d.ten)));
+
+// SRS-5.1zzzzzzz186: dòng cách tâm phường > 50 km bị bỏ (ca gốc: đường Tân Phú, Đồng Nai dưới "Phường Tân Phú" TP.HCM).
+const tamTanPhu = { lat: 10.7906, lng: 106.6285 };
+const lo = locTheoTamPhuong([
+  { ten: "Tân Hương", lat: 10.7880, lng: 106.6240 },
+  { ten: "Quốc lộ 20", lat: 11.2659, lng: 107.4468 },
+  { ten: "Không toạ độ", lat: null, lng: null },
+], tamTanPhu);
+ok("lọc tâm phường: giữ đường gần + dòng thiếu toạ độ, bỏ đường cách ~100 km", lo.giu.map((d) => d.ten).join("|") === "Tân Hương|Không toạ độ" && lo.bo.map((d) => d.ten).join("|") === "Quốc lộ 20", JSON.stringify(lo));
+ok("lọc tâm phường: phường chưa có tâm thì giữ hết", locTheoTamPhuong([{ ten: "X", lat: 11.2, lng: 107.4 }], { lat: null, lng: null }).giu.length === 1);
+ok("lọc tâm phường: đường dài trong phường lớn (20 km) vẫn giữ", locTheoTamPhuong([{ ten: "Y", lat: 10.97, lng: 106.63 }], { lat: 10.79, lng: 106.63 }).bo.length === 0);
+ok("khoangCachKm ~ 100 km giữa hai điểm Tân Phú", Math.abs(khoangCachKm(10.7906, 106.6285, 11.2659, 107.4468) - 103) < 6, String(khoangCachKm(10.7906, 106.6285, 11.2659, 107.4468)));
 
 console.log(`\nPHÂN LOẠI ĐƯỜNG: ${dat} đạt · ${hong} hỏng`);
 if (hong) process.exit(1);
