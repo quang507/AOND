@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-25 13:55 (giờ VN)
+-- Sinh lúc: 2026-10-25 15:22 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -2949,16 +2949,17 @@ begin
   if not (public.la_admin() or coalesce(auth.role(), '') = 'service_role' or current_user in ('postgres', 'supabase_admin')) then
     raise exception 'don_du_lieu_thu: chi admin' using errcode = '42501';
   end if;
-  -- 20260929a (FR-245): ID thử đọc từ MỘT chỗ (`la_id_thu`) — trước đây hai danh sách tiền tố viết tay ở đây lệch với
-  -- ID bắn thử production (lx-, do-), nên dữ liệu thử đó không bao giờ được dọn.
+  -- 20260929a (FR-245): ID thử đọc từ MỘT chỗ (`la_id_thu`).
+  -- 20261025f (SRS-5.1zzzzzzz179): người bán giữ rổ mẫu `seed_thu` KHÔNG phải dữ liệu thử để dọn — bỏ khỏi `_nguoi_thu`, tin mẫu bỏ khỏi `_tin_thu`.
   create temp table if not exists _nguoi_thu on commit drop as
-    select id from sellers
-     where public.la_id_thu(zalo_user_id);
+    select s.id from sellers s
+     where public.la_id_thu(s.zalo_user_id)
+       and not exists (select 1 from listings l where l.seller_id = s.id and l.source = 'seed_thu');
   create temp table if not exists _khach_thu on commit drop as
     select id from buyers
      where public.la_id_thu(zalo_user_id);
   create temp table if not exists _tin_thu on commit drop as
-    select id from listings where seller_id in (select id from _nguoi_thu);
+    select id from listings where seller_id in (select id from _nguoi_thu) and coalesce(source, '') <> 'seed_thu';
   create temp table if not exists _conv_thu on commit drop as
     select id from conversations
      where seller_id in (select id from _nguoi_thu) or buyer_id in (select id from _khach_thu);
@@ -2986,8 +2987,6 @@ begin
   delete from sellers        where id in (select id from _nguoi_thu);
   get diagnostics v_nguoi = row_count;
 
-  --  chỉ có (who, at, last_id) — dấu thời gian ở đó, còn con số thì
-  -- vào  để sáng hôm sau còn đọc được đêm qua dọn những gì.
   insert into bot_health (who, at) values ('don_thu', now())
     on conflict (who) do update set at = excluded.at;
   insert into app_config (key, value) values ('don_thu_lan_cuoi',
