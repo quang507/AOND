@@ -8671,6 +8671,14 @@ Ca gốc: chủ dự án 24/10 chat thử (khách chưa tự xưng): bot đáp "
 3. **Sửa**: `khoi_xung_ho` thêm dòng cấm gọi khách là "mình" cho mọi cách xưng trừ "em" (`_CAM_GOI_MINH`); `engine._goi_khach_la_minh` + một lý do trong `_soat_hinh_thuc` — lời còn "mình" đứng riêng (không sau nhà / căn / đất / lô / phố / phòng / tin / bên / dự án / hàng / cư / khu / của / kho) khi khách không xưng "em" thì gọi lại model một lần. Là kiểm hình thức lời của chính bot, không đoán ý khách. Lưới kiểm bằng chữ nên "mình" sau danh từ khác (vd "thông tin mình") bị coi là sai và gọi lại model — chấp nhận, đổi lấy ít bỏ sót.
 4. **Kiểm**: `tests/test_cam_goi_minh.py` (13 ca; đã thử đột biến: bỏ lưới → ca lượt chat đỏ, bỏ dòng cấm → ca khối xưng hô đỏ). Chưa thử Zalo thật.
 
+### SRS-5.1zzzzzzz172 · Bỏ gán CTV cho hội thoại; bot không còn báo CTV dẫn khách (24/10/2026)
+
+Chủ dự án 24/10: "Bỏ luôn assign_ctv_round_robin đi"; "sau khi chốt thì admin tự báo qua zalo đến ctv để dẫn khách sau, ko cần bot làm đoạn này nữa". Tiếp SRS-165 / SRS-170.
+
+1. **Soát**: không còn bước nào trong bot tự nhắn CTV dẫn khách sau khi chốt — lịch xem (SRS-165) và câu khách hỏi chủ nhà (SRS-170) đã đi thẳng admin; nhánh "CTV xác nhận lịch → báo admin nắm" của `info_request_bao_lai_khach` (SRS-164, `20261023f`) chỉ chạy khi dòng có `ctv_id`, nay không còn dòng mới nào như vậy nên nằm im (chưa gỡ, để khỏi viết lại hàm). Còn một câu nói với chủ nhà ở `FEE_VALUE_POINTS` ("Hệ thống tự điều CTV dẫn khách…") — nay hứa suông nên đổi thành "Bên em sắp xếp người dẫn khách tới xem nhà".
+2. **Sửa** (`20261025a_bo_gan_ctv_cho_hoi_thoai.sql`): gỡ trigger `trg_conversations_assign_ctv` và hàm `assign_ctv_round_robin()` — trước đó mỗi hội thoại mới tự điền `conversations.ctv_id` theo vòng, không đẻ nhắc nào. Giữ cột `conversations.ctv_id` + dữ liệu cũ (`ctv_dang_ganh` còn đếm) và hàm `chon_ctv`.
+3. **Kiểm**: sau khi áp migration, soát catalog DB không còn trigger / hàm; pytest 807 xanh. Chưa thử Zalo thật.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
