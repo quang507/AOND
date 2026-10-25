@@ -2,7 +2,7 @@
 // Quét QR bằng ACC ZALO CLONE (đừng dùng acc chính — zca-js là API không chính
 // thức, Zalo có thể khoá acc). Tin nhắn đến → gọi edge function chat-reply
 // (bộ não) → gửi câu trả lời (kèm hình nếu có) lại. Cài & chạy:
-//   cd bot/bridge-zca && npm init -y && npm i zca-js && node index.mjs
+//   cd bot/bridge-zca && npm init -y && npm i zca-js@2.2.0 && node index.mjs   (ghim phiên bản — SRS-5.1zzzzzzz177)
 // Lần đầu cần quét QR: zca-js KHÔNG in QR ra terminal (nó ghi qr.png — bắt
 // 08/09/2026 khi dựng VPS, tài liệu cũ nói sai), nên bridge nhận ảnh QR qua
 // callback rồi PHÁT TẠM qua http ở một đường dẫn ngẫu nhiên; mở link đó trên
@@ -18,6 +18,7 @@ import crypto from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { kichThuocAnh } from "./kich-thuoc-anh.mjs";
 
 // Nạp bot/bridge-zca/.env — KHÔNG cần thư viện nào.
 // Vì sao cần: BRIDGE_SECRET (FR-151) phải có trong env, mà `set BRIDGE_SECRET=…`
@@ -109,7 +110,15 @@ async function baoDangNhap(trang_thai, qr_png = null, ghi_chu = null) {
 const SESSION_FILE = path.join(HERE, "zalo-session.json");
 
 const { Zalo, ThreadType } = zca;
-const zalo = new Zalo();
+// SRS-5.1zzzzzzz177 (25/10/2026): zca-js ≥ 2.0 bắt buộc `imageMetadataGetter` khi gửi ảnh theo đường dẫn file — thiếu thì MỌI tấm hỏng
+// ("Missing imageMetadataGetter", sổ lỗi 23–24/10 ×9) trong khi lõi vẫn nói "ảnh em gửi ngay sau tin này". Đọc tay JPEG / PNG / GIF /
+// WebP (kich-thuoc-anh.mjs), không thêm thư viện; không đọc ra thì gửi 0×0 (zca-js chỉ cần số). Phiên bản zca-js ghim ở cai-vps.sh.
+async function imageMetadataGetter(filePath) {
+  const data = await fs.promises.readFile(filePath);
+  const kt = kichThuocAnh(data) || { width: 0, height: 0 };
+  return { width: kt.width, height: kt.height, size: data.length };
+}
+const zalo = new Zalo({ imageMetadataGetter });
 let api;
 if (fs.existsSync(SESSION_FILE)) {
   try {
