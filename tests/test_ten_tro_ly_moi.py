@@ -1,16 +1,23 @@
-"""SRS-5.1zzzzzzz181 (chủ dự án 25/10/2026): thêm 10 tên có nghĩa vào cạnh kho tên cũ — chỉ đúng danh sách chủ dự án duyệt."""
-from aioi.assistants import ASSISTANT_NAMES, assign_assistant
+"""SRS-5.1zzzzzzz181/182 (chủ dự án 25/10/2026): kho tên trợ lý chỉ còn 10 tên dạng phụ âm + "ai" — thêm hay bớt dấu vẫn có nghĩa."""
+import unicodedata
+
+from aioi.assistants import ASSISTANT_NAMES, BUYER_ASSISTANT, SELLER_ASSISTANT, assign_assistant
 
 MOI = ["Thái", "Mai", "Hải", "Lai", "Khải", "Tài", "Đại", "Đài", "Nhài", "Giai"]
 
 
-def test_kho_ten_co_du_ten_moi_khong_trung_va_giu_ten_cu():
-    assert len(ASSISTANT_NAMES) == 30 and len(set(ASSISTANT_NAMES)) == 30
-    assert all(t in ASSISTANT_NAMES for t in MOI)
-    assert all(t in ASSISTANT_NAMES for t in ("Thảo", "Hương", "Tuấn", "Toàn"))
+def _khong_dau(t: str) -> str:
+    return unicodedata.normalize("NFD", t.replace("Đ", "D").replace("đ", "d")).encode("ascii", "ignore").decode().lower()
 
 
-def test_ten_van_on_dinh_theo_khach_va_ten_moi_co_luc_duoc_chon():
+def test_kho_chi_con_10_ten_ai_khong_trung():
+    assert ASSISTANT_NAMES == MOI and len(set(ASSISTANT_NAMES)) == 10
+    assert all(_khong_dau(t).endswith("ai") for t in ASSISTANT_NAMES)       # mọi tên đều có "ai" phía sau
+    assert all(t not in ASSISTANT_NAMES for t in ("Thảo", "Hương", "Linh", "Tuấn", "Khang"))
+
+
+def test_ten_mac_dinh_hai_vai_cung_co_ai_va_ten_on_dinh_theo_khach():
+    assert SELLER_ASSISTANT in MOI and BUYER_ASSISTANT in MOI
+    assert assign_assistant("x", "buyer").name == BUYER_ASSISTANT
     assert assign_assistant("zalo-abc").name == assign_assistant("zalo-abc").name
-    chon = {assign_assistant(f"khach-{i}").name for i in range(400)}
-    assert set(MOI) <= chon
+    assert {assign_assistant(f"khach-{i}").name for i in range(300)} == set(MOI)

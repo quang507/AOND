@@ -8740,6 +8740,12 @@ Chủ dự án 25/10 sau khi xem kho dự án: "nối project_id cho tin rao tr�
 4. **Lớp lỗi / chỗ khác cùng lớp**: "đoán thuộc dự án nào bằng tên trùng hẳn" bỏ lọt tên viết khác (Ny'ah / NYAL). Cùng lớp: `phuong_theo_du_an` (đã đi qua `_du_an` nên được hưởng), `project_for` (tra theo tên ô `du_an` — chưa dùng gợi ý, sẽ dùng khi cờ gật ghi `du_an`). Khách MUA hỏi dự án vẫn chưa tra kho (SRS-180 mục 3).
 5. **Kiểm**: `tests/test_du_an_goi_y.py` (6 ca: gợi ý khi đúng một dự án cùng đường, không gợi ý khi nhiều dự án / khác phường / đã khớp tên / tên đường quá ngắn, hỏi một lần rồi lượt sau dặn ghi `du_an`, "NYAL" ≈ "Ny'ah Phú Định" gắn thẳng, tên khác hẳn thì chỉ được hỏi, hai dự án cùng khớp thì không đoán). Chưa thử Zalo thật.
 
+### SRS-5.1zzzzzzz182 · Kho tên trợ lý chỉ còn 10 tên "phụ âm + ai" (25/10/2026)
+Chủ dự án 25/10, ngay sau khi SRS-181 thêm 10 tên cạnh kho cũ: "xóa các tên không có ai phía sau, còn tên gì ai mà có nghĩa ko". Hiểu: gỡ các tên không có "ai" ở cuối (20 tên người thật đời đầu: Thảo, Hương, Linh, Tuấn…), chỉ giữ 10 tên đã duyệt (Thái, Mai, Hải, Lai, Khải, Tài, Đại, Đài, Nhài, Giai) — thay quyết định "thêm vào cạnh kho cũ" của SRS-181.
+1. **Sửa**: `assistants.ASSISTANT_NAMES` còn 10 tên; `SELLER_ASSISTANT` = Thái, `BUYER_ASSISTANT` = Mai (hai hằng cũ Tuấn / Linh không còn trong kho). `assign_assistant` chia theo băm nên MỌI khách đang chat có thể đổi tên trợ lý sau khi triển khai (kho đổi cả nội dung lẫn độ dài). Không có DB / migration.
+2. **Kiểm**: `tests/test_ten_tro_ly_moi.py` (kho đúng 10 tên, bỏ dấu đều kết thúc bằng "ai", hai tên mặc định nằm trong kho, tên ổn định theo khách, 300 khách phủ đủ 10 tên). Tên cũ còn nằm trong lịch sử hội thoại / log (tên trợ lý đã nói với khách) — không sửa.
+3. **Chưa chắc**: câu "còn tên gì ai mà có nghĩa ko" hiểu là điều kiện giữ tên; nếu ý khác (vd muốn thêm tên mới) thì nói để sửa. Chưa thử Zalo thật.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
