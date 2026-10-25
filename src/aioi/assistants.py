@@ -9,15 +9,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Kho 10 tên dạng phụ âm + "ai" — thêm hay bớt dấu vẫn là từ có nghĩa (SRS-5.1zzzzzzz182, chủ dự án 25/10/2026: "xóa các tên không có ai phía sau").
-# Chỉ thêm tên chủ dự án duyệt; các tên người thật đời đầu (Thảo, Hương, Linh, Tuấn…) đã gỡ.
+# Kho 13 tên dạng "phụ âm • vần ai" — chấm giữa tách phụ âm đầu khỏi vần; thêm hay bớt dấu vẫn là từ có nghĩa
+# (SRS-5.1zzzzzzz183, chủ dự án 25/10/2026: "Ph•ái L•ài Ho•ài dc 3 cái này nữa, tên vẫn có cái chấm giữa").
+# Chỉ thêm tên chủ dự án duyệt; các tên người thật đời đầu (Thảo, Hương, Linh, Tuấn…) đã gỡ ở SRS-5.1zzzzzzz182.
 ASSISTANT_NAMES: list[str] = [
-    "Thái", "Mai", "Hải", "Lai", "Khải", "Tài", "Đại", "Đài", "Nhài", "Giai",
+    "Th•ái", "M•ai", "H•ải", "L•ai", "Kh•ải", "T•ài", "Đ•ại", "Đ•ài", "Nh•ài", "Gi•ai",
+    "Ph•ái", "L•ài", "Ho•ài",
 ]
 
 # Tên mặc định đại diện cho nhánh Người bán và Người mua
-SELLER_ASSISTANT = "Thái"   # phụ trách Người bán (tiếp nhận, làm giàu dữ liệu)
-BUYER_ASSISTANT = "Mai"      # phụ trách Người mua (lọc khách, hẹn lịch)
+SELLER_ASSISTANT = "Th•ái"   # phụ trách Người bán (tiếp nhận, làm giàu dữ liệu)
+BUYER_ASSISTANT = "M•ai"     # phụ trách Người mua (lọc khách, hẹn lịch)
 
 
 @dataclass(frozen=True)
