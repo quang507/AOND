@@ -30,7 +30,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { gomDuong } from "./lib/phan-loai-duong.mjs";
+import { gomDuong, locTheoTamPhuong } from "./lib/phan-loai-duong.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const env = Object.fromEntries(
@@ -110,7 +110,7 @@ async function tatCa(path) {
     if (trang.length < 1000) return ra;
   }
 }
-const wards = await rest("wards?select=ten_day_du,quan_cu,tinh_cu&order=ten_day_du");
+const wards = await rest("wards?select=ten_day_du,quan_cu,tinh_cu,lat,lng&order=ten_day_du");
 const daCo = CHI_THIEU ? await tatCa("duong?select=tinh,phuong&order=id") : [];
 const phuongDaCo = new Set(daCo.filter((d) => d.phuong).map((d) => d.phuong));
 const tinhDaCo = new Set(daCo.filter((d) => !d.phuong).map((d) => d.tinh));
@@ -126,9 +126,12 @@ if (!CHI_TINH || CHI_TINH === "TP.HCM") {
     if (csv == null) { console.log(`  ✗ ${w.ten_day_du}: không có trả lời`); await nghi(2000); continue; }
     const { dong, soArea } = gomDuong(csv);
     if (soArea !== 1) { console.log(`  ✗ ${w.ten_day_du}: ${soArea} đa giác cùng tên trong hộp bao — bỏ, cần soi tay`); await nghi(2000); continue; }
-    const n = await ghi(dong.map((x) => ({ ...x, tinh: "TP.HCM", tinh_cu: w.tinh_cu, phuong: w.ten_day_du, quan_cu: w.quan_cu, nguon: `OSM Overpass ${NGAY} (way highway+name trong area phường, out center)` })));
+    // SRS-5.1zzzzzzz186: đa giác trùng tên ở tỉnh khác (Phường Tân Phú vs huyện Tân Phú, Đồng Nai) kéo đường cách tâm phường ~100 km vào.
+    const { giu, bo } = locTheoTamPhuong(dong, w);
+    if (bo.length) console.log(`  ! ${w.ten_day_du}: bỏ ${bo.length} dòng cách tâm phường > 50 km (${bo.slice(0, 3).map((x) => x.ten).join("; ")}…)`);
+    const n = await ghi(giu.map((x) => ({ ...x, tinh: "TP.HCM", tinh_cu: w.tinh_cu, phuong: w.ten_day_du, quan_cu: w.quan_cu, nguon: `OSM Overpass ${NGAY} (way highway+name trong area phường, out center)` })));
     if (n) coDong++; tongDong += n;
-    const dem = (l) => dong.filter((x) => x.loai === l).length;
+    const dem = (l) => giu.filter((x) => x.loai === l).length;
     console.log(`  ${w.ten_day_du} (${w.quan_cu}): ${n} dòng — ${dem("duong")} đường, ${dem("so")} đường số, ${dem("hem")} hẻm`);
     await nghi(2000);
   }

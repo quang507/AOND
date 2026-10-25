@@ -69,3 +69,25 @@ export function gomDuong(csv) {
   }));
   return { dong, soArea: area.size };
 }
+
+// SRS-5.1zzzzzzz186: khoảng cách (km) hai điểm trên mặt cầu.
+export function khoangCachKm(la1, lo1, la2, lo2) {
+  const r = Math.PI / 180;
+  const a = Math.sin(((la2 - la1) * r) / 2) ** 2 + Math.cos(la1 * r) * Math.cos(la2 * r) * Math.sin(((lo2 - lo1) * r) / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * Bỏ dòng có toạ độ cách tâm phường quá `toiDaKm` — đa giác trùng tên ở tỉnh khác kéo theo đường của nơi đó (lượt 08/10: 19 dòng
+ * đường Tân Phú, Đồng Nai nằm dưới "Phường Tân Phú" TP.HCM, cách tâm ~100 km). Không có tâm phường hoặc dòng không có toạ độ thì giữ.
+ * Trả {giu, bo}.
+ */
+export function locTheoTamPhuong(dong, tam, toiDaKm = 50) {
+  if (!tam || tam.lat == null || tam.lng == null || !Number.isFinite(Number(tam.lat)) || !Number.isFinite(Number(tam.lng))) return { giu: dong, bo: [] };
+  const giu = [], bo = [];
+  for (const d of dong) {
+    const xa = d.lat != null && d.lng != null && khoangCachKm(d.lat, d.lng, Number(tam.lat), Number(tam.lng)) > toiDaKm;
+    (xa ? bo : giu).push(d);
+  }
+  return { giu, bo };
+}
