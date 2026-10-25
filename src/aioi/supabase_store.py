@@ -28,6 +28,10 @@ from .mua import KhoNguoiMua
 from .revenue import SALE_FEE_RATE
 from .prompts import FIELD_LABELS
 from .schema import O_NOI_BO, TYPE_TO_GROUP, Property, _calc_area_from_dimension
+
+# Số câu chuẩn tối đa đưa vào prompt (SRS-5.1zzzzzzz180). Mỗi dòng ≈ 300–900 ký tự; khối nằm trong phần cache nên 16 dòng chỉ là
+# vài nghìn token ĐỌC CACHE mỗi lượt. Tăng nữa thì đo `cache_read_tokens` ở bot_usage_model trước.
+CAU_CHUAN_TOI_DA = 16
 from .tin_goc import gom_tin_goc
 from .assistants import assign_assistant
 from .dia_danh import bo_dau
@@ -269,8 +273,10 @@ class SupabaseConversationStore(KhoNguoiMua):
         return None
 
     def cau_chuan_mau(self) -> list[dict[str, Any]]:
-        """Câu chuẩn người chấm đã sửa / đã chấm (bảng `cau_chuan`, SRS-5.1zzzzzzz88) — 8 dòng mới nhất, làm ví dụ trong prompt. Sửa ở
-        CRM là bot đổi trong vòng 60 giây, không cần cài lại. Lỗi đọc → [] (bot vẫn trả lời, không ví dụ)."""
+        """Câu chuẩn người chấm đã sửa / đã chấm (bảng `cau_chuan`, SRS-5.1zzzzzzz88) làm ví dụ trong prompt. SRS-5.1zzzzzzz180: lấy tới
+        `CAU_CHUAN_TOI_DA` dòng (trước 8 dòng mới nhất — chủ dự án 25/10: "460 dòng sao lại lấy 8"), câu SỬA TAY xếp trước câu chỉ chấm, rồi
+        mới nhất trước; khối nằm trong phần prompt được cache nên thêm dòng gần như không tốn thêm tiền. Sửa ở CRM là bot đổi trong vòng
+        60 giây, không cần cài lại. Lỗi đọc → [] (bot vẫn trả lời, không ví dụ)."""
         if not self.is_configured:
             return []
         nho = getattr(self, "_cau_chuan_nho", None)
@@ -278,7 +284,8 @@ class SupabaseConversationStore(KhoNguoiMua):
             return nho[1]
         try:
             rows = self._get("cau_chuan?select=ngu_canh,cau_bot,cau_chuan,diem,ghi_chu&dung_lam_mau=eq.true"
-                             "&or=(cau_chuan.not.is.null,diem.not.is.null)&order=updated_at.desc&limit=8")
+                             "&or=(cau_chuan.not.is.null,diem.not.is.null)&order=cau_chuan.desc.nullslast,updated_at.desc"
+                             f"&limit={CAU_CHUAN_TOI_DA}")
         except Exception as e:  # noqa: BLE001
             log.warning("cau_chuan_mau lỗi: %s", e)
             rows = nho[1] if nho else []
