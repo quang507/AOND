@@ -3504,7 +3504,7 @@ class Engine:
         conv.can_mua, conv.cau_hoi_cho = [], []
         if conv.role == "buyer" and getattr(kho, "can_phu_hop", None) is not None:
             with _do(conv, "kho_doc"):
-                conv.can_mua = kho.can_phu_hop(conv.buyer_lead)
+                conv.can_mua = self._can_goi_y(conv)
             system += khoi_can_cho_khach(conv.can_mua, not co_tieu_chi(conv.buyer_lead))
         elif conv.role != "buyer" and getattr(kho, "cau_hoi_cho_nguoi_ban", None) is not None:
             with _do(conv, "kho_doc"):
@@ -3707,6 +3707,12 @@ class Engine:
                     return ma[:1]
         return []
 
+    def _can_goi_y(self, conv: Conversation) -> list[dict]:
+        """Căn gợi ý cho khách mua, bỏ căn khách đã chê (SRS-5.1zzzzzzz175) — MỘT cửa cho cả lượt lập thao tác lẫn lượt trả lời."""
+        kho = self._convstore
+        lay = getattr(kho, "can_khong_hop", None)
+        return kho.can_phu_hop(conv.buyer_lead, loai_tru=lay(conv.user_key) if lay is not None else None)
+
     def _viec_mua(self, conv: Conversation, text: str) -> tuple[list[str], list[dict]]:
         """Ghi việc khách mua vừa nói (quan tâm / hẹn xem / hỏi chủ nhà) lên DB — chỉ khi mã căn có thật và đang hiện, cụm thời gian
         / câu hỏi có nguyên trong tin khách. Trả (câu tả việc đã ghi cho model, danh sách căn đưa vào lời đáp)."""
@@ -3722,14 +3728,35 @@ class Engine:
         bid = kho.khach_mua(conv.user_key, None, nhu_cau or None)
         mua = conv.y_luot.get("mua") or {}
         ma = [m for m in (mua.get("ma_can") or []) if isinstance(m, str) and m.strip()]
-        if not ma and (mua.get("hen_xem") or mua.get("quan_tam") is True or mua.get("hoi_chu_nha") or mua.get("xin_anh") is True):
+        if not ma and (mua.get("hen_xem") or mua.get("quan_tam") is True or mua.get("hoi_chu_nha") or mua.get("xin_anh") is True
+                       or mua.get("khong_hop") is True):
             # SRS-5.1zzzzzzz153: khách đáp lại căn bot VỪA giới thiệu (tin báo căn mới / lời gợi ý có link) mà không gõ mã — lấy mã từ link trong
             # lời bot gần nhất. Bản trước chỉ nhận mã AI đọc ra, nên "xem thử thứ 7 được không" sau tin báo căn mới không ghi được lịch.
             ma = self._ma_can_bot_vua_nhac(conv)
         nhac = kho.can_theo_ma(ma) if ma else []
-        co_san = conv.can_mua or kho.can_phu_hop(lead)
+        co_san = conv.can_mua or self._can_goi_y(conv)
         can = nhac + [c for c in co_san if c.get("id") not in {n.get("id") for n in nhac}]
         viec: list[str] = []
+        # SRS-5.1zzzzzzz175: khách bảo đừng báo căn mới nữa / xin báo lại — cờ `buyers.bao_can_moi`, vòng `bao_can_moi` đọc.
+        if bid and mua.get("ngung_bao") in ("tat", "bat") and kho.ngung_bao_can(bid, mua["ngung_bao"] == "tat"):
+            viec.append("khách KHÔNG muốn nhận tin tự động báo căn mới: hệ thống ĐÃ TẮT — nói ngắn là em không gửi tin báo căn nữa, khách cần "
+                        "thì nhắn em bất cứ lúc nào; KHÔNG hỏi lý do, KHÔNG nài" if mua["ngung_bao"] == "tat" else
+                        "khách xin được báo khi có căn mới: hệ thống ĐÃ BẬT — nói ngắn có căn hợp nhu cầu em nhắn liền (trong giờ 8–20h)")
+        # SRS-5.1zzzzzzz175: khách chê căn → ghi `interests` khong_hop + lý do nguyên văn; không gợi / không báo lại căn đó.
+        khong_hop = mua.get("khong_hop") is True
+        if khong_hop:
+            if not nhac:
+                viec.append("khách chê một căn nhưng chưa rõ căn nào: hỏi lại MỘT câu ngắn xem căn nào không hợp, KHÔNG giới thiệu căn mới")
+            elif bid:
+                ly_do = str(mua.get("ly_do") or "").strip()
+                ly_do = ly_do if _trich_dan_khop(ly_do, text) else ""
+                if kho.ghi_khong_hop(bid, nhac, ly_do, conv.user_key):
+                    bo = {c.get("id") for c in nhac}
+                    can = [c for c in can if c.get("id") not in bo]
+                    viec.append("ghi căn " + ", ".join(f"#{c.get('code')}" for c in nhac) + " KHÔNG HỢP với khách"
+                                + (f" (lý do khách nói: \"{ly_do}\")" if ly_do else "")
+                                + ": hệ thống sẽ không gợi / không báo lại căn đó. Nói ngắn đã ghi nhận, KHÔNG thuyết phục lại; có căn khác trong "
+                                "CĂN ĐANG RAO thì giới thiệu căn kế, không thì hỏi MỘT câu khách muốn khác đi điểm nào")
         # SRS-5.1zzzzzzz148 (chủ dự án 23/10: lúc hẹn xem thì lấy được số điện thoại khách): số CHỈ được ghi vào lịch hẹn đang chờ chưa có số,
         # lấy từ lời khách (số là dữ liệu có khuôn, không phải đoán ý); không có lịch chờ thì số khách gõ không được lưu.
         sdt = tim_sdt(text)
@@ -3771,7 +3798,7 @@ class Engine:
         # vài tin khách gần nhất (SRS-5.1zzzzzzz153).
         hen = hen if (_trich_dan_khop(hen, text) or _chu_co_trong_loi_khach(hen, self._loi_khach_gan(conv))) else ""
         hoi = hoi if _trich_dan_khop(hoi, text) else ""
-        if (mua.get("quan_tam") is True or hen or hoi) and kho.ghi_quan_tam(bid, [c["code"] for c in nhac if c.get("code")]):
+        if not khong_hop and (mua.get("quan_tam") is True or hen or hoi) and kho.ghi_quan_tam(bid, [c["code"] for c in nhac if c.get("code")]):
             viec.append("ghi khách quan tâm căn " + ", ".join(f"#{c.get('code')}" for c in nhac))
         if hen and kho.ghi_hen_xem(bid, dau, hen):
             viec.append(f"ghi lịch hẹn xem #{dau.get('code')} ({hen}) — chờ xác nhận với chủ nhà rồi báo lại khách")

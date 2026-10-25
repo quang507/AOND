@@ -1696,6 +1696,12 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
   Hỏi thứ dòng của căn đã có (giá, diện tích) thì để trống.
 - "xin_anh": true khi khách xin XEM ẢNH / HÌNH của căn (vd "cho xem ảnh", "gửi hình đi em", "có hình thật không", "gửi lại ảnh giúp anh"),
   kể cả khi bot đã gửi ảnh ở trên rồi. Khách chỉ hỏi chung "căn này đẹp không" thì để trống.
+- "khong_hop" (25/10/2026, SRS-5.1zzzzzzz175): true khi khách CHÊ / TỪ CHỐI căn đang nói tới — không hợp, không thích, bỏ qua căn này,
+  xa quá, đắt quá, hẻm nhỏ quá… ("căn đó không hợp", "thôi bỏ căn này", "xa trường con quá", "giá đó cao quá anh không với tới"). Kèm
+  "ly_do" = NGUYÊN VĂN cụm khách nêu lý do (bỏ trống nếu khách không nói vì sao). Khách chỉ hỏi thêm hay so sánh chưa quyết thì để trống.
+- "ngung_bao" (25/10/2026, SRS-5.1zzzzzzz175): "tat" khi khách bảo ĐỪNG gửi / đừng nhắn / đừng báo căn nữa, ngưng tin tự động ("đừng gửi
+  nữa em", "thôi khỏi báo căn", "ngưng nhắn anh nha"); "bat" khi khách XIN được báo lại khi có căn mới ("có căn mới thì nhắn anh"). Khách
+  chỉ từ chối MỘT căn (khong_hop) không phải ngưng báo → bỏ trống.
 - "trich_dan": nguyên văn cụm trong tin khách làm căn cứ cho các ô trên.
 
 TRẢ LỜI CÂU KHÁCH HỎI ("tra_loi_khach_hoi", chỉ khi có khối CÂU KHÁCH MUA ĐANG HỎI CHỦ NHÀ và người rao vừa trả lời đúng câu đó):
@@ -1968,6 +1974,10 @@ def operations_schema() -> dict[str, Any]:
                     "hen_xem": {"type": "string", "description": "Nguyên văn cụm thời gian khách hẹn đi xem."},
                     "hoi_chu_nha": {"type": "string", "description": "Nguyên văn câu khách hỏi mà dữ liệu căn không có."},
                     "xin_anh": {"type": "boolean", "description": "Khách xin xem ảnh / hình của căn (kể cả xin gửi lại)."},
+                    "khong_hop": {"type": "boolean", "description": "Khách chê / từ chối căn đang nói tới (không hợp, bỏ qua căn này)."},
+                    "ly_do": {"type": "string", "description": "Nguyên văn cụm khách nêu lý do căn không hợp (nếu có)."},
+                    "ngung_bao": {"type": "string", "enum": ["tat", "bat"],
+                                  "description": "tat = khách bảo đừng gửi / báo căn mới nữa; bat = khách xin được báo khi có căn mới."},
                     "trich_dan": {"type": "string", "description": "Nguyên văn cụm trong tin khách làm căn cứ."},
                 },
                 "description": "Việc của khách mua (quan tâm, hẹn xem, hỏi chủ nhà) — xem VIỆC CỦA KHÁCH MUA.",

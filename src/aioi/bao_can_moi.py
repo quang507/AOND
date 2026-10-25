@@ -5,8 +5,10 @@ Lõi quét định kỳ (`server._vong_bao_can_moi`), KHÔNG qua trigger DB cũ 
 trượt — và tin nó đẻ ra không ai gửi vì edge function `nudge` đã gỡ). Mỗi lượt:
   1. chỉ chạy trong khung 8–20 giờ (giờ Việt Nam); ngoài khung thì để lượt sau, KHÔNG xếp hàng gửi sáng hôm sau (căn có thể đã bán);
   2. tin vừa lên kệ: `status = dang_ban`, tạo trong 7 ngày, cập nhật trong 36 giờ;
-  3. khách: có hội thoại mua nhắn trong 30 ngày, không đang chờ người (`needs_human` / `human_hold`), có khu vực hoặc ngân sách;
-  4. MỖI khách tối đa một tin / 24 giờ và MỘT căn / tin; một căn không báo hai lần cho một khách (sổ: `reminders` kind `match`);
+  3. khách: có hội thoại mua nhắn trong 30 ngày, không đang chờ người (`needs_human` / `human_hold`), có khu vực hoặc ngân sách, chưa bảo
+     "đừng báo nữa" (`buyers.bao_can_moi`, SRS-5.1zzzzzzz175);
+  4. MỖI khách tối đa một tin / 24 giờ và MỘT căn / tin; một căn không báo hai lần cho một khách (sổ: `reminders` kind `match`); căn khách
+     đã chê trong chat (`interests.trang_thai = khong_hop`) không báo;
   5. khớp cứng: bán / thuê, loại, khu vực, giá ≤ ngân sách × 1,15 — căn vượt ngân sách vẫn báo, nói rõ vượt khoảng bao nhiêu %.
 Câu chữ do code ghép từ cột thật (không gọi AI, không tốn quota): câu mẫu `bao_can_moi` / `bao_can_moi_vuot` (chủ dự án sửa ở CRM).
 SRS-5.1zzzzzzz151: căn có ảnh công khai (`listing_photos_v`) thì gửi kèm ảnh sau tin chữ; căn chưa có ảnh thì chỉ gửi chữ.
@@ -142,17 +144,21 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
     if not bids:
         return []
     lst = ",".join(_q(b) for b in bids)
-    khach = kho._get(f"buyers?id=in.({lst})&zalo_user_id=not.is.null&select=id,name,zalo_user_id,preferences")
+    khach = kho._get(f"buyers?id=in.({lst})&zalo_user_id=not.is.null&select=id,name,zalo_user_id,preferences,bao_can_moi")
     da_bao = kho._get(f"reminders?kind=eq.match&buyer_id=in.({lst})"
                       f"&created_at=gte.{_q(_iso(bay_gio - timedelta(days=KHACH_NHAN_TRONG_NGAY)))}&select=buyer_id,listing_id,created_at")
+    # SRS-5.1zzzzzzz175: căn khách đã chê trong chat không báo lại.
+    che = kho._get(f"interests?buyer_id=in.({lst})&trang_thai=eq.khong_hop&select=buyer_id,listing_id")
     moc_van = bay_gio - timedelta(hours=VAN_GIO)
     ra: list[dict] = []
     for k in khach[:TOI_DA_KHACH_MOI_LUOT]:
         bid = k["id"]
+        if k.get("bao_can_moi") is False:
+            continue   # SRS-5.1zzzzzzz175: khách đã bảo đừng báo căn nữa
         mine = [r for r in da_bao if r.get("buyer_id") == bid]
         if any(_den_luc(r.get("created_at")) > moc_van for r in mine):
             continue   # van 24 giờ: một khách một tin báo căn mỗi ngày
-        da = {r.get("listing_id") for r in mine}
+        da = {r.get("listing_id") for r in mine} | {r.get("listing_id") for r in che if r.get("buyer_id") == bid}
         lead = nhu_cau_tu_ho_so(k.get("preferences"))
         if not co_tieu_chi(lead):
             continue
