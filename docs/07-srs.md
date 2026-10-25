@@ -8746,6 +8746,12 @@ Chủ dự án 25/10, ngay sau khi SRS-181 thêm 10 tên cạnh kho cũ: "xóa c
 2. **Kiểm**: `tests/test_ten_tro_ly_moi.py` (kho đúng 10 tên, bỏ dấu đều kết thúc bằng "ai", hai tên mặc định nằm trong kho, tên ổn định theo khách, 300 khách phủ đủ 10 tên). Tên cũ còn nằm trong lịch sử hội thoại / log (tên trợ lý đã nói với khách) — không sửa.
 3. **Chưa chắc**: câu "còn tên gì ai mà có nghĩa ko" hiểu là điều kiện giữ tên; nếu ý khác (vd muốn thêm tên mới) thì nói để sửa. Chưa thử Zalo thật.
 
+### SRS-5.1zzzzzzz183 · Tên trợ lý có chấm giữa, thêm Ph•ái, L•ài, Ho•ài (25/10/2026)
+Chủ dự án 25/10: "Ph•ái L•ài Ho•ài dc 3 cái này nữa, à tên vẫn có cái chấm giữa như này" (sau SRS-182 chỉ giữ 10 tên "ai"). Thay hình thức tên của SRS-182: mỗi tên viết kèm chấm giữa tách phụ âm đầu khỏi vần — họ "•ai" từng dùng ở đời đầu (R•ai, Ph•ai trong log 09–14/10; `CLAUDE.md` ghi "kho •ai bỏ 14/10/2026", FR-181) nay dùng lại với tên có nghĩa.
+1. **Sửa**: `assistants.ASSISTANT_NAMES` = 13 tên có chấm giữa: Th•ái, M•ai, H•ải, L•ai, Kh•ải, T•ài, Đ•ại, Đ•ài, Nh•ài, Gi•ai, Ph•ái, L•ài, Ho•ài (ba tên mới ghi đúng như chủ dự án gõ — "Ho•ài" tách sau "Ho"); `SELLER_ASSISTANT` = Th•ái, `BUYER_ASSISTANT` = M•ai. Lời bot nói tên kèm chấm ("em là Th•ái"). Code khác không đổi: `engine.py` đã có mặc định "Đ•ai", prompt nhận mọi chuỗi tên.
+2. **Ảnh hưởng**: `assign_assistant` chia theo băm nên kho đổi độ dài / nội dung thì khách đang chat có thể đổi tên trợ lý; tin cũ trong lịch sử giữ tên cũ.
+3. **Kiểm**: `tests/test_ten_tro_ly_moi.py` (đúng 13 tên, mỗi tên đúng một chấm và phần sau chấm kết thúc bằng "ai" khi bỏ dấu, không còn tên cũ / tên không chấm, hai tên mặc định nằm trong kho, 400 khách phủ đủ 13 tên). Tên có nghĩa là danh sách của chủ dự án, chưa đối chiếu từ điển chính thống. Chưa thử Zalo thật.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
