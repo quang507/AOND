@@ -445,7 +445,7 @@ class Property:
                 continue
             if ma == "chi_tiet" and self.group is not PropertyGroup.RESIDENTIAL:
                 continue
-            con = [k for k in cum if k not in mong and not self._has(k)]
+            con = [k for k in cum if k not in mong and not self._has(k) and f"sau:{k}" not in da_hoi]   # SRS-178: mỗi lượt một ô
             if con:
                 return ma, con
         return None

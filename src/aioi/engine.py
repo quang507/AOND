@@ -25,6 +25,7 @@ from uuid import uuid4
 
 from . import gamification as g
 from . import phap_ly
+from .prompts import KHOI_MOT_UU_TIEN
 from . import cau_mau
 from . import che_do_test
 from . import nhom_json
@@ -2114,7 +2115,8 @@ class Engine:
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
                            + khoi_lich_dang_cho(conv.y_luot.get("lich_cho"), customer_pronoun))
-            system += khoi_can_nguoi(conv) + khoi_phap_ly(conv) + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
+            uu_tien = khoi_can_nguoi(conv) or khoi_phap_ly(conv)   # SRS-5.1zzzzzzz178: một khối ưu tiên, khối đó quyết lượt
+            system += ((uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else "") + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
             system += self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
             # Khách mua báo đã đủ thông tin căn đang xem (SRS-5.1zzzzzzz104) → xin chấm sao một lần.
@@ -2214,8 +2216,9 @@ class Engine:
             if sau_dang and not xin_sao and not conv.y_luot.get("danh_gia"):
                 cum_sau = conv.prop.cum_sau_dang(da_hoi)
                 if cum_sau:
-                    conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi | {cum_sau[0]}))
-                    system += khoi_hoi_sau_dang(cum_sau[1], conv.prop)
+                    # SRS-5.1zzzzzzz178: mỗi lượt MỘT ô (không hỏi gộp cụm) — ghi "sau:<ô>" để lượt sau tới ô kế của cùng cụm.
+                    conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi | {f"sau:{cum_sau[1][0]}"}))
+                    system += khoi_hoi_sau_dang(cum_sau[1][:1], conv.prop)
                     log.warning("Hỏi sau đăng: cụm %s", cum_sau[0])
 
         # Tra địa danh (SRS-5.1zzzzzzz60/61): hỏi xác nhận tên đường kho gợi ý ở MỌI nhánh (cả lượt soạn bản nháp), kể phường khi hỏi phường.
@@ -2237,14 +2240,15 @@ class Engine:
 
         if not is_listing_post and not any(t.role == "assistant" for t in conv.history):
             system += khoi_chao_lan_dau(conv.assistant.name, cau_mau.cau("chao_lan_dau", goi_toi_khach(customer_pronoun)[0], ten=conv.assistant.name))
-        system += khoi_xung_ho(customer_pronoun) + self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv) + khoi_khen_theo_luot(conv.so_luot_thong_tin)
+        system += khoi_xung_ho(customer_pronoun) + self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
         if xin_sao:
             system += KHOI_SAP_XIN_SAO
 
         # Khối ưu tiên theo điều khách HỎI — lượt AI lập thao tác đọc theo nghĩa (conv.hoi_ve_luot, SRS-5.1zzzzzzz54); bản trước
         # dò từ khoá ("chi phí" nào cũng thành hỏi phí). Con số phí theo vai từ _fee_hint, không viết tay.
+        hoi_ve_khoi = ""
         if conv.hoi_ve_luot == "phi":
-            system += (
+            hoi_ve_khoi = (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ PHÍ: ===\n"
                 "Trả lời RÕ RÀNG trước: đăng tin MIỄN PHÍ; CHỈ thu phí khi giao dịch thành công, không thành thì không tốn đồng nào. "
                 "Con số phí đúng theo VAI NGƯỜI RAO / BỐI CẢNH ở trên (bán: 1% chính chủ, 0.5% môi giới; cho thuê: 0.75 tháng tiền thuê "
@@ -2253,7 +2257,7 @@ class Engine:
                 + ((khoi_bao_phi(conv.user_type, conv.prop.is_rental) + "\n") if khoi_bao_phi(conv.user_type, conv.prop.is_rental) else "")
             )
         elif conv.hoi_ve_luot == "uy_tin":
-            system += (
+            hoi_ve_khoi = (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ UY TÍN / CÔNG TY: ===\n"
                 "Khách vừa hỏi về danh tính công ty hoặc lo ngại an toàn/lừa đảo. Hãy TRẢ LỜI ẤM ÁP, TẠO NIỀM TIN:\n"
                 "- Giới thiệu AI Ơi Nhà Đất (aioinhadat.com) là nền tảng công nghệ kết nối mạng lưới môi giới và người mua thực tế.\n"
@@ -2265,17 +2269,20 @@ class Engine:
             # Câu "tin đã lên web" do trạng thái THẬT quyết (khoi_trang_thai_web, SRS-5.1zzzzzzz44) — tin chưa ra bản nháp thì
             # chắc chắn chưa hiển thị.
             web = self._trang_thai_web(conv) if is_listing_post else {"len_web": False, "chua_ban_nhap": True}
-            system += (
+            hoi_ve_khoi = (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ LINK HOẶC CÁCH ĐĂNG TRÊN WEB: ===\n"
                 "Khách vừa hỏi xem link bài đăng, xem tin ở đâu hoặc tin trên web đang hiển thị như thế nào. Hãy TRẢ LỜI RÕ RÀNG, CHUYÊN NGHIỆP:\n"
                 + khoi_trang_thai_web(web, conv.prop.is_rental)[1] + "\n"
             )
         elif conv.hoi_ve_luot == "tinh_hinh_ban":
             web = self._trang_thai_web(conv) if is_listing_post else {"len_web": False}
-            system += khoi_tinh_hinh_ban(self._tinh_hinh_tin(conv), bool(web and web.get("len_web")))
+            hoi_ve_khoi = khoi_tinh_hinh_ban(self._tinh_hinh_tin(conv), bool(web and web.get("len_web")))
         elif conv.hoi_ve_luot == "dinh_gia":
-            system += KHOI_DINH_GIA
-        system += khoi_can_nguoi(conv) + khoi_phap_ly(conv) + khoi_ngoai_viec(conv)
+            hoi_ve_khoi = KHOI_DINH_GIA
+        # SRS-5.1zzzzzzz178: MỘT khối ưu tiên mỗi lượt, theo thứ tự cần người > pháp lý > ngoài việc > hỏi về (phí / uy tín / link / tình hình /
+        # định giá); có khối ưu tiên thì không ép khen theo lượt, không hỏi ô kế. Không có thì mới tới khối khen theo lượt.
+        uu_tien = khoi_can_nguoi(conv) or khoi_phap_ly(conv) or khoi_ngoai_viec(conv) or hoi_ve_khoi
+        system += (uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else khoi_khen_theo_luot(conv.so_luot_thong_tin)
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
         system += self._project_memory_block(project)  # remember the price list + phân lô; reason over it
         system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"

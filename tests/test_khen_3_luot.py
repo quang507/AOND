@@ -12,8 +12,9 @@ def _plan(k, v, bc):
 
 def test_khoi_theo_so_luot():
     assert khoi_khen_theo_luot(0) == ""
-    assert "THỨ 1" in khoi_khen_theo_luot(1) and "trong 3 lượt đầu" in khoi_khen_theo_luot(1) and "BẮT BUỘC" in khoi_khen_theo_luot(3)
-    assert "THỨ 4" in khoi_khen_theo_luot(4) and "đã qua 3 lượt đầu" in khoi_khen_theo_luot(4) and "BẮT BUỘC" not in khoi_khen_theo_luot(4)
+    assert "THỨ 1" in khoi_khen_theo_luot(1) and "trong 3 lượt đầu" in khoi_khen_theo_luot(1) and "ƯU TIÊN mở đầu" in khoi_khen_theo_luot(3)
+    assert "BẮT BUỘC" not in khoi_khen_theo_luot(3) and "không có thì cảm ơn ngắn" in khoi_khen_theo_luot(3)   # SRS-178: không ép khen gượng
+    assert "THỨ 4" in khoi_khen_theo_luot(4) and "đã qua 3 lượt đầu" in khoi_khen_theo_luot(4) and "ƯU TIÊN mở đầu" not in khoi_khen_theo_luot(4)
 
 
 def test_dem_luot_cho_thong_tin_va_khoi_vao_prompt():

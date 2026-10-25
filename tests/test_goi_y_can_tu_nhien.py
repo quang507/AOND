@@ -144,7 +144,7 @@ def test_khoi_can_dat_thu_tu_khen_can_roi_moi_hoi_ngan():
     khoi = khoi_can_cho_khach([_can("A1", 5.5e9)])
     assert "BỐN ĐOẠN" in khoi and "MỘT DÒNG TRỐNG" in khoi and "khoảng 15 chữ" in khoi          # SRS-160: bốn tin, câu hỏi ngắn ở đoạn cuối
     assert "không khen lần hai ở cuối" in khoi and "KHÔNG nhắc lại" in khoi         # một lời khen mở tin, không lặp căn đã gửi
-    assert khoi.index("(1) Mở lời") < khoi.index("(2) Thông số") < khoi.index("(3) Link") < khoi.index("(4) Đúng MỘT câu hỏi")   # thứ tự: mở lời · thông số + vì sao hợp · link · hỏi
+    assert khoi.index("(1) Mở lời") < khoi.index("(2) Thông số") < khoi.index("(3) Link") < khoi.index("(4) Tối đa MỘT câu hỏi")   # thứ tự: mở lời · thông số + vì sao hợp · link · hỏi
 
 
 def test_prompt_mua_noi_can_truoc_hoi_sau_va_cau_hoi_ngan():
