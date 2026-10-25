@@ -1686,6 +1686,11 @@ PHÂN BIỆT Ý ĐỊNH KHÁCH ("user_intent") BẰNG TOÀN BỘ NGỮ CẢNH (S
   rao bán: khách hỏi / hẹn xem / hỏi giá / hỏi chủ nhà về căn bot VỪA giới thiệu hoặc báo cho họ xem (vd "mình xem thử thứ 7 được không", "căn đó còn
   không em", "9h nhé" đáp lại lời hẹn xem) là "buy" dù trước đó họ từng gửi bán.
 - "unknown": Chào hỏi chung, hỏi phí, hỏi công ty mà chưa rõ họ muốn bán hay mua.
+- "hoi_ngoai_viec" (25/10/2026, SRS-5.1zzzzzzz177): khách hỏi / kể việc KHÔNG thuộc mua bán / thuê nhà đất (đồng hồ nước, điện, phí quản lý
+  khu dân cư, hành chính, chuyện riêng, hỏi nhầm công ty khác…) và CHƯA tỏ ý gửi bán hay tìm mua → hoi_ngoai_viec = NGUYÊN VĂN câu đó,
+  user_intent = "unknown", operations RỖNG — KHÔNG ghi ô nào từ câu đó, kể cả địa chỉ / tên khu khách nêu để hỏi việc khác (chat thử 24/10:
+  cư dân hỏi "đồng hồ nước trước cổng ngày nào cắt" bị hỏi địa chỉ rồi thành tin rao). Câu hỏi pháp lý / thủ tục nhà đất → hoi_phap_ly,
+  không phải mục này. Khách đã nói rõ bán / mua rồi mới hỏi việc khác → bỏ trống.
 
 VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / thuê — 19/10/2026): đọc theo NGHĨA tin khách VỪA nhắn.
 - "ma_can": mã căn khách đang nói tới — chỉ lấy mã khách gõ (#ABCD1234, BDS-Q5-0012) hoặc mã trong danh sách CĂN ĐANG CÓ bot vừa
@@ -2007,6 +2012,8 @@ def operations_schema() -> dict[str, Any]:
                 },
                 "description": "Người rao vừa trả lời một câu khách mua hỏi.",
             },
+            "hoi_ngoai_viec": {"type": "string", "description": "Nguyên văn câu khách hỏi / kể việc ngoài mua bán, thuê nhà đất khi chưa "
+                               "tỏ ý bán hay mua (đồng hồ nước, điện, hành chính khu dân cư…). Không có thì bỏ trống."},
             "user_intent": {
                 "type": "string",
                 "enum": ["sell", "buy", "unknown"],

@@ -60,8 +60,8 @@ else
   sudo -u nhadat git clone -q -b "$NHANH" "$REPO" "$DIR" && xong "clone xong (nhánh $NHANH)"
 fi
 
-buoc "3/5 npm i zca-js"
-sudo -u nhadat bash -c "cd '$BR' && { [ -f package.json ] || npm init -y >/dev/null; } && npm i --no-audit --no-fund zca-js >/dev/null"
+buoc "3/5 npm i zca-js@2.2.0"
+sudo -u nhadat bash -c "cd '$BR' && { [ -f package.json ] || npm init -y >/dev/null; } && npm i --no-audit --no-fund zca-js@2.2.0 >/dev/null"   # ghim (SRS-5.1zzzzzzz177): bản mới đổi API gửi ảnh mà không ai thấy
 xong "zca-js $(sudo -u nhadat bash -c "cd '$BR' && node -p 'require(\"zca-js/package.json\").version'" 2>/dev/null || echo '?')"
 
 buoc "4/5 BRIDGE_SECRET → $BR/.env"

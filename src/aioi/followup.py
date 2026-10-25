@@ -131,6 +131,11 @@ class FollowUpManager:
             if getattr(conv, "role", "") == "buyer":
                 log.info("Follow-up for %s: đang ở vai người mua. Skipping.", user_key)
                 return
+            # SRS-5.1zzzzzzz177: khách hỏi việc ngoài nhà đất, chưa tỏ ý bán — tin nhắc hỏi ô thiếu là hỏi nhầm người (24/10: nhắc "phường nào" cho
+            # cư dân hỏi đồng hồ nước).
+            if getattr(conv, "role", "") != "seller" and getattr(conv, "so_luot_ngoai_viec", 0):
+                log.info("Follow-up for %s: khách hỏi việc ngoài nhà đất, chưa tỏ ý bán. Skipping.", user_key)
+                return
 
             # Check if user has an active listing in basket
             if not conv.listings:

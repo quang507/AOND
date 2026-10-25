@@ -863,6 +863,11 @@ class SupabaseConversationStore(KhoNguoiMua):
                 # Căn ngoài vùng nhận tin (SRS-5.1zzzzzzz86): đã có dòng (tạo lượt trước, khi chưa biết tỉnh) thì ẩn; chưa có thì
                 # không tạo — trigger đăng tin không đụng tới `an`.
                 ngoai_vung = bool(fields.get("_ngoai_vung"))
+                # SRS-5.1zzzzzzz177: dòng `listings` chỉ tạo khi khách đã cho ÍT NHẤT một ô thật (loại / địa chỉ / giá…) — lời chào không đẻ
+                # tin rỗng `cho_thong_tin` (23/10: 4 dòng rỗng `chua_ro` của 4 người chỉ chào, kể cả khách mua). Dòng đã có thì vẫn cập nhật.
+                co_o_that = bool(li.prop.loai_hinh) or any(v for k, v in fields.items() if not k.startswith("_"))
+                if not existing and not co_o_that:
+                    continue
                 if existing:
                     lid = existing[0]["id"]
                     # Admin đã sửa tay ô nào trên CRM (nguồn = admin, SRS-5.1zzzzzzz89) thì lượt chat sau KHÔNG ghi đè ô đó — trước

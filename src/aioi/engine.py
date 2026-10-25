@@ -428,6 +428,8 @@ class Conversation:
     che_do_test: bool = False
     # Persisted (SRS-5.1zzzzzzz131 bản 2): số lượt khách đã CHO THÔNG TIN (lượt ghi được ô) — 3 lượt đầu bắt buộc mở bằng lời khen; "$$$$$" về 0.
     so_luot_thong_tin: int = 0
+    # Transient (SRS-5.1zzzzzzz177): số lượt khách hỏi việc NGOÀI nhà đất khi chưa tỏ ý bán / mua — lần 2 đề nghị nối người.
+    so_luot_ngoai_viec: int = 0
     # Transient (SRS-5.1zzzzzzz130): ô tin của căn đang nói TRƯỚC khi áp thao tác lượt này, và cụm khách nói làm bằng chứng cho ô vừa ghi —
     # chỉ để tin phụ chế độ test nói "mới" hay "đổi từ …", kèm câu khách trích.
     truoc_luot: dict = field(default_factory=dict)
@@ -576,6 +578,22 @@ def khoi_can_nguoi(conv: "Conversation") -> str:
         "Nói ngắn, ấm: em đã báo anh/chị phụ trách, anh/chị ấy sẽ nhắn khách sớm. KHÔNG hứa giờ cụ thể, KHÔNG xin số điện thoại. "
         "Trong lúc chờ, nếu khách muốn em vẫn hỗ trợ tiếp. Không hỏi thêm thông tin căn ở lượt này.\n"
     )
+
+
+def khoi_ngoai_viec(conv: "Conversation") -> str:
+    """Khách hỏi việc ngoài nhà đất khi chưa tỏ ý bán / mua (SRS-5.1zzzzzzz177): lần 1 nói thật không nắm + hỏi có cần bán / mua không;
+    từ lần 2 thôi hỏi về nhà đất, đề nghị nối người phụ trách (hỏi khách có muốn không — không tự báo)."""
+    n = conv.y_luot.get("ngoai_viec")
+    if not n:
+        return ""
+    if n == 1:
+        return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VIỆC NGOÀI NHÀ ĐẤT (chưa tỏ ý bán / mua): ===\n"
+                "Nói thật NGẮN là việc đó em không nắm (không đoán, không hứa hỏi giúp). KHÔNG hỏi địa chỉ / loại / giá / bất kỳ thông tin căn "
+                "nào, KHÔNG nói khách đang rao hay đang bán, KHÔNG khen. Hỏi MỘT câu ngắn: khách có cần gửi bán, cho thuê hay tìm mua nhà đất "
+                "không.\n")
+    return (f"\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI LẠI VIỆC NGOÀI NHÀ ĐẤT (lần thứ {n}): ===\n"
+            "KHÔNG hỏi gì về nhà đất nữa, KHÔNG khen. Nói ngắn: bên em chỉ hỗ trợ gửi bán / cho thuê / tìm mua nhà đất, việc này em chưa nắm; nếu "
+            "khách muốn, em nối anh/chị phụ trách để hỏi giúp — hỏi MỘT câu khách có muốn không. KHÔNG nói đã báo ai.\n")
 
 
 def khoi_phap_ly(conv: "Conversation") -> str:
@@ -2257,7 +2275,7 @@ class Engine:
             system += khoi_tinh_hinh_ban(self._tinh_hinh_tin(conv), bool(web and web.get("len_web")))
         elif conv.hoi_ve_luot == "dinh_gia":
             system += KHOI_DINH_GIA
-        system += khoi_can_nguoi(conv) + khoi_phap_ly(conv)
+        system += khoi_can_nguoi(conv) + khoi_phap_ly(conv) + khoi_ngoai_viec(conv)
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
         system += self._project_memory_block(project)  # remember the price list + phân lô; reason over it
         system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
@@ -3603,6 +3621,16 @@ class Engine:
         conv.duyet_luot = None
         y = plan.get("duyet_ban_nhap")
         cuoi = next((t.content for t in reversed(conv.history) if t.role == "user"), "")
+        # SRS-5.1zzzzzzz177 (chat thử 24/10: cư dân hỏi "đồng hồ nước… cắt ngày nào" bị ép vào luồng rao bán, có cả dòng `listings`): khách hỏi việc
+        # ngoài nhà đất khi CHƯA tỏ ý bán / mua → không ghi ô (operations rỗng), không tạo tin, đếm lượt để lần hai đề nghị nối người.
+        nv = plan.get("hoi_ngoai_viec")
+        la_ngoai_viec = False
+        if (isinstance(nv, str) and nv.strip() and intent not in ("buy", "sell") and not has_seller_context
+                and (_trich_dan_khop(nv, cuoi) or _chu_co_trong_loi_khach(nv, self._loi_khach_gan(conv)))):
+            conv.so_luot_ngoai_viec += 1
+            la_ngoai_viec = True   # ghi vào y_luot SAU chỗ làm mới y_luot bên dưới
+            plan["operations"] = []
+            plan.pop("buyer_lead", None)
         # Sticker trung tính của bridge ("[khách gửi sticker]", không rõ vui hay bực) KHÔNG bao giờ là đồng ý — dấu của kênh,
         # không phải lời khách (bản TS: laStickerTrungTinh). Tim / like thật đến qua "[khách thả cảm xúc …]".
         if conv.listing_proposed and y in ("dong_y", "khong_dong_y") and not la_sticker(cuoi):
@@ -3629,6 +3657,8 @@ class Engine:
 
         # Xin xem bản vẽ / hỏi dự án / tả dự án / xác nhận xoá (SRS-5.1zzzzzzz55): nhận khi cụm trích có trong tin vừa nhắn.
         conv.y_luot = {}
+        if la_ngoai_viec:
+            conv.y_luot["ngoai_viec"] = conv.so_luot_ngoai_viec   # SRS-5.1zzzzzzz177
         for k in ("xin_xem_ban_ve", "cau_hoi_du_an", "mo_ta_du_an"):
             if _trich_dan_khop(plan.get(k), cuoi):
                 conv.y_luot[k] = True

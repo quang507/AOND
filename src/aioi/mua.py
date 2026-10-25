@@ -262,6 +262,7 @@ class KhoNguoiMua:
                 if isinstance(g, (int, float)) and g > ns:
                     c["_vuot_ngan_sach"] = max(1, round((g / ns - 1) * 100))
             can.sort(key=lambda c: 1 if c.get("_vuot_ngan_sach") else 0)
+        danh_dau_lech(can, lead)
         self._gan_so_anh(can)
         if len(nho) > 200:
             nho.clear()
@@ -338,7 +339,7 @@ class KhoNguoiMua:
             if isinstance(tran, (int, float)) and tran > 0:
                 loc.append(f"price_vnd=lte.{int(tran * 1.1)}")
         try:
-            return self._get(f"listings?{'&'.join(loc)}&select={COT_CAN}&order=updated_at.desc&limit={toi_da}")
+            return danh_dau_lech(self._get(f"listings?{'&'.join(loc)}&select={COT_CAN}&order=updated_at.desc&limit={toi_da}"), lead)
         except Exception as e:  # noqa: BLE001
             log.warning("can_phu_hop lỗi: %s", e)
             return []
@@ -378,7 +379,7 @@ class KhoNguoiMua:
                 if isinstance(g, (int, float)) and g > ns:
                     r["_vuot_ngan_sach"] = max(1, round((g / ns - 1) * 100))
         rows.sort(key=lambda r: 1 if r.get("_vuot_ngan_sach") else 0)   # sắp ổn định: giữ thứ tự mới cập nhật trước
-        return rows
+        return danh_dau_lech(rows, lead)
 
     # --- Ghi việc của khách ------------------------------------------------------------------------------------------
     def ghi_quan_tam(self, buyer_id: str, ma: list[str]) -> bool:
@@ -573,6 +574,25 @@ _TEN_LOAI = {"nha_pho": "nhà phố", "nha_cap4": "nhà cấp 4", "biet_thu": "b
              "dat_nong_nghiep": "đất nông nghiệp", "dat_kinh_doanh": "đất kinh doanh"}
 
 
+def danh_dau_lech(can: list[dict], lead: Any) -> list[dict]:
+    """Ghi lên từng căn điểm LỆCH so với nhu cầu mềm của khách — phòng ngủ, diện tích (SRS-5.1zzzzzzz177; chat thử 24/10: khách cần 2PN, bot
+    đưa căn 1PN mà chỉ nói "khác khu"). `tim_nha` chỉ cộng điểm cho hai tiêu chí này nên căn lệch vẫn lọt; lời bot phải nói thẳng."""
+    f = getattr(lead, "fields", {}) or {}
+    pn = int(_so_dau(getattr(lead, "so_phong_ngu", None) or f.get("so_phong_ngu")) or 0)
+    dt = _so_dau(f.get("dien_tich_mong_muon"))
+    for c in can:
+        b = c.get("bedrooms")
+        if pn:
+            if not isinstance(b, (int, float)):
+                c["_thieu_pn"] = (None, pn)
+            elif b < pn:
+                c["_thieu_pn"] = (int(b), pn)
+        a = c.get("area_m2")
+        if dt and isinstance(a, (int, float)) and a < dt:
+            c["_nho_dt"] = (float(a), float(dt))
+    return can
+
+
 def dong_can(c: dict) -> str:
     """Một căn thành một dòng cho model: mã, loại, đường / phường / quận (không số nhà), diện tích, giá, phòng ngủ, kết cấu."""
     vi_tri = ", ".join(str(c[k]) for k in ("street", "ward", "district") if c.get(k))
@@ -595,6 +615,11 @@ def dong_can(c: dict) -> str:
         phan.append(f"vì sao hợp: {c['_ly_do']}")
     if c.get("_vuot_ngan_sach"):
         phan.append(f"VƯỢT ngân sách khách nêu khoảng {c['_vuot_ngan_sach']}%")
+    if c.get("_thieu_pn"):
+        co, can_ = c["_thieu_pn"]
+        phan.append(f"CHƯA RÕ số phòng ngủ (khách cần {can_})" if co is None else f"ÍT phòng ngủ hơn khách cần (có {co}, khách cần {can_})")
+    if c.get("_nho_dt"):
+        phan.append(f"NHỎ hơn diện tích khách muốn ({c['_nho_dt'][0]:g} m², khách muốn {c['_nho_dt'][1]:g} m²)")
     so_anh = c.get("_so_anh")
     if isinstance(so_anh, int):
         phan.append(f"ảnh: có {so_anh} ảnh, tự gửi kèm khi dán link; khách xin ảnh thì hệ thống gửi (kể cả xin lại)" if so_anh else "ảnh: CHƯA có ảnh nào trên hệ thống")
@@ -628,8 +653,9 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
             "nhiên, đúng xưng hô). Luật khen: nếu có điều đáng khen khách vừa nói thì mở bằng MỘT lời khen ngắn gắn đúng điều đó, cùng đoạn này — "
             "không bịa thị trường, không bình luận giá, không thêm chi tiết khách chưa nói.\n"
             "      (2) Thông số ngắn (khu vực, diện tích, giá, phòng ngủ) rồi VÌ SAO HỢP — kể lại ĐÚNG phần \"vì sao hợp\" của căn, không thêm. "
-            "Căn ghi \"KHÁC khu vực khách chọn\" hoặc \"VƯỢT ngân sách\" thì nói thẳng một câu ngắn ở đoạn này (khác khu nào / vượt khoảng bao "
-            "nhiêu phần trăm); chỉ đưa căn như vậy khi không có căn đúng.\n"
+            "Căn ghi \"KHÁC khu vực\", \"VƯỢT ngân sách\", \"ÍT phòng ngủ\", \"CHƯA RÕ số phòng ngủ\" hay \"NHỎ hơn diện tích\" thì nói thẳng "
+            "MỌI điểm lệch đó trong một câu ngắn ở đoạn này (khác khu nào / vượt bao nhiêu % / thiếu mấy phòng), không giấu điểm nào; chỉ đưa "
+            "căn như vậy khi không có căn đúng.\n"
             "      (3) Link: dán nguyên văn dòng \"link …\" của căn để khách xem chi tiết. Dòng căn ghi \"có … ảnh\" thì ảnh tự gửi kèm ngay sau, không "
             "cần nhắc; ghi \"CHƯA có ảnh\" thì sẽ KHÔNG có ảnh nào gửi kèm.\n"
             "      (4) Đúng MỘT câu hỏi, thật ngắn (khoảng 15 chữ), không giải thích vì sao hỏi — chính là câu thông tin cần hỏi tiếp ở trên "

@@ -84,7 +84,11 @@ def vi_sao_hop(c: dict, lead: Any = None) -> str:
         phan.append(f"giá trong ngân sách {g('ngan_sach')}")
     if _can_xe_hoi(g("yeu_cau_xe_hoi")):
         phan.append("xe hơi vào được")
-    return ("Hợp vì " + ", ".join(phan) + ".") if phan else ""
+    cau = ("Hợp vì " + ", ".join(phan) + ".") if phan else ""
+    if c.get("_thieu_pn"):   # SRS-5.1zzzzzzz177: nói thẳng điểm lệch phòng ngủ, không giấu
+        co, can_ = c["_thieu_pn"]
+        cau += (" Lưu ý căn chưa rõ số phòng ngủ." if co is None else f" Lưu ý căn có {co} phòng ngủ, ít hơn {can_} phòng khách cần.")
+    return cau.strip()
 
 
 def viet_tin(c: dict, xung_ho: str = "unknown", lead: Any = None) -> str:
@@ -139,10 +143,11 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
         return []
     hoi = kho._get(f"conversations?buyer_id=not.is.null&needs_human=eq.false&human_hold=eq.false"
                    f"&last_message_at=gte.{_q(_iso(bay_gio - timedelta(days=KHACH_NHAN_TRONG_NGAY)))}"
-                   f"&select=buyer_id&limit=200")
+                   f"&select=id,buyer_id&limit=200")
     bids = list(dict.fromkeys(r["buyer_id"] for r in hoi if r.get("buyer_id")))
     if not bids:
         return []
+    da_gioi_thieu = can_da_gioi_thieu(kho, hoi, bay_gio)   # SRS-5.1zzzzzzz177: căn bot đã dán link trong chat thì không báo lại
     lst = ",".join(_q(b) for b in bids)
     khach = kho._get(f"buyers?id=in.({lst})&zalo_user_id=not.is.null&select=id,name,zalo_user_id,preferences,bao_can_moi")
     da_bao = kho._get(f"reminders?kind=eq.match&buyer_id=in.({lst})"
@@ -158,7 +163,8 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
         mine = [r for r in da_bao if r.get("buyer_id") == bid]
         if any(_den_luc(r.get("created_at")) > moc_van for r in mine):
             continue   # van 24 giờ: một khách một tin báo căn mỗi ngày
-        da = {r.get("listing_id") for r in mine} | {r.get("listing_id") for r in che if r.get("buyer_id") == bid}
+        da = ({r.get("listing_id") for r in mine} | {r.get("listing_id") for r in che if r.get("buyer_id") == bid}
+              | da_gioi_thieu.get(bid, set()))
         lead = nhu_cau_tu_ho_so(k.get("preferences"))
         if not co_tieu_chi(lead):
             continue
@@ -188,6 +194,43 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
             continue
         ra.append({"buyer_id": bid, "listing_id": c["id"], "code": c.get("code"), "vuot": c.get("_vuot_ngan_sach")})
         da_bao.append({"buyer_id": bid, "listing_id": c["id"], "created_at": _iso(bay_gio)})
+    return ra
+
+
+_LINK_CAN = re.compile(r"/nha-dat/([A-Za-z0-9]+)")
+
+
+def can_da_gioi_thieu(kho: Any, hoi: list[dict], bay_gio: datetime) -> dict[str, set[str]]:
+    """buyer_id → id các căn bot ĐÃ dán link trong chat của khách đó (30 ngày) — SRS-5.1zzzzzzz177 (24/10: tin báo 8 giờ sáng gửi lại SEED0044
+    bot vừa giới thiệu lúc 1 giờ, khách thấy bot "quên"). Lỗi đọc → rỗng (thà báo trùng một căn còn hơn câm cả vòng)."""
+    ht_buyer = {r["id"]: r["buyer_id"] for r in hoi if r.get("id") and r.get("buyer_id")}
+    if not ht_buyer:
+        return {}
+    try:
+        tin = kho._get(f"messages?conversation_id=in.({','.join(_q(i) for i in list(ht_buyer)[:200])})&sender=eq.bot"
+                       f"&body=like.{_q('*/nha-dat/*')}&created_at=gte.{_q(_iso(bay_gio - timedelta(days=KHACH_NHAN_TRONG_NGAY)))}"
+                       f"&select=conversation_id,body&limit=1000")
+    except Exception as e:  # noqa: BLE001
+        log.warning("bao_can_moi: đọc tin đã giới thiệu lỗi (%s)", type(e).__name__)
+        return {}
+    ma_theo_ht: dict[str, set[str]] = {}
+    for t in tin:
+        for m in _LINK_CAN.finditer(t.get("body") or ""):
+            ma_theo_ht.setdefault(t.get("conversation_id"), set()).add(m.group(1).upper())
+    ma_all = sorted(set().union(*ma_theo_ht.values())) if ma_theo_ht else []
+    if not ma_all:
+        return {}
+    try:
+        dong = kho._get(f"listings?code=in.({','.join(_q(m) for m in ma_all[:200])})&select=id,code")
+    except Exception as e:  # noqa: BLE001
+        log.warning("bao_can_moi: tra id căn đã giới thiệu lỗi (%s)", type(e).__name__)
+        return {}
+    id_theo_ma = {str(d["code"]).upper(): d["id"] for d in dong if d.get("code") and d.get("id")}
+    ra: dict[str, set[str]] = {}
+    for ht, mas in ma_theo_ht.items():
+        bid = ht_buyer.get(ht)
+        if bid:
+            ra.setdefault(bid, set()).update(id_theo_ma[m] for m in mas if m in id_theo_ma)
     return ra
 
 
