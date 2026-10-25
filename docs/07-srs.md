@@ -8759,6 +8759,14 @@ Chủ dự án 25/10: "cho bot phía mua tra kho dự án đi" (việc đã ghi 
 3. **Chưa làm**: lọc căn đang rao theo dự án (`listings.project_id` hiện 0 — SRS-181 mới bắt đầu gắn), khách mua hỏi dự án khi `tra_du_an` lỗi chỉ nói thật chưa tra được; kiến thức chủ dự án chỉ cắt 2.800 chữ đầu. Chưa thử Zalo thật.
 4. **Kiểm**: `tests/test_du_an_mua.py` (7 ca: ô có dữ liệu mới ghi, bốn chế độ + luật nói thật, `tra_du_an` ro / gần / nhiều / không / lỗi, lượt chat có khối, tên AI tự suy không tra, không hỏi dự án thì không khối, cổng số soát lệch khối). Lỗi bắt khi viết test: lời dặn trong khối có chữ số ("2–3 ý") làm số hợp lệ giả cho cổng số — đã bỏ chữ số khỏi lời dặn.
 
+### SRS-5.1zzzzzzz185 · Tra dự án phía mua theo NGHĨA (vector) (25/10/2026)
+Chủ dự án 25/10: "trước giờ tưởng có sẵn rồi, vector hóa nó" (sau SRS-184: `match_projects` đòi tên dự án nằm trọn trong chữ khách).
+1. **Hiện trạng đo trên DB thật 25/10**: `projects.nhung` (halfvec 768) đã nhúng đủ 2.362/2.362 dòng và `tim_dia_danh_theo_nghia` đã có nhánh `du_an` — chỉ `tra_du_an` chưa gọi. Không cần migration.
+2. **Lớp lỗi**: khách hỏi bằng mô tả ("khu nhà phố quận 8", "căn hộ ven sông Thảo Điền") không có tên dự án trọn trong chữ → tra theo chữ rỗng → bot nói "kho chưa có" dù kho có. **Sửa**: `TraDiaDanh.du_an_theo_nghia` (nhúng câu tìm bằng Gemini, `p_loai=['du_an']`, giữ dòng ≥ `NGUONG_NGHIA` 0,55, tối đa 3 và cách dòng đầu ≤ `BIEN_NGHIA_DU_AN` 0,04); `tra_du_an(ten, theo_nghia=…)` chỉ gọi khi `match_projects` VÀ khớp một phần đều rỗng (chữ ra rồi thì khỏi tốn Gemini); `engine._viec_mua` nối hàm của `self._dia_danh`.
+3. **Chốt an toàn**: kết quả vector KHÔNG BAO GIỜ là `ro` — một dòng → `gan` (bot nhắc tên đầy đủ để khách xác nhận), từ hai → `nhieu` (hỏi lại, chưa kể gì). Gemini hỏng / không dòng đạt ngưỡng → `khong` (nói thật chưa có).
+4. **Chưa làm / không chắc**: ngưỡng 0,55 và biên 0,04 là số của địa danh dùng chung, CHƯA đo riêng cho tên dự án (sandbox không có khoá Gemini để đo) — cần bắn thử vài câu mô tả trên VPS rồi chỉnh; vector chỉ nhúng tên + trường đã nhúng sẵn, chất lượng tuỳ văn bản lịch `nhung-tick` dựng. Chưa thử Zalo thật.
+5. **Kiểm**: `tests/test_du_an_mua.py` thêm 3 ca (vector → gan / nhieu / không bao giờ ro; không gọi vector khi chữ đã ra, Gemini hỏng, rỗng; lọc ngưỡng + biên + loại khác) và 1 ca engine nối hàm (đỏ khi bỏ dòng nối trong `_viec_mua`, đã thử).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

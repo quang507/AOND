@@ -364,10 +364,11 @@ class SupabaseConversationStore(KhoNguoiMua):
     _COT_DU_AN_MUA = ("id,name,developer,province,district,ward,location_raw,legal_status,handover_date,handover,status_text,"
                       "price_min,price_max,amenities,specs,unit_types")
 
-    def tra_du_an(self, ten: str) -> dict[str, Any]:
+    def tra_du_an(self, ten: str, theo_nghia: Callable[[str], list[dict]] | None = None) -> dict[str, Any]:
         """Khách MUA hỏi thông tin dự án → dữ kiện trong kho `projects` + kiến thức chủ dự án duyệt `du_an_kien_thuc` (SRS-5.1zzzzzzz184).
         `khop`: "ro" (tên trùng hẳn) · "gan" (đúng MỘT dự án gần tên — bot nhắc tên đầy đủ để khách xác nhận) · "nhieu" (từ hai dự án — hỏi
-        lại, chưa kể) · "khong" (kho chưa có) · "loi" (tra lỗi mạng). Chỉ ĐỌC; không ghi gì lên DB."""
+        lại, chưa kể) · "khong" (kho chưa có) · "loi" (tra lỗi mạng). Chỉ ĐỌC; không ghi gì lên DB. `theo_nghia` (SRS-5.1zzzzzzz185): khi tra theo
+        chữ không ra dòng nào, hỏi vector nghĩa của kho (`TraDiaDanh.du_an_theo_nghia`) — kết quả vector KHÔNG BAO GIỜ là "ro", luôn để khách xác nhận."""
         ten = str(ten or "").strip()
         kq: dict[str, Any] = {"ten_khach": ten, "khop": "khong"}
         if len(ten) < 3:
@@ -389,7 +390,20 @@ class SupabaseConversationStore(KhoNguoiMua):
             except Exception as e:  # noqa: BLE001 — coi như kho chưa có, bot nói thật
                 log.warning("tra_du_an khớp một phần lỗi: %s", e)
                 ds = []
-        ro = next((x for x in ds if cung_ten_du_an(ten, x.get("name"))), None)
+        theo_vec = False
+        if not ds and theo_nghia is not None:
+            try:   # chữ không ra: tìm theo NGHĨA ("khu căn hộ ven sông Thủ Thiêm" → vector tên + mô tả dự án đã nhúng sẵn `projects.nhung`)
+                gan = [d for d in theo_nghia(ten) if d.get("khoa")]
+                if gan:
+                    ids = ",".join(urllib.parse.quote(str(d["khoa"])) for d in gan)
+                    dong = self._get(f"projects?id=in.({ids})&select={self._COT_DU_AN_MUA}")
+                    thu_tu = {str(d["khoa"]): i for i, d in enumerate(gan)}
+                    ds = sorted((x for x in dong if isinstance(x, dict)), key=lambda x: thu_tu.get(str(x.get("id")), 9))
+                    theo_vec = bool(ds)
+            except Exception as e:  # noqa: BLE001 — vector là phần thêm; hỏng thì coi như kho chưa có
+                log.warning("tra_du_an theo nghĩa lỗi: %s", e)
+                ds = []
+        ro = None if theo_vec else next((x for x in ds if cung_ten_du_an(ten, x.get("name"))), None)
         if ro:
             kq["khop"], kq["du_an"] = "ro", ro
         elif len(ds) == 1:

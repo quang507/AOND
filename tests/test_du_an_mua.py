@@ -15,9 +15,9 @@ KT = "# Ny'ah Phú Định — kiến thức dự án\n- Cổng 1: 58A Trương 
 
 
 class KhoDuAn(KhoGia):
-    def __init__(self, ds=(), kien_thuc=KT, mot_phan=()):
+    def __init__(self, ds=(), kien_thuc=KT, mot_phan=(), theo_id=()):
         super().__init__()
-        self.ds, self.kien_thuc, self.mot_phan = list(ds), kien_thuc, list(mot_phan)
+        self.ds, self.kien_thuc, self.mot_phan, self.theo_id = list(ds), kien_thuc, list(mot_phan), list(theo_id)
 
     def _request(self, method, endpoint, data=None, prefer=None):
         if method == "POST" and endpoint.startswith("rpc/match_projects"):
@@ -29,6 +29,10 @@ class KhoDuAn(KhoGia):
         if endpoint.startswith("projects?name=ilike."):   # khớp một phần tên (khi match_projects không ra dòng nào)
             self.goi.append(("GET", endpoint, None))
             return list(self.mot_phan)
+        if endpoint.startswith("projects?id=in."):        # tra theo nghĩa: lấy dòng theo id vector trả
+            self.goi.append(("GET", endpoint, None))
+            ids = endpoint.split("in.(")[1].split(")")[0].split(",")
+            return [x for x in self.theo_id if str(x["id"]) in ids]
         if endpoint.startswith("du_an_kien_thuc?ten=eq."):
             self.goi.append(("GET", endpoint, None))
             return [{"du_lieu": {"docs": [{"markdown": self.kien_thuc}]}}] if self.kien_thuc else []
@@ -109,3 +113,56 @@ def test_so_trong_loi_bot_lech_khoi_du_an_bi_soat_con_so_trong_khoi_thi_qua():
     la = _so_khong_co_trong_can("Giá từ 3 tỷ nha anh.", [], conv, khoi)
     assert la and "3 tỷ" in la[0]
     assert _so_khong_co_trong_can("Giá từ 3 tỷ nha anh.", [], conv, "") == []   # không có khối dự án và không có căn thì không soát
+
+
+def test_chu_khong_ra_thi_tra_theo_nghia_va_khong_bao_gio_la_ro():
+    """SRS-5.1zzzzzzz185: "khu căn hộ ven sông Thủ Thiêm" không có tên dự án nào trong chữ → hỏi vector `projects.nhung`; kết quả vector chỉ là
+    "gan" / "nhieu" để khách xác nhận, kể cả khi tên trả về trùng hẳn tên khách gõ."""
+    masteri = {**NYAH, "id": "m1", "name": "Masteri Thảo Điền"}
+    an_phu = {**NYAH, "id": "m2", "name": "Masteri An Phú"}
+    kho = KhoDuAn([], theo_id=[masteri, an_phu])
+    mot = kho.tra_du_an("căn hộ ven sông Thảo Điền", theo_nghia=lambda t: [{"khoa": "m1", "ten": "Masteri Thảo Điền", "do_gan": 0.8}])
+    assert mot["khop"] == "gan" and mot["du_an"]["name"] == "Masteri Thảo Điền"
+    nhieu = KhoDuAn([], theo_id=[masteri, an_phu]).tra_du_an(
+        "căn hộ gần Thảo Điền", theo_nghia=lambda t: [{"khoa": "m2", "ten": "Masteri An Phú", "do_gan": 0.79}, {"khoa": "m1", "ten": "Masteri Thảo Điền", "do_gan": 0.78}])
+    assert nhieu["khop"] == "nhieu" and nhieu["ung_vien"] == ["Masteri An Phú", "Masteri Thảo Điền"]      # giữ thứ tự gần nhất trước
+    tron = KhoDuAn([], theo_id=[masteri]).tra_du_an("Masteri Thảo Điền", theo_nghia=lambda t: [{"khoa": "m1", "ten": "Masteri Thảo Điền", "do_gan": 0.95}])
+    assert tron["khop"] == "gan"                                                                       # vector không bao giờ là "ro"
+
+
+def test_theo_nghia_khong_chay_khi_chu_da_ra_hoac_vector_hong_hoac_rong():
+    goi = []
+    kho = KhoDuAn([NYAH])
+    assert kho.tra_du_an("Nyah Phú Định", theo_nghia=lambda t: goi.append(t) or [])["khop"] == "ro" and not goi    # chữ ra rồi: khỏi tốn Gemini
+
+    def hong(t):
+        raise RuntimeError("Gemini 429")
+    assert KhoDuAn([]).tra_du_an("khu nhà phố ven sông", theo_nghia=hong)["khop"] == "khong"
+    assert KhoDuAn([]).tra_du_an("khu nhà phố ven sông", theo_nghia=lambda t: [])["khop"] == "khong"
+
+
+def test_du_an_theo_nghia_chi_giu_dong_dat_nguong_va_sat_dong_dau():
+    from tests.test_dia_danh import _tra
+    nghia = [{"loai": "du_an", "khoa": "a", "ten": "A", "do_gan": 0.80}, {"loai": "du_an", "khoa": "b", "ten": "B", "do_gan": 0.78},
+             {"loai": "du_an", "khoa": "c", "ten": "C", "do_gan": 0.60}, {"loai": "duong", "khoa": "d", "ten": "D", "do_gan": 0.9}]
+    t, goi = _tra(nghia=nghia)
+    assert [d["ten"] for d in t.du_an_theo_nghia("khu ven sông")] == ["A", "B"] and "nhung" in goi     # C xa dòng đầu; loại khác bị bỏ
+    t2, _ = _tra(nghia=[{"loai": "du_an", "khoa": "a", "ten": "A", "do_gan": 0.3}])
+    assert t2.du_an_theo_nghia("khu ven sông") == [] and t2.du_an_theo_nghia("  ") == []
+    t3, _ = _tra(nghia=nghia, nhung_loi=True)
+    assert t3.du_an_theo_nghia("khu ven sông") == []
+
+
+def test_engine_chuyen_ham_tra_theo_nghia_cua_dia_danh_vao_tra_du_an():
+    """Đỏ khi `_viec_mua` không nối `TraDiaDanh.du_an_theo_nghia` vào `tra_du_an` (vector có sẵn mà không ai gọi — chủ dự án 25/10: "tưởng có sẵn rồi")."""
+    from aioi.engine import Engine
+
+    class DiaDanhGia:
+        def du_an_theo_nghia(self, ten):
+            return [{"khoa": "p1", "ten": "Ny'ah Phú Định", "do_gan": 0.8}]
+    kho = KhoDuAn([], theo_id=[NYAH])
+    base, ai = _engine(kho, {**KHACH_MUA, "mua": {"hoi_du_an": "khu nhà phố quận 8", "trich_dan": "khu nhà phố quận 8"}})
+    eng = Engine(ai, conversation_store=kho, dia_danh=DiaDanhGia())
+    eng.handle("mua-da-4", "Có khu nhà phố quận 8 nào không em")
+    khoi = [s for s in ai.system if du_an_mua.TIEU_DE in s]
+    assert khoi and 'nhắc TÊN ĐẦY ĐỦ "Ny\'ah Phú Định"' in khoi[-1]

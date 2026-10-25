@@ -26,6 +26,7 @@ log = logging.getLogger("aioi.dia_danh")
 URL_NHUNG = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent"
 SO_CHIEU = 768
 NGUONG_NGHIA = 0.55
+BIEN_NGHIA_DU_AN = 0.04   # dự án thứ hai trở đi chỉ tính khi sát dự án đầu trong chừng này (độ gần cosine)
 
 LOAI_PHUONG = ("phuong_moi", "phuong_cu")
 LOAI_KHONG_PHAI_DUONG = ("phuong_moi", "phuong_cu", "quan_cu", "du_an")
@@ -177,6 +178,24 @@ class TraDiaDanh:
             log.warning("nhúng câu tìm lỗi: %s", e)
             return []
         return self._thu("tim_dia_danh_theo_nghia", {"p_vec": vec, "p_loai": list(loai) if loai else None, "p_limit": 10})
+
+    def du_an_theo_nghia(self, ten: str | None) -> list[dict]:
+        """Dự án trong kho `projects` gần NGHĨA chữ khách gõ (SRS-5.1zzzzzzz185) — dùng khi tra theo chữ không ra dòng nào. Trả các dòng
+        {khoa (id dự án), ten, do_gan} đạt `NGUONG_NGHIA`, gần nhất trước, tối đa 3 và cách dòng đầu không quá `BIEN_NGHIA_DU_AN`;
+        không nhúng được / không dòng nào đạt → []."""
+        ten = (ten or "").strip()
+        if not ten:
+            return []
+        ds = [u for u in self._theo_nghia(ten, ("du_an",)) if u.get("loai") == "du_an" and (u.get("do_gan") or 0) >= NGUONG_NGHIA]
+        ds.sort(key=lambda u: -(u.get("do_gan") or 0))
+        if not ds:
+            return []
+        dau = ds[0].get("do_gan") or 0
+        kq = [{"khoa": u.get("khoa"), "ten": u.get("ten"), "do_gan": u.get("do_gan")} for u in ds[:3]
+              if dau - (u.get("do_gan") or 0) <= BIEN_NGHIA_DU_AN and u.get("khoa")]
+        if kq:
+            log.info("dự án theo nghĩa: %r → %s", ten, [k["ten"] for k in kq])
+        return kq
 
     def quan(self, ten: str | None) -> str | None:
         """Tên quận / huyện cũ chuẩn ("q5" → "Quận 5"); không chắc → None."""
