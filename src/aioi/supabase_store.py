@@ -638,6 +638,13 @@ class SupabaseConversationStore(KhoNguoiMua):
             return {}
         return {r["khoa"]: r["cau"] for r in self._get("cau_mau?select=khoa,cau") if r.get("khoa") and r.get("cau")}
 
+    def phap_ly_tu_kho(self) -> dict[str, dict]:
+        """Kho kiến thức pháp lý admin sửa trên DB (bảng `kien_thuc_phap_ly`, SRS-5.1zzzzzzz176) — khoá → {tra_loi, cap_nhat}."""
+        if not self.is_configured:
+            return {}
+        return {r["khoa"]: {"tra_loi": r.get("tra_loi"), "cap_nhat": str(r.get("cap_nhat") or "")}
+                for r in self._get("kien_thuc_phap_ly?select=khoa,tra_loi,cap_nhat") if r.get("khoa")}
+
     # --- Khách chấm sao cho AI (SRS-5.1zzzzzzz104) --------------------------
 
     def da_xin_danh_gia(self, user_key: str) -> bool:

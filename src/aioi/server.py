@@ -19,6 +19,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from . import cau_mau
+from . import phap_ly
 from .anh_du_an import anh_gui_kem
 from .anh_can import anh_can_gui_kem
 from .config import load_settings
@@ -91,6 +92,7 @@ def _init_engine() -> Engine:
         )
         log.info("Initialized SupabaseConversationStore (Single Source of Truth) at %s", settings.supabase_url)
         cau_mau.dang_ky(conv_store.cau_mau_tu_kho)   # câu mẫu chủ dự án sửa ở CRM (SRS-5.1zzzzzzz106)
+        phap_ly.dang_ky(conv_store.phap_ly_tu_kho)   # kho pháp lý admin sửa trên DB (SRS-5.1zzzzzzz176)
     else:
         conv_store = sqlite_store
         log.info("Initialized local SqliteConversationStore at %s", settings.db_path)
