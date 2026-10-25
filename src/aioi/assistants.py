@@ -9,10 +9,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Kho 20 tên người thật thân thiện, đậm chất môi giới địa phương (từ Nhadat.cc).
+# Kho 30 tên người thật thân thiện, đậm chất môi giới địa phương (từ Nhadat.cc).
 ASSISTANT_NAMES: list[str] = [
     "Thảo", "Hương", "Linh", "Trang", "Ngọc", "Vy", "Nhung", "Yến", "Hằng", "Thư",
     "Tuấn", "Hùng", "Khoa", "Duy", "Quân", "Huy", "Đạt", "Khang", "Thắng", "Toàn",
+    # SRS-5.1zzzzzzz181 (chủ dự án 25/10/2026): thêm tên dạng phụ âm + "ai" — thêm hay bớt dấu vẫn là từ có nghĩa. Chỉ thêm tên chủ dự án duyệt.
+    "Thái", "Mai", "Hải", "Lai", "Khải", "Tài", "Đại", "Đài", "Nhài", "Giai",
 ]
 
 # Tên mặc định đại diện cho nhánh Người bán và Người mua

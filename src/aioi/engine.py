@@ -2272,6 +2272,8 @@ class Engine:
             # Haiku có khối "Kho hẻm" trong prompt vẫn hỏi trống "nhà mình thuộc phường nào". Kiểm ở _soat_hinh_thuc.
             hem_phai_nhac = ([] if is_listing_post or "phuong" not in (cum_hoi or [next_field])
                              else phuong_kho_hem(self._dia_danh, conv.prop.fields))
+            if not is_listing_post:
+                system += self._khoi_hoi_du_an(conv)   # SRS-5.1zzzzzzz181: kho có đúng một dự án cùng đường → hỏi xác nhận MỘT lần
         if conv.y_luot.get("da_tra_loi_khach"):
             system += ("\nEM VỪA CHUYỂN câu trả lời của anh/chị cho khách mua đang hỏi (hệ thống báo khách ngay). Cảm ơn ngắn gọn, "
                        "nói em đã báo khách rồi, rồi mới tiếp chuyện tin rao.\n")
@@ -3592,6 +3594,7 @@ class Engine:
             system += f"\nĐỊA CHỈ ĐANG GHI của căn đang nói tới: {conv.prop.fields['dia_chi']}\n"
         with _do(conv, "dia_danh"):
             system += goi_y_duong(self._dia_danh, conv.prop.fields)   # SRS-5.1zzzzzzz61: khách xác nhận tên đường kho gợi ý → AI ghi
+        system += self._khoi_du_an_da_hoi(conv)   # SRS-5.1zzzzzzz181: khách xác nhận dự án kho gợi ý → AI ghi du_an
         # Phía mua (SRS-5.1zzzzzzz70): khách mua thấy căn đang có (AI chỉ đúng mã); người rao thấy câu khách đang hỏi họ.
         kho = self._convstore
         conv.can_mua, conv.cau_hoi_cho = [], []
@@ -3835,6 +3838,39 @@ class Engine:
             log.warning("can_dang_noi: %s", e)
             ds = []
         return ds[0] if ds else None
+
+    def _khoi_hoi_du_an(self, conv: "Conversation") -> str:
+        """Kho có ĐÚNG MỘT dự án cùng đường với căn mà khách chưa nói dự án khớp → bảo model hỏi xác nhận MỘT lần (SRS-5.1zzzzzzz181,
+        chủ dự án 25/10: "nối project_id… có cần hỏi lại ko" → hỏi khi chưa chắc, gắn khi khách gật). Cờ `_goi_y_du_an` ghi tên đã hỏi
+        (lưu cùng tin) nên không hỏi lại; chưa hết hỏi đường (`goi_y_duong`) thì để lượt sau — mỗi lượt một câu."""
+        f = conv.prop.fields
+        tra = getattr(self._convstore, "du_an_goi_y", None)
+        if tra is None or conv.role == "buyer" or f.get("_goi_y_du_an") or not f.get("duong") or goi_y_duong(self._dia_danh, f):
+            return ""
+        try:
+            with _do(conv, "du_an"):
+                d = tra(f)
+        except Exception as e:  # noqa: BLE001 — không hỏi lượt này, tin vẫn đi
+            log.warning("du_an_goi_y lỗi: %s", e)
+            return ""
+        if not d or not d.get("name"):
+            return ""
+        f["_goi_y_du_an"] = str(d["name"])
+        return (f'\n\nDỰ ÁN GỢI Ý (hệ thống tra kho dự án theo tên đường, KHÔNG phải khách nói): kho có dự án "{d["name"]}" ở cùng đường với căn '
+                "này. Lượt này hỏi khéo xác nhận MỘT lần, thay cho câu hỏi kế (theo đúng cách xưng hô lượt này), dạng HỎI "
+                f'("căn này thuộc dự án {d["name"]} đúng không ạ?"), KHÔNG khẳng định. Khách nói không hoặc lờ đi thì thôi, không hỏi lại.')
+
+    @staticmethod
+    def _khoi_du_an_da_hoi(conv: "Conversation") -> str:
+        """Lượt SAU khi bot hỏi dự án gợi ý: dặn lượt AI lập thao tác ghi `du_an` khi khách xác nhận (đúng một lượt, rồi đóng cờ)."""
+        f = conv.prop.fields
+        cu = str(f.get("_goi_y_du_an") or "")
+        if not cu or cu.endswith("|xong"):
+            return ""
+        f["_goi_y_du_an"] = cu + "|xong"
+        return (f'BOT VỪA HỎI căn này có thuộc dự án "{cu}" không (kho gợi ý theo tên đường). Khách xác nhận đúng (vd "đúng rồi", "ừ", "phải") → ghi '
+                f'du_an = "{cu}", cụm trích = lời xác nhận của khách; khách nói không hoặc nêu tên khác → ghi theo lời khách hoặc để trống; '
+                "không nhắc tới → không ghi.\n")
 
     def _can_goi_y(self, conv: Conversation) -> list[dict]:
         """Căn gợi ý cho khách mua, bỏ căn khách đã chê (SRS-5.1zzzzzzz175) — MỘT cửa cho cả lượt lập thao tác lẫn lượt trả lời."""

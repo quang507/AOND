@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import copy
+import difflib
 import queue
 import re
 import threading
@@ -115,6 +116,23 @@ def cung_ten_du_an(khach: str | None, kho: str | None) -> bool:
     "Vinhomes Grand Park" ≠ "Glory Heights - Vinhomes Grand Park" (toà con — không đoán)."""
     a, b = _khoa_ten_du_an(khach), _khoa_ten_du_an(kho)
     return bool(a) and a == b
+
+
+_TU_CHUNG_DU_AN = frozenset({"khu", "nha", "pho", "can", "ho", "chung", "cu", "du", "an", "dan", "do", "thi", "cao", "oc", "toa", "city",
+                            "garden", "residence", "apartment", "tower", "block", "project", "villa", "shophouse", "phan", "dat", "nen"})
+
+
+def _tu_ten_du_an(ten: str | None) -> list[str]:
+    """Từ lõi của tên dự án: bỏ dấu, dính nháy ("Ny'ah" → "nyah"), bỏ từ chung (khu / nhà / phố / city…), từ ≥ 4 ký tự."""
+    t = re.sub(r"[^a-z0-9 ]+", " ", bo_dau(str(ten or "")).replace("'", "").replace("’", ""))
+    return [w for w in t.split() if len(w) >= 4 and w not in _TU_CHUNG_DU_AN]
+
+
+def ten_gan_giong_du_an(khach: str | None, kho: str | None) -> bool:
+    """Tên khách nói GẦN GIỐNG tên trong kho (SRS-5.1zzzzzzz181): có một từ lõi của khách trùng / chỉ lệch ≤ 1 ký tự với một từ lõi của kho
+    ("NYAL" ≈ "Nyah", từ lõi 4 ký tự lệch 1). Chỉ dùng khi ĐỊA CHỈ cũng khớp (cùng đường) — tên gần giống một mình không đủ để gắn."""
+    a, b = _tu_ten_du_an(khach), _tu_ten_du_an(kho)
+    return any(x == y or difflib.SequenceMatcher(None, x, y).ratio() >= 0.75 for x in a for y in b)
 
 
 def ma_loai_db(loai: str | None) -> str | None:
@@ -317,10 +335,40 @@ class SupabaseConversationStore(KhoNguoiMua):
                 self._du_an_nho.clear()
             self._du_an_nho[ten] = next((x for x in (da if isinstance(da, list) else []) if cung_ten_du_an(ten, x.get("name"))), None)
             if self._du_an_nho[ten] is None:
+                # Tên khác nhưng GẦN GIỐNG + cùng đường với đúng một dự án trong kho → gắn thẳng, không hỏi (SRS-5.1zzzzzzz181).
+                gan = [x for x in self._du_an_cung_duong(fields) if ten_gan_giong_du_an(ten, x.get("name"))]
+                self._du_an_nho[ten] = gan[0] if len(gan) == 1 else None
+            if self._du_an_nho[ten] is None:
                 if len(hut) > 500:
                     hut.clear()
                 hut[ten] = time.time()
         return self._du_an_nho[ten]
+
+    def _du_an_cung_duong(self, fields: dict[str, Any]) -> list[dict[str, Any]]:
+        """Dự án trong kho có ĐỊA CHỈ chứa tên đường của căn (kho mogi: cả 2.361 dự án có `location_raw`), bỏ dự án khác phường khi cả hai
+        biết phường. Tối đa 3 dòng; lỗi mạng → []."""
+        duong = str(fields.get("duong") or "").strip()
+        if len(duong) < 4:
+            return []
+        chu = re.sub(r"[*%,()&]", " ", duong).strip()
+        try:
+            dong = self._nho_tra("du_an_cung_duong", chu, lambda: self._get(
+                f"projects?location_raw=ilike.*{urllib.parse.quote(chu)}*&select=id,name,ward,district,location_raw&limit=3"))
+        except Exception as e:  # noqa: BLE001 — không gợi ý / không gắn lượt này
+            log.warning("du_an_cung_duong lỗi: %s", e)
+            return []
+        phuong = _khoa_ten_du_an(str(fields.get("phuong") or ""))
+        return [d for d in (dong if isinstance(dong, list) else [])
+                if not (phuong and d.get("ward") and _khoa_ten_du_an(str(d["ward"])) != phuong)]
+
+    def du_an_goi_y(self, fields: dict[str, Any]) -> dict[str, Any] | None:
+        """Dự án trong kho CÓ THỂ là nơi căn này nằm, để bot HỎI xác nhận một lần (SRS-5.1zzzzzzz181). Chat chị N. 20/10: "Khu nhà phố NYAL"
+        ở 198 Trương Đình Hội — kho có "Ny'ah Phú Định" (58A Trương Đình Hội). Tên đã khớp (rõ hoặc gần giống + cùng đường) thì `_du_an`
+        gắn thẳng, không hỏi. Còn lại: đúng MỘT dự án trong kho cùng đường (cùng phường nếu cả hai biết) → gợi ý; từ hai trở lên → None."""
+        if self._du_an(fields):
+            return None
+        hop = self._du_an_cung_duong(fields)
+        return hop[0] if len(hop) == 1 else None
 
     def _nho_tra(self, ten: str, chu: str, goi: Callable[[], Any]) -> Any:
         """Kết quả hàm tra CỐ ĐỊNH của DB (cùng chữ vào → cùng kết quả ra) nhớ trong bộ nhớ (SRS-5.1zzzzzzz92: mỗi lượt lưu 2–3 lần, mỗi
