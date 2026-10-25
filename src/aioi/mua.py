@@ -96,7 +96,33 @@ def _can_xe_hoi(v: Any) -> bool:
 
 
 # Ô nhu cầu mang NGHĨA (khách tả bằng lời) — những ô này mới đáng nhúng; số / khu vực / giá đã lọc hoặc tính điểm bằng cột.
-_O_NGHIA = ("moi_truong_song", "thanh_vien", "noi_lam_viec", "muc_dich")
+_O_NGHIA = ("moi_truong_song", "thanh_vien", "noi_lam_viec", "muc_dich", "tien_ich_mong_muon")
+
+# Loại tiện ích quanh căn (SRS-5.1zzzzzzz179 mục 2) — CÙNG 5 loại `geocode-listings` ghi vào `listings.tien_ich_gan` từ Overpass
+# (`_shared/geocode.ts` loaiTuTags). AI đã đọc ý khách ra ô `tien_ich_mong_muon` / `moi_truong_song`; ở đây chỉ ánh xạ chữ khách sang mã loại
+# cố định (tra bảng, không đoán ý). Thêm loại = thêm ở cả geocode.ts lẫn đây.
+TIEN_ICH_LOAI: dict[str, tuple[str, tuple[str, ...]]] = {
+    "truong_hoc": ("trường học", ("truong", "school", "mam non", "mẫu giáo", "dai hoc")),
+    "benh_vien": ("bệnh viện", ("benh vien", "bv ", "hospital", "phong kham", "y te")),
+    "cho": ("chợ", ("cho ", "cho,", "cho.", "market")),
+    "sieu_thi": ("siêu thị", ("sieu thi", "supermarket", "mall", "trung tam thuong mai")),
+    "cong_vien": ("công viên", ("cong vien", "park", "cay xanh")),
+}
+
+
+def _khong_dau(s: str) -> str:
+    import unicodedata
+    s = unicodedata.normalize("NFD", str(s or "").lower()).replace("đ", "d")
+    return "".join(ch for ch in s if unicodedata.category(ch) != "Mn")
+
+
+def loai_tien_ich(lead: Any) -> list[str]:
+    """Mã loại tiện ích khách muốn gần, đọc từ ô `tien_ich_mong_muon` (AI trích) và `moi_truong_song`; thứ tự cố định theo bảng. Rỗng = không lọc."""
+    f = getattr(lead, "fields", {}) or {}
+    chu = " " + _khong_dau(" . ".join(str(f.get(k) or "") for k in ("tien_ich_mong_muon", "moi_truong_song"))) + " "
+    if not chu.strip():
+        return []
+    return [ma for ma, (_, tu) in TIEN_ICH_LOAI.items() if any(t in chu for t in tu)]
 
 
 def _chu_nhu_cau(lead: Any) -> str:
@@ -240,6 +266,7 @@ class KhoNguoiMua:
             "p_pn_min": (int(_so_dau(getattr(lead, "so_phong_ngu", None) or f.get("so_phong_ngu")) or 0) or None),
             "p_xe_hoi": _can_xe_hoi(getattr(lead, "yeu_cau_xe_hoi", None) or f.get("yeu_cau_xe_hoi")),
             "p_limit": toi_da,
+            "p_tien_ich": loai_tien_ich(lead) or None,   # SRS-5.1zzzzzzz179: loại tiện ích khách muốn gần (≤ 1 km, cộng điểm)
         }
         tham_so["p_vec"] = self._vec_nhu_cau(lead)
         khoa = repr(sorted((k, v) for k, v in tham_so.items() if k != "p_vec")) + "|" + _chu_nhu_cau(lead)
@@ -590,7 +617,28 @@ def danh_dau_lech(can: list[dict], lead: Any) -> list[dict]:
         a = c.get("area_m2")
         if dt and isinstance(a, (int, float)) and a < dt:
             c["_nho_dt"] = (float(a), float(dt))
+        # SRS-5.1zzzzzzz179 mục 2: khách muốn gần tiện ích mà căn chưa có dữ liệu (toạ độ chỉ cấp phường / Overpass chưa chạy) hoặc loại đó
+        # không có trong 1 km → ghi rõ để bot nói "chưa rõ", không nói "gần trường" khi dữ liệu không có (lỗi MOSO AI mắc 25/10).
+        muon = loai_tien_ich(lead)
+        if muon:
+            gan = c.get("tien_ich_gan")
+            co = {t.get("loai") for t in gan if isinstance(t, dict) and _so_dau(t.get("m")) is not None and _so_dau(t.get("m")) <= 1000} \
+                if isinstance(gan, list) else set()
+            thieu = [TIEN_ICH_LOAI[m][0] for m in muon if m not in co]
+            if thieu:
+                c["_chua_ro_tien_ich"] = thieu
     return can
+
+
+def gia_moi_m2(c: dict) -> str | None:
+    """"≈ 83,3 triệu/m²" từ `price_vnd` / `area_m2` (SRS-5.1zzzzzzz179 mục 4; MOSO hiện giá/m² trên mỗi thẻ). Thiếu một trong hai → None.
+    Tin thuê (deal cho_thue) không tính — giá tháng chia m² không có nghĩa với khách."""
+    gia, dt = c.get("price_vnd"), c.get("area_m2")
+    if c.get("deal") == "cho_thue" or not isinstance(gia, (int, float)) or not isinstance(dt, (int, float)) or gia <= 0 or dt <= 0:
+        return None
+    trieu = gia / dt / 1_000_000
+    chu = f"{trieu:,.1f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"≈ {chu} triệu/m²"
 
 
 def dong_can(c: dict) -> str:
@@ -601,6 +649,11 @@ def dong_can(c: dict) -> str:
         phan.append(f"{c['area_m2']:g} m²" if isinstance(c["area_m2"], (int, float)) else f"{c['area_m2']} m²")
     if c.get("price_raw"):
         phan.append(f"giá {c['price_raw']}")
+    gm2 = gia_moi_m2(c)
+    if gm2:
+        phan.append(gm2)
+    if c.get("chinh_chu") is True:
+        phan.append("chính chủ rao")
     if c.get("bedrooms"):
         phan.append(f"{c['bedrooms']} phòng ngủ")
     if c.get("floors_text"):
@@ -620,6 +673,8 @@ def dong_can(c: dict) -> str:
         phan.append(f"CHƯA RÕ số phòng ngủ (khách cần {can_})" if co is None else f"ÍT phòng ngủ hơn khách cần (có {co}, khách cần {can_})")
     if c.get("_nho_dt"):
         phan.append(f"NHỎ hơn diện tích khách muốn ({c['_nho_dt'][0]:g} m², khách muốn {c['_nho_dt'][1]:g} m²)")
+    if c.get("_chua_ro_tien_ich"):
+        phan.append("CHƯA RÕ có gần " + " / ".join(c["_chua_ro_tien_ich"]) + " không (hệ thống chưa có dữ liệu tiện ích quanh căn này)")
     so_anh = c.get("_so_anh")
     if isinstance(so_anh, int):
         phan.append(f"ảnh: có {so_anh} ảnh, tự gửi kèm khi dán link; khách xin ảnh thì hệ thống gửi (kể cả xin lại)" if so_anh else "ảnh: CHƯA có ảnh nào trên hệ thống")
@@ -653,9 +708,10 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
             "nhiên, đúng xưng hô). Luật khen: nếu có điều đáng khen khách vừa nói thì mở bằng MỘT lời khen ngắn gắn đúng điều đó, cùng đoạn này — "
             "không bịa thị trường, không bình luận giá, không thêm chi tiết khách chưa nói.\n"
             "      (2) Thông số ngắn (khu vực, diện tích, giá, phòng ngủ) rồi VÌ SAO HỢP — kể lại ĐÚNG phần \"vì sao hợp\" của căn, không thêm. "
-            "Căn ghi \"KHÁC khu vực\", \"VƯỢT ngân sách\", \"ÍT phòng ngủ\", \"CHƯA RÕ số phòng ngủ\" hay \"NHỎ hơn diện tích\" thì nói thẳng "
-            "MỌI điểm lệch đó trong một câu ngắn ở đoạn này (khác khu nào / vượt bao nhiêu % / thiếu mấy phòng), không giấu điểm nào; chỉ đưa "
-            "căn như vậy khi không có căn đúng.\n"
+            "Căn ghi \"KHÁC khu vực\", \"VƯỢT ngân sách\", \"ÍT phòng ngủ\", \"CHƯA RÕ số phòng ngủ\", \"NHỎ hơn diện tích\" hay \"CHƯA RÕ có gần "
+            "…\" thì nói thẳng MỌI điểm lệch đó trong một câu ngắn ở đoạn này (khác khu nào / vượt bao nhiêu % / thiếu mấy phòng / chưa rõ gần "
+            "trường nào), không giấu điểm nào; chỉ đưa căn như vậy khi không có căn đúng. Tiện ích gần (trường, chợ…) CHỈ nói khi dòng căn ghi "
+            "\"gần <tên> ~<m> m\" — không có thì KHÔNG nói gần, không đoán. Giá mỗi m² chỉ nói khi dòng căn có \"≈ … triệu/m²\".\n"
             "      (3) Link: dán nguyên văn dòng \"link …\" của căn để khách xem chi tiết. Dòng căn ghi \"có … ảnh\" thì ảnh tự gửi kèm ngay sau, không "
             "cần nhắc; ghi \"CHƯA có ảnh\" thì sẽ KHÔNG có ảnh nào gửi kèm.\n"
             "      (4) Tối đa MỘT câu hỏi, thật ngắn (khoảng 15 chữ), không giải thích vì sao hỏi — câu thông tin cần hỏi tiếp ở trên, hoặc hỏi khách "

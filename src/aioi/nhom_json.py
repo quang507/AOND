@@ -26,7 +26,8 @@ NHOM_O: dict[str, tuple[str, ...]] = {
 # Ô không phải thông số căn: ảnh (đếm riêng ở khối `nhap`), ô riêng của chủ (schema.O_NOI_BO — không in ra), ô của người mua.
 BO_QUA = frozenset({"hinh_anh"}) | O_NOI_BO
 O_NGUOI_MUA = frozenset({"khu_vuc", "ngan_sach", "loai_bds", "yeu_cau_xe_hoi", "muc_dich", "tien_do_mua", "vay_ngan_hang", "nhan_nha_khi_nao",
-                         "moi_truong_song", "thanh_vien", "noi_lam_viec", "dien_tich_mong_muon", "nguoi_quyet_dinh", "loai_giao_dich"})
+                         "moi_truong_song", "thanh_vien", "noi_lam_viec", "dien_tich_mong_muon", "tien_ich_mong_muon", "nguoi_quyet_dinh",
+                         "loai_giao_dich"})
 
 _NHOM_CUA_O = {o: nhom for nhom, cac_o in NHOM_O.items() for o in cac_o}
 

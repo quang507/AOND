@@ -597,9 +597,13 @@ def khoi_ngoai_viec(conv: "Conversation") -> str:
             "khách muốn, em nối anh/chị phụ trách để hỏi giúp — hỏi MỘT câu khách có muốn không. KHÔNG nói đã báo ai.\n")
 
 
-def khoi_phap_ly(conv: "Conversation") -> str:
-    """Khối dặn model khi khách hỏi pháp lý / thủ tục (SRS-5.1zzzzzzz176) — nội dung từ kho `phap_ly`, luôn kèm "tham khảo"."""
-    return phap_ly.khoi_luot(conv.y_luot.get("hoi_phap_ly"), bool(conv.y_luot.get("phap_ly_nhay_cam")))
+def khoi_phap_ly(conv: "Conversation", can: dict | None = None) -> str:
+    """Khối pháp lý của lượt (SRS-5.1zzzzzzz176). `can` (SRS-5.1zzzzzzz179 mục 3): căn khách đang nói tới ở vai mua — có giá thì kho pháp lý
+    nối dòng số thuế phí tính sẵn theo giá căn."""
+    gia = can.get("price_vnd") if isinstance(can, dict) else None
+    return phap_ly.khoi_luot(conv.y_luot.get("hoi_phap_ly"), bool(conv.y_luot.get("phap_ly_nhay_cam")),
+                             gia_can=float(gia) if isinstance(gia, (int, float)) and gia > 0 else None,
+                             ma_can=str(can.get("code")) if isinstance(can, dict) and can.get("code") else None)
 
 
 @dataclass
@@ -943,6 +947,46 @@ _BINH_LUAN_GIA = re.compile(
     r"(thanh khoản|đắt khách|dễ bán|đắc địa|người mua tìm nhiều|nhiều người (?:hỏi|tìm|quan tâm)|"
     r"(?:mức giá|giá)(?:(?!,\s)[^.!?;\n]){0,50}?(?:hợp lý|vừa tầm|cạnh tranh|mềm|quá tốt|rất tốt|tốt lắm|tốt rồi|quá rẻ|rẻ lắm)|"
     r"(?:hợp lý|vừa tầm)(?:(?!,\s)[^.!?;\n]){0,25}?(?:mức giá|giá))", re.I)   # cửa sổ dừng ở ", " (vế khác), "9,2 tỷ" vẫn qua
+
+
+_SO_DON_VI_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*(m²|m2|mét vuông|triệu\s*/\s*m[²2]|tỷ|tỉ|triệu|phòng ngủ|pn\b|tầng|lầu)", re.I)
+_SO_RE = re.compile(r"\d+(?:[.,]\d+)?")
+
+
+def _so_khong_co_trong_can(reply: str, can: list[dict] | None, conv: "Conversation", system: str = "") -> list[str]:
+    """Con số kèm đơn vị (m², tỷ, triệu, triệu/m², phòng ngủ, tầng) trong lời bot phía mua mà KHÔNG có ở dòng căn đưa cho model, khối số
+    tính sẵn (thuế phí / tài chính tham khảo) hay lời khách (SRS-5.1zzzzzzz179 mục 5 — lớp lỗi MOSO AI mắc 25/10: tóm tắt "36–57 m²" trong khi
+    thẻ hiện 21–29 m²). So số với sai số 5 % để chấp nhận làm tròn (207,9 → 208); mã tin / link / giờ không có đơn vị nên không bị soi."""
+    from .mua import dong_can
+    if not can:
+        return []
+
+    def so(v: str) -> float | None:
+        try:
+            return float(v.replace(".", "").replace(",", ".")) if v.count(",") == 1 and v.count(".") >= 1 else float(v.replace(",", "."))
+        except ValueError:
+            return None
+
+    nguon = " ".join(dong_can(c) for c in can)
+    for c in can:
+        gia = c.get("price_vnd")
+        if isinstance(gia, (int, float)) and gia > 0:
+            nguon += f" {gia / 1e9:g} {gia / 1e6:g}"
+    for t in conv.history[-8:]:
+        if t.role == "user" and t.content:
+            nguon += " " + t.content
+    for dau in ("SỐ TÍNH THEO CĂN", "SỐ LIỆU TÀI CHÍNH THAM KHẢO"):
+        k = system.find(dau)
+        if k >= 0:
+            nguon += " " + system[k:k + 1200]
+    cho_phep = {x for x in (so(m) for m in _SO_RE.findall(nguon)) if x is not None}
+    la: list[str] = []
+    for m in _SO_DON_VI_RE.finditer(reply):
+        v = so(m.group(1))
+        if v is None or any(abs(v - x) <= 0.05 * max(1.0, x) for x in cho_phep):
+            continue
+        la.append(m.group(0).strip())
+    return la
 
 
 def _binh_luan_gia(reply: str) -> str | None:
@@ -2115,7 +2159,7 @@ class Engine:
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
                            + khoi_lich_dang_cho(conv.y_luot.get("lich_cho"), customer_pronoun))
-            uu_tien = khoi_can_nguoi(conv) or khoi_phap_ly(conv)   # SRS-5.1zzzzzzz178: một khối ưu tiên, khối đó quyết lượt
+            uu_tien = khoi_can_nguoi(conv) or khoi_phap_ly(conv, self._can_dang_noi(conv, can))   # SRS-5.1zzzzzzz178: một khối ưu tiên
             system += ((uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else "") + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
             system += self._khoi_cau_chuan(conv) + self._khoi_danh_gia(conv)
@@ -2126,7 +2170,7 @@ class Engine:
             reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
                 raise LoiTraLoi("lời gửi khách rỗng")
-            reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply))
+            reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply), can_mua=can)
             if xin_sao:
                 reply = self._gan_xin_sao(conv, reply)
             conv.history.append(Turn("assistant", reply, now))
@@ -2362,7 +2406,8 @@ class Engine:
         cau = cau_xin_sao({"anh": "anh", "chi": "chị"}.get(x, "anh/chị"), em_xung_minh=(x == "em"))
         return f"{reply.rstrip()}\n\n{cau}"
 
-    def _soat_hinh_thuc(self, conv: Conversation, system: str, reply: str, phuong_phai_nhac: list[str] | None = None) -> str:
+    def _soat_hinh_thuc(self, conv: Conversation, system: str, reply: str, phuong_phai_nhac: list[str] | None = None,
+                        can_mua: list[dict] | None = None) -> str:
         """Luật HÌNH THỨC code kiểm được mà không đọc ý — lệch thì gọi lại model MỘT lần kèm lý do, không tự sửa chữ.
         Bản tin (📋) phải có giá trong tiêu đề (SRS-5.1zzzzzzz86: bắn thử 20/10, bản tin CẬP NHẬT của KB3 bỏ giá dù AD_FORMAT bắt
         buộc); không mở đầu "Dạ" (SRS-5.1zzzzzzz87). Cả nhánh bán lẫn nhánh mua. `phuong_phai_nhac` (SRS-5.1zzzzzzz115): phường kho
@@ -2410,6 +2455,11 @@ class Engine:
         if bl:
             ly_do.append(f"Lời vừa viết nhận xét giá / thị trường (\"{bl}\") — em không có dữ liệu thị trường, CẤM bình luận giá hợp lý / "
                          "đắt khách / dễ bán (luật KHEN). Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn.")
+        so_la = _so_khong_co_trong_can(reply, can_mua, conv, system) if can_mua else []
+        if so_la:
+            ly_do.append("Lời vừa viết có con số không có trong dữ liệu căn (" + ", ".join(f"\"{x}\"" for x in so_la) + ") — diện tích, giá, "
+                         "giá mỗi m², số phòng, số tầng CHỈ được lấy đúng số ở dòng của căn (hoặc số khách đã nói), không ước lượng, không "
+                         "làm tròn khác, không cộng gộp.")
         if ly_do:
             log.warning("Lời bot lệch luật hình thức (%d lý do) — gọi lại model", len(ly_do))
             with _do(conv, "tra_loi_lai"):
@@ -3758,6 +3808,22 @@ class Engine:
                 if ma:
                     return ma[:1]
         return []
+
+    def _can_dang_noi(self, conv: Conversation, can: list[dict] | None = None) -> dict | None:
+        """Căn khách mua đang nói tới (SRS-5.1zzzzzzz179 mục 3): mã trong link bot vừa dán → tìm trong `can` lượt này, không có thì tra kho; không mã → None."""
+        ma = self._ma_can_bot_vua_nhac(conv)
+        if not ma:
+            return None
+        for c in can or []:
+            if str(c.get("code") or "").upper() == ma[0].upper():
+                return c
+        tra = getattr(self._convstore, "can_theo_ma", None)
+        try:
+            ds = tra(ma) if tra is not None else []
+        except Exception as e:  # noqa: BLE001
+            log.warning("can_dang_noi: %s", e)
+            ds = []
+        return ds[0] if ds else None
 
     def _can_goi_y(self, conv: Conversation) -> list[dict]:
         """Căn gợi ý cho khách mua, bỏ căn khách đã chê (SRS-5.1zzzzzzz175) — MỘT cửa cho cả lượt lập thao tác lẫn lượt trả lời."""
