@@ -8752,6 +8752,13 @@ Chủ dự án 25/10: "Ph•ái L•ài Ho•ài dc 3 cái này nữa, à tên v
 2. **Ảnh hưởng**: `assign_assistant` chia theo băm nên kho đổi độ dài / nội dung thì khách đang chat có thể đổi tên trợ lý; tin cũ trong lịch sử giữ tên cũ.
 3. **Kiểm**: `tests/test_ten_tro_ly_moi.py` (đúng 13 tên, mỗi tên đúng một chấm và phần sau chấm kết thúc bằng "ai" khi bỏ dấu, không còn tên cũ / tên không chấm, hai tên mặc định nằm trong kho, 400 khách phủ đủ 13 tên). Tên có nghĩa là danh sách của chủ dự án, chưa đối chiếu từ điển chính thống. Chưa thử Zalo thật.
 
+### SRS-5.1zzzzzzz184 · Phía MUA tra kho dự án (25/10/2026)
+Chủ dự án 25/10: "cho bot phía mua tra kho dự án đi" (việc đã ghi ở SRS-180 mục 3: kho dự án chỉ phía BÁN dùng).
+1. **Lớp lỗi**: khách mua hỏi "dự án X có gì / của ai / pháp lý" thì model trả lời từ trí nhớ — cùng lớp "bịa số liệu" ở MOSO AI (SRS-179 mục 5). Kho có sẵn nhưng không có đường nối từ lượt mua.
+2. **Sửa**: (a) `prompts.py` — ô `mua.hoi_du_an` (nguyên văn tên dự án khách hỏi thông tin; chỉ nhắc tên làm vị trí tìm nhà thì bỏ trống). (b) `supabase_store.tra_du_an(ten)` — `match_projects` (rỗng thì khớp MỘT PHẦN tên bằng `projects?name=ilike.*…*`: DB thật 25/10 "Masteri" không ra dòng nào ở `match_projects` dù kho có 5+ dự án Masteri) rồi phân loại `ro` (tên trùng hẳn) / `gan` (đúng MỘT dự án gần tên) / `nhieu` (từ hai dự án) / `khong` / `loi`; kèm kiến thức chủ dự án duyệt (`du_an_kien_thuc.du_lieu.docs[].markdown`, đọc mới mỗi lượt). Chỉ ĐỌC. (c) `du_an_mua.py` — khối "DỰ ÁN TRONG KHO": chỉ ô có dữ liệu (chủ đầu tư, vị trí, pháp lý, bàn giao, giá niêm yết tham khảo, quy mô, loại căn, tiện ích), không đưa link nguồn mogi; luật nói thật: thiếu / dòng ⚠ → "em chưa có, kiểm tra rồi báo lại", không bình luận giá, `nhieu` → hỏi lại, `khong` → nói thật chưa có. (d) `engine._viec_mua` gọi tra khi tên nằm NGUYÊN trong tin khách (tên AI tự suy không tra); khối nối vào lời đáp phía mua; `_so_khong_co_trong_can` chạy cả khi chỉ có khối dự án (số + đơn vị trong lời bot phải có trong khối).
+3. **Chưa làm**: lọc căn đang rao theo dự án (`listings.project_id` hiện 0 — SRS-181 mới bắt đầu gắn), khách mua hỏi dự án khi `tra_du_an` lỗi chỉ nói thật chưa tra được; kiến thức chủ dự án chỉ cắt 2.800 chữ đầu. Chưa thử Zalo thật.
+4. **Kiểm**: `tests/test_du_an_mua.py` (7 ca: ô có dữ liệu mới ghi, bốn chế độ + luật nói thật, `tra_du_an` ro / gần / nhiều / không / lỗi, lượt chat có khối, tên AI tự suy không tra, không hỏi dự án thì không khối, cổng số soát lệch khối). Lỗi bắt khi viết test: lời dặn trong khối có chữ số ("2–3 ý") làm số hợp lệ giả cho cổng số — đã bỏ chữ số khỏi lời dặn.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.

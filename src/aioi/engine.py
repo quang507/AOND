@@ -34,6 +34,7 @@ from .delivery import _is_formatted_post
 from .prompts import _MO_DAU_RE   # dòng mở bản nháp "(📋) Em/Mình sẽ rao như vầy nhé…:" (SRS-5.1zzzzzzz132)
 from .prompts import khoi_khen_theo_luot
 from .danh_gia import KHOI_SAP_XIN_SAO, cau_xin_sao, doc_sao, khoi_cam_on_sao, vua_xin_sao
+from . import du_an_mua
 from .assistants import Assistant, assign_assistant
 from .drive import extract_drive_id
 from .fetch import (
@@ -958,7 +959,7 @@ def _so_khong_co_trong_can(reply: str, can: list[dict] | None, conv: "Conversati
     tính sẵn (thuế phí / tài chính tham khảo) hay lời khách (SRS-5.1zzzzzzz179 mục 5 — lớp lỗi MOSO AI mắc 25/10: tóm tắt "36–57 m²" trong khi
     thẻ hiện 21–29 m²). So số với sai số 5 % để chấp nhận làm tròn (207,9 → 208); mã tin / link / giờ không có đơn vị nên không bị soi."""
     from .mua import dong_can
-    if not can:
+    if not can and du_an_mua.TIEU_DE not in system:
         return []
 
     def so(v: str) -> float | None:
@@ -975,10 +976,10 @@ def _so_khong_co_trong_can(reply: str, can: list[dict] | None, conv: "Conversati
     for t in conv.history[-8:]:
         if t.role == "user" and t.content:
             nguon += " " + t.content
-    for dau in ("SỐ TÍNH THEO CĂN", "SỐ LIỆU TÀI CHÍNH THAM KHẢO"):
+    for dau, rong in (("SỐ TÍNH THEO CĂN", 1200), ("SỐ LIỆU TÀI CHÍNH THAM KHẢO", 1200), (du_an_mua.TIEU_DE, du_an_mua.CAT_KIEN_THUC + 2500)):
         k = system.find(dau)
         if k >= 0:
-            nguon += " " + system[k:k + 1200]
+            nguon += " " + system[k:k + rong]
     cho_phep = {x for x in (so(m) for m in _SO_RE.findall(nguon)) if x is not None}
     la: list[str] = []
     for m in _SO_DON_VI_RE.finditer(reply):
@@ -2159,6 +2160,7 @@ class Engine:
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
                            + khoi_lich_dang_cho(conv.y_luot.get("lich_cho"), customer_pronoun))
+            system += du_an_mua.khoi_du_an(conv.y_luot.get("du_an_mua"))   # SRS-5.1zzzzzzz184: dữ kiện dự án trong kho cho câu khách hỏi
             uu_tien = khoi_can_nguoi(conv) or khoi_phap_ly(conv, self._can_dang_noi(conv, can))   # SRS-5.1zzzzzzz178: một khối ưu tiên
             system += ((uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else "") + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
@@ -2468,7 +2470,7 @@ class Engine:
         if bl:
             ly_do.append(f"Lời vừa viết nhận xét giá / thị trường (\"{bl}\") — em không có dữ liệu thị trường, CẤM bình luận giá hợp lý / "
                          "đắt khách / dễ bán (luật KHEN). Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn.")
-        so_la = _so_khong_co_trong_can(reply, can_mua, conv, system) if can_mua else []
+        so_la = _so_khong_co_trong_can(reply, can_mua, conv, system) if (can_mua or du_an_mua.TIEU_DE in system) else []
         if so_la:
             ly_do.append("Lời vừa viết có con số không có trong dữ liệu căn (" + ", ".join(f"\"{x}\"" for x in so_la) + ") — diện tích, giá, "
                          "giá mỗi m², số phòng, số tầng CHỈ được lấy đúng số ở dòng của căn (hoặc số khách đã nói), không ước lượng, không "
@@ -3882,6 +3884,14 @@ class Engine:
         """Ghi việc khách mua vừa nói (quan tâm / hẹn xem / hỏi chủ nhà) lên DB — chỉ khi mã căn có thật và đang hiện, cụm thời gian
         / câu hỏi có nguyên trong tin khách. Trả (câu tả việc đã ghi cho model, danh sách căn đưa vào lời đáp)."""
         kho = self._convstore
+        # SRS-5.1zzzzzzz184: khách mua hỏi thông tin dự án → tra kho `projects` + kiến thức chủ dự án; tên dự án phải nằm nguyên trong tin khách.
+        ten_da = str((conv.y_luot.get("mua") or {}).get("hoi_du_an") or "").strip()
+        if ten_da and _trich_dan_khop(ten_da, text) and getattr(kho, "tra_du_an", None) is not None:
+            try:
+                with _do(conv, "du_an"):
+                    conv.y_luot["du_an_mua"] = kho.tra_du_an(ten_da)
+            except Exception as e:  # noqa: BLE001 — không có khối dự án thì bot không có dữ kiện, nhưng lượt vẫn đi
+                log.warning("tra_du_an lỗi: %s", e)
         if getattr(kho, "khach_mua", None) is None:
             return [], []
         lead = conv.buyer_lead
