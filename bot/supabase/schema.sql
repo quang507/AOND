@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-25 13:33 (giờ VN)
+-- Sinh lúc: 2026-10-25 13:55 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -273,6 +273,19 @@ create table if not exists public.interests (
   created_at timestamp with time zone not null default now(),
   trang_thai text not null default 'quan_tam'::text,
   ly_do text
+);
+
+create table if not exists public.kien_thuc_phap_ly (
+  khoa text not null,
+  tieu_de text not null,
+  tra_loi text not null,
+  mac_dinh text not null,
+  nguon text,
+  nhom text,
+  cap_nhat date not null default CURRENT_DATE,
+  kiem_duyet text not null default 'chua'::text,
+  thu_tu integer not null default 0,
+  updated_at timestamp with time zone not null default now()
 );
 
 create table if not exists public.listing_media (
@@ -734,6 +747,9 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.interests add constraint interests_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['quan_tam'::text, 'khong_hop'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.kien_thuc_phap_ly add constraint kien_thuc_phap_ly_pkey PRIMARY KEY (khoa);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listing_media add constraint listing_media_bia_phai_cong_khai CHECK (((NOT is_cover) OR (bucket = 'listing-public'::text)));
@@ -6764,6 +6780,7 @@ alter table public.duong enable row level security;
 alter table public.giao_lo enable row level security;
 alter table public.info_requests enable row level security;
 alter table public.interests enable row level security;
+alter table public.kien_thuc_phap_ly enable row level security;
 alter table public.listing_media enable row level security;
 alter table public.listing_noi_bo enable row level security;
 alter table public.listing_views enable row level security;
@@ -6854,6 +6871,10 @@ drop policy if exists interests_admin_select on public.interests;
 create policy interests_admin_select on public.interests as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
   WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text)))));
+drop policy if exists kien_thuc_phap_ly_admin_doc on public.kien_thuc_phap_ly;
+create policy kien_thuc_phap_ly_admin_doc on public.kien_thuc_phap_ly as permissive for SELECT to authenticated using (la_admin());
+drop policy if exists kien_thuc_phap_ly_admin_sua on public.kien_thuc_phap_ly;
+create policy kien_thuc_phap_ly_admin_sua on public.kien_thuc_phap_ly as permissive for UPDATE to authenticated using (la_admin()) with check (la_admin());
 drop policy if exists listing_media_admin_all on public.listing_media;
 create policy listing_media_admin_all on public.listing_media as permissive for ALL to authenticated using (la_admin()) with check (la_admin());
 drop policy if exists listing_media_doc_cong_khai on public.listing_media;
@@ -6966,6 +6987,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ho
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.info_requests to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.interests to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.khach_can_nguoi_that to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.kien_thuc_phap_ly to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listing_media to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listing_noi_bo to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listing_photos_v to service_role;
@@ -7050,6 +7072,7 @@ grant SELECT on public.ro_hang_ban to authenticated;
 grant SELECT on public.seller_ranks to authenticated;
 grant SELECT on public.tien_ich to authenticated;
 grant SELECT, UPDATE on public.cau_mau to authenticated;
+grant SELECT, UPDATE on public.kien_thuc_phap_ly to authenticated;
 
 -- ══ Quyền hàm (FR-167) ══
 revoke all on function public.admin_cap_nhat_khach(p_buyer_id uuid, p_preferences jsonb, p_notes text) from public, anon, authenticated;
