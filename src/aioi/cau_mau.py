@@ -105,6 +105,25 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                          "ngân sách {goi} nêu khoảng {pct}%.\n\nXem hình và chi tiết ở đây ạ: {link}\n\n{Goi} thấy sao, {toi} sắp lịch xem thử "
                          "giúp {goi} nhé?",
                          "Như trên, khi giá vượt ngân sách một chút (tới 15 %). {pct} = % vượt, code tính", "SRS-5.1zzzzzzz150 / 159 · chủ dự án 23/10"),
+    # --- Biến thể tin báo căn mới: hai tin liền nhau cho một khách không được cùng văn phong (SRS-5.1zzzzzzz188) ---
+    'bao_can_moi_2': ('Vừa có căn mới lên kệ, {toi} thấy khá sát chỗ {goi} đang tìm đó.\n\n{Mo_ta}. {vi_sao}\n\nHình với thông tin đầy đủ {toi} để ở đây nè: {link}\n\nNếu {goi} ưng thì {toi} giữ lịch cho {goi} qua xem nhé?',
+        'Biến thể xoay vòng theo số tin báo đã gửi cho khách (SRS-5.1zzzzzzz188), cùng khung bốn đoạn và cùng chỗ giữ chữ với `bao_can_moi`',
+        'SRS-5.1zzzzzzz188 · chủ dự án 26/10: hai tin báo căn liền nhau trùng văn phong'),
+    'bao_can_moi_3': ('Hôm nay {toi} gặp một căn {goi} có thể thích đó.\n\n{Mo_ta}. {vi_sao}\n\n{Goi} bấm vào đây xem ảnh thật nha: {link}\n\nNếu {goi} thấy ổn, {toi} hẹn giờ cho {goi} đi xem luôn nha?',
+        'Biến thể xoay vòng theo số tin báo đã gửi cho khách (SRS-5.1zzzzzzz188), cùng khung bốn đoạn và cùng chỗ giữ chữ với `bao_can_moi`',
+        'SRS-5.1zzzzzzz188 · chủ dự án 26/10: hai tin báo căn liền nhau trùng văn phong'),
+    'bao_can_moi_4': ('Mới có thêm một căn đúng gu {goi} tìm nè, {goi} xem thử nha.\n\n{Mo_ta}. {vi_sao}\n\nChi tiết và hình ảnh ở link này ạ: {link}\n\n{Goi} có tiện đi xem không, để {toi} sắp xếp giúp {goi} ạ?',
+        'Biến thể xoay vòng theo số tin báo đã gửi cho khách (SRS-5.1zzzzzzz188), cùng khung bốn đoạn và cùng chỗ giữ chữ với `bao_can_moi`',
+        'SRS-5.1zzzzzzz188 · chủ dự án 26/10: hai tin báo căn liền nhau trùng văn phong'),
+    'bao_can_moi_vuot_2': ('Vừa có căn mới lên kệ, {toi} thấy khá gần chỗ {goi} đang tìm đó.\n\n{Mo_ta}. {vi_sao} Giá cao hơn mức {goi} đặt khoảng {pct}%.\n\nHình với thông tin đầy đủ {toi} để ở đây nè: {link}\n\nNếu {goi} thấy được thì {toi} giữ lịch cho {goi} qua xem nhé?',
+        'Biến thể xoay vòng của `bao_can_moi_vuot` (SRS-5.1zzzzzzz188), thêm {pct} = % vượt ngân sách',
+        'SRS-5.1zzzzzzz188 · chủ dự án 26/10: hai tin báo căn liền nhau trùng văn phong'),
+    'bao_can_moi_vuot_3': ('Hôm nay {toi} gặp một căn gần ý {goi}, có điều giá nhỉnh một chút.\n\n{Mo_ta}. {vi_sao} Giá vượt ngân sách khoảng {pct}%.\n\n{Goi} bấm vào đây xem ảnh thật nha: {link}\n\nNếu {goi} thấy chấp nhận được, {toi} hẹn giờ cho {goi} đi xem luôn nha?',
+        'Biến thể xoay vòng của `bao_can_moi_vuot` (SRS-5.1zzzzzzz188), thêm {pct} = % vượt ngân sách',
+        'SRS-5.1zzzzzzz188 · chủ dự án 26/10: hai tin báo căn liền nhau trùng văn phong'),
+    'bao_can_moi_vuot_4': ('Mới có thêm một căn gần gu {goi} tìm nè, {goi} xem thử nha.\n\n{Mo_ta}. {vi_sao} Lưu ý giá đang cao hơn ngân sách khoảng {pct}%.\n\nChi tiết và hình ảnh ở link này ạ: {link}\n\n{Goi} có tiện đi xem không, để {toi} sắp xếp giúp {goi} ạ?',
+        'Biến thể xoay vòng của `bao_can_moi_vuot` (SRS-5.1zzzzzzz188), thêm {pct} = % vượt ngân sách',
+        'SRS-5.1zzzzzzz188 · chủ dự án 26/10: hai tin báo căn liền nhau trùng văn phong'),
     # --- Xác nhận lịch hẹn xem với khách mua (SRS-5.1zzzzzzz158) ---
     "xac_nhan_lich": ("{Goi} xác nhận giúp {toi}, {gio} mình đến xem căn {can} đúng không ạ?",
                       "Khách mua đã nói đủ ngày và giờ xem nhà — bot hỏi xác nhận MỘT lần (model chép câu này, chỉ điền chỗ giữ chữ). {toi} = em / "

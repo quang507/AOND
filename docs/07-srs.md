@@ -8783,6 +8783,14 @@ Chủ dự án 26/10: "Tìm nguyên nhân gốc khiến đường Tân Phú củ
 4. **Chưa kiểm**: truy vấn `rel(id);map_to_area` chưa chạy thử trên Overpass (máy `openstreetmap.fr` trong danh sách DB không có chỉ mục vùng, hai máy kia quá giờ từ DB) — kiểm bằng số liệu sau khi nạp lại (khoảng cách tới tâm phường). 
 5. **Kiểm**: `bot/tests/phan-loai-duong.mjs` thêm 8 ca (hai đa giác cùng tên đếm là 2 — đỏ với bản đếm theo tên; CSV cũ không vỡ; chọn relation theo tâm cho Long Bình Thủ Đức / Biên Hòa; không cái nào trong 3 km, thiếu toạ độ, hai cái đều gần → null).
 
+### SRS-5.1zzzzzzz188 · Tin báo căn mới: hai tin liền nhau không được cùng văn phong (26/10/2026)
+Chủ dự án 26/10 (ảnh chụp CRM, hai tin báo cho cùng một khách lúc 08:06 24/10 và 15:30 25/10): "nếu tin thứ 2 thì phải khác chứ, văn phong gì trùng nhau nữa".
+1. **Lớp lỗi**: thông điệp chủ động lặp lại cho cùng một người đi qua MỘT khung câu mẫu cố định (`bao_can_moi` / `bao_can_moi_vuot`, SRS-150 / 159) — mỗi lần gửi cùng mở lời, cùng câu dẫn link, cùng câu hỏi lịch xem, chỉ khác dữ kiện căn; khách đọc thấy máy. Chủ dự án đã nhắc đúng ý này ở SRS-97 / 102 ("câu chữ thực như môi giới nhắn Zalo, không văn mẫu").
+2. **Chỗ khác cùng lớp (đã soát, CHƯA sửa)**: tin nhắc `nhac_hoi_lai` / `nhac_xin_anh` / `nhac_xin_anh_em` (tin nhắc sau 5 phút, một khung cố định, có thể gửi nhiều lần cho cùng khách), `xin_cham_sao` và lời chào (mỗi khách một lần nên ít lộ). Tin giới thiệu căn TRONG chat do model viết nên không dính.
+3. **Sửa**: thêm 6 câu mẫu `bao_can_moi_2/_3/_4` và `bao_can_moi_vuot_2/_3/_4` (migration `20261026b_cau_mau_bao_can_moi_bien_the.sql`, sửa được ở CRM như các câu mẫu khác); `bao_can_moi.viet_tin(kieu=…)` chọn khoá theo kiểu và đổi chữ mở "vì sao hợp" (Hợp vì / Khớp ở chỗ / Điểm cộng là / Được cái); `chay_mot_luot` truyền `kieu = số tin báo đã gửi cho khách trong 30 ngày % SO_KIEU (4)` nên hai tin liền nhau luôn khác kiểu và kiểu thứ 5 quay lại kiểu đầu. Kiểu 0 giữ nguyên hai câu cũ.
+4. **Chưa làm / hạn chế**: chỉ 4 kiểu; kiểu dựa trên số tin báo trong 30 ngày nên khi tin cũ rơi khỏi cửa sổ, hai tin liền nhau có thể trùng kiểu (hiếm: cách nhau > 30 ngày); xoá `reminders` của khách thì khách quay về kiểu 0. Chưa thử Zalo thật.
+5. **Kiểm**: `tests/test_bao_can_moi.py` thêm 3 ca (năm tin liền nhau cho một khách: mỗi cặp liền nhau khác ở cả bốn đoạn và kiểu 5 quay về kiểu 1; bản vượt ngân sách cũng xoay và giữ `{pct}`; kiểu ngoài khoảng quay vòng, mặc định không đổi) — hai ca đầu ĐỎ khi thay `kieu=len(mine) % SO_KIEU` bằng `kieu=0` (đã thử).
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
