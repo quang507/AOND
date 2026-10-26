@@ -27,8 +27,6 @@ from . import gamification as g
 from . import phap_ly
 from .prompts import KHOI_MOT_UU_TIEN
 from . import cau_mau
-from . import che_do_test
-from . import nhom_json
 from . import so_token
 from .delivery import _is_formatted_post
 from .prompts import _MO_DAU_RE   # dòng mở bản nháp "(📋) Em/Mình sẽ rao như vầy nhé…:" (SRS-5.1zzzzzzz132)
@@ -158,7 +156,6 @@ def _ten_tep_that(ten: str | None) -> bool:
     return bool(ten) and str(ten).strip().lower() not in ("undefined", "null", "none", "nan", "unknown", "file", "image")
 
 
-LENH_LAM_MOI = "$$$$$"   # lệnh làm mới phiên (SRS-5.1zzzzzzz123)
 from .sticker import STICKER_TRUNG_TINH, la_sticker  # noqa: E402,F401  (một nguồn ở sticker.py, SRS-5.1zzzzzzz122)
 
 # Max tool-calling steps in one agent turn (a safety cap so the loop can't run away).
@@ -425,8 +422,7 @@ class Conversation:
     # Transient (SRS-5.1zzzzzzz163): gợi ý xưng hô từ giới tính trên hồ sơ Zalo ("anh" nam / "chi" nữ), bridge gửi kèm mỗi tin. Chỉ dùng
     # khi khách CHƯA tự xưng (`xung_ho` trống) — lời khách tự nói luôn thắng; không lưu DB.
     xung_ho_goi_y: str | None = None
-    # Persisted (SRS-5.1zzzzzzz130): chế độ test — gõ "$$$$$" bật; sau mỗi lượt server gửi thêm tin phụ "$$$$$ … đã trích xuất / đã hiểu gì"
-    # (che_do_test.py, code ghép, không phải AI).
+    # Cột cũ của chế độ test (SRS-5.1zzzzzzz130) — từ SRS-5.1zzzzzzz195 (26/10/2026) KHÔNG còn đường nào bật; để nguyên cột / trường để khỏi đổi lược đồ.
     che_do_test: bool = False
     # Persisted (SRS-5.1zzzzzzz131 bản 2): số lượt khách đã CHO THÔNG TIN (lượt ghi được ô) — 3 lượt đầu bắt buộc mở bằng lời khen; "$$$$$" về 0.
     so_luot_thong_tin: int = 0
@@ -628,8 +624,6 @@ class TurnResult:
     danh_gia: tuple[int, str] | None = None
     role: str = "seller"       # "seller" hoặc "buyer"
     lead: BuyerLead | None = None
-    # Chế độ test (SRS-5.1zzzzzzz130): tin phụ "$$$$$ … đã trích xuất / đã hiểu gì" — server gửi thêm sau lời trả lời, KHÔNG vào lịch sử / CRM.
-    chu_thich: str = ""
     # Khách mua xin ảnh (SRS-5.1zzzzzzz169): mã căn cần gửi ảnh ngay cả khi lời bot không dán link / ảnh đã gửi trong 24 giờ.
     xin_anh: list[str] = field(default_factory=list)
 
@@ -688,7 +682,7 @@ class SqliteConversationStore(ConversationStore):
             ("conversations", "role", "'unknown'"),
             ("conversations", "active_lead_id", "''"),
             ("conversations", "xung_ho", "''"),   # SRS-5.1zzzzzzz76: khách tự xưng gì, giữ qua khởi động lại
-            ("conversations", "che_do_test", "''"),   # SRS-5.1zzzzzzz130: chế độ test ($$$$$), giữ qua khởi động lại
+            ("conversations", "che_do_test", "''"),   # cột cũ chế độ test (SRS-195: không còn bật)
             ("conversations", "so_luot_thong_tin", "'0'"),   # SRS-5.1zzzzzzz131 bản 2: lượt thông tin thứ mấy (3 lượt đầu khen 100%)
         ):
             try:  # migrate older tables that predate this column
@@ -1894,66 +1888,6 @@ class Engine:
 
         clean_text = text.strip()
         cmd = clean_text.lower()
-
-        # LỆNH LÀM MỚI PHIÊN = "$$$$$" (năm dấu đô, chủ dự án 22/10/2026: "đừng để hello thành reset nữa, lệnh reset sẽ là $$$$$").
-        # Trước đây "hello / hi / alo / chào em / 👋 / sticker chào" xoá phiên (quyết định 20/10 để test) — khách thật chào giữa chừng là mất
-        # hết tin đang soạn; nay lời chào chỉ được CHÀO. Chủ dự án 22/10 (lần hai): "giờ chỉ còn cái $$$$$ mới xóa hết thôi" — các lệnh gõ tay cũ (/reset, /clear, /xoa,
-        # "reset session", "xóa hết") đã bỏ: khách thật gõ đúng "xóa hết" là mất cả phiên.
-        la_lenh_lam_moi = cmd == LENH_LAM_MOI
-        if la_lenh_lam_moi:
-            new_li = Listing(prop=Property())
-            conv.listings = [new_li]
-            conv.active_listing_id = new_li.listing_id
-            conv.price_book = {}
-            conv.history = []
-            conv.role = "unknown"
-            conv.buyer_lead = None
-            conv.pending_destructive = []
-            conv.last_receipts = []
-            if self._convstore is not None:
-                self._convstore.reset(user_key)
-
-            # SRS-5.1zzzzzzz130 (Lê Quang 22/10): "$$$$$" xoá hết dữ liệu cũ + bật chế độ test, KHÔNG thông báo gì (replies rỗng → bridge không gửi);
-            # tin kế tiếp của khách đi như người mới (lời chào lượt đầu do AI đọc) và từ đó mỗi lượt kèm tin phụ "$$$$$ đã trích xuất / đã hiểu…".
-            conv.che_do_test = True
-            conv.so_luot_thong_tin = 0                                 # SRS-5.1zzzzzzz131 bản 2: đếm lại 3 lượt khen từ đầu
-            kq = self._build_result(conv, "", captured=[], now=now)   # cờ bật TRƯỚC khi lưu kho (sống qua khởi động lại)
-            kq.chu_thich = ""                                          # tin phụ chỉ bắt đầu từ tin kế tiếp của khách
-            return kq
-
-        # Command: json / thong tin — Inspect current extracted structured data
-        if cmd in ("json", "/json", "xem json", "check json", "thong tin", "thong_tin"):
-            conv.history.append(Turn("user", text, now))
-            # SRS-5.1zzzzzzz141: 2 tầng — tầng lớn (tin / vi_tri / quy_mo / gia / phap_ly / su_dung / nhap) chứa ô nhỏ; xem nhom_json.py.
-            if conv.role == "buyer" and conv.buyer_lead:
-                bl = conv.buyer_lead
-                dump_data = nhom_json.json_nguoi_mua(bl.lead_id, bl.stage, bl.loai_giao_dich, bl.loai_bds, bl.ngan_sach, bl.khu_vuc,
-                                                     dict(bl.fields))
-            elif len(conv.listings) > 1:
-                dump_data = {
-                    "vai_tro": "seller",
-                    "so_can_trong_gio": len(conv.listings),
-                    "can_hien_tai": conv.active_listing_id,
-                    "gio_hang": [
-                        nhom_json.json_tin_ban(li.listing_id, li.prop.loai_hinh, li.prop.fields.get("du_an"), li.prop.fields_khach(),
-                                               do_day_du=f"{int(li.prop.completeness() * 100)}%", thieu=li.prop.missing_fields(),
-                                               du_dieu_kien=None, so_anh=len(li.media))
-                        for li in conv.listings
-                    ],
-                }
-            else:
-                li = conv.active
-                dump_data = {"vai_tro": "seller", **nhom_json.json_tin_ban(
-                    li.listing_id, li.prop.loai_hinh, li.prop.fields.get("du_an"), li.prop.fields_khach(),
-                    do_day_du=f"{int(li.prop.completeness() * 100)}%", thieu=li.prop.missing_fields(),
-                    du_dieu_kien=li.prop.summary_ready(), so_anh=len(li.media))}
-            json_str = json.dumps(dump_data, ensure_ascii=False, indent=2)
-            # Không mở bằng "📋" — dấu đó là dấu bản nháp tin rao; `_ban_tin_da_trinh` lấy lượt có 📋 cuối cùng làm bản khách duyệt, nên
-            # gõ "thong tin" sau bản nháp rồi duyệt là đăng khối JSON lên web (SRS-5.1zzzzzzz110).
-            reply = f"🧾 Dữ liệu trích xuất hiện tại (JSON):\n```json\n{json_str}\n```"
-            conv.history.append(Turn("assistant", reply, now))
-            conv.last_ai_at = now
-            return self._build_result(conv, reply, captured=[], now=now)
 
         # Check if text contains a media/document URL (e.g. from Zalo or pasted link)
         url_match = re.search(r"https?://\S+", clean_text)
@@ -3503,7 +3437,6 @@ class Engine:
             tha_tim=bool(conv.y_luot.get("tha_tim")) or bool(set(captured) & CAC_O_DIA_CHI),
             xin_danh_gia=bool(conv.y_luot.get("xin_danh_gia")),
             danh_gia=conv.y_luot.get("danh_gia"),
-            chu_thich=che_do_test.chu_thich(conv, captured, next_f, so_token.tong_luot()) if conv.che_do_test else "",
             xin_anh=list(conv.y_luot.get("xin_anh") or []),
         )
 

@@ -16,6 +16,9 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):  # pragma: no cover
         pass
 
+# Dòng chi phí đã có `$extract` / `$chat` ở dưới; tắt log stderr cùng nội dung của sổ token (so_token) để khỏi in lặp trong terminal.
+os.environ.setdefault("AIOI_LOG_COST", "0")
+
 from aioi import che_do_test, so_token
 from aioi.config import load_settings
 from aioi.delivery import chunk_reply, typing_delay
@@ -161,17 +164,26 @@ def main() -> None:
             else:
                 print(f"   [⚠️ Lỗi khi xử lý tin nhắn — bỏ qua lượt này: {type(e).__name__}: {msg[:200]}]\n")
             continue
+        _in_chi_phi()   # `$extract` rồi `$chat` — in TRƯỚC lời bot, ngắn gọn y như bản anh Luận
         _emit_reply(result.assistant_name, result.reply)
         if result.captured:
             print(f"   [đã trích xuất: {', '.join(result.captured)}]")
-        for model, so in sorted(so_token.tong_luot().items()):   # chi phí từng model của lượt vừa rồi, như bản anh Luận
-            usd = che_do_test.tien_usd(model, so)
-            print(f"   [ $ {model} · gọi={so['calls']} · in={so['p_in']} cache_w={so['p_cache_write']} cache_r={so['p_cache_read']} "
-                  f"out={so['p_out']} · " + (f"~${usd:.4f}" if usd is not None else "chưa rõ giá") + " ]")
         print(
             f"   [điểm BĐS {result.property_score} | uy tín {result.user_score} "
             f"| hạng {result.tier} | hoàn chỉnh {result.completeness:.0%}]\n"
         )
+
+
+def _in_chi_phi() -> None:
+    """Mỗi mục đích gọi model của lượt vừa rồi một dòng: `[ $extract · haiku-4-5 · in=1940 cache_r=6439 out=199 · ~$0.0036]` (extract trước, chat sau;
+    chỉ in ô cache khi khác 0; tên model bỏ tiền tố "claude-"). Không có gì để in (model giả / không gọi AI) thì im."""
+    thu_tu = {"extract": 0, "chat": 1}
+    for (nhan, model), so in sorted(so_token.tong_luot_theo_nhan().items(), key=lambda kv: (thu_tu.get(kv[0][0], 9), kv[0])):
+        usd = che_do_test.tien_usd(model, so)
+        cache = "".join(f" {k}={so[v]}" for k, v in (("cache_w", "p_cache_write"), ("cache_r", "p_cache_read")) if so[v])
+        ten = model[len("claude-"):] if model.startswith("claude-") else model
+        print(f"   [ ${nhan or 'goi'} · {ten} · in={so['p_in']}{cache} out={so['p_out']} · "
+              + (f"~${usd:.4f}" if usd is not None else "chưa rõ giá") + "]")
 
 
 def _dump_state(engine: Engine, user: str) -> None:

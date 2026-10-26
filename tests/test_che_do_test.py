@@ -1,100 +1,11 @@
-"""22/10/2026 (SRS-5.1zzzzzzz130). Chủ dự án: gõ `$$$$$` rồi "mỗi tin nhắn đều có 1 tin `$$$$$` … đã trích xuất thông tin gì, đã hiểu gì",
-"từ tin nhắn đầu luôn, viết từ code". Tester không phải gõ `json` mỗi lượt. Test đỏ khi tin phụ không có ở tin trả lời `$$$$$`, khi nó chui vào
-lịch sử (model đọc lại) hay lời trả lời gửi khách, khi mất sau khởi động lại, hoặc khi người KHÔNG gõ `$$$$$` cũng nhận tin phụ."""
-from fastapi.testclient import TestClient
-
-import aioi.server as srv
-from aioi import che_do_test
-from aioi.engine import SqliteConversationStore
-from tests.test_doc_y_khach import _eng
-
-PLAN = {"operations": [{"op": "update", "fields": {"gia": "6,95 tỷ", "dia_chi": "12 Lê Văn Sỹ"}, "bang_chung": {"gia": "6,95 tỷ", "dia_chi": "12 Lê Văn Sỹ"}}],
-        "user_intent": "sell", "xung_ho": "em", "xung_ho_trich_dan": "em ơi"}
-
-
-def test_lenh_lam_moi_bat_che_do_test_im_lang_roi_tin_ke_co_tin_phu():
-    eng, _ = _eng({"operations": []})
-    r = eng.handle("t1", "$$$$$")
-    assert eng.conversation("t1").che_do_test is True
-    assert r.reply == "" and r.chu_thich == ""                          # không thông báo gì (22/10: "không cần thông báo")
-    r1 = eng.handle("t1", "chào em")
-    assert r1.chu_thich.startswith("$$$$$ Ghi:") and r1.reply   # tin phụ bắt đầu từ tin kế tiếp
-
-
-def test_tin_phu_khong_vao_lich_su_va_khong_vao_loi_tra_loi():
-    eng, _ = _eng({"operations": []})
-    eng.handle("t2", "$$$$$")
-    r = eng.handle("t2", "chào em")
-    conv = eng.conversation("t2")
-    assert all("$$$$$" not in t.content for t in conv.history)          # model không đọc lại tin phụ
-    assert "$$$$$" not in r.reply
-
-
-def test_khong_go_lenh_thi_khong_co_tin_phu():
-    eng, _ = _eng({"operations": []})
-    r = eng.handle("t3", "nhà anh hẻm 4m nha")
-    assert r.chu_thich == "" and eng.conversation("t3").che_do_test is False
-
-
-def test_sau_moi_luot_co_tin_phu_ghi_o_da_trich_xuat_va_dieu_da_hieu():
-    eng, _ = _eng(PLAN)
-    eng.handle("t4", "$$$$$")
-    r = eng.handle("t4", "em ơi nhà 12 Lê Văn Sỹ giá 6,95 tỷ")
-    ct = r.chu_thich
-    assert ct.startswith("$$$$$ Ghi:") and "6,95 tỷ" in ct and "12 Lê Văn Sỹ" in ct and "Thiếu:" in ct
-    assert len(ct.split("\n")) <= 4 and "Đã hiểu" not in ct and "AI đề xuất" not in ct         # SRS-5.1zzzzzzz139: sếp bảo tin debug cũng ngắn
-
-
-def test_khong_co_o_moi_thi_noi_ro_va_ngoai_vung_duoc_ghi():
-    eng, _ = _eng({"operations": []})
-    eng.handle("t5", "$$$$$")
-    conv = eng.conversation("t5")
-    conv.prop.fields["_ngoai_vung"] = "Bình Phước"
-    ct = che_do_test.chu_thich(conv, [], "gia")
-    assert "Ghi: không có ô mới" in ct and "NGOÀI vùng: Bình Phước" in ct and "Hỏi tiếp:" in ct
-
-
-def test_chu_thich_loi_thi_tra_rong_khong_lam_hong_luot():
-    assert che_do_test.chu_thich(None, ["gia"]) == ""          # type: ignore[arg-type]
-
-
-def test_che_do_test_song_qua_khoi_dong_lai(tmp_path):
-    kho = SqliteConversationStore(str(tmp_path / "c.db"))
-    eng, _ = _eng({"operations": []})
-    eng._convstore = kho
-    eng.handle("t6", "$$$$$")
-    assert kho.load("t6").che_do_test is True
-    cu = SqliteConversationStore(str(tmp_path / "c.db"))                 # mở lại file = lõi khởi động lại
-    assert cu.load("t6").che_do_test is True
-
-
-def test_server_gui_tin_phu_sau_loi_tra_loi_nhung_khong_ghi_vao_crm(monkeypatch):
-    eng, _ = _eng(PLAN)
-    monkeypatch.setattr(srv, "_engine", eng)
-    ghi = []
-    monkeypatch.setattr(srv, "sync_to_supabase_async", lambda **k: ghi.append(k))
-    monkeypatch.setattr(srv, "_thu_lai_nen", lambda *a, **k: None)
-    cl = TestClient(srv.app)
-    r0 = cl.post("/chat-reply", json={"external_user_id": "t7", "text": "$$$$$"}).json()
-    assert r0["replies"] == [] and r0["nhip_go"] == [] and r0["reply"] == ""       # bridge không gửi gì
-    r1 = cl.post("/chat-reply", json={"external_user_id": "t7", "text": "em ơi nhà 12 Lê Văn Sỹ giá 6,95 tỷ"}).json()
-    assert r1["replies"][0].startswith("$$$$$ Ghi:") and "$$$$$" not in r1["reply"]     # SRS-5.1zzzzzzz136: tin debug đi TRƯỚC
-    assert all(not b.startswith("$$$$$") for b in r1["replies"][1:])                          # các tin sau là lời cho khách thật
-    assert all("$$$$$ Ghi:" not in g["bot_reply"] for g in ghi) and len(r1["nhip_go"]) == len(r1["replies"])
-
-
-# --- SRS-5.1zzzzzzz130 (bản 2): tiền lượt này, câu khách nói → làm chuẩn, ô bị bỏ và lý do ---------------------------------------------------
+"""Bảng giá model + quy đô (SRS-5.1zzzzzzz130 → 195). Chế độ test `$$$$$` / tin phụ debug đã gỡ 26/10/2026; còn lại bảng giá phải khớp lib/gia-model.ts."""
 import pathlib
 import re
 from types import SimpleNamespace
 
-from aioi import so_token
+from aioi import che_do_test, so_token
 
 GIA_TS = pathlib.Path(__file__).resolve().parent.parent / "lib/gia-model.ts"
-
-
-def _plan(gia, bc):
-    return {"operations": [{"op": "update", "fields": {"gia": gia}, "bang_chung": {"gia": bc}}], "user_intent": "sell"}
 
 
 def test_bang_gia_python_giong_tung_dong_voi_lib_gia_model_ts():
@@ -129,40 +40,17 @@ def test_so_token_cong_dung_theo_luot_cua_luong():
     assert so_token.tong_luot() == {}                                           # lượt mới đếm lại từ đầu
 
 
-def test_tin_phu_co_tien_cua_dung_luot_do():
-    eng, spy = _eng(_plan("9,2 tỷ", "9.2"))
-    goc = spy.extract
-
-    def extract(*a, **k):                                                       # giả lập một lượt gọi Claude trong lượt này
-        so_token._cong_luot("claude-haiku-5-5", {"p_in": 2000, "p_out": 400, "p_cache_write": 1000, "p_cache_read": 5000})
-        return goc(*a, **k)
-    spy.extract = extract
-    eng.handle("t8", "$$$$$")
-    r = eng.handle("t8", "giá 9.2 nha em")
-    assert "Tốn: $0.0006 (claude-haiku-5-5 vào 2.0k ra 400)" in r.chu_thich
-    r2 = eng.handle("t8", "ok em")
-    assert "Tốn: $0.0006" in r2.chu_thich                              # lượt sau tính riêng, không cộng dồn lượt trước
-
-
-def test_tin_phu_cum_khach_noi_lam_chuan_moi_va_doi():
-    eng, spy = _eng(_plan("9,2 tỷ", "9.2"))
-    eng.handle("t9", "$$$$$")
-    ct = eng.handle("t9", "giá 9.2 nha em").chu_thich
-    assert 'giá "9.2" → "9,2 tỷ"' in ct and "đổi từ" not in ct
-    spy.plan = _plan("9,5 tỷ", "9.5")
-    ct2 = eng.handle("t9", "à nhầm, giá 9.5 nha").chu_thich
-    assert 'giá "9.5" → "9,5 tỷ" (đổi từ "9,2 tỷ")' in ct2
-
-
-def test_tin_phu_noi_ro_o_ai_de_xuat_nhung_bi_bo_va_ly_do():
-    eng, _ = _eng(_plan("9,2 tỷ", "9.2"))                                       # AI "đọc" ra giá mà khách KHÔNG nói
-    eng.handle("t10", "$$$$$")
-    ct = eng.handle("t10", "nhà hẻm 4m nha").chu_thich
-    assert 'Bỏ: giá "9,2 tỷ" vì không có bằng chứng' in ct and "Ghi: không có ô mới" in ct
-    eng3, _ = _eng({"operations": [{"op": "update", "fields": {"gia": "9,2 tỷ", "gan_nga_tu": None, "unit_type": ""}, "bang_chung": {"gia": "9.2"}}], "user_intent": "sell"})
-    eng3.handle("t12", "$$$$$")
-    ct3 = eng3.handle("t12", "giá 9.2 nha em").chu_thich
-    assert "Bỏ:" not in ct3 and "gan_nga_tu" not in ct3 and "unit_type" not in ct3   # khoá AI trả null không bị kể là bỏ (bắn thử 22/10)
-    eng2, _ = _eng({"operations": []})
-    eng2.handle("t11", "$$$$$")
-    assert "Ghi: không có ô mới" in eng2.handle("t11", "giá 9.2 nha em").chu_thich    # AI không đọc ra gì → nói thẳng
+def test_tong_luot_theo_nhan_tach_chat_va_extract():
+    """SRS-5.1zzzzzzz195: cli.py in dòng `$extract` / `$chat` riêng — token phải tách theo mục đích gọi, cùng model vẫn hai dòng."""
+    so_token.bat_dau_luot()
+    resp = SimpleNamespace(model="claude-haiku-4-5", usage=SimpleNamespace(input_tokens=10, output_tokens=5, cache_creation_input_tokens=0, cache_read_input_tokens=30))
+    st = so_token.SoToken(None)
+    st.ghi("extract", "claude-haiku-4-5", resp)
+    st.ghi("chat", "claude-haiku-4-5", resp)
+    st.ghi("chat", "claude-haiku-4-5", resp)
+    t = so_token.tong_luot_theo_nhan()
+    assert t[("extract", "claude-haiku-4-5")]["calls"] == 1 and t[("chat", "claude-haiku-4-5")]["calls"] == 2
+    assert t[("chat", "claude-haiku-4-5")]["p_cache_read"] == 60
+    assert so_token.tong_luot()["claude-haiku-4-5"]["calls"] == 3                 # tổng theo model giữ nguyên
+    so_token.bat_dau_luot()
+    assert so_token.tong_luot_theo_nhan() == {}
