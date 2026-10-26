@@ -40,7 +40,8 @@ def test_can_ho_khong_hoi_thang_may_va_bo_cau_da_biet():
 def test_prompt_mua_goi_y_cau_va_khong_xin_so_dien_thoai():
     b = _lead()
     p = build_buyer_chat_system("Hằng", b, "thang_may")
-    assert "ông bà" in p and "thang máy" in p
+    # SRS-5.1zzzzzzz212: câu thang máy là câu MỞ — không gợi sẵn "thang máy sẽ tiện hơn" rồi hỏi khách thấy sao (câu dẫn dắt).
+    assert "thang máy" in p and "người lớn tuổi" in p and "KHÔNG gợi sẵn" in p
     xong = build_buyer_chat_system("Hằng", b, None)
     assert "KHÔNG xin số điện thoại" in xong and "hoặc xin số điện thoại" not in xong
 

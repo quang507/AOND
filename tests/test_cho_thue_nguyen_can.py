@@ -14,7 +14,7 @@ def test_mo_dau_ban_tin_theo_cach_khach_xung():
         "📋 Em sẽ rao như vầy nhé chị:\n\nCho thuê nhà"
     p = Property(loai_hinh="nha_pho", is_rental=True)
     he = build_listing_proposal_system("Đạt", p, xung_ho="chi")
-    assert "Dòng 1: 📋 Em sẽ rao như vầy nhé chị:" in he and "Chị thấy bản tin này hấp dẫn chưa ạ?" in he
+    assert "Dòng 1: 📋 Em sẽ rao như vầy nhé chị:" in he and "Chị muốn sửa chỗ nào, hay em đăng luôn ạ?" in he
 
 
 def test_loi_sau_duyet_ngan_va_phi_thue_ba_phan_tu():

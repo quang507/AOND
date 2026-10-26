@@ -164,7 +164,7 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "lo_gioi_duong": "Hỏi con đường trước nhà / đất rộng mấy mét (độ rộng con đường, không phải bề ngang lô), ô tô / xe tải vào tận nơi không",
     "phap_ly_so_do": "Hỏi sổ đỏ riêng chính chủ sẵn sàng công chứng chưa",
     "the_chap": "Hỏi sổ đang cất ở nhà hay đang thế chấp ngân hàng",
-    "thuong_luong": "Hỏi giá này có thương lượng bớt lộc cho khách thiện chí không",
+    "thuong_luong": "Hỏi giá này chủ muốn giữ cứng hay còn thương lượng (không gài sẵn chữ \"bớt lộc\", \"khách thiện chí\")",
     "ly_do_ban": "Hỏi thăm lý do bán hoặc tiến độ cần bán nhanh hay thong thả",
     "dung_ten_so": "Hỏi NGẮN đúng một câu, không giải thích, không liệt kê lựa chọn: \"Sổ đứng tên ai vậy ạ?\" (chỉ hỏi quan hệ, KHÔNG xin họ tên)",
     "thue_phi": "Hỏi thuế phí sang tên bên nào chịu (bên bán, bên mua hay chia đôi) — giá đã gồm thuế phí chưa",
@@ -220,10 +220,10 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "thanh_vien": "Hỏi nhà mình gồm những ai sẽ ở",
     "noi_lam_viec": "Hỏi mình đi làm (con đi học) ở khu vực nào để chọn chỗ tiện đi lại",
     "dien_tich_mong_muon": "Hỏi cần khoảng mấy phòng, diện tích tầm bao nhiêu thì thoải mái (số phòng khách đã nói thì chỉ hỏi diện tích)",
-    "thang_may": ("Dựa vào thành viên gia đình khách đã kể: có ông bà / người lớn tuổi thì gợi ý nhà có thang máy sẽ tiện hơn và hỏi "
-                  "khách thấy sao; không có thì hỏi nhẹ có cần thang máy không. Không nói bên em có mẫu nào nếu danh sách căn không có"),
+    "thang_may": ("Hỏi việc lên xuống các tầng với nhà khách thế nào (ví dụ nhà có người lớn tuổi đi cầu thang được không) — câu MỞ, "
+                  "KHÔNG gợi sẵn \"thang máy sẽ tiện hơn\" rồi hỏi khách thấy sao. Không nói bên em có mẫu nào nếu danh sách căn không có"),
     "nguoi_quyet_dinh": "Hỏi ngoài anh/chị còn ai cùng quyết định mua không (để em gửi thông tin cho đủ người xem)",
-    "vay_ngan_hang": "Hỏi mình có cần em tư vấn thêm phần vay ngân hàng không",
+    "vay_ngan_hang": "Hỏi khách dự định thanh toán thế nào (tiền sẵn hay vay một phần) — câu mở, không hỏi \"có cần em tư vấn vay không\"",
 }
 
 # Từ điển tiếng lóng BĐS thực chiến (thừa kế từ nhadat.cc) — giúp AI hiểu đúng từ lóng của người rao
@@ -491,7 +491,7 @@ BỐI CẢNH TƯ VẤN KHÁCH MUA / THUÊ:
 - NGUYÊN TẮC HỎI NHỎ GIỌT (1 câu hỏi / lượt):
   • Tầng 1 (Cốt lõi): Khu vực / Quận mong muốn, Tầm tài chính / Ngân sách dự kiến, Loại BĐS tìm kiếm.
   • Tầng 2 (Làm rõ theo loại BĐS):
-    - Khách tìm Nhà đất: hỏi mục đích (để ở hay kinh doanh?), đường trước nhà (xe hơi vào tận cửa không?), số phòng ngủ, hướng phong thủy.
+    - Khách tìm Nhà đất: hỏi mua để làm gì (ở, cho thuê, kinh doanh…), đường trước nhà cần rộng cỡ nào, số phòng ngủ, hướng phong thủy.
     - Khách tìm Chung cư: hỏi số phòng ngủ (1PN/2PN/3PN), thời gian nhận nhà (ở liền hay chờ xây), có dự án ưa thích chưa.
     - Khách tìm Dự án / Đất: hỏi mục đích đầu tư ngắn/dài hạn, tỷ lệ vốn tự có và có cần vay gói ưu đãi lãi suất ngân hàng không.
   • Tầng 3 (Chốt hành động): Hỏi thời gian dự kiến mua/xem nhà, gợi ý quỹ căn phù hợp và hẹn lịch dẫn đi xem thực tế.
@@ -499,6 +499,9 @@ BỐI CẢNH TƯ VẤN KHÁCH MUA / THUÊ:
 QUY TẮC PHẢN HỒI:
 - Trả lời ngắn gọn, ấm áp, như môi giới nhắn Zalo (em KHÔNG có số liệu thị trường — không nhận xét giá / thanh khoản). Xưng "em", gọi khách "anh/chị".
 - Mỗi lượt CHỈ hỏi tối đa 1 thông tin còn thiếu, bằng MỘT câu ngắn.
+- CÂU HỎI NHU CẦU LÀ CÂU MỞ (SRS-5.1zzzzzzz212, bài UX phỏng vấn định tính): hỏi "như thế nào / tầm bao nhiêu / ở đâu / kể em nghe", tránh câu
+  Có/Không ("cần hẻm xe hơi không?") và câu gài sẵn đáp án hay tính từ cảm xúc ("tiện lắm đúng không?", "chắc chị thích…"). Câu mời xem nhà
+  ("anh/chị muốn đi xem thử không?") vẫn được.
 - GỢI Ý TRƯỚC, HỎI SAU (23/10/2026): khi phần "CĂN ĐANG RAO" ở cuối có căn thì nói căn NGAY trong tin này, câu hỏi thêm nằm CUỐI tin;
   chưa có căn (khách chưa nêu khu vực / ngân sách) thì chỉ hỏi.
 - Tuyệt đối không bịa đặt căn ảo không có trong rổ hàng.
@@ -522,7 +525,8 @@ def khoi_chao_tu_van(assistant_name: str, mau: str) -> str:
     """Lượt ĐẦU ở số Zalo TƯ VẤN người mua (SRS-5.1zzzzzzz210): khách chỉ chào thì chào lại theo mẫu `cau_mau.chao_tu_van` rồi hỏi khách
     đang tìm mua / thuê gì. Khách đã nói nhu cầu (kể cả muốn bán — nhắn nhầm số vẫn được trả lời) thì bỏ qua khối này."""
     return ("\n\n=== LƯỢT ĐẦU TIÊN CỦA CUỘC CHAT (số tư vấn người mua) ===\nNếu khách CHỈ chào hỏi (kể cả chào bằng sticker hay biểu tượng), "
-            f"chưa nói nhu cầu: chào lại ngắn, giới thiệu em là {assistant_name}, rồi hỏi khách đang tìm mua hay thuê nhà đất gì. Mẫu câu "
+            f"chưa nói nhu cầu: chào lại ngắn, giới thiệu em là {assistant_name}, rồi mời khách kể đang tìm mua hay thuê căn như thế nào — MỘT câu "
+            "hỏi MỞ, không liệt kê loại nhà / khu vực / mua-thuê thành nhiều lựa chọn (SRS-5.1zzzzzzz212). Mẫu câu "
             f"(đổi chữ cho tự nhiên, giữ ý, KHÔNG chép nguyên): \"{mau}\"\nKhách đã nói nhu cầu ngay trong tin đầu thì bỏ qua đoạn này.\n")
 
 
@@ -594,6 +598,29 @@ KHOI_DINH_GIA = (
     "Bên em CHƯA có dữ liệu định giá (SRS-5.1zzzzzzz116): KHÔNG nêu con số giá thị trường, KHÔNG nhận xét giá chủ đưa cao / thấp / hợp "
     "lý, KHÔNG so với căn khác. Nói ngắn: chuyên viên bên em sẽ xem khu vực và báo lại chủ; tin vẫn rao theo giá chủ muốn.\n"
 )
+
+
+def khoi_hoi_ve_mua(hoi_ve: str | None) -> str:
+    """Khối ưu tiên cho NGƯỜI MUA khi lượt AI đọc ra khách hỏi về phí / uy tín / định giá (SRS-5.1zzzzzzz212). Bắn thử 5 khách 26/10: chị L.
+    hỏi "mua qua bên em có bị lừa không" → bot "em chưa có thông tin đánh giá về uy tín của bên em" — khối `hoi_ve` chỉ nối ở nhánh bán,
+    nhánh mua không có khối nào nên model tự nói. Nội dung chỉ từ bối cảnh đã có (người mua không trả phí — CLAUDE.md §1; phí chỉ thu bên
+    bán khi giao dịch thành công), không thêm cam kết mới."""
+    if hoi_ve == "phi":
+        return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH MUA HỎI VỀ PHÍ: ===\n"
+                "Người mua / người thuê KHÔNG trả phí môi giới cho bên em — phí do bên bán / cho thuê trả, và chỉ khi giao dịch thành công. "
+                "Nói rõ một câu như vậy rồi nối lại chuyện căn đang trao đổi. KHÔNG nói con số phí của bên bán.\n")
+    if hoi_ve == "uy_tin":
+        return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH MUA LO BỊ LỪA / HỎI UY TÍN: ===\n"
+                "Đồng cảm ngắn với nỗi lo của khách rồi trả lời TẠO NIỀM TIN bằng đúng các ý sau (không thêm cam kết nào khác):\n"
+                "- AI Ơi Nhà Đất (aioinhadat.com) là nền tảng kết nối người bán và người mua nhà đất.\n"
+                "- Người mua không trả phí môi giới cho bên em; bên em chỉ thu phí bên bán khi giao dịch thành công.\n"
+                "- Khách cứ đi xem nhà tận nơi, xem sổ gốc và làm thủ tục ở văn phòng công chứng trước khi đặt cọc — đó là cách an toàn nhất.\n"
+                "TUYỆT ĐỐI KHÔNG nói em không có thông tin / không dám chắc về uy tín của bên em.\n")
+    if hoi_ve == "dinh_gia":
+        return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH MUA HỎI GIÁ CÓ HỢP LÝ / GIÁ THỊ TRƯỜNG: ===\n"
+                "Bên em CHƯA có dữ liệu định giá: KHÔNG nêu giá thị trường, KHÔNG nhận xét giá căn cao / thấp / hợp lý. Chỉ được nói giá mỗi m² "
+                "khi dòng căn có \"≈ … triệu/m²\".\n")
+    return ""
 
 
 def describe_captured(prop: Property) -> str:
@@ -793,7 +820,7 @@ QUY TẮC BẮT BUỘC (theo bản anh Luận, SRS-5.1zzzzzzz207):
 - CHỈ dùng dữ liệu được cung cấp bên dưới. TUYỆT ĐỐI không bịa, không suy diễn thêm số liệu/vật liệu/tiện ích.
 - Văn phong thân thiện, đậm chất địa phương Việt Nam.
 - Viết TRỌN VẸN, không bỏ lửng câu, không kết thúc bằng "…".
-- TUYỆT ĐỐI CHƯA nhắc gì đến phí môi giới ở bước này. Chỉ trình bản tin và hỏi khách thấy hấp dẫn chưa.
+- TUYỆT ĐỐI CHƯA nhắc gì đến phí môi giới ở bước này. Chỉ trình bản tin và hỏi khách muốn sửa chỗ nào hay đăng luôn.
 
 DỮ LIỆU BĐS:
 {describe_captured(prop)}"""
@@ -840,6 +867,17 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
         if thieu[0] == "phuong":
             hoi = ("phường của nhà theo tên phường MỚI sau sáp nhập (phường khách nói chưa khớp được một phường mới duy nhất — "
                    "có thể phường cũ đã chia về nhiều phường mới)")
+            # SRS-5.1zzzzzzz212 (bắn thử 5 khách, cô T.: phường hỏi lần 3 ở lượt duyệt, bot tự kể "Nguyễn Cư Trinh, Phường 11 hay Phường 4"
+            # — khối này không đưa danh sách nào nên model bịa). Chủ dự án 26/10: "thiếu thông tin thì hỏi khác".
+            goi_y = [p for p in (web.get("goi_y_phuong") or []) if isinstance(p, str)][:4]
+            if goi_y:
+                hoi += (f" — kể ĐÚNG các phường hệ thống tra được cho khách chọn: {', '.join(goi_y)} (hệ thống tra, không phải khách nói); "
+                        "KHÔNG kể phường nào khác")
+            elif web.get("phuong_da_hoi"):
+                hoi = ("chỗ của nhà theo CÁCH KHÁC vì khách đã được hỏi phường mà chưa trả lời: hỏi số nhà / số hẻm, hoặc nhà gần chỗ nào "
+                       "(chợ, trường, ngã tư) để bên em tự tra phường — KHÔNG hỏi lại chữ \"phường nào\", KHÔNG tự kể tên phường nào")
+            else:
+                hoi += " — KHÔNG tự kể tên phường nào (hệ thống chưa tra được danh sách)"
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu {nhan}. {cam}"
         viec = f"nói chỉ cần thêm {nhan} là tin lên web ngay, rồi hỏi ĐÚNG 1 câu về {hoi}."
     elif web.get("chua_ban_nhap"):
@@ -866,6 +904,7 @@ def build_fee_followup_system(
     project_block: str = "",
     web: dict | None = None,
     duyet: str | None = None,
+    phi_da_bao: bool = False,
 ) -> str:
     """Step 2: customer has seen the draft — react to their feedback, then talk fee (§V).
 
@@ -894,8 +933,13 @@ def build_fee_followup_system(
         "PHÍ NHẸ NHÀNG như bản anh Luận (tinh thần \"anh/chị có biết phí môi giới của tụi em chưa ạ?\"): mời khách vào web theo dõi "
         f"tin rồi hỏi khách đã biết phí môi giới bên em chưa (câu mẫu: \"{cau_mau.cau('hoi_phi')}\") — đây là câu hỏi DUY NHẤT "
         "của lượt này. Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách. Đoạn này tối đa 2 câu ngắn."
-        if (web is None or web.get("len_web")) else ""
+        if (web is None or web.get("len_web")) and not phi_da_bao else ""
     )
+    if phi_da_bao and (web is None or web.get("len_web")):
+        # SRS-5.1zzzzzzz212 (bắn thử 5 khách: anh Hùng hỏi phí, bot báo 0.5%, lượt "ok đăng đi" lại hỏi "biết phí môi giới bên em chưa"):
+        # câu hỏi phí là bước kịch bản, không biết phí ĐÃ được báo trong cuộc chat.
+        hoi_phi = ("\n  • Khách ĐÃ được báo phí trong cuộc chat này: KHÔNG hỏi lại khách biết phí chưa, không nhắc lại con số phí. "
+                   f"Được mời khách vào {_WEB} theo dõi tin, một câu ngắn.")
     bao_phi = khoi_bao_phi(user_type, prop.is_rental)
     bao_phi = f"\n  {bao_phi}" if bao_phi else ""
     hoi_sau = ""
@@ -909,7 +953,7 @@ def build_fee_followup_system(
 
 {BUSINESS_CONTEXT}
 {project_block}
-NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem bản tin rao và hỏi họ thấy hấp dẫn chưa. Hãy đọc phản hồi MỚI NHẤT của khách:{khong_dong_y}
+NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem bản tin rao và hỏi họ muốn sửa chỗ nào hay đăng luôn. Hãy đọc phản hồi MỚI NHẤT của khách:{khong_dong_y}
 - NẾU khách ĐỒNG Ý / DUYỆT / BẢO ĐĂNG TIN (vd: "đăng đi", "lên bài đi", "lên tin đi", "đăng tin đi", "ok em", "được rồi", "chuẩn rồi em", "không cần sửa gì", hoặc thả tim/like):
 {xac_nhan}{hoi_phi}{hoi_sau}
 - NẾU khách HỎI LINK BÀI ĐĂNG HOẶC HỎI TRÊN WEB ĐĂNG NHƯ THẾ NÀO (vd: "đang đăng web như thế nào", "xem tin ở đâu", "cho xin link web", "link đâu"):
@@ -1622,6 +1666,7 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
 - "hen_xem": nguyên văn cụm thời gian khách HẸN đi xem ("chiều mai 3h", "thứ 7 này"). Chỉ hỏi "xem được không" mà chưa nói giờ thì
   để trống.
 - "hoi_chu_nha": nguyên văn câu khách hỏi về căn mà dòng của căn KHÔNG có câu trả lời (vd "sổ riêng hay chung", "chủ có bớt không").
+  Khách vừa ĐỒNG Ý để em hỏi chủ nhà câu khách hỏi ở lượt trước ("ừ hỏi giúp anh") → chép nguyên văn câu hỏi đó từ lượt trước.
   Hỏi thứ dòng của căn đã có (giá, diện tích) thì để trống.
 - "xin_anh": true khi khách xin XEM ẢNH / HÌNH của căn (vd "cho xem ảnh", "gửi hình đi em", "có hình thật không", "gửi lại ảnh giúp anh"),
   kể cả khi bot đã gửi ảnh ở trên rồi. Khách chỉ hỏi chung "căn này đẹp không" thì để trống.
@@ -1702,7 +1747,12 @@ QUY TẮC:
 {DANH_MUC_PHAP_LY}
 - KHÁCH TỰ XƯNG (đọc cả các lượt trước): xung_ho = "em" khi khách tự xưng em ("nhà em", "em gửi"); "anh" / "chi" khi khách
   tự xưng anh / chị; "chu_co_bac" khi khách tự xưng chú / cô / bác / dì. Chữ "em" khách dùng để GỌI bot ("đăng đi em") không
-  phải tự xưng. Chưa thấy khách tự xưng → bỏ trống. Có điền thì xung_ho_trich_dan = NGUYÊN VĂN cụm khách tự xưng.
+  phải tự xưng. Khách gõ tắt cũng tính: "e" = em, "a" = anh, "c" = chị ("e tìm thuê", "a là MG"). Khách GỌI bot là "con" /
+  "cháu" ("sao hỏi nhiều vậy con") = khách lớn tuổi → "chu_co_bac". Chưa thấy → bỏ trống. Có điền thì xung_ho_trich_dan =
+  NGUYÊN VĂN cụm chứa chữ xưng / chữ gọi đó.
+- BOT VỪA HỎI GÌ (SRS-5.1zzzzzzz212): bot_vua_hoi = danh sách KHOÁ ô (đúng tên khoá ở fields: phuong, dia_chi, gia, dien_tich_dat,
+  phap_ly_hoan_cong…) mà TIN GẦN NHẤT CỦA BOT thật sự hỏi khách — đọc theo nghĩa câu hỏi của bot, không theo việc khách trả lời
+  ("cho em xin phường nhà mình" → ["phuong"]; "nhà ở đường nào, phường nào" → ["dia_chi", "phuong"]). Bot không hỏi ô nào → [].
 - XIN XEM BẢN VẼ (19/10/2026): xin_xem_ban_ve = NGUYÊN VĂN cụm khách XIN XEM / XIN GỬI bản vẽ, mặt bằng (bản vẽ tầng / căn /
   tổng thể), sơ đồ, phối cảnh, layout, brochure. "cho thuê mặt bằng kinh doanh", "bán mặt bằng" là LOẠI BĐS, không phải xin bản
   vẽ → bỏ trống. Có điền thì operations RỖNG (xin xem không phải sửa rổ hàng). Khách xin bản đồ / phân lô / quy hoạch / mặt
@@ -1888,9 +1938,12 @@ def operations_schema() -> dict[str, Any]:
             "xung_ho": {
                 "type": "string",
                 "enum": ["em", "anh", "chi", "chu_co_bac"],
-                "description": "Khách TỰ XƯNG là gì (em / anh / chị / chú-cô-bác-dì). Chưa thấy khách tự xưng thì bỏ trống.",
+                "description": "Khách TỰ XƯNG là gì (em / anh / chị / chú-cô-bác-dì; gõ tắt e / a / c cũng tính). Khách gọi bot là con / "
+                               "cháu → chu_co_bac. Chưa thấy thì bỏ trống.",
             },
-            "xung_ho_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách tự xưng (bắt buộc khi có xung_ho)."},
+            "xung_ho_trich_dan": {"type": "string", "description": "Nguyên văn cụm chứa chữ khách tự xưng / gọi bot (bắt buộc khi có xung_ho)."},
+            "bot_vua_hoi": {"type": "array", "items": {"type": "string"},
+                            "description": "Khoá các ô mà tin GẦN NHẤT của bot thật sự hỏi khách (vd [\"phuong\"]). Không hỏi ô nào → []."},
             "xin_xem_ban_ve": {"type": "string", "description": "Nguyên văn cụm khách xin xem / xin gửi bản vẽ, mặt bằng (bản "
                                "vẽ), sơ đồ, phối cảnh, layout, brochure. Không xin thì bỏ trống."},
             "ban_do_du_an": {"type": "boolean", "description": "Có xin_xem_ban_ve VÀ thứ khách xin là bản đồ / phân lô / quy "
@@ -1955,7 +2008,8 @@ def operations_schema() -> dict[str, Any]:
                 "type": "object",
                 "properties": {
                     "loai_giao_dich": {"type": "string", "enum": ["mua", "thue"]},
-                    "loai_bds": {"type": "string", "description": "nha_pho, chung_cu, du_an, dat_tho_cu..."},
+                    "loai_bds": {"type": "string", "description": "nha_pho, chung_cu, du_an, dat_tho_cu... Khách nói nhà hẻm / nhà mặt tiền "
+                                 "/ nhà phố / nhà riêng / nhà đất → nha_pho; căn hộ / chung cư → chung_cu. Chỉ nói \"mua nhà\" chung chung thì bỏ trống."},
                     "ngan_sach": {"type": "string", "description": "Ngân sách tối đa (vd: 5 tỷ, 10-15 tỷ, 15 tr/tháng)"},
                     "khu_vuc": {"type": "string", "description": "Quận, huyện, tên dự án tìm kiếm"},
                     "so_phong_ngu": {"type": "string", "description": "Số phòng ngủ (vd: 2PN, 3PN)"},
