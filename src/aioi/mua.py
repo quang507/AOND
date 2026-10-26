@@ -699,8 +699,11 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
     if not can:
         return ("\nCĂN ĐANG RAO: chưa có căn nào khớp nhu cầu khách. KHÔNG giới thiệu căn nào, KHÔNG bịa căn; nói sẽ báo khi có căn phù hợp "
                 "(xưng hô y như các lượt trước).\n")
-    return ("\nCĂN ĐANG RAO (chỉ được giới thiệu các căn dưới đây; không đọc số nhà; thông tin không có ở dòng của căn thì nói sẽ hỏi chủ nhà "
-            "rồi báo lại, KHÔNG đoán). CÁCH NÓI — như người môi giới nhắn Zalo cho khách, từng tin ngắn, không như bảng liệt kê:\n"
+    # SRS-5.1zzzzzzz212 (bắn thử 5 khách, anh M.: "căn nào đang có HĐ thuê thì gửi" → bot "em sẽ hỏi chủ nhà rồi báo lại" mà không có việc nào
+    # được ghi): câu cũ dặn LUÔN hứa hỏi chủ nhà, đè lên `khoi_viec_vua_ghi([])` ("không hứa sẽ báo lại"). Lời hứa chỉ khi đã ghi việc thật.
+    return ("\nCĂN ĐANG RAO (chỉ được giới thiệu các căn dưới đây; không đọc số nhà; thông tin không có ở dòng của căn thì KHÔNG đoán: nói thật "
+            "tin chưa ghi thông tin đó. CHỈ nói đã chuyển câu hỏi cho chủ nhà khi phần \"EM VỪA GHI LƯỢT NÀY\" có việc chuyển câu đó; không có "
+            "thì hỏi khách có muốn em hỏi chủ của căn đang nói không — KHÔNG hứa sẽ báo lại). CÁCH NÓI — như người môi giới nhắn Zalo cho khách, từng tin ngắn, không như bảng liệt kê:\n"
             "  • Mã # CHỈ để ghi thao tác: KHÔNG nói mã ra lời, không viết dấu #. Không nói chữ \"rổ\".\n"
             "  • Mỗi lượt giới thiệu MỘT căn tốt nhất (khách đòi thêm mới đưa căn kế). Viết thành BỐN ĐOẠN, MỖI ĐOẠN cách nhau MỘT DÒNG TRỐNG — mỗi "
             "đoạn là một tin Zalo riêng. KHÔNG gạch đầu dòng, không dấu \"·\", không viết tắt \"P.\" \"Q.\" (viết \"phường\", \"quận\"):\n"

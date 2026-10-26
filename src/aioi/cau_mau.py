@@ -45,24 +45,27 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "thu_lai_hong": ("Em xin lỗi anh/chị, hệ thống bên em đang chậm. Em đã báo anh/chị phụ trách xem tin của mình, anh/chị ấy sẽ "
                      "nhắn lại sớm ạ.", "Làm lại vẫn lỗi — xin lỗi và báo người phụ trách", "SRS-5.1zzzzzzz82"),
     # --- Câu có từ trước khi theo anh Luận (SRS-5.1zzzzzzz110) ---
-    "chao_lan_dau": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n{Goi} đang có căn chung cư, nhà phố hay "
-                     "đất cần gửi bán, cho thuê, hay đang tìm mua vậy ạ?",
-                     "Khách chào (hello / hi / alo / 👋) lần đầu. {ten} = tên trợ lý", "Lời chào cũ, giữ (quyết định 20/10); 25/10 thêm \"tìm mua\" (SRS-5.1zzzzzzz174)"),
+    "chao_lan_dau": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n{Goi} đang cần gửi bán, cho thuê nhà, hay "
+                     "đang tìm mua ạ?",
+                     "Khách chào (hello / hi / alo / 👋) lần đầu. {ten} = tên trợ lý",
+                     "Lời chào cũ (quyết định 20/10); 25/10 thêm \"tìm mua\" (SRS-174); 26/10 bỏ kể loại nhà — một câu hỏi (SRS-5.1zzzzzzz212)"),
     "chao_lam_moi": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\nEm đã làm mới cuộc trò chuyện rồi ạ. {Goi} "
-                     "đang có căn chung cư, nhà phố hay đất cần gửi bán, cho thuê, hay đang tìm mua vậy ạ?",
-                     "Khách chào khi đã có chuyện cũ — làm mới phiên. {ten} = tên trợ lý", "Quyết định 20/10: hello làm mới phiên; 25/10 thêm \"tìm mua\" (SRS-5.1zzzzzzz174)"),
-    "chao_tu_van": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n{Goi} đang tìm mua hay thuê căn chung cư, nhà "
-                    "phố hay đất ở khu vực nào vậy ạ?",
+                     "đang cần gửi bán, cho thuê nhà, hay đang tìm mua ạ?",
+                     "Khách chào khi đã có chuyện cũ — làm mới phiên. {ten} = tên trợ lý",
+                     "Quyết định 20/10: hello làm mới phiên; 25/10 thêm \"tìm mua\" (SRS-174); 26/10 bỏ kể loại nhà (SRS-5.1zzzzzzz212)"),
+    "chao_tu_van": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n{Goi} đang tìm căn như thế nào, kể em nghe "
+                    "với ạ?",
                     "Khách chào lần đầu ở số Zalo TƯ VẤN người mua. {ten} = tên trợ lý",
-                    "SRS-5.1zzzzzzz210 · chủ dự án 26/10: một số nhận ký gửi, một số tư vấn người mua"),
+                    "SRS-5.1zzzzzzz210 · chủ dự án 26/10: một số nhận ký gửi, một số tư vấn người mua; câu hỏi mở (SRS-5.1zzzzzzz212)"),
     "mo_dau_nhap": ("📋 Em sẽ rao như vầy nhé {goi}:",
                     "Dòng mở bản nháp tin rao — phải bắt đầu 📋 và kết thúc dấu \":\" (code cắt câu dẫn theo dòng này)",
                     "SRS-5.1zzzzzzz76 / 85 / 90"),
     "mo_dau_nhap_em": ("📋 Mình sẽ rao như vầy nhé em:", "Như trên, khi khách xưng \"em\" — phải bắt đầu 📋, kết thúc \":\"",
                        "SRS-5.1zzzzzzz76"),
-    "hoi_ban_nhap": ("{Goi} thấy bản tin này hấp dẫn chưa ạ?", "Câu hỏi cuối bản nháp (bot được dặn kết bản nháp bằng câu này)",
-                     "Kịch bản người bán"),
-    "hoi_ban_nhap_em": ("Em thấy bản tin này hấp dẫn chưa?", "Như trên, khi khách xưng \"em\"", "Kịch bản người bán"),
+    "hoi_ban_nhap": ("{Goi} muốn sửa chỗ nào, hay em đăng luôn ạ?", "Câu hỏi cuối bản nháp (bot được dặn kết bản nháp bằng câu này)",
+                     "Kịch bản người bán; 26/10 bỏ câu dẫn dắt \"hấp dẫn chưa\" (SRS-5.1zzzzzzz212)"),
+    "hoi_ban_nhap_em": ("Em muốn sửa chỗ nào, hay mình đăng luôn nhé?", "Như trên, khi khách xưng \"em\"",
+                        "Kịch bản người bán; 26/10 bỏ câu dẫn dắt (SRS-5.1zzzzzzz212)"),
     "xac_nhan_an": ("{Goi} muốn em **{viec}** — đúng không ạ? Nhắn **\"đúng\"** để em làm, hoặc **\"thôi\"** để giữ nguyên nhé. (Em "
                     "KHÔNG xóa dữ liệu đâu — chỉ ẩn tin, rao lại lúc nào cũng được.)",
                     "Khách bảo gỡ / ẩn căn — hỏi xác nhận trước. {viec} = việc sắp làm (vd \"NGƯNG RAO căn A12\")",

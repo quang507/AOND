@@ -132,8 +132,17 @@ class ClaudeProvider(LLMProvider):
         khối ổn định (lượt sau, khách khác dùng lại được dù đuôi đổi), điểm thứ hai ở cuối cả chuỗi (gọi lại trong CÙNG lượt vẫn trúng
         như trước). Không có dấu thì một khối như cũ. Khối rỗng bị API từ chối nên bỏ."""
         on_dinh, dong = tach_on_dinh(system)
-        khoi = [{"type": "text", "text": t, "cache_control": {"type": "ephemeral"}} for t in (on_dinh, dong) if t.strip()]
-        return khoi or [{"type": "text", "text": system or " ", "cache_control": {"type": "ephemeral"}}]
+        # SRS-5.1zzzzzzz213 (26/10, nhật ký 5 khách: mỗi lượt chat cache_w 600–4.000 token cho ĐUÔI đổi mỗi lượt, chưa kể lượt gọi lại
+        # nối thêm "=== VIẾT LẠI ===" nên đuôi không bao giờ được đọc lại): đuôi KHÔNG đặt điểm cache — ghi cache đắt 1,25 lần token
+        # thường, đọc lại mới rẻ; thứ không ai đọc lại thì đừng ghi. Chỉ khối ổn định trước dấu có điểm cache. Không có dấu → một khối
+        # có cache như cũ (lượt lập thao tác / prompt chưa đặt dấu).
+        if not dong.strip():
+            return [{"type": "text", "text": on_dinh if on_dinh.strip() else (system or " "), "cache_control": {"type": "ephemeral"}}]
+        khoi: list[dict[str, Any]] = []
+        if on_dinh.strip():
+            khoi.append({"type": "text", "text": on_dinh, "cache_control": {"type": "ephemeral"}})
+        khoi.append({"type": "text", "text": dong})
+        return khoi
 
     def chat(self, system: str, messages: list[Message], max_tokens: int = 256) -> str:
         resp = self._tao("chat",
