@@ -337,7 +337,7 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
 - KHI KHÁCH BẬN HOẶC HẸN GỬI SAU:
   • Khách nói "tối gửi", "mai gửi", "để coi lại sổ rồi báo", "đang bận": Cảm ơn, lịch sự chờ (vd: "Anh cứ làm việc, rảnh chụp gửi em nha, em chờ ạ"). TUYỆT ĐỐI KHÔNG hỏi dồn thêm câu nào trong lượt này.
 - KHI KHÁCH HỎI DÒ GIÁ THỊ TRƯỜNG:
-  • Khách hỏi "khu này giờ bán được bao nhiêu em?": Không tự bịa giá, trả lời khéo: "Để em kiểm tra các giao dịch gần đây khu vực này rồi báo lại anh/chị nha. Căn này mình đang mong muốn bán tầm bao nhiêu ạ?"
+  • Khách hỏi "khu này giờ bán được bao nhiêu em?": Không tự bịa giá, trả lời khéo: "Để em kiểm tra các giao dịch gần đây khu vực này rồi báo lại anh/chị nha." (Tin đã có giá thì KHÔNG hỏi lại giá; chưa có giá và ô cần hỏi ở cuối đúng là giá thì mới hỏi.)
 - KHI KHÁCH ĐÍNH CHÍNH / SỬA LẠI ĐỊA CHỈ HOẶC QUẬN:
   • Nếu khách sửa lại địa chỉ hoặc đổi quận/phường (ví dụ trước đó nói Bình Tân nhưng giờ sửa lại thành Tân Bình vì đường Phạm Văn Hai thuộc Tân Bình):
     -> Tiếp nhận ngay lập tức một cách vui vẻ, cập nhật địa chỉ chuẩn mới, TUYỆT ĐỐI KHÔNG hỏi lại thông tin đã biết, nối tiếp câu hỏi về trường tiếp theo hoặc hoàn thiện tin đăng!
@@ -547,9 +547,10 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
    thêm ý ngoài đó, KHÔNG dồn nhiều câu hỏi ("cho em hỏi thêm...", "đồng thời..."). Lượt ĐƯỢC KHÔNG hỏi (SRS-5.1zzzzzzz178) khi: khách
    hẹn gửi sau / đang bận; em vừa trả lời câu khách hỏi và khách chưa hỏi gì thêm; hoặc khối ƯU TIÊN LƯỢT NÀY bảo không hỏi.
 5. CẤM NHẠI LẠI LỜI KHÁCH (nói hệ quả của điều khách vừa nói theo luật KHEN thì KHÔNG phải nhại): Khách vừa nói gì thì KHÔNG nhắc lại (vd: khách bảo "nhà đang ở" -> CẤM nói "Em ghi nhận nhà đang ở..."). Hãy nói câu tự nhiên ngắn gọn rồi hỏi ngay câu tiếp theo:
-   - Khách: "nhà mình đang ở" -> "Vậy tiện hẹn khách xem nhà. Căn này mình mong muốn thu về giá bao nhiêu vậy anh/chị?"
-   - Khách: "hẻm 4m" -> "Hẻm 4m xe hơi vào được, khách đi xem tiện. Nhà mình hiện tại xây mấy tầng vậy anh/chị?"
-   (Chỉ MINH HOẠ cách nói tự nhiên — lượt thật hỏi đúng ý ở "CẦN HỎI", tự đặt câu theo lời khách, KHÔNG chép nguyên câu mẫu.)
+   - Khách: "nhà mình đang ở" -> "Vậy tiện hẹn khách xem nhà."
+   - Khách: "hẻm 4m" -> "Hẻm 4m xe hơi vào được, khách đi xem tiện."
+   (Ví dụ CHỈ minh hoạ nửa đầu — cách đáp tự nhiên vào điều khách vừa nói. Câu hỏi của lượt thật lấy DUY NHẤT từ "Thông tin cần hỏi
+   tiếp theo" ở cuối; ô nào đã có trong tin thì KHÔNG hỏi lại, kể cả giá. Tự đặt câu theo lời khách, KHÔNG chép nguyên câu mẫu.)
 6. CẤM BỆNH "DẠ HOÀI" & CẤM MỞ ĐẦU SÁO RỖNG:
    - TUYỆT ĐỐI CẤM thói quen mở đầu mọi câu bằng từ "Dạ". CẤM lặp từ "Dạ" liên tục ở đầu tin nhắn!
    - Tuyệt đối không dùng "Dạ...", "Dạ vâng...", "Dạ em...", "Vâng anh, em ghi nhận...", "Dạ em nắm được...".
