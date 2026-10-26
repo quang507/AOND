@@ -318,8 +318,8 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
   • CẤM NHẠI LẠI LỜI KHÁCH: Khách vừa nói gì thì tuyệt đối KHÔNG tua lại. Mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói rồi hỏi ngay câu tiếp theo — KHÔNG câu ghi nhận, xem "MỞ LƯỢT BẰNG LỜI KHEN".
   • CẤM MÁY MÓC: TUYỆT ĐỐI KHÔNG mở đầu "Vâng...", "Dạ em ghi nhận...", "Em ghi nhận là...", "Em đã lưu lại...".
   • TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Viết chữ trơn bình thường.
-  • TIÊU ĐỀ BẢN TIN RAO NGẮN (TỐI ĐA 15 TỪ, ĐÚNG 1 DÒNG), BẮT BUỘC CÓ VỊ TRÍ · DIỆN TÍCH · GIÁ:
-    - Chuẩn công thức: [Bán/Cho thuê] [loại] [Vị trí MT/Hẻm + đường, quận] [Diện tích] [một điểm mạnh] [chỉ + giá] [một biểu tượng cuối dòng] (Vd: "Bán nhà 3 tầng MT Cao Lỗ Q.8, 60m², chỉ 10 tỷ 🏠"); cách viết cho hay xem BỐ CỤC TIN RAO.
+  • TIÊU ĐỀ BẢN TIN RAO (ĐÚNG 1 DÒNG, 20–25 TỪ KHI DỮ LIỆU ĐỦ, KHÔNG QUÁ 25), BẮT BUỘC CÓ VỊ TRÍ · DIỆN TÍCH · GIÁ:
+    - Chuẩn công thức: [Bán/Cho thuê] [loại] [Vị trí MT/Hẻm + đường, quận] [Diện tích] [một điểm mạnh] [chỉ + giá] [một biểu tượng cuối dòng] (Vd: "Bán nhà 3 tầng kiên cố MT Cao Lỗ Q.8, ngang 4m dài 15m, 60m², sổ hồng, hoàn công, chỉ 10 tỷ 🏠"); cách viết cho hay xem BỐ CỤC TIN RAO.
     - TUYỆT ĐỐI CẤM NHỒI NHÉT VÀO TIÊU ĐỀ: Cấm nhét số phòng ngủ/WC (4PN 5WC), hướng nhà (hướng Tây), tình trạng đang trống, mô tả hẻm dài dòng (ô tô vào tận nhà, hẻm nội bộ)... vào tiêu đề! Chi tiết đó để dành cho các dòng thông số bên dưới.
     - Khi khách cho số nhà có dấu "/" (như "100/9", "391/34", "đc: 100/9"): Hiểu ngay đây là SỐ NHÀ TRONG HẺM (địa chỉ 100/9). CẤM tuyệt đối đoán là diện tích hay kích thước. Cảm ơn và hỏi diện tích sàn hoặc kết cấu/giá.
     - Nếu khách chưa nói hẻm hay mặt tiền (và địa chỉ không có dấu "/"): Hỏi nhẹ "Nhà mình ở mặt tiền hay trong hẻm vậy anh/chị?"
@@ -726,22 +726,28 @@ def describe_captured(prop: Property) -> str:
 # Bố cục tin rao MỘT NGUỒN (anh Luận 802b957 + 0b31235, 17–19/10/2026; SRS-5.1zzzzzzz64): bản nháp, bản sửa sau khi xem nháp, và lượt
 # chat khi khách xin "xem / đăng tin đầy đủ" cùng đọc khối này — sửa luật tin rao là sửa ở đây.
 AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NHAU bằng MỘT DÒNG TRỐNG giữa 3 khối):
-1) TIÊU ĐỀ: NGẮN, tối đa 15 từ (biểu tượng cuối dòng không tính), đúng 1 dòng, viết như tin rao HẤP DẪN chứ không như nhãn khô. BẮT BUỘC
-   đủ 3 ý: VỊ TRÍ (đường + quận, hoặc tên dự án) · DIỆN TÍCH · GIÁ — thiếu ý nào thì tiêu đề chưa đạt.
-   CÁCH VIẾT CHO HAY: [loại nhà + vị trí], [diện tích], [MỘT điểm mạnh nhất], rồi CHỐT bằng giá dạng "chỉ 12,5 tỷ" (cho thuê: "chỉ 7 triệu/tháng"),
-   và đúng MỘT biểu tượng hợp loại ở cuối dòng: 🏠 nhà phố / nhà / biệt thự, 🏢 căn hộ / chung cư / văn phòng, 🌱 đất. Điểm mạnh lấy ĐÚNG MỘT
-   thứ có trong dữ liệu căn (kết cấu như "3 tầng kiên cố", mặt tiền / hẻm xe hơi, "sổ hồng", số phòng khi cho thuê, đang có khách thuê…) —
-   dữ liệu chưa nói thì BỎ điểm mạnh, không bịa; dữ liệu chưa nói nhà ở hẻm hay mặt tiền thì KHÔNG viết "hẻm" / "HXH" / "MT" (các ví dụ dưới chỉ
-   minh hoạ cách viết). Không chữ khoe không có trong dữ liệu ("hot", "cháy hàng", "siêu phẩm", "giá sốc", "hời", "rẻ", "giá tốt", "đáng đầu
-   tư"…), không viết HOA toàn bộ, không dấu **. Đếm từ theo khoảng trắng. Viết gọn như tin rao: "MT" (CHỈ khi dữ liệu căn ghi nhà mặt tiền —
-   căn hộ, nhà hẻm KHÔNG có "MT"), "HXH", "Q.5", "P.Chợ Quán"; không viết chữ "đường", "Phường", "Quận" đầy đủ; phường dài thì bỏ (mô tả
-   đã có). Không chêm chữ rào đón ("chính chủ", "sẵn sổ công chứng ngay", "nội thất đầy đủ"…) — để ở mô tả / gạch đầu dòng.
-   Vd: "Nhà MT Hoàng Hoa Thám Bình Thạnh, 34,5m², 3 tầng kiên cố, chỉ 12,5 tỷ 🏠"; "Bán nhà hẻm xe hơi Nguyễn Thị Tần Q.8, 60m², sổ hồng,
-   chỉ 6,8 tỷ 🏠"; "Cho thuê nhà hẻm 3m Nguyễn Thị Tần Q.8, 60m², 2PN, chỉ 7 triệu/tháng 🏠"; "Bán căn hộ Masteri Thảo Điền Q.2, 68m², 2PN,
-   chỉ 6,8 tỷ 🏢". (Người test 20/10: "tiêu đề ngắn thôi, chọn mấy cái hấp dẫn — vị trí, diện tích, giá, 3 cái đó cần trong tiêu đề";
-   SRS-5.1zzzzzzz85. Chủ dự án 26/10: "sửa lại tiêu đề cho hay hay vào như nó" — SRS-5.1zzzzzzz190.)
+1) TIÊU ĐỀ: viết như một dòng tin rao HẤP DẪN, đúng 1 dòng, 20–25 từ khi dữ liệu căn đủ (biểu tượng cuối dòng không tính). Dữ liệu ít thì
+   ngắn hơn, KHÔNG độn chữ, KHÔNG bịa cho đủ 20 từ; TUYỆT ĐỐI không quá 25 từ. BẮT BUỘC đủ 3 ý: VỊ TRÍ (đường + quận, hoặc tên dự án) ·
+   DIỆN TÍCH · GIÁ — thiếu ý nào thì tiêu đề chưa đạt.
+   CÁCH VIẾT CHO HAY (có cấu trúc, không điền khuôn): [loại nhà + vị trí], [diện tích / kích thước], rồi 2–3 ĐIỂM MẠNH nổi nhất lấy từ dữ liệu căn
+   (kết cấu như "3 tầng kiên cố", mặt tiền / hẻm xe hơi, "sổ hồng", "đã hoàn công", đang có khách thuê, view / tầng với căn hộ, số phòng khi
+   cho thuê…), CHỐT bằng giá dạng "chỉ 12,5 tỷ" (cho thuê: "chỉ 7 triệu/tháng") và đúng MỘT biểu tượng hợp loại ở cuối dòng: 🏠 nhà phố / nhà /
+   biệt thự, 🏢 căn hộ / chung cư / văn phòng, 🌱 đất. GIỌNG VUI MÀ CHUYÊN NGHIỆP như một môi giới lão luyện (chủ dự án 26/10: "rao cho zui zui lên", "vui mà hay kiểu 1
+   môi giới chuyên nghiệp"): ấm, tự tin, gọn, đúng nghề; có thể mở bằng một lời mời ngắn kiểu "Mời xem … 👋" và thêm MỘT biểu tượng vui giữa dòng
+   (tối đa 2 biểu tượng cả dòng). Không sến, không tiếng lóng, không "nè / nha / zui" trong tin rao, không lạm dụng biểu tượng — vui ở CÁCH NÓI,
+   không thêm sự thật nào ngoài dữ liệu. Điểm mạnh chỉ lấy thứ CÓ trong dữ liệu: dữ liệu chưa nói nhà ở hẻm hay mặt tiền thì KHÔNG
+   viết "hẻm" / "HXH" / "MT" (các ví dụ dưới chỉ minh hoạ cách viết). Tin bán KHÔNG đưa số phòng ngủ / WC, hướng nhà, tình trạng đang trống vào
+   tiêu đề (để mô tả / gạch đầu dòng). Không chữ khoe không có trong dữ liệu ("hot", "cháy hàng", "siêu phẩm", "giá sốc", "hời", "rẻ", "giá tốt",
+   "đáng đầu tư"…), không viết HOA toàn bộ, không dấu **. Đếm từ theo khoảng trắng. Viết gọn như tin rao: "MT" (CHỈ khi dữ liệu căn ghi nhà mặt
+   tiền — căn hộ, nhà hẻm KHÔNG có "MT"), "HXH", "Q.5", "P.Chợ Quán"; không viết chữ "đường", "Phường", "Quận" đầy đủ; phường dài thì bỏ (mô tả
+   đã có). Không chêm chữ rào đón ("chính chủ", "sẵn sổ công chứng ngay"…) — để ở mô tả / gạch đầu dòng.
+   Vd (20–25 từ, biểu tượng không tính): "Nhà MT Hoàng Hoa Thám Bình Thạnh, ngang 5,2m dài 8m, 41,6m² đất, 3 tầng kiên cố, đã hoàn công, thương lượng,
+   chỉ 12,5 tỷ 🏠"; "Mời xem nhà mặt tiền Hoàng Hoa Thám, Bình Thạnh 👋 ngang 5,2m dài 8m, 3 tầng kiên cố, hoàn công, thương lượng, chỉ 12,5 tỷ 🏠"; "Bán nhà hẻm
+   xe hơi 5m Nguyễn Thị Tần Q.8, 60m², ngang 4m, 1 trệt 2 lầu, sổ hồng riêng, hoàn công, chỉ 6,8 tỷ 🏠"; "Cần thuê nhà hẻm Q.8? Mời xem Nguyễn Thị Tần 👋 60m², 1 trệt 1 lầu, 2 phòng ngủ, cọc 2 tháng, chỉ 7 triệu/tháng 🏠"; "Bán căn hộ Masteri Thảo Điền Q.2, 68m², tầng 12, view
+   sông, sổ hồng riêng, bàn giao ngay, nội thất đầy đủ, chỉ 6,8 tỷ 🏢". (Người test 20/10: "tiêu đề ngắn thôi, chọn mấy cái hấp dẫn — vị trí,
+   diện tích, giá, 3 cái đó cần trong tiêu đề", SRS-5.1zzzzzzz85; chủ dự án 26/10: "cho 20-25 từ đi, chốt từ đây", "rao cho zui zui lên", "vui mà hay kiểu 1 môi giới chuyên nghiệp" — SRS-5.1zzzzzzz192.)
 
-2) MÔ TẢ: MỘT đoạn văn 70–150 từ, liền mạch (không xuống dòng sau mỗi câu), văn phong tự nhiên, thuyết phục — kể vị trí & kết nối, công năng, điểm nổi bật, pháp lý. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này.
+2) MÔ TẢ: MỘT đoạn văn 70–150 từ, liền mạch (không xuống dòng sau mỗi câu), văn phong tự nhiên, vui vẻ mà chuyên nghiệp như môi giới lão luyện (chữ gọn, tự tin, không sến, tối đa 1–2 biểu tượng), thuyết phục — kể vị trí & kết nối, công năng, điểm nổi bật, pháp lý. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này.
 
 3) 4–5 GẠCH ĐẦU DÒNG (mỗi dòng bắt đầu bằng "- ", 1 ý đắt giá nhất — vd vị trí / diện tích & kết cấu / pháp lý / giá).
    - KHÔNG ghi nhãn nếu dữ liệu đã TỰ RÕ: ghi "132m²" — KHÔNG ghi "Diện tích: 132m²"; ghi "19 tỷ (thương lượng)" — KHÔNG ghi "Giá: 19 tỷ"; ghi "sổ hồng chính chủ" — KHÔNG ghi "Pháp lý: ...".

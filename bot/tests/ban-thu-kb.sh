@@ -78,8 +78,8 @@ dong() { q "select l.code, l.status, l.property_type, l.deal, l.price_vnd, l.are
               l.boc_tach - '_cap_nhat' as boc_tach
             from listings l join sellers s on s.id = l.seller_id left join projects p on p.id = l.project_id
             where s.zalo_user_id = '$1' order by l.updated_at desc limit 1" | jq -c '.[0] // {}'; }
-tieu_de_dat() {   # $1 = chữ phải có (vị trí); tiêu đề ≤ 15 từ, có vị trí, diện tích, giá
-  [ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 15 ] && grep -qiE "$1" <<<"$TIEU_DE" \
+tieu_de_dat() {   # $1 = chữ phải có (vị trí); tiêu đề ≤ 25 từ (+1 biểu tượng cuối dòng, SRS-5.1zzzzzzz192), có vị trí, diện tích, giá
+  [ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 26 ] && grep -qiE "$1" <<<"$TIEU_DE" \
     && grep -qE 'm²|m2|[0-9]+([.,][0-9]+)? ?x ?[0-9]+([.,][0-9]+)? ?m' <<<"$TIEU_DE" && grep -qE 'tỷ|triệu' <<<"$TIEU_DE" && echo 1 || echo 0
 }
 web_co() {   # trang tin trên web có chữ $2 (tin mã $1)
@@ -118,7 +118,7 @@ kiem "KB4: hẻm, không phải mặt tiền đường" "$(jq '(.access_type // 
 kiem "KB4: không ô nào bịa \"ô tô vào\" từ hẻm 3m" "$(jq '[.boc_tach[]? | strings | test("ô tô|xe hơi")] | any | not | if . then 1 else 0 end' <<<"$r4")"
 kiem "KB4: \"đăng đi\" — ra 📋 thật hoặc hỏi ý còn thiếu, không bài đăng giả" \
      "$([ -n "$TIEU_DE" ] || ! grep -qE '^- ' <<<"$(jq -r '.reply // ""' <<<"$TRA")" && echo 1 || echo 0)"
-if [ -n "$TIEU_DE" ]; then kiem "KB4: tiêu đề ≤ 15 từ, có Nguyễn Chí Thanh, diện tích, giá" "$(tieu_de_dat 'Nguyễn Chí Thanh')"; fi
+if [ -n "$TIEU_DE" ]; then kiem "KB4: tiêu đề ≤ 25 từ, có Nguyễn Chí Thanh, diện tích, giá" "$(tieu_de_dat 'Nguyễn Chí Thanh')"; fi
 
 echo; echo "=================== KB2 — nhà phố trong dự án LakeView City ==================="
 TIEU_DE=""; MOC_KB2=${#MOI_LOI}
@@ -136,7 +136,7 @@ kiem "KB2: giá 27 tỷ" "$(jq '.price_vnd == 27000000000 | if . then 1 else 0 e
 kiem "KB2: diện tích 100" "$(jq '((.area_m2 // 0) | tonumber) == 100 | if . then 1 else 0 end' <<<"$r2")"
 kiem "KB2: 4 tầng" "$(jq '.floors == 4 | if . then 1 else 0 end' <<<"$r2")"
 kiem "KB2: 4 phòng ngủ" "$(jq '.bedrooms == 4 | if . then 1 else 0 end' <<<"$r2")"
-if [ -n "$TIEU_DE" ]; then kiem "KB2: tiêu đề ≤ 15 từ, có LakeView, diện tích, giá" "$(tieu_de_dat 'lake ?view')"
+if [ -n "$TIEU_DE" ]; then kiem "KB2: tiêu đề ≤ 25 từ, có LakeView, diện tích, giá" "$(tieu_de_dat 'lake ?view')"
 else echo "== KB2: chưa ra bản nháp (còn thiếu ô tối thiểu — mã căn / diện tích sàn), không kiểm tiêu đề"; fi
 
 echo; echo "=================== KB3 — căn hộ trong dự án Masteri Thảo Điền ==================="
@@ -153,7 +153,7 @@ kiem "KB3: phường Thảo Điền (từ dự án)" "$(jq '(.ward // "") | test
 kiem "KB3: giá 6,8 tỷ" "$(jq '.price_vnd == 6800000000 | if . then 1 else 0 end' <<<"$r3")"
 kiem "KB3: 2 phòng ngủ" "$(jq '.bedrooms == 2 | if . then 1 else 0 end' <<<"$r3")"
 kiem "KB3: có thương lượng" "$(jq '.negotiable == true | if . then 1 else 0 end' <<<"$r3")"
-kiem "KB3: tiêu đề ≤ 15 từ, có Masteri, diện tích, giá" "$(tieu_de_dat 'masteri')"
+kiem "KB3: tiêu đề ≤ 25 từ, có Masteri, diện tích, giá" "$(tieu_de_dat 'masteri')"
 kiem "KB3: tiêu đề căn hộ không có \"MT\"" "$(grep -qw 'MT' <<<"$TIEU_DE" && echo 0 || echo 1)"
 kiem "KB3: không hỏi hẻm / mặt tiền" "$(grep -qiE 'hẻm|mặt tiền' <<<"$(jq -r '.reply' <<<"$TRA")" && echo 0 || echo 1)"
 # SRS-5.1zzzzzzz94: sau bản nháp bot ghi thêm phí quản lý (tin ngay trước không còn là bản nháp) — "ok đăng đi" vẫn là duyệt.

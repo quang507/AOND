@@ -11,7 +11,7 @@ P = Property(loai_hinh="nha_pho", fields={"gia": "5 tỷ", "dia_chi": "12 Lê L�
 
 def test_ad_format_mot_nguon_o_ca_ba_noi():
     assert "4–5 GẠCH ĐẦU DÒNG" in prompts.AD_FORMAT and "MỘT DÒNG TRỐNG" in prompts.AD_FORMAT
-    assert "tối đa 15 từ" in prompts.AD_FORMAT and "70–150 từ" in prompts.AD_FORMAT   # 20/10 người test: tiêu đề ngắn (SRS-5.1zzzzzzz85)
+    assert "20–25 từ" in prompts.AD_FORMAT and "70–150 từ" in prompts.AD_FORMAT   # 26/10 chủ dự án: tiêu đề 20–25 từ (SRS-5.1zzzzzzz192; trước đó ≤ 15 từ, SRS-5.1zzzzzzz85)
     he_thong = [
         prompts.build_listing_proposal_system("Lan", P),
         prompts.build_fee_followup_system("Lan", P),
