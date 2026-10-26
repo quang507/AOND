@@ -31,7 +31,13 @@ else
   apt-get install -y -qq nodejs
   xong "node $(node -v)"
 fi
-apt-get install -y -qq git tmux >/dev/null
+# 26/10/2026: máy đã có git + tmux thì bỏ qua apt — lượt cài 40303125818 dừng ngay ở dòng này (output bị giấu nên không biết lý do; nghi apt
+# đang bị tiến trình khác giữ khoá) dù cả hai đã có sẵn từ lâu.
+if command -v git >/dev/null && command -v tmux >/dev/null; then
+  xong "git + tmux đã có"
+else
+  apt-get install -y -qq git tmux
+fi
 command -v node >/dev/null && [ -x /usr/bin/node ] || ln -sf "$(command -v node)" /usr/bin/node
 
 # 19/10/2026 (SRS-5.1zzzzzzz76): dấu vân code bridge TRƯỚC khi lấy code mới — bước 5 chỉ khởi động lại bridge khi nó đổi. Bridge tắt là
