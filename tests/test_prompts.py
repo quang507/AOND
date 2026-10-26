@@ -116,6 +116,22 @@ def test_normal_missing_field_question_unaffected_by_ambiguous_area_check():
     assert '"giá"' in s  # asks about the actual next_field ("gia"), not diện tích at all
 
 
+def test_tieu_de_hap_dan_vi_du_trong_prompt_tu_tuan_luat():
+    """SRS-5.1zzzzzzz190: tiêu đề tin rao có một điểm mạnh + "chỉ <giá>" + một biểu tượng cuối dòng; các ví dụ trong prompt phải tự
+    tuân luật của chính nó (≤ 15 từ không tính biểu tượng, có "chỉ", đúng một biểu tượng ở cuối) — không thì model học theo ví dụ sai."""
+    import re
+    from aioi.prompts import AD_FORMAT
+    assert "CÁCH VIẾT CHO HAY" in AD_FORMAT and "đúng MỘT biểu tượng" in AD_FORMAT and "không viết HOA toàn bộ" in AD_FORMAT
+    vi_du = [" ".join(m.split()) for m in re.findall(r'"([^"]*?(?:🏠|🏢|🌱))"', AD_FORMAT)]
+    assert len(vi_du) >= 4, vi_du
+    for tieu_de in vi_du:
+        *chu, bieu_tuong = tieu_de.split(" ")
+        assert bieu_tuong in ("🏠", "🏢", "🌱"), tieu_de
+        assert len(chu) <= 15, (len(chu), tieu_de)
+        assert "chỉ" in chu and re.search(r"\d+(?:[.,]\d+)?\s*(?:tỷ|triệu)", tieu_de), tieu_de
+        assert not re.search(r"[A-ZÀ-Ỹ]{4,}", tieu_de), tieu_de      # không viết HOA cả từ (MT / HXH / Q.8 / 2PN vẫn được)
+
+
 def test_listing_proposal_system_contains_length_and_no_header_rules():
     from aioi.prompts import build_listing_proposal_system
     s = build_listing_proposal_system("T•ai", _prop())
