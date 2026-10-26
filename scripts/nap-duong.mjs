@@ -30,7 +30,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { gomDuong, locTheoTamPhuong } from "./lib/phan-loai-duong.mjs";
+import { gomDuong, locTheoTamPhuong, chonRelationGanTam } from "./lib/phan-loai-duong.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const env = Object.fromEntries(
@@ -121,11 +121,22 @@ if (!CHI_TINH || CHI_TINH === "TP.HCM") {
   for (const w of wards) {
     if (CHI_PHUONG && w.ten_day_du !== CHI_PHUONG) continue;
     if (CHI_THIEU && phuongDaCo.has(w.ten_day_du)) continue;
-    const q = `[out:csv(name,::type,::lat,::lon;false)][timeout:180];area["admin_level"="6"]["name"="${w.ten_day_du}"]->.a;way(area.a)(${BBOX_RIENG[w.ten_day_du] ?? BBOX_HCM})["highway"]["name"];out center tags;.a out;`;
-    const csv = await overpass(q); daTra++;
+    const hop = BBOX_RIENG[w.ten_day_du] ?? BBOX_HCM;
+    const q = `[out:csv(name,::type,::lat,::lon,::id;false)][timeout:180];area["admin_level"="6"]["name"="${w.ten_day_du}"]->.a;way(area.a)(${hop})["highway"]["name"];out center tags;.a out;`;
+    let csv = await overpass(q); daTra++;
     if (csv == null) { console.log(`  ✗ ${w.ten_day_du}: không có trả lời`); await nghi(2000); continue; }
-    const { dong, soArea } = gomDuong(csv);
-    if (soArea !== 1) { console.log(`  ✗ ${w.ten_day_du}: ${soArea} đa giác cùng tên trong hộp bao — bỏ, cần soi tay`); await nghi(2000); continue; }
+    let { dong, soArea } = gomDuong(csv);
+    if (soArea > 1) {
+      // SRS-5.1zzzzzzz187: hai đa giác cùng tên (Phường Tân Phú / Long Bình ở TP.HCM và Đồng Nai) — chọn relation có tâm gần tâm phường rồi tra lại đúng nó.
+      const ds = await overpass(`[out:csv(::id,::lat,::lon;false)][timeout:60];rel["boundary"="administrative"]["admin_level"="6"]["name"="${w.ten_day_du}"](${hop});out center;`);
+      const id = ds == null ? null : chonRelationGanTam(ds, w.lat, w.lng);
+      if (!id) { console.log(`  ✗ ${w.ten_day_du}: ${soArea} đa giác cùng tên trong hộp bao, không chọn được cái gần tâm phường — bỏ, cần soi tay`); await nghi(2000); continue; }
+      csv = await overpass(`[out:csv(name,::type,::lat,::lon,::id;false)][timeout:180];rel(${id});map_to_area->.a;way(area.a)(${hop})["highway"]["name"];out center tags;.a out;`); daTra++;
+      if (csv == null) { console.log(`  ✗ ${w.ten_day_du}: relation ${id} không có trả lời`); await nghi(2000); continue; }
+      ({ dong, soArea } = gomDuong(csv));
+      console.log(`  ~ ${w.ten_day_du}: ${ds.trim().split("\n").length} relation cùng tên, chọn relation ${id}`);
+    }
+    if (soArea !== 1) { console.log(`  ✗ ${w.ten_day_du}: ${soArea} đa giác trong hộp bao — bỏ, cần soi tay`); await nghi(2000); continue; }
     // SRS-5.1zzzzzzz186: đa giác trùng tên ở tỉnh khác (Phường Tân Phú vs huyện Tân Phú, Đồng Nai) kéo đường cách tâm phường ~100 km vào.
     const { giu, bo } = locTheoTamPhuong(dong, w);
     if (bo.length) console.log(`  ! ${w.ten_day_du}: bỏ ${bo.length} dòng cách tâm phường > 50 km (${bo.slice(0, 3).map((x) => x.ten).join("; ")}…)`);

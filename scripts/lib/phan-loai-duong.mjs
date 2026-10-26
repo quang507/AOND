@@ -51,13 +51,15 @@ function chuanSo(t) {
 
 /**
  * Gom các đoạn (way) cùng tên trong một phường → một dòng, toạ độ = trung bình tâm các đoạn. Dòng CSV Overpass
- * `name \t type \t lat \t lon` (out center). Dòng type=area đếm số đa giác phường (hai TÊN khác nhau là trùng tên thật).
+ * `name \t type \t lat \t lon \t id` (out center). Dòng type=area đếm số đa giác phường theo ID.
+ * SRS-5.1zzzzzzz187: trước đây đếm theo TÊN (`Set` của name) nên hai đa giác CÙNG TÊN ở hai tỉnh ("Phường Tân Phú" TP.HCM và Đồng Nai,
+ * "Phường Long Bình" Thủ Đức và Biên Hòa) gộp thành một, phép chặn `soArea !== 1` không bao giờ kêu. Thiếu cột id (CSV cũ) thì đếm theo tên.
  */
 export function gomDuong(csv) {
   const gom = new Map(); const area = new Set();
   for (const dong of String(csv ?? "").split("\n")) {
-    const [name, type, lat, lon] = dong.split("\t");
-    if (type === "area") { area.add(name); continue; }
+    const [name, type, lat, lon, id] = dong.split("\t");
+    if (type === "area") { area.add(id ? `#${id}` : name); continue; }
     const d = phanLoaiDuong(name); if (!d) continue;
     const g = gom.get(d.ten) ?? { ...d, lat: 0, lng: 0, n: 0 };
     const la = Number(lat), lo = Number(lon);
@@ -68,6 +70,21 @@ export function gomDuong(csv) {
     ...d, lat: n ? Math.round((lat / n) * 1e6) / 1e6 : null, lng: n ? Math.round((lng / n) * 1e6) / 1e6 : null,
   }));
   return { dong, soArea: area.size };
+}
+
+/**
+ * Hai đa giác cùng tên: chọn relation có tâm gần tâm phường trong `wards` (cùng nguồn OSM nên lệch < vài trăm m).
+ * `csv` = dòng `id \t lat \t lon` của các relation cùng tên (`out center`). Đúng MỘT relation trong `toiDaKm` → id; còn lại → null (soi tay).
+ */
+export function chonRelationGanTam(csv, lat, lng, toiDaKm = 3) {
+  if (lat == null || lng == null || !Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return null;
+  const gan = [];
+  for (const dong of String(csv ?? "").split("\n")) {
+    const [id, la, lo] = dong.split("\t");
+    if (!id || !Number.isFinite(Number(la)) || !Number.isFinite(Number(lo))) continue;
+    if (khoangCachKm(Number(la), Number(lo), Number(lat), Number(lng)) <= toiDaKm) gan.push(id);
+  }
+  return gan.length === 1 ? gan[0] : null;
 }
 
 // SRS-5.1zzzzzzz186: khoảng cách (km) hai điểm trên mặt cầu.
