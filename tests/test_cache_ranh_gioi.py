@@ -22,7 +22,8 @@ def test_sys_mot_khoi_khi_khong_co_dau_va_hai_khoi_khi_co():
     assert len(mot) == 1 and mot[0]["cache_control"] == {"type": "ephemeral"}
     hai = ClaudeProvider._sys("on dinh" + RANH_GIOI_CACHE + "doi moi luot")
     assert [k["text"] for k in hai] == ["on dinh", "doi moi luot"]
-    assert all(k["cache_control"] == {"type": "ephemeral"} for k in hai)   # điểm 1 ở cuối khối ổn định, điểm 2 ở cuối chuỗi
+    # SRS-5.1zzzzzzz213: chỉ khối ổn định có điểm cache; đuôi đổi mỗi lượt KHÔNG ghi cache (ghi đắt 1,25x, không ai đọc lại).
+    assert hai[0]["cache_control"] == {"type": "ephemeral"} and "cache_control" not in hai[1]
     assert RANH_GIOI_CACHE not in "".join(k["text"] for k in hai)
 
 
@@ -62,3 +63,16 @@ def test_model_du_phong_khong_nhan_dau():
     dp = du_phong.DuPhongProvider(None, [du_phong.Nguon("Gemini", "http://x", ["k"], ["m"], True)], goi=goi)
     dp._hoi(dp._nguon[0], "m", "k", "A" + RANH_GIOI_CACHE + "B", [], 100)
     assert gui["body"]["messages"][0]["content"] == "AB"
+
+
+def test_prompt_ban_nhap_va_sau_duyet_co_ranh_gioi():
+    """SRS-5.1zzzzzzz213 (nhật ký 5 khách 26/10: lượt bản nháp / lượt sau duyệt cache_w ~14.000, cache_r = 0 vì không có dấu — cả chuỗi
+    ghi lại mỗi lần): hai prompt này cũng cắt khối; khuôn tin rao + luật đứng trước dấu, dữ liệu căn + khối dự án sau dấu."""
+    pr = Property()
+    pr.fields["gia"] = "8 tỷ 123"
+    a = p.build_listing_proposal_system("Lan", pr, project_block="=== DỰ ÁN X ===")
+    on, dong = tach_on_dinh(a)
+    assert p.AD_FORMAT in on and "DỰ ÁN X" in dong and "8 tỷ 123" in dong and "8 tỷ 123" not in on
+    b = p.build_fee_followup_system("Lan", pr, web={"len_web": True})
+    on_b, dong_b = tach_on_dinh(b)
+    assert on_b and "NHIỆM VỤ" in dong_b

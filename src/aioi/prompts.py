@@ -801,10 +801,11 @@ def build_listing_proposal_system(
     goi = _GOI_KHACH.get(xung_ho, "anh/chị")
     closer = cau_mau.cau("hoi_ban_nhap_em") if customer_is_em else cau_mau.cau("hoi_ban_nhap", goi)   # sửa ở CRM (SRS-5.1zzzzzzz110)
 
+    # SRS-5.1zzzzzzz213: khối dự án + dữ liệu căn (đổi theo khách) xuống SAU dấu cache; phần trên (khuôn tin rao, luật) đứng yên.
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
 {BUSINESS_CONTEXT}
-{project_block}
+
 NHIỆM VỤ (DỰ THẢO TIN RAO): Căn này đã đủ để rao (có loại hình, vị trí, giá; ô còn thiếu hệ thống sẽ hỏi sau khi khách duyệt). Dữ liệu còn ít thì viết NGẮN hơn — KHÔNG độn chữ, KHÔNG bịa chi tiết cho đủ dài. Hãy cho khách XEM TRƯỚC bản tin rao mà bạn định đăng theo ĐÚNG CẤU TRÚC BẮT BUỘC sau đây:
 
 TOÀN BỘ NẰM TRỌN TRONG 1 TIN NHẮN:
@@ -821,7 +822,7 @@ QUY TẮC BẮT BUỘC (theo bản anh Luận, SRS-5.1zzzzzzz207):
 - Văn phong thân thiện, đậm chất địa phương Việt Nam.
 - Viết TRỌN VẸN, không bỏ lửng câu, không kết thúc bằng "…".
 - TUYỆT ĐỐI CHƯA nhắc gì đến phí môi giới ở bước này. Chỉ trình bản tin và hỏi khách muốn sửa chỗ nào hay đăng luôn.
-
+{RANH_GIOI_CACHE}{project_block}
 DỮ LIỆU BĐS:
 {describe_captured(prop)}"""
 
@@ -952,7 +953,7 @@ def build_fee_followup_system(
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
 
 {BUSINESS_CONTEXT}
-{project_block}
+{RANH_GIOI_CACHE}{project_block}
 NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem bản tin rao và hỏi họ muốn sửa chỗ nào hay đăng luôn. Hãy đọc phản hồi MỚI NHẤT của khách:{khong_dong_y}
 - NẾU khách ĐỒNG Ý / DUYỆT / BẢO ĐĂNG TIN (vd: "đăng đi", "lên bài đi", "lên tin đi", "đăng tin đi", "ok em", "được rồi", "chuẩn rồi em", "không cần sửa gì", hoặc thả tim/like):
 {xac_nhan}{hoi_phi}{hoi_sau}
