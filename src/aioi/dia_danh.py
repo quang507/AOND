@@ -79,6 +79,50 @@ def _mot(gia_tri: list[str | None]) -> str | None:
     return ds.pop() if len(ds) == 1 else None
 
 
+_SO_PHUONG_CU = re.compile(r"(?<![a-z0-9])(?:phuong|p)\.?\s*(\d{1,2})(?![a-z0-9])")
+
+
+def so_phuong_cu(chu: str | None) -> int | None:
+    """Số của phường CŨ đánh số khách gõ ("phường 6", "P.6", "p6", hoặc chỉ "6") — đọc hình thức chữ, không đoán ý."""
+    k = bo_dau(chu or "").strip()
+    m = _SO_PHUONG_CU.search(k) or re.fullmatch(r"(\d{1,2})", k)
+    return int(m.group(1)) if m else None
+
+
+def _khoa_quan(s: str | None) -> str:
+    """"Quận Bình Thạnh" / "Bình Thạnh" → "binhthanh"; "Quận 5" / "Q.5" / "q5" → "5" — so quận cũ không phụ thuộc chữ "Quận"."""
+    k = re.sub(r"^(?:quan|huyen|thanh pho|thi xa|q)\.?\s*", "", bo_dau(s or "").strip())
+    return re.sub(r"[^a-z0-9]", "", k)
+
+
+def phuong_cu_chia(doc: Callable[[str, dict], list] | None, so: int | None, quan: str | None) -> list[str]:
+    """Các phường MỚI (wards.ten_day_du, xếp theo tên) mà phường cũ đánh số bị CHIA về, khi chia về từ 2 phường trở lên — SRS-5.1zzzzzzz191
+    (chat anh Luận 26/10: "phường 6" của Bình Thạnh về cả Bình Lợi Trung lẫn Gia Định nên máy không tự chọn được). Cần số phường và quận cũ
+    (cùng số "phường 6" có ở nhiều quận). Chia về một phường, không biết quận, bảng lỗi → []. `doc(bảng, tham số)` đọc PostgREST."""
+    qk = _khoa_quan(quan)
+    if doc is None or so is None or not qk:
+        return []
+    try:
+        cu = doc("phuong_cu", {"select": "quan_cu,phuong_moi", "ten": f"eq.Phường {so}", "limit": "200"})
+        moi = sorted({d["phuong_moi"] for d in cu if d.get("phuong_moi") and _khoa_quan(d.get("quan_cu")) == qk})
+        if len(moi) < 2:
+            return []
+        w = doc("wards", {"select": "ten,ten_day_du", "ten": "in.(" + ",".join(f'"{m}"' for m in moi) + ")"})
+    except Exception as e:  # noqa: BLE001 — tra địa danh là phần thêm
+        log.warning("phường cũ bị chia: đọc lỗi: %s", e)
+        return []
+    day_du = {x["ten"]: x["ten_day_du"] for x in w if x.get("ten") and x.get("ten_day_du")}
+    return sorted(day_du.get(m, f"Phường {m}") for m in moi)
+
+
+def chon_phuong_da_goi_ten(ung_vien: list[str], *chu: str | None) -> str | None:
+    """Trong các phường mới mà phường cũ bị chia về, đúng MỘT phường được nêu tên trong chữ khách ("Gia Định", "phường Gia Định") → phường đó;
+    không phường nào / nhiều hơn một → None. Chỉ so tên (bỏ dấu, bỏ chữ loại), không đoán."""
+    k = " " + re.sub(r"[^a-z0-9]+", " ", bo_dau(" ".join(c for c in chu if c))).strip() + " "
+    thay = [u for u in ung_vien if len(ten_tran(u)) >= 3 and f" {ten_tran(u)} " in k]
+    return thay[0] if len(thay) == 1 else None
+
+
 LOAI_XA_GO = {"xa": "xa", "phuong": "phuong", "p": "phuong", "thi tran": "thi tran", "tt": "thi tran"}
 # Tỉnh CŨ (cột `xa_tinh_khac.tinh_cu`) nằm NGOÀI vùng nhận tin dù nay thuộc tỉnh trong vùng (chủ dự án 20/10: "Bình Phước cũ — bỏ"; prompts.VUNG_NHAN_TIN).
 TINH_CU_NGOAI_VUNG = frozenset({"Bình Phước"})
@@ -136,6 +180,7 @@ class TraDiaDanh:
         self._nhung = nhung
         self._nho: dict[tuple, dict | None] = {}   # (tên, quận) → kết quả duong(): prompt hỏi lại mỗi lượt, khỏi tra / nhúng lại
         self._nho_hem: dict[tuple, list[str]] = {}   # (đường, số hẻm, quận) → phường của hẻm
+        self._nho_chia: dict[tuple, list[str]] = {}   # (số phường cũ, quận) → các phường mới nó bị chia về (≥ 2) hoặc []
         self._kho_xa: tuple[float, list[dict]] | None = None   # (lúc đọc, các dòng xa_tinh_khac)
 
     @classmethod
@@ -222,6 +267,18 @@ class TraDiaDanh:
         if kq:
             log.info("phường theo nghĩa: %r → %s", ten, kq)
         return kq
+
+    def phuong_cu_chia(self, chu: str | None, quan: str | None) -> list[str]:
+        """Phường mới mà "phường 6" (cũ, đánh số) của `quan` bị chia về, khi từ 2 phường trở lên — xem hàm cùng tên ở mức module. Nhớ theo (số, quận)."""
+        so = so_phuong_cu(chu)
+        khoa = (so, _khoa_quan(quan))
+        if so is None or not khoa[1]:
+            return []
+        if khoa not in self._nho_chia:
+            if len(self._nho_chia) > 200:
+                self._nho_chia.clear()
+            self._nho_chia[khoa] = phuong_cu_chia(self._doc, so, quan)
+        return self._nho_chia[khoa]
 
     def xa(self, ten: str | None) -> dict | None:
         """Xã / phường mới của tỉnh Tây Ninh (hợp nhất Long An) hoặc Đồng Nai (hợp nhất Bình Phước) theo chữ khách gõ — xem `tra_xa`. Bảng 191 dòng,
@@ -398,8 +455,17 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
             dong.append(f'Xã / phường khách nói là {x["ten_day_du"]}, tỉnh {x["tinh"]} (từ 01/07/2025 tỉnh {x["tinh"]} gồm cả {gop}; '
                         f'hợp nhất từ: {", ".join(x["don_vi_cu"]) or "giữ nguyên, không sáp nhập"}). Địa chỉ cấp xã + tỉnh là ĐỦ: KHÔNG hỏi quận / huyện / tỉnh, '
                         f'ghi đúng tên {x["ten_day_du"]}.' + (" Khách gọi bằng tên đơn vị cũ thì nhận, không bắt sửa." if x["tu_ten_cu"] or cu else ""))
+    chia = getattr(tra, "phuong_cu_chia", None)
+    chia = chia(fields.get("phuong"), fields.get("quan")) if chia else []
+    if len(chia) >= 2:
+        # SRS-5.1zzzzzzz191 (chat anh Luận 26/10): khách nói "phường 6" — phường CŨ đánh số bị chia về hai phường mới nên hệ thống không tự ghi
+        # được phường; bản trước bot cứ hỏi tiếp việc khác rồi tới lúc duyệt tin mới hỏi trống "phường mới nào". Hỏi NGAY, kèm các lựa chọn.
+        dong.append(f'Khách nói phường "{fields.get("phuong")}" — đó là phường CŨ đánh số; từ 01/07/2025 nó chia về nhiều phường mới ({", ".join(chia)}) '
+                    f'nên CHƯA biết nhà thuộc phường nào. Nếu chưa hỏi thì lượt này hỏi ĐÚNG câu này thay cho câu hỏi kế: kể hai phường mới cho khách '
+                    f'chọn (vd "{fields.get("phuong")} cũ giờ chia về {" hoặc ".join(chia)}, nhà mình ở phường nào ạ?"), KHÔNG hỏi trống "phường nào". '
+                    "Khách đã chọn hay nói phường khác thì ghi theo khách, không hỏi lại. Danh sách phường do hệ thống tra, KHÔNG phải khách nói.")
     if not fields.get("duong"):
-        return ("\n\nTRA CỨU ĐỊA DANH (hệ thống tra kho đường / phường, KHÔNG phải khách nói; không tự chọn thay khách):\n- " + dong[0]) if dong else ""
+        return ("\n\nTRA CỨU ĐỊA DANH (hệ thống tra kho đường / phường, KHÔNG phải khách nói; không tự chọn thay khách):\n- " + "\n- ".join(dong)) if dong else ""
     goi_y = _goi_y(tra, fields)
     if goi_y:
         dong.append(f'Tên đường khách gõ "{fields["duong"]}" gần với đường "{goi_y["ten"]}" trong kho, kho không có tên khách gõ. '

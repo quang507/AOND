@@ -35,7 +35,7 @@ from .schema import O_NOI_BO, TYPE_TO_GROUP, Property, _calc_area_from_dimension
 CAU_CHUAN_TOI_DA = 16
 from .tin_goc import gom_tin_goc
 from .assistants import assign_assistant
-from .dia_danh import bo_dau
+from .dia_danh import bo_dau, chon_phuong_da_goi_ten, phuong_cu_chia, so_phuong_cu
 
 if TYPE_CHECKING:
     from .engine import Conversation, Listing, Turn, BuyerLead
@@ -257,6 +257,8 @@ class SupabaseConversationStore(KhoNguoiMua):
         lỗi mạng → không ghi gì (cột cũ giữ nguyên)."""
         chu = ", ".join(str(fields[k]) for k in ("dia_chi", "phuong", "quan") if fields.get(k))
         phuong, quan = self._chuan_dia_ban(chu)
+        if not phuong:
+            phuong = self._phuong_chia_da_chon(chu, fields, quan)
         # Nguồn phường (cột `ward_source`, SRS-5.1zzzzzzz89): tra từ chữ khách gõ = khách nói; lấy theo dự án = suy đoán.
         nguon = "chu_xac_nhan" if phuong else "suy_doan"
         # Căn hộ trong dự án: khách thường chỉ nói tên dự án — lấy phường theo địa chỉ dự án trong kho (SRS-5.1zzzzzzz41), chỉ
@@ -276,6 +278,23 @@ class SupabaseConversationStore(KhoNguoiMua):
                     phuong = p2
                     break
         return phuong, quan, nguon
+
+    def _phuong_chia_da_chon(self, chu: str, fields: dict[str, Any], quan_cu: str | None) -> str | None:
+        """Phường cũ đánh số ("phường 6") bị chia về nhiều phường mới → `chuan_dia_ban` trả `mo_ho` và KHÔNG ghi phường (SRS-5.1zzzzzzz191, chat anh
+        Luận 26/10). Khi khách đã GỌI TÊN một trong các phường mới đó ("Gia Định") thì ghi phường ấy — địa chỉ cũ vẫn còn chữ "phường 6" nên DB
+        cứ trả mơ hồ dù khách đã chọn. Không nêu tên phường nào / nêu hơn một / thiếu quận → None (bot hỏi tiếp)."""
+        so = so_phuong_cu(chu)
+        quan = fields.get("quan") or quan_cu
+        if so is None or not quan:
+            return None
+
+        def doc(bang: str, ts: dict) -> list:
+            return self._get(f"{bang}?{urllib.parse.urlencode(ts)}")
+
+        ung_vien = self._nho_tra("phuong_cu_chia", f"{so}|{quan}", lambda: phuong_cu_chia(doc, so, quan))
+        if len(ung_vien) < 2:
+            return None
+        return chon_phuong_da_goi_ten(ung_vien, fields.get("phuong"))   # chỉ ô phường: tên đường có thể trùng tên phường
 
     def phuong_theo_du_an(self, fields: dict[str, Any]) -> str | None:
         """Phường (tên chuẩn) của dự án khách nói, khi tên khớp rõ một dự án trong kho — cùng đường với `_dia_ban` (SRS-5.1zzzzzzz93)."""

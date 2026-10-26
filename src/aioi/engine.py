@@ -2436,7 +2436,7 @@ class Engine:
                             else "các phường này cho khách chọn") + ", không hỏi trống \"thuộc phường nào\".")
         if thieu_td:
             ly_do.append("Bản tin vừa viết có TIÊU ĐỀ thiếu " + ", ".join(thieu_td)
-                         + "; tiêu đề tối đa 15 từ, đủ vị trí · diện tích · giá.")
+                         + "; tiêu đề 20–25 từ khi dữ liệu đủ (không quá 25), đủ vị trí · diện tích · giá.")
         lo_rieng = _lo_thong_tin_rieng(reply, conv.prop)
         if lo_rieng:
             ly_do.append("Bản tin rao vừa viết có thông tin RIÊNG của chủ (" + ", ".join(lo_rieng) + ") — bản tin lên web cho người mua "

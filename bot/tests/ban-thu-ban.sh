@@ -127,8 +127,8 @@ kiem "Nguyễn Trãi: trả lời theo cụm thì ra bản nháp trong ≤ 4 lư
 # SRS-5.1zzzzzzz85 (người test 20/10: "tiêu đề ngắn thôi — vị trí, diện tích, giá"): tiêu đề = dòng có chữ đầu tiên sau dòng 📋.
 TIEU_DE=$(jq -r '.reply // ""' <<<"$TRA" | sed -n '/📋/,$p' | sed 1d | awk 'NF{print; exit}')
 echo "== Nguyễn Trãi: tiêu đề \"$TIEU_DE\" ($(wc -w <<<"$TIEU_DE") từ)"
-kiem "Nguyễn Trãi: tiêu đề ≤ 15 từ, có đường, diện tích và giá" \
-  "$([ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 15 ] && grep -q 'Nguyễn Trãi' <<<"$TIEU_DE" && grep -qE 'm²|m2|[0-9] ?x ?[0-9]' <<<"$TIEU_DE" && grep -q 'tỷ' <<<"$TIEU_DE" && echo 1 || echo 0)"
+kiem "Nguyễn Trãi: tiêu đề ≤ 25 từ, có đường, diện tích và giá" \
+  "$([ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 26 ] && grep -q 'Nguyễn Trãi' <<<"$TIEU_DE" && grep -qE 'm²|m2|[0-9] ?x ?[0-9]' <<<"$TIEU_DE" && grep -q 'tỷ' <<<"$TIEU_DE" && echo 1 || echo 0)"
 # Lượt đầu khách chưa nói phường: phường từ kho chỉ được nhắc dạng hỏi, không khẳng định.
 # SRS-5.1zzzzzzz81: khách duyệt bản nháp → bot hỏi khách biết phí môi giới chưa (như bản anh Luận), không tự báo con số. Tin chưa
 # lên web (còn thiếu ô) thì lượt đó hỏi ô thiếu trước, không hỏi phí.

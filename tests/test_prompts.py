@@ -117,26 +117,33 @@ def test_normal_missing_field_question_unaffected_by_ambiguous_area_check():
 
 
 def test_tieu_de_hap_dan_vi_du_trong_prompt_tu_tuan_luat():
-    """SRS-5.1zzzzzzz190: tiêu đề tin rao có một điểm mạnh + "chỉ <giá>" + một biểu tượng cuối dòng; các ví dụ trong prompt phải tự
-    tuân luật của chính nó (≤ 15 từ không tính biểu tượng, có "chỉ", đúng một biểu tượng ở cuối) — không thì model học theo ví dụ sai."""
+    """SRS-5.1zzzzzzz190 + 192: tiêu đề tin rao 20–25 từ khi dữ liệu đủ, có điểm mạnh + "chỉ <giá>" + một biểu tượng cuối dòng; các ví dụ trong
+    prompt phải tự tuân luật của chính nó (20–25 từ không tính biểu tượng, có "chỉ" + con số giá, đúng một biểu tượng ở cuối, không HOA cả từ) —
+    không thì model học theo ví dụ sai."""
     import re
     from aioi.prompts import AD_FORMAT
     assert "CÁCH VIẾT CHO HAY" in AD_FORMAT and "đúng MỘT biểu tượng" in AD_FORMAT and "không viết HOA toàn bộ" in AD_FORMAT
+    assert "TUYỆT ĐỐI không quá 25 từ" in AD_FORMAT and "KHÔNG bịa cho đủ 20 từ" in AD_FORMAT
     vi_du = [" ".join(m.split()) for m in re.findall(r'"([^"]*?(?:🏠|🏢|🌱))"', AD_FORMAT)]
     assert len(vi_du) >= 4, vi_du
+    assert any("👋" in v for v in vi_du) and "GIỌNG VUI MÀ CHUYÊN NGHIỆP" in AD_FORMAT   # "rao cho zui zui lên" + "kiểu môi giới chuyên nghiệp"
+    assert not any(re.search(r"(?<![\w])(nè|nha|zui)(?![\w])", v, re.I) for v in vi_du)      # ví dụ trong prompt không dùng giọng sến / teen
     for tieu_de in vi_du:
-        *chu, bieu_tuong = tieu_de.split(" ")
-        assert bieu_tuong in ("🏠", "🏢", "🌱"), tieu_de
-        assert len(chu) <= 15, (len(chu), tieu_de)
+        tu = tieu_de.split(" ")
+        bieu_tuong = tu[-1]
+        chu = [t for t in tu if not re.fullmatch(r"[\U0001F300-\U0001FAFF]", t)]   # biểu tượng không tính vào 20–25 từ
+        assert bieu_tuong in ("🏠", "🏢", "🌱"), tieu_de                  # biểu tượng hợp loại luôn ở cuối dòng
+        assert len(tu) - len(chu) <= 2, tieu_de                          # tối đa 2 biểu tượng cả dòng
+        assert 20 <= len(chu) <= 25, (len(chu), tieu_de)
         assert "chỉ" in chu and re.search(r"\d+(?:[.,]\d+)?\s*(?:tỷ|triệu)", tieu_de), tieu_de
-        assert not re.search(r"[A-ZÀ-Ỹ]{4,}", tieu_de), tieu_de      # không viết HOA cả từ (MT / HXH / Q.8 / 2PN vẫn được)
+        assert not re.search(r"[A-ZÀ-Ỹ]{4,}", tieu_de), tieu_de      # không viết HOA cả từ (MT / HXH / Q.8 / WC vẫn được)
 
 
 def test_listing_proposal_system_contains_length_and_no_header_rules():
     from aioi.prompts import build_listing_proposal_system
     s = build_listing_proposal_system("T•ai", _prop())
     # 19/10/2026 (SRS-5.1zzzzzzz64): luật nằm ở AD_FORMAT một nguồn — 4–5 gạch (anh Luận 0b31235), không nhãn khi đã tự rõ.
-    assert "tối đa 15 từ" in s and "VỊ TRÍ" in s and "DIỆN TÍCH" in s and "GIÁ" in s   # SRS-5.1zzzzzzz85
+    assert "20–25 từ" in s and "VỊ TRÍ" in s and "DIỆN TÍCH" in s and "GIÁ" in s   # SRS-5.1zzzzzzz85 / 192
     assert "70–150 từ" in s
     assert "4–5 GẠCH ĐẦU DÒNG" in s
     assert "KHÔNG ghi nhãn nếu dữ liệu đã TỰ RÕ" in s
