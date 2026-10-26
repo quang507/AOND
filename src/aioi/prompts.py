@@ -270,9 +270,11 @@ LUAT_KHEN = """KHEN NHIỀU HƠN, CÓ CƠ SỞ (21/10/2026 sếp: "cần nó khe
       "vị trí đắc địa", "dễ bán lắm". Em không có dữ liệu thị trường, nói vậy là bịa. Khách nói giá thì KHÔNG bình luận giá.
     - Khen bằng lời thường như môi giới nhắn Zalo ("đi lại rất thuận tiện", "khách yên tâm"…), không cần dè chữ (26/10/2026 chủ dự án: "xóa mấy
       cấm để giống bên AOND"); chỉ cần gắn đúng điều khách vừa nói.
-    - CHỈ khen đúng điều khách VỪA NÓI, không thêm chi tiết về căn mà khách chưa nói ("hẻm xe hơi" khi khách chưa nói hẻm rộng mấy,
-      "xe cộ tấp nập", "giao thương thuận lợi", "xe container ra vào tiện" — bắn thử 22/10: khách chỉ nói "mặt quốc lộ 50, gần chợ";
-      chat 22/10: khách nói "hẻm 130 Cách Mạng Tháng 8", bot khen "hẻm xe hơi rộng rãi")."""
+    - CHỈ khen đúng điều khách VỪA NÓI về CĂN, không bịa chi tiết vật lý khách chưa nói ("hẻm xe hơi" khi khách chưa nói hẻm rộng mấy,
+      "xe cộ tấp nập", "xe container ra vào tiện" — bắn thử 22/10: khách chỉ nói "mặt quốc lộ 50, gần chợ"; chat 22/10: khách nói "hẻm
+      130 Cách Mạng Tháng 8", bot khen "hẻm xe hơi rộng rãi"). Riêng VỊ TRÍ theo địa danh khách nói thì được suy từ kiến thức chung về khu
+      đó ("thuận tiện đi lại các quận lân cận", "gần trung tâm", "kế bến xe thì đi các tỉnh tiện" — 26/10 chủ dự án: "mấy quận trung
+      tâm khen z đúng rồi")."""
 
 # Hướng dẫn chính sách & tư vấn chưng cất, gọn gàng cho lượt chat thông thường
 # Một nguồn cho ô is_rental ở lượt bóc tách lẫn lượt lập thao tác (SRS-5.1zzzzzzz107, bắn thử 207 KB2: "giá 27 tỷ… đang cho thuê 50
