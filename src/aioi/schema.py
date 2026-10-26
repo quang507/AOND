@@ -69,6 +69,18 @@ import uuid
 import time
 
 
+def _merge_uu_the(old: str, new: str) -> str:
+    """Ưu thế khác khách tự nói CỘNG DỒN, không ghi đè (SRS-5.1zzzzzzz205, theo anh Luận): mỗi ý một cụm ngắn, nối bằng " · ", chỉ thêm cụm
+    chưa có (không phân biệt hoa thường)."""
+    co = [p.strip() for p in (old or "").split("·") if p.strip()]
+    thay = {p.lower() for p in co}
+    for p in (x.strip() for x in (new or "").split("·")):
+        if p and p.lower() not in thay:
+            co.append(p)
+            thay.add(p.lower())
+    return " · ".join(co)
+
+
 class PropertyGroup(str, Enum):
     RESIDENTIAL = "residential"   # Nhóm 1: Nhà phố, Biệt thự, Nhà cấp 4, CHDV, Phòng trọ
     CONDO = "condo"               # Nhóm 2: Căn hộ, Chung cư, Penthouse, Officetel
@@ -611,6 +623,8 @@ class Property:
                 continue
             if k == "dia_chi":                  # MERGE, don't overwrite — keep street/ward intact
                 v = _merge_dia_chi(self.fields.get("dia_chi", ""), v)
+            if k == "uu_the":                   # ưu thế khác CỘNG DỒN, không đè
+                v = _merge_uu_the(self.fields.get("uu_the", ""), v)
             if k in KHOA_PHAP_LY and self.fields.get(k) and self.fields[k] != v:
                 self._nho_phap_ly_cu(self.fields[k])
             if self.fields.get(k) != v:

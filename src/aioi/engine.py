@@ -4045,14 +4045,34 @@ class Engine:
         """MỘT cổng cho mọi đường AI ghi ô tin từ lời chat (lượt lập thao tác, đọc lại căn mới tách ra) — SRS-5.1zzzzzzz73/86."""
         bc = bang_chung if isinstance(bang_chung, dict) else {}
         out: dict[str, str] = {}
+        uu_the = self._loc_uu_the(conv, (fields or {}).get("uu_the"))
         for k, v in (fields or {}).items():
-            if isinstance(v, str) and v.strip():
+            if k != "uu_the" and isinstance(v, str) and v.strip():
                 g = self._gia_tri_ghi(conv, k, v, bc)
                 if g:
                     out[k] = g
                     if isinstance(bc.get(k), str) and bc[k].strip():
                         conv.bc_luot[k] = bc[k].strip()   # cụm khách nói làm căn cứ — tin phụ chế độ test trích lại
-        return self._mot_cum_mot_o(conv, out)
+        out = self._mot_cum_mot_o(conv, out)
+        if uu_the:
+            out["uu_the"] = uu_the
+        return out
+
+    @staticmethod
+    def _loc_uu_the(conv: "Conversation", raw) -> str:
+        """Ô `uu_the` (SRS-5.1zzzzzzz205): AI trả MẢNG cụm ngắn khách tự nói; chỉ giữ cụm nằm NGUYÊN trong lời khách lượt này (cùng cổng bằng
+        chứng của mọi ô, `_trich_dan_khop`), nối bằng " · ". Cụm AI tự suy bị bỏ và ghi sổ `bo_luot`."""
+        ds = raw if isinstance(raw, list) else ([raw] if isinstance(raw, str) else [])
+        giu: list[str] = []
+        for x in ds:
+            if not (isinstance(x, str) and x.strip()):
+                continue
+            if _trich_dan_khop(x, conv.loi_khach_luot):
+                giu.append(x.strip())
+            else:
+                log.warning("Bỏ cụm ưu thế: không nằm trong lời khách")
+                conv.bo_luot.append(("uu_the", x, None, "cụm ưu thế không nằm nguyên trong lời khách"))
+        return " · ".join(dict.fromkeys(giu))
 
     @staticmethod
     def _mot_cum_mot_o(conv: "Conversation", out: dict[str, str]) -> dict[str, str]:

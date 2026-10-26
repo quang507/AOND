@@ -74,7 +74,7 @@ COT_THONG_SO = ("frontage_m", "length_m", "rear_width_m", "legal_area_m2", "buil
                 "distance_to_street_m", "floors", "floors_text", "floor", "bedrooms", "bathrooms", "year_built",
                 "has_completion", "has_elevator", "car_in_house", "corner_lot", "negotiable", "access_type",
                 "planning_status", "furnishing", "direction")
-_O_KHONG_PHAI_THONG_SO = {"dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "du_an", "ma_so_can", "unit_type", "gia",
+_O_KHONG_PHAI_THONG_SO = {"uu_the", "dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "du_an", "ma_so_can", "unit_type", "gia",
                           "loai_hinh", "phap_ly", "hinh_anh", "ly_do_ban", "trang_thai", "phi_gui_xe", "yeu_cau_xe_hoi",
                           # SRS-5.1zzzzzzz116: chuyện thanh toán / thuế phí / hợp đồng thuê, không phải thông số căn
                           "thue_phi", "thanh_toan", "hd_thue_con", "thu_nhap_thue", "co_hdt"}

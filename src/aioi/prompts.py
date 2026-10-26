@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import functools
 import re
-import zlib
 from typing import Any
 
 from .projects import Project, UnitType
@@ -31,6 +30,7 @@ from .schema import (
 
 # Human-readable Vietnamese labels for each field slug — used when asking questions.
 FIELD_LABELS: dict[str, str] = {
+    "uu_the": "ưu thế khác (điểm riêng khách tự nói: gần trường / chợ, tặng nội thất, khu an ninh…)",
     "loai_hinh": "loại hình BĐS",
     "dia_chi": "địa chỉ",
     "phuong": "phường / xã (cũ hay mới đều được, vd phường 1 quận 5 / phường Chợ Quán / xã Phước Lý)",
@@ -543,9 +543,9 @@ def build_chat_system(
             + (" Ô này em ĐÃ hỏi ở lượt trước mà khách chưa trả lời: ĐỔI cách hỏi (ngắn hơn, hoặc gợi sẵn vài đáp án để khách chọn nhanh), "
                "KHÔNG lặp lại nguyên câu cũ, và đừng nhắc là mình đã hỏi." if hoi_lai else "")
             if next_field
-            else "Tin đã đủ dữ liệu — KHÔNG còn gì cần hỏi. Khách không có yêu cầu mới thì CHỐT lịch sự, ấm áp: cảm ơn, xác nhận tin đã được ghi nhận, "
-            "chúc anh/chị một ngày tốt lành (không hứa việc hệ thống chưa làm). TUYỆT ĐỐI đừng hỏi thêm cho có, đừng gạ khách rao thêm căn khác "
-            "khi khách chưa nhắc tới (SRS-5.1zzzzzzz201, theo anh Luận ce11491)."
+            else "Tin đã đủ dữ liệu — KHÔNG còn gì cần hỏi. Khách không có yêu cầu mới thì CHỐT lịch sự, ấm áp: cảm ơn, xác nhận tin đã được ghi nhận "
+            "và sẽ đem đi chào khách, HỨA sẽ liên hệ lại ngay khi có khách quan tâm, rồi chúc anh/chị một ngày tốt lành. TUYỆT ĐỐI đừng hỏi thêm "
+            "cho có, đừng gạ khách rao thêm căn khác khi khách chưa nhắc tới (SRS-5.1zzzzzzz205, theo anh Luận ce11491)."
         )
 
     return f"""Bạn là "{assistant_name}", chuyên viên tư vấn bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
@@ -738,6 +738,9 @@ def describe_captured(prop: Property) -> str:
         value = prop.fields.get(slug)
         if value:
             lines.append(f"- {nhan_o(slug, prop)}: {value}")
+    # Ưu thế khác khách tự nói (không thuộc ô nào) là chất liệu cho mô tả / gạch đầu dòng (SRS-5.1zzzzzzz205).
+    if prop.fields.get("uu_the"):
+        lines.append(f"- {FIELD_LABELS['uu_the']}: {prop.fields['uu_the']}")
     rieng: list[str] = []
     for slug, value in prop.fields_khach().items():
         if slug not in seen and value:
@@ -773,18 +776,18 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NH
    sông, sổ hồng riêng, bàn giao ngay, nội thất đầy đủ, chỉ 6,8 tỷ 🏢". (Người test 20/10: "tiêu đề ngắn thôi, chọn mấy cái hấp dẫn — vị trí,
    diện tích, giá, 3 cái đó cần trong tiêu đề", SRS-5.1zzzzzzz85; chủ dự án 26/10: "cho 20-25 từ đi, chốt từ đây", "rao cho zui zui lên", "vui mà hay kiểu 1 môi giới chuyên nghiệp" — SRS-5.1zzzzzzz192.)
 
-2) MÔ TẢ: MỘT đoạn văn 70–150 từ, liền mạch (không xuống dòng sau mỗi câu), giọng RAO CHỢ theo bản anh Luận (SRS-5.1zzzzzzz201): nói TRỰC TIẾP với đám đông người mua như đang mời ngay tại chỗ — mời gọi, nồng nhiệt, hối hả, lầy một chút nhưng vẫn chuyên nghiệp, KHÔNG phải văn báo chí chỉn chu. Mở màn theo "KIỂU LỜI" của tin này (khối ngay dưới bố cục; code chọn mỗi tin một kiểu — gọi "anh chị cô bác" chỉ là MỘT cách mở, không bắt buộc). Kể đủ vị trí & kết nối, công năng, điểm nổi bật, pháp lý bằng lời đời thường, có nhịp, có cảm xúc. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này. Chỉ hối khi ĐÚNG dữ liệu (chủ nói bán gấp thì mới được nói gấp). CẤM câu khoe khan hiếm / so sánh thị trường không kiểm được: "hiếm", "không nhiều đâu", "không phải lúc nào cũng có", "ít khi có", "đáng để dừng chân", "cơ hội tốt", "chỉ còn…", "ngay trung tâm" khi dữ liệu không nói vậy (bản bắn thử 26/10 vẫn viết "mặt tiền đẹp như thế này không phải lúc nào cũng có sẵn"). Sức hút đến từ dữ liệu thật (mặt tiền, ngang dài, kết cấu, pháp lý, dòng tiền thuê), không từ lời so sánh. KHÔNG mở màn bằng "Anh chị ơi," nếu tiêu đề đã mở bằng đúng câu đó — đổi câu mở đoạn mô tả.
+2) MÔ TẢ: MỘT đoạn văn 70–150 từ, liền mạch (không xuống dòng sau mỗi câu), giọng RAO CHỢ theo bản anh Luận (SRS-5.1zzzzzzz201): nói TRỰC TIẾP với đám đông người mua như đang mời ngay tại chỗ — mời gọi, nồng nhiệt, hối hả, lầy một chút nhưng vẫn chuyên nghiệp, KHÔNG phải văn báo chí chỉn chu. Mở màn gọi "anh chị cô bác". Kể đủ vị trí & kết nối, công năng, điểm nổi bật, pháp lý bằng lời đời thường, có nhịp, có cảm xúc. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này. Chỉ hối khi ĐÚNG dữ liệu (chủ nói bán gấp thì mới được nói gấp). CẤM câu khoe khan hiếm / so sánh thị trường không kiểm được: "hiếm", "không nhiều đâu", "không phải lúc nào cũng có", "ít khi có", "đáng để dừng chân", "cơ hội tốt", "chỉ còn…", "ngay trung tâm" khi dữ liệu không nói vậy (bản bắn thử 26/10 vẫn viết "mặt tiền đẹp như thế này không phải lúc nào cũng có sẵn"). Sức hút đến từ dữ liệu thật (mặt tiền, ngang dài, kết cấu, pháp lý, dòng tiền thuê), không từ lời so sánh. KHÔNG mở màn bằng "Anh chị ơi," nếu tiêu đề đã mở bằng đúng câu đó — đổi câu mở đoạn mô tả.
    ĐẶT "ANH CHỊ" CÓ CHỦ ĐÍCH: KHÔNG rải mỗi câu — chỉ gọi ở các ĐỈNH CẢM XÚC để người đọc tự đặt mình vào: (a) ĐỈNH QUYỀN LỢI khi nói cái lợi họ sẽ được; (b) ĐỈNH MẤT CƠ HỘI dồn vào CÂU MỜI CHỐT (khối 4). Cộng câu gọi mời mở màn là đủ ~3 lần.
    CÂU PHẢI RÕ: đủ dấu câu và nhịp, đọc lọt tai; trong mô tả và gạch đầu dòng VIẾT RÕ, không viết tắt cụt ("mặt tiền", "phòng ngủ" — KHÔNG "MT", "PN"); không lặp từ / ý sát nhau; LUÔN kèm đơn vị ("12,5 tỷ", "5,2m", "35m²").
 
-3) 4–5 GẠCH ĐẦU DÒNG (mỗi dòng bắt đầu bằng "- ", 1 ý đắt giá nhất — vd vị trí / diện tích & kết cấu / pháp lý / giá).
+3) 4–5 GẠCH ĐẦU DÒNG (mỗi dòng bắt đầu bằng "- ", 1 ý đắt giá nhất — nếu DỮ LIỆU có "ưu thế khác" khách tự nói thì ưu tiên đưa vào mô tả / gạch — vd vị trí / diện tích & kết cấu / pháp lý / giá).
    - KHÔNG ghi nhãn nếu dữ liệu đã TỰ RÕ: ghi "132m²" — KHÔNG ghi "Diện tích: 132m²"; ghi "19 tỷ (thương lượng)" — KHÔNG ghi "Giá: 19 tỷ"; ghi "sổ hồng chính chủ" — KHÔNG ghi "Pháp lý: ...".
    - CHỈ thêm chữ phân biệt khi KHÔNG tự rõ: "132m² đất · 120m² xây dựng", "mặt tiền 12m", "6 tầng có thang máy".
    - Mỗi gạch ngắn gọn, không trùng ý nhau.
 
-4) CÂU MỜI CHỐT (CTA — bắt buộc): MỘT–HAI câu cuối KÊU GỌI người đọc NHẮN TIN Zalo cho em NGAY, gắn với nỗi sợ hụt mất (FOMO) để thúc hành động — mệnh lệnh trực tiếp, KHÔNG phải câu hỏi lấy lệ, KHÔNG dùng dấu "?". Giọng gần gũi, có nhịp; KHÔNG có câu mẫu sẵn — lấy cách nói và lý do nhắn từ "KIỂU LỜI" của tin này. FOMO chỉ ở mức lời thúc chung — KHÔNG khẳng định sự kiện không có trong dữ liệu ("đã có người đặt cọc", "căn cuối cùng", "mấy người đang hỏi").
+4) CÂU MỜI CHỐT (CTA — bắt buộc): MỘT–HAI câu cuối KÊU GỌI người đọc NHẮN TIN Zalo cho em NGAY, gắn với nỗi sợ hụt mất (FOMO) để thúc hành động — mệnh lệnh trực tiếp, KHÔNG phải câu hỏi lấy lệ, KHÔNG dùng dấu "?". Mẫu giọng: "Nhanh tay nhắn Zalo cho em ngay — chậm một bước là người ta hốt mất của anh chị à nghen!". FOMO chỉ ở mức lời thúc chung — KHÔNG khẳng định sự kiện không có trong dữ liệu ("đã có người đặt cọc", "căn cuối cùng", "mấy người đang hỏi").
 
-ĐA DẠNG — MỖI TIN MỘT VẺ (bắt buộc): mọi câu ví dụ ở trên (lời mở tiêu đề, lời mở màn, câu mời nhắn Zalo, móc FOMO) CHỈ minh hoạ giọng — TUYỆT ĐỐI KHÔNG chép y nguyên. Mỗi lần soạn phải TỰ diễn đạt MỚI: đổi câu mở màn, cách khoe quyền lợi, móc FOMO, câu mời Zalo, nhịp câu — để không có hai tin nào trùng từng chữ. Giữ NGUYÊN TẮC (giọng, cấu trúc, sự thật), còn LỜI phải tươi mới.
+ĐA DẠNG — MỖI TIN MỘT VẺ (bắt buộc): mọi câu ví dụ ở trên (lời mở màn, "chậm một bước là người ta hốt mất…", "Nhanh tay nhắn Zalo cho em ngay"…) CHỈ minh hoạ giọng — TUYỆT ĐỐI KHÔNG chép y nguyên. Mỗi lần soạn phải TỰ diễn đạt MỚI: đổi câu mở màn, cách khoe quyền lợi, móc FOMO, câu mời Zalo, nhịp câu — để không có hai tin nào trùng từng chữ. Giữ NGUYÊN TẮC (giọng, cấu trúc, sự thật), còn LỜI phải tươi mới.
 
 GIỌNG & XƯNG HÔ (bắt buộc): gọi người đọc là "anh chị" / "cô bác" — CẤM "bạn" (bắn thử 26/10: "Bạn đang tìm nhà phố…"); đây là TIN RAO CÔNG KHAI cho NHIỀU người mua đọc, KHÔNG phải tin nhắn nói riêng với chủ nhà. Nói với CẢ ĐÁM ĐÔNG ("anh chị", "cô bác") — TUYỆT ĐỐI KHÔNG xưng hô như nói riêng một người ("anh ơi", "anh thấy đó", "em gửi anh").
 
@@ -894,41 +897,6 @@ def cat_truoc_mo_dau(reply: str, xung_ho: str = "unknown") -> str:
 _MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em) sẽ rao như vầy nhé[^:\n]{0,20}:")
 
 
-# SRS-5.1zzzzzzz203 (chủ dự án 26/10/2026: "mỗi mẫu tin thì phải khác nhau một xíu"): bắn thử `ban-thu-ban` cho thấy model chép câu mời nhắn Zalo
-# và lời mở "Anh chị cô bác ơi," gần nguyên văn ở 4–5/6 tin dù đã dặn "đừng chép". Nay CODE chọn kiểu lời theo từng căn (băm địa chỉ + loại,
-# không theo giá nên bản sửa giá của cùng căn giữ nguyên giọng) — tin khác căn thì lời khác; thêm kiểu = thêm một dòng ở đây (chỉ tả HƯỚNG,
-# không viết sẵn câu hoàn chỉnh vì câu sẵn sẽ bị chép).
-KIEU_LOI_TIN_RAO: tuple[tuple[str, str], ...] = (
-    ("mở đoạn mô tả bằng điểm mạnh NỔI NHẤT của căn nói thẳng (mặt tiền / hẻm xe hơi / dòng tiền thuê / diện tích…), không câu gọi mời mở màn",
-     "mời nhắn Zalo để xin thêm hình thật và xem nhà sớm; lý do thúc là kẻo tiếc về sau"),
-    ("mở bằng MỘT câu hỏi gợi đúng người đang cần (ai đang tìm nhà ở khu này / ai cần căn để ở hay kinh doanh), rồi kể căn",
-     "mời nhắn Zalo để hỏi thẳng giá chốt và cách xem nhà; lý do thúc là đừng để người khác hỏi trước"),
-    ("mở bằng VỊ TRÍ: đường đi, kết nối, đi các nơi quen thuộc mất bao lâu (chỉ nói điều dữ liệu có), rồi mới tới căn",
-     "mời nhắn Zalo để em hẹn giờ dẫn đi xem tận nơi; lý do thúc là xem sớm mới kịp quyết"),
-    ("mở bằng lời mời xem nhà thân mật như chủ quán mời khách ghé, nói căn này có gì để anh chị tới coi",
-     "mời nhắn Zalo để em gửi đủ thông tin và hồ sơ; lý do thúc là nhanh tay kẻo lỡ"),
-    ("mở bằng CON SỐ nổi nhất của căn (giá / diện tích / thu nhập thuê, chỉ số có trong dữ liệu) rồi mới kể tiếp",
-     "mời nhắn Zalo để em chốt lịch xem trong ngày; lý do thúc nói chung chung, không nêu sự kiện"),
-)
-
-
-def kieu_loi_tin_rao(prop: Property) -> int:
-    """Chỉ số kiểu lời của căn: băm địa chỉ / đường / dự án + loại (KHÔNG băm giá, để bản sửa giá không đổi giọng)."""
-    khoa = "|".join(str(prop.fields.get(k) or "") for k in ("dia_chi", "duong", "du_an", "phuong", "quan")) + f"|{prop.loai_hinh or ''}"
-    return zlib.crc32(khoa.encode("utf-8")) % len(KIEU_LOI_TIN_RAO)
-
-
-def khoi_kieu_loi_tin_rao(prop: Property) -> str:
-    """Khối "KIỂU LỜI CỦA TIN NÀY" đặt ngay sau AD_FORMAT: code chọn cách mở mô tả + hướng câu mời nhắn Zalo cho căn này."""
-    mo, cta = KIEU_LOI_TIN_RAO[kieu_loi_tin_rao(prop)]
-    return (
-        "KIỂU LỜI CỦA TIN NÀY (code chọn cho căn này — BẮT BUỘC theo, tự đặt câu chữ, KHÔNG chép câu nào ở trên):\n"
-        f"- Đoạn mô tả: {mo}.\n"
-        f"- Câu mời chốt: {cta}.\n"
-        "- Khi đã chọn kiểu này thì KHÔNG mở mô tả bằng đúng cụm đã mở tiêu đề."
-    )
-
-
 def build_listing_proposal_system(
     assistant_name: str,
     prop: Property,
@@ -956,8 +924,6 @@ TOÀN BỘ NẰM TRỌN TRONG 1 TIN NHẮN:
 Dòng 1: {opener}
 
 {AD_FORMAT}
-
-{khoi_kieu_loi_tin_rao(prop)}
 
 Dòng cuối cùng:
 {closer}
@@ -1119,8 +1085,6 @@ DANH SÁCH GIÁ TRỊ (dùng để thuyết phục, chỉ nêu thứ có thật)
 
 KHI RAO LẠI BẢN TIN ĐÃ SỬA:
 {AD_FORMAT}
-
-{khoi_kieu_loi_tin_rao(prop)}
 
 DỮ LIỆU BĐS:
 {describe_captured(prop)}"""
@@ -1600,6 +1564,16 @@ def property_field_props() -> dict[str, Any]:
         for f in all_fields
         if f != "loai_hinh"
     }
+    # SRS-5.1zzzzzzz205 (theo anh Luận ce11491, "bóc tách không thiếu"): điều khách TỰ NÓI mà không có ô riêng vẫn được ghi, để nó thành điểm
+    # bán trong tin. Mỗi ý một cụm ngắn NGUYÊN VĂN lời khách — code giữ cụm nào nằm trong lời khách, bỏ cụm AI tự suy.
+    properties["uu_the"] = {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Các ƯU THẾ / điểm đặc biệt KHÁC do người rao TỰ NÓI mà KHÔNG khớp ô nào ở trên — vd 'gần trường quốc tế', 'chợ ngay đầu hẻm', "
+        "'nhà mới sơn', 'tặng toàn bộ nội thất', 'khu an ninh có bảo vệ', 'hẻm thông', 'nhà 2 mặt tiền'. Mỗi ưu thế MỘT chuỗi ngắn, CHÉP NGUYÊN "
+        "VĂN cụm trong lời khách. TUYỆT ĐỐI KHÔNG bịa, KHÔNG suy diễn, KHÔNG lặp thông tin đã nằm ở ô khác (giá, diện tích, pháp lý…). "
+        "Không có thì bỏ trống.",
+    }
     properties["loai_hinh"] = {
         "type": "string",
         "description": "Loại hình BĐS (slug khớp CRM): nha_pho, nha_cap_4, chung_cu, dat, biet_thu, "
@@ -1763,6 +1737,8 @@ Các loại "op":
 MƠ HỒ / VÔ NGHĨA / MÉO TIẾNG (lỗi voice-to-text, vd "tránh nhau vi vu nhé") → TUYỆT ĐỐI KHÔNG tạo
 op hủy; để operations RỖNG. Thà bỏ sót còn hơn ẩn nhầm.
 
+BÓC TÁCH KHÔNG THIẾU (SRS-5.1zzzzzzz205): điều khách TỰ NÓI mà không khớp ô nào (gần trường / chợ, nhà mới sơn, tặng nội thất, khu an ninh, hẻm thông,
+2 mặt tiền…) → đưa vào mảng "uu_the" trong fields, mỗi ý một cụm ngắn CHÉP NGUYÊN VĂN lời khách; vẫn tuyệt đối KHÔNG bịa.
 CHỈ GHI ĐIỀU KHÁCH NÓI: mỗi ô trong "fields" phải kèm "bang_chung" = nguyên văn cụm trong lời KHÁCH. Câu BOT hỏi hay gợi ý
 ("có để giá thương lượng nhẹ không ạ?") KHÔNG phải lời khách: khách chưa trả lời đúng ý đó thì không ghi ô đó. Không tự suy
 (nhà "mới xây", "nội thất đẹp"…) khi khách không nói. Ô thiếu bằng chứng bị hệ thống bỏ.
