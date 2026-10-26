@@ -300,13 +300,16 @@ RENTAL_FIELDS: list[str] = [
 # anh Luận (68129e4) dùng cùng nhóm này để quyết câu hỏi, bên mình vẫn theo CORE_FIELDS / CUM_HOI. Ô lạ rơi vào "Khác"; ô bắt đầu bằng "_"
 # (nội bộ) không hiển thị.
 FACETS: list[tuple[str, str, list[str]]] = [
-    ("vi_tri",     "Vị trí",           ["dia_chi", "du_an", "ma_so_can", "duong", "phuong", "quan", "xa", "tinh"]),
-    ("vi_the",     "Vị thế",           ["lo_gioi_hem", "huong", "view", "vi_the", "goc", "mat_tien_duong"]),
-    ("dat",        "Kích thước đất",   ["dien_tich", "dien_tich_dat", "kich_thuoc", "mat_tien", "no_hau"]),
-    ("cong_trinh", "Quy mô xây dựng",  ["ket_cau", "dien_tich_nha", "so_tang", "so_phong_ngu", "so_phong_thue", "noi_that"]),
-    ("phap_ly",    "Pháp lý",          ["phap_ly_hoan_cong", "nam_so", "quy_hoach", "thoi_han_su_dung"]),
+    ("vi_tri",     "Vị trí",           ["dia_chi", "du_an", "ma_so_can", "duong", "phuong", "quan", "xa", "tinh", "gan_nga_tu", "tang_toa"]),
+    ("vi_the",     "Vị thế",           ["lo_gioi_hem", "huong", "view", "ban_cong_view", "vi_the", "goc", "can_goc", "mat_tien_duong", "lo_gioi_duong",
+                                        "vi_he_xe", "loi_di", "diem_noi_bat"]),
+    ("dat",        "Kích thước đất",   ["dien_tich", "dien_tich_dat", "kich_thuoc", "mat_tien", "no_hau", "tho_cu"]),
+    ("cong_trinh", "Quy mô xây dựng",  ["ket_cau", "dien_tich_nha", "so_tang", "so_phong_ngu", "so_phong", "so_phong_thue", "noi_that", "thang_may",
+                                        "tien_ich_phong"]),
+    ("phap_ly",    "Pháp lý",          ["phap_ly_hoan_cong", "phap_ly", "phap_ly_so_do", "phap_ly_so_hong", "nam_so", "quy_hoach", "thoi_han_su_dung",
+                                        "the_chap"]),
     ("gia_tm",     "Giá & thương mại", ["gia", "thuong_luong", "tinh_trang_ban_giao", "hien_trang_su_dung", "muc_coc", "thoi_han_hd",
-                                         "co_hdt", "thu_nhap_thue"]),
+                                        "co_hdt", "thu_nhap_thue", "dong_tien_thue", "phi_quan_ly"]),
 ]
 FACET_LABEL: dict[str, str] = {fid: label for fid, label, _ in FACETS}
 _FACET_OF: dict[str, str] = {k: fid for fid, _, keys in FACETS for k in keys}
@@ -379,22 +382,31 @@ class Property:
         labels = {**FACET_LABEL, "khac": "Khác"}
         return [(fid, labels.get(fid, fid), b) for fid, b in buckets.items() if b]
 
-    def summary_ready(self) -> bool:
-        """True once the listing is "khá đầy đủ" — detailed enough to draft a real ad.
+    def minimal_missing(self) -> list[str]:
+        """Còn thiếu gì để RAO được (SRS-5.1zzzzzzz200, chủ dự án 26/10/2026: "đổi cách quyết đủ rao chưa thành loại hình + vị trí + giá
+        của anh Luận"): LOẠI HÌNH + VỊ TRÍ (địa chỉ / tên đường, hoặc dự án) + GIÁ — mọi thứ khác bổ sung dần, hỏi thêm sau bản nháp."""
+        need: list[str] = []
+        if self.loai_hinh is None:
+            need.append("loai_hinh")
+        if not (self.fields.get("dia_chi") or self.fields.get("duong") or self.fields.get("du_an")):
+            need.append("du_an" if self.group is PropertyGroup.CONDO else "dia_chi")
+        if not self.fields.get("gia"):
+            need.append("gia")
+        return need
 
-        Requires ALL identity fields (type, address, area(s), price) AND a high overall
-        completeness, so the draft includes core details, not just the basics.
-        """
-        if self.thieu_toi_thieu():
-            return False
-        # Ô hỏi sau bản nháp vẫn tính vào % (như bản anh Luận) nhưng không hỏi trước — hết ô để hỏi trước bản nháp thì ra nháp, không kẹt.
-        return self.completeness() >= SUMMARY_READY_COMPLETENESS or not self.missing_fields()
+    def can_publish(self) -> bool:
+        """Đủ tối thiểu để soạn bản nháp rao (loại hình + vị trí + giá)."""
+        return not self.minimal_missing()
+
+    def summary_ready(self) -> bool:
+        """Soạn bản nháp ngay khi đủ tối thiểu (bản anh Luận 26/10: rao sớm rồi hỏi thêm cho đầy đủ theo thời gian). Trước đây đòi đủ ô
+        nhận diện + ô bắt buộc theo loại + ≥ 75% ô — bắn thử 26/10 phải 6 lượt, hỏi diện tích sàn lặp bốn lượt liền. Phường / diện tích
+        là điều kiện lên WEB (trigger DB), không phải điều kiện soạn bản nháp: thiếu thì bot hỏi sau lượt duyệt (`khoi_trang_thai_web`)."""
+        return self.can_publish()
 
     def thieu_toi_thieu(self) -> list[str]:
-        """Ô phải có trước MỌI bản nháp — nhận diện (trừ ô khách lờ 2 lần đã để sau) và ô bắt buộc theo loại. Khách bảo đăng sớm thì
-        chỉ còn chờ các ô này (SRS-5.1zzzzzzz86)."""
-        ra = [f for f in self.identity_fields() if not self._has(f) and f not in self.hoan]
-        return ra + [f for f in self.blocking_fields() if f not in ra]
+        """Ô phải có trước MỌI bản nháp — chính là `minimal_missing` (khách bảo đăng sớm thì chỉ chờ các ô này)."""
+        return self.minimal_missing()
 
     def cum_hoi(self, o: str | None, missing: list[str]) -> list[str]:
         """Các ô hỏi gộp trong lượt có ô `o` (SRS-5.1zzzzzzz79): ô còn thiếu cùng cụm với `o`, theo thứ tự hỏi, tối đa `CUM_TOI_DA`."""
@@ -456,12 +468,15 @@ class Property:
                 ra.insert(ra.index("dia_chi") + 1, "phuong")
             else:
                 ra.insert(1 if ra[:1] == ["loai_hinh"] else 0, "phuong")
-        return [x for x in ra if x not in HOI_SAU_KHI_RA_TIN and x not in self.hoan]
+        ra = [x for x in ra if x not in HOI_SAU_KHI_RA_TIN and x not in self.hoan]
+        # Tối thiểu để rao hỏi TRƯỚC (loại hình → vị trí → giá), phường ngay sau giá, rồi mới tới các ô còn lại (SRS-5.1zzzzzzz200).
+        dau = [x for x in ("loai_hinh", "dia_chi", "du_an", "gia", "phuong") if x in ra]
+        return dau + [x for x in ra if x not in dau]
 
     def hoan_duoc(self, o: str) -> bool:
         """Ô được để sau bản nháp khi khách lờ 2 lần (SRS-5.1zzzzzzz80). Loại, chỗ (địa chỉ / dự án / mã căn), giá và ô bắt buộc thì
         không: thiếu chúng thì không có tin để rao."""
-        return o not in ("loai_hinh", "dia_chi", "du_an", "gia") and o not in self.blocking_fields()
+        return o not in ("loai_hinh", "dia_chi", "du_an", "gia")
 
     def cau_hoi_sau_ra_tin(self) -> str | None:
         """Ô hỏi SAU khi khách duyệt bản nháp: chỉ còn ô khách đã lờ 2 lần (SRS-5.1zzzzzzz80). Hẻm và hiện trạng từ 20/10 hỏi trước
@@ -469,7 +484,18 @@ class Property:
         # SRS-5.1zzzzzzz116: mỗi ô hỏi lại MỘT lần (`_sau_da_hoi` ghi "hoan:<ô>" lúc hỏi) — trước đây khách không trả lời thì ô còn đó,
         # lượt nào prompt cũng hỏi lại và chặn luôn các bước sau (xin chấm sao, hỏi thêm sau khi đăng).
         da_hoi = set((self.fields.get("_sau_da_hoi") or "").split(","))
-        return next((o for o in self.expected_fields() if o in self.hoan and not self._has(o) and f"hoan:{o}" not in da_hoi), None)
+        return next((o for o in self.expected_fields()
+                     if o in self.hoan and not self._has(o) and f"hoan:{o}" not in da_hoi and not self._facet_da_co(o)), None)
+
+    def _facet_da_co(self, o: str) -> bool:
+        """MỘT câu hỏi cho MỖI facet còn trống (SRS-5.1zzzzzzz200, mô hình facet của anh Luận): facet của ô `o` đã có ô khác khách cho (vd
+        "quy mô xây dựng" đã có số tầng thì không hỏi thêm số phòng ngủ). Vị trí (phường, quận — điều kiện lên web) và ô chưa xếp facet
+        thì luôn hỏi."""
+        fid = facet_of(o)
+        if fid in ("vi_tri", "khac"):
+            return False
+        keys = next((ks for f, _, ks in FACETS if f == fid), [])
+        return any(self._has(k) for k in keys if k != o)
 
     def cum_sau_dang(self, da_hoi: set[str] | frozenset[str] = frozenset()) -> tuple[str, list[str]] | None:
         """Cụm hỏi kế SAU khi tin lên web (SRS-5.1zzzzzzz116): (mã cụm, các ô còn thiếu) — cụm chưa hỏi lần nào, còn ít nhất một ô

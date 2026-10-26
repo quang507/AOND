@@ -508,6 +508,7 @@ def build_chat_system(
     user_type: SellerRole = SellerRole.UNKNOWN,
     project_block: str = "",
     cum: list[str] | None = None,
+    hoi_lai: bool = False,
 ) -> str:
     ambiguous_area = prop.fields.get("dien_tich")
     # Con số đó khách đã nói là đất (hoặc nhà) rồi thì hết mơ hồ — hỏi ô còn lại, đừng hỏi lại "80m2 là đất hay nhà"
@@ -538,6 +539,8 @@ def build_chat_system(
         ask_line = (
             f'Thông tin cần hỏi tiếp theo: "{label}". Mục tiêu: {natural}. Tiếp nhận nhanh gọn, tự nhiên (KHÔNG mở đầu bằng từ "Dạ"; khen theo luật "KHEN NHIỀU HƠN, NHƯNG CÓ CƠ SỞ"), rồi hỏi đúng 1 ý này một cách khéo léo. CHỈ hỏi ý này — KHÔNG tự hỏi ý khác ngoài danh sách (thương lượng, lý do bán, '
             'thế chấp…); khách tự nói thì lưu vào tin, không hỏi lại.'
+            + (" Ô này em ĐÃ hỏi ở lượt trước mà khách chưa trả lời: ĐỔI cách hỏi (ngắn hơn, hoặc gợi sẵn vài đáp án để khách chọn nhanh), "
+               "KHÔNG lặp lại nguyên câu cũ, và đừng nhắc là mình đã hỏi." if hoi_lai else "")
             if next_field
             else "Dữ liệu đã khá đầy đủ. Cảm ơn anh/chị và xác nhận trạng thái tin một cách thân thiện."
         )
@@ -898,7 +901,7 @@ def build_listing_proposal_system(
 
 {BUSINESS_CONTEXT}
 {project_block}
-NHIỆM VỤ (DỰ THẢO TIN RAO): Thông tin căn này đã khá đầy đủ. Hãy cho khách XEM TRƯỚC bản tin rao mà bạn định đăng theo ĐÚNG CẤU TRÚC BẮT BUỘC sau đây:
+NHIỆM VỤ (DỰ THẢO TIN RAO): Căn này đã đủ để rao (có loại hình, vị trí, giá; ô còn thiếu hệ thống sẽ hỏi sau khi khách duyệt). Dữ liệu còn ít thì viết NGẮN hơn — KHÔNG độn chữ, KHÔNG bịa chi tiết cho đủ dài. Hãy cho khách XEM TRƯỚC bản tin rao mà bạn định đăng theo ĐÚNG CẤU TRÚC BẮT BUỘC sau đây:
 
 TOÀN BỘ NẰM TRỌN TRONG 1 TIN NHẮN:
 

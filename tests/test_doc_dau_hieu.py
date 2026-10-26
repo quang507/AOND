@@ -22,7 +22,7 @@ def test_co_ten_duong_thi_khong_hoi_lai_dia_chi():
     from aioi.schema import Property
     p = Property(loai_hinh="nha_pho", fields={"duong": "Âu Cơ", "quan": "Quận 11"})
     thieu = p.missing_fields()
-    assert "dia_chi" not in thieu and thieu[0] == "phuong"
+    assert "dia_chi" not in thieu and thieu[0] == "gia" and thieu[1] == "phuong"   # SRS-5.1zzzzzzz200: giá là ô tối thiểu, hỏi trước phường
 
 
 def test_cau_hoi_gia_khong_kem_thuong_luong():

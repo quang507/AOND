@@ -10,17 +10,18 @@ _DU = {"dia_chi": "146 Trần Bình Trọng", "duong": "Trần Bình Trọng", "
        "ket_cau": "1 trệt 2 lầu", "lo_gioi_hem": "hẻm 4m", "phap_ly_hoan_cong": "sổ hồng", "tinh_trang_ban_giao": "trống"}
 
 
-def test_chi_dien_tich_dat_thi_chua_ra_ban_nhap():
+def test_chi_dien_tich_dat_thi_van_hoi_tiep_dien_tich_nha():
+    # SRS-5.1zzzzzzz200: diện tích nhà không còn chặn bản nháp, nhưng vẫn nằm trong danh sách hỏi tiếp.
     p = Property(loai_hinh="nha_pho", fields={**_DU, "dien_tich_dat": "60m2"})
-    assert not p.summary_ready() and "dien_tich_nha" in p.missing_fields()
+    assert p.summary_ready() and "dien_tich_nha" in p.missing_fields()
     p.update({"dien_tich_nha": "150m2"})
-    assert p.summary_ready()
+    assert "dien_tich_nha" not in p.missing_fields()
 
 
 def test_mot_con_so_mo_ho_khong_tu_thanh_dien_tich_dat():
     p = Property(loai_hinh="biet_thu", fields=dict(_DU))
     p.update({"dien_tich": "200m2"})
-    assert p.fields.get("dien_tich_dat") is None and not p.summary_ready()
+    assert p.fields.get("dien_tich_dat") is None   # con số mơ hồ không tự thành diện tích đất (SRS-52, vẫn đúng)
     assert {"dien_tich_dat", "dien_tich_nha"} <= set(p.missing_fields())
 
 

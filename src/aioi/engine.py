@@ -2163,11 +2163,15 @@ class Engine:
         xin_sao = False
         if not is_listing_post:
             system = build_chat_system(
-                conv.assistant.name, conv.prop, next_field, conv.user_type, project_block, cum=cum_hoi
+                conv.assistant.name, conv.prop, next_field, conv.user_type, project_block, cum=cum_hoi,
+                hoi_lai=bool(next_field and conv.lo.get(next_field, 0) >= 1),   # SRS-5.1zzzzzzz200: đừng nhắn trùng câu cũ
             ) + khoi_xin_dang(toi_thieu, conv.prop)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
             trinh_nhap = True
+            # SRS-5.1zzzzzzz200: ra bản nháp theo cổng tối thiểu thì ô còn thiếu để SAU khi khách duyệt, mỗi lượt một ô (không dồn
+            # hỏi trước bản nháp, và không hỏi lại cùng một ô hai nơi).
+            conv.prop.hoan |= {x for x in thieu if conv.prop.hoan_duoc(x)}
             system = build_listing_proposal_system(
                 conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em, xung_ho=customer_pronoun
             )
