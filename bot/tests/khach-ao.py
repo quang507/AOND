@@ -91,16 +91,24 @@ chọn ô hỏi / lặp / không ghi), "khac". Trả JSON thuần (không markdo
  "tot": ["<1–3 câu BOT làm tốt, trích ngắn>"], "tom_tat": "<2 câu>"}"""
 
 
-def _goi(model: str, system: str, messages: list[dict], max_tokens: int = 600) -> str:
-    r = client.messages.create(model=model, max_tokens=max_tokens, system=system, messages=messages)
-    return "".join(b.text for b in r.content if b.type == "text").strip()
+def _goi(model: str, system: str, messages: list[dict], max_tokens: int = 2000) -> str:
+    """Lượt đầu (run 40375813417): lời khách ảo bị CẮT giữa chữ ("tìm nhà phố q10 hoặc", "sao hỏi l"), có lượt rỗng, JSON chấm cụt — max_tokens 300
+    quá thấp cho model đời 5 (phần suy nghĩ ẩn cũng tính vào trần). Nay trần rộng và chạm trần thì gọi lại một lần với trần gấp 4."""
+    chu = ""
+    for mt in (max_tokens, max_tokens * 4):
+        r = client.messages.create(model=model, max_tokens=mt, system=system, messages=messages)
+        chu = "".join(b.text for b in r.content if b.type == "text").strip()
+        if getattr(r, "stop_reason", None) != "max_tokens":
+            return chu
+        print(f"   (model {model} chạm trần {mt} token — gọi lại)", file=sys.stderr)
+    return chu
 
 
 def _cham(system: str, messages: list[dict]) -> tuple[str, str]:
     """Giám khảo: thử model chấm, lỗi (không có quyền model / quá tải) thì rơi về model khách."""
     for m in (MODEL_CHAM, MODEL_KHACH):
         try:
-            return _goi(m, system, messages, max_tokens=1800), m
+            return _goi(m, system, messages, max_tokens=6000), m
         except Exception as e:  # noqa: BLE001
             print(f"   (giám khảo {m} lỗi: {type(e).__name__} — thử model kế)", file=sys.stderr)
     return "", ""
@@ -153,7 +161,7 @@ def chay_mot(n: int, so_nhan: str, ten: str, vai: str) -> dict:
     for luot in range(1, MAX_LUOT + 1):
         hoi.append({"role": "user", "content": chu_bot_moi})
         try:
-            khach = _goi(MODEL_KHACH, vai + LUAT_KHACH, hoi, max_tokens=300)
+            khach = _goi(MODEL_KHACH, vai + LUAT_KHACH, hoi, max_tokens=1500)
         except Exception as e:  # noqa: BLE001
             ban_ghi.append(f"  (khách ảo lỗi lượt {luot}: {type(e).__name__})")
             break
@@ -163,18 +171,15 @@ def chay_mot(n: int, so_nhan: str, ten: str, vai: str) -> dict:
         if not khach:
             break
         bong = [b.strip() for b in re.split(r"\n\s*\n", khach) if b.strip()] or [khach]
-        tra: list[str] = []
-        giay = 0.0
         for b in bong:
             ban_ghi.append(f"\n  KHÁCH: {b}")
-            try:
-                r, g = _bot(uid, so_nhan, ten, b)
-            except Exception as e:  # noqa: BLE001
-                ban_ghi.append(f"  BOT:   (lỗi gọi lõi: {type(e).__name__})")
-                r, g = [], 0.0
-            tra += r
-            giay += g
-            time.sleep(0.5)
+        # Khách nhắn nhiều tin liền thì trên Zalo thật bridge GOM trong 2,5 s thành một tin (index.mjs "BỘ ĐỆM GOM TIN") — gửi lõi MỘT lượt.
+        # Lượt đầu gửi từng tin: bot trả lời tin 1 (hỏi khu vực) trong khi tin 2 đã có khu vực → khách thấy "hỏi lại" oan (chị H. bực 2 lần).
+        try:
+            tra, giay = _bot(uid, so_nhan, ten, "\n".join(bong))
+        except Exception as e:  # noqa: BLE001
+            ban_ghi.append(f"  BOT:   (lỗi gọi lõi: {type(e).__name__})")
+            tra, giay = [], 0.0
         loi_bot = "\n\n".join(tra)
         if tra:
             for x in tra:
@@ -189,7 +194,7 @@ def chay_mot(n: int, so_nhan: str, ten: str, vai: str) -> dict:
     # Khách tự chấm
     hoi.append({"role": "user", "content": LUAT_CAM_NHAN})
     try:
-        cam_nhan = _json(_goi(MODEL_KHACH, vai, hoi, max_tokens=400))
+        cam_nhan = _json(_goi(MODEL_KHACH, vai, hoi, max_tokens=1500))
     except Exception as e:  # noqa: BLE001
         cam_nhan = {"loi": type(e).__name__}
     # Giám khảo riêng
