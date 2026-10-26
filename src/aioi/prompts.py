@@ -542,7 +542,9 @@ def build_chat_system(
             + (" Ô này em ĐÃ hỏi ở lượt trước mà khách chưa trả lời: ĐỔI cách hỏi (ngắn hơn, hoặc gợi sẵn vài đáp án để khách chọn nhanh), "
                "KHÔNG lặp lại nguyên câu cũ, và đừng nhắc là mình đã hỏi." if hoi_lai else "")
             if next_field
-            else "Dữ liệu đã khá đầy đủ. Cảm ơn anh/chị và xác nhận trạng thái tin một cách thân thiện."
+            else "Tin đã đủ dữ liệu — KHÔNG còn gì cần hỏi. Khách không có yêu cầu mới thì CHỐT lịch sự, ấm áp: cảm ơn, xác nhận tin đã được ghi nhận, "
+            "chúc anh/chị một ngày tốt lành (không hứa việc hệ thống chưa làm). TUYỆT ĐỐI đừng hỏi thêm cho có, đừng gạ khách rao thêm căn khác "
+            "khi khách chưa nhắc tới (SRS-5.1zzzzzzz201, theo anh Luận ce11491)."
         )
 
     return f"""Bạn là "{assistant_name}", chuyên viên tư vấn bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
@@ -748,7 +750,7 @@ def describe_captured(prop: Property) -> str:
 
 # Bố cục tin rao MỘT NGUỒN (anh Luận 802b957 + 0b31235, 17–19/10/2026; SRS-5.1zzzzzzz64): bản nháp, bản sửa sau khi xem nháp, và lượt
 # chat khi khách xin "xem / đăng tin đầy đủ" cùng đọc khối này — sửa luật tin rao là sửa ở đây.
-AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NHAU bằng MỘT DÒNG TRỐNG giữa 3 khối):
+AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NHAU bằng MỘT DÒNG TRỐNG giữa 4 khối: tiêu đề · mô tả · gạch đầu dòng · câu mời chốt):
 1) TIÊU ĐỀ: viết như một dòng tin rao HẤP DẪN, đúng 1 dòng, 20–25 từ khi dữ liệu căn đủ (biểu tượng cuối dòng không tính). Dữ liệu ít thì
    ngắn hơn, KHÔNG độn chữ, KHÔNG bịa cho đủ 20 từ; TUYỆT ĐỐI không quá 25 từ. BẮT BUỘC đủ 3 ý: VỊ TRÍ (đường + quận, hoặc tên dự án) ·
    DIỆN TÍCH · GIÁ — thiếu ý nào thì tiêu đề chưa đạt.
@@ -756,8 +758,8 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NH
    (kết cấu như "3 tầng kiên cố", mặt tiền / hẻm xe hơi, "sổ hồng", "đã hoàn công", đang có khách thuê, view / tầng với căn hộ, số phòng khi
    cho thuê…), CHỐT bằng giá dạng "chỉ 12,5 tỷ" (cho thuê: "chỉ 7 triệu/tháng") và đúng MỘT biểu tượng hợp loại ở cuối dòng: 🏠 nhà phố / nhà /
    biệt thự, 🏢 căn hộ / chung cư / văn phòng, 🌱 đất. GIỌNG VUI MÀ CHUYÊN NGHIỆP như một môi giới lão luyện (chủ dự án 26/10: "rao cho zui zui lên", "vui mà hay kiểu 1
-   môi giới chuyên nghiệp"): ấm, tự tin, gọn, đúng nghề; có thể mở bằng một lời mời ngắn kiểu "Mời xem … 👋" và thêm MỘT biểu tượng vui giữa dòng
-   (tối đa 2 biểu tượng cả dòng). Không sến, không tiếng lóng, không "nè / nha / zui" trong tin rao, không lạm dụng biểu tượng — vui ở CÁCH NÓI,
+   môi giới chuyên nghiệp"): ấm, tự tin, gọn, đúng nghề; MỞ bằng một lời gọi mời ngắn như rao chợ ("Anh chị ơi,", "Mời xem …", "Bà con ơi,"… — ĐỔI mỗi tin, cấm mở bằng "Trời ơi") và có thể thêm
+   MỘT biểu tượng vui giữa dòng (tối đa 2 biểu tượng cả dòng). Không sến, không tiếng lóng, không "nè / nha / zui" trong tin rao, không lạm dụng biểu tượng — vui ở CÁCH NÓI,
    không thêm sự thật nào ngoài dữ liệu. Điểm mạnh chỉ lấy thứ CÓ trong dữ liệu: dữ liệu chưa nói nhà ở hẻm hay mặt tiền thì KHÔNG
    viết "hẻm" / "HXH" / "MT" (các ví dụ dưới chỉ minh hoạ cách viết). Tin bán KHÔNG đưa số phòng ngủ / WC, hướng nhà, tình trạng đang trống vào
    tiêu đề (để mô tả / gạch đầu dòng). Không chữ khoe không có trong dữ liệu ("hot", "cháy hàng", "siêu phẩm", "giá sốc", "hời", "rẻ", "giá tốt",
@@ -770,12 +772,22 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NH
    sông, sổ hồng riêng, bàn giao ngay, nội thất đầy đủ, chỉ 6,8 tỷ 🏢". (Người test 20/10: "tiêu đề ngắn thôi, chọn mấy cái hấp dẫn — vị trí,
    diện tích, giá, 3 cái đó cần trong tiêu đề", SRS-5.1zzzzzzz85; chủ dự án 26/10: "cho 20-25 từ đi, chốt từ đây", "rao cho zui zui lên", "vui mà hay kiểu 1 môi giới chuyên nghiệp" — SRS-5.1zzzzzzz192.)
 
-2) MÔ TẢ: MỘT đoạn văn 70–150 từ, liền mạch (không xuống dòng sau mỗi câu), văn phong tự nhiên, vui vẻ mà chuyên nghiệp như môi giới lão luyện (chữ gọn, tự tin, không sến, tối đa 1–2 biểu tượng), thuyết phục — kể vị trí & kết nối, công năng, điểm nổi bật, pháp lý. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này.
+2) MÔ TẢ: MỘT đoạn văn 70–150 từ, liền mạch (không xuống dòng sau mỗi câu), giọng RAO CHỢ theo bản anh Luận (SRS-5.1zzzzzzz201): nói TRỰC TIẾP với đám đông người mua như đang mời ngay tại chỗ — mời gọi, nồng nhiệt, hối hả, lầy một chút nhưng vẫn chuyên nghiệp, KHÔNG phải văn báo chí chỉn chu. Mở màn gọi "anh chị cô bác". Kể đủ vị trí & kết nối, công năng, điểm nổi bật, pháp lý bằng lời đời thường, có nhịp, có cảm xúc. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này. Chỉ hối / nói khan hiếm khi ĐÚNG dữ liệu (chủ nói bán gấp thì mới được nói gấp; không bịa độ gấp, không bịa "hiếm", "chỉ còn…").
+   ĐẶT "ANH CHỊ" CÓ CHỦ ĐÍCH: KHÔNG rải mỗi câu — chỉ gọi ở các ĐỈNH CẢM XÚC để người đọc tự đặt mình vào: (a) ĐỈNH QUYỀN LỢI khi nói cái lợi họ sẽ được; (b) ĐỈNH MẤT CƠ HỘI dồn vào CÂU MỜI CHỐT (khối 4). Cộng câu gọi mời mở màn là đủ ~3 lần.
+   CÂU PHẢI RÕ: đủ dấu câu và nhịp, đọc lọt tai; trong mô tả và gạch đầu dòng VIẾT RÕ, không viết tắt cụt ("mặt tiền", "phòng ngủ" — KHÔNG "MT", "PN"); không lặp từ / ý sát nhau; LUÔN kèm đơn vị ("12,5 tỷ", "5,2m", "35m²").
 
 3) 4–5 GẠCH ĐẦU DÒNG (mỗi dòng bắt đầu bằng "- ", 1 ý đắt giá nhất — vd vị trí / diện tích & kết cấu / pháp lý / giá).
    - KHÔNG ghi nhãn nếu dữ liệu đã TỰ RÕ: ghi "132m²" — KHÔNG ghi "Diện tích: 132m²"; ghi "19 tỷ (thương lượng)" — KHÔNG ghi "Giá: 19 tỷ"; ghi "sổ hồng chính chủ" — KHÔNG ghi "Pháp lý: ...".
    - CHỈ thêm chữ phân biệt khi KHÔNG tự rõ: "132m² đất · 120m² xây dựng", "mặt tiền 12m", "6 tầng có thang máy".
    - Mỗi gạch ngắn gọn, không trùng ý nhau.
+
+4) CÂU MỜI CHỐT (CTA — bắt buộc): MỘT–HAI câu cuối KÊU GỌI người đọc NHẮN TIN Zalo cho em NGAY, gắn với nỗi sợ hụt mất (FOMO) để thúc hành động — mệnh lệnh trực tiếp, KHÔNG phải câu hỏi lấy lệ, KHÔNG dùng dấu "?". Mẫu giọng: "Nhanh tay nhắn Zalo cho em ngay — chậm một bước là người ta hốt mất của anh chị à nghen!". FOMO chỉ ở mức lời thúc chung — KHÔNG khẳng định sự kiện không có trong dữ liệu ("đã có người đặt cọc", "căn cuối cùng", "mấy người đang hỏi").
+
+ĐA DẠNG — MỖI TIN MỘT VẺ (bắt buộc): mọi câu ví dụ ở trên (lời mở màn, "chậm một bước là người ta hốt mất…", "Nhanh tay nhắn Zalo cho em ngay"…) CHỈ minh hoạ giọng — TUYỆT ĐỐI KHÔNG chép y nguyên. Mỗi lần soạn phải TỰ diễn đạt MỚI: đổi câu mở màn, cách khoe quyền lợi, móc FOMO, câu mời Zalo, nhịp câu — để không có hai tin nào trùng từng chữ. Giữ NGUYÊN TẮC (giọng, cấu trúc, sự thật), còn LỜI phải tươi mới.
+
+GIỌNG & XƯNG HÔ (bắt buộc): đây là TIN RAO CÔNG KHAI cho NHIỀU người mua đọc, KHÔNG phải tin nhắn nói riêng với chủ nhà. Nói với CẢ ĐÁM ĐÔNG ("anh chị", "cô bác") — TUYỆT ĐỐI KHÔNG xưng hô như nói riêng một người ("anh ơi", "anh thấy đó", "em gửi anh").
+
+BIỂU TƯỢNG: CẢ bản rao chỉ 2–3 biểu tượng tổng cộng (tiêu đề đã gồm biểu tượng cuối dòng); KHÔNG đặt biểu tượng đầu mỗi gạch đầu dòng. Biểu tượng luôn cách chữ đúng MỘT khoảng trắng.
 
 NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN (SRS-5.1zzzzzzz73): mọi ý trong tin phải có trong dữ liệu căn / lời chủ nhà. Không thêm điều chủ
 nhà chưa nói — "giữ gìn sạch đẹp", "nhà mới xây", "thương lượng", lý do bán, tiện ích gần nhà… Câu bot từng HỎI hay từng KHEN
