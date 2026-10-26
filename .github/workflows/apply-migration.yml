@@ -14,7 +14,7 @@ on:
         required: false
         default: ''
       dung_lai:
-        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-du-an | nap-duong | nap-giao-lo | cai-vps | go-trang-thu | ban-thu-mua | ban-thu-ban | ban-thu-kb | ban-thu-dc | ban-thu-sau | ban-thu-xa | ban-thu-nhieu-can | ban-thu-dap-y | ban-thu-luan | doc-log-loi | ban-thu-vm | do-tim-nha | nap-tin-mau. Trống = áp migration_file như thường"
+        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-du-an | nap-duong | nap-giao-lo | cai-vps | go-trang-thu | ban-thu-mua | ban-thu-ban | ban-thu-kb | ban-thu-dc | ban-thu-sau | ban-thu-xa | ban-thu-nhieu-can | ban-thu-dap-y | ban-thu-luan | doc-log-loi | ban-thu-vm | ban-thu-5-khach | do-tim-nha | nap-tin-mau. Trống = áp migration_file như thường"
         required: false
         default: ''
       commit_schema:
@@ -147,6 +147,13 @@ jobs:
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
         run: bash bot/tests/ban-thu-dap-y.sh
+
+      # SRS-5.1zzzzzzz212: 5 khách giả 5 tính cách (2 bán ở số ký gửi, 3 mua ở số tư vấn) chat với lõi — in lời bot, gắn nhãn câu hỏi CÓ/KHÔNG · DẪN DẮT · MỞ để người chấm.
+      - name: Bắn thử 5 khách tính cách khác nhau (ban-thu-5-khach)
+        if: ${{ inputs.dung_lai == 'ban-thu-5-khach' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: bash bot/tests/ban-thu-5-khach.sh
 
       # SRS-5.1zzzzzzz199: chạy bản anh Luận (luan8560/aond main) thành dịch vụ riêng cổng 8001 trên VPS, bắn cùng kịch bản vào bản đó và lõi mình để so cạnh.
       - name: Bắn thử bản anh Luận so cạnh lõi mình (ban-thu-luan)
