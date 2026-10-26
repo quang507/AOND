@@ -82,7 +82,7 @@ def test_luot_hoi_them_sau_luot_xin_sao_moi_cum_mot_lan(monkeypatch):
     r2 = eng.handle("u-sao", "chưa biết, mà thôi được rồi em")
     assert r2.xin_danh_gia and "HỎI THÊM LƯỢT NÀY" not in seen[-1]   # xin sao đúng lúc cũ, không chen câu hỏi
     truoc = len(seen)
-    o_het = [k for _, cum in CUM_SAU_DANG for k in cum]
+    o_het = [k for ma, cum in CUM_SAU_DANG if ma != "hdt" for k in cum]   # cụm hdt chỉ hỏi khi AI đọc ra nhà đang có HĐT (SRS-5.1zzzzzzz197)
     for _ in range(len(o_het) + 2):
         eng.handle("u-sao", "ừ em")
     hoi = [x for x in seen[truoc:] if "HỎI THÊM LƯỢT NÀY" in x and "VIẾT LẠI LƯỢT NÀY" not in x]

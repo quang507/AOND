@@ -44,7 +44,7 @@ FIELD_LABELS: dict[str, str] = {
     # 21/10 (SRS-5.1zzzzzzz95): ba ô hay lẫn — bề ngang CĂN (mat_tien), độ rộng con ĐƯỜNG (lo_gioi_duong), mặt tiền hay HẺM
     # (lo_gioi_hem). Nhãn nói rõ cái nào là của căn, cái nào là của đường; nhãn tới cả mô tả ô cho lượt AI bóc.
     "lo_gioi_hem": "vị trí: mặt tiền đường hay trong hẻm, kèm độ rộng hẻm nếu là hẻm (đường trước nhà)",
-    "tinh_trang_ban_giao": "tình trạng bàn giao (đang trống hay có khách thuê)",
+    "tinh_trang_ban_giao": "hiện trạng nhà: chủ đang ở, để trống giao ngay hay đang có người thuê (chỉ ý này — tiền thuê ghi ô thu_nhap_thue, thời hạn hợp đồng ghi ô hd_thue_con)",
     "phap_ly_hoan_cong": "pháp lý, hoàn công (sổ hồng)",
     # Nhà đất & Đất
     "kich_thuoc": "kích thước (ngang x dài)",
@@ -65,7 +65,10 @@ FIELD_LABELS: dict[str, str] = {
     "chia_khoa": "khi dẫn khách xem thì liên hệ ai, ai giữ chìa khoá (riêng của chủ)",
     "huong": "hướng nhà",
     "nam_xay": "năm xây / năm sửa lại",
-    "hd_thue_con": "hợp đồng thuê hiện tại còn bao lâu",
+    "hd_thue_con": "hợp đồng thuê hiện tại còn bao lâu (chỉ khi tin BÁN và nhà đang có người thuê)",
+    "co_hdt": ("nhà (tin BÁN) đang có hợp đồng thuê hay không — AI đọc theo nghĩa, chỉ ghi \"co\" khi khách nói nhà đang cho thuê / có người thuê, "
+               "\"khong\" khi khách nói đang ở hoặc để trống; chưa rõ thì BỎ TRỐNG"),
+    "thu_nhap_thue": "tiền thuê nhà đang thu mỗi tháng (CHỈ khi tin BÁN và nhà đang có hợp đồng thuê; ghi cả số tiền khách nói, vd 35 triệu/tháng)",
     "hinh_anh": "hình ảnh thực tế / sổ đỏ",
     # Chung cư / Căn hộ
     "so_phong_ngu": "số phòng ngủ và WC (chỉ số PHÒNG — số tầng / lầu thuộc ô kết cấu)",
@@ -76,7 +79,7 @@ FIELD_LABELS: dict[str, str] = {
     "phi_quan_ly": "phí quản lý dịch vụ",
     "can_goc": "căn thường hay căn góc",
     "phi_gui_xe": "phí gửi ô tô / xe máy",
-    "hien_trang_su_dung": "hiện trạng đang ở, để trống hay có khách thuê",
+    "hien_trang_su_dung": "hiện trạng căn hộ: chủ đang ở, để trống hay có khách thuê (nhà phố / biệt thự / nhà cấp 4 ghi ô tinh_trang_ban_giao)",
     # Dự án
     "chu_dau_tu_phan_khu": "chủ đầu tư và phân khu dự án",
     "tien_do_xay_dung": "tiến độ thi công xây dựng",
@@ -149,7 +152,7 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "ket_cau": "Hỏi nhà mình xây mấy lầu / mấy tầng, có mấy phòng ngủ, mấy WC",
     "lo_gioi_hem": ("Hỏi nhà mình ở mặt tiền đường hay trong hẻm, và đường (hoặc hẻm) trước nhà rộng khoảng mấy mét; hẻm thì "
                     "xe hơi vào tận cửa được không"),
-    "tinh_trang_ban_giao": "Hỏi nhà hiện đang trống giao ngay hay đang cho thuê (đang cho thuê thì hợp đồng còn bao lâu)",
+    "tinh_trang_ban_giao": "Hỏi nhà hiện đang ở, đang trống giao ngay hay đang cho thuê (chỉ hỏi ý này; tiền thuê, hợp đồng còn bao lâu hỏi sau nếu nhà có người thuê)",
     "phap_ly_hoan_cong": "Hỏi sổ hồng riêng đã hoàn công đầy đủ chưa",
     # Nhà đất & Đất
     "kich_thuoc": "Hỏi bề ngang và chiều dài nhà/đất khoảng bao nhiêu mét",
@@ -170,6 +173,7 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "huong": "Hỏi nhà hướng gì",
     "nam_xay": "Hỏi nhà xây năm nào, đã sửa lại lần nào chưa",
     "hd_thue_con": "Hỏi hợp đồng thuê hiện tại còn bao lâu",
+    "thu_nhap_thue": "Hỏi tiền thuê nhà đang thu mỗi tháng khoảng bao nhiêu (chỉ khi nhà đang có người thuê)",
     "hinh_anh": "Mời gửi hình ảnh thực tế hoặc hình sổ để hồ sơ được chấm điểm cao",
     # Chung cư / Căn hộ
     "so_phong_ngu": "Hỏi căn mình thiết kế mấy phòng ngủ và mấy WC",
@@ -266,8 +270,15 @@ LUAT_KHEN = """KHEN NHIỀU HƠN, CÓ CƠ SỞ (21/10/2026 sếp: "cần nó khe
       nhận định thị trường, KHÔNG "hấp dẫn lắm", "dễ bán".
     - Một lượt tối đa HAI ý khen ngắn (một về căn / vị trí, một về cách khách làm việc), kèm câu hỏi của lượt, không thay câu hỏi; cùng
       một điểm không khen lại lần hai trong cuộc chat (đọc lại lời em ở trên).
+    - GIỌNG SÔI NỔI ĐƯỢC PHÉP (26/10/2026 chủ dự án: "cho phép mở đầu sôi nổi như Wow, Tuyệt vời!"): khi điều khách vừa nói THẬT SỰ tốt
+      (có hợp đồng thuê sẵn, sổ riêng hoàn công, mặt tiền, nhà mới, khách gửi thông tin đủ và rõ…) được mở lượt bằng MỘT tiếng cảm thán
+      ngắn ("Wow,", "Tuyệt vời!", "Hay quá anh!", "Quá tốt luôn chị!") rồi nối thẳng vào lời khen / hệ quả theo các luật trên. Tối đa MỘT
+      tiếng cảm thán mỗi lượt; hai lượt liền nhau đổi chữ; thông tin bình thường thì KHÔNG cảm thán gượng. Cảm thán không kéo dài lượt
+      (vẫn ≤ ~40 từ cả lượt) và không phải cớ để thêm chi tiết khách chưa nói.
     - CẤM nói điều em không có số liệu: "thanh khoản tốt", "người mua tìm nhiều", "khu này đắt khách", "giá hợp lý / vừa tầm / tốt",
-      "vị trí đắc địa", "dễ bán lắm". Em không có dữ liệu thị trường, nói vậy là bịa. Khách nói giá thì KHÔNG bình luận giá.
+      "vị trí đắc địa", "dễ bán lắm". Em không có dữ liệu thị trường, nói vậy là bịa. Khách nói giá thì KHÔNG bình luận giá. CẤM dự đoán
+      người mua sẽ quan tâm / sẽ thích / sẽ hỏi nhiều ("khách mua sẽ thích", "chắc nhiều người hỏi", "dễ có khách") — chỉ nói hệ quả thẳng
+      từ lời khách. Cảm thán sôi nổi KHÔNG phá các cấm này ("Wow, vị trí đắc địa quá!" vẫn là sai).
     - Khen bằng lời thường như môi giới nhắn Zalo ("đi lại rất thuận tiện", "khách yên tâm"…), không cần dè chữ (26/10/2026 chủ dự án: "xóa mấy
       cấm để giống bên AOND"); chỉ cần gắn đúng điều khách vừa nói.
     - CHỈ khen đúng điều khách VỪA NÓI về CĂN, không bịa chi tiết vật lý khách chưa nói ("hẻm xe hơi" khi khách chưa nói hẻm rộng mấy,

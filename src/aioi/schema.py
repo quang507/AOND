@@ -271,12 +271,15 @@ HOI_SAU_KHI_RA_TIN: set[str] = set()
 # của loại) thì bỏ. Thứ tự = thứ tự quan trọng (pháp lý trước — "phần quan trọng nhất").
 CUM_SAU_DANG: list[tuple[str, tuple[str, ...]]] = [
     ("phap_ly", ("dung_ten_so", "the_chap", "quy_hoach")),
+    ("hdt", ("thu_nhap_thue",)),   # SRS-5.1zzzzzzz197: chỉ khi AI đọc nhà đang có hợp đồng thuê (`co_hdt` = "co"), xem cum_sau_dang
     ("gia", ("thuong_luong", "ly_do_ban")),
     ("thue_phi", ("thue_phi", "thanh_toan")),
     ("xem_nha", ("gio_xem", "chia_khoa")),
     ("chi_tiet", ("huong", "nam_xay", "noi_that")),
 ]
-O_SAU_DANG: frozenset[str] = frozenset(k for _, cum in CUM_SAU_DANG for k in cum) | {"hd_thue_con"}
+# SRS-5.1zzzzzzz197 (chủ dự án 26/10/2026): `thu_nhap_thue` = tiền thuê nhà đang thu mỗi tháng khi TIN BÁN có hợp đồng thuê (HĐT). Không có ô
+# cờ "có HĐT": khách nói "đang cho thuê 35 triệu" thì AI ghi thẳng số tiền (có bằng chứng trong lời khách), `hd_thue_con` là hợp đồng còn bao lâu.
+O_SAU_DANG: frozenset[str] = frozenset(k for _, cum in CUM_SAU_DANG for k in cum) | {"hd_thue_con", "thu_nhap_thue", "co_hdt"}
 
 # Ô RIÊNG của chủ nhà (SRS-5.1zzzzzzz116): không ghi vào `listings.boc_tach` (đọc công khai qua API cho tin đang bán), không vào bản tin
 # rao — lưu bảng `listing_noi_bo` (chỉ admin đọc). Lý do bán / mức gấp cho người mua biết là mất thế thương lượng của chủ; ai đứng tên,
@@ -477,6 +480,8 @@ class Property:
                 continue
             if ma == "chi_tiet" and self.group is not PropertyGroup.RESIDENTIAL:
                 continue
+            if ma == "hdt" and self.fields.get("co_hdt") != "co":   # ô phân loại AI đọc theo nghĩa, không dò chữ khách (SRS-5.1zzzzzzz197)
+                continue
             con = [k for k in cum if k not in mong and not self._has(k) and f"sau:{k}" not in da_hoi]   # SRS-178: mỗi lượt một ô
             if con:
                 return ma, con
@@ -497,6 +502,8 @@ class Property:
             return bool(self.fields.get("ma_so_can") or self.fields.get("tang_toa"))
         if name == "dia_chi":     # có tên đường là đã định vị được — không hỏi lại "đường nào" (SRS-5.1zzzzzzz74; 19/10 hỏi 3 lần)
             return bool(self.fields.get("dia_chi") or self.fields.get("duong"))
+        if name in ("tinh_trang_ban_giao", "hien_trang_su_dung"):   # MỘT ý hiện trạng (đang ở / trống / đang cho thuê), hai tên ô (SRS-5.1zzzzzzz197)
+            return bool(self.fields.get("tinh_trang_ban_giao") or self.fields.get("hien_trang_su_dung"))
         if name == "phap_ly_hoan_cong":   # khách đã nói sổ (ô phap_ly) thì không hỏi riêng hoàn công (SRS-5.1zzzzzzz76)
             return bool(self.fields.get("phap_ly_hoan_cong") or self.fields.get("phap_ly"))
         if name == "dien_tich":   # BĐS một diện tích (chung cư / đất / công nghiệp)
@@ -518,6 +525,12 @@ class Property:
         for k, v in captured.items():
             if not v:
                 continue
+            # SRS-5.1zzzzzzz197: loại có ô bàn giao trong bộ câu hỏi (nhà phố…) thì "hiện trạng" CHỈ nằm ở `tinh_trang_ban_giao` — AI ghi
+            # `hien_trang_su_dung` (chủ nhà "nhà anh đang ở", chat Bình Hưng 26/10) cũng gom về đó, khỏi hai ô cùng một ý, bot hỏi lại.
+            if k == "hien_trang_su_dung" and "tinh_trang_ban_giao" in self.core_fields():
+                k = "tinh_trang_ban_giao"
+                if "hien_trang_su_dung" in self.fields:
+                    del self.fields["hien_trang_su_dung"]
             if k == "loai_hinh":
                 if self.loai_hinh != v:
                     self.loai_hinh = v

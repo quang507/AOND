@@ -20,10 +20,13 @@ vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/nu
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
 BAN="thu-dy-$RUN"
+BAN_LC="thu-dy-lc-$RUN"   # cuộc chat riêng để thử gõ "$$$$$" / "json" (SRS-5.1zzzzzzz195: nay chỉ là tin thường)
 don() {
   echo "== dọn dữ liệu thử"
-  vps "curl -sS -X POST http://127.0.0.1:8000/reset/$BAN >/dev/null" || true
-  q "select reset_nguoi_test('$BAN') as kq" | jq -c '.[0]' || true
+  for id in "$BAN" "$BAN_LC"; do
+    vps "curl -sS -X POST http://127.0.0.1:8000/reset/$id >/dev/null" || true
+    q "select reset_nguoi_test('$id') as kq" | jq -c '.[0]' || true
+  done
 }
 trap don EXIT
 
@@ -65,10 +68,30 @@ kiem "HĐT: lời đáp nhắc tới hợp đồng thuê / dòng tiền (soát c
   "$(grep -qiE 'hợp đồng thuê|HĐT|dòng tiền|đang cho thuê|thuê sẵn' <<<"$DAP" && echo 1 || echo 0)"
 kiem "HĐT: 35 triệu không bị ghi nhầm vào mức cọc / thời hạn hợp đồng" \
   "$(jq '((.boc_tach.muc_coc // "") | tostring | test("35")) or ((.boc_tach.thoi_han_hd // "") | tostring | test("35")) | if . then 0 else 1 end' <<<"$r")"
+kiem "HĐT: 35 triệu vào ô thu_nhap_thue (SRS-5.1zzzzzzz197) và co_hdt = co" \
+  "$(jq '((.boc_tach.thu_nhap_thue // "") | tostring | test("35")) and ((.boc_tach.co_hdt // "") == "co") | if . then 1 else 0 end' <<<"$r")"
 kiem "HĐT: giá bán vẫn 12,5 tỷ (không bị 35 triệu đè)" "$(jq '.price_vnd == 12500000000 | if . then 1 else 0 end' <<<"$r")"
 kiem "mọi lượt: không nhận định thị trường / bình giá" \
   "$(grep -qiE 'thanh khoản|tìm (mua )?nhiều|hợp lý|vừa tầm|đắc địa|dễ bán|hấp dẫn lắm|lợi suất' <<<"$MOI_LOI" && echo 0 || echo 1)"
 kiem "mọi lượt: không mở đầu \"Dạ\", không dấu **, không gọi khách là \"bạn\"" \
   "$(grep -qE '^Dạ|\*\*|(^|[ ,.!?])bạn([ ,.!?]|$)' <<<"$MOI_LOI" && echo 0 || echo 1)"
+# SRS-5.1zzzzzzz195: gõ "$$$$$" và "json" giữa cuộc chat giờ chỉ là tin thường — không xoá phiên, không bật chế độ test, không in khối JSON.
+BAN="$BAN_LC"
+chat "Anh có nhà mặt tiền đường Lê Lai Quận 1 cần bán"
+sleep 1
+chat '$$$$$'
+LENH1="$TRA"
+chat "json"
+LENH2="$TRA"
+KQ2=$(q "select l.boc_tach - '_cap_nhat' as boc_tach, (select count(*) from messages m join conversations c on c.id = m.conversation_id
+         where c.seller_id = s.id) as so_tin from listings l join sellers s on s.id = l.seller_id
+         where s.zalo_user_id = '$BAN_LC' order by l.updated_at desc limit 1")
+echo "== sau \"\$\$\$\$\$\" và \"json\":"; jq -c '.[0]' <<<"$KQ2"
+r2=$(jq '.[0] // {}' <<<"$KQ2")
+kiem "gõ \$\$\$\$\$: vẫn có phiên và ô tin cũ (không xoá)" "$(jq '(.boc_tach.duong // .boc_tach.dia_chi // "") != "" | if . then 1 else 0 end' <<<"$r2")"
+kiem "gõ \$\$\$\$\$ và json: bot vẫn trả lời như tin thường (có lời đáp)" \
+  "$([ -n "$(jq -r '.replies[]?' <<<"$LENH1")" ] && [ -n "$(jq -r '.replies[]?' <<<"$LENH2")" ] && echo 1 || echo 0)"
+kiem "gõ \$\$\$\$\$ và json: không tin phụ \$\$\$\$\$, không khối JSON {…} trong lời đáp" \
+  "$(jq -r '.replies[]?' <<<"$LENH1$LENH2" | grep -qE '^\$\$\$\$\$|^\{|\"gia\"|```' && echo 0 || echo 1)"
 echo "== tóm tắt: bản nháp ở lượt ${LUOT_NHAP:-chưa ra}, tổng $LUOT lượt, $TONG_HOI dấu hỏi (cả lượt HĐT)"
 exit $loi
