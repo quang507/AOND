@@ -22,20 +22,10 @@ def test_gia_da_co_thi_khong_nam_trong_o_can_hoi():
     assert "gia" not in p.missing_fields()
 
 
-def _khoi_quy_tac_5(system: str) -> str:
-    m = re.search(r"\n5\. CẤM NHẠI LẠI LỜI KHÁCH.*?\n6\. ", system, re.S)
-    assert m, "mất quy tắc 5"
-    return m.group(0)
-
-
-def test_vi_du_quy_tac_5_khong_kem_cau_hoi_o_cu_the():
-    p = _prop_da_co_gia()
-    khoi = _khoi_quy_tac_5(build_chat_system("T•ai", p, "dien_tich_dat"))
-    vi_du = [d for d in khoi.splitlines() if d.strip().startswith("- Khách:")]
-    assert len(vi_du) >= 2, khoi
-    for d in vi_du:
-        assert "?" not in d, d                                   # ví dụ chỉ có lời đáp, không có câu hỏi nào để model chép
-        assert not re.search(r"giá|mấy tầng|bao nhiêu", d.split("->", 1)[1], re.I), d
+def test_prompt_khong_con_vi_du_cau_dap_kem_cau_hoi():
+    # SRS-207: quy tắc 5 (ví dụ "Khách: … -> …") bỏ theo prompt bản anh Luận — không còn ví dụ nào để model chép câu hỏi của một ô.
+    system = build_chat_system("T•ai", _prop_da_co_gia(), "dien_tich_dat")
+    assert not [d for d in system.splitlines() if d.strip().startswith("- Khách:")]
 
 
 def test_khong_cau_hoi_mau_nao_ve_gia_ngoai_o_cau_hoi_ke():

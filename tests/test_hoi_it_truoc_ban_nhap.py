@@ -15,7 +15,7 @@ def test_so_rieng_thi_khong_hoi_rieng_hoan_cong():
     p = _au_co()
     # 20/10 (SRS-5.1zzzzzzz81): hiện trạng lại hỏi trước bản nháp như bản anh Luận; hoàn công vẫn không hỏi riêng khi đã nói sổ.
     assert p.missing_fields() == ["dien_tich_nha", "tinh_trang_ban_giao"]
-    assert not p.summary_ready()
+    assert p.summary_ready()        # SRS-5.1zzzzzzz200: đã có loại + vị trí + giá thì ra nháp, hai ô trên hỏi sau
 
 
 def test_du_dien_tich_san_la_ra_ban_nhap():

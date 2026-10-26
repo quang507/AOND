@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ListingCard from "@/components/ListingCard";
 import MapView from "@/components/MapView";
 import type { ListingCard as CardRow, MapRow } from "@/lib/supabase";
@@ -25,11 +25,16 @@ export default function BrowseWithMap({
   const [showMap, setShowMap] = useState(false);
 
   // Map rows from listings
-  const mapRows: MapRow[] = listings.map((l) => ({
-    ...l,
-    lat: (l as unknown as { lat?: number }).lat ?? null,
-    lng: (l as unknown as { lng?: number }).lng ?? null,
-  }));
+  // useMemo: MapView dựng lại ghim + canh khung mỗi khi mảng đổi danh tính (SRS-5.1zzzzzzz206).
+  const mapRows: MapRow[] = useMemo(
+    () =>
+      listings.map((l) => ({
+        ...l,
+        lat: (l as unknown as { lat?: number }).lat ?? null,
+        lng: (l as unknown as { lng?: number }).lng ?? null,
+      })),
+    [listings],
+  );
 
   return (
     <div className="mx-auto w-full px-4 pb-12 transition-all duration-300">

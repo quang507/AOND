@@ -58,6 +58,14 @@ if (fs.existsSync(ENV_FILE)) {
   console.log(`Đã nạp ${ENV_FILE} (${Object.keys(tuFile).join(", ") || "không có biến nào"})`);
 }
 
+// SRS-5.1zzzzzzz210 (chủ dự án 26/10/2026: "1 số điện thoại nhận đầu vào kí gửi 1 số điện thoại nhận đầu ra tư vấn người mua", "đặt trên VPS"):
+// cùng một file chạy HAI tiến trình — `SO_NHAN` trống / "ky_gui" = số ký gửi (số cũ, giữ nguyên mọi đường dẫn / cổng cũ), "tu_van" = số tư vấn
+// người mua (service `nhadat-bridge-tu-van`). Mỗi số một file phiên, một cổng QR / gửi, một dòng `bridge_dang_nhap` (1 / 2). Tin nội bộ + nhắc
+// người bán chỉ đi số ký gửi: escalation-feed trả hàng việc rỗng cho số tư vấn.
+const SO_NHAN = String(process.env.SO_NHAN || "").trim().toLowerCase() === "tu_van" ? "tu_van" : "ky_gui";
+const LA_TU_VAN = SO_NHAN === "tu_van";
+const DUOI = LA_TU_VAN ? "-tu-van" : "";
+
 // Bộ não là lõi Python AOND (`src/aioi/server.py`, `aond-core.service` cổng 8000 trên cùng VPS — README). 18/10/2026: từng đổi
 // nhầm sang chat-reply TypeScript trên Supabase; chủ dự án chốt lõi Python, bỏ lõi TypeScript.
 const CHAT_REPLY_URL =
@@ -99,7 +107,7 @@ async function baoDangNhap(trang_thai, qr_png = null, ghi_chu = null) {
         "Content-Type": "application/json",
         ...(process.env.BRIDGE_SECRET ? { "x-bridge-secret": process.env.BRIDGE_SECRET } : {}),
       },
-      body: JSON.stringify({ action: "qr", trang_thai, qr_png, ghi_chu, luc }),
+      body: JSON.stringify({ action: "qr", trang_thai, qr_png, ghi_chu, luc, so_nhan: SO_NHAN }),
       signal: AbortSignal.timeout(10_000),
     });
   } catch { /* còn đường http tạm + qr.png */ }
@@ -107,7 +115,7 @@ async function baoDangNhap(trang_thai, qr_png = null, ghi_chu = null) {
 
 // Bám theo thư mục của script, không theo cwd: chạy từ gốc repo cũng phải tìm
 // ra đúng session cũ, đừng bắt quét QR lại vô cớ.
-const SESSION_FILE = path.join(HERE, "zalo-session.json");
+const SESSION_FILE = path.join(HERE, `zalo-session${DUOI}.json`);
 
 const { Zalo, ThreadType } = zca;
 // SRS-5.1zzzzzzz177 (25/10/2026): zca-js ≥ 2.0 bắt buộc `imageMetadataGetter` khi gửi ảnh theo đường dẫn file — thiếu thì MỌI tấm hỏng
@@ -136,8 +144,8 @@ if (!api) {
   // tmux. Tên sự kiện lấy từ enum của zca-js, có số dự phòng nếu bản mới
   // không export enum (0 = sinh QR, 1 = hết hạn, 2 = đã quét, 3 = từ chối).
   const EV = zca.LoginQRCallbackEventType ?? {};
-  const QR_FILE = path.join(HERE, "qr.png");
-  const QR_PORT = Number(process.env.QR_PORT || 8787);
+  const QR_FILE = path.join(HERE, `qr${DUOI}.png`);
+  const QR_PORT = Number(process.env.QR_PORT || (LA_TU_VAN ? 8788 : 8787));
   const token = crypto.randomBytes(6).toString("hex");
   const ipMay = () =>
     Object.values(os.networkInterfaces()).flat()
@@ -244,7 +252,7 @@ async function ghiLoi(source, detail) {
     await fetch(FEED_URL, {
       method: "POST",
       headers: feedHeaders,
-      body: JSON.stringify({ action: "log", source, detail: String(detail) }),
+      body: JSON.stringify({ action: "log", source: LA_TU_VAN ? `tư vấn ${source}` : source, detail: String(detail), so_nhan: SO_NHAN }),
     });
   } catch { /* mất mạng thì thôi, đừng làm hỏng thêm luồng đang lỗi */ }
 }
@@ -261,7 +269,7 @@ async function phienChet(lyDo) {
   if (dangThoat) return;
   dangThoat = true;
   console.log(`Phiên Zalo chết (${lyDo}) — bỏ phiên, khởi động lại để quét QR.`);
-  try { fs.renameSync(SESSION_FILE, path.join(HERE, "zalo-session.het-han.json")); } catch { /* không có file */ }
+  try { fs.renameSync(SESSION_FILE, path.join(HERE, `zalo-session${DUOI}.het-han.json`)); } catch { /* không có file */ }
   await baoDangNhap("het_han", null, String(lyDo).slice(0, 200));
   await ghiLoi("phien zalo", `phiên chết: ${lyDo} — quét QR lại ở /admin`);
   process.exit(1);
@@ -395,6 +403,8 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cl
     gioi_tinh: userGenderCache.get(String(threadId)),
     msg_id: msgId,
     channel: "zalo_personal_test",
+    // SRS-5.1zzzzzzz210: lõi đặt vai mặc định theo số khách nhắn tới và gửi tin chủ động về đúng số đó.
+    so_nhan: SO_NHAN,
   };
 
   // 20/10/2026 (đánh giá UX: lượt bot 9–25 giây im lặng, khách tưởng treo): hiện "đang soạn" từ lúc gửi bộ não tới lúc có lời.
@@ -683,7 +693,7 @@ async function pumpEscalations() {
   if (dangKeoViec) return;
   dangKeoViec = true;
   try {
-    const { items, error, quet_lai } = await postJson(FEED_URL, feedHeaders, { action: "pull" });
+    const { items, error, quet_lai } = await postJson(FEED_URL, feedHeaders, { action: "pull", so_nhan: SO_NHAN });
     if (error) return await ghiLoi("escalation-feed", error);
     // FR-203: admin bấm "Đăng nhập lại" ở /admin.
     if (quet_lai) return await phienChet("admin yêu cầu đăng nhập lại từ /admin");
@@ -775,7 +785,7 @@ async function guiAnhQuaUrl(threadId, url) {
 }
 
 // Local HTTP Send API on 127.0.0.1:5005 for proactive messages (follow-up, reminders)
-const SEND_PORT = process.env.SEND_PORT || 5005;
+const SEND_PORT = process.env.SEND_PORT || (LA_TU_VAN ? 5006 : 5005);   // SRS-5.1zzzzzzz210: lõi gửi tin chủ động số tư vấn qua 5006
 try {
   const sendServer = http.createServer(async (req, res) => {
     if (req.method === 'POST' && req.url === '/send') {

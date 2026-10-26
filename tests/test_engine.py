@@ -259,7 +259,9 @@ def test_ambiguous_house_area_is_parked_not_dropped():
     # 19/10 (SRS-5.1zzzzzzz52, theo bản anh Luận): con số chưa rõ đất hay nhà KHÔNG tự thành diện tích đất; bot hỏi lại.
     assert conv.prop.fields.get("dien_tich_dat") is None
     assert conv.prop.fields.get("dien_tich_nha") is None
-    assert "dien_tich_dat" in conv.prop.missing_fields()
+    # SRS-5.1zzzzzzz202: câu đầu đủ sàn tối thiểu nhưng còn 2 facet chính trống (công trình, pháp lý) nên chưa soạn bài; hai diện tích vẫn
+    # nằm trong danh sách hỏi, chưa mất.
+    assert not conv.listing_proposed and {"dien_tich_dat", "dien_tich_nha"} <= set(conv.prop.missing_fields())
 
 
 def test_chat_turn_is_not_a_listing_post_while_data_missing():
@@ -294,8 +296,13 @@ def test_complete_listing_drafts_ad_completely():
     assert not r.reply.rstrip().endswith(("…", "..."))
 
 
-def test_identity_only_is_not_yet_summary_ready():
-    # Identity fields alone (missing price/area) -> still collecting.
+def test_loai_vi_tri_gia_la_du_rao_thieu_gia_thi_chua():
+    # SRS-5.1zzzzzzz200: đủ rao = loại hình + vị trí + giá; thiếu giá thì vẫn đang hỏi.
+    eng = _engine()
+    c0 = eng.conversation("u8")
+    c0.prop.loai_hinh = "nha_pho"
+    c0.prop.fields.update({"dia_chi": "146 Trần Bình Trọng, Q5", "duong": "Trần Bình Trọng"})
+    assert not c0.prop.summary_ready() and c0.prop.missing_fields()[0] == "gia"
     eng = _engine()
     conv = eng.conversation("u9")
     conv.prop.loai_hinh = "nha_pho"
@@ -304,9 +311,9 @@ def test_identity_only_is_not_yet_summary_ready():
         "duong": "Trần Bình Trọng", "phuong": "Phường 1",  # ô AI tách từ địa chỉ (SRS-5.1zzzzzzz41)
         "gia": "10 tỷ",
     })
-    assert not conv.prop.summary_ready()  # dien_tich still missing
-    r = eng.handle("u9", "nhà ở Trần Bình Trọng Q5 nha em")
-    assert r.is_listing_post is False
+    assert not conv.prop.summary_ready()   # SRS-5.1zzzzzzz202: đủ sàn tối thiểu nhưng cả 4 facet chính còn trống → chưa soạn bài
+    conv.prop.fields.update({"lo_gioi_hem": "hẻm 4m", "dien_tich_dat": "60m2", "ket_cau": "3 tầng"})
+    assert conv.prop.summary_ready()       # ≥ 3/4 facet có dữ liệu
 
 
 def test_draft_then_fee_only_after_approval():

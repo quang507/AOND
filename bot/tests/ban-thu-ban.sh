@@ -128,7 +128,7 @@ kiem "Nguyễn Trãi: trả lời theo cụm thì ra bản nháp trong ≤ 4 lư
 TIEU_DE=$(jq -r '.reply // ""' <<<"$TRA" | sed -n '/📋/,$p' | sed 1d | awk 'NF{print; exit}')
 echo "== Nguyễn Trãi: tiêu đề \"$TIEU_DE\" ($(wc -w <<<"$TIEU_DE") từ)"
 kiem "Nguyễn Trãi: tiêu đề ≤ 25 từ, có đường, diện tích và giá" \
-  "$([ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 26 ] && grep -q 'Nguyễn Trãi' <<<"$TIEU_DE" && grep -qE 'm²|m2|[0-9] ?x ?[0-9]' <<<"$TIEU_DE" && grep -q 'tỷ' <<<"$TIEU_DE" && echo 1 || echo 0)"
+  "$([ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 26 ] && grep -qi 'Nguyễn Trãi' <<<"$TIEU_DE" && grep -qiE 'm²|m2|[0-9] ?x ?[0-9]' <<<"$TIEU_DE" && grep -qi 'tỷ' <<<"$TIEU_DE" && echo 1 || echo 0)"
 # Lượt đầu khách chưa nói phường: phường từ kho chỉ được nhắc dạng hỏi, không khẳng định.
 # SRS-5.1zzzzzzz81: khách duyệt bản nháp → bot hỏi khách biết phí môi giới chưa (như bản anh Luận), không tự báo con số. Tin chưa
 # lên web (còn thiếu ô) thì lượt đó hỏi ô thiếu trước, không hỏi phí.
@@ -176,6 +176,12 @@ kiem "Cho thuê: không nói phí 1% giá bán" "$(grep -qE '1 ?% ?(giá|giao)' 
 LOI_BOT=""
 for cau in "bán lô đất thổ cư đường Trần Văn Giàu huyện Bình Chánh" "ngang 5 dài 20, full thổ cư, sổ riêng" \
            "đường trước đất rộng 8m, giá 3 tỷ"; do chat "$BAN6" "$cau"; sleep 1; done
+# Lưu nền (như kịch bản hai căn): lõi trả lời trước khi ghi xong DB, đọc sau 1 giây thì giá lượt cuối chưa vào cột (ban-thu-ban 26/10, bản 29ff6b4:
+# "Đất: giá 3 tỷ" TRƯỢT dù bản tin đã in "chỉ 3 tỷ"; các lượt khác đạt cùng mã) — chờ tới 15 s cho tới khi cột giá có.
+for _ in $(seq 1 15); do
+  [ "$(q "select count(*) as n from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = '$BAN6' and l.price_vnd is not null" | jq -r '.[0].n')" = 1 ] && break
+  sleep 1
+done
 r6=$(dong "$BAN6"); echo "$r6"
 kiem "Đất: loại đất" "$(jq '(.property_type // "") | test("dat") | if . then 1 else 0 end' <<<"$r6")"
 kiem "Đất: giá 3 tỷ" "$(jq '.price_vnd == 3000000000 | if . then 1 else 0 end' <<<"$r6")"

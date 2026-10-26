@@ -32,10 +32,14 @@ Deno.serve(async (req) => {
   // phút không thấy nhịp trong giờ làm thì bot_health_tick() ghi sổ + báo.
   // (Lưu ý thật: tin báo đi ĐƯỜNG BRIDGE, nên bridge chết là tin nằm chờ tới
   //  lúc nó sống lại. Muốn biết ngay thì mở /admin — trang đó đọc bot_health.)
-  await client.rpc("beat", { p_who: "bridge-zca" });
-
   const body = await req.json().catch(() => ({}));
   const action = String(body.action ?? "pull");
+  // SRS-5.1zzzzzzz210 (chủ dự án 26/10/2026: một số Zalo nhận ký gửi, một số tư vấn người mua; "tin nội bộ và nhắc người bán vẫn đi từ số
+  // hiện tại"): bridge số tư vấn gửi `so_nhan: "tu_van"` → nhịp tim riêng (`bridge-zca-tu-van`, để còi của số ký gửi không bị nhịp số kia
+  // che), dòng đăng nhập riêng (id = 2), và KHÔNG nhận việc nhắn (hàng việc chỉ số ký gửi gửi). Bridge bản cũ không gửi = số ký gửi.
+  const laTuVan = String(body.so_nhan ?? "") === "tu_van";
+  const dongDn = laTuVan ? 2 : 1;
+  await client.rpc("beat", { p_who: laTuVan ? "bridge-zca-tu-van" : "bridge-zca" });
 
   // FR-152: bridge chạy trên máy chủ dự án, console.error của nó hiện ở terminal
   // rồi mất theo cửa sổ. Cho nó một đường đẩy lỗi lên sổ chung — cùng cổng
@@ -77,9 +81,16 @@ Deno.serve(async (req) => {
       ...(tt === "cho_quet" || tt === "dang_nhap" ? { yeu_cau_quet_lai: false } : {}),
       ghi_chu: body.ghi_chu ? String(body.ghi_chu).slice(0, 200) : null,
       cap_nhat: luc,
-    }).eq("id", 1).lte("cap_nhat", luc);
+    }).eq("id", dongDn).lte("cap_nhat", luc);
     if (qErr) await ghiLoi(client, "escalation-feed qr", qErr.message);
     return jsonResponse({ ok: !qErr });
+  }
+
+  // Số tư vấn: không kéo việc (tin nội bộ / nhắc người bán / báo khách đi số ký gửi) — chỉ trả cờ "đăng nhập lại" của chính nó.
+  if (laTuVan) {
+    const { data: dnTv } = await client.from("bridge_dang_nhap")
+      .select("yeu_cau_quet_lai").eq("id", 2).maybeSingle();
+    return jsonResponse({ items: [], quet_lai: !!dnTv?.yeu_cau_quet_lai });
   }
 
   if (action === "ack") {

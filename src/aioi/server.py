@@ -36,6 +36,7 @@ from .projects import SqliteProjectStore, SupabaseProjectStore
 from .kho_anh import SupabaseMediaStore
 from .kho_tep import LocalDirectoryMediaStore, MediaStore
 from .so_token import SoToken
+from . import lenh_zalo
 from .supabase_sync import sync_to_supabase_async
 from .voice import is_audio_file, transcribe_voice_url
 
@@ -153,6 +154,7 @@ class ZaloBridgePayload(BaseModel):
     sticker_url: str | None = None      # link ảnh sticker (bridge, zca-js getStickersDetail) — SRS-5.1zzzzzzz122
     sticker_text: str | None = None     # nhãn chữ Zalo gắn cho sticker (có thể trống)
     gioi_tinh: str | None = None        # "nam" / "nu" theo hồ sơ Zalo (bridge) — chỉ gợi ý xưng hô khi khách chưa tự xưng (SRS-5.1zzzzzzz163)
+    so_nhan: str | None = None          # số Zalo khách nhắn tới: "ky_gui" / "tu_van" (SRS-5.1zzzzzzz210); bridge cũ không gửi = giữ nguyên
     msg_id: str | None = None
     channel: str | None = None
     mark_sent: str | None = None
@@ -185,6 +187,14 @@ def _dat_goi_y_xung_ho(user_key: str, gioi_tinh: str | None) -> None:
     if os.environ.get("XUNG_HO_THEO_ZALO", "").strip().lower() == "tat":
         return
     _engine.conversation(user_key).xung_ho_goi_y = {"nam": "anh", "nu": "chi"}.get((gioi_tinh or "").strip().lower())
+
+
+def _dat_so_nhan(user_key: str, so_nhan: str | None) -> None:
+    """Số Zalo khách vừa nhắn tới (SRS-5.1zzzzzzz210) → vai mặc định của lượt mơ hồ + số gửi tin chủ động. Không có (bridge bản cũ) thì giữ."""
+    if so_nhan is None:
+        return
+    from .engine import SO_TU_VAN
+    _engine.conversation(user_key).so_nhan = SO_TU_VAN if so_nhan.strip().lower() == SO_TU_VAN else ""
 
 
 @app.get("/health")
@@ -260,12 +270,16 @@ def _gui_bridge(user_key: str, text: str, photos: list[str] | None = None) -> di
     Trả phản hồi của bridge (`anh_da_gui` = số ảnh đã đi)."""
     import json
     import urllib.request
-    from .followup import BRIDGE_SEND_URL
+    from .engine import SO_TU_VAN
+    from .followup import BRIDGE_SEND_URL, BRIDGE_SEND_URL_TU_VAN
+    # SRS-5.1zzzzzzz210: tin chủ động cho khách (báo căn mới, lượt thử lại) đi đúng số Zalo khách đang nhắn — số tư vấn hay số ký gửi. Tin nhắc
+    # người bán (followup.py) và tin nội bộ (bridge kéo escalation-feed) vẫn đi số ký gửi (chủ dự án 26/10).
+    url = BRIDGE_SEND_URL_TU_VAN if _engine.conversation(user_key).so_nhan == SO_TU_VAN else BRIDGE_SEND_URL
     goi = {"threadId": user_key, "message": text}
     if photos:
         goi["photos"] = photos
     # Ảnh được tải rồi gửi từng tấm (mỗi tấm tới 15 s) — hạn chờ dài hơn tin chữ thuần.
-    req = urllib.request.Request(BRIDGE_SEND_URL, data=json.dumps(goi).encode("utf-8"), headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(url, data=json.dumps(goi).encode("utf-8"), headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=10 + 20 * len(photos or [])) as resp:
         try:
             return json.loads(resp.read().decode("utf-8")) or {}
@@ -523,6 +537,18 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         incoming_text = incoming_text.replace(
             STICKER_TRUNG_TINH, doc_sticker(_engine._provider, payload.sticker_url, payload.sticker_text or ""), 1)
 
+    # 3c. Lệnh gõ tay trên Zalo (SRS-5.1zzzzzzz211): /quit xoá sạch phiên của người gõ; /state, /listings, /whoami… trả tin debug "$$$$$ " — không qua
+    # model, không vào lịch sử, không ghi CRM. /link chỉ bỏ chữ lệnh rồi đi tiếp đường thường.
+    if not media_urls and lenh_zalo.ten_lenh(incoming_text):
+        with _engine.khoa_luot(payload.external_user_id):
+            _dat_so_nhan(payload.external_user_id, payload.so_nhan)
+            kq_lenh = lenh_zalo.chay(_engine, payload.external_user_id, incoming_text, huy_nhac=followup_manager.cancel_followup)
+        if kq_lenh.text_moi is None:
+            log.warning("Lệnh Zalo: %s (%d bong bóng)", lenh_zalo.ten_lenh(incoming_text), len(kq_lenh.replies))
+            return ZaloBridgeResponse(reply="\n\n".join(kq_lenh.replies), replies=kq_lenh.replies, nhip_go=[], assistant_name="", captured=[],
+                                      next_field=None, property_score=0.0, user_score=0.0, tier="", completeness=0.0)
+        incoming_text = kq_lenh.text_moi
+
     # 4. Dispatch to Engine
     uk = payload.external_user_id
     if media_urls:
@@ -541,6 +567,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     with _engine.khoa_luot(uk):
         cho_luot = int((time.perf_counter() - t_khoa) * 1000)
         _dat_goi_y_xung_ho(uk, payload.gioi_tinh)
+        _dat_so_nhan(uk, payload.so_nhan)
         if not media_urls:
             gom = _lay_cho(uk, so_cho)
             if gom is None:   # tin này đã nằm trong lượt trước — chỉ ghi lời khách vào CRM, không trả lời riêng

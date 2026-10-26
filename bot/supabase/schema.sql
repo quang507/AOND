@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-25 15:42 (giờ VN)
+-- Sinh lúc: 2026-10-26 16:51 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -623,7 +623,7 @@ do $d$ begin
   alter table public.bot_usage_model add constraint bot_usage_model_pkey PRIMARY KEY (day, model);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.bridge_dang_nhap add constraint bridge_dang_nhap_id_check CHECK ((id = 1));
+  alter table public.bridge_dang_nhap add constraint bridge_dang_nhap_id_check CHECK ((id = ANY (ARRAY[1, 2])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.bridge_dang_nhap add constraint bridge_dang_nhap_pkey PRIMARY KEY (id);
@@ -1066,6 +1066,7 @@ create index if not exists danh_gia_ai_hoi_luc_idx ON public.danh_gia_ai USING b
 create index if not exists deals_buyer_id_idx ON public.deals USING btree (buyer_id);
 create index if not exists deals_ctv_id_idx ON public.deals USING btree (ctv_id);
 create index if not exists deals_listing_id_idx ON public.deals USING btree (listing_id);
+create index if not exists duong_ban_do ON public.duong USING btree (lat, lng) INCLUDE (ten, phuong, quan_cu, loai) WHERE (loai = ANY (ARRAY['duong'::text, 'so'::text]));
 create index if not exists duong_hem ON public.duong USING btree (upper(so_hem), bo_dau(duong_me)) WHERE (loai = 'hem'::text);
 create index if not exists duong_lat_lng ON public.duong USING btree (lat, lng);
 create index if not exists duong_nhung_hnsw ON public.duong USING hnsw (nhung extensions.halfvec_cosine_ops);
@@ -1420,6 +1421,49 @@ begin
   end if;
   return public.xoa_nguoi_theo_zalo(p_zalo);
 end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[] DEFAULT ARRAY['can'::text])
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  select jsonb_build_object(
+    'can', case when 'can' = any(p_lop) then coalesce((
+      select jsonb_agg(to_jsonb(t)) from (
+        -- đúng CARD_COLS + lat, lng (lib/supabase.ts) — đủ cho ListingCard, không kéo mô tả
+        select l.id, l.code, l.deal, l.district, l.ward, l.street, l.location_raw, l.area_m2, l.price_vnd, l.price_raw, l.property_type,
+               l.bedrooms, l.bathrooms, l.floors, l.access_type, l.status, l.created_at, l.lat, l.lng
+          from public.listings l
+         where l.status in ('dang_ban', 'dang_quan_tam', 'da_coc')
+           and l.lat between least(p_nam, p_bac) and greatest(p_nam, p_bac)
+           and l.lng between least(p_tay, p_dong) and greatest(p_tay, p_dong)
+         order by l.created_at desc
+         limit 300) t), '[]'::jsonb) else '[]'::jsonb end,
+    'du_an', case when 'du_an' = any(p_lop) then coalesce((
+      select jsonb_agg(to_jsonb(t)) from (
+        select p.slug, p.name, p.developer, p.district, p.status_text, p.lat::double precision as lat, p.lng::double precision as lng
+          from public.projects p
+         where p.lat is not null and p.lng is not null
+           and p.lat between least(p_nam, p_bac) and greatest(p_nam, p_bac)
+           and p.lng between least(p_tay, p_dong) and greatest(p_tay, p_dong)
+         order by hashtext(coalesce(p.slug, p.name))   -- khung rộng quá 300: rải đều, không dồn tên A–C (thứ tự cố định)
+         limit 300) t), '[]'::jsonb) else '[]'::jsonb end,
+    -- Lớp đường CHỈ khi khung nhỏ (≤ 0,08° mỗi chiều ≈ zoom 15): khung cả TP.HCM quét hết bảng `duong` (dòng nặng vì cột vector) mất ~5 s
+    -- (đo 26/10), khung 0,02° × 0,03° đi chỉ mục `duong_lat_lng` ~36 ms. Chặn ở đây vì hàm mở cho anon — web cũng chỉ xin lớp này từ zoom 15.
+    'duong', case when 'duong' = any(p_lop)
+                   and greatest(p_nam, p_bac) - least(p_nam, p_bac) <= 0.08
+                   and greatest(p_tay, p_dong) - least(p_tay, p_dong) <= 0.08 then coalesce((
+      select jsonb_agg(to_jsonb(t)) from (
+        select d.ten, d.loai, d.phuong, d.quan_cu, d.lat, d.lng
+          from public.duong d
+         where d.loai in ('duong', 'so')
+           and d.lat between least(p_nam, p_bac) and greatest(p_nam, p_bac)
+           and d.lng between least(p_tay, p_dong) and greatest(p_tay, p_dong)
+         order by hashtext(d.ten || coalesce(d.phuong, ''))
+         limit 300) t), '[]'::jsonb) else '[]'::jsonb end);
+$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.bao_can_da_chot(p_listing_id uuid)
@@ -5972,7 +6016,7 @@ end
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.yeu_cau_quet_lai_zalo()
+CREATE OR REPLACE FUNCTION public.yeu_cau_quet_lai_zalo(p_id smallint DEFAULT 1)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -5982,12 +6026,15 @@ begin
   if not (coalesce(auth.role(), '') = 'service_role' or public.la_admin()) then
     raise exception 'Khong co quyen quan tri' using errcode = '42501';
   end if;
+  if p_id is null or p_id not in (1, 2) then
+    raise exception 'p_id phai la 1 (so ky gui) hoac 2 (so tu van)' using errcode = '22023';
+  end if;
   update public.bridge_dang_nhap
      set yeu_cau_quet_lai = true,
          ghi_chu = 'yêu cầu đăng nhập lại từ /admin (' ||
                    coalesce((select auth.jwt()) ->> 'email', 'service_role') || ')',
          cap_nhat = now()
-   where id = 1;
+   where id = p_id;
 end $function$
 ;
 
@@ -6822,6 +6869,10 @@ grant execute on function public.admin_xoa_het_khach_va_ro_hang(p_xac_nhan text)
 revoke all on function public.admin_xoa_khach(p_zalo text) from public, anon, authenticated;
 grant execute on function public.admin_xoa_khach(p_zalo text) to authenticated;
 grant execute on function public.admin_xoa_khach(p_zalo text) to service_role;
+revoke all on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) from public, anon, authenticated;
+grant execute on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) to anon;
+grant execute on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) to authenticated;
+grant execute on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) to service_role;
 revoke all on function public.bao_can_da_chot(p_listing_id uuid) from public, anon, authenticated;
 grant execute on function public.bao_can_da_chot(p_listing_id uuid) to service_role;
 revoke all on function public.bat_het_tien_api() from public, anon, authenticated;
@@ -7161,9 +7212,9 @@ revoke all on function public.xoa_nguoi_theo_zalo(p_zalo text) from public, anon
 grant execute on function public.xoa_nguoi_theo_zalo(p_zalo text) to service_role;
 revoke all on function public.xuat_schema() from public, anon, authenticated;
 grant execute on function public.xuat_schema() to service_role;
-revoke all on function public.yeu_cau_quet_lai_zalo() from public, anon, authenticated;
-grant execute on function public.yeu_cau_quet_lai_zalo() to authenticated;
-grant execute on function public.yeu_cau_quet_lai_zalo() to service_role;
+revoke all on function public.yeu_cau_quet_lai_zalo(p_id smallint) from public, anon, authenticated;
+grant execute on function public.yeu_cau_quet_lai_zalo(p_id smallint) to authenticated;
+grant execute on function public.yeu_cau_quet_lai_zalo(p_id smallint) to service_role;
 
 -- ══ Storage bucket ══
 insert into storage.buckets (id, name, public) values ('listing-photos', 'listing-photos', 'f') on conflict (id) do nothing;

@@ -9,6 +9,14 @@ DU_TOI_THIEU = {"dia_chi": "12 Lê Lợi", "duong": "Lê Lợi", "phuong": "Phư
                 "dien_tich_nha": "200m2", "gia": "9 tỷ"}
 
 
+def _tra_ban_tin(spy):
+    """Spy trả BẢN TIN như model thật ở lượt trình nháp (SRS-5.1zzzzzzz204: lượt trình nháp mà không ra bản tin thì bị gọi lại / không tính là đã trình)."""
+    def chat(system, messages, **k):
+        spy.systems.append(system)
+        return "📋 Em sẽ rao như vầy nhé anh chị:\n\nMời xem nhà Lê Lợi, chỉ 9 tỷ 🏠\n\nNhà đẹp.\n\n- Lê Lợi\n- 9 tỷ\n\nAnh/chị thấy bản tin này hấp dẫn chưa ạ?"
+    spy.chat = chat
+
+
 def _chuan_bi(eng, uk, fields):
     conv = eng.conversation(uk)
     conv.prop.loai_hinh = "nha_pho"
@@ -18,8 +26,10 @@ def _chuan_bi(eng, uk, fields):
 
 def test_du_toi_thieu_khach_bao_dang_thi_ra_ban_nhap_that():
     eng, spy = _eng({"operations": [], "xin_dang": "đăng đi"})
+    _tra_ban_tin(spy)
     conv = _chuan_bi(eng, "xd1", DU_TOI_THIEU)
-    assert not conv.prop.summary_ready()                 # còn thiếu ô phụ (kết cấu, hẻm, pháp lý…) — chưa tới ngưỡng
+    assert not conv.prop.summary_ready()                 # còn 2 facet chính trống (vị thế, pháp lý) — chưa tới ngưỡng tự soạn
+    assert not conv.prop.thieu_toi_thieu()               # nhưng đủ sàn tối thiểu → khách bảo đăng thì soạn ngay (SRS-5.1zzzzzzz202)
     eng.handle("xd1", "ok em đăng đi")
     assert AD_FORMAT in spy.systems[-1] and "KHÁCH VỪA BẢO ĐĂNG" not in spy.systems[-1]
     assert conv.listing_proposed                         # bản nháp được ghi → khách duyệt lượt sau mới ghi được
@@ -28,16 +38,16 @@ def test_du_toi_thieu_khach_bao_dang_thi_ra_ban_nhap_that():
 
 def test_thieu_o_toi_thieu_thi_hoi_dung_o_do_khong_soan_bai():
     eng, spy = _eng({"operations": [], "xin_dang": "đăng đi"})
-    f = {k: v for k, v in DU_TOI_THIEU.items() if k != "phuong"}
+    f = {k: v for k, v in DU_TOI_THIEU.items() if k != "gia"}
     conv = _chuan_bi(eng, "xd2", f)
     eng.handle("xd2", "ok em đăng đi")
     he = spy.systems[-1]
     assert "KHÁCH VỪA BẢO ĐĂNG" in he and AD_FORMAT not in he
-    assert conv.o_vua_hoi == "phuong" and not conv.listing_proposed
+    assert conv.o_vua_hoi == "gia" and not conv.listing_proposed
 
 
 def test_trich_dan_khong_co_trong_tin_khach_thi_khong_tinh_la_bao_dang():
     eng, spy = _eng({"operations": [], "xin_dang": "đăng đi"})
-    conv = _chuan_bi(eng, "xd3", DU_TOI_THIEU)
+    conv = _chuan_bi(eng, "xd3", {k: v for k, v in DU_TOI_THIEU.items() if k != "gia"})
     eng.handle("xd3", "phí bên em bao nhiêu")
     assert not conv.listing_proposed and AD_FORMAT not in spy.systems[-1]

@@ -30,7 +30,6 @@ from . import cau_mau
 from . import so_token
 from .delivery import _is_formatted_post
 from .prompts import _MO_DAU_RE   # dòng mở bản nháp "(📋) Em/Mình sẽ rao như vầy nhé…:" (SRS-5.1zzzzzzz132)
-from .prompts import khoi_khen_theo_luot
 from .danh_gia import KHOI_SAP_XIN_SAO, cau_xin_sao, doc_sao, khoi_cam_on_sao, vua_xin_sao
 from . import du_an_mua
 from .assistants import Assistant, assign_assistant
@@ -77,6 +76,7 @@ from .prompts import (
     tai_lieu_chung_schema,
     build_greeting,
     khoi_chao_lan_dau,
+    khoi_chao_tu_van,
     build_listing_proposal_system,
     build_ngoai_vung_system,
     khoi_hoi_mat_tien,
@@ -115,6 +115,8 @@ from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, san
 # Headroom so the token cap never truncates a reply. The model controls actual length
 # via the prompt (brief while chatting, full ad when asked / complete).
 REPLY_MAX_TOKENS = 4096
+# SRS-5.1zzzzzzz210: giá trị `Conversation.so_nhan` của số Zalo tư vấn người mua (bridge gửi `so_nhan`); "" = số ký gửi.
+SO_TU_VAN = "tu_van"
 
 # Extracted trạng-thái intent → the stored Listing.status value.
 STATUS_MAP = {"da_ban": "đã bán", "dung_ban": "dừng bán", "da_cho_thue": "đã cho thuê",
@@ -426,6 +428,10 @@ class Conversation:
     che_do_test: bool = False
     # Persisted (SRS-5.1zzzzzzz131 bản 2): số lượt khách đã CHO THÔNG TIN (lượt ghi được ô) — 3 lượt đầu bắt buộc mở bằng lời khen; "$$$$$" về 0.
     so_luot_thong_tin: int = 0
+    # Persisted (SRS-5.1zzzzzzz210, chủ dự án 26/10/2026: "1 số điện thoại nhận đầu vào kí gửi 1 số điện thoại nhận đầu ra tư vấn người mua"):
+    # khách nhắn tới số Zalo NÀO — "" = số ký gửi (số cũ), SO_TU_VAN = số tư vấn người mua. Chỉ quyết vai MẶC ĐỊNH của lượt mơ hồ và số gửi tin
+    # chủ động cho khách; khách nhắn nhầm số vẫn được trả lời đúng việc (`user_intent` của lượt thắng).
+    so_nhan: str = ""
     # Transient (SRS-5.1zzzzzzz177): số lượt khách hỏi việc NGOÀI nhà đất khi chưa tỏ ý bán / mua — lần 2 đề nghị nối người.
     so_luot_ngoai_viec: int = 0
     # Transient (SRS-5.1zzzzzzz130): ô tin của căn đang nói TRƯỚC khi áp thao tác lượt này, và cụm khách nói làm bằng chứng cho ô vừa ghi —
@@ -659,7 +665,8 @@ class SqliteConversationStore(ConversationStore):
             "active_lead_id TEXT NOT NULL DEFAULT '', "
             "xung_ho TEXT NOT NULL DEFAULT '', "
             "che_do_test TEXT NOT NULL DEFAULT '', "
-            "so_luot_thong_tin TEXT NOT NULL DEFAULT '0')"
+            "so_luot_thong_tin TEXT NOT NULL DEFAULT '0', "
+            "so_nhan TEXT NOT NULL DEFAULT '')"
         )
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS listings ("
@@ -684,6 +691,7 @@ class SqliteConversationStore(ConversationStore):
             ("conversations", "xung_ho", "''"),   # SRS-5.1zzzzzzz76: khách tự xưng gì, giữ qua khởi động lại
             ("conversations", "che_do_test", "''"),   # cột cũ chế độ test (SRS-195: không còn bật)
             ("conversations", "so_luot_thong_tin", "'0'"),   # SRS-5.1zzzzzzz131 bản 2: lượt thông tin thứ mấy (3 lượt đầu khen 100%)
+            ("conversations", "so_nhan", "''"),   # SRS-5.1zzzzzzz210: khách nhắn số ký gửi ("") hay số tư vấn
         ):
             try:  # migrate older tables that predate this column
                 self._conn.execute(
@@ -698,13 +706,13 @@ class SqliteConversationStore(ConversationStore):
         active_lead_id = conv.buyer_lead.lead_id if conv.buyer_lead else ""
         self._conn.execute(
             "INSERT INTO conversations(user_key, user_type, last_ai_at, active_listing_id, "
-            "history_json, price_book_json, role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin) VALUES (?,?,?,?,?,?,?,?,?,?,?) "
+            "history_json, price_book_json, role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(user_key) DO UPDATE SET "
             "user_type=excluded.user_type, last_ai_at=excluded.last_ai_at, "
             "active_listing_id=excluded.active_listing_id, history_json=excluded.history_json, "
             "price_book_json=excluded.price_book_json, role=excluded.role, "
             "active_lead_id=excluded.active_lead_id, xung_ho=excluded.xung_ho, che_do_test=excluded.che_do_test, "
-            "so_luot_thong_tin=excluded.so_luot_thong_tin",
+            "so_luot_thong_tin=excluded.so_luot_thong_tin, so_nhan=excluded.so_nhan",
             (
                 conv.user_key,
                 conv.user_type.value,
@@ -717,6 +725,7 @@ class SqliteConversationStore(ConversationStore):
                 conv.xung_ho or "",
                 "1" if conv.che_do_test else "",
                 str(int(conv.so_luot_thong_tin or 0)),
+                conv.so_nhan or "",
             ),
         )
         if conv.buyer_lead is not None:
@@ -786,7 +795,7 @@ class SqliteConversationStore(ConversationStore):
     def load(self, user_key: str) -> Conversation | None:
         row = self._conn.execute(
             "SELECT user_type, last_ai_at, active_listing_id, history_json, price_book_json, "
-            "role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin FROM conversations WHERE user_key=?",
+            "role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan FROM conversations WHERE user_key=?",
             (user_key,),
         ).fetchone()
         if row is None:
@@ -850,6 +859,7 @@ class SqliteConversationStore(ConversationStore):
             xung_ho=row[7] or None,
             che_do_test=bool(row[8]),
             so_luot_thong_tin=int(row[9] or 0) if len(row) > 9 else 0,
+            so_nhan=(row[10] or "") if len(row) > 10 else "",
         )
 
     def reset(self, user_key: str) -> None:
@@ -924,6 +934,41 @@ def _hem_mt_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
     return ra
 
 
+# SRS-5.1zzzzzzz208 (bắn thử 26/10 trên giọng anh Luận, chủ dự án: "Bịa chi tiết khách không nói" là lỗi): tin rao viết "ra vô chợ búa, trường học
+# gần gần đó" khi khách không nhắc, "nhà được giữ gìn kỹ, sạch sẽ" khi khách chỉ nói "ở lâu rồi". Cụm TIỆN ÍCH quanh nhà / TÌNH TRẠNG nhà có
+# trong bản tin mà không có trong lời khách của căn đang nói → gọi lại model. So chữ của chính bản tin, không đoán ý khách.
+_CHI_TIET_BIA_RE = re.compile(r"(?i)(gần chợ|chợ búa|trường học|bệnh viện|siêu thị|công viên|trung tâm thương mại|giữ gìn|sạch sẽ|mới xây|nhà mới)")
+
+
+def _chi_tiet_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
+    """Cụm tiện ích quanh nhà / tình trạng nhà trong bản tin 📋 (tiêu đề + mô tả + gạch) mà lời KHÁCH của căn đang nói không có (bỏ dấu).
+    Không có 📋 → []."""
+    if "📋" not in (reply or ""):
+        return []
+    tin = _than_ban_tin(reply)
+    phan = f"{tin[0]}\n{tin[1]}" if tin else reply
+    bat = {m.lower() for m in _CHI_TIET_BIA_RE.findall(phan)}
+    if not bat:
+        return []
+    bd = max(0, getattr(getattr(conv, "active", None), "history_start", 0) or 0)
+    khach = bo_dau(" ".join(t.content for t in conv.history[bd:] if t.role == "user" and t.content)).lower()
+    khach += " " + bo_dau(" ".join(str(v) for v in conv.prop.fields.values() if isinstance(v, str))).lower()
+    goc = {"gần chợ": "cho", "chợ búa": "cho", "trường học": "truong", "bệnh viện": "benh vien", "siêu thị": "sieu thi",
+           "công viên": "cong vien", "trung tâm thương mại": "trung tam thuong mai", "giữ gìn": "giu gin", "sạch sẽ": "sach se",
+           "mới xây": "moi xay", "nhà mới": "moi"}
+    return [t for t in sorted(bat) if not re.search(rf"(?<![a-z]){goc.get(t, bo_dau(t))}(?![a-z])", khach)]
+
+
+# Bản tin in nguyên tên khối của khuôn ("Gạch đầu dòng:", "Mô tả:" — bắn thử 26/10 tin rao đất). Chỉ soát đầu dòng của bản tin 📋.
+_NHAN_KHOI_RE = re.compile(r"(?im)^\s*(?:\d\)\s*)?(tiêu đề|mô tả|gạch đầu dòng|câu mời chốt|cta)\s*:")
+
+
+def _nhan_khoi_trong_tin(reply: str) -> list[str]:
+    if "📋" not in (reply or ""):
+        return []
+    return sorted({m.group(1).lower() for m in _NHAN_KHOI_RE.finditer(reply.split("📋", 1)[1])})
+
+
 def _dong_tieu_de(reply: str) -> str:
     """Dòng tiêu đề của bản tin 📋 — một chỗ cho mọi bước kiểm (SRS-5.1zzzzzzz109). Bản nháp đầu: dòng mở "📋 Em sẽ rao như vầy…:" rồi
     tiêu đề ở dòng chữ kế; bản cập nhật ghi tiêu đề NGAY trên dòng 📋 ("📋 Bản tin cập nhật: <tiêu đề>"). Bản trước luôn lấy dòng kế,
@@ -936,7 +981,7 @@ def _dong_tieu_de(reply: str) -> str:
 
 
 # SRS-5.1zzzzzzz132 (bắn thử 22/10: "Mức giá 9,2 tỷ cho căn nhà 6 tầng trung tâm này quá hợp lý rồi anh/chị nhỉ!"): lời bot nhận xét giá /
-# thị trường dù luật KHEN cấm — kiểm HÌNH THỨC lời của chính bot (không đoán ý khách), cùng lớp lưới chống bịa đang có. Nhắc lại con số khách
+# thị trường dù prompt cấm — kiểm HÌNH THỨC lời của chính bot (không đoán ý khách), cùng lớp lưới chống bịa đang có. Nhắc lại con số khách
 # đưa ("Em đã để sẵn giá 9,2 tỷ trong bản tin") không khớp — chỉ bắt cụm ĐÁNH GIÁ.
 _BINH_LUAN_GIA = re.compile(
     r"(thanh khoản|đắt khách|dễ bán|đắc địa|người mua tìm nhiều|nhiều người (?:hỏi|tìm|quan tâm)|"
@@ -1037,6 +1082,11 @@ def _than_ban_tin(reply: str) -> tuple[str, str] | None:
     return (doan[0], "\n\n".join(doan[1:])) if len(doan) >= 2 else None
 
 
+def _la_ban_nhap(reply: str) -> bool:
+    """Lời bot là BẢN TIN rao (có dấu 📋, dòng mở bản nháp, hoặc bố cục tin có gạch đầu dòng) — không phải lời chat thường (SRS-5.1zzzzzzz204)."""
+    return bool(reply) and ("📋" in reply or _MO_DAU_RE.search(reply) is not None or _is_formatted_post(reply))
+
+
 def _ban_tin_da_trinh(conv: "Conversation") -> tuple[str, str] | None:
     """Bản tin 📋 cuối cùng bot gửi cho căn đang nói (từ lượt căn này bắt đầu) — chính bản khách vừa duyệt."""
     for t in reversed(conv.history[conv.active.history_start:]):
@@ -1068,19 +1118,10 @@ def _mo_dau_ghi_nhan(reply: str) -> bool:
     """Câu đầu của lời bot là câu ghi nhận ("Em ghi nhận…", "Em đã ghi rồi…", "Em lưu vào tin rồi…", "Em nắm rồi…") — kiểm HÌNH THỨC lời
     của chính bot, không đoán ý khách (SRS-5.1zzzzzzz118). Từ 22/10 (SRS-5.1zzzzzzz131, chủ dự án bỏ hẳn kiểu ghi nhận) MỌI lượt mở như vậy
     đều gọi lại model; "Em sửa giá còn…" (nói con số vừa sửa) không phải ghi nhận."""
-    return re.match(r"(?i)\s*em\s+(?:đã\s+)?(?:ghi\s+nhận|ghi\s+rồi|ghi\s+lại|ghi\s+vào|nhận\s+thông\s+tin|lưu\s+(?:vào|lại|rồi)|nắm\s+(?:rồi|được)|"
-                    r"thêm\s+vào\s+tin)", reply or "") is not None
-
-
-def _ba_chu_dau(reply: str) -> tuple[str, ...]:
-    return tuple(re.findall(r"\w+", (reply or "").lower())[:3])
-
-
-def _cung_mo_dau(reply: str, truoc: str) -> bool:
-    """Hai lượt bot liền nhau cùng mở bằng ba chữ đầu (vd "Em ghi nhận…" / "Em ghi nhận…") — kiểm HÌNH THỨC lời của chính bot
-    (SRS-5.1zzzzzzz118; Lê Quang 21/10: "flexible vào")."""
-    a = _ba_chu_dau(reply)
-    return len(a) == 3 and a == _ba_chu_dau(truoc)
+    # SRS-5.1zzzzzzz208 (bắn thử 26/10: "Em ghi nhận rồi ạ…", "Em ghi thêm diện tích sàn…", "Em lưu phường 9…", "Em lên thông tin địa chỉ…"):
+    # thêm "ghi thêm", "lưu …", "lên thông tin" cùng lớp câu ghi nhận.
+    return re.match(r"(?i)\s*em\s+(?:đã\s+)?(?:ghi\s+nhận|ghi\s+rồi|ghi\s+lại|ghi\s+vào|ghi\s+thêm|nhận\s+thông\s+tin|lưu(?![\wà-ỹđ])|"
+                    r"nắm\s+(?:rồi|được)|thêm\s+vào\s+tin|lên\s+thông\s+tin)", reply or "") is not None
 
 
 def _bo_markdown(reply: str) -> str:
@@ -1401,6 +1442,11 @@ class Engine:
         if hoan:
             conv.prop.hoan |= hoan
             missing = [x for x in missing if x not in hoan]
+        # SRS-5.1zzzzzzz208 (bắn thử Cao Lỗ 26/10: hỏi giá 3 lần trong 6 lượt vì giá là sàn tối thiểu, khách trả lời ý khác thì lượt sau quay lại
+        # giá): ô sàn (không để sau được) khách đã lờ một lần thì lùi xuống CUỐI — hỏi hết ý khác rồi mới hỏi lại.
+        lui = [x for x in missing if not conv.prop.hoan_duoc(x) and conv.lo.get(x, 0) >= 1]
+        if lui and len(lui) < len(missing):
+            missing = [x for x in missing if x not in lui] + lui
         if len(missing) > 1 and missing[0] == conv.o_vua_hoi:
             # SRS-5.1zzzzzzz79: hỏi theo cụm — khách lờ cả cụm thì lùi CẢ CỤM xuống cuối, không hỏi tiếp ô cùng cụm.
             cum = set(conv.prop.cum_hoi(missing[0], missing))
@@ -1410,7 +1456,7 @@ class Engine:
         conv.cum_vua_hoi = conv.prop.cum_hoi(conv.o_vua_hoi, missing)
         # Chỉ TÊN ô (không giá trị khách) — để truy được "bot hỏi lặp" từ journal (SRS-5.1zzzzzzz90: chat tester 20/10 hỏi một câu 3
         # lần mà không có gì cho biết lượt nào hệ thống chọn ô nào).
-        log.info("ô hỏi: %s · cụm: %s · lờ: %s · để sau: %s", conv.o_vua_hoi, conv.cum_vua_hoi,
+        log.warning("ô hỏi: %s · cụm: %s · lờ: %s · để sau: %s", conv.o_vua_hoi, conv.cum_vua_hoi,
                  {k: v for k, v in conv.lo.items() if v}, sorted(conv.prop.hoan))
         return conv.o_vua_hoi
 
@@ -2095,6 +2141,9 @@ class Engine:
                 system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
                            + khoi_lich_dang_cho(conv.y_luot.get("lich_cho"), customer_pronoun))
             system += du_an_mua.khoi_du_an(conv.y_luot.get("du_an_mua"))   # SRS-5.1zzzzzzz184: dữ kiện dự án trong kho cho câu khách hỏi
+            if conv.so_nhan == SO_TU_VAN and not any(t.role == "assistant" for t in conv.history):
+                # SRS-5.1zzzzzzz210: lượt đầu ở số tư vấn — chào theo câu mẫu chỉ hỏi chuyện tìm mua / thuê (số ký gửi giữ lời chào hai lựa chọn).
+                system += khoi_chao_tu_van(conv.assistant.name, cau_mau.cau("chao_tu_van", goi_toi_khach(customer_pronoun)[0], ten=conv.assistant.name))
             uu_tien = khoi_can_nguoi(conv) or khoi_phap_ly(conv, self._can_dang_noi(conv, can))   # SRS-5.1zzzzzzz178: một khối ưu tiên
             system += ((uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else "") + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
@@ -2134,6 +2183,7 @@ class Engine:
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured, now)
 
+        o_truoc = conv.o_vua_hoi   # ô lượt trước hỏi — khách chưa trả lời mà hệ thống đổi ô thì dặn model đừng hỏi lại (SRS-5.1zzzzzzz208)
         next_field = self._o_hoi_ke(conv, conv.prop.missing_fields())
         thieu = conv.prop.missing_fields()   # sau _o_hoi_ke: ô khách lờ 2 lần đã để sau (SRS-5.1zzzzzzz80)
         cum_hoi = conv.prop.cum_hoi(next_field, thieu)   # SRS-5.1zzzzzzz79: các ô hỏi gộp một câu lượt này
@@ -2163,11 +2213,16 @@ class Engine:
         xin_sao = False
         if not is_listing_post:
             system = build_chat_system(
-                conv.assistant.name, conv.prop, next_field, conv.user_type, project_block, cum=cum_hoi
+                conv.assistant.name, conv.prop, next_field, conv.user_type, project_block, cum=cum_hoi,
+                hoi_lai=bool(next_field and conv.lo.get(next_field, 0) >= 1),   # SRS-5.1zzzzzzz200: đừng nhắn trùng câu cũ
+                o_bo_qua=o_truoc if o_truoc in thieu else None,
             ) + khoi_xin_dang(toi_thieu, conv.prop)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
             trinh_nhap = True
+            # SRS-5.1zzzzzzz200: ra bản nháp theo cổng tối thiểu thì ô còn thiếu để SAU khi khách duyệt, mỗi lượt một ô (không dồn
+            # hỏi trước bản nháp, và không hỏi lại cùng một ô hai nơi).
+            conv.prop.hoan |= {x for x in thieu if conv.prop.hoan_duoc(x)}
             system = build_listing_proposal_system(
                 conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em, xung_ho=customer_pronoun
             )
@@ -2264,7 +2319,8 @@ class Engine:
         # SRS-5.1zzzzzzz178: MỘT khối ưu tiên mỗi lượt, theo thứ tự cần người > pháp lý > ngoài việc > hỏi về (phí / uy tín / link / tình hình /
         # định giá); có khối ưu tiên thì không ép khen theo lượt, không hỏi ô kế. Không có thì mới tới khối khen theo lượt.
         uu_tien = khoi_can_nguoi(conv) or khoi_phap_ly(conv) or khoi_ngoai_viec(conv) or hoi_ve_khoi
-        system += (uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else khoi_khen_theo_luot(conv.so_luot_thong_tin)
+        # SRS-5.1zzzzzzz207: bỏ khối khen theo lượt — giọng theo bản anh Luận ("khen ngợi điểm mạnh trước" nằm sẵn trong prompt).
+        system += (uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else ""
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
         system += self._project_memory_block(project)  # remember the price list + phân lô; reason over it
         system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
@@ -2284,6 +2340,23 @@ class Engine:
             raise LoiTraLoi("lời gửi khách rỗng")
 
         reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply), hem_phai_nhac if len(hem_phai_nhac) <= 4 else [])
+        la_nhap = _la_ban_nhap(reply)
+        if trinh_nhap and (not la_nhap or "zalo" not in reply.lower()):
+            # SRS-5.1zzzzzzz204: lượt trình bản nháp mà model đáp như chat thường (ban-thu-ban 26/10 Âu Cơ: đủ loại · vị trí · giá · 4 facet mà
+            # tám lượt không có bản tin, vì `listing_proposed` đã bật nên lượt sau không thử lại), hoặc bản tin thiếu câu mời nhắn Zalo (khối 4
+            # của AD_FORMAT; 2/8 bản nháp bắn thử bỏ nó). Gọi lại model MỘT lần; bản tin vẫn không ra thì tắt `listing_proposed` để lượt sau
+            # trình lại, thay vì nói phí khi khách chưa hề thấy bản tin; bản tin ra mà thiếu câu mời thì giữ bản cũ.
+            log.warning("Lượt trình bản nháp: %s — gọi lại model một lần", "không ra bản tin" if not la_nhap else "thiếu câu mời nhắn Zalo")
+            nhac = (system + "\n\nLƯỢT TRƯỚC CỦA EM CHƯA ĐẠT: " + ("chưa phải bản tin rao." if not la_nhap else "bản tin thiếu CÂU MỜI CHỐT nhắn Zalo (khối 4).")
+                    + " Lượt này BẮT BUỘC gửi đúng bản tin rao theo CẤU TRÚC BẮT BUỘC ở trên (dòng mở, tiêu đề, mô tả, gạch đầu dòng, câu mời "
+                    "chốt nhắn Zalo, câu hỏi khách duyệt) — không đáp bằng lời chat.")
+            with _do(conv, "tra_loi_lai"):
+                lai = self._provider.reply(nhac, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+            lai = self._soat_hinh_thuc(conv, nhac, _bo_markdown(lai), []) if lai else lai
+            if lai and _la_ban_nhap(lai) and "zalo" in lai.lower():
+                reply = lai
+            elif not la_nhap:
+                conv.listing_proposed = False
         if trinh_nhap:
             reply = cat_truoc_mo_dau(reply, customer_pronoun)
         if xin_sao:
@@ -2380,17 +2453,22 @@ class Engine:
             ly_do.append("Bản tin rao vừa viết có chữ " + ", ".join(f"\"{x}\"" for x in bia_hem) + " nhưng chủ nhà CHƯA nói nhà ở hẻm / mặt tiền "
                          "(dữ liệu căn chưa có) — bỏ hẳn các chữ đó khỏi tiêu đề và mô tả, KHÔNG đoán loại đường vào; ví dụ trong luật chỉ để "
                          "minh hoạ cách viết gọn.")
+        bia_ct = _chi_tiet_khong_co_du_lieu(reply, conv)
+        if bia_ct:
+            ly_do.append("Bản tin rao vừa viết có " + ", ".join(f"\"{x}\"" for x in bia_ct) + " nhưng chủ nhà KHÔNG hề nói — bỏ hẳn các ý đó; "
+                         "mọi ý trong tin chỉ lấy từ dữ liệu căn / lời chủ nhà, không thêm tiện ích quanh nhà hay tình trạng nhà.")
+        nhan = _nhan_khoi_trong_tin(reply)
+        if nhan:
+            ly_do.append("Bản tin rao vừa viết in tên khối (" + ", ".join(f"\"{x}:\"" for x in nhan) + ") — tên khối trong BỐ CỤC chỉ để em biết "
+                         "thứ tự, KHÔNG in ra; viết thẳng nội dung.")
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
         if _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
             ly_do.append("Lời vừa viết gọi khách là \"mình\" (\"em xin lỗi mình\", \"Mình đang cần…\") — khách chưa xưng \"em\" nên KHÔNG dùng \"mình\" "
                          "gọi khách: gọi đúng cách khách xưng, chưa rõ thì \"anh/chị\". Chỉ \"nhà mình / căn mình\" khi nói về căn của khách.")
-        truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant"), "")
-        if _mo_dau_ghi_nhan(reply) and "📋" not in reply:
-            ly_do.append("Lời vừa viết mở đầu bằng câu ghi nhận (\"Em ghi nhận / Em ghi rồi / Em lưu rồi…\") — chủ dự án đã bỏ hẳn kiểu này (22/10): "
-                         "mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói (vị trí, diện tích, pháp lý, cách khách trả lời…) rồi hỏi câu kế.")
-        elif _cung_mo_dau(reply, truoc) and "📋" not in reply:
-            ly_do.append("Lượt trước em đã mở đầu bằng cùng mấy chữ này; lượt này đổi cách mở — khen điểm khác, hoặc nối thẳng vào câu hỏi kế.")
+        if _mo_dau_ghi_nhan(reply):   # SRS-5.1zzzzzzz208: cả câu dẫn trước bản tin cập nhật ("Em ghi nhận thêm sổ hồng… 📋 Bản tin cập nhật")
+            ly_do.append("Lời vừa viết mở đầu bằng câu ghi nhận (\"Em ghi nhận / Em ghi thêm / Em lưu…\") — chủ dự án đã bỏ hẳn kiểu này: "
+                         "mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói, hoặc vào thẳng nội dung (bản tin cập nhật thì mở thẳng bằng 📋).")
         if _tieu_de_can_ho_co_mt(reply, conv.prop):
             ly_do.append("Tiêu đề căn hộ có chữ \"MT\" — người mua đọc là mặt tiền; căn hộ không có mặt tiền, viết đủ tên dự án, không "
                          "viết tắt \"MT\".")
@@ -2403,14 +2481,15 @@ class Engine:
         bl = None if la_ban_tin else _binh_luan_gia(reply)
         if bl:
             ly_do.append(f"Lời vừa viết nhận xét giá / thị trường (\"{bl}\") — em không có dữ liệu thị trường, CẤM bình luận giá hợp lý / "
-                         "đắt khách / dễ bán (luật KHEN). Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn.")
+                         "đắt khách / dễ bán. Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn.")
         so_la = _so_khong_co_trong_can(reply, can_mua, conv, system) if (can_mua or du_an_mua.TIEU_DE in system) else []
         if so_la:
             ly_do.append("Lời vừa viết có con số không có trong dữ liệu căn (" + ", ".join(f"\"{x}\"" for x in so_la) + ") — diện tích, giá, "
                          "giá mỗi m², số phòng, số tầng CHỈ được lấy đúng số ở dòng của căn (hoặc số khách đã nói), không ước lượng, không "
                          "làm tròn khác, không cộng gộp.")
         if ly_do:
-            log.warning("Lời bot lệch luật hình thức (%d lý do) — gọi lại model", len(ly_do))
+            # Đầu mỗi lý do (không lời khách) để truy lưới nào kích — bắn thử 368 chỉ thấy "1 lý do", không biết lý do gì.
+            log.warning("Lời bot lệch luật hình thức (%d lý do: %s) — gọi lại model", len(ly_do), " | ".join(x[:40] for x in ly_do))
             with _do(conv, "tra_loi_lai"):
                 lai = self._provider.reply(
                     system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\n" + " ".join(ly_do) + " Viết lại TOÀN BỘ lượt trả lời.\n",
@@ -3622,6 +3701,12 @@ class Engine:
             pass   # lượt mơ hồ ("ok", "xem được không") của người đang nói chuyện mua: ở lại nhánh mua
         elif has_seller_context:
             conv.role = "seller"
+        elif conv.so_nhan == SO_TU_VAN:
+            # SRS-5.1zzzzzzz210: số tư vấn — lượt mơ hồ (lời chào, "alo") chưa có việc bán nào thì vào vai MUA; khách nói bán thì nhánh "sell"
+            # ở trên đã đưa sang vai bán (nhắn nhầm số vẫn được trả lời).
+            conv.role = "buyer"
+            if conv.buyer_lead is None:
+                conv.buyer_lead = BuyerLead(user_key=conv.user_key)
 
         # Duyệt bản nháp (SRS-5.1zzzzzzz47): chỉ tính khi bản nháp ĐÃ gửi ở lượt trước và cụm trích có thật trong tin khách.
         conv.duyet_luot = None
@@ -4019,14 +4104,34 @@ class Engine:
         """MỘT cổng cho mọi đường AI ghi ô tin từ lời chat (lượt lập thao tác, đọc lại căn mới tách ra) — SRS-5.1zzzzzzz73/86."""
         bc = bang_chung if isinstance(bang_chung, dict) else {}
         out: dict[str, str] = {}
+        uu_the = self._loc_uu_the(conv, (fields or {}).get("uu_the"))
         for k, v in (fields or {}).items():
-            if isinstance(v, str) and v.strip():
+            if k != "uu_the" and isinstance(v, str) and v.strip():
                 g = self._gia_tri_ghi(conv, k, v, bc)
                 if g:
                     out[k] = g
                     if isinstance(bc.get(k), str) and bc[k].strip():
                         conv.bc_luot[k] = bc[k].strip()   # cụm khách nói làm căn cứ — tin phụ chế độ test trích lại
-        return self._mot_cum_mot_o(conv, out)
+        out = self._mot_cum_mot_o(conv, out)
+        if uu_the:
+            out["uu_the"] = uu_the
+        return out
+
+    @staticmethod
+    def _loc_uu_the(conv: "Conversation", raw) -> str:
+        """Ô `uu_the` (SRS-5.1zzzzzzz205): AI trả MẢNG cụm ngắn khách tự nói; chỉ giữ cụm nằm NGUYÊN trong lời khách lượt này (cùng cổng bằng
+        chứng của mọi ô, `_trich_dan_khop`), nối bằng " · ". Cụm AI tự suy bị bỏ và ghi sổ `bo_luot`."""
+        ds = raw if isinstance(raw, list) else ([raw] if isinstance(raw, str) else [])
+        giu: list[str] = []
+        for x in ds:
+            if not (isinstance(x, str) and x.strip()):
+                continue
+            if _trich_dan_khop(x, conv.loi_khach_luot):
+                giu.append(x.strip())
+            else:
+                log.warning("Bỏ cụm ưu thế: không nằm trong lời khách")
+                conv.bo_luot.append(("uu_the", x, None, "cụm ưu thế không nằm nguyên trong lời khách"))
+        return " · ".join(dict.fromkeys(giu))
 
     @staticmethod
     def _mot_cum_mot_o(conv: "Conversation", out: dict[str, str]) -> dict[str, str]:

@@ -51,6 +51,10 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "chao_lam_moi": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\nEm đã làm mới cuộc trò chuyện rồi ạ. {Goi} "
                      "đang có căn chung cư, nhà phố hay đất cần gửi bán, cho thuê, hay đang tìm mua vậy ạ?",
                      "Khách chào khi đã có chuyện cũ — làm mới phiên. {ten} = tên trợ lý", "Quyết định 20/10: hello làm mới phiên; 25/10 thêm \"tìm mua\" (SRS-5.1zzzzzzz174)"),
+    "chao_tu_van": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n{Goi} đang tìm mua hay thuê căn chung cư, nhà "
+                    "phố hay đất ở khu vực nào vậy ạ?",
+                    "Khách chào lần đầu ở số Zalo TƯ VẤN người mua. {ten} = tên trợ lý",
+                    "SRS-5.1zzzzzzz210 · chủ dự án 26/10: một số nhận ký gửi, một số tư vấn người mua"),
     "mo_dau_nhap": ("📋 Em sẽ rao như vầy nhé {goi}:",
                     "Dòng mở bản nháp tin rao — phải bắt đầu 📋 và kết thúc dấu \":\" (code cắt câu dẫn theo dòng này)",
                     "SRS-5.1zzzzzzz76 / 85 / 90"),

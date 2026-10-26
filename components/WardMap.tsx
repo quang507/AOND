@@ -1,6 +1,6 @@
 "use client";
 // FR-10 — bản đồ MỨC PHƯỜNG trên trang tin. Bọc MapView bằng `next/dynamic`
-// ssr:false (Leaflet đụng `window`) — Next 15 chỉ cho ssr:false trong client
+// ssr:false (MapLibre đụng `window`, SRS-5.1zzzzzzz206) — Next 15 chỉ cho ssr:false trong client
 // component, nên phải có lớp vỏ này chứ trang tin (server) không import thẳng.
 //
 // Cố ý KHÔNG truyền lat/lng thật: chấm rơi về `wardPoint` (tâm phường + jitter

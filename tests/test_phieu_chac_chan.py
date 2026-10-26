@@ -41,7 +41,7 @@ def test_hoi_lai_mat_tien_khi_chua_co_hai_chieu_lo(monkeypatch):
     ke = {"operations": [{"op": "update", "fields": {"mat_tien": "5m"}, "bang_chung": {"mat_tien": "mặt tiền 5m"}}]}
     eng, _, seen, conv = _eng(ke, monkeypatch)
     eng.handle("u-duyet", "nhà mặt tiền 5m")
-    assert conv.prop.fields.get("mat_tien") == "5m" and sum("BỀ NGANG HAY ĐƯỜNG" in s for s in seen) == 1
+    assert conv.prop.fields.get("mat_tien") == "5m" and sum("BỀ NGANG HAY ĐƯỜNG" in s and "LƯỢT TRƯỚC CỦA EM CHƯA ĐẠT" not in s for s in seen) == 1   # bỏ lượt gọi lại của SRS-204
     seen.clear()
     eng.handle("u-duyet", "nhà mặt tiền 5m nha")                   # đã hỏi một lần thì thôi
     assert not any("BỀ NGANG HAY ĐƯỜNG" in s for s in seen)

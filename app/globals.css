@@ -197,3 +197,48 @@ details > summary:hover::before {
     transition: none;
   }
 }
+
+/* Bản đồ MapLibre (SRS-5.1zzzzzzz206) — ghim giá + popup. Màu viết thẳng hex, không dựa biến @theme (Tailwind 4 có thể
+   bỏ biến không dùng khỏi CSS build). Bán = nền đậm, thuê = nền trắng — khớp chú thích trên /ban-do. */
+.ghim-gia {
+  background: #0b192c;
+  color: #fff;
+  border: 1.5px solid #0068ff;
+  border-radius: 2px;
+  padding: 3px 8px;
+  font: 700 11px/1.2 var(--font-jakarta), system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+  cursor: pointer;
+}
+.ghim-gia--thue {
+  background: #fff;
+  color: #0b192c;
+}
+.ghim-gia:hover,
+.ghim-gia:focus-visible {
+  background: #0068ff;
+  color: #fff;
+  z-index: 3;
+}
+.maplibregl-popup-content {
+  border-radius: 2px;
+  padding: 10px 12px;
+  box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.12);
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+}
+.popup-ban-do { min-width: 180px; }
+.popup-ban-do__nhan { font-size: 11px; font-weight: 700; color: #0068ff; text-transform: uppercase; }
+.popup-ban-do__gia { margin-top: 2px; font-size: 14px; font-weight: 800; color: #0b192c; }
+.popup-ban-do__noi { margin-top: 2px; font-size: 12px; color: #64748b; }
+.popup-ban-do__nut {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  background: #0068ff;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+}

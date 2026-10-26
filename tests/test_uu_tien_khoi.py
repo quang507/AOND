@@ -14,8 +14,8 @@ CHU_NHA = {"operations": [{"op": "update", "target": "", "fields": {"dia_chi": "
 def test_prompt_khong_con_chu_mau_thuan():
     s = prompts.build_chat_system("Hằng", Property(loai_hinh="nha_pho"), "gia")
     assert "gộp các ý trong CỤM" not in s and "gộp được các ý" not in s and "25 - 40" not in s and "100% lượt khách cho thông tin" not in s
-    assert "TỐI ĐA ~40 TỪ" in s and "Lượt ĐƯỢC KHÔNG hỏi" in s and "hỏi MỘT ý" in s
-    assert "BẮT BUỘC mở đầu bằng MỘT lời khen" not in prompts.khoi_khen_theo_luot(1)
+    assert "khoảng 30 từ" in s and "TỐI ĐA 1 thông tin" in s           # SRS-207: giọng bản anh Luận
+    assert not hasattr(prompts, "khoi_khen_theo_luot")
     b = prompts.build_buyer_chat_system("Hằng", BuyerLead(), "khu_vuc")
     assert "am hiểu thị trường" not in b and "KHÔNG thêm chi tiết khách chưa nói" in b
 
@@ -30,12 +30,13 @@ def test_hoi_ve_phi_la_khoi_uu_tien_duy_nhat_khong_ep_khen():
     assert s.count("=== ƯU TIÊN LƯỢT NÀY") == 1
 
 
-def test_luot_thuong_van_co_khoi_khen_theo_luot_uu_tien_khong_bat_buoc():
+def test_luot_thuong_khong_con_khoi_khen_theo_luot():
+    # SRS-207: khối "LƯỢT THÔNG TIN THỨ N" bỏ — khen theo bản anh Luận nằm sẵn trong prompt ("Khen ngợi điểm mạnh của BĐS trước").
     kho = KhoGia()
     eng, ai = _engine(kho, CHU_NHA)
     eng.handle("ut-2", "Nhà 12 Lê Lai, Quận 1")
     s = ai.system[-1]
-    assert "LƯỢT THÔNG TIN THỨ 1" in s and "ƯU TIÊN mở đầu" in s and "không có thì cảm ơn ngắn" in s
+    assert "LƯỢT THÔNG TIN THỨ" not in s and "Khen ngợi điểm mạnh của BĐS trước" in s
     assert KHOI_MOT_UU_TIEN not in s and "=== ƯU TIÊN LƯỢT NÀY" not in s
 
 

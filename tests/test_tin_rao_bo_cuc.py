@@ -11,7 +11,7 @@ P = Property(loai_hinh="nha_pho", fields={"gia": "5 tỷ", "dia_chi": "12 Lê L�
 
 def test_ad_format_mot_nguon_o_ca_ba_noi():
     assert "4–5 GẠCH ĐẦU DÒNG" in prompts.AD_FORMAT and "MỘT DÒNG TRỐNG" in prompts.AD_FORMAT
-    assert "20–25 từ" in prompts.AD_FORMAT and "70–150 từ" in prompts.AD_FORMAT   # 26/10 chủ dự án: tiêu đề 20–25 từ (SRS-5.1zzzzzzz192; trước đó ≤ 15 từ, SRS-5.1zzzzzzz85)
+    assert "15–25 từ" in prompts.AD_FORMAT and "70–150 từ" in prompts.AD_FORMAT   # SRS-207: khuôn anh Luận (thay 20–25 từ của SRS-192)
     he_thong = [
         prompts.build_listing_proposal_system("Lan", P),
         prompts.build_fee_followup_system("Lan", P),
@@ -24,7 +24,7 @@ def test_ad_format_mot_nguon_o_ca_ba_noi():
 def test_chat_khong_tu_soan_bai_dang():
     # SRS-5.1zzzzzzz86: bắn thử KB1/KB2 "ok em đăng đi" khi tin còn thiếu → lượt chat soạn bài đăng không 📋, khách duyệt không ghi.
     s = prompts.build_chat_system("Lan", P, "phap_ly")
-    assert prompts.AD_FORMAT not in s and "xem / đăng TOÀN BỘ tin" not in s and "TỐI ĐA ~40 TỪ" in s
+    assert prompts.AD_FORMAT not in s and "KHÔNG tự soạn bài đăng" in s and "khoảng 30 từ" in s
 
 
 def test_tin_rao_di_mot_bong_giu_dong_trong():

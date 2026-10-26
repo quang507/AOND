@@ -10,7 +10,7 @@ def _nha(**f):
 
 
 def test_o_thieu_dau_tien_quyet_cum_va_hoi_gop():
-    p = _nha(duong="Âu Cơ", dia_chi="110 Âu Cơ", phuong="Phường 9", quan="Quận 11", lo_gioi_hem="mặt tiền")
+    p = _nha(duong="Âu Cơ", dia_chi="110 Âu Cơ", phuong="Phường 9", quan="Quận 11", lo_gioi_hem="mặt tiền", gia="16 tỷ")
     thieu = p.missing_fields()
     assert p.cum_hoi(thieu[0], thieu) == ["dien_tich_dat"]    # SRS-5.1zzzzzzz136 (22/10: "bỏ hỏi gộp"): mỗi lượt đúng một ô
     s = build_chat_system("Hằng", p, thieu[0], cum=p.cum_hoi(thieu[0], thieu))
@@ -26,5 +26,7 @@ def test_ban_nhap_theo_cong_thuc_anh_luan():
     assert SUMMARY_READY_COMPLETENESS == 0.75
     du = dict(duong="Âu Cơ", dia_chi="110 Âu Cơ", phuong="Phường 9", dien_tich_dat="80m2", dien_tich_nha="240m2", gia="16 tỷ",
               ket_cau="5 tầng")
-    assert not _nha(**du).summary_ready()                 # 6/9 ô: thiếu hẻm / mặt tiền, pháp lý, hiện trạng → chưa ra nháp
-    assert _nha(**du, phap_ly="sổ riêng", lo_gioi_hem="mặt tiền").summary_ready()   # 8/9
+    # SRS-5.1zzzzzzz202: công thức 75% thay bằng sàn tối thiểu (loại hình + vị trí + giá) VÀ còn ≤ 1 facet chính trống (theo anh Luận ce11491)
+    assert not _nha(**du).summary_ready()                       # thiếu cả vị thế (hẻm / mặt tiền) lẫn pháp lý → 2 facet trống
+    assert _nha(**du, phap_ly="sổ riêng").summary_ready()       # chỉ còn vị thế trống
+    assert not _nha(**{k: v for k, v in du.items() if k != "gia"}, phap_ly="sổ riêng", lo_gioi_hem="mặt tiền").summary_ready()  # thiếu giá

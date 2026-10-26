@@ -74,7 +74,7 @@ COT_THONG_SO = ("frontage_m", "length_m", "rear_width_m", "legal_area_m2", "buil
                 "distance_to_street_m", "floors", "floors_text", "floor", "bedrooms", "bathrooms", "year_built",
                 "has_completion", "has_elevator", "car_in_house", "corner_lot", "negotiable", "access_type",
                 "planning_status", "furnishing", "direction")
-_O_KHONG_PHAI_THONG_SO = {"dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "du_an", "ma_so_can", "unit_type", "gia",
+_O_KHONG_PHAI_THONG_SO = {"uu_the", "dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "du_an", "ma_so_can", "unit_type", "gia",
                           "loai_hinh", "phap_ly", "hinh_anh", "ly_do_ban", "trang_thai", "phi_gui_xe", "yeu_cau_xe_hoi",
                           # SRS-5.1zzzzzzz116: chuyện thanh toán / thuế phí / hợp đồng thuê, không phải thông số căn
                           "thue_phi", "thanh_toan", "hd_thue_con", "thu_nhap_thue", "co_hdt"}
@@ -975,7 +975,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 if quan:
                     listing_payload["district"] = quan
                 listing_payload.update(self._thong_so(fields, ma_loai_db(li.prop.loai_hinh)))
-                ma_pl = self._ma_phap_ly(fields.get("phap_ly"))
+                ma_pl = next((m for m in (self._ma_phap_ly(c) for c in li.prop.phap_ly_da_noi()) if m), None)
                 if ma_pl:
                     listing_payload["legal_status"] = ma_pl
                 dt = so_m2(fields, li.prop.is_rental)
@@ -1174,6 +1174,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             conv.xung_ho = cu.xung_ho
             conv.che_do_test = cu.che_do_test
             conv.so_luot_thong_tin = cu.so_luot_thong_tin
+            conv.so_nhan = cu.so_nhan   # SRS-5.1zzzzzzz210: số Zalo khách nhắn tới — Supabase không có cột này
         return conv
 
     def load(self, user_key: str) -> Any:
@@ -1294,6 +1295,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 conv.xung_ho = cu.xung_ho   # khách tự xưng gì (SRS-5.1zzzzzzz76) — Supabase không có cột này
                 conv.che_do_test = cu.che_do_test   # chế độ test $$$$$ (SRS-5.1zzzzzzz130) — Supabase không có cột này
                 conv.so_luot_thong_tin = cu.so_luot_thong_tin   # lượt thông tin thứ mấy (SRS-5.1zzzzzzz131 bản 2)
+                conv.so_nhan = cu.so_nhan   # số Zalo khách nhắn tới (SRS-5.1zzzzzzz210) — Supabase không có cột này
                 if conv.user_type.value == "unknown":
                     conv.user_type = cu.user_type
             if conv.role == "buyer" and conv.buyer_lead is None:
