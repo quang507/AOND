@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-25 15:42 (giờ VN)
+-- Sinh lúc: 2026-10-26 14:44 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -1420,6 +1420,49 @@ begin
   end if;
   return public.xoa_nguoi_theo_zalo(p_zalo);
 end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[] DEFAULT ARRAY['can'::text])
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  select jsonb_build_object(
+    'can', case when 'can' = any(p_lop) then coalesce((
+      select jsonb_agg(to_jsonb(t)) from (
+        -- đúng CARD_COLS + lat, lng (lib/supabase.ts) — đủ cho ListingCard, không kéo mô tả
+        select l.id, l.code, l.deal, l.district, l.ward, l.street, l.location_raw, l.area_m2, l.price_vnd, l.price_raw, l.property_type,
+               l.bedrooms, l.bathrooms, l.floors, l.access_type, l.status, l.created_at, l.lat, l.lng
+          from public.listings l
+         where l.status in ('dang_ban', 'dang_quan_tam', 'da_coc')
+           and l.lat between least(p_nam, p_bac) and greatest(p_nam, p_bac)
+           and l.lng between least(p_tay, p_dong) and greatest(p_tay, p_dong)
+         order by l.created_at desc
+         limit 300) t), '[]'::jsonb) else '[]'::jsonb end,
+    'du_an', case when 'du_an' = any(p_lop) then coalesce((
+      select jsonb_agg(to_jsonb(t)) from (
+        select p.slug, p.name, p.developer, p.district, p.status_text, p.lat::double precision as lat, p.lng::double precision as lng
+          from public.projects p
+         where p.lat is not null and p.lng is not null
+           and p.lat between least(p_nam, p_bac) and greatest(p_nam, p_bac)
+           and p.lng between least(p_tay, p_dong) and greatest(p_tay, p_dong)
+         order by hashtext(coalesce(p.slug, p.name))   -- khung rộng quá 300: rải đều, không dồn tên A–C (thứ tự cố định)
+         limit 300) t), '[]'::jsonb) else '[]'::jsonb end,
+    -- Lớp đường CHỈ khi khung nhỏ (≤ 0,08° mỗi chiều ≈ zoom 15): khung cả TP.HCM quét hết bảng `duong` (dòng nặng vì cột vector) mất ~5 s
+    -- (đo 26/10), khung 0,02° × 0,03° đi chỉ mục `duong_lat_lng` ~36 ms. Chặn ở đây vì hàm mở cho anon — web cũng chỉ xin lớp này từ zoom 15.
+    'duong', case when 'duong' = any(p_lop)
+                   and greatest(p_nam, p_bac) - least(p_nam, p_bac) <= 0.08
+                   and greatest(p_tay, p_dong) - least(p_tay, p_dong) <= 0.08 then coalesce((
+      select jsonb_agg(to_jsonb(t)) from (
+        select d.ten, d.loai, d.phuong, d.quan_cu, d.lat, d.lng
+          from public.duong d
+         where d.loai in ('duong', 'so')
+           and d.lat between least(p_nam, p_bac) and greatest(p_nam, p_bac)
+           and d.lng between least(p_tay, p_dong) and greatest(p_tay, p_dong)
+         order by hashtext(d.ten || coalesce(d.phuong, ''))
+         limit 300) t), '[]'::jsonb) else '[]'::jsonb end);
+$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.bao_can_da_chot(p_listing_id uuid)
@@ -6822,6 +6865,10 @@ grant execute on function public.admin_xoa_het_khach_va_ro_hang(p_xac_nhan text)
 revoke all on function public.admin_xoa_khach(p_zalo text) from public, anon, authenticated;
 grant execute on function public.admin_xoa_khach(p_zalo text) to authenticated;
 grant execute on function public.admin_xoa_khach(p_zalo text) to service_role;
+revoke all on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) from public, anon, authenticated;
+grant execute on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) to anon;
+grant execute on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) to authenticated;
+grant execute on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) to service_role;
 revoke all on function public.bao_can_da_chot(p_listing_id uuid) from public, anon, authenticated;
 grant execute on function public.bao_can_da_chot(p_listing_id uuid) to service_role;
 revoke all on function public.bat_het_tien_api() from public, anon, authenticated;
