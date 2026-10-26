@@ -176,6 +176,12 @@ kiem "Cho thuê: không nói phí 1% giá bán" "$(grep -qE '1 ?% ?(giá|giao)' 
 LOI_BOT=""
 for cau in "bán lô đất thổ cư đường Trần Văn Giàu huyện Bình Chánh" "ngang 5 dài 20, full thổ cư, sổ riêng" \
            "đường trước đất rộng 8m, giá 3 tỷ"; do chat "$BAN6" "$cau"; sleep 1; done
+# Lưu nền (như kịch bản hai căn): lõi trả lời trước khi ghi xong DB, đọc sau 1 giây thì giá lượt cuối chưa vào cột (ban-thu-ban 26/10, bản 29ff6b4:
+# "Đất: giá 3 tỷ" TRƯỢT dù bản tin đã in "chỉ 3 tỷ"; các lượt khác đạt cùng mã) — chờ tới 15 s cho tới khi cột giá có.
+for _ in $(seq 1 15); do
+  [ "$(q "select count(*) as n from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = '$BAN6' and l.price_vnd is not null" | jq -r '.[0].n')" = 1 ] && break
+  sleep 1
+done
 r6=$(dong "$BAN6"); echo "$r6"
 kiem "Đất: loại đất" "$(jq '(.property_type // "") | test("dat") | if . then 1 else 0 end' <<<"$r6")"
 kiem "Đất: giá 3 tỷ" "$(jq '.price_vnd == 3000000000 | if . then 1 else 0 end' <<<"$r6")"
