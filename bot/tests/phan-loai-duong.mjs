@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 // phan-loai-duong.mjs — từ điển đường giữ cả đường số + hẻm, kèm toạ độ (30/09/2026, chạy offline).
-import { gomDuong, phanLoaiDuong, khoangCachKm, locTheoTamPhuong } from "../../scripts/lib/phan-loai-duong.mjs";
+import { gomDuong, phanLoaiDuong, khoangCachKm, locTheoTamPhuong, chonRelationGanTam } from "../../scripts/lib/phan-loai-duong.mjs";
 
 let dat = 0, hong = 0;
 const ok = (ten, dk, chi = "") => { if (dk) dat++; else { hong++; console.log(`✗ ${ten}${chi ? `\n    ${chi}` : ""}`); } };
@@ -59,6 +59,18 @@ ok("lọc tâm phường: giữ đường gần + dòng thiếu toạ độ, b�
 ok("lọc tâm phường: phường chưa có tâm thì giữ hết", locTheoTamPhuong([{ ten: "X", lat: 11.2, lng: 107.4 }], { lat: null, lng: null }).giu.length === 1);
 ok("lọc tâm phường: đường dài trong phường lớn (20 km) vẫn giữ", locTheoTamPhuong([{ ten: "Y", lat: 10.97, lng: 106.63 }], { lat: 10.79, lng: 106.63 }).bo.length === 0);
 ok("khoangCachKm ~ 100 km giữa hai điểm Tân Phú", Math.abs(khoangCachKm(10.7906, 106.6285, 11.2659, 107.4468) - 103) < 6, String(khoangCachKm(10.7906, 106.6285, 11.2659, 107.4468)));
+
+// SRS-5.1zzzzzzz187: hai đa giác CÙNG TÊN (Phường Long Bình Thủ Đức / Biên Hòa) phải đếm là 2 — trước đây đếm theo tên nên luôn ra 1.
+const csvHaiDaGiac = ["Phường Long Bình\tarea\t\t\t3600000001", "Phường Long Bình\tarea\t\t\t3600000002", "Quốc lộ 1\tway\t10.95\t106.9\t55"].join("\n");
+ok("đếm đa giác theo ID: hai đa giác cùng tên → 2", gomDuong(csvHaiDaGiac).soArea === 2, String(gomDuong(csvHaiDaGiac).soArea));
+ok("đếm đa giác: cùng một ID hiện hai lần → 1", gomDuong("A\tarea\t\t\t7\nA\tarea\t\t\t7").soArea === 1);
+ok("đếm đa giác: CSV cũ không cột id vẫn đếm theo tên (không vỡ)", gomDuong("Phường X\tarea\t\t\nPhường X\tarea\t\t").soArea === 1);
+const relLongBinh = "7342307\t10.862\t106.829\n8392610\t10.946\t106.902";
+ok("chọn relation gần tâm phường: Long Bình Thủ Đức (tâm 10.866, 106.833) → 7342307", chonRelationGanTam(relLongBinh, 10.866, 106.833) === "7342307");
+ok("chọn relation: tâm phường ở Biên Hòa → 8392610", chonRelationGanTam(relLongBinh, 10.945, 106.9) === "8392610");
+ok("chọn relation: không cái nào trong 3 km → null (soi tay)", chonRelationGanTam(relLongBinh, 10.9, 106.7) === null);
+ok("chọn relation: phường thiếu toạ độ → null", chonRelationGanTam(relLongBinh, null, null) === null);
+ok("chọn relation: hai cái đều trong 3 km → null (không đoán)", chonRelationGanTam("1\t10.800\t106.800\n2\t10.801\t106.801", 10.8, 106.8) === null);
 
 console.log(`\nPHÂN LOẠI ĐƯỜNG: ${dat} đạt · ${hong} hỏng`);
 if (hong) process.exit(1);

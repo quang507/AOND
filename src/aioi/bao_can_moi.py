@@ -36,6 +36,7 @@ KHACH_NHAN_TRONG_NGAY = 30
 VAN_GIO = 24
 TRAN_VUOT = 1.15
 TOI_DA_KHACH_MOI_LUOT = 20
+SO_KIEU = 4            # số kiểu văn phong tin báo (câu mẫu `bao_can_moi`, `_2`, `_3`, `_4` và bản `_vuot`) — SRS-5.1zzzzzzz188
 TOI_DA_ANH = 4         # ảnh đính kèm mỗi tin báo (SRS-5.1zzzzzzz159, chủ dự án 23/10: "3 4 tấm ảnh"; bridge /send cũng chặn ở 4)
 
 _O_NHU_CAU = ("loai_giao_dich", "loai_bds", "ngan_sach", "khu_vuc", "so_phong_ngu", "yeu_cau_xe_hoi")
@@ -67,7 +68,11 @@ def mo_ta_can(c: dict) -> str:
     return ", ".join(phan)
 
 
-def vi_sao_hop(c: dict, lead: Any = None) -> str:
+# Chữ mở câu "vì sao hợp" theo kiểu văn phong (SRS-5.1zzzzzzz188); kiểu 0 giữ "Hợp vì" như trước.
+MO_VI_SAO = ("Hợp vì", "Khớp ở chỗ", "Điểm cộng là", "Được cái")
+
+
+def vi_sao_hop(c: dict, lead: Any = None, kieu: int = 0) -> str:
     """Một câu "Hợp vì …" ghép từ ĐÚNG những điều bộ lọc cứng của `can_moi_khop` đã kiểm (khu vực, loại, giá, xe hơi) — không bịa, không gọi AI.
     Giá chỉ nêu khi căn trong ngân sách (căn vượt ngân sách thì câu mẫu `bao_can_moi_vuot` tự nói phần vượt). Không có gì để nói → ""."""
     if lead is None:
@@ -84,22 +89,27 @@ def vi_sao_hop(c: dict, lead: Any = None) -> str:
         phan.append(f"giá trong ngân sách {g('ngan_sach')}")
     if _can_xe_hoi(g("yeu_cau_xe_hoi")):
         phan.append("xe hơi vào được")
-    cau = ("Hợp vì " + ", ".join(phan) + ".") if phan else ""
+    cau = (f"{MO_VI_SAO[kieu % len(MO_VI_SAO)]} " + ", ".join(phan) + ".") if phan else ""
     if c.get("_thieu_pn"):   # SRS-5.1zzzzzzz177: nói thẳng điểm lệch phòng ngủ, không giấu
         co, can_ = c["_thieu_pn"]
         cau += (" Lưu ý căn chưa rõ số phòng ngủ." if co is None else f" Lưu ý căn có {co} phòng ngủ, ít hơn {can_} phòng khách cần.")
     return cau.strip()
 
 
-def viet_tin(c: dict, xung_ho: str = "unknown", lead: Any = None) -> str:
+def viet_tin(c: dict, xung_ho: str = "unknown", lead: Any = None, kieu: int = 0) -> str:
     """Tin báo một căn — nhiều đoạn cách nhau một dòng trống, MỖI ĐOẠN là một tin Zalo (mở lời · thông số + vì sao hợp · link · câu hỏi lịch xem).
-    `xung_ho`: khách tự xưng gì (engine) — "em" thì bot xưng "mình" và gọi khách "em"."""
+    `xung_ho`: khách tự xưng gì (engine) — "em" thì bot xưng "mình" và gọi khách "em".
+    `kieu` (SRS-5.1zzzzzzz188, chủ dự án 26/10: hai tin báo liền nhau trùng văn phong): 0..SO_KIEU-1, chọn câu mẫu `bao_can_moi` / `_2` / `_3` / `_4`
+    (bản `_vuot` khi vượt ngân sách) và chữ mở "vì sao hợp"; `chay_mot_luot` xoay theo số tin báo đã gửi cho khách nên hai tin liền nhau luôn khác kiểu."""
     goi = {"anh": "anh", "chi": "chị", "em": "em"}.get(xung_ho, "anh/chị")
     toi = "mình" if xung_ho == "em" else "em"
     mo_ta = mo_ta_can(c)
-    bien = {"toi": toi, "mo_ta": mo_ta, "Mo_ta": mo_ta[:1].upper() + mo_ta[1:], "vi_sao": vi_sao_hop(c, lead),
+    bien = {"toi": toi, "mo_ta": mo_ta, "Mo_ta": mo_ta[:1].upper() + mo_ta[1:], "vi_sao": vi_sao_hop(c, lead, kieu),
             "link": f"{SITE_URL}/nha-dat/{c.get('code')}"}
-    mau = cau_mau.cau("bao_can_moi_vuot", goi, pct=c["_vuot_ngan_sach"], **bien) if c.get("_vuot_ngan_sach") else cau_mau.cau("bao_can_moi", goi, **bien)
+    kieu = kieu % SO_KIEU
+    hau = "" if kieu == 0 else f"_{kieu + 1}"
+    mau = (cau_mau.cau(f"bao_can_moi_vuot{hau}", goi, pct=c["_vuot_ngan_sach"], **bien) if c.get("_vuot_ngan_sach")
+           else cau_mau.cau(f"bao_can_moi{hau}", goi, **bien))
     return "\n\n".join(d.strip() for d in re.split(r"\n\s*\n", mau) if d.strip())
 
 
@@ -172,7 +182,7 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
         if not can:
             continue
         c = can[0]
-        tin = viet_tin(c, xung_ho_cua(k["zalo_user_id"]) if xung_ho_cua else "unknown", lead)
+        tin = viet_tin(c, xung_ho_cua(k["zalo_user_id"]) if xung_ho_cua else "unknown", lead, kieu=len(mine) % SO_KIEU)
         # Giữ chỗ TRƯỚC khi gửi: hai lượt chạy chồng nhau không báo đúp (khoá duy nhất khách + tin cho kind `match`). Gửi hụt thì xoá để thử lại.
         try:
             giu = kho._post("reminders", {"kind": "match", "buyer_id": bid, "listing_id": c["id"], "due_at": _iso(bay_gio),

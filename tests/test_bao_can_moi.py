@@ -247,3 +247,47 @@ def test_tin_dau_hut_thi_khong_gui_gi_va_tin_sau_hut_thi_van_tinh_la_da_bao(monk
     monkeypatch.setattr(server, "_gui_bridge", gui)
     assert server._gui_bao_can_moi("zl-hut-3", tin_bao, None, {"code": "SEED0002"}, []) is True and len(goi) == 3      # khách đã nhận 2 tin: không gửi lại
     assert server._engine.conversation("zl-hut-3").history[-1].content == "\n\n".join(bao_can_moi.tach_tin(tin_bao)[:2])
+
+
+def test_hai_tin_bao_lien_nhau_cho_mot_khach_khong_cung_van_phong():
+    """SRS-5.1zzzzzzz188 (chủ dự án 26/10, ảnh chụp hai tin báo liền nhau cùng mở lời / câu link / câu hỏi: "văn phong gì trùng nhau nữa"):
+    kiểu văn phong xoay theo số tin báo đã gửi cho khách — mỗi cặp tin liền nhau khác nhau ở MỌI đoạn (mở lời, chữ mở "vì sao hợp", câu link, câu hỏi),
+    hết 4 kiểu thì quay lại kiểu đầu. Đỏ khi bỏ `kieu=len(mine) % SO_KIEU` trong `chay_mot_luot`."""
+    kho = KhoGia([tin("l1", "A", 6.8e9)])
+    tin_gui = []
+    for i, ma in enumerate(["A", "B", "C", "D", "E"]):
+        if i:
+            kho.tins.append(tin(f"l{i + 1}", ma, 6.8e9))
+        _, gui = chay(kho, bay_gio=TRUA + timedelta(hours=25 * i))
+        assert len(gui) == 1, ma
+        tin_gui.append(bao_can_moi.tach_tin(gui[0][1]))
+    for truoc, sau in zip(tin_gui, tin_gui[1:]):
+        assert len(truoc) == len(sau) == 4
+        for a, b in zip(truoc, sau):
+            if "/nha-dat/" in a:
+                a, b = a.split(":")[0], b.split(":")[0]       # đoạn link: chỉ so câu dẫn, không so đường dẫn
+            elif a.startswith(("Nhà phố", "Căn")):
+                a, b = a.split(". ", 1)[1].split(" ")[0], b.split(". ", 1)[1].split(" ")[0]   # đoạn thông số: so chữ mở "vì sao hợp"
+            assert a != b, (a, b)
+    assert tin_gui[0][0] == tin_gui[4][0]                   # kiểu thứ 5 quay lại kiểu đầu
+    assert len({t[0] for t in tin_gui[:4]}) == 4 and len({t[3] for t in tin_gui[:4]}) == 4
+
+
+def test_kieu_vuot_ngan_sach_cung_xoay_va_giu_phan_tram():
+    kho = KhoGia([tin("l1", "A", 7.7e9)])
+    gui_ra = []
+    for i, ma in enumerate(["A", "B", "C", "D"]):
+        if i:
+            kho.tins.append(tin(f"l{i + 1}", ma, 7.7e9))
+        _, gui = chay(kho, bay_gio=TRUA + timedelta(hours=25 * i))
+        gui_ra.append(gui[0][1])
+    assert len(set(gui_ra)) == 4 and all("10%" in t and "/nha-dat/" in t for t in gui_ra)
+    assert len({bao_can_moi.tach_tin(t)[0] for t in gui_ra}) == 4
+
+
+def test_viet_tin_kieu_ngoai_khoang_thi_quay_vong_va_mac_dinh_khong_doi():
+    c = {**tin("l1", "A", 6.8e9)}
+    lead = bao_can_moi.nhu_cau_tu_ho_so(NGAN["preferences"])
+    assert bao_can_moi.viet_tin(c, "chi", lead) == bao_can_moi.viet_tin(c, "chi", lead, kieu=0) == bao_can_moi.viet_tin(c, "chi", lead, kieu=4)
+    assert bao_can_moi.viet_tin(c, "chi", lead, kieu=1) != bao_can_moi.viet_tin(c, "chi", lead, kieu=0)
+    assert "Khớp ở chỗ" in bao_can_moi.viet_tin(c, "chi", lead, kieu=1)
