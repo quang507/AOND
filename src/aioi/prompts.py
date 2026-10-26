@@ -654,7 +654,8 @@ ICON/EMOJI (bắt buộc): CẢ bản rao chỉ dùng **2–3 icon** tổng cộ
 NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN (giữ của mình — chống bịa, SRS-5.1zzzzzzz73): mọi ý trong tin phải có trong dữ liệu căn / lời chủ nhà. Câu bot
 từng HỎI hay từng KHEN trong lúc chat không phải dữ liệu. KHÔNG thêm tiện ích quanh nhà (chợ, trường học, bệnh viện, siêu thị…) hay tình trạng nhà
 (mới, sạch sẽ, giữ gìn kỹ) khi chủ nhà không nói — "ở lâu rồi", "đang ở" không có nghĩa là nhà sạch / mới. Dữ liệu chưa nói nhà ở hẻm hay mặt tiền thì KHÔNG viết "hẻm" / "HXH" / "mặt tiền";
-căn hộ không có "mặt tiền". Không suy từ con số ra điều khác ("ngõ 3m" thì viết "ngõ 3m", không thêm "ô tô vào thuận tiện"). Tiêu đề phải
+căn hộ không có "mặt tiền". Không suy từ con số ra điều khác ("ngõ 3m" thì viết "ngõ 3m", không thêm "ô tô vào thuận tiện"). Quy hoạch là chuyện sau này: "quy hoạch mở rộng 25m" thì viết đúng
+vậy, KHÔNG viết thành đường đang rộng 25m. "DTCN" là diện tích đất công nhận, KHÔNG viết thành diện tích sàn. Tiêu đề phải
 có GIÁ. FOMO chỉ là lời thúc chung — KHÔNG khẳng định sự kiện không có trong dữ liệu ("đã có người đặt cọc", "căn cuối cùng"). Gọi
 người đọc là "anh chị" / "cô bác", KHÔNG "bạn". KHÔNG in tên khối ("Tiêu đề:", "Mô tả:", "Gạch đầu dòng:", "Câu mời chốt:") — viết thẳng
 nội dung. CẤM viết "đang cập nhật"."""
@@ -1347,10 +1348,15 @@ cho các loại này.
   (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
   nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Không có dấu hiệu nào mới để tạm dien_tich.
   Viết tắt (20/10): "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
+  "DTCN" / "dt công nhận" / "diện tích công nhận" = diện tích ĐẤT công nhận trên sổ → dien_tich_dat, KHÔNG BAO GIỜ là sàn (26/10: "DT 4x18m
+  – DTCN 71m²" bị ghi thành 71m² sàn).
   "dts" có thể là diện tích sổ hoặc sàn: con số bằng ngang × dài khách đã nói (4x11 → 44) là ĐẤT; còn lại để tạm dien_tich. Số
   bằng ngang × dài luôn là diện tích ĐẤT, không bao giờ là diện tích sàn của nhà nhiều tầng.
   "MT 20m" / "mặt tiền đường 20m" nói cạnh TÊN ĐƯỜNG là độ rộng con ĐƯỜNG → lo_gioi_duong; mat_tien là bề ngang của chính căn
   nhà (lô 4x11 → ngang 4m), không bao giờ lớn hơn chiều của lô.
+  Độ rộng theo QUY HOẠCH ("quy hoạch mở rộng 25m", "lộ giới quy hoạch 20m", "sắp mở rộng đường") là chuyện SAU NÀY → quy_hoach, KHÔNG
+  ghi vào lo_gioi_duong (lo_gioi_duong = đường rộng bao nhiêu BÂY GIỜ). 26/10: "mặt tiền quy hoạch mở rộng 25m" bị ghi lo_gioi_duong = 25 rồi
+  tin rao viết "đường rộng 25m".
 QUAN TRỌNG — mã số căn: BĐS dự án lúc MỞ BÁN (chưa hoàn thành) thường được định danh bằng
 MÃ SỐ CĂN (vd "căn số 42", "A-15-03", "block B tầng 5 căn 3") và CHƯA có địa chỉ đường. Nếu
 người rao cho mã số căn thì trích vào ma_so_can. ĐỪNG nhầm mã số căn với số phòng ngủ hay số
@@ -1661,10 +1667,15 @@ QUY TẮC:
   (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
   nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Không có dấu hiệu nào mới để tạm dien_tich.
   Viết tắt (20/10): "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
+  "DTCN" / "dt công nhận" / "diện tích công nhận" = diện tích ĐẤT công nhận trên sổ → dien_tich_dat, KHÔNG BAO GIỜ là sàn (26/10: "DT 4x18m
+  – DTCN 71m²" bị ghi thành 71m² sàn).
   "dts" có thể là diện tích sổ hoặc sàn: con số bằng ngang × dài khách đã nói (4x11 → 44) là ĐẤT; còn lại để tạm dien_tich. Số
   bằng ngang × dài luôn là diện tích ĐẤT, không bao giờ là diện tích sàn của nhà nhiều tầng.
   "MT 20m" / "mặt tiền đường 20m" nói cạnh TÊN ĐƯỜNG là độ rộng con ĐƯỜNG → lo_gioi_duong; mat_tien là bề ngang của chính căn
   nhà (lô 4x11 → ngang 4m), không bao giờ lớn hơn chiều của lô.
+  Độ rộng theo QUY HOẠCH ("quy hoạch mở rộng 25m", "lộ giới quy hoạch 20m", "sắp mở rộng đường") là chuyện SAU NÀY → quy_hoach, KHÔNG
+  ghi vào lo_gioi_duong (lo_gioi_duong = đường rộng bao nhiêu BÂY GIỜ). 26/10: "mặt tiền quy hoạch mở rộng 25m" bị ghi lo_gioi_duong = 25 rồi
+  tin rao viết "đường rộng 25m".
 - Đừng nhầm mã số căn với số phòng ngủ/số tầng.
 - DUYỆT BẢN NHÁP (18/10/2026; 20/10 theo trạng thái): chỉ khi có dòng "TRẠNG THÁI: bot ĐÃ gửi bản tin nháp" bên dưới (bot đã gửi
   bản nháp — kể cả khi sau đó bot nhắc hay hỏi xác nhận "đã ổn chưa"), đọc theo NGHĨA tin khách vừa nhắn: đồng ý cho đăng (ok, được rồi, đăng đi, chuẩn rồi, thả tim / like…) →

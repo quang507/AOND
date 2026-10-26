@@ -107,3 +107,13 @@ def test_engine_truyen_o_luot_truoc_khi_doi_o():
     dong = bat.he[0].split(prompts.RANH_GIOI_CACHE, 1)[1]
     assert c.o_vua_hoi != "dien_tich_nha"
     assert "KHÔNG hỏi lại ý đó" in dong and prompts.nhan_o("dien_tich_nha", c.prop) in dong
+
+
+def test_dtcn_la_dat_va_quy_hoach_khong_phai_lo_gioi_hien_tai():
+    """Chat thử 26/10 (Thống Nhất – Gò Vấp): "DT 4x18m – DTCN 71m²" bị ghi thành 71m² SÀN và "mặt tiền quy hoạch mở rộng 25m" thành đường đang rộng
+    25m. Cả hai lượt bóc tách (lập thao tác + bóc tách phụ) và AD_FORMAT phải nói rõ hai luật — đỏ khi gỡ đoạn đó khỏi prompt."""
+    import re
+    nguon = open(prompts.__file__, encoding="utf-8").read()
+    assert len(re.findall(r'"DTCN" / "dt công nhận" / "diện tích công nhận" = diện tích ĐẤT', nguon)) == 2
+    assert len(re.findall(r"quy_hoach, KHÔNG\s+ghi vào lo_gioi_duong", nguon)) == 2
+    assert "KHÔNG viết thành đường đang rộng 25m" in prompts.AD_FORMAT and "DTCN" in prompts.AD_FORMAT
