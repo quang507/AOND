@@ -461,6 +461,7 @@ GHI CHÚ NGHIỆP VỤ (để hiểu đúng và nói đúng — không phải lu
 - Không mở lượt bằng câu ghi nhận ("Em ghi nhận…", "Em lưu…", "Em ghi thêm…") — hệ thống tự lưu, khách không cần nghe.
 - Điều khách đã nói rõ (giá, địa chỉ, diện tích…) thì KHÔNG hỏi lại để xác nhận; KHÔNG nhắc tới tài liệu / bảng giá / ảnh khách chưa gửi.
 - Giá thị trường: em không có số liệu thị trường — không nêu giá khu vực, không nhận xét giá khách đưa cao / thấp.
+- Không lặp lại câu / ý đã nói ở lượt trước (lời xin lỗi, trấn an "yên tâm", "cứ nhắn lại", "em sẽ báo"): mỗi ý nói MỘT lần, lượt sau vào thẳng việc; không mở đầu hai lượt liền nhau bằng cùng mấy chữ.
 
 {SLANG_NOTES}
 {RANH_GIOI_CACHE}{project_block}
@@ -499,6 +500,7 @@ BỐI CẢNH TƯ VẤN KHÁCH MUA / THUÊ:
 QUY TẮC PHẢN HỒI:
 - Trả lời ngắn gọn, ấm áp, như môi giới nhắn Zalo (em KHÔNG có số liệu thị trường — không nhận xét giá / thanh khoản). Xưng "em", gọi khách "anh/chị".
 - Mỗi lượt CHỈ hỏi tối đa 1 thông tin còn thiếu, bằng MỘT câu ngắn.
+- Không lặp lại câu / ý đã nói ở lượt trước ("chưa có căn phù hợp", "em sẽ nhắn khi có", lời cảm ơn, lời trấn an): mỗi ý nói MỘT lần, lượt sau nói ngắn hơn bằng chữ khác hoặc bỏ; không mở đầu hai lượt liền nhau bằng cùng mấy chữ.
 - CÂU HỎI NHU CẦU LÀ CÂU MỞ (SRS-5.1zzzzzzz212, bài UX phỏng vấn định tính): hỏi "như thế nào / tầm bao nhiêu / ở đâu / kể em nghe", tránh câu
   Có/Không ("cần hẻm xe hơi không?") và câu gài sẵn đáp án hay tính từ cảm xúc ("tiện lắm đúng không?", "chắc chị thích…"). Câu mời xem nhà
   ("anh/chị muốn đi xem thử không?") vẫn được.
@@ -1644,8 +1646,9 @@ GIÁ TRỊ Ô CŨNG CHỈ LÀ ĐIỀU KHÁCH NÓI (SRS-5.1zzzzzzz86): không suy
 vào được", "hẻm 4m" KHÔNG thành "mặt tiền", "3 lầu" KHÔNG thành "có thang máy". Giá trị có từ khách không gõ thì hệ thống ghi
 nguyên cụm bang_chung thay cho giá trị.
 
-Ngoài "operations", nếu rõ vai trò người rao thì đặt "seller_role"
-(chu_nha/luot_song/moi_gioi/san/chu_dau_tu); nếu là tin cho thuê đặt "is_rental"=true ("đang cho thuê X/tháng" khi rao BÁN là hiện trạng, không phải tin cho thuê).
+Ngoài "operations", nếu khách TỰ NÓI RA vai thì đặt "seller_role"
+(chu_nha/luot_song/moi_gioi/san/chu_dau_tu) kèm "seller_role_trich_dan" = nguyên văn cụm khách gọi tên vai ("a là môi giới", "nhà chính chủ",
+"bên sàn em"); cách nói việc ("a cần đăng tin", "nhà em", "chú có căn nhà") KHÔNG phải vai — bỏ trống (phí báo theo vai, đoán sai là báo sai tiền); nếu là tin cho thuê đặt "is_rental"=true ("đang cho thuê X/tháng" khi rao BÁN là hiện trạng, không phải tin cho thuê).
 
 PHÂN BIỆT Ý ĐỊNH KHÁCH ("user_intent") BẰNG TOÀN BỘ NGỮ CẢNH (Semantic Understanding):
 - "sell": Người bán / cho thuê gửi thông tin BĐS của họ, HOẶC người bán hỏi thăm tình hình bán/thị trường (vd: "giá này có khách mua không em?", "có ai hỏi mua chưa?", "bên mua có trả giá không?"). Việc nhắc tới chữ "mua" trong câu hỏi VẪN LÀ "sell"!
@@ -1895,8 +1898,10 @@ def operations_schema() -> dict[str, Any]:
             "seller_role": {
                 "type": "string",
                 "enum": ["chu_nha", "luot_song", "moi_gioi", "san", "chu_dau_tu"],
-                "description": "Vai trò người rao khi đã rõ. Bỏ trống nếu chưa chắc.",
+                "description": "Vai trò người rao khi khách TỰ NÓI RA vai (\"a là môi giới\", \"nhà chính chủ\", \"bên sàn\"). Bỏ trống nếu chưa chắc.",
             },
+            "seller_role_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách tự nói vai (bắt buộc khi có seller_role); "
+                                      "\"a cần đăng tin\", \"nhà em\" KHÔNG phải vai → bỏ trống cả hai."},
             "is_rental": {"type": "boolean", "description": MO_TA_CHO_THUE},
             "duyet_ban_nhap": {
                 "type": "string",

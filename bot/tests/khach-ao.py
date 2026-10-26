@@ -132,7 +132,11 @@ def _bot(uid: str, so_nhan: str, ten: str, text: str) -> tuple[list[str], float]
     t = time.time()
     with urllib.request.urlopen(req, timeout=120) as r:
         d = json.loads(r.read().decode())
-    return [x for x in (d.get("replies") or []) if isinstance(x, str)], time.time() - t
+    tra = [x for x in (d.get("replies") or []) if isinstance(x, str)]
+    so_anh = len(d.get("photos") or [])
+    if so_anh:   # lượt 2 (run 40377269267): Thư xin ảnh, lõi có trả `photos` cho bridge gửi kèm nhưng khách ảo không thấy → "mãi không hiện ảnh" oan
+        tra.append(f"[trợ lý gửi kèm {so_anh} ảnh]")
+    return tra, time.time() - t
 
 
 def _nhan_cau_hoi(loi: str) -> list[str]:

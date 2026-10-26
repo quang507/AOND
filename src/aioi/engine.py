@@ -273,6 +273,18 @@ def _hai_chieu_lo(fields: dict) -> str | None:
                  if x and re.search(r"\d\s*[x×*]\s*\d", str(x))), None)
 
 
+_VAI_RE = re.compile(r"(?i)(chính chủ|chinh chu|chủ nhà|chu nha|chủ sở hữu|chu so huu|đứng tên|dung ten|môi giới|moi gioi|\bmg\b|sàn|san giao dich|"
+                     r"rổ hàng|ro hang|giỏ hàng|gio hang|chủ đầu tư|chu dau tu|\bcđt\b|\bcdt\b|lướt sóng|luot song|sang nhượng|sang nhuong|hđmb|hdmb|"
+                     r"đầu tư|dau tu|bán chênh|ban chenh)")
+
+
+def _vai_co_bang_chung(trich: str | None, loi_khach: list[str]) -> bool:
+    """Vai người rao chỉ nhận khi cụm AI trích GỌI TÊN vai (chính chủ / môi giới / sàn / chủ đầu tư / lướt sóng…) và nằm nguyên trong một tin
+    khách gần đây (SRS-5.1zzzzzzz213; luật cũ của bản TS `vaiTuCau`: "bán lô đất", "chú có căn nhà" không phải vai)."""
+    t = str(trich or "").strip()
+    return bool(t) and bool(_VAI_RE.search(t)) and any(_trich_dan_khop(t, c) for c in loi_khach)
+
+
 def _trich_dan_khop(trich: str | None, cau: str | None) -> bool:
     """Cụm AI trích có nằm NGUYÊN trong câu khách không (bỏ dấu, bỏ dấu câu, gộp khoảng trắng) — AI đọc nghĩa, code chỉ kiểm bằng
     chứng. Dấu câu bỏ từ SRS-5.1zzzzzzz107 (bắn thử 207: khách "quận Đống Đa, Hà Nội", AI trích bỏ dấu phẩy → trượt, tin Hà Nội lọt
@@ -605,9 +617,11 @@ def khoi_phap_ly(conv: "Conversation", can: dict | None = None) -> str:
     """Khối pháp lý của lượt (SRS-5.1zzzzzzz176). `can` (SRS-5.1zzzzzzz179 mục 3): căn khách đang nói tới ở vai mua — có giá thì kho pháp lý
     nối dòng số thuế phí tính sẵn theo giá căn."""
     gia = can.get("price_vnd") if isinstance(can, dict) else None
-    return phap_ly.khoi_luot(conv.y_luot.get("hoi_phap_ly"), bool(conv.y_luot.get("phap_ly_nhay_cam")),
-                             gia_can=float(gia) if isinstance(gia, (int, float)) and gia > 0 else None,
-                             ma_can=str(can.get("code")) if isinstance(can, dict) and can.get("code") else None)
+    k = phap_ly.khoi_luot(conv.y_luot.get("hoi_phap_ly"), bool(conv.y_luot.get("phap_ly_nhay_cam")),
+                          gia_can=float(gia) if isinstance(gia, (int, float)) and gia > 0 else None,
+                          ma_can=str(can.get("code")) if isinstance(can, dict) and can.get("code") else None)
+    # SRS-5.1zzzzzzz213 (khách ảo 26/10: đang "cháu / cô" bỗng "em chưa có thông tin chắc chắn" khi trả lời pháp lý — tư liệu kho viết "em").
+    return k + ("\nXưng hô trong câu trả lời theo khối xưng hô của lượt; tư liệu viết \"em\" thì đổi cho khớp (đang xưng \"cháu\" thì \"cháu\").\n" if k else "")
 
 
 @dataclass
@@ -938,7 +952,10 @@ def _hem_mt_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
 # SRS-5.1zzzzzzz208 (bắn thử 26/10 trên giọng anh Luận, chủ dự án: "Bịa chi tiết khách không nói" là lỗi): tin rao viết "ra vô chợ búa, trường học
 # gần gần đó" khi khách không nhắc, "nhà được giữ gìn kỹ, sạch sẽ" khi khách chỉ nói "ở lâu rồi". Cụm TIỆN ÍCH quanh nhà / TÌNH TRẠNG nhà có
 # trong bản tin mà không có trong lời khách của căn đang nói → gọi lại model. So chữ của chính bản tin, không đoán ý khách.
-_CHI_TIET_BIA_RE = re.compile(r"(?i)(gần chợ|chợ búa|trường học|bệnh viện|siêu thị|công viên|trung tâm thương mại|giữ gìn|sạch sẽ|mới xây|nhà mới)")
+# SRS-5.1zzzzzzz213 (khách ảo 26/10, tin rao căn Era Town: "khu dân cư sầm uất phía Nam Sài Gòn", "được nhiều người hỏi thăm lắm" — tả khu vực
+# và sự kiện không có): thêm cụm tả khu / sự kiện giả vào lưới bịa chi tiết.
+_CHI_TIET_BIA_RE = re.compile(r"(?i)(gần chợ|chợ búa|trường học|bệnh viện|siêu thị|công viên|trung tâm thương mại|giữ gìn|sạch sẽ|mới xây|nhà mới"
+                              r"|sầm uất|nhiều người hỏi|nhiều người quan tâm|khách hỏi nhiều|nhiều khách hỏi|đông dân cư)")
 
 
 def _chi_tiet_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
@@ -1123,6 +1140,30 @@ def _mo_dau_ghi_nhan(reply: str) -> bool:
     # thêm "ghi thêm", "lưu …", "lên thông tin" cùng lớp câu ghi nhận.
     return re.match(r"(?i)\s*em\s+(?:đã\s+)?(?:ghi\s+nhận|ghi\s+rồi|ghi\s+lại|ghi\s+vào|ghi\s+thêm|nhận\s+thông\s+tin|lưu(?![\wà-ỹđ])|"
                     r"nắm\s+(?:rồi|được)|thêm\s+vào\s+tin|lên\s+thông\s+tin)", reply or "") is not None
+
+
+def _ba_chu_dau(reply: str) -> tuple[str, ...]:
+    return tuple(re.findall(r"\w+", (reply or "").lower())[:3])
+
+
+def _cung_mo_dau(reply: str, truoc: str) -> bool:
+    """Hai lượt bot liền nhau cùng mở bằng ba chữ đầu ("Em xin lỗi anh…" ×6 với anh K., "Cô yên tâm…" ×5 với cô S. — khách ảo 26/10,
+    SRS-5.1zzzzzzz213). Lưới này có từ SRS-118, bị gỡ cùng luật giọng ở SRS-207; khách ảo cho thấy gỡ nó làm bot lặp mở đầu."""
+    a = _ba_chu_dau(reply)
+    return len(a) == 3 and a == _ba_chu_dau(truoc)
+
+
+def _cau_lap_luot_truoc(reply: str, truoc: str) -> str | None:
+    """Một CÂU (≥ 6 chữ) của lời vừa viết trùng gần nguyên văn một câu lời bot lượt trước ("Em cứ thong thả bàn với bạn nha" ×2, "Hiện bên
+    em chưa có căn nào ở Gò Vấp hay Phú Nhuận…" ×3 — khách ảo 26/10). So chữ bỏ dấu, bỏ dấu câu; không đụng bản tin 📋 và link."""
+    if not reply or not truoc:
+        return None
+    gon = lambda c: re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", _strip_accents(c).lower())).strip()
+    cu = {gon(c) for c in re.split(r"[.!?\n]+", truoc) if len(c.split()) >= 6}
+    for c in re.split(r"[.!?\n]+", reply):
+        if len(c.split()) >= 6 and "http" not in c and "📋" not in c and gon(c) in cu:
+            return c.strip()
+    return None
 
 
 def _bo_markdown(reply: str) -> str:
@@ -2473,6 +2514,17 @@ class Engine:
         if _mo_dau_ghi_nhan(reply):   # SRS-5.1zzzzzzz208: cả câu dẫn trước bản tin cập nhật ("Em ghi nhận thêm sổ hồng… 📋 Bản tin cập nhật")
             ly_do.append("Lời vừa viết mở đầu bằng câu ghi nhận (\"Em ghi nhận / Em ghi thêm / Em lưu…\") — chủ dự án đã bỏ hẳn kiểu này: "
                          "mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói, hoặc vào thẳng nội dung (bản tin cập nhật thì mở thẳng bằng 📋).")
+        # SRS-5.1zzzzzzz213 (khách ảo 26/10, giám khảo chấm "không lặp" 1,4/5): lặp mở đầu / lặp nguyên câu của lượt trước — lưới cũ SRS-118
+        # bị gỡ ở SRS-207; nay đặt lại, kiểm HÌNH THỨC lời của chính bot, không đọc ý.
+        truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant" and t.content), "")
+        if "📋" not in reply:
+            if _cung_mo_dau(reply, truoc):
+                ly_do.append("Lượt trước em đã mở đầu bằng cùng mấy chữ này — lượt này đổi cách mở (vào thẳng ý, hoặc đáp điều khách vừa nói), "
+                             "không lặp lời xin lỗi / trấn an đã nói.")
+            lap = _cau_lap_luot_truoc(reply, truoc)
+            if lap:
+                ly_do.append(f"Câu \"{lap[:60]}\" lặp gần nguyên văn lời em ở lượt trước — khách đã đọc rồi: bỏ câu đó, hoặc nói ngắn hơn bằng "
+                             "chữ khác; mỗi ý (chưa có căn, cứ nhắn lại, em sẽ báo) chỉ nói MỘT lần trong cuộc chat.")
         if _tieu_de_can_ho_co_mt(reply, conv.prop):
             ly_do.append("Tiêu đề căn hộ có chữ \"MT\" — người mua đọc là mặt tiền; căn hộ không có mặt tiền, viết đủ tên dự án, không "
                          "viết tắt \"MT\".")
@@ -3481,8 +3533,19 @@ class Engine:
             log.warning("trang_thai_web lỗi: %s", e)
             return {"len_web": None}
         if "phuong" in (web.get("thieu") or []):   # SRS-5.1zzzzzzz212: tin chờ phường — hỏi khác, chỉ kể phường hệ thống tra được
-            web["phuong_da_hoi"] = conv.lo.get("phuong", 0) >= 1 or "phuong" in conv.prop.hoan
+            n = conv.lo.get("phuong", 0)
+            web["phuong_da_hoi"] = n >= 1 or "phuong" in conv.prop.hoan
             web["goi_y_phuong"] = self._goi_y_phuong(conv)
+            # SRS-5.1zzzzzzz213 (khách ảo 26/10: anh K. bị hỏi phường 6 lượt sau bản nháp vì sổ lờ chỉ đếm ở lượt thu thập, không đếm ở cổng
+            # web): mỗi lượt cổng này hỏi phường cũng tính một lần lờ (một lần mỗi lượt). Hỏi tới lần thứ 3 mà chưa ra → báo người phụ trách tra
+            # phường (cùng đường `can_nguoi_that`, có nhắc admin thật), bot thôi hỏi.
+            if not conv.y_luot.get("_cong_web_phuong"):
+                conv.y_luot["_cong_web_phuong"] = True
+                conv.lo["phuong"] = n + 1
+                if n >= 2 and not conv.y_luot.get("can_nguoi_that"):
+                    f = conv.prop.fields
+                    conv.y_luot["can_nguoi_that"] = ("Bot hỏi phường 3 lượt chưa ra — nhờ admin tra và điền phường ở Sửa tin: "
+                                                     + ", ".join(str(f[k]) for k in ("du_an", "duong", "dia_chi", "quan") if f.get(k)))
         return web
 
     def _goi_y_phuong(self, conv: Conversation) -> list[str]:
@@ -3691,7 +3754,11 @@ class Engine:
 
         # Sticky conversation attributes (never downgrade role to unknown).
         raw_role = plan.get("seller_role")
-        if raw_role in {r.value for r in SellerRole if r is not SellerRole.UNKNOWN}:
+        # SRS-5.1zzzzzzz213 (khách ảo 26/10: anh K. môi giới 8 năm bị báo phí 1 % — model đoán vai "chủ nhà" từ "a cần đăng tin"): vai chỉ nhận khi
+        # cụm trích GỌI TÊN vai và nằm trong lời khách gần đây (bất biến phí, CLAUDE.md "chỉ thành tu_nhan khi cụm trích GỌI TÊN vai"); chưa
+        # có bằng chứng thì giữ UNKNOWN → câu phí nêu cả hai mức.
+        if raw_role in {r.value for r in SellerRole if r is not SellerRole.UNKNOWN} and _vai_co_bang_chung(
+                plan.get("seller_role_trich_dan"), [t.content for t in conv.history if t.role == "user" and t.content][-6:]):
             conv.user_type = SellerRole(raw_role)
         if plan.get("is_rental"):
             conv.prop.is_rental = True
