@@ -264,6 +264,10 @@ LAND_GATED_TYPES: set[str] = {"dat", "dat_tho_cu"}
 # hỏi TRƯỚC bản nháp như bản anh Luận (gộp cụm: hẻm cùng địa chỉ / phường, hiện trạng cùng giá / pháp lý). Tập để trống, giữ tên để
 # chỗ nào cần lại thì thêm vào đây.
 HOI_SAU_KHI_RA_TIN: set[str] = set()
+# Ô pháp lý: khách nói sổ rồi nói hoàn công vào cùng một ô thì câu sau ĐÈ câu trước (ban-thu-ban 26/10, Cao Lỗ: "sổ riêng" mất, cột
+# `legal_status` rỗng). Ý cũ cất ở `_phap_ly_cu` (mới nhất trước) để cột mã pháp lý vẫn đọc được; khách SỬA ý cũ thì mã của câu mới thắng.
+KHOA_PHAP_LY = ("phap_ly", "phap_ly_hoan_cong", "phap_ly_so_hong", "phap_ly_so_do")
+PHAP_LY_CU_TOI_DA = 5
 
 # 21/10/2026 (SRS-5.1zzzzzzz116; chủ dự án gửi bộ câu môi giới hỏi chủ nhà — pháp lý, giá, dẫn khách xem, chi tiết nhà): hỏi SAU khi tin
 # đã lên web và đã nói chuyện phí, mỗi lượt MỘT cụm, mỗi cụm hỏi MỘT lần (khách lờ thì thôi). Không thuộc `expected_fields` — không
@@ -574,6 +578,20 @@ class Property:
             return missing[0]
         return None
 
+    def _nho_phap_ly_cu(self, cu: str) -> None:
+        """Cất ý pháp lý cũ sắp bị ô mới ghi đè (mới nhất đứng đầu, không trùng, tối đa `PHAP_LY_CU_TOI_DA`)."""
+        ds = [x for x in (self.fields.get("_phap_ly_cu") or "").split(" | ") if x and x != cu]
+        self.fields["_phap_ly_cu"] = " | ".join(([cu] + ds)[:PHAP_LY_CU_TOI_DA])
+
+    def phap_ly_da_noi(self) -> list[str]:
+        """Mọi chữ pháp lý khách đã nói về căn này, MỚI NHẤT TRƯỚC: các ô pháp lý hiện có rồi ý cũ đã bị ô mới đè. Cột `legal_status` lấy
+        mã đầu tiên đọc được trong danh sách này."""
+        ra: list[str] = []
+        for v in [self.fields.get(k) for k in KHOA_PHAP_LY] + (self.fields.get("_phap_ly_cu") or "").split(" | "):
+            if v and v not in ra:
+                ra.append(v)
+        return ra
+
     def update(self, captured: dict[str, str]) -> list[str]:
         """Merge newly extracted fields; return the names that were newly set."""
         newly: list[str] = []
@@ -593,6 +611,8 @@ class Property:
                 continue
             if k == "dia_chi":                  # MERGE, don't overwrite — keep street/ward intact
                 v = _merge_dia_chi(self.fields.get("dia_chi", ""), v)
+            if k in KHOA_PHAP_LY and self.fields.get(k) and self.fields[k] != v:
+                self._nho_phap_ly_cu(self.fields[k])
             if self.fields.get(k) != v:
                 self.fields[k] = v
                 newly.append(k)

@@ -40,3 +40,30 @@ def test_cam_khoe_khan_hiem_va_chep_loi_khen_cua_bot():
     assert '"không phải lúc nào cũng có"' in A and '"không nhiều đâu"' in A and "so sánh thị trường không kiểm được" in A
     assert "xe hơi đi lại thoải mái" in A and "KHÔNG được viết" in A
     assert "KHÔNG mở màn bằng" in A            # tiêu đề và mô tả không mở trùng một câu
+
+
+def test_code_chon_kieu_loi_moi_can_mot_kieu_khong_chep_cau_mau():
+    # SRS-5.1zzzzzzz203: bắn thử thấy câu mời nhắn Zalo / lời mở "Anh chị cô bác ơi," bị chép ở 4–5/6 tin. Nay code chọn kiểu theo căn và
+    # AD_FORMAT không còn câu mẫu hoàn chỉnh để chép.
+    assert "Nhanh tay nhắn Zalo cho em ngay" not in A and "hốt mất" not in A
+    assert 'Mở màn gọi "anh chị cô bác".' not in A
+    P = prompts.Property
+    cac_can = [P(loai_hinh="nha_pho", fields={"dia_chi": d, "duong": d, "gia": "9 tỷ"})
+               for d in ("12 Lê Lợi", "Cao Lỗ", "Nguyễn Trãi", "Âu Cơ", "Lê Văn Sỹ", "Trần Văn Giàu", "Phạm Hùng", "Bùi Minh Trực")]
+    kieu = {prompts.kieu_loi_tin_rao(p) for p in cac_can}
+    assert len(kieu) >= 3                                                       # nhiều căn → nhiều kiểu, không cùng một lời
+    p = cac_can[0]
+    doi_gia = P(loai_hinh="nha_pho", fields={**p.fields, "gia": "8 tỷ"})
+    assert prompts.kieu_loi_tin_rao(p) == prompts.kieu_loi_tin_rao(doi_gia)    # sửa giá không đổi giọng
+    for q in cac_can:
+        for s in (prompts.build_listing_proposal_system("Lan", q), prompts.build_fee_followup_system("Lan", q)):
+            assert "KIỂU LỜI CỦA TIN NÀY" in s and "KHÔNG chép câu nào ở trên" in s
+    mo, cta = prompts.KIEU_LOI_TIN_RAO[prompts.kieu_loi_tin_rao(p)]
+    assert mo in prompts.khoi_kieu_loi_tin_rao(p) and cta in prompts.khoi_kieu_loi_tin_rao(p)
+
+
+def test_cac_kieu_loi_khong_viet_san_cau_hoan_chinh():
+    # Kiểu chỉ tả HƯỚNG; không chứa câu mời nguyên văn kiểu cũ (cùng lớp lỗi ví dụ bị chép, SRS-196).
+    for mo, cta in prompts.KIEU_LOI_TIN_RAO:
+        assert "nhắn Zalo cho em ngay" not in mo + cta and '"' not in mo + cta
+    assert len({m for m, _ in prompts.KIEU_LOI_TIN_RAO}) == len(prompts.KIEU_LOI_TIN_RAO) >= 5

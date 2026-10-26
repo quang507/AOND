@@ -975,7 +975,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 if quan:
                     listing_payload["district"] = quan
                 listing_payload.update(self._thong_so(fields, ma_loai_db(li.prop.loai_hinh)))
-                ma_pl = self._ma_phap_ly(fields.get("phap_ly"))
+                ma_pl = next((m for m in (self._ma_phap_ly(c) for c in li.prop.phap_ly_da_noi()) if m), None)
                 if ma_pl:
                     listing_payload["legal_status"] = ma_pl
                 dt = so_m2(fields, li.prop.is_rental)
