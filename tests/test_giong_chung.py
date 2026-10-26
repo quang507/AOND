@@ -18,8 +18,8 @@ def test_moi_cach_xung_ho_deu_cam_da_va_ban():
 
 
 def test_chinh_sach_chung_khong_cho_goi_ban_khong_doan_theo_zalo():
-    assert '(hoặc "bạn")' not in prompts.CONVERSATION_POLICY
-    assert "Zalo nam giới" not in prompts.CONVERSATION_POLICY and "Zalo nữ giới" not in prompts.CONVERSATION_POLICY
+    s = prompts.build_chat_system("Hằng", prompts.Property(loai_hinh="nha_pho"), "gia")   # SRS-207: chính sách chung nay là prompt bản anh Luận
+    assert '(hoặc "bạn")' not in s and "Zalo nam giới" not in s and "Zalo nữ giới" not in s
 
 
 def test_cau_viet_cung_trong_code_khong_mo_bang_da():
@@ -34,4 +34,3 @@ def test_khach_xung_em_bot_xung_minh_khong_anh_chi():
     # "mình hoặc anh/chị", trùng chữ với cách gọi khách. Đỏ trên bản trước.
     k = khoi_xung_ho("em")
     assert "hoặc 'anh/chị'" not in k and "KHÔNG có chữ 'anh/chị'" in k
-    assert 'xưng "mình" hoặc "anh/chị"' not in prompts.CONVERSATION_POLICY

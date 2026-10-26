@@ -30,7 +30,6 @@ from . import cau_mau
 from . import so_token
 from .delivery import _is_formatted_post
 from .prompts import _MO_DAU_RE   # dòng mở bản nháp "(📋) Em/Mình sẽ rao như vầy nhé…:" (SRS-5.1zzzzzzz132)
-from .prompts import khoi_khen_theo_luot
 from .danh_gia import KHOI_SAP_XIN_SAO, cau_xin_sao, doc_sao, khoi_cam_on_sao, vua_xin_sao
 from . import du_an_mua
 from .assistants import Assistant, assign_assistant
@@ -936,7 +935,7 @@ def _dong_tieu_de(reply: str) -> str:
 
 
 # SRS-5.1zzzzzzz132 (bắn thử 22/10: "Mức giá 9,2 tỷ cho căn nhà 6 tầng trung tâm này quá hợp lý rồi anh/chị nhỉ!"): lời bot nhận xét giá /
-# thị trường dù luật KHEN cấm — kiểm HÌNH THỨC lời của chính bot (không đoán ý khách), cùng lớp lưới chống bịa đang có. Nhắc lại con số khách
+# thị trường dù prompt cấm — kiểm HÌNH THỨC lời của chính bot (không đoán ý khách), cùng lớp lưới chống bịa đang có. Nhắc lại con số khách
 # đưa ("Em đã để sẵn giá 9,2 tỷ trong bản tin") không khớp — chỉ bắt cụm ĐÁNH GIÁ.
 _BINH_LUAN_GIA = re.compile(
     r"(thanh khoản|đắt khách|dễ bán|đắc địa|người mua tìm nhiều|nhiều người (?:hỏi|tìm|quan tâm)|"
@@ -1075,17 +1074,6 @@ def _mo_dau_ghi_nhan(reply: str) -> bool:
     đều gọi lại model; "Em sửa giá còn…" (nói con số vừa sửa) không phải ghi nhận."""
     return re.match(r"(?i)\s*em\s+(?:đã\s+)?(?:ghi\s+nhận|ghi\s+rồi|ghi\s+lại|ghi\s+vào|nhận\s+thông\s+tin|lưu\s+(?:vào|lại|rồi)|nắm\s+(?:rồi|được)|"
                     r"thêm\s+vào\s+tin)", reply or "") is not None
-
-
-def _ba_chu_dau(reply: str) -> tuple[str, ...]:
-    return tuple(re.findall(r"\w+", (reply or "").lower())[:3])
-
-
-def _cung_mo_dau(reply: str, truoc: str) -> bool:
-    """Hai lượt bot liền nhau cùng mở bằng ba chữ đầu (vd "Em ghi nhận…" / "Em ghi nhận…") — kiểm HÌNH THỨC lời của chính bot
-    (SRS-5.1zzzzzzz118; Lê Quang 21/10: "flexible vào")."""
-    a = _ba_chu_dau(reply)
-    return len(a) == 3 and a == _ba_chu_dau(truoc)
 
 
 def _bo_markdown(reply: str) -> str:
@@ -2273,7 +2261,8 @@ class Engine:
         # SRS-5.1zzzzzzz178: MỘT khối ưu tiên mỗi lượt, theo thứ tự cần người > pháp lý > ngoài việc > hỏi về (phí / uy tín / link / tình hình /
         # định giá); có khối ưu tiên thì không ép khen theo lượt, không hỏi ô kế. Không có thì mới tới khối khen theo lượt.
         uu_tien = khoi_can_nguoi(conv) or khoi_phap_ly(conv) or khoi_ngoai_viec(conv) or hoi_ve_khoi
-        system += (uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else khoi_khen_theo_luot(conv.so_luot_thong_tin)
+        # SRS-5.1zzzzzzz207: bỏ khối khen theo lượt — giọng theo bản anh Luận ("khen ngợi điểm mạnh trước" nằm sẵn trong prompt).
+        system += (uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else ""
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
         system += self._project_memory_block(project)  # remember the price list + phân lô; reason over it
         system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
@@ -2411,12 +2400,9 @@ class Engine:
         if _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
             ly_do.append("Lời vừa viết gọi khách là \"mình\" (\"em xin lỗi mình\", \"Mình đang cần…\") — khách chưa xưng \"em\" nên KHÔNG dùng \"mình\" "
                          "gọi khách: gọi đúng cách khách xưng, chưa rõ thì \"anh/chị\". Chỉ \"nhà mình / căn mình\" khi nói về căn của khách.")
-        truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant"), "")
         if _mo_dau_ghi_nhan(reply) and "📋" not in reply:
             ly_do.append("Lời vừa viết mở đầu bằng câu ghi nhận (\"Em ghi nhận / Em ghi rồi / Em lưu rồi…\") — chủ dự án đã bỏ hẳn kiểu này (22/10): "
                          "mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói (vị trí, diện tích, pháp lý, cách khách trả lời…) rồi hỏi câu kế.")
-        elif _cung_mo_dau(reply, truoc) and "📋" not in reply:
-            ly_do.append("Lượt trước em đã mở đầu bằng cùng mấy chữ này; lượt này đổi cách mở — khen điểm khác, hoặc nối thẳng vào câu hỏi kế.")
         if _tieu_de_can_ho_co_mt(reply, conv.prop):
             ly_do.append("Tiêu đề căn hộ có chữ \"MT\" — người mua đọc là mặt tiền; căn hộ không có mặt tiền, viết đủ tên dự án, không "
                          "viết tắt \"MT\".")
@@ -2429,7 +2415,7 @@ class Engine:
         bl = None if la_ban_tin else _binh_luan_gia(reply)
         if bl:
             ly_do.append(f"Lời vừa viết nhận xét giá / thị trường (\"{bl}\") — em không có dữ liệu thị trường, CẤM bình luận giá hợp lý / "
-                         "đắt khách / dễ bán (luật KHEN). Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn.")
+                         "đắt khách / dễ bán. Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn.")
         so_la = _so_khong_co_trong_can(reply, can_mua, conv, system) if (can_mua or du_an_mua.TIEU_DE in system) else []
         if so_la:
             ly_do.append("Lời vừa viết có con số không có trong dữ liệu căn (" + ", ".join(f"\"{x}\"" for x in so_la) + ") — diện tích, giá, "

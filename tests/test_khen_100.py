@@ -1,12 +1,12 @@
 """22/10/2026 (SRS-5.1zzzzzzz131). Lê Quang: "giờ xóa hết mấy cái em ghi nhận em bla bla đi, và khen nhiều hơn vị trí các thứ cũng 100% khen".
 Bot không mở lượt bằng câu ghi nhận nữa — mở bằng lời khen gắn với điều khách vừa nói (kể cả vị trí), rồi hỏi. Vẫn cấm bịa thị trường / bình luận
 giá / thêm chi tiết khách chưa nói (quyết định 21/10 chưa bỏ). Đỏ khi luật cũ "GHI NHẬN VỪA NGẮN" còn trong prompt, khi câu mẫu `ghi_nhan_mau` còn,
-khi lời bot mở bằng "Em ghi nhận / Em lưu rồi" mà không bị gọi lại, hay khi luật khen mất các cấm cũ."""
+khi lời bot mở bằng "Em ghi nhận / Em lưu rồi" mà không bị gọi lại. 26/10 (SRS-5.1zzzzzzz207): luật khen / mở lượt trong prompt đã
+thay bằng giọng bản anh Luận — các bài kiểm chữ của LUAT_KHEN / LUAT_MO_LUOT bỏ, lưới code "câu ghi nhận" giữ."""
 import pathlib
 
-from aioi import cau_mau, prompts
+from aioi import cau_mau
 from aioi.engine import Engine, _mo_dau_ghi_nhan
-from aioi.prompts import CONVERSATION_POLICY, LUAT_KHEN, LUAT_MO_LUOT, build_chat_system, build_fee_followup_system
 from aioi.schema import Property
 
 GOC = pathlib.Path(__file__).resolve().parent.parent
@@ -18,24 +18,6 @@ def test_khong_con_cau_mau_ghi_nhan_va_cho_giu_chu():
     assert "VI_DU_GHI_NHAN" not in nguon and "LUAT_GHI_NHAN" not in nguon and "GHI NHẬN VỪA NGẮN" not in nguon
     sql = (GOC / "bot/supabase/migrations/20261022e_cau_mau_bo_ghi_nhan_mau.sql").read_text(encoding="utf-8")
     assert "delete from public.cau_mau where khoa = 'ghi_nhan_mau'" in sql
-
-
-def test_luat_mo_luot_bang_khen_o_ca_luot_thuong_lan_sau_ban_nhap():
-    assert LUAT_MO_LUOT in CONVERSATION_POLICY and "KHÔNG CÂU GHI NHẬN" in LUAT_MO_LUOT and "Em ghi nhận" in LUAT_MO_LUOT
-    s = build_chat_system("Hằng", Property(loai_hinh="nha_pho", fields={"gia": "9,2 tỷ"}), "dia_chi")
-    assert LUAT_MO_LUOT in s and "KHÔNG nịnh bợ" not in s
-    f = build_fee_followup_system("Hằng", Property(loai_hinh="nha_pho"), web={"len_web": False, "cho_duyet": True})
-    assert LUAT_MO_LUOT in f
-
-
-def test_luat_khen_100_phan_tram_ke_ca_vi_tri_nhung_van_cam_bia():
-    k = LUAT_KHEN
-    # 25/10 (SRS-5.1zzzzzzz178): "3 lượt đầu 100% khen" nới thành khen khi có điểm thật — ba lượt đầu chỉ ƯU TIÊN tìm điểm khen
-    assert "ĐIỂM TỐT THẬT" in k and "ba lượt đầu ƯU TIÊN" in k and "không khen gượng" in k and "MỖI lượt MỞ ĐẦU bằng MỘT lời khen" not in k
-    assert "VỊ TRÍ khách nêu" in k and "bùng binh Dân Chủ" in k
-    assert "thanh khoản tốt" in k and "KHÔNG bình luận giá" in k and "CHỈ khen đúng điều khách VỪA NÓI" in k and "hẻm xe hơi" in k
-    assert "tối đa HAI ý khen" in k and "CÁCH khách cung cấp thông tin" in k
-    assert build_chat_system("Hằng", Property(loai_hinh="nha_pho"), "gia").count(LUAT_KHEN) == 1
 
 
 def test_nhan_dien_cau_ghi_nhan_rong_hon():

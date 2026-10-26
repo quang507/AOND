@@ -8,8 +8,8 @@ A = prompts.AD_FORMAT
 
 
 def test_co_khoi_mo_chot_nhan_zalo_va_khong_hoi():
-    assert "4) CÂU MỜI CHỐT" in A and "NHẮN TIN Zalo" in A and "FOMO" in A
-    assert 'KHÔNG dùng dấu "?"' in A
+    assert "4) CÂU MỜI CHỐT" in A and "NHẮN TIN / liên hệ Zalo" in A and "FOMO" in A
+    assert "KHÔNG phải câu hỏi lấy lệ" in A
     assert "KHÔNG khẳng định sự kiện không có trong dữ liệu" in A      # không bịa "đã có người đặt cọc", "căn cuối cùng"
 
 
@@ -18,14 +18,13 @@ def test_moi_tin_mot_ve_cam_chep_cau_mau():
 
 
 def test_tin_cong_khai_noi_voi_dam_dong_khong_noi_rieng_voi_chu_nha():
-    assert "TIN RAO CÔNG KHAI" in A and 'KHÔNG xưng hô như nói riêng một người' in A
+    assert "TIN RAO CÔNG KHAI" in A and 'KHÔNG xưng hô 1 người' in A
     assert 'ĐẶT "ANH CHỊ" CÓ CHỦ ĐÍCH' in A
 
 
 def test_mo_ta_viet_ro_khong_viet_tat_va_giu_luat_that():
-    assert 'KHÔNG "MT", "PN"' in A
-    assert "chủ nói bán gấp thì mới được nói gấp" in A and "NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN" in A      # luật thật của mình không bị đè
-    assert "KHÔNG dùng dấu **" in A
+    assert 'KHÔNG "MT"' in A and 'KHÔNG "PN"' in A
+    assert "KHÔNG bịa độ gấp" in A and "NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN" in A      # luật chống bịa của mình không bị đè (SRS-207)
 
 
 def test_ban_nhap_va_ban_sua_deu_dung_mot_nguon():
@@ -37,9 +36,9 @@ def test_ban_nhap_va_ban_sua_deu_dung_mot_nguon():
 def test_cam_khoe_khan_hiem_va_chep_loi_khen_cua_bot():
     # Bắn thử 26/10 (ban-thu-luan): tin viết "mặt tiền đẹp như thế này không phải lúc nào cũng có sẵn" và chép "xe hơi đi lại thoải mái"
     # từ câu bot tự khen trong chat. Cùng lớp: lời khen / so sánh không có trong dữ liệu lọt vào tin.
-    assert '"không phải lúc nào cũng có"' in A and '"không nhiều đâu"' in A and "so sánh thị trường không kiểm được" in A
-    assert "xe hơi đi lại thoải mái" in A and "KHÔNG được viết" in A
-    assert "KHÔNG mở màn bằng" in A            # tiêu đề và mô tả không mở trùng một câu
+    # SRS-207: danh sách chữ khoe khan hiếm của mình bỏ theo bản anh Luận ("Chỉ hối/khan hiếm khi ĐÚNG sự thật"); lời bot khen trong chat
+    # vẫn không phải dữ liệu.
+    assert "khan hiếm khi ĐÚNG sự thật" in A and "từng HỎI hay từng KHEN" in A and "không phải dữ liệu" in A
 
 
 def test_cau_moi_zalo_theo_cau_mau_cua_anh_luan_kem_luat_moi_tin_mot_ve():
@@ -52,7 +51,7 @@ def test_cau_moi_zalo_theo_cau_mau_cua_anh_luan_kem_luat_moi_tin_mot_ve():
 
 
 def test_cam_goi_nguoi_doc_la_ban():
-    assert 'CẤM "bạn"' in A      # bắn thử 26/10: "Bạn đang tìm nhà phố ở Q.8…" trong tin rao
+    assert 'KHÔNG "bạn"' in A      # bắn thử 26/10: "Bạn đang tìm nhà phố ở Q.8…" trong tin rao
 
 
 def test_loi_chot_hua_lien_he_khi_co_khach_quan_tam_theo_anh_luan():
