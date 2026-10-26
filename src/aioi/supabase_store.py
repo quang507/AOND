@@ -1289,6 +1289,7 @@ class SupabaseConversationStore(KhoNguoiMua):
     def reset(self, user_key: str) -> None:
         """Reset conversation and listings for this user directly in Supabase."""
         self._seller_cache.pop(user_key, None)
+        self.__dict__.setdefault("_buyer_cache", {}).pop(user_key, None)
         if self.fallback:
             try:
                 self.fallback.reset(user_key)
@@ -1300,22 +1301,34 @@ class SupabaseConversationStore(KhoNguoiMua):
 
         try:
             sellers = self._get(f"sellers?zalo_user_id=eq.{urllib.parse.quote(user_key)}")
-            if not sellers:
+            seller_id = sellers[0]["id"] if sellers else None
+            # SRS-5.1zzzzzzz189 (chủ dự án 26/10: "reset để chat lại mà nhu cầu mua vẫn lưu"): bản trước thoát ngay khi không có dòng
+            # `sellers` và không bao giờ đụng `buyers` — hồ sơ nhu cầu (`preferences`) sống sót qua `$$$$$` nên vòng báo căn mới vẫn bắn.
+            buyer_id = self._id_mua_neu_co(user_key)
+            if not seller_id and not buyer_id:
                 return
-            seller_id = sellers[0]["id"]
+
+            # 0. Hồ sơ người mua: xoá nhu cầu, căn quan tâm, sổ tin báo căn mới (giữ dòng `buyers` — lịch hẹn / yêu cầu thông tin trỏ vào nó)
+            if buyer_id:
+                self._delete(f"interests?buyer_id=eq.{buyer_id}")
+                self._delete(f"reminders?kind=eq.match&buyer_id=eq.{buyer_id}")
+                self._patch(f"buyers?id=eq.{buyer_id}", {"preferences": {}, "bao_can_moi": True})
 
             # 1. Delete or unlist listings
-            self._delete(f"listings?seller_id=eq.{seller_id}")
+            if seller_id:
+                self._delete(f"listings?seller_id=eq.{seller_id}")
 
             # 2. Delete conversations and messages
-            convs = self._get(f"conversations?seller_id=eq.{seller_id}")   # hội thoại chung gắn cả buyer_id: xoá luôn tin vai mua
+            dk = ([f"seller_id.eq.{seller_id}"] if seller_id else []) + ([f"buyer_id.eq.{buyer_id}"] if buyer_id else [])
+            convs = self._get(f"conversations?or=({','.join(dk)})&select=id")   # hội thoại chung gắn cả seller_id và buyer_id (SRS-149)
             for c in convs:
                 cid = c["id"]
                 self._delete(f"messages?conversation_id=eq.{cid}")
                 self._delete(f"conversations?id=eq.{cid}")
 
             # 3. Clear cache
-            self._conv_cache.pop(seller_id, None)
+            if seller_id:
+                self._conv_cache.pop(seller_id, None)
             for k in [k for k in self._conv_cache if k.startswith("mua:")]:   # khoá phía mua cũng trỏ vào hội thoại vừa xoá
                 self._conv_cache.pop(k, None)
             log.info("Successfully reset user %s in Supabase", user_key)
