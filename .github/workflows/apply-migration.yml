@@ -254,7 +254,7 @@ jobs:
 
       # 08/10/2026: project production cũ bị xoá nhầm — dựng lại từng bước trên project mới rỗng.
       - name: Dựng lại DB (dung_lai)
-        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-du-an' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'nap-giao-lo' && inputs.dung_lai != 'cai-vps' && inputs.dung_lai != 'go-trang-thu' && inputs.dung_lai != 'ban-thu-mua' && inputs.dung_lai != 'ban-thu-ban' && inputs.dung_lai != 'ban-thu-dap-y' && inputs.dung_lai != 'ban-thu-luan' && inputs.dung_lai != 'doc-log-loi' && inputs.dung_lai != 'ban-thu-kb' && inputs.dung_lai != 'ban-thu-dc' && inputs.dung_lai != 'ban-thu-sau' && inputs.dung_lai != 'ban-thu-xa' && inputs.dung_lai != 'ban-thu-nhieu-can' && inputs.dung_lai != 'ban-thu-vm' && inputs.dung_lai != 'do-tim-nha' && inputs.dung_lai != 'nap-tin-mau' && inputs.dung_lai != 'nap-anh-mau' }}
+        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-du-an' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'nap-giao-lo' && inputs.dung_lai != 'cai-vps' && inputs.dung_lai != 'go-trang-thu' && inputs.dung_lai != 'ban-thu-mua' && inputs.dung_lai != 'ban-thu-ban' && inputs.dung_lai != 'ban-thu-dap-y' && inputs.dung_lai != 'ban-thu-luan' && inputs.dung_lai != 'doc-log-loi' && inputs.dung_lai != 'ban-thu-kb' && inputs.dung_lai != 'ban-thu-dc' && inputs.dung_lai != 'ban-thu-sau' && inputs.dung_lai != 'ban-thu-xa' && inputs.dung_lai != 'ban-thu-nhieu-can' && inputs.dung_lai != 'ban-thu-vm' && inputs.dung_lai != 'ban-thu-5-khach' && inputs.dung_lai != 'do-tim-nha' && inputs.dung_lai != 'nap-tin-mau' && inputs.dung_lai != 'nap-anh-mau' }}
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
           BUOC: ${{ inputs.dung_lai }}
