@@ -8830,6 +8830,7 @@ Chủ dự án 26/10 (kèm ảnh chat bản anh Luận: khách báo "hiện có 
 3. **Chỗ khác cùng lớp**: phía mua (`build_buyer_chat_system`) có luật khen riêng cấm "nhận xét tài chính" — CHƯA đổi; các lời nhắc cố định (`nhac_hoi_lai`, `nhac_xin_anh`) và lời nhận ảnh / link / tệp là câu mẫu, không đi qua luật này.
 4. **Chưa làm / hạn chế**: chưa thử model thật (sandbox không có khoá), nên chưa biết Haiku có đáp đúng ý nghĩa hay lại khen gượng; chưa so cùng kịch bản với bản anh Luận (chat bằng Sonnet-4-6, theo ảnh). Chủ dự án sẽ đo lại bằng trang chat thử / `ban-thu-ban` sau triển khai.
 5. **Kiểm**: `tests/test_dap_vao_y_nghia.py` — luật nằm trong luật khen một nguồn, ví dụ trong luật tự tuân điều cấm (không con số, không nhận định thị trường, ≤ 25 từ); đỏ khi gỡ bước này (đã thử gỡ: 2/3 ca đỏ).
+6. **Bắn thử (26/10, theo yêu cầu "thêm ca đó rồi bắn lại")**: `bot/tests/ban-thu-dap-y.sh` (ô `dung_lai` = `ban-thu-dap-y`) — chat kiểu ảnh chủ dự án (nhà phố Hoàng Hoa Thám, từng ý ngắn, sau bản nháp nói "hiện có HĐT 35 triệu"): in từng bong bóng, số từ / số dấu hỏi mỗi lượt, số lượt tới bản nháp; chỉ kiểm cứng điều tất định (đáp nhắc hợp đồng thuê, 35 triệu không ghi nhầm vào mức cọc / thời hạn hợp đồng, giá bán giữ nguyên, không nhận định thị trường / "Dạ" / `**` / "bạn"). Độ tự nhiên của lời đáp và lời khen do người đọc log chấm, không có điểm số.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
