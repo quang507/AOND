@@ -1037,6 +1037,11 @@ def _than_ban_tin(reply: str) -> tuple[str, str] | None:
     return (doan[0], "\n\n".join(doan[1:])) if len(doan) >= 2 else None
 
 
+def _la_ban_nhap(reply: str) -> bool:
+    """Lời bot là BẢN TIN rao (có dấu 📋, dòng mở bản nháp, hoặc bố cục tin có gạch đầu dòng) — không phải lời chat thường (SRS-5.1zzzzzzz204)."""
+    return bool(reply) and ("📋" in reply or _MO_DAU_RE.search(reply) is not None or _is_formatted_post(reply))
+
+
 def _ban_tin_da_trinh(conv: "Conversation") -> tuple[str, str] | None:
     """Bản tin 📋 cuối cùng bot gửi cho căn đang nói (từ lượt căn này bắt đầu) — chính bản khách vừa duyệt."""
     for t in reversed(conv.history[conv.active.history_start:]):
@@ -2288,6 +2293,23 @@ class Engine:
             raise LoiTraLoi("lời gửi khách rỗng")
 
         reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply), hem_phai_nhac if len(hem_phai_nhac) <= 4 else [])
+        la_nhap = _la_ban_nhap(reply)
+        if trinh_nhap and (not la_nhap or "zalo" not in reply.lower()):
+            # SRS-5.1zzzzzzz204: lượt trình bản nháp mà model đáp như chat thường (ban-thu-ban 26/10 Âu Cơ: đủ loại · vị trí · giá · 4 facet mà
+            # tám lượt không có bản tin, vì `listing_proposed` đã bật nên lượt sau không thử lại), hoặc bản tin thiếu câu mời nhắn Zalo (khối 4
+            # của AD_FORMAT; 2/8 bản nháp bắn thử bỏ nó). Gọi lại model MỘT lần; bản tin vẫn không ra thì tắt `listing_proposed` để lượt sau
+            # trình lại, thay vì nói phí khi khách chưa hề thấy bản tin; bản tin ra mà thiếu câu mời thì giữ bản cũ.
+            log.warning("Lượt trình bản nháp: %s — gọi lại model một lần", "không ra bản tin" if not la_nhap else "thiếu câu mời nhắn Zalo")
+            nhac = (system + "\n\nLƯỢT TRƯỚC CỦA EM CHƯA ĐẠT: " + ("chưa phải bản tin rao." if not la_nhap else "bản tin thiếu CÂU MỜI CHỐT nhắn Zalo (khối 4).")
+                    + " Lượt này BẮT BUỘC gửi đúng bản tin rao theo CẤU TRÚC BẮT BUỘC ở trên (dòng mở, tiêu đề, mô tả, gạch đầu dòng, câu mời "
+                    "chốt nhắn Zalo, câu hỏi khách duyệt) — không đáp bằng lời chat.")
+            with _do(conv, "tra_loi_lai"):
+                lai = self._provider.reply(nhac, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+            lai = self._soat_hinh_thuc(conv, nhac, _bo_markdown(lai), []) if lai else lai
+            if lai and _la_ban_nhap(lai) and "zalo" in lai.lower():
+                reply = lai
+            elif not la_nhap:
+                conv.listing_proposed = False
         if trinh_nhap:
             reply = cat_truoc_mo_dau(reply, customer_pronoun)
         if xin_sao:

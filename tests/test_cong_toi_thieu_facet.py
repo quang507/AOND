@@ -55,7 +55,9 @@ def test_chua_du_facet_thi_chua_ra_ban_nhap_va_khach_bao_dang_thi_ra():
 
 
 def test_ra_ban_nhap_thi_o_con_thieu_de_sau_khi_duyet():
+    from tests.test_xin_dang import _tra_ban_tin
     eng, spy = _eng({"operations": []})
+    _tra_ban_tin(spy)
     conv = eng.conversation("ct1")
     conv.prop.loai_hinh = "nha_pho"
     conv.prop.fields.update({**_MOI, "lo_gioi_hem": "hẻm 4m", "dien_tich_dat": "60m2", "ket_cau": "3 tầng"})

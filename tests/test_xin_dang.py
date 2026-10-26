@@ -9,6 +9,14 @@ DU_TOI_THIEU = {"dia_chi": "12 Lê Lợi", "duong": "Lê Lợi", "phuong": "Phư
                 "dien_tich_nha": "200m2", "gia": "9 tỷ"}
 
 
+def _tra_ban_tin(spy):
+    """Spy trả BẢN TIN như model thật ở lượt trình nháp (SRS-5.1zzzzzzz204: lượt trình nháp mà không ra bản tin thì bị gọi lại / không tính là đã trình)."""
+    def chat(system, messages, **k):
+        spy.systems.append(system)
+        return "📋 Em sẽ rao như vầy nhé anh chị:\n\nMời xem nhà Lê Lợi, chỉ 9 tỷ 🏠\n\nNhà đẹp.\n\n- Lê Lợi\n- 9 tỷ\n\nAnh/chị thấy bản tin này hấp dẫn chưa ạ?"
+    spy.chat = chat
+
+
 def _chuan_bi(eng, uk, fields):
     conv = eng.conversation(uk)
     conv.prop.loai_hinh = "nha_pho"
@@ -18,6 +26,7 @@ def _chuan_bi(eng, uk, fields):
 
 def test_du_toi_thieu_khach_bao_dang_thi_ra_ban_nhap_that():
     eng, spy = _eng({"operations": [], "xin_dang": "đăng đi"})
+    _tra_ban_tin(spy)
     conv = _chuan_bi(eng, "xd1", DU_TOI_THIEU)
     assert not conv.prop.summary_ready()                 # còn 2 facet chính trống (vị thế, pháp lý) — chưa tới ngưỡng tự soạn
     assert not conv.prop.thieu_toi_thieu()               # nhưng đủ sàn tối thiểu → khách bảo đăng thì soạn ngay (SRS-5.1zzzzzzz202)

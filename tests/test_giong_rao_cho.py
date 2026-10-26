@@ -67,3 +67,7 @@ def test_cac_kieu_loi_khong_viet_san_cau_hoan_chinh():
     for mo, cta in prompts.KIEU_LOI_TIN_RAO:
         assert "nhắn Zalo cho em ngay" not in mo + cta and '"' not in mo + cta
     assert len({m for m, _ in prompts.KIEU_LOI_TIN_RAO}) == len(prompts.KIEU_LOI_TIN_RAO) >= 5
+
+
+def test_cam_goi_nguoi_doc_la_ban():
+    assert 'CẤM "bạn"' in A      # bắn thử 26/10: "Bạn đang tìm nhà phố ở Q.8…" trong tin rao

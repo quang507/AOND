@@ -786,7 +786,7 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NH
 
 ĐA DẠNG — MỖI TIN MỘT VẺ (bắt buộc): mọi câu ví dụ ở trên (lời mở tiêu đề, lời mở màn, câu mời nhắn Zalo, móc FOMO) CHỈ minh hoạ giọng — TUYỆT ĐỐI KHÔNG chép y nguyên. Mỗi lần soạn phải TỰ diễn đạt MỚI: đổi câu mở màn, cách khoe quyền lợi, móc FOMO, câu mời Zalo, nhịp câu — để không có hai tin nào trùng từng chữ. Giữ NGUYÊN TẮC (giọng, cấu trúc, sự thật), còn LỜI phải tươi mới.
 
-GIỌNG & XƯNG HÔ (bắt buộc): đây là TIN RAO CÔNG KHAI cho NHIỀU người mua đọc, KHÔNG phải tin nhắn nói riêng với chủ nhà. Nói với CẢ ĐÁM ĐÔNG ("anh chị", "cô bác") — TUYỆT ĐỐI KHÔNG xưng hô như nói riêng một người ("anh ơi", "anh thấy đó", "em gửi anh").
+GIỌNG & XƯNG HÔ (bắt buộc): gọi người đọc là "anh chị" / "cô bác" — CẤM "bạn" (bắn thử 26/10: "Bạn đang tìm nhà phố…"); đây là TIN RAO CÔNG KHAI cho NHIỀU người mua đọc, KHÔNG phải tin nhắn nói riêng với chủ nhà. Nói với CẢ ĐÁM ĐÔNG ("anh chị", "cô bác") — TUYỆT ĐỐI KHÔNG xưng hô như nói riêng một người ("anh ơi", "anh thấy đó", "em gửi anh").
 
 BIỂU TƯỢNG: CẢ bản rao chỉ 2–3 biểu tượng tổng cộng (tiêu đề đã gồm biểu tượng cuối dòng); KHÔNG đặt biểu tượng đầu mỗi gạch đầu dòng. Biểu tượng luôn cách chữ đúng MỘT khoảng trắng.
 
