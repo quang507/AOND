@@ -420,8 +420,8 @@ def build_chat_system(
             f'Thông tin cần hỏi tiếp theo: "{nhan_o(next_field, prop)}" ({cau_hoi_o(next_field, prop)}). '
             "Hãy khen ngợi điểm mạnh của BĐS trước, rồi hỏi đúng 1 thông tin này một cách tự nhiên. CHỈ hỏi ý này — KHÔNG tự hỏi ý khác "
             "ngoài danh sách (thương lượng, lý do bán, thế chấp…); khách tự nói thì lưu vào tin, không hỏi lại."
-            + (" Ô này em ĐÃ hỏi ở lượt trước mà khách chưa trả lời: ĐỔI cách hỏi (ngắn hơn, hoặc gợi sẵn vài đáp án để khách chọn nhanh), "
-               "KHÔNG lặp lại nguyên câu cũ, và đừng nhắc là mình đã hỏi." if hoi_lai else "")
+            + (" Ô này em ĐÃ hỏi ở lượt trước mà khách chưa trả lời: ĐỔI cách hỏi (ngắn hơn, hoặc gợi sẵn vài đáp án để khách chọn nhanh — "
+               "riêng giá / diện tích / con số thì KHÔNG đưa số gợi ý), KHÔNG lặp lại nguyên câu cũ, và đừng nhắc là mình đã hỏi." if hoi_lai else "")
         )
     else:
         ask_line = (
@@ -453,6 +453,7 @@ GHI CHÚ NGHIỆP VỤ (để hiểu đúng và nói đúng — không phải lu
 - Tên đường và quận khách nói không khớp nhau (vd Phạm Văn Hai ở Tân Bình mà khách nói Bình Tân) thì hỏi xác nhận nhẹ một câu, đừng ghi mù quáng.
 - Tin hệ thống trong ngoặc vuông: "[Tin nhắn thoại của khách]: …" — trả lời như khách gõ chữ; "[Khách gửi tin nhắn thoại nhưng …]" — chưa nghe được, xin khách nói lại hoặc nhắn chữ; "[khách gửi sticker…]" — đáp ngắn thân thiện, không coi là đồng ý; "[khách thả cảm xúc …]" — tim / like là ưng.
 - Trạng thái tin: KHÔNG tự nói tin "đã đăng / đang hiển thị trên web" — chỉ nói theo khối trạng thái hệ thống đưa (nếu có).
+- Điều khách đã nói rõ (giá, địa chỉ, diện tích…) thì KHÔNG hỏi lại để xác nhận; KHÔNG nhắc tới tài liệu / bảng giá / ảnh khách chưa gửi.
 - Giá thị trường: em không có số liệu thị trường — không nêu giá khu vực, không nhận xét giá khách đưa cao / thấp.
 
 {SLANG_NOTES}
@@ -637,10 +638,12 @@ ICON/EMOJI (bắt buộc): CẢ bản rao chỉ dùng **2–3 icon** tổng cộ
 ĐỊNH DẠNG KHOẢNG CÁCH (bắt buộc): MỘT dòng trống NGĂN giữa các khối (tiêu đề / mô tả / gạch đầu dòng / câu mời chốt). Trong khối gạch đầu dòng thì KHÔNG chèn dòng trống giữa các gạch.
 
 NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN (giữ của mình — chống bịa, SRS-5.1zzzzzzz73): mọi ý trong tin phải có trong dữ liệu căn / lời chủ nhà. Câu bot
-từng HỎI hay từng KHEN trong lúc chat không phải dữ liệu. Dữ liệu chưa nói nhà ở hẻm hay mặt tiền thì KHÔNG viết "hẻm" / "HXH" / "mặt tiền";
+từng HỎI hay từng KHEN trong lúc chat không phải dữ liệu. KHÔNG thêm tiện ích quanh nhà (chợ, trường học, bệnh viện, siêu thị…) hay tình trạng nhà
+(mới, sạch sẽ, giữ gìn kỹ) khi chủ nhà không nói — "ở lâu rồi", "đang ở" không có nghĩa là nhà sạch / mới. Dữ liệu chưa nói nhà ở hẻm hay mặt tiền thì KHÔNG viết "hẻm" / "HXH" / "mặt tiền";
 căn hộ không có "mặt tiền". Không suy từ con số ra điều khác ("ngõ 3m" thì viết "ngõ 3m", không thêm "ô tô vào thuận tiện"). Tiêu đề phải
 có GIÁ. FOMO chỉ là lời thúc chung — KHÔNG khẳng định sự kiện không có trong dữ liệu ("đã có người đặt cọc", "căn cuối cùng"). Gọi
-người đọc là "anh chị" / "cô bác", KHÔNG "bạn". CẤM viết "đang cập nhật"."""
+người đọc là "anh chị" / "cô bác", KHÔNG "bạn". KHÔNG in tên khối ("Tiêu đề:", "Mô tả:", "Gạch đầu dòng:", "Câu mời chốt:") — viết thẳng
+nội dung. CẤM viết "đang cập nhật"."""
 
 
 # Vùng nhận rao (chủ dự án 20/10/2026: "hcm long an tây ninh bình dương đồng nai vũng tàu thôi"; SRS-5.1zzzzzzz86). Một nguồn cho

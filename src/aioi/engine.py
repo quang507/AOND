@@ -923,6 +923,41 @@ def _hem_mt_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
     return ra
 
 
+# SRS-5.1zzzzzzz208 (bắn thử 26/10 trên giọng anh Luận, chủ dự án: "Bịa chi tiết khách không nói" là lỗi): tin rao viết "ra vô chợ búa, trường học
+# gần gần đó" khi khách không nhắc, "nhà được giữ gìn kỹ, sạch sẽ" khi khách chỉ nói "ở lâu rồi". Cụm TIỆN ÍCH quanh nhà / TÌNH TRẠNG nhà có
+# trong bản tin mà không có trong lời khách của căn đang nói → gọi lại model. So chữ của chính bản tin, không đoán ý khách.
+_CHI_TIET_BIA_RE = re.compile(r"(?i)(gần chợ|chợ búa|trường học|bệnh viện|siêu thị|công viên|trung tâm thương mại|giữ gìn|sạch sẽ|mới xây|nhà mới)")
+
+
+def _chi_tiet_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
+    """Cụm tiện ích quanh nhà / tình trạng nhà trong bản tin 📋 (tiêu đề + mô tả + gạch) mà lời KHÁCH của căn đang nói không có (bỏ dấu).
+    Không có 📋 → []."""
+    if "📋" not in (reply or ""):
+        return []
+    tin = _than_ban_tin(reply)
+    phan = f"{tin[0]}\n{tin[1]}" if tin else reply
+    bat = {m.lower() for m in _CHI_TIET_BIA_RE.findall(phan)}
+    if not bat:
+        return []
+    bd = max(0, getattr(getattr(conv, "active", None), "history_start", 0) or 0)
+    khach = bo_dau(" ".join(t.content for t in conv.history[bd:] if t.role == "user" and t.content)).lower()
+    khach += " " + bo_dau(" ".join(str(v) for v in conv.prop.fields.values() if isinstance(v, str))).lower()
+    goc = {"gần chợ": "cho", "chợ búa": "cho", "trường học": "truong", "bệnh viện": "benh vien", "siêu thị": "sieu thi",
+           "công viên": "cong vien", "trung tâm thương mại": "trung tam thuong mai", "giữ gìn": "giu gin", "sạch sẽ": "sach se",
+           "mới xây": "moi xay", "nhà mới": "moi"}
+    return [t for t in sorted(bat) if not re.search(rf"(?<![a-z]){goc.get(t, bo_dau(t))}(?![a-z])", khach)]
+
+
+# Bản tin in nguyên tên khối của khuôn ("Gạch đầu dòng:", "Mô tả:" — bắn thử 26/10 tin rao đất). Chỉ soát đầu dòng của bản tin 📋.
+_NHAN_KHOI_RE = re.compile(r"(?im)^\s*(?:\d\)\s*)?(tiêu đề|mô tả|gạch đầu dòng|câu mời chốt|cta)\s*:")
+
+
+def _nhan_khoi_trong_tin(reply: str) -> list[str]:
+    if "📋" not in (reply or ""):
+        return []
+    return sorted({m.group(1).lower() for m in _NHAN_KHOI_RE.finditer(reply.split("📋", 1)[1])})
+
+
 def _dong_tieu_de(reply: str) -> str:
     """Dòng tiêu đề của bản tin 📋 — một chỗ cho mọi bước kiểm (SRS-5.1zzzzzzz109). Bản nháp đầu: dòng mở "📋 Em sẽ rao như vầy…:" rồi
     tiêu đề ở dòng chữ kế; bản cập nhật ghi tiêu đề NGAY trên dòng 📋 ("📋 Bản tin cập nhật: <tiêu đề>"). Bản trước luôn lấy dòng kế,
@@ -1072,8 +1107,10 @@ def _mo_dau_ghi_nhan(reply: str) -> bool:
     """Câu đầu của lời bot là câu ghi nhận ("Em ghi nhận…", "Em đã ghi rồi…", "Em lưu vào tin rồi…", "Em nắm rồi…") — kiểm HÌNH THỨC lời
     của chính bot, không đoán ý khách (SRS-5.1zzzzzzz118). Từ 22/10 (SRS-5.1zzzzzzz131, chủ dự án bỏ hẳn kiểu ghi nhận) MỌI lượt mở như vậy
     đều gọi lại model; "Em sửa giá còn…" (nói con số vừa sửa) không phải ghi nhận."""
-    return re.match(r"(?i)\s*em\s+(?:đã\s+)?(?:ghi\s+nhận|ghi\s+rồi|ghi\s+lại|ghi\s+vào|nhận\s+thông\s+tin|lưu\s+(?:vào|lại|rồi)|nắm\s+(?:rồi|được)|"
-                    r"thêm\s+vào\s+tin)", reply or "") is not None
+    # SRS-5.1zzzzzzz208 (bắn thử 26/10: "Em ghi nhận rồi ạ…", "Em ghi thêm diện tích sàn…", "Em lưu phường 9…", "Em lên thông tin địa chỉ…"):
+    # thêm "ghi thêm", "lưu …", "lên thông tin" cùng lớp câu ghi nhận.
+    return re.match(r"(?i)\s*em\s+(?:đã\s+)?(?:ghi\s+nhận|ghi\s+rồi|ghi\s+lại|ghi\s+vào|ghi\s+thêm|nhận\s+thông\s+tin|lưu(?![\wà-ỹđ])|"
+                    r"nắm\s+(?:rồi|được)|thêm\s+vào\s+tin|lên\s+thông\s+tin)", reply or "") is not None
 
 
 def _bo_markdown(reply: str) -> str:
@@ -1394,6 +1431,11 @@ class Engine:
         if hoan:
             conv.prop.hoan |= hoan
             missing = [x for x in missing if x not in hoan]
+        # SRS-5.1zzzzzzz208 (bắn thử Cao Lỗ 26/10: hỏi giá 3 lần trong 6 lượt vì giá là sàn tối thiểu, khách trả lời ý khác thì lượt sau quay lại
+        # giá): ô sàn (không để sau được) khách đã lờ một lần thì lùi xuống CUỐI — hỏi hết ý khác rồi mới hỏi lại.
+        lui = [x for x in missing if not conv.prop.hoan_duoc(x) and conv.lo.get(x, 0) >= 1]
+        if lui and len(lui) < len(missing):
+            missing = [x for x in missing if x not in lui] + lui
         if len(missing) > 1 and missing[0] == conv.o_vua_hoi:
             # SRS-5.1zzzzzzz79: hỏi theo cụm — khách lờ cả cụm thì lùi CẢ CỤM xuống cuối, không hỏi tiếp ô cùng cụm.
             cum = set(conv.prop.cum_hoi(missing[0], missing))
@@ -2395,14 +2437,22 @@ class Engine:
             ly_do.append("Bản tin rao vừa viết có chữ " + ", ".join(f"\"{x}\"" for x in bia_hem) + " nhưng chủ nhà CHƯA nói nhà ở hẻm / mặt tiền "
                          "(dữ liệu căn chưa có) — bỏ hẳn các chữ đó khỏi tiêu đề và mô tả, KHÔNG đoán loại đường vào; ví dụ trong luật chỉ để "
                          "minh hoạ cách viết gọn.")
+        bia_ct = _chi_tiet_khong_co_du_lieu(reply, conv)
+        if bia_ct:
+            ly_do.append("Bản tin rao vừa viết có " + ", ".join(f"\"{x}\"" for x in bia_ct) + " nhưng chủ nhà KHÔNG hề nói — bỏ hẳn các ý đó; "
+                         "mọi ý trong tin chỉ lấy từ dữ liệu căn / lời chủ nhà, không thêm tiện ích quanh nhà hay tình trạng nhà.")
+        nhan = _nhan_khoi_trong_tin(reply)
+        if nhan:
+            ly_do.append("Bản tin rao vừa viết in tên khối (" + ", ".join(f"\"{x}:\"" for x in nhan) + ") — tên khối trong BỐ CỤC chỉ để em biết "
+                         "thứ tự, KHÔNG in ra; viết thẳng nội dung.")
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
         if _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
             ly_do.append("Lời vừa viết gọi khách là \"mình\" (\"em xin lỗi mình\", \"Mình đang cần…\") — khách chưa xưng \"em\" nên KHÔNG dùng \"mình\" "
                          "gọi khách: gọi đúng cách khách xưng, chưa rõ thì \"anh/chị\". Chỉ \"nhà mình / căn mình\" khi nói về căn của khách.")
-        if _mo_dau_ghi_nhan(reply) and "📋" not in reply:
-            ly_do.append("Lời vừa viết mở đầu bằng câu ghi nhận (\"Em ghi nhận / Em ghi rồi / Em lưu rồi…\") — chủ dự án đã bỏ hẳn kiểu này (22/10): "
-                         "mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói (vị trí, diện tích, pháp lý, cách khách trả lời…) rồi hỏi câu kế.")
+        if _mo_dau_ghi_nhan(reply):   # SRS-5.1zzzzzzz208: cả câu dẫn trước bản tin cập nhật ("Em ghi nhận thêm sổ hồng… 📋 Bản tin cập nhật")
+            ly_do.append("Lời vừa viết mở đầu bằng câu ghi nhận (\"Em ghi nhận / Em ghi thêm / Em lưu…\") — chủ dự án đã bỏ hẳn kiểu này: "
+                         "mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói, hoặc vào thẳng nội dung (bản tin cập nhật thì mở thẳng bằng 📋).")
         if _tieu_de_can_ho_co_mt(reply, conv.prop):
             ly_do.append("Tiêu đề căn hộ có chữ \"MT\" — người mua đọc là mặt tiền; căn hộ không có mặt tiền, viết đủ tên dự án, không "
                          "viết tắt \"MT\".")
