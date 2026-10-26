@@ -37,7 +37,10 @@ command -v node >/dev/null && [ -x /usr/bin/node ] || ln -sf "$(command -v node)
 # 19/10/2026 (SRS-5.1zzzzzzz76): dấu vân code bridge TRƯỚC khi lấy code mới — bước 5 chỉ khởi động lại bridge khi nó đổi. Bridge tắt là
 # acc Zalo rời mạng; tin khách tới trong lúc đó không qua bridge. Lượt cài chỉ đổi lõi Python không có lý do tắt nó.
 van_bridge() { cat "$BR/index.mjs" "$BR/nhadat-bridge.service" "$BR/node_modules/zca-js/package.json" 2>/dev/null | sha256sum; }
+# SRS-5.1zzzzzzz210: số tư vấn người mua — cùng code, thêm file unit riêng.
+van_bridge_tv() { cat "$BR/index.mjs" "$BR/nhadat-bridge-tu-van.service" "$BR/node_modules/zca-js/package.json" 2>/dev/null | sha256sum; }
 VAN_TRUOC=$(van_bridge)
+VAN_TRUOC_TV=$(van_bridge_tv)
 
 buoc "2/5 user nhadat + $DIR"
 id nhadat >/dev/null 2>&1 || useradd -m -s /bin/bash nhadat
@@ -165,4 +168,24 @@ Không mở được link → mở cổng 8787 ở Firewall của nhà cung cấ
 Kiểm từ DB: select * from bot_health where who = 'bridge-zca'  → cột at phải nhích.
 ════════════════════════════════════════════════════════════════
 HD
+fi
+
+# SRS-5.1zzzzzzz210 (chủ dự án 26/10/2026: "đặt trên VPS"): bridge thứ hai cho SỐ TƯ VẤN người mua. Chưa có phiên thì service chờ quét QR —
+# mã hiện ở thẻ "Zalo tư vấn" trên /admin (dòng bridge_dang_nhap id = 2), KHÔNG in link ra đây (log workflow công khai). Quét bằng acc của
+# số tư vấn. Code không đổi và phiên còn thì không khởi động lại (giữ kết nối, như số ký gửi).
+buoc "thêm: systemd nhadat-bridge-tu-van (số tư vấn)"
+if [ -f "$BR/nhadat-bridge-tu-van.service" ]; then
+  cp "$BR/nhadat-bridge-tu-van.service" /etc/systemd/system/nhadat-bridge-tu-van.service
+  systemctl daemon-reload
+  systemctl enable nhadat-bridge-tu-van >/dev/null 2>&1
+  if [ -f "$BR/zalo-session-tu-van.json" ] && [ "$(van_bridge_tv)" = "$VAN_TRUOC_TV" ] && systemctl is-active --quiet nhadat-bridge-tu-van; then
+    xong "số tư vấn: code không đổi → không khởi động lại"
+  else
+    systemctl restart nhadat-bridge-tu-van
+    if [ -f "$BR/zalo-session-tu-van.json" ]; then
+      xong "số tư vấn: đã có phiên → service đang chạy (journalctl -u nhadat-bridge-tu-van -f)"
+    else
+      xong "số tư vấn: service đang chạy và CHỜ QUÉT QR — mở /admin, thẻ \"Zalo tư vấn\", quét bằng acc Zalo của số tư vấn"
+    fi
+  fi
 fi

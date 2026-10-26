@@ -518,6 +518,14 @@ def khoi_chao_lan_dau(assistant_name: str, mau: str) -> str:
             f"(đổi chữ cho tự nhiên, giữ ý, KHÔNG chép nguyên): \"{mau}\"\nKhách đã nói nhu cầu ngay trong tin đầu thì bỏ qua đoạn này.\n")
 
 
+def khoi_chao_tu_van(assistant_name: str, mau: str) -> str:
+    """Lượt ĐẦU ở số Zalo TƯ VẤN người mua (SRS-5.1zzzzzzz210): khách chỉ chào thì chào lại theo mẫu `cau_mau.chao_tu_van` rồi hỏi khách
+    đang tìm mua / thuê gì. Khách đã nói nhu cầu (kể cả muốn bán — nhắn nhầm số vẫn được trả lời) thì bỏ qua khối này."""
+    return ("\n\n=== LƯỢT ĐẦU TIÊN CỦA CUỘC CHAT (số tư vấn người mua) ===\nNếu khách CHỈ chào hỏi (kể cả chào bằng sticker hay biểu tượng), "
+            f"chưa nói nhu cầu: chào lại ngắn, giới thiệu em là {assistant_name}, rồi hỏi khách đang tìm mua hay thuê nhà đất gì. Mẫu câu "
+            f"(đổi chữ cho tự nhiên, giữ ý, KHÔNG chép nguyên): \"{mau}\"\nKhách đã nói nhu cầu ngay trong tin đầu thì bỏ qua đoạn này.\n")
+
+
 def build_greeting(assistant_name: str) -> str:
     """The opening message AOND sends before the user says anything."""
     return (

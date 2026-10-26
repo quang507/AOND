@@ -228,6 +228,8 @@ function BanLamViec() {
   const [tienModel, setTienModel] = useState<TienModel[]>([]);
   const [quota, setQuota] = useState<Quota | null>(null);
   const [zaloDn, setZaloDn] = useState<DangNhapZalo | null>(null);
+  // SRS-5.1zzzzzzz210: số Zalo thứ hai — tư vấn người mua (dòng bridge_dang_nhap id = 2).
+  const [zaloDnTv, setZaloDnTv] = useState<DangNhapZalo | null>(null);
   const [viec, setViec] = useState<Viec[]>([]);
   const [nguoiBan, setNguoiBan] = useState<NguoiBan[]>([]);
   const [hangCtv, setHangCtv] = useState<HangCtv[]>([]);
@@ -323,13 +325,17 @@ function BanLamViec() {
   // Tách khỏi `load()` để lúc chờ quét chỉ đọc lại đúng một dòng này.
   const taiDangNhap = async () => {
     const { data } = await supabase.from("bridge_dang_nhap")
-      .select("trang_thai, qr_png, yeu_cau_quet_lai, ghi_chu, cap_nhat").eq("id", 1).maybeSingle();
-    setZaloDn((data as DangNhapZalo | null) ?? null);
+      .select("id, trang_thai, qr_png, yeu_cau_quet_lai, ghi_chu, cap_nhat").in("id", [1, 2]);
+    const dong = (data ?? []) as (DangNhapZalo & { id: number })[];
+    setZaloDn(dong.find((d) => d.id === 1) ?? null);
+    setZaloDnTv(dong.find((d) => d.id === 2) ?? null);
   };
   // Đang chờ quét thì đọc lại mỗi 4 giây: mã QR đổi mỗi ~100 giây, và quét
   // xong phải thấy "đã đăng nhập" ngay chứ không phải tự bấm tải lại trang.
-  const theoDoiDn = role === "admin" && !!zaloDn &&
-    (zaloDn.trang_thai !== "dang_nhap" || zaloDn.yeu_cau_quet_lai);
+  // Số tư vấn chỉ theo dõi khi bridge của nó đang ở luồng QR — "chưa có tín hiệu" (bridge chưa cài) thì khỏi đọc lại mỗi 4 giây.
+  const theoDoiDn = role === "admin" && (
+    (!!zaloDn && (zaloDn.trang_thai !== "dang_nhap" || zaloDn.yeu_cau_quet_lai)) ||
+    (!!zaloDnTv && (["cho_quet", "da_quet", "het_han", "tu_choi"].includes(zaloDnTv.trang_thai) || zaloDnTv.yeu_cau_quet_lai)));
   useEffect(() => {
     if (!theoDoiDn) return;
     const t = setInterval(() => void taiDangNhap(), 4000);
@@ -369,12 +375,12 @@ function BanLamViec() {
     alert(`Đã khôi phục: ${d.sellers ?? 0} người bán · ${d.buyers ?? 0} khách mua · ${d.listings ?? 0} tin · ${d.messages ?? 0} tin nhắn.`);
     await load();
   };
-  const dangNhapLaiZalo = async () => {
+  const dangNhapLaiZalo = async (id: 1 | 2 = 1) => {
     if (!confirm(
-      "Đăng nhập lại acc Zalo clone?\n\nBridge sẽ bỏ phiên hiện tại (trong ≤ 5 phút) rồi hiện mã QR mới ở đây để quét. " +
-      "Trong lúc chờ quét, bot KHÔNG nhận và gửi được tin Zalo.",
+      `Đăng nhập lại acc Zalo ${id === 2 ? "số TƯ VẤN" : "số KÝ GỬI"}?\n\nBridge sẽ bỏ phiên hiện tại (trong ≤ 5 phút) rồi hiện mã QR mới ở đây để quét. ` +
+      "Trong lúc chờ quét, số này KHÔNG nhận và gửi được tin Zalo.",
     )) return;
-    const { error } = await supabase.rpc("yeu_cau_quet_lai_zalo");
+    const { error } = await supabase.rpc("yeu_cau_quet_lai_zalo", { p_id: id });
     if (error) { alert(`Không gửi được yêu cầu: ${error.message}`); return; }
     await taiDangNhap();
   };
@@ -857,7 +863,7 @@ function BanLamViec() {
           khuất dưới đáy tab Vận hành. */}
       {zaloChet && (
         <div className="mt-4 rounded-lg border-2 border-brand bg-white p-6">
-          <TheZaloClone dn={zaloDn} onDangNhapLai={dangNhapLaiZalo} />
+          <TheZaloClone dn={zaloDn} onDangNhapLai={() => dangNhapLaiZalo(1)} />
         </div>
       )}
 
@@ -1755,9 +1761,14 @@ function BanLamViec() {
               này đã nằm ở đầu trang (mọi tab), đừng hiện hai lần. */}
           {!zaloChet && (
             <div className="rounded-lg border border-line bg-white p-6">
-              <TheZaloClone dn={zaloDn} onDangNhapLai={dangNhapLaiZalo} />
+              <TheZaloClone dn={zaloDn} onDangNhapLai={() => dangNhapLaiZalo(1)} />
             </div>
           )}
+
+          {/* SRS-5.1zzzzzzz210: số Zalo tư vấn người mua — quét QR bằng acc của số đó. */}
+          <div className="rounded-lg border border-line bg-white p-6">
+            <TheZaloClone dn={zaloDnTv} onDangNhapLai={() => dangNhapLaiZalo(2)} tuVan />
+          </div>
 
           {/* Tình trạng Bot AI */}
           <div className="rounded-lg border border-line bg-white p-6 space-y-4">
@@ -2195,7 +2206,7 @@ const NHAN_DANG_NHAP: Record<string, string> = {
 // FR-203: ô đăng nhập acc Zalo clone. Ảnh QR là thứ nhạy (quét bằng acc nào
 // thì acc đó thành acc bot) — bảng chỉ admin đọc được, và trang này chỉ hiện
 // mã còn hạn.
-function TheZaloClone({ dn, onDangNhapLai }: { dn: DangNhapZalo | null; onDangNhapLai: () => void }) {
+function TheZaloClone({ dn, onDangNhapLai, tuVan = false }: { dn: DangNhapZalo | null; onDangNhapLai: () => void; tuVan?: boolean }) {
   const giay = dn ? Math.round((Date.now() - new Date(dn.cap_nhat).getTime()) / 1000) : null;
   // zca-js cho mỗi mã sống 100 giây rồi sinh mã mới. Ảnh cũ hơn thế nghĩa là
   // bridge đã thôi đẩy (chết giữa chừng) — đừng cho quét một mã đã chết.
@@ -2205,9 +2216,11 @@ function TheZaloClone({ dn, onDangNhapLai }: { dn: DangNhapZalo | null; onDangNh
     <div className="space-y-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-3">
         <div>
-          <h2 className="text-lg font-bold tracking-tight text-navy">Zalo clone</h2>
+          <h2 className="text-lg font-bold tracking-tight text-navy">{tuVan ? "Zalo tư vấn" : "Zalo ký gửi"}</h2>
           <p className="text-xs text-mute mt-0.5">
-            Acc Zalo cá nhân bot dùng để nhắn khách và chủ nhà khi chưa có OA. Phiên hết hạn thì quét lại mã QR ngay ở đây.
+            {tuVan
+              ? "Số Zalo tư vấn người mua. Lần đầu và khi phiên hết hạn: quét mã QR ở đây bằng acc của SỐ TƯ VẤN."
+              : "Số Zalo nhận ký gửi (số cũ) — cũng gửi tin nội bộ và nhắc người bán. Phiên hết hạn thì quét lại mã QR ngay ở đây."}
           </p>
         </div>
         <span
@@ -2228,7 +2241,7 @@ function TheZaloClone({ dn, onDangNhapLai }: { dn: DangNhapZalo | null; onDangNh
             className="h-56 w-56 border border-line bg-white p-2"
           />
           <ol className="list-decimal space-y-1 pl-5 text-sm text-navy">
-            <li>Mở Zalo trên điện thoại đang đăng nhập <b>acc clone</b> (đừng dùng acc chính).</li>
+            <li>Mở Zalo trên điện thoại đang đăng nhập <b>{tuVan ? "acc số tư vấn" : "acc số ký gửi"}</b> (đừng dùng acc chính, đừng quét nhầm số kia).</li>
             <li>Bấm biểu tượng QR ở thanh tìm kiếm, quét mã bên cạnh.</li>
             <li>Bấm xác nhận đăng nhập trên điện thoại.</li>
             <li className="text-mute">Mã tự đổi mỗi ~100 giây, trang này tự cập nhật.</li>

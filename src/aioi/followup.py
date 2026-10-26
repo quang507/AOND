@@ -26,6 +26,8 @@ log = logging.getLogger("aioi.followup")
 
 DEFAULT_FOLLOWUP_DELAY = int(os.environ.get("FOLLOWUP_DELAY_SECONDS", "300"))  # 300s = 5 minutes
 BRIDGE_SEND_URL = os.environ.get("BRIDGE_SEND_URL", "http://127.0.0.1:5005/send")
+# SRS-5.1zzzzzzz210: bridge thứ hai — số Zalo tư vấn người mua (`SO_NHAN=tu_van`, cổng SEND_PORT 5006). Tin nhắc người bán dưới đây vẫn đi số ký gửi.
+BRIDGE_SEND_URL_TU_VAN = os.environ.get("BRIDGE_SEND_URL_TU_VAN", "http://127.0.0.1:5006/send")
 
 
 _GOI = {"em": "Em", "anh": "Anh", "chi": "Chị"}
