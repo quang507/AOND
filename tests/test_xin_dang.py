@@ -19,7 +19,8 @@ def _chuan_bi(eng, uk, fields):
 def test_du_toi_thieu_khach_bao_dang_thi_ra_ban_nhap_that():
     eng, spy = _eng({"operations": [], "xin_dang": "đăng đi"})
     conv = _chuan_bi(eng, "xd1", DU_TOI_THIEU)
-    assert conv.prop.summary_ready()                     # SRS-5.1zzzzzzz200: loại + vị trí + giá là đủ; ô phụ hỏi sau bản nháp
+    assert not conv.prop.summary_ready()                 # còn 2 facet chính trống (vị thế, pháp lý) — chưa tới ngưỡng tự soạn
+    assert not conv.prop.thieu_toi_thieu()               # nhưng đủ sàn tối thiểu → khách bảo đăng thì soạn ngay (SRS-5.1zzzzzzz202)
     eng.handle("xd1", "ok em đăng đi")
     assert AD_FORMAT in spy.systems[-1] and "KHÁCH VỪA BẢO ĐĂNG" not in spy.systems[-1]
     assert conv.listing_proposed                         # bản nháp được ghi → khách duyệt lượt sau mới ghi được

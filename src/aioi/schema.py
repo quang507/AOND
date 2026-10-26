@@ -312,6 +312,10 @@ FACETS: list[tuple[str, str, list[str]]] = [
                                         "co_hdt", "thu_nhap_thue", "dong_tien_thue", "phi_quan_ly"]),
 ]
 FACET_LABEL: dict[str, str] = {fid: label for fid, label, _ in FACETS}
+# 4 facet chính quyết "đủ để SOẠN bài rao" (SRS-5.1zzzzzzz202, theo anh Luận ce11491): vị thế · kích thước đất · quy mô xây dựng · pháp lý.
+# Vị trí và giá đã nằm trong sàn tối thiểu (`minimal_missing`), nên không đếm ở đây.
+FACET_CHINH = ("vi_the", "dat", "cong_trinh", "phap_ly")
+FACET_TRONG_TOI_DA = 1      # còn ≤ 1 facet chính trống thì soạn bản nháp (≥ 3/4 facet có dữ liệu)
 _FACET_OF: dict[str, str] = {k: fid for fid, _, keys in FACETS for k in keys}
 
 
@@ -398,11 +402,27 @@ class Property:
         """Đủ tối thiểu để soạn bản nháp rao (loại hình + vị trí + giá)."""
         return not self.minimal_missing()
 
+    def facet_trong(self) -> list[str]:
+        """Facet chính còn TRỐNG: không có ô nào khách đã cho, và chưa bị để sau (mọi ô mong đợi của facet đều bị khách lờ 2 lần). Chỉ tính
+        facet mà loại BĐS này có ô mong đợi. Thứ tự theo `FACET_CHINH`."""
+        mong = self.expected_fields()
+        ra: list[str] = []
+        for fid in FACET_CHINH:
+            keys = next((ks for f, _, ks in FACETS if f == fid), [])
+            cua_loai = [k for k in mong if k in keys]
+            if not cua_loai or any(self._has(k) for k in keys):
+                continue
+            if all(k in self.hoan for k in cua_loai):
+                continue
+            ra.append(fid)
+        return ra
+
     def summary_ready(self) -> bool:
-        """Soạn bản nháp ngay khi đủ tối thiểu (bản anh Luận 26/10: rao sớm rồi hỏi thêm cho đầy đủ theo thời gian). Trước đây đòi đủ ô
-        nhận diện + ô bắt buộc theo loại + ≥ 75% ô — bắn thử 26/10 phải 6 lượt, hỏi diện tích sàn lặp bốn lượt liền. Phường / diện tích
-        là điều kiện lên WEB (trigger DB), không phải điều kiện soạn bản nháp: thiếu thì bot hỏi sau lượt duyệt (`khoi_trang_thai_web`)."""
-        return self.can_publish()
+        """Đủ để SOẠN bài rao (SRS-5.1zzzzzzz202, theo anh Luận ce11491 "hết hơi vội rao"): `can_publish` (loại hình + vị trí + giá) VÀ
+        còn ≤ `FACET_TRONG_TOI_DA` facet chính trống (≥ 3/4: vị thế / kích thước đất / quy mô xây dựng / pháp lý). Chưa đủ thì bot hỏi tiếp,
+        mỗi facet trống một câu. Khách bảo đăng sớm thì chỉ cần sàn tối thiểu (`thieu_toi_thieu`). Phường / diện tích là điều kiện lên WEB
+        (trigger DB), không phải điều kiện soạn bản nháp: thiếu thì bot hỏi sau lượt duyệt (`khoi_trang_thai_web`)."""
+        return self.can_publish() and len(self.facet_trong()) <= FACET_TRONG_TOI_DA
 
     def thieu_toi_thieu(self) -> list[str]:
         """Ô phải có trước MỌI bản nháp — chính là `minimal_missing` (khách bảo đăng sớm thì chỉ chờ các ô này)."""
@@ -469,9 +489,18 @@ class Property:
             else:
                 ra.insert(1 if ra[:1] == ["loai_hinh"] else 0, "phuong")
         ra = [x for x in ra if x not in HOI_SAU_KHI_RA_TIN and x not in self.hoan]
-        # Tối thiểu để rao hỏi TRƯỚC (loại hình → vị trí → giá), phường ngay sau giá, rồi mới tới các ô còn lại (SRS-5.1zzzzzzz200).
-        dau = [x for x in ("loai_hinh", "dia_chi", "du_an", "gia", "phuong") if x in ra]
-        return dau + [x for x in ra if x not in dau]
+        # Sàn tối thiểu hỏi TRƯỚC (loại hình → vị trí → giá); rồi MỖI facet chính còn trống MỘT ô (ô đứng đầu của facet theo thứ tự hỏi);
+        # rồi phường và các ô còn lại (SRS-5.1zzzzzzz200 / 202).
+        dau = [x for x in ("loai_hinh", "dia_chi", "du_an", "gia") if x in ra]
+        moi_facet: list[str] = []
+        for fid in self.facet_trong():
+            o = next((x for x in ra if x not in dau and facet_of(x) == fid), None)
+            if o:
+                moi_facet.append(o)
+        giua = dau + moi_facet
+        if "phuong" in ra and "phuong" not in giua:
+            giua.append("phuong")
+        return giua + [x for x in ra if x not in giua]
 
     def hoan_duoc(self, o: str) -> bool:
         """Ô được để sau bản nháp khi khách lờ 2 lần (SRS-5.1zzzzzzz80). Loại, chỗ (địa chỉ / dự án / mã căn), giá và ô bắt buộc thì

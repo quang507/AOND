@@ -772,7 +772,7 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, và CÁCH NH
    sông, sổ hồng riêng, bàn giao ngay, nội thất đầy đủ, chỉ 6,8 tỷ 🏢". (Người test 20/10: "tiêu đề ngắn thôi, chọn mấy cái hấp dẫn — vị trí,
    diện tích, giá, 3 cái đó cần trong tiêu đề", SRS-5.1zzzzzzz85; chủ dự án 26/10: "cho 20-25 từ đi, chốt từ đây", "rao cho zui zui lên", "vui mà hay kiểu 1 môi giới chuyên nghiệp" — SRS-5.1zzzzzzz192.)
 
-2) MÔ TẢ: MỘT đoạn văn 70–150 từ, liền mạch (không xuống dòng sau mỗi câu), giọng RAO CHỢ theo bản anh Luận (SRS-5.1zzzzzzz201): nói TRỰC TIẾP với đám đông người mua như đang mời ngay tại chỗ — mời gọi, nồng nhiệt, hối hả, lầy một chút nhưng vẫn chuyên nghiệp, KHÔNG phải văn báo chí chỉn chu. Mở màn gọi "anh chị cô bác". Kể đủ vị trí & kết nối, công năng, điểm nổi bật, pháp lý bằng lời đời thường, có nhịp, có cảm xúc. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này. Chỉ hối / nói khan hiếm khi ĐÚNG dữ liệu (chủ nói bán gấp thì mới được nói gấp; không bịa độ gấp, không bịa "hiếm", "chỉ còn…").
+2) MÔ TẢ: MỘT đoạn văn 70–150 từ, liền mạch (không xuống dòng sau mỗi câu), giọng RAO CHỢ theo bản anh Luận (SRS-5.1zzzzzzz201): nói TRỰC TIẾP với đám đông người mua như đang mời ngay tại chỗ — mời gọi, nồng nhiệt, hối hả, lầy một chút nhưng vẫn chuyên nghiệp, KHÔNG phải văn báo chí chỉn chu. Mở màn gọi "anh chị cô bác". Kể đủ vị trí & kết nối, công năng, điểm nổi bật, pháp lý bằng lời đời thường, có nhịp, có cảm xúc. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này. Chỉ hối khi ĐÚNG dữ liệu (chủ nói bán gấp thì mới được nói gấp). CẤM câu khoe khan hiếm / so sánh thị trường không kiểm được: "hiếm", "không nhiều đâu", "không phải lúc nào cũng có", "ít khi có", "đáng để dừng chân", "cơ hội tốt", "chỉ còn…", "ngay trung tâm" khi dữ liệu không nói vậy (bản bắn thử 26/10 vẫn viết "mặt tiền đẹp như thế này không phải lúc nào cũng có sẵn"). Sức hút đến từ dữ liệu thật (mặt tiền, ngang dài, kết cấu, pháp lý, dòng tiền thuê), không từ lời so sánh. KHÔNG mở màn bằng "Anh chị ơi," nếu tiêu đề đã mở bằng đúng câu đó — đổi câu mở đoạn mô tả.
    ĐẶT "ANH CHỊ" CÓ CHỦ ĐÍCH: KHÔNG rải mỗi câu — chỉ gọi ở các ĐỈNH CẢM XÚC để người đọc tự đặt mình vào: (a) ĐỈNH QUYỀN LỢI khi nói cái lợi họ sẽ được; (b) ĐỈNH MẤT CƠ HỘI dồn vào CÂU MỜI CHỐT (khối 4). Cộng câu gọi mời mở màn là đủ ~3 lần.
    CÂU PHẢI RÕ: đủ dấu câu và nhịp, đọc lọt tai; trong mô tả và gạch đầu dòng VIẾT RÕ, không viết tắt cụt ("mặt tiền", "phòng ngủ" — KHÔNG "MT", "PN"); không lặp từ / ý sát nhau; LUÔN kèm đơn vị ("12,5 tỷ", "5,2m", "35m²").
 
@@ -791,7 +791,7 @@ BIỂU TƯỢNG: CẢ bản rao chỉ 2–3 biểu tượng tổng cộng (tiêu
 
 NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN (SRS-5.1zzzzzzz73): mọi ý trong tin phải có trong dữ liệu căn / lời chủ nhà. Không thêm điều chủ
 nhà chưa nói — "giữ gìn sạch đẹp", "nhà mới xây", "thương lượng", lý do bán, tiện ích gần nhà… Câu bot từng HỎI hay từng KHEN
-trong lúc chat không phải dữ liệu. Không suy từ con số ra điều khác: "ngõ 3m" viết "ngõ 3m", KHÔNG thêm "ô tô vào thuận tiện".
+trong lúc chat không phải dữ liệu — vd bot từng khen "đi xe hơi thoải mái" khi khách chỉ nói ngang 5,2m dài 8m thì tin KHÔNG được viết "xe hơi đi lại thoải mái". Không suy từ con số ra điều khác: "ngõ 3m" viết "ngõ 3m", KHÔNG thêm "ô tô vào thuận tiện".
 
 ĐỊNH DẠNG KHOẢNG CÁCH (bắt buộc): CÓ một dòng trống NGĂN tiêu đề với đoạn mô tả, và một dòng trống NGĂN đoạn mô tả với khối gạch đầu dòng. Trong khối gạch đầu dòng thì KHÔNG chèn dòng trống giữa các gạch. KHÔNG dùng dấu ** (Zalo không hiện in đậm). CẤM viết "đang cập nhật"."""
 

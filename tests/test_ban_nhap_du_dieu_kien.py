@@ -16,15 +16,15 @@ def test_ca_that_hoi_duong_roi_phuong_roi_ket_cau():
     p = _nha()
     # 26/10 (SRS-5.1zzzzzzz200, theo anh Luận): "đủ rao" = loại hình + vị trí + giá. Câu đầu đã có cả ba nên ra bản nháp ngay;
     # phường / diện tích nhà / kết cấu không chặn nữa, chỉ được hỏi tiếp (phường trước, vì tin cần phường mới lên web).
-    assert p.minimal_missing() == [] and p.summary_ready()
-    assert p.missing_fields()[:2] == ["dia_chi", "phuong"]     # "hẻm Quận 5" chưa có tên đường → hỏi tên đường, rồi phường
+    assert p.minimal_missing() == [] and p.summary_ready()     # SRS-202: đủ sàn tối thiểu + chỉ trống 1 facet chính (quy mô xây dựng)
+    assert p.missing_fields()[:2] == ["dia_chi", "dien_tich_nha"]   # "hẻm Quận 5" chưa có tên đường → hỏi tên đường, rồi facet còn trống
     # thiếu giá hoặc vị trí → chưa rao, và hai ô đó luôn đứng đầu danh sách hỏi
     q = Property(loai_hinh="nha_pho", fields={"dia_chi": "Trần Hưng Đạo", "duong": "Trần Hưng Đạo", "dien_tich_dat": "60m2"})
     assert not q.summary_ready() and q.missing_fields()[0] == "gia"
     r = Property(loai_hinh="nha_pho", fields={"gia": "5 tỷ"})
     assert not r.summary_ready() and r.missing_fields()[0] == "dia_chi"
     p.update({"duong": "Trần Hưng Đạo", "dia_chi": "Trần Hưng Đạo"})
-    assert p.summary_ready() and p.missing_fields()[0] == "phuong"
+    assert p.summary_ready() and p.missing_fields()[0] == "dien_tich_nha" and "phuong" in p.missing_fields()
 
 
 def test_khong_doan_bang_tu_khoa_tren_dia_chi():

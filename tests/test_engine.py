@@ -259,8 +259,9 @@ def test_ambiguous_house_area_is_parked_not_dropped():
     # 19/10 (SRS-5.1zzzzzzz52, theo bản anh Luận): con số chưa rõ đất hay nhà KHÔNG tự thành diện tích đất; bot hỏi lại.
     assert conv.prop.fields.get("dien_tich_dat") is None
     assert conv.prop.fields.get("dien_tich_nha") is None
-    # SRS-5.1zzzzzzz200: câu đầu đã đủ loại + vị trí + giá nên ra bản nháp ngay; hai diện tích để sau khi khách duyệt (hoan), chưa mất.
-    assert conv.listing_proposed and {"dien_tich_dat", "dien_tich_nha"} <= conv.prop.hoan
+    # SRS-5.1zzzzzzz202: câu đầu đủ sàn tối thiểu nhưng còn 2 facet chính trống (công trình, pháp lý) nên chưa soạn bài; hai diện tích vẫn
+    # nằm trong danh sách hỏi, chưa mất.
+    assert not conv.listing_proposed and {"dien_tich_dat", "dien_tich_nha"} <= set(conv.prop.missing_fields())
 
 
 def test_chat_turn_is_not_a_listing_post_while_data_missing():
@@ -310,7 +311,9 @@ def test_loai_vi_tri_gia_la_du_rao_thieu_gia_thi_chua():
         "duong": "Trần Bình Trọng", "phuong": "Phường 1",  # ô AI tách từ địa chỉ (SRS-5.1zzzzzzz41)
         "gia": "10 tỷ",
     })
-    assert conv.prop.summary_ready()  # SRS-5.1zzzzzzz200: loại hình + vị trí + giá là đủ rao, diện tích hỏi sau
+    assert not conv.prop.summary_ready()   # SRS-5.1zzzzzzz202: đủ sàn tối thiểu nhưng cả 4 facet chính còn trống → chưa soạn bài
+    conv.prop.fields.update({"lo_gioi_hem": "hẻm 4m", "dien_tich_dat": "60m2", "ket_cau": "3 tầng"})
+    assert conv.prop.summary_ready()       # ≥ 3/4 facet có dữ liệu
 
 
 def test_draft_then_fee_only_after_approval():

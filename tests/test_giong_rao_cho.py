@@ -24,7 +24,7 @@ def test_tin_cong_khai_noi_voi_dam_dong_khong_noi_rieng_voi_chu_nha():
 
 def test_mo_ta_viet_ro_khong_viet_tat_va_giu_luat_that():
     assert 'KHÔNG "MT", "PN"' in A
-    assert "không bịa độ gấp" in A and "NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN" in A      # luật thật của mình không bị đè
+    assert "chủ nói bán gấp thì mới được nói gấp" in A and "NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN" in A      # luật thật của mình không bị đè
     assert "KHÔNG dùng dấu **" in A
 
 
@@ -32,3 +32,11 @@ def test_ban_nhap_va_ban_sua_deu_dung_mot_nguon():
     P = prompts.Property(loai_hinh="nha_pho", fields={"gia": "5 tỷ", "dia_chi": "12 Lê Lợi", "duong": "Lê Lợi"})
     for s in (prompts.build_listing_proposal_system("Lan", P), prompts.build_fee_followup_system("Lan", P)):
         assert "4) CÂU MỜI CHỐT" in s
+
+
+def test_cam_khoe_khan_hiem_va_chep_loi_khen_cua_bot():
+    # Bắn thử 26/10 (ban-thu-luan): tin viết "mặt tiền đẹp như thế này không phải lúc nào cũng có sẵn" và chép "xe hơi đi lại thoải mái"
+    # từ câu bot tự khen trong chat. Cùng lớp: lời khen / so sánh không có trong dữ liệu lọt vào tin.
+    assert '"không phải lúc nào cũng có"' in A and '"không nhiều đâu"' in A and "so sánh thị trường không kiểm được" in A
+    assert "xe hơi đi lại thoải mái" in A and "KHÔNG được viết" in A
+    assert "KHÔNG mở màn bằng" in A            # tiêu đề và mô tả không mở trùng một câu
