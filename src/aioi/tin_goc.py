@@ -11,7 +11,6 @@ from typing import Any, Iterable
 
 TOI_DA_CHU = 3000       # trần văn bản nhúng của phần này (`van_ban_nhung` cũng cắt 3000); giữ các tin MỚI nhất
 _SDT = re.compile(r"\d[\d .-]{7,}\d")
-_LENH = {"json", "/json", "xem json", "check json", "thong tin", "thong_tin"}
 # Từ đưa đẩy / xưng hô / đáp lời — bỏ ra hết mà không còn gì thì lượt đó không mang thông tin về căn ("ok em", "dạ vâng ạ", "cảm ơn anh").
 # Bot hỏi từng ô nên chủ nhà trả lời NGẮN ("giá 8,5 tỷ", "Nhà mặt tiền") — đó chính là thông tin, nên không lọc theo độ dài.
 _DUA_DAY = frozenset({"ok", "oke", "okay", "ừ", "ừm", "ừa", "um", "uh", "ờ", "dạ", "vâng", "vầng", "được", "rồi", "em", "anh", "chị", "chú", "cô",
@@ -22,7 +21,7 @@ _VN = timezone(timedelta(hours=7))
 
 def la_tin_co_thong_tin(text: str) -> bool:
     t = " ".join((text or "").split())
-    if t.startswith(("$$$$$", "[")) or t.lower() in _LENH or not any(c.isalpha() for c in t):
+    if t.startswith("[") or not any(c.isalpha() for c in t):
         return False
     tu = [w for w in (x.strip(".,!?;:…~").lower() for x in t.split()) if w and w not in _DUA_DAY]
     return len(tu) >= 2 or any(c.isdigit() for w in tu for c in w)

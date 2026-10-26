@@ -77,7 +77,7 @@ COT_THONG_SO = ("frontage_m", "length_m", "rear_width_m", "legal_area_m2", "buil
 _O_KHONG_PHAI_THONG_SO = {"dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "du_an", "ma_so_can", "unit_type", "gia",
                           "loai_hinh", "phap_ly", "hinh_anh", "ly_do_ban", "trang_thai", "phi_gui_xe", "yeu_cau_xe_hoi",
                           # SRS-5.1zzzzzzz116: chuyện thanh toán / thuế phí / hợp đồng thuê, không phải thông số căn
-                          "thue_phi", "thanh_toan", "hd_thue_con"}
+                          "thue_phi", "thanh_toan", "hd_thue_con", "thu_nhap_thue", "co_hdt"}
 # Nhãn ô là chữ CỦA MÌNH, không phải lời khách — mà `boc_thong_so` dò chữ khoá trên cả chuỗi "nhãn: giá trị". Soát 20/10/2026
 # (SRS-5.1zzzzzzz85: gọi boc_thong_so("<nhãn>: x") cho mọi nhãn FIELD_LABELS) — 10/74 nhãn tự bật một cột dù giá trị vô nghĩa: tin đất
 # "giá chỉ áp dụng trong tháng 10" lên web thành "thương lượng"; "vị trí mặt tiền hay hẻm: hẻm 3m" → mặt tiền; "căn thường hay căn

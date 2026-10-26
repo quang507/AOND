@@ -16,6 +16,10 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):  # pragma: no cover
         pass
 
+# Dòng chi phí đã có `$extract` / `$chat` ở dưới; tắt log stderr cùng nội dung của sổ token (so_token) để khỏi in lặp trong terminal.
+os.environ.setdefault("AIOI_LOG_COST", "0")
+
+from aioi import che_do_test, so_token
 from aioi.config import load_settings
 from aioi.delivery import chunk_reply, typing_delay
 from aioi.drive import make_folder_namer, make_resolver
@@ -160,6 +164,7 @@ def main() -> None:
             else:
                 print(f"   [⚠️ Lỗi khi xử lý tin nhắn — bỏ qua lượt này: {type(e).__name__}: {msg[:200]}]\n")
             continue
+        _in_chi_phi()   # `$extract` rồi `$chat` — in TRƯỚC lời bot, ngắn gọn y như bản anh Luận
         _emit_reply(result.assistant_name, result.reply)
         if result.captured:
             print(f"   [đã trích xuất: {', '.join(result.captured)}]")
@@ -169,6 +174,18 @@ def main() -> None:
         )
 
 
+def _in_chi_phi() -> None:
+    """Mỗi mục đích gọi model của lượt vừa rồi một dòng: `[ $extract · haiku-4-5 · in=1940 cache_r=6439 out=199 · ~$0.0036]` (extract trước, chat sau;
+    chỉ in ô cache khi khác 0; tên model bỏ tiền tố "claude-"). Không có gì để in (model giả / không gọi AI) thì im."""
+    thu_tu = {"extract": 0, "chat": 1}
+    for (nhan, model), so in sorted(so_token.tong_luot_theo_nhan().items(), key=lambda kv: (thu_tu.get(kv[0][0], 9), kv[0])):
+        usd = che_do_test.tien_usd(model, so)
+        cache = "".join(f" {k}={so[v]}" for k, v in (("cache_w", "p_cache_write"), ("cache_r", "p_cache_read")) if so[v])
+        ten = model[len("claude-"):] if model.startswith("claude-") else model
+        print(f"   [ ${nhan or 'goi'} · {ten} · in={so['p_in']}{cache} out={so['p_out']} · "
+              + (f"~${usd:.4f}" if usd is not None else "chưa rõ giá") + "]")
+
+
 def _dump_state(engine: Engine, user: str) -> None:
     """Everything AOND has BÓC TÁCH (extracted) for this seller: every listing in the basket
     (fields + status), the seller's own saved prices, and the SHARED project knowledge."""
@@ -176,16 +193,17 @@ def _dump_state(engine: Engine, user: str) -> None:
     print("\n======== AOND ĐÃ BÓC TÁCH ĐƯỢC ========")
     print(f"Người rao: {user}  |  loại khách: {conv.user_type.value}")
 
-    # 1) Rổ hàng — từng căn + trạng thái + mọi trường đã bắt
+    # 1) Rổ hàng — từng căn, nhóm theo FACET (vị trí / vị thế / đất / công trình / pháp lý / giá)
     print(f"\n── RỔ HÀNG ({len(conv.listings)} căn) ──")
     for i, li in enumerate(conv.listings, 1):
         active = " ← đang nhập" if li.listing_id == conv.active_listing_id else ""
-        print(f"  [{i}] {li.label()}{active}")
-        for k, v in li.prop.fields.items():
-            print(f"        {k}: {v}")
-        miss = li.prop.missing_fields()
-        if miss:
-            print(f"        (còn thiếu: {', '.join(miss)})")
+        thieu = li.prop.thieu_toi_thieu()
+        rao = "đủ để RAO ✓" if not thieu else f"CHƯA đủ rao (cần {', '.join(thieu)})"
+        print(f"  [{i}] {li.label()}{active}  — {rao}")
+        if li.prop.loai_hinh:
+            print(f"        loại hình: {li.prop.loai_hinh}")
+        for _fid, label, kv in li.prop.by_facet():
+            print(f"        • {label}: " + " · ".join(f"{k}={v}" for k, v in kv.items()))
 
     # 2) Giá RIÊNG người rao đã gửi (bảng giá) — không phải kiến thức chung
     if conv.price_book:

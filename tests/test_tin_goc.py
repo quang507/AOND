@@ -26,7 +26,7 @@ def test_giu_nguyen_van_khong_chuan_hoa_va_che_sdt():
 
 
 def test_bo_luot_khong_co_thong_tin():
-    for bo in ("ok em", "ừ", "dạ vâng ạ", "cảm ơn anh nhé", "$$$$$", "json", "[Khách gửi file/link >20MB: https://x]", "1234567890123456789012"):
+    for bo in ("ok em", "ừ", "dạ vâng ạ", "cảm ơn anh nhé", "[Khách gửi file/link >20MB: https://x]", "1234567890123456789012"):
         assert not la_tin_co_thong_tin(bo), bo
     # Bot hỏi từng ô nên câu trả lời ngắn LÀ thông tin (bắn thử ban-thu-ban: "giá 8,5 tỷ", "Nhà mặt tiền", "dt 4,5x11") — không được lọc theo độ dài
     for giu in ("giá 8,5 tỷ", "Nhà mặt tiền", "dt 4,5x11", "đã hoàn công đủ", "Quận 8", "nhà 4 tầng hẻm xe hơi gần chợ"):

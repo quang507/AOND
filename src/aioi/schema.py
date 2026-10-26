@@ -271,12 +271,15 @@ HOI_SAU_KHI_RA_TIN: set[str] = set()
 # của loại) thì bỏ. Thứ tự = thứ tự quan trọng (pháp lý trước — "phần quan trọng nhất").
 CUM_SAU_DANG: list[tuple[str, tuple[str, ...]]] = [
     ("phap_ly", ("dung_ten_so", "the_chap", "quy_hoach")),
+    ("hdt", ("thu_nhap_thue",)),   # SRS-5.1zzzzzzz197: chỉ khi AI đọc nhà đang có hợp đồng thuê (`co_hdt` = "co"), xem cum_sau_dang
     ("gia", ("thuong_luong", "ly_do_ban")),
     ("thue_phi", ("thue_phi", "thanh_toan")),
     ("xem_nha", ("gio_xem", "chia_khoa")),
     ("chi_tiet", ("huong", "nam_xay", "noi_that")),
 ]
-O_SAU_DANG: frozenset[str] = frozenset(k for _, cum in CUM_SAU_DANG for k in cum) | {"hd_thue_con"}
+# SRS-5.1zzzzzzz197 (chủ dự án 26/10/2026): `thu_nhap_thue` = tiền thuê nhà đang thu mỗi tháng khi TIN BÁN có hợp đồng thuê (HĐT). Không có ô
+# cờ "có HĐT": khách nói "đang cho thuê 35 triệu" thì AI ghi thẳng số tiền (có bằng chứng trong lời khách), `hd_thue_con` là hợp đồng còn bao lâu.
+O_SAU_DANG: frozenset[str] = frozenset(k for _, cum in CUM_SAU_DANG for k in cum) | {"hd_thue_con", "thu_nhap_thue", "co_hdt"}
 
 # Ô RIÊNG của chủ nhà (SRS-5.1zzzzzzz116): không ghi vào `listings.boc_tach` (đọc công khai qua API cho tin đang bán), không vào bản tin
 # rao — lưu bảng `listing_noi_bo` (chỉ admin đọc). Lý do bán / mức gấp cho người mua biết là mất thế thương lượng của chủ; ai đứng tên,
@@ -290,6 +293,28 @@ RENTAL_FIELDS: list[str] = [
     "truot_gia",     # Trượt giá
     "thoi_gian_fitout",  # Thời gian Fit-out
 ]
+
+
+# ── NHÓM HIỂN THỊ THEO FACET (26/10/2026, chủ dự án: "đổi các hàm để test như bên AOND của anh Luận", SRS-5.1zzzzzzz194) ───────────────────
+# CHỈ để xem dữ liệu đã bóc tách (`cli.py /state`, test): gom ô theo vài mặt người đọc hiểu ngay. KHÔNG đổi luật hỏi / ra bản nháp — bản
+# anh Luận (68129e4) dùng cùng nhóm này để quyết câu hỏi, bên mình vẫn theo CORE_FIELDS / CUM_HOI. Ô lạ rơi vào "Khác"; ô bắt đầu bằng "_"
+# (nội bộ) không hiển thị.
+FACETS: list[tuple[str, str, list[str]]] = [
+    ("vi_tri",     "Vị trí",           ["dia_chi", "du_an", "ma_so_can", "duong", "phuong", "quan", "xa", "tinh"]),
+    ("vi_the",     "Vị thế",           ["lo_gioi_hem", "huong", "view", "vi_the", "goc", "mat_tien_duong"]),
+    ("dat",        "Kích thước đất",   ["dien_tich", "dien_tich_dat", "kich_thuoc", "mat_tien", "no_hau"]),
+    ("cong_trinh", "Quy mô xây dựng",  ["ket_cau", "dien_tich_nha", "so_tang", "so_phong_ngu", "so_phong_thue", "noi_that"]),
+    ("phap_ly",    "Pháp lý",          ["phap_ly_hoan_cong", "nam_so", "quy_hoach", "thoi_han_su_dung"]),
+    ("gia_tm",     "Giá & thương mại", ["gia", "thuong_luong", "tinh_trang_ban_giao", "hien_trang_su_dung", "muc_coc", "thoi_han_hd",
+                                         "co_hdt", "thu_nhap_thue"]),
+]
+FACET_LABEL: dict[str, str] = {fid: label for fid, label, _ in FACETS}
+_FACET_OF: dict[str, str] = {k: fid for fid, _, keys in FACETS for k in keys}
+
+
+def facet_of(key: str) -> str:
+    """Ô thuộc facet nào ("khac" nếu chưa xếp)."""
+    return _FACET_OF.get(key, "khac")
 
 
 @dataclass
@@ -343,6 +368,16 @@ class Property:
         if self.is_rental:
             expected += RENTAL_FIELDS
         return expected
+
+    def by_facet(self) -> list[tuple[str, str, dict[str, str]]]:
+        """Dữ liệu đã bắt, gom theo facet: (facet_id, nhãn, {ô: giá trị}) cho facet có ít nhất một ô; ô lạ vào "Khác". Chỉ để hiển thị."""
+        buckets: dict[str, dict[str, str]] = {fid: {} for fid, _, _ in FACETS}
+        buckets["khac"] = {}
+        for k, v in self.fields.items():
+            if v and not k.startswith("_"):
+                buckets.setdefault(facet_of(k), {})[k] = v
+        labels = {**FACET_LABEL, "khac": "Khác"}
+        return [(fid, labels.get(fid, fid), b) for fid, b in buckets.items() if b]
 
     def summary_ready(self) -> bool:
         """True once the listing is "khá đầy đủ" — detailed enough to draft a real ad.
@@ -445,6 +480,8 @@ class Property:
                 continue
             if ma == "chi_tiet" and self.group is not PropertyGroup.RESIDENTIAL:
                 continue
+            if ma == "hdt" and self.fields.get("co_hdt") != "co":   # ô phân loại AI đọc theo nghĩa, không dò chữ khách (SRS-5.1zzzzzzz197)
+                continue
             con = [k for k in cum if k not in mong and not self._has(k) and f"sau:{k}" not in da_hoi]   # SRS-178: mỗi lượt một ô
             if con:
                 return ma, con
@@ -465,6 +502,8 @@ class Property:
             return bool(self.fields.get("ma_so_can") or self.fields.get("tang_toa"))
         if name == "dia_chi":     # có tên đường là đã định vị được — không hỏi lại "đường nào" (SRS-5.1zzzzzzz74; 19/10 hỏi 3 lần)
             return bool(self.fields.get("dia_chi") or self.fields.get("duong"))
+        if name in ("tinh_trang_ban_giao", "hien_trang_su_dung"):   # MỘT ý hiện trạng (đang ở / trống / đang cho thuê), hai tên ô (SRS-5.1zzzzzzz197)
+            return bool(self.fields.get("tinh_trang_ban_giao") or self.fields.get("hien_trang_su_dung"))
         if name == "phap_ly_hoan_cong":   # khách đã nói sổ (ô phap_ly) thì không hỏi riêng hoàn công (SRS-5.1zzzzzzz76)
             return bool(self.fields.get("phap_ly_hoan_cong") or self.fields.get("phap_ly"))
         if name == "dien_tich":   # BĐS một diện tích (chung cư / đất / công nghiệp)
@@ -486,6 +525,12 @@ class Property:
         for k, v in captured.items():
             if not v:
                 continue
+            # SRS-5.1zzzzzzz197: loại có ô bàn giao trong bộ câu hỏi (nhà phố…) thì "hiện trạng" CHỈ nằm ở `tinh_trang_ban_giao` — AI ghi
+            # `hien_trang_su_dung` (chủ nhà "nhà anh đang ở", chat Bình Hưng 26/10) cũng gom về đó, khỏi hai ô cùng một ý, bot hỏi lại.
+            if k == "hien_trang_su_dung" and "tinh_trang_ban_giao" in self.core_fields():
+                k = "tinh_trang_ban_giao"
+                if "hien_trang_su_dung" in self.fields:
+                    del self.fields["hien_trang_su_dung"]
             if k == "loai_hinh":
                 if self.loai_hinh != v:
                     self.loai_hinh = v

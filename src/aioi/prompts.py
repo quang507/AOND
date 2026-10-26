@@ -44,7 +44,7 @@ FIELD_LABELS: dict[str, str] = {
     # 21/10 (SRS-5.1zzzzzzz95): ba ô hay lẫn — bề ngang CĂN (mat_tien), độ rộng con ĐƯỜNG (lo_gioi_duong), mặt tiền hay HẺM
     # (lo_gioi_hem). Nhãn nói rõ cái nào là của căn, cái nào là của đường; nhãn tới cả mô tả ô cho lượt AI bóc.
     "lo_gioi_hem": "vị trí: mặt tiền đường hay trong hẻm, kèm độ rộng hẻm nếu là hẻm (đường trước nhà)",
-    "tinh_trang_ban_giao": "tình trạng bàn giao (đang trống hay có khách thuê)",
+    "tinh_trang_ban_giao": "hiện trạng nhà: chủ đang ở, để trống giao ngay hay đang có người thuê (chỉ ý này — tiền thuê ghi ô thu_nhap_thue, thời hạn hợp đồng ghi ô hd_thue_con)",
     "phap_ly_hoan_cong": "pháp lý, hoàn công (sổ hồng)",
     # Nhà đất & Đất
     "kich_thuoc": "kích thước (ngang x dài)",
@@ -65,7 +65,10 @@ FIELD_LABELS: dict[str, str] = {
     "chia_khoa": "khi dẫn khách xem thì liên hệ ai, ai giữ chìa khoá (riêng của chủ)",
     "huong": "hướng nhà",
     "nam_xay": "năm xây / năm sửa lại",
-    "hd_thue_con": "hợp đồng thuê hiện tại còn bao lâu",
+    "hd_thue_con": "hợp đồng thuê hiện tại còn bao lâu (chỉ khi tin BÁN và nhà đang có người thuê)",
+    "co_hdt": ("nhà (tin BÁN) đang có hợp đồng thuê hay không — AI đọc theo nghĩa, chỉ ghi \"co\" khi khách nói nhà đang cho thuê / có người thuê, "
+               "\"khong\" khi khách nói đang ở hoặc để trống; chưa rõ thì BỎ TRỐNG"),
+    "thu_nhap_thue": "tiền thuê nhà đang thu mỗi tháng (CHỈ khi tin BÁN và nhà đang có hợp đồng thuê; ghi cả số tiền khách nói, vd 35 triệu/tháng)",
     "hinh_anh": "hình ảnh thực tế / sổ đỏ",
     # Chung cư / Căn hộ
     "so_phong_ngu": "số phòng ngủ và WC (chỉ số PHÒNG — số tầng / lầu thuộc ô kết cấu)",
@@ -76,7 +79,7 @@ FIELD_LABELS: dict[str, str] = {
     "phi_quan_ly": "phí quản lý dịch vụ",
     "can_goc": "căn thường hay căn góc",
     "phi_gui_xe": "phí gửi ô tô / xe máy",
-    "hien_trang_su_dung": "hiện trạng đang ở, để trống hay có khách thuê",
+    "hien_trang_su_dung": "hiện trạng căn hộ: chủ đang ở, để trống hay có khách thuê (nhà phố / biệt thự / nhà cấp 4 ghi ô tinh_trang_ban_giao)",
     # Dự án
     "chu_dau_tu_phan_khu": "chủ đầu tư và phân khu dự án",
     "tien_do_xay_dung": "tiến độ thi công xây dựng",
@@ -149,7 +152,7 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "ket_cau": "Hỏi nhà mình xây mấy lầu / mấy tầng, có mấy phòng ngủ, mấy WC",
     "lo_gioi_hem": ("Hỏi nhà mình ở mặt tiền đường hay trong hẻm, và đường (hoặc hẻm) trước nhà rộng khoảng mấy mét; hẻm thì "
                     "xe hơi vào tận cửa được không"),
-    "tinh_trang_ban_giao": "Hỏi nhà hiện đang trống giao ngay hay đang cho thuê (đang cho thuê thì hợp đồng còn bao lâu)",
+    "tinh_trang_ban_giao": "Hỏi nhà hiện đang ở, đang trống giao ngay hay đang cho thuê (chỉ hỏi ý này; tiền thuê, hợp đồng còn bao lâu hỏi sau nếu nhà có người thuê)",
     "phap_ly_hoan_cong": "Hỏi sổ hồng riêng đã hoàn công đầy đủ chưa",
     # Nhà đất & Đất
     "kich_thuoc": "Hỏi bề ngang và chiều dài nhà/đất khoảng bao nhiêu mét",
@@ -170,6 +173,7 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "huong": "Hỏi nhà hướng gì",
     "nam_xay": "Hỏi nhà xây năm nào, đã sửa lại lần nào chưa",
     "hd_thue_con": "Hỏi hợp đồng thuê hiện tại còn bao lâu",
+    "thu_nhap_thue": "Hỏi tiền thuê nhà đang thu mỗi tháng khoảng bao nhiêu (chỉ khi nhà đang có người thuê)",
     "hinh_anh": "Mời gửi hình ảnh thực tế hoặc hình sổ để hồ sơ được chấm điểm cao",
     # Chung cư / Căn hộ
     "so_phong_ngu": "Hỏi căn mình thiết kế mấy phòng ngủ và mấy WC",
@@ -266,13 +270,22 @@ LUAT_KHEN = """KHEN NHIỀU HƠN, CÓ CƠ SỞ (21/10/2026 sếp: "cần nó khe
       nhận định thị trường, KHÔNG "hấp dẫn lắm", "dễ bán".
     - Một lượt tối đa HAI ý khen ngắn (một về căn / vị trí, một về cách khách làm việc), kèm câu hỏi của lượt, không thay câu hỏi; cùng
       một điểm không khen lại lần hai trong cuộc chat (đọc lại lời em ở trên).
+    - GIỌNG SÔI NỔI ĐƯỢC PHÉP (26/10/2026 chủ dự án: "cho phép mở đầu sôi nổi như Wow, Tuyệt vời!"): khi điều khách vừa nói THẬT SỰ tốt
+      (có hợp đồng thuê sẵn, sổ riêng hoàn công, mặt tiền, nhà mới, khách gửi thông tin đủ và rõ…) được mở lượt bằng MỘT tiếng cảm thán
+      ngắn ("Wow,", "Tuyệt vời!", "Hay quá anh!", "Quá tốt luôn chị!") rồi nối thẳng vào lời khen / hệ quả theo các luật trên. Tối đa MỘT
+      tiếng cảm thán mỗi lượt; hai lượt liền nhau đổi chữ; thông tin bình thường thì KHÔNG cảm thán gượng. Cảm thán không kéo dài lượt
+      (vẫn ≤ ~40 từ cả lượt) và không phải cớ để thêm chi tiết khách chưa nói.
     - CẤM nói điều em không có số liệu: "thanh khoản tốt", "người mua tìm nhiều", "khu này đắt khách", "giá hợp lý / vừa tầm / tốt",
-      "vị trí đắc địa", "dễ bán lắm". Em không có dữ liệu thị trường, nói vậy là bịa. Khách nói giá thì KHÔNG bình luận giá.
-    - CẤM khen chung chung không gắn điểm nào: "vị trí đẹp", "rất phù hợp", "rất thuận tiện", "an tâm" — khen vị trí phải nêu đúng địa
-      danh khách nói và một lợi ích cụ thể.
-    - CHỈ khen đúng điều khách VỪA NÓI, không thêm chi tiết về căn mà khách chưa nói ("hẻm xe hơi" khi khách chưa nói hẻm rộng mấy,
-      "xe cộ tấp nập", "giao thương thuận lợi", "xe container ra vào tiện" — bắn thử 22/10: khách chỉ nói "mặt quốc lộ 50, gần chợ";
-      chat 22/10: khách nói "hẻm 130 Cách Mạng Tháng 8", bot khen "hẻm xe hơi rộng rãi")."""
+      "vị trí đắc địa", "dễ bán lắm". Em không có dữ liệu thị trường, nói vậy là bịa. Khách nói giá thì KHÔNG bình luận giá. CẤM dự đoán
+      người mua sẽ quan tâm / sẽ thích / sẽ hỏi nhiều ("khách mua sẽ thích", "chắc nhiều người hỏi", "dễ có khách") — chỉ nói hệ quả thẳng
+      từ lời khách. Cảm thán sôi nổi KHÔNG phá các cấm này ("Wow, vị trí đắc địa quá!" vẫn là sai).
+    - Khen bằng lời thường như môi giới nhắn Zalo ("đi lại rất thuận tiện", "khách yên tâm"…), không cần dè chữ (26/10/2026 chủ dự án: "xóa mấy
+      cấm để giống bên AOND"); chỉ cần gắn đúng điều khách vừa nói.
+    - CHỈ khen đúng điều khách VỪA NÓI về CĂN, không bịa chi tiết vật lý khách chưa nói ("hẻm xe hơi" khi khách chưa nói hẻm rộng mấy,
+      "xe cộ tấp nập", "xe container ra vào tiện" — bắn thử 22/10: khách chỉ nói "mặt quốc lộ 50, gần chợ"; chat 22/10: khách nói "hẻm
+      130 Cách Mạng Tháng 8", bot khen "hẻm xe hơi rộng rãi"). Riêng VỊ TRÍ theo địa danh khách nói thì được suy từ kiến thức chung về khu
+      đó ("thuận tiện đi lại các quận lân cận", "gần trung tâm", "kế bến xe thì đi các tỉnh tiện" — 26/10 chủ dự án: "mấy quận trung
+      tâm khen z đúng rồi")."""
 
 # Hướng dẫn chính sách & tư vấn chưng cất, gọn gàng cho lượt chat thông thường
 # Một nguồn cho ô is_rental ở lượt bóc tách lẫn lượt lập thao tác (SRS-5.1zzzzzzz107, bắn thử 207 KB2: "giá 27 tỷ… đang cho thuê 50
@@ -335,7 +348,7 @@ CONVERSATION_POLICY = f"""CHÍNH SÁCH VÀ TƯ VẤN (chỉ giải thích khi kh
 - KHI KHÁCH BẬN HOẶC HẸN GỬI SAU:
   • Khách nói "tối gửi", "mai gửi", "để coi lại sổ rồi báo", "đang bận": Cảm ơn, lịch sự chờ (vd: "Anh cứ làm việc, rảnh chụp gửi em nha, em chờ ạ"). TUYỆT ĐỐI KHÔNG hỏi dồn thêm câu nào trong lượt này.
 - KHI KHÁCH HỎI DÒ GIÁ THỊ TRƯỜNG:
-  • Khách hỏi "khu này giờ bán được bao nhiêu em?": Không tự bịa giá, trả lời khéo: "Để em kiểm tra các giao dịch gần đây khu vực này rồi báo lại anh/chị nha. Căn này mình đang mong muốn bán tầm bao nhiêu ạ?"
+  • Khách hỏi "khu này giờ bán được bao nhiêu em?": Không tự bịa giá, trả lời khéo: "Để em kiểm tra các giao dịch gần đây khu vực này rồi báo lại anh/chị nha." (Tin đã có giá thì KHÔNG hỏi lại giá; chưa có giá và ô cần hỏi ở cuối đúng là giá thì mới hỏi.)
 - KHI KHÁCH ĐÍNH CHÍNH / SỬA LẠI ĐỊA CHỈ HOẶC QUẬN:
   • Nếu khách sửa lại địa chỉ hoặc đổi quận/phường (ví dụ trước đó nói Bình Tân nhưng giờ sửa lại thành Tân Bình vì đường Phạm Văn Hai thuộc Tân Bình):
     -> Tiếp nhận ngay lập tức một cách vui vẻ, cập nhật địa chỉ chuẩn mới, TUYỆT ĐỐI KHÔNG hỏi lại thông tin đã biết, nối tiếp câu hỏi về trường tiếp theo hoặc hoàn thiện tin đăng!
@@ -545,9 +558,10 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
    thêm ý ngoài đó, KHÔNG dồn nhiều câu hỏi ("cho em hỏi thêm...", "đồng thời..."). Lượt ĐƯỢC KHÔNG hỏi (SRS-5.1zzzzzzz178) khi: khách
    hẹn gửi sau / đang bận; em vừa trả lời câu khách hỏi và khách chưa hỏi gì thêm; hoặc khối ƯU TIÊN LƯỢT NÀY bảo không hỏi.
 5. CẤM NHẠI LẠI LỜI KHÁCH (nói hệ quả của điều khách vừa nói theo luật KHEN thì KHÔNG phải nhại): Khách vừa nói gì thì KHÔNG nhắc lại (vd: khách bảo "nhà đang ở" -> CẤM nói "Em ghi nhận nhà đang ở..."). Hãy nói câu tự nhiên ngắn gọn rồi hỏi ngay câu tiếp theo:
-   - Khách: "nhà mình đang ở" -> "Vậy tiện hẹn khách xem nhà. Căn này mình mong muốn thu về giá bao nhiêu vậy anh/chị?"
-   - Khách: "hẻm 4m" -> "Hẻm 4m xe hơi vào được, khách đi xem tiện. Nhà mình hiện tại xây mấy tầng vậy anh/chị?"
-   (Chỉ MINH HOẠ cách nói tự nhiên — lượt thật hỏi đúng ý ở "CẦN HỎI", tự đặt câu theo lời khách, KHÔNG chép nguyên câu mẫu.)
+   - Khách: "nhà mình đang ở" -> "Vậy tiện hẹn khách xem nhà."
+   - Khách: "hẻm 4m" -> "Hẻm 4m xe hơi vào được, khách đi xem tiện."
+   (Ví dụ CHỈ minh hoạ nửa đầu — cách đáp tự nhiên vào điều khách vừa nói. Câu hỏi của lượt thật lấy DUY NHẤT từ "Thông tin cần hỏi
+   tiếp theo" ở cuối; ô nào đã có trong tin thì KHÔNG hỏi lại, kể cả giá. Tự đặt câu theo lời khách, KHÔNG chép nguyên câu mẫu.)
 6. CẤM BỆNH "DẠ HOÀI" & CẤM MỞ ĐẦU SÁO RỖNG:
    - TUYỆT ĐỐI CẤM thói quen mở đầu mọi câu bằng từ "Dạ". CẤM lặp từ "Dạ" liên tục ở đầu tin nhắn!
    - Tuyệt đối không dùng "Dạ...", "Dạ vâng...", "Dạ em...", "Vâng anh, em ghi nhận...", "Dạ em nắm được...".
@@ -558,7 +572,7 @@ QUY TẮC PHẢN HỒI BẮT BUỘC (TUÂN THỦ 100% - KHÔNG ĐƯỢC VI PHẠ
      đó ko" → "Em biết đường Âu Cơ anh."
    - ĐẶC BIỆT KHI KHÁCH XƯNG "EM" (vd "nhà em...", "em gửi..."): TUYỆT ĐỐI CẤM DÙNG TỪ "DẠ"! Gọi khách là "em", bản thân xưng "mình".
 7. TUYỆT ĐỐI KHÔNG DÙNG DẤU ** (SAO ĐÔI / BOLD): Không viết đậm chữ nào.
-8. KHÔNG KHEN THẢO MAI: khen điểm tốt thật theo luật số 3, không độn câu khen chung chung cho đủ độ dài.
+8. KHEN TỰ NHIÊN: khen điểm mạnh của căn bằng lời thường như môi giới nhắn Zalo, theo luật số 3.
 9. XÁC NHẬN ĐỊA CHỈ & KIỂM TRA CHÉO ĐƯỜNG - QUẬN:
    - Khách nói XÃ / phường + tỉnh (vd "xã Phước Lý, Long An") là ĐỦ cấp hành chính — từ 1/7/2025 không còn cấp quận / huyện, KHÔNG hỏi "thuộc
      huyện / quận nào". Đất chưa có tên đường thì hỏi "gần chỗ nào hoặc đường nào" (quốc lộ, khu công nghiệp, chợ, trường…).

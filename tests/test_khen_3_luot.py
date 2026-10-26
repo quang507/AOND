@@ -1,6 +1,6 @@
 """22/10/2026 (SRS-5.1zzzzzzz131 bản 2). Lê Quang: "100% khen là 3 lần khách đưa thông tin đầu tiên thì 100% khen hết". Lõi đếm lượt khách CHO
 THÔNG TIN (lượt ghi được ô), chèn khối "LƯỢT THÔNG TIN THỨ N" cho model: N ≤ 3 bắt buộc khen, N ≥ 4 khen khi có điểm tốt. Đỏ khi lượt không ghi ô
-cũng bị đếm, khi "$$$$$" không về 0, khi số đếm mất sau khởi động lại, hay khi khối sai nhánh."""
+cũng bị đếm, khi số đếm mất sau khởi động lại, hay khi khối sai nhánh."""
 from aioi.engine import SqliteConversationStore
 from aioi.prompts import khoi_khen_theo_luot
 from tests.test_doc_y_khach import _eng
@@ -31,7 +31,7 @@ def test_dem_luot_cho_thong_tin_va_khoi_vao_prompt():
     assert "LƯỢT THÔNG TIN THỨ 4 CỦA KHÁCH (đã qua 3 lượt đầu)" in spy.systems[-1]
 
 
-def test_lenh_lam_moi_ve_0_va_song_qua_khoi_dong_lai(tmp_path):
+def test_dem_luot_song_qua_khoi_dong_lai(tmp_path):
     kho = SqliteConversationStore(str(tmp_path / "c.db"))
     eng, spy = _eng(_plan("gia", "6 tỷ", "6 tỷ"))
     eng._convstore = kho
@@ -39,5 +39,4 @@ def test_lenh_lam_moi_ve_0_va_song_qua_khoi_dong_lai(tmp_path):
     assert eng.conversation("k4").so_luot_thong_tin == 1                     # cùng giá trị đã có → không phải ô mới
     spy.plan = _plan("ket_cau", "3 tầng", "3 tầng"); eng.handle("k4", "3 tầng")
     assert kho.load("k4").so_luot_thong_tin == 2 and SqliteConversationStore(str(tmp_path / "c.db")).load("k4").so_luot_thong_tin == 2
-    eng.handle("k4", "$$$$$")
-    assert eng.conversation("k4").so_luot_thong_tin == 0 and kho.load("k4").so_luot_thong_tin == 0
+
