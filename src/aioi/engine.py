@@ -1445,7 +1445,7 @@ class Engine:
         conv.cum_vua_hoi = conv.prop.cum_hoi(conv.o_vua_hoi, missing)
         # Chỉ TÊN ô (không giá trị khách) — để truy được "bot hỏi lặp" từ journal (SRS-5.1zzzzzzz90: chat tester 20/10 hỏi một câu 3
         # lần mà không có gì cho biết lượt nào hệ thống chọn ô nào).
-        log.info("ô hỏi: %s · cụm: %s · lờ: %s · để sau: %s", conv.o_vua_hoi, conv.cum_vua_hoi,
+        log.warning("ô hỏi: %s · cụm: %s · lờ: %s · để sau: %s", conv.o_vua_hoi, conv.cum_vua_hoi,
                  {k: v for k, v in conv.lo.items() if v}, sorted(conv.prop.hoan))
         return conv.o_vua_hoi
 
@@ -2169,6 +2169,7 @@ class Engine:
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured, now)
 
+        o_truoc = conv.o_vua_hoi   # ô lượt trước hỏi — khách chưa trả lời mà hệ thống đổi ô thì dặn model đừng hỏi lại (SRS-5.1zzzzzzz208)
         next_field = self._o_hoi_ke(conv, conv.prop.missing_fields())
         thieu = conv.prop.missing_fields()   # sau _o_hoi_ke: ô khách lờ 2 lần đã để sau (SRS-5.1zzzzzzz80)
         cum_hoi = conv.prop.cum_hoi(next_field, thieu)   # SRS-5.1zzzzzzz79: các ô hỏi gộp một câu lượt này
@@ -2200,6 +2201,7 @@ class Engine:
             system = build_chat_system(
                 conv.assistant.name, conv.prop, next_field, conv.user_type, project_block, cum=cum_hoi,
                 hoi_lai=bool(next_field and conv.lo.get(next_field, 0) >= 1),   # SRS-5.1zzzzzzz200: đừng nhắn trùng câu cũ
+                o_bo_qua=o_truoc if o_truoc in thieu else None,
             ) + khoi_xin_dang(toi_thieu, conv.prop)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
@@ -2472,7 +2474,8 @@ class Engine:
                          "giá mỗi m², số phòng, số tầng CHỈ được lấy đúng số ở dòng của căn (hoặc số khách đã nói), không ước lượng, không "
                          "làm tròn khác, không cộng gộp.")
         if ly_do:
-            log.warning("Lời bot lệch luật hình thức (%d lý do) — gọi lại model", len(ly_do))
+            # Đầu mỗi lý do (không lời khách) để truy lưới nào kích — bắn thử 368 chỉ thấy "1 lý do", không biết lý do gì.
+            log.warning("Lời bot lệch luật hình thức (%d lý do: %s) — gọi lại model", len(ly_do), " | ".join(x[:40] for x in ly_do))
             with _do(conv, "tra_loi_lai"):
                 lai = self._provider.reply(
                     system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\n" + " ".join(ly_do) + " Viết lại TOÀN BỘ lượt trả lời.\n",

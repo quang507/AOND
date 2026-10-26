@@ -396,6 +396,7 @@ def build_chat_system(
     project_block: str = "",
     cum: list[str] | None = None,
     hoi_lai: bool = False,
+    o_bo_qua: str | None = None,
 ) -> str:
     """Lượt chat người bán — GIỌNG theo bản anh Luận (`luan8560/AOND` 207a145, `build_chat_system`), SRS-5.1zzzzzzz207 (chủ dự án 26/10:
     "lấy 100% của bên aond… cái nào cần gỡ bớt cho tự do thì gỡ, nhưng phần bóc tách… thì ko lấy"). Thêm vào khuôn anh Luận chỉ phần
@@ -422,6 +423,10 @@ def build_chat_system(
             "ngoài danh sách (thương lượng, lý do bán, thế chấp…); khách tự nói thì lưu vào tin, không hỏi lại."
             + (" Ô này em ĐÃ hỏi ở lượt trước mà khách chưa trả lời: ĐỔI cách hỏi (ngắn hơn, hoặc gợi sẵn vài đáp án để khách chọn nhanh — "
                "riêng giá / diện tích / con số thì KHÔNG đưa số gợi ý), KHÔNG lặp lại nguyên câu cũ, và đừng nhắc là mình đã hỏi." if hoi_lai else "")
+            # SRS-5.1zzzzzzz208 (bắn thử 368 Cao Lỗ: hệ thống đã chuyển sang hỏi pháp lý, model vẫn hỏi lại diện tích sàn vừa hỏi): nói
+            # thẳng ô vừa hỏi mà khách chưa trả lời là ô KHÔNG hỏi lượt này — model hay "nối" câu hỏi của lượt trước.
+            + (f' Lượt trước em hỏi "{nhan_o(o_bo_qua, prop)}" mà khách chưa trả lời: lượt này KHÔNG hỏi lại ý đó (hệ thống hỏi sau).'
+               if o_bo_qua and o_bo_qua != next_field else "")
         )
     else:
         ask_line = (
@@ -453,6 +458,7 @@ GHI CHÚ NGHIỆP VỤ (để hiểu đúng và nói đúng — không phải lu
 - Tên đường và quận khách nói không khớp nhau (vd Phạm Văn Hai ở Tân Bình mà khách nói Bình Tân) thì hỏi xác nhận nhẹ một câu, đừng ghi mù quáng.
 - Tin hệ thống trong ngoặc vuông: "[Tin nhắn thoại của khách]: …" — trả lời như khách gõ chữ; "[Khách gửi tin nhắn thoại nhưng …]" — chưa nghe được, xin khách nói lại hoặc nhắn chữ; "[khách gửi sticker…]" — đáp ngắn thân thiện, không coi là đồng ý; "[khách thả cảm xúc …]" — tim / like là ưng.
 - Trạng thái tin: KHÔNG tự nói tin "đã đăng / đang hiển thị trên web" — chỉ nói theo khối trạng thái hệ thống đưa (nếu có).
+- Không mở lượt bằng câu ghi nhận ("Em ghi nhận…", "Em lưu…", "Em ghi thêm…") — hệ thống tự lưu, khách không cần nghe.
 - Điều khách đã nói rõ (giá, địa chỉ, diện tích…) thì KHÔNG hỏi lại để xác nhận; KHÔNG nhắc tới tài liệu / bảng giá / ảnh khách chưa gửi.
 - Giá thị trường: em không có số liệu thị trường — không nêu giá khu vực, không nhận xét giá khách đưa cao / thấp.
 

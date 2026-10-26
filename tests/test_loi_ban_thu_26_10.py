@@ -68,3 +68,42 @@ def test_hoi_lai_khong_goi_y_con_so_va_khong_hoi_lai_dieu_da_noi():
     assert "KHÔNG đưa số gợi ý" in s
     assert "KHÔNG hỏi lại để xác nhận" in s and "bảng giá" in s
     assert "KHÔNG in tên khối" in prompts.AD_FORMAT and "giữ gìn kỹ" in prompts.AD_FORMAT
+
+
+def test_o_vua_hoi_khach_chua_tra_loi_thi_dan_model_khong_hoi_lai():
+    """Bắn thử 368 Cao Lỗ: lượt "1 trệt 3 lầu" hệ thống chọn hỏi pháp lý mà model vẫn hỏi lại diện tích sàn — lời dặn phải nói ô đó KHÔNG hỏi."""
+    p = Property()
+    p.loai_hinh = "nha_pho"
+    s = prompts.build_chat_system("Th•ái", p, "phap_ly_hoan_cong", o_bo_qua="dien_tich_nha")
+    dong = s.split(prompts.RANH_GIOI_CACHE, 1)[1]
+    assert "KHÔNG hỏi lại ý đó" in dong and prompts.nhan_o("dien_tich_nha", p) in dong
+    assert "KHÔNG hỏi lại ý đó" not in prompts.build_chat_system("Th•ái", p, "dien_tich_nha", o_bo_qua="dien_tich_nha")
+
+
+def test_engine_truyen_o_luot_truoc_khi_doi_o():
+    """Đường thật qua Engine.handle: lượt trước hỏi diện tích sàn, khách nói kết cấu (không trả lời sàn) → hệ thống đổi ô, system gửi model
+    phải dặn KHÔNG hỏi lại diện tích sàn."""
+    class _Bat:
+        def __init__(self):
+            self.he = []
+
+        def extract(self, *a, **k):
+            return {"operations": []}
+
+        def reply(self, system, messages, **k):
+            self.he.append(system)
+            return "Nhà 1 trệt 3 lầu rộng rãi ạ. Nhà mình có sổ chưa anh?"
+
+        chat = reply
+
+    bat = _Bat()
+    eng = Engine(bat)
+    c = eng.conversation("k-208b")
+    c.prop.loai_hinh = "nha_pho"
+    c.prop.fields.update({"dia_chi": "Cao Lỗ, Phường Chánh Hưng", "duong": "Cao Lỗ", "phuong": "Phường Chánh Hưng", "lo_gioi_hem": "mặt tiền",
+                          "dien_tich_dat": "4,5x11", "ket_cau": "1 trệt 3 lầu"})
+    c.o_vua_hoi, c.cum_vua_hoi = "dien_tich_nha", ["dien_tich_nha"]
+    eng.handle("k-208b", "Nhà xây 1 trệt 3 lầu")
+    dong = bat.he[0].split(prompts.RANH_GIOI_CACHE, 1)[1]
+    assert c.o_vua_hoi != "dien_tich_nha"
+    assert "KHÔNG hỏi lại ý đó" in dong and prompts.nhan_o("dien_tich_nha", c.prop) in dong
