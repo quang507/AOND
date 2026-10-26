@@ -40,4 +40,4 @@ trap don EXIT
 for i in $(seq 1 20); do curl -sS -m 3 "http://127.0.0.1:$CONG/" >/dev/null 2>&1 && break; sleep 1; done
 curl -sS -m 5 "http://127.0.0.1:$CONG/" >/dev/null 2>&1 || { echo "::error::Đường hầm tới lõi không lên"; exit 1; }
 
-ANTHROPIC_API_KEY="$KHOA" CORE_URL="http://127.0.0.1:$CONG" RUN_ID="$RUN" python3 -I bot/tests/khach-ao.py
+ANTHROPIC_API_KEY="$KHOA" CORE_URL="http://127.0.0.1:$CONG" RUN_ID="$RUN" python3 bot/tests/khach-ao.py   # không -I: pip cài anthropic vào user site, -I bỏ qua chỗ đó (lượt 40375596667 ModuleNotFoundError)

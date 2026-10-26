@@ -314,7 +314,12 @@ class MockProvider(LLMProvider):
         if "cho thuê" in text or "thuê" in text:
             out["is_rental"] = True
 
-        # Seller-role hint (chủ nhà / lướt sóng / môi giới / sàn / chủ đầu tư).
+        # Seller-role hint (chủ nhà / lướt sóng / môi giới / sàn / chủ đầu tư). SRS-5.1zzzzzzz213: kèm cụm trích GỌI TÊN vai như schema
+        # thật (`seller_role_trich_dan`) — engine chỉ nhận vai khi cụm có trong lời khách.
+        vai_tu = next((w for w in ("chủ đầu tư", "chu dau tu", "sàn", "môi giới", "rổ hàng", "giỏ hàng", "lướt sóng", "sang nhượng",
+                                   "bán chênh", "chính chủ", "chủ nhà") if w in text), None)
+        if vai_tu:
+            out["seller_role_trich_dan"] = vai_tu
         if "chủ đầu tư" in text or "chu dau tu" in text:
             out["seller_role"] = "chu_dau_tu"
         elif "sàn" in text:
@@ -359,8 +364,11 @@ def _flat_to_operations(flat: dict[str, Any]) -> dict[str, Any]:
     out = dict(flat)
     result: dict[str, Any] = {"operations": []}
     role = out.pop("seller_role", None)
+    trich_vai = out.pop("seller_role_trich_dan", None)
     if role:
         result["seller_role"] = role
+        if trich_vai:
+            result["seller_role_trich_dan"] = trich_vai
     if out.pop("is_rental", None):
         result["is_rental"] = True
     intent = out.pop("user_intent", None)
