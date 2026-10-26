@@ -804,6 +804,9 @@ function BanLamViec() {
   // một nhịp tim), nên thẻ nhìn nhịp tim một mình đã báo "Đang trực" xanh đúng
   // lúc Zalo clone chết (11/09 — chủ dự án chụp màn hình hỏi lại).
   const zaloChet = !!zaloDn && (zaloDn.trang_thai !== "dang_nhap" || zaloDn.yeu_cau_quet_lai);
+  // SRS-5.1zzzzzzz210: số tư vấn đang ở luồng QR → thẻ lên đầu trang (mọi tab), như số ký gửi khi hỏng. "Chưa có tín hiệu" (bridge chưa cài) thì không.
+  const zaloTvCanQuet = !!zaloDnTv &&
+    (["cho_quet", "da_quet", "het_han", "tu_choi"].includes(zaloDnTv.trang_thai) || zaloDnTv.yeu_cau_quet_lai);
   const botLoi = !health
     ? null
     : !bridgeSong
@@ -864,6 +867,11 @@ function BanLamViec() {
       {zaloChet && (
         <div className="mt-4 rounded-lg border-2 border-brand bg-white p-6">
           <TheZaloClone dn={zaloDn} onDangNhapLai={() => dangNhapLaiZalo(1)} />
+        </div>
+      )}
+      {zaloTvCanQuet && (
+        <div className="mt-4 rounded-lg border-2 border-brand bg-white p-6">
+          <TheZaloClone dn={zaloDnTv} onDangNhapLai={() => dangNhapLaiZalo(2)} tuVan />
         </div>
       )}
 
@@ -1765,10 +1773,12 @@ function BanLamViec() {
             </div>
           )}
 
-          {/* SRS-5.1zzzzzzz210: số Zalo tư vấn người mua — quét QR bằng acc của số đó. */}
-          <div className="rounded-lg border border-line bg-white p-6">
-            <TheZaloClone dn={zaloDnTv} onDangNhapLai={() => dangNhapLaiZalo(2)} tuVan />
-          </div>
+          {/* SRS-5.1zzzzzzz210: số Zalo tư vấn người mua — quét QR bằng acc của số đó. Đang chờ quét thì ô đã nằm ở đầu trang. */}
+          {!zaloTvCanQuet && (
+            <div className="rounded-lg border border-line bg-white p-6">
+              <TheZaloClone dn={zaloDnTv} onDangNhapLai={() => dangNhapLaiZalo(2)} tuVan />
+            </div>
+          )}
 
           {/* Tình trạng Bot AI */}
           <div className="rounded-lg border border-line bg-white p-6 space-y-4">
