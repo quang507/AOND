@@ -22,5 +22,6 @@ command -v sshpass >/dev/null || sudo apt-get install -y -qq sshpass >/dev/null
 export SSHPASS="$PW"; unset PW
 vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 -o LogLevel=ERROR "root@$HOST" "$@"; }
 
-echo "== nhật ký lõi UTC $TU → $DEN (đã loại SĐT / số dài)"
-vps "journalctl -u aond-core --utc --since '$TU' --until '$DEN' --no-pager -o short-iso | grep -E 'Kế hoạch|Bỏ ô|gom .* tin|thời gian lượt|khởi động|Started|Stopped|lệch luật|gọi lại' | sed -E 's/[0-9]{9,}/#/g' | cut -c1-260" || true
+echo "== nhật ký lõi UTC $TU → $DEN (đã loại SĐT / số dài); múi giờ VPS: $(vps 'date +%Z%z')"
+vps "journalctl -u aond-core --no-pager -o short-iso | head -1" || true   # dòng nhật ký cũ nhất còn giữ
+vps "journalctl -u aond-core --utc --since '$TU UTC' --until '$DEN UTC' --no-pager -o short-iso | grep -E 'Kế hoạch|Bỏ ô|gom .* tin|thời gian lượt|khởi động|Started|Stopped|lệch luật|gọi lại' | sed -E 's/[0-9]{9,}/#/g' | cut -c1-260" || true
