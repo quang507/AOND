@@ -36,6 +36,7 @@ from .projects import SqliteProjectStore, SupabaseProjectStore
 from .kho_anh import SupabaseMediaStore
 from .kho_tep import LocalDirectoryMediaStore, MediaStore
 from .so_token import SoToken
+from . import lenh_zalo
 from .supabase_sync import sync_to_supabase_async
 from .voice import is_audio_file, transcribe_voice_url
 
@@ -535,6 +536,18 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     if payload.sticker_url and STICKER_TRUNG_TINH in incoming_text:
         incoming_text = incoming_text.replace(
             STICKER_TRUNG_TINH, doc_sticker(_engine._provider, payload.sticker_url, payload.sticker_text or ""), 1)
+
+    # 3c. Lệnh gõ tay trên Zalo (SRS-5.1zzzzzzz211): /quit xoá sạch phiên của người gõ; /state, /listings, /whoami… trả tin debug "$$$$$ " — không qua
+    # model, không vào lịch sử, không ghi CRM. /link chỉ bỏ chữ lệnh rồi đi tiếp đường thường.
+    if not media_urls and lenh_zalo.ten_lenh(incoming_text):
+        with _engine.khoa_luot(payload.external_user_id):
+            _dat_so_nhan(payload.external_user_id, payload.so_nhan)
+            kq_lenh = lenh_zalo.chay(_engine, payload.external_user_id, incoming_text, huy_nhac=followup_manager.cancel_followup)
+        if kq_lenh.text_moi is None:
+            log.warning("Lệnh Zalo: %s (%d bong bóng)", lenh_zalo.ten_lenh(incoming_text), len(kq_lenh.replies))
+            return ZaloBridgeResponse(reply="\n\n".join(kq_lenh.replies), replies=kq_lenh.replies, nhip_go=[], assistant_name="", captured=[],
+                                      next_field=None, property_score=0.0, user_score=0.0, tier="", completeness=0.0)
+        incoming_text = kq_lenh.text_moi
 
     # 4. Dispatch to Engine
     uk = payload.external_user_id

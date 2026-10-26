@@ -187,53 +187,12 @@ def _in_chi_phi() -> None:
 
 
 def _dump_state(engine: Engine, user: str) -> None:
-    """Everything AOND has BÓC TÁCH (extracted) for this seller: every listing in the basket
-    (fields + status), the seller's own saved prices, and the SHARED project knowledge."""
-    conv = engine.conversation(user)
-    print("\n======== AOND ĐÃ BÓC TÁCH ĐƯỢC ========")
-    print(f"Người rao: {user}  |  loại khách: {conv.user_type.value}")
-
-    # 1) Rổ hàng — từng căn, nhóm theo FACET (vị trí / vị thế / đất / công trình / pháp lý / giá)
-    print(f"\n── RỔ HÀNG ({len(conv.listings)} căn) ──")
-    for i, li in enumerate(conv.listings, 1):
-        active = " ← đang nhập" if li.listing_id == conv.active_listing_id else ""
-        thieu = li.prop.thieu_toi_thieu()
-        rao = "đủ để RAO ✓" if not thieu else f"CHƯA đủ rao (cần {', '.join(thieu)})"
-        print(f"  [{i}] {li.label()}{active}  — {rao}")
-        if li.prop.loai_hinh:
-            print(f"        loại hình: {li.prop.loai_hinh}")
-        for _fid, label, kv in li.prop.by_facet():
-            print(f"        • {label}: " + " · ".join(f"{k}={v}" for k, v in kv.items()))
-
-    # 2) Giá RIÊNG người rao đã gửi (bảng giá) — không phải kiến thức chung
-    if conv.price_book:
-        print(f"\n── GIÁ ĐÃ LƯU (riêng người rao, {len(conv.price_book)} căn) ──")
-        for row in conv.price_book.values():
-            gia = row.get("gia_goi") or row.get("gia") or "?"
-            print(f"  căn {row.get('ma_so_can','?')} ({row.get('unit_type','?')}): {gia}")
-
-    # 3) Kiến thức CHUNG của dự án (dùng lại cho mọi seller) — lấy từ căn active, nếu rỗng thì
-    #    từ bất kỳ căn nào trong rổ có dự án.
-    project = engine.project_for(conv.prop)
-    if project is None:
-        for li in conv.listings:
-            p = engine._projects.get(li.prop.fields.get("du_an"))
-            if p is not None:
-                project = p
-                break
-    if project is not None:
-        print(f"\n── KIẾN THỨC DỰ ÁN: {project.name} (CHUNG) ──")
-        if project.facts():
-            for line in project.facts():
-                print(f"  • {line}")
-        if project.unit_types:
-            print("  Mẫu nhà:")
-            for ut in project.unit_types:
-                specs = "; ".join(ut.facts()) if ut.specs else "(chưa có thông số)"
-                print(f"    - {ut.name}: {specs}")
-        print(f"  Danh mục căn: {len(project.units)} căn  |  Tài liệu: "
-              f"{', '.join(d.get('title','?') for d in project.docs) or '(chưa có)'}")
-    print("=======================================\n")
+    """Everything AOND has BÓC TÁCH (extracted) for this seller — cùng nội dung lệnh /state trên Zalo (`aioi.lenh_zalo.trang_thai`, SRS-5.1zzzzzzz211)."""
+    from aioi.lenh_zalo import DAU_DEBUG, trang_thai
+    print()
+    for b in trang_thai(engine, user):
+        print(b[len(DAU_DEBUG):])
+    print()
 
 
 if __name__ == "__main__":
