@@ -31,20 +31,16 @@ else
   apt-get install -y -qq nodejs
   xong "node $(node -v)"
 fi
-# 26/10/2026: máy đã có git + tmux thì bỏ qua apt — lượt cài 40303125818 dừng ngay ở dòng này (output bị giấu nên không biết lý do; nghi apt
-# đang bị tiến trình khác giữ khoá) dù cả hai đã có sẵn từ lâu.
-if command -v git >/dev/null && command -v tmux >/dev/null; then
-  xong "git + tmux đã có"
-else
-  apt-get install -y -qq git tmux
-fi
+apt-get install -y -qq git tmux >/dev/null
 command -v node >/dev/null && [ -x /usr/bin/node ] || ln -sf "$(command -v node)" /usr/bin/node
 
 # 19/10/2026 (SRS-5.1zzzzzzz76): dấu vân code bridge TRƯỚC khi lấy code mới — bước 5 chỉ khởi động lại bridge khi nó đổi. Bridge tắt là
 # acc Zalo rời mạng; tin khách tới trong lúc đó không qua bridge. Lượt cài chỉ đổi lõi Python không có lý do tắt nó.
 van_bridge() { cat "$BR/index.mjs" "$BR/nhadat-bridge.service" "$BR/node_modules/zca-js/package.json" 2>/dev/null | sha256sum; }
 # SRS-5.1zzzzzzz210: số tư vấn người mua — cùng code, thêm file unit riêng.
-van_bridge_tv() { cat "$BR/index.mjs" "$BR/nhadat-bridge-tu-van.service" "$BR/node_modules/zca-js/package.json" 2>/dev/null | sha256sum; }
+# `|| true`: lượt đầu file unit số tư vấn chưa có trên máy (code mới kéo về ở bước 2) — `cat` lỗi + `set -o pipefail` từng làm script dừng
+# lặng lẽ ngay sau bước 1 (lượt cài 40303125818 và 40303450140, 26/10).
+van_bridge_tv() { { cat "$BR/index.mjs" "$BR/nhadat-bridge-tu-van.service" "$BR/node_modules/zca-js/package.json" 2>/dev/null || true; } | sha256sum; }
 VAN_TRUOC=$(van_bridge)
 VAN_TRUOC_TV=$(van_bridge_tv)
 
