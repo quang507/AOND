@@ -16,6 +16,7 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):  # pragma: no cover
         pass
 
+from aioi import che_do_test, so_token
 from aioi.config import load_settings
 from aioi.delivery import chunk_reply, typing_delay
 from aioi.drive import make_folder_namer, make_resolver
@@ -163,6 +164,10 @@ def main() -> None:
         _emit_reply(result.assistant_name, result.reply)
         if result.captured:
             print(f"   [đã trích xuất: {', '.join(result.captured)}]")
+        for model, so in sorted(so_token.tong_luot().items()):   # chi phí từng model của lượt vừa rồi, như bản anh Luận
+            usd = che_do_test.tien_usd(model, so)
+            print(f"   [ $ {model} · gọi={so['calls']} · in={so['p_in']} cache_w={so['p_cache_write']} cache_r={so['p_cache_read']} "
+                  f"out={so['p_out']} · " + (f"~${usd:.4f}" if usd is not None else "chưa rõ giá") + " ]")
         print(
             f"   [điểm BĐS {result.property_score} | uy tín {result.user_score} "
             f"| hạng {result.tier} | hoàn chỉnh {result.completeness:.0%}]\n"
@@ -176,16 +181,17 @@ def _dump_state(engine: Engine, user: str) -> None:
     print("\n======== AOND ĐÃ BÓC TÁCH ĐƯỢC ========")
     print(f"Người rao: {user}  |  loại khách: {conv.user_type.value}")
 
-    # 1) Rổ hàng — từng căn + trạng thái + mọi trường đã bắt
+    # 1) Rổ hàng — từng căn, nhóm theo FACET (vị trí / vị thế / đất / công trình / pháp lý / giá)
     print(f"\n── RỔ HÀNG ({len(conv.listings)} căn) ──")
     for i, li in enumerate(conv.listings, 1):
         active = " ← đang nhập" if li.listing_id == conv.active_listing_id else ""
-        print(f"  [{i}] {li.label()}{active}")
-        for k, v in li.prop.fields.items():
-            print(f"        {k}: {v}")
-        miss = li.prop.missing_fields()
-        if miss:
-            print(f"        (còn thiếu: {', '.join(miss)})")
+        thieu = li.prop.thieu_toi_thieu()
+        rao = "đủ để RAO ✓" if not thieu else f"CHƯA đủ rao (cần {', '.join(thieu)})"
+        print(f"  [{i}] {li.label()}{active}  — {rao}")
+        if li.prop.loai_hinh:
+            print(f"        loại hình: {li.prop.loai_hinh}")
+        for _fid, label, kv in li.prop.by_facet():
+            print(f"        • {label}: " + " · ".join(f"{k}={v}" for k, v in kv.items()))
 
     # 2) Giá RIÊNG người rao đã gửi (bảng giá) — không phải kiến thức chung
     if conv.price_book:

@@ -292,6 +292,28 @@ RENTAL_FIELDS: list[str] = [
 ]
 
 
+# ── NHÓM HIỂN THỊ THEO FACET (26/10/2026, chủ dự án: "đổi các hàm để test như bên AOND của anh Luận", SRS-5.1zzzzzzz194) ───────────────────
+# CHỈ để xem dữ liệu đã bóc tách (`cli.py /state`, test): gom ô theo vài mặt người đọc hiểu ngay. KHÔNG đổi luật hỏi / ra bản nháp — bản
+# anh Luận (68129e4) dùng cùng nhóm này để quyết câu hỏi, bên mình vẫn theo CORE_FIELDS / CUM_HOI. Ô lạ rơi vào "Khác"; ô bắt đầu bằng "_"
+# (nội bộ) không hiển thị.
+FACETS: list[tuple[str, str, list[str]]] = [
+    ("vi_tri",     "Vị trí",           ["dia_chi", "du_an", "ma_so_can", "duong", "phuong", "quan", "xa", "tinh"]),
+    ("vi_the",     "Vị thế",           ["lo_gioi_hem", "huong", "view", "vi_the", "goc", "mat_tien_duong"]),
+    ("dat",        "Kích thước đất",   ["dien_tich", "dien_tich_dat", "kich_thuoc", "mat_tien", "no_hau"]),
+    ("cong_trinh", "Quy mô xây dựng",  ["ket_cau", "dien_tich_nha", "so_tang", "so_phong_ngu", "so_phong_thue", "noi_that"]),
+    ("phap_ly",    "Pháp lý",          ["phap_ly_hoan_cong", "nam_so", "quy_hoach", "thoi_han_su_dung"]),
+    ("gia_tm",     "Giá & thương mại", ["gia", "thuong_luong", "tinh_trang_ban_giao", "hien_trang_su_dung", "muc_coc", "thoi_han_hd",
+                                         "co_hdt", "thu_nhap_thue"]),
+]
+FACET_LABEL: dict[str, str] = {fid: label for fid, label, _ in FACETS}
+_FACET_OF: dict[str, str] = {k: fid for fid, _, keys in FACETS for k in keys}
+
+
+def facet_of(key: str) -> str:
+    """Ô thuộc facet nào ("khac" nếu chưa xếp)."""
+    return _FACET_OF.get(key, "khac")
+
+
 @dataclass
 class Property:
     """A single listing whose data is filled in gradually."""
@@ -343,6 +365,16 @@ class Property:
         if self.is_rental:
             expected += RENTAL_FIELDS
         return expected
+
+    def by_facet(self) -> list[tuple[str, str, dict[str, str]]]:
+        """Dữ liệu đã bắt, gom theo facet: (facet_id, nhãn, {ô: giá trị}) cho facet có ít nhất một ô; ô lạ vào "Khác". Chỉ để hiển thị."""
+        buckets: dict[str, dict[str, str]] = {fid: {} for fid, _, _ in FACETS}
+        buckets["khac"] = {}
+        for k, v in self.fields.items():
+            if v and not k.startswith("_"):
+                buckets.setdefault(facet_of(k), {})[k] = v
+        labels = {**FACET_LABEL, "khac": "Khác"}
+        return [(fid, labels.get(fid, fid), b) for fid, b in buckets.items() if b]
 
     def summary_ready(self) -> bool:
         """True once the listing is "khá đầy đủ" — detailed enough to draft a real ad.
