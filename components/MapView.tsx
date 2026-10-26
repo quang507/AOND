@@ -1,12 +1,15 @@
 "use client";
-
-import { useEffect, useRef } from "react";
-import "leaflet/dist/leaflet.css";
+// Bản đồ ghim giá dùng chung (WardMap, BrowseWithMap). SRS-5.1zzzzzzz206: MapLibre + nền OpenFreeMap thay Leaflet + ảnh ô OSM.
+// maplibre-gl import ĐỘNG trong effect (thư viện đụng `window`, component này còn được SSR qua BrowseWithMap).
+import { useEffect, useRef, useState } from "react";
+import "maplibre-gl/dist/maplibre-gl.css";
+import type { Map as BanDo } from "maplibre-gl";
+import NutNenBanDo from "@/components/NutNenBanDo";
+import { ghimGia, kieuNen, maTin, napMapLibre, popupCan, SG_TAM, type NenBanDo } from "@/lib/ban-do";
 import type { MapRow } from "@/lib/supabase";
-import { formatPrice } from "@/lib/format";
 import { wardPoint } from "@/lib/geo";
 
-const SG_CENTER: [number, number] = [10.762622, 106.660172]; // Sài Gòn trung tâm
+type ThuVien = typeof import("maplibre-gl");
 
 export default function MapView({
   listings,
@@ -14,83 +17,69 @@ export default function MapView({
   zoom = 13,
 }: {
   listings: MapRow[];
+  /** [lat, lng] như lib/geo; có tâm thì không tự canh khung theo ghim. */
   center?: [number, number];
   zoom?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [tv, setTv] = useState<{ ml: ThuVien; map: BanDo } | null>(null);
+  const [nen, setNen] = useState<NenBanDo>("sang");
+  const nenDung = useRef<NenBanDo>("sang");
 
   useEffect(() => {
-    let map: import("leaflet").Map | null = null;
-    let cancelled = false;
-
+    let huy = false;
+    let map: BanDo | null = null;
     (async () => {
-      const L = (await import("leaflet")).default;
-      if (cancelled || !ref.current) return;
-
-      map = L.map(ref.current).setView(center ?? SG_CENTER, zoom);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
-        maxZoom: 19,
-      }).addTo(map);
-
-      const esc = (s: string) =>
-        s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
-
-      const bounds: [number, number][] = [];
-
-      for (const l of listings) {
-        const code = l.code ?? l.id.slice(0, 8);
-        const p: [number, number] | null =
-          l.lat && l.lng ? [Number(l.lat), Number(l.lng)] : wardPoint(l.ward, code);
-        if (!p) continue;
-
-        bounds.push(p);
-
-        const priceText = formatPrice(l.price_vnd, l.price_raw);
-
-        // Price badge marker matching Batdongsan.com.vn in Image 2
-        const priceIcon = L.divIcon({
-          className: "custom-price-badge",
-          html: `<div style="background:#0b192c;color:#ffffff;padding:3px 8px;border-radius:2px;font-size:11px;font-weight:700;border:1.5px solid #0068ff;box-shadow:0 3px 8px rgba(0,0,0,0.3);white-space:nowrap;display:inline-flex;align-items:center;gap:3px;cursor:pointer;transform:translate(-50%,-50%);transition:all .15s ease;">
-            <span>${esc(priceText)}</span>
-          </div>`,
-          iconSize: [0, 0],
-        });
-
-        const marker = L.marker(p, { icon: priceIcon }).addTo(map);
-
-        marker.bindPopup(
-          `<div style="font-family:inherit;min-width:190px;padding:4px 0;">
-            <div style="font-size:11px;font-weight:700;color:#0068ff;text-transform:uppercase;margin-bottom:2px;">
-              ${l.deal === "cho_thue" ? "Cho thuê" : "Đang bán"}
-            </div>
-            <div style="font-weight:800;font-size:14px;color:#0b192c;margin-bottom:3px;">
-              ${esc(priceText)}
-            </div>
-            <div style="font-size:12px;color:#64748b;margin-bottom:6px;">
-              ${esc(l.ward ? `${l.ward}, ` : "")}${esc(l.district ?? "Sài Gòn")}
-            </div>
-            <a href="/nha-dat/${encodeURIComponent(code)}" style="display:inline-block;background:#0068ff;color:#fff;padding:4px 10px;border-radius:2px;font-size:11px;font-weight:700;text-decoration:none;">
-              Xem chi tiết →
-            </a>
-          </div>`,
-        );
-      }
-
-      if (bounds.length > 0 && !center && map) {
-        try {
-          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
-        } catch {
-          /* ignore fitBounds edge cases */
-        }
-      }
+      const ml = await napMapLibre();
+      if (huy || !ref.current) return;
+      map = new ml.Map({
+        container: ref.current,
+        style: kieuNen("sang"),
+        center: center ? [center[1], center[0]] : SG_TAM,
+        zoom,
+        attributionControl: { compact: true },
+      });
+      map.addControl(new ml.NavigationControl({ showCompass: false }), "top-left");
+      setTv({ ml, map });
     })();
-
     return () => {
-      cancelled = true;
+      huy = true;
       map?.remove();
     };
-  }, [listings, center, zoom]);
+    // Tạo bản đồ MỘT lần; tâm / zoom ban đầu không đổi theo prop.
+  }, []);
 
-  return <div ref={ref} className="h-full w-full" />;
+  useEffect(() => {
+    if (!tv || nenDung.current === nen) return;
+    nenDung.current = nen;
+    tv.map.setStyle(kieuNen(nen));
+  }, [tv, nen]);
+
+  useEffect(() => {
+    if (!tv) return;
+    const { ml, map } = tv;
+    const ghim: InstanceType<ThuVien["Marker"]>[] = [];
+    const khung = new ml.LngLatBounds();
+    for (const l of listings) {
+      const p = l.lat && l.lng ? [Number(l.lat), Number(l.lng)] : wardPoint(l.ward, maTin(l));
+      if (!p) continue;
+      const ll: [number, number] = [p[1], p[0]];
+      ghim.push(
+        new ml.Marker({ element: ghimGia(l) })
+          .setLngLat(ll)
+          .setPopup(new ml.Popup({ offset: 14, maxWidth: "260px" }).setHTML(popupCan(l)))
+          .addTo(map),
+      );
+      khung.extend(ll);
+    }
+    if (ghim.length > 0 && !center) map.fitBounds(khung, { padding: 40, maxZoom: 15, duration: 0 });
+    return () => ghim.forEach((g) => g.remove());
+  }, [tv, listings, center]);
+
+  return (
+    <div className="relative h-full w-full">
+      <div ref={ref} className="h-full w-full" />
+      <NutNenBanDo nen={nen} doiNen={setNen} />
+    </div>
+  );
 }

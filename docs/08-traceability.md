@@ -99,7 +99,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-119 | — | — | app/tinh-lai-vay (client, không đụng DB) | — |
 | FR-120 | — | — | app/thong-ke (đọc listings qua RLS anon) | — |
 | FR-121 | — | — | localStorage phía trình duyệt, không lưu server | — |
-| FR-122 | — | — | app/ban-do + lib/geo (tâm phường, tôn trọng SRS-3.8 ẩn danh) | — |
+| FR-122 | — | — | app/ban-do + lib/geo (tâm phường, tôn trọng SRS-3.8 ẩn danh) · 26/10/2026 SRS-5.1zzzzzzz206: MapLibre 6.13 + OpenFreeMap thay Leaflet (`lib/ban-do.ts`, `components/MapView.tsx`, `BanDoKhung.tsx`, `NutNenBanDo.tsx`), `/ban-do` tĩnh, tìm theo khung qua rpc `ban_do_khung` (`20261026c`) + lớp dự án + lớp đường (chỉ mục `duong_ban_do`, `20261026d`); `ListingBrowse` chọn `MAP_COLS` cho nút "Xem bản đồ" | chụp Playwright bản build (chưa có bài kiểm tự động) |
 | FR-123 | UF-01 | WF-03 | app/mua-ban, cho-thue (query param) | — |
 | FR-124 | UF-09 | — | sellers.auth_user_id + RLS listings_own_* | — |
 | FR-125 | — | — | view `agents_public` (không lộ phone; SECURITY DEFINER **tự chứa**, `20260904b` — bản invoker `20260827g` làm `/moi-gioi` trống 27/08→04/09) | TS-SEC-08 |

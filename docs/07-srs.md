@@ -50,7 +50,7 @@ flowchart TB
     AI["Chuỗi model<br/>Groq → Gemini → Claude"]
     EMB["Gemini embedding<br/>768 chiều"]
     NTFY["ntfy.sh (push + email)"]
-    OSM["Nominatim / OSM · Leaflet"]
+    OSM["Nominatim / OSM · MapLibre + OpenFreeMap"]
     W -->|publishable key, RLS| DB
     W --> ST
     W --> OSM
@@ -86,7 +86,7 @@ flowchart TB
 | Tìm theo nghĩa | Gemini `gemini-embedding-001` (768 chiều) — câu tìm nhúng lúc chat (`_shared/ai/nhung.ts`, 429 thì thử khoá 2, SRS-5.1g), tài liệu nhúng bằng cron `nhung_tick` / `nhung_dia_danh_tick`; công tắc `app_config.tim_theo_nghia` |
 | Chat | Zalo qua bridge `zca-js` (acc clone, chạy trên VPS từ 04/09 — `bot/bridge-zca/VPS.md`); Zalo OA API qua `zalo-webhook` chờ OA duyệt |
 | Cảnh báo | ntfy.sh (`canh_bao_ngoai`), chuyển tiếp email khi có tài khoản ntfy (`SRS-5.5`) |
-| Bản đồ | Leaflet + OSM tile; geocode Nominatim (`geocode-listings`); tiện ích quanh tin qua Overpass |
+| Bản đồ | MapLibre + nền OpenFreeMap (SRS-5.1zzzzzzz206; trước đó Leaflet + OSM tile); geocode Nominatim (`geocode-listings`); tiện ích quanh tin qua Overpass |
 | Quan trắc | `bot_errors` / `bot_health` / `bot_usage` + `/admin` (FR-152, FR-169); không Logstash/ES, Slack, SMTP, fingerprint |
 
 ### SRS-2.2 — Đường giao tiếp S↔B
@@ -8922,6 +8922,15 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 2. **Câu mời Zalo theo câu mẫu** (`AD_FORMAT`): GỠ kiểu lời do code chọn của SRS-203 (`KIEU_LOI_TIN_RAO`, `kieu_loi_tin_rao`, `khoi_kieu_loi_tin_rao`) và trả lại câu mẫu "Nhanh tay nhắn Zalo cho em ngay — chậm một bước…" + "Mở màn gọi anh chị cô bác" kèm luật "MỖI TIN MỘT VẺ… TUYỆT ĐỐI KHÔNG chép y nguyên". Bắn thử 26/10 (bản `fc99e52`) đã thấy model chép câu mẫu ở nhiều tin; nay là quyết định của chủ dự án, đo lại ở lượt bắn tới.
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
+
+### SRS-5.1zzzzzzz206 · Bản đồ web: MapLibre + OpenFreeMap, tìm theo khung, lớp dự án + lớp đường (26/10/2026)
+Chủ dự án 26/10 (sau khi xem bản đồ Cozrum): "vị trí các căn mình có trực quan trên map này dc ko, dự án nữa đường nữa" → "giữ OpenStreetMap, làm tìm theo khung + lớp dự án đường đi" → chọn "Đổi sang MapLibre + OpenFreeMap". FR-122 (trang `/ban-do`) vẫn ghi `[deprecated]` ở `docs/02`; trang có thật trên web và đây là lệnh trực tiếp của chủ dự án — không cấp FR mới (quy ước 30/09).
+1. **Thư viện + nền**: gỡ `leaflet` / `@types/leaflet`, cài `maplibre-gl@6.13.0` (ghim đúng bản). Nền vector OpenFreeMap (`liberty` sáng, `dark` tối; dữ liệu OSM, không khoá) + nền vệ tinh Esri World Imagery (`lib/ban-do.ts`). **Điều khoản dùng ảnh Esri miễn phí cho web công khai CHƯA kiểm** — đổi nguồn thì đổi ở `VE_TINH`. Nút đổi nền `components/NutNenBanDo.tsx` (Bản đồ · Tối · Vệ tinh) đặt góc trên trái — góc dưới trái bị nút Chat Zalo nổi che (thấy khi chụp).
+2. **Ba component**: `MapView` (ghim giá dùng chung cho `WardMap` và `BrowseWithMap`), `BanDoKhung` (mới, trang `/ban-do`), `WardMap` giữ nguyên logic (chấm mức phường, FR-104). Ghim giá: bán nền đậm, thuê nền trắng (khớp chú thích trang); CSS `.ghim-gia` / `.popup-ban-do` ở `app/globals.css`, màu viết thẳng hex.
+3. **Tìm theo khung** (`/ban-do`): trang tĩnh (○, không truy vấn lúc dựng — trước đó kéo 300 tin vào HTML, revalidate 3 giờ); trình duyệt gọi MỘT rpc `ban_do_khung(tây, nam, đông, bắc, lớp[])` (`20261026c`, SECURITY DEFINER, chỉ cột công khai, mỗi lớp ≤ 300 điểm) mỗi khi kéo / phóng xong 500 ms, hoặc nút "Tìm trong khung này" khi tắt ô "Tìm khi di chuyển bản đồ". Khung ghi vào URL `?khung=…` để gửi link. Lớp: căn đang rao (ghim giá + danh sách 30 thẻ bên phải), dự án (chấm xanh, popup + link `/du-an/<slug>`), tên đường (chấm cam — MỘT điểm đại diện của con đường, không phải số nhà; bỏ hẻm).
+4. **Lớp đường chỉ khi khung ≤ 0,08° mỗi chiều** (hàm DB chặn, web cũng chỉ xin khi khung đủ nhỏ): đo 26/10 khung cả TP.HCM quét `duong` mất ~5 s (dòng nặng vì cột vector). Chỉ mục một phần `duong_ban_do` (`20261026d`, chỉ `duong` / `so`, mang sẵn cột trả về) đưa khung 0,08° × 0,12° từ ~2,9 s xuống ~50 ms (index-only scan), khung cả thành phố ~150 ms.
+5. **Lỗi bắt khi chụp bản build**: (a) MapLibre 6 tìm file worker cạnh file của nó qua `import.meta.url`, Next đóng gói không mang theo → "Worker failed to load", bản đồ trống, `tsc` và build vẫn xanh. Sửa: `napMapLibre()` đặt `setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url))` để webpack phát file worker vào bản build. (b) Có sẵn từ trước: bản đồ ở `/mua-ban`, `/cho-thue` (nút "Xem bản đồ") không có ghim nào — `ListingBrowse` chọn `CARD_COLS` không có `lat/lng`, ghim rơi về `wardPoint` vốn chỉ biết phường Q5 cũ. Nay chọn `MAP_COLS`.
+6. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "kiểm bằng kiểu / build mà không mở trang thật" — lỗi worker và bản đồ trống ghim đều qua `tsc` + build. (2) *Chỗ khác cùng lớp*: `WardMap` trên trang tin vẫn chỉ hiện khi `ward` khớp `WARD_CENTROIDS` (tên phường Q5 CŨ), tin phường mới không có bản đồ — CHƯA sửa (FR-10, ngoài phạm vi lần này); chế độ "Tối" của bản đồ không theo giao diện web (web chưa có chế độ tối). (3) *Kiểm*: chụp bằng Playwright trên bản build (`/ban-do` khung rộng 223 ghim + 300 dự án; khung Q5 18 căn · 75 dự án · 181 đường; đổi Vệ tinh giữ ghim; popup căn; tắt "tìm khi di chuyển" thì hiện nút; mobile 375 px không tràn ngang; `/mua-ban` "Xem bản đồ" 24 ghim) — chưa có bài kiểm tự động nào cho bản đồ.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
