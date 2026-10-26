@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-26 14:50 (giờ VN)
+-- Sinh lúc: 2026-10-26 16:51 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -623,7 +623,7 @@ do $d$ begin
   alter table public.bot_usage_model add constraint bot_usage_model_pkey PRIMARY KEY (day, model);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.bridge_dang_nhap add constraint bridge_dang_nhap_id_check CHECK ((id = 1));
+  alter table public.bridge_dang_nhap add constraint bridge_dang_nhap_id_check CHECK ((id = ANY (ARRAY[1, 2])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.bridge_dang_nhap add constraint bridge_dang_nhap_pkey PRIMARY KEY (id);
@@ -6016,7 +6016,7 @@ end
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.yeu_cau_quet_lai_zalo()
+CREATE OR REPLACE FUNCTION public.yeu_cau_quet_lai_zalo(p_id smallint DEFAULT 1)
  RETURNS void
  LANGUAGE plpgsql
  SECURITY DEFINER
@@ -6026,12 +6026,15 @@ begin
   if not (coalesce(auth.role(), '') = 'service_role' or public.la_admin()) then
     raise exception 'Khong co quyen quan tri' using errcode = '42501';
   end if;
+  if p_id is null or p_id not in (1, 2) then
+    raise exception 'p_id phai la 1 (so ky gui) hoac 2 (so tu van)' using errcode = '22023';
+  end if;
   update public.bridge_dang_nhap
      set yeu_cau_quet_lai = true,
          ghi_chu = 'yêu cầu đăng nhập lại từ /admin (' ||
                    coalesce((select auth.jwt()) ->> 'email', 'service_role') || ')',
          cap_nhat = now()
-   where id = 1;
+   where id = p_id;
 end $function$
 ;
 
@@ -7209,9 +7212,9 @@ revoke all on function public.xoa_nguoi_theo_zalo(p_zalo text) from public, anon
 grant execute on function public.xoa_nguoi_theo_zalo(p_zalo text) to service_role;
 revoke all on function public.xuat_schema() from public, anon, authenticated;
 grant execute on function public.xuat_schema() to service_role;
-revoke all on function public.yeu_cau_quet_lai_zalo() from public, anon, authenticated;
-grant execute on function public.yeu_cau_quet_lai_zalo() to authenticated;
-grant execute on function public.yeu_cau_quet_lai_zalo() to service_role;
+revoke all on function public.yeu_cau_quet_lai_zalo(p_id smallint) from public, anon, authenticated;
+grant execute on function public.yeu_cau_quet_lai_zalo(p_id smallint) to authenticated;
+grant execute on function public.yeu_cau_quet_lai_zalo(p_id smallint) to service_role;
 
 -- ══ Storage bucket ══
 insert into storage.buckets (id, name, public) values ('listing-photos', 'listing-photos', 'f') on conflict (id) do nothing;
