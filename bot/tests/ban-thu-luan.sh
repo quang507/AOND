@@ -134,8 +134,8 @@ chay() {   # $1 bản (luan|minh)  $2 tên kịch bản  $3 id  $4 lượt-giá 
     hoi_tong=$((hoi_tong + hoi))
     echo "   [lượt $n: $tu từ, $hoi dấu hỏi]"
     if [ "$ban" = luan ]; then echo "   [next_field=$(jq -r '.next_field // "-"' <<<"$TRA" 2>/dev/null) · hoàn chỉnh=$(jq -r '.completeness // "-"' <<<"$TRA" 2>/dev/null)]"; fi
-    [ -z "$nhap" ] && grep -q '📋' <<<"$BAN" && nhap=$n
-    grep -qiE '(^|[^a-zà-ỹ])(wow|tuyệt vời)' <<<"$BAN" && wow=$((wow + 1))
+    [ -z "$nhap" ] && grep -qE '📋|rao như vầy' <<<"$BAN" && nhap=$n   # bản anh Luận không có dấu 📋, mở bằng "Em sẽ rao như vầy"
+    grep -qiE '(^|[^[:alpha:]])(wow|tuyệt vời)' <<<"$BAN" && wow=$((wow + 1))   # [:alpha:] — dải à-ỹ làm grep lỗi "Invalid collation character"
     # Hỏi LẠI giá: sau lượt khách đã nói giá (lg), lời bot có câu hỏi về giá / mức bao nhiêu (người đọc chấm — chỉ cờ).
     if [ "$lg" -gt 0 ] && [ "$n" -gt "$lg" ] && grep -qiE '(giá|mức giá|bán.*bao nhiêu|bao nhiêu.*(tỷ|tiền))[^.!]*\?' <<<"$BAN"; then
       hoi_gia=$((hoi_gia + 1)); echo "   ⚑ lời bot có câu hỏi về GIÁ sau khi khách đã nói giá (lượt $lg)"
