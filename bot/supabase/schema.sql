@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-26 14:44 (giờ VN)
+-- Sinh lúc: 2026-10-26 14:50 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -1066,6 +1066,7 @@ create index if not exists danh_gia_ai_hoi_luc_idx ON public.danh_gia_ai USING b
 create index if not exists deals_buyer_id_idx ON public.deals USING btree (buyer_id);
 create index if not exists deals_ctv_id_idx ON public.deals USING btree (ctv_id);
 create index if not exists deals_listing_id_idx ON public.deals USING btree (listing_id);
+create index if not exists duong_ban_do ON public.duong USING btree (lat, lng) INCLUDE (ten, phuong, quan_cu, loai) WHERE (loai = ANY (ARRAY['duong'::text, 'so'::text]));
 create index if not exists duong_hem ON public.duong USING btree (upper(so_hem), bo_dau(duong_me)) WHERE (loai = 'hem'::text);
 create index if not exists duong_lat_lng ON public.duong USING btree (lat, lng);
 create index if not exists duong_nhung_hnsw ON public.duong USING hnsw (nhung extensions.halfvec_cosine_ops);
