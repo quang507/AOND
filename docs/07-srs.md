@@ -8873,6 +8873,12 @@ Chủ dự án 26/10: nới giọng bot, cho phép mở đầu sôi nổi như "
 2. **Chưa chứng minh**: chỉ sửa prompt, chưa bắn model thật nên chưa biết Haiku dùng cảm thán đúng lúc hay lạm dụng. Đo bằng `ban-thu-ban` / `ban-thu-dap-y` sau triển khai; nếu lạm dụng thì thu hẹp danh sách tình huống được phép.
 3. **Kiểm**: `tests/test_giong_soi_noi.py` (prompt chat có khối cho phép, các cấm cũ + cấm dự đoán khách còn nguyên); bỏ bản sửa thì 2/3 test đỏ. Không phải sửa lỗi nên không áp ba câu hỏi lớp lỗi.
 
+### SRS-5.1zzzzzzz199 · Chạy bản anh Luận trên VPS để so cạnh lõi mình (26/10/2026)
+Chủ dự án 26/10: "đưa bản của anh Luận lên VPS bắn thử"; sau khi đối chiếu cấu trúc DB: "làm cả hai, chạy bản anh Luận trước".
+1. **Khác biệt đã đọc (repo `luan8560/aond`, `68129e4` 26/10 10:29)**: bản anh Luận chỉ có SQLite cục bộ (`conversations`, `listings.fields_json`), không có SQL / migration / lớp Supabase; các commit sáng 26/10 chỉ đổi mã Python — mô hình facet (`FACETS`, `minimal_missing` = loại hình + vị trí + giá, `can_publish`, hỏi mỗi facet còn trống một câu, ghi tự do trong facet), kênh chỉ phục vụ người bán (`_looks_like_buyer`), luật tách `lo_gioi_hem` / `mat_tien`, `muc_coc` / `thoi_han_hd`, giới hạn icon. Không đổi cột DB nào.
+2. **Cách chạy** (`bot/tests/ban-thu-luan.sh`, ô `dung_lai` = `ban-thu-luan`): dịch vụ RIÊNG `aond-luan` (127.0.0.1:8001, `/opt/aond_luan`, SQLite riêng, dùng trình thông dịch của `aond-core`, chỉ mượn `ANTHROPIC_API_KEY` + tên model từ `.env` lõi — KHÔNG mượn khoá Supabase / Gemini / bridge) — không đụng `aond-core` (cổng 8000), bridge Zalo hay Supabase; chạy xong dừng dịch vụ (`systemctl stop`, không bật theo máy). Bắn hai kịch bản (HHT: nhà phố + HĐT 35 triệu; BH: ca Bình Hưng — khách đã nói giá, trả lời "nhà anh đang ở") vào bản đó (`POST /message`) rồi vào lõi mình (`/chat-reply`, ID thử `thu-lc-m-…`, tự dọn). In từng lời đáp, số từ, dấu hỏi, lượt tới bản nháp, số lần "Wow / Tuyệt vời", cờ hỏi lại giá; chỉ thoát khác 0 khi hạ tầng hỏng.
+3. **Chưa làm**: bước 2 của chủ dự án ("áp tinh thần facet vào lõi mình": tối thiểu để rao = loại hình + vị trí + giá, ghi tự do trong facet) — chờ số so cạnh. Bản anh Luận chạy với model theo `.env` lõi mình (để cùng điều kiện), KHÔNG phải model chat Sonnet-4-6 mà anh Luận nói dùng trên máy họ.
+
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
 `[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
