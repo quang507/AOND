@@ -46,11 +46,16 @@ __all__ = ["ASSISTANT_NAMES", "TEN_NAM", "TEN_NU", "TRE", "gioi_tinh", "goi_toi"
 
 # "mình" đứng sau các danh từ này là "căn của mình" (gọi căn của khách) — được phép; còn lại là đại từ gọi khách.
 MINH_SAU_DANH_TU = re.compile(r"(?i)\b(?:nhà|căn|đất|lô|phố|phòng|tin|bên|dự\s+án|hàng|cư|khu|của|kho)\s+mình\b")
+# "mình" nghĩa CHÚNG TA — bên em và khách cùng làm (chủ dự án 27/10/2026: "mình nghĩa chúng ta thì được", SRS-5.1zzzzzzz230): "chúng mình /
+# tụi mình", "mình cùng …", "hay / để mình đăng luôn", "mình chốt / rao / đẩy tin…" (việc của bên em với tin của khách). Không tính khi "mình"
+# làm chủ ngữ việc của KHÁCH ("mình cần biết thêm", "mình đến xem", "Mình đang cần gửi…").
+MINH_CHUNG_TA = re.compile(r"(?i)(?<![\wà-ỹđ])(?:(?:chúng|tụi|bọn)\s+mình|(?:hay|để)\s+mình\s+[\wà-ỹđ]+|mình\s+(?:cùng|đăng|chốt|rao|đẩy|"
+                           r"lên\s+tin|làm\s+tin|sửa\s+tin|chỉnh\s+tin|hoàn\s+thiện))(?![\wà-ỹđ])")
 
 
 def goi_khach_la_minh(loi: str) -> bool:
     """Lời gửi khách gọi khách là "mình" như đại từ ("em xin lỗi mình nhé", "Mình cần biết thêm…") — SRS-5.1zzzzzzz171 / 214: bot KHÔNG
     xưng "mình" với ai. "nhà mình / căn mình…" không tính. MỘT nguồn cho cả lưới lời model (`engine._soat_hinh_thuc`) và câu mẫu cố định
     (`cau_mau.cau`) — SRS-5.1zzzzzzz226: câu mẫu từng nằm ngoài luật này nên ba câu gọi khách "mình" mà không ai thấy."""
-    return re.search(r"(?i)(?<![\wà-ỹđ])mình(?![\wà-ỹđ])", MINH_SAU_DANH_TU.sub(" ", loi or "")) is not None
+    return re.search(r"(?i)(?<![\wà-ỹđ])mình(?![\wà-ỹđ])", MINH_CHUNG_TA.sub(" ", MINH_SAU_DANH_TU.sub(" ", loi or ""))) is not None
 

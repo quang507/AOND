@@ -558,7 +558,8 @@ _GIONG_CHUNG = ("KHÔNG mở đầu câu bằng \"Dạ\" / \"Dạ vâng\" — c�
 # SRS-5.1zzzzzzz171 (chủ dự án 24/10/2026: "sao nó xưng mình z"): bot gọi khách là "mình" ("em xin lỗi mình nhé. Mình đang cần gửi…") dù khách
 # chưa xưng "em" — khối "chưa biết" bảo gọi "anh/chị" nhưng không cấm "mình". Chỉ khi khách xưng "em" bot mới xưng "mình" (xem `_khoi_xung_ho_rieng`).
 _CAM_GOI_MINH = ("KHÔNG gọi khách là \"mình\" (đại từ ngôi hai: \"em xin lỗi mình\", \"Mình đang cần…\") — gọi đúng cách khách xưng, chưa rõ thì "
-                 "\"anh/chị\". Chỉ được \"nhà mình / căn mình / đất mình\" khi nói về căn của khách.\n")
+                 "\"anh/chị\". Chỉ được \"nhà mình / căn mình / đất mình\" khi nói về căn của khách, và \"mình\" nghĩa CHÚNG TA khi bên em "
+                 "với khách cùng làm (\"hay mình đăng luôn\").\n")
 
 
 def khoi_xung_ho(p: str, ten: str | None = None) -> str:
@@ -1277,6 +1278,22 @@ def _bot_hua_gui_anh(loi: str) -> bool:
     """Lời bot PHÍA BÁN nói "em gửi (thêm) ảnh" — ngược vai: ảnh căn là chủ nhà chụp gửi, bot không có ảnh nào để gửi chủ nhà
     (SRS-5.1zzzzzzz228 mục 4, ban-thu-srd 27/10: "Anh có muốn em gửi thêm ảnh thực tế để tin nổi bật hơn không ạ?")."""
     return bool(loi) and _BOT_GUI_ANH_RE.search(loi) is not None
+
+
+_DA_DAU_RE = re.compile(r"(?i)^\s*dạ(?![a-zà-ỹđ])[\s,.!…]*")
+
+
+def _bo_da_dau(loi: str) -> str:
+    """Bỏ chữ "Dạ" mở đầu lời — chỉ dùng khi model đã viết lại HAI lần vẫn mở "Dạ" (SRS-5.1zzzzzzz230, chủ dự án 27/10: "sửa 2 đi"; ban-thu-ban:
+    khách "Xin lỗi em…" → «Dạ không sao anh…» qua hai lần gọi lại). Không bỏ khi phần còn lại mở bằng "không" mà không phải "không sao / không
+    có gì / không vấn đề" («Dạ không, em hiểu rồi» → «Không, em hiểu rồi» là đổi nghĩa) — khi ấy giữ nguyên lời."""
+    m = _DA_DAU_RE.match(loi or "")
+    if not m:
+        return loi
+    con = loi[m.end():]
+    if not con.strip() or re.match(r"(?i)không(?![a-zà-ỹđ])(?!\s+(?:sao|có\s+gì|vấn\s+đề))", con):
+        return loi
+    return con[0].upper() + con[1:]
 
 
 def _ba_chu_dau(reply: str) -> tuple[str, ...]:
@@ -2805,6 +2822,11 @@ class Engine:
                             conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
                     if lai2:
                         reply = _gan_dau_ban_tin(_bo_markdown(lai2))
+                    if _mo_dau_da(reply):   # hai lần viết lại vẫn mở "Dạ" — code bỏ chữ đó khi bỏ không đổi nghĩa (SRS-5.1zzzzzzz230)
+                        bo = _bo_da_dau(reply)
+                        if bo != reply:
+                            log.warning("Bỏ chữ Dạ mở đầu sau hai lần viết lại")
+                            reply = bo
         return reply
 
     @staticmethod

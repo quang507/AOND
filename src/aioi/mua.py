@@ -155,8 +155,17 @@ class KhoNguoiMua:
                     if ten_zalo and str(rows[0].get("name") or "").startswith("Khách Zalo"):
                         self._patch(f"buyers?id=eq.{bid}", {"name": ten_zalo})
                 else:
-                    tao = self._post("buyers", {"zalo_user_id": user_key, "name": ten_zalo or f"Khách Zalo {user_key[-4:]}"})
-                    bid = tao[0]["id"] if tao else None
+                    try:
+                        tao = self._post("buyers", {"zalo_user_id": user_key, "name": ten_zalo or f"Khách Zalo {user_key[-4:]}"})
+                        bid = tao[0]["id"] if tao else None
+                    except Exception as e:  # noqa: BLE001
+                        # SRS-5.1zzzzzzz230 (ban-thu-ban 27/10: khách mới nhắn tin đầu "muốn nói chuyện với nhân viên" — luồng lưu nền và
+                        # luồng báo cần người cùng tạo dòng `buyers`, luồng thua nhận 409 và trả None nên cờ cần người không bật): dòng đã có
+                        # thì đọc lại, cùng cách `_get_or_create_seller` (SRS-5.1zzzzzzz143).
+                        lai = self._get(f"buyers?zalo_user_id=eq.{_q(user_key)}&select=id")
+                        if not lai:
+                            raise e
+                        bid = lai[0]["id"]
                 if bid:
                     cache[user_key] = bid
             if bid and nhu_cau:
