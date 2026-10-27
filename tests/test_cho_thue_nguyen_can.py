@@ -9,7 +9,8 @@ from tests.test_supabase_store_luu_tin import StoreGia, _conv, _ghi_tin
 
 def test_mo_dau_ban_tin_theo_cach_khach_xung():
     assert mo_dau_nhap("chi") == "📋 Em sẽ rao như vầy nhé chị:" and mo_dau_nhap("anh") == "📋 Em sẽ rao như vầy nhé anh:"
-    assert mo_dau_nhap("unknown") == "📋 Em sẽ rao như vầy nhé anh chị:" and mo_dau_nhap("em") == "📋 Mình sẽ rao như vầy nhé em:"
+    assert mo_dau_nhap("unknown") == "📋 Em sẽ rao như vầy nhé anh chị:" and mo_dau_nhap("em") == "📋 Anh sẽ rao như vầy nhé em:"
+    assert mo_dau_nhap("em", "chị") == "📋 Chị sẽ rao như vầy nhé em:" and mo_dau_nhap("chau", "cô") == "📋 Cô sẽ rao như vầy nhé cháu:"   # SRS-214
     assert cat_truoc_mo_dau("Em ghi nhận rồi chị. Em sẽ rao như vầy nhé anh chị:\n\nCho thuê nhà", "chi") == \
         "📋 Em sẽ rao như vầy nhé chị:\n\nCho thuê nhà"
     p = Property(loai_hinh="nha_pho", is_rental=True)

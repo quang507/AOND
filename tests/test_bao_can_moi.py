@@ -157,10 +157,14 @@ def test_gui_hut_thi_go_dong_giu_cho_de_lan_sau_thu_lai():
     assert len(ra) == 1 and len(kho.reminders) == 1
 
 
-def test_khach_xung_em_thi_bot_xung_minh():
+def test_khach_xung_em_thi_bot_xung_anh_chi_theo_ten():
+    # SRS-5.1zzzzzzz214: bot không còn xưng "mình"; chưa biết tên trợ lý → "anh", tên nữ (M•ai) → "chị".
     kho = KhoGia([tin("l1", "A", 6.8e9)])
     _, gui = chay(kho, xung_ho="em")
-    assert gui[0][1].startswith("Em ơi, mình đang có căn này hợp với nhu cầu của em nè, em xem qua nha.") and "Em có muốn mình sắp lịch" in gui[0][1]
+    assert gui[0][1].startswith("Em ơi, anh đang có căn này hợp với nhu cầu của em nè, em xem qua nha.") and "Em có muốn anh sắp lịch" in gui[0][1]
+    kho = KhoGia([tin("l1", "A", 6.8e9)])
+    _, gui = chay(kho, xung_ho=("em", "M•ai"))
+    assert gui[0][1].startswith("Em ơi, chị đang có căn này") and "Em có muốn chị sắp lịch" in gui[0][1] and "mình" not in gui[0][1].split("\n")[0]
 
 
 def test_khach_chua_neu_khu_vuc_hay_ngan_sach_thi_khong_bao():

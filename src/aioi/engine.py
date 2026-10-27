@@ -107,7 +107,8 @@ from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
-from .mua import (co_tieu_chi, giong_sdt_sai, goi_toi as goi_toi_khach, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_viec_vua_ghi, lenh_tra_loi,
+from .xung_ho import goi_toi as goi_toi_khach, tre as _xung_tre
+from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_viec_vua_ghi, lenh_tra_loi,
                   tim_sdt)
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
@@ -536,21 +537,32 @@ _CAM_GOI_MINH = ("KHÔNG gọi khách là \"mình\" (đại từ ngôi hai: \"em
                  "\"anh/chị\". Chỉ được \"nhà mình / căn mình / đất mình\" khi nói về căn của khách.\n")
 
 
-def khoi_xung_ho(p: str) -> str:
-    """Khối luật xưng hô của lượt theo cách khách tự xưng (`_detect_customer_pronoun`). Một nguồn cho lượt chat và lượt ảnh sổ
-    (SRS-5.1zzzzzzz82 — trước đó câu sau ảnh sổ viết cứng, luôn "anh/chị", có nhánh "vậy anh?")."""
-    return _khoi_xung_ho_rieng(p) + _GIONG_CHUNG + ("" if p == "em" else _CAM_GOI_MINH)
+def khoi_xung_ho(p: str, ten: str | None = None) -> str:
+    """Khối luật xưng hô của lượt theo cách khách tự xưng (`_detect_customer_pronoun`) và tên trợ lý (`xung_ho.goi_toi`). Một nguồn cho
+    lượt chat và lượt ảnh sổ (SRS-5.1zzzzzzz82 — trước đó câu sau ảnh sổ viết cứng, luôn "anh/chị", có nhánh "vậy anh?")."""
+    return _khoi_xung_ho_rieng(p, ten) + _GIONG_CHUNG + _CAM_GOI_MINH
 
 
-def _khoi_xung_ho_rieng(p: str) -> str:
+def _khoi_xung_ho_rieng(p: str, ten: str | None = None) -> str:
+    # SRS-5.1zzzzzzz214 (chủ dự án 27/10/2026: "người ta xưng em thì mình xưng anh hoặc chị tùy tên, xưng cháu thì cô hoặc chú"): bot
+    # không còn xưng "mình" (khách ảo 26/10 ra "Em ơi, em…"); cách xưng lấy từ `xung_ho.goi_toi` theo tên trợ lý.
     if p == "em":
+        toi = goi_toi_khach("em", ten)[1]
         return (
             "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC LƯỢT NÀY (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
             "Khách tự xưng là 'em' (vd: 'nhà em...', 'em gửi...', 'em có...', 'em bán...').\n"
             "1. TUYỆT ĐỐI CẤM DÙNG TỪ 'DẠ' HOẶC 'DẠ VÂNG' Ở BẤT KỲ ĐÂU! Không dạ thưa với người xưng em.\n"
             "2. TUYỆT ĐỐI CẤM gọi khách là 'anh' hay 'chị'. Hãy gọi khách là 'em'.\n"
-            "3. Bản thân xưng là 'mình' (Ví dụ: 'Căn của em ở đường nào vậy?', 'Nhà em nằm ở mặt tiền hay trong hẻm em ha?'). Cả lượt "
-            "KHÔNG có chữ 'anh/chị' — kể cả khi câu mẫu / gợi ý câu hỏi ở trên viết 'anh/chị', đổi thành 'em'.\n"
+            f"3. Bản thân xưng là '{toi}' (Ví dụ: '{toi.capitalize()} hỏi chút, căn của em ở đường nào vậy?', 'Nhà em nằm ở mặt tiền hay trong hẻm em ha?'). "
+            f"KHÔNG xưng 'mình', KHÔNG xưng 'em'. Cả lượt KHÔNG có chữ 'anh/chị' gọi khách — kể cả khi câu mẫu / gợi ý câu hỏi ở trên viết "
+            "'anh/chị', đổi thành 'em'.\n"
+        )
+    elif p == "chau":
+        toi = goi_toi_khach("chau", ten)[1]
+        return (
+            "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC LƯỢT NÀY (KHÁCH TỰ XƯNG LÀ 'CHÁU' / 'CON'): ===\n"
+            f"Khách tự xưng là 'cháu' / 'con' (vd: 'cháu muốn bán nhà', 'con có căn…'). Gọi khách là 'cháu', bản thân xưng '{toi}'. KHÔNG xưng "
+            "'em' / 'mình', KHÔNG 'Dạ'. Cả lượt KHÔNG có chữ 'anh/chị' gọi khách — câu mẫu / gợi ý ở trên viết 'anh/chị' thì đổi thành 'cháu'.\n"
         )
     elif p == "chi":
         return (
@@ -892,7 +904,7 @@ def _detect_customer_pronoun(conv: Conversation, current_text: str = "") -> str:
     """Khách tự xưng gì: "em" / "anh" / "chi" / "elder" / "unknown". Do lượt AI lập thao tác đọc theo nghĩa (`xung_ho`, code kiểm
     trích dẫn trong lời khách) — không dò từ khoá (SRS-5.1zzzzzzz54; bản trước regex "em gửi|nhà em…" nhầm cả chữ "em" khách
     dùng để GỌI bot). `current_text` giữ cho chỗ gọi cũ, không dùng."""
-    return {"em": "em", "anh": "anh", "chi": "chi", "chu_co_bac": "elder"}.get(conv.xung_ho or conv.xung_ho_goi_y or "", "unknown")
+    return {"em": "em", "anh": "anh", "chi": "chi", "chau": "chau", "chu_co_bac": "elder"}.get(conv.xung_ho or conv.xung_ho_goi_y or "", "unknown")
 
 
 @contextmanager
@@ -1124,11 +1136,9 @@ _MINH_SAU_DANH_TU = re.compile(r"(?i)\b(?:nhà|căn|đất|lô|phố|phòng|tin|
 
 
 def _goi_khach_la_minh(reply: str, pronoun: str) -> bool:
-    """Lời bot gọi khách là "mình" như đại từ ("em xin lỗi mình nhé", "Mình đang cần…") khi khách KHÔNG xưng "em" (SRS-5.1zzzzzzz171).
-    Khách xưng "em" thì bot xưng "mình" (luật SRS-5.1zzzzzzz86) nên bỏ qua. "nhà mình / căn mình…" không tính. Kiểm HÌNH THỨC lời của
-    chính bot, không đoán ý khách."""
-    if pronoun == "em":
-        return False
+    """Lời bot gọi khách là "mình" như đại từ ("em xin lỗi mình nhé", "Mình đang cần…") — SRS-5.1zzzzzzz171. Từ SRS-5.1zzzzzzz214 (chủ dự
+    án 27/10: khách xưng "em" thì bot xưng anh / chị theo tên) bot KHÔNG còn xưng "mình" với ai, nên mọi cách xưng đều kiểm.
+    "nhà mình / căn mình…" không tính. Kiểm HÌNH THỨC lời của chính bot, không đoán ý khách."""
     return re.search(r"(?i)(?<![\wà-ỹđ])mình(?![\wà-ỹđ])", _MINH_SAU_DANH_TU.sub(" ", reply or "")) is not None
 
 
@@ -1138,7 +1148,10 @@ def _mo_dau_ghi_nhan(reply: str) -> bool:
     đều gọi lại model; "Em sửa giá còn…" (nói con số vừa sửa) không phải ghi nhận."""
     # SRS-5.1zzzzzzz208 (bắn thử 26/10: "Em ghi nhận rồi ạ…", "Em ghi thêm diện tích sàn…", "Em lưu phường 9…", "Em lên thông tin địa chỉ…"):
     # thêm "ghi thêm", "lưu …", "lên thông tin" cùng lớp câu ghi nhận.
-    return re.match(r"(?i)\s*em\s+(?:đã\s+)?(?:ghi\s+nhận|ghi\s+rồi|ghi\s+lại|ghi\s+vào|ghi\s+thêm|nhận\s+thông\s+tin|lưu(?![\wà-ỹđ])|"
+    # SRS-5.1zzzzzzz214 (chat 27/10: "Em đã ghi giá 6,2 tỷ cho anh rồi ạ" lọt vì luật chỉ liệt kê "ghi nhận / ghi rồi / ghi lại…"): mọi câu mở
+    # "<bot> (đã) ghi …" là ghi nhận, chủ ngữ theo mọi cách bot xưng (em / anh / chị / cô / chú / cháu / mình); "Em cập nhật thêm cọc…" / "Em sửa
+    # giá còn…" (nói ý vừa sửa) vẫn không tính (SRS-208).
+    return re.match(r"(?i)\s*(?:em|anh|chị|cô|chú|cháu|mình)\s+(?:đã\s+)?(?:ghi(?![\wà-ỹđ])|nhận\s+thông\s+tin|lưu(?![\wà-ỹđ])|"
                     r"nắm\s+(?:rồi|được)|thêm\s+vào\s+tin|lên\s+thông\s+tin)", reply or "") is not None
 
 
@@ -2181,14 +2194,14 @@ class Engine:
             viec, can = self._viec_mua(conv, text)
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
-                           + khoi_lich_dang_cho(conv.y_luot.get("lich_cho"), customer_pronoun))
+                           + khoi_lich_dang_cho(conv.y_luot.get("lich_cho"), customer_pronoun, conv.assistant.name))
             system += du_an_mua.khoi_du_an(conv.y_luot.get("du_an_mua"))   # SRS-5.1zzzzzzz184: dữ kiện dự án trong kho cho câu khách hỏi
             if conv.so_nhan == SO_TU_VAN and not any(t.role == "assistant" for t in conv.history):
                 # SRS-5.1zzzzzzz210: lượt đầu ở số tư vấn — chào theo câu mẫu chỉ hỏi chuyện tìm mua / thuê (số ký gửi giữ lời chào hai lựa chọn).
                 system += khoi_chao_tu_van(conv.assistant.name, cau_mau.cau("chao_tu_van", goi_toi_khach(customer_pronoun)[0], ten=conv.assistant.name))
             uu_tien = (khoi_can_nguoi(conv) or khoi_phap_ly(conv, self._can_dang_noi(conv, can))   # SRS-5.1zzzzzzz178: một khối ưu tiên
                        or khoi_hoi_ve_mua(conv.hoi_ve_luot))   # SRS-5.1zzzzzzz212: phí / uy tín / định giá cũng có khối ở phía mua
-            system += ((uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else "") + khoi_xung_ho(customer_pronoun)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
+            system += ((uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else "") + khoi_xung_ho(customer_pronoun, conv.assistant.name)   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
             system = self._ghep_cau_chuan(system, conv) + self._khoi_danh_gia(conv)
             # Khách mua báo đã đủ thông tin căn đang xem (SRS-5.1zzzzzzz104) → xin chấm sao một lần.
@@ -2210,13 +2223,13 @@ class Engine:
         #    - "khá đầy đủ", not yet proposed -> draft the ad, ask "hấp dẫn chưa" (no fee)
         #    - draft already shown            -> react to approval & pivot to the fee (§V)
         customer_pronoun = _detect_customer_pronoun(conv, text)
-        customer_is_em = (customer_pronoun == "em")
+        customer_is_em = _xung_tre(customer_pronoun)   # em / cháu: câu mẫu biến thể `_em` (SRS-5.1zzzzzzz214)
 
         # Căn ngoài vùng nhận tin (SRS-5.1zzzzzzz86, chủ dự án 20/10: chỉ TP.HCM, Bình Dương, Vũng Tàu, Long An, Tây Ninh, Đồng Nai):
         # nói khéo chưa nhận khu vực đó — không hỏi tiếp ô thiếu, không soạn tin, không đăng (kho ẩn tin, tin nhắc bỏ qua).
         if conv.prop.fields.get("_ngoai_vung"):
             system = (build_ngoai_vung_system(conv.assistant.name, conv.prop.fields["_ngoai_vung"])
-                      + khoi_xung_ho(customer_pronoun) + khoi_can_nguoi(conv) + khoi_phap_ly(conv))
+                      + khoi_xung_ho(customer_pronoun, conv.assistant.name) + khoi_can_nguoi(conv) + khoi_phap_ly(conv))
             reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
                 raise LoiTraLoi("lời gửi khách rỗng")
@@ -2269,7 +2282,8 @@ class Engine:
             # hỏi trước bản nháp, và không hỏi lại cùng một ô hai nơi).
             conv.prop.hoan |= {x for x in thieu if conv.prop.hoan_duoc(x)}
             system = build_listing_proposal_system(
-                conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em, xung_ho=customer_pronoun
+                conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em, xung_ho=customer_pronoun,
+                toi=goi_toi_khach(customer_pronoun, conv.assistant.name)[1],
             )
         else:
             web_tin = self._trang_thai_web(conv)
@@ -2322,7 +2336,7 @@ class Engine:
 
         if not is_listing_post and not any(t.role == "assistant" for t in conv.history):
             system += khoi_chao_lan_dau(conv.assistant.name, cau_mau.cau("chao_lan_dau", goi_toi_khach(customer_pronoun)[0], ten=conv.assistant.name))
-        system = self._ghep_cau_chuan(system + khoi_xung_ho(customer_pronoun), conv) + self._khoi_danh_gia(conv)
+        system = self._ghep_cau_chuan(system + khoi_xung_ho(customer_pronoun, conv.assistant.name), conv) + self._khoi_danh_gia(conv)
         if xin_sao:
             system += KHOI_SAP_XIN_SAO
 
@@ -2403,7 +2417,7 @@ class Engine:
             elif not la_nhap:
                 conv.listing_proposed = False
         if trinh_nhap:
-            reply = cat_truoc_mo_dau(reply, customer_pronoun)
+            reply = cat_truoc_mo_dau(reply, customer_pronoun, goi_toi_khach(customer_pronoun, conv.assistant.name)[1])
         if xin_sao:
             reply = self._gan_xin_sao(conv, reply)
 
@@ -2469,8 +2483,9 @@ class Engine:
         """Nối câu xin chấm sao (code sinh, đúng câu chủ dự án duyệt) thành đoạn riêng — bộ chia gửi thành tin nhắn riêng."""
         self._da_xin_sao.add(conv.user_key)
         conv.y_luot["xin_danh_gia"] = True
-        x = conv.xung_ho or ""
-        cau = cau_xin_sao({"anh": "anh", "chi": "chị"}.get(x, "anh/chị"), em_xung_minh=(x == "em"))
+        p = _detect_customer_pronoun(conv)
+        goi, toi = goi_toi_khach(p, conv.assistant.name)
+        cau = cau_xin_sao(goi, tre=_xung_tre(p), toi=toi)
         return f"{reply.rstrip()}\n\n{cau}"
 
     def _soat_hinh_thuc(self, conv: Conversation, system: str, reply: str, phuong_phai_nhac: list[str] | None = None,
@@ -2509,11 +2524,13 @@ class Engine:
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
         if _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
-            ly_do.append("Lời vừa viết gọi khách là \"mình\" (\"em xin lỗi mình\", \"Mình đang cần…\") — khách chưa xưng \"em\" nên KHÔNG dùng \"mình\" "
-                         "gọi khách: gọi đúng cách khách xưng, chưa rõ thì \"anh/chị\". Chỉ \"nhà mình / căn mình\" khi nói về căn của khách.")
+            ly_do.append("Lời vừa viết gọi khách là \"mình\" (\"em xin lỗi mình\", \"Mình đang cần…\") — KHÔNG dùng \"mình\" gọi khách hay tự xưng: "
+                         "gọi đúng cách khách xưng (em / cháu / anh / chị), chưa rõ thì \"anh/chị\"; tự xưng đúng QUY TẮC XƯNG HÔ ở trên. "
+                         "Chỉ \"nhà mình / căn mình\" khi nói về căn của khách.")
         if _mo_dau_ghi_nhan(reply):   # SRS-5.1zzzzzzz208: cả câu dẫn trước bản tin cập nhật ("Em ghi nhận thêm sổ hồng… 📋 Bản tin cập nhật")
-            ly_do.append("Lời vừa viết mở đầu bằng câu ghi nhận (\"Em ghi nhận / Em ghi thêm / Em lưu…\") — chủ dự án đã bỏ hẳn kiểu này: "
-                         "mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói, hoặc vào thẳng nội dung (bản tin cập nhật thì mở thẳng bằng 📋).")
+            ly_do.append("Lời vừa viết mở đầu bằng câu ghi nhận (\"Em ghi nhận / Em đã ghi giá… / Em lưu…\") — chủ dự án đã bỏ hẳn kiểu này: "
+                         "mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói (khách vừa nêu giá thì nói mức đó hợp lý / dễ bán cho vị trí khách "
+                         "đã kể, KHÔNG kèm số liệu thị trường), hoặc vào thẳng nội dung (bản tin cập nhật thì mở thẳng bằng 📋).")
         # SRS-5.1zzzzzzz213 (khách ảo 26/10, giám khảo chấm "không lặp" 1,4/5): lặp mở đầu / lặp nguyên câu của lượt trước — lưới cũ SRS-118
         # bị gỡ ở SRS-207; nay đặt lại, kiểm HÌNH THỨC lời của chính bot, không đọc ý.
         truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant" and t.content), "")
@@ -2773,7 +2790,7 @@ class Engine:
             "khách hỏi chi tiết MẪU NHÀ (số tầng, số phòng, bố trí), TRẢ LỜI NGAY từ mục MẪU NHÀ — đó "
             "là kiến thức chung em ĐÃ CÓ, KHÔNG nói 'em không tra cứu được'. Thân thiện. TUYỆT ĐỐI không bịa; "
             "nếu KHÔNG có trong tài liệu lẫn bảng giá thì mới nói \"em chưa có thông tin về ý này ạ\" rồi mời khách bổ sung."
-            + khoi_xung_ho(_detect_customer_pronoun(conv))
+            + khoi_xung_ho(_detect_customer_pronoun(conv), conv.assistant.name)
         )
         return self._provider.reply(system, [Message("user", text)], max_tokens=REPLY_MAX_TOKENS).strip()
 
@@ -3079,7 +3096,7 @@ class Engine:
                 # bản cũ ghép NATURAL_QUESTIONS (lời dặn cho model) vào lời gửi khách, luôn khen "pháp lý sổ chuẩn chỉnh", gọi "anh".
                 cum = conv.active.prop.cum_hoi(next_field, conv.active.prop.missing_fields())
                 he = (build_chat_system(conv.assistant.name, conv.active.prop, next_field, conv.user_type, "", cum=cum)
-                      + khoi_xung_ho(_detect_customer_pronoun(conv, caption or ""))
+                      + khoi_xung_ho(_detect_customer_pronoun(conv, caption or ""), conv.assistant.name)
                       + "\n\n=== LƯỢT NÀY: KHÁCH VỪA GỬI ẢNH SỔ / GIẤY TỜ ===\nHệ thống đã đọc ảnh và GỬI KHÁCH các dòng sau, ngay "
                         f"trước lời em:\n{detail_lines or '(chưa đọc được dòng nào)'}\nViết 1–2 câu tiếp theo: mời khách xem các dòng "
                         "trên đã đúng chưa, rồi hỏi tiếp đúng ý ở \"Thông tin cần hỏi tiếp theo\" (nếu có). KHÔNG khen sổ / pháp lý, "
@@ -3825,14 +3842,15 @@ class Engine:
         if h in ("phi", "uy_tin", "link_web", "tinh_hinh_ban", "dinh_gia") and _trich_dan_khop(plan.get("hoi_ve_trich_dan"), cuoi):
             conv.hoi_ve_luot = h
         x = plan.get("xung_ho")
-        if x in ("em", "anh", "chi", "chu_co_bac"):
+        if x in ("em", "anh", "chi", "chau", "chu_co_bac"):
             gan = [t.content for t in conv.history[-12:] if t.role == "user" and t.content][-6:]
             trich = plan.get("xung_ho_trich_dan")
             # SRS-5.1zzzzzzz91 (bắn thử KB2 20/10: "mình… em" rồi lượt sau "anh/chị"): cụm trích phải CHỨA chữ xưng đó (không chỉ có
             # thật trong lời khách), và ĐỔI cách xưng đã chốt thì cụm phải ở tin vừa nhắn — cụm cũ không lật được cách xưng.
             # SRS-5.1zzzzzzz212 (bắn thử 5 khách: "e tìm thuê", "a là MG", "sao hoi nhieu vay con" đều bị gọi "anh/chị"): khách Zalo gõ tắt e / a / c,
             # và người lớn tuổi không tự xưng mà GỌI bot là con / cháu — bản trước chỉ nhận chữ tự xưng đủ.
-            chu = {"em": ("em", "e"), "anh": ("anh", "a"), "chi": ("chi", "c"),
+            # SRS-5.1zzzzzzz214: khách TỰ XƯNG "cháu" / "con" ("cháu muốn bán nhà") → bot xưng cô / chú theo tên trợ lý.
+            chu = {"em": ("em", "e"), "anh": ("anh", "a"), "chi": ("chi", "c"), "chau": ("chau", "con"),
                    "chu_co_bac": ("chu", "co", "bac", "di", "cau", "thim", "ong", "ba", "con", "chau")}[x]
             # Chữ tắt một ký tự so trên chữ CÒN dấu: "ạ" bỏ dấu thành "a", "ê" thành "e" — so trên chữ bỏ dấu thì "dạ em gửi ạ" cũng thành "anh".
             hop = bool({c for c in chu if len(c) > 1} & set(re.findall(r"[a-z]+", _strip_accents(str(trich or "")).lower()))

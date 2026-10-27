@@ -58,10 +58,10 @@ def test_can_vuot_ngan_sach_xep_sau_va_ghi_ro_muc_vuot():
     assert kho.so_parse == 1                                          # vẫn MỘT lượt parse_vnd (nhớ theo chữ), không thêm lượt gọi DB
 
 
-def test_khong_co_ngan_sach_thi_giu_nguyen_thu_tu():
+def test_khong_co_ngan_sach_thi_chua_goi_can():
+    # SRS-5.1zzzzzzz214 (chủ dự án 27/10): mới có khu vực chưa gợi căn (khách ảo 26/10: Thư thuê 7–9 triệu bị đưa căn 17 triệu); bản cũ gợi và giữ thứ tự.
     kho = _Kho(_hang(_can("C44", 6.2e9), _can("C16", 5.5e9)))
-    can = kho.can_phu_hop(BuyerLead(loai_giao_dich="mua", khu_vuc="Gò Vấp"))
-    assert [c["code"] for c in can] == ["C44", "C16"] and not any("_vuot_ngan_sach" in c for c in can)
+    assert kho.can_phu_hop(BuyerLead(loai_giao_dich="mua", khu_vuc="Gò Vấp")) == [] and kho.so_parse == 0
 
 
 def test_dia_chi_viet_tat_khong_bi_cat_giua_chung():
@@ -121,13 +121,14 @@ def test_site_url_khong_phai_nhadat_cc_chua_tro_ve_web(ten):
 
 
 # --- SRS-5.1zzzzzzz146: gợi ý căn TRƯỚC, hỏi thêm SAU, câu hỏi NGẮN (chủ dự án 23/10: "hỏi thêm thông tin hơi dài… gửi luôn căn gợi ý rồi sau mới hỏi") ---
-def test_co_tieu_chi_can_khu_vuc_hoac_ngan_sach_loai_bds_mot_minh_chua_du():
+def test_co_tieu_chi_can_ca_khu_vuc_va_ngan_sach():
     from aioi.mua import co_tieu_chi
     assert not co_tieu_chi(BuyerLead(loai_giao_dich="mua", loai_bds="nha_pho"))
-    assert co_tieu_chi(BuyerLead(khu_vuc="Gò Vấp")) and co_tieu_chi(BuyerLead(ngan_sach="5 tỷ"))
-    b = BuyerLead()
+    assert not co_tieu_chi(BuyerLead(khu_vuc="Gò Vấp")) and not co_tieu_chi(BuyerLead(ngan_sach="5 tỷ"))   # SRS-214: một trong hai chưa đủ
+    assert co_tieu_chi(BuyerLead(khu_vuc="Gò Vấp", ngan_sach="5 tỷ"))
+    b = BuyerLead(ngan_sach="tầm 7 triệu")
     b.fields["khu_vuc"] = "Quận 5"
-    assert co_tieu_chi(b) and not co_tieu_chi(BuyerLead(khu_vuc="  "))
+    assert co_tieu_chi(b) and not co_tieu_chi(BuyerLead(khu_vuc="  ", ngan_sach="5 tỷ"))
 
 
 def test_chua_co_tieu_chi_thi_khong_goi_y_can_khong_goi_db():
@@ -135,7 +136,7 @@ def test_chua_co_tieu_chi_thi_khong_goi_y_can_khong_goi_db():
     assert kho.can_phu_hop(BuyerLead(loai_giao_dich="mua", loai_bds="nha_pho")) == []   # "nhà phố" một mình: căn nào cũng khớp → không đoán
     assert kho.so_parse == 0
     chua = khoi_can_cho_khach([], chua_co_tieu_chi=True)
-    assert "chưa nêu khu vực hay ngân sách" in chua and "KHÔNG nói \"chưa có căn\"" in chua
+    assert "chưa nêu đủ khu vực và ngân sách" in chua and "KHÔNG nói \"chưa có căn\"" in chua
     assert "báo khi có căn" not in chua                                             # câu "chưa có căn" chỉ dành cho khách ĐÃ nêu tiêu chí
     assert "báo khi có căn" in khoi_can_cho_khach([], chua_co_tieu_chi=False)
 

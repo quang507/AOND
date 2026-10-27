@@ -732,10 +732,10 @@ class BuyerLead:
 
     def next_question_field(self) -> str | None:
         """Quyết định thông tin cần hỏi tiếp theo theo cây phân nhánh người mua."""
-        # SRS-5.1zzzzzzz154 (chủ dự án 23/10: "hỏi nhiều quá, 1 hoặc 2 câu hỏi thôi"): đã có khu vực hoặc ngân sách (đủ để gợi ý căn) mà bot
-        # đã hỏi đủ MAX_CAU_HOI_MUA câu thì thôi hỏi nhu cầu — từ đó chỉ gợi ý căn và hẹn xem. Chưa có khu vực / ngân sách thì vẫn hỏi (không
-        # có gì để gợi ý). Engine cộng `_so_cau_hoi` mỗi lượt có câu hỏi.
-        co_tieu_chi = any((getattr(self, k, None) or self.fields.get(k) or "").strip() for k in ("khu_vuc", "ngan_sach"))
+        # SRS-5.1zzzzzzz154 (chủ dự án 23/10: "hỏi nhiều quá, 1 hoặc 2 câu hỏi thôi"): đã có khu vực VÀ ngân sách (đủ để gợi ý căn — SRS-214,
+        # cùng `mua.co_tieu_chi`) mà bot đã hỏi đủ MAX_CAU_HOI_MUA câu thì thôi hỏi nhu cầu — từ đó chỉ gợi ý căn và hẹn xem. Chưa đủ thì vẫn
+        # hỏi (không có gì để gợi ý). Engine cộng `_so_cau_hoi` mỗi lượt có câu hỏi.
+        co_tieu_chi = all((getattr(self, k, None) or self.fields.get(k) or "").strip() for k in ("khu_vuc", "ngan_sach"))
         if co_tieu_chi and _so_nguyen(self.fields.get("_so_cau_hoi")) >= MAX_CAU_HOI_MUA:
             return None
         # Giai đoạn 1: Nhu cầu & Ngân sách cốt lõi (Discovery)

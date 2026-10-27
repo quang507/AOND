@@ -34,5 +34,7 @@ def test_khong_cau_cho_co_anh_roi_thi_khong_nhac_chua_co_anh_thi_xin_anh():
 
 def test_xung_ho_theo_khach():
     c = _conv(("assistant", "Nhà em ở đường nào vậy?"))
-    assert cau_nhac(c, c.active, "em").startswith("Em ơi, mình hỏi lại")
+    assert cau_nhac(c, c.active, "em").startswith("Em ơi, anh hỏi lại")                 # SRS-214: bot xưng anh / chị theo tên, không "mình"
+    assert cau_nhac(c, c.active, "em", "M•ai").startswith("Em ơi, chị hỏi lại")
+    assert cau_nhac(c, c.active, "chau", "Th•ái").startswith("Cháu ơi, chú hỏi lại")
     assert cau_nhac(c, c.active, "unknown").startswith("Anh/chị ơi, em hỏi lại")

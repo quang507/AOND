@@ -23,6 +23,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Any, Callable
 
+from .xung_ho import goi_toi
 from . import cau_mau
 from .mua import SITE_URL, _LOAI_MUA_SANG_DB, _TEN_LOAI, _can_xe_hoi, _q, co_tieu_chi
 
@@ -96,13 +97,12 @@ def vi_sao_hop(c: dict, lead: Any = None, kieu: int = 0) -> str:
     return cau.strip()
 
 
-def viet_tin(c: dict, xung_ho: str = "unknown", lead: Any = None, kieu: int = 0) -> str:
+def viet_tin(c: dict, xung_ho: str = "unknown", lead: Any = None, kieu: int = 0, ten: str | None = None) -> str:
     """Tin báo một căn — nhiều đoạn cách nhau một dòng trống, MỖI ĐOẠN là một tin Zalo (mở lời · thông số + vì sao hợp · link · câu hỏi lịch xem).
-    `xung_ho`: khách tự xưng gì (engine) — "em" thì bot xưng "mình" và gọi khách "em".
+    `xung_ho`: khách tự xưng gì (engine); `ten` = tên trợ lý — khách xưng em / cháu thì bot xưng anh / chị / cô / chú theo tên (SRS-5.1zzzzzzz214).
     `kieu` (SRS-5.1zzzzzzz188, chủ dự án 26/10: hai tin báo liền nhau trùng văn phong): 0..SO_KIEU-1, chọn câu mẫu `bao_can_moi` / `_2` / `_3` / `_4`
     (bản `_vuot` khi vượt ngân sách) và chữ mở "vì sao hợp"; `chay_mot_luot` xoay theo số tin báo đã gửi cho khách nên hai tin liền nhau luôn khác kiểu."""
-    goi = {"anh": "anh", "chi": "chị", "em": "em"}.get(xung_ho, "anh/chị")
-    toi = "mình" if xung_ho == "em" else "em"
+    goi, toi = goi_toi(xung_ho, ten)
     mo_ta = mo_ta_can(c)
     bien = {"toi": toi, "mo_ta": mo_ta, "Mo_ta": mo_ta[:1].upper() + mo_ta[1:], "vi_sao": vi_sao_hop(c, lead, kieu),
             "link": f"{SITE_URL}/nha-dat/{c.get('code')}"}
@@ -182,7 +182,9 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
         if not can:
             continue
         c = can[0]
-        tin = viet_tin(c, xung_ho_cua(k["zalo_user_id"]) if xung_ho_cua else "unknown", lead, kieu=len(mine) % SO_KIEU)
+        xh = xung_ho_cua(k["zalo_user_id"]) if xung_ho_cua else "unknown"   # str, hoặc (cách xưng, tên trợ lý) — SRS-5.1zzzzzzz214
+        xh, ten = (xh if isinstance(xh, tuple) else (xh, None))
+        tin = viet_tin(c, xh, lead, kieu=len(mine) % SO_KIEU, ten=ten)
         # Giữ chỗ TRƯỚC khi gửi: hai lượt chạy chồng nhau không báo đúp (khoá duy nhất khách + tin cho kind `match`). Gửi hụt thì xoá để thử lại.
         try:
             giu = kho._post("reminders", {"kind": "match", "buyer_id": bid, "listing_id": c["id"], "due_at": _iso(bay_gio),

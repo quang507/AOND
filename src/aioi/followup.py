@@ -15,6 +15,7 @@ import time
 import urllib.request
 from typing import TYPE_CHECKING
 
+from .xung_ho import goi_toi, tre
 from . import cau_mau
 from .engine import Turn, _detect_customer_pronoun, _image_count
 from .supabase_sync import sync_to_supabase_async
@@ -43,15 +44,15 @@ def cau_hoi_cuoi_cua_bot(conv) -> str:
     return cau[-1] if cau else ""
 
 
-def cau_nhac(conv, listing, pronoun: str) -> str:
-    """Tin nhắc khi khách im (SRS-5.1zzzzzzz73): hỏi lại câu đang chờ; không còn câu chờ thì xin ảnh khi căn chưa có ảnh."""
-    goi = _GOI.get(pronoun, "Anh/chị")
-    toi = "mình" if pronoun == "em" else "em"
+def cau_nhac(conv, listing, pronoun: str, ten: str | None = None) -> str:
+    """Tin nhắc khi khách im (SRS-5.1zzzzzzz73): hỏi lại câu đang chờ; không còn câu chờ thì xin ảnh khi căn chưa có ảnh. `ten` = tên trợ lý
+    (bot xưng anh / chị / cô / chú khi khách xưng em / cháu — SRS-5.1zzzzzzz214)."""
+    goi, toi = goi_toi(pronoun, ten)
     hoi = cau_hoi_cuoi_cua_bot(conv)
     if hoi:   # câu mẫu sửa ở CRM (SRS-5.1zzzzzzz110)
-        return cau_mau.cau("nhac_hoi_lai", goi.lower(), toi=toi, hoi=hoi)
+        return cau_mau.cau("nhac_hoi_lai", goi, toi=toi, hoi=hoi)
     if not _image_count(listing.media):
-        return cau_mau.cau("nhac_xin_anh_em") if pronoun == "em" else cau_mau.cau("nhac_xin_anh", goi.lower())
+        return cau_mau.cau("nhac_xin_anh_em", goi, toi=toi) if tre(pronoun) else cau_mau.cau("nhac_xin_anh", goi)
     return ""
 
 
@@ -160,7 +161,8 @@ class FollowUpManager:
 
             # Determine tone and pronoun based on conversation context
             customer_pronoun = _detect_customer_pronoun(conv, "")
-            customer_is_em = (customer_pronoun == "em")
+            ten = getattr(getattr(conv, "assistant", None), "name", None)
+            customer_is_em = tre(customer_pronoun)
 
             # Determine missing item or draft status
             # Chỉ nói "bản tin nháp em soạn ở trên" khi bản nháp ĐÃ gửi thật (SRS-5.1zzzzzzz91) — trước đây đủ ý (summary_ready) cũng
@@ -168,19 +170,19 @@ class FollowUpManager:
             is_draft_ready = bool(getattr(conv, "listing_proposed", False))
 
             if is_draft_ready:
+                goi, toi = goi_toi(customer_pronoun, ten)
                 if customer_is_em:
                     # 21/10 (SRS-5.1zzzzzzz99, câu tester sửa): một câu ngắn, không hỏi "ưng ý chưa" kèm "có cần điều chỉnh không".
-                    follow_up_msg = cau_mau.cau("nhac_ban_nhap_em")   # sửa câu ở CRM (SRS-5.1zzzzzzz106)
+                    follow_up_msg = cau_mau.cau("nhac_ban_nhap_em", goi, toi=toi)   # sửa câu ở CRM (SRS-5.1zzzzzzz106)
                 else:
                     # Gọi khách đúng cách khách tự xưng (SRS-5.1zzzzzzz90: khách xưng "chị" mà tin nhắc vẫn "anh/chị").
-                    goi = {"anh": "anh", "chi": "chị"}.get(customer_pronoun, "anh/chị")
                     # Đúng câu tester (chủ dự án: "đúng rồi vậy giống người hơn"); "mình" ở đây là gọi khách, như "nhà mình".
                     follow_up_msg = cau_mau.cau("nhac_ban_nhap", goi)
             else:
                 # 19/10/2026 (SRS-5.1zzzzzzz73): nhắc lại ĐÚNG câu bot vừa hỏi. Bản trước lấy câu mẫu cố định theo ô thiếu đầu
                 # tiên; ô nào không có câu mẫu (vd diện tích sàn) rơi vào "chụp gửi em vài tấm ảnh" — chủ nhà vừa gửi 6 ảnh vẫn
                 # bị xin ảnh. Không còn câu nào đang chờ trả lời thì chỉ xin ảnh khi căn CHƯA có ảnh; có rồi thì không nhắc.
-                follow_up_msg = cau_nhac(conv, listing, customer_pronoun)
+                follow_up_msg = cau_nhac(conv, listing, customer_pronoun, ten)
                 if not follow_up_msg:
                     log.info("Follow-up for %s: không có câu đang chờ, căn đã có ảnh. Skipping.", user_key)
                     return

@@ -42,7 +42,8 @@ def _eng(monkeypatch, kho):
 def test_cau_xin_dung_cau_chu_du_an_duyet():
     assert cau_xin_sao("anh/chị") == "Anh/chị chấm giúp em 1–5 sao cho lần hỗ trợ này nha, để em làm tốt hơn ạ."
     assert cau_xin_sao("chị").startswith("Chị chấm giúp em") and vua_xin_sao(cau_xin_sao("anh"))
-    assert "mình" in cau_xin_sao(em_xung_minh=True) and vua_xin_sao(cau_xin_sao(em_xung_minh=True))
+    em = cau_xin_sao("em", tre=True, toi="chị")   # SRS-5.1zzzzzzz214: khách xưng em → bot xưng chị / anh theo tên, không "mình"
+    assert em.startswith("Em chấm giúp chị") and "mình" not in em and vua_xin_sao(em) and vua_xin_sao(cau_xin_sao("cháu", tre=True, toi="chú"))
 
 
 def test_ban_xin_sao_sau_luot_duyet_va_phi_mot_lan(monkeypatch):
