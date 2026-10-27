@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-27 08:42 (giờ VN)
+-- Sinh lúc: 2026-10-27 10:00 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -872,7 +872,7 @@ do $d$ begin
   alter table public.quan_cu add constraint quan_cu_pkey PRIMARY KEY (ten);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.reminders add constraint reminders_kind_check CHECK ((kind = ANY (ARRAY['promise'::text, 'reengage'::text, 'viewing'::text, 'followup'::text, 'escalation'::text, 'report'::text, 'match'::text, 'feedback'::text, 'sold'::text, 'rating'::text])));
+  alter table public.reminders add constraint reminders_kind_check CHECK ((kind = ANY (ARRAY['promise'::text, 'reengage'::text, 'viewing'::text, 'followup'::text, 'escalation'::text, 'report'::text, 'match'::text, 'feedback'::text, 'sold'::text, 'rating'::text, 'admin_reply'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.reminders add constraint reminders_pkey PRIMARY KEY (id);
@@ -1267,6 +1267,33 @@ begin
   return jsonb_build_object('ok', true, 'listing_id', v_listing_id);
 end;
 $function$
+;
+
+CREATE OR REPLACE FUNCTION public.admin_gui_tin(p_conversation_id uuid, p_noi_dung text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare v_sid uuid; v_bid uuid; v_id uuid; v_chu text;
+begin
+  if not (coalesce(auth.role(), '') = 'service_role' or public.la_admin()) then
+    raise exception 'chỉ admin' using errcode = '42501';
+  end if;
+  v_chu := left(btrim(coalesce(p_noi_dung, '')), 2000);
+  if v_chu = '' then
+    raise exception 'tin rỗng' using errcode = '22023';
+  end if;
+  select seller_id, buyer_id into v_sid, v_bid from public.conversations where id = p_conversation_id;
+  if v_sid is null and v_bid is null then
+    raise exception 'hội thoại không có khách' using errcode = '22023';
+  end if;
+  insert into public.reminders (kind, seller_id, buyer_id, due_at, note, status)
+  values ('admin_reply', v_sid, v_bid, now(), v_chu, 'pending')
+  returning id into v_id;
+  update public.conversations set human_touch_at = now() where id = p_conversation_id;
+  return v_id;
+end $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.admin_khoi_phuc_lan_xoa(p_lan bigint)
@@ -5020,6 +5047,9 @@ begin
      where r.status = 'sent' and r.sent_at > now() - interval '24 hours'
        and coalesce(s.zalo_user_id, case when r.kind <> 'escalation' then b.zalo_user_id end) is not null
        and not (coalesce(btrim(r.note), '') <> '' and btrim(r.note) not like '💬%' and left(btrim(r.note), 1) !~ '[[:alnum:]]')
+       -- 27/10/2026 (SRS-5.1zzzzzzz216): `admin_reply` là admin NÓI CHUYỆN với khách qua ô gửi ở /admin/tin-nhan (lõi gửi hộ), không phải
+       -- tin chủ động của bot — admin trả lời ba câu trong một ngày không phải "nhắn dồn".
+       and r.kind <> 'admin_reply'
      group by 1 having count(*) > 2
   )
   select 'gui_qua_hai_tin_mot_ngay', 'NANG', count(*)::int,
@@ -6862,6 +6892,9 @@ grant execute on function public.admin_dang_tin(p jsonb) to service_role;
 revoke all on function public.admin_gan_bds_quan_tam(p_buyer_id uuid, p_code text) from public, anon, authenticated;
 grant execute on function public.admin_gan_bds_quan_tam(p_buyer_id uuid, p_code text) to authenticated;
 grant execute on function public.admin_gan_bds_quan_tam(p_buyer_id uuid, p_code text) to service_role;
+revoke all on function public.admin_gui_tin(p_conversation_id uuid, p_noi_dung text) from public, anon, authenticated;
+grant execute on function public.admin_gui_tin(p_conversation_id uuid, p_noi_dung text) to authenticated;
+grant execute on function public.admin_gui_tin(p_conversation_id uuid, p_noi_dung text) to service_role;
 revoke all on function public.admin_khoi_phuc_lan_xoa(p_lan bigint) from public, anon, authenticated;
 grant execute on function public.admin_khoi_phuc_lan_xoa(p_lan bigint) to authenticated;
 grant execute on function public.admin_khoi_phuc_lan_xoa(p_lan bigint) to service_role;

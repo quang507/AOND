@@ -258,7 +258,7 @@ BUSINESS_CONTEXT = """BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ �
   • Bên MÔI GIỚI (nhân viên môi giới; hoặc sàn giao dịch): phí 0.5% giá chốt khi bán, hoặc 0.75 tháng tiền thuê. Khích lệ đăng thêm hàng (≥10 căn) để lên Top.
   • CHỦ ĐẦU TƯ: phí KHÔNG theo 1%/0.5% — thoả thuận riêng với dự án; đừng tự báo con số.
 - PHÍ CHỈ thu khi giao dịch THÀNH CÔNG. TUYỆT ĐỐI không bịa con số phí/ưu đãi/cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì đừng báo phí, cứ hỏi khéo hoặc tư vấn chung.
-- Gamification: có Điểm uy tín và hạng Đồng/Bạc/Vàng; nên khen điểm mạnh và gợi ý cách tăng điểm (bổ sung ảnh, sổ hồng, thông tin còn thiếu)."""
+- Gamification: có Điểm uy tín và hạng Đồng/Bạc/Vàng — số THẬT nằm ở khối "ĐIỂM TIN" cuối prompt (hệ thống tính); chỉ nói số trong khối đó, gợi ý cách tăng điểm theo ô còn thiếu ghi ở đó (ảnh, sổ hồng, thông tin còn thiếu)."""
 
 
 def muc_phi(role: SellerRole, thue: bool) -> str | None:
@@ -600,8 +600,24 @@ KHOI_MOT_UU_TIEN = ("(Khối ƯU TIÊN LƯỢT NÀY ở trên quyết nội dung
 KHOI_DINH_GIA = (
     "\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI GIÁ THỊ TRƯỜNG / GIÁ CAO HAY THẤP: ===\n"
     "Bên em CHƯA có dữ liệu định giá (SRS-5.1zzzzzzz116): KHÔNG nêu con số giá thị trường, KHÔNG nhận xét giá chủ đưa cao / thấp / hợp "
-    "lý, KHÔNG so với căn khác. Nói ngắn: chuyên viên bên em sẽ xem khu vực và báo lại chủ; tin vẫn rao theo giá chủ muốn.\n"
+    "lý, KHÔNG so với căn khác. Nói ngắn, thật: bên em chưa có số liệu để định giá, tin vẫn rao theo giá chủ muốn; chủ muốn tham khảo thì "
+    "xem các tin cùng khu đang rao trên web bên em. KHÔNG hứa chuyên viên sẽ xem khu vực / báo lại (không có đường nào làm việc đó — "
+    "SRS-5.1zzzzzzz216).\n"
 )
+
+
+def khoi_diem_tin(diem_tin: float, hang: str, diem_nguoi: float, thieu: list[str], so_anh: int, prop: Property | None = None) -> str:
+    """Khối ĐIỂM TIN đưa cho model phía bán (SRS-5.1zzzzzzz216, chủ dự án 27/10: "3 làm đi"): `BUSINESS_CONTEXT` bảo bot nói về điểm uy
+    tín / hạng mà trước đó không khối nào mang số thật, nên model chỉ có thể bịa. Số do `gamification` tính (cùng nguồn `TurnResult`),
+    ô còn thiếu = `Property.missing_fields()` theo nhãn `nhan_o`. Đặt SAU `RANH_GIOI_CACHE` (đổi mỗi lượt). Chữ dặn không chứa chữ số."""
+    nhan = [nhan_o(o, prop).split(" (")[0] for o in (thieu or [])[:5]]
+    cach = ", ".join(nhan) if nhan else "tin đã đủ ô — chỉ còn thêm ảnh thật nếu chưa có"
+    return (
+        "\n\n=== ĐIỂM TIN (hệ thống tính, số THẬT — chỉ nói số ở đây, không tự đặt số khác) ===\n"
+        f"Tin này: {diem_tin:.0f}/100. Người rao: hạng {hang} ({diem_nguoi:.0f}/100). Ảnh đã nhận: {so_anh} tấm.\n"
+        f"Để tăng điểm: {cach}.\n"
+        "Chỉ nhắc điểm / hạng khi khách hỏi, hoặc một câu ngắn khi khích lệ gửi thêm thông tin — không nhắc mỗi lượt, không hứa lên Top.\n"
+    )
 
 
 def khoi_hoi_ve_mua(hoi_ve: str | None) -> str:

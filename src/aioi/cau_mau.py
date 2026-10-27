@@ -95,9 +95,10 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                        "Khách gửi link bảng tính (rổ hàng). {n} = số căn đã nhập", "Nhận tệp"),
     "bang_tinh_trong": ("Em có nhận bảng tính nhưng chưa đọc ra căn nào — {goi} kiểm tra lại các cột (loại hình, địa chỉ, diện tích, "
                         "giá...) giúp em nhé.", "Bảng tính không đọc ra căn nào", "Nhận tệp"),
-    "chua_co_ban_ve": ("Em CHƯA có bản vẽ/mặt bằng {can} ạ 😅. {Goi} gửi giúp em file bản vẽ, hoặc để em xin bên dự án rồi gửi lại "
-                       "nhé! (Em không đụng gì tới rổ hàng đâu ạ.)",
-                       "Khách xin bản vẽ / mặt bằng mà chưa có. {can} = căn đang nói (vd \"căn A12 (mẫu Fusion)\")", "Bản vẽ"),
+    "chua_co_ban_ve": ("Em CHƯA có bản vẽ/mặt bằng {can} ạ 😅. {Goi} có file bản vẽ thì gửi giúp em, em gắn vào tin ngay nhé! "
+                       "(Em không đụng gì tới rổ hàng đâu ạ.)",
+                       "Khách xin bản vẽ / mặt bằng mà chưa có. {can} = căn đang nói (vd \"căn A12 (mẫu Fusion)\"). 27/10 (SRS-216): bỏ \"để em xin bên "
+                       "dự án rồi gửi lại\" — không có đường nào xin; bản vẽ admin nạp vào kho dự án thì bot tự gửi như ảnh dự án", "Bản vẽ · SRS-5.1zzzzzzz216"),
     "nhac_hoi_lai": ("{Goi} ơi, {toi} hỏi lại chút nha: {hoi}",
                      "Tin nhắc sau 5 phút khách im — hỏi lại câu bot vừa hỏi. {toi} = bot tự xưng (em / anh / chị / cô / chú), {hoi} = câu bot vừa hỏi",
                      "SRS-5.1zzzzzzz73"),
@@ -140,11 +141,23 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                       "Khách mua đã nói đủ ngày và giờ xem nhà — bot hỏi xác nhận MỘT lần (model chép câu này, chỉ điền chỗ giữ chữ). {toi} = bot tự "
                       "xưng (em / anh / chị / cô / chú), {gio} = ngày giờ khách đã nói (vd \"4 giờ chiều nay\"), {can} = đường hoặc khu của căn — câu sửa phải giữ {gio} và {can}",
                       "SRS-5.1zzzzzzz158 · câu người xem chat chị Ngân góp ý 23/10"),
+    # --- Lõi gửi nhắc cho khách mua do trigger DB tạo (SRS-5.1zzzzzzz216, 27/10/2026: `nudge` gỡ 18/10 nên các nhắc này không ai gửi) ---
+    "bao_tra_loi_chu_nha": ("Chủ nhà căn {ma} vừa trả lời câu {goi} hỏi “{cau_hoi}”: {tra_loi}\n{Goi} còn muốn hỏi thêm gì về căn này không ạ?",
+                            "Chủ nhà / admin trả lời câu khách mua hỏi (nhắc `followup`). {ma} = mã căn, {cau_hoi} = câu khách hỏi, {tra_loi} = câu "
+                            "trả lời, {toi} = bot tự xưng — câu sửa phải giữ {tra_loi}", "SRS-5.1zzzzzzz216"),
+    "bao_lich_da_chot": ("Lịch xem căn {ma} của {goi} đã được chốt: {gio}. Tới giờ {goi} ghé xem nhé, có gì thay đổi {goi} nhắn {toi} ạ.",
+                         "Admin chốt lịch xem (`#mã: ok giờ`) → báo khách mua (nhắc `followup` có viewing_id). {ma} = mã căn, {gio} = giờ đã chốt, "
+                         "{toi} = bot tự xưng — câu sửa phải giữ {gio}", "SRS-5.1zzzzzzz216"),
+    "bao_can_da_ban": ("Căn {ma} {goi} quan tâm vừa có người chốt rồi ạ. {Goi} muốn {toi} tìm căn khác tương tự không ạ?",
+                       "Căn khách mua đã quan tâm chuyển sang đã chốt (nhắc `sold`). {ma} = mã căn, {toi} = bot tự xưng", "SRS-5.1zzzzzzz216"),
+    "hoi_cam_nhan_sau_xem": ("{Goi} đi xem căn {ma} rồi thấy sao ạ? {Goi} kể {toi} nghe vài dòng để {toi} tìm tiếp cho đúng ý nhé.",
+                             "4 giờ sau giờ hẹn xem nhà (nhắc `feedback`). {ma} = mã căn, {toi} = bot tự xưng", "SRS-5.1zzzzzzz216"),
 }
 
 # Khung bắt buộc của vài câu — code dựa vào khung đó (dòng mở bản nháp: tìm tiêu đề, cắt câu dẫn). Câu sửa sai khung → mặc định.
 # Chỗ giữ chữ câu sửa tay BẮT BUỘC giữ (thiếu thì bot nói câu không có con số) — kiểm trên câu sửa, trước khi điền.
-_BAT_BUOC = {"bao_phi": ("{phi}",), "xac_nhan_lich": ("{gio}", "{can}")}
+_BAT_BUOC = {"bao_phi": ("{phi}",), "xac_nhan_lich": ("{gio}", "{can}"), "bao_tra_loi_chu_nha": ("{tra_loi}",),
+             "bao_lich_da_chot": ("{gio}",)}
 
 _KHUNG = {
     "mo_dau_nhap": lambda c: c.startswith("📋") and c.rstrip().endswith(":") and "\n" not in c,

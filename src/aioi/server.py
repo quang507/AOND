@@ -160,6 +160,7 @@ class ZaloBridgePayload(BaseModel):
     mark_sent: str | None = None
     sent_bubbles: int | None = None
     done: bool | None = None
+    human_note: bool | None = None      # bridge: tin ĐI RA từ acc clone không phải bot gửi = admin gõ tay → bot nhường sân (SRS-5.1zzzzzzz216)
 
 
 class ZaloBridgeResponse(BaseModel):
@@ -340,6 +341,95 @@ def _gui_bao_can_moi(zalo_id: str, tin: str, ten: str | None, can: dict, anh: li
 
 BAO_CAN_MOI_CHU_KY_GIAY = int(os.environ.get("BAO_CAN_MOI_CHU_KY_GIAY", "600"))
 
+# --- Người thật nói chuyện với khách (SRS-5.1zzzzzzz216) ---------------------------------------------------------------------------
+NHUONG_SAN_GIAY = int(os.environ.get("NHUONG_SAN_GIAY", "1800"))   # FR-141: bot nhường sân 30 phút sau khi người thật nhắn
+
+
+def _dap_rong() -> "ZaloBridgeResponse":
+    return ZaloBridgeResponse(reply="", replies=[], nhip_go=[], assistant_name="", captured=[], next_field=None,
+                              property_score=0.0, user_score=0.0, tier="", completeness=0.0)
+
+
+def _dang_nhuong_san(user_key: str) -> bool:
+    """Người thật vừa nói trong NHUONG_SAN_GIAY → bot im (như nút giữ, nhưng tự hết). Mốc giữ trong `Conversation.nhuong_san_den` (SQLite)."""
+    try:
+        return _engine.conversation(user_key).nhuong_san_den > time.time()
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _nguoi_that_noi(user_key: str, text: str, ten: str | None = None, vai: str | None = None, sender: str = "human") -> None:
+    """Admin vừa nói với khách (gõ tay trên acc clone, hoặc lõi vừa gửi tin admin soạn ở /admin/tin-nhan): lời đó vào lịch sử lõi như
+    một lượt trợ lý (bot quay lại còn biết đã nói gì), vào CRM với sender `human`, huỷ nhắc 5 phút, đặt mốc nhường sân, đánh dấu
+    `human_touch_at` để CRM hiện "người thật đã vào"."""
+    from .engine import Turn
+    bay_gio = time.time()
+    with _engine.khoa_luot(user_key):
+        conv = _engine.conversation(user_key)
+        conv.nhuong_san_den = bay_gio + NHUONG_SAN_GIAY
+        if text:
+            conv.history.append(Turn(role="assistant", content=text, at=bay_gio))
+        if _engine._convstore is not None:
+            try:
+                _engine._convstore.save(conv)
+            except Exception as e:  # noqa: BLE001
+                _so_loi.ghi_loi("nguoi that noi", f"lưu mốc nhường sân hụt: {type(e).__name__}"[:200])
+        vai = vai or ("buyer" if conv.role == "buyer" else "seller")
+    followup_manager.cancel_followup(user_key)
+    if text:
+        sync_to_supabase_async(external_user_id=user_key, incoming_text="", bot_reply=text, role=vai, user_name=ten, nguoi_gui=sender)
+    danh_dau = getattr(_engine._convstore, "danh_dau_nguoi_that", None)
+    if danh_dau is not None:
+        def chay() -> None:
+            try:
+                danh_dau(user_key, vai)
+            except Exception as e:  # noqa: BLE001
+                _so_loi.ghi_loi("nguoi that noi", f"human_touch_at hụt: {type(e).__name__}"[:200])
+        threading.Thread(target=chay, daemon=True).start()
+
+
+# --- Lõi gửi nhắc cho khách do trigger DB tạo (SRS-5.1zzzzzzz216) --------------------------------------------------------------------
+GUI_NHAC_CHU_KY_GIAY = int(os.environ.get("GUI_NHAC_CHU_KY_GIAY", "60"))
+
+
+def _gui_nhac_mot(zalo_id: str, text: str) -> bool:
+    _gui_bridge(zalo_id, text)   # ném lỗi khi bridge không nhận → gui_nhac đếm hụt
+    return True
+
+
+def _ghi_lich_su_nhac(zalo_id: str, text: str, vai: str, ten: str | None, sender: str) -> None:
+    """Tin nhắc đã đi: vào lịch sử lõi + CRM như tin báo căn mới; tin admin soạn (`admin_reply`) còn đặt mốc nhường sân."""
+    if sender == "human":
+        _nguoi_that_noi(zalo_id, text, ten, vai, "human")
+        return
+    from .engine import Turn
+    with _engine.khoa_luot(zalo_id):
+        conv = _engine.conversation(zalo_id)
+        conv.history.append(Turn(role="assistant", content=text, at=time.time()))
+        if _engine._convstore is not None:
+            _engine._convstore.save(conv)
+    sync_to_supabase_async(external_user_id=zalo_id, incoming_text="", bot_reply=text, role=vai, user_name=ten)
+
+
+def _vong_gui_nhac() -> None:
+    """Quét mỗi GUI_NHAC_CHU_KY_GIAY các nhắc `followup` / `sold` / `feedback` / `admin_reply` còn pending (logic ở `gui_nhac`). Tắt: GUI_NHAC=tat."""
+    from . import gui_nhac
+    time.sleep(75)   # lõi khởi động xong, bridge nối lại
+    while True:
+        try:
+            kho = _engine._convstore
+            if getattr(kho, "is_configured", False):
+                ra = gui_nhac.chay_mot_luot(kho, _gui_nhac_mot, _xung_ho_khach, _ghi_lich_su_nhac)
+                if ra:
+                    log.info("Gửi nhắc: %d tin (%s)", len(ra), ", ".join(str(r["kind"]) for r in ra))
+        except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
+            _so_loi.ghi_loi("gui nhac", f"{type(e).__name__}: {e}"[:200])
+        time.sleep(GUI_NHAC_CHU_KY_GIAY)
+
+
+if os.environ.get("GUI_NHAC", "bat") != "tat" and _settings.supabase_service_role_key:
+    threading.Thread(target=_vong_gui_nhac, daemon=True, name="gui-nhac").start()
+
 
 def _vong_bao_can_moi() -> None:
     """SRS-5.1zzzzzzz150: quét định kỳ báo khách mua có căn mới vừa nhu cầu (khung 8–20 giờ nằm trong `bao_can_moi`). Tắt: BAO_CAN_MOI=tat."""
@@ -475,8 +565,14 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     zalo_name = payload.sender_name or payload.user_name
 
     # Admin đang giữ hội thoại (nút "giữ" trên /admin/tin-nhan) → bot im, chỉ ghi lời khách vào CRM cho admin đọc (SRS-5.1zzzzzzz82).
+    # SRS-5.1zzzzzzz216 (chủ dự án 27/10: "làm 4 đi"): admin gõ tay trên acc clone → bridge gửi `human_note` (từ FR-141) mà lõi bỏ qua
+    # trường này, coi lời admin là lời khách và trả lời chen. Nay: ghi lời admin vào lịch sử + CRM (sender "human"), bot nhường sân
+    # NHUONG_SAN_GIAY, không gọi model.
+    if payload.human_note:
+        _nguoi_that_noi(payload.external_user_id, (payload.text or "").strip(), zalo_name)
+        return _dap_rong()
     giu = getattr(_engine._convstore, "dang_giu_hoi_thoai", None)
-    if giu is not None and giu(payload.external_user_id):
+    if (giu is not None and giu(payload.external_user_id)) or _dang_nhuong_san(payload.external_user_id):
         followup_manager.cancel_followup(payload.external_user_id)
         sync_to_supabase_async(external_user_id=payload.external_user_id, incoming_text=(payload.text or "").strip()
                                or "[Khách gửi tin nhắn]", bot_reply="", zalo_msg_id=payload.msg_id, user_name=zalo_name,
