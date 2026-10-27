@@ -3561,6 +3561,16 @@ class Engine:
             elif not conv.y_luot.get("_cong_web_phuong"):
                 conv.y_luot["_cong_web_phuong"] = True
                 conv.lo["phuong"] = n + 1
+                # SRS-5.1zzzzzzz214 mục 8 (chủ dự án 27/10: "khách không chọn thì lưu cả 2 luôn"): đã hỏi một lần mà khách không chọn, kho tra được
+                # 2–4 phường ứng viên (đường / hẻm, hoặc phường cũ bị chia) → ghi tạm CẢ các phường đó vào ô, tin lên web, thôi hỏi, không báo admin.
+                # Đây là ô do HỆ THỐNG ghi theo quyết định chủ dự án (ngoại lệ "ô tin chỉ ghi điều khách nói", SRS-73) — đánh dấu `_phuong_he_thong`.
+                ung_vien = self._ung_vien_phuong(conv, web)
+                if n >= 1 and 2 <= len(ung_vien) <= 4:
+                    conv.prop.fields["phuong"] = " / ".join(ung_vien)
+                    conv.prop.fields["_phuong_he_thong"] = "1"
+                    web["thieu"] = [o for o in (web.get("thieu") or []) if o != "phuong"]
+                    web["phuong_he_thong"] = ung_vien
+                    return web
                 # SRS-5.1zzzzzzz214 mục 7 (chat anh Luận 27/10 06:34–06:44 VN: 15 tin 🙋 tới admin trong 10 phút): `y_luot` làm mới mỗi lượt nên
                 # "chưa có can_nguoi_that" luôn đúng → từ lượt 3 trở đi lượt nào cũng báo. Cờ nhớ qua lượt nằm ở ô tin: báo admin MỘT lần mỗi căn.
                 f = conv.prop.fields
@@ -3569,6 +3579,22 @@ class Engine:
                     conv.y_luot["can_nguoi_that"] = ("Bot hỏi phường 3 lượt chưa ra — nhờ admin tra và điền phường ở Sửa tin: "
                                                      + ", ".join(str(f[k]) for k in ("du_an", "duong", "dia_chi", "quan") if f.get(k)))
         return web
+
+    def _ung_vien_phuong(self, conv: Conversation, web: dict) -> list[str]:
+        """Phường ứng viên (tên đầy đủ) để ghi tạm cả hai khi khách không chọn (SRS-5.1zzzzzzz214 mục 8): kho đường / hẻm trước, không có thì các
+        phường mới mà phường cũ đánh số khách nói bị chia về (`TraDiaDanh.phuong_cu_chia`). Kho hỏng → []."""
+        ph = list(web.get("goi_y_phuong") or [])
+        if ph:
+            return ph
+        chia = getattr(self._dia_danh, "phuong_cu_chia", None)
+        if not chia:
+            return []
+        f = conv.prop.fields
+        try:
+            return list(chia(f.get("phuong"), f.get("quan")) or [])
+        except Exception as e:  # noqa: BLE001
+            log.warning("phuong_cu_chia lỗi: %s", e)
+            return []
 
     def _goi_y_phuong(self, conv: Conversation) -> list[str]:
         """Phường kho đường / kho hẻm tra được cho địa chỉ khách nói (1–4 phường) — để bot kể cho khách chọn, không tự bịa tên."""

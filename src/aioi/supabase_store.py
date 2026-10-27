@@ -259,8 +259,17 @@ class SupabaseConversationStore(KhoNguoiMua):
         phuong, quan = self._chuan_dia_ban(chu)
         if not phuong:
             phuong = self._phuong_chia_da_chon(chu, fields, quan)
-        # Nguồn phường (cột `ward_source`, SRS-5.1zzzzzzz89): tra từ chữ khách gõ = khách nói; lấy theo dự án = suy đoán.
-        nguon = "chu_xac_nhan" if phuong else "suy_doan"
+        he_thong = False
+        if not phuong and " / " in str(fields.get("phuong") or ""):
+            # SRS-5.1zzzzzzz214 mục 8: ô phường "A / B" do hệ thống ghi tạm (khách không chọn) — cột `ward` chỉ chứa MỘT tên chuẩn (20261009b) nên
+            # lấy phường đầu tra được; nguồn là suy đoán. Ô tin vẫn giữ cả hai để bản tin / admin thấy.
+            for phan in str(fields["phuong"]).split(" / "):
+                p2, q2 = self._chuan_dia_ban(", ".join(x for x in (phan.strip(), fields.get("quan") or quan) if x))
+                if p2:
+                    phuong, quan, he_thong = p2, quan or q2, True
+                    break
+        # Nguồn phường (cột `ward_source`, SRS-5.1zzzzzzz89): tra từ chữ khách gõ = khách nói; lấy theo dự án / ghi tạm = suy đoán.
+        nguon = "chu_xac_nhan" if phuong and not he_thong else "suy_doan"
         # Căn hộ trong dự án: khách thường chỉ nói tên dự án — lấy phường theo địa chỉ dự án trong kho (SRS-5.1zzzzzzz41), chỉ
         # khi tên khớp rõ một dự án (`_du_an`, SRS-5.1zzzzzzz86 — bản trước lấy dòng đầu của tìm gần đúng).
         # Cột phường của dự án (đã là tên chuẩn) tra TRƯỚC, chữ địa chỉ dài chỉ là lưới đỡ (SRS-5.1zzzzzzz87): bắn thử KB5 20/10 —
