@@ -86,3 +86,47 @@ def test_dia_ban_ghi_phuong_khi_khach_goi_ten_mot_phuong_moi_du_dia_chi_con_phuo
     assert _kho((None, "Quận Bình Thạnh"))._dia_ban(f2)[0] is None
     # DB đã tra ra phường thì giữ nguyên, không đụng
     assert _kho(("Phường Chợ Quán", "Quận 5"))._dia_ban({"phuong": "P.6", "quan": "Quận 5"})[0] == "Phường Chợ Quán"
+
+
+# --- SRS-5.1zzzzzzz214 mục 8 (chủ dự án 27/10/2026: "khách không chọn thì lưu cả 2 luôn") — hỏi một lần, khách không chọn thì hệ thống ghi tạm
+# cả các phường ứng viên, tin lên web, không báo admin; cột `ward` lấy phường đầu tra được (nguồn suy đoán).
+def test_cong_web_khach_khong_chon_thi_ghi_tam_ca_hai_phuong():
+    from tests.test_doc_y_khach import _eng
+    eng, _ = _eng({"operations": []})
+    eng._dia_danh = _tra()
+    c = eng.conversation("ph2")
+    c.prop.fields.update({"duong": "Hoàng Hoa Thám", "phuong": "phường 6", "quan": "Bình Thạnh", "dia_chi": "Hoàng Hoa Thám, phường 6, Bình Thạnh"})
+    eng._convstore = type("K", (), {"trang_thai_tin": lambda self, conv: {"len_web": False, "thieu": ["phuong"]}, "save": lambda self, conv: None,
+                                    "load": lambda self, k: None})()
+    c.y_luot = {}
+    web = eng._trang_thai_web(c)          # lượt 1: hỏi (kể hai phường)
+    assert "phuong" in web["thieu"] and c.prop.fields["phuong"] == "phường 6" and c.lo["phuong"] == 1
+    c.y_luot = {}
+    web = eng._trang_thai_web(c)          # lượt 2: khách vẫn không chọn → ghi tạm cả hai
+    assert c.prop.fields["phuong"] == "Phường Bình Lợi Trung / Phường Gia Định" and c.prop.fields["_phuong_he_thong"] == "1"
+    assert "phuong" not in web["thieu"] and web["phuong_he_thong"] == ["Phường Bình Lợi Trung", "Phường Gia Định"]
+    assert "can_nguoi_that" not in c.y_luot and "_phuong_bao_admin" not in c.prop.fields
+    from aioi.prompts import khoi_trang_thai_web
+    k = khoi_trang_thai_web({"len_web": False, "thieu": [], "phuong_he_thong": web["phuong_he_thong"]})
+    assert "ghi tạm CẢ các phường Phường Bình Lợi Trung / Phường Gia Định" in k[0] and "KHÔNG hỏi phường nữa" in k[1]
+    # kho đường / phường cũ không tra ra ứng viên → vẫn đường cũ: hỏi tới lần 3 rồi báo admin một lần
+    eng._dia_danh = None
+    c2 = eng.conversation("ph3")
+    c2.prop.fields.update({"du_an": "Era Town Đức Khải", "quan": "Quận 7"})
+    for _ in range(3):
+        c2.y_luot = {}
+        eng._trang_thai_web(c2)
+    assert "nhờ admin tra" in c2.y_luot["can_nguoi_that"] and "phuong" not in c2.prop.fields
+
+
+def test_dia_ban_cot_ward_lay_phuong_dau_tra_duoc_khi_o_ghi_ca_hai():
+    f = {"dia_chi": "Hoàng Hoa Thám, phường 6, Bình Thạnh", "phuong": "Phường Bình Lợi Trung / Phường Gia Định", "quan": "Bình Thạnh"}
+    kho = _kho((None, "Quận Bình Thạnh"))
+    kho._chuan_dia_ban = lambda chu: (("Phường Gia Định", "Quận Bình Thạnh") if chu.startswith("Phường Gia Định") else (None, "Quận Bình Thạnh"))
+    assert kho._dia_ban(f) == ("Phường Gia Định", "Quận Bình Thạnh", "suy_doan")   # phường đầu tra được; nguồn suy đoán
+    kho._chuan_dia_ban = lambda chu: (("Phường Bình Lợi Trung", "Quận Bình Thạnh") if chu.startswith("Phường Bình Lợi Trung") else (None, "Quận Bình Thạnh"))
+    assert kho._dia_ban(f)[0] == "Phường Bình Lợi Trung"
+    # cách ghi mới chưa bắn: ba phường ứng viên, quận chưa có trong ô
+    f3 = {"phuong": "Phường An Đông / Phường Chợ Quán / Phường An Đông"}
+    kho._chuan_dia_ban = lambda chu: (("Phường Chợ Quán", "Quận 5") if chu.startswith("Phường Chợ Quán") else (None, None))
+    assert kho._dia_ban(f3) == ("Phường Chợ Quán", "Quận 5", "suy_doan")

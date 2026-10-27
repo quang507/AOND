@@ -877,7 +877,14 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
     cam = ("TUYỆT ĐỐI KHÔNG nói tin đã đăng / đã lên web / đang hiển thị, KHÔNG bảo khách vào web xem tin của mình, KHÔNG nói "
            f"\"{cau_mau.cau('duyet_tin')}\" (SRS-5.1zzzzzzz107).")
     thieu = [o for o in (web.get("thieu") or []) if o in FIELD_LABELS]
-    if thieu and thieu[0] == "phuong" and web.get("phuong_bao_admin"):
+    ghi_tam = [p for p in (web.get("phuong_he_thong") or []) if isinstance(p, str)]
+    if ghi_tam and not thieu:
+        # SRS-5.1zzzzzzz214 mục 8 (chủ dự án 27/10: "khách không chọn thì lưu cả 2 luôn"): hệ thống vừa ghi tạm cả các phường ứng viên.
+        ly_do = (f"TIN ĐANG ĐƯỢC ĐƯA LÊN WEB: khách chưa chọn phường mới nên hệ thống ghi tạm CẢ các phường {' / '.join(ghi_tam)} (hệ thống tra, "
+                 f"không phải khách nói). {cam}")
+        viec = (f"báo khách MỘT câu ngắn: nhà nằm ở ranh {' / '.join(ghi_tam)} nên em ghi cả hai, khách muốn sửa phường thì nhắn em; KHÔNG hỏi "
+                "phường nữa, rồi tiếp việc đang dở.")
+    elif thieu and thieu[0] == "phuong" and web.get("phuong_bao_admin"):
         # SRS-5.1zzzzzzz214 mục 7: đã báo admin tra phường (sau 3 lượt hỏi) → thôi hỏi, không nhắc lại mỗi lượt.
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu phường, admin ĐÃ được báo để tra và điền. {cam}"
         viec = ("KHÔNG hỏi khách về phường / số nhà / gần đâu nữa; nếu khách hỏi tin thì nói bên em đang tra phường rồi lên web, còn lại đáp "
