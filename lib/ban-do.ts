@@ -65,6 +65,22 @@ export function popupCan(l: MapRow): string {
   </div>`;
 }
 
+/** Popup danh sách khi nhiều căn nằm CÙNG một chỗ (toạ độ cấp đường — chưa có số nhà) nên phóng to không tách được (SRS-5.1zzzzzzz221). */
+export const DS_CUM_TOI_DA = 30;
+export function popupNhieuCan(rows: MapRow[]): string {
+  const dong = rows.slice(0, DS_CUM_TOI_DA).map((l) => {
+    const noi = [l.street, l.ward].filter(Boolean).join(", ");
+    return `<a class="popup-ban-do__dong" href="/nha-dat/${encodeURIComponent(maTin(l))}">
+      <span class="popup-ban-do__gia">${esc(formatPrice(l.price_vnd, l.price_raw))}</span>
+      <span class="popup-ban-do__noi">${l.deal === "cho_thue" ? "Cho thuê" : "Bán"}${noi ? " · " + esc(noi) : ""}</span></a>`;
+  });
+  const con = rows.length - DS_CUM_TOI_DA;
+  return `<div class="popup-ban-do popup-ban-do--ds">
+    <div class="popup-ban-do__nhan">${rows.length} căn cùng vị trí trên bản đồ</div>
+    <div class="popup-ban-do__ds">${dong.join("")}${con > 0 ? `<div class="popup-ban-do__noi">…và ${con} căn nữa</div>` : ""}</div>
+  </div>`;
+}
+
 /** Nạp maplibre-gl + chỉ đúng file worker. MapLibre 6 tự tìm worker cạnh file của nó (`import.meta.url`), nhưng khi Next đóng gói thì
  *  file đó không đi theo → "Worker failed to load", bản đồ trống (bắt 26/10 khi chụp bản build). `new URL(…, import.meta.url)` để webpack
  *  phát file worker thành tài nguyên tĩnh của bản build — cùng phiên bản với gói đã cài, không chép tay vào public/. */

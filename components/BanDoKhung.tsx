@@ -246,7 +246,7 @@ export default function BanDoKhung() {
     };
   }, [tv, moc]);
 
-  // Gõ tên địa danh → gợi ý (rpc `tim_moc`, nghỉ 300 ms, tối đa 8 dòng).
+  // Gõ tên địa danh / tên đường → gợi ý (rpc `tim_moc`, nghỉ 300 ms, tối đa 10 dòng).
   useEffect(() => {
     const t = timMoc.trim();
     if (t.length < 3 || (moc && t === moc.ten)) {
@@ -300,7 +300,7 @@ export default function BanDoKhung() {
                   setGoiYMoc([]);
                 }
               }}
-              placeholder="Quanh địa danh: tên trường, bệnh viện, chợ, siêu thị, công viên, dự án…"
+              placeholder="Quanh địa danh: tên đường, trường, bệnh viện, chợ, siêu thị, công viên, dự án…"
               autoComplete="off"
               className="min-h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none focus:border-brand"
             />
@@ -334,7 +334,7 @@ export default function BanDoKhung() {
           {moc && (
             <p className="mt-1.5 text-xs text-mute">
               Đang xem quanh <span className="font-semibold text-navy">{moc.ten}</span> ({TEN_LOAI_MOC[moc.loai] ?? moc.loai}). Bong bóng
-              &quot;N căn&quot; là nhiều căn gần nhau — bấm để phóng to.
+              &quot;N căn&quot; là nhiều căn gần nhau — bấm để phóng to; căn trùng chỗ thì hiện danh sách.
             </p>
           )}
         </div>

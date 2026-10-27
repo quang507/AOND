@@ -1667,7 +1667,8 @@ def test_link_question_read_by_ai_with_quote():
     spy = SpyProvider({"operations": [], "hoi_ve": "link_web", "hoi_ve_trich_dan": "coi trên mạng chỗ nào"})
     eng = Engine(spy, fetcher=_fetch_default)
     eng.handle("test_user_link", cau)
-    assert "KHÁCH HỎI VỀ LINK" in spy.last_system and "aioinhadat.com" in spy.last_system
+    from aioi.web import SITE_HOST   # SRS-5.1zzzzzzz220: link web một nguồn (aioinhadat.com chưa trỏ về web)
+    assert "KHÁCH HỎI VỀ LINK" in spy.last_system and SITE_HOST in spy.last_system
     # Trích dẫn bịa (không có trong lời khách) → không chèn khối.
     spy2 = SpyProvider({"operations": [], "hoi_ve": "link_web", "hoi_ve_trich_dan": "cho xin link web"})
     eng2 = Engine(spy2, fetcher=_fetch_default)

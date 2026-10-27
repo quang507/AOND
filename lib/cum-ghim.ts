@@ -4,14 +4,17 @@
 // Chỉ hàm thuần dựng phần tử lúc gọi — không import maplibre-gl ở đây (component tự nạp qua `napMapLibre`).
 import Supercluster from "supercluster";
 import type { Map as BanDo, Marker } from "maplibre-gl";
-import { ghimGia, popupCan } from "@/lib/ban-do";
+import { ghimGia, popupCan, popupNhieuCan } from "@/lib/ban-do";
 import type { MapRow } from "@/lib/supabase";
 
 type ThuVien = typeof import("maplibre-gl");
 type Diem = { i: number };
 
 export const BAN_KINH_CUM = 60; // px — hai ghim gần hơn khoảng này (ở zoom đang xem) thì gom
-export const ZOOM_HET_CUM = 17; // từ zoom này trở lên luôn hiện ghim lẻ
+// SRS-5.1zzzzzzz221 (chủ dự án 27/10: "sao 1 căn mà nó ghi 9 căn… zoom vào có 1 căn à"): 9 tin có CÙNG toạ độ (cấp đường, chưa có số nhà) nên
+// bản cũ (hết gom từ zoom 17) để chín ghim chồng khít thành một. Nay gom tới zoom tối đa của bản đồ: căn trùng chỗ luôn là bong bóng, bấm thì
+// mở danh sách thay vì phóng to mãi không tách.
+export const ZOOM_HET_CUM = 22;
 
 /** Phần tử bong bóng cụm: "N căn", to dần theo số căn. */
 export function bongBongCum(n: number): HTMLButtonElement {
@@ -19,7 +22,7 @@ export function bongBongCum(n: number): HTMLButtonElement {
   el.type = "button";
   el.className = `cum-ghim${n >= 100 ? " cum-ghim--lon" : n >= 20 ? " cum-ghim--vua" : ""}`;
   el.textContent = `${n} căn`;
-  el.setAttribute("aria-label", `${n} căn ở gần nhau, bấm để phóng to`);
+  el.setAttribute("aria-label", `${n} căn ở gần nhau, bấm để phóng to hoặc xem danh sách`);
   return el;
 }
 
@@ -52,11 +55,24 @@ export function cumGhim(
       if ("cluster" in c.properties && c.properties.cluster) {
         const el = bongBongCum(c.properties.point_count);
         const id = c.properties.cluster_id;
+        const mk = new ml.Marker({ element: el }).setLngLat([lng, lat]);
         el.addEventListener("click", () => {
-          const zoom = Math.min(index.getClusterExpansionZoom(id), ZOOM_HET_CUM + 1);
+          const zoom = index.getClusterExpansionZoom(id);
+          const la = index.getLeaves(id, Infinity);
+          const trungCho = la.every((f) => {
+            const [x, y] = f.geometry.coordinates;
+            const [x0, y0] = la[0].geometry.coordinates;
+            return Math.abs(x - x0) < 1e-6 && Math.abs(y - y0) < 1e-6;
+          });
+          if (trungCho || zoom > map.getMaxZoom()) {
+            // Phóng to không tách được → danh sách các căn ngay tại chỗ.
+            const ds = la.map((f) => rows[(f.properties as Diem).i]).filter(Boolean);
+            new ml.Popup({ offset: 16, maxWidth: "300px" }).setLngLat([lng, lat]).setHTML(popupNhieuCan(ds)).addTo(map);
+            return;
+          }
           map.easeTo({ center: [lng, lat], zoom, duration: 500 });
         });
-        ghim.push(new ml.Marker({ element: el }).setLngLat([lng, lat]).addTo(map));
+        ghim.push(mk.addTo(map));
       } else {
         const l = rows[(c.properties as Diem).i];
         if (!l) continue;
@@ -82,6 +98,7 @@ export type Moc = { ten: string; loai: string; lat: number; lng: number };
 
 export const TEN_LOAI_MOC: Record<string, string> = {
   truong_hoc: "Trường", benh_vien: "Bệnh viện", cho: "Chợ", sieu_thi: "Siêu thị", cong_vien: "Công viên", du_an: "Dự án",
+  duong: "Đường", hem: "Hẻm",
 };
 
 /** Ghim địa danh (trường / bệnh viện / chợ / dự án…): chấm tròn + nhãn tên, không bấm được, đặt trên ghim giá. */

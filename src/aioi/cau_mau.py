@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 MAC_DINH: dict[str, tuple[str, str, str]] = {
     "duyet_tin": ("Em xin phép đăng tin ạ!",
                   "Khách duyệt bản nháp — đoạn đầu lời đáp (tin đã lên web)", "SRS-5.1zzzzzzz103 · tester, chủ dự án 21/10"),
-    "hoi_phi": ("{Goi} có thể vào aioinhadat.com để theo dõi tin rao ạ. {Goi} biết phí môi giới bên em chưa ạ?",
+    "hoi_phi": ("{Goi} có thể vào {web} để theo dõi tin rao ạ. {Goi} biết phí môi giới bên em chưa ạ?",
                 "Ngay sau câu duyệt tin — tin nhắn thứ hai, câu hỏi phí (bot nói theo tinh thần câu này)",
                 "SRS-5.1zzzzzzz81 / 98 · bản anh Luận + câu tester 21/10"),
     "bao_phi": ("Em xin phép báo phí bên em: phí môi giới bên em là {phi}. Chỉ thu khi giao dịch thành công. Mình cần biết thêm thông "
@@ -192,6 +192,9 @@ def _da_sua() -> dict[str, str]:
 
 def _dien(mau: str, goi: str, **bien) -> str:
     goi = (goi or "anh/chị").strip()
+    if "{web}" in mau and "web" not in bien:   # SRS-5.1zzzzzzz220: địa chỉ web một nguồn (`web.SITE_HOST`), không viết tay tên miền
+        from .web import SITE_HOST
+        bien["web"] = SITE_HOST
     if ("{toi}" in mau or "{Toi}" in mau) and "toi" not in bien:
         bien["toi"] = "em"   # chỗ gọi quên điền thì bot xưng "em", không vỡ câu
     if "toi" in bien and "Toi" not in bien:   # {Toi} = {toi} viết hoa chữ đầu (SRS-5.1zzzzzzz214)

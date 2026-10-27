@@ -86,10 +86,12 @@ def _conv():
 
 
 def test_store_doc_status_va_o_thieu():
-    assert StoreGia([{"status": "dang_ban", "ward": "Phường Chợ Quán", "area_m2": 60, "price_vnd": 10}]).trang_thai_tin(_conv()) == \
-        {"len_web": True, "thieu": [], "cho_duyet": False}
-    assert StoreGia([{"status": "cho_thong_tin", "ward": None, "area_m2": 60, "price_vnd": None}]).trang_thai_tin(_conv()) == \
-        {"len_web": False, "thieu": ["phuong", "gia"], "cho_duyet": False}
+    c = _conv()
+    ma = c.active.listing_id[:8].upper()   # SRS-5.1zzzzzzz220: mã tin đi kèm để bot gửi link trang tin
+    assert StoreGia([{"status": "dang_ban", "ward": "Phường Chợ Quán", "area_m2": 60, "price_vnd": 10}]).trang_thai_tin(c) == \
+        {"len_web": True, "thieu": [], "cho_duyet": False, "ma": ma}
+    assert StoreGia([{"status": "cho_thong_tin", "ward": None, "area_m2": 60, "price_vnd": None}]).trang_thai_tin(c) == \
+        {"len_web": False, "thieu": ["phuong", "gia"], "cho_duyet": False, "ma": ma}
     assert StoreGia([{"status": "cho_thong_tin", "ward": "P", "area_m2": 1, "price_vnd": 1, "can_chu_duyet": True,
                       "chu_duyet_at": None}]).trang_thai_tin(_conv())["cho_duyet"] is True
     assert StoreGia([]).trang_thai_tin(_conv()) is None
