@@ -1139,7 +1139,15 @@ def _tieu_de_thieu(reply: str, prop: "Property") -> list[str]:
     tieu_de = _dong_tieu_de(reply)
     gia = prop.fields["gia"]
     so_gia = _so_trong(gia)
-    return [f"giá ({gia})"] if so_gia and not (so_gia & _so_trong(tieu_de)) else []
+    thieu = [f"giá ({gia})"] if so_gia and not (so_gia & _so_trong(tieu_de)) else []
+    # SRS-5.1zzzzzzz218 (bắn thử 27/10: tiêu đề Nguyễn Trãi 28 từ dù AD_FORMAT "15–25 từ" — chưa lưới nào đếm): đếm chữ, bỏ icon.
+    so_tu = len([w for w in re.sub(r"[^\w\s]", " ", tieu_de).split() if w])
+    if so_tu > TIEU_DE_TOI_DA_TU:
+        thieu.append(f"độ dài: {so_tu} từ, quá {TIEU_DE_TOI_DA_TU} — rút gọn")
+    return thieu
+
+
+TIEU_DE_TOI_DA_TU = 25   # AD_FORMAT: tiêu đề 15–25 từ (đổi thì đổi cả AD_FORMAT và ban-thu-ban.sh / ban-thu-kb.sh đếm wc -w)
 
 
 def _tieu_de_can_ho_co_mt(reply: str, prop: "Property") -> bool:
@@ -4070,8 +4078,10 @@ class Engine:
         if isinstance(yc, list):
             # Cụm nằm nguyên trong tin, HOẶC mọi chữ của cụm đều có trong tin (AI hay rút gọn / đảo chữ: "đem lên tiêu đề nhấn mạnh"
             # từ "em lại đem lên trên tiêu đề nhấn mạnh") — bắn thử 27/10 (run 40447321762) sổ chỉ giữ 2/4 lời dặn.
+            # và so không khoảng trắng: khách gõ "5 m", AI trích "5m" (run 40449155997 bỏ mất "mặt tiền 5 m xứng đáng để nói").
+            lien = lambda t: re.sub(r"[^0-9a-z]", "", _strip_accents(str(t or "")).lower())
             giu = [str(x).strip() for x in yc if isinstance(x, str) and x.strip()
-                   and (_trich_dan_khop(x, cuoi) or _chu_co_trong_loi_khach(x, [cuoi]))]
+                   and (_trich_dan_khop(x, cuoi) or _chu_co_trong_loi_khach(x, [cuoi]) or (lien(x) and lien(x) in lien(cuoi)))]
             if len(giu) != len([x for x in yc if isinstance(x, str) and x.strip()]) or giu:
                 log.warning("Yêu cầu viết: AI=%d giữ=%d", len([x for x in yc if isinstance(x, str) and x.strip()]), len(giu))   # chỉ số đếm
             if giu:

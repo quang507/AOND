@@ -264,7 +264,7 @@ echo "== Anh Luận: số bản tin nói 'bàn giao' ≥ 2 lần: $BAN_GIAO_2 (n
 # SRS-5.1zzzzzzz80: bắn thử 20/10 có 2/3 kịch bản bot mở đầu "Dạ không, em ghi nhận…" khi khách không hỏi gì.
 kiem "mọi kịch bản: không bong bóng nào mở đầu \"Dạ không\"" "$(grep -qE '^Dạ không' <<<"$MOI_LOI" && echo 0 || echo 1)"
 
-vps "journalctl -u aond-core --since '-10 min' --no-pager -o cat | grep -E 'Bỏ ô|Kế hoạch:|Đầu ra công cụ' | sed -E 's/[0-9]{9,}/#/g' | tail -40" || true
+vps "journalctl -u aond-core --since '-10 min' --no-pager -o cat | grep -E 'Bỏ ô|Kế hoạch:|Đầu ra công cụ|Yêu cầu viết|Lời bot lệch luật' | sed -E 's/[0-9]{9,}/#/g' | tail -40" || true
 # SRS-5.1zzzzzzz76: lượt model bị cắt / ra rỗng ghi sổ lỗi (chỉ lý do, không nội dung khách) — in ra để biết lượt nào hụt.
 q "select to_char(at, 'HH24:MI:SS') as luc, source, left(detail, 160) as chi_tiet from bot_errors
    where at > now() - interval '15 min' and (source like 'claude%' or source like 'stt%') order by at" | jq -c '.[]' || true
