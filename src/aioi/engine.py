@@ -1260,6 +1260,25 @@ def _mo_dau_ghi_nhan(reply: str) -> bool:
     return MO_DAU_GHI_NHAN_RE.match(reply or "") is not None   # một nguồn với bộ lọc ví dụ câu chuẩn (SRS-5.1zzzzzzz215)
 
 
+_NOI_DAU_CAU_RE = re.compile(r"(?i)^\s*(?:(?:vậy|vâng|ok|oke|okela|rồi|thế|thì|được|dạ)\s*[,!.]?\s*)+")
+
+
+def _co_cau_ghi_nhan(loi: str) -> bool:
+    """Lời bot có MỘT câu ghi nhận ở bất kỳ đâu ("Em ghi nhận…", "Vậy em ghi nhận là…", "… Em lưu giá rồi") — SRS-5.1zzzzzzz228 mục 3
+    (ban-thu-srd 27/10: "Vậy em ghi nhận là căn nhà vẫn đang rao" lọt vì lưới chỉ soi đầu lời). Lượt có 📋 chỉ soi phần chat quanh bản tin."""
+    phan = _phan_chat_quanh_ban_tin(loi) if "📋" in (loi or "") else (loi or "")
+    return any(MO_DAU_GHI_NHAN_RE.match(_NOI_DAU_CAU_RE.sub("", c)) for c in re.split(r"(?<=[.!?…])\s+|\n+", phan) if c.strip())
+
+
+_BOT_GUI_ANH_RE = re.compile(r"(?i)(?<![\wà-ỹđ])em\s+(?:sẽ\s+)?(?:gửi|chụp)\s+(?:thêm\s+)?(?:(?:vài|mấy|một|ít)\s+)?(?:tấm\s+)?(?:ảnh|hình)")
+
+
+def _bot_hua_gui_anh(loi: str) -> bool:
+    """Lời bot PHÍA BÁN nói "em gửi (thêm) ảnh" — ngược vai: ảnh căn là chủ nhà chụp gửi, bot không có ảnh nào để gửi chủ nhà
+    (SRS-5.1zzzzzzz228 mục 4, ban-thu-srd 27/10: "Anh có muốn em gửi thêm ảnh thực tế để tin nổi bật hơn không ạ?")."""
+    return bool(loi) and _BOT_GUI_ANH_RE.search(loi) is not None
+
+
 def _ba_chu_dau(reply: str) -> tuple[str, ...]:
     return tuple(re.findall(r"\w+", (reply or "").lower())[:3])
 
@@ -2691,10 +2710,15 @@ class Engine:
         if phi_dung:
             ly_do.append(f"Lời vừa viết báo phí % không đúng vai người rao đã biết — mức đúng: \"{phi_dung}\". Vai CHƯA rõ thì nêu đủ cả hai "
                          "mức như vậy hoặc hỏi khéo khách là chủ nhà hay môi giới, KHÔNG tự đoán một vai.")
-        if _mo_dau_ghi_nhan(reply):   # SRS-5.1zzzzzzz208: cả câu dẫn trước bản tin cập nhật ("Em ghi nhận thêm sổ hồng… 📋 Bản tin cập nhật")
-            ly_do.append("Lời vừa viết mở đầu bằng câu ghi nhận (\"Em ghi nhận / Em đã ghi giá… / Em lưu…\") — chủ dự án đã bỏ hẳn kiểu này: "
-                         "mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói (khách vừa nêu giá thì nói mức đó hợp lý / dễ bán cho vị trí khách "
-                         "đã kể, KHÔNG kèm số liệu thị trường), hoặc vào thẳng nội dung (bản tin cập nhật thì mở thẳng bằng 📋).")
+        # SRS-5.1zzzzzzz228 mục 3 (chủ dự án 27/10: "câu nào cũng dc, đừng trùng 3 4 câu em ghi nhận, 1 lần là dc" — thay "bỏ hẳn" của SRS-131):
+        # câu ghi nhận được nói MỘT lần trong cuộc chat; lượt trước đã có một câu như vậy thì lượt này gọi lại.
+        if _co_cau_ghi_nhan(reply) and any(_co_cau_ghi_nhan(t.content) for t in conv.history if t.role == "assistant" and t.content):
+            ly_do.append("Lời vừa viết có câu ghi nhận (\"Em ghi nhận / Em đã ghi… / Em lưu…\") mà em ĐÃ nói một câu kiểu này ở lượt trước — "
+                         "chỉ được một lần trong cuộc chat: lượt này đáp thẳng vào điều khách vừa nói (một lợi ích cụ thể, hoặc vào thẳng việc; "
+                         "bản tin cập nhật thì mở thẳng bằng 📋).")
+        if conv.role != "buyer" and _bot_hua_gui_anh(reply):
+            ly_do.append("Lời vừa viết nói \"em gửi ảnh\" cho chủ nhà — ngược vai: ảnh căn là CHỦ NHÀ chụp gửi cho em; muốn xin ảnh thì mời "
+                         "chủ nhà chụp gửi.")
         # SRS-5.1zzzzzzz213 (khách ảo 26/10, giám khảo chấm "không lặp" 1,4/5): lặp mở đầu / lặp nguyên câu của lượt trước — lưới cũ SRS-118
         # bị gỡ ở SRS-207; nay đặt lại, kiểm HÌNH THỨC lời của chính bot, không đọc ý.
         truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant" and t.content), "")
