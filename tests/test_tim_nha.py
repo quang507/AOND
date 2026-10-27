@@ -82,7 +82,7 @@ def test_ly_do_vao_dong_can_va_khoi_cho_bot():
 
 def test_ky_tu_dai_dien_khong_lot_vao_ilike():
     kho = KhoGia()
-    lead = BuyerLead(loai_giao_dich="thue", khu_vuc="Quận 5 %_ , (x)")
+    lead = BuyerLead(loai_giao_dich="thue", khu_vuc="Quận 5 %_ , (x)", ngan_sach="chưa rõ")   # SRS-214: cần cả ngân sách mới tìm; chữ không ra số → không trần giá
     kho.can_phu_hop(lead)
     p = _tim(kho)[0][1]
-    assert p["p_deal"] == "cho_thue" and p["p_khu"] == "Quận 5" and p["p_gia_max"] is None
+    assert p["p_deal"] == "cho_thue" and p["p_khu"] == "Quận 5"

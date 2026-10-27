@@ -24,7 +24,6 @@ def test_goi_khach_la_minh_bi_bat(loi, xung_ho):
     ("Nhà mình ở Phường 5 đúng không ạ?", "unknown"),
     ("Căn mình ở đường nào vậy anh?", "anh"),
     ("Đất mình ngang x dài khoảng bao nhiêu mét ạ?", "chi"),
-    ("Mình ở đường nào vậy em?", "em"),                            # khách xưng em → bot xưng "mình"
     ("Em chào anh, em là Trang. Anh đang cần gửi bán hay tìm mua ạ?", "anh"),
     ("Anh ơi, tin này em soạn xong rồi, ví dụ trình bày — không có đại từ nào.", "unknown"),
 ])
@@ -32,10 +31,11 @@ def test_minh_hop_le_khong_bi_bat(loi, xung_ho):
     assert not _goi_khach_la_minh(loi, xung_ho)
 
 
-def test_khoi_xung_ho_cam_minh_tru_khach_xung_em():
-    for p in ("unknown", "anh", "chi", "elder"):
+def test_khoi_xung_ho_cam_minh_moi_cach_xung():
+    # SRS-5.1zzzzzzz214: khách xưng "em" bot cũng không xưng "mình" nữa (xưng anh / chị theo tên) → cấm "mình" ở MỌI cách xưng.
+    for p in ("unknown", "anh", "chi", "elder", "em", "chau"):
         assert "KHÔNG gọi khách là \"mình\"" in khoi_xung_ho(p)
-    assert "KHÔNG gọi khách là \"mình\"" not in khoi_xung_ho("em")
+    assert _goi_khach_la_minh("Mình ở đường nào vậy em?", "em")
 
 
 class AiMinh(MockProvider):

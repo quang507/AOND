@@ -15,17 +15,18 @@ DAU_XIN_SAO = "chấm giúp"
 NGUONG_BAO_ADMIN = 2
 
 
-def cau_xin_sao(goi: str = "anh/chị", em_xung_minh: bool = False) -> str:
-    """Câu chủ dự án duyệt 21/10: "Anh/chị chấm giúp em 1–5 sao cho lần hỗ trợ này nha, để em làm tốt hơn ạ." Khách xưng "em"
-    thì bot xưng "mình" (luật xưng hô, SRS-5.1zzzzzzz86). Sửa câu ở CRM (`cau_mau`, SRS-5.1zzzzzzz106)."""
-    return cau_mau.cau("xin_cham_sao_em") if em_xung_minh else cau_mau.cau("xin_cham_sao", goi)
+def cau_xin_sao(goi: str = "anh/chị", tre: bool = False, toi: str = "em") -> str:
+    """Câu chủ dự án duyệt 21/10: "Anh/chị chấm giúp em 1–5 sao cho lần hỗ trợ này nha, để em làm tốt hơn ạ." Khách xưng "em" / "cháu"
+    (`tre`) thì bot xưng `toi` = anh / chị / cô / chú theo tên trợ lý (SRS-5.1zzzzzzz214). Sửa câu ở CRM (`cau_mau`, SRS-5.1zzzzzzz106)."""
+    return cau_mau.cau("xin_cham_sao_em", goi, toi=toi) if tre else cau_mau.cau("xin_cham_sao", goi)
 
 
 def vua_xin_sao(loi_bot_truoc: str | None) -> bool:
     """Lời bot vừa gửi có câu xin chấm sao — câu đang dùng hay câu mặc định (vừa sửa ở CRM giữa hai lượt vẫn nhận)."""
     if not loi_bot_truoc:
         return False
-    if any(c in loi_bot_truoc for c in cau_mau.moi_cach_goi("xin_cham_sao") + cau_mau.moi_cach_goi("xin_cham_sao_em")):
+    if any(c in loi_bot_truoc for c in cau_mau.moi_cach_goi("xin_cham_sao")
+           + [c for t in ("anh", "chị", "cô", "chú", "mình") for c in cau_mau.moi_cach_goi("xin_cham_sao_em", ("em", "cháu"), toi=t)]):
         return True
     return DAU_XIN_SAO in loi_bot_truoc and "1–5 sao" in loi_bot_truoc
 

@@ -460,7 +460,9 @@ GHI CHÚ NGHIỆP VỤ (để hiểu đúng và nói đúng — không phải lu
 - Trạng thái tin: KHÔNG tự nói tin "đã đăng / đang hiển thị trên web" — chỉ nói theo khối trạng thái hệ thống đưa (nếu có).
 - Không mở lượt bằng câu ghi nhận ("Em ghi nhận…", "Em lưu…", "Em ghi thêm…") — hệ thống tự lưu, khách không cần nghe.
 - Điều khách đã nói rõ (giá, địa chỉ, diện tích…) thì KHÔNG hỏi lại để xác nhận; KHÔNG nhắc tới tài liệu / bảng giá / ảnh khách chưa gửi.
-- Giá thị trường: em không có số liệu thị trường — không nêu giá khu vực, không nhận xét giá khách đưa cao / thấp.
+- Giá thị trường: em không có số liệu thị trường — không nêu con số giá khu vực, không so với căn khác; khách HỎI giá cao hay thấp thì khối
+  định giá ở dưới quyết. Khách VỪA NÊU giá: thay vì "em đã ghi giá…", ĐƯỢC khen MỘT câu định tính gắn với điểm khách đã kể ("6,2 tỷ cho vị
+  trí gần Aeon Mall là mức hợp lý, dễ có khách") — không con số thị trường, không hứa bán được (SRS-5.1zzzzzzz214, chủ dự án 27/10).
 - Không lặp lại câu / ý đã nói ở lượt trước (lời xin lỗi, trấn an "yên tâm", "cứ nhắn lại", "em sẽ báo"): mỗi ý nói MỘT lần, lượt sau vào thẳng việc; không mở đầu hai lượt liền nhau bằng cùng mấy chữ.
 
 {SLANG_NOTES}
@@ -505,7 +507,7 @@ QUY TẮC PHẢN HỒI:
   Có/Không ("cần hẻm xe hơi không?") và câu gài sẵn đáp án hay tính từ cảm xúc ("tiện lắm đúng không?", "chắc chị thích…"). Câu mời xem nhà
   ("anh/chị muốn đi xem thử không?") vẫn được.
 - GỢI Ý TRƯỚC, HỎI SAU (23/10/2026): khi phần "CĂN ĐANG RAO" ở cuối có căn thì nói căn NGAY trong tin này, câu hỏi thêm nằm CUỐI tin;
-  chưa có căn (khách chưa nêu khu vực / ngân sách) thì chỉ hỏi.
+  chưa có căn (khách chưa nêu ĐỦ khu vực và ngân sách) thì chỉ hỏi.
 - Tuyệt đối không bịa đặt căn ảo không có trong rổ hàng.
 - KHEN KHI CÓ ĐIỂM THẬT (22/10 "100% khen" → 25/10 chủ dự án nới, SRS-5.1zzzzzzz178): khách nêu thêm nhu cầu thì mở bằng MỘT mệnh đề khen
   ngắn nếu có điều đáng khen — cách nêu rõ (khu vực, ngân sách, số phòng, hẻm xe hơi…) hoặc lợi ích cụ thể của khu khách chọn (đi lại, tiện
@@ -754,37 +756,45 @@ def khoi_xin_dang(thieu: list[str], prop: Property | None = None) -> str:
 # Dòng mở đầu cố định của bản nháp tin rao. Model hay viết thêm câu dẫn TRƯỚC dòng này ("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như
 # vầy nhé anh:") → khách đọc hai câu dẫn; `cat_truoc_mo_dau` bỏ phần trước (SRS-5.1zzzzzzz76).
 # Câu đang dùng ở `cau_mau` (chủ dự án sửa ở CRM, SRS-5.1zzzzzzz110); hằng này là câu MẶC ĐỊNH.
-MO_DAU_NHAP = (cau_mau.MAC_DINH["mo_dau_nhap_em"][0], cau_mau._dien(cau_mau.MAC_DINH["mo_dau_nhap"][0], "anh chị"))
+MO_DAU_NHAP = (cau_mau._dien(cau_mau.MAC_DINH["mo_dau_nhap_em"][0], "em", toi="anh"), cau_mau._dien(cau_mau.MAC_DINH["mo_dau_nhap"][0], "anh chị"))
 _GOI_KHACH = {"anh": "anh", "chi": "chị"}
 
 
-def mo_dau_nhap(xung_ho: str = "unknown") -> str:
-    """Dòng mở đầu bản nháp theo cách khách tự xưng (SRS-5.1zzzzzzz90: khách xưng "chị" mà dòng này vẫn "anh chị")."""
-    if xung_ho == "em":
-        return cau_mau.cau("mo_dau_nhap_em")
+_TRE = ("em", "chau")   # khách xưng em / cháu → biến thể câu mẫu `_em`, bot xưng `toi` (anh / chị / cô / chú theo tên — SRS-5.1zzzzzzz214)
+
+
+def mo_dau_nhap(xung_ho: str = "unknown", toi: str = "anh") -> str:
+    """Dòng mở đầu bản nháp theo cách khách tự xưng (SRS-5.1zzzzzzz90: khách xưng "chị" mà dòng này vẫn "anh chị"). `toi` = bot tự xưng khi
+    khách xưng em / cháu (`xung_ho.goi_toi`)."""
+    if xung_ho in _TRE:
+        return cau_mau.cau("mo_dau_nhap_em", "em" if xung_ho == "em" else "cháu", toi=toi)
     return cau_mau.cau("mo_dau_nhap", _GOI_KHACH.get(xung_ho, "anh chị"))
 
 
-def cat_truoc_mo_dau(reply: str, xung_ho: str = "unknown") -> str:
+def cat_truoc_mo_dau(reply: str, xung_ho: str = "unknown", toi: str = "anh") -> str:
     """Bản nháp bắt đầu đúng ở dòng mở đầu cố định; chữ model viết trước dòng đó bỏ đi. Model chép dòng mở đầu thiếu "📋" (bắn thử
     20/10: "Em ghi nhận đủ thông tin rồi anh ạ. Em sẽ rao như vầy nhé anh chị:") vẫn nhận ra và gắn lại đúng dòng cố định
     (SRS-5.1zzzzzzz80). Bắn thử 20/10 lần 3: model đổi luôn chữ gọi khách ("Em sẽ rao như vầy nhé anh:") — so nguyên văn thì trượt,
     câu dẫn còn nguyên và lượt không được nhận là bản nháp. Nhận dòng mở đầu với bất kỳ chữ gọi khách nào (lấy dòng CUỐI — tin rao nằm
     ngay sau nó) rồi thay bằng dòng cố định theo cách xưng "Mình" / "Em" (SRS-5.1zzzzzzz85)."""
     # Nhận dòng mở theo khuôn cũ VÀ theo câu đang dùng ở CRM (SRS-5.1zzzzzzz110: chủ dự án sửa chữ thì khuôn cũ có thể trượt).
-    khop: list[tuple[int, int, bool]] = [(m.start(), m.end(), m.group(1) == "Mình") for m in _MO_DAU_RE.finditer(reply)]
-    for khoa, la_em in (("mo_dau_nhap", False), ("mo_dau_nhap_em", True)):
-        for c in cau_mau.moi_cach_goi(khoa, ("anh chị", "anh", "chị")):
+    khop: list[tuple[int, int, bool]] = [(m.start(), m.end(), m.group(1) != "Em") for m in _MO_DAU_RE.finditer(reply)]
+    for c in cau_mau.moi_cach_goi("mo_dau_nhap", ("anh chị", "anh", "chị")):
+        than = c.lstrip("📋").strip()
+        if than:
+            khop += [(m.start(), m.end(), False) for m in re.finditer(r"(?:📋\s*)?" + re.escape(than), reply)]
+    for t in ("anh", "chị", "cô", "chú", "mình"):
+        for c in cau_mau.moi_cach_goi("mo_dau_nhap_em", ("em", "cháu"), toi=t):
             than = c.lstrip("📋").strip()
             if than:
-                khop += [(m.start(), m.end(), la_em) for m in re.finditer(r"(?:📋\s*)?" + re.escape(than), reply)]
+                khop += [(m.start(), m.end(), True) for m in re.finditer(r"(?:📋\s*)?" + re.escape(than), reply)]
     if not khop:
         return reply
     _, cuoi, la_em = max(khop, key=lambda k: k[1])
-    return (mo_dau_nhap("em") if la_em else mo_dau_nhap(xung_ho if xung_ho != "em" else "unknown")) + reply[cuoi:]
+    return (mo_dau_nhap(xung_ho if xung_ho in _TRE else "em", toi) if la_em else mo_dau_nhap(xung_ho if xung_ho not in _TRE else "unknown")) + reply[cuoi:]
 
 
-_MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em) sẽ rao như vầy nhé[^:\n]{0,20}:")
+_MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em|Anh|Chị|Cô|Chú) sẽ rao như vầy nhé[^:\n]{0,20}:")
 
 
 def build_listing_proposal_system(
@@ -793,15 +803,18 @@ def build_listing_proposal_system(
     project_block: str = "",
     customer_is_em: bool = False,
     xung_ho: str = "unknown",
+    toi: str = "anh",
 ) -> str:
     """Step 1: show the customer the draft ad and ask if it looks appealing (SRD §II).
 
     Used once the listing is "khá đầy đủ". This is NOT a 30-word chat reply, so the word
     cap does NOT apply. CRUCIALLY: do NOT mention the fee yet — that comes after approval.
     """
-    opener = mo_dau_nhap("em") if customer_is_em else mo_dau_nhap(xung_ho)
+    xh_tre = xung_ho if xung_ho in _TRE else "em"
+    opener = mo_dau_nhap(xh_tre, toi) if customer_is_em else mo_dau_nhap(xung_ho)
     goi = _GOI_KHACH.get(xung_ho, "anh/chị")
-    closer = cau_mau.cau("hoi_ban_nhap_em") if customer_is_em else cau_mau.cau("hoi_ban_nhap", goi)   # sửa ở CRM (SRS-5.1zzzzzzz110)
+    closer = (cau_mau.cau("hoi_ban_nhap_em", "em" if xh_tre == "em" else "cháu", toi=toi) if customer_is_em
+              else cau_mau.cau("hoi_ban_nhap", goi))   # sửa ở CRM (SRS-5.1zzzzzzz110)
 
     # SRS-5.1zzzzzzz213: khối dự án + dữ liệu căn (đổi theo khách) xuống SAU dấu cache; phần trên (khuôn tin rao, luật) đứng yên.
     return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
@@ -864,7 +877,12 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
     cam = ("TUYỆT ĐỐI KHÔNG nói tin đã đăng / đã lên web / đang hiển thị, KHÔNG bảo khách vào web xem tin của mình, KHÔNG nói "
            f"\"{cau_mau.cau('duyet_tin')}\" (SRS-5.1zzzzzzz107).")
     thieu = [o for o in (web.get("thieu") or []) if o in FIELD_LABELS]
-    if thieu:
+    if thieu and thieu[0] == "phuong" and web.get("phuong_bao_admin"):
+        # SRS-5.1zzzzzzz214 mục 7: đã báo admin tra phường (sau 3 lượt hỏi) → thôi hỏi, không nhắc lại mỗi lượt.
+        ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu phường, admin ĐÃ được báo để tra và điền. {cam}"
+        viec = ("KHÔNG hỏi khách về phường / số nhà / gần đâu nữa; nếu khách hỏi tin thì nói bên em đang tra phường rồi lên web, còn lại đáp "
+                "điều khách vừa nói và hỏi ô khác (nếu có) như thường.")
+    elif thieu:
         nhan = ", ".join(FIELD_LABELS[o].split(" (")[0] for o in thieu)
         hoi = FIELD_LABELS[thieu[0]]
         if thieu[0] == "phuong":
@@ -1750,7 +1768,7 @@ QUY TẮC:
   DANH MỤC PHÁP LÝ (khoá: nội dung):
 {DANH_MUC_PHAP_LY}
 - KHÁCH TỰ XƯNG (đọc cả các lượt trước): xung_ho = "em" khi khách tự xưng em ("nhà em", "em gửi"); "anh" / "chi" khi khách
-  tự xưng anh / chị; "chu_co_bac" khi khách tự xưng chú / cô / bác / dì. Chữ "em" khách dùng để GỌI bot ("đăng đi em") không
+  tự xưng anh / chị; "chau" khi khách TỰ XƯNG cháu / con ("cháu muốn bán nhà", "con có căn…"); "chu_co_bac" khi khách tự xưng chú / cô / bác / dì. Chữ "em" khách dùng để GỌI bot ("đăng đi em") không
   phải tự xưng. Khách gõ tắt cũng tính: "e" = em, "a" = anh, "c" = chị ("e tìm thuê", "a là MG"). Khách GỌI bot là "con" /
   "cháu" ("sao hỏi nhiều vậy con") = khách lớn tuổi → "chu_co_bac". Chưa thấy → bỏ trống. Có điền thì xung_ho_trich_dan =
   NGUYÊN VĂN cụm chứa chữ xưng / chữ gọi đó.
@@ -1943,9 +1961,9 @@ def operations_schema() -> dict[str, Any]:
                                  "giấy tờ giả / tránh thuế / hồ sơ cụ thể cần người đọc."},
             "xung_ho": {
                 "type": "string",
-                "enum": ["em", "anh", "chi", "chu_co_bac"],
-                "description": "Khách TỰ XƯNG là gì (em / anh / chị / chú-cô-bác-dì; gõ tắt e / a / c cũng tính). Khách gọi bot là con / "
-                               "cháu → chu_co_bac. Chưa thấy thì bỏ trống.",
+                "enum": ["em", "anh", "chi", "chau", "chu_co_bac"],
+                "description": "Khách TỰ XƯNG là gì (em / anh / chị / cháu-con / chú-cô-bác-dì; gõ tắt e / a / c cũng tính). Khách tự xưng "
+                               "cháu / con → chau; khách GỌI bot là con / cháu → chu_co_bac. Chưa thấy thì bỏ trống.",
             },
             "xung_ho_trich_dan": {"type": "string", "description": "Nguyên văn cụm chứa chữ khách tự xưng / gọi bot (bắt buộc khi có xung_ho)."},
             "bot_vua_hoi": {"type": "array", "items": {"type": "string"},

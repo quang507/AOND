@@ -23,6 +23,7 @@ import time
 import urllib.parse
 from typing import Any, Callable
 
+from .xung_ho import goi_toi as _goi_toi
 from . import cau_mau
 
 log = logging.getLogger("aioi.mua")
@@ -220,7 +221,7 @@ class KhoNguoiMua:
         Hàm DB lỗi / chưa có thì về cách lọc cứng cũ — bot không mất rổ hàng. `loai_tru` = id căn khách đã chê (SRS-5.1zzzzzzz175): không
         đưa lại — xin thêm bấy nhiêu căn rồi lọc ở đây (hàm DB không nhận danh sách loại trừ)."""
         if not self.is_configured or lead is None or not co_tieu_chi(lead):
-            return []   # SRS-5.1zzzzzzz146: chưa có khu vực / ngân sách thì không đoán căn — hỏi trước
+            return []   # SRS-5.1zzzzzzz146 / 214: chưa đủ khu vực + ngân sách thì không đoán căn — hỏi trước
         loai_tru = set(loai_tru or ())
         try:
             can = self.tim_nha(lead, toi_da + len(loai_tru))
@@ -684,9 +685,10 @@ def dong_can(c: dict) -> str:
 
 
 def co_tieu_chi(lead: Any) -> bool:
-    """Đủ tiêu chí để gợi ý căn: khách đã nêu KHU VỰC hoặc NGÂN SÁCH (loại BĐS một mình chưa đủ — "nhà phố" thì căn nào cũng khớp)."""
+    """Đủ tiêu chí để gợi ý căn: khách đã nêu CẢ KHU VỰC VÀ NGÂN SÁCH (SRS-5.1zzzzzzz214, chủ dự án 27/10 "ừ" — khách ảo 26/10: Thư thuê
+    7–9 triệu mới nói khu vực đã bị đưa căn 17 triệu; bản cũ "hoặc"). Loại BĐS một mình chưa đủ — "nhà phố" thì căn nào cũng khớp."""
     f = getattr(lead, "fields", {}) or {}
-    return any(str(getattr(lead, k, None) or f.get(k) or "").strip() for k in ("khu_vuc", "ngan_sach"))
+    return all(str(getattr(lead, k, None) or f.get(k) or "").strip() for k in ("khu_vuc", "ngan_sach"))
 
 
 def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
@@ -694,7 +696,7 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
     "luôn kèm mã #" và đặt tên khối "RỔ" — model đọc mã tin, nói "trong rổ", liệt kê bằng dấu "·"; và viết "em" giữa lời xưng "cháu".
     SRS-5.1zzzzzzz146 (cùng ngày: "gửi luôn căn gợi ý rồi sau mới hỏi thêm"): thứ tự tin là khen → căn → MỘT câu hỏi ngắn."""
     if not can and chua_co_tieu_chi:
-        return ("\nCĂN ĐANG RAO: khách chưa nêu khu vực hay ngân sách nên chưa tìm căn. Lượt này CHƯA giới thiệu căn nào và KHÔNG nói \"chưa có "
+        return ("\nCĂN ĐANG RAO: khách chưa nêu đủ khu vực và ngân sách nên chưa tìm căn. Lượt này CHƯA giới thiệu căn nào và KHÔNG nói \"chưa có "
                 "căn\"; chỉ hỏi đúng câu thông tin ở trên, thật ngắn (xưng hô y như các lượt trước).\n")
     if not can:
         return ("\nCĂN ĐANG RAO: chưa có căn nào khớp nhu cầu khách. KHÔNG giới thiệu căn nào, KHÔNG bịa căn; nói sẽ báo khi có căn phù hợp "
@@ -740,20 +742,20 @@ def gop_gio_hen(cu: str | None, moi: str) -> str:
     return f"{cu}, {moi}"[:200]
 
 
-def goi_toi(pronoun: str | None) -> tuple[str, str]:
-    """(cách gọi khách, cách bot tự xưng) theo cách khách tự xưng — cùng quy ước `followup.cau_nhac`: khách xưng "em" thì gọi "em", bot xưng
-    "mình"; còn lại bot xưng "em"; chưa rõ thì "anh/chị"."""
-    return {"em": "em", "anh": "anh", "chi": "chị"}.get(pronoun or "", "anh/chị"), ("mình" if pronoun == "em" else "em")
+def goi_toi(pronoun: str | None, ten: str | None = None) -> tuple[str, str]:
+    """(cách gọi khách, cách bot tự xưng) — một nguồn ở `xung_ho.goi_toi` (SRS-5.1zzzzzzz214: khách xưng em / cháu thì bot xưng anh / chị /
+    cô / chú theo tên trợ lý `ten`, không còn "mình")."""
+    return _goi_toi(pronoun, ten)
 
 
-def khoi_lich_dang_cho(lich: list[dict] | None, pronoun: str | None = None) -> str:
+def khoi_lich_dang_cho(lich: list[dict] | None, pronoun: str | None = None, ten: str | None = None) -> str:
     """Khối đưa lịch hẹn xem ĐÃ GHI cho model phía mua (SRS-5.1zzzzzzz157). Chat chị Ngân 23/10: khách chỉ nói "ngày nào cũng rảnh", "chiều",
     "4h", bot tự viết "chiều nay" rồi "xác nhận giúp em 4 giờ chiều nay…", khách đáp "có" thì bot hỏi "ngày nào" — tự mâu thuẫn vì model không
     thấy lịch đã ghi gì và tự thêm "nay"."""
     if not lich:
         return ""
     dong = "\n".join(f"- #{x.get('listing_code') or '?'}: \"{x['time_text']}\"" for x in lich if x.get("time_text"))
-    goi, toi = goi_toi(pronoun)
+    goi, toi = goi_toi(pronoun, ten)
     mau = cau_mau.cau("xac_nhan_lich", goi, toi=toi, gio="<ngày giờ khách đã nói>", can="<đường / khu của căn>")   # sửa ở CRM (SRS-5.1zzzzzzz158)
     return ("\nLỊCH HẸN XEM ĐÃ GHI (đọc kỹ trước khi hỏi giờ / ngày; chữ trong ngoặc là đúng những gì khách đã nói):\n" + dong + "\n"
             "  • CHỈ nói ngày (hôm nay / chiều nay / ngày mai / thứ …) khi chữ ở trên hoặc lời khách có ngày đó. Khách mới nói \"chiều\" hay \"4h\" "

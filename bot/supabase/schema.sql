@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-26 16:51 (giờ VN)
+-- Sinh lúc: 2026-10-27 08:42 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -5008,6 +5008,10 @@ begin
   return query
   -- 23/10/2026 (SRS-5.1zzzzzzz156): dòng `escalation` đi tới chủ nhà / CTV / admin (escalation-feed), KHÔNG tới người mua — `buyer_id` ở đó
   -- chỉ nói việc về khách nào. Đếm nó vào người mua làm lịch hẹn xem thật (2 việc báo admin + 1 tin báo căn mới) hiện thành "3 tin" oan.
+  -- 27/10/2026 (SRS-5.1zzzzzzz214 mục 7): tin NỘI BỘ (note mở bằng 🙋 ⭐ 🩺 ❓ 😟… — cùng luật `laTinNoiBo` của bridge: chữ đầu không phải chữ /
+  -- số, không phải 💬) KHÔNG BAO GIỜ tới chủ nhà dù dòng gắn `seller_id` (escalation-feed, 01/10/2026) — nó đi CTV / admin. Đếm nó vào chủ nhà
+  -- làm 15 tin 🙋 về admin (lỗi lặp cổng phường, đã sửa ở lõi) hiện thành "chủ nhà …8895 nhận 16 tin" oan. Tin tới admin có chỗ đếm riêng? Chưa —
+  -- admin là người nhà, không phải khách bị nhắn dồn.
   with gui as (
     select coalesce(s.zalo_user_id, case when r.kind <> 'escalation' then b.zalo_user_id end) as uid, count(*) as so_tin
       from reminders r
@@ -5015,6 +5019,7 @@ begin
       left join buyers  b on b.id = r.buyer_id
      where r.status = 'sent' and r.sent_at > now() - interval '24 hours'
        and coalesce(s.zalo_user_id, case when r.kind <> 'escalation' then b.zalo_user_id end) is not null
+       and not (coalesce(btrim(r.note), '') <> '' and btrim(r.note) not like '💬%' and left(btrim(r.note), 1) !~ '[[:alnum:]]')
      group by 1 having count(*) > 2
   )
   select 'gui_qua_hai_tin_mot_ngay', 'NANG', count(*)::int,

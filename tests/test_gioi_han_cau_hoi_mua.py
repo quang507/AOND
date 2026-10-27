@@ -9,8 +9,11 @@ from tests.test_viec_mua import KhoGia, _engine
 def test_du_tieu_chi_va_da_hoi_du_thi_het_cau_hoi():
     lead = BuyerLead(user_key="gh-1")
     lead.khu_vuc = "Quận 5"
+    lead.fields["_so_cau_hoi"] = str(MAX_CAU_HOI_MUA)
+    assert lead.next_question_field() == "ngan_sach"          # SRS-214: chỉ khu vực chưa đủ tiêu chí → vẫn hỏi ngân sách
+    lead.ngan_sach = "5 tỷ"
     lead.fields["_so_cau_hoi"] = str(MAX_CAU_HOI_MUA - 1)
-    assert lead.next_question_field() == "ngan_sach"
+    assert lead.next_question_field() not in (None, "khu_vuc", "ngan_sach")
     lead.fields["_so_cau_hoi"] = str(MAX_CAU_HOI_MUA)
     assert lead.next_question_field() is None
 

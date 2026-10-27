@@ -287,13 +287,15 @@ def _gui_bridge(user_key: str, text: str, photos: list[str] | None = None) -> di
             return {}
 
 
-def _xung_ho_khach(zalo_id: str) -> str:
-    """Khách tự xưng gì (engine đã đọc theo nghĩa ở các lượt trước); chưa rõ → "unknown" (gọi "anh/chị")."""
+def _xung_ho_khach(zalo_id: str) -> tuple[str, str | None]:
+    """(khách tự xưng gì, tên trợ lý của khách) — engine đã đọc cách xưng theo nghĩa ở các lượt trước; chưa rõ → "unknown" (gọi "anh/chị").
+    Tên trợ lý để tin báo căn xưng anh / chị / cô / chú đúng tên khi khách xưng em / cháu (SRS-5.1zzzzzzz214)."""
     from .engine import _detect_customer_pronoun
     try:
-        return _detect_customer_pronoun(_engine.conversation(zalo_id), "")
+        conv = _engine.conversation(zalo_id)
+        return _detect_customer_pronoun(conv, ""), conv.assistant.name
     except Exception:  # noqa: BLE001
-        return "unknown"
+        return "unknown", None
 
 
 NHIP_BAO_CAN_MOI_GIAY = float(os.environ.get("NHIP_BAO_CAN_MOI_GIAY", "1.5"))   # nghỉ giữa các tin báo căn: nghe như người nhắn, Zalo giao đúng thứ tự

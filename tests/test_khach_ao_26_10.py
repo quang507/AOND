@@ -48,14 +48,24 @@ def test_cong_web_dem_lo_phuong_va_bao_nguoi_phu_trach_lan_3():
     c = eng.conversation("ph1")
     c.prop.fields.update({"du_an": "Era Town Đức Khải", "quan": "Quận 7"})
     eng._convstore = type("K", (), {"trang_thai_tin": lambda self, conv: {"len_web": False, "thieu": ["phuong"]}, "save": lambda self, conv: None})()
-    for lan in range(3):
+    for lan in range(2):
         c.y_luot = {}
         web = eng._trang_thai_web(c)
-    assert web["phuong_da_hoi"] and c.lo["phuong"] == 3
-    assert "nhờ admin tra" in c.y_luot["can_nguoi_that"] and "Era Town Đức Khải" in c.y_luot["can_nguoi_that"]
+    eng._trang_thai_web(c)   # hai lần trong cùng lượt chỉ đếm một
+    assert web["phuong_da_hoi"] and c.lo["phuong"] == 2 and "can_nguoi_that" not in c.y_luot
     c.y_luot = {}
-    eng._trang_thai_web(c); eng._trang_thai_web(c)   # hai lần trong cùng lượt chỉ đếm một
-    assert c.lo["phuong"] == 4
+    eng._trang_thai_web(c)
+    assert c.lo["phuong"] == 3 and "nhờ admin tra" in c.y_luot["can_nguoi_that"] and "Era Town Đức Khải" in c.y_luot["can_nguoi_that"]
+    # SRS-5.1zzzzzzz214 mục 7 (chat anh Luận 27/10: 15 tin 🙋 trong 10 phút, sổ lờ lên 16): lượt 4, 5… KHÔNG báo admin lại — cờ nhớ ở ô tin,
+    # không ở y_luot — và không đếm lờ / không hỏi phường nữa.
+    assert c.prop.fields.get("_phuong_bao_admin") == "1"
+    for lan in range(2):
+        c.y_luot = {}
+        web = eng._trang_thai_web(c)
+    assert "can_nguoi_that" not in c.y_luot and web["phuong_bao_admin"] and c.lo["phuong"] == 3
+    from aioi.prompts import khoi_trang_thai_web
+    k = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "phuong_bao_admin": True})
+    assert "KHÔNG hỏi khách về phường" in k[1] and "admin ĐÃ được báo" in k[0]
 
 
 def test_tin_rao_ta_khu_va_su_kien_khong_co():
