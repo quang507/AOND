@@ -72,12 +72,13 @@ def test_planner_doc_yeu_cau_viet_chi_giu_cum_trong_tin_khach():
     try:
         # AI rút gọn / đảo chữ (bắn thử 27/10: "đem lên tiêu đề nhấn mạnh" từ "em lại đem lên trên tiêu đề nhấn mạnh") → nhận khi mọi chữ
         # đều có trong tin; "viết ngắn thôi" có chữ khách không nói → bỏ.
-        plan = {"operations": [], "yeu_cau_viet": ["đừng đem lên tiêu đề nhấn mạnh", "đem lên tiêu đề nhấn mạnh lại", "viết ngắn thôi"]}
+        plan = {"operations": [], "yeu_cau_viet": ["đừng đem lên tiêu đề nhấn mạnh", "đem lên tiêu đề nhấn mạnh lại", "viết ngắn thôi",
+                                                    "mặt tiền 5m xứng đáng để nói"]}   # khách gõ "5 m" — so không khoảng trắng
         eng, _, seen, conv = _eng(plan, mp)
         conv.listing_proposed = True
-        eng.handle("u-duyet", "Sao mỗi lần anh nói gì em lại đem lên trên tiêu đề nhấn mạnh, đừng đem lên tiêu đề nhấn mạnh nữa")
-        assert conv.y_luot.get("yeu_cau_viet") == ["đừng đem lên tiêu đề nhấn mạnh", "đem lên tiêu đề nhấn mạnh lại"]
-        assert conv.prop.fields.get("_yeu_cau_viet") == "đừng đem lên tiêu đề nhấn mạnh | đem lên tiêu đề nhấn mạnh lại"
+        eng.handle("u-duyet", "Sao mỗi lần anh nói gì em lại đem lên trên tiêu đề nhấn mạnh, đừng đem lên tiêu đề nhấn mạnh nữa; mặt tiền 5 m xứng đáng để nói")
+        assert conv.y_luot.get("yeu_cau_viet") == ["đừng đem lên tiêu đề nhấn mạnh", "đem lên tiêu đề nhấn mạnh lại", "mặt tiền 5m xứng đáng để nói"]
+        assert conv.prop.fields.get("_yeu_cau_viet") == "đừng đem lên tiêu đề nhấn mạnh | đem lên tiêu đề nhấn mạnh lại | mặt tiền 5m xứng đáng để nói"
         he = [s for s in seen if TIEU_DE_YEU_CAU_VIET in s]
         assert he, "khối yêu cầu phải vào prompt soạn tin"
         s = he[0]
@@ -232,3 +233,15 @@ def test_chu_roi_khong_thanh_cau_hoi_treo_cho_luot_doc_anh():
     assert Engine._pending_seller_question(_conv("Em sẽ rao sao?")) == "Em sẽ rao sao?"
     assert Engine._pending_seller_question(_conv("đường nội bộ rộng bao nhiêu")) == "đường nội bộ rộng bao nhiêu"
     assert Engine._pending_seller_question(_conv("[khách gửi sticker]")) == ""
+
+
+def test_tieu_de_qua_25_tu_bi_bat():
+    from aioi.engine import _tieu_de_thieu, TIEU_DE_TOI_DA_TU
+    p = Property(loai_hinh="nha_pho"); p.fields["gia"] = "25 tỷ"
+    dai = ("📋 Bản tin cập nhật:\n\n🔥 Bà con ơi, nhà mặt tiền Nguyễn Trãi Phường Chợ Quán 25 tỷ, 4x20m, 1 trệt 3 lầu, sổ hồng riêng, đầu tư hay ở đều hợp!"
+           "\n\nMô tả.")   # 28 từ (bắn thử 27/10)
+    ly = _tieu_de_thieu(dai, p)
+    assert len(ly) == 1 and "quá 25" in ly[0]
+    ngan = "📋 Bản tin cập nhật:\n\n🏠 Anh chị ơi, mặt tiền 5m đường Hoàng Hoa Thám Bình Thạnh, 3 tầng kiên cố, giá 12,5 tỷ thương lượng nhẹ!\n\nMô tả."
+    p.fields["gia"] = "12,5 tỷ"
+    assert _tieu_de_thieu(ngan, p) == [] and TIEU_DE_TOI_DA_TU == 25
