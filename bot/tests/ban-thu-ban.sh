@@ -128,7 +128,7 @@ kiem "Nguyễn Trãi: trả lời theo cụm thì ra bản nháp trong ≤ 4 lư
 TIEU_DE=$(jq -r '.reply // ""' <<<"$TRA" | sed -n '/📋/,$p' | sed 1d | awk 'NF{print; exit}')
 echo "== Nguyễn Trãi: tiêu đề \"$TIEU_DE\" ($(wc -w <<<"$TIEU_DE") từ)"
 kiem "Nguyễn Trãi: tiêu đề ≤ 25 từ, có đường, diện tích và giá" \
-  "$([ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 26 ] && grep -qi 'Nguyễn Trãi' <<<"$TIEU_DE" && grep -qiE 'm²|m2|[0-9] ?x ?[0-9]' <<<"$TIEU_DE" && grep -qi 'tỷ' <<<"$TIEU_DE" && echo 1 || echo 0)"
+  "$([ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 26 ] && grep -qi 'Nguyễn Trãi' <<<"$TIEU_DE" && grep -qiE 'm²|m2|[0-9] ?x ?[0-9]|[0-9] ?m\b' <<<"$TIEU_DE" && grep -qi 'tỷ' <<<"$TIEU_DE" && echo 1 || echo 0)"
 # Lượt đầu khách chưa nói phường: phường từ kho chỉ được nhắc dạng hỏi, không khẳng định.
 # SRS-5.1zzzzzzz81: khách duyệt bản nháp → bot hỏi khách biết phí môi giới chưa (như bản anh Luận), không tự báo con số. Tin chưa
 # lên web (còn thiếu ô) thì lượt đó hỏi ô thiếu trước, không hỏi phí.
@@ -252,7 +252,7 @@ kiem "Anh Luận: có bản tin 📋 (số bản: $SO_NHAP)" "$([ "$SO_NHAP" -ge
 kiem "Anh Luận: mọi số m² trong bản tin là số khách nói — không 41,6m² tự nhân ($SO_M2_LA lệch)" "$([ "$SO_M2_LA" = 0 ] && echo 1 || echo 0)"
 kiem "Anh Luận: giá 12,5 tỷ, đất 34,5" "$(jq '(.price_vnd == 12500000000) and (((.area_m2 // 0) | tonumber) == 34.5) | if . then 1 else 0 end' <<<"$r9")"
 kiem "Anh Luận: bàn giao một ô (không có thoi_gian_ban_giao), hiện trạng có ghi" "$(jq '(.boc_tach.thoi_gian_ban_giao == null) and ((.boc_tach.tinh_trang_ban_giao // "") != "") | if . then 1 else 0 end' <<<"$r9")"
-kiem "Anh Luận: mặt tiền đính chính còn 5m" "$(jq '(.boc_tach.mat_tien // "") | test("(^|[^0-9,.])5 ?m") | if . then 1 else 0 end' <<<"$r9")"
+kiem "Anh Luận: mặt tiền đính chính còn 5 (ô mat_tien)" "$(jq '(.boc_tach.mat_tien // "") | test("^5 ?(m|$)") | if . then 1 else 0 end' <<<"$r9")"
 kiem "Anh Luận: câu nhờ 'cho dùm anh 2-3 cái hình tượng' KHÔNG thành ô hinh_anh" "$(jq '(.boc_tach.hinh_anh // "") | test("cho dùm|hình tượng") | if . then 0 else 1 end' <<<"$r9")"
 kiem "Anh Luận: lời dặn cách viết vào sổ _yeu_cau_viet" "$(jq '(.boc_tach._yeu_cau_viet // "") | length > 0 | if . then 1 else 0 end' <<<"$r9")"
 kiem "Anh Luận: mỗi lời dặn → có bản tin 📋 ngay lượt đó ($TIN_SAU_DAN/$DAN)" "$([ "$TIN_SAU_DAN" = "$DAN" ] && echo 1 || echo 0)"

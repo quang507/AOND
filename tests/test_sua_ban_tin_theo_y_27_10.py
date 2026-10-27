@@ -70,12 +70,14 @@ def test_planner_doc_yeu_cau_viet_chi_giu_cum_trong_tin_khach():
     import pytest
     mp = pytest.MonkeyPatch()
     try:
-        plan = {"operations": [], "yeu_cau_viet": ["đừng đem lên tiêu đề nhấn mạnh", "viết ngắn thôi"]}
+        # AI rút gọn / đảo chữ (bắn thử 27/10: "đem lên tiêu đề nhấn mạnh" từ "em lại đem lên trên tiêu đề nhấn mạnh") → nhận khi mọi chữ
+        # đều có trong tin; "viết ngắn thôi" có chữ khách không nói → bỏ.
+        plan = {"operations": [], "yeu_cau_viet": ["đừng đem lên tiêu đề nhấn mạnh", "đem lên tiêu đề nhấn mạnh lại", "viết ngắn thôi"]}
         eng, _, seen, conv = _eng(plan, mp)
         conv.listing_proposed = True
-        eng.handle("u-duyet", "Sao mỗi lần anh nói gì em lại đem lên tiêu đề nhấn mạnh, đừng đem lên tiêu đề nhấn mạnh nữa")
-        assert conv.y_luot.get("yeu_cau_viet") == ["đừng đem lên tiêu đề nhấn mạnh"]   # "viết ngắn thôi" không có trong tin → bỏ
-        assert conv.prop.fields.get("_yeu_cau_viet") == "đừng đem lên tiêu đề nhấn mạnh"
+        eng.handle("u-duyet", "Sao mỗi lần anh nói gì em lại đem lên trên tiêu đề nhấn mạnh, đừng đem lên tiêu đề nhấn mạnh nữa")
+        assert conv.y_luot.get("yeu_cau_viet") == ["đừng đem lên tiêu đề nhấn mạnh", "đem lên tiêu đề nhấn mạnh lại"]
+        assert conv.prop.fields.get("_yeu_cau_viet") == "đừng đem lên tiêu đề nhấn mạnh | đem lên tiêu đề nhấn mạnh lại"
         he = [s for s in seen if TIEU_DE_YEU_CAU_VIET in s]
         assert he, "khối yêu cầu phải vào prompt soạn tin"
         s = he[0]
