@@ -19,6 +19,8 @@ import logging
 import time
 from typing import Callable
 
+from .xung_ho import goi_khach_la_minh
+
 log = logging.getLogger(__name__)
 
 # khoá → (câu mặc định, dùng ở đâu, nguồn quyết định). Thứ tự = thứ tự hiện trên CRM.
@@ -28,11 +30,11 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "hoi_phi": ("{Goi} có thể vào {web} để theo dõi tin rao ạ. {Goi} biết phí môi giới bên em chưa ạ?",
                 "Ngay sau câu duyệt tin — tin nhắn thứ hai, câu hỏi phí (bot nói theo tinh thần câu này)",
                 "SRS-5.1zzzzzzz81 / 98 · bản anh Luận + câu tester 21/10"),
-    "bao_phi": ("Em xin phép báo phí bên em: phí môi giới bên em là {phi}. Chỉ thu khi giao dịch thành công. Mình cần biết thêm thông "
+    "bao_phi": ("Em xin phép báo phí bên em: phí môi giới bên em là {phi}. Chỉ thu khi giao dịch thành công. {Goi} cần biết thêm thông "
                 "tin, nhắn em hỗ trợ ạ.",
                 "Báo con số phí (khách chưa biết phí / hỏi phí). {phi} = mức phí theo vai + bán hay thuê, code điền (vd \"0.75 tháng "
                 "tiền thuê\") — câu sửa phải giữ {phi}", "SRS-5.1zzzzzzz111 · câu tester sửa ở Câu chuẩn 21/10"),
-    "nhac_ban_nhap": ("Em gửi {goi} bản nháp tin đăng, mình cần chỉnh sửa thêm nhắn em hỗ trợ ạ!",
+    "nhac_ban_nhap": ("Em gửi {goi} bản nháp tin đăng, {goi} cần chỉnh sửa thêm nhắn em hỗ trợ ạ!",
                       "Tin nhắc sau 5 phút khách chưa trả lời bản nháp", "SRS-5.1zzzzzzz99 / 101 · câu tester 21/10"),
     "nhac_ban_nhap_em": ("{Toi} gửi {goi} bản nháp tin đăng, {goi} cần chỉnh sửa thêm nhắn {toi} hỗ trợ nhé!",
                          "Như trên, khi khách xưng \"em\" / \"cháu\" ({goi} = em / cháu, {toi} = anh / chị / cô / chú theo tên trợ lý)",
@@ -137,7 +139,7 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
         'Biến thể xoay vòng của `bao_can_moi_vuot` (SRS-5.1zzzzzzz188), thêm {pct} = % vượt ngân sách',
         'SRS-5.1zzzzzzz188 · chủ dự án 26/10: hai tin báo căn liền nhau trùng văn phong'),
     # --- Xác nhận lịch hẹn xem với khách mua (SRS-5.1zzzzzzz158) ---
-    "xac_nhan_lich": ("{Goi} xác nhận giúp {toi}, {gio} mình đến xem căn {can} đúng không ạ?",
+    "xac_nhan_lich": ("{Goi} xác nhận giúp {toi}, {gio} {goi} đến xem căn {can} đúng không ạ?",
                       "Khách mua đã nói đủ ngày và giờ xem nhà — bot hỏi xác nhận MỘT lần (model chép câu này, chỉ điền chỗ giữ chữ). {toi} = bot tự "
                       "xưng (em / anh / chị / cô / chú), {gio} = ngày giờ khách đã nói (vd \"4 giờ chiều nay\"), {can} = đường hoặc khu của căn — câu sửa phải giữ {gio} và {can}",
                       "SRS-5.1zzzzzzz158 · câu người xem chat chị Ngân góp ý 23/10"),
@@ -213,9 +215,14 @@ def cau(khoa: str, goi: str = "anh/chị", **bien) -> str:
     if sua:
         try:
             ra = _dien(sua, goi, **bien)
-            if ra and _KHUNG.get(khoa, lambda c: True)(ra):
+            if ra and goi_khach_la_minh(ra):
+                # SRS-5.1zzzzzzz226: câu mẫu sửa tay cũng theo luật lời gửi khách (bot không gọi khách "mình") — không thì lưới hình thức
+                # gọi lại model vì chính câu hệ thống dặn nói nguyên văn.
+                log.warning("Câu mẫu %s sửa tay gọi khách là \"mình\" — dùng mặc định", khoa)
+            elif ra and _KHUNG.get(khoa, lambda c: True)(ra):
                 return ra
-            log.warning("Câu mẫu %s sửa tay sai khung — dùng mặc định", khoa)
+            else:
+                log.warning("Câu mẫu %s sửa tay sai khung — dùng mặc định", khoa)
         except (KeyError, IndexError, ValueError) as e:
             log.warning("Câu mẫu %s sửa tay lỗi chỗ giữ chữ (%s) — dùng mặc định", khoa, e)
     return _dien(mac_dinh, goi, **bien)

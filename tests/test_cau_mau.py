@@ -23,7 +23,7 @@ def _sach():
 def test_mac_dinh_khi_chua_gan_kho():
     assert cau_mau.cau("duyet_tin") == "Em xin phép đăng tin ạ!"
     assert cau_mau.cau("xin_cham_sao", "chị").startswith("Chị chấm giúp em 1–5 sao")
-    assert cau_mau.cau("nhac_ban_nhap", "anh") == "Em gửi anh bản nháp tin đăng, mình cần chỉnh sửa thêm nhắn em hỗ trợ ạ!"
+    assert cau_mau.cau("nhac_ban_nhap", "anh") == "Em gửi anh bản nháp tin đăng, anh cần chỉnh sửa thêm nhắn em hỗ trợ ạ!"
 
 
 def test_cau_sua_o_crm_toi_loi_bot():
@@ -121,7 +121,7 @@ def test_cau_bao_phi_tester_sua_toi_loi_bot():
     thue = build_fee_followup_system("x", Property(loai_hinh="nha_pho", is_rental=True), user_type=SellerRole.CHU_NHA,
                                      web={"len_web": True})
     assert ("Em xin phép báo phí bên em: phí môi giới bên em là 0.75 tháng tiền thuê. Chỉ thu khi giao dịch thành công. "
-            "Mình cần biết thêm thông tin, nhắn em hỗ trợ ạ.") in thue
+            "Anh/chị cần biết thêm thông tin, nhắn em hỗ trợ ạ.") in thue
     assert "phí môi giới bên em là 1% giá chốt." in khoi_bao_phi(SellerRole.CHU_NHA, False)
     assert "phí môi giới bên em là 0.5% giá chốt." in khoi_bao_phi(SellerRole.MOI_GIOI, False)
     assert khoi_bao_phi(SellerRole.CHU_DAU_TU, False) == ""   # chủ đầu tư: phí thoả thuận riêng, không báo con số
