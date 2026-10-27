@@ -71,6 +71,7 @@ from .prompts import (
     build_fee_followup_system,
     _fee_hint,
     khoi_bao_phi,
+    muc_phi,
     khoi_hoi_sau_dang,
     khoi_tinh_hinh_ban,
     KHOI_DINH_GIA,
@@ -1289,6 +1290,24 @@ _GOI_A_RE = re.compile(r"(?<![\wÀ-ỹ])(anh chị|anh|chị|cô chú|cô|chú|b
 def _goi_a(loi: str) -> bool:
     """Lời bot có tiếng gọi khách kèm "ạ" ("chị ạ", "anh ạ", "cô ạ") — dấu lễ phép lặp mỗi lượt làm bot đọc như máy (SRS-5.1zzzzzzz220)."""
     return bool(loi) and _GOI_A_RE.search(loi) is not None
+
+
+_PHI_PHAN_TRAM_RE = re.compile(r"(?<![\d.,])(1|0[.,]5)\s?%")
+
+
+def _phi_lech_vai(loi: str, role: SellerRole, thue: bool) -> str | None:
+    """Con số phí (%) trong lời bot phía bán phải khớp `muc_phi` theo vai (SRS-5.1zzzzzzz227, ban-thu-srd 27/10: vai CHƯA rõ mà bot viết
+    "Phí bên em với chủ nhà là 1% giá chốt" — model gộp câu mẫu "1% nếu là chủ nhà, 0.5% nếu là môi giới" thành một mức đoán vai).
+    Trả mức đúng để dặn model, None khi khớp / không nói phí bằng %. Tin thuê bỏ qua (mức thuê không theo %)."""
+    if thue or "phí" not in (loi or "").lower():
+        return None
+    noi = {m.group(1).replace(",", ".") for m in _PHI_PHAN_TRAM_RE.finditer(loi)}
+    if not noi:
+        return None
+    dung = muc_phi(role, thue)
+    if dung is None:
+        return "chủ đầu tư: phí theo thoả thuận riêng, KHÔNG báo con số %"
+    return None if noi == {m.group(1).replace(",", ".") for m in _PHI_PHAN_TRAM_RE.finditer(dung)} else dung
 
 
 def _bo_markdown(reply: str) -> str:
@@ -2667,6 +2686,10 @@ class Engine:
             ly_do.append("Lời vừa viết gọi khách là \"mình\" (\"em xin lỗi mình\", \"Mình đang cần…\") — KHÔNG dùng \"mình\" gọi khách hay tự xưng: "
                          "gọi đúng cách khách xưng (em / cháu / anh / chị), chưa rõ thì \"anh/chị\"; tự xưng đúng QUY TẮC XƯNG HÔ ở trên. "
                          "Chỉ \"nhà mình / căn mình\" khi nói về căn của khách.")
+        phi_dung = _phi_lech_vai(reply, conv.user_type, conv.prop.is_rental) if conv.role != "buyer" else None
+        if phi_dung:
+            ly_do.append(f"Lời vừa viết báo phí % không đúng vai người rao đã biết — mức đúng: \"{phi_dung}\". Vai CHƯA rõ thì nêu đủ cả hai "
+                         "mức như vậy hoặc hỏi khéo khách là chủ nhà hay môi giới, KHÔNG tự đoán một vai.")
         if _mo_dau_ghi_nhan(reply):   # SRS-5.1zzzzzzz208: cả câu dẫn trước bản tin cập nhật ("Em ghi nhận thêm sổ hồng… 📋 Bản tin cập nhật")
             ly_do.append("Lời vừa viết mở đầu bằng câu ghi nhận (\"Em ghi nhận / Em đã ghi giá… / Em lưu…\") — chủ dự án đã bỏ hẳn kiểu này: "
                          "mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói (khách vừa nêu giá thì nói mức đó hợp lý / dễ bán cho vị trí khách "
