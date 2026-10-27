@@ -214,6 +214,7 @@ kiem "Xin gặp người: ID thử không nhắn admin" "$(jq '.nhac == 0 | if .
 ban_tin_cuoi() { awk 'BEGIN{RS="\n\n"} /📋/{f=1} f{print; print ""}' <<<"$1"; }   # phần từ dấu 📋 trở đi của một lượt
 tieu_de_cua() { awk 'BEGIN{RS="\n\n"} /📋/{getline; print; exit}' <<<"$1"; }     # đoạn ngay sau dòng 📋 = tiêu đề
 LOI_BOT=""; MOI_LOI=""; LUOT=0; LUOT_NHAP=""; SO_NHAP=0; SO_M2_LA=0; TD_TRUOC=""; TD_DOI=0; TIN_SAU_DAN=0; DAN=0; BAN_GIAO_2=0; ICON_SAU=0; MT5=0
+CHOT_TRUOC=""; CHOT_LAP=0; CAM_THAN=0   # SRS-5.1zzzzzzz219: câu chốt sau bản tin lặp nguyên văn lượt trước; số lượt mở bằng cảm thán
 for cau in "Anh cần bán nhà mặt tiền đường Hoàng Hoa Thám, Bình Thạnh" "Phường Gia Định" "ngang 5,2m dài 8m, đất 34,5m2" \
            "3 tầng kiên cố, sổ hồng hoàn công rồi" "giá 12,5 tỷ thương lượng nhẹ" "Em rao lại xem" \
            "Người ta thuê 1 năm nhưng mà anh có thể bàn giao tức thì mà em" "Xin lỗi em anh cũng nhầm căn nhà này mặt tiền có 5 m thôi" \
@@ -231,7 +232,11 @@ for cau in "Anh cần bán nhà mặt tiền đường Hoàng Hoa Thám, Bình T
     [ "$(grep -oi 'bàn giao' <<<"$BT" | wc -l)" -ge 2 ] && BAN_GIAO_2=$((BAN_GIAO_2 + 1))
     [ -n "$TD_TRUOC" ] && [ "$TD" != "$TD_TRUOC" ] && TD_DOI_LAN=$LUOT
     TD_TRUOC="$TD"
+    CHOT=$(awk 'BEGIN{RS="\n\n"} {d=$0} END{print d}' <<<"$L" | tr -s ' ' | tr 'A-Z' 'a-z')
+    if [ -n "$CHOT_TRUOC" ] && [ "$CHOT" = "$CHOT_TRUOC" ]; then CHOT_LAP=$((CHOT_LAP + 1)); echo "   ⚑ câu chốt sau bản tin lặp nguyên văn lượt trước"; fi
+    CHOT_TRUOC="$CHOT"
   fi
+  head -c 80 <<<"$L" | LC_ALL=C.UTF-8 grep -qiE '^(ồ|wow|tuyệt|ngon|nét|quá|ôi|hay quá|chuẩn)' && CAM_THAN=$((CAM_THAN + 1))
   case "$cau" in
     "Em cho dùm anh"*|"cái việc chủ nhà"*|"Sao mỗi lần"*|"Nhưng mặt tiền"*)
       DAN=$((DAN + 1))
@@ -260,6 +265,8 @@ kiem "Anh Luận: xin 2-3 icon → bản tin có ≥ 3 icon ($ICON_SAU)" "$([ "$
 kiem "Anh Luận: chê tiêu đề → tiêu đề đổi" "$([ "$TD_DOI" = 1 ] && echo 1 || echo 0)"
 kiem "Anh Luận: 'mặt tiền 5m xứng đáng để nói' → bản tin nhắc mặt tiền 5m" "$([ "$MT5" = 1 ] && echo 1 || echo 0)"
 echo "== Anh Luận: số bản tin nói 'bàn giao' ≥ 2 lần: $BAN_GIAO_2 (người đọc chấm)"
+kiem "Anh Luận: câu chốt sau bản tin không lặp nguyên văn lượt trước ($CHOT_LAP lần lặp)" "$([ "$CHOT_LAP" = 0 ] && echo 1 || echo 0)"
+echo "== Anh Luận: số lượt mở bằng cảm thán: $CAM_THAN / $LUOT (người đọc chấm — không bắt buộc mọi lượt)"
 
 # SRS-5.1zzzzzzz80: bắn thử 20/10 có 2/3 kịch bản bot mở đầu "Dạ không, em ghi nhận…" khi khách không hỏi gì.
 kiem "mọi kịch bản: không bong bóng nào mở đầu \"Dạ không\"" "$(grep -qE '^Dạ không' <<<"$MOI_LOI" && echo 0 || echo 1)"

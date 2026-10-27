@@ -1168,6 +1168,22 @@ def _than_ban_tin(reply: str) -> tuple[str, str] | None:
     return (doan[0], "\n\n".join(doan[1:])) if len(doan) >= 2 else None
 
 
+def _phan_chat_quanh_ban_tin(reply: str) -> str:
+    """Phần CHAT của một lượt có bản tin 📋: câu dẫn trước dấu 📋 (bỏ dòng mở "📋 Bản tin cập nhật:") + đoạn cuối sau bản tin nếu là câu hỏi
+    chốt. Lượt không có 📋 → cả lời. Chỉ cắt theo bố cục, không đọc ý (SRS-5.1zzzzzzz219)."""
+    if "📋" not in (reply or ""):
+        return (reply or "").strip()
+    truoc, sau = reply.split("📋", 1)
+    doan = [d.strip() for d in re.split(r"\n\s*\n", sau) if d.strip()]
+    # Câu chốt = đoạn cuối đứng SAU câu mời nhắn Zalo (khối 4 của AD_FORMAT). Không dựa vào dấu "?" — câu chốt thật của bot hay kết bằng "!"
+    # ("…còn chỗ nào cần chỉnh thì anh cứ nhắn em nhé!", chat anh Luận 27/10 lặp 6 lượt).
+    zalo = [i for i, d in enumerate(doan) if "zalo" in d.lower()]
+    cuoi = doan[-1] if doan else ""
+    la_chot = len(doan) >= 2 and not cuoi.lstrip().startswith("-") and (
+        "?" in cuoi or (zalo and zalo[-1] < len(doan) - 1))
+    return (truoc.strip() + "\n" + (cuoi if la_chot else "")).strip()
+
+
 def _ban_tin_truoc(conv: "Conversation") -> str:
     """Thân bản tin 📋 gần nhất bot đã gửi (chữ sau dấu 📋) — rỗng nếu chưa có."""
     for t in reversed(conv.history):
@@ -2637,6 +2653,18 @@ class Engine:
             if lap:
                 ly_do.append(f"Câu \"{lap[:60]}\" lặp gần nguyên văn lời em ở lượt trước — khách đã đọc rồi: bỏ câu đó, hoặc nói ngắn hơn bằng "
                              "chữ khác; mỗi ý (chưa có căn, cứ nhắn lại, em sẽ báo) chỉ nói MỘT lần trong cuộc chat.")
+        else:
+            # SRS-5.1zzzzzzz219 (chat anh Luận 27/10: câu chốt "Anh xem bản tin này ưng chưa… cứ nhắn em nhé!" lặp 6 lượt liền): phần CHAT
+            # quanh bản tin (câu dẫn trước 📋 + câu hỏi chốt sau bản tin) cũng không được lặp lời lượt trước; thân bản tin không soi ở đây.
+            chat_nay, chat_truoc = _phan_chat_quanh_ban_tin(reply), _phan_chat_quanh_ban_tin(truoc)
+            if chat_nay and chat_truoc:
+                if _cung_mo_dau(chat_nay, chat_truoc):
+                    ly_do.append("Câu dẫn trước bản tin mở bằng cùng mấy chữ với lượt trước — lượt này MỘT câu ngắn đáp đúng điều khách vừa nói "
+                                 "(theo khối GIỌNG), không mở bằng câu báo cáo.")
+                lap = _cau_lap_luot_truoc(chat_nay, chat_truoc)
+                if lap:
+                    ly_do.append(f"Câu \"{lap[:60]}\" quanh bản tin lặp gần nguyên văn lượt trước — câu dẫn và câu hỏi chốt mỗi lượt một cách "
+                                 "nói khác (hỏi đã ưng chưa / còn chỗ nào chỉnh / đăng luôn nhé), ngắn thôi.")
         if _tieu_de_can_ho_co_mt(reply, conv.prop):
             ly_do.append("Tiêu đề căn hộ có chữ \"MT\" — người mua đọc là mặt tiền; căn hộ không có mặt tiền, viết đủ tên dự án, không "
                          "viết tắt \"MT\".")
