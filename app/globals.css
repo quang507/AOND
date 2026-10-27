@@ -221,6 +221,48 @@ details > summary:hover::before {
   color: #fff;
   z-index: 3;
 }
+/* Bong bóng cụm "N căn" (SRS-5.1zzzzzzz217): to dần theo số căn, bấm thì bản đồ trượt tới và cụm tách ra. */
+.cum-ghim {
+  background: #fff;
+  color: #0b192c;
+  border: 2px solid #0068ff;
+  border-radius: 999px;
+  padding: 4px 11px;
+  font: 800 12px/1.2 var(--font-jakarta), system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.22);
+  cursor: pointer;
+}
+.cum-ghim--vua { padding: 6px 13px; font-size: 13px; }
+.cum-ghim--lon { padding: 8px 15px; font-size: 14px; border-width: 3px; }
+.cum-ghim:hover,
+.cum-ghim:focus-visible {
+  background: #0068ff;
+  color: #fff;
+  z-index: 3;
+}
+/* Ghim địa danh (trường / bệnh viện / chợ / dự án): chấm + nhãn tên. */
+.moc-ghim { display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; }
+.moc-ghim__cham {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #0068ff;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(0, 104, 255, 0.4);
+  font-size: 16px;
+}
+.moc-ghim__ten {
+  background: #fff;
+  color: #0b192c;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: 700 12px/1.2 var(--font-jakarta), system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+}
 .maplibregl-popup-content {
   border-radius: 2px;
   padding: 10px 12px;

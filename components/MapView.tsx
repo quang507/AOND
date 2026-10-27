@@ -5,7 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Map as BanDo } from "maplibre-gl";
 import NutNenBanDo from "@/components/NutNenBanDo";
-import { ghimGia, kieuNen, maTin, napMapLibre, popupCan, SG_TAM, type NenBanDo } from "@/lib/ban-do";
+import { kieuNen, maTin, napMapLibre, SG_TAM, type NenBanDo } from "@/lib/ban-do";
+import { cumGhim } from "@/lib/cum-ghim";
 import type { MapRow } from "@/lib/supabase";
 import { wardPoint } from "@/lib/geo";
 
@@ -58,22 +59,23 @@ export default function MapView({
   useEffect(() => {
     if (!tv) return;
     const { ml, map } = tv;
-    const ghim: InstanceType<ThuVien["Marker"]>[] = [];
-    const khung = new ml.LngLatBounds();
-    for (const l of listings) {
+    // Toạ độ ghim: tin có lat/lng thì dùng, không thì điểm phường (lib/geo). SRS-5.1zzzzzzz217: nhiều ghim dồn một chỗ gom thành bong bóng
+    // "N căn", bấm thì bản đồ trượt tới và tách ra (cùng cách trang /ban-do).
+    const toaDo = (l: MapRow): [number, number] | null => {
       const p = l.lat && l.lng ? [Number(l.lat), Number(l.lng)] : wardPoint(l.ward, maTin(l));
-      if (!p) continue;
-      const ll: [number, number] = [p[1], p[0]];
-      ghim.push(
-        new ml.Marker({ element: ghimGia(l) })
-          .setLngLat(ll)
-          .setPopup(new ml.Popup({ offset: 14, maxWidth: "260px" }).setHTML(popupCan(l)))
-          .addTo(map),
-      );
-      khung.extend(ll);
+      return p ? [p[1], p[0]] : null;
+    };
+    const khung = new ml.LngLatBounds();
+    let co = 0;
+    for (const l of listings) {
+      const ll = toaDo(l);
+      if (ll) {
+        khung.extend(ll);
+        co++;
+      }
     }
-    if (ghim.length > 0 && !center) map.fitBounds(khung, { padding: 40, maxZoom: 15, duration: 0 });
-    return () => ghim.forEach((g) => g.remove());
+    if (co > 0 && !center) map.fitBounds(khung, { padding: 40, maxZoom: 15, duration: 0 });
+    return cumGhim(ml, map, listings, toaDo);
   }, [tv, listings, center]);
 
   return (

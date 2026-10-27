@@ -10,7 +10,8 @@ import type { FeatureCollection } from "geojson";
 import type { GeoJSONSource, Map as BanDo, MapLayerMouseEvent } from "maplibre-gl";
 import ListingCard from "@/components/ListingCard";
 import NutNenBanDo from "@/components/NutNenBanDo";
-import { esc, ghimGia, kieuNen, napMapLibre, popupCan, SG_TAM, type NenBanDo } from "@/lib/ban-do";
+import { esc, kieuNen, napMapLibre, SG_TAM, type NenBanDo } from "@/lib/ban-do";
+import { cumGhim, ghimMoc, TEN_LOAI_MOC, type Moc } from "@/lib/cum-ghim";
 import { supabase, type MapRow } from "@/lib/supabase";
 
 type ThuVien = typeof import("maplibre-gl");
@@ -46,6 +47,17 @@ function khungTuUrl(): [[number, number], [number, number]] | null {
   return [[k[0], k[1]], [k[2], k[3]]];
 }
 
+const ZOOM_MOC = 15; // SRS-5.1zzzzzzz217: chọn địa danh thì bay tới ở mức thấy từng con đường quanh đó
+
+/** Ghi khung (và địa danh đang chọn) vào URL để gửi link — một chỗ, kẻo `?moc=` mất khi khung đổi. */
+function ghiUrl(khung: number[] | null, moc: Moc | null) {
+  const q = new URLSearchParams(window.location.search);
+  if (khung) q.set("khung", khung.join(","));
+  if (moc) q.set("moc", moc.ten);
+  else q.delete("moc");
+  window.history.replaceState(null, "", `?${q.toString()}`);
+}
+
 export default function BanDoKhung() {
   const ref = useRef<HTMLDivElement>(null);
   const [tv, setTv] = useState<{ ml: ThuVien; map: BanDo } | null>(null);
@@ -60,6 +72,12 @@ export default function BanDoKhung() {
   const [loi, setLoi] = useState(false);
   const [zoomGan, setZoomGan] = useState(false);
   const luot = useRef(0);
+  // SRS-5.1zzzzzzz217: địa danh đang chọn (trường / bệnh viện / chợ / siêu thị / công viên / dự án) — ghim có tên + bản đồ bay tới.
+  const [moc, setMoc] = useState<Moc | null>(null);
+  const mocRef = useRef<Moc | null>(null);
+  const [timMoc, setTimMoc] = useState("");
+  const [goiYMoc, setGoiYMoc] = useState<Moc[]>([]);
+  const luotMoc = useRef(0);
 
   const tai = useCallback(async () => {
     if (!tv) return;
@@ -91,7 +109,7 @@ export default function BanDoKhung() {
     }
     setLoi(false);
     setKq({ ...RONG, ...(data as Partial<KetQua>) });
-    window.history.replaceState(null, "", `?khung=${khung.join(",")}`);
+    ghiUrl(khung, mocRef.current);
   }, [tv, lop]);
 
   // Dựng bản đồ một lần.
@@ -157,6 +175,16 @@ export default function BanDoKhung() {
         m.on("mouseleave", id, () => (m.getCanvas().style.cursor = ""));
       }
       m.once("load", () => setTv({ ml, map: m }));
+      // `?moc=<tên>` trong link: tra địa danh rồi bay tới (bản đồ dựng xong mới bay, kẻo khung ban đầu đè lên).
+      const tenMoc = new URLSearchParams(window.location.search).get("moc")?.trim();
+      if (tenMoc) {
+        const { data } = await supabase.rpc("tim_moc", { p_tim: tenMoc });
+        const d = (data as Moc[] | null)?.[0];
+        if (d && !huy) {
+          setMoc(d);
+          setTimMoc(d.ten);
+        }
+      }
     })();
     return () => {
       huy = true;
@@ -191,7 +219,7 @@ export default function BanDoKhung() {
     tv.map.setStyle(kieuNen(nen));
   }, [tv, nen]);
 
-  // Vẽ kết quả: căn = ghim giá HTML, dự án / đường = cập nhật nguồn GeoJSON.
+  // Vẽ kết quả: căn = ghim giá HTML gom cụm "N căn" (SRS-5.1zzzzzzz217), dự án / đường = cập nhật nguồn GeoJSON.
   useEffect(() => {
     kqRef.current = kq;
     if (!tv) return;
@@ -199,16 +227,39 @@ export default function BanDoKhung() {
     for (const id of ["du_an", "duong"] as const) {
       (map.getSource(id) as GeoJSONSource | undefined)?.setData(diem(kq[id]));
     }
-    const ghim = kq.can
-      .filter((l) => l.lat && l.lng)
-      .map((l) =>
-        new ml.Marker({ element: ghimGia(l) })
-          .setLngLat([Number(l.lng), Number(l.lat)])
-          .setPopup(new ml.Popup({ offset: 14, maxWidth: "260px" }).setHTML(popupCan(l)))
-          .addTo(map),
-      );
-    return () => ghim.forEach((g) => g.remove());
+    return cumGhim(ml, map, kq.can, (l) => (l.lat && l.lng ? [Number(l.lng), Number(l.lat)] : null));
   }, [tv, kq]);
+
+  // Địa danh đang chọn: cắm ghim có tên và bay tới (SRS-5.1zzzzzzz217). Bay xong `moveend` tự tải căn quanh đó.
+  useEffect(() => {
+    mocRef.current = moc;
+    if (!tv) return;
+    if (!moc) {
+      ghiUrl(null, null);
+      return;
+    }
+    const { ml, map } = tv;
+    const g = new ml.Marker({ element: ghimMoc(moc), anchor: "bottom" }).setLngLat([moc.lng, moc.lat]).addTo(map);
+    map.flyTo({ center: [moc.lng, moc.lat], zoom: Math.max(map.getZoom(), ZOOM_MOC), duration: 900 });
+    return () => {
+      g.remove();
+    };
+  }, [tv, moc]);
+
+  // Gõ tên địa danh → gợi ý (rpc `tim_moc`, nghỉ 300 ms, tối đa 8 dòng).
+  useEffect(() => {
+    const t = timMoc.trim();
+    if (t.length < 3 || (moc && t === moc.ten)) {
+      setGoiYMoc([]);
+      return;
+    }
+    const so = ++luotMoc.current;
+    const hen = setTimeout(async () => {
+      const { data } = await supabase.rpc("tim_moc", { p_tim: t });
+      if (so === luotMoc.current) setGoiYMoc((data as Moc[] | null) ?? []);
+    }, 300);
+    return () => clearTimeout(hen);
+  }, [timMoc, moc]);
 
   const dem: Record<Lop, number> = { can: kq.can.length, du_an: kq.du_an.length, duong: kq.duong.length };
 
@@ -233,6 +284,59 @@ export default function BanDoKhung() {
             <input type="checkbox" checked={timKhiKeo} onChange={(e) => setTimKhiKeo(e.target.checked)} className="h-4 w-4 accent-brand" />
             <span>Tìm khi di chuyển bản đồ</span>
           </label>
+        </div>
+        <div className="relative mb-3">
+          <label htmlFor="tim-moc" className="sr-only">Quanh địa danh</label>
+          <div className="flex items-center gap-2">
+            <input
+              id="tim-moc"
+              value={timMoc}
+              onChange={(e) => setTimMoc(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && goiYMoc[0]) {
+                  e.preventDefault();
+                  setMoc(goiYMoc[0]);
+                  setTimMoc(goiYMoc[0].ten);
+                  setGoiYMoc([]);
+                }
+              }}
+              placeholder="Quanh địa danh: tên trường, bệnh viện, chợ, siêu thị, công viên, dự án…"
+              autoComplete="off"
+              className="min-h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none focus:border-brand"
+            />
+            {moc && (
+              <button
+                type="button"
+                onClick={() => { setMoc(null); setTimMoc(""); setGoiYMoc([]); }}
+                className="min-h-10 shrink-0 rounded-md border border-line px-3 text-sm font-semibold text-navy hover:bg-cream"
+                title="Bỏ địa danh đang chọn"
+              >
+                Bỏ chọn
+              </button>
+            )}
+          </div>
+          {goiYMoc.length > 0 && (
+            <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-md border border-line bg-white shadow-lg">
+              {goiYMoc.map((g, i) => (
+                <li key={`${g.loai}-${g.lat}-${g.lng}-${i}`}>
+                  <button
+                    type="button"
+                    onClick={() => { setMoc(g); setTimMoc(g.ten); setGoiYMoc([]); }}
+                    className="flex min-h-10 w-full items-center justify-between gap-3 px-3 text-left text-sm hover:bg-cream"
+                  >
+                    <span className="truncate font-semibold text-navy">{g.ten}</span>
+                    <span className="shrink-0 text-xs text-mute">{TEN_LOAI_MOC[g.loai] ?? g.loai}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {moc && (
+            <p className="mt-1.5 text-xs text-mute">
+              Đang xem quanh <span className="font-semibold text-navy">{moc.ten}</span> ({TEN_LOAI_MOC[moc.loai] ?? moc.loai}). Bong bóng
+              &quot;N căn&quot; là nhiều căn gần nhau — bấm để phóng to.
+            </p>
+          )}
         </div>
 
         <div className="relative h-[62vh] min-h-96 overflow-hidden rounded-king border border-line lg:h-[74vh]">
