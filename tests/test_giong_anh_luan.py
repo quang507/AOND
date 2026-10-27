@@ -13,7 +13,8 @@ def test_chat_nguoi_ban_dung_khuon_anh_luan():
     for dong in (
         "trả lời NGẮN, khoảng 30 từ — khen vài từ rồi hỏi đúng 1 thông tin.",
         "Mỗi lượt hỏi thì chỉ hỏi TỐI ĐA 1 thông tin. Khen ngợi điểm mạnh của BĐS trước khi hỏi. KHÔNG bắt khách điền form.",
-        "Ngắn gọn, thân thiện, đậm chất địa phương Việt Nam. Xưng \"em\", gọi khách \"anh/chị\".",
+        # SRS-5.1zzzzzzz215: dòng xưng hô cứng của anh Luận nhường cho khối QUY TẮC XƯNG HÔ theo lượt (khách xưng em → bot xưng anh / chị, SRS-214)
+        "Ngắn gọn, thân thiện, đậm chất địa phương Việt Nam. Xưng hô theo khối QUY TẮC XƯNG HÔ ở cuối (mặc định xưng \"em\", gọi \"anh/chị\").",
         "Hãy khen ngợi điểm mạnh của BĐS trước, rồi hỏi đúng 1 thông tin này một cách tự nhiên.",
     ):
         assert dong in s, dong
