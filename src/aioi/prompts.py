@@ -694,7 +694,7 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU M
 
 GIỌNG & XƯNG HÔ (bắt buộc): đây là TIN RAO CÔNG KHAI cho NHIỀU người mua đọc — KHÔNG phải tin nhắn nói riêng với người bán. Nói với CẢ ĐÁM ĐÔNG ("anh chị", "cô bác") — TUYỆT ĐỐI KHÔNG xưng hô 1 người kiểu nói riêng với chủ nhà ("anh ơi", "anh thấy đó", "em gửi anh", "cơ hội này không nhiều anh ơi").
 
-ICON/EMOJI (bắt buộc): CẢ bản rao chỉ dùng **2–3 icon** tổng cộng, đặt chỗ đắt nhất (thường 1 ở tiêu đề). TUYỆT ĐỐI KHÔNG đặt icon ở đầu mỗi gạch đầu dòng, KHÔNG rải icon mỗi dòng — lạm dụng icon trông rẻ tiền. Khi có dùng icon, LUÔN cách chữ đúng MỘT khoảng trắng (vd "🏡 Nhà mặt tiền" — KHÔNG viết dính "🏡Nhà" hay "Nhà🏡mặt tiền").
+ICON/EMOJI (bắt buộc): MẶC ĐỊNH cả bản rao chỉ dùng **2–3 icon** tổng cộng, đặt chỗ đắt nhất (thường 1 ở tiêu đề); KHÔNG đặt icon ở đầu mỗi gạch đầu dòng, KHÔNG rải icon mỗi dòng — lạm dụng icon trông rẻ tiền. NGOẠI LỆ: chủ nhà XIN thêm / bớt icon (khối YÊU CẦU CỦA CHỦ NHÀ VỀ CÁCH VIẾT) thì làm ĐÚNG ý chủ nhà — chủ nhà xin "2-3 icon" là thêm đúng chừng đó vào tin, tối đa 6 icon cả bản, và nói rõ đã thêm; KHÔNG trả lời "tin đang dùng icon ở tiêu đề" thay cho việc sửa. Khi có dùng icon, LUÔN cách chữ đúng MỘT khoảng trắng (vd "🏡 Nhà mặt tiền" — KHÔNG viết dính "🏡Nhà" hay "Nhà🏡mặt tiền").
 
 ĐỊNH DẠNG KHOẢNG CÁCH (bắt buộc): MỘT dòng trống NGĂN giữa các khối (tiêu đề / mô tả / gạch đầu dòng / câu mời chốt). Trong khối gạch đầu dòng thì KHÔNG chèn dòng trống giữa các gạch.
 
@@ -813,6 +813,30 @@ def cat_truoc_mo_dau(reply: str, xung_ho: str = "unknown", toi: str = "anh") -> 
 _MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em|Anh|Chị|Cô|Chú) sẽ rao như vầy nhé[^:\n]{0,20}:")
 
 
+# SRS-5.1zzzzzzz218 (chat anh Luận 26/10: "sao mỗi lần anh nói cái gì cái em lại đem lên trên tiêu đề", "cho dùm anh 2-3 cái hình tượng",
+# "bàn giao tức thì có cần nói 2 lần không"): lời khách dặn về CÁCH VIẾT bản tin không phải dữ liệu căn nên không có chỗ nào giữ — mỗi lượt
+# sửa model soạn lại từ "DỮ LIỆU BĐS", lời dặn trôi theo lịch sử. Nay lượt lập thao tác đọc `yeu_cau_viet` (cụm trích trong lời khách), engine
+# cộng dồn vào ô hệ thống `_yeu_cau_viet` của căn, và khối này đứng ngay trước dữ liệu căn ở MỌI prompt soạn tin.
+YEU_CAU_VIET_TOI_DA = 8
+TIEU_DE_YEU_CAU_VIET = "=== YÊU CẦU CỦA CHỦ NHÀ VỀ CÁCH VIẾT (bắt buộc, áp cho MỌI bản tin từ nay) ==="
+
+
+def khoi_yeu_cau_viet(prop: Property | None, moi: list[str] | None = None) -> str:
+    """Khối lời dặn cách viết của chủ nhà (ô `_yeu_cau_viet`, nguyên văn lời khách, mới nhất CUỐI). `moi` = yêu cầu khách vừa nói lượt này —
+    bản tin cập nhật phải thể hiện rõ đúng chỗ đó. Không có yêu cầu → rỗng."""
+    ds = [x for x in ((prop.fields.get("_yeu_cau_viet") if prop else "") or "").split(" | ") if x.strip()]
+    if not ds:
+        return ""
+    dong = "\n".join(f"- {x}" for x in ds)
+    vua = ""
+    if moi:
+        vua = ("\nKhách VỪA nói lượt này: " + " / ".join(f'"{x}"' for x in moi) + " — đó là lý do khách chưa duyệt. Lượt này RAO LẠI bản tin "
+               "cập nhật (mở \"📋 Bản tin cập nhật:\") sửa ĐÚNG chỗ khách nói, chỗ khách không nhắc giữ nguyên; KHÔNG chỉ hứa \"em sẽ sửa\".")
+    return (f"\n{TIEU_DE_YEU_CAU_VIET}\nĐây là lời chủ nhà dặn (nguyên văn), KHÔNG phải dữ liệu căn — không đưa câu dặn vào tin, mà viết tin theo đúng "
+            f"ý dặn:\n{dong}\nMỗi bản tin sau phải thể hiện rõ từng yêu cầu (cái gì bảo bớt thì bớt, bảo đưa lên thì đưa lên, bảo không lặp "
+            f"thì nói MỘT lần).{vua}\n")
+
+
 def build_listing_proposal_system(
     assistant_name: str,
     prop: Property,
@@ -820,6 +844,7 @@ def build_listing_proposal_system(
     customer_is_em: bool = False,
     xung_ho: str = "unknown",
     toi: str = "anh",
+    yeu_cau_moi: list[str] | None = None,
 ) -> str:
     """Step 1: show the customer the draft ad and ask if it looks appealing (SRD §II).
 
@@ -827,6 +852,7 @@ def build_listing_proposal_system(
     cap does NOT apply. CRUCIALLY: do NOT mention the fee yet — that comes after approval.
     """
     xh_tre = xung_ho if xung_ho in _TRE else "em"
+    yeu_cau = khoi_yeu_cau_viet(prop, yeu_cau_moi)
     opener = mo_dau_nhap(xh_tre, toi) if customer_is_em else mo_dau_nhap(xung_ho)
     goi = _GOI_KHACH.get(xung_ho, "anh/chị")
     closer = (cau_mau.cau("hoi_ban_nhap_em", "em" if xh_tre == "em" else "cháu", toi=toi) if customer_is_em
@@ -853,7 +879,7 @@ QUY TẮC BẮT BUỘC (theo bản anh Luận, SRS-5.1zzzzzzz207):
 - Văn phong thân thiện, đậm chất địa phương Việt Nam.
 - Viết TRỌN VẸN, không bỏ lửng câu, không kết thúc bằng "…".
 - TUYỆT ĐỐI CHƯA nhắc gì đến phí môi giới ở bước này. Chỉ trình bản tin và hỏi khách muốn sửa chỗ nào hay đăng luôn.
-{RANH_GIOI_CACHE}{project_block}
+{RANH_GIOI_CACHE}{project_block}{yeu_cau}
 DỮ LIỆU BĐS:
 {describe_captured(prop)}"""
 
@@ -949,6 +975,7 @@ def build_fee_followup_system(
     web: dict | None = None,
     duyet: str | None = None,
     phi_da_bao: bool = False,
+    yeu_cau_moi: list[str] | None = None,
 ) -> str:
     """Step 2: customer has seen the draft — react to their feedback, then talk fee (§V).
 
@@ -986,6 +1013,7 @@ def build_fee_followup_system(
                    f"Được mời khách vào {_WEB} theo dõi tin, một câu ngắn.")
     bao_phi = khoi_bao_phi(user_type, prop.is_rental)
     bao_phi = f"\n  {bao_phi}" if bao_phi else ""
+    yeu_cau = khoi_yeu_cau_viet(prop, yeu_cau_moi)
     hoi_sau = ""
     o_sau = prop.cau_hoi_sau_ra_tin() if (web is None or web.get("len_web")) else None
     if o_sau:   # SRS-5.1zzzzzzz80: ô khách lờ 2 lần trước bản nháp — hỏi lại một lần, SAU lượt nói chuyện phí (lượt duyệt chỉ hỏi phí)
@@ -1002,9 +1030,12 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
 {xac_nhan}{hoi_phi}{hoi_sau}
 - NẾU khách HỎI LINK BÀI ĐĂNG HOẶC HỎI TRÊN WEB ĐĂNG NHƯ THẾ NÀO (vd: "đang đăng web như thế nào", "xem tin ở đâu", "cho xin link web", "link đâu"):
 {hoi_link}
-- NẾU khách muốn CHỈNH SỬA THẬT SỰ (vd "tiêu đề nhiều thông tin quá", "đổi tiêu đề...", "giá sửa lại...", "nhà có 3 lầu..."):
+- NẾU khách muốn CHỈNH SỬA THẬT SỰ (vd "tiêu đề nhiều thông tin quá", "đổi tiêu đề...", "giá sửa lại...", "nhà có 3 lầu...", "bớt lặp", "thêm icon"):
   • Tiếp thu ngay và khen tinh thần đóng góp của khách (vd "Tiêu đề này ngắn gọn, dễ đọc hơn hẳn ạ!"), cập nhật dữ liệu, KHÔNG nhắc phí.
-  • RAO LẠI BẢN TIN ĐÃ SỬA (mở đầu "📋 Bản tin cập nhật:") theo ĐÚNG bố cục tin rao dưới đây.
+  • RAO LẠI BẢN TIN ĐÃ SỬA (mở đầu "📋 Bản tin cập nhật:") theo ĐÚNG bố cục tin rao dưới đây — sửa ĐÚNG chỗ khách nói trên bản tin trước,
+    chỗ khách không nhắc giữ nguyên; KHÔNG soạn lại từ đầu theo ý mình, KHÔNG đem điều khách vừa đính chính lên tiêu đề nếu khách không bảo.
+  • Khách góp ý về CÁCH VIẾT (nhấn gì, bớt gì, icon, lặp) mà bản tin vẫn không thể hiện được thì phải nói thật vì sao; KHÔNG trả lời "em sẽ
+    sửa" rồi không gửi bản tin.
 - NẾU khách trả lời CHƯA BIẾT PHÍ (sau câu hỏi phí): báo NGẮN trong 1–2 câu — con số phí đúng vai + chỉ thu khi giao dịch thành công.
   Không thêm câu giải thích, không chào kết dài.{bao_phi}
 - NẾU khách CHỦ ĐỘNG HỎI PHÍ HOẶC CHÊ PHÍ CAO / DO DỰ / TỪ CHỐI trả phí: hãy THUYẾT PHỤC một cách khéo léo, ấm áp:
@@ -1019,7 +1050,7 @@ DANH SÁCH GIÁ TRỊ (dùng để thuyết phục, chỉ nêu thứ có thật)
 
 KHI RAO LẠI BẢN TIN ĐÃ SỬA:
 {AD_FORMAT}
-
+{yeu_cau}
 DỮ LIỆU BĐS:
 {describe_captured(prop)}"""
 
@@ -1819,6 +1850,14 @@ QUY TẮC:
   trống, KHÔNG đoán. Có điền thì ngoai_vung_trich_dan = NGUYÊN VĂN cụm địa danh khách nói.
 - KHÁCH BẢO ĐĂNG (20/10/2026, SRS-5.1zzzzzzz86): xin_dang = NGUYÊN VĂN cụm khách bảo đăng tin / lên tin / xin xem bản tin hoàn chỉnh
   (vd "ok em đăng đi", "đăng giúp anh", "soạn tin cho chị xem"). Chỉ hỏi phí, hỏi link web, hay đang kể thông tin căn → bỏ trống.
+- KHÁCH DẶN CÁCH VIẾT BẢN TIN (27/10/2026, SRS-5.1zzzzzzz218): yeu_cau_viet = danh sách cụm NGUYÊN VĂN trong tin khách vừa nhắn dặn bot
+  viết / sửa bản tin THẾ NÀO — không phải dữ liệu căn: nhấn mạnh hay bớt ý nào ("mặt tiền 5m xứng đáng để nói", "đừng đem lên tiêu đề"),
+  không lặp ("bàn giao tức thì nói 2 lần"), thêm / bớt icon ("cho dùm anh 2-3 cái hình tượng"), ngắn / dài hơn, đổi giọng, đổi tiêu đề.
+  Mỗi ý MỘT cụm, chép đúng chữ khách. Khách chỉ ĐÍNH CHÍNH số liệu ("mặt tiền có 5m thôi") thì đó là dữ liệu → ghi ô, KHÔNG phải yeu_cau_viet.
+  Không dặn gì → [].
+- GIÁ TRỊ Ô LÀ CỤM DỮ LIỆU, KHÔNG PHẢI CẢ CÂU KHÁCH: ghi "đang cho thuê, bàn giao ngay được" — KHÔNG ghi nguyên câu "Người ta thuê 1 năm
+  nhưng mà anh có thể bàn giao tức thì mà em". Câu khách NHỜ / YÊU CẦU bot làm gì ("cho dùm anh 2-3 cái hình", "em rao lại xem") KHÔNG
+  BAO GIỜ là giá trị ô (hinh_anh, mo_ta…) — để yeu_cau_viet hoặc bỏ. Ô mà câu khách hỏi ("?") không phải dữ liệu → bỏ.
 - XÁC NHẬN XOÁ: chỉ khi tin NGAY TRƯỚC của bot hỏi xác nhận ẩn / bỏ / chỉ giữ căn: xac_nhan_xoa = "dong_y" (khách đồng ý làm) hoặc
   "tu_choi" (khách không muốn, giữ nguyên), kèm xac_nhan_trich_dan = NGUYÊN VĂN cụm đó. Nói chuyện khác → bỏ trống.
 - ĐỊA CHỈ ĐẦY ĐỦ: fields.dia_chi luôn là địa chỉ ĐẦY ĐỦ của căn sau khi GHÉP phần khách vừa nói (số nhà, hẻm, phường, quận) vào
@@ -2007,6 +2046,9 @@ def operations_schema() -> dict[str, Any]:
             "ngoai_vung_trich_dan": {"type": "string", "description": "Nguyên văn cụm địa danh khách nói (bắt buộc khi có ngoai_vung)."},
             "xin_dang": {"type": "string", "description": "Nguyên văn cụm khách bảo đăng tin / xin xem bản tin hoàn chỉnh. Không có thì "
                          "bỏ trống."},
+            "yeu_cau_viet": {"type": "array", "items": {"type": "string"},
+                             "description": "Cụm NGUYÊN VĂN khách dặn CÁCH VIẾT / SỬA bản tin (nhấn ý nào, bớt gì, icon, không lặp, "
+                             "ngắn hơn, đổi tiêu đề) — không phải dữ liệu căn, không phải đính chính số liệu. Không dặn thì []."},
             "xac_nhan_xoa": {"type": "string", "enum": ["dong_y", "tu_choi"],
                              "description": "Chỉ khi bot vừa hỏi xác nhận ẩn / bỏ / chỉ giữ căn: khách đồng ý hay từ chối."},
             "xac_nhan_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách đồng ý / từ chối (bắt buộc khi có xac_nhan_xoa)."},

@@ -8,6 +8,7 @@ so all fields are optional and start empty.
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -67,6 +68,17 @@ def _calc_area_from_dimension(dim: str) -> str | None:
 
 import uuid
 import time
+
+
+def _gop_y(cu: str, them: str) -> str:
+    """Gộp ý `them` vào chuỗi `cu` của cùng một ô: mọi chữ của `them` đã có trong `cu` → giữ `cu`; ngược lại nối " · " (SRS-5.1zzzzzzz218)."""
+    tu = lambda x: set(re.findall(r"[a-z0-9]+", unicodedata.normalize("NFD", (x or "").replace("đ", "d").replace("Đ", "D")).lower()
+                                 .encode("ascii", "ignore").decode()))
+    if not cu:
+        return them
+    if tu(them) <= tu(cu):
+        return cu
+    return f"{cu} · {them}"
 
 
 def _merge_uu_the(old: str, new: str) -> str:
@@ -575,6 +587,8 @@ class Property:
             return bool(self.fields.get("dia_chi") or self.fields.get("duong"))
         if name in ("tinh_trang_ban_giao", "hien_trang_su_dung"):   # MỘT ý hiện trạng (đang ở / trống / đang cho thuê), hai tên ô (SRS-5.1zzzzzzz197)
             return bool(self.fields.get("tinh_trang_ban_giao") or self.fields.get("hien_trang_su_dung"))
+        if name == "thoi_gian_ban_giao" and "tinh_trang_ban_giao" in self.core_fields():   # SRS-5.1zzzzzzz218: gộp vào hiện trạng
+            return bool(self.fields.get("tinh_trang_ban_giao") or self.fields.get("thoi_gian_ban_giao"))
         if name == "phap_ly_hoan_cong":   # khách đã nói sổ (ô phap_ly) thì không hỏi riêng hoàn công (SRS-5.1zzzzzzz76)
             return bool(self.fields.get("phap_ly_hoan_cong") or self.fields.get("phap_ly"))
         if name == "dien_tich":   # BĐS một diện tích (chung cư / đất / công nghiệp)
@@ -616,6 +630,12 @@ class Property:
                 k = "tinh_trang_ban_giao"
                 if "hien_trang_su_dung" in self.fields:
                     del self.fields["hien_trang_su_dung"]
+            # SRS-5.1zzzzzzz218 (chat anh Luận 26/10: "bàn giao tức thì" vào cả `thoi_gian_ban_giao` lẫn `tinh_trang_ban_giao` → bản tin nói
+            # hai lần): với loại có ô hiện trạng, thời điểm bàn giao là một phần của hiện trạng — gộp vào, ý đã có thì không nối thêm.
+            if k == "thoi_gian_ban_giao" and "tinh_trang_ban_giao" in self.core_fields():
+                k = "tinh_trang_ban_giao"
+                v = _gop_y(captured.get("tinh_trang_ban_giao") or self.fields.get("tinh_trang_ban_giao") or "", v)
+                self.fields.pop("thoi_gian_ban_giao", None)
             if k == "loai_hinh":
                 if self.loai_hinh != v:
                     self.loai_hinh = v
