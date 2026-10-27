@@ -1169,6 +1169,24 @@ def _than_ban_tin(reply: str) -> tuple[str, str] | None:
     return (doan[0], "\n\n".join(doan[1:])) if len(doan) >= 2 else None
 
 
+_DONG_CAP_NHAT_RE = re.compile(r"(?i)📋?[ \t]*bản tin (?:đã )?(?:cập nhật|sửa)(?: lại)?[ \t]*:")
+
+
+def _gan_dau_ban_tin(reply: str) -> str:
+    """Bản tin cập nhật mà model viết dòng mở THIẾU dấu 📋 (ban-thu-ban 27/10 sau SRS-219: "Đúng rồi anh, … nha anh. Bản tin cập nhật:" nối
+    cuối câu dẫn, 3/4 lượt) → tách câu dẫn và gắn lại đúng dòng "📋 Bản tin cập nhật:". Không có dấu thì cả hệ thống coi lượt đó là chat
+    thường: lưới bản tin không chạy, bản khách duyệt lấy nhầm bản cũ (`_ban_tin_da_trinh`). Cùng lớp với dòng mở bản nháp đầu thiếu 📋
+    (`prompts.cat_truoc_mo_dau`, SRS-5.1zzzzzzz80). Chỉ chạm lời có bố cục tin rao (gạch đầu dòng) — SRS-5.1zzzzzzz222."""
+    if not reply or "📋" in reply or not _is_formatted_post(reply):
+        return reply
+    m = _DONG_CAP_NHAT_RE.search(reply)
+    if not m:
+        return reply
+    truoc, sau = reply[:m.start()].rstrip(), reply[m.end():]
+    sau = sau if sau.startswith(("\n", "\r")) else " " + sau.lstrip()
+    return ((truoc + "\n\n") if truoc else "") + "📋 Bản tin cập nhật:" + sau
+
+
 def _phan_chat_quanh_ban_tin(reply: str) -> str:
     """Phần CHAT của một lượt có bản tin 📋: câu dẫn trước dấu 📋 (bỏ dòng mở "📋 Bản tin cập nhật:") + đoạn cuối sau bản tin nếu là câu hỏi
     chốt. Lượt không có 📋 → cả lời. Chỉ cắt theo bố cục, không đọc ý (SRS-5.1zzzzzzz219)."""
@@ -2620,6 +2638,7 @@ class Engine:
         Bản tin (📋) phải có giá trong tiêu đề (SRS-5.1zzzzzzz86: bắn thử 20/10, bản tin CẬP NHẬT của KB3 bỏ giá dù AD_FORMAT bắt
         buộc); không mở đầu "Dạ" (SRS-5.1zzzzzzz87). Cả nhánh bán lẫn nhánh mua. `phuong_phai_nhac` (SRS-5.1zzzzzzz115): phường kho
         hẻm của lượt hỏi phường — lời không nhắc phường nào trong đó thì viết lại."""
+        reply = _gan_dau_ban_tin(reply)
         thieu_td = _tieu_de_thieu(reply, conv.prop)
         ly_do = []
         if phuong_phai_nhac and not any(ten_tran(p) in bo_dau(reply) for p in phuong_phai_nhac):
@@ -2731,7 +2750,7 @@ class Engine:
                     system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\n" + " ".join(ly_do) + " Viết lại TOÀN BỘ lượt trả lời.\n",
                     conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if lai:
-                reply = _bo_markdown(lai)
+                reply = _gan_dau_ban_tin(_bo_markdown(lai))
         return reply
 
     @staticmethod
