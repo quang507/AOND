@@ -217,9 +217,9 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "nguon_nuoc": "Hỏi nguồn nước tưới / sinh hoạt ở đó lấy từ đâu",
     "muc_dich_su_dung_dat": "Hỏi trên sổ ghi mục đích sử dụng đất là gì (SKC, TMD hay đất khác)",
     # Khách mua (SRS-5.1zzzzzzz116)
-    "moi_truong_song": "Hỏi anh/chị muốn mình sống ở một khu như thế nào (yên tĩnh, gần chợ, trường, công viên…)",
+    "moi_truong_song": "Hỏi khách muốn sống ở một khu như thế nào (yên tĩnh, gần chợ, trường, công viên…)",
     "thanh_vien": "Hỏi nhà mình gồm những ai sẽ ở",
-    "noi_lam_viec": "Hỏi mình đi làm (con đi học) ở khu vực nào để chọn chỗ tiện đi lại",
+    "noi_lam_viec": "Hỏi khách đi làm (con đi học) ở khu vực nào để chọn chỗ tiện đi lại",
     "dien_tich_mong_muon": "Hỏi cần khoảng mấy phòng, diện tích tầm bao nhiêu thì thoải mái (số phòng khách đã nói thì chỉ hỏi diện tích)",
     "thang_may": ("Hỏi việc lên xuống các tầng với nhà khách thế nào (ví dụ nhà có người lớn tuổi đi cầu thang được không) — câu MỞ, "
                   "KHÔNG gợi sẵn \"thang máy sẽ tiện hơn\" rồi hỏi khách thấy sao. Không nói bên em có mẫu nào nếu danh sách căn không có"),

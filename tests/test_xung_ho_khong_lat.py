@@ -45,4 +45,4 @@ def test_tin_nhac_ban_nhap_theo_cau_tester():
     eng = SimpleNamespace(conversation=lambda uk: conv, khoa_luot=lambda uk: threading.RLock(), _convstore=None)
     FollowUpManager()._execute_followup("bn-1", eng, None, "seller", hen=None)
     nhac = conv.history[-1].content
-    assert nhac == "Em gửi chị bản nháp tin đăng, mình cần chỉnh sửa thêm nhắn em hỗ trợ ạ!"   # đúng câu tester (SRS-5.1zzzzzzz101)
+    assert nhac == "Em gửi chị bản nháp tin đăng, chị cần chỉnh sửa thêm nhắn em hỗ trợ ạ!"   # đúng câu tester (SRS-5.1zzzzzzz101)

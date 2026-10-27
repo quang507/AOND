@@ -111,7 +111,7 @@ from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
-from .xung_ho import goi_toi as goi_toi_khach, tre as _xung_tre
+from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_viec_vua_ghi, lenh_tra_loi,
                   tim_sdt)
 from .tai_chinh import khoi_tai_chinh
@@ -1241,15 +1241,10 @@ def _mo_dau_da(reply: str) -> bool:
     return re.match(r"(?i)\s*dạ(?![a-zà-ỹđ])", reply or "") is not None
 
 
-# "mình" đứng sau các danh từ này là "căn của mình" (gọi căn của khách) — được phép; còn lại là đại từ gọi khách.
-_MINH_SAU_DANH_TU = re.compile(r"(?i)\b(?:nhà|căn|đất|lô|phố|phòng|tin|bên|dự\s+án|hàng|cư|khu|của|kho)\s+mình\b")
-
-
 def _goi_khach_la_minh(reply: str, pronoun: str) -> bool:
-    """Lời bot gọi khách là "mình" như đại từ ("em xin lỗi mình nhé", "Mình đang cần…") — SRS-5.1zzzzzzz171. Từ SRS-5.1zzzzzzz214 (chủ dự
-    án 27/10: khách xưng "em" thì bot xưng anh / chị theo tên) bot KHÔNG còn xưng "mình" với ai, nên mọi cách xưng đều kiểm.
-    "nhà mình / căn mình…" không tính. Kiểm HÌNH THỨC lời của chính bot, không đoán ý khách."""
-    return re.search(r"(?i)(?<![\wà-ỹđ])mình(?![\wà-ỹđ])", _MINH_SAU_DANH_TU.sub(" ", reply or "")) is not None
+    """Lời bot gọi khách là "mình" như đại từ — SRS-5.1zzzzzzz171 / 214. Luật một nguồn ở `xung_ho.goi_khach_la_minh` (câu mẫu cố định
+    cũng qua đó, SRS-5.1zzzzzzz226). Kiểm HÌNH THỨC lời của chính bot, không đoán ý khách."""
+    return goi_khach_la_minh(reply)
 
 
 def _mo_dau_ghi_nhan(reply: str) -> bool:
@@ -1478,7 +1473,7 @@ class Engine:
             shared_prefix = prefix >= 0.6 * min(len(qs), len(ps))
             if shared_tail or shared_prefix:
                 return ("near", p.name,
-                        f"Dự án “{name}” có phải cũng là “{p.name}” mình đang có không, hay là "
+                        f"Dự án “{name}” có phải cũng là “{p.name}” bên em đang có không, hay là "
                         "một dự án khác ạ? Em hỏi cho chắc để khỏi tách nhầm thành 2 dự án.")
         return None
 
@@ -3181,7 +3176,7 @@ class Engine:
                     cap_line = f"“{caption.strip()}” — " if caption and caption.strip() else ""
                     reply = (f"📊 {cap_line}Em đọc được bảng giá ({names}) rồi ạ — **{n_in_list} căn**"
                              f"{where}, em đã LƯU LẠI GIÁ của từng căn. Em chưa cho căn nào vào rổ "
-                             "rao vì mình chưa nói rao căn nào — anh/chị muốn RAO căn nào ạ (hoặc "
+                             "rao vì anh/chị chưa nói rao căn nào — anh/chị muốn RAO căn nào ạ (hoặc "
                              "hỏi em giá căn nào cũng được)? 😊")
                     if conv.pending_name_note:
                         reply += "\n\n🤔 " + conv.pending_name_note

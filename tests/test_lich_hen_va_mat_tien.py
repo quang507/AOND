@@ -81,11 +81,11 @@ def test_cau_xac_nhan_lich_la_cau_mau_nguyen_van():
     from aioi import cau_mau
     lich = [{"listing_code": "SEED0044", "time_text": "chiều, 4h"}]
     k = khoi_lich_dang_cho(lich, "chi")
-    assert "Chị xác nhận giúp em, <ngày giờ khách đã nói> mình đến xem căn <đường / khu của căn> đúng không ạ?" in k and "NGUYÊN VĂN" in k
-    assert "Em xác nhận giúp anh, <ngày giờ khách đã nói> mình đến xem căn" in khoi_lich_dang_cho(lich, "em")      # khách xưng "em": bot xưng anh (SRS-214)
+    assert "Chị xác nhận giúp em, <ngày giờ khách đã nói> chị đến xem căn <đường / khu của căn> đúng không ạ?" in k and "NGUYÊN VĂN" in k
+    assert "Em xác nhận giúp anh, <ngày giờ khách đã nói> em đến xem căn" in khoi_lich_dang_cho(lich, "em")      # khách xưng "em": bot xưng anh (SRS-214)
     assert "Em xác nhận giúp chị, " in khoi_lich_dang_cho(lich, "em", "M•ai")
     assert cau_mau.cau("xac_nhan_lich", "chị", toi="em", gio="4 giờ chiều nay", can="Quang Trung") == (
-        "Chị xác nhận giúp em, 4 giờ chiều nay mình đến xem căn Quang Trung đúng không ạ?")
+        "Chị xác nhận giúp em, 4 giờ chiều nay chị đến xem căn Quang Trung đúng không ạ?")
     try:
         cau_mau.dang_ky(lambda: {"xac_nhan_lich": "{Goi} chốt giúp {toi}: {gio} xem căn {can} nhé?"})     # chủ dự án sửa ở CRM → có hiệu lực
         assert "Chị chốt giúp em: <ngày giờ khách đã nói> xem căn <đường / khu của căn> nhé?" in khoi_lich_dang_cho(lich, "chi")
