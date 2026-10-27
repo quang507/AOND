@@ -43,7 +43,7 @@ def test_phuong_cu_bi_chia_thi_o_hoi_luot_do_la_phuong_mot_lan():
 def test_prompt_khong_con_dong_doi_nguoc_va_moi_phu_dinh():
     he = build_chat_system("Mai", Property(), "gia")
     assert 'Xưng "em", gọi khách "anh/chị".' not in he and "theo khối QUY TẮC XƯNG HÔ" in he
-    assert '("Em ghi nhận…"' not in he and "không cần báo đã ghi / đã lưu" in he
+    assert '("Em ghi nhận…"' not in he and "không cần báo đã ghi / đã lưu" in he and '"Wow"' in he   # chủ dự án 27/10: "lời dặn thuận hoặc câu khen, wow các kiểu"
     assert "xin thêm ảnh thì được" in he and 'Thông tin cần hỏi tiếp theo: "giá' in he
     mua = build_buyer_chat_system("Mai", BuyerLead(), "ngan_sach")
     assert 'không câu ghi nhận "em ghi nhận"' not in mua and "không báo đã ghi / đã lưu" in mua
