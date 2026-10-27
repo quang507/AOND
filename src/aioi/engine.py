@@ -3559,8 +3559,11 @@ class Engine:
             if not conv.y_luot.get("_cong_web_phuong"):
                 conv.y_luot["_cong_web_phuong"] = True
                 conv.lo["phuong"] = n + 1
-                if n >= 2 and not conv.y_luot.get("can_nguoi_that"):
-                    f = conv.prop.fields
+                # SRS-5.1zzzzzzz214 mục 7 (chat anh Luận 27/10 06:34–06:44 VN: 15 tin 🙋 tới admin trong 10 phút): `y_luot` làm mới mỗi lượt nên
+                # "chưa có can_nguoi_that" luôn đúng → từ lượt 3 trở đi lượt nào cũng báo. Cờ nhớ qua lượt nằm ở ô tin: báo admin MỘT lần mỗi căn.
+                f = conv.prop.fields
+                if n >= 2 and not conv.y_luot.get("can_nguoi_that") and not f.get("_phuong_bao_admin"):
+                    f["_phuong_bao_admin"] = "1"
                     conv.y_luot["can_nguoi_that"] = ("Bot hỏi phường 3 lượt chưa ra — nhờ admin tra và điền phường ở Sửa tin: "
                                                      + ", ".join(str(f[k]) for k in ("du_an", "duong", "dia_chi", "quan") if f.get(k)))
         return web
