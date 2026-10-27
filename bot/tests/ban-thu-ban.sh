@@ -202,7 +202,8 @@ NGUOI=$(jq -r '.reply // ""' <<<"$TRA")
 sleep 4
 CN=$(q "select coalesce(bool_or(c.needs_human), false) as cn,
                (select count(*) from reminders r join sellers s2 on s2.id = r.seller_id where s2.zalo_user_id = '$BAN8') as nhac
-          from conversations c join sellers s on s.id = c.seller_id where s.zalo_user_id = '$BAN8'" | jq -c '.[0]')
+          from conversations c left join sellers s on s.id = c.seller_id left join buyers b on b.id = c.buyer_id
+         where s.zalo_user_id = '$BAN8' or b.zalo_user_id = '$BAN8'" | jq -c '.[0]')   # lượt mơ hồ có thể ở vai mua (SRS-230)
 echo "== xin gặp người: $CN"
 kiem "Xin gặp người: bot nói đã báo người phụ trách" "$(grep -qi 'báo' <<<"$NGUOI" && echo 1 || echo 0)"
 kiem "Xin gặp người: bật needs_human" "$(jq '.cn == true | if . then 1 else 0 end' <<<"$CN")"
