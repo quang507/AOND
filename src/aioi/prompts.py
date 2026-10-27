@@ -71,7 +71,7 @@ FIELD_LABELS: dict[str, str] = {
     "co_hdt": ("nhà (tin BÁN) đang có hợp đồng thuê hay không — AI đọc theo nghĩa, chỉ ghi \"co\" khi khách nói nhà đang cho thuê / có người thuê, "
                "\"khong\" khi khách nói đang ở hoặc để trống; chưa rõ thì BỎ TRỐNG"),
     "thu_nhap_thue": "tiền thuê nhà đang thu mỗi tháng (CHỈ khi tin BÁN và nhà đang có hợp đồng thuê; ghi cả số tiền khách nói, vd 35 triệu/tháng)",
-    "hinh_anh": "hình ảnh thực tế / sổ đỏ",
+    "hinh_anh": "hình ảnh thực tế / sổ đỏ (chủ nhà chụp gửi cho em)",
     # Chung cư / Căn hộ
     "so_phong_ngu": "số phòng ngủ và WC (chỉ số PHÒNG — số tầng / lầu thuộc ô kết cấu)",
     "tang_toa": "tầng và tòa/block căn hộ",
@@ -398,7 +398,7 @@ GIONG_VUI = """GIỌNG (bắt buộc): em là một môi giới trẻ đang HÀO
 - Minh hoạ giọng (CHỈ minh hoạ cặp ý, KHÔNG phải câu để chép): hẻm xe hơi → khách tới xem đậu xe tận cửa · sổ hồng riêng → sang tên nhanh, khách yên tâm · 4 phòng ngủ → đủ chỗ cho nhà đông người · có người thuê sẵn → mua về có dòng tiền ngay.
 - Nói như nhắn Zalo cho người quen: câu ngắn, có nhịp, từ đời thường miền Nam ("ghê", "luôn", "nha", "nghen") — mỗi câu nhiều nhất MỘT từ như vậy.
 - Có nét riêng: gọi căn bằng tên đường ("căn Hoàng Hoa Thám này"), nhắc ĐÚNG một chi tiết khách vừa kể để khách thấy mình đang nghe, rồi mới hỏi hay làm việc.
-- Mỗi lượt một vẻ: hai lượt liền nhau không cùng kiểu mở (lượt này cảm thán thì lượt sau nói lợi ích, có lượt vào thẳng việc), không cùng khuôn câu, không cùng câu hỏi chốt. Việc đã làm (sửa tin, thêm icon, đổi tiêu đề) nói bằng lời tự nhiên trong câu đáp, hoặc vào thẳng bản tin — không mở bằng câu báo cáo "Em đã cập nhật / Em sửa rồi ạ / Em ghi nhận".
+- Mỗi lượt một vẻ: hai lượt liền nhau không cùng kiểu mở (lượt này cảm thán thì lượt sau nói lợi ích, có lượt vào thẳng việc), không cùng khuôn câu, không cùng câu hỏi chốt. Việc đã làm (sửa tin, thêm icon, đổi tiêu đề) nói bằng lời tự nhiên trong câu đáp, hoặc vào thẳng bản tin; câu báo cáo kiểu "Em ghi nhận / Em đã cập nhật" nói nhiều nhất MỘT lần cả cuộc chat.
 - Gọi khách (anh / chị / cô / chú) NHIỀU NHẤT một lần mỗi lượt, và đừng lượt nào cũng có "<gọi> ơi" hay kết câu bằng "<gọi> ạ" — người thật nhắn Zalo không gọi tên mỗi câu; câu đáp ngắn thì bỏ hẳn tiếng gọi.
 - Hào hứng nhưng vẫn thật: cảm thán không thêm chi tiết khách chưa nói, không bình giá, không hứa bán được."""
 
@@ -629,7 +629,7 @@ def khoi_diem_tin(diem_tin: float, hang: str, diem_nguoi: float, thieu: list[str
     tín / hạng mà trước đó không khối nào mang số thật, nên model chỉ có thể bịa. Số do `gamification` tính (cùng nguồn `TurnResult`),
     ô còn thiếu = `Property.missing_fields()` theo nhãn `nhan_o`. Đặt SAU `RANH_GIOI_CACHE` (đổi mỗi lượt). Chữ dặn không chứa chữ số."""
     nhan = [nhan_o(o, prop).split(" (")[0] for o in (thieu or [])[:5]]
-    cach = ", ".join(nhan) if nhan else "tin đã đủ ô — chỉ còn thêm ảnh thật nếu chưa có"
+    cach = ", ".join(nhan) if nhan else "tin đã đủ ô — chỉ còn chủ nhà chụp gửi ảnh thật nếu chưa có"
     return (
         "\n\n=== ĐIỂM TIN (hệ thống tính, số THẬT — chỉ nói số ở đây, không tự đặt số khác) ===\n"
         f"Tin này: {diem_tin:.0f}/100. Người rao: hạng {hang} ({diem_nguoi:.0f}/100). Ảnh đã nhận: {so_anh} tấm.\n"

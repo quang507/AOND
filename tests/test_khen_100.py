@@ -43,12 +43,15 @@ class _SpyHangDoi:
     chat = reply
 
 
-def test_mot_luot_mo_bang_ghi_nhan_la_goi_lai_ngay():
-    spy = _SpyHangDoi(["Em ghi nhận hẻm 4m rồi anh. Nhà mình mấy lầu vậy anh?"])
+def test_ghi_nhan_mot_lan_duoc_lan_hai_goi_lai():
+    """SRS-5.1zzzzzzz228 mục 3 (chủ dự án 27/10: "câu nào cũng dc, đừng trùng 3 4 câu em ghi nhận, 1 lần là dc") — thay "bỏ hẳn" của SRS-131."""
+    spy = _SpyHangDoi(["Em ghi nhận hẻm 4m rồi anh. Nhà mấy lầu vậy anh?", "Vậy em ghi nhận là 3 lầu nha anh. Sổ hồng riêng chưa anh?"])
     eng = Engine(spy)
-    r = eng.handle("k1", "nhà anh ở hẻm 4m đường Cao Lỗ quận 8")
-    assert not _mo_dau_ghi_nhan(r.reply)
-    assert any("VIẾT LẠI LƯỢT NÀY" in s and "câu ghi nhận" in s and "lời khen" in s for s in spy.systems)
+    r1 = eng.handle("k1", "nhà anh ở hẻm 4m đường Cao Lỗ quận 8")
+    assert r1.reply.startswith("Em ghi nhận") and not any("VIẾT LẠI LƯỢT NÀY" in s for s in spy.systems)
+    r2 = eng.handle("k1", "3 lầu em")
+    assert "ghi nhận" not in r2.reply
+    assert any("VIẾT LẠI LƯỢT NÀY" in s and "câu ghi nhận" in s and "một lần" in s for s in spy.systems)
 
 
 def test_loi_mo_bang_khen_khong_bi_goi_lai():

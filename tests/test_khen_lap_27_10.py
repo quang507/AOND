@@ -91,3 +91,24 @@ def test_luat_mem_khong_goi_lan_hai():
     c.history.append(Turn("user", "4 phòng ngủ", 0.0))
     eng._soat_hinh_thuc(c, "SYS", "Nhà 4 phòng ngủ rộng rãi quá anh ơi.")
     assert len(spy.systems) == 1
+
+
+# ---------- Mục 3: câu ghi nhận ở giữa lời cũng nhận ra; mục 4: "em gửi ảnh" ngược vai ----------
+
+def test_cau_ghi_nhan_o_giua_loi():
+    from aioi.engine import _co_cau_ghi_nhan
+    assert _co_cau_ghi_nhan("Vậy em ghi nhận là căn nhà vẫn đang rao, chưa có ai chốt nhé.")
+    assert _co_cau_ghi_nhan("Hay quá anh. Em lưu giá 10 tỷ rồi nha.")          # cách nói mới: câu thứ hai
+    assert not _co_cau_ghi_nhan("Căn còn bán thì em cứ đẩy tin đều cho anh. Nhà mấy lầu?")
+
+
+def test_bot_noi_em_gui_anh_cho_chu_nha_bi_goi_lai():
+    from aioi.engine import _bot_hua_gui_anh
+    assert _bot_hua_gui_anh("Anh có muốn em gửi thêm ảnh thực tế để tin nổi bật hơn không ạ?")
+    assert _bot_hua_gui_anh("Em sẽ gửi vài tấm hình cho anh xem nha.")
+    assert not _bot_hua_gui_anh("Anh chụp gửi em vài tấm ảnh thực tế nhé.") and not _bot_hua_gui_anh("Em gửi anh bản nháp tin đăng nhé.")
+    spy = _Spy()
+    eng = Engine(spy)
+    c = _conv(eng, "k-228f")
+    eng._soat_hinh_thuc(c, "SYS", "Anh có muốn em gửi thêm ảnh thực tế để tin nổi bật hơn không ạ?")
+    assert len(spy.systems) == 1 and "ngược vai" in spy.systems[0]
