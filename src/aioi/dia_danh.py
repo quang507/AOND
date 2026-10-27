@@ -508,7 +508,9 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
                     "hô lượt này), không nhắc chữ khách gõ sai. Trong hội thoại khách đã trả lời giữ tên của mình thì thôi, không hỏi lại.")
     d = tra.duong(fields.get("duong"), fields.get("quan"))
     ph = d["phuong"] if d else []
-    ph_hem = phuong_kho_hem(tra, fields)
+    # SRS-5.1zzzzzzz228 (ban-thu-srd 27/10: bot hỏi "có phải Phường Chợ Quán không" 5 lượt liền, cả sau khi đã báo admin tra phường): dòng
+    # kho hẻm kèm sẵn câu hỏi nên model hỏi phường ở MỌI lượt có khối này — chỉ đưa ở lượt hệ thống chọn hỏi phường.
+    ph_hem = phuong_kho_hem(tra, fields) if next_field == "phuong" else []
     if len(ph_hem) == 1:
         dong.append(f"Kho hẻm: hẻm trong địa chỉ khách chỉ có ở {ph_hem[0]} — khi hỏi phường, hỏi xác nhận dạng HỎI (\"nhà mình ở "
                     f"{ph_hem[0]} đúng không anh/chị?\"), KHÔNG khẳng định; khách nói phường khác thì ghi theo khách, không hỏi lại.")
