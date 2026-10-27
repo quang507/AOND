@@ -643,8 +643,13 @@ class SupabaseConversationStore(KhoNguoiMua):
             try:
                 tao = self._post("conversations", body)
             except Exception as e:  # noqa: BLE001
-                log.error("Failed to create conversation in Supabase: %s", e)
-                return None
+                # SRS-5.1zzzzzzz230: chỉ mục duy nhất `conversations_buyer_uniq` / `_seller_uniq` — luồng lưu nền và luồng báo cần người cùng
+                # tạo hội thoại cho khách mới, luồng thua bị từ chối. Hội thoại đã có thì đọc lại, đừng trả None (cờ cần người không bật).
+                lai = self._tim_hoi_thoai(sid, bid)
+                if not lai:
+                    log.error("Failed to create conversation in Supabase: %s", e)
+                    return None
+                tao = [lai]
             conv_id = tao[0]["id"] if tao else None
             if not conv_id:
                 return None

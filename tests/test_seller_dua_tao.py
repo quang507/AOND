@@ -69,3 +69,25 @@ def test_tao_buyer_loi_that_su_van_tra_none():
             return []
 
     assert _Hong().khach_mua("thu-0004") is None
+
+
+class _DuaHoiThoai(SupabaseConversationStore):
+    """Khách mua mới: tìm hội thoại lần đầu rỗng, POST conversations bị chỉ mục duy nhất từ chối (409), tìm lại thấy dòng luồng kia tạo."""
+
+    def __init__(self):
+        super().__init__(url="https://x.supabase.co", key="k")
+        self.so_tim = 0
+
+    def _request(self, method, endpoint, data=None, prefer=None):
+        if method == "GET" and endpoint.startswith("buyers?"):
+            return [{"id": "b-1"}]
+        if method == "GET" and endpoint.startswith("conversations?"):
+            self.so_tim += 1
+            return [] if self.so_tim == 1 else [{"id": "c-da-co", "seller_id": None, "buyer_id": "b-1"}]
+        if method == "POST" and endpoint == "conversations":
+            raise urllib.error.HTTPError("u", 409, "Conflict", {}, None)
+        return []
+
+
+def test_thua_cuoc_tao_hoi_thoai_thi_doc_lai():
+    assert _DuaHoiThoai()._hoi_thoai_chung("thu-0005", "chị Hoa", "buyer") == "c-da-co"
