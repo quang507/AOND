@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-27 10:00 (giờ VN)
+-- Sinh lúc: 2026-10-27 10:29 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -5345,6 +5345,27 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.tim_moc(p_tim text)
+ RETURNS TABLE(ten text, loai text, lat double precision, lng double precision)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  with q as (select public.bo_dau(btrim(coalesce(p_tim, ''))) as t)
+  select ten, loai, lat, lng from (
+    select ti.ten, ti.loai, ti.lat, ti.lng, length(ti.ten) as dai
+      from public.tien_ich ti, q
+     where length(q.t) >= 3 and ti.ten_kd ilike '%' || q.t || '%' and ti.lat is not null and ti.lng is not null
+    union all
+    select p.name, 'du_an', p.lat, p.lng, length(p.name)
+      from public.projects p, q
+     where length(q.t) >= 3 and public.bo_dau(p.name) ilike '%' || q.t || '%' and p.lat is not null and p.lng is not null
+  ) x
+  order by dai, ten
+  limit 8;
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.tim_nghia_san_sang()
  RETURNS boolean
  LANGUAGE sql
@@ -7213,6 +7234,10 @@ revoke all on function public.tim_dia_danh_theo_nghia(p_vec double precision[], 
 grant execute on function public.tim_dia_danh_theo_nghia(p_vec double precision[], p_loai text[], p_lat double precision, p_lng double precision, p_limit integer) to service_role;
 revoke all on function public.tim_duong(p_ten text, p_quan text, p_toi_da integer) from public, anon, authenticated;
 grant execute on function public.tim_duong(p_ten text, p_quan text, p_toi_da integer) to service_role;
+revoke all on function public.tim_moc(p_tim text) from public, anon, authenticated;
+grant execute on function public.tim_moc(p_tim text) to anon;
+grant execute on function public.tim_moc(p_tim text) to authenticated;
+grant execute on function public.tim_moc(p_tim text) to service_role;
 revoke all on function public.tim_nghia_san_sang() from public, anon, authenticated;
 grant execute on function public.tim_nghia_san_sang() to service_role;
 revoke all on function public.tim_nha(p_deal text, p_loai text, p_gia_max bigint, p_khu text, p_dt_min numeric, p_pn_min integer, p_xe_hoi boolean, p_vec double precision[], p_limit integer, p_tien_ich text[]) from public, anon, authenticated;
