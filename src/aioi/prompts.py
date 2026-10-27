@@ -877,7 +877,12 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
     cam = ("TUYỆT ĐỐI KHÔNG nói tin đã đăng / đã lên web / đang hiển thị, KHÔNG bảo khách vào web xem tin của mình, KHÔNG nói "
            f"\"{cau_mau.cau('duyet_tin')}\" (SRS-5.1zzzzzzz107).")
     thieu = [o for o in (web.get("thieu") or []) if o in FIELD_LABELS]
-    if thieu:
+    if thieu and thieu[0] == "phuong" and web.get("phuong_bao_admin"):
+        # SRS-5.1zzzzzzz214 mục 7: đã báo admin tra phường (sau 3 lượt hỏi) → thôi hỏi, không nhắc lại mỗi lượt.
+        ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu phường, admin ĐÃ được báo để tra và điền. {cam}"
+        viec = ("KHÔNG hỏi khách về phường / số nhà / gần đâu nữa; nếu khách hỏi tin thì nói bên em đang tra phường rồi lên web, còn lại đáp "
+                "điều khách vừa nói và hỏi ô khác (nếu có) như thường.")
+    elif thieu:
         nhan = ", ".join(FIELD_LABELS[o].split(" (")[0] for o in thieu)
         hoi = FIELD_LABELS[thieu[0]]
         if thieu[0] == "phuong":

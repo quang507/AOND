@@ -3556,7 +3556,9 @@ class Engine:
             # SRS-5.1zzzzzzz213 (khách ảo 26/10: anh K. bị hỏi phường 6 lượt sau bản nháp vì sổ lờ chỉ đếm ở lượt thu thập, không đếm ở cổng
             # web): mỗi lượt cổng này hỏi phường cũng tính một lần lờ (một lần mỗi lượt). Hỏi tới lần thứ 3 mà chưa ra → báo người phụ trách tra
             # phường (cùng đường `can_nguoi_that`, có nhắc admin thật), bot thôi hỏi.
-            if not conv.y_luot.get("_cong_web_phuong"):
+            if conv.prop.fields.get("_phuong_bao_admin"):
+                web["phuong_bao_admin"] = True   # admin đã được báo: không hỏi phường nữa, không đếm lờ nữa (nhật ký 27/10: lờ lên tới 16)
+            elif not conv.y_luot.get("_cong_web_phuong"):
                 conv.y_luot["_cong_web_phuong"] = True
                 conv.lo["phuong"] = n + 1
                 # SRS-5.1zzzzzzz214 mục 7 (chat anh Luận 27/10 06:34–06:44 VN: 15 tin 🙋 tới admin trong 10 phút): `y_luot` làm mới mỗi lượt nên
