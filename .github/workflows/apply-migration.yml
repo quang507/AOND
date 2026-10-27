@@ -14,7 +14,7 @@ on:
         required: false
         default: ''
       dung_lai:
-        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-du-an | nap-duong | nap-giao-lo | cai-vps | go-trang-thu | ban-thu-mua | ban-thu-ban | ban-thu-kb | ban-thu-dc | ban-thu-sau | ban-thu-xa | ban-thu-nhieu-can | ban-thu-dap-y | ban-thu-luan | doc-log-loi | ban-thu-vm | ban-thu-5-khach | ban-thu-khach-ao | do-tim-nha | nap-tin-mau. Trống = áp migration_file như thường"
+        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-du-an | nap-duong | nap-giao-lo | cai-vps | go-trang-thu | ban-thu-mua | ban-thu-ban | ban-thu-srd | ban-thu-kb | ban-thu-dc | ban-thu-sau | ban-thu-xa | ban-thu-nhieu-can | ban-thu-dap-y | ban-thu-luan | doc-log-loi | ban-thu-vm | ban-thu-5-khach | ban-thu-khach-ao | do-tim-nha | nap-tin-mau. Trống = áp migration_file như thường"
         required: false
         default: ''
       commit_schema:
@@ -133,6 +133,13 @@ jobs:
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
         run: bash bot/tests/ban-thu-ban.sh
+
+      # SRS-5.1zzzzzzz225: kịch bản mẫu SRD của anh Luận (req + chat examples.docx) — luồng 30 câu + nhóm 1 / 2.4 / 5. ID thử, tự dọn.
+      - name: Bắn thử kịch bản mẫu SRD anh Luận (ban-thu-srd)
+        if: ${{ inputs.dung_lai == 'ban-thu-srd' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+        run: bash bot/tests/ban-thu-srd.sh
 
       # SRS-5.1zzzzzzz142: ca một tin nhắn hai căn chạy riêng (ban-thu-ban 22/10 trượt vì chờ lưu nền quá ngắn), in thời gian thật tới lúc đủ 2 tin.
       - name: Bắn thử ca một tin nhắn hai căn (ban-thu-nhieu-can)
