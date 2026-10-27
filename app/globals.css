@@ -270,6 +270,10 @@ details > summary:hover::before {
   font-family: var(--font-jakarta), system-ui, sans-serif;
 }
 .popup-ban-do { min-width: 180px; }
+.popup-ban-do__ds { margin-top: 6px; max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.popup-ban-do__dong { display: block; padding: 6px 4px; border-top: 1px solid #e2e8f0; text-decoration: none; }
+.popup-ban-do__dong:hover, .popup-ban-do__dong:focus-visible { background: #f1f5f9; }
+.popup-ban-do__dong .popup-ban-do__gia, .popup-ban-do__dong .popup-ban-do__noi { display: block; margin-top: 0; }
 .popup-ban-do__nhan { font-size: 11px; font-weight: 700; color: #0068ff; text-transform: uppercase; }
 .popup-ban-do__gia { margin-top: 2px; font-size: 14px; font-weight: 800; color: #0b192c; }
 .popup-ban-do__noi { margin-top: 2px; font-size: 12px; color: #64748b; }

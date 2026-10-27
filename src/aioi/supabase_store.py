@@ -1137,7 +1137,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             return None
         r = rows[0]
         thieu = [o for o, cot in self._COT_DANG_TIN if r.get(cot) in (None, "")]
-        return {"len_web": r.get("status") == "dang_ban", "thieu": thieu,
+        return {"len_web": r.get("status") == "dang_ban", "thieu": thieu, "ma": code,   # mã → link trang tin (SRS-5.1zzzzzzz220)
                 "cho_duyet": not thieu and bool(r.get("can_chu_duyet")) and not r.get("chu_duyet_at")}
 
     @staticmethod

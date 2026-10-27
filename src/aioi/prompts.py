@@ -14,6 +14,7 @@ from .revenue import SellerRole
 from . import cau_mau
 from . import phap_ly
 from .llm.base import RANH_GIOI_CACHE
+from .web import SITE_HOST, SITE_URL, link_tin
 from .schema import (
     CORE_FIELDS,
     CORE_THEO_LOAI,
@@ -397,6 +398,7 @@ GIONG_VUI = """GIỌNG (bắt buộc): em là một môi giới trẻ đang HÀO
 - Có nét riêng: gọi căn bằng tên đường ("căn Hoàng Hoa Thám này"), nhắc ĐÚNG một chi tiết khách vừa kể để khách thấy mình đang nghe, rồi mới hỏi hay làm việc.
 - Mỗi lượt một vẻ: hai lượt liền nhau không cùng cách mở, không cùng câu hỏi chốt. Việc đã làm (sửa tin, thêm icon, đổi tiêu đề) nói bằng lời tự nhiên trong câu đáp, hoặc vào thẳng bản tin — không mở bằng câu báo cáo "Em đã cập nhật / Em sửa rồi ạ / Em ghi nhận".
 - Minh hoạ giọng (CHỈ minh hoạ, không chép): "Nhà mình hẻm 123 Trần Bình Trọng vị trí trung tâm quá anh ơi!" · "Tuyệt vời anh ạ! Xe hơi tới cửa là điểm cộng cực lớn." · "Ảnh sổ hồng nét quá anh ơi!" · "Ồ, có người thuê sẵn mà bàn giao được ngay thì khách mua mê lắm nha anh."
+- Gọi khách (anh / chị / cô / chú) NHIỀU NHẤT một lần mỗi lượt, và đừng lượt nào cũng kết câu bằng "<gọi> ạ" — người thật nhắn Zalo không "chị ạ" mỗi câu; câu đáp ngắn thì bỏ hẳn tiếng gọi.
 - Hào hứng nhưng vẫn thật: cảm thán không thêm chi tiết khách chưa nói, không bình giá, không hứa bán được."""
 
 
@@ -449,7 +451,7 @@ def build_chat_system(
             "một ngày tốt lành. TUYỆT ĐỐI đừng hỏi thêm cho có, đừng gạ khách rao thêm căn khác."
         )
     fee = _fee_hint(user_type)
-    return f"""Bạn là "{assistant_name}", một trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
+    return f"""Bạn là "{assistant_name}", một trợ lý ảo bất động sản của AI Ơi Nhà Đất ({SITE_HOST}).
 
 {BUSINESS_CONTEXT}
 
@@ -502,7 +504,7 @@ def build_buyer_chat_system(
              "phù hợp trong danh sách (nếu có), rồi hỏi khách có muốn xem căn nào không và hẹn lịch đi xem thực tế ngay trên Zalo — KHÔNG xin "
              "số điện thoại, trừ khi phần \"EM VỪA GHI LƯỢT NÀY\" bảo xin lúc khách chốt lịch xem."
     )
-    return f"""Bạn là "{assistant_name}", trợ lý tư vấn tìm mua/thuê bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
+    return f"""Bạn là "{assistant_name}", trợ lý tư vấn tìm mua/thuê bất động sản của AI Ơi Nhà Đất ({SITE_HOST}).
 
 BỐI CẢNH TƯ VẤN KHÁCH MUA / THUÊ:
 - Khách đang tìm kiếm BĐS qua Zalo. Mục tiêu của bạn: hiểu rõ chân dung & tiêu chí tìm kiếm của khách, lưu trữ nhu cầu để khớp căn chính xác nhất từ rổ hàng.
@@ -552,7 +554,7 @@ def khoi_chao_tu_van(assistant_name: str, mau: str) -> str:
 def build_greeting(assistant_name: str) -> str:
     """The opening message AOND sends before the user says anything."""
     return (
-        f"Xin chào anh/chị! Em là {assistant_name}, trợ lý bất động sản của AI Ơi Nhà Đất (aioinhadat.com). 🏡\n\n"
+        f"Xin chào anh/chị! Em là {assistant_name}, trợ lý bất động sản của AI Ơi Nhà Đất ({SITE_HOST}). 🏡\n\n"
         "Em sẵn sàng hỗ trợ anh/chị:\n"
         "1. **Gửi Bán / Cho Thuê** nhà đất, căn hộ, dự án — cứ nhắn tin, gửi ảnh hoặc bảng giá tự nhiên, không cần điền form.\n"
         "2. **Tìm Mua / Thuê** BĐS — nếu anh/chị cần tìm mua, em cùng đồng nghiệp tại kênh **AI Ơi Nhà Đất - Buyers** sẵn sàng lọc rổ hàng và hỗ trợ anh/chị tận tình ạ!\n\n"
@@ -647,7 +649,7 @@ def khoi_hoi_ve_mua(hoi_ve: str | None) -> str:
     if hoi_ve == "uy_tin":
         return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH MUA LO BỊ LỪA / HỎI UY TÍN: ===\n"
                 "Đồng cảm ngắn với nỗi lo của khách rồi trả lời TẠO NIỀM TIN bằng đúng các ý sau (không thêm cam kết nào khác):\n"
-                "- AI Ơi Nhà Đất (aioinhadat.com) là nền tảng kết nối người bán và người mua nhà đất.\n"
+                f"- AI Ơi Nhà Đất ({SITE_HOST}) là nền tảng kết nối người bán và người mua nhà đất.\n"
                 "- Người mua không trả phí môi giới cho bên em; bên em chỉ thu phí bên bán khi giao dịch thành công.\n"
                 "- Khách cứ đi xem nhà tận nơi, xem sổ gốc và làm thủ tục ở văn phòng công chứng trước khi đặt cọc — đó là cách an toàn nhất.\n"
                 "TUYỆT ĐỐI KHÔNG nói em không có thông tin / không dám chắc về uy tín của bên em.\n")
@@ -756,7 +758,7 @@ def khoi_hoi_mat_tien(gia_tri: str) -> str:
 def build_ngoai_vung_system(assistant_name: str, tinh: str) -> str:
     """Căn khách rao nằm ngoài vùng nhận tin: cảm ơn, nói khéo bên mình chưa nhận khu vực đó, mời gửi căn trong vùng nếu có. Không
     hỏi tiếp thông tin căn, không soạn tin rao (SRS-5.1zzzzzzz86)."""
-    return f"""Bạn là "{assistant_name}", chuyên viên tư vấn bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
+    return f"""Bạn là "{assistant_name}", chuyên viên tư vấn bất động sản của AI Ơi Nhà Đất ({SITE_HOST}).
 
 === CĂN KHÁCH RAO NẰM NGOÀI KHU VỰC NHẬN TIN ({tinh}) ===
 Hiện AI Ơi Nhà Đất chỉ nhận rao bất động sản ở {VUNG_NHAN_TIN}. Trả lời 1–2 câu, ấm áp, lịch sự: cảm ơn khách đã gửi, nói khéo
@@ -874,7 +876,7 @@ def build_listing_proposal_system(
               else cau_mau.cau("hoi_ban_nhap", goi))   # sửa ở CRM (SRS-5.1zzzzzzz110)
 
     # SRS-5.1zzzzzzz213: khối dự án + dữ liệu căn (đổi theo khách) xuống SAU dấu cache; phần trên (khuôn tin rao, luật) đứng yên.
-    return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
+    return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất ({SITE_HOST}).
 
 {BUSINESS_CONTEXT}
 
@@ -908,7 +910,8 @@ FEE_VALUE_POINTS = """- CHỈ thu phí KHI giao dịch thành công — khách k
 - Tiết kiệm thời gian, sàng lọc khách ảo, giữ liên lạc tự động qua Zalo."""
 
 
-_WEB = "https://aioinhadat.com"
+# SRS-5.1zzzzzzz220: link web một nguồn (`web.py`) — `aioinhadat.com` chưa trỏ về web, chủ nhà bấm vào không thấy tin.
+_WEB = SITE_URL
 
 
 def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]:
@@ -916,8 +919,15 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
     "đã đăng / đang hiển thị" của nhánh người bán (SRS-5.1zzzzzzz44). Trước đó prompt luôn bảo "xác nhận đã đăng lên web" kể cả
     khi trigger DB giữ tin ở `cho_thong_tin` (thiếu phường chuẩn / giá / diện tích) → khách tin đã đăng mà web không có."""
     if web is None or web.get("len_web"):
-        vua = ("\n  • Nếu lượt trước em báo tin CHƯA lên web vì thiếu thông tin và khách vừa bổ sung: báo tin nay ĐÃ hiển thị trên "
-               f"{_WEB}." if web is not None else "")
+        lk = link_tin(web.get("ma")) if web else _WEB   # SRS-5.1zzzzzzz220: link TRANG TIN của chủ nhà, không phải trang chủ
+        vua = ("\n  • Nếu lượt trước em báo tin CHƯA lên web vì thiếu thông tin và khách vừa bổ sung: báo tin nay ĐÃ hiển thị ở "
+               f"{lk}." if web is not None else "")
+        if web and web.get("da_bao_dang"):
+            # SRS-5.1zzzzzzz220 (chat 27/10: câu mẫu duyet_tin nói ba lần cho ba lần "ok"): khách đã được báo đăng tin ở lượt trước —
+            # câu duyệt là việc MỘT lần, không phải phản xạ mỗi lần khách đáp "ok".
+            return ("  • Tin ĐÃ đăng và khách ĐÃ được báo ở lượt trước: KHÔNG nói lại câu xin phép đăng tin / tin đã đăng / mời vào web. "
+                    "Khách chỉ đáp ngắn (ok, vâng…) thì đáp MỘT câu rất ngắn, tự nhiên; có việc khác thì làm việc đó.",
+                    f"  • Gửi đúng link trang tin của khách: {lk}")
         return (
             # 20/10 (SRS-5.1zzzzzzz90, tester: "nghe dài mệt quá"); 21/10 (SRS-5.1zzzzzzz98) theo câu tester sửa: cảm ơn + ĐÚNG 1 câu
             # xác nhận (đã đăng + hiển thị trên web + chuyển mạng lưới khách đang tìm), không kể thêm.
@@ -927,7 +937,7 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
             # "ừ đổi, ngắn thì tốt" — bỏ "Dạ" (luật cấm mở đầu Dạ), bỏ câu kể đã đăng + chuyển mạng lưới; link web ở đoạn phí.
             f"  • Đoạn đầu ĐÚNG 1 câu, nguyên văn: \"{cau_mau.cau('duyet_tin')}\" — KHÔNG thêm câu cảm ơn, KHÔNG kể tin "
             f"{'cho thuê' if thue else 'bán'} đã đăng ở đâu, không tả lại căn.{vua}",
-            f"  • Gửi ngay link website: {_WEB}\n"
+            f"  • Gửi ngay link trang tin của khách: {lk}\n"
             "  • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng "
             "như môi giới dễ dàng tìm kiếm, kết nối.",
         )
@@ -1017,7 +1027,7 @@ def build_fee_followup_system(
     hoi_phi = (
         "\n  • RỒI XUỐNG MỘT DÒNG TRỐNG (đoạn riêng — hệ thống gửi thành tin nhắn riêng cho đỡ rối mắt; SRS-5.1zzzzzzz98) và HỎI "
         "PHÍ NHẸ NHÀNG như bản anh Luận (tinh thần \"anh/chị có biết phí môi giới của tụi em chưa ạ?\"): mời khách vào web theo dõi "
-        f"tin rồi hỏi khách đã biết phí môi giới bên em chưa (câu mẫu: \"{cau_mau.cau('hoi_phi')}\") — đây là câu hỏi DUY NHẤT "
+        f"tin rồi hỏi khách đã biết phí môi giới bên em chưa (câu mẫu: \"{cau_mau.cau('hoi_phi', **({'web': link_tin(web['ma'])} if (web or {}).get('ma') else {}))}\") — đây là câu hỏi DUY NHẤT "
         "của lượt này. Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách. Đoạn này tối đa 2 câu ngắn."
         if (web is None or web.get("len_web")) and not phi_da_bao else ""
     )
@@ -1025,7 +1035,7 @@ def build_fee_followup_system(
         # SRS-5.1zzzzzzz212 (bắn thử 5 khách: anh Hùng hỏi phí, bot báo 0.5%, lượt "ok đăng đi" lại hỏi "biết phí môi giới bên em chưa"):
         # câu hỏi phí là bước kịch bản, không biết phí ĐÃ được báo trong cuộc chat.
         hoi_phi = ("\n  • Khách ĐÃ được báo phí trong cuộc chat này: KHÔNG hỏi lại khách biết phí chưa, không nhắc lại con số phí. "
-                   f"Được mời khách vào {_WEB} theo dõi tin, một câu ngắn.")
+                   f"Được mời khách vào {link_tin((web or {}).get('ma'))} theo dõi tin, một câu ngắn.")
     bao_phi = khoi_bao_phi(user_type, prop.is_rental)
     bao_phi = f"\n  {bao_phi}" if bao_phi else ""
     yeu_cau = khoi_yeu_cau_viet(prop, yeu_cau_moi)
@@ -1036,7 +1046,7 @@ def build_fee_followup_system(
             f"\n- TỪ LƯỢT SAU LƯỢT DUYỆT (khách đã trả lời chuyện phí): tin còn thiếu \"{nhan_o(o_sau, prop)}\" — hỏi thêm ĐÚNG "
             f"1 câu ngắn ({cau_hoi_o(o_sau, prop)}) để tin đầy đủ hơn. Khách chưa tiện thì thôi, không hỏi lại."
         )
-    return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất (aioinhadat.com).
+    return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất ({SITE_HOST}).
 
 {BUSINESS_CONTEXT}
 
@@ -1050,7 +1060,7 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
 - NẾU khách muốn CHỈNH SỬA THẬT SỰ (vd "tiêu đề nhiều thông tin quá", "đổi tiêu đề...", "giá sửa lại...", "nhà có 3 lầu...", "bớt lặp", "thêm icon"):
   • TRƯỚC dấu 📋: MỘT câu ngắn đáp đúng điều khách vừa nói, theo khối GIỌNG (đồng tình, cảm thán nếu điều đó hay, hoặc nói thẳng sẽ sửa
     gì) — KHÔNG mở bằng câu báo cáo "Em sửa rồi ạ / Em cập nhật lại bản tin", KHÔNG nhắc phí.
-  • RAO LẠI BẢN TIN ĐÃ SỬA (mở đầu "📋 Bản tin cập nhật:") theo ĐÚNG bố cục tin rao dưới đây — sửa ĐÚNG chỗ khách nói trên bản tin trước;
+  • RAO LẠI BẢN TIN ĐÃ SỬA (xuống dòng, dòng RIÊNG "📋 Bản tin cập nhật:" — giữ dấu 📋) theo ĐÚNG bố cục tin rao dưới đây — sửa ĐÚNG chỗ khách nói trên bản tin trước;
     chỗ khách không nhắc giữ nguyên DỮ LIỆU và Ý nhưng câu chữ được làm tươi (đổi vài cách nói, sửa lỗi chính tả), KHÔNG chép lại y nguyên
     cả đoạn; KHÔNG soạn lại từ đầu theo ý mình, KHÔNG đem điều khách vừa đính chính lên tiêu đề nếu khách không bảo.
   • SAU bản tin: MỘT câu hỏi chốt ngắn, mỗi lần một cách nói khác lượt trước (hỏi đã ưng chưa / còn chỗ nào chỉnh / đăng luôn nhé) —

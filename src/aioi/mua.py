@@ -30,7 +30,7 @@ log = logging.getLogger("aioi.mua")
 
 # Link trang chi tiết căn đưa cho khách (SRS-5.1zzzzzzz145). `nhadat.cc` chưa trỏ về web (mọi đường dẫn 404, kiểm 23/10/2026) nên dùng cùng mặc định
 # với `lib/format.ts` SITE_URL; đổi tên miền thì đặt biến môi trường AIOI_SITE_URL trên VPS, không sửa chữ ở chỗ khác.
-SITE_URL = os.environ.get("AIOI_SITE_URL", "https://aioinhadat.vercel.app").rstrip("/")
+from .web import SITE_URL  # noqa: E402 — một nguồn với phía bán (SRS-5.1zzzzzzz220)
 
 # Trạng thái tin còn hiện cho khách (cùng bộ với `lib/supabase.ts` TRANG_THAI_HIEN).
 TRANG_THAI_HIEN = ("dang_ban", "dang_quan_tam", "da_coc")

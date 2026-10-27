@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-27 10:29 (giờ VN)
+-- Sinh lúc: 2026-10-27 14:41 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -5353,16 +5353,21 @@ CREATE OR REPLACE FUNCTION public.tim_moc(p_tim text)
 AS $function$
   with q as (select public.bo_dau(btrim(coalesce(p_tim, ''))) as t)
   select ten, loai, lat, lng from (
-    select ti.ten, ti.loai, ti.lat, ti.lng, length(ti.ten) as dai
+    select ti.ten, ti.loai, ti.lat, ti.lng, (ti.ten_kd ilike q.t || '%') as dau, 0 as phu, length(ti.ten) as dai
       from public.tien_ich ti, q
      where length(q.t) >= 3 and ti.ten_kd ilike '%' || q.t || '%' and ti.lat is not null and ti.lng is not null
     union all
-    select p.name, 'du_an', p.lat, p.lng, length(p.name)
+    select p.name, 'du_an', p.lat, p.lng, (public.bo_dau(p.name) ilike q.t || '%'), 0, length(p.name)
       from public.projects p, q
      where length(q.t) >= 3 and public.bo_dau(p.name) ilike '%' || q.t || '%' and p.lat is not null and p.lng is not null
+    union all
+    select d.ten || coalesce(', ' || nullif(d.phuong, ''), ''), case when d.loai = 'hem' then 'hem' else 'duong' end, d.lat, d.lng,
+           (d.ten_khong_dau ilike q.t || '%' or d.ten_khong_dau ilike 'duong ' || q.t || '%'), (d.loai = 'hem')::int, length(d.ten)
+      from public.duong d, q
+     where length(q.t) >= 3 and d.ten_khong_dau ilike '%' || q.t || '%' and d.lat is not null and d.lng is not null
   ) x
-  order by dai, ten
-  limit 8;
+  order by dau desc, phu, dai, ten
+  limit 10;
 $function$
 ;
 

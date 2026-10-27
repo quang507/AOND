@@ -46,6 +46,7 @@ from .fetch import (
 )
 from .llm import LLMProvider, Message
 from .llm.base import RANH_GIOI_CACHE
+from .web import SITE_HOST, link_tin
 from . import bulk
 from . import inventory as inv
 from .projects import (
@@ -1168,6 +1169,24 @@ def _than_ban_tin(reply: str) -> tuple[str, str] | None:
     return (doan[0], "\n\n".join(doan[1:])) if len(doan) >= 2 else None
 
 
+_DONG_CAP_NHAT_RE = re.compile(r"(?i)📋?[ \t]*bản tin (?:đã )?(?:cập nhật|sửa)(?: lại)?[ \t]*:")
+
+
+def _gan_dau_ban_tin(reply: str) -> str:
+    """Bản tin cập nhật mà model viết dòng mở THIẾU dấu 📋 (ban-thu-ban 27/10 sau SRS-219: "Đúng rồi anh, … nha anh. Bản tin cập nhật:" nối
+    cuối câu dẫn, 3/4 lượt) → tách câu dẫn và gắn lại đúng dòng "📋 Bản tin cập nhật:". Không có dấu thì cả hệ thống coi lượt đó là chat
+    thường: lưới bản tin không chạy, bản khách duyệt lấy nhầm bản cũ (`_ban_tin_da_trinh`). Cùng lớp với dòng mở bản nháp đầu thiếu 📋
+    (`prompts.cat_truoc_mo_dau`, SRS-5.1zzzzzzz80). Chỉ chạm lời có bố cục tin rao (gạch đầu dòng) — SRS-5.1zzzzzzz222."""
+    if not reply or "📋" in reply or not _is_formatted_post(reply):
+        return reply
+    m = _DONG_CAP_NHAT_RE.search(reply)
+    if not m:
+        return reply
+    truoc, sau = reply[:m.start()].rstrip(), reply[m.end():]
+    sau = sau if sau.startswith(("\n", "\r")) else " " + sau.lstrip()
+    return ((truoc + "\n\n") if truoc else "") + "📋 Bản tin cập nhật:" + sau
+
+
 def _phan_chat_quanh_ban_tin(reply: str) -> str:
     """Phần CHAT của một lượt có bản tin 📋: câu dẫn trước dấu 📋 (bỏ dòng mở "📋 Bản tin cập nhật:") + đoạn cuối sau bản tin nếu là câu hỏi
     chốt. Lượt không có 📋 → cả lời. Chỉ cắt theo bố cục, không đọc ý (SRS-5.1zzzzzzz219)."""
@@ -1267,6 +1286,14 @@ def _cau_lap_luot_truoc(reply: str, truoc: str) -> str | None:
         if len(c.split()) >= 6 and "http" not in c and "📋" not in c and gon(c) in cu:
             return c.strip()
     return None
+
+
+_GOI_A_RE = re.compile(r"(?<![\wÀ-ỹ])(anh chị|anh|chị|cô chú|cô|chú|bác|em|cháu)\s+ạ(?![\wÀ-ỹ])", re.I)
+
+
+def _goi_a(loi: str) -> bool:
+    """Lời bot có tiếng gọi khách kèm "ạ" ("chị ạ", "anh ạ", "cô ạ") — dấu lễ phép lặp mỗi lượt làm bot đọc như máy (SRS-5.1zzzzzzz220)."""
+    return bool(loi) and _GOI_A_RE.search(loi) is not None
 
 
 def _bo_markdown(reply: str) -> str:
@@ -2385,6 +2412,8 @@ class Engine:
             )
         else:
             web_tin = self._trang_thai_web(conv)
+            if web_tin is not None and conv.prop.fields.get("_da_bao_dang"):
+                web_tin["da_bao_dang"] = True   # SRS-5.1zzzzzzz220: đã báo đăng tin ở lượt trước — không "xin phép đăng tin" lại mỗi lần "ok"
             system = build_fee_followup_system(
                 conv.assistant.name, conv.prop, conv.user_type, project_block, web=web_tin,
                 duyet=conv.duyet_luot, phi_da_bao=bool(conv.prop.fields.get("_phi_da_bao")), yeu_cau_moi=conv.y_luot.get("yeu_cau_viet"),
@@ -2392,6 +2421,8 @@ class Engine:
             len_web = bool(web_tin and web_tin.get("len_web"))
             if conv.duyet_luot == "dong_y" and len_web:
                 conv.prop.fields["_phi_da_hoi"] = "1"   # lượt duyệt hỏi phí (hoi_phi) — lượt sau là lúc xin chấm sao
+            if len_web and (conv.duyet_luot == "dong_y" or web_tin.get("da_bao_dang")):
+                conv.prop.fields["_da_bao_dang"] = "1"
             # Hết việc của tin (tin đã lên web, đã hỏi phí ở lượt duyệt, lượt này khách không hỏi gì mới, không sửa tin — chỉ trả lời cụm
             # vừa hỏi, không còn ô để sau bản nháp).
             da_hoi = {x for x in (conv.prop.fields.get("_sau_da_hoi") or "").split(",") if x}
@@ -2454,7 +2485,7 @@ class Engine:
             hoi_ve_khoi = (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ UY TÍN / CÔNG TY: ===\n"
                 "Khách vừa hỏi về danh tính công ty hoặc lo ngại an toàn/lừa đảo. Hãy TRẢ LỜI ẤM ÁP, TẠO NIỀM TIN:\n"
-                "- Giới thiệu AI Ơi Nhà Đất (aioinhadat.com) là nền tảng công nghệ kết nối mạng lưới môi giới và người mua thực tế.\n"
+                f"- Giới thiệu AI Ơi Nhà Đất ({SITE_HOST}) là nền tảng công nghệ kết nối mạng lưới môi giới và người mua thực tế.\n"
                 "- Cam kết bảo mật thông tin cá nhân và số điện thoại của khách, không làm phiền.\n"
                 "- Mọi giao dịch chỉ thu phí khi bán thành công.\n"
                 "Sau đó lịch sự mời khách an tâm chia sẻ tiếp thông tin căn nhà.\n"
@@ -2519,6 +2550,8 @@ class Engine:
         if xin_sao:
             reply = self._gan_xin_sao(conv, reply)
 
+        if "📋" in reply:
+            conv.prop.fields.pop("_da_bao_dang", None)   # bản tin mới → lần duyệt kế được báo đăng / cập nhật lại (SRS-5.1zzzzzzz220)
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
         return self._build_result(conv, reply, captured, now)
@@ -2605,6 +2638,7 @@ class Engine:
         Bản tin (📋) phải có giá trong tiêu đề (SRS-5.1zzzzzzz86: bắn thử 20/10, bản tin CẬP NHẬT của KB3 bỏ giá dù AD_FORMAT bắt
         buộc); không mở đầu "Dạ" (SRS-5.1zzzzzzz87). Cả nhánh bán lẫn nhánh mua. `phuong_phai_nhac` (SRS-5.1zzzzzzz115): phường kho
         hẻm của lượt hỏi phường — lời không nhắc phường nào trong đó thì viết lại."""
+        reply = _gan_dau_ban_tin(reply)
         thieu_td = _tieu_de_thieu(reply, conv.prop)
         ly_do = []
         if phuong_phai_nhac and not any(ten_tran(p) in bo_dau(reply) for p in phuong_phai_nhac):
@@ -2665,6 +2699,15 @@ class Engine:
                 if lap:
                     ly_do.append(f"Câu \"{lap[:60]}\" quanh bản tin lặp gần nguyên văn lượt trước — câu dẫn và câu hỏi chốt mỗi lượt một cách "
                                  "nói khác (hỏi đã ưng chưa / còn chỗ nào chỉnh / đăng luôn nhé), ngắn thôi.")
+        if "📋" not in reply and _goi_a(reply) and _goi_a(truoc):
+            # SRS-5.1zzzzzzz220 (chat 27/10: "…thuận tiện cho việc đi lại ạ. Chị cho em…", "…dễ xoay xe, chị ạ!", "…thuận lợi cho chị ạ!" — bốn
+            # lượt liền, khách: "sao lại chị ạ liên tục"): kiểm HÌNH THỨC lời của chính bot, không đọc ý khách.
+            ly_do.append("Lượt trước em đã kết câu bằng tiếng gọi \"… ạ\" (\"chị ạ\", \"anh ạ\") — lượt này đừng lặp: gọi khách nhiều nhất MỘT lần, "
+                         "hoặc bỏ hẳn tiếng gọi, nói tự nhiên như nhắn Zalo cho người quen.")
+        moi = self._phuong_moi_cua_cu(conv)
+        if moi and ("📋" in reply or _is_formatted_post(reply)) and ten_tran(moi) not in bo_dau(reply):
+            ly_do.append(f"Bản tin vừa viết ghi phường theo tên CŨ — từ 01/07/2025 phường đó nay là {moi}: ghi \"{moi}\" trong tiêu đề / mô tả "
+                         f"(được kèm tên cũ trong ngoặc), người mua tìm theo tên phường mới.")
         if _tieu_de_can_ho_co_mt(reply, conv.prop):
             ly_do.append("Tiêu đề căn hộ có chữ \"MT\" — người mua đọc là mặt tiền; căn hộ không có mặt tiền, viết đủ tên dự án, không "
                          "viết tắt \"MT\".")
@@ -2707,7 +2750,7 @@ class Engine:
                     system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\n" + " ".join(ly_do) + " Viết lại TOÀN BỘ lượt trả lời.\n",
                     conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if lai:
-                reply = _bo_markdown(lai)
+                reply = _gan_dau_ban_tin(_bo_markdown(lai))
         return reply
 
     @staticmethod
@@ -3727,6 +3770,17 @@ class Engine:
                     conv.y_luot["can_nguoi_that"] = ("Bot hỏi phường 3 lượt chưa ra — nhờ admin tra và điền phường ở Sửa tin: "
                                                      + ", ".join(str(f[k]) for k in ("du_an", "duong", "dia_chi", "quan") if f.get(k)))
         return web
+
+    def _phuong_moi_cua_cu(self, conv: Conversation) -> str | None:
+        """Phường MỚI duy nhất của phường cũ đánh số khách nói ("phường 2" Quận 8 → Phường Chánh Hưng), hoặc None (SRS-5.1zzzzzzz220)."""
+        tra = getattr(self._dia_danh, "phuong_cu_moi", None)
+        if tra is None:
+            return None
+        try:
+            return tra(conv.prop.fields.get("phuong"), conv.prop.fields.get("quan"))
+        except Exception as e:  # noqa: BLE001 — tra địa danh là phần thêm
+            log.warning("phường mới của phường cũ: lỗi %s", e)
+            return None
 
     def _phuong_cu_bi_chia(self, conv: Conversation) -> bool:
         """Khách nói phường cũ đánh số mà phường đó chia về ≥ 2 phường mới (`TraDiaDanh.phuong_cu_chia`, cần quận). Kho hỏng → False."""
