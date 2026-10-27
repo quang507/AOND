@@ -27,7 +27,12 @@ TAT_CA="$SRD $MO $MUA"
 don() {
   echo "== dọn dữ liệu thử"
   vps "for u in $TAT_CA; do curl -sS -X POST http://127.0.0.1:8000/reset/\$u >/dev/null; done" || true
-  for u in $TAT_CA; do q "select reset_nguoi_test('$u') as kq" | jq -c '.[0]' || true; done
+  # Kịch bản "đã bán" đẻ deal đã chốt — trigger FR-163 chặn xoá deal chốt, nên mở chốt deal của ID THỬ trước khi reset.
+  for u in $TAT_CA; do
+    q "update deals set closed_at = null where closed_at is not null and listing_id in (select l.id from listings l join sellers s
+       on s.id = l.seller_id where s.zalo_user_id = '$u' and la_id_thu('$u'))" >/dev/null || true
+    q "select reset_nguoi_test('$u') as kq" | jq -c '.[0]' || true
+  done
 }
 trap don EXIT
 
