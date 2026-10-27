@@ -56,6 +56,7 @@ from .projects import (
     normalize_project_name,
 )
 from .prompts import (
+    MO_DAU_GHI_NHAN_RE,
     EXTRACTION_SYSTEM,
     OPERATIONS_SYSTEM,
     PROJECT_EXTRACTION_SYSTEM,
@@ -1151,8 +1152,7 @@ def _mo_dau_ghi_nhan(reply: str) -> bool:
     # SRS-5.1zzzzzzz214 (chat 27/10: "Em đã ghi giá 6,2 tỷ cho anh rồi ạ" lọt vì luật chỉ liệt kê "ghi nhận / ghi rồi / ghi lại…"): mọi câu mở
     # "<bot> (đã) ghi …" là ghi nhận, chủ ngữ theo mọi cách bot xưng (em / anh / chị / cô / chú / cháu / mình); "Em cập nhật thêm cọc…" / "Em sửa
     # giá còn…" (nói ý vừa sửa) vẫn không tính (SRS-208).
-    return re.match(r"(?i)\s*(?:em|anh|chị|cô|chú|cháu|mình)\s+(?:đã\s+)?(?:ghi(?![\wà-ỹđ])|nhận\s+thông\s+tin|lưu(?![\wà-ỹđ])|"
-                    r"nắm\s+(?:rồi|được)|thêm\s+vào\s+tin|lên\s+thông\s+tin)", reply or "") is not None
+    return MO_DAU_GHI_NHAN_RE.match(reply or "") is not None   # một nguồn với bộ lọc ví dụ câu chuẩn (SRS-5.1zzzzzzz215)
 
 
 def _ba_chu_dau(reply: str) -> tuple[str, ...]:
@@ -2254,6 +2254,12 @@ class Engine:
         elif toi_thieu and next_field not in toi_thieu:
             next_field = toi_thieu[0]
             cum_hoi = [o for o in conv.prop.cum_hoi(next_field, thieu) if o in toi_thieu] or [next_field]
+            conv.o_vua_hoi, conv.cum_vua_hoi = next_field, cum_hoi
+        # SRS-5.1zzzzzzz215 (soát prompt 27/10): khách nói phường cũ bị chia ("phường 6" Bình Thạnh) → khối địa danh bảo hỏi phường, trong khi dòng
+        # "Thông tin cần hỏi tiếp theo" bảo CHỈ hỏi ô khác — hai lệnh kéo hai hướng. Nay ô hỏi lượt đó LÀ phường (một lần, cờ ở ô tin).
+        if next_field and next_field != "phuong" and not xin_dang and not conv.prop.fields.get("_phuong_chia_da_hoi") and self._phuong_cu_bi_chia(conv):
+            conv.prop.fields["_phuong_chia_da_hoi"] = "1"
+            next_field, cum_hoi = "phuong", ["phuong"]
             conv.o_vua_hoi, conv.cum_vua_hoi = next_field, cum_hoi
         # Project awareness: if the listing's project is registered, inherit its verified
         # facts (and lightly confirm); if it's named but unknown, prompt the bot to acquire
@@ -3579,6 +3585,18 @@ class Engine:
                     conv.y_luot["can_nguoi_that"] = ("Bot hỏi phường 3 lượt chưa ra — nhờ admin tra và điền phường ở Sửa tin: "
                                                      + ", ".join(str(f[k]) for k in ("du_an", "duong", "dia_chi", "quan") if f.get(k)))
         return web
+
+    def _phuong_cu_bi_chia(self, conv: Conversation) -> bool:
+        """Khách nói phường cũ đánh số mà phường đó chia về ≥ 2 phường mới (`TraDiaDanh.phuong_cu_chia`, cần quận). Kho hỏng → False."""
+        chia = getattr(self._dia_danh, "phuong_cu_chia", None)
+        if not chia:
+            return False
+        f = conv.prop.fields
+        try:
+            return len(chia(f.get("phuong"), f.get("quan")) or []) >= 2
+        except Exception as e:  # noqa: BLE001
+            log.warning("phuong_cu_chia lỗi: %s", e)
+            return False
 
     def _ung_vien_phuong(self, conv: Conversation, web: dict) -> list[str]:
         """Phường ứng viên (tên đầy đủ) để ghi tạm cả hai khi khách không chọn (SRS-5.1zzzzzzz214 mục 8): kho đường / hẻm trước, không có thì các

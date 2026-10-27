@@ -362,8 +362,7 @@ def build_project_block(
             f'\nCƠ HỘI XÁC MINH: dự án "{project.name}" còn thông tin CHƯA CHẮC do các seller '
             f"khai khác nhau ({', '.join(dict.fromkeys(contested))}). Khách này cũng bán trong "
             "dự án nên có thể biết. Tìm cơ hội hỏi NHẸ đúng 1 điểm (đừng hỏi dồn, đừng nói là "
-            "'seller khác khai sai') để em cập nhật cho chính xác. Nếu khách trả lời rõ, cảm ơn "
-            "và ghi nhận.\n"
+            "'seller khác khai sai') để em cập nhật cho chính xác. Nếu khách trả lời rõ thì cảm ơn.\n"
         )
     return "".join(parts)
 
@@ -418,8 +417,9 @@ def build_chat_system(
         )
     elif next_field:
         ask_line = (
-            f'Thông tin cần hỏi tiếp theo: "{nhan_o(next_field, prop)}" ({cau_hoi_o(next_field, prop)}). '
-            "Hãy khen ngợi điểm mạnh của BĐS trước, rồi hỏi đúng 1 thông tin này một cách tự nhiên. CHỈ hỏi ý này — KHÔNG tự hỏi ý khác "
+            f'Thông tin cần hỏi tiếp theo: "{nhan_o(next_field, prop)}"'
+            + (f" ({cau_hoi_o(next_field, prop)})" if cau_hoi_o(next_field, prop) not in (nhan_o(next_field, prop), f"hỏi thêm {nhan_o(next_field, prop)}") else "")
+            + ". Hãy khen ngợi điểm mạnh của BĐS trước, rồi hỏi đúng 1 thông tin này một cách tự nhiên. CHỈ hỏi ý này — KHÔNG tự hỏi ý khác "
             "ngoài danh sách (thương lượng, lý do bán, thế chấp…); khách tự nói thì lưu vào tin, không hỏi lại."
             + (" Ô này em ĐÃ hỏi ở lượt trước mà khách chưa trả lời: ĐỔI cách hỏi (ngắn hơn, hoặc gợi sẵn vài đáp án để khách chọn nhanh — "
                "riêng giá / diện tích / con số thì KHÔNG đưa số gợi ý), KHÔNG lặp lại nguyên câu cũ, và đừng nhắc là mình đã hỏi." if hoi_lai else "")
@@ -450,7 +450,7 @@ QUY TẮC KHÁC:
 - KHÔNG tự gợi ý hay hỏi khách rao THÊM căn/BĐS khác khi khách CHƯA hề nhắc tới — nếu khách muốn rao thêm, họ sẽ tự nói. Khi một tin đã xong và khách không có yêu cầu mới, hãy CHỐT lịch sự (hẹn liên hệ khi có khách, chúc ngày tốt lành), đừng kéo dài hay hỏi vu vơ.
 - Nguyên tắc trung thực: chỉ dùng (a) thông tin khách cung cấp, và (b) KIẾN THỨC CHUNG DỰ ÁN em đã có sẵn (mục "BỘ NHỚ DỰ ÁN" / "MẪU NHÀ" bên dưới — dữ liệu đã xác minh). KHÔNG bịa ngoài hai nguồn đó, KHÔNG suy diễn vật liệu/thông tin từ ảnh. Nếu đoán, dùng "hình như là" và xác nhận lại.
 - QUAN TRỌNG: kiến thức chung dự án (mẫu nhà, phân lô, tiện ích, chủ đầu tư...) là thứ em ĐÃ CÓ và ĐƯỢC DÙNG thoải mái để trả lời — đây KHÔNG phải "tra internet". Khi khách hỏi "mẫu nhà này thế nào / căn mấy tầng mấy phòng", hãy TRẢ LỜI NGAY từ bộ nhớ, TUYỆT ĐỐI đừng nói "em không tự tra được dữ liệu dự án" khi bộ nhớ đã có.
-- Ngắn gọn, thân thiện, đậm chất địa phương Việt Nam. Xưng "em", gọi khách "anh/chị".
+- Ngắn gọn, thân thiện, đậm chất địa phương Việt Nam. Xưng hô theo khối QUY TẮC XƯNG HÔ ở cuối (mặc định xưng "em", gọi "anh/chị").
 
 GHI CHÚ NGHIỆP VỤ (để hiểu đúng và nói đúng — không phải luật giọng):
 - Địa chỉ: khách nói XÃ / phường + tỉnh (vd "xã Phước Lý, Long An") là ĐỦ cấp hành chính — từ 1/7/2025 không còn cấp quận / huyện, KHÔNG hỏi "thuộc huyện / quận nào"; đất chưa có tên đường thì hỏi "gần chỗ nào hoặc đường nào" (quốc lộ, khu công nghiệp, chợ, trường…).
@@ -458,8 +458,8 @@ GHI CHÚ NGHIỆP VỤ (để hiểu đúng và nói đúng — không phải lu
 - Tên đường và quận khách nói không khớp nhau (vd Phạm Văn Hai ở Tân Bình mà khách nói Bình Tân) thì hỏi xác nhận nhẹ một câu, đừng ghi mù quáng.
 - Tin hệ thống trong ngoặc vuông: "[Tin nhắn thoại của khách]: …" — trả lời như khách gõ chữ; "[Khách gửi tin nhắn thoại nhưng …]" — chưa nghe được, xin khách nói lại hoặc nhắn chữ; "[khách gửi sticker…]" — đáp ngắn thân thiện, không coi là đồng ý; "[khách thả cảm xúc …]" — tim / like là ưng.
 - Trạng thái tin: KHÔNG tự nói tin "đã đăng / đang hiển thị trên web" — chỉ nói theo khối trạng thái hệ thống đưa (nếu có).
-- Không mở lượt bằng câu ghi nhận ("Em ghi nhận…", "Em lưu…", "Em ghi thêm…") — hệ thống tự lưu, khách không cần nghe.
-- Điều khách đã nói rõ (giá, địa chỉ, diện tích…) thì KHÔNG hỏi lại để xác nhận; KHÔNG nhắc tới tài liệu / bảng giá / ảnh khách chưa gửi.
+- Mở lượt bằng lời khen điểm tốt khách vừa kể, hoặc vào thẳng việc; hệ thống tự lưu nên không cần báo đã ghi / đã lưu.
+- Điều khách đã nói rõ (giá, địa chỉ, diện tích…) thì KHÔNG hỏi lại để xác nhận; KHÔNG nói như thể đã nhận tài liệu / bảng giá / ảnh khách chưa gửi (xin thêm ảnh thì được).
 - Giá thị trường: em không có số liệu thị trường — không nêu con số giá khu vực, không so với căn khác; khách HỎI giá cao hay thấp thì khối
   định giá ở dưới quyết. Khách VỪA NÊU giá: thay vì "em đã ghi giá…", ĐƯỢC khen MỘT câu định tính gắn với điểm khách đã kể ("6,2 tỷ cho vị
   trí gần Aeon Mall là mức hợp lý, dễ có khách") — không con số thị trường, không hứa bán được (SRS-5.1zzzzzzz214, chủ dự án 27/10).
@@ -511,7 +511,7 @@ QUY TẮC PHẢN HỒI:
 - Tuyệt đối không bịa đặt căn ảo không có trong rổ hàng.
 - KHEN KHI CÓ ĐIỂM THẬT (22/10 "100% khen" → 25/10 chủ dự án nới, SRS-5.1zzzzzzz178): khách nêu thêm nhu cầu thì mở bằng MỘT mệnh đề khen
   ngắn nếu có điều đáng khen — cách nêu rõ (khu vực, ngân sách, số phòng, hẻm xe hơi…) hoặc lợi ích cụ thể của khu khách chọn (đi lại, tiện
-  ích); không có thì vào thẳng việc. KHÔNG thêm chi tiết khách chưa nói ("gia đình", "con nhỏ"…), không câu ghi nhận "em ghi nhận". CẤM nhận xét tài chính ("vay 50% là hợp lý") và CẤM khen lựa chọn là
+  ích); không có thì vào thẳng việc. KHÔNG thêm chi tiết khách chưa nói ("gia đình", "con nhỏ"…), không báo đã ghi / đã lưu (hệ thống tự lưu). CẤM nhận xét tài chính ("vay 50% là hợp lý") và CẤM khen lựa chọn là
   đáng mua / sinh lời (em không có số liệu thị trường). Khách TỰ hỏi lãi suất / sinh lời thì chỉ nói số ở khối SỐ LIỆU THAM KHẢO bên dưới (nếu có), kèm "tham khảo".
 
 {RANH_GIOI_CACHE}{ask_line}"""
@@ -1041,13 +1041,13 @@ DỮ LIỆU ĐÃ BIẾT VỀ CĂN NÀY (ĐÃ THU THẬP TỪ TRƯỚC - TUYỆT 
         label = nhan_o(next_field, prop)
         natural = cau_hoi_o(next_field, prop)
         next_guide = f"""
-MỤC TIÊU HỎI TIẾP THEO: Sau khi ghi nhận ngắn gọn ảnh, hãy hỏi tiếp thông tin: "{label}".
+MỤC TIÊU HỎI TIẾP THEO: Sau MỘT câu ngắn khen / nhận xét điều thấy trong ảnh, hãy hỏi tiếp thông tin: "{label}".
 Gợi ý câu hỏi: {natural}.
-(Lưu ý: Nếu trong ảnh đã thể hiện rõ thông tin này, hãy ghi nhận luôn; nếu chưa có thì hỏi đúng 1 câu này thật vui vẻ, hoạt bát!)
+(Lưu ý: Nếu trong ảnh đã thể hiện rõ thông tin này thì coi như đã có, không hỏi lại; nếu chưa có thì hỏi đúng 1 câu này thật vui vẻ, hoạt bát!)
 """
     elif prop:
         next_guide = """
-Thông tin căn này đã rất đầy đủ. Sau khi ghi nhận ảnh, hãy vui vẻ cảm ơn và hỏi khách xem có cần bổ sung góc chụp hay thông tin gì nữa không nhé!
+Thông tin căn này đã rất đầy đủ. Sau MỘT câu ngắn về ảnh, hãy vui vẻ cảm ơn và hỏi khách xem có cần bổ sung góc chụp hay thông tin gì nữa không nhé!
 """
 
     return f"""Bạn là "{assistant_name}", trợ lý ảo BĐS của AI Ơi Nhà Đất. Khách vừa gửi một ẢNH hoặc TÀI LIỆU BĐS.
@@ -2087,6 +2087,21 @@ _SDT = re.compile(r"(?<!\d)(?:\+?84|0)(?:[\s.\-]?\d){8,10}(?!\d)")
 _AI_CAU_CHUAN = {"buyer": "Khách", "seller": "Khách", "bot": "Bot", "human": "Người thật", "ctv": "CTV"}
 
 
+# Câu mở lượt kiểu ghi nhận ("Em ghi nhận…", "Chị đã ghi giá…", "Em lưu…") — chủ dự án bỏ hẳn kiểu này (SRS-5.1zzzzzzz131); chủ ngữ theo mọi
+# cách bot xưng (SRS-214). MỘT nguồn: lưới `engine._mo_dau_ghi_nhan` và bộ lọc ví dụ câu chuẩn dưới đây cùng dùng (SRS-5.1zzzzzzz215).
+MO_DAU_GHI_NHAN_RE = re.compile(r"(?i)\s*(?:em|anh|chị|cô|chú|cháu|mình)\s+(?:đã\s+)?(?:ghi(?![\wà-ỹđ])|nhận\s+thông\s+tin|lưu(?![\wà-ỹđ])|"
+                                r"nắm\s+(?:rồi|được)|thêm\s+vào\s+tin|lên\s+thông\s+tin)")
+_MAU_PHAM_LUAT_RE = re.compile(r"(?i)^\s*dạ(?![a-zà-ỹđ])|đã\s+(?:được\s+)?(?:đăng|hiển\s+thị)")
+
+
+def mau_cau_chuan_hop_le(cau: str | None) -> bool:
+    """Ví dụ câu chuẩn được đưa cho model phải không TỰ phạm luật hình thức đang áp (SRS-5.1zzzzzzz215, chủ dự án 27/10: "con của mình cứ em
+    ghi nhận hoài"): 67/376 dòng `cau_chuan` mở bằng "Em ghi rồi / Em nhận thông tin…" (sửa tay 21/10, trước khi bỏ kiểu ghi nhận 22/10) nên prompt
+    vừa cấm vừa dạy. Loại: mở bằng ghi nhận, mở bằng "Dạ", tự nói tin "đã đăng / đã hiển thị" (trạng thái web do khối hệ thống quyết)."""
+    c = " ".join(str(cau or "").split())
+    return bool(c) and not MO_DAU_GHI_NHAN_RE.match(c) and not _MAU_PHAM_LUAT_RE.search(c)
+
+
 def khoi_cau_chuan(rows: list[dict] | None) -> str:
     """Câu chuẩn người chấm sửa / chấm ở CRM (`cau_chuan`, SRS-5.1zzzzzzz88) → khối ví dụ cho lượt trả lời. Mỗi ví dụ kèm NGỮ CẢNH
     (3 tin trước câu bot), câu bot cũ, điểm, câu chuẩn, ghi chú. Ví dụ là hội thoại của khách khác: che SĐT, dặn model không nhắc lại
@@ -2094,13 +2109,21 @@ def khoi_cau_chuan(rows: list[dict] | None) -> str:
     if not rows:
         return ""
     cat = lambda x, n: (lambda t: t if len(t) <= n else t[:n].rstrip() + "…")(_SDT.sub("0xxxxxxxxx", " ".join(str(x or "").split())))
+    # SRS-5.1zzzzzzz215: ví dụ "nên nói" (câu chuẩn, hoặc câu bot cũ được giữ) phải hợp luật hình thức đang áp; câu bot cũ chỉ in khi có
+    # ĐIỂM (để model biết đó là cách nói cần tránh) — in không điểm là dạy thêm một lần nữa kiểu ghi nhận.
+    def _nen_noi(r: dict) -> str | None:   # câu được trình là "nên nói": câu chuẩn sửa tay, hoặc câu bot cũ chấm ≥ 4; câu điểm thấp là cách cần tránh
+        return r.get("cau_chuan") or (r.get("cau_bot") if (r.get("diem") or 0) >= 4 else None)
+    rows = [r for r in rows if (_nen_noi(r) is None and r.get("diem")) or mau_cau_chuan_hop_le(_nen_noi(r))]
+    if not rows:
+        return ""
     khoi = []
     for i, r in enumerate(rows, 1):
         dong = [f"[{i}]" + (f" Điểm câu bot cũ: {r['diem']}/5" if r.get("diem") else "")]
         for t in (r.get("ngu_canh") or [])[-3:]:
             if isinstance(t, dict) and t.get("noi_dung"):
                 dong.append(f"  {_AI_CAU_CHUAN.get(t.get('ai'), 'Khách')}: {cat(t['noi_dung'], 300)}")
-        dong.append(f"  Câu bot cũ: {cat(r.get('cau_bot'), 500)}")
+        if r.get("diem") or not r.get("cau_chuan") or cat(r["cau_chuan"], 900) == cat(r.get("cau_bot"), 900):
+            dong.append(f"  Câu bot cũ: {cat(r.get('cau_bot'), 500)}")
         if r.get("cau_chuan") and cat(r["cau_chuan"], 900) != cat(r.get("cau_bot"), 900):
             dong.append(f"  CÂU CHUẨN (nên nói thế này): {cat(r['cau_chuan'], 900)}")
         elif r.get("cau_chuan") or (r.get("diem") or 0) >= 4:

@@ -461,7 +461,7 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
         # SRS-5.1zzzzzzz191 (chat anh Luận 26/10): khách nói "phường 6" — phường CŨ đánh số bị chia về hai phường mới nên hệ thống không tự ghi
         # được phường; bản trước bot cứ hỏi tiếp việc khác rồi tới lúc duyệt tin mới hỏi trống "phường mới nào". Hỏi NGAY, kèm các lựa chọn.
         dong.append(f'Khách nói phường "{fields.get("phuong")}" — đó là phường CŨ đánh số; từ 01/07/2025 nó chia về nhiều phường mới ({", ".join(chia)}) '
-                    f'nên CHƯA biết nhà thuộc phường nào. Nếu chưa hỏi thì lượt này hỏi ĐÚNG câu này thay cho câu hỏi kế: kể hai phường mới cho khách '
+                    f'nên CHƯA biết nhà thuộc phường nào. Khi "Thông tin cần hỏi tiếp theo" là phường: kể hai phường mới cho khách '
                     f'chọn (vd "{fields.get("phuong")} cũ giờ chia về {" hoặc ".join(chia)}, nhà mình ở phường nào ạ?"), KHÔNG hỏi trống "phường nào". '
                     "Khách đã chọn hay nói phường khác thì ghi theo khách, không hỏi lại. Danh sách phường do hệ thống tra, KHÔNG phải khách nói.")
     if not fields.get("duong"):
