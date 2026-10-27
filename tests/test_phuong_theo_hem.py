@@ -43,7 +43,7 @@ def test_so_hem_cua():
 
 
 def test_137_28_duong_so_59_goi_y_an_hoi_tay():
-    k = khoi_dia_danh(_tra(), {"duong": "đường số 59", "dia_chi": "137/28 đường số 59"}, None)
+    k = khoi_dia_danh(_tra(), {"duong": "đường số 59", "dia_chi": "137/28 đường số 59"}, "phuong")
     assert "Kho hẻm" in k and "Phường An Hội Tây" in k and "đúng không" in k
     assert "Phường Tân Hưng" not in k                                  # không kể cả 7 phường của đường
 
@@ -66,9 +66,9 @@ def test_quan_khach_noi_loc_hem():
 
 def test_ai_bo_chu_hem_van_tra_duoc_khi_can_trong_hem():
     """Bắn thử 21/10 (DC2): khách gõ "hẻm 965 Quang Trung", ô dia_chi AI ghi "965 Quang Trung" (mất chữ hẻm)."""
-    k = khoi_dia_danh(_tra(), {"duong": "Quang Trung", "dia_chi": "965 Quang Trung", "lo_gioi_hem": "Nhà hẻm"}, None)
+    k = khoi_dia_danh(_tra(), {"duong": "Quang Trung", "dia_chi": "965 Quang Trung", "lo_gioi_hem": "Nhà hẻm"}, "phuong")
     assert "Phường An Hội Tây" in k
-    k = khoi_dia_danh(_tra(), {"duong": "Quang Trung", "dia_chi": "965 Quang Trung"}, None)   # chưa biết hẻm hay mặt tiền
+    k = khoi_dia_danh(_tra(), {"duong": "Quang Trung", "dia_chi": "965 Quang Trung"}, "phuong")   # chưa biết hẻm hay mặt tiền
     assert "Kho hẻm" not in k
     assert so_hem_cua("đường số 59", "Đường số 59", la_hem=True) == []                       # số trong tên đường không phải hẻm
 
@@ -92,6 +92,11 @@ def _lam(monkeypatch, loi, them=None):
     from aioi.engine import Engine
     f = {"loai_hinh": "nha_pho", "dia_chi": "137/28 đường số 59", "duong": "đường số 59", "gia": "6 tỷ 2", **(them or {})}
     monkeypatch.setattr(Engine, "_ap_dung_ke_hoach", lambda self, conv, plan: (conv.prop.update(f), []))
+    if "phuong" not in f:   # lượt này hệ thống chọn hỏi phường — khối kho hẻm chỉ vào lượt hỏi phường (SRS-5.1zzzzzzz228)
+        def _hoi_phuong(conv, missing):
+            conv.o_vua_hoi, conv.cum_vua_hoi = "phuong", ["phuong"]
+            return "phuong"
+        monkeypatch.setattr(Engine, "_o_hoi_ke", staticmethod(_hoi_phuong))
     m = _Model(loi)
     e = Engine(m)
     e._dia_danh = _tra()
@@ -116,3 +121,11 @@ def test_loi_da_nhac_phuong_thi_khong_goi_lai(monkeypatch):
 def test_da_co_phuong_khong_soat(monkeypatch):
     m, _ = _lam(monkeypatch, ["Nhà mình mấy phòng ngủ vậy chị?"], {"phuong": "Phường An Hội Tây"})
     assert len(m.systems) == 1
+
+
+def test_kho_hem_chi_vao_luot_hoi_phuong():
+    """SRS-5.1zzzzzzz228 (ban-thu-srd 27/10: "có phải Phường Chợ Quán không" lặp 5 lượt — khối kho hẻm kèm sẵn câu hỏi nằm trong prompt mọi
+    lượt, cả sau khi admin đã được báo tra phường). Lượt hỏi ô khác / lượt sau bản nháp không có khối này. Đỏ khi bỏ điều kiện."""
+    f = {"duong": "đường số 59", "dia_chi": "137/28 đường số 59"}
+    assert "Kho hẻm" in khoi_dia_danh(_tra(), f, "phuong")
+    assert "Kho hẻm" not in khoi_dia_danh(_tra(), f, "gia") and "Kho hẻm" not in khoi_dia_danh(_tra(), f, None)

@@ -1284,11 +1284,12 @@ def _cau_lap_luot_truoc(reply: str, truoc: str) -> str | None:
     return None
 
 
-_GOI_A_RE = re.compile(r"(?<![\wÀ-ỹ])(anh chị|anh|chị|cô chú|cô|chú|bác|em|cháu)\s+ạ(?![\wÀ-ỹ])", re.I)
+_GOI_A_RE = re.compile(r"(?<![\wÀ-ỹ])(anh chị|anh|chị|cô chú|cô|chú|bác|em|cháu)\s+(?:ạ|ơi)(?![\wÀ-ỹ])", re.I)
 
 
 def _goi_a(loi: str) -> bool:
-    """Lời bot có tiếng gọi khách kèm "ạ" ("chị ạ", "anh ạ", "cô ạ") — dấu lễ phép lặp mỗi lượt làm bot đọc như máy (SRS-5.1zzzzzzz220)."""
+    """Lời bot có tiếng gọi khách kèm "ạ" / "ơi" ("chị ạ", "anh ơi") — tiếng gọi lặp mỗi lượt làm bot đọc như máy (SRS-5.1zzzzzzz220;
+    "ơi" từ SRS-5.1zzzzzzz228: ban-thu-srd 27/10 sáu trên bảy lượt đầu kết "… quá anh ơi!")."""
     return bool(loi) and _GOI_A_RE.search(loi) is not None
 
 
@@ -2717,11 +2718,11 @@ class Engine:
                 if lap:
                     ly_do.append(f"Câu \"{lap[:60]}\" quanh bản tin lặp gần nguyên văn lượt trước — câu dẫn và câu hỏi chốt mỗi lượt một cách "
                                  "nói khác (hỏi đã ưng chưa / còn chỗ nào chỉnh / đăng luôn nhé), ngắn thôi.")
-        if "📋" not in reply and _goi_a(reply) and _goi_a(truoc):
+        if "📋" not in reply and _goi_a(reply) and _goi_a(_phan_chat_quanh_ban_tin(truoc) if "📋" in truoc else truoc):
             # SRS-5.1zzzzzzz220 (chat 27/10: "…thuận tiện cho việc đi lại ạ. Chị cho em…", "…dễ xoay xe, chị ạ!", "…thuận lợi cho chị ạ!" — bốn
             # lượt liền, khách: "sao lại chị ạ liên tục"): kiểm HÌNH THỨC lời của chính bot, không đọc ý khách.
-            ly_do.append("Lượt trước em đã kết câu bằng tiếng gọi \"… ạ\" (\"chị ạ\", \"anh ạ\") — lượt này đừng lặp: gọi khách nhiều nhất MỘT lần, "
-                         "hoặc bỏ hẳn tiếng gọi, nói tự nhiên như nhắn Zalo cho người quen.")
+            ly_do.append("Lượt trước em đã gọi khách kèm \"ạ\" / \"ơi\" (\"chị ạ\", \"anh ơi\") — lượt này đừng lặp: bỏ hẳn tiếng gọi, nói tự "
+                         "nhiên như nhắn Zalo cho người quen, và đổi khuôn câu (đừng \"… quá anh ơi!\" lượt nào cũng vậy).")
         moi = self._phuong_moi_cua_cu(conv)
         if moi and ("📋" in reply or _is_formatted_post(reply)) and ten_tran(moi) not in bo_dau(reply):
             ly_do.append(f"Bản tin vừa viết ghi phường theo tên CŨ — từ 01/07/2025 phường đó nay là {moi}: ghi \"{moi}\" trong tiêu đề / mô tả "
@@ -2769,7 +2770,32 @@ class Engine:
                     conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if lai:
                 reply = _gan_dau_ban_tin(_bo_markdown(lai))
+                # SRS-5.1zzzzzzz228 (ban-thu-srd 27/10: bản gọi lại vẫn mở bằng Dạ, "… em hiểu rồi anh…"): luật CỨNG (Dạ, gọi khách "mình",
+                # phí sai vai) soát lại bản gọi lại; còn lệch thì gọi thêm MỘT lần. Luật mềm (lặp, khen) không gọi lần hai — tốn tiền mỗi lượt.
+                con = self._ly_do_cung(conv, reply)
+                if con:
+                    log.warning("Bản gọi lại vẫn lệch luật cứng (%s) — gọi lại lần hai", " | ".join(x[:40] for x in con))
+                    with _do(conv, "tra_loi_lai"):
+                        lai2 = self._provider.reply(
+                            system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\n" + " ".join(con) + " Viết lại TOÀN BỘ lượt trả lời.\n",
+                            conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+                    if lai2:
+                        reply = _gan_dau_ban_tin(_bo_markdown(lai2))
         return reply
+
+    @staticmethod
+    def _ly_do_cung(conv: Conversation, reply: str) -> list[str]:
+        """Luật hình thức CỨNG của lời bot (quyết định chủ dự án, không có ngoại lệ theo ngữ cảnh) — dùng lại ở lần soát bản gọi lại."""
+        ly_do = []
+        if _mo_dau_da(reply):
+            ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
+        if _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
+            ly_do.append("Lời vừa viết gọi khách là \"mình\" — gọi đúng cách khách xưng (anh / chị / cô / chú), chỉ \"nhà mình / căn mình\" "
+                         "khi nói về căn của khách.")
+        phi_dung = _phi_lech_vai(reply, conv.user_type, conv.prop.is_rental) if conv.role != "buyer" else None
+        if phi_dung:
+            ly_do.append(f"Lời vừa viết báo phí % không đúng vai người rao — mức đúng: \"{phi_dung}\", KHÔNG tự đoán một vai.")
+        return ly_do
 
     @staticmethod
     def _inventory_tools() -> list[dict]:
@@ -3785,6 +3811,7 @@ class Engine:
                 f = conv.prop.fields
                 if n >= 2 and not conv.y_luot.get("can_nguoi_that") and not f.get("_phuong_bao_admin"):
                     f["_phuong_bao_admin"] = "1"
+                    web["phuong_bao_admin"] = True   # SRS-5.1zzzzzzz228: lượt báo admin cũng thôi hỏi — phường hỏi tối đa 2 lần
                     conv.y_luot["can_nguoi_that"] = ("Bot hỏi phường 3 lượt chưa ra — nhờ admin tra và điền phường ở Sửa tin: "
                                                      + ", ".join(str(f[k]) for k in ("du_an", "duong", "dia_chi", "quan") if f.get(k)))
         return web
