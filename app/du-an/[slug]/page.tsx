@@ -75,7 +75,38 @@ const NHAN_SPEC: Record<string, string> = {
   so_tang: "Số tầng", mat_tien: "Mặt tiền", so_phong_ngu: "Phòng ngủ", bo_tri: "Bố trí",
   ban_giao: "Bàn giao", thang_may: "Thang máy", ghi_chu: "Ghi chú", cong: "Cổng",
   vi_tri: "Vị trí", ket_cau: "Kết cấu", tong_so_can: "Tổng số căn", dien_tich: "Diện tích",
+  gia_dong: "Giá tham khảo", nam_khoi_cong: "Khởi công", nam_hoan_thanh: "Hoàn thành", tong_dien_tich: "Tổng diện tích",
 };
+// Ô trống của kho dự án mogi ra JSON null — `String(null)` là chữ "null", trước đây lọt lên trang cùng tên khoá trần ("gia_dong null",
+// chủ dự án 27/10). Trống = null / "" / "null".
+function coGiaTri(v: unknown): boolean {
+  return v !== null && v !== undefined && String(v).trim() !== "" && String(v).trim().toLowerCase() !== "null";
+}
+function nhanSpec(k: string): string {
+  return NHAN_SPEC[k] ?? k.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+}
+function khoang(a: unknown, b: unknown, donVi: string): string | null {
+  const x = coGiaTri(a) ? String(a) : null;
+  const y = coGiaTri(b) ? String(b) : null;
+  return x && y && x !== y ? `${x} – ${y} ${donVi}` : x || y ? `${x ?? y} ${donVi}` : null;
+}
+/** Dòng thông số dự án cho người đọc: bỏ ô trống, gộp cặp từ–đến, giá/m² chỉ khi không có câu giá. */
+function dongSpec(specs: Record<string, unknown>): [string, string][] {
+  const ra: [string, string][] = [];
+  const bo = new Set(["gia_m2_min", "gia_m2_max", "dien_tich_tu_m2", "dien_tich_den_m2"]);
+  for (const [k, v] of Object.entries(specs)) {
+    if (bo.has(k) || !coGiaTri(v)) continue;
+    ra.push([nhanSpec(k), typeof v === "object" ? JSON.stringify(v) : String(v)]);
+  }
+  const trieu = (v: unknown) => (coGiaTri(v) && Number(v) > 0 ? String(Math.round(Number(v) / 1e6)) : null);
+  if (!coGiaTri(specs.gia_dong)) {
+    const g = khoang(trieu(specs.gia_m2_min), trieu(specs.gia_m2_max), "triệu/m²");
+    if (g) ra.push(["Giá / m²", g]);
+  }
+  const dt = khoang(specs.dien_tich_tu_m2, specs.dien_tich_den_m2, "m²");
+  if (dt) ra.push(["Diện tích căn", dt]);
+  return ra;
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -110,7 +141,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const anh = anhDuAn(p.images);
   const tienIch = chuoi(p.amenities);
   const loai = loaiCan(p.unit_types);
-  const specs = p.specs && typeof p.specs === "object" ? Object.entries(p.specs as Record<string, unknown>) : [];
+  const specs = p.specs && typeof p.specs === "object" && !Array.isArray(p.specs) ? dongSpec(p.specs as Record<string, unknown>) : [];
   // Giá min–max: cột dự án nếu có, không thì suy từ tin đang lên kệ.
   const giaTin = tin.map((l) => l.price_vnd).filter((v): v is number => !!v && v > 0);
   const giaMin = p.price_min ?? (giaTin.length ? Math.min(...giaTin) : null);
@@ -181,9 +212,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                   ["Vị trí", p.location_raw ?? viTri(p)],
                   ["Pháp lý", p.legal_status],
                   ["Bàn giao", p.handover ?? (p.handover_date ? new Date(p.handover_date).toLocaleDateString("vi-VN") : null)],
-                  ...specs.map(([k, v]) => [NHAN_SPEC[k] ?? k, typeof v === "object" ? JSON.stringify(v) : String(v)] as [string, string]),
+                  ...specs,
                 ]
-                  .filter((x): x is [string, string] => !!x[1])
+                  .filter((x, i, a): x is [string, string] => coGiaTri(x[1]) && a.findIndex((y) => y[0] === x[0]) === i)
                   .map(([k, v]) => (
                     <div key={k} className="flex justify-between gap-4 border-b border-line py-2.5 text-sm">
                       <dt className="shrink-0 text-mute">{k}</dt>
@@ -208,7 +239,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                       <p className="font-bold">{lc.name ?? `Loại ${i + 1}`}</p>
                       {lc.specs && (
                         <p className="mt-1 text-navy/75">
-                          {Object.entries(lc.specs).map(([k, v]) => `${NHAN_SPEC[k] ?? k}: ${String(v)}`).join(" · ")}
+                          {Object.entries(lc.specs).filter(([, v]) => coGiaTri(v)).map(([k, v]) => `${nhanSpec(k)}: ${String(v)}`).join(" · ")}
                         </p>
                       )}
                       {chuoi(lc.units).length > 0 && (
