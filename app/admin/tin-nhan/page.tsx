@@ -54,6 +54,10 @@ export default function Page() {
   const [locPhia, setLocPhia] = useState<"" | "ban" | "mua">("");
   const [chiCanNguoi, setChiCanNguoi] = useState(false);
   const [thongBao, setThongBao] = useState<string | null>(null);
+  // SRS-5.1zzzzzzz216 (chủ dự án 27/10: "trong này có 1 ô để admin gửi lại nữa"): ô gửi tin cho khách — RPC admin_gui_tin xếp nhắc
+  // `admin_reply`, lõi Python gửi qua bridge trong ~1 phút rồi ghi `messages` (sender human, Realtime đẩy vào đây), bot nhường sân 30 phút.
+  const [chuGui, setChuGui] = useState("");
+  const [dangGui, setDangGui] = useState(false);
   // SRS-5.1zzzzzzz29: hội thoại đang mở, đọc được trong callback Realtime (closure của effect không thấy state mới).
   const chonRef = useRef<HoiThoai | null>(null);
   useEffect(() => { chonRef.current = chon; }, [chon]);
@@ -176,6 +180,15 @@ export default function Page() {
     setChon({ ...chon, human_hold: giu, needs_human: giu ? false : chon.needs_human });
     setThongBao(giu ? `Đang giữ "${ten(chon)}": bot im tới khi bấm "Trả bot".` : `Đã trả "${ten(chon)}" cho bot.`);
     await napHoiThoai();
+  };
+  const guiTin = async () => {
+    if (!chon || !chuGui.trim() || dangGui) return;
+    setDangGui(true);
+    const { error } = await supabase.rpc("admin_gui_tin", { p_conversation_id: chon.id, p_noi_dung: chuGui.trim() });
+    setDangGui(false);
+    if (error) { setLoi(error.message); return; }
+    setChuGui("");
+    setThongBao(`Đã xếp tin cho "${ten(chon)}" — lõi gửi qua Zalo trong khoảng 1 phút; bot nhường sân 30 phút.`);
   };
   const dem = {
     tong: hoiThoai.length,
@@ -304,6 +317,25 @@ export default function Page() {
                 );
               })}
             </ol>
+            <form
+              onSubmit={(e) => { e.preventDefault(); void guiTin(); }}
+              className="flex items-end gap-2 border-t border-line bg-white px-3 py-2"
+            >
+              <label htmlFor="admin-gui-tin" className="sr-only">Gửi tin cho khách</label>
+              <textarea
+                id="admin-gui-tin"
+                value={chuGui}
+                onChange={(e) => setChuGui(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void guiTin(); } }}
+                rows={2}
+                maxLength={2000}
+                placeholder="Nhắn cho khách bằng tên bạn (Enter gửi, Shift+Enter xuống dòng) — bot sẽ im 30 phút"
+                className="min-h-[44px] flex-1 resize-y rounded-md border border-line bg-cream/60 px-3 py-2 text-sm outline-none focus:border-brand focus:bg-white"
+              />
+              <Btn type="submit" disabled={dangGui || !chuGui.trim()} className="py-2 text-xs" title="Lõi gửi qua Zalo trong ~1 phút, ghi vào đây với nhãn Người thật">
+                {dangGui ? "Đang xếp…" : "Gửi cho khách"}
+              </Btn>
+            </form>
           </>
         )}
       </section>

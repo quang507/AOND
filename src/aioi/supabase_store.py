@@ -697,7 +697,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         return None
 
     def ghi_luot_chat(self, user_key: str, incoming_text: str, bot_reply: str, zalo_msg_id: str | None = None,
-                      role: str = "seller", user_name: str | None = None, nhan_luc: str | None = None) -> None:
+                      role: str = "seller", user_name: str | None = None, nhan_luc: str | None = None, nguoi_gui: str = "bot") -> None:
         """Một lượt chat → hai dòng `messages` (khách, bot) + đẩy hội thoại lên đầu CRM. Dùng chung đường tìm / tạo người bán và
         hội thoại với `save` (SRS-5.1zzzzzzz56 — trước đây supabase_sync có bản riêng). Lượt MUA ghi vào hội thoại mua.
         20/10/2026 (SRS-5.1zzzzzzz84): hội thoại trong cache có thể đã bị xoá ở chỗ khác — khách gõ "hello" (reset ở bản kho của
@@ -707,16 +707,16 @@ class SupabaseConversationStore(KhoNguoiMua):
         if not (self.is_configured and user_key):
             return
         try:
-            self._ghi_luot_chat_mot_lan(user_key, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc)
+            self._ghi_luot_chat_mot_lan(user_key, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc, nguoi_gui)
         except urllib.error.HTTPError as e:
             if e.code != 409:
                 raise
             self._seller_cache.pop(user_key, None)
             self._conv_cache.clear()
-            self._ghi_luot_chat_mot_lan(user_key, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc)
+            self._ghi_luot_chat_mot_lan(user_key, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc, nguoi_gui)
 
     def _ghi_luot_chat_mot_lan(self, user_key: str, incoming_text: str, bot_reply: str, zalo_msg_id: str | None,
-                               role: str, user_name: str | None, nhan_luc: str | None) -> None:
+                               role: str, user_name: str | None, nhan_luc: str | None, nguoi_gui: str = "bot") -> None:
         conv_id = self._hoi_thoai_chung(user_key, user_name, "buyer" if role == "buyer" else "seller")
         if not conv_id:
             return
@@ -730,9 +730,21 @@ class SupabaseConversationStore(KhoNguoiMua):
                 msg["zalo_msg_id"] = str(zalo_msg_id)
             self._post("messages", msg, prefer="return=minimal")
         if bot_reply:
-            self._post("messages", {"conversation_id": conv_id, "sender": "bot", "body": bot_reply, "created_at": now_iso},
-                       prefer="return=minimal")
+            # `nguoi_gui` = "human" khi câu là của admin (gõ tay trên acc clone / ô gửi ở /admin/tin-nhan) — CRM tô màu riêng (SRS-216).
+            self._post("messages", {"conversation_id": conv_id, "sender": nguoi_gui if nguoi_gui in ("bot", "human") else "bot",
+                                    "body": bot_reply, "created_at": now_iso}, prefer="return=minimal")
         self._patch(f"conversations?id=eq.{conv_id}", {"last_message_at": now_iso})
+
+    def danh_dau_nguoi_that(self, user_key: str, role: str = "seller") -> bool:
+        """Người thật vừa nói trong hội thoại (admin gõ tay trên acc clone → bridge `human_note`, hoặc gửi từ /admin/tin-nhan) →
+        `conversations.human_touch_at` để CRM hiện "người thật đã vào" (SRS-5.1zzzzzzz216). Không đụng `human_hold` (nút giữ)."""
+        if not (self.is_configured and user_key):
+            return False
+        conv_id = self._hoi_thoai_chung(user_key, None, "buyer" if role == "buyer" else "seller")
+        if not conv_id:
+            return False
+        self._patch(f"conversations?id=eq.{conv_id}", {"human_touch_at": datetime.now(timezone.utc).isoformat()})
+        return True
 
     def dang_giu_hoi_thoai(self, user_key: str) -> bool:
         """Admin đang GIỮ hội thoại (`conversations.human_hold`, nút "giữ" trên /admin/tin-nhan → `giu_khach`) → bot im
@@ -1184,6 +1196,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             conv.che_do_test = cu.che_do_test
             conv.so_luot_thong_tin = cu.so_luot_thong_tin
             conv.so_nhan = cu.so_nhan   # SRS-5.1zzzzzzz210: số Zalo khách nhắn tới — Supabase không có cột này
+            conv.nhuong_san_den = cu.nhuong_san_den   # SRS-5.1zzzzzzz216: người thật đang nói tới lúc nào — chỉ SQLite
         return conv
 
     def load(self, user_key: str) -> Any:
@@ -1305,6 +1318,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 conv.che_do_test = cu.che_do_test   # chế độ test $$$$$ (SRS-5.1zzzzzzz130) — Supabase không có cột này
                 conv.so_luot_thong_tin = cu.so_luot_thong_tin   # lượt thông tin thứ mấy (SRS-5.1zzzzzzz131 bản 2)
                 conv.so_nhan = cu.so_nhan   # số Zalo khách nhắn tới (SRS-5.1zzzzzzz210) — Supabase không có cột này
+                conv.nhuong_san_den = cu.nhuong_san_den   # người thật đang nói tới lúc nào (SRS-5.1zzzzzzz216) — chỉ SQLite
                 if conv.user_type.value == "unknown":
                     conv.user_type = cu.user_type
             if conv.role == "buyer" and conv.buyer_lead is None:

@@ -84,6 +84,7 @@ from .prompts import (
     khoi_hoi_mat_tien,
     trong_vung_nhan_tin,
     khoi_xin_dang,
+    khoi_diem_tin,
     khoi_cau_chuan,
     cat_truoc_mo_dau,
     build_inventory_instruction,
@@ -447,6 +448,10 @@ class Conversation:
     # khách nhắn tới số Zalo NÀO — "" = số ký gửi (số cũ), SO_TU_VAN = số tư vấn người mua. Chỉ quyết vai MẶC ĐỊNH của lượt mơ hồ và số gửi tin
     # chủ động cho khách; khách nhắn nhầm số vẫn được trả lời đúng việc (`user_intent` của lượt thắng).
     so_nhan: str = ""
+    # Persisted (SRS-5.1zzzzzzz216, 27/10/2026): NGƯỜI THẬT đang nói chuyện với khách tới mốc này (epoch giây) — admin gõ tay trên acc
+    # clone (bridge `human_note`, trước đây lõi bỏ qua trường này và coi lời admin là lời khách) hoặc gửi từ /admin/tin-nhan. Chưa tới mốc
+    # thì bot im (chỉ ghi lời khách vào CRM), như nút "giữ" nhưng tự hết sau NHUONG_SAN_GIAY.
+    nhuong_san_den: float = 0.0
     # Transient (SRS-5.1zzzzzzz177): số lượt khách hỏi việc NGOÀI nhà đất khi chưa tỏ ý bán / mua — lần 2 đề nghị nối người.
     so_luot_ngoai_viec: int = 0
     # Transient (SRS-5.1zzzzzzz130): ô tin của căn đang nói TRƯỚC khi áp thao tác lượt này, và cụm khách nói làm bằng chứng cho ô vừa ghi —
@@ -694,7 +699,8 @@ class SqliteConversationStore(ConversationStore):
             "xung_ho TEXT NOT NULL DEFAULT '', "
             "che_do_test TEXT NOT NULL DEFAULT '', "
             "so_luot_thong_tin TEXT NOT NULL DEFAULT '0', "
-            "so_nhan TEXT NOT NULL DEFAULT '')"
+            "so_nhan TEXT NOT NULL DEFAULT '', "
+            "nhuong_san_den TEXT NOT NULL DEFAULT '')"
         )
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS listings ("
@@ -720,6 +726,7 @@ class SqliteConversationStore(ConversationStore):
             ("conversations", "che_do_test", "''"),   # cột cũ chế độ test (SRS-195: không còn bật)
             ("conversations", "so_luot_thong_tin", "'0'"),   # SRS-5.1zzzzzzz131 bản 2: lượt thông tin thứ mấy (3 lượt đầu khen 100%)
             ("conversations", "so_nhan", "''"),   # SRS-5.1zzzzzzz210: khách nhắn số ký gửi ("") hay số tư vấn
+            ("conversations", "nhuong_san_den", "''"),   # SRS-5.1zzzzzzz216: người thật đang nói tới lúc nào (epoch giây)
         ):
             try:  # migrate older tables that predate this column
                 self._conn.execute(
@@ -734,13 +741,14 @@ class SqliteConversationStore(ConversationStore):
         active_lead_id = conv.buyer_lead.lead_id if conv.buyer_lead else ""
         self._conn.execute(
             "INSERT INTO conversations(user_key, user_type, last_ai_at, active_listing_id, "
-            "history_json, price_book_json, role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) "
+            "history_json, price_book_json, role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan, nhuong_san_den) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(user_key) DO UPDATE SET "
             "user_type=excluded.user_type, last_ai_at=excluded.last_ai_at, "
             "active_listing_id=excluded.active_listing_id, history_json=excluded.history_json, "
             "price_book_json=excluded.price_book_json, role=excluded.role, "
             "active_lead_id=excluded.active_lead_id, xung_ho=excluded.xung_ho, che_do_test=excluded.che_do_test, "
-            "so_luot_thong_tin=excluded.so_luot_thong_tin, so_nhan=excluded.so_nhan",
+            "so_luot_thong_tin=excluded.so_luot_thong_tin, so_nhan=excluded.so_nhan, nhuong_san_den=excluded.nhuong_san_den",
             (
                 conv.user_key,
                 conv.user_type.value,
@@ -754,6 +762,7 @@ class SqliteConversationStore(ConversationStore):
                 "1" if conv.che_do_test else "",
                 str(int(conv.so_luot_thong_tin or 0)),
                 conv.so_nhan or "",
+                str(conv.nhuong_san_den or 0) if conv.nhuong_san_den else "",
             ),
         )
         if conv.buyer_lead is not None:
@@ -823,7 +832,7 @@ class SqliteConversationStore(ConversationStore):
     def load(self, user_key: str) -> Conversation | None:
         row = self._conn.execute(
             "SELECT user_type, last_ai_at, active_listing_id, history_json, price_book_json, "
-            "role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan FROM conversations WHERE user_key=?",
+            "role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan, nhuong_san_den FROM conversations WHERE user_key=?",
             (user_key,),
         ).fetchone()
         if row is None:
@@ -888,6 +897,7 @@ class SqliteConversationStore(ConversationStore):
             che_do_test=bool(row[8]),
             so_luot_thong_tin=int(row[9] or 0) if len(row) > 9 else 0,
             so_nhan=(row[10] or "") if len(row) > 10 else "",
+            nhuong_san_den=float(row[11]) if len(row) > 11 and row[11] else 0.0,
         )
 
     def reset(self, user_key: str) -> None:
@@ -2280,7 +2290,7 @@ class Engine:
                 conv.assistant.name, conv.prop, next_field, conv.user_type, project_block, cum=cum_hoi,
                 hoi_lai=bool(next_field and conv.lo.get(next_field, 0) >= 1),   # SRS-5.1zzzzzzz200: đừng nhắn trùng câu cũ
                 o_bo_qua=o_truoc if o_truoc in thieu else None,
-            ) + khoi_xin_dang(toi_thieu, conv.prop)
+            ) + khoi_xin_dang(toi_thieu, conv.prop) + self._khoi_diem_tin(conv, now)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
             trinh_nhap = True
@@ -2456,6 +2466,19 @@ class Engine:
         except Exception as e:  # noqa: BLE001 — thiếu ví dụ không được làm hỏng lượt trả lời
             log.warning("khoi_cau_chuan lỗi: %s", e)
             return ""
+
+    def _khoi_diem_tin(self, conv: Conversation, now: float) -> str:
+        """Khối ĐIỂM TIN cho model (SRS-5.1zzzzzzz216): cùng số `gamification` mà `TurnResult` trả bridge — một nguồn, không tính lại
+        kiểu khác. Ô còn thiếu theo `missing_fields()`, ảnh theo `Listing.media` (ảnh khách đã gửi qua chat)."""
+        timeliness = self._timeliness(conv, now)
+        diem = g.property_score(conv.prop.completeness(), timeliness)
+        tat_ca = [g.property_score(li.prop.completeness(), timeliness) for li in conv.listings] or [diem]
+        diem_nguoi = g.user_score(tat_ca, num_listings=len(conv.listings))
+        try:
+            so_anh = len(conv.active.media or [])
+        except Exception:  # noqa: BLE001 — chưa có căn nào
+            so_anh = 0
+        return khoi_diem_tin(diem, g.tier_for(diem_nguoi).value, diem_nguoi, conv.prop.missing_fields(), so_anh, conv.prop)
 
     def _ghep_cau_chuan(self, system: str, conv: "Conversation | None" = None) -> str:
         """Ghép khối câu chuẩn vào system TRƯỚC `RANH_GIOI_CACHE` (SRS-5.1zzzzzzz180): khối giống nhau cho mọi khách và chỉ đổi khi người
@@ -2920,6 +2943,11 @@ class Engine:
         conv.history.append(Turn("user", f"[Khách gửi file/link >20MB: {', '.join(urls)}]", now))
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
+        # SRS-5.1zzzzzzz216 (chủ dự án 27/10: "5 làm đi"): câu mẫu `file_qua_lon` nói "Em đã báo admin rồi" nhưng `admin_escalations`
+        # chỉ nằm trong bộ nhớ, không ai đọc. Nay đi cùng đường "khách cần người thật" (server → `bao_can_nguoi` → tin 🙋 cho admin qua
+        # escalation-feed) — một chủ cho mọi tin "nhờ admin vào chat".
+        conv.y_luot = {"can_nguoi_that": f"gửi file quá {MAX_SEND_BYTES // (1024 * 1024)} MB, nhờ admin vào chat đọc giúp: "
+                                         + ", ".join(urls)[:160]}
         return replace(self._build_result(conv, reply, captured=[], now=now), escalated=True)
 
     def handle_media_batch(
