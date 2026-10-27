@@ -19,8 +19,8 @@ vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/nu
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
 BAN="thu-ban-$RUN"; BAN2="thu-ban2-$RUN"; BAN3="thu-ban3-$RUN"
-BAN4="thu-ban4-$RUN"; BAN5="thu-ban5-$RUN"; BAN6="thu-ban6-$RUN"; BAN7="thu-ban7-$RUN"; BAN8="thu-ban8-$RUN"
-TAT_CA="$BAN $BAN2 $BAN3 $BAN4 $BAN5 $BAN6 $BAN7 $BAN8"
+BAN4="thu-ban4-$RUN"; BAN5="thu-ban5-$RUN"; BAN6="thu-ban6-$RUN"; BAN7="thu-ban7-$RUN"; BAN8="thu-ban8-$RUN"; BAN9="thu-ban9-$RUN"
+TAT_CA="$BAN $BAN2 $BAN3 $BAN4 $BAN5 $BAN6 $BAN7 $BAN8 $BAN9"
 
 don() {
   echo "== dọn dữ liệu thử"
@@ -128,7 +128,7 @@ kiem "Nguyễn Trãi: trả lời theo cụm thì ra bản nháp trong ≤ 4 lư
 TIEU_DE=$(jq -r '.reply // ""' <<<"$TRA" | sed -n '/📋/,$p' | sed 1d | awk 'NF{print; exit}')
 echo "== Nguyễn Trãi: tiêu đề \"$TIEU_DE\" ($(wc -w <<<"$TIEU_DE") từ)"
 kiem "Nguyễn Trãi: tiêu đề ≤ 25 từ, có đường, diện tích và giá" \
-  "$([ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 26 ] && grep -qi 'Nguyễn Trãi' <<<"$TIEU_DE" && grep -qiE 'm²|m2|[0-9] ?x ?[0-9]' <<<"$TIEU_DE" && grep -qi 'tỷ' <<<"$TIEU_DE" && echo 1 || echo 0)"
+  "$([ -n "$TIEU_DE" ] && [ "$(wc -w <<<"$TIEU_DE")" -le 26 ] && grep -qi 'Nguyễn Trãi' <<<"$TIEU_DE" && grep -qiE 'm²|m2|[0-9] ?x ?[0-9]|[0-9] ?m\b' <<<"$TIEU_DE" && grep -qi 'tỷ' <<<"$TIEU_DE" && echo 1 || echo 0)"
 # Lượt đầu khách chưa nói phường: phường từ kho chỉ được nhắc dạng hỏi, không khẳng định.
 # SRS-5.1zzzzzzz81: khách duyệt bản nháp → bot hỏi khách biết phí môi giới chưa (như bản anh Luận), không tự báo con số. Tin chưa
 # lên web (còn thiếu ô) thì lượt đó hỏi ô thiếu trước, không hỏi phí.
@@ -207,6 +207,59 @@ echo "== xin gặp người: $CN"
 kiem "Xin gặp người: bot nói đã báo người phụ trách" "$(grep -qi 'báo' <<<"$NGUOI" && echo 1 || echo 0)"
 kiem "Xin gặp người: bật needs_human" "$(jq '.cn == true | if . then 1 else 0 end' <<<"$CN")"
 kiem "Xin gặp người: ID thử không nhắn admin" "$(jq '.nhac == 0 | if . then 1 else 0 end' <<<"$CN")"
+
+# ==== Kịch bản 9 (SRS-5.1zzzzzzz218): chat anh Luận 26/10 — nhà Hoàng Hoa Thám, khách đính chính + dặn CÁCH VIẾT bản tin. Kiểm điều
+# tất định: số trong bản tin chỉ là số khách nói (không "41,6m²" tự nhân), bàn giao một ô, câu nhờ không thành ô `hinh_anh`, lời dặn vào
+# sổ `_yeu_cau_viet`, mỗi lời dặn → có bản tin 📋 mới và tiêu đề đổi khi khách chê tiêu đề. Câu chữ model người đọc chấm ở dòng <<.
+ban_tin_cuoi() { awk 'BEGIN{RS="\n\n"} /📋/{f=1} f{print; print ""}' <<<"$1"; }   # phần từ dấu 📋 trở đi của một lượt
+tieu_de_cua() { awk 'BEGIN{RS="\n\n"} /📋/{getline; print; exit}' <<<"$1"; }     # đoạn ngay sau dòng 📋 = tiêu đề
+LOI_BOT=""; MOI_LOI=""; LUOT=0; LUOT_NHAP=""; SO_NHAP=0; SO_M2_LA=0; TD_TRUOC=""; TD_DOI=0; TIN_SAU_DAN=0; DAN=0; BAN_GIAO_2=0; ICON_SAU=0; MT5=0
+for cau in "Anh cần bán nhà mặt tiền đường Hoàng Hoa Thám, Bình Thạnh" "Phường Gia Định" "ngang 5,2m dài 8m, đất 34,5m2" \
+           "3 tầng kiên cố, sổ hồng hoàn công rồi" "giá 12,5 tỷ thương lượng nhẹ" "Em rao lại xem" \
+           "Người ta thuê 1 năm nhưng mà anh có thể bàn giao tức thì mà em" "Xin lỗi em anh cũng nhầm căn nhà này mặt tiền có 5 m thôi" \
+           "Em cho dùm anh 2-3 cái hình tượng trong bản tin đi" \
+           "cái việc chủ nhà bàn giao tức thì có cần thiết phải nói tới 2 lần trong bản rao không em" \
+           "Sao mỗi lần anh nói cái gì cái em lại đem lên trên tiêu đề nhấn mạnh đi nhấn mạnh lại trong khi có nhiều tính năng khác của ngôi nhà rất hay mà em lại bỏ ra" \
+           "Nhưng mặt tiền 5 m xứng đáng để nói"; do
+  chat "$BAN9" "$cau"
+  L=$(jq -r '[.replies[]?] | join("\n\n")' <<<"$TRA" 2>/dev/null || true)
+  if grep -q '📋' <<<"$L"; then
+    SO_NHAP=$((SO_NHAP + 1)); BT=$(ban_tin_cuoi "$L"); TD=$(tieu_de_cua "$L")
+    # số kèm m² trong bản tin: khách chỉ nói 34,5 (đất); số khác (41,6 = 5,2×8…) là bịa
+    while read -r so; do [ -n "$so" ] && ! grep -qE '^34[.,]5$' <<<"$so" && { SO_M2_LA=$((SO_M2_LA + 1)); echo "   ⚑ số m² không phải khách nói: $so"; }; done \
+      < <(grep -oiE '[0-9]+([.,][0-9]+)? ?m(²|2)' <<<"$BT" | grep -oE '^[0-9]+([.,][0-9]+)?' || true)
+    [ "$(grep -oi 'bàn giao' <<<"$BT" | wc -l)" -ge 2 ] && BAN_GIAO_2=$((BAN_GIAO_2 + 1))
+    [ -n "$TD_TRUOC" ] && [ "$TD" != "$TD_TRUOC" ] && TD_DOI_LAN=$LUOT
+    TD_TRUOC="$TD"
+  fi
+  case "$cau" in
+    "Em cho dùm anh"*|"cái việc chủ nhà"*|"Sao mỗi lần"*|"Nhưng mặt tiền"*)
+      DAN=$((DAN + 1))
+      if grep -q '📋' <<<"$L"; then TIN_SAU_DAN=$((TIN_SAU_DAN + 1)); else echo "   ⚑ khách dặn cách viết mà lượt này KHÔNG có bản tin 📋"; fi;;
+  esac
+  case "$cau" in
+    "Em cho dùm anh"*) ICON_SAU=$(LC_ALL=C.UTF-8 grep -oP '(*UTF)[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]' <<<"$(ban_tin_cuoi "$L")" | wc -l);;
+    "Sao mỗi lần"*) TD_CHE="$TD_TRUOC"; [ "${TD_DOI_LAN:-0}" = "$LUOT" ] && TD_DOI=1;;
+    "Nhưng mặt tiền"*) grep -qiE 'mặt tiền[^.\n]{0,40}5 ?m|5 ?m[^.\n]{0,20}mặt tiền|ngang 5 ?m' <<<"$(ban_tin_cuoi "$L")" && MT5=1;;
+  esac
+  sleep 1
+done
+sleep 3
+r9=$(q "select l.boc_tach - '_cap_nhat' - '_thong_so_ai' as boc_tach, l.area_m2, l.price_vnd from listings l join sellers s on s.id = l.seller_id
+        where s.zalo_user_id = '$BAN9' order by l.updated_at desc limit 1" | jq -c '.[0] // {}')
+echo "$r9"
+kiem "Anh Luận: có bản tin 📋 (số bản: $SO_NHAP)" "$([ "$SO_NHAP" -ge 1 ] && echo 1 || echo 0)"
+kiem "Anh Luận: mọi số m² trong bản tin là số khách nói — không 41,6m² tự nhân ($SO_M2_LA lệch)" "$([ "$SO_M2_LA" = 0 ] && echo 1 || echo 0)"
+kiem "Anh Luận: giá 12,5 tỷ, đất 34,5" "$(jq '(.price_vnd == 12500000000) and (((.area_m2 // 0) | tonumber) == 34.5) | if . then 1 else 0 end' <<<"$r9")"
+kiem "Anh Luận: bàn giao một ô (không có thoi_gian_ban_giao), hiện trạng có ghi" "$(jq '(.boc_tach.thoi_gian_ban_giao == null) and ((.boc_tach.tinh_trang_ban_giao // "") != "") | if . then 1 else 0 end' <<<"$r9")"
+kiem "Anh Luận: mặt tiền đính chính còn 5 (ô mat_tien)" "$(jq '(.boc_tach.mat_tien // "") | test("^5 ?(m|$)") | if . then 1 else 0 end' <<<"$r9")"
+kiem "Anh Luận: câu nhờ 'cho dùm anh 2-3 cái hình tượng' KHÔNG thành ô hinh_anh" "$(jq '(.boc_tach.hinh_anh // "") | test("cho dùm|hình tượng") | if . then 0 else 1 end' <<<"$r9")"
+kiem "Anh Luận: lời dặn cách viết vào sổ _yeu_cau_viet" "$(jq '(.boc_tach._yeu_cau_viet // "") | length > 0 | if . then 1 else 0 end' <<<"$r9")"
+kiem "Anh Luận: mỗi lời dặn → có bản tin 📋 ngay lượt đó ($TIN_SAU_DAN/$DAN)" "$([ "$TIN_SAU_DAN" = "$DAN" ] && echo 1 || echo 0)"
+kiem "Anh Luận: xin 2-3 icon → bản tin có ≥ 3 icon ($ICON_SAU)" "$([ "${ICON_SAU:-0}" -ge 3 ] && echo 1 || echo 0)"
+kiem "Anh Luận: chê tiêu đề → tiêu đề đổi" "$([ "$TD_DOI" = 1 ] && echo 1 || echo 0)"
+kiem "Anh Luận: 'mặt tiền 5m xứng đáng để nói' → bản tin nhắc mặt tiền 5m" "$([ "$MT5" = 1 ] && echo 1 || echo 0)"
+echo "== Anh Luận: số bản tin nói 'bàn giao' ≥ 2 lần: $BAN_GIAO_2 (người đọc chấm)"
 
 # SRS-5.1zzzzzzz80: bắn thử 20/10 có 2/3 kịch bản bot mở đầu "Dạ không, em ghi nhận…" khi khách không hỏi gì.
 kiem "mọi kịch bản: không bong bóng nào mở đầu \"Dạ không\"" "$(grep -qE '^Dạ không' <<<"$MOI_LOI" && echo 0 || echo 1)"

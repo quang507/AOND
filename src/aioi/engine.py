@@ -4068,7 +4068,12 @@ class Engine:
         # SRS-5.1zzzzzzz218: khách dặn CÁCH VIẾT bản tin — AI đọc theo nghĩa, code giữ cụm nằm nguyên trong tin vừa nhắn.
         yc = plan.get("yeu_cau_viet")
         if isinstance(yc, list):
-            giu = [str(x).strip() for x in yc if isinstance(x, str) and x.strip() and _trich_dan_khop(x, cuoi)]
+            # Cụm nằm nguyên trong tin, HOẶC mọi chữ của cụm đều có trong tin (AI hay rút gọn / đảo chữ: "đem lên tiêu đề nhấn mạnh"
+            # từ "em lại đem lên trên tiêu đề nhấn mạnh") — bắn thử 27/10 (run 40447321762) sổ chỉ giữ 2/4 lời dặn.
+            giu = [str(x).strip() for x in yc if isinstance(x, str) and x.strip()
+                   and (_trich_dan_khop(x, cuoi) or _chu_co_trong_loi_khach(x, [cuoi]))]
+            if len(giu) != len([x for x in yc if isinstance(x, str) and x.strip()]) or giu:
+                log.warning("Yêu cầu viết: AI=%d giữ=%d", len([x for x in yc if isinstance(x, str) and x.strip()]), len(giu))   # chỉ số đếm
             if giu:
                 conv.y_luot["yeu_cau_viet"] = list(dict.fromkeys(giu))
                 if conv.duyet_luot == "dong_y":   # vừa dặn sửa thì chưa phải duyệt — lượt này rao lại bản sửa
