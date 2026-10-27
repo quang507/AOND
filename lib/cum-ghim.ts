@@ -56,7 +56,10 @@ export function cumGhim(
         const el = bongBongCum(c.properties.point_count);
         const id = c.properties.cluster_id;
         const mk = new ml.Marker({ element: el }).setLngLat([lng, lat]);
-        el.addEventListener("click", () => {
+        el.addEventListener("click", (e) => {
+          // Cú bấm này còn lan xuống bản đồ ("click" của MapLibre) → popup mở mặc định `closeOnClick` tự đóng ngay trong cùng cú bấm
+          // (SRS-221 lên production: bấm "9 căn" không ra gì). Chặn lan để danh sách ở lại.
+          e.stopPropagation();
           const zoom = index.getClusterExpansionZoom(id);
           const la = index.getLeaves(id, Infinity);
           const trungCho = la.every((f) => {
