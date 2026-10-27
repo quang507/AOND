@@ -163,6 +163,20 @@ Deno.serve(async (req) => {
         point = [row.du_an_lat, row.du_an_lng];
         mucMoi = "du_an";
       } else {
+        // 27/10/2026 (SRS-5.1zzzzzzz224): từ điển đường của mình (`duong`, OSM theo phường MỚI, 100% có toạ độ) trước Nominatim. Tin
+        // "Dương Bá Trạc, Phường Chánh Hưng" ra tâm phường (cách đường 2,4 km) vì Nominatim chưa biết tên phường mới.
+        const tenDuongTin = (row.street ?? "").trim();
+        if (tenDuongTin && row.ward) {
+          const { data: d, error: dErr } = await db.from("duong").select("lat,lng")
+            .eq("loai", "duong").ilike("ten", tenDuongTin).eq("phuong", row.ward).not("lat", "is", null).limit(1);
+          if (dErr) await ghiLoi(`duong ${row.id} → ${dErr.message}`);
+          else if (d?.length) {
+            point = [Number(d[0].lat), Number(d[0].lng)];
+            mucMoi = "duong";
+          }
+        }
+      }
+      if (!point && !(row.du_an_lat != null && row.du_an_lng != null)) {
         const ngoai = laTinhNgoai(row.district);
         const vung = row.quan_mac_dinh ? null : vungQuan(row.district);
         for (const c of queriesFor(row)) {
