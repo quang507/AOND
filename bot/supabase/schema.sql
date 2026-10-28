@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-27 16:25 (giờ VN)
+-- Sinh lúc: 2026-10-28 08:48 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -201,6 +201,18 @@ create table if not exists public.deals (
   closed_at timestamp with time zone,
   created_at timestamp with time zone not null default now(),
   ctv_id uuid
+);
+
+create table if not exists public.dieu_luat (
+  id bigint generated always as identity,
+  so_hieu text not null,
+  dieu text not null,
+  phan integer not null default 1,
+  tieu_de text not null,
+  noi_dung text not null,
+  nhung extensions.halfvec(768),
+  nhung_md5 text,
+  nhung_luc timestamp with time zone
 );
 
 create table if not exists public.du_an_kien_thuc (
@@ -439,6 +451,13 @@ create table if not exists public.nhung_viec_du_an (
   gui_luc timestamp with time zone not null default now()
 );
 
+create table if not exists public.nhung_viec_luat (
+  dieu_id bigint not null,
+  request_id bigint not null,
+  md5 text not null,
+  gui_luc timestamp with time zone not null default now()
+);
+
 create table if not exists public.phuong_cu (
   id bigint generated always as identity,
   ten text not null,
@@ -556,6 +575,17 @@ create table if not exists public.tien_ich (
   lat double precision not null,
   lng double precision not null,
   cap_nhat_at timestamp with time zone not null default now()
+);
+
+create table if not exists public.van_ban_luat (
+  so_hieu text not null,
+  ten text not null,
+  loai text not null,
+  ngay_hieu_luc date,
+  con_hieu_luc boolean not null default true,
+  nguon_url text not null,
+  ghi_chu text,
+  nap_luc timestamp with time zone not null default now()
 );
 
 create table if not exists public.viewings (
@@ -704,6 +734,15 @@ do $d$ begin
   alter table public.deals add constraint deals_pkey PRIMARY KEY (id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.dieu_luat add constraint dieu_luat_phan_check CHECK (((phan >= 1) AND (phan <= 99)));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.dieu_luat add constraint dieu_luat_pkey PRIMARY KEY (id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.dieu_luat add constraint dieu_luat_so_hieu_dieu_phan_key UNIQUE (so_hieu, dieu, phan);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.du_an_kien_thuc add constraint du_an_kien_thuc_pkey PRIMARY KEY (khoa);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -848,6 +887,9 @@ do $d$ begin
   alter table public.nhung_viec_du_an add constraint nhung_viec_du_an_pkey PRIMARY KEY (project_id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.nhung_viec_luat add constraint nhung_viec_luat_pkey PRIMARY KEY (dieu_id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.phuong_cu add constraint phuong_cu_loai_check CHECK ((loai = ANY (ARRAY['phuong'::text, 'xa'::text, 'thi_tran'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -911,6 +953,12 @@ do $d$ begin
   alter table public.tien_ich add constraint tien_ich_pkey PRIMARY KEY (osm_id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.van_ban_luat add constraint van_ban_luat_loai_check CHECK ((loai = ANY (ARRAY['luat'::text, 'bo_luat'::text, 'nghi_dinh'::text, 'thong_tu'::text, 'nghi_quyet'::text, 'vbhn'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.van_ban_luat add constraint van_ban_luat_pkey PRIMARY KEY (so_hieu);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.viewings add constraint viewings_buyer_rating_check CHECK (((buyer_rating >= 1) AND (buyer_rating <= 5)));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -970,6 +1018,9 @@ do $d$ begin
   alter table public.deals add constraint deals_listing_id_fkey FOREIGN KEY (listing_id) REFERENCES listings(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.dieu_luat add constraint dieu_luat_so_hieu_fkey FOREIGN KEY (so_hieu) REFERENCES van_ban_luat(so_hieu) ON DELETE CASCADE;
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.info_requests add constraint info_requests_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES buyers(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -1013,6 +1064,9 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.nhung_viec_du_an add constraint nhung_viec_du_an_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.nhung_viec_luat add constraint nhung_viec_luat_dieu_id_fkey FOREIGN KEY (dieu_id) REFERENCES dieu_luat(id) ON DELETE CASCADE;
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.phuong_cu add constraint phuong_cu_phuong_moi_fkey FOREIGN KEY (phuong_moi) REFERENCES wards(ten) ON UPDATE CASCADE;
@@ -1066,6 +1120,7 @@ create index if not exists danh_gia_ai_hoi_luc_idx ON public.danh_gia_ai USING b
 create index if not exists deals_buyer_id_idx ON public.deals USING btree (buyer_id);
 create index if not exists deals_ctv_id_idx ON public.deals USING btree (ctv_id);
 create index if not exists deals_listing_id_idx ON public.deals USING btree (listing_id);
+create index if not exists dieu_luat_nhung_hnsw ON public.dieu_luat USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists duong_ban_do ON public.duong USING btree (lat, lng) INCLUDE (ten, phuong, quan_cu, loai) WHERE (loai = ANY (ARRAY['duong'::text, 'so'::text]));
 create index if not exists duong_hem ON public.duong USING btree (upper(so_hem), bo_dau(duong_me)) WHERE (loai = 'hem'::text);
 create index if not exists duong_lat_lng ON public.duong USING btree (lat, lng);
@@ -2872,6 +2927,19 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.dieu_luat_doi_chu()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+begin
+  if new.tieu_de is distinct from old.tieu_de or new.noi_dung is distinct from old.noi_dung then
+    new.nhung := null; new.nhung_md5 := null; new.nhung_luc := null;
+  end if;
+  return new;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.doc_danh_sach(p_token text)
  RETURNS jsonb
  LANGUAGE sql
@@ -4297,6 +4365,123 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.nhung_luat_tick()
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions', 'pg_temp'
+AS $function$
+declare
+  v record;
+  r record;
+  v_key text;
+  v_txt text;
+  v_md5 text;
+  v_vals jsonb;
+  v_gui int := 0;
+  v_tran int;
+  v_dung timestamptz;
+  v_tu_choi boolean := false;
+  v_ma int;
+  v_mau text;
+  v_ngay boolean := false;
+  v_reset timestamp;
+  v_ok boolean := false;
+  v_loi int;
+begin
+  -- (1) Thu kết quả lượt trước. "Đã gọi net.http_post" KHÔNG phải bằng chứng (NFR-18): chỉ ghi vector khi đọc được 200 + đúng 768 số.
+  for v in
+    select nv.dieu_id, nv.md5, nv.gui_luc, h.status_code, h.content, h.error_msg
+      from public.nhung_viec_luat nv left join net._http_response h on h.id = nv.request_id
+  loop
+    if v.status_code is null and v.error_msg is null then
+      if v.gui_luc < now() - interval '10 minutes' then
+        delete from public.nhung_viec_luat where dieu_id = v.dieu_id;
+      end if;
+      continue;
+    end if;
+    if v.status_code = 200 then
+      v_vals := (v.content::jsonb) -> 'embedding' -> 'values';
+      if jsonb_typeof(v_vals) = 'array' and jsonb_array_length(v_vals) = 768 then
+        v_ok := true;
+        update public.dieu_luat set nhung = (v_vals::text)::extensions.halfvec, nhung_md5 = v.md5, nhung_luc = now() where id = v.dieu_id;
+      else
+        perform public.log_loi('nhung-luat-tick', 'Gemini embed trả khuôn lạ cho dieu_luat ' || v.dieu_id, null);
+      end if;
+    else
+      v_tu_choi := true;
+      v_ma := coalesce(v_ma, v.status_code);
+      v_mau := coalesce(v_mau, left(coalesce(v.error_msg, v.content, ''), 200));
+      v_ngay := v_ngay or coalesce(v.content, '') ilike '%PerDay%';
+    end if;
+    delete from public.nhung_viec_luat where dieu_id = v.dieu_id;
+  end loop;
+
+  -- Gemini từ chối → cùng cách giãn nhịp / đổi khoá / mốc tạm dừng CHUNG với nhung-tick và nhung-dia-danh-tick (chung hạn mức).
+  v_loi := coalesce(nullif(public.cau_hinh('nhung_lan_loi'), '')::int, 0);
+  if v_tu_choi and v_ma = 429 and public.nhung_doi_khoa() then
+    v_tu_choi := false;
+  end if;
+  if v_tu_choi then
+    v_loi := v_loi + 1;
+    v_dung := now() + make_interval(mins => case when v_ma = 402 then 60 else least(60, (2 ^ least(v_loi, 6))::int) end);
+    if v_ngay then
+      v_reset := date_trunc('day', now() at time zone 'UTC') + interval '8 hours';
+      if v_reset <= (now() at time zone 'UTC') then v_reset := v_reset + interval '1 day'; end if;
+      v_dung := greatest(v_dung, v_reset at time zone 'UTC');
+    end if;
+    update public.app_config set value = v_loi::text where key = 'nhung_lan_loi';
+    update public.app_config set value = to_char(v_dung at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+     where key = 'nhung_tam_dung_den'
+       and coalesce(nullif(value, '')::timestamptz, '-infinity'::timestamptz) < v_dung;
+    if v_loi = 1 or v_loi % 12 = 0 then
+      perform public.log_loi('nhung-luat-tick',
+        'Gemini embed từ chối HTTP ' || coalesce(v_ma::text, '?') || ' (lần ' || v_loi || ') — tạm dừng tới '
+          || to_char(v_dung at time zone 'Asia/Ho_Chi_Minh', 'HH24:MI DD/MM') || ' giờ VN. ' || coalesce(v_mau, ''),
+        null);
+    end if;
+  elsif v_ok and coalesce(nullif(public.cau_hinh('nhung_khoa_vong'), '')::int, 0) > 0 then
+    update public.app_config set value = '0' where key = 'nhung_khoa_vong';
+    if v_loi > 0 then
+      update public.app_config set value = '0' where key = 'nhung_lan_loi';
+      update public.app_config set value = '' where key = 'nhung_tam_dung_den';
+    end if;
+  elsif v_ok and v_loi > 0 then
+    update public.app_config set value = '0' where key = 'nhung_lan_loi';
+    update public.app_config set value = '' where key = 'nhung_tam_dung_den';
+  end if;
+
+  -- (2) Gửi mẻ mới — chỉ khi tin rao, dự án, địa danh không chờ (tin rao của khách đi trước kho luật).
+  if coalesce(public.cau_hinh('tim_theo_nghia'), 'tat') <> 'bat' then return; end if;
+  v_dung := nullif(public.cau_hinh('nhung_tam_dung_den'), '')::timestamptz;
+  if v_dung is not null and v_dung > now() then return; end if;
+  if exists (select 1 from public.nhung_viec) or exists (select 1 from public.nhung_viec_du_an)
+     or exists (select 1 from public.nhung_viec_dia_danh) or exists (select 1 from public.nhung_viec_luat) then return; end if;
+  v_key := public.khoa_nhung_nen();
+  if v_key is null then return; end if;
+  v_tran := greatest(1, least(coalesce(nullif(public.cau_hinh('nhung_luat_moi_tick'), '')::int, 20), 50));
+
+  for r in
+    select d.id, d.nhung_md5 from public.dieu_luat d join public.van_ban_luat vb on vb.so_hieu = d.so_hieu
+     where vb.con_hieu_luc and d.nhung is null order by d.id limit 100
+  loop
+    exit when v_gui >= v_tran;
+    v_txt := public.van_ban_dieu_luat(r.id);
+    if v_txt is null or length(v_txt) < 10 then continue; end if;
+    v_md5 := md5(v_txt);
+    insert into public.nhung_viec_luat (dieu_id, request_id, md5)
+    values (r.id, net.http_post(
+      url := 'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent',
+      headers := jsonb_build_object('Content-Type', 'application/json', 'x-goog-api-key', v_key),
+      body := jsonb_build_object(
+        'content', jsonb_build_object('parts', jsonb_build_array(jsonb_build_object('text', left(v_txt, 4000)))),
+        'taskType', 'RETRIEVAL_DOCUMENT', 'outputDimensionality', 768),
+      timeout_milliseconds := 20000), v_md5);
+    v_gui := v_gui + 1;
+  end loop;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.nhung_tick()
  RETURNS void
  LANGUAGE plpgsql
@@ -5314,6 +5499,21 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.tim_dieu_luat(p_vec double precision[], p_limit integer DEFAULT 5, p_so_hieu text[] DEFAULT NULL::text[])
+ RETURNS TABLE(so_hieu text, ten_van_ban text, nguon_url text, dieu text, phan integer, tieu_de text, noi_dung text, do_gan double precision)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'extensions', 'pg_temp'
+AS $function$
+  with v as (select p_vec::extensions.halfvec(768) as q)
+  select d.so_hieu, vb.ten, vb.nguon_url, d.dieu, d.phan, d.tieu_de, d.noi_dung, 1 - (d.nhung <=> v.q) as do_gan
+    from public.dieu_luat d join public.van_ban_luat vb on vb.so_hieu = d.so_hieu, v
+   where d.nhung is not null and vb.con_hieu_luc and (p_so_hieu is null or d.so_hieu = any(p_so_hieu))
+   order by d.nhung <=> v.q
+   limit greatest(1, least(coalesce(p_limit, 5), 20));
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.tim_duong(p_ten text, p_quan text DEFAULT NULL::text, p_toi_da integer DEFAULT 2)
  RETURNS TABLE(ten text, khoang_cach integer, quan_cu text[], phuong text[], tinh text[])
  LANGUAGE sql
@@ -5648,6 +5848,18 @@ AS $function$
                        nullif(d.phuong, ''), case when d.quan_cu is not null then d.quan_cu || ' (cũ)' end, d.tinh)
         from public.duong d where d.id::text = p_khoa)
   end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.van_ban_dieu_luat(p_id bigint)
+ RETURNS text
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  select v.ten || ' — ' || d.tieu_de || case when d.phan > 1 then ' (tiếp, phần ' || d.phan || ')' else '' end || E'\n' || d.noi_dung
+    from public.dieu_luat d join public.van_ban_luat v on v.so_hieu = d.so_hieu
+   where d.id = p_id
 $function$
 ;
 
@@ -6527,6 +6739,8 @@ drop trigger if exists trg_deals_chan_xoa on public.deals;
 CREATE TRIGGER trg_deals_chan_xoa BEFORE DELETE ON public.deals FOR EACH ROW EXECUTE FUNCTION deals_chan_xoa_da_chot();
 drop trigger if exists trg_pe_deals on public.deals;
 CREATE TRIGGER trg_pe_deals AFTER INSERT ON public.deals FOR EACH ROW EXECUTE FUNCTION trg_property_event();
+drop trigger if exists dieu_luat_doi_chu on public.dieu_luat;
+CREATE TRIGGER dieu_luat_doi_chu BEFORE UPDATE ON public.dieu_luat FOR EACH ROW EXECUTE FUNCTION dieu_luat_doi_chu();
 drop trigger if exists trg_huy_nhac_khi_da_tra_loi on public.info_requests;
 CREATE TRIGGER trg_huy_nhac_khi_da_tra_loi AFTER UPDATE OF status ON public.info_requests FOR EACH ROW EXECUTE FUNCTION huy_nhac_khi_da_tra_loi();
 drop trigger if exists trg_info_request_bao_lai_khach on public.info_requests;
@@ -6611,6 +6825,7 @@ alter table public.ctvs enable row level security;
 alter table public.curated_lists enable row level security;
 alter table public.danh_gia_ai enable row level security;
 alter table public.deals enable row level security;
+alter table public.dieu_luat enable row level security;
 alter table public.du_an_kien_thuc enable row level security;
 alter table public.duong enable row level security;
 alter table public.giao_lo enable row level security;
@@ -6627,6 +6842,7 @@ alter table public.messages enable row level security;
 alter table public.nhung_viec enable row level security;
 alter table public.nhung_viec_dia_danh enable row level security;
 alter table public.nhung_viec_du_an enable row level security;
+alter table public.nhung_viec_luat enable row level security;
 alter table public.phuong_cu enable row level security;
 alter table public.projects enable row level security;
 alter table public.property_events enable row level security;
@@ -6634,6 +6850,7 @@ alter table public.quan_cu enable row level security;
 alter table public.reminders enable row level security;
 alter table public.sellers enable row level security;
 alter table public.tien_ich enable row level security;
+alter table public.van_ban_luat enable row level security;
 alter table public.viewings enable row level security;
 alter table public.wards enable row level security;
 alter table public.xa_tinh_khac enable row level security;
@@ -6691,6 +6908,8 @@ create policy ctvs_admin_read on public.ctvs as permissive for SELECT to authent
   WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text)))));
 drop policy if exists danh_gia_ai_admin_doc on public.danh_gia_ai;
 create policy danh_gia_ai_admin_doc on public.danh_gia_ai as permissive for SELECT to authenticated using (la_admin());
+drop policy if exists dieu_luat_admin_doc on public.dieu_luat;
+create policy dieu_luat_admin_doc on public.dieu_luat as permissive for SELECT to authenticated using (la_admin());
 drop policy if exists info_requests_admin_read on public.info_requests;
 create policy info_requests_admin_read on public.info_requests as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
@@ -6787,6 +7006,8 @@ drop policy if exists sellers_self_read on public.sellers;
 create policy sellers_self_read on public.sellers as permissive for SELECT to authenticated using ((auth_user_id = ( SELECT auth.uid() AS uid)));
 drop policy if exists tien_ich_admin_read on public.tien_ich;
 create policy tien_ich_admin_read on public.tien_ich as permissive for SELECT to authenticated using (la_admin());
+drop policy if exists van_ban_luat_admin_doc on public.van_ban_luat;
+create policy van_ban_luat_admin_doc on public.van_ban_luat as permissive for SELECT to authenticated using (la_admin());
 drop policy if exists viewings_admin_read on public.viewings;
 create policy viewings_admin_read on public.viewings as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
@@ -6814,6 +7035,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ct
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.curated_lists to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.danh_gia_ai to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.deals to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.dieu_luat to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.du_an_kien_thuc to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.duong to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.giao_lo to service_role;
@@ -6837,6 +7059,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.me
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.nhung_viec to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.nhung_viec_dia_danh to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.nhung_viec_du_an to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.nhung_viec_luat to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.nmg_hoat_dong to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.nmg_hoat_dong to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.phuong_cu to service_role;
@@ -6850,6 +7073,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ro
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.seller_ranks to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.sellers to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.tien_ich to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.van_ban_luat to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.viewings to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.wards to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.xa_tinh_khac to service_role;
@@ -6896,6 +7120,7 @@ grant SELECT on public.bot_usage to authenticated;
 grant SELECT on public.bot_usage_model to authenticated;
 grant SELECT on public.bridge_dang_nhap to authenticated;
 grant SELECT on public.danh_gia_ai to authenticated;
+grant SELECT on public.dieu_luat to authenticated;
 grant SELECT on public.hoi_thoai_nhan to authenticated;
 grant SELECT on public.hoi_thoai_phien to authenticated;
 grant SELECT on public.hoi_thoai_thong_ke to authenticated;
@@ -6907,6 +7132,7 @@ grant SELECT on public.listing_photos_v to authenticated;
 grant SELECT on public.ro_hang_ban to authenticated;
 grant SELECT on public.seller_ranks to authenticated;
 grant SELECT on public.tien_ich to authenticated;
+grant SELECT on public.van_ban_luat to authenticated;
 grant SELECT, UPDATE on public.cau_mau to authenticated;
 grant SELECT, UPDATE on public.kien_thuc_phap_ly to authenticated;
 
@@ -7042,6 +7268,10 @@ revoke all on function public.diem_tin(l listings) from public, anon, authentica
 grant execute on function public.diem_tin(l listings) to service_role;
 revoke all on function public.diem_tin(p_listing_id uuid) from public, anon, authenticated;
 grant execute on function public.diem_tin(p_listing_id uuid) to service_role;
+revoke all on function public.dieu_luat_doi_chu() from public, anon, authenticated;
+grant execute on function public.dieu_luat_doi_chu() to anon;
+grant execute on function public.dieu_luat_doi_chu() to authenticated;
+grant execute on function public.dieu_luat_doi_chu() to service_role;
 revoke all on function public.doc_danh_sach(p_token text) from public, anon, authenticated;
 grant execute on function public.doc_danh_sach(p_token text) to anon;
 grant execute on function public.doc_danh_sach(p_token text) to authenticated;
@@ -7185,6 +7415,8 @@ revoke all on function public.nhung_dia_danh_tick() from public, anon, authentic
 grant execute on function public.nhung_dia_danh_tick() to service_role;
 revoke all on function public.nhung_doi_khoa() from public, anon, authenticated;
 grant execute on function public.nhung_doi_khoa() to service_role;
+revoke all on function public.nhung_luat_tick() from public, anon, authenticated;
+grant execute on function public.nhung_luat_tick() to service_role;
 revoke all on function public.nhung_tick() from public, anon, authenticated;
 grant execute on function public.nhung_tick() to service_role;
 revoke all on function public.notify_info_request_escalation() from public, anon, authenticated;
@@ -7239,6 +7471,8 @@ revoke all on function public.tim_dia_danh(p_ten text, p_toi_da integer) from pu
 grant execute on function public.tim_dia_danh(p_ten text, p_toi_da integer) to service_role;
 revoke all on function public.tim_dia_danh_theo_nghia(p_vec double precision[], p_loai text[], p_lat double precision, p_lng double precision, p_limit integer) from public, anon, authenticated;
 grant execute on function public.tim_dia_danh_theo_nghia(p_vec double precision[], p_loai text[], p_lat double precision, p_lng double precision, p_limit integer) to service_role;
+revoke all on function public.tim_dieu_luat(p_vec double precision[], p_limit integer, p_so_hieu text[]) from public, anon, authenticated;
+grant execute on function public.tim_dieu_luat(p_vec double precision[], p_limit integer, p_so_hieu text[]) to service_role;
 revoke all on function public.tim_duong(p_ten text, p_quan text, p_toi_da integer) from public, anon, authenticated;
 grant execute on function public.tim_duong(p_ten text, p_quan text, p_toi_da integer) to service_role;
 revoke all on function public.tim_moc(p_tim text) from public, anon, authenticated;
@@ -7272,6 +7506,8 @@ grant execute on function public.url_kho_anh() to authenticated;
 grant execute on function public.url_kho_anh() to service_role;
 revoke all on function public.van_ban_dia_danh(p_bang text, p_khoa text) from public, anon, authenticated;
 grant execute on function public.van_ban_dia_danh(p_bang text, p_khoa text) to service_role;
+revoke all on function public.van_ban_dieu_luat(p_id bigint) from public, anon, authenticated;
+grant execute on function public.van_ban_dieu_luat(p_id bigint) to service_role;
 revoke all on function public.van_ban_du_an(p_id uuid) from public, anon, authenticated;
 grant execute on function public.van_ban_du_an(p_id uuid) to service_role;
 revoke all on function public.van_ban_nhung(p_id uuid) from public, anon, authenticated;
@@ -7313,6 +7549,7 @@ select cron.schedule('listing-interest-decay', '0 20 * * *', 'update public.list
 select cron.schedule('media-chet-tick', '0 * * * *', 'select public.chon_viec_don_chet()');
 select cron.schedule('media-cleanup-tick', '*/5 * * * *', 'select public.media_cleanup_tick()');
 select cron.schedule('nhung-dia-danh-tick', '1-59/2 * * * *', 'select public.nhung_dia_danh_tick()');
+select cron.schedule('nhung-luat-tick', '1-59/2 * * * *', 'select public.nhung_luat_tick()');
 select cron.schedule('nhung-tick', '*/2 * * * *', 'select public.nhung_tick()');
 select cron.schedule('soat-du-lieu-tick', '5 1 * * *', 'select public.soat_du_lieu_tick()');
 
