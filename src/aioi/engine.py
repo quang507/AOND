@@ -699,7 +699,7 @@ def _khoi_xung_ho_rieng(p: str, ten: str | None = None) -> str:
             "Khách tự xưng là 'em' (vd: 'nhà em...', 'em gửi...', 'em có...', 'em bán...').\n"
             "1. TUYỆT ĐỐI CẤM DÙNG TỪ 'DẠ' HOẶC 'DẠ VÂNG' Ở BẤT KỲ ĐÂU! Không dạ thưa với người xưng em.\n"
             "2. TUYỆT ĐỐI CẤM gọi khách là 'anh' hay 'chị'. Hãy gọi khách là 'em'.\n"
-            f"3. Bản thân xưng là '{toi}' (Ví dụ: '{toi.capitalize()} hỏi chút, căn của em ở đường nào vậy?', 'Nhà em nằm ở mặt tiền hay trong hẻm em ha?'). "
+            f"3. Bản thân xưng là '{toi}', gọi khách là 'em'. "
             f"KHÔNG xưng 'mình', KHÔNG xưng 'em'. Cả lượt KHÔNG có chữ 'anh/chị' gọi khách — kể cả khi câu mẫu / gợi ý câu hỏi ở trên viết "
             "'anh/chị', đổi thành 'em'.\n"
         )
@@ -753,8 +753,8 @@ def khoi_can_nguoi(conv: "Conversation") -> str:
     """Khối lệnh khi lượt AI lập thao tác đọc được khách XIN gặp người thật (SRS-5.1zzzzzzz82). Server bật `needs_human` và xếp tin
     báo admin ở cùng lượt, nên lời "đã báo" là thật; không hứa giờ cụ thể. Câu pháp lý nhạy cảm đi cùng đường báo nhưng lời dặn ở
     `khoi_phap_ly` (SRS-5.1zzzzzzz176)."""
-    if not conv.y_luot.get("can_nguoi_that") or conv.y_luot.get("phap_ly_nhay_cam"):
-        return ""
+    if not conv.y_luot.get("can_nguoi_that") or conv.y_luot.get("phap_ly_nhay_cam") or conv.y_luot.get("bao_admin_he_thong"):
+        return ""   # SRS-5.1zzzzzzz253: hệ thống tự nhờ admin (phường, câu dự án) — khách không xin gặp người, không hứa "sẽ nhắn khách"
     if conv.y_luot.get("cdt_bao_admin"):   # SRS-5.1zzzzzzz240: người rao là chủ đầu tư (OPEN-21 a)
         return (
             "\n\n=== ƯU TIÊN LƯỢT NÀY — NGƯỜI RAO LÀ CHỦ ĐẦU TƯ (hệ thống ĐÃ BÁO bộ phận hợp tác dự án): ===\n"
@@ -777,8 +777,8 @@ def khoi_ngoai_viec(conv: "Conversation") -> str:
     if n == 1:
         return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VIỆC NGOÀI NHÀ ĐẤT (chưa tỏ ý bán / mua): ===\n"
                 "Nói thật NGẮN là việc đó em không nắm (không đoán, không hứa hỏi giúp). KHÔNG hỏi địa chỉ / loại / giá / bất kỳ thông tin căn "
-                "nào, KHÔNG nói khách đang rao hay đang bán, KHÔNG khen. Hỏi MỘT câu ngắn: khách có cần gửi bán, cho thuê hay tìm mua nhà đất "
-                "không.\n")
+                "nào, KHÔNG nói khách đang rao hay đang bán, KHÔNG khen. Hỏi MỘT câu ngắn: khách có cần gửi bán"
+                + (", cho thuê hay tìm mua" if conv.so_nhan == SO_TU_VAN else " hay cho thuê") + " nhà đất không.\n")
     return (f"\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI LẠI VIỆC NGOÀI NHÀ ĐẤT (lần thứ {n}): ===\n"
             "KHÔNG hỏi gì về nhà đất nữa, KHÔNG khen. Nói ngắn: bên em chỉ hỗ trợ gửi bán / cho thuê / tìm mua nhà đất, việc này em chưa nắm; nếu "
             "khách muốn, em nối anh/chị phụ trách để hỏi giúp — hỏi MỘT câu khách có muốn không. KHÔNG nói đã báo ai.\n")
@@ -2312,8 +2312,8 @@ class Engine:
             "TOÀN BỘ dự án trong phân lô — KHÔNG chỉ vài căn đang có trong rổ. Căn khớp CÓ THỂ là "
             "một căn CHƯA có trong rổ; đó là bình thường (khách đang rao thêm căn mới).\n"
             "- Nếu suy ra được nhưng CHƯA chắc 100% (vd không rõ có phải lô góc), hãy NÊU căn em "
-            "nghĩ tới kèm dữ kiện (mã lô, diện tích, mặt tiền) rồi HỎI XÁC NHẬN ('...phải nó không "
-            "anh?'). Khi khách XÁC NHẬN, hãy THÊM đúng căn đó vào rổ (nếu chưa có) với mã lô + "
+            "nghĩ tới kèm dữ kiện (mã lô, diện tích, mặt tiền) rồi HỎI XÁC NHẬN ('...phải căn đó "
+            "không ạ?'). Khi khách XÁC NHẬN, hãy THÊM đúng căn đó vào rổ (nếu chưa có) với mã lô + "
             "diện tích + mẫu + giá từ bộ nhớ, rồi đề xuất rao với mức giá đó.\n"
             "- Nếu bộ nhớ KHÔNG có đủ dữ kiện để xác định (vd phân lô không ghi diện tích/giá của "
             "căn đó), hãy nói THẲNG em chưa có dữ liệu đó và hỏi khách, TUYỆT ĐỐI không bịa số.\n"
@@ -2759,10 +2759,10 @@ class Engine:
         elif conv.hoi_ve_luot == "uy_tin":
             hoi_ve_khoi = (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ UY TÍN / CÔNG TY: ===\n"
-                "Khách vừa hỏi về danh tính công ty hoặc lo ngại an toàn/lừa đảo. Hãy TRẢ LỜI ẤM ÁP, TẠO NIỀM TIN:\n"
-                f"- Giới thiệu AI Ơi Nhà Đất ({SITE_HOST}) là nền tảng công nghệ kết nối mạng lưới môi giới và người mua thực tế.\n"
-                "- Cam kết bảo mật thông tin cá nhân và số điện thoại của khách, không làm phiền.\n"
-                "- Mọi giao dịch chỉ thu phí khi bán thành công.\n"
+                "Khách vừa hỏi về danh tính công ty hoặc lo ngại an toàn/lừa đảo. Trả lời để khách yên tâm:\n"
+                f"- Giới thiệu AI Ơi Nhà Đất ({SITE_HOST}) là nền tảng công nghệ kết nối người bán / cho thuê với người mua / thuê thực tế.\n"
+                "- Không chia sẻ thông tin cá nhân và số điện thoại của khách cho bên thứ ba.\n"
+                "- Chỉ thu phí khi giao dịch thành công.\n"
                 "Sau đó lịch sự mời khách an tâm chia sẻ tiếp thông tin căn nhà.\n"
             )
         elif conv.hoi_ve_luot == "link_web":
@@ -3023,8 +3023,8 @@ class Engine:
         # rất ngắn): lượt AI đã đọc khách chỉ đáp ngắn đồng ý (`tha_tim` = dong_y, có cụm trích), lịch hẹn đã ghi, không việc mua nào khác.
         if (conv.role == "buyer" and conv.y_luot.get("lich_cho") and conv.y_luot.get("tha_tim") == "dong_y" and not conv.y_luot.get("mua")
                 and _dap_ok_qua_dai(reply)):
-            ly_do.append("Khách chỉ đáp ngắn đồng ý và lịch hẹn ĐÃ ghi — đáp đúng MỘT câu rất ngắn (tối đa khoảng 12 từ, vd \"Vâng ạ, em cảm ơn "
-                         "anh.\"), KHÔNG nhắc lại lịch / căn / người phụ trách, KHÔNG hỏi thêm.")
+            ly_do.append("Khách chỉ đáp ngắn đồng ý và lịch hẹn ĐÃ ghi — đáp đúng MỘT câu rất ngắn (tối đa khoảng 12 từ"
+                         "), KHÔNG nhắc lại lịch / căn / người phụ trách, KHÔNG hỏi thêm.")
         # SRS-5.1zzzzzzz218: bản tin rao phía bán — số kèm đơn vị phải là số chủ nhà đã nói ("41,6m²" là 5,2 × 8 model tự nhân).
         so_tin = _so_khong_co_trong_tin(reply, conv) if (la_ban_tin and conv.role != "buyer") else []
         if so_tin:
@@ -3638,8 +3638,8 @@ class Engine:
                 he = (build_chat_system(conv.assistant.name, conv.active.prop, next_field, conv.vai_phi, "", cum=cum)
                       + khoi_xung_ho(_detect_customer_pronoun(conv, caption or ""), conv.assistant.name, _xung_ho_doan(conv))
                       + "\n\n=== LƯỢT NÀY: KHÁCH VỪA GỬI ẢNH SỔ / GIẤY TỜ ===\nHệ thống đã đọc ảnh và GỬI KHÁCH các dòng sau, ngay "
-                        f"trước lời em:\n{detail_lines or '(chưa đọc được dòng nào)'}\nViết 1–2 câu tiếp theo: mời khách xem các dòng "
-                        "trên đã đúng chưa, rồi hỏi tiếp đúng ý ở \"Thông tin cần hỏi tiếp theo\" (nếu có). KHÔNG khen sổ / pháp lý, "
+                        f"trước lời em:\n{detail_lines or '(chưa đọc được dòng nào)'}\nViết 1–2 câu tiếp theo với MỘT câu hỏi cả lượt: có ý ở "
+                        "\"Thông tin cần hỏi tiếp theo\" thì hỏi ý đó (khách thấy dòng nào sai sẽ tự nói), không có thì hỏi các dòng trên đã đúng chưa. KHÔNG khen sổ / pháp lý, "
                         "KHÔNG nói sổ \"chuẩn\", \"đầy đủ\" — em mới đọc ảnh, chưa kiểm sổ. Không lặp lại các dòng trên.\n")
                 ask_tail = self._provider.reply(he, conv.messages() + [Message("user", seller_turn)],
                                                 max_tokens=REPLY_MAX_TOKENS).strip()
@@ -3660,7 +3660,7 @@ class Engine:
                 pending_question=self._pending_seller_question(conv),
                 prop=active_prop,
                 next_field=next_f,
-            )
+            ) + khoi_xung_ho(_detect_customer_pronoun(conv), conv.assistant.name, _xung_ho_doan(conv))   # SRS-5.1zzzzzzz253
             description = self._provider.describe_media(
                 [(m.data, m.media_type) for m in fetched], instruction
             ).strip()
@@ -3952,7 +3952,7 @@ class Engine:
                 pending_question=self._pending_seller_question(conv),
                 prop=active_prop,
                 next_field=next_f,
-            )
+            ) + khoi_xung_ho(_detect_customer_pronoun(conv), conv.assistant.name, _xung_ho_doan(conv))   # SRS-5.1zzzzzzz253
             description = self._provider.describe_media(
                 [(m.data, m.media_type) for m in fetched], instruction
             ).strip()
@@ -4146,6 +4146,7 @@ class Engine:
                 if n >= 2 and not conv.y_luot.get("can_nguoi_that") and not f.get("_phuong_bao_admin"):
                     f["_phuong_bao_admin"] = "1"
                     web["phuong_bao_admin"] = True   # SRS-5.1zzzzzzz228: lượt báo admin cũng thôi hỏi — phường hỏi tối đa 2 lần
+                    conv.y_luot["bao_admin_he_thong"] = True
                     conv.y_luot["can_nguoi_that"] = ("Bot hỏi phường 3 lượt chưa ra — nhờ admin tra và điền phường ở Sửa tin: "
                                                      + ", ".join(str(f[k]) for k in ("du_an", "duong", "dia_chi", "quan") if f.get(k)))
         return web
@@ -4824,7 +4825,7 @@ class Engine:
         khong_hop = mua.get("khong_hop") is True
         if khong_hop:
             if not nhac:
-                viec.append("khách chê một căn nhưng chưa rõ căn nào: hỏi lại MỘT câu ngắn xem căn nào không hợp, KHÔNG giới thiệu căn mới")
+                viec.append("khách chê một căn nhưng chưa rõ căn nào: hỏi lại MỘT câu ngắn xem căn nào không hợp (câu hỏi DUY NHẤT của lượt), KHÔNG giới thiệu căn mới")
             elif bid:
                 ly_do = str(mua.get("ly_do") or "").strip()
                 ly_do = ly_do if _trich_dan_khop(ly_do, text) else ""
@@ -4834,7 +4835,7 @@ class Engine:
                     viec.append("ghi căn " + ", ".join(f"#{c.get('code')}" for c in nhac) + " KHÔNG HỢP với khách"
                                 + (f" (lý do khách nói: \"{ly_do}\")" if ly_do else "")
                                 + ": hệ thống sẽ không gợi / không báo lại căn đó. Nói ngắn đã ghi nhận, KHÔNG thuyết phục lại; có căn khác trong "
-                                "CĂN ĐANG RAO thì giới thiệu căn kế, không thì hỏi MỘT câu khách muốn khác đi điểm nào")
+                                "CĂN ĐANG RAO thì giới thiệu căn kế, không thì hỏi MỘT câu khách muốn khác đi điểm nào (câu hỏi DUY NHẤT của lượt)")
         # SRS-5.1zzzzzzz148 (chủ dự án 23/10: lúc hẹn xem thì lấy được số điện thoại khách): số CHỈ được ghi vào lịch hẹn đang chờ chưa có số,
         # lấy từ lời khách (số là dữ liệu có khuôn, không phải đoán ý); không có lịch chờ thì số khách gõ không được lưu.
         sdt = tim_sdt(text)
@@ -4856,7 +4857,7 @@ class Engine:
         # chặn 24 giờ, nên khách xin lại thì bot chỉ nhắc "ảnh em gửi ở trên".
         if mua.get("xin_anh") is True:
             if not nhac:
-                viec.append("khách xin xem ảnh nhưng chưa rõ căn nào: hỏi lại MỘT câu ngắn xem khách muốn xem ảnh căn nào, KHÔNG hứa gửi ảnh")
+                viec.append("khách xin xem ảnh nhưng chưa rõ căn nào: hỏi lại MỘT câu ngắn xem khách muốn xem ảnh căn nào (câu hỏi DUY NHẤT của lượt), KHÔNG hứa gửi ảnh")
             else:
                 co_anh = [c for c in nhac if c.get("code") and c.get("_so_anh") != 0]
                 # SRS-5.1zzzzzzz232 (chủ dự án 28/10: "nói thật, không gửi lại", "có thể xin thêm ảnh"): căn đã gửi đủ mọi ảnh thì không gửi lại —
@@ -4870,10 +4871,10 @@ class Engine:
                 for c in het:
                     viec.append(f"căn #{c['code']} chỉ có {c['_so_anh']} ảnh và em ĐÃ gửi đủ cả {c['_so_anh']} ảnh ở trên — lượt này KHÔNG có ảnh nào "
                                 "gửi kèm: nói thật như vậy, KHÔNG nói đang gửi / gửi lại / \"kéo lên xem ảnh em vừa gửi\"; hỏi MỘT câu khách có muốn em xin "
-                                "chủ nhà thêm ảnh không (khách đồng ý thì em chuyển lời cho chủ nhà)")
+                                "chủ nhà thêm ảnh không (câu hỏi DUY NHẤT của lượt)")
                 if not co_anh:
-                    viec.append("căn khách xin ảnh CHƯA có ảnh nào trên hệ thống: nói thật là chưa có, em xin chủ nhà bổ sung hoặc hẹn khách xem "
-                                "trực tiếp, KHÔNG hứa gửi ảnh")
+                    viec.append("căn khách xin ảnh CHƯA có ảnh nào trên hệ thống: nói thật là chưa có, khách muốn thì hẹn xem "
+                                "trực tiếp, KHÔNG hứa gửi ảnh, KHÔNG nói em đã xin chủ nhà")
         hoi_da = str(mua.get("hoi_chu_nha") or "").strip()
         if bid and not nhac and hoi_da and (_trich_dan_khop(hoi_da, text) or any(_trich_dan_khop(hoi_da, t) for t in self._loi_khach_gan(conv))):
             # SRS-5.1zzzzzzz250 (chủ dự án 28/10 mục 7: "hỏi chủ nhà có căn hoặc nhà đang rao bán gắn với địa chỉ này trước, nếu ko có nữa thì
@@ -4889,6 +4890,7 @@ class Engine:
                 elif not trong and conv.buyer_lead is not None and conv.buyer_lead.fields.get("_da_bao_admin_du_an") != hoi_da:
                     conv.buyer_lead.fields["_da_bao_admin_du_an"] = hoi_da
                     conv.y_luot["can_nguoi_that"] = f"Khách mua hỏi về dự án {ten}: \"{hoi_da[:200]}\" — kho chưa có căn đang rao trong dự án để hỏi chủ nhà, nhờ admin trả lời"
+                    conv.y_luot["bao_admin_he_thong"] = True
                     viec.append(f"dự án {ten} chưa có căn đang rao để hỏi chủ nhà: em ĐÃ chuyển câu \"{hoi_da}\" cho bộ phận phụ trách — nói ngắn "
                                 "em hỏi lại rồi báo khách, KHÔNG đoán câu trả lời")
         if not (bid and nhac):
@@ -4909,7 +4911,7 @@ class Engine:
             if lead is not None and not lead.fields.get("_da_xin_sdt") and not sdt:
                 # Xin số MỘT lần (cờ ở hồ sơ nhu cầu, qua khởi động lại vẫn nhớ); khách không muốn thì thôi, không ép, không hứa gì thêm.
                 lead.fields["_da_xin_sdt"] = "1"
-                viec.append("xin khách MỘT số điện thoại để người phụ trách gọi xác nhận lịch (một câu ngắn; khách không muốn để thì thôi, đừng nài)")
+                viec.append("xin khách MỘT số điện thoại để người phụ trách gọi xác nhận lịch (một câu ngắn — câu hỏi DUY NHẤT của lượt, lượt này chưa hỏi xác nhận lịch; khách không muốn để thì thôi, đừng nài)")
         if hoi and kho.ghi_hoi_chu_nha(bid, dau, hoi):
             viec.append(f"chuyển câu \"{hoi}\" về #{dau.get('code')} cho chủ nhà — có trả lời em báo lại khách ngay")
         conv.y_luot["lich_cho"] = self._lich_cho(kho, bid)

@@ -18,7 +18,7 @@ def test_dong_can_ghi_so_anh_that():
 def test_loi_dan_khong_hua_anh_vo_dieu_kien():
     khoi = khoi_can_cho_khach([{"code": "A2", "property_type": "nha_pho", "_so_anh": 0}])
     assert "tự gửi kèm ngay sau, không cần nhắc)" not in khoi          # câu cũ hứa ảnh cho mọi căn
-    assert "CHƯA có ảnh" in khoi and "KHÔNG nói \"em gửi ảnh ngay\"" in khoi
+    assert "CHƯA có ảnh" in khoi and "KHÔNG hứa xin chủ" in khoi           # SRS-5.1zzzzzzz253: không hứa việc không ghi
     assert "KHÔNG hứa gửi ảnh" in khoi                                   # dòng căn không ghi gì về ảnh
 
 

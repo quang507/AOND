@@ -9058,6 +9058,49 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz253 · Soát mọi prompt theo ý chủ dự án: một câu hỏi, hai số, xưng hô một nguồn, không hứa suông (28/10/2026)
+Chủ dự án 28/10: "Kiểm tra các đoạn prompt nào sai ý tôi nữa ko". Soát chữ gửi model ở `prompts.py`, `engine.py`, `mua.py`, `du_an_mua.py`,
+`phap_ly.py` theo luật ĐANG ÁP (CLAUDE.md §6.2) và các quyết định đã ghi ở docs/07; mỗi chỗ đã đọc lại code trước khi sửa.
+1. **Một câu hỏi mỗi lượt (SRS-252)** — khối nào dặn hỏi thì THAY câu hỏi kế, không cộng thêm: `build_project_block` bỏ "nên XÁC NHẬN nhẹ 1–2 ý
+   chính" (dự án) và "xác nhận nhẹ" (mẫu nhà); "CƠ HỘI XÁC MINH" chỉ hỏi ở lượt không có câu hỏi khác; khối mẫu nhà chưa có dữ liệu, khối dự án phía
+   mua (`du_an_mua`: nhiều dự án gần tên, khu có dự án gì, dự án nào) ghi THAY câu hỏi nhu cầu; `khoi_viec_vua_ghi` thêm "cả lượt tối đa MỘT câu
+   hỏi"; việc mua (chê căn chưa rõ căn nào, xin ảnh chưa rõ căn, xin thêm ảnh chủ nhà, xin số lúc ghi hẹn) ghi "câu hỏi DUY NHẤT"; ảnh sổ đỏ
+   (`ask_tail`) bỏ "mời xem dòng trên đúng chưa RỒI hỏi tiếp"; prompt đọc ảnh: tài liệu chung hỏi MỘT câu căn nào (bỏ "/ đã có bảng giá chưa"),
+   "Kết bằng MỘT câu hỏi" → "tối đa MỘT câu hỏi".
+2. **Hai số (SRS-251)** — `engine.khoi_ngoai_viec` lần 1: số ký gửi hỏi "gửi bán hay cho thuê", chỉ số tư vấn mới thêm "tìm mua".
+3. **Xưng hô một nguồn (SRS-234 / 245)** — prompt phía mua và prompt đọc ảnh bỏ `Xưng "em", gọi khách "anh/chị"` cứng (ảnh nay nối
+   `khoi_xung_ho` ở cả hai đường gọi); khối xưng "em" bỏ hai câu ví dụ là câu hỏi ô đường / hẻm (SRS-196, khối dùng cả phía mua); bỏ ví dụ có
+   "anh" cứng ("…phải nó không anh?", "Vâng ạ, em cảm ơn anh.", "khi nào anh cần cứ nhắn em", "Em hiểu băn khoăn của anh/chị…").
+4. **Câu ví dụ chép được (SRS-196 / 248)** — bỏ: "6,2 tỷ cho vị trí gần Aeon Mall là mức hợp lý, dễ có khách" (giữ quyền khen giá định tính SRS-214,
+   `GIONG_VUI` đổi "không bình giá" → "không nêu số / so giá thị trường" cho khỏi trái nhau), "Em thấy mặt tiền nhà phố 4 tầng ạ." (còn trái luật
+   không khẳng định mặt tiền từ ảnh), câu xin chụp lại sổ, câu "Chị ơi, em đang có căn này…" ở khối căn phía mua.
+5. **Phí (SRS-227 / 240)** — `BUSINESS_CONTEXT` "Chưa rõ vai thì đừng báo phí" → nêu cả hai mức hoặc hỏi vai. `OPERATIONS_SYSTEM` bỏ "phí bao nhiêu
+   đó em" khỏi danh sách DUYỆT (cùng prompt nói hỏi phí là KHÔNG duyệt).
+6. **Không hứa việc không có đường làm (SRS-205 / 216)** — `FEE_VALUE_POINTS` bỏ "người dẫn khách" và "mạng lưới 20 nhà môi giới lõi" (CTV đã bỏ,
+   SRS-238) → "tìm và sàng lọc khách, hẹn lịch xem với chủ nhà", "giới thiệu tới khách mua đang tìm đúng khu vực và tầm giá" (`bao_can_moi`);
+   `khoi_tinh_hinh_ban` bỏ "kiểm lại rồi báo chủ sau"; trạng thái web bỏ "sẽ nhắn khi tin hiển thị" (không có loại nhắc này trong `gui_nhac.KIND_LOI`);
+   `du_an_mua` chỉ hứa "báo lại" khi phần EM VỪA GHI có việc chuyển câu, bỏ "khi có căn em nhắn khách" (báo căn mới không lọc theo dự án);
+   căn chưa có ảnh: bỏ "em xin chủ nhà bổ sung" (không ghi việc nào); khối căn phía mua: việc ảnh theo EM VỪA GHI, bỏ "khách xin ảnh thì hệ thống gửi
+   (kể cả xin lại)" (trái SRS-232). Khối uy tín: bỏ "không làm phiền" (có gửi chủ động), "mạng lưới môi giới", "khi bán thành công" (bỏ sót thuê).
+   **Báo admin vì việc hệ thống** (hỏi phường 3 lượt, câu dự án chưa có căn) dùng chung cờ `can_nguoi_that` nên `khoi_can_nguoi` dặn "anh/chị
+   phụ trách sẽ nhắn khách sớm" dù khách không xin gặp người — thêm cờ lượt `bao_admin_he_thong`, hai đường đó bật, khối im (admin vẫn được báo).
+7. **Khác** — phía mua: giới thiệu MỘT căn khi hết câu hỏi nhu cầu (SRS-160), bỏ câu đóng "có cần vay … không" (trái luật câu mở SRS-212); ví dụ
+   pháp lý đọc từ sổ bỏ "chính chủ" (sổ không chứng minh người rao là chủ, SRS-233).
+8. **Giữ nguyên vì chủ dự án đã chốt** (không chấm là lỗi): khen trước rồi hỏi (bản anh Luận, "cứ để nó khen đi"), lời chốt hứa liên hệ khi có khách
+   (SRS-207), khích lệ ≥ 10 căn lên Top (chủ dự án 14/10 "câu khích lệ làm đi"), khen giá định tính (SRS-214), câu mẫu trong `AD_FORMAT` (anh Luận
+   "lấy 100%"), hạng Đồng / Bạc / Vàng.
+9. **Còn lại, chưa sửa** — (a) nhiều khối "câu hỏi duy nhất" phía bán (`khoi_hoi_mat_tien`, `_khoi_hoi_du_an`, `khoi_dia_danh`, tách bán / thuê,
+   `khoi_hoi_sau_dang`) vẫn cộng không điều kiện — cần chuỗi `or` như `uu_tien` (SRS-178); lưới `_nhieu_cau_hoi` đỡ tạm. (b) Câu "🤔" dự án trùng tên
+   code nối sau lời đã có câu hỏi (lượt ảnh / tách nhóm). (c) Câu mẫu gửi thẳng khách không truyền `goi` / câu code "📎 Em đã nhận…" không qua
+   `_xung_ho_cau` (khách xưng em vẫn nhận "anh/chị", "Em"). (d) Lời đọc ảnh / `_answer_from_docs` / `ask_tail` không qua `_soat_hinh_thuc`.
+   (e) `phap_ly.MAC_DINH["dat_chua_so"]` "Bên em không nhận rao tin không có giấy tờ rõ ràng" — chưa có code chặn, cần chủ dự án chốt chính sách.
+10. **Ba câu gốc** — (1) *lớp lỗi*: luật mới (một câu hỏi, hai số, xưng hô một nguồn, bỏ CTV) sửa ở chỗ chính nhưng các đoạn prompt cũ rải ở nhiều
+   khối vẫn nói ngược, không gì soát chéo; ví dụ hoàn chỉnh mang chữ gọi cứng. (2) *Chỗ khác cùng lớp*: mục 9. (3) *Bài đỏ*:
+   `tests/test_prompt_dung_y_253.py` (9 ca: hai mức phí, xác minh dự án không chồng câu hỏi, báo admin hệ thống không hứa nhắn khách, số ký gửi
+   không hỏi tìm mua, prompt ảnh không xưng cứng / không ví dụ mặt tiền, không còn mạng lưới CTV, không hứa báo sau, việc mua thay câu hỏi, khối xưng
+   em không ví dụ hỏi ô) — chạy trên prompt cũ (`e4456c7`): đỏ cả 9; `test_prompts.py`, `test_anh_can_trung_thuc.py`, `test_loi_5_khach.py` sửa
+   theo. Chưa bắn model thật.
+
 ### SRS-5.1zzzzzzz252 · Mỗi lượt tối đa MỘT câu hỏi; bật lại dòng `$$$$$ Đã trích xuất` cho giai đoạn test (28/10/2026)
 Chủ dự án 28/10 (sau chat thử số ký gửi 19:00): "Sao dặn hỏi 1 câu rồi mà nó lại hỏi nhiều thế vẫn trong giai đoạn test có dòng $ đã trích xuất nữa đi".
 1. **Ca gốc** (chat thử 28/10 19:00–19:03, trước bản cài 19:28): khách "7m lận em nha" rồi 4 giây sau "mặt tiền lớn" → bot trả lời hai lượt; lượt hai

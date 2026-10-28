@@ -105,4 +105,4 @@ def test_vi_du_mo_loi_khong_ep_goi_khach_la_chi():
     # Khách ảo 26/10 (SRS-5.1zzzzzzz213): anh D. 45 tuổi bị bot mở lời "Chị ơi, em đang có căn…" — model chép xưng hô của ví dụ trong khối căn
     # (cùng lớp SRS-196: ví dụ trong prompt bị chép nguyên).
     k = khoi_can_cho_khach([CAN])
-    assert 'KHÔNG chép chữ "chị"' in k and 'chưa rõ thì "Anh/chị ơi' in k
+    assert "Chị ơi" not in k and "tự đặt câu" in k     # SRS-5.1zzzzzzz253: bỏ hẳn câu ví dụ thay vì dặn "đừng chép"
