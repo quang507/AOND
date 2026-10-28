@@ -128,3 +128,32 @@ def test_model_khong_nhan_ep_cong_cu_thi_chuyen_auto():
     assert p.reply("s", [Message("user", "ok")]) == "Nhà mình mấy tầng ạ?"
     kieu = [c["tool_choice"]["type"] for c in p._client.messages.calls]
     assert kieu == ["tool", "auto", "auto"]           # lượt sau không thử ép lại
+
+
+def test_tat_cong_cu_gui_khach_thi_tra_chu_thuong(monkeypatch):
+    """SRS-5.1zzzzzzz246 (chủ dự án 28/10: "bạn thử tắt công cụ cố định xem"): AIOI_CONG_CU_GUI_KHACH=tat → không gửi `tools`, lời là chữ
+    thường; trống / bat → vẫn ép công cụ. Đỏ khi bỏ công tắc."""
+    from aioi.llm.claude import ClaudeProvider
+
+    class _Chu(_Api):
+        def create(self, **kw):
+            self.calls.append(kw)
+            usage = SimpleNamespace(input_tokens=1, output_tokens=1, cache_creation_input_tokens=0, cache_read_input_tokens=0)
+            return SimpleNamespace(model=kw["model"], usage=usage, stop_reason="end_turn",
+                                   content=[SimpleNamespace(type="text", text="Nhà chú hẻm mấy mét vậy chú?")])
+
+    p = ClaudeProvider(Settings(provider="claude", anthropic_api_key="test", chat_model="claude-sonnet-5-5", vision_model="v"))
+    p._client = SimpleNamespace(messages=_Chu())
+    p._so = SoToken(None, nen=False)
+    monkeypatch.setenv("AIOI_CONG_CU_GUI_KHACH", "tat")
+    assert p.reply("s", [Message("user", "chú bán nhà")]) == "Nhà chú hẻm mấy mét vậy chú?"
+    assert "tools" not in p._client.messages.calls[-1] and "tool_choice" not in p._client.messages.calls[-1]
+    monkeypatch.setenv("AIOI_CONG_CU_GUI_KHACH", "bat")
+    p.reply("s", [Message("user", "chú bán nhà")])
+    assert p._client.messages.calls[-1]["tool_choice"] == {"type": "tool", "name": "gui_khach"}
+
+
+def test_cai_vps_tat_cong_cu_mot_dong():
+    import pathlib
+    s = (pathlib.Path(__file__).parents[1] / "bot/bridge-zca/cai-vps.sh").read_text(encoding="utf-8")
+    assert 'CONG_CU_GUI_KHACH="tat"' in s and "AIOI_CONG_CU_GUI_KHACH=%s" in s

@@ -9058,6 +9058,18 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz246 · Thử tắt công cụ cố định `gui_khach`: lời trả khách là chữ thường như bản anh Luận (28/10/2026)
+Chủ dự án 28/10: "trả lời qua một 'công cụ' cố định là gì, nếu mình bỏ qua công cụ cố định thì nó khen tốt hơn như con anh Luận ko" → "bạn thử tắt
+công cụ cố định xem". Bối cảnh: SRS-76 ép lượt trả lời gọi công cụ hai ô (`tu_soat` không gửi + `loi_gui_khach`) để ghi chú tự soát không lọt tới khách;
+Sonnet 5.5 không nhận kiểu ép (SRS-244) nên lượt đã chạy `tool_choice` auto — model tự chọn gọi công cụ hay viết chữ, chưa có số đếm đường nào.
+Sửa: `llm/claude.py` `ep_cong_cu_gui_khach()` đọc env `AIOI_CONG_CU_GUI_KHACH`; `tat` → `reply` gọi không `tools`, lấy chữ thường. Một nguồn:
+`bot/bridge-zca/cai-vps.sh` dòng `CONG_CU_GUI_KHACH="tat"` (ghi vào `.env` lõi cùng model chat). Áp cho MỌI khách, kể cả ID thử. Bật lại: đổi `bat`, chạy cai-vps.
+Rủi ro đã biết (lý do của SRS-76): chữ tự do có thể lẫn ghi chú tự soát ("Lưu ý: … Sửa lại:"); lưới `_soat_hinh_thuc` / `_ly_do_cung` vẫn chạy sau.
+Ba câu gốc — (1) *lớp lỗi*: không phải sửa lỗi, là thí nghiệm theo quyết định chủ dự án. (2) *chỗ khác cùng lớp*: bóc tách / gom ảnh vẫn ép công cụ
+(đầu ra JSON, không phải lời khách) — không đổi. (3) *kiểm*: `tests/test_loi_gui_khach.py::test_tat_cong_cu_gui_khach_thi_tra_chu_thuong` (tắt → không
+gửi `tools`, lời là chữ; `bat` → ép như cũ; gỡ công tắc thì đỏ — đã chạy), `test_cai_vps_tat_cong_cu_mot_dong`; bắn lại bộ anh Luận + bộ môi giới
+với `giu_du_lieu = giu` để đọc trên CRM.
+
 ### SRS-5.1zzzzzzz245 · Khách xưng "chú" mà bot gọi "anh": giới tính Zalo vào prompt như lời khách tự xưng; bắn thử giữ được dữ liệu cho CRM (28/10/2026)
 Ca gốc: chủ dự án chat thử 28/10 bằng Zalo hồ sơ nam — "chú bán nhà ở 125 Bình Long…" (cùng câu ca SRS-233). Lượt đầu bot gọi "chú", tin nhắc
 5 phút mở "Anh ơi…", các lượt sau "Anh cho em hỏi…". Log lõi (`doc-log-loi` 03:38–08:35 UTC, đã thêm dòng "Xưng hô") KHÔNG có dòng "Xưng hô" nào của

@@ -145,13 +145,16 @@ if [ -d /opt/aond_core/src/aioi ]; then
   # 28/10/2026 (SRS-5.1zzzzzzz243, chủ dự án: "đổi thành claude sonnet 5.5 xem nó có nịnh tốt ko"): bắn thử bằng Sonnet 5.5 như khách thật
   # (bóc tách Haiku như khách thật). Quay lại Gemini cho đỡ tiền thì đổi thành "gemini".
   MODEL_CHAT_THU="claude-sonnet-5-5"
+  # SRS-5.1zzzzzzz246 (chủ dự án 28/10/2026: "bạn thử tắt công cụ cố định xem"): "tat" = lời trả khách là chữ thường như bản anh Luận;
+  # "bat" = lại ép công cụ hai ô gui_khach (tự soát + lời gửi, SRS-76). Áp cho mọi khách, kể cả ID thử.
+  CONG_CU_GUI_KHACH="tat"
   if [ -f /opt/aond_core/.env ]; then
     umask 077
-    grep -vE '^AIOI_CHAT_MODEL(_THU)?=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
-    printf 'AIOI_CHAT_MODEL=%s\nAIOI_CHAT_MODEL_THU=%s\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" >> /opt/aond_core/.env.moi
+    grep -vE '^AIOI_(CHAT_MODEL(_THU)?|CONG_CU_GUI_KHACH)=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
+    printf 'AIOI_CHAT_MODEL=%s\nAIOI_CHAT_MODEL_THU=%s\nAIOI_CONG_CU_GUI_KHACH=%s\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$CONG_CU_GUI_KHACH" >> /opt/aond_core/.env.moi
     chown --reference=/opt/aond_core/.env /opt/aond_core/.env.moi; chmod 600 /opt/aond_core/.env.moi
     mv /opt/aond_core/.env.moi /opt/aond_core/.env
-    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT, ID thử = $MODEL_CHAT_THU"
+    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT, ID thử = $MODEL_CHAT_THU, công cụ gửi khách = $CONG_CU_GUI_KHACH"
   fi
   systemctl restart aond-core
   for i in $(seq 1 60); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done
