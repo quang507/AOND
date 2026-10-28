@@ -275,7 +275,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         phuong, quan = self._chuan_dia_ban(chu)
         if not phuong:
             phuong = self._phuong_chia_da_chon(chu, fields, quan)
-        he_thong = False
+        he_thong = fields.get("_phuong_he_thong") in ("so_nha", "hem")   # SRS-5.1zzzzzzz236: phường hệ thống tra theo số nhà / hẻm → nguồn suy đoán
         if not phuong and " / " in str(fields.get("phuong") or ""):
             # SRS-5.1zzzzzzz214 mục 8: ô phường "A / B" do hệ thống ghi tạm (khách không chọn) — cột `ward` chỉ chứa MỘT tên chuẩn (20261009b) nên
             # lấy phường đầu tra được; nguồn là suy đoán. Ô tin vẫn giữ cả hai để bản tin / admin thấy.
