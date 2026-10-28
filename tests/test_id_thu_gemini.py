@@ -1,6 +1,8 @@
 """28/10/2026 (SRS-5.1zzzzzzz239). Chủ dự án: "nếu bắn product đổi sang key gemini bắn từ từ". `AIOI_CHAT_MODEL_THU=gemini` → mọi lượt gọi
 model của ID thử đi THẲNG Gemini, không chạm Claude, không rơi về Groq / Claude khi Gemini hỏng; khách thật không đổi. Đỏ khi lượt bắn thử
 vẫn gọi Claude (tốn tiền thật) hoặc khách thật bị đưa sang Gemini."""
+import re
+
 import pytest
 
 from aioi.llm.base import CHI_GEMINI, NGUON_LUOT
@@ -55,7 +57,7 @@ def test_engine_dat_nguon_gemini_chi_cho_id_thu(monkeypatch):
 def test_cai_vps_dat_id_thu_gemini():
     from pathlib import Path
     s = (Path(__file__).resolve().parent.parent / "bot/bridge-zca/cai-vps.sh").read_text()
-    assert 'MODEL_CHAT_THU="gemini"' in s and "AIOI_CHAT_MODEL_THU=%s" in s
+    assert re.search(r'^\s*MODEL_CHAT_THU="(gemini|tat|claude-[a-z0-9-]+)"$', s, re.M) and "AIOI_CHAT_MODEL_THU=%s" in s   # SRS-243: đổi được
 
 
 def test_luot_chi_gemini_khong_ghi_so_loi_du_phong():

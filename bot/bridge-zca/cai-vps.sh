@@ -142,7 +142,9 @@ if [ -d /opt/aond_core/src/aioi ]; then
   MODEL_CHAT="claude-sonnet-5-5"
   # SRS-5.1zzzzzzz239 (chủ dự án 28/10/2026: "nếu bắn product đổi sang key gemini bắn từ từ"): ID thử (`la_id_thu`, các ô ban-thu-*) gọi
   # model THẲNG Gemini, không tốn tiền Claude. Muốn bắn thử bằng đúng model khách thật thì đổi dòng này thành "tat" rồi chạy cai-vps.
-  MODEL_CHAT_THU="gemini"
+  # 28/10/2026 (SRS-5.1zzzzzzz243, chủ dự án: "đổi thành claude sonnet 5.5 xem nó có nịnh tốt ko"): bắn thử bằng Sonnet 5.5 như khách thật
+  # (bóc tách Haiku như khách thật). Quay lại Gemini cho đỡ tiền thì đổi thành "gemini".
+  MODEL_CHAT_THU="claude-sonnet-5-5"
   if [ -f /opt/aond_core/.env ]; then
     umask 077
     grep -vE '^AIOI_CHAT_MODEL(_THU)?=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true

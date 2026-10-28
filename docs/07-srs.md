@@ -9058,6 +9058,12 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz243 · Bắn thử bằng Claude Sonnet 5.5 thay Gemini (28/10/2026)
+Chủ dự án 28/10: "bắn cả hai đi … đổi thành claude sonnet 5.5 xem nó có nịnh tốt ko". `bot/bridge-zca/cai-vps.sh` `MODEL_CHAT_THU` = `claude-sonnet-5-5`:
+ID thử chat bằng đúng model khách thật, bóc tách Haiku như khách thật (lượt Gemini 28/10 trượt vì Gemini bóc tách sai ô — SRS-239 / 241). Quay lại
+Gemini cho đỡ tiền thì đặt lại `gemini`. `bot/tests/ban-thu-sau.sh` (bộ câu môi giới) nghỉ `NGHI_GIUA_LUOT` (12 s) giữa lượt như hai script kia.
+Không đổi code lõi. Kiểm: `tests/test_id_thu_gemini.py::test_cai_vps_dat_id_thu_gemini` nhận cả tên model Claude.
+
 ### SRS-5.1zzzzzzz242 · Ngưỡng kho điều luật 0,62 → 0,69 theo số đo (28/10/2026)
 Kho `dieu_luat` nhúng đủ 2952/2952 (lịch hẹn đo 28/10 07:30 UTC). Đo 12 câu thử trên kho thật (nhúng RETRIEVAL_QUERY qua `net.http_post` + khoá
 `khoa_nhung_nen()`, gọi `tim_dieu_luat`):

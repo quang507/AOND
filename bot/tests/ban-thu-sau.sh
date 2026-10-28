@@ -46,7 +46,7 @@ chat() {
         | vps "curl -sS -m 150 -X POST http://127.0.0.1:8000/chat-reply -H 'Content-Type: application/json' -d @-")
   LOI=$(jq -r '[.replies[]?] | join("\n")' <<<"$TRA" 2>/dev/null || echo "$TRA")
   sed 's/^/<< /' <<<"$LOI"
-  sleep 1
+  sleep "${NGHI_GIUA_LUOT:-12}"   # chủ dự án 28/10: bắn production thì bắn chậm (SRS-5.1zzzzzzz239)
 }
 cum_log() { vps "journalctl -u aond-core --since @$BAT_DAU -o cat --no-pager | grep -oE 'Hỏi sau đăng: cụm [a-z_]+' | sed 's/.* //' | tr '\n' ' '" || true; }
 
