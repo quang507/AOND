@@ -54,13 +54,14 @@ def test_fee_followup_quotes_rate_by_seller_role():
     assert "thoả thuận riêng" in build_fee_followup_system("T•ai", _prop(), SellerRole.CHU_DAU_TU)
 
 
-def test_known_project_facts_injected_and_asks_light_confirm():
+def test_known_project_facts_injected_not_reconfirmed():
+    """SRS-5.1zzzzzzz253: dữ liệu dự án đã xác thực không mời model "xác nhận nhẹ 1–2 ý" — cộng với câu hỏi ô kế thành 2–3 câu hỏi."""
     proj = Project("Botanic Tower", amenities=["hồ bơi", "gym"],
                    attributes={"cổng": "Nguyễn Thượng Hiền"})
     block = build_project_block(proj, "Botanic Tower")
     s = build_chat_system("T•ai", _prop(), "gia", SellerRole.UNKNOWN, project_block=block)
     assert "Botanic Tower" in s and "hồ bơi" in s
-    assert "XÁC NHẬN" in s  # known facts → confirm lightly, not silent assert
+    assert "XÁC NHẬN nhẹ" not in s and "ĐỪNG hỏi lại để xác nhận" in s
 
 
 def test_unit_type_facts_injected_alongside_project():
