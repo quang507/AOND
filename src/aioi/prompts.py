@@ -541,10 +541,12 @@ QUY TẮC PHẢN HỒI:
 
 
 def khoi_chao_lan_dau(assistant_name: str, mau: str) -> str:
-    """Lượt ĐẦU của cuộc chat: khách chỉ chào thì AI chào lại theo mẫu ở `cau_mau.chao_lan_dau` (CRM sửa được) rồi hỏi bán / thuê hay
-    mua — thay danh sách từ khoá hello / hi / 👋 (SRS-5.1zzzzzzz125). AI đọc nghĩa: khách đã nói nhu cầu ngay thì bỏ qua khối này."""
-    return ("\n\n=== LƯỢT ĐẦU TIÊN CỦA CUỘC CHAT ===\nNếu khách CHỈ chào hỏi (kể cả chào bằng sticker hay biểu tượng), chưa nói nhu cầu nhà đất: "
-            f"chào lại ngắn, giới thiệu em là {assistant_name}, rồi hỏi khách đang có căn cần gửi bán / cho thuê hay đang tìm mua. Mẫu câu "
+    """Lượt ĐẦU ở số KÝ GỬI: khách chỉ chào thì AI chào lại theo mẫu ở `cau_mau.chao_lan_dau` (CRM sửa được) rồi hỏi căn gửi bán / cho
+    thuê — thay danh sách từ khoá hello / hi / 👋 (SRS-5.1zzzzzzz125). 28/10 (SRS-5.1zzzzzzz251, chủ dự án: "1 số chuyên gửi bán 1 số chuyên
+    mua"): không hỏi "hay đang tìm mua" nữa. AI đọc nghĩa: khách đã nói nhu cầu ngay thì bỏ qua khối này."""
+    return ("\n\n=== LƯỢT ĐẦU TIÊN CỦA CUỘC CHAT (số ký gửi) ===\nNếu khách CHỈ chào hỏi (kể cả chào bằng sticker hay biểu tượng), chưa nói "
+            f"nhu cầu nhà đất: chào lại ngắn, giới thiệu em là {assistant_name}, rồi hỏi MỘT câu khách đang có căn muốn gửi bán hay cho thuê — "
+            "số này chuyên KÝ GỬI, KHÔNG hỏi khách có tìm mua không. Hỏi xong thì DỪNG, chờ khách trả lời. Mẫu câu "
             f"(đổi chữ cho tự nhiên, giữ ý, KHÔNG chép nguyên): \"{mau}\"\nKhách đã nói nhu cầu ngay trong tin đầu thì bỏ qua đoạn này.\n")
 
 
@@ -561,10 +563,9 @@ def build_greeting(assistant_name: str) -> str:
     """The opening message AOND sends before the user says anything."""
     return (
         f"Xin chào anh/chị! Em là {assistant_name}, trợ lý bất động sản của AI Ơi Nhà Đất ({SITE_HOST}). 🏡\n\n"
-        "Em sẵn sàng hỗ trợ anh/chị:\n"
-        "1. **Gửi Bán / Cho Thuê** nhà đất, căn hộ, dự án — cứ nhắn tin, gửi ảnh hoặc bảng giá tự nhiên, không cần điền form.\n"
-        "2. **Tìm Mua / Thuê** BĐS — nếu anh/chị cần tìm mua, em cùng đồng nghiệp tại kênh **AI Ơi Nhà Đất - Buyers** sẵn sàng lọc rổ hàng và hỗ trợ anh/chị tận tình ạ!\n\n"
-        "Anh/chị đang cần hỗ trợ gửi bán hay tìm mua BĐS để em phục vụ chu đáo nhất ạ? 😊"
+        "Số Zalo này chuyên nhận KÝ GỬI — gửi bán / cho thuê nhà đất, căn hộ, dự án: cứ nhắn tin, gửi ảnh hoặc bảng giá tự nhiên, không cần "
+        "điền form. (Tìm mua / thuê có số tư vấn riêng của AI Ơi Nhà Đất - Buyers.)\n\n"
+        "Anh/chị đang có căn nào muốn gửi bán hay cho thuê ạ? 😊"
     )
 
 

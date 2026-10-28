@@ -9,7 +9,7 @@ Bản đầy đủ cũ (tới 28/10/2026, gồm lịch sử phần TypeScript đ
 **Aioinhadat** (viết "AI Ơi Nhà Đất"; tiền thân nhadat.cc) — môi giới bất động sản "chat-first" tại TP.HCM và vùng lân cận.
 Luận điểm: *listing chỉ là mồi, giao dịch xảy ra trong cuộc trò chuyện, và cuộc trò chuyện không bao giờ kết thúc.*
 
-- **Kênh chat**: Zalo cá nhân qua bridge `zca-js` trên tài khoản Zalo clone (quyết định chủ dự án, không bàn lại). Hai số: số **ký gửi** (người bán, cũng trả lời người mua nhắn nhầm) và số **tư vấn người mua** (SRS-210). Trợ lý mỗi khách một tên người thật có chấm giữa (`assistants.ASSISTANT_NAMES`, SRS-183).
+- **Kênh chat**: Zalo cá nhân qua bridge `zca-js` trên tài khoản Zalo clone (quyết định chủ dự án, không bàn lại). Hai số chuyên việc: số **ký gửi** (người bán; câu chào chỉ hỏi gửi bán / cho thuê, SRS-251; người mua nhắn nhầm vẫn được trả lời) và số **tư vấn người mua** (SRS-210); kiến thức dự án dùng chung. Trợ lý mỗi khách một tên người thật có chấm giữa (`assistants.ASSISTANT_NAMES`, SRS-183).
 - **Người bán (S)** — **CCRB** (chính chủ) và **NMG** (môi giới) — rao bằng một câu rao thường, AI bóc tách ô và viết bản tin.
 - **Người mua (B)** không trả phí; bot gợi căn, hẹn xem. Chỉ xin số điện thoại MỘT lần khi khách chốt lịch xem (SRS-148).
 - **Web** (Next.js) là kênh SEO + listing + bản đồ, đẩy người dùng sang Zalo. Link do `src/aioi/web.py` quyết (env `AIOI_SITE_URL`, mặc định `aioinhadat.vercel.app`; `nhadat.cc` / `aioinhadat.com` chưa trỏ về web).

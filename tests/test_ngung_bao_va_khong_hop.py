@@ -116,7 +116,13 @@ def test_bao_can_moi_bo_qua_khach_da_tat_va_can_da_che():
     assert bao_can_moi.TOI_DA_ANH == 4
 
 
-def test_cau_chao_hoi_ca_tim_mua():
+def test_cau_chao_so_ky_gui_chi_hoi_gui_ban():
+    """SRS-5.1zzzzzzz251 (chủ dự án 28/10: "1 số chuyên gửi bán 1 số chuyên mua nhé, sửa câu chào"): đổi quyết định 25/10 (SRS-174) — số
+    ký gửi chỉ hỏi gửi bán / cho thuê, một câu; số tư vấn hỏi chuyện tìm mua."""
     from aioi import cau_mau
+    from aioi.prompts import khoi_chao_lan_dau
     for k in ("chao_lan_dau", "chao_lam_moi"):
-        assert "hay đang tìm mua" in cau_mau.MAC_DINH[k][0]
+        mau = cau_mau.MAC_DINH[k][0]
+        assert "tìm mua" not in mau and "gửi bán hay cho thuê" in mau and mau.count("?") == 1
+    assert "tìm mua" in cau_mau.MAC_DINH["chao_tu_van"][0] or "tìm căn" in cau_mau.MAC_DINH["chao_tu_van"][0]
+    assert "KHÔNG hỏi khách có tìm mua" in khoi_chao_lan_dau("Lai", "x")

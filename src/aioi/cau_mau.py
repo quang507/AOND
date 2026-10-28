@@ -49,14 +49,15 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "thu_lai_hong": ("Em xin lỗi anh/chị, hệ thống bên em đang chậm. Em đã báo anh/chị phụ trách xem tin của mình, anh/chị ấy sẽ "
                      "nhắn lại sớm ạ.", "Làm lại vẫn lỗi — xin lỗi và báo người phụ trách", "SRS-5.1zzzzzzz82"),
     # --- Câu có từ trước khi theo anh Luận (SRS-5.1zzzzzzz110) ---
-    "chao_lan_dau": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n{Goi} đang cần gửi bán, cho thuê nhà, hay "
-                     "đang tìm mua ạ?",
-                     "Khách chào (hello / hi / alo / 👋) lần đầu. {ten} = tên trợ lý",
-                     "Lời chào cũ (quyết định 20/10); 25/10 thêm \"tìm mua\" (SRS-174); 26/10 bỏ kể loại nhà — một câu hỏi (SRS-5.1zzzzzzz212)"),
-    "chao_lam_moi": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\nEm đã làm mới cuộc trò chuyện rồi ạ. {Goi} "
-                     "đang cần gửi bán, cho thuê nhà, hay đang tìm mua ạ?",
-                     "Khách chào khi đã có chuyện cũ — làm mới phiên. {ten} = tên trợ lý",
-                     "Quyết định 20/10: hello làm mới phiên; 25/10 thêm \"tìm mua\" (SRS-174); 26/10 bỏ kể loại nhà (SRS-5.1zzzzzzz212)"),
+    "chao_lan_dau": ("Chào {goi} ạ! Em là {ten}, trợ lý ký gửi nhà đất của AI Ơi Nhà Đất. 🏡✨\n{Goi} đang có căn nào muốn gửi bán hay "
+                     "cho thuê ạ?",
+                     "Khách chào (hello / hi / alo / 👋) lần đầu ở số KÝ GỬI. {ten} = tên trợ lý",
+                     "Lời chào cũ (20/10); 26/10 một câu hỏi (SRS-212); 28/10 số ký gửi chỉ hỏi gửi bán / cho thuê — số tư vấn lo người mua "
+                     "(SRS-5.1zzzzzzz251)"),
+    "chao_lam_moi": ("Chào {goi} ạ! Em là {ten}, trợ lý ký gửi nhà đất của AI Ơi Nhà Đất. 🏡✨\nEm đã làm mới cuộc trò chuyện rồi ạ. {Goi} "
+                     "đang có căn nào muốn gửi bán hay cho thuê ạ?",
+                     "Khách chào khi đã có chuyện cũ — làm mới phiên (số ký gửi). {ten} = tên trợ lý",
+                     "Quyết định 20/10: hello làm mới phiên; 26/10 bỏ kể loại nhà (SRS-212); 28/10 chỉ gửi bán / cho thuê (SRS-5.1zzzzzzz251)"),
     "chao_tu_van": ("Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨\n{Goi} đang tìm căn như thế nào, kể em nghe "
                     "với ạ?",
                     "Khách chào lần đầu ở số Zalo TƯ VẤN người mua. {ten} = tên trợ lý",
