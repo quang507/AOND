@@ -175,6 +175,7 @@ def _ten_tep_that(ten: str | None) -> bool:
 
 
 from .sticker import STICKER_TRUNG_TINH, la_sticker  # noqa: E402,F401  (một nguồn ở sticker.py, SRS-5.1zzzzzzz122)
+from .sticker import Y_NGHIA as STICKER_Y_NGHIA, ra_van_ban as ra_van_ban_sticker  # noqa: E402  (SRS-5.1zzzzzzz255)
 
 # Max tool-calling steps in one agent turn (a safety cap so the loop can't run away).
 MAX_AGENT_STEPS = 6
@@ -3626,6 +3627,13 @@ class Engine:
                 f"{DEED_VISION_INSTRUCTION}\n\nTệp: {names}",
                 deed_extraction_schema(),
             )
+            # SRS-5.1zzzzzzz255: sticker Zalo tới dưới dạng ảnh (.png) → đi đường CHỮ như sticker thường (sticker chào = "hello"), không đọc
+            # như ảnh nhà, không lưu vào tin. AI quyết theo nghĩa (ô `sticker`), code chỉ nối chữ qua `sticker.ra_van_ban`.
+            y_sticker = str(deed_data.get("sticker") or "").strip()
+            if fetched[0].kind == "image" and y_sticker in STICKER_Y_NGHIA and not deed_data.get("la_giay_to_bds"):
+                chu = ra_van_ban_sticker({"y_nghia": y_sticker, "mo_ta": str(deed_data.get("sticker_mo_ta") or y_sticker)})
+                log.warning("Ảnh là sticker (%s) — đi đường chữ", y_sticker)
+                return self.handle(user_key, f"{caption.strip()}\n{chu}" if caption and caption.strip() else chu, now)
             if deed_data.get("la_giay_to_bds"):
                 update_fields: dict[str, str] = {}
                 if deed_data.get("loai_hinh") and deed_data["loai_hinh"] != "chua_ro":

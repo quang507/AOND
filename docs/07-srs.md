@@ -9058,6 +9058,22 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz255 · Sticker Zalo tới dưới dạng ảnh .png: đọc theo nghĩa như sticker, không đọc như ảnh nhà (28/10/2026)
+Chủ dự án 28/10: "tôi thấy gửi chào bằng sticker nên zalo gửi bằng cái png gì đó, ko đọc dc".
+1. **Ca gốc** (DB `messages` 28/10 12:07 UTC): khách nhắn "Hello em" kèm một sticker; bot đáp "📎 Em đã nhận: artboard_…_2x_….png — Em thấy ảnh
+   này chỉ có icon like, chat và dấu tích xanh thôi ạ, chưa thấy căn BĐS nào… căn đang rao là chung cư, nhà phố hay đất ạ?". Nguyên nhân: bridge
+   chỉ nhận sticker khi nội dung zca-js mang `catId` / `id` (SRS-22 / 122); loại sticker này tới với `href` ảnh nên rơi vào nhánh ẢNH, lõi đọc
+   như ảnh nhà (đường `handle_media_batch`).
+2. **Sửa** — lượt đọc ảnh đơn (`deed_extraction_schema`, cùng lượt đọc sổ / chấm `khong_phai_anh_can`, không thêm lần gọi model) thêm ô `sticker`
+   (ý nghĩa: chao / cam_on / tam_biet / dong_y / vui / buon_gian / khac; ảnh khác để trống) + `sticker_mo_ta`. AI chấm là sticker (và không phải
+   giấy tờ) → `Engine.handle_media_batch` bỏ đường ảnh, nối chữ bằng `sticker.ra_van_ban` (sticker chào = "hello", còn lại "[khách gửi sticker: …]"
+   — vẫn KHÔNG bao giờ là đồng ý, SRS-22) rồi đi `handle` như khách gõ; chữ khách gửi kèm giữ ở đầu. Ảnh sticker không lưu vào tin.
+3. **Ba câu gốc** — (1) *lớp lỗi*: nhận diện sticker dựa vào HÌNH DẠNG dữ liệu zca-js; dạng mới (ảnh có `href`) lọt sang đường ảnh. Nay AI đọc
+   nghĩa ở đường ảnh làm lưới đỡ, không thêm luật tên tệp ("artboard", ".png") vào bridge. (2) *Chỗ khác cùng lớp*: gửi NHIỀU ảnh một lần
+   (`_group_media_batch`) chưa nhận sticker — sticker gửi kèm ảnh nhà thì vẫn tính là một nhóm ảnh "không phải ảnh căn" (`khong_phai_anh_can`,
+   không lưu); GIF động tới dạng video chưa soát. (3) *Bài đỏ*: `tests/test_kho_anh.py::test_sticker_toi_duoi_dang_anh_di_duong_chu` (sticker chào →
+   lịch sử "hello", không lưu ảnh; sticker cảm ơn → "[khách gửi sticker: …]"; ảnh thường vẫn lưu) — gỡ nhánh ở engine: đỏ. Chưa bắn với sticker thật.
+
 ### SRS-5.1zzzzzzz254 · Nối đường thật cho "xin chủ nhà ảnh", "nhắn khi tin hiển thị"; câu trùng tên dự án chỉ hỏi cùng vị trí; xoá câu xưng cứng; nhận tin chưa có giấy tờ (28/10/2026)
 Chủ dự án 28/10 (đọc báo cáo SRS-253): "“báo lại sau”, “nhắn khi tin hiển thị”, “em xin chủ nhà ảnh” cái này cấu hình hệ thống để làm đi, em xin
 chủ nhà ảnh, em xin chủ nhà về các chi tiết, các trường đang thiếu, cái này cần thiết"; "Câu “🤔 có phải dự án X?” … cùng vị trí mới cần hỏi
