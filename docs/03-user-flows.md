@@ -4,6 +4,12 @@
 chính, nhánh lỗi, và **một dòng trạng thái dựng** (đối chiếu code 04/09/2026 —
 `docs/10 §10.8`; chi tiết chưa dựng gom ở OPEN-43).
 
+> **Hiện trạng 28/10/2026.** Bộ não là lõi Python `src/aioi/` (SRS-5.1zzzzzzz31); edge function
+> `chat-reply`, `nudge`, `ask-seller`, `zalo-webhook` đã gỡ. Kênh là **Zalo cá nhân** qua bridge `zca-js`,
+> hai số: ký gửi và tư vấn người mua (SRS-5.1zzzzzzz210), không phải Zalo OA. **CTV đã bỏ hẳn**
+> [nguồn: chủ dự án 28/10/2026, chat]: mọi việc từng giao CTV nay về admin (SRS-5.1zzzzzzz165 / 170 / 172 / 173).
+> Dòng trạng thái các UF bên dưới đã trỏ lại theo lõi Python.
+
 ## Bản đồ toàn cảnh
 
 ```mermaid
@@ -11,7 +17,7 @@ flowchart TD
     G[Google / quảng cáo] --> W[Website nhadat.cc]
     W -->|UF-01 search| L[Kết quả listing]
     L -->|UF-02| D[Chi tiết BĐS]
-    D -->|UF-03 hộp mời kết nối| Z[Zalo OA]
+    D -->|UF-03 hộp mời kết nối| Z[Zalo cá nhân]
     W -->|UF-09| SM["Mini-site /raoban"]
     Z -->|UF-04| NEED[Khai thác nhu cầu]
     NEED --> REC[Gợi ý 3 căn]
@@ -20,8 +26,8 @@ flowchart TD
     SS -->|UF-10| S[CCRB / NMG]
     S --> ASK
     REC -->|UF-06| BOOK[Đặt lịch xem nhà]
-    BOOK --> CTV[CTV / NMG dẫn xem]
-    CTV -->|UF-07| FB[Phản hồi sau xem]
+    BOOK --> ADMIN[Admin báo người dẫn xem]
+    ADMIN -->|UF-07| FB[Phản hồi sau xem]
     FB --> REC
     REC -.im lặng.-> UF8[UF-08 tái kích hoạt]
     UF8 --> REC
@@ -57,7 +63,7 @@ quả → nới lỏng lần lượt giá ±20% → phường → quận lân c�
 
 ---
 
-## UF-03 — Chuyển từ web sang Zalo OA kèm ngữ cảnh
+## UF-03 — Chuyển từ web sang Zalo kèm ngữ cảnh
 **Actor** khách vãng lai → B · **FR** FR-13, FR-14, FR-30
 ❌ chưa dựng: deep link mang ngữ cảnh (`?ref=`) không ai đọc (OPEN-43); hôm nay khách gõ `#mã tin` trong Zalo và bot tra theo mã.
 
@@ -65,13 +71,13 @@ quả → nới lỏng lần lượt giá ±20% → phường → quận lân c�
 sequenceDiagram
     participant U as Khách
     participant W as Website
-    participant Z as Zalo OA
+    participant Z as Zalo cá nhân
     participant BS as B Side
     U->>W: Tìm kiếm / xem chi tiết
     W->>W: Lưu ngữ cảnh (tiêu chí, BĐS đã xem) vào fingerprint
     U->>W: Click "Bắt đầu kết nối"
     W->>Z: Deep link kèm mã ngữ cảnh
-    Z->>BS: Sự kiện follow OA + mã ngữ cảnh
+    Z->>BS: Tin đầu tiên + mã ngữ cảnh
     BS->>BS: Nối fingerprint ↔ Zalo ID
     BS->>U: "Anh đang tìm mua nhà phố HXH 8 tỉ ở Q8 phải không ạ?"
 ```
@@ -83,7 +89,7 @@ sequenceDiagram
 
 ## UF-04 — Chat lần đầu & khai thác nhu cầu
 **Actor** B · **FR** FR-20, FR-22, FR-23, FR-24, FR-25, FR-26
-✅ đã dựng: `chat-reply` nhánh buyer — hồ sơ nhu cầu `buyers.preferences` (FR-130), lọc kho khi đủ khu vực + giá.
+✅ đã dựng: lõi Python nhánh mua (`src/aioi/engine.py` + `mua.py`, `schema.BuyerLead`) — tìm căn qua hàm DB `tim_nha` (SRS-5.1zzzzzzz138), chỉ gợi căn khi có khu vực VÀ ngân sách (SRS-5.1zzzzzzz214), mỗi lượt một căn (SRS-5.1zzzzzzz160), hỏi nhu cầu tối đa `MAX_CAU_HOI_MUA = 2` câu (SRS-5.1zzzzzzz154).
 
 ```mermaid
 flowchart TD
@@ -117,7 +123,7 @@ flowchart TD
 
 ## UF-05 — Hỏi bổ sung thông tin từ S (vòng lặp trung tâm)
 **Actor** B, hệ thống, S · **FR** FR-40…FR-47, FR-98, FR-173
-✅ đã dựng: `info_requests` + kho `listing_facts`/`media` tra trước (FR-44); câu khách hỏi giao CTV (FR-173), timeout FR-110 qua cron `info-timeout-tick`.
+🟡 một phần: lõi ghi `info_requests` (`src/aioi/mua.py`); tin không có chủ nhà trên hệ thống → giao thẳng admin, chủ nhà quá hạn → nhắc `escalation` về admin (SRS-5.1zzzzzzz170); câu trả lời báo lại khách do lõi gửi (`gui_nhac.py`, SRS-5.1zzzzzzz216). Bảng `listing_facts` gỡ 19/10 (ô tin ở `listings.boc_tach`); lịch `info-timeout-tick` gỡ 18/10 nên luật 24h / 48h của FR-110 hiện không chạy.
 
 ```mermaid
 sequenceDiagram
@@ -130,7 +136,7 @@ sequenceDiagram
     BS->>B: "Chị chờ em một chút"
     BS->>SS: API {BĐS ID, Requested Info ID, nguyên văn câu hỏi}
     BS->>B: "Trong khi chờ, chị có câu hỏi gì khác không ạ?"
-    SS->>S: Chuyển câu hỏi (chủ tin / CTV / chuyên viên)
+    SS->>S: Chuyển câu hỏi (chủ tin / admin)
     S->>SS: "Đây em" + [ảnh sổ]
     SS->>BS: API {Requested Info ID, nội dung trả lời, file đính kèm}
     BS->>BS: Cập nhật listing (FR-44)
@@ -138,31 +144,32 @@ sequenceDiagram
     BS->>BS: Ghi sự kiện INFO_ADDED
 ```
 
-- **Kho trước, hỏi S sau** (FR-44): có trong `media`/`listing_facts` thì trả ngay;
+- **Kho trước, hỏi S sau** (FR-44): có trong `media` / `listings.boc_tach` thì trả ngay;
   câu trả lời mới lọc liên hệ (FR-105) rồi lưu kho. Nhắc S sau 24h, quá 48h đóng
   và báo thật cho B (FR-110).
-- **Câu khách hỏi** (`buyer_ask`, FR-173): giao CTV đang hoạt động ít việc nhất
-  (không có → admin); CTV trả lời theo mẫu `#mã tin: câu trả lời`; quá 120' nhắc
-  admin, CTV tụt hạng. Câu nhỏ giọt nuôi tin vẫn đi S.
+- **Câu khách hỏi** (`buyer_ask`, FR-173): hỏi chủ nhà nếu chủ nhà có trên hệ thống;
+  không có → giao thẳng admin (`info_requests.assignee = 'admin'`); chủ nhà quá hạn →
+  nhắc admin ngay (SRS-5.1zzzzzzz170). Admin trả lời theo mẫu `#mã tin: câu trả lời`.
+  Bước CTV (giao CTV ít việc nhất, quá 120' tụt hạng) đã bỏ. Câu nhỏ giọt nuôi tin vẫn đi S.
 - **Hàng dự án** (INS-10, FR-115/116): câu tầng dự án trả lời từ dữ liệu chung,
   không info_request; câu tầng căn đọc `unit_status`, chỉ hỏi S khi quá hạn xác nhận (FR-116).
 - **Quy tắc vàng (RSK-03)**: pháp lý, quy hoạch, "còn bán không" — không bao giờ
   khẳng định: *"Cho tới 15h ngày 17/9 thì còn. Nhưng để em hỏi lại anh nhé."*
 
-**Nhánh lỗi**: S không trả lời trong SLA → escalate CTV → chuyên viên (FR-47), báo
+**Nhánh lỗi**: S không trả lời trong SLA → escalate admin (FR-47; bước CTV bỏ, SRS-5.1zzzzzzz170), báo
 B trung thực.
 
 ---
 
 ## UF-06 — Đặt lịch xem nhà
-**Actor** B, CTV/NMG · **FR** FR-50…FR-57
-🟡 một phần: chốt lịch + xin SĐT đúng kịch bản (`chat-reply`), trigger `viewings` → escalation CTV/admin + `xac_nhan_lich` (FR-52), nhắc trước giờ kèm bản đồ (`nudge`, FR-54/55); email `[VIEWING]` nay đi `email_admin()` → ntfy (cần `NTFY_TOKEN`); mở khoá danh tính hai bên (FR-104) chưa dựng.
+**Actor** B, admin · **FR** FR-50…FR-57
+🟡 một phần: chốt lịch + xin SĐT MỘT lần khi khách chốt lịch (`src/aioi/mua.py`, `ghi_sdt_hen_xem`, SRS-5.1zzzzzzz148); trigger `viewings_bao_ctv_va_email` giao thẳng admin (SRS-5.1zzzzzzz165); admin trả lời `#mã: ok giờ` → lõi báo khách (`gui_nhac.py`, SRS-5.1zzzzzzz216); nhắc trước giờ kèm bản đồ (FR-54/55) mất khi gỡ `nudge` 18/10; email `[VIEWING]` đi `email_admin()` → ntfy (cần `NTFY_TOKEN`); mở khoá danh tính hai bên (FR-104) chưa dựng.
 
 1. B đề nghị xem, hoặc bot đề nghị sau ≥3 câu hỏi về một căn.
 2. Bot xác nhận đúng căn, hỏi khung giờ.
 3. **Xin số điện thoại** — nêu rõ chỉ dùng cho buổi xem, có đường từ chối (FR-53 ↔ OPEN-05).
 4. Đọc lại lịch cho B xác nhận; sinh `VIEWING_REQUESTED` + báo admin (FR-57).
-5. CTV/NMG xác nhận → bot chốt giờ + link bản đồ (FR-54); nhắc trước giờ (FR-55).
+5. Admin xác nhận (`#mã: ok giờ`) → bot báo khách giờ đã chốt (FR-54); admin tự báo người dẫn xem qua Zalo (SRS-5.1zzzzzzz172). Nhắc trước giờ (FR-55) chưa dựng lại.
 6. Sau buổi xem → UF-07.
 
 **Mở khoá danh tính (FR-104)**: chỉ khi lịch **đã chốt** hai bên mới biết SĐT của
@@ -176,7 +183,7 @@ dẫn được (RSK-05) → đề xuất giờ khác, không huỷ im lặng.
 
 ## UF-07 — Sau khi xem nhà
 **Actor** B · **FR** FR-56, FR-65
-🟡 một phần: hỏi cảm nhận 4 giờ sau buổi xem (`feedback`, nudge v25) + chấm sao → `ghi_danh_gia` (FR-65); ghi lý do không ưng thành tiêu chí mới của B chưa dựng.
+🟡 một phần: hỏi cảm nhận 4 giờ sau buổi xem (kind `feedback`, lõi gửi qua `src/aioi/gui_nhac.py`, SRS-5.1zzzzzzz216) + chấm sao → `ghi_danh_gia` (FR-65); khách chê căn → `interests.trang_thai = khong_hop`, căn đó không gợi lại (SRS-5.1zzzzzzz175); ghi lý do không ưng thành tiêu chí mới của B chưa dựng.
 
 1. *"Chị ưng căn này không ạ?"* — không ưng → hỏi chưa phù hợp chỗ nào.
 2. Câu trả lời (*"mặt tiền trên 4m thôi"*) ghi thành tiêu chí mới, áp cho mọi gợi ý sau.
@@ -188,7 +195,7 @@ dẫn được (RSK-05) → đề xuất giờ khác, không huỷ im lặng.
 
 ## UF-08 — Tái kích hoạt & chống mất kết nối Zalo
 **Actor** hệ thống → B · **FR** FR-60…FR-64 · **Rủi ro** RSK-01
-✅ đã dựng: `nudge` v25 — hỏi thăm khi im đủ 5 ngày, sáu góc xoay vòng, im ≥6 ngày buộc câu giữ kết nối, `match` tin mới khớp tiêu chí (trigger DB).
+🟡 một phần: báo căn mới khớp nhu cầu do lõi tự quét mỗi 10 phút (`src/aioi/bao_can_moi.py`, SRS-5.1zzzzzzz150 / 188; khách tắt được, SRS-5.1zzzzzzz175). Hỏi thăm khi im 5 ngày và tin chống xoá ngày +6 từng ở `nudge` v25 — gỡ 18/10/2026, chưa dựng lại trong lõi. Kênh nay là Zalo cá nhân nên luật 7 ngày của OA (INS-03) chưa kiểm còn áp không.
 
 ```mermaid
 flowchart TD
@@ -242,7 +249,12 @@ không thêm ma sát cho CCRB (INS-05).
 
 ## UF-10 — S rao tin ngay trong Zalo (F1)
 **Actor** CCRB / NMG · **FR** FR-109, FR-111, FR-106, FR-144, FR-150, FR-157, FR-176, FR-177, FR-178 · *(FR-97 bản cũ deprecated)* [nguồn: artifact "Cầu Nối BĐS" v2, 08/2026; kịch bản Gemini của sếp 07/09/2026; SRD AOND §I–II]
-✅ đã dựng: `chat-reply` nhánh seller (tạo tin nháp, hỏi nhỏ giọt, `ask-seller` cron), ảnh về bucket `listing-public` (FR-165), `20260907h` chấm điểm + cổng duyệt.
+✅ đã dựng: lõi Python nhánh bán (`src/aioi/engine.py`, `schema.py`, `prompts.py`); ảnh về bucket `listing-public` (`kho_anh.py`, FR-165). Tin nhắc 5 phút khi người bán im: `src/aioi/followup.py`.
+
+> **Hiện trạng khác sơ đồ dưới (28/10/2026):** cổng ra bản nháp là `Property.minimal_missing()` (loại hình + vị trí + giá) và
+> `summary_ready` (còn ≤ 1 facet chính trống) — SRS-5.1zzzzzzz200 / 202, không còn ngưỡng điểm 70. Bản tin 📋 do model
+> soạn theo `prompts.AD_FORMAT` (SRS-5.1zzzzzzz207), code soát số / hẻm / pháp lý (`engine._soat_hinh_thuc`). Sơ đồ và
+> bước 6–7 giữ làm lịch sử thiết kế.
 
 ```mermaid
 flowchart TD
@@ -281,11 +293,12 @@ flowchart TD
    trong nhóm thì bám thứ S vừa nhắc — nghe "ngang 5" hỏi tiếp chiều dài, chưa
    nhảy sang giá. Xong cơ bản mới tới **chuyên môn**: hẻm rộng mấy mét, ô tô vào
    được không → mấy lầu → mấy phòng ngủ → pháp lý → xin ảnh. Hướng, quy hoạch,
-   năm xây **không hỏi**, chỉ ghi khi S tự kể. Thứ tự nằm ở `required_facts`
-   (`nhom` + `priority`), không ở prompt.
-3. **Mỗi tin khoảng 30 từ**: đáp một tiếng ("Dạ", "Vâng ạ"), lâu lâu khen ngắn đúng điểm
-   mạnh khách vừa nói (không gắn khách mua, không câu nào cũng khen — `TONE_RULES`), rồi hỏi
-   đúng **một** thông tin (FR-177 b, FR-178 b).
+   năm xây **không hỏi**, chỉ ghi khi S tự kể. Bộ câu hỏi theo loại nằm ở
+   `src/aioi/schema.py` (`CORE_FIELDS`, `CORE_THEO_LOAI`, SRS-5.1zzzzzzz68), không ở prompt;
+   bảng `required_facts` gỡ 19/10/2026.
+3. **Mỗi tin khoảng 30 từ**: KHÔNG mở bằng "Dạ"; khen ngắn đúng điểm
+   mạnh khách vừa nói, rồi hỏi đúng **một** thông tin (FR-177 b, FR-178 b).
+   Giọng theo khối `GIONG_VUI` trong `src/aioi/prompts.py` (SRS-5.1zzzzzzz219).
 4. **Hỏi một đường, trả lời một nẻo thì VẪN GHI** (FR-177 e): nhận ra S đang nói
    fact nào thì ghi vào đúng fact đó; không nhận ra thì ghi nguyên văn vào
    `bo_sung`. Câu hỏi gốc vẫn treo, bot hỏi lại bằng lời khác. Chỉ ừ/ok, dặn xưng
@@ -304,7 +317,7 @@ flowchart TD
 
 **Không đọc mã tin cho S** (FR-178 a): gọi căn bằng địa chỉ ("căn Trần Bình Trọng
 của mình"); S rao nhiều căn thì phân biệt cũng bằng địa chỉ. Mã vẫn sinh, vẫn lưu,
-vẫn hiện trên web và trong tin cho CTV/admin — chỉ không đọc ra trong chat.
+vẫn hiện trên web và trong tin cho admin — chỉ không đọc ra trong chat.
 Mỗi lần đăng là một listing riêng (FR-104). `/raoban` (UF-09) là kênh song song.
 
 ---
@@ -339,7 +352,7 @@ Body chứa field của danh sách tương ứng, kèm mô tả BĐS nếu có. 
 
 ## UF-13 — Vòng đời listing & báo sold cho người đang chờ
 **Actor** hệ thống, admin, S, B · **FR** FR-139, FR-108, FR-164, FR-103 · *(FR-106, FR-107 bản cũ deprecated)* [nguồn: artifact "Cầu Nối BĐS" v2, 08/2026]
-✅ đã dựng: 5 trạng thái + trigger `trg_zz_listings_dang_tin`; `da_chot` → kind `sold` cho khách trong `interests` (nudge v25); tin im 30 ngày → hỏi chủ "còn bán không" (`stale-listing-tick`, FR-103). TTL xác nhận 7 ngày nay chỉ còn áp cho căn trong dự án (FR-116).
+🟡 một phần: 5 trạng thái + trigger `trg_zz_listings_dang_tin`; `da_chot` → kind `sold` cho khách trong `interests`, lõi gửi qua `src/aioi/gui_nhac.py` (SRS-5.1zzzzzzz216). Lịch `stale-listing-tick` (tin im 30 ngày → hỏi chủ "còn bán không", FR-103) gỡ 18/10/2026, chưa dựng lại trong lõi. TTL xác nhận 7 ngày nay chỉ còn áp cho căn trong dự án (FR-116).
 
 ```mermaid
 stateDiagram-v2
@@ -360,3 +373,13 @@ stateDiagram-v2
 3. Sang `da_chot`: quét `interests`, báo mọi B đang chờ kèm căn thay thế (FR-108).
 4. `an` không xoá listing — chỉ ẩn khỏi matching tới khi S xác nhận lại.
 5. Tin chủ động ngoài cửa sổ tương tác Zalo cần ZNS trả phí (OPEN-09).
+
+---
+
+## Luồng sau 18/10 ghi theo SRS
+
+Các luồng dưới đây chưa có UF riêng; đặc tả và cách kiểm nằm ở mục SRS trong `docs/07` (CLAUDE.md §4: không bắt buộc cấp ID mới).
+
+- **Báo căn mới cho khách mua**: lõi quét mỗi 10 phút, 8–20 giờ, tối đa 1 tin / khách / 24 giờ, 1 căn / tin, kèm ảnh; khách tắt được (`src/aioi/bao_can_moi.py`, SRS-5.1zzzzzzz150 / 151 / 175 / 188).
+- **Hai số Zalo**: số ký gửi và số tư vấn người mua (`SO_NHAN=tu_van`) cùng một lõi; tin chủ động đi đúng số khách đang nhắn (SRS-5.1zzzzzzz210).
+- **Lệnh gõ tay `/quit`**: khách gõ `/quit` thì xoá sạch phiên của người gõ, bot im lặng; `/state` `/listings` `/whoami` trả tin debug (`src/aioi/lenh_zalo.py`, SRS-5.1zzzzzzz211).

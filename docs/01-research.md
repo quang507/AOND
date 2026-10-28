@@ -27,6 +27,9 @@ Website không phải nơi chốt; nó là phễu SEO đẩy người dùng sang
 càng tốt [nguồn: biz model.docx §Website và Zalo]. Hệ quả: mọi trang web đều có CTA
 sang Zalo, và CTA phải **mang theo ngữ cảnh tìm kiếm**.
 
+> Hiện trạng 28/10/2026: kênh chat là **Zalo cá nhân** qua bridge `zca-js` (`bot/bridge-zca/`),
+> hai số: ký gửi và tư vấn người mua (SRS-5.1zzzzzzz210), không phải Zalo OA. Insight giữ nguyên.
+
 ### INS-02 — Chu kỳ mua nhà dài 3–4 năm, không phải 3–4 tuần
 > *"nhadat.CC muốn phục vụ khách hàng tìm kiếm trong suốt 3-4 năm cho tới khi họ
 > mua được nhà"* [nguồn: chats w B.docx §Trước khi Zalo xóa].
@@ -198,7 +201,7 @@ Ngân sách 6 tháng đầu **800.000.000 VND** [nguồn: dự kiến vốn 6 th
 | 7 | Roadshow, event | 50.000.000 | gọi vốn |
 | | **Tổng** | **800.000.000** | |
 
-Hệ quả: **418tr cho toàn bộ build** → MVP cắt gọn (web + Zalo OA + admin tối thiểu);
+Hệ quả (lập luận 2024; nay kênh là Zalo cá nhân, CTV đã bỏ 28/10/2026 — `docs/07`): **418tr cho toàn bộ build** → MVP cắt gọn (web + Zalo OA + admin tối thiểu);
 **1.5 CTV** → ~2–3 lịch xem/ngày, phải xếp hàng và ưu tiên; **20tr/tháng mua traffic**
 từ batdongsan → chưa cạnh tranh SEO trực diện 6 tháng đầu.
 
@@ -235,7 +238,7 @@ trao đổi chủ dự án, 24/08/2026]. Tái dựng từ nguồn thứ cấp �
 | | radanhadat.vn | nhadat.cc học / khác |
 |---|---|---|
 | Học | URL facet + title theo tháng; content hub quy hoạch/sáp nhập; địa giới cũ làm trục | Áp vào `04`; thêm content ánh xạ cũ↔mới (INS-12) |
-| Học | Checklist trường chuẩn hoá theo loại BĐS | `required_facts`/`listing_missing_facts` (INS-06) |
+| Học | Checklist trường chuẩn hoá theo loại BĐS | `src/aioi/schema.py` `CORE_FIELDS` / `CORE_THEO_LOAI` (INS-06; bảng `required_facts` gỡ 19/10/2026, SRS-5.1zzzzzzz68) |
 | Khác | Listing-first; liên hệ = lộ SĐT trên tin | Chat-first, hội thoại 3–4 năm (INS-01/02), ẩn danh hai chiều (INS-11) |
 | Khác | Môi giới là khách trả tiền, phủ toàn quốc | Phí theo giao dịch, sâu một quận (INS-08) |
 | Né | Đăng tin nhiều bước + duyệt tay | Rao một câu qua Zalo, AI viết lại (INS-05, FR-109) |
@@ -301,4 +304,4 @@ Không có trong tài liệu gốc, cần bổ sung trước khi chốt scope:
 1. Số liệu thị trường sơ cấp Quận 5 (số BĐS đang rao, giá trung bình, thanh khoản).
 2. Phỏng vấn người dùng thật — chân dung B hiện dựa trên hội thoại *giả định*.
 3. Danh sách TOP-100 keyword BĐS (file `.xlsm`, chưa có trong repo — OPEN-06).
-4. Hạn mức API và chính sách nội dung Zalo OA cho ngành BĐS.
+4. Hạn mức API và chính sách nội dung Zalo OA cho ngành BĐS. (Nay chạy Zalo cá nhân qua `zca-js` — SRS-5.1zzzzzzz210.)

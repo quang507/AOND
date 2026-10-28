@@ -11,7 +11,7 @@
 | IA-P5 | Khu vực S (`/raoban`) tách hẳn khu vực B — hai tâm trí khác nhau | S's side.docx |
 | IA-P6 | Không có trang "tài khoản người mua" — B sống trên Zalo, không trên web | NFR-07 |
 
-## 4.2 Sitemap (route thật trong `app/`, 04/09/2026)
+## 4.2 Sitemap (route thật trong `app/`, soát lại 28/10/2026)
 
 ```mermaid
 flowchart TD
@@ -27,13 +27,14 @@ flowchart TD
     MB --> DT["/nha-dat/{code}"]
     T --> DT
     DA["/du-an/{slug}"] --> DT
-    DT --> ZL["Zalo OA (ngoài site)"]
+    DT --> ZL["Zalo cá nhân, hai số (ngoài site)"]
     H --> ZL
     DS["/ds/{token} — danh sách riêng, noindex"] --> DT
     DN["/dang-nhap"] --> QL["/quan-ly — tin của tôi"]
     DN --> TKH["/tai-khoan"]
     DN --> YT["/yeu-thich"]
     DN --> AD["/admin"] --> ADT["/admin/dang-tin"]
+    AD --> ADX["/admin/tin-nhan · /admin/ro-hang (+/json) · /admin/cau-chuan · /admin/danh-gia"]
     PARSE["/api/listing/parse (JSON)"] -.-> RB
     SM["/sitemap.xml · /robots.txt"]
 ```
@@ -53,11 +54,11 @@ flowchart TD
 | IA-09 | `/raoban/xac-nhan` | Bản bóc tách để S sửa + upload ảnh | ❌ | FR-94, FR-96 | ⛔ gộp vào `/raoban` |
 | IA-10 | `/raoban/quan-ly` → thật `/quan-ly` | Tin của tôi + câu hỏi chờ trả lời | ❌ | FR-98 | 🟡 tin của tôi có; câu hỏi chờ trả lời chưa |
 | IA-11 | `/ds/{token}` | Danh sách riêng cho một B (`noindex, nofollow`, robots chặn) | ❌ | FR-100 | ✅ trang có; bot chưa tự tạo (UF-12) |
-| IA-12 | `/admin` (?tab=todo·crm·stats·ops), `/admin/tin-nhan`, `/admin/ro-hang` (+`/json`), `/admin/dang-tin`, `/admin/mau-cau` | Khung CRM (09/09/2026, bố cục theo ZaloCRM): thanh navy với tab theo phân hệ, ô tìm, chuông việc, avatar; Header/Footer công khai ẩn dưới `/admin` | ❌ | FR-70…81, FR-127, FR-152, FR-175, FR-180 | ✅ đã dựng |
+| IA-12 | `/admin` (?tab=todo·crm·stats·ops), `/admin/tin-nhan` (ô admin gửi tin, SRS-5.1zzzzzzz216), `/admin/ro-hang` (+`/json`), `/admin/dang-tin`, `/admin/cau-chuan` (câu chuẩn + câu mẫu cố định, SRS-5.1zzzzzzz88 / 106), `/admin/danh-gia` (khách chấm sao AI, SRS-5.1zzzzzzz104); `/admin/mau-cau`, `/admin/prompt` gỡ 18/10/2026 (SRS-5.1zzzzzzz46) | Khung CRM (09/09/2026, bố cục theo ZaloCRM): thanh navy với tab theo phân hệ, ô tìm, chuông việc, avatar; Header/Footer công khai ẩn dưới `/admin` | ❌ | FR-70…81, FR-127, FR-152, FR-175, FR-180 | ✅ đã dựng |
 | IA-13 | `/du-an/{slug}` | Trang dự án + giỏ hàng (tin `project_id`), SSG | ✅ | FR-117, FR-113 | ✅ đã dựng |
 | IA-14 | `/api/search`, `/api/listing/parse` | Route handler JSON, không phải trang | ❌ robots chặn `/api/` | FR-09, FR-92 | ✅ đã dựng |
 | IA-15 | `/mua-ban`, `/cho-thue` | Lưới listing theo giao dịch, lọc bằng searchParams (`unstable_cache`) | ✅ (❌ khi có `q`) | FR-07, FR-08 | ✅ đã dựng |
-| IA-16 | `/ban-do` | Bản đồ tin có `lat/lng` | ✅ | FR-122 | ✅ đã dựng |
+| IA-16 | `/ban-do` | Bản đồ tin có `lat/lng` (MapLibre + OpenFreeMap, tìm theo khung, gom cụm — SRS-5.1zzzzzzz206 / 217) | ✅ | FR-122 | ✅ đã dựng |
 | IA-17 | `/thong-ke` | Giá theo phường/loại tính tại chỗ từ tin đang có | ✅ | FR-120 | ✅ đã dựng |
 | IA-18 | `/tinh-lai-vay` | Công cụ tính khoản vay | ✅ | FR-119 | ✅ đã dựng |
 | IA-19 | `/moi-gioi` | Danh sách NMG công khai (view `agents_public`, không lộ liên hệ) | ✅ | FR-125 | ✅ đã dựng |

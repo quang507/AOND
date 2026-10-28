@@ -1,7 +1,7 @@
-// Bridge zca-js — CHẠY TRÊN MÁY LOCAL, KHÔNG deploy đâu cả.
+// Bridge zca-js — chạy trên VPS (systemd `nhadat-bridge`, số tư vấn `nhadat-bridge-tu-van`; cài bằng cai-vps.sh).
 // Quét QR bằng ACC ZALO CLONE (đừng dùng acc chính — zca-js là API không chính
-// thức, Zalo có thể khoá acc). Tin nhắn đến → gọi edge function chat-reply
-// (bộ não) → gửi câu trả lời (kèm hình nếu có) lại. Cài & chạy:
+// thức, Zalo có thể khoá acc). Tin nhắn đến → gọi lõi Python `aond-core`
+// (http://127.0.0.1:8000/chat-reply, bộ não từ 18/10/2026) → gửi câu trả lời (kèm hình nếu có) lại. Cài & chạy tay:
 //   cd bot/bridge-zca && npm init -y && npm i zca-js@2.2.0 && node index.mjs   (ghim phiên bản — SRS-5.1zzzzzzz177)
 // Lần đầu cần quét QR: zca-js KHÔNG in QR ra terminal (nó ghi qr.png — bắt
 // 08/09/2026 khi dựng VPS, tài liệu cũ nói sai), nên bridge nhận ảnh QR qua

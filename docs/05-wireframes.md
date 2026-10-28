@@ -191,48 +191,42 @@ Tag rỗng → giữ bố cục, thay lưới bằng hộp mời kết nối c�
 ---
 
 ## WF-05 — Chat Zalo: khai thác nhu cầu → UF-04
-✅ đã dựng: `chat-reply` nhánh buyer (lời chào "em là Thái, bên Aioinhadat", hồ sơ nhu cầu, tối đa 3 căn/lượt).
+✅ đã dựng: lõi Python nhánh mua (`src/aioi/engine.py`, `mua.py`); lời chào là câu mẫu `chao_tu_van` / `chao_lan_dau` (`src/aioi/cau_mau.py`), tên trợ lý theo khách, có chấm giữa (13 tên, SRS-5.1zzzzzzz183); gợi căn khi có khu vực và ngân sách (SRS-5.1zzzzzzz214), mỗi lượt MỘT căn, bốn đoạn = bốn tin Zalo: mở lời · thông số + vì sao hợp · link · một câu hỏi ngắn (SRS-5.1zzzzzzz145 / 160). Khung dưới chỉ minh hoạ, chữ thật do model viết.
 
 ```
-┌─ Zalo OA · Aioinhadat ───────────────────┐
+┌─ Zalo cá nhân · số tư vấn người mua ─────┐
 │                                          │
 │ ┌────────────────────────────────────┐   │
-│ │ Aioinhadat xin cảm ơn! Công ty em  │   │
-│ │ có 30 nhà môi giới túc trực để tìm │   │
-│ │ nhà đất chung cư cho anh/chị.      │   │
-│ │ Em tên là Thái. Em xin tên anh/chị │   │
-│ │ để xưng hô cho lễ phép ạ           │   │
+│ │ Chào anh ạ! Em là M•ai, trợ lý bất │   │
+│ │ động sản của AI Ơi Nhà Đất. 🏡✨     │   │
+│ │ Anh đang tìm căn như thế nào, kể em│   │
+│ │ nghe với ạ?                        │   │
 │ └────────────────────────────────────┘   │
-│                        ┌───────────┐     │
-│                        │  Hưng     │     │
-│                        └───────────┘     │
+│         ┌──────────────────────────┐     │
+│         │ Nhà phố Quận 5, tầm 9 tỷ │     │
+│         └──────────────────────────┘     │
 │ ┌────────────────────────────────────┐   │
-│ │ Dạ. Anh tìm nhà ở đâu ạ?           │   │
+│ │ Quận 5 tầm 9 tỷ thì có căn hợp nè! │   │
 │ └────────────────────────────────────┘   │
-│                        ┌───────────┐     │
-│                        │ Quận 5    │     │
-│                        └───────────┘     │
 │ ┌────────────────────────────────────┐   │
-│ │ Em hiện có 24 mục. Anh xem thử vài │   │
-│ │ mục hot nhất nha                   │   │
-│ │ ┌──────────────────────────────┐   │   │
-│ │ │▢ #24 nhà phố 4 tầng HXH Trần │   │   │
-│ │ │  Bình Trọng, nhà mới  9.8 tỉ │   │   │
-│ │ └──────────────────────────────┘   │   │
-│ │ ┌ #56 … 8.4 tỉ ────────────────┐   │   │
-│ │ ┌ #234 … 9.45 tỉ ──────────────┐   │   │
-│ │      [Xem thêm] [Xem chi tiết] │   │   │
-│ │ Anh muốn xem thêm không ạ?     │   │   │
+│ │ Nhà phố HXH Trần Bình Trọng, 4     │   │
+│ │ tầng, 9,8 tỷ, hơi vượt ngân sách.  │   │
+│ └────────────────────────────────────┘   │
+│ ┌────────────────────────────────────┐   │
+│ │ <AIOI_SITE_URL>/nha-dat/<mã>       │   │
+│ └────────────────────────────────────┘   │
+│ ┌────────────────────────────────────┐   │
+│ │ Anh muốn đi xem căn này không ạ?   │   │
 │ └────────────────────────────────────┘   │
 └──────────────────────────────────────────┘
 ```
 
-**Bất biến**: tối đa 3 card mỗi lượt (FR-24); hỏi gọn theo `06 §6.8`.
+**Bất biến**: một căn mỗi lượt, khách đòi thêm mới đưa căn kế (SRS-5.1zzzzzzz160; thay "tối đa 3 card" của FR-24); không mở bằng "Dạ"; không nói mã tin / chữ "rổ" (SRS-5.1zzzzzzz145).
 
 ---
 
 ## WF-06 — Chat Zalo: hỏi bổ sung thông tin → UF-05
-✅ đã dựng: `ask_owner` → `info_requests`, câu giữ nhịp "Trong khi chờ…" (FR-45), báo lại khách khi chủ trả lời (`followup`).
+✅ đã dựng: lõi ghi `info_requests` (`src/aioi/mua.py`), câu giữ nhịp "Trong khi chờ…" (FR-45); chủ nhà / admin trả lời → lõi báo lại khách (kind `followup`, `src/aioi/gui_nhac.py`, SRS-5.1zzzzzzz216).
 
 ```
 │                    ┌──────────────────┐  │
@@ -257,7 +251,7 @@ Tag rỗng → giữ bố cục, thay lưới bằng hộp mời kết nối c�
 ---
 
 ## WF-07 — Chat Zalo: đặt lịch xem nhà → UF-06
-✅ đã dựng: `chat-reply` chốt lịch + xin SĐT kèm lý do và đường từ chối; `nudge` nhắc trước giờ kèm link bản đồ (FR-54/55).
+🟡 một phần: lõi Python chốt lịch + xin SĐT MỘT lần khi khách chốt lịch (`src/aioi/mua.py`, SRS-5.1zzzzzzz148), lịch giao thẳng admin (SRS-5.1zzzzzzz165), lịch đã chốt báo khách qua `src/aioi/gui_nhac.py` (SRS-5.1zzzzzzz216). Nhắc trước giờ kèm link bản đồ (FR-54/55) từng ở `nudge`, gỡ 18/10/2026, chưa dựng lại. Bot không mở lượt bằng "Em ghi nhận…" lặp lại (câu ghi nhận tối đa một lần mỗi cuộc chat, SRS-5.1zzzzzzz229).
 
 ```
 │ ┌────────────────────────────────────┐   │
@@ -354,7 +348,7 @@ Tag rỗng → giữ bố cục, thay lưới bằng hộp mời kết nối c�
 ---
 
 ## WF-10 — Tin của tôi & câu hỏi chờ trả lời `/raoban/quan-ly` → FR-98
-🟡 một phần: `/quan-ly` có "Tin của tôi" + đăng tin một câu; câu hỏi chờ trả lời trên web chưa — câu hỏi đi qua Zalo tới chủ/CTV (FR-173).
+🟡 một phần: `/quan-ly` có "Tin của tôi" + đăng tin một câu; câu hỏi chờ trả lời trên web chưa — câu hỏi đi qua Zalo tới chủ nhà / admin (FR-173; bước CTV bỏ, SRS-5.1zzzzzzz170).
 
 ```
 ┌──────────────────────────────────────────┐
@@ -396,7 +390,7 @@ Không hiển thị tên/Zalo ID của B trên trang.
 ---
 
 ## WF-12 — Admin: câu hỏi chờ S trả lời `/admin/cau-hoi` → FR-76, FR-80
-✅ đã dựng: thẻ "Câu hỏi đang chờ" trên `/admin` (`20260904c`), quá SLA tô đỏ.
+✅ đã dựng: thẻ "Câu khách hỏi" trên `/admin` (`20260904c`), quá SLA tô đỏ; câu không có chủ nhà giao thẳng admin (SRS-5.1zzzzzzz170).
 
 ```
 ┌──────────────────────────────────────────┐
@@ -418,7 +412,7 @@ Không hiển thị tên/Zalo ID của B trên trang.
 ---
 
 ## WF-13 — Admin: tìm kiếm B `/admin/hoi-thoai` → FR-74
-✅ đã dựng: thẻ "Tìm khách" + "Thống kê hội thoại · 30 ngày" trên `/admin`.
+[deprecated 28/10/2026 — route `/admin/hoi-thoai` không có trong `app/`] Tìm và đọc hội thoại nay ở `/admin/tin-nhan` (màn chat 3 cột: lọc · hội thoại · tin nhắn); thẻ "Thống kê hội thoại · 30 ngày" trên `/admin`. Khung dưới giữ làm lịch sử.
 
 ```
 ┌──────────────────────────────────────────┐
@@ -448,6 +442,13 @@ Không hiển thị tên/Zalo ID của B trên trang.
 └────────────┴───────┴─────────────────────┘
         mỗi dòng đã gửi email [UPSET] <Zalo ID>
 ```
+
+---
+
+## Trang admin chưa có WF
+
+- `/admin/cau-chuan` — chấm / sửa câu bot + khung "Câu mẫu cố định" (SRS-5.1zzzzzzz88 / 106): chưa có WF, nguồn là code trang.
+- `/admin/danh-gia` — khách chấm sao cho AI (SRS-5.1zzzzzzz104): chưa có WF, nguồn là code trang.
 
 ---
 

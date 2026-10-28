@@ -1,6 +1,6 @@
 # AI Ơi Nhà Đất — Mô hình dữ liệu & Lưu trữ (Data Model)
 
-> Tài liệu thiết kế cho **milestone lưu trữ** (SRD §VII) và phía người mua (tìm căn cho nhánh mua). *Tên vai M•ai / T•ai của SRD AOND bỏ 14/10/2026 — trợ lý là một `chat-reply`, mỗi khách một tên người thật (SRS-5.1zzzzzzz9).*
+> Tài liệu thiết kế cho **milestone lưu trữ** (SRD §VII) và phía người mua (tìm căn cho nhánh mua). *Trợ lý là lõi Python `src/aioi/` (từ 18/10/2026, SRS-5.1zzzzzzz31), mỗi khách một tên trợ lý có chấm giữa trong kho 13 tên (SRS-5.1zzzzzzz183; vai M•ai / T•ai của SRD AOND không còn là hai vai riêng).*
 > Bản xuất từ ghi nhớ dự án — cập nhật 2026-06-28. Trạng thái build được ghi rõ trong từng mục.
 > Liên quan: tài liệu build engine (`docs/build-status.md` nếu xuất), `req + chat examples.docx` (đã gỡ khỏi repo 19/10/2026 — xem
 > lại bằng `git log --diff-filter=D -- "req + chat examples.docx"`; nội dung đã chưng cất vào `docs/06 §6.8`, `docs/09`).
@@ -11,9 +11,14 @@
 ## Vì sao cần lưu bền
 Phải lưu **MỌI** chi tiết BĐS người rao cung cấp (toàn bộ listing có cấu trúc, không chỉ state chat), ở dạng **truy vấn được**. Mục đích: phục vụ bên mua/thuê — nhánh mua truy vấn dữ liệu này để khớp BĐS cho người mua. Claude là stateless; "trí nhớ" = thứ app lưu và phát lại.
 
-> *Trạng thái:* listing nay đã lưu bền qua `SqliteConversationStore` (sống sót restart) — nhưng dạng blob theo từng conversation; **chỉ mục tìm-kiếm-chéo cho bên mua vẫn chưa build.**
+> *Trạng thái (06/2026, cũ):* listing lưu bền qua `SqliteConversationStore` dạng blob theo conversation; chỉ mục tìm-kiếm-chéo cho bên mua chưa build.
+>
+> *Hiện trạng 28/10/2026:* tin lưu ở Supabase qua `src/aioi/supabase_store.py` (bảng `listings`, ô tin ở `listings.boc_tach`); SQLite trên VPS chỉ còn giữ phiên chat. **Tìm căn cho bên mua ĐÃ có**: hàm DB `tim_nha` (lọc cứng bán / thuê / loại / giá, điểm mềm khu vực / diện tích / phòng ngủ / xe hơi / tiện ích, cộng điểm vector `listings.nhung`), gọi qua `src/aioi/mua.py` `can_phu_hop` (SRS-5.1zzzzzzz138 / 179).
 
-## Hai tầng lưu trữ (đã chốt)
+## Hai tầng lưu trữ (thiết kế 06/2026 — đã thay)
+
+> Hiện trạng: kho tệp = Supabase Storage (`listing-public`, `listing-private`), chỉ mục = Postgres + vector trên Supabase (`tim_nha`). SharePoint đã bỏ (SRS-5.1zzzzzzz56). Mục dưới giữ làm lịch sử thiết kế.
+
 1. **SharePoint = kho gốc (system of record)** — file gốc (ảnh, scan sổ hồng, hợp đồng, giấy tờ), cây thư mục §VII, tích hợp M365, con người duyệt, phân quyền, versioning.
 2. **Chỉ mục tìm kiếm (serving layer)** — kho truy vấn nhanh (SQLite local → Postgres + pgvector khi lớn): cột lọc + vector embeddings. `search_listings` truy vấn realtime.
 
@@ -73,6 +78,8 @@ Luồng **fetch → show → confirm → snapshot** phía người rao (mẫu tr
 - **Rào chắn (phần rủi ro — fetch URL người dùng):** chống SSRF (chỉ http/https, phân giải DNS và chặn IP nội bộ, re-check redirect, fetch từ worker sandbox/giới-hạn-egress), timeout + allowlist content-type + cap kích thước; thất bại lịch sự với link cần đăng nhập/JS/video. "Đáng tin" = người rao xác nhận + đối soát, không phải điểm tin tự động.
 
 ## Tìm kiếm phía người mua — bám chặt DB
+
+> Hiện trạng 28/10/2026: nguyên tắc dưới vẫn đúng, nhưng công cụ là hàm DB `tim_nha` gọi từ code (`mua.can_phu_hop`, cửa duy nhất `engine._can_goi_y`, SRS-5.1zzzzzzz175), không phải tool `search_listings` cho model — `search_listings` là thiết kế 06/2026, chưa từng dựng. Link web lấy từ `src/aioi/web.py` (`AIOI_SITE_URL`, mặc định `aioinhadat.vercel.app`; `aioinhadat.com` chưa trỏ về web, SRS-5.1zzzzzzz220).
 Khi người mua tìm (nhánh mua), AOND chỉ giới thiệu BĐS hợp từ DB của mình — không lướt Internet, không bịa:
 1. Model **không có tool web** (`ClaudeProvider` hiện không có — giữ vậy).
 2. **Tìm bằng code xác định** (SQL/lọc theo quận/loại hình/giá/diện tích/phòng/hướng), tùy chọn + **xếp hạng ngữ nghĩa** (embeddings) — không phải model. Phễu 5.000 → lọc SQL → ~50 → xếp hạng → top ~10–20 → chỉ nhúm đó vào prompt. Model không bao giờ đọc cả DB.
@@ -80,8 +87,10 @@ Khi người mua tìm (nhánh mua), AOND chỉ giới thiệu BĐS hợp từ DB
 4. **Khóa mạnh nhất:** model trả **ID** (qua tool `search_listings` chỉ trả từ DB); **app render sự thật** (giá/địa chỉ/ảnh) từ DB theo ID và **kiểm mỗi ID nằm trong tập ứng viên**. Mọi con số khách thấy đều từ DB; model chỉ khớp + diễn đạt.
 - **Chỉ link first-party:** nhánh mua **không bao giờ** gửi link ngoài cho người mua — chỉ link của AOND (trang aioinhadat.com, media tự host). Tham chiếu ngoài đã lưu chỉ dùng nội bộ.
 
-## Tìm kiếm ngữ nghĩa (khi thêm)
+## Tìm kiếm ngữ nghĩa (thiết kế 06/2026)
+
+> Hiện trạng: vector nhúng bằng Gemini embedding, cột `listings.nhung`, lịch `nhung-tick` nuôi; `tim_nha(p_vec)` dùng để cộng điểm (SRS-5.1zzzzzzz138). Đoạn dưới là thiết kế cũ.
 Embeddings biến mô tả mỗi listing thành vector (một lần lúc lưu; re-embed khi đổi); câu hỏi → top-K gần nhất theo cosine. **Hybrid: lọc cứng SQL trước (ngân sách/quận — embeddings dở về số/ràng buộc), xếp hạng ngữ nghĩa trong số còn lại.** Embedding model tách khỏi chat model (Anthropic không có API embeddings — Voyage AI, hoặc model đa ngữ mã nguồn mở như BGE-M3 / multilingual-E5 chạy local, hợp lộ trình Blackwell). Ở ~5.000 listing, quét cosine brute-force trong app là mili-giây — chưa cần vector DB tới khi vài trăm nghìn+ (lúc đó pgvector/Qdrant/FAISS).
 
-## Thứ tự build đề xuất
+## Thứ tự build đề xuất (06/2026 — lịch sử)
 Interface `Store` + backend **SQLite** (PK surrogate-ID + cột lọc/index) → lưu listing từ nhánh bán → `search_listings` (lọc + xếp hạng, chưa vector) → thêm **embeddings** → cắm **SharePoint** làm kho gốc + đồng bộ.

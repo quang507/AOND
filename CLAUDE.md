@@ -37,7 +37,7 @@ Thứ tự đọc = thứ tự phụ thuộc. Tài liệu sau **không được 
 | 11 | `docs/11-quy-trinh.md` | Quy trình BA và tester, ba cổng, định nghĩa XONG. Không sinh ID mới | — |
 | — | `docs/SRD-AI-Oi-Nha-Dat.docx` | **Bản XUẤT**, không phải nguồn sự thật: `bun run srd` sinh lại từ các file md (`scripts/sinh-srd-docx.mjs`); sửa md rồi sinh lại, đừng sửa tay .docx | — |
 
-**Lưu ý:** các tầng 00–06, 10, 11 sửa lần cuối khoảng 18/10/2026 — trước khi bot dồn hẳn về lõi Python; chỗ nào lệch với code / docs/07 thì code + docs/07 là bản đúng.
+**Lưu ý:** cả bộ docs được soát lại theo lõi Python và quyết định **bỏ hẳn CTV** ngày 28/10/2026 (SRS-5.1zzzzzzz237). Chỗ nào còn lệch với code thì code + mục SRS mới nhất ở docs/07 là bản đúng — sửa docs theo, đừng sửa code theo docs.
 
 ## 3. Tài liệu gốc & phân định phạm vi
 
@@ -101,7 +101,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 ### 6.2 Luật đang áp — lõi bot
 
 **Ghi ô tin**
-- Ô tin chỉ ghi điều KHÁCH nói: mỗi ô mới / đổi phải có `bang_chung` nằm nguyên trong lời khách (`_co_bang_chung`, SRS-73); câu bot hỏi, lời AI tả ảnh không phải bằng chứng. Thêm đường ghi ô mới thì qua cùng cổng. Ngoại lệ có chủ đích, đánh dấu `_phuong_he_thong`: ghi tạm hai phường (SRS-214 mục 8), phường tra theo số nhà / hẻm (SRS-236), phường theo dự án / ngã tư.
+- Ô tin chỉ ghi điều KHÁCH nói: mỗi ô mới / đổi phải có `bang_chung` nằm nguyên trong lời khách (`Engine._loc_o_tin` → `_gia_tri_ghi`, SRS-73); câu bot hỏi, lời AI tả ảnh không phải bằng chứng. Thêm đường ghi ô mới thì qua cùng cổng. Ngoại lệ có chủ đích, đánh dấu `_phuong_he_thong`: ghi tạm hai phường (SRS-214 mục 8), phường tra theo số nhà / hẻm (SRS-236), phường theo dự án / ngã tư.
 - Ô tin một nguồn `listings.boc_tach` (đọc CÔNG KHAI với tin đang bán); ô riêng của chủ nhà (`schema.O_NOI_BO`) ghi bảng `listing_noi_bo` (SRS-116). Khoá bắt đầu `_` là nội bộ, không ra khách.
 - Vai người rao (`seller_role`) chỉ nhận khi cụm trích GỌI TÊN vai (`_vai_co_bang_chung`, SRS-213) — phí theo vai đoán là báo sai tiền.
 - Mỗi cờ "đã báo / đã hỏi" nằm ở chỗ nhớ qua lượt (ô tin / SQLite), không ở `y_luot` (làm mới mỗi lượt) (SRS-214).
@@ -139,7 +139,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 - Gợi căn cần khu vực VÀ ngân sách (`co_tieu_chi`, SRS-214); mọi đường gợi căn đi qua `engine._can_goi_y` (bỏ căn đã chê), đừng gọi `can_phu_hop` trần (SRS-175). Mỗi lượt MỘT căn, bốn đoạn = bốn tin Zalo (SRS-160); không nói mã tin / "rổ". Đừng chỉnh trọng số `tim_nha` khi chưa có số đo (`do-tim-nha`).
 - Số ảnh nói thật (`_so_anh`); ảnh đã gửi đủ thì không gửi lại, đề nghị xin chủ nhà thêm (SRS-168 / 232). Số trong lời bot phía mua phải có trong dòng căn / lời khách / khối "SỐ TÍNH THEO CĂN" (`_so_khong_co_trong_can`).
 - Việc của khối `mua` nhận theo căn cứ RIÊNG từng việc (`_loc_viec_mua`), đừng nhận / bỏ cả khối theo một trích dẫn (SRS-232). Lượt không ghi gì thì không nói "đã chuyển / đã giữ lịch".
-- Mọi đường báo của phía mua (lịch xem, câu hỏi chủ nhà) đi thẳng admin, bỏ bước CTV (SRS-165 / 170 / 172 / 173); admin tự báo CTV dẫn khách.
+- **CTV đã bỏ hẳn** (chủ dự án 28/10/2026): mọi đường báo của phía mua (lịch xem, câu hỏi chủ nhà) đi chủ nhà hoặc admin (SRS-165 / 170 / 172 / 173). Code / DB còn tàn dư CTV (bảng `ctvs`, view `ctv_ranks`, cột `ctv_id`, nhánh `ctv` của trigger `info_requests`, khối hạng CTV ở `/admin`) — chưa dọn; đừng thêm việc mới giao CTV.
 - Tra dự án phía mua: `mua.hoi_du_an` → `tra_du_an` (chữ trước, vector sau — kết quả vector chỉ để khách xác nhận) (SRS-184 / 185). Bot chỉ hỏi "có phải dự án X" khi khách nhắc dự án hoặc địa chỉ trùng số nhà + đường (SRS-232).
 
 **Gửi chủ động & nhắc**

@@ -28,7 +28,7 @@ flowchart LR
 
 | File | Mô tả | Đối tượng đọc |
 |---|---|---|
-| [00-dinh-huong.md](00-dinh-huong.md) | **Định hướng (BRD hợp nhất Aioinhadat × nhadat.cc)** — thương hiệu Aioinhadat / AI Ơi Nhà Đất, trợ lý mỗi khách một tên người thật (FR-181; kho •ai bỏ 14/10/2026, SRS-5.1zzzzzzz9); sản phẩm hôm nay là gì, giữ gì của bên nào, câu khách hỏi đi về chủ nhà rồi CTV, sao Bắc Đẩu, lộ trình, quyết định treo | Founder, PO, mọi người mới vào |
+| [00-dinh-huong.md](00-dinh-huong.md) | **Định hướng (BRD hợp nhất Aioinhadat × nhadat.cc)** — thương hiệu Aioinhadat / AI Ơi Nhà Đất, trợ lý mỗi khách một tên (FR-181; nay 13 tên có chấm giữa, SRS-5.1zzzzzzz183); sản phẩm hôm nay là gì, giữ gì của bên nào, câu khách hỏi đi về chủ nhà rồi admin (CTV bỏ 28/10/2026), sao Bắc Đẩu, lộ trình, quyết định treo | Founder, PO, mọi người mới vào |
 | [00-glossary.md](00-glossary.md) | Từ điển thuật ngữ | Tất cả |
 | [01-research.md](01-research.md) | Bối cảnh thị trường, người dùng, đối thủ, ràng buộc | PO, Founder, Marketing |
 | [02-requirements.md](02-requirements.md) | Mục tiêu KD, persona, FR/NFR | PO, Dev Lead, QA |
@@ -38,7 +38,7 @@ flowchart LR
 | [06-ui-design.md](06-ui-design.md) | Design system + tone giọng chat | UI, Dev, Content |
 | [07-srs.md](07-srs.md) | Đặc tả kỹ thuật: kiến trúc, DB, API, NFR | Dev, QA, Vendor |
 | [08-traceability.md](08-traceability.md) | Ma trận truy vết | PO, QA |
-| [09-open-issues.md](09-open-issues.md) | 64 vấn đề (36 đã chốt hoặc đã đóng — dọn 07/09, chốt thêm 09/09 theo chat Gemini OPEN-55 và OPEN-40, đóng OPEN-45 10/09; 27 cần chủ dự án chốt, mới nhất OPEN-63 chính sách phí / hợp đồng môi giới / chia hoa hồng 21/10) | Founder, PO |
+| [09-open-issues.md](09-open-issues.md) | 67 vấn đề (55 đã chốt hoặc đã đóng — đợt 28/10/2026 đóng các mục mất đối tượng khi gỡ phần TypeScript và bỏ CTV; 12 cần chủ dự án chốt, mới nhất OPEN-65…67 về hạn admin trả lời, phần phí CTV, chỉ số I4 / I5) | Founder, PO |
 | [10-ke-hoach-kiem-thu.md](10-ke-hoach-kiem-thu.md) | Kế hoạch kiểm thử 4 tầng (suite TS-*) | QA, Dev, PO |
 | [11-quy-trinh.md](11-quy-trinh.md) | **Quy trình BA và tester** — hai vòng làm việc, ba cổng, máy kiểm gì / người kiểm gì, định nghĩa XONG | Tất cả |
 | [SRD-AI-Oi-Nha-Dat.docx](SRD-AI-Oi-Nha-Dat.docx) | **SRD gộp (.docx)** — bản đọc nhanh theo bố cục SRD Aioinhadat 06/2026 (7 mục I–VII + đối chiếu + còn treo + thư viện kịch bản + hội thoại giả lập 30 câu). **Bản xuất, không phải nguồn sự thật**: sinh từ các file md ở đây bằng `bun run srd` (`scripts/sinh-srd-docx.mjs`, 06/10/2026 theo yêu cầu chủ dự án "đổi thành đuôi docx như bên AOND"); sửa nội dung thì sửa md rồi sinh lại, không sửa tay file .docx | Sếp, chủ dự án, người mới, đối tác đọc một lần |
@@ -55,7 +55,7 @@ flowchart LR
 
 | Tầng | Độ đầy đủ | Chặn bởi |
 |---|---|---|
-| 00 Định hướng | 95% — tên đã chốt (Aioinhadat; trợ lý mỗi khách một tên từ 09/09, tên người thật từ 14/10), địa bàn đã chốt nửa đầu (Sài Gòn phường mới + Long An); chờ phạm vi loại BĐS, nhà cung cấp model, ngưỡng CTV; địa bàn nửa sau chốt 15/09 (lưu tên phường mới, bảng `wards`, FR-209); 07/09 thêm: bớt kế thừa nhadat.cc (OPEN-48); hỏi người bán đã chốt theo kịch bản Gemini → FR-177 | OPEN-40, OPEN-41, OPEN-42, OPEN-27, OPEN-48 |
+| 00 Định hướng | Không tự chấm % (soát lại 28/10/2026 theo lõi Python và quyết định bỏ CTV) — tên đã chốt (Aioinhadat; trợ lý mỗi khách một tên, 13 tên có chấm giữa từ 25/10), địa bàn đã chốt nửa đầu (Sài Gòn phường mới + Long An); chờ phạm vi loại BĐS; địa bàn nửa sau chốt 15/09 (lưu tên phường mới, bảng `wards`, FR-209); 07/09 thêm: bớt kế thừa nhadat.cc (OPEN-48); hỏi người bán đã chốt theo kịch bản Gemini → FR-177 | OPEN-40, OPEN-41, OPEN-42, OPEN-27, OPEN-48 |
 | 01 Research | 85% — thiếu số liệu thị trường sơ cấp | OPEN-01 |
 | 02 Requirements | 90% | OPEN-02, OPEN-05 |
 | 03 User Flow | 90% | OPEN-04 |
