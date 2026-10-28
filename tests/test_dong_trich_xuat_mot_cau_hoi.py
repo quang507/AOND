@@ -42,3 +42,16 @@ def test_tin_phu_trich_xuat_theo_cong_tac(monkeypatch):
     assert ct.startswith(che_do_test.DAU + " Đã trích xuất:") and "12.5 tỉ" in ct and "Tốn:" in ct
     assert len(ct.splitlines()) <= 4
     assert all(ct not in t.content for t in eng2.conversation("tp-2").history)   # không vào lịch sử model đọc
+
+
+def test_khong_con_prompt_dan_hoi_chong_cau():
+    """SRS-252 mục 5 (chủ dự án 28/10: "đoạn prompt nào có cái này thì xoá đi"): prompt lượt ảnh và lượt hỏi lại đất / nhà không còn dặn hỏi thêm ý."""
+    import inspect
+    from aioi import prompts
+    nguon = inspect.getsource(prompts)
+    assert "hỏi luôn số diện tích còn lại" not in nguon
+    assert "Nhà mặt tiền hay trong hẻm vậy ạ?" not in nguon
+    from aioi.schema import Property
+    p = Property()
+    p.fields.update({"loai_hinh": "nha_pho"})
+    assert "CHỈ MỘT câu hỏi cả lượt" in prompts.build_media_read_instruction("Lai", prop=p, next_field="gia")

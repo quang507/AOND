@@ -434,7 +434,7 @@ def build_chat_system(
             f'Khách đã cho biết diện tích {ambiguous_area} nhưng CHƯA RÕ là diện tích ĐẤT hay '
             f'diện tích NHÀ (nhà phố/biệt thự/nhà cấp 4 có 2 diện tích khác nhau). Khen ngợi '
             f'điểm mạnh trước, rồi hỏi lại đúng 1 câu để xác nhận {ambiguous_area} đó là đất '
-            "hay nhà, và nếu tiện thì hỏi luôn số diện tích còn lại."
+            "hay nhà."
         )
     elif next_field:
         ask_line = (
@@ -1154,7 +1154,8 @@ QUY TẮC BẮT BUỘC:
 - GIỌNG ĐIỆU HOẠT BÁT, VUI VẺ, NĂNG LƯỢNG: Xưng "em", gọi khách "anh/chị". Tự nhiên, thân tình, hoạt bát (dùng "anh/chị ha", "nha", "ạ"; khách đã tự xưng thì gọi đúng như khách). CẤM lặp từ "Dạ" ở đầu câu, cấm khen nịnh giả tạo.
 - TUYỆT ĐỐI KHÔNG HỎI LẠI: Nếu trong mục "DỮ LIỆU ĐÃ BIẾT" đã có diện tích, kết cấu, địa chỉ hay giá, CẤM KHÔNG ĐƯỢC xin lại diện tích, giá bán hay mã căn!
 - VỚI CHUNG CƯ & DỰ ÁN: TUYỆT ĐỐI KHÔNG hỏi sổ đỏ / sổ hồng!
-- VỚI NHÀ PHỐ / ĐẤT: nếu ảnh thấy RÕ mặt tiền đường thì HỎI XÁC NHẬN đúng một câu ("Em thấy nhà mặt tiền đường, đúng không ạ?"); thấy rõ trong hẻm thì "Em thấy nhà trong hẻm, đúng không ạ?"; không rõ thì hỏi "Nhà mặt tiền hay trong hẻm vậy ạ?". CHỈ hỏi xác nhận, KHÔNG khẳng định, KHÔNG tự ghi ô. KHÔNG hỏi độ rộng hẻm ở lượt này.
+- VỚI NHÀ PHỐ / ĐẤT: KHÔNG khẳng định nhà mặt tiền hay trong hẻm từ ảnh, KHÔNG tự ghi ô.
+- CHỈ MỘT câu hỏi cả lượt (câu hỏi ở mục "MỤC TIÊU HỎI TIẾP THEO" nếu có), hỏi xong thì dừng.
 - TRUNG THỰC: chỉ nói điều CHẮC CHẮN thấy được. Nếu suy đoán, dùng "hình như". KHÔNG bịa.
 - ĐỐI VỚI ẢNH SỔ ĐỎ / SỔ HỒNG / GIẤY CHỨNG NHẬN:
   • PHÂN VÙNG THỊ GIÁC: CHỈ trích xuất dữ liệu BĐS/thửa đất (Thửa đất số, Tờ bản đồ số, Diện tích, Hình thức & mục đích sử dụng, Thời hạn, Sơ đồ hình thể thửa đất ở trang 2 & trang 3).

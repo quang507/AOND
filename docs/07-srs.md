@@ -9077,6 +9077,11 @@ Chủ dự án 28/10 (sau chat thử số ký gửi 19:00): "Sao dặn hỏi 1 c
    `_nhieu_cau_hoi` đỡ chung mọi khối và cả phía mua; tốn thêm một lần gọi model ở lượt lệch. (3) *Bài đỏ*: `tests/test_dong_trich_xuat_mot_cau_hoi.py`
    (đếm câu hỏi bỏ bản tin / link, khối mặt tiền, lời hai câu hỏi → gọi lại, tin phụ theo công tắc) — đã thử tắt lưới trong `_soat_hinh_thuc`: đỏ;
    `tests/test_khong_con_lenh_dac_biet.py` sửa theo (gõ `$$$$$` vẫn là tin thường).
+5. **Soát tiếp mọi prompt dặn hỏi chồng câu** (chủ dự án 28/10: "đoạn prompt nào có cái này thì xoá đi"): (a) `build_chat_system` — bỏ "và nếu tiện
+   thì hỏi luôn số diện tích còn lại" ở lượt hỏi lại đất hay nhà; (b) prompt lượt ẢNH (`build_media_read_instruction`) — bỏ câu hỏi xác nhận "nhà mặt tiền
+   hay trong hẻm" vốn chồng lên câu hỏi ô kế (giữ "không khẳng định, không tự ghi ô"), thêm "chỉ một câu hỏi cả lượt"; (c) khối tách bán / thuê
+   (SRS-241) — câu hỏi giá THAY cho câu hỏi kế. Các khối hỏi xác nhận khác (tên đường, dự án, phường, mặt tiền) đã ghi "thay cho câu hỏi kế" / "câu
+   hỏi duy nhất". Khối "hỏi gộp cụm" (SRS-79) đã gỡ khỏi prompt từ SRS-136 (`CUM_TOI_DA = 1`).
 
 ### SRS-5.1zzzzzzz251 · Hai số chuyên việc: câu chào số ký gửi chỉ hỏi gửi bán / cho thuê (28/10/2026)
 Chủ dự án 28/10: "giờ có 2 số rồi đó, 1 số chuyên gửi bán 1 số chuyên mua nhé, sửa câu chào sửa bot prompt lại nhé, kiến thức vẫn là kiến thức chung".
