@@ -154,6 +154,12 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                        "Căn khách mua đã quan tâm chuyển sang đã chốt (nhắc `sold`). {ma} = mã căn, {toi} = bot tự xưng", "SRS-5.1zzzzzzz216"),
     "hoi_cam_nhan_sau_xem": ("{Goi} đi xem căn {ma} rồi thấy sao ạ? {Goi} kể {toi} nghe vài dòng để {toi} tìm tiếp cho đúng ý nhé.",
                              "4 giờ sau giờ hẹn xem nhà (nhắc `feedback`). {ma} = mã căn, {toi} = bot tự xưng", "SRS-5.1zzzzzzz216"),
+    "giu_ket_noi_mua": ("{Goi} ơi, {toi} vẫn đang để mắt tìm căn hợp ý cho {goi}. Nhờ {goi} nhắn lại {toi} một chữ thôi, kẻo Zalo tự ngắt "
+                        "kết nối thì {toi} không nhắn được nữa ạ 🙏",
+                        "Khách mua im 6 ngày — giữ kết nối Zalo trước mốc 7 ngày (FR-63). {toi} = bot tự xưng", "SRS-5.1zzzzzzz238"),
+    "giu_ket_noi_ban": ("{Goi} ơi, {toi} vẫn đang giữ tin căn của {goi} trên hệ thống. Nhờ {goi} nhắn lại {toi} một chữ thôi, kẻo Zalo tự "
+                        "ngắt kết nối thì có khách hỏi {toi} không báo {goi} được ạ 🙏",
+                        "Người bán im 6 ngày — giữ kết nối Zalo trước mốc 7 ngày (FR-63). {toi} = bot tự xưng", "SRS-5.1zzzzzzz238"),
 }
 
 # Khung bắt buộc của vài câu — code dựa vào khung đó (dòng mở bản nháp: tìm tiêu đề, cắt câu dẫn). Câu sửa sai khung → mặc định.

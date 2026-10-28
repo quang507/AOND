@@ -1,7 +1,7 @@
 """Trần lượt trả lời — mỗi người và cả hệ thống mỗi ngày (FR-192, SRS-5.1zzzzzzz53).
 
 Bot TypeScript cũ chặn hai tầng trước khi gọi model: `bump_user_quota(uid)` (30 lượt / giờ, 120 / 24 giờ; người đã là người
-rao / CTV / admin ×4) và `bump_model_quota(trần)` (trần cả hệ thống mỗi ngày, Vault `DAILY_MODEL_CALL_CAP`, mặc định 1000;
+rao / admin ×4) và `bump_model_quota(trần)` (trần cả hệ thống mỗi ngày, Vault `DAILY_MODEL_CALL_CAP`, mặc định 1000;
 chạm trần thì DB tự báo admin một lần mỗi ngày). Lõi Python thay bộ não từ 18/10/2026 mà không gọi hai hàm đó → không trần
 nào, ai có cửa vào cũng đốt được tiền model không giới hạn, và thẻ "Quota tiêu hao" ở /admin đếm 0 lượt.
 

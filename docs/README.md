@@ -38,7 +38,7 @@ flowchart LR
 | [06-ui-design.md](06-ui-design.md) | Design system + tone giọng chat | UI, Dev, Content |
 | [07-srs.md](07-srs.md) | Đặc tả kỹ thuật: kiến trúc, DB, API, NFR | Dev, QA, Vendor |
 | [08-traceability.md](08-traceability.md) | Ma trận truy vết | PO, QA |
-| [09-open-issues.md](09-open-issues.md) | 67 vấn đề (55 đã chốt hoặc đã đóng — đợt 28/10/2026 đóng các mục mất đối tượng khi gỡ phần TypeScript và bỏ CTV; 12 cần chủ dự án chốt, mới nhất OPEN-65…67 về hạn admin trả lời, phần phí CTV, chỉ số I4 / I5) | Founder, PO |
+| [09-open-issues.md](09-open-issues.md) | 67 vấn đề (56 đã chốt hoặc đã đóng — đợt 28/10/2026 đóng các mục mất đối tượng khi gỡ phần TypeScript và bỏ CTV, chốt hạn admin 5 giờ OPEN-65; 11 cần chủ dự án chốt, mới nhất OPEN-66…67 về phần phí CTV, chỉ số I4 / I5) | Founder, PO |
 | [10-ke-hoach-kiem-thu.md](10-ke-hoach-kiem-thu.md) | Kế hoạch kiểm thử 4 tầng (suite TS-*) | QA, Dev, PO |
 | [11-quy-trinh.md](11-quy-trinh.md) | **Quy trình BA và tester** — hai vòng làm việc, ba cổng, máy kiểm gì / người kiểm gì, định nghĩa XONG | Tất cả |
 | [SRD-AI-Oi-Nha-Dat.docx](SRD-AI-Oi-Nha-Dat.docx) | **SRD gộp (.docx)** — bản đọc nhanh theo bố cục SRD Aioinhadat 06/2026 (7 mục I–VII + đối chiếu + còn treo + thư viện kịch bản + hội thoại giả lập 30 câu). **Bản xuất, không phải nguồn sự thật**: sinh từ các file md ở đây bằng `bun run srd` (`scripts/sinh-srd-docx.mjs`, 06/10/2026 theo yêu cầu chủ dự án "đổi thành đuôi docx như bên AOND"); sửa nội dung thì sửa md rồi sinh lại, không sửa tay file .docx | Sếp, chủ dự án, người mới, đối tác đọc một lần |

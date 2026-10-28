@@ -5,10 +5,10 @@ và chạy theo dòng được ghi — lõi chỉ cần GHI ĐÚNG DÒNG:
 
 - **quan tâm căn** → `rpc/mark_listing_interest(p_codes, p_buyer_id)`: bảng `interests` + tin chuyển "đang quan tâm"; khi căn
   chốt, trigger `listings_bao_can_da_chot` báo những khách đã quan tâm.
-- **hẹn xem nhà** → dòng `viewings` (status `proposed`): trigger `viewings_bao_ctv_va_email` nhắc CTV / admin, mở câu xác nhận lịch.
+- **hẹn xem nhà** → dòng `viewings` (status `proposed`): trigger `viewings_bao_admin_va_email` nhắc admin, mở câu xác nhận lịch.
 - **câu khách hỏi mà dữ liệu căn không có** → dòng `info_requests` (source `buyer_ask`): trigger `route_info_request` giao chủ nhà
-  (có Zalo) / CTV khu vực / admin kèm hạn trả lời, `notify_info_request_escalation` gửi nhắc. Trả lời (chủ nhà trong chat, CTV /
-  admin bằng "#mã: câu trả lời") → `status = answered` → trigger `info_request_bao_lai_khach` báo lại khách.
+  (có Zalo, hạn 12 giờ) hoặc admin (hạn 5 giờ), `notify_info_request_escalation` gửi nhắc. Trả lời (chủ nhà trong chat, admin bằng
+  "#mã: câu trả lời") → `status = answered` → trigger `info_request_bao_lai_khach` báo lại khách.
 - **chốt kèo** → dòng `deals` khi tin chuyển `da_chot` (giá, % phí theo vai người rao).
 
 Ý khách do AI đọc (lượt lập thao tác, khoá `mua` / `tra_loi_khach_hoi`); code chỉ kiểm cụm trích có thật trong tin khách và mã căn
@@ -41,7 +41,7 @@ _LOAI_MUA_SANG_DB = {"nha_pho": "nha_pho", "nha_cap_4": "nha_cap4", "biet_thu": 
                      "can_ho": "chung_cu", "condo": "chung_cu", "dat": "dat", "dat_tho_cu": "dat", "dat_nen": "dat",
                      "phong_tro": "phong_tro", "mat_bang": "mat_bang", "toa_nha": "toa_nha", "chdv": "toa_nha",
                      "kho_xuong": "kho_xuong", "dat_nong_nghiep": "dat_nong_nghiep", "dat_kinh_doanh": "dat_kinh_doanh"}
-# Lệnh nhân viên (CTV / admin) trả lời câu khách hỏi: "#<mã tin>: <câu trả lời>" — cú pháp do hệ thống đặt trong tin nhắc
+# Lệnh admin trả lời câu khách hỏi: "#<mã tin>: <câu trả lời>" — cú pháp do hệ thống đặt trong tin nhắc
 # (`notify_info_request_escalation`), không phải đoán ý khách.
 _LENH_TRA_LOI = re.compile(r"^\s*#\s*([A-Za-z0-9][A-Za-z0-9-]{3,})\s*:\s*(.+)$", re.S)
 
@@ -483,7 +483,7 @@ class KhoNguoiMua:
 
     def ghi_sdt_hen_xem(self, buyer_id: str, sdt: str) -> bool:
         """Khách để số điện thoại sau khi hẹn xem (SRS-5.1zzzzzzz148, chủ dự án 23/10: lúc hẹn xem thì lấy được số): ghi vào lịch đang chờ
-        mới nhất CHƯA có số, rồi báo người phụ trách (cùng CTV với lời nhắc lịch; không có CTV thì admin). Không có lịch chờ → không ghi gì:
+        mới nhất CHƯA có số, rồi báo admin (CTV bỏ 28/10/2026). Không có lịch chờ → không ghi gì:
         số khách gõ ngoài ngữ cảnh hẹn xem không được lưu."""
         try:
             co = self._get(f"viewings?buyer_id=eq.{buyer_id}&status=in.(proposed,pending)&phone=is.null"
@@ -492,9 +492,8 @@ class KhoNguoiMua:
                 return False
             lich = co[0]
             self._request("PATCH", f"viewings?id=eq.{lich['id']}", data={"phone": sdt}, prefer="return=minimal")
-            cu = self._get(f"reminders?viewing_id=eq.{lich['id']}&kind=eq.escalation&select=ctv_id&limit=1")
             self._post("reminders", {"kind": "escalation", "buyer_id": buyer_id, "listing_id": lich.get("listing_id"),
-                                     "viewing_id": lich["id"], "ctv_id": (cu[0].get("ctv_id") if cu else None),
+                                     "viewing_id": lich["id"],
                                      "due_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                                      "note": f"Khách lịch xem #{lich.get('listing_code') or '?'} để lại SĐT {sdt}, gọi xác nhận giúp em nha"},
                        prefer="return=minimal")
@@ -504,7 +503,7 @@ class KhoNguoiMua:
             return False
 
     def ghi_hoi_chu_nha(self, buyer_id: str, can: dict, cau_hoi: str) -> bool:
-        """Câu khách hỏi → `info_requests` (DB tự giao chủ nhà / CTV / admin). Cùng câu đang chờ thì không tạo thêm."""
+        """Câu khách hỏi → `info_requests` (DB tự giao chủ nhà / admin). Cùng câu đang chờ thì không tạo thêm."""
         cau_hoi = cau_hoi.strip()[:500]
         try:
             co = self._get(f"info_requests?buyer_id=eq.{buyer_id}&listing_id=eq.{can['id']}&status=eq.pending"
@@ -562,13 +561,12 @@ class KhoNguoiMua:
             return False
 
     def la_nhan_vien(self, user_key: str) -> bool:
-        """CTV đang hoạt động hoặc admin (theo Zalo ID) — chỉ họ dùng lệnh "#mã: câu trả lời"."""
+        """Admin (theo Zalo ID) — chỉ admin dùng lệnh "#mã: câu trả lời" (CTV bỏ 28/10/2026, SRS-5.1zzzzzzz238)."""
         if not (self.is_configured and user_key):
             return False
         try:
             u = _q(user_key)
-            return bool(self._get(f"ctvs?zalo_user_id=eq.{u}&active=eq.true&select=id")
-                        or self._get(f"admins?zalo_user_id=eq.{u}&select=zalo_user_id"))
+            return bool(self._get(f"admins?zalo_user_id=eq.{u}&select=zalo_user_id"))
         except Exception as e:  # noqa: BLE001
             log.warning("la_nhan_vien lỗi: %s", e)
             return False

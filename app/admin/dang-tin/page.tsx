@@ -1,6 +1,6 @@
 "use client";
 // Admin tự đăng tin (FR-156) — cho nguồn KHÔNG đi qua Zalo OA: tin nhặt trên
-// Facebook, Chợ Tốt, sổ tay CTV, khách quen gọi điện.
+// Facebook, Chợ Tốt, khách quen gọi điện.
 //
 // Mọi thứ đi qua RPC `admin_dang_tin`: hàm đó tự kiểm quyền theo bảng `admins`
 // và tự sinh mã nối tiếp dãy BDS-Q5-####. Trang này KHÔNG được cấp quyền đọc
@@ -22,7 +22,6 @@ const NGUON = [
   ["facebook", "Facebook / hội nhóm"],
   ["chotot", "Chợ Tốt"],
   ["batdongsan", "Batdongsan.com.vn"],
-  ["ctv", "Cộng tác viên"],
   ["khach_quen", "Khách quen giới thiệu"],
   ["di_duong", "Đi đường thấy bảng"],
   ["khac", "Nguồn khác"],

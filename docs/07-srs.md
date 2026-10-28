@@ -9058,6 +9058,32 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz238 · Tin chống Zalo xoá kết nối làm lại; hạn admin 5 giờ; dọn CTV khỏi code (28/10/2026)
+Chủ dự án 28/10: "làm lại tin chống xoá kết nối, dọn CTV luôn đi làm giống bên anh Luận, hạn admin trả lời câu khách hỏi 5 giờ".
+1. **Tin giữ kết nối (FR-63)** — mất từ 18/10 khi gỡ edge function `nudge` (chỉ làm cho khách mua). Nay ở lõi: `src/aioi/giu_ket_noi.py`, vòng
+   `server._vong_giu_ket_noi` mỗi 30 phút (tắt `GIU_KET_NOI=tat`), chỉ 8–20 giờ Việt Nam. Rpc `khach_can_giu_ket_noi` (migration `20261028c`)
+   chọn hội thoại có tin KHÁCH cuối 6–7 ngày trước, chưa có tin giữ kết nối sau tin đó (`reminders` kind `reengage`, note `giu_ket_noi…`,
+   pending / sent), không phải ID thử, người thật không giữ khách, khách mua chưa tắt báo (`buyers.bao_can_moi`). Vai theo tin khách cuối:
+   câu mẫu `giu_ket_noi_mua` / `giu_ket_noi_ban` (cố định, không gọi model). Giữ chỗ pending → gửi qua bridge (đúng số khách đang nhắn) →
+   `sent` + ghi lịch sử / CRM; bridge hụt → `cancelled`, lượt sau thử lại trong cửa sổ. **Chưa kiểm**: luật 7 ngày là của Zalo OA (INS-03);
+   với Zalo cá nhân qua zca-js chưa biết Zalo có ngắt kết nối như vậy không.
+2. **Hạn admin 5 giờ (OPEN-65 chốt)** — `admin_han_gio()` (mặc định 5, `app_config.admin_han_gio`); `route_info_request` đặt `sla_due_at`
+   cho câu khách hỏi giao thẳng admin; `info_request_sla_tick` đặt hạn 5 giờ khi chủ nhà quá 12 giờ chuyển admin, và vòng 2 (thay vòng CTV)
+   nhắc lại admin ⏰ + email khi quá hạn. Câu xác nhận lịch xem (`xac_nhan_lich`) không tính hạn.
+3. **Dọn CTV — bước 1** (code + thân hàm, chạy được trước khi xoá bảng): `escalation-feed` không đọc `ctv_id` / `ctvs` (đích tin nội bộ chỉ còn
+   chủ nhà → admin); `mua.la_nhan_vien` chỉ còn admin; lời nhắc lịch không gắn `ctv_id`; `/admin` bỏ khối hạng CTV và cột `ctv_name`; hàm DB
+   `notify_info_request_escalation`, `info_request_sla_tick`, `bump_user_quota`, `quota_tieu_hao` bỏ nhánh CTV; hàm + trigger lịch xem đổi
+   tên `viewings_bao_admin_va_email`. Kiểm DB 28/10: bảng `ctvs` 0 dòng, mọi cột `ctv_id` 0 dòng có giá trị, không câu hỏi / nhắc nào giao CTV —
+   dọn không mất dữ liệu. **Bước 2** (migration riêng, sau khi lõi / escalation-feed / web mới đã chạy): xoá bảng `ctvs`, view `ctv_ranks`, cột
+   `ctv_id` ở `conversations` / `deals` / `info_requests` / `reminders`, hàm `chon_ctv` / `ctv_dang_ganh` / `ctv_sla_phut`, giá trị `ctv` của
+   `info_requests.assignee`, khoá `app_config.ctv_tran_ca`; đổi tên lịch `ctv-sla-tick`. Giá trị `ctv` của enum `msg_sender` giữ (Postgres không
+   gỡ được giá trị enum đơn giản; 0 tin dùng).
+4. **Ba câu gốc** — (1) *Lớp lỗi*: gỡ một khối (edge function `nudge`) mà không kê các tính năng nó gánh nên FR-63 mất im lặng 10 ngày; bỏ một vai
+   (CTV) ở luồng mà để lại bảng / hàm / màn hình; (2) *chỗ khác cùng lớp*: FR-32 / 54 / 55 / 60–62 / 191 cũng mất cùng `nudge`, vẫn ❌ (docs/02,
+   chưa ai yêu cầu làm lại); (3) *kiểm*: `tests/test_giu_ket_noi.py` (câu theo vai, ngoài giờ không gửi, bridge hụt thì huỷ chỗ giữ, rpc chưa có
+   thì im, xưng hô), `bot/tests/sql/giu-ket-noi-han-admin.sql` (chọn đúng khách 6–7 ngày, bỏ 3 ngày / 8 ngày / ID thử / đã nhắn; câu giao admin
+   có hạn 5 giờ — đỏ khi chưa áp migration), `tests/test_viec_mua.py` (lệnh "#mã:" chỉ admin). Chưa thử Zalo thật.
+
 ### SRS-5.1zzzzzzz237 · Soát lại cả bộ docs theo lõi Python; bỏ hẳn CTV (28/10/2026)
 Chủ dự án 28/10: "làm cả hai đi" (hook SessionStart + rút gọn CLAUDE.md), rồi sau bản soát docs: "Kiến trúc đúng — bỏ", "bỏ hẳn CTV đi, sửa docs từ bước 1 luôn", đóng OPEN mất đối tượng, docs kiểm thử sang pytest.
 1. **Soát** (28/10, đọc docs đối chiếu code): từ 18/10 bot dồn về lõi Python nhưng chỉ §5.1 của file này và `CLAUDE.md` được cập nhật; các tầng 00–06, 10, 13 và §1–4 của file này vẫn mô tả edge function TypeScript (`chat-reply`, `nudge`, `ask-seller`…), Zalo OA, CTV, `bot_prompts`, `required_facts`, Haiku 4.5, project Supabase cũ.

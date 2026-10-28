@@ -1,7 +1,7 @@
 // escalation-feed — FR-140: cửa cho bridge acc clone (chạy local) kéo các
-// việc "báo CTV/admin" khi OA chưa duyệt (nudge gửi OA không được thì reminder
+// việc "báo admin / chủ nhà" khi OA chưa duyệt (nudge gửi OA không được thì reminder
 // escalation vẫn pending ở đây). Bridge pull → tự resolve SĐT ra uid Zalo →
-// gửi → ack lại. FR-149: kéo cả kind `report` (báo cáo CTV 17h) về Zalo admin.
+// gửi → ack lại. FR-149: kéo cả kind `report` (báo cáo hằng ngày) về Zalo admin.
 // POST { action: "pull" } → { items: [{id, note, text, name, zalo_user_id, phone}] }
 // POST { action: "ack", id } → { ok: true }
 // FR-202 (11/09): pull trả thêm lời nhắc nudge ĐÃ SOẠN SẴN (`noi_dung_gui`) cho
@@ -103,13 +103,10 @@ Deno.serve(async (req) => {
     const learned = body.zalo_user_id ? String(body.zalo_user_id).trim().slice(0, 128) : "";
     if (learned) {
       const { data: r } = await client.from("reminders")
-        .select("seller_id, ctv_id, buyer_id").eq("id", id).maybeSingle();
+        .select("seller_id, buyer_id").eq("id", id).maybeSingle();
       if (r?.seller_id) {
         await client.from("sellers").update({ zalo_user_id: learned })
           .eq("id", r.seller_id).is("zalo_user_id", null);
-      } else if (r?.ctv_id) {
-        await client.from("ctvs").update({ zalo_user_id: learned })
-          .eq("id", r.ctv_id).is("zalo_user_id", null);
       } else if (!r?.buyer_id) {
         // (Lời nhắc NGƯỜI MUA — FR-202 — vốn có sẵn uid, không có gì để học, và
         //  cũng không phải việc của admin nên không rơi xuống nhánh này.)
@@ -118,8 +115,8 @@ Deno.serve(async (req) => {
         //             .is("zalo_user_id", null)` — KHÔNG có mệnh đề khoá nào.
         // Nó ghi đè MỌI dòng `admins` đang trống, bằng giá trị do người gọi
         // truyền vào, và chạy bằng service_role nên RLS không cản. Ai qua được
-        // cổng chỉ cần ack một reminder không gắn seller/ctv kèm uid của mình
-        // là từ đó BÁO CÁO CTV 17H HẰNG NGÀY (đơn, lịch xem, tên khách) và mọi
+        // cổng chỉ cần ack một reminder không gắn seller kèm uid của mình
+        // là từ đó báo cáo hằng ngày (đơn, lịch xem, tên khách) và mọi
         // escalation "khách cần người thật" đi thẳng về máy họ — còn admin thật
         // im lặng mất tin, vì ô đã hết NULL nên lần sau không ai ghi nữa.
         //
@@ -134,7 +131,7 @@ Deno.serve(async (req) => {
         // `escalation-feed admin uid` mỗi giờ có tin 🩺 được gửi, liên tục từ
         // 05:00 tới 10:00 UTC. (Bắt 08/09/2026.)
         console.log(
-          `escalation-feed: reminder ${id} không gắn seller/ctv nên không học ` +
+          `escalation-feed: reminder ${id} không gắn seller nên không học ` +
           "zalo_user_id cho admin (SEC-03) — đúng thiết kế. Điền tay ở /admin.",
         );
       }
@@ -170,10 +167,10 @@ Deno.serve(async (req) => {
   }
 
   // pull: việc pending tới hạn + đích liên lạc theo vai:
-  // seller (FR-144 — chủ động hỏi chính chủ) → CTV được giao → admin.
+  // seller (FR-144 — chủ động hỏi chính chủ) → admin. CTV bỏ hẳn 28/10/2026 (SRS-5.1zzzzzzz238).
   const { data: due } = await client
     .from("reminders")
-    .select("id, kind, note, ctv_id, seller_id, ctvs(name, zalo_user_id, phone), sellers(name, zalo_user_id, phone)")
+    .select("id, kind, note, seller_id, sellers(name, zalo_user_id, phone)")
     .eq("status", "pending").in("kind", KINDS)
     .lte("due_at", new Date().toISOString())
     .limit(10);
@@ -198,28 +195,27 @@ Deno.serve(async (req) => {
 
   type Target = { name?: string | null; zalo_user_id?: string | null; phone?: string | null } | null;
   const items = (due ?? []).map((r) => {
-    const ctv = r.ctvs as Target;
     const seller = r.sellers as Target;
     // Tin nội bộ (❓ 😟 🩺…) KHÔNG BAO GIỜ đi tới chủ nhà dù dòng việc gắn `seller_id` (`laTinNoiBo`, 01/10/2026).
     const chuNha = laTinNoiBo(r.note) ? null : seller;
-    const uid = chuNha?.zalo_user_id ?? ctv?.zalo_user_id ?? adm?.zalo_user_id ?? null;
-    const sdt = chuNha?.phone ?? ctv?.phone ?? adm?.zalo_phone ?? null;
+    const uid = chuNha?.zalo_user_id ?? adm?.zalo_user_id ?? null;
+    const sdt = chuNha?.phone ?? adm?.zalo_phone ?? null;
     return {
       id: r.id,
       note: r.note,
       // Text soạn sẵn dùng chung với nudge (_shared/claude.ts) — hai đường đi
       // ra ngoài (OA và bridge) phải nói y hệt nhau.
       text: escalationText(r),
-      name: chuNha?.name ?? ctv?.name ?? "admin",
-      // SRS-5.1zzzzzzz134 (22/10/2026, chủ dự án: "tin cho debug phải bắt đầu với $$$$$"): tin đi tới CTV / admin là TIN NỘI BỘ,
-      // bridge mở bằng "$$$$$ " để người cầm máy phân biệt với tin cho khách thật. Tin tới chủ nhà (chuNha) thì không.
+      name: chuNha?.name ?? "admin",
+      // SRS-5.1zzzzzzz134 (22/10/2026, chủ dự án: "tin cho debug phải bắt đầu với $$$$$"): tin đi tới admin là TIN NỘI BỘ,
+      // bridge mở bằng "$$$$$ " để người cầm máy phân biệt với tin cho khách thật. Tin tới chủ nhà (chuNha) thì không. (CTV bỏ 28/10/2026: tin nội bộ chỉ còn tới admin.)
       noi_bo: !chuNha,
       zalo_user_id: uid,
       // SEC-07 — CHỈ trả SĐT khi CHƯA biết uid Zalo.
       // Bridge cần số điện thoại đúng một việc: `findUser` để đổi ra uid lần
       // đầu. Biết uid rồi thì nó gửi thẳng, số kia thành thừa — mà thừa ở đây
       // nghĩa là mỗi lượt `pull` (mỗi phút, 10 dòng) lại đẩy SĐT THẬT của chủ
-      // nhà và CTV ra khỏi DB cho bất kỳ ai qua được cổng. Gọi lặp là gom dần
+      // nhà ra khỏi DB cho bất kỳ ai qua được cổng. Gọi lặp là gom dần
       // được cả danh bạ. Đây đúng thứ NFR-07/BR-06 hứa không đụng tới.
       phone: uid ? null : sdt,
     };

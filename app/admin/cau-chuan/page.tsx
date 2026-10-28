@@ -18,7 +18,7 @@ type Dong = {
 };
 type Nhap = { cau_chuan: string; diem: number | null; ghi_chu: string; dung_lam_mau: boolean };
 
-const AI_VI: Record<string, string> = { bot: "Trợ lý", buyer: "Khách", seller: "Chủ nhà", human: "Người thật", ctv: "CTV", system: "Hệ thống" };
+const AI_VI: Record<string, string> = { bot: "Trợ lý", buyer: "Khách", seller: "Chủ nhà", human: "Người thật", system: "Hệ thống" };
 const luc = (s: string) => new Date(s).toLocaleString("vi-VN", { hour12: false });
 const nhapTu = (d: Dong): Nhap => ({ cau_chuan: d.cau_chuan ?? d.cau_bot, diem: d.diem, ghi_chu: d.ghi_chu ?? "", dung_lam_mau: d.dung_lam_mau });
 

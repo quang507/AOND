@@ -2276,8 +2276,8 @@ class Engine:
                 caption = clean_text.replace(cand_url, "").strip() or None
                 return self.handle_link(user_key, cand_url, now=now, caption=caption)
 
-        # Nhân viên (CTV / admin) trả lời câu khách mua hỏi bằng lệnh "#mã: câu trả lời" (SRS-5.1zzzzzzz70) — cú pháp hệ thống tự đặt
-        # trong tin nhắc (`notify_info_request_escalation`), không phải đoán ý khách; chỉ nhận từ Zalo ID của CTV / admin.
+        # Admin trả lời câu khách mua hỏi bằng lệnh "#mã: câu trả lời" (SRS-5.1zzzzzzz70) — cú pháp hệ thống tự đặt
+        # trong tin nhắc (`notify_info_request_escalation`), không phải đoán ý khách; chỉ nhận từ Zalo ID của admin (CTV bỏ 28/10/2026).
         lenh = lenh_tra_loi(clean_text)
         la_nhan_vien = getattr(self._convstore, "la_nhan_vien", None)
         if lenh and la_nhan_vien is not None and la_nhan_vien(user_key):

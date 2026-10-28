@@ -45,7 +45,7 @@ export default function Page() {
         Nhắn câu rao qua Zalo ngay
       </a>
       <p className="mt-3 text-center text-sm text-mute">
-        Chủ nhà ngại gõ? Gọi tụi em đọc miệng cũng được - CTV ghi giùm.
+        Chủ nhà ngại gõ? Gọi tụi em đọc miệng cũng được - tụi em ghi giùm.
       </p>
     </div>
   );

@@ -1,7 +1,7 @@
 """Lõi gửi nhắc cho KHÁCH do trigger DB tạo — SRS-5.1zzzzzzz216 (27/10/2026).
 
 Trigger DB đẻ bốn loại nhắc mà từ 18/10 (gỡ edge function `nudge`, SRS-5.1zzzzzzz31) KHÔNG còn ai gửi — `escalation-feed` chỉ kéo
-`escalation` / `report` (tin nội bộ cho admin / CTV / chủ nhà) và dòng có `noi_dung_gui` soạn sẵn:
+`escalation` / `report` (tin nội bộ cho admin / chủ nhà) và dòng có `noi_dung_gui` soạn sẵn:
 - `followup` — chủ nhà / admin trả lời câu khách mua hỏi (`info_request_bao_lai_khach`), hoặc admin chốt lịch xem (`#mã: ok giờ`, có
   `viewing_id`); bot từng nói "có trả lời em báo lại khách ngay" mà khách không bao giờ nhận.
 - `sold` — căn khách đã quan tâm chuyển sang đã chốt (`bao_can_da_chot`).

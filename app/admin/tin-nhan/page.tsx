@@ -31,7 +31,7 @@ const TEN_NHAN: Record<NhanHT["nhan"], string> = {
 };
 
 const AI_VI: Record<string, string> = {
-  bot: "Trợ lý", buyer: "Khách", seller: "Chủ nhà", human: "Người thật", ctv: "CTV", system: "Hệ thống",
+  bot: "Trợ lý", buyer: "Khách", seller: "Chủ nhà", human: "Người thật", system: "Hệ thống",
 };
 const luc = (s: string | null) => s ? new Date(s).toLocaleString("vi-VN", { hour12: false }) : "";
 const gioNgan = (s: string | null) => {
