@@ -5,7 +5,7 @@ from aioi.config import Settings
 from aioi.engine import Engine
 from aioi.llm.base import ToolCall, ToolTurn
 from aioi.llm.mock import MockProvider
-from aioi.projects import SqliteProjectStore, Unit
+from aioi.projects import SqliteProjectStore, Unit, UnitType
 
 
 class _ScriptedAgent(MockProvider):
@@ -65,11 +65,12 @@ def test_agent_loop_learns_a_fact_into_the_project(tmp_path):
     eng = _engine(script, tmp_path)
     eng.handle("s", "căn 26 là lô góc đó nha em")
     unit26 = eng._projects.get("Nyah Phú Định").find_unit("26")
-    assert unit26.attrs.get("vi_tri") == "góc"             # learned + persisted on the project
+    # SRS-249: lời một người bán là một PHIẾU theo hạng của họ — chờ đủ người mới vào kho chung
+    assert list(unit26.votes["vi_tri"]) == ["góc"] and "vi_tri" not in unit26.attrs
     # persisted across restart too
     eng2 = Engine(MockProvider(Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")),
                   project_store=SqliteProjectStore(str(tmp_path / "loop.db")))
-    assert eng2._projects.get("Nyah Phú Định").find_unit("26").attrs.get("vi_tri") == "góc"
+    assert list(eng2._projects.get("Nyah Phú Định").find_unit("26").votes["vi_tri"]) == ["góc"]
 
 
 def test_drawing_request_never_touches_the_basket(tmp_path):
@@ -84,6 +85,21 @@ def test_drawing_request_never_touches_the_basket(tmp_path):
     assert codes == ["24", "42", "50"]                # basket UNTOUCHED (was being pruned)
     assert "bản vẽ" in r.reply.lower() or "mặt bằng" in r.reply.lower()   # a media answer
     assert "còn 1 căn" not in r.reply                 # not the destructive receipt
+
+
+def test_xin_ban_ve_gui_anh_that_khong_hua_suong(tmp_path):
+    """SRS-5.1zzzzzzz249: mẫu nhà có ảnh bản vẽ (link công khai) → lượt trả `ban_ve` để bridge gửi ảnh. Trước bản này tệp nằm kho riêng,
+    `web_url` rỗng, bot nói "em có lưu, để em gửi lại nha" mà không có gì gửi."""
+    settings = Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")
+    eng = Engine(_ScriptedAgent(settings, []), project_store=SqliteProjectStore(str(tmp_path / "bv.db")))
+    eng.import_listings("s", [{"ma_so_can": "24", "du_an": "Nyah Phú Định"}])
+    p = eng.register_project("Nyah Phú Định", voter="chac_chan:admin:a")
+    p.unit_types.append(UnitType("Cosmo", {"số tầng": "4"}, media=[
+        {"web_url": "https://x/mb.jpg", "content_type": "image/jpeg"}, {"web_url": "", "content_type": "image/jpeg"}]))
+    p.upsert_unit("24", {"mau_nha": "Cosmo"}, voter="chac_chan:admin:a")
+    eng._projects.save(p)
+    r = eng.handle("s", "bản vẽ căn 24")
+    assert r.ban_ve == ["https://x/mb.jpg"] and "gửi lại nha" not in r.reply
 
 
 def test_agent_loop_not_triggered_without_inventory(tmp_path):

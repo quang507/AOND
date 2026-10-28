@@ -65,11 +65,15 @@ def dong_du_an(p: dict[str, Any]) -> list[str]:
         ten = [t for t in ten if t][:CAT_TIEN_ICH]
         if ten:
             d.append("- Loại căn: " + "; ".join(ten))
+    tt = p.get("thong_tin") if isinstance(p.get("thong_tin"), dict) else {}
     ti = p.get("amenities")
-    if isinstance(ti, list):
-        ti = [_chu(x)[:140] for x in ti if _chu(x)][:CAT_TIEN_ICH]
-        if ti:
-            d.append("- Tiện ích: " + "; ".join(ti))
+    ti = [_chu(x)[:140] for x in ((ti if isinstance(ti, list) else []) + list(tt.get("tien_ich") or [])) if _chu(x)][:CAT_TIEN_ICH]
+    if ti:
+        d.append("- Tiện ích: " + "; ".join(dict.fromkeys(ti)))
+    # Dữ kiện người bán / admin bổ sung ĐÃ DUYỆT (đủ phiếu theo hạng hoặc admin ghi) — cùng một kho với phía bán (SRS-5.1zzzzzzz249).
+    for k, v in (tt.get("thuoc_tinh") or {}).items():
+        if _chu(k) and _chu(v):
+            d.append(f"- {_chu(k)[:60]}: {_chu(v)[:200]}")
     return d
 
 
@@ -95,7 +99,7 @@ def khoi_du_an(kq: dict[str, Any] | None) -> str:
     kt = _chu(kq.get("kien_thuc"))[:CAT_KIEN_THUC]
     out = dau + "\n".join(dong) + "\n"
     if kt:
-        out += ("Kiến thức dự án (do chủ dự án duyệt; dòng đánh dấu ⚠ là chưa chắc — KHÔNG khẳng định, nói sẽ kiểm tra rồi báo lại):\n"
+        out += ("Kiến thức dự án (tài liệu đã duyệt; dòng đánh dấu ⚠ là chưa chắc — KHÔNG khẳng định, nói sẽ kiểm tra rồi báo lại):\n"
                 + kt + "\n")
     out += ("CÁCH NÓI: chỉ dùng ĐÚNG dữ kiện ở khối này; thứ khách hỏi mà khối không có (hoặc đánh dấu ⚠) thì nói thật là em chưa có thông "
             "tin đó, em kiểm tra rồi báo lại — KHÔNG đoán, KHÔNG lấy từ trí nhớ. Giá là giá niêm yết THAM KHẢO, không bình luận đắt / rẻ / "

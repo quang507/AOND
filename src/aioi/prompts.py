@@ -356,15 +356,18 @@ def build_project_block(
 
     # Verify-conflicts opening: this seller ALSO lists in the project, so they're a good
     # person to break a tie between values other sellers gave. Ask ONE, lightly.
-    contested = project.contested_keys() if project is not None else []
+    # SRS-5.1zzzzzzz249: điều người bán khác nói về dự án CHỜ đủ phiếu (theo hạng Đồng / Bạc / Vàng) mới vào kho chung — ở đây chỉ là
+    # lời chờ xác minh, model không được nói như sự thật.
+    cho = project.pending() if project is not None else []
     if unit_type is not None:
-        contested += unit_type.contested_keys()
-    if contested:
+        cho += [f"mẫu {unit_type.name} — {x}" for x in unit_type.pending()]
+    if cho:
+        dong = "\n".join(f"- {x}" for x in cho[:6])
         parts.append(
-            f'\nCƠ HỘI XÁC MINH: dự án "{project.name}" còn thông tin CHƯA CHẮC do các seller '
-            f"khai khác nhau ({', '.join(dict.fromkeys(contested))}). Khách này cũng bán trong "
-            "dự án nên có thể biết. Tìm cơ hội hỏi NHẸ đúng 1 điểm (đừng hỏi dồn, đừng nói là "
-            "'seller khác khai sai') để em cập nhật cho chính xác. Nếu khách trả lời rõ thì cảm ơn.\n"
+            f'\nCƠ HỘI XÁC MINH: dự án "{project.name}" có điều người bán khác đã nói nhưng CHƯA đủ người xác nhận '
+            f"(chưa phải dữ liệu dự án, đừng nói như sự thật):\n{dong}\nKhách này cũng bán trong "
+            "dự án nên có thể biết. Tìm cơ hội hỏi NHẸ đúng 1 điểm (đừng hỏi dồn, đừng nhắc người khác đã nói) "
+            "để em cập nhật cho chính xác. Nếu khách trả lời rõ thì cảm ơn.\n"
         )
     return "".join(parts)
 

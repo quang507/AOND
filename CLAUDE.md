@@ -106,6 +106,10 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 - Vai người rao (`seller_role`) chỉ nhận khi cụm trích GỌI TÊN vai (`_vai_co_bang_chung`, SRS-213) — phí theo vai đoán là báo sai tiền.
 - Mỗi cờ "đã báo / đã hỏi" nằm ở chỗ nhớ qua lượt (ô tin / SQLite), không ở `y_luot` (làm mới mỗi lượt) (SRS-214).
 
+**Dự án (một nguồn, SRS-249)**
+- `projects` là kho chung (mogi + `thong_tin` đã duyệt; hai phía bot cùng đọc qua `SupabaseProjectStore` / `tra_du_an`); `du_an_kien_thuc` chỉ giữ phần học thêm nối `project_id` — đừng chép lại cột mogi sang đó. Dữ liệu riêng (giá, mã căn) ở tin (`listings.unit_code`) hoặc `rieng`, không vào kho chung.
+- Lời người bán về dự án là PHIẾU theo hạng (Đồng 1 / Bạc 2 / Vàng 3, chốt ≥ 6, phe khác ≤ 2), admin (`admins`) = `chac_chan:` ghi thẳng; mã phiếu chỉ do `Engine._ma_phieu` tính — đừng nhận phiếu từ model. Tệp mẫu nhà lưu `du-an/…` (bucket công khai) để gửi được.
+
 **Địa chỉ / phường**
 - Cột `listings.ward` chỉ mang `wards.ten_day_du` hoặc null; DB chặn lần cuối (`20261009b`). Xã Tây Ninh / Đồng Nai ở bảng riêng `xa_tinh_khac`, không nhét vào `wards`.
 - Tra địa danh: `dia_danh.py` — chữ trước, vector Gemini sau, máy kiểm tên gần chữ khách; vector do lịch `nhung-tick` / `nhung-dia-danh-tick` / `nhung-luat-tick` nuôi — đừng gỡ. Tìm theo nghĩa đi qua `tim_dia_danh_theo_nghia` và `tim_nha(p_vec)`, đừng dựng hàm từng bảng (SRS-180).

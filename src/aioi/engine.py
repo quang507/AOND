@@ -55,6 +55,8 @@ from .projects import (
     Project,
     ProjectStore,
     UnitType,
+    la_ma_phieu,
+    ma_phieu,
     merge_facts,
     normalize_project_name,
 )
@@ -792,6 +794,8 @@ class TurnResult:
     lead: BuyerLead | None = None
     # Khách mua xin ảnh (SRS-5.1zzzzzzz169): mã căn cần gửi ảnh ngay cả khi lời bot không dán link / ảnh đã gửi trong 24 giờ.
     xin_anh: list[str] = field(default_factory=list)
+    # Ảnh bản vẽ / mặt bằng mẫu nhà (link công khai) khách vừa xin — bridge gửi kèm sau chữ (SRS-5.1zzzzzzz249).
+    ban_ve: list[str] = field(default_factory=list)
 
 
 class ConversationStore(ABC):
@@ -1604,6 +1608,24 @@ class Engine:
 
     # --- projects (condos/developments) ---------------------------------
 
+    def _ma_phieu(self, user_key: str) -> str:
+        """Mã phiếu của người vừa nói về dự án (SRS-5.1zzzzzzz249, chủ dự án 28/10/2026: "ai nhắn zalo thì dựa theo hạng đồng bạc vàng để
+        vote cho kiến thức dự án, còn admin nhắn thì ghi thẳng"). Admin (bảng `admins`) → phiếu chắc chắn, vào kho chung ngay; người khác →
+        hạng theo điểm uy tín (cùng công thức `gamification` của khối ĐIỂM TIN), chưa có căn nào thì Đồng. Engine tự tính — không nhận mã
+        phiếu do model đưa (ô `nguon` của công cụ ghi nhớ chỉ là chữ ghi nguồn)."""
+        if not user_key or user_key == "?" or la_ma_phieu(user_key):
+            return user_key
+        la_admin = getattr(self._convstore, "la_nhan_vien", None)
+        if la_admin is not None and la_admin(user_key):
+            return ma_phieu(user_key, admin=True)
+        conv = self._conversations.get(user_key)
+        can = [li for li in conv.listings if li.prop.fields] if conv is not None else []
+        if not can:
+            return ma_phieu(user_key, "dong")
+        t = self._timeliness(conv, time.time())
+        diem = g.user_score([g.property_score(li.prop.completeness(), t) for li in can], num_listings=len(can))
+        return ma_phieu(user_key, {g.Tier.VANG: "vang", g.Tier.BAC: "bac"}.get(g.tier_for(diem), "dong"))
+
     def register_project(
         self,
         name: str,
@@ -1611,11 +1633,8 @@ class Engine:
         attributes: dict[str, str] | None = None,
         voter: str = "?",
     ) -> Project:
-        """Register/ENRICH a project's shared facts. The project registry is GLOBAL —
-        shared across ALL sellers — so info one seller gives about a project is reused when
-        another seller lists a different unit in it. MERGES into any existing project
-        (unions amenities, fills/updates attributes, keeps unit_types) so nothing a prior
-        seller provided is lost."""
+        """Register/ENRICH a project's shared facts. The project registry is GLOBAL — shared across ALL sellers. Mỗi điều người bán nói
+        là một PHIẾU theo hạng (`_ma_phieu`); chỉ khi đủ phiếu (hoặc admin nói) mới vào kho chung — tiện ích cũng vậy (SRS-249)."""
         name = self._canonical_du_an(name)  # a variant/model name enriches the real project
         project = self._projects.get(name)
         if project is None:  # about to CREATE a new project — is it a near-miss of an existing one?
@@ -1623,9 +1642,14 @@ class Engine:
             if concern is not None and concern[0] == "near":
                 self._pending_name_concern = concern[2]  # surfaced by the ingest reply → AOND asks
             project = Project(name=name)
+        voter = self._ma_phieu(voter)
         for a in amenities or []:
-            if a not in project.amenities:
-                project.amenities.append(a)
+            a = (a or "").strip()
+            if a and a not in project.amenities:
+                chot: dict[str, str] = {}
+                merge_facts(chot, project.votes, {f"tiện ích: {a}": "có"}, voter)
+                if chot:
+                    project.amenities.append(a)
         merge_facts(project.attributes, project.votes, attributes or {}, voter)
         self._projects.save(project)
         return project
@@ -1737,7 +1761,7 @@ class Engine:
         if unit_type is None:
             unit_type = UnitType(name=name)
             project.unit_types.append(unit_type)
-        merge_facts(unit_type.specs, unit_type.votes, {k: v for k, v in specs.items() if v}, voter)
+        merge_facts(unit_type.specs, unit_type.votes, {k: v for k, v in specs.items() if v}, self._ma_phieu(voter))
         self._projects.save(project)
         return unit_type
 
@@ -1762,34 +1786,19 @@ class Engine:
                  if isinstance(data.get(key), str) and data[key].strip()}
         return self.register_unit_type(project_name, name, specs, voter=voter)
 
-    def ingest_source_doc(
-        self, url: str, project_name: str, kind: str = "tài liệu", title: str | None = None,
-        assistant_name: str = "Đ•ai",
-    ) -> dict[str, str]:
-        """Read a source (phân lô, brochure mẫu nhà, bảng mô tả gói nội thất...) ONCE, transcribe
-        it FAITHFULLY to Markdown, store the .md on the PROJECT (persisted + uploaded to
-        SharePoint `<Dự án>/_Chung/`), and return the doc record. The bot re-reads this cheap
-        text later to advise with grounding — no re-OCR, no fuzzy recall. See [[aioi-data-model]]."""
-        # A brochure/phân lô can be hi-res and large; allow a bigger fetch (an image is
-        # downscaled in describe_media before it hits the vision API anyway).
-        data, mt = fetch_raw(url, max_bytes=30 * 1024 * 1024)
-        media_type = sniff_media_type(data) or (mt if mt in ("application/pdf",) else "application/pdf")
-        return self._ingest_doc_bytes(data, media_type, project_name, kind, title, assistant_name)
-
     def _ingest_doc_bytes(
         self, data: bytes, media_type: str, project_name: str, kind: str = "tài liệu",
-        title: str | None = None, assistant_name: str = "Đ•ai",
+        title: str | None = None, assistant_name: str = "Đ•ai", nguoi_gui: str = "",
     ) -> dict[str, str]:
-        """Core of ingest_source_doc, but from ALREADY-FETCHED bytes — so a brochure the seller
-        sends inline (not just an admin-pasted link) is ALSO transcribed once to a faithful .md
-        and stored on the project, ready for cheap grounded Q&A. See [[aioi-data-model]]."""
+        """A brochure / phân lô the seller sends (already fetched bytes) → transcribed once to a faithful .md and stored on the project,
+        ready for cheap grounded Q&A. See [[aioi-data-model]]. `nguoi_gui` = Zalo ID người gửi (tài liệu chờ duyệt, SRS-249)."""
         markdown = self._provider.describe_media(
             [(data, media_type)], build_transcribe_instruction(assistant_name, kind),
             max_tokens=8192,  # full multi-page transcription needs headroom (don't truncate)
         ).strip()
-        return self._save_project_doc(project_name, kind, title or kind, markdown)
+        return self._save_project_doc(project_name, kind, title or kind, markdown, nguoi_gui=nguoi_gui)
 
-    def _save_project_doc(self, project_name: str, kind: str, title: str, markdown: str) -> dict[str, str]:
+    def _save_project_doc(self, project_name: str, kind: str, title: str, markdown: str, nguoi_gui: str = "") -> dict[str, str]:
         """Store a grounded Markdown doc on a project: upload the .md to SharePoint `_Chung`
         (best-effort) and append it to `Project.docs` (persisted), so the bot can re-read it
         later for grounded answers. Re-saving the same title REPLACES the old copy."""
@@ -1809,6 +1818,8 @@ class Engine:
                 pass  # DB copy still kept; kho tệp is best-effort
         doc = {"kind": kind, "title": title, "markdown": markdown,
                "web_url": web_url, "item_id": item_id, "fetched_at": str(int(time.time()))}
+        if nguoi_gui:   # SRS-249: tài liệu một người bán gửi chờ duyệt — người khác chưa thấy (`Project.docs_cho`); admin gửi → vào kho chung
+            doc["nguoi_gui"] = self._ma_phieu(nguoi_gui)
         project = self._projects.get(project_name) or Project(name=project_name)
         project.docs = [d for d in project.docs if d.get("title") != title]  # re-ingest replaces
         project.docs.append(doc)
@@ -2044,7 +2055,7 @@ class Engine:
             for ut_name in {r["unit_type"] for r in rows if r.get("unit_type")}:
                 self.register_unit_type(du_an, ut_name, {}, voter=user_key)
             self._save_project_doc(du_an, kind="danh mục", title=f"danh mục {du_an}",
-                                   markdown=self._catalog_markdown(du_an, rows))
+                                   markdown=self._catalog_markdown(du_an, rows), nguoi_gui=user_key)
             self._seed_inventory(du_an, rows, voter=user_key)
         conv.pending_name_note = self._drain_name_concern()  # near-miss → ask (empty if none)
         # The prices are the SELLER'S OWN reference — keep them (keyed by mã lô) so we can attach
@@ -2117,6 +2128,7 @@ class Engine:
         project = self._projects.get(du_an)
         if project is None:
             return
+        voter = self._ma_phieu(voter)
         for r in rows:
             code = r.get("ma_so_can")
             if not code:
@@ -2247,7 +2259,7 @@ class Engine:
                 + "\n".join(lines))
         return "\n\n".join(sections)
 
-    def _project_memory_block(self, project: Project | None) -> str:
+    def _project_memory_block(self, project: Project | None, conv: "Conversation | None" = None) -> str:
         """The project knowledge the bot ALREADY HAS (price list the seller just shared + the
         pre-loaded phân lô / mẫu nhà docs) — injected every seller turn so AOND never 'forgets'
         the căn it just read and can RESOLVE a reference ('căn Cosmo', 'căn góc', 'căn lớn nhất')
@@ -2257,7 +2269,7 @@ class Engine:
         sections: list[str] = []
         if (structured := self._structured_shared_block(project)):
             sections.append(structured)
-        for d in project.docs:
+        for d in project.docs_cho(conv.user_key if conv is not None else None):   # tài liệu chưa duyệt của người khác: không đọc (SRS-249)
             sections.append(f'### {d.get("title", "tài liệu")}\n{d.get("markdown", "")}')
         if not sections:
             return ""
@@ -2412,7 +2424,7 @@ class Engine:
         # the conversation history + the structured memory (model specs) + the catalog tools.
         agent_project = q_project is not None and bool(q_project.units)
         if (q_project is not None and not agent_project
-                and (q_project.docs or conv.price_book) and factual_q):
+                and (q_project.docs_cho(conv.user_key) or conv.price_book) and factual_q):
             reply = self._answer_from_docs(conv, q_project, text)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
@@ -2517,27 +2529,16 @@ class Engine:
             if captured:
                 self._sync_media_folder(conv.active)
 
-        # 1b. If this seller's listing is in a project we have UNSETTLED facts about, treat
-        #     their message as a possible answer to the open question and cast a vote — this
-        #     is how the bot's "let me verify" ask actually resolves the conflict (majority
-        #     wins). Gated on contested keys so we don't run an extra extract every turn.
+        # 1b/1c. LEARN project / model knowledge from a seller's CHAT ANSWER (not just from a file): mỗi điều khách tả về dự án / mẫu nhà
+        #     là một PHIẾU theo hạng (SRS-5.1zzzzzzz249) — đủ phiếu mới vào kho chung, cũng là cách câu "hỏi xác minh" chốt được. Chỉ chạy
+        #     ở lượt AI đọc là khách đang tả dự án (`mo_ta_du_an`), không thêm một lần gọi mỗi lượt. Trước bản này chỉ học khi dự án CHƯA có
+        #     dữ kiện nào — nay dự án nguồn mogi luôn có sẵn dữ kiện nên điều kiện cũ làm bot không bao giờ học thêm.
         project = self.project_for(conv.prop, conv)
-        if project is not None and project.contested_keys():
-            self.register_project_from_text(text, project_name=project.name, voter=user_key)
-            project = self.project_for(conv.prop, conv)  # reload: the vote may have shifted/settled
-
-        # 1c. LEARN project / model knowledge from a seller's CHAT ANSWER (not just from a
-        #     file) — so info one seller types is reused for the next seller of the same
-        #     project/model (the shared registry). Gated: only for a project unit, only on a
-        #     descriptive message, and only while the project/model is still missing facts —
-        #     so it's not an extra LLM call every turn.
         du_an = conv.prop.fields.get("du_an")
         ut_name = conv.prop.fields.get("unit_type")
         if du_an and conv.y_luot.get("mo_ta_du_an"):
-            if project is None or not project.facts():
-                self.register_project_from_text(text, project_name=du_an, voter=user_key)
-            ut = self.unit_type_for(conv.prop)
-            if ut_name and (ut is None or not ut.specs):
+            self.register_project_from_text(text, project_name=project.name if project is not None else du_an, voter=user_key)
+            if ut_name:
                 self.register_unit_type_from_text(text, project_name=du_an, name=ut_name, voter=user_key)
             project = self.project_for(conv.prop, conv)  # reload for the block below
 
@@ -2760,7 +2761,7 @@ class Engine:
         # SRS-5.1zzzzzzz207: bỏ khối khen theo lượt — giọng theo bản anh Luận ("khen ngợi điểm mạnh trước" nằm sẵn trong prompt).
         system += (uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else ""
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
-        system += self._project_memory_block(project)  # remember the price list + phân lô; reason over it
+        system += self._project_memory_block(project, conv)  # remember the price list + phân lô; reason over it
         system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
         # A seller in a project WITH an inventory → the reply runs through the agent LOOP (same
         # sales-mode prompt + tools). The model decides per turn whether to query the catalog,
@@ -3116,6 +3117,13 @@ class Engine:
                               "required": ["ma_so_can"]}},
         ]
 
+    def _ket_qua_phieu(self, conv: Conversation, nguon: str) -> str:
+        """Lời công cụ ghi nhớ trả model: admin → đã vào kho chung; người khác → mới là một phiếu, chưa nói như sự thật (SRS-249)."""
+        if self._ma_phieu(conv.user_key).startswith("chac_chan:"):
+            return f"Đã lưu thẳng vào kiến thức chung dự án (admin, nguồn: {nguon})."
+        return (f"Đã ghi nhận một phiếu (nguồn: {nguon}) — chờ đủ người xác nhận mới vào kiến thức chung; đừng nói với khách là "
+                "đã cập nhật dữ liệu dự án.")
+
     def _exec_tool(self, conv: Conversation, project: Project, call) -> str:
         """Run ONE tool the model asked for, against the REAL store/basket, and return a short
         result string. The engine is the source of truth — tools return only true data (never
@@ -3147,18 +3155,18 @@ class Engine:
             return json.dumps(inv.coverage(project), ensure_ascii=False)
         if name == "ghi_nho_can":
             attrs = inp.get("thuoc_tinh") if isinstance(inp.get("thuoc_tinh"), dict) else {}
-            nguon = str(inp.get("nguon") or "").strip() or conv.user_key   # provenance = voter id
+            nguon = str(inp.get("nguon") or "").strip() or conv.user_key   # chữ ghi nguồn; phiếu theo người nói (SRS-249)
             inv.remember(project, str(inp.get("ma_so_can", "")),
-                         {k: str(v) for k, v in attrs.items()}, voter=nguon)
+                         {k: str(v) for k, v in attrs.items()}, voter=self._ma_phieu(conv.user_key))
             self._projects.save(project)
-            return f"Đã ghi nhớ vào kiến thức chung dự án (nguồn: {nguon})."
+            return self._ket_qua_phieu(conv, nguon)
         if name == "ghi_nho_du_an":
             attrs = inp.get("thuoc_tinh") if isinstance(inp.get("thuoc_tinh"), dict) else {}
             nguon = str(inp.get("nguon") or "").strip() or conv.user_key
             merge_facts(project.attributes, project.votes,
-                        {k: str(v) for k, v in attrs.items() if str(v).strip()}, voter=nguon)
+                        {k: str(v) for k, v in attrs.items() if str(v).strip()}, voter=self._ma_phieu(conv.user_key))
             self._projects.save(project)
-            return f"Đã lưu kiến thức chung dự án (nguồn: {nguon})."
+            return self._ket_qua_phieu(conv, nguon)
         if name == "them_can_vao_ro":
             code = str(inp.get("ma_so_can", "")).strip()
             if not code:
@@ -3210,12 +3218,12 @@ class Engine:
         return final or "Anh/chị nói rõ thêm giúp em căn nào ạ?"
 
     @staticmethod
-    def _project_map_doc(project: Project | None) -> dict[str, str] | None:
-        """The project's stored phân-lô / sơ-đồ / quy-hoạch map doc, if any (most recent)."""
+    def _project_map_doc(project: Project | None, voter: str | None = None) -> dict[str, str] | None:
+        """The project's stored phân-lô / sơ-đồ / quy-hoạch map doc, if any (most recent) — chỉ tài liệu đã duyệt / của chính người hỏi."""
         if project is None:
             return None
         needles = ("phan lo", "so do", "ban do", "quy hoach")
-        for d in reversed(project.docs):
+        for d in reversed(project.docs_cho(voter)):
             hay = normalize_project_name((d.get("title") or "") + " " + (d.get("kind") or ""))
             if any(n in hay for n in needles):
                 return d
@@ -3229,7 +3237,7 @@ class Engine:
         # doc → READ it to answer (they want us to consult the map), and offer the stored file. This
         # fixes AOND wrongly insisting "em CHƯA có bản vẽ" when the phân lô .md is right there.
         if conv.y_luot.get("ban_do_du_an"):   # AI đọc: khách xin bản đồ / phân lô của cả dự án (SRS-5.1zzzzzzz55)
-            doc = self._project_map_doc(project)
+            doc = self._project_map_doc(project, conv.user_key)
             if doc is not None:
                 answer = self._answer_from_docs(conv, project, text)
                 link = doc.get("web_url")
@@ -3254,9 +3262,15 @@ class Engine:
         if mau:
             who += f" (mẫu {mau})"
         if ut is not None and ut.media:
-            link = next((m.get("web_url") for m in ut.media if m.get("web_url")), "")
-            tail = f" đây ạ: {link}" if link else " em có lưu, để em gửi lại nha."
-            return f"Bản vẽ/mặt bằng mẫu {ut.name}{tail} 📐"
+            # SRS-5.1zzzzzzz249: ảnh bản vẽ có link công khai → bridge GỬI ẢNH (TurnResult.ban_ve); PDF thì dán link. Tệp cũ ở kho riêng
+            # (không link) thì nói thật là chưa gửi được, không hứa "để em gửi lại" khi không có đường gửi.
+            anh = [m["web_url"] for m in ut.media if m.get("web_url") and str(m.get("content_type", "")).startswith("image/")][:3]
+            pdf = next((m["web_url"] for m in ut.media if m.get("web_url") and m.get("content_type") == "application/pdf"), "")
+            if anh:
+                conv.y_luot["ban_ve"] = anh
+                return f"Bản vẽ/mặt bằng mẫu {ut.name} em gửi kèm đây ạ 📐" + (f"\nBản PDF: {pdf}" if pdf else "")
+            if pdf:
+                return f"Bản vẽ/mặt bằng mẫu {ut.name} đây ạ 📐: {pdf}"
         return cau_mau.cau("chua_co_ban_ve", can=who)
 
     def _answer_from_docs(self, conv: Conversation, project: Project, text: str) -> str:
@@ -3268,7 +3282,7 @@ class Engine:
         structured = self._structured_shared_block(project)  # mẫu nhà specs + project facts
         system = (
             f'Bạn là "{conv.assistant.name}", trợ lý BĐS của AI Ơi Nhà Đất. '
-            + build_project_docs_block(project.name, project.docs)
+            + build_project_docs_block(project.name, project.docs_cho(conv.user_key))
             + (f"\n\n=== KIẾN THỨC CHUNG DỰ ÁN (em ĐÃ CÓ SẴN) ===\n{structured}\n" if structured else "")
             + self._seller_price_block(conv)
             + "\nTrả lời câu hỏi của khách NGẮN GỌN, ĐÚNG theo tài liệu / mẫu nhà / bảng giá trên. Khi "
@@ -3375,7 +3389,7 @@ class Engine:
             if du_an:
                 markdown = f"# Tham khảo web — {du_an}\n\n*(Nguồn: {url})*\n\n{summary}"
                 self._save_project_doc(du_an, kind="tham khảo web",
-                                       title=f"tham khảo web — {host}", markdown=markdown)
+                                       title=f"tham khảo web — {host}", markdown=markdown, nguoi_gui=user_key)
                 reply = (f"Em đọc trang **{host}** rồi ạ:\n\n{summary}\n\n"
                          f"Em đã lưu vào kiến thức dự án (nguồn: {url}) — lần sau anh/chị hỏi là "
                          "có ngay ạ 😊")
@@ -3682,9 +3696,9 @@ class Engine:
 
     @staticmethod
     def _unittype_folder(project_name: str, ut_name: str) -> str:
-        """Shared media folder for a house model: `<Dự án>/<Mẫu nhà>/_Chung` — every unit
-        of the model inherits these (brochure/floor-plan/renders), per [[aioi-data-model]]."""
-        return f"{project_name}/{ut_name}/_Chung"
+        """Shared media folder for a house model: `du-an/<Dự án>/<Mẫu nhà>` — every unit of the model inherits these (brochure /
+        floor-plan / renders). Tiền tố `du-an/` = kho tệp để CÔNG KHAI (ảnh, PDF) để bot gửi được cho khách (SRS-5.1zzzzzzz249)."""
+        return f"du-an/{project_name}/{ut_name}"
 
     def _store_unittype_media(self, project_name: str, ut_name: str, items: list[FetchedMedia]) -> list[dict[str, str]]:
         """Upload model brochure/render files to the UnitType's shared folder and attach the
@@ -3702,7 +3716,7 @@ class Engine:
 
     def _ingest_group_docs(
         self, project_name: str | None, items: list[FetchedMedia], kind: str,
-        default_title: str | None = None,
+        default_title: str | None = None, nguoi_gui: str = "",
     ) -> list[str]:
         """A seller-sent DOCUMENT (PDF brochure / phân lô / gói nội thất) → transcribe ONCE to
         a faithful grounded .md on the project, so the bot can answer factual questions about it
@@ -3716,7 +3730,7 @@ class Engine:
                 continue
             title = default_title or (m.filename.rsplit(".", 1)[0] if m.filename else kind)
             try:
-                self._ingest_doc_bytes(m.data, m.media_type, project_name, kind=kind, title=title)
+                self._ingest_doc_bytes(m.data, m.media_type, project_name, kind=kind, title=title, nguoi_gui=nguoi_gui)
                 titles.append(title)
             except (FetchError, KhoTepError, ValueError):
                 continue
@@ -3748,7 +3762,7 @@ class Engine:
             if store:
                 self._store_unittype_media(proj.name, ut.name, fetched)
                 # A lone brochure PDF for a model → also transcribe to a grounded .md.
-                self._ingest_group_docs(proj.name, fetched, kind="mẫu nhà", default_title=ut.name)
+                self._ingest_group_docs(proj.name, fetched, kind="mẫu nhà", default_title=ut.name, nguoi_gui=user_key)
             return [], 0
         # A project DOCUMENT that isn't a model brochure — phân lô, sơ đồ, quy cách bàn giao,
         # phụ lục, tiện ích... — is SHARED project knowledge: transcribe it to a grounded .md so
@@ -3763,7 +3777,7 @@ class Engine:
                 title = self._doc_title(m.filename, description)
                 try:
                     self._ingest_doc_bytes(m.data, m.media_type, du_an,
-                                           kind="tài liệu dự án", title=title)
+                                           kind="tài liệu dự án", title=title, nguoi_gui=user_key)
                 except (FetchError, KhoTepError, ValueError):
                     pass
             return [], 0
@@ -3959,7 +3973,7 @@ class Engine:
                 self._upload_media(folder, store_items)  # no listing — project-level
                 # A project-level DOCUMENT (phân lô, quy hoạch...) → grounded .md for Q&A later.
                 docs = [] if data_only else self._ingest_group_docs(
-                    project.name if project else None, items, kind="tài liệu chung")
+                    project.name if project else None, items, kind="tài liệu chung", nguoi_gui=user_key)
                 doc_note = f" — đã lưu tài liệu để tra cứu: {', '.join(docs)}" if docs else ""
                 summary.append(f"📁 Thông tin CHUNG dự án ({files}){tag}{doc_note}:\n{mo_ta}")
             elif scope == "mau_nha":
@@ -3974,7 +3988,7 @@ class Engine:
                     # tầng, mặt tiền bao nhiêu?" can be answered from the document later.
                     if not data_only:
                         docs = self._ingest_group_docs(
-                            project.name, items, kind="mẫu nhà", default_title=ut.name)
+                            project.name, items, kind="mẫu nhà", default_title=ut.name, nguoi_gui=user_key)
                 doc_note = f" — đã lưu tài liệu để tra cứu: {', '.join(docs)}" if docs else ""
                 summary.append(f"🏗️ Mẫu nhà{' ' + ut.name if ut else ''} ({files}){tag}{doc_note}:\n{mo_ta}")
             elif scope == "can_da_co":
@@ -4237,6 +4251,7 @@ class Engine:
             xin_danh_gia=bool(conv.y_luot.get("xin_danh_gia")),
             danh_gia=conv.y_luot.get("danh_gia"),
             xin_anh=list(conv.y_luot.get("xin_anh") or []),
+            ban_ve=list(conv.y_luot.get("ban_ve") or []),
         )
 
     def _match_listing(self, conv: Conversation, ref: str) -> Listing | None:
@@ -4310,8 +4325,8 @@ class Engine:
         # data) instead of fabricating a blank căn. When the reference needs a guess it isn't
         # sure of, it leaves operations empty so the reply can confirm first.
         project = self.project_for(conv.prop, conv)
-        system = OPERATIONS_SYSTEM + RANH_GIOI_CACHE + self._project_memory_block(project)   # SRS-5.1zzzzzzz166: 16 nghìn chữ cố định chung mọi khách
-        if project is not None and project.docs:
+        system = OPERATIONS_SYSTEM + RANH_GIOI_CACHE + self._project_memory_block(project, conv)   # SRS-5.1zzzzzzz166: 16 nghìn chữ cố định chung mọi khách
+        if project is not None and project.docs_cho(conv.user_key):
             system += (
                 "KHI LẬP THAO TÁC từ bộ nhớ: khi khách rõ ràng THÊM/nhắc một căn CÓ trong bảng "
                 "giá, tạo op 'add' và điền LUÔN mã lô + mẫu nhà + giá + diện tích lấy từ bộ nhớ. "

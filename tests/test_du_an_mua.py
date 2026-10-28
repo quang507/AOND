@@ -33,9 +33,9 @@ class KhoDuAn(KhoGia):
             self.goi.append(("GET", endpoint, None))
             ids = endpoint.split("in.(")[1].split(")")[0].split(",")
             return [x for x in self.theo_id if str(x["id"]) in ids]
-        if endpoint.startswith("du_an_kien_thuc?ten=eq."):
+        if endpoint.startswith("du_an_kien_thuc?project_id=eq."):
             self.goi.append(("GET", endpoint, None))
-            return [{"du_lieu": {"docs": [{"markdown": self.kien_thuc}]}}] if self.kien_thuc else []
+            return [{"du_lieu": {"docs": [{"markdown": self.kien_thuc}, {"markdown": "TÀI LIỆU CHƯA DUYỆT", "nguoi_gui": "dong:z9"}]}}] if self.kien_thuc else []
         return super()._get(endpoint)
 
 
@@ -63,6 +63,7 @@ def test_tra_du_an_ro_gan_nhieu_khong_va_loi():
     assert KhoDuAn([NYAH]).tra_du_an("Nyah Phú Định")["khop"] == "ro"
     kq = KhoDuAn([NYAH]).tra_du_an("Phú Định")
     assert kq["khop"] == "gan" and kq["du_an"]["name"] == "Ny'ah Phú Định" and "⚠ Tiến độ" in kq["kien_thuc"]
+    assert "CHƯA DUYỆT" not in kq["kien_thuc"]            # SRS-249: tài liệu một người bán gửi chưa duyệt không ra phía mua
     kq2 = KhoDuAn([NYAH, {**NYAH, "id": "p2", "name": "Phú Định Garden"}]).tra_du_an("Phú Định")
     assert kq2["khop"] == "nhieu" and kq2["ung_vien"] == ["Ny'ah Phú Định", "Phú Định Garden"] and "du_an" not in kq2
     assert KhoDuAn([]).tra_du_an("Zzz City")["khop"] == "khong" and KhoDuAn([]).tra_du_an("ab")["khop"] == "khong"
@@ -166,3 +167,10 @@ def test_engine_chuyen_ham_tra_theo_nghia_cua_dia_danh_vao_tra_du_an():
     eng.handle("mua-da-4", "Có khu nhà phố quận 8 nào không em")
     khoi = [s for s in ai.system if du_an_mua.TIEU_DE in s]
     assert khoi and 'nhắc TÊN ĐẦY ĐỦ "Ny\'ah Phú Định"' in khoi[-1]
+
+
+def test_phia_mua_doc_du_kien_da_duyet_cung_kho_voi_phia_ban():
+    """SRS-5.1zzzzzzz249: dữ kiện đã chốt (đủ phiếu theo hạng / admin ghi) nằm ở `projects.thong_tin` — phía mua đọc cùng một chỗ với phía bán."""
+    p = {**NYAH, "thong_tin": {"thuoc_tinh": {"an ninh": "cổng từ, bảo vệ 24/7"}, "tien_ich": ["Sân tennis"]}}
+    dong = "\n".join(du_an_mua.dong_du_an(p))
+    assert "an ninh: cổng từ, bảo vệ 24/7" in dong and "Sân tennis" in dong and "Hồ bơi" in dong
