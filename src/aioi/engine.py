@@ -320,6 +320,17 @@ def _dap_ok_qua_dai(reply: str) -> bool:
     return len((reply or "").split()) > 15 or len(cau) > 1
 
 
+def _tin_khach_sau_ban_nhap(conv: "Conversation") -> tuple[str | None, list[str]]:
+    """(mốc của bản nháp 📋 gần nhất bot gửi, các tin khách gửi SAU bản nháp đó) — SRS-5.1zzzzzzz247. Không có bản nháp → (None, [])."""
+    sau: list[str] = []
+    for t in reversed(conv.history):
+        if t.role == "assistant" and "📋" in (t.content or ""):
+            return repr(t.at), sau
+        if t.role == "user" and t.content:
+            sau.append(t.content)
+    return None, []
+
+
 def _la_id_thu(user_key: str | None) -> bool:
     """ID thử của các ô bắn thử — chỉ để log thêm chi tiết (lời khách thật không vào log)."""
     return str(user_key or "").startswith(_TIEN_TO_ID_THU)
@@ -4442,6 +4453,14 @@ class Engine:
         if conv.listing_proposed and y in ("dong_y", "khong_dong_y") and not la_sticker(cuoi):
             if _trich_dan_khop(plan.get("duyet_trich_dan"), cuoi):
                 conv.duyet_luot = y
+            elif y == "dong_y":
+                # SRS-5.1zzzzzzz247 (bắn thử môi giới 28/10: "ok em đăng đi" → AI=dong_y trích_khớp=False hai lượt, tin lên trễ 3 lượt): AI đọc ra
+                # đồng ý trễ một lượt thì trích tin cũ. Nhận khi cụm nằm trong một tin khách gửi SAU bản nháp 📋 đang chờ, và bản nháp đó CHƯA
+                # được duyệt (`_duyet_ban`) — duyệt rồi thì trích cũ không duyệt lại.
+                moc, sau_nhap = _tin_khach_sau_ban_nhap(conv)
+                if moc is not None and conv.prop.fields.get("_duyet_ban") != moc and any(
+                        _trich_dan_khop(plan.get("duyet_trich_dan"), c) for c in sau_nhap):
+                    conv.duyet_luot = "dong_y"
 
         # Hỏi về gì / tự xưng gì (SRS-5.1zzzzzzz54): nhận khi cụm trích có thật trong lời khách — tin vừa nhắn (hỏi về), hoặc
         # một trong sáu lượt khách gần nhất (xưng hô giữ qua các lượt).
@@ -4563,8 +4582,14 @@ class Engine:
         if conv.listing_proposed:
             # Một dòng mỗi lượt chờ duyệt (SRS-5.1zzzzzzz94): bắn thử 21/10 có hai lượt khách bảo đăng mà không thành duyệt, journal không
             # cho biết hụt ở AI (bỏ trống) hay ở code (cụm trích không khớp). Chỉ ghi tên / cờ, không ghi lời khách.
-            log.warning("Duyệt: AI=%s trích_khớp=%s xin_đăng=%s → %s", y or "-", _trich_dan_khop(plan.get("duyet_trich_dan"), cuoi),
-                        bool(conv.y_luot.get("xin_dang")), conv.duyet_luot or "-")
+            log.warning("Duyệt: AI=%s trích_khớp=%s xin_đăng=%s → %s%s", y or "-", _trich_dan_khop(plan.get("duyet_trich_dan"), cuoi),
+                        bool(conv.y_luot.get("xin_dang")), conv.duyet_luot or "-",
+                        # SRS-5.1zzzzzzz247: cụm trích chỉ in với ID thử (CLAUDE.md §5) — để biết AI trích gì khi không khớp
+                        f" (trích: {str(plan.get('duyet_trich_dan') or '')[:80]!r})" if _la_id_thu(conv.user_key) else "")
+        if conv.duyet_luot == "dong_y":
+            moc = _tin_khach_sau_ban_nhap(conv)[0]
+            if moc is not None:
+                conv.prop.fields["_duyet_ban"] = moc   # SRS-5.1zzzzzzz247: bản nháp này đã duyệt
         nv = str(plan.get("ngoai_vung") or "").strip()
         if conv.role != "buyer":
             # Một dòng mỗi lượt người bán (SRS-5.1zzzzzzz96, đo nhận vùng): chỉ cờ — không ghi tên tỉnh / lời khách.
