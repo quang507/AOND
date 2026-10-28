@@ -50,3 +50,13 @@ def test_id_thu_chat_bang_model_thu_khach_that_khong(monkeypatch):
     assert MODEL_CHAT_LUOT.get() is None                                       # trả lại sau lượt
     monkeypatch.setenv("AIOI_CHAT_MODEL_THU", "tat")
     assert model_chat_thu() is None
+
+
+def test_model_chat_khach_that_mot_nguon_o_cai_vps(monkeypatch):
+    """SRS-5.1zzzzzzz235 (chủ dự án 28/10: "để sonnet 5.5 đi, khi nào cần thì thôi đổi lại"): model chat của lõi ghi vào .env bởi cai-vps.sh
+    từ MỘT dòng MODEL_CHAT; ID thử mặc định chat cùng model khách thật."""
+    import pathlib
+    s = (pathlib.Path(__file__).parents[1] / "bot/bridge-zca/cai-vps.sh").read_text(encoding="utf-8")
+    assert 'MODEL_CHAT="claude-sonnet-5-5"' in s and "AIOI_CHAT_MODEL=%s" in s
+    monkeypatch.delenv("AIOI_CHAT_MODEL_THU", raising=False)
+    assert model_chat_thu() is None

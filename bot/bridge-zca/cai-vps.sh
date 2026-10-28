@@ -136,6 +136,18 @@ if [ -d /opt/aond_core/src/aioi ]; then
     mv /opt/aond_core/.env.moi /opt/aond_core/.env
     xong "ANTHROPIC_API_KEY trong .env lõi ← Vault"
   fi
+  # 28/10/2026 (SRS-5.1zzzzzzz235, chủ dự án: "đổi model chạy thật đang chạy cho khách là sonnet đi … để sonnet 5.5 đi, khi nào cần thì
+  # thôi đổi lại"): model CHAT của lõi một nguồn ở dòng dưới — đổi lại Haiku thì sửa đúng dòng này (vd claude-haiku-5-5) rồi chạy cai-vps.
+  # Chỉ lượt chat / trả lời; bóc tách (AIOI_EXTRACT_MODEL) và đọc ảnh giữ nguyên.
+  MODEL_CHAT="claude-sonnet-5-5"
+  if [ -f /opt/aond_core/.env ]; then
+    umask 077
+    grep -vE '^AIOI_CHAT_MODEL=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
+    printf 'AIOI_CHAT_MODEL=%s\n' "$MODEL_CHAT" >> /opt/aond_core/.env.moi
+    chown --reference=/opt/aond_core/.env /opt/aond_core/.env.moi; chmod 600 /opt/aond_core/.env.moi
+    mv /opt/aond_core/.env.moi /opt/aond_core/.env
+    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT"
+  fi
   systemctl restart aond-core
   for i in $(seq 1 60); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done
   SUC_KHOE=$(curl -fsS -m 3 http://127.0.0.1:8000/health) || { echo "aond-core không trả /health sau khởi động lại — bản cũ ở $LUU"; exit 1; }

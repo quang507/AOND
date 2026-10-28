@@ -33,8 +33,9 @@ MODEL_CHAT_LUOT: contextvars.ContextVar[str | None] = contextvars.ContextVar("mo
 
 
 def model_chat_thu() -> str | None:
-    """Model chat cho ID thử: env `AIOI_CHAT_MODEL_THU` (mặc định claude-sonnet-4-6, cùng model bot anh Luận); "tat" / rỗng → None."""
-    v = os.getenv("AIOI_CHAT_MODEL_THU", "claude-sonnet-4-6").strip()
+    """Model chat RIÊNG cho ID thử: env `AIOI_CHAT_MODEL_THU`; "tat" / rỗng → None (ID thử chat cùng model khách thật). Mặc định "tat" từ
+    SRS-5.1zzzzzzz235 (khách thật đã chuyển Sonnet 5.5 — bắn thử phải đo đúng model khách gặp); muốn so model khác thì đặt env này."""
+    v = os.getenv("AIOI_CHAT_MODEL_THU", "tat").strip()
     return None if v.lower() in ("", "tat", "off") else v
 
 @dataclass
