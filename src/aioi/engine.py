@@ -4283,6 +4283,9 @@ class Engine:
             elif self._dia_danh is not None:
                 # SRS-5.1zzzzzzz231: nguyên văn điều luật gần nghĩa câu khách (kho dieu_luat) — kèm câu soạn sẵn, hoặc thay "chưa có" khi ngoài kho.
                 conv.y_luot["dieu_luat"] = self._dia_danh.dieu_luat(cuoi)
+        if h or hp:   # SRS-5.1zzzzzzz233: bắn thử 176 trượt mà log không cho biết AI đọc "phí" hay "pháp lý" — in khoá + kết quả kiểm trích
+            log.warning("Hỏi về: hoi_ve=%s nhận=%s · hoi_phap_ly=%s nhận=%s%s", h, conv.hoi_ve_luot is not None, hp, "hoi_phap_ly" in conv.y_luot,
+                     f" (trích pháp lý: {str(plan.get('phap_ly_trich_dan') or '')[:80]!r})" if _la_id_thu(conv.user_key) else "")
         # Thả tim (SRS-5.1zzzzzzz163): lời chào / lời đáp ngắn đồng ý do AI đọc theo nghĩa (cụm trích có trong tin vừa nhắn), hoặc khách vừa
         # duyệt bản nháp. Không dò từ khoá ở code.
         if plan.get("loi_xa_giao") in ("chao", "dong_y") and _trich_dan_khop(plan.get("loi_xa_giao_trich_dan"), cuoi):

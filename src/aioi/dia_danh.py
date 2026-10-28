@@ -258,7 +258,7 @@ class TraDiaDanh:
         kq = [{"khoa": u.get("khoa"), "ten": u.get("ten"), "do_gan": u.get("do_gan")} for u in ds[:3]
               if dau - (u.get("do_gan") or 0) <= BIEN_NGHIA_DU_AN and u.get("khoa")]
         if kq:
-            log.info("dự án theo nghĩa: %r → %s", ten, [k["ten"] for k in kq])
+            log.warning("dự án theo nghĩa: %r → %s", ten, [k["ten"] for k in kq])
         return kq
 
     def dieu_luat(self, cau: str | None, k: int = 3) -> list[dict]:
@@ -276,7 +276,7 @@ class TraDiaDanh:
         ds = [d for d in self._thu("tim_dieu_luat", {"p_vec": vec, "p_limit": 6})
               if isinstance(d, dict) and (d.get("do_gan") or 0) >= NGUONG_LUAT and d.get("noi_dung")]
         if ds:
-            log.info("điều luật theo nghĩa: %s", [(d.get("so_hieu"), d.get("dieu"), round(d.get("do_gan") or 0, 3)) for d in ds[:k]])
+            log.warning("điều luật theo nghĩa: %s", [(d.get("so_hieu"), d.get("dieu"), round(d.get("do_gan") or 0, 3)) for d in ds[:k]])
         return ds[:k]
 
     def quan(self, ten: str | None) -> str | None:

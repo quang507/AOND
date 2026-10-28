@@ -1855,6 +1855,9 @@ QUY TẮC:
   NGUYÊN VĂN câu hỏi của khách. Câu thuộc nhóm TRANH CHẤP / KIỆN TỤNG / THỪA KẾ, CHIA DI SẢN / LY HÔN CHIA TÀI SẢN / NGHI GIẤY TỜ GIẢ, LỪA
   ĐẢO / CÁCH GIẢM, TRÁNH THUẾ / hồ sơ cụ thể cần người đọc giấy tờ → phap_ly_nhay_cam = true (vẫn điền hoi_phap_ly nếu có khoá hợp).
   Khách chỉ kể tình trạng pháp lý căn của mình ("sổ hồng riêng", "chưa hoàn công") KHÔNG phải câu hỏi → bỏ trống.
+  Câu có chữ "phí" mà hỏi khoản PHẢI NỘP khi mua / bán / sang tên nhà (thuế, lệ phí, phí công chứng — "bán nhà phải nộp những thuế
+  phí gì", "sang tên tốn phí gì") là câu PHÁP LÝ, kể cả khi người hỏi là CHỦ NHÀ đang rao tin → hoi_phap_ly, KHÔNG hoi_ve = "phi".
+  Khách hỏi lẫn cả hai (thuế phí nhà nước và phí bên mình) → chỉ điền hoi_phap_ly.
   DANH MỤC PHÁP LÝ (khoá: nội dung):
 {DANH_MUC_PHAP_LY}
 - KHÁCH TỰ XƯNG (đọc cả các lượt trước): xung_ho = "em" khi khách tự xưng em ("nhà em", "em gửi"); "anh" / "chi" khi khách
