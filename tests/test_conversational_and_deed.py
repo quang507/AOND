@@ -87,7 +87,7 @@ def test_deed_vision_handling_via_engine():
     r = eng.handle_media("u_deed", "https://example.com/so_hong_quan_7.jpg")
     assert r.reply
     # Should acknowledge receipt of deed file and extracted data
-    assert "so_hong_quan_7.jpg" in r.reply
+    assert "📎" not in r.reply and "Thông tin đọc từ giấy tờ" in r.reply
     assert "123 Nguyễn Thị Thập" in r.reply
     assert "75m2" in r.reply
     assert "chuẩn chỉnh" not in r.reply and "đầy đủ rồi" not in r.reply   # SRS-5.1zzzzzzz82: không khen sổ khi mới đọc ảnh
@@ -117,7 +117,7 @@ def test_zalo_bridge_deed_image_chat_reply(monkeypatch):
         resp = client.post("/chat-reply", json=payload)
         assert resp.status_code == 200
         data = resp.json()
-        assert "so_do_chinh_chu.png" in data["reply"]
+        assert "📎" not in data["reply"]
         assert "123 Nguyễn Thị Thập" in data["reply"]
         assert len(data["replies"]) >= 1
         assert len(data["nhip_go"]) == len(data["replies"])
@@ -151,15 +151,9 @@ def test_build_media_read_instruction_injects_known_fields_and_forbids_reask():
     assert "mặt tiền đường hay trong hẻm" in inst   # nhãn ô lo_gioi_hem (SRS-5.1zzzzzzz95)
 
 
-def test_friendly_media_receipt_hash_cleaning():
-    # Long CDN hash string -> friendly text
-    r = Engine._friendly_media_receipt("2aOboR5fFnl9STXbuUhDNvitS8AjwWcOUN1PvA1o.jpg", 1)
-    assert "2aOboR5fFnl9STXbuUhDNvitS8AjwWcOUN1PvA1o" not in r
-    assert "Em đã nhận 1 ảnh của nhà mình rồi nhé! 📸✨" in r
-
-    # Meaningful name -> preserved
-    r2 = Engine._friendly_media_receipt("so_hong_quan_7.jpg", 1)
-    assert "so_hong_quan_7.jpg" in r2
+def test_khong_con_dong_em_da_nhan():
+    """SRS-5.1zzzzzzz254 (chủ dự án 28/10: câu "📎 Em đã nhận…" viết cứng "Em", sai khi khách xưng em — "xóa luôn")."""
+    assert not hasattr(Engine, "_friendly_media_receipt")
 
 
 def test_lo_gioi_hem_does_not_assume_alley():

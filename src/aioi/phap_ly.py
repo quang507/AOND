@@ -118,7 +118,7 @@ MAC_DINH: dict[str, tuple[str, str, str, str]] = {
         "Muốn chuyển nhượng đất thì phải có Giấy chứng nhận (trừ vài trường hợp như thừa kế), đất không tranh chấp, không bị kê biên, và "
         "hợp đồng phải công chứng hoặc chứng thực. Mua đất chưa có sổ bằng giấy tay thì không sang tên được, bên mua rất khó bảo vệ quyền "
         "lợi khi có tranh chấp. Chỉ một số giao dịch giấy tay làm trước 01/08/2024, đất có giấy tờ gốc và không tranh chấp, mới có đường "
-        "xin cấp sổ. Bên em không nhận rao những tin không có giấy tờ rõ ràng.",
+        "xin cấp sổ.",   # SRS-5.1zzzzzzz254: bỏ "Bên em không nhận rao tin không có giấy tờ" — chủ dự án 28/10 "lúc đầu thì cứ nhận đã"
         "Luật Đất đai 2024 (Điều 27 khoản 3, Điều 45 khoản 1, Điều 137 khoản 5)", "giay_to"),
     "tra_quy_hoach": (
         "Kiểm tra quy hoạch, lộ giới của một thửa đất ở đâu",

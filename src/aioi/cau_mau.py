@@ -83,10 +83,8 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                   "được bất cứ lúc nào nha). ✅", "Khách đồng ý ẩn bớt / chỉ giữ vài căn. {n} = số căn còn rao", "Hỏi trước khi ẩn"),
     "da_cap_nhat_ro": ("Em đã cập nhật rổ hàng rồi ạ.", "Khách đồng ý, việc khác ngoài ẩn", "Hỏi trước khi ẩn"),
     "giu_nguyen_ro": ("Em giữ nguyên rổ hàng, không xóa gì đâu ạ 👍", "Khách không đồng ý ẩn", "Hỏi trước khi ẩn"),
-    "nhan_anh": ("📎 Em đã nhận {n} ảnh của nhà mình rồi nhé! 📸✨", "Dòng đầu khi khách gửi ảnh (tên file là mã máy). {n} = số ảnh",
-                 "Nhận ảnh"),
     "file_qua_lon": ("File to quá ạ (>20MB), xin lỗi em chưa xử lý được 😔. Em đã báo admin rồi ạ — {goi} không cần làm gì thêm đâu. "
-                     "Admin của em sẽ vào chat này đọc file/link của mình rồi xử lý sau nhé!",
+                     "Admin của em sẽ vào chat này đọc file / link rồi xử lý sau nhé!",
                      "Khách gửi file / ảnh quá 20 MB — đã báo admin", "Nhận tệp"),
     "link_thu_muc_drive": ("Đây là link thư mục Drive ạ. {Goi} gửi từng ảnh/file (hoặc link từng tấm) giúp em nhé!",
                            "Khách gửi link THƯ MỤC Google Drive (chưa đọc được)", "Nhận tệp"),
@@ -94,7 +92,7 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                            "Khách gửi link ảnh / tệp không tải được", "Nhận tệp"),
     "link_web_trong": ("Em mở link nhưng chưa đọc được nội dung ạ 😅. {Goi} gửi link khác, hoặc dán nội dung giúp em nhé.",
                        "Khách gửi link trang web mà trang trống", "Nhận tệp"),
-    "nhap_bang_tinh": ("Em nhận được bảng tính rồi, đã nhập {n} căn vào rổ hàng của mình ạ! 🎉 {Goi} xem lại giúp em nhé.",
+    "nhap_bang_tinh": ("Em nhận được bảng tính rồi, đã nhập {n} căn vào rổ hàng ạ! 🎉 {Goi} xem lại giúp em nhé.",
                        "Khách gửi link bảng tính (rổ hàng). {n} = số căn đã nhập", "Nhận tệp"),
     "bang_tinh_trong": ("Em có nhận bảng tính nhưng chưa đọc ra căn nào — {goi} kiểm tra lại các cột (loại hình, địa chỉ, diện tích, "
                         "giá...) giúp em nhé.", "Bảng tính không đọc ra căn nào", "Nhận tệp"),
@@ -153,6 +151,12 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                          "{toi} = bot tự xưng — câu sửa phải giữ {gio}", "SRS-5.1zzzzzzz216"),
     "bao_can_da_ban": ("Căn {ma} {goi} quan tâm vừa có người chốt rồi ạ. {Goi} muốn {toi} tìm căn khác tương tự không ạ?",
                        "Căn khách mua đã quan tâm chuyển sang đã chốt (nhắc `sold`). {ma} = mã căn, {toi} = bot tự xưng", "SRS-5.1zzzzzzz216"),
+    "bao_them_anh": ("Chủ nhà căn {ma} vừa gửi thêm ảnh rồi {goi} ạ 📸 {Goi} xem ở đây nhé: {url}",
+                     "Chủ nhà gửi thêm ảnh sau khi khách mua xin (nhắc `followup`). {ma} = mã căn, {url} = link trang tin — câu sửa phải giữ {url}",
+                     "SRS-5.1zzzzzzz254"),
+    "bao_tin_len_web": ("Tin của {goi} đã hiển thị trên web rồi ạ 🎉 {Goi} xem ở đây nhé: {url}",
+                        "Tin chủ nhà đã duyệt mà lúc đó chưa hiển thị, nay đã lên web (nhắc `len_web`). {url} = link trang tin — câu sửa phải giữ {url}",
+                        "SRS-5.1zzzzzzz254"),
     "hoi_cam_nhan_sau_xem": ("{Goi} đi xem căn {ma} rồi thấy sao ạ? {Goi} kể {toi} nghe vài dòng để {toi} tìm tiếp cho đúng ý nhé.",
                              "4 giờ sau giờ hẹn xem nhà (nhắc `feedback`). {ma} = mã căn, {toi} = bot tự xưng", "SRS-5.1zzzzzzz216"),
     "giu_ket_noi_mua": ("{Goi} ơi, {toi} vẫn đang để mắt tìm căn hợp ý cho {goi}. Nhờ {goi} nhắn lại {toi} một chữ thôi, kẻo Zalo tự ngắt "
@@ -187,7 +191,7 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
 # Chỗ giữ chữ câu sửa tay BẮT BUỘC giữ (thiếu thì bot nói câu không có con số) — kiểm trên câu sửa, trước khi điền.
 _BAT_BUOC = {"bao_phi": ("{phi}",), "xac_nhan_lich": ("{gio}", "{can}"), "bao_tra_loi_chu_nha": ("{tra_loi}",),
              "bao_lich_da_chot": ("{gio}",), "web_da_luu": ("{tom_tat}", "{url}"), "web_hoi_du_an": ("{tom_tat}",),
-             "ban_ve_pdf": ("{link}",)}
+             "ban_ve_pdf": ("{link}",), "bao_them_anh": ("{url}",), "bao_tin_len_web": ("{url}",)}
 
 _KHUNG = {
     "mo_dau_nhap": lambda c: c.startswith("📋") and c.rstrip().endswith(":") and "\n" not in c,

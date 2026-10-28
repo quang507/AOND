@@ -1179,6 +1179,29 @@ class SupabaseConversationStore(KhoNguoiMua):
         return {"len_web": r.get("status") == "dang_ban", "thieu": thieu, "ma": code,   # mã → link trang tin (SRS-5.1zzzzzzz220)
                 "cho_duyet": not thieu and bool(r.get("can_chu_duyet")) and not r.get("chu_duyet_at")}
 
+    def hen_bao_len_web(self, conv: Conversation) -> bool:
+        """Tin chủ nhà đã duyệt mà chưa hiển thị (hệ thống / admin đang hoàn tất) → một nhắc `len_web`: `gui_nhac` chờ tới khi tin `dang_ban`
+        rồi nhắn chủ nhà kèm link (SRS-5.1zzzzzzz254, chủ dự án 28/10: "nhắn khi tin hiển thị … cấu hình hệ thống để làm đi"). Đã có nhắc
+        đang chờ của tin này thì thôi. True khi có nhắc (mới hoặc sẵn)."""
+        if not self.is_configured:
+            return False
+        try:
+            sid = self._get_or_create_seller(conv.user_key)
+            code = conv.active.listing_id[:8].upper()
+            tin = self._get(f"listings?seller_id=eq.{sid}&code=eq.{code}&select=id") if sid else []
+            if not tin:
+                return False
+            if self._get(f"reminders?kind=eq.len_web&status=eq.pending&listing_id=eq.{tin[0]['id']}&select=id"):
+                return True
+            from datetime import datetime, timezone
+            self._post("reminders", {"kind": "len_web", "seller_id": sid, "listing_id": tin[0]["id"],
+                                     "due_at": datetime.now(timezone.utc).isoformat(), "note": f"báo chủ nhà khi tin #{code} hiển thị"},
+                       prefer="return=minimal")
+            return True
+        except Exception as e:  # noqa: BLE001 — hẹn hụt thì bot không hứa nhắn (prompt đọc cờ)
+            log.warning("hen_bao_len_web lỗi: %s", e)
+            return False
+
     @staticmethod
     def _nguoi_noi_cuoi(rows: list[dict]) -> str | None:
         """Vai của khách ở tin KHÁCH gần nhất trong hội thoại chung (`messages.sender` = buyer / seller) — để nạp lại phiên đúng phía."""

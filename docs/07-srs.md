@@ -9058,6 +9058,43 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz254 · Nối đường thật cho "xin chủ nhà ảnh", "nhắn khi tin hiển thị"; câu trùng tên dự án chỉ hỏi cùng vị trí; xoá câu xưng cứng; nhận tin chưa có giấy tờ (28/10/2026)
+Chủ dự án 28/10 (đọc báo cáo SRS-253): "“báo lại sau”, “nhắn khi tin hiển thị”, “em xin chủ nhà ảnh” cái này cấu hình hệ thống để làm đi, em xin
+chủ nhà ảnh, em xin chủ nhà về các chi tiết, các trường đang thiếu, cái này cần thiết"; "Câu “🤔 có phải dự án X?” … cùng vị trí mới cần hỏi
+nha"; "câu mẫu và câu “📎 Em đã nhận…” vẫn viết cứng … xóa luôn"; pháp lý "Bên em không nhận rao tin không có giấy tờ" — "lúc đầu thì cứ nhận đã".
+1. **Xin chủ nhà ảnh** — khách mua xin ảnh mà căn đã gửi đủ / chưa có ảnh: bản trước hỏi "có muốn em xin chủ nhà thêm ảnh không" (khách "ừ" thì
+   chưa chắc ra việc). Nay lõi nhờ chủ nhà NGAY qua đường `info_requests` sẵn có (`KhoNguoiMua.xin_them_anh`, câu `mua.XIN_THEM_ANH`; trigger
+   `route_info_request` giao chủ nhà 12 giờ / admin 5 giờ, `notify_info_request_escalation` nhắn chủ nhà); bot chỉ nói "em đã nhắn chủ nhà" khi
+   dòng ghi được. Chủ nhà gửi ảnh vào chat (`_route_readout_media`, ảnh lưu vào căn đang nói) → `tra_loi_xin_anh` đặt câu đó `answered` → trigger
+   `info_request_bao_lai_khach` đẻ nhắc `followup` → `gui_nhac` gửi câu mẫu mới `bao_them_anh` kèm link trang tin. Chủ nhà trả lời bằng chữ thì đi
+   đường trả lời câu hỏi như cũ.
+2. **Chi tiết căn còn thiếu** — đường đã có (SRS-212 / 250): khách hỏi điều dòng căn không có → AI chép câu vào `hoi_chu_nha` → `info_requests` →
+   chủ nhà / admin trả lời → báo lại khách (`bao_tra_loi_chu_nha`). Không đổi; SRS-253 đã cho bot chỉ nói "em báo lại" khi việc đó có thật.
+3. **Nhắn khi tin hiển thị** — loại nhắc mới `len_web` (migration `20261028n`, ràng buộc `reminders_kind_check`): khách đã duyệt mà tin chưa
+   `dang_ban` và không thiếu ô khách tự bổ sung được (hoặc phường đang chờ admin) → `SupabaseConversationStore.hen_bao_len_web` ghi MỘT nhắc /
+   tin; `gui_nhac` xét mỗi vòng: tin chưa hiển thị thì hẹn lại 10 phút (không đếm hụt), hiển thị thì nhắn chủ nhà câu mẫu `bao_tin_len_web` kèm
+   link (8–20 giờ), chờ quá 7 ngày thì `dead`. Prompt duyệt tin chỉ được nói "tin hiển thị em nhắn ngay" khi nhắc đã ghi (`web["hen_bao_len_web"]`).
+4. **"Báo lại sau" còn lại** — `khoi_tinh_hinh_ban` khi KHÔNG đọc được số liệu (DB lỗi): giữ lời "hiện em chưa xem được số liệu" của SRS-253, không
+   hẹn nhắc — lúc đọc DB hỏng thì ghi nhắc cũng hỏng, hứa là hứa suông.
+5. **Câu "🤔 có phải dự án X"** — tên dự án gần trùng một dự án kho: chỉ hỏi khi dự án kho CÙNG vị trí với căn (`Engine._cung_vi_tri_du_an`: phường /
+   quận / đường khách đã nói nằm trong "vị trí" của dự án, so chữ bỏ dấu; một bên chưa có vị trí → không hỏi, coi là dự án khác). Khi hỏi, đó là câu
+   hỏi DUY NHẤT (`_hoi_trung_ten`): lời code / model đã có câu hỏi thì câu này sang lượt chat sau thành khối ƯU TIÊN (`_khoi_hoi_trung_ten`, cuối
+   chuỗi `or` SRS-178) thay câu hỏi kế.
+6. **Xưng cứng** — xoá dòng "📎 Em đã nhận <tên tệp>" (đọc ảnh, ảnh sổ, nhóm tệp) và câu mẫu `nhan_anh`; dòng ảnh sổ đổi "📄 Thông tin đọc từ giấy
+   tờ:", nhóm tệp "N tệp chia thành M nhóm:", bản đồ "📐 File phân lô / bản đồ:". Câu mẫu gửi thẳng khách (ẩn / giữ rổ, bản vẽ chưa có, bảng tính,
+   link hỏng, file quá lớn) đi qua `Engine._cau_khach` (đổi "anh/chị" + "em" theo khách); `file_qua_lon`, `nhap_bang_tinh` bỏ "của mình"
+   (migration `20261028m`, câu đã sửa tay ở CRM giữ nguyên).
+7. **Pháp lý** — `phap_ly.MAC_DINH["dat_chua_so"]` bỏ câu "Bên em không nhận rao những tin không có giấy tờ rõ ràng" (migration sinh bằng script
+   `20261028l_kien_thuc_phap_ly_nhan_tin_chua_so`; dòng admin đã sửa tay giữ).
+8. **Ba câu gốc** — (1) *lớp lỗi*: lời hứa trong prompt đi trước đường làm thật (xin ảnh, báo tin lên web), và câu code ghép không đi qua một chỗ
+   xưng hô; câu hỏi phụ do code nối không đếm vào "một câu hỏi". (2) *Chỗ khác cùng lớp*: "báo lại sau" của số liệu tin (mục 4, để nguyên có lý do);
+   tin chủ nhà đang có nhiều căn mà căn đang nói trong lõi khác căn khách xin ảnh thì ảnh mới không trả lời câu xin (chủ nhà vẫn trả lời bằng chữ
+   được) — chưa sửa; câu mẫu `thu_lai_hong` có "anh/chị phụ trách" (người của bên mình) nên KHÔNG đổi qua `_cau_khach`. (3) *Bài đỏ*:
+   `tests/test_xin_chu_nha_254.py` (7 ca: `len_web` chờ / gửi kèm link / quá 7 ngày dead, báo thêm ảnh kèm link, chủ nhà gửi ảnh → câu xin ảnh
+   answered, hẹn `len_web` ghi một nhắc, prompt chỉ hứa khi có hẹn), `test_viec_mua_28_10` (hết ảnh → POST `info_requests` câu `XIN_THEM_ANH`),
+   `test_engine` (trùng tên: cùng quận hỏi / khác quận không / chưa vị trí không; câu hỏi duy nhất), `test_conversational_and_deed` (không còn dòng
+   "Em đã nhận") — chạy trên code cũ: đỏ (lỗi nạp / sai). Chưa bắn model thật; migration `20261028l/m/n` áp cùng PR.
+
 ### SRS-5.1zzzzzzz253 · Soát mọi prompt theo ý chủ dự án: một câu hỏi, hai số, xưng hô một nguồn, không hứa suông (28/10/2026)
 Chủ dự án 28/10: "Kiểm tra các đoạn prompt nào sai ý tôi nữa ko". Soát chữ gửi model ở `prompts.py`, `engine.py`, `mua.py`, `du_an_mua.py`,
 `phap_ly.py` theo luật ĐANG ÁP (CLAUDE.md §6.2) và các quyết định đã ghi ở docs/07; mỗi chỗ đã đọc lại code trước khi sửa.
