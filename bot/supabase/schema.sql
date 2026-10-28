@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-28 13:02 (giờ VN)
+-- Sinh lúc: 2026-10-28 13:46 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -6437,10 +6437,10 @@ create or replace view public.nmg_hoat_dong as
            FROM listings l
           WHERE l.seller_id = s.id) t ON true
      LEFT JOIN LATERAL ( SELECT count(*) AS tra_loi_7d,
-            max(q.answered_at) AS last_answer_at
-           FROM info_requests q
-             JOIN listings l ON l.id = q.listing_id
-          WHERE l.seller_id = s.id AND (q.source = ANY (ARRAY['seller_flow'::text, 'seller_drip'::text])) AND q.answered_at >= (now() - '7 days'::interval)) d ON true
+            max(m.created_at) AS last_answer_at
+           FROM conversations c
+             JOIN messages m ON m.conversation_id = c.id
+          WHERE c.seller_id = s.id AND m.sender = 'seller'::msg_sender AND m.created_at >= (now() - '7 days'::interval)) d ON true
   WHERE s.seller_type = 'nmg'::seller_type AND (auth.role() = 'service_role'::text OR (EXISTS ( SELECT 1
            FROM admins a
           WHERE a.email = (auth.jwt() ->> 'email'::text))));
@@ -6631,6 +6631,19 @@ create or replace view public.khach_can_nguoi_that as
   WHERE c.needs_human = true AND (c.human_touch_at IS NULL OR c.human_touch_at < c.needs_human_at) AND (auth.role() = 'service_role'::text OR (EXISTS ( SELECT 1
            FROM admins a
           WHERE a.email = ((( SELECT auth.jwt() AS jwt)) ->> 'email'::text))));
+
+create or replace view public.ket_noi_zalo_song with (security_invoker=true) as
+ SELECT b.id AS buyer_id,
+    f.tin_dau_at,
+    f.tin_cuoi_at,
+    f.tin_cuoi_at >= (f.tin_dau_at + '30 days'::interval) AS song_sau_30_ngay
+   FROM buyers b
+     JOIN LATERAL ( SELECT min(m.created_at) AS tin_dau_at,
+            max(m.created_at) AS tin_cuoi_at
+           FROM conversations c
+             JOIN messages m ON m.conversation_id = c.id
+          WHERE c.buyer_id = b.id AND m.sender = 'buyer'::msg_sender) f ON f.tin_dau_at IS NOT NULL
+  WHERE f.tin_dau_at <= (now() - '30 days'::interval) AND NOT COALESCE(la_id_thu(b.zalo_user_id), false);
 
 -- ══ Trigger ══
 drop trigger if exists trg_bot_errors_het_tien on public.bot_errors;
@@ -6942,6 +6955,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ho
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.hoi_thoai_thong_ke to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.info_requests to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.interests to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ket_noi_zalo_song to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.khach_can_nguoi_that to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.kien_thuc_phap_ly to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listing_media to service_role;
