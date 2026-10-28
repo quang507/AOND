@@ -1003,6 +1003,8 @@ class SupabaseConversationStore(KhoNguoiMua):
                     "code": li.listing_id[:8].upper(),
                     "deal": deal_type,
                     "street": fields.get("duong"),
+                    # OPEN-59 (SRS-5.1zzzzzzz241): tin cùng căn ở loại giao dịch kia — liên kết mềm, không khoá ngoại.
+                    **({"cung_can_id": str(uuid.UUID(fields["_cung_can"]))} if la_uuid(str(fields.get("_cung_can") or "")) else {}),
                     # Ô khách lờ 2 lần (để sau bản nháp) đi kèm tin dưới khoá nội bộ `_hoan` — lõi khởi động lại (mỗi lần cài VPS)
                     # không quên rồi hỏi lại từ đầu (SRS-5.1zzzzzzz90). Khoá `_` không ra khách (`fields_khach`, `_thong_so`).
                     # `_thong_so_ai` (SRS-5.1zzzzzzz94): thông số / loại BĐS do lõi AI quyết — hai trigger đoán bằng regex trên mô tả
@@ -1057,7 +1059,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                     # đây phường / giá admin sửa bị lượt chat kế tiếp ghi lại theo bản lõi.
                     for nguon, cots in (("price_source", ("price_raw", "price_source")), ("ward_source", ("ward", "ward_source")),
                                         ("property_type_source", ("property_type",))):
-                        if existing[0].get(nguon) == "admin":
+                        if existing[0].get(nguon) in ("admin", "admin_xac_minh"):   # admin_xac_minh: OPEN-31, SRS-5.1zzzzzzz241
                             for c in cots:
                                 listing_payload.pop(c, None)
                     ma = "an" if ngoai_vung else ma_trang_thai(getattr(li, "status", None), existing[0].get("status"))
@@ -1107,9 +1109,11 @@ class SupabaseConversationStore(KhoNguoiMua):
                 continue
             mime = m.get("content_type") or ("image/jpeg" if re.search(r"\.jpe?g$", khoa, re.I) else
                                               "application/pdf" if khoa.lower().endswith(".pdf") else "application/octet-stream")
+            b_nho, _, k_nho = str(m.get("ban_nho") or "").partition("/")   # OPEN-38: bản nhỏ 480px cùng bucket, cùng thư mục tin
             dong.append({"listing_id": lid, "bucket": bucket, "storage_path": khoa, "mime_type": mime,
                          "media_type": "giay_to" if bucket == BUCKET_RIENG else "khac",
-                         "sort_order": min(i, 9999), "nguon": "chat"})
+                         "sort_order": min(i, 9999), "nguon": "chat",
+                         "variants": {"480": k_nho} if b_nho == bucket and k_nho.startswith(f"{lid}/") else {}})
         if not dong:
             return
         try:

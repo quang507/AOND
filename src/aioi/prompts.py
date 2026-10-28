@@ -258,6 +258,7 @@ BUSINESS_CONTEXT = """BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ �
   • Bên SỞ HỮU (chủ nhà; hoặc nhà đầu tư lướt sóng giữ HĐMB): phí 1% giá chốt khi bán, hoặc 0.75 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê, tuyệt đối không nói nhầm thành 3 hay 4 tháng).
   • Bên MÔI GIỚI (nhân viên môi giới; hoặc sàn giao dịch): phí 0.5% giá chốt khi bán, hoặc 0.75 tháng tiền thuê. Khích lệ đăng thêm hàng (≥10 căn) để lên Top.
   • CHỦ ĐẦU TƯ: phí KHÔNG theo 1%/0.5% — thoả thuận riêng với dự án; đừng tự báo con số.
+- CHÍNH SÁCH khi khách hỏi (chủ dự án chốt 28/10/2026, SRS-5.1zzzzzzz241): (1) KHÔNG bớt / giảm phí — khách xin bớt thì nói khéo mức phí cố định, bù lại chỉ thu khi giao dịch thành công; (2) CÓ ký hợp đồng môi giới bằng văn bản (thống nhất phí) — khách hỏi thì nói có; khách muốn ký thì nói em nối người phụ trách, KHÔNG hẹn giờ, KHÔNG tự gửi mẫu; (3) KHÔNG độc quyền — chủ nhà gửi bán nhiều nơi vẫn được; (4) môi giới gửi hàng: phí 0.5% giá chốt như trên, không có mức chia hoa hồng nào khác.
 - PHÍ CHỈ thu khi giao dịch THÀNH CÔNG. TUYỆT ĐỐI không bịa con số phí/ưu đãi/cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì đừng báo phí, cứ hỏi khéo hoặc tư vấn chung.
 - Gamification: có Điểm uy tín và hạng Đồng/Bạc/Vàng — số THẬT nằm ở khối "ĐIỂM TIN" cuối prompt (hệ thống tính); chỉ nói số trong khối đó, gợi ý cách tăng điểm theo ô còn thiếu ghi ở đó (ảnh, sổ hồng, thông tin còn thiếu)."""
 
@@ -695,7 +696,7 @@ def describe_captured(prop: Property) -> str:
 # Khuôn tin rao = NGUYÊN VĂN bản anh Luận (`luan8560/AOND` 207a145) — SRS-5.1zzzzzzz207, chủ dự án 26/10: "lấy 100% của bên aond".
 # Chỉ nối thêm đoạn chống bịa của mình ở cuối (dữ liệu căn là nguồn duy nhất; bóc tách / sự thật giữ của mình).
 AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU MỘT DÒNG TRỐNG giữa các khối):
-1) TIÊU ĐỀ: **15–25 từ**, viết hoa gây chú ý, MỞ bằng câu gọi mời ("Bà con ơi,", "Anh chị ơi,") rồi dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm). CẤM mở bằng "Trời ơi".
+1) TIÊU ĐỀ: **15–25 từ**, viết như câu nói thường (chỉ hoa chữ đầu câu và tên riêng — KHÔNG viết HOA cả cụm / cả dòng), MỞ bằng câu gọi mời ("Bà con ơi,", "Anh chị ơi,") rồi dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm). CẤM mở bằng "Trời ơi".
 
 2) MÔ TẢ: MỘT đoạn **70–150 từ**, giọng RAO CHỢ — nói chuyện TRỰC TIẾP với đám đông người mua như đang mời ngay tại chỗ: mời gọi, nồng nhiệt, hối hả, lầy một chút, KHÔNG phải văn báo chí chỉn chu. Mở màn gọi "anh chị cô bác". Kể đủ vị trí & kết nối, công năng, điểm nổi bật, pháp lý — bằng lời đời thường, có nhịp, có cảm xúc. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này. Chỉ hối/khan hiếm khi ĐÚNG sự thật (chủ thật sự cần bán gấp, căn thật sự hiếm) — KHÔNG bịa độ gấp. CẤM dùng "trời ơi".
    ĐẶT "ANH CHỊ" CÓ CHỦ ĐÍCH (quan trọng): KHÔNG rải đều mỗi câu. Chỉ gọi "anh chị" ở các ĐỈNH CẢM XÚC để người đọc tự đặt mình vào — (a) ĐỈNH QUYỀN LỢI: khi khoe cái lợi lớn họ sẽ được ("anh chị mua vô là tiền vô liền tay"); (b) ĐỈNH MẤT CƠ HỘI: dồn vào CÂU MỜI CHỐT cuối bài (mục 4). Cộng câu gọi mời mở màn là đủ ~3 lần, không hơn.
@@ -1226,11 +1227,19 @@ Trích xuất chính xác các thông số kỹ thuật và pháp lý của BĐS
 Nếu ảnh bị mờ hoặc KHÔNG PHẢI giấy tờ pháp lý BĐS (vd ảnh chụp phòng khách, mặt tiền, phong cảnh...), đặt la_giay_to_bds = false."""
 
 
+# OPEN-53 (chủ dự án 28/10/2026, phương án 3): AI chấm ảnh có phải ảnh thật của căn TRƯỚC khi lưu (tính điểm) và hiện web — đi chung lượt đọc
+# ảnh sẵn có (nhận sổ / gom nhóm), không thêm lần gọi model.
+MO_TA_KHONG_PHAI_ANH_CAN = ("true nếu là ẢNH nhưng KHÔNG phải ảnh chụp thật của căn đang rao: ảnh mạng / ảnh quảng cáo có chữ, logo, watermark của bên khác, "
+                "phối cảnh 3D / ảnh minh hoạ, ảnh không liên quan nhà đất. Ảnh nhà, phòng, hẻm, đường trước nhà, view chụp thật → false; giấy tờ, "
+                "bảng dữ liệu → false. Phân vân thì false (OPEN-53, SRS-5.1zzzzzzz241).")
+
+
 def deed_extraction_schema() -> dict[str, Any]:
     """JSON schema để trích xuất dữ liệu từ Sổ hồng, Sổ đỏ, Giấy chứng nhận QSDĐ."""
     return {
         "type": "object",
         "properties": {
+            "khong_phai_anh_can": {"type": "boolean", "description": MO_TA_KHONG_PHAI_ANH_CAN},
             "la_giay_to_bds": {
                 "type": "boolean",
                 "description": "true nếu ảnh là giấy chứng nhận QSDĐ, sổ hồng, sổ đỏ, HĐMB, bản vẽ sơ đồ thửa đất. false nếu là ảnh nhà thông thường hoặc tài liệu khác.",
@@ -1387,6 +1396,7 @@ def media_group_schema() -> dict[str, Any]:
                             "description": "true nếu nhóm là SỔ ĐỎ / SỔ HỒNG / GIẤY TỜ pháp lý / hợp đồng / CCCD — "
                             "có thông tin chủ nhà, cất RIÊNG, không bao giờ đăng web. false cho ảnh nhà thật.",
                         },
+                        "khong_phai_anh_can": {"type": "boolean", "description": MO_TA_KHONG_PHAI_ANH_CAN},
                         "chi_luu_du_lieu": {
                             "type": "boolean",
                             "description": "true nếu nhóm là TRANG DỮ LIỆU THUẦN (bảng giá/thông "
@@ -2034,6 +2044,10 @@ def operations_schema() -> dict[str, Any]:
             "seller_role_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách tự nói vai (bắt buộc khi có seller_role); "
                                       "\"a cần đăng tin\", \"nhà em\" KHÔNG phải vai → bỏ trống cả hai."},
             "is_rental": {"type": "boolean", "description": MO_TA_CHO_THUE},
+            # SRS-5.1zzzzzzz241 (OPEN-59 a): một căn vừa bán vừa cho thuê → hai tin chung căn.
+            "ca_ban_ca_thue": {"type": "boolean", "description": "true CHỈ KHI khách nói CÙNG căn đang nói muốn VỪA bán VỪA cho thuê (\"bán "
+                               "hay cho thuê đều được\", \"ai thuê cũng cho, mua cũng bán\"). \"Đang cho thuê 30 triệu\" khi rao bán là hiện trạng → bỏ trống."},
+            "ca_ban_ca_thue_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách nói vừa bán vừa cho thuê (bắt buộc khi có ca_ban_ca_thue)."},
             "duyet_ban_nhap": {
                 "type": "string",
                 "enum": ["dong_y", "khong_dong_y"],

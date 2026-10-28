@@ -44,7 +44,7 @@ const DETAIL_COLS =
   "created_at, lat, lng, bedrooms, street, access_type, alley_width_m, distance_to_street_m, frontage_m, length_m, " +
   "rear_width_m, legal_area_m2, built_area_m2, floors, floors_text, floor, bathrooms, direction, legal_status, has_completion, " +
   "planning_status, has_elevator, car_in_house, corner_lot, furnishing, year_built, negotiable, rent_income_vnd, " +
-  "price_per_m2_vnd, project_id, unit_code, nhan";
+  "price_per_m2_vnd, project_id, unit_code, nhan, cung_can_id";
 
 
 const getListing = cache(async (code: string): Promise<Listing | null> => {
@@ -169,7 +169,7 @@ export default async function Page({
   const listing = await getListing(code);
   if (!listing) notFound();
 
-  const [factsRes, relatedRes, photos, mauGia, duAnRes] = await Promise.all([
+  const [factsRes, relatedRes, photos, mauGia, duAnRes, capRes] = await Promise.all([
     // 19/10/2026 (SRS-5.1zzzzzzz65): "Đã xác minh với chủ nhà" đọc ô lõi Python bóc (`boc_tach`), không còn `listing_facts`.
     supabase.from("listings").select("boc_tach").eq("id", listing.id).maybeSingle(),
     supabase
@@ -188,7 +188,12 @@ export default async function Page({
     listing.project_id
       ? supabase.from("projects").select("slug, name").eq("id", listing.project_id).maybeSingle()
       : Promise.resolve({ data: null }),
+    // OPEN-59: tin cùng căn ở loại giao dịch kia (bán ↔ cho thuê), chỉ khi tin đó đang hiện trên web
+    listing.cung_can_id
+      ? supabase.from("listings").select("code, deal, price_vnd, price_raw").eq("id", listing.cung_can_id).in("status", TRANG_THAI_HIEN).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+  const cungCan = (capRes.data ?? null) as { code: string; deal: string; price_vnd: number | null; price_raw: string | null } | null;
   const facts = dongXacMinh((factsRes.data as { boc_tach?: unknown } | null)?.boc_tach);
   const soSanh = soSanhGia(listing, mauGia);
   const duAn = (duAnRes.data ?? null) as { slug: string; name: string } | null;
@@ -373,6 +378,14 @@ export default async function Page({
                     {duAn.name}
                   </Link>
                   {listing.unit_code ? <span className="text-mute"> · căn {listing.unit_code}</span> : null}
+                </p>
+              )}
+              {cungCan && (
+                <p className="mt-2 text-sm">
+                  Căn này cũng {cungCan.deal === "cho_thue" ? "cho thuê" : "rao bán"}:{" "}
+                  <Link href={`/nha-dat/${encodeURIComponent(cungCan.code)}`} className="font-bold text-brand hover:underline">
+                    #{cungCan.code} · {formatPrice(cungCan.price_vnd, cungCan.price_raw)}
+                  </Link>
                 </p>
               )}
               {specs.length > 0 && (

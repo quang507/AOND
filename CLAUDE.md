@@ -129,6 +129,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 - Độ dài: "ngắn vừa vừa", ý chính rồi dừng (SRS-97).
 
 **Phí, pháp lý, số liệu**
+- Tiêu đề tin rao viết thường như câu nói, không viết HOA cả cụm (`_viet_hoa_ca_cum`, SRS-241). Chính sách không bớt phí / có ký HĐ / không độc quyền ở `prompts.BUSINESS_CONTEXT`.
 - Mức phí % trong lời bot phải bằng `prompts.muc_phi(vai, thuê)` với vai = `conv.vai_phi` (từ tin BÁN thứ 3 trong rổ tính như môi giới, tin thuê không đếm; CĐT không báo số, báo admin) — đừng đưa `user_type` trần vào đường phí; vai chưa rõ thì nêu cả hai mức hoặc hỏi vai (SRS-227 / 240).
 - Pháp lý chỉ trả lời từ `phap_ly.MAC_DINH` (+ bảng `kien_thuc_phap_ly` admin sửa) kèm điều luật gần nghĩa (`dieu_luat`, SRS-231); luôn nói "tham khảo" (nội dung AI soạn, chưa người chuyên môn duyệt); không cho bot search web. Thêm mục = khoá ở `MAC_DINH` + `python scripts/sinh-migration-phap-ly.py <tên>`. Thêm / thay văn bản luật: `bot/supabase/luat/danh-muc.json` + `scripts/tach-dieu-luat.py` + ô `nap-luat`, không ghi tay. "Thuế phí" phải nộp khi mua bán là câu pháp lý, không phải phí môi giới (SRS-233).
 - Số tài chính tham khảo (`tai_chinh.py`) là số TƯỢNG TRƯNG chưa kiểm — chỉ nói khi khách hỏi, kèm "tham khảo" (SRS-148).

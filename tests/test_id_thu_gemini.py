@@ -56,3 +56,19 @@ def test_cai_vps_dat_id_thu_gemini():
     from pathlib import Path
     s = (Path(__file__).resolve().parent.parent / "bot/bridge-zca/cai-vps.sh").read_text()
     assert 'MODEL_CHAT_THU="gemini"' in s and "AIOI_CHAT_MODEL_THU=%s" in s
+
+
+def test_luot_chi_gemini_khong_ghi_so_loi_du_phong():
+    """SRS-5.1zzzzzzz241: lượt bắn thử chỉ-Gemini không ghi "Claude hỏng" vào sổ lỗi (báo động giả cho còi sức khoẻ); Claude hỏng thật vẫn ghi."""
+    from tests.test_du_phong import HetTien, So
+    so = So()
+    p = DuPhongProvider(ClaudeGia(), _nguon(), so=so, goi=lambda n, k, than, han: _dap("Gemini đáp"))
+    dau = NGUON_LUOT.set(CHI_GEMINI)
+    try:
+        p.reply("sys", M)
+    finally:
+        NGUON_LUOT.reset(dau)
+    assert so.loi == []
+    p2 = DuPhongProvider(ClaudeGia(HetTien()), _nguon(), so=so, goi=lambda n, k, than, han: _dap("Gemini đáp"))
+    p2.reply("sys", M)
+    assert so.loi and "Claude hỏng" in so.loi[0][1]

@@ -18,6 +18,26 @@ import { supabase } from "@/lib/supabase";
 const MAX_CANH = 1600;
 const CHAT_LUONG = 0.82;
 
+// OPEN-38 (chủ dự án 28/10/2026, SRS-5.1zzzzzzz241): bản nhỏ cạnh dài 480px cho lưới thẻ, cùng thư mục tin `<uuid>/480/…`.
+const CANH_NHO = 480;
+
+async function banNho(blob: Blob): Promise<Blob | null> {
+  try {
+    const bmp = await createImageBitmap(blob);
+    const ratio = Math.min(1, CANH_NHO / Math.max(bmp.width, bmp.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bmp.width * ratio);
+    canvas.height = Math.round(bmp.height * ratio);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close();
+    return await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/jpeg", 0.8));
+  } catch {
+    return null; // không sinh được thì web dùng ảnh gốc (url_480 rơi về url)
+  }
+}
+
 async function nenAnh(file: File): Promise<{ blob: Blob; mime: string; ext: string }> {
   // Không phải ảnh nén được (HEIC không decode được trên nhiều trình duyệt) →
   // để nguyên, bucket sẽ từ chối nếu MIME không nằm trong danh sách cho phép.
@@ -84,13 +104,18 @@ export default function UploadAnh({
           .from("listing-public")
           .upload(dest, blob, { contentType: mime, upsert: false });
         if (e1) throw new Error(e1.message);
+        const nho = mime.startsWith("image/") ? await banNho(blob) : null;
+        const destNho = `${listingId}/480/${mediaId}.jpg`;
+        const coNho = nho != null && !(await supabase.storage.from("listing-public")
+          .upload(destNho, nho, { contentType: "image/jpeg", upsert: false })).error;
         const { error: e2 } = await supabase.from("listing_media").insert({
           id: mediaId, listing_id: listingId, bucket: "listing-public",
           storage_path: dest, media_type: "khac", mime_type: mime, sort_order: i + 1,
+          variants: coNho ? { "480": destNho } : {},
         });
         if (e2) {
-          // Ghi dòng hỏng → dọn file vừa up, đừng để rác mồ côi (FR-165 bất biến 5).
-          await supabase.storage.from("listing-public").remove([dest]);
+          // Ghi dòng hỏng → dọn file vừa up (cả bản nhỏ), đừng để rác mồ côi (FR-165 bất biến 5).
+          await supabase.storage.from("listing-public").remove(coNho ? [dest, destNho] : [dest]);
           throw new Error(e2.message);
         }
         ok++;
