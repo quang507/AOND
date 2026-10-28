@@ -28,7 +28,7 @@ from .kho_anh import BUCKET_CONG_KHAI, BUCKET_RIENG, la_uuid
 from .mua import KhoNguoiMua
 from .revenue import SALE_FEE_RATE
 from .prompts import FIELD_LABELS
-from .schema import O_NOI_BO, TYPE_TO_GROUP, Property, _calc_area_from_dimension
+from .schema import HOUSE_TYPES, O_NOI_BO, TYPE_TO_GROUP, Property, _calc_area_from_dimension
 
 # Số câu chuẩn tối đa đưa vào prompt (SRS-5.1zzzzzzz180). Mỗi dòng ≈ 300–900 ký tự; khối nằm trong phần cache nên 16 dòng chỉ là
 # vài nghìn token ĐỌC CACHE mỗi lượt. Tăng nữa thì đo `cache_read_tokens` ở bot_usage_model trước.
@@ -205,6 +205,24 @@ def so_m2(fields: dict[str, str], thue: bool = False) -> float | None:
                 return v
     tinh = _calc_area_from_dimension(str(fields.get("kich_thuoc") or ""))
     return float(tinh[:-2]) if tinh else None
+
+
+def o_tu_cot(row: dict, loai: str | None) -> dict[str, str]:
+    """Ô tin suy từ CỘT của dòng `listings` (SRS-5.1zzzzzzz257). Tin nhập từ CRM / admin / bài bắn thử có cột đường, phường, quận, giá… mà
+    `boc_tach` trống — lõi nạp vào thấy căn rỗng, chủ nhà vừa trả lời câu khách mua hỏi xong bị hỏi "căn này nằm ở đường nào". Chỉ dùng để
+    LẤP ô `boc_tach` thiếu (ô đã có giữ nguyên). Diện tích chỉ lấy với loại một diện tích — nhà phố / biệt thự / cấp 4 có đất và sàn, cột
+    `area_m2` không nói là loại nào."""
+    def chu(v: Any) -> str:
+        if v is None or isinstance(v, bool):
+            return ""
+        if isinstance(v, float) and v.is_integer():
+            v = int(v)
+        return str(v).strip()
+    ra = {k: chu(row.get(c)) for k, c in (("duong", "street"), ("phuong", "ward"), ("quan", "district"), ("dia_chi", "location_raw"),
+                                          ("gia", "price_raw"), ("so_phong_ngu", "bedrooms"), ("so_tang", "floors_text"))}
+    if loai not in HOUSE_TYPES and chu(row.get("area_m2")):
+        ra["dien_tich"] = f"{chu(row.get('area_m2'))} m²"
+    return {k: v for k, v in ra.items() if v}
 
 
 class SupabaseConversationStore(KhoNguoiMua):
@@ -1325,8 +1343,10 @@ class SupabaseConversationStore(KhoNguoiMua):
                 hoan = boc_tach.pop("_hoan", None)
                 boc_tach.pop("_thong_so_ai", None)   # dấu cho DB, không phải ô tin
                 boc_tach.update(noi_bo.get(str(row.get("id")), {}))
+                loai = loai_tu_db(row.get("property_type"), boc_tach)
+                boc_tach = {**o_tu_cot(row, loai), **boc_tach}   # SRS-5.1zzzzzzz257: tin tạo ngoài chat — ô lấy từ cột khi boc_tach trống
                 prop = Property(
-                    loai_hinh=loai_tu_db(row.get("property_type"), boc_tach),
+                    loai_hinh=loai,
                     is_rental=(row.get("deal") in ("cho_thue", "thue")),
                     fields=boc_tach,
                 )
