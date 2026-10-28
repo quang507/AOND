@@ -9077,6 +9077,11 @@ Chủ dự án 28/10: "có sửa đi" (việc còn lại ở SRS-256 mục 5).
    được hỏi thì ghi luôn ô tin bằng op "update" target = mã căn (qua cổng bằng chứng như mọi ô); `Engine._match_listing` nhận mã tin web
    (#XXXXXXXX = 8 ký tự đầu id) — bản trước chỉ khớp số trong `ma_so_can` / địa chỉ. Bài: `test_chu_nha_tra_loi_ghi_o_tin_theo_ma_can` (đỏ khi
    gỡ), `ban-thu-mua` thêm "ô pháp lý của tin được ghi".
+5. **Bắn lần 3** (run 40729854550, lõi `449da81`): ô pháp lý AI đọc ra đúng ("sổ hồng riêng chính chủ"), nhưng (a) tin ĐANG BÁN tạo ngoài chat
+   có `listing_proposed` = False khi nạp nên đủ ô là bot gửi lại "📋 Em sẽ rao như vầy nhé" cho chủ nhà — sửa: nạp tin có trạng thái hiển thị /
+   giao dịch (`dang_ban`, `dang_quan_tam`, `da_coc`, `da_chot`) là đã trình (bài `test_tin_dang_ban_tao_ngoai_chat_khong_trinh_lai_ban_nhap`,
+   đỏ khi gỡ); (b) script soi DB 2 giây sau lượt chủ nhà, trước khi lõi lưu nền (`luu_nen`) → chờ 10 giây; (c) bài "bot đưa ra căn" chỉ nhận mã
+   hex, bot đưa căn rổ mẫu `SEED0231` → nhận `[0-9A-Z]{8}`.
 
 ### SRS-5.1zzzzzzz256 · Lượt lập thao tác của khách mua phải biết vai khách mua — khách hỏi chủ nhà không bị đọc thành ô tin rao (28/10/2026)
 Chủ dự án 28/10: "phần khách mua có yêu cầu thì nhắn hỏi xin lại thông tin của chủ nhà ổn chưa".
