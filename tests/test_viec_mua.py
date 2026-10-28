@@ -45,8 +45,8 @@ class KhoGia(SupabaseConversationStore):
                 return self.cau_cho
             if endpoint.startswith("info_requests?listing_id=eq."):
                 return [{"id": "ir-9", "question": "sổ riêng không"}]
-            if endpoint.startswith("ctvs?") and self.nhan_vien:
-                return [{"id": "ctv1"}]
+            if endpoint.startswith("admins?") and self.nhan_vien:   # CTV bỏ hẳn 28/10/2026: chỉ admin dùng lệnh "#mã: …"
+                return [{"zalo_user_id": "admin-1"}]
             return []
         return []
 
@@ -147,7 +147,7 @@ def test_nguoi_ban_tra_loi_cau_khach_hoi():
 def test_nhan_vien_tra_loi_bang_lenh():
     kho = KhoGia(nhan_vien=True)
     eng, _ = _engine(kho, {"operations": []})
-    r = eng.handle("ctv-1", "#ABCD1234: sổ riêng, chủ bớt 100 triệu")
+    r = eng.handle("admin-1", "#ABCD1234: sổ riêng, chủ bớt 100 triệu")
     patch = [d for m, e, d in kho.goi if m == "PATCH" and e.startswith("info_requests?id=eq.ir-9")]
     assert patch and patch[0]["answer"] == "sổ riêng, chủ bớt 100 triệu" and "#ABCD1234" in r.reply
     kho2 = KhoGia(nhan_vien=False)

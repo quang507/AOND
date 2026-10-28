@@ -6,7 +6,7 @@ thân mục xoá 07/09/2026 theo lệnh chủ dự án, lý lẽ gốc nằm tro
 ✅ đã chốt · 🚫 đóng vì không còn hợp hướng AOND hoặc mất đối tượng (thứ được hỏi đã gỡ) · 🟡 chốt một phần (vẫn tính còn chờ,
 nằm ở bảng thứ nhất).
 
-## Còn chờ chủ dự án (12)
+## Còn chờ chủ dự án (11)
 
 | ID | Vấn đề | Mức | Liên quan |
 |---|---|---|---|
@@ -19,11 +19,10 @@ nằm ở bảng thứ nhất).
 | OPEN-53 | Ảnh đếm tấm, chưa kiểm ảnh có thật là căn đó | Thấp | FR-177, FR-105 |
 | OPEN-59 | Một căn vừa BÁN vừa CHO THUÊ: hai tin, một tin hai giá, hay chọn một loại chính? | Trung bình | FR-150, SRS-5.1zzzw |
 | OPEN-63 | Ba chính sách người bán hay hỏi chưa có câu trả lời: thương lượng phí, hợp đồng môi giới / độc quyền, NMG chia hoa hồng | Trung bình | SRS-5.1zzzzzzz116 |
-| OPEN-65 | Hạn admin trả lời câu khách hỏi: DB không đặt `sla_due_at` cho dòng giao admin — đặt bao nhiêu giờ, và ngưỡng dừng của I3? | Cao | SRS-5.1zzzzzzz170, FR-140, DH-05 |
 | OPEN-66 | Phí CCRB 1% trước có phần CTV hưởng 0,5% (FR-112) — bỏ CTV thì phần đó về đâu? | Trung bình | BR-05, FR-112 |
 | OPEN-67 | Chỉ số I4, I5 (`00 §0.5`) không đo được: lõi không ghi `buyers.last_contact_at`, không ghi câu nguồn `seller_flow` / `seller_drip` mà `nmg_hoat_dong` đếm — đo lại thế nào? | Trung bình | FR-63, FR-155, DH-05 |
 
-## Đã chốt / đã đóng (55)
+## Đã chốt / đã đóng (56)
 
 28/10/2026: soát lại theo quyết định chủ dự án (bỏ hẳn CTV; đóng OPEN đã mất đối tượng sau khi bot TypeScript gỡ 18/10) — đóng OPEN-04, 33, 34, 35, 41, 42, 47, 50, 51, 52, 54, 57, 58; dòng 🟡 / 🟢 nằm nhầm bảng này đã xếp lại (56, 60, 64 đã chốt; 59, 63 lên bảng còn chờ; 53 thêm thân mục); mở OPEN-65…67 cho chỗ trống bỏ CTV để lại. [nguồn: chủ dự án 28/10/2026, chat]
 
@@ -84,6 +83,7 @@ nằm ở bảng thứ nhất).
 | OPEN-61 | ✅ **ĐÃ CHỐT 09/10/2026 — phương án (a)** (chủ dự án: "để chính chủ đi"): mặc định vẫn gán chính chủ khi mở hồ sơ (FR-159), con số phí chỉ nói khi vai đã xác nhận (`tu_nhan` / `admin`). Không đổi mặc định sang `unknown`. Nội dung cũ giữ dưới làm dấu vết. 🟡 **Nhãn người rao ĐOÁN dùng cho kế toán, chưa xác nhận dùng cho lời nói** (SRS-5.1zzzzj, bắn production 09/10/2026: "phí sao em" → "1% giá chốt" với người chưa nói vai). FR-159 (chủ dự án 02/09) gán chính chủ ngay khi mở hồ sơ để deal có phí (FR-170 f), hạng, ưu tiên chủ nhà (FR-173 a) chạy. Đã làm: cột `sellers.seller_type_source` (suy_doan / tu_nhan / admin), con số phí chỉ nói khi tu_nhan / admin; nhãn và mọi chỗ dùng nhãn khác KHÔNG đổi. **Còn treo**: có nên đổi luôn mặc định nhãn sang `unknown` tới khi người rao tự nói (deal của nhãn `unknown` không có phí, hạng / ưu tiên không tính) không; và các nhãn `nmg` / `ccrb` có trên DB trước 20261009c đều là `suy_doan` (bot không nói số cho họ tới khi họ tự nói lại hoặc admin đặt). **Phương án**: (a) giữ như đã làm; (b) mặc định `unknown` + bot hỏi khéo vai ở lượt đầu. **Khuyến nghị BA:** (a). Chờ chủ dự án chốt. | FR-159, FR-170, SRS-5.1zzzzj |
 | OPEN-62 | ✅ **ĐÃ CHỐT 09/10/2026 — phương án (a)** (chủ dự án: "bật đi"): bỏ gạch dài "—" và "anh/chị" gạch chéo LUÔN bật ở đường ra, không theo công tắc `luat_loi_bot`; lời khen đoán người mua bỏ. Nội dung cũ giữ dưới làm dấu vết. 🟡 **Hai việc đổi một phần quyết định giọng 06/10 (SRS-5.1zzn) — cần chủ dự án xác nhận** (SRS-5.1zzzzj). (1) Gạch dài "—" và "anh/chị" gạch chéo nay LUÔN chuẩn ở đường ra (trước: tắt khi `luat_loi_bot` = gọn) — TONE_RULES cấm cả hai, nên lưới chỉ giữ đúng điều prompt nói; các van sửa VĂN khác vẫn theo công tắc. (2) Lời khen đoán NGƯỜI MUA ("hẻm xe hơi là khách chuộng lắm", "căn này dễ bán lắm") bỏ khỏi câu mẫu giọng và lượt soát bỏ nó — khen chỉ nói lợi ích thật của đặc điểm ("ô tô tới tận nhà, đi lại tiện lắm"). Bảng `mau_cau` (mẫu chuẩn sửa tay trên DB, FR-180) nếu còn câu "khách chuộng" thì sẽ dạy ngược — cần soát tay. **Phương án**: (a) giữ cả hai; (b) trả (1) về công tắc. **Khuyến nghị BA:** (a). | SRS-5.1zzn, SRS-5.1zzzzj, FR-180 |
 | OPEN-64 | ✅ **CHỐT 23/10/2026** — phương án (a): giữ 63 cột `listings`, chỉ dọn khi có cột chết mới [nguồn: chủ dự án 23/10/2026 — "từ từ vẫn giữ vậy đi"]; 7 cột chết đã gỡ (70 → 63, SRS-5.1zzzzzzz140) | SRS-5.1zzzzzzz140 |
+| OPEN-65 | ✅ Chốt 28/10/2026: hạn admin trả lời câu khách hỏi = **5 giờ** [nguồn: chủ dự án 28/10/2026, chat: "hạn admin trả lời câu khách hỏi 5 giờ"]. Migration `20261028c`: `admin_han_gio()` (đổi được bằng `app_config.admin_han_gio`), `route_info_request` đặt hạn cho câu giao thẳng admin, `info_request_sla_tick` đặt hạn khi chủ nhà quá 12 giờ chuyển admin và nhắc lại admin + email khi quá hạn. Câu xác nhận lịch xem không tính. Ngưỡng dừng I3 ở `00 §0.7` vẫn *[giả định BA]* | SRS-5.1zzzzzzz238, FR-140, DH-05 |
 
 ---
 
@@ -172,17 +172,6 @@ video, đăng quảng cáo. Hiện bot không hứa gì ngoài chính sách.
 **Phương án**: (a) chủ dự án chốt từng chính sách rồi BA viết câu trả lời (câu mẫu ở `/admin/cau-chuan`) + luật; (b) để
 nguyên, bot báo admin.
 **Khuyến nghị BA**: (a), làm (2) trước — văn bản hợp đồng là thứ khách hỏi sớm nhất. **Chờ**: chủ dự án.
-
-### OPEN-65 · Hạn admin trả lời câu khách hỏi
-**Vấn đề** (soát 28/10/2026 sau khi bỏ CTV [nguồn: chủ dự án 28/10/2026, chat — bỏ CTV]): trigger `route_info_request` chỉ đặt `sla_due_at` khi câu giao chủ nhà
-(`chu_nha_han_gio()`, 12 giờ). Câu giao thẳng admin (tin không có chủ nhà trên hệ thống, SRS-5.1zzzzzzz170) không có hạn, và
-câu chủ nhà quá hạn chuyển admin thì `info_request_sla_tick` đặt `sla_due_at = null`. Hậu quả: I3 (`00 §0.5`) không đo được
-phần admin, không có gì nhắc admin khi để câu khách nằm lâu. Ngưỡng dừng "<30% câu được trả lời trong 48 giờ; admin phải đỡ
->50%" ở `00 §0.7` cũng là *[giả định BA]*.
-**Phương án**: (a) đặt hạn admin 24 giờ *[giả định BA]* bằng migration (trigger + vòng tick nhắc lại admin), I3 đếm cả hai
-phía; (b) không đặt hạn, I3 chỉ đo phần chủ nhà, phần admin đọc tay ở `/admin`.
-**Khuyến nghị BA**: (a) — câu khách chờ không ai nhắc là đúng loại hỏng im lặng NFR-18. **Chờ**: chủ dự án chốt con số và
-ngưỡng dừng.
 
 ### OPEN-66 · Phần phí CTV hưởng sau khi bỏ CTV
 **Vấn đề**: FR-112 ghi `deals` "phí CCRB 1% (CTV hưởng 0.5%)", `00 §0.10` cũng ghi "phần 0,5% trước chia CTV". Bỏ CTV

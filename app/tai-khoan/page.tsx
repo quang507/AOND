@@ -140,7 +140,7 @@ export default function Page() {
               <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Để trống cũng được"
                 className="w-full rounded-lg border border-line px-3 py-2.5 tabular-nums focus-visible:outline-2 focus-visible:outline-brand" />
               <span className="mt-1 block text-xs text-mute/80">
-                Chỉ dùng để CTV gọi xác nhận khi anh chị đặt lịch xem nhà - tụi em
+                Chỉ dùng để admin gọi xác nhận khi anh chị đặt lịch xem nhà - tụi em
                 không gọi chào hàng, không đưa cho môi giới nào khác. Xoá lúc nào cũng được.
               </span>
             </label>

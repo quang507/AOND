@@ -83,19 +83,11 @@ const HANG: Record<string, { ten: string; lop: string }> = {
   chua_du: { ten: "Chưa đủ dữ liệu", lop: "bg-line text-mute" },
 };
 
-// FR-173 e: hạng CTV theo tỷ lệ trả lời câu khách hỏi đúng hạn (view `ctv_ranks`).
-type HangCtv = {
-  id: string; name: string | null; active: boolean;
-  tong: number; tra_loi: number; dung_han: number; tre: number;
-  ty_le_dung_han: number | null; rank: string;
-};
-
 // ── Admin buyer side (04/09/2026) ────────────────────────────────────────────
 type CauHoi = {
   id: string; question: string; status: string; answer: string | null; source: string | null;
   assignee: string | null; sla_due_at: string | null; answered_at: string | null; created_at: string;
   listings: { code: string | null } | null;
-  ctvs: { name: string | null } | null;
   buyers: { name: string | null } | null;
 };
 type LichXem = {
@@ -106,7 +98,7 @@ type LichXem = {
 };
 type KhachCan = {
   conversation_id: string; vai: string; ten: string | null; zalo_user_id: string | null;
-  needs_human_at: string; last_message_at: string | null; ctv_name: string | null;
+  needs_human_at: string; last_message_at: string | null;
   tin_khach_cuoi: string | null; tin_khach_cuoi_at: string | null;
 };
 type ThongKe = {
@@ -164,7 +156,7 @@ const TRANG_THAI_HOI: Record<string, string> = { pending: "đang chờ", answere
 const TRANG_THAI_XEM: Record<string, string> = {
   proposed: "đề xuất", pending: "đã hẹn", done: "đã xem", cancelled: "đã huỷ",
 };
-const NGUOI_GIAO: Record<string, string> = { ctv: "CTV", seller: "chủ nhà", admin: "admin" };
+const NGUOI_GIAO: Record<string, string> = { seller: "chủ nhà", admin: "admin" };   // CTV bỏ hẳn 28/10/2026 (SRS-5.1zzzzzzz238)
 
 type BdsHot = { listing_id: string; code: string | null; ward: string | null; so_su_kien_60d: number; last_event_at: string | null };
 type GiayTo = { id: string; listing_id: string; storage_path: string; media_type: string; mime_type: string; created_at: string; listings: { code: string | null } | null };
@@ -232,7 +224,6 @@ function BanLamViec() {
   const [zaloDnTv, setZaloDnTv] = useState<DangNhapZalo | null>(null);
   const [viec, setViec] = useState<Viec[]>([]);
   const [nguoiBan, setNguoiBan] = useState<NguoiBan[]>([]);
-  const [hangCtv, setHangCtv] = useState<HangCtv[]>([]);
   const [cauHoi, setCauHoi] = useState<CauHoi[]>([]);
   const [lichXem, setLichXem] = useState<LichXem[]>([]);
   const [khachCan, setKhachCan] = useState<KhachCan[]>([]);
@@ -348,7 +339,7 @@ function BanLamViec() {
   const xoaHetKhachVaRoHang = async () => {
     const go = prompt(
       "XOÁ HÀNG LOẠT: mọi khách mua, người bán, tin rao, ảnh, hội thoại, câu hỏi, lịch hẹn, giao dịch.\n" +
-      "GIỮ: kho dự án, phường, CTV, admin, cấu hình, prompt, mẫu câu chuẩn, sổ lỗi.\n" +
+      "GIỮ: kho dự án, phường, admin, cấu hình, prompt, mẫu câu chuẩn, sổ lỗi.\n" +
       "Trước khi xoá, mọi dòng được CHÉP vào kho lưu (luu_tru) — khôi phục được bằng nút \"Khôi phục lần xoá\".\n\nGõ đúng chữ XOA HET để xoá:",
     );
     if (go === null) return;
@@ -388,7 +379,7 @@ function BanLamViec() {
   const load = async () => {
     void taiDangNhap();
     const d7 = new Date(Date.now() - 7 * 86400e3).toISOString();
-    const [pend, st, beatRes, errRes, tn, vc, nb, hg, hc, ch, lx, kc, tk, hot, gt, buyRes, intRes, qtRes, tmRes] = await Promise.all([
+    const [pend, st, beatRes, errRes, tn, vc, nb, hg, ch, lx, kc, tk, hot, gt, buyRes, intRes, qtRes, tmRes] = await Promise.all([
       supabase
         .from("listings")
         .select("id, code, ward, price_vnd, price_raw, area_m2, description, location_raw, created_at")
@@ -414,12 +405,8 @@ function BanLamViec() {
         .select("id, name, seller_type, active_count, closed_count, rank, diem_nguoi_rao, diem_phan_hoi, dat_chuan_nmg")
         .order("active_count", { ascending: false }).limit(50),
       supabase
-        .from("ctv_ranks")
-        .select("id, name, active, tong, tra_loi, dung_han, tre, ty_le_dung_han, rank")
-        .order("name").limit(20),
-      supabase
         .from("info_requests")
-        .select("id, question, status, answer, source, assignee, sla_due_at, answered_at, created_at, listings(code), ctvs(name), buyers(name)")
+        .select("id, question, status, answer, source, assignee, sla_due_at, answered_at, created_at, listings(code), buyers(name)")
         .in("status", ["pending", "answered"])
         .order("created_at", { ascending: false }).limit(100),
       supabase
@@ -429,7 +416,7 @@ function BanLamViec() {
         .order("created_at", { ascending: false, nullsFirst: false }).limit(100),
       supabase
         .from("khach_can_nguoi_that")
-        .select("conversation_id, vai, ten, zalo_user_id, needs_human_at, last_message_at, ctv_name, tin_khach_cuoi, tin_khach_cuoi_at")
+        .select("conversation_id, vai, ten, zalo_user_id, needs_human_at, last_message_at, tin_khach_cuoi, tin_khach_cuoi_at")
         .order("needs_human_at", { ascending: false }).limit(100),
       supabase
         .from("hoi_thoai_thong_ke")
@@ -478,7 +465,6 @@ function BanLamViec() {
     setViec((vc.data ?? []) as Viec[]);
     setNguoiBan((nb.data ?? []) as unknown as NguoiBan[]);
     setHang((hg.data ?? []) as Ng[]);
-    setHangCtv((hc.data ?? []) as HangCtv[]);
     setCauHoi((ch.data ?? []) as unknown as CauHoi[]);
     setLichXem((lx.data ?? []) as unknown as LichXem[]);
     setKhachCan((kc.data ?? []) as KhachCan[]);

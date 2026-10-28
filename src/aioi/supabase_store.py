@@ -792,7 +792,7 @@ class SupabaseConversationStore(KhoNguoiMua):
 
     def bao_can_nguoi(self, user_key: str, trich: str, ten: str | None = None, role: str = "seller") -> bool:
         """Khách xin gặp người thật (SRS-5.1zzzzzzz82): bật `needs_human` (khung "khách cần người thật" trên /admin) và xếp một tin
-        nội bộ "🙋" vào `reminders` — bridge kéo qua escalation-feed rồi nhắn Zalo cho CTV / admin (tin nội bộ không bao giờ tới
+        nội bộ "🙋" vào `reminders` — bridge kéo qua escalation-feed rồi nhắn Zalo cho admin (tin nội bộ không bao giờ tới
         chủ nhà, `laTinNoiBo`). ID thử (`la_id_thu`) chỉ bật cờ, không nhắn admin. Trả True khi đã xếp tin / bật cờ."""
         if not (self.is_configured and user_key):
             return False
@@ -894,7 +894,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         return True
 
     def ghi_danh_gia(self, user_key: str, sao: int, trich: str, ten: str | None = None, role: str = "seller") -> bool:
-        """Ghi điểm khách chấm. ≤ 2 sao → xếp tin nội bộ "⭐" vào `reminders` (bridge kéo qua escalation-feed nhắn CTV / admin, như
+        """Ghi điểm khách chấm. ≤ 2 sao → xếp tin nội bộ "⭐" vào `reminders` (bridge kéo qua escalation-feed nhắn admin, như
         `bao_can_nguoi`); ID thử chỉ ghi điểm, không nhắn admin."""
         if not (self.is_configured and user_key and 1 <= int(sao) <= 5):
             return False

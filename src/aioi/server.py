@@ -450,6 +450,28 @@ def _vong_bao_can_moi() -> None:
 if os.environ.get("BAO_CAN_MOI", "bat") != "tat" and _settings.supabase_service_role_key:
     threading.Thread(target=_vong_bao_can_moi, daemon=True, name="bao-can-moi").start()
 
+GIU_KET_NOI_CHU_KY_GIAY = int(os.environ.get("GIU_KET_NOI_CHU_KY_GIAY", "1800"))
+
+
+def _vong_giu_ket_noi() -> None:
+    """SRS-5.1zzzzzzz238: khách im 6–7 ngày → MỘT tin nhờ nhắn lại một chữ (logic ở `giu_ket_noi`, khung 8–20 giờ). Tắt: GIU_KET_NOI=tat."""
+    from . import giu_ket_noi
+    time.sleep(120)   # lõi khởi động xong, bridge nối lại
+    while True:
+        try:
+            kho = _engine._convstore
+            if getattr(kho, "is_configured", False):
+                ra = giu_ket_noi.chay_mot_luot(kho, _gui_nhac_mot, _xung_ho_khach, _ghi_lich_su_nhac)
+                if ra:
+                    log.warning("Giữ kết nối: đã nhắn %d khách", len(ra))
+        except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
+            _so_loi.ghi_loi("giu ket noi", f"{type(e).__name__}: {e}"[:200])
+        time.sleep(GIU_KET_NOI_CHU_KY_GIAY)
+
+
+if os.environ.get("GIU_KET_NOI", "bat") != "tat" and _settings.supabase_service_role_key:
+    threading.Thread(target=_vong_giu_ket_noi, daemon=True, name="giu-ket-noi").start()
+
 
 _CAU_DAN_THUA = re.compile(r"(?is)(?:^|(?<=\n))\s*Còn\s+(?:một|1)\s+điểm\s+em\s+cần\s+nắm\s+thêm\s*[:：]\s*")
 

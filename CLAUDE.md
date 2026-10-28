@@ -139,11 +139,12 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 - Gợi căn cần khu vực VÀ ngân sách (`co_tieu_chi`, SRS-214); mọi đường gợi căn đi qua `engine._can_goi_y` (bỏ căn đã chê), đừng gọi `can_phu_hop` trần (SRS-175). Mỗi lượt MỘT căn, bốn đoạn = bốn tin Zalo (SRS-160); không nói mã tin / "rổ". Đừng chỉnh trọng số `tim_nha` khi chưa có số đo (`do-tim-nha`).
 - Số ảnh nói thật (`_so_anh`); ảnh đã gửi đủ thì không gửi lại, đề nghị xin chủ nhà thêm (SRS-168 / 232). Số trong lời bot phía mua phải có trong dòng căn / lời khách / khối "SỐ TÍNH THEO CĂN" (`_so_khong_co_trong_can`).
 - Việc của khối `mua` nhận theo căn cứ RIÊNG từng việc (`_loc_viec_mua`), đừng nhận / bỏ cả khối theo một trích dẫn (SRS-232). Lượt không ghi gì thì không nói "đã chuyển / đã giữ lịch".
-- **CTV đã bỏ hẳn** (chủ dự án 28/10/2026): mọi đường báo của phía mua (lịch xem, câu hỏi chủ nhà) đi chủ nhà hoặc admin (SRS-165 / 170 / 172 / 173). Code / DB còn tàn dư CTV (bảng `ctvs`, view `ctv_ranks`, cột `ctv_id`, nhánh `ctv` của trigger `info_requests`, khối hạng CTV ở `/admin`) — chưa dọn; đừng thêm việc mới giao CTV.
+- **CTV đã bỏ hẳn** (chủ dự án 28/10/2026): mọi đường báo của phía mua (lịch xem, câu hỏi chủ nhà) đi chủ nhà (hạn 12 giờ) hoặc admin (hạn 5 giờ, `admin_han_gio`) (SRS-165 / 170 / 238). Code đã gỡ CTV (SRS-238); đừng thêm lại vai / bảng / nhánh CTV.
 - Tra dự án phía mua: `mua.hoi_du_an` → `tra_du_an` (chữ trước, vector sau — kết quả vector chỉ để khách xác nhận) (SRS-184 / 185). Bot chỉ hỏi "có phải dự án X" khi khách nhắc dự án hoặc địa chỉ trùng số nhà + đường (SRS-232).
 
 **Gửi chủ động & nhắc**
 - Báo căn mới cho khách mua: `bao_can_moi.py`, vòng 10 phút, 8–20 giờ, ≤ 1 tin / khách / 24 giờ, xoay 4 kiểu văn phong (SRS-150 / 188). Đừng bật lại trigger cũ `bao_tin_moi_khop` / `nudge` (hai chủ).
+- Tin chống Zalo xoá kết nối (FR-63): `giu_ket_noi.py`, khách im 6–7 ngày, 8–20 giờ, câu mẫu cố định, giữ chỗ `reminders` `reengage` (SRS-238).
 - Nhắc `followup` / `sold` / `feedback` / `admin_reply` do LÕI gửi (`gui_nhac.py`, vòng 60 s); thêm loại nhắc = thêm vào `KIND_LOI` + `soan_tin`, đừng mở đường gửi thứ hai; đừng ghi `noi_dung_gui` khi còn pending (SRS-216).
 - Tin nội bộ (🙋 ⭐ 🩺) gửi CTV / admin mở bằng `$$$$$ `; tin cho khách thật không bao giờ có (SRS-134). Ảnh gửi qua `/send` của bridge, vòng tải ảnh chỉ ở `guiAnhQuaUrl`.
 - Lệnh gõ tay trên Zalo (`lenh_zalo.py`): `/quit` (xoá phiên), `/state`, `/listings`, `/whoami`, `/import`, `/project`, `/link`; chạy TRƯỚC model, không vào lịch sử (SRS-211).

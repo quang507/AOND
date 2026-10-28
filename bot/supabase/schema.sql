@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-28 09:10 (giờ VN)
+-- Sinh lúc: 2026-10-28 12:53 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -1351,6 +1351,14 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.admin_han_gio()
+ RETURNS integer
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$ select coalesce(nullif(public.cau_hinh('admin_han_gio'), '')::int, 5) $function$
+;
+
 CREATE OR REPLACE FUNCTION public.admin_khoi_phuc_lan_xoa(p_lan bigint)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -2165,8 +2173,6 @@ begin
 
   select exists (
     select 1 from sellers s where s.zalo_user_id = p_uid
-    union all
-    select 1 from ctvs c   where c.zalo_user_id = p_uid
     union all
     select 1 from admins a where a.zalo_user_id = p_uid
   ) into v_quen;
@@ -3339,7 +3345,8 @@ begin
       and q.sla_due_at < now() and q.chu_nha_qua_han_at is null
     limit 50
   loop
-    update info_requests set assignee = 'admin', chu_nha_qua_han_at = now(), sla_due_at = null where id = r.id;
+    update info_requests set assignee = 'admin', chu_nha_qua_han_at = now(),
+      sla_due_at = now() + make_interval(hours => public.admin_han_gio()) where id = r.id;
     insert into reminders (kind, listing_id, due_at, note)
     values ('escalation', r.listing_id, now(),
       '❓ Khách hỏi căn #' || coalesce(r.code, '?') || ': "' || coalesce(r.question, '')
@@ -3348,28 +3355,27 @@ begin
     n := n + 1;
   end loop;
 
+  -- 20261028c: CTV bỏ hẳn — vòng 2 là ADMIN quá hạn (mặc định 5 giờ): nhắc lại admin một lần + email.
   for r in
-    select q.id, q.question, q.buyer_id, q.listing_id, l.code, coalesce(c.name, '?') as ctv_name,
+    select q.id, q.question, q.buyer_id, q.listing_id, l.code,
            b.zalo_user_id as buyer_uid, b.name as buyer_name
     from info_requests q
     join listings l on l.id = q.listing_id
-    left join ctvs c on c.id = q.ctv_id
     left join buyers b on b.id = q.buyer_id
-    where q.status = 'pending' and q.source = 'buyer_ask' and q.assignee = 'ctv'
+    where q.status = 'pending' and q.source = 'buyer_ask' and q.assignee = 'admin'
+      and coalesce(q.question, '') <> 'xac_nhan_lich'
       and q.sla_due_at < now() and q.sla_missed_at is null
     limit 50
   loop
     insert into reminders (kind, listing_id, due_at, note)
     values ('escalation', r.listing_id, now(),
-      '⏰ CTV ' || r.ctv_name || ' chưa trả lời câu khách hỏi #' || coalesce(r.code, '?')
-      || ' ("' || coalesce(r.question, '') || '") sau ' || public.ctv_sla_phut()
-      || ' phút. Admin đỡ khách giúp: hỏi chủ rồi nhắn bot "#' || coalesce(r.code, '?') || ': câu trả lời".');
+      '⏰ Câu khách hỏi căn #' || coalesce(r.code, '?') || ' ("' || coalesce(r.question, '')
+      || '") đã quá ' || public.admin_han_gio() || ' giờ chưa trả lời. Admin hỏi chủ rồi nhắn bot "#'
+      || coalesce(r.code, '?') || ': câu trả lời".');
     update info_requests set sla_missed_at = now() where id = r.id;
-    if coalesce(r.question, '') <> 'xac_nhan_lich' then
-      perform public.email_admin('QUESTION', r.buyer_uid,
-        'Khách: ' || coalesce(r.buyer_name, '(chưa biết tên)') || E'\nCâu hỏi: "' || coalesce(r.question, '')
-        || E'"\nCTV: ' || r.ctv_name || ' quá ' || public.ctv_sla_phut() || ' phút chưa trả lời', r.listing_id);
-    end if;
+    perform public.email_admin('QUESTION', r.buyer_uid,
+      'Khách: ' || coalesce(r.buyer_name, '(chưa biết tên)') || E'\nCâu hỏi: "' || coalesce(r.question, '')
+      || E'"\nQuá ' || public.admin_han_gio() || ' giờ chưa trả lời', r.listing_id);
     n := n + 1;
   end loop;
   return n;
@@ -3413,6 +3419,42 @@ AS $function$
   select btrim(regexp_replace(
     regexp_replace(lower(public.bo_dau(coalesce(p, ''))), '[^a-z0-9 ]+', '', 'g'),
     '\s+', ' ', 'g'))
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.khach_can_giu_ket_noi(p_tu_ngay integer DEFAULT 6, p_den_ngay integer DEFAULT 7, p_limit integer DEFAULT 10)
+ RETURNS TABLE(conversation_id uuid, zalo_user_id text, ten text, vai text, buyer_id uuid, seller_id uuid, khach_cuoi timestamp with time zone)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  with cuoi as (
+    select distinct on (m.conversation_id) m.conversation_id, m.sender::text as vai, m.created_at as khach_cuoi
+      from messages m
+     where m.sender in ('buyer', 'seller')
+       and m.created_at > now() - make_interval(days => p_den_ngay) - interval '1 day'
+     order by m.conversation_id, m.created_at desc, m.seq desc
+  )
+  select c.id, coalesce(case when cu.vai = 'seller' then s.zalo_user_id end, b.zalo_user_id, s.zalo_user_id),
+         coalesce(case when cu.vai = 'seller' then s.name end, b.name, s.name),
+         cu.vai, c.buyer_id, c.seller_id, cu.khach_cuoi
+    from cuoi cu
+    join conversations c on c.id = cu.conversation_id
+    left join buyers b on b.id = c.buyer_id
+    left join sellers s on s.id = c.seller_id
+   where cu.khach_cuoi <= now() - make_interval(days => p_tu_ngay)
+     and cu.khach_cuoi > now() - make_interval(days => p_den_ngay)
+     and not c.human_hold
+     and coalesce(case when cu.vai = 'seller' then s.zalo_user_id end, b.zalo_user_id, s.zalo_user_id) is not null
+     and not public.la_id_thu(coalesce(case when cu.vai = 'seller' then s.zalo_user_id end, b.zalo_user_id, s.zalo_user_id))
+     and (cu.vai = 'seller' or coalesce(b.bao_can_moi, true))
+     and not exists (
+       select 1 from reminders r
+        where r.kind = 'reengage' and r.note like 'giu_ket_noi%' and r.status in ('pending', 'sent')
+          and r.created_at >= cu.khach_cuoi
+          and ((c.buyer_id is not null and r.buyer_id = c.buyer_id) or (c.seller_id is not null and r.seller_id = c.seller_id)))
+   order by cu.khach_cuoi
+   limit p_limit
 $function$
 ;
 
@@ -4665,7 +4707,7 @@ begin
     with g as (
       update reminders set note = note || ' · khách hỏi thêm: "' || v_hoi || '"'
        where kind = 'escalation' and status = 'pending' and listing_id = new.listing_id
-         and seller_id is null and ctv_id is null
+         and seller_id is null
          and created_at > now() - interval '15 minutes'
       returning 1
     ) select count(*) into v_gom from g;
@@ -4675,29 +4717,6 @@ begin
         '❓ Khách hỏi căn #' || coalesce(v_code, '?') || ': "' || v_hoi
         || '" — tin không có chủ nhà trên hệ thống. Admin hỏi chủ rồi nhắn bot "#'
         || coalesce(v_code, '?') || ': câu trả lời".');
-    end if;
-
-  elsif new.assignee = 'ctv' then
-    with g as (
-      update reminders set note = note || ' · khách hỏi thêm: "' || v_hoi || '"'
-       where kind = 'escalation' and status = 'pending' and listing_id = new.listing_id
-         and ctv_id is not distinct from new.ctv_id
-         and created_at > now() - interval '15 minutes'
-      returning 1
-    ) select count(*) into v_gom from g;
-    if v_gom = 0 then
-      if new.source = 'buyer_ask' then
-        insert into reminders (kind, listing_id, ctv_id, due_at, note)
-        values ('escalation', new.listing_id, new.ctv_id, now(),
-          'khách hỏi #' || coalesce(v_code, '?') || ': "' || v_hoi
-          || '". Anh/chị hỏi chủ rồi nhắn lại em theo mẫu "#' || coalesce(v_code, '?')
-          || ': câu trả lời" trong ' || public.ctv_sla_phut() || ' phút nha, em báo khách liền.');
-      else
-        insert into reminders (kind, listing_id, ctv_id, due_at, note)
-        values ('escalation', new.listing_id, new.ctv_id, now(),
-          'khách hỏi #' || coalesce(v_code, '?') || ' · cần: ' || public.nhan_fact(v_hoi)
-          || ' · tin không có chính chủ trên hệ thống → giao ctv');
-      end if;
     end if;
 
   elsif new.assignee = 'seller' and v_seller is not null
@@ -4886,7 +4905,6 @@ begin
              sum(q.calls) filter (where q.gio = date_trunc('hour', now())) as trong_gio,
              exists (
                select 1 from sellers s where s.zalo_user_id = q.zalo_user_id
-               union all select 1 from ctvs c where c.zalo_user_id = q.zalo_user_id
                union all select 1 from admins a where a.zalo_user_id = q.zalo_user_id
              ) as nguoi_quen
         from chat_quota q where q.gio > now() - interval '24 hours'
@@ -5031,7 +5049,10 @@ begin
     end if;
     return new;
   end if;
-  new.assignee := 'admin';   -- 20261024a: bỏ bước CTV, không có chủ nhà trên hệ thống thì giao thẳng admin
+  new.assignee := 'admin';   -- 20261024a: không có chủ nhà trên hệ thống thì giao thẳng admin
+  if new.source = 'buyer_ask' and coalesce(new.question, '') <> 'xac_nhan_lich' then
+    new.sla_due_at := now() + make_interval(hours => public.admin_han_gio());   -- 20261028c: hạn admin 5 giờ
+  end if;
   return new;
 end $function$
 ;
@@ -5948,14 +5969,14 @@ AS $function$
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.viewings_bao_ctv_va_email()
+CREATE OR REPLACE FUNCTION public.viewings_bao_admin_va_email()
  RETURNS trigger
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
 declare
-  v_listing uuid; v_code text; v_ctv uuid; v_uid text; v_ten text; v_gio text; v_note text;
+  v_listing uuid; v_code text; v_uid text; v_ten text; v_gio text; v_note text;
 begin
   v_listing := new.listing_id;
   if v_listing is null and new.listing_code is not null then
@@ -5964,24 +5985,23 @@ begin
   select code into v_code from listings where id = v_listing;
   v_code := coalesce(v_code, new.listing_code, '?');
   select b.zalo_user_id, b.name into v_uid, v_ten from buyers b where b.id = new.buyer_id;
-  v_ctv := null;   -- 20261023g: bỏ bước CTV, lịch xem đi thẳng admin
   v_gio := coalesce(to_char(new.slot at time zone 'Asia/Ho_Chi_Minh', 'HH24:MI DD/MM'), new.time_text, '?');
 
   -- (a) nhắc admin ngay
   begin
     v_note := 'Lịch xem #' || v_code || ' · ' || v_gio || ' · khách ' || coalesce(v_ten, '(chưa biết tên)')
            || ', xác nhận với chủ nhà rồi nhắn lại em "#' || v_code || ': ok ' || coalesce(to_char(new.slot at time zone 'Asia/Ho_Chi_Minh', 'HH24"h"'), 'giờ') || '" nha';
-    insert into reminders (kind, buyer_id, listing_id, viewing_id, ctv_id, due_at, note)
-    values ('escalation', new.buyer_id, v_listing, new.id, v_ctv, now(), v_note);
+    insert into reminders (kind, buyer_id, listing_id, viewing_id, due_at, note)
+    values ('escalation', new.buyer_id, v_listing, new.id, now(), v_note);
   exception when others then
-    perform public.log_loi('viewings_bao_ctv', left(sqlerrm, 400), null::integer);
+    perform public.log_loi('viewings_bao_admin', left(sqlerrm, 400), null::integer);
   end;
 
   -- (b) câu xác nhận lịch giao admin để lời "#mã: ok giờ" đóng được nó (info_request_bao_lai_khach chốt lịch + báo khách)
   if v_listing is not null and new.buyer_id is not null and new.status in ('proposed', 'pending') then
     begin
-      insert into info_requests (listing_id, buyer_id, question, status, source, assignee, ctv_id, sla_due_at)
-      values (v_listing, new.buyer_id, 'xac_nhan_lich', 'pending', 'buyer_ask', 'admin', null, null);
+      insert into info_requests (listing_id, buyer_id, question, status, source, assignee, sla_due_at)
+      values (v_listing, new.buyer_id, 'xac_nhan_lich', 'pending', 'buyer_ask', 'admin', null);
     exception when others then
       perform public.log_loi('viewings_xac_nhan_lich', left(sqlerrm, 400), null::integer);
     end;
@@ -6805,8 +6825,8 @@ drop trigger if exists trg_sellers_nguon_nhan on public.sellers;
 CREATE TRIGGER trg_sellers_nguon_nhan BEFORE INSERT OR UPDATE OF seller_type ON public.sellers FOR EACH ROW EXECUTE FUNCTION sellers_nguon_nhan();
 drop trigger if exists trg_pe_viewings on public.viewings;
 CREATE TRIGGER trg_pe_viewings AFTER INSERT ON public.viewings FOR EACH ROW EXECUTE FUNCTION trg_property_event();
-drop trigger if exists trg_viewings_bao_ctv_va_email on public.viewings;
-CREATE TRIGGER trg_viewings_bao_ctv_va_email AFTER INSERT ON public.viewings FOR EACH ROW EXECUTE FUNCTION viewings_bao_ctv_va_email();
+drop trigger if exists trg_viewings_bao_admin_va_email on public.viewings;
+CREATE TRIGGER trg_viewings_bao_admin_va_email AFTER INSERT ON public.viewings FOR EACH ROW EXECUTE FUNCTION viewings_bao_admin_va_email();
 
 -- ══ Bật RLS ══
 alter table public.admins enable row level security;
@@ -7149,6 +7169,8 @@ grant execute on function public.admin_gan_bds_quan_tam(p_buyer_id uuid, p_code 
 revoke all on function public.admin_gui_tin(p_conversation_id uuid, p_noi_dung text) from public, anon, authenticated;
 grant execute on function public.admin_gui_tin(p_conversation_id uuid, p_noi_dung text) to authenticated;
 grant execute on function public.admin_gui_tin(p_conversation_id uuid, p_noi_dung text) to service_role;
+revoke all on function public.admin_han_gio() from public, anon, authenticated;
+grant execute on function public.admin_han_gio() to service_role;
 revoke all on function public.admin_khoi_phuc_lan_xoa(p_lan bigint) from public, anon, authenticated;
 grant execute on function public.admin_khoi_phuc_lan_xoa(p_lan bigint) to authenticated;
 grant execute on function public.admin_khoi_phuc_lan_xoa(p_lan bigint) to service_role;
@@ -7326,6 +7348,8 @@ grant execute on function public.jsonb_bo_rong(j jsonb) to service_role;
 revoke all on function public.kd_ten(p text) from public, anon, authenticated;
 grant execute on function public.kd_ten(p text) to authenticated;
 grant execute on function public.kd_ten(p text) to service_role;
+revoke all on function public.khach_can_giu_ket_noi(p_tu_ngay integer, p_den_ngay integer, p_limit integer) from public, anon, authenticated;
+grant execute on function public.khach_can_giu_ket_noi(p_tu_ngay integer, p_den_ngay integer, p_limit integer) to service_role;
 revoke all on function public.khoa_nhung_nen() from public, anon, authenticated;
 grant execute on function public.khoa_nhung_nen() to service_role;
 revoke all on function public.khoang_cach_m(p_lat1 double precision, p_lng1 double precision, p_lat2 double precision, p_lng2 double precision) from public, anon, authenticated;
@@ -7512,8 +7536,8 @@ revoke all on function public.van_ban_du_an(p_id uuid) from public, anon, authen
 grant execute on function public.van_ban_du_an(p_id uuid) to service_role;
 revoke all on function public.van_ban_nhung(p_id uuid) from public, anon, authenticated;
 grant execute on function public.van_ban_nhung(p_id uuid) to service_role;
-revoke all on function public.viewings_bao_ctv_va_email() from public, anon, authenticated;
-grant execute on function public.viewings_bao_ctv_va_email() to service_role;
+revoke all on function public.viewings_bao_admin_va_email() from public, anon, authenticated;
+grant execute on function public.viewings_bao_admin_va_email() to service_role;
 revoke all on function public.xoa_nguoi_theo_zalo(p_zalo text) from public, anon, authenticated;
 grant execute on function public.xoa_nguoi_theo_zalo(p_zalo text) to service_role;
 revoke all on function public.xuat_schema() from public, anon, authenticated;

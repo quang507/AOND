@@ -1539,7 +1539,7 @@ QUAN TRỌNG — is_new_listing: nếu người rao rõ ràng CHUYỂN SANG mộ
 hãy đặt is_new_listing=true và CHỈ trích thông tin của CĂN MỚI. Nếu chỉ sửa/bổ sung căn hiện tại thì để trống.
 QUAN TRỌNG — lý do bán và chuyện riêng tư: nếu người rao chia sẻ lý do cần bán, hoàn cảnh gia đình
 (con cái định cư/đi xa, vợ chồng không ở, nợ nần, bệnh tật, về quê...), hãy trích vào ly_do_ban
-để lưu trữ nội bộ cho CTV/Admin hỗ trợ. TUYỆT ĐỐI KHÔNG xếp các câu chuyện riêng tư này vào tiện ích
+để lưu trữ nội bộ cho admin hỗ trợ. TUYỆT ĐỐI KHÔNG xếp các câu chuyện riêng tư này vào tiện ích
 hay mô tả công khai của căn nhà.
 QUAN TRỌNG — địa chỉ tách phần (18/10/2026): ngoài dia_chi (nguyên cụm địa chỉ khách nói), tách RIÊNG:
 - duong: TÊN ĐƯỜNG khách nêu (vd "Trần Hưng Đạo", "Đường số 5", "Hẻm 137 Lê Văn Sỹ" → "Lê Văn Sỹ"). Chỉ tên đường thật —
@@ -2189,7 +2189,7 @@ def tai_lieu_chung_schema() -> dict[str, Any]:
 
 
 _SDT = re.compile(r"(?<!\d)(?:\+?84|0)(?:[\s.\-]?\d){8,10}(?!\d)")
-_AI_CAU_CHUAN = {"buyer": "Khách", "seller": "Khách", "bot": "Bot", "human": "Người thật", "ctv": "CTV"}
+_AI_CAU_CHUAN = {"buyer": "Khách", "seller": "Khách", "bot": "Bot", "human": "Người thật"}
 
 
 # Câu mở lượt kiểu ghi nhận ("Em ghi nhận…", "Chị đã ghi giá…", "Em lưu…") — chủ dự án bỏ hẳn kiểu này (SRS-5.1zzzzzzz131); chủ ngữ theo mọi

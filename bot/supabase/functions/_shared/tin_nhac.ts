@@ -10,9 +10,9 @@
  * Text của một việc trong hàng đợi `reminders` khi đi ra ngoài (OA hoặc bridge).
  * Dùng CHUNG cho `nudge` (đường OA) và `escalation-feed` (đường bridge) — hai
  * đường phải nói y hệt nhau.
- * - kind `report` (FR-149): báo cáo CTV 17h → gửi NGUYÊN VĂN về Zalo admin.
+ * - kind `report` (FR-149): báo cáo hằng ngày → gửi NGUYÊN VĂN về Zalo admin.
  * - có seller_id (FR-144): đích là chính chủ → giọng CSKH lễ phép.
- * - còn lại: CTV/admin → thông báo nội bộ.
+ * - còn lại: admin → thông báo nội bộ.
  */
 /**
  * 01/10/2026 (soát sau bắn thử lx-cx-01): ghi chú mở đầu bằng DẤU HIỆU (❓ khách hỏi, 😟 cảm xúc, 🩺 sức khoẻ, 🆕, ✏️…) là tin
