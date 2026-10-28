@@ -563,6 +563,24 @@ class KhoNguoiMua:
         """Khách mua xin ảnh mà căn chưa có / đã gửi đủ → nhờ chủ nhà gửi thêm (SRS-5.1zzzzzzz254)."""
         return self.ghi_hoi_chu_nha(buyer_id, can, XIN_THEM_ANH)
 
+    def can_cho_anh(self, user_key: str) -> list[str]:
+        """Mã tin (8 ký tự) các căn của chủ nhà `user_key` đang có câu khách mua "xin thêm ảnh" chờ trả lời, câu MỚI nhất trước — tin hệ thống
+        vừa nhắn chủ nhà (SRS-5.1zzzzzzz258). Lỗi / không có → []."""
+        if not (self.is_configured and user_key):
+            return []
+        try:
+            s = self._get(f"sellers?zalo_user_id=eq.{_q(user_key)}&select=id")
+            tin = self._get(f"listings?seller_id=eq.{s[0]['id']}&select=id,code") if s else []
+            if not tin:
+                return []
+            ma = {t["id"]: str(t.get("code") or "").upper() for t in tin}
+            rows = self._get(f"info_requests?listing_id=in.({','.join(ma)})&status=eq.pending&question=eq.{_q(XIN_THEM_ANH)}"
+                             "&select=listing_id&order=created_at.desc")
+        except Exception as e:  # noqa: BLE001
+            log.warning("can_cho_anh lỗi: %s", e)
+            return []
+        return list(dict.fromkeys(ma[r["listing_id"]] for r in rows if ma.get(r.get("listing_id"))))
+
     def tra_loi_xin_anh(self, user_key: str, code: str, so_anh: int) -> int:
         """Chủ nhà (Zalo `user_key`) vừa gửi `so_anh` ảnh vào căn `code` → mọi câu "xin thêm ảnh" đang chờ của căn đó thành đã trả lời (trigger
         báo lại khách). Trả số câu đã đặt; lỗi / không có → 0."""

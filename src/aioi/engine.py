@@ -3866,6 +3866,8 @@ class Engine:
                 except (FetchError, KhoTepError, ValueError):
                     pass
             return [], 0
+        if store:
+            self._chon_can_nhan_anh(conv)
         captured = self._extract(conv)
         if store:
             refs, capped = self._upload_media(
@@ -3879,6 +3881,26 @@ class Engine:
                 tra(conv.user_key, conv.active.listing_id[:8].upper(), so_anh)
             return captured, capped
         return captured, 0
+
+    def _chon_can_nhan_anh(self, conv: Conversation) -> None:
+        """Chủ nhà nhiều căn gửi ảnh lúc lõi đang nói căn khác (SRS-5.1zzzzzzz258, chủ dự án 28/10: "xét trong cả ngữ cảnh mấy câu đó"): ảnh vào
+        căn mà NGỮ CẢNH chỉ tới — (1) tin chủ nhà vừa nhắn (≤ 10 phút) gọi tên căn (mã tin / địa chỉ, `_match_listing`); không có thì (2) căn
+        khách mua vừa xin thêm ảnh (tin hệ thống mới nhất vừa nhắn chủ nhà). Không có gì chỉ tới thì giữ căn đang nói như cũ."""
+        if len(conv.listings) < 2:
+            return
+        moc = time.time() - 600
+        for t in reversed(conv.history[-6:]):
+            if t.role == "user" and t.at >= moc and (li := self._match_listing(conv, t.content or "")) is not None:
+                conv.active_listing_id = li.listing_id
+                return
+        lay = getattr(self._convstore, "can_cho_anh", None)
+        ma = lay(conv.user_key) if lay is not None else []
+        if not ma or conv.active.listing_id[:8].upper() in ma:
+            return
+        li = next((x for x in conv.listings if x.listing_id[:8].upper() == ma[0]), None)
+        if li is not None:
+            log.warning("Ảnh chủ nhà: chuyển sang căn khách mua đang xin ảnh")
+            conv.active_listing_id = li.listing_id
 
     @staticmethod
     def _doc_title(filename: str | None, description: str) -> str:
