@@ -108,3 +108,34 @@ def test_bot_chi_hua_nhan_khi_co_hen():
     co = build_fee_followup_system("T•ai", p, web={"len_web": False, "hen_bao_len_web": True}, duyet="dong_y")
     khong = build_fee_followup_system("T•ai", p, web={"len_web": False}, duyet="dong_y")
     assert "tin hiển thị em nhắn ngay" in co and "tin hiển thị em nhắn" not in khong
+
+
+def test_anh_chu_nha_vao_dung_can_theo_ngu_canh():
+    """SRS-5.1zzzzzzz258 (chủ dự án 28/10: "chủ nhà có nhiều căn mà gửi ảnh lúc bot đang nói về căn khác … xét trong cả ngữ cảnh mấy câu
+    đó"): ảnh vào căn khách mua vừa xin ảnh; chủ nhà vừa gọi tên căn khác thì theo lời chủ nhà; không có gì chỉ tới thì giữ căn đang nói."""
+    import time
+    from types import SimpleNamespace
+    from aioi.assistants import assign_assistant
+    from aioi.engine import Conversation, Engine, Listing, Turn
+    from aioi.schema import Property
+    from tests.test_viec_mua import AiGia
+    a = Listing(listing_id="aaaaaaaa" + "0" * 24, prop=Property(loai_hinh="nha_pho", fields={"dia_chi": "12 Trần Bình Trọng"}))
+    b = Listing(listing_id="bbbbbbbb" + "0" * 24, prop=Property(loai_hinh="nha_pho", fields={"dia_chi": "5 An Dương Vương"}))
+
+    def conv_moi(loi=None):
+        c = Conversation(user_key="zl-chu", assistant=assign_assistant("zl-chu"), listings=[a, b], active_listing_id=a.listing_id)
+        if loi:
+            c.history.append(Turn("user", loi, time.time()))
+        return c
+    e = Engine(AiGia({"operations": []}))
+    e._convstore = SimpleNamespace(can_cho_anh=lambda uk: ["BBBBBBBB"])
+    c = conv_moi()
+    e._chon_can_nhan_anh(c)
+    assert c.active_listing_id == b.listing_id                          # căn khách vừa xin ảnh
+    c = conv_moi("ảnh căn 12 Trần Bình Trọng nè em")
+    e._chon_can_nhan_anh(c)
+    assert c.active_listing_id == a.listing_id                          # chủ nhà gọi tên căn → theo lời chủ nhà
+    e._convstore = SimpleNamespace(can_cho_anh=lambda uk: [])
+    c = conv_moi()
+    e._chon_can_nhan_anh(c)
+    assert c.active_listing_id == a.listing_id                          # không gì chỉ tới → giữ căn đang nói

@@ -9058,6 +9058,23 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz258 · Ảnh chủ nhà gửi vào đúng căn theo ngữ cảnh — chủ nhà nhiều căn trả lời câu "xin thêm ảnh" (28/10/2026)
+Chủ dự án 28/10 (đọc việc còn lại ở SRS-254): "chủ nhà có nhiều căn mà gửi ảnh lúc bot đang nói về căn khác … vậy thì xét trong cả ngữ cảnh mấy câu
+đó"; "2 sdt thì mặc định 1 số mua 1 số bán thôi chứ nếu người ta vừa mua vừa bán bằng 1 sdt thì vẫn nhận nha".
+1. **Ca** — khách mua xin thêm ảnh căn B (SRS-254: `info_requests` câu `XIN_THEM_ANH`, chủ nhà được nhắn). Lõi đang nói căn A của chủ nhà đó; chủ
+   nhà gửi ảnh → ảnh vào căn A, câu xin ảnh của căn B không được trả lời, khách không được báo.
+2. **Sửa** — `Engine._chon_can_nhan_anh` (gọi trong `_route_readout_media` trước khi lưu ảnh, chỉ khi chủ nhà có ≥ 2 căn): (1) tin chủ nhà vừa nhắn
+   (≤ 10 phút, 6 tin gần nhất) gọi tên căn — mã tin web hoặc địa chỉ (`_match_listing`) → căn đó; (2) không thì căn có câu "xin thêm ảnh" MỚI nhất
+   đang chờ (`KhoNguoiMua.can_cho_anh` — đúng tin hệ thống vừa nhắn chủ nhà); (3) không gì chỉ tới → giữ căn đang nói. Sau đó `tra_loi_xin_anh`
+   trả lời câu của đúng căn.
+3. **Hai số** — đã đúng, không đổi: số Zalo chỉ quyết vai MẶC ĐỊNH của lượt mơ hồ (SRS-210); khách nói rõ mua / bán thì sang vai đó ở số nào cũng
+   được, một Zalo vừa mua vừa bán là hai bản ghi `buyers` + `sellers` (SRS-149 / 153).
+4. **Ba câu gốc** — (1) *lớp lỗi*: nơi cất ảnh chỉ nhìn "căn đang nói" trong bộ nhớ lõi, không nhìn việc đang chờ trên DB (tin hệ thống nhắn chủ nhà
+   đi đường escalation-feed, không vào lịch sử lõi). (2) *Chỗ khác cùng lớp*: chủ nhà trả lời bằng CHỮ đi qua khối "CÂU KHÁCH MUA ĐANG HỎI CHỦ
+   NHÀ" (có id + mã căn) — không lệch; nhóm nhiều ảnh (`_group_media_batch`) chia nhóm theo AI, không qua bước này. (3) *Bài đỏ*:
+   `tests/test_xin_chu_nha_254.py::test_anh_chu_nha_vao_dung_can_theo_ngu_canh` (căn khách xin ảnh / chủ nhà gọi tên căn khác / không gì chỉ tới)
+   — gỡ bản sửa: đỏ. Chưa bắn model thật (bài bắn không có ảnh).
+
 ### SRS-5.1zzzzzzz257 · Tin tạo ngoài chat: nạp ô từ cột khi `boc_tach` trống — chủ nhà trả lời khách mua không bị hỏi lại địa chỉ (28/10/2026)
 Chủ dự án 28/10: "có sửa đi" (việc còn lại ở SRS-256 mục 5).
 1. **Ca gốc** — `ban-thu-mua` run 40726585276: chủ nhà có tin trên DB (tạo thẳng DB, có `street` / `ward` / `district` / `price_raw` / `area_m2`,
