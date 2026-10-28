@@ -168,6 +168,12 @@ class FollowUpManager:
             # Chỉ nói "bản tin nháp em soạn ở trên" khi bản nháp ĐÃ gửi thật (SRS-5.1zzzzzzz91) — trước đây đủ ý (summary_ready) cũng
             # tính, nên khách chưa thấy bản nháp nào vẫn được nhắc "xem bản tin ở trên".
             is_draft_ready = bool(getattr(conv, "listing_proposed", False))
+            if is_draft_ready:
+                # SRS-5.1zzzzzzz233 (chat chị Ngân 28/10: khách duyệt "đăng giúp chị", bot hỏi phường, 5 phút sau vẫn nhắc "Em gửi chị bản nháp tin
+                # đăng…"): `listing_proposed` còn bật sau khi khách đã đáp bản tin. Chỉ nhắc bản nháp khi khách CHƯA nhắn gì sau bản tin 📋 gần nhất.
+                hs = list(getattr(conv, "history", []) or [])
+                i_tin = max((i for i, t in enumerate(hs) if t.role == "assistant" and "📋" in (t.content or "")), default=-1)
+                is_draft_ready = i_tin >= 0 and not any(t.role == "user" for t in hs[i_tin + 1:])
 
             if is_draft_ready:
                 goi, toi = goi_toi(customer_pronoun, ten)

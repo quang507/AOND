@@ -24,4 +24,4 @@ vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/nu
 
 echo "== nhật ký lõi UTC $TU → $DEN (đã loại SĐT / số dài); múi giờ VPS: $(vps 'date +%Z%z')"
 vps "journalctl -u aond-core --no-pager -o short-iso | head -1" || true   # dòng nhật ký cũ nhất còn giữ
-vps "journalctl -u aond-core --utc --since '$TU UTC' --until '$DEN UTC' --no-pager -o short-iso | grep -E 'Kế hoạch|Bỏ ô|ô hỏi|💲|gom .* tin|thời gian lượt|khởi động|Started|Stopped|lệch luật|gọi lại' | sed -E 's/[0-9]{9,}/#/g' | cut -c1-900" || true
+vps "journalctl -u aond-core --utc --since '$TU UTC' --until '$DEN UTC' --no-pager -o short-iso | grep -E 'Kế hoạch|Hỏi về|Mua:|Bỏ ô|ô hỏi|💲|gom .* tin|thời gian lượt|khởi động|Started|Stopped|lệch luật|gọi lại' | sed -E 's/[0-9]{9,}/#/g' | cut -c1-900" || true

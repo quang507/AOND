@@ -199,5 +199,5 @@ PY
 kiem "171: không lượt nào gọi khách là \"mình\" ($VI lượt vi phạm)" "$([ "$VI" = 0 ] && echo 1 || echo 0)"
 
 echo "== lõi trên VPS: $(vps 'systemctl is-active aond-core')"
-vps "journalctl -u aond-core --since '-10 min' --no-pager -o cat | grep -E 'Mua: |điều luật theo nghĩa|dự án theo nghĩa|Failed to|error|Error|exception|traceback' | grep -viE 'key|token|secret|password|bearer' | sed -E 's/[0-9]{9,}/#/g' | tail -30" || true
+vps "journalctl -u aond-core --since '-10 min' --no-pager -o cat | grep -E 'Mua: |Hỏi về: |điều luật theo nghĩa|dự án theo nghĩa|Failed to|error|Error|exception|traceback' | grep -viE 'key|token|secret|password|bearer' | sed -E 's/[0-9]{9,}/#/g' | tail -30" || true
 exit $loi

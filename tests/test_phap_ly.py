@@ -89,3 +89,15 @@ def test_khoa_la_hoac_trich_dan_bia_thi_bo():
     eng, ai = _engine(KhoGia(), {**CHU_NHA, "hoi_phap_ly": "luat_rung", "phap_ly_trich_dan": "nhà em ở quận 5"})
     eng.handle("pl-5", "Nhà em ở quận 5")
     assert not any("KHÁCH HỎI PHÁP LÝ" in s for s in ai.system)
+
+
+def test_chu_nha_hoi_thue_phi_khong_bi_doc_thanh_phi_moi_gioi():
+    """SRS-5.1zzzzzzz233 (bắn thử ban-thu-ai 28/10: chủ nhà "Bán nhà thì anh phải nộp những thuế phí gì em?" → bot trả 1% / 0,5% phí bên mình).
+    Lượt đọc ý phải được dặn rõ: "phí" của khoản phải nộp khi mua bán là câu pháp lý. Lỡ AI điền cả hai thì khối pháp lý vẫn thắng."""
+    assert "kể cả khi người hỏi là CHỦ NHÀ đang rao tin → hoi_phap_ly, KHÔNG hoi_ve = \"phi\"" in OPERATIONS_SYSTEM
+    cau = "Bán nhà thì anh phải nộp những thuế phí gì em?"
+    eng, ai = _engine(KhoGia(), {**CHU_NHA, "hoi_ve": "phi", "hoi_ve_trich_dan": "thuế phí gì",
+                                 "hoi_phap_ly": "thue_phi_sang_ten", "phap_ly_trich_dan": "phải nộp những thuế phí gì"})
+    eng.handle("pl-176", cau)
+    assert any("KHÁCH HỎI PHÁP LÝ / THỦ TỤC" in s for s in ai.system)
+    assert not any("KHÁCH HỎI VỀ PHÍ" in s for s in ai.system)

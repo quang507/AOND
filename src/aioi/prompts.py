@@ -718,7 +718,8 @@ ICON/EMOJI (bắt buộc): MẶC ĐỊNH cả bản rao chỉ dùng **2–3 icon
 
 NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN (giữ của mình — chống bịa, SRS-5.1zzzzzzz73): mọi ý trong tin phải có trong dữ liệu căn / lời chủ nhà. Câu bot
 từng HỎI hay từng KHEN trong lúc chat không phải dữ liệu. KHÔNG thêm tiện ích quanh nhà (chợ, trường học, bệnh viện, siêu thị…) hay tình trạng nhà
-(mới, sạch sẽ, giữ gìn kỹ) khi chủ nhà không nói — "ở lâu rồi", "đang ở" không có nghĩa là nhà sạch / mới. Dữ liệu chưa nói nhà ở hẻm hay mặt tiền thì KHÔNG viết "hẻm" / "HXH" / "mặt tiền";
+(mới, sạch sẽ, giữ gìn kỹ) khi chủ nhà không nói — "ở lâu rồi", "đang ở" không có nghĩa là nhà sạch / mới. "Kể đủ … pháp lý" ở trên là kể pháp lý
+ĐÃ CÓ trong dữ liệu: chưa có thì BỎ hẳn ý pháp lý (không "sổ hồng", "sổ đỏ", "pháp lý rõ ràng", "hoàn công"); "chính chủ" chỉ viết khi chủ nhà tự nói là chủ. Dữ liệu chưa nói nhà ở hẻm hay mặt tiền thì KHÔNG viết "hẻm" / "HXH" / "mặt tiền";
 căn hộ không có "mặt tiền". Không suy từ con số ra điều khác ("ngõ 3m" thì viết "ngõ 3m", không thêm "ô tô vào thuận tiện"). Quy hoạch là chuyện sau này: "quy hoạch mở rộng 25m" thì viết đúng
 vậy, KHÔNG viết thành đường đang rộng 25m. "DTCN" là diện tích đất công nhận, KHÔNG viết thành diện tích sàn. Tiêu đề phải
 có GIÁ. FOMO chỉ là lời thúc chung — KHÔNG khẳng định sự kiện không có trong dữ liệu ("đã có người đặt cọc", "căn cuối cùng"). Gọi
@@ -970,8 +971,10 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
                 hoi += (f" — kể ĐÚNG các phường hệ thống tra được cho khách chọn: {', '.join(goi_y)} (hệ thống tra, không phải khách nói); "
                         "KHÔNG kể phường nào khác")
             elif web.get("phuong_da_hoi"):
-                hoi = ("chỗ của nhà theo CÁCH KHÁC vì khách đã được hỏi phường mà chưa trả lời: hỏi số nhà / số hẻm, hoặc nhà gần chỗ nào "
-                       "(chợ, trường, ngã tư) để bên em tự tra phường — KHÔNG hỏi lại chữ \"phường nào\", KHÔNG tự kể tên phường nào")
+                hoi = ("chỗ của nhà theo CÁCH KHÁC vì khách đã được hỏi phường mà chưa trả lời: "
+                       + ("hỏi nhà gần chỗ nào (chợ, trường, ngã tư) — khách ĐÃ cho số nhà, KHÔNG xin lại số nhà"
+                          if web.get("co_so_nha") else "hỏi số nhà / số hẻm, hoặc nhà gần chỗ nào (chợ, trường, ngã tư)")
+                       + " để bên em tự tra phường — KHÔNG hỏi lại chữ \"phường nào\", KHÔNG tự kể tên phường nào")
             else:
                 hoi += " — KHÔNG tự kể tên phường nào (hệ thống chưa tra được danh sách)"
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu {nhan}. {cam}"
@@ -1855,6 +1858,9 @@ QUY TẮC:
   NGUYÊN VĂN câu hỏi của khách. Câu thuộc nhóm TRANH CHẤP / KIỆN TỤNG / THỪA KẾ, CHIA DI SẢN / LY HÔN CHIA TÀI SẢN / NGHI GIẤY TỜ GIẢ, LỪA
   ĐẢO / CÁCH GIẢM, TRÁNH THUẾ / hồ sơ cụ thể cần người đọc giấy tờ → phap_ly_nhay_cam = true (vẫn điền hoi_phap_ly nếu có khoá hợp).
   Khách chỉ kể tình trạng pháp lý căn của mình ("sổ hồng riêng", "chưa hoàn công") KHÔNG phải câu hỏi → bỏ trống.
+  Câu có chữ "phí" mà hỏi khoản PHẢI NỘP khi mua / bán / sang tên nhà (thuế, lệ phí, phí công chứng — "bán nhà phải nộp những thuế
+  phí gì", "sang tên tốn phí gì") là câu PHÁP LÝ, kể cả khi người hỏi là CHỦ NHÀ đang rao tin → hoi_phap_ly, KHÔNG hoi_ve = "phi".
+  Khách hỏi lẫn cả hai (thuế phí nhà nước và phí bên mình) → chỉ điền hoi_phap_ly.
   DANH MỤC PHÁP LÝ (khoá: nội dung):
 {DANH_MUC_PHAP_LY}
 - KHÁCH TỰ XƯNG (đọc cả các lượt trước): xung_ho = "em" khi khách tự xưng em ("nhà em", "em gửi"); "anh" / "chi" khi khách
