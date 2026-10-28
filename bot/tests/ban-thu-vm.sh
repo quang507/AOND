@@ -28,8 +28,8 @@ don() {
   echo "== dọn dữ liệu thử"
   # Lõi trước, DB sau (SRS-5.1zzzzzzz91): dọn DB trước thì tin nhắc / lượt ghi nền của lõi còn chạy tạo lại hội thoại mồ côi
   # (20/10: hội thoại "Khách thử" chỉ có một tin nhắc "bản tin nháp em soạn ở trên").
-  vps "curl -sS -X POST http://127.0.0.1:8000/reset/$MUA >/dev/null; curl -sS -X POST http://127.0.0.1:8000/reset/$BAN >/dev/null" || true
-  q "select reset_nguoi_test('$MUA') as mua, reset_nguoi_test('$BAN') as ban" | jq -c '.[0]' || true
+  [ "${GIU_DU_LIEU:-}" = giu ] || vps "curl -sS -X POST http://127.0.0.1:8000/reset/$MUA >/dev/null; curl -sS -X POST http://127.0.0.1:8000/reset/$BAN >/dev/null" || true
+  [ "${GIU_DU_LIEU:-}" = giu ] || q "select reset_nguoi_test('$MUA') as mua, reset_nguoi_test('$BAN') as ban" | jq -c '.[0]' || true
 }
 trap don EXIT
 

@@ -30,8 +30,8 @@ don() {
   echo "== dọn dữ liệu thử"
   for n in 1 2 3 4 5; do
     id="thu-ka-$n-$RUN"
-    curl -sS -m 10 -X POST "http://127.0.0.1:$CONG/reset/$id" >/dev/null 2>&1 || vps "curl -sS -X POST http://127.0.0.1:8000/reset/$id >/dev/null" || true
-    q "select reset_nguoi_test('$id') as kq" | jq -c '.[0]' || true
+    [ "${GIU_DU_LIEU:-}" = giu ] || curl -sS -m 10 -X POST "http://127.0.0.1:$CONG/reset/$id" >/dev/null 2>&1 || vps "curl -sS -X POST http://127.0.0.1:8000/reset/$id >/dev/null" || true
+    [ "${GIU_DU_LIEU:-}" = giu ] || q "select reset_nguoi_test('$id') as kq" | jq -c '.[0]' || true
   done
   kill "$HAM" 2>/dev/null || true
 }

@@ -24,8 +24,8 @@ BAN_LC="thu-dy-lc-$RUN"   # cuộc chat riêng để thử gõ "$$$$$" / "json" 
 don() {
   echo "== dọn dữ liệu thử"
   for id in "$BAN" "$BAN_LC"; do
-    vps "curl -sS -X POST http://127.0.0.1:8000/reset/$id >/dev/null" || true
-    q "select reset_nguoi_test('$id') as kq" | jq -c '.[0]' || true
+    [ "${GIU_DU_LIEU:-}" = giu ] || vps "curl -sS -X POST http://127.0.0.1:8000/reset/$id >/dev/null" || true
+    [ "${GIU_DU_LIEU:-}" = giu ] || q "select reset_nguoi_test('$id') as kq" | jq -c '.[0]' || true
   done
 }
 trap don EXIT
