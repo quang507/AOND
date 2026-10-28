@@ -9073,7 +9073,12 @@ Chủ dự án 28/10: "phần khách mua có yêu cầu thì nhắn hỏi xin l�
 4. **Ba câu gốc** — (1) *lớp lỗi*: prompt phụ thuộc AI tự đoán vai mỗi lượt dù hệ thống đã biết vai; bài offline giả kế hoạch AI nên không bắt
    được. (2) *Chỗ khác cùng lớp*: phía người bán đã có khối "CÂU KHÁCH MUA ĐANG HỎI CHỦ NHÀ" (`khoi_cau_hoi_cho`) — không lệch; lượt đọc ảnh
    phía mua chưa soát. (3) *Bài đỏ*: `tests/test_vai_mua_lap_viec_256.py` (lượt 2 của khách mua có khối vai; người bán không có) — gỡ khối:
-   đỏ. Kiểm bằng model thật: bắn lại `ban-thu-mua` sau khi cài (ghi kết quả ở dưới).
+   đỏ. Kiểm bằng model thật: `ban-thu-mua` run 40726585276 (lõi `600a264`) ĐẠT 10/10 — quan tâm, lịch hẹn "Chiều thứ 7 này 3h",
+   `info_requests` "nhà này sổ hồng riêng không em?" giao seller → chủ nhà trả lời → `answered`, `reminders escalation` cho chủ nhà, `followup`
+   báo lại khách; lời bot lượt 2 một câu hỏi (xin số điện thoại khi ghi hẹn).
+5. **Còn lại** — chủ nhà có tin trên DB nhưng CHƯA từng chat với lõi (tin nhập / admin tạo; ở bài bắn là tin tạo thẳng DB): trả lời xong câu khách
+   hỏi thì lõi coi như người rao mới, ghi ô vào một căn trống và hỏi "căn này nằm ở đường nào" — chưa sửa. Chủ nhà đăng tin qua chat thì lõi đã có
+   phiên chứa căn đó.
 
 ### SRS-5.1zzzzzzz255 · Sticker Zalo tới dưới dạng ảnh .png: đọc theo nghĩa như sticker, không đọc như ảnh nhà (28/10/2026)
 Chủ dự án 28/10: "tôi thấy gửi chào bằng sticker nên zalo gửi bằng cái png gì đó, ko đọc dc".
