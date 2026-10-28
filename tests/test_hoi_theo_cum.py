@@ -27,6 +27,7 @@ def test_ban_nhap_theo_cong_thuc_anh_luan():
     du = dict(duong="Âu Cơ", dia_chi="110 Âu Cơ", phuong="Phường 9", dien_tich_dat="80m2", dien_tich_nha="240m2", gia="16 tỷ",
               ket_cau="5 tầng")
     # SRS-5.1zzzzzzz202: công thức 75% thay bằng sàn tối thiểu (loại hình + vị trí + giá) VÀ còn ≤ 1 facet chính trống (theo anh Luận ce11491)
-    assert not _nha(**du).summary_ready()                       # thiếu cả vị thế (hẻm / mặt tiền) lẫn pháp lý → 2 facet trống
-    assert _nha(**du, phap_ly="sổ riêng").summary_ready()       # chỉ còn vị thế trống
+    assert not _nha(**du).summary_ready()                       # thiếu pháp lý + hiện trạng
+    assert not _nha(**du, phap_ly="sổ riêng").summary_ready()   # SRS-5.1zzzzzzz260: còn hiện trạng
+    assert _nha(**du, phap_ly="sổ riêng", tinh_trang_ban_giao="đang ở").summary_ready()   # vị thế (hẻm / mặt tiền) không chặn
     assert not _nha(**{k: v for k, v in du.items() if k != "gia"}, phap_ly="sổ riêng", lo_gioi_hem="mặt tiền").summary_ready()  # thiếu giá

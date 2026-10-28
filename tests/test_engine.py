@@ -333,9 +333,11 @@ def test_loai_vi_tri_gia_la_du_rao_thieu_gia_thi_chua():
         "duong": "Trần Bình Trọng", "phuong": "Phường 1",  # ô AI tách từ địa chỉ (SRS-5.1zzzzzzz41)
         "gia": "10 tỷ",
     })
-    assert not conv.prop.summary_ready()   # SRS-5.1zzzzzzz202: đủ sàn tối thiểu nhưng cả 4 facet chính còn trống → chưa soạn bài
+    assert not conv.prop.summary_ready()   # đủ sàn tối thiểu nhưng quy mô · pháp lý · hiện trạng còn trống → chưa soạn bài
     conv.prop.fields.update({"lo_gioi_hem": "hẻm 4m", "dien_tich_dat": "60m2", "ket_cau": "3 tầng"})
-    assert conv.prop.summary_ready()       # ≥ 3/4 facet có dữ liệu
+    assert not conv.prop.summary_ready()   # SRS-5.1zzzzzzz260: còn pháp lý + hiện trạng
+    conv.prop.fields.update({"phap_ly": "sổ hồng riêng", "tinh_trang_ban_giao": "đang ở"})
+    assert conv.prop.summary_ready()
 
 
 def test_draft_then_fee_only_after_approval():
@@ -351,6 +353,7 @@ def test_draft_then_fee_only_after_approval():
         "gia": "10 tỷ",
         "ket_cau": "1 trệt 2 lầu, 4PN",
         "lo_gioi_hem": "hẻm xe hơi 4m",
+        "phap_ly": "sổ hồng riêng", "tinh_trang_ban_giao": "đang ở",   # SRS-5.1zzzzzzz260: ô cơ bản trước bản nháp
     })
     assert conv.prop.summary_ready()
 
@@ -1728,6 +1731,7 @@ def test_post_approval_marks_status_dang_ban():
         "gia": "10 tỷ",
         "ket_cau": "1 trệt 2 lầu, 4PN",
         "lo_gioi_hem": "hẻm xe hơi 4m",
+        "phap_ly": "sổ hồng riêng", "tinh_trang_ban_giao": "đang ở",   # SRS-5.1zzzzzzz260: ô cơ bản trước bản nháp
     })
     # Step 1: propose
     r1 = eng.handle("u_appr", "xong rồi đó em")

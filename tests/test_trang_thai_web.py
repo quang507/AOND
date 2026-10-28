@@ -57,7 +57,7 @@ def test_engine_doc_trang_thai_that_khi_khach_duyet():
     conv.prop.loai_hinh = "nha_pho"
     conv.prop.fields.update({"dia_chi": "146 Trần Bình Trọng, Q5", "duong": "Trần Bình Trọng", "phuong": "Phường 2",
                              "dien_tich_dat": "60m2", "dien_tich_nha": "50m2", "gia": "10 tỷ", "ket_cau": "1 trệt 2 lầu, 4PN",
-                             "lo_gioi_hem": "hẻm xe hơi 4m"})
+                             "lo_gioi_hem": "hẻm xe hơi 4m", "phap_ly": "sổ hồng riêng", "tinh_trang_ban_giao": "đang ở"})   # SRS-260
     eng.handle("u-web", "xong rồi đó em")
     assert conv.listing_proposed
     truoc = kho.luu

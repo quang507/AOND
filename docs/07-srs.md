@@ -9058,6 +9058,38 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz260 · Đủ soạn bản nháp = giá · địa chỉ hoặc khu vực · quy mô · pháp lý · hiện trạng (28/10/2026)
+Chủ dự án 28/10: "các trường cơ bản giá, địa chỉ hoặc khu vực, quy mô, pháp lý và hiện trạng là đủ … đổi đi". Thay luật "≥ 3/4 facet chính"
+của SRS-5.1zzzzzzz202.
+1. **Luật mới** (`schema.Property`):
+   - Sàn `minimal_missing` = loại hình + vị trí + giá. Vị trí nhận địa chỉ / tên đường / dự án, HOẶC khu vực (phường / xã / quận).
+   - `summary_ready` = sàn + không còn nhóm trống trong `NHOM_SOAN`:
+     - quy mô = một ô kích thước đất HOẶC quy mô xây dựng;
+     - pháp lý;
+     - hiện trạng (`tinh_trang_ban_giao` / `hien_trang_su_dung`).
+   - Nhóm chỉ tính khi loại BĐS có ô mong đợi trong nhóm, nên đất không đòi hiện trạng. Tin cho thuê không đòi pháp lý.
+   - Ô khách lờ 2 lần vẫn để sau (SRS-80). Khách bảo "đăng đi" vẫn chỉ cần sàn.
+   - `missing_fields`: ô sàn còn thiếu trước, rồi mỗi nhóm trống một ô, rồi phường, rồi ô còn lại. Có khu vực thì địa chỉ cụ thể hỏi sau.
+2. **Bộ câu hỏi** — căn hộ thêm `phap_ly_so_hong` + `hien_trang_su_dung`; đất thêm `phap_ly_so_do` (trước chưa có ô pháp lý nên không hỏi).
+3. **Giả định** (chủ dự án không nói rõ, ghi lại để soát):
+   - "quy mô" = diện tích HOẶC kết cấu, một ô là đủ;
+   - tin cho thuê bỏ pháp lý;
+   - vị thế (hẻm / mặt tiền) không còn chặn, hỏi sau bản nháp.
+4. **Kiểm**:
+   - `tests/test_cong_toi_thieu_facet.py` — đỏ 5 bài khi gỡ bản sửa. Các ca: đủ nhóm thì soạn, thiếu từng nhóm thì không, khu vực thay địa chỉ,
+     cho thuê, đất, căn hộ.
+   - Các test ghi luật cũ cập nhật dữ liệu mẫu, thêm hiện trạng / pháp lý:
+     - `test_ban_nhap_du_dieu_kien`;
+     - `test_ban_nhap_thieu_thi_goi_lai`;
+     - `test_engine`;
+     - `test_hoi_it_truoc_ban_nhap`;
+     - `test_hoi_theo_cum`;
+     - `test_kich_ban_srd_aond` (luồng 30 câu thêm một lượt hiện trạng);
+     - `test_lo_hai_lan_de_sau`;
+     - `test_trang_thai_web`;
+     - `test_conversational_and_deed`.
+   - Chưa bắn thử production.
+
 ### SRS-5.1zzzzzzz259 · "Tin đang hiển thị" ở lõi cùng bộ trạng thái với web — chủ nhà không bị hỏi duyệt lại tin đang bán (28/10/2026)
 1. **Ca** — `ban-thu-mua` 28/10 (ID thử): khách mua hẹn xem → tin sang `dang_quan_tam`; chủ nhà trả lời câu khách hỏi thì bot đáp "Bản tin căn
    Trần Bình Trọng anh/chị xem còn chỗ nào cần chỉnh không, hay mình chốt đăng luôn?" với một tin đang hiện trên web.

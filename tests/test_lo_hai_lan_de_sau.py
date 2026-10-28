@@ -50,9 +50,11 @@ def test_o_giua_cum_cung_duoc_dem():
     c = _conv(duong="Cao Lỗ", dia_chi="Cao Lỗ", phuong="Phường Chánh Hưng", quan="Quận 8", lo_gioi_hem="mặt tiền")
     p = c.prop
     hoi = []
-    for khach_noi in ({}, {"dien_tich_dat": "4,5x11"}, {"ket_cau": "1 trệt 3 lầu"}, {"phap_ly": "sổ riêng"}, {"gia": "8,5 tỷ"}):
+    for khach_noi in ({}, {"dien_tich_dat": "4,5x11"}, {"ket_cau": "1 trệt 3 lầu"}, {"phap_ly": "sổ riêng"}, {"gia": "8,5 tỷ"},
+                      {"tinh_trang_ban_giao": "đang ở"}):   # SRS-5.1zzzzzzz260: hiện trạng là ô cơ bản
         p.fields.update(khach_noi)
         o = Engine._o_hoi_ke(c, p.missing_fields())
         hoi.append(c.cum_vua_hoi)
     assert sum("dien_tich_nha" in cum for cum in hoi) <= 2
-    assert "dien_tich_nha" in p.hoan and p.summary_ready()
+    # SRS-5.1zzzzzzz260: quy mô đã có (diện tích đất / kết cấu) nên diện tích sàn không còn hỏi trước bản nháp — hỏi sau.
+    assert p.summary_ready()
