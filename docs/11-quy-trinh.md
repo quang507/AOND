@@ -16,8 +16,8 @@ thì gần như luôn nghiệm thu đạt.
 | Mũ | Sở hữu | Câu hỏi phải trả lời |
 |---|---|---|
 | **BA** | `docs/00`–`09` | Yêu cầu này đến từ đâu, nó mâu thuẫn gì không, ai kiểm được nó? |
-| **Dev** | `app/`, `bot/`, `lib/`, migration | Code có đúng FR không, có `catch` nào chưa nối sổ không? |
-| **Tester** | `docs/10`, `bot/tests/`, `scripts/soat-truy-vet.sh` | Có bằng chứng nào cho câu "đã xong" ngoài lời kể không? |
+| **Dev** | `src/aioi/` (lõi Python), `app/`, `bot/`, `lib/`, migration | Code có đúng FR / mục SRS không, có `catch` nào chưa nối sổ không? |
+| **Tester** | `docs/10`, `tests/` (pytest), `bot/tests/`, `scripts/soat-truy-vet.sh` | Có bằng chứng nào cho câu "đã xong" ngoài lời kể không? |
 
 Luật một dòng: **BA viết điều phải đúng, tester viết cách chứng minh nó đúng,
 dev làm cho nó đúng.** Ba việc, ba lượt, theo thứ tự đó.
@@ -71,7 +71,12 @@ chủ dự án phát hiện thì phải bóc ngược năm tầng.
    TS-RET / TS-ADM / TS-SEL / TS-BROKER / TS-PROJECT)
 
 3. Kiểm được bằng MÁY không?
-   ├─ Được → viết ca vào bot/tests/ hoặc bot/tests/e2e/run.mjs, nối vào CI
+   ├─ Lõi Python (src/aioi/) → ca pytest trong tests/ (bun run test:py, CI job `bot`)
+   ├─ Web / edge function / script / SQL → bot/tests/*.mjs (thêm vào `test:bot`)
+   │                                       hoặc bot/tests/sql/ (`test:sql`)
+   ├─ Cần model thật → ô bắn thử production qua apply-migration.yml `dung_lai`
+   │                   (`ban-thu-*`, `ban-thu-khach-ao`; đọc log bằng `doc-log-loi`) —
+   │                   tiền thật, ID thử `la_id_thu`, tự dọn (docs/10 §10.7.0)
    └─ Chưa → viết ca chạy tay vào docs/10 §10.7, kèm LỆNH DÁN VÀO CHẠY ĐƯỢC
              (không phải mô tả), kỳ vọng, và cách dọn dữ liệu thử
 
@@ -82,6 +87,16 @@ chủ dự án phát hiện thì phải bóc ngược năm tầng.
 
 6. Hỏng → mở lại cho dev. Bug tìm thấy sau release phải có ca tái hiện TRƯỚC
    khi sửa — suite chỉ phình, không teo.
+
+7. Sửa lỗi bot / web: mục SRS ở docs/07 trả lời BA CÂU GỐC (CLAUDE.md §6, từ
+   01/10/2026): (1) lớp lỗi — cơ chế nào cho lỗi lọt; (2) chỗ khác cùng lớp đã
+   soát, cái nào sửa, cái nào còn; (3) bài kiểm ĐỎ khi tắt bản sửa, kèm ít nhất
+   một cách nói MỚI chưa từng bắn. Lỗi "máy đoán ý bằng từ khoá" không vá bằng
+   thêm từ vào regex — đưa sang AI đọc nghĩa, code kiểm trích dẫn.
+
+8. Pytest xanh với model giả chỉ kiểm giả định của người sửa. Sửa hành vi model
+   thì bắn lại ô `ban-thu-*` liên quan sau khi cài lõi (`cai-vps`) rồi mới ghi
+   "xong".
 ```
 
 **Ba luật của tester ở repo này:**
@@ -107,14 +122,16 @@ của người đẩy commit**. Nay chia lại cho sòng phẳng.
 |---|---|---|---|
 | Kiểu dữ liệu TypeScript | máy | CI job `web` | ⚠️ xem dưới |
 | Web dựng được, trang tin còn trong cache (NFR-17) | máy dựng, người soi bảng route | CI job `web` | ⚠️ / không |
-| 208 ca hội thoại + webhook + cổng, và 82 ca FR-159/161/164 | máy | CI job `bot` | ⚠️ |
-| Xuất rổ hàng / đẩy masterDB không hụt im lặng (TS-ROHANG, TS-MASTERDB) | máy | CI job `rohang` | ⚠️ |
+| Lõi Python — pytest `tests/` (TS-PY-01); `test:bot` (code TypeScript còn sống); `test:sql` (trigger thật trên Postgres tạm) | máy | CI job `bot` | ⚠️ |
+| Xuất rổ hàng không hụt im lặng (TS-ROHANG; TS-MASTERDB gỡ 19/10/2026) | máy | CI job `rohang` | ⚠️ |
+| Kiểu ba edge function, luật tiền TS ↔ SQL, danh sách migration, trạng thái DB | máy | CI job `kieubot`, `doichieutien`, `migration`, `soatdb` | ⚠️ |
+| Lời bot với model THẬT (TS-PROD-01…04) | máy bắn, người đọc log | `apply-migration.yml` ô `dung_lai` = `ban-thu-*`, `doc-log-loi` | không, tay |
 | ID gãy, truy vết thiếu, số đếm README, PII, khoá service_role | máy | CI job `truyvet` | ⚠️ |
 | RLS / GRANT — tập không phá huỷ (TS-SEC-AUTO) | máy | CI job `baomat` | ⚠️ |
 | RLS / GRANT — ma trận 5 vai (TS-SEC3) | người, SQL Editor | `bot/tests/vai-tro.sql` | có, tay |
 | RLS / GRANT — bài phá huỷ (xoá thật nếu RLS hỏng) | người, SQL Editor | `docs/10 §10.7` | có, tay |
 | Migration đã áp ↔ file trong repo, ảnh chụp schema còn mới | máy, chạy tay | `scripts/soat-migration.mjs` | có, tay |
-| Thông tuyến Zalo thật (TS-LIVE); kịch bản người thật ba vai (TS-NGUOI, 15/09) | người, hai–ba điện thoại | `docs/10 §10.7` | có, tay |
+| Thông tuyến Zalo thật (TS-LIVE); chat Zalo thật bằng ID thử (TS-NGUOI cũ có vai CTV — deprecated 28/10/2026) | người | `docs/10 §10.7` | có, tay |
 | Tone giọng, a11y, Lighthouse, tải | người | `docs/10 §10.3–10.4` | chưa |
 | Lint | **không có** — repo chưa cài eslint/biome/prettier | — | không |
 
@@ -155,13 +172,14 @@ trả JSON có `message`), có bài dò đường chạy trước, và có mã t
 **Cổng 1 — trước commit** (người, tại máy):
 
 ```bash
-bun run kiem     # kiểu + dựng + e2e bot + soát truy vết, một lệnh
+bun run kiem     # kiểu + deno check + dựng + test:bot + rổ hàng + soát truy vết, một lệnh
+bun run test:py  # lõi Python — KHÔNG nằm trong `kiem`, sửa src/aioi/ thì chạy thêm
 ```
 
 Đụng migration RLS/GRANT thì chạy thêm TS-SEC bằng tay.
 
 **Cổng 2 — trước merge** (máy, GitHub Actions `.github/workflows/kiem.yml`):
-năm job `web` / `bot` / `rohang` / `truyvet` / `baomat` phải xanh. Đỏ là không
+các job của `kiem.yml` phải xanh (năm job dưới là danh sách required check đã đề xuất; soát 28/10/2026 CI có thêm `migration`, `soatdb`, `kieubot`, `doichieutien`). Đỏ là không
 merge — không "merge rồi sửa sau".
 
 Nhưng tính tới 06/09/2026 câu trên mới là **kỷ luật, chưa phải hàng rào**:
@@ -178,8 +196,8 @@ thẳng. Cổng 2 chỉ có thật khi chủ dự án bật, ở
   | Tên check | Job | Đỏ nghĩa là gì |
   |---|---|---|
   | `Web — kiểu dữ liệu + dựng` | `web` | TypeScript hoặc `next build` hỏng |
-  | `Bot — e2e hội thoại` | `bot` | Hồi quy hội thoại / webhook / cổng vào gãy |
-  | `Rổ hàng + masterDB — tự kiểm trên máy chủ giả` | `rohang` | Bản xuất rổ hàng ghi vào repo / nuốt dòng thiếu, hoặc đẩy masterDB hụt mà vẫn báo xong |
+  | `Bot — e2e hội thoại` | `bot` | pytest lõi Python, `test:bot` hoặc `test:sql` đỏ (tên check giữ chữ "e2e" cũ để không phải sửa branch protection) |
+  | `Rổ hàng + masterDB — tự kiểm trên máy chủ giả` | `rohang` | Bản xuất rổ hàng ghi vào repo / nuốt dòng thiếu (phần masterDB gỡ 19/10/2026, tên check giữ nguyên) |
   | `Tài liệu — truy vết ID` | `truyvet` | ID gãy, số đếm lệch, PII hoặc khoá lọt vào file |
   | `Bảo mật — hồi quy RLS trên DB thật` | `baomat` | Vai `anon` với tới thứ nó không được với |
 
@@ -196,10 +214,12 @@ nó sẽ chặn thật, nên đừng ngạc nhiên rồi đi tắt nó lúc đan
 Không bật ✅ *Include administrators* thì chủ repo vẫn tự bỏ qua được — tuỳ chủ
 dự án, nhưng phải là lựa chọn có ý thức, không phải mặc định quên bật.
 
-**Cổng 3 — trước deploy edge function** (người; README bot của repo Nhadat.cc cũ, không có trong AOND):
-bundle → deploy → kéo ngược → **so từng byte** → chạy e2e trên chính nội dung
-kéo ngược → gọi thử một lượt thật rồi dọn. Bỏ bước so byte là bỏ cả cổng: chép
-tay đo được một lỗi mỗi 7 KB, và lỗi rơi vào regex thì hỏng im lặng.
+**Cổng 3 — trước / sau triển khai** (người):
+- **Lõi Python**: cài bằng `apply-migration.yml` ô `dung_lai` = `cai-vps` (đưa `src/aioi` lên VPS, khởi động lại
+  `aond-core.service`; báo trước người đang chat thử). Xong thì bắn ô `ban-thu-*` liên quan và đọc `doc-log-loi`.
+- **Migration**: áp qua `apply-migration.yml`; áp xong mà chưa mở PR cho file của nó thì việc chưa xong (CLAUDE.md §6).
+- **Edge function còn lại** (`escalation-feed`, `geocode-listings`, `media-cleanup`): workflow `deploy-bot.yml`
+  (chạy tay, runner tự build và đẩy, bytes không qua tay ai). Bản cũ "bundle → kéo ngược → so từng byte" là của `chat-reply` đã gỡ.
 
 ## 11.6 Định nghĩa XONG
 
@@ -222,9 +242,12 @@ qua** (`docs/10 §10.8`).
 | Toàn bộ cổng 1 | `bun run kiem` | — |
 | Chỉ kiểu dữ liệu | `bun run kieu` | có |
 | Chỉ dựng web | `bun run build` | có |
-| Chỉ e2e bot (208 ca + 82 ca regex + 4 cảnh tự kiểm) | `bun run test:bot` | có |
-| Chỉ ba tiến trình e2e | `bun run e2e` | qua `test:bot` |
-| Chỉ tự kiểm rổ hàng / masterDB | `bun run test:rohang` · `bun run test:masterdb` | có |
+| Lõi Python (pytest `tests/`) | `bun run test:py` | **không** — chạy thêm khi sửa `src/aioi/`; CI chạy ở job `bot` |
+| Code TypeScript còn sống (web, edge function, script) | `bun run test:bot` | có |
+| Trigger / hàm SQL trên Postgres tạm | `bun run test:sql` | không (cần Postgres; CI job `bot`) |
+| Kiểu ba edge function | `bun run kieu:bot` | có |
+| Chỉ tự kiểm rổ hàng | `bun run test:rohang` | có |
+| Bắn thử lõi production bằng model thật (tiền thật) | workflow `apply-migration.yml`, ô `dung_lai` = `ban-thu-*` / `doc-log-loi` / `do-tim-nha` | không |
 | Chỉ soát tài liệu | `bun run truyvet` | có |
 | Hồi quy RLS trên DB thật (cần Internet) | `bun run test:sec` | **không** — cần mạng, để `kiem` không đỏ oan trên máy offline |
 | Ma trận quyền 5 vai (cần quyền SQL) | dán `bot/tests/vai-tro.sql` vào SQL Editor | không |

@@ -209,7 +209,7 @@ buộc giữ kết nối từ ngày 6) và **dựng hết phần tài liệu có
 | OPEN-41 | Model: giữ Claude hay Gemini → local theo AOND §VII | Code đã chạy theo khuyến nghị: Claude chính (chat Sonnet 5.5, bóc tách Haiku), Gemini → Groq dự phòng (SRS-5.1zzzzzzz117, SRS-5.1zzzzzzz235). Đề nghị đóng |
 | OPEN-42 | *[mất đối tượng 28/10/2026 — bỏ CTV]* Hạn trả lời và mốc hạng CTV | Đóng ở `09` |
 | **OPEN-48** | ✅ **ĐÃ CHỐT 08/09/2026**: Bỏ toàn bộ nhóm tính năng thừa kế 2024 (mini-site rao web, tài khoản, trang phụ SEO cũ). Chuẩn hóa 100% tài liệu theo Aioinhadat 2026 | Đã chốt theo lệnh sếp và chủ dự án |
-| (mới) | Hạn admin trả lời câu khách hỏi (DB chưa đặt `sla_due_at` cho dòng giao admin); ngưỡng I3 | Đề xuất 24 giờ *[giả định BA]*; chờ chủ dự án chốt, đưa vào `09` |
+| OPEN-65 | Hạn admin trả lời câu khách hỏi (DB chưa đặt `sla_due_at` cho dòng giao admin); ngưỡng I3 | Đề xuất 24 giờ *[giả định BA]*; chờ chủ dự án chốt (`09`) |
 
 **Đã chốt 07/09/2026: cách hỏi người bán** — theo kịch bản huấn luyện môi giới sếp
 làm trong Gemini: một thông tin/lần theo thứ tự địa chỉ → giá → hẻm → diện tích →
@@ -224,8 +224,7 @@ của hướng nhadat.cc 2024 đóng vì không còn hợp AOND (`09` bảng "đ
 chủ dự án) — mỗi tin ngắn, khen điểm mạnh thật rồi hỏi đúng một thứ, không đọc tên
 trường, và **mã tin không bao giờ đọc ra trong chat** — mua lẫn bán, gọi căn bằng
 địa chỉ. Mã vẫn là khoá liên kết web ↔ chat (IA-P3): web hiện, khách gõ vào thì
-bot hiểu; phía mua bot gửi link trang tin thay vì đọc mã (SRS-5.1zzzzzzz145). Còn
-treo: ngưỡng điểm để tin được rao (**OPEN-50**).
+bot hiểu; phía mua bot gửi link trang tin thay vì đọc mã (SRS-5.1zzzzzzz145). OPEN-50 (ngưỡng điểm để tin được rao) đã đóng 28/10/2026: không còn cổng điểm 70, tin lên web theo trigger `listings_quyet_dinh_dang_tin`.
 
 **DH-07.** Cho tới khi §0.8 chốt, việc mới đi theo cột phải và tầng dưới ghi
 `[giả định BA]` ở chỗ phụ thuộc.
