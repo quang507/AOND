@@ -46,7 +46,7 @@ from .fetch import (
     sniff_media_type,
 )
 from .llm import LLMProvider, Message
-from .llm.base import RANH_GIOI_CACHE
+from .llm.base import MODEL_CHAT_LUOT, RANH_GIOI_CACHE, model_chat_thu
 from .web import SITE_HOST, link_tin
 from . import bulk
 from . import inventory as inv
@@ -650,6 +650,13 @@ def _khoi_xung_ho_rieng(p: str, ten: str | None = None) -> str:
             "Khách xưng 'anh'. Gọi khách là 'anh', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu. Cả lượt KHÔNG có chữ 'anh/chị' — kể cả "
             "khi câu mẫu ở trên viết 'anh/chị', đổi thành 'anh' (vd lời chào: \"Em chào anh ạ\").\n"
         )
+    elif p.startswith("elder:"):
+        lon = p.partition(":")[2]
+        return (
+            "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
+            f"Khách tự xưng '{lon}'. Gọi khách là '{lon}', bản thân lễ phép xưng 'cháu'. KHÔNG 'anh' / 'chị' / 'anh/chị' — câu mẫu ở trên viết "
+            f"'anh/chị' thì đổi thành '{lon}'. KHÔNG 'Dạ'.\n"
+        )
     elif p == "elder":
         return (
             "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
@@ -984,7 +991,19 @@ def _detect_customer_pronoun(conv: Conversation, current_text: str = "") -> str:
     """Khách tự xưng gì: "em" / "anh" / "chi" / "elder" / "unknown". Do lượt AI lập thao tác đọc theo nghĩa (`xung_ho`, code kiểm
     trích dẫn trong lời khách) — không dò từ khoá (SRS-5.1zzzzzzz54; bản trước regex "em gửi|nhà em…" nhầm cả chữ "em" khách
     dùng để GỌI bot). `current_text` giữ cho chỗ gọi cũ, không dùng."""
-    return {"em": "em", "anh": "anh", "chi": "chi", "chau": "chau", "chu_co_bac": "elder"}.get(conv.xung_ho or conv.xung_ho_goi_y or "", "unknown")
+    goc, _, chu = (conv.xung_ho or conv.xung_ho_goi_y or "").partition(":")
+    if goc == "chu_co_bac" and chu:   # SRS-5.1zzzzzzz233: khách tự xưng đúng chữ nào (chú / cô / bác…) — câu mẫu gọi đúng chữ đó
+        return f"elder:{chu}"
+    return {"em": "em", "anh": "anh", "chi": "chi", "chau": "chau", "chu_co_bac": "elder"}.get(goc, "unknown")
+
+
+# Chữ người lớn tuổi TỰ XƯNG (có dấu — "co" / "ba" bỏ dấu trùng "có" / số ba). Khách GỌI bot là con / cháu thì không có chữ nào ở đây.
+_CHU_LON_TUOI = ("chú", "cô", "bác", "dì", "cậu", "mợ", "thím", "ông", "bà")
+
+
+def _chu_lon_tuoi(trich: str | None) -> str | None:
+    tu = re.findall(r"\w+", str(trich or "").lower())
+    return next((t for t in tu if t in _CHU_LON_TUOI), None)
 
 
 @contextmanager
@@ -2225,6 +2244,16 @@ class Engine:
         )
 
     def handle(self, user_key: str, text: str, now: float | None = None) -> TurnResult:
+        """Một lượt khách. ID thử chat bằng model thử (`llm.base.model_chat_thu`, SRS-5.1zzzzzzz234) — khách thật giữ model mặc định."""
+        m = model_chat_thu() if _la_id_thu(user_key) else None
+        dau = MODEL_CHAT_LUOT.set(m) if m else None
+        try:
+            return self._handle(user_key, text, now)
+        finally:
+            if dau is not None:
+                MODEL_CHAT_LUOT.reset(dau)
+
+    def _handle(self, user_key: str, text: str, now: float | None = None) -> TurnResult:
         now = now if now is not None else time.time()
         conv = self.conversation(user_key)
         conv.do_luot = {}
@@ -4281,9 +4310,15 @@ class Engine:
             # Chữ tắt một ký tự so trên chữ CÒN dấu: "ạ" bỏ dấu thành "a", "ê" thành "e" — so trên chữ bỏ dấu thì "dạ em gửi ạ" cũng thành "anh".
             hop = bool({c for c in chu if len(c) > 1} & set(re.findall(r"[a-z]+", _strip_accents(str(trich or "")).lower()))
                        or {c for c in chu if len(c) == 1} & set(re.findall(r"\w+", str(trich or "").lower())))
-            nguon = [cuoi] if (conv.xung_ho and conv.xung_ho != x) else gan
+            cu = (conv.xung_ho or "").partition(":")[0]
+            nguon = [cuoi] if (cu and cu != x) else gan
             if hop and any(_trich_dan_khop(trich, c) for c in nguon):
-                conv.xung_ho = x
+                # SRS-5.1zzzzzzz233 (chat chị Ngân 28/10: khách "chú bán nhà…", tin nhắc 5 phút mở "Anh ơi…"): nhóm "chu_co_bac" mất chữ khách
+                # xưng nên câu mẫu không gọi đúng được — giữ kèm chữ đó ("chu_co_bac:chú"); chữ cũ còn nếu lần này không thấy chữ nào.
+                lon = _chu_lon_tuoi(trich) if x == "chu_co_bac" else None
+                giu = (conv.xung_ho or "").partition(":")[2] if cu == x else ""
+                conv.xung_ho = f"{x}:{lon or giu}" if x == "chu_co_bac" and (lon or giu) else x
+            log.warning("Xưng hô: AI=%s · nhận=%s · đang=%s", x, hop and any(_trich_dan_khop(trich, c) for c in nguon), conv.xung_ho)
 
         # SRS-5.1zzzzzzz212 (bắn thử 5 khách, cô T.: hệ thống chọn hỏi giá, model hỏi phường; sổ "lờ" chỉ ghi ô hệ thống chọn nên phường
         # bị hỏi lần 2, lần 3 như mới): ô mà lời bot lượt trước THẬT SỰ hỏi (AI đọc theo nghĩa) cũng tính vào cụm vừa hỏi để đếm lờ.
