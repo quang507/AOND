@@ -27,6 +27,7 @@ URL_NHUNG = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embe
 SO_CHIEU = 768
 NGUONG_NGHIA = 0.55
 BIEN_NGHIA_DU_AN = 0.04   # dự án thứ hai trở đi chỉ tính khi sát dự án đầu trong chừng này (độ gần cosine)
+NGUONG_LUAT = 0.62   # điều luật dưới ngưỡng này coi như không khớp câu khách hỏi (SRS-5.1zzzzzzz231; đo trên bộ câu thử, xem docs/07)
 
 LOAI_PHUONG = ("phuong_moi", "phuong_cu")
 LOAI_KHONG_PHAI_DUONG = ("phuong_moi", "phuong_cu", "quan_cu", "du_an")
@@ -259,6 +260,24 @@ class TraDiaDanh:
         if kq:
             log.info("dự án theo nghĩa: %r → %s", ten, [k["ten"] for k in kq])
         return kq
+
+    def dieu_luat(self, cau: str | None, k: int = 3) -> list[dict]:
+        """Điều luật nguyên văn gần NGHĨA câu khách hỏi pháp lý (bảng `dieu_luat`, rpc `tim_dieu_luat` — SRS-5.1zzzzzzz231). Trả tối đa `k`
+        dòng {so_hieu, ten_van_ban, nguon_url, dieu, phan, tieu_de, noi_dung, do_gan} đạt `NGUONG_LUAT`, gần nhất trước. Không nhúng được /
+        kho trống / không dòng nào đạt → [] (bot đi đường cũ: chỉ 24 câu soạn sẵn)."""
+        cau = (cau or "").strip()
+        if not cau or self._nhung is None:
+            return []
+        try:
+            vec = self._nhung(cau)
+        except Exception as e:  # noqa: BLE001 — Gemini hết hạn mức / mạng: bỏ phần trích điều
+            log.warning("nhúng câu hỏi pháp lý lỗi: %s", e)
+            return []
+        ds = [d for d in self._thu("tim_dieu_luat", {"p_vec": vec, "p_limit": 6})
+              if isinstance(d, dict) and (d.get("do_gan") or 0) >= NGUONG_LUAT and d.get("noi_dung")]
+        if ds:
+            log.info("điều luật theo nghĩa: %s", [(d.get("so_hieu"), d.get("dieu"), round(d.get("do_gan") or 0, 3)) for d in ds[:k]])
+        return ds[:k]
 
     def quan(self, ten: str | None) -> str | None:
         """Tên quận / huyện cũ chuẩn ("q5" → "Quận 5"); không chắc → None."""

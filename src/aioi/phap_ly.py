@@ -302,9 +302,37 @@ def khoi_phi_theo_can(khoa: str | None, gia_vnd: float | None, ma_can: str | Non
             + "; ".join(dong) + ". Hồ sơ cụ thể có thể khác; không tự tính thêm số nào ngoài các số này.\n")
 
 
-def khoi_luot(khoa: str | None, nhay_cam: bool = False, gia_can: float | None = None, ma_can: str | None = None) -> str:
+TIEU_DE_DIEU_LUAT = "ĐIỀU LUẬT TRA ĐƯỢC"
+CAT_DIEU = 900   # ký tự mỗi điều đưa cho model — đủ khoản liên quan, không nhồi cả điều dài
+
+
+def khoi_dieu_luat(dieu: list[dict] | None, ngoai_kho: bool = False) -> str:
+    """Nguyên văn điều luật tra theo nghĩa (SRS-5.1zzzzzzz231, chủ dự án 28/10: "24 câu + trích điều"). `ngoai_kho`: câu hỏi không có trong
+    24 mục — model chỉ được tóm đúng điều luật, không suy diễn. Không có điều → ""."""
+    ds = [d for d in (dieu or []) if isinstance(d, dict) and d.get("noi_dung")]
+    if not ds:
+        return ""
+    dong = "\n".join(
+        f"- {d.get('ten_van_ban') or d.get('so_hieu')} ({d.get('so_hieu')}), {d.get('tieu_de')}"
+        f"{' (phần ' + str(d.get('phan')) + ')' if (d.get('phan') or 1) > 1 else ''}: «{str(d['noi_dung'])[:CAT_DIEU]}»"
+        for d in ds)
+    if ngoai_kho:
+        return (f"\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI PHÁP LÝ NGOÀI TÀI LIỆU SOẠN SẴN; {TIEU_DE_DIEU_LUAT} (nguyên văn, tìm theo nghĩa): ===\n"
+                + dong + "\n"
+                "Nếu một điều trên trả lời ĐÚNG câu khách hỏi: tóm ĐÚNG điều đó nói (1–3 câu, lời thường), nêu tên văn bản và số điều, KHÔNG "
+                "suy diễn sang trường hợp riêng của khách, KHÔNG thêm điều kiện / con số / thời hạn không có trong nguyên văn, nói đây là tham khảo "
+                "theo nguyên văn luật, hồ sơ cụ thể cần kiểm lại với văn phòng công chứng hoặc văn phòng đăng ký đất đai. Nếu không điều nào trả "
+                "lời đúng câu khách hỏi: nói thật tài liệu bên em chưa có, KHÔNG đoán, hỏi MỘT câu khách có muốn em nối anh/chị phụ trách không.\n")
+    return (f"{TIEU_DE_DIEU_LUAT} liên quan (nguyên văn, tìm theo nghĩa — để dẫn căn cứ):\n" + dong + "\n"
+            "Khách hỏi nguồn / căn cứ thì nêu tên văn bản và số điều ở trên. Nếu điều luật trên NÓI KHÁC nội dung tham khảo ở trên ở điểm nào "
+            "thì KHÔNG khẳng định điểm đó, nói quy định có thể đã thay đổi và đề nghị nối anh/chị phụ trách kiểm lại.\n")
+
+
+def khoi_luot(khoa: str | None, nhay_cam: bool = False, gia_can: float | None = None, ma_can: str | None = None,
+              dieu: list[dict] | None = None) -> str:
     """Khối dặn model ở lượt trả lời khi lượt lập thao tác đọc được khách hỏi pháp lý. `khoa` None → "". `gia_can` (SRS-5.1zzzzzzz179):
-    giá căn đang nói tới — có thì nối dòng số tính sẵn cho các mục thuế phí."""
+    giá căn đang nói tới — có thì nối dòng số tính sẵn cho các mục thuế phí. `dieu` (SRS-5.1zzzzzzz231): điều luật nguyên văn tra theo
+    nghĩa câu khách — nối kèm câu soạn sẵn; câu ngoài kho mà có điều khớp thì model tóm điều đó thay vì nói "chưa có"."""
     if not khoa:
         return ""
     if nhay_cam:
@@ -313,6 +341,8 @@ def khoi_luot(khoa: str | None, nhay_cam: bool = False, gia_can: float | None = 
                 "vấn nội dung, KHÔNG đoán hướng xử lý. Nói ngắn, ấm: em đã báo anh/chị phụ trách liên hệ hỗ trợ; khách có thể gửi sẵn giấy tờ "
                 "liên quan. KHÔNG hứa giờ cụ thể, KHÔNG xin số điện thoại.\n")
     d = tra_loi(khoa)
+    if d is None and khoi_dieu_luat(dieu):
+        return khoi_dieu_luat(dieu, ngoai_kho=True)
     if d is None:
         return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI PHÁP LÝ / THỦ TỤC MÀ TÀI LIỆU BÊN EM CHƯA CÓ: ===\n"
                 "Nói thật là điều này chưa có trong tài liệu bên em, KHÔNG đoán, KHÔNG trả lời theo hiểu biết riêng, KHÔNG nêu con số. Hỏi "
@@ -324,4 +354,4 @@ def khoi_luot(khoa: str | None, nhay_cam: bool = False, gia_can: float | None = 
             "thể anh/chị kiểm lại với văn phòng công chứng hoặc văn phòng đăng ký đất đai; cần thì em nối người phụ trách. Không nêu tên văn "
             "bản luật trừ khi khách hỏi nguồn"
             + (f" (nguồn: {d['nguon']})" if d.get("nguon") else "") + ".\n"
-            + khoi_phi_theo_can(khoa, gia_can, ma_can))
+            + khoi_phi_theo_can(khoa, gia_can, ma_can) + khoi_dieu_luat(dieu))

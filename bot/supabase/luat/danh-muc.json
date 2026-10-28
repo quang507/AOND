@@ -1,0 +1,8 @@
+{
+ "ghi_chu": "Danh mục văn bản nạp bảng van_ban_luat / dieu_luat (SRS-5.1zzzzzzz231). Mỗi văn bản: nguồn chính thức (Công báo / vanban.chinhphu.vn), tệp chữ đã tách ở cùng thư mục. Thêm văn bản = thêm dòng ở đây + chạy scripts/tach-dieu-luat.py. Văn bản đã bị sửa đổi thì nạp bản hợp nhất; văn bản hết hiệu lực thì đặt con_hieu_luc = false.",
+ "van_ban": [
+  {"so_hieu": "31/2024/QH15", "ten": "Luật Đất đai 2024", "loai": "luat", "ngay_hieu_luc": "2024-08-01", "con_hieu_luc": true,
+   "nguon_url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2024/9/31-2024-qh15_1.pdf", "tep": "luat-dat-dai-2024.json",
+   "ghi_chu": "Bản gốc Công báo số 363-366 ngày 01/3/2024 (3 tệp PDF)."}
+ ]
+}

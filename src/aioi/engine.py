@@ -656,7 +656,8 @@ def khoi_phap_ly(conv: "Conversation", can: dict | None = None) -> str:
     gia = can.get("price_vnd") if isinstance(can, dict) else None
     k = phap_ly.khoi_luot(conv.y_luot.get("hoi_phap_ly"), bool(conv.y_luot.get("phap_ly_nhay_cam")),
                           gia_can=float(gia) if isinstance(gia, (int, float)) and gia > 0 else None,
-                          ma_can=str(can.get("code")) if isinstance(can, dict) and can.get("code") else None)
+                          ma_can=str(can.get("code")) if isinstance(can, dict) and can.get("code") else None,
+                          dieu=conv.y_luot.get("dieu_luat"))
     # SRS-5.1zzzzzzz213 (khách ảo 26/10: đang "cháu / cô" bỗng "em chưa có thông tin chắc chắn" khi trả lời pháp lý — tư liệu kho viết "em").
     return k + ("\nXưng hô trong câu trả lời theo khối xưng hô của lượt; tư liệu viết \"em\" thì đổi cho khớp (đang xưng \"cháu\" thì \"cháu\").\n" if k else "")
 
@@ -1103,7 +1104,8 @@ def _so_khong_co_trong_can(reply: str, can: list[dict] | None, conv: "Conversati
     for t in conv.history[-8:]:
         if t.role == "user" and t.content:
             nguon += " " + t.content
-    for dau, rong in (("SỐ TÍNH THEO CĂN", 1200), ("SỐ LIỆU TÀI CHÍNH THAM KHẢO", 1200), (du_an_mua.TIEU_DE, du_an_mua.CAT_KIEN_THUC + 2500)):
+    for dau, rong in (("SỐ TÍNH THEO CĂN", 1200), ("SỐ LIỆU TÀI CHÍNH THAM KHẢO", 1200), (du_an_mua.TIEU_DE, du_an_mua.CAT_KIEN_THUC + 2500),
+                      (phap_ly.TIEU_DE_DIEU_LUAT, phap_ly.CAT_DIEU * 3 + 1500)):
         k = system.find(dau)
         if k >= 0:
             nguon += " " + system[k:k + rong]
@@ -4223,6 +4225,9 @@ class Engine:
             if plan.get("phap_ly_nhay_cam") is True:
                 conv.y_luot["phap_ly_nhay_cam"] = True
                 conv.y_luot["can_nguoi_that"] = str(plan.get("phap_ly_trich_dan")).strip()
+            elif self._dia_danh is not None:
+                # SRS-5.1zzzzzzz231: nguyên văn điều luật gần nghĩa câu khách (kho dieu_luat) — kèm câu soạn sẵn, hoặc thay "chưa có" khi ngoài kho.
+                conv.y_luot["dieu_luat"] = self._dia_danh.dieu_luat(cuoi)
         # Thả tim (SRS-5.1zzzzzzz163): lời chào / lời đáp ngắn đồng ý do AI đọc theo nghĩa (cụm trích có trong tin vừa nhắn), hoặc khách vừa
         # duyệt bản nháp. Không dò từ khoá ở code.
         if plan.get("loi_xa_giao") in ("chao", "dong_y") and _trich_dan_khop(plan.get("loi_xa_giao_trich_dan"), cuoi):
