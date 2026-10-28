@@ -29,6 +29,8 @@ def goi_toi(pronoun: str | None, ten: str | None = None) -> tuple[str, str]:
     em → gọi "em", xưng anh / chị; chau → gọi "cháu", xưng chú / cô; anh / chi → xưng "em"; chưa rõ → "anh/chị" + "em".
     Khách lớn tuổi (elder) giữ như cũ ở câu mẫu ("anh/chị" + "em") — khối luật cho model mới nói cháu / cô chú."""
     p = pronoun or ""
+    if p.startswith("elder:") and p.partition(":")[2]:   # SRS-5.1zzzzzzz233: khách tự xưng "chú" → gọi "chú", bot xưng "cháu"
+        return p.partition(":")[2], "cháu"
     nu = gioi_tinh(ten) == "nu"
     if p == "em":
         return "em", ("chị" if nu else "anh")

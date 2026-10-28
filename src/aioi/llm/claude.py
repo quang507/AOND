@@ -14,7 +14,7 @@ from typing import Any
 from ..config import Settings
 from ..imaging import downscale_image
 from ..so_token import SoToken
-from .base import LLMProvider, Message, ToolCall, ToolTurn, tach_on_dinh
+from .base import MODEL_CHAT_LUOT, LLMProvider, Message, ToolCall, ToolTurn, tach_on_dinh
 
 log = logging.getLogger(__name__)
 
@@ -146,12 +146,12 @@ class ClaudeProvider(LLMProvider):
 
     def chat(self, system: str, messages: list[Message], max_tokens: int = 256) -> str:
         resp = self._tao("chat",
-            model=self._chat_model,
+            model=MODEL_CHAT_LUOT.get() or self._chat_model,
             max_tokens=max_tokens,
             system=self._sys(system),
             messages=[{"role": m.role, "content": m.content} for m in messages],
         )
-        self._so.ghi("chat", self._chat_model, resp)
+        self._so.ghi("chat", MODEL_CHAT_LUOT.get() or self._chat_model, resp)
         return "".join(b.text for b in resp.content if b.type == "text").strip()
 
     def reply(self, system: str, messages: list[Message], max_tokens: int = 256) -> str:
@@ -162,14 +162,14 @@ class ClaudeProvider(LLMProvider):
         # lần và ghi sổ lỗi (chỉ lý do + tên ô, không nội dung).
         for lan in range(2):
             resp = self._tao("chat",
-                model=self._chat_model,
+                model=MODEL_CHAT_LUOT.get() or self._chat_model,
                 max_tokens=max_tokens + 300,
                 system=self._sys(system),
                 messages=[{"role": m.role, "content": m.content} for m in messages],
                 tools=[_GUI_KHACH],
                 tool_choice={"type": "tool", "name": _GUI_KHACH["name"]},
             )
-            self._so.ghi("chat", self._chat_model, resp)
+            self._so.ghi("chat", MODEL_CHAT_LUOT.get() or self._chat_model, resp)
             o = next((dict(b.input or {}) for b in resp.content if b.type == "tool_use"), {})
             # Bắn thử 20/10: Haiku gõ tên ô có dấu ("loi_gui_khách") → lời rỗng, tốn một lượt gọi lại. Nhận tên ô theo chữ bỏ dấu.
             loi = str(next((v for k, v in o.items() if _bo_dau(k) == "loi_gui_khach"), "") or "").strip()
@@ -216,13 +216,13 @@ class ClaudeProvider(LLMProvider):
         # tool_results, then calls again — a manual agentic loop (fine-grained control so the
         # engine gates/verifies every tool). tools are plain Claude tool defs.
         resp = self._tao("agent",
-            model=self._chat_model,
+            model=MODEL_CHAT_LUOT.get() or self._chat_model,
             max_tokens=max_tokens,
             system=self._sys(system),
             messages=messages,
             tools=tools,
         )
-        self._so.ghi("agent", self._chat_model, resp)
+        self._so.ghi("agent", MODEL_CHAT_LUOT.get() or self._chat_model, resp)
         text = "".join(b.text for b in resp.content if b.type == "text").strip()
         calls = [ToolCall(id=b.id, name=b.name, input=dict(b.input))
                  for b in resp.content if b.type == "tool_use"]  # CUSTOM tools only (server tools

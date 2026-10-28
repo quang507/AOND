@@ -803,6 +803,8 @@ def mo_dau_nhap(xung_ho: str = "unknown", toi: str = "anh") -> str:
     khách xưng em / cháu (`xung_ho.goi_toi`)."""
     if xung_ho in _TRE:
         return cau_mau.cau("mo_dau_nhap_em", "em" if xung_ho == "em" else "cháu", toi=toi)
+    if xung_ho.startswith("elder:") and xung_ho.partition(":")[2]:   # SRS-5.1zzzzzzz233: khách xưng "chú" → "Cháu sẽ rao như vầy nhé chú:"
+        return cau_mau.cau("mo_dau_nhap_em", xung_ho.partition(":")[2], toi="cháu")
     return cau_mau.cau("mo_dau_nhap", _GOI_KHACH.get(xung_ho, "anh chị"))
 
 
@@ -829,7 +831,7 @@ def cat_truoc_mo_dau(reply: str, xung_ho: str = "unknown", toi: str = "anh") -> 
     return (mo_dau_nhap(xung_ho if xung_ho in _TRE else "em", toi) if la_em else mo_dau_nhap(xung_ho if xung_ho not in _TRE else "unknown")) + reply[cuoi:]
 
 
-_MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em|Anh|Chị|Cô|Chú) sẽ rao như vầy nhé[^:\n]{0,20}:")
+_MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em|Anh|Chị|Cô|Chú|Cháu) sẽ rao như vầy nhé[^:\n]{0,20}:")
 
 
 # SRS-5.1zzzzzzz218 (chat anh Luận 26/10: "sao mỗi lần anh nói cái gì cái em lại đem lên trên tiêu đề", "cho dùm anh 2-3 cái hình tượng",

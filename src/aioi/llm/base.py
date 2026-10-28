@@ -1,6 +1,8 @@
 """Provider-agnostic interface. The engine only ever talks to this."""
 from __future__ import annotations
 
+import contextvars
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
@@ -23,6 +25,17 @@ def tach_on_dinh(system: str) -> tuple[str, str]:
 def bo_ranh_gioi(system: str) -> str:
     return system.replace(RANH_GIOI_CACHE, "")
 
+
+# SRS-5.1zzzzzzz234 (chủ dự án 28/10/2026: "thử Sonnet cho tài khoản thử đi"; ảnh bot anh Luận chat bằng sonnet-4-6): model CHAT của MỘT lượt
+# đè model mặc định. Engine đặt cho ID thử (`la_id_thu`) rồi trả lại sau lượt; khách thật vẫn `AIOI_CHAT_MODEL` (Haiku). Bóc tách / đọc ảnh
+# không đổi. Đặt env `AIOI_CHAT_MODEL_THU=tat` để tắt.
+MODEL_CHAT_LUOT: contextvars.ContextVar[str | None] = contextvars.ContextVar("model_chat_luot", default=None)
+
+
+def model_chat_thu() -> str | None:
+    """Model chat cho ID thử: env `AIOI_CHAT_MODEL_THU` (mặc định claude-sonnet-4-6, cùng model bot anh Luận); "tat" / rỗng → None."""
+    v = os.getenv("AIOI_CHAT_MODEL_THU", "claude-sonnet-4-6").strip()
+    return None if v.lower() in ("", "tat", "off") else v
 
 @dataclass
 class Message:
