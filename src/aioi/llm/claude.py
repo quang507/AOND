@@ -7,6 +7,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import os
 import re
 import unicodedata
 from typing import Any
@@ -95,6 +96,12 @@ _GUI_KHACH: dict[str, Any] = {
 }
 
 
+def ep_cong_cu_gui_khach() -> bool:
+    """SRS-5.1zzzzzzz246 (chủ dự án 28/10/2026: "bạn thử tắt công cụ cố định xem"): env `AIOI_CONG_CU_GUI_KHACH=tat` → lượt trả lời khách là
+    chữ thường như bản anh Luận, không qua công cụ hai ô `gui_khach` (SRS-76). Một nguồn ở `bot/bridge-zca/cai-vps.sh` dòng CONG_CU_GUI_KHACH."""
+    return os.environ.get("AIOI_CONG_CU_GUI_KHACH", "").strip().lower() != "tat"
+
+
 class ClaudeProvider(LLMProvider):
     def __init__(self, settings: Settings):
         import anthropic  # imported lazily so offline/mock runs need no SDK
@@ -172,14 +179,15 @@ class ClaudeProvider(LLMProvider):
         # (không gửi) rồi lời gửi khách; chỉ ô sau tới khách. Không lọc chữ ở đầu ra.
         # Bắn thử 19/10: một lượt ra rỗng → khách nhận câu dự phòng "kết nối mạng vừa gián đoạn". Ô lời gửi khách trống thì gọi lại một
         # lần và ghi sổ lỗi (chỉ lý do + tên ô, không nội dung).
+        cong_cu = ({"tools": [_GUI_KHACH], "tool_choice": {"type": "tool", "name": _GUI_KHACH["name"]}}
+                   if ep_cong_cu_gui_khach() else {})   # SRS-5.1zzzzzzz246: tắt thì gọi chữ thường
         for lan in range(2):
             resp = self._tao("chat",
                 model=MODEL_CHAT_LUOT.get() or self._chat_model,
                 max_tokens=max_tokens + 300,
                 system=self._sys(system),
                 messages=[{"role": m.role, "content": m.content} for m in messages],
-                tools=[_GUI_KHACH],
-                tool_choice={"type": "tool", "name": _GUI_KHACH["name"]},
+                **cong_cu,
             )
             self._so.ghi("chat", MODEL_CHAT_LUOT.get() or self._chat_model, resp)
             o = next((dict(b.input or {}) for b in resp.content if b.type == "tool_use"), {})
@@ -187,7 +195,8 @@ class ClaudeProvider(LLMProvider):
             loi = str(next((v for k, v in o.items() if _bo_dau(k) == "loi_gui_khach"), "") or "").strip()
             if not loi and not o:   # SRS-5.1zzzzzzz244: tool_choice auto, model trả chữ thường không gọi công cụ → lấy chữ đó
                 loi = "".join(b.text for b in resp.content if b.type == "text").strip()
-                log.warning("Lời gửi khách: chữ thường, model không gọi gui_khach")   # SRS-5.1zzzzzzz245: đếm đường nào được dùng (không in lời)
+                if cong_cu:
+                    log.warning("Lời gửi khách: chữ thường, model không gọi gui_khach")   # SRS-5.1zzzzzzz245: đếm đường nào được dùng (không in lời)
             if loi:
                 return loi
             self._so.ghi_loi("claude chat", f"lời gửi khách rỗng (lần {lan + 1}): stop={getattr(resp, 'stop_reason', '?')}, "
