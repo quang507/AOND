@@ -86,8 +86,8 @@ def khoi_du_an(kq: dict[str, Any] | None) -> str:
     khop = kq.get("khop")
     if khop == "nhieu":
         ds = "; ".join(str(x) for x in (kq.get("ung_vien") or [])[:4])
-        return dau + (f"Kho có nhiều dự án gần tên này: {ds}. Hỏi khách MỘT câu ngắn là dự án nào, CHƯA kể thông tin dự án nào, "
-                      "KHÔNG đoán.\n")
+        return dau + (f"Kho có nhiều dự án gần tên này: {ds}. Hỏi khách MỘT câu ngắn là dự án nào — câu này THAY câu hỏi nhu "
+                      "cầu lượt này; CHƯA kể thông tin dự án nào, KHÔNG đoán.\n")
     if khop in ("khong", "loi") or not isinstance(kq.get("du_an"), dict):
         return dau + ("Kho CHƯA có dự án tên này" + (" (tra kho đang lỗi)" if khop == "loi" else "") + ". Nói thật NGẮN là em chưa có thông tin "
                       "dự án đó trong hệ thống, đề nghị khách cho tên đầy đủ hoặc khu vực; KHÔNG kể gì về dự án từ trí nhớ, KHÔNG "
@@ -99,10 +99,10 @@ def khoi_du_an(kq: dict[str, Any] | None) -> str:
     kt = _chu(kq.get("kien_thuc"))[:CAT_KIEN_THUC]
     out = dau + "\n".join(dong) + "\n"
     if kt:
-        out += ("Kiến thức dự án (tài liệu đã duyệt; dòng đánh dấu ⚠ là chưa chắc — KHÔNG khẳng định, nói sẽ kiểm tra rồi báo lại):\n"
+        out += ("Kiến thức dự án (tài liệu đã duyệt; dòng đánh dấu ⚠ là chưa chắc — KHÔNG khẳng định):\n"
                 + kt + "\n")
     out += ("CÁCH NÓI: chỉ dùng ĐÚNG dữ kiện ở khối này; thứ khách hỏi mà khối không có (hoặc đánh dấu ⚠) thì nói thật là em chưa có thông "
-            "tin đó, em kiểm tra rồi báo lại — KHÔNG đoán, KHÔNG lấy từ trí nhớ. Giá là giá niêm yết THAM KHẢO, không bình luận đắt / rẻ / "
+            "tin đó (CHỈ nói sẽ báo lại khi phần \"EM VỪA GHI LƯỢT NÀY\" có việc chuyển câu đó) — KHÔNG đoán, KHÔNG lấy từ trí nhớ. Giá là giá niêm yết THAM KHẢO, không bình luận đắt / rẻ / "
             "đáng đầu tư. Chọn vài ý đúng câu khách hỏi, không đổ cả khối; không dán link nguồn. Xong ý thì giữ MỘT câu hỏi ngắn như mọi "
             "lượt (nếu có), không hỏi thêm về dự án.\n")
     return out
@@ -119,7 +119,7 @@ def khoi_du_an_khu(kq: dict[str, Any] | None) -> str:
                       "từ trí nhớ.\n")
     dong = [f"- {_chu(d['name'])}" + (f" — đang có {d['so_can']} căn rao" if d.get("so_can") else "") for d in ds]
     return dau + "\n".join(dong) + ("\nCÁCH NÓI: kể vài tên trong danh sách này (kho có thể còn dự án khác ở khu đó — đừng nói \"chỉ có\"); dự án có "
-                                    "căn đang rao thì gợi khách xem căn; hỏi MỘT câu khách quan tâm dự án nào. KHÔNG thêm dự án ngoài danh sách.\n")
+                                    "căn đang rao thì gợi khách xem căn; hỏi MỘT câu khách quan tâm dự án nào (THAY câu hỏi nhu cầu lượt này). KHÔNG thêm dự án ngoài danh sách.\n")
 
 
 def khoi_can_du_an(kq: dict[str, Any] | None) -> str:
@@ -128,14 +128,14 @@ def khoi_can_du_an(kq: dict[str, Any] | None) -> str:
         return ""
     dau = f'\n\n=== CĂN ĐANG RAO TRONG DỰ ÁN (khách tìm căn ở dự án "{_chu(kq["ten_khach"])}"; hệ thống tra kho) ===\n'
     if kq.get("khop") == "nhieu":
-        return dau + "Kho có nhiều dự án gần tên này: " + "; ".join(str(x) for x in (kq.get("ung_vien") or [])[:4]) + ". Hỏi khách MỘT câu là dự án nào.\n"
+        return dau + "Kho có nhiều dự án gần tên này: " + "; ".join(str(x) for x in (kq.get("ung_vien") or [])[:4]) + ". Hỏi khách MỘT câu là dự án nào (THAY câu hỏi nhu cầu lượt này).\n"
     if kq.get("khop") not in ("ro", "gan") or not isinstance(kq.get("du_an"), dict):
         return dau + "Kho CHƯA có dự án tên này. Nói thật ngắn, xin tên đầy đủ hoặc khu vực; KHÔNG đoán.\n"
     ten = _chu(kq["du_an"].get("name"))
     can = [c for c in (kq.get("can") or []) if isinstance(c, dict) and c.get("code")]
     if not can:
-        return dau + (f'Dự án "{ten}" hiện CHƯA có căn nào đang rao trên hệ thống. Nói thật ngắn; đề nghị khi có căn em nhắn khách (hỏi MỘT câu '
-                      "khách muốn loại căn / tầm giá nào để em canh); KHÔNG bịa căn.\n")
+        return dau + (f'Dự án "{ten}" hiện CHƯA có căn nào đang rao trên hệ thống. Nói thật ngắn; KHÔNG bịa căn, KHÔNG hứa '
+                      "nhắn khách khi có căn.\n")
     dong = [f"- #{c['code']}" + "".join(x for x in (f" · mã căn {_chu(c.get('unit_code'))}" if _chu(c.get("unit_code")) else "",
                                                     f" · {_chu(c.get('area_m2'))} m²" if _chu(c.get("area_m2")) else "",
                                                     f" · {_chu(c.get('price_raw'))}" if _chu(c.get("price_raw")) else "",

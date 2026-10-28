@@ -1139,18 +1139,18 @@ DỮ LIỆU ĐÃ BIẾT VỀ CĂN NÀY (ĐÃ THU THẬP TỪ TRƯỚC - TUYỆT 
         next_guide = f"""
 MỤC TIÊU HỎI TIẾP THEO: Sau MỘT câu ngắn khen / nhận xét điều thấy trong ảnh, hãy hỏi tiếp thông tin: "{label}".
 Gợi ý câu hỏi: {natural}.
-(Lưu ý: Nếu trong ảnh đã thể hiện rõ thông tin này thì coi như đã có, không hỏi lại; nếu chưa có thì hỏi đúng 1 câu này thật vui vẻ, hoạt bát!)
+(Lưu ý: Nếu trong ảnh đã thể hiện rõ thông tin này thì coi như đã có, không hỏi lại; nếu chưa có thì hỏi đúng 1 câu này.)
 """
     elif prop:
         next_guide = """
-Thông tin căn này đã rất đầy đủ. Sau MỘT câu ngắn về ảnh, hãy vui vẻ cảm ơn và hỏi khách xem có cần bổ sung góc chụp hay thông tin gì nữa không nhé!
+Thông tin căn này đã rất đầy đủ. Sau MỘT câu ngắn về ảnh thì cảm ơn ngắn, không cần hỏi thêm.
 """
 
     return f"""Bạn là "{assistant_name}", trợ lý ảo BĐS của AI Ơi Nhà Đất. Khách vừa gửi một ẢNH hoặc TÀI LIỆU BĐS.
 Chỉ nói NGẮN MỘT câu điều NHÌN THẤY RÕ trong ảnh/tài liệu. TUYỆT ĐỐI KHÔNG liệt kê, KHÔNG thêm chi tiết khách chưa nói, KHÔNG khen vật liệu / thiết bị (ban công kính, đèn downlight, cổng sắt…), KHÔNG nhắc lại thông tin đã có.
 {ctx}{known_block}{next_guide}
 QUY TẮC BẮT BUỘC:
-- GIỌNG ĐIỆU HOẠT BÁT, VUI VẺ, NĂNG LƯỢNG: Xưng "em", gọi khách "anh/chị". Tự nhiên, thân tình, hoạt bát (dùng "anh/chị ha", "nha", "ạ"; khách đã tự xưng thì gọi đúng như khách). CẤM lặp từ "Dạ" ở đầu câu, cấm khen nịnh giả tạo.
+- Xưng hô theo khối QUY TẮC XƯNG HÔ ở cuối. Không mở đầu bằng "Dạ", không khen nịnh giả tạo.
 - TUYỆT ĐỐI KHÔNG HỎI LẠI: Nếu trong mục "DỮ LIỆU ĐÃ BIẾT" đã có diện tích, kết cấu, địa chỉ hay giá, CẤM KHÔNG ĐƯỢC xin lại diện tích, giá bán hay mã căn!
 - VỚI CHUNG CƯ & DỰ ÁN: TUYỆT ĐỐI KHÔNG hỏi sổ đỏ / sổ hồng!
 - VỚI NHÀ PHỐ / ĐẤT: KHÔNG khẳng định nhà mặt tiền hay trong hẻm từ ảnh, KHÔNG tự ghi ô.
@@ -1159,11 +1159,11 @@ QUY TẮC BẮT BUỘC:
 - ĐỐI VỚI ẢNH SỔ ĐỎ / SỔ HỒNG / GIẤY CHỨNG NHẬN:
   • PHÂN VÙNG THỊ GIÁC: CHỈ trích xuất dữ liệu BĐS/thửa đất (Thửa đất số, Tờ bản đồ số, Diện tích, Hình thức & mục đích sử dụng, Thời hạn, Sơ đồ hình thể thửa đất ở trang 2 & trang 3).
   • BẢO MẬT NHÂN THÂN (PII): TUYỆT ĐỐI KHÔNG đọc, KHÔNG trích xuất, KHÔNG đưa tên chủ sở hữu, số CMND/CCCD, năm sinh, địa chỉ thường trú vào bài đăng tóm tắt công khai.
-  • BÁO LỖI ẢNH THÔNG MINH: Nếu ảnh bị mờ, chụp nghiêng, lóa đèn flash không đọc rõ số thửa/diện tích/sơ đồ, hãy phản hồi ấm áp xin chụp lại trang sơ đồ thửa đất: "Ảnh sổ phần diện tích và sơ đồ thửa đất hơi bị loá sáng/mờ, anh/chị chụp lại gần hơn trang sơ đồ giúp em với nha!".
+  • BÁO LỖI ẢNH THÔNG MINH: Nếu ảnh bị mờ, chụp nghiêng, lóa đèn flash không đọc rõ số thửa/diện tích/sơ đồ, hãy nói ngắn phần nào chưa đọc được và xin chụp lại gần hơn trang sơ đồ thửa đất (tự đặt câu).
 - NGƯỜI GỬI ĐANG MUỐN RAO BÁN:
-  • Nếu tài liệu là THÔNG TIN CHUNG của dự án (quy cách bàn giao, phụ lục, brochure mẫu nhà... KHÔNG phải một căn cụ thể có giá) VÀ khách KHÔNG đang hỏi điều gì cụ thể, hãy nhắc nhẹ đây là thông tin chung và HỎI khách đang rao CĂN NÀO / đã có BẢNG GIÁ chưa (vd: "Trong này chưa có căn/giá cụ thể — anh/chị đang rao căn nào ạ?").
-  • Nếu là ảnh thực tế của căn đang rao: Tóm tắt 1 câu về góc ảnh và KẾT THÚC BẰNG CÂU HỎI TIẾP THEO về thông tin còn thiếu.
-- Kết bằng MỘT câu hỏi định hướng (trừ khi đã trả lời câu hỏi đang chờ ở trên thì chỉ cần chốt lại ngắn gọn)."""
+  • Nếu tài liệu là THÔNG TIN CHUNG của dự án (quy cách bàn giao, phụ lục, brochure mẫu nhà... KHÔNG phải một căn cụ thể có giá) VÀ khách KHÔNG đang hỏi điều gì cụ thể, hãy nhắc nhẹ đây là thông tin chung và hỏi MỘT câu khách đang rao căn nào — câu này THAY câu ở "MỤC TIÊU HỎI TIẾP THEO".
+  • Nếu là ảnh thực tế của căn đang rao: Tóm tắt 1 câu về góc ảnh rồi hỏi câu ở "MỤC TIÊU HỎI TIẾP THEO" (nếu có).
+- Tối đa MỘT câu hỏi cả lượt (đã trả lời câu hỏi đang chờ ở trên thì chỉ cần chốt lại ngắn gọn)."""
 
 
 def build_media_group_instruction(
@@ -1226,7 +1226,7 @@ Trích xuất chính xác các thông số kỹ thuật và pháp lý của BĐS
 3. Diện tích đất (m2), diện tích sàn xây dựng nhà ở (m2), diện tích đất ở / thổ cư (m2).
 4. Kích thước (ngang x dài) nếu nhìn thấy trên bản vẽ sơ đồ thửa đất (ví dụ: '5x15m', '4.2x18m').
 5. Loại hình BĐS: nhà ở riêng lẻ -> 'nha_pho', căn hộ chung cư -> 'chung_cu', đất ở -> 'dat'.
-6. Tình trạng pháp lý: ví dụ 'Sổ hồng riêng chính chủ', 'Sổ đỏ riêng', 'Đã hoàn công', 'Hợp đồng mua bán'.
+6. Tình trạng pháp lý: ví dụ 'Sổ hồng riêng', 'Sổ đỏ riêng', 'Đã hoàn công', 'Hợp đồng mua bán'.
 7. Tên dự án, số tầng, mã căn (nếu là căn hộ chung cư).
 🔒 BẢO MẬT NHÂN THÂN (PII): TUYỆT ĐỐI KHÔNG trích xuất tên chủ sở hữu, số CMND/CCCD, năm sinh, địa chỉ thường trú của chủ nhà. Chỉ trích xuất thông số kỹ thuật của BĐS.
 Nếu ảnh bị mờ hoặc KHÔNG PHẢI giấy tờ pháp lý BĐS (vd ảnh chụp phòng khách, mặt tiền, phong cảnh...), đặt la_giay_to_bds = false."""
@@ -1270,7 +1270,7 @@ def deed_extraction_schema() -> dict[str, Any]:
             "dien_tich": {"type": "string", "description": "Diện tích căn hộ hoặc diện tích tổng (m2)."},
             "tho_cu": {"type": "string", "description": "Diện tích đất ở / thổ cư (m2) ghi trên sổ."},
             "kich_thuoc": {"type": "string", "description": "Kích thước ngang x dài (vd: '5x15m', '4.2x18m')."},
-            "phap_ly": {"type": "string", "description": "Tình trạng pháp lý (vd: Sổ hồng riêng chính chủ, Đã hoàn công)."},
+            "phap_ly": {"type": "string", "description": "Tình trạng pháp lý đọc được trên giấy (vd: Sổ hồng riêng, Đã hoàn công) — KHÔNG ghi 'chính chủ'."},
             "ten_du_an": {"type": "string", "description": "Tên dự án chung cư nếu có."},
             "ma_can": {"type": "string", "description": "Mã căn hộ / số tầng nếu có."},
         },
@@ -1833,7 +1833,7 @@ TRẢ LỜI CÂU KHÁCH HỎI ("tra_loi_khach_hoi", chỉ khi có khối CÂU KH
 
 QUY TẮC:
 - Người rao chỉ khai thông tin bình thường (chưa có gì đặc biệt) → MỘT op "update" target trống.
-- DUYỆT BẢN TIN / ĐỒNG Ý ĐĂNG TIN ("ừ em lên tin đi", "lên bài đi", "đăng đi em", "ok em đăng đi", "duyệt", "chuẩn rồi em", "được rồi em", "phí bao nhiêu đó em"):
+- DUYỆT BẢN TIN / ĐỒNG Ý ĐĂNG TIN ("ừ em lên tin đi", "lên bài đi", "đăng đi em", "ok em đăng đi", "duyệt", "chuẩn rồi em", "được rồi em"):
   ĐÂY LÀ ĐỒNG Ý BẢN DỰ THẢO TIN RAO CỦA CĂN HIỆN TẠI ĐỂ CHÀO KHÁCH.
   ⚠️ TUYỆT ĐỐI CẤM TẠO THAO TÁC "add" (thêm căn mới) khi khách duyệt tin hoặc hỏi phí! Phải để operations RỖNG.
   CHỈ tạo thao tác "add" khi khách nói RÕ RÀNG muốn rao MỘT CĂN KHÁC (vd: "tôi còn căn nữa ở...", "thêm căn số 2...", "qua căn khác...").

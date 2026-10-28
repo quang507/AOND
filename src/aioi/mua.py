@@ -721,7 +721,7 @@ def dong_can(c: dict) -> str:
         phan.append("CHƯA RÕ có gần " + " / ".join(c["_chua_ro_tien_ich"]) + " không (hệ thống chưa có dữ liệu tiện ích quanh căn này)")
     so_anh = c.get("_so_anh")
     if isinstance(so_anh, int):
-        phan.append(f"ảnh: có {so_anh} ảnh, tự gửi kèm khi dán link; khách xin ảnh thì hệ thống gửi (kể cả xin lại)" if so_anh else "ảnh: CHƯA có ảnh nào trên hệ thống")
+        phan.append(f"ảnh: có {so_anh} ảnh, tự gửi kèm khi dán link; khách xin ảnh thì làm theo phần EM VỪA GHI LƯỢT NÀY" if so_anh else "ảnh: CHƯA có ảnh nào trên hệ thống")
     if c.get("code"):
         phan.append(f"link {SITE_URL}/nha-dat/{c['code']}")
     return " · ".join(p for p in phan if p)
@@ -752,9 +752,7 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
             "  • Mã # CHỈ để ghi thao tác: KHÔNG nói mã ra lời, không viết dấu #. Không nói chữ \"rổ\".\n"
             "  • Mỗi lượt giới thiệu MỘT căn tốt nhất (khách đòi thêm mới đưa căn kế). Viết thành BỐN ĐOẠN, MỖI ĐOẠN cách nhau MỘT DÒNG TRỐNG — mỗi "
             "đoạn là một tin Zalo riêng. KHÔNG gạch đầu dòng, không dấu \"·\", không viết tắt \"P.\" \"Q.\" (viết \"phường\", \"quận\"):\n"
-            "      (1) Mở lời như người nhắn, GỌI KHÁCH đúng theo khối xưng hô bên dưới — ví dụ khi khách là chị: \"Chị ơi, em đang có căn này hợp "
-            "với nhu cầu của chị nè, chị xem qua nha.\"; khách là anh thì \"Anh ơi…\", chưa rõ thì \"Anh/chị ơi…\". KHÔNG chép chữ \"chị\" của ví "
-            "dụ (khách ảo 26/10: anh D. 45 tuổi bị gọi \"Chị ơi\"). Luật khen: nếu có điều đáng khen khách vừa nói thì mở bằng MỘT lời khen ngắn gắn đúng điều đó, cùng đoạn này — "
+            "      (1) Mở lời như người nhắn, GỌI KHÁCH đúng theo khối xưng hô bên dưới (tự đặt câu, ngắn). Luật khen: nếu có điều đáng khen khách vừa nói thì mở bằng MỘT lời khen ngắn gắn đúng điều đó, cùng đoạn này — "
             "không bịa thị trường, không bình luận giá, không thêm chi tiết khách chưa nói.\n"
             "      (2) Thông số ngắn (khu vực, diện tích, giá, phòng ngủ) rồi VÌ SAO HỢP — kể lại ĐÚNG phần \"vì sao hợp\" của căn, không thêm. "
             "Căn ghi \"KHÁC khu vực\", \"VƯỢT ngân sách\", \"ÍT phòng ngủ\", \"CHƯA RÕ số phòng ngủ\", \"NHỎ hơn diện tích\" hay \"CHƯA RÕ có gần "
@@ -767,9 +765,8 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
             "có muốn xem thử không. Khách vừa hỏi điều gì và em đã trả lời đủ, hoặc khách đang bận / hẹn sau, thì KHÔNG cần câu hỏi (SRS-178).\n"
             "  • Xưng hô GIỮ NGUYÊN như các lượt trước, không đổi qua lại giữa em / cháu / tôi trong cùng một tin. Không tua lại toàn bộ yêu cầu "
             "của khách; không khen lần hai ở cuối tin.\n"
-            "  • Khách hỏi ảnh / hình của căn: dòng căn ghi CÓ ảnh thì nói ảnh em đã gửi kèm link ở tin trên (khách kéo lên xem), cần thì dán lại "
-            "link; ghi \"CHƯA có ảnh\" thì nói THẬT là căn này chưa có ảnh trên hệ thống, em xin chủ nhà bổ sung hoặc hẹn khách xem trực tiếp — "
-            "KHÔNG nói \"em gửi ảnh ngay\". Dòng căn không ghi gì về ảnh thì KHÔNG hứa gửi ảnh.\n"
+            "  • Khách hỏi ảnh / hình của căn: làm đúng phần \"EM VỪA GHI LƯỢT NÀY\"; không có việc ảnh nào thì KHÔNG hứa gửi ảnh, KHÔNG hứa xin chủ "
+            "nhà. Dòng căn ghi \"CHƯA có ảnh\" thì nói THẬT là căn này chưa có ảnh trên hệ thống.\n"
             "  • Căn đã giới thiệu ở các tin trước thì KHÔNG nhắc lại, trừ khi khách hỏi; nếu không còn căn mới thì chỉ hỏi câu kế:\n"
             + "\n".join(f"- {dong_can(c)}" for c in can) + "\n")
 
@@ -822,7 +819,8 @@ def khoi_viec_vua_ghi(viec: list[str]) -> str:
         return ("\nLƯỢT NÀY EM CHƯA GHI VIỆC GÌ lên hệ thống: TUYỆT ĐỐI KHÔNG nói đã chuyển / đã báo / đã giữ / đã xếp lịch, không nói chủ nhà hay "
                 "admin đã nhận được gì, không hứa sẽ báo lại. Khách muốn xem nhà mà còn thiếu căn nào hoặc ngày giờ nào thì hỏi đúng chỗ thiếu "
                 "bằng MỘT câu ngắn.\n")
-    return ("\nEM VỪA GHI LƯỢT NÀY (nói đúng các việc này, không hứa thêm việc khác): " + "; ".join(viec) + ".\n")
+    return ("\nEM VỪA GHI LƯỢT NÀY (nói đúng các việc này, không hứa thêm việc khác): " + "; ".join(viec) + ".\n"
+            "Cả lượt tối đa MỘT câu hỏi: việc nào ở trên dặn hỏi thì câu đó THAY câu hỏi nhu cầu (SRS-5.1zzzzzzz253).\n")
 
 
 def khoi_cau_hoi_cho(cau: list[dict]) -> str:
