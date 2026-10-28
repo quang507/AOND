@@ -1246,6 +1246,12 @@ def deed_extraction_schema() -> dict[str, Any]:
         "type": "object",
         "properties": {
             "khong_phai_anh_can": {"type": "boolean", "description": MO_TA_KHONG_PHAI_ANH_CAN},
+            # SRS-5.1zzzzzzz255 (chủ dự án 28/10: "gửi chào bằng sticker nên zalo gửi bằng cái png gì đó, ko đọc dc"): Zalo có loại sticker
+            # tới bridge dưới dạng ẢNH (link .png), không qua nhánh sticker — AI đọc nghĩa ngay trong lượt đọc ảnh này, không thêm lần gọi.
+            "sticker": {"type": "string", "description": "CHỈ khi ảnh là STICKER / nhãn dán / biểu tượng cảm xúc / icon hoạt hình khách gửi trong "
+                        "chat (không phải ảnh chụp, không phải tài liệu, không phải ảnh quảng cáo): ghi ý nghĩa — một trong chao (vẫy tay / chữ hi, "
+                        "hello, chào), cam_on, tam_biet, dong_y (ok, like, tim, gật), vui, buon_gian (khóc, giận), khac. Ảnh khác để TRỐNG."},
+            "sticker_mo_ta": {"type": "string", "description": "Chỉ khi là sticker: tối đa 12 từ tiếng Việt — hình gì + chữ in trên sticker."},
             "la_giay_to_bds": {
                 "type": "boolean",
                 "description": "true nếu ảnh là giấy chứng nhận QSDĐ, sổ hồng, sổ đỏ, HĐMB, bản vẽ sơ đồ thửa đất. false nếu là ảnh nhà thông thường hoặc tài liệu khác.",

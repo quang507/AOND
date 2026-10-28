@@ -126,3 +126,28 @@ def test_gom_nhom_co_co_khong_phai_anh_can():
     from aioi.prompts import deed_extraction_schema, media_group_schema
     assert "khong_phai_anh_can" in deed_extraction_schema()["properties"]
     assert "khong_phai_anh_can" in media_group_schema()["properties"]["nhom"]["items"]["properties"]
+
+
+def test_sticker_toi_duoi_dang_anh_di_duong_chu():
+    """SRS-5.1zzzzzzz255 (chủ dự án 28/10: "gửi chào bằng sticker nên zalo gửi bằng cái png gì đó, ko đọc dc"; ca gốc: bot đáp "ảnh này chỉ có
+    icon like, chat… chưa thấy căn BĐS nào" rồi hỏi loại nhà). AI đọc ảnh chấm là sticker → đi đường chữ như sticker thường, không lưu ảnh."""
+    def eng_voi(y):
+        class P(MockProvider):
+            def extract_media(self, items, instruction, json_schema):
+                if "la_giay_to_bds" in json_schema.get("properties", {}):
+                    return {"la_giay_to_bds": False, "sticker": y, "sticker_mo_ta": "thỏ cầm biển cảm ơn"}
+                return {"la_bang_gia": False}
+        kho, goi = _kho()
+        e = Engine(P(Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")),
+                   fetcher=lambda u: FetchedMedia(_jpeg(240, 240), "image/png", u, filename="artboard_2x.png"), media_store=kho)
+        return e, goi
+    e, goi = eng_voi("chao")
+    e.handle_media("k-st", "https://example.com/artboard_2x.png")
+    c = e.conversation("k-st")
+    assert c.history[0].content == "hello" and goi == [] and not c.active.media           # như khách gõ lời chào
+    e2, goi2 = eng_voi("cam_on")
+    e2.handle_media("k-st2", "https://example.com/artboard_2x.png")
+    assert e2.conversation("k-st2").history[0].content.startswith("[khách gửi sticker") and goi2 == []
+    e3, goi3 = eng_voi("")
+    e3.handle_media("k-that", "https://example.com/nha.jpg")
+    assert e3.conversation("k-that").active.media and goi3                                 # ảnh thường vẫn lưu như cũ
