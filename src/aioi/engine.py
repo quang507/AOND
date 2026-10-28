@@ -2726,7 +2726,7 @@ class Engine:
         if conv.y_luot.get("tach_ban_thue"):   # SRS-5.1zzzzzzz241 (OPEN-59 a)
             loai = "CHO THUÊ" if conv.y_luot["tach_ban_thue"] == "thue" else "BÁN"
             system += (f"\nHỆ THỐNG VỪA MỞ THÊM MỘT TIN {loai} cho CÙNG căn này (khách muốn vừa bán vừa cho thuê): hai tin, hai giá riêng, chung "
-                       "căn. Báo khách MỘT câu ngắn là em lên cả hai tin; tin nào chưa có giá thì hỏi giá đó "
+                       "căn. Báo khách MỘT câu ngắn là em lên cả hai tin; tin nào chưa có giá thì hỏi giá đó, THAY cho câu hỏi kế (một câu hỏi cả lượt) "
                        f"({'giá thuê theo tháng' if loai == 'CHO THUÊ' else 'giá bán'}).\n")
         if conv.y_luot.get("da_tra_loi_khach"):
             system += ("\nEM VỪA CHUYỂN câu trả lời của anh/chị cho khách mua đang hỏi (hệ thống báo khách ngay). Cảm ơn ngắn gọn, "
