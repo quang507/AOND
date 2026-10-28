@@ -9058,6 +9058,39 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz241 · Quyết định chủ dự án đợt 2: tiêu đề viết thường, ba chính sách người bán, bậc admin đã đối chiếu giấy tờ, ảnh 480px, hai tin chung căn, AI chấm ảnh; bắn thử không ghi sổ lỗi giả (28/10/2026)
+Chủ dự án 28/10 (kèm ảnh mẫu bản tin Cao Lỗ): "Tiêu đề tin rao không cần viết hoa để như này đi, không bớt phí, có kí hd, không độc quyền, nma nói rồi
+mà, open 24 kệ đi, bắn thử nên để bóc tách dùng Gemini, khi Claude sập, Gemini bóc tách sai ô của khách thật thì … cứ theo dõi làm hết đi".
+1. **Tiêu đề viết thường** (`prompts.AD_FORMAT` mục TIÊU ĐỀ — thay "viết hoa gây chú ý" của SRS-207): viết như câu nói, chỉ hoa chữ đầu câu và tên
+   riêng. Lưới cứng `engine._viet_hoa_ca_cum` (≥ 3 từ liền nhau viết HOA, từ có chữ số cắt chuỗi để "HXH MT 4m" không tính) ở cả `_soat_hinh_thuc`
+   và `_ly_do_cung` → gọi lại model. Kiểm hình thức chữ, không đọc ý.
+2. **OPEN-63 — ba chính sách** vào `prompts.BUSINESS_CONTEXT` (chỗ duy nhất dặn chính sách): không bớt phí; có ký hợp đồng môi giới (khách muốn
+   ký thì nối người phụ trách, không hẹn giờ, không tự gửi mẫu); không độc quyền; NMG 0,5 % không mức chia khác *[giả định BA về "nma nói rồi"]*.
+3. **OPEN-31 — `admin_xac_minh`**: migration `20261028f` (ba CHECK nguồn của `listings`), `components/admin/SuaTinModal.tsx` ô "Đã đối chiếu giấy
+   tờ" (cả ba ô đang có giá trị mang `admin_xac_minh`), `supabase_store` không ghi đè ô nguồn `admin` / `admin_xac_minh` (trước chỉ `admin`).
+4. **OPEN-38 — ảnh 480px**: migration `20261028g` — cột `listing_media.variants`, `listing_photos_v.url_480` (rơi về ảnh gốc), trigger
+   `listing_media_xep_hang_don` xếp dọn cả bản nhỏ. Lõi: `kho_anh.ban_nho_480` (Pillow) + `SupabaseMediaStore._tai_ban_nho` → `MediaRef.ban_nho`
+   → `_ghi_anh` ghi `variants`; CRM `UploadAnh` sinh bản nhỏ bằng canvas; `lib/photos.coverByCode` đọc `url_480`. Ảnh đã có trước bản này không
+   có bản nhỏ (không chạy bù).
+5. **OPEN-59 — hai tin chung căn**: ô kế hoạch `ca_ban_ca_thue` + `ca_ban_ca_thue_trich_dan` (AI đọc theo nghĩa, code kiểm cụm trích) →
+   `Engine._tach_tin_ban_thue`: mở tin loại kia, chép ô căn trừ `O_GIA_RIENG_LOAI_GD`, hai tin trỏ nhau qua `_cung_can`; căn đã có giá thì chuyển
+   sang tin mới để hỏi giá loại kia; prompt báo khách một câu. DB `listings.cung_can_id` (`20261028h`, liên kết mềm); trang tin hiện "Căn này
+   cũng cho thuê / rao bán". `_dedup_basket` (gộp trùng mã căn khi nạp lại) nay phân biệt tin bán / tin thuê — trước đó căn hộ có mã căn sẽ bị
+   gộp hai tin làm một.
+6. **OPEN-53 — AI chấm ảnh**: cờ `khong_phai_anh_can` (`MO_TA_KHONG_PHAI_ANH_CAN`) trong hai lượt đọc ảnh sẵn có (`deed_extraction_schema` lượt
+   một ảnh, `media_group_schema` lượt nhiều ảnh) — không thêm lần gọi model. Cờ true → không lưu ảnh vào tin (không tính điểm, không lên web),
+   lời bot nói rõ; "phân vân thì false". Giới hạn: ảnh chụp thật của căn KHÁC thì AI không phân biệt được.
+7. **Bắn thử không ghi sổ lỗi giả**: lượt ID thử chỉ-Gemini (SRS-239) đi qua `DuPhongProvider._bao` → ghi "Claude hỏng (?)" vào `bot_errors`
+   mỗi 10 phút — còi sức khoẻ báo động giả mỗi lần bắn thử. Nay lượt chỉ-Gemini chỉ ghi log. Bóc tách lượt bắn thử giữ Gemini (chủ dự án chọn);
+   Claude sập thật thì sổ lỗi vẫn ghi "đang trả lời bằng Gemini" — đó là chỗ theo dõi (chủ dự án: "cứ theo dõi").
+8. **Ba câu gốc** — (1) *Lớp lỗi*: luật hình thức chỉ nằm trong prompt (viết hoa) không có lưới; đường ghi sổ dùng chung cho tình huống khác
+   nghĩa (dự phòng thật / bắn thử); khoá gộp trùng không tính loại giao dịch. (2) *Chỗ khác cùng lớp*: `_bao` là đường ghi sổ duy nhất của
+   dự phòng; khoá `_dedup_basket` là chỗ gộp duy nhất theo mã căn; hai lượt đọc ảnh là hai cổng vào kho ảnh của chat (CRM up tay không qua AI —
+   admin tự chọn ảnh). (3) *Kiểm*: `tests/test_quyet_dinh_28_10.py` (viết hoa — cách nói mới "BÁN GẤP NHÀ"; chính sách; hai tin chung căn — cách
+   nói mới "ai thuê cũng cho, mua cũng bán"; gộp trùng), `tests/test_id_thu_gemini.py::test_luot_chi_gemini_khong_ghi_so_loi_du_phong`,
+   `tests/test_sua_tin_admin.py::test_admin_xac_minh…`, `tests/test_kho_anh.py` (bản nhỏ 480, ảnh không phải căn), `bot/tests/sql/nguon-admin-xac-minh.sql`,
+   `bot/tests/sql/anh-480.sql` — gỡ từng bản sửa thì ca tương ứng đỏ (đã chạy với bản sửa lõi chính của mỗi mục).
+
 ### SRS-5.1zzzzzzz240 · Quyết định chủ dự án sau soát OPEN: phường đã báo admin thôi hỏi, vai chủ đầu tư báo admin, phí trôi theo số tin bán, đo lại I4 / I5 (28/10/2026)
 Chủ dự án 28/10 chốt 13 mục (chép nguyên ở `docs/09`): tiêu đề tin rao giữ viết hoa gây chú ý; phường tối đa 2 lần cả lúc thu thông tin; OPEN-02 b,
 21 a, 24 a+b, 28 b (không gộp tin thuê), 31 a, 38 a, 53 (3), 59 a, 63 a, 66 a, 67 a. Mục này làm phần dựng được ngay; OPEN-31 / 38 / 53 / 59

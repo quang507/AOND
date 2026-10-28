@@ -125,6 +125,9 @@ from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, san
 REPLY_MAX_TOKENS = 4096
 # SRS-5.1zzzzzzz240 (OPEN-28 b, FR-160): từ tin BÁN thứ mấy trong rổ thì phí tính như môi giới.
 TIN_BAN_LA_MOI_GIOI = 3
+# SRS-5.1zzzzzzz241 (OPEN-59 a): ô thuộc RIÊNG loại giao dịch (giá, điều kiện bán / thuê) — không chép sang tin cặp bán ↔ cho thuê.
+O_GIA_RIENG_LOAI_GD = frozenset({"gia", "thuong_luong", "thue_phi", "thanh_toan", "hd_thue_con", "co_hdt", "thu_nhap_thue",
+                                  "chinh_sach_thanh_toan", "phi_chuyen_nhuong", "dong_tien_thue", "muc_coc", "truot_gia"})
 # SRS-5.1zzzzzzz210: giá trị `Conversation.so_nhan` của số Zalo tư vấn người mua (bridge gửi `so_nhan`); "" = số ký gửi.
 SO_TU_VAN = "tu_van"
 
@@ -1351,6 +1354,21 @@ def _ban_tin_da_trinh(conv: "Conversation") -> tuple[str, str] | None:
     return None
 
 
+_TU_RE = re.compile(r"\w+")
+
+
+def _viet_hoa_ca_cum(reply: str) -> bool:
+    """Lời bot có cụm ≥ 3 từ liền nhau viết HOA toàn bộ (vd "NHÀ MẶT TIỀN CAO LỖ") — chủ dự án 28/10 (SRS-5.1zzzzzzz241): tiêu đề tin rao
+    viết thường như câu nói, không viết hoa. Kiểm hình thức chữ (không đoán ý); chữ viết tắt lẻ (MT, HXH, WC) không tính."""
+    for dong in reply.splitlines():
+        chuoi = 0
+        for t in _TU_RE.findall(dong):   # từ có chữ số (4m, 5WC) cắt chuỗi — "HXH MT 4m" là viết tắt, không phải cụm viết hoa
+            chuoi = chuoi + 1 if len(t) >= 2 and t.isalpha() and t.isupper() else 0
+            if chuoi >= 3:
+                return True
+    return False
+
+
 def _mo_dau_da(reply: str) -> bool:
     """Lời bot mở đầu bằng "Dạ" — luật chủ dự án (cấm mở đầu "Dạ", CLAUDE.md §6) mà model có lượt không theo (chat chị N. 20/10: hai
     lượt sau khi đăng tin mở đầu bằng Dạ). Chỉ kiểm chữ đầu; không sửa lời — lệch thì gọi lại model (SRS-5.1zzzzzzz87)."""
@@ -1846,6 +1864,8 @@ class Engine:
         changed = False
         for li in conv.listings:
             key = normalize_project_name(li.prop.fields.get("ma_so_can") or "") or None
+            if key is not None:   # SRS-5.1zzzzzzz241 (OPEN-59): cùng căn mà một tin bán, một tin thuê là HAI tin, không gộp
+                key += "|thue" if li.prop.is_rental else "|ban"
             if key is not None and key in seen:  # same mã số căn → duplicate căn → merge
                 keep = seen[key]
                 for k, v in li.prop.fields.items():
@@ -2640,6 +2660,11 @@ class Engine:
                              else phuong_kho_hem(self._dia_danh, conv.prop.fields))
             if not is_listing_post:
                 system += self._khoi_hoi_du_an(conv)   # SRS-5.1zzzzzzz181: kho có đúng một dự án cùng đường → hỏi xác nhận MỘT lần
+        if conv.y_luot.get("tach_ban_thue"):   # SRS-5.1zzzzzzz241 (OPEN-59 a)
+            loai = "CHO THUÊ" if conv.y_luot["tach_ban_thue"] == "thue" else "BÁN"
+            system += (f"\nHỆ THỐNG VỪA MỞ THÊM MỘT TIN {loai} cho CÙNG căn này (khách muốn vừa bán vừa cho thuê): hai tin, hai giá riêng, chung "
+                       "căn. Báo khách MỘT câu ngắn là em lên cả hai tin; tin nào chưa có giá thì hỏi giá đó "
+                       f"({'giá thuê theo tháng' if loai == 'CHO THUÊ' else 'giá bán'}).\n")
         if conv.y_luot.get("da_tra_loi_khach"):
             system += ("\nEM VỪA CHUYỂN câu trả lời của anh/chị cho khách mua đang hỏi (hệ thống báo khách ngay). Cảm ơn ngắn gọn, "
                        "nói em đã báo khách rồi, rồi mới tiếp chuyện tin rao.\n")
@@ -2859,6 +2884,8 @@ class Engine:
                          "thứ tự, KHÔNG in ra; viết thẳng nội dung.")
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
+        if _viet_hoa_ca_cum(reply):   # SRS-5.1zzzzzzz241
+            ly_do.append("Lời vừa viết có cụm chữ viết HOA toàn bộ — viết thường như câu nói (chỉ hoa chữ đầu câu và tên riêng), kể cả tiêu đề tin rao.")
         if _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
             ly_do.append("Lời vừa viết gọi khách là \"mình\" (\"em xin lỗi mình\", \"Mình đang cần…\") — KHÔNG dùng \"mình\" gọi khách hay tự xưng: "
                          "gọi đúng cách khách xưng (em / cháu / anh / chị), chưa rõ thì \"anh/chị\"; tự xưng đúng QUY TẮC XƯNG HÔ ở trên. "
@@ -2981,6 +3008,8 @@ class Engine:
         ly_do = []
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
+        if _viet_hoa_ca_cum(reply):   # SRS-5.1zzzzzzz241
+            ly_do.append("Lời vừa viết có cụm chữ viết HOA toàn bộ — viết thường như câu nói (chỉ hoa chữ đầu câu và tên riêng), kể cả tiêu đề tin rao.")
         if _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
             ly_do.append("Lời vừa viết gọi khách là \"mình\" — gọi đúng cách khách xưng (anh / chị / cô / chú), chỉ \"nhà mình / căn mình\" "
                          "khi nói về căn của khách.")
@@ -3552,11 +3581,18 @@ class Engine:
                 f"[Khách gửi {len(fetched)} tệp ({names}). Nội dung em đọc được từ tài liệu của khách:]\n{description}",
                 now,
             ))
+            # OPEN-53 (SRS-5.1zzzzzzz241): AI chấm ảnh không phải ảnh thật của căn → không lưu vào tin (không tính điểm, không lên web).
+            khong_phai_can = deed_data.get("khong_phai_anh_can") is True and fetched[0].kind == "image"
+            if khong_phai_can:
+                log.warning("Ảnh không phải ảnh căn: không lưu (%s)", names)
             # Register the project + model, then store the files where they belong: a MẪU NHÀ
             # brochure → the UnitType's shared media (units inherit), else the active căn.
-            captured, capped = self._route_readout_media(conv, description, fetched, user_key)
+            captured, capped = self._route_readout_media(conv, description, fetched, user_key, store=not khong_phai_can)
             header = self._friendly_media_receipt(names, len(fetched))
             reply = f"{header}\n\n{description}" + self._cap_note(capped)
+            if khong_phai_can:
+                reply += ("\n\n(Ảnh này em chưa đưa vào tin vì trông không phải ảnh chụp thật của căn — anh/chị gửi giúp em ảnh tự chụp căn nhà "
+                          "nhé, tin có ảnh thật khách xem tin tưởng hơn.)")
             if (q := self._drain_name_concern()):  # read doc named a near-miss project → ASK
                 reply += "\n\n🤔 " + q
 
@@ -3873,8 +3909,11 @@ class Engine:
             # A pure DATA page (bảng giá/thông số): keep the extracted data, abandon the image.
             data_only = bool(g.get("chi_luu_du_lieu"))
             giay_to = g.get("giay_to") is not False   # thiếu cờ → coi như giấy tờ, cất RIÊNG (an toàn hơn lộ ảnh sổ, §5)
-            store_items = [] if data_only else items
-            tag = " (chỉ lấy dữ liệu, không lưu ảnh)" if data_only else ""
+            # OPEN-53 (SRS-5.1zzzzzzz241): ảnh AI chấm không phải ảnh thật của căn → không lưu (không tính điểm, không lên web).
+            khong_phai_can = g.get("khong_phai_anh_can") is True and not giay_to and not data_only
+            store_items = [] if (data_only or khong_phai_can) else items
+            tag = (" (chỉ lấy dữ liệu, không lưu ảnh)" if data_only
+                   else " (ảnh không giống ảnh chụp thật của căn — em chưa đưa vào tin)" if khong_phai_can else "")
             if scope == "chung":
                 project = self.register_project_from_text(mo_ta, project_name=known_project, voter=user_key)
                 self.register_unit_type_from_text(mo_ta, voter=user_key)
@@ -3937,6 +3976,24 @@ class Engine:
         return reply, captured
 
     # --- internals -------------------------------------------------------
+
+    @staticmethod
+    def _tach_tin_ban_thue(conv: Conversation) -> str | None:
+        """Mở tin thứ hai cho CÙNG căn ở loại giao dịch kia (OPEN-59 a, SRS-5.1zzzzzzz241): chép ô của căn (trừ giá / ô riêng của loại giao
+        dịch), hai tin trỏ nhau qua `_cung_can` (DB: `listings.cung_can_id`). Căn đã có giá thì chuyển sang tin mới để hỏi giá loại kia.
+        Trả "thue" / "ban" = loại tin vừa mở; None khi căn đã có tin cặp."""
+        goc = conv.active
+        if goc.prop.fields.get("_cung_can") or not any(not k.startswith("_") and v for k, v in goc.prop.fields.items()):
+            return None
+        o = {k: v for k, v in goc.prop.fields.items() if not k.startswith("_") and k not in O_GIA_RIENG_LOAI_GD}
+        cap = Listing(prop=Property(loai_hinh=goc.prop.loai_hinh, is_rental=not goc.prop.is_rental, fields=o),
+                      history_start=len(conv.history))
+        cap.prop.fields["_cung_can"] = goc.listing_id
+        goc.prop.fields["_cung_can"] = cap.listing_id
+        conv.listings.append(cap)
+        if goc.prop.fields.get("gia"):
+            conv.active_listing_id = cap.listing_id
+        return "thue" if cap.prop.is_rental else "ban"
 
     @staticmethod
     def _is_stub_listing(li: Listing) -> bool:
@@ -4406,6 +4463,11 @@ class Engine:
                 conv.y_luot[k] = True
         if conv.y_luot.get("xin_xem_ban_ve") and plan.get("ban_do_du_an") is True:
             conv.y_luot["ban_do_du_an"] = True
+        # SRS-5.1zzzzzzz241 (chủ dự án 28/10, OPEN-59 a): khách muốn CÙNG căn vừa bán vừa cho thuê → mở thêm tin loại kia (hai tin, hai giá).
+        if plan.get("ca_ban_ca_thue") is True and _trich_dan_khop(plan.get("ca_ban_ca_thue_trich_dan"), cuoi):
+            loai = self._tach_tin_ban_thue(conv)
+            if loai:
+                conv.y_luot["tach_ban_thue"] = loai
         # Xin gặp người thật (SRS-5.1zzzzzzz82): giữ nguyên cụm trích để báo admin kèm lời khách.
         if _trich_dan_khop(plan.get("can_nguoi_that"), cuoi):
             conv.y_luot["can_nguoi_that"] = str(plan["can_nguoi_that"]).strip()

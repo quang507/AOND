@@ -32,12 +32,13 @@ async function _coverByCode(
   if (!list.length) return {};
   const { data } = await supabase
     .from("listing_photos_v")
-    .select("code, url")
+    .select("code, url_480")
     .in("code", list)
     .eq("is_cover", true);
+  // OPEN-38 (SRS-5.1zzzzzzz241): lưới thẻ dùng bản nhỏ 480px; ảnh cũ chưa có bản nhỏ thì view trả ảnh gốc.
   const cover: Record<string, string> = {};
   for (const r of data ?? []) {
-    if (!cover[r.code as string]) cover[r.code as string] = r.url as string;
+    if (!cover[r.code as string]) cover[r.code as string] = r.url_480 as string;
   }
   return cover;
 }

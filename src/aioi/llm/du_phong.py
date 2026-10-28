@@ -135,7 +135,7 @@ class DuPhongProvider(LLMProvider):
                         raise loi or RuntimeError("dự phòng quá ngân sách thời gian")
                     try:
                         kq = goi_phu(n, model, khoa)
-                        self._bao(viec, n, model, loi_chinh)
+                        self._bao(viec, n, model, loi_chinh, ghi_so=not chi_gemini)
                         return kq
                     except Exception as e:  # noqa: BLE001
                         loi = e
@@ -147,10 +147,11 @@ class DuPhongProvider(LLMProvider):
                             break   # model này chậm → khoá khác cũng chậm như vậy; sang model / nguồn kế
         raise loi_chinh or loi or RuntimeError("không còn đường gọi model")
 
-    def _bao(self, viec: str, n: Nguon, model: str, loi_chinh: BaseException | None) -> None:
-        """Mỗi lượt chạy dự phòng một dòng log (chỉ tên); sổ lỗi tối đa 10 phút một dòng — còi sức khoẻ biết đang chạy dự phòng."""
+    def _bao(self, viec: str, n: Nguon, model: str, loi_chinh: BaseException | None, ghi_so: bool = True) -> None:
+        """Mỗi lượt chạy dự phòng một dòng log (chỉ tên); sổ lỗi tối đa 10 phút một dòng — còi sức khoẻ biết đang chạy dự phòng.
+        Lượt bắn thử chỉ-Gemini (SRS-5.1zzzzzzz239) không ghi sổ: Claude không hỏng, ghi là báo động giả (SRS-5.1zzzzzzz241)."""
         log.warning("Dự phòng: %s → %s/%s", viec, n.ten, model)
-        if self._so is not None and time.time() - self._bao_luc > 600:
+        if ghi_so and self._so is not None and time.time() - self._bao_luc > 600:
             self._bao_luc = time.time()
             ly_do = ("hết số dư" if _het_so_du(loi_chinh) else type(loi_chinh).__name__) if loi_chinh else "?"
             self._so.ghi_loi("du phong", f"Claude hỏng ({ly_do}) — đang trả lời bằng {n.ten}/{model}")

@@ -80,16 +80,19 @@ class MediaRef:
     path: str
     filename: str
     content_type: str = ""
+    ban_nho: str = ""   # "bucket/khoá" của bản nhỏ cạnh dài 480px (OPEN-38, SRS-5.1zzzzzzz241) — rỗng khi không sinh được
 
     def to_dict(self) -> dict[str, str]:
         d = {"item_id": self.item_id, "web_url": self.web_url, "path": self.path, "filename": self.filename}
         if self.content_type:
             d["content_type"] = self.content_type
+        if self.ban_nho:
+            d["ban_nho"] = self.ban_nho
         return d
 
     @staticmethod
     def from_dict(d: dict[str, str]) -> "MediaRef":
-        return MediaRef(d["item_id"], d["web_url"], d["path"], d["filename"], d.get("content_type", ""))
+        return MediaRef(d["item_id"], d["web_url"], d["path"], d["filename"], d.get("content_type", ""), d.get("ban_nho", ""))
 
 
 class MediaStore(ABC):

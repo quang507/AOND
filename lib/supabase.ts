@@ -81,4 +81,6 @@ export type Listing = {
   // FR-113/FR-117 — tin thuộc dự án (SRS-3.10): null với hàng lẻ.
   project_id: string | null;
   unit_code: string | null;
+  // OPEN-59 (SRS-5.1zzzzzzz241): cùng một căn vừa bán vừa cho thuê = hai tin, tin này trỏ sang tin kia.
+  cung_can_id?: string | null;
 };

@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-28 13:46 (giờ VN)
+-- Sinh lúc: 2026-10-28 14:09 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -298,7 +298,8 @@ create table if not exists public.listing_media (
   created_at timestamp with time zone not null default now(),
   nguon text not null default 'kho'::text,
   mo_ta text,
-  ocr jsonb
+  ocr jsonb,
+  variants jsonb not null default '{}'::jsonb
 );
 
 create table if not exists public.listing_noi_bo (
@@ -380,7 +381,8 @@ END) stored,
   nhan text[] not null default '{}'::text[],
   nhung extensions.halfvec(768),
   nhung_md5 text,
-  nhung_luc timestamp with time zone
+  nhung_luc timestamp with time zone,
+  cung_can_id uuid
 );
 
 create table if not exists public.media (
@@ -821,10 +823,10 @@ do $d$ begin
   alter table public.listings add constraint listings_pkey PRIMARY KEY (id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.listings add constraint listings_price_source_check CHECK ((price_source = ANY (ARRAY['suy_doan'::text, 'chu_xac_nhan'::text, 'admin'::text])));
+  alter table public.listings add constraint listings_price_source_check CHECK ((price_source = ANY (ARRAY['suy_doan'::text, 'chu_xac_nhan'::text, 'admin'::text, 'admin_xac_minh'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.listings add constraint listings_property_type_source_check CHECK ((property_type_source = ANY (ARRAY['suy_doan'::text, 'chu_xac_nhan'::text, 'admin'::text])));
+  alter table public.listings add constraint listings_property_type_source_check CHECK ((property_type_source = ANY (ARRAY['suy_doan'::text, 'chu_xac_nhan'::text, 'admin'::text, 'admin_xac_minh'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listings add constraint listings_status_check CHECK ((status = ANY (ARRAY['cho_thong_tin'::text, 'dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text, 'an'::text])));
@@ -833,7 +835,7 @@ do $d$ begin
   alter table public.listings add constraint listings_toa_do_muc_check CHECK (((toa_do_muc IS NULL) OR (toa_do_muc = ANY (ARRAY['duong'::text, 'phuong'::text, 'quan'::text, 'du_an'::text, 'tay'::text]))));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.listings add constraint listings_ward_source_check CHECK ((ward_source = ANY (ARRAY['suy_doan'::text, 'chu_xac_nhan'::text, 'admin'::text])));
+  alter table public.listings add constraint listings_ward_source_check CHECK ((ward_source = ANY (ARRAY['suy_doan'::text, 'chu_xac_nhan'::text, 'admin'::text, 'admin_xac_minh'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.media add constraint media_pkey PRIMARY KEY (id);
@@ -1105,6 +1107,7 @@ CREATE UNIQUE INDEX listing_media_mot_bia_idx ON public.listing_media USING btre
 create index if not exists listing_media_tin_thu_tu_idx ON public.listing_media USING btree (listing_id, sort_order, created_at, id);
 create index if not exists listing_views_listing_id_idx ON public.listing_views USING btree (listing_id);
 create index if not exists listings_access_idx ON public.listings USING btree (deal, status, access_type);
+create index if not exists listings_cung_can_id_idx ON public.listings USING btree (cung_can_id) WHERE (cung_can_id IS NOT NULL);
 create index if not exists listings_district_status_idx ON public.listings USING btree (district, status);
 create index if not exists listings_floors_idx ON public.listings USING btree (deal, status, floors);
 create index if not exists listings_nhan_gin_idx ON public.listings USING gin (nhan);
@@ -3540,12 +3543,17 @@ begin
   if tg_op = 'DELETE' then
     insert into media_cleanup_queue (bucket, storage_path)
     values (old.bucket, old.storage_path);
+    insert into media_cleanup_queue (bucket, storage_path)
+    select old.bucket, v.value from jsonb_each_text(coalesce(old.variants, '{}'::jsonb)) v where v.value <> '';
     return old;
   end if;
   if old.bucket is distinct from new.bucket
      or old.storage_path is distinct from new.storage_path then
     insert into media_cleanup_queue (bucket, storage_path)
     values (old.bucket, old.storage_path);
+    insert into media_cleanup_queue (bucket, storage_path)
+    select old.bucket, v.value from jsonb_each_text(coalesce(old.variants, '{}'::jsonb)) v
+     where v.value <> '' and not (coalesce(new.variants, '{}'::jsonb) ? v.key and new.variants ->> v.key = v.value);
   end if;
   return new;
 end $function$
@@ -6473,7 +6481,8 @@ create or replace view public.listing_photos_v with (security_invoker=true) as
     m.created_at,
     m.listing_id,
     m.id AS media_id,
-    l.legacy_code
+    l.legacy_code,
+    (((url_kho_anh() || '/'::text) || m.bucket) || '/'::text) || COALESCE(NULLIF(m.variants ->> '480'::text, ''::text), m.storage_path) AS url_480
    FROM listing_media m
      JOIN listings l ON l.id = m.listing_id
   WHERE m.bucket = 'listing-public'::text AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text]));

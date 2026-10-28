@@ -12,6 +12,8 @@ Dòng `listing_media` do `SupabaseConversationStore.save` ghi SAU khi tin đã c
 """
 from __future__ import annotations
 
+import io
+import logging
 import re
 import unicodedata
 import urllib.parse
@@ -23,6 +25,23 @@ from .kho_tep import MediaRef, MediaStore, KhoTepError
 
 BUCKET_CONG_KHAI = "listing-public"
 BUCKET_RIENG = "listing-private"
+CANH_BAN_NHO = 480   # OPEN-38 (chủ dự án 28/10/2026): bản nhỏ cho lưới thẻ — biến đổi ảnh của Supabase là tính năng Pro
+
+log = logging.getLogger("aioi.kho_anh")
+
+
+def ban_nho_480(data: bytes) -> bytes | None:
+    """JPEG cạnh dài ≤ `CANH_BAN_NHO` px của ảnh, hoặc None khi không đọc được ảnh (tệp hỏng, định dạng Pillow không mở được)."""
+    try:
+        from PIL import Image, ImageOps
+        with Image.open(io.BytesIO(data)) as im:
+            im = ImageOps.exif_transpose(im)
+            im.thumbnail((CANH_BAN_NHO, CANH_BAN_NHO))
+            ra = io.BytesIO()
+            im.convert("RGB").save(ra, "JPEG", quality=80, optimize=True)
+            return ra.getvalue()
+    except Exception:  # noqa: BLE001 — bản nhỏ là phần thêm: không sinh được thì web dùng ảnh gốc
+        return None
 
 
 def _khoa_an_toan(s: str) -> str:
@@ -75,7 +94,22 @@ class SupabaseMediaStore(MediaStore):
         })
         web = f"{self._goc}/storage/v1/object/public/{bucket}/{urllib.parse.quote(khoa)}" if cong_khai else ""
         return MediaRef(item_id=f"{bucket}/{khoa}", web_url=web, path=f"{bucket}/{khoa}",
-                        filename=filename, content_type=content_type)
+                        filename=filename, content_type=content_type, ban_nho=self._tai_ban_nho(khoa, data) if cong_khai else "")
+
+    def _tai_ban_nho(self, khoa: str, data: bytes) -> str:
+        """Tải bản nhỏ 480px cạnh ảnh gốc: `<uuid>/480/<tên>.jpg` (OPEN-38). Hỏng thì "" — ảnh gốc vẫn dùng được."""
+        nho = ban_nho_480(data)
+        if nho is None:
+            return ""
+        thu_muc, _, ten = khoa.rpartition("/")
+        khoa_nho = f"{thu_muc}/480/{ten.rsplit('.', 1)[0]}.jpg"
+        try:
+            self._gui("POST", f"{self._goc}/storage/v1/object/{BUCKET_CONG_KHAI}/{urllib.parse.quote(khoa_nho)}", nho, {
+                "apikey": self._key, "Authorization": f"Bearer {self._key}", "Content-Type": "image/jpeg", "x-upsert": "true"})
+        except KhoTepError as e:
+            log.warning("tải bản nhỏ 480 lỗi: %s", e)
+            return ""
+        return f"{BUCKET_CONG_KHAI}/{khoa_nho}"
 
     def delete(self, item_id: str) -> None:
         bucket, _, khoa = item_id.partition("/")

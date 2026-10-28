@@ -114,6 +114,8 @@ export default function SuaTinModal({
   // Lỗi hiện TRONG modal: <dialog> showModal() nằm ở top layer, thông báo nổi của trang bị che.
   const [loiTrong, setLoiTrong] = useState<string | null>(null);
   const [noiBo, setNoiBo] = useState<Record<string, string> | null>(null);
+  // OPEN-31 (chủ dự án 28/10/2026, SRS-5.1zzzzzzz241): admin đã đối chiếu sổ / giấy tờ → nguồn `admin_xac_minh`, bậc cao nhất.
+  const [doiChieu, setDoiChieu] = useState(false);
   const dangRao = tin.status === "dang_ban";
   const doi = JSON.stringify(f) !== JSON.stringify(goc);
 
@@ -175,10 +177,14 @@ export default function SuaTinModal({
       // SRS-5.1zzzzzzz89: chỉ "Lưu & rao" mới bỏ dấu chờ khách duyệt — trước đây nút "Lưu" cũng gửi false, trigger thấy tin đủ ý
       // là tự đưa lên web dù khách chưa duyệt, ngược với dòng "Rao lên web bằng nút dưới cùng".
       ...(hanhDong === "rao" ? { can_chu_duyet: false } : {}),
-      // Ô admin sửa tay mang nguồn `admin` — lõi đọc nguồn này để lượt chat sau không ghi đè.
-      ...(f.price_raw.trim() !== (tin.price_raw ?? "").trim() ? { price_source: "admin" } : {}),
-      ...(f.ward.trim() !== (tin.ward ?? "").trim() ? { ward_source: "admin" } : {}),
-      ...(f.property_type !== (tin.property_type ?? "") ? { property_type_source: "admin" } : {}),
+      // Ô admin sửa tay mang nguồn `admin` — lõi đọc nguồn này để lượt chat sau không ghi đè. Tick "đã đối chiếu giấy tờ" thì cả ba ô
+      // đang có giá trị mang `admin_xac_minh` (OPEN-31).
+      ...(doiChieu
+        ? { ...(f.price_raw.trim() ? { price_source: "admin_xac_minh" } : {}), ...(f.ward.trim() ? { ward_source: "admin_xac_minh" } : {}),
+            ...(f.property_type ? { property_type_source: "admin_xac_minh" } : {}) }
+        : { ...(f.price_raw.trim() !== (tin.price_raw ?? "").trim() ? { price_source: "admin" } : {}),
+            ...(f.ward.trim() !== (tin.ward ?? "").trim() ? { ward_source: "admin" } : {}),
+            ...(f.property_type !== (tin.property_type ?? "") ? { property_type_source: "admin" } : {}) }),
       updated_at: new Date().toISOString(),
     };
     const { data, error } = await supabase.from("listings").update(updates).eq("id", tin.id).select("price_vnd, status").maybeSingle();
@@ -357,12 +363,17 @@ export default function SuaTinModal({
           </div>
         )}
 
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" checked={doiChieu} onChange={(e) => setDoiChieu(e.target.checked)} className="mt-0.5 h-4 w-4" />
+          <span><b>Đã đối chiếu giấy tờ</b> (sổ / HĐMB) — giá, phường, loại nhà theo giấy tờ; lượt chat sau không ghi đè</span>
+        </label>
+
         {loiTrong && <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-800">{loiTrong}</p>}
 
         {/* Hành động chính */}
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line pt-4">
           <button type="button" onClick={dong} className="min-h-9 rounded-md px-4 text-sm font-bold text-slate-700 hover:bg-slate-100">Huỷ</button>
-          <button type="button" onClick={() => luu("luu")} disabled={dangLuu || !doi}
+          <button type="button" onClick={() => luu("luu")} disabled={dangLuu || (!doi && !doiChieu)}
             className="min-h-9 rounded-md border border-slate-500 bg-white px-5 text-sm font-bold text-navy hover:border-navy disabled:opacity-50"
             title={dangRao ? "Lưu, tin vẫn đang rao" : "Lưu, CHƯA rao lên web"}>
             {dangLuu ? "Đang lưu…" : "Lưu"}

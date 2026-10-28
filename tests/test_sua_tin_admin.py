@@ -53,3 +53,18 @@ def test_cot_nguon_va_giu_o_admin_da_sua():
     st2.save(_conv({"gia": "9 tỷ", "dien_tich": "50m2", "dia_chi": "Phường 1, Quận 5"}))
     [(m, _, d2)] = _ghi_tin(st2)
     assert m == "PATCH" and "price_raw" not in d2 and "ward" not in d2 and d2["property_type"] == "nha_pho"
+
+
+def test_admin_xac_minh_giay_to_cung_khoa_o():
+    """OPEN-31 (SRS-5.1zzzzzzz241): ô admin đánh dấu đã đối chiếu giấy tờ (`admin_xac_minh`) — lượt chat sau không ghi đè giá / phường."""
+    class StoreXM(StoreGia):
+        def _request(self, method, endpoint, data=None, prefer=None):
+            if endpoint.startswith("listings?seller_id") and method == "GET":
+                self.goi.append((method, endpoint, data))
+                return [{"id": "l1", "status": "cho_thong_tin", "price_source": "admin_xac_minh", "ward_source": "admin_xac_minh",
+                         "property_type_source": "suy_doan"}]
+            return super()._request(method, endpoint, data, prefer)
+    st = StoreXM(co_san=True)
+    st.save(_conv({"gia": "9 tỷ", "dien_tich": "50m2", "dia_chi": "Phường 1, Quận 5"}))
+    [(m, _, d)] = _ghi_tin(st)
+    assert m == "PATCH" and "price_raw" not in d and "ward" not in d and "price_source" not in d

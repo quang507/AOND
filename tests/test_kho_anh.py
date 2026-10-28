@@ -59,3 +59,59 @@ def test_save_tao_tin_dung_id_va_ghi_listing_media():
     assert [(r["bucket"], r["media_type"]) for r in dong] == [("listing-public", "khac"), ("listing-private", "giay_to")]
     st.save(SimpleNamespace(user_key="zalo-thu-2", listings=[li]))       # lượt sau không gửi lại
     assert len([1 for m, e, d in st.goi if e.startswith("listing_media")]) == 1
+
+
+def _jpeg(w, h):
+    import io
+    from PIL import Image
+    b = io.BytesIO()
+    Image.new("RGB", (w, h), (200, 100, 50)).save(b, "JPEG")
+    return b.getvalue()
+
+
+def test_anh_cong_khai_co_ban_nho_480():
+    """OPEN-38 (SRS-5.1zzzzzzz241): ảnh căn công khai tải thêm bản nhỏ cạnh dài 480px cạnh ảnh gốc; dòng listing_media ghi variants."""
+    import io
+    from PIL import Image
+    kho, goi = _kho()
+    lid = str(uuid.UUID(U))
+    ref = kho.upload(kho.thu_muc_can(U), "mat tien.jpg", _jpeg(2000, 1000), "image/jpeg")
+    assert ref.ban_nho == f"listing-public/{lid}/480/mat-tien.jpg"
+    [nho] = [g for g in goi if "/480/" in g[1]]
+    with Image.open(io.BytesIO(nho[2])) as im:
+        assert max(im.size) == 480
+    assert kho.upload(kho.thu_muc_can(U), "hong.jpg", b"x", "image/jpeg").ban_nho == ""          # ảnh hỏng: không có bản nhỏ
+    assert kho.upload(kho.thu_muc_can(U), "so.jpg", _jpeg(900, 900), "image/jpeg", rieng=True).ban_nho == ""   # giấy tờ riêng: không
+    st = StoreGia(co_san=False)
+    li = SimpleNamespace(prop=Property(loai_hinh="nha_pho", fields={"gia": "5 tỷ"}), listing_id=U, listing_proposed=True,
+                         media=[ref.to_dict()])
+    st.save(SimpleNamespace(user_key="zalo-thu-480", listings=[li]))
+    [dong] = [d for m, e, d in st.goi if m == "POST" and e.startswith("listing_media")]
+    assert dong[0]["variants"] == {"480": f"{lid}/480/mat-tien.jpg"}
+
+
+def test_anh_khong_phai_anh_can_thi_khong_luu():
+    """OPEN-53 (SRS-5.1zzzzzzz241): ảnh AI chấm KHÔNG phải ảnh thật của căn (ảnh mạng / phối cảnh) → không lưu vào tin (không tính điểm,
+    không lên web), lời bot nói rõ; ảnh thật vẫn lưu như cũ. Cờ đi chung lượt đọc ảnh nhận sổ — không thêm lần gọi model."""
+    def eng_voi(khong_phai):
+        class P(MockProvider):
+            def extract_media(self, items, instruction, json_schema):
+                if "la_giay_to_bds" in json_schema.get("properties", {}):
+                    return {"la_giay_to_bds": False, "khong_phai_anh_can": khong_phai}
+                return {"la_bang_gia": False}
+        kho, goi = _kho()
+        e = Engine(P(Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")),
+                   fetcher=lambda u: FetchedMedia(_jpeg(800, 600), "image/jpeg", u, filename="nha.jpg"), media_store=kho)
+        return e, goi
+    e, goi = eng_voi(True)
+    r = e.handle_media("k-mang", "https://example.com/anh-mang.jpg")
+    assert e.conversation("k-mang").active.media == [] and goi == [] and "chưa đưa vào tin" in r.reply
+    e2, goi2 = eng_voi(False)
+    e2.handle_media("k-that", "https://example.com/nha.jpg")
+    assert e2.conversation("k-that").active.media and goi2
+
+
+def test_gom_nhom_co_co_khong_phai_anh_can():
+    from aioi.prompts import deed_extraction_schema, media_group_schema
+    assert "khong_phai_anh_can" in deed_extraction_schema()["properties"]
+    assert "khong_phai_anh_can" in media_group_schema()["properties"]["nhom"]["items"]["properties"]
