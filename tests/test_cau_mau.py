@@ -141,3 +141,15 @@ def test_khach_hoi_phi_cung_doc_cau_bao_phi():
     goc = (pathlib.Path(cau_mau.__file__).parent / "engine.py").read_text()
     khoi = goc[goc.index('if conv.hoi_ve_luot == "phi":'):goc.index('elif conv.hoi_ve_luot == "uy_tin":')]
     assert "khoi_bao_phi(conv.vai_phi, conv.prop.is_rental)" in khoi   # SRS-5.1zzzzzzz240: vai tính phí
+
+
+def test_cau_code_ghep_goi_theo_cach_khach_xung():
+    """SRS-5.1zzzzzzz250 (mục 11): câu code ghép (bảng giá, ảnh, tách nhóm tệp) và câu mẫu luồng dự án gọi đúng cách khách xưng — trước bản này
+    luôn "anh/chị" + "em" kể cả khi khách xưng "em" / "chú". Bỏ `_xung_ho_cau` / `_goi_toi` ở các chỗ ghép thì đỏ."""
+    from aioi.engine import _xung_ho_cau
+    goc = "\n\nAnh/chị xem giúp em tách vậy có đúng không ạ? Lần sau anh/chị gửi trước — xem kỹ nha"
+    assert _xung_ho_cau(goc, "anh/chị", "em") == goc
+    assert _xung_ho_cau(goc, "em", "anh") == "\n\nEm xem giúp anh tách vậy có đúng không ạ? Lần sau em gửi trước — xem kỹ nha"
+    assert _xung_ho_cau(goc, "chú", "cháu").startswith("\n\nChú xem giúp cháu")
+    assert cau_mau.cau("hoi_ro_can", "chị", toi="em") == "Chị nói rõ thêm giúp em căn nào ạ?"
+    assert "bên cháu đang có" in cau_mau.cau("du_an_hoi_trung_ten", ten="X", du_an="Y", toi="cháu")

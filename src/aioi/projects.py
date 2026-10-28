@@ -1,13 +1,13 @@
 """Projects (condos / developments) and their shared attributes.
 
 A project carries facts that belong to EVERY property in it — pool, gym, entrance
-gate, security, access road, location. Register a project once; when a lister then
-lists a property whose `du_an` (project) matches, the property INHERITS these facts,
-so AOND can advise about the pool/gate without asking and without inventing (project
-data is operator-verified ground truth).
+gate, security, access road, location. When a lister lists a property whose `du_an`
+(project) matches, the property INHERITS these facts, so AOND can advise about the
+pool/gate without asking and without inventing.
 
-In-memory for now, behind a `ProjectStore` interface so SharePoint / a DB can back it
-later ("Cắm Rút"), same as the LLM provider. See [[aioi-data-model]] (Project→UnitType→Unit).
+Kho một nguồn (SRS-5.1zzzzzzz249): `SupabaseProjectStore` đọc bảng `projects` (nguồn mogi + `thong_tin` đã duyệt) + phần học thêm
+`du_an_kien_thuc` nối `project_id`; lời người bán là PHIẾU theo hạng, đủ điểm mới vào kho chung (`merge_facts`). `InMemoryProjectStore` /
+`SqliteProjectStore` cho test và chạy thử trên máy. See [[aioi-data-model]] (Project→UnitType→Unit).
 """
 from __future__ import annotations
 
@@ -20,47 +20,71 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 
-# A contested value SETTLES (stops being flagged) once it wins decisively: AT LEAST
-# SETTLE_N distinct-seller votes AND the opposing values together stay AT MOST SETTLE_N/3.
-# n=6 → a fact is confirmed at ≥6 sellers with ≤2 dissenters (user-set 2026-07-01).
+# Phiếu có TRỌNG SỐ theo hạng người nói (SRS-5.1zzzzzzz249, chủ dự án 28/10/2026: "ai nhắn zalo thì dựa theo hạng đồng bạc vàng để vote
+# cho kiến thức dự án, còn admin nhắn thì ghi thẳng"). Một giá trị CHỐT khi tổng điểm phiếu ủng hộ ≥ SETTLE_N VÀ tổng điểm các giá trị khác
+# ≤ SETTLE_N/3. Đồng 1 · Bạc 2 · Vàng 3 điểm (phiếu cũ không ghi hạng tính 1) → 6 khách Đồng, 3 Bạc hoặc 2 Vàng là chốt. CHƯA chốt thì dữ
+# kiện CHƯA vào kho chung (`current[key]` giữ giá trị cũ — nguồn mogi hoặc lần chốt trước); chỉ nằm trong phiếu chờ.
 SETTLE_N = 6
+HANG_DIEM = {"vang": 3, "bac": 2, "dong": 1}
 
-# `votes[key][value]` is the LIST OF DISTINCT SELLER IDs that asserted this value — never a
-# raw counter — so one seller repeating themselves can't inflate the tally ("no phantom votes").
-Tally = dict[str, list[str]]  # value -> voter ids
-
-
-def _count(tally: Tally, value: str) -> int:
-    return len(tally.get(value, []))
+# `votes[key][value]` is the LIST OF DISTINCT VOTER CODES that asserted this value — never a raw counter — so one seller repeating
+# themselves can't inflate the tally ("no phantom votes"). Mã phiếu = "<hạng>:<zalo id>" (`ma_phieu`), hoặc "chac_chan:…".
+Tally = dict[str, list[str]]  # value -> voter codes
 
 
 # Phiếu CHẮC CHẮN (21/10/2026, SRS-5.1zzzzzzz96): nguồn chủ dự án nhập tay (bảng giá, rổ hàng chính thức) — chủ dự án: "cái này tôi
 # nhập tay nên là chắc chắn". Giá trị có phiếu này thắng ngay và coi như đã chốt; phiếu khách vẫn bầu như cũ, nhiều phiếu khách KHÔNG
-# lật được nó. Hai nguồn chắc chắn khác nhau thì giá trị được ghi SAU (đứng sau trong tally) thắng.
+# lật được nó. Hai nguồn chắc chắn khác nhau thì giá trị được ghi SAU (đứng sau trong tally) thắng. Admin nhắn Zalo = phiếu này (SRS-249).
 CHAC_CHAN = "chac_chan:"
+
+
+def ma_phieu(user_key: str, hang: str | None = None, admin: bool = False) -> str:
+    """Mã phiếu của một người: admin → `chac_chan:admin:<id>` (ghi thẳng); khách → `<hạng>:<id>` (hạng vang / bac / dong)."""
+    if admin:
+        return f"{CHAC_CHAN}admin:{user_key}"
+    return f"{hang}:{user_key}" if hang in HANG_DIEM else user_key
+
+
+def la_ma_phieu(voter: str) -> bool:
+    """Đã là mã phiếu (có tiền tố hạng / chắc chắn) — engine không mã hoá lần hai."""
+    v = str(voter)
+    return v.startswith(CHAC_CHAN) or v.split(":", 1)[0] in HANG_DIEM
+
+
+def _nguoi(voter: str) -> str:
+    """Người đứng sau mã phiếu (bỏ tiền tố hạng) — mỗi người MỘT phiếu mỗi ô dù hạng đổi giữa hai lần nói."""
+    v = str(voter)
+    dau, _, sau = v.partition(":")
+    return sau if sau and dau in HANG_DIEM else v
 
 
 def _chac_chan(voters: list[str]) -> bool:
     return any(str(v).startswith(CHAC_CHAN) for v in voters)
 
 
+def _diem(voters: list[str]) -> float:
+    if _chac_chan(voters):
+        return float("inf")
+    return float(sum(HANG_DIEM.get(str(v).split(":", 1)[0], 1) for v in voters))
+
+
 def _leading(tally: Tally) -> str:
-    """Value with the most distinct-seller votes; ties keep the earliest-seen value. A value backed by a CHẮC CHẮN voter wins."""
+    """Value with the most vote POINTS; ties keep the earliest-seen value. A value backed by a CHẮC CHẮN voter wins."""
     chac = [v for v, vs in tally.items() if _chac_chan(vs)]
     if chac:
         return chac[-1]
-    return max(tally, key=lambda v: len(tally[v]))
+    return max(tally, key=lambda v: _diem(tally[v]))
 
 
 def _is_settled(tally: Tally) -> bool:
-    """True once one value wins decisively (see SETTLE_N) — the bot may stop asking."""
+    """True once one value wins decisively (see SETTLE_N) — chốt lên kho chung, bot thôi hỏi."""
     if not tally:
         return False
-    if _chac_chan(tally[_leading(tally)]):
-        return True
     lead = _leading(tally)
-    opposing = sum(len(vs) for v, vs in tally.items() if v != lead)
-    return len(tally[lead]) >= SETTLE_N and opposing <= SETTLE_N / 3
+    if _chac_chan(tally[lead]):
+        return True
+    opposing = sum(_diem(vs) for v, vs in tally.items() if v != lead)
+    return _diem(tally[lead]) >= SETTLE_N and opposing <= SETTLE_N / 3
 
 
 def merge_facts(
@@ -69,50 +93,49 @@ def merge_facts(
     new: dict[str, str],
     voter: str = "?",
 ) -> None:
-    """Record each seller's assertions as VOTES keyed by seller identity. A seller gets ONE
-    vote per key: re-asserting the same value is a no-op (no phantom votes), asserting a
-    different value MOVES their vote (they changed their mind). `current[key]` tracks the
-    LEADING value for inheritance; disagreements surface via `contested_keys` until they
-    settle. Pass `voter` = the seller's id (user_key)."""
+    """Record each person's assertions as VOTES. One person gets ONE vote per key: re-asserting the same value refreshes their code
+    (hạng mới), asserting a different value MOVES their vote. `current[key]` (kho chung) only takes the leading value once it SETTLES
+    (`_is_settled`) — before that the old value stays (mogi seed / earlier settled value) and the claim waits in `votes`
+    (SRS-5.1zzzzzzz249). Pass `voter` = mã phiếu (`ma_phieu`)."""
+    ai = _nguoi(voter)
     for key, value in new.items():
         value = (value or "").strip()
         if not value:
             continue
         tally = votes.setdefault(key, {})
-        for v, voters in tally.items():  # one vote per seller: drop their prior pick
-            if v != value and voter in voters:
-                voters.remove(voter)
-        voters = tally.setdefault(value, [])
-        if voter not in voters:
-            voters.append(voter)
+        for vs in tally.values():  # one vote per person: drop their prior pick (any value, any tier code)
+            for x in [x for x in vs if _nguoi(x) == ai]:
+                vs.remove(x)
+        tally.setdefault(value, []).append(voter)
         for v in [v for v, vs in tally.items() if not vs]:  # prune emptied values
             del tally[v]
-        current[key] = _leading(tally)
+        if _is_settled(tally):
+            current[key] = _leading(tally)
+
+
+def pending_lines(votes: dict[str, Tally], current: dict[str, str]) -> list[str]:
+    """Dữ kiện đang CHỜ đủ phiếu (chưa vào kho chung): chưa được nói như sự thật — chỉ để bot có dịp hỏi người khác xác minh."""
+    ra = []
+    for key, tally in votes.items():
+        if not tally or _is_settled(tally):
+            continue
+        lead = _leading(tally)
+        if current.get(key) == lead:
+            continue
+        ra.append(f"{key}: {lead} (đang chờ xác nhận {_diem(tally[lead]):g}/{SETTLE_N} điểm)")
+    return ra
 
 
 def _contested(votes: dict[str, Tally]) -> list[str]:
-    """Keys sellers DISAGREE on and that haven't SETTLED yet — worth verifying."""
-    return [
-        k for k, tally in votes.items()
-        if len([v for v in tally if tally[v]]) > 1 and not _is_settled(tally)
-    ]
+    """Keys with a claim still WAITING for votes (not settled) — worth verifying with the next seller of the project (SRS-249: một người
+    nói cũng là chờ, không chỉ khi hai người nói khác nhau)."""
+    return [k for k, tally in votes.items() if tally and not _is_settled(tally)]
 
 
 def _fact_lines(values: dict[str, str], votes: dict[str, Tally]) -> list[str]:
-    lines = []
-    for key, value in values.items():
-        if not value:
-            continue
-        tally = votes.get(key, {})
-        distinct = [v for v in tally if tally[v]]
-        if len(distinct) > 1 and not _is_settled(tally):  # unsettled → leader + tally + flag
-            detail = " / ".join(
-                f"{v}×{_count(tally, v)}" for v in sorted(distinct, key=lambda v: -_count(tally, v))
-            )
-            lines.append(f"{key}: {value} ⚠️ CHƯA CHẮC ({detail}) — hỏi khách để xác minh")
-        else:
-            lines.append(f"{key}: {value}")
-    return lines
+    """Dòng dữ kiện ĐÃ VÀO kho chung (nguồn mogi / đã chốt / chắc chắn). Lời đang chờ phiếu ở `pending_lines`, không trộn vào đây
+    (SRS-249: trước bản này một người nói là thành "dữ liệu dự án đã xác thực" cho người sau)."""
+    return [f"{key}: {value}" for key, value in values.items() if value]
 
 
 @dataclass
@@ -124,10 +147,14 @@ class UnitType:
     specs: dict[str, str] = field(default_factory=dict)  # diện tích, số phòng, số tầng, layout...
     votes: dict[str, Tally] = field(default_factory=dict)  # per-spec voters {value: [seller ids]}
     media: list[dict[str, str]] = field(default_factory=list)  # model brochure/floor-plan/renders
-    # (SharePoint MediaRef dicts) — shared by EVERY unit of this model; see [[aioi-data-model]].
+    # (MediaRef dicts, kho tệp `du-an/…` công khai) — shared by EVERY unit of this model; see [[aioi-data-model]].
+    goc: bool = False  # mẫu đọc từ cột `projects.unit_types` (nguồn mogi) — chỉ ghi lại kho kiến thức khi đã học thêm (SRS-249)
 
     def facts(self) -> list[str]:
         return _fact_lines(self.specs, self.votes)
+
+    def pending(self) -> list[str]:
+        return pending_lines(self.votes, self.specs)
 
     def contested_keys(self) -> list[str]:
         return _contested(self.votes)
@@ -170,6 +197,20 @@ class Project:
     units: list[Unit] = field(default_factory=list)  # the project's INVENTORY (each mã số căn +
     # its free-form attribute bag). Seeded from a price list / phân lô; grows as sellers tell us
     # more. Queried by the 4 plain functions in aioi.inventory (the substrate for the agent loop).
+    # Một nguồn (SRS-5.1zzzzzzz249): `id` = projects.id (rỗng = dự án mới chỉ biết qua chat, chưa có dòng `projects`); `goc` / `goc_tien_ich`
+    # = dữ kiện nguồn mogi đọc từ cột `projects` (KHÔNG ghi lại vào kho kiến thức — chỉ phần học thêm mới ghi); `rieng` = dữ liệu riêng
+    # không bao giờ vào prompt (giá bảng giá chủ đầu tư chờ nhập thành tin rao).
+    id: str = ""
+    goc: dict[str, str] = field(default_factory=dict)
+    goc_tien_ich: list[str] = field(default_factory=list)
+    rieng: dict = field(default_factory=dict)
+
+    def docs_cho(self, voter: str | None = None) -> list[dict[str, str]]:
+        """Tài liệu ĐÃ VÀO kho chung (admin / chủ dự án gửi, hoặc tài liệu cũ không ghi người gửi) + tài liệu của chính `voter`. Tài liệu một
+        người bán gửi chưa ai duyệt thì người khác không thấy (SRS-249: học từ chat phải chờ duyệt mới lên kho chung)."""
+        ai = _nguoi(voter) if voter else None
+        return [d for d in self.docs
+                if not d.get("nguoi_gui") or str(d["nguoi_gui"]).startswith(CHAC_CHAN) or (ai and _nguoi(d["nguoi_gui"]) == ai)]
 
     def find_unit(self, ma_so_can: str | None) -> Unit | None:
         key = normalize_project_name(ma_so_can or "")
@@ -204,8 +245,12 @@ class Project:
             lines.append("Tiện ích: " + ", ".join(self.amenities))
         return lines + _fact_lines(self.attributes, self.votes)
 
+    def pending(self) -> list[str]:
+        """Lời người bán nói về dự án còn CHỜ đủ phiếu — chỉ phía bán thấy, để hỏi xác minh; không nói như sự thật."""
+        return pending_lines(self.votes, self.attributes)
+
     def contested_keys(self) -> list[str]:
-        """Attributes sellers disagree on — the bot should find a chance to verify these."""
+        """Attributes still waiting for votes — the bot should find a chance to verify these."""
         return _contested(self.votes)
 
     def find_unit_type(self, name: str | None) -> UnitType | None:
@@ -323,9 +368,8 @@ class InMemoryProjectStore(ProjectStore):
 
 
 class SqliteProjectStore(ProjectStore):
-    """Persistent ProjectStore — projects survive restarts and are reused for later
-    listings (same interface as InMemoryProjectStore; the first piece of the Store layer).
-    Chỉ còn cho chạy thử trên máy và làm nguồn chép một lần sang SupabaseProjectStore (SRS-5.1zzzzzzz56)."""
+    """Persistent ProjectStore cho chạy thử trên máy (không có service_role) — cùng giao diện InMemoryProjectStore. Bản chạy thật dùng
+    SupabaseProjectStore (SRS-5.1zzzzzzz56 / 249)."""
 
     def __init__(self, path: str = "aioi.db"):
         self._conn = sqlite3.connect(path, check_same_thread=False)
@@ -405,15 +449,23 @@ class SqliteProjectStore(ProjectStore):
         return [self._row_to_project(r) for r in rows]
 
 
-def project_to_dict(project: Project) -> dict:
-    """Project → JSON (cùng khuôn với cột SQLite cũ) — dùng chung cho kho Supabase và lượt chép từ SQLite."""
-    return {
+def project_to_dict(project: Project, chi_phan_hoc: bool = False) -> dict:
+    """Project → JSON (cùng khuôn với cột SQLite cũ) — dùng chung cho kho Supabase và SQLite. `chi_phan_hoc` (SRS-249): bỏ phần đọc từ
+    cột `projects` (nguồn mogi) — kho kiến thức chỉ giữ phần học thêm, không chép lại dữ kiện mogi thành bản thứ hai."""
+    ut = [u for u in project.unit_types if not (chi_phan_hoc and u.goc and not u.votes and not u.media)]
+    d = {
         "name": project.name, "amenities": project.amenities, "attributes": project.attributes,
-        "unit_types": [{"name": u.name, "specs": u.specs, "votes": u.votes, "media": u.media} for u in project.unit_types],
+        "unit_types": [{"name": u.name, "specs": u.specs, "votes": u.votes, "media": u.media} for u in ut],
         "votes": project.votes, "docs": project.docs,
         "units": [{"ma_so_can": u.ma_so_can, "attrs": u.attrs, "votes": u.votes, "loai_hinh": u.loai_hinh}
                   for u in project.units],
     }
+    if project.rieng:
+        d["rieng"] = project.rieng
+    if chi_phan_hoc:
+        d["attributes"] = {k: v for k, v in project.attributes.items() if v and project.goc.get(k) != v}
+        d["amenities"] = [a for a in project.amenities if a not in project.goc_tien_ich]
+    return d
 
 
 def project_from_dict(d: dict) -> Project:
@@ -422,18 +474,75 @@ def project_from_dict(d: dict) -> Project:
         [UnitType(u["name"], u.get("specs", {}), u.get("votes", {}), u.get("media", [])) for u in d.get("unit_types") or []],
         d.get("votes") or {}, d.get("docs") or [],
         [Unit(u["ma_so_can"], u.get("attrs", {}), u.get("votes", {}), u.get("loai_hinh", "")) for u in d.get("units") or []],
+        rieng=d.get("rieng") or {},
     )
 
 
+# Cột `projects` (nguồn mogi) → nhãn dữ kiện chung mà bot đọc (SRS-249). Trước bản này phía bán chỉ thấy chủ đầu tư / quận / phường chép
+# sang `du_an_kien_thuc` lúc nạp — tiện ích (1.351 dự án), pháp lý, bàn giao, mẫu căn (191 dự án) có trong kho mà bot không bao giờ thấy.
+_COT_DU_AN = ("id,name,developer,province,district,ward,location_raw,legal_status,handover_date,handover,status_text,"
+              "amenities,unit_types,specs,thong_tin")
+_NHAN_MAU = {"dien_tich": "diện tích", "so_phong_ngu": "số phòng ngủ", "so_wc": "số WC", "so_tang": "số tầng"}
+
+
+def _chu(v) -> str:
+    return str(v).strip() if isinstance(v, (str, int, float)) and str(v).strip() else ""
+
+
+def project_from_row(row: dict, kien_thuc: dict | None = None) -> Project:
+    """Một dự án = dòng `projects` (kho chung: nguồn mogi + `thong_tin` đã duyệt) + phần học thêm trong `du_an_kien_thuc` (phiếu chờ, mẫu
+    nhà học được, rổ căn chủ đầu tư, tài liệu) nối bằng `project_id` (SRS-5.1zzzzzzz249)."""
+    p = project_from_dict({**(kien_thuc or {}), "name": row.get("name") or (kien_thuc or {}).get("name") or ""})
+    p.id = str(row.get("id") or "")
+    goc: dict[str, str] = {}
+    if _chu(row.get("developer")):
+        goc["chủ đầu tư"] = _chu(row["developer"])
+    vi_tri = _chu(row.get("location_raw")) or ", ".join(x for x in (_chu(row.get("ward")), _chu(row.get("district")),
+                                                                   _chu(row.get("province"))) if x)
+    if vi_tri:
+        goc["vị trí"] = vi_tri
+    if _chu(row.get("legal_status")):
+        goc["pháp lý"] = _chu(row["legal_status"])
+    if _chu(row.get("handover_date")) or _chu(row.get("handover")):
+        goc["bàn giao"] = _chu(row.get("handover_date")) or _chu(row.get("handover"))
+    if _chu(row.get("status_text")):
+        goc["tình trạng"] = _chu(row["status_text"])
+    sp = row.get("specs") if isinstance(row.get("specs"), dict) else {}
+    if _chu(sp.get("tong_dien_tich")):
+        goc["tổng diện tích"] = _chu(sp["tong_dien_tich"])
+    tt = row.get("thong_tin") if isinstance(row.get("thong_tin"), dict) else {}
+    da_duyet = {k: _chu(v) for k, v in (tt.get("thuoc_tinh") or {}).items() if _chu(v)}
+    p.goc = goc
+    p.attributes = {**goc, **{k: v for k, v in p.attributes.items() if v}, **da_duyet}
+    p.goc_tien_ich = [_chu(a) for a in (row.get("amenities") or []) if _chu(a)] if isinstance(row.get("amenities"), list) else []
+    for a in p.goc_tien_ich + [_chu(a) for a in (tt.get("tien_ich") or []) if _chu(a)]:
+        if a not in p.amenities:
+            p.amenities.append(a)
+    for m in row.get("unit_types") or [] if isinstance(row.get("unit_types"), list) else []:
+        if not isinstance(m, dict) or not _chu(m.get("name")):
+            continue
+        specs = {_NHAN_MAU.get(k, k): _chu(v) for k, v in (m.get("specs") or {}).items() if _chu(v)}
+        hoc = p.find_unit_type(m["name"])
+        if hoc is None:
+            p.unit_types.append(UnitType(_chu(m["name"]), specs, goc=True))
+        else:
+            hoc.specs = {**specs, **hoc.specs}
+            hoc.goc = True
+    return p
+
+
 class SupabaseProjectStore(ProjectStore):
-    """Kiến thức dự án lõi Python học được (tài liệu .md đã che thông tin cá nhân, mẫu nhà, rổ căn, phiếu bầu) — bảng
-    `du_an_kien_thuc` trên Supabase (20261019a, SRS-5.1zzzzzzz56). Trước 19/10 nằm trong SQLite trên VPS: không ai ngoài VPS
-    thấy, VPS hỏng là mất. `rpc(method, endpoint, body)` để test thay lời gọi mạng."""
+    """Kho dự án MỘT NGUỒN (SRS-5.1zzzzzzz249): bảng `projects` là kho chung (2.362 dự án nguồn mogi + `thong_tin` đã duyệt, web và hai phía
+    bot cùng đọc); `du_an_kien_thuc` chỉ giữ phần học thêm (phiếu chờ, mẫu nhà, rổ căn, tài liệu), nối `project_id`. Dự án chỉ nghe qua chat,
+    chưa có dòng `projects`, nằm riêng trong `du_an_kien_thuc` (project_id rỗng) — không đẻ dòng web từ lời một người.
+    Trước bản này `du_an_kien_thuc` chép lại chủ đầu tư / quận / phường của từng dự án (hai bản cùng một dữ kiện) mà thiếu tiện ích, pháp lý.
+    `rpc(method, endpoint, body)` để test thay lời gọi mạng."""
 
     def __init__(self, supabase_url: str, service_key: str, rpc=None):
         self._goc = supabase_url.rstrip("/") + "/rest/v1/"
         self._key = service_key
         self._rpc = rpc or self._goi_that
+        self._muc_luc_nho: tuple[float, dict[str, tuple[str, str]]] | None = None
 
     def _goi_that(self, method: str, endpoint: str, body=None):
         import urllib.request
@@ -446,74 +555,81 @@ class SupabaseProjectStore(ProjectStore):
             raw = r.read()
         return json.loads(raw.decode("utf-8")) if raw else None
 
-    # PostgREST của project trả TỐI ĐA 1.000 dòng mỗi lần đọc (đo 21/10/2026, SRS-5.1zzzzzzz96). Kho có 2.352 dự án: bản cũ đọc khoá
-    # một lần nên dự án từ dòng 1.001 không bao giờ tra được (Ny'ah Phú Định nằm dòng 1.645 — bot không thấy kiến thức đã nạp), và lượt
-    # chép SQLite lúc khởi động tưởng chúng chưa có nên ghi lại mỗi lần. Đọc theo trang, khoá nhớ 60 giây, tra khoá nguyên văn trước.
+    # PostgREST của project trả TỐI ĐA 1.000 dòng mỗi lần đọc (đo 21/10/2026, SRS-5.1zzzzzzz96) — đọc theo trang.
     _TRANG = 1000
 
-    def _doc_het(self, endpoint: str) -> list[dict]:
+    def _doc_het(self, endpoint: str, thu_tu: str) -> list[dict]:
         ra: list[dict] = []
         tu = 0
         while True:
-            trang = self._rpc("GET", f"{endpoint}&order=khoa&limit={self._TRANG}&offset={tu}") or []
+            trang = self._rpc("GET", f"{endpoint}&order={thu_tu}&limit={self._TRANG}&offset={tu}") or []
             ra += trang
             if len(trang) < self._TRANG:
                 return ra
             tu += self._TRANG
 
-    def save(self, project: Project) -> None:
-        from datetime import datetime, timezone
-        self._rpc("POST", "du_an_kien_thuc?on_conflict=khoa", {
-            "khoa": normalize_project_name(project.name), "ten": project.name,
-            "du_lieu": project_to_dict(project), "cap_nhat": datetime.now(timezone.utc).isoformat()})
-        self._khoa_nho = None
-
-    def _khoa(self) -> list[str]:
+    def _muc_luc(self) -> dict[str, tuple[str, str]]:
+        """{khoá tên → (projects.id hoặc "", tên)}: mọi dòng `projects` + dự án chỉ biết qua chat. Nhớ 5 phút."""
         import time
-        nho = getattr(self, "_khoa_nho", None)
-        if nho and time.time() - nho[0] < 60:
-            return nho[1]
-        khoa = [r["khoa"] for r in self._doc_het("du_an_kien_thuc?select=khoa")]
-        self._khoa_nho = (time.time(), khoa)
-        return khoa
+        if self._muc_luc_nho and time.time() - self._muc_luc_nho[0] < 300:
+            return self._muc_luc_nho[1]
+        ml: dict[str, tuple[str, str]] = {}
+        for r in self._doc_het("du_an_kien_thuc?select=khoa,ten&project_id=is.null", "khoa"):
+            ml[r["khoa"]] = ("", r.get("ten") or r["khoa"])
+        for r in self._doc_het("projects?select=id,name", "id"):
+            if r.get("name"):
+                ml[normalize_project_name(r["name"])] = (str(r["id"]), r["name"])
+        self._muc_luc_nho = (time.time(), ml)
+        return ml
 
-    def _mot(self, khoa: str) -> Project | None:
+    def _mot(self, khoa: str, pid: str) -> Project | None:
+        if pid:
+            dong = self._rpc("GET", f"projects?id=eq.{_q(pid)}&select={_COT_DU_AN}") or []
+            if not dong:
+                return None
+            kt = self._rpc("GET", f"du_an_kien_thuc?project_id=eq.{_q(pid)}&select=du_lieu") or []
+            return project_from_row(dong[0], kt[0]["du_lieu"] if kt else None)
         rows = self._rpc("GET", f"du_an_kien_thuc?select=du_lieu&khoa=eq.{_q(khoa)}") or []
         return project_from_dict(rows[0]["du_lieu"]) if rows else None
 
     def get(self, name: str | None) -> Project | None:
         if not name:
             return None
-        q = normalize_project_name(name)
-        p = self._mot(q)                     # khoá nguyên văn: một lần gọi, không tải danh sách
-        if p is not None:
-            return p
-        key = find_matching_key(q, self._khoa())
-        return self._mot(key) if key else None
+        ml = self._muc_luc()
+        key = find_matching_key(normalize_project_name(name), ml)
+        return self._mot(key, ml[key][0]) if key else None
+
+    def save(self, project: Project) -> None:
+        from datetime import datetime, timezone
+        bay_gio = datetime.now(timezone.utc).isoformat()
+        hoc = project_to_dict(project, chi_phan_hoc=bool(project.id))
+        if project.id:
+            # Dữ kiện ĐÃ CHỐT (phiếu đủ / admin) lên kho chung `projects.thong_tin` — web và phía mua đọc ngay; phần chờ ở lại kho kiến thức.
+            self._rpc("PATCH", f"projects?id=eq.{_q(project.id)}", {"thong_tin": {
+                "thuoc_tinh": hoc.pop("attributes"), "tien_ich": hoc.pop("amenities")}})
+        self._rpc("POST", "du_an_kien_thuc?on_conflict=khoa", {
+            "khoa": normalize_project_name(project.name), "ten": project.name, "project_id": project.id or None,
+            "du_lieu": hoc, "cap_nhat": bay_gio})
+        if not project.id:
+            self._muc_luc_nho = None
 
     def all(self) -> list[Project]:
-        """Mọi dự án NHƯNG chỉ tên + mẫu nhà (soi tên mơ hồ `project_name_concern`) — không kéo tài liệu / rổ căn của 2.352 dự án."""
-        return [project_from_dict({"name": r.get("ten") or "", "unit_types": r.get("unit_types") or []})
-                for r in self._doc_het("du_an_kien_thuc?select=ten,unit_types:du_lieu->unit_types")]
-
-    def chep_tu(self, cu: ProjectStore) -> int:
-        """Chép những dự án SQLite cũ có mà Supabase CHƯA có (không đè bản trên Supabase) — chạy lại được: lượt chép bị cắt
-        giữa chừng thì lần khởi động sau chép tiếp phần còn thiếu. Trả số dự án đã chép."""
-        co = set(self._khoa())
-        n = 0
-        for p in cu.all():
-            # So bằng `find_matching_key` (cùng luật tra dự án), không so khoá nguyên văn (SRS-5.1zzzzzzz96): SQLite cũ trên VPS
-            # có "nyah phú định" (học từ chat 20/10, chỉ có vị trí) — mỗi lần khởi động lại được chép thành dòng thứ hai cạnh
-            # "ny ah phú định" đầy đủ; tra "Nyah Phú Định" khớp NGUYÊN VĂN dòng rỗng trước, bot mất hết kiến thức dự án.
-            if find_matching_key(normalize_project_name(p.name), co) is not None:
+        """Mọi dự án NHƯNG chỉ tên + mẫu nhà (soi tên mơ hồ `project_name_concern`) — không kéo tài liệu / rổ căn."""
+        ra: dict[str, Project] = {}
+        for r in self._doc_het("projects?select=name,unit_types", "id"):
+            if r.get("name"):
+                ra[normalize_project_name(r["name"])] = project_from_row({"name": r["name"], "unit_types": r.get("unit_types")})
+        for r in self._doc_het("du_an_kien_thuc?select=ten,unit_types:du_lieu->unit_types", "khoa"):
+            k = normalize_project_name(r.get("ten") or "")
+            if not k:
                 continue
-            self.save(p)
-            co.add(normalize_project_name(p.name))
-            n += 1
-        return n
+            p = ra.setdefault(k, Project(r.get("ten") or ""))
+            for u in r.get("unit_types") or []:
+                if isinstance(u, dict) and u.get("name") and p.find_unit_type(u["name"]) is None:
+                    p.unit_types.append(UnitType(u["name"], u.get("specs", {})))
+        return list(ra.values())
 
 
 def _q(s: str) -> str:
     import urllib.parse
     return urllib.parse.quote(s, safe="")
-

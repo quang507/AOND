@@ -406,7 +406,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 if not (phuong and d.get("ward") and _khoa_ten_du_an(str(d["ward"])) != phuong)]
 
     _COT_DU_AN_MUA = ("id,name,developer,province,district,ward,location_raw,legal_status,handover_date,handover,status_text,"
-                      "price_min,price_max,amenities,specs,unit_types")
+                      "price_min,price_max,amenities,specs,unit_types,thong_tin")
 
     def tra_du_an(self, ten: str, theo_nghia: Callable[[str], list[dict]] | None = None) -> dict[str, Any]:
         """Khách MUA hỏi thông tin dự án → dữ kiện trong kho `projects` + kiến thức chủ dự án duyệt `du_an_kien_thuc` (SRS-5.1zzzzzzz184).
@@ -457,10 +457,12 @@ class SupabaseConversationStore(KhoNguoiMua):
             return kq
         else:
             return kq
-        try:   # kiến thức chủ dự án duyệt (docs[].markdown) — mới nhất, không nhớ: chủ dự án sửa là bot thấy ngay
-            dong = self._get(f"du_an_kien_thuc?ten=eq.{urllib.parse.quote(str(kq['du_an'].get('name') or ''))}&select=du_lieu&limit=1")
+        try:   # tài liệu dự án ĐÃ DUYỆT (admin gửi / tài liệu cũ) nối theo project_id — mới nhất, không nhớ: chủ dự án sửa là bot thấy ngay.
+            # Tài liệu một người bán gửi chưa duyệt không ra phía mua (SRS-5.1zzzzzzz249, cùng luật `Project.docs_cho`).
+            dong = self._get(f"du_an_kien_thuc?project_id=eq.{urllib.parse.quote(str(kq['du_an'].get('id') or ''))}&select=du_lieu&limit=1")
             docs = ((dong[0].get("du_lieu") or {}).get("docs") if dong else None) or []
-            kq["kien_thuc"] = "\n\n".join(str(d.get("markdown") or "").strip() for d in docs if isinstance(d, dict) and d.get("markdown"))
+            kq["kien_thuc"] = "\n\n".join(str(d.get("markdown") or "").strip() for d in docs if isinstance(d, dict) and d.get("markdown")
+                                           and (not d.get("nguoi_gui") or str(d["nguoi_gui"]).startswith("chac_chan:")))
         except Exception as e:  # noqa: BLE001 — còn dữ kiện `projects`, thiếu phần kiến thức
             log.warning("tra_du_an kiến thức lỗi: %s", e)
         return kq
@@ -1023,6 +1025,11 @@ class SupabaseConversationStore(KhoNguoiMua):
                 du_an = self._du_an(fields)
                 if du_an and du_an.get("id"):
                     listing_payload["project_id"] = du_an["id"]
+                    # Mã căn người bán nói (ô `ma_so_can`) là dữ liệu RIÊNG của tin, nối với kho chung bằng project_id (SRS-5.1zzzzzzz249,
+                    # chủ dự án 28/10: "mã căn thì người bán sẽ cung cấp, ghi vào dữ liệu listing riêng"). Trước bản này cột luôn trống.
+                    ma = str(fields.get("ma_so_can") or "").strip()
+                    if ma:
+                        listing_payload["unit_code"] = ma[:40]
                 if quan:
                     listing_payload["district"] = quan
                 listing_payload.update(self._thong_so(fields, ma_loai_db(li.prop.loai_hinh)))

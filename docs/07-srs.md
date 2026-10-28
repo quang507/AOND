@@ -9058,6 +9058,88 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz251 · Hai số chuyên việc: câu chào số ký gửi chỉ hỏi gửi bán / cho thuê (28/10/2026)
+Chủ dự án 28/10: "giờ có 2 số rồi đó, 1 số chuyên gửi bán 1 số chuyên mua nhé, sửa câu chào sửa bot prompt lại nhé, kiến thức vẫn là kiến thức chung".
+1. **Ca gốc**: câu chào số ký gửi (`chao_lan_dau`, `chao_lam_moi`) hỏi "gửi bán, cho thuê nhà, hay đang tìm mua" (thêm "tìm mua" 25/10, SRS-174, khi chỉ có một số);
+   khối `prompts.khoi_chao_lan_dau` dặn model hỏi cả hai; lời chào `build_greeting` còn kể kênh người mua.
+2. **Chỗ sửa**: hai câu mẫu chỉ hỏi MỘT câu "đang có căn nào muốn gửi bán hay cho thuê" (migration `20261028k`, câu đã sửa tay ở CRM giữ nguyên);
+   `khoi_chao_lan_dau` ghi rõ số ký gửi, KHÔNG hỏi tìm mua, hỏi xong thì dừng chờ khách; `build_greeting` chỉ nói ký gửi. Số tư vấn giữ `chao_tu_van`
+   (SRS-210). Kho kiến thức dự án vẫn một nguồn cho cả hai số (SRS-249).
+3. **Chưa đổi**: khách tìm mua nhắn nhầm số ký gửi (hoặc người bán nhắn số tư vấn) vẫn được trả lời theo vai như cũ — chuyển sang số kia cần số Zalo
+   để chỉ khách, chờ chủ dự án quyết.
+4. **Ba câu gốc** — (1) *lớp lỗi*: câu chào viết cho một số dùng chung không đổi theo khi tách hai số; (2) *chỗ khác cùng lớp*: `chao_tu_van` đã riêng; tin
+   giữ kết nối / nhắc theo vai (SRS-238) không hỏi mua-bán; (3) *bài đỏ*: `tests/test_ngung_bao_va_khong_hop.py::test_cau_chao_so_ky_gui_chi_hoi_gui_ban`
+   (thay test cũ buộc có "hay đang tìm mua"), `tests/test_cau_mau.py::test_migration_nap_dung_cau_mac_dinh`.
+
+### SRS-5.1zzzzzzz250 · Phía mua dùng kho dự án: "quận X có dự án gì", căn còn bán trong dự án, câu về dự án hỏi chủ nhà rồi admin; câu ghép gọi đúng cách khách xưng (28/10/2026)
+Chủ dự án 28/10 (sau bản khảo sát 12 mục): "3 sao lại không được, có địa chỉ hết rồi mà, 4 sẽ cập nhật … 7 đợi có thì gửi 'gửi bảng căn còn bán', 'hỏi
+chủ đầu tư giùm tầng căn, hoặc hỏi chủ nhà có căn hoặc nhà đang rao bán gắn với địa chỉ này trước nếu ko có nữa thì hỏi admin', sửa cái Trái luật
+repo: 11 … và Dọn dẹp: 12".
+1. **Ca gốc**: khách mua hỏi "quận 8 có dự án gì" → không có đường tra (chỉ `hoi_du_an` tra MỘT dự án theo tên); "Ny'ah còn căn nào" → gợi căn
+   (`tim_nha`) không lọc theo dự án (mọi tin rao 0 dòng có `project_id` khớp + `unit_code`, SRS-249); câu về dự án mà không chỉ căn ("còn căn tầng cao
+   không") → `hoi_chu_nha` cần một căn nên câu rơi mất. Câu code ghép (bảng giá, ảnh, tách nhóm tệp, hỏi trùng tên dự án, đọc link web) viết cứng
+   "anh/chị" + "em" — khách xưng "em" / "chú" vẫn bị gọi "anh/chị" (trái luật "câu code ghép gọi khách bằng {goi}").
+2. **Chỗ sửa** — (a) AI lập thao tác thêm ô `mua.du_an_khu_vuc` (+ `du_an_khu_vuc_chuan`) và `mua.tim_du_an`, nhận theo cụm nguyên văn từng ô
+   (`_loc_viec_mua`); (b) `mua.du_an_theo_khu` — dự án `projects` có quận / phường khớp TRỌN tên khu (regex chặn số dính liền: "Quận 1" ra 67 dự án, không
+   kéo Quận 10–12; đo trên DB 28/10), kèm số căn đang rao; `mua.can_trong_du_an` — căn đang hiện nối `project_id`, đúng bán / thuê; khối
+   `du_an_mua.khoi_du_an_khu` / `khoi_can_du_an` (chỉ tên / căn trong kho; khách xin bảng thì kể từng dòng, không thì giới thiệu một căn như thường); căn
+   trong dự án đứng đầu danh sách gợi ý; (c) câu về dự án không chỉ căn (`hoi_chu_nha` + dự án đã nhận ở `_du_an_id`) → `info_requests` của một căn đang rao
+   trong dự án (đường sẵn có: chủ nhà 12 giờ, quá hạn sang admin); dự án chưa có căn → `can_nguoi_that` báo admin MỘT lần mỗi câu (`_da_bao_admin_du_an`);
+   (d) 7 câu mẫu mới (`du_an_hoi_mau_nha`, `du_an_hoi_trung_ten`, `web_da_luu`, `web_hoi_du_an`, `ban_ve_gui_kem`, `ban_ve_pdf`, `hoi_ro_can`, migration
+   `20261028j`) + `engine._xung_ho_cau` cho mảnh chữ code ghép (bảng giá, ảnh không phải ảnh căn, tệp không mở được, trần ảnh, tách nhóm) — đổi một lượt
+   "anh/chị"/"em" theo `xung_ho.goi_toi`, không đụng lời model; (e) `/project` báo đúng: admin "đã ghi vào kho chung", người khác "đã ghi nhận phiếu".
+3. **Không làm được**: `?ref=du-an:` từ web — link `zalo.me/<số>` của tài khoản cá nhân không chuyển tham số `ref` vào cuộc chat, bridge zca-js không đọc
+   được; chỉ Zalo OA có ref. "Hỏi chủ đầu tư" — kho chưa có đầu mối liên lạc chủ đầu tư; câu đi chủ nhà trong dự án rồi admin như chủ dự án dặn.
+4. **Ba câu gốc** — (1) *lớp lỗi*: dữ liệu có (địa chỉ dự án, `project_id`) mà không có đường đọc cho phía mua; đường chuyển câu hỏi gắn cứng vào "một căn";
+   câu chữ code tự ghép đứng ngoài nguồn xưng hô. (2) *Chỗ khác cùng lớp*: `tim_nha` (rpc) vẫn chưa nhận tham số dự án — căn trong dự án được ghép trước
+   danh sách thay vì lọc trong rpc; báo căn mới (`bao_can_moi`) chưa theo dự án khách hỏi; câu nhắc `followup` đã theo `goi_toi` (SRS-214); còn câu ghép
+   ngoài engine chưa soát hết (`lenh_zalo` là tin debug, không gửi khách thật). (3) *Bài đỏ khi tắt bản sửa*: `tests/test_mua_du_an_250.py` (6 ca: khu, khu
+   AI tự suy không có trong tin, bảng căn còn bán, dự án chưa có căn, hỏi chủ nhà trong dự án → admin một lần), `tests/test_cau_mau.py::
+   test_cau_code_ghep_goi_theo_cach_khach_xung`, `test_migration_nap_dung_cau_mac_dinh` (7 câu mới). Model thật chưa đo — cần bắn `ban-thu-mua`.
+
+### SRS-5.1zzzzzzz249 · Dữ liệu dự án MỘT NGUỒN: `projects` là kho chung, phiếu theo hạng Đồng / Bạc / Vàng, admin ghi thẳng, bản vẽ mẫu nhà gửi được (28/10/2026)
+Chủ dự án 28/10: "gộp 2 cái này là 1 … single source of truth … thông tin dự án lấy từ mogi là thông tin sơ khởi ban đầu, còn sau thì ghi thêm, cả bên mua và bên
+bán đều truy cập được … dữ liệu riêng như nhà giá bao nhiêu, tầng nào số căn hướng các thứ thì ghi thêm 1 mục ở chỗ listing nhưng có link vào dữ liệu chung của dự
+án … mã căn thì người bán sẽ cung cấp"; "6 docs ghi có mà không lôi ra được là lỗi do ai, xử lý đi"; "ai nhắn zalo thì dựa theo hạng đồng bạc vàng để vote cho kiến
+thức dự án, còn admin nhắn thì ghi thẳng … vì sao không gửi dc bản vẽ ta".
+1. **Hiện trạng đo trên DB 28/10**: `projects` 2.362 dòng (mogi: chủ đầu tư, vị trí, pháp lý, bàn giao, tiện ích ở 1.351 dự án, mẫu căn ở 191, `floor_plans`
+   trống cả 2.362); `du_an_kien_thuc` 2.352 dòng, 2.349 dòng chỉ là bản CHÉP chủ đầu tư / quận / phường / thông số (khoá `supabase_id`) — không chép tiện ích,
+   pháp lý, bàn giao, mẫu căn. Phía bán đọc `du_an_kien_thuc` nên không bao giờ thấy tiện ích (mục 6 — lỗi của lượt nạp 19/10, SRS-56); phía mua đọc `projects`
+   + tài liệu theo TÊN. Phiếu bầu (`projects.merge_facts`) là một người một phiếu NGANG nhau, giá trị dẫn đầu vào dữ kiện NGAY từ phiếu đầu tiên (một người nói là
+   thành "dữ liệu dự án đã xác thực" cho người sau); luật trọng số theo uy tín ở FR-195 / SRS-19 chỉ có ở bản TypeScript đã gỡ 18/10; tiền tố `chac_chan:` có mà
+   không đường nào ghi. Bảng giá độc quyền Ny'ah (giá từng căn + tài liệu `bang_gia`) nằm trong kho chung. `listings.unit_code` 0 dòng có giá trị.
+2. **Kho một nguồn** (`bot/supabase/migrations/20261028i_du_an_mot_nguon.sql`, `src/aioi/projects.py` `project_from_row`, `SupabaseProjectStore`):
+   `projects` là kho chung — cột mogi + cột mới `thong_tin` `{"thuoc_tinh", "tien_ich"}` (dữ kiện ĐÃ DUYỆT). `du_an_kien_thuc` chỉ giữ phần HỌC THÊM (phiếu chờ,
+   mẫu nhà học được, rổ căn chủ đầu tư, tài liệu, `rieng`) nối khoá ngoại `project_id`; dự án chỉ nghe qua chat chưa có dòng `projects` thì `project_id` rỗng (không
+   đẻ dòng web từ lời một người). Lõi đọc một dự án = dòng `projects` + phần học thêm; lưu chỉ ghi phần học thêm và đẩy dữ kiện đã chốt lên `projects.thong_tin`.
+   Migration: lưu trữ `luu_tru.du_an_kien_thuc_20261028`; nối `project_id` (2.349 theo `supabase_id`, Ny'ah theo tên); xoá dòng chỉ là bản chép (còn 2:
+   Ny'ah, Botanica); 14 thuộc tính chủ dự án nạp cho Ny'ah + 17 tiện ích lên `thong_tin`. Chạy thử trong giao dịch rollback trên DB thật trước khi áp.
+3. **Phiếu theo hạng, admin ghi thẳng** (`projects.ma_phieu`, `_diem`, `_is_settled`, `merge_facts`, `pending_lines`; `engine.Engine._ma_phieu`): mã phiếu
+   `<vang|bac|dong>:<zalo>`; Đồng 1 · Bạc 2 · Vàng 3 điểm theo hạng uy tín `gamification` (cùng công thức khối ĐIỂM TIN; chưa có căn nào = Đồng); chốt khi điểm ủng
+   hộ ≥ 6 và phe khác ≤ 2 (giữ N = 6 chủ dự án đặt 01/07). CHƯA chốt thì không vào kho chung — `current` giữ giá trị cũ (mogi / lần chốt trước), lời chờ hiện ở
+   khối "CƠ HỘI XÁC MINH" phía bán ("chưa phải dữ liệu dự án, đừng nói như sự thật"), không ra phía mua. Tiện ích cũng là phiếu (`tiện ích: <tên>`). Zalo ID trong
+   bảng `admins` → phiếu `chac_chan:admin:<id>` vào kho chung ngay. Engine tự tính mã phiếu — công cụ `ghi_nho_*` không còn nhận `nguon` do model đưa làm phiếu
+   (trước đây model điền gì cũng thành ID người bầu). Tài liệu người bán gửi ghi `nguoi_gui`: người khác (và phía mua) chưa thấy tới khi admin gửi lại
+   (`Project.docs_cho`); tài liệu cũ không ghi người gửi coi như đã duyệt. Học từ lời chat (`mo_ta_du_an`) nay chạy cả khi dự án đã có dữ kiện (điều kiện cũ "dự án
+   chưa có dữ kiện nào" làm bot không bao giờ học thêm cho dự án mogi).
+4. **Dữ liệu riêng ở tin**: `listings.unit_code` = ô `ma_so_can` khi tin gắn `project_id` (`supabase_store`); chỉ mục duy nhất `(project_id, unit_code)` đổi sang chỉ
+   mục thường (bán + cho thuê cùng căn, hai môi giới cùng rao là chuyện thường — chỉ mục duy nhất làm lần lưu tin thứ hai hỏng). Giá từng căn + tài liệu bảng giá Ny'ah
+   chuyển sang `du_an_kien_thuc.du_lieu.rieng` (không vào prompt) chờ nhập thành tin rao.
+5. **Bản vẽ gửi được** (`kho_anh.SupabaseMediaStore.upload`, `THU_MUC_DU_AN`; `Engine._unittype_folder`, `_media_request_reply`; `TurnResult.ban_ve`; `server`
+   gửi kèm `photos`): tệp mẫu nhà (ảnh, PDF) lưu `du-an/<dự án>/<mẫu>` ở bucket CÔNG KHAI; khách xin bản vẽ → ảnh đi qua bridge, PDF dán link. Tệp cũ ở kho
+   riêng không có link → bot không còn hứa "để em gửi lại". Bản .md dự án, sổ đỏ (`rieng=True`) vẫn riêng.
+6. **Ba câu gốc** — (1) *lớp lỗi*: hai kho giữ hai bản cùng dữ kiện, lượt nạp chép thiếu cột thì một phía mù; luật trong docs không có code chạy (vote theo uy tín
+   chỉ ở bản TS đã gỡ, `chac_chan:` không ai ghi); tệp "dùng chung" cất ở chỗ không có link. (2) *Chỗ khác cùng lớp*: phía mua nay đọc `thong_tin` + tài liệu
+   theo `project_id` (sửa); `anh_du_an` vẫn chỉ gửi `projects.images` (đúng, ảnh mogi); web CHƯA hiện `thong_tin` (trang dự án đọc cột mogi) — để PR web;
+   `floor_plans` mogi trống, không có đường nạp — còn. Hạng của phiếu tính lúc bầu, không tính lại khi người đó lên / xuống hạng sau. (3) *Bài đỏ khi tắt bản sửa*:
+   `tests/test_kho_du_an.py` (đọc tiện ích / pháp lý / mẫu căn từ `projects`; lưu không chép mogi), `tests/test_phieu_chac_chan.py` (`test_phieu_theo_hang_dong_bac_vang`,
+   `test_admin_ghi_thang`, `test_engine_admin_zalo_ghi_thang_khach_theo_hang`), `tests/test_kho_anh.py::test_ban_ve_mau_nha_vao_bucket_cong_khai_de_bot_gui_duoc`,
+   `tests/test_agent_loop.py::test_xin_ban_ve_gui_anh_that_khong_hua_suong`, `tests/test_du_an_mua.py` (tài liệu chưa duyệt không ra phía mua; `thong_tin`),
+   `tests/test_supabase_store_luu_tin.py::test_ma_can_nguoi_ban_ghi_vao_tin_noi_kho_chung`. Đã thử tắt từng chỗ sửa (trọng số, nhánh admin, `project_from_row`,
+   `ban_ve`, nhánh `du-an/`) — đều đỏ. Test cũ đổi theo luật mới: một người nói là phiếu chờ, không còn vào dữ kiện ngay.
+7. **Bỏ**: `SupabaseProjectStore.chep_tu` + lượt chép SQLite → Supabase mỗi lần khởi động (SRS-56; đã chép xong 19/10, chỉ còn đẻ dòng trùng), `Engine.ingest_source_doc`
+   (chỉ test gọi).
+
 ### SRS-5.1zzzzzzz248 · Giọng bớt cứng: bỏ khuôn "X thì <lợi ích>", được cảm thán, ngắn như anh Luận; Vercel không dựng lại web khi chỉ đổi bot (28/10/2026)
 Chủ dự án 28/10: "cảm giác vẫn cứng quá ta, chưa có wow tuyệt vời các kiểu à nó có lặp ko" → "sửa giọng GIONG_VUI cho bớt cứng đi, xem anh Luận có khác mình ko".
 Số đo (61 lời bot không phải bản nháp, các lượt thử 28/10 sau khi tắt công cụ — SRS-246): 25 lời (41%) câu đầu theo khuôn "<điều khách nói> thì

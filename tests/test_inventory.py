@@ -5,7 +5,7 @@ answer correctly for BOTH a phân-lô development (dien_tich_dat / vi_tri) and a
 (dien_tich / view / tang), proving they're attribute-agnostic, not hard-coded to houses.
 """
 from aioi.inventory import coverage, find, lookup, remember
-from aioi.projects import Project, SqliteProjectStore, Unit
+from aioi.projects import CHAC_CHAN, Project, SqliteProjectStore, Unit
 
 
 def _nyah() -> Project:
@@ -65,11 +65,13 @@ def test_find_extreme_excludes_units_with_unknown_attribute():
 def test_remember_learns_a_new_attribute_then_it_is_queryable():
     p = _nyah()
     assert find(p, where={"vi_tri": "góc"}) == []                # unknown at first
-    remember(p, "26", {"vi_tri": "góc"}, voter="seller1")        # a seller tells us lô 26 is a corner
+    remember(p, "26", {"vi_tri": "góc"}, voter="dong:seller1")   # one Đồng seller: a vote, not shared yet (SRS-249)
+    assert find(p, where={"vi_tri": "góc"}) == []
+    remember(p, "26", {"vi_tri": "góc"}, voter=CHAC_CHAN + "admin:a")   # admin tells us lô 26 is a corner
     assert _codes(find(p, where={"vi_tri": "góc"})) == ["26"]    # now findable
     assert lookup(p, "26")["vi_tri"] == "góc"
     # learning a brand-new mã số căn creates it
-    remember(p, "7", {"mau_nha": "Cosmo"}, voter="seller1")
+    remember(p, "7", {"mau_nha": "Cosmo"}, voter=CHAC_CHAN + "admin:a")
     assert lookup(p, "7") == {"ma_so_can": "7", "mau_nha": "Cosmo"}
 
 

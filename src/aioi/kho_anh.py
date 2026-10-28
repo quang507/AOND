@@ -6,8 +6,11 @@ lõi Python ghi ảnh vào thư mục `sharepoint_store/` trên đĩa VPS: `list
 Luật kho (§5 CLAUDE.md, ràng buộc `listing_media` trên DB):
 - Ảnh của MỘT căn (thư mục = UUID tin, `thu_muc_can`) → bucket CÔNG KHAI `listing-public/<uuid>/…`, web hiện qua
   `listing_photos_v` khi tin đang đăng.
-- Mọi thứ khác → bucket RIÊNG `listing-private`: sổ đỏ / giấy tờ (`rieng=True`), PDF / tài liệu, tệp cấp dự án. Không có link công
-  khai (`web_url` rỗng) — chỉ admin ký link xem.
+- Bản vẽ / mặt bằng / brochure MẪU NHÀ của dự án (thư mục `du-an/…`, ảnh hoặc PDF) → bucket CÔNG KHAI (SRS-5.1zzzzzzz249): tài liệu bán
+  hàng dùng chung, bot gửi lại cho khách qua bridge. Trước bản này chúng vào bucket riêng, `web_url` rỗng — bot nói "để em gửi" mà không
+  có gì để gửi.
+- Mọi thứ khác → bucket RIÊNG `listing-private`: sổ đỏ / giấy tờ (`rieng=True`), PDF / tài liệu của căn, bản .md dự án. Không có link
+  công khai (`web_url` rỗng) — chỉ admin ký link xem.
 Dòng `listing_media` do `SupabaseConversationStore.save` ghi SAU khi tin đã có trên DB (khoá ngoại), đọc từ `Listing.media`.
 """
 from __future__ import annotations
@@ -25,6 +28,7 @@ from .kho_tep import MediaRef, MediaStore, KhoTepError
 
 BUCKET_CONG_KHAI = "listing-public"
 BUCKET_RIENG = "listing-private"
+THU_MUC_DU_AN = "du-an/"   # tệp mẫu nhà dùng chung của dự án (SRS-5.1zzzzzzz249) — `Engine._unittype_folder`
 CANH_BAN_NHO = 480   # OPEN-38 (chủ dự án 28/10/2026): bản nhỏ cho lưới thẻ — biến đổi ảnh của Supabase là tính năng Pro
 
 log = logging.getLogger("aioi.kho_anh")
@@ -84,7 +88,9 @@ class SupabaseMediaStore(MediaStore):
         return str(uuid.UUID(listing_id))
 
     def upload(self, folder: str, filename: str, data: bytes, content_type: str, rieng: bool = False) -> MediaRef:
-        cong_khai = (not rieng) and content_type.startswith("image/") and la_uuid(folder.split("/", 1)[0])
+        anh = content_type.startswith("image/")
+        cong_khai = (not rieng) and ((anh and la_uuid(folder.split("/", 1)[0]))
+                                     or (folder.startswith(THU_MUC_DU_AN) and (anh or content_type == "application/pdf")))
         bucket = BUCKET_CONG_KHAI if cong_khai else BUCKET_RIENG
         khoa = _khoa_an_toan(f"{folder}/{filename}")
         url = f"{self._goc}/storage/v1/object/{bucket}/{urllib.parse.quote(khoa)}"
@@ -94,7 +100,7 @@ class SupabaseMediaStore(MediaStore):
         })
         web = f"{self._goc}/storage/v1/object/public/{bucket}/{urllib.parse.quote(khoa)}" if cong_khai else ""
         return MediaRef(item_id=f"{bucket}/{khoa}", web_url=web, path=f"{bucket}/{khoa}",
-                        filename=filename, content_type=content_type, ban_nho=self._tai_ban_nho(khoa, data) if cong_khai else "")
+                        filename=filename, content_type=content_type, ban_nho=self._tai_ban_nho(khoa, data) if cong_khai and anh else "")
 
     def _tai_ban_nho(self, khoa: str, data: bytes) -> str:
         """Tải bản nhỏ 480px cạnh ảnh gốc: `<uuid>/480/<tên>.jpg` (OPEN-38). Hỏng thì "" — ảnh gốc vẫn dùng được."""

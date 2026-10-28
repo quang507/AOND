@@ -45,29 +45,17 @@ _co_khoa_drive = False  # /health báo có khoá Drive hay không (không bao gi
 
 
 def _kho_du_an(settings):
-    """Kiến thức dự án: Supabase (bảng du_an_kien_thuc) khi có service_role; lần đầu chép từ SQLite cũ trên VPS sang."""
+    """Kho dự án một nguồn (SRS-5.1zzzzzzz249): `projects` + phần học thêm `du_an_kien_thuc` khi có service_role; không có thì SQLite (chạy thử
+    trên máy). Lượt chép SQLite cũ → Supabase mỗi lần khởi động (19/10) đã bỏ: dữ liệu đã chép xong, lượt chép chỉ còn đẻ dòng trùng."""
     sqlite = SqliteProjectStore(settings.db_path)
     if not settings.supabase_service_role_key:
         return sqlite
     kho = SupabaseProjectStore(settings.supabase_url, settings.supabase_service_role_key)
     try:
-        kho._khoa()   # bảng có, mạng tới được
+        kho._muc_luc()   # bảng có, mạng tới được
     except Exception as e:  # noqa: BLE001 — bảng chưa có / mạng lỗi: chạy tiếp bằng SQLite, không câm bot
         log.warning("Kho dự án Supabase chưa dùng được (%s) — dùng SQLite", e)
         return sqlite
-
-    # Chép phần còn thiếu từ SQLite chạy NỀN: lượt chép đầu 19/10 chạy ngay lúc khởi động (hàng nghìn dự án, ~3 dự án / giây)
-    # nên lõi không trả lời /health trong nhiều phút, cai-vps báo hỏng và bot im suốt lúc đó.
-    def _chep() -> None:
-        try:
-            n = kho.chep_tu(sqlite)
-            if n:
-                log.info("Đã chép %s dự án từ SQLite sang du_an_kien_thuc", n)
-        except Exception as e:  # noqa: BLE001
-            log.warning("Chép dự án sang Supabase dừng giữa chừng (%s) — lần khởi động sau chép tiếp", e)
-
-    import threading
-    threading.Thread(target=_chep, daemon=True).start()
     return kho
 
 
@@ -771,6 +759,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     photos = anh_gui_kem(payload.external_user_id, r.role, payload.text)
     # SRS-5.1zzzzzzz145: căn bot vừa giới thiệu (có link trong lời) → 1–2 ảnh mỗi căn nếu căn đã có ảnh công khai
     photos = (photos + anh_can_gui_kem(payload.external_user_id, r.role, cleaned_reply, xin=r.xin_anh))[:6]
+    photos = (list(r.ban_ve) + [p for p in photos if p not in r.ban_ve])[:6]   # bản vẽ khách xin đi trước (SRS-5.1zzzzzzz249)
 
     return ZaloBridgeResponse(
         reply=cleaned_reply,

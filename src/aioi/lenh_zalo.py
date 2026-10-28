@@ -133,4 +133,8 @@ def chay(engine: "Engine", user: str, text: str, huy_nhac: Callable[[str], None]
     proj = engine.register_project_from_text(phan_con, voter=user)
     if proj is None:
         return KetQuaLenh(_goi_bong(["Không nhận ra tên dự án trong mô tả."]))
-    return KetQuaLenh(_goi_bong([f"Đã đăng ký dự án: {proj.name} · tiện ích: {', '.join(proj.amenities) or '—'}"]))
+    # SRS-5.1zzzzzzz249: /project là lời của người gõ — admin ghi thẳng kho chung, người khác là một phiếu theo hạng (chờ đủ điểm).
+    admin = engine._ma_phieu(user).startswith("chac_chan:")
+    return KetQuaLenh(_goi_bong([f"{'Đã ghi vào kho chung' if admin else 'Đã ghi nhận phiếu (chờ đủ người xác nhận)'}: dự án {proj.name} · "
+                                 f"tiện ích trong kho: {', '.join(proj.amenities) or '—'}"
+                                 + (f" · đang chờ: {len(proj.pending())} ý" if proj.pending() else "")]))

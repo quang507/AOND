@@ -106,7 +106,15 @@ def test_tin_trong_du_an_gan_project_id_khi_ten_khop_ro():
     st = StoreGia(co_san=False)
     st.save(_conv({"gia": "3 tỷ", "du_an": "sunrise city"}))
     [(_, _, d)] = _ghi_tin(st)
-    assert d["project_id"] == "p-sunrise" and d["ward"] == "Phường Tân Hưng"
+    assert d["project_id"] == "p-sunrise" and d["ward"] == "Phường Tân Hưng" and "unit_code" not in d
+
+
+def test_ma_can_nguoi_ban_ghi_vao_tin_noi_kho_chung():
+    """SRS-5.1zzzzzzz249: mã căn là dữ liệu riêng của tin (`listings.unit_code`) nối dự án bằng project_id — trước bản này cột luôn trống."""
+    st = StoreGia(co_san=False)
+    st.save(_conv({"gia": "3 tỷ", "du_an": "sunrise city", "ma_so_can": "A-12.05"}))
+    [(_, _, d)] = _ghi_tin(st)
+    assert d["project_id"] == "p-sunrise" and d["unit_code"] == "A-12.05"
 
 
 def test_ten_gan_dung_khong_gan_du_an_khac_va_khong_lay_phuong_cua_no():

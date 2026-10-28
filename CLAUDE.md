@@ -9,7 +9,7 @@ Bản đầy đủ cũ (tới 28/10/2026, gồm lịch sử phần TypeScript đ
 **Aioinhadat** (viết "AI Ơi Nhà Đất"; tiền thân nhadat.cc) — môi giới bất động sản "chat-first" tại TP.HCM và vùng lân cận.
 Luận điểm: *listing chỉ là mồi, giao dịch xảy ra trong cuộc trò chuyện, và cuộc trò chuyện không bao giờ kết thúc.*
 
-- **Kênh chat**: Zalo cá nhân qua bridge `zca-js` trên tài khoản Zalo clone (quyết định chủ dự án, không bàn lại). Hai số: số **ký gửi** (người bán, cũng trả lời người mua nhắn nhầm) và số **tư vấn người mua** (SRS-210). Trợ lý mỗi khách một tên người thật có chấm giữa (`assistants.ASSISTANT_NAMES`, SRS-183).
+- **Kênh chat**: Zalo cá nhân qua bridge `zca-js` trên tài khoản Zalo clone (quyết định chủ dự án, không bàn lại). Hai số chuyên việc: số **ký gửi** (người bán; câu chào chỉ hỏi gửi bán / cho thuê, SRS-251; người mua nhắn nhầm vẫn được trả lời) và số **tư vấn người mua** (SRS-210); kiến thức dự án dùng chung. Trợ lý mỗi khách một tên người thật có chấm giữa (`assistants.ASSISTANT_NAMES`, SRS-183).
 - **Người bán (S)** — **CCRB** (chính chủ) và **NMG** (môi giới) — rao bằng một câu rao thường, AI bóc tách ô và viết bản tin.
 - **Người mua (B)** không trả phí; bot gợi căn, hẹn xem. Chỉ xin số điện thoại MỘT lần khi khách chốt lịch xem (SRS-148).
 - **Web** (Next.js) là kênh SEO + listing + bản đồ, đẩy người dùng sang Zalo. Link do `src/aioi/web.py` quyết (env `AIOI_SITE_URL`, mặc định `aioinhadat.vercel.app`; `nhadat.cc` / `aioinhadat.com` chưa trỏ về web).
@@ -106,6 +106,10 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 - Vai người rao (`seller_role`) chỉ nhận khi cụm trích GỌI TÊN vai (`_vai_co_bang_chung`, SRS-213) — phí theo vai đoán là báo sai tiền.
 - Mỗi cờ "đã báo / đã hỏi" nằm ở chỗ nhớ qua lượt (ô tin / SQLite), không ở `y_luot` (làm mới mỗi lượt) (SRS-214).
 
+**Dự án (một nguồn, SRS-249)**
+- `projects` là kho chung (mogi + `thong_tin` đã duyệt; hai phía bot cùng đọc qua `SupabaseProjectStore` / `tra_du_an`); `du_an_kien_thuc` chỉ giữ phần học thêm nối `project_id` — đừng chép lại cột mogi sang đó. Dữ liệu riêng (giá, mã căn) ở tin (`listings.unit_code`) hoặc `rieng`, không vào kho chung.
+- Lời người bán về dự án là PHIẾU theo hạng (Đồng 1 / Bạc 2 / Vàng 3, chốt ≥ 6, phe khác ≤ 2), admin (`admins`) = `chac_chan:` ghi thẳng; mã phiếu chỉ do `Engine._ma_phieu` tính — đừng nhận phiếu từ model. Tệp mẫu nhà lưu `du-an/…` (bucket công khai) để gửi được.
+
 **Địa chỉ / phường**
 - Cột `listings.ward` chỉ mang `wards.ten_day_du` hoặc null; DB chặn lần cuối (`20261009b`). Xã Tây Ninh / Đồng Nai ở bảng riêng `xa_tinh_khac`, không nhét vào `wards`.
 - Tra địa danh: `dia_danh.py` — chữ trước, vector Gemini sau, máy kiểm tên gần chữ khách; vector do lịch `nhung-tick` / `nhung-dia-danh-tick` / `nhung-luat-tick` nuôi — đừng gỡ. Tìm theo nghĩa đi qua `tim_dia_danh_theo_nghia` và `tim_nha(p_vec)`, đừng dựng hàm từng bảng (SRS-180).
@@ -124,7 +128,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 
 **Giọng & hình thức lời bot**
 - Giọng phía bán theo khuôn anh Luận (SRS-207); `prompts.GIONG_VUI` là CHỖ DUY NHẤT dặn giọng (SRS-219 / 228 / 248) — đổi giọng sửa ở đó; không kèm cặp ví dụ cụ thể (model chép thành khuôn, SRS-248), ĐỪNG thêm luật giọng chồng lên. Ví dụ trong prompt chỉ là lời ĐÁP, không chứa câu hỏi của một ô cụ thể (model chép, SRS-196); không câu minh hoạ hoàn chỉnh.
-- Xưng hô một nguồn `xung_ho.py` (`goi_toi`): khách xưng em → anh / chị theo tên trợ lý; khách xưng cháu / con → cô / chú; khách xưng chú / cô / bác giữ đúng chữ (`chu_co_bac:<chữ>`, SRS-234). Bot không gọi khách là "mình" ("mình" nghĩa chúng ta thì được, SRS-230); không mở đầu "Dạ". Câu mẫu / câu code ghép gọi khách bằng `{goi}`. Giới tính Zalo chỉ là ĐOÁN — vào prompt qua `khoi_xung_ho(..., doan=_xung_ho_doan(conv))`, không thành "khách xưng anh" (SRS-245).
+- Xưng hô một nguồn `xung_ho.py` (`goi_toi`): khách xưng em → anh / chị theo tên trợ lý; khách xưng cháu / con → cô / chú; khách xưng chú / cô / bác giữ đúng chữ (`chu_co_bac:<chữ>`, SRS-234). Bot không gọi khách là "mình" ("mình" nghĩa chúng ta thì được, SRS-230); không mở đầu "Dạ". Câu mẫu / câu code ghép gọi khách bằng `{goi}`; mảnh chữ code ghép sẵn "anh/chị" + "em" thì qua `engine._xung_ho_cau` (SRS-250). Giới tính Zalo chỉ là ĐOÁN — vào prompt qua `khoi_xung_ho(..., doan=_xung_ho_doan(conv))`, không thành "khách xưng anh" (SRS-245).
 - Câu ghi nhận ("em ghi rồi…") tối đa MỘT lần mỗi cuộc chat (SRS-229). Hai lưới lặp hình thức (`_cung_mo_dau`, `_cau_lap_luot_truoc`) không được gỡ khi đổi giọng (SRS-213). Thêm luật cứng mới thì thêm vào `_ly_do_cung`.
 - Mỗi lượt MỘT khối "ƯU TIÊN LƯỢT NÀY" (cần người > pháp lý > ngoài việc > hỏi về); khối mới đặt vào chuỗi `or` đó (SRS-178). Lượt được phép không có câu hỏi — đừng thêm lưới "lời phải có câu hỏi".
 - Độ dài: "ngắn vừa vừa", ý chính rồi dừng (SRS-97).
@@ -142,6 +146,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 - Số ảnh nói thật (`_so_anh`); ảnh đã gửi đủ thì không gửi lại, đề nghị xin chủ nhà thêm (SRS-168 / 232). Số trong lời bot phía mua phải có trong dòng căn / lời khách / khối "SỐ TÍNH THEO CĂN" (`_so_khong_co_trong_can`).
 - Việc của khối `mua` nhận theo căn cứ RIÊNG từng việc (`_loc_viec_mua`), đừng nhận / bỏ cả khối theo một trích dẫn (SRS-232). Lượt không ghi gì thì không nói "đã chuyển / đã giữ lịch".
 - **CTV đã bỏ hẳn** (chủ dự án 28/10/2026): mọi đường báo của phía mua (lịch xem, câu hỏi chủ nhà) đi chủ nhà (hạn 12 giờ) hoặc admin (hạn 5 giờ, `admin_han_gio`) (SRS-165 / 170 / 238). Code và DB đã gỡ CTV (SRS-238 / 239: bảng `ctvs`, cột `ctv_id`, view `ctv_ranks` đã xoá; enum `msg_sender` còn giá trị `ctv` không ai dùng); đừng thêm lại vai / bảng / nhánh CTV.
+- Dự án phía mua (SRS-250): "khu X có dự án gì" → `du_an_theo_khu`; tìm căn / bảng căn còn bán trong dự án → `can_trong_du_an` (nối `project_id`); câu về dự án không chỉ căn → chủ nhà của một căn trong dự án, không có căn thì báo admin một lần. `?ref=` từ web không tới được Zalo cá nhân.
 - Tra dự án phía mua: `mua.hoi_du_an` → `tra_du_an` (chữ trước, vector sau — kết quả vector chỉ để khách xác nhận) (SRS-184 / 185). Bot chỉ hỏi "có phải dự án X" khi khách nhắc dự án hoặc địa chỉ trùng số nhà + đường (SRS-232).
 
 **Gửi chủ động & nhắc**

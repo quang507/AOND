@@ -2,7 +2,9 @@ from aioi.config import Settings
 from aioi.engine import Engine, SqliteConversationStore
 from aioi.fetch import FetchedMedia, FetchError
 from aioi.llm.mock import MockProvider
-from aioi.projects import Project, UnitType
+from aioi.projects import CHAC_CHAN, Project, UnitType
+
+ADMIN = CHAC_CHAN + "admin:test"   # phiếu admin: vào kho chung ngay (SRS-5.1zzzzzzz249)
 from aioi.kho_tep import MediaRef
 
 
@@ -358,7 +360,7 @@ def test_seller_role_detected_and_sticky():
 def test_listing_inherits_registered_project():
     eng = _engine()
     eng.register_project("Botanic Tower", amenities=["hồ bơi", "gym"],
-                         attributes={"cổng": "Nguyễn Thượng Hiền"})
+                         attributes={"cổng": "Nguyễn Thượng Hiền"}, voter=ADMIN)
     conv = eng.conversation("u16")
     conv.prop.fields["du_an"] = "botanic tower"  # case-insensitive match
     p = eng.project_for(conv.prop)
@@ -368,7 +370,7 @@ def test_listing_inherits_registered_project():
 
 def test_unit_type_registered_and_inherited():
     eng = _engine()
-    eng.register_unit_type("Botanic Towers", "Type B", {"diện tích": "113m2", "số phòng ngủ": "3"})
+    eng.register_unit_type("Botanic Towers", "Type B", {"diện tích": "113m2", "số phòng ngủ": "3"}, voter=ADMIN)
     conv = eng.conversation("uT")
     conv.prop.fields["du_an"] = "Botanic Tower"   # lenient project match
     conv.prop.fields["unit_type"] = "Type B"
@@ -387,8 +389,9 @@ def test_register_unit_type_from_text():
 
 
 def test_model_learned_from_chat_answer_is_shared_across_sellers():
+    """SRS-249: lời MỘT người bán tả mẫu nhà là một phiếu chờ — người bán sau thấy để hỏi xác minh, chưa thành thông số mẫu."""
     eng = _engine()
-    eng.register_project("Nyah Phú Định", amenities=["hồ bơi"])
+    eng.register_project("Nyah Phú Định", amenities=["hồ bơi"], voter=ADMIN)
     conv = eng.conversation("A")
     conv.prop.fields["du_an"] = "Nyah Phú Định"      # (mock doesn't extract du_an; set directly)
     conv.prop.fields["unit_type"] = "Cosmo Gen 2"
@@ -396,12 +399,12 @@ def test_model_learned_from_chat_answer_is_shared_across_sellers():
     # Seller A ANSWERS the acquisition question in chat (a file was never sent).
     eng.handle("A", "Mẫu nhà Cosmo Gen 2. Có 3 phòng ngủ, 70m2 nha em.")
     ut = eng._projects.get("Nyah Phú Định").find_unit_type("Cosmo Gen 2")
-    assert ut is not None and ut.specs.get("số phòng ngủ") == "3"   # learned from chat
-    # A DIFFERENT seller's unit of the same model now inherits it.
+    assert ut is not None and ut.votes.get("số phòng ngủ") == {"3": ["bac:A"]}    # learned from chat — as a vote (hạng của A)
+    assert "số phòng ngủ" not in ut.specs                                        # một phiếu Bạc (2 điểm) chưa vào kho chung
+    # A DIFFERENT seller's unit of the same model sees it as a claim to verify.
     convB = eng.conversation("B")
     convB.prop.fields.update({"du_an": "Nyah Phú Định", "unit_type": "Cosmo Gen 2"})
-    assert eng.unit_type_for(convB.prop) is ut
-
+    assert any("số phòng ngủ: 3" in x for x in eng.unit_type_for(convB.prop).pending())
 
 def test_non_descriptive_message_does_not_trigger_learning():
     # Small talk must NOT spend an extract trying to learn a project/model.
@@ -415,10 +418,10 @@ def test_non_descriptive_message_does_not_trigger_learning():
 
 def test_project_knowledge_is_global_and_accumulates_across_sellers():
     eng = _engine()
-    # Seller A registers Botanic Towers (in seller A's context, but the registry is global).
-    eng.register_project("Botanic Towers", amenities=["hồ bơi"], attributes={"cổng": "NTH"})
-    # A DIFFERENT seller later adds more about the SAME project — must MERGE, not overwrite.
-    eng.register_project("Botanic Tower", amenities=["gym"], attributes={"an ninh": "24/7"})
+    # Admin registers Botanic Towers (in one context, but the registry is global).
+    eng.register_project("Botanic Towers", amenities=["hồ bơi"], attributes={"cổng": "NTH"}, voter=ADMIN)
+    # Admin later adds more about the SAME project (another spelling) — must MERGE, not overwrite.
+    eng.register_project("Botanic Tower", amenities=["gym"], attributes={"an ninh": "24/7"}, voter=ADMIN)
     p = eng._projects.get("Botanic Towers")
     assert set(p.amenities) == {"hồ bơi", "gym"}                 # unioned — nothing lost
     assert p.attributes == {"cổng": "NTH", "an ninh": "24/7"}     # merged
@@ -427,29 +430,30 @@ def test_project_knowledge_is_global_and_accumulates_across_sellers():
     conv.prop.fields["du_an"] = "Botanic Towers"
     proj = eng.project_for(conv.prop)
     assert "hồ bơi" in proj.amenities and "gym" in proj.amenities
-
+    # A seller's amenity claim waits for votes (SRS-249) — not in the shared list yet.
+    eng.register_project("Botanic Towers", amenities=["sân tennis"], voter="sellerB")
+    p = eng._projects.get("Botanic Towers")
+    assert "sân tennis" not in p.amenities and p.votes["tiện ích: sân tennis"] == {"có": ["bac:sellerB"]}
 
 def test_conflicting_attribute_is_flagged_and_kept_both():
     eng = _engine()
     eng.register_project("Botanic Towers", attributes={"cổng": "Nguyễn Thượng Hiền"}, voter="s1")
     eng.register_project("Botanic Towers", attributes={"cổng": "Phan Đăng Lưu"}, voter="s2")
     p = eng._projects.get("Botanic Towers")
-    # both values kept as seller-votes; the key is contested (tie), no silent overwrite
-    assert p.votes["cổng"] == {"Nguyễn Thượng Hiền": ["s1"], "Phan Đăng Lưu": ["s2"]}
-    assert "cổng" in p.contested_keys()
-    facts = " ".join(p.facts())
-    assert "CHƯA CHẮC" in facts and "Nguyễn Thượng Hiền" in facts        # surfaced for verify
+    # both values kept as votes (hạng Đồng — chưa có căn), the key waits; no silent overwrite, not in the shared facts
+    assert p.votes["cổng"] == {"Nguyễn Thượng Hiền": ["dong:s1"], "Phan Đăng Lưu": ["dong:s2"]}
+    assert "cổng" in p.contested_keys() and "cổng" not in p.attributes
+    assert any("Nguyễn Thượng Hiền" in x and "chờ" in x for x in p.pending())     # surfaced for verify
 
 
 def test_majority_vote_breaks_the_tie():
     eng = _engine()
-    eng.register_project("Botanic Towers", attributes={"cổng": "Nguyễn Thượng Hiền"}, voter="s1")
-    eng.register_project("Botanic Towers", attributes={"cổng": "Phan Đăng Lưu"}, voter="s2")
-    eng.register_project("Botanic Towers", attributes={"cổng": "Phan Đăng Lưu"}, voter="s3")
+    for i, v in enumerate(["Nguyễn Thượng Hiền", "Phan Đăng Lưu", "Phan Đăng Lưu"]):
+        eng.register_project("Botanic Towers", attributes={"cổng": v}, voter=f"s{i}")
     p = eng._projects.get("Botanic Towers")
-    assert p.attributes["cổng"] == "Phan Đăng Lưu"          # leading value = most votes
-    assert p.votes["cổng"]["Phan Đăng Lưu"] == ["s2", "s3"]
-    assert "cổng" in p.contested_keys()                     # still flagged, not yet settled
+    assert p.votes["cổng"]["Phan Đăng Lưu"] == ["dong:s1", "dong:s2"]
+    assert "cổng" in p.contested_keys() and "cổng" not in p.attributes   # 2 điểm < 6: chưa chốt
+    assert "Phan Đăng Lưu" in " ".join(p.pending())                       # leading value = most points
 
 
 def test_no_phantom_votes_same_seller_counts_once():
@@ -457,8 +461,8 @@ def test_no_phantom_votes_same_seller_counts_once():
     for _ in range(4):  # same seller repeats — must NOT inflate
         eng.register_project("X Tower", attributes={"cổng": "A"}, voter="s1")
     p = eng._projects.get("X Tower")
-    assert p.votes["cổng"] == {"A": ["s1"]}
-    assert "cổng" not in p.contested_keys()
+    assert p.votes["cổng"] == {"A": ["dong:s1"]}
+    assert "cổng" not in p.attributes
 
 
 def test_seller_changing_mind_moves_their_vote():
@@ -466,9 +470,24 @@ def test_seller_changing_mind_moves_their_vote():
     eng.register_project("X Tower", attributes={"cổng": "A"}, voter="s1")
     eng.register_project("X Tower", attributes={"cổng": "B"}, voter="s1")  # same seller, new answer
     p = eng._projects.get("X Tower")
-    assert p.votes["cổng"] == {"B": ["s1"]}                  # A dropped, not left dangling
-    assert "cổng" not in p.contested_keys()
+    assert p.votes["cổng"] == {"B": ["dong:s1"]}                  # A dropped, not left dangling
 
+    eng = _engine()
+    for i in range(6):  # 6 Đồng sellers say A (6 điểm ≥ n=6)...
+        eng.register_project("Y Tower", attributes={"cổng": "A"}, voter=f"a{i}")
+    for i in range(2):  # ...vs 2 dissenters (2 điểm ≤ n/3 = 2)
+        eng.register_project("Y Tower", attributes={"cổng": "B"}, voter=f"b{i}")
+    p = eng._projects.get("Y Tower")
+    assert p.attributes["cổng"] == "A"
+    assert "cổng" not in p.contested_keys() and p.pending() == []      # settled → in the shared store, no longer flagged
+
+    eng = _engine()
+    for i in range(6):
+        eng.register_project("Z Tower", attributes={"cổng": "A"}, voter=f"a{i}")
+    for i in range(3):  # 3 dissenters > n/3 = 2
+        eng.register_project("Z Tower", attributes={"cổng": "B"}, voter=f"b{i}")
+    p = eng._projects.get("Z Tower")
+    assert "cổng" in p.contested_keys() and p.attributes["cổng"] == "A"  # đã chốt thì giữ tới khi giá trị khác CHỐT; phe khác > n/3 → lại cần xác minh
 
 def test_conflict_settles_when_a_value_wins_decisively():
     eng = _engine()
@@ -503,7 +522,7 @@ def test_not_settled_while_leader_below_threshold():
 
 def test_register_unit_type_preserves_project_amenities():
     eng = _engine()
-    eng.register_project("Nyah Phú Định", amenities=["hồ bơi"])
+    eng.register_project("Nyah Phú Định", amenities=["hồ bơi"], voter=ADMIN)
     eng.register_unit_type("Nyah Phú Định", "Fusion Gen 5", {"số tầng": "6"})
     p = eng._projects.get("Nyah Phú Định")
     assert p.amenities == ["hồ bơi"]                    # unit-type registration kept amenities
@@ -512,7 +531,7 @@ def test_register_unit_type_preserves_project_amenities():
 
 def test_register_project_from_text():
     eng = _engine()
-    p = eng.register_project_from_text("Dự án Botanic Tower, có hồ bơi và gym, bảo vệ 24/7.")
+    p = eng.register_project_from_text("Dự án Botanic Tower, có hồ bơi và gym, bảo vệ 24/7.", voter=ADMIN)
     assert p is not None
     assert p.name.startswith("Botanic Tower")
     assert "hồ bơi" in p.amenities and "gym" in p.amenities
@@ -794,7 +813,7 @@ def test_model_brochure_media_stored_on_unittype_not_a_listing():
     ut = eng._projects.get("Nyah Phú Định").find_unit_type("Fusion Gen 5")
     assert ut is not None
     assert len(ut.media) == 3                             # attached to the model
-    assert all("Fusion Gen 5/_Chung" in folder for folder, _ in store.calls)
+    assert all(folder.startswith("du-an/") and folder.endswith("Fusion Gen 5") for folder, _ in store.calls)  # thư mục công khai (SRS-249)
 
 
 def test_mau_nha_group_routes_media_to_unittype():
@@ -812,7 +831,7 @@ def test_mau_nha_group_routes_media_to_unittype():
                                   "https://x/cong.jpg"])
     ut = eng._projects.get("Nyah Phú Định").find_unit_type("Fusion Gen 5")
     assert ut is not None and len(ut.media) == 2
-    assert all(folder.endswith("Fusion Gen 5/_Chung")
+    assert all(folder.startswith("du-an/") and folder.endswith("Fusion Gen 5")
                for folder, name in store.calls if "fusion" in name)
 
 
@@ -1027,12 +1046,13 @@ def test_price_list_keeps_all_package_prices():
     # SHARED knowledge keeps the physical facts + the QUY CÁCH BÀN GIAO (handover spec incl. which
     # finishing package the căn can be built with) — but NOT the price per gói.
     proj = eng._projects.get("Nyah Phú Định")
+    # SRS-249: one seller's catalog is a VOTE (chờ đủ người) — not yet in the shared attrs.
     u50 = proj.find_unit("50")
-    assert u50.attrs.get("mau_nha") == "Cosmo Gen 2"
-    assert "nội thất" in u50.attrs.get("quy_cach_ban_giao", "")   # handover spec IS shared
-    assert "Air/Max" in u50.attrs.get("quy_cach_ban_giao", "")
-    assert not any(k.startswith("gia") for k in u50.attrs)        # ...but NO price in shared inventory
-    assert "mặt tiền" in proj.find_unit("26").attrs.get("quy_cach_ban_giao", "")  # base căn: spec too
+    assert u50.votes["mau_nha"] == {"Cosmo Gen 2": ["dong:b"]} and "mau_nha" not in u50.attrs
+    qc = next(iter(u50.votes["quy_cach_ban_giao"]))
+    assert "nội thất" in qc and "Air/Max" in qc                   # handover spec IS shared knowledge (as a vote)
+    assert not any(k.startswith("gia") for k in u50.votes)        # ...but NO price in shared inventory
+    assert "mặt tiền" in next(iter(proj.find_unit("26").votes["quy_cach_ban_giao"]))  # base căn: spec too
     doc = proj.doc("danh mục", "danh mục Nyah Phú Định")
     assert "Cosmo Gen 2" in doc["markdown"] and "nội thất" in doc["markdown"]   # catalog shows spec
     assert "11.470.000.000" not in doc["markdown"]               # ...but NO price
@@ -1279,14 +1299,14 @@ def test_project_memory_is_always_in_context_for_a_project_seller():
     assert "43.75m²" not in _SystemCapturingProvider.last_system
 
 
-def test_ingest_source_doc_stores_markdown_on_project(monkeypatch):
+def test_ingest_doc_bytes_stores_markdown_on_project(monkeypatch):
     import aioi.engine as E
     monkeypatch.setattr(E, "fetch_raw", lambda url, **kw: (b"%PDF-1.4 fake phan lo", "application/pdf"))
     store = _FakeMediaStore()
     settings = Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")
     eng = _engine(media_store=store, provider=MockProvider(settings))
     eng.register_project("Nyah Phú Định")
-    doc = eng.ingest_source_doc("https://x/phanlo.pdf", "Nyah Phú Định", kind="phân lô", title="Phân lô")
+    doc = eng._ingest_doc_bytes(b"%PDF-1.4 fake phan lo", "application/pdf", "Nyah Phú Định", kind="phân lô", title="Phân lô")
     assert doc["markdown"]                                  # transcribed to markdown
     proj = eng._projects.get("Nyah Phú Định")
     assert proj.doc(kind="phân lô") is not None             # stored on the project (reusable)
@@ -1468,7 +1488,7 @@ def test_media_batch_common_group_enriches_project_not_a_new_listing():
     conv = eng.conversation("g3")
     assert len(conv.listings) == 1                     # "chung" doesn't create a listing
     proj = eng._projects.get("Botanic Towers")
-    assert proj is not None and "hồ bơi" in proj.amenities
+    assert proj is not None and "tiện ích: hồ bơi" in proj.votes   # một người nói: phiếu chờ (SRS-249)
 
 
 def test_media_batch_uploads_route_chung_to_project_and_can_moi_to_listing():

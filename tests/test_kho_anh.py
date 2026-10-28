@@ -36,6 +36,17 @@ def test_giay_to_pdf_va_tep_du_an_vao_bucket_rieng():
     assert r.path.startswith("listing-private/") and r.web_url == ""      # ảnh cấp dự án không có link công khai
 
 
+def test_ban_ve_mau_nha_vao_bucket_cong_khai_de_bot_gui_duoc():
+    """SRS-5.1zzzzzzz249 (chủ dự án 28/10: "vì sao không gửi dc bản vẽ"): tệp mẫu nhà (`du-an/…`) có link công khai, ảnh lẫn PDF; tắt
+    nhánh `THU_MUC_DU_AN` trong `upload` thì đỏ. Sổ đỏ (`rieng=True`) vẫn riêng dù nằm thư mục nào."""
+    kho, _ = _kho()
+    anh = kho.upload("du-an/Ny'ah Phú Định/Cosmo", "mặt bằng.jpg", b"x", "image/jpeg")
+    pdf = kho.upload("du-an/Ny'ah Phú Định/Cosmo", "brochure.pdf", b"x", "application/pdf")
+    assert anh.path.startswith("listing-public/du-an/") and anh.web_url.startswith("https://x.invalid/storage/v1/object/public/")
+    assert pdf.path.startswith("listing-public/du-an/") and pdf.web_url and pdf.ban_nho == ""
+    assert kho.upload("du-an/X/Y", "so.jpg", b"x", "image/jpeg", rieng=True).web_url == ""
+
+
 def test_engine_dung_uuid_tin_lam_thu_muc():
     kho, goi = _kho()
     eng = Engine(MockProvider(Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")),

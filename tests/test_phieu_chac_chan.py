@@ -1,7 +1,7 @@
 """21/10/2026 (SRS-5.1zzzzzzz96). Chủ dự án nạp bảng giá Ny'ah Phú Định nhập tay: "phải có trường để người ta biểu quyết đủ thì thay
 dữ liệu cũ"; "cái này tôi nhập tay nên là chắc chắn". Phiếu nguồn chắc chắn (`chac_chan:`) thắng ngay; phiếu khách vẫn bầu như cũ.
-Kèm: lượt chép SQLite → Supabase không đẻ dự án thứ hai khi tên chỉ khác dấu nháy / khoảng trắng."""
-from aioi.projects import CHAC_CHAN, Project, SupabaseProjectStore, Unit, _fact_lines, merge_facts
+28/10 (SRS-5.1zzzzzzz249): phiếu khách có trọng số theo hạng; admin = phiếu chắc chắn."""
+from aioi.projects import CHAC_CHAN, Unit, _fact_lines, merge_facts
 
 
 def test_phieu_chac_chan_thang_ngay_va_khong_bi_phieu_khach_lat():
@@ -13,26 +13,27 @@ def test_phieu_chac_chan_thang_ngay_va_khong_bi_phieu_khach_lat():
     assert u.attrs["mau_nha"] == "Office 1"
 
 
-def test_phieu_thuong_van_bau_nhu_cu():
+def test_phieu_theo_hang_dong_bac_vang():
+    """SRS-5.1zzzzzzz249 (chủ dự án 28/10: "dựa theo hạng đồng bạc vàng để vote … admin nhắn thì ghi thẳng"). Tắt trọng số (`_diem` đếm
+    mỗi phiếu là 1) thì hai phiếu Vàng không chốt được — đỏ."""
     cur, votes = {}, {}
-    merge_facts(cur, votes, {"huong": "Đông"}, "a")
-    merge_facts(cur, votes, {"huong": "Tây"}, "b")
-    assert cur["huong"] == "Đông"                         # hoà thì giữ giá trị thấy trước
-    merge_facts(cur, votes, {"huong": "Tây"}, "c")
-    assert cur["huong"] == "Tây"                          # nhiều phiếu hơn thì thay
+    merge_facts(cur, votes, {"huong": "Đông"}, "dong:a")
+    merge_facts(cur, votes, {"huong": "Tây"}, "dong:b")
+    assert cur == {}                                      # chưa đủ điểm: chưa vào kho chung
+    merge_facts(cur, votes, {"huong": "Tây"}, "vang:c")
+    assert cur == {}                                      # 4 điểm < 6
+    merge_facts(cur, votes, {"huong": "Tây"}, "vang:d")
+    assert cur["huong"] == "Tây"                          # 1 + 3 + 3 = 7 ≥ 6, phe khác 1 ≤ 2 → chốt
+    merge_facts(cur, votes, {"huong": "Tây"}, "bac:c")    # c lên/xuống hạng: vẫn MỘT phiếu
+    assert sum(1 for v in votes["huong"]["Tây"] if v.endswith(":c")) == 1
 
 
-def test_chep_sqlite_khong_de_du_an_thu_hai_khac_dau_nhay():
-    goi: list[tuple] = []
-    def rpc(method, endpoint, body=None):
-        goi.append((method, endpoint, body))
-        return [{"khoa": "ny ah phú định"}] if endpoint.startswith("du_an_kien_thuc?select=khoa") else None
-    kho = SupabaseProjectStore("https://x.invalid", "k", rpc=rpc)
-    class Cu:
-        def all(self):
-            return [Project("Nyah Phú Định", attributes={"vị trí": "Quận 8"}), Project("Sun Wah Tower"), Project("Sunwah Tower")]
-    assert kho.chep_tu(Cu()) == 1                         # chỉ Sun Wah Tower; "Sunwah Tower" trùng nó sau khi bỏ khoảng trắng
-    assert [b["khoa"] for m, e, b in goi if m == "POST"] == ["sun wah tower"]
+def test_admin_ghi_thang():
+    cur, votes = {"phap ly": "sổ chung"}, {}
+    merge_facts(cur, votes, {"phap ly": "sổ hồng riêng"}, "dong:a")
+    assert cur["phap ly"] == "sổ chung"                   # nguồn mogi giữ tới khi phiếu đủ
+    merge_facts(cur, votes, {"phap ly": "sổ hồng từng căn"}, CHAC_CHAN + "admin:84900")
+    assert cur["phap ly"] == "sổ hồng từng căn"
 
 
 def test_hoi_lai_mat_tien_khi_chua_co_hai_chieu_lo(monkeypatch):
@@ -52,3 +53,21 @@ def test_hoi_lai_mat_tien_khi_chua_co_hai_chieu_lo(monkeypatch):
     conv2.prop.fields["kich_thuoc"] = "5x20"                        # có hai chiều lô: luật bề ngang ≤ lô tự kiểm, khỏi hỏi
     eng2.handle("u-duyet", "nhà mặt tiền 5m")
     assert not any("BỀ NGANG HAY ĐƯỜNG" in s for s in seen2)
+
+
+def test_engine_admin_zalo_ghi_thang_khach_theo_hang():
+    """SRS-5.1zzzzzzz249: engine tự tính mã phiếu — Zalo ID trong bảng `admins` ghi thẳng; người khác là một phiếu theo hạng. Bỏ nhánh admin
+    trong `Engine._ma_phieu` thì dữ kiện admin nói chỉ là phiếu chờ — đỏ."""
+    from tests.test_engine import _engine
+    eng = _engine()
+
+    class Kho:
+        def la_nhan_vien(self, u):
+            return u == "84admin"
+    eng._convstore = Kho()
+    eng.register_project("Sky Garden", attributes={"cổng": "Nguyễn Văn Linh"}, voter="84admin")
+    eng.register_project("Sky Garden", attributes={"an ninh": "24/7"}, voter="84khach")
+    p = eng._projects.get("Sky Garden")
+    assert p.attributes == {"cổng": "Nguyễn Văn Linh"}
+    assert p.votes["cổng"] == {"Nguyễn Văn Linh": [CHAC_CHAN + "admin:84admin"]} and p.votes["an ninh"] == {"24/7": ["dong:84khach"]}
+    assert eng._ma_phieu("84admin").startswith(CHAC_CHAN) and eng._ma_phieu(CHAC_CHAN + "x") == CHAC_CHAN + "x"

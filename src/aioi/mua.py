@@ -200,6 +200,42 @@ class KhoNguoiMua:
         self._gan_so_anh(can)
         return can
 
+    def du_an_theo_khu(self, khu: str, toi_da: int = 8) -> list[dict]:
+        """Khách mua hỏi "quận X có dự án gì" (SRS-5.1zzzzzzz250, chủ dự án 28/10: "có địa chỉ hết rồi mà"): dự án trong kho chung `projects`
+        có quận / phường khớp TRỌN tên khu (regex chặn số dính liền — "Quận 1" không ra Quận 10, 11, 12), ưu tiên trước, kèm số căn đang hiện."""
+        k = re.sub(r"\s+", " ", re.sub(r'[*%,()&"\\]', " ", khu or "")).strip()
+        if not (self.is_configured and len(k) >= 2):
+            return []
+        mau = _q(f"(^|[^0-9]){re.escape(k)}([^0-9]|$)")
+        try:
+            ds = self._get(f'projects?or=(district.imatch."{mau}",ward.imatch."{mau}")&select=id,name,district,ward'
+                           f"&order=priority.asc.nullslast,name.asc&limit={toi_da}")
+            if not ds:
+                return []
+            hien = ",".join(TRANG_THAI_HIEN)
+            tin = self._get(f"listings?project_id=in.({','.join(str(d['id']) for d in ds)})&status=in.({hien})&select=project_id")
+        except Exception as e:  # noqa: BLE001 — bot nói thật là chưa tra được, không đoán
+            log.warning("du_an_theo_khu lỗi: %s", e)
+            return []
+        dem: dict[str, int] = {}
+        for t in tin or []:
+            dem[str(t.get("project_id"))] = dem.get(str(t.get("project_id")), 0) + 1
+        return [{**d, "so_can": dem.get(str(d["id"]), 0)} for d in ds]
+
+    def can_trong_du_an(self, project_id: str, thue: bool = False, toi_da: int = 5) -> list[dict]:
+        """Căn ĐANG HIỆN trong một dự án (tin rao nối `project_id`), mới cập nhật trước — "bảng căn còn bán" (SRS-5.1zzzzzzz250)."""
+        if not (self.is_configured and project_id):
+            return []
+        hien = ",".join(TRANG_THAI_HIEN)
+        try:
+            can = self._get(f"listings?project_id=eq.{_q(project_id)}&status=in.({hien})&deal=eq.{'cho_thue' if thue else 'ban'}"
+                            f"&select={COT_CAN},unit_code&order=updated_at.desc&limit={toi_da}")
+        except Exception as e:  # noqa: BLE001
+            log.warning("can_trong_du_an lỗi: %s", e)
+            return []
+        self._gan_so_anh(can)
+        return can
+
     def _so_anh_theo_ma(self, ma: list[str]) -> dict[str, int] | None:
         """Số ảnh công khai của từng căn, đếm từ view `listing_photos_v` — CHÍNH nguồn ảnh gửi kèm (`anh_can`). None = không đọc được: lúc đó
         không khẳng định căn có hay không có ảnh (SRS-5.1zzzzzzz168 — bot từng hứa "ảnh em gửi ngay" cho căn chưa có ảnh nào)."""
