@@ -137,8 +137,8 @@ phải giá trị).
 | I1 | Tin đủ thông tin lên sàn / tuần | FR-129, FR-172, FR-156, SRS-5.1zzzzzzz200 | `listings.status='dang_ban'` |
 | I2 | Hội thoại mua đủ khu vực + ngân sách | FR-130, FR-131, SRS-5.1zzzzzzz214 (`co_tieu_chi`) | `buyers.preferences` (lõi ghi qua `mua.py`) |
 | I3 | **Câu khách hỏi được trả lời đúng hạn — chủ nhà hoặc admin** [nguồn: chủ dự án 28/10/2026, chat — bỏ CTV] | SRS-5.1zzzzzzz170, FR-140 c | `info_requests` nguồn `buyer_ask`: dòng chủ nhà `answered_at ≤ sla_due_at` (12 giờ); dòng admin `answered_at ≤ sla_due_at` (5 giờ, chủ dự án chốt 28/10/2026 — OPEN-65, SRS-5.1zzzzzzz238) |
-| I4 | Kết nối Zalo sống sau 30 ngày | FR-63, báo căn mới (SRS-5.1zzzzzzz150), lõi gửi nhắc `gui_nhac.py` (SRS-5.1zzzzzzz216) | Khách mua có tin nhắn sau ngày 30 *[giả định BA về cách đo]*. Soát 28/10: lõi không ghi `buyers.last_contact_at` |
-| I5 | NMG hoạt động (có tin + trả lời câu hỏi bù 7 ngày) | FR-155 | view `nmg_hoat_dong` (`20260904e`). Soát 28/10: view đếm câu nguồn `seller_flow` / `seller_drip`, lõi Python không ghi hai nguồn này — cần định nghĩa lại *[giả định BA]* |
+| I4 | Kết nối Zalo sống sau 30 ngày | FR-63, báo căn mới (SRS-5.1zzzzzzz150), tin giữ kết nối `giu_ket_noi.py` (SRS-5.1zzzzzzz238) | View `ket_noi_zalo_song` (`20261028e`, SRS-5.1zzzzzzz240): khách mua có tin đầu ≥ 30 ngày, còn nhắn từ ngày thứ 30 [nguồn: chủ dự án 28/10/2026, chat — OPEN-67 a] |
+| I5 | NMG hoạt động (có tin đang rao + nhắn bot trong 7 ngày) | FR-155 | View `nmg_hoat_dong` đếm tin người bán 7 ngày từ `messages` (`20261028e`, SRS-5.1zzzzzzz240) [nguồn: chủ dự án 28/10/2026, chat — OPEN-67 a] |
 
 *Lịch sử I3 (tới 28/10/2026): "Câu khách hỏi được trả lời đúng hạn" đo qua CTV
 (`ctv_ranks`, hạn 120 phút, FR-173) — deprecated cùng CTV.*
@@ -210,6 +210,7 @@ buộc giữ kết nối từ ngày 6) và **dựng hết phần tài liệu có
 | OPEN-42 | *[mất đối tượng 28/10/2026 — bỏ CTV]* Hạn trả lời và mốc hạng CTV | Đóng ở `09` |
 | **OPEN-48** | ✅ **ĐÃ CHỐT 08/09/2026**: Bỏ toàn bộ nhóm tính năng thừa kế 2024 (mini-site rao web, tài khoản, trang phụ SEO cũ). Chuẩn hóa 100% tài liệu theo Aioinhadat 2026 | Đã chốt theo lệnh sếp và chủ dự án |
 | OPEN-65 | Hạn admin trả lời câu khách hỏi | ✅ Chốt 28/10/2026: 5 giờ (SRS-5.1zzzzzzz238); ngưỡng dừng I3 vẫn *[giả định BA]* |
+| OPEN-67 | Đo I4 / I5 | ✅ Chốt 28/10/2026 (a): đo từ `messages` (SRS-5.1zzzzzzz240) |
 
 **Đã chốt 07/09/2026: cách hỏi người bán** — theo kịch bản huấn luyện môi giới sếp
 làm trong Gemini: một thông tin/lần theo thứ tự địa chỉ → giá → hẻm → diện tích →

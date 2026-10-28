@@ -9058,6 +9058,36 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz240 · Quyết định chủ dự án sau soát OPEN: phường đã báo admin thôi hỏi, vai chủ đầu tư báo admin, phí trôi theo số tin bán, đo lại I4 / I5 (28/10/2026)
+Chủ dự án 28/10 chốt 13 mục (chép nguyên ở `docs/09`): tiêu đề tin rao giữ viết hoa gây chú ý; phường tối đa 2 lần cả lúc thu thông tin; OPEN-02 b,
+21 a, 24 a+b, 28 b (không gộp tin thuê), 31 a, 38 a, 53 (3), 59 a, 63 a, 66 a, 67 a. Mục này làm phần dựng được ngay; OPEN-31 / 38 / 53 / 59
+ghi "chưa dựng" ở `docs/09`, OPEN-63 chờ nội dung từng chính sách, ticket Supabase của OPEN-24 do chủ dự án gửi.
+1. **Phường đã báo admin thì thôi kể phường** (`prompts.khoi_trang_thai_web`): ca gốc `ban-thu-srd` 28/10 (run 40629325535, Claude) — admin đã
+   được báo tra phường (`phuong_bao_admin`) mà bot vẫn "chỉ cần anh cho em xin phường là đăng lên ngay". Nguyên nhân: tin còn thiếu cả diện
+   tích nên `thieu[0]` không phải phường, nhánh "còn thiếu …" kể cả phường vào việc cần hỏi. Sửa: đã báo admin thì phường ra khỏi danh sách
+   hỏi, khối nói rõ admin đang tra. Lượt thu thông tin trước bản nháp đã có luật lờ 2 lần thì để sau (`_o_hoi_ke`, SRS-80) và cổng web đếm
+   chung sổ `conv.lo["phuong"]` nên tổng số lần hỏi phường vẫn ≤ 2 rồi báo admin. Lượt Gemini cùng ngày hỏi phường 5 lần vì bóc tách Gemini
+   không ghi được tên đường (`dia_chi` là ô sàn, không để sau được) — lỗi bóc tách của nguồn dự phòng, không phải luật đếm.
+2. **Vai chủ đầu tư (OPEN-21 a)**: lõi đã có vai `chu_dau_tu` (`muc_phi` → None, `_fee_hint` "kết nối bộ phận hợp tác dự án") nhưng không có
+   đường báo ai — lời hứa không có thật (SRS-205 / 216). Nay `Engine` báo admin MỘT lần ở lượt vai đổi sang CĐT (`y_luot.cdt_bao_admin` +
+   `can_nguoi_that`, server báo như khách xin gặp người), khối ưu tiên riêng trong `khoi_can_nguoi`: không nêu con số %.
+3. **Phí trôi theo số tin bán (OPEN-28 b, FR-160)**: `Conversation.vai_phi` — từ tin BÁN thứ `TIN_BAN_LA_MOI_GIOI` (= 3) trong rổ hàng, chính chủ /
+   lướt sóng / chưa rõ vai tính phí môi giới 0,5 %; tin cho thuê không đếm; CĐT / sàn / môi giới giữ nguyên. Mọi chỗ dùng vai để nói hay ghi
+   phí đổi sang `vai_phi`: `build_chat_system`, `build_fee_followup_system`, khối ưu tiên phí, lưới `_phi_lech_vai` (hai chỗ), lượt soạn lại,
+   `supabase_store.ghi_deal`. `user_type` (vai khách tự gọi tên) không đổi. Đếm theo rổ của cuộc chat *[giả định BA]* — tin đã chốt còn trong
+   rổ vẫn đếm.
+4. **Đo lại I4 / I5 (OPEN-67 a)** — migration `20261028e_do_lai_i4_i5`: `nmg_hoat_dong` đếm tin `sender = 'seller'` 7 ngày của chính NMG thay
+   câu `info_requests` nguồn `seller_flow` / `seller_drip` (lõi không tạo) — giữ tên cột vì `bao_nmg_can_moi` đọc `hoat_dong`; view mới
+   `ket_noi_zalo_song` (security_invoker, chỉ service_role đọc ra dòng): khách mua có tin đầu ≥ 30 ngày, `song_sau_30_ngay` = còn nhắn từ
+   ngày 30, bỏ ID thử.
+5. **Ba câu gốc** — (1) *Lớp lỗi*: cờ "đã xong việc X" (đã báo admin tra phường; vai CĐT) chỉ đổi lời ở MỘT nhánh prompt, nhánh khác vẫn nói
+   việc cũ / hứa việc không có đường làm; chỉ số đo từ cột / nguồn mà lõi mới không ghi. (2) *Chỗ khác cùng lớp*: soát các nhánh của
+   `khoi_trang_thai_web` — nhánh `ghi_tam` (phường hệ thống ghi tạm) và nhánh `phuong_bao_admin` khi phường đứng đầu đã đúng; `_fee_hint` CĐT là
+   lời hứa duy nhất về "bộ phận" chưa có đường; chỉ số I1–I3 đọc bảng lõi vẫn ghi. Còn: `buyers.last_contact_at` vẫn không ai ghi (`/admin`
+   hiện cột này) — để nguyên, I4 không dựa vào nó nữa. (3) *Kiểm*: `tests/test_trang_thai_web.py::test_da_bao_admin_tra_phuong…` (thiếu diện
+   tích + phường, cách nói mới: thiếu cả diện tích nhà), `tests/test_quyet_dinh_28_10.py` (CĐT báo một lần, lượt sau "cđt bên anh" không báo
+   lại; 2 bán + 3 thuê vẫn 1 %, 3 bán → 0,5 %), `bot/tests/sql/do-lai-i4-i5.sql` — gỡ từng bản sửa thì ca tương ứng đỏ (đã chạy).
+
 ### SRS-5.1zzzzzzz239 · ID thử gọi model bằng Gemini, bắn thử chậm; dọn CTV bước 2 xoá bảng / cột (28/10/2026)
 Chủ dự án 28/10: "Offline thôi ko bắn product … nếu bắn product đổi sang key gemini bắn từ từ dc ko. Nếu dc thì làm".
 1. **ID thử → Gemini**: `AIOI_CHAT_MODEL_THU=gemini` (một dòng `MODEL_CHAT_THU` trong `bot/bridge-zca/cai-vps.sh`) → `Engine.handle` đặt
