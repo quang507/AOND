@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-28 14:08 (giờ VN)
+-- Sinh lúc: 2026-10-28 14:09 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -381,7 +381,8 @@ END) stored,
   nhan text[] not null default '{}'::text[],
   nhung extensions.halfvec(768),
   nhung_md5 text,
-  nhung_luc timestamp with time zone
+  nhung_luc timestamp with time zone,
+  cung_can_id uuid
 );
 
 create table if not exists public.media (
@@ -1106,6 +1107,7 @@ CREATE UNIQUE INDEX listing_media_mot_bia_idx ON public.listing_media USING btre
 create index if not exists listing_media_tin_thu_tu_idx ON public.listing_media USING btree (listing_id, sort_order, created_at, id);
 create index if not exists listing_views_listing_id_idx ON public.listing_views USING btree (listing_id);
 create index if not exists listings_access_idx ON public.listings USING btree (deal, status, access_type);
+create index if not exists listings_cung_can_id_idx ON public.listings USING btree (cung_can_id) WHERE (cung_can_id IS NOT NULL);
 create index if not exists listings_district_status_idx ON public.listings USING btree (district, status);
 create index if not exists listings_floors_idx ON public.listings USING btree (deal, status, floors);
 create index if not exists listings_nhan_gin_idx ON public.listings USING gin (nhan);
