@@ -9058,6 +9058,26 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz248 · Giọng bớt cứng: bỏ khuôn "X thì <lợi ích>", được cảm thán, ngắn như anh Luận; Vercel không dựng lại web khi chỉ đổi bot (28/10/2026)
+Chủ dự án 28/10: "cảm giác vẫn cứng quá ta, chưa có wow tuyệt vời các kiểu à nó có lặp ko" → "sửa giọng GIONG_VUI cho bớt cứng đi, xem anh Luận có khác mình ko".
+Số đo (61 lời bot không phải bản nháp, các lượt thử 28/10 sau khi tắt công cụ — SRS-246): 25 lời (41%) câu đầu theo khuôn "<điều khách nói> thì
+<lợi ích>"; 1 lời có "Wow", 0 "Tuyệt vời"; 6 lời có chấm than; 4 lời mở "Ồ,". Câu chép gần nguyên ví dụ: "Sổ hồng riêng thì sang tên nhanh…", "…khỏi lo chỗ đậu xe".
+Nguyên nhân: `GIONG_VUI` (SRS-228) bắt "KHEN HAY là nói được VÌ SAO… một lợi ích cụ thể", gọi khen bằng tính từ là "khen dở", và kèm cặp ví dụ
+"hẻm xe hơi → khách tới xem đậu xe tận cửa · sổ hồng riêng → sang tên nhanh…". Model bám một khuôn duy nhất. Bản anh Luận (`luan8560/AOND` 207a145 —
+commit mới nhất, không đổi từ 26/10): "MẶC ĐỊNH… trả lời NGẮN, khoảng 30 từ — khen vài từ rồi hỏi đúng 1 thông tin", không ép giải thích lợi ích.
+Sửa: (1) `prompts.GIONG_VUI` (chỗ duy nhất dặn giọng): lượt hỏi thông tin ~30 từ, khen vài chữ; được mở bằng cảm thán ("Wow", "Tuyệt vời", "Ồ hay quá"…, mỗi
+lần một tiếng khác) khi khách vừa đưa điểm mạnh; ba kiểu khen đổi lượt (cảm thán + vài chữ / một lợi ích gọn nửa câu / vào thẳng việc), khuôn "… thì <lợi ích>"
+nhiều nhất một lần mỗi ba lượt; bỏ cặp ví dụ bị chép; gọi căn bằng tên đường thỉnh thoảng thôi (28/10 gần như lượt nào cũng "căn Trần Bình Trọng").
+Lưới `_cung_mo_dau` (hai lượt liền cùng mở đầu) vẫn đỡ việc lặp cùng một tiếng cảm thán.
+(2) `vercel.json` `ignoreCommand`: lần đẩy lên `main` không đổi file nào web dùng (`app`, `components`, `lib`, `public`, `design-system`,
+`bot/supabase/functions/_shared`, `package.json`, `bun.lock`, cấu hình Next / TS / Vercel) thì Vercel bỏ qua bản dựng. Soát 4 commit main gần nhất: 3 commit
+chỉ đổi lõi Python sẽ được bỏ qua, #158 (đổi `vercel.json`) vẫn dựng. Web không đọc `docs/`, `src/`, `tests/` (chỉ nhắc trong chú thích).
+Ba câu gốc — (1) *lớp lỗi*: lời dặn giọng kèm ví dụ cụ thể thì model chép thành khuôn; sửa lặp kiểu này bằng một khuôn mới chỉ đổi khuôn (SRS-228 chữa
+"…quá anh ơi!" thành "X thì Y"). (2) *chỗ khác cùng lớp*: `AD_FORMAT` có câu mẫu mời Zalo (quyết định chủ dự án SRS-205, "mỗi tin một vẻ") — để nguyên;
+ví dụ trong `cau_chuan` lọc theo luật hình thức (SRS-215). (3) *kiểm*: `tests/test_giong_bot_cung_28_10.py` (cặp ví dụ không quay lại; có cảm thán + đổi kiểu
+khen + trần khuôn "thì"; ~30 từ); `tests/test_khen_lap_27_10.py` đổi kỳ vọng. Prompt không đo offline được (không có khoá API trong phiên) — đo lại tỉ lệ
+khuôn "thì" / cảm thán trên chat của tester sau khi cài.
+
 ### SRS-5.1zzzzzzz247 · "ok em đăng đi" không thành duyệt vì AI đọc trễ một lượt; tắt preview Vercel cho nhánh `claude/*` (28/10/2026)
 Ca gốc: bắn thử bộ môi giới (run 40662188653, công cụ `gui_khach` đã tắt — SRS-246) trượt "hỏi đủ 5 cụm sau đăng". So với lượt đạt 08:20 cùng câu khách:
 log ghi `Duyệt: AI=dong_y trích_khớp=False` hai lượt, "ok em đăng đi" không thành duyệt, tới "ừ em" mới đăng (trễ 3 lượt). Kịch bản gửi câu theo thứ tự
