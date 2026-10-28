@@ -6,6 +6,7 @@ from aioi.dia_danh import TraDiaDanh, khoi_dia_danh, so_hem_cua
 BAY_PHUONG = ["Phường An Hội Tây", "Phường An Khánh", "Phường Bình Dương", "Phường Bình Phú", "Phường Bình Trưng",
               "Phường Hiệp Bình", "Phường Tân Hưng"]
 HEM = {("Đường số 59", "137"): [{"phuong": "Phường An Hội Tây", "quan_cu": "Quận Gò Vấp"}],
+       ("Đường số 59", "200"): [{"phuong": "Phường An Hội Tây", "quan_cu": "Quận Gò Vấp"}, {"phuong": "Phường Tân Hưng", "quan_cu": "Quận Gò Vấp"}],
        ("Cách Mạng Tháng Tám", "285"): [{"phuong": "Phường Hòa Hưng", "quan_cu": "Quận 10"}],
        ("Quang Trung", "965"): [{"phuong": "Phường An Hội Tây", "quan_cu": "Quận Gò Vấp"}]}
 
@@ -88,9 +89,10 @@ class _Model:
     chat = reply
 
 
-def _lam(monkeypatch, loi, them=None):
+def _lam(monkeypatch, loi, them=None, dia_chi="200/5 đường số 59"):
+    """Mặc định hẻm 200 nằm ở HAI phường: hẻm chỉ một phường thì hệ thống tự ghi phường, không hỏi (SRS-5.1zzzzzzz236)."""
     from aioi.engine import Engine
-    f = {"loai_hinh": "nha_pho", "dia_chi": "137/28 đường số 59", "duong": "đường số 59", "gia": "6 tỷ 2", **(them or {})}
+    f = {"loai_hinh": "nha_pho", "dia_chi": dia_chi, "duong": "đường số 59", "gia": "6 tỷ 2", **(them or {})}
     monkeypatch.setattr(Engine, "_ap_dung_ke_hoach", lambda self, conv, plan: (conv.prop.update(f), []))
     if "phuong" not in f:   # lượt này hệ thống chọn hỏi phường — khối kho hẻm chỉ vào lượt hỏi phường (SRS-5.1zzzzzzz228)
         def _hoi_phuong(conv, missing):
@@ -101,21 +103,32 @@ def _lam(monkeypatch, loi, them=None):
     e = Engine(m)
     e._dia_danh = _tra()
     r = e.handle("hem1", "Chị bán nhà 137/28 đường số 59, 4x15m, 1 trệt 2 lầu, giá 6 tỷ 2")
+    m.e = e
     return m, r
 
 
 def test_loi_hoi_phuong_trong_thi_goi_lai_model(monkeypatch):
     """Bắn thử 21/10 (DC1): khối "Kho hẻm" đã vào prompt, Haiku vẫn hỏi trống "Nhà mình thuộc phường nào" → gọi lại một lần."""
     m, r = _lam(monkeypatch, ["Em ghi rồi chị. Nhà mình thuộc phường nào vậy chị?",
-                              "Em ghi rồi chị. Nhà mình ở An Hội Tây đúng không chị?"])
+                              "Em ghi rồi chị. Nhà mình ở An Hội Tây hay Tân Hưng vậy chị?"])
     assert "Kho hẻm" in m.systems[0]
     assert len(m.systems) == 2 and "VIẾT LẠI LƯỢT NÀY" in m.systems[1] and "An Hội Tây" in m.systems[1]
     assert "An Hội Tây" in r.reply
 
 
 def test_loi_da_nhac_phuong_thi_khong_goi_lai(monkeypatch):
-    m, _ = _lam(monkeypatch, ["Nhà mình ở phường An Hội Tây đúng không chị?"])
+    m, _ = _lam(monkeypatch, ["Nhà mình ở phường An Hội Tây hay Tân Hưng vậy chị?"])
     assert len(m.systems) == 1
+
+
+def test_hem_mot_phuong_thi_tu_ghi_khong_hoi(monkeypatch):
+    """SRS-5.1zzzzzzz236 (chủ dự án 28/10: "đưa ... hẻm cụ thể thì nó search phường trước, nếu search không được mới hỏi"): kho hẻm chỉ có MỘT
+    phường → ghi vào ô, đánh dấu hệ thống, báo khách một câu; không còn khối "Kho hẻm" hỏi xác nhận. Đỏ khi gỡ `_phuong_tu_dia_chi`."""
+    m, r = _lam(monkeypatch, ["Nhà mình thuộc Phường An Hội Tây nha chị, sai thì chị báo em. Nhà mình mấy phòng ngủ vậy chị?"],
+                dia_chi="137/28 đường số 59")
+    assert "Kho hẻm" not in m.systems[0] and "PHƯỜNG HỆ THỐNG VỪA TRA" in m.systems[0]
+    f = m.e.conversation("hem1").prop.fields
+    assert f["phuong"] == "Phường An Hội Tây" and f["_phuong_he_thong"] == "hem"
 
 
 def test_da_co_phuong_khong_soat(monkeypatch):

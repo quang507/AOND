@@ -2425,6 +2425,11 @@ class Engine:
                 with _do(conv, "dia_danh"):
                     captured = list(dict.fromkeys(list(captured) + self._chuan_dia_danh(conv.prop, captured)))
 
+            # 1a-số nhà (28/10/2026, SRS-5.1zzzzzzz236): khách cho số nhà / hẻm cụ thể mà chưa nói phường → tra phường TRƯỚC, không ra mới hỏi.
+            if self._dia_danh:
+                with _do(conv, "dia_danh"):
+                    captured = list(dict.fromkeys(list(captured) + self._phuong_tu_dia_chi(conv, captured)))
+
             # 1a. A newly-captured address/project makes a listing's folder name readable — if it
             #     already has files stored under the old (id-only) folder, rename it to match.
             if captured:
@@ -2602,6 +2607,9 @@ class Engine:
         # Tra địa danh (SRS-5.1zzzzzzz60/61): hỏi xác nhận tên đường kho gợi ý ở MỌI nhánh (cả lượt soạn bản nháp), kể phường khi hỏi phường.
         with _do(conv, "dia_danh"):
             system += khoi_dia_danh(self._dia_danh, conv.prop.fields, None if is_listing_post else next_field)
+            if conv.y_luot.get("_phuong_vua_tra"):   # SRS-5.1zzzzzzz236: phường hệ thống vừa tra theo số nhà / hẻm — báo một lần, không hỏi
+                system += (f'\n\nPHƯỜNG HỆ THỐNG VỪA TRA (khách CHƯA nói): theo số nhà / hẻm trong địa chỉ, nhà thuộc {conv.y_luot["_phuong_vua_tra"]}. '
+                           "KHÔNG hỏi phường. Nhắc khách MỘT câu ngắn nhà thuộc phường này, sai thì khách báo lại.\n")
             # SRS-5.1zzzzzzz115: lượt này hỏi phường mà kho hẻm thu được 1–4 phường → lời bot phải nhắc (dạng hỏi) — bắn thử 21/10
             # Haiku có khối "Kho hẻm" trong prompt vẫn hỏi trống "nhà mình thuộc phường nào". Kiểm ở _soat_hinh_thuc.
             hem_phai_nhac = ([] if is_listing_post or "phuong" not in (cum_hoi or [next_field])
@@ -4015,6 +4023,41 @@ class Engine:
         except Exception as e:  # noqa: BLE001
             log.warning("phuong_cu_chia lỗi: %s", e)
             return []
+
+    def _phuong_tu_dia_chi(self, conv: Conversation, captured: list[str]) -> list[str]:
+        """SRS-5.1zzzzzzz236 (chủ dự án 28/10: "đưa địa chỉ cụ thể hoặc hẻm cụ thể thì nó search phường trước bằng nominatim, nếu search không
+        được mới hỏi"): chưa có phường mà ô dia_chi có số nhà / số hẻm → (1) bản đồ ra ĐÚNG số nhà (`TraDiaDanh.phuong_theo_so_nha`), không thì
+        (2) kho hẻm chỉ có MỘT phường → ghi phường vào ô, đánh dấu do hệ thống (`_phuong_he_thong`, kho ghi `ward_source = suy_doan`). Mỗi địa
+        chỉ tra một lần (`_phuong_tra_dc`); khách đổi địa chỉ thì phường hệ thống ghi theo địa chỉ cũ bị gỡ để tra lại. Ngoại lệ có chủ đích
+        của "ô tin chỉ ghi điều khách nói" (SRS-73), như ghi tạm hai phường ở SRS-214 mục 8."""
+        f = conv.prop.fields
+        dc = str(f.get("dia_chi") or "").strip()
+        if "phuong" in captured and f.get("_phuong_he_thong") in ("so_nha", "hem"):
+            f.pop("_phuong_he_thong", None)   # khách tự nói phường lượt này: phường là của khách, không gỡ theo địa chỉ nữa
+        if f.get("_phuong_he_thong") in ("so_nha", "hem") and f.get("_phuong_tra_dc") != dc:
+            f.pop("phuong", None)
+            f.pop("_phuong_he_thong", None)
+        if f.get("phuong") or not dc or not f.get("duong") or f.get("_phuong_tra_dc") == dc:
+            return []
+        if not re.match(r"\s*(?:số\s*)?\d", dc, re.I) and not re.search(r"\b(?:hẻm|hxh|kiệt|ngõ)\s*\d", dc, re.I):
+            return []
+        f["_phuong_tra_dc"] = dc
+        nguon, p = "so_nha", None
+        tra = getattr(self._dia_danh, "phuong_theo_so_nha", None)
+        try:
+            p = tra(dc, f.get("duong"), f.get("quan")) if tra else None
+            if not p:
+                hem = phuong_kho_hem(self._dia_danh, f)
+                nguon, p = "hem", (hem[0] if len(hem) == 1 else None)
+        except Exception as e:  # noqa: BLE001 — tra hỏng thì bot hỏi phường như cũ
+            log.warning("phường từ địa chỉ: lỗi %s", e)
+            return []
+        if not p:
+            return []
+        log.warning("Phường từ địa chỉ: %s (%s)", p, nguon)
+        f["_phuong_he_thong"] = nguon
+        conv.y_luot["_phuong_vua_tra"] = p
+        return conv.prop.update({"phuong": p})
 
     def _goi_y_phuong(self, conv: Conversation) -> list[str]:
         """Phường kho đường / kho hẻm tra được cho địa chỉ khách nói (1–4 phường) — để bot kể cho khách chọn, không tự bịa tên."""

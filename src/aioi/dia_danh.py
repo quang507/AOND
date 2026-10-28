@@ -198,6 +198,7 @@ class TraDiaDanh:
         self._nho: dict[tuple, dict | None] = {}   # (tên, quận) → kết quả duong(): prompt hỏi lại mỗi lượt, khỏi tra / nhúng lại
         self._nho_hem: dict[tuple, list[str]] = {}   # (đường, số hẻm, quận) → phường của hẻm
         self._nho_chia: dict[tuple, list[str]] = {}   # (số phường cũ, quận) → các phường mới nó bị chia về (≥ 2) hoặc []
+        self._nho_so_nha: dict[tuple, str | None] = {}   # (số nhà, đường, quận) → phường bản đồ ra đúng số nhà, hoặc None
         self._kho_xa: tuple[float, list[dict]] | None = None   # (lúc đọc, các dòng xa_tinh_khac)
 
     @classmethod
@@ -392,6 +393,49 @@ class TraDiaDanh:
             log.warning("phường theo hẻm: %d phường", len(self._nho_hem[khoa]))
         return self._nho_hem[khoa]
 
+    def phuong_theo_so_nha(self, dia_chi: str | None, ten_duong: str | None, quan: str | None = None) -> str | None:
+        """Phường mới của nhà khi bản đồ OSM có ĐÚNG số nhà đó (SRS-5.1zzzzzzz236, chủ dự án 28/10: "đưa địa chỉ cụ thể hoặc hẻm cụ thể thì nó
+        search phường trước bằng nominatim, nếu search không được mới hỏi"). Đo 28/10 trên 20 địa chỉ: toà nhà / dự án ra đúng số 4/10, nhà
+        thường 0/10; kết quả chỉ ở mức ĐƯỜNG có lúc sai phường (125 Bình Long, Bình Tân → Phú Thọ Hòa) — nên chỉ nhận khi Nominatim trả đúng
+        số nhà + đúng tên đường, phường ra phải là MỘT phường trong kho, nằm trong các phường con đường đi qua (và của hẻm, nếu kho hẻm có).
+        Không chắc / lỗi mạng → None (bot hỏi như cũ). Nhớ theo (số, đường, quận); lỗi mạng không nhớ."""
+        m = _SO_NHA_DAU.match(dia_chi or "")
+        if not m or not ten_duong:
+            return None
+        so = m.group(1).upper()
+        khoa = (so, bo_dau(ten_duong), _khoa_quan(quan))
+        nho = self._nho_so_nha
+        if khoa in nho:
+            return nho[khoa]
+        q = f"{so} {ten_duong}, {quan + ', ' if quan else ''}Thành phố Hồ Chí Minh"
+        try:
+            ds = self._rpc("tra_nominatim", {"p_q": q, "p_limit": 3, "p_chi_tiet": True, "p_cho_giay": 4})
+        except Exception as e:  # noqa: BLE001 — tra bản đồ là phần thêm
+            log.warning("phường theo số nhà: lỗi %s", e)
+            return None
+        duong_khoa = _loi(ten_duong, TU_CHUNG_DUONG)
+        kq = None
+        for r in ds if isinstance(ds, list) else []:
+            a = r.get("address") or {}
+            so_osm = {re.sub(r"\s", "", x).upper() for x in re.split(r"[;,]", str(a.get("house_number") or "")) if x.strip()}
+            if so not in so_osm or _loi(str(a.get("road") or ""), TU_CHUNG_DUONG) != duong_khoa:
+                continue
+            ten = a.get("suburb") or a.get("quarter")
+            kq = self.phuong(ten) if ten else None
+            break
+        if kq:
+            d = self.duong(ten_duong, quan)
+            hop_le = list(d["phuong"]) if d else []
+            hem = self.phuong_theo_hem(dia_chi, d["ten"] if d else ten_duong, quan)
+            if (hop_le and kq not in hop_le) or (hem and kq not in hem):
+                log.warning("phường theo số nhà: bản đồ ra phường ngoài kho đường / hẻm — bỏ")
+                kq = None
+        log.warning("phường theo số nhà: %s", "trúng" if kq else "không ra")
+        if len(nho) > 500:
+            nho.clear()
+        nho[khoa] = kq
+        return kq
+
     def _phuong_cua_duong(self, ten: str, quan: str | None, mac_dinh: list) -> list[str]:
         """Phường mới con đường đi qua — trong quận đã biết (bảng duong theo quận cũ); không biết quận thì danh sách chung."""
         if quan and self._doc is not None:
@@ -407,6 +451,7 @@ class TraDiaDanh:
 
 # Số nhà / số hẻm trong địa chỉ: "137/28", "387/12A", "hẻm 965", "hxh 12/3". Đây là đọc KHUÔN SỐ của địa chỉ (không đoán ý khách):
 # ô dia_chi đã do AI ghi và qua cổng bằng chứng. So trên chữ bỏ dấu, đã gỡ tên đường ("Đường số 59" không cho số 59).
+_SO_NHA_DAU = re.compile(r"\s*(?:số\s*)?(\d+[a-zA-Z]?(?:/\d+[a-zA-Z]?)*)\b", re.I)   # số nhà đứng đầu ô dia_chi ("125", "12/3", "156B")
 _SO_DIA_CHI = re.compile(r"(?:\b(hem|hxh|kiet|ngo)\s*)?\b(\d+[a-z]?(?:/\d+[a-z]?)*)\b")
 
 
