@@ -6,5 +6,6 @@
     "deploymentEnabled": {
       "claude/**": false
     }
-  }
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- app components lib public design-system bot/supabase/functions/_shared package.json bun.lock next.config.mjs postcss.config.mjs tsconfig.json vercel.json instrumentation.ts"
 }

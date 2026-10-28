@@ -27,7 +27,8 @@ def _conv(eng, key):
 def test_giong_khong_con_cau_vi_du_bi_chep():
     assert "trung tâm quá anh ơi" not in GIONG_VUI and "Nét quá anh ơi" not in GIONG_VUI and "Tuyệt quá anh" not in GIONG_VUI
     assert '"anh ơi"' not in GIONG_VUI          # không còn gợi ý dùng "anh ơi" như từ đệm
-    assert "KHEN HAY" in GIONG_VUI and "lợi ích cụ thể" in GIONG_VUI and "→" in GIONG_VUI
+    # SRS-5.1zzzzzzz248: cặp "điều khách nói → lợi ích" bị chép thành khuôn "X thì Y" (41% lời bot 28/10) — bỏ cặp ví dụ, lợi ích chỉ là một kiểu khen.
+    assert "→" not in GIONG_VUI and "lợi ích" in GIONG_VUI
 
 
 # ---------- B1: "anh ơi" hai lượt liền → gọi lại ----------
