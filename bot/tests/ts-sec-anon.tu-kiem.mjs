@@ -29,7 +29,7 @@ const HERE = import.meta.dirname ?? dirname(fileURLToPath(import.meta.url));
 const BO_TEST = join(HERE, "ts-sec-anon.mjs");
 
 const NOI_BO = [
-  "reminders", "sellers", "ctvs", "messages", "conversations", "viewings",
+  "reminders", "sellers", "messages", "conversations", "viewings",
   "deals", "buyers", "info_requests", "bot_errors",
   "curated_lists", "property_events", "public_listings",
 ];

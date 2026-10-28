@@ -71,7 +71,8 @@ chat() {
     # (SRS-5.1zzzzzzz105: lượt 205 đọc nhầm đoạn mô tả thành tiêu đề 111 từ).
     TIEU_DE=$(jq -r '.reply // ""' <<<"$TRA" | sed -n '/📋/,$p' | awk 'NR==1{sub(/^.*📋[^:]*:[ ]*/,""); if (NF) {print; exit} next} NF{print; exit}')
   fi
-  sleep 1
+  # SRS-5.1zzzzzzz239 (chủ dự án 28/10: "bắn từ từ"): ID thử chat bằng Gemini — nghỉ giữa các lượt cho khỏi chạm trần nhịp của khoá.
+  sleep "${NGHI_GIUA_LUOT:-12}"
 }
 dong() { q "select l.code, l.status, l.property_type, l.deal, l.price_vnd, l.area_m2, l.floors, l.frontage_m, l.bedrooms,
               l.access_type, l.alley_width_m, l.negotiable, l.legal_status, l.ward, l.district, l.street, p.name as du_an,

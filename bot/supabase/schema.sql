@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-28 12:53 (giờ VN)
+-- Sinh lúc: 2026-10-28 13:02 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -147,7 +147,6 @@ create table if not exists public.conversations (
   id uuid not null default gen_random_uuid(),
   buyer_id uuid,
   seller_id uuid,
-  ctv_id uuid,
   channel text not null default 'zalo_oa'::text,
   started_at timestamp with time zone not null default now(),
   last_message_at timestamp with time zone,
@@ -156,17 +155,6 @@ create table if not exists public.conversations (
   human_touch_at timestamp with time zone,
   human_escalated_at timestamp with time zone,
   human_hold boolean not null default false
-);
-
-create table if not exists public.ctvs (
-  id uuid not null default gen_random_uuid(),
-  name text not null,
-  zalo_user_id text,
-  phone text,
-  active boolean not null default true,
-  created_at timestamp with time zone not null default now(),
-  last_assigned_at timestamp with time zone,
-  khu_vuc text[] not null default '{}'::text[]
 );
 
 create table if not exists public.curated_lists (
@@ -199,8 +187,7 @@ create table if not exists public.deals (
   price_vnd bigint,
   fee_pct numeric,
   closed_at timestamp with time zone,
-  created_at timestamp with time zone not null default now(),
-  ctv_id uuid
+  created_at timestamp with time zone not null default now()
 );
 
 create table if not exists public.dieu_luat (
@@ -272,7 +259,6 @@ create table if not exists public.info_requests (
   answered_at timestamp with time zone,
   created_at timestamp with time zone not null default now(),
   assignee text,
-  ctv_id uuid,
   source text not null default 'seller_flow'::text,
   sla_due_at timestamp with time zone,
   sla_missed_at timestamp with time zone,
@@ -539,7 +525,6 @@ create table if not exists public.reminders (
   created_at timestamp with time zone not null default now(),
   sent_at timestamp with time zone,
   viewing_id uuid,
-  ctv_id uuid,
   locked_at timestamp with time zone,
   locked_by text,
   attempts integer not null default 0,
@@ -701,12 +686,6 @@ do $d$ begin
   alter table public.conversations add constraint conversations_pkey PRIMARY KEY (id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.ctvs add constraint ctvs_pkey PRIMARY KEY (id);
-exception when duplicate_object then null; end $d$;
-do $d$ begin
-  alter table public.ctvs add constraint ctvs_zalo_user_id_key UNIQUE (zalo_user_id);
-exception when duplicate_object then null; end $d$;
-do $d$ begin
   alter table public.curated_lists add constraint curated_lists_listing_ids_check CHECK (((cardinality(listing_ids) >= 1) AND (cardinality(listing_ids) <= 60)));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -776,7 +755,7 @@ do $d$ begin
   alter table public.giao_lo add constraint giao_lo_pkey PRIMARY KEY (id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.info_requests add constraint info_requests_assignee_check CHECK ((assignee = ANY (ARRAY['seller'::text, 'ctv'::text, 'admin'::text])));
+  alter table public.info_requests add constraint info_requests_assignee_check CHECK ((assignee = ANY (ARRAY['seller'::text, 'admin'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.info_requests add constraint info_requests_pkey PRIMARY KEY (id);
@@ -1000,9 +979,6 @@ do $d$ begin
   alter table public.conversations add constraint conversations_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES buyers(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.conversations add constraint conversations_ctv_id_fkey FOREIGN KEY (ctv_id) REFERENCES ctvs(id);
-exception when duplicate_object then null; end $d$;
-do $d$ begin
   alter table public.conversations add constraint conversations_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES sellers(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -1012,9 +988,6 @@ do $d$ begin
   alter table public.deals add constraint deals_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES buyers(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.deals add constraint deals_ctv_id_fkey FOREIGN KEY (ctv_id) REFERENCES ctvs(id);
-exception when duplicate_object then null; end $d$;
-do $d$ begin
   alter table public.deals add constraint deals_listing_id_fkey FOREIGN KEY (listing_id) REFERENCES listings(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -1022,9 +995,6 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.info_requests add constraint info_requests_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES buyers(id);
-exception when duplicate_object then null; end $d$;
-do $d$ begin
-  alter table public.info_requests add constraint info_requests_ctv_id_fkey FOREIGN KEY (ctv_id) REFERENCES ctvs(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.info_requests add constraint info_requests_listing_id_fkey FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE;
@@ -1081,9 +1051,6 @@ do $d$ begin
   alter table public.reminders add constraint reminders_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES buyers(id) ON DELETE CASCADE;
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.reminders add constraint reminders_ctv_id_fkey FOREIGN KEY (ctv_id) REFERENCES ctvs(id);
-exception when duplicate_object then null; end $d$;
-do $d$ begin
   alter table public.reminders add constraint reminders_listing_id_fkey FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE;
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -1113,12 +1080,10 @@ create index if not exists cau_chuan_phien_idx ON public.cau_chuan USING btree (
 create index if not exists chat_quota_gio_idx ON public.chat_quota USING btree (gio);
 create index if not exists conversations_buyer_id_idx ON public.conversations USING btree (buyer_id);
 CREATE UNIQUE INDEX conversations_buyer_uniq ON public.conversations USING btree (buyer_id) WHERE (buyer_id IS NOT NULL);
-create index if not exists conversations_ctv_id_idx ON public.conversations USING btree (ctv_id);
 CREATE UNIQUE INDEX conversations_seller_uniq ON public.conversations USING btree (seller_id) WHERE (seller_id IS NOT NULL);
 create index if not exists curated_lists_buyer_idx ON public.curated_lists USING btree (buyer_id);
 create index if not exists danh_gia_ai_hoi_luc_idx ON public.danh_gia_ai USING btree (hoi_luc DESC);
 create index if not exists deals_buyer_id_idx ON public.deals USING btree (buyer_id);
-create index if not exists deals_ctv_id_idx ON public.deals USING btree (ctv_id);
 create index if not exists deals_listing_id_idx ON public.deals USING btree (listing_id);
 create index if not exists dieu_luat_nhung_hnsw ON public.dieu_luat USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists duong_ban_do ON public.duong USING btree (lat, lng) INCLUDE (ten, phuong, quan_cu, loai) WHERE (loai = ANY (ARRAY['duong'::text, 'so'::text]));
@@ -1132,7 +1097,6 @@ create index if not exists giao_lo_lat_lng_idx ON public.giao_lo USING btree (la
 create index if not exists idx_conversations_seller ON public.conversations USING btree (seller_id, started_at DESC);
 create index if not exists idx_listings_price_vnd ON public.listings USING btree (deal, price_vnd);
 create index if not exists info_requests_buyer_id_idx ON public.info_requests USING btree (buyer_id);
-create index if not exists info_requests_ctv_id_idx ON public.info_requests USING btree (ctv_id);
 create index if not exists info_requests_listing_id_idx ON public.info_requests USING btree (listing_id);
 CREATE UNIQUE INDEX info_requests_mot_cau_cho_idx ON public.info_requests USING btree (listing_id, question) WHERE (status = 'pending'::request_status);
 create index if not exists info_requests_sla_idx ON public.info_requests USING btree (sla_due_at) WHERE ((status = 'pending'::request_status) AND (sla_missed_at IS NULL));
@@ -1160,7 +1124,6 @@ create index if not exists property_events_buyer_idx ON public.property_events U
 create index if not exists property_events_listing_at_idx ON public.property_events USING btree (listing_id, at DESC);
 create index if not exists quan_cu_nhung_hnsw ON public.quan_cu USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists reminders_buyer_id_idx ON public.reminders USING btree (buyer_id);
-create index if not exists reminders_ctv_id_idx ON public.reminders USING btree (ctv_id);
 create index if not exists reminders_den_han_idx ON public.reminders USING btree (due_at) WHERE (status = 'pending'::text);
 create index if not exists reminders_due_idx ON public.reminders USING btree (status, due_at);
 create index if not exists reminders_listing_id_idx ON public.reminders USING btree (listing_id);
@@ -2359,27 +2322,6 @@ AS $function$
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.chon_ctv(p_district text)
- RETURNS uuid
- LANGUAGE sql
- STABLE
- SET search_path TO 'public'
-AS $function$
-  select c.id from public.ctvs c
-   where c.active and (c.zalo_user_id is not null or c.phone is not null)
-     and public.ctv_dang_ganh(c.id) < coalesce(nullif(public.cau_hinh('ctv_tran_ca'), '')::int, 15)
-   order by (case
-               when p_district is not null and exists (
-                 select 1 from unnest(c.khu_vuc) k
-                  where public.bo_dau(p_district) like '%' || public.bo_dau(k) || '%'
-                     or public.bo_dau(k) like '%' || public.bo_dau(p_district) || '%') then 0
-               when cardinality(c.khu_vuc) = 0 then 1
-               else 2 end),
-            public.ctv_dang_ganh(c.id), c.last_assigned_at nulls first, c.created_at
-   limit 1;
-$function$
-;
-
 CREATE OR REPLACE FUNCTION public.chon_viec_don_chet()
  RETURNS integer
  LANGUAGE sql
@@ -2614,25 +2556,6 @@ begin
   end if;
   return null;
 end $function$
-;
-
-CREATE OR REPLACE FUNCTION public.ctv_dang_ganh(p_ctv uuid)
- RETURNS integer
- LANGUAGE sql
- STABLE
- SET search_path TO 'public'
-AS $function$
-  select (select count(*) from public.info_requests q where q.ctv_id = p_ctv and q.status = 'pending')::int
-       + (select count(*) from public.conversations c where c.ctv_id = p_ctv and c.needs_human)::int;
-$function$
-;
-
-CREATE OR REPLACE FUNCTION public.ctv_sla_phut()
- RETURNS integer
- LANGUAGE sql
- IMMUTABLE
- SET search_path TO ''
-AS $function$ select 120 $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.cung_quan_cu(a text, b text)
@@ -6362,40 +6285,6 @@ create or replace view public.media_mo_coi_db as
            FROM storage.objects o
           WHERE o.bucket_id = m.bucket AND o.name = m.storage_path));
 
-create or replace view public.ctv_ranks as
- WITH q AS (
-         SELECT q_1.ctv_id,
-            count(*) AS tong,
-            count(*) FILTER (WHERE q_1.status = 'answered'::request_status) AS tra_loi,
-            count(*) FILTER (WHERE q_1.status = 'answered'::request_status AND q_1.answered_at <= q_1.sla_due_at) AS dung_han,
-            count(*) FILTER (WHERE q_1.sla_missed_at IS NOT NULL) AS tre
-           FROM info_requests q_1
-          WHERE q_1.source = 'buyer_ask'::text AND q_1.assignee = 'ctv'::text AND q_1.created_at >= (now() - '30 days'::interval)
-          GROUP BY q_1.ctv_id
-        )
- SELECT c.id,
-    c.name,
-    c.active,
-    COALESCE(q.tong, 0::bigint)::integer AS tong,
-    COALESCE(q.tra_loi, 0::bigint)::integer AS tra_loi,
-    COALESCE(q.dung_han, 0::bigint)::integer AS dung_han,
-    COALESCE(q.tre, 0::bigint)::integer AS tre,
-        CASE
-            WHEN COALESCE(q.tong, 0::bigint) = 0 THEN NULL::numeric
-            ELSE round(q.dung_han::numeric / q.tong::numeric, 2)
-        END AS ty_le_dung_han,
-        CASE
-            WHEN COALESCE(q.tong, 0::bigint) < 3 THEN 'chua_du'::text
-            WHEN (q.dung_han::numeric / q.tong::numeric) >= 0.9 THEN 'vang'::text
-            WHEN (q.dung_han::numeric / q.tong::numeric) >= 0.7 THEN 'bac'::text
-            ELSE 'dong'::text
-        END AS rank
-   FROM ctvs c
-     LEFT JOIN q ON q.ctv_id = c.id
-  WHERE auth.role() = 'service_role'::text OR (EXISTS ( SELECT 1
-           FROM admins a
-          WHERE a.email = (auth.jwt() ->> 'email'::text)));
-
 create or replace view public.hoi_thoai_thong_ke as
  WITH ngay AS (
          SELECT d.d::date AS ngay
@@ -6446,37 +6335,6 @@ create or replace view public.hoi_thoai_thong_ke as
   WHERE auth.role() = 'service_role'::text OR (EXISTS ( SELECT 1
            FROM admins a
           WHERE a.email = ((( SELECT auth.jwt() AS jwt)) ->> 'email'::text)));
-
-create or replace view public.khach_can_nguoi_that as
- SELECT c.id AS conversation_id,
-        CASE
-            WHEN c.buyer_id IS NOT NULL THEN 'khach'::text
-            ELSE 'nguoi_ban'::text
-        END AS vai,
-    c.buyer_id,
-    c.seller_id,
-    COALESCE(b.name, s.name) AS ten,
-    COALESCE(b.zalo_user_id, s.zalo_user_id) AS zalo_user_id,
-    c.needs_human_at,
-    c.human_escalated_at,
-    c.last_message_at,
-    c.ctv_id,
-    ct.name AS ctv_name,
-    "left"(m.body, 120) AS tin_khach_cuoi,
-    m.created_at AS tin_khach_cuoi_at
-   FROM conversations c
-     LEFT JOIN buyers b ON b.id = c.buyer_id
-     LEFT JOIN sellers s ON s.id = c.seller_id
-     LEFT JOIN ctvs ct ON ct.id = c.ctv_id
-     LEFT JOIN LATERAL ( SELECT m_1.body,
-            m_1.created_at
-           FROM messages m_1
-          WHERE m_1.conversation_id = c.id AND (m_1.sender = ANY (ARRAY['buyer'::msg_sender, 'seller'::msg_sender]))
-          ORDER BY m_1.created_at DESC
-         LIMIT 1) m ON true
-  WHERE c.needs_human = true AND (c.human_touch_at IS NULL OR c.human_touch_at < c.needs_human_at) AND (auth.role() = 'service_role'::text OR (EXISTS ( SELECT 1
-           FROM admins a
-          WHERE a.email = ((( SELECT auth.jwt() AS jwt)) ->> 'email'::text))));
 
 create or replace view public.hoi_thoai_phien as
  WITH m AS (
@@ -6531,7 +6389,7 @@ create or replace view public.hoi_thoai_nhan with (security_invoker=true) as
             WHEN c.needs_human AND (c.human_touch_at IS NULL OR c.human_touch_at < c.needs_human_at) THEN 'bot xin người thật'::text
             WHEN (EXISTS ( SELECT 1
                FROM info_requests q
-              WHERE q.buyer_id = c.buyer_id AND c.buyer_id IS NOT NULL AND q.status = 'pending'::request_status)) THEN 'khách hỏi, đang chờ chủ nhà/CTV trả lời'::text
+              WHERE q.buyer_id = c.buyer_id AND c.buyer_id IS NOT NULL AND q.status = 'pending'::request_status)) THEN 'khách hỏi, đang chờ chủ nhà/admin trả lời'::text
             WHEN (m.sender = ANY (ARRAY['buyer'::msg_sender, 'seller'::msg_sender])) AND m.created_at < (now() - '00:10:00'::interval) THEN 'khách nhắn > 10 phút chưa có tin bot'::text
             ELSE NULL::text
         END AS ly_do,
@@ -6746,6 +6604,34 @@ create or replace view public.ro_hang_ban with (security_invoker=true) as
    FROM listings l
   WHERE deal = 'ban'::listing_deal;
 
+create or replace view public.khach_can_nguoi_that as
+ SELECT c.id AS conversation_id,
+        CASE
+            WHEN c.buyer_id IS NOT NULL THEN 'khach'::text
+            ELSE 'nguoi_ban'::text
+        END AS vai,
+    c.buyer_id,
+    c.seller_id,
+    COALESCE(b.name, s.name) AS ten,
+    COALESCE(b.zalo_user_id, s.zalo_user_id) AS zalo_user_id,
+    c.needs_human_at,
+    c.human_escalated_at,
+    c.last_message_at,
+    "left"(m.body, 120) AS tin_khach_cuoi,
+    m.created_at AS tin_khach_cuoi_at
+   FROM conversations c
+     LEFT JOIN buyers b ON b.id = c.buyer_id
+     LEFT JOIN sellers s ON s.id = c.seller_id
+     LEFT JOIN LATERAL ( SELECT m_1.body,
+            m_1.created_at
+           FROM messages m_1
+          WHERE m_1.conversation_id = c.id AND (m_1.sender = ANY (ARRAY['buyer'::msg_sender, 'seller'::msg_sender]))
+          ORDER BY m_1.created_at DESC
+         LIMIT 1) m ON true
+  WHERE c.needs_human = true AND (c.human_touch_at IS NULL OR c.human_touch_at < c.needs_human_at) AND (auth.role() = 'service_role'::text OR (EXISTS ( SELECT 1
+           FROM admins a
+          WHERE a.email = ((( SELECT auth.jwt() AS jwt)) ->> 'email'::text))));
+
 -- ══ Trigger ══
 drop trigger if exists trg_bot_errors_het_tien on public.bot_errors;
 CREATE TRIGGER trg_bot_errors_het_tien AFTER INSERT ON public.bot_errors FOR EACH ROW EXECUTE FUNCTION bat_het_tien_api();
@@ -6841,7 +6727,6 @@ alter table public.cau_chuan enable row level security;
 alter table public.cau_mau enable row level security;
 alter table public.chat_quota enable row level security;
 alter table public.conversations enable row level security;
-alter table public.ctvs enable row level security;
 alter table public.curated_lists enable row level security;
 alter table public.danh_gia_ai enable row level security;
 alter table public.deals enable row level security;
@@ -6920,10 +6805,6 @@ drop policy if exists cau_mau_admin_sua on public.cau_mau;
 create policy cau_mau_admin_sua on public.cau_mau as permissive for UPDATE to authenticated using (la_admin()) with check (la_admin());
 drop policy if exists conversations_admin_read on public.conversations;
 create policy conversations_admin_read on public.conversations as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
-   FROM admins a
-  WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text)))));
-drop policy if exists ctvs_admin_read on public.ctvs;
-create policy ctvs_admin_read on public.ctvs as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
   WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text)))));
 drop policy if exists danh_gia_ai_admin_doc on public.danh_gia_ai;
@@ -7049,9 +6930,6 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ca
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.cau_mau to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.chat_quota to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.conversations to service_role;
-grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ctv_ranks to authenticated;
-grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ctv_ranks to service_role;
-grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ctvs to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.curated_lists to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.danh_gia_ai to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.deals to service_role;
@@ -7100,7 +6978,6 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.xa
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.admins to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.buyers to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.conversations to authenticated;
-grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.ctvs to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.deals to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.info_requests to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.interests to authenticated;
@@ -7119,7 +6996,6 @@ grant REFERENCES, SELECT, TRIGGER on public.agents_public to anon;
 grant REFERENCES, SELECT, TRIGGER on public.agents_public to authenticated;
 grant REFERENCES, SELECT, TRIGGER on public.buyers to anon;
 grant REFERENCES, SELECT, TRIGGER on public.conversations to anon;
-grant REFERENCES, SELECT, TRIGGER on public.ctvs to anon;
 grant REFERENCES, SELECT, TRIGGER on public.deals to anon;
 grant REFERENCES, SELECT, TRIGGER on public.info_requests to anon;
 grant REFERENCES, SELECT, TRIGGER on public.interests to anon;
@@ -7241,10 +7117,6 @@ revoke all on function public.che_sdt(p text) from public, anon, authenticated;
 grant execute on function public.che_sdt(p text) to anon;
 grant execute on function public.che_sdt(p text) to authenticated;
 grant execute on function public.che_sdt(p text) to service_role;
-revoke all on function public.chon_ctv(p_district text) from public, anon, authenticated;
-grant execute on function public.chon_ctv(p_district text) to anon;
-grant execute on function public.chon_ctv(p_district text) to authenticated;
-grant execute on function public.chon_ctv(p_district text) to service_role;
 revoke all on function public.chon_viec_don_chet() from public, anon, authenticated;
 grant execute on function public.chon_viec_don_chet() to service_role;
 revoke all on function public.chu_nha_han_gio() from public, anon, authenticated;
@@ -7265,14 +7137,6 @@ revoke all on function public.cong_token(p_in bigint, p_out bigint, p_cache_writ
 grant execute on function public.cong_token(p_in bigint, p_out bigint, p_cache_write bigint, p_cache_read bigint, p_model text) to service_role;
 revoke all on function public.conversations_email_upset() from public, anon, authenticated;
 grant execute on function public.conversations_email_upset() to service_role;
-revoke all on function public.ctv_dang_ganh(p_ctv uuid) from public, anon, authenticated;
-grant execute on function public.ctv_dang_ganh(p_ctv uuid) to anon;
-grant execute on function public.ctv_dang_ganh(p_ctv uuid) to authenticated;
-grant execute on function public.ctv_dang_ganh(p_ctv uuid) to service_role;
-revoke all on function public.ctv_sla_phut() from public, anon, authenticated;
-grant execute on function public.ctv_sla_phut() to anon;
-grant execute on function public.ctv_sla_phut() to authenticated;
-grant execute on function public.ctv_sla_phut() to service_role;
 revoke all on function public.cung_quan_cu(a text, b text) from public, anon, authenticated;
 grant execute on function public.cung_quan_cu(a text, b text) to anon;
 grant execute on function public.cung_quan_cu(a text, b text) to authenticated;
@@ -7565,9 +7429,9 @@ create policy storage_seller_own_insert on storage.objects as permissive for INS
 -- ══ Cron ══
 select cron.schedule('bot-health-tick', '*/15 * * * *', 'select public.bot_health_tick()');
 select cron.schedule('cron-don-so', '15 18 * * *', 'delete from cron.job_run_details where end_time < now() - interval ''7 days''');
-select cron.schedule('ctv-sla-tick', '*/15 1-13 * * *', 'select public.info_request_sla_tick()');
 select cron.schedule('don-du-lieu-thu', '0 14 * * *', 'select public.don_du_lieu_thu()');
 select cron.schedule('geocode-tick', '*/10 * * * *', 'select public.geocode_tick()');
+select cron.schedule('info-request-sla-tick', '*/15 1-13 * * *', 'select public.info_request_sla_tick()');
 select cron.schedule('listing-interest-decay', '0 20 * * *', 'update public.listings set status = ''dang_ban''
    where status = ''dang_quan_tam'' and last_interest_at < now() - interval ''7 days''');
 select cron.schedule('media-chet-tick', '0 * * * *', 'select public.chon_viec_don_chet()');

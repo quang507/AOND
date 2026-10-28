@@ -46,6 +46,8 @@ chat() {
   MOI_LOI+=$'\n'"$(jq -r '.replies[]?' <<<"$TRA" 2>/dev/null || true)"
   LUOT=$((LUOT + 1))
   if [ -z "$LUOT_NHAP" ] && grep -q '📋' <<<"$TRA"; then LUOT_NHAP=$LUOT; fi
+  # SRS-5.1zzzzzzz239 (chủ dự án 28/10: "bắn từ từ"): ID thử chat bằng Gemini — nghỉ giữa các lượt cho khỏi chạm trần nhịp của khoá.
+  sleep "${NGHI_GIUA_LUOT:-12}"
 }
 loi=0
 kiem() { if [ "$2" = 1 ]; then echo "ĐẠT  $1"; else echo "TRƯỢT $1"; loi=1; fi; }

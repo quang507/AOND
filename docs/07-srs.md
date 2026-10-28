@@ -9058,6 +9058,26 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz239 · ID thử gọi model bằng Gemini, bắn thử chậm; dọn CTV bước 2 xoá bảng / cột (28/10/2026)
+Chủ dự án 28/10: "Offline thôi ko bắn product … nếu bắn product đổi sang key gemini bắn từ từ dc ko. Nếu dc thì làm".
+1. **ID thử → Gemini**: `AIOI_CHAT_MODEL_THU=gemini` (một dòng `MODEL_CHAT_THU` trong `bot/bridge-zca/cai-vps.sh`) → `Engine.handle` đặt
+   `llm.base.NGUON_LUOT = "gemini"` cho ID thử (`_la_id_thu`); `DuPhongProvider._thu` bỏ Claude, chỉ thử nguồn Gemini (khoá Vault
+   `GEMINI_API_KEY…`), Gemini hỏng thì lượt đó hỏng — KHÔNG rơi về Claude / Groq. Mọi lượt gọi model của ID thử (bóc tách, trả lời, đọc ảnh)
+   đều đi đường này; khách thật không đổi (Sonnet 5.5 chat, Haiku bóc tách). Hệ quả: bắn thử đo GEMINI, không đo đúng model khách gặp —
+   muốn đo Claude thì đổi dòng `MODEL_CHAT_THU` thành `tat` rồi chạy `cai-vps`.
+2. **Bắn chậm**: `ban-thu-srd.sh`, `ban-thu-kb.sh` nghỉ `NGHI_GIUA_LUOT` giây (mặc định 12) sau mỗi lượt chat, cho khỏi chạm trần nhịp của khoá
+   Gemini. Các ô `ban-thu-*` khác chưa đổi nhịp.
+3. **Dọn CTV bước 2** (migration `20261028d`, áp SAU khi escalation-feed + lõi + web bản SRS-238 đã lên): xoá view `ctv_ranks`, dựng lại
+   `khach_can_nguoi_that` không cột CTV, chữ "chủ nhà/CTV" ở `hoi_thoai_nhan` → "chủ nhà/admin", xoá cột `ctv_id` (conversations / deals /
+   info_requests / reminders), `info_requests.assignee` chỉ còn `seller` / `admin`, xoá hàm `chon_ctv` / `ctv_dang_ganh` / `ctv_sla_phut`, bảng
+   `ctvs`, khoá `app_config.ctv_tran_ca`; lịch `ctv-sla-tick` đổi tên `info-request-sla-tick` (cùng giờ). Giữ giá trị `ctv` của enum `msg_sender`.
+   Không chép `luu_tru` vì 0 dòng dữ liệu CTV (soát 28/10).
+4. **Ba câu gốc** — (1) *Lớp lỗi*: bắn thử production gọi cùng model trả tiền với khách thật, không có công tắc nguồn model riêng cho ID thử
+   (chỉ có đổi TÊN model Claude, SRS-234); (2) *chỗ khác cùng lớp*: `ban-thu-luan` chạy bản anh Luận ở cổng 8001 với khoá Anthropic riêng của
+   nó — không đi qua công tắc này; lời đọc sticker (`doc_sticker`, gọi provider ngoài `Engine.handle`) của ID thử vẫn theo đường thường;
+   (3) *kiểm*: `tests/test_id_thu_gemini.py` (lượt chỉ Gemini không gọi Claude / Groq, Gemini hỏng không rơi về Claude, engine chỉ đặt cho ID
+   thử, cai-vps ghi env) — bỏ điều kiện `chi_gemini` trong `_thu` → đỏ; `bun run test:sql` với `20261028d`.
+
 ### SRS-5.1zzzzzzz238 · Tin chống Zalo xoá kết nối làm lại; hạn admin 5 giờ; dọn CTV khỏi code (28/10/2026)
 Chủ dự án 28/10: "làm lại tin chống xoá kết nối, dọn CTV luôn đi làm giống bên anh Luận, hạn admin trả lời câu khách hỏi 5 giờ".
 1. **Tin giữ kết nối (FR-63)** — mất từ 18/10 khi gỡ edge function `nudge` (chỉ làm cho khách mua). Nay ở lõi: `src/aioi/giu_ket_noi.py`, vòng

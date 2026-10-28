@@ -3,8 +3,8 @@
   "vi_sao_khong_de_cong_do_san": "Cổng đỏ ngay từ ngày đầu là cổng sẽ bị bỏ qua — đúng bài học của chính hôm nay: 52 dòng cảnh báo kêu mãi thành tiếng ồn, rồi cái thứ 53 (trôi thật) chìm lẫn vào đó.",
   "da_biet": {
     "view_thieu_quyen": {
-      "chi_tiet": "bds_hot, ctv_ranks, hoi_thoai_phien, hoi_thoai_thong_ke, khach_can_nguoi_that, nmg_hoat_dong",
-      "ghi_chu": "Còn 6 (bot_do_tre gỡ 18/10/2026 cùng inbound_ledger, 20261018i), tất cả đều tự chặn bằng la_admin()/admins ngay trong WHERE nên thiếu security_invoker không phơi gì — phép soát tự hạ xuống mức NHẸ vì không cái nào mang dấu (!). Hai cái từng mang dấu đó đã sửa 10/09 (20260910q): project_facts_cho_duyet bật security_invoker để RLS admin-only tự áp; listing_photos_v bật được sau khi mở url_kho_anh() thay cho truy vấn thẳng app_config."
+      "chi_tiet": "bds_hot, hoi_thoai_phien, hoi_thoai_thong_ke, khach_can_nguoi_that, nmg_hoat_dong",
+      "ghi_chu": "Còn 5 (bot_do_tre gỡ 18/10/2026 cùng inbound_ledger, 20261018i; ctv_ranks gỡ 28/10/2026, 20261028d), tất cả đều tự chặn bằng la_admin()/admins ngay trong WHERE nên thiếu security_invoker không phơi gì — phép soát tự hạ xuống mức NHẸ vì không cái nào mang dấu (!). Hai cái từng mang dấu đó đã sửa 10/09 (20260910q): project_facts_cho_duyet bật security_invoker để RLS admin-only tự áp; listing_photos_v bật được sau khi mở url_kho_anh() thay cho truy vấn thẳng app_config."
     },
     "ham_trung_chu_ky": {
       "chi_tiet": "mark_listing_interest, next_listing_code",

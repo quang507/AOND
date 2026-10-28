@@ -22,7 +22,7 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-from .base import LLMProvider, Message, ToolTurn, bo_ranh_gioi
+from .base import CHI_GEMINI, NGUON_LUOT, LLMProvider, Message, ToolTurn, bo_ranh_gioi
 from .claude import chuan_theo_schema
 
 log = logging.getLogger(__name__)
@@ -108,8 +108,11 @@ class DuPhongProvider(LLMProvider):
     # --- chọn đường -----------------------------------------------------------------------------
 
     def _thu(self, viec: str, goi_chinh, goi_phu, can_anh: bool = False):
+        chi_gemini = NGUON_LUOT.get() == CHI_GEMINI   # SRS-5.1zzzzzzz239: lượt bắn thử — không gọi Claude, chỉ Gemini
         loi_chinh: BaseException | None = self._loi_nghi if time.time() < self._nghi_den else None
-        if time.time() >= self._nghi_den:
+        if chi_gemini:
+            loi_chinh = None
+        elif time.time() >= self._nghi_den:
             try:
                 return goi_chinh()
             except Exception as e:  # noqa: BLE001 — chỉ đổi đường với lỗi đổi model chữa được; còn lại ném lên
@@ -121,7 +124,7 @@ class DuPhongProvider(LLMProvider):
         loi = loi_chinh
         bat_dau = time.time()
         for n in self._nguon:
-            if can_anh and not n.nhin_anh:
+            if (can_anh and not n.nhin_anh) or (chi_gemini and n.ten != "Gemini"):
                 continue
             for model in n.models:
                 if time.time() < self._nghi_model.get((n.ten, model), 0.0):
