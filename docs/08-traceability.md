@@ -385,6 +385,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | — | — | — | 28/10 (SRS-5.1zzzzzzz239): ID thử gọi model bằng Gemini (`NGUON_LUOT`, `AIOI_CHAT_MODEL_THU=gemini`), bắn thử nghỉ giữa lượt; dọn CTV bước 2 (`20261028d`: xoá `ctvs`, `ctv_ranks`, cột `ctv_id`) | `tests/test_id_thu_gemini.py`, `bun run test:sql` |
 | FR-160, FR-155, FR-63 | — | — | 28/10 (SRS-5.1zzzzzzz240): quyết định chủ dự án sau soát OPEN — phường đã báo admin thôi kể (`prompts.khoi_trang_thai_web`), vai CĐT báo admin một lần, phí trôi theo số tin bán (`Conversation.vai_phi`), đo lại I4 / I5 (`20261028e`: `nmg_hoat_dong`, `ket_noi_zalo_song`) | `tests/test_quyet_dinh_28_10.py`, `tests/test_trang_thai_web.py`, `bot/tests/sql/do-lai-i4-i5.sql` |
 | FR-164, FR-165, FR-150, FR-177, FR-105 | — | — | 28/10 (SRS-5.1zzzzzzz241): tiêu đề viết thường (`_viet_hoa_ca_cum`), chính sách OPEN-63 (`BUSINESS_CONTEXT`), `admin_xac_minh` (`20261028f`, Sửa tin), ảnh 480px (`20261028g`, `kho_anh`, `UploadAnh`), hai tin chung căn (`_tach_tin_ban_thue`, `20261028h`), AI chấm ảnh (`khong_phai_anh_can`), bắn thử không ghi sổ lỗi giả | `tests/test_quyet_dinh_28_10.py`, `tests/test_kho_anh.py`, `tests/test_sua_tin_admin.py`, `bot/tests/sql/anh-480.sql`, `bot/tests/sql/nguon-admin-xac-minh.sql` |
+| — | — | — | 28/10 (SRS-5.1zzzzzzz242): ngưỡng kho điều luật `NGUONG_LUAT` 0,62 → 0,69 theo số đo 12 câu trên kho thật | `tests/test_kho_dieu_luat.py` |
 
 ## 8.4 Rủi ro → biện pháp
 

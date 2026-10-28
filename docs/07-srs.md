@@ -9058,6 +9058,21 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz242 · Ngưỡng kho điều luật 0,62 → 0,69 theo số đo (28/10/2026)
+Kho `dieu_luat` nhúng đủ 2952/2952 (lịch hẹn đo 28/10 07:30 UTC). Đo 12 câu thử trên kho thật (nhúng RETRIEVAL_QUERY qua `net.http_post` + khoá
+`khoa_nhung_nen()`, gọi `tim_dieu_luat`):
+- Điều ĐÚNG ở đầu: phí công chứng 0,752 (TT 257 Đ4), lệ phí trước bạ 0,758 (NĐ 10/2022 Đ8), thuế TNCN 0,763 (NĐ 253/2026 Đ57), người nước ngoài mua
+  nhà 0,756 (Luật Nhà ở Đ17), tài sản chung vợ chồng 0,727 (Luật HN&GĐ Đ26), mua nhà chưa có sổ 0,709 (Luật Nhà ở Đ164, gần đúng), chuyển đất nông
+  nghiệp 0,702 (Luật Đất đai Đ121).
+- Điều SAI ở đầu: thừa kế sổ bố mẹ 0,676 (Luật Đất đai Đ44; Luật Công chứng Đ59 ở hạng 3, 0,660), đặt cọc bên bán đổi ý 0,672 (Luật KD BĐS Đ23 — BLDS
+  Đ328 không vào top 3), vi bằng 0,639 (Luật Nhà ở Đ160 — NĐ 151/2026 không vào top 3).
+- Câu không phải pháp lý: giá căn hộ 0,592, hỏi thời tiết 0,561.
+Chủ dự án 28/10: "a làm đi" (phương án a). `dia_danh.NGUONG_LUAT` = 0,69: chặn cả ba điều sai, giữ điều đúng thấp nhất (0,702 — sát ngưỡng).
+Ba câu đặt cọc / vi bằng / thừa kế nay không kèm điều luật (bot vẫn trả lời từ `phap_ly.MAC_DINH`, nói "tham khảo"). Còn: gốc vì sao BLDS Đ328 và
+NĐ 151/2026 không lên top 3 chưa soát. Mẫu 12 câu — tin cậy vừa. Ba câu gốc — (1) *lớp lỗi*: ngưỡng đặt trước khi kho nhúng xong, chưa đo trên kho
+thật; (2) *chỗ khác cùng lớp*: các ngưỡng vector khác (`tim_dia_danh_theo_nghia`, `tim_nha`) đã có số đo riêng (SRS-180 / `do-tim-nha`), không đổi ở
+đây; (3) *kiểm*: `tests/test_kho_dieu_luat.py::test_nguong_theo_so_do_28_10` (ba điểm sai bị chặn, 0,702 qua) — trả ngưỡng về 0,62 thì đỏ (đã chạy).
+
 ### SRS-5.1zzzzzzz241 · Quyết định chủ dự án đợt 2: tiêu đề viết thường, ba chính sách người bán, bậc admin đã đối chiếu giấy tờ, ảnh 480px, hai tin chung căn, AI chấm ảnh; bắn thử không ghi sổ lỗi giả (28/10/2026)
 Chủ dự án 28/10 (kèm ảnh mẫu bản tin Cao Lỗ): "Tiêu đề tin rao không cần viết hoa để như này đi, không bớt phí, có kí hd, không độc quyền, nma nói rồi
 mà, open 24 kệ đi, bắn thử nên để bóc tách dùng Gemini, khi Claude sập, Gemini bóc tách sai ô của khách thật thì … cứ theo dõi làm hết đi".

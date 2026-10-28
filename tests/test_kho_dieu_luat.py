@@ -165,3 +165,12 @@ def test_hop_nhat_bo_dieu_bai_bo_va_trich_luat_khac_luat_sua_doi_giu_trich():
     sua = "Điều 1. Sửa đổi khoản 1 Điều 7 như sau:\n“1. Cá nhân có doanh thu từ mức Chính phủ quy định trở xuống không phải nộp thuế.”.\nĐiều 2. Hiệu lực\nLuật này có hiệu lực."
     ds = tach_mod.tach(sua)
     assert [d["dieu"] for d in ds] == ["1", "2"] and "không phải nộp thuế" in ds[0]["noi_dung"]
+
+
+def test_nguong_theo_so_do_28_10():
+    """SRS-5.1zzzzzzz242 (chủ dự án 28/10: "a làm đi"): đo 12 câu thử trên kho thật — điều trả SAI cho câu đặt cọc / vi bằng / thừa kế có do_gan
+    0,639 / 0,672 / 0,676, điều ĐÚNG thấp nhất 0,702 (đất nông nghiệp lên thổ cư). Ngưỡng phải chặn cả ba điều sai và giữ điều đúng thấp nhất.
+    Đỏ khi ngưỡng trả về 0,62."""
+    for sai in (0.639, 0.672, 0.676):
+        assert TraGia([{**D45, "do_gan": sai}]).dieu_luat("đặt cọc rồi bên bán đổi ý") == []
+    assert [d["dieu"] for d in TraGia([{**D45, "do_gan": 0.702}]).dieu_luat("đất nông nghiệp lên thổ cư")] == ["45"]
