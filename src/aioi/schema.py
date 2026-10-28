@@ -155,6 +155,8 @@ CORE_FIELDS: dict[PropertyGroup, list[str]] = {
         "ban_cong_view",      # Hướng ban công & tầm nhìn (view thoáng/nội khu)
         "noi_that",           # Tình trạng nội thất (full, cơ bản, nhà thô)
         "phi_quan_ly",        # Phí quản lý dịch vụ / gửi xe
+        "phap_ly_so_hong",    # Sổ hồng riêng hay HĐMB (SRS-5.1zzzzzzz260: pháp lý là ô cơ bản trước bản nháp)
+        "hien_trang_su_dung", # Đang ở, trống hay có khách thuê (SRS-5.1zzzzzzz260: hiện trạng là ô cơ bản trước bản nháp)
     ],
     PropertyGroup.PROJECT: [
         "chu_dau_tu_phan_khu", # Chủ đầu tư & Phân khu
@@ -164,6 +166,7 @@ CORE_FIELDS: dict[PropertyGroup, list[str]] = {
     ],
     PropertyGroup.LAND: [
         "kich_thuoc",         # Kích thước (ngang x dài)
+        "phap_ly_so_do",      # Sổ đỏ riêng (SRS-5.1zzzzzzz260: pháp lý là ô cơ bản trước bản nháp)
         "chi_tieu_xay_dung",  # Chỉ tiêu xây dựng
         "quy_hoach",          # Quy hoạch
         "yeu_to_ha_tang",     # Hạ tầng (vướng cột điện / hố ga)
@@ -340,11 +343,17 @@ FACETS: list[tuple[str, str, list[str]]] = [
                                         "co_hdt", "thu_nhap_thue", "dong_tien_thue", "phi_quan_ly"]),
 ]
 FACET_LABEL: dict[str, str] = {fid: label for fid, label, _ in FACETS}
-# 4 facet chính quyết "đủ để SOẠN bài rao" (SRS-5.1zzzzzzz202, theo anh Luận ce11491): vị thế · kích thước đất · quy mô xây dựng · pháp lý.
-# Vị trí và giá đã nằm trong sàn tối thiểu (`minimal_missing`), nên không đếm ở đây.
-FACET_CHINH = ("vi_the", "dat", "cong_trinh", "phap_ly")
-FACET_TRONG_TOI_DA = 1      # còn ≤ 1 facet chính trống thì soạn bản nháp (≥ 3/4 facet có dữ liệu)
 _FACET_OF: dict[str, str] = {k: fid for fid, _, keys in FACETS for k in keys}
+_KEYS_FACET: dict[str, list[str]] = {fid: keys for fid, _, keys in FACETS}
+# Nhóm ô cơ bản phải có trước bản nháp (SRS-5.1zzzzzzz260, chủ dự án 28/10: "giá, địa chỉ hoặc khu vực, quy mô, pháp lý và hiện trạng là
+# đủ"). Giá + vị trí nằm ở sàn `minimal_missing`. Quy mô = kích thước đất HOẶC quy mô xây dựng (một ô là đủ). Thay 4 facet chính
+# "≥ 3/4" của SRS-5.1zzzzzzz202. Nhóm chỉ tính khi loại BĐS có ô mong đợi trong nhóm (đất không hỏi hiện trạng); tin cho thuê bỏ pháp lý.
+NHOM_SOAN: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("quy_mo", tuple(_KEYS_FACET["dat"] + _KEYS_FACET["cong_trinh"])),
+    ("phap_ly", tuple(_KEYS_FACET["phap_ly"])),
+    ("hien_trang", ("tinh_trang_ban_giao", "hien_trang_su_dung")),
+)
+_NHOM_OF: dict[str, str] = {k: nid for nid, keys in NHOM_SOAN for k in keys}
 
 
 def facet_of(key: str) -> str:
@@ -420,7 +429,8 @@ class Property:
         need: list[str] = []
         if self.loai_hinh is None:
             need.append("loai_hinh")
-        if not (self.fields.get("dia_chi") or self.fields.get("duong") or self.fields.get("du_an")):
+        # SRS-5.1zzzzzzz260: "địa chỉ HOẶC khu vực" — phường / xã / quận cũng là vị trí đủ để soạn; địa chỉ cụ thể hỏi sau.
+        if not any(self.fields.get(k) for k in ("dia_chi", "duong", "du_an", "phuong", "xa", "quan")):
             need.append("du_an" if self.group is PropertyGroup.CONDO else "dia_chi")
         if not self.fields.get("gia"):
             need.append("gia")
@@ -431,12 +441,13 @@ class Property:
         return not self.minimal_missing()
 
     def facet_trong(self) -> list[str]:
-        """Facet chính còn TRỐNG: không có ô nào khách đã cho, và chưa bị để sau (mọi ô mong đợi của facet đều bị khách lờ 2 lần). Chỉ tính
-        facet mà loại BĐS này có ô mong đợi. Thứ tự theo `FACET_CHINH`."""
+        """Nhóm ô cơ bản (`NHOM_SOAN`) còn TRỐNG: không có ô nào khách đã cho, và chưa bị để sau (mọi ô mong đợi của nhóm đều bị khách lờ
+        2 lần). Chỉ tính nhóm mà loại BĐS này có ô mong đợi; tin cho thuê không tính pháp lý. Thứ tự theo `NHOM_SOAN`."""
         mong = self.expected_fields()
         ra: list[str] = []
-        for fid in FACET_CHINH:
-            keys = next((ks for f, _, ks in FACETS if f == fid), [])
+        for fid, keys in NHOM_SOAN:
+            if fid == "phap_ly" and self.is_rental:
+                continue
             cua_loai = [k for k in mong if k in keys]
             if not cua_loai or any(self._has(k) for k in keys):
                 continue
@@ -446,11 +457,10 @@ class Property:
         return ra
 
     def summary_ready(self) -> bool:
-        """Đủ để SOẠN bài rao (SRS-5.1zzzzzzz202, theo anh Luận ce11491 "hết hơi vội rao"): `can_publish` (loại hình + vị trí + giá) VÀ
-        còn ≤ `FACET_TRONG_TOI_DA` facet chính trống (≥ 3/4: vị thế / kích thước đất / quy mô xây dựng / pháp lý). Chưa đủ thì bot hỏi tiếp,
-        mỗi facet trống một câu. Khách bảo đăng sớm thì chỉ cần sàn tối thiểu (`thieu_toi_thieu`). Phường / diện tích là điều kiện lên WEB
+        """Đủ để SOẠN bài rao (SRS-5.1zzzzzzz260, chủ dự án 28/10): `can_publish` (loại hình + vị trí hoặc khu vực + giá) VÀ không còn nhóm
+        cơ bản trống (quy mô · pháp lý · hiện trạng, `NHOM_SOAN`; ô khách lờ 2 lần thì để sau). Chưa đủ thì bot hỏi tiếp, mỗi nhóm một câu. Khách bảo đăng sớm thì chỉ cần sàn tối thiểu (`thieu_toi_thieu`). Phường / diện tích là điều kiện lên WEB
         (trigger DB), không phải điều kiện soạn bản nháp: thiếu thì bot hỏi sau lượt duyệt (`khoi_trang_thai_web`)."""
-        return self.can_publish() and len(self.facet_trong()) <= FACET_TRONG_TOI_DA
+        return self.can_publish() and not self.facet_trong()
 
     def thieu_toi_thieu(self) -> list[str]:
         """Ô phải có trước MỌI bản nháp — chính là `minimal_missing` (khách bảo đăng sớm thì chỉ chờ các ô này)."""
@@ -519,10 +529,11 @@ class Property:
         ra = [x for x in ra if x not in HOI_SAU_KHI_RA_TIN and x not in self.hoan]
         # Sàn tối thiểu hỏi TRƯỚC (loại hình → vị trí → giá); rồi MỖI facet chính còn trống MỘT ô (ô đứng đầu của facet theo thứ tự hỏi);
         # rồi phường và các ô còn lại (SRS-5.1zzzzzzz200 / 202).
-        dau = [x for x in ("loai_hinh", "dia_chi", "du_an", "gia") if x in ra]
+        san = self.minimal_missing()   # SRS-5.1zzzzzzz260: chỉ ô sàn còn thiếu đứng đầu (có khu vực thì địa chỉ cụ thể hỏi sau)
+        dau = [x for x in ("loai_hinh", "dia_chi", "du_an", "gia") if x in ra and x in san]
         moi_facet: list[str] = []
         for fid in self.facet_trong():
-            o = next((x for x in ra if x not in dau and facet_of(x) == fid), None)
+            o = next((x for x in ra if x not in dau and _NHOM_OF.get(x) == fid), None)
             if o:
                 moi_facet.append(o)
         giua = dau + moi_facet

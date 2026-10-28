@@ -128,7 +128,8 @@ def test_zalo_bridge_deed_image_chat_reply(monkeypatch):
 def test_condo_and_project_core_fields_no_deed():
     from aioi.schema import CORE_FIELDS, PropertyGroup
     condo_fields = CORE_FIELDS[PropertyGroup.CONDO]
-    assert "phap_ly_so_hong" not in condo_fields
+    # SRS-5.1zzzzzzz260 (chủ dự án 28/10): pháp lý + hiện trạng là ô cơ bản trước bản nháp — căn hộ hỏi sổ hồng riêng hay HĐMB.
+    assert "phap_ly_so_hong" in condo_fields and "hien_trang_su_dung" in condo_fields
     assert "lo_gioi_hem" not in condo_fields
 
     project_fields = CORE_FIELDS[PropertyGroup.PROJECT]

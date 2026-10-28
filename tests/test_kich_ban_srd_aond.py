@@ -73,6 +73,10 @@ LUONG_30 = [
      "Sổ hồng riêng thì khách mua yên tâm hẳn anh ơi! Anh muốn bán giá bao nhiêu?"),
     ("Giá bán 10 tỷ nha em. Có thương lượng.",
      _ghi({"gia": "10 tỷ", "thuong_luong": "Có thương lượng"}, {"gia": "10 tỷ", "thuong_luong": "Có thương lượng"}),
+     "10 tỷ có thương lượng em ghi nhận anh! Nhà hiện anh đang ở hay để trống vậy anh?"),
+    # SRS-5.1zzzzzzz260 (chủ dự án 28/10): hiện trạng là ô cơ bản trước bản nháp — một lượt hỏi thêm rồi mới ra bản tin.
+    ("Nhà đang ở, bàn giao ngay khi công chứng.",
+     _ghi({"tinh_trang_ban_giao": "Nhà đang ở"}, {"tinh_trang_ban_giao": "Nhà đang ở"}),
      BAN_NHAP),
 ]
 
@@ -99,7 +103,7 @@ def _chuan_bi():
 
 # ---------- Luồng 30 câu ----------
 
-def test_luong_30_ghi_dung_o_moi_luot_va_ra_ban_nhap_khi_du_gia():
+def test_luong_30_ghi_dung_o_moi_luot_va_ra_ban_nhap_khi_du_o_co_ban():
     eng, spy = _chuan_bi()
     kq = _chay_luong_30(eng, spy)
     c = eng.conversation("srd-30")
@@ -108,8 +112,8 @@ def test_luong_30_ghi_dung_o_moi_luot_va_ra_ban_nhap_khi_du_gia():
     assert f["duong"] == "Trần Bình Trọng" and f["quan"] == "Quận 5" and f["dien_tich_dat"] == "50m2"
     assert f["lo_gioi_hem"] == "Hẻm xe hơi 4m, ô tô tới cửa" and f["ket_cau"] == "1 trệt 2 lầu" and f["phong_ngu"] == "4"
     assert f["gia"] == "10 tỷ" and f["phap_ly"] == "Sổ hồng riêng"
-    # Bản nháp chỉ trình khi đã có loại hình + vị trí + giá (SRS-200): năm lượt đầu là chat, lượt nói giá ra bản tin 📋.
-    assert [r.is_listing_post for r in kq] == [False, False, False, False, False, True]
+    # Bản nháp chỉ trình khi đủ giá · vị trí · quy mô · pháp lý · hiện trạng (SRS-260): sáu lượt đầu là chat, lượt nói hiện trạng ra 📋.
+    assert [r.is_listing_post for r in kq] == [False, False, False, False, False, False, True]
     assert c.listing_proposed and "📋" in kq[-1].reply
     assert not any(r.reply.startswith("Dạ") for r in kq)
 

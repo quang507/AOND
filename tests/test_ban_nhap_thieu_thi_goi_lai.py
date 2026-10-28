@@ -32,7 +32,7 @@ def _chuan_bi(loi):
     conv = eng.conversation("bn1")
     conv.prop.loai_hinh = "nha_pho"
     conv.prop.fields.update({"dia_chi": "110 Âu Cơ", "duong": "Âu Cơ", "gia": "16 tỷ", "lo_gioi_hem": "mặt tiền", "dien_tich_dat": "80m2",
-                             "ket_cau": "5 tầng", "phap_ly": "sổ riêng"})
+                             "ket_cau": "5 tầng", "phap_ly": "sổ riêng", "tinh_trang_ban_giao": "đang ở"})   # SRS-260: đủ ô cơ bản
     return eng, spy, conv
 
 

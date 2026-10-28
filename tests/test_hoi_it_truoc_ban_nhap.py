@@ -6,7 +6,8 @@ from aioi.schema import Property
 
 def _au_co(**them):
     f = {"duong": "Âu Cơ", "dia_chi": "110 Âu Cơ, Phường 9, Quận 11", "phuong": "Phường 9", "quan": "Quận 11",
-         "lo_gioi_hem": "mặt tiền", "dien_tich_dat": "80m2", "ket_cau": "5 tầng", "phap_ly": "sổ riêng", "gia": "16 tỷ"}
+         "lo_gioi_hem": "mặt tiền", "dien_tich_dat": "80m2", "ket_cau": "5 tầng", "phap_ly": "sổ riêng", "gia": "16 tỷ",
+         "tinh_trang_ban_giao": "đang ở"}   # SRS-5.1zzzzzzz260: hiện trạng là ô cơ bản trước bản nháp
     f.update(them)
     return Property(loai_hinh="nha_pho", fields=f)
 
@@ -14,8 +15,8 @@ def _au_co(**them):
 def test_so_rieng_thi_khong_hoi_rieng_hoan_cong():
     p = _au_co()
     # 20/10 (SRS-5.1zzzzzzz81): hiện trạng lại hỏi trước bản nháp như bản anh Luận; hoàn công vẫn không hỏi riêng khi đã nói sổ.
-    assert p.missing_fields() == ["dien_tich_nha", "tinh_trang_ban_giao"]
-    assert p.summary_ready()        # SRS-5.1zzzzzzz200: đã có loại + vị trí + giá thì ra nháp, hai ô trên hỏi sau
+    assert p.missing_fields() == ["dien_tich_nha"]
+    assert p.summary_ready()        # SRS-5.1zzzzzzz260: đủ ô cơ bản thì ra nháp, diện tích sàn hỏi sau
 
 
 def test_du_dien_tich_san_la_ra_ban_nhap():
