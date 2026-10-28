@@ -4,6 +4,7 @@ giờ hẹn lượt trước vào đó nên lượt chê căn / xin thôi báo /
 Nay kiểm TỪNG việc theo cụm của chính nó. Đỏ khi: quay lại kiểm chung cả khối, gửi lại ảnh đã gửi hết, lượt "ok" dài không bị gọi lại."""
 from aioi import anh_can
 from aioi.engine import _dap_ok_qua_dai, _loc_viec_mua
+from aioi.mua import XIN_THEM_ANH
 from tests.test_viec_mua import KHACH_MUA, _engine
 from tests.test_xin_anh_can import KhoAnh
 
@@ -38,12 +39,15 @@ def test_kieu_cu_trich_chung_dung_van_nhan_het_va_hen_ghep_tu_nhieu_tin():
 def test_xin_anh_khi_da_gui_het_noi_that_khong_gui_lai():
     anh_can._so_gui.dat("mua-anh", "ABCD1234", 4)
     try:
-        eng, ai = _engine(KhoAnh(4), {**KHACH_MUA, "mua": {"ma_can": ["ABCD1234"], "xin_anh": True, "xin_anh_trich": "cho anh xem ảnh"}})
+        kho = KhoAnh(4)
+        eng, ai = _engine(kho, {**KHACH_MUA, "mua": {"ma_can": ["ABCD1234"], "xin_anh": True, "xin_anh_trich": "cho anh xem ảnh"}})
         r = eng.handle("mua-anh", "cho anh xem ảnh căn đó với em")
     finally:
         anh_can._so_gui.dat("mua-anh", "ABCD1234", 0)
     assert r.xin_anh == []
-    assert any("ĐÃ gửi đủ cả 4 ảnh" in s and "xin chủ nhà thêm ảnh" in s for s in ai.system)
+    assert any("ĐÃ gửi đủ cả 4 ảnh" in s and "em ĐÃ nhắn chủ nhà xin thêm ảnh" in s for s in ai.system)
+    # SRS-5.1zzzzzzz254: nhờ chủ nhà gửi thêm ảnh NGAY qua `info_requests` (không hỏi khách "có muốn em xin không")
+    assert any(m == "POST" and e == "info_requests" and (d or {}).get("question") == XIN_THEM_ANH for m, e, d, *_ in kho.goi)
     assert not any("gửi ảnh #ABCD1234 NGAY SAU tin này" in s for s in ai.system)
 
 

@@ -134,6 +134,12 @@ def _chu_nhu_cau(lead: Any) -> str:
     return ". ".join(p for p in phan if p)
 
 
+# SRS-5.1zzzzzzz254 (chủ dự án 28/10: "em xin chủ nhà ảnh … cái này cần thiết"): khách mua xin ảnh mà căn chưa có / đã gửi đủ → câu hỏi chủ
+# nhà đi đường `info_requests` sẵn có (chủ nhà 12 giờ, quá hạn admin; chủ nhà được nhắn qua `notify_info_request_escalation`). Chủ nhà gửi ảnh
+# vào chat → lõi đặt câu này `answered` (`tra_loi_xin_anh`) → trigger `info_request_bao_lai_khach` đẻ nhắc `followup` → `gui_nhac` báo khách.
+XIN_THEM_ANH = "Khách xin thêm ảnh thực tế của căn"
+
+
 class KhoNguoiMua:
     """Trộn vào `SupabaseConversationStore` (dùng `_get` / `_post` / `_patch` / `_request` / `is_configured` của nó)."""
 
@@ -552,6 +558,26 @@ class KhoNguoiMua:
         except Exception as e:  # noqa: BLE001
             log.warning("ghi_hoi_chu_nha lỗi: %s", e)
             return False
+
+    def xin_them_anh(self, buyer_id: str, can: dict) -> bool:
+        """Khách mua xin ảnh mà căn chưa có / đã gửi đủ → nhờ chủ nhà gửi thêm (SRS-5.1zzzzzzz254)."""
+        return self.ghi_hoi_chu_nha(buyer_id, can, XIN_THEM_ANH)
+
+    def tra_loi_xin_anh(self, user_key: str, code: str, so_anh: int) -> int:
+        """Chủ nhà (Zalo `user_key`) vừa gửi `so_anh` ảnh vào căn `code` → mọi câu "xin thêm ảnh" đang chờ của căn đó thành đã trả lời (trigger
+        báo lại khách). Trả số câu đã đặt; lỗi / không có → 0."""
+        if not (self.is_configured and user_key and code and so_anh > 0):
+            return 0
+        try:
+            s = self._get(f"sellers?zalo_user_id=eq.{_q(user_key)}&select=id")
+            tin = self._get(f"listings?seller_id=eq.{s[0]['id']}&code=eq.{_q(code)}&select=id") if s else []
+            if not tin:
+                return 0
+            rows = self._get(f"info_requests?listing_id=eq.{tin[0]['id']}&status=eq.pending&question=eq.{_q(XIN_THEM_ANH)}&select=id")
+        except Exception as e:  # noqa: BLE001
+            log.warning("tra_loi_xin_anh lỗi: %s", e)
+            return 0
+        return sum(1 for r in rows if self.tra_loi_cau_hoi(r["id"], f"chủ nhà đã gửi thêm {so_anh} ảnh"))
 
     # --- Trả lời câu khách hỏi ----------------------------------------------------------------------------------------
     def cau_hoi_cho_nguoi_ban(self, user_key: str) -> list[dict]:

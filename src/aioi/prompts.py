@@ -1002,7 +1002,8 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
         viec = "hỏi khách đã ưng bản tin chưa; khách ưng thì em đăng (tự đặt câu, đừng lặp cách nói lượt trước)."
     elif web.get("len_web") is False:
         ly_do = f"TIN CHƯA HIỂN THỊ trên web (hệ thống đã kiểm). {cam}"
-        viec = "báo bên em đang hoàn tất để đưa tin lên."
+        viec = ("báo bên em đang hoàn tất để đưa tin lên, tin hiển thị em nhắn ngay kèm link." if web.get("hen_bao_len_web")
+                else "báo bên em đang hoàn tất để đưa tin lên.")
     else:  # không đọc được trạng thái
         ly_do = f"CHƯA XÁC NHẬN ĐƯỢC tin đã hiển thị trên web. {cam}"
         viec = f"nói tin sẽ hiển thị trên {_WEB} sau khi hệ thống hoàn tất."

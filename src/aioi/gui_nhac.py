@@ -23,12 +23,17 @@ from typing import Any, Callable
 
 from . import cau_mau
 from .bao_can_moi import trong_khung_gio
+from .mua import XIN_THEM_ANH
+from .web import link_tin
 from .xung_ho import goi_toi
 
 log = logging.getLogger(__name__)
 
-KIND_LOI = ("followup", "sold", "feedback", "admin_reply")
-KIND_TU_DONG = ("followup", "sold", "feedback")   # chỉ 8–20 giờ; `admin_reply` là người thật nói, gửi ngay
+KIND_LOI = ("followup", "sold", "feedback", "admin_reply", "len_web")
+KIND_TU_DONG = ("followup", "sold", "feedback", "len_web")   # chỉ 8–20 giờ; `admin_reply` là người thật nói, gửi ngay
+# SRS-5.1zzzzzzz254: `len_web` — chủ nhà đã duyệt tin mà lúc đó tin chưa hiển thị; lõi chờ tới khi tin `dang_ban` rồi nhắn chủ nhà kèm link.
+CHO_LEN_WEB_PHUT = 10
+CHO_LEN_WEB_TOI_DA = timedelta(days=7)
 ATTEMPTS_TOI_DA = 5
 TOI_DA_MOT_LUOT = 10
 
@@ -87,13 +92,38 @@ def soan_tin(kho: Any, r: dict, goi: str, toi: str) -> str | None:
                       "&select=question,answer&order=answered_at.desc.nullslast&limit=1")
         if not ir or not (ir[0].get("answer") or "").strip():
             return None
+        if (ir[0].get("question") or "").strip() == XIN_THEM_ANH:   # SRS-5.1zzzzzzz254: chủ nhà gửi thêm ảnh khách xin
+            ma = _ma_can(kho, r.get("listing_id"))
+            return cau_mau.cau("bao_them_anh", goi, toi=toi, ma=ma, url=link_tin(ma if ma != "?" else None))
         return cau_mau.cau("bao_tra_loi_chu_nha", goi, toi=toi, ma=_ma_can(kho, r.get("listing_id")),
                            cau_hoi=(ir[0].get("question") or "").strip()[:200], tra_loi=ir[0]["answer"].strip()[:600])
     if kind == "sold":
         return cau_mau.cau("bao_can_da_ban", goi, toi=toi, ma=_ma_can(kho, r.get("listing_id")))
     if kind == "feedback":
         return cau_mau.cau("hoi_cam_nhan_sau_xem", goi, toi=toi, ma=_ma_can(kho, r.get("listing_id")))
+    if kind == "len_web":
+        ma = _ma_can(kho, r.get("listing_id"))
+        return cau_mau.cau("bao_tin_len_web", goi, toi=toi, url=link_tin(ma)) if ma != "?" else None
     return None
+
+
+def _cho_len_web(kho: Any, r: dict, bay_gio: datetime) -> bool:
+    """Nhắc `len_web` mà tin CHƯA hiển thị → hẹn xét lại sau CHO_LEN_WEB_PHUT phút (không đếm là gửi hụt); chờ quá CHO_LEN_WEB_TOI_DA thì
+    `dead`. True = chưa tới lúc gửi."""
+    if r.get("kind") != "len_web":
+        return False
+    tin = kho._get(f"listings?id=eq.{_q(r.get('listing_id') or '')}&select=status") if r.get("listing_id") else []
+    if tin and tin[0].get("status") == "dang_ban":
+        return False
+    try:
+        tao = datetime.fromisoformat(str(r.get("created_at") or "").replace("Z", "+00:00"))
+    except ValueError:
+        tao = bay_gio
+    if not tin or bay_gio - tao > CHO_LEN_WEB_TOI_DA:
+        _ket(kho, r, "dead", bay_gio, loi="tin chưa hiển thị sau 7 ngày" if tin else "không thấy tin")
+        return True
+    kho._patch(f"reminders?id=eq.{_q(r['id'])}", {"next_retry_at": _iso(bay_gio + timedelta(minutes=CHO_LEN_WEB_PHUT))})
+    return True
 
 
 def _nguoi_nhan(kho: Any, r: dict) -> tuple[str | None, str | None, str]:
@@ -142,7 +172,7 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str], bool], xung_ho_cua: Callab
     now = _iso(bay_gio)
     rows = kho._get(f"reminders?status=eq.pending&kind=in.({','.join(KIND_LOI)})&due_at=lte.{_q(now)}"
                     f"&or=(next_retry_at.is.null,next_retry_at.lte.{_q(now)})"
-                    "&select=id,kind,note,buyer_id,seller_id,listing_id,viewing_id,attempts&order=due_at.asc"
+                    "&select=id,kind,note,buyer_id,seller_id,listing_id,viewing_id,attempts,created_at&order=due_at.asc"
                     f"&limit={TOI_DA_MOT_LUOT}")
     trong_gio = trong_khung_gio(bay_gio)
     ra: list[dict] = []
@@ -150,6 +180,8 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str], bool], xung_ho_cua: Callab
         if r.get("kind") in KIND_TU_DONG and not trong_gio:
             continue   # để pending, lượt sau trong khung giờ mới gửi
         try:
+            if _cho_len_web(kho, r, bay_gio):
+                continue
             zalo, ten, vai = _nguoi_nhan(kho, r)
             if not zalo:
                 _ket(kho, r, "dead", bay_gio, loi="người nhận không có Zalo")

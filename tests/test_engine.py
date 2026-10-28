@@ -176,14 +176,34 @@ def test_near_miss_project_name_triggers_ask_on_ingest():
     # Extend "nghi ngờ thì hỏi" to the media/doc ingest path: a mishearing that differs only in the
     # tail ("Nyah Phú BÌNH" vs canonical "…ĐỊNH") must be flagged so AOND asks — not silently forked.
     eng = _engine()
-    eng._projects.save(Project("Ny'ah Phú Định"))
+    eng._projects.save(Project("Ny'ah Phú Định", attributes={"vị trí": "Phường 16, Quận 8, TP.HCM"}))
     assert eng.project_name_concern("Nyah Phú Bình")[0] == "near"      # tail differs, long shared prefix
     assert eng.project_name_concern("Nhã Đạt Phú Định")[0] == "near"   # front differs, shared tail
     assert eng.project_name_concern("Vinhomes Grand Park") is None     # genuinely different — no ask
     # Registering the mishearing stashes a clarifying question that the ingest reply drains once.
+    conv = eng.conversation("u")
+    conv.active.prop.fields["quan"] = "Quận 8"                          # SRS-5.1zzzzzzz254: cùng vị trí mới hỏi
     eng.register_project("Nyah Phú Bình", voter="u")
-    q = eng._drain_name_concern()
-    assert "Ny'ah Phú Định" in q and eng._drain_name_concern() == ""   # asked, then cleared
+    q = eng._drain_name_concern(conv)
+    assert "Ny'ah Phú Định" in q and eng._drain_name_concern(conv) == ""   # asked, then cleared
+    conv.active.prop.fields["quan"] = "Quận 7"                          # khác vị trí → không hỏi (tách dự án mới)
+    eng.register_project("Nhã Đạt Phú Định", voter="u")
+    assert eng._drain_name_concern(conv) == ""
+    conv.active.prop.fields.pop("quan")                                 # căn chưa có vị trí → không hỏi
+    eng.register_project("Ny ah Phu Dinh Moi", voter="u")
+    assert eng._drain_name_concern(conv) == ""
+
+
+def test_cau_hoi_trung_ten_la_cau_hoi_duy_nhat():
+    """Lời đã có câu hỏi → câu "🤔" sang lượt sau, thành khối ƯU TIÊN thay câu hỏi kế (SRS-5.1zzzzzzz252 / 254)."""
+    eng = _engine()
+    conv = eng.conversation("u2")
+    conv.pending_name_note = "Dự án “A” có phải cũng là “B” bên em đang có không ạ?"
+    assert eng._hoi_trung_ten(conv, "Anh xem giúp em tách vậy đúng không ạ?") == "Anh xem giúp em tách vậy đúng không ạ?"
+    khoi = eng._khoi_hoi_trung_ten(conv)
+    assert "câu hỏi DUY NHẤT" in khoi and "“B”" in khoi and conv.pending_name_note == ""
+    conv.pending_name_note = "Dự án “A” có phải cũng là “B” bên em đang có không ạ?"
+    assert eng._hoi_trung_ten(conv, "Em đọc xong tài liệu rồi ạ.").endswith("🤔 Dự án “A” có phải cũng là “B” bên em đang có không ạ?")
 
 
 def test_so_do_personal_data_redacted_but_land_facts_kept():
@@ -217,10 +237,10 @@ def test_drive_file_link_is_read_as_media_not_a_web_page():
     eng = _engine(fetcher=lambda u: FetchedMedia(b"\xff\xd8\xff", "image/jpeg", u, filename="nha.jpg"))
     r = eng.handle_link(
         "d1", "https://drive.google.com/open?id=1vMvOLSURsd6UyBtTGr62qja6NCcDAAa0&usp=drive_fs")
-    assert "📎 Em đã nhận" in r.reply          # đi đường đọc media
+    assert "ảnh/tài liệu" in r.reply or "tài liệu/ảnh" in r.reply   # đi đường đọc media (lời mock describe_media)
     assert "dự án nào" not in r.reply.lower()  # KHÔNG bị đọc như trang web dự án
     r2 = eng.handle_link("d2", "https://drive.google.com/file/d/1AbCdEfGhIjKlMnOp/view?usp=sharing")
-    assert "📎 Em đã nhận" in r2.reply and "drive.google.com" not in r2.reply   # cách viết link khác, chưa từng bắn
+    assert ("ảnh/tài liệu" in r2.reply or "tài liệu/ảnh" in r2.reply) and "drive.google.com" not in r2.reply   # cách viết link khác, chưa từng bắn
 
 
 def test_reply_is_complete_and_not_truncated():
@@ -645,7 +665,7 @@ def test_handle_media_reads_link_and_replies():
     eng = _engine(fetcher=fake)
     r = eng.handle_media("u11", "https://example.com/x.jpg")
     assert r.reply  # a confirmation reply was produced
-    assert "So_Hong.jpg" in r.reply  # the filename is shown back to the seller
+    assert "📎" not in r.reply  # SRS-5.1zzzzzzz254: không còn dòng "Em đã nhận <tên tệp>"
     # SRS-5.1zzzzzzz82: câu sau danh sách đọc từ sổ do model viết (không còn câu viết cứng "xác nhận… pháp lý sổ chuẩn chỉnh")
     assert "(offline)" in r.reply and "chuẩn chỉnh" not in r.reply
     conv = eng.conversation("u11")
@@ -677,7 +697,7 @@ def test_resolver_expands_a_drive_folder_into_files():
         return FetchedMedia(b"x", "image/jpeg", url)
     eng = _engine(fetcher=fetcher, resolver=resolver)
     r = eng.handle_media("u15", "https://drive.google.com/drive/folders/FLD")
-    assert "mat_tien.jpg" in r.reply and "so_hong.pdf" in r.reply  # both names shown
+    assert "📎" not in r.reply
 
 
 def test_oversize_send_is_escalated_to_admin_not_processed():
@@ -1431,7 +1451,7 @@ def test_media_batch_single_group_falls_back_to_one_listing():
     )
     r = eng.handle_media_batch("g1", ["https://x/a.jpg", "https://x/b.jpg"])
     assert len(eng.conversation("g1").listings) == 1
-    assert "a.jpg" in r.reply and "b.jpg" in r.reply
+    assert "📎" not in r.reply
 
 
 def test_media_batch_splits_into_new_listings():
