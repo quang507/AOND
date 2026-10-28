@@ -6,5 +6,6 @@
     "deploymentEnabled": {
       "claude/**": false
     }
-  }
+  },
+  "ignoreCommand": "bash scripts/vercel-ignore.sh"
 }
