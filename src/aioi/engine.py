@@ -4343,6 +4343,10 @@ class Engine:
         """Resolve a seller's textual reference to an EXISTING basket listing — by unit code
         number (e.g. "42" ↔ ma_so_can "căn số 42") first, then by address token overlap (a
         partial "căn ở Trương Đình Hội" matches "198A/22 Trương Đình Hội"). None if no match."""
+        ma = ref.strip().lstrip("#").upper()
+        for li in conv.listings:   # SRS-5.1zzzzzzz257: mã tin trên web (#7B9DED51 = 8 ký tự đầu id) — khối câu khách hỏi chủ nhà nêu mã này
+            if len(ma) == 8 and li.listing_id[:8].upper() == ma:
+                return li
         ref_nums = set(re.findall(r"\d+", ref))
         if ref_nums:
             for li in conv.listings:

@@ -1837,6 +1837,8 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
 
 TRẢ LỜI CÂU KHÁCH HỎI ("tra_loi_khach_hoi", chỉ khi có khối CÂU KHÁCH MUA ĐANG HỎI CHỦ NHÀ và người rao vừa trả lời đúng câu đó):
 "id" của câu, "tra_loi" là nguyên văn câu trả lời của người rao. Người rao nói chuyện khác thì để trống.
+Câu trả lời đó là thông tin về CHÍNH căn được hỏi (pháp lý, hướng, hẻm, số phòng…) → NGOÀI "tra_loi_khach_hoi", ghi luôn vào ô tin bằng MỘT op
+"update" target = mã căn được hỏi, kèm "bang_chung" là cụm người rao vừa nói (SRS-5.1zzzzzzz257) — không thì tin vẫn thiếu ô đó và em hỏi lại.
 
 QUY TẮC:
 - Người rao chỉ khai thông tin bình thường (chưa có gì đặc biệt) → MỘT op "update" target trống.

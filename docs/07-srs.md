@@ -9071,6 +9071,12 @@ Chủ dự án 28/10: "có sửa đi" (việc còn lại ở SRS-256 mục 5).
    thể bị hỏi các ô đó (là ô còn thiếu thật của tin, đúng ý "xin chủ nhà các trường đang thiếu"). (3) *Bài đỏ*:
    `tests/test_trang_thai_va_nap_lai.py::test_tin_tao_ngoai_chat_nap_o_tu_cot` — gỡ bản sửa: đỏ; `ban-thu-mua` thêm bài "chủ nhà trả lời xong
    không bị hỏi lại địa chỉ".
+4. **Kết quả + phần thêm** — `ban-thu-mua` run 40728653137 (lõi `971b0f7`) ĐẠT 11/11: chủ nhà trả lời xong không bị hỏi địa chỉ, bot hỏi ô còn
+   thiếu thật (mặt tiền / hẻm). Thấy thêm: câu trả lời "sổ hồng riêng chính chủ" chỉ đi vào `info_requests`, ô pháp lý của tin vẫn trống
+   ("không có ô mới") → lượt sau bot có thể hỏi lại pháp lý. Sửa: `OPERATIONS_SYSTEM` (khối "TRẢ LỜI CÂU KHÁCH HỎI") dặn câu trả lời về chính căn
+   được hỏi thì ghi luôn ô tin bằng op "update" target = mã căn (qua cổng bằng chứng như mọi ô); `Engine._match_listing` nhận mã tin web
+   (#XXXXXXXX = 8 ký tự đầu id) — bản trước chỉ khớp số trong `ma_so_can` / địa chỉ. Bài: `test_chu_nha_tra_loi_ghi_o_tin_theo_ma_can` (đỏ khi
+   gỡ), `ban-thu-mua` thêm "ô pháp lý của tin được ghi".
 
 ### SRS-5.1zzzzzzz256 · Lượt lập thao tác của khách mua phải biết vai khách mua — khách hỏi chủ nhà không bị đọc thành ô tin rao (28/10/2026)
 Chủ dự án 28/10: "phần khách mua có yêu cầu thì nhắn hỏi xin lại thông tin của chủ nhà ổn chưa".
