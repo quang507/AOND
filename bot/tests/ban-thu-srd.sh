@@ -64,7 +64,7 @@ for cau in "Anh muốn gửi bán căn nhà phố ở Quận 5." "Nhà hẻm 123
   chat "$SRD" "$cau"; sleep 1
 done
 LOI_SAU_GIA="$LOI"
-# Bản nháp chưa ra sau câu giá thì khách trả lời thêm một ý bot hỏi (SRS-202: soạn bài khi còn ≤ 1 facet chính trống).
+# Bản nháp chưa ra sau câu giá thì khách trả lời thêm hiện trạng (SRS-260: soạn bài khi đủ quy mô · pháp lý · hiện trạng).
 [ -z "$LUOT_NHAP" ] && { chat "$SRD" "Nhà đang để trống em."; sleep 1; }
 chat "$SRD" "OK em. Có khách báo anh."; sleep 1
 chat "$SRD" "Tặng hết nội thất dính tường nha."; sleep 1

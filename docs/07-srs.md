@@ -9058,6 +9058,24 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz261 · Lời chào số tư vấn nói rõ vai mua / thuê; môi giới hỏi căn dùng số tư vấn (28/10/2026)
+Chủ dự án 28/10: hỏi lời chào bên mua ("tư vấn mua nhà đất hay sao ạ"), rồi "bạn quyết thêm đi, còn chỗ nào cần quy định rồi làm luôn".
+1. **Lời chào** — câu mẫu `chao_tu_van`:
+   - **Cũ:** "trợ lý bất động sản … đang tìm căn như thế nào".
+   - **Mới:** "trợ lý tư vấn mua / thuê nhà đất … đang tìm mua hay thuê căn như thế nào, kể em nghe với ạ?" Vẫn MỘT câu hỏi mở (SRS-212), không kể
+     loại nhà / khu vực.
+   - Migration `20261028o_cau_mau_chao_tu_van.sql`: dòng chủ dự án đã sửa tay ở CRM giữ nguyên.
+2. **Quyết định (BA, chủ dự án uỷ quyền 28/10)** — môi giới cần thêm thông tin căn thì nhắn số tư vấn người mua:
+   - bot trả lời từ tin;
+   - thiếu thì hỏi chủ nhà qua `info_requests` (SRS-254 / 256), báo lại khi chủ nhà trả lời.
+   - Chưa làm số Zalo nội bộ riêng hay AI hỏi đáp trên web. Làm sau khi có số đo môi giới nhắn thật.
+3. **Quyết định đi kèm SRS-260:**
+   - Loại thương mại / công nghiệp chưa có ô pháp lý / hiện trạng trong bộ câu hỏi (`CORE_FIELDS`) nên chỉ đòi quy mô trước bản nháp.
+   - Giữ nguyên tới khi có tin loại này thật.
+4. **Kiểm**
+   - `tests/test_cau_mau.py`: câu mặc định khớp migration.
+   - `tests/test_loi_5_khach.py`: lời chào vẫn mở, không kể khu vực.
+
 ### SRS-5.1zzzzzzz260 · Đủ soạn bản nháp = giá · địa chỉ hoặc khu vực · quy mô · pháp lý · hiện trạng (28/10/2026)
 Chủ dự án 28/10: "các trường cơ bản giá, địa chỉ hoặc khu vực, quy mô, pháp lý và hiện trạng là đủ … đổi đi". Thay luật "≥ 3/4 facet chính"
 của SRS-5.1zzzzzzz202.
