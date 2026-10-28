@@ -112,12 +112,24 @@ class ClaudeProvider(LLMProvider):
         self._vision_model = settings.vision_model  # Opus 4.8 for vision/OCR-grade reads
         # Mỗi lượt gọi ghi token + model thật vào sổ Supabase (cong_token) để /admin quy ra đô (SRS-5.1zzzzzzz49).
         self._so = SoToken.tu_cau_hinh(settings.supabase_url, settings.supabase_service_role_key)
+        # SRS-5.1zzzzzzz244: model API từ chối tool_choice ép một công cụ ("tool_choice: type tool and any are not supported" — bắn thử
+        # Sonnet 5.5 28/10, mọi lượt chat 400) → nhớ model đó, các lượt sau gửi tool_choice auto.
+        self._khong_ep_tool: set[str] = set()
 
     def _tao(self, nhan: str, **kw: Any) -> Any:
-        """messages.create + báo sổ lỗi khi API từ chối (hết số dư, quá tải…) rồi ném lên như cũ (SRS-5.1zzzzzzz56)."""
+        """messages.create + báo sổ lỗi khi API từ chối (hết số dư, quá tải…) rồi ném lên như cũ (SRS-5.1zzzzzzz56).
+        Model không nhận tool_choice ép công cụ (SRS-5.1zzzzzzz244) → gửi lại một lần với tool_choice auto, nhớ model cho các lượt sau."""
+        ep = isinstance(kw.get("tool_choice"), dict) and kw["tool_choice"].get("type") in ("tool", "any")
+        if ep and kw.get("model") in self._khong_ep_tool:
+            kw = {**kw, "tool_choice": {"type": "auto"}}
+            ep = False
         try:
             return self._client.messages.create(**kw)
         except Exception as e:
+            if ep and "tool_choice" in str(e) and "not supported" in str(e):
+                self._khong_ep_tool.add(str(kw.get("model")))
+                log.warning("Model %s không nhận tool_choice ép công cụ — chuyển sang auto", kw.get("model"))
+                return self._tao(nhan, **kw)
             self._so.bao_loi(nhan, e)
             raise
 
@@ -173,6 +185,8 @@ class ClaudeProvider(LLMProvider):
             o = next((dict(b.input or {}) for b in resp.content if b.type == "tool_use"), {})
             # Bắn thử 20/10: Haiku gõ tên ô có dấu ("loi_gui_khách") → lời rỗng, tốn một lượt gọi lại. Nhận tên ô theo chữ bỏ dấu.
             loi = str(next((v for k, v in o.items() if _bo_dau(k) == "loi_gui_khach"), "") or "").strip()
+            if not loi and not o:   # SRS-5.1zzzzzzz244: tool_choice auto, model trả chữ thường không gọi công cụ → lấy chữ đó
+                loi = "".join(b.text for b in resp.content if b.type == "text").strip()
             if loi:
                 return loi
             self._so.ghi_loi("claude chat", f"lời gửi khách rỗng (lần {lan + 1}): stop={getattr(resp, 'stop_reason', '?')}, "

@@ -102,3 +102,29 @@ def test_ban_nhap_bo_cau_dan_truoc_dong_mo_dau():
     assert cat_truoc_mo_dau("Em ghi nhận giá 16 tỷ rồi anh. Em sẽ rao như vầy nhé anh:\n\nBán nhà MT Âu Cơ") == \
         f"{MO_DAU_NHAP[1]}\n\nBán nhà MT Âu Cơ"
     assert cat_truoc_mo_dau("Mình sẽ rao như vầy nhé bạn:\nBán đất") == f"{MO_DAU_NHAP[0]}\nBán đất"
+
+
+def test_model_khong_nhan_ep_cong_cu_thi_chuyen_auto():
+    """SRS-5.1zzzzzzz244 (bắn thử 28/10, Sonnet 5.5): API trả 400 "tool_choice: type tool and any are not supported" cho MỌI lượt chat →
+    khách chỉ nhận câu chờ. Nay gửi lại với tool_choice auto, nhớ model; model trả chữ thường (không gọi công cụ) thì lấy chữ đó.
+    Đỏ khi lỗi 400 ném thẳng lên."""
+    from aioi.llm.claude import ClaudeProvider
+
+    class Api400:
+        def __init__(self):
+            self.calls = []
+
+        def create(self, **kw):
+            self.calls.append(kw)
+            if kw.get("tool_choice", {}).get("type") in ("tool", "any"):
+                raise RuntimeError("Error code: 400 - tool_choice: type \"tool\" and \"any\" are not supported")
+            usage = SimpleNamespace(input_tokens=1, output_tokens=1, cache_creation_input_tokens=0, cache_read_input_tokens=0)
+            return SimpleNamespace(model=kw["model"], usage=usage, content=[SimpleNamespace(type="text", text="Nhà mình mấy tầng ạ?")],
+                                   stop_reason="end_turn")
+    p = ClaudeProvider(Settings(provider="claude", anthropic_api_key="test", chat_model="claude-sonnet-5-5", vision_model="v"))
+    p._client = SimpleNamespace(messages=Api400())
+    p._so = SoToken(None, nen=False)
+    assert p.reply("s", [Message("user", "nhà mình có sổ riêng")]) == "Nhà mình mấy tầng ạ?"
+    assert p.reply("s", [Message("user", "ok")]) == "Nhà mình mấy tầng ạ?"
+    kieu = [c["tool_choice"]["type"] for c in p._client.messages.calls]
+    assert kieu == ["tool", "auto", "auto"]           # lượt sau không thử ép lại

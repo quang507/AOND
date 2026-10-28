@@ -387,6 +387,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-164, FR-165, FR-150, FR-177, FR-105 | — | — | 28/10 (SRS-5.1zzzzzzz241): tiêu đề viết thường (`_viet_hoa_ca_cum`), chính sách OPEN-63 (`BUSINESS_CONTEXT`), `admin_xac_minh` (`20261028f`, Sửa tin), ảnh 480px (`20261028g`, `kho_anh`, `UploadAnh`), hai tin chung căn (`_tach_tin_ban_thue`, `20261028h`), AI chấm ảnh (`khong_phai_anh_can`), bắn thử không ghi sổ lỗi giả | `tests/test_quyet_dinh_28_10.py`, `tests/test_kho_anh.py`, `tests/test_sua_tin_admin.py`, `bot/tests/sql/anh-480.sql`, `bot/tests/sql/nguon-admin-xac-minh.sql` |
 | — | — | — | 28/10 (SRS-5.1zzzzzzz242): ngưỡng kho điều luật `NGUONG_LUAT` 0,62 → 0,69 theo số đo 12 câu trên kho thật | `tests/test_kho_dieu_luat.py` |
 | — | — | — | 28/10 (SRS-5.1zzzzzzz243): bắn thử bằng Sonnet 5.5 (`MODEL_CHAT_THU`), bộ câu môi giới bắn chậm | `tests/test_id_thu_gemini.py` |
+| — | — | — | 28/10 (SRS-5.1zzzzzzz244): Sonnet 5.5 từ chối tool_choice ép công cụ — `ClaudeProvider._tao` chuyển auto, `reply` lấy chữ thường | `tests/test_loi_gui_khach.py` |
 
 ## 8.4 Rủi ro → biện pháp
 

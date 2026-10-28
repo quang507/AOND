@@ -9058,6 +9058,20 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz244 · Sonnet 5.5 từ chối tool_choice ép công cụ → mọi lượt chat chỉ ra câu chờ (28/10/2026)
+Ca gốc: bắn thử kịch bản anh Luận bằng Sonnet 5.5 (SRS-243, run 40653399444) — 20/20 lượt chat lỗi 400 "tool_choice: type "tool" and "any" are not
+supported", khách thử chỉ nhận câu chờ "Em đang xem kỹ thông tin…". Bóc tách (Haiku) vẫn chạy nên ô tin đủ. Khách thật chat bằng cùng model
+(`MODEL_CHAT`, SRS-235): sổ lỗi `claude chat` 30 giờ qua chỉ có 20 dòng của lượt bắn thử, khách thật cuối nhắn 03:xx UTC — chưa thấy khách thật
+dính, nhưng lượt kế tiếp của khách thật sẽ dính.
+Nguyên nhân: `ClaudeProvider.reply` ép model gọi công cụ hai ô `gui_khach` (`tool_choice` type tool, SRS-76); Sonnet 5.5 không nhận kiểu ép đó.
+Sửa: `ClaudeProvider._tao` — model trả lỗi đúng câu này thì gửi lại MỘT lần với `tool_choice` auto và nhớ model (`_khong_ep_tool`), lượt sau
+khỏi thử ép; `reply` lấy chữ thường khi model không gọi công cụ. Áp cho mọi lời gọi qua `_tao` (bóc tách, gom ảnh…) nếu sau này đổi model.
+Ba câu gốc — (1) *lớp lỗi*: đổi model chat (SRS-235) không có bài kiểm gọi API thật với model mới; bắn thử lúc đó chạy Gemini nên không đi qua
+đường Claude. (2) *chỗ khác cùng lớp*: mọi chỗ ép `tool_choice` (`extract`, `group_media`, đọc ảnh) đi qua `_tao` — cùng lưới. Còn: với tool_choice
+auto, lời gửi khách có thể lẫn ghi chú tự soát (lý do của SRS-76) — lưới hình thức `_soat_hinh_thuc` vẫn chạy sau. (3) *kiểm*:
+`tests/test_loi_gui_khach.py::test_model_khong_nhan_ep_cong_cu_thi_chuyen_auto` (lỗi 400 → auto, lượt sau không ép lại; chữ thường được lấy) —
+gỡ bản sửa thì đỏ (đã chạy); bắn lại kịch bản anh Luận bằng Sonnet 5.5 sau khi cài.
+
 ### SRS-5.1zzzzzzz243 · Bắn thử bằng Claude Sonnet 5.5 thay Gemini (28/10/2026)
 Chủ dự án 28/10: "bắn cả hai đi … đổi thành claude sonnet 5.5 xem nó có nịnh tốt ko". `bot/bridge-zca/cai-vps.sh` `MODEL_CHAT_THU` = `claude-sonnet-5-5`:
 ID thử chat bằng đúng model khách thật, bóc tách Haiku như khách thật (lượt Gemini 28/10 trượt vì Gemini bóc tách sai ô — SRS-239 / 241). Quay lại
