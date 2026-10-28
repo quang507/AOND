@@ -140,4 +140,4 @@ def test_khach_hoi_phi_cung_doc_cau_bao_phi():
     """Nhánh khách chủ động hỏi phí (engine) dùng cùng câu mẫu, không viết câu phí riêng."""
     goc = (pathlib.Path(cau_mau.__file__).parent / "engine.py").read_text()
     khoi = goc[goc.index('if conv.hoi_ve_luot == "phi":'):goc.index('elif conv.hoi_ve_luot == "uy_tin":')]
-    assert "khoi_bao_phi(conv.user_type, conv.prop.is_rental)" in khoi
+    assert "khoi_bao_phi(conv.vai_phi, conv.prop.is_rental)" in khoi   # SRS-5.1zzzzzzz240: vai tính phí

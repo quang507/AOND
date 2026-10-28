@@ -304,7 +304,7 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 ### Bố cục bài rao (`AD_FORMAT`, `src/aioi/prompts.py`)
 Chuẩn khi model viết bài rao (khuôn anh Luận, SRS-5.1zzzzzzz201 / 207; đọc nguyên văn ở `AD_FORMAT`):
 1. **Tiêu đề 15–25 từ**, mở bằng câu gọi mời ("Anh chị ơi,"), dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm), phải có GIÁ.
-   `AD_FORMAT` (nguyên bản anh Luận, SRS-5.1zzzzzzz207) ghi "viết hoa gây chú ý"; luật cũ "không HOA toàn bộ / không `**`" (SRS-5.1zzzzzzz192) đã bị SRS-207 thay. Viết hoa cả dòng hay chỉ nhấn chữ: prompt không nói rõ — chưa chốt.
+   `AD_FORMAT` (nguyên bản anh Luận, SRS-5.1zzzzzzz207) ghi "viết hoa gây chú ý"; luật cũ "không HOA toàn bộ / không `**`" (SRS-5.1zzzzzzz192) đã bị SRS-207 thay. Chủ dự án chốt 28/10/2026: GIỮ viết hoa gây chú ý như `AD_FORMAT` (SRS-5.1zzzzzzz240) [nguồn: chủ dự án 28/10/2026, chat].
 2. **Mô tả**: MỘT đoạn 70–150 từ giọng rao chợ, nói với đám đông người mua ("anh chị", "cô bác", không "bạn"); không gạch đầu dòng.
 3. **4–5 gạch đầu dòng**, mỗi dòng một ý đắt nhất; không ghi nhãn khi dữ liệu tự rõ ("132m²", không "Diện tích: 132m²").
 4. **Câu mời chốt** nhắn Zalo, FOMO chỉ là lời thúc chung, không bịa sự kiện.

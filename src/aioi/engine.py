@@ -123,6 +123,8 @@ from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, san
 # Headroom so the token cap never truncates a reply. The model controls actual length
 # via the prompt (brief while chatting, full ad when asked / complete).
 REPLY_MAX_TOKENS = 4096
+# SRS-5.1zzzzzzz240 (OPEN-28 b, FR-160): từ tin BÁN thứ mấy trong rổ thì phí tính như môi giới.
+TIN_BAN_LA_MOI_GIOI = 3
 # SRS-5.1zzzzzzz210: giá trị `Conversation.so_nhan` của số Zalo tư vấn người mua (bridge gửi `so_nhan`); "" = số ký gửi.
 SO_TU_VAN = "tu_van"
 
@@ -565,6 +567,18 @@ class Conversation:
         self.active_listing_id = li.listing_id
         return li
 
+    @property
+    def vai_phi(self) -> SellerRole:
+        """Vai TÍNH PHÍ (SRS-5.1zzzzzzz240, chủ dự án 28/10 — OPEN-28 b, FR-160): từ tin BÁN thứ `TIN_BAN_LA_MOI_GIOI` trong rổ, người rao chính
+        chủ / lướt sóng / chưa rõ vai tính phí như môi giới (0,5 %); tin cho thuê không đếm (phí thuê theo tháng tiền thuê, không theo vai).
+        `user_type` (vai khách tự gọi tên) giữ nguyên — chỉ con số phí trôi theo số tin."""
+        if self.user_type in (SellerRole.CHU_NHA, SellerRole.LUOT_SONG, SellerRole.UNKNOWN):
+            ban = [li for li in self.listings
+                   if not li.prop.is_rental and any(li.prop.fields.get(k) for k in ("ma_so_can", "dia_chi", "gia"))]
+            if len(ban) >= TIN_BAN_LA_MOI_GIOI:
+                return SellerRole.MOI_GIOI
+        return self.user_type
+
     def new_listing(self) -> Listing:
         """Start a fresh listing and make it active (seller is listing another property)."""
         li = Listing(history_start=len(self.history))
@@ -683,6 +697,12 @@ def khoi_can_nguoi(conv: "Conversation") -> str:
     `khoi_phap_ly` (SRS-5.1zzzzzzz176)."""
     if not conv.y_luot.get("can_nguoi_that") or conv.y_luot.get("phap_ly_nhay_cam"):
         return ""
+    if conv.y_luot.get("cdt_bao_admin"):   # SRS-5.1zzzzzzz240: người rao là chủ đầu tư (OPEN-21 a)
+        return (
+            "\n\n=== ƯU TIÊN LƯỢT NÀY — NGƯỜI RAO LÀ CHỦ ĐẦU TƯ (hệ thống ĐÃ BÁO bộ phận hợp tác dự án): ===\n"
+            "Phí với chủ đầu tư là thoả thuận riêng — KHÔNG nêu con số % nào. Nói ngắn: em đã báo bộ phận hợp tác dự án, anh/chị phụ trách "
+            "sẽ liên hệ sớm. KHÔNG hứa giờ cụ thể, KHÔNG xin số điện thoại. Sau đó tiếp chuyện dự án / căn như thường.\n"
+        )
     return (
         "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH XIN GẶP NGƯỜI THẬT (hệ thống đã đọc, ĐÃ BÁO người phụ trách): ===\n"
         "Nói ngắn, ấm: em đã báo anh/chị phụ trách, anh/chị ấy sẽ nhắn khách sớm. KHÔNG hứa giờ cụ thể, KHÔNG xin số điện thoại. "
@@ -2560,7 +2580,7 @@ class Engine:
         xin_sao = False
         if not is_listing_post:
             system = build_chat_system(
-                conv.assistant.name, conv.prop, next_field, conv.user_type, project_block, cum=cum_hoi,
+                conv.assistant.name, conv.prop, next_field, conv.vai_phi, project_block, cum=cum_hoi,
                 hoi_lai=bool(next_field and conv.lo.get(next_field, 0) >= 1),   # SRS-5.1zzzzzzz200: đừng nhắn trùng câu cũ
                 o_bo_qua=o_truoc if o_truoc in thieu else None,
             ) + khoi_xin_dang(toi_thieu, conv.prop) + self._khoi_diem_tin(conv, now)
@@ -2579,7 +2599,7 @@ class Engine:
             if web_tin is not None and conv.prop.fields.get("_da_bao_dang"):
                 web_tin["da_bao_dang"] = True   # SRS-5.1zzzzzzz220: đã báo đăng tin ở lượt trước — không "xin phép đăng tin" lại mỗi lần "ok"
             system = build_fee_followup_system(
-                conv.assistant.name, conv.prop, conv.user_type, project_block, web=web_tin,
+                conv.assistant.name, conv.prop, conv.vai_phi, project_block, web=web_tin,
                 duyet=conv.duyet_luot, phi_da_bao=bool(conv.prop.fields.get("_phi_da_bao")), yeu_cau_moi=conv.y_luot.get("yeu_cau_viet"),
             )
             len_web = bool(web_tin and web_tin.get("len_web"))
@@ -2645,8 +2665,8 @@ class Engine:
                 "Trả lời RÕ RÀNG trước: đăng tin MIỄN PHÍ; CHỈ thu phí khi giao dịch thành công, không thành thì không tốn đồng nào. "
                 "Con số phí đúng theo VAI NGƯỜI RAO / BỐI CẢNH ở trên (bán: 1% chính chủ, 0.5% môi giới; cho thuê: 0.75 tháng tiền thuê "
                 "= 3/4 của MỘT tháng tiền thuê; chưa rõ vai thì nêu cả hai hoặc hỏi khéo khách là chủ nhà hay môi giới). Sau đó nối lại nội dung căn đang trao đổi.\n"
-                + ((_fee_hint(conv.user_type) + "\n") if _fee_hint(conv.user_type) else "")
-                + ((khoi_bao_phi(conv.user_type, conv.prop.is_rental) + "\n") if khoi_bao_phi(conv.user_type, conv.prop.is_rental) else "")
+                + ((_fee_hint(conv.vai_phi) + "\n") if _fee_hint(conv.vai_phi) else "")
+                + ((khoi_bao_phi(conv.vai_phi, conv.prop.is_rental) + "\n") if khoi_bao_phi(conv.vai_phi, conv.prop.is_rental) else "")
             )
         elif conv.hoi_ve_luot == "uy_tin":
             hoi_ve_khoi = (
@@ -2843,7 +2863,7 @@ class Engine:
             ly_do.append("Lời vừa viết gọi khách là \"mình\" (\"em xin lỗi mình\", \"Mình đang cần…\") — KHÔNG dùng \"mình\" gọi khách hay tự xưng: "
                          "gọi đúng cách khách xưng (em / cháu / anh / chị), chưa rõ thì \"anh/chị\"; tự xưng đúng QUY TẮC XƯNG HÔ ở trên. "
                          "Chỉ \"nhà mình / căn mình\" khi nói về căn của khách.")
-        phi_dung = _phi_lech_vai(reply, conv.user_type, conv.prop.is_rental) if conv.role != "buyer" else None
+        phi_dung = _phi_lech_vai(reply, conv.vai_phi, conv.prop.is_rental) if conv.role != "buyer" else None
         if phi_dung:
             ly_do.append(f"Lời vừa viết báo phí % không đúng vai người rao đã biết — mức đúng: \"{phi_dung}\". Vai CHƯA rõ thì nêu đủ cả hai "
                          "mức như vậy hoặc hỏi khéo khách là chủ nhà hay môi giới, KHÔNG tự đoán một vai.")
@@ -2964,7 +2984,7 @@ class Engine:
         if _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
             ly_do.append("Lời vừa viết gọi khách là \"mình\" — gọi đúng cách khách xưng (anh / chị / cô / chú), chỉ \"nhà mình / căn mình\" "
                          "khi nói về căn của khách.")
-        phi_dung = _phi_lech_vai(reply, conv.user_type, conv.prop.is_rental) if conv.role != "buyer" else None
+        phi_dung = _phi_lech_vai(reply, conv.vai_phi, conv.prop.is_rental) if conv.role != "buyer" else None
         if phi_dung:
             ly_do.append(f"Lời vừa viết báo phí % không đúng vai người rao — mức đúng: \"{phi_dung}\", KHÔNG tự đoán một vai.")
         return ly_do
@@ -3498,7 +3518,7 @@ class Engine:
                 # SRS-5.1zzzzzzz82: câu sau danh sách đọc từ sổ do model viết (cùng khung hỏi theo cụm + xưng hô), không viết cứng —
                 # bản cũ ghép NATURAL_QUESTIONS (lời dặn cho model) vào lời gửi khách, luôn khen "pháp lý sổ chuẩn chỉnh", gọi "anh".
                 cum = conv.active.prop.cum_hoi(next_field, conv.active.prop.missing_fields())
-                he = (build_chat_system(conv.assistant.name, conv.active.prop, next_field, conv.user_type, "", cum=cum)
+                he = (build_chat_system(conv.assistant.name, conv.active.prop, next_field, conv.vai_phi, "", cum=cum)
                       + khoi_xung_ho(_detect_customer_pronoun(conv, caption or ""), conv.assistant.name)
                       + "\n\n=== LƯỢT NÀY: KHÁCH VỪA GỬI ẢNH SỔ / GIẤY TỜ ===\nHệ thống đã đọc ảnh và GỬI KHÁCH các dòng sau, ngay "
                         f"trước lời em:\n{detail_lines or '(chưa đọc được dòng nào)'}\nViết 1–2 câu tiếp theo: mời khách xem các dòng "
@@ -4276,8 +4296,10 @@ class Engine:
         # SRS-5.1zzzzzzz213 (khách ảo 26/10: anh K. môi giới 8 năm bị báo phí 1 % — model đoán vai "chủ nhà" từ "a cần đăng tin"): vai chỉ nhận khi
         # cụm trích GỌI TÊN vai và nằm trong lời khách gần đây (bất biến phí, CLAUDE.md "chỉ thành tu_nhan khi cụm trích GỌI TÊN vai"); chưa
         # có bằng chứng thì giữ UNKNOWN → câu phí nêu cả hai mức.
+        vua_thanh_cdt = False
         if raw_role in {r.value for r in SellerRole if r is not SellerRole.UNKNOWN} and _vai_co_bang_chung(
                 plan.get("seller_role_trich_dan"), [t.content for t in conv.history if t.role == "user" and t.content][-6:]):
+            vua_thanh_cdt = raw_role == SellerRole.CHU_DAU_TU.value and conv.user_type is not SellerRole.CHU_DAU_TU
             conv.user_type = SellerRole(raw_role)
         if plan.get("is_rental"):
             conv.prop.is_rental = True
@@ -4387,6 +4409,11 @@ class Engine:
         # Xin gặp người thật (SRS-5.1zzzzzzz82): giữ nguyên cụm trích để báo admin kèm lời khách.
         if _trich_dan_khop(plan.get("can_nguoi_that"), cuoi):
             conv.y_luot["can_nguoi_that"] = str(plan["can_nguoi_that"]).strip()
+        # SRS-5.1zzzzzzz240 (chủ dự án 28/10, OPEN-21 a): người rao vừa tự nhận là chủ đầu tư → không báo con số phí, báo admin MỘT lần (lượt vai
+        # đổi sang CĐT) để bộ phận hợp tác dự án liên hệ — lời "em đã báo" nhờ vậy là thật.
+        if vua_thanh_cdt:
+            conv.y_luot["cdt_bao_admin"] = True
+            conv.y_luot.setdefault("can_nguoi_that", "Người rao tự nhận là CHỦ ĐẦU TƯ — phí theo thoả thuận riêng, nhờ admin / bộ phận hợp tác dự án liên hệ")
         # Hỏi pháp lý / thủ tục (SRS-5.1zzzzzzz176): khoá phải có trong kho (hoặc "khac"), câu hỏi phải nằm nguyên trong tin khách. Nhạy cảm
         # → báo admin cùng đường khách xin gặp người thật (server đọc `can_nguoi_that`).
         hp = plan.get("hoi_phap_ly")

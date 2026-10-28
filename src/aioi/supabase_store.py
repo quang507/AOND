@@ -1065,7 +1065,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                         listing_payload["status"] = ma
                     self._patch(f"listings?id=eq.{lid}", listing_payload)
                     if ma == "da_chot":   # chốt kèo → dòng deals (SRS-5.1zzzzzzz70); báo khách quan tâm do trigger DB lo
-                        self.ghi_deal(lid, SALE_FEE_RATE.get(getattr(conv, "user_type", None)))
+                        self.ghi_deal(lid, SALE_FEE_RATE.get(getattr(conv, "vai_phi", None) or getattr(conv, "user_type", None)))
                 elif ngoai_vung:
                     continue
                 else:

@@ -383,6 +383,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | — | — | — | 28/10 (SRS-5.1zzzzzzz237): soát cả bộ docs theo lõi Python, bỏ hẳn CTV — `docs/00` v1.5, `docs/02` + `08` (FR dựa trên CTV / thứ đã gỡ đánh `[deprecated 28/10/2026]`), `CLAUDE.md` rút gọn (bản cũ `.claude/lich-su-claude-md.md`), hook `.claude/hooks/session-start.sh` | `bash scripts/soat-truy-vet.sh` |
 | FR-63, FR-140 | — | — | 28/10 (SRS-5.1zzzzzzz238): tin chống Zalo xoá kết nối làm lại ở lõi (`giu_ket_noi.py`, rpc `khach_can_giu_ket_noi`, câu mẫu `giu_ket_noi_mua` / `_ban`); hạn admin trả lời câu khách hỏi 5 giờ (`admin_han_gio`, OPEN-65); gỡ CTV khỏi code + hàm DB bước 1 (`20261028c`) | `tests/test_giu_ket_noi.py`, `bot/tests/sql/giu-ket-noi-han-admin.sql`, `tests/test_viec_mua.py` |
 | — | — | — | 28/10 (SRS-5.1zzzzzzz239): ID thử gọi model bằng Gemini (`NGUON_LUOT`, `AIOI_CHAT_MODEL_THU=gemini`), bắn thử nghỉ giữa lượt; dọn CTV bước 2 (`20261028d`: xoá `ctvs`, `ctv_ranks`, cột `ctv_id`) | `tests/test_id_thu_gemini.py`, `bun run test:sql` |
+| FR-160, FR-155, FR-63 | — | — | 28/10 (SRS-5.1zzzzzzz240): quyết định chủ dự án sau soát OPEN — phường đã báo admin thôi kể (`prompts.khoi_trang_thai_web`), vai CĐT báo admin một lần, phí trôi theo số tin bán (`Conversation.vai_phi`), đo lại I4 / I5 (`20261028e`: `nmg_hoat_dong`, `ket_noi_zalo_song`) | `tests/test_quyet_dinh_28_10.py`, `tests/test_trang_thai_web.py`, `bot/tests/sql/do-lai-i4-i5.sql` |
 
 ## 8.4 Rủi ro → biện pháp
 

@@ -948,6 +948,12 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
     cam = ("TUYỆT ĐỐI KHÔNG nói tin đã đăng / đã lên web / đang hiển thị, KHÔNG bảo khách vào web xem tin của mình, KHÔNG nói "
            f"\"{cau_mau.cau('duyet_tin')}\" (SRS-5.1zzzzzzz107).")
     thieu = [o for o in (web.get("thieu") or []) if o in FIELD_LABELS]
+    # SRS-5.1zzzzzzz240 (ban-thu-srd 28/10: admin đã được báo tra phường mà bot vẫn "chỉ cần anh cho em xin phường" — tin còn thiếu cả diện
+    # tích nên `thieu[0]` không phải phường, nhánh dưới kể phường vào "chỉ cần thêm …"). Đã báo admin thì phường ra khỏi việc hỏi khách.
+    admin_tra_phuong = ""
+    if web.get("phuong_bao_admin") and "phuong" in thieu and thieu[0] != "phuong":
+        thieu = [o for o in thieu if o != "phuong"]
+        admin_tra_phuong = " Phường thì admin ĐÃ được báo để tra và điền — KHÔNG hỏi khách về phường / số nhà / gần đâu nữa."
     ghi_tam = [p for p in (web.get("phuong_he_thong") or []) if isinstance(p, str)]
     if ghi_tam and not thieu:
         # SRS-5.1zzzzzzz214 mục 8 (chủ dự án 27/10: "khách không chọn thì lưu cả 2 luôn"): hệ thống vừa ghi tạm cả các phường ứng viên.
@@ -979,8 +985,9 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
                        + " để bên em tự tra phường — KHÔNG hỏi lại chữ \"phường nào\", KHÔNG tự kể tên phường nào")
             else:
                 hoi += " — KHÔNG tự kể tên phường nào (hệ thống chưa tra được danh sách)"
-        ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu {nhan}. {cam}"
-        viec = f"nói chỉ cần thêm {nhan} là tin lên web ngay, rồi hỏi ĐÚNG 1 câu về {hoi}."
+        ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu {nhan}.{admin_tra_phuong} {cam}"
+        viec = (f"nói còn cần thêm {nhan} (phường bên em đang tra), rồi hỏi ĐÚNG 1 câu về {hoi}." if admin_tra_phuong
+                else f"nói chỉ cần thêm {nhan} là tin lên web ngay, rồi hỏi ĐÚNG 1 câu về {hoi}.")
     elif web.get("chua_ban_nhap"):
         ly_do = f"TIN CHƯA LÊN WEB: chưa đủ thông tin để soạn tin. {cam}"
         viec = "nói em cần thêm vài thông tin để soạn tin đăng, rồi hỏi tiếp đúng câu đang cần hỏi."

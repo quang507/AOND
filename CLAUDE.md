@@ -129,7 +129,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 - Độ dài: "ngắn vừa vừa", ý chính rồi dừng (SRS-97).
 
 **Phí, pháp lý, số liệu**
-- Mức phí % trong lời bot phải bằng `prompts.muc_phi(vai, thuê)`; vai chưa rõ thì nêu cả hai mức hoặc hỏi vai (SRS-227).
+- Mức phí % trong lời bot phải bằng `prompts.muc_phi(vai, thuê)` với vai = `conv.vai_phi` (từ tin BÁN thứ 3 trong rổ tính như môi giới, tin thuê không đếm; CĐT không báo số, báo admin) — đừng đưa `user_type` trần vào đường phí; vai chưa rõ thì nêu cả hai mức hoặc hỏi vai (SRS-227 / 240).
 - Pháp lý chỉ trả lời từ `phap_ly.MAC_DINH` (+ bảng `kien_thuc_phap_ly` admin sửa) kèm điều luật gần nghĩa (`dieu_luat`, SRS-231); luôn nói "tham khảo" (nội dung AI soạn, chưa người chuyên môn duyệt); không cho bot search web. Thêm mục = khoá ở `MAC_DINH` + `python scripts/sinh-migration-phap-ly.py <tên>`. Thêm / thay văn bản luật: `bot/supabase/luat/danh-muc.json` + `scripts/tach-dieu-luat.py` + ô `nap-luat`, không ghi tay. "Thuế phí" phải nộp khi mua bán là câu pháp lý, không phải phí môi giới (SRS-233).
 - Số tài chính tham khảo (`tai_chinh.py`) là số TƯỢNG TRƯNG chưa kiểm — chỉ nói khi khách hỏi, kèm "tham khảo" (SRS-148).
 - Câu mẫu nói nguyên văn chỉ ở `cau_mau.MAC_DINH` (chủ dự án sửa ở `/admin/cau-chuan`, bảng `cau_mau` đè); thêm câu = khoá + migration `*_cau_mau_*` (SRS-106). Câu chuẩn (bảng `cau_chuan`) là ví dụ trong prompt, chèn TRƯỚC `RANH_GIOI_CACHE` (SRS-180), lọc theo luật hình thức đang áp (SRS-215).

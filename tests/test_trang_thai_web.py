@@ -111,3 +111,18 @@ def test_xac_nhan_ngan_mot_cau_khong_mo_dau_da():
     ban, _ = khoi_trang_thai_web({"len_web": True})
     assert '"Em xin phép đăng tin ạ!"' in ban and "Dạ em xin phép" not in ban
     assert "mạng lưới" not in ban and "đã được đăng lên hệ thống" not in ban
+
+
+def test_da_bao_admin_tra_phuong_thi_khong_ke_phuong_khi_con_thieu_o_khac():
+    """SRS-5.1zzzzzzz240 (ban-thu-srd 28/10): admin đã được báo tra phường, tin còn thiếu cả diện tích (ô đứng trước phường) → khối không
+    được kể phường vào "chỉ cần thêm …" (bot hỏi phường lần 3–4). Đỏ khi bỏ lọc `phuong_bao_admin`."""
+    from aioi.prompts import khoi_trang_thai_web
+    for thieu in (["dien_tich_dat", "phuong"], ["dien_tich_nha", "dien_tich_dat", "phuong"]):
+        duyet, _ = khoi_trang_thai_web({"len_web": False, "thieu": thieu, "phuong_bao_admin": True})
+        viec = duyet.split("KHÔNG hỏi khách về phường")[0]
+        assert "phường mới" not in duyet and "Phường thì admin ĐÃ được báo" in duyet
+        assert "phường" not in viec.split("còn thiếu")[1].split(".")[0].lower()
+        assert "lên web ngay" not in duyet
+    # chưa báo admin: phường vẫn được kể như cũ
+    duyet, _ = khoi_trang_thai_web({"len_web": False, "thieu": ["dien_tich_dat", "phuong"]})
+    assert "phường" in duyet.split("còn thiếu")[1].split(".")[0].lower()
