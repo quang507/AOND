@@ -1362,7 +1362,10 @@ class SupabaseConversationStore(KhoNguoiMua):
                     prop=prop,
                     # Đã trình bản nháp chưa: bản SQLite trên VPS nhớ đúng; không có thì suy từ DB (khách đã duyệt, hoặc tin đã đủ ý —
                     # bản nháp đi ngay lượt đủ ý). Trước đây so với "dang_rao" (không có trên DB) nên luôn sai → trình lại bản nháp.
-                    listing_proposed=cu_li.listing_proposed if cu_li else bool(row.get("chu_duyet_at") or prop.summary_ready()),
+                    # SRS-5.1zzzzzzz257: tin ĐÃ hiển thị / đang giao dịch (tạo ngoài chat, chưa có bản SQLite) cũng coi là đã trình — chủ nhà trả
+                    # lời câu khách mua xong không bị gửi lại "📋 Em sẽ rao như vầy" cho tin đang bán.
+                    listing_proposed=cu_li.listing_proposed if cu_li else bool(
+                        row.get("chu_duyet_at") or prop.summary_ready() or row.get("status") in ("dang_ban", "dang_quan_tam", "da_coc", "da_chot")),
                     status=trang_thai_tu_db(row.get("status"), prop.is_rental),
                     history_start=cu_li.history_start if cu_li else 0,
                     media=cu_li.media if cu_li else [],

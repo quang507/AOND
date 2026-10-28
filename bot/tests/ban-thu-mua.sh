@@ -49,12 +49,12 @@ q "with s as (insert into sellers (zalo_user_id, seller_type) values ('$BAN', 'c
 chat "$MUA" "Chào em, anh đang tìm mua nhà phố ở Quận 5, tài chính tầm 5 tỷ"
 # Nhiều lượt bắn thử chạy cùng lúc thì mỗi lượt có một căn thử cùng khu — bot kể căn của lượt khác cũng là đúng. Đạt khi bot đưa
 # ra ít nhất một mã căn; căn của chính lượt này được chọn ở lượt 2.
-co_ma=0; grep -qE "#?[0-9A-F]{8}" <<<"$TRA" && co_ma=1
+co_ma=0; grep -qE "#?[0-9A-Z]{8}" <<<"$TRA" && co_ma=1   # mã tin thật (hex) hoặc rổ mẫu SEED0001…
 chat "$MUA" "Căn #$MA anh thấy được đó em. Chiều thứ 7 này 3h anh qua xem nhà được không, mà nhà này sổ hồng riêng không em?"
 sleep 2
 chat "$BAN" "Dạ căn đó sổ hồng riêng chính chủ nha em, công chứng ngay được"
 LOI_BAN="$TRA"
-sleep 2
+sleep 10   # lõi lưu tin nền sau khi trả lời (luu_nen, SRS-5.1zzzzzzz92) — soi DB sớm quá thì ô vừa ghi chưa xuống
 
 echo; echo "== soi DB"
 KQ=$(q "with l as (select id from listings where code = '$MA'), b as (select id from buyers where zalo_user_id = '$MUA')

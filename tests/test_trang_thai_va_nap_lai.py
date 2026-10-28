@@ -179,3 +179,12 @@ def test_chu_nha_tra_loi_ghi_o_tin_theo_ma_can():
                         listings=[Listing(listing_id=UUID, prop=Property(loai_hinh="nha_pho"))], active_listing_id=UUID)
     assert e._match_listing(conv, "#" + UUID[:8].upper()) is conv.listings[0]
     assert e._match_listing(conv, "#ABCDEF12") is None
+
+
+def test_tin_dang_ban_tao_ngoai_chat_khong_trinh_lai_ban_nhap():
+    """SRS-5.1zzzzzzz257 (ban-thu-mua run 40729854550): tin đang bán tạo ngoài chat, chủ nhà trả lời câu khách hỏi làm đủ ô → bot gửi lại
+    "📋 Em sẽ rao như vầy" cho tin đang bán. Tin đã hiển thị / đang giao dịch nạp lên là đã trình."""
+    dong = {**_dong(UUID_GACH, UUID[:8].upper(), status="dang_ban"), "boc_tach": {}}
+    assert StoreChuaHoiThoai(rows=[dong]).load("zalo-thu-1").listings[0].listing_proposed is True
+    nhap = {**_dong(UUID_GACH, UUID[:8].upper(), status="cho_thong_tin"), "boc_tach": {}}
+    assert StoreChuaHoiThoai(rows=[nhap]).load("zalo-thu-1").listings[0].listing_proposed is False
