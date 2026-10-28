@@ -51,8 +51,9 @@ _bo_nho = BoNhoAnhDaGui()
 
 
 class SoAnhDaGui:
-    """(khách, căn) → số ảnh ĐÃ gửi (cả lúc giới thiệu lẫn lúc khách xin). Khách xin ảnh thì gửi tiếp các ảnh chưa gửi; gửi hết rồi thì quay lại từ
-    đầu — khách xin lại ảnh vẫn nhận được (SRS-5.1zzzzzzz169), không bị chặn như lúc bot tự giới thiệu."""
+    """(khách, căn) → số ảnh ĐÃ gửi (cả lúc giới thiệu lẫn lúc khách xin). Khách xin ảnh thì gửi tiếp các ảnh chưa gửi (SRS-5.1zzzzzzz169); gửi
+    hết rồi thì KHÔNG gửi lại (SRS-5.1zzzzzzz232, chủ dự án 28/10: "nói thật, không gửi lại", "có thể xin thêm ảnh" từ chủ nhà) — engine biết
+    trước qua `da_gui_het` để lời bot nói thật."""
 
     def __init__(self) -> None:
         self._n: dict[tuple[str, str], int] = {}
@@ -72,10 +73,15 @@ class SoAnhDaGui:
 _so_gui = SoAnhDaGui()
 
 
+def da_gui_het(khach: str, ma: str, tong: int | None, so_gui: SoAnhDaGui | None = None) -> bool:
+    """Khách đã nhận đủ `tong` ảnh của căn `ma` chưa (bộ nhớ trong tiến trình lõi; lõi khởi động lại thì coi như chưa gửi)."""
+    return isinstance(tong, int) and tong > 0 and (so_gui or _so_gui).lay(khach, str(ma).strip().upper()) >= tong
+
+
 def anh_can_gui_kem(khach: str, vai: str, reply: str, goi=_goi_anh_can, bo_nho: BoNhoAnhDaGui | None = None,
                     xin: list[str] | tuple[str, ...] = (), so_gui: SoAnhDaGui | None = None) -> list[str]:
     """Ảnh gửi kèm lượt này: chỉ khách MUA, ảnh công khai https. Căn có link trong `reply` (bot tự giới thiệu): mỗi (khách, căn) một lần / 24 giờ.
-    Căn trong `xin` (khách XIN ảnh — lượt AI đọc, engine đã kiểm căn có thật): luôn gửi, bỏ chặn 24 giờ, gửi tiếp ảnh chưa gửi."""
+    Căn trong `xin` (khách XIN ảnh — lượt AI đọc, engine đã kiểm căn có thật): bỏ chặn 24 giờ, gửi tiếp ảnh chưa gửi; hết ảnh chưa gửi thì thôi."""
     if vai != "buyer":
         return []
     xin = [str(c).strip().upper() for c in xin if c][:TOI_DA_CAN]
@@ -103,7 +109,8 @@ def anh_can_gui_kem(khach: str, vai: str, reply: str, goi=_goi_anh_can, bo_nho: 
             continue
         if c in xin:
             bd = so.lay(khach, c)
-            bd = 0 if bd >= len(ds) else bd              # gửi hết rồi → quay lại từ đầu
+            if bd >= len(ds):                            # gửi hết rồi → không gửi lại (lời bot đã được dặn nói thật, SRS-5.1zzzzzzz232)
+                continue
             chon = ds[bd:bd + moi_can]
             so.dat(khach, c, bd + len(chon))
             bn.nen_gui(khach, f"can:{c}")                # tin tự giới thiệu sau đó không gửi trùng ngay

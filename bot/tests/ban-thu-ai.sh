@@ -108,6 +108,7 @@ fi
 echo "======== Phía mua: gợi căn, xin ảnh, giá/m², thuế phí theo căn, hẹn xem, ok, chê căn, tắt báo"
 chat "$MUA" "Chào em, anh đang tìm mua nhà phố ở Quận Tân Phú, tài chính tầm 6 tỷ"
 MA=$(grep -oE 'nha-dat/[A-Za-z0-9]+' <<<"$LOI" | head -1 | cut -d/ -f2 || true)
+ANH_DAU=$(jq '.photos | length' <<<"$TRA")
 if [ -z "$MA" ]; then
   chat "$MUA" "Em gửi anh xem thử một căn đi"
   MA=$(grep -oE 'nha-dat/[A-Za-z0-9]+' <<<"$LOI" | head -1 | cut -d/ -f2 || true)
@@ -119,8 +120,14 @@ if [ -n "$MA" ]; then
   echo "   căn #$MA: $CAN"
 
   chat "$MUA" "Cho anh xem thêm ảnh căn đó với em"
-  if [ "$(jq -r '.so_anh // 0' <<<"$CAN")" -gt 0 ]; then
-    kiem "169: khách xin ảnh → lượt có ảnh gửi kèm ($(jq '.photos | length' <<<"$TRA") ảnh)" "$(jq '(.photos | length) >= 1 | if . then 1 else 0 end' <<<"$TRA")"
+  SO_ANH=$(jq -r '.so_anh // 0' <<<"$CAN")
+  if [ "$SO_ANH" -gt "${ANH_DAU:-0}" ]; then
+    kiem "169: khách xin ảnh, còn ảnh chưa gửi → lượt có ảnh gửi kèm ($(jq '.photos | length' <<<"$TRA") ảnh)" "$(jq '(.photos | length) >= 1 | if . then 1 else 0 end' <<<"$TRA")"
+  elif [ "$SO_ANH" -gt 0 ]; then
+    # SRS-5.1zzzzzzz232 (chủ dự án 28/10: "nói thật, không gửi lại", "có thể xin thêm ảnh"): lời giới thiệu đã gửi đủ $SO_ANH ảnh.
+    kiem "169: đã gửi đủ ảnh → không gửi lại ($(jq '.photos | length' <<<"$TRA") ảnh)" "$(jq '(.photos | length) == 0 | if . then 1 else 0 end' <<<"$TRA")"
+    kiem "169: đã gửi đủ ảnh → không nói \"vừa gửi / gửi lại\", đề nghị xin chủ nhà thêm ảnh" \
+      "$( ! grep -qiE 'vừa gửi|gửi lại ảnh|em gửi ảnh' <<<"$LOI" && grep -qi 'chủ nhà' <<<"$LOI" && echo 1 || echo 0)"
   else
     kiem "169: căn chưa có ảnh → bot nói thật, không hứa gửi" "$(grep -qiE 'em gửi (ngay|liền)|gửi ảnh ngay' <<<"$LOI" && echo 0 || echo 1)"
   fi
@@ -141,6 +148,10 @@ if [ -n "$MA" ]; then
 
   chat "$MUA" "Anh muốn đi xem căn này thứ 7 tuần này lúc 9h sáng được không em?"
   chat "$MUA" "Số anh 0900000002 nhé"
+  sleep 4
+  LICH=$(q "select count(*)::int n from viewings v join buyers b on b.id = v.buyer_id join listings l on l.id = v.listing_id
+            where b.zalo_user_id = '$MUA' and l.code = '$MA'" | jq -r '.[0].n')
+  kiem "162: hẹn xem thứ 7 9h sáng → ghi lịch hẹn (viewings, $LICH dòng)" "$([ "$LICH" -ge 1 ] && echo 1 || echo 0)"
   chat "$MUA" "ok em"
   N=$(so_tu "$LOI")
   kiem "162: khách \"ok\" sau khi lịch đã chốt → đáp MỘT câu rất ngắn ($N từ ≤ 25)" "$([ "$N" -le 25 ] && echo 1 || echo 0)"

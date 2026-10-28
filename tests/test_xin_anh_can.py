@@ -23,7 +23,9 @@ def test_xin_lai_trong_24_gio_van_gui_va_gui_tiep_anh_chua_gui():
     xin1 = anh_can_gui_kem("k1", "buyer", "dạ em gửi ảnh nha", xin=["abcd1234"], **kw)   # khách XIN (lời không cần link)
     assert xin1 == ["https://x/4.jpg", "https://x/5.jpg"]                          # gửi tiếp ảnh chưa gửi
     xin2 = anh_can_gui_kem("k1", "buyer", "dạ", xin=["ABCD1234"], **kw)
-    assert xin2 == [f"https://x/{i}.jpg" for i in range(4)]                        # gửi hết rồi → quay lại từ đầu, không im
+    assert xin2 == []                                                               # gửi hết rồi → KHÔNG gửi lại (SRS-5.1zzzzzzz232)
+    from aioi.anh_can import da_gui_het
+    assert da_gui_het("k1", "abcd1234", 6, so) and not da_gui_het("k1", "ABCD1234", 7, so) and not da_gui_het("k1", "ABCD1234", None, so)
     assert anh_can_gui_kem("k1", "seller", "dạ", xin=["ABCD1234"], **kw) == []     # chỉ khách mua
     assert anh_can_gui_kem("k1", "buyer", "dạ", xin=["KHONGCO"], **kw) == []       # căn không có ảnh → không gửi, không ném
 

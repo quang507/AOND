@@ -1774,7 +1774,8 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
 - "hen_xem": nguyên văn cụm thời gian khách HẸN đi xem ("chiều mai 3h", "thứ 7 này"). Chỉ hỏi "xem được không" mà chưa nói giờ thì
   để trống.
 - "hoi_chu_nha": nguyên văn câu khách hỏi về căn mà dòng của căn KHÔNG có câu trả lời (vd "sổ riêng hay chung", "chủ có bớt không").
-  Khách vừa ĐỒNG Ý để em hỏi chủ nhà câu khách hỏi ở lượt trước ("ừ hỏi giúp anh") → chép nguyên văn câu hỏi đó từ lượt trước.
+  Khách vừa ĐỒNG Ý để em hỏi chủ nhà câu khách hỏi ở lượt trước ("ừ hỏi giúp anh") → chép nguyên văn câu hỏi đó từ lượt trước — kể cả khi
+  em đã gửi hết ảnh của căn và khách đồng ý để em xin chủ nhà thêm ảnh (chép nguyên văn câu khách xin ảnh ở lượt trước).
   Hỏi thứ dòng của căn đã có (giá, diện tích) thì để trống.
 - "xin_anh": true khi khách xin XEM ẢNH / HÌNH của căn (vd "cho xem ảnh", "gửi hình đi em", "có hình thật không", "gửi lại ảnh giúp anh"),
   kể cả khi bot đã gửi ảnh ở trên rồi. Khách chỉ hỏi chung "căn này đẹp không" thì để trống.
@@ -1787,7 +1788,10 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
 - "hoi_du_an" (25/10/2026, SRS-5.1zzzzzzz184): NGUYÊN VĂN tên dự án khi khách hỏi THÔNG TIN về một dự án (chủ đầu tư là ai, tiện ích, pháp lý,
   giá, bàn giao, "dự án X có gì / tốt không / của ai"). Chỉ lấy tên khách gõ, không tự suy tên đầy đủ. Khách chỉ nhắc tên dự án như vị trí tìm
   nhà (không hỏi về dự án) thì để trống.
-- "trich_dan": nguyên văn cụm trong tin khách làm căn cứ cho các ô trên.
+- "xin_anh_trich" / "khong_hop_trich" / "ngung_bao_trich": NGUYÊN VĂN cụm trong TIN KHÁCH VỪA NHẮN làm căn cứ cho đúng việc đó (vd "cho anh xem
+  thêm ảnh", "nhỏ quá, không hợp", "đừng báo căn mới cho anh nữa") — mỗi việc một cụm, code kiểm từng việc riêng.
+- "trich_dan": nguyên văn cụm trong TIN KHÁCH VỪA NHẮN làm căn cứ cho các ô trên. Mọi ô chỉ đọc theo tin VỪA nhắn: giờ hẹn / câu hỏi khách đã nói
+  ở lượt TRƯỚC thì KHÔNG chép lại (để trống "hen_xem"), trừ khi khách nhắc lại hoặc ghép giờ hẹn từ vài tin ngắn liền nhau.
 
 TRẢ LỜI CÂU KHÁCH HỎI ("tra_loi_khach_hoi", chỉ khi có khối CÂU KHÁCH MUA ĐANG HỎI CHỦ NHÀ và người rao vừa trả lời đúng câu đó):
 "id" của câu, "tra_loi" là nguyên văn câu trả lời của người rao. Người rao nói chuyện khác thì để trống.
@@ -2106,7 +2110,10 @@ def operations_schema() -> dict[str, Any]:
                     "ngung_bao": {"type": "string", "enum": ["tat", "bat"],
                                   "description": "tat = khách bảo đừng gửi / báo căn mới nữa; bat = khách xin được báo khi có căn mới."},
                     "hoi_du_an": {"type": "string", "description": "Nguyên văn tên dự án khách MUA hỏi thông tin (chủ đầu tư, tiện ích, pháp lý, giá, bàn giao)."},
-                    "trich_dan": {"type": "string", "description": "Nguyên văn cụm trong tin khách làm căn cứ."},
+                    "xin_anh_trich": {"type": "string", "description": "Nguyên văn cụm khách xin ảnh trong tin vừa nhắn."},
+                    "khong_hop_trich": {"type": "string", "description": "Nguyên văn cụm khách chê / từ chối căn trong tin vừa nhắn."},
+                    "ngung_bao_trich": {"type": "string", "description": "Nguyên văn cụm khách bảo đừng / xin báo căn mới trong tin vừa nhắn."},
+                    "trich_dan": {"type": "string", "description": "Nguyên văn cụm trong tin khách VỪA nhắn làm căn cứ."},
                 },
                 "description": "Việc của khách mua (quan tâm, hẹn xem, hỏi chủ nhà) — xem VIỆC CỦA KHÁCH MUA.",
             },

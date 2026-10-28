@@ -20,20 +20,32 @@ def _kho_that(dong, du_an_khop=None):
     return kho
 
 
-def test_dung_mot_du_an_cung_duong_thi_goi_y():
+def test_dung_mot_du_an_cung_duong_va_khach_nhac_du_an_thi_goi_y():
     kho = _kho_that([NYAH])
-    d = kho.du_an_goi_y({"duong": "Trương Đình Hội", "phuong": "Phường Phú Định"})
+    d = kho.du_an_goi_y({"duong": "Trương Đình Hội", "phuong": "Phường Phú Định", "du_an": "Khu nhà phố NYAL"})
     assert d and d["name"] == "Ny'ah Phú Định"
     assert "Tr%C6%B0%C6%A1ng" in kho.da_hoi[0] and "ilike" in kho.da_hoi[0]
 
 
-def test_nhieu_du_an_hoac_khac_phuong_hoac_da_khop_ten_thi_khong_hoi():
+def test_chi_cung_duong_o_gan_thi_khong_hoi_dung_dia_chi_du_an_thi_hoi():
+    """SRS-5.1zzzzzzz232 (chủ dự án 28/10: "nhắc tới dự án hoặc chính xác địa chỉ dự án mới hỏi … còn trong 100m không hỏi")."""
     f = {"duong": "Trương Đình Hội", "phuong": "Phường Phú Định"}
+    assert _kho_that([NYAH]).du_an_goi_y({**f, "dia_chi": "198 Trương Đình Hội"}) is None    # cùng đường, khác số nhà
+    assert _kho_that([NYAH]).du_an_goi_y(f) is None                                           # không số nhà, không nhắc dự án
+    assert _kho_that([NYAH]).du_an_goi_y({**f, "dia_chi": "58a Trương Đình Hội"})["name"] == "Ny'ah Phú Định"
+    from aioi.supabase_store import cung_dia_chi_du_an
+    assert cung_dia_chi_du_an("200 đường 3 Tháng 2", "3 Tháng 2", "200 Đường 3 Tháng 2, Phường 12, Quận 10, TPHCM")
+    assert not cung_dia_chi_du_an("20 đường 3 Tháng 2", "3 Tháng 2", "200 Đường 3 Tháng 2, Phường 12")
+    assert not cung_dia_chi_du_an("200 Lê Lai", "Lê Lai", "200 Đường 3 Tháng 2, Phường 12")
+
+
+def test_nhieu_du_an_hoac_khac_phuong_hoac_da_khop_ten_thi_khong_hoi():
+    f = {"duong": "Trương Đình Hội", "phuong": "Phường Phú Định", "du_an": "Khu nhà phố NYAL"}
     assert _kho_that([NYAH, {**NYAH, "id": "p2", "name": "Dự án khác"}]).du_an_goi_y(f) is None
     assert _kho_that([{**NYAH, "ward": "Phường Chánh Hưng"}]).du_an_goi_y(f) is None
     assert _kho_that([NYAH], du_an_khop={"id": "p1"}).du_an_goi_y(f) is None
     assert _kho_that([]).du_an_goi_y(f) is None
-    assert _kho_that([NYAH]).du_an_goi_y({"duong": "Hồ"}) is None   # tên đường quá ngắn: khớp bừa
+    assert _kho_that([NYAH]).du_an_goi_y({"duong": "Hồ", "du_an": "Khu nhà phố NYAL"}) is None   # tên đường quá ngắn: khớp bừa
     # phường kho / phường khách chưa biết một bên → không loại
     assert _kho_that([{**NYAH, "ward": None}]).du_an_goi_y(f)
 
