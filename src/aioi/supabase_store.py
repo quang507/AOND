@@ -111,6 +111,22 @@ def _khoa_ten_du_an(ten: str | None) -> str:
     return re.sub(r"\s+", "", _TIEN_TO_DU_AN.sub("", t))
 
 
+_SO_NHA = re.compile(r"^\s*(?:so\s+|so nha\s+)?(\d+[a-z]?(?:\s*/\s*\d+[a-z]?)*)\b")
+
+
+def cung_dia_chi_du_an(dia_chi: str | None, duong: str | None, dia_chi_du_an: str | None) -> bool:
+    """Địa chỉ khách nêu CHÍNH LÀ địa chỉ dự án trong kho (SRS-5.1zzzzzzz232): cùng số nhà mở đầu VÀ tên đường của căn có trong địa chỉ dự án.
+    "200 đường 3 Tháng 2" ≡ "200 Đường 3 Tháng 2, Phường 12…"; "198 Trương Đình Hội" ≠ "58A Trương Đình Hội…" (chỉ cùng đường). Bỏ dấu,
+    không phân biệt hoa thường; thiếu số nhà ở một bên → False."""
+    a, b = bo_dau(str(dia_chi or "")).lower(), bo_dau(str(dia_chi_du_an or "")).lower()
+    ma, mb = _SO_NHA.match(a), _SO_NHA.match(b)
+    d = re.sub(r"\s+", " ", bo_dau(str(duong or "")).lower()).strip()
+    if not (ma and mb and len(d) >= 4):
+        return False
+    so = lambda m: re.sub(r"\s+", "", m.group(1))
+    return so(ma) == so(mb) and d in re.sub(r"\s+", " ", b)
+
+
 def cung_ten_du_an(khach: str | None, kho: str | None) -> bool:
     """Tên dự án khách nói và tên trong kho là MỘT dự án: bỏ dấu, bỏ tiền tố chung, trùng hẳn. "LakeView City" ≡ "Lakeview city";
     "Vinhomes Grand Park" ≠ "Glory Heights - Vinhomes Grand Park" (toà con — không đoán)."""
@@ -452,11 +468,18 @@ class SupabaseConversationStore(KhoNguoiMua):
     def du_an_goi_y(self, fields: dict[str, Any]) -> dict[str, Any] | None:
         """Dự án trong kho CÓ THỂ là nơi căn này nằm, để bot HỎI xác nhận một lần (SRS-5.1zzzzzzz181). Chat chị N. 20/10: "Khu nhà phố NYAL"
         ở 198 Trương Đình Hội — kho có "Ny'ah Phú Định" (58A Trương Đình Hội). Tên đã khớp (rõ hoặc gần giống + cùng đường) thì `_du_an`
-        gắn thẳng, không hỏi. Còn lại: đúng MỘT dự án trong kho cùng đường (cùng phường nếu cả hai biết) → gợi ý; từ hai trở lên → None."""
+        gắn thẳng, không hỏi. Còn lại cần đúng MỘT dự án trong kho cùng đường (cùng phường nếu cả hai biết) VÀ một trong hai (SRS-5.1zzzzzzz232,
+        chủ dự án 28/10: "nhắc tới dự án hoặc chính xác địa chỉ dự án mới hỏi … còn trong 100m không hỏi"): khách CÓ nhắc một dự án (ô
+        `du_an`), hoặc địa chỉ khách nêu trùng số nhà + đường với địa chỉ dự án trong kho. Chỉ cùng đường / ở gần thì không hỏi."""
         if self._du_an(fields):
             return None
         hop = self._du_an_cung_duong(fields)
-        return hop[0] if len(hop) == 1 else None
+        if len(hop) != 1:
+            return None
+        d = hop[0]
+        if str(fields.get("du_an") or "").strip() or cung_dia_chi_du_an(fields.get("dia_chi"), fields.get("duong"), d.get("location_raw")):
+            return d
+        return None
 
     def _nho_tra(self, ten: str, chu: str, goi: Callable[[], Any]) -> Any:
         """Kết quả hàm tra CỐ ĐỊNH của DB (cùng chữ vào → cùng kết quả ra) nhớ trong bộ nhớ (SRS-5.1zzzzzzz92: mỗi lượt lưu 2–3 lần, mỗi

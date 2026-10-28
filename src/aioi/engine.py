@@ -33,6 +33,7 @@ from .delivery import _is_formatted_post
 from .prompts import _MO_DAU_RE   # dòng mở bản nháp "(📋) Em/Mình sẽ rao như vầy nhé…:" (SRS-5.1zzzzzzz132)
 from .danh_gia import KHOI_SAP_XIN_SAO, cau_xin_sao, doc_sao, khoi_cam_on_sao, vua_xin_sao
 from . import du_an_mua
+from .anh_can import da_gui_het
 from .assistants import Assistant, assign_assistant
 from .drive import extract_drive_id
 from .fetch import (
@@ -303,6 +304,54 @@ def _trich_dan_khop(trich: str | None, cau: str | None) -> bool:
     tron = lambda s: re.sub(r"\s+", " ", re.sub(r"[^\w\s/]", " ", s)).strip()
     t2 = tron(t)
     return bool(t2) and t2 in tron(gon(cau))
+
+
+_TIEN_TO_ID_THU = ("thu-", "b15-", "hoi-", "z-", "e2e-", "b-", "lx-", "do-")   # cùng danh sách với hàm DB la_id_thu (FR-245)
+
+
+def _dap_ok_qua_dai(reply: str) -> bool:
+    """Lời đáp một cái "ok" của khách mà dài hơn MỘT câu ngắn: quá 15 từ hoặc từ hai câu trở lên (SRS-5.1zzzzzzz232)."""
+    cau = [c for c in re.split(r"[.!?…]+\s*|\n+", reply or "") if c.strip()]
+    return len((reply or "").split()) > 15 or len(cau) > 1
+
+
+def _la_id_thu(user_key: str | None) -> bool:
+    """ID thử của các ô bắn thử — chỉ để log thêm chi tiết (lời khách thật không vào log)."""
+    return str(user_key or "").startswith(_TIEN_TO_ID_THU)
+
+
+def _loc_viec_mua(mua: dict, cuoi: str, gan: list[str]) -> dict:
+    """Việc của khách mua mà lời khách CHỐNG ĐỠ được, kiểm TỪNG việc (SRS-5.1zzzzzzz232). Cụm nguyên văn của chính việc đó là căn cứ của nó:
+    `hen_xem` (nằm trong tin vừa nhắn hoặc mọi chữ có trong vài tin gần nhất), `hoi_chu_nha` (tin vừa nhắn hoặc tin gần), `hoi_du_an` /
+    `ly_do` (tin vừa nhắn). Việc dạng cờ (`xin_anh`, `khong_hop`, `ngung_bao`, `quan_tam`) nhận khi cụm trích RIÊNG (`<việc>_trich`) có trong
+    tin vừa nhắn, hoặc `trich_dan` chung có căn cứ; `khong_hop` còn nhận khi `ly_do` có căn cứ. `ma_can` / `trich_dan` đi kèm khi có việc nào
+    được nhận (mã căn còn được kiểm với kho ở `_viec_mua`)."""
+    chung = bool(mua.get("trich_dan")) and (_trich_dan_khop(mua.get("trich_dan"), cuoi) or _chu_co_trong_loi_khach(mua.get("trich_dan"), gan))
+    rieng = lambda k: _trich_dan_khop(mua.get(f"{k}_trich"), cuoi) if mua.get(f"{k}_trich") else False
+    ra: dict = {}
+    hen = str(mua.get("hen_xem") or "").strip()
+    if hen and (_trich_dan_khop(hen, cuoi) or _chu_co_trong_loi_khach(hen, gan)):
+        ra["hen_xem"] = hen
+    hoi = str(mua.get("hoi_chu_nha") or "").strip()
+    if hoi and (_trich_dan_khop(hoi, cuoi) or any(_trich_dan_khop(hoi, t) for t in gan)):
+        ra["hoi_chu_nha"] = hoi
+    for k in ("hoi_du_an", "ly_do"):
+        v = str(mua.get(k) or "").strip()
+        if v and _trich_dan_khop(v, cuoi):
+            ra[k] = v
+    if mua.get("xin_anh") is True and (rieng("xin_anh") or chung):
+        ra["xin_anh"] = True
+    if mua.get("khong_hop") is True and (rieng("khong_hop") or chung or "ly_do" in ra):
+        ra["khong_hop"] = True
+    if mua.get("ngung_bao") in ("tat", "bat") and (rieng("ngung_bao") or chung):
+        ra["ngung_bao"] = mua["ngung_bao"]
+    if mua.get("quan_tam") is True and (rieng("quan_tam") or chung or "hen_xem" in ra or "hoi_chu_nha" in ra):
+        ra["quan_tam"] = True
+    if ra:
+        for k in ("ma_can", "trich_dan"):
+            if mua.get(k):
+                ra[k] = mua[k]
+    return ra
 
 
 def _chu_co_trong_loi_khach(cum: str | None, loi_khach: list[str]) -> bool:
@@ -2788,6 +2837,12 @@ class Engine:
             ly_do.append("Lời vừa viết có con số không có trong dữ liệu căn (" + ", ".join(f"\"{x}\"" for x in so_la) + ") — diện tích, giá, "
                          "giá mỗi m², số phòng, số tầng CHỈ được lấy đúng số ở dòng của căn (hoặc số khách đã nói), không ước lượng, không "
                          "làm tròn khác, không cộng gộp.")
+        # SRS-5.1zzzzzzz232 (ban-thu-ai 28/10: "ok em" sau khi lịch hẹn đã ghi → hai câu 26 từ nhắc lại xác nhận lịch dù khối lịch dặn MỘT câu
+        # rất ngắn): lượt AI đã đọc khách chỉ đáp ngắn đồng ý (`tha_tim` = dong_y, có cụm trích), lịch hẹn đã ghi, không việc mua nào khác.
+        if (conv.role == "buyer" and conv.y_luot.get("lich_cho") and conv.y_luot.get("tha_tim") == "dong_y" and not conv.y_luot.get("mua")
+                and _dap_ok_qua_dai(reply)):
+            ly_do.append("Khách chỉ đáp ngắn đồng ý và lịch hẹn ĐÃ ghi — đáp đúng MỘT câu rất ngắn (tối đa khoảng 12 từ, vd \"Vâng ạ, em cảm ơn "
+                         "anh.\"), KHÔNG nhắc lại lịch / căn / người phụ trách, KHÔNG hỏi thêm.")
         # SRS-5.1zzzzzzz218: bản tin rao phía bán — số kèm đơn vị phải là số chủ nhà đã nói ("41,6m²" là 5,2 × 8 model tự nhân).
         so_tin = _so_khong_co_trong_tin(reply, conv) if (la_ban_tin and conv.role != "buyer") else []
         if so_tin:
@@ -4292,9 +4347,17 @@ class Engine:
             conv.y_luot["xac_nhan_xoa"] = plan["xac_nhan_xoa"]
         # Việc khách mua / người rao trả lời câu khách hỏi (SRS-5.1zzzzzzz70): nhận khi cụm trích có trong tin vừa nhắn.
         mua = plan.get("mua")
-        if conv.role == "buyer" and isinstance(mua, dict) and (
-                _trich_dan_khop(mua.get("trich_dan"), cuoi) or _chu_co_trong_loi_khach(mua.get("trich_dan"), self._loi_khach_gan(conv))):
-            conv.y_luot["mua"] = mua
+        if conv.role == "buyer" and isinstance(mua, dict) and mua:
+            # SRS-5.1zzzzzzz232: mỗi việc kiểm căn cứ RIÊNG (`_loc_viec_mua`). Bản trước nhận / bỏ CẢ khối theo một `trich_dan` chung — bắn thử
+            # ban-thu-ai 28/10: AI chép lại giờ hẹn của lượt trước vào trich_dan nên lượt chê căn / xin thôi báo / xin ảnh mất sạch.
+            nhan = _loc_viec_mua(mua, cuoi, self._loi_khach_gan(conv))
+            if nhan:
+                conv.y_luot["mua"] = nhan
+            bo = sorted(k for k, v in mua.items() if v not in (None, "", False, [], {}) and k not in nhan and not k.endswith("trich")
+                        and k != "trich_dan")
+            if bo:
+                log.warning("Mua: bỏ việc %s — không có căn cứ trong lời khách%s", bo,
+                            f" (trích: {str(mua.get('trich_dan') or '')[:80]!r})" if _la_id_thu(conv.user_key) else "")
         elif isinstance(mua, dict) and mua:
             log.warning("Mua: AI có đọc việc (hẹn=%s) nhưng bị bỏ — vai=%s trích_dẫn_khớp=%s", bool(mua.get("hen_xem")), conv.role,
                         _trich_dan_khop(mua.get("trich_dan"), cuoi))
@@ -4452,11 +4515,19 @@ class Engine:
                 viec.append("khách xin xem ảnh nhưng chưa rõ căn nào: hỏi lại MỘT câu ngắn xem khách muốn xem ảnh căn nào, KHÔNG hứa gửi ảnh")
             else:
                 co_anh = [c for c in nhac if c.get("code") and c.get("_so_anh") != 0]
-                if co_anh:
-                    conv.y_luot["xin_anh"] = [str(c["code"]) for c in co_anh]
-                    viec.append("hệ thống gửi ảnh " + ", ".join(f"#{c['code']}" for c in co_anh) + " NGAY SAU tin này: nói ngắn là em gửi ảnh "
+                # SRS-5.1zzzzzzz232 (chủ dự án 28/10: "nói thật, không gửi lại", "có thể xin thêm ảnh"): căn đã gửi đủ mọi ảnh thì không gửi lại —
+                # bot nói thật căn có N ảnh, em đã gửi đủ, và hỏi khách có muốn em xin chủ nhà thêm ảnh không.
+                het = [c for c in co_anh if da_gui_het(conv.user_key, str(c["code"]), c.get("_so_anh"))]
+                con = [c for c in co_anh if c not in het]
+                if con:
+                    conv.y_luot["xin_anh"] = [str(c["code"]) for c in con]
+                    viec.append("hệ thống gửi ảnh " + ", ".join(f"#{c['code']}" for c in con) + " NGAY SAU tin này: nói ngắn là em gửi ảnh "
                                 "(KHÔNG dán lại link, KHÔNG nói \"đã gửi ở trên\" hay \"ảnh ở trên\")")
-                else:
+                for c in het:
+                    viec.append(f"căn #{c['code']} chỉ có {c['_so_anh']} ảnh và em ĐÃ gửi đủ cả {c['_so_anh']} ảnh ở trên — lượt này KHÔNG có ảnh nào "
+                                "gửi kèm: nói thật như vậy, KHÔNG nói đang gửi / gửi lại / \"kéo lên xem ảnh em vừa gửi\"; hỏi MỘT câu khách có muốn em xin "
+                                "chủ nhà thêm ảnh không (khách đồng ý thì em chuyển lời cho chủ nhà)")
+                if not co_anh:
                     viec.append("căn khách xin ảnh CHƯA có ảnh nào trên hệ thống: nói thật là chưa có, em xin chủ nhà bổ sung hoặc hẹn khách xem "
                                 "trực tiếp, KHÔNG hứa gửi ảnh")
         if not (bid and nhac):
