@@ -68,7 +68,7 @@ KQ=$(q "with l as (select id from listings where code = '$MA'), b as (select id 
    (select count(*) from reminders m where m.listing_id in (select id from l) and m.kind = 'escalation' and m.seller_id is not null) as nhac_chu_nha,
    (select count(*) from reminders m where m.listing_id in (select id from l) and m.kind = 'followup' and m.buyer_id in (select id from b)) as bao_lai_khach,
    (select status from listings where id in (select id from l)) as listing_status,
-   (select boc_tach->>'phap_ly' from listings where id in (select id from l)) as phap_ly")
+   (select coalesce(boc_tach->>'phap_ly', boc_tach->>'phap_ly_hoan_cong', boc_tach->>'phap_ly_so_hong', boc_tach->>'phap_ly_so_do') from listings where id in (select id from l)) as phap_ly")
 jq '.[0]' <<<"$KQ"
 
 loi=0
