@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-28 14:09 (giờ VN)
+-- Sinh lúc: 2026-10-28 19:10 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -206,7 +206,8 @@ create table if not exists public.du_an_kien_thuc (
   khoa text not null,
   ten text not null,
   du_lieu jsonb not null default '{}'::jsonb,
-  cap_nhat timestamp with time zone not null default now()
+  cap_nhat timestamp with time zone not null default now(),
+  project_id uuid
 );
 
 create table if not exists public.duong (
@@ -493,7 +494,8 @@ create table if not exists public.projects (
   geocode_at timestamp with time zone,
   nhung extensions.halfvec(768),
   nhung_md5 text,
-  nhung_luc timestamp with time zone
+  nhung_luc timestamp with time zone,
+  thong_tin jsonb not null default '{}'::jsonb
 );
 
 create table if not exists public.property_events (
@@ -725,6 +727,9 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.du_an_kien_thuc add constraint du_an_kien_thuc_pkey PRIMARY KEY (khoa);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.du_an_kien_thuc add constraint du_an_kien_thuc_project_id_key UNIQUE (project_id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.duong add constraint duong_loai_check CHECK ((loai = ANY (ARRAY['duong'::text, 'so'::text, 'hem'::text])));
@@ -996,6 +1001,9 @@ do $d$ begin
   alter table public.dieu_luat add constraint dieu_luat_so_hieu_fkey FOREIGN KEY (so_hieu) REFERENCES van_ban_luat(so_hieu) ON DELETE CASCADE;
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.du_an_kien_thuc add constraint du_an_kien_thuc_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL;
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.info_requests add constraint info_requests_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES buyers(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -1113,7 +1121,7 @@ create index if not exists listings_floors_idx ON public.listings USING btree (d
 create index if not exists listings_nhan_gin_idx ON public.listings USING gin (nhan);
 create index if not exists listings_nhung_hnsw ON public.listings USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists listings_project_idx ON public.listings USING btree (project_id) WHERE (project_id IS NOT NULL);
-CREATE UNIQUE INDEX listings_project_unit_uniq ON public.listings USING btree (project_id, unit_code) WHERE ((project_id IS NOT NULL) AND (unit_code IS NOT NULL));
+create index if not exists listings_project_unit_idx ON public.listings USING btree (project_id, unit_code) WHERE ((project_id IS NOT NULL) AND (unit_code IS NOT NULL));
 create index if not exists listings_seller_id_idx ON public.listings USING btree (seller_id);
 create index if not exists media_cleanup_can_lam_idx ON public.media_cleanup_queue USING btree (trang_thai, created_at) WHERE (trang_thai = ANY (ARRAY['cho'::text, 'dang_lam'::text]));
 create index if not exists media_listing_id_idx ON public.media USING btree (listing_id);
