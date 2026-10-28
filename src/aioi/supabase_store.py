@@ -1194,7 +1194,9 @@ class SupabaseConversationStore(KhoNguoiMua):
             return None
         r = rows[0]
         thieu = [o for o, cot in self._COT_DANG_TIN if r.get(cot) in (None, "")]
-        return {"len_web": r.get("status") == "dang_ban", "thieu": thieu, "ma": code,   # mã → link trang tin (SRS-5.1zzzzzzz220)
+        # SRS-5.1zzzzzzz259: "đang hiển thị" = cùng bộ trạng thái web hiện (`_DB_DANG_HIEN`), không chỉ `dang_ban` — tin khách mua vừa quan tâm
+        # (`dang_quan_tam`) bị coi là chưa lên web, bot hỏi chủ nhà duyệt lại tin đang bán.
+        return {"len_web": r.get("status") in _DB_DANG_HIEN, "thieu": thieu, "ma": code,   # mã → link trang tin (SRS-5.1zzzzzzz220)
                 "cho_duyet": not thieu and bool(r.get("can_chu_duyet")) and not r.get("chu_duyet_at")}
 
     def hen_bao_len_web(self, conv: Conversation) -> bool:

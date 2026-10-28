@@ -68,7 +68,7 @@ KQ=$(q "with l as (select id from listings where code = '$MA'), b as (select id 
    (select count(*) from reminders m where m.listing_id in (select id from l) and m.kind = 'escalation' and m.seller_id is not null) as nhac_chu_nha,
    (select count(*) from reminders m where m.listing_id in (select id from l) and m.kind = 'followup' and m.buyer_id in (select id from b)) as bao_lai_khach,
    (select status from listings where id in (select id from l)) as listing_status,
-   (select boc_tach->>'phap_ly' from listings where id in (select id from l)) as phap_ly")
+   (select coalesce(boc_tach->>'phap_ly', boc_tach->>'phap_ly_hoan_cong', boc_tach->>'phap_ly_so_hong', boc_tach->>'phap_ly_so_do') from listings where id in (select id from l)) as phap_ly")
 jq '.[0]' <<<"$KQ"
 
 loi=0
@@ -79,6 +79,8 @@ kiem "lượt 1: bot đưa ra căn (mã #…)" "$co_ma"
 kiem "chủ nhà trả lời xong không bị hỏi loại nhà" "$(grep -qiE 'chung cư, nhà phố|nhà phố hay|hay lô đất|hay đất' <<<"$LOI_BAN" && echo 0 || echo 1)"
 # SRS-5.1zzzzzzz257: tin tạo ngoài chat (cột đường / phường / quận có sẵn) — chủ nhà trả lời xong không bị hỏi lại địa chỉ căn.
 kiem "chủ nhà trả lời xong không bị hỏi lại địa chỉ" "$(grep -qiE 'đường nào|phường hay xã nào|địa chỉ' <<<"$LOI_BAN" && echo 0 || echo 1)"
+# SRS-5.1zzzzzzz259: tin đang hiển thị (dang_quan_tam sau khi khách hẹn xem) không bị hỏi duyệt / đăng lại — lưới đỡ, gốc ở trang_thai_tin
+kiem "chủ nhà trả lời xong không bị hỏi duyệt / đăng lại tin đang bán" "$(grep -qiE '📋|đăng luôn|chốt đăng|cần chỉnh' <<<"$LOI_BAN" && echo 0 || echo 1)"
 SO_TIN=$(q "select count(*) as n from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = '$BAN'" | jq -r '.[0].n')
 kiem "người bán vẫn đúng 1 tin (không sinh tin rỗng) — có $SO_TIN" "$([ "$SO_TIN" = 1 ] && echo 1 || echo 0)"
 kiem "có dòng buyers cho khách mua" "$(jq '(.buyers|tonumber) >= 1 | if . then 1 else 0 end' <<<"$r")"
