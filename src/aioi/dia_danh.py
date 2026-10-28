@@ -27,7 +27,7 @@ URL_NHUNG = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embe
 SO_CHIEU = 768
 NGUONG_NGHIA = 0.55
 BIEN_NGHIA_DU_AN = 0.04   # dự án thứ hai trở đi chỉ tính khi sát dự án đầu trong chừng này (độ gần cosine)
-NGUONG_LUAT = 0.62   # điều luật dưới ngưỡng này coi như không khớp câu khách hỏi (SRS-5.1zzzzzzz231; đo trên bộ câu thử, xem docs/07)
+NGUONG_LUAT = 0.69   # điều luật dưới ngưỡng này coi như không khớp câu khách hỏi (SRS-5.1zzzzzzz231; đo 28/10 trên 12 câu thử: điều đúng ≥ 0,70, điều sai 0,639–0,676 — SRS-5.1zzzzzzz242)
 
 LOAI_PHUONG = ("phuong_moi", "phuong_cu")
 LOAI_KHONG_PHAI_DUONG = ("phuong_moi", "phuong_cu", "quan_cu", "du_an")
