@@ -9058,6 +9058,20 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz257 · Tin tạo ngoài chat: nạp ô từ cột khi `boc_tach` trống — chủ nhà trả lời khách mua không bị hỏi lại địa chỉ (28/10/2026)
+Chủ dự án 28/10: "có sửa đi" (việc còn lại ở SRS-256 mục 5).
+1. **Ca gốc** — `ban-thu-mua` run 40726585276: chủ nhà có tin trên DB (tạo thẳng DB, có `street` / `ward` / `district` / `price_raw` / `area_m2`,
+   `boc_tach` trống) trả lời câu khách mua "sổ hồng riêng không" → lõi nạp tin (SRS-77) nhưng ô tin chỉ đọc `boc_tach` nên căn rỗng; bot đáp
+   "Cảm ơn anh/chị, em báo khách rồi nha. Căn này nằm ở đường nào, phường hay xã nào vậy anh/chị?".
+2. **Sửa** — `supabase_store.o_tu_cot(row, loai)`: khi nạp tin, ô thiếu trong `boc_tach` lấy từ cột (đường, phường, quận, `location_raw`, giá,
+   phòng ngủ, số tầng; diện tích chỉ với loại một diện tích — nhà phố / biệt thự / cấp 4 có đất và sàn, `area_m2` không nói là loại nào). Ô
+   `boc_tach` đã có giữ nguyên. Đây là dữ liệu đã có trên tin, không phải ô mới AI ghi — không đi cổng bằng chứng SRS-73.
+3. **Ba câu gốc** — (1) *lớp lỗi*: hai nguồn cho cùng dữ liệu tin (cột ↔ `boc_tach`), đường nạp chỉ đọc một nguồn; tin chat ghi cả hai nên
+   không lộ, tin tạo ngoài chat chỉ có cột. (2) *Chỗ khác cùng lớp*: pháp lý (`legal_status` là mã), hướng, hẻm chưa nạp ngược — chủ nhà vẫn có
+   thể bị hỏi các ô đó (là ô còn thiếu thật của tin, đúng ý "xin chủ nhà các trường đang thiếu"). (3) *Bài đỏ*:
+   `tests/test_trang_thai_va_nap_lai.py::test_tin_tao_ngoai_chat_nap_o_tu_cot` — gỡ bản sửa: đỏ; `ban-thu-mua` thêm bài "chủ nhà trả lời xong
+   không bị hỏi lại địa chỉ".
+
 ### SRS-5.1zzzzzzz256 · Lượt lập thao tác của khách mua phải biết vai khách mua — khách hỏi chủ nhà không bị đọc thành ô tin rao (28/10/2026)
 Chủ dự án 28/10: "phần khách mua có yêu cầu thì nhắn hỏi xin lại thông tin của chủ nhà ổn chưa".
 1. **Kiểm** — DB thật: bảng `info_requests` 0 dòng (khách thật chưa lần nào đi trọn đường; dữ liệu bắn thử bị dọn). Bắn `ban-thu-mua` (run

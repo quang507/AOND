@@ -150,3 +150,18 @@ def test_load_nguoi_ban_co_tin_ma_chua_co_hoi_thoai():
     assert conv is not None and conv.role == "seller" and [li.listing_id for li in conv.listings] == [UUID]
     assert conv.history == []
     assert StoreChuaHoiThoai(rows=[]).load("zalo-thu-1") is None      # không tin, không hội thoại → như người mới (giữ như cũ)
+
+
+def test_tin_tao_ngoai_chat_nap_o_tu_cot():
+    """SRS-5.1zzzzzzz257 (bắn thử ban-thu-mua 28/10, run 40726585276): tin tạo ngoài chat (CRM / admin / bài bắn) có cột đường, phường,
+    quận, giá… mà `boc_tach` trống → lõi nạp căn rỗng, chủ nhà vừa trả lời câu khách mua bị hỏi "căn này nằm ở đường nào". Ô thiếu lấy từ
+    cột; ô `boc_tach` đã có giữ nguyên; nhà phố không suy diện tích từ `area_m2` (không rõ đất hay sàn)."""
+    from aioi.supabase_store import o_tu_cot
+    dong = {**_dong(UUID_GACH, UUID[:8].upper()), "property_type": "nha_pho", "boc_tach": {"gia": "4,9 tỷ"}, "street": "Trần Bình Trọng",
+            "ward": "Phường Chợ Quán", "district": "Quận 5", "price_raw": "5 tỷ", "area_m2": 60.0, "bedrooms": 3}
+    li = StoreChuaHoiThoai(rows=[dong]).load("zalo-thu-1").listings[0]
+    f = li.prop.fields
+    assert f["duong"] == "Trần Bình Trọng" and f["phuong"] == "Phường Chợ Quán" and f["quan"] == "Quận 5" and f["so_phong_ngu"] == "3"
+    assert f["gia"] == "4,9 tỷ"                                        # ô đã có trong boc_tach thắng cột
+    assert "dien_tich" not in f and "dien_tich_dat" not in f            # nhà phố: area_m2 không rõ đất hay sàn
+    assert o_tu_cot({"area_m2": 72, "street": None}, "chung_cu") == {"dien_tich": "72 m²"}
