@@ -9058,6 +9058,23 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz256 · Lượt lập thao tác của khách mua phải biết vai khách mua — khách hỏi chủ nhà không bị đọc thành ô tin rao (28/10/2026)
+Chủ dự án 28/10: "phần khách mua có yêu cầu thì nhắn hỏi xin lại thông tin của chủ nhà ổn chưa".
+1. **Kiểm** — DB thật: bảng `info_requests` 0 dòng (khách thật chưa lần nào đi trọn đường; dữ liệu bắn thử bị dọn). Bắn `ban-thu-mua` (run
+   40725107110, lõi `06b3fb4`, model thật; script thêm hai bài: có tin nhắn chủ nhà `reminders escalation`, có nhắc báo lại khách `followup`):
+   lượt 2 khách "Căn #… anh thấy được đó em. Chiều thứ 7 này 3h anh qua xem nhà được không, mà nhà này sổ hồng riêng không em?" → TRƯỢT cả sáu
+   bài ghi (quan tâm, hẹn xem, câu hỏi chủ nhà, trả lời, nhắn chủ nhà, báo lại khách). Nhật ký lõi: lượt lập thao tác trả
+   `[('update', ['phap_ly_hoan_cong'])]` (thao tác phía BÁN, bị cổng bằng chứng bỏ vì "giá trị là câu hỏi"), KHÔNG có khối `mua`; bot đáp "Anh có
+   muốn em hỏi chủ nhà về sổ hồng không?". Chủ nhà trả lời ở lượt 3 thì không có câu nào chờ → bị coi như người rao mới, bị hỏi địa chỉ.
+2. **Nguyên nhân** — prompt lập thao tác (`OPERATIONS_SYSTEM` + khối căn) không nói người nhắn đang là khách mua; câu hỏi pháp lý về một căn bị
+   Haiku đọc thành ô tin rao.
+3. **Sửa** — `engine.KHOI_VAI_MUA_LAP_VIEC` nối vào prompt lập thao tác khi `conv.role == "buyer"` (dữ kiện hệ thống từ các lượt trước, không
+   đoán ý): câu hỏi về căn đang rao / chọn căn / hẹn xem → khối "mua"; chỉ tạo thao tác rao căn khi khách nói rõ muốn bán / cho thuê căn của mình.
+4. **Ba câu gốc** — (1) *lớp lỗi*: prompt phụ thuộc AI tự đoán vai mỗi lượt dù hệ thống đã biết vai; bài offline giả kế hoạch AI nên không bắt
+   được. (2) *Chỗ khác cùng lớp*: phía người bán đã có khối "CÂU KHÁCH MUA ĐANG HỎI CHỦ NHÀ" (`khoi_cau_hoi_cho`) — không lệch; lượt đọc ảnh
+   phía mua chưa soát. (3) *Bài đỏ*: `tests/test_vai_mua_lap_viec_256.py` (lượt 2 của khách mua có khối vai; người bán không có) — gỡ khối:
+   đỏ. Kiểm bằng model thật: bắn lại `ban-thu-mua` sau khi cài (ghi kết quả ở dưới).
+
 ### SRS-5.1zzzzzzz255 · Sticker Zalo tới dưới dạng ảnh .png: đọc theo nghĩa như sticker, không đọc như ảnh nhà (28/10/2026)
 Chủ dự án 28/10: "tôi thấy gửi chào bằng sticker nên zalo gửi bằng cái png gì đó, ko đọc dc".
 1. **Ca gốc** (DB `messages` 28/10 12:07 UTC): khách nhắn "Hello em" kèm một sticker; bot đáp "📎 Em đã nhận: artboard_…_2x_….png — Em thấy ảnh
