@@ -9058,6 +9058,20 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz259 · "Tin đang hiển thị" ở lõi cùng bộ trạng thái với web — chủ nhà không bị hỏi duyệt lại tin đang bán (28/10/2026)
+1. **Ca** — `ban-thu-mua` 28/10 (ID thử): khách mua hẹn xem → tin sang `dang_quan_tam`; chủ nhà trả lời câu khách hỏi thì bot đáp "Bản tin căn
+   Trần Bình Trọng anh/chị xem còn chỗ nào cần chỉnh không, hay mình chốt đăng luôn?" với một tin đang hiện trên web.
+2. **Nguyên nhân** — `SupabaseConversationStore.trang_thai_tin` coi `len_web` = `status == "dang_ban"`; web hiện `dang_ban` / `dang_quan_tam` /
+   `da_coc` (`lib/supabase.ts` TRANG_THAI_HIEN). Tin có khách quan tâm thành "chưa lên web" → prompt sau bản nháp (`build_fee_followup_system`)
+   đi nhánh tin chưa hiển thị, model hỏi duyệt / đăng lại. SRS-257 (bật `listing_proposed` cho tin đang giao dịch) làm ca này lộ ra.
+3. **Sửa** — `trang_thai_tin`: `len_web` = `status in _DB_DANG_HIEN`; `gui_nhac._cho_len_web` (nhắc `len_web`) dùng `mua.TRANG_THAI_HIEN`.
+4. **Lớp lỗi** — hai định nghĩa "đang hiển thị" (một ở web, một chép tay ở lõi). **Chỗ khác cùng lớp** — đã soát mọi `dang_ban` trong `src/aioi`:
+   `mua.py` gợi căn dùng `TRANG_THAI_HIEN` (đúng); `bao_can_moi` / `can_moi_khop` cố ý chỉ `dang_ban` (báo tin VỪA lên kệ) — giữ.
+5. **Kiểm đỏ khi tắt bản sửa** — `tests/test_dang_hien_259.py` (2 bài, đỏ cả hai khi gỡ bản sửa): `dang_quan_tam` / `da_coc` là đang hiện,
+   `da_chot` / `an` không; nhắc `len_web` gửi khi tin `dang_quan_tam`. Bắn thử: `bot/tests/ban-thu-mua.sh` thêm kiểm "chủ nhà trả lời xong không bị
+   hỏi duyệt / đăng lại tin đang bán" (lưới đỡ bằng chữ; gốc ở `trang_thai_tin`); kiểm ô pháp lý đọc mọi khoá `KHOA_PHAP_LY` (nhà phố ghi
+   `phap_ly_hoan_cong` — script cũ chỉ đọc `phap_ly` nên trượt oan).
+
 ### SRS-5.1zzzzzzz258 · Ảnh chủ nhà gửi vào đúng căn theo ngữ cảnh — chủ nhà nhiều căn trả lời câu "xin thêm ảnh" (28/10/2026)
 Chủ dự án 28/10 (đọc việc còn lại ở SRS-254): "chủ nhà có nhiều căn mà gửi ảnh lúc bot đang nói về căn khác … vậy thì xét trong cả ngữ cảnh mấy câu
 đó"; "2 sdt thì mặc định 1 số mua 1 số bán thôi chứ nếu người ta vừa mua vừa bán bằng 1 sdt thì vẫn nhận nha".

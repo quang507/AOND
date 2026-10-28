@@ -79,6 +79,8 @@ kiem "lượt 1: bot đưa ra căn (mã #…)" "$co_ma"
 kiem "chủ nhà trả lời xong không bị hỏi loại nhà" "$(grep -qiE 'chung cư, nhà phố|nhà phố hay|hay lô đất|hay đất' <<<"$LOI_BAN" && echo 0 || echo 1)"
 # SRS-5.1zzzzzzz257: tin tạo ngoài chat (cột đường / phường / quận có sẵn) — chủ nhà trả lời xong không bị hỏi lại địa chỉ căn.
 kiem "chủ nhà trả lời xong không bị hỏi lại địa chỉ" "$(grep -qiE 'đường nào|phường hay xã nào|địa chỉ' <<<"$LOI_BAN" && echo 0 || echo 1)"
+# SRS-5.1zzzzzzz259: tin đang hiển thị (dang_quan_tam sau khi khách hẹn xem) không bị hỏi duyệt / đăng lại — lưới đỡ, gốc ở trang_thai_tin
+kiem "chủ nhà trả lời xong không bị hỏi duyệt / đăng lại tin đang bán" "$(grep -qiE '📋|đăng luôn|chốt đăng|cần chỉnh' <<<"$LOI_BAN" && echo 0 || echo 1)"
 SO_TIN=$(q "select count(*) as n from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = '$BAN'" | jq -r '.[0].n')
 kiem "người bán vẫn đúng 1 tin (không sinh tin rỗng) — có $SO_TIN" "$([ "$SO_TIN" = 1 ] && echo 1 || echo 0)"
 kiem "có dòng buyers cho khách mua" "$(jq '(.buyers|tonumber) >= 1 | if . then 1 else 0 end' <<<"$r")"

@@ -23,7 +23,7 @@ from typing import Any, Callable
 
 from . import cau_mau
 from .bao_can_moi import trong_khung_gio
-from .mua import XIN_THEM_ANH
+from .mua import TRANG_THAI_HIEN, XIN_THEM_ANH
 from .web import link_tin
 from .xung_ho import goi_toi
 
@@ -113,7 +113,7 @@ def _cho_len_web(kho: Any, r: dict, bay_gio: datetime) -> bool:
     if r.get("kind") != "len_web":
         return False
     tin = kho._get(f"listings?id=eq.{_q(r.get('listing_id') or '')}&select=status") if r.get("listing_id") else []
-    if tin and tin[0].get("status") == "dang_ban":
+    if tin and tin[0].get("status") in TRANG_THAI_HIEN:   # SRS-5.1zzzzzzz259: cùng bộ trạng thái web hiện
         return False
     try:
         tao = datetime.fromisoformat(str(r.get("created_at") or "").replace("Z", "+00:00"))
