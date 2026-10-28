@@ -96,13 +96,23 @@ def _khoa_quan(s: str | None) -> str:
     return re.sub(r"[^a-z0-9]", "", k)
 
 
-def phuong_moi_tu_cu(doc: Callable[[str, dict], list] | None, so: int | None, quan: str | None) -> list[str]:
-    """MỌI phường mới (wards.ten_day_du, xếp theo tên) mà phường cũ đánh số `so` của `quan` về — một hay nhiều. Thiếu số / quận, bảng lỗi → []."""
+def phuong_moi_tu_cu(doc: Callable[[str, dict], list] | None, so: int | None, quan: str | None, ten: str | None = None) -> list[str]:
+    """MỌI phường mới (wards.ten_day_du, xếp theo tên) mà phường cũ đánh số `so` của `quan` về — một hay nhiều. Không có số thì `ten` là tên
+    phường CŨ có chữ ("Bình Hưng Hòa A" — SRS-5.1zzzzzzz233, chat chị Ngân 28/10: bản trước chỉ tra phường đánh số nên bot hỏi trống "tên phường
+    mới"); tên trùng một phường MỚI đang có thì coi là khách nói tên mới → []. Thiếu số / tên / quận, bảng lỗi → []."""
     qk = _khoa_quan(quan)
-    if doc is None or so is None or not qk:
+    khoa_ten = _loi(ten or "", TU_CHUNG_PHUONG) if so is None else ""
+    if doc is None or not qk or (so is None and len(khoa_ten) < 4):
         return []
     try:
-        cu = doc("phuong_cu", {"select": "quan_cu,phuong_moi", "ten": f"eq.Phường {so}", "limit": "200"})
+        if so is not None:
+            cu = doc("phuong_cu", {"select": "quan_cu,phuong_moi", "ten": f"eq.Phường {so}", "limit": "200"})
+        else:
+            if any(_loi(x.get("ten") or "", TU_CHUNG_PHUONG) == khoa_ten
+                   for x in doc("wards", {"select": "ten", "limit": "1000"})):
+                return []
+            cu = [d for d in doc("phuong_cu", {"select": "ten,quan_cu,phuong_moi", "limit": "2000"})
+                  if _loi(d.get("ten") or "", TU_CHUNG_PHUONG) == khoa_ten]
         moi = sorted({d["phuong_moi"] for d in cu if d.get("phuong_moi") and _khoa_quan(d.get("quan_cu")) == qk})
         if not moi:
             return []
@@ -114,24 +124,12 @@ def phuong_moi_tu_cu(doc: Callable[[str, dict], list] | None, so: int | None, qu
     return sorted(day_du.get(m, f"Phường {m}") for m in moi)
 
 
-def phuong_cu_chia(doc: Callable[[str, dict], list] | None, so: int | None, quan: str | None) -> list[str]:
+def phuong_cu_chia(doc: Callable[[str, dict], list] | None, so: int | None, quan: str | None, ten: str | None = None) -> list[str]:
     """Các phường MỚI (wards.ten_day_du, xếp theo tên) mà phường cũ đánh số bị CHIA về, khi chia về từ 2 phường trở lên — SRS-5.1zzzzzzz191
     (chat anh Luận 26/10: "phường 6" của Bình Thạnh về cả Bình Lợi Trung lẫn Gia Định nên máy không tự chọn được). Cần số phường và quận cũ
     (cùng số "phường 6" có ở nhiều quận). Chia về một phường, không biết quận, bảng lỗi → []. `doc(bảng, tham số)` đọc PostgREST."""
-    qk = _khoa_quan(quan)
-    if doc is None or so is None or not qk:
-        return []
-    try:
-        cu = doc("phuong_cu", {"select": "quan_cu,phuong_moi", "ten": f"eq.Phường {so}", "limit": "200"})
-        moi = sorted({d["phuong_moi"] for d in cu if d.get("phuong_moi") and _khoa_quan(d.get("quan_cu")) == qk})
-        if len(moi) < 2:
-            return []
-        w = doc("wards", {"select": "ten,ten_day_du", "ten": "in.(" + ",".join(f'"{m}"' for m in moi) + ")"})
-    except Exception as e:  # noqa: BLE001 — tra địa danh là phần thêm
-        log.warning("phường cũ bị chia: đọc lỗi: %s", e)
-        return []
-    day_du = {x["ten"]: x["ten_day_du"] for x in w if x.get("ten") and x.get("ten_day_du")}
-    return sorted(day_du.get(m, f"Phường {m}") for m in moi)
+    moi = phuong_moi_tu_cu(doc, so, quan, ten)   # SRS-5.1zzzzzzz233: một đường tra cho phường đánh số lẫn phường có tên
+    return moi if len(moi) >= 2 else []
 
 
 def chon_phuong_da_goi_ten(ung_vien: list[str], *chu: str | None) -> str | None:
@@ -317,13 +315,13 @@ class TraDiaDanh:
 
     def _phuong_moi(self, chu: str | None, quan: str | None) -> list[str]:
         so = so_phuong_cu(chu)
-        khoa = (so, _khoa_quan(quan))
-        if so is None or not khoa[1]:
+        khoa = (so if so is not None else _loi(chu or "", TU_CHUNG_PHUONG), _khoa_quan(quan))
+        if not khoa[0] or not khoa[1]:
             return []
         if khoa not in self._nho_chia:
             if len(self._nho_chia) > 200:
                 self._nho_chia.clear()
-            self._nho_chia[khoa] = phuong_moi_tu_cu(self._doc, so, quan)
+            self._nho_chia[khoa] = phuong_moi_tu_cu(self._doc, so, quan, None if so is not None else chu)
         return self._nho_chia[khoa]
 
     def xa(self, ten: str | None) -> dict | None:
@@ -506,7 +504,7 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
     if len(chia) >= 2:
         # SRS-5.1zzzzzzz191 (chat anh Luận 26/10): khách nói "phường 6" — phường CŨ đánh số bị chia về hai phường mới nên hệ thống không tự ghi
         # được phường; bản trước bot cứ hỏi tiếp việc khác rồi tới lúc duyệt tin mới hỏi trống "phường mới nào". Hỏi NGAY, kèm các lựa chọn.
-        dong.append(f'Khách nói phường "{fields.get("phuong")}" — đó là phường CŨ đánh số; từ 01/07/2025 nó chia về nhiều phường mới ({", ".join(chia)}) '
+        dong.append(f'Khách nói phường "{fields.get("phuong")}" — đó là phường CŨ (trước sáp nhập); từ 01/07/2025 nó chia về nhiều phường mới ({", ".join(chia)}) '
                     f'nên CHƯA biết nhà thuộc phường nào. Khi "Thông tin cần hỏi tiếp theo" là phường: kể hai phường mới cho khách '
                     f'chọn (vd "{fields.get("phuong")} cũ giờ chia về {" hoặc ".join(chia)}, nhà mình ở phường nào ạ?"), KHÔNG hỏi trống "phường nào". '
                     "Khách đã chọn hay nói phường khác thì ghi theo khách, không hỏi lại. Danh sách phường do hệ thống tra, KHÔNG phải khách nói.")

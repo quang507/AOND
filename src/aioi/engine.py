@@ -111,7 +111,7 @@ from .prompts import (
 )
 from .imaging import downscale_image
 from .revenue import SellerRole
-from .schema import O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
+from .schema import KHOA_PHAP_LY, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_viec_vua_ghi, lenh_tra_loi,
@@ -706,7 +706,7 @@ def khoi_phap_ly(conv: "Conversation", can: dict | None = None) -> str:
     k = phap_ly.khoi_luot(conv.y_luot.get("hoi_phap_ly"), bool(conv.y_luot.get("phap_ly_nhay_cam")),
                           gia_can=float(gia) if isinstance(gia, (int, float)) and gia > 0 else None,
                           ma_can=str(can.get("code")) if isinstance(can, dict) and can.get("code") else None,
-                          dieu=conv.y_luot.get("dieu_luat"))
+                          dieu=conv.y_luot.get("dieu_luat"), ten_can=can.get("_ten") if isinstance(can, dict) else None)
     # SRS-5.1zzzzzzz213 (khách ảo 26/10: đang "cháu / cô" bỗng "em chưa có thông tin chắc chắn" khi trả lời pháp lý — tư liệu kho viết "em").
     return k + ("\nXưng hô trong câu trả lời theo khối xưng hô của lượt; tư liệu viết \"em\" thì đổi cho khớp (đang xưng \"cháu\" thì \"cháu\").\n" if k else "")
 
@@ -1067,6 +1067,30 @@ def _chi_tiet_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
            "công viên": "cong vien", "trung tâm thương mại": "trung tam thuong mai", "giữ gìn": "giu gin", "sạch sẽ": "sach se",
            "mới xây": "moi xay", "nhà mới": "moi"}
     return [t for t in sorted(bat) if not re.search(rf"(?<![a-z]){goc.get(t, bo_dau(t))}(?![a-z])", khach)]
+
+
+# SRS-5.1zzzzzzz233 (chat chị Ngân 28/10: chị chỉ nói địa chỉ, 70m² sàn, 3 tỷ — bản nháp viết "Chính chủ bán…", "Nhà có sổ hồng rõ ràng"). Khuôn tin
+# rao bảo "kể đủ … pháp lý" nên model tự điền pháp lý / vai khi căn chưa có. Pháp lý và vai người bán là sự thật pháp lý của tin công khai.
+_PHAP_LY_VAI_RE = re.compile(r"(?i)(sổ hồng|sổ đỏ|pháp lý|hoàn công|chính chủ)")
+_KHACH_NOI_PHAP_LY_RE = re.compile(r"so hong|so do|phap ly|hoan cong|giay to|so rieng|so chung|vi bang|hop dong mua ban|hdmb")
+
+
+def _phap_ly_vai_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
+    """Cụm pháp lý (sổ hồng / sổ đỏ / pháp lý / hoàn công) hay "chính chủ" trong bản tin 📋 mà căn chưa có ô pháp lý, khách chưa nói giấy tờ,
+    và (với "chính chủ") vai người rao chưa được khách gọi tên là chủ nhà. So chữ bản tin với ô đã ghi / lời khách; không có 📋 → []."""
+    if "📋" not in (reply or ""):
+        return []
+    tin = _than_ban_tin(reply)
+    phan = f"{tin[0]}\n{tin[1]}" if tin else reply
+    bat = {m.lower() for m in _PHAP_LY_VAI_RE.findall(phan)}
+    if not bat:
+        return []
+    f = conv.prop.fields
+    bd = max(0, getattr(getattr(conv, "active", None), "history_start", 0) or 0)
+    khach = bo_dau(" ".join(t.content for t in conv.history[bd:] if t.role == "user" and t.content)).lower()
+    co_phap_ly = any(str(f.get(k) or "").strip() for k in KHOA_PHAP_LY) or _KHACH_NOI_PHAP_LY_RE.search(khach) is not None
+    chu_nha = getattr(conv, "user_type", None) == SellerRole.CHU_NHA or re.search(r"chinh chu|chu nha", khach) is not None
+    return sorted(t for t in bat if (t == "chính chủ" and not chu_nha) or (t != "chính chủ" and not co_phap_ly))
 
 
 # Bản tin in nguyên tên khối của khuôn ("Gạch đầu dòng:", "Mô tả:" — bắn thử 26/10 tin rao đất). Chỉ soát đầu dòng của bản tin 📋.
@@ -2608,7 +2632,7 @@ class Engine:
             hoi_ve_khoi = KHOI_DINH_GIA
         # SRS-5.1zzzzzzz178: MỘT khối ưu tiên mỗi lượt, theo thứ tự cần người > pháp lý > ngoài việc > hỏi về (phí / uy tín / link / tình hình /
         # định giá); có khối ưu tiên thì không ép khen theo lượt, không hỏi ô kế. Không có thì mới tới khối khen theo lượt.
-        uu_tien = khoi_can_nguoi(conv) or khoi_phap_ly(conv) or khoi_ngoai_viec(conv) or hoi_ve_khoi
+        uu_tien = khoi_can_nguoi(conv) or khoi_phap_ly(conv, self._can_cua_chu(conv)) or khoi_ngoai_viec(conv) or hoi_ve_khoi
         # SRS-5.1zzzzzzz207: bỏ khối khen theo lượt — giọng theo bản anh Luận ("khen ngợi điểm mạnh trước" nằm sẵn trong prompt).
         system += (uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else ""
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
@@ -2764,6 +2788,10 @@ class Engine:
         if bia_ct:
             ly_do.append("Bản tin rao vừa viết có " + ", ".join(f"\"{x}\"" for x in bia_ct) + " nhưng chủ nhà KHÔNG hề nói — bỏ hẳn các ý đó; "
                          "mọi ý trong tin chỉ lấy từ dữ liệu căn / lời chủ nhà, không thêm tiện ích quanh nhà hay tình trạng nhà.")
+        bia_pl = _phap_ly_vai_khong_co_du_lieu(reply, conv)
+        if bia_pl:
+            ly_do.append("Bản tin rao vừa viết có " + ", ".join(f"\"{x}\"" for x in bia_pl) + " nhưng chủ nhà CHƯA nói pháp lý / giấy tờ (hoặc chưa "
+                         "nói mình là chủ nhà) — bỏ hẳn các ý đó khỏi tiêu đề, mô tả và gạch đầu dòng, KHÔNG viết \"pháp lý rõ ràng\" hay đoán loại sổ.")
         nhan = _nhan_khoi_trong_tin(reply)
         if nhan:
             ly_do.append("Bản tin rao vừa viết in tên khối (" + ", ".join(f"\"{x}:\"" for x in nhan) + ") — tên khối trong BỐ CỤC chỉ để em biết "
@@ -3891,6 +3919,7 @@ class Engine:
             n = conv.lo.get("phuong", 0)
             web["phuong_da_hoi"] = n >= 1 or "phuong" in conv.prop.hoan
             web["goi_y_phuong"] = self._goi_y_phuong(conv)
+            web["co_so_nha"] = bool(re.match(r"\s*(?:số\s*)?\d+[a-zA-Z]?(?:/\d+[a-zA-Z]?)*\b", str(conv.prop.fields.get("dia_chi") or ""), re.I))
             # SRS-5.1zzzzzzz213 (khách ảo 26/10: anh K. bị hỏi phường 6 lượt sau bản nháp vì sổ lờ chỉ đếm ở lượt thu thập, không đếm ở cổng
             # web): mỗi lượt cổng này hỏi phường cũng tính một lần lờ (một lần mỗi lượt). Hỏi tới lần thứ 3 mà chưa ra → báo người phụ trách tra
             # phường (cùng đường `can_nguoi_that`, có nhắc admin thật), bot thôi hỏi.
@@ -3971,6 +4000,10 @@ class Engine:
         except Exception as e:  # noqa: BLE001 — tra kho hỏng thì không gợi ý, không làm hỏng lượt
             log.warning("goi_y_phuong lỗi: %s", e)
             return []
+        if not ph:
+            # SRS-5.1zzzzzzz233 (chat chị Ngân 28/10: "Bình Hưng Hòa A" cũ chia về Bình Hưng Hòa / Bình Trị Đông, kho đường không có Bình Long —
+            # bot hỏi trống "tên phường mới" rồi xin lại số nhà đã có): kể các phường mới mà phường cũ khách nói bị chia về.
+            ph = self._ung_vien_phuong(conv, {})
         return ph if 1 <= len(ph) <= 4 else []
 
     def _build_result(
@@ -4385,6 +4418,20 @@ class Engine:
                 if ma:
                     return ma[:1]
         return []
+
+    def _can_cua_chu(self, conv: Conversation) -> dict | None:
+        """Giá rao của căn chủ nhà đang nói (SRS-5.1zzzzzzz233, đề xuất 28/10: chủ nhà hỏi thuế phí thì tính theo giá căn của mình như phía mua).
+        Chỉ khi lượt này khách hỏi pháp lý; giá chữ đổi ra đồng bằng `parse_vnd` của DB (luật tiền một nguồn). Không giá / lỗi → None."""
+        gia = str(conv.prop.fields.get("gia") or "").strip()
+        doi = getattr(self._convstore, "_ngan_sach_vnd", None)
+        if not conv.y_luot.get("hoi_phap_ly") or not gia or doi is None:
+            return None
+        try:
+            v = doi(gia)
+        except Exception as e:  # noqa: BLE001 — số tính sẵn là phần thêm
+            log.warning("gia chu nha: %s", e)
+            return None
+        return {"price_vnd": v, "_ten": "căn của khách đang rao"} if v else None
 
     def _can_dang_noi(self, conv: Conversation, can: list[dict] | None = None) -> dict | None:
         """Căn khách mua đang nói tới (SRS-5.1zzzzzzz179 mục 3): mã trong link bot vừa dán → tìm trong `can` lượt này, không có thì tra kho; không mã → None."""

@@ -330,12 +330,13 @@ def tien(v: float) -> str:
     return f"{_s(v / 1_000)} nghìn"
 
 
-def khoi_phi_theo_can(khoa: str | None, gia_vnd: float | None, ma_can: str | None = None) -> str:
-    """Dòng số tính sẵn theo giá căn — chỉ cho 4 mục thuế phí và khi đã biết giá; khoá khác / không giá → ""."""
+def khoi_phi_theo_can(khoa: str | None, gia_vnd: float | None, ma_can: str | None = None, ten_can: str | None = None) -> str:
+    """Dòng số tính sẵn theo giá căn — chỉ cho 4 mục thuế phí và khi đã biết giá; khoá khác / không giá → "". `ten_can` (SRS-5.1zzzzzzz233):
+    tên căn trong dòng số khi không phải căn khách mua đang xem (chủ nhà hỏi thuế theo giá rao của căn mình)."""
     if khoa not in PHI_THEO_GIA or not gia_vnd or float(gia_vnd) <= 0:
         return ""
     p = tinh_phi(float(gia_vnd))
-    ten = f"căn {ma_can}" if ma_can else "căn khách đang xem"
+    ten = ten_can or (f"căn {ma_can}" if ma_can else "căn khách đang xem")
     dong = []
     if khoa in ("thue_phi_sang_ten", "thue_tncn"):
         dong.append(f"thuế TNCN bên bán 2 % ≈ {tien(p['tncn'])}")
@@ -374,7 +375,7 @@ def khoi_dieu_luat(dieu: list[dict] | None, ngoai_kho: bool = False) -> str:
 
 
 def khoi_luot(khoa: str | None, nhay_cam: bool = False, gia_can: float | None = None, ma_can: str | None = None,
-              dieu: list[dict] | None = None) -> str:
+              dieu: list[dict] | None = None, ten_can: str | None = None) -> str:
     """Khối dặn model ở lượt trả lời khi lượt lập thao tác đọc được khách hỏi pháp lý. `khoa` None → "". `gia_can` (SRS-5.1zzzzzzz179):
     giá căn đang nói tới — có thì nối dòng số tính sẵn cho các mục thuế phí. `dieu` (SRS-5.1zzzzzzz231): điều luật nguyên văn tra theo
     nghĩa câu khách — nối kèm câu soạn sẵn; câu ngoài kho mà có điều khớp thì model tóm điều đó thay vì nói "chưa có"."""
@@ -399,4 +400,4 @@ def khoi_luot(khoa: str | None, nhay_cam: bool = False, gia_can: float | None = 
             "thể anh/chị kiểm lại với văn phòng công chứng hoặc văn phòng đăng ký đất đai; cần thì em nối người phụ trách. Không nêu tên văn "
             "bản luật trừ khi khách hỏi nguồn"
             + (f" (nguồn: {d['nguon']})" if d.get("nguon") else "") + ".\n"
-            + khoi_phi_theo_can(khoa, gia_can, ma_can) + khoi_dieu_luat(dieu))
+            + khoi_phi_theo_can(khoa, gia_can, ma_can, ten_can) + khoi_dieu_luat(dieu))
