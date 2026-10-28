@@ -14,7 +14,7 @@ def test_dau_la_khong_con_xoa_phien_va_khong_bat_che_do_test():
     spy.plan = {"operations": []}
     r = eng.handle("u1", "$$$$$")
     assert eng.conversation("u1").prop.fields.get("gia") == "6 tỷ"          # không bị xoá sạch
-    assert r.reply != "" and not hasattr(r, "chu_thich")                     # bot trả lời như tin thường, không tin phụ
+    assert r.reply != "" and r.chu_thich == ""                               # bot trả lời như tin thường; tin phụ chỉ theo công tắc (SRS-252)
     assert not getattr(eng.conversation("u1"), "che_do_test", False)        # không bật chế độ test
 
 
@@ -27,5 +27,6 @@ def test_json_la_tin_thuong_khong_in_khoi_du_lieu():
         assert "```json" not in r.reply and "Dữ liệu trích xuất" not in r.reply, lenh
 
 
-def test_turnresult_khong_con_truong_chu_thich():
-    assert "chu_thich" not in TurnResult.__dataclass_fields__
+def test_tin_phu_chi_theo_cong_tac_chung_khong_theo_lenh():
+    """SRS-5.1zzzzzzz252: tin phụ quay lại nhưng là công tắc CHUNG (`AIOI_DONG_TRICH_XUAT`), mặc định tắt — gõ `$$$$$` không bật gì."""
+    assert TurnResult.__dataclass_fields__["chu_thich"].default == ""

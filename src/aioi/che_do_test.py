@@ -1,9 +1,29 @@
-"""Bảng giá model + quy đô cho `cli.py` (SRS-5.1zzzzzzz130 → SRS-5.1zzzzzzz195). Từ 26/10/2026 chủ dự án bỏ chế độ test `$$$$$` (tin phụ debug trên Zalo):
-bên anh Luận không có, chỉ có `cli.py` in số liệu ra terminal. Còn lại ở đây DUY NHẤT bảng giá (chép từ `lib/gia-model.ts`, test so từng dòng) và hàm
-quy token ra đô — `cli.py` dùng để in dòng `$extract` / `$chat` mỗi lượt."""
+"""Bảng giá model + quy đô (SRS-5.1zzzzzzz130 → 195), và tin phụ `$$$$$` "đã trích xuất" sau mỗi lượt (bật lại 28/10/2026, SRS-5.1zzzzzzz252).
+
+26/10 chủ dự án bỏ chế độ test `$$$$$` (bên anh Luận không có); 28/10: "vẫn trong giai đoạn test có dòng $ đã trích xuất nữa đi". Nay là công tắc
+CHUNG `AIOI_DONG_TRICH_XUAT` (`cai-vps.sh` `DONG_TRICH_XUAT`, "bat" / "tat") — áp mọi cuộc chat trong giai đoạn test, tắt một dòng khi chạy thật.
+Tin phụ (tối đa 4 dòng như SRS-139: Ghi · Bỏ · Thiếu / hỏi tiếp · Tốn) ghép HOÀN TOÀN từ dữ liệu lõi đã ghi — không lượt AI nào viết nên không
+bịa, không tốn thêm tiền; KHÔNG vào lịch sử hội thoại / CRM (chỉ nằm trong `replies`), gửi TRƯỚC lời bot (SRS-136). Lỗi → "" (không chặn lượt)."""
 from __future__ import annotations
 
+import logging
+import os
 import re
+from typing import TYPE_CHECKING
+
+from .prompts import FIELD_LABELS
+
+if TYPE_CHECKING:  # tránh vòng nhập: engine nhập module này
+    from .engine import Conversation
+
+log = logging.getLogger("aioi.che_do_test")
+
+DAU = "$$$$$"
+
+
+def bat() -> bool:
+    """Công tắc tin phụ "đã trích xuất" (SRS-5.1zzzzzzz252) — đọc mỗi lượt, đổi `.env` + khởi động lại lõi là áp."""
+    return os.environ.get("AIOI_DONG_TRICH_XUAT", "").strip().lower() == "bat"
 
 
 # Bảng giá MỘT NGUỒN là lib/gia-model.ts (đô / 1 triệu chữ-máy). Chép lại ở đây vì VPS chỉ có src/aioi; tests/test_che_do_test.py so từng dòng
@@ -58,3 +78,74 @@ def dong_tien(token: dict[str, dict[str, int]] | None) -> str:
             tong += t
         phan.append(f"{model} vào {_k(so['p_in'])} ra {_k(so['p_out'])}" + ("" if t is not None else " chưa rõ giá"))
     return f"Tốn: ${tong:.4f}" + ("" if ro else "+") + " (" + " | ".join(phan) + ")"
+
+
+def _cat(x: object, n: int = 70) -> str:
+    s = " ".join(str(x or "").split())
+    return s if len(s) <= n else s[: n - 1] + "…"
+
+
+def _nhan(k: str) -> str:
+    return _cat(FIELD_LABELS.get(k, k).split("(")[0].strip() or k, 40)
+
+
+def _giong(a: object, b: object) -> bool:
+    gon = lambda x: " ".join(str(x or "").lower().split())  # noqa: E731
+    return gon(a) == gon(b)
+
+
+def _o_vua_ghi(conv: "Conversation", captured: list[str]) -> list[str]:
+    """Ô lượt này ghi, mỗi ô một đoạn ngắn: `nhãn "cụm khách nói" → "giá trị chuẩn" (đổi từ "cũ")`. Người mua: ô phiếu."""
+    ra: list[str] = []
+    if conv.role == "buyer" and conv.buyer_lead is not None:
+        bl = conv.buyer_lead
+        gom = {"loai_giao_dich": bl.loai_giao_dich, "loai_bds": bl.loai_bds, "ngan_sach": bl.ngan_sach, "khu_vuc": bl.khu_vuc,
+               **{k: v for k, v in dict(bl.fields).items() if not str(k).startswith("_")}}
+        for k, v in gom.items():
+            if v and (not captured or k in captured):
+                ra.append(f"{_nhan(k)} \"{_cat(v, 40)}\"")
+        return ra
+    khach = conv.prop.fields_khach()
+    cung_can = conv.truoc_id == conv.active_listing_id
+    for k in captured:
+        if k not in khach or khach[k] in (None, ""):
+            continue
+        trich = conv.bc_luot.get(k)
+        dong = f"{_nhan(k)} \"{_cat(trich or khach[k], 40)}\""
+        if trich and not _giong(trich, khach[k]):
+            dong += f" → \"{_cat(khach[k], 40)}\""
+        cu = conv.truoc_luot.get(k) if cung_can else None
+        if cu and not _giong(cu, khach[k]):
+            dong += f" (đổi từ \"{_cat(cu, 30)}\")"
+        ra.append(dong)
+    return ra
+
+
+def _da_bo(conv: "Conversation") -> list[str]:
+    """Ô AI đề xuất mà code bỏ — trả lời "vì sao nó không nhớ"."""
+    return [f"{_nhan(k)} \"{_cat(v, 30)}\" vì {ly}" for k, v, _bc, ly in conv.bo_luot]
+
+
+def chu_thich(conv: "Conversation", captured: list[str], next_field: str | None = None,
+              token: dict[str, dict[str, int]] | None = None) -> str:
+    """Tin phụ sau một lượt, tối đa 4 dòng: Ghi · Bỏ (nếu có) · Thiếu / hỏi tiếp · Tốn. Lỗi bất kỳ → "" (không chặn lượt)."""
+    try:
+        ghi = _o_vua_ghi(conv, list(captured or []))
+        dong = [f"{DAU} Đã trích xuất: " + (" · ".join(ghi) if ghi else "không có ô mới")]
+        bo = _da_bo(conv)
+        if bo:
+            dong.append("Bỏ: " + " · ".join(bo))
+        phan: list[str] = []
+        if conv.role != "buyer":
+            thieu = conv.prop.missing_fields()
+            phan.append("Thiếu: " + (", ".join(_nhan(x) for x in thieu[:5]) or "không") + (" …" if len(thieu) > 5 else "")
+                        + ("" if conv.prop.summary_ready() else " (chưa đủ soạn nháp)"))
+        if next_field:
+            phan.append(f"Hỏi tiếp: {_nhan(next_field)}")
+        if phan:
+            dong.append(" · ".join(phan))
+        dong.append(dong_tien(token))
+        return "\n".join(dong)
+    except Exception as e:  # noqa: BLE001 — tin phụ chỉ để soi, không được làm hỏng lời trả lời khách
+        log.warning("che_do_test.chu_thich lỗi: %s", e)
+        return ""

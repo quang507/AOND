@@ -757,9 +757,9 @@ def khoi_hoi_mat_tien(gia_tri: str) -> str:
     ngang căn hoặc độ rộng con đường trước nhà — hỏi lại một lần. Engine chỉ bật khối này một lần mỗi căn."""
     return (
         f"\nBỀ NGANG HAY ĐƯỜNG (hệ thống đã kiểm): lượt này em ghi \"{gia_tri}\" là BỀ NGANG của căn, nhưng chưa có kích thước lô "
-        "(ngang × dài) để đối chiếu. Nếu khách nói kiểu \"mặt tiền … m\" / \"MT … m\" (có thể là độ rộng con đường trước nhà), gộp "
-        "vào câu hỏi lượt này MỘT ý hỏi lại cho chắc: số đó là bề ngang của căn hay đường trước nhà rộng chừng đó. Khách đã nói rõ "
-        "\"ngang\" / \"bề ngang\" / \"đường rộng\" thì KHÔNG hỏi.\n"
+        "(ngang × dài) để đối chiếu. Nếu khách nói kiểu \"mặt tiền … m\" / \"MT … m\" (có thể là độ rộng con đường trước nhà), câu hỏi "
+        "DUY NHẤT của lượt này là hỏi lại cho chắc: số đó là bề ngang của căn hay đường trước nhà rộng chừng đó — KHÔNG hỏi thêm ô nào "
+        "khác (ô kế tiếp để lượt sau, SRS-5.1zzzzzzz252). Khách đã nói rõ \"ngang\" / \"bề ngang\" / \"đường rộng\" thì KHÔNG hỏi.\n"
     )
 
 

@@ -148,13 +148,16 @@ if [ -d /opt/aond_core/src/aioi ]; then
   # SRS-5.1zzzzzzz246 (chủ dự án 28/10/2026: "bạn thử tắt công cụ cố định xem"): "tat" = lời trả khách là chữ thường như bản anh Luận;
   # "bat" = lại ép công cụ hai ô gui_khach (tự soát + lời gửi, SRS-76). Áp cho mọi khách, kể cả ID thử.
   CONG_CU_GUI_KHACH="tat"
+  # SRS-5.1zzzzzzz252 (chủ dự án 28/10/2026: "vẫn trong giai đoạn test có dòng $ đã trích xuất nữa đi"): "bat" = sau mỗi lượt gửi thêm tin
+  # phụ "$$$$$ Đã trích xuất…" cho MỌI cuộc chat; chạy với khách thật thì đổi thành "tat" rồi chạy cai-vps.
+  DONG_TRICH_XUAT="bat"
   if [ -f /opt/aond_core/.env ]; then
     umask 077
-    grep -vE '^AIOI_(CHAT_MODEL(_THU)?|CONG_CU_GUI_KHACH)=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
-    printf 'AIOI_CHAT_MODEL=%s\nAIOI_CHAT_MODEL_THU=%s\nAIOI_CONG_CU_GUI_KHACH=%s\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$CONG_CU_GUI_KHACH" >> /opt/aond_core/.env.moi
+    grep -vE '^AIOI_(CHAT_MODEL(_THU)?|CONG_CU_GUI_KHACH|DONG_TRICH_XUAT)=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
+    printf 'AIOI_CHAT_MODEL=%s\nAIOI_CHAT_MODEL_THU=%s\nAIOI_CONG_CU_GUI_KHACH=%s\nAIOI_DONG_TRICH_XUAT=%s\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$CONG_CU_GUI_KHACH" "$DONG_TRICH_XUAT" >> /opt/aond_core/.env.moi
     chown --reference=/opt/aond_core/.env /opt/aond_core/.env.moi; chmod 600 /opt/aond_core/.env.moi
     mv /opt/aond_core/.env.moi /opt/aond_core/.env
-    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT, ID thử = $MODEL_CHAT_THU, công cụ gửi khách = $CONG_CU_GUI_KHACH"
+    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT, ID thử = $MODEL_CHAT_THU, công cụ gửi khách = $CONG_CU_GUI_KHACH, dòng trích xuất = $DONG_TRICH_XUAT"
   fi
   systemctl restart aond-core
   for i in $(seq 1 60); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done

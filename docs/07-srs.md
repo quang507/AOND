@@ -9058,6 +9058,26 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz252 · Mỗi lượt tối đa MỘT câu hỏi; bật lại dòng `$$$$$ Đã trích xuất` cho giai đoạn test (28/10/2026)
+Chủ dự án 28/10 (sau chat thử số ký gửi 19:00): "Sao dặn hỏi 1 câu rồi mà nó lại hỏi nhiều thế vẫn trong giai đoạn test có dòng $ đã trích xuất nữa đi".
+1. **Ca gốc** (chat thử 28/10 19:00–19:03, trước bản cài 19:28): khách "7m lận em nha" rồi 4 giây sau "mặt tiền lớn" → bot trả lời hai lượt; lượt hai
+   "con số 7m đó là bề ngang căn hay đường trước nhà rộng chừng đó? Với lại sổ hồng riêng đã hoàn công đầy đủ chưa anh?" — HAI câu hỏi. Nguyên nhân:
+   khối `prompts.khoi_hoi_mat_tien` (SRS-96) dặn "GỘP vào câu hỏi lượt này MỘT ý hỏi lại", tức cộng thêm một câu vào câu hỏi ô kế; không lưới nào
+   đếm số câu hỏi. Lời chào lúc 18:59 vẫn là câu cũ ba lựa chọn — đã sửa ở SRS-251 (bản cài 19:28).
+2. **Chỗ sửa** — (a) `engine._nhieu_cau_hoi`: lời chat (bỏ phần bản tin từ 📋 và đường dẫn) có quá một dấu "?" → `_soat_hinh_thuc` gọi lại model
+   MỘT lần kèm lý do "mỗi lượt chỉ hỏi MỘT ý, hỏi xong thì dừng"; cũng nằm trong `_ly_do_cung` (soát bản gọi lại). Lượt KHÔNG có câu hỏi vẫn
+   được (luật SRS-178 giữ). (b) `khoi_hoi_mat_tien`: câu hỏi bề ngang / đường là câu hỏi DUY NHẤT của lượt, ô kế để lượt sau. (c) Tin phụ
+   `$$$$$ Đã trích xuất: … · Bỏ … · Thiếu / Hỏi tiếp … · Tốn: $…` (≤ 4 dòng, khuôn SRS-139) quay lại dưới dạng công tắc CHUNG
+   `AIOI_DONG_TRICH_XUAT` (`cai-vps.sh` `DONG_TRICH_XUAT="bat"`): mọi cuộc chat, gửi TRƯỚC lời bot (SRS-136), không vào lịch sử / CRM, ghép từ dữ
+   liệu lõi (`che_do_test.chu_thich`), không gọi thêm AI. Khác SRS-130: không còn lệnh gõ `$$$$$` (SRS-195 giữ), tắt bằng một dòng khi chạy thật.
+3. **Chưa sửa**: hai tin khách nhắn cách nhau hơn 2,5 giây mà lượt đầu đã chạy thì vẫn ra hai lượt trả lời (gom chỉ gộp các tin CÙNG chờ, SRS-91);
+   nới cửa sổ gom ở bridge thì khách chờ lâu hơn mọi lượt — chưa đổi khi chưa có số đo.
+4. **Ba câu gốc** — (1) *lớp lỗi*: khối prompt phụ "cộng thêm một ý hỏi" chồng lên câu hỏi ô kế; luật "hỏi một ý" chỉ nằm trong lời dặn, không có lưới.
+   (2) *Chỗ khác cùng lớp*: các khối dặn "hỏi xác nhận" khác (`_khoi_hoi_du_an`, phường kho hẻm, tách bán / thuê) cũng có thể cộng câu hỏi — nay lưới
+   `_nhieu_cau_hoi` đỡ chung mọi khối và cả phía mua; tốn thêm một lần gọi model ở lượt lệch. (3) *Bài đỏ*: `tests/test_dong_trich_xuat_mot_cau_hoi.py`
+   (đếm câu hỏi bỏ bản tin / link, khối mặt tiền, lời hai câu hỏi → gọi lại, tin phụ theo công tắc) — đã thử tắt lưới trong `_soat_hinh_thuc`: đỏ;
+   `tests/test_khong_con_lenh_dac_biet.py` sửa theo (gõ `$$$$$` vẫn là tin thường).
+
 ### SRS-5.1zzzzzzz251 · Hai số chuyên việc: câu chào số ký gửi chỉ hỏi gửi bán / cho thuê (28/10/2026)
 Chủ dự án 28/10: "giờ có 2 số rồi đó, 1 số chuyên gửi bán 1 số chuyên mua nhé, sửa câu chào sửa bot prompt lại nhé, kiến thức vẫn là kiến thức chung".
 1. **Ca gốc**: câu chào số ký gửi (`chao_lan_dau`, `chao_lam_moi`) hỏi "gửi bán, cho thuê nhà, hay đang tìm mua" (thêm "tìm mua" 25/10, SRS-174, khi chỉ có một số);

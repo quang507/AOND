@@ -130,7 +130,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 - Giọng phía bán theo khuôn anh Luận (SRS-207); `prompts.GIONG_VUI` là CHỖ DUY NHẤT dặn giọng (SRS-219 / 228 / 248) — đổi giọng sửa ở đó; không kèm cặp ví dụ cụ thể (model chép thành khuôn, SRS-248), ĐỪNG thêm luật giọng chồng lên. Ví dụ trong prompt chỉ là lời ĐÁP, không chứa câu hỏi của một ô cụ thể (model chép, SRS-196); không câu minh hoạ hoàn chỉnh.
 - Xưng hô một nguồn `xung_ho.py` (`goi_toi`): khách xưng em → anh / chị theo tên trợ lý; khách xưng cháu / con → cô / chú; khách xưng chú / cô / bác giữ đúng chữ (`chu_co_bac:<chữ>`, SRS-234). Bot không gọi khách là "mình" ("mình" nghĩa chúng ta thì được, SRS-230); không mở đầu "Dạ". Câu mẫu / câu code ghép gọi khách bằng `{goi}`; mảnh chữ code ghép sẵn "anh/chị" + "em" thì qua `engine._xung_ho_cau` (SRS-250). Giới tính Zalo chỉ là ĐOÁN — vào prompt qua `khoi_xung_ho(..., doan=_xung_ho_doan(conv))`, không thành "khách xưng anh" (SRS-245).
 - Câu ghi nhận ("em ghi rồi…") tối đa MỘT lần mỗi cuộc chat (SRS-229). Hai lưới lặp hình thức (`_cung_mo_dau`, `_cau_lap_luot_truoc`) không được gỡ khi đổi giọng (SRS-213). Thêm luật cứng mới thì thêm vào `_ly_do_cung`.
-- Mỗi lượt MỘT khối "ƯU TIÊN LƯỢT NÀY" (cần người > pháp lý > ngoài việc > hỏi về); khối mới đặt vào chuỗi `or` đó (SRS-178). Lượt được phép không có câu hỏi — đừng thêm lưới "lời phải có câu hỏi".
+- Mỗi lượt MỘT khối "ƯU TIÊN LƯỢT NÀY" (cần người > pháp lý > ngoài việc > hỏi về); khối mới đặt vào chuỗi `or` đó (SRS-178). Lượt được phép không có câu hỏi — đừng thêm lưới "lời phải có câu hỏi"; nhưng tối đa MỘT câu hỏi (`_nhieu_cau_hoi`, SRS-252), khối dặn hỏi xác nhận phải là câu hỏi duy nhất, không cộng thêm.
 - Độ dài: "ngắn vừa vừa", ý chính rồi dừng (SRS-97).
 
 **Phí, pháp lý, số liệu**
@@ -153,7 +153,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 - Báo căn mới cho khách mua: `bao_can_moi.py`, vòng 10 phút, 8–20 giờ, ≤ 1 tin / khách / 24 giờ, xoay 4 kiểu văn phong (SRS-150 / 188). Đừng bật lại trigger cũ `bao_tin_moi_khop` / `nudge` (hai chủ).
 - Tin chống Zalo xoá kết nối (FR-63): `giu_ket_noi.py`, khách im 6–7 ngày, 8–20 giờ, câu mẫu cố định, giữ chỗ `reminders` `reengage` (SRS-238).
 - Nhắc `followup` / `sold` / `feedback` / `admin_reply` do LÕI gửi (`gui_nhac.py`, vòng 60 s); thêm loại nhắc = thêm vào `KIND_LOI` + `soan_tin`, đừng mở đường gửi thứ hai; đừng ghi `noi_dung_gui` khi còn pending (SRS-216).
-- Tin nội bộ (🙋 ⭐ 🩺) gửi CTV / admin mở bằng `$$$$$ `; tin cho khách thật không bao giờ có (SRS-134). Ảnh gửi qua `/send` của bridge, vòng tải ảnh chỉ ở `guiAnhQuaUrl`.
+- Tin nội bộ (🙋 ⭐ 🩺) gửi CTV / admin mở bằng `$$$$$ `; tin cho khách thật không bao giờ có (SRS-134) — trừ tin phụ "Đã trích xuất" khi công tắc `DONG_TRICH_XUAT` trong `cai-vps.sh` = `bat` (giai đoạn test, SRS-252; chạy thật thì `tat`). Ảnh gửi qua `/send` của bridge, vòng tải ảnh chỉ ở `guiAnhQuaUrl`.
 - Lệnh gõ tay trên Zalo (`lenh_zalo.py`): `/quit` (xoá phiên), `/state`, `/listings`, `/whoami`, `/import`, `/project`, `/link`; chạy TRƯỚC model, không vào lịch sử (SRS-211).
 
 **Prompt, cache, chi phí**

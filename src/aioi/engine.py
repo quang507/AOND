@@ -29,6 +29,7 @@ from . import phap_ly
 from .prompts import KHOI_MOT_UU_TIEN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
+from . import che_do_test
 from .delivery import _is_formatted_post
 from .prompts import _MO_DAU_RE   # dòng mở bản nháp "(📋) Em/Mình sẽ rao như vầy nhé…:" (SRS-5.1zzzzzzz132)
 from .danh_gia import KHOI_SAP_XIN_SAO, cau_xin_sao, doc_sao, khoi_cam_on_sao, vua_xin_sao
@@ -345,6 +346,14 @@ def _xung_ho_cau(cau: str, goi: str, toi: str) -> str:
     hoa = lambda s: s[:1].upper() + s[1:]
     bang = {"anh/chị": goi, "Anh/chị": hoa(goi), "em": toi, "Em": hoa(toi)}
     return _XUNG_HO_CAU_RE.sub(lambda m: bang[m.group(1)], cau)
+
+
+def _nhieu_cau_hoi(loi: str) -> bool:
+    """Lời bot hỏi khách quá MỘT câu (SRS-5.1zzzzzzz252, chủ dự án 28/10: "dặn hỏi 1 câu rồi mà nó lại hỏi nhiều thế"). Đếm dấu "?" kết câu
+    trong lời CHAT — bỏ phần bản tin (từ dòng mở 📋: câu hỏi trong tin rao là của bản tin) và dấu "?" trong đường dẫn. Luật hình thức, không đoán ý."""
+    chat = (loi or "").split("📋", 1)[0]
+    chat = re.sub(r"https?://\S+", " ", chat)
+    return len(re.findall(r"\?+", chat)) > 1
 
 
 def _la_id_thu(user_key: str | None) -> bool:
@@ -812,6 +821,8 @@ class TurnResult:
     xin_anh: list[str] = field(default_factory=list)
     # Ảnh bản vẽ / mặt bằng mẫu nhà (link công khai) khách vừa xin — bridge gửi kèm sau chữ (SRS-5.1zzzzzzz249).
     ban_ve: list[str] = field(default_factory=list)
+    # Tin phụ "$$$$$ Đã trích xuất…" (công tắc `AIOI_DONG_TRICH_XUAT`, SRS-5.1zzzzzzz252) — server gửi TRƯỚC lời bot, KHÔNG vào lịch sử / CRM.
+    chu_thich: str = ""
 
 
 class ConversationStore(ABC):
@@ -2946,6 +2957,9 @@ class Engine:
         if phi_dung:
             ly_do.append(f"Lời vừa viết báo phí % không đúng vai người rao đã biết — mức đúng: \"{phi_dung}\". Vai CHƯA rõ thì nêu đủ cả hai "
                          "mức như vậy hoặc hỏi khéo khách là chủ nhà hay môi giới, KHÔNG tự đoán một vai.")
+        if _nhieu_cau_hoi(reply):   # SRS-5.1zzzzzzz252 (chủ dự án 28/10: "dặn hỏi 1 câu rồi mà nó lại hỏi nhiều thế")
+            ly_do.append("Lời vừa viết hỏi khách NHIỀU HƠN MỘT câu — mỗi lượt chỉ hỏi MỘT ý (một dấu \"?\"), hỏi xong thì dừng chờ khách trả lời; "
+                         "ý còn lại để lượt sau.")
         # SRS-5.1zzzzzzz228 mục 3 (chủ dự án 27/10: "câu nào cũng dc, đừng trùng 3 4 câu em ghi nhận, 1 lần là dc" — thay "bỏ hẳn" của SRS-131):
         # câu ghi nhận được nói MỘT lần trong cuộc chat; lượt trước đã có một câu như vậy thì lượt này gọi lại.
         if _co_cau_ghi_nhan(reply) and any(_co_cau_ghi_nhan(t.content) for t in conv.history if t.role == "assistant" and t.content):
@@ -3068,6 +3082,9 @@ class Engine:
         phi_dung = _phi_lech_vai(reply, conv.vai_phi, conv.prop.is_rental) if conv.role != "buyer" else None
         if phi_dung:
             ly_do.append(f"Lời vừa viết báo phí % không đúng vai người rao — mức đúng: \"{phi_dung}\", KHÔNG tự đoán một vai.")
+        if _nhieu_cau_hoi(reply):   # SRS-5.1zzzzzzz252
+            ly_do.append("Lời vừa viết hỏi khách NHIỀU HƠN MỘT câu — mỗi lượt chỉ hỏi MỘT ý (một dấu \"?\"), hỏi xong thì dừng chờ khách trả lời; "
+                         "ý còn lại để lượt sau.")
         return ly_do
 
     @staticmethod
@@ -4267,6 +4284,7 @@ class Engine:
             danh_gia=conv.y_luot.get("danh_gia"),
             xin_anh=list(conv.y_luot.get("xin_anh") or []),
             ban_ve=list(conv.y_luot.get("ban_ve") or []),
+            chu_thich=che_do_test.chu_thich(conv, captured, next_f, so_token.tong_luot()) if che_do_test.bat() else "",
         )
 
     def _match_listing(self, conv: Conversation, ref: str) -> Listing | None:
