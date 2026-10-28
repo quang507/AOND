@@ -42,7 +42,27 @@ def test_tin_nhac_ban_nhap_theo_cau_tester():
     conv.listing_proposed = True
     conv.xung_ho = "chi"
     conv.history.append(Turn("user", "chị bán nhà", 0.0))
+    conv.history.append(Turn("assistant", "📋 Em sẽ rao như vầy nhé chị:\n\nBán nhà Bình Long 3 tỷ", 0.0))
     eng = SimpleNamespace(conversation=lambda uk: conv, khoa_luot=lambda uk: threading.RLock(), _convstore=None)
     FollowUpManager()._execute_followup("bn-1", eng, None, "seller", hen=None)
     nhac = conv.history[-1].content
     assert nhac == "Em gửi chị bản nháp tin đăng, chị cần chỉnh sửa thêm nhắn em hỗ trợ ạ!"   # đúng câu tester (SRS-5.1zzzzzzz101)
+
+
+def test_khach_da_dap_ban_nhap_thi_khong_nhac_ban_nhap():
+    """SRS-5.1zzzzzzz233 (chat chị Ngân 28/10: "đăng giúp chị" → bot hỏi phường → 5 phút sau "Em gửi chị bản nháp tin đăng…")."""
+    import threading
+    from types import SimpleNamespace
+    from aioi.assistants import assign_assistant
+    from aioi.engine import Conversation, Turn
+    from aioi.followup import FollowUpManager
+    conv = Conversation(user_key="bn-2", assistant=assign_assistant("bn-2"))
+    conv.prop.loai_hinh = "nha_pho"
+    conv.listing_proposed = True
+    conv.xung_ho = "chi"
+    for vai, chu in (("user", "chị bán nhà"), ("assistant", "📋 Em sẽ rao như vầy nhé chị:\n\nBán nhà Bình Long 3 tỷ"),
+                     ("user", "đăng giúp chị"), ("assistant", "Em đã báo đội tra phường cho nhà mình rồi chị.")):
+        conv.history.append(Turn(vai, chu, 0.0))
+    eng = SimpleNamespace(conversation=lambda uk: conv, khoa_luot=lambda uk: threading.RLock(), _convstore=None)
+    FollowUpManager()._execute_followup("bn-2", eng, None, "seller", hen=None)
+    assert not any("bản nháp tin đăng" in t.content for t in conv.history)
