@@ -9058,6 +9058,32 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz250 · Phía mua dùng kho dự án: "quận X có dự án gì", căn còn bán trong dự án, câu về dự án hỏi chủ nhà rồi admin; câu ghép gọi đúng cách khách xưng (28/10/2026)
+Chủ dự án 28/10 (sau bản khảo sát 12 mục): "3 sao lại không được, có địa chỉ hết rồi mà, 4 sẽ cập nhật … 7 đợi có thì gửi 'gửi bảng căn còn bán', 'hỏi
+chủ đầu tư giùm tầng căn, hoặc hỏi chủ nhà có căn hoặc nhà đang rao bán gắn với địa chỉ này trước nếu ko có nữa thì hỏi admin', sửa cái Trái luật
+repo: 11 … và Dọn dẹp: 12".
+1. **Ca gốc**: khách mua hỏi "quận 8 có dự án gì" → không có đường tra (chỉ `hoi_du_an` tra MỘT dự án theo tên); "Ny'ah còn căn nào" → gợi căn
+   (`tim_nha`) không lọc theo dự án (mọi tin rao 0 dòng có `project_id` khớp + `unit_code`, SRS-249); câu về dự án mà không chỉ căn ("còn căn tầng cao
+   không") → `hoi_chu_nha` cần một căn nên câu rơi mất. Câu code ghép (bảng giá, ảnh, tách nhóm tệp, hỏi trùng tên dự án, đọc link web) viết cứng
+   "anh/chị" + "em" — khách xưng "em" / "chú" vẫn bị gọi "anh/chị" (trái luật "câu code ghép gọi khách bằng {goi}").
+2. **Chỗ sửa** — (a) AI lập thao tác thêm ô `mua.du_an_khu_vuc` (+ `du_an_khu_vuc_chuan`) và `mua.tim_du_an`, nhận theo cụm nguyên văn từng ô
+   (`_loc_viec_mua`); (b) `mua.du_an_theo_khu` — dự án `projects` có quận / phường khớp TRỌN tên khu (regex chặn số dính liền: "Quận 1" ra 67 dự án, không
+   kéo Quận 10–12; đo trên DB 28/10), kèm số căn đang rao; `mua.can_trong_du_an` — căn đang hiện nối `project_id`, đúng bán / thuê; khối
+   `du_an_mua.khoi_du_an_khu` / `khoi_can_du_an` (chỉ tên / căn trong kho; khách xin bảng thì kể từng dòng, không thì giới thiệu một căn như thường); căn
+   trong dự án đứng đầu danh sách gợi ý; (c) câu về dự án không chỉ căn (`hoi_chu_nha` + dự án đã nhận ở `_du_an_id`) → `info_requests` của một căn đang rao
+   trong dự án (đường sẵn có: chủ nhà 12 giờ, quá hạn sang admin); dự án chưa có căn → `can_nguoi_that` báo admin MỘT lần mỗi câu (`_da_bao_admin_du_an`);
+   (d) 7 câu mẫu mới (`du_an_hoi_mau_nha`, `du_an_hoi_trung_ten`, `web_da_luu`, `web_hoi_du_an`, `ban_ve_gui_kem`, `ban_ve_pdf`, `hoi_ro_can`, migration
+   `20261028j`) + `engine._xung_ho_cau` cho mảnh chữ code ghép (bảng giá, ảnh không phải ảnh căn, tệp không mở được, trần ảnh, tách nhóm) — đổi một lượt
+   "anh/chị"/"em" theo `xung_ho.goi_toi`, không đụng lời model; (e) `/project` báo đúng: admin "đã ghi vào kho chung", người khác "đã ghi nhận phiếu".
+3. **Không làm được**: `?ref=du-an:` từ web — link `zalo.me/<số>` của tài khoản cá nhân không chuyển tham số `ref` vào cuộc chat, bridge zca-js không đọc
+   được; chỉ Zalo OA có ref. "Hỏi chủ đầu tư" — kho chưa có đầu mối liên lạc chủ đầu tư; câu đi chủ nhà trong dự án rồi admin như chủ dự án dặn.
+4. **Ba câu gốc** — (1) *lớp lỗi*: dữ liệu có (địa chỉ dự án, `project_id`) mà không có đường đọc cho phía mua; đường chuyển câu hỏi gắn cứng vào "một căn";
+   câu chữ code tự ghép đứng ngoài nguồn xưng hô. (2) *Chỗ khác cùng lớp*: `tim_nha` (rpc) vẫn chưa nhận tham số dự án — căn trong dự án được ghép trước
+   danh sách thay vì lọc trong rpc; báo căn mới (`bao_can_moi`) chưa theo dự án khách hỏi; câu nhắc `followup` đã theo `goi_toi` (SRS-214); còn câu ghép
+   ngoài engine chưa soát hết (`lenh_zalo` là tin debug, không gửi khách thật). (3) *Bài đỏ khi tắt bản sửa*: `tests/test_mua_du_an_250.py` (6 ca: khu, khu
+   AI tự suy không có trong tin, bảng căn còn bán, dự án chưa có căn, hỏi chủ nhà trong dự án → admin một lần), `tests/test_cau_mau.py::
+   test_cau_code_ghep_goi_theo_cach_khach_xung`, `test_migration_nap_dung_cau_mac_dinh` (7 câu mới). Model thật chưa đo — cần bắn `ban-thu-mua`.
+
 ### SRS-5.1zzzzzzz249 · Dữ liệu dự án MỘT NGUỒN: `projects` là kho chung, phiếu theo hạng Đồng / Bạc / Vàng, admin ghi thẳng, bản vẽ mẫu nhà gửi được (28/10/2026)
 Chủ dự án 28/10: "gộp 2 cái này là 1 … single source of truth … thông tin dự án lấy từ mogi là thông tin sơ khởi ban đầu, còn sau thì ghi thêm, cả bên mua và bên
 bán đều truy cập được … dữ liệu riêng như nhà giá bao nhiêu, tầng nào số căn hướng các thứ thì ghi thêm 1 mục ở chỗ listing nhưng có link vào dữ liệu chung của dự

@@ -160,12 +160,33 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "giu_ket_noi_ban": ("{Goi} ơi, {toi} vẫn đang giữ tin căn của {goi} trên hệ thống. Nhờ {goi} nhắn lại {toi} một chữ thôi, kẻo Zalo tự "
                         "ngắt kết nối thì có khách hỏi {toi} không báo {goi} được ạ 🙏",
                         "Người bán im 6 ngày — giữ kết nối Zalo trước mốc 7 ngày (FR-63). {toi} = bot tự xưng", "SRS-5.1zzzzzzz238"),
+    # --- Luồng dự án: câu trước đây viết cứng "anh/chị" / "Em" trong engine (SRS-5.1zzzzzzz250, chủ dự án 28/10 mục 11) ---
+    "du_an_hoi_mau_nha": ("‘{ten}’ nghe giống MẪU NHÀ trong dự án “{du_an}” — đây là mẫu nhà của “{du_an}”, hay là một dự án riêng ạ? {Toi} "
+                          "hỏi cho chắc kẻo nhầm.",
+                          "Tên khách nói giống mẫu nhà của một dự án trong kho. {ten} = tên khách nói, {du_an} = dự án trong kho",
+                          "SRS-5.1zzzzzzz250"),
+    "du_an_hoi_trung_ten": ("Dự án “{ten}” có phải cũng là “{du_an}” bên {toi} đang có không, hay là một dự án khác ạ? {Toi} hỏi cho chắc "
+                            "để khỏi tách nhầm thành 2 dự án.",
+                            "Tên dự án khách nói gần giống một dự án trong kho. {ten} = tên khách nói, {du_an} = dự án trong kho",
+                            "SRS-5.1zzzzzzz250"),
+    "web_da_luu": ("{Toi} đọc trang **{host}** rồi ạ:\n\n{tom_tat}\n\n{Toi} đã ghi lại (nguồn: {url}) — lần sau {goi} hỏi là có ngay ạ 😊",
+                   "Khách gửi link trang web về dự án đang rao — bot tóm tắt và ghi vào kiến thức dự án. {tom_tat} {url} {host} code điền",
+                   "SRS-5.1zzzzzzz250"),
+    "web_hoi_du_an": ("{Toi} đọc trang **{host}** rồi ạ:\n\n{tom_tat}\n\n{Goi} đang rao dự án nào để {toi} gắn thông tin này vào cho đúng ạ?",
+                      "Khách gửi link trang web mà chưa biết căn thuộc dự án nào. {tom_tat} {host} code điền", "SRS-5.1zzzzzzz250"),
+    "ban_ve_gui_kem": ("Bản vẽ / mặt bằng mẫu {mau_nha} {toi} gửi kèm đây ạ 📐",
+                       "Khách xin bản vẽ — ảnh bản vẽ mẫu nhà gửi kèm sau câu này. {mau_nha} = tên mẫu nhà", "SRS-5.1zzzzzzz249"),
+    "ban_ve_pdf": ("Bản vẽ / mặt bằng mẫu {mau_nha} đây ạ 📐: {link}",
+                   "Khách xin bản vẽ — mẫu nhà chỉ có bản PDF. {link} = đường dẫn PDF (bắt buộc)", "SRS-5.1zzzzzzz249"),
+    "hoi_ro_can": ("{Goi} nói rõ thêm giúp {toi} căn nào ạ?",
+                   "Lượt tra rổ hàng không ra lời — hỏi lại khách căn nào", "SRS-5.1zzzzzzz250"),
 }
 
 # Khung bắt buộc của vài câu — code dựa vào khung đó (dòng mở bản nháp: tìm tiêu đề, cắt câu dẫn). Câu sửa sai khung → mặc định.
 # Chỗ giữ chữ câu sửa tay BẮT BUỘC giữ (thiếu thì bot nói câu không có con số) — kiểm trên câu sửa, trước khi điền.
 _BAT_BUOC = {"bao_phi": ("{phi}",), "xac_nhan_lich": ("{gio}", "{can}"), "bao_tra_loi_chu_nha": ("{tra_loi}",),
-             "bao_lich_da_chot": ("{gio}",)}
+             "bao_lich_da_chot": ("{gio}",), "web_da_luu": ("{tom_tat}", "{url}"), "web_hoi_du_an": ("{tom_tat}",),
+             "ban_ve_pdf": ("{link}",)}
 
 _KHUNG = {
     "mo_dau_nhap": lambda c: c.startswith("📋") and c.rstrip().endswith(":") and "\n" not in c,

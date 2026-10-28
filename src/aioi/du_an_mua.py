@@ -106,3 +106,41 @@ def khoi_du_an(kq: dict[str, Any] | None) -> str:
             "đáng đầu tư. Chọn vài ý đúng câu khách hỏi, không đổ cả khối; không dán link nguồn. Xong ý thì giữ MỘT câu hỏi ngắn như mọi "
             "lượt (nếu có), không hỏi thêm về dự án.\n")
     return out
+
+
+def khoi_du_an_khu(kq: dict[str, Any] | None) -> str:
+    """Khách hỏi "khu X có dự án gì" (SRS-5.1zzzzzzz250): danh sách dự án kho chung có ở khu đó + số căn đang rao. Chỉ tên trong kho."""
+    if not isinstance(kq, dict) or not kq.get("khu"):
+        return ""
+    dau = f'\n\n=== {TIEU_DE} — KHU "{_chu(kq["khu"])}" (khách MUA hỏi khu này có dự án nào; hệ thống tra kho, KHÔNG phải khách nói) ===\n'
+    ds = [d for d in (kq.get("ds") or []) if isinstance(d, dict) and _chu(d.get("name"))]
+    if not ds:
+        return dau + ("Kho CHƯA có dự án nào ghi ở khu này (hoặc tra lỗi). Nói thật ngắn, hỏi khách khu lân cận / tên dự án cụ thể; KHÔNG kể dự án "
+                      "từ trí nhớ.\n")
+    dong = [f"- {_chu(d['name'])}" + (f" — đang có {d['so_can']} căn rao" if d.get("so_can") else "") for d in ds]
+    return dau + "\n".join(dong) + ("\nCÁCH NÓI: kể vài tên trong danh sách này (kho có thể còn dự án khác ở khu đó — đừng nói \"chỉ có\"); dự án có "
+                                    "căn đang rao thì gợi khách xem căn; hỏi MỘT câu khách quan tâm dự án nào. KHÔNG thêm dự án ngoài danh sách.\n")
+
+
+def khoi_can_du_an(kq: dict[str, Any] | None) -> str:
+    """Khách tìm căn / xin bảng căn còn bán trong một dự án (SRS-5.1zzzzzzz250, chủ dự án 28/10 mục 7: "đợi có thì gửi 'gửi bảng căn còn bán'")."""
+    if not isinstance(kq, dict) or not kq.get("ten_khach"):
+        return ""
+    dau = f'\n\n=== CĂN ĐANG RAO TRONG DỰ ÁN (khách tìm căn ở dự án "{_chu(kq["ten_khach"])}"; hệ thống tra kho) ===\n'
+    if kq.get("khop") == "nhieu":
+        return dau + "Kho có nhiều dự án gần tên này: " + "; ".join(str(x) for x in (kq.get("ung_vien") or [])[:4]) + ". Hỏi khách MỘT câu là dự án nào.\n"
+    if kq.get("khop") not in ("ro", "gan") or not isinstance(kq.get("du_an"), dict):
+        return dau + "Kho CHƯA có dự án tên này. Nói thật ngắn, xin tên đầy đủ hoặc khu vực; KHÔNG đoán.\n"
+    ten = _chu(kq["du_an"].get("name"))
+    can = [c for c in (kq.get("can") or []) if isinstance(c, dict) and c.get("code")]
+    if not can:
+        return dau + (f'Dự án "{ten}" hiện CHƯA có căn nào đang rao trên hệ thống. Nói thật ngắn; đề nghị khi có căn em nhắn khách (hỏi MỘT câu '
+                      "khách muốn loại căn / tầm giá nào để em canh); KHÔNG bịa căn.\n")
+    dong = [f"- #{c['code']}" + "".join(x for x in (f" · mã căn {_chu(c.get('unit_code'))}" if _chu(c.get("unit_code")) else "",
+                                                    f" · {_chu(c.get('area_m2'))} m²" if _chu(c.get("area_m2")) else "",
+                                                    f" · {_chu(c.get('price_raw'))}" if _chu(c.get("price_raw")) else "",
+                                                    f" · {_chu(c.get('bedrooms'))} PN" if _chu(c.get("bedrooms")) else ""))
+            for c in can]
+    return dau + f'Dự án "{ten}" — {len(can)} căn mới cập nhật đang rao:\n' + "\n".join(dong) + (
+        "\nCÁCH NÓI: khách xin BẢNG / danh sách căn còn bán thì kể gọn từng dòng trên (mã #, diện tích, giá — đúng số trong khối); không thì giới "
+        "thiệu MỘT căn hợp nhất như thường. Không nói mã căn nội bộ nếu khách không hỏi. KHÔNG thêm căn ngoài khối.\n")

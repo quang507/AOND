@@ -1802,7 +1802,9 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
 - "hoi_chu_nha": nguyên văn câu khách hỏi về căn mà dòng của căn KHÔNG có câu trả lời (vd "sổ riêng hay chung", "chủ có bớt không").
   Khách vừa ĐỒNG Ý để em hỏi chủ nhà câu khách hỏi ở lượt trước ("ừ hỏi giúp anh") → chép nguyên văn câu hỏi đó từ lượt trước — kể cả khi
   em đã gửi hết ảnh của căn và khách đồng ý để em xin chủ nhà thêm ảnh (chép nguyên văn câu khách xin ảnh ở lượt trước).
-  Hỏi thứ dòng của căn đã có (giá, diện tích) thì để trống.
+  Hỏi thứ dòng của căn đã có (giá, diện tích) thì để trống. Khách hỏi về DỰ ÁN đang nói (còn căn tầng cao không, tầng mấy, căn góc…) mà khối
+  dự án / căn trong dự án không có câu trả lời thì cũng chép nguyên văn câu đó vào đây (hệ thống hỏi chủ nhà có căn trong dự án, không có thì
+  hỏi admin — SRS-5.1zzzzzzz250).
 - "xin_anh": true khi khách xin XEM ẢNH / HÌNH của căn (vd "cho xem ảnh", "gửi hình đi em", "có hình thật không", "gửi lại ảnh giúp anh"),
   kể cả khi bot đã gửi ảnh ở trên rồi. Khách chỉ hỏi chung "căn này đẹp không" thì để trống.
 - "khong_hop" (25/10/2026, SRS-5.1zzzzzzz175): true khi khách CHÊ / TỪ CHỐI căn đang nói tới — không hợp, không thích, bỏ qua căn này,
@@ -1814,6 +1816,12 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
 - "hoi_du_an" (25/10/2026, SRS-5.1zzzzzzz184): NGUYÊN VĂN tên dự án khi khách hỏi THÔNG TIN về một dự án (chủ đầu tư là ai, tiện ích, pháp lý,
   giá, bàn giao, "dự án X có gì / tốt không / của ai"). Chỉ lấy tên khách gõ, không tự suy tên đầy đủ. Khách chỉ nhắc tên dự án như vị trí tìm
   nhà (không hỏi về dự án) thì để trống.
+- "du_an_khu_vuc" (28/10/2026, SRS-5.1zzzzzzz250): NGUYÊN VĂN khu vực khi khách hỏi khu đó CÓ NHỮNG DỰ ÁN NÀO ("quận 7 có dự án gì",
+  "bên Thủ Đức có chung cư nào"); kèm "du_an_khu_vuc_chuan" = tên hành chính đầy đủ của khu đó ("Quận 7", "Thủ Đức", "Phường Phú Định").
+  Khách tìm CĂN ở khu đó (không hỏi danh sách dự án) thì để trống.
+- "tim_du_an" (28/10/2026, SRS-5.1zzzzzzz250): NGUYÊN VĂN tên dự án khi khách muốn TÌM / XEM CĂN đang bán hoặc cho thuê TRONG dự án đó, hay xin
+  danh sách / bảng căn còn bán của dự án ("Masteri còn căn nào không", "gửi anh bảng căn còn bán ở Ny'ah"). Chỉ hỏi thông tin dự án thì dùng
+  "hoi_du_an", không dùng ô này.
 - "xin_anh_trich" / "khong_hop_trich" / "ngung_bao_trich": NGUYÊN VĂN cụm trong TIN KHÁCH VỪA NHẮN làm căn cứ cho đúng việc đó (vd "cho anh xem
   thêm ảnh", "nhỏ quá, không hợp", "đừng báo căn mới cho anh nữa") — mỗi việc một cụm, code kiểm từng việc riêng.
 - "trich_dan": nguyên văn cụm trong TIN KHÁCH VỪA NHẮN làm căn cứ cho các ô trên. Mọi ô chỉ đọc theo tin VỪA nhắn: giờ hẹn / câu hỏi khách đã nói
@@ -2146,6 +2154,9 @@ def operations_schema() -> dict[str, Any]:
                     "ngung_bao": {"type": "string", "enum": ["tat", "bat"],
                                   "description": "tat = khách bảo đừng gửi / báo căn mới nữa; bat = khách xin được báo khi có căn mới."},
                     "hoi_du_an": {"type": "string", "description": "Nguyên văn tên dự án khách MUA hỏi thông tin (chủ đầu tư, tiện ích, pháp lý, giá, bàn giao)."},
+                    "du_an_khu_vuc": {"type": "string", "description": "Nguyên văn khu vực khi khách hỏi khu đó có những dự án nào."},
+                    "du_an_khu_vuc_chuan": {"type": "string", "description": "Tên hành chính đầy đủ của khu vực ở du_an_khu_vuc (vd \"Quận 7\")."},
+                    "tim_du_an": {"type": "string", "description": "Nguyên văn tên dự án khách muốn tìm căn đang rao / xin bảng căn còn bán trong đó."},
                     "xin_anh_trich": {"type": "string", "description": "Nguyên văn cụm khách xin ảnh trong tin vừa nhắn."},
                     "khong_hop_trich": {"type": "string", "description": "Nguyên văn cụm khách chê / từ chối căn trong tin vừa nhắn."},
                     "ngung_bao_trich": {"type": "string", "description": "Nguyên văn cụm khách bảo đừng / xin báo căn mới trong tin vừa nhắn."},

@@ -1,13 +1,13 @@
 """Projects (condos / developments) and their shared attributes.
 
 A project carries facts that belong to EVERY property in it — pool, gym, entrance
-gate, security, access road, location. Register a project once; when a lister then
-lists a property whose `du_an` (project) matches, the property INHERITS these facts,
-so AOND can advise about the pool/gate without asking and without inventing (project
-data is operator-verified ground truth).
+gate, security, access road, location. When a lister lists a property whose `du_an`
+(project) matches, the property INHERITS these facts, so AOND can advise about the
+pool/gate without asking and without inventing.
 
-In-memory for now, behind a `ProjectStore` interface so SharePoint / a DB can back it
-later ("Cắm Rút"), same as the LLM provider. See [[aioi-data-model]] (Project→UnitType→Unit).
+Kho một nguồn (SRS-5.1zzzzzzz249): `SupabaseProjectStore` đọc bảng `projects` (nguồn mogi + `thong_tin` đã duyệt) + phần học thêm
+`du_an_kien_thuc` nối `project_id`; lời người bán là PHIẾU theo hạng, đủ điểm mới vào kho chung (`merge_facts`). `InMemoryProjectStore` /
+`SqliteProjectStore` cho test và chạy thử trên máy. See [[aioi-data-model]] (Project→UnitType→Unit).
 """
 from __future__ import annotations
 
@@ -30,10 +30,6 @@ HANG_DIEM = {"vang": 3, "bac": 2, "dong": 1}
 # `votes[key][value]` is the LIST OF DISTINCT VOTER CODES that asserted this value — never a raw counter — so one seller repeating
 # themselves can't inflate the tally ("no phantom votes"). Mã phiếu = "<hạng>:<zalo id>" (`ma_phieu`), hoặc "chac_chan:…".
 Tally = dict[str, list[str]]  # value -> voter codes
-
-
-def _count(tally: Tally, value: str) -> int:
-    return len(tally.get(value, []))
 
 
 # Phiếu CHẮC CHẮN (21/10/2026, SRS-5.1zzzzzzz96): nguồn chủ dự án nhập tay (bảng giá, rổ hàng chính thức) — chủ dự án: "cái này tôi
@@ -151,7 +147,7 @@ class UnitType:
     specs: dict[str, str] = field(default_factory=dict)  # diện tích, số phòng, số tầng, layout...
     votes: dict[str, Tally] = field(default_factory=dict)  # per-spec voters {value: [seller ids]}
     media: list[dict[str, str]] = field(default_factory=list)  # model brochure/floor-plan/renders
-    # (SharePoint MediaRef dicts) — shared by EVERY unit of this model; see [[aioi-data-model]].
+    # (MediaRef dicts, kho tệp `du-an/…` công khai) — shared by EVERY unit of this model; see [[aioi-data-model]].
     goc: bool = False  # mẫu đọc từ cột `projects.unit_types` (nguồn mogi) — chỉ ghi lại kho kiến thức khi đã học thêm (SRS-249)
 
     def facts(self) -> list[str]:
@@ -372,9 +368,8 @@ class InMemoryProjectStore(ProjectStore):
 
 
 class SqliteProjectStore(ProjectStore):
-    """Persistent ProjectStore — projects survive restarts and are reused for later
-    listings (same interface as InMemoryProjectStore; the first piece of the Store layer).
-    Chỉ còn cho chạy thử trên máy và làm nguồn chép một lần sang SupabaseProjectStore (SRS-5.1zzzzzzz56)."""
+    """Persistent ProjectStore cho chạy thử trên máy (không có service_role) — cùng giao diện InMemoryProjectStore. Bản chạy thật dùng
+    SupabaseProjectStore (SRS-5.1zzzzzzz56 / 249)."""
 
     def __init__(self, path: str = "aioi.db"):
         self._conn = sqlite3.connect(path, check_same_thread=False)
