@@ -187,6 +187,7 @@ class ClaudeProvider(LLMProvider):
             loi = str(next((v for k, v in o.items() if _bo_dau(k) == "loi_gui_khach"), "") or "").strip()
             if not loi and not o:   # SRS-5.1zzzzzzz244: tool_choice auto, model trả chữ thường không gọi công cụ → lấy chữ đó
                 loi = "".join(b.text for b in resp.content if b.type == "text").strip()
+                log.warning("Lời gửi khách: chữ thường, model không gọi gui_khach")   # SRS-5.1zzzzzzz245: đếm đường nào được dùng (không in lời)
             if loi:
                 return loi
             self._so.ghi_loi("claude chat", f"lời gửi khách rỗng (lần {lan + 1}): stop={getattr(resp, 'stop_reason', '?')}, "

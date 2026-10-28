@@ -25,8 +25,8 @@ don() {
   echo; echo "== dọn: dừng aond-luan, xoá dữ liệu thử của lõi mình"
   vps "systemctl stop aond-luan 2>/dev/null; echo \"aond-luan: \$(systemctl is-active aond-luan 2>/dev/null)\"" || true
   for id in "$ID_MINH_HHT" "$ID_MINH_BH"; do
-    vps "curl -sS -X POST http://127.0.0.1:8000/reset/$id >/dev/null" || true
-    q "select reset_nguoi_test('$id') as kq" | jq -c '.[0]' || true
+    [ "${GIU_DU_LIEU:-}" = giu ] || vps "curl -sS -X POST http://127.0.0.1:8000/reset/$id >/dev/null" || true
+    [ "${GIU_DU_LIEU:-}" = giu ] || q "select reset_nguoi_test('$id') as kq" | jq -c '.[0]' || true
   done
 }
 trap don EXIT

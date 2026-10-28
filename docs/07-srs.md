@@ -9058,6 +9058,29 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz245 · Khách xưng "chú" mà bot gọi "anh": giới tính Zalo vào prompt như lời khách tự xưng; bắn thử giữ được dữ liệu cho CRM (28/10/2026)
+Ca gốc: chủ dự án chat thử 28/10 bằng Zalo hồ sơ nam — "chú bán nhà ở 125 Bình Long…" (cùng câu ca SRS-233). Lượt đầu bot gọi "chú", tin nhắc
+5 phút mở "Anh ơi…", các lượt sau "Anh cho em hỏi…". Log lõi (`doc-log-loi` 03:38–08:35 UTC, đã thêm dòng "Xưng hô") KHÔNG có dòng "Xưng hô" nào của
+cuộc chat: lượt lập thao tác (Haiku) không trả `xung_ho` hợp lệ, nên SRS-233 (giữ chữ "chú") chưa bao giờ chạy với ca này.
+Nguyên nhân: (a) `xung_ho` trống thì `_detect_customer_pronoun` lấy giới tính hồ sơ Zalo (`xung_ho_goi_y`, SRS-163) và `khoi_xung_ho("anh")` ghi
+"Khách xưng 'anh'… Cả lượt KHÔNG có chữ 'anh/chị'" — một lời ĐOÁN vào prompt dưới dạng luật cứng, đè cả điều model chat đang đọc đúng từ lời khách;
+(b) công cụ bóc tách không ép enum — AI trả chữ ("chú") thay mã thì rơi im lặng, không log; (c) hướng dẫn `xung_ho` không có mẫu "chú / cô làm chủ ngữ".
+Sửa: (1) `engine._xung_ho_doan` + `khoi_xung_ho(..., doan)` → `_khoi_xung_ho_doan`: anh / chị chỉ đoán từ Zalo thì khối nói rõ là đoán, bảo model đọc lại
+tin khách và gọi đúng chữ khách tự xưng (chú / cô / bác → bot xưng cháu; em → bot xưng theo tên trợ lý) — quyết định về AI, không regex lời khách.
+Năm chỗ gọi `khoi_xung_ho` đều truyền cờ. (2) `_MA_XUNG_HO`: chuẩn hoá GIÁ TRỊ AI trả (bỏ dấu, "chú" → `chu_co_bac`, "cháu" → `chau`); giá trị
+ngoài danh sách thì log "Xưng hô: AI trả giá trị ngoài danh sách". (3) `OPERATIONS_SYSTEM` + mô tả ô `xung_ho`: chữ chú / cô / bác làm CHỦ NGỮ câu
+khách kể việc của mình là tự xưng; chỉ điền mã. (4) `ClaudeProvider.reply` log "Lời gửi khách: chữ thường" khi model không gọi `gui_khach`
+(trả lời câu "bắn thử có qua công cụ cố định không" bằng số đếm, SRS-244); `doc-log-loi` in hai dòng này.
+(5) Bắn thử giữ dữ liệu (chủ dự án 28/10: "trả lại lên trên chỗ CRM để tui đọc lát tui xóa cho"): ô `giu_du_lieu` = `giu` của `apply-migration.yml`
+→ env `GIU_DU_LIEU`; mọi `bot/tests/ban-thu-*.sh` bỏ bước `/reset` + `reset_nguoi_test` + xoá `danh_gia_ai` khi = `giu`. Trống = tự dọn như cũ.
+Xoá sau bằng nút xoá khách trên `/admin/tin-nhan` (`admin_xoa_khach`).
+Ba câu gốc — (1) *lớp lỗi*: dữ kiện ĐOÁN (giới tính hồ sơ) đi vào prompt cùng dạng với dữ kiện khách nói, và đầu ra AI lệch dạng bị bỏ không dấu vết;
+bài kiểm SRS-233 giả định AI đã trả đúng mã nên không thấy. (2) *chỗ khác cùng lớp*: câu mẫu code ghép (tin nhắc `followup`, báo căn mới, giữ kết
+nối) vẫn dùng chữ đoán khi AI chưa đọc ra cách xưng — không có model đọc lại nên chưa sửa; đỡ bằng (2)(3) cho AI đọc ra sớm. Các ô enum khác của kế
+hoạch (`hoi_ve`, `duyet`…) cũng không chuẩn hoá giá trị lệch — chưa thấy ca, để đó. (3) *kiểm*: `tests/test_xung_ho_doan_28_10.py` — AI trả "chú" /
+"Cô" ("cô có căn hộ ở Bình Tân…", cách nói mới) vẫn nhận; giới tính Zalo "anh" + kế hoạch không có xưng hô → khối không còn "Khách xưng 'anh'" mà có
+"ĐOÁN"; tắt `_MA_XUNG_HO` hoặc `_xung_ho_doan` thì 2 ca đỏ (đã chạy). Chưa kiểm với Haiku thật — bắn lại câu "chú bán nhà…" sau khi cài, đọc dòng "Xưng hô".
+
 ### SRS-5.1zzzzzzz244 · Sonnet 5.5 từ chối tool_choice ép công cụ → mọi lượt chat chỉ ra câu chờ (28/10/2026)
 Ca gốc: bắn thử kịch bản anh Luận bằng Sonnet 5.5 (SRS-243, run 40653399444) — 20/20 lượt chat lỗi 400 "tool_choice: type "tool" and "any" are not
 supported", khách thử chỉ nhận câu chờ "Em đang xem kỹ thông tin…". Bóc tách (Haiku) vẫn chạy nên ô tin đủ. Khách thật chat bằng cùng model

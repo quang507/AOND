@@ -26,8 +26,8 @@ LOI_TAT_CA=$(mktemp)
 
 don() {
   echo "== dọn dữ liệu thử"
-  for u in "$BAN" "$DA" "$MUA"; do vps "curl -sS -X POST http://127.0.0.1:8000/reset/$u >/dev/null" || true; done
-  q "select reset_nguoi_test('$BAN') as ban, reset_nguoi_test('$DA') as da, reset_nguoi_test('$MUA') as mua" | jq -c '.[0]' || true
+  [ "${GIU_DU_LIEU:-}" = giu ] || for u in "$BAN" "$DA" "$MUA"; do vps "curl -sS -X POST http://127.0.0.1:8000/reset/$u >/dev/null" || true; done
+  [ "${GIU_DU_LIEU:-}" = giu ] || q "select reset_nguoi_test('$BAN') as ban, reset_nguoi_test('$DA') as da, reset_nguoi_test('$MUA') as mua" | jq -c '.[0]' || true
   rm -f "$LOI_TAT_CA"
 }
 trap don EXIT

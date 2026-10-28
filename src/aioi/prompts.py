@@ -1883,7 +1883,9 @@ QUY TẮC:
   DANH MỤC PHÁP LÝ (khoá: nội dung):
 {DANH_MUC_PHAP_LY}
 - KHÁCH TỰ XƯNG (đọc cả các lượt trước): xung_ho = "em" khi khách tự xưng em ("nhà em", "em gửi"); "anh" / "chi" khi khách
-  tự xưng anh / chị; "chau" khi khách TỰ XƯNG cháu / con ("cháu muốn bán nhà", "con có căn…"); "chu_co_bac" khi khách tự xưng chú / cô / bác / dì. Chữ "em" khách dùng để GỌI bot ("đăng đi em") không
+  tự xưng anh / chị; "chau" khi khách TỰ XƯNG cháu / con ("cháu muốn bán nhà", "con có căn…"); "chu_co_bac" khi khách tự xưng chú / cô / bác / dì
+  — chữ đó đứng làm CHỦ NGỮ câu khách kể việc của mình ("chú bán nhà ở…", "cô có căn…", "bác cần bán gấp") là TỰ XƯNG (SRS-5.1zzzzzzz245).
+  Chỉ điền ĐÚNG MÃ trong danh sách (em / anh / chi / chau / chu_co_bac), không điền chữ khách gõ. Chữ "em" khách dùng để GỌI bot ("đăng đi em") không
   phải tự xưng. Khách gõ tắt cũng tính: "e" = em, "a" = anh, "c" = chị ("e tìm thuê", "a là MG"). Khách GỌI bot là "con" /
   "cháu" ("sao hỏi nhiều vậy con") = khách lớn tuổi → "chu_co_bac". Chưa thấy → bỏ trống. Có điền thì xung_ho_trich_dan =
   NGUYÊN VĂN cụm chứa chữ xưng / chữ gọi đó.
@@ -2090,7 +2092,8 @@ def operations_schema() -> dict[str, Any]:
                 "type": "string",
                 "enum": ["em", "anh", "chi", "chau", "chu_co_bac"],
                 "description": "Khách TỰ XƯNG là gì (em / anh / chị / cháu-con / chú-cô-bác-dì; gõ tắt e / a / c cũng tính). Khách tự xưng "
-                               "cháu / con → chau; khách GỌI bot là con / cháu → chu_co_bac. Chưa thấy thì bỏ trống.",
+                               "cháu / con → chau; khách GỌI bot là con / cháu → chu_co_bac; \"chú bán nhà…\" / \"cô có căn…\" (chữ chú / cô / bác làm "
+                               "chủ ngữ) → chu_co_bac. Chưa thấy thì bỏ trống.",
             },
             "xung_ho_trich_dan": {"type": "string", "description": "Nguyên văn cụm chứa chữ khách tự xưng / gọi bot (bắt buộc khi có xung_ho)."},
             "bot_vua_hoi": {"type": "array", "items": {"type": "string"},

@@ -30,9 +30,9 @@ don() {
   echo "== đưa câu bot vào Câu chuẩn"
   for u in $TAT_CA; do q "select cau_chuan_tu_zalo('$u') as so_cau" | jq -c '.[0]' || true; done
   echo "== dọn dữ liệu thử"
-  vps "for u in $TAT_CA; do curl -sS -X POST http://127.0.0.1:8000/reset/\$u >/dev/null; done" || true
-  for u in $TAT_CA; do q "select reset_nguoi_test('$u') as kq" | jq -c '.[0]' || true; done
-  q "delete from danh_gia_ai where la_thu and zalo_user_id in ('$SD1', '$SM1')" >/dev/null || true
+  [ "${GIU_DU_LIEU:-}" = giu ] || vps "for u in $TAT_CA; do curl -sS -X POST http://127.0.0.1:8000/reset/\$u >/dev/null; done" || true
+  [ "${GIU_DU_LIEU:-}" = giu ] || for u in $TAT_CA; do q "select reset_nguoi_test('$u') as kq" | jq -c '.[0]' || true; done
+  [ "${GIU_DU_LIEU:-}" = giu ] || q "delete from danh_gia_ai where la_thu and zalo_user_id in ('$SD1', '$SM1')" >/dev/null || true
 }
 trap don EXIT
 

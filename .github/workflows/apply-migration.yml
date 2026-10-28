@@ -21,9 +21,15 @@ on:
         description: Sau khi áp, COMMIT bot/supabase/schema.sql vừa xuất lên đúng nhánh đang chạy (phiên không có service_role không tải được artifact). Gõ đúng chữ "commit".
         required: false
         default: ''
+      giu_du_lieu:
+        description: "Bắn thử (ban-thu-*) xong GIỮ hội thoại / tin của ID thử để đọc trên CRM /admin/tin-nhan (xoá sau bằng nút xoá khách trên CRM). Gõ đúng chữ \"giu\". Trống = tự dọn như cũ"
+        required: false
+        default: ''
 
 env:
   PROJECT_REF: rqxmmqmctpklqcmbfxuj
+  # SRS-5.1zzzzzzz245 (chủ dự án 28/10: "trả lại lên trên chỗ CRM để tui đọc lát tui xóa cho"): các script ban-thu-* bỏ bước dọn khi = "giu".
+  GIU_DU_LIEU: ${{ inputs.giu_du_lieu }}
   # Khoá publishable (công khai, như lib/supabase.ts) — dung-lai-db.mjs ghi vào app_config.publishable_key.
   PUBLISHABLE_KEY: sb_publishable_f4wNO8jQcCDWn1QmNZQ7-g_BXDtYM3Y
 
