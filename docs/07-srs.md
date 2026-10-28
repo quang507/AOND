@@ -9058,6 +9058,24 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz247 · "ok em đăng đi" không thành duyệt vì AI đọc trễ một lượt; tắt preview Vercel cho nhánh `claude/*` (28/10/2026)
+Ca gốc: bắn thử bộ môi giới (run 40662188653, công cụ `gui_khach` đã tắt — SRS-246) trượt "hỏi đủ 5 cụm sau đăng". So với lượt đạt 08:20 cùng câu khách:
+log ghi `Duyệt: AI=dong_y trích_khớp=False` hai lượt, "ok em đăng đi" không thành duyệt, tới "ừ em" mới đăng (trễ 3 lượt). Kịch bản gửi câu theo thứ tự
+cố định nên khách đã tự nói pháp lý / giá trước khi bot tới các cụm đó; `schema.cum_sau_dang` bỏ cụm đã đủ ô (đúng thiết kế) → chỉ còn cụm thuế phí.
+Không do tắt công cụ: lượt đọc ý (Haiku) chạy trước lượt trả lời và không đổi theo công tắc.
+Nguyên nhân: AI hiểu đồng ý trễ một lượt thì trích lại tin cũ ("ok em đăng đi") — cổng duyệt chỉ nhận cụm nằm trong tin VỪA nhắn, nên bỏ.
+Chưa chắc 100%: log cũ không in cụm trích; khả năng trên khớp với hai dòng `trích_khớp=False`.
+Sửa: (1) `engine._tin_khach_sau_ban_nhap` + nhánh nhận trễ — AI đọc `dong_y` mà cụm không ở tin vừa nhắn thì nhận nếu cụm nằm trong một tin khách gửi SAU
+bản nháp 📋 gần nhất VÀ bản nháp đó chưa duyệt (mốc `_duyet_ban` = thời điểm bản nháp, ghi khi duyệt). Chỉ cho đồng ý; "không đồng ý" vẫn phải ở tin vừa
+nhắn; lời dặn sửa cùng lượt vẫn lật về chưa duyệt. (2) Dòng log `Duyệt:` in cụm trích với ID thử (CLAUDE.md §5).
+(3) `vercel.json` `git.deploymentEnabled` `{"claude/**": false}` (chủ dự án 28/10: "tắt preview cho các nhánh ko cần … vercel giới hạn"): nhánh của
+phiên Claude không tạo bản preview; `main` vẫn triển khai. Có hiệu lực từ commit chứa cấu hình (Vercel đọc `vercel.json` của commit được đẩy).
+Ba câu gốc — (1) *lớp lỗi*: cổng bằng chứng "cụm trong tin vừa nhắn" giả định AI đọc ngay lượt khách nói; đọc trễ một lượt thì mất hẳn. (2) *chỗ khác
+cùng lớp*: các ý khác dùng cùng cổng tin vừa nhắn (`hoi_ve`, `xin_dang`, `danh_gia`, `loi_xa_giao`) — chưa thấy ca mất; chúng là ý của lượt (hỏi phí,
+chấm sao), nhận trễ dễ trả lời lạc lượt nên để nguyên. (3) *kiểm*: `tests/test_duyet_tre_28_10.py` — đồng ý đọc trễ một lượt vẫn duyệt; đã duyệt thì
+trích cũ không duyệt lại; cụm nói TRƯỚC bản nháp ("được rồi đó em, lên bài giùm chị", cách nói mới) không tính. Gỡ nhánh nhận trễ hoặc mốc `_duyet_ban`
+thì đỏ (đã chạy). Bắn lại bộ môi giới sau khi cài.
+
 ### SRS-5.1zzzzzzz246 · Thử tắt công cụ cố định `gui_khach`: lời trả khách là chữ thường như bản anh Luận (28/10/2026)
 Chủ dự án 28/10: "trả lời qua một 'công cụ' cố định là gì, nếu mình bỏ qua công cụ cố định thì nó khen tốt hơn như con anh Luận ko" → "bạn thử tắt
 công cụ cố định xem". Bối cảnh: SRS-76 ép lượt trả lời gọi công cụ hai ô (`tu_soat` không gửi + `loi_gui_khach`) để ghi chú tự soát không lọt tới khách;
