@@ -47,7 +47,7 @@ flowchart TD
 flowchart TD
   IN["tin khách"] --> URL{"có link ảnh / PDF / Drive / Sheets?"}
   URL -->|có| HL["Engine.handle_link"]
-  URL -->|không| MA{"lenh_tra_loi '#mã: …'<br/>và la_nhan_vien?"}
+  URL -->|không| MA{"lenh_tra_loi '#35;mã: …'<br/>và la_nhan_vien?"}
   MA -->|có| TM["tra_loi_theo_ma<br/>(admin trả lời câu khách mua hỏi)"] --> BRS
   MA -->|không| KH["_lap_ke_hoach<br/>lượt AI lập thao tác (OPERATIONS_SYSTEM + RANH_GIOI_CACHE)<br/>ra: operations + vai + ý mua / bán + duyệt + hỏi về + y_luot"]
   KH --> VAI["định tuyến vai theo user_intent của lượt<br/>buy → buyer · sell → seller · mơ hồ: giữ vai / số tư vấn → buyer"]
