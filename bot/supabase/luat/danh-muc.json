@@ -1,8 +1,265 @@
 {
- "ghi_chu": "Danh mục văn bản nạp bảng van_ban_luat / dieu_luat (SRS-5.1zzzzzzz231). Mỗi văn bản: nguồn chính thức (Công báo / vanban.chinhphu.vn), tệp chữ đã tách ở cùng thư mục. Thêm văn bản = thêm dòng ở đây + chạy scripts/tach-dieu-luat.py. Văn bản đã bị sửa đổi thì nạp bản hợp nhất; văn bản hết hiệu lực thì đặt con_hieu_luc = false.",
+ "ghi_chu": "Danh mục văn bản nạp bảng van_ban_luat / dieu_luat (SRS-5.1zzzzzzz231). Mỗi văn bản: nguồn chính thức (Công báo / vanban.chinhphu.vn), tệp chữ đã tách ở cùng thư mục. Thêm văn bản = thêm dòng ở đây + chạy scripts/tach-dieu-luat.py. Văn bản đã bị sửa đổi thì nạp bản HỢP NHẤT (loai vbhn); văn bản hết hiệu lực thì đặt con_hieu_luc = false. Văn bản có trên DB mà không còn ở đây thì scripts/nap-luat.mjs xoá.",
  "van_ban": [
-  {"so_hieu": "31/2024/QH15", "ten": "Luật Đất đai 2024", "loai": "luat", "ngay_hieu_luc": "2024-08-01", "con_hieu_luc": true,
-   "nguon_url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2024/9/31-2024-qh15_1.pdf", "tep": "luat-dat-dai-2024.json",
-   "ghi_chu": "Bản gốc Công báo số 363-366 ngày 01/3/2024 (3 tệp PDF)."}
+  {
+   "so_hieu": "44/VBHN-VPQH",
+   "ten": "Luật Đất đai 2024 (văn bản hợp nhất)",
+   "loai": "vbhn",
+   "ngay_hieu_luc": "2024-08-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/180507251028987904/2026/4/1/469129-1774926486_v1_1775005859_signed.pdf",
+   "tep": "luat-dat-dai-2024.json",
+   "ghi_chu": "Hợp nhất Luật Đất đai 31/2024/QH15 với các luật sửa đổi; Công báo số 174 ngày 01/4/2026."
+  },
+  {
+   "so_hieu": "79/VBHN-VPQH",
+   "ten": "Luật Nhà ở 2023 (văn bản hợp nhất)",
+   "loai": "vbhn",
+   "ngay_hieu_luc": "2024-08-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/180507251028987904/2026/4/10/469209-1775794482_v1_1775811756_signed.pdf",
+   "tep": "luat-nha-o-2023.json",
+   "ghi_chu": "Hợp nhất Luật Nhà ở 27/2023/QH15; Công báo số 204 ngày 10/4/2026."
+  },
+  {
+   "so_hieu": "06/VBHN-VPQH",
+   "ten": "Luật Kinh doanh bất động sản 2023 (văn bản hợp nhất)",
+   "loai": "vbhn",
+   "ngay_hieu_luc": "2024-08-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/CongBaoCP/VanBan/2025/2/44399/55348-1-2025493-49406-vbhn-vpqh.pdf",
+   "tep": "luat-kinh-doanh-bds-2023.json",
+   "ghi_chu": "Hợp nhất Luật Kinh doanh bất động sản 29/2023/QH15 (bản 2025)."
+  },
+  {
+   "so_hieu": "46/2024/QH15",
+   "ten": "Luật Công chứng 2024",
+   "loai": "luat",
+   "ngay_hieu_luc": "2025-07-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2025/01/luat46.pdf",
+   "tep": "luat-cong-chung-2024.json",
+   "ghi_chu": "Luật 04/2026/QH16 sửa đổi, hiệu lực 01/01/2027 (bản quét, chưa nạp)."
+  },
+  {
+   "so_hieu": "121/VBHN-VPQH",
+   "ten": "Luật Hôn nhân và gia đình 2014 (văn bản hợp nhất)",
+   "loai": "vbhn",
+   "ngay_hieu_luc": null,
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/CongBaoCP/VanBan/2025/8/46059/58694-1-20251299-1300121-vbhn-vpqh.pdf",
+   "tep": "luat-hon-nhan-gia-dinh-2014.json",
+   "ghi_chu": "Hợp nhất Luật Hôn nhân và gia đình 52/2014/QH13 (27/8/2025)."
+  },
+  {
+   "so_hieu": "33/VBHN-VPQH",
+   "ten": "Luật Quy hoạch đô thị và nông thôn 2024 (văn bản hợp nhất)",
+   "loai": "vbhn",
+   "ngay_hieu_luc": "2025-07-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2026/3/33-vbhn-vpqh.pdf",
+   "tep": "luat-quy-hoach-do-thi-nong-thon-2024.json",
+   "ghi_chu": "Hợp nhất Luật 47/2024/QH15 với Luật 71/2025, 144/2025."
+  },
+  {
+   "so_hieu": "109/2025/QH15",
+   "ten": "Luật Thuế thu nhập cá nhân 2025",
+   "loai": "luat",
+   "ngay_hieu_luc": "2026-07-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/180507251028987904/2026/1/24/109signed-17692403594311667615452.pdf",
+   "tep": "luat-thue-tncn-2025.json",
+   "ghi_chu": "Thay Luật 04/2007/QH12. Sửa đổi bởi Luật 09/2026/QH16 (ngưỡng doanh thu do Chính phủ quy định)."
+  },
+  {
+   "so_hieu": "09/2026/QH16",
+   "ten": "Luật sửa đổi Luật Thuế thu nhập cá nhân, Luật Thuế giá trị gia tăng (2026)",
+   "loai": "luat",
+   "ngay_hieu_luc": "2026-01-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/180507251028987904/2026/5/27/469536-1779329464_v1_1779843299_signed.pdf",
+   "tep": "luat-09-2026.json",
+   "ghi_chu": "Luật sửa đổi — đọc cùng Luật 109/2025/QH15 và Luật 48/2024/QH15."
+  },
+  {
+   "so_hieu": "253/2026/NĐ-CP",
+   "ten": "Nghị định 253/2026 hướng dẫn Luật Thuế thu nhập cá nhân",
+   "loai": "nghi_dinh",
+   "ngay_hieu_luc": "2026-07-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/180507251028987904/2026/7/16/469959-1784171413_v1_1784174315_signed.pdf",
+   "tep": "nd-253-2026.json",
+   "ghi_chu": null
+  },
+  {
+   "so_hieu": "87/2026/TT-BTC",
+   "ten": "Thông tư 87/2026 hướng dẫn thuế thu nhập cá nhân",
+   "loai": "thong_tu",
+   "ngay_hieu_luc": "2026-07-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/180507251028987904/2026/7/20/470001-1784543065_v1_1784543710_signed.pdf",
+   "tep": "tt-87-2026.json",
+   "ghi_chu": "Thay Thông tư 111/2013/TT-BTC."
+  },
+  {
+   "so_hieu": "12/VBHN-VPQH",
+   "ten": "Luật Thuế giá trị gia tăng 2024 (văn bản hợp nhất)",
+   "loai": "vbhn",
+   "ngay_hieu_luc": "2025-07-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2026/02/12-vbhn-vpqh.pdf",
+   "tep": "luat-thue-gtgt-2024.json",
+   "ghi_chu": "Hợp nhất Luật 48/2024/QH15."
+  },
+  {
+   "so_hieu": "68/2026/NĐ-CP",
+   "ten": "Nghị định 68/2026 về thuế hộ kinh doanh, cá nhân kinh doanh",
+   "loai": "nghi_dinh",
+   "ngay_hieu_luc": null,
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/180507251028987904/2026/3/18/469047-1773796836_v1_1773803477_signed.pdf",
+   "tep": "nd-68-2026.json",
+   "ghi_chu": "Sửa đổi bởi Nghị định 141/2026/NĐ-CP (ngưỡng 500 triệu thành 01 tỷ đồng)."
+  },
+  {
+   "so_hieu": "141/2026/NĐ-CP",
+   "ten": "Nghị định 141/2026 sửa Nghị định 68/2026",
+   "loai": "nghi_dinh",
+   "ngay_hieu_luc": "2026-01-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/180507251028987904/2026/5/14/469455-1778231931_v1_1778720623_signed.pdf",
+   "tep": "nd-141-2026.json",
+   "ghi_chu": null
+  },
+  {
+   "so_hieu": "10/2022/NĐ-CP",
+   "ten": "Nghị định 10/2022 về lệ phí trước bạ",
+   "loai": "nghi_dinh",
+   "ngay_hieu_luc": "2022-03-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/CongBaoCP/VanBan/2022/1/36658/39573-1-2022163-16410-2022-nd-cp.pdf",
+   "tep": "nd-10-2022.json",
+   "ghi_chu": "Sửa đổi bởi Nghị định 175/2025/NĐ-CP."
+  },
+  {
+   "so_hieu": "175/2025/NĐ-CP",
+   "ten": "Nghị định 175/2025 sửa Nghị định 10/2022 về lệ phí trước bạ",
+   "loai": "nghi_dinh",
+   "ngay_hieu_luc": "2025-07-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/CongBaoCP/VanBan/2025/6/45318/57228-1-2025863-864175-2025-nd-cp.pdf",
+   "tep": "nd-175-2025.json",
+   "ghi_chu": null
+  },
+  {
+   "so_hieu": "61/VBHN-BTC",
+   "ten": "Thông tư 257/2016 về phí công chứng (văn bản hợp nhất)",
+   "loai": "vbhn",
+   "ngay_hieu_luc": "2017-01-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/CongBaoCP/VanBan/2019/12/30200/29011-1-2019979-98061-vbhn-btc.pdf",
+   "tep": "tt-257-2016-phi-cong-chung.json",
+   "ghi_chu": "Hợp nhất Thông tư 257/2016/TT-BTC với Thông tư 111/2017/TT-BTC."
+  },
+  {
+   "so_hieu": "83/VBHN-BNNMT",
+   "ten": "Nghị định 101/2024 về đăng ký, cấp Giấy chứng nhận (văn bản hợp nhất)",
+   "loai": "vbhn",
+   "ngay_hieu_luc": "2024-08-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2025/12/83-vbhn-bnnmt.pdf",
+   "tep": "nd-101-2024.json",
+   "ghi_chu": "Hợp nhất tới Nghị định 151/2025, 226/2025 (09/12/2025)."
+  },
+  {
+   "so_hieu": "46/VBHN-BNNMT",
+   "ten": "Nghị định 102/2024 hướng dẫn Luật Đất đai (văn bản hợp nhất)",
+   "loai": "vbhn",
+   "ngay_hieu_luc": "2024-08-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2026/4/46-vbhn-bnnmt.pdf",
+   "tep": "nd-102-2024.json",
+   "ghi_chu": "Hợp nhất tới Nghị định 49/2026, 70/2026."
+  },
+  {
+   "so_hieu": "32/VBHN-BNNMT",
+   "ten": "Thông tư 10/2024 về hồ sơ địa chính, Giấy chứng nhận (văn bản hợp nhất)",
+   "loai": "vbhn",
+   "ngay_hieu_luc": "2024-08-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2025/8/32-vbhn-bnnmt.pdf",
+   "tep": "tt-10-2024.json",
+   "ghi_chu": "Hợp nhất tới Thông tư 23/2025."
+  },
+  {
+   "so_hieu": "41/VBHN-BNNMT",
+   "ten": "Nghị định 151/2025 phân định thẩm quyền chính quyền hai cấp về đất đai (văn bản hợp nhất)",
+   "loai": "vbhn",
+   "ngay_hieu_luc": "2025-07-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://xdcs.cdnchinhphu.vn/446259493575335936/2026/4/5/41-vbhn-bnnmt-17753835749711439297000.pdf",
+   "tep": "nd-151-2025.json",
+   "ghi_chu": "Hợp nhất tới Nghị định 49/2026."
+  },
+  {
+   "so_hieu": "151/2026/NĐ-CP",
+   "ten": "Nghị định 151/2026 về văn phòng thi hành án dân sự, Thừa hành viên (vi bằng)",
+   "loai": "nghi_dinh",
+   "ngay_hieu_luc": "2026-07-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/180507251028987904/2026/5/27/469523-1779268187_v1_1779843117_signed.pdf",
+   "tep": "nd-151-2026.json",
+   "ghi_chu": "Thay Nghị định 08/2020/NĐ-CP."
+  },
+  {
+   "so_hieu": "281/2026/NĐ-CP",
+   "ten": "Nghị định 281/2026 sửa Nghị định 123/2024 về xử phạt hành chính đất đai",
+   "loai": "nghi_dinh",
+   "ngay_hieu_luc": "2026-08-31",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbao.chinhphu.vn/van-ban/nghi-dinh-so-281-2026-nd-cp-470093.htm",
+   "tep": "nd-281-2026.json",
+   "ghi_chu": "Văn bản sửa đổi — Nghị định 123/2024 gốc chưa nạp."
+  },
+  {
+   "so_hieu": "49/2026/NĐ-CP",
+   "ten": "Nghị định 49/2026 hướng dẫn Nghị quyết 254/2025/QH15 về đất đai",
+   "loai": "nghi_dinh",
+   "ngay_hieu_luc": "2026-01-31",
+   "con_hieu_luc": true,
+   "nguon_url": "https://xdcs.cdnchinhphu.vn/446259493575335936/2026/2/3/49-2026-nd-cp-31012026-2-signed-1770087390008721455210.pdf",
+   "tep": "nd-49-2026.json",
+   "ghi_chu": null
+  },
+  {
+   "so_hieu": "50/2026/NĐ-CP",
+   "ten": "Nghị định 50/2026 về tiền sử dụng đất theo Nghị quyết 254/2025/QH15",
+   "loai": "nghi_dinh",
+   "ngay_hieu_luc": "2026-01-31",
+   "con_hieu_luc": true,
+   "nguon_url": "https://xdcs.cdnchinhphu.vn/446259493575335936/2026/2/2/50-2026-nd-cp-31012026-1-signed-17700242722821758306624.pdf",
+   "tep": "nd-50-2026.json",
+   "ghi_chu": null
+  },
+  {
+   "so_hieu": "91/2015/QH13",
+   "ten": "Bộ luật Dân sự 2015",
+   "loai": "bo_luat",
+   "ngay_hieu_luc": "2017-01-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://congbaocdn.chinhphu.vn/CongBaoCP/VanBan/2015/11/18397/12965-1-912015qh1313017pdf",
+   "tep": "bo-luat-dan-su-2015.json",
+   "ghi_chu": "Công báo 2015, hai tệp. Chưa tìm thấy văn bản sửa đổi các điều về cọc, thế chấp, uỷ quyền."
+  },
+  {
+   "so_hieu": "21/VBHN-BXD",
+   "ten": "Nghị định 95/2024 hướng dẫn Luật Nhà ở (văn bản hợp nhất)",
+   "loai": "vbhn",
+   "ngay_hieu_luc": "2024-08-01",
+   "con_hieu_luc": true,
+   "nguon_url": "https://datafiles.chinhphu.vn/cpp/files/vbpq/2026/3/21-vbhn-bxd.pdf",
+   "tep": "nd-95-2024.json",
+   "ghi_chu": null
+  }
  ]
 }

@@ -153,3 +153,15 @@ def test_tep_kho_luat_khop_danh_muc():
         khoa = [(d["dieu"], d["phan"]) for d in du["dieu"]]
         assert len(khoa) == len(set(khoa))
         assert all(len(d["noi_dung"]) <= tach_mod.TOI_DA for d in du["dieu"])
+
+
+def test_hop_nhat_bo_dieu_bai_bo_va_trich_luat_khac_luat_sua_doi_giu_trich():
+    hn = ("Điều 22. Tên cũ\n1. Nội dung khoản một.\nĐiều 23.67 (được bãi bỏ)\nĐiều 23. Tư vấn lập quy hoạch cấp xã68\n1. Điều kiện tư vấn.\n"
+          "Điều 24 và Điều 25 của Luật số 71/2025/QH15 quy định như sau:\n“Điều 24. Hiệu lực thi hành\n1. Luật này có hiệu lực.\n"
+          "Điều 25. Chuyển tiếp\n1. Nội dung chuyển tiếp.”.\n")
+    ds = tach_mod.tach(hn, hop_nhat=True)
+    assert [d["dieu"] for d in ds] == ["22", "23"]
+    assert ds[1]["tieu_de"] == "Điều 23. Tư vấn lập quy hoạch cấp xã" and "chuyển tiếp" not in ds[1]["noi_dung"]
+    sua = "Điều 1. Sửa đổi khoản 1 Điều 7 như sau:\n“1. Cá nhân có doanh thu từ mức Chính phủ quy định trở xuống không phải nộp thuế.”.\nĐiều 2. Hiệu lực\nLuật này có hiệu lực."
+    ds = tach_mod.tach(sua)
+    assert [d["dieu"] for d in ds] == ["1", "2"] and "không phải nộp thuế" in ds[0]["noi_dung"]

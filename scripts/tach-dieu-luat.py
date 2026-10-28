@@ -24,11 +24,30 @@ GOC = Path(__file__).resolve().parent.parent
 THU_MUC = GOC / "bot" / "supabase" / "luat"
 TOI_DA = 1800   # ký tự mỗi phần — vừa một lượt nhúng (gemini-embedding-001 ~2.048 token), đủ ngắn để trích cho model
 
-_BO_DONG = re.compile(
-    r"^(CÔNG BÁO/Số .*|\d{1,4}|Ký bởi:.*|Người ký:.*|Email:.*|Cơ quan:.*|Ngày ký:.*|Thời gian ký:.*|"
-    r"\d{1,4}\s+CÔNG BÁO/Số .*|CÔNG BÁO/Số .*\s+\d{1,4})$")
+_DAU_TRANG = re.compile(
+    r"^(CÔNG BÁO/Số .*|Ký bởi:.*|Người ký:.*|Email:.*|Cơ quan:.*|Ngày ký:.*|Thời gian ký:.*|\d{1,4}\s+CÔNG BÁO/Số .*|CÔNG BÁO/Số .*\s+\d{1,4})$")
+_SO_TRON = re.compile(r"^\d{1,4}$")   # số trang hoặc số chú thích đứng riêng một dòng
+# Chú thích cuối trang của văn bản hợp nhất: "3" đứng riêng rồi "Điểm này được sửa đổi, bổ sung theo quy định tại … Luật số …".
+_CHU_THICH = re.compile(r"^((Điểm|Khoản|Điều|Đoạn|Mục|Chương|Tên điều|Tiêu đề) này (được|có hiệu lực|bị|hết hiệu lực)\b|Cụm từ “|Cụm từ \"|"
+                        r"Luật này có hiệu lực|Văn bản này)")
+TRANG, SO = "\x00TRANG", "\x00SO"
+# Mốc chú thích in DÍNH vào chữ (văn bản hợp nhất): "thôn5", "e)3", "4.25 Ủy ban…", "biển;21", "năm 20241". Không đụng m2 / m3 / km2 và
+# số thập phân "0,5" (trước dấu là chữ số, không phải chữ).
+_MOC_DINH = (
+    (re.compile(r"^(\d+[a-zđ]?\.)(\d{1,3})(?=\s)"), r"\1"),
+    (re.compile(r"^([a-zđ]\))(\d{1,3})(?=\s)"), r"\1"),
+    (re.compile(r"(năm \d{4})\d{1,3}\b"), r"\1"),
+    (re.compile(r"(?<![a-zà-ỹđ]m)(?<!\bm)(?<=[a-zà-ỹđ])\d{1,3}(?=[\s,.;:]|$)"), ""),
+    (re.compile(r"(?<=[a-zà-ỹđ\)”][;.,:])\d{1,3}(?=\s|$)"), ""),
+)
+
+
+def bo_moc_dinh(d: str) -> str:
+    for mau, thay in _MOC_DINH:
+        d = mau.sub(thay, d)
+    return d
 _DIEU = re.compile(r"^Điều\s+(\d+[a-zđ]?)\.\s*(.*)$")
-_MO_DOAN = re.compile(r"^(Điều\s+\d+[a-zđ]?\.|Chương\s+[IVXLCDM]+\b|Mục\s+\d+\b|Phần\s+thứ\b|\d+[a-zđ]?\.\s|[a-zđ]\)\s|[-–+•]\s)")
+_MO_DOAN = re.compile(r"^(“(Điều\s+\d+[a-zđ]?\.|\d+[a-zđ]?\.\s|[a-zđ]\)\s)|Điều\s+\d+[a-zđ]?\.|Chương\s+[IVXLCDM]+\b|Mục\s+\d+\b|Phần\s+thứ\b|\d+[a-zđ]?\.\s|[a-zđ]\)\s|[-–+•]\s)")
 _KHOAN = re.compile(r"(?m)^\d+[a-zđ]?\.\s")
 _CHUONG = re.compile(r"^(Chương\s+[IVXLCDM]+\b|Mục\s+\d+\b|Phần\s+thứ\b)")
 _KET = re.compile(r"^((Bộ luật|Luật|Nghị quyết) này (đã )?được Quốc hội|Nơi nhận:|TM\. CHÍNH PHỦ|CHỦ TỊCH QUỐC HỘI\b|XÁC THỰC VĂN BẢN HỢP NHẤT)")
@@ -40,27 +59,63 @@ def _chuan(s: str) -> str:
 
 
 def dong_sach(chu: str) -> list[str]:
-    """Bỏ dòng rác đầu / chân trang, giữ nguyên thứ tự các dòng còn lại."""
-    return [d for d in (x.strip() for x in _chuan(chu).split("\n")) if d and not _BO_DONG.match(d)]
+    """Các dòng còn chữ, giữ thứ tự. Đầu / chân trang (Công báo, chữ ký số) → dấu `TRANG`; số đứng riêng một dòng → dấu `SO` (số trang
+    hoặc mốc chú thích — `doan` phân biệt)."""
+    ra = []
+    for x in _chuan(chu).split("\n"):
+        d = x.strip()
+        if not d:
+            continue
+        ra.append(TRANG if _DAU_TRANG.match(d) else SO if _SO_TRON.match(d) else d)
+    return ra
 
 
 def doan(dong: list[str]) -> list[str]:
-    """Nối dòng bị ngắt khi in: dòng mở điều / chương / khoản / điểm mới là đoạn mới, còn lại nối vào đoạn trước."""
+    """Nối dòng bị ngắt khi in: dòng mở điều / chương / khoản / điểm mới là đoạn mới, còn lại nối vào đoạn THÂN trước đó. Chú thích cuối
+    trang (mốc số rồi "Điểm này được sửa đổi …") bị bỏ cùng các dòng nối của nó, tới hết trang; chữ thân sang trang nối tiếp đúng câu đang dở."""
     ra: list[str] = []
+    chu_thich = False      # đang trong một chú thích cuối trang
+    sau_trang = False      # số đứng riêng ngay sau đầu trang là số trang, không phải mốc chú thích
+    moc = False            # vừa gặp mốc chú thích
     for d in dong:
+        if d == TRANG:
+            chu_thich, moc, sau_trang = False, False, True
+            continue
+        if d == SO:
+            moc = not sau_trang
+            sau_trang = False
+            continue
+        sau_trang = False
+        if moc and _CHU_THICH.match(d):
+            chu_thich, moc = True, False
+            continue
+        moc = False
+        mo = _MO_DOAN.match(d) or _KET.match(d)
+        if chu_thich and not mo:
+            continue
+        chu_thich = False
         # Tiêu đề điều xuống dòng thì dòng tiếp mở bằng chữ thường; dòng chữ HOA ngay sau tiêu đề là thân điều (điều không chia khoản).
-        if not ra or _MO_DOAN.match(d) or _KET.match(d) or (_DIEU.match(ra[-1]) and d[:1].isupper()):
+        if not ra or mo or (_DIEU.match(ra[-1]) and d[:1].isupper()):
             ra.append(d)
         else:
             ra[-1] = ra[-1] + " " + d
     return ra
 
 
-def tach_dieu(cac_doan: list[str]) -> list[dict]:
+_BAI_BO = re.compile(r"^Điều \d+[a-zđ]?\.\s*\d*\s*\((được |đã |bị )?(bãi bỏ|hết hiệu lực)\)\s*$")
+
+
+def tach_dieu(cac_doan: list[str], hop_nhat: bool = False) -> list[dict]:
     """Đoạn → điều. Tiêu đề điều là phần chữ sau "Điều N." cộng các dòng chữ thường nối tiếp (đã nối ở `doan`). Đoạn chương / mục không
     vào điều nào; gặp dòng kết văn bản (chữ ký, nơi nhận) thì dừng."""
     dieu: list[dict] = []
+    # (Chỉ văn bản hợp nhất — luật / nghị định sửa đổi thì nội dung chính NẰM trong ngoặc kép.) Đoạn trích nguyên văn luật KHÁC ("“Điều 50. Hiệu lực thi hành … ”.") — không phải điều của văn bản này. Đếm ngoặc mở / đóng (trích
+    # có thể dài nhiều đoạn, có ngoặc lồng bên trong); hết trích khi số ngoặc đóng bằng số ngoặc mở.
+    mo = 0
     for p in cac_doan:
+        if hop_nhat and (mo > 0 or re.match(r'^“(Điều\s+\d+[a-zđ]?\.|\d+[a-zđ]?\.\s|[a-zđ]\)\s)', p)):
+            mo = max(0, mo + p.count("“") - p.count("”"))
+            continue
         if _KET.match(p):
             break
         m = _DIEU.match(p)
@@ -94,9 +149,14 @@ def cat_phan(than: list[str], toi_da: int = TOI_DA) -> list[str]:
     return phan or [""]
 
 
-def tach(chu: str) -> list[dict]:
+def tach(chu: str, hop_nhat: bool = False) -> list[dict]:
+    """`hop_nhat`: văn bản hợp nhất — bỏ thêm mốc chú thích dính vào chữ (`bo_moc_dinh`)."""
+    dong = dong_sach(chu)
+    if hop_nhat:
+        dong = [d if d in (TRANG, SO) else bo_moc_dinh(d) for d in dong]
     ra = []
-    for d in tach_dieu(doan(dong_sach(chu))):
+    # Văn bản hợp nhất giữ chỗ điều đã bãi bỏ ("Điều 23.67 (được bãi bỏ)") rồi in điều thay thế cùng số — bỏ dòng giữ chỗ.
+    for d in [x for x in tach_dieu(doan(dong), hop_nhat) if not (_BAI_BO.match(x["tieu_de"]) and not x["than"])]:
         for i, nd in enumerate(cat_phan(d["than"]), 1):
             ra.append({"dieu": d["dieu"], "phan": i, "tieu_de": d["tieu_de"], "noi_dung": nd})
     return ra
@@ -138,7 +198,7 @@ def main(argv: list[str]) -> int:
         print(f"Không có {so_hieu} trong danh-muc.json")
         return 2
     chu = "\n".join(Path(t).read_text(encoding="utf-8", errors="replace") for t in tep)
-    dong = tach(chu)
+    dong = tach(chu, hop_nhat=vb["loai"] == "vbhn")
     loi, canh = kiem(dong)
     for c in canh[:30]:
         print("  cảnh báo:", c)

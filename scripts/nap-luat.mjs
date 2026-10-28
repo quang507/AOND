@@ -41,6 +41,10 @@ try {
     console.log(`== ${so_hieu} (${vb.ten}): ${dem.n} phần trên DB (tệp ${dieu.length}), đã có vector ${dem.co_vector}, xoá ${xoa.length} phần cũ`);
     if (dem.n !== dieu.length) throw new Error(`${so_hieu}: DB ${dem.n} phần ≠ tệp ${dieu.length}`);
   }
+  // Văn bản trên DB mà danh mục không còn (thay bằng bản hợp nhất, gỡ bỏ) → xoá cả điều luật (cascade).
+  const giuVb = dm.van_ban.filter((v) => existsSync(new URL(v.tep, THU_MUC))).map((v) => lit(v.so_hieu)).join(",");
+  const bo = await q(`delete from public.van_ban_luat where so_hieu not in (${giuVb}) returning so_hieu`);
+  if (bo.length) console.log(`== xoá văn bản không còn trong danh mục: ${bo.map((r) => r.so_hieu).join(", ")}`);
   const tong = (await q("select count(*)::int n, count(nhung)::int co_vector from public.dieu_luat"))[0];
   console.log(`OK: kho ${tong.n} phần điều luật, ${tong.co_vector} đã có vector (lịch nhung-luat-tick nhúng dần ~20 phần / 2 phút).`);
 } catch (e) {
