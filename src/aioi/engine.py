@@ -769,6 +769,15 @@ def khoi_can_nguoi(conv: "Conversation") -> str:
     )
 
 
+# SRS-5.1zzzzzzz256 (bắn thử ban-thu-mua 28/10 16:21: khách mua "Căn #… anh thấy được đó em. Chiều thứ 7 này 3h anh qua xem nhà được không, mà
+# nhà này sổ hồng riêng không em?" → lượt lập thao tác trả `update phap_ly_hoan_cong` của phía BÁN, khối "mua" trống — không ghi quan tâm, hẹn
+# xem, câu hỏi chủ nhà): prompt lập thao tác không nói người nhắn đang là khách mua. Đây là DỮ KIỆN hệ thống (vai các lượt trước), không đoán ý.
+KHOI_VAI_MUA_LAP_VIEC = (
+    "\nVAI NGƯỜI NHẮN (hệ thống, từ các lượt trước): KHÁCH TÌM MUA / THUÊ. Câu khách hỏi về một căn đang rao (pháp lý, sổ, hướng, hẻm…), "
+    "khách chọn căn, hẹn đi xem → khối \"mua\" (ma_can, quan_tam, hen_xem, hoi_chu_nha…), KHÔNG phải ô tin rao. Chỉ tạo thao tác "
+    "add / update căn rao khi khách NÓI RÕ muốn bán / cho thuê căn của chính mình.\n")
+
+
 def khoi_ngoai_viec(conv: "Conversation") -> str:
     """Khách hỏi việc ngoài nhà đất khi chưa tỏ ý bán / mua (SRS-5.1zzzzzzz177): lần 1 nói thật không nắm + hỏi có cần bán / mua không;
     từ lần 2 thôi hỏi về nhà đất, đề nghị nối người phụ trách (hỏi khách có muốn không — không tự báo)."""
@@ -4426,7 +4435,7 @@ class Engine:
         if conv.role == "buyer" and getattr(kho, "can_phu_hop", None) is not None:
             with _do(conv, "kho_doc"):
                 conv.can_mua = self._can_goi_y(conv)
-            system += khoi_can_cho_khach(conv.can_mua, not co_tieu_chi(conv.buyer_lead))
+            system += khoi_can_cho_khach(conv.can_mua, not co_tieu_chi(conv.buyer_lead)) + KHOI_VAI_MUA_LAP_VIEC
         elif conv.role != "buyer" and getattr(kho, "cau_hoi_cho_nguoi_ban", None) is not None:
             with _do(conv, "kho_doc"):
                 conv.cau_hoi_cho = kho.cau_hoi_cho_nguoi_ban(conv.user_key)
