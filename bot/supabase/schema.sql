@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-28 14:07 (giờ VN)
+-- Sinh lúc: 2026-10-28 14:08 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -298,7 +298,8 @@ create table if not exists public.listing_media (
   created_at timestamp with time zone not null default now(),
   nguon text not null default 'kho'::text,
   mo_ta text,
-  ocr jsonb
+  ocr jsonb,
+  variants jsonb not null default '{}'::jsonb
 );
 
 create table if not exists public.listing_noi_bo (
@@ -3540,12 +3541,17 @@ begin
   if tg_op = 'DELETE' then
     insert into media_cleanup_queue (bucket, storage_path)
     values (old.bucket, old.storage_path);
+    insert into media_cleanup_queue (bucket, storage_path)
+    select old.bucket, v.value from jsonb_each_text(coalesce(old.variants, '{}'::jsonb)) v where v.value <> '';
     return old;
   end if;
   if old.bucket is distinct from new.bucket
      or old.storage_path is distinct from new.storage_path then
     insert into media_cleanup_queue (bucket, storage_path)
     values (old.bucket, old.storage_path);
+    insert into media_cleanup_queue (bucket, storage_path)
+    select old.bucket, v.value from jsonb_each_text(coalesce(old.variants, '{}'::jsonb)) v
+     where v.value <> '' and not (coalesce(new.variants, '{}'::jsonb) ? v.key and new.variants ->> v.key = v.value);
   end if;
   return new;
 end $function$
@@ -6473,7 +6479,8 @@ create or replace view public.listing_photos_v with (security_invoker=true) as
     m.created_at,
     m.listing_id,
     m.id AS media_id,
-    l.legacy_code
+    l.legacy_code,
+    (((url_kho_anh() || '/'::text) || m.bucket) || '/'::text) || COALESCE(NULLIF(m.variants ->> '480'::text, ''::text), m.storage_path) AS url_480
    FROM listing_media m
      JOIN listings l ON l.id = m.listing_id
   WHERE m.bucket = 'listing-public'::text AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text]));
