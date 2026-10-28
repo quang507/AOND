@@ -67,7 +67,8 @@ KQ=$(q "with l as (select id from listings where code = '$MA'), b as (select id 
    (select count(*) from reminders m where m.listing_id in (select id from l)) as reminders,
    (select count(*) from reminders m where m.listing_id in (select id from l) and m.kind = 'escalation' and m.seller_id is not null) as nhac_chu_nha,
    (select count(*) from reminders m where m.listing_id in (select id from l) and m.kind = 'followup' and m.buyer_id in (select id from b)) as bao_lai_khach,
-   (select status from listings where id in (select id from l)) as listing_status")
+   (select status from listings where id in (select id from l)) as listing_status,
+   (select boc_tach->>'phap_ly' from listings where id in (select id from l)) as phap_ly")
 jq '.[0]' <<<"$KQ"
 
 loi=0
@@ -90,6 +91,7 @@ kiem "chủ nhà trả lời → câu hỏi chuyển answered" \
 # 28/10/2026: đủ vòng "khách hỏi → nhắn chủ nhà → chủ nhà trả lời → báo lại khách" (trigger notify_info_request_escalation / info_request_bao_lai_khach;
 # lõi `gui_nhac` gửi — ID thử không có Zalo thật nên chỉ kiểm dòng nhắc được đẻ).
 kiem "có tin nhắn chủ nhà (reminders escalation giao người bán)" "$(jq '(.nhac_chu_nha|tonumber) >= 1 | if . then 1 else 0 end' <<<"$r")"
+kiem "chủ nhà trả lời pháp lý → ô pháp lý của tin được ghi" "$(jq '(.phap_ly // "") != "" | if . then 1 else 0 end' <<<"$r")"
 kiem "có nhắc báo lại khách mua (reminders followup)" "$(jq '(.bao_lai_khach|tonumber) >= 1 | if . then 1 else 0 end' <<<"$r")"
 echo "== lõi trên VPS: $(vps 'systemctl is-active aond-core')"
 vps "journalctl -u aond-core --since '-5 min' --no-pager -o cat | grep -iE 'error|exception|traceback' | grep -viE 'key|token|secret|password|bearer' | sed -E 's/[0-9]{9,}/#/g' | tail -15" || true

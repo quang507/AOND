@@ -165,3 +165,17 @@ def test_tin_tao_ngoai_chat_nap_o_tu_cot():
     assert f["gia"] == "4,9 tỷ"                                        # ô đã có trong boc_tach thắng cột
     assert "dien_tich" not in f and "dien_tich_dat" not in f            # nhà phố: area_m2 không rõ đất hay sàn
     assert o_tu_cot({"area_m2": 72, "street": None}, "chung_cu") == {"dien_tich": "72 m²"}
+
+
+def test_chu_nha_tra_loi_ghi_o_tin_theo_ma_can():
+    """SRS-5.1zzzzzzz257: chủ nhà trả lời câu khách hỏi về pháp lý → ngoài chuyển câu trả lời, ghi ô tin của căn được hỏi (op update target = mã
+    tin #XXXXXXXX như khối câu hỏi chủ nhà nêu). Đỏ khi bỏ dòng dặn trong prompt hoặc `_match_listing` không nhận mã tin."""
+    from aioi.engine import Engine
+    from aioi.prompts import OPERATIONS_SYSTEM
+    from tests.test_viec_mua import AiGia
+    assert "target = mã căn được hỏi" in OPERATIONS_SYSTEM
+    e = Engine(AiGia({"operations": []}))
+    conv = Conversation(user_key="zalo-thu-1", assistant=assign_assistant("zalo-thu-1"),
+                        listings=[Listing(listing_id=UUID, prop=Property(loai_hinh="nha_pho"))], active_listing_id=UUID)
+    assert e._match_listing(conv, "#" + UUID[:8].upper()) is conv.listings[0]
+    assert e._match_listing(conv, "#ABCDEF12") is None
