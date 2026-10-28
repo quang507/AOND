@@ -3,7 +3,7 @@
 begin;
 set local client_min_messages = warning;
 create or replace function auth.role() returns text language sql as $$ select 'service_role'::text $$;
--- bài này chỉ đo hàm điểm: tắt mọi trigger (hội thoại mới gọi chon_ctv, tin mới xếp nhắc…), khoá ngoại vẫn chạy
+-- bài này chỉ đo hàm điểm: tắt mọi trigger (tin mới xếp nhắc…), khoá ngoại vẫn chạy
 set local session_replication_role = replica;
 insert into sellers (id, zalo_user_id, seller_type) values
   ('00000000-0000-0000-0000-0000000000c1', 'thu-sql-ph1', 'ccrb'),

@@ -32,6 +32,13 @@ def bo_ranh_gioi(system: str) -> str:
 MODEL_CHAT_LUOT: contextvars.ContextVar[str | None] = contextvars.ContextVar("model_chat_luot", default=None)
 
 
+# SRS-5.1zzzzzzz239 (chủ dự án 28/10/2026: "nếu bắn product đổi sang key gemini bắn từ từ"): `AIOI_CHAT_MODEL_THU=gemini` → MỌI lượt gọi model
+# của ID thử (bóc tách, trả lời, đọc ảnh) đi THẲNG Gemini qua `DuPhongProvider`, không chạm Claude; Gemini hỏng thì lượt đó hỏng (không rơi về
+# Claude — bắn thử không được tốn tiền Claude). Khách thật không đổi.
+NGUON_LUOT: contextvars.ContextVar[str | None] = contextvars.ContextVar("nguon_luot", default=None)
+CHI_GEMINI = "gemini"
+
+
 def model_chat_thu() -> str | None:
     """Model chat RIÊNG cho ID thử: env `AIOI_CHAT_MODEL_THU`; "tat" / rỗng → None (ID thử chat cùng model khách thật). Mặc định "tat" từ
     SRS-5.1zzzzzzz235 (khách thật đã chuyển Sonnet 5.5 — bắn thử phải đo đúng model khách gặp); muốn so model khác thì đặt env này."""

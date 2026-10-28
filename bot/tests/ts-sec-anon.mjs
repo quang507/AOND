@@ -91,7 +91,7 @@ if (dau.body.length === 0) {
 
 // ── Nhóm 1: bảng nội bộ — anon phải KHÔNG thấy dòng nào ─────────────────────
 for (const bang of [
-  "reminders", "sellers", "ctvs", "messages", "conversations",
+  "reminders", "sellers", "messages", "conversations",
   "viewings", "deals", "buyers", "info_requests", "bot_errors",
   "curated_lists", "property_events",
 ]) {

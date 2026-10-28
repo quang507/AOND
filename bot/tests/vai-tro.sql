@@ -36,7 +36,7 @@ declare
   -- View cấp cho `authenticated`. Chủ sở hữu là `postgres` (có BYPASSRLS) nên
   -- chúng KHÔNG được bảo vệ bởi RLS — hàng rào duy nhất là mệnh đề WHERE bên
   -- trong chính view. Vì vậy phải kiểm từng cái, không suy ra từ RLS.
-  VIEW_QT  text[] := array['khach_can_nguoi_that','hoi_thoai_phien','bds_hot','ctv_ranks','nmg_hoat_dong'];
+  VIEW_QT  text[] := array['khach_can_nguoi_that','hoi_thoai_phien','bds_hot','nmg_hoat_dong'];
 begin
   insert into admins (email) values ('vaitro-admin@example.com');
   insert into buyers (zalo_user_id, name, phone) values ('VAITRO-B1','Chi D.','0903xxxxxx') returning id into b;

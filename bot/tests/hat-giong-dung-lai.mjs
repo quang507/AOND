@@ -17,7 +17,7 @@ const MIG = join(GOC, "bot", "supabase", "migrations");
 const MIEN = {
   storage: "storage.buckets — dung-lai-db bước cau-truc chạy riêng (nhánh `luon`)",
   supabase_migrations: "sổ migration — dung-lai-db ghi riêng",
-  ctvs: "2 dòng giữ chỗ 'CTV 1/2' không có SĐT / Zalo (20260825) — dựng lại thì nhập CTV thật tay, nạp chỗ giữ chỗ không gửi được tin cho ai",
+  ctvs: "bảng CTV đã gỡ 28/10/2026 (20261028d, bỏ hẳn CTV) — câu insert trong migration lịch sử 20260825 không còn chỗ để nạp",
   sellers: "dữ liệu thử / dữ liệu thật cũ trong migration lịch sử — không phải dữ liệu tham chiếu",
   listings: "như trên",
   listing_media: "như trên",

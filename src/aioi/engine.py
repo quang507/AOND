@@ -46,7 +46,7 @@ from .fetch import (
     sniff_media_type,
 )
 from .llm import LLMProvider, Message
-from .llm.base import MODEL_CHAT_LUOT, RANH_GIOI_CACHE, model_chat_thu
+from .llm.base import CHI_GEMINI, MODEL_CHAT_LUOT, NGUON_LUOT, RANH_GIOI_CACHE, model_chat_thu
 from .web import SITE_HOST, link_tin
 from . import bulk
 from . import inventory as inv
@@ -2246,12 +2246,16 @@ class Engine:
     def handle(self, user_key: str, text: str, now: float | None = None) -> TurnResult:
         """Một lượt khách. ID thử chat bằng model thử (`llm.base.model_chat_thu`, SRS-5.1zzzzzzz234) — khách thật giữ model mặc định."""
         m = model_chat_thu() if _la_id_thu(user_key) else None
-        dau = MODEL_CHAT_LUOT.set(m) if m else None
+        # SRS-5.1zzzzzzz239: `gemini` không phải tên model Claude — cả lượt của ID thử đi thẳng Gemini (`llm.base.NGUON_LUOT`).
+        dau = MODEL_CHAT_LUOT.set(m) if m and m != CHI_GEMINI else None
+        dau_nguon = NGUON_LUOT.set(CHI_GEMINI) if m == CHI_GEMINI else None
         try:
             return self._handle(user_key, text, now)
         finally:
             if dau is not None:
                 MODEL_CHAT_LUOT.reset(dau)
+            if dau_nguon is not None:
+                NGUON_LUOT.reset(dau_nguon)
 
     def _handle(self, user_key: str, text: str, now: float | None = None) -> TurnResult:
         now = now if now is not None else time.time()

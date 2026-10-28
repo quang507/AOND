@@ -531,7 +531,7 @@ api.listener.on("message", async (message) => {
   try {
     if (message.type !== ThreadType.User) return; // chỉ chat 1-1, bỏ qua nhóm
 
-    // FR-141: tin ĐI RA từ acc clone mà không phải bot vừa gửi = CTV/admin đang
+    // FR-141: tin ĐI RA từ acc clone mà không phải bot vừa gửi = admin đang
     // gõ tay → báo bộ não ghi log + nhường sân 30 phút, đừng trả lời chen ngang.
     if (message.isSelf) {
       const selfText = typeof message.data?.content === "string" ? message.data.content : "";
@@ -664,7 +664,7 @@ try {
   });
 } catch { /* phiên bản zca-js không hỗ trợ reaction */ }
 
-// FR-140/144: mỗi phút kéo việc "hỏi chính chủ / báo CTV/admin" từ
+// FR-140/144: mỗi phút kéo việc "hỏi chính chủ / báo admin" từ
 // escalation-feed, resolve SĐT → uid Zalo rồi nhắn từ acc clone, xong ack.
 // OA duyệt xong thì nudge tự gửi phía server, vòng này tự hết việc.
 const uidCache = new Map(); // SĐT → uid, khỏi findUser lặp lại
@@ -717,13 +717,13 @@ async function pumpEscalations() {
           }
         }
         if (!uid) { await ghiLoi("escalation", `${it.id}: không resolve được ${it.name}`); continue; }
-        // SRS-5.1zzzzzzz134 (22/10/2026): tin NỘI BỘ (admin / CTV: 🙋 khách cần người thật, ⭐ chấm sao thấp, 🩺 sức khoẻ, 📊 báo cáo)
+        // SRS-5.1zzzzzzz134 (22/10/2026): tin NỘI BỘ (admin: 🙋 khách cần người thật, ⭐ chấm sao thấp, 🩺 sức khoẻ, 📊 báo cáo)
         // mở bằng "$$$$$ " như tin phụ chế độ test — chủ dự án: "tin nào là tin debug tin nào là tin cho khách thật phải phân tách rõ".
         // Tin cho khách thật (chủ nhà / người mua) không có tiền tố. Cờ do escalation-feed quyết theo đích (`noi_bo`).
         const msg = (it.noi_bo ? "$$$$$ " : "") + (it.text ?? `🔔 nhadat.cc: ${it.note}. Anh/chị check giúp rồi trả lời khách sớm nha.`);
         rememberSent(msg);
         await api.sendMessage(msg, String(uid), ThreadType.User);
-        // Gửi kèm uid vừa resolve từ SĐT: server ghi ngược vào sellers/ctvs/admins
+        // Gửi kèm uid vừa resolve từ SĐT: server ghi ngược vào sellers/admins
         // để lần sau bot nhận ra người này ngay từ tin đầu (khỏi điền tay).
         await postJson(FEED_URL, feedHeaders, {
           action: "ack", id: it.id, zalo_user_id: String(uid),
