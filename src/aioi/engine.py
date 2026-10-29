@@ -4557,6 +4557,11 @@ class Engine:
         # chờ khách duyệt bản nháp / xác nhận ẩn tin — câu nói đó thuộc việc bán), "sell" sang vai bán, lượt mơ hồ ở lại vai mua nếu đang
         # ở đó. Tin / rổ hàng của phía bán và hồ sơ nhu cầu phía mua đều giữ nguyên, chỉ vai của lượt đổi.
         dang_giua_viec_ban = bool(conv.listing_proposed or conv.pending_destructive)
+        if intent not in ("buy", "sell") and not has_seller_context and conv.role != "buyer" and self._go_ma_can_dang_hien(conv):
+            # SRS-5.1zzzzzzz273 (bắn thử ban-thu-kiem H 29/10): khách mới nhắn số ký gửi "căn #SEED0040 trần cao bao nhiêu" — model lúc ra
+            # "buy", lúc không; không ra thì lượt đi nhánh bán ("nhà phố hay chung cư?"), câu hỏi không tới ai. Lưới đỡ bằng DỮ LIỆU: mã tin
+            # khách gõ là một căn đang hiện trên hệ thống (khách chưa có việc bán nào) → khách đang hỏi căn để mua / thuê.
+            intent = "buy"
         if intent == "buy" and not (has_seller_context and dang_giua_viec_ban):
             conv.role = "buyer"
             if conv.buyer_lead is None:
@@ -5039,6 +5044,20 @@ class Engine:
         lay = getattr(kho, "lich_dang_cho", None)
         return lay(bid) if lay is not None and bid else []
 
+    def _go_ma_can_dang_hien(self, conv: Conversation) -> bool:
+        """Tin khách vừa nhắn có mã tin dạng "#XXXXXXXX" của một căn ĐANG HIỆN trên hệ thống (`KhoNguoiMua.can_theo_ma`) — SRS-5.1zzzzzzz273.
+        Kho không có / lỗi → False."""
+        tra = getattr(self._convstore, "can_theo_ma", None)
+        cuoi = next((t.content for t in reversed(conv.history) if t.role == "user"), "")
+        ma = [m.upper() for m in re.findall(r"#([0-9A-Za-z][0-9A-Za-z-]{3,19})", cuoi or "")]
+        if tra is None or not ma:
+            return False
+        try:
+            return bool(tra(ma))
+        except Exception as e:  # noqa: BLE001
+            log.warning("can_theo_ma lỗi: %s", e)
+            return False
+
     def _ap_dung_ke_hoach(self, conv: Conversation, plan: dict) -> tuple[list[str], list[tuple]]:
         changed: set[str] = set()
         receipts: list[tuple] = []
@@ -5150,6 +5169,29 @@ class Engine:
         cuoi = next((t.content for t in reversed(conv.history) if t.role == "user"), "")
         return _trich_dan_khop(trich, cuoi) or _trich_dan_khop(trich, conv.loi_khach_luot)
 
+    def _duong_chu_khach(self, conv: "Conversation", v: str) -> str:
+        """SRS-5.1zzzzzzz273 (bắn thử ban-thu-kiem J 29/10): khách gõ "ma lo", AI ghi ô duong "Mã Lò" — tự thêm dấu nên luật "khách gõ đúng dấu
+        thì nhận" (SRS-270) bắt nhầm, bot không hỏi Mã Lò hay Mã Lộ. Chữ khách gõ khớp NHIỀU đường trong kho thì ô giữ đúng chữ khách gõ; khách
+        chọn rồi (gõ đúng dấu / nói quận) mới thành tên kho. Không nhập nhằng → giữ giá trị AI (bước chuẩn hoá theo kho lo dấu)."""
+        if self._dia_danh is None or not hasattr(self._dia_danh, "ung_vien_duong"):
+            return v
+        loi = unicodedata.normalize("NFC", conv.loi_khach_luot or "")
+        kd, vk = bo_dau(loi), bo_dau(v).strip()
+        i = kd.find(vk) if vk and len(kd) == len(loi) else -1
+        if i < 0:
+            return v
+        goc = loi[i:i + len(vk)]
+        if goc.lower() == v.lower():
+            return v
+        try:
+            nhap_nhang = bool(self._dia_danh.ung_vien_duong(goc, conv.prop.fields.get("quan")))
+        except Exception as e:  # noqa: BLE001
+            log.warning("ung_vien_duong lỗi: %s", e)
+            return v
+        if nhap_nhang:
+            log.warning("Ô duong: giữ chữ khách gõ (tên khớp nhiều đường), không nhận dấu AI tự thêm")
+        return goc if nhap_nhang else v
+
     def _loc_o_tin(self, conv: "Conversation", fields: dict, bang_chung: dict | None = None) -> dict[str, str]:
         """MỘT cổng cho mọi đường AI ghi ô tin từ lời chat (lượt lập thao tác, đọc lại căn mới tách ra) — SRS-5.1zzzzzzz73/86."""
         bc = bang_chung if isinstance(bang_chung, dict) else {}
@@ -5158,6 +5200,8 @@ class Engine:
         for k, v in (fields or {}).items():
             if k != "uu_the" and isinstance(v, str) and v.strip():
                 g = self._gia_tri_ghi(conv, k, v, bc)
+                if g and k == "duong":
+                    g = self._duong_chu_khach(conv, g)
                 if g:
                     out[k] = g
                     if isinstance(bc.get(k), str) and bc[k].strip():

@@ -122,6 +122,7 @@ kiem "G: bot đáp như lời chào (lưới đỡ bằng chữ)" "$(grep -qiE '
 
 # ==== H. Câu hỏi về căn rổ mẫu giao thẳng admin (SRS-269, chủ dự án 29/10: "giao thẳng admin luôn") — trước đây giao người bán thử
 # `thu-seed-001` (không có Zalo thật), hạn 12 giờ mới sang admin.
+T_H=$(q "select now()::text as n" | jq -r '.[0].n')   # chỉ tính tin báo admin tạo SAU lượt chat này (lần 29/10 ô đạt nhờ tin cũ)
 chat "$MUA3" "Chào em, căn #SEED0040 trần tầng trệt cao bao nhiêu mét vậy em? Anh hỏi để kê tủ bếp"
 IR=$(q "select q.assignee as n from info_requests q join listings l on l.id = q.listing_id join buyers b on b.id = q.buyer_id
         where l.code = 'SEED0040' and b.zalo_user_id = '$MUA3' and q.source = 'buyer_ask' order by q.created_at desc limit 1" | jq -r '.[0].n // empty')
@@ -130,7 +131,7 @@ kiem "H: câu khách hỏi căn SEED giao thẳng admin (không giao người b�
 NHAC=""
 for _ in $(seq 1 18); do
   NHAC=$(q "select m.status as n from reminders m join listings l on l.id = m.listing_id where l.code = 'SEED0040' and m.kind = 'escalation'
-            and m.seller_id is null and m.created_at > now() - interval '10 minutes' order by m.created_at desc limit 1" | jq -r '.[0].n // empty')
+            and m.seller_id is null and m.created_at > '$T_H'::timestamptz order by m.created_at desc limit 1" | jq -r '.[0].n // empty')
   [ "$NHAC" = sent ] && break; sleep 10
 done
 echo "== H: tin báo admin: ${NHAC:-(không có)}"

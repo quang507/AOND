@@ -1,6 +1,6 @@
 """19/10/2026 (SRS-5.1zzzzzzz60): tra phường / quận / đường theo chữ rồi theo NGHĨA (vector), máy kiểm tên còn gần chữ khách.
 Đỏ khi bỏ bước tra trong engine, khi vector "gần nghĩa" mà khác tên vẫn bị nhận (Tân Định → Tân Bình), hay khi lỗi mạng làm hỏng lượt."""
-from aioi.dia_danh import TraDiaDanh, khoi_dia_danh, ten_gan, TU_CHUNG_PHUONG, TU_CHUNG_DUONG
+from aioi.dia_danh import TraDiaDanh, bo_dau, khoi_dia_danh, ten_gan, TU_CHUNG_PHUONG, TU_CHUNG_DUONG
 from aioi.schema import Property
 
 
@@ -232,3 +232,35 @@ def test_tin_cho_phuong_ma_ten_duong_nhap_nhang_thi_hoi_duong_truoc():
     assert "Mã Lò (Quận Bình Tân) / Mã Lộ (Quận 1)" in k and "KHÔNG hỏi chợ" in k
     cu = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "goi_y_phuong": [], "phuong_da_hoi": True})[0]
     assert "Mã Lò" not in cu
+
+
+def test_khach_noi_quan_thi_chon_duong_cung_quan():
+    """SRS-5.1zzzzzzz273: "ma lo" + quận Bình Tân → Mã Lò; quận 1 → Mã Lộ."""
+    ml = [{"ten": "Mã Lò", "khoang_cach": 0, "quan_cu": ["Quận Bình Tân"], "phuong": ["Phường Bình Hưng Hòa", "Phường Bình Trị Đông"]},
+          {"ten": "Mã Lộ", "khoang_cach": 0, "quan_cu": ["Quận 1"], "phuong": ["Phường Tân Định"]}]
+    t, _ = _tra(duong={"ma lo": ml})
+    assert t.duong("ma lo", "Quận Bình Tân")["ten"] == "Mã Lò"
+    assert t.duong("ma lo", "Quận 1")["ten"] == "Mã Lộ"
+    assert t.ung_vien_duong("ma lo", "Quận Bình Tân") == []
+
+
+def test_o_duong_giu_chu_khach_go_khi_ten_khop_nhieu_duong():
+    """SRS-5.1zzzzzzz273 (bắn thử J 29/10): khách gõ "ma lo", AI ghi "Mã Lò" (tự thêm dấu) → ô giữ "ma lo" để bot hỏi Mã Lò hay Mã Lộ.
+    Tên không nhập nhằng ("tran hung dao" → AI "Trần Hưng Đạo") giữ giá trị AI. Cách nói mới: "Ma Lo" viết hoa."""
+    from tests.test_engine import _engine
+    from aioi.engine import Conversation
+    from aioi.assistants import assign_assistant
+    ml = [{"ten": "Mã Lò", "khoang_cach": 0, "quan_cu": ["Quận Bình Tân"], "phuong": []},
+          {"ten": "Mã Lộ", "khoang_cach": 0, "quan_cu": ["Quận 1"], "phuong": []}]
+    thd = [{"ten": "Trần Hưng Đạo", "khoang_cach": 0, "quan_cu": ["Quận 5"], "phuong": []}]
+    t, _ = _tra(duong={"ma lo": ml, "Ma Lo": ml, "tran hung dao": thd})
+    e = _engine()
+    e._dia_danh = t
+    conv = Conversation(user_key="u-ml", assistant=assign_assistant("u-ml"))
+    for go in ("ban nha duong ma lo 12 ty", "ban nha duong Ma Lo 12 ty"):
+        conv.loi_khach_luot = go
+        assert bo_dau(e._duong_chu_khach(conv, "Mã Lò")) == "ma lo" and e._duong_chu_khach(conv, "Mã Lò") != "Mã Lò"
+    conv.loi_khach_luot = "ban nha duong tran hung dao"
+    assert e._duong_chu_khach(conv, "Trần Hưng Đạo") == "Trần Hưng Đạo"
+    conv.loi_khach_luot = "bán nhà đường Mã Lò"
+    assert e._duong_chu_khach(conv, "Mã Lò") == "Mã Lò"
