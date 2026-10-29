@@ -9095,6 +9095,11 @@ Chủ dự án 29/10, kèm ảnh chat căn đường Mã Lò: "sao đường mã
 6. **Chưa kiểm production**:
    - Nút Trả lời cần Zalo thật (bắn thử gọi thẳng lõi, không qua bridge).
    - Sau `cai-vps` (bridge khởi động lại vì `index.mjs` đổi), chủ dự án bấm "Trả lời" một tin để kiểm.
+7. **Bắn thử** `ban-thu-kiem` (run 40814337101, sau `cai-vps` bản #186): **21/21 ĐẠT**.
+   - Kịch bản I mới: khách rao "Bán nhà mặt tiền đường Mã Lò…" → bản nháp → "ừ đăng đi".
+   - Bot hỏi "Nhà mình thuộc Phường Bình Hưng Hòa hay Phường Bình Trị Đông vậy?", không còn hỏi trống "gần chợ, trường, ngã tư".
+   - Chủ dự án 29/10: "nếu vậy thì hỏi xác nhận người ta đi chứ, linh động lên" — đúng hướng bản này: kể các phường kho tra được cho khách
+     xác nhận, lời khách thắng.
 
 ### SRS-5.1zzzzzzz269 · Câu khách hỏi về căn rổ mẫu giao thẳng admin (29/10/2026)
 Chủ dự án 29/10: "làm đi, giao thẳng admin luôn". Trước đó tôi kiểm theo câu hỏi "câu hỏi căn mẫu có chuyển admin không".
