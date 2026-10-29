@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-29 11:27 (giờ VN)
+-- Sinh lúc: 2026-10-29 16:54 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -711,9 +711,6 @@ do $d$ begin
   alter table public.danh_gia_ai add constraint danh_gia_ai_zalo_user_id_key UNIQUE (zalo_user_id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.deals add constraint deals_listing_buyer_key UNIQUE NULLS NOT DISTINCT (listing_id, buyer_id);
-exception when duplicate_object then null; end $d$;
-do $d$ begin
   alter table public.deals add constraint deals_pkey PRIMARY KEY (id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -891,7 +888,7 @@ do $d$ begin
   alter table public.projects add constraint projects_slug_key UNIQUE (slug);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.property_events add constraint property_events_event_type_check CHECK ((event_type = ANY (ARRAY['view'::text, 'asked'::text, 'interest'::text, 'photos'::text, 'viewing'::text, 'deal'::text, 'match_sent'::text, 'status'::text])));
+  alter table public.property_events add constraint property_events_event_type_check CHECK ((event_type = ANY (ARRAY['view'::text, 'asked'::text, 'interest'::text, 'photos'::text, 'viewing'::text, 'deal'::text, 'match_sent'::text, 'status'::text, 'doi_gia'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.property_events add constraint property_events_pkey PRIMARY KEY (id);
@@ -5771,6 +5768,12 @@ begin
   elsif tg_table_name = 'listings' then
     if tg_op = 'UPDATE' and old.status is distinct from new.status then
       perform public.ghi_su_kien_bds(new.id, 'status', null, jsonb_build_object('tu', old.status, 'den', new.status));
+    end if;
+    -- 20261029e (SRS-5.1zzzzzzz285): lịch sử giá — giá cũ bị ghi đè, mất tín hiệu "chủ đã giảm giá" (chủ cần bán) và không báo được khách đã
+    -- quan tâm. Chỉ ghi khi đã có giá trước đó (lần đầu điền giá không phải "đổi giá").
+    if tg_op = 'UPDATE' and old.price_vnd is not null and new.price_vnd is not null and old.price_vnd is distinct from new.price_vnd then
+      perform public.ghi_su_kien_bds(new.id, 'doi_gia', null, jsonb_build_object('tu', old.price_vnd, 'den', new.price_vnd,
+        'tu_chu', old.price_raw, 'den_chu', new.price_raw, 'nguon', new.price_source));
     end if;
   end if;
   return null;
