@@ -43,8 +43,11 @@ def test_hai_tin_cung_khach_toi_song_song_thi_chay_lan_luot(monkeypatch):
     b = threading.Thread(target=gui, args=("sổ hồng riêng",))
     a.start(); time.sleep(0.05); b.start(); a.join(); b.join()
     assert loi == [] and srv.CAU_GIU_CHO not in sum(kq, [])
+    # SRS-5.1zzzzzzz279: tin thứ hai tới lúc bot còn soạn tin thứ nhất → lời cũ bỏ, lượt kế đọc gộp hai tin, một lời đáp.
     vai = [t.role for t in srv._engine.conversation("song-song-1").history]
-    assert vai == ["user", "assistant", "user", "assistant"]
+    assert vai == ["user", "assistant"]
+    assert srv._engine.conversation("song-song-1").history[0].content == "giá 5 tỷ\nsổ hồng riêng"
+    assert sorted(len(v) for v in kq) == [0, 1]
 
 
 def test_khach_khac_nhau_khong_cho_nhau():
@@ -119,7 +122,8 @@ def test_tin_cho_luc_bot_dang_soan_gom_thanh_mot_luot(monkeypatch):
     ts[0].start(); time.sleep(0.1); ts[1].start(); time.sleep(0.05); ts[2].start()
     for t in ts:
         t.join()
+    # SRS-5.1zzzzzzz279: lời lượt "1 bếp, 3wc" soạn xong khi đã có tin mới chờ → bỏ, lượt kế gộp CẢ BA tin, khách nhận MỘT lời đáp.
     assert luot[0] == "1 bếp, 3wc" and len(luot) == 2
-    assert luot[1] == "giá này không bớt\nkhông nuôi thú cưng"
-    assert sorted(len(v) for v in kq.values()) == [0, 1, 1]
+    assert luot[1] == "1 bếp, 3wc\ngiá này không bớt\nkhông nuôi thú cưng"
+    assert sorted(len(v) for v in kq.values()) == [0, 0, 1]
     assert sorted(t for t, _ in ghi) == sorted(["1 bếp, 3wc", "giá này không bớt", "không nuôi thú cưng"])   # CRM đủ từng tin
