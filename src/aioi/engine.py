@@ -125,7 +125,7 @@ from .revenue import SellerRole
 from .schema import KHOA_PHAP_LY, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
-from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
+from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
                   lenh_tra_loi, nhan_nhu_cau, nhan_tu_du_lieu, nhu_cau_cua, tim_sdt)
 from . import agent_mua
 from .tai_chinh import khoi_tai_chinh
@@ -4523,7 +4523,7 @@ class Engine:
         if conv.role == "buyer" and getattr(kho, "can_phu_hop", None) is not None:
             with _do(conv, "kho_doc"):
                 conv.can_mua = self._can_goi_y(conv)
-            system += (khoi_can_cho_khach(conv.can_mua, not co_tieu_chi(conv.buyer_lead)) + KHOI_VAI_MUA_LAP_VIEC
+            system += (khoi_can_lap_viec(conv.can_mua) + KHOI_VAI_MUA_LAP_VIEC   # SRS-5.1zzzzzzz294: không dặn cách nói ở lượt đọc ý
                        + khoi_nhu_cau(conv.buyer_lead, conv.nhu_cau_khac))
         elif conv.role != "buyer" and getattr(kho, "cau_hoi_cho_nguoi_ban", None) is not None:
             with _do(conv, "kho_doc"):

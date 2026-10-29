@@ -9058,6 +9058,21 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz294 · Lượt đọc ý khách mua không nhận phần dặn cách nói của lượt viết lời (29/10/2026)
+Chủ dự án 29/10 (sau SRS-293): "Bat là sao bớt prompt nữa dc ko".
+
+1. **Đo**: prompt lượt đọc ý (Haiku) của khách mua sau SRS-293 = 13.883 chữ phần cố định (trước dấu `RANH_GIOI_CACHE`, đọc từ cache) + 3.389 chữ
+   phần đổi mỗi lượt (sau dấu, tính tiền đủ mỗi lượt). Trong 3.389 chữ đó ≈ 2.500 là khối `khoi_can_cho_khach` — dặn lượt VIẾT LỜI cách giới
+   thiệu căn (bốn đoạn, khen, link, ảnh, một câu hỏi). Lượt đọc ý không viết lời nên phần này thừa.
+2. **Quyết định (BA, uỷ quyền)**: lượt đọc ý dùng `mua.khoi_can_lap_viec` — chỉ các dòng căn (mã + điều dòng căn đã có, để biết mã căn và
+   điều gì không phải `hoi_chu_nha`), tiêu đề "CĂN ĐANG CÓ" khớp chữ mục `ma_can` trong form. Lượt viết lời giữ nguyên `khoi_can_cho_khach`.
+   Phần đổi mỗi lượt còn 865 chữ (đo bằng engine thử, một căn). Áp cho cả form gọn lẫn form đầy đủ của khách mua (cùng chỗ dựng prompt).
+3. **Đã cân nhắc, không làm**: bỏ thẻ ngày / mã SRS trong form gọn chỉ bớt 362 / 13.883 chữ (2,6%) ở phần đã cache; bỏ ô hỏi tư vấn trong
+   `buyer_lead` (hướng, vay, người ở…) là đổi dữ liệu thu (task 7 câu tư vấn) — không làm. Danh mục pháp lý giữ (Haiku cần nghĩa để chọn khoá).
+4. **Ba câu hỏi gốc** — (1) *lớp lỗi*: khối dựng cho một lượt (viết lời) được dùng lại nguyên cho lượt khác (đọc ý). (2) *chỗ khác cùng lớp*: phía
+   bán lượt đọc ý nhận `khoi_cau_hoi_cho` (câu khách mua hỏi) — khối này là dữ liệu, không dặn cách nói; chưa soát hết các khối khác của phía bán.
+   (3) *kiểm*: `tests/test_form_mua_gon_293.py::test_luot_doc_y_chi_nhan_dong_can_khong_nhan_cach_noi` (đỏ khi gỡ bản sửa).
+
 ### SRS-5.1zzzzzzz293 · Phía mua: lượt Haiku đọc ý khách dùng form gọn (prompt ≈ một nửa, schema 36 → 16 khoá) (29/10/2026)
 Chủ dự án 29/10: "Hay là bớt prompt dài đi, cấu trúc form json ngắn hơn ổn hơn k" (sau bắn thử SRS-292: Haiku bỏ sót hẹn xem / câu hỏi chủ nhà 2 / 4 lần).
 

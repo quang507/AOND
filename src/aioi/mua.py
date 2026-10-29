@@ -1004,6 +1004,15 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
             + "\n".join(f"- {dong_can(c)}" for c in can) + "\n")
 
 
+def khoi_can_lap_viec(can: list[dict]) -> str:
+    """Khối căn cho lượt ĐỌC Ý (lập thao tác) phía mua — chỉ dòng căn để AI biết mã căn và điều dòng căn đã có (SRS-5.1zzzzzzz294). Lượt này
+    không viết lời: phần dặn CÁCH NÓI của `khoi_can_cho_khach` (≈ 2.500 chữ, nằm sau dấu cache — tính tiền đủ mỗi lượt) không đưa vào."""
+    if not can:
+        return ""
+    return ("\nCĂN ĐANG CÓ (bot đang giới thiệu cho khách; mã # chỉ để ghi khối \"mua\"; điều dòng căn đã ghi thì không phải hoi_chu_nha):\n"
+            + "\n".join(f"- {dong_can(c)}" for c in can) + "\n")
+
+
 def gop_gio_hen(cu: str | None, moi: str) -> str:
     """Gộp chữ giờ hẹn khách nói thêm vào chữ đã ghi: đã có trong chữ cũ thì giữ, chữ cũ nằm trong chữ mới thì lấy chữ mới, còn lại nối
     ("chiều" + "4h" → "chiều, 4h"). Chỉ so chữ, không đoán ý; tối đa 200 ký tự như cột."""
