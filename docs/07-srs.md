@@ -9099,7 +9099,28 @@ Chủ dự án 29/10: "kiểm đi" (sau bảng soát SRS-267). Script mới `bot
      - Khách nói "còn lô đất SKC ở Bến Lức nữa" → hai căn.
      - Hai ca đầu đỏ khi gỡ bản sửa. Test cũ `test_nhieu_can.py`, `test_bang_chung_o_tin.py` thêm cụm trích.
    - pytest 1159 passed.
-6. **Chưa kiểm**: bắn lại `ban-thu-kiem` sau khi cài lên VPS (kết quả ghi tiếp dưới mục này).
+6. **Bắn lại lần 2** (run 40807964141, sau `cai-vps` bản #181): 15 ĐẠT, 1 TRƯỢT.
+   - **E ĐẠT cả ba ô**: có sổ thì ra bản nháp 📋.
+   - **F**: câu xin ảnh chuyển answered, nghĩa là ảnh đã vào đúng căn B. Nhưng cả hai căn đều 0 dòng `listing_media`.
+     - Gốc: tin tạo ngoài chat có mã khác 8 ký tự đầu id. Đó là tin bài bắn, rổ mẫu SEED, và tin CRM `admin_dang_tin` (mã do
+       `next_listing_code` sinh, dạng "BDS-…").
+     - Với các tin này, lúc nạp từ DB lõi lấy MÃ làm id căn. Id không phải uuid nên `_folder_for` rơi về thư mục cũ, còn `_ghi_anh` chỉ
+       nhận tệp trong `<uuid>/` nên bỏ. Ảnh chủ nhà gửi không lên web.
+     - Mã dài hơn 8 ký tự còn bị cắt ở mọi chỗ lõi tính mã bằng `listing_id[:8]` (lưu tin, duyệt, mô tả, trạng thái web, xin ảnh).
+     - DB 29/10: 7 tin chat đều khớp; 242 tin SEED lệch; chưa có tin CRM nào. Chưa đụng tin thật.
+   - **Sửa**:
+     - `supabase_store.load`: id căn luôn là uuid của dòng; mã riêng giữ ở khoá nội bộ `_ma_tin` (không ra khách, không ghi vào `boc_tach`).
+     - `Listing.ma_tin` (engine) và `supabase_store._ma_tin` thay mọi chỗ `listing_id[:8].upper()`.
+     - Lưu tin giữ nguyên mã DB. `_match_listing` nhận mã đầy đủ, không chỉ mã 8 ký tự.
+   - **Ba câu hỏi gốc**:
+     - (1) *Lớp lỗi*: một giả định ngầm (mã tin = 8 ký tự đầu id) rải ở nhiều chỗ; tin tạo ngoài chat phá giả định mà không chỗ nào báo.
+     - (2) *Chỗ khác cùng lớp*: đã soát mọi `listing_id[:8]` trong `src/aioi`. Còn `kho_tep.listing_folder` dùng 8 ký tự đầu, nhưng chỉ
+       là đường thư mục kho cũ (không phải Supabase).
+     - (3) *Bài đỏ khi tắt bản sửa*:
+       `tests/test_trang_thai_va_nap_lai.py::test_tin_crm_ma_rieng_id_can_la_uuid_anh_vao_dung_tin`.
+       - Tin mã "BDS-NP-Q5-0007": id căn là uuid, lưu không đổi mã, ảnh `<uuid>/` ghi được `listing_media`, `_match_listing` nhận mã đầy đủ.
+       - Đỏ khi gỡ bản sửa ở `supabase_store`. pytest 1160 passed.
+7. **Chưa kiểm**: bắn lại lần 3 sau khi cài bản này lên VPS (ghi tiếp dưới mục này).
 
 ### SRS-5.1zzzzzzz267 · Soát lời hứa của bot: mỗi câu hứa phải có code phía sau (29/10/2026)
 Chủ dự án 29/10: "kiểm tra các thứ tôi cần có code phía sau chưa hay ai hứa suông thôi". Soát mọi câu mẫu gửi thẳng khách (`cau_mau.MAC_DINH`) và

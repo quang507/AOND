@@ -188,3 +188,24 @@ def test_tin_dang_ban_tao_ngoai_chat_khong_trinh_lai_ban_nhap():
     assert StoreChuaHoiThoai(rows=[dong]).load("zalo-thu-1").listings[0].listing_proposed is True
     nhap = {**_dong(UUID_GACH, UUID[:8].upper(), status="cho_thong_tin"), "boc_tach": {}}
     assert StoreChuaHoiThoai(rows=[nhap]).load("zalo-thu-1").listings[0].listing_proposed is False
+
+
+def test_tin_crm_ma_rieng_id_can_la_uuid_anh_vao_dung_tin():
+    """SRS-5.1zzzzzzz268 (bắn thử ban-thu-kiem F, run 40807964141): tin tạo ngoài chat có mã khác 8 ký tự đầu id (CRM `admin_dang_tin` →
+    `next_listing_code` "BDS-…", bài bắn, rổ mẫu SEED) — lõi lấy MÃ làm id căn, ảnh chủ nhà gửi vào thư mục cũ, `_ghi_anh` bỏ, 0 dòng
+    listing_media. Nay id căn = uuid dòng, mã giữ ở `_ma_tin`; lưu lại không đổi mã; ảnh `<uuid>/` ghi được."""
+    from aioi.engine import Engine
+    from tests.test_viec_mua import AiGia
+    dong = {**_dong(UUID_GACH, "BDS-NP-Q5-0007"), "boc_tach": {"gia": "9 tỷ"}}
+    st = StoreChuaHoiThoai(rows=[dong])
+    conv = st.load("zalo-thu-1")
+    li = conv.listings[0]
+    assert li.listing_id == UUID and li.ma_tin == "BDS-NP-Q5-0007"
+    assert "_ma_tin" not in li.prop.fields_khach()
+    li.media = [{"path": f"listing-public/{UUID_GACH}/a.jpg", "filename": "a.jpg"}]
+    st.goi.clear()
+    st.save(conv)
+    ghi = [d for m, e, d in st.goi if m == "PATCH" and e.startswith("listings?id=eq.")]
+    assert ghi and ghi[0]["code"] == "BDS-NP-Q5-0007" and "_ma_tin" not in ghi[0]["boc_tach"]
+    assert [e for m, e, d in st.goi if m == "POST" and e.startswith("listing_media")]
+    assert Engine(AiGia({"operations": []}))._match_listing(conv, "#BDS-NP-Q5-0007") is li
