@@ -2233,7 +2233,11 @@ def operations_schema() -> dict[str, Any]:
                     "loai_giao_dich": {"type": "string", "enum": ["mua", "thue"]},
                     "loai_bds": {"type": "string", "description": "nha_pho, chung_cu, du_an, dat_tho_cu... Khách nói nhà hẻm / nhà mặt tiền "
                                  "/ nhà phố / nhà riêng / nhà đất → nha_pho; căn hộ / chung cư → chung_cu. Chỉ nói \"mua nhà\" chung chung thì bỏ trống."},
-                    "ngan_sach": {"type": "string", "description": "Ngân sách tối đa (vd: 5 tỷ, 10-15 tỷ, 15 tr/tháng)"},
+                    "ngan_sach": {"type": "string", "description": "Ngân sách khách nói, giữ nguyên ý (vd: 5 tỷ, 10-15 tỷ, dưới 6 tỷ, 15 tr/tháng)"},
+                    "ngan_sach_tu": {"type": "string", "description": "MỨC THẤP NHẤT khách chịu trả, một số kèm đơn vị (\"10-15 tỷ\" → \"10 tỷ\"; "
+                                     "\"từ 8 tỷ trở lên\" → \"8 tỷ\"). Khách không nêu mức sàn (\"dưới 6 tỷ\", \"tầm 5 tỷ\") thì bỏ trống."},
+                    "ngan_sach_den": {"type": "string", "description": "MỨC CAO NHẤT khách chịu trả, một số kèm đơn vị (\"10-15 tỷ\" → \"15 tỷ\"; "
+                                      "\"dưới 6 tỷ\" / \"tầm 6 tỷ\" → \"6 tỷ\"; \"7-9 triệu/tháng\" → \"9 triệu\"). Khách chỉ nêu sàn thì bỏ trống."},
                     "khu_vuc": {"type": "string", "description": "Quận, huyện, tên dự án tìm kiếm"},
                     "so_phong_ngu": {"type": "string", "description": "Số phòng ngủ (vd: 2PN, 3PN)"},
                     "yeu_cau_xe_hoi": {"type": "string", "description": "Hẻm xe hơi, xe hơi vào nhà, chỗ đậu ô tô..."},
@@ -2245,6 +2249,15 @@ def operations_schema() -> dict[str, Any]:
                     "thanh_vien": {"type": "string", "description": "nhà gồm những ai sẽ ở (vợ chồng, con nhỏ, ông bà…) — không ghi họ tên"},
                     "noi_lam_viec": {"type": "string", "description": "khu vực đi làm / con đi học"},
                     "dien_tich_mong_muon": {"type": "string", "description": "số phòng, diện tích mong muốn"},
+                    "dien_tich_tu": {"type": "string", "description": "CHỈ con số m² nhỏ nhất khách muốn (\"60-80m2\" → \"60\"; \"trên 50m2\" → \"50\"). "
+                                     "Không nêu thì bỏ trống."},
+                    "dien_tich_den": {"type": "string", "description": "CHỈ con số m² lớn nhất khách muốn (\"60-80m2\" → \"80\"; \"dưới 100m2\" → "
+                                      "\"100\"). Không nêu thì bỏ trống."},
+                    "nhu_cau": {"type": "string", "description": "Nhãn NGẮN của bộ nhu cầu tin này nói tới (vd \"mua ở\", \"đầu tư\", \"cho con\"). "
+                                "Khối BỘ NHU CẦU CỦA KHÁCH đã có nhãn cho bộ đó thì chép ĐÚNG nhãn ấy."},
+                    "nhu_cau_moi": {"type": "boolean", "description": "true CHỈ khi khách nói tìm thêm một căn KHÁC với bộ đang nói (mục đích hoặc "
+                                    "người ở khác: \"tìm giùm con một căn nữa\", \"còn muốn mua thêm căn đầu tư\") — các ô khác trong buyer_lead "
+                                    "là của bộ MỚI đó. Khách chỉ đổi / nói thêm điều kiện của cùng căn đang tìm thì KHÔNG đặt."},
                     "so_tang_mong_muon": {"type": "string", "description": "CHỈ con số tổng số tầng khách muốn, tính cả trệt, không tính lửng "
                                           "(\"nhà 4 tầng\" → \"4\"; \"1 trệt 3 lầu\" → \"4\"). Khách không nói số tầng thì bỏ trống."},
                     "tien_ich_mong_muon": {"type": "string", "description": "NGUYÊN VĂN cụm khách nói muốn gần tiện ích nào: trường học, bệnh viện, "

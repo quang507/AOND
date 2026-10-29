@@ -1299,6 +1299,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                             listings=[Listing(prop=Property())], role="buyer")
         conv.buyer_lead = (cu.buyer_lead if cu and cu.buyer_lead is not None else None) or BuyerLead(user_key=user_key)
         if cu:
+            conv.nhu_cau_khac = cu.nhu_cau_khac   # SRS-5.1zzzzzzz286: các bộ nhu cầu đã cất — chỉ SQLite giữ phía lõi
             conv.price_book = cu.price_book
             conv.last_ai_at = cu.last_ai_at
             conv.xung_ho = cu.xung_ho
@@ -1433,6 +1434,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             if cu:
                 conv.price_book = cu.price_book
                 conv.buyer_lead = cu.buyer_lead
+                conv.nhu_cau_khac = cu.nhu_cau_khac   # SRS-5.1zzzzzzz286
                 conv.last_ai_at = cu.last_ai_at
                 conv.xung_ho = cu.xung_ho   # khách tự xưng gì (SRS-5.1zzzzzzz76) — Supabase không có cột này
                 conv.che_do_test = cu.che_do_test   # chế độ test $$$$$ (SRS-5.1zzzzzzz130) — Supabase không có cột này
@@ -1476,6 +1478,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             if buyer_id:
                 self._delete(f"interests?buyer_id=eq.{buyer_id}")
                 self._delete(f"reminders?kind=eq.match&buyer_id=eq.{buyer_id}")
+                self._delete(f"buyer_needs?buyer_id=eq.{buyer_id}")   # SRS-5.1zzzzzzz286: các bộ nhu cầu
                 self._patch(f"buyers?id=eq.{buyer_id}", {"preferences": {}, "bao_can_moi": True})
 
             # 1. Delete or unlist listings

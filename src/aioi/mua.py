@@ -147,6 +147,59 @@ def _so_tang(lead: Any) -> int | None:
     return int(n) if n and 1 <= n <= 30 else None
 
 
+def khoang_dien_tich(lead: Any) -> tuple[float | None, float | None]:
+    """Diện tích khách muốn (min, max) m² — SRS-5.1zzzzzzz286: AI đọc nghĩa ra `dien_tich_tu` / `dien_tich_den` ("dưới 80m²" → max 80, bản
+    cũ lấy số đầu của chữ nên thành TỐI THIỂU 80). Chưa có hai ô đó (hồ sơ cũ) → số đầu của `dien_tich_mong_muon` làm min như trước."""
+    f = getattr(lead, "fields", {}) or {}
+    tu, den = _so_dau(f.get("dien_tich_tu")), _so_dau(f.get("dien_tich_den"))
+    if tu is None and den is None:
+        return _so_dau(f.get("dien_tich_mong_muon")), None
+    if tu and den and tu > den:
+        tu, den = den, tu
+    return tu or None, den or None
+
+
+# Ô một bộ nhu cầu ghi xuống DB (`buyers.preferences` = bộ đang nói; `buyer_needs.preferences` = từng bộ) — SRS-5.1zzzzzzz286.
+O_NHU_CAU_GHI = ("loai_giao_dich", "loai_bds", "ngan_sach", "khu_vuc", "so_phong_ngu", "yeu_cau_xe_hoi", "huong", "muc_dich", "tien_do_mua",
+                 "vay_ngan_hang", "moi_truong_song", "thanh_vien", "noi_lam_viec", "dien_tich_mong_muon", "thang_may", "nguoi_quyet_dinh",
+                 "so_tang_mong_muon", "tien_ich_mong_muon", "nhu_cau", "ngan_sach_tu", "ngan_sach_den", "dien_tich_tu", "dien_tich_den")
+
+
+def nhu_cau_cua(lead: Any) -> dict[str, Any]:
+    """Các ô có giá trị của một bộ nhu cầu (thuộc tính `BuyerLead` trước, rồi `fields`); khoá nội bộ `_…` không ghi."""
+    if lead is None:
+        return {}
+    f = getattr(lead, "fields", {}) or {}
+    ra: dict[str, Any] = {}
+    for k in O_NHU_CAU_GHI:
+        v = getattr(lead, k, None) or f.get(k)
+        if v:
+            ra[k] = v
+    return ra
+
+
+def nhan_nhu_cau(lead: Any) -> str:
+    """Nhãn bộ nhu cầu (AI đọc: "mua ở", "đầu tư", "cho con"…); chưa đặt nhãn thì mượn mục đích."""
+    f = getattr(lead, "fields", {}) or {}
+    return str(f.get("nhu_cau") or getattr(lead, "muc_dich", None) or f.get("muc_dich") or "").strip()
+
+
+def _tom_nhu_cau(lead: Any) -> str:
+    phan = [str(nhu_cau_cua(lead).get(k) or "") for k in ("loai_giao_dich", "loai_bds", "khu_vuc", "ngan_sach", "so_phong_ngu")]
+    return ", ".join(p for p in phan if p) or "chưa nêu gì"
+
+
+def khoi_nhu_cau(dang_noi: Any, khac: list) -> str:
+    """Khối (sau RANH_GIOI_CACHE) kể các bộ nhu cầu của khách — AI lập thao tác ghi `buyer_lead.nhu_cau` đúng nhãn đã có, lời đáp biết khách
+    đang tìm cho bộ nào (SRS-5.1zzzzzzz286). Khách mới có một bộ chưa nhãn thì vẫn kể (để AI biết khi nào là bộ MỚI)."""
+    if dang_noi is None:
+        return ""
+    dong = [f"- ĐANG NÓI: «{nhan_nhu_cau(dang_noi) or 'chưa đặt nhãn'}» — {_tom_nhu_cau(dang_noi)}"]
+    dong += [f"- ĐÃ CẤT: «{nhan_nhu_cau(l) or 'chưa đặt nhãn'}» — {_tom_nhu_cau(l)}" for l in khac or []]
+    return ("\nBỘ NHU CẦU CỦA KHÁCH (một khách có thể tìm nhiều căn cho mục đích / người khác nhau; mỗi bộ có khu vực, ngân sách riêng):\n"
+            + "\n".join(dong) + "\n")
+
+
 def _khong_dau(s: str) -> str:
     import unicodedata
     s = unicodedata.normalize("NFD", str(s or "").lower()).replace("đ", "d")
@@ -216,6 +269,37 @@ class KhoNguoiMua:
         except Exception as e:  # noqa: BLE001
             log.warning("khach_mua lỗi: %s", e)
             return None
+
+    def ghi_nhu_cau(self, buyer_id: str, dang_noi: Any, khac: list | None = None) -> bool:
+        """Mỗi bộ nhu cầu của khách một dòng `buyer_needs` (SRS-5.1zzzzzzz286): chữ khách nói + số sàn / trần ngân sách, diện tích. Ghi đè theo
+        (khách, `lead_id`); bộ không đổi so với lần ghi trước thì không gọi DB. Lỗi → False (không chặn lượt chat)."""
+        dong = []
+        for lead, noi in [(dang_noi, True)] + [(l, False) for l in khac or []]:
+            if lead is None:
+                continue
+            gmin, gmax = self.khoang_gia(lead)
+            dmin, dmax = khoang_dien_tich(lead)
+            dong.append({"buyer_id": buyer_id, "lead_id": str(lead.lead_id), "nhan": nhan_nhu_cau(lead) or None,
+                         "loai_giao_dich": "thue" if getattr(lead, "loai_giao_dich", "mua") == "thue" else "mua",
+                         "preferences": nhu_cau_cua(lead), "gia_min": gmin, "gia_max": gmax, "dien_tich_min": dmin,
+                         "dien_tich_max": dmax, "dang_noi": noi})
+        if not (self.is_configured and buyer_id and dong):
+            return False
+        nho = self.__dict__.setdefault("_nho_nhu_cau", {})
+        dau = repr(dong)
+        if nho.get(buyer_id) == dau:
+            return True
+        now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        try:
+            self._request("POST", "buyer_needs?on_conflict=buyer_id,lead_id", data=[{**d, "updated_at": now} for d in dong],
+                          prefer="resolution=merge-duplicates,return=minimal")
+        except Exception as e:  # noqa: BLE001
+            log.warning("ghi_nhu_cau lỗi: %s", e)
+            return False
+        if len(nho) > 500:
+            nho.clear()
+        nho[buyer_id] = dau
+        return True
 
     def _ten_ban_neu_co(self, user_key: str) -> str | None:
         """Tên thật của khách ở dòng `sellers` (nếu đã có và không phải tên giữ chỗ "Khách Zalo ####") — để dòng mua dùng cùng tên."""
@@ -364,9 +448,9 @@ class KhoNguoiMua:
         tham_so = {
             "p_deal": "cho_thue" if getattr(lead, "loai_giao_dich", "mua") == "thue" else "ban",
             "p_loai": _LOAI_MUA_SANG_DB.get(str(getattr(lead, "loai_bds", None) or f.get("loai_bds") or "").strip().lower()),
-            "p_gia_max": self._gia_toi_da(str(getattr(lead, "ngan_sach", None) or f.get("ngan_sach") or "")),
+            "p_gia_max": self._gia_toi_da(lead),
             "p_khu": _sach_khu(str(getattr(lead, "khu_vuc", None) or f.get("khu_vuc") or "")),
-            "p_dt_min": _so_dau(f.get("dien_tich_mong_muon")),
+            "p_dt_min": khoang_dien_tich(lead)[0],
             "p_pn_min": (int(_so_dau(getattr(lead, "so_phong_ngu", None) or f.get("so_phong_ngu")) or 0) or None),
             "p_xe_hoi": _can_xe_hoi(getattr(lead, "yeu_cau_xe_hoi", None) or f.get("yeu_cau_xe_hoi")),
             "p_limit": toi_da,
@@ -377,8 +461,9 @@ class KhoNguoiMua:
         khoa = repr(sorted((k, v) for k, v in tham_so.items() if k != "p_vec")) + "|" + _chu_nhu_cau(lead)
         nho = self.__dict__.setdefault("_nho_tim_nha", {})
         hien = time.time()
+        gia_min = self.khoang_gia(lead)[0]
         if khoa in nho and hien - nho[khoa][0] < 60:
-            return nho[khoa][1]
+            return _tren_san(nho[khoa][1], gia_min)
         kq = self._request("POST", "rpc/tim_nha", data=tham_so)
         can: list[dict] = []
         for r in kq if isinstance(kq, list) else []:
@@ -387,7 +472,7 @@ class KhoNguoiMua:
             can.append(c)
         # SRS-5.1zzzzzzz145: `tim_nha` nới trần giá 20 % nhưng giá không là điểm — căn vượt ngân sách có thể đứng TRÊN căn đúng ngân sách
         # (chat thử 23/10: "dưới 6 tỷ" → 6,2 tỷ xếp trước 5,5 tỷ). Đánh dấu mức vượt và xếp căn đúng ngân sách lên trước (sắp ổn định).
-        ns = self._ngan_sach_vnd(str(getattr(lead, "ngan_sach", None) or f.get("ngan_sach") or ""))
+        ns = self.khoang_gia(lead)[1]
         if ns:
             for c in can:
                 g = c.get("price_vnd")
@@ -399,7 +484,7 @@ class KhoNguoiMua:
         if len(nho) > 200:
             nho.clear()
         nho[khoa] = (hien, can)
-        return can
+        return _tren_san(can, gia_min)
 
     def _ngan_sach_vnd(self, ns: str) -> int | None:
         """Ngân sách khách nêu (đồng) — `parse_vnd` là hàm cố định của DB nên nhớ theo chữ (khỏi gọi mỗi lượt)."""
@@ -416,10 +501,27 @@ class KhoNguoiMua:
         v = nho[ns]
         return int(v) if isinstance(v, (int, float)) and v > 0 else None
 
-    def _gia_toi_da(self, ns: str) -> int | None:
-        """Trần giá (đồng) đưa vào `tim_nha`: ngân sách nới 20 %."""
-        v = self._ngan_sach_vnd(ns)
+    def _gia_toi_da(self, lead: Any) -> int | None:
+        """Trần giá (đồng) đưa vào `tim_nha`: mức trần ngân sách nới 20 %. Khách chỉ nêu sàn ("từ 8 tỷ") → không trần."""
+        v = self.khoang_gia(lead)[1]
         return int(v * 1.2) if v else None
+
+    def khoang_gia(self, lead: Any) -> tuple[int | None, int | None]:
+        """Ngân sách (sàn, trần) bằng đồng — SRS-5.1zzzzzzz286. AI đọc NGHĨA ra cụm `ngan_sach_tu` / `ngan_sach_den` ("dưới 6 tỷ" → trần,
+        "từ 8 tỷ trở lên" → sàn, bản cũ đọc thành trần 8 tỷ); đổi ra số vẫn qua `parse_vnd` (luật tiền một nguồn). Hồ sơ chưa có hai ô đó →
+        trần = `parse_vnd` cả câu ngân sách như trước. Số dưới 500 nghìn (cụm thiếu đơn vị) bỏ."""
+        f = getattr(lead, "fields", {}) or {}
+
+        def doc(v: Any) -> int | None:
+            n = self._ngan_sach_vnd(str(v or ""))
+            return n if n and n >= 500_000 else None
+
+        tu, den = doc(f.get("ngan_sach_tu")), doc(f.get("ngan_sach_den"))
+        if tu is None and den is None:
+            return None, doc(getattr(lead, "ngan_sach", None) or f.get("ngan_sach"))
+        if tu and den and tu > den:
+            tu, den = den, tu
+        return tu, den
 
     def _vec_nhu_cau(self, lead: Any) -> list[float] | None:
         """Vector câu tả nhu cầu của khách. Không có lời tả → KHÔNG gọi Gemini (tiết kiệm quota). Lỗi / hết hạn mức → không vector, vẫn tìm."""
@@ -493,10 +595,12 @@ class KhoNguoiMua:
             mau = _q(f"*{khu}*")
             loc.append(f"or=(district.ilike.{mau},ward.ilike.{mau},street.ilike.{mau})")
         ns_chu = str(getattr(lead, "ngan_sach", None) or f.get("ngan_sach") or "")
-        ns = self._ngan_sach_vnd(ns_chu)
+        san, ns = self.khoang_gia(lead)
         if ns:
             loc.append(f"price_vnd=lte.{int(ns * tran)}")
-        elif ns_chu.strip():
+        if san:
+            loc.append(f"price_vnd=gte.{int(san * SAN_NOI)}")   # SRS-5.1zzzzzzz286: khách nêu sàn ("từ 8 tỷ") thì không báo căn rẻ hẳn
+        if not (ns or san) and ns_chu.strip():
             return []   # khách nêu ngân sách mà không đọc ra số → không đoán
         try:
             rows = self._get(f"listings?{'&'.join(loc)}&select={COT_CAN},car_in_house,updated_at&order=updated_at.desc&limit=30")
@@ -748,7 +852,7 @@ def danh_dau_lech(can: list[dict], lead: Any) -> list[dict]:
     đưa căn 1PN mà chỉ nói "khác khu"). `tim_nha` chỉ cộng điểm cho hai tiêu chí này nên căn lệch vẫn lọt; lời bot phải nói thẳng."""
     f = getattr(lead, "fields", {}) or {}
     pn = int(_so_dau(getattr(lead, "so_phong_ngu", None) or f.get("so_phong_ngu")) or 0)
-    dt = _so_dau(f.get("dien_tich_mong_muon"))
+    dt = khoang_dien_tich(lead)[0]
     for c in can:
         b = c.get("bedrooms")
         if pn:
@@ -835,6 +939,16 @@ def dong_can(c: dict) -> str:
     if c.get("code"):
         phan.append(f"link {SITE_URL}/nha-dat/{c['code']}")
     return " · ".join(p for p in phan if p)
+
+
+# Khách nêu SÀN ngân sách: căn dưới sàn quá 20 % không đưa (cùng biên nới 20 % của trần) — SRS-5.1zzzzzzz286.
+SAN_NOI = 0.8
+
+
+def _tren_san(can: list[dict], san: int | None) -> list[dict]:
+    if not san:
+        return can
+    return [c for c in can if not (isinstance(c.get("price_vnd"), (int, float)) and c["price_vnd"] < san * SAN_NOI)]
 
 
 def co_tieu_chi(lead: Any) -> bool:

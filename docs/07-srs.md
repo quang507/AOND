@@ -9058,6 +9058,41 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz286 · Phía mua: một khách nhiều bộ nhu cầu; ngân sách / diện tích dạng số min–max (29/10/2026)
+Chủ dự án 29/10 (bước 4 của SRS-5.1zzzzzzz285): "Một khách có nhiều bộ nhu cầu (mua ở, mua đầu tư, tìm giùm con). cái này cần làm" và "Ngân sách và
+diện tích lưu dạng số min–max … làm như này có bị phình db ra nhiều quá ko, có khiến phải hỏi nhiều mới ra bản nháp không".
+
+1. **Ca gốc**:
+   - (a) Một `buyer_lead` / khách; `buyers.preferences` một bộ. Khách nói "tìm giùm con căn hộ Q7 3 tỷ" thì khu vực / ngân sách mới ĐÈ bộ "nhà phố Q5
+     8 tỷ để ở"; vòng báo căn mới chỉ còn biết một bộ.
+   - (b) Ngân sách đổi ra số bằng `parse_vnd` cả câu — `parse_vnd` lấy số CUỐI ("5-7 tỷ" → 7 tỷ: đúng trần). Nhưng "từ 8 tỷ trở lên" → trần 8 tỷ
+     (nới 20 % = 9,6 tỷ), căn 12 tỷ bị loại; khách nêu sàn không có chỗ nào dùng. Diện tích lấy SỐ ĐẦU của `dien_tich_mong_muon` làm tối thiểu:
+     "dưới 80m²" thành TỐI THIỂU 80.
+2. **Quyết định (BA, uỷ quyền)** — AI đọc nghĩa, code làm (cùng khuôn SRS-280 / 281):
+   - AI (lượt lập thao tác, ô `buyer_lead`): `nhu_cau` = nhãn ngắn bộ đang nói ("mua ở", "đầu tư", "cho con"), chép đúng nhãn ở khối "BỘ NHU CẦU CỦA
+     KHÁCH"; `nhu_cau_moi = true` khi khách tìm thêm một căn KHÁC (mục đích / người khác); `ngan_sach_tu` / `ngan_sach_den` (cụm tiền có đơn vị),
+     `dien_tich_tu` / `dien_tich_den` (số m²).
+   - Code (`Engine._chon_nhu_cau`): `nhu_cau_moi` → cất bộ đang nói vào `conv.nhu_cau_khac`, mở bộ mới (bộ đang nói còn trống thì dùng luôn);
+     nhãn trùng một bộ đã cất → quay lại bộ đó. Nhãn lệch chữ mà KHÔNG có `nhu_cau_moi` thì không đẻ bộ (tránh tách bộ vì AI gọi tên khác đi).
+   - Tiền vẫn một nguồn: cụm AI đọc → `parse_vnd` (`KhoNguoiMua.khoang_gia`); số < 500 nghìn (cụm thiếu đơn vị) bỏ. Hồ sơ cũ không có hai ô đó →
+     như trước. `tim_nha`: trần = mức trần × 1,2 (khách chỉ nêu sàn → không trần); căn dưới 80 % sàn bỏ (`mua._tren_san`, `SAN_NOI`); `p_dt_min` =
+     sàn diện tích. `can_moi_khop` (báo căn mới) lọc thêm `price_vnd ≥ sàn × 0,8`. Trọng số `tim_nha` không đổi.
+   - Lưu: bảng mới `buyer_needs` (migration `20261029f_buyer_needs`) — mỗi bộ một dòng: nhãn, chữ khách (`preferences`), `gia_min` / `gia_max`
+     (đồng), `dien_tich_min` / `dien_tich_max`, `dang_noi`, `dang_tim`; khoá (buyer_id, lead_id); RLS chỉ admin đọc, anon không quyền. Lõi ghi mỗi
+     lượt mua (`KhoNguoiMua.ghi_nhu_cau`, bộ không đổi thì không gọi DB). `buyers.preferences` giữ là bộ ĐANG NÓI (CRM / chỗ đọc cũ không vỡ).
+     Phía lõi: SQLite `buyer_leads` vốn khoá theo `lead_id` — lưu / nạp cả các bộ đã cất. `$$$$$` xoá cả `buyer_needs`.
+   - `bao_can_moi`: xét từng bộ còn tìm (bộ đang nói trước), bộ đầu tiên có căn khớp thì báo; vẫn ≤ 1 tin / khách / 24 giờ. Đọc `buyer_needs` lỗi →
+     về `preferences`.
+   - Lời bot phía mua thấy khối các bộ khi khách có ≥ 2 bộ; `/state` kể các bộ đã cất.
+3. **Trả lời câu hỏi chủ dự án**: (i) chữ khách nói vẫn giữ, số là cột thêm cạnh chữ; (ii) DB: một dòng vài trăm byte mỗi bộ — ước tính, chưa đo
+   trên dữ liệu thật; (iii) không thêm câu hỏi: khách mua không có bản nháp (bản nháp là phía bán), điều kiện gợi căn vẫn khu vực + ngân sách
+   (`co_tieu_chi`); bộ MỚI thì bot hỏi khu vực / ngân sách của bộ đó như khách mới (tối đa `MAX_CAU_HOI_MUA` khi đã đủ hai ô).
+4. **Ba câu hỏi gốc** — (1) *lớp lỗi*: hồ sơ một-bản-ghi cho thứ vốn nhiều-bản-ghi, và chữ tự do đổi ra số bằng một bộ đọc không biết nghĩa
+   "từ / dưới". (2) *chỗ khác cùng lớp*: `so_phong_ngu` / `so_tang_mong_muon` vẫn lấy số đầu làm tối thiểu ("tối đa 3 phòng" hiếm, để đó); trang
+   CRM chưa hiện `buyer_needs` (chỉ `buyers.preferences` của bộ đang nói); tin báo căn mới chưa nói căn hợp bộ nào. (3) *kiểm*:
+   `tests/test_nhieu_nhu_cau_286.py` (8 ca, đỏ khi gỡ bản sửa). Migration chạy thử trên DB thật trong giao dịch huỷ: 2 bộ / khách, ghi đè theo khoá,
+   anon không đọc được. Chưa bắn thử với model thật.
+
 ### SRS-5.1zzzzzzz285 · Soát DB theo góc môi giới: kế hoạch 4 bước; bước 1 — cột lọc trống, khoá `deals`, lịch sử giá (29/10/2026)
 Chủ dự án 29/10: "vào vai môi giới 20 năm kinh nghiệm review lại cái db ssot … các tình huống nào thì nó không đáp ứng dc" → "tạo plan sửa các thứ bạn
 triển khai được đi, nếu mở rộng enum thì thêm bộ câu hỏi à facet à, cứ làm đi rồi tôi chốt từ từ, hiện tại đang là phát triển nên chưa có dữ liệu".

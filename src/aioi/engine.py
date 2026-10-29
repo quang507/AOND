@@ -122,8 +122,8 @@ from .revenue import SellerRole
 from .schema import KHOA_PHAP_LY, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
-from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_viec_vua_ghi, lenh_tra_loi,
-                  tim_sdt)
+from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
+                  lenh_tra_loi, nhan_nhu_cau, nhu_cau_cua, tim_sdt)
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
@@ -520,6 +520,8 @@ class Conversation:
     active_listing_id: str = ""
     role: str = "unknown"  # "seller", "buyer", "unknown"
     buyer_lead: BuyerLead | None = None
+    # SRS-5.1zzzzzzz286: các bộ nhu cầu KHÁC của cùng khách (mua ở / đầu tư / tìm giùm con) — `buyer_lead` là bộ đang nói.
+    nhu_cau_khac: list[BuyerLead] = field(default_factory=list)
     # Transient (not persisted): the structural basket ops applied on the latest turn, so the
     # reply layer can confirm exactly what happened. Reset each turn by _plan_and_apply.
     last_receipts: list[tuple] = field(default_factory=list)
@@ -932,8 +934,7 @@ class SqliteConversationStore(ConversationStore):
                 str(conv.nhuong_san_den or 0) if conv.nhuong_san_den else "",
             ),
         )
-        if conv.buyer_lead is not None:
-            bl = conv.buyer_lead
+        for bl in ([conv.buyer_lead] if conv.buyer_lead is not None else []) + list(conv.nhu_cau_khac):
             self._conn.execute(
                 "INSERT INTO buyer_leads(lead_id, user_key, loai_giao_dich, loai_bds, ngan_sach, "
                 "khu_vuc, so_phong_ngu, yeu_cau_xe_hoi, huong, muc_dich, tien_do_mua, vay_ngan_hang, "
@@ -1048,6 +1049,17 @@ class SqliteConversationStore(ConversationStore):
                     fields=json.loads(lrow[13]) if lrow[13] else {},
                     updated_at=lrow[14] or 0.0,
                 )
+        khac: list[BuyerLead] = []
+        if lead is not None:   # SRS-5.1zzzzzzz286: các bộ nhu cầu đã cất của cùng khách
+            for r in self._conn.execute(
+                "SELECT lead_id, loai_giao_dich, loai_bds, ngan_sach, khu_vuc, so_phong_ngu, yeu_cau_xe_hoi, huong, muc_dich, tien_do_mua, "
+                "vay_ngan_hang, stage, notes, fields_json, updated_at FROM buyer_leads WHERE user_key=? AND lead_id<>? ORDER BY updated_at DESC",
+                (user_key, lead.lead_id),
+            ).fetchall():
+                khac.append(BuyerLead(lead_id=r[0], user_key=user_key, loai_giao_dich=r[1] or "mua", loai_bds=r[2], ngan_sach=r[3], khu_vuc=r[4],
+                                      so_phong_ngu=r[5], yeu_cau_xe_hoi=r[6], huong=r[7], muc_dich=r[8], tien_do_mua=r[9], vay_ngan_hang=r[10],
+                                      stage=r[11] or "discovery", notes=r[12] or "", fields=json.loads(r[13]) if r[13] else {},
+                                      updated_at=r[14] or 0.0))
 
         return Conversation(
             user_key=user_key,
@@ -1060,6 +1072,7 @@ class SqliteConversationStore(ConversationStore):
             price_book=json.loads(row[4]) if row[4] else {},  # the seller's uploaded prices survive restart
             role=row[5] if len(row) > 5 and row[5] else "unknown",
             buyer_lead=lead,
+            nhu_cau_khac=khac,
             xung_ho=row[7] or None,
             che_do_test=bool(row[8]),
             so_luot_thong_tin=int(row[9] or 0) if len(row) > 9 else 0,
@@ -2628,6 +2641,7 @@ class Engine:
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
                            + khoi_lich_dang_cho(conv.y_luot.get("lich_cho"), customer_pronoun, conv.assistant.name))
+            system += khoi_nhu_cau(conv.buyer_lead, conv.nhu_cau_khac) if conv.nhu_cau_khac else ""   # SRS-5.1zzzzzzz286
             system += du_an_mua.khoi_du_an(conv.y_luot.get("du_an_mua"))   # SRS-5.1zzzzzzz184: dữ kiện dự án trong kho cho câu khách hỏi
             system += du_an_mua.khoi_du_an_khu(conv.y_luot.get("du_an_khu"))   # SRS-5.1zzzzzzz250: "quận X có dự án gì"
             system += du_an_mua.khoi_can_du_an(conv.y_luot.get("can_du_an"))   # SRS-5.1zzzzzzz250: căn còn bán trong một dự án
@@ -4471,7 +4485,8 @@ class Engine:
         if conv.role == "buyer" and getattr(kho, "can_phu_hop", None) is not None:
             with _do(conv, "kho_doc"):
                 conv.can_mua = self._can_goi_y(conv)
-            system += khoi_can_cho_khach(conv.can_mua, not co_tieu_chi(conv.buyer_lead)) + KHOI_VAI_MUA_LAP_VIEC
+            system += (khoi_can_cho_khach(conv.can_mua, not co_tieu_chi(conv.buyer_lead)) + KHOI_VAI_MUA_LAP_VIEC
+                       + khoi_nhu_cau(conv.buyer_lead, conv.nhu_cau_khac))
         elif conv.role != "buyer" and getattr(kho, "cau_hoi_cho_nguoi_ban", None) is not None:
             with _do(conv, "kho_doc"):
                 conv.cau_hoi_cho = kho.cau_hoi_cho_nguoi_ban(conv.user_key)
@@ -4561,7 +4576,8 @@ class Engine:
             if conv.buyer_lead is None:
                 conv.buyer_lead = BuyerLead(user_key=conv.user_key)
             if plan.get("buyer_lead"):
-                conv.buyer_lead.update(plan["buyer_lead"])
+                self._chon_nhu_cau(conv, plan["buyer_lead"])
+                conv.buyer_lead.update({k: v for k, v in plan["buyer_lead"].items() if k != "nhu_cau_moi"})
         elif intent == "sell":
             conv.role = "seller"
         elif conv.role == "buyer" and conv.buyer_lead is not None:
@@ -4869,6 +4885,33 @@ class Engine:
                 c["_ke_thua"] = dong_ke_thua(nho[pid], c.get("unit_type"), c)
         return can
 
+    @staticmethod
+    def _chon_nhu_cau(conv: Conversation, bl: dict) -> None:
+        """SRS-5.1zzzzzzz286 (chủ dự án 29/10: "Một khách có nhiều bộ nhu cầu (mua ở, mua đầu tư, tìm giùm con). cái này cần làm"): bản trước
+        chỉ có MỘT `buyer_lead` — khách nói "tìm thêm căn cho con, căn hộ Q7 3 tỷ" thì đè mất khu vực / ngân sách của căn mua ở. AI đọc nghĩa:
+        `nhu_cau_moi` = khách mở một bộ MỚI (căn khác, mục đích / người khác) → cất bộ đang nói, mở bộ mới mang nhãn `nhu_cau`; `nhu_cau` trùng
+        nhãn một bộ đã cất → quay lại bộ đó. Nhãn lệch chữ mà không có `nhu_cau_moi` thì KHÔNG đẻ bộ (tránh tách bộ vì AI gọi tên khác đi)."""
+        cur = conv.buyer_lead
+        nhan = str(bl.get("nhu_cau") or "").strip()[:40]
+        if cur is None or not nhan:
+            return
+
+        def chuan(s: str) -> str:
+            return " ".join(unicodedata.normalize("NFC", s).lower().split())
+
+        if bl.get("nhu_cau_moi") is True:
+            if not (nhu_cau_cua(cur).keys() - {"loai_giao_dich", "nhu_cau"}):
+                return   # bộ đang nói còn trống — dùng luôn cho nhãn mới, khỏi để lại bộ rỗng
+            if not cur.fields.get("nhu_cau"):
+                cur.fields["nhu_cau"] = nhan_nhu_cau(cur) or "nhu cầu trước"
+            conv.nhu_cau_khac = [cur] + [l for l in conv.nhu_cau_khac if l is not cur]
+            conv.buyer_lead = BuyerLead(user_key=conv.user_key)
+            return
+        cu = next((l for l in conv.nhu_cau_khac if chuan(nhan_nhu_cau(l)) == chuan(nhan)), None)
+        if cu is not None and chuan(nhan_nhu_cau(cur)) != chuan(nhan):
+            conv.nhu_cau_khac = [cur] + [l for l in conv.nhu_cau_khac if l is not cu and l is not cur]
+            conv.buyer_lead = cu
+
     def _can_goi_y(self, conv: Conversation) -> list[dict]:
         """Căn gợi ý cho khách mua, bỏ căn khách đã chê (SRS-5.1zzzzzzz175) — MỘT cửa cho cả lượt lập thao tác lẫn lượt trả lời."""
         kho = self._convstore
@@ -4910,12 +4953,10 @@ class Engine:
         if getattr(kho, "khach_mua", None) is None:
             return [], []
         lead = conv.buyer_lead
-        nhu_cau = {k: v for k, v in vars(lead).items()
-                   if k in ("loai_giao_dich", "loai_bds", "ngan_sach", "khu_vuc", "so_phong_ngu", "yeu_cau_xe_hoi", "huong",
-                            "muc_dich", "tien_do_mua", "vay_ngan_hang") and v} if lead else {}
-        if lead:   # 7 câu tư vấn (SRS-5.1zzzzzzz116) nằm ở lead.fields — không phải thuộc tính riêng
-            nhu_cau.update({k: lead.fields[k] for k in O_TU_VAN_MUA if lead.fields.get(k) and k not in nhu_cau})
+        nhu_cau = nhu_cau_cua(lead)   # bộ ĐANG NÓI → `buyers.preferences` (chỗ đọc cũ / CRM); mọi bộ → `buyer_needs` (SRS-5.1zzzzzzz286)
         bid = kho.khach_mua(conv.user_key, None, nhu_cau or None)
+        if bid and lead is not None and getattr(kho, "ghi_nhu_cau", None) is not None:
+            kho.ghi_nhu_cau(bid, lead, conv.nhu_cau_khac)
         mua = conv.y_luot.get("mua") or {}
         ma = [m for m in (mua.get("ma_can") or []) if isinstance(m, str) and m.strip()]
         if not ma and (mua.get("hen_xem") or mua.get("quan_tam") is True or mua.get("hoi_chu_nha") or mua.get("xin_anh") is True
