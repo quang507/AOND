@@ -1634,7 +1634,9 @@ def property_field_props() -> dict[str, Any]:
     # listings.street / ward / district đọc các ô này, không dò từ khoá trên chữ dia_chi.
     properties["duong"] = {
         "type": "string",
-        "description": "Tên đường khách nêu (không số nhà, không 'hẻm'/'mặt tiền', không phường/quận). Chưa nêu thì bỏ trống.",
+        "description": "Tên đường khách nêu (không số nhà, không 'hẻm'/'mặt tiền', không phường/quận). Khách gõ KHÔNG DẤU ('duong ma lo', "
+        "'nha mat tien le van sy') vẫn là tên đường — ghi đúng chữ khách gõ, không tự thêm dấu (hệ thống tra kho đường, tên khớp nhiều đường "
+        "thì hỏi lại khách, SRS-5.1zzzzzzz274). Chưa nêu thì bỏ trống.",
     }
     properties["phuong"] = {
         "type": "string",
