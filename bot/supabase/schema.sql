@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-29 16:54 (giờ VN)
+-- Sinh lúc: 2026-10-29 17:14 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -95,6 +95,23 @@ create table if not exists public.bridge_dang_nhap (
   yeu_cau_quet_lai boolean not null default false,
   ghi_chu text,
   cap_nhat timestamp with time zone not null default now()
+);
+
+create table if not exists public.buyer_needs (
+  id uuid not null default gen_random_uuid(),
+  buyer_id uuid not null,
+  lead_id text not null,
+  nhan text,
+  loai_giao_dich text not null default 'mua'::text,
+  preferences jsonb not null default '{}'::jsonb,
+  gia_min bigint,
+  gia_max bigint,
+  dien_tich_min numeric,
+  dien_tich_max numeric,
+  dang_noi boolean not null default false,
+  dang_tim boolean not null default true,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now()
 );
 
 create table if not exists public.buyers (
@@ -654,6 +671,27 @@ do $d$ begin
   alter table public.bridge_dang_nhap add constraint bridge_dang_nhap_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['chua_ro'::text, 'dang_nhap'::text, 'cho_quet'::text, 'da_quet'::text, 'het_han'::text, 'tu_choi'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.buyer_needs add constraint buyer_needs_buyer_lead_key UNIQUE (buyer_id, lead_id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.buyer_needs add constraint buyer_needs_dien_tich_max_check CHECK (((dien_tich_max IS NULL) OR (dien_tich_max > (0)::numeric)));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.buyer_needs add constraint buyer_needs_dien_tich_min_check CHECK (((dien_tich_min IS NULL) OR (dien_tich_min > (0)::numeric)));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.buyer_needs add constraint buyer_needs_gia_max_check CHECK (((gia_max IS NULL) OR (gia_max > 0)));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.buyer_needs add constraint buyer_needs_gia_min_check CHECK (((gia_min IS NULL) OR (gia_min > 0)));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.buyer_needs add constraint buyer_needs_loai_giao_dich_check CHECK ((loai_giao_dich = ANY (ARRAY['mua'::text, 'thue'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.buyer_needs add constraint buyer_needs_pkey PRIMARY KEY (id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.buyers add constraint buyers_auth_user_id_key UNIQUE (auth_user_id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -971,6 +1009,9 @@ exception when duplicate_object then null; end $d$;
 
 -- ══ Khoá ngoại ══
 do $d$ begin
+  alter table public.buyer_needs add constraint buyer_needs_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES buyers(id) ON DELETE CASCADE;
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.buyers add constraint buyers_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES auth.users(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -1082,6 +1123,7 @@ exception when duplicate_object then null; end $d$;
 -- ══ Index ══
 create index if not exists bot_errors_at_idx ON public.bot_errors USING btree (at DESC);
 create index if not exists bot_errors_source_at_idx ON public.bot_errors USING btree (source, at DESC);
+create index if not exists buyer_needs_buyer_idx ON public.buyer_needs USING btree (buyer_id) WHERE dang_tim;
 create index if not exists cau_chuan_mau_idx ON public.cau_chuan USING btree (updated_at DESC) WHERE dung_lam_mau;
 create index if not exists cau_chuan_phien_idx ON public.cau_chuan USING btree (phien, seq);
 create index if not exists chat_quota_gio_idx ON public.chat_quota USING btree (gio);
@@ -6760,6 +6802,7 @@ alter table public.bot_health enable row level security;
 alter table public.bot_usage enable row level security;
 alter table public.bot_usage_model enable row level security;
 alter table public.bridge_dang_nhap enable row level security;
+alter table public.buyer_needs enable row level security;
 alter table public.buyers enable row level security;
 alter table public.cau_chuan enable row level security;
 alter table public.cau_mau enable row level security;
@@ -6819,6 +6862,10 @@ create policy bot_usage_model_admin_read on public.bot_usage_model as permissive
   WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text)))));
 drop policy if exists bridge_dang_nhap_admin_read on public.bridge_dang_nhap;
 create policy bridge_dang_nhap_admin_read on public.bridge_dang_nhap as permissive for SELECT to authenticated using (la_admin());
+drop policy if exists buyer_needs_admin_read on public.buyer_needs;
+create policy buyer_needs_admin_read on public.buyer_needs as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
+   FROM admins a
+  WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text)))));
 drop policy if exists buyers_admin_read on public.buyers;
 create policy buyers_admin_read on public.buyers as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
@@ -6963,6 +7010,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.bo
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.bot_usage to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.bot_usage_model to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.bridge_dang_nhap to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.buyer_needs to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.buyers to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.cau_chuan to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.cau_mau to service_role;
@@ -7054,6 +7102,7 @@ grant SELECT on public.bot_health to authenticated;
 grant SELECT on public.bot_usage to authenticated;
 grant SELECT on public.bot_usage_model to authenticated;
 grant SELECT on public.bridge_dang_nhap to authenticated;
+grant SELECT on public.buyer_needs to authenticated;
 grant SELECT on public.danh_gia_ai to authenticated;
 grant SELECT on public.dieu_luat to authenticated;
 grant SELECT on public.hoi_thoai_nhan to authenticated;

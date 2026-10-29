@@ -66,6 +66,10 @@ def trang_thai(engine: "Engine", user: str) -> list[str]:
         nhu_cau = {"giao dịch": bl.loai_giao_dich, "loại": bl.loai_bds, "ngân sách": bl.ngan_sach, "khu vực": bl.khu_vuc,
                    "phòng ngủ": bl.so_phong_ngu}
         dong.append("NHU CẦU MUA: " + (" · ".join(f"{k}={v}" for k, v in nhu_cau.items() if v) or "chưa có"))
+        for khac in conv.nhu_cau_khac:   # SRS-5.1zzzzzzz286: các bộ nhu cầu đã cất
+            dong.append(f"   bộ khác «{khac.fields.get('nhu_cau') or khac.muc_dich or '?'}»: "
+                        + (" · ".join(f"{k}={v}" for k, v in (("loại", khac.loai_bds), ("ngân sách", khac.ngan_sach),
+                                                                ("khu vực", khac.khu_vuc)) if v) or "chưa có"))
     project = engine.project_for(conv.prop)
     if project is None:
         for li in conv.listings:

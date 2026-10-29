@@ -57,6 +57,21 @@ def nhu_cau_tu_ho_so(pref: dict[str, Any] | None) -> SimpleNamespace:
                            **{k: p.get(k) for k in _O_NHU_CAU if k != "loai_giao_dich"})
 
 
+def cac_bo_nhu_cau(kho: Any, lst: str) -> dict[str, list[dict]]:
+    """buyer_id → `preferences` từng bộ nhu cầu còn tìm (`buyer_needs`, bộ đang nói trước). Lỗi đọc → rỗng (về `buyers.preferences`)."""
+    try:
+        rows = kho._get(f"buyer_needs?buyer_id=in.({lst})&dang_tim=eq.true&select=buyer_id,preferences"
+                        f"&order=dang_noi.desc,updated_at.desc")
+    except Exception as e:  # noqa: BLE001
+        log.warning("bao_can_moi: đọc buyer_needs lỗi: %s", e)
+        return {}
+    ra: dict[str, list[dict]] = {}
+    for r in rows or []:
+        if r.get("buyer_id") and r.get("preferences"):
+            ra.setdefault(r["buyer_id"], []).append(r["preferences"])
+    return ra
+
+
 def mo_ta_can(c: dict) -> str:
     """Một cụm tả căn: loại, đường (không số nhà), phường, quận, diện tích, giá, phòng ngủ. Viết đủ chữ, không "P." "Q."."""
     vi_tri = ", ".join(str(c[k]) for k in ("street", "ward", "district") if c.get(k))
@@ -166,6 +181,7 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
                       f"&created_at=gte.{_q(_iso(bay_gio - timedelta(days=KHACH_NHAN_TRONG_NGAY)))}&select=buyer_id,listing_id,created_at")
     # SRS-5.1zzzzzzz175: căn khách đã chê trong chat không báo lại.
     che = kho._get(f"interests?buyer_id=in.({lst})&trang_thai=eq.khong_hop&select=buyer_id,listing_id")
+    bo_theo_khach = cac_bo_nhu_cau(kho, lst)
     moc_van = bay_gio - timedelta(hours=VAN_GIO)
     ra: list[dict] = []
     for k in khach[:TOI_DA_KHACH_MOI_LUOT]:
@@ -177,15 +193,21 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
             continue   # van 24 giờ: một khách một tin báo căn mỗi ngày
         da = ({r.get("listing_id") for r in mine} | {r.get("listing_id") for r in che if r.get("buyer_id") == bid}
               | da_gioi_thieu.get(bid, set()))
-        lead = nhu_cau_tu_ho_so(k.get("preferences"))
-        if not co_tieu_chi(lead):
-            continue
-        can = kho.can_moi_khop(lead, [i for i in ids if i not in da], TRAN_VUOT)
-        if can and getattr(kho, "khoa_nha_theo_id", None) is not None:
-            # SRS-5.1zzzzzzz278 (chat 28/10: 146 Trần Bình Trọng hai tin của hai người rao — tin thứ hai được báo như "căn mới" sau khi khách
-            # đã nghe căn thứ nhất): căn trùng nhà (số nhà + đường + phường) với căn đã giới thiệu / đã báo / đã chê thì không báo.
-            khoa = kho.khoa_nha_theo_id([str(c.get("id")) for c in can] + [str(i) for i in da if i])
-            can = bo_can_trung_nha(can, khoa, {khoa[str(i)] for i in da if i and khoa.get(str(i))})
+        # SRS-5.1zzzzzzz286: một khách nhiều bộ nhu cầu (mua ở, đầu tư, tìm giùm con) — xét từng bộ, bộ đang nói trước; bộ đầu tiên có căn
+        # khớp thì báo (vẫn ≤ 1 tin / khách / 24 giờ). Khách chưa có dòng `buyer_needs` → `preferences` như trước.
+        can, lead = [], None
+        for pref in bo_theo_khach.get(bid) or [k.get("preferences")]:
+            lead = nhu_cau_tu_ho_so(pref)
+            if not co_tieu_chi(lead):
+                continue
+            can = kho.can_moi_khop(lead, [i for i in ids if i not in da], TRAN_VUOT)
+            if can and getattr(kho, "khoa_nha_theo_id", None) is not None:
+                # SRS-5.1zzzzzzz278 (chat 28/10: 146 Trần Bình Trọng hai tin của hai người rao — tin thứ hai được báo như "căn mới" sau khi khách
+                # đã nghe căn thứ nhất): căn trùng nhà (số nhà + đường + phường) với căn đã giới thiệu / đã báo / đã chê thì không báo.
+                khoa = kho.khoa_nha_theo_id([str(c.get("id")) for c in can] + [str(i) for i in da if i])
+                can = bo_can_trung_nha(can, khoa, {khoa[str(i)] for i in da if i and khoa.get(str(i))})
+            if can:
+                break
         if not can:
             continue
         c = can[0]
