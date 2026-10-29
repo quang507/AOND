@@ -5005,7 +5005,7 @@ class Engine:
                                 + ("em ĐÃ nhắn chủ nhà xin ảnh — nói ngắn có ảnh em báo khách ngay (khách muốn thì vẫn hẹn xem trực tiếp được)" if xin
                                    else "khách muốn thì hẹn xem trực tiếp, KHÔNG nói em đã xin chủ nhà"))
         hoi_da = str(mua.get("hoi_chu_nha") or "").strip()
-        if bid and not nhac and hoi_da and (_trich_dan_khop(hoi_da, text) or any(_trich_dan_khop(hoi_da, t) for t in self._loi_khach_gan(conv))):
+        if bid and not nhac and hoi_da:   # SRS-5.1zzzzzzz280: câu AI viết lại theo ý khách — nhận luôn (quyết định chủ dự án)
             # SRS-5.1zzzzzzz250 (chủ dự án 28/10 mục 7: "hỏi chủ nhà có căn hoặc nhà đang rao bán gắn với địa chỉ này trước, nếu ko có nữa thì
             # hỏi admin"): câu về một DỰ ÁN (tầng, căn còn lại…) mà khách không chỉ căn nào → hỏi chủ nhà của một căn đang rao trong dự án đó
             # (đường `info_requests` sẵn có: chủ nhà 12 giờ, quá hạn sang admin); dự án chưa có căn nào → báo admin một lần (hạn 5 giờ).
@@ -5031,8 +5031,8 @@ class Engine:
         # Giờ hẹn khách hay nhắn rời từng tin ("thứ 7" / "sáng nhé" / "9h"): nhận khi nằm nguyên trong tin này HOẶC mọi chữ của cụm có trong
         # vài tin khách gần nhất (SRS-5.1zzzzzzz153).
         hen = hen if (_trich_dan_khop(hen, text) or _chu_co_trong_loi_khach(hen, self._loi_khach_gan(conv))) else ""
-        # SRS-5.1zzzzzzz212: khách gật "ừ hỏi giúp" sau khi bot hỏi có muốn hỏi chủ không — câu hỏi nằm ở tin khách trước đó.
-        hoi = hoi if (_trich_dan_khop(hoi, text) or any(_trich_dan_khop(hoi, t) for t in self._loi_khach_gan(conv))) else ""
+        # SRS-5.1zzzzzzz280 (chủ dự án 29/10: "kệ hallucinate"): câu hỏi chủ nhà do AI viết lại theo ý khách — KHÔNG so nguyên văn với lời khách
+        # (bản trước so ở đây lần hai, sau `_loc_viec_mua`, nên câu AI sửa chính tả / diễn lại vẫn bị bỏ).
         if not khong_hop and (mua.get("quan_tam") is True or hen or hoi) and kho.ghi_quan_tam(bid, [c["code"] for c in nhac if c.get("code")]):
             viec.append("ghi khách quan tâm căn " + ", ".join(f"#{c.get('code')}" for c in nhac))
         if hen and kho.ghi_hen_xem(bid, dau, hen):
