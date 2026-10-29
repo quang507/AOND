@@ -9058,6 +9058,24 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz291 · Bắn thử ban-thu-mua sau SRS-290: bộ nhu cầu bị ghi đè; bot chép ví dụ "hay mình đăng luôn" (29/10/2026)
+Bắn thử production `ban-thu-mua` (run 40871600371, ID thử, Sonnet 5.5 + bóc tách Haiku) sau khi bật vòng agent (SRS-290): 14/15 phép đạt.
+
+1. **Kết quả vòng agent** (log `Agent mua:`): 4 lượt mua; 3 lượt model KHÔNG gọi công cụ (5–7 giây phần viết lời); lượt "tìm giùm con căn hộ Q7 3 tỷ"
+   gọi `tim_can` (3 căn, 12,8 giây; cả lượt ~35 giây, $0,0696 — lượt thường $0,016–0,036). Kho không có căn hộ Q7 hợp → bot nói thật chưa có.
+2. **Lỗi A — bộ nhu cầu bị đè** (thấy ở dòng "Đã trích xuất" — phía mua in cả bộ đang nói): lượt 3 bộ "cho con" = căn hộ Q7 3 tỷ; lượt 4 khách hỏi
+   lại căn Q5 → bộ "cho con" thành nhà phố Q5 5 tỷ. Gốc: bộ đầu chưa nhãn bị đặt "nhu cầu trước" (AI không gọi lại được) và Haiku chép ô cũ từ lịch sử
+   vào bộ đang nói. Sửa (`Engine._chon_nhu_cau`): không có `nhu_cau_moi` và nhãn trống / trùng bộ đang nói mà ô AI ghi TRÙNG HẲN một bộ đã cất (≥ 2
+   trong khu vực / ngân sách / loại) và khác bộ đang nói → quay về bộ đã cất. Bộ chưa nhãn được đặt nhãn từ dữ liệu (`mua.nhan_tu_du_lieu`:
+   "nhà phố Quận 5"). Mô tả ô `nhu_cau` dặn: khách quay lại bộ đã cất thì ghi nhãn bộ đó, đừng chép ô sang bộ khác.
+3. **Lỗi B — phía bán**: chủ nhà trả lời câu khách mua (tin tạo ngoài chat, đang chế độ thu ô) → bot "Bản tin rao ở trên còn chỗ nào cần chỉnh không,
+   hay mình đăng luôn?" dù chưa có bản tin. Gốc: `_CAM_GOI_MINH` (khối xưng hô, có trong MỌI prompt) kèm ví dụ `("hay mình đăng luôn")` — model
+   chép (cùng lớp SRS-196 / 248). Sửa: bỏ ví dụ, giữ luật.
+4. **Ba câu hỏi gốc** — (1) *lớp lỗi*: A — dữ liệu AI trích lại từ lịch sử không gắn bộ; B — ví dụ cụm câu trong prompt dùng chung bị model chép.
+   (2) *chỗ khác cùng lớp*: soát ví dụ dạng câu hoàn chỉnh trong các khối dùng chung (`khoi_xung_ho`, `_GIONG_CHUNG`) — chỉ còn ví dụ đại từ đơn
+   lẻ; lưới `_cung_mo_dau` / `_cau_lap_luot_truoc` giữ. (3) *kiểm*: `tests/test_nhieu_nhu_cau_286.py::…_291` (2 ca, đỏ khi gỡ bản sửa); bắn lại
+   `ban-thu-mua` sau khi cài.
+
 ### SRS-5.1zzzzzzz290 · Phía mua: lượt trả lời thành vòng agent "suy nghĩ → chọn công cụ → thực thi → đánh giá" (công cụ chỉ đọc) (29/10/2026)
 Chủ dự án 29/10 (sau khi đọc bài "AI Agent dùng Tool Use"): "Ok thử, kiểm tra xem. chủ yếu vẫn là sang kiểu Suy nghĩ -> Chọn công cụ -> Thực thi
 -> Đánh giá thôi còn bóc tách vẫn dùng haiku có dc ko tại mấy cái code từ khóa bạn làm chạy không ổn định dc".

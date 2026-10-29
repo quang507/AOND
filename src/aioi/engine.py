@@ -123,7 +123,7 @@ from .schema import KHOA_PHAP_LY, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, 
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
-                  lenh_tra_loi, nhan_nhu_cau, nhu_cau_cua, tim_sdt)
+                  lenh_tra_loi, nhan_nhu_cau, nhan_tu_du_lieu, nhu_cau_cua, tim_sdt)
 from . import agent_mua
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
@@ -666,7 +666,7 @@ _GIONG_CHUNG = ("KHÔNG mở đầu câu bằng \"Dạ\" / \"Dạ vâng\" — c�
 # chưa xưng "em" — khối "chưa biết" bảo gọi "anh/chị" nhưng không cấm "mình". Chỉ khi khách xưng "em" bot mới xưng "mình" (xem `_khoi_xung_ho_rieng`).
 _CAM_GOI_MINH = ("KHÔNG gọi khách là \"mình\" (đại từ ngôi hai: \"em xin lỗi mình\", \"Mình đang cần…\") — gọi đúng cách khách xưng, chưa rõ thì "
                  "\"anh/chị\". Chỉ được \"nhà mình / căn mình / đất mình\" khi nói về căn của khách, và \"mình\" nghĩa CHÚNG TA khi bên em "
-                 "với khách cùng làm (\"hay mình đăng luôn\").\n")
+                 "với khách cùng làm.\n")   # SRS-291: bỏ ví dụ "hay mình đăng luôn" — khối này ở MỌI prompt, model chép thành câu hỏi duyệt tin
 
 
 def khoi_xung_ho(p: str, ten: str | None = None, doan: bool = False) -> str:
@@ -4916,14 +4916,31 @@ class Engine:
         for l in ([cur] if cur is not None else []) + list(conv.nhu_cau_khac):
             if thoi and chuan(nhan_nhu_cau(l)) == thoi:
                 l.fields["_thoi_tim"] = "1"
-        if cur is None or not nhan:
+        if cur is None:
+            return
+        if not bl.get("nhu_cau_moi") and (not nhan or chuan(nhan) == chuan(nhan_nhu_cau(cur))):
+            # SRS-5.1zzzzzzz291 (bắn thử ban-thu-mua 29/10: khách hỏi lại căn Quận 5 sau khi mở bộ "cho con" → Haiku chép Quận 5 / 5 tỷ / nhà phố
+            # từ lịch sử vào bộ "cho con", đè mất Quận 7 / 3 tỷ): ô AI ghi TRÙNG HẲN một bộ đã cất (≥ 2 trong khu vực / ngân sách / loại) và
+            # khác bộ đang nói → đó là bộ đã cất, quay về bộ đó thay vì ghi đè. So dữ liệu AI ghi, không dò chữ khách.
+            khoa = [k for k in ("khu_vuc", "ngan_sach", "loai_bds") if str(bl.get(k) or "").strip()]
+
+            def giong(l: BuyerLead) -> bool:
+                return all(chuan(str(getattr(l, k, None) or l.fields.get(k) or "")) == chuan(str(bl[k])) for k in khoa)
+
+            cu = next((l for l in conv.nhu_cau_khac if giong(l)), None) if len(khoa) >= 2 and not giong(cur) else None
+            if cu is not None:
+                conv.nhu_cau_khac = [cur] + [l for l in conv.nhu_cau_khac if l is not cu and l is not cur]
+                conv.buyer_lead = cu
+                cu.fields.pop("_thoi_tim", None)
+            return
+        if not nhan:
             return
 
         if bl.get("nhu_cau_moi") is True:
             if not (nhu_cau_cua(cur).keys() - {"loai_giao_dich", "nhu_cau"}):
                 return   # bộ đang nói còn trống — dùng luôn cho nhãn mới, khỏi để lại bộ rỗng
             if not cur.fields.get("nhu_cau"):
-                cur.fields["nhu_cau"] = nhan_nhu_cau(cur) or "nhu cầu trước"
+                cur.fields["nhu_cau"] = nhan_nhu_cau(cur) or nhan_tu_du_lieu(cur)   # SRS-291: nhãn AI gọi lại được ("nhà phố Quận 5")
             conv.nhu_cau_khac = [cur] + [l for l in conv.nhu_cau_khac if l is not cur]
             conv.buyer_lead = BuyerLead(user_key=conv.user_key)
             return
