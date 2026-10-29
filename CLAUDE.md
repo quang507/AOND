@@ -214,6 +214,15 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 ```
 
 - CI: `.github/workflows/kiem.yml` (chạy mỗi PR; dispatch tay được trên nhánh).
+
+**Vòng giao việc của agent** (SRS-265 — chat bị compact thì quên, docs thì không; hook `SessionStart` in 6 mục SRS mới nhất mỗi lần bắt đầu / compact):
+1. Trước khi sửa: đọc mục SRS liên quan (`grep -n "<từ khoá>" docs/07-srs.md`) và code đang có — việc đã có thì không hỏi lại chủ dự án.
+2. Quyết định chủ dự án nói trong chat → ghi ngay vào mục SRS mới ở docs/07 (+ dòng docs/08, + dòng luật ở file này nếu là luật đang áp) CÙNG commit với code.
+3. Sửa → `bun run test:py` (+ bài kiểm đỏ khi gỡ bản sửa) → `bun run truyvet` → commit, push nhánh → PR draft.
+4. Có migration: áp TRƯỚC khi gộp (`apply-migration.yml` ô `migration_file`, kèm `commit_schema = commit` nếu đổi hàm / bảng), hàm đổi chữ ký phải tương thích lõi đang chạy.
+5. Dispatch `kiem.yml` trên nhánh → `bash scripts/cho-workflow.sh kiem.yml <nhánh>` → xanh thì bỏ draft, gộp squash.
+6. Đụng `src/aioi` → `apply-migration.yml` ô `dung_lai = cai-vps` trên `main` → `bash scripts/cho-workflow.sh apply-migration.yml main`; rồi `git merge -s ours origin/main` vào nhánh làm việc.
+7. Hành vi bot đổi → bắn thử đúng kịch bản (`ban-thu-*`, đọc log job) khi chủ dự án yêu cầu hoặc thay đổi lớn; báo kết quả thật, chưa bắn thì nói chưa.
 - **Bắn thử production** (ô `giu_du_lieu = giu` giữ hội thoại cho CRM, chủ dự án tự xoá — SRS-245; ID thử chạy model theo `MODEL_CHAT_THU`, hiện Sonnet 5.5 — SRS-243; chủ dự án 28/10: ưu tiên test offline, bắn production thì bắn chậm `NGHI_GIUA_LUOT`; tự dọn): `apply-migration.yml` ô `dung_lai` = `ban-thu-ban` / `ban-thu-mua` / `ban-thu-srd` / `ban-thu-ai` / `ban-thu-vm` / `ban-thu-khach-ao` / `ban-thu-5-khach` / `ban-thu-kb` / `ban-thu-dc` / `ban-thu-xa` / `ban-thu-sau` / `ban-thu-nhieu-can` / `ban-thu-dap-y` / `ban-thu-luan`; đọc log lõi `doc-log-loi`; nạp dữ liệu `nap-duong` / `nap-du-an` / `nap-tin-mau` / `nap-luat`; đo tìm nhà `do-tim-nha` (đáp án `cau-hoi.json` soạn cho 30 tin cũ — chưa dùng được). Script ở `bot/tests/ban-thu-*.sh`.
 - Người và máy dùng chung script trong `package.json` — đừng gõ lệnh rời.
 

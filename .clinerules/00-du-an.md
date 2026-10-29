@@ -22,3 +22,5 @@ File này chỉ nhắc các luật bất di bất dịch:
 9. Sửa lỗi bot/web (từ 01/10/2026): ghi trong docs/07 ba mục — **lớp lỗi** (cơ chế gốc cho lỗi lọt, không phải câu khách cụ
    thể), **chỗ khác cùng lớp** đã soát, **bài kiểm đỏ khi tắt bản sửa** (kèm một cách nói mới). Lỗi "máy đoán ý bằng từ
    khoá" thì không thêm từ vào regex — đưa sang AI đọc theo nghĩa, từ khoá làm lưới đỡ (CLAUDE.md §6, mẫu SRS-5.1q).
+10. Trước khi sửa: đọc mục SRS liên quan ở docs/07 và code đang có; quyết định chủ dự án nói trong chat ghi ngay vào docs/07 cùng commit
+    (chat bị nén thì quên, docs thì không). Vòng giao việc đầy đủ (PR, CI, migration, cài VPS): CLAUDE.md §7 (SRS-5.1zzzzzzz265).
