@@ -3042,11 +3042,14 @@ class Engine:
         # SRS-5.1zzzzzzz213 (khách ảo 26/10, giám khảo chấm "không lặp" 1,4/5): lặp mở đầu / lặp nguyên câu của lượt trước — lưới cũ SRS-118
         # bị gỡ ở SRS-207; nay đặt lại, kiểm HÌNH THỨC lời của chính bot, không đọc ý.
         truoc = next((t.content for t in reversed(conv.history) if t.role == "assistant" and t.content), "")
+        # SRS-5.1zzzzzzz277 (chat mua 28/10: "Em nêu rõ … nên anh dễ lọc" mở 5 lượt, xen giữa là lượt gợi căn — so một lượt trước thì lọt):
+        # so với BA lời bot gần nhất (bỏ lời có bản tin 📋).
+        gan = [t.content for t in reversed(conv.history) if t.role == "assistant" and t.content and "📋" not in t.content][:3]
         if "📋" not in reply:
-            if _cung_mo_dau(reply, truoc):
-                ly_do.append("Lượt trước em đã mở đầu bằng cùng mấy chữ này — lượt này đổi cách mở (vào thẳng ý, hoặc đáp điều khách vừa nói), "
-                             "không lặp lời xin lỗi / trấn an đã nói.")
-            lap = _cau_lap_luot_truoc(reply, truoc)
+            if any(_cung_mo_dau(reply, t) for t in gan):
+                ly_do.append("Mấy lượt gần đây em đã mở đầu bằng cùng mấy chữ này — lượt này đổi cách mở (vào thẳng ý, hoặc đáp điều khách vừa "
+                             "nói), không lặp lời khen / xin lỗi / trấn an đã nói.")
+            lap = _cau_lap_luot_truoc(reply, "\n".join(gan))
             if lap:
                 ly_do.append(f"Câu \"{lap[:60]}\" lặp gần nguyên văn lời em ở lượt trước — khách đã đọc rồi: bỏ câu đó, hoặc nói ngắn hơn bằng "
                              "chữ khác; mỗi ý (chưa có căn, cứ nhắn lại, em sẽ báo) chỉ nói MỘT lần trong cuộc chat.")
