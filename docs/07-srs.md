@@ -9058,6 +9058,23 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz269 · Câu khách hỏi về căn rổ mẫu giao thẳng admin (29/10/2026)
+Chủ dự án 29/10: "làm đi, giao thẳng admin luôn". Trước đó tôi kiểm theo câu hỏi "câu hỏi căn mẫu có chuyển admin không".
+
+1. **Trước bản này**:
+   - `route_info_request` giao câu khách hỏi căn SEED cho "chủ nhà", vì người bán thử `thu-seed-001` có Zalo ID. Hạn 12 giờ (`chu_nha_han_gio`).
+   - Tin nhắn cho chủ nhà không tới ai (ID thử, không phải Zalo thật).
+   - Sau 12 giờ, `info_request_sla_tick` mới chuyển sang admin. Lịch chạy 15 phút một lần, 8–20 giờ.
+   - Người test phía mua chờ ≥ 12 giờ. DB 29/10: `info_requests` 0 dòng, chưa ca nào từng chuyển admin.
+2. **Sửa** (migration `20261029c_seed_hoi_thang_admin.sql`):
+   - `route_info_request`: tin `listings.source = 'seed_thu'` giao thẳng admin như tin không có chủ nhà (hạn `admin_han_gio`, 5 giờ).
+   - `notify_info_request_escalation` có sẵn nhánh admin, đẻ tin "❓ Khách hỏi căn #…" cho admin.
+   - Tin thật có chủ nhà đi như cũ.
+3. **Kiểm**: `bot/tests/ban-thu-kiem.sh` kịch bản H.
+   - Khách thử hỏi căn #SEED0040 → `info_requests.assignee = admin`.
+   - Có `reminders` escalation không gắn người bán; bridge gửi tới Zalo admin (status `sent`).
+   - Admin thật nhận một tin thử mỗi lần bắn.
+
 ### SRS-5.1zzzzzzz268 · Bắn thử các việc chưa kiểm production (`ban-thu-kiem`); "add" mở căn mới phải có cụm khách nói căn khác (29/10/2026)
 Chủ dự án 29/10: "kiểm đi" (sau bảng soát SRS-267). Script mới `bot/tests/ban-thu-kiem.sh`, ô `dung_lai = ban-thu-kiem` của
 `apply-migration.yml`; chỉ dùng ID thử, cuối script dọn qua `reset_nguoi_test`.

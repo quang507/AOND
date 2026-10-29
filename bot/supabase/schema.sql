@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-29 08:28 (giờ VN)
+-- Sinh lúc: 2026-10-29 10:14 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -4976,19 +4976,19 @@ CREATE OR REPLACE FUNCTION public.route_info_request()
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-declare v_seller_zalo text; v_district text;
+declare v_seller_zalo text; v_district text; v_source text;
 begin
   if new.assignee is not null then return new; end if;
-  select s.zalo_user_id, l.district into v_seller_zalo, v_district
+  select s.zalo_user_id, l.district, l.source into v_seller_zalo, v_district, v_source
     from listings l join sellers s on s.id = l.seller_id where l.id = new.listing_id;
-  if v_seller_zalo is not null then
+  if v_seller_zalo is not null and v_source is distinct from 'seed_thu' then
     new.assignee := 'seller';
     if new.source = 'buyer_ask' then
       new.sla_due_at := now() + make_interval(hours => public.chu_nha_han_gio());
     end if;
     return new;
   end if;
-  new.assignee := 'admin';   -- 20261024a: không có chủ nhà trên hệ thống thì giao thẳng admin
+  new.assignee := 'admin';   -- 20261024a: không có chủ nhà trên hệ thống thì giao thẳng admin; 20261029c: căn rổ mẫu cũng vậy
   if new.source = 'buyer_ask' and coalesce(new.question, '') <> 'xac_nhan_lich' then
     new.sla_due_at := now() + make_interval(hours => public.admin_han_gio());   -- 20261028c: hạn admin 5 giờ
   end if;
