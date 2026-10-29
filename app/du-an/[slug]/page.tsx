@@ -25,7 +25,7 @@ type DuAn = {
   district: string | null; ward: string | null; province: string | null; location_raw: string | null;
   legal_status: string | null; status_text: string | null; handover: string | null; handover_date: string | null;
   description: string | null; price_min: number | null; price_max: number | null; is_partner: boolean | null;
-  unit_types: unknown; amenities: unknown; images: unknown; specs: unknown;
+  unit_types: unknown; amenities: unknown; images: unknown; specs: unknown; thong_tin: unknown;
 };
 
 // Tin trong dự án: thẻ + mã căn / tình trạng căn (FR-113).
@@ -46,11 +46,22 @@ export async function generateStaticParams() {
 const getProject = cache(async (slug: string): Promise<DuAn | null> => {
   const { data } = await supabase
     .from("projects")
-    .select("id, name, slug, developer, district, ward, province, location_raw, legal_status, status_text, handover, handover_date, description, price_min, price_max, is_partner, unit_types, amenities, images, specs")
+    .select("id, name, slug, developer, district, ward, province, location_raw, legal_status, status_text, handover, handover_date, description, price_min, price_max, is_partner, unit_types, amenities, images, specs, thong_tin")
     .eq("slug", slug)
     .maybeSingle();
   return (data as DuAn) ?? null;
 });
+
+// SRS-5.1zzzzzzz283: `projects.thong_tin` = dữ kiện ĐÃ CHỐT (phiếu đủ / admin ghi thẳng, SRS-249) — lõi bot đọc nó đè cột mogi cùng nghĩa;
+// trang dự án đọc y như vậy để web và bot nói cùng một điều. Bỏ link ngoài (web không dẫn khách ra trang khác).
+function thongTin(v: unknown): { thuocTinh: [string, string][]; tienIch: string[] } {
+  const o = v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+  const tt = o.thuoc_tinh && typeof o.thuoc_tinh === "object" && !Array.isArray(o.thuoc_tinh) ? (o.thuoc_tinh as Record<string, unknown>) : {};
+  const thuocTinh = Object.entries(tt)
+    .filter(([k, x]) => typeof x === "string" && x.trim() && !/https?:\/\//i.test(x) && !["website", "link"].includes(k.trim().toLowerCase()))
+    .map(([k, x]): [string, string] => [k.charAt(0).toUpperCase() + k.slice(1), (x as string).trim()]);
+  return { thuocTinh, tienIch: chuoi(o.tien_ich).filter((t) => !/https?:\/\//i.test(t)) };
+}
 
 function viTri(p: DuAn): string {
   return [p.ward, p.district, p.province].filter(Boolean).join(", ");
@@ -68,14 +79,24 @@ function chuoi(v: unknown): string[] {
   return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 }
 type LoaiCan = { name?: string; specs?: Record<string, unknown>; units?: unknown };
+// Hai dạng `projects.unit_types`: mogi `{name, specs, units}` và dạng phẳng chủ dự án nhập tay `{ten, ket_cau, kich_thuoc, …}` (Ny'ah,
+// SRS-5.1zzzzzzz249) — dạng phẳng trước đây hiện "Loại 1…5" trống (SRS-5.1zzzzzzz283). Mẫu không tên lẫn thông số thì bỏ.
 function loaiCan(v: unknown): LoaiCan[] {
-  return Array.isArray(v) ? v.filter((x): x is LoaiCan => !!x && typeof x === "object") : [];
+  if (!Array.isArray(v)) return [];
+  return v
+    .filter((x): x is Record<string, unknown> => !!x && typeof x === "object" && !Array.isArray(x))
+    .map((x): LoaiCan => {
+      if (typeof x.name === "string" || x.specs) return x as LoaiCan;
+      const { ten, units, ...con } = x;
+      return { name: typeof ten === "string" ? ten : undefined, specs: con, units };
+    })
+    .filter((lc) => !!lc.name || Object.values(lc.specs ?? {}).some(coGiaTri));
 }
 const NHAN_SPEC: Record<string, string> = {
   so_tang: "Số tầng", mat_tien: "Mặt tiền", so_phong_ngu: "Phòng ngủ", bo_tri: "Bố trí",
   ban_giao: "Bàn giao", thang_may: "Thang máy", ghi_chu: "Ghi chú", cong: "Cổng",
   vi_tri: "Vị trí", ket_cau: "Kết cấu", tong_so_can: "Tổng số căn", dien_tich: "Diện tích",
-  gia_dong: "Giá tham khảo", nam_khoi_cong: "Khởi công", nam_hoan_thanh: "Hoàn thành", tong_dien_tich: "Tổng diện tích",
+  gia_dong: "Giá tham khảo", kich_thuoc: "Kích thước", dien_tich_su_dung: "Diện tích sử dụng", phong_ngu: "Phòng ngủ", nam_khoi_cong: "Khởi công", nam_hoan_thanh: "Hoàn thành", tong_dien_tich: "Tổng diện tích",
 };
 // Ô trống của kho dự án mogi ra JSON null — `String(null)` là chữ "null", trước đây lọt lên trang cùng tên khoá trần ("gia_dong null",
 // chủ dự án 27/10). Trống = null / "" / "null".
@@ -139,7 +160,9 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const tin = (data ?? []) as unknown as TinDuAn[];
   const covers = await coverByCode(tin.map((l) => l.code));
   const anh = anhDuAn(p.images);
-  const tienIch = chuoi(p.amenities);
+  const tt = thongTin(p.thong_tin);
+  const tienIch = [...new Set([...chuoi(p.amenities), ...tt.tienIch])];
+  const daChot = new Map(tt.thuocTinh.map(([k, v]) => [k.toLowerCase(), v]));
   const loai = loaiCan(p.unit_types);
   const specs = p.specs && typeof p.specs === "object" && !Array.isArray(p.specs) ? dongSpec(p.specs as Record<string, unknown>) : [];
   // Giá min–max: cột dự án nếu có, không thì suy từ tin đang lên kệ.
@@ -175,7 +198,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           </p>
           <h1 className="mt-1.5 text-3xl font-extrabold [text-wrap:balance] md:text-4xl">{p.name}</h1>
           <p className="mt-2 text-white/70">
-            {p.developer ? `Chủ đầu tư ${p.developer} · ` : ""}{viTri(p)}
+            {(daChot.get("chủ đầu tư") ?? p.developer) ? `Chủ đầu tư ${daChot.get("chủ đầu tư") ?? p.developer} · ` : ""}{viTri(p)}
           </p>
         </div>
       </div>
@@ -209,10 +232,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
               )}
               <dl className="mt-5 grid grid-cols-1 gap-x-8 sm:grid-cols-2">
                 {[
-                  ["Vị trí", p.location_raw ?? viTri(p)],
-                  ["Pháp lý", p.legal_status],
-                  ["Bàn giao", p.handover ?? (p.handover_date ? new Date(p.handover_date).toLocaleDateString("vi-VN") : null)],
+                  ["Vị trí", daChot.get("vị trí") ?? p.location_raw ?? viTri(p)],
+                  ["Pháp lý", daChot.get("pháp lý") ?? p.legal_status],
+                  ["Bàn giao", daChot.get("bàn giao") ?? p.handover ?? (p.handover_date ? new Date(p.handover_date).toLocaleDateString("vi-VN") : null)],
                   ...specs,
+                  ...tt.thuocTinh.filter(([k]) => !["vị trí", "pháp lý", "bàn giao", "chủ đầu tư"].includes(k.toLowerCase())),
                 ]
                   .filter((x, i, a): x is [string, string] => coGiaTri(x[1]) && a.findIndex((y) => y[0] === x[0]) === i)
                   .map(([k, v]) => (

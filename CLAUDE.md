@@ -109,6 +109,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 **Dự án (một nguồn, SRS-249)**
 - `projects` là kho chung (mogi + `thong_tin` đã duyệt; hai phía bot cùng đọc qua `SupabaseProjectStore` / `tra_du_an`); `du_an_kien_thuc` chỉ giữ phần học thêm nối `project_id` — đừng chép lại cột mogi sang đó. Dữ liệu riêng (giá, mã căn) ở tin (`listings.unit_code`) hoặc `rieng`, không vào kho chung.
 - Câu "🤔 có phải dự án X" (tên gần trùng) chỉ hỏi khi dự án kho CÙNG vị trí với căn (`_cung_vi_tri_du_an`), là câu hỏi duy nhất của lượt (`_hoi_trung_ten`; lời đã có câu hỏi thì sang lượt sau) (SRS-254).
+- Chung / riêng theo khuôn anh Luận: căn kế thừa dự án ⊕ mẫu nhà, căn thắng, giá luôn riêng; phía mua qua `projects.dong_ke_thua` (`Engine._gan_ke_thua`), web trang dự án đọc `thong_tin` đè cột mogi (SRS-283).
 - Lời người bán về dự án là PHIẾU theo hạng (Đồng 1 / Bạc 2 / Vàng 3, chốt ≥ 6, phe khác ≤ 2), admin (`admins`) = `chac_chan:` ghi thẳng; mã phiếu chỉ do `Engine._ma_phieu` tính — đừng nhận phiếu từ model. Tệp mẫu nhà lưu `du-an/…` (bucket công khai) để gửi được.
 
 **Địa chỉ / phường**
