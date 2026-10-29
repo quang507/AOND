@@ -9058,6 +9058,22 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz289 · CRM hiện các bộ nhu cầu; tin báo căn mới nói căn cho bộ nào (29/10/2026)
+Chủ dự án 29/10: "Trang CRM không hiện các bộ nhu cầu của khách"; "Tin báo căn mới chưa nói căn đó hợp với bộ nào".
+
+1. **Ca gốc**: (a) thẻ khách CRM (`app/admin/page.tsx`) chỉ đọc `buyers.preferences` — không thấy `buyer_needs` (SRS-286). (b) Soát thêm: thẻ đọc khoá
+   tiếng Anh (`area`, `property_type`, `budget`, `deal`, `bedrooms`, do form CRM cũ ghi), còn lõi ghi khoá tiếng Việt (`khu_vuc`, `loai_bds`,
+   `ngan_sach`, `loai_giao_dich`, `so_phong_ngu`) → nhu cầu bot thu được hiện "Chưa rõ" ở mọi ô. (c) Khách có hai bộ (mua ở Q5, cho con Q7) nhận tin
+   báo căn Q7 mà tin không nói là cho bộ "cho con".
+2. **Sửa (BA, uỷ quyền)**: (a) CRM đọc `buyer_needs` (RLS admin, SRS-286), mỗi bộ một khối: nhãn, mua / thuê, khu vực, loại, phòng ngủ, ngân sách chữ
+   + khoảng số sàn – trần, diện tích; ghi "(đang nói)" / "(đã thôi tìm)". Khách chưa có dòng `buyer_needs` → khối cũ từ `preferences`. (b) Hàm
+   `docNhuCau` đọc khoá lõi trước, khoá form cũ sau; ô tìm kiếm và form "Sửa nhu cầu" điền sẵn theo cùng thứ tự. (c) `bao_can_moi.viet_tin(nhan=…)`:
+   khách ≥ 2 bộ thì câu "vì sao hợp" thêm "(nhu cầu «cho con»)"; khách một bộ thì giữ nguyên.
+3. **Ba câu hỏi gốc** — (1) *lớp lỗi*: hai bên ghi cùng một cục JSON bằng hai bộ khoá khác nhau, bên đọc chỉ biết một bộ. (2) *chỗ khác cùng lớp*: form
+   "Sửa nhu cầu" vẫn GHI khoá tiếng Anh (RPC trộn) — lõi không đọc các khoá đó nên sửa tay trên CRM chưa đổi được cách bot gợi căn; ghi nhận, để mục sau
+   (cần đổi RPC sang khoá lõi + migration). (3) *kiểm*: `tests/test_nhieu_nhu_cau_286.py` (2 ca tin báo, đỏ khi gỡ bản sửa); CRM: `tsc` + `bun run
+   build` xanh, CHƯA chụp màn hình (trang admin cần đăng nhập).
+
 ### SRS-5.1zzzzzzz288 · Phía mua: không lấy nhầm mã căn khi khách không gõ mã (29/10/2026)
 Chủ dự án 29/10: "rủi ro lấy nhầm code" (sau khi đọc lại luồng "hỏi giúp a đi e → mã căn lấy từ căn bot vừa gửi link").
 

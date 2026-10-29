@@ -104,6 +104,7 @@ def test_bao_can_moi_xet_tung_bo_nhu_cau():
     kho = _KhoBaoNhieuBo([tin("t7", "Q7AAAAAA", 3e9, quan="Quận 7")], bo)
     _, da_gui = chay(kho, TRUA)
     assert len(da_gui) == 1 and "Quận 7" in da_gui[0][1]
+    assert "nhu cầu «cho con»" in da_gui[0][1]                    # SRS-289: khách ≥ 2 bộ → tin nói căn cho bộ nào
     assert chay(_KhoBaoNhieuBo([tin("t7", "Q7AAAAAA", 3e9, quan="Quận 7")], []), TRUA)[1] == []   # chỉ có preferences (Quận 5)
 
 
@@ -138,3 +139,9 @@ def test_khach_thoi_tim_mot_bo_thi_tat_bo_do_khong_do_chu():
     eng.handle("mua-286e", "căn của anh không cần thang máy, 3 phòng ngủ")
     ghi = {d["nhan"]: d["dang_tim"] for d in kho.ghi("POST", "buyer_needs")[-1]}
     assert ghi == {"cho con": False, "mua ở": True}
+
+
+def test_bao_can_moi_mot_bo_khong_ghi_nhan():
+    bo = [{"buyer_id": "b1", "preferences": {**NGAN["preferences"], "nhu_cau": "mua ở"}}]
+    _, da_gui = chay(_KhoBaoNhieuBo([tin("t5", "Q5AAAAAA", 6.8e9)], bo), TRUA)
+    assert len(da_gui) == 1 and "nhu cầu «" not in da_gui[0][1]

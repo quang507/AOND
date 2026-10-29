@@ -134,6 +134,8 @@ type KhachCrm = {
   zalo_user_id: string | null;
   phone: string | null;
   preferences: Record<string, unknown> | null;
+  // SRS-5.1zzzzzzz289: các bộ nhu cầu (mua ở / đầu tư / cho con…) — bảng buyer_needs do lõi ghi (SRS-286); bộ đang nói trước.
+  nhu_cau?: BoNhuCau[];
   notes: string | null;
   last_contact_at: string | null;
   created_at: string;
@@ -150,6 +152,35 @@ type KhachCrm = {
     location_raw: string | null;
   }[];
 };
+type BoNhuCau = {
+  buyer_id: string;
+  nhan: string | null;
+  loai_giao_dich: string;
+  preferences: Record<string, unknown> | null;
+  gia_min: number | null;
+  gia_max: number | null;
+  dien_tich_min: number | null;
+  dien_tich_max: number | null;
+  dang_noi: boolean;
+  dang_tim: boolean;
+};
+// SRS-5.1zzzzzzz289: lõi ghi khoá tiếng Việt (khu_vuc, loai_bds, ngan_sach, loai_giao_dich, so_phong_ngu); form CRM cũ ghi khoá tiếng
+// Anh (area, property_type, budget, deal, bedrooms). Thẻ khách trước đây chỉ đọc khoá tiếng Anh nên nhu cầu bot thu hiện "Chưa rõ".
+function docNhuCau(p: Record<string, unknown> | null | undefined) {
+  const v = (...k: string[]) => { for (const x of k) { const t = p?.[x]; if (t != null && String(t).trim()) return String(t); } return ""; };
+  const gd = v("loai_giao_dich", "deal");
+  return { thue: gd === "thue" || gd === "cho_thue", khu: v("khu_vuc", "area"), loai: v("loai_bds", "property_type"),
+           ngan_sach: v("ngan_sach", "budget"), pn: v("so_phong_ngu", "bedrooms") };
+}
+function chuTien(d: number): string {
+  return d >= 1e9 ? `${+(d / 1e9).toFixed(2)} tỷ` : `${+(d / 1e6).toFixed(1)} triệu`;
+}
+function khoangGia(b: BoNhuCau): string {
+  if (b.gia_min && b.gia_max) return `${chuTien(b.gia_min)} – ${chuTien(b.gia_max)}`;
+  if (b.gia_max) return `đến ${chuTien(b.gia_max)}`;
+  if (b.gia_min) return `từ ${chuTien(b.gia_min)}`;
+  return "";
+}
 const TRANG_THAI_TIN: Record<string, string> = {
   cho_thong_tin: "chờ thông tin", dang_ban: "đang bán", dang_quan_tam: "đang quan tâm", da_coc: "đã cọc", da_chot: "đã chốt", an: "ẩn",
 };
@@ -287,8 +318,8 @@ function BanLamViec() {
       const zalo = (k.zalo_user_id ?? "").toLowerCase();
       const notes = (k.notes ?? "").toLowerCase();
       const p = k.preferences ?? {};
-      const area = String(p.area ?? "").toLowerCase();
-      const ptype = String(p.property_type ?? "").toLowerCase();
+      const area = String(p.khu_vuc ?? p.area ?? "").toLowerCase();
+      const ptype = String(p.loai_bds ?? p.property_type ?? "").toLowerCase();
       const sellCode = (k.seller?.active_listing?.code ?? "").toLowerCase();
       const sellLeg = (k.seller?.active_listing?.legacy_code ?? "").toLowerCase();
       const intCodes = (k.interests ?? []).map((i) => `${i.code ?? ""} ${i.legacy_code ?? ""}`).join(" ").toLowerCase();
@@ -380,7 +411,7 @@ function BanLamViec() {
   const load = async () => {
     void taiDangNhap();
     const d7 = new Date(Date.now() - 7 * 86400e3).toISOString();
-    const [pend, st, beatRes, errRes, tn, vc, nb, hg, ch, lx, kc, tk, hot, gt, buyRes, intRes, qtRes, tmRes] = await Promise.all([
+    const [pend, st, beatRes, errRes, tn, vc, nb, hg, ch, lx, kc, tk, hot, gt, buyRes, intRes, qtRes, tmRes, bnRes] = await Promise.all([
       supabase
         .from("listings")
         .select("id, code, ward, price_vnd, price_raw, area_m2, description, location_raw, created_at")
@@ -446,6 +477,9 @@ function BanLamViec() {
         .from("bot_usage_model")
         .select("day, model, calls, in_tokens, out_tokens, cache_write_tokens, cache_read_tokens")
         .gte("day", d7.slice(0, 10)).order("day", { ascending: false }),
+      supabase.from("buyer_needs")
+        .select("buyer_id, nhan, loai_giao_dich, preferences, gia_min, gia_max, dien_tich_min, dien_tich_max, dang_noi, dang_tim")
+        .order("dang_noi", { ascending: false }).order("updated_at", { ascending: false }).limit(500),
     ]);
     setTienModel(tmRes.error ? [] : ((tmRes.data ?? []) as TienModel[]));
     setQuota(qtRes.error ? null : ((qtRes.data as Quota | null) ?? null));
@@ -537,6 +571,7 @@ function BanLamViec() {
         zalo_user_id: b.zalo_user_id,
         phone: s?.phone ?? null,
         preferences: b.preferences,
+        nhu_cau: bnRes.error ? [] : ((bnRes.data ?? []) as BoNhuCau[]).filter((n) => n.buyer_id === b.id),
         notes: b.notes,
         last_contact_at: b.last_contact_at,
         created_at: b.created_at,
@@ -655,11 +690,11 @@ function BanLamViec() {
     setFormNhuCau({
       name: k.name ?? "",
       seller_type: k.seller?.seller_type === "nmg" ? "nmg" : "ccrb",
-      area: String(p.area ?? ""),
-      property_type: String(p.property_type ?? ""),
+      area: String(p.area ?? p.khu_vuc ?? ""),
+      property_type: String(p.property_type ?? p.loai_bds ?? ""),
       deal: String(p.deal ?? "ban"),
       bedrooms: p.bedrooms != null ? String(p.bedrooms) : "",
-      budget: String(p.budget ?? ""),
+      budget: String(p.budget ?? p.ngan_sach ?? ""),
       notes: k.notes ?? String(p.notes ?? ""),
     });
   };
@@ -1099,46 +1134,57 @@ function BanLamViec() {
                         </div>
                       )}
 
-                      {/* Box 2: Nhu cầu tìm kiếm */}
-                      {k.preferences ? (
-                        <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3 text-xs space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-sky-900 flex items-center gap-1">
-                              Nhu cầu tìm kiếm:
-                            </span>
-                            <span className="rounded bg-brand/10 text-brand px-2 py-0.5 text-[10px] font-bold">
-                              {p.deal === "thue" ? "Cần thuê" : "Cần mua"}
-                            </span>
+                      {/* Box 2: Nhu cầu tìm kiếm — mỗi bộ một khối (SRS-5.1zzzzzzz289); khách chưa có bộ nào trong buyer_needs thì đọc preferences */}
+                      {(() => {
+                        const bo: { nhan: string | null; nc: ReturnType<typeof docNhuCau>; khoang: string; dt: string; dangNoi: boolean; thoi: boolean }[] =
+                          (k.nhu_cau ?? []).length
+                            ? (k.nhu_cau ?? []).map((n) => ({
+                                nhan: n.nhan, nc: { ...docNhuCau(n.preferences), thue: n.loai_giao_dich === "thue" }, khoang: khoangGia(n),
+                                dt: n.dien_tich_min || n.dien_tich_max
+                                  ? `${n.dien_tich_min ? `${n.dien_tich_min}` : ""}${n.dien_tich_min && n.dien_tich_max ? "–" : n.dien_tich_max ? "≤ " : "≥ "}${n.dien_tich_max ?? ""} m²`
+                                  : "",
+                                dangNoi: n.dang_noi, thoi: !n.dang_tim,
+                              }))
+                            : k.preferences ? [{ nhan: null, nc: docNhuCau(p), khoang: "", dt: "", dangNoi: false, thoi: false }] : [];
+                        if (!bo.length)
+                          return (
+                            <div className="rounded-xl border border-dashed border-line p-3 text-xs text-mute flex items-center justify-center italic">
+                              Chưa ghi nhận nhu cầu tìm mua / thuê
+                            </div>
+                          );
+                        return (
+                          <div className="space-y-2">
+                            {bo.map((b, i) => (
+                              <div key={i} className={`rounded-xl border border-sky-200 bg-sky-50/50 p-3 text-xs space-y-1.5 ${b.thoi ? "opacity-60" : ""}`}>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="font-bold text-sky-900">
+                                    {b.nhan ? `Nhu cầu: ${b.nhan}` : "Nhu cầu tìm kiếm"}
+                                    {b.dangNoi && bo.length > 1 && <span className="ml-1 font-normal text-mute">(đang nói)</span>}
+                                    {b.thoi && <span className="ml-1 font-normal text-mute">(đã thôi tìm)</span>}
+                                  </span>
+                                  <span className="rounded bg-brand/10 text-brand px-2 py-0.5 text-[10px] font-bold">
+                                    {b.nc.thue ? "Cần thuê" : "Cần mua"}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-navy">
+                                  <div><span className="text-mute">Khu vực: </span><b>{b.nc.khu || "Chưa rõ"}</b></div>
+                                  <div><span className="text-mute">Loại BĐS: </span><b>{b.nc.loai || "Chưa rõ"}</b></div>
+                                  <div><span className="text-mute">Số PN: </span><b>{b.nc.pn || "Chưa rõ"}</b></div>
+                                  <div>
+                                    <span className="text-mute">Ngân sách: </span>
+                                    <b className="text-brand">{b.nc.ngan_sach || "Chưa rõ"}</b>
+                                    {b.khoang && <span className="text-mute"> ({b.khoang})</span>}
+                                  </div>
+                                  {b.dt && <div><span className="text-mute">Diện tích: </span><b>{b.dt}</b></div>}
+                                </div>
+                              </div>
+                            ))}
+                            {(p.notes || k.notes) && (
+                              <div className="text-xs text-navy font-medium px-1">{String(k.notes || p.notes)}</div>
+                            )}
                           </div>
-                          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-navy">
-                            <div>
-                              <span className="text-mute">Khu vực: </span>
-                              <b>{String(p.area || "Chưa rõ")}</b>
-                            </div>
-                            <div>
-                              <span className="text-mute">Loại BĐS: </span>
-                              <b>{String(p.property_type || "Chưa rõ")}</b>
-                            </div>
-                            <div>
-                              <span className="text-mute">Số PN: </span>
-                              <b>{p.bedrooms ? `${p.bedrooms} phòng ngủ` : "Chưa rõ"}</b>
-                            </div>
-                            <div>
-                              <span className="text-mute">Ngân sách: </span>
-                              <b className="text-brand">{String(p.budget || "Chưa rõ")}</b>
-                            </div>
-                          </div>
-                          {(p.notes || k.notes) && (
-                            <div className="border-t border-sky-100 pt-1 text-mute">
-                              <span className="text-navy font-medium">{String(k.notes || p.notes)}</span>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="rounded-xl border border-dashed border-line p-3 text-xs text-mute flex items-center justify-center italic">
-                          Chưa ghi nhận nhu cầu tìm mua / thuê
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
 
                     {/* Inline Form Edit Preferences */}

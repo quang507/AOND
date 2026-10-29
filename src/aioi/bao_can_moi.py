@@ -113,14 +113,17 @@ def vi_sao_hop(c: dict, lead: Any = None, kieu: int = 0) -> str:
     return cau.strip()
 
 
-def viet_tin(c: dict, xung_ho: str = "unknown", lead: Any = None, kieu: int = 0, ten: str | None = None) -> str:
+def viet_tin(c: dict, xung_ho: str = "unknown", lead: Any = None, kieu: int = 0, ten: str | None = None, nhan: str | None = None) -> str:
     """Tin báo một căn — nhiều đoạn cách nhau một dòng trống, MỖI ĐOẠN là một tin Zalo (mở lời · thông số + vì sao hợp · link · câu hỏi lịch xem).
     `xung_ho`: khách tự xưng gì (engine); `ten` = tên trợ lý — khách xưng em / cháu thì bot xưng anh / chị / cô / chú theo tên (SRS-5.1zzzzzzz214).
     `kieu` (SRS-5.1zzzzzzz188, chủ dự án 26/10: hai tin báo liền nhau trùng văn phong): 0..SO_KIEU-1, chọn câu mẫu `bao_can_moi` / `_2` / `_3` / `_4`
     (bản `_vuot` khi vượt ngân sách) và chữ mở "vì sao hợp"; `chay_mot_luot` xoay theo số tin báo đã gửi cho khách nên hai tin liền nhau luôn khác kiểu."""
     goi, toi = goi_toi(xung_ho, ten)
     mo_ta = mo_ta_can(c)
-    bien = {"toi": toi, "mo_ta": mo_ta, "Mo_ta": mo_ta[:1].upper() + mo_ta[1:], "vi_sao": vi_sao_hop(c, lead, kieu),
+    vi_sao = vi_sao_hop(c, lead, kieu)
+    if nhan:   # SRS-5.1zzzzzzz289: khách có ≥ 2 bộ nhu cầu — nói căn này cho bộ nào ("mua ở" hay "cho con")
+        vi_sao = (vi_sao[:-1] if vi_sao.endswith(".") else vi_sao) + f" (nhu cầu «{nhan}»)." if vi_sao else f"Căn này cho nhu cầu «{nhan}»."
+    bien = {"toi": toi, "mo_ta": mo_ta, "Mo_ta": mo_ta[:1].upper() + mo_ta[1:], "vi_sao": vi_sao,
             "link": f"{SITE_URL}/nha-dat/{c.get('code')}"}
     kieu = kieu % SO_KIEU
     hau = "" if kieu == 0 else f"_{kieu + 1}"
@@ -196,7 +199,8 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
         # SRS-5.1zzzzzzz286: một khách nhiều bộ nhu cầu (mua ở, đầu tư, tìm giùm con) — xét từng bộ, bộ đang nói trước; bộ đầu tiên có căn
         # khớp thì báo (vẫn ≤ 1 tin / khách / 24 giờ). Khách chưa có dòng `buyer_needs` → `preferences` như trước.
         can, lead = [], None
-        for pref in bo_theo_khach.get(bid) or [k.get("preferences")]:
+        cac_bo = bo_theo_khach.get(bid) or [k.get("preferences")]
+        for pref in cac_bo:
             lead = nhu_cau_tu_ho_so(pref)
             if not co_tieu_chi(lead):
                 continue
@@ -213,7 +217,8 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
         c = can[0]
         xh = xung_ho_cua(k["zalo_user_id"]) if xung_ho_cua else "unknown"   # str, hoặc (cách xưng, tên trợ lý) — SRS-5.1zzzzzzz214
         xh, ten = (xh if isinstance(xh, tuple) else (xh, None))
-        tin = viet_tin(c, xh, lead, kieu=len(mine) % SO_KIEU, ten=ten)
+        nhan = str((getattr(lead, "fields", {}) or {}).get("nhu_cau") or "").strip() if len(cac_bo) > 1 else ""
+        tin = viet_tin(c, xh, lead, kieu=len(mine) % SO_KIEU, ten=ten, nhan=nhan or None)
         # Giữ chỗ TRƯỚC khi gửi: hai lượt chạy chồng nhau không báo đúp (khoá duy nhất khách + tin cho kind `match`). Gửi hụt thì xoá để thử lại.
         try:
             giu = kho._post("reminders", {"kind": "match", "buyer_id": bid, "listing_id": c["id"], "due_at": _iso(bay_gio),
