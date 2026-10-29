@@ -6,7 +6,7 @@
 Mỗi ca đỏ khi gỡ bản sửa."""
 import pathlib
 
-from aioi.engine import _loc_viec_mua, _trich_gan_khop
+from aioi.engine import _loc_viec_mua
 
 GOC = pathlib.Path(__file__).parents[1]
 TRUOC = "a mua để ở nha. nhà này vào ở ngay được khoogn?"
@@ -18,31 +18,20 @@ def test_khach_dong_y_hoi_chu_nha_cau_hoi_co_loi_go_van_nhan():
     assert ra.get("hoi_chu_nha") == "nhà này vào ở ngay được không?" and ra.get("ma_can") == ["SEED0002"]
 
 
-def test_cau_hoi_bia_khong_co_trong_loi_khach_van_bo():
-    assert not _trich_gan_khop("chủ có bớt giá không", "hỏi giúp a đi e")
-    assert not _trich_gan_khop("còn ko", "còn không")              # dưới 3 chữ trùng: không chịu lỗi
-    ra = _loc_viec_mua({"hoi_chu_nha": "sổ riêng hay sổ chung vậy", "ma_can": ["SEED0002"]}, "hỏi giúp a đi e", [TRUOC])
-    assert "hoi_chu_nha" not in ra
-
-
-def test_cau_hoi_ai_viet_lai_theo_y_khach_nhan_theo_cum_can_cu():
-    """Chủ dự án 29/10: "khách có muôn vàn câu hỏi … sửa để AI hiểu ý khách". AI viết lại câu hỏi (gộp hai tin, sửa chính tả); code chỉ kiểm cụm
-    căn cứ ngắn `hoi_chu_nha_trich` trong lời khách."""
+def test_cau_hoi_ai_viet_lai_nhan_luon():
+    """Chủ dự án 29/10: "AI sẽ tự diễn giải và viết lại câu hỏi gửi chủ nhà cho rõ ràng và tạo code tạo yêu cầu luôn, kệ hallucinate"."""
     hoi = "Nhà vào ở ngay được không, 2 tuần nữa khách dọn vào được không?"
-    gan = [TRUOC, "2 tuần nữa vào ở được không", "hỏi giúp a đi e"]
-    ra = _loc_viec_mua({"hoi_chu_nha": hoi, "hoi_chu_nha_trich": "hỏi giúp a đi", "ma_can": ["SEED0002"]}, "hỏi giúp a đi e", gan)
-    assert ra.get("hoi_chu_nha") == hoi
-    # cụm căn cứ không có trong lời khách → bỏ (AI tự bịa câu hỏi)
-    ra2 = _loc_viec_mua({"hoi_chu_nha": "Chủ có bán gấp không?", "hoi_chu_nha_trich": "chủ bán gấp không", "ma_can": ["SEED0002"]},
-                        "ok em", ["ok em"])
-    assert "hoi_chu_nha" not in ra2
+    ra = _loc_viec_mua({"hoi_chu_nha": hoi, "ma_can": ["SEED0002"]}, "hỏi giúp a đi e", [TRUOC, "hỏi giúp a đi e"])
+    assert ra.get("hoi_chu_nha") == hoi and ra.get("ma_can") == ["SEED0002"]
+    ra2 = _loc_viec_mua({"hoi_chu_nha": "Chủ có bán gấp không?"}, "ok em", ["ok em"])   # không đòi căn cứ trong lời khách
+    assert ra2.get("hoi_chu_nha") == "Chủ có bán gấp không?"
 
 
 def test_prompt_cau_hoi_chu_nha_doc_theo_y():
     from aioi.prompts import operations_schema
     from aioi import prompts
     goc = pathlib.Path(prompts.__file__).read_text(encoding="utf-8")
-    assert "ĐỌC THEO Ý khách" in goc and '"hoi_chu_nha_trich"' in goc
+    assert "ĐỌC THEO Ý khách" in goc and "hoi_chu_nha_trich" not in goc
 
 
 def test_bridge_gui_moi_anh_mot_lan():

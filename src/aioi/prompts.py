@@ -1833,11 +1833,9 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
   vào ở được khi nào, bớt giá, nội thất, hàng xóm, ngập nước…). ĐỌC THEO Ý khách, viết lại thành MỘT câu hỏi rõ ràng, đủ ý để chủ nhà trả
   lời được ngay (sửa lỗi gõ, gộp ý từ nhiều tin; vd khách "nhà này vào ở ngay được khoogn" + "2 tuần nữa vào ở được không" → "Nhà vào ở
   ngay được không, 2 tuần nữa khách dọn vào được không?"). Khách vừa ĐỒNG Ý để em hỏi giúp ("ừ hỏi giúp anh", "hỏi đi em") → câu hỏi là
-  điều khách hỏi ở các lượt trước — kể cả xin thêm ảnh khi em đã gửi hết ảnh. Hỏi thứ dòng của căn đã có (giá, diện tích) thì để trống.
+  điều khách hỏi ở các lượt trước — kể cả xin thêm ảnh khi em đã gửi hết ảnh. Câu này được gửi chủ nhà NGAY khi em ghi — chỉ ghi khi khách thật muốn biết điều đó. Hỏi thứ dòng của căn đã có (giá, diện tích) thì để trống.
   Khách hỏi về DỰ ÁN đang nói (còn căn tầng cao không, tầng mấy, căn góc…) mà khối dự án / căn trong dự án không có câu trả lời thì cũng
   ghi vào đây (hệ thống hỏi chủ nhà có căn trong dự án, không có thì hỏi admin — SRS-5.1zzzzzzz250).
-- "hoi_chu_nha_trich": cụm NGẮN chép đúng chữ khách gõ (tin vừa nhắn hoặc vài tin trước) làm căn cứ khách thật sự hỏi điều đó hoặc đồng ý
-  để em hỏi ("vào ở ngay được khoogn", "hỏi giúp a đi") — SRS-5.1zzzzzzz280.
 - "xin_anh": true khi khách xin XEM ẢNH / HÌNH của căn (vd "cho xem ảnh", "gửi hình đi em", "có hình thật không", "gửi lại ảnh giúp anh"),
   kể cả khi bot đã gửi ảnh ở trên rồi. Khách chỉ hỏi chung "căn này đẹp không" thì để trống.
 - "khong_hop" (25/10/2026, SRS-5.1zzzzzzz175): true khi khách CHÊ / TỪ CHỐI căn đang nói tới — không hợp, không thích, bỏ qua căn này,
@@ -2192,7 +2190,6 @@ def operations_schema() -> dict[str, Any]:
                     "quan_tam": {"type": "boolean", "description": "Khách tỏ ý quan tâm / muốn xem căn đó."},
                     "hen_xem": {"type": "string", "description": "Nguyên văn cụm thời gian khách hẹn đi xem."},
                     "hoi_chu_nha": {"type": "string", "description": "Câu hỏi gửi chủ nhà, viết lại rõ theo Ý khách (điều dữ liệu căn không có)."},
-                    "hoi_chu_nha_trich": {"type": "string", "description": "Cụm ngắn nguyên văn lời khách làm căn cứ câu hỏi chủ nhà."},
                     "xin_anh": {"type": "boolean", "description": "Khách xin xem ảnh / hình của căn (kể cả xin gửi lại)."},
                     "khong_hop": {"type": "boolean", "description": "Khách chê / từ chối căn đang nói tới (không hợp, bỏ qua căn này)."},
                     "ly_do": {"type": "string", "description": "Nguyên văn cụm khách nêu lý do căn không hợp (nếu có)."},

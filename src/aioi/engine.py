@@ -319,18 +319,6 @@ def _trich_dan_khop(trich: str | None, cau: str | None) -> bool:
     return bool(t2) and t2 in tron(gon(cau))
 
 
-def _trich_gan_khop(trich: str | None, cau: str | None, ty_le: float = 0.7) -> bool:
-    """SRS-5.1zzzzzzz280: như `_trich_dan_khop` nhưng chịu lỗi gõ / AI sửa chính tả — test mua 29/10: khách "nhà này vào ở ngay được khoogn?",
-    AI chép "…được không?" → so nguyên văn trượt, câu hỏi chủ nhà bị bỏ dù khách đã đồng ý. Nhận khi ≥ 3 chữ của cụm và ≥ `ty_le` số chữ
-    của cụm có trong câu khách (bỏ dấu). Chỉ dùng cho câu khách HỎI (không dùng cho số / giá / địa chỉ — ô tin vẫn so nguyên văn)."""
-    if _trich_dan_khop(trich, cau):
-        return True
-    tach = lambda x: re.findall(r"[0-9a-z]+", _strip_accents(str(x or "")).lower())
-    chu, co = tach(trich), set(tach(cau))
-    trung = sum(1 for w in chu if w in co)
-    return trung >= 3 and trung >= ty_le * len(chu)
-
-
 _TIEN_TO_ID_THU = ("thu-", "b15-", "hoi-", "z-", "e2e-", "b-", "lx-", "do-")   # cùng danh sách với hàm DB la_id_thu (FR-245)
 
 
@@ -380,7 +368,7 @@ def _la_id_thu(user_key: str | None) -> bool:
 
 def _loc_viec_mua(mua: dict, cuoi: str, gan: list[str]) -> dict:
     """Việc của khách mua mà lời khách CHỐNG ĐỠ được, kiểm TỪNG việc (SRS-5.1zzzzzzz232). Cụm nguyên văn của chính việc đó là căn cứ của nó:
-    `hen_xem` (nằm trong tin vừa nhắn hoặc mọi chữ có trong vài tin gần nhất), `hoi_chu_nha` (tin vừa nhắn hoặc tin gần), `hoi_du_an` /
+    `hen_xem` (nằm trong tin vừa nhắn hoặc mọi chữ có trong vài tin gần nhất), `hoi_chu_nha` (AI viết lại theo ý khách — nhận luôn, SRS-280), `hoi_du_an` /
     `ly_do` / `tim_du_an` / `du_an_khu_vuc` (tin vừa nhắn; tên chuẩn `du_an_khu_vuc_chuan` đi kèm khu đã nhận). Việc dạng cờ (`xin_anh`, `khong_hop`, `ngung_bao`, `quan_tam`) nhận khi cụm trích RIÊNG (`<việc>_trich`) có trong
     tin vừa nhắn, hoặc `trich_dan` chung có căn cứ; `khong_hop` còn nhận khi `ly_do` có căn cứ. `ma_can` / `trich_dan` đi kèm khi có việc nào
     được nhận (mã căn còn được kiểm với kho ở `_viec_mua`)."""
@@ -391,10 +379,9 @@ def _loc_viec_mua(mua: dict, cuoi: str, gan: list[str]) -> dict:
     if hen and (_trich_dan_khop(hen, cuoi) or _chu_co_trong_loi_khach(hen, gan)):
         ra["hen_xem"] = hen
     hoi = str(mua.get("hoi_chu_nha") or "").strip()
-    # SRS-5.1zzzzzzz280 (chủ dự án 29/10: "khách có muôn vàn câu hỏi … sửa để AI hiểu ý khách, thực thi đúng ý"): câu hỏi do AI VIẾT LẠI theo
-    # ý khách; code chỉ kiểm cụm căn cứ ngắn `hoi_chu_nha_trich` (chịu lỗi gõ) trong tin vừa nhắn hoặc vài tin gần — hoặc chính câu hỏi.
-    can_cu = [str(mua.get("hoi_chu_nha_trich") or "").strip(), hoi]
-    if hoi and any(c and (_trich_gan_khop(c, cuoi) or any(_trich_gan_khop(c, t) for t in gan)) for c in can_cu):
+    # SRS-5.1zzzzzzz280 (chủ dự án 29/10: "AI sẽ tự diễn giải và viết lại câu hỏi gửi chủ nhà cho rõ ràng và tạo code tạo yêu cầu luôn, kệ
+    # hallucinate"): câu hỏi chủ nhà do AI đọc theo ý khách và viết lại — NHẬN LUÔN, không kiểm cụm trích (quyết định chủ dự án).
+    if hoi:
         ra["hoi_chu_nha"] = hoi
     for k in ("hoi_du_an", "ly_do", "tim_du_an", "du_an_khu_vuc", "can_cu_the"):   # tim_du_an / du_an_khu_vuc: SRS-250; can_cu_the: SRS-262
         v = str(mua.get(k) or "").strip()
