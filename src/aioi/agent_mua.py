@@ -31,8 +31,10 @@ HUONG_DAN = (
     "- xem_can: khách hỏi chi tiết một căn (theo mã trong link đã gửi) mà dòng căn ở dưới chưa có.\n"
     "- tra_du_an / du_an_trong_khu: khách hỏi về một dự án, hoặc khu nào có dự án gì, mà khối dự án ở dưới chưa có.\n"
     "Tra tối đa 2 lần. Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có. Vẫn giới thiệu MỘT căn mỗi lượt như luật ở trên.\n"
-    "- hen_xem / hoi_chu_nha (GHI thật): khách muốn hẹn đi xem một căn đã rõ (có giờ / ngày) hoặc muốn hỏi chủ nhà điều tin chưa ghi, mà khối EM "
-    "VỪA GHI LƯỢT NÀY CHƯA có việc đó → gọi để ghi. Căn chưa rõ là căn nào hoặc khách chưa nói giờ thì KHÔNG gọi — hỏi lại khách.\n"
+    "- hen_xem / hoi_chu_nha (GHI thật) khi khối EM VỪA GHI LƯỢT NÀY CHƯA có việc đó: khách đề nghị giờ / ngày đi xem một căn đã rõ → hen_xem "
+    "NGAY; khách hỏi điều về căn mà dòng của căn KHÔNG có câu trả lời (sổ, nội thất, bớt giá, vào ở khi nào…) → hoi_chu_nha NGAY với câu viết "
+    "rõ theo ý khách — khách hỏi tức là muốn biết, KHÔNG hỏi lại khách \"có muốn em hỏi chủ nhà không\". Căn chưa rõ là căn nào hoặc khách chưa "
+    "nói giờ thì KHÔNG gọi — hỏi lại khách.\n"
     "Chỉ nói đã ghi / đã chuyển chủ nhà khi khối EM VỪA GHI LƯỢT NÀY có việc đó HOẶC kết quả hen_xem / hoi_chu_nha báo ĐÃ GHI (kết quả công cụ "
     "thắng câu 'lượt này em chưa ghi việc gì'). Lời gửi khách viết ở lượt cuối, sau khi tra / ghi xong; không viết 'để em tra / em kiểm tra'.\n"
 )

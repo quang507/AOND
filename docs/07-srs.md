@@ -9076,6 +9076,10 @@ gọi `xem_can` (6,7 s) và `tim_can` (10,7 s). Trượt 7 phép:
    bản nháp" suy từ DB mà không phân biệt tin tạo ngoài chat. (2) *chỗ khác cùng lớp*: xin ảnh / chê căn vẫn chỉ đi bóc tách Haiku (chưa thấy trượt khi
    bắn — để đo thêm); tin tạo ngoài chat mà CHƯA hiển thị vẫn đi nhánh cũ. (3) *kiểm*: `tests/test_agent_mua_290.py` (4 ca mới, đỏ khi gỡ bản sửa);
    bắn lại `ban-thu-mua`.
+4. **Bắn lần 3 (run 40874392228): 12/15** — lịch hẹn ghi được nhờ công cụ `hen_xem` (Haiku lại bỏ sót, ra 66 token); phía bán đạt ("em đã ghi vào tin
+   đang hiển thị"). Còn trượt câu hỏi sổ: agent hỏi lại khách "anh muốn em hỏi chủ nhà không" thay vì gửi — hướng dẫn công cụ viết "khách muốn hỏi
+   chủ nhà", lệch luật đã chốt ở đường cũ (prompts mục `hoi_chu_nha`: điều dòng căn không có thì gửi chủ nhà NGAY). Sửa `agent_mua.HUONG_DAN` cho
+   khớp luật đó (cả hẹn xem: khách đề nghị giờ là ghi ngay). Kiểm: `test_huong_dan_gui_chu_nha_ngay_khong_hoi_xin_phep`; bắn lần 4.
 
 ### SRS-5.1zzzzzzz291 · Bắn thử ban-thu-mua sau SRS-290: bộ nhu cầu bị ghi đè; bot chép ví dụ "hay mình đăng luôn" (29/10/2026)
 Bắn thử production `ban-thu-mua` (run 40871600371, ID thử, Sonnet 5.5 + bóc tách Haiku) sau khi bật vòng agent (SRS-290): 14/15 phép đạt.

@@ -149,3 +149,10 @@ def test_tin_ngoai_chat_dang_hien_khong_trinh_lai_ban_tin():
     assert any("TIN NÀY ĐANG HIỂN THỊ TRÊN WEB" in s for s in seen)
     assert conv.y_luot.get("_tin_dang_hien_ngoai_chat")
     assert any("ĐANG HIỂN THỊ" in x for x in Engine._ly_do_cung(conv, "Em cập nhật rồi.\n\n📋 Bản tin cập nhật:\nNhà phố"))
+
+
+def test_huong_dan_gui_chu_nha_ngay_khong_hoi_xin_phep():
+    """Bắn thử lần 3 (29/10): khách hỏi "sổ hồng riêng không" → agent hỏi lại "anh muốn em hỏi chủ nhà không" thay vì gửi ngay (luật đường cũ:
+    điều dòng căn không có thì gửi chủ nhà NGAY — prompts mục hoi_chu_nha)."""
+    from aioi.agent_mua import HUONG_DAN
+    assert "hoi_chu_nha NGAY" in HUONG_DAN and "KHÔNG hỏi lại khách" in HUONG_DAN
