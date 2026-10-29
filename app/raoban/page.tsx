@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { zaloLink } from "@/lib/format";
+import { PT_CHU, PT_MG } from "@/lib/phi";
 
 export const metadata: Metadata = {
   title: "Rao bán nhà - một câu là xong",
   description:
-    "Rao bán nhà đất Sài Gòn, Long An không cần điền form: nhắn một câu qua Zalo, AI bóc tách và viết tin giùm. Phí chỉ khi bán được: chính chủ 1%, môi giới 0.5%.",
+    `Rao bán nhà đất Sài Gòn, Long An không cần điền form: nhắn một câu qua Zalo, AI bóc tách và viết tin giùm. Phí chỉ khi bán được: chính chủ ${PT_CHU}, môi giới ${PT_MG}.`,
 };
 
 const STEPS = [
@@ -21,7 +22,7 @@ export default function Page() {
       </h1>
       <p className="mt-3 text-navy/70">
         Không form, không tài khoản, không phí đăng tin. Phí chỉ phát sinh khi
-        bán được: chính chủ 1% - môi giới 0.5% giá trị giao dịch.
+        bán được: chính chủ {PT_CHU} - môi giới {PT_MG} giá trị giao dịch.
       </p>
 
       <div className="mt-8 space-y-4">
