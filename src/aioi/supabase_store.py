@@ -591,7 +591,10 @@ class SupabaseConversationStore(KhoNguoiMua):
         sellers = self._get(f"sellers?zalo_user_id=eq.{urllib.parse.quote(user_key)}")
         if sellers:
             seller_id = sellers[0]["id"]
-            if name and ("Khách Zalo" in sellers[0].get("name", "") or not sellers[0].get("name")):
+            # SRS-5.1zzzzzzz276: cột `name` NULL (người bán tạo ngoài chat: bắn thử, CRM) → `.get("name", "")` trả None, `in None` ném
+            # TypeError trước khi kịp nhớ cache → mọi tin của khách đó không xuống `messages`.
+            ten_cu = sellers[0].get("name") or ""
+            if name and ("Khách Zalo" in ten_cu or not ten_cu):
                 try:
                     self._patch(f"sellers?id=eq.{seller_id}", {"name": name})
                 except Exception as e:

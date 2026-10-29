@@ -158,6 +158,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 - Tin chống Zalo xoá kết nối (FR-63): `giu_ket_noi.py`, khách im 6–7 ngày, 8–20 giờ, câu mẫu cố định, giữ chỗ `reminders` `reengage` (SRS-238).
 - Nhắc `followup` / `sold` / `feedback` / `admin_reply` / `len_web` do LÕI gửi (`gui_nhac.py`, vòng 60 s; `len_web` chờ tin `dang_ban` rồi nhắn chủ nhà — bot chỉ hứa "tin hiển thị em nhắn" khi `hen_bao_len_web` đã ghi, SRS-254); thêm loại nhắc = thêm vào `KIND_LOI` + `soan_tin`, đừng mở đường gửi thứ hai; đừng ghi `noi_dung_gui` khi còn pending (SRS-216).
 - Tin nội bộ (🙋 ⭐ 🩺) gửi CTV / admin mở bằng `$$$$$ `; tin cho khách thật không bao giờ có (SRS-134) — trừ tin phụ "Đã trích xuất" khi công tắc `DONG_TRICH_XUAT` trong `cai-vps.sh` = `bat` (giai đoạn test, SRS-252; chạy thật thì `tat`). Ảnh gửi qua `/send` của bridge, vòng tải ảnh chỉ ở `guiAnhQuaUrl`.
+- Việc bridge kéo qua `escalation-feed`: đích ID thử bị huỷ ở `pull` (`la_id_thu`), gửi hụt báo `hut` (thử lại 5 phút × lần, 5 lần → `dead`) — đường gửi mới phải có trần như vậy (SRS-276).
 - Tin khách bấm "Trả lời" trên Zalo: bridge `quote_text` → `conv.tin_tra_loi` → `prompts.khoi_tin_tra_loi`; nội dung trích KHÔNG phải lời khách, không làm bằng chứng ô tin (SRS-270).
 - Lệnh gõ tay trên Zalo (`lenh_zalo.py`): `/quit` (xoá phiên), `/state`, `/listings`, `/whoami`, `/import`, `/project`, `/link`; chạy TRƯỚC model, không vào lịch sử (SRS-211).
 
