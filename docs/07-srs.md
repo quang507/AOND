@@ -9058,6 +9058,25 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz292 · Bắn thử ban-thu-mua lần 2: bóc tách bỏ sót hẹn xem → agent ghi được; tin ngoài chat đang hiển thị không trình lại bản tin (29/10/2026)
+Bắn lại `ban-thu-mua` sau SRS-291 (run 40872893032): bộ nhu cầu không còn bị đè (lượt 4 giữ "cho con" Q7 3 tỷ; bộ đầu nhãn "mua ở"); vòng agent
+gọi `xem_can` (6,7 s) và `tim_can` (10,7 s). Trượt 7 phép:
+
+1. **Ca A — lượt "chiều thứ 7 3h anh qua xem, sổ hồng riêng không"**: bóc tách Haiku ra 80 token, không đọc ra hẹn xem / câu hỏi chủ nhà (lần bắn
+   trước cùng câu thì đọc ra đủ) → không `viewings`, không `info_requests`, kéo theo 5 phép trượt. Bot nói thật "em chưa xếp lịch". Đúng lớp chủ dự án
+   nêu ("chạy không ổn định"). **Quyết định (BA, uỷ quyền; theo hướng "Chọn công cụ → Thực thi" chủ dự án chốt)**: vòng agent có thêm 2 công cụ GHI
+   `hen_xem` / `hoi_chu_nha` (`agent_mua._ghi_viec`): cùng hàm ghi đường cũ (`ghi_hen_xem` gộp giờ, `ghi_hoi_chu_nha` chống câu trùng), chỉ căn đang
+   hiện, căn lượt này đường cũ đã ghi thì không ghi lại (`y_luot["_da_ghi_hen_xem" / "_da_ghi_hoi_chu_nha"]`), xin số MỘT lần cùng cờ `_da_xin_sdt`;
+   lời bot chỉ nói đã ghi khi kết quả công cụ báo ĐÃ GHI. Bóc tách ô vẫn Haiku.
+2. **Ca B — phía bán (trượt cả hai lần bắn)**: tin tạo ngoài chat đang hiển thị (`dang_quan_tam`), chủ nhà trả lời câu khách mua kèm pháp lý → nhánh
+   "sau bản nháp" (`listing_proposed` theo SRS-257) có prompt "vừa cho khách xem bản tin" → bot rao "📋 Bản tin cập nhật" + hỏi đã ưng chưa. Sửa: tin đang
+   hiển thị mà chat CHƯA có bản tin 📋 nào → khối `KHOI_TIN_DANG_HIEN_NGOAI_CHAT` (đã cập nhật thẳng vào tin, không trình / không hỏi duyệt) + luật cứng
+   trong `_ly_do_cung` (lời có 📋 thì viết lại). SRS-291 mục 3 (bỏ ví dụ "hay mình đăng luôn") đúng nhưng chưa đủ.
+3. **Ba câu hỏi gốc** — (1) *lớp lỗi*: A — việc phụ thuộc MỘT lần đọc của model nhỏ, không có đường đỡ; B — prompt dựng theo trạng thái "đã trình
+   bản nháp" suy từ DB mà không phân biệt tin tạo ngoài chat. (2) *chỗ khác cùng lớp*: xin ảnh / chê căn vẫn chỉ đi bóc tách Haiku (chưa thấy trượt khi
+   bắn — để đo thêm); tin tạo ngoài chat mà CHƯA hiển thị vẫn đi nhánh cũ. (3) *kiểm*: `tests/test_agent_mua_290.py` (4 ca mới, đỏ khi gỡ bản sửa);
+   bắn lại `ban-thu-mua`.
+
 ### SRS-5.1zzzzzzz291 · Bắn thử ban-thu-mua sau SRS-290: bộ nhu cầu bị ghi đè; bot chép ví dụ "hay mình đăng luôn" (29/10/2026)
 Bắn thử production `ban-thu-mua` (run 40871600371, ID thử, Sonnet 5.5 + bóc tách Haiku) sau khi bật vòng agent (SRS-290): 14/15 phép đạt.
 
