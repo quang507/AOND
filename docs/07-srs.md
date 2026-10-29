@@ -9058,6 +9058,24 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz293 · Phía mua: lượt Haiku đọc ý khách dùng form gọn (prompt ≈ một nửa, schema 36 → 16 khoá) (29/10/2026)
+Chủ dự án 29/10: "Hay là bớt prompt dài đi, cấu trúc form json ngắn hơn ổn hơn k" (sau bắn thử SRS-292: Haiku bỏ sót hẹn xem / câu hỏi chủ nhà 2 / 4 lần).
+
+1. **Đo trước khi sửa**: lượt lập thao tác của MỌI khách (cả khách mua) nhận `OPERATIONS_SYSTEM` 27.243 chữ + schema `operations_schema()` 24.117 chữ
+   (36 khoá cấp kế hoạch, 163 ô kể cả lồng); phần lớn là thao tác rổ hàng người bán (`operations` riêng 11.177 chữ). Khách mua chỉ dùng
+   `user_intent`, `buyer_lead`, `mua` và vài ô chung.
+2. **Quyết định (BA, uỷ quyền)**: form gọn cho khách đã ở vai mua (`conv.role == "buyer"`) — `prompts.OPERATIONS_SYSTEM_MUA` (13.883 chữ) +
+   `operations_schema_mua()` (9.133 chữ, 16 khoá `KHOA_FORM_MUA`). Không viết lại luật: CẮT từ `OPERATIONS_SYSTEM` theo mốc (đoạn "PHÂN BIỆT Ý ĐỊNH
+   KHÁCH" → trước "TRẢ LỜI CÂU KHÁCH HỎI (", 6 mục dùng chung, "TỪ ĐIỂN TIẾNG LÓNG" tới cuối) và lấy nguyên định nghĩa ô từ `operations_schema()` —
+   sửa luật ở form đầy đủ là form gọn theo. Form gọn đọc ra `user_intent = "sell"` → đọc lại CÙNG lượt bằng form đầy đủ (log "form mua gọn đọc ra
+   ý bán"). Lượt đầu (chưa rõ vai) vẫn form đầy đủ. Công tắc `FORM_MUA_GON` trong `cai-vps.sh` → `AIOI_FORM_MUA_GON`: `thu` (chỉ ID thử, hiện tại)
+   / `bat` / `tat`. Không đổi model (vẫn Haiku), không đổi vòng agent SRS-290 / 292 (vẫn là lưới đỡ khi Haiku sót).
+3. **Ba câu hỏi gốc** — (1) *lớp lỗi*: model nhỏ đọc một form dài phần lớn không dính lượt → dễ trả thiếu khoá (bắn thử: Haiku ra 66–80 token, bỏ trống
+   `mua`). (2) *chỗ khác cùng lớp*: phía BÁN vẫn form đầy đủ (cần `operations`); lượt chủ nhà trả lời câu khách mua (`tra_loi_khach_hoi`, trượt lần
+   bắn 4 SRS-292) chưa có form gọn — để đo sau khi có số phía mua. (3) *kiểm*: `tests/test_form_mua_gon_293.py` (2 ca engine đỏ khi gỡ bản sửa:
+   khách mua ID thử đọc bằng form gọn; form gọn ra ý bán thì đọc lại form đầy đủ), `tests/test_cache_ranh_gioi.py` (cả hai form đứng trước
+   `RANH_GIOI_CACHE`). Hiệu quả thật (Haiku bớt sót hay không) chỉ biết sau bắn `ban-thu-mua` — chưa bắn ở thời điểm viết mục này.
+
 ### SRS-5.1zzzzzzz292 · Bắn thử ban-thu-mua lần 2: bóc tách bỏ sót hẹn xem → agent ghi được; tin ngoài chat đang hiển thị không trình lại bản tin (29/10/2026)
 Bắn lại `ban-thu-mua` sau SRS-291 (run 40872893032): bộ nhu cầu không còn bị đè (lượt 4 giữ "cho con" Q7 3 tỷ; bộ đầu nhãn "mua ở"); vòng agent
 gọi `xem_can` (6,7 s) và `tim_can` (10,7 s). Trượt 7 phép:
