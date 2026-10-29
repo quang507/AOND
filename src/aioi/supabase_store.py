@@ -178,6 +178,24 @@ DB_SANG_TRANG_THAI = {"da_chot": "đã bán", "da_coc": "đã cọc", "an": "kh�
 _DB_DANG_HIEN = ("dang_ban", "dang_quan_tam", "da_coc")
 
 
+def cot_tu_o(fields: dict[str, Any]) -> dict[str, Any]:
+    """Cột thông số đọc THẲNG từ ô AI đã bóc khi giá trị có khuôn rõ (SRS-5.1zzzzzzz285): `nam_xay` → `year_built` (năm 4 chữ số), `dien_tich_nha`
+    → `built_area_m2` (cả ô là MỘT con số m²). Soát DB 29/10: tin có `nam_xay: 2015`, `dien_tich_nha: 150` mà hai cột trống — bộ đọc chữ
+    `boc_thong_so` của DB chỉ nhận "xây 2015" / "diện tích sàn 150m2", nhãn ô gửi sang không khớp. Đây là đọc khuôn số, không đoán ý (ý đã do AI
+    đọc vào ô); ô không đúng khuôn ("xây kín đất", "2015 sửa 2020") thì bỏ, để bộ đọc DB xét."""
+    from datetime import date
+    ra: dict[str, Any] = {}
+    nam = re.fullmatch(r"\s*(?:năm\s*)?((?:19|20)\d{2})\s*", str(fields.get("nam_xay") or ""), re.IGNORECASE)
+    if nam and 1950 <= int(nam.group(1)) <= date.today().year:
+        ra["year_built"] = int(nam.group(1))
+    dt = re.fullmatch(r"\s*(\d+(?:[.,]\d+)?)\s*(?:m2|m²|m\s*vuông)?\s*", str(fields.get("dien_tich_nha") or ""), re.IGNORECASE)
+    if dt:
+        so = float(dt.group(1).replace(",", "."))
+        if 5 <= so <= 100_000:
+            ra["built_area_m2"] = int(so) if so.is_integer() else so
+    return ra
+
+
 def ma_trang_thai(trang_thai: str | None, db_hien_tai: str | None) -> str | None:
     """Mã `listings.status` cần ghi, hoặc None = để nguyên (trigger `listings_quyet_dinh_dang_tin` tự quyết cho_thong_tin ↔ dang_ban).
     "đã cọc" chỉ áp cho tin ĐANG HIỆN — tin chưa duyệt bản nháp không vì "cọc rồi" mà lên web. "đang bán" trên tin đang ẩn / đã chốt /
@@ -574,7 +592,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             self._thong_so_nho[khoa] = {c: kq[c] for c in COT_THONG_SO if isinstance(kq, dict) and kq.get(c) is not None}
         # `alley_width_m` là độ rộng ĐƯỜNG VÀO — hẻm, hoặc con đường với nhà mặt tiền (web in "Đường vào: Mặt tiền đường · đường
         # rộng 20 m"). Bản SRS-5.1zzzzzzz94 bỏ cột này với nhà mặt tiền là đọc sai nghĩa cột — gỡ ở SRS-5.1zzzzzzz95.
-        return dict(self._thong_so_nho[khoa])
+        return {**cot_tu_o(fields), **self._thong_so_nho[khoa]}
 
     def _patch(self, endpoint: str, data: dict) -> None:
         self._request("PATCH", endpoint, data=data, prefer="return=minimal")

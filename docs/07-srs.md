@@ -9058,6 +9058,35 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz285 · Soát DB theo góc môi giới: kế hoạch 4 bước; bước 1 — cột lọc trống, khoá `deals`, lịch sử giá (29/10/2026)
+Chủ dự án 29/10: "vào vai môi giới 20 năm kinh nghiệm review lại cái db ssot … các tình huống nào thì nó không đáp ứng dc" → "tạo plan sửa các thứ bạn
+triển khai được đi, nếu mở rộng enum thì thêm bộ câu hỏi à facet à, cứ làm đi rồi tôi chốt từ từ, hiện tại đang là phát triển nên chưa có dữ liệu".
+
+1. **Kế hoạch (BA, uỷ quyền — chủ dự án chốt sau từng bước)**:
+   - Bước 1 (mục này): vá nền không đụng nghiệp vụ — cột lọc trống, khoá `deals`, lịch sử giá.
+   - Bước 2: mở rộng enum + câu hỏi / facet — giao dịch `sang_nhuong`; loại hình shophouse / khách sạn / CHDV / officetel / đất nền dự án (hiện bị
+     gộp vào `mat_bang` / `toa_nha`); pháp lý vi bằng / sổ đỏ / chờ sổ / đất nông nghiệp; rủi ro pháp lý thành cột lọc (thế chấp, tranh chấp, quy hoạch).
+   - Bước 3: chuỗi tiền — hợp đồng môi giới (phí thoả thuận, thời hạn, độc quyền), đặt cọc (số tiền, ngày, hạn công chứng), phí đã thu; ngày chủ xác nhận
+     còn bán (chống hàng ảo); ngày trống / hết hạn hợp đồng cho thuê. Đụng tiền → chủ dự án chốt con số / luồng trước khi bot dùng.
+   - Bước 4: phía mua nhiều bộ nhu cầu / khách; ngân sách – diện tích dạng số min–max.
+2. **Bước 1 — ca gốc đo trên DB thật**:
+   - (a) Tin thật có ô `nam_xay: 2015`, `dien_tich_nha: 150` mà cột `year_built` / `built_area_m2` trống (7/7 tin). Gốc: `_thong_so` gửi bộ đọc chữ
+     `boc_thong_so` của DB chuỗi "năm xây / năm sửa lại: 2015", "diện tích nhà: 150" — bộ đọc chỉ nhận "xây 2015" / "diện tích sàn 150m2". Web lọc /
+     `tim_nha` đọc cột nên không thấy dữ liệu bot đã bóc.
+   - (b) `deals` khoá duy nhất (listing_id, buyer_id) NULLS NOT DISTINCT → mỗi tin một giao dịch với khách ngoài hệ thống; căn cho thuê chốt lần hai
+     không ghi được (lõi dùng `on_conflict … ignore-duplicates` nên bỏ im lặng).
+   - (c) Giá ghi đè, không lịch sử — mất tín hiệu "chủ đã giảm giá", không báo được khách đã quan tâm.
+3. **Sửa**:
+   - `supabase_store.cot_tu_o`: `year_built` / `built_area_m2` đọc THẲNG từ ô AI đã bóc khi cả ô đúng khuôn (năm 4 chữ số 1950…nay; một con số m²) —
+     đọc khuôn số, không đoán ý; ô khác khuôn để bộ đọc DB xét. Không thêm chữ vào regex của DB.
+   - Migration `20261029e_deals_lich_su_gia`: bỏ khoá `deals_listing_buyer_key` (lõi chỉ ghi `deals` lúc tin ĐỔI sang `da_chot`); `property_events`
+     thêm loại `doi_gia` (meta `tu`, `den`, chữ gốc, nguồn) do `trg_property_event` ghi khi `price_vnd` đổi (đã có giá trước đó). `mua.ghi_deal` bỏ
+     `on_conflict`. Chạy thử trên DB thật trong giao dịch huỷ: 2 dòng `deals` cùng tin, `doi_gia` {4,5 tỷ → 3 tỷ}; DB nguyên sau khi huỷ.
+4. **Ba câu hỏi gốc** — (1) *lớp lỗi*: hai bộ đọc nối nhau (AI ghi ô → regex DB ghi cột) mà nhãn ô không khớp từ vựng regex; khoá chống trùng đặt
+   sai mức (cả đời tin thay vì một lần chốt). (2) *chỗ khác cùng lớp*: `dien_tich_dat` → `legal_area_m2` (diện tích công nhận) KHÔNG nối — đất thực tế
+   có thể khác sổ, để AI đọc ở bước 2; `noi_that` ("để lại toàn bộ nội thất") / `thuong_luong` ("có bớt chút") → `furnishing` / `negotiable` vẫn
+   trống khi chữ khác từ khoá — cần AI trả mã (bước 2), không thêm từ vào regex. (3) *kiểm*: `tests/test_db_nen_285.py` — đỏ khi gỡ bản sửa.
+
 ### SRS-5.1zzzzzzz284 · Đối chiếu commit anh Luận: ô mức cọc / thời hạn hợp đồng chỉ cho tin cho thuê (29/10/2026)
 Chủ dự án 29/10: "xem các commit của anh Luận có sửa gì ko".
 
