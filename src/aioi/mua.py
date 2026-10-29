@@ -35,7 +35,7 @@ from .web import SITE_URL  # noqa: E402 — một nguồn với phía bán (SRS-
 # Trạng thái tin còn hiện cho khách (cùng bộ với `lib/supabase.ts` TRANG_THAI_HIEN).
 TRANG_THAI_HIEN = ("dang_ban", "dang_quan_tam", "da_coc")
 # Cột căn đưa cho model khi tư vấn khách mua — KHÔNG có số nhà (`location_raw`), mô tả gốc (có thể chứa SĐT) hay người bán.
-COT_CAN = ("id,code,property_type,deal,street,ward,district,area_m2,price_raw,price_vnd,bedrooms,floors_text,legal_status,"
+COT_CAN = ("id,code,property_type,deal,street,ward,district,area_m2,price_raw,price_vnd,bedrooms,floors,floors_text,legal_status,"
            "direction,access_type,alley_width_m,status")
 _LOAI_MUA_SANG_DB = {"nha_pho": "nha_pho", "nha_cap_4": "nha_cap4", "biet_thu": "biet_thu", "chung_cu": "chung_cu",
                      "can_ho": "chung_cu", "condo": "chung_cu", "dat": "dat", "dat_tho_cu": "dat", "dat_nen": "dat",
@@ -109,6 +109,12 @@ TIEN_ICH_LOAI: dict[str, tuple[str, tuple[str, ...]]] = {
     "sieu_thi": ("siêu thị", ("sieu thi", "supermarket", "mall", "trung tam thuong mai")),
     "cong_vien": ("công viên", ("cong vien", "park", "cay xanh")),
 }
+
+
+def _so_tang(lead: Any) -> int | None:
+    """Số tầng khách muốn (cột `listings.floors` tính cả trệt, không tính lửng) — AI ghi con số vào `so_tang_mong_muon`. None = khách không nói."""
+    n = _so_dau((getattr(lead, "fields", {}) or {}).get("so_tang_mong_muon"))
+    return int(n) if n and 1 <= n <= 30 else None
 
 
 def _khong_dau(s: str) -> str:
@@ -319,6 +325,7 @@ class KhoNguoiMua:
             "p_xe_hoi": _can_xe_hoi(getattr(lead, "yeu_cau_xe_hoi", None) or f.get("yeu_cau_xe_hoi")),
             "p_limit": toi_da,
             "p_tien_ich": loai_tien_ich(lead) or None,   # SRS-5.1zzzzzzz179: loại tiện ích khách muốn gần (≤ 1 km, cộng điểm)
+            "p_tang_min": _so_tang(lead),                # SRS-5.1zzzzzzz262: số tầng khách muốn (tính cả trệt, cộng điểm)
         }
         tham_so["p_vec"] = self._vec_nhu_cau(lead)
         khoa = repr(sorted((k, v) for k, v in tham_so.items() if k != "p_vec")) + "|" + _chu_nhu_cau(lead)
@@ -702,6 +709,13 @@ def danh_dau_lech(can: list[dict], lead: Any) -> list[dict]:
                 c["_thieu_pn"] = (None, pn)
             elif b < pn:
                 c["_thieu_pn"] = (int(b), pn)
+        tang = _so_tang(lead)   # SRS-5.1zzzzzzz262: cùng cách phòng ngủ — căn ít tầng hơn / chưa rõ số tầng thì nói thẳng
+        if tang:
+            t = c.get("floors")
+            if not isinstance(t, (int, float)):
+                c["_thieu_tang"] = (None, tang)
+            elif t < tang:
+                c["_thieu_tang"] = (int(t), tang)
         a = c.get("area_m2")
         if dt and isinstance(a, (int, float)) and a < dt:
             c["_nho_dt"] = (float(a), float(dt))
@@ -759,6 +773,9 @@ def dong_can(c: dict) -> str:
     if c.get("_thieu_pn"):
         co, can_ = c["_thieu_pn"]
         phan.append(f"CHƯA RÕ số phòng ngủ (khách cần {can_})" if co is None else f"ÍT phòng ngủ hơn khách cần (có {co}, khách cần {can_})")
+    if c.get("_thieu_tang"):
+        co, can_ = c["_thieu_tang"]
+        phan.append(f"CHƯA RÕ số tầng (khách muốn {can_} tầng)" if co is None else f"ÍT tầng hơn khách muốn (có {co} tầng, khách muốn {can_})")
     if c.get("_nho_dt"):
         phan.append(f"NHỎ hơn diện tích khách muốn ({c['_nho_dt'][0]:g} m², khách muốn {c['_nho_dt'][1]:g} m²)")
     if c.get("_chua_ro_tien_ich"):

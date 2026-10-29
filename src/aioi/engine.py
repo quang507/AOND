@@ -377,7 +377,7 @@ def _loc_viec_mua(mua: dict, cuoi: str, gan: list[str]) -> dict:
     hoi = str(mua.get("hoi_chu_nha") or "").strip()
     if hoi and (_trich_dan_khop(hoi, cuoi) or any(_trich_dan_khop(hoi, t) for t in gan)):
         ra["hoi_chu_nha"] = hoi
-    for k in ("hoi_du_an", "ly_do", "tim_du_an", "du_an_khu_vuc"):   # hai ô cuối: SRS-5.1zzzzzzz250
+    for k in ("hoi_du_an", "ly_do", "tim_du_an", "du_an_khu_vuc", "can_cu_the"):   # tim_du_an / du_an_khu_vuc: SRS-250; can_cu_the: SRS-262
         v = str(mua.get(k) or "").strip()
         if v and _trich_dan_khop(v, cuoi):
             ra[k] = v
@@ -4893,6 +4893,15 @@ class Engine:
         co_san = can_da + [c for c in (conv.can_mua or self._can_goi_y(conv)) if c.get("id") not in {d.get("id") for d in can_da}]
         can = nhac + [c for c in co_san if c.get("id") not in {n.get("id") for n in nhac}]
         viec: list[str] = []
+        # SRS-5.1zzzzzzz262 (bắn thử SRD 28/10: khách hỏi "nhà hẻm xe hơi đường Trần Bình Trọng quận 5 giá 10 tỷ còn không" — căn đó chưa lên web,
+        # bot đáp "em có căn này hợp với anh" rồi kể một căn KHÁC): khách tả đúng MỘT căn đã thấy mà không có mã → lời đáp phải đối chiếu; không
+        # khớp thì nói thẳng trước rồi mới gợi căn khác. Ý "căn cụ thể" do AI đọc, code chỉ kiểm cụm trích có trong lời khách.
+        cu_the = str(mua.get("can_cu_the") or "").strip()
+        if cu_the and not nhac and _trich_dan_khop(cu_the, text):
+            viec.append(f"khách hỏi đúng MỘT căn cụ thể đã thấy ở đâu đó (\"{cu_the}\") mà không có mã: đối chiếu với các căn em đang có — KHÔNG "
+                        "căn nào khớp đúng căn khách tả (cùng đường VÀ cùng giá / diện tích) thì câu ĐẦU nói thẳng em chưa thấy đúng căn đó trên hệ "
+                        "thống (có thể đã bán hoặc chưa đăng), rồi mới giới thiệu căn gần nhất và nói rõ đó là căn KHÁC; KHÔNG nói \"em có căn này\" "
+                        "như thể đúng căn khách hỏi")
         # SRS-5.1zzzzzzz175: khách bảo đừng báo căn mới nữa / xin báo lại — cờ `buyers.bao_can_moi`, vòng `bao_can_moi` đọc.
         if bid and mua.get("ngung_bao") in ("tat", "bat") and kho.ngung_bao_can(bid, mua["ngung_bao"] == "tat"):
             viec.append("khách KHÔNG muốn nhận tin tự động báo căn mới: hệ thống ĐÃ TẮT — nói ngắn là em không gửi tin báo căn nữa, khách cần "
