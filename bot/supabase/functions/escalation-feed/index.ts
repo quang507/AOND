@@ -16,6 +16,9 @@ import { laTinNoiBo } from "../_shared/tin_nhac.ts";
 import { congBiMat } from "../_shared/gate.ts";
 
 const KINDS = ["escalation", "report"];
+// SRS-5.1zzzzzzz276: bridge gửi hụt (Zalo từ chối, "Tham số không hợp lệ") báo `hut` → thử lại 5 phút × số lần, tới trần thì `dead`.
+// Bản trước dòng giữ `pending` và bị kéo lại MỖI PHÚT mãi mãi (56 lần / một dòng trong sổ lỗi 29/10). Cùng trần với lõi (`gui_nhac`).
+const HUT_TOI_DA = 5;
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("POST only", { status: 405 });
@@ -91,6 +94,23 @@ Deno.serve(async (req) => {
     const { data: dnTv } = await client.from("bridge_dang_nhap")
       .select("yeu_cau_quet_lai").eq("id", 2).maybeSingle();
     return jsonResponse({ items: [], quet_lai: !!dnTv?.yeu_cau_quet_lai });
+  }
+
+  // SRS-5.1zzzzzzz276: bridge gửi hụt một việc → đếm lần, hẹn thử lại, quá trần thì bỏ (`dead`) và ghi sổ MỘT dòng.
+  if (action === "hut") {
+    const id = String(body.id ?? "");
+    const loi = String(body.loi ?? "").slice(0, 300);
+    const { data: r } = await client.from("reminders").select("attempts, status").eq("id", id).maybeSingle();
+    if (!r || r.status !== "pending") return jsonResponse({ ok: true });
+    const lan = (r.attempts ?? 0) + 1;
+    const bo = lan >= HUT_TOI_DA;
+    await client.from("reminders").update(
+      bo
+        ? { status: "dead", attempts: lan, last_error: `hụt ${lan} lần: ${loi}` }
+        : { attempts: lan, next_retry_at: new Date(Date.now() + 5 * 60_000 * lan).toISOString(), last_error: loi },
+    ).eq("id", id).eq("status", "pending");
+    if (bo) await ghiLoi(client, "escalation-feed bỏ việc", `${id}: hụt ${lan} lần — ${loi}`);
+    return jsonResponse({ ok: true, dead: bo });
   }
 
   if (action === "ack") {
@@ -173,6 +193,7 @@ Deno.serve(async (req) => {
     .select("id, kind, note, seller_id, sellers(name, zalo_user_id, phone)")
     .eq("status", "pending").in("kind", KINDS)
     .lte("due_at", new Date().toISOString())
+    .or(`next_retry_at.is.null,next_retry_at.lte.${new Date().toISOString()}`)
     .limit(10);
   // Lời nhắc nudge đã SOẠN SẴN (lịch xem, lời hứa, báo lại câu trả lời…) mà
   // chưa có OA để gửi — chủ dự án 11/09: "dùng zalo clone gửi cho id zalo".
@@ -183,6 +204,7 @@ Deno.serve(async (req) => {
     .select("id, kind, note, noi_dung_gui, buyer_id, seller_id, buyers(name, zalo_user_id), sellers(name, zalo_user_id, phone)")
     .eq("status", "pending").not("noi_dung_gui", "is", null)
     .lte("due_at", new Date().toISOString())
+    .or(`next_retry_at.is.null,next_retry_at.lte.${new Date().toISOString()}`)
     .limit(10);
   // Đích admin chỉ cần khi có việc — 99% lượt kéo là rỗng, đọc `admins` ở đó
   // là một truy vấn thừa mỗi phút (FR-171 c).
@@ -234,8 +256,22 @@ Deno.serve(async (req) => {
     });
   }
 
+  // SRS-5.1zzzzzzz276: đích là ID THỬ (bắn thử tạo người bán / người mua `thu-…`) — Zalo không có người đó, gửi là "Tham số không hợp lệ".
+  // Không đưa bridge; huỷ dòng việc (vẫn giữ dòng để bài bắn thử đếm được). Tiền tố chỉ ở `la_id_thu` (chỗ DUY NHẤT).
+  const thu = new Set<string>();
+  for (const it of items) {
+    if (!it.zalo_user_id) continue;
+    const { data: laThu } = await client.rpc("la_id_thu", { p: it.zalo_user_id });
+    if (laThu === true) thu.add(it.id);
+  }
+  if (thu.size) {
+    await client.from("reminders")
+      .update({ status: "cancelled", last_error: "đích là ID thử — không gửi Zalo (SRS-5.1zzzzzzz276)" })
+      .in("id", [...thu]).eq("status", "pending");
+  }
+
   // FR-203: admin bấm "Đăng nhập lại" ở /admin → bridge bỏ phiên, vào luồng QR.
   const { data: dn } = await client.from("bridge_dang_nhap")
     .select("yeu_cau_quet_lai").eq("id", 1).maybeSingle();
-  return jsonResponse({ items, quet_lai: !!dn?.yeu_cau_quet_lai });
+  return jsonResponse({ items: items.filter((it) => !thu.has(it.id)), quet_lai: !!dn?.yeu_cau_quet_lai });
 });

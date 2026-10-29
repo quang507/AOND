@@ -166,7 +166,7 @@ log = logging.getLogger(__name__)
 
 def _image_count(media: list[dict[str, str]]) -> int:
     """How many of a listing's stored media are photos (not PDFs/docs)."""
-    return sum(1 for r in media if not r.get("filename", "").lower().endswith(".pdf"))
+    return sum(1 for r in media if not (r.get("filename") or "").lower().endswith(".pdf"))
 
 # 19/10/2026 (SRS-5.1zzzzzzz55): các bộ dò từ khoá _looks_descriptive / _wants_project_facts / _wants_media /
 # _looks_like_reference_doc / _affirms / _denies đã gỡ — lượt AI lập thao tác đọc theo nghĩa (xin_xem_ban_ve, cau_hoi_du_an,

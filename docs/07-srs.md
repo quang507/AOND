@@ -9058,6 +9058,30 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz276 · Sổ lỗi 29/10: tin của người bán không tên không xuống CRM; việc gửi tới ID thử bị gửi lại mỗi phút (29/10/2026)
+Soát `bot_errors` 48 giờ (chủ dự án "ok làm tiếp đi"), hai lỗi còn lặp tới sáng 29/10:
+
+1. **`supabase sync: ghi tin vào messages hỏng: TypeError: argument of type 'NoneType' is not iterable`** — 15 lần (28/10 16:22 → 29/10 04:52).
+   - Gốc: `SupabaseConversationStore._get_or_create_seller` viết `"Khách Zalo" in sellers[0].get("name", "")`; cột `name` NULL thì `.get` trả
+     None (khoá có, giá trị None) → TypeError TRƯỚC khi nhớ cache → mọi lượt của khách đó không xuống `messages` (CRM trống).
+   - Người bán `name` NULL: bắn thử chèn thẳng `sellers` (`ban-thu-kiem` / `-mua` / `-vm`), hoặc dòng tạo ở CRM. DB 29/10 không còn dòng
+     thật nào như vậy — lỗi mới gặp ở ID thử, nhưng đường CRM / web tạo người bán không tên sẽ dính y hệt.
+   - Sửa: đọc `sellers[0].get("name") or ""`. Cùng kiểu ở `engine._image_count` (`filename` NULL) — sửa luôn.
+2. **`bridge escalation <id>: Tham số không hợp lệ`** — 56 lần cho MỘT dòng việc (`💬 có khách đang hỏi căn…`, người bán `thu-…` của bắn thử F).
+   - Gốc: `escalation-feed` trao bridge việc gửi tới ID THỬ; Zalo không có người đó nên từ chối. Bridge giữ dòng `pending`, kéo lại mỗi
+     phút — không đếm lần, không trần (lõi `gui_nhac` đã có trần 5 lần → `dead`, đường bridge thì chưa).
+   - Sửa (a): `pull` hỏi `la_id_thu` cho đích của từng việc — ID thử thì huỷ dòng (`cancelled`, giữ dòng để bài bắn thử đếm) và không trao bridge.
+     Tiền tố ID thử vẫn chỉ ở `la_id_thu`.
+   - Sửa (b): bridge gửi hụt báo `action: "hut"` → feed đếm `attempts`, hẹn `next_retry_at` (5 phút × số lần), tới 5 lần thì `dead` và ghi
+     sổ MỘT dòng `escalation-feed bỏ việc`; `pull` bỏ dòng chưa tới giờ thử lại.
+3. **Ba câu hỏi gốc**:
+   - (1) *Lớp lỗi*: (a) `.get(k, "")` không đỡ được giá trị NULL từ DB; (b) đường gửi thứ hai (bridge) thiếu trần thử lại mà đường lõi có,
+     và không lọc ID thử như lõi (`bao_can_nguoi` chỉ bật cờ với ID thử).
+   - (2) *Chỗ khác cùng lớp*: soát `.get("…", "")` rồi `in` / `.lower()` ở `src/aioi` — sửa `engine._image_count`; các chỗ còn lại đọc
+     dữ liệu Drive / kho địa danh (cột không NULL). Đường gửi khác: `gui_nhac` đã có trần; `bao_can_moi` / `giu_ket_noi` đi qua lõi.
+   - (3) *Kiểm*: `tests/test_hut_va_id_thu_276.py` — người bán tên NULL vẫn ghi đủ hai tin (đỏ khi gỡ bản sửa: TypeError); feed lọc ID thử
+     qua `la_id_thu`, có `hut` + trần, cả hai truy vấn kéo việc lọc `next_retry_at`; bridge báo `hut`.
+
 ### SRS-5.1zzzzzzz275 · Mức phí môi giới một nguồn: chữ trong prompt và web dựng từ số tính tiền (29/10/2026)
 Chủ dự án hỏi 29/10: "vẫn giữ 1 thư viện tư liệu duy nhất SSOT để các bên nối vào rồi đúng ko". Soát: dự án (`projects`), pháp lý (`phap_ly.MAC_DINH` + bảng),
 câu mẫu (`cau_mau`), luật tiền (`luat-tien.ts` + `parse_vnd`), vùng nhận tin đều một nguồn. Riêng **mức phí** viết tay 7 chỗ:

@@ -738,7 +738,9 @@ async function pumpEscalations() {
         console.log(`🔔 đã nhắn ${it.name}: ${String(it.note).slice(0, 70)}…`);
       } catch (e) {
         if (laPhienChet(e)) return await phienChet(errDetail(e));
-        await ghiLoi("escalation", `${it.id}: ${errDetail(e)}`); // giữ pending, vòng sau thử lại
+        await ghiLoi("escalation", `${it.id}: ${errDetail(e)}`);
+        // SRS-5.1zzzzzzz276: báo hụt → server hẹn thử lại (5 phút × số lần), quá 5 lần thì bỏ việc — trước đây giữ pending, mỗi phút gửi lại mãi.
+        await postJson(FEED_URL, feedHeaders, { action: "hut", id: it.id, loi: errDetail(e) }).catch(() => {});
       }
     }
   } catch (e) {
