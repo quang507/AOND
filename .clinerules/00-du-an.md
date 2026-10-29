@@ -24,3 +24,5 @@ File này chỉ nhắc các luật bất di bất dịch:
    khoá" thì không thêm từ vào regex — đưa sang AI đọc theo nghĩa, từ khoá làm lưới đỡ (CLAUDE.md §6, mẫu SRS-5.1q).
 10. Trước khi sửa: đọc mục SRS liên quan ở docs/07 và code đang có; quyết định chủ dự án nói trong chat ghi ngay vào docs/07 cùng commit
     (chat bị nén thì quên, docs thì không). Vòng giao việc đầy đủ (PR, CI, migration, cài VPS): CLAUDE.md §7 (SRS-5.1zzzzzzz265).
+11. Tự quyết việc kỹ thuật / UX / câu chữ (soát code + docs trước, ghi SRS "Quyết định (BA, uỷ quyền)"); chỉ hỏi chủ dự án — một câu — khi đụng
+    tiền / phí, pháp lý, thương hiệu, dữ liệu khách thật, hoặc đảo quyết định đã chốt (CLAUDE.md §4 mục 2, SRS-5.1zzzzzzz266).

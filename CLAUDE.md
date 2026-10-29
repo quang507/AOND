@@ -67,7 +67,7 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 ## 4. Quy ước làm việc
 
 1. **Mọi câu khẳng định trong `docs/` phải truy được về nguồn** (`[nguồn: …]`). Không có nguồn → `[giả định BA]` hoặc đưa vào `09-open-issues.md`.
-2. **Không tự ý chốt điều còn mơ hồ.** Mâu thuẫn → tạo `OPEN-xx`, nêu phương án + khuyến nghị, chờ chủ dự án.
+2. **Tự quyết việc trong tầm, chỉ hỏi việc của chủ dự án** (chủ dự án uỷ quyền 28–29/10/2026: "bạn quyết thêm đi … làm luôn", "cấu hình hết rồi sao còn hỏi lại", SRS-266). Việc kỹ thuật / UX / câu chữ / ngưỡng hỏi → soát code + docs trước, tự chọn phương án tốt nhất, làm, ghi mục SRS "Quyết định (BA, uỷ quyền)". CHỈ hỏi — một câu, rồi dừng — khi đụng: tiền / phí, pháp lý, thương hiệu, dữ liệu khách thật, hoặc đảo một quyết định đã chốt trong docs. Mâu thuẫn tài liệu không tự giải được → `OPEN-xx` kèm khuyến nghị. Scope đổi thường xuyên là bình thường: mục SRS mới nhất thắng mục cũ.
 3. **ID là bất biến.** Không đánh số lại; cấp ID kế tiếp, mục cũ đánh `[deprecated]`.
 4. **Sửa tài liệu tầng trên → cập nhật `08-traceability.md` cùng commit.**
 5. Tài liệu **tiếng Việt**, giữ thuật ngữ kỹ thuật tiếng Anh. Tên biến / bảng / API: tiếng Anh hoặc tiếng Việt không dấu, snake_case (theo code xung quanh).
