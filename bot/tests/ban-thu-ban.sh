@@ -117,7 +117,7 @@ kiem "Âu Cơ: không nhận định thị trường / bình giá" "$(grep -qiE 
 # bản trên mỗi lượt chỉ nói một ý nên luôn ra nháp ở lượt cuối, không đo được).
 LOI_BOT=""; LUOT=0; LUOT_NHAP=""
 for cau in "chị bán nhà mặt tiền đường Nguyễn Trãi quận 5" "Phường Chợ Quán em" "ngang 4 dài 20, 1 trệt 3 lầu, sàn tầm 300m" \
-           "sổ hồng riêng, giá 25 tỷ"; do
+           "sổ hồng riêng, nhà đang để trống, giá 25 tỷ"; do   # SRS-260: hiện trạng là ô cơ bản trước bản nháp
   chat "$BAN3" "$cau"
   [ "$LUOT" = 1 ] && LOI_DAU=$(jq -r '.reply // ""' <<<"$TRA")
   sleep 1
