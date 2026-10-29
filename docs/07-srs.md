@@ -9071,6 +9071,9 @@ Chủ dự án test mua 29/10 14:24–14:26 (căn SEED0002):
    - Sửa: `hoi_chu_nha` = câu AI VIẾT LẠI theo ý khách (gộp nhiều tin, sửa lỗi gõ, đủ ý để chủ nhà trả lời) — `_loc_viec_mua` NHẬN LUÔN, không
      kiểm cụm trích. Mã căn AI không ghi thì lấy căn bot vừa dán link (`_ma_can_bot_vua_nhac`, có sẵn). Câu hỏi đi tiếp như cũ: căn thật →
      chủ nhà (hạn 12 giờ), căn mẫu → admin. Đánh đổi chấp nhận: AI đọc nhầm thì chủ nhà nhận một câu hỏi thừa.
+   - **Bổ sung sau khi cài (#197)**: `Engine._viec_mua` còn HAI chỗ so nguyên văn `hoi_chu_nha` với lời khách (đường căn cụ thể và đường dự án,
+     có từ SRS-212 / 250) — bản cài #197 chỉ sửa `_loc_viec_mua` nên câu AI viết lại vẫn bị bỏ ở bước sau, chưa tạo `info_requests`. Gỡ cả hai.
+     Bài kiểm đi hết đường thật (engine → `info_requests`): `test_khach_dong_y_hoi_giup_tao_info_request_voi_cau_ai_viet_lai` — đỏ trên bản #197.
 2. **Ảnh gửi từng tấm phóng to** ("ảnh gửi 1 lần có được ko, nhìn nó phóng trên zalo to lắm"): bridge `guiAnhQuaUrl` nay nhận danh sách,
    tải song song rồi gửi MỘT tin nhiều tệp; gửi gộp hỏng thì gửi lẻ. Cả đường trả lời chat lẫn `/send` (báo căn mới) dùng chung.
    Chưa kiểm trên Zalo thật cách Zalo hiện một tin nhiều ảnh (zca-js 2.2.0).
