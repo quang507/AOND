@@ -14,7 +14,7 @@ on:
         required: false
         default: ''
       dung_lai:
-        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-du-an | nap-duong | nap-giao-lo | cai-vps | go-trang-thu | ban-thu-mua | ban-thu-ban | ban-thu-srd | ban-thu-kb | ban-thu-dc | ban-thu-sau | ban-thu-xa | ban-thu-nhieu-can | ban-thu-dap-y | ban-thu-luan | doc-log-loi | ban-thu-vm | ban-thu-5-khach | ban-thu-khach-ao | do-tim-nha | nap-tin-mau | nap-luat | ban-thu-ai. Trống = áp migration_file như thường"
+        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-du-an | nap-duong | nap-giao-lo | cai-vps | go-trang-thu | ban-thu-mua | ban-thu-ban | ban-thu-srd | ban-thu-kb | ban-thu-dc | ban-thu-sau | ban-thu-xa | ban-thu-nhieu-can | ban-thu-dap-y | ban-thu-luan | doc-log-loi | ban-thu-vm | ban-thu-5-khach | ban-thu-khach-ao | do-tim-nha | nap-tin-mau | nap-luat | ban-thu-ai | ban-thu-kiem. Trống = áp migration_file như thường"
         required: false
         default: ''
       commit_schema:
@@ -191,6 +191,15 @@ jobs:
         run: bash bot/tests/doc-log-loi.sh
 
       # SRS-5.1zzzzzzz153: khách VỪA BÁN VỪA MUA hẹn xem nhà bằng nhiều tin ngắn — lịch hẹn + việc báo người phụ trách + số điện thoại phải vào DB.
+      # SRS-5.1zzzzzzz268: bắn thử các việc đã có code + test offline mà chưa kiểm production (số tầng, căn / mã không có, kho xưởng, ảnh chủ nhà
+      # đúng căn, sticker .png, lời chào số tư vấn).
+      - name: Bắn thử các việc chưa kiểm production (ban-thu-kiem)
+        if: ${{ inputs.dung_lai == 'ban-thu-kiem' }}
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
+          GIU_DU_LIEU: ${{ inputs.giu_du_lieu }}
+        run: bash bot/tests/ban-thu-kiem.sh
+
       - name: Bắn thử khách vừa bán vừa mua hẹn xem nhà (ban-thu-vm)
         if: ${{ inputs.dung_lai == 'ban-thu-vm' }}
         env:
