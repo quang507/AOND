@@ -9058,6 +9058,44 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz267 · Soát lời hứa của bot: mỗi câu hứa phải có code phía sau (29/10/2026)
+Chủ dự án 29/10: "kiểm tra các thứ tôi cần có code phía sau chưa hay ai hứa suông thôi". Soát mọi câu mẫu gửi thẳng khách (`cau_mau.MAC_DINH`) và
+mọi lời dặn hứa trong prompt (`prompts.py`, `mua.py`, `engine.py`: báo lại / nhắn lại / liên hệ / gọi / chuyển / người phụ trách).
+
+1. **Kết quả đối chiếu** (lời hứa → code thật):
+
+   | Lời hứa | Code phía sau | Kết luận |
+   |---|---|---|
+   | `thu_lai_hong` "đã báo người phụ trách" | `server._thu_lai_nen` → `_bao_can_nguoi_nen` (tin 🙋 qua escalation-feed) | thật |
+   | `file_qua_lon` "đã báo admin" | `_escalate_oversize` → `bao_can_nguoi` (SRS-216) | thật |
+   | `xac_nhan_lich` / `bao_lich_da_chot` | `viewings` → trigger nhắc admin + `info_requests xac_nhan_lich`; "#mã: ok giờ" → `gui_nhac` báo khách | thật |
+   | Phía mua "người phụ trách sẽ gọi xác nhận" | SĐT vào `viewings.phone` → email `[VIEWING]` kèm SĐT cho admin | thật (người gọi tay) |
+   | Câu khách hỏi → chủ nhà → báo lại khách | `info_requests` → nhắc chủ nhà → `info_request_bao_lai_khach` → `gui_nhac` | thật (bắn thử 28/10 11/11) |
+   | Xin thêm ảnh / tin hiển thị em nhắn | `xin_them_anh` / `hen_bao_len_web` → `gui_nhac` (SRS-254) | thật |
+   | Báo căn mới cho khách mua | `bao_can_moi.py` | thật |
+   | `giu_ket_noi_ban` "có khách hỏi em báo" | đường câu hỏi chủ nhà ở trên | thật |
+   | `chua_co_ban_ve` "gửi giúp em, em gắn vào tin" | `_store_unittype_media` gắn tệp vào mẫu nhà | thật |
+   | **Chốt tin phía bán: "HỨA sẽ liên hệ lại ngay khi có khách quan tâm"** | khách bấm "quan tâm" (`interests`) chỉ ghi `property_events`, KHÔNG báo ai | **rộng hơn đường thật** |
+   | **`giu_cho`, `thu_lai_hong`** viết cứng "anh/chị", "Em", "của mình" | — | **sót đợt SRS-254** (sai khi khách xưng em / cháu; vi phạm SRS-230) |
+
+2. **Sửa**
+   - Lời chốt (`build_chat_system`) đổi thành "có khách hỏi hay hẹn xem thì bên em báo ngay", nói rõ hai đường thật:
+     - câu hỏi → chủ nhà;
+     - lịch xem → người phụ trách.
+   - Lời chốt không còn hứa gọi điện hay hạn bán, bỏ chữ "anh/chị" trong lời dặn.
+   - `giu_cho` / `thu_lai_hong` dùng `{goi}` / `{toi}`; `server._cau_theo_khach` điền theo cách khách xưng.
+   - Migration `20261029b_cau_mau_giu_cho_xin_loi.sql`: dòng đã sửa tay ở CRM giữ nguyên.
+3. **Lớp lỗi**
+   - Lời hứa viết trong prompt / câu mẫu, tách khỏi code làm việc đó; đổi một bên thì bên kia không đổi theo.
+   - Câu mẫu do server gửi đi không qua `_cau_khach` / `_goi_toi` như câu do engine gửi.
+4. **Chỗ khác cùng lớp** — đã soát toàn bộ `cau_mau.MAC_DINH` (câu có báo / nhắn / gửi / gọi / liên hệ / chuyển / hẹn) và lời dặn hứa trong 3 file trên.
+   Còn lại đúng hai chỗ ở bảng, đã sửa.
+5. **Kiểm**
+   - `tests/test_chuyen_nguoi.py::test_cau_giu_cho_va_xin_loi_goi_theo_cach_khach_xung`: khách xưng "cháu" → không còn "anh/chị", "của mình", chỗ giữ
+     sót. Đỏ khi gỡ bản sửa.
+   - `tests/test_giong_rao_cho.py` theo câu chốt mới.
+   - pytest 1156 passed.
+
 ### SRS-5.1zzzzzzz266 · Khi nào agent tự quyết, khi nào hỏi chủ dự án (29/10/2026)
 Chủ dự án 28–29/10:
 - "làm hết đi hỏi lắm";

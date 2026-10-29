@@ -44,10 +44,11 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                      "SRS-5.1zzzzzzz104 · chủ dự án chốt 21/10"),
     "xin_cham_sao_em": ("{Goi} chấm giúp {toi} 1–5 sao cho lần hỗ trợ này nha, để {toi} làm tốt hơn nhé.",
                         "Như trên, khi khách xưng \"em\" / \"cháu\" ({goi} = em / cháu, {toi} = anh / chị / cô / chú theo tên trợ lý)", "SRS-5.1zzzzzzz104 · 214"),
-    "giu_cho": ("Em đang xem kỹ thông tin anh/chị gửi, anh/chị chờ em một chút nhé, em trả lời ngay ạ.",
-                "Lượt trả lời bị lỗi — giữ chỗ, bot tự làm lại sau 20 giây", "SRS-5.1zzzzzzz82 · đánh giá UX 20/10"),
-    "thu_lai_hong": ("Em xin lỗi anh/chị, hệ thống bên em đang chậm. Em đã báo anh/chị phụ trách xem tin của mình, anh/chị ấy sẽ "
-                     "nhắn lại sớm ạ.", "Làm lại vẫn lỗi — xin lỗi và báo người phụ trách", "SRS-5.1zzzzzzz82"),
+    "giu_cho": ("{Toi} đang xem kỹ thông tin {goi} gửi, {goi} chờ {toi} một chút nhé, {toi} trả lời ngay ạ.",
+                "Lượt trả lời bị lỗi — giữ chỗ, bot tự làm lại sau 20 giây", "SRS-5.1zzzzzzz82 · đánh giá UX 20/10; 29/10 gọi theo cách khách xưng (SRS-5.1zzzzzzz267)"),
+    "thu_lai_hong": ("{Toi} xin lỗi {goi}, hệ thống bên {toi} đang chậm. {Toi} đã báo người phụ trách xem tin nhắn của {goi}, người phụ trách "
+                     "sẽ nhắn lại sớm ạ.", "Làm lại vẫn lỗi — xin lỗi và báo người phụ trách (server gọi `bao_can_nguoi`)",
+                     "SRS-5.1zzzzzzz82; 29/10 bỏ \"anh/chị\" viết cứng và \"của mình\" (SRS-5.1zzzzzzz267)"),
     # --- Câu có từ trước khi theo anh Luận (SRS-5.1zzzzzzz110) ---
     "chao_lan_dau": ("Chào {goi} ạ! Em là {ten}, trợ lý ký gửi nhà đất của AI Ơi Nhà Đất. 🏡✨\n{Goi} đang có căn nào muốn gửi bán hay "
                      "cho thuê ạ?",

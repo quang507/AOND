@@ -58,4 +58,5 @@ def test_loi_chot_hua_lien_he_khi_co_khach_quan_tam_theo_anh_luan():
     from aioi.schema import Property
     p = Property(loai_hinh="nha_pho", fields={"gia": "9 tỷ", "dia_chi": "12 Lê Lợi", "duong": "Lê Lợi"})
     s = prompts.build_chat_system("Lan", p, None)
-    assert "HỨA sẽ liên hệ lại ngay khi có khách quan tâm" in s and "đừng gạ khách rao thêm căn" in s
+    # SRS-5.1zzzzzzz267: vẫn chốt có lời hứa như anh Luận, nhưng chỉ hứa điều có đường làm thật (câu hỏi → chủ nhà, lịch xem → người phụ trách)
+    assert "có khách hỏi hay hẹn xem thì bên em báo ngay" in s and "KHÔNG hứa gọi điện" in s and "đừng gạ khách rao thêm căn" in s

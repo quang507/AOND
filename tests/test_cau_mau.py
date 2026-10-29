@@ -38,7 +38,7 @@ def test_cau_sua_o_crm_toi_loi_bot():
 def test_cau_sua_hong_thi_dung_cau_goc():
     cau_mau.dang_ky(lambda: {"nhac_ban_nhap": "Em gửi {ten} bản nháp", "giu_cho": "   "})
     assert cau_mau.cau("nhac_ban_nhap", "anh") == cau_mau._dien(cau_mau.MAC_DINH["nhac_ban_nhap"][0], "anh")
-    assert cau_mau.cau("giu_cho") == cau_mau.MAC_DINH["giu_cho"][0]
+    assert cau_mau.cau("giu_cho") == cau_mau.cau("giu_cho", "anh/chị", toi="em") and "{" not in cau_mau.cau("giu_cho")   # SRS-267: câu gốc có chỗ giữ
 
 
 def test_doc_kho_loi_khong_lam_hong_luot():

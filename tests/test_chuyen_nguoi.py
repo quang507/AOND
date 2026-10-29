@@ -170,3 +170,14 @@ def test_thu_lai_bo_qua_khi_khach_da_nhan_tin_moi(monkeypatch):
     monkeypatch.setattr(srv, "threading", SimpleNamespace(Thread=_Luong))
     srv._thu_lai_nen("g6", lambda: goi.append(1), moc=0, sau_hong=1, ten=None)   # lúc hỏng có 1 lượt, nay đã 3
     assert goi == [] and len(conv.history) == 3
+
+
+def test_cau_giu_cho_va_xin_loi_goi_theo_cach_khach_xung():
+    # SRS-5.1zzzzzzz267: câu server gửi thẳng khách không viết cứng "anh/chị" / "của mình" — khách xưng "cháu" thì bot gọi "cô/chú".
+    import aioi.server as srv
+    conv = srv._engine.conversation("xh-267")
+    conv.xung_ho = "chau"   # AI lượt lập thao tác đọc "cháu chào cô…" ra mã xưng hô (SRS-54) — đặt thẳng trạng thái đó
+    for k in ("giu_cho", "thu_lai_hong"):
+        c = srv._cau_theo_khach("xh-267", k)
+        assert "anh/chị" not in c and "của mình" not in c and "{" not in c, (k, c)
+    assert "người phụ trách" in srv._cau_theo_khach("xh-267", "thu_lai_hong")
