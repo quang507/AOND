@@ -9058,6 +9058,28 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz298 · B2 bước 1: lớp soát lời — luật giọng / lặp thôi gọi lại model, tối đa một lần gọi lại (29/10/2026)
+Chủ dự án 29/10 (về bốn khâu phía bán trong bản review: Haiku đọc form 27.518 chữ → code áp → Sonnet viết từ ~28 khối → ~34 luật regex soát lời,
+gọi lại tối đa 2 lần): "Đoạn này có xoá hay bỏ không hay như thế nào trước rồi làm b2".
+
+1. **Số đếm thật**: `_soat_hinh_thuc` + `_ly_do_cung` có 34 chỗ ghi lý do (vài luật trùng giữa hai hàm) — khoảng 26 luật khác nhau.
+2. **Quyết định (BA, uỷ quyền) cho từng khâu trong B2**:
+   - *Haiku form 27.518 chữ*: không xoá ngay — B2 bước 2 cho agent phía bán (công cụ ghi ô qua cùng cổng bằng chứng `_loc_o_tin`) thay nó sau
+     công tắc `thu`; bắn thử đạt rồi mới gỡ.
+   - *Code áp kết quả*: GIỮ — thành phần thân của công cụ (cổng bằng chứng, phí, trạng thái).
+   - *~28 khối prompt*: lõi cố định ngắn (giọng, xưng hô, phí, một câu hỏi) giữ; khối dữ liệu (địa danh, dự án, câu khách mua hỏi, trạng thái tin) chuyển
+     thành công cụ agent tự tra khi cần — B2 bước 2.
+   - *Lớp soát lời* (mục này): tách hai nhóm. GIỮ gọi lại (sự thật / tiền / riêng tư / bản tin / luật cứng chủ dự án): phí sai vai, số không có trong tin
+     / trong căn, bịa hẻm / chi tiết / pháp lý, lộ ô riêng, tiêu đề thiếu / sai đơn vị / "MT" căn hộ, phường tên cũ, in tên khối, tin đang hiển thị mà
+     trình 📋, khách dặn cách viết mà không sửa, bình luận giá, "em gửi ảnh" ngược vai, gọi khách "mình", hơn một câu hỏi. CHỈ GHI LOG (giọng / lặp):
+     viết HOA cả cụm, câu ghi nhận lặp, cùng mở đầu (2 chỗ), câu lặp (2 chỗ), "ạ / ơi" lặp, không nhắc phường kho hẻm, đáp ngắn đồng ý quá dài.
+     "Dạ" mở đầu: code bỏ chữ, không gọi model. Gọi lại tối đa MỘT lần (bỏ lần hai).
+3. **Công tắc** `SOAT_GON` trong `cai-vps.sh` → `AIOI_SOAT_GON`: `thu` (chỉ ID thử, hiện tại) / `bat` / `tat`. Log `Lời bot lệch luật giọng / lặp (…
+   chế độ gọn — không gọi lại)` để đếm lưới nào còn kích — số đó quyết luật nào bỏ hẳn, luật nào đưa vào prompt.
+4. **Ba câu hỏi gốc** — (1) *lớp lỗi*: mỗi lỗi giọng thành một lưới regex + một lần gọi model (tốn 2–3 lượt Sonnet cho lỗi khách không thấy). (2) *chỗ
+   khác cùng lớp*: phía mua dùng chung `_soat_hinh_thuc` — cùng công tắc. (3) *kiểm*: `tests/test_soat_gon_298.py` (3 ca chế độ gọn đỏ khi gỡ bản
+   sửa; ca khách thật giữ như cũ). Bắn thử: chạy `ban-thu-ban` sau khi cài.
+
 ### SRS-5.1zzzzzzz297 · B1 gọn quy trình: CI tự chạy, tự cài VPS sau gộp, một lệnh sau gộp, CLAUDE.md tách luật chi tiết (29/10/2026)
 Chủ dự án 29/10 (sau bản review "đi đường vòng" — gọi AI, lưu trữ, quy trình; thứ tự B1 → B2 → B3): "Ok gọn quy trình theo b1 đi".
 
