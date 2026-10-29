@@ -1626,6 +1626,18 @@ def property_field_props() -> dict[str, Any]:
         "VĂN cụm trong lời khách. TUYỆT ĐỐI KHÔNG bịa, KHÔNG suy diễn, KHÔNG lặp thông tin đã nằm ở ô khác (giá, diện tích, pháp lý…). "
         "Không có thì bỏ trống.",
     }
+    # SRS-5.1zzzzzzz284 (theo anh Luận 6d58e9a): ô điều khoản THUÊ chỉ cho tin CHO THUÊ — tin BÁN "có HĐT 35tr/tháng" thì AI ghi "35 triệu/tháng"
+    # vào mức cọc, "sẵn HĐT" vào thời hạn hợp đồng. Nhà bán đang có người thuê thuộc ô co_hdt / thu_nhap_thue / hd_thue_con.
+    properties["thoi_han_hd"] = {
+        "type": "string",
+        "description": "THỜI HẠN hợp đồng khi CHO THUÊ — một khoảng thời gian (vd '1 năm', 'tối thiểu 6 tháng'). CHỈ điền cho tin CHO THUÊ. KHÔNG "
+        "phải 'có HĐT' / 'sẵn hợp đồng', KHÔNG phải giá thuê. Nhà BÁN đang có người thuê → ô co_hdt / hd_thue_con, KHÔNG điền vào đây.",
+    }
+    properties["muc_coc"] = {
+        "type": "string",
+        "description": "Số tiền / số tháng ĐẶT CỌC khi CHO THUÊ (vd '2 tháng cọc', '20 triệu'). CHỈ điền cho tin CHO THUÊ. KHÔNG phải giá thuê "
+        "mỗi tháng (đó là 'gia'), KHÔNG phải tiền thuê nhà BÁN đang thu (đó là thu_nhap_thue), KHÔNG phải 'có HĐT'.",
+    }
     properties["loai_hinh"] = {
         "type": "string",
         "description": "Loại hình BĐS (slug khớp CRM): nha_pho, nha_cap_4, chung_cu, dat, biet_thu, "

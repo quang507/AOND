@@ -9058,6 +9058,21 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz284 · Đối chiếu commit anh Luận: ô mức cọc / thời hạn hợp đồng chỉ cho tin cho thuê (29/10/2026)
+Chủ dự án 29/10: "xem các commit của anh Luận có sửa gì ko".
+
+1. **Đối chiếu** `luan8560/aond` (21 commit, mới nhất `207a145` 26/10 13:10 — không có commit mới sau lần soát trước). Đã có bên mình: giọng rao / CTA / mỗi tin
+   một vẻ (`207a145`, `4aac437`, `c768f25` — SRS-207 / 219), facet + ô tự do (`68129e4`, `ce11491` — SRS-205 / 260), giới hạn 2–3 icon (`c9d3582`,
+   `AD_FORMAT`), bố cục tin (`802b957`, `0b31235`, `AD_FORMAT`), gộp địa chỉ khi thêm số nhà (`b274582`, `schema._merge_dia_chi`), một bong bóng Zalo
+   (`ffd3684`), trần 30 tin lịch sử (`e4cbf90`), Drive là media (`4ebeb18`), ghi token (`418f63b`). Giải bằng đường khác: "MT 5.2m" lẫn sang lộ giới
+   (`4f977bb`) — SRS-95 tách ô `mat_tien` (bề ngang căn) / `lo_gioi_duong` (độ rộng đường); kênh chỉ người bán (`9a06086`) — bên mình hai số, khách mua
+   nhắn nhầm vẫn được trả lời (SRS-210 / 251). Không áp: `01052c4` (script xoá sạch SharePoint của anh Luận).
+2. **Còn thiếu `6d58e9a`**: tin BÁN "có HĐT 35tr/tháng" → AI ghi "35 triệu/tháng" vào `muc_coc`, "sẵn HĐT" vào `thoi_han_hd`; mô tả hai ô bên mình chỉ là
+   "mức cọc" / "thời hạn hợp đồng". Sửa (`prompts.property_field_props`): mô tả ô nói rõ CHỈ cho tin CHO THUÊ, không phải giá thuê / "có HĐT", nhà bán đang
+   có người thuê thuộc `co_hdt` / `thu_nhap_thue` / `hd_thue_con` (SRS-64 của bên mình). Nhãn hiển thị `FIELD_LABELS` giữ nguyên.
+3. **Ba câu hỏi gốc** — (1) *lớp lỗi*: mô tả ô quá trơn để model phân biệt hai nghĩa gần nhau; (2) *chỗ khác cùng lớp*: `kich_thuoc` / `lo_gioi_hem`
+   / `mat_tien` / `lo_gioi_duong` đã tách nghĩa ở SRS-95; (3) *kiểm*: `tests/test_dieu_khoan_thue_284.py` — đỏ khi gỡ bản sửa. Chưa bắn thử với model thật.
+
 ### SRS-5.1zzzzzzz283 · Thông tin dự án chung / riêng theo khuôn anh Luận: căn kế thừa dự án + mẫu nhà ở cả phía mua và web (29/10/2026)
 Chủ dự án 29/10: "thông tin dự án có các thứ chung các thứ riêng, xem bên github anh Luận có quy chế chung riêng chưa" → "làm theo anh Luận đi, có điểm nào
 cần cải thiện theo logic thì cải thiện luôn".
