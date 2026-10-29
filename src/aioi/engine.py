@@ -124,6 +124,7 @@ from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
                   lenh_tra_loi, nhan_nhu_cau, nhu_cau_cua, tim_sdt)
+from . import agent_mua
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
@@ -2658,7 +2659,14 @@ class Engine:
             xin_sao = bool(conv.y_luot.get("xong_viec_mua") and can) and self._nen_xin_sao(conv)
             if xin_sao:
                 system += KHOI_SAP_XIN_SAO
-            reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+            if agent_mua.bat(conv.user_key, _la_id_thu(conv.user_key)) and getattr(self._convstore, "can_phu_hop", None) is not None:
+                # SRS-5.1zzzzzzz290: lượt viết lời có công cụ CHỈ ĐỌC (tra căn / dự án) — model tự quyết có tra không; căn tra được vào `can`
+                # để lưới soát số / ảnh biết. Bóc tách (Haiku) và việc GHI giữ đường cũ.
+                reply, tra = agent_mua.chay(self, conv, system, REPLY_MAX_TOKENS)
+                can = can + [c for c in tra if c.get("id") not in {d.get("id") for d in can}]
+            else:
+                reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS)
+            reply = reply.strip()
             if not reply:
                 raise LoiTraLoi("lời gửi khách rỗng")
             reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply), can_mua=can)

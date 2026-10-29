@@ -54,12 +54,16 @@ chat "$MUA" "Căn #$MA anh thấy được đó em. Chiều thứ 7 này 3h anh 
 sleep 2
 chat "$BAN" "Dạ căn đó sổ hồng riêng chính chủ nha em, công chứng ngay được"
 LOI_BAN="$TRA"
+# SRS-5.1zzzzzzz286 / 290: khách mở bộ nhu cầu thứ hai; hỏi chi tiết căn (vòng agent tự quyết có tra kho không — AGENT_MUA=thu bật cho ID thử).
+chat "$MUA" "À anh tìm thêm giùm con anh một căn hộ quận 7 tầm 3 tỷ nữa nha em"
+chat "$MUA" "Còn căn #$MA hồi nãy diện tích bao nhiêu, mấy tầng vậy em?"
 sleep 10   # lõi lưu tin nền sau khi trả lời (luu_nen, SRS-5.1zzzzzzz92) — soi DB sớm quá thì ô vừa ghi chưa xuống
 
 echo; echo "== soi DB"
 KQ=$(q "with l as (select id from listings where code = '$MA'), b as (select id from buyers where zalo_user_id = '$MUA')
   select
    (select count(*) from b) as buyers,
+   (select count(*) from buyer_needs n where n.buyer_id in (select id from b)) as bo_nhu_cau,
    (select count(*) from interests i where i.listing_id in (select id from l) and i.buyer_id in (select id from b)) as interests,
    (select json_agg(json_build_object('status', v.status, 'time_text', v.time_text)) from viewings v where v.listing_id in (select id from l)) as viewings,
    (select json_agg(json_build_object('q', r.question, 'status', r.status, 'assignee', r.assignee, 'answer', r.answer, 'source', r.source) order by r.created_at)
@@ -95,6 +99,10 @@ kiem "chủ nhà trả lời → câu hỏi chuyển answered" \
 kiem "có tin nhắn chủ nhà (reminders escalation giao người bán)" "$(jq '(.nhac_chu_nha|tonumber) >= 1 | if . then 1 else 0 end' <<<"$r")"
 kiem "chủ nhà trả lời pháp lý → ô pháp lý của tin được ghi" "$(jq '(.phap_ly // "") != "" | if . then 1 else 0 end' <<<"$r")"
 kiem "có nhắc báo lại khách mua (reminders followup)" "$(jq '(.bao_lai_khach|tonumber) >= 1 | if . then 1 else 0 end' <<<"$r")"
+kiem "khách có ≥ 2 bộ nhu cầu (buyer_needs, SRS-286)" "$(jq '(.bo_nhu_cau|tonumber) >= 2 | if . then 1 else 0 end' <<<"$r")"
+AGENT=$(vps "journalctl -u aond-core --since '-6 min' --no-pager -o cat | grep -F 'Agent mua:' | tail -6" || true)
+echo "== vòng agent mua (SRS-290):"; echo "$AGENT"
+kiem "vòng agent mua có chạy (dòng log 'Agent mua:')" "$([ -n "$AGENT" ] && echo 1 || echo 0)"
 echo "== lõi trên VPS: $(vps 'systemctl is-active aond-core')"
 vps "journalctl -u aond-core --since '-5 min' --no-pager -o cat | grep -iE 'error|exception|traceback' | grep -viE 'key|token|secret|password|bearer' | sed -E 's/[0-9]{9,}/#/g' | tail -15" || true
 exit $loi

@@ -9058,6 +9058,30 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz290 · Phía mua: lượt trả lời thành vòng agent "suy nghĩ → chọn công cụ → thực thi → đánh giá" (công cụ chỉ đọc) (29/10/2026)
+Chủ dự án 29/10 (sau khi đọc bài "AI Agent dùng Tool Use"): "Ok thử, kiểm tra xem. chủ yếu vẫn là sang kiểu Suy nghĩ -> Chọn công cụ -> Thực thi
+-> Đánh giá thôi còn bóc tách vẫn dùng haiku có dc ko tại mấy cái code từ khóa bạn làm chạy không ổn định dc".
+
+1. **Hiện trạng trước**: mỗi lượt mua là đường cố định — Haiku lập thao tác (bóc ý ra JSON qua công cụ ép `save_property_data`) → code làm việc +
+   tra kho MỘT lần theo hồ sơ nhu cầu (`_can_goi_y`) → Sonnet viết lời. Code quyết tra gì; khách đổi tiêu chí giữa câu, hỏi chi tiết căn không có
+   trong khối, hỏi dự án khác… thì lời viết trên dữ liệu đã dựng sẵn.
+2. **Quyết định (chủ dự án chốt thử; BA chọn cách làm)**:
+   - Bóc tách GIỮ Haiku; mọi việc GHI (ô nhu cầu, hẹn xem, hỏi chủ nhà, xin ảnh, chê căn) giữ đường cũ có cổng (SRS-281 / 286–288).
+   - Lượt viết lời (Sonnet, `MODEL_CHAT_LUOT`) chạy vòng công cụ CHỈ ĐỌC (`agent_mua.py`): `tim_can` (tiêu chí mới đè lên hồ sơ, qua
+     `can_phu_hop` — bỏ căn đã chê, mỗi nhà một tin), `xem_can` (dòng đầy đủ + kế thừa dự án), `tra_du_an` (kho + căn trong dự án),
+     `du_an_trong_khu`. Model tự quyết có tra không; chữ ở lượt có gọi công cụ không tới khách.
+   - Trần: tối đa 3 lần gọi model / lượt, không tra thêm sau 25 giây (lõi 40 s, bridge 90 s); hết trần chưa có lời → `reply` thường kèm "KẾT QUẢ
+     EM VỪA TRA KHO". Công cụ lỗi → câu nói thật, lượt không vỡ. Claude hỏng → dự phòng trả chữ (đường `converse` sẵn có).
+   - Căn công cụ tra được gộp vào `can` của lượt → lưới số (`_so_khong_co_trong_can`) và ảnh biết các căn đó.
+   - KHÔNG cho bot công cụ chạy code / terminal / web (khách lạ trên Zalo có thể gõ lời lừa); không dùng LangChain / CrewAI (vòng tay 60 dòng trên
+     SDK sẵn có, cùng khuôn `_agent_reply` phía bán dự án).
+   - Công tắc `AGENT_MUA` trong `cai-vps.sh` → `AIOI_AGENT_MUA`: `thu` (mặc định — chỉ ID thử, bắn thử trước), `bat` (mọi khách), `tat`.
+   - Đo: mỗi lượt một dòng log `Agent mua: công_cụ=… căn_tra=… giây=…` (không lời khách); token ghi `bot_usage_model` loại `agent`.
+3. **Về "code từ khoá chạy không ổn định"**: vòng này thay việc CODE quyết tra gì bằng model quyết. Cổng nguyên văn cho ô dữ liệu / tiền / đăng /
+   xoá (SRS-281 mục 3) giữ — đó là chặn bịa dữ liệu, không phải đoán ý.
+4. **Kiểm**: `tests/test_agent_mua_290.py` (5 ca; 3 ca agent đỏ khi gỡ bản sửa; 2 ca tắt / khách thật giữ đường cũ). `bot/tests/ban-thu-mua.sh`
+   thêm lượt mở bộ "cho con" + hỏi chi tiết căn, kiểm `buyer_needs` ≥ 2 và có dòng log `Agent mua:`.
+
 ### SRS-5.1zzzzzzz289 · CRM hiện các bộ nhu cầu; tin báo căn mới nói căn cho bộ nào (29/10/2026)
 Chủ dự án 29/10: "Trang CRM không hiện các bộ nhu cầu của khách"; "Tin báo căn mới chưa nói căn đó hợp với bộ nào".
 
