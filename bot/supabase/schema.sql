@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-29 17:14 (giờ VN)
+-- Sinh lúc: 2026-10-29 22:07 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -400,7 +400,8 @@ END) stored,
   nhung extensions.halfvec(768),
   nhung_md5 text,
   nhung_luc timestamp with time zone,
-  cung_can_id uuid
+  cung_can_id uuid,
+  xac_nhan_con_ban_at timestamp with time zone
 );
 
 create table if not exists public.media (
@@ -935,7 +936,7 @@ do $d$ begin
   alter table public.quan_cu add constraint quan_cu_pkey PRIMARY KEY (ten);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.reminders add constraint reminders_kind_check CHECK ((kind = ANY (ARRAY['promise'::text, 'reengage'::text, 'viewing'::text, 'followup'::text, 'escalation'::text, 'report'::text, 'match'::text, 'feedback'::text, 'sold'::text, 'rating'::text, 'admin_reply'::text, 'len_web'::text])));
+  alter table public.reminders add constraint reminders_kind_check CHECK ((kind = ANY (ARRAY['promise'::text, 'reengage'::text, 'viewing'::text, 'followup'::text, 'escalation'::text, 'report'::text, 'match'::text, 'feedback'::text, 'sold'::text, 'rating'::text, 'admin_reply'::text, 'len_web'::text, 'con_ban'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.reminders add constraint reminders_pkey PRIMARY KEY (id);
@@ -5669,6 +5670,30 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.tin_can_hoi_con_ban(p_ngay integer DEFAULT 20, p_limit integer DEFAULT 30)
+ RETURNS TABLE(listing_id uuid, code text, deal text, street text, district text, seller_id uuid, zalo_user_id text, ten text)
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  select l.id, l.code, l.deal::text, l.street, l.district, s.id, s.zalo_user_id, s.name
+    from listings l
+    join sellers s on s.id = l.seller_id
+   where l.status in ('dang_ban', 'dang_quan_tam')
+     and l.source is distinct from 'seed_thu'
+     and s.zalo_user_id is not null
+     and not public.la_id_thu(s.zalo_user_id)
+     and coalesce(l.xac_nhan_con_ban_at, l.chu_duyet_at, l.created_at) <= now() - make_interval(days => p_ngay)
+     and not exists (select 1 from conversations c where c.seller_id = s.id and c.human_hold)
+     and not exists (
+       select 1 from reminders r
+        where r.kind = 'con_ban' and r.listing_id = l.id and r.status in ('pending', 'sent')
+          and r.created_at > now() - make_interval(days => p_ngay))
+   order by s.id, coalesce(l.xac_nhan_con_ban_at, l.chu_duyet_at, l.created_at)
+   limit p_limit
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.tin_cua_toi(p_listing uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -7461,6 +7486,8 @@ revoke all on function public.tim_nha(p_deal text, p_loai text, p_gia_max bigint
 grant execute on function public.tim_nha(p_deal text, p_loai text, p_gia_max bigint, p_khu text, p_dt_min numeric, p_pn_min integer, p_xe_hoi boolean, p_vec double precision[], p_limit integer, p_tien_ich text[], p_tang_min integer) to service_role;
 revoke all on function public.tin_can_geocode(p_limit integer) from public, anon, authenticated;
 grant execute on function public.tin_can_geocode(p_limit integer) to service_role;
+revoke all on function public.tin_can_hoi_con_ban(p_ngay integer, p_limit integer) from public, anon, authenticated;
+grant execute on function public.tin_can_hoi_con_ban(p_ngay integer, p_limit integer) to service_role;
 revoke all on function public.tin_cua_toi(p_listing uuid) from public, anon, authenticated;
 grant execute on function public.tin_cua_toi(p_listing uuid) to authenticated;
 grant execute on function public.tin_cua_toi(p_listing uuid) to service_role;

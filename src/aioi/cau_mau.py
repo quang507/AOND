@@ -167,6 +167,10 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "giu_ket_noi_ban": ("{Goi} ơi, {toi} vẫn đang giữ tin căn của {goi} trên hệ thống. Nhờ {goi} nhắn lại {toi} một chữ thôi, kẻo Zalo tự "
                         "ngắt kết nối thì có khách hỏi {toi} không báo {goi} được ạ 🙏",
                         "Người bán im 6 ngày — giữ kết nối Zalo trước mốc 7 ngày (FR-63). {toi} = bot tự xưng", "SRS-5.1zzzzzzz238"),
+    "hoi_con_ban": ("{Goi} ơi, {toi} hỏi thăm chút: {can} của {goi} hiện {con} không ạ? Còn thì {goi} nhắn {toi} một chữ \"còn\" là được, "
+                    "bán / cọc rồi thì báo {toi} cập nhật tin cho đúng nha.",
+                    "Tin rao quá 20 ngày chưa xác nhận — hỏi chủ nhà căn còn bán / còn cho thuê (lõi gửi, 8–20 giờ). {can} = các căn, "
+                    "{con} = \"còn bán\" / \"còn cho thuê\"", "SRS-5.1zzzzzzz295"),
     # --- Luồng dự án: câu trước đây viết cứng "anh/chị" / "Em" trong engine (SRS-5.1zzzzzzz250, chủ dự án 28/10 mục 11) ---
     "du_an_hoi_mau_nha": ("‘{ten}’ nghe giống MẪU NHÀ trong dự án “{du_an}” — đây là mẫu nhà của “{du_an}”, hay là một dự án riêng ạ? {Toi} "
                           "hỏi cho chắc kẻo nhầm.",
@@ -193,7 +197,8 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
 # Chỗ giữ chữ câu sửa tay BẮT BUỘC giữ (thiếu thì bot nói câu không có con số) — kiểm trên câu sửa, trước khi điền.
 _BAT_BUOC = {"bao_phi": ("{phi}",), "xac_nhan_lich": ("{gio}", "{can}"), "bao_tra_loi_chu_nha": ("{tra_loi}",),
              "bao_lich_da_chot": ("{gio}",), "web_da_luu": ("{tom_tat}", "{url}"), "web_hoi_du_an": ("{tom_tat}",),
-             "ban_ve_pdf": ("{link}",), "bao_them_anh": ("{url}",), "bao_tin_len_web": ("{url}",)}
+             "ban_ve_pdf": ("{link}",), "bao_them_anh": ("{url}",), "bao_tin_len_web": ("{url}",),
+             "hoi_con_ban": ("{can}", "{con}")}
 
 _KHUNG = {
     "mo_dau_nhap": lambda c: c.startswith("📋") and c.rstrip().endswith(":") and "\n" not in c,

@@ -471,6 +471,29 @@ def _vong_giu_ket_noi() -> None:
 if os.environ.get("GIU_KET_NOI", "bat") != "tat" and _settings.supabase_service_role_key:
     threading.Thread(target=_vong_giu_ket_noi, daemon=True, name="giu-ket-noi").start()
 
+HOI_CON_BAN_CHU_KY_GIAY = int(os.environ.get("HOI_CON_BAN_CHU_KY_GIAY", "1800"))
+
+
+def _vong_hoi_con_ban() -> None:
+    """SRS-5.1zzzzzzz295: tin rao quá 20 ngày chưa xác nhận → hỏi chủ nhà căn còn bán không (logic ở `hoi_con_ban`, khung 8–20 giờ).
+    Tắt: HOI_CON_BAN=tat."""
+    from . import hoi_con_ban
+    time.sleep(180)   # lõi khởi động xong, bridge nối lại
+    while True:
+        try:
+            kho = _engine._convstore
+            if getattr(kho, "is_configured", False):
+                ra = hoi_con_ban.chay_mot_luot(kho, _gui_nhac_mot, _xung_ho_khach, _ghi_lich_su_nhac)
+                if ra:
+                    log.warning("Hỏi còn bán: đã hỏi %d người bán", len(ra))
+        except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
+            _so_loi.ghi_loi("hoi con ban", f"{type(e).__name__}: {e}"[:200])
+        time.sleep(HOI_CON_BAN_CHU_KY_GIAY)
+
+
+if os.environ.get("HOI_CON_BAN", "bat") != "tat" and _settings.supabase_service_role_key:
+    threading.Thread(target=_vong_hoi_con_ban, daemon=True, name="hoi-con-ban").start()
+
 
 _CAU_DAN_THUA = re.compile(r"(?is)(?:^|(?<=\n))\s*Còn\s+(?:một|1)\s+điểm\s+em\s+cần\s+nắm\s+thêm\s*[:：]\s*")
 

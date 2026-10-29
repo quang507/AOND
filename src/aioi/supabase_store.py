@@ -1249,6 +1249,28 @@ class SupabaseConversationStore(KhoNguoiMua):
             log.warning("hen_bao_len_web lỗi: %s", e)
             return False
 
+    def xac_nhan_con_ban(self, conv: Conversation) -> int:
+        """Chủ nhà đáp "còn" tin hỏi còn bán (SRS-5.1zzzzzzz295, `hoi_con_ban`): ghi `xac_nhan_con_ban_at` = bây giờ cho các căn của người bán
+        này vừa được hỏi (nhắc `con_ban` đã gửi trong 7 ngày) mà vẫn đang hiển thị. Trả số căn đã ghi; lỗi / không có tin hỏi → 0."""
+        if not self.is_configured:
+            return 0
+        try:
+            from datetime import datetime, timedelta, timezone
+            bay_gio = datetime.now(timezone.utc)
+            sid = self._get_or_create_seller(conv.user_key)
+            if not sid:
+                return 0
+            tu = urllib.parse.quote((bay_gio - timedelta(days=7)).isoformat(), safe="")
+            hoi = self._get(f"reminders?kind=eq.con_ban&status=eq.sent&seller_id=eq.{sid}&sent_at=gte.{tu}&select=listing_id")
+            ids = sorted({str(r["listing_id"]) for r in hoi if r.get("listing_id")})
+            if not ids:
+                return 0
+            self._patch(f"listings?id=in.({','.join(ids)})&status=in.(dang_ban,dang_quan_tam)", {"xac_nhan_con_ban_at": bay_gio.isoformat()})
+            return len(ids)
+        except Exception as e:  # noqa: BLE001 — ghi hụt thì 20 ngày sau hỏi lại, không vỡ lượt chat
+            log.warning("xac_nhan_con_ban lỗi: %s", e)
+            return 0
+
     @staticmethod
     def _nguoi_noi_cuoi(rows: list[dict]) -> str | None:
         """Vai của khách ở tin KHÁCH gần nhất trong hội thoại chung (`messages.sender` = buyer / seller) — để nạp lại phiên đúng phía."""
