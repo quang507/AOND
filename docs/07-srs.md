@@ -9074,7 +9074,12 @@ Chủ dự án 29/10: "Hay là bớt prompt dài đi, cấu trúc form json ng�
    `mua`). (2) *chỗ khác cùng lớp*: phía BÁN vẫn form đầy đủ (cần `operations`); lượt chủ nhà trả lời câu khách mua (`tra_loi_khach_hoi`, trượt lần
    bắn 4 SRS-292) chưa có form gọn — để đo sau khi có số phía mua. (3) *kiểm*: `tests/test_form_mua_gon_293.py` (2 ca engine đỏ khi gỡ bản sửa:
    khách mua ID thử đọc bằng form gọn; form gọn ra ý bán thì đọc lại form đầy đủ), `tests/test_cache_ranh_gioi.py` (cả hai form đứng trước
-   `RANH_GIOI_CACHE`). Hiệu quả thật (Haiku bớt sót hay không) chỉ biết sau bắn `ban-thu-mua` — chưa bắn ở thời điểm viết mục này.
+   `RANH_GIOI_CACHE`). Hiệu quả thật (Haiku bớt sót hay không) chỉ biết sau bắn `ban-thu-mua`.
+4. **Bắn `ban-thu-mua` 3 lần sau cài (công tắc `thu`; run 40892505510, 40893049896, 40893534078): 15/15 phép đạt cả 3 lần** (trước form gọn,
+   SRS-291 / 292: 14, 8, 12, 13 / 15). Lượt "chiều thứ 7 3h qua xem, sổ hồng riêng không": Haiku ra 191–231 token (các lần sót trước: 66–80);
+   lần 1 và 2 vòng agent KHÔNG gọi công cụ ghi mà lịch hẹn + câu hỏi chủ nhà vẫn có → Haiku tự đọc ra. Lần 3 agent có gọi `hen_xem` / `hoi_chu_nha`;
+   log không phân biệt Haiku sót hay agent gọi trùng (đường cũ đã ghi thì công cụ báo "đã ghi ở lượt này rồi") — không chắc. Phía bán (vẫn form đầy
+   đủ) đạt cả 3 lần, kể cả `tra_loi_khach_hoi` (trượt lần bắn 4 SRS-292). 3 lần là mẫu nhỏ; giữ `thu`, chuyển `bat` sau khi có thêm số.
 
 ### SRS-5.1zzzzzzz292 · Bắn thử ban-thu-mua lần 2: bóc tách bỏ sót hẹn xem → agent ghi được; tin ngoài chat đang hiển thị không trình lại bản tin (29/10/2026)
 Bắn lại `ban-thu-mua` sau SRS-291 (run 40872893032): bộ nhu cầu không còn bị đè (lượt 4 giữ "cho con" Q7 3 tỷ; bộ đầu nhãn "mua ở"); vòng agent
