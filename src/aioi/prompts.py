@@ -1996,6 +1996,50 @@ OPERATIONS_SYSTEM = OPERATIONS_SYSTEM.replace("{SLANG_NOTES}", SLANG_NOTES)
 OPERATIONS_SYSTEM = OPERATIONS_SYSTEM.replace("{DANH_MUC_PHAP_LY}", phap_ly.danh_muc_cho_prompt())
 
 
+# ── Form bóc tách GỌN cho lượt khách MUA (SRS-5.1zzzzzzz293) ──────────────────────────────────────────────────────────────
+# Chủ dự án 29/10: "Hay là bớt prompt dài đi, cấu trúc form json ngắn hơn ổn hơn k". Đo: lượt mua gửi Haiku cả prompt điều phối 27 nghìn chữ
+# (đa phần thao tác rổ hàng phía BÁN) + schema 24 nghìn chữ / 36 khoá / 163 ô — trong khi lượt mua chỉ dùng khoảng 16 khoá. Bắn thử 29/10 Haiku
+# 2/4 lần bỏ trống cả việc hẹn xem + câu hỏi chủ nhà của một câu rõ ràng. Form gọn = CÙNG chữ các đoạn phía mua / dùng chung, cắt từ prompt gốc
+# theo mốc (một nguồn: sửa prompt gốc là form gọn đổi theo); mốc mất thì `tests/test_form_mua_gon_293.py` đỏ.
+_MO_DAU_FORM_MUA = """Bạn là bộ ĐỌC Ý tin nhắn của KHÁCH TÌM MUA / THUÊ nhà đất cho AI Ơi Nhà Đất.
+Đọc TIN NHẮN MỚI NHẤT của khách theo NGHĨA (các tin trước chỉ là NGỮ CẢNH để hiểu "căn đó", "giờ đó") và điền form JSON: ý định
+(user_intent), nhu cầu (buyer_lead), việc khách muốn làm với căn (mua), và các ô dùng chung bên dưới. Ô nào tin không nói thì BỎ TRỐNG.
+Khách chuyển sang nói chuyện GỬI BÁN / CHO THUÊ căn của chính họ → user_intent = "sell" (hệ thống sẽ đọc lại bằng form đầy đủ).
+
+"""
+_MUC_FORM_MUA = ("- LỜI XÃ GIAO", "- KHÁCH HỎI VỀ GÌ", "- HỎI PHÁP LÝ", "- KHÁCH TỰ XƯNG", "- XIN GẶP NGƯỜI THẬT", "- TIN HỆ THỐNG")
+
+
+def _cat_doan(t: str, dau: str, cuoi: str) -> str:
+    i, j = t.index(dau), t.index(cuoi)
+    return t[i:j]
+
+
+def _muc_dau_dong(t: str, dau: str) -> str:
+    """Một mục gạch đầu dòng (tới mục gạch đầu dòng / đoạn kế tiếp cùng cấp) bắt đầu bằng `dau` ở đầu dòng."""
+    i = t.index("\n" + dau) + 1
+    m = re.search(r"\n(?=- |[A-ZĐ][A-ZĐÀ-Ỹ ]{5,})", t[i + 1:])
+    return t[i: i + 1 + m.start()] if m else t[i:]
+
+
+OPERATIONS_SYSTEM_MUA = (
+    _MO_DAU_FORM_MUA
+    + _cat_doan(OPERATIONS_SYSTEM, "PHÂN BIỆT Ý ĐỊNH KHÁCH", "TRẢ LỜI CÂU KHÁCH HỎI (")
+    + "\nCÁC Ô DÙNG CHUNG:\n" + "\n".join(_muc_dau_dong(OPERATIONS_SYSTEM, m).rstrip() for m in _MUC_FORM_MUA) + "\n\n"
+    + OPERATIONS_SYSTEM[OPERATIONS_SYSTEM.index("TỪ ĐIỂN TIẾNG LÓNG"):]
+)
+
+# Khoá kế hoạch lượt mua dùng (engine đọc các khoá này ở nhánh mua); thiếu khoá nào thì `plan.get` ra rỗng như lượt không nói.
+KHOA_FORM_MUA = ("user_intent", "buyer_lead", "mua", "xong_viec_mua", "hoi_ve", "hoi_phap_ly", "phap_ly_trich_dan", "phap_ly_nhay_cam",
+                 "xung_ho", "xung_ho_trich_dan", "can_nguoi_that", "loi_xa_giao", "loi_xa_giao_trich_dan", "hoi_ngoai_viec",
+                 "danh_gia_sao", "danh_gia_trich_dan")
+
+
+def operations_schema_mua() -> dict[str, Any]:
+    p = operations_schema()["properties"]
+    return {"type": "object", "properties": {k: p[k] for k in KHOA_FORM_MUA if k in p}, "required": ["user_intent"]}
+
+
 # ── Scoping a price-list import by what the seller actually sells ─────────────────────
 # A bảng giá lists the WHOLE project inventory, but a broker usually sells only SOME căn
 # ("tôi bán 2 căn Cosmo Gen 2 trong này"). The full list is kept as a reference doc; only

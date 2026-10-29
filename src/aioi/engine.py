@@ -13,6 +13,7 @@ import html as _html
 import json
 import logging
 import re
+import os
 import sqlite3
 import threading
 import time
@@ -66,6 +67,7 @@ from .prompts import (
     MO_DAU_GHI_NHAN_RE,
     EXTRACTION_SYSTEM,
     OPERATIONS_SYSTEM,
+    OPERATIONS_SYSTEM_MUA,
     PROJECT_EXTRACTION_SYSTEM,
     UNIT_TYPE_EXTRACTION_SYSTEM,
     build_buyer_chat_system,
@@ -113,6 +115,7 @@ from .prompts import (
     inventory_scope_schema,
     media_group_schema,
     operations_schema,
+    operations_schema_mua,
     INVENTORY_SCOPE_SYSTEM,
     project_extraction_schema,
     unit_type_extraction_schema,
@@ -372,6 +375,16 @@ def _nhieu_cau_hoi(loi: str) -> bool:
 def _la_id_thu(user_key: str | None) -> bool:
     """ID thử của các ô bắn thử — chỉ để log thêm chi tiết (lời khách thật không vào log)."""
     return str(user_key or "").startswith(_TIEN_TO_ID_THU)
+
+
+def _form_mua_gon(conv: "Conversation") -> bool:
+    """Lượt lập thao tác của khách MUA dùng form gọn (SRS-5.1zzzzzzz293): prompt + schema chỉ phần phía mua, bỏ phần thao tác rổ hàng người bán
+    (≈ một nửa chữ, schema 36 → 16 khoá). Công tắc `AIOI_FORM_MUA_GON` (một nguồn `bot/bridge-zca/cai-vps.sh` dòng FORM_MUA_GON): "thu" = chỉ ID
+    thử, "bat" = mọi khách, khác = form đầy đủ như cũ."""
+    if conv.role != "buyer":
+        return False
+    v = os.environ.get("AIOI_FORM_MUA_GON", "").strip().lower()
+    return v == "bat" or (v == "thu" and _la_id_thu(conv.user_key))
 
 
 def _loc_viec_mua(mua: dict) -> dict:
@@ -4482,7 +4495,9 @@ class Engine:
         # data) instead of fabricating a blank căn. When the reference needs a guess it isn't
         # sure of, it leaves operations empty so the reply can confirm first.
         project = self.project_for(conv.prop, conv)
-        system = OPERATIONS_SYSTEM + RANH_GIOI_CACHE + self._project_memory_block(project, conv)   # SRS-5.1zzzzzzz166: 16 nghìn chữ cố định chung mọi khách
+        gon = _form_mua_gon(conv)
+        system = ((OPERATIONS_SYSTEM_MUA if gon else OPERATIONS_SYSTEM)   # SRS-5.1zzzzzzz293: khách mua đọc bằng form gọn
+                  + RANH_GIOI_CACHE + self._project_memory_block(project, conv))   # SRS-5.1zzzzzzz166: phần cố định chung mọi khách
         if project is not None and project.docs_cho(conv.user_key):
             system += (
                 "KHI LẬP THAO TÁC từ bộ nhớ: khi khách rõ ràng THÊM/nhắc một căn CÓ trong bảng "
@@ -4516,7 +4531,13 @@ class Engine:
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
         conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
         with _do(conv, "lap_thao_tac"):
-            plan = self._provider.extract(system, src, operations_schema())
+            plan = self._provider.extract(system, src, operations_schema_mua() if gon else operations_schema())
+        if gon and plan.get("user_intent") == "sell":
+            # SRS-5.1zzzzzzz293: form gọn không có ô thao tác rổ hàng — khách mua chuyển sang gửi bán thì đọc lại cả lượt bằng form đầy đủ.
+            log.warning("Kế hoạch: form mua gọn đọc ra ý bán — đọc lại bằng form đầy đủ")
+            system = OPERATIONS_SYSTEM + system[len(OPERATIONS_SYSTEM_MUA):]
+            with _do(conv, "lap_thao_tac"):
+                plan = self._provider.extract(system, src, operations_schema())
         if isinstance(plan.get("operations"), str):
             # SRS-5.1zzzzzzz78: Haiku có lượt trả `operations` thành chuỗi mà giải dễ dãi cũng hỏng — gọi lại một lần thay vì mất
             # mọi ô của lượt (lượt cuối hội thoại thì mất hẳn).

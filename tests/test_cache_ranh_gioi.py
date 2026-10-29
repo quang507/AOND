@@ -47,10 +47,11 @@ def test_prompt_mua_va_lap_thao_tac_co_ranh_gioi():
     on_dinh, dong = tach_on_dinh(mua)
     assert on_dinh and "Thông tin cần khai thác tiếp theo" in dong
     # lượt lập thao tác: 16 nghìn chữ OPERATIONS_SYSTEM đứng trước dấu (engine nối đuôi đổi sau dấu)
-    assert RANH_GIOI_CACHE not in p.OPERATIONS_SYSTEM
+    assert RANH_GIOI_CACHE not in p.OPERATIONS_SYSTEM and RANH_GIOI_CACHE not in p.OPERATIONS_SYSTEM_MUA   # SRS-5.1zzzzzzz293: form gọn cũng vậy
     import inspect
     from aioi import engine
-    assert "OPERATIONS_SYSTEM + RANH_GIOI_CACHE" in inspect.getsource(engine.Engine._lap_ke_hoach)
+    nguon = inspect.getsource(engine.Engine._lap_ke_hoach)
+    assert "(OPERATIONS_SYSTEM_MUA if gon else OPERATIONS_SYSTEM)" in nguon and "+ RANH_GIOI_CACHE + self._project_memory_block" in nguon
 
 
 def test_model_du_phong_khong_nhan_dau():
