@@ -2254,7 +2254,8 @@ def operations_schema() -> dict[str, Any]:
                     "dien_tich_den": {"type": "string", "description": "CHỈ con số m² lớn nhất khách muốn (\"60-80m2\" → \"80\"; \"dưới 100m2\" → "
                                       "\"100\"). Không nêu thì bỏ trống."},
                     "nhu_cau": {"type": "string", "description": "Nhãn NGẮN của bộ nhu cầu tin này nói tới (vd \"mua ở\", \"đầu tư\", \"cho con\"). "
-                                "Khối BỘ NHU CẦU CỦA KHÁCH đã có nhãn cho bộ đó thì chép ĐÚNG nhãn ấy."},
+                                "Khối BỘ NHU CẦU CỦA KHÁCH đã có nhãn cho bộ đó thì chép ĐÚNG nhãn ấy; khách quay lại nói căn / điều kiện của một "
+                                "bộ ĐÃ CẤT thì ghi nhãn bộ đã cất đó, đừng chép ô của bộ này sang bộ kia."},
                     "nhu_cau_moi": {"type": "boolean", "description": "true CHỈ khi khách nói tìm thêm một căn KHÁC với bộ đang nói (mục đích hoặc "
                                     "người ở khác: \"tìm giùm con một căn nữa\", \"còn muốn mua thêm căn đầu tư\") — các ô khác trong buyer_lead "
                                     "là của bộ MỚI đó. Khách chỉ đổi / nói thêm điều kiện của cùng căn đang tìm thì KHÔNG đặt."},

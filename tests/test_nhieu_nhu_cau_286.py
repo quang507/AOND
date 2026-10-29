@@ -145,3 +145,25 @@ def test_bao_can_moi_mot_bo_khong_ghi_nhan():
     bo = [{"buyer_id": "b1", "preferences": {**NGAN["preferences"], "nhu_cau": "mua ở"}}]
     _, da_gui = chay(_KhoBaoNhieuBo([tin("t5", "Q5AAAAAA", 6.8e9)], bo), TRUA)
     assert len(da_gui) == 1 and "nhu cầu «" not in da_gui[0][1]
+
+
+def test_khach_hoi_lai_can_bo_cu_khong_de_bo_moi_291():
+    """SRS-5.1zzzzzzz291 — ca bắn thử ban-thu-mua 29/10: bộ đầu không nhãn; mở bộ "cho con" Q7; khách hỏi lại căn Q5 → Haiku chép Q5 / 5 tỷ /
+    nhà phố vào bộ "cho con" (đè Q7). Nay: dữ liệu AI ghi trùng hẳn bộ đã cất → quay về bộ đó; bộ đầu có nhãn dựng từ dữ liệu."""
+    kho = KhoGia()
+    eng, ai = _engine(kho, _bo(loai_bds="nha_pho", khu_vuc="Quận 5", ngan_sach="5 tỷ"))
+    eng.handle("mua-291", "anh tìm nhà phố quận 5 tầm 5 tỷ")
+    ai.ke_hoach = _bo(loai_bds="chung_cu", khu_vuc="Quận 7", ngan_sach="3 tỷ", nhu_cau="cho con", nhu_cau_moi=True)
+    eng.handle("mua-291", "tìm thêm giùm con căn hộ quận 7 tầm 3 tỷ")
+    conv = eng._conversations["mua-291"]
+    assert [l.fields.get("nhu_cau") for l in conv.nhu_cau_khac] == ["nhà phố Quận 5"]
+    ai.ke_hoach = _bo(loai_bds="nha_pho", khu_vuc="Quận 5", ngan_sach="5 tỷ", nhu_cau="cho con")
+    eng.handle("mua-291", "còn căn quận 5 hồi nãy diện tích bao nhiêu em")
+    assert conv.buyer_lead.khu_vuc == "Quận 5"
+    con = next(l for l in conv.nhu_cau_khac if l.fields.get("nhu_cau") == "cho con")
+    assert (con.khu_vuc, con.ngan_sach, con.loai_bds) == ("Quận 7", "3 tỷ", "chung_cu")
+
+
+def test_khoi_xung_ho_khong_con_vi_du_dang_luon_291():
+    from aioi.engine import khoi_xung_ho
+    assert "đăng luôn" not in khoi_xung_ho("unknown", "Phương")

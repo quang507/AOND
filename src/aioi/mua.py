@@ -184,6 +184,14 @@ def nhan_nhu_cau(lead: Any) -> str:
     return str(f.get("nhu_cau") or getattr(lead, "muc_dich", None) or f.get("muc_dich") or "").strip()
 
 
+def nhan_tu_du_lieu(lead: Any) -> str:
+    """Nhãn cho bộ khách chưa đặt tên, dựng từ chính dữ liệu bộ đó ("nhà phố Quận 5") — để khối BỘ NHU CẦU có tên AI gọi lại được (SRS-291)."""
+    f = getattr(lead, "fields", {}) or {}
+    g = lambda k: str(getattr(lead, k, None) or f.get(k) or "").strip()   # noqa: E731
+    loai = _TEN_LOAI.get(_LOAI_MUA_SANG_DB.get(g("loai_bds").lower(), ""), "") or g("loai_bds")
+    return " ".join(x for x in (loai, g("khu_vuc")) if x)[:40] or "nhu cầu trước"
+
+
 def _tom_nhu_cau(lead: Any) -> str:
     phan = [str(nhu_cau_cua(lead).get(k) or "") for k in ("loai_giao_dich", "loai_bds", "khu_vuc", "ngan_sach", "so_phong_ngu")]
     thoi = " (khách đã THÔI tìm bộ này)" if (getattr(lead, "fields", {}) or {}).get("_thoi_tim") else ""
