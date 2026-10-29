@@ -148,6 +148,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 - Gợi căn cần khu vực VÀ ngân sách (`co_tieu_chi`, SRS-214); mọi đường gợi căn đi qua `engine._can_goi_y` (bỏ căn đã chê), đừng gọi `can_phu_hop` trần (SRS-175). Mỗi lượt MỘT căn, bốn đoạn = bốn tin Zalo (SRS-160); không nói mã tin / "rổ". Đừng chỉnh trọng số `tim_nha` khi chưa có số đo (`do-tim-nha`).
 - Một nhà có thể có nhiều tin (nhiều người rao): "đã giới thiệu / đã báo / đã chê" so theo `mua.khoa_nha` (số nhà + đường + phường) chứ không chỉ id tin (SRS-278).
 - Số ảnh nói thật (`_so_anh`); ảnh đã gửi đủ thì không gửi lại (SRS-168 / 232). Hết ảnh / chưa có ảnh → nhờ chủ nhà NGAY (`xin_them_anh`, câu `mua.XIN_THEM_ANH` qua `info_requests`); chủ nhà gửi ảnh → `tra_loi_xin_anh` → báo lại khách (SRS-254). Số trong lời bot phía mua phải có trong dòng căn / lời khách / khối "SỐ TÍNH THEO CĂN" (`_so_khong_co_trong_can`).
+- Câu hỏi chủ nhà (`hoi_chu_nha`) là câu AI viết lại theo Ý khách; căn cứ là cụm ngắn `hoi_chu_nha_trich` chịu lỗi gõ (`_trich_gan_khop`) — đừng đòi chính câu hỏi khớp nguyên văn (SRS-280).
 - Việc của khối `mua` nhận theo căn cứ RIÊNG từng việc (`_loc_viec_mua`), đừng nhận / bỏ cả khối theo một trích dẫn (SRS-232). Lượt không ghi gì thì không nói "đã chuyển / đã giữ lịch".
 - **CTV đã bỏ hẳn** (chủ dự án 28/10/2026): mọi đường báo của phía mua (lịch xem, câu hỏi chủ nhà) đi chủ nhà (hạn 12 giờ) hoặc admin (hạn 5 giờ, `admin_han_gio`) (SRS-165 / 170 / 238). Code và DB đã gỡ CTV (SRS-238 / 239: bảng `ctvs`, cột `ctv_id`, view `ctv_ranks` đã xoá; enum `msg_sender` còn giá trị `ctv` không ai dùng); đừng thêm lại vai / bảng / nhánh CTV.
 - Câu khách hỏi căn rổ mẫu (`listings.source = 'seed_thu'`) giao thẳng admin, không qua người bán thử (`route_info_request`, SRS-269).
@@ -158,7 +159,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 - Báo căn mới cho khách mua: `bao_can_moi.py`, vòng 10 phút, 8–20 giờ, ≤ 1 tin / khách / 24 giờ, xoay 4 kiểu văn phong (SRS-150 / 188). Đừng bật lại trigger cũ `bao_tin_moi_khop` / `nudge` (hai chủ).
 - Tin chống Zalo xoá kết nối (FR-63): `giu_ket_noi.py`, khách im 6–7 ngày, 8–20 giờ, câu mẫu cố định, giữ chỗ `reminders` `reengage` (SRS-238).
 - Nhắc `followup` / `sold` / `feedback` / `admin_reply` / `len_web` do LÕI gửi (`gui_nhac.py`, vòng 60 s; `len_web` chờ tin `dang_ban` rồi nhắn chủ nhà — bot chỉ hứa "tin hiển thị em nhắn" khi `hen_bao_len_web` đã ghi, SRS-254); thêm loại nhắc = thêm vào `KIND_LOI` + `soan_tin`, đừng mở đường gửi thứ hai; đừng ghi `noi_dung_gui` khi còn pending (SRS-216).
-- Tin nội bộ (🙋 ⭐ 🩺) gửi CTV / admin mở bằng `$$$$$ `; tin cho khách thật không bao giờ có (SRS-134) — trừ tin phụ "Đã trích xuất" khi công tắc `DONG_TRICH_XUAT` trong `cai-vps.sh` = `bat` (giai đoạn test, SRS-252; chạy thật thì `tat`). Ảnh gửi qua `/send` của bridge, vòng tải ảnh chỉ ở `guiAnhQuaUrl`.
+- Tin nội bộ (🙋 ⭐ 🩺) gửi CTV / admin mở bằng `$$$$$ `; tin cho khách thật không bao giờ có (SRS-134) — trừ tin phụ "Đã trích xuất" khi công tắc `DONG_TRICH_XUAT` trong `cai-vps.sh` = `bat` (giai đoạn test, SRS-252; chạy thật thì `tat`). Ảnh gửi qua `/send` của bridge, vòng tải ảnh chỉ ở `guiAnhQuaUrl` (mọi ảnh một tin, SRS-280).
 - Việc bridge kéo qua `escalation-feed`: đích ID thử bị huỷ ở `pull` (`la_id_thu`), gửi hụt báo `hut` (thử lại 5 phút × lần, 5 lần → `dead`) — đường gửi mới phải có trần như vậy (SRS-276).
 - Tin khách bấm "Trả lời" trên Zalo: bridge `quote_text` → `conv.tin_tra_loi` → `prompts.khoi_tin_tra_loi`; nội dung trích KHÔNG phải lời khách, không làm bằng chứng ô tin (SRS-270).
 - Tin khách tới lúc bot đang soạn: lời vừa soạn bỏ, lượt kế đọc gộp (`server._bo_loi_cu_neu_co_tin_moi`, SRS-279) — đừng gửi lời soạn trên hội thoại đã cũ.
@@ -195,7 +196,7 @@ curl -s -X POST "https://rqxmmqmctpklqcmbfxuj.supabase.co/rest/v1/rpc/xuat_schem
 - Đừng tin `cron.job_run_details.status` — `net.http_post` chỉ xếp hàng; kết quả thật ở `net._http_response`. Đường báo động mới phải có bằng chứng tới nơi.
 - Sổ lỗi `bot_errors` là đầu vào của còi `bot_health_tick`: đường đi đúng thiết kế không ghi sổ (vòng tự nuôi 08/09); mọi `catch` mới phải nối vào sổ.
 - Luật tiền MỘT NGUỒN: `_shared/extraction/luat-tien.ts` + SQL `parse_vnd` cùng trả lời bảng ca `bot/tests/luat/tien.json` (`bun run doi-chieu:tien`). Nhãn tìm kiếm: `_shared/extraction/nhan.ts` + `ten_nhan()` SQL.
-- Dữ liệu THỬ / THẬT tách bằng `la_id_thu(zalo)` (chỗ DUY NHẤT giữ tiền tố ID thử). `reset_nguoi_test` từ chối ID thật. Rổ mẫu `listings.source = 'seed_thu'` (SEED0001..0242, người bán `thu-seed-001`) — đường xoá dữ liệu thử mới phải loại nó (SRS-179).
+- Dữ liệu THỬ / THẬT tách bằng `la_id_thu(zalo)` (chỗ DUY NHẤT giữ tiền tố ID thử). `reset_nguoi_test` từ chối ID thật. Rổ mẫu `listings.source = 'seed_thu'` (SEED0001..0242, người bán `thu-seed-001`) — không có ảnh (ảnh mẫu vẽ đã gỡ, SRS-280) — đường xoá dữ liệu thử mới phải loại nó (SRS-179).
 - Xem rổ hàng / log chat bằng mắt người: schema `so` (`so.ro_hang`, `so.nguoi_ban`, `so.hoi_thoai`), đừng mở `messages` / `listings` trần.
 
 ### 6.5 Web
