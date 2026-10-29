@@ -9109,6 +9109,10 @@ Việc tự soát (chủ dự án 29/10 "ok làm tiếp đi" sau danh sách vi�
      - `tim_dia_danh` cũng gom cả `duong` (`group by ten`), được cùng chỉ mục nếu planner chọn quét chỉ mục.
      - Kết quả đo sau khi áp ghi dưới mục này.
    - (3) *Kiểm*: đo `explain analyze` trước / sau trên DB thật. Không có bài pytest (lõi không đổi). Bắn thử `ban-thu-kiem` đọc log còn timeout không.
+5. **Đo sau khi áp** (29/10, cùng DB):
+   - `tim_duong('ma lo')` 7 ms; `tim_duong('Trần Bình Trọng')` 167 ms (trước 209 ms – 6,08 s).
+   - Kế hoạch: Index Only Scan `duong_ten_gon`, 79 trang thay vì 9.957.
+   - `tim_dia_danh('Mã Lò')` 584 ms — dưới hạn 5 s, chưa sửa thêm.
 
 ### SRS-5.1zzzzzzz271 · Tên đường khách gõ khớp nhiều đường thì hỏi lại là đường nào (29/10/2026)
 Chủ dự án 29/10: "Mã Lò mà chưa ra phường thì nó phải hỏi lại là mã lò hay mã lộ chứ. khách gõ sai tên mà ra 2 đường thì hỏi lại là mã lò
