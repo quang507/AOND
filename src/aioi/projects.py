@@ -349,6 +349,53 @@ class ProjectStore(ABC):
     @abstractmethod
     def all(self) -> list[Project]: ...
 
+    def theo_id(self, project_id: str | None) -> Project | None:
+        """Dự án theo `projects.id` (tin rao nối `project_id`). Kho không có id (bộ nhớ / SQLite) → None."""
+        return None
+
+
+# Thuộc tính của CĂN thắng thuộc tính chung cùng nghĩa (SRS-5.1zzzzzzz283, kế thừa 3 tầng của anh Luận: Project ⊕ UnitType ⊕ Unit, căn thắng):
+# khoá chung → cột tin rao; tin đã có cột đó thì không nhắc giá trị chung (vd pháp lý của căn khác pháp lý dự án).
+_CAN_THANG = {"pháp lý": "legal_status", "vị trí": "ward", "diện tích": "area_m2", "số phòng ngủ": "bedrooms", "số tầng": "floors",
+              "hướng": "direction"}
+
+
+_KHOA_TRUOC = ("chủ đầu tư", "loại hình", "quy mô", "pháp lý", "bàn giao", "tình trạng", "vị trí")
+
+
+def dong_ke_thua(project: Project, ten_mau: str | None = None, can: dict | None = None, toi_da_tien_ich: int = 6, toi_da: int = 700) -> str:
+    """Phần CHUNG mà một căn trong dự án kế thừa (SRS-5.1zzzzzzz283; khuôn anh Luận `docs/data-model.md` "Kế thừa 3 tầng"): dữ kiện dự án ĐÃ CHỐT
+    (`attributes` chỉ giữ giá trị đã chốt; phiếu chờ không vào) + thông số mẫu nhà của căn; thuộc tính căn đã có thì căn thắng, không lặp giá trị
+    chung. Giá không bao giờ ở đây (giá là của riêng người rao). Bỏ link ngoài (bot chỉ dán link web mình — `web.py`); tối đa `toi_da` ký tự
+    (dòng căn đi vào prompt mỗi lượt) — cắt ở ranh giới ý."""
+    can = can or {}
+    co = lambda k: can.get(_CAN_THANG.get(k, "")) not in (None, "")   # noqa: E731
+    phan: list[str] = []
+    mau = project.find_unit_type(ten_mau) if ten_mau else None
+    if mau is not None:
+        sp = [f"{k} {v}" for k, v in mau.specs.items() if v and not co(k) and "http" not in v]
+        phan.append(f"mẫu {mau.name}" + (f" ({'; '.join(sp)})" if sp else ""))
+    tt = {k: v for k, v in project.attributes.items() if v and not co(k) and "http" not in v and k not in ("website", "link")}
+    phan += [f"{k} {tt.pop(k)}" for k in _KHOA_TRUOC if k in tt]   # ý chính trước — dòng có trần độ dài
+    ti = [a if len(a) <= 40 else a[:38].rstrip() + "…" for a in project.amenities if "http" not in a][:toi_da_tien_ich]
+    if ti:
+        phan.append("tiện ích dự án: " + ", ".join(ti))
+    phan += [f"{k} {v}" for k, v in tt.items()]
+    dau = f"thuộc dự án {project.name}"
+    if not phan:
+        return dau
+    dau += " — chung của dự án, căn kế thừa (thông số riêng của căn ở trên thắng nếu khác): "
+    ra, cat = "", False
+    for x in phan:
+        if x.startswith("tiện ích dự án: "):   # tiện ích là câu khách hay hỏi nhất — không đủ chỗ thì rút bớt mục, không bỏ hẳn
+            while len(dau) + len(ra) + len(x) + 2 > toi_da and ", " in x:
+                x, cat = x.rsplit(", ", 1)[0], True
+        if len(dau) + len(ra) + len(x) + 2 > toi_da:
+            cat = True   # ý quá dài thì bỏ qua ý đó, vẫn xét ý sau
+            continue
+        ra += ("; " if ra else "") + x
+    return dau + ra + (" …" if cat else "")
+
 
 class InMemoryProjectStore(ProjectStore):
     def __init__(self) -> None:
@@ -482,7 +529,9 @@ def project_from_dict(d: dict) -> Project:
 # sang `du_an_kien_thuc` lúc nạp — tiện ích (1.351 dự án), pháp lý, bàn giao, mẫu căn (191 dự án) có trong kho mà bot không bao giờ thấy.
 _COT_DU_AN = ("id,name,developer,province,district,ward,location_raw,legal_status,handover_date,handover,status_text,"
               "amenities,unit_types,specs,thong_tin")
-_NHAN_MAU = {"dien_tich": "diện tích", "so_phong_ngu": "số phòng ngủ", "so_wc": "số WC", "so_tang": "số tầng"}
+_NHAN_MAU = {"dien_tich": "diện tích", "so_phong_ngu": "số phòng ngủ", "so_wc": "số WC", "so_tang": "số tầng",
+             "phong_ngu": "số phòng ngủ", "kich_thuoc": "kích thước", "dien_tich_su_dung": "diện tích sử dụng", "ket_cau": "kết cấu",
+             "ghi_chu": "ghi chú"}
 
 
 def _chu(v) -> str:
@@ -519,6 +568,8 @@ def project_from_row(row: dict, kien_thuc: dict | None = None) -> Project:
         if a not in p.amenities:
             p.amenities.append(a)
     for m in row.get("unit_types") or [] if isinstance(row.get("unit_types"), list) else []:
+        if isinstance(m, dict) and not m.get("name") and _chu(m.get("ten")):   # dạng phẳng nhập tay {ten, ket_cau, …} (SRS-5.1zzzzzzz283)
+            m = {"name": m["ten"], "specs": {k: v for k, v in m.items() if k not in ("ten", "units")}}
         if not isinstance(m, dict) or not _chu(m.get("name")):
             continue
         specs = {_NHAN_MAU.get(k, k): _chu(v) for k, v in (m.get("specs") or {}).items() if _chu(v)}
@@ -591,6 +642,9 @@ class SupabaseProjectStore(ProjectStore):
             return project_from_row(dong[0], kt[0]["du_lieu"] if kt else None)
         rows = self._rpc("GET", f"du_an_kien_thuc?select=du_lieu&khoa=eq.{_q(khoa)}") or []
         return project_from_dict(rows[0]["du_lieu"]) if rows else None
+
+    def theo_id(self, project_id: str | None) -> Project | None:
+        return self._mot("", str(project_id)) if project_id else None
 
     def get(self, name: str | None) -> Project | None:
         if not name:

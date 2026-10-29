@@ -9058,6 +9058,39 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz283 · Thông tin dự án chung / riêng theo khuôn anh Luận: căn kế thừa dự án + mẫu nhà ở cả phía mua và web (29/10/2026)
+Chủ dự án 29/10: "thông tin dự án có các thứ chung các thứ riêng, xem bên github anh Luận có quy chế chung riêng chưa" → "làm theo anh Luận đi, có điểm nào
+cần cải thiện theo logic thì cải thiện luôn".
+
+1. **Quy chế anh Luận** (`luan8560/aond` commit `207a145`, `docs/data-model.md` "Kế thừa 3 tầng", `README.md`, `engine.py` `_AGENT_TOOL_GUIDE`):
+   Project ⊕ UnitType ⊕ Unit, "join, không copy", căn thắng. Chung dự án: tiện ích, cổng, đường vào, vị trí khu, pháp lý / quy hoạch dự án, phân lô,
+   tài liệu dự án. Chung mẫu nhà (~99%): công năng, diện tích, số phòng, bản vẽ, hoàn thiện. Riêng căn: block / tầng / số căn, hướng, giá, tình trạng,
+   ảnh thực tế, ~1% khác mẫu; vị trí không kế thừa từ mẫu. Giá là của riêng người rao. Sổ đỏ trong dự án: dữ kiện đất chung, danh tính chủ xoá.
+2. **Soát lõi hiện tại**: phía bán đã đúng khuôn (`build_project_block`, `_structured_shared_block`, chặn giá vào kho chung `engine.py` `_AGENT_TOOL_GUIDE`,
+   `_redact_personal_data`), cộng luật phiếu theo hạng của SRS-249. Hở:
+   - (a) **Phía mua**: dòng căn (`mua.dong_can`) không mang gì của dự án / mẫu nhà — khách hỏi "căn này có hồ bơi không" bot không biết dù kho có.
+   - (b) **Web trang dự án** không đọc `projects.thong_tin` (dữ kiện đã chốt) — web và bot nói hai điều khác nhau (còn ghi ở SRS-249 mục 6).
+   - (c) **Mẫu nhà dạng phẳng**: `projects.unit_types` của Ny'ah nhập tay `{ten, ket_cau, kich_thuoc, …}` (khác mogi `{name, specs}`) — web hiện
+     "Loại 1…5" trống; lõi bỏ qua (lõi vẫn có 5 mẫu nhờ `du_an_kien_thuc`, nhưng cột chung đọc hụt). Đo DB: 5 mẫu / 1 dự án dạng phẳng, 520 dạng mogi.
+3. **Sửa (BA, uỷ quyền theo khuôn anh Luận)**:
+   - `projects.dong_ke_thua(project, ten_mau, can)`: phần CHUNG căn kế thừa — mẫu nhà của căn, ý chính dự án (chủ đầu tư, loại hình, quy mô, pháp lý,
+     bàn giao, tình trạng, vị trí) trước, tiện ích (≤ 6 mục, mỗi mục ≤ 40 ký tự, thiếu chỗ thì rút bớt mục chứ không bỏ hẳn), rồi dữ kiện khác; căn đã có
+     cột cùng nghĩa (pháp lý, diện tích, phòng ngủ, tầng, hướng, phường) thì căn thắng, không lặp; bỏ link ngoài; không bao giờ có giá; trần 700 ký tự.
+   - `ProjectStore.theo_id` (Supabase đọc `projects` + phần học thêm theo `project_id`); `mua.COT_CAN` thêm `project_id`, `unit_type:boc_tach->>unit_type`;
+     `Engine._gan_ke_thua` gắn `_ke_thua` cho căn có `project_id` trước khi dựng khối căn phía mua; `dong_can` in phần đó. Số trong phần kế thừa nằm
+     trong dòng căn nên lưới `_so_khong_co_trong_can` cho phép bot nói.
+   - Web `app/du-an/[slug]`: đọc `thong_tin` — dữ kiện đã chốt đè cột mogi cùng nghĩa (vị trí, pháp lý, bàn giao, chủ đầu tư), dữ kiện khác thêm dòng,
+     tiện ích gộp; bỏ link ngoài. `loaiCan` + `project_from_row` đọc cả dạng phẳng `ten`.
+   - Giữ: luật phiếu Đồng / Bạc / Vàng + admin ghi thẳng (SRS-249, quyết định chủ dự án — chặt hơn bản anh Luận một người nói là ghi).
+4. **Ba câu hỏi gốc**:
+   - (1) *Lớp lỗi*: luật kế thừa chỉ nối ở một phía (bán); dữ liệu cùng cột mà hai khuôn (mogi / nhập tay) thì bộ đọc chỉ biết một khuôn.
+   - (2) *Chỗ khác cùng lớp*: tin báo căn mới (`bao_can_moi.mo_ta_can`) chưa mang phần dự án — chủ ý giữ ngắn; trang tin `app/nha-dat/[code]` đã có
+     link sang trang dự án (FR-117), chưa in tiện ích dự án. Hiện 0 tin đang hiện có `project_id` (rổ mẫu `seed_thu` 85 căn hộ không gắn dự án) — đường
+     kế thừa phía mua chạy khi người bán rao căn trong dự án qua chat.
+   - (3) *Kiểm*: `tests/test_ke_thua_du_an_283.py` (căn thắng, không link / giá, trần độ dài, khách mua thấy "thuộc dự án … hồ bơi … mẫu" trong prompt,
+     mẫu nhà dạng phẳng) — gỡ nối engine / `COT_CAN` thì đỏ. Truy vấn `COT_CAN` mới chạy thử trên PostgREST thật; dòng kế thừa dựng từ dòng Ny'ah thật.
+     Web: build thật + chụp `/du-an/nyah-phu-dinh` máy tính và 375 px (dữ kiện đã chốt, 5 mẫu nhà có thông số). Chưa bắn thử với model thật.
+
 ### SRS-5.1zzzzzzz282 · Trả lời pháp lý ngắn, trúng ý khách hỏi (29/10/2026)
 Chủ dự án xem chat khách mua (số tư vấn, 29/10 15:11, khách "Mr T." hỏi "công chứng sang tên lâu không?"): "đoạn pháp lý dài quá ta".
 

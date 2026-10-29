@@ -36,7 +36,7 @@ from .web import SITE_URL  # noqa: E402 — một nguồn với phía bán (SRS-
 TRANG_THAI_HIEN = ("dang_ban", "dang_quan_tam", "da_coc")
 # Cột căn đưa cho model khi tư vấn khách mua — KHÔNG có số nhà (`location_raw`), mô tả gốc (có thể chứa SĐT) hay người bán.
 COT_CAN = ("id,code,property_type,deal,street,ward,district,area_m2,price_raw,price_vnd,bedrooms,floors,floors_text,legal_status,"
-           "direction,access_type,alley_width_m,status")
+           "direction,access_type,alley_width_m,status,project_id,unit_type:boc_tach->>unit_type")   # project_id + mẫu nhà: kế thừa (SRS-283)
 _LOAI_MUA_SANG_DB = {"nha_pho": "nha_pho", "nha_cap_4": "nha_cap4", "biet_thu": "biet_thu", "chung_cu": "chung_cu",
                      "can_ho": "chung_cu", "condo": "chung_cu", "dat": "dat", "dat_tho_cu": "dat", "dat_nen": "dat",
                      "phong_tro": "phong_tro", "mat_bang": "mat_bang", "toa_nha": "toa_nha", "chdv": "toa_nha",
@@ -812,6 +812,8 @@ def dong_can(c: dict) -> str:
         phan.append(f"hướng {c['direction']}")
     if c.get("status") == "da_coc":
         phan.append("(đã có khách cọc)")
+    if c.get("_ke_thua"):   # SRS-5.1zzzzzzz283: phần chung của dự án / mẫu nhà mà căn kế thừa
+        phan.append(str(c["_ke_thua"]))
     if c.get("_ly_do"):
         phan.append(f"vì sao hợp: {c['_ly_do']}")
     if c.get("_vuot_ngan_sach"):

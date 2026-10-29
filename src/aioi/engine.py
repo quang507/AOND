@@ -56,6 +56,7 @@ from .projects import (
     Project,
     ProjectStore,
     UnitType,
+    dong_ke_thua,
     la_ma_phieu,
     ma_phieu,
     merge_facts,
@@ -2623,6 +2624,7 @@ class Engine:
                 conv.buyer_lead.fields["_da_hoi"] = ",".join(sorted(set(da) | {next_field}))
             system = build_buyer_chat_system(conv.assistant.name, conv.buyer_lead, next_field)
             viec, can = self._viec_mua(conv, text)
+            self._gan_ke_thua(can)   # SRS-5.1zzzzzzz283: căn trong dự án mang phần chung của dự án / mẫu nhà
             if getattr(self._convstore, "can_phu_hop", None) is not None:
                 system += (khoi_can_cho_khach(can, not co_tieu_chi(conv.buyer_lead)) + khoi_viec_vua_ghi(viec)
                            + khoi_lich_dang_cho(conv.y_luot.get("lich_cho"), customer_pronoun, conv.assistant.name))
@@ -4844,6 +4846,28 @@ class Engine:
         return (f'BOT VỪA HỎI căn này có thuộc dự án "{cu}" không (kho gợi ý theo tên đường). Khách xác nhận đúng (vd "đúng rồi", "ừ", "phải") → ghi '
                 f'du_an = "{cu}", cụm trích = lời xác nhận của khách; khách nói không hoặc nêu tên khác → ghi theo lời khách hoặc để trống; '
                 "không nhắc tới → không ghi.\n")
+
+    def _gan_ke_thua(self, can: list[dict]) -> list[dict]:
+        """Căn nối `project_id` → `_ke_thua` = phần CHUNG kế thừa từ dự án + mẫu nhà (SRS-5.1zzzzzzz283, khuôn 3 tầng của anh Luận: Project ⊕
+        UnitType ⊕ Unit, căn thắng). Trước bản này dòng căn phía mua không mang gì của dự án — khách hỏi "căn này có hồ bơi không" thì bot không
+        biết dù kho dự án có. Đọc mỗi dự án một lần mỗi lượt; kho lỗi thì bỏ qua, lượt vẫn đi."""
+        lay = getattr(self._projects, "theo_id", None)
+        if lay is None:
+            return can
+        nho: dict[str, Project | None] = {}
+        for c in can:
+            pid = str(c.get("project_id") or "")
+            if not pid or c.get("_ke_thua"):
+                continue
+            if pid not in nho:
+                try:
+                    nho[pid] = lay(pid)
+                except Exception as e:  # noqa: BLE001
+                    log.warning("ke_thua: đọc dự án lỗi (%s)", type(e).__name__)
+                    nho[pid] = None
+            if nho[pid] is not None:
+                c["_ke_thua"] = dong_ke_thua(nho[pid], c.get("unit_type"), c)
+        return can
 
     def _can_goi_y(self, conv: Conversation) -> list[dict]:
         """Căn gợi ý cho khách mua, bỏ căn khách đã chê (SRS-5.1zzzzzzz175) — MỘT cửa cho cả lượt lập thao tác lẫn lượt trả lời."""
