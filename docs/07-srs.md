@@ -9058,6 +9058,26 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz266 · Khi nào agent tự quyết, khi nào hỏi chủ dự án (29/10/2026)
+Chủ dự án 28–29/10:
+- "làm hết đi hỏi lắm";
+- "bạn quyết thêm đi, còn chỗ nào cần quy định rồi làm luôn";
+- "mấy cái đó có cấu hình hết rồi sao còn hỏi lại vậy";
+- "mày cần nhớ định hướng của t để đỡ hỏi lại".
+
+`CLAUDE.md` §4 mục 2 cũ ("không tự ý chốt điều còn mơ hồ → OPEN, chờ chủ dự án") khiến agent hỏi cả việc kỹ thuật, và hỏi lại điều code đã có. Thay bằng:
+- **Tự quyết:** việc kỹ thuật / UX / câu chữ / ngưỡng hỏi — sau khi soát code + docs; ghi mục SRS "Quyết định (BA, uỷ quyền)".
+- **Chỉ hỏi**, một câu, khi đụng:
+  - tiền / phí;
+  - pháp lý;
+  - thương hiệu;
+  - dữ liệu khách thật;
+  - hoặc đảo quyết định đã chốt.
+- Mâu thuẫn tài liệu không tự giải được → vẫn tạo `OPEN-xx` kèm khuyến nghị.
+- Scope đổi thường xuyên: mục SRS mới nhất thắng.
+
+Đồng bộ `.clinerules/00-du-an.md` mục 11. Không đổi code.
+
 ### SRS-5.1zzzzzzz265 · Harness giữ thông tin qua compact: vòng giao việc ở CLAUDE.md, hook in mục SRS mới nhất, script chờ CI trong repo (29/10/2026)
 Chủ dự án 29/10: "có harness rồi, có cách nào để ghi đầy đủ thông tin trên đó, docs PR làm chuẩn, sau bạn làm gì thì đọc docs trước, thì compact chat
 vẫn không bị mất thông tin không".
