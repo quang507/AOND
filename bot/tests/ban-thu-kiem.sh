@@ -6,6 +6,7 @@
 #   E. Kho xưởng: đủ vị trí · diện tích · pháp lý mới ra bản nháp (SRS-263)
 #   F. Chủ nhà hai căn gửi ảnh → ảnh vào căn khách mua đang xin (SRS-258 / 254)
 #   G. Sticker tới dạng ảnh .png → đọc như lời chào, không lưu thành ảnh căn (SRS-255)
+#   H. Khách hỏi căn rổ mẫu SEED → câu hỏi giao thẳng admin, tin tới Zalo admin (SRS-269) — admin THẬT nhận một tin "❓ Khách hỏi căn #SEED…"
 # Kiểm điều tất định (DB, mã căn trong link); câu chữ bot in ra ở dòng << cho người đọc. Từ khoá trong lời bot chỉ là lưới đỡ.
 # Cần: TOKEN (Management API), PROJECT_REF. Tiền thật: ~16 lượt chat.
 set -euo pipefail
@@ -24,7 +25,8 @@ vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/nu
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
 TV="thu-kiem-tv-$RUN"; MUA="thu-kiem-mua-$RUN"; KHO="thu-kiem-kho-$RUN"; CHU="thu-kiem-chu-$RUN"; MUA2="thu-kiem-mua2-$RUN"; ST="thu-kiem-st-$RUN"
-TAT_CA="$TV $MUA $KHO $CHU $MUA2 $ST"
+MUA3="thu-kiem-mua3-$RUN"
+TAT_CA="$TV $MUA $KHO $CHU $MUA2 $ST $MUA3"
 MA_A=$(printf 'A%07X' $(( RUN % 268435456 ))); MA_B=$(printf 'B%07X' $(( RUN % 268435456 )))
 
 don() {
@@ -115,6 +117,23 @@ gui "$ST" '{"text":"","image_urls":["https://cdn.jsdelivr.net/gh/twitter/twemoji
 ANH_ST=$(mot "select count(*) as n from listing_media m join listings l on l.id = m.listing_id join sellers s on s.id = l.seller_id where s.zalo_user_id = '$ST'")
 kiem "G: sticker không bị lưu thành ảnh căn" "$([ "$ANH_ST" = 0 ] && echo 1 || echo 0)"
 kiem "G: bot đáp như lời chào (lưới đỡ bằng chữ)" "$(grep -qiE 'chào|xin chào' <<<"$LOI" && echo 1 || echo 0)"
+
+# ==== H. Câu hỏi về căn rổ mẫu giao thẳng admin (SRS-269, chủ dự án 29/10: "giao thẳng admin luôn") — trước đây giao người bán thử
+# `thu-seed-001` (không có Zalo thật), hạn 12 giờ mới sang admin.
+chat "$MUA3" "Chào em, căn #SEED0040 trần tầng trệt cao bao nhiêu mét vậy em? Anh hỏi để kê tủ bếp"
+IR=$(q "select q.assignee as n from info_requests q join listings l on l.id = q.listing_id join buyers b on b.id = q.buyer_id
+        where l.code = 'SEED0040' and b.zalo_user_id = '$MUA3' and q.source = 'buyer_ask' order by q.created_at desc limit 1" | jq -r '.[0].n // empty')
+echo "== H: câu hỏi giao: ${IR:-(không có dòng info_requests)}"
+kiem "H: câu khách hỏi căn SEED giao thẳng admin (không giao người bán thử)" "$([ "$IR" = admin ] && echo 1 || echo 0)"
+NHAC=""
+for _ in $(seq 1 18); do
+  NHAC=$(q "select m.status as n from reminders m join listings l on l.id = m.listing_id where l.code = 'SEED0040' and m.kind = 'escalation'
+            and m.seller_id is null and m.created_at > now() - interval '10 minutes' order by m.created_at desc limit 1" | jq -r '.[0].n // empty')
+  [ "$NHAC" = sent ] && break; sleep 10
+done
+echo "== H: tin báo admin: ${NHAC:-(không có)}"
+kiem "H: có tin báo admin (reminders escalation không gắn người bán)" "$([ -n "$NHAC" ] && echo 1 || echo 0)"
+kiem "H: bridge đã gửi tin tới Zalo admin (status sent, chờ ≤ 3 phút)" "$([ "$NHAC" = sent ] && echo 1 || echo 0)"
 
 kiem "mọi lượt: không bong bóng nào mở đầu \"Dạ\"" "$(grep -qE '^Dạ' <<<"$MOI_LOI" && echo 0 || echo 1)"
 vps "journalctl -u aond-core --since '-15 min' --no-pager -o cat | grep -E 'Ảnh chủ nhà|Bỏ ô|Lời bot lệch luật|lỗi' | sed -E 's/[0-9]{9,}/#/g' | tail -30" || true
