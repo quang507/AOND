@@ -4577,7 +4577,7 @@ class Engine:
                 conv.buyer_lead = BuyerLead(user_key=conv.user_key)
             if plan.get("buyer_lead"):
                 self._chon_nhu_cau(conv, plan["buyer_lead"])
-                conv.buyer_lead.update({k: v for k, v in plan["buyer_lead"].items() if k != "nhu_cau_moi"})
+                conv.buyer_lead.update({k: v for k, v in plan["buyer_lead"].items() if k not in ("nhu_cau_moi", "nhu_cau_thoi")})
         elif intent == "sell":
             conv.role = "seller"
         elif conv.role == "buyer" and conv.buyer_lead is not None:
@@ -4893,11 +4893,17 @@ class Engine:
         nhãn một bộ đã cất → quay lại bộ đó. Nhãn lệch chữ mà không có `nhu_cau_moi` thì KHÔNG đẻ bộ (tránh tách bộ vì AI gọi tên khác đi)."""
         cur = conv.buyer_lead
         nhan = str(bl.get("nhu_cau") or "").strip()[:40]
-        if cur is None or not nhan:
-            return
 
         def chuan(s: str) -> str:
             return " ".join(unicodedata.normalize("NFC", s).lower().split())
+
+        # Khách thôi tìm một bộ ("khỏi tìm cho con nữa") — AI đọc nghĩa, ghi nhãn bộ đó; code chỉ so nhãn AI ghi với nhãn đã có, không dò chữ khách.
+        thoi = chuan(str(bl.get("nhu_cau_thoi") or ""))
+        for l in ([cur] if cur is not None else []) + list(conv.nhu_cau_khac):
+            if thoi and chuan(nhan_nhu_cau(l)) == thoi:
+                l.fields["_thoi_tim"] = "1"
+        if cur is None or not nhan:
+            return
 
         if bl.get("nhu_cau_moi") is True:
             if not (nhu_cau_cua(cur).keys() - {"loai_giao_dich", "nhu_cau"}):
@@ -4908,9 +4914,10 @@ class Engine:
             conv.buyer_lead = BuyerLead(user_key=conv.user_key)
             return
         cu = next((l for l in conv.nhu_cau_khac if chuan(nhan_nhu_cau(l)) == chuan(nhan)), None)
-        if cu is not None and chuan(nhan_nhu_cau(cur)) != chuan(nhan):
+        if cu is not None and chuan(nhan_nhu_cau(cur)) != chuan(nhan) and chuan(nhan) != thoi:
             conv.nhu_cau_khac = [cur] + [l for l in conv.nhu_cau_khac if l is not cu and l is not cur]
             conv.buyer_lead = cu
+            cu.fields.pop("_thoi_tim", None)   # khách quay lại nói bộ đã thôi → tìm lại
 
     def _can_goi_y(self, conv: Conversation) -> list[dict]:
         """Căn gợi ý cho khách mua, bỏ căn khách đã chê (SRS-5.1zzzzzzz175) — MỘT cửa cho cả lượt lập thao tác lẫn lượt trả lời."""

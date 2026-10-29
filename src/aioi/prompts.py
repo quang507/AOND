@@ -2258,6 +2258,8 @@ def operations_schema() -> dict[str, Any]:
                     "nhu_cau_moi": {"type": "boolean", "description": "true CHỈ khi khách nói tìm thêm một căn KHÁC với bộ đang nói (mục đích hoặc "
                                     "người ở khác: \"tìm giùm con một căn nữa\", \"còn muốn mua thêm căn đầu tư\") — các ô khác trong buyer_lead "
                                     "là của bộ MỚI đó. Khách chỉ đổi / nói thêm điều kiện của cùng căn đang tìm thì KHÔNG đặt."},
+                    "nhu_cau_thoi": {"type": "string", "description": "Khách nói THÔI tìm một bộ (\"khỏi tìm cho con nữa\", \"căn đầu tư tạm gác\") → "
+                                     "chép ĐÚNG nhãn bộ đó ở khối BỘ NHU CẦU CỦA KHÁCH. Không có thì bỏ trống."},
                     "so_tang_mong_muon": {"type": "string", "description": "CHỈ con số tổng số tầng khách muốn, tính cả trệt, không tính lửng "
                                           "(\"nhà 4 tầng\" → \"4\"; \"1 trệt 3 lầu\" → \"4\"). Khách không nói số tầng thì bỏ trống."},
                     "tien_ich_mong_muon": {"type": "string", "description": "NGUYÊN VĂN cụm khách nói muốn gần tiện ích nào: trường học, bệnh viện, "

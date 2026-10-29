@@ -121,3 +121,20 @@ def test_khach_mua_cu_mot_bo_van_chay():
     eng, _ = _engine(KhoGia(), KHACH_MUA)
     eng.handle("mua-286d", "Em tìm nhà phố quận 5 tầm 5 tỷ")
     assert eng._conversations["mua-286d"].nhu_cau_khac == []
+
+
+def test_khach_thoi_tim_mot_bo_thi_tat_bo_do_khong_do_chu():
+    """Khách "khỏi tìm cho con nữa": AI ghi `nhu_cau_thoi` = nhãn bộ; code chỉ so nhãn AI ghi, không dò chữ "không" / "khỏi" trong lời khách."""
+    kho = KhoGia()
+    eng, ai = _engine(kho, _bo(khu_vuc="Quận 5", ngan_sach="8 tỷ", nhu_cau="mua ở"))
+    eng.handle("mua-286e", "tìm nhà quận 5 tầm 8 tỷ để ở")
+    ai.ke_hoach = _bo(khu_vuc="Quận 7", ngan_sach="3 tỷ", nhu_cau="cho con", nhu_cau_moi=True)
+    eng.handle("mua-286e", "tìm giùm con căn hộ quận 7 tầm 3 tỷ nữa")
+    ai.ke_hoach = _bo(nhu_cau="cho con", nhu_cau_thoi="cho con")
+    eng.handle("mua-286e", "thôi khỏi tìm cho con nữa em, nó mua rồi")
+    ghi = {d["nhan"]: d["dang_tim"] for d in kho.ghi("POST", "buyer_needs")[-1]}
+    assert ghi == {"cho con": False, "mua ở": True}
+    ai.ke_hoach = _bo(so_phong_ngu="3PN", nhu_cau="mua ở")              # lời khách có chữ "không" mà AI không ghi thôi → không tắt bộ nào
+    eng.handle("mua-286e", "căn của anh không cần thang máy, 3 phòng ngủ")
+    ghi = {d["nhan"]: d["dang_tim"] for d in kho.ghi("POST", "buyer_needs")[-1]}
+    assert ghi == {"cho con": False, "mua ở": True}
