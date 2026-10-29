@@ -9,6 +9,7 @@
 // 08/09/2026 — Phân hệ CRM Khách Hàng Hai Vai (vừa mua vừa bán · gắn BĐS quan tâm · nhu cầu)
 // và Tái cấu trúc Phân Cấp Giao Diện (Hierarchical Tabs & KPI Overview Cards).
 import { canhBaoCache, giaCua, tongTien, tyLeDocCache, type DongToken } from "@/lib/gia-model";
+import { PT_CHU, PT_MG } from "@/lib/phi";
 import { Suspense, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -74,7 +75,7 @@ type Viec = { id: string; kind: string; note: string | null; due_at: string; cre
 type NguoiBan = {
   id: string; name: string | null; seller_type: string; created_at: string; zalo_user_id: string | null;
 };
-const NHAN: Record<string, string> = { ccrb: "Chính chủ · 1%", nmg: "Môi giới · 0,5%", unknown: "Chưa nhãn" };
+const NHAN: Record<string, string> = { ccrb: `Chính chủ · ${PT_CHU}`, nmg: `Môi giới · ${PT_MG}`, unknown: "Chưa nhãn" };   // SRS-5.1zzzzzzz275
 
 const HANG: Record<string, { ten: string; lop: string }> = {
   vang: { ten: "Vàng", lop: "bg-[#f6c453] text-navy" },

@@ -9058,6 +9058,28 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz275 · Mức phí môi giới một nguồn: chữ trong prompt và web dựng từ số tính tiền (29/10/2026)
+Chủ dự án hỏi 29/10: "vẫn giữ 1 thư viện tư liệu duy nhất SSOT để các bên nối vào rồi đúng ko". Soát: dự án (`projects`), pháp lý (`phap_ly.MAC_DINH` + bảng),
+câu mẫu (`cau_mau`), luật tiền (`luat-tien.ts` + `parse_vnd`), vùng nhận tin đều một nguồn. Riêng **mức phí** viết tay 7 chỗ:
+
+- Lõi: `revenue.SALE_FEE_RATE` / `RENTAL_FEE_MONTHS` (số tính tiền) nhưng `prompts.BUSINESS_CONTEXT`, `prompts.muc_phi`, `prompts._fee_hint`,
+  khối phí `engine.py` gõ lại "1%", "0.5%", "0.75 tháng tiền thuê".
+- Web: `app/raoban/page.tsx`, `app/moi-gioi/page.tsx`, `app/admin/page.tsx` gõ lại "1%" / "0,5%".
+
+Đổi mức phí ở `revenue.py` thì lời bot và web vẫn nói số cũ — báo sai tiền.
+
+1. **Sửa**:
+   - `prompts.PT_CHU` / `PT_MG` / `PHI_THUE` dựng từ `revenue.py`; `BUSINESS_CONTEXT`, `muc_phi`, `_fee_hint`, khối phí engine dùng ba chữ này.
+     `BUSINESS_CONTEXT` ra đúng từng byte như cũ (cache prompt không đổi).
+   - Web: `lib/phi.ts` (một nguồn phía web), ba trang import từ đó. Nhãn admin đổi "0,5%" → "0.5%" cho cùng cách viết với lời bot.
+   - Mức phí KHÔNG đổi (1% / 0.5% / 0.75 tháng tiền thuê).
+2. **Ba câu hỏi gốc**:
+   - (1) *Lớp lỗi*: cùng một con số chép tay ở nhiều tầng (Python tính tiền, prompt, web) — không gì ép các bản khớp nhau.
+   - (2) *Chỗ khác cùng lớp*: đã soát dự án, pháp lý, câu mẫu, luật tiền, vùng nhận tin — một nguồn. Câu mẫu admin (`cau_mau.MAC_DINH`)
+     có thể chứa số phí do chủ dự án sửa ở `/admin/cau-chuan` — để vậy (chữ chủ dự án, không phải code). `docs/` nêu mức phí bằng chữ — tài liệu, không phải nguồn.
+   - (3) *Kiểm*: `tests/test_phi_mot_nguon_275.py` — chữ phí bằng số tính tiền; prompts / engine không còn "1%" / "0.5%" viết tay (quét AST, bỏ docstring);
+     `lib/phi.ts` khớp `revenue.py`; trang web không gõ tay mức phí. Đỏ khi gỡ bản sửa (gõ lại "1%" trong prompt / trang web).
+
 ### SRS-5.1zzzzzzz274 · Bắn thử lần 7: không còn timeout tra đường; ô `duong` ghi cả tên khách gõ không dấu (29/10/2026)
 Bắn thử `ban-thu-kiem` (run 40818146901, sau #189): 20/22 ĐẠT.
 

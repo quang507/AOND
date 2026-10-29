@@ -10,7 +10,7 @@ import re
 from typing import Any
 
 from .projects import Project, UnitType
-from .revenue import SellerRole
+from .revenue import RENTAL_FEE_MONTHS, SALE_FEE_RATE, SellerRole
 from . import cau_mau
 from . import phap_ly
 from .llm.base import RANH_GIOI_CACHE
@@ -252,14 +252,24 @@ MO_TA_CHO_THUE = ("true CHỈ KHI khách muốn CHO THUÊ căn này (rao cho thu
 
 
 # Stable business context used when discussing fees / drafting listings
-BUSINESS_CONTEXT = """BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ — chỉ nói ra khi khách hỏi, đừng thuyết giảng):
+# Mức phí MỘT NGUỒN (SRS-5.1zzzzzzz275): số ở `revenue.SALE_FEE_RATE` / `RENTAL_FEE_MONTHS` (cũng là số tính tiền giao dịch); mọi câu chữ
+# phí trong prompt / câu mẫu dựng từ đây — trước đây "1% / 0.5% / 0.75 tháng" viết tay ở 4 chỗ (BUSINESS_CONTEXT, _fee_hint, engine, muc_phi).
+def _pt(x: float) -> str:
+    return f"{x * 100:g}%"
+
+
+PT_CHU = _pt(SALE_FEE_RATE[SellerRole.CHU_NHA])     # "1%"
+PT_MG = _pt(SALE_FEE_RATE[SellerRole.MOI_GIOI])     # "0.5%"
+PHI_THUE = f"{RENTAL_FEE_MONTHS:g} tháng tiền thuê"  # "0.75 tháng tiền thuê"
+
+BUSINESS_CONTEXT = f"""BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ — chỉ nói ra khi khách hỏi, đừng thuyết giảng):
 - Người rao bán/cho thuê BĐS bằng cách chat Zalo tự nhiên (KHÔNG form). Nhiệm vụ của bạn: lặng lẽ gom đủ dữ liệu listing, giữ khách quay lại, và dùng gamification để khích lệ.
 - HAI loại khách — hãy nhận biết qua hội thoại rồi tư vấn cho đúng:
-  • Bên SỞ HỮU (chủ nhà; hoặc nhà đầu tư lướt sóng giữ HĐMB): phí 1% giá chốt khi bán, hoặc 0.75 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê, tuyệt đối không nói nhầm thành 3 hay 4 tháng).
-  • Bên MÔI GIỚI (nhân viên môi giới; hoặc sàn giao dịch): phí 0.5% giá chốt khi bán, hoặc 0.75 tháng tiền thuê. Khích lệ đăng thêm hàng (≥10 căn) để lên Top.
-  • CHỦ ĐẦU TƯ: phí KHÔNG theo 1%/0.5% — thoả thuận riêng với dự án; đừng tự báo con số.
-- CHÍNH SÁCH khi khách hỏi (chủ dự án chốt 28/10/2026, SRS-5.1zzzzzzz241): (1) KHÔNG bớt / giảm phí — khách xin bớt thì nói khéo mức phí cố định, bù lại chỉ thu khi giao dịch thành công; (2) CÓ ký hợp đồng môi giới bằng văn bản (thống nhất phí) — khách hỏi thì nói có; khách muốn ký thì nói em nối người phụ trách, KHÔNG hẹn giờ, KHÔNG tự gửi mẫu; (3) KHÔNG độc quyền — chủ nhà gửi bán nhiều nơi vẫn được; (4) môi giới gửi hàng: phí 0.5% giá chốt như trên, không có mức chia hoa hồng nào khác.
-- PHÍ CHỈ thu khi giao dịch THÀNH CÔNG. TUYỆT ĐỐI không bịa con số phí/ưu đãi/cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì nêu cả hai mức (chủ nhà 1%, môi giới 0.5%) hoặc hỏi khách là chủ nhà hay môi giới.
+  • Bên SỞ HỮU (chủ nhà; hoặc nhà đầu tư lướt sóng giữ HĐMB): phí {PT_CHU} giá chốt khi bán, hoặc {PHI_THUE} (ba phần tư của MỘT tháng tiền thuê, tuyệt đối không nói nhầm thành 3 hay 4 tháng).
+  • Bên MÔI GIỚI (nhân viên môi giới; hoặc sàn giao dịch): phí {PT_MG} giá chốt khi bán, hoặc {PHI_THUE}. Khích lệ đăng thêm hàng (≥10 căn) để lên Top.
+  • CHỦ ĐẦU TƯ: phí KHÔNG theo {PT_CHU}/{PT_MG} — thoả thuận riêng với dự án; đừng tự báo con số.
+- CHÍNH SÁCH khi khách hỏi (chủ dự án chốt 28/10/2026, SRS-5.1zzzzzzz241): (1) KHÔNG bớt / giảm phí — khách xin bớt thì nói khéo mức phí cố định, bù lại chỉ thu khi giao dịch thành công; (2) CÓ ký hợp đồng môi giới bằng văn bản (thống nhất phí) — khách hỏi thì nói có; khách muốn ký thì nói em nối người phụ trách, KHÔNG hẹn giờ, KHÔNG tự gửi mẫu; (3) KHÔNG độc quyền — chủ nhà gửi bán nhiều nơi vẫn được; (4) môi giới gửi hàng: phí {PT_MG} giá chốt như trên, không có mức chia hoa hồng nào khác.
+- PHÍ CHỈ thu khi giao dịch THÀNH CÔNG. TUYỆT ĐỐI không bịa con số phí/ưu đãi/cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì nêu cả hai mức (chủ nhà {PT_CHU}, môi giới {PT_MG}) hoặc hỏi khách là chủ nhà hay môi giới.
 - Gamification: có Điểm uy tín và hạng Đồng/Bạc/Vàng — số THẬT nằm ở khối "ĐIỂM TIN" cuối prompt (hệ thống tính); chỉ nói số trong khối đó, gợi ý cách tăng điểm theo ô còn thiếu ghi ở đó (ảnh, sổ hồng, thông tin còn thiếu)."""
 
 
@@ -269,12 +279,12 @@ def muc_phi(role: SellerRole, thue: bool) -> str | None:
     if role == SellerRole.CHU_DAU_TU:
         return None
     if thue:
-        return "0.75 tháng tiền thuê"
+        return PHI_THUE
     if role in (SellerRole.CHU_NHA, SellerRole.LUOT_SONG):
-        return "1% giá chốt"
+        return f"{PT_CHU} giá chốt"
     if role in (SellerRole.MOI_GIOI, SellerRole.SAN):
-        return "0.5% giá chốt"
-    return "1% giá chốt nếu là chủ nhà, 0.5% nếu là môi giới"
+        return f"{PT_MG} giá chốt"
+    return f"{PT_CHU} giá chốt nếu là chủ nhà, {PT_MG} nếu là môi giới"
 
 
 def khoi_bao_phi(role: SellerRole, thue: bool) -> str:
@@ -290,18 +300,18 @@ def _fee_hint(role: SellerRole) -> str:
     if role in (SellerRole.CHU_NHA, SellerRole.LUOT_SONG):
         who = "CHÍNH CHỦ" if role == SellerRole.CHU_NHA else "NHÀ ĐẦU TƯ (chủ HĐMB)"
         return (
-            f"VAI NGƯỜI RAO: {who} (bên sở hữu). Nếu được hỏi phí, báo 1% giá chốt khi bán, "
-            "hoặc 0.75 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng), chỉ thu khi giao dịch thành công."
+            f"VAI NGƯỜI RAO: {who} (bên sở hữu). Nếu được hỏi phí, báo {PT_CHU} giá chốt khi bán, "
+            f"hoặc {PHI_THUE} (ba phần tư của MỘT tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng), chỉ thu khi giao dịch thành công."
         )
     if role in (SellerRole.MOI_GIOI, SellerRole.SAN):
         who = "MÔI GIỚI" if role == SellerRole.MOI_GIOI else "SÀN GIAO DỊCH"
         return (
-            f"VAI NGƯỜI RAO: {who} (bên môi giới). Nếu được hỏi phí, báo 0.5% giá chốt khi bán, "
-            "hoặc 0.75 tháng tiền thuê (ba phần tư của MỘT tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng), chỉ thu khi thành công; khích lệ đăng thêm hàng (≥10 căn) để lên Top hiển thị."
+            f"VAI NGƯỜI RAO: {who} (bên môi giới). Nếu được hỏi phí, báo {PT_MG} giá chốt khi bán, "
+            f"hoặc {PHI_THUE} (ba phần tư của MỘT tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng), chỉ thu khi thành công; khích lệ đăng thêm hàng (≥10 căn) để lên Top hiển thị."
         )
     if role == SellerRole.CHU_DAU_TU:
         return (
-            "VAI NGƯỜI RAO: CHỦ ĐẦU TƯ. Phí KHÔNG theo 1%/0.5% — đây là thoả thuận riêng "
+            f"VAI NGƯỜI RAO: CHỦ ĐẦU TƯ. Phí KHÔNG theo {PT_CHU}/{PT_MG} — đây là thoả thuận riêng "
             "với dự án. Nếu được hỏi phí, nói sẽ kết nối bộ phận hợp tác dự án, ĐỪNG báo con số."
         )
     return ""  # unknown -> rely on the general BUSINESS_CONTEXT guidance

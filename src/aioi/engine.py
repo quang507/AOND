@@ -75,6 +75,9 @@ from .prompts import (
     build_transcribe_instruction,
     build_fee_followup_system,
     _fee_hint,
+    PT_CHU,
+    PT_MG,
+    PHI_THUE,
     khoi_bao_phi,
     muc_phi,
     khoi_hoi_sau_dang,
@@ -2816,7 +2819,7 @@ class Engine:
             hoi_ve_khoi = (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ PHÍ: ===\n"
                 "Trả lời RÕ RÀNG trước: đăng tin MIỄN PHÍ; CHỈ thu phí khi giao dịch thành công, không thành thì không tốn đồng nào. "
-                "Con số phí đúng theo VAI NGƯỜI RAO / BỐI CẢNH ở trên (bán: 1% chính chủ, 0.5% môi giới; cho thuê: 0.75 tháng tiền thuê "
+                f"Con số phí đúng theo VAI NGƯỜI RAO / BỐI CẢNH ở trên (bán: {PT_CHU} chính chủ, {PT_MG} môi giới; cho thuê: {PHI_THUE} "
                 "= 3/4 của MỘT tháng tiền thuê; chưa rõ vai thì nêu cả hai hoặc hỏi khéo khách là chủ nhà hay môi giới). Sau đó nối lại nội dung căn đang trao đổi.\n"
                 + ((_fee_hint(conv.vai_phi) + "\n") if _fee_hint(conv.vai_phi) else "")
                 + ((khoi_bao_phi(conv.vai_phi, conv.prop.is_rental) + "\n") if khoi_bao_phi(conv.vai_phi, conv.prop.is_rental) else "")

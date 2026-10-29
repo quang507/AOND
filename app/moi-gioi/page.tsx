@@ -18,6 +18,7 @@
 import type { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
 import { zaloLink } from "@/lib/format";
+import { PT_MG } from "@/lib/phi";
 
 export const revalidate = 3600;
 export const metadata: Metadata = {
@@ -73,7 +74,7 @@ export default async function Page() {
       <div className="mt-10 rounded-king bg-navy px-6 py-8 text-white">
         <h2 className="text-xl font-extrabold">Anh chị là môi giới ở Sài Gòn hay Long An?</h2>
         <p className="mt-1 max-w-lg text-white/70">
-          Vào mạng lưới: phí 0.5% mỗi giao dịch thành công, khách tụi em chuyển
+          Vào mạng lưới: phí {PT_MG} mỗi giao dịch thành công, khách tụi em chuyển
           tận nơi. Yêu cầu giữ tối thiểu 10 tin và tỷ lệ chốt từ 5%.
         </p>
         <a
