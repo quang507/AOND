@@ -9058,6 +9058,20 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz288 · Phía mua: không lấy nhầm mã căn khi khách không gõ mã (29/10/2026)
+Chủ dự án 29/10: "rủi ro lấy nhầm code" (sau khi đọc lại luồng "hỏi giúp a đi e → mã căn lấy từ căn bot vừa gửi link").
+
+1. **Soát `Engine._ma_can_bot_vua_nhac`** (đường đỡ khi AI không ghi `ma_can`): lấy link trong lời bot gần nhất có link (3 lượt bot gần nhất). Ba chỗ nhầm:
+   - (a) Lời bot đó nhắc ≥ 2 căn (bảng căn dự án, so sánh, "căn A đã bán — căn B") → lấy căn ĐẦU: câu hỏi / lịch hẹn tới nhầm chủ nhà.
+   - (b) Khách hỏi / hẹn NHIỀU căn AI đọc ra → chỉ căn đầu (`nhac[0]`) có `info_requests` / `viewings`, chủ căn kia không biết.
+   - (c) Lời bot báo đã chuyển chỉ có mã (bot không đọc mã) → khách không thấy được căn nào để chữa nếu nhầm.
+2. **Sửa (BA, uỷ quyền)**: (a) lời bot có nhiều căn mà khách không nói căn nào → KHÔNG đoán, không ghi; việc "chưa rõ căn nào: hỏi lại MỘT câu" (gọi
+   căn bằng loại + đường); đường "câu về dự án" (SRS-250) cũng không chạy khi mơ hồ. (b) hẹn xem / câu hỏi chủ nhà ghi cho TỪNG căn AI đọc ra (tối đa 3).
+   (c) việc vừa ghi kèm đường + quận của căn, dặn lời đáp nói rõ căn nào — khách thấy nhầm thì nói lại ngay. Lời bot có MỘT căn thì như trước.
+3. **Ba câu hỏi gốc** — (1) *lớp lỗi*: đường đỡ chọn phần tử đầu của danh sách thay vì nhận ra danh sách mơ hồ; (2) *chỗ khác cùng lớp*: `_can_dang_noi`
+   (khối pháp lý theo căn) dùng cùng hàm nên cũng thôi đoán; xin ảnh / chê căn vốn đã hỏi lại khi không rõ căn; `bao_can_moi` mỗi tin một căn nên
+   không mơ hồ; (3) *kiểm*: `tests/test_lay_dung_can_288.py` (3 ca, đỏ khi gỡ bản sửa). Chưa bắn thử với model thật.
+
 ### SRS-5.1zzzzzzz287 · Khách thôi tìm một bộ nhu cầu; nhãn bộ không đọc bằng chữ (29/10/2026)
 Chủ dự án 29/10 (sau SRS-286): "ai đọc nhãn bộ nhu cầu chứ code đọc theo chữ thì lệnh hết à, kiểu có chữ không đừng các thứ nữa mà chết".
 

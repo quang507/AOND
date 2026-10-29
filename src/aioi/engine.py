@@ -4791,13 +4791,19 @@ class Engine:
 
     @staticmethod
     def _ma_can_bot_vua_nhac(conv: Conversation) -> list[str]:
-        """Mã căn trong link bot dán ở vài lượt gần nhất (mới nhất trước) — căn khách đang đáp lại."""
+        """Mã căn trong link bot dán ở vài lượt gần nhất — căn khách đang đáp lại. SRS-5.1zzzzzzz288: lời bot gần nhất có link mà nhắc NHIỀU căn
+        thì không đoán (bản trước lấy căn đầu → câu hỏi / lịch hẹn có thể tới nhầm chủ nhà); `_ma_link_gan_nhat` cho biết các căn đó để hỏi lại."""
+        ma = Engine._ma_link_gan_nhat(conv)
+        return ma if len(ma) == 1 else []
+
+    @staticmethod
+    def _ma_link_gan_nhat(conv: Conversation) -> list[str]:
         from .anh_can import ma_can_trong_loi
         for t in reversed(conv.history[-6:]):
             if t.role == "assistant" and t.content:
                 ma = ma_can_trong_loi(t.content)
                 if ma:
-                    return ma[:1]
+                    return ma
         return []
 
     def _can_cua_chu(self, conv: Conversation) -> dict | None:
@@ -4971,6 +4977,9 @@ class Engine:
             # SRS-5.1zzzzzzz153: khách đáp lại căn bot VỪA giới thiệu (tin báo căn mới / lời gợi ý có link) mà không gõ mã — lấy mã từ link trong
             # lời bot gần nhất. Bản trước chỉ nhận mã AI đọc ra, nên "xem thử thứ 7 được không" sau tin báo căn mới không ghi được lịch.
             ma = self._ma_can_bot_vua_nhac(conv)
+            mo_ho = [] if ma else self._ma_link_gan_nhat(conv)   # lời bot vừa nhắc ≥ 2 căn, khách không nói căn nào
+        else:
+            mo_ho = []
         nhac = kho.can_theo_ma(ma) if ma else []
         co_san = can_da + [c for c in (conv.can_mua or self._can_goi_y(conv)) if c.get("id") not in {d.get("id") for d in can_da}]
         can = nhac + [c for c in co_san if c.get("id") not in {n.get("id") for n in nhac}]
@@ -5057,7 +5066,11 @@ class Engine:
                                 + ("em ĐÃ nhắn chủ nhà xin ảnh — nói ngắn có ảnh em báo khách ngay (khách muốn thì vẫn hẹn xem trực tiếp được)" if xin
                                    else "khách muốn thì hẹn xem trực tiếp, KHÔNG nói em đã xin chủ nhà"))
         hoi_da = str(mua.get("hoi_chu_nha") or "").strip()
-        if bid and not nhac and hoi_da:   # SRS-5.1zzzzzzz280: câu AI viết lại theo ý khách — nhận luôn (quyết định chủ dự án)
+        if len(mo_ho) > 1 and (hoi_da or mua.get("hen_xem")) and not (mua.get("xin_anh") is True or mua.get("khong_hop") is True):
+            viec.append("khách muốn " + ("hỏi chủ nhà" if hoi_da else "hẹn xem") + " nhưng em vừa nhắc nhiều căn (" + ", ".join(f"#{m}" for m in mo_ho)
+                        + ") và chưa rõ căn nào: hỏi lại MỘT câu ngắn khách nói căn nào (gọi căn bằng loại + đường, không đọc mã — câu hỏi DUY "
+                          "NHẤT của lượt); em CHƯA chuyển / CHƯA ghi gì")
+        if bid and not nhac and hoi_da and not mo_ho:   # SRS-5.1zzzzzzz280: câu AI viết lại theo ý khách — nhận luôn (quyết định chủ dự án)
             # SRS-5.1zzzzzzz250 (chủ dự án 28/10 mục 7: "hỏi chủ nhà có căn hoặc nhà đang rao bán gắn với địa chỉ này trước, nếu ko có nữa thì
             # hỏi admin"): câu về một DỰ ÁN (tầng, căn còn lại…) mà khách không chỉ căn nào → hỏi chủ nhà của một căn đang rao trong dự án đó
             # (đường `info_requests` sẵn có: chủ nhà 12 giờ, quá hạn sang admin); dự án chưa có căn nào → báo admin một lần (hạn 5 giờ).
@@ -5077,7 +5090,11 @@ class Engine:
         if not (bid and nhac):
             conv.y_luot["lich_cho"] = self._lich_cho(kho, bid)
             return viec, can[:4]
-        dau = nhac[0]
+        dich = nhac[:3]   # SRS-5.1zzzzzzz288: khách hỏi / hẹn NHIỀU căn AI đọc ra → mỗi căn một yêu cầu (bản trước chỉ căn đầu nhận)
+
+        def ten(c: dict) -> str:   # căn gọi bằng loại + đường để khách thấy đúng căn (lời bot không đọc mã)
+            noi = ", ".join(str(c[k]) for k in ("street", "district") if c.get(k))
+            return f"#{c.get('code')}" + (f" ({noi})" if noi else "")
         hen = str(mua.get("hen_xem") or "").strip()
         hoi = str(mua.get("hoi_chu_nha") or "").strip()
         # Giờ hẹn theo ý AI đọc (SRS-5.1zzzzzzz281: "mai 9h" → "9h sáng thứ 6" vẫn nhận; lịch chờ chủ nhà xác nhận rồi mới báo khách).
@@ -5085,14 +5102,18 @@ class Engine:
         # (bản trước so ở đây lần hai, sau `_loc_viec_mua`, nên câu AI sửa chính tả / diễn lại vẫn bị bỏ).
         if not khong_hop and (mua.get("quan_tam") is True or hen or hoi) and kho.ghi_quan_tam(bid, [c["code"] for c in nhac if c.get("code")]):
             viec.append("ghi khách quan tâm căn " + ", ".join(f"#{c.get('code')}" for c in nhac))
-        if hen and kho.ghi_hen_xem(bid, dau, hen):
-            viec.append(f"ghi lịch hẹn xem #{dau.get('code')} ({hen}) — chờ xác nhận với chủ nhà rồi báo lại khách")
+        da_hen = [c for c in (dich if hen else []) if kho.ghi_hen_xem(bid, c, hen)]
+        if da_hen:
+            viec.append(f"ghi lịch hẹn xem {', '.join(ten(c) for c in da_hen)} ({hen}) — chờ xác nhận với chủ nhà rồi báo lại khách; nói rõ căn nào "
+                        "(loại + đường) để khách thấy đúng căn")
             if lead is not None and not lead.fields.get("_da_xin_sdt") and not sdt:
                 # Xin số MỘT lần (cờ ở hồ sơ nhu cầu, qua khởi động lại vẫn nhớ); khách không muốn thì thôi, không ép, không hứa gì thêm.
                 lead.fields["_da_xin_sdt"] = "1"
                 viec.append("xin khách MỘT số điện thoại để người phụ trách gọi xác nhận lịch (một câu ngắn — câu hỏi DUY NHẤT của lượt, lượt này chưa hỏi xác nhận lịch; khách không muốn để thì thôi, đừng nài)")
-        if hoi and kho.ghi_hoi_chu_nha(bid, dau, hoi):
-            viec.append(f"chuyển câu \"{hoi}\" về #{dau.get('code')} cho chủ nhà — có trả lời em báo lại khách ngay")
+        da_hoi = [c for c in (dich if hoi else []) if kho.ghi_hoi_chu_nha(bid, c, hoi)]
+        if da_hoi:
+            viec.append(f"chuyển câu \"{hoi}\" về {', '.join(ten(c) for c in da_hoi)} cho chủ nhà — có trả lời em báo lại khách ngay; nói rõ "
+                        "căn nào (loại + đường) để khách thấy đúng căn")
         conv.y_luot["lich_cho"] = self._lich_cho(kho, bid)
         return viec, can[:4]
 
