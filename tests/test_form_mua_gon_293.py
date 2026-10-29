@@ -60,3 +60,15 @@ def test_cong_tac_thu_khach_that_va_tat_giu_form_day_du(monkeypatch):
     assert all("operations" in k for _, k in ai.form)
     ai, _ = _hai_luot("thu-293c", monkeypatch, None)
     assert all("operations" in k for _, k in ai.form)
+
+
+# --- SRS-5.1zzzzzzz294 -------------------------------------------------------------------------------------------------------------------
+def test_luot_doc_y_chi_nhan_dong_can_khong_nhan_cach_noi(monkeypatch):
+    """Chủ dự án 29/10 "bớt prompt nữa dc ko": lượt đọc ý khách mua nhận cả phần dặn CÁCH NÓI (bốn đoạn, khen, link…) của lượt viết lời —
+    ≈ 2.500 chữ sau dấu cache, tính tiền đủ mỗi lượt. Nay chỉ dòng căn (mã + điều đã có)."""
+    from aioi.llm.base import RANH_GIOI_CACHE
+    ai, _ = _hai_luot("thu-294", monkeypatch, "thu")
+    dong = ai.form[-1][0].split(RANH_GIOI_CACHE, 1)[1]
+    assert "CĂN ĐANG CÓ" in dong and "#ABCD1234" in dong
+    assert "CÁCH NÓI" not in dong and "BỐN ĐOẠN" not in dong
+    assert any("CÁCH NÓI" in s for s in ai.system)   # lượt viết lời vẫn đủ
