@@ -9058,6 +9058,19 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz287 · Khách thôi tìm một bộ nhu cầu; nhãn bộ không đọc bằng chữ (29/10/2026)
+Chủ dự án 29/10 (sau SRS-286): "ai đọc nhãn bộ nhu cầu chứ code đọc theo chữ thì lệnh hết à, kiểu có chữ không đừng các thứ nữa mà chết".
+
+1. **Trả lời**: code KHÔNG dò chữ khách. AI đọc nghĩa và ghi nhãn (`nhu_cau`), cờ mở bộ (`nhu_cau_moi`); code chỉ so nhãn AI vừa ghi với nhãn AI đã ghi
+   trước đó (bỏ hoa / thường, khoảng trắng). Chữ "không", "đừng", "khỏi" trong lời khách không đi qua code nào của phần này. Số tiền: AI tách cụm "6 tỷ",
+   code đổi bằng `parse_vnd` (đọc số + đơn vị, không đọc "từ / dưới").
+2. **Lỗ soát ra**: cột `buyer_needs.dang_tim` có nhưng không đường nào tắt — khách "khỏi tìm cho con nữa" vẫn bị báo căn mới cho bộ đó.
+3. **Sửa**: ô AI `buyer_lead.nhu_cau_thoi` = nhãn bộ khách thôi tìm → `Engine._chon_nhu_cau` đánh dấu `_thoi_tim`; `ghi_nhu_cau` ghi `dang_tim = false`;
+   `bao_can_moi` vốn chỉ đọc `dang_tim = true`. Khách quay lại nói bộ đó (AI ghi đúng nhãn) thì bật lại. Khối "BỘ NHU CẦU CỦA KHÁCH" ghi bộ đã thôi.
+4. **Ba câu hỏi gốc** — (1) *lớp lỗi*: cột trạng thái có mà không có đường ghi; (2) *chỗ khác cùng lớp*: `buyers.bao_can_moi` (thôi báo cả khách) đã
+   có đường `ngung_bao` (SRS-175); (3) *kiểm*: `tests/test_nhieu_nhu_cau_286.py::test_khach_thoi_tim_mot_bo_thi_tat_bo_do_khong_do_chu` — đỏ khi gỡ bản
+   sửa; có ca lời khách chứa "không" mà AI không ghi thôi → không bộ nào bị tắt. Chưa bắn thử với model thật.
+
 ### SRS-5.1zzzzzzz286 · Phía mua: một khách nhiều bộ nhu cầu; ngân sách / diện tích dạng số min–max (29/10/2026)
 Chủ dự án 29/10 (bước 4 của SRS-5.1zzzzzzz285): "Một khách có nhiều bộ nhu cầu (mua ở, mua đầu tư, tìm giùm con). cái này cần làm" và "Ngân sách và
 diện tích lưu dạng số min–max … làm như này có bị phình db ra nhiều quá ko, có khiến phải hỏi nhiều mới ra bản nháp không".

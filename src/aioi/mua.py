@@ -186,7 +186,8 @@ def nhan_nhu_cau(lead: Any) -> str:
 
 def _tom_nhu_cau(lead: Any) -> str:
     phan = [str(nhu_cau_cua(lead).get(k) or "") for k in ("loai_giao_dich", "loai_bds", "khu_vuc", "ngan_sach", "so_phong_ngu")]
-    return ", ".join(p for p in phan if p) or "chưa nêu gì"
+    thoi = " (khách đã THÔI tìm bộ này)" if (getattr(lead, "fields", {}) or {}).get("_thoi_tim") else ""
+    return (", ".join(p for p in phan if p) or "chưa nêu gì") + thoi
 
 
 def khoi_nhu_cau(dang_noi: Any, khac: list) -> str:
@@ -282,7 +283,7 @@ class KhoNguoiMua:
             dong.append({"buyer_id": buyer_id, "lead_id": str(lead.lead_id), "nhan": nhan_nhu_cau(lead) or None,
                          "loai_giao_dich": "thue" if getattr(lead, "loai_giao_dich", "mua") == "thue" else "mua",
                          "preferences": nhu_cau_cua(lead), "gia_min": gmin, "gia_max": gmax, "dien_tich_min": dmin,
-                         "dien_tich_max": dmax, "dang_noi": noi})
+                         "dien_tich_max": dmax, "dang_noi": noi, "dang_tim": not (getattr(lead, "fields", {}) or {}).get("_thoi_tim")})
         if not (self.is_configured and buyer_id and dong):
             return False
         nho = self.__dict__.setdefault("_nho_nhu_cau", {})
