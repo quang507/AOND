@@ -211,7 +211,7 @@ def test_bridge_send_nhan_photos_chi_https_va_dung_chung_ham_gui_anh():
     send = js[js.index("req.url === '/send'"):]
     assert "photos" in send.split("res.end")[0] and "startsWith('https://')" in send and ".slice(0, 4)" in send and "guiAnhQuaUrl" in send
     assert js.count("api.sendMessage({ msg: \"\", attachments: [f] }") == 1       # chỉ MỘT chỗ tải-và-gửi ảnh
-    assert "for (const url of Array.isArray(photos) ? photos : []) await guiAnhQuaUrl(threadId, url);" in js
+    assert "await guiAnhQuaUrl(threadId, Array.isArray(photos) ? photos : []);" in js   # SRS-5.1zzzzzzz280: mọi ảnh một lần
 
 
 def test_gui_nhieu_tin_lan_luot_anh_di_sau_tin_co_link(monkeypatch):
