@@ -1,9 +1,9 @@
-"""Vòng agent phía MUA (SRS-5.1zzzzzzz290, chủ dự án 29/10/2026: "Ok thử … sang kiểu Suy nghĩ -> Chọn công cụ -> Thực thi -> Đánh giá thôi
+"""Vòng agent phía MUA (SRS-5.1zzzzzzz290 / 292, chủ dự án 29/10/2026: "Ok thử … sang kiểu Suy nghĩ -> Chọn công cụ -> Thực thi -> Đánh giá thôi
 còn bóc tách vẫn dùng haiku … tại mấy cái code từ khóa bạn làm chạy không ổn định").
 
-Lượt viết lời cho khách mua (Sonnet) được bộ công cụ CHỈ ĐỌC: model tự quyết có cần tra kho không (khách đổi tiêu chí, hỏi chi tiết một căn,
-hỏi dự án / khu) thay vì code dựng sẵn một lần tra cố định. Bóc tách (Haiku) và mọi việc GHI (hẹn xem, hỏi chủ nhà, xin ảnh, ô nhu cầu) giữ
-nguyên đường cũ có cổng kiểm — công cụ ở đây không ghi gì. Có trần: tối đa `MAX_VONG` lần gọi model, ngừng tra sau `HAN_GIAY` giây; hết trần mà
+Lượt viết lời cho khách mua (Sonnet) được bộ công cụ: model tự quyết có cần tra kho không (khách đổi tiêu chí, hỏi chi tiết một căn, hỏi dự án /
+khu) thay vì code dựng sẵn một lần tra cố định; và (SRS-292) ghi hẹn xem / câu hỏi chủ nhà khi bóc tách Haiku bỏ sót — cùng hàm ghi, cùng chống
+trùng của đường cũ. Bóc tách ô (Haiku) và các việc ghi khác giữ nguyên đường cũ có cổng kiểm. Có trần: tối đa `MAX_VONG` lần gọi model, ngừng tra sau `HAN_GIAY` giây; hết trần mà
 chưa có lời thì viết lời thường kèm kết quả đã tra. Công tắc `AIOI_AGENT_MUA` (một nguồn ở `bot/bridge-zca/cai-vps.sh` dòng AGENT_MUA):
 "bat" = mọi khách, "thu" = chỉ ID thử, khác = tắt."""
 from __future__ import annotations
@@ -31,8 +31,10 @@ HUONG_DAN = (
     "- xem_can: khách hỏi chi tiết một căn (theo mã trong link đã gửi) mà dòng căn ở dưới chưa có.\n"
     "- tra_du_an / du_an_trong_khu: khách hỏi về một dự án, hoặc khu nào có dự án gì, mà khối dự án ở dưới chưa có.\n"
     "Tra tối đa 2 lần. Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có. Vẫn giới thiệu MỘT căn mỗi lượt như luật ở trên.\n"
-    "Công cụ KHÔNG ghi gì: hẹn xem, hỏi chủ nhà, xin ảnh do hệ thống ghi riêng — chỉ nói đã chuyển / đã ghi khi khối EM VỪA GHI LƯỢT NÀY có "
-    "việc đó. Lời gửi khách viết ở lượt cuối, sau khi tra xong; không viết 'để em tra / em kiểm tra'.\n"
+    "- hen_xem / hoi_chu_nha (GHI thật): khách muốn hẹn đi xem một căn đã rõ (có giờ / ngày) hoặc muốn hỏi chủ nhà điều tin chưa ghi, mà khối EM "
+    "VỪA GHI LƯỢT NÀY CHƯA có việc đó → gọi để ghi. Căn chưa rõ là căn nào hoặc khách chưa nói giờ thì KHÔNG gọi — hỏi lại khách.\n"
+    "Chỉ nói đã ghi / đã chuyển chủ nhà khi khối EM VỪA GHI LƯỢT NÀY có việc đó HOẶC kết quả hen_xem / hoi_chu_nha báo ĐÃ GHI (kết quả công cụ "
+    "thắng câu 'lượt này em chưa ghi việc gì'). Lời gửi khách viết ở lượt cuối, sau khi tra / ghi xong; không viết 'để em tra / em kiểm tra'.\n"
 )
 
 CONG_CU: list[dict[str, Any]] = [
@@ -62,6 +64,26 @@ CONG_CU: list[dict[str, Any]] = [
             "type": "object",
             "properties": {"ma": {"type": "array", "items": {"type": "string"}, "maxItems": 3, "description": "Mã căn, vd ABCD1234"}},
             "required": ["ma"],
+        },
+    },
+    {
+        "name": "hen_xem",
+        "description": "GHI lịch hẹn khách đi xem MỘT căn đang hiện (chờ chủ nhà xác nhận rồi báo khách). Chỉ khi khách đã nói muốn xem và giờ / ngày.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"ma": {"type": "string", "description": "Mã căn, vd ABCD1234"},
+                           "gio": {"type": "string", "description": "Giờ / ngày khách hẹn, viết rõ (vd \"3h chiều thứ 7\")"}},
+            "required": ["ma", "gio"],
+        },
+    },
+    {
+        "name": "hoi_chu_nha",
+        "description": "GHI câu khách mua muốn hỏi chủ nhà về MỘT căn đang hiện (chủ nhà trả lời thì hệ thống báo lại khách).",
+        "input_schema": {
+            "type": "object",
+            "properties": {"ma": {"type": "string", "description": "Mã căn, vd ABCD1234"},
+                           "cau_hoi": {"type": "string", "description": "Câu hỏi gửi chủ nhà, viết rõ theo ý khách"}},
+            "required": ["ma", "cau_hoi"],
         },
     },
     {
@@ -114,6 +136,8 @@ def chay_cong_cu(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -
             can = kho.can_theo_ma(ma) if ma and getattr(kho, "can_theo_ma", None) is not None else []
             gom.extend(can)
             return _dong(engine, can) if can else "Không có căn nào đang hiện với mã đó (có thể đã bán / ẩn)."
+        if ten in ("hen_xem", "hoi_chu_nha"):
+            return _ghi_viec(engine, conv, ten, inp, gom)
         if ten == "tra_du_an":
             t = _chu(inp.get("ten"))
             if not t or getattr(kho, "tra_du_an", None) is None:
@@ -137,6 +161,40 @@ def chay_cong_cu(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -
         log.warning("Agent mua: công cụ %s lỗi: %s", ten, type(e).__name__)
         return "Tra kho lỗi — nói thật là em chưa tra được, không đoán."
     return "Không rõ công cụ."
+
+
+def _ghi_viec(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -> str:
+    """Việc GHI của vòng agent (SRS-5.1zzzzzzz292): bóc tách Haiku bỏ sót hẹn xem / câu hỏi chủ nhà thì Sonnet ghi được — CÙNG hàm ghi của đường
+    cũ (`ghi_hen_xem` gộp giờ, `ghi_hoi_chu_nha` không tạo câu trùng đang chờ), chỉ căn đang hiện, căn lượt này đã ghi thì không ghi lại."""
+    kho = engine._convstore
+    hen = ten == "hen_xem"
+    ma = _chu(inp.get("ma"), 20).lstrip("#").upper()
+    noi = _chu(inp.get("gio") if hen else inp.get("cau_hoi"), 300)
+    if not ma or not noi:
+        return "Chưa ghi: thiếu mã căn hoặc " + ("giờ hẹn" if hen else "câu hỏi") + " — hỏi lại khách, KHÔNG nói đã ghi."
+    can = kho.can_theo_ma([ma]) if getattr(kho, "can_theo_ma", None) is not None else []
+    if not can:
+        return "Chưa ghi: không có căn đang hiện với mã đó — KHÔNG nói đã ghi."
+    c = can[0]
+    gom.append(c)
+    da = conv.y_luot.setdefault(f"_da_ghi_{ten}", set())
+    if c.get("id") in da:
+        return "Việc này đã ghi ở lượt này rồi (xem khối EM VỪA GHI) — không ghi lại."
+    bid = kho.khach_mua(conv.user_key) if getattr(kho, "khach_mua", None) is not None else None
+    ok = bool(bid) and (kho.ghi_hen_xem(bid, c, noi) if hen else kho.ghi_hoi_chu_nha(bid, c, noi))
+    if not ok:
+        return "Chưa ghi được (lỗi kho) — nói thật là em chưa ghi được, KHÔNG nói đã ghi."
+    da.add(c.get("id"))
+    kho.ghi_quan_tam(bid, [str(c.get("code"))])
+    log.warning("Agent mua: ghi %s qua công cụ (bóc tách không đọc ra)", ten)
+    if not hen:
+        return f"ĐÃ GHI: chuyển câu \"{noi}\" về căn #{c.get('code')} cho chủ nhà — có trả lời em báo lại khách ngay."
+    ra = f"ĐÃ GHI: lịch hẹn xem căn #{c.get('code')} ({noi}) — chờ xác nhận với chủ nhà rồi báo lại khách."
+    lead = conv.buyer_lead
+    if lead is not None and not lead.fields.get("_da_xin_sdt"):   # xin số MỘT lần khi chốt lịch (SRS-148), cùng cờ với đường cũ
+        lead.fields["_da_xin_sdt"] = "1"
+        ra += (" Xin khách MỘT số điện thoại để người phụ trách gọi xác nhận lịch (câu hỏi DUY NHẤT của lượt; khách không muốn thì thôi).")
+    return ra
 
 
 def chay(engine: Any, conv: Any, system: str, max_tokens: int) -> tuple[str, list[dict]]:

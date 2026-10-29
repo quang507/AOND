@@ -190,6 +190,12 @@ MAX_AGENT_STEPS = 6
 # with an inventory: the model reasons over the sales-mode prompt AND has these tools — it decides
 # per turn whether to query the catalog / add a căn / learn a fact / ask for a link, WITHOUT a
 # keyword gate (that's the point of "Mảnh B": no code catching each case).
+KHOI_TIN_DANG_HIEN_NGOAI_CHAT = (
+    "\n\n=== TIN NÀY ĐANG HIỂN THỊ TRÊN WEB (tạo ngoài cuộc chat — em CHƯA từng gửi bản tin nào cho khách) ===\n"
+    "Bỏ qua các dặn về \"vừa cho khách xem bản tin\": điều khách vừa bổ sung / sửa đã được hệ thống ghi thẳng vào tin đang hiển thị. Nói ngắn đã "
+    "cập nhật (nếu khách có bổ sung), KHÔNG rao lại bản tin 📋, KHÔNG hỏi đã ưng chưa / còn chỉnh / đăng luôn.\n"
+)
+
 _AGENT_TOOL_GUIDE = (
     "\n\n=== CÔNG CỤ TRA RỔ HÀNG DỰ ÁN (kiến thức CHUNG) ===\n"
     "Em có công cụ tra dự án. Tự quyết khi nào cần dùng:\n"
@@ -2764,6 +2770,12 @@ class Engine:
                 duyet=conv.duyet_luot, phi_da_bao=bool(conv.prop.fields.get("_phi_da_bao")), yeu_cau_moi=conv.y_luot.get("yeu_cau_viet"),
             )
             len_web = bool(web_tin and web_tin.get("len_web"))
+            if len_web and not any(t.role == "assistant" and "📋" in (t.content or "") for t in conv.history):
+                # SRS-5.1zzzzzzz292 (bắn thử ban-thu-mua 29/10, hai lần liền): tin tạo NGOÀI chat đang hiển thị, chủ nhà trả lời câu khách mua kèm
+                # thông tin mới → prompt "vừa cho khách xem bản tin" khiến bot rao "📋 Bản tin cập nhật" / hỏi "đăng luôn" cho tin đã lên web,
+                # dù chưa từng gửi bản tin nào. Ô mới đã ghi thẳng vào tin đang hiển thị — nói ngắn đã cập nhật, không trình / không hỏi duyệt.
+                conv.y_luot["_tin_dang_hien_ngoai_chat"] = True
+                system += KHOI_TIN_DANG_HIEN_NGOAI_CHAT
             if conv.duyet_luot == "dong_y" and len_web:
                 conv.prop.fields["_phi_da_hoi"] = "1"   # lượt duyệt hỏi phí (hoi_phi) — lượt sau là lúc xin chấm sao
             if len_web and (conv.duyet_luot == "dong_y" or web_tin.get("da_bao_dang")):
@@ -3165,6 +3177,9 @@ class Engine:
         phi_dung = _phi_lech_vai(reply, conv.vai_phi, conv.prop.is_rental) if conv.role != "buyer" else None
         if phi_dung:
             ly_do.append(f"Lời vừa viết báo phí % không đúng vai người rao — mức đúng: \"{phi_dung}\", KHÔNG tự đoán một vai.")
+        if conv.y_luot.get("_tin_dang_hien_ngoai_chat") and "📋" in reply:   # SRS-5.1zzzzzzz292
+            ly_do.append("Tin của khách ĐANG HIỂN THỊ trên web (tạo ngoài cuộc chat) — KHÔNG rao lại bản tin 📋, KHÔNG hỏi duyệt / đăng; nói ngắn "
+                         "điều khách vừa bổ sung đã cập nhật vào tin.")
         if _nhieu_cau_hoi(reply):   # SRS-5.1zzzzzzz252
             ly_do.append("Lời vừa viết hỏi khách NHIỀU HƠN MỘT câu — mỗi lượt chỉ hỏi MỘT ý (một dấu \"?\"), hỏi xong thì dừng chờ khách trả lời; "
                          "ý còn lại để lượt sau.")
@@ -5128,6 +5143,7 @@ class Engine:
         if not khong_hop and (mua.get("quan_tam") is True or hen or hoi) and kho.ghi_quan_tam(bid, [c["code"] for c in nhac if c.get("code")]):
             viec.append("ghi khách quan tâm căn " + ", ".join(f"#{c.get('code')}" for c in nhac))
         da_hen = [c for c in (dich if hen else []) if kho.ghi_hen_xem(bid, c, hen)]
+        conv.y_luot["_da_ghi_hen_xem"] = {c.get("id") for c in da_hen}   # SRS-292: vòng agent không ghi lại căn này
         if da_hen:
             viec.append(f"ghi lịch hẹn xem {', '.join(ten(c) for c in da_hen)} ({hen}) — chờ xác nhận với chủ nhà rồi báo lại khách; nói rõ căn nào "
                         "(loại + đường) để khách thấy đúng căn")
@@ -5136,6 +5152,7 @@ class Engine:
                 lead.fields["_da_xin_sdt"] = "1"
                 viec.append("xin khách MỘT số điện thoại để người phụ trách gọi xác nhận lịch (một câu ngắn — câu hỏi DUY NHẤT của lượt, lượt này chưa hỏi xác nhận lịch; khách không muốn để thì thôi, đừng nài)")
         da_hoi = [c for c in (dich if hoi else []) if kho.ghi_hoi_chu_nha(bid, c, hoi)]
+        conv.y_luot["_da_ghi_hoi_chu_nha"] = {c.get("id") for c in da_hoi}
         if da_hoi:
             viec.append(f"chuyển câu \"{hoi}\" về {', '.join(ten(c) for c in da_hoi)} cho chủ nhà — có trả lời em báo lại khách ngay; nói rõ "
                         "căn nào (loại + đường) để khách thấy đúng căn")
