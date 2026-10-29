@@ -46,13 +46,14 @@ def test_khach_tung_ban_hen_xem_nha_roi_tung_tin_van_ghi_lich_va_dung_can_bot_vu
     assert eng.conversation("vm-1").prop.fields["dia_chi"] == "12 Lê Văn Sỹ"               # rổ / tin bán KHÔNG mất
 
 
-def test_gio_hen_co_chu_khach_chua_noi_thi_khong_ghi():
+def test_gio_hen_ai_ghep_theo_y_van_ghi():
+    # SRS-5.1zzzzzzz281 (chủ dự án 29/10: "sửa để ai hiểu ý khách, thực thi đúng ý khách"): AI đọc ra là làm — không so nguyên văn.
     kho = KhoGia()
     eng, _ = _engine(kho, KHACH_MUA)
     _khach_tung_ban(eng, "vm-2")
-    eng._provider.ke_hoach = {"operations": [], "user_intent": "buy", "mua": {"hen_xem": "9h sáng thứ 7 tại nhà", "trich_dan": "9h"}}
-    eng.handle("vm-2", "9h")                                                               # "tại nhà" khách chưa hề nói → AI bịa, không ghi
-    assert not kho.ghi("POST", "viewings")
+    eng._provider.ke_hoach = {"operations": [], "user_intent": "buy", "mua": {"hen_xem": "9h sáng thứ 7 tại nhà"}}
+    eng.handle("vm-2", "9h")
+    assert kho.ghi("POST", "viewings")
 
 
 def test_luot_mo_ho_o_lai_vai_mua_nhung_dang_cho_duyet_ban_nhap_thi_van_la_viec_ban():

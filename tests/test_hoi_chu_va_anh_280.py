@@ -9,21 +9,20 @@ import pathlib
 from aioi.engine import _loc_viec_mua
 
 GOC = pathlib.Path(__file__).parents[1]
-TRUOC = "a mua để ở nha. nhà này vào ở ngay được khoogn?"
 
 
 def test_khach_dong_y_hoi_chu_nha_cau_hoi_co_loi_go_van_nhan():
     mua = {"hoi_chu_nha": "nhà này vào ở ngay được không?", "ma_can": ["SEED0002"], "trich_dan": "hỏi giúp a đi e"}
-    ra = _loc_viec_mua(mua, "hỏi giúp a đi e", [TRUOC, "hỏi giúp a đi e"])
+    ra = _loc_viec_mua(mua)
     assert ra.get("hoi_chu_nha") == "nhà này vào ở ngay được không?" and ra.get("ma_can") == ["SEED0002"]
 
 
 def test_cau_hoi_ai_viet_lai_nhan_luon():
     """Chủ dự án 29/10: "AI sẽ tự diễn giải và viết lại câu hỏi gửi chủ nhà cho rõ ràng và tạo code tạo yêu cầu luôn, kệ hallucinate"."""
     hoi = "Nhà vào ở ngay được không, 2 tuần nữa khách dọn vào được không?"
-    ra = _loc_viec_mua({"hoi_chu_nha": hoi, "ma_can": ["SEED0002"]}, "hỏi giúp a đi e", [TRUOC, "hỏi giúp a đi e"])
+    ra = _loc_viec_mua({"hoi_chu_nha": hoi, "ma_can": ["SEED0002"]})
     assert ra.get("hoi_chu_nha") == hoi and ra.get("ma_can") == ["SEED0002"]
-    ra2 = _loc_viec_mua({"hoi_chu_nha": "Chủ có bán gấp không?"}, "ok em", ["ok em"])   # không đòi căn cứ trong lời khách
+    ra2 = _loc_viec_mua({"hoi_chu_nha": "Chủ có bán gấp không?"})   # không đòi căn cứ trong lời khách
     assert ra2.get("hoi_chu_nha") == "Chủ có bán gấp không?"
 
 

@@ -90,11 +90,12 @@ def test_khach_mua_hoi_du_an_thi_model_nhan_khoi_du_lieu(monkeypatch):
     assert kho.ghi("POST", "rpc/match_projects")
 
 
-def test_ten_du_an_ai_tu_suy_khong_co_trong_tin_khach_thi_khong_tra(monkeypatch):
+def test_ten_du_an_ai_viet_dung_ten_khach_go_sai_van_tra(monkeypatch):
+    # SRS-5.1zzzzzzz281 (chủ dự án 29/10: "sửa để ai hiểu ý khách, thực thi đúng ý khách"): AI đọc ra là làm — không so nguyên văn.
     kho = KhoDuAn([NYAH])
-    eng, ai = _engine(kho, {**KHACH_MUA, "mua": {"hoi_du_an": "Vinhomes Grand Park", "trich_dan": "dự án này có gì"}})
-    eng.handle("mua-da-2", "Dự án này có gì em")
-    assert not kho.ghi("POST", "rpc/match_projects") and not any(du_an_mua.TIEU_DE in s for s in ai.system)
+    eng, ai = _engine(kho, {**KHACH_MUA, "mua": {"hoi_du_an": "Ny'ah Phú Định"}})
+    eng.handle("mua-da-2", "du an nya phu dinh co gi hay em")
+    assert kho.ghi("POST", "rpc/match_projects") and any(du_an_mua.TIEU_DE in s for s in ai.system)
 
 
 def test_khach_khong_hoi_du_an_thi_khong_co_khoi(monkeypatch):

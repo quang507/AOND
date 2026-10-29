@@ -1712,8 +1712,8 @@ def test_link_question_read_by_ai_with_quote():
     eng.handle("test_user_link", cau)
     from aioi.web import SITE_HOST   # SRS-5.1zzzzzzz220: link web một nguồn (aioinhadat.com chưa trỏ về web)
     assert "KHÁCH HỎI VỀ LINK" in spy.last_system and SITE_HOST in spy.last_system
-    # Trích dẫn bịa (không có trong lời khách) → không chèn khối.
-    spy2 = SpyProvider({"operations": [], "hoi_ve": "link_web", "hoi_ve_trich_dan": "cho xin link web"})
+    # AI không đọc ra hoi_ve → không chèn khối (SRS-5.1zzzzzzz281: có hoi_ve là đủ, không so nguyên văn).
+    spy2 = SpyProvider({"operations": []})
     eng2 = Engine(spy2, fetcher=_fetch_default)
     eng2.handle("test_user_link2", cau)
     assert "KHÁCH HỎI VỀ LINK" not in spy2.last_system
