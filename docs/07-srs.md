@@ -9073,6 +9073,8 @@ Bắn thử `ban-thu-kiem` (run 40818146901, sau #189): 20/22 ĐẠT.
    - (1) *Lớp lỗi*: AI bỏ / "làm đẹp" chữ khách gõ không dấu.
    - (2) *Chỗ khác cùng lớp*: ô `phuong`, `quan`, `du_an` cũng có thể bị bỏ khi khách gõ không dấu; chưa thấy ca thật.
    - (3) *Kiểm*: chỉ đo được bằng model thật — bắn lại kịch bản J. Lưới code (`_duong_chu_khach`, `ung_vien_duong`) đã có bài đỏ ở SRS-271 / 273.
+6. **Bắn thử lần 8** (run 40819589024, sau #190): **22/22 ĐẠT**, log lõi không còn timeout.
+   - J: AI ghi `duong` "ma lo"; bot hỏi "Căn này nằm ở đường Mã Lò (Bình Tân) hay Mã Lộ (Quận 1) vậy anh/chị?".
 
 ### SRS-5.1zzzzzzz273 · Bắn thử 29/10 lần 6: khách gõ mã căn là khách mua; ô tên đường giữ chữ khách gõ khi tên khớp nhiều đường (29/10/2026)
 Bắn thử `ban-thu-kiem` (run 40816491377, sau #188): 20/22 ĐẠT, 2 TRƯỢT.
