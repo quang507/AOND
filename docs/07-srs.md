@@ -9058,6 +9058,29 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz264 · Khách gõ mã căn không có → nói thẳng; script bắn thử theo luật bản nháp mới (29/10/2026)
+Chủ dự án 29/10: "có bao nhiêu trường hợp hỏi nữa, cấu hình luôn đi". Soát lại:
+- 67 mục OPEN ở `docs/09` đều đã chốt hoặc đóng.
+- Còn hai việc tự để ngỏ, làm luôn ở mục này.
+1. **Mã căn không có**
+   - **Ca gốc:** "chỗ khác cùng lớp còn" của SRS-262. Khách gõ một mã căn không có căn nào đang hiện (đã bán / ẩn / gõ nhầm): `can_theo_ma` trả rỗng, khối
+     căn chỉ dặn "giới thiệu căn dưới đây", nên bot lờ mã đó và gợi căn khác.
+   - **Sửa:** `Engine._viec_mua` dặn câu đầu nói thẳng chưa thấy căn mã đó, nhờ khách kiểm lại mã hoặc gửi link, rồi mới giới thiệu căn KHÁC. Điều kiện:
+     - mã do AI đọc (`mua.ma_can`) nằm trong lời khách;
+     - mã đó không có trong kết quả `can_theo_ma`.
+   - Có mã không tồn tại thì không dặn thêm phần `can_cu_the` (một khối).
+   - **Lớp lỗi:** như SRS-262 — lời đáp không biết khách hỏi một căn cụ thể.
+   - **Chỗ khác cùng lớp:** đã soát hết nhánh phía mua.
+   - **Kiểm:** `tests/test_tim_can_262.py::test_khach_go_ma_khong_co_thi_noi_thang`.
+     - Mã không có → có khối. Đỏ khi gỡ bản sửa.
+     - Mã có thật → không có khối.
+2. **`bot/tests/ban-thu-ban.sh`** — kịch bản Nguyễn Trãi trả lời theo cụm thêm "nhà đang để trống" vào câu cuối. Luật SRS-260 cần hiện trạng; nếu không
+   thêm, kiểm "≤ 4 lượt" trượt oan. Các kịch bản khác:
+   - Âu Cơ đã có "đang ở".
+   - Cao Lỗ không kiểm số lượt.
+   - `ban-thu-dap-y` chỉ in số lượt.
+   - `ban-thu-srd` đã có lượt hiện trạng.
+
 ### SRS-5.1zzzzzzz263 · Đất thương mại / kho xưởng: đủ vị trí · diện tích · pháp lý mới soạn bản nháp (29/10/2026)
 Chủ dự án 29/10: "đất thương mại / kho xưởng: hiện chỉ đòi quy mô trước bản nháp, rồi vị trí, diện tích, pháp lý đồ nữa". Thay SRS-5.1zzzzzzz261 mục 3.
 1. **Trước** — nhóm công nghiệp / thương mại không có ô sổ trong `CORE_FIELDS`:

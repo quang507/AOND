@@ -48,3 +48,13 @@ def test_khach_hoi_dung_mot_can_khong_ma_thi_noi_thang_chua_thay():
     eng3, ai3 = _engine(KhoHaiCan(), KHACH_MUA)
     eng3.handle("mua-cu-the-3", "Anh tìm nhà phố quận 5 tầm 5 tỷ")
     assert not any("em chưa thấy đúng căn đó" in s for s in ai3.system)
+
+
+def test_khach_go_ma_khong_co_thi_noi_thang():
+    # SRS-5.1zzzzzzz264: mã khách gõ không có căn đang hiện (KhoHaiCan chỉ có ABCD1234 / EFGH5678) → câu đầu nói thẳng, không lờ đi.
+    eng, ai = _engine(KhoHaiCan(), {**KHACH_MUA, "mua": {"ma_can": ["ZZZZ9999"], "quan_tam": True, "trich_dan": "căn ZZZZ9999 còn không"}})
+    eng.handle("mua-ma-1", "Căn ZZZZ9999 còn không em?")
+    assert any("#ZZZZ9999" in s and "KHÔNG có căn đang rao nào mang mã đó" in s for s in ai.system)
+    eng2, ai2 = _engine(KhoHaiCan(), {**KHACH_MUA, "mua": {"ma_can": ["ABCD1234"], "quan_tam": True, "trich_dan": "căn ABCD1234 còn không"}})
+    eng2.handle("mua-ma-2", "Căn ABCD1234 còn không em?")
+    assert not any("KHÔNG có căn đang rao nào mang mã đó" in s for s in ai2.system)   # mã có thật → không có khối

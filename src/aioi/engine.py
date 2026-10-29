@@ -4896,8 +4896,16 @@ class Engine:
         # SRS-5.1zzzzzzz262 (bắn thử SRD 28/10: khách hỏi "nhà hẻm xe hơi đường Trần Bình Trọng quận 5 giá 10 tỷ còn không" — căn đó chưa lên web,
         # bot đáp "em có căn này hợp với anh" rồi kể một căn KHÁC): khách tả đúng MỘT căn đã thấy mà không có mã → lời đáp phải đối chiếu; không
         # khớp thì nói thẳng trước rồi mới gợi căn khác. Ý "căn cụ thể" do AI đọc, code chỉ kiểm cụm trích có trong lời khách.
+        # Cùng lớp (SRS-5.1zzzzzzz264): khách GÕ một mã căn không có căn nào đang hiện (đã bán / ẩn / gõ nhầm) → nói thẳng, không lờ đi rồi gợi căn khác.
+        co_ma = {str(c.get(k) or "").upper() for c in nhac for k in ("code", "legacy_code")}
+        ma_go = [m.strip().lstrip("#").upper() for m in (mua.get("ma_can") or []) if isinstance(m, str) and m.strip()]
+        ma_khong_co = [m for m in ma_go if m and m in text.upper() and m not in co_ma]
+        if ma_khong_co:
+            viec.append(f"khách gõ mã căn {', '.join('#' + m for m in ma_khong_co)} nhưng hệ thống KHÔNG có căn đang rao nào mang mã đó (có thể đã "
+                        "bán, tạm ẩn hoặc gõ nhầm): câu ĐẦU nói thẳng em chưa thấy căn mã đó, nhờ khách kiểm lại mã hoặc gửi link tin; có căn khác hợp "
+                        "nhu cầu thì giới thiệu SAU và nói rõ đó là căn KHÁC")
         cu_the = str(mua.get("can_cu_the") or "").strip()
-        if cu_the and not nhac and _trich_dan_khop(cu_the, text):
+        if cu_the and not nhac and not ma_khong_co and _trich_dan_khop(cu_the, text):
             viec.append(f"khách hỏi đúng MỘT căn cụ thể đã thấy ở đâu đó (\"{cu_the}\") mà không có mã: đối chiếu với các căn em đang có — KHÔNG "
                         "căn nào khớp đúng căn khách tả (cùng đường VÀ cùng giá / diện tích) thì câu ĐẦU nói thẳng em chưa thấy đúng căn đó trên hệ "
                         "thống (có thể đã bán hoặc chưa đăng), rồi mới giới thiệu căn gần nhất và nói rõ đó là căn KHÁC; KHÔNG nói \"em có căn này\" "
