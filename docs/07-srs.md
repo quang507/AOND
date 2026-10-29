@@ -9058,6 +9058,20 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz282 · Trả lời pháp lý ngắn, trúng ý khách hỏi (29/10/2026)
+Chủ dự án xem chat khách mua (số tư vấn, 29/10 15:11, khách "Mr T." hỏi "công chứng sang tên lâu không?"): "đoạn pháp lý dài quá ta".
+
+1. **Ca gốc**: lời bot 4 đoạn Zalo — chép đủ mục `thoi_han_sang_ten` (hạn 30 ngày, mức phạt 2–3 triệu, thời gian do tỉnh quy định, nơi nộp hồ sơ)
+   rồi một câu kết dặn dò dài. Nội dung đúng kho (`phap_ly.MAC_DINH`), chỉ dài.
+   - Gốc: `phap_ly.khoi_luot` dặn "trả lời bằng ĐÚNG nội dung trên … có thể bỏ ý phụ" và "kết bằng MỘT câu" dài cố định — model chọn chép đủ.
+2. **Quyết định (BA, uỷ quyền)**: trả lời THẲNG điều khách hỏi, tối đa 2 câu ngắn, bỏ ý phụ khách không hỏi (khách hỏi thêm thì lượt sau);
+   kết bằng MỘT vế ngắn có chữ "tham khảo" (luật "luôn nói tham khảo" giữ nguyên). Không thêm lưới đếm độ dài ở code (gọi lại model tốn thêm
+   ~8–10 s mỗi lượt, SRS-279) — sửa ở lời dặn.
+3. **Ba câu hỏi gốc**:
+   - (1) *Lớp lỗi*: lời dặn "đúng nội dung trên" + "có thể bỏ" để model tự chọn độ dài → chọn đủ.
+   - (2) *Chỗ khác cùng lớp*: khối điều luật ngoài kho (`khoi_dieu_luat(ngoai_kho=True)`) đã giới hạn 1–3 câu; câu nhạy cảm vốn "nói ngắn".
+   - (3) *Kiểm*: `tests/test_phap_ly_ngan_282.py` — đỏ khi gỡ bản sửa. Chưa bắn thử với model thật.
+
 ### SRS-5.1zzzzzzz281 · Việc bot tự giao làm theo ý AI đọc, không so nguyên văn lời khách (29/10/2026)
 Chủ dự án 29/10, sau SRS-280: "còn các kiểu tự giao việc khác nữa có đổi lại cho tối ưu dc ko". Trước đó: "con người ta chắc chắn có muôn vàn
 câu hỏi nên bắt theo nghĩa vậy mà chết à, sửa để AI hiểu ý khách, thực thi đúng ý khách, tư duy thông minh lên" và "kệ hallucinate".
