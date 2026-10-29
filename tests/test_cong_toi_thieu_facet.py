@@ -90,3 +90,15 @@ def test_o_vua_hoi_ma_khach_chua_tra_loi_thi_doi_cach_hoi():
     s = build_chat_system("Linh", p, "gia", hoi_lai=True)
     assert "ĐỔI cách hỏi" in s
     assert "ĐỔI cách hỏi" not in build_chat_system("Linh", p, "gia")
+
+
+def test_dat_thuong_mai_kho_xuong_doi_vi_tri_dien_tich_phap_ly():
+    # SRS-5.1zzzzzzz263 (chủ dự án 29/10: "đất thương mại / kho xưởng … rồi vị trí, diện tích, pháp lý đồ nữa"): trước đây chỉ đòi quy mô.
+    for loai in ("kho_xuong", "mat_bang", "dat_kinh_doanh", "dat_tmd"):
+        p = Property(loai_hinh=loai, fields={"duong": "QL1A", "dia_chi": "QL1A", "gia": "20 tỷ"})
+        assert p.facet_trong() == ["quy_mo", "phap_ly"] and p.missing_fields()[:2] == ["dien_tich", "phap_ly_so_do"], loai
+        p.update({"dien_tich": "1000m2"})
+        assert not p.summary_ready(), loai                                   # chưa có sổ thì chưa soạn
+        p.update({"phap_ly_so_do": "sổ đỏ riêng"})
+        assert p.summary_ready(), loai
+    assert not Property(loai_hinh="kho_xuong", fields={"dien_tich": "1000m2", "phap_ly_so_do": "sổ đỏ", "gia": "20 tỷ"}).summary_ready()  # thiếu vị trí

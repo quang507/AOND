@@ -9058,6 +9058,25 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz263 · Đất thương mại / kho xưởng: đủ vị trí · diện tích · pháp lý mới soạn bản nháp (29/10/2026)
+Chủ dự án 29/10: "đất thương mại / kho xưởng: hiện chỉ đòi quy mô trước bản nháp, rồi vị trí, diện tích, pháp lý đồ nữa". Thay SRS-5.1zzzzzzz261 mục 3.
+1. **Trước** — nhóm công nghiệp / thương mại không có ô sổ trong `CORE_FIELDS`:
+   - nhóm pháp lý của `NHOM_SOAN` không tính với nhóm thương mại;
+   - kho xưởng chỉ có `thoi_han_su_dung`, hỏi sau cùng;
+   - bản nháp ra khi mới có diện tích.
+2. **Sửa** — `schema.py`:
+   - `phap_ly_so_do` đứng đầu bộ câu của `INDUSTRIAL` (kho xưởng, đất kinh doanh / SKC / TMD theo nhóm) và `COMMERCIAL` (mặt bằng, shophouse).
+   - `phap_ly_so_do` thêm vào sau kích thước ở `CORE_THEO_LOAI` của `dat_kinh_doanh` / `dat_skc` / `dat_tmd`.
+   - Kết quả:
+     - Vị trí nằm ở sàn `minimal_missing`.
+     - Diện tích = nhóm quy mô: ô `dien_tich` của loại một diện tích.
+     - Pháp lý = nhóm pháp lý, nay bot hỏi sổ trước.
+     - Tin cho thuê vẫn bỏ pháp lý (SRS-260).
+3. **Kiểm** — `tests/test_cong_toi_thieu_facet.py::test_dat_thuong_mai_kho_xuong_doi_vi_tri_dien_tich_phap_ly`, đỏ khi gỡ bản sửa. Bốn loại:
+   - hỏi diện tích rồi sổ;
+   - thiếu sổ thì chưa soạn;
+   - thiếu vị trí thì chưa soạn.
+
 ### SRS-5.1zzzzzzz262 · Tìm căn theo số tầng; khách hỏi đúng một căn không tìm thấy thì nói thẳng trước (29/10/2026)
 Chủ dự án 29/10:
 - Khách hỏi đúng một căn mà bot không tìm thấy → nói rõ "căn đó chưa có" trước rồi mới gợi căn khác.

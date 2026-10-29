@@ -174,6 +174,7 @@ CORE_FIELDS: dict[PropertyGroup, list[str]] = {
         "tho_cu",             # Diện tích thổ cư
     ],
     PropertyGroup.INDUSTRIAL: [
+        "phap_ly_so_do",      # Sổ đỏ (SRS-5.1zzzzzzz263: kho xưởng phải có pháp lý trước bản nháp)
         "thoi_han_su_dung",   # Thời hạn sử dụng đất
         "chieu_cao_tran",     # Chiều cao trần
         "tai_trong_san",      # Tải trọng sàn
@@ -181,6 +182,7 @@ CORE_FIELDS: dict[PropertyGroup, list[str]] = {
         "tieu_chuan_container",  # Tiêu chuẩn Container
     ],
     PropertyGroup.COMMERCIAL: [
+        "phap_ly_so_do",      # Sổ đỏ / sổ hồng (SRS-5.1zzzzzzz263: BĐS thương mại phải có pháp lý trước bản nháp; tin cho thuê bỏ qua)
         "mat_tien",           # Bề ngang mặt tiền (m)
         "loi_di",             # Lối đi riêng hay chung chủ
         "vi_he_xe",           # Vỉa hè & chỗ để xe (xe máy / ô tô)
@@ -201,9 +203,9 @@ CORE_THEO_LOAI: dict[str, list[str]] = {
     # Đất nông nghiệp: không hỏi chỉ tiêu xây dựng / thổ cư như đất ở — hỏi đường vào, quy hoạch, lên thổ cư được không, nước tưới.
     "dat_nong_nghiep": ["kich_thuoc", "lo_gioi_duong", "quy_hoach", "len_tho_cu", "nguon_nuoc"],
     # Đất kinh doanh / SKC / TMD là ĐẤT trống: không hỏi chiều cao trần, tải trọng sàn như kho xưởng.
-    "dat_kinh_doanh": ["kich_thuoc", "lo_gioi_duong", "thoi_han_su_dung", "muc_dich_su_dung_dat", "quy_hoach"],
-    "dat_skc": ["kich_thuoc", "lo_gioi_duong", "thoi_han_su_dung", "muc_dich_su_dung_dat", "quy_hoach"],
-    "dat_tmd": ["kich_thuoc", "lo_gioi_duong", "thoi_han_su_dung", "muc_dich_su_dung_dat", "quy_hoach"],
+    "dat_kinh_doanh": ["kich_thuoc", "phap_ly_so_do", "lo_gioi_duong", "thoi_han_su_dung", "muc_dich_su_dung_dat", "quy_hoach"],
+    "dat_skc": ["kich_thuoc", "phap_ly_so_do", "lo_gioi_duong", "thoi_han_su_dung", "muc_dich_su_dung_dat", "quy_hoach"],
+    "dat_tmd": ["kich_thuoc", "phap_ly_so_do", "lo_gioi_duong", "thoi_han_su_dung", "muc_dich_su_dung_dat", "quy_hoach"],
 }
 
 # Trường hỏi thêm khi đã làm rõ thông tin cơ bản (Secondary facts & Closing)
