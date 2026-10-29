@@ -123,7 +123,7 @@ kiem_dem "OPEN" "$n_open" docs/README.md "\\b$n_open vấn đề"
 # ── 4. PII: số điện thoại thật lọt vào docs/ ────────────────────────────────
 # Ẩn danh theo CLAUDE.md §5 là `0903xxxxxx` — tức 4 số đầu rồi chữ x. Mẫu dưới
 # chỉ bắt dãy 10 chữ số liền, nên bản đã ẩn danh không dính.
-pii=$(grep -rnE '\b0(9|3|7|8|5)[0-9]{8}\b' docs/ CLAUDE.md README.md 2>/dev/null)
+pii=$(grep -rnE '\b0(9|3|7|8|5)[0-9]{8}\b' docs/ CLAUDE.md .claude/luat-dang-ap.md README.md 2>/dev/null)
 if [[ -n "$pii" ]]; then
   canh "Số điện thoại thật trong tài liệu:"
   printf '%s\n' "$pii" | sed 's/^/   /'
