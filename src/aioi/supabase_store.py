@@ -49,6 +49,12 @@ log = logging.getLogger("aioi.supabase_store")
 _SELLER_TYPE_SANG_VAI = {"ccrb": "chu_nha", "nmg": "moi_gioi"}
 
 
+def _ma_tin(li) -> str:
+    """Mã tin trên DB của một căn — cùng luật `engine.Listing.ma_tin` (SRS-5.1zzzzzzz268); đọc thẳng ô để chạy cả với căn giả trong test."""
+    f = getattr(getattr(li, "prop", None), "fields", None) or {}
+    return str(f.get("_ma_tin") or str(li.listing_id)[:8]).upper()
+
+
 def vai_tu_seller_type(raw: Any) -> "SellerRole":
     from .revenue import SellerRole
 
@@ -1013,14 +1019,14 @@ class SupabaseConversationStore(KhoNguoiMua):
             for li in ([] if getattr(conv, "role", None) == "buyer" else conv.listings):
                 # Ô riêng của chủ (SRS-5.1zzzzzzz116: lý do bán, người đứng tên, giờ xem, chìa khoá) không vào `boc_tach` — cột đó
                 # đọc công khai qua API với tin đang bán — mà vào bảng `listing_noi_bo` (chỉ admin) sau khi có id tin.
-                fields = {k: v for k, v in li.prop.fields.items() if k not in O_NOI_BO}
+                fields = {k: v for k, v in li.prop.fields.items() if k not in O_NOI_BO and k != "_ma_tin"}
                 rieng = {k: li.prop.fields[k] for k in sorted(O_NOI_BO) if li.prop.fields.get(k)}
                 # 20/10/2026 (SRS-5.1zzzzzzz83): enum `listing_deal` là ban / cho_thue — bản trước ghi "thue" → 22P02, cả dòng tin
                 # cho thuê không bao giờ xuống DB (không lên web, không có trên /admin), lỗi chỉ nằm ở journal.
                 deal_type = "cho_thue" if li.prop.is_rental else "ban"
                 listing_payload: dict[str, Any] = {
                     "seller_id": seller_id,
-                    "code": li.listing_id[:8].upper(),
+                    "code": _ma_tin(li),
                     "deal": deal_type,
                     "street": fields.get("duong"),
                     # OPEN-59 (SRS-5.1zzzzzzz241): tin cùng căn ở loại giao dịch kia — liên kết mềm, không khoá ngoại.
@@ -1157,7 +1163,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         sid = self._get_or_create_seller(conv.user_key)
         if not sid:
             return
-        code = conv.active.listing_id[:8].upper()
+        code = _ma_tin(conv.active)
         self._patch(f"listings?seller_id=eq.{sid}&code=eq.{code}",
                     {"chu_duyet_at": datetime.now(timezone.utc).isoformat() if dong_y else None})
 
@@ -1169,7 +1175,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         sid = self._get_or_create_seller(conv.user_key)
         if not sid:
             return
-        code = conv.active.listing_id[:8].upper()
+        code = _ma_tin(conv.active)
         self._patch(f"listings?seller_id=eq.{sid}&code=eq.{code}", {"description": mo_ta.strip()})
 
     # Cột → ô bot hỏi: đúng ba điều kiện của `listing_du_dang_tin` (giá · diện tích · phường).
@@ -1184,7 +1190,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             sid = self._get_or_create_seller(conv.user_key)
             if not sid:
                 return None
-            code = conv.active.listing_id[:8].upper()
+            code = _ma_tin(conv.active)
             rows = self._get(f"listings?seller_id=eq.{sid}&code=eq.{code}"
                              "&select=status,ward,area_m2,price_vnd,can_chu_duyet,chu_duyet_at")
         except Exception as e:  # noqa: BLE001 — không biết thì bot nói trung tính, không bịa "đã đăng"
@@ -1207,7 +1213,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             return False
         try:
             sid = self._get_or_create_seller(conv.user_key)
-            code = conv.active.listing_id[:8].upper()
+            code = _ma_tin(conv.active)
             tin = self._get(f"listings?seller_id=eq.{sid}&code=eq.{code}&select=id") if sid else []
             if not tin:
                 return False
@@ -1356,8 +1362,14 @@ class SupabaseConversationStore(KhoNguoiMua):
                     prop.hoan = {str(x) for x in hoan}
                 # listing_id = uuid của dòng (bỏ gạch) khi tin tạo từ bản 19/10 (code = 8 ký tự đầu id) — để ảnh ghi đúng thư
                 # mục `<uuid>/` và lượt sau cập nhật đúng dòng; tin cũ giữ code như trước (SRS-5.1zzzzzzz56).
+                # SRS-5.1zzzzzzz268: tin tạo ngoài chat (CRM, rổ mẫu) mã khác 8 ký tự đầu id — trước đây id căn = mã tin (không phải uuid) nên ảnh chủ
+                # nhà gửi vào thư mục cũ, `_ghi_anh` bỏ, không lên web (bắn thử ban-thu-kiem F). Nay id căn luôn là uuid, mã riêng giữ ở `_ma_tin`.
                 rid = str(row.get("id") or "").replace("-", "")
-                lid_engine = rid if rid and (row.get("code") or "") == rid[:8].upper() else (row.get("code", "") or row.get("id"))
+                ma_db = str(row.get("code") or "")
+                lid_engine = rid or ma_db
+                boc_tach.pop("_ma_tin", None)
+                if rid and ma_db and ma_db.upper() != rid[:8].upper():
+                    boc_tach["_ma_tin"] = ma_db
                 cu_li = next((x for x in (cu.listings if cu else []) if x.listing_id == lid_engine), None)
                 li = Listing(
                     listing_id=lid_engine,

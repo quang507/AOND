@@ -484,6 +484,13 @@ class Listing:
     media: list[dict[str, str]] = field(default_factory=list)  # MediaRef.to_dict()s (kho Supabase Storage)
 
     @property
+    def ma_tin(self) -> str:
+        """Mã tin trên DB / web. Tin tạo từ chat: 8 ký tự đầu id. Tin tạo ngoài chat (CRM `admin_dang_tin` đặt mã `next_listing_code`, rổ mẫu
+        SEED…) mang mã riêng ở khoá nội bộ `_ma_tin` do lúc nạp từ DB ghi (SRS-5.1zzzzzzz268) — id căn vẫn là uuid của dòng để ảnh vào đúng
+        thư mục `<uuid>/` của tin."""
+        return str(self.prop.fields.get("_ma_tin") or self.listing_id[:8]).upper()
+
+    @property
     def display_status(self) -> str:
         """The lifecycle status as shown to the user. `status` defaults to the sale-oriented
         'đang bán' for every listing; for a RENTAL that reads wrong, so the default active state
@@ -3878,7 +3885,7 @@ class Engine:
             so_anh = _image_count(refs)
             tra = getattr(self._convstore, "tra_loi_xin_anh", None)
             if so_anh and tra is not None:   # SRS-5.1zzzzzzz254: khách mua đang chờ thêm ảnh căn này → báo lại khách
-                tra(conv.user_key, conv.active.listing_id[:8].upper(), so_anh)
+                tra(conv.user_key, conv.active.ma_tin, so_anh)
             return captured, capped
         return captured, 0
 
@@ -3895,9 +3902,9 @@ class Engine:
                 return
         lay = getattr(self._convstore, "can_cho_anh", None)
         ma = lay(conv.user_key) if lay is not None else []
-        if not ma or conv.active.listing_id[:8].upper() in ma:
+        if not ma or conv.active.ma_tin in ma:
             return
-        li = next((x for x in conv.listings if x.listing_id[:8].upper() == ma[0]), None)
+        li = next((x for x in conv.listings if x.ma_tin == ma[0]), None)
         if li is not None:
             log.warning("Ảnh chủ nhà: chuyển sang căn khách mua đang xin ảnh")
             conv.active_listing_id = li.listing_id
@@ -4367,7 +4374,7 @@ class Engine:
         partial "căn ở Trương Đình Hội" matches "198A/22 Trương Đình Hội"). None if no match."""
         ma = ref.strip().lstrip("#").upper()
         for li in conv.listings:   # SRS-5.1zzzzzzz257: mã tin trên web (#7B9DED51 = 8 ký tự đầu id) — khối câu khách hỏi chủ nhà nêu mã này
-            if len(ma) == 8 and li.listing_id[:8].upper() == ma:
+            if ma and li.ma_tin == ma:
                 return li
         ref_nums = set(re.findall(r"\d+", ref))
         if ref_nums:
