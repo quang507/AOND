@@ -9058,6 +9058,26 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz278 · Phía mua: không giới thiệu lại cùng một căn nhà dưới mã tin khác; không chen tin báo căn mới khi khách đang chat (29/10/2026)
+Chủ dự án hỏi 29/10: "còn sửa gì ở phía mua dc nữa ko". Soát chat mua 28/10 (hai cuộc chat cùng kịch bản, Zalo thật):
+
+1. **Ca gốc (a)**: 146 Trần Bình Trọng có HAI tin đang hiển thị (mã EBCB3EEA và B6B04A44, hai người rao — ở đây là hai lượt bắn thử). Bot giới
+   thiệu EBCB3EEA trong chat; 17:11 tin báo căn mới gửi B6B04A44 như "căn mới". Ngoài đời hai môi giới rao cùng một nhà là chuyện thường.
+   - Gốc: `bao_can_moi` / `can_phu_hop` chỉ loại theo id tin (đã báo / đã dán link / đã chê) — không biết hai tin là một nhà.
+   - Sửa: `mua.khoa_nha(street, ward, dia_chi)` = số nhà (đầu ô `boc_tach.dia_chi`) + đường + phường, bỏ dấu; thiếu số nhà → không gộp.
+     `KhoMua.khoa_nha_theo_id` đọc `dia_chi:boc_tach->>dia_chi`; `bo_can_trung_nha` bỏ căn trùng nhà với căn đứng trước / căn đã nghe.
+     `bao_can_moi`: căn trùng nhà với căn đã báo / đã giới thiệu / đã chê thì không báo. `can_phu_hop`: hai tin cùng nhà chỉ đưa một, trùng
+     nhà căn đã chê thì bỏ; xin thêm 2 căn từ `tim_nha` để bù chỗ bị bỏ.
+2. **Ca gốc (b)**: khách nhắn 17:10:41, bot trả 17:10:54, tin báo căn mới chen vào 17:11:03 — khách đang chat thì lượt chat đã tự gợi căn.
+   - Sửa: `bao_can_moi` bỏ khách có `last_message_at` trong 30 phút qua (`DANG_CHAT_PHUT`); vòng 10 phút sau xét lại. Quyết định (BA, uỷ quyền).
+3. **Ba câu hỏi gốc**:
+   - (1) *Lớp lỗi*: "một căn" được đếm bằng mã tin, trong khi một nhà có thể có nhiều tin; đường gửi chủ động không biết khách đang chat.
+   - (2) *Chỗ khác cùng lớp*: lượt gợi căn trong chat (`can_phu_hop`) — đã sửa cùng lúc; trang web vẫn hiện cả hai tin (đúng: hai người rao) —
+     để nguyên. Căn đã gợi ở lượt chat trước nhưng chưa dán link thì `can_da_gioi_thieu` không biết — chưa thấy ca thật, để vậy.
+   - (3) *Kiểm*: `tests/test_trung_nha_278.py` — khoá nhà, bỏ trùng trong danh sách, không báo tin trùng nhà căn đã báo (khác số nhà vẫn báo),
+     truy vấn hội thoại có mốc 30 phút. Đỏ khi gỡ bản sửa ở `bao_can_moi`. Đã chạy `khoa_nha` trên hai tin thật: cùng khoá
+     `146|tran binh trong|cho quan`. `tests/test_ngung_bao_va_khong_hop.py`: `p_limit` 4 → 6 (thêm 2 chỗ bù tin trùng).
+
 ### SRS-5.1zzzzzzz277 · Soát giọng chat 72 giờ: phía mua lặp khuôn khen "Em nêu rõ … nên anh dễ lọc" (29/10/2026)
 Chủ dự án hỏi 29/10: "còn văn thì hay chat thì ổn vui vẻ rồi hả". Soát 61 lời bot gửi khách thật (không tính ID thử) 26–29/10:
 

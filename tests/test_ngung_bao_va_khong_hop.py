@@ -43,7 +43,7 @@ def test_can_khach_da_che_khong_duoc_goi_lai():
     khoi = [s for s in ai.system if "CĂN ĐANG RAO" in s]
     assert khoi and all("#EFGH5678" in s and "#ABCD1234" not in s for s in khoi)
     tim = [d for m, e, d in kho.goi if e.startswith("rpc/tim_nha")]
-    assert tim and tim[0]["p_limit"] == 4                                  # xin thêm đúng số căn đã loại
+    assert tim and tim[0]["p_limit"] == 6           # xin thêm đúng số căn đã loại + 2 chỗ cho tin trùng nhà (SRS-5.1zzzzzzz278)
 
 
 def test_khach_che_can_ghi_khong_hop_kem_ly_do_va_bo_khoi_loi_dap():
