@@ -373,6 +373,13 @@ def _nhieu_cau_hoi(loi: str) -> bool:
     return len(re.findall(r"\?+", chat)) > 1
 
 
+def _soat_gon(user_key: str | None) -> bool:
+    """Soát lời chế độ gọn (SRS-5.1zzzzzzz298, B2 bước 1): luật giọng / lặp chỉ ghi log, tối đa MỘT lần gọi lại model, "Dạ" do code bỏ. Công tắc
+    `AIOI_SOAT_GON` (một nguồn `bot/bridge-zca/cai-vps.sh` dòng SOAT_GON): "thu" = chỉ ID thử, "bat" = mọi khách, khác = như cũ."""
+    v = os.environ.get("AIOI_SOAT_GON", "").strip().lower()
+    return v == "bat" or (v == "thu" and _la_id_thu(user_key))
+
+
 def _la_id_thu(user_key: str | None) -> bool:
     """ID thử của các ô bắn thử — chỉ để log thêm chi tiết (lời khách thật không vào log)."""
     return str(user_key or "").startswith(_TIEN_TO_ID_THU)
@@ -3033,10 +3040,16 @@ class Engine:
         hẻm của lượt hỏi phường — lời không nhắc phường nào trong đó thì viết lại."""
         reply = _gan_dau_ban_tin(reply)
         thieu_td = _tieu_de_thieu(reply, conv.prop)
-        ly_do = []
+        ly_do: list[str] = []
+        # SRS-5.1zzzzzzz298 (B2 bước 1): luật GIỌNG / LẶP (không đổi sự thật, tiền, quyền riêng) vào `mem` — chế độ gọn chỉ ghi log, không gọi
+        # lại model; luật giữ sự thật / tiền / riêng tư / bản tin / luật cứng chủ dự án (một câu hỏi, không gọi "mình") vẫn vào `ly_do`.
+        mem: list[str] = []
+        gon = _soat_gon(conv.user_key)
+        if gon and _mo_dau_da(reply):
+            reply = _bo_da_dau(reply)   # "Dạ" mở đầu: code bỏ chữ, không gọi lại model
         if phuong_phai_nhac and not any(ten_tran(p) in bo_dau(reply) for p in phuong_phai_nhac):
             ds = ", ".join(phuong_phai_nhac)
-            ly_do.append(f"Lời vừa viết hỏi phường mà không nhắc phường kho hẻm ({ds}) — câu hỏi phường phải nêu "
+            mem.append(f"Lời vừa viết hỏi phường mà không nhắc phường kho hẻm ({ds}) — câu hỏi phường phải nêu "
                          + (f"{ds} ở dạng hỏi xác nhận (\"nhà mình ở {ds} đúng không …?\")" if len(phuong_phai_nhac) == 1
                             else "các phường này cho khách chọn") + ", không hỏi trống \"thuộc phường nào\".")
         if thieu_td:
@@ -3066,7 +3079,7 @@ class Engine:
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
         if _viet_hoa_ca_cum(reply):   # SRS-5.1zzzzzzz241
-            ly_do.append("Lời vừa viết có cụm chữ viết HOA toàn bộ — viết thường như câu nói (chỉ hoa chữ đầu câu và tên riêng), kể cả tiêu đề tin rao.")
+            mem.append("Lời vừa viết có cụm chữ viết HOA toàn bộ — viết thường như câu nói (chỉ hoa chữ đầu câu và tên riêng), kể cả tiêu đề tin rao.")
         if _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
             ly_do.append("Lời vừa viết gọi khách là \"mình\" (\"em xin lỗi mình\", \"Mình đang cần…\") — KHÔNG dùng \"mình\" gọi khách hay tự xưng: "
                          "gọi đúng cách khách xưng (em / cháu / anh / chị), chưa rõ thì \"anh/chị\"; tự xưng đúng QUY TẮC XƯNG HÔ ở trên. "
@@ -3081,7 +3094,7 @@ class Engine:
         # SRS-5.1zzzzzzz228 mục 3 (chủ dự án 27/10: "câu nào cũng dc, đừng trùng 3 4 câu em ghi nhận, 1 lần là dc" — thay "bỏ hẳn" của SRS-131):
         # câu ghi nhận được nói MỘT lần trong cuộc chat; lượt trước đã có một câu như vậy thì lượt này gọi lại.
         if _co_cau_ghi_nhan(reply) and any(_co_cau_ghi_nhan(t.content) for t in conv.history if t.role == "assistant" and t.content):
-            ly_do.append("Lời vừa viết có câu ghi nhận (\"Em ghi nhận / Em đã ghi… / Em lưu…\") mà em ĐÃ nói một câu kiểu này ở lượt trước — "
+            mem.append("Lời vừa viết có câu ghi nhận (\"Em ghi nhận / Em đã ghi… / Em lưu…\") mà em ĐÃ nói một câu kiểu này ở lượt trước — "
                          "chỉ được một lần trong cuộc chat: lượt này đáp thẳng vào điều khách vừa nói (một lợi ích cụ thể, hoặc vào thẳng việc; "
                          "bản tin cập nhật thì mở thẳng bằng 📋).")
         if conv.role != "buyer" and _bot_hua_gui_anh(reply):
@@ -3095,11 +3108,11 @@ class Engine:
         gan = [t.content for t in reversed(conv.history) if t.role == "assistant" and t.content and "📋" not in t.content][:3]
         if "📋" not in reply:
             if any(_cung_mo_dau(reply, t) for t in gan):
-                ly_do.append("Mấy lượt gần đây em đã mở đầu bằng cùng mấy chữ này — lượt này đổi cách mở (vào thẳng ý, hoặc đáp điều khách vừa "
+                mem.append("Mấy lượt gần đây em đã mở đầu bằng cùng mấy chữ này — lượt này đổi cách mở (vào thẳng ý, hoặc đáp điều khách vừa "
                              "nói), không lặp lời khen / xin lỗi / trấn an đã nói.")
             lap = _cau_lap_luot_truoc(reply, "\n".join(gan))
             if lap:
-                ly_do.append(f"Câu \"{lap[:60]}\" lặp gần nguyên văn lời em ở lượt trước — khách đã đọc rồi: bỏ câu đó, hoặc nói ngắn hơn bằng "
+                mem.append(f"Câu \"{lap[:60]}\" lặp gần nguyên văn lời em ở lượt trước — khách đã đọc rồi: bỏ câu đó, hoặc nói ngắn hơn bằng "
                              "chữ khác; mỗi ý (chưa có căn, cứ nhắn lại, em sẽ báo) chỉ nói MỘT lần trong cuộc chat.")
         else:
             # SRS-5.1zzzzzzz219 (chat anh Luận 27/10: câu chốt "Anh xem bản tin này ưng chưa… cứ nhắn em nhé!" lặp 6 lượt liền): phần CHAT
@@ -3107,16 +3120,16 @@ class Engine:
             chat_nay, chat_truoc = _phan_chat_quanh_ban_tin(reply), _phan_chat_quanh_ban_tin(truoc)
             if chat_nay and chat_truoc:
                 if _cung_mo_dau(chat_nay, chat_truoc):
-                    ly_do.append("Câu dẫn trước bản tin mở bằng cùng mấy chữ với lượt trước — lượt này MỘT câu ngắn đáp đúng điều khách vừa nói "
+                    mem.append("Câu dẫn trước bản tin mở bằng cùng mấy chữ với lượt trước — lượt này MỘT câu ngắn đáp đúng điều khách vừa nói "
                                  "(theo khối GIỌNG), không mở bằng câu báo cáo.")
                 lap = _cau_lap_luot_truoc(chat_nay, chat_truoc)
                 if lap:
-                    ly_do.append(f"Câu \"{lap[:60]}\" quanh bản tin lặp gần nguyên văn lượt trước — câu dẫn và câu hỏi chốt mỗi lượt một cách "
+                    mem.append(f"Câu \"{lap[:60]}\" quanh bản tin lặp gần nguyên văn lượt trước — câu dẫn và câu hỏi chốt mỗi lượt một cách "
                                  "nói khác (hỏi đã ưng chưa / còn chỗ nào chỉnh / đăng luôn nhé), ngắn thôi.")
         if "📋" not in reply and _goi_a(reply) and _goi_a(_phan_chat_quanh_ban_tin(truoc) if "📋" in truoc else truoc):
             # SRS-5.1zzzzzzz220 (chat 27/10: "…thuận tiện cho việc đi lại ạ. Chị cho em…", "…dễ xoay xe, chị ạ!", "…thuận lợi cho chị ạ!" — bốn
             # lượt liền, khách: "sao lại chị ạ liên tục"): kiểm HÌNH THỨC lời của chính bot, không đọc ý khách.
-            ly_do.append("Lượt trước em đã gọi khách kèm \"ạ\" / \"ơi\" (\"chị ạ\", \"anh ơi\") — lượt này đừng lặp: bỏ hẳn tiếng gọi, nói tự "
+            mem.append("Lượt trước em đã gọi khách kèm \"ạ\" / \"ơi\" (\"chị ạ\", \"anh ơi\") — lượt này đừng lặp: bỏ hẳn tiếng gọi, nói tự "
                          "nhiên như nhắn Zalo cho người quen, và đổi khuôn câu (đừng \"… quá anh ơi!\" lượt nào cũng vậy).")
         moi = self._phuong_moi_cua_cu(conv)
         if moi and ("📋" in reply or _is_formatted_post(reply)) and ten_tran(moi) not in bo_dau(reply):
@@ -3144,7 +3157,7 @@ class Engine:
         # rất ngắn): lượt AI đã đọc khách chỉ đáp ngắn đồng ý (`tha_tim` = dong_y, có cụm trích), lịch hẹn đã ghi, không việc mua nào khác.
         if (conv.role == "buyer" and conv.y_luot.get("lich_cho") and conv.y_luot.get("tha_tim") == "dong_y" and not conv.y_luot.get("mua")
                 and _dap_ok_qua_dai(reply)):
-            ly_do.append("Khách chỉ đáp ngắn đồng ý và lịch hẹn ĐÃ ghi — đáp đúng MỘT câu rất ngắn (tối đa khoảng 12 từ"
+            mem.append("Khách chỉ đáp ngắn đồng ý và lịch hẹn ĐÃ ghi — đáp đúng MỘT câu rất ngắn (tối đa khoảng 12 từ"
                          "), KHÔNG nhắc lại lịch / căn / người phụ trách, KHÔNG hỏi thêm.")
         # SRS-5.1zzzzzzz218: bản tin rao phía bán — số kèm đơn vị phải là số chủ nhà đã nói ("41,6m²" là 5,2 × 8 model tự nhân).
         so_tin = _so_khong_co_trong_tin(reply, conv) if (la_ban_tin and conv.role != "buyer") else []
@@ -3162,6 +3175,10 @@ class Engine:
             elif _do_giong_ban_tin(reply.split("📋", 1)[1], _ban_tin_truoc(conv)) >= BAN_TIN_GIONG_TOI_DA:
                 ly_do.append(f"Khách vừa dặn cách viết bản tin ({dan}) mà bản tin cập nhật gần như Y NGUYÊN bản trước — sửa ĐÚNG chỗ khách "
                              "dặn cho thấy rõ khác biệt (tiêu đề / mô tả / gạch đầu dòng), chỗ khách không nhắc giữ nguyên.")
+        if gon and mem:
+            log.warning("Lời bot lệch luật giọng / lặp (%d, chế độ gọn — không gọi lại): %s", len(mem), " | ".join(x[:40] for x in mem))
+        elif mem:
+            ly_do += mem
         if ly_do:
             # Đầu mỗi lý do (không lời khách) để truy lưới nào kích — bắn thử 368 chỉ thấy "1 lý do", không biết lý do gì.
             log.warning("Lời bot lệch luật hình thức (%d lý do: %s) — gọi lại model", len(ly_do), " | ".join(x[:40] for x in ly_do))
@@ -3173,7 +3190,9 @@ class Engine:
                 reply = _gan_dau_ban_tin(_bo_markdown(lai))
                 # SRS-5.1zzzzzzz228 (ban-thu-srd 27/10: bản gọi lại vẫn mở bằng Dạ, "… em hiểu rồi anh…"): luật CỨNG (Dạ, gọi khách "mình",
                 # phí sai vai) soát lại bản gọi lại; còn lệch thì gọi thêm MỘT lần. Luật mềm (lặp, khen) không gọi lần hai — tốn tiền mỗi lượt.
-                con = self._ly_do_cung(conv, reply)
+                con = [] if gon else self._ly_do_cung(conv, reply)   # chế độ gọn: tối đa MỘT lần gọi lại (SRS-5.1zzzzzzz298)
+                if gon and _mo_dau_da(reply):
+                    reply = _bo_da_dau(reply)
                 if con:
                     log.warning("Bản gọi lại vẫn lệch luật cứng (%s) — gọi lại lần hai", " | ".join(x[:40] for x in con))
                     with _do(conv, "tra_loi_lai"):
