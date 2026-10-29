@@ -203,3 +203,32 @@ def test_duong_trung_ten_bo_dau_khach_go_dung_dau_thi_nhan():
     assert t.duong("Mã Lò") == {"ten": "Mã Lò", "chac": True, "phuong": ["Phường Bình Hưng Hòa", "Phường Bình Trị Đông"]}
     assert t.duong("mã lộ")["ten"] == "Mã Lộ"
     assert t.duong("ma lo") is None
+
+
+def test_ten_duong_khop_nhieu_duong_thi_hoi_khach_chon():
+    """SRS-5.1zzzzzzz271 (chủ dự án 29/10: "khách gõ sai tên mà ra 2 đường thì hỏi lại là mã lò hay mã lộ"): "ma lo" khớp ngang nhau Mã Lò
+    (Bình Tân) và Mã Lộ (Quận 1) → khối trả lời bảo bot hỏi khách là đường nào (kèm quận cũ), lượt lập thao tác biết ghi tên khách chọn.
+    Cách nói mới: "mã lo" (thiếu một dấu)."""
+    from aioi.dia_danh import goi_y_duong
+    ml = [{"ten": "Mã Lò", "khoang_cach": 0, "quan_cu": ["Quận Bình Tân"], "phuong": ["Phường Bình Hưng Hòa", "Phường Bình Trị Đông"]},
+          {"ten": "Mã Lộ", "khoang_cach": 0, "quan_cu": ["Quận 1"], "phuong": ["Phường Tân Định"]},
+          {"ten": "Ba Tơ", "khoang_cach": 2, "quan_cu": ["Quận 8"], "phuong": ["Phường Bình Đông"]}]
+    for go in ("ma lo", "mã lo"):
+        t, _ = _tra(duong={go: ml})
+        assert t.ung_vien_duong(go) == ["Mã Lò (Quận Bình Tân)", "Mã Lộ (Quận 1)"]
+        k = khoi_dia_danh(t, {"duong": go}, "phuong")
+        assert "Mã Lò (Quận Bình Tân) / Mã Lộ (Quận 1)" in k and "Ba Tơ" not in k
+        assert "TÊN ĐƯỜNG NHIỀU KHẢ NĂNG" in goi_y_duong(t, {"duong": go})
+    t, _ = _tra(duong={"Mã Lò": ml})
+    assert t.ung_vien_duong("Mã Lò") == [] and "NHIỀU" not in khoi_dia_danh(t, {"duong": "Mã Lò"}, "phuong")
+
+
+def test_tin_cho_phuong_ma_ten_duong_nhap_nhang_thi_hoi_duong_truoc():
+    """SRS-5.1zzzzzzz271 (chat 29/10, căn Mã Lò): khách duyệt tin, tin chờ phường, tên đường khớp hai đường → hỏi đường nào (kể tên), không
+    hỏi trống "gần chợ, trường hay ngã tư"."""
+    from aioi.prompts import khoi_trang_thai_web
+    uv = ["Mã Lò (Quận Bình Tân)", "Mã Lộ (Quận 1)"]
+    k = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "goi_y_phuong": [], "phuong_da_hoi": True, "duong_nhap_nhang": uv})[0]
+    assert "Mã Lò (Quận Bình Tân) / Mã Lộ (Quận 1)" in k and "KHÔNG hỏi chợ" in k
+    cu = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "goi_y_phuong": [], "phuong_da_hoi": True})[0]
+    assert "Mã Lò" not in cu

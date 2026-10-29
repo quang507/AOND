@@ -4205,6 +4205,10 @@ class Engine:
             n = conv.lo.get("phuong", 0)
             web["phuong_da_hoi"] = n >= 1 or "phuong" in conv.prop.hoan
             web["goi_y_phuong"] = self._goi_y_phuong(conv)
+            f0 = conv.prop.fields
+            if not web["goi_y_phuong"] and self._dia_danh is not None and f0.get("duong"):
+                # SRS-5.1zzzzzzz271: tên đường khớp nhiều đường (Mã Lò / Mã Lộ) — hỏi đường nào trước, không hỏi trống "gần chợ, ngã tư".
+                web["duong_nhap_nhang"] = self._dia_danh.ung_vien_duong(f0.get("duong"), f0.get("quan"))
             web["co_so_nha"] = bool(re.match(r"\s*(?:số\s*)?\d+[a-zA-Z]?(?:/\d+[a-zA-Z]?)*\b", str(conv.prop.fields.get("dia_chi") or ""), re.I))
             # SRS-5.1zzzzzzz213 (khách ảo 26/10: anh K. bị hỏi phường 6 lượt sau bản nháp vì sổ lờ chỉ đếm ở lượt thu thập, không đếm ở cổng
             # web): mỗi lượt cổng này hỏi phường cũng tính một lần lờ (một lần mỗi lượt). Hỏi tới lần thứ 3 mà chưa ra → báo người phụ trách tra

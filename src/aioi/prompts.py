@@ -980,7 +980,12 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
             # SRS-5.1zzzzzzz212 (bắn thử 5 khách, cô T.: phường hỏi lần 3 ở lượt duyệt, bot tự kể "Nguyễn Cư Trinh, Phường 11 hay Phường 4"
             # — khối này không đưa danh sách nào nên model bịa). Chủ dự án 26/10: "thiếu thông tin thì hỏi khác".
             goi_y = [p for p in (web.get("goi_y_phuong") or []) if isinstance(p, str)][:4]
-            if goi_y:
+            nhap_nhang = [d for d in (web.get("duong_nhap_nhang") or []) if isinstance(d, str)][:4]
+            if nhap_nhang:   # SRS-5.1zzzzzzz271: chưa biết đường nào thì chưa tra được phường — hỏi đường trước
+                hoi = (f"nhà nằm ở đường nào — tên đường khách gõ khớp nhiều đường trong kho: {' / '.join(nhap_nhang)} (hệ thống tra, không "
+                       "phải khách nói); kể các tên này kèm quận cũ cho khách chọn (biết đường thì bên em tự tra phường), KHÔNG hỏi chợ / "
+                       "trường / ngã tư, KHÔNG tự chọn thay khách")
+            elif goi_y:
                 hoi += (f" — kể ĐÚNG các phường hệ thống tra được cho khách chọn: {', '.join(goi_y)} (hệ thống tra, không phải khách nói); "
                         "KHÔNG kể phường nào khác")
             elif web.get("phuong_da_hoi"):

@@ -7,6 +7,7 @@
 #   F. Chủ nhà hai căn gửi ảnh → ảnh vào căn khách mua đang xin (SRS-258 / 254)
 #   G. Sticker tới dạng ảnh .png → đọc như lời chào, không lưu thành ảnh căn (SRS-255)
 #   I. Đường Mã Lò (hai phường, trùng "Mã Lộ" Q1 khi bỏ dấu): bot kể hai phường cho khách xác nhận, không hỏi trống (SRS-270)
+#   J. Khách gõ không dấu "ma lo" (khớp Mã Lò Bình Tân / Mã Lộ Q1): bot hỏi lại là đường nào (SRS-271)
 #   H. Khách hỏi căn rổ mẫu SEED → câu hỏi giao thẳng admin, tin tới Zalo admin (SRS-269) — admin THẬT nhận một tin "❓ Khách hỏi căn #SEED…"
 # Kiểm điều tất định (DB, mã căn trong link); câu chữ bot in ra ở dòng << cho người đọc. Từ khoá trong lời bot chỉ là lưới đỡ.
 # Cần: TOKEN (Management API), PROJECT_REF. Tiền thật: ~16 lượt chat.
@@ -26,8 +27,8 @@ vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/nu
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
 TV="thu-kiem-tv-$RUN"; MUA="thu-kiem-mua-$RUN"; KHO="thu-kiem-kho-$RUN"; CHU="thu-kiem-chu-$RUN"; MUA2="thu-kiem-mua2-$RUN"; ST="thu-kiem-st-$RUN"
-MUA3="thu-kiem-mua3-$RUN"; ML="thu-kiem-ml-$RUN"
-TAT_CA="$TV $MUA $KHO $CHU $MUA2 $ST $MUA3 $ML"
+MUA3="thu-kiem-mua3-$RUN"; ML="thu-kiem-ml-$RUN"; ML2="thu-kiem-ml2-$RUN"
+TAT_CA="$TV $MUA $KHO $CHU $MUA2 $ST $MUA3 $ML $ML2"
 MA_A=$(printf 'A%07X' $(( RUN % 268435456 ))); MA_B=$(printf 'B%07X' $(( RUN % 268435456 )))
 
 don() {
@@ -147,6 +148,13 @@ chat "$ML" "ừ đăng đi"; LOI_ML+=$'\n'"$LOI"
 kiem "I: bot kể phường Bình Trị Đông cho khách xác nhận" "$(grep -q 'Bình Trị Đông' <<<"$LOI_ML" && echo 1 || echo 0)"
 kiem "I: bot kể phường Bình Hưng Hòa cho khách xác nhận" "$(grep -q 'Bình Hưng Hòa' <<<"$LOI_ML" && echo 1 || echo 0)"
 kiem "I: không hỏi trống \"gần chợ, trường, ngã tư\"" "$(grep -qi 'ngã tư' <<<"$LOI_ML" && echo 0 || echo 1)"
+
+# ==== J. Gõ không dấu khớp hai đường (SRS-271, chủ dự án 29/10: "khách gõ sai tên mà ra 2 đường thì hỏi lại là mã lò hay mã lộ").
+chat "$ML2" "ban nha mat tien duong ma lo, ngang 7m, gia 12 ty"
+LOI_ML2="$LOI"
+grep -q 'Mã Lộ' <<<"$LOI_ML2" || { chat "$ML2" "dat 135m2"; LOI_ML2+=$'\n'"$LOI"; }
+kiem "J: bot hỏi lại đường nào — có nêu Mã Lò" "$(grep -q 'Mã Lò' <<<"$LOI_ML2" && echo 1 || echo 0)"
+kiem "J: bot hỏi lại đường nào — có nêu Mã Lộ" "$(grep -q 'Mã Lộ' <<<"$LOI_ML2" && echo 1 || echo 0)"
 
 kiem "mọi lượt: không bong bóng nào mở đầu \"Dạ\"" "$(grep -qE '^Dạ' <<<"$MOI_LOI" && echo 0 || echo 1)"
 vps "journalctl -u aond-core --since '-15 min' --no-pager -o cat | grep -E 'Ảnh chủ nhà|Bỏ ô|Lời bot lệch luật|lỗi' | sed -E 's/[0-9]{9,}/#/g' | tail -30" || true
