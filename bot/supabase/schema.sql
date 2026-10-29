@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-10-29 10:14 (giờ VN)
+-- Sinh lúc: 2026-10-29 11:27 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -1100,6 +1100,7 @@ create index if not exists duong_ban_do ON public.duong USING btree (lat, lng) I
 create index if not exists duong_hem ON public.duong USING btree (upper(so_hem), bo_dau(duong_me)) WHERE (loai = 'hem'::text);
 create index if not exists duong_lat_lng ON public.duong USING btree (lat, lng);
 create index if not exists duong_nhung_hnsw ON public.duong USING hnsw (nhung extensions.halfvec_cosine_ops);
+create index if not exists duong_ten_gon ON public.duong USING btree (length(ten_khong_dau)) INCLUDE (ten_khong_dau, ten, loai, quan_cu, phuong, tinh) WHERE (loai <> 'hem'::text);
 create index if not exists duong_ten_khong_dau_idx ON public.duong USING btree (ten_khong_dau);
 create index if not exists giao_lo_a_idx ON public.giao_lo USING btree (a_khong_dau);
 create index if not exists giao_lo_b_idx ON public.giao_lo USING btree (b_khong_dau);
@@ -5481,14 +5482,16 @@ CREATE OR REPLACE FUNCTION public.tim_duong(p_ten text, p_quan text DEFAULT NULL
  SET search_path TO 'public', 'extensions'
 AS $function$
   with q as (
-    select public.bo_dau(regexp_replace(btrim(coalesce(p_ten, '')), '\s+', ' ', 'g')) as k
+    select public.bo_dau(regexp_replace(btrim(coalesce(p_ten, '')), '\s+', ' ', 'g')) as k,
+           greatest(coalesce(p_toi_da, 0), 0) as n
   ), c as (
     select d.ten, d.quan_cu, d.phuong, d.tinh,
-           levenshtein_less_equal(d.ten_khong_dau, q.k, greatest(coalesce(p_toi_da, 0), 0)) as kc
-      from public.duong d, q
-     where length(q.k) between 4 and 200
-       and d.loai <> 'hem'
-       and abs(length(d.ten_khong_dau) - length(q.k)) <= greatest(coalesce(p_toi_da, 0), 0)
+           levenshtein_less_equal(d.ten_khong_dau, (select k from q), (select n from q)) as kc
+      from public.duong d
+     where d.loai <> 'hem'
+       and (select length(k) from q) between 4 and 200
+       -- SRS-5.1zzzzzzz272: khoảng độ dài (dùng chỉ mục duong_ten_gon) thay cho abs(length(...) - length(k)) <= n — cùng tập dòng
+       and length(d.ten_khong_dau) between (select length(k) - n from q) and (select length(k) + n from q)
   )
   select c.ten,
          min(c.kc)::integer,
@@ -5496,7 +5499,7 @@ AS $function$
          array_remove(array_agg(distinct c.phuong), ''),
          array_agg(distinct c.tinh)
     from c
-   where c.kc <= greatest(coalesce(p_toi_da, 0), 0)
+   where c.kc <= (select n from q)
    group by c.ten
    order by min(c.kc),
             (p_quan is not null and bool_or(public.cung_quan_cu(c.quan_cu, p_quan))) desc,

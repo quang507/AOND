@@ -371,6 +371,9 @@ class TraDiaDanh:
             # SRS-5.1zzzzzzz270 (chat 29/10, đường Mã Lò): so bỏ dấu thì "Mã Lò" (Bình Tân) và "Mã Lộ" (Quận 1) trùng nhau → không ra tên nào,
             # bot không kể được phường, hỏi trống "gần chợ, trường, ngã tư". Khách gõ ĐÚNG DẤU một tên trong số đó thì nhận tên đó.
             ten_kho = _mot(cung) or _mot([t for t in cung if t and t.strip().lower() == ten.lower()])
+            if not ten_kho and quan:   # SRS-5.1zzzzzzz273: khách đã nói quận ("mã lò bình tân") → tên cùng quận
+                ten_kho = _mot([u.get("ten") for u in ds if u.get("khoang_cach", 9) == gan
+                                and any(_cung_quan(q, quan) for q in (u.get("quan_cu") or []) if q)])
             if not ten_kho:
                 nhan = []
                 for u in ds:
