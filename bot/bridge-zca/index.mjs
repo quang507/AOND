@@ -481,7 +481,7 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cl
 
   // FR-143: đính kèm hình thật (URL chính chủ gửi, bộ não chọn) — tải về file
   // tạm rồi gửi như ảnh đính kèm; lỗi một tấm thì bỏ qua tấm đó.
-  for (const url of Array.isArray(photos) ? photos : []) await guiAnhQuaUrl(threadId, url);
+  await guiAnhQuaUrl(threadId, Array.isArray(photos) ? photos : []);   // SRS-5.1zzzzzzz280: mọi ảnh một lần
 
   // SRS-5.1zzzzzzz26 (18/10/2026): bỏ lượt POST `sync_turn` gửi sau mỗi lượt — chat-reply đã ghi lời khách và lời bot vào
   // `messages` ngay trong lượt chính, lượt đồng bộ thêm làm mỗi câu bot nằm hai lần trong sổ hội thoại (CRM + lịch sử model).
@@ -772,24 +772,50 @@ vongKeo();
 
 // Tải một ảnh theo URL về file tạm rồi gửi như ảnh đính kèm. Dùng chung cho lượt chat (`photos` của chat-reply, FR-143) và tin chủ động
 // (`photos` của /send, SRS-5.1zzzzzzz151). Trả true nếu đã gửi; lỗi thì ghi sổ và trả false — một tấm hỏng không chặn các tấm sau.
-async function guiAnhQuaUrl(threadId, url) {
+// SRS-5.1zzzzzzz280 (chủ dự án 29/10: "ảnh gửi 1 lần có được ko, nhìn nó phóng trên zalo to lắm"): tải HẾT ảnh rồi gửi MỘT tin nhiều
+// tệp — Zalo hiện thành một khối ảnh nhỏ thay vì từng tấm phóng to. Gửi gộp hỏng thì gửi lẻ từng tấm (khách vẫn nhận ảnh). Trả số tấm đã gửi.
+async function guiAnhQuaUrl(threadId, urls) {
+  const ds = (Array.isArray(urls) ? urls : [urls]).filter((u) => typeof u === "string" && u);
+  if (!ds.length) return 0;
+  const tep = [];
   try {
     // Hạn chờ BẮT BUỘC: một URL ảnh treo mà không có hạn là kẹt luôn cả vòng
     // gửi ảnh, khách chờ mãi không thấy tấm nào.
-    const img = await fetch(url, { signal: AbortSignal.timeout(15_000) });
-    if (!img.ok) return false;
-    const f = path.join(
-      os.tmpdir(),
-      `nhadat-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`,
-    );
-    fs.writeFileSync(f, Buffer.from(await img.arrayBuffer()));
-    await api.sendMessage({ msg: "", attachments: [f] }, String(threadId), ThreadType.User);
-    fs.unlinkSync(f);
-    console.log(`→ 📷 ${String(url).slice(0, 70)}…`);
-    return true;
-  } catch (e) {
-    await ghiLoi("gửi ảnh", errDetail(e));
-    return false;
+    const tai = await Promise.all(ds.map(async (url) => {
+      try {
+        const img = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+        if (!img.ok) return null;
+        const f = path.join(os.tmpdir(), `nhadat-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`);
+        fs.writeFileSync(f, Buffer.from(await img.arrayBuffer()));
+        return f;
+      } catch (e) {
+        await ghiLoi("tải ảnh", errDetail(e));
+        return null;
+      }
+    }));
+    tep.push(...tai.filter(Boolean));
+    if (!tep.length) return 0;
+    try {
+      await api.sendMessage({ msg: "", attachments: tep }, String(threadId), ThreadType.User);
+      console.log(`→ 📷 ${tep.length} ảnh gửi một lần`);
+      return tep.length;
+    } catch (e) {
+      await ghiLoi("gửi ảnh gộp", errDetail(e));
+      let n = 0;
+      for (const f of tep) {
+        try {
+          await api.sendMessage({ msg: "", attachments: [f] }, String(threadId), ThreadType.User);
+          n++;
+        } catch (e2) {
+          await ghiLoi("gửi ảnh", errDetail(e2));
+        }
+      }
+      return n;
+    }
+  } finally {
+    for (const f of tep) {
+      try { fs.unlinkSync(f); } catch { /* tệp tạm đã mất */ }
+    }
   }
 }
 
@@ -815,7 +841,7 @@ try {
             let anhDaGui = 0;
             if (/^\d{6,}$/.test(String(threadId))) {
               const anh = (Array.isArray(photos) ? photos : []).filter((u) => typeof u === 'string' && u.startsWith('https://')).slice(0, 4);
-              for (const u of anh) if (await guiAnhQuaUrl(threadId, u)) anhDaGui++;
+              anhDaGui = await guiAnhQuaUrl(threadId, anh);   // SRS-5.1zzzzzzz280: mọi ảnh một lần
             }
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true, anh_da_gui: anhDaGui }));

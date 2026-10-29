@@ -9058,6 +9058,32 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz280 · Câu hỏi chủ nhà đọc theo ý khách; ảnh gửi một lần; gỡ ảnh mẫu vẽ của rổ seed (29/10/2026)
+Chủ dự án test mua 29/10 14:24–14:26 (căn SEED0002):
+
+1. **Câu hỏi chủ nhà không đi tới ai.** Khách "a mua để ở nha. nhà này vào ở ngay được khoogn?" → bot "Em hỏi chủ nhà giúp anh nhé?" → khách
+   "hỏi giúp a đi e" → bot hỏi sang "Anh dự định dọn vào ở khoảng khi nào ạ?"; `info_requests` trống. Log lõi:
+   `Mua: bỏ việc ['hoi_chu_nha', 'ma_can', 'quan_tam'] — không có căn cứ trong lời khách` (cả lượt "2 tuần nữa vào ở được không" cũng bị bỏ).
+   - Gốc: `_loc_viec_mua` đòi CHÍNH câu hỏi `hoi_chu_nha` nằm nguyên văn trong lời khách; AI sửa chính tả ("khoogn" → "không") / diễn lại → trượt.
+   - Chủ dự án: "con người ta chắc chắn có muôn vàn câu hỏi nên bắt theo nghĩa vậy mà chết à, sửa để AI hiểu ý khách, thực thi đúng ý khách".
+   - **Quyết định chủ dự án** (29/10, sau bản nháp kiểm cụm căn cứ): "AI sẽ tự diễn giải và viết lại câu hỏi gửi chủ nhà cho rõ ràng và tạo code
+     tạo yêu cầu luôn, kệ hallucinate".
+   - Sửa: `hoi_chu_nha` = câu AI VIẾT LẠI theo ý khách (gộp nhiều tin, sửa lỗi gõ, đủ ý để chủ nhà trả lời) — `_loc_viec_mua` NHẬN LUÔN, không
+     kiểm cụm trích. Mã căn AI không ghi thì lấy căn bot vừa dán link (`_ma_can_bot_vua_nhac`, có sẵn). Câu hỏi đi tiếp như cũ: căn thật →
+     chủ nhà (hạn 12 giờ), căn mẫu → admin. Đánh đổi chấp nhận: AI đọc nhầm thì chủ nhà nhận một câu hỏi thừa.
+2. **Ảnh gửi từng tấm phóng to** ("ảnh gửi 1 lần có được ko, nhìn nó phóng trên zalo to lắm"): bridge `guiAnhQuaUrl` nay nhận danh sách,
+   tải song song rồi gửi MỘT tin nhiều tệp; gửi gộp hỏng thì gửi lẻ. Cả đường trả lời chat lẫn `/send` (báo căn mới) dùng chung.
+   Chưa kiểm trên Zalo thật cách Zalo hiện một tin nhiều ảnh (zca-js 2.2.0).
+3. **Gỡ ảnh mẫu vẽ** ("bỏ luôn mấy cái ảnh mẫu vẽ kia"): xoá 968 dòng `listing_media` (4 ảnh "ẢNH MẪU" × 242 căn `seed_thu`) — trigger
+   `trg_listing_media_don_file` xếp 968 file vào `media_cleanup_queue`, cron `media-cleanup` xoá khỏi Storage. Gỡ công cụ `nap-anh-mau`
+   (script, ảnh, `sinh-anh-mau.py`, ô workflow, tự kiểm trong `test:bot`). Căn mẫu nay "chưa có ảnh" → khách xin ảnh thì xin qua admin (SRS-269).
+4. **Ba câu hỏi gốc**:
+   - (1) *Lớp lỗi*: bằng chứng đòi khớp nguyên văn trên chính GIÁ TRỊ AI diễn đạt (câu hỏi) — AI hiểu đúng ý vẫn bị chặn.
+   - (2) *Chỗ khác cùng lớp*: `hoi_du_an`, `ly_do`, `can_cu_the` vẫn so nguyên văn tin vừa nhắn — chưa thấy ca thật trượt; `hen_xem` đã chịu ghép
+     từ nhiều tin (SRS-153). Ô tin phía bán (số, giá, địa chỉ) giữ so nguyên văn — số liệu không được diễn lại.
+   - (3) *Kiểm*: `tests/test_hoi_chu_va_anh_280.py` — câu AI viết lại (có / không có chữ khách) được nhận; bridge gửi mọi ảnh một lần; công cụ
+     ảnh mẫu đã gỡ. Đỏ khi gỡ bản sửa.
+
 ### SRS-5.1zzzzzzz279 · Khách nhắn thêm lúc bot đang soạn: bỏ lời cũ, đọc gộp; lượt chậm ghi thời gian từng khâu (29/10/2026)
 Chủ dự án test phía mua 29/10 14:16: "sao có vẻ phản hồi chậm z ta".
 
