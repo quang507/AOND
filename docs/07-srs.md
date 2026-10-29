@@ -9080,6 +9080,11 @@ gọi `xem_can` (6,7 s) và `tim_can` (10,7 s). Trượt 7 phép:
    đang hiển thị"). Còn trượt câu hỏi sổ: agent hỏi lại khách "anh muốn em hỏi chủ nhà không" thay vì gửi — hướng dẫn công cụ viết "khách muốn hỏi
    chủ nhà", lệch luật đã chốt ở đường cũ (prompts mục `hoi_chu_nha`: điều dòng căn không có thì gửi chủ nhà NGAY). Sửa `agent_mua.HUONG_DAN` cho
    khớp luật đó (cả hẹn xem: khách đề nghị giờ là ghi ngay). Kiểm: `test_huong_dan_gui_chu_nha_ngay_khong_hoi_xin_phep`; bắn lần 4.
+5. **Bắn lần 4 (run 40875417679): 13/15** — phía mua đủ (lịch hẹn, câu hỏi chủ nhà, 2 bộ nhu cầu), phía bán không trình lại bản tin. Còn trượt 2 phép
+   cùng gốc: chủ nhà trả lời "sổ hồng riêng chính chủ" mà bóc tách Haiku phía BÁN không đọc ra `tra_loi_khach_hoi` (lần 1 cùng câu thì đọc ra) →
+   câu hỏi không `answered`, khách mua không được báo lại. Cùng lớp "một lần đọc của model nhỏ, không đường đỡ" — phía bán chưa có vòng agent; ghi
+   nhận, chưa sửa ở mục này. Đo vòng agent qua 4 lần bắn (16 lượt mua): lượt không gọi công cụ 5–7 s phần viết lời, $0,017–0,038 / lượt; lượt có tra
+   / ghi 10–15 s, $0,03–0,07 / lượt; cả lượt (gồm bóc tách, soát) 17–43 s — dưới trần bridge 90 s. Công tắc giữ `thu` (chỉ ID thử).
 
 ### SRS-5.1zzzzzzz291 · Bắn thử ban-thu-mua sau SRS-290: bộ nhu cầu bị ghi đè; bot chép ví dụ "hay mình đăng luôn" (29/10/2026)
 Bắn thử production `ban-thu-mua` (run 40871600371, ID thử, Sonnet 5.5 + bóc tách Haiku) sau khi bật vòng agent (SRS-290): 14/15 phép đạt.
