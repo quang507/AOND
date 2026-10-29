@@ -9058,6 +9058,27 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz272 · Tra tên đường quá giờ: chỉ mục gọn cho bảng `duong` (29/10/2026)
+Việc tự soát (chủ dự án 29/10 "ok làm tiếp đi" sau danh sách việc còn lại).
+
+1. **Ca gốc**:
+   - Log lõi của các lần bắn thử 29/10 lặp "tim_dia_danh lỗi: The read operation timed out", "tim_duong lỗi: …".
+   - Lõi chờ rpc 5 giây (`TraDiaDanh.tu_cau_hinh`). Lượt đó mất phần tra đường / phường: không gợi ý tên đường gần đúng, không kể phường.
+2. **Đo trên DB thật** (explain analyze):
+   - `tim_duong('Mã Lò')` lần lượt 6,08 s, 1,41 s, 30 ms cho cùng một phép quét.
+   - `tim_duong('Trần Bình Trọng')` 209 ms.
+   - Hàm quét CẢ bảng `duong`: 39 nghìn dòng (25,5 nghìn hẻm), 78 MB vì mỗi dòng mang vector `nhung`.
+   - Gói Free bộ nhớ đệm ít; các lịch `nhung-tick` / `nhung-dia-danh-tick` / `nhung-luat-tick` chạy 2 phút một lần.
+3. **Sửa** (migration `20261029d_duong_chi_muc_ten.sql`):
+   - Chỉ mục `duong_ten_gon (length(ten_khong_dau)) include (ten_khong_dau, ten, loai, quan_cu, phuong, tinh) where loai <> 'hem'`.
+   - `tim_duong` lọc độ dài tên theo KHOẢNG (dùng được chỉ mục) thay cho `abs(...)`. Cùng tập dòng, chữ ký không đổi.
+4. **Ba câu hỏi gốc**:
+   - (1) *Lớp lỗi*: hàm tra chữ đọc cả bảng có cột vector nặng; bảng lớn dần theo dữ liệu nạp (hẻm, vector), không ai đo lại.
+   - (2) *Chỗ khác cùng lớp*:
+     - `tim_dia_danh` cũng gom cả `duong` (`group by ten`), được cùng chỉ mục nếu planner chọn quét chỉ mục.
+     - Kết quả đo sau khi áp ghi dưới mục này.
+   - (3) *Kiểm*: đo `explain analyze` trước / sau trên DB thật. Không có bài pytest (lõi không đổi). Bắn thử `ban-thu-kiem` đọc log còn timeout không.
+
 ### SRS-5.1zzzzzzz271 · Tên đường khách gõ khớp nhiều đường thì hỏi lại là đường nào (29/10/2026)
 Chủ dự án 29/10: "Mã Lò mà chưa ra phường thì nó phải hỏi lại là mã lò hay mã lộ chứ. khách gõ sai tên mà ra 2 đường thì hỏi lại là mã lò
 hay mã lộ".
