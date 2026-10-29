@@ -721,7 +721,9 @@ class KhoNguoiMua:
 
     # --- Chốt kèo ------------------------------------------------------------------------------------------------
     def ghi_deal(self, listing_id: str, ti_le_phi: float | None) -> None:
-        """Tin vừa chuyển `da_chot` → một dòng `deals` (khoá (listing_id, buyer_id) nulls not distinct: trùng thì bỏ qua)."""
+        """Tin vừa chuyển `da_chot` → một dòng `deals`. Chỉ gọi lúc ĐỔI trạng thái sang `da_chot` (`ma_trang_thai` trả None khi không đổi), nên
+        một lần chốt một dòng. SRS-5.1zzzzzzz285: bỏ khoá duy nhất (listing_id, buyer_id) nulls not distinct — căn cho thuê chốt lại năm sau
+        (khách ngoài hệ thống, buyer_id rỗng) trước đây không ghi được giao dịch thứ hai."""
         try:
             tin = self._get(f"listings?id=eq.{listing_id}&select=price_vnd")
             from datetime import datetime, timezone
@@ -730,8 +732,7 @@ class KhoNguoiMua:
                 dong["price_vnd"] = tin[0]["price_vnd"]
             if ti_le_phi is not None:
                 dong["fee_pct"] = round(ti_le_phi * 100, 3)
-            self._request("POST", "deals?on_conflict=listing_id,buyer_id", data=dong,
-                          prefer="resolution=ignore-duplicates,return=minimal")
+            self._request("POST", "deals", data=dong, prefer="return=minimal")
         except Exception as e:  # noqa: BLE001
             log.warning("ghi_deal lỗi: %s", e)
 

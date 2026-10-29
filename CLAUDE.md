@@ -197,6 +197,7 @@ curl -s -X POST "https://rqxmmqmctpklqcmbfxuj.supabase.co/rest/v1/rpc/xuat_schem
 - Sổ lỗi `bot_errors` là đầu vào của còi `bot_health_tick`: đường đi đúng thiết kế không ghi sổ (vòng tự nuôi 08/09); mọi `catch` mới phải nối vào sổ.
 - Luật tiền MỘT NGUỒN: `_shared/extraction/luat-tien.ts` + SQL `parse_vnd` cùng trả lời bảng ca `bot/tests/luat/tien.json` (`bun run doi-chieu:tien`). Nhãn tìm kiếm: `_shared/extraction/nhan.ts` + `ten_nhan()` SQL.
 - Dữ liệu THỬ / THẬT tách bằng `la_id_thu(zalo)` (chỗ DUY NHẤT giữ tiền tố ID thử). `reset_nguoi_test` từ chối ID thật. Rổ mẫu `listings.source = 'seed_thu'` (SEED0001..0242, người bán `thu-seed-001`) — không có ảnh (ảnh mẫu vẽ đã gỡ, SRS-280) — đường xoá dữ liệu thử mới phải loại nó (SRS-179).
+- Cột thông số tin: ô AI đúng khuôn số đọc thẳng (`supabase_store.cot_tu_o`), còn lại qua `boc_thong_so` — cột trống vì chữ khác từ khoá thì đưa AI trả mã, đừng thêm từ vào regex DB. Đổi giá ghi `property_events.doi_gia`; `deals` một dòng mỗi lần chốt (SRS-285).
 - Xem rổ hàng / log chat bằng mắt người: schema `so` (`so.ro_hang`, `so.nguoi_ban`, `so.hoi_thoai`), đừng mở `messages` / `listings` trần.
 
 ### 6.5 Web
