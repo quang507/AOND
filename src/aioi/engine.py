@@ -5126,6 +5126,14 @@ class Engine:
         conv.bo_luot.append((k, v, bc, "không có bằng chứng — cụm AI trích và giá trị đều không nằm trong lời khách"))
         return None
 
+    @staticmethod
+    def _co_cum_can_khac(conv: "Conversation", trich) -> bool:
+        """Cụm AI trích cho thấy khách nói một căn KHÁC căn đang khai có nằm nguyên trong lời khách lượt này không (SRS-5.1zzzzzzz268)."""
+        if not (isinstance(trich, str) and trich.strip()):
+            return False
+        cuoi = next((t.content for t in reversed(conv.history) if t.role == "user"), "")
+        return _trich_dan_khop(trich, cuoi) or _trich_dan_khop(trich, conv.loi_khach_luot)
+
     def _loc_o_tin(self, conv: "Conversation", fields: dict, bang_chung: dict | None = None) -> dict[str, str]:
         """MỘT cổng cho mọi đường AI ghi ô tin từ lời chat (lượt lập thao tác, đọc lại căn mới tách ra) — SRS-5.1zzzzzzz73/86."""
         bc = bang_chung if isinstance(bang_chung, dict) else {}
@@ -5263,6 +5271,13 @@ class Engine:
                 if targets:
                     data["ma_so_can"] = targets[0]
                 changed.update(conv.active.prop.update(data))
+            elif not self._co_cum_can_khac(conv, op.get("can_khac_trich")):
+                # SRS-5.1zzzzzzz268 (bắn thử ban-thu-kiem E): khách kho xưởng chỉ nói thêm "Sổ đỏ riêng, đất SKC 50 năm", AI lập thao
+                # tác trả "add" → căn mới rỗng, bản nháp không ra, bot hỏi lại vị trí. "add" mở căn mới phải kèm cụm khách nói căn KHÁC
+                # (AI đọc nghĩa, code chỉ kiểm cụm nằm trong lời khách); không có thì đó là thông tin của căn đang khai.
+                log.warning("Thao tác add không kèm cụm khách nói căn khác — ghi vào căn đang khai")
+                changed.update(conv.active.prop.update(_data()))
+                return
             else:
                 # A genuinely NEW căn alongside existing ones: open a fresh listing pointed at
                 # the describing message and RE-READ its fields from that clean slice, so nothing

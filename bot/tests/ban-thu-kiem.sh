@@ -93,7 +93,10 @@ q "with s as (insert into sellers (zalo_user_id, seller_type) values ('$CHU', 'c
 chat "$MUA2" "Chào em, anh tìm nhà phố quận 5 tầm 9 tỷ. Căn #$MA_B gửi anh thêm ảnh thực tế được không em?"
 XIN=$(mot "select count(*) as n from info_requests r join listings l on l.id = r.listing_id where l.code = '$MA_B' and r.question = 'Khách xin thêm ảnh thực tế của căn' and r.status = 'pending'")
 kiem "F: khách xin ảnh căn chưa có ảnh → câu xin ảnh giao chủ nhà (info_requests)" "$([ "$XIN" -ge 1 ] && echo 1 || echo 0)"
-ANH=$(q "select url as n from listing_photos_v where url is not null and code like 'SEED%' order by created_at limit 1" | jq -r '.[0].n // empty')
+# Ảnh nhà thật có sẵn trên web của dự án (public/img/house1.jpg). Ảnh rổ mẫu SEED là ảnh minh hoạ — AI chấm ảnh (OPEN-53) bỏ đúng,
+# lần bắn 29/10 trượt F vì thế (SRS-5.1zzzzzzz268).
+ANH="https://aioinhadat.vercel.app/img/house1.jpg"
+curl -sS -m 20 -o /dev/null -f "$ANH" || ANH=""
 if [ -n "$ANH" ]; then
   gui "$CHU" "$(jq -n --arg u "$ANH" '{text:"", image_urls:[$u]}')" "(chủ nhà gửi 1 ảnh, không kèm chữ)"
   for _ in $(seq 1 20); do [ "$(mot "select count(*) as n from listing_media m join listings l on l.id = m.listing_id where l.code = '$MA_B'")" -ge 1 ] && break; sleep 2; done

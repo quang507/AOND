@@ -307,8 +307,10 @@ class MockProvider(LLMProvider):
             out["xoa_toan_bo"] = True
 
         # "A different property" hint → start a new listing.
-        if any(k in text for k in ("căn khác", "căn nữa", "còn căn", "thêm căn", "qua căn", "căn tiếp")):
-            out["is_new_listing"] = True
+        # Giá trị = cụm khách nói căn khác — engine kiểm cụm này nằm trong lời khách (SRS-5.1zzzzzzz268).
+        cum_moi = next((k for k in ("căn khác", "căn nữa", "còn căn", "thêm căn", "qua căn", "căn tiếp") if k in text), None)
+        if cum_moi:
+            out["is_new_listing"] = cum_moi
 
         # Rental hint.
         if "cho thuê" in text or "thuê" in text:
@@ -400,7 +402,7 @@ def _flat_to_operations(flat: dict[str, Any]) -> dict[str, Any]:
     elif len(codes) >= 2:  # several units of the same model in one message
         ops.append({"op": "add", "targets": codes, "fields": data})
     elif is_new:  # "thêm căn"/"còn căn nữa" → a NEW căn (beats a spurious ref sub-match)
-        ops.append({"op": "add", "fields": fields})
+        ops.append({"op": "add", "fields": fields, "can_khac_trich": is_new})
     elif ref:  # a price/field edit that names one existing căn
         ops.append({"op": "update", "target": ref, "fields": data})
     elif status:  # bare status report on the active căn
