@@ -9058,6 +9058,28 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz279 · Khách nhắn thêm lúc bot đang soạn: bỏ lời cũ, đọc gộp; lượt chậm ghi thời gian từng khâu (29/10/2026)
+Chủ dự án test phía mua 29/10 14:16: "sao có vẻ phản hồi chậm z ta".
+
+1. **Ca gốc (lời cũ)**: khách nhắn "a đang cần mua nhà khu vực bình tân e" (14:17:50) rồi 6 giây sau "giá tầm 3 4 tỉ gì đó. có không?". Bridge gom
+   2,5 giây nên hai tin thành hai lượt; lượt một trả "Ngân sách anh dự kiến … tầm bao nhiêu ạ?" (14:18:09) — hỏi điều khách VỪA nói — rồi lượt
+   hai mới gợi căn (14:18:38).
+   - Gốc: hàng chờ `_xep_cho` / `_lay_cho` (SRS-91) gom tin tới TRƯỚC khi lượt bắt đầu; tin tới TRONG lúc lượt đang soạn thì lượt đó vẫn gửi lời đã cũ.
+   - Sửa: `server._bo_loi_cu_neu_co_tin_moi` — lượt chữ soạn xong mà còn tin chữ của khách đang chờ thì bỏ lời vừa soạn (cắt lịch sử về mốc,
+     như `_thu_lai_nen`), đặt tin vừa xử lý lên đầu hàng chờ; lượt kế đọc gộp mọi tin, khách nhận MỘT lời đáp. Tin vẫn ghi CRM đủ từng tin.
+   - Quyết định (BA, uỷ quyền): đổi lại tin đầu tới muộn hơn (chờ lượt gộp) để không hỏi lại điều khách vừa nói; tốn thêm một lượt model khi
+     khách nhắn chen. Không kéo dài cửa gom 2,5 giây của bridge (mọi tin đều chậm thêm).
+2. **Chậm**: log lõi khung 14:16–14:19 — "hello" 35 giây: bóc tách Haiku ghi cache lạnh 30 nghìn token (~9 s) + lượt chat Sonnet ghi cache lạnh
+   (~18 s); lượt gợi căn: Sonnet viết 880 token (~26 s). Thời gian từng khâu (`do_luot`) trước đây ghi `info` — không ra journal (SRS-233).
+   - Sửa: lượt ≥ 10 s (`LUOT_CHAM_MS`) ghi `warning` kèm ms từng khâu, để lần sau đọc được chậm ở đâu bằng ô `doc-log-loi`.
+   - Chưa sửa tốc độ model: cần số đo từng khâu trước (cache 5 phút hết hạn khi khách nhắn thưa; lời gợi căn bốn đoạn dài).
+3. **Ba câu hỏi gốc**:
+   - (1) *Lớp lỗi*: lời đáp soạn trên ảnh chụp hội thoại lúc lượt bắt đầu, không xét tin tới trong lúc soạn; số đo chậm có nhưng nằm ở mức log không ra.
+   - (2) *Chỗ khác cùng lớp*: lượt ảnh / tệp (`handle_media_batch`) không vào hàng chờ chữ — giữ nguyên; tin nhắc / báo căn mới đi đường riêng
+     (đã không chen khi khách đang chat, SRS-278).
+   - (3) *Kiểm*: `tests/test_mot_luot_mot_luc.py` — hai tin song song → một lời đáp, lịch sử một cặp, tin khách gộp; ba tin lúc bot soạn → lượt kế
+     gộp cả ba, khách nhận một lời đáp, CRM đủ ba tin. Đỏ khi gỡ bản sửa. Chưa bắn thử production.
+
 ### SRS-5.1zzzzzzz278 · Phía mua: không giới thiệu lại cùng một căn nhà dưới mã tin khác; không chen tin báo căn mới khi khách đang chat (29/10/2026)
 Chủ dự án hỏi 29/10: "còn sửa gì ở phía mua dc nữa ko". Soát chat mua 28/10 (hai cuộc chat cùng kịch bản, Zalo thật):
 

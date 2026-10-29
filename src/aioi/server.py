@@ -542,6 +542,9 @@ _cho_tin: dict[str, list[tuple[int, str]]] = {}
 _cho_so = 0
 
 
+LUOT_CHAM_MS = 10_000   # SRS-5.1zzzzzzz279: lượt ≥ 10 s ghi journal kèm thời gian từng khâu
+
+
 def _xep_cho(uk: str, text: str) -> int:
     global _cho_so
     with _cho_khoa:
@@ -558,6 +561,19 @@ def _lay_cho(uk: str, so: int) -> list[str] | None:
             return None
         _cho_tin.pop(uk, None)
         return [t for _, t in ds]
+
+
+def _bo_loi_cu_neu_co_tin_moi(uk: str, moc: int, van_luot: str) -> bool:
+    """SRS-5.1zzzzzzz279: còn tin chữ của khách đang chờ (tới sau khi lượt này bắt đầu) → cắt lịch sử về `moc` và đặt `van_luot` lên đầu
+    hàng chờ (số 0 — lượt kế `_lay_cho` gom cả hai theo thứ tự). Không có tin chờ → False, lượt này gửi như thường."""
+    with _cho_khoa:
+        ds = _cho_tin.get(uk)
+        if not ds:
+            return False
+        ds.insert(0, (0, van_luot))
+    conv = _engine.conversation(uk)
+    del conv.history[moc:]
+    return True
 
 
 @app.post("/chat-reply", response_model=ZaloBridgeResponse)
@@ -710,10 +726,21 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
             loi_luot, sau_hong = e, len(_engine.conversation(uk).history)
         tong = int((time.perf_counter() - t0) * 1000)
         thoi_gian = dict(getattr(_engine.conversation(uk), "do_luot", {}) or {})
+        # SRS-5.1zzzzzzz279 (chủ dự án test mua 29/10: "cần mua nhà khu vực bình tân" rồi 6 giây sau "giá tầm 3 4 tỉ" — bot trả lời tin
+        # đầu bằng "Ngân sách anh dự kiến … tầm bao nhiêu ạ?" rồi mới gợi căn): khách nhắn thêm TRONG LÚC bot soạn thì lời vừa soạn đã cũ —
+        # như người thật đọc tin mới rồi mới gửi: bỏ lời này (cắt lịch sử về mốc), trả tin vừa xử lý về đầu hàng chờ để lượt kế đọc gộp.
+        if loi_luot is None and not media_urls and _bo_loi_cu_neu_co_tin_moi(uk, moc, "\n".join(gom)):
+            log.warning("bỏ lời lượt cũ: khách nhắn thêm trong lúc soạn (%d ms)", tong)
+            sync_to_supabase_async(external_user_id=uk, incoming_text=incoming_text, bot_reply="",
+                                   zalo_msg_id=payload.msg_id, role=_engine.conversation(uk).role, user_name=zalo_name,
+                                   nhan_luc=nhan_luc)
+            return ZaloBridgeResponse(reply="", replies=[], nhip_go=[], assistant_name="", captured=[], next_field=None,
+                                      property_score=0.0, user_score=0.0, tier="", completeness=0.0)
     thoi_gian["con_lai"] = max(0, tong - sum(thoi_gian.values()))
     thoi_gian["tong"] = tong
     thoi_gian["cho_luot"] = cho_luot          # chờ lượt trước của cùng khách xong (khoa_luot)
-    log.info("thời gian lượt (ms): %s", thoi_gian)   # chỉ con số — không dữ liệu khách
+    # SRS-5.1zzzzzzz279: lõi không cấu hình logging nên `info` không ra journal (SRS-233) — lượt chậm (≥ LUOT_CHAM_MS) ghi `warning` để biết chậm ở khâu nào.
+    (log.warning if tong >= LUOT_CHAM_MS else log.info)("thời gian lượt (ms): %s", thoi_gian)   # chỉ con số — không dữ liệu khách
     if loi_luot is not None:
         e = loi_luot
         _so_loi.ghi_loi("chat-reply", f"lượt trả lời hỏng, giữ chỗ rồi thử lại: {type(e).__name__}: {e}"[:200])
