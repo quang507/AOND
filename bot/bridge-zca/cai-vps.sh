@@ -153,10 +153,10 @@ if [ -d /opt/aond_core/src/aioi ]; then
   DONG_TRICH_XUAT="bat"
   # SRS-5.1zzzzzzz290 (chủ dự án 29/10/2026: "Ok thử … sang kiểu Suy nghĩ -> Chọn công cụ -> Thực thi -> Đánh giá"): lượt trả lời khách MUA có
   # công cụ chỉ đọc (tra căn / dự án), model tự quyết có tra không. "thu" = chỉ ID thử (bắn thử trước); "bat" = mọi khách; "tat" = như cũ.
-  AGENT_MUA="thu"
+  AGENT_MUA="bat"
   # SRS-5.1zzzzzzz293 (chủ dự án 29/10/2026: "bớt prompt dài đi, cấu trúc form json ngắn hơn"): lượt Haiku đọc ý khách MUA dùng form gọn (chỉ phần
   # phía mua, ≈ một nửa chữ). "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = form đầy đủ như cũ.
-  FORM_MUA_GON="thu"
+  FORM_MUA_GON="bat"
   if [ -f /opt/aond_core/.env ]; then
     umask 077
     grep -vE '^AIOI_(CHAT_MODEL(_THU)?|CONG_CU_GUI_KHACH|DONG_TRICH_XUAT|AGENT_MUA|FORM_MUA_GON)=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
