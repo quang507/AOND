@@ -159,6 +159,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 
 **Gửi chủ động & nhắc**
 - Báo căn mới cho khách mua: `bao_can_moi.py`, vòng 10 phút, 8–20 giờ, ≤ 1 tin / khách / 24 giờ, xoay 4 kiểu văn phong (SRS-150 / 188). Đừng bật lại trigger cũ `bao_tin_moi_khop` / `nudge` (hai chủ).
+- Hỏi chủ nhà căn còn bán: `hoi_con_ban.py`, tin chưa xác nhận 20 ngày (chủ dự án chốt), một tin / người bán, 8–20 giờ; chủ đáp còn → `con_ban` → `listings.xac_nhan_con_ban_at`. Căn đã cọc → hỏi `O_COC` (ô riêng), mỗi lượt một ô. Phí hợp đồng = mức chuẩn, không có phí thoả thuận (SRS-295).
 - Tin chống Zalo xoá kết nối (FR-63): `giu_ket_noi.py`, khách im 6–7 ngày, 8–20 giờ, câu mẫu cố định, giữ chỗ `reminders` `reengage` (SRS-238).
 - Nhắc `followup` / `sold` / `feedback` / `admin_reply` / `len_web` do LÕI gửi (`gui_nhac.py`, vòng 60 s; `len_web` chờ tin `dang_ban` rồi nhắn chủ nhà — bot chỉ hứa "tin hiển thị em nhắn" khi `hen_bao_len_web` đã ghi, SRS-254); thêm loại nhắc = thêm vào `KIND_LOI` + `soan_tin`, đừng mở đường gửi thứ hai; đừng ghi `noi_dung_gui` khi còn pending (SRS-216).
 - Tin nội bộ (🙋 ⭐ 🩺) gửi CTV / admin mở bằng `$$$$$ `; tin cho khách thật không bao giờ có (SRS-134) — trừ tin phụ "Đã trích xuất" khi công tắc `DONG_TRICH_XUAT` trong `cai-vps.sh` = `bat` (giai đoạn test, SRS-252; chạy thật thì `tat`). Ảnh gửi qua `/send` của bridge, vòng tải ảnh chỉ ở `guiAnhQuaUrl` (mọi ảnh một tin, SRS-280).

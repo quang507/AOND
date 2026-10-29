@@ -22,6 +22,7 @@ from .schema import (
     IDENTITY_FIELDS,
     RENTAL_FIELDS,
     SECONDARY_FIELDS,
+    O_COC,
     O_NOI_BO,
     O_SAU_DANG,
     Property,
@@ -65,6 +66,10 @@ FIELD_LABELS: dict[str, str] = {
     "thanh_toan": "cách nhận tiền (một lần / chia đợt) và có cho người mua vay ngân hàng không",
     "gio_xem": "khung giờ tiện dẫn khách xem nhà (riêng của chủ)",
     "chia_khoa": "khi dẫn khách xem thì liên hệ ai, ai giữ chìa khoá (riêng của chủ)",
+    # SRS-5.1zzzzzzz295: chỉ khi căn ĐÃ CỌC (riêng của chủ, không lên tin)
+    "tien_coc": "số tiền khách mua đã đặt cọc cho căn (chỉ khi căn đã cọc; ghi số khách nói, vd 200 triệu)",
+    "ngay_coc": "ngày khách mua đặt cọc (chỉ khi căn đã cọc; ghi như khách nói)",
+    "han_cong_chung": "ngày / hạn hẹn ra công chứng sang tên (chỉ khi căn đã cọc; ghi như khách nói)",
     "huong": "hướng nhà",
     "nam_xay": "năm xây / năm sửa lại",
     "hd_thue_con": "hợp đồng thuê hiện tại còn bao lâu (chỉ khi tin BÁN và nhà đang có người thuê)",
@@ -172,6 +177,9 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "thanh_toan": "Hỏi muốn nhận tiền một lần hay chia đợt, có đồng ý để người mua vay ngân hàng không",
     "gio_xem": "Hỏi khung giờ nào tiện để bên em dẫn khách tới xem nhà",
     "chia_khoa": "Hỏi lúc dẫn khách xem thì bên em liên hệ ai (chủ nhà hay người nhà) và ai giữ chìa khoá — KHÔNG xin số điện thoại",
+    "tien_coc": "Hỏi khách mua đặt cọc bao nhiêu",
+    "ngay_coc": "Hỏi khách cọc ngày nào",
+    "han_cong_chung": "Hỏi hai bên hẹn ra công chứng ngày nào",
     "huong": "Hỏi nhà hướng gì",
     "nam_xay": "Hỏi nhà xây năm nào, đã sửa lại lần nào chưa",
     "hd_thue_con": "Hỏi hợp đồng thuê hiện tại còn bao lâu",
@@ -610,6 +618,14 @@ def khoi_hoi_sau_dang(keys: list[str], prop: Property | None = None) -> str:
             "Đáp điều khách vừa nói trước (ngắn). Rồi XUỐNG MỘT DÒNG TRỐNG (đoạn riêng) và hỏi MỘT câu ngắn, tự nhiên như môi giới "
             f"nhắn Zalo, về MỘT ý: {y}. Đây là câu hỏi DUY NHẤT của lượt này (ý khác hệ thống đưa ở lượt sau). Khách không tiện trả lời / lờ đi thì thôi, KHÔNG hỏi "
             "lại, KHÔNG nài. Thông tin riêng (người đứng tên, lý do bán, giờ xem, chìa khoá) chỉ để bên em nắm, không đưa lên tin.\n")
+
+
+def khoi_hoi_coc(o: str, prop: Property | None = None) -> str:
+    """Căn đã cọc (SRS-5.1zzzzzzz295): hỏi MỘT ô cọc / công chứng — engine chọn ô (`schema.O_COC`), model đặt câu."""
+    return ("\n\n=== HỎI THÊM LƯỢT NÀY (căn ĐÃ CỌC — để bên em theo sát tới lúc công chứng): ===\n"
+            "Đáp điều khách vừa nói trước (ngắn, chúc mừng một câu nếu khách vừa báo cọc). Rồi XUỐNG MỘT DÒNG TRỐNG và hỏi MỘT câu ngắn, tự "
+            f"nhiên như môi giới nhắn Zalo: {cau_hoi_o(o, prop)}. Đây là câu hỏi DUY NHẤT của lượt. Khách không tiện trả lời thì thôi, KHÔNG hỏi lại, "
+            "KHÔNG nài. Thông tin cọc chỉ để bên em nắm, không đưa lên tin.\n")
 
 
 def khoi_tinh_hinh_ban(so: dict | None, len_web: bool) -> str:
@@ -1609,6 +1625,7 @@ def property_field_props() -> dict[str, Any]:
         + sum((SECONDARY_FIELDS[g] for g in SECONDARY_FIELDS), [])
         + list(RENTAL_FIELDS)
         + sorted(O_SAU_DANG)
+        + list(O_COC)
     )
     all_fields = list(dict.fromkeys(all_fields))
     properties: dict[str, Any] = {
@@ -1875,6 +1892,9 @@ TRẢ LỜI CÂU KHÁCH HỎI ("tra_loi_khach_hoi", chỉ khi có khối CÂU KH
 "id" của câu, "tra_loi" là nguyên văn câu trả lời của người rao. Người rao nói chuyện khác thì để trống.
 Câu trả lời đó là thông tin về CHÍNH căn được hỏi (pháp lý, hướng, hẻm, số phòng…) → NGOÀI "tra_loi_khach_hoi", ghi luôn vào ô tin bằng MỘT op
 "update" target = mã căn được hỏi, kèm "bang_chung" là cụm người rao vừa nói (SRS-5.1zzzzzzz257) — không thì tin vẫn thiếu ô đó và em hỏi lại.
+
+CĂN CÒN BÁN ("con_ban", SRS-5.1zzzzzzz295): bot vừa hỏi chủ nhà căn còn bán / còn cho thuê không, và người rao đáp căn VẪN CÒN ("còn", "vẫn còn
+em", "chưa bán") → con_ban = true. Người rao báo đã bán / đã cọc / dừng bán → dùng op "set_status" như thường, KHÔNG đặt con_ban.
 
 QUY TẮC:
 - Người rao chỉ khai thông tin bình thường (chưa có gì đặc biệt) → MỘT op "update" target trống.
@@ -2264,6 +2284,7 @@ def operations_schema() -> dict[str, Any]:
                 },
                 "description": "Người rao vừa trả lời một câu khách mua hỏi.",
             },
+            "con_ban": {"type": "boolean", "description": "Người rao xác nhận căn VẪN CÒN bán / cho thuê khi bot vừa hỏi (xem CĂN CÒN BÁN)."},
             "hoi_ngoai_viec": {"type": "string", "description": "Nguyên văn câu khách hỏi / kể việc ngoài mua bán, thuê nhà đất khi chưa "
                                "tỏ ý bán hay mua (đồng hồ nước, điện, hành chính khu dân cư…). Không có thì bỏ trống."},
             "user_intent": {

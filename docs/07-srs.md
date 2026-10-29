@@ -9058,6 +9058,28 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz295 · Bước 3 chuỗi tiền: phí theo mức chuẩn, bot hỏi cọc / công chứng, 20 ngày hỏi chủ nhà căn còn bán (29/10/2026)
+Chủ dự án 29/10, trả lời 3 câu của bước 3 (SRS-285): "1 ko dc 2 dc hỏi 3 20 ngày" — (1) phí trong hợp đồng môi giới KHÔNG được khác mức chuẩn;
+(2) bot ĐƯỢC hỏi tiền cọc / ngày cọc / hạn công chứng; (3) cứ 20 ngày hỏi chủ nhà căn còn bán.
+
+1. **Phí (quyết định chủ dự án)**: không thêm cột "phí thoả thuận". `deals.fee_pct` vẫn lấy mức chuẩn theo vai lúc chốt (`ghi_deal` ←
+   `SALE_FEE_RATE[vai_phi]`); chính sách không bớt phí ở `prompts.BUSINESS_CONTEXT` giữ nguyên.
+2. **Cọc / công chứng**: ô riêng `tien_coc`, `ngay_coc`, `han_cong_chung` (`schema.O_COC`, thuộc `O_NOI_BO` → bảng `listing_noi_bo`, không lên
+   web / bản tin), có mô tả ô cho lượt đọc ý (`FIELD_LABELS`) — vẫn qua cổng bằng chứng như mọi ô. Tin ở trạng thái "đã cọc" và đang hiển thị →
+   lượt trả lời có khối `prompts.khoi_hoi_coc`: hỏi MỘT ô mỗi lượt theo thứ tự tiền cọc → ngày cọc → hạn công chứng, mỗi ô MỘT lần (`_coc_da_hoi`),
+   thay cụm hỏi sau đăng lượt đó; khách lờ thì thôi. Lượt có khối ưu tiên (hỏi về, duyệt) thì không hỏi.
+3. **20 ngày hỏi còn bán**: migration `20261029g_cau_mau_hoi_con_ban` — cột `listings.xac_nhan_con_ban_at`, kind nhắc `con_ban`, rpc
+   `tin_can_hoi_con_ban` (tin `dang_ban` / `dang_quan_tam`, bỏ rổ mẫu / ID thử / hội thoại người thật giữ, mốc xác nhận — chưa có thì
+   `chu_duyet_at` / `created_at` — cũ hơn 20 ngày, chưa hỏi trong 20 ngày), câu mẫu `hoi_con_ban`. Lõi `hoi_con_ban.py` (vòng 30 phút, 8–20 giờ,
+   tắt bằng env `HOI_CON_BAN=tat`): MỘT tin mỗi người bán gộp tối đa 3 căn tới hạn, giữ chỗ trước gửi sau (khuôn `giu_ket_noi`). Chủ đáp còn →
+   lượt đọc ý đặt `con_ban` → `SupabaseConversationStore.xac_nhan_con_ban` ghi mốc cho các căn vừa hỏi (nhắc `con_ban` gửi trong 7 ngày); chủ
+   báo bán / cọc / dừng → op `set_status` có sẵn. **Chưa làm** (chưa có quyết định): chủ không đáp thì chưa tự ẩn tin — 20 ngày sau hỏi lại.
+   Chạy thử migration trên DB thật trong giao dịch huỷ: áp được; lúc thử 0 tin tới hạn (3 tin thật đang hiển thị, đều chưa đủ 20 ngày).
+4. **Ba câu hỏi gốc** — (1) *lớp lỗi*: thiếu chỗ ghi các mốc tiền sau khi tin lên web (cọc, công chứng) và không ai kiểm tin còn thật (hàng ảo).
+   (2) *chỗ khác cùng lớp*: ngày trống / hết hạn hợp đồng cho thuê (bước 3) chưa làm; trang CRM chưa hiện ô cọc / mốc xác nhận. (3) *kiểm*:
+   `tests/test_chuoi_tien_295.py` (ca engine hỏi cọc, ghi mốc khi chủ đáp còn, store ghi mốc — đỏ khi gỡ bản sửa; lõi gửi gộp căn, ngoài giờ,
+   bridge hụt; migration). Chưa bắn thử production.
+
 ### SRS-5.1zzzzzzz294 · Lượt đọc ý khách mua không nhận phần dặn cách nói của lượt viết lời (29/10/2026)
 Chủ dự án 29/10 (sau SRS-293): "Bat là sao bớt prompt nữa dc ko".
 

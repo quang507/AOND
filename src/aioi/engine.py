@@ -83,6 +83,7 @@ from .prompts import (
     PHI_THUE,
     khoi_bao_phi,
     muc_phi,
+    khoi_hoi_coc,
     khoi_hoi_sau_dang,
     khoi_tinh_hinh_ban,
     KHOI_DINH_GIA,
@@ -122,7 +123,7 @@ from .prompts import (
 )
 from .imaging import downscale_image
 from .revenue import SellerRole
-from .schema import KHOA_PHAP_LY, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
+from .schema import KHOA_PHAP_LY, O_COC, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
@@ -2800,8 +2801,17 @@ class Engine:
             if o_hoan and len_web and conv.prop.fields.get("_phi_da_hoi") == "1" and conv.duyet_luot is None:
                 da_hoi.add(f"hoan:{o_hoan}")
                 conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi))
+            # SRS-5.1zzzzzzz295: căn đã cọc → hỏi tiền cọc / ngày cọc / hạn công chứng (mỗi lượt một ô, mỗi ô một lần), thay cụm hỏi sau đăng.
+            o_coc = None
+            if (len_web and conv.active.status == "đã cọc" and conv.duyet_luot is None and conv.hoi_ve_luot is None
+                    and set(captured) <= (O_SAU_DANG | set(O_COC))):
+                coc_da_hoi = {x for x in (conv.prop.fields.get("_coc_da_hoi") or "").split(",") if x}
+                o_coc = next((k for k in O_COC if not conv.prop.fields.get(k) and k not in coc_da_hoi), None)
+                if o_coc:
+                    conv.prop.fields["_coc_da_hoi"] = ",".join(sorted(coc_da_hoi | {o_coc}))
+                    system += khoi_hoi_coc(o_coc, conv.prop)
             sau_dang = (len_web and conv.prop.fields.get("_phi_da_hoi") == "1" and conv.duyet_luot is None
-                        and conv.hoi_ve_luot is None and set(captured) <= O_SAU_DANG and not o_hoan)
+                        and conv.hoi_ve_luot is None and set(captured) <= O_SAU_DANG and not o_hoan and not o_coc)
             # Xin chấm sao (SRS-5.1zzzzzzz104, chủ dự án 21/10): lượt đầu hết việc; mỗi khách một lần (kho quyết).
             xin_sao = sau_dang and self._nen_xin_sao(conv)
             # Hỏi thêm sau khi tin lên web (SRS-5.1zzzzzzz116): từ lượt SAU lượt xin sao (giữ đúng lúc xin sao chủ dự án chốt), lượt khách
@@ -2831,6 +2841,9 @@ class Engine:
             system += (f"\nHỆ THỐNG VỪA MỞ THÊM MỘT TIN {loai} cho CÙNG căn này (khách muốn vừa bán vừa cho thuê): hai tin, hai giá riêng, chung "
                        "căn. Báo khách MỘT câu ngắn là em lên cả hai tin; tin nào chưa có giá thì hỏi giá đó, THAY cho câu hỏi kế (một câu hỏi cả lượt) "
                        f"({'giá thuê theo tháng' if loai == 'CHO THUÊ' else 'giá bán'}).\n")
+        if conv.y_luot.get("da_xac_nhan_con_ban"):   # SRS-5.1zzzzzzz295
+            system += ("\nCHỦ NHÀ VỪA XÁC NHẬN CĂN CÒN BÁN / CÒN CHO THUÊ (em đã ghi, tin vẫn hiển thị). Cảm ơn ngắn, nói tin vẫn đang chào khách; "
+                       "không hỏi lại căn còn không.\n")
         if conv.y_luot.get("da_tra_loi_khach"):
             system += ("\nEM VỪA CHUYỂN câu trả lời của anh/chị cho khách mua đang hỏi (hệ thống báo khách ngay). Cảm ơn ngắn gọn, "
                        "nói em đã báo khách rồi, rồi mới tiếp chuyện tin rao.\n")
@@ -4826,6 +4839,12 @@ class Engine:
             # chuyển NGUYÊN lời người rao, không bỏ (bản trước bỏ im lặng: khách mua chờ mãi) và không chuyển câu AI tự diễn.
             tra = str(tl["tra_loi"]).strip() if _trich_dan_khop(tl.get("tra_loi"), cuoi) else cuoi.strip()
             conv.y_luot["tra_loi_khach_hoi"] = {"id": tl["id"], "tra_loi": tra}
+        xac_nhan = getattr(self._convstore, "xac_nhan_con_ban", None)
+        if plan.get("con_ban") is True and conv.role != "buyer" and xac_nhan is not None:
+            # SRS-5.1zzzzzzz295: chủ nhà đáp "còn" tin hỏi 20 ngày (`hoi_con_ban`) → ghi mốc xác nhận cho các căn vừa được hỏi.
+            with _do(conv, "kho_ghi"):
+                if xac_nhan(conv):
+                    conv.y_luot["da_xac_nhan_con_ban"] = True
         return plan
 
     @staticmethod

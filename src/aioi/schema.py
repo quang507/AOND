@@ -317,7 +317,10 @@ O_SAU_DANG: frozenset[str] = frozenset(k for _, cum in CUM_SAU_DANG for k in cum
 # Ô RIÊNG của chủ nhà (SRS-5.1zzzzzzz116): không ghi vào `listings.boc_tach` (đọc công khai qua API cho tin đang bán), không vào bản tin
 # rao — lưu bảng `listing_noi_bo` (chỉ admin đọc). Lý do bán / mức gấp cho người mua biết là mất thế thương lượng của chủ; ai đứng tên,
 # ai giữ chìa khoá, giờ xem là chuyện nhà người ta.
-O_NOI_BO: frozenset[str] = frozenset({"dung_ten_so", "ly_do_ban", "gio_xem", "chia_khoa"})
+# SRS-5.1zzzzzzz295 (chủ dự án 29/10/2026, bước 3 chuỗi tiền: "bot được hỏi" cọc / công chứng): tin chuyển "đã cọc" thì hỏi số tiền cọc, ngày
+# cọc, hạn công chứng — mỗi lượt một ô, mỗi ô một lần (`_coc_da_hoi`). Chuyện giao dịch giữa hai bên → ô RIÊNG, không lên web.
+O_COC: tuple[str, ...] = ("tien_coc", "ngay_coc", "han_cong_chung")
+O_NOI_BO: frozenset[str] = frozenset({"dung_ten_so", "ly_do_ban", "gio_xem", "chia_khoa", *O_COC})
 
 # Thông số cho thuê (áp dụng chung khi là tin cho thuê) — SRD §III.
 RENTAL_FIELDS: list[str] = [
