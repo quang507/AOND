@@ -9058,6 +9058,22 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz274 · Bắn thử lần 7: không còn timeout tra đường; ô `duong` ghi cả tên khách gõ không dấu (29/10/2026)
+Bắn thử `ban-thu-kiem` (run 40818146901, sau #189): 20/22 ĐẠT.
+
+1. **Log lõi**: không còn dòng "tim_duong / tim_dia_danh … timed out" (lần 6 có 2 dòng). Chỉ mục SRS-272 có tác dụng trên production.
+2. **H** (khách gõ mã căn) ĐẠT: vai mua, câu hỏi giao admin, tin tới Zalo admin.
+3. **J TRƯỢT**:
+   - Khách "ban nha mat tien duong ma lo, ngang 7m, gia 12 ty". Lần này AI KHÔNG ghi ô `duong` (chỉ ghi "mặt tiền đường"), sang lượt 2 cũng không.
+   - Chưa có tên đường nên không có gì để hỏi Mã Lò / Mã Lộ; bot hỏi "phường nào, thành phố nào".
+   - Lần 6 AI ghi "Mã Lò" có dấu — ô `duong` với tên không dấu chập chờn.
+4. **Sửa**: mô tả ô `duong` (`prompts.property_field_props`): khách gõ không dấu ("duong ma lo") vẫn là tên đường — ghi đúng chữ khách gõ,
+   không tự thêm dấu; hệ thống tra kho, tên khớp nhiều đường thì hỏi lại.
+5. **Ba câu hỏi gốc**:
+   - (1) *Lớp lỗi*: AI bỏ / "làm đẹp" chữ khách gõ không dấu.
+   - (2) *Chỗ khác cùng lớp*: ô `phuong`, `quan`, `du_an` cũng có thể bị bỏ khi khách gõ không dấu; chưa thấy ca thật.
+   - (3) *Kiểm*: chỉ đo được bằng model thật — bắn lại kịch bản J. Lưới code (`_duong_chu_khach`, `ung_vien_duong`) đã có bài đỏ ở SRS-271 / 273.
+
 ### SRS-5.1zzzzzzz273 · Bắn thử 29/10 lần 6: khách gõ mã căn là khách mua; ô tên đường giữ chữ khách gõ khi tên khớp nhiều đường (29/10/2026)
 Bắn thử `ban-thu-kiem` (run 40816491377, sau #188): 20/22 ĐẠT, 2 TRƯỢT.
 
