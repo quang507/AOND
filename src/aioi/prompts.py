@@ -1830,6 +1830,9 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
 - "tim_du_an" (28/10/2026, SRS-5.1zzzzzzz250): NGUYÊN VĂN tên dự án khi khách muốn TÌM / XEM CĂN đang bán hoặc cho thuê TRONG dự án đó, hay xin
   danh sách / bảng căn còn bán của dự án ("Masteri còn căn nào không", "gửi anh bảng căn còn bán ở Ny'ah"). Chỉ hỏi thông tin dự án thì dùng
   "hoi_du_an", không dùng ô này.
+- "can_cu_the" (29/10/2026, SRS-5.1zzzzzzz262): NGUYÊN VĂN cụm khách tả MỘT căn CỤ THỂ họ đã thấy / nghe ở đâu đó mà KHÔNG gõ mã, và hỏi còn
+  không / hỏi về chính căn đó (vd "nhà hẻm xe hơi Trần Bình Trọng giá 10 tỷ còn không", "căn 2PN Sunrise City 3 tỷ đăng hôm qua"). Khách tả
+  NHU CẦU tìm nhà ("tìm nhà quận 5 tầm 10 tỷ", "cần nhà 4 tầng gần trường") hay nói căn bot VỪA giới thiệu thì để trống.
 - "xin_anh_trich" / "khong_hop_trich" / "ngung_bao_trich": NGUYÊN VĂN cụm trong TIN KHÁCH VỪA NHẮN làm căn cứ cho đúng việc đó (vd "cho anh xem
   thêm ảnh", "nhỏ quá, không hợp", "đừng báo căn mới cho anh nữa") — mỗi việc một cụm, code kiểm từng việc riêng.
 - "trich_dan": nguyên văn cụm trong TIN KHÁCH VỪA NHẮN làm căn cứ cho các ô trên. Mọi ô chỉ đọc theo tin VỪA nhắn: giờ hẹn / câu hỏi khách đã nói
@@ -2167,6 +2170,7 @@ def operations_schema() -> dict[str, Any]:
                     "du_an_khu_vuc": {"type": "string", "description": "Nguyên văn khu vực khi khách hỏi khu đó có những dự án nào."},
                     "du_an_khu_vuc_chuan": {"type": "string", "description": "Tên hành chính đầy đủ của khu vực ở du_an_khu_vuc (vd \"Quận 7\")."},
                     "tim_du_an": {"type": "string", "description": "Nguyên văn tên dự án khách muốn tìm căn đang rao / xin bảng căn còn bán trong đó."},
+                    "can_cu_the": {"type": "string", "description": "Nguyên văn cụm khách tả MỘT căn cụ thể đã thấy (không mã) và hỏi về chính căn đó."},
                     "xin_anh_trich": {"type": "string", "description": "Nguyên văn cụm khách xin ảnh trong tin vừa nhắn."},
                     "khong_hop_trich": {"type": "string", "description": "Nguyên văn cụm khách chê / từ chối căn trong tin vừa nhắn."},
                     "ngung_bao_trich": {"type": "string", "description": "Nguyên văn cụm khách bảo đừng / xin báo căn mới trong tin vừa nhắn."},
@@ -2207,6 +2211,8 @@ def operations_schema() -> dict[str, Any]:
                     "thanh_vien": {"type": "string", "description": "nhà gồm những ai sẽ ở (vợ chồng, con nhỏ, ông bà…) — không ghi họ tên"},
                     "noi_lam_viec": {"type": "string", "description": "khu vực đi làm / con đi học"},
                     "dien_tich_mong_muon": {"type": "string", "description": "số phòng, diện tích mong muốn"},
+                    "so_tang_mong_muon": {"type": "string", "description": "CHỈ con số tổng số tầng khách muốn, tính cả trệt, không tính lửng "
+                                          "(\"nhà 4 tầng\" → \"4\"; \"1 trệt 3 lầu\" → \"4\"). Khách không nói số tầng thì bỏ trống."},
                     "tien_ich_mong_muon": {"type": "string", "description": "NGUYÊN VĂN cụm khách nói muốn gần tiện ích nào: trường học, bệnh viện, "
                                            "chợ, siêu thị, công viên (vd \"gần trường học\", \"gần chợ với bệnh viện\"). Không nói thì bỏ trống."},
                     "thang_may": {"type": "string", "description": "có cần thang máy không"},

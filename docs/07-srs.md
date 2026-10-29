@@ -9058,6 +9058,46 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz262 · Tìm căn theo số tầng; khách hỏi đúng một căn không tìm thấy thì nói thẳng trước (29/10/2026)
+Chủ dự án 29/10:
+- Khách hỏi đúng một căn mà bot không tìm thấy → nói rõ "căn đó chưa có" trước rồi mới gợi căn khác.
+- Khách tìm theo khu vực, khoảng giá, công năng, gần bệnh viện / trường, không gian yên tĩnh, nhà 4 tầng, nhà cấp 4, đất nền… → "cân đối để gợi ý,
+  tìm trường phù hợp với code có sẵn, và vector hoá".
+
+1. **Đối chiếu tiêu chí ↔ code có sẵn** (`mua.tim_nha` → rpc `tim_nha`, một lượt gọi DB):
+
+   | Tiêu chí khách nói | Ô nhu cầu (AI đọc) | Cách tìm |
+   |---|---|---|
+   | Khu vực | `khu_vuc` | `p_khu` cộng 3 điểm; khác khu ghi "KHÁC khu vực" |
+   | Khoảng giá | `ngan_sach` | `p_gia_max` lọc cứng, nới 20 %; vượt thì cờ "VƯỢT ngân sách" (SRS-145) |
+   | Nhà cấp 4 / đất nền / chung cư / nhà phố | `loai_bds` | `p_loai` lọc cứng (`_LOAI_MUA_SANG_DB`) |
+   | Gần trường / bệnh viện / chợ / siêu thị / công viên | `tien_ich_mong_muon` | `p_tien_ich` — mỗi loại ≤ 1 km cộng 2 (dữ liệu Overpass, SRS-179); không có dữ liệu thì "CHƯA RÕ" |
+   | Yên tĩnh, công năng (ở / kinh doanh / cho thuê), thành viên, nơi làm việc | `moi_truong_song`, `muc_dich`, `thanh_vien`, `noi_lam_viec` | vector Gemini câu nhu cầu so với `listings.nhung` (`p_vec`, ×4) |
+   | Diện tích, phòng ngủ, xe hơi | `dien_tich_mong_muon`, `so_phong_ngu`, `yeu_cau_xe_hoi` | `p_dt_min` / `p_pn_min` +1, `p_xe_hoi` +2 |
+   | **Số tầng (mới)** | **`so_tang_mong_muon`** (con số, tính cả trệt) | **`p_tang_min` +1** (cột `floors`, tính cả trệt, không tính lửng) |
+
+2. **Số tầng**
+   - Ô `so_tang_mong_muon` trong `buyer_lead`: AI ghi con số, ví dụ "1 trệt 3 lầu" → "4".
+   - `mua._so_tang` → `tim_nha(p_tang_min)`. Migration `20261029a_tim_nha_so_tang.sql`: đổi chữ ký, `can` thêm `floors`, `ly_do` thêm "đủ số tầng".
+   - `danh_dau_lech` ghi `_thieu_tang`, rồi `dong_can` in "ÍT tầng hơn" / "CHƯA RÕ số tầng". Căn lệch không bị loại, bot phải nói thẳng (như phòng ngủ, SRS-177).
+3. **Căn cụ thể không tìm thấy**
+   - **Ca gốc** — bắn thử `ban-thu-srd` 28/10: khách hỏi "nhà hẻm xe hơi đường Trần Bình Trọng quận 5 giá 10 tỷ còn không". Căn đó chưa lên web vì thiếu
+     phường, nên bot không tìm thấy, nhưng vẫn đáp "em có căn này hợp với anh" rồi kể căn 60 m² 9 tỷ.
+   - **Sửa:**
+     - Ô `mua.can_cu_the` (AI đọc theo nghĩa: khách tả MỘT căn đã thấy, không mã). Qua `_loc_viec_mua` như các ô trích khác.
+     - `Engine._viec_mua`: cụm có trong lời khách và không có mã căn → việc dặn: không căn nào khớp đúng (cùng đường VÀ cùng giá / diện tích) thì câu
+       đầu nói thẳng chưa thấy đúng căn đó, rồi mới gợi căn KHÁC.
+   - **Lớp lỗi:** lời bot chỉ được dặn "giới thiệu căn tốt nhất", không biết khách đang hỏi một căn cụ thể, nên căn gần nhất bị nói như đúng căn.
+   - **Chỗ khác cùng lớp:**
+     - Khách gõ mã căn không tồn tại → `can_theo_ma` trả rỗng, khối căn vẫn dặn "chỉ giới thiệu căn dưới đây". Chưa có câu riêng — còn.
+     - Báo căn mới (`bao_can_moi`) không có ca này.
+4. **Kiểm**:
+   - `tests/test_tim_can_262.py`: 3 bài, đỏ cả 3 khi gỡ bản sửa.
+     - `tim_nha` nhận `p_tang_min` khi khách nói số tầng, không nhận khi không nói.
+     - Cờ "ÍT tầng" / "CHƯA RÕ số tầng".
+     - Cách nói mới "nhà hẻm xe hơi … giá 10 tỷ còn không": có khối. Cụm bịa: không. Khách tả nhu cầu chung: không.
+   - Chưa bắn thử production.
+
 ### SRS-5.1zzzzzzz261 · Lời chào số tư vấn nói rõ vai mua / thuê; môi giới hỏi căn dùng số tư vấn (28/10/2026)
 Chủ dự án 28/10: hỏi lời chào bên mua ("tư vấn mua nhà đất hay sao ạ"), rồi "bạn quyết thêm đi, còn chỗ nào cần quy định rồi làm luôn".
 1. **Lời chào** — câu mẫu `chao_tu_van`:
