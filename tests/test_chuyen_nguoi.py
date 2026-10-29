@@ -19,10 +19,14 @@ def test_ai_doc_xin_gap_nguoi_co_trich_dan_thi_chen_khoi_va_bao_ra():
     assert r.can_nguoi_that == "cho anh nói chuyện với nhân viên"
 
 
-def test_trich_dan_khong_co_trong_loi_khach_thi_khong_bao():
-    eng, spy = _eng({"operations": [], "can_nguoi_that": "cho gặp quản lý"})
-    r = eng.handle("g2", "nhà anh hẻm 4m nha")
-    assert "KHÁCH XIN GẶP NGƯỜI THẬT" not in spy.systems[-1] and r.can_nguoi_that is None
+def test_ai_tom_y_xin_gap_nguoi_khac_chu_khach_van_bao():
+    # SRS-5.1zzzzzzz281 (chủ dự án 29/10: "sửa để ai hiểu ý khách, thực thi đúng ý khách"): AI đọc ra là làm — không so nguyên văn.
+    eng, spy = _eng({"operations": [], "can_nguoi_that": "Khách muốn nói chuyện trực tiếp với người phụ trách"})
+    r = eng.handle("g2", "thôi em kêu ai bên đó gọi anh đi, chat máy hoài")
+    assert "KHÁCH XIN GẶP NGƯỜI THẬT" in spy.systems[-1] and r.can_nguoi_that == "Khách muốn nói chuyện trực tiếp với người phụ trách"
+    eng2, spy2 = _eng({"operations": []})                                   # AI không đọc ra → không báo
+    r2 = eng2.handle("g3", "nhà anh hẻm 4m nha")
+    assert "KHÁCH XIN GẶP NGƯỜI THẬT" not in spy2.systems[-1] and r2.can_nguoi_that is None
 
 
 def test_khoi_rong_khi_khong_xin():

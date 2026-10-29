@@ -85,7 +85,9 @@ def test_khong_biet_can_nao_thi_hoi_lai():
     assert any("chưa rõ căn nào" in s for s in ai.system)
 
 
-def test_cum_trich_khong_co_trong_tin_khach_thi_bo():
-    r, _ = _xin(KhoAnh(4), {"ma_can": ["ABCD1234"], "xin_anh": True, "trich_dan": "xin gửi hình thật nhiều"})
-    assert r.xin_anh == []                                                          # AI bịa cụm trích → bỏ, như mọi việc mua khác
-    assert CAN["code"] == "ABCD1234"
+def test_xin_anh_theo_y_ai_doc_khong_can_trich():
+    # SRS-5.1zzzzzzz281 (chủ dự án 29/10: "sửa để ai hiểu ý khách, thực thi đúng ý khách"): AI đọc ra là làm — không so nguyên văn.
+    r, _ = _xin(KhoAnh(4), {"ma_can": ["ABCD1234"], "xin_anh": True})
+    assert r.xin_anh == ["ABCD1234"]
+    r2, _ = _xin(KhoAnh(4), {"ma_can": ["ABCD1234"]})                                  # AI không đọc ra xin ảnh → không gửi
+    assert r2.xin_anh == []

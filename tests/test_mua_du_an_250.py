@@ -36,11 +36,12 @@ def test_quan_x_co_du_an_gi_ke_ten_trong_kho_va_so_can():
     assert "%5B%5E0-9%5D" in q                    # chặn số dính liền: "Quận 1" không ra Quận 10 / 11 / 12
 
 
-def test_khu_ai_tu_suy_khong_co_trong_tin_thi_khong_tra():
+def test_khu_ai_hieu_tu_ngu_canh_van_tra():
+    # SRS-5.1zzzzzzz281 (chủ dự án 29/10: "sửa để ai hiểu ý khách, thực thi đúng ý khách"): AI đọc ra là làm — không so nguyên văn.
     kho = KhoKhu()
-    eng, ai = _engine(kho, {**KHACH_MUA, "mua": {"du_an_khu_vuc": "Quận 7", "trich_dan": "có dự án gì"}})
+    eng, ai = _engine(kho, {**KHACH_MUA, "mua": {"du_an_khu_vuc": "Quận 7", "du_an_khu_vuc_chuan": "Quận 7"}})
     eng.handle("mua-khu-2", "bên đó có dự án gì em")
-    assert not any(e.startswith("projects?or=(district.imatch.") for m, e, d in kho.goi)
+    assert any(e.startswith("projects?or=(district.imatch.") for m, e, d in kho.goi)
 
 
 def test_tim_can_trong_du_an_ra_bang_can_con_ban():

@@ -41,10 +41,14 @@ def test_hoi_phi_cach_noi_moi_va_phi_thue():
     assert "KHÁCH HỎI VỀ PHÍ" in he and "3/4 của MỘT tháng" in he   # cho thuê có số đúng, không chỉ 1% / 0.5%
 
 
-def test_trich_dan_bia_thi_khong_chen_khoi():
-    eng, spy = _eng({"operations": [], "hoi_ve": "uy_tin", "hoi_ve_trich_dan": "có lừa đảo không"})
-    eng.handle("p3", "nhà anh hẻm 4m nha")
-    assert "UY TÍN" not in spy.systems[-1]
+def test_hoi_ve_theo_y_ai_doc_khong_can_trich():
+    # SRS-5.1zzzzzzz281 (chủ dự án 29/10: "sửa để ai hiểu ý khách, thực thi đúng ý khách"): AI đọc ra là làm — không so nguyên văn.
+    eng, spy = _eng({"operations": [], "hoi_ve": "uy_tin"})
+    eng.handle("p3", "bên em làm ăn đàng hoàng chứ, anh nghe nhiều chỗ ăn cọc rồi")
+    assert "UY TÍN" in spy.systems[-1]
+    eng2, spy2 = _eng({"operations": []})
+    eng2.handle("p4", "nhà anh hẻm 4m nha")
+    assert "UY TÍN" not in spy2.systems[-1]
 
 
 def test_xung_ho_do_ai_doc_va_giu_qua_cac_luot():

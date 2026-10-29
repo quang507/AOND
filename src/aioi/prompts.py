@@ -1827,8 +1827,8 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
 - "ma_can": mã căn khách đang nói tới — chỉ lấy mã khách gõ (#ABCD1234, BDS-Q5-0012) hoặc mã trong danh sách CĂN ĐANG CÓ bot vừa
   gửi khi khách chỉ rõ căn đó ("căn đầu", "căn 5 tỷ ở Q5"). Không chắc căn nào thì để trống.
 - "quan_tam": true khi khách tỏ ý thích / muốn tìm hiểu / muốn xem căn đó.
-- "hen_xem": nguyên văn cụm thời gian khách HẸN đi xem ("chiều mai 3h", "thứ 7 này"). Chỉ hỏi "xem được không" mà chưa nói giờ thì
-  để trống.
+- "hen_xem": thời gian khách HẸN đi xem, viết rõ theo ý khách (gộp từ vài tin ngắn: "thứ 7" + "sáng" + "9h" → "9h sáng thứ 7"). Chỉ hỏi
+  "xem được không" mà chưa nói giờ thì để trống.
 - "hoi_chu_nha": câu cần hỏi CHỦ NHÀ thay khách — mọi điều khách muốn biết về căn mà dòng của căn KHÔNG có câu trả lời (tình trạng,
   vào ở được khi nào, bớt giá, nội thất, hàng xóm, ngập nước…). ĐỌC THEO Ý khách, viết lại thành MỘT câu hỏi rõ ràng, đủ ý để chủ nhà trả
   lời được ngay (sửa lỗi gõ, gộp ý từ nhiều tin; vd khách "nhà này vào ở ngay được khoogn" + "2 tuần nữa vào ở được không" → "Nhà vào ở
@@ -1840,26 +1840,24 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
   kể cả khi bot đã gửi ảnh ở trên rồi. Khách chỉ hỏi chung "căn này đẹp không" thì để trống.
 - "khong_hop" (25/10/2026, SRS-5.1zzzzzzz175): true khi khách CHÊ / TỪ CHỐI căn đang nói tới — không hợp, không thích, bỏ qua căn này,
   xa quá, đắt quá, hẻm nhỏ quá… ("căn đó không hợp", "thôi bỏ căn này", "xa trường con quá", "giá đó cao quá anh không với tới"). Kèm
-  "ly_do" = NGUYÊN VĂN cụm khách nêu lý do (bỏ trống nếu khách không nói vì sao). Khách chỉ hỏi thêm hay so sánh chưa quyết thì để trống.
+  "ly_do" = lý do khách nêu, viết ngắn theo ý khách (bỏ trống nếu khách không nói vì sao). Khách chỉ hỏi thêm hay so sánh chưa quyết thì để trống.
 - "ngung_bao" (25/10/2026, SRS-5.1zzzzzzz175): "tat" khi khách bảo ĐỪNG gửi / đừng nhắn / đừng báo căn nữa, ngưng tin tự động ("đừng gửi
   nữa em", "thôi khỏi báo căn", "ngưng nhắn anh nha"); "bat" khi khách XIN được báo lại khi có căn mới ("có căn mới thì nhắn anh"). Khách
   chỉ từ chối MỘT căn (khong_hop) không phải ngưng báo → bỏ trống.
-- "hoi_du_an" (25/10/2026, SRS-5.1zzzzzzz184): NGUYÊN VĂN tên dự án khi khách hỏi THÔNG TIN về một dự án (chủ đầu tư là ai, tiện ích, pháp lý,
-  giá, bàn giao, "dự án X có gì / tốt không / của ai"). Chỉ lấy tên khách gõ, không tự suy tên đầy đủ. Khách chỉ nhắc tên dự án như vị trí tìm
-  nhà (không hỏi về dự án) thì để trống.
-- "du_an_khu_vuc" (28/10/2026, SRS-5.1zzzzzzz250): NGUYÊN VĂN khu vực khi khách hỏi khu đó CÓ NHỮNG DỰ ÁN NÀO ("quận 7 có dự án gì",
+- "hoi_du_an" (25/10/2026, SRS-5.1zzzzzzz184): tên dự án khi khách hỏi THÔNG TIN về một dự án (chủ đầu tư là ai, tiện ích, pháp lý,
+  giá, bàn giao, "dự án X có gì / tốt không / của ai") — khách gõ sai / tắt mà em nhận ra dự án thì viết đúng tên. Khách chỉ nhắc tên dự án
+  như vị trí tìm nhà (không hỏi về dự án) thì để trống.
+- "du_an_khu_vuc" (28/10/2026, SRS-5.1zzzzzzz250): khu vực khi khách hỏi khu đó CÓ NHỮNG DỰ ÁN NÀO ("quận 7 có dự án gì",
   "bên Thủ Đức có chung cư nào"); kèm "du_an_khu_vuc_chuan" = tên hành chính đầy đủ của khu đó ("Quận 7", "Thủ Đức", "Phường Phú Định").
   Khách tìm CĂN ở khu đó (không hỏi danh sách dự án) thì để trống.
-- "tim_du_an" (28/10/2026, SRS-5.1zzzzzzz250): NGUYÊN VĂN tên dự án khi khách muốn TÌM / XEM CĂN đang bán hoặc cho thuê TRONG dự án đó, hay xin
+- "tim_du_an" (28/10/2026, SRS-5.1zzzzzzz250): tên dự án (viết đúng tên nếu khách gõ sai / tắt) khi khách muốn TÌM / XEM CĂN đang bán hoặc cho thuê TRONG dự án đó, hay xin
   danh sách / bảng căn còn bán của dự án ("Masteri còn căn nào không", "gửi anh bảng căn còn bán ở Ny'ah"). Chỉ hỏi thông tin dự án thì dùng
   "hoi_du_an", không dùng ô này.
-- "can_cu_the" (29/10/2026, SRS-5.1zzzzzzz262): NGUYÊN VĂN cụm khách tả MỘT căn CỤ THỂ họ đã thấy / nghe ở đâu đó mà KHÔNG gõ mã, và hỏi còn
+- "can_cu_the" (29/10/2026, SRS-5.1zzzzzzz262): cụm tả MỘT căn CỤ THỂ họ đã thấy / nghe ở đâu đó mà KHÔNG gõ mã, và hỏi còn
   không / hỏi về chính căn đó (vd "nhà hẻm xe hơi Trần Bình Trọng giá 10 tỷ còn không", "căn 2PN Sunrise City 3 tỷ đăng hôm qua"). Khách tả
   NHU CẦU tìm nhà ("tìm nhà quận 5 tầm 10 tỷ", "cần nhà 4 tầng gần trường") hay nói căn bot VỪA giới thiệu thì để trống.
-- "xin_anh_trich" / "khong_hop_trich" / "ngung_bao_trich": NGUYÊN VĂN cụm trong TIN KHÁCH VỪA NHẮN làm căn cứ cho đúng việc đó (vd "cho anh xem
-  thêm ảnh", "nhỏ quá, không hợp", "đừng báo căn mới cho anh nữa") — mỗi việc một cụm, code kiểm từng việc riêng.
-- "trich_dan": nguyên văn cụm trong TIN KHÁCH VỪA NHẮN làm căn cứ cho các ô trên. Mọi ô chỉ đọc theo tin VỪA nhắn: giờ hẹn / câu hỏi khách đã nói
-  ở lượt TRƯỚC thì KHÔNG chép lại (để trống "hen_xem"), trừ khi khách nhắc lại hoặc ghép giờ hẹn từ vài tin ngắn liền nhau.
+- Mọi việc ở đây được hệ thống LÀM NGAY khi em ghi (ghi lịch, gửi ảnh, nhắn chủ nhà, tắt báo căn…) — chỉ ghi việc khách muốn ở tin VỪA nhắn:
+  việc / giờ hẹn khách đã nói ở lượt TRƯỚC và đã làm rồi thì KHÔNG chép lại, trừ khi khách nhắc lại hoặc ghép giờ hẹn từ vài tin ngắn liền nhau.
 
 TRẢ LỜI CÂU KHÁCH HỎI ("tra_loi_khach_hoi", chỉ khi có khối CÂU KHÁCH MUA ĐANG HỎI CHỦ NHÀ và người rao vừa trả lời đúng câu đó):
 "id" của câu, "tra_loi" là nguyên văn câu trả lời của người rao. Người rao nói chuyện khác thì để trống.
@@ -1918,7 +1916,7 @@ QUY TẮC:
   ty là ai, có uy tín / lừa đảo không, trụ sở ở đâu; "link_web" khi khách hỏi link tin, xem tin ở đâu, tin trên web thế nào;
   "tinh_hinh_ban" (21/10) khi CHỦ NHÀ hỏi căn của mình đã có ai hỏi / quan tâm / hẹn xem chưa, bán tới đâu rồi; "dinh_gia" khi
   chủ nhà hỏi giá mình đưa cao hay thấp, giá thị trường khu đó bao nhiêu, nên bán giá nào.
-  Không hỏi những điều đó → bỏ trống. Có điền thì hoi_ve_trich_dan = NGUYÊN VĂN cụm câu hỏi trong tin khách.
+  Không hỏi những điều đó → bỏ trống.
 - HỎI PHÁP LÝ / THỦ TỤC / THUẾ PHÍ (25/10/2026, SRS-5.1zzzzzzz176, đọc theo NGHĨA): khách (mua hay bán) hỏi một điều về thủ tục, giấy tờ,
   thuế phí, quy định mua bán / thuê nhà đất nói chung — KHÔNG phải hỏi về một căn cụ thể đang rao, KHÔNG phải phí môi giới bên mình (đó là
   hoi_ve = "phi") → hoi_phap_ly = khoá hợp nhất trong DANH MỤC PHÁP LÝ bên dưới; không mục nào hợp → "khac". Kèm phap_ly_trich_dan =
@@ -1948,7 +1946,7 @@ QUY TẮC:
   bao nhiêu", "gói Max gồm gì", "mẫu này mấy phòng"). Khách KỂ thông tin căn của mình ("căn này 50m2") không phải câu hỏi → bỏ trống.
 - TẢ DỰ ÁN: mo_ta_du_an = NGUYÊN VĂN cụm khách TẢ kiến thức CHUNG của dự án / mẫu nhà (tiện ích, cổng, pháp lý dự án, bố trí mẫu
   nhà, số tầng của mẫu…) để hệ thống học lại. Chỉ nói giá / căn riêng của mình → bỏ trống.
-- XIN GẶP NGƯỜI THẬT (20/10/2026, SRS-5.1zzzzzzz82): can_nguoi_that = NGUYÊN VĂN cụm khách XIN nói chuyện / gặp / gọi điện với
+- XIN GẶP NGƯỜI THẬT (20/10/2026, SRS-5.1zzzzzzz82): can_nguoi_that = câu ngắn tóm ý khách XIN nói chuyện / gặp / gọi điện với
   NGƯỜI (nhân viên, quản lý, môi giới, "người thật", "không muốn chat với máy"). Hỏi bot là người hay máy, hay chỉ than chậm, KHÔNG
   phải xin gặp người → bỏ trống. Có điền thì vẫn ghi các ô tin khác như thường.
 - NGOÀI VÙNG NHẬN TIN (20/10/2026, SRS-5.1zzzzzzz86): bên mình chỉ nhận rao ở TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai — tính theo địa giới cũ lẫn mới (TP.HCM
@@ -2135,7 +2133,6 @@ def operations_schema() -> dict[str, Any]:
                 "bán tới đâu; dinh_gia = chủ nhà hỏi giá mình đưa cao hay thấp, giá thị trường khu đó bao nhiêu. Không hỏi những điều "
                 "đó thì bỏ trống.",
             },
-            "hoi_ve_trich_dan": {"type": "string", "description": "Nguyên văn cụm câu hỏi trong tin khách (bắt buộc khi có hoi_ve)."},
             "hoi_phap_ly": {"type": "string", "enum": list(phap_ly.KHOA) + [phap_ly.KHAC],
                             "description": "Khách hỏi pháp lý / thủ tục / thuế phí nhà đất nói chung: khoá trong DANH MỤC PHÁP LÝ, "
                             "hoặc khac khi không mục nào hợp. Không hỏi thì bỏ trống."},
@@ -2160,7 +2157,7 @@ def operations_schema() -> dict[str, Any]:
                               "Khách kể thông tin căn của mình thì bỏ trống."},
             "mo_ta_du_an": {"type": "string", "description": "Nguyên văn cụm khách TẢ kiến thức chung của dự án / mẫu nhà. "
                             "Không có thì bỏ trống."},
-            "can_nguoi_that": {"type": "string", "description": "Nguyên văn cụm khách XIN nói chuyện / gặp / gọi điện với người "
+            "can_nguoi_that": {"type": "string", "description": "Câu ngắn tóm ý khách XIN nói chuyện / gặp / gọi điện với người "
                                "thật (nhân viên, quản lý). Không xin thì bỏ trống."},
             "ngoai_vung": {"type": "string", "description": "Tên tỉnh / thành của căn khi khách đã nói rõ căn nằm NGOÀI vùng nhận "
                            "tin (TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai). Trong vùng hoặc chưa rõ thì bỏ "
@@ -2188,22 +2185,18 @@ def operations_schema() -> dict[str, Any]:
                 "properties": {
                     "ma_can": {"type": "array", "items": {"type": "string"}, "description": "Mã căn khách đang nói tới."},
                     "quan_tam": {"type": "boolean", "description": "Khách tỏ ý quan tâm / muốn xem căn đó."},
-                    "hen_xem": {"type": "string", "description": "Nguyên văn cụm thời gian khách hẹn đi xem."},
+                    "hen_xem": {"type": "string", "description": "Thời gian khách hẹn đi xem, viết rõ theo ý khách."},
                     "hoi_chu_nha": {"type": "string", "description": "Câu hỏi gửi chủ nhà, viết lại rõ theo Ý khách (điều dữ liệu căn không có)."},
                     "xin_anh": {"type": "boolean", "description": "Khách xin xem ảnh / hình của căn (kể cả xin gửi lại)."},
                     "khong_hop": {"type": "boolean", "description": "Khách chê / từ chối căn đang nói tới (không hợp, bỏ qua căn này)."},
-                    "ly_do": {"type": "string", "description": "Nguyên văn cụm khách nêu lý do căn không hợp (nếu có)."},
+                    "ly_do": {"type": "string", "description": "Lý do khách chê căn, viết ngắn theo ý khách (nếu có)."},
                     "ngung_bao": {"type": "string", "enum": ["tat", "bat"],
                                   "description": "tat = khách bảo đừng gửi / báo căn mới nữa; bat = khách xin được báo khi có căn mới."},
-                    "hoi_du_an": {"type": "string", "description": "Nguyên văn tên dự án khách MUA hỏi thông tin (chủ đầu tư, tiện ích, pháp lý, giá, bàn giao)."},
-                    "du_an_khu_vuc": {"type": "string", "description": "Nguyên văn khu vực khi khách hỏi khu đó có những dự án nào."},
+                    "hoi_du_an": {"type": "string", "description": "Tên dự án (viết đúng tên) khách MUA hỏi thông tin (chủ đầu tư, tiện ích, pháp lý, giá, bàn giao)."},
+                    "du_an_khu_vuc": {"type": "string", "description": "Khu vực khi khách hỏi khu đó có những dự án nào."},
                     "du_an_khu_vuc_chuan": {"type": "string", "description": "Tên hành chính đầy đủ của khu vực ở du_an_khu_vuc (vd \"Quận 7\")."},
-                    "tim_du_an": {"type": "string", "description": "Nguyên văn tên dự án khách muốn tìm căn đang rao / xin bảng căn còn bán trong đó."},
-                    "can_cu_the": {"type": "string", "description": "Nguyên văn cụm khách tả MỘT căn cụ thể đã thấy (không mã) và hỏi về chính căn đó."},
-                    "xin_anh_trich": {"type": "string", "description": "Nguyên văn cụm khách xin ảnh trong tin vừa nhắn."},
-                    "khong_hop_trich": {"type": "string", "description": "Nguyên văn cụm khách chê / từ chối căn trong tin vừa nhắn."},
-                    "ngung_bao_trich": {"type": "string", "description": "Nguyên văn cụm khách bảo đừng / xin báo căn mới trong tin vừa nhắn."},
-                    "trich_dan": {"type": "string", "description": "Nguyên văn cụm trong tin khách VỪA nhắn làm căn cứ."},
+                    "tim_du_an": {"type": "string", "description": "Tên dự án (viết đúng tên) khách muốn tìm căn đang rao / xin bảng căn còn bán trong đó."},
+                    "can_cu_the": {"type": "string", "description": "Cụm tả MỘT căn cụ thể đã thấy (không mã) và hỏi về chính căn đó."},
                 },
                 "description": "Việc của khách mua (quan tâm, hẹn xem, hỏi chủ nhà) — xem VIỆC CỦA KHÁCH MUA.",
             },

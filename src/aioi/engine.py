@@ -366,41 +366,25 @@ def _la_id_thu(user_key: str | None) -> bool:
     return str(user_key or "").startswith(_TIEN_TO_ID_THU)
 
 
-def _loc_viec_mua(mua: dict, cuoi: str, gan: list[str]) -> dict:
-    """Việc của khách mua mà lời khách CHỐNG ĐỠ được, kiểm TỪNG việc (SRS-5.1zzzzzzz232). Cụm nguyên văn của chính việc đó là căn cứ của nó:
-    `hen_xem` (nằm trong tin vừa nhắn hoặc mọi chữ có trong vài tin gần nhất), `hoi_chu_nha` (AI viết lại theo ý khách — nhận luôn, SRS-280), `hoi_du_an` /
-    `ly_do` / `tim_du_an` / `du_an_khu_vuc` (tin vừa nhắn; tên chuẩn `du_an_khu_vuc_chuan` đi kèm khu đã nhận). Việc dạng cờ (`xin_anh`, `khong_hop`, `ngung_bao`, `quan_tam`) nhận khi cụm trích RIÊNG (`<việc>_trich`) có trong
-    tin vừa nhắn, hoặc `trich_dan` chung có căn cứ; `khong_hop` còn nhận khi `ly_do` có căn cứ. `ma_can` / `trich_dan` đi kèm khi có việc nào
-    được nhận (mã căn còn được kiểm với kho ở `_viec_mua`)."""
-    chung = bool(mua.get("trich_dan")) and (_trich_dan_khop(mua.get("trich_dan"), cuoi) or _chu_co_trong_loi_khach(mua.get("trich_dan"), gan))
-    rieng = lambda k: _trich_dan_khop(mua.get(f"{k}_trich"), cuoi) if mua.get(f"{k}_trich") else False
+def _loc_viec_mua(mua: dict) -> dict:
+    """Việc khách mua AI đọc ra ở lượt lập thao tác — NHẬN LUÔN theo ý AI đọc (SRS-5.1zzzzzzz281, chủ dự án 29/10: "sửa để ai hiểu ý khách, thực
+    thi đúng ý khách"). Bản trước (SRS-232 / 280) đòi mỗi việc có cụm NGUYÊN VĂN trong lời khách — AI sửa chính tả / diễn lại / chuẩn tên dự án
+    là việc bị bỏ im lặng (câu hỏi chủ nhà, giờ hẹn "mai 9h" → "9h sáng 30/10", tên dự án gõ sai). Code chỉ chuẩn hoá KIỂU; mã căn kiểm với kho ở
+    `_viec_mua`, các đường ghi DB đều gộp trùng (lịch hẹn một dòng mỗi căn, `interests` merge) nên AI chép lại việc lượt trước không nhân đôi."""
     ra: dict = {}
-    hen = str(mua.get("hen_xem") or "").strip()
-    if hen and (_trich_dan_khop(hen, cuoi) or _chu_co_trong_loi_khach(hen, gan)):
-        ra["hen_xem"] = hen
-    hoi = str(mua.get("hoi_chu_nha") or "").strip()
-    # SRS-5.1zzzzzzz280 (chủ dự án 29/10: "AI sẽ tự diễn giải và viết lại câu hỏi gửi chủ nhà cho rõ ràng và tạo code tạo yêu cầu luôn, kệ
-    # hallucinate"): câu hỏi chủ nhà do AI đọc theo ý khách và viết lại — NHẬN LUÔN, không kiểm cụm trích (quyết định chủ dự án).
-    if hoi:
-        ra["hoi_chu_nha"] = hoi
-    for k in ("hoi_du_an", "ly_do", "tim_du_an", "du_an_khu_vuc", "can_cu_the"):   # tim_du_an / du_an_khu_vuc: SRS-250; can_cu_the: SRS-262
+    for k in ("hen_xem", "hoi_chu_nha", "hoi_du_an", "ly_do", "tim_du_an", "du_an_khu_vuc", "can_cu_the"):
         v = str(mua.get(k) or "").strip()
-        if v and _trich_dan_khop(v, cuoi):
+        if v:
             ra[k] = v
     if "du_an_khu_vuc" in ra and str(mua.get("du_an_khu_vuc_chuan") or "").strip():
         ra["du_an_khu_vuc_chuan"] = str(mua["du_an_khu_vuc_chuan"]).strip()[:60]
-    if mua.get("xin_anh") is True and (rieng("xin_anh") or chung):
-        ra["xin_anh"] = True
-    if mua.get("khong_hop") is True and (rieng("khong_hop") or chung or "ly_do" in ra):
-        ra["khong_hop"] = True
-    if mua.get("ngung_bao") in ("tat", "bat") and (rieng("ngung_bao") or chung):
+    for k in ("xin_anh", "khong_hop", "quan_tam"):
+        if mua.get(k) is True:
+            ra[k] = True
+    if mua.get("ngung_bao") in ("tat", "bat"):
         ra["ngung_bao"] = mua["ngung_bao"]
-    if mua.get("quan_tam") is True and (rieng("quan_tam") or chung or "hen_xem" in ra or "hoi_chu_nha" in ra):
-        ra["quan_tam"] = True
-    if ra:
-        for k in ("ma_can", "trich_dan"):
-            if mua.get(k):
-                ra[k] = mua[k]
+    if ra and mua.get("ma_can"):
+        ra["ma_can"] = mua["ma_can"]
     return ra
 
 
@@ -4617,11 +4601,11 @@ class Engine:
                         _trich_dan_khop(plan.get("duyet_trich_dan"), c) for c in sau_nhap):
                     conv.duyet_luot = "dong_y"
 
-        # Hỏi về gì / tự xưng gì (SRS-5.1zzzzzzz54): nhận khi cụm trích có thật trong lời khách — tin vừa nhắn (hỏi về), hoặc
-        # một trong sáu lượt khách gần nhất (xưng hô giữ qua các lượt).
+        # Hỏi về gì / tự xưng gì (SRS-5.1zzzzzzz54): "hỏi về" theo ý AI đọc (SRS-5.1zzzzzzz281); xưng hô nhận khi cụm trích có thật trong một
+        # trong sáu lượt khách gần nhất (xưng hô giữ qua các lượt).
         conv.hoi_ve_luot = None
         h = plan.get("hoi_ve")
-        if h in ("phi", "uy_tin", "link_web", "tinh_hinh_ban", "dinh_gia") and _trich_dan_khop(plan.get("hoi_ve_trich_dan"), cuoi):
+        if h in ("phi", "uy_tin", "link_web", "tinh_hinh_ban", "dinh_gia"):   # SRS-5.1zzzzzzz281: tra khối dữ kiện theo ý AI đọc, không so nguyên văn
             conv.hoi_ve_luot = h
         # SRS-5.1zzzzzzz245 (chat thử 28/10 "chú bán nhà ở 125 Bình Long…": log không có dòng "Xưng hô" nào, bot gọi "Anh" theo giới tính Zalo):
         # công cụ không ép enum nên AI có thể trả chữ ("chú", "cháu") thay mã — trước đây rơi im lặng. Chuẩn hoá ĐẦU RA AI (không đọc lời khách).
@@ -4674,22 +4658,23 @@ class Engine:
             loai = self._tach_tin_ban_thue(conv)
             if loai:
                 conv.y_luot["tach_ban_thue"] = loai
-        # Xin gặp người thật (SRS-5.1zzzzzzz82): giữ nguyên cụm trích để báo admin kèm lời khách.
-        if _trich_dan_khop(plan.get("can_nguoi_that"), cuoi):
+        # Xin gặp người thật (SRS-5.1zzzzzzz82). SRS-5.1zzzzzzz281: AI đọc theo ý khách ("cho anh nói chuyện với ai đó", "gọi anh nhé") — nhận
+        # luôn; bản trước đòi cụm nguyên văn nên lời AI tóm lại bị bỏ, bot không báo admin.
+        if isinstance(plan.get("can_nguoi_that"), str) and plan["can_nguoi_that"].strip():
             conv.y_luot["can_nguoi_that"] = str(plan["can_nguoi_that"]).strip()
         # SRS-5.1zzzzzzz240 (chủ dự án 28/10, OPEN-21 a): người rao vừa tự nhận là chủ đầu tư → không báo con số phí, báo admin MỘT lần (lượt vai
         # đổi sang CĐT) để bộ phận hợp tác dự án liên hệ — lời "em đã báo" nhờ vậy là thật.
         if vua_thanh_cdt:
             conv.y_luot["cdt_bao_admin"] = True
             conv.y_luot.setdefault("can_nguoi_that", "Người rao tự nhận là CHỦ ĐẦU TƯ — phí theo thoả thuận riêng, nhờ admin / bộ phận hợp tác dự án liên hệ")
-        # Hỏi pháp lý / thủ tục (SRS-5.1zzzzzzz176): khoá phải có trong kho (hoặc "khac"), câu hỏi phải nằm nguyên trong tin khách. Nhạy cảm
+        # Hỏi pháp lý / thủ tục (SRS-5.1zzzzzzz176): khoá phải có trong kho (hoặc "khac"); không so nguyên văn (SRS-5.1zzzzzzz281). Nhạy cảm
         # → báo admin cùng đường khách xin gặp người thật (server đọc `can_nguoi_that`).
         hp = plan.get("hoi_phap_ly")
-        if isinstance(hp, str) and (hp in phap_ly.KHOA or hp == phap_ly.KHAC) and _trich_dan_khop(plan.get("phap_ly_trich_dan"), cuoi):
+        if isinstance(hp, str) and (hp in phap_ly.KHOA or hp == phap_ly.KHAC):   # SRS-5.1zzzzzzz281: khoá theo ý AI đọc, không so nguyên văn
             conv.y_luot["hoi_phap_ly"] = hp
             if plan.get("phap_ly_nhay_cam") is True:
                 conv.y_luot["phap_ly_nhay_cam"] = True
-                conv.y_luot["can_nguoi_that"] = str(plan.get("phap_ly_trich_dan")).strip()
+                conv.y_luot["can_nguoi_that"] = str(plan.get("phap_ly_trich_dan") or "").strip() or cuoi.strip()
             elif self._dia_danh is not None:
                 # SRS-5.1zzzzzzz231: nguyên văn điều luật gần nghĩa câu khách (kho dieu_luat) — kèm câu soạn sẵn, hoặc thay "chưa có" khi ngoài kho.
                 conv.y_luot["dieu_luat"] = self._dia_danh.dieu_luat(cuoi)
@@ -4764,26 +4749,21 @@ class Engine:
                 conv.y_luot["ngoai_vung"] = nv
         if plan.get("xac_nhan_xoa") in ("dong_y", "tu_choi") and _trich_dan_khop(plan.get("xac_nhan_trich_dan"), cuoi):
             conv.y_luot["xac_nhan_xoa"] = plan["xac_nhan_xoa"]
-        # Việc khách mua / người rao trả lời câu khách hỏi (SRS-5.1zzzzzzz70): nhận khi cụm trích có trong tin vừa nhắn.
+        # Việc khách mua / người rao trả lời câu khách hỏi (SRS-5.1zzzzzzz70). SRS-5.1zzzzzzz281: việc khách mua AI đọc theo ý khách — nhận luôn.
         mua = plan.get("mua")
         if conv.role == "buyer" and isinstance(mua, dict) and mua:
-            # SRS-5.1zzzzzzz232: mỗi việc kiểm căn cứ RIÊNG (`_loc_viec_mua`). Bản trước nhận / bỏ CẢ khối theo một `trich_dan` chung — bắn thử
-            # ban-thu-ai 28/10: AI chép lại giờ hẹn của lượt trước vào trich_dan nên lượt chê căn / xin thôi báo / xin ảnh mất sạch.
-            nhan = _loc_viec_mua(mua, cuoi, self._loi_khach_gan(conv))
+            nhan = _loc_viec_mua(mua)
             if nhan:
                 conv.y_luot["mua"] = nhan
-            bo = sorted(k for k, v in mua.items() if v not in (None, "", False, [], {}) and k not in nhan and not k.endswith("trich")
-                        and k != "trich_dan")
-            if bo:
-                log.warning("Mua: bỏ việc %s — không có căn cứ trong lời khách%s", bo,
-                            f" (trích: {str(mua.get('trich_dan') or '')[:80]!r})" if _la_id_thu(conv.user_key) else "")
+                log.warning("Mua: nhận việc %s", sorted(k for k in nhan if k != "ma_can"))   # chỉ tên việc, không lời khách
         elif isinstance(mua, dict) and mua:
-            log.warning("Mua: AI có đọc việc (hẹn=%s) nhưng bị bỏ — vai=%s trích_dẫn_khớp=%s", bool(mua.get("hen_xem")), conv.role,
-                        _trich_dan_khop(mua.get("trich_dan"), cuoi))
+            log.warning("Mua: AI có đọc việc (hẹn=%s) nhưng người nhắn không ở vai mua — vai=%s", bool(mua.get("hen_xem")), conv.role)
         tl = plan.get("tra_loi_khach_hoi")
-        if (isinstance(tl, dict) and tl.get("id") in {c.get("id") for c in conv.cau_hoi_cho}
-                and _trich_dan_khop(tl.get("tra_loi"), cuoi)):
-            conv.y_luot["tra_loi_khach_hoi"] = {"id": tl["id"], "tra_loi": str(tl["tra_loi"])}
+        if isinstance(tl, dict) and tl.get("id") in {c.get("id") for c in conv.cau_hoi_cho} and str(tl.get("tra_loi") or "").strip():
+            # SRS-5.1zzzzzzz281: câu trả lời đi thẳng tới khách mua (thông tin về căn) — AI viết lại mà không nằm nguyên trong tin người rao thì
+            # chuyển NGUYÊN lời người rao, không bỏ (bản trước bỏ im lặng: khách mua chờ mãi) và không chuyển câu AI tự diễn.
+            tra = str(tl["tra_loi"]).strip() if _trich_dan_khop(tl.get("tra_loi"), cuoi) else cuoi.strip()
+            conv.y_luot["tra_loi_khach_hoi"] = {"id": tl["id"], "tra_loi": tra}
         return plan
 
     @staticmethod
@@ -4872,12 +4852,13 @@ class Engine:
         return kho.can_phu_hop(conv.buyer_lead, loai_tru=lay(conv.user_key) if lay is not None else None)
 
     def _viec_mua(self, conv: Conversation, text: str) -> tuple[list[str], list[dict]]:
-        """Ghi việc khách mua vừa nói (quan tâm / hẹn xem / hỏi chủ nhà) lên DB — chỉ khi mã căn có thật và đang hiện, cụm thời gian
-        / câu hỏi có nguyên trong tin khách. Trả (câu tả việc đã ghi cho model, danh sách căn đưa vào lời đáp)."""
+        """Ghi việc khách mua vừa nói (quan tâm / hẹn xem / hỏi chủ nhà) lên DB — chỉ khi mã căn có thật và đang hiện; ý việc do AI đọc
+        (SRS-5.1zzzzzzz281). Trả (câu tả việc đã ghi cho model, danh sách căn đưa vào lời đáp)."""
         kho = self._convstore
-        # SRS-5.1zzzzzzz184: khách mua hỏi thông tin dự án → tra kho `projects` + kiến thức chủ dự án; tên dự án phải nằm nguyên trong tin khách.
+        # SRS-5.1zzzzzzz184: khách mua hỏi thông tin dự án → tra kho `projects` + kiến thức chủ dự án. SRS-5.1zzzzzzz281: tên dự án theo ý AI đọc
+        # (AI sửa tên gõ sai / tắt được) — tra kho là việc chỉ đọc, kho trả "không khớp" thì bot nói chưa có.
         ten_da = str((conv.y_luot.get("mua") or {}).get("hoi_du_an") or "").strip()
-        if ten_da and _trich_dan_khop(ten_da, text) and getattr(kho, "tra_du_an", None) is not None:
+        if ten_da and getattr(kho, "tra_du_an", None) is not None:
             try:
                 with _do(conv, "du_an"):
                     nghia = getattr(self._dia_danh, "du_an_theo_nghia", None)
@@ -4887,13 +4868,13 @@ class Engine:
         mua0 = conv.y_luot.get("mua") or {}
         # SRS-5.1zzzzzzz250 (chủ dự án 28/10: mục 3 "có địa chỉ hết rồi mà"): "quận X có dự án gì" → dự án trong kho chung theo khu.
         khu = str(mua0.get("du_an_khu_vuc") or "").strip()
-        if khu and _trich_dan_khop(khu, text) and getattr(kho, "du_an_theo_khu", None) is not None:
+        if khu and getattr(kho, "du_an_theo_khu", None) is not None:
             chuan = str(mua0.get("du_an_khu_vuc_chuan") or "").strip() or khu
             conv.y_luot["du_an_khu"] = {"khu": chuan, "ds": kho.du_an_theo_khu(chuan)}
         # SRS-5.1zzzzzzz250 (mục 4 + 7): khách tìm căn / xin bảng căn còn bán TRONG một dự án → căn đang rao nối project_id của dự án đó.
         ten_tim = str(mua0.get("tim_du_an") or "").strip()
         can_da: list[dict] = []
-        if ten_tim and _trich_dan_khop(ten_tim, text) and getattr(kho, "tra_du_an", None) is not None:
+        if ten_tim and getattr(kho, "tra_du_an", None) is not None:
             kq = kho.tra_du_an(ten_tim)
             if kq.get("khop") in ("ro", "gan") and isinstance(kq.get("du_an"), dict) and getattr(kho, "can_trong_du_an", None) is not None:
                 thue = getattr(conv.buyer_lead, "loai_giao_dich", "mua") == "thue"
@@ -4924,7 +4905,7 @@ class Engine:
         viec: list[str] = []
         # SRS-5.1zzzzzzz262 (bắn thử SRD 28/10: khách hỏi "nhà hẻm xe hơi đường Trần Bình Trọng quận 5 giá 10 tỷ còn không" — căn đó chưa lên web,
         # bot đáp "em có căn này hợp với anh" rồi kể một căn KHÁC): khách tả đúng MỘT căn đã thấy mà không có mã → lời đáp phải đối chiếu; không
-        # khớp thì nói thẳng trước rồi mới gợi căn khác. Ý "căn cụ thể" do AI đọc, code chỉ kiểm cụm trích có trong lời khách.
+        # khớp thì nói thẳng trước rồi mới gợi căn khác. Ý "căn cụ thể" do AI đọc (SRS-5.1zzzzzzz281: không so nguyên văn).
         # Cùng lớp (SRS-5.1zzzzzzz264): khách GÕ một mã căn không có căn nào đang hiện (đã bán / ẩn / gõ nhầm) → nói thẳng, không lờ đi rồi gợi căn khác.
         co_ma = {str(c.get(k) or "").upper() for c in nhac for k in ("code", "legacy_code")}
         ma_go = [m.strip().lstrip("#").upper() for m in (mua.get("ma_can") or []) if isinstance(m, str) and m.strip()]
@@ -4934,7 +4915,7 @@ class Engine:
                         "bán, tạm ẩn hoặc gõ nhầm): câu ĐẦU nói thẳng em chưa thấy căn mã đó, nhờ khách kiểm lại mã hoặc gửi link tin; có căn khác hợp "
                         "nhu cầu thì giới thiệu SAU và nói rõ đó là căn KHÁC")
         cu_the = str(mua.get("can_cu_the") or "").strip()
-        if cu_the and not nhac and not ma_khong_co and _trich_dan_khop(cu_the, text):
+        if cu_the and not nhac and not ma_khong_co:
             viec.append(f"khách hỏi đúng MỘT căn cụ thể đã thấy ở đâu đó (\"{cu_the}\") mà không có mã: đối chiếu với các căn em đang có — KHÔNG "
                         "căn nào khớp đúng căn khách tả (cùng đường VÀ cùng giá / diện tích) thì câu ĐẦU nói thẳng em chưa thấy đúng căn đó trên hệ "
                         "thống (có thể đã bán hoặc chưa đăng), rồi mới giới thiệu căn gần nhất và nói rõ đó là căn KHÁC; KHÔNG nói \"em có căn này\" "
@@ -4950,8 +4931,7 @@ class Engine:
             if not nhac:
                 viec.append("khách chê một căn nhưng chưa rõ căn nào: hỏi lại MỘT câu ngắn xem căn nào không hợp (câu hỏi DUY NHẤT của lượt), KHÔNG giới thiệu căn mới")
             elif bid:
-                ly_do = str(mua.get("ly_do") or "").strip()
-                ly_do = ly_do if _trich_dan_khop(ly_do, text) else ""
+                ly_do = str(mua.get("ly_do") or "").strip()   # SRS-5.1zzzzzzz281: lý do theo ý AI đọc
                 if kho.ghi_khong_hop(bid, nhac, ly_do, conv.user_key):
                     bo = {c.get("id") for c in nhac}
                     can = [c for c in can if c.get("id") not in bo]
@@ -5028,9 +5008,7 @@ class Engine:
         dau = nhac[0]
         hen = str(mua.get("hen_xem") or "").strip()
         hoi = str(mua.get("hoi_chu_nha") or "").strip()
-        # Giờ hẹn khách hay nhắn rời từng tin ("thứ 7" / "sáng nhé" / "9h"): nhận khi nằm nguyên trong tin này HOẶC mọi chữ của cụm có trong
-        # vài tin khách gần nhất (SRS-5.1zzzzzzz153).
-        hen = hen if (_trich_dan_khop(hen, text) or _chu_co_trong_loi_khach(hen, self._loi_khach_gan(conv))) else ""
+        # Giờ hẹn theo ý AI đọc (SRS-5.1zzzzzzz281: "mai 9h" → "9h sáng thứ 6" vẫn nhận; lịch chờ chủ nhà xác nhận rồi mới báo khách).
         # SRS-5.1zzzzzzz280 (chủ dự án 29/10: "kệ hallucinate"): câu hỏi chủ nhà do AI viết lại theo ý khách — KHÔNG so nguyên văn với lời khách
         # (bản trước so ở đây lần hai, sau `_loc_viec_mua`, nên câu AI sửa chính tả / diễn lại vẫn bị bỏ).
         if not khong_hop and (mua.get("quan_tam") is True or hen or hoi) and kho.ghi_quan_tam(bid, [c["code"] for c in nhac if c.get("code")]):

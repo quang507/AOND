@@ -59,13 +59,13 @@ def test_khach_che_can_ghi_khong_hop_kem_ly_do_va_bo_khoi_loi_dap():
     assert len(dong) == 1 and dong[0].startswith("- #EFGH5678")
 
 
-def test_ly_do_ai_bia_thi_khong_ghi_ly_do():
+def test_ly_do_ai_tom_y_van_ghi():
+    # SRS-5.1zzzzzzz281 (chủ dự án 29/10: "sửa để ai hiểu ý khách, thực thi đúng ý khách"): AI đọc ra là làm — không so nguyên văn.
     kho = KhoHaiCan()
-    eng, _ = _engine(kho, {**KHACH_MUA, "mua": {"ma_can": ["ABCD1234"], "khong_hop": True, "ly_do": "vì hẻm nhỏ",
-                                                "trich_dan": "bỏ căn này"}})
-    eng.handle("mua-che-3", "Thôi bỏ căn này đi em")
+    eng, _ = _engine(kho, {**KHACH_MUA, "mua": {"ma_can": ["ABCD1234"], "khong_hop": True, "ly_do": "hẻm nhỏ, xe hơi không vào"}})
+    eng.handle("mua-che-3", "Thôi bỏ căn này đi em, hẻm vậy xe anh sao chui vô")
     ghi = [d for m, e, d in kho.goi if e.startswith("interests?on_conflict=")]
-    assert ghi and ghi[0][0]["ly_do"] is None
+    assert ghi and ghi[0][0]["ly_do"] == "hẻm nhỏ, xe hơi không vào"
 
 
 def test_khach_che_ma_chua_ro_can_nao_thi_hoi_lai():
@@ -88,11 +88,12 @@ def test_ngung_bao_tat_va_bat_lai():
     assert co()[-1] == {"bao_can_moi": True}
 
 
-def test_ngung_bao_cum_trich_khong_co_trong_tin_thi_bo():
+def test_ngung_bao_theo_y_khach_noi_khac_chu():
+    # SRS-5.1zzzzzzz281 (chủ dự án 29/10: "sửa để ai hiểu ý khách, thực thi đúng ý khách"): AI đọc ra là làm — không so nguyên văn.
     kho = KhoHaiCan()
-    eng, _ = _engine(kho, {**KHACH_MUA, "mua": {"ngung_bao": "tat", "trich_dan": "đừng gửi nữa"}})
-    eng.handle("mua-tat-2", "Em tìm nhà phố quận 5 tầm 5 tỷ")
-    assert not [d for d in kho.ghi("PATCH", "buyers?id=eq.b1") if "bao_can_moi" in d]
+    eng, _ = _engine(kho, {**KHACH_MUA, "mua": {"ngung_bao": "tat"}})
+    eng.handle("mua-tat-2", "anh mua được nhà rồi, em khỏi nhắn mấy căn nữa nha")
+    assert [d for d in kho.ghi("PATCH", "buyers?id=eq.b1") if d.get("bao_can_moi") is False]
 
 
 class KhoBaoCanMoi(KhoBao):

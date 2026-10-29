@@ -41,10 +41,10 @@ def test_khach_hoi_dung_mot_can_khong_ma_thi_noi_thang_chua_thay():
                                                          "trich_dan": "còn không em"}})
     eng.handle("mua-cu-the-1", cau)
     assert any("em chưa thấy đúng căn đó trên hệ thống" in s and "căn KHÁC" in s for s in ai.system)
-    # Cụm AI trích không có trong lời khách (bịa) → không có khối; khách tả nhu cầu chung (AI để trống) → không có khối.
-    eng2, ai2 = _engine(KhoHaiCan(), {**KHACH_MUA, "mua": {"can_cu_the": "căn 3 tỷ ở Sunrise City"}})
+    # SRS-5.1zzzzzzz281: AI tóm lại theo ý khách (khác chữ) vẫn nhận; khách tả nhu cầu chung (AI để trống) → không có khối.
+    eng2, ai2 = _engine(KhoHaiCan(), {**KHACH_MUA, "mua": {"can_cu_the": "nhà hẻm xe hơi Trần Bình Trọng Q5, 10 tỷ"}})
     eng2.handle("mua-cu-the-2", cau)
-    assert not any("em chưa thấy đúng căn đó" in s for s in ai2.system)
+    assert any("em chưa thấy đúng căn đó" in s for s in ai2.system)
     eng3, ai3 = _engine(KhoHaiCan(), KHACH_MUA)
     eng3.handle("mua-cu-the-3", "Anh tìm nhà phố quận 5 tầm 5 tỷ")
     assert not any("em chưa thấy đúng căn đó" in s for s in ai3.system)

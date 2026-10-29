@@ -9058,6 +9058,34 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz281 · Việc bot tự giao làm theo ý AI đọc, không so nguyên văn lời khách (29/10/2026)
+Chủ dự án 29/10, sau SRS-280: "còn các kiểu tự giao việc khác nữa có đổi lại cho tối ưu dc ko". Trước đó: "con người ta chắc chắn có muôn vàn
+câu hỏi nên bắt theo nghĩa vậy mà chết à, sửa để AI hiểu ý khách, thực thi đúng ý khách, tư duy thông minh lên" và "kệ hallucinate".
+
+1. **Soát**: mọi chỗ `_trich_dan_khop` / `_chu_co_trong_loi_khach` trong `engine.py` gác một việc bot TỰ GIAO. Cùng lớp lỗi SRS-280: AI hiểu đúng ý
+   nhưng ghi khác chữ (sửa chính tả, tóm ý, chuẩn tên dự án, ghép giờ hẹn) → việc bị bỏ im lặng, lời bot vẫn nói như đã làm hoặc hỏi lại.
+2. **Quyết định (BA, uỷ quyền, theo hướng chủ dự án) — AI đọc ra là làm**, code chỉ chuẩn hoá kiểu và kiểm dữ liệu thật (mã căn có trong kho, id câu
+   hỏi đang chờ, khoá pháp lý có trong danh mục):
+   - Phía mua (`_loc_viec_mua` viết lại, `_viec_mua`): `hen_xem`, `quan_tam`, `xin_anh`, `khong_hop` + `ly_do`, `ngung_bao`, `hoi_du_an`, `tim_du_an`,
+     `du_an_khu_vuc`, `can_cu_the` (cùng `hoi_chu_nha` của SRS-280). Bỏ các ô `*_trich` / `trich_dan` khỏi schema công cụ. Prompt dặn: việc được LÀM
+     NGAY khi ghi, chỉ ghi việc của tin vừa nhắn (không chép việc lượt trước). Đường ghi DB vốn gộp trùng (lịch hẹn một dòng mỗi căn, `interests` merge).
+   - Xin gặp người thật (`can_nguoi_that`): AI tóm ý khách là đủ để báo admin.
+   - Hỏi phí / uy tín / link / tình hình bán / định giá (`hoi_ve`) và hỏi pháp lý (`hoi_phap_ly`): chỉ chọn khối dữ kiện để tra — nhận theo khoá
+     AI đọc; bỏ ô `hoi_ve_trich_dan`. Câu pháp lý nhạy cảm báo admin kèm cụm AI trích, không có thì lời khách.
+   - Chủ nhà trả lời câu khách mua hỏi (`tra_loi_khach_hoi`): câu này đi THẲNG tới khách mua (thông tin về căn) — cụm AI trích nằm nguyên trong
+     tin chủ nhà thì chuyển cụm đó; không thì chuyển NGUYÊN lời chủ nhà (bản trước bỏ im lặng, khách chờ mãi). Không chuyển câu AI tự diễn.
+3. **Giữ so nguyên văn** (không phải "giao việc" mà là ghi dữ liệu / tiền / đăng / xoá): ô tin phía bán (SRS-73), duyệt bản nháp / xin đăng,
+   vai người rao (phí, SRS-213), ngoài vùng nhận tin (từ chối tin), xác nhận xoá căn, tách tin bán + thuê, chấm sao, xưng hô, yêu cầu viết, việc
+   dự án phía bán (`xin_xem_ban_ve` / `cau_hoi_du_an` rẽ cả lượt khỏi bóc tách; `mo_ta_du_an` ghi kiến thức dự án).
+4. **Đánh đổi** (chấp nhận theo "kệ hallucinate"): AI đọc nhầm thì có thể ghi một lịch hẹn / báo admin / tắt báo căn thừa — lịch hẹn chờ chủ nhà
+   xác nhận, tắt báo căn khách bật lại được bằng một câu.
+5. **Ba câu hỏi gốc**:
+   - (1) *Lớp lỗi*: dùng lưới chống bịa ô dữ liệu (SRS-73) cho cả việc giao đi — giá trị AI DIỄN ĐẠT bị đòi khớp nguyên văn.
+   - (2) *Chỗ khác cùng lớp*: đã soát hết `engine.py` (mục 2 sửa, mục 3 giữ có lý do). `server.py` / `mua.py` không có cổng nguyên văn cho việc giao.
+   - (3) *Kiểm*: `tests/test_ai_hieu_y_giao_viec_281.py` (khách nói khác chữ: lịch hẹn + câu hỏi chủ nhà + quan tâm đều ghi; câu trả lời chủ nhà
+     AI diễn lại → chuyển nguyên lời chủ nhà) và 15 bài cũ đổi từ "bịa thì bỏ" sang "AI đọc ra thì làm" (chuyển người, hỏi về, dự án, khu, căn cụ thể,
+     lý do chê, thôi báo, xin ảnh, pháp lý, giờ hẹn). Gỡ bản sửa: 15 bài đỏ. Chưa bắn thử với model thật.
+
 ### SRS-5.1zzzzzzz280 · Câu hỏi chủ nhà đọc theo ý khách; ảnh gửi một lần; gỡ ảnh mẫu vẽ của rổ seed (29/10/2026)
 Chủ dự án test mua 29/10 14:24–14:26 (căn SEED0002):
 

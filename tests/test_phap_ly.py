@@ -82,10 +82,11 @@ def test_cau_nhay_cam_bao_admin_va_khong_tu_van():
     assert "PHÁP LÝ NHẠY CẢM" in cuoi and "KHÁCH XIN GẶP NGƯỜI THẬT" not in cuoi
 
 
-def test_khoa_la_hoac_trich_dan_bia_thi_bo():
-    eng, ai = _engine(KhoGia(), {**CHU_NHA, "hoi_phap_ly": "thue_tncn", "phap_ly_trich_dan": "thuế bán nhà bao nhiêu phần trăm"})
-    eng.handle("pl-4", "Nhà em ở quận 5, 60m2, 5 tỷ")                        # AI bịa cụm trích
-    assert not any("KHÁCH HỎI PHÁP LÝ" in s for s in ai.system)
+def test_khoa_la_thi_bo_khoa_dung_thi_nhan_khong_can_trich():
+    # SRS-5.1zzzzzzz281: khoá trong kho là đủ (AI đọc theo nghĩa), không so cụm trích; khoá lạ vẫn bỏ.
+    eng, ai = _engine(KhoGia(), {**CHU_NHA, "hoi_phap_ly": "thue_tncn"})
+    eng.handle("pl-4", "bán xong nhà nhà nước lấy của em bao nhiêu vậy")
+    assert any("KHÁCH HỎI PHÁP LÝ" in s for s in ai.system)
     eng, ai = _engine(KhoGia(), {**CHU_NHA, "hoi_phap_ly": "luat_rung", "phap_ly_trich_dan": "nhà em ở quận 5"})
     eng.handle("pl-5", "Nhà em ở quận 5")
     assert not any("KHÁCH HỎI PHÁP LÝ" in s for s in ai.system)

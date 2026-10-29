@@ -8,39 +8,22 @@ from aioi.mua import XIN_THEM_ANH
 from tests.test_viec_mua import KHACH_MUA, _engine
 from tests.test_xin_anh_can import KhoAnh
 
-GAN = ["Anh muốn đi xem căn này thứ 7 tuần này lúc 9h sáng được không em?", "Số anh 0900000002 nhé", "ok"]
-
-
-def test_trich_chung_cu_khong_lam_mat_viec_khac():
-    cuoi = "Mà căn đó anh thấy diện tích nhỏ quá, không hợp với nhà anh"
-    mua = {"ma_can": ["SEED0215"], "hen_xem": "thứ 7 tuần này lúc 9h sáng", "khong_hop": True, "khong_hop_trich": "nhỏ quá, không hợp",
-           "trich_dan": "thứ 7 tuần này lúc 9h sáng"}
-    ra = _loc_viec_mua(mua, cuoi, ["ok em", "ok", cuoi])
-    assert ra.get("khong_hop") is True and "hen_xem" not in ra and ra["ma_can"] == ["SEED0215"]
-
-
-def test_ngung_bao_va_xin_anh_theo_cum_rieng():
-    cuoi = "Thôi em đừng báo căn mới cho anh nữa nhé"
-    assert _loc_viec_mua({"ngung_bao": "tat", "ngung_bao_trich": "đừng báo căn mới", "trich_dan": "giờ hẹn cũ"}, cuoi, [cuoi])["ngung_bao"] == "tat"
-    assert _loc_viec_mua({"ngung_bao": "tat", "trich_dan": "giờ hẹn cũ"}, cuoi, [cuoi]) == {}          # không căn cứ nào → bỏ
-    cuoi2 = "Cho anh xem thêm ảnh căn đó với em"
-    assert _loc_viec_mua({"xin_anh": True, "xin_anh_trich": "xem thêm ảnh"}, cuoi2, [cuoi2])["xin_anh"] is True
-    assert _loc_viec_mua({"xin_anh": True, "xin_anh_trich": "gửi hình thật nhiều"}, cuoi2, [cuoi2]) == {}   # cụm bịa → bỏ
-
-
-def test_kieu_cu_trich_chung_dung_van_nhan_het_va_hen_ghep_tu_nhieu_tin():
-    cuoi = "Anh muốn đi xem căn này thứ 7 tuần này lúc 9h sáng được không em?"
-    ra = _loc_viec_mua({"quan_tam": True, "xin_anh": True, "hen_xem": "thứ 7 tuần này lúc 9h sáng", "trich_dan": "đi xem căn này"}, cuoi, [cuoi])
-    assert ra["quan_tam"] is True and ra["xin_anh"] is True and ra["hen_xem"] == "thứ 7 tuần này lúc 9h sáng"
-    assert _loc_viec_mua({"hen_xem": "9h sáng thứ 7"}, "9h", ["thứ 7 nhé", "sáng", "9h"])["hen_xem"] == "9h sáng thứ 7"
-    assert _loc_viec_mua({"hen_xem": "chủ nhật 10h"}, "ok", GAN) == {}                                  # giờ khách chưa từng nói
+def test_moi_viec_ai_doc_ra_deu_nhan_chi_chuan_hoa_kieu():
+    """SRS-5.1zzzzzzz281 (chủ dự án 29/10: "sửa để ai hiểu ý khách, thực thi đúng ý khách"): bản 232 kiểm từng việc theo cụm nguyên văn — nay AI
+    đọc ra là nhận; code chỉ chuẩn hoá kiểu (cờ phải là true, ngung_bao chỉ tat / bat, chuỗi rỗng bỏ)."""
+    mua = {"ma_can": ["SEED0215"], "hen_xem": "thứ 7 tuần này lúc 9h sáng", "khong_hop": True, "ly_do": "diện tích nhỏ",
+           "xin_anh": True, "ngung_bao": "tat", "quan_tam": True, "hoi_du_an": "Ny'ah", "trich_dan": "giờ hẹn cũ"}
+    ra = _loc_viec_mua(mua)
+    assert ra == {"ma_can": ["SEED0215"], "hen_xem": "thứ 7 tuần này lúc 9h sáng", "khong_hop": True, "ly_do": "diện tích nhỏ",
+                  "xin_anh": True, "ngung_bao": "tat", "quan_tam": True, "hoi_du_an": "Ny'ah"}
+    assert _loc_viec_mua({"xin_anh": "có", "ngung_bao": "khong", "hen_xem": "  ", "ma_can": ["X"]}) == {}   # sai kiểu → bỏ, không việc → không mã
 
 
 def test_xin_anh_khi_da_gui_het_noi_that_khong_gui_lai():
     anh_can._so_gui.dat("mua-anh", "ABCD1234", 4)
     try:
         kho = KhoAnh(4)
-        eng, ai = _engine(kho, {**KHACH_MUA, "mua": {"ma_can": ["ABCD1234"], "xin_anh": True, "xin_anh_trich": "cho anh xem ảnh"}})
+        eng, ai = _engine(kho, {**KHACH_MUA, "mua": {"ma_can": ["ABCD1234"], "xin_anh": True}})
         r = eng.handle("mua-anh", "cho anh xem ảnh căn đó với em")
     finally:
         anh_can._so_gui.dat("mua-anh", "ABCD1234", 0)

@@ -18,9 +18,10 @@ def test_chu_hoi_co_khach_chua_doc_so_that(monkeypatch):
     assert "CHỦ NHÀ HỎI TÌNH HÌNH BÁN" in seen[-1] and "2 khách bấm quan tâm, 1 câu hỏi" in seen[-1] and "0 lịch hẹn xem" in seen[-1]
 
 
-def test_trich_dan_khong_co_trong_loi_khach_thi_khong_nhan(monkeypatch):
+def test_ai_khong_doc_ra_thi_khong_chen_khoi(monkeypatch):
+    # SRS-5.1zzzzzzz281: "hỏi về" theo ý AI đọc — AI để trống thì không có khối (không còn kiểm cụm trích).
     eng, seen, ke, conv = _eng(monkeypatch, _KhoSo())
-    ke["plan"] = {"operations": [], "hoi_ve": "tinh_hinh_ban", "hoi_ve_trich_dan": "có khách chưa"}
+    ke["plan"] = {"operations": []}
     eng.handle("u-sao", "ok em cảm ơn")
     assert "CHỦ NHÀ HỎI TÌNH HÌNH BÁN" not in seen[-1]
 

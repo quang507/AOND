@@ -123,15 +123,24 @@ def test_quan_tam_hen_xem_hoi_chu_nha_ghi_xuong_db():
     assert "EM VỪA GHI LƯỢT NÀY" in ai.system[-1] and "hẹn xem #ABCD1234" in ai.system[-1]
 
 
-def test_khong_ghi_khi_trich_dan_khong_co_trong_tin_hoac_ma_khong_co_that():
+def test_khong_ghi_khi_ma_khong_co_that():
     kho = KhoGia()
     eng, _ = _engine(kho, KHACH_MUA)
     eng.handle("mua-3", "Em tìm nhà phố quận 5 tầm 5 tỷ")
-    eng._provider.ke_hoach = {**KHACH_MUA, "mua": {"ma_can": ["ABCD1234"], "hen_xem": "thứ 7", "trich_dan": "thứ 7"}}
-    eng.handle("mua-3", "để em hỏi vợ đã")                               # AI bịa: cụm trích không có trong tin
-    eng._provider.ke_hoach = {**KHACH_MUA, "mua": {"ma_can": ["ZZZZ9999"], "quan_tam": True, "trich_dan": "căn ZZZZ9999"}}
-    eng.handle("mua-3", "căn ZZZZ9999 còn không")                        # mã không có / không hiện
+    eng._provider.ke_hoach = {**KHACH_MUA, "mua": {"ma_can": ["ZZZZ9999"], "quan_tam": True, "hen_xem": "thứ 7"}}
+    eng.handle("mua-3", "căn ZZZZ9999 còn không, thứ 7 anh qua")         # mã không có / không hiện
     assert not kho.ghi("POST", "viewings") and not [e for m, e, d in kho.goi if e.startswith("rpc/mark_listing_interest")]
+
+
+def test_gio_hen_ai_viet_lai_theo_y_khach_van_ghi():
+    # SRS-5.1zzzzzzz281 (chủ dự án 29/10: "sửa để ai hiểu ý khách, thực thi đúng ý khách"): AI đọc ra là làm — không so nguyên văn.
+    kho = KhoGia()
+    eng, _ = _engine(kho, KHACH_MUA)
+    eng.handle("mua-3b", "Em tìm nhà phố quận 5 tầm 5 tỷ")
+    eng._provider.ke_hoach = {**KHACH_MUA, "mua": {"ma_can": ["ABCD1234"], "hen_xem": "9h sáng thứ 7 (31/10)"}}
+    eng.handle("mua-3b", "cuối tuần này sáng sớm chút anh ghé coi được hông")
+    v = kho.ghi("POST", "viewings")
+    assert v and v[0]["time_text"] == "9h sáng thứ 7 (31/10)"
 
 
 def test_nguoi_ban_tra_loi_cau_khach_hoi():
