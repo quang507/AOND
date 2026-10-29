@@ -9058,6 +9058,27 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz297 · B1 gọn quy trình: CI tự chạy, tự cài VPS sau gộp, một lệnh sau gộp, CLAUDE.md tách luật chi tiết (29/10/2026)
+Chủ dự án 29/10 (sau bản review "đi đường vòng" — gọi AI, lưu trữ, quy trình; thứ tự B1 → B2 → B3): "Ok gọn quy trình theo b1 đi".
+
+1. **Đo trước**: mỗi thay đổi nhỏ ~10 bước tay (test, truyvet, commit, PR, dispatch kiem, chờ, gộp, dispatch cai-vps, chờ, merge -s ours) + docs ba chỗ
+   (docs/07, docs/08, CLAUDE.md). CLAUDE.md 252 dòng nạp vào MỌI lượt → ngữ cảnh đầy nhanh, phiên compact nhiều lần.
+2. **Sửa (BA, uỷ quyền)**:
+   - Bỏ bước dispatch `kiem.yml` tay: workflow đã tự chạy trên `pull_request` (các lượt dispatch trước là chạy đúp).
+   - `.github/workflows/tu-cai-vps.yml`: push lên `main` có đổi `src/aioi/**` / `bot/bridge-zca/**` → `gh workflow run apply-migration.yml -f dung_lai=cai-vps`
+     (GITHUB_TOKEN được kích `workflow_dispatch`). Không nhân đôi đường cài — vẫn đúng một bước cai-vps cũ.
+   - `scripts/sau-gop.sh`: một lệnh sau khi gộp — có đổi lõi thì chờ `tu-cai-vps` rồi chờ lượt cai-vps của ĐÚNG commit đó, rồi `merge -s ours` + push.
+     `cho-workflow.sh` thêm tham số SHA: lượt mới nhất chưa phải của commit đang chờ thì chờ tiếp, không lấy nhầm lượt cũ (thử: đúng SHA trả 0, SHA sai
+     hết giờ trả 1).
+   - CLAUDE.md 252 → ~140 dòng: §3 (tài liệu gốc), §6.2 (luật lõi bot), §6.4–6.5 (DB, web) chuyển NGUYÊN VĂN sang `.claude/luat-dang-ap.md` (không tự nạp,
+     đọc trước khi sửa phần tương ứng); CLAUDE.md giữ năm luật hay sai nhất + trỏ đường. Vòng giao việc §7 còn 6 bước, gom việc cùng chủ đề một PR.
+   - docs/08 chỉ cập nhật khi đổi FR / tầng trên; mục SRS sửa lỗi / cải tiến không thêm dòng docs/08 (dòng FR-177 đã thành khối hàng chục mục).
+3. **Không đổi**: PR + CI + bắn thử production vẫn là cổng (bắt lỗi thật: SRS-291 / 292 bắn thử thấy bộ nhu cầu bị đè, Haiku sót hẹn xem; SRS-295 CI
+   bắt `schema.sql` lệch) — chỉ bỏ phần bấm tay, không bỏ phần kiểm. Luật trong `.claude/luat-dang-ap.md` không bớt chữ nào.
+4. **Ba câu hỏi gốc** — (1) *lớp lỗi*: quy trình người làm tay lớn dần theo từng sự cố, không ai gom lại. (2) *chỗ khác cùng lớp*: `docs/11-quy-trinh.md`,
+   `.clinerules/` còn tả vòng cũ (dispatch kiem tay) — chưa sửa. (3) *kiểm*: `cho-workflow.sh` với SHA đúng / sai trên lượt thật; `tu-cai-vps.yml` kiểm
+   ở lần gộp đầu tiên đổi lõi (chưa chạy lần nào lúc viết mục này).
+
 ### SRS-5.1zzzzzzz296 · Bật form gọn + vòng agent phía mua cho mọi khách (29/10/2026)
 Chủ dự án 29/10 (đáp câu "có chuyển `FORM_MUA_GON` và `AGENT_MUA` sang `bat` cho khách thật không" — form gọn rẻ hơn, agent tốn thêm khoảng
 $0,017–0,07 / lượt khách mua): "Có bật đi".

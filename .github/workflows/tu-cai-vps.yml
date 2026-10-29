@@ -1,0 +1,28 @@
+# Tự cài lõi lên VPS sau khi gộp (SRS-5.1zzzzzzz297, B1 gọn quy trình — chủ dự án 29/10: "gọn quy trình theo b1 đi").
+# Trước: gộp xong agent / người phải dispatch tay apply-migration.yml ô dung_lai = cai-vps rồi chờ. Nay lần đẩy lên main có đổi lõi
+# (src/aioi) hoặc bridge (bot/bridge-zca) tự gọi đúng lượt đó — cùng một đường cài, không nhân đôi script.
+# GITHUB_TOKEN được phép kích workflow_dispatch (ngoại lệ của luật "token không kích workflow khác").
+name: Tự cài VPS sau khi gộp
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/aioi/**"
+      - "bot/bridge-zca/**"
+
+permissions:
+  actions: write
+
+concurrency:
+  group: tu-cai-vps
+  cancel-in-progress: false
+
+jobs:
+  cai:
+    name: Gọi apply-migration.yml dung_lai = cai-vps
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh workflow run apply-migration.yml --repo "$GITHUB_REPOSITORY" --ref main -f dung_lai=cai-vps
+        env:
+          GH_TOKEN: ${{ github.token }}
