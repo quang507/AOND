@@ -25,7 +25,7 @@ from typing import Any, Callable
 
 from .xung_ho import goi_toi
 from . import cau_mau
-from .mua import SITE_URL, _LOAI_MUA_SANG_DB, _TEN_LOAI, _can_xe_hoi, _q, co_tieu_chi
+from .mua import SITE_URL, _LOAI_MUA_SANG_DB, _TEN_LOAI, _can_xe_hoi, _q, bo_can_trung_nha, co_tieu_chi
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ VAN_GIO = 24
 TRAN_VUOT = 1.15
 TOI_DA_KHACH_MOI_LUOT = 20
 SO_KIEU = 4            # số kiểu văn phong tin báo (câu mẫu `bao_can_moi`, `_2`, `_3`, `_4` và bản `_vuot`) — SRS-5.1zzzzzzz188
+DANG_CHAT_PHUT = 30    # SRS-5.1zzzzzzz278: khách nhắn trong 30 phút qua = đang chat — không chen tin báo vào giữa (lượt chat tự gợi căn)
 TOI_DA_ANH = 4         # ảnh đính kèm mỗi tin báo (SRS-5.1zzzzzzz159, chủ dự án 23/10: "3 4 tấm ảnh"; bridge /send cũng chặn ở 4)
 
 _O_NHU_CAU = ("loai_giao_dich", "loai_bds", "ngan_sach", "khu_vuc", "so_phong_ngu", "yeu_cau_xe_hoi")
@@ -153,6 +154,7 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
         return []
     hoi = kho._get(f"conversations?buyer_id=not.is.null&needs_human=eq.false&human_hold=eq.false"
                    f"&last_message_at=gte.{_q(_iso(bay_gio - timedelta(days=KHACH_NHAN_TRONG_NGAY)))}"
+                   f"&last_message_at=lt.{_q(_iso(bay_gio - timedelta(minutes=DANG_CHAT_PHUT)))}"
                    f"&select=id,buyer_id&limit=200")
     bids = list(dict.fromkeys(r["buyer_id"] for r in hoi if r.get("buyer_id")))
     if not bids:
@@ -179,6 +181,11 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str, str | None, dict, list[str]
         if not co_tieu_chi(lead):
             continue
         can = kho.can_moi_khop(lead, [i for i in ids if i not in da], TRAN_VUOT)
+        if can and getattr(kho, "khoa_nha_theo_id", None) is not None:
+            # SRS-5.1zzzzzzz278 (chat 28/10: 146 Trần Bình Trọng hai tin của hai người rao — tin thứ hai được báo như "căn mới" sau khi khách
+            # đã nghe căn thứ nhất): căn trùng nhà (số nhà + đường + phường) với căn đã giới thiệu / đã báo / đã chê thì không báo.
+            khoa = kho.khoa_nha_theo_id([str(c.get("id")) for c in can] + [str(i) for i in da if i])
+            can = bo_can_trung_nha(can, khoa, {khoa[str(i)] for i in da if i and khoa.get(str(i))})
         if not can:
             continue
         c = can[0]

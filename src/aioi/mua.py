@@ -85,6 +85,36 @@ def _sach_khu(chu: str) -> str | None:
     return re.split(r"\s{2,}", k)[0].strip() or None
 
 
+_SO_NHA_RE = re.compile(r"^\s*(?:số\s*)?(\d+[a-z]?(?:/\d+[a-z]?)*)\b", re.IGNORECASE)
+
+
+def khoa_nha(street: Any, ward: Any, dia_chi: Any) -> str | None:
+    """Khoá "cùng một căn nhà" giữa các tin (SRS-5.1zzzzzzz278): số nhà (đầu ô `dia_chi`) + tên đường + phường, bỏ dấu. Hai người bán / hai
+    môi giới rao cùng một nhà là hai tin khác mã — khách mua không được nghe giới thiệu lại như căn mới. Thiếu số nhà hoặc tên đường → None
+    (cùng đường chưa chắc cùng nhà, không gộp)."""
+    from .dia_danh import bo_dau, ten_tran
+    m = _SO_NHA_RE.match(str(dia_chi or ""))
+    duong = re.sub(r"^(duong|d\.)\s*", "", bo_dau(str(street or "")).strip())
+    if not (m and duong):
+        return None
+    duong = re.sub(r"\s+", " ", duong)
+    return f"{m.group(1).lower()}|{duong}|{ten_tran(str(ward or ''))}"
+
+
+def bo_can_trung_nha(can: list[dict], khoa: dict[str, str | None], da_co: set[str] | None = None) -> list[dict]:
+    """Bỏ căn có `khoa_nha` trùng căn đứng trước trong danh sách hoặc trùng `da_co` (khoá các căn khách đã nghe giới thiệu / đã chê)."""
+    thay = set(da_co or ())
+    ra = []
+    for c in can:
+        k = khoa.get(str(c.get("id")))
+        if k and k in thay:
+            continue
+        if k:
+            thay.add(k)
+        ra.append(c)
+    return ra
+
+
 def _so_dau(v: Any) -> float | None:
     """Số đầu tiên trong chữ ("2PN" → 2, "60m2" → 60, "3,5" → 3.5); không có → None."""
     m = re.search(r"\d+(?:[.,]\d+)?", str(v or ""))
@@ -281,11 +311,27 @@ class KhoNguoiMua:
             return []   # SRS-5.1zzzzzzz146 / 214: chưa đủ khu vực + ngân sách thì không đoán căn — hỏi trước
         loai_tru = set(loai_tru or ())
         try:
-            can = self.tim_nha(lead, toi_da + len(loai_tru))
+            can = self.tim_nha(lead, toi_da + len(loai_tru) + 2)
         except Exception as e:  # noqa: BLE001
             log.warning("tim_nha lỗi, về lọc cứng: %s", e)
-            can = self._can_phu_hop_loc_cung(lead, toi_da + len(loai_tru))
-        return [c for c in can if c.get("id") not in loai_tru][:toi_da]
+            can = self._can_phu_hop_loc_cung(lead, toi_da + len(loai_tru) + 2)
+        can = [c for c in can if c.get("id") not in loai_tru]
+        # SRS-5.1zzzzzzz278: hai tin cùng một căn nhà (khác người rao) chỉ đưa một; căn trùng nhà với căn khách đã chê cũng bỏ.
+        khoa = self.khoa_nha_theo_id([str(c.get("id")) for c in can] + list(loai_tru))
+        da_che = {khoa[i] for i in loai_tru if khoa.get(i)}
+        return bo_can_trung_nha(can, khoa, da_che)[:toi_da]
+
+    def khoa_nha_theo_id(self, ids: list[str]) -> dict[str, str | None]:
+        """id tin → `khoa_nha` (số nhà + đường + phường) — SRS-5.1zzzzzzz278. Lỗi đọc → rỗng (thà gợi trùng một căn còn hơn câm)."""
+        ids = [i for i in dict.fromkeys(ids) if i][:100]
+        if not (self.is_configured and ids):
+            return {}
+        try:
+            rows = self._get(f"listings?id=in.({','.join(_q(i) for i in ids)})&select=id,street,ward,dia_chi:boc_tach->>dia_chi")
+        except Exception as e:  # noqa: BLE001
+            log.warning("khoa_nha_theo_id lỗi: %s", e)
+            return {}
+        return {str(r.get("id")): khoa_nha(r.get("street"), r.get("ward"), r.get("dia_chi")) for r in rows if r.get("id")}
 
     def can_khong_hop(self, user_key: str) -> set[str]:
         """id các căn khách đã CHÊ (`interests.trang_thai = khong_hop`, SRS-5.1zzzzzzz175) — `can_phu_hop` và `bao_can_moi` không đưa lại.
