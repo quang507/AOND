@@ -9120,7 +9120,10 @@ Chủ dự án 29/10: "kiểm đi" (sau bảng soát SRS-267). Script mới `bot
        `tests/test_trang_thai_va_nap_lai.py::test_tin_crm_ma_rieng_id_can_la_uuid_anh_vao_dung_tin`.
        - Tin mã "BDS-NP-Q5-0007": id căn là uuid, lưu không đổi mã, ảnh `<uuid>/` ghi được `listing_media`, `_match_listing` nhận mã đầy đủ.
        - Đỏ khi gỡ bản sửa ở `supabase_store`. pytest 1160 passed.
-7. **Chưa kiểm**: bắn lại lần 3 sau khi cài bản này lên VPS (ghi tiếp dưới mục này).
+7. **Bắn lại lần 3** (run 40809374432, sau `cai-vps` bản #182): **15/15 ô ĐẠT**.
+   - F: ảnh vào căn B được 1 dòng `listing_media`, căn A 0 dòng, câu xin ảnh chuyển answered.
+   - Job vẫn đỏ vì bước `dung-lai-db.mjs` chạy sau với `ban-thu-kiem`: điều kiện của bước đó chưa loại ô mới. Đã thêm `ban-thu-kiem` vào danh sách loại trừ trong `apply-migration.yml`.
+   - Log lõi có `tim_dia_danh` / `tim_duong` timeout (đọc DB quá giờ). Bot vẫn trả lời đủ; chưa soi gốc.
 
 ### SRS-5.1zzzzzzz267 · Soát lời hứa của bot: mỗi câu hứa phải có code phía sau (29/10/2026)
 Chủ dự án 29/10: "kiểm tra các thứ tôi cần có code phía sau chưa hay ai hứa suông thôi". Soát mọi câu mẫu gửi thẳng khách (`cau_mau.MAC_DINH`) và
