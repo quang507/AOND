@@ -6,6 +6,7 @@
 #   E. Kho xưởng: đủ vị trí · diện tích · pháp lý mới ra bản nháp (SRS-263)
 #   F. Chủ nhà hai căn gửi ảnh → ảnh vào căn khách mua đang xin (SRS-258 / 254)
 #   G. Sticker tới dạng ảnh .png → đọc như lời chào, không lưu thành ảnh căn (SRS-255)
+#   I. Đường Mã Lò (hai phường, trùng "Mã Lộ" Q1 khi bỏ dấu): bot kể hai phường cho khách xác nhận, không hỏi trống (SRS-270)
 #   H. Khách hỏi căn rổ mẫu SEED → câu hỏi giao thẳng admin, tin tới Zalo admin (SRS-269) — admin THẬT nhận một tin "❓ Khách hỏi căn #SEED…"
 # Kiểm điều tất định (DB, mã căn trong link); câu chữ bot in ra ở dòng << cho người đọc. Từ khoá trong lời bot chỉ là lưới đỡ.
 # Cần: TOKEN (Management API), PROJECT_REF. Tiền thật: ~16 lượt chat.
@@ -25,8 +26,8 @@ vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/nu
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
 TV="thu-kiem-tv-$RUN"; MUA="thu-kiem-mua-$RUN"; KHO="thu-kiem-kho-$RUN"; CHU="thu-kiem-chu-$RUN"; MUA2="thu-kiem-mua2-$RUN"; ST="thu-kiem-st-$RUN"
-MUA3="thu-kiem-mua3-$RUN"
-TAT_CA="$TV $MUA $KHO $CHU $MUA2 $ST $MUA3"
+MUA3="thu-kiem-mua3-$RUN"; ML="thu-kiem-ml-$RUN"
+TAT_CA="$TV $MUA $KHO $CHU $MUA2 $ST $MUA3 $ML"
 MA_A=$(printf 'A%07X' $(( RUN % 268435456 ))); MA_B=$(printf 'B%07X' $(( RUN % 268435456 )))
 
 don() {
@@ -134,6 +135,18 @@ done
 echo "== H: tin báo admin: ${NHAC:-(không có)}"
 kiem "H: có tin báo admin (reminders escalation không gắn người bán)" "$([ -n "$NHAC" ] && echo 1 || echo 0)"
 kiem "H: bridge đã gửi tin tới Zalo admin (status sent, chờ ≤ 3 phút)" "$([ "$NHAC" = sent ] && echo 1 || echo 0)"
+
+# ==== I. Đường Mã Lò (SRS-270, chat chủ dự án 29/10): trước đây "Mã Lò" / "Mã Lộ" trùng khi bỏ dấu → bot hỏi "gần chợ, trường, ngã tư".
+chat "$ML" "Bán nhà mặt tiền đường Mã Lò, ngang 7m, đất 135m2, sàn 250m2, sổ hồng riêng, nhà đang ở, giá 12.5 tỷ"
+LOI_ML="$LOI"
+for _ in 1 2; do
+  grep -q '📋' <<<"$LOI_ML" && break
+  chat "$ML" "đủ rồi em, soạn tin đi"; LOI_ML+=$'\n'"$LOI"
+done
+chat "$ML" "ừ đăng đi"; LOI_ML+=$'\n'"$LOI"
+kiem "I: bot kể phường Bình Trị Đông cho khách xác nhận" "$(grep -q 'Bình Trị Đông' <<<"$LOI_ML" && echo 1 || echo 0)"
+kiem "I: bot kể phường Bình Hưng Hòa cho khách xác nhận" "$(grep -q 'Bình Hưng Hòa' <<<"$LOI_ML" && echo 1 || echo 0)"
+kiem "I: không hỏi trống \"gần chợ, trường, ngã tư\"" "$(grep -qi 'ngã tư' <<<"$LOI_ML" && echo 0 || echo 1)"
 
 kiem "mọi lượt: không bong bóng nào mở đầu \"Dạ\"" "$(grep -qE '^Dạ' <<<"$MOI_LOI" && echo 0 || echo 1)"
 vps "journalctl -u aond-core --since '-15 min' --no-pager -o cat | grep -E 'Ảnh chủ nhà|Bỏ ô|Lời bot lệch luật|lỗi' | sed -E 's/[0-9]{9,}/#/g' | tail -30" || true

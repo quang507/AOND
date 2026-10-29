@@ -141,6 +141,7 @@ class ZaloBridgePayload(BaseModel):
     file_name: str | None = None
     sticker_url: str | None = None      # link ảnh sticker (bridge, zca-js getStickersDetail) — SRS-5.1zzzzzzz122
     sticker_text: str | None = None     # nhãn chữ Zalo gắn cho sticker (có thể trống)
+    quote_text: str | None = None       # nội dung tin khách bấm "Trả lời" trên Zalo (zca-js `quote.msg`) — SRS-5.1zzzzzzz270
     gioi_tinh: str | None = None        # "nam" / "nu" theo hồ sơ Zalo (bridge) — chỉ gợi ý xưng hô khi khách chưa tự xưng (SRS-5.1zzzzzzz163)
     so_nhan: str | None = None          # số Zalo khách nhắn tới: "ky_gui" / "tu_van" (SRS-5.1zzzzzzz210); bridge cũ không gửi = giữ nguyên
     msg_id: str | None = None
@@ -686,6 +687,8 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         cho_luot = int((time.perf_counter() - t_khoa) * 1000)
         _dat_goi_y_xung_ho(uk, payload.gioi_tinh)
         _dat_so_nhan(uk, payload.so_nhan)
+        # SRS-5.1zzzzzzz270: tin khách bấm "Trả lời" — chỉ cho lượt này (gán mỗi request, không có thì xoá, không sót sang lượt sau).
+        _engine.conversation(uk).tin_tra_loi = (payload.quote_text or "").strip()[:1500]
         if not media_urls:
             gom = _lay_cho(uk, so_cho)
             if gom is None:   # tin này đã nằm trong lượt trước — chỉ ghi lời khách vào CRM, không trả lời riêng

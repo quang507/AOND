@@ -2302,3 +2302,17 @@ def khoi_cau_chuan(rows: list[dict] | None) -> str:
     return ("\n\n=== CÂU CHUẨN NGƯỜI CHẤM ĐÃ SỬA / CHẤM (học giọng và cách xử lý; gặp tình huống giống thì làm như câu chuẩn; điểm thấp "
             "là cách nói cần tránh) ===\nĐây là hội thoại của KHÁCH KHÁC: KHÔNG nhắc lại địa chỉ, giá, tên, số liệu trong ví dụ.\n"
             + "\n".join(khoi) + "\n")
+
+
+def khoi_tin_tra_loi(trich: str | None) -> str:
+    """SRS-5.1zzzzzzz270 (chủ dự án 29/10: "người ta bấm nút trả lời thì bot có đọc chính xác hơn dc ko"): khách bấm "Trả lời" một tin trên
+    Zalo → bridge chuyển nội dung tin được trích (`quote_text`). Lượt này đọc lời khách theo ĐÚNG tin đó. Nội dung tin trích KHÔNG phải lời
+    khách (thường là tin bot) — không vào `loi_khach_luot`, không làm bằng chứng ghi ô."""
+    t = (trich or "").strip()
+    if not t:
+        return ""
+    t = t[:1500]
+    return ("\n\nKHÁCH BẤM \"TRẢ LỜI\" (TRÍCH) MỘT TIN khi nhắn lượt này — lời khách lượt này là đáp lại ĐÚNG tin đó:\n«" + t + "»\n"
+            "Đọc lời khách theo tin được trích: tin là bản nháp 📋 thì lời đồng ý / sửa là cho CHÍNH bản nháp đó (căn đó); tin là câu em "
+            "hỏi thì lời khách là câu trả lời câu đó; tin là căn em gợi ý thì khách đang nói về căn đó. Nội dung tin trích KHÔNG phải lời "
+            "khách — không lấy chữ trong đó làm bằng chứng ghi ô tin, không coi là khách vừa nói.\n")

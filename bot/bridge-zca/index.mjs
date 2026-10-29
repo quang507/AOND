@@ -382,7 +382,7 @@ async function thaTim(threadId, dich) {
   }
 }
 
-async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cliMsgId) {
+async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cliMsgId, quote) {
   const imgList = Array.isArray(imageUrls) ? imageUrls : (imageUrls ? [imageUrls] : []);
   const imgDesc = imgList.length > 1 ? `[${imgList.length} ?nh]` : (imgList.length === 1 ? "[?nh]" : "");
   console.log(`? [${threadId}] ${text || (tep ? `[file ${tep.ten ?? ""}]` : (imgDesc || "[tin nh?n]"))}`);
@@ -400,6 +400,9 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cl
     // SRS-5.1zzzzzzz122 (22/10/2026): link ảnh sticker để bộ não ĐỌC nghĩa (khách gửi sticker "HI!" = lời chào).
     sticker_url: sticker?.url,
     sticker_text: sticker?.text,
+    // SRS-5.1zzzzzzz270 (chủ dự án 29/10: "người ta bấm nút trả lời thì bot có đọc chính xác hơn dc ko"): khách bấm "Trả lời" một tin trên
+    // Zalo → zca-js để nội dung tin được trích ở `message.data.quote.msg`; chuyển cho lõi để biết khách đang đáp tin nào.
+    quote_text: quote || undefined,
     gioi_tinh: userGenderCache.get(String(threadId)),
     msg_id: msgId,
     channel: "zalo_personal_test",
@@ -490,7 +493,7 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cl
 const bufferTin = new Map();
 const DEBOUNCE_MS = 2500;
 
-function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId) {
+function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId, quote) {
   const tid = String(threadId);
   const hienTai = bufferTin.get(tid) || {
     texts: [],
@@ -500,6 +503,7 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId) 
     sticker: null,
     lastMsgId: null,
     lastCliMsgId: null,
+    quote: null,
   };
   if (text) hienTai.texts.push(text.trim());
   if (imageUrl && !hienTai.imageUrls.includes(imageUrl)) {
@@ -509,6 +513,7 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId) 
   if (sticker?.url) hienTai.sticker = sticker;
   hienTai.lastMsgId = msgId || hienTai.lastMsgId;
   hienTai.lastCliMsgId = cliMsgId || hienTai.lastCliMsgId;
+  if (quote) hienTai.quote = quote;
 
   if (hienTai.timer) clearTimeout(hienTai.timer);
 
@@ -517,7 +522,7 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId) 
     const textGom = hienTai.texts.filter(Boolean).join("\n");
     if (!textGom && !hienTai.imageUrls.length && !hienTai.tep) return;
     try {
-      await handleIncoming(tid, textGom, hienTai.imageUrls, hienTai.lastMsgId, hienTai.tep, hienTai.sticker, hienTai.lastCliMsgId);
+      await handleIncoming(tid, textGom, hienTai.imageUrls, hienTai.lastMsgId, hienTai.tep, hienTai.sticker, hienTai.lastCliMsgId, hienTai.quote);
     } catch (e) {
       if (laPhienChet(e)) return await phienChet(errDetail(e));
       await ghiLoi("xử lý tin gom", errDetail(e));
@@ -624,6 +629,8 @@ api.listener.on("message", async (message) => {
       tep,
       sticker,
       message.data?.cliMsgId ? String(message.data.cliMsgId) : undefined,
+      typeof message.data?.quote?.msg === "string" && message.data.quote.msg.trim()
+        ? message.data.quote.msg.trim().slice(0, 1500) : undefined,
     );
   } catch (e) {
     if (laPhienChet(e)) return await phienChet(errDetail(e));
