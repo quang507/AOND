@@ -192,3 +192,14 @@ def test_engine_thay_ten_duong_khac_dau_trong_dia_chi(monkeypatch):
     e.handle("u-lvs", "nhà 12 le van sy")
     f = e.conversation("u-lvs").prop.fields
     assert (f["duong"], f["dia_chi"]) == ("Lê Văn Sỹ", "12 Lê Văn Sỹ")
+
+
+def test_duong_trung_ten_bo_dau_khach_go_dung_dau_thi_nhan():
+    """SRS-5.1zzzzzzz270 (chat 29/10): "Mã Lò" (Bình Tân, hai phường) và "Mã Lộ" (Quận 1) cùng khoảng cách 0 khi bỏ dấu → trước đây None, bot
+    không kể được phường mà hỏi trống. Khách gõ đúng dấu thì nhận đúng tên; gõ không dấu vẫn không đoán."""
+    ml = [{"ten": "Mã Lò", "khoang_cach": 0, "phuong": ["Phường Bình Hưng Hòa", "Phường Bình Trị Đông"]},
+          {"ten": "Mã Lộ", "khoang_cach": 0, "phuong": ["Phường Tân Định"]}]
+    t, _ = _tra(duong={"Mã Lò": ml, "mã lộ": ml, "ma lo": ml})
+    assert t.duong("Mã Lò") == {"ten": "Mã Lò", "chac": True, "phuong": ["Phường Bình Hưng Hòa", "Phường Bình Trị Đông"]}
+    assert t.duong("mã lộ")["ten"] == "Mã Lộ"
+    assert t.duong("ma lo") is None

@@ -357,7 +357,10 @@ class TraDiaDanh:
         ds = self._thu("tim_duong", {"p_ten": ten, "p_quan": quan, "p_toi_da": 2})
         if ds:
             gan = min(u.get("khoang_cach", 9) for u in ds)
-            ten_kho = _mot([u.get("ten") for u in ds if u.get("khoang_cach", 9) == gan])
+            cung = [u.get("ten") for u in ds if u.get("khoang_cach", 9) == gan]
+            # SRS-5.1zzzzzzz270 (chat 29/10, đường Mã Lò): so bỏ dấu thì "Mã Lò" (Bình Tân) và "Mã Lộ" (Quận 1) trùng nhau → không ra tên nào,
+            # bot không kể được phường, hỏi trống "gần chợ, trường, ngã tư". Khách gõ ĐÚNG DẤU một tên trong số đó thì nhận tên đó.
+            ten_kho = _mot(cung) or _mot([t for t in cung if t and t.strip().lower() == ten.lower()])
             if not ten_kho:
                 return None
             u = next(u for u in ds if u.get("ten") == ten_kho)

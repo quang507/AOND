@@ -9058,6 +9058,44 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz270 · Đường trùng tên khi bỏ dấu (Mã Lò / Mã Lộ); bot đọc tin khách bấm "Trả lời" trên Zalo (29/10/2026)
+Chủ dự án 29/10, kèm ảnh chat căn đường Mã Lò: "sao đường mã lò mà ko ra dc phường z" và "người ta bấm nút trả lời thì bot có đọc chính xác hơn dc ko".
+
+1. **Ca gốc — đường Mã Lò**:
+   - Khách rao "bán nhà Mã Lò 12.5 tỉ", duyệt bản nháp. Bot hỏi "Nhà ở gần chợ, trường hay ngã tư nào, hoặc số nhà bao nhiêu", không kể phường nào.
+   - DB: rpc `tim_duong('Mã Lò')` trả "Mã Lò" (Bình Tân; Phường Bình Hưng Hòa + Phường Bình Trị Đông, theo kho OSM) và "Mã Lộ" (Quận 1, Tân Định),
+     cả hai khoảng cách 0 vì so bỏ dấu.
+   - `TraDiaDanh._duong` thấy hai tên nên trả None: không có `goi_y_phuong`, không ra quận, bot hỏi trống.
+   - Ghi chú: bảng `phuong_cu` (NQ 1685) cho thấy phường Bình Hưng Hòa A cũ chia về Bình Hưng Hòa và Bình Trị Đông. Kho OSM đặt các hẻm 382–499
+     Mã Lò ở Bình Hưng Hòa. Tra Google AI (ảnh chủ dự án gửi) lại nói toàn tuyến thuộc Bình Trị Đông. **Chưa xác minh được nguồn nào đúng**;
+     bot kể cả hai phường cho khách chọn, lời khách thắng.
+2. **Sửa (Mã Lò)**: `dia_danh.TraDiaDanh._duong` — nhiều tên cùng khoảng cách gần nhất mà khách gõ ĐÚNG DẤU một tên trong số đó thì nhận tên đó.
+   Gõ không dấu ("ma lo") vẫn không đoán.
+3. **Ca gốc — nút "Trả lời"**:
+   - Khách bấm "Trả lời" bản nháp 📋 rồi gõ "ừ đăng đi". zca-js đưa nội dung tin được trích ở `message.data.quote.msg` (`TQuote.msg`,
+     zca-js 2.2.0), nhưng bridge bỏ trường này, lõi không biết khách đang đáp tin nào.
+4. **Sửa (nút Trả lời)**:
+   - Bridge (`index.mjs`) gửi `quote_text` (≤ 1500 chữ, qua bước gom tin) → `ZaloBridgePayload.quote_text` → `Conversation.tin_tra_loi`.
+     Server gán mỗi request, nên không sót sang lượt sau.
+   - `prompts.khoi_tin_tra_loi` vào lượt lập thao tác, lượt trả lời phía bán và phía mua: đọc lời khách theo đúng tin được trích (bản nháp nào,
+     câu hỏi nào, căn gợi ý nào).
+   - Nội dung tin trích KHÔNG phải lời khách: không vào `loi_khach_luot`, không làm bằng chứng ghi ô (SRS-73).
+5. **Ba câu hỏi gốc**:
+   - (1) *Lớp lỗi*:
+     - Mã Lò: so bỏ dấu để chịu được khách gõ thiếu dấu, nhưng làm mất thông tin khi khách gõ đúng dấu.
+     - Nút Trả lời: dữ liệu Zalo có sẵn mà bridge không chuyển.
+   - (2) *Chỗ khác cùng lớp*:
+     - `TraDiaDanh.phuong` / dự án cũng dùng `_mot` trên kết quả bỏ dấu. Phường trùng tên đã cần quận (test Tân Định); chưa thêm luật đúng
+       dấu cho phường / dự án.
+     - Bridge còn bỏ `mentions` (chỉ có ở nhóm, không dùng).
+   - (3) *Bài đỏ khi tắt bản sửa*:
+     - `tests/test_dia_danh.py::test_duong_trung_ten_bo_dau_khach_go_dung_dau_thi_nhan` ("Mã Lò" / "mã lộ" / "ma lo").
+     - `tests/test_tin_tra_loi_270.py` (3 ca; khối vào cả lượt lập thao tác và lượt trả lời, số trong tin trích không thành ô tin).
+     - Đỏ khi gỡ bản sửa. pytest 1164 passed.
+6. **Chưa kiểm production**:
+   - Nút Trả lời cần Zalo thật (bắn thử gọi thẳng lõi, không qua bridge).
+   - Sau `cai-vps` (bridge khởi động lại vì `index.mjs` đổi), chủ dự án bấm "Trả lời" một tin để kiểm.
+
 ### SRS-5.1zzzzzzz269 · Câu khách hỏi về căn rổ mẫu giao thẳng admin (29/10/2026)
 Chủ dự án 29/10: "làm đi, giao thẳng admin luôn". Trước đó tôi kiểm theo câu hỏi "câu hỏi căn mẫu có chuyển admin không".
 

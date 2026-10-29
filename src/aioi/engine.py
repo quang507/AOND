@@ -68,6 +68,7 @@ from .prompts import (
     PROJECT_EXTRACTION_SYSTEM,
     UNIT_TYPE_EXTRACTION_SYSTEM,
     build_buyer_chat_system,
+    khoi_tin_tra_loi,
     build_chat_system,
     build_column_map_system,
     build_project_docs_block,
@@ -566,6 +567,7 @@ class Conversation:
     # khách nhắn tới số Zalo NÀO — "" = số ký gửi (số cũ), SO_TU_VAN = số tư vấn người mua. Chỉ quyết vai MẶC ĐỊNH của lượt mơ hồ và số gửi tin
     # chủ động cho khách; khách nhắn nhầm số vẫn được trả lời đúng việc (`user_intent` của lượt thắng).
     so_nhan: str = ""
+    tin_tra_loi: str = ""   # nội dung tin khách bấm "Trả lời" trên Zalo, chỉ của lượt đang chạy (SRS-5.1zzzzzzz270); không lưu
     # Persisted (SRS-5.1zzzzzzz216, 27/10/2026): NGƯỜI THẬT đang nói chuyện với khách tới mốc này (epoch giây) — admin gõ tay trên acc
     # clone (bridge `human_note`, trước đây lõi bỏ qua trường này và coi lời admin là lời khách) hoặc gửi từ /admin/tin-nhan. Chưa tới mốc
     # thì bot im (chỉ ghi lời khách vào CRM), như nút "giữ" nhưng tự hết sau NHUONG_SAN_GIAY.
@@ -2645,6 +2647,7 @@ class Engine:
                        or khoi_hoi_ve_mua(conv.hoi_ve_luot))   # SRS-5.1zzzzzzz212: phí / uy tín / định giá cũng có khối ở phía mua
             system += ((uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else "") + khoi_xung_ho(customer_pronoun, conv.assistant.name, _xung_ho_doan(conv))   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
             system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
+            system += khoi_tin_tra_loi(conv.tin_tra_loi)   # SRS-5.1zzzzzzz270
             system = self._ghep_cau_chuan(system, conv) + self._khoi_danh_gia(conv)
             # Khách mua báo đã đủ thông tin căn đang xem (SRS-5.1zzzzzzz104) → xin chấm sao một lần.
             xin_sao = bool(conv.y_luot.get("xong_viec_mua") and can) and self._nen_xin_sao(conv)
@@ -2850,6 +2853,7 @@ class Engine:
         system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
         system += self._project_memory_block(project, conv)  # remember the price list + phân lô; reason over it
         system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
+        system += khoi_tin_tra_loi(conv.tin_tra_loi)   # SRS-5.1zzzzzzz270
         # A seller in a project WITH an inventory → the reply runs through the agent LOOP (same
         # sales-mode prompt + tools). The model decides per turn whether to query the catalog,
         # add a resolved căn, learn a fact, or ask for a link — NO keyword gate (Mảnh B). A plain
@@ -4462,6 +4466,7 @@ class Engine:
         with _do(conv, "dia_danh"):
             system += goi_y_duong(self._dia_danh, conv.prop.fields)   # SRS-5.1zzzzzzz61: khách xác nhận tên đường kho gợi ý → AI ghi
         system += self._khoi_du_an_da_hoi(conv)   # SRS-5.1zzzzzzz181: khách xác nhận dự án kho gợi ý → AI ghi du_an
+        system += khoi_tin_tra_loi(conv.tin_tra_loi)   # SRS-5.1zzzzzzz270: khách bấm "Trả lời" một tin
         # Phía mua (SRS-5.1zzzzzzz70): khách mua thấy căn đang có (AI chỉ đúng mã); người rao thấy câu khách đang hỏi họ.
         kho = self._convstore
         conv.can_mua, conv.cau_hoi_cho = [], []
