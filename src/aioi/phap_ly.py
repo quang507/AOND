@@ -395,9 +395,10 @@ def khoi_luot(khoa: str | None, nhay_cam: bool = False, gia_can: float | None = 
                 "MỘT câu ngắn: khách có muốn em nối anh/chị phụ trách để hỏi kỹ không. Vẫn trả lời phần việc khác của lượt nếu có.\n")
     return (f"\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI PHÁP LÝ / THỦ TỤC: {d['tieu_de']} ===\n"
             f"Nội dung tham khảo bên em có (bản cập nhật {_thang(d['cap_nhat'])}):\n\"{d['tra_loi']}\"\n"
-            "Trả lời bằng ĐÚNG nội dung trên, diễn đạt ngắn gọn như môi giới nhắn Zalo (có thể bỏ ý phụ, KHÔNG thêm điều không có ở trên, "
-            "KHÔNG thêm con số khác, KHÔNG nói mức phí môi giới). Kết bằng MỘT câu: đây là thông tin tham khảo theo quy định chung, hồ sơ cụ "
-            "thể anh/chị kiểm lại với văn phòng công chứng hoặc văn phòng đăng ký đất đai; cần thì em nối người phụ trách. Không nêu tên văn "
-            "bản luật trừ khi khách hỏi nguồn"
+            # SRS-5.1zzzzzzz282 (chủ dự án 29/10 "đoạn pháp lý dài quá"): khách hỏi "sang tên lâu không" → bot chép đủ 5 ý của mục + câu kết dài.
+            "Trả lời THẲNG điều khách hỏi trong TỐI ĐA 2 câu ngắn như môi giới nhắn Zalo — chỉ lấy ý trúng câu hỏi trong nội dung trên, BỎ các "
+            "ý phụ khách không hỏi (mức phạt, nơi nộp hồ sơ, hồ sơ gồm gì…), khách hỏi thêm thì lượt sau nói. KHÔNG thêm điều không có ở trên, "
+            "KHÔNG thêm con số khác, KHÔNG nói mức phí môi giới. Kết bằng MỘT vế ngắn có chữ \"tham khảo\" (vd thông tin tham khảo, cần kỹ "
+            "em nối người phụ trách) — không viết thành đoạn dặn dò. Không nêu tên văn bản luật trừ khi khách hỏi nguồn"
             + (f" (nguồn: {d['nguon']})" if d.get("nguon") else "") + ".\n"
             + khoi_phi_theo_can(khoa, gia_can, ma_can, ten_can) + khoi_dieu_luat(dieu))
