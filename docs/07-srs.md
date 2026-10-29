@@ -9058,6 +9058,29 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz277 · Soát giọng chat 72 giờ: phía mua lặp khuôn khen "Em nêu rõ … nên anh dễ lọc" (29/10/2026)
+Chủ dự án hỏi 29/10: "còn văn thì hay chat thì ổn vui vẻ rồi hả". Soát 61 lời bot gửi khách thật (không tính ID thử) 26–29/10:
+
+- **Phía bán ổn**: 0 lời mở "Dạ"; có cảm thán đổi kiểu ("Wow, ngang 7m lận là rộng ghê", "Ngon lành, mặt tiền lớn thì khách nhìn là mê liền",
+  "Ồ, nhà Mã Lò mà giá 12,5 tỷ, nghe hấp dẫn đó anh!"); câu ghi nhận 1 lần. Chuỗi "Em xin lỗi … Bản tin cập nhật" lặp 27/10 (8 lần bản tin) là
+  trước SRS-219 / 228; câu hỏi phường trống 29/10 10:37 là trước SRS-270 lên VPS.
+- **Phía mua lặp khuôn**: 28/10 hai cuộc chat mở 5 lượt bằng khen CÁCH khách nói ("Em nêu rõ khu vực, ngân sách… nên anh dễ lọc hơn nè",
+  "Anh nêu rõ đường, hẻm xe hơi… nên em dễ lọc hơn"), xen giữa là lượt gợi căn.
+
+1. **Gốc**: prompt mua (`build_buyer_chat_system`, luật KHEN SRS-178) tự gợi ý khen "cách nêu rõ (khu vực, ngân sách, số phòng, hẻm xe hơi…)" —
+   model chép thành khuôn (cùng lớp SRS-196 / 248). Lưới lặp mở đầu (`_cung_mo_dau`, SRS-213) chỉ so MỘT lượt trước, khuôn cách một lượt thì lọt.
+2. **Sửa**:
+   - Luật khen phía mua chỉ còn "lợi ích cụ thể của điều khách muốn"; ghi rõ đừng khen cách khách nói; hai lượt gần nhau không mở cùng kiểu.
+   - `_soat_hinh_thuc`: lặp ba chữ mở đầu và lặp câu ≥ 6 chữ so với BA lời bot gần nhất (bỏ lời có 📋), không chỉ lượt ngay trước.
+   - Quyết định (BA, uỷ quyền): không đổi `GIONG_VUI` (phía bán đang ổn), không thêm luật giọng mới — sửa luật khen có sẵn của phía mua.
+3. **Ba câu hỏi gốc**:
+   - (1) *Lớp lỗi*: ví dụ cụ thể trong prompt bị model chép thành câu mẫu; lưới hình thức nhìn quá ngắn (một lượt).
+   - (2) *Chỗ khác cùng lớp*: soát ví dụ trong prompt mua / gợi căn (`mua.py` đoạn (1) mở lời) — không kèm câu mẫu; câu mẫu `bao_can_moi`
+     ("… có căn này hợp với nhu cầu của … nè, … xem qua nha") là tin chủ động nói nguyên văn, model có chép lại trong chat 28/10 17:10 —
+     lưới lặp câu ba lượt nay bắt được khi trùng nguyên câu.
+   - (3) *Kiểm*: `tests/test_lap_mo_dau_ba_luot_277.py` — lời mở "Em nêu rõ…" trùng lời bot hai lượt trước thì gọi lại model; prompt mua không
+     còn gợi ý khen "cách nêu rõ". Đỏ khi gỡ bản sửa. Hành vi model thật chưa bắn thử ở mục này.
+
 ### SRS-5.1zzzzzzz276 · Sổ lỗi 29/10: tin của người bán không tên không xuống CRM; việc gửi tới ID thử bị gửi lại mỗi phút (29/10/2026)
 Soát `bot_errors` 48 giờ (chủ dự án "ok làm tiếp đi"), hai lỗi còn lặp tới sáng 29/10:
 

@@ -542,8 +542,9 @@ QUY TẮC PHẢN HỒI:
   chưa có căn (khách chưa nêu ĐỦ khu vực và ngân sách) thì chỉ hỏi.
 - Tuyệt đối không bịa đặt căn ảo không có trong rổ hàng.
 - KHEN KHI CÓ ĐIỂM THẬT (22/10 "100% khen" → 25/10 chủ dự án nới, SRS-5.1zzzzzzz178): khách nêu thêm nhu cầu thì mở bằng MỘT mệnh đề khen
-  ngắn nếu có điều đáng khen — cách nêu rõ (khu vực, ngân sách, số phòng, hẻm xe hơi…) hoặc lợi ích cụ thể của khu khách chọn (đi lại, tiện
-  ích); không có thì vào thẳng việc. KHÔNG thêm chi tiết khách chưa nói ("gia đình", "con nhỏ"…), không báo đã ghi / đã lưu (hệ thống tự lưu). CẤM nhận xét tài chính ("vay 50% là hợp lý") và CẤM khen lựa chọn là
+  ngắn nếu có điều đáng khen — lợi ích cụ thể của điều khách muốn (khu đi lại tiện, gần trường cho con…); không có thì vào thẳng việc.
+  Đừng khen CÁCH khách nói ("anh nêu rõ … nên em dễ lọc") — lặp lượt nào cũng vậy thành văn mẫu (SRS-5.1zzzzzzz277). Hai lượt gần nhau
+  không mở cùng kiểu; nhiều lượt vào thẳng việc là bình thường. KHÔNG thêm chi tiết khách chưa nói ("gia đình", "con nhỏ"…), không báo đã ghi / đã lưu (hệ thống tự lưu). CẤM nhận xét tài chính ("vay 50% là hợp lý") và CẤM khen lựa chọn là
   đáng mua / sinh lời (em không có số liệu thị trường). Khách TỰ hỏi lãi suất / sinh lời thì chỉ nói số ở khối SỐ LIỆU THAM KHẢO bên dưới (nếu có), kèm "tham khảo".
 
 {RANH_GIOI_CACHE}{ask_line}"""
