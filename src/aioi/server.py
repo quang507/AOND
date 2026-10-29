@@ -249,8 +249,18 @@ def message(msg: IncomingMessage) -> Reply:
 
 # Lượt hỏng (SRS-5.1zzzzzzz82): câu giữ chỗ không đổ lỗi cho mạng, không bắt khách gõ lại; luồng nền thử lại sau THU_LAI_SAU giây.
 # Câu mặc định; câu đang dùng đọc qua cau_mau (chủ dự án sửa ở CRM, SRS-5.1zzzzzzz106).
-CAU_GIU_CHO = cau_mau.MAC_DINH["giu_cho"][0]
-CAU_THU_LAI_HONG = cau_mau.MAC_DINH["thu_lai_hong"][0]
+CAU_GIU_CHO = cau_mau.cau("giu_cho")
+CAU_THU_LAI_HONG = cau_mau.cau("thu_lai_hong")
+
+
+def _cau_theo_khach(uk: str, khoa: str) -> str:
+    """Câu mẫu server gửi thẳng khách (giữ chỗ / xin lỗi), gọi theo cách khách xưng như lượt model (SRS-5.1zzzzzzz267). Đọc hội thoại
+    hỏng thì "anh/chị" + "em" — câu xin lỗi vẫn phải đi được."""
+    try:
+        goi, toi = _engine._goi_toi(_engine.conversation(uk))
+    except Exception:  # noqa: BLE001
+        goi, toi = "anh/chị", "em"
+    return cau_mau.cau(khoa, goi, toi=toi)
 THU_LAI_SAU = 20
 
 
@@ -482,10 +492,10 @@ def _thu_lai_nen(user_key: str, lam, moc: int, sau_hong: int, ten: str | None) -
         except Exception as e:  # noqa: BLE001
             _so_loi.ghi_loi("chat-reply thu lai", f"thử lại vẫn hỏng: {type(e).__name__}: {e}"[:200])
             try:
-                _gui_bridge(user_key, cau_mau.cau("thu_lai_hong"))
+                _gui_bridge(user_key, _cau_theo_khach(user_key, "thu_lai_hong"))
             except Exception as e2:  # noqa: BLE001
                 _so_loi.ghi_loi("chat-reply thu lai", f"gửi lời xin lỗi qua bridge hỏng: {type(e2).__name__}"[:200])
-            sync_to_supabase_async(external_user_id=user_key, incoming_text="", bot_reply=cau_mau.cau("thu_lai_hong"), user_name=ten)
+            sync_to_supabase_async(external_user_id=user_key, incoming_text="", bot_reply=_cau_theo_khach(user_key, "thu_lai_hong"), user_name=ten)
             _bao_can_nguoi_nen(user_key, "(hệ thống: lượt trả lời hỏng hai lần)", ten, "seller")
 
     threading.Thread(target=chay, daemon=True).start()
@@ -704,7 +714,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     if loi_luot is not None:
         e = loi_luot
         _so_loi.ghi_loi("chat-reply", f"lượt trả lời hỏng, giữ chỗ rồi thử lại: {type(e).__name__}: {e}"[:200])
-        giu_cho = cau_mau.cau("giu_cho")
+        giu_cho = _cau_theo_khach(uk, "giu_cho")
         sync_to_supabase_async(external_user_id=uk, incoming_text=incoming_text, bot_reply=giu_cho,
                                zalo_msg_id=payload.msg_id, user_name=zalo_name, nhan_luc=nhan_luc)
         _thu_lai_nen(uk, lam, moc, sau_hong, zalo_name)

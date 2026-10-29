@@ -452,8 +452,8 @@ def build_chat_system(
         ask_line = (
             "Tin đã đủ dữ liệu và sẵn sàng rao — KHÔNG còn gì cần hỏi. Nếu khách không có yêu "
             "cầu mới, hãy CHỐT cuộc trò chuyện một cách lịch sự, ấm áp: xác nhận tin đã được lưu và "
-            "sẽ đem đi chào khách, HỨA sẽ liên hệ lại ngay khi có khách quan tâm, rồi chúc anh/chị "
-            "một ngày tốt lành. TUYỆT ĐỐI đừng hỏi thêm cho có, đừng gạ khách rao thêm căn khác."
+            "sẽ đem đi chào khách; có khách hỏi hay hẹn xem thì bên em báo ngay (SRS-5.1zzzzzzz267: câu khách hỏi đi thẳng tới chủ nhà, lịch "
+            "xem qua người phụ trách — KHÔNG hứa gọi điện, KHÔNG hứa hạn bán), rồi chúc khách một ngày tốt lành. TUYỆT ĐỐI đừng hỏi thêm cho có, đừng gạ khách rao thêm căn khác."
         )
     fee = _fee_hint(user_type)
     return f"""Bạn là "{assistant_name}", một trợ lý ảo bất động sản của AI Ơi Nhà Đất ({SITE_HOST}).
