@@ -9058,6 +9058,49 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz268 · Bắn thử các việc chưa kiểm production (`ban-thu-kiem`); "add" mở căn mới phải có cụm khách nói căn khác (29/10/2026)
+Chủ dự án 29/10: "kiểm đi" (sau bảng soát SRS-267). Script mới `bot/tests/ban-thu-kiem.sh`, ô `dung_lai = ban-thu-kiem` của
+`apply-migration.yml`; chỉ dùng ID thử, cuối script dọn qua `reset_nguoi_test`.
+
+1. **Bảy kịch bản**:
+   - A: lời chào số tư vấn (SRS-261);
+   - B: tìm nhà 4 tầng (SRS-262);
+   - C: khách hỏi đúng một căn không có;
+   - D: khách gõ mã căn không có (SRS-264);
+   - E: kho xưởng đủ vị trí · diện tích · pháp lý mới ra bản nháp (SRS-263);
+   - F: chủ nhà hai căn, ảnh vào đúng căn khách xin (SRS-258);
+   - G: sticker .png (SRS-255).
+   Mọi lượt đều kiểm không mở đầu "Dạ".
+2. **Kết quả lần 1** (run 40806225862, bản `99edcab`): 13 ĐẠT, 3 TRƯỢT.
+   - **E TRƯỢT — lỗi thật.** Kho xưởng Đức Hòa đã có vị trí, diện tích và giá; khách nói tiếp "Sổ đỏ riêng, đất SKC 50 năm".
+     - Lượt lập thao tác trả "add". Code mở căn mới rỗng ngay (`_apply_operation`, nhánh căn mới), nên bản nháp không ra.
+     - Bot hỏi lại loại hình và vị trí. Log có "Bỏ ô phap_ly_so_do", vì lượt đọc lại căn mới không mang cụm bằng chứng.
+   - **F TRƯỢT 2 ô — lỗi dữ liệu thử, không phải lỗi bot.**
+     - Ảnh gửi là ảnh rổ mẫu SEED (ảnh minh hoạ). AI chấm ảnh (OPEN-53, SRS-241) bỏ đúng, nên không ảnh nào được lưu.
+     - Việc ảnh vào đúng căn chưa đo được ở lần này.
+3. **Sửa E**:
+   - Lượt lập thao tác có ô mới `can_khac_trich` (`prompts.operations_schema`): nguyên văn cụm khách nói đây là căn KHÁC.
+   - Luật "add" trong `OPERATIONS_SYSTEM` nói rõ: khách nói thêm loại đất, pháp lý hay diện tích của căn đang khai là "update".
+   - `Engine._apply_operation`: "add" một căn khi căn đang khai không rỗng chỉ mở căn mới nếu `_co_cum_can_khac` thấy cụm trích nằm
+     trong lời khách lượt này. Không thì ghi các ô (qua cùng cổng bằng chứng) vào căn đang khai.
+   - "add" nhiều mã căn cùng mẫu và căn khởi đầu rỗng giữ nguyên như cũ.
+   - Mock (`llm/mock.py`) trả cụm khách nói kèm "add".
+4. **Sửa F (script)**: ảnh gửi là ảnh nhà thật có sẵn trên web của dự án (`public/img/house1.jpg`), không dùng ảnh rổ mẫu.
+5. **Ba câu hỏi gốc**
+   - (1) *Lớp lỗi*: quyết định cấu trúc của AI (mở căn mới) được nhận không cần căn cứ. Các ô tin đã qua cổng bằng chứng (SRS-73), riêng
+     thao tác rổ thì chưa.
+   - (2) *Chỗ khác cùng lớp*:
+     - `set_status` và `remove` / `keep_only` / `clear` theo mã căn — đường hủy đã chỉ ẩn, không xoá (`_unlist_listings`) và có lời xác nhận
+       theo trạng thái thật. Chưa thêm cổng cụm trích.
+     - "add" nhiều mã căn — mã căn phải là chữ khách gõ. Chưa kiểm.
+   - (3) *Bài đỏ khi tắt bản sửa*: `tests/test_add_can_khac_268.py`, 3 ca.
+     - Kho xưởng "Sổ đỏ riêng, đất SKC 50 năm" không cụm → vẫn một căn, pháp lý vào căn đang khai.
+     - Cách nói mới: AI bịa cụm "còn một căn nữa" khách không nói → vẫn một căn.
+     - Khách nói "còn lô đất SKC ở Bến Lức nữa" → hai căn.
+     - Hai ca đầu đỏ khi gỡ bản sửa. Test cũ `test_nhieu_can.py`, `test_bang_chung_o_tin.py` thêm cụm trích.
+   - pytest 1159 passed.
+6. **Chưa kiểm**: bắn lại `ban-thu-kiem` sau khi cài lên VPS (kết quả ghi tiếp dưới mục này).
+
 ### SRS-5.1zzzzzzz267 · Soát lời hứa của bot: mỗi câu hứa phải có code phía sau (29/10/2026)
 Chủ dự án 29/10: "kiểm tra các thứ tôi cần có code phía sau chưa hay ai hứa suông thôi". Soát mọi câu mẫu gửi thẳng khách (`cau_mau.MAC_DINH`) và
 mọi lời dặn hứa trong prompt (`prompts.py`, `mua.py`, `engine.py`: báo lại / nhắn lại / liên hệ / gọi / chuyển / người phụ trách).

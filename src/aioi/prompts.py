@@ -1754,6 +1754,8 @@ Các loại "op":
   đang khai (vd "còn một căn nữa", "qua căn khác", địa chỉ hoàn toàn khác). Khách BỔ SUNG / LÀM RÕ địa chỉ của căn đang
   khai (thêm quận, tỉnh / thành, phường, số nhà cho cùng con đường — vd vừa nói "đường Nguyễn Chí Thanh" rồi "nhà ở quận Đống
   Đa, Hà Nội") là "update" căn đó, KHÔNG "add", dù địa danh khác điều em đoán (SRS-5.1zzzzzzz108).
+  "add" 1 căn PHẢI kèm "can_khac_trich" = nguyên văn cụm khách nói căn khác; khách nói thêm loại đất / pháp lý / diện tích
+  của căn đang khai (vd kho xưởng rồi "sổ đỏ riêng, đất SKC 50 năm") là "update" (SRS-5.1zzzzzzz268).
 - "set_status": người rao đổi TRẠNG THÁI một căn — HỄ TIN NHẮN THỂ HIỆN là tạo op này (mọi trạng
   thái của hệ thống đều đến từ lời nhắn, không có nút bấm). "status":
     • da_ban = "bán rồi / đã bán / bán xong / chốt rồi"; da_cho_thue = "cho thuê rồi / đã cho thuê".
@@ -2047,6 +2049,12 @@ def operations_schema() -> dict[str, Any]:
                 "description": "Với MỖI ô trong fields: tên ô -> NGUYÊN VĂN cụm trong lời KHÁCH (không phải lời bot) cho thấy giá trị "
                 "đó (vd {\"gia\": \"giá 8,5 tỷ\", \"dien_tich\": \"4,5x11\"}). Ô khách chưa tự nói — chỉ bot hỏi / đề xuất, hoặc "
                 "em tự suy — thì KHÔNG đưa vào fields.",
+            },
+            "can_khac_trich": {
+                "type": "string",
+                "description": "CHỈ cho op add (1 căn): NGUYÊN VĂN cụm trong lời KHÁCH nói đây là căn KHÁC căn đang khai (vd \"còn một "
+                "căn nữa\", \"anh có thêm miếng đất Củ Chi\", một địa chỉ khác hẳn). Khách nói thêm loại đất, pháp lý, diện tích, mô tả "
+                "của căn đang khai KHÔNG phải căn khác — đó là update. Không có cụm như vậy thì KHÔNG dùng add.",
             },
             "status": {
                 "type": "string",

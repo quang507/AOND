@@ -20,15 +20,15 @@ def _conv_co_can_q5() -> Conversation:
     return conv
 
 
-def _add(eng: Engine, conv: Conversation, loi: str, fields: dict) -> None:
+def _add(eng: Engine, conv: Conversation, loi: str, fields: dict, trich: str | None = None) -> None:
     conv.history.append(Turn("user", loi, 1.0))
-    eng._apply_operation(conv, {"op": "add", "fields": fields}, set(), [])
+    eng._apply_operation(conv, {"op": "add", "fields": fields, "can_khac_trich": trich}, set(), [])
 
 
 def test_add_mo_can_moi_du_loi_khach_co_chu_ok():
     # Bản 16/10: "ok" khớp regex duyệt tin, "nhà … nữa" không khớp "căn nữa" → nhà Q3 ĐÈ lên căn Q5.
     eng, conv = _engine(), _conv_co_can_q5()
-    _add(eng, conv, "ok, còn nhà ở Lê Văn Sỹ quận 3 nữa", {"dia_chi": "Lê Văn Sỹ, Quận 3"})
+    _add(eng, conv, "ok, còn nhà ở Lê Văn Sỹ quận 3 nữa", {"dia_chi": "Lê Văn Sỹ, Quận 3"}, "còn nhà ở Lê Văn Sỹ quận 3 nữa")
     assert len(conv.listings) == 2
     assert conv.listings[0].prop.fields["dia_chi"] == "12 Trần Hưng Đạo, Quận 5"   # căn cũ nguyên vẹn
     assert conv.active is conv.listings[1]
@@ -37,7 +37,7 @@ def test_add_mo_can_moi_du_loi_khach_co_chu_ok():
 def test_add_cach_noi_moi_chua_tung_ban():
     # Cách nói mới, không có chữ "căn": "chuẩn rồi, à anh có thêm miếng đất Củ Chi" — regex cũ coi là duyệt tin.
     eng, conv = _engine(), _conv_co_can_q5()
-    _add(eng, conv, "chuẩn rồi, à anh có thêm miếng đất Củ Chi", {"loai_hinh": "dat", "dia_chi": "Củ Chi"})
+    _add(eng, conv, "chuẩn rồi, à anh có thêm miếng đất Củ Chi", {"loai_hinh": "dat", "dia_chi": "Củ Chi"}, "anh có thêm miếng đất Củ Chi")
     assert len(conv.listings) == 2
     assert conv.listings[0].prop.fields["dia_chi"] == "12 Trần Hưng Đạo, Quận 5"
 

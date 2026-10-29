@@ -193,7 +193,7 @@ def test_can_moi_tach_ra_cung_qua_cong_bang_chung():
     eng = Engine(AiTachCan({"operations": [{"op": "update", "fields": {"gia": "5 tỷ"}, "bang_chung": {"gia": "5 tỷ"}}],
                             "user_intent": "sell"}))
     eng.handle("chu-16", "bán nhà giá 5 tỷ")
-    eng._provider.ke_hoach = {"operations": [{"op": "add"}], "user_intent": "sell"}
+    eng._provider.ke_hoach = {"operations": [{"op": "add", "can_khac_trich": "còn căn nữa"}], "user_intent": "sell"}
     eng.handle("chu-16", "còn căn nữa 60m2")
     conv = eng.conversation("chu-16")
     moi = conv.listings[-1].prop.fields
