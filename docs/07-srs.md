@@ -9058,6 +9058,27 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz301 · Chỉnh prompt để Haiku khen cụ thể như Sonnet, mở đầu không lặp, không chào lại giữa chừng (30/10/2026)
+Chủ dự án 30/10 (sau SRS-300, Haiku rẻ ~9 lần nhưng khen nhạt): "sếp thích kiểu khen lúc test Sonnet" → chọn "cách 3": chỉnh prompt cho Haiku, thử bằng quota CLI.
+
+1. **Ca gốc** (kịch bản `hht`, viết lời Haiku 5.5, `scripts/thu-cli.py`): khen chung chung ("lợi thế lớn", "yên tâm lắm"); mở "Ồ" bốn lượt; lượt 1 tự giới thiệu
+   kiểu máy dù khách đã nói nhu cầu; lượt 3 tự "Em chào anh ạ" giữa chừng.
+2. **Sửa**:
+   - `prompts.GIONG_VUI`: khen CỤ THỂ — trúng đúng điểm khách vừa nói và nó được việc gì cho căn NÀY, chữ mạnh có hình ảnh; cấm khen chung chung.
+   - `engine.khoi_mo_dau_vua_dung`: dữ kiện sau ranh giới cache — "đang giữa cuộc chat, không chào lại" + các cụm mở đầu (chữ trước dấu phẩy đầu, ≤ 4 chữ) của
+     ba lời gần nhất (bỏ bản tin 📋), dặn lượt này mở khác. Soát gọn (SRS-298) chỉ ghi log lỗi lặp nên báo trước trong prompt, không gọi lại model.
+   - Khối chào lần đầu (`khoi_chao_lan_dau`) chỉ khi khách chưa đưa ô tin nào hoặc lượt đọc ý thấy khách chỉ chào (`tha_tim = chao`).
+3. **Đo lại** (cùng kịch bản 8 lượt, bóc tách Haiku 5.5, quota CLI — tiền quy đổi theo giá niêm yết): viết lời Sonnet 5.5 $0,5436 · Haiku 5.5 $0,0529. Lời Haiku
+   nay khen trúng chi tiết ("ngang 5,2m mà mặt tiền Hoàng Hoa Thám thì mở buôn bán rộng rãi"), mở đầu đổi tiếng, không chào lại; ghi đủ ô, ra bản nháp,
+   sửa đúng chỗ khách đính chính. **Còn lệch**: Haiku gọi "Anh/chị" ở lượt 1–2 dù khách tự xưng "anh" (Sonnet gọi "anh") — chưa sửa.
+4. **Chưa đổi model production**: `MODEL_CHAT` vẫn Sonnet 5.5; chuyển Haiku khi chủ dự án / sếp duyệt giọng (bản so từng lượt đã gửi chủ dự án). Tài khoản
+   Anthropic còn hết tiền (SRS-299) nên production đang chạy Gemini dự phòng — bản sửa prompt có hiệu lực với mọi model viết lời.
+5. **Ba câu hỏi gốc** — (1) *lớp lỗi*: luật giọng chỉ tả hình thức ("một tiếng cảm thán") không tả nội dung khen; luật chống lặp nằm ở lớp soát SAU khi viết,
+   model rẻ không thấy lời mình vừa dùng; khối chào gắn theo "chưa có lượt bot" thay vì theo việc khách đã nói gì. (2) *chỗ khác cùng lớp*: phía mua (`agent_mua.py`)
+   dùng chung `GIONG_VUI` nên hưởng luật khen, nhưng chưa nhận khối mở đầu — chưa đo; xưng hô "Anh/chị" lượt đầu của Haiku (mục 3). (3) *kiểm*:
+   `tests/test_giong_khen_301.py` (khối mở đầu liệt kê cụm đã dùng, bỏ bản tin; lượt đầu có nhu cầu không nhận khối chào, "hello em" vẫn nhận; `GIONG_VUI` có
+   luật khen cụ thể) — đỏ khi gỡ bản sửa ở `engine.py`.
+
 ### SRS-5.1zzzzzzz300 · Test lời bot bằng quota gói Claude Code (`claude -p`), không tốn tiền API (30/10/2026)
 Chủ dự án 30/10 (Claude API hết tiền; hỏi dùng quota CLI để test): "cài claude code dùng quota của bên mình đi".
 
