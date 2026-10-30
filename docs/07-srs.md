@@ -999,6 +999,8 @@ tiền API ("có 200% api credit rồi") → bắn thử production sau khi gộ
    trả đúng giá cả hai căn qua công cụ `ro_hang`.
 4. **Quyết định chủ dự án** 30/10: "dùng haiku hết luôn cũng dc" → `MODEL_CHAT` và `MODEL_CHAT_THU` trong `cai-vps.sh` = `claude-haiku-5-5`
    (viết lời khách thật + ID thử; bóc tách vốn Haiku). Căn cứ: điểm bộ chấm ở mục 3, tiền quy đổi Haiku ~$0,4 / Sonnet ~$4–5 một lần chạy.
+   Cùng ngày chủ dự án đổi lại: "nếu chạy vậy thì ko tốn nhiều đâu, chuyển sang sonnet 5.5 luôn" (khi bàn hướng agent công cụ — code viết sẵn
+   công cụ, model chỉ chọn) → `MODEL_CHAT` / `MODEL_CHAT_THU` = `claude-sonnet-5-5`; agent công cụ sắp làm cũng chạy Sonnet.
 5. **Kiểm**: `tests/test_hai_can_mot_tin_308.py` (đỏ khi gỡ bản sửa engine), `test_agent_ban_307.py::test_du_phong_…`,
    `test_du_phong.py::test_converse_du_phong_danh_dau_stop_reason_308`.
 
