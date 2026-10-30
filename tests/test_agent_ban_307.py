@@ -75,7 +75,7 @@ def test_ro_nhieu_can_khong_ro_can_nao_thi_khong_doi_trang_thai_va_hoi_lai():
     nghĩa ở form bóc tách (cả bản gọn người bán) + luật hỏi lại ở hướng dẫn agent (khối rổ hàng nay chỉ tới model qua công cụ)."""
     from aioi import agent_ban, prompts
     for form in (prompts.OPERATIONS_SYSTEM, prompts.OPERATIONS_SYSTEM_BAN):
-        assert "KHÔNG tạo set_status, để lượt trả lời hỏi lại căn nào" in form
+        assert "VẪN tạo set_status nhưng để trống target và trich_dan_can" in form   # SRS-310: code chặn, lượt trả lời hỏi lại
     assert "HỎI LẠI căn nào" in agent_ban.HUONG_DAN
 
 
