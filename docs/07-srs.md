@@ -993,7 +993,7 @@ Chủ dự án 30/10: "xong làm nốt b2 nhưng vẫn lưu các hàm để dễ
 3. **Kịch bản mới lộ lỗi cũ** (`hai_can_da_ban`: khai hai căn một tin rồi "căn đó bán rồi"): bóc tách đổi trạng thái căn đang nói 4/4 lần (đường
    cũ). *Lớp lỗi*: `set_status` bỏ trống target = "căn hiện tại", form không dặn ca rổ nhiều căn chưa rõ căn nào. Sửa theo nghĩa ở form đầy đủ
    (bản gọn cắt từ đó): không chỉ ra được căn nào → không tạo `set_status`, để lượt trả lời hỏi lại. Luật "hỏi lại căn nào" vốn nằm TRONG khối rổ
-   hàng — nay khối đó chỉ tới model qua công cụ, nên chuyển sang `agent_ban.HUONG_DAN`. *Còn*: Haiku bóc tách vẫn đổi nhầm 5/16 lần đo sau sửa;
+   hàng — nay khối đó chỉ tới model qua công cụ, nên chuyển sang `agent_ban.HUONG_DAN`. *Còn*: Haiku bóc tách vẫn đổi nhầm 6/16 lần đo sau sửa;
    Sonnet viết lời đôi lần vẫn tự nhận một căn.
 4. **Đo** (26 kịch bản, 2 lần mỗi bên, agent bật cho ID chấm): Sonnet 277/278 + 274/278, gọi lại 7 + 6, $3,65 + $3,48; Haiku 277/278 + 276/278,
    gọi lại 9 + 10. 25 kịch bản cũ: Sonnet 268 + 265 (trước 268 + 266), Haiku 267 + 267 (trước 265 + 267) — phép trượt thêm của Sonnet ở lượt
