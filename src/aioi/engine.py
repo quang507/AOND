@@ -383,6 +383,13 @@ def _phieu_luot(user_key: str | None) -> bool:
     return v == "bat" or (v == "thu" and _la_id_thu(user_key))
 
 
+def _model_luot_de() -> str | None:
+    """Model viết lời cho LƯỢT DỄ (SRS-5.1zzzzzzz311, kế hoạch bước 4): env `AIOI_MODEL_LUOT_DE` (một nguồn `cai-vps.sh` dòng MODEL_LUOT_DE);
+    trống / "tat" → lượt dễ dùng model chat như mọi lượt."""
+    v = os.environ.get("AIOI_MODEL_LUOT_DE", "").strip()
+    return None if v.lower() in ("", "tat") else v
+
+
 def _soat_gon(user_key: str | None) -> bool:
     """Soát lời chế độ gọn (SRS-5.1zzzzzzz298, B2 bước 1): luật giọng / lặp chỉ ghi log, tối đa MỘT lần gọi lại model, "Dạ" do code bỏ. Công tắc
     `AIOI_SOAT_GON` (một nguồn `bot/bridge-zca/cai-vps.sh` dòng SOAT_GON): "thu" = chỉ ID thử, "bat" = mọi khách, khác = như cũ."""
@@ -2801,10 +2808,12 @@ class Engine:
         is_listing_post = conv.prop.summary_ready() or conv.listing_proposed or (xin_dang and not toi_thieu)
         trinh_nhap = False
         xin_sao = False
+        luot_de = False   # SRS-5.1zzzzzzz311: lượt thu thập bằng phiếu lượt — ứng viên model rẻ (xét thêm điều kiện ở chỗ gọi model)
         if not is_listing_post:
             hoi_lai = bool(next_field and conv.lo.get(next_field, 0) >= 1)   # SRS-5.1zzzzzzz200: đừng nhắn trùng câu cũ
             o_bo_qua = o_truoc if o_truoc in thieu else None
             if _phieu_luot(conv.user_key):   # SRS-5.1zzzzzzz309 (kế hoạch bước 2): phiếu lượt ngắn thay văn xuôi build_chat_system
+                luot_de = True
                 system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua)
             else:
                 system = build_chat_system(
@@ -2978,19 +2987,28 @@ class Engine:
         # listing (no project inventory) uses the single chat call, unchanged.
         # Length is model-decided from the prompt (short while chatting, full ad when complete) —
         # NOT clamped by a token cap (Vietnamese is token-dense; a tight cap hard-cuts mid-word).
-        with _do(conv, "tra_loi"):
-            if dung_agent_ban:
-                reply, da_tra = agent_ban.chay(self, conv, project, system, REPLY_MAX_TOKENS)
-                system += da_tra   # lần soát / gọi lại của lượt viết với đúng dữ liệu model vừa tra
-            elif project is not None and project.units:
-                reply = self._agent_reply(conv, project, system, now)
-            else:
-                reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+        # SRS-5.1zzzzzzz311 (kế hoạch bước 4): lượt DỄ — thu thập bằng phiếu lượt, không tra dữ liệu, không kho dự án, lượt không có việc gì
+        # khác (y_luot chỉ còn khoá nội bộ `_`), không khối hỏi về → model rẻ (cả lần soát gọi lại của lượt). Lượt còn lại giữ model chat.
+        m_de = _model_luot_de() if (luot_de and not dung_agent_ban and not (project is not None and project.units)
+                                    and conv.hoi_ve_luot is None and all(k.startswith("_") for k in conv.y_luot)) else None
+        dau_de = MODEL_CHAT_LUOT.set(m_de) if m_de else None
+        try:
+            with _do(conv, "tra_loi"):
+                if dung_agent_ban:
+                    reply, da_tra = agent_ban.chay(self, conv, project, system, REPLY_MAX_TOKENS)
+                    system += da_tra   # lần soát / gọi lại của lượt viết với đúng dữ liệu model vừa tra
+                elif project is not None and project.units:
+                    reply = self._agent_reply(conv, project, system, now)
+                else:
+                    reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
 
-        if not reply:   # SRS-5.1zzzzzzz82: không gửi "kết nối mạng gián đoạn, nhắn lại giúp em" — server giữ chỗ rồi tự thử lại
-            raise LoiTraLoi("lời gửi khách rỗng")
+            if not reply:   # SRS-5.1zzzzzzz82: không gửi "kết nối mạng gián đoạn, nhắn lại giúp em" — server giữ chỗ rồi tự thử lại
+                raise LoiTraLoi("lời gửi khách rỗng")
 
-        reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply), hem_phai_nhac if len(hem_phai_nhac) <= 4 else [])
+            reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply), hem_phai_nhac if len(hem_phai_nhac) <= 4 else [])
+        finally:
+            if dau_de is not None:
+                MODEL_CHAT_LUOT.reset(dau_de)
         la_nhap = _la_ban_nhap(reply)
         if trinh_nhap and (not la_nhap or "zalo" not in reply.lower()):
             # SRS-5.1zzzzzzz204: lượt trình bản nháp mà model đáp như chat thường (ban-thu-ban 26/10 Âu Cơ: đủ loại · vị trí · giá · 4 facet mà
