@@ -1558,6 +1558,23 @@ def _cung_mo_dau(reply: str, truoc: str) -> bool:
     return len(a) == 3 and a == _ba_chu_dau(truoc)
 
 
+def khoi_mo_dau_vua_dung(conv: "Conversation") -> str:
+    """Dữ kiện cho lượt viết lời (SRS-5.1zzzzzzz301): các tiếng / cụm mở đầu em đã dùng ở ba lời gần nhất (chữ trước dấu phẩy đầu, tối đa 4 chữ)
+    và nhắc đây không phải lượt đầu. Thử bằng quota CLI 30/10: Haiku mở bằng "Ồ" bốn lượt, lượt 3 tự "Em chào anh ạ" giữa chừng — chế độ soát
+    gọn (SRS-298) chỉ ghi log lỗi lặp nên đưa dữ kiện vào prompt trước, không gọi lại model."""
+    loi = [t.content for t in conv.history if t.role == "assistant" and t.content and "📋" not in t.content.split("\n", 1)[0]][-3:]
+    if not loi:
+        return ""
+    mo = []
+    for l in loi:
+        dau = re.split(r"[,.!?\n]", l.strip(), maxsplit=1)[0].strip()
+        if dau and len(dau.split()) <= 4 and dau not in mo:
+            mo.append(dau)
+    return ("\n\nĐANG GIỮA CUỘC CHAT (không chào lại, không giới thiệu tên)."
+            + (f" Mở đầu em vừa dùng gần đây: {' · '.join(chr(34) + m + chr(34) for m in mo)} — lượt này mở KHÁC (tiếng khác hoặc vào thẳng ý)." if mo else "")
+            + "\n")
+
+
 def _cau_lap_luot_truoc(reply: str, truoc: str) -> str | None:
     """Một CÂU (≥ 6 chữ) của lời vừa viết trùng gần nguyên văn một câu lời bot lượt trước ("Em cứ thong thả bàn với bạn nha" ×2, "Hiện bên
     em chưa có căn nào ở Gò Vấp hay Phú Nhuận…" ×3 — khách ảo 26/10). So chữ bỏ dấu, bỏ dấu câu; không đụng bản tin 📋 và link."""
@@ -2861,9 +2878,13 @@ class Engine:
             conv.prop.fields["_mt_da_hoi"] = "1"
             system += khoi_hoi_mat_tien(conv.prop.fields.get("mat_tien", ""))
 
-        if not is_listing_post and not any(t.role == "assistant" for t in conv.history):
+        # SRS-5.1zzzzzzz301: khối chào chỉ khi khách CHƯA đưa thông tin nào (ô tin trống) hoặc lượt đọc ý thấy khách chỉ chào — thử bằng quota CLI
+        # 30/10, Haiku đọc nhầm "nếu khách chỉ chào" và tự giới thiệu kiểu máy dù khách đã nói nhu cầu ngay tin đầu.
+        if (not is_listing_post and not any(t.role == "assistant" for t in conv.history)
+                and (not conv.prop.fields_khach() or conv.y_luot.get("tha_tim") == "chao")):
             system += khoi_chao_lan_dau(conv.assistant.name, cau_mau.cau("chao_lan_dau", goi_toi_khach(customer_pronoun)[0], ten=conv.assistant.name))
         system = self._ghep_cau_chuan(system + khoi_xung_ho(customer_pronoun, conv.assistant.name, _xung_ho_doan(conv)), conv) + self._khoi_danh_gia(conv)
+        system += khoi_mo_dau_vua_dung(conv)   # SRS-5.1zzzzzzz301
         if xin_sao:
             system += KHOI_SAP_XIN_SAO
 
