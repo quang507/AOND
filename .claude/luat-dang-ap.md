@@ -130,4 +130,4 @@ curl -s -X POST "https://rqxmmqmctpklqcmbfxuj.supabase.co/rest/v1/rpc/xuat_schem
 - `bun run build` có thể im lặng bỏ sót lớp Tailwind MỚI khi `.next/cache` cũ (Vercel cũng khôi phục cache): khoảng cách sai so với mã nguồn → soi CSS đã build trước, `rm -rf .next/cache && bun run build`. Đổi bố cục thì CHỤP màn hình bản build thật.
 - Trang tin phải nằm trong cache: route động cần `generateStaticParams()` trả `[]` (KHÔNG hỏi DB); bảng route sau build phải là `●` / `○`, thấy `ƒ` là hỏng; route đọc `searchParams` bọc truy vấn trong `unstable_cache` (`bot/tests/giam-egress.mjs`).
 - Bản đồ: MapLibre (`maplibre-gl` ghim `6.13.0`) + OpenFreeMap; nạp qua `napMapLibre()` (đừng `import("maplibre-gl")` trần — worker mất, bản đồ trống mà build vẫn xanh); gom cụm qua `lib/cum-ghim.ts` (`cumGhim`); rpc `ban_do_khung` / `tim_moc`. Không có bài kiểm tự động — chụp bản build thật (SRS-206 / 217).
-
+- Provider `claude_cli` (`claude -p`, quota gói Claude Code) CHỈ để test trên máy mình (`scripts/thu-cli.py`); không đặt cho lõi VPS phục vụ khách (SRS-300).
