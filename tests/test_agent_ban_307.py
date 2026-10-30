@@ -68,3 +68,12 @@ def test_khong_co_du_lieu_de_tra_thi_khong_mo_vong_cong_cu(monkeypatch):
     ai = _Ai([])
     Engine(ai).handle("s307b", "bán nhà hẻm Cao Lỗ quận 8 giá 8 tỷ")   # một căn, không dự án, không bảng giá → không có gì để tra
     assert not ai.he and ai.he_reply
+
+
+def test_ro_nhieu_can_khong_ro_can_nao_thi_khong_doi_trang_thai_va_hoi_lai():
+    """Kịch bản `hai_can_da_ban` (bộ chấm): rổ hai căn, "căn đó bán rồi" → bóc tách đổi nhầm trạng thái căn đang nói 4/4 lần. Luật đọc theo
+    nghĩa ở form bóc tách (cả bản gọn người bán) + luật hỏi lại ở hướng dẫn agent (khối rổ hàng nay chỉ tới model qua công cụ)."""
+    from aioi import agent_ban, prompts
+    for form in (prompts.OPERATIONS_SYSTEM, prompts.OPERATIONS_SYSTEM_BAN):
+        assert "KHÔNG tạo set_status, để lượt trả lời hỏi lại căn nào" in form
+    assert "HỎI LẠI căn nào" in agent_ban.HUONG_DAN

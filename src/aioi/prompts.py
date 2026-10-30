@@ -1816,7 +1816,9 @@ Các loại "op":
     • khong_rao = NGƯNG RAO (ẩn tin, vẫn giữ dữ liệu) — "bỏ/ẩn/ngưng rao căn X".
     • thoi_dang_ky = RÚT TIN khỏi hệ thống (vẫn giữ dữ liệu) — "thôi đăng ký căn X".
     • rao = ĐĂNG / RAO LẠI một căn đang ẩn — "rao lại căn X", "đăng lại căn X", "bán lại".
-  Đặt "target"/"targets" = căn nào (mã/địa chỉ); bỏ trống nếu đang nói về căn hiện tại.
+  Đặt "target"/"targets" = căn nào (mã/địa chỉ); bỏ trống nếu đang nói về căn hiện tại. Rổ có NHIỀU căn mà lời khách không chỉ ra
+  được căn nào (không mã, không địa chỉ / đường, các lượt gần cũng chưa nói riêng một căn — vd vừa khai hai căn trong một tin rồi "căn đó bán
+  rồi") → KHÔNG tạo set_status, để lượt trả lời hỏi lại căn nào (đổi nhầm trạng thái là ẩn nhầm tin đang rao, SRS-5.1zzzzzzz307).
 - "remove": người rao muốn BỎ/NGƯNG RAO vài căn cụ thể ("bỏ căn 50 và 3") → "targets" = ["50","3"].
 - "keep_only": người rao nói CHỈ GIỮ RAO một số căn ("tôi chỉ có căn 23, 24") → "targets" =
   ["23","24"] (các căn còn lại chuyển sang không rao).

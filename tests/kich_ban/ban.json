@@ -489,7 +489,10 @@
    "kiem": {
     "so_can": 2,
     "luot": {
-     "2": "Bùi Minh Trực|Phạm Hùng|căn nào"
+     "2": "căn nào"
+    },
+    "luot_khong": {
+     "2": "(chuyển|cập nhật|đổi|đánh dấu).{0,40}đã bán"
     }
    }
   }
