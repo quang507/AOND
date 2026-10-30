@@ -5531,6 +5531,22 @@ class Engine:
         data = self._provider.extract(EXTRACTION_SYSTEM, conv.messages(), extraction_schema())
         return {k: v for k, v in data.items() if isinstance(v, str)}
 
+    def _chua_ro_can(self, conv: Conversation, op: dict) -> list[str] | None:
+        """Cổng đổi trạng thái (SRS-5.1zzzzzzz310, cổng nguyên văn cho việc ẩn / đổi tin): rổ có từ 2 căn thì `trich_dan_can` phải nằm nguyên
+        trong lời khách lượt này và chỉ ra đúng một căn (cùng căn với `target` nếu có). Không đạt → nhãn các căn để hỏi lại; đạt / rổ một căn → None."""
+        that = [li for li in conv.listings if not self._is_stub_listing(li)]
+        if len(that) < 2:
+            return None
+        trich = str(op.get("trich_dan_can") or "").strip()
+        if trich and _trich_dan_khop(trich, conv.loi_khach_luot):
+            tg = self._op_targets(op)
+            li = self._match_listing(conv, trich)
+            # Mỗi căn đích phải do chính cụm khách chỉ ra ("căn 42 với 41" → 42 và 41); không có đích thì cụm tự chỉ ra một căn.
+            if (tg and all(self._match_listing(conv, t) is not None and (_trich_dan_khop(t, trich) or self._match_listing(conv, t) is li)
+                           for t in tg)) or (not tg and li is not None):
+                return None
+        return [x.label() for x in that]
+
     @staticmethod
     def _op_targets(op: dict) -> list[str]:
         raw = list(op.get("targets") or [])
@@ -5617,6 +5633,15 @@ class Engine:
             receipts.append(("add", targets))
             return
         if kind == "set_status":
+            chua_ro = self._chua_ro_can(conv, op)
+            if chua_ro:
+                # SRS-5.1zzzzzzz310: rổ từ 2 căn mà cụm khách không chỉ ra đúng một căn → KHÔNG đổi (bộ chấm hai_can_da_ban: "căn đó bán rồi" →
+                # form đánh dấu căn đang nói là đã bán); lời trả lời hỏi lại căn nào.
+                log.warning("Không đổi trạng thái: lời khách chưa chỉ ra căn nào trong rổ %d căn", len(chua_ro))
+                conv.y_luot["chua_ro_can"] = chua_ro
+                return
+            if not targets and op.get("trich_dan_can") and len(conv.listings) > 1:
+                targets = [str(op["trich_dan_can"])]   # cụm khách chỉ căn (đã qua cổng) là đích — không rơi về căn đang nói
             status = STATUS_MAP.get(op.get("status") or "")
             listings = self._resolve_targets(conv, targets) if targets else []
             if listings:  # the referenced căn(s) exist → mark each and switch context to them

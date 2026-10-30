@@ -93,3 +93,25 @@ def test_khach_that_khi_thu_doc_bang_form(monkeypatch):
     vong = [[("doi_trang_thai", {"target": "Phạm Hùng", "status": "da_ban", "trich_dan_can": "căn đó"})]]
     eng, conv, ai = _hai_luot(monkeypatch, "chu-310e", "à căn đó anh bán được rồi em nhé", vong)
     assert ai.form == 1 and ai.vong   # agent không chạy
+
+
+class _AiForm(_AiAgent):
+    """Đường form (agent tắt): lượt 2 model trả set_status đoán căn, không kèm cụm khách chỉ căn."""
+
+    def extract(self, system, messages, json_schema):
+        if "operations" in json_schema.get("properties", {}) and self.form >= 1:
+            self.form += 1
+            return {"operations": [{"op": "set_status", "status": "da_ban", "target": "Phạm Hùng"}], "user_intent": "sell"}
+        return super().extract(system, messages, json_schema)
+
+
+def test_duong_form_ro_hai_can_doan_can_khong_doi(monkeypatch):
+    monkeypatch.setenv("AIOI_FORM_BAN_GON", "bat")
+    monkeypatch.setenv("AIOI_AGENT_BOC", "tat")
+    monkeypatch.setenv("AIOI_AGENT_BAN", "tat")
+    ai = _AiForm([])
+    eng = Engine(ai)
+    eng.handle("chu-310f", TIN)
+    eng.handle("chu-310f", "à căn đó anh bán được rồi em nhé")
+    conv = eng.conversation("chu-310f")
+    assert all(li.status != "đã bán" for li in conv.listings) and "CHƯA đổi căn nào" in ai.he_tra_loi[-1]

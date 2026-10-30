@@ -48,8 +48,6 @@ def cong_cu(schema: dict[str, Any]) -> list[dict[str, Any]]:
     p = schema["properties"]
     op = p["operations"]["items"]["properties"]
     lay = lambda *ks: {k: copy.deepcopy(op[k]) for k in ks if k in op}
-    trich_can = {"type": "string", "description": "NGUYÊN VĂN cụm khách dùng để chỉ căn bị đổi (địa chỉ, tên đường, mã căn) — bắt buộc khi rổ "
-                                                  "có từ 2 căn."}
     bo = {"op": {"type": "string", "enum": ["remove", "keep_only", "clear"], "description": op["op"]["description"]}, **lay("targets")}
     y = {k: copy.deepcopy(v) for k, v in p.items() if k != "operations"}
     return [
@@ -59,17 +57,13 @@ def cong_cu(schema: dict[str, Any]) -> list[dict[str, Any]]:
          "input_schema": {"type": "object", "properties": lay("targets", "fields", "bang_chung", "can_khac_trich"),
                           "required": ["can_khac_trich"]}},
         {"name": "doi_trang_thai", "description": "Đổi trạng thái giao dịch của một căn (đã bán, đã cọc, ngưng rao, rao lại…).",
-         "input_schema": {"type": "object", "properties": {**lay("target", "status"), "trich_dan_can": trich_can},
+         "input_schema": {"type": "object", "properties": lay("target", "status", "trich_dan_can"),
                           "required": ["status"]}},
         {"name": "bo_can", "description": "Ngưng rao (ẩn, giữ dữ liệu) vài căn / chỉ giữ vài căn / cả rổ — hệ thống hỏi khách xác nhận trước.",
          "input_schema": {"type": "object", "properties": bo, "required": ["op"]}},
         {"name": "ghi_y_khach", "description": "Ý khách lượt này ngoài ô tin: vai, ý định, duyệt bản nháp, xin đăng, hỏi về, cần người thật…",
          "input_schema": {"type": "object", "properties": y}},
     ]
-
-
-def _goi_can(li: Any) -> str:
-    return li.label() if hasattr(li, "label") else str(li)
 
 
 def _chay_cong_cu(engine: Any, conv: Any, ten: str, vao: dict[str, Any], plan: dict[str, Any]) -> str:
@@ -96,18 +90,12 @@ def _chay_cong_cu(engine: Any, conv: Any, ten: str, vao: dict[str, Any], plan: d
             f". {SUA} vì cụm trích không nằm nguyên trong lời khách: {', '.join(sai)} — sửa cụm trích đúng nguyên văn rồi gọi lại, hoặc thôi."
             if sai else ".")
     if ten == "doi_trang_thai":
-        that = [li for li in conv.listings if not engine._is_stub_listing(li)]
-        target = str(vao.get("target") or "").strip()
-        if len(that) >= 2:
-            trich = str(vao.get("trich_dan_can") or "").strip()
-            li = engine._match_listing(conv, trich) if trich and _trich_dan_khop(trich, loi_khach) else None
-            li_t = engine._match_listing(conv, target) if target else li
-            if li is None or (li_t is not None and li_t is not li):
-                plan["_chua_ro_can"] = [_goi_can(x) for x in that]
-                return ("KHÔNG đổi: lời khách chưa chỉ ra căn nào trong rổ (" + "; ".join(plan["_chua_ro_can"])
-                        + "). Đừng gọi lại — lời trả lời sẽ hỏi khách căn nào.")
-            target = target or trich
-        plan["operations"].append({"op": "set_status", "status": vao.get("status"), **({"target": target} if target else {})})
+        op = {"op": "set_status", **{k: vao[k] for k in ("target", "status", "trich_dan_can") if vao.get(k)}}
+        chua_ro = engine._chua_ro_can(conv, op)   # cùng cổng với đường áp dụng (`Engine._apply_operation`)
+        if chua_ro:
+            plan["_chua_ro_can"] = chua_ro
+            return "KHÔNG đổi: lời khách chưa chỉ ra căn nào trong rổ (" + "; ".join(chua_ro) + "). Đừng gọi lại — lời trả lời sẽ hỏi khách căn nào."
+        plan["operations"].append(op)
         return f"Đổi trạng thái: {vao.get('status')}."
     if ten == "bo_can":
         plan["operations"].append({"op": vao.get("op"), **({"targets": vao["targets"]} if vao.get("targets") else {})})

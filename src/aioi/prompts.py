@@ -1855,7 +1855,7 @@ Các loại "op":
     • khong_rao = NGƯNG RAO (ẩn tin, vẫn giữ dữ liệu) — "bỏ/ẩn/ngưng rao căn X".
     • thoi_dang_ky = RÚT TIN khỏi hệ thống (vẫn giữ dữ liệu) — "thôi đăng ký căn X".
     • rao = ĐĂNG / RAO LẠI một căn đang ẩn — "rao lại căn X", "đăng lại căn X", "bán lại".
-  Đặt "target"/"targets" = căn nào (mã/địa chỉ); bỏ trống nếu đang nói về căn hiện tại. Rổ có NHIỀU căn mà lời khách không chỉ ra
+  Đặt "target"/"targets" = căn nào (mã/địa chỉ); bỏ trống nếu đang nói về căn hiện tại; rổ nhiều căn thì kèm "trich_dan_can". Rổ có NHIỀU căn mà lời khách không chỉ ra
   được căn nào (không mã, không địa chỉ / đường, các lượt gần cũng chưa nói riêng một căn — vd vừa khai hai căn trong một tin rồi "căn đó bán
   rồi") → KHÔNG tạo set_status, để lượt trả lời hỏi lại căn nào (đổi nhầm trạng thái là ẩn nhầm tin đang rao, SRS-5.1zzzzzzz307).
 - "remove": người rao muốn BỎ/NGƯNG RAO vài căn cụ thể ("bỏ căn 50 và 3") → "targets" = ["50","3"].
@@ -2217,6 +2217,11 @@ def operations_schema() -> dict[str, Any]:
                 "description": "Trạng thái — chỉ dùng cho op set_status. rao=đăng/rao lại; "
                 "khong_rao=ngưng rao (ẩn, vẫn giữ); thoi_dang_ky=rút tin; da_coc=khách đã đặt cọc "
                 "(chưa sang tên); da_ban/da_cho_thue=đã xong.",
+            },
+            "trich_dan_can": {
+                "type": "string",
+                "description": "CHỈ cho set_status khi rổ có từ 2 căn: NGUYÊN VĂN cụm trong lời KHÁCH chỉ ra căn bị đổi (địa chỉ, tên "
+                "đường, mã căn). Khách chỉ nói \"căn đó\" / \"căn kia\" thì KHÔNG tạo set_status.",
             },
         },
         "required": ["op"],
