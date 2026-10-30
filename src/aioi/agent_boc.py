@@ -31,7 +31,7 @@ HUONG_DAN = (
     "keep_only / clear; ghi_y_khach = mọi khoá còn lại (seller_role, user_intent, duyet_ban_nhap, xin_dang, hoi_ve, can_nguoi_that, "
     "bot_vua_hoi…) — gọi MỘT lần, chỉ điền khoá có giá trị.\n"
     "- doi_trang_thai khi rổ có từ 2 căn: điền trich_dan_can = NGUYÊN VĂN cụm khách dùng để chỉ căn (địa chỉ, tên đường, mã căn). Khách "
-    "chỉ nói 'căn đó', 'căn kia' mà không rõ căn nào thì KHÔNG gọi — để lời trả lời hỏi lại.\n"
+    "chỉ nói 'căn đó', 'căn kia' mà không rõ căn nào thì vẫn gọi, để trống trich_dan_can — hệ thống không đổi và lời trả lời hỏi lại.\n"
     "- Tin khách không có gì để ghi thì chỉ gọi ghi_y_khach (ít nhất user_intent).\n"
     "Hệ thống trả kết quả từng lần gọi; ô bị bỏ vì cụm trích sai thì sửa cụm trích đúng nguyên văn lời khách rồi gọi lại, hoặc thôi. "
     "Xong thì trả một chữ: xong.\n"
