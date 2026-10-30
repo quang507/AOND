@@ -140,3 +140,58 @@ Không đạt thì không bật.
 4. **Q4 — Duyệt kế hoạch bước 2** (2A → 2E và tiêu chí gộp ở §5).
 
 Tôi dừng ở đây theo phạm vi lượt này; chưa bắt đầu bước 2.
+
+---
+
+## 7. Kết quả bước 2A + 2B (SRS-314, 30/10 tối)
+
+Chủ dự án bảo làm luôn ("chạy lun đi"). Không đổi lời bot gửi khách: engine chỉ ghi lại việc đã chọn để đo. Kết quả đo bằng bộ chấm, 2 lần chạy, 48 kịch bản. Tiêu chí giám khảo đã đổi, nên điểm giọng không so thẳng được với §3.
+
+| Chỉ số | Lần 1 | Lần 2 (nền mới) |
+|---|---|---|
+| Tổng phép (623) | 569 | 571 |
+| Phép tất định (479) | 472 | 472 |
+| Giọng trung bình | 2,96 | 2,92 |
+| Lộ luật (giám khảo) | 3 / 48 | 2 / 48 |
+| Hỏi lại điều khách đã nói (giám khảo) | 3 / 48 | 3 / 48 |
+| Lượt engine ghép > 1 khối hỏi | 15 / 169 | 16 / 169 |
+| Gọi lại | 11 | 12 |
+
+**Lỗi thật mà kịch bản mới bắt được** (lỗi của bot, không phải của phép chấm):
+
+- `doc_quyen` (2/2 lần): bot trả lời "Chuyện ký độc quyền thì em chưa có thông tin chắc nên không dám nói bừa".
+  - Nguyên nhân: phiếu lượt không mang `BUSINESS_CONTEXT` (M9). Chính sách "không độc quyền" chỉ có ở prompt cũ.
+- `xung_chi_phi` (lần 2): khách xưng "chị" mà câu báo phí vẫn gọi "Anh/chị".
+  - Nguyên nhân: `prompts.khoi_bao_phi` gọi `cau_mau.cau("bao_phi", phi=…)` mà không truyền xưng hô.
+- `hai_can_da_ban` (lần 2): bot tự đoán căn đã bán ("Căn anh bán được là nhà hẻm Bùi…"), không hỏi lại là căn nào. Trạng thái tin trong DB không đổi, nên cổng SRS-310 vẫn giữ.
+- `len_top`: bot nói "căn này đang 78/100".
+  - Đây là điểm tin của khối `khoi_diem_tin` (SRS-216, quyết định giữ hạng / điểm).
+  - Giám khảo tính câu này là lộ luật, nhưng nó đúng theo quyết định đã chốt. Câu hỏi Q2 vẫn còn nguyên.
+
+**Chỗ engine ghép nhiều khối hỏi cùng lượt** (16 lượt; `viec_luot` chọn một việc, các khối còn lại bị bỏ):
+
+| Việc `viec_luot` chọn | Khối thừa | Số lượt | Ý nghĩa |
+|---|---|---|---|
+| `tra_loi` (phí / uy tín / pháp lý) | `hoi_o` | 6 | Khối ưu tiên dặn "không hỏi ô kế", nhưng phiếu lượt vẫn ghi "VIỆC LƯỢT NÀY: hỏi đúng MỘT ý: X". Hai lệnh ngược nhau trong cùng một prompt |
+| `xac_nhan_mat_tien` | `hoi_o` | 5 | Khối hỏi mặt tiền và câu hỏi ô kế cùng bật |
+| `trinh_nhap` | `mat_tien` | 2 | Lượt trình bản nháp vẫn kèm câu hỏi xác nhận mặt tiền |
+| `can_nguoi` / `hoi_can_nao` | `hoi_o` | 1 + 1 | Như hàng đầu |
+| `trinh_nhap` | `hoi_o` | 1 | Đây là lỗi của `viec_luot` (khách bảo đăng khi còn thiếu ô tối thiểu), **đã sửa** sau lần đo |
+
+**Độ tin của các phép giám khảo:**
+- "Lộ luật" chính xác hơn sau khi đổi tiêu chí: không còn bắt nhầm câu báo phí / vùng. Nhưng giám khảo vẫn có lúc bỏ sót cờ thật ("lên Top" ở `phi_moi_gioi` bị sót 1/4 lần chấm).
+- "Hỏi lại" bắt nhầm khi bot hỏi lại là ĐÚNG (`hai_can_da_ban` hỏi căn nào). Cần xem như tín hiệu, không phải cổng chặn.
+
+## 8. Kế hoạch 2C (chờ duyệt cùng Q1–Q3)
+
+1. Lượt phía bán đi qua MỘT phiếu: giọng cố định + dữ liệu căn + **việc do `viec_luot` chọn**. Bỏ chuỗi khối "ƯU TIÊN" và các khối hỏi rời; 16 lượt lệch ở trên sẽ hết theo cách dựng.
+2. Dữ kiện chỉ kèm khi việc cần tới:
+   - việc phí: con số theo vai + `CHINH_SACH_PHI` (sửa `doc_quyen`);
+   - câu mẫu nói nguyên văn: code ghép, có xưng hô (sửa `xung_chi_phi`).
+3. Bỏ danh sách cảm thán trong `GIONG_VUI`: đây là lý do giọng bị chê nhiều nhất.
+4. Đặt sau công tắc `PHIEU_TOAN_BO=thu`, đo ≥ 2 lần mỗi bên. Tiêu chí bật cho mọi khách:
+   - tất định ≥ 470 / 479;
+   - giọng ≥ 3,0;
+   - `doc_quyen`, `xung_chi_phi` đạt;
+   - lượt lệch khối = 0;
+   - prompt viết lời trung vị ≤ 1.500 chữ.

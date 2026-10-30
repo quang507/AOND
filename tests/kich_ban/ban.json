@@ -808,8 +808,8 @@
      "gia": "8"
     },
     "luot_khong": {
-     "3": "(giấy tờ|pháp lý|sổ)[^.?!]*\\?",
-     "4": "(giấy tờ|pháp lý|sổ)[^.?!]*\\?"
+     "3": "(giấy tờ|pháp lý|sổ (hồng|đỏ|riêng|chung))[^.?!]*\\?",
+     "4": "(giấy tờ|pháp lý|sổ (hồng|đỏ|riêng|chung))[^.?!]*\\?"
     }
    }
   },

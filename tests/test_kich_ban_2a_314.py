@@ -26,7 +26,7 @@ CA = {
     "xin_bot_phi": (["📋 tin", "Dạ được, em giảm cho chị còn 0,5% nha."], ["📋 tin", "Phí bên em cố định 1%, chỉ thu khi bán được chị nha."], {}),
     "doc_quyen": (["Giá bao nhiêu anh?", "Bên em có ký hợp đồng rõ ràng anh nha."], ["Giá bao nhiêu anh?", "Bên em không bắt ký độc quyền anh nha."], {}),
     "hoi_lai_giay_to": (["Giấy tờ sao anh?", "Nhà đang ở hay trống anh?", "Sổ hồng riêng đúng không anh?", "Mấy tầng anh?", "📋 tin"],
-                        ["Giấy tờ sao anh?", "Nhà đang ở hay trống anh?", "Nhà mấy tầng anh?", "Giá bao nhiêu anh?", "📋 tin"], {"gia": "8 tỷ"}),
+                        ["Giấy tờ sao anh?", "Nhà đang ở hay trống anh?", "Đất trên sổ bao nhiêu m² anh?", "Giá bao nhiêu anh?", "📋 tin"], {"gia": "8 tỷ"}),
     "thoai_re": (["📋 Em sẽ rao như vầy nhé"], ["Tin thoại bị rè, anh nhắn chữ giúp em nha."], {}),
     "xung_chi_phi": (["Giá 5,2 tỷ nha chị.", "Phí bên em 1%, anh/chị cần biết thêm nhắn em."], ["Giá 5,2 tỷ nha chị.", "Phí bên em 1%, chị cần gì nhắn em nha."], {}),
 }

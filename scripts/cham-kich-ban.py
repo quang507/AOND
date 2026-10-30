@@ -174,6 +174,7 @@ def main() -> int:
     ap.add_argument("--boc", default="", help="model bóc tách; trống = như lõi VPS (AIOI_EXTRACT_MODEL hoặc mặc định config)")
     ap.add_argument("--nhu", choices=("khach", "thu"), default="khach", help="công tắc \"thu\" tính tắt (khách thật) hay bật (ID thử)")
     ap.add_argument("--nen", action="store_true", help="ghi điểm nền vào tests/kich_ban/diem_nen.json")
+    ap.add_argument("--cham-lai", default="", help="chấm lại bản ghi JSON đã lưu bằng --ra (không gọi model), vd sau khi sửa phép chấm")
     ap.add_argument("--chi", default="", help="chỉ chạy các id, ngăn bằng dấu phẩy")
     ap.add_argument("--song-song", type=int, default=4)
     ap.add_argument("--ra", default="", help="ghi kết quả JSON")
@@ -190,10 +191,17 @@ def main() -> int:
     if not a.boc:
         from aioi.config import load_settings
         a.boc = os.environ.get("AIOI_EXTRACT_MODEL") or load_settings().extract_model
-    with ProcessPoolExecutor(max_workers=a.song_song) as ex:
-        kqs = list(ex.map(_chay_mot, bo, [a.chat] * len(bo), [a.boc] * len(bo), [env] * len(bo)))
     giong = {}
-    if a.giong:
+    if a.cham_lai:   # chấm lại bản ghi đã lưu (--ra) bằng phép chấm hiện tại — không gọi model; điểm giám khảo giữ như lúc chạy
+        cu_kq = {r["id"]: r for r in json.load(open(a.cham_lai, encoding="utf-8"))["ket_qua"]}
+        bo = [k for k in bo if k["id"] in cu_kq]
+        kqs = [cu_kq[k["id"]] for k in bo]
+        giong = {k["id"]: (r["giong"], next((g for t, _, g in r.get("diem", []) if t.startswith("giọng")), "").split(" ", 1)[-1],
+                           r.get("lo_luat") or [], r.get("hoi_lai") or [], 0.0) for k, r in zip(bo, kqs) if r.get("giong")}
+    else:
+        with ProcessPoolExecutor(max_workers=a.song_song) as ex:
+            kqs = list(ex.map(_chay_mot, bo, [a.chat] * len(bo), [a.boc] * len(bo), [env] * len(bo)))
+    if a.giong and not a.cham_lai:
         from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=a.song_song) as ex:
             giong = dict(zip([k["id"] for k in bo], ex.map(lambda kq: _cham_giong(kq, a.giong), kqs)))

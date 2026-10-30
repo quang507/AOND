@@ -21,6 +21,7 @@ class TrangThaiLuot:
     khoi: tuple[str, ...] = ()
     hoi_ve: str | None = None          # phi | uy_tin | link_web | tinh_hinh_ban | dinh_gia (AI đọc theo nghĩa)
     muon_dang: bool = False            # khách bảo đăng / rao (lại) — nghĩa cụ thể do trạng thái quyết
+    thieu_toi_thieu: bool = False      # chưa đủ ô tối thiểu để ra bản nháp (loại · vị trí · giá)
     da_co_nhap: bool = False           # đã trình bản nháp 📋
     trang_thai: str = ""               # trạng thái tin hiện tại ("đang bán", "ẩn", "đã cọc"…)
     duyet: str | None = None           # dong_y | khong_dong_y | None
@@ -62,7 +63,9 @@ def _chon(t: TrangThaiLuot, k: set[str]) -> Viec:
     if t.muon_dang:   # "đăng đi" / "rao lại": căn đang ẩn → rao lại căn; chưa có bản nháp → trình nháp; có rồi → gửi lại bản tin
         if t.trang_thai == "ẩn":
             return Viec("doi_trang_thai", "rao")
-        return Viec("gui_lai_ban_tin") if t.da_co_nhap else Viec("trinh_nhap")
+        if t.da_co_nhap:
+            return Viec("gui_lai_ban_tin")
+        return Viec("hoi_o", t.next_field) if t.thieu_toi_thieu and t.next_field else Viec("trinh_nhap")
     if "chua_ro_can" in k:
         return Viec("hoi_can_nao")
     if "hoi_trung_ten" in k:

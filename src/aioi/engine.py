@@ -2989,7 +2989,7 @@ class Engine:
         dau_de = MODEL_CHAT_LUOT.set(m_de) if m_de else None
         self._ghi_viec(conv, TrangThaiLuot(
             pha="thu_thap" if not is_listing_post else "trinh_nhap" if trinh_nhap else "sau_nhap", next_field=None if is_listing_post else next_field,
-            khoi=tuple(khoi), hoi_ve=conv.hoi_ve_luot, muon_dang=bool(conv.y_luot.get("xin_dang")),
+            khoi=tuple(khoi), hoi_ve=conv.hoi_ve_luot, muon_dang=bool(conv.y_luot.get("xin_dang")), thieu_toi_thieu=bool(toi_thieu),
             da_co_nhap=any(t.role == "assistant" and "📋" in (t.content or "") for t in conv.history), trang_thai=conv.active.status or "",
             duyet=conv.duyet_luot, yeu_cau_viet=bool(conv.y_luot.get("yeu_cau_viet"))), khoi)
         try:

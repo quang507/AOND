@@ -11,6 +11,8 @@ def _v(**k):
 def test_rao_lai_theo_trang_thai():
     # cùng một ý khách ("em rao lại xem" / "đăng đi") — ba trạng thái, ba việc
     assert _v(pha="thu_thap", muon_dang=True)[0] == ("trinh_nhap", None)
+    # "đăng đi" khi còn thiếu ô tối thiểu → hỏi đúng ô thiếu, không trình bản nháp giả (đo bộ chấm `dang_khi_thieu` lượt 2)
+    assert _v(pha="thu_thap", muon_dang=True, thieu_toi_thieu=True, next_field="gia", khoi=("hoi_o",)) == (("hoi_o", "gia"), set())
     assert _v(pha="sau_nhap", muon_dang=True, da_co_nhap=True)[0] == ("gui_lai_ban_tin", None)
     assert _v(pha="sau_nhap", muon_dang=True, da_co_nhap=True, trang_thai="ẩn")[0] == ("doi_trang_thai", "rao")
 
