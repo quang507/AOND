@@ -68,6 +68,7 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 - Bot tự hiểu từ dữ kiện đã có rồi làm, KHÔNG hỏi lại khách để xác nhận nghĩa / số lệch (chủ dự án 30/10); số khách nói thắng số tự tính (SRS-302). Ví dụ trong prompt bóc tách không được đá định nghĩa ô.
 - Form bóc tách người bán gọn (`OPERATIONS_SYSTEM_BAN`, SRS-303) CẮT từ form đầy đủ như form mua gọn — sửa luật ở `OPERATIONS_SYSTEM`. Tiêu đề: prompt dặn 15–25 từ, lưới gọi lại khi quá 30.
 - Gỡ / thêm luật prompt hay luật soát phải chạy `bun run cham` ≥ 2 lần mỗi bên và so điểm (SRS-304); điểm tụt thì không gộp.
+- Lỗi bot đáng giữ → thêm kịch bản vào `tests/kich_ban/ban.json`, không thêm câu luật vào prompt (SRS-305). Nhật ký SRS trước 26/10/2026 ở `docs/07-srs-luu-tru.md` — không thêm mục vào đó.
 - Mỗi lượt MỘT khối "ƯU TIÊN LƯỢT NÀY" (cần người > pháp lý > ngoài việc > hỏi về); khối mới đặt vào chuỗi `or` đó (SRS-178). Lượt được phép không có câu hỏi — đừng thêm lưới "lời phải có câu hỏi"; nhưng tối đa MỘT câu hỏi (`_nhieu_cau_hoi`, SRS-252), khối dặn hỏi xác nhận phải là câu hỏi duy nhất, không cộng thêm.
 - Độ dài: "ngắn vừa vừa", ý chính rồi dừng (SRS-97).
 

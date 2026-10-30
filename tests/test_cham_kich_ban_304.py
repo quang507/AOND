@@ -6,7 +6,7 @@ import os
 from tests.kich_ban.cham import cham, chua, loi_pham
 
 BO = os.path.join(os.path.dirname(__file__), "kich_ban", "ban.json")
-KHOA = {"o", "o_khong", "o_khong_chua", "loai", "cho_thue", "so_can", "xin_nguoi", "nhap_truoc", "khong_nhap", "cam", "luot"}
+KHOA = {"o", "o_khong", "o_khong_chua", "loai", "cho_thue", "so_can", "xin_nguoi", "nhap_truoc", "khong_nhap", "cam", "luot", "luot_khong", "trang_thai"}
 
 
 def _kq(bots, o=None, **k):
@@ -18,7 +18,7 @@ def test_tep_kich_ban_hop_le():
     assert len(bo) >= 15 and len({k["id"] for k in bo}) == len(bo)
     for k in bo:
         assert k["cau"] and set(k["kiem"]) <= KHOA, k["id"]
-        for so in k["kiem"].get("luot", {}):
+        for so in {**k["kiem"].get("luot", {}), **k["kiem"].get("luot_khong", {})}:
             assert 1 <= int(so) <= len(k["cau"]), k["id"]
 
 

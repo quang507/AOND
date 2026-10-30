@@ -65,7 +65,7 @@ def _chay_mot(kb: dict, chat: str, boc: str) -> dict:
         conv = eng.conversation(key)
         o = {k: v for k, v in conv.prop.fields.items() if isinstance(v, str)}
         return {"id": kb["id"], "luot": luot, "o": o, "loai": conv.prop.loai_hinh, "cho_thue": conv.prop.is_rental,
-                "so_can": len(conv.listings), "xin_nguoi": xin_nguoi, "giay": round(time.monotonic() - bat_dau, 1), **dem}
+                "so_can": len(conv.listings), "trang_thai": conv.active.status, "xin_nguoi": xin_nguoi, "giay": round(time.monotonic() - bat_dau, 1), **dem}
 
 
 def main() -> int:
