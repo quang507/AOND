@@ -9058,6 +9058,36 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz302 · Bot tự hiểu từ dữ kiện đã có, không hỏi lại; "em rao lại xem" ra bản tin; đếm từ tiêu đề đúng số thập phân (30/10/2026)
+Chủ dự án 30/10 (xem báo cáo thử CLI SRS-301): "làm cho ra việc luôn khen cho hay luôn đi", "từ các dữ liệu đã có thì bot tự hiểu dữ liệu khác",
+"không cần hỏi lại".
+
+1. **Ca gốc** (thử quota CLI, kịch bản `hht`, viết lời Haiku 5.5): (a) lượt "Em rao lại xem" (chưa có bản nháp) bóc tách không ghi `xin_dang` → lượt
+   đi nhánh chat, bot nói "em gửi anh ngay bên dưới" mà không có bản tin; (b) lượt 3 bot tự nhân 5,2 × 8 và bắt khách kiểm diện tích (hai câu hỏi một
+   lượt); (c) lượt "mặt tiền có 5 m thôi" bot hỏi lại "5m là ngang hay đường" thay vì sửa; (d) Sonnet 3/3 bản tin bị gọi lại vì "tiêu đề quá 25 từ"
+   dù tiêu đề 24 từ.
+2. **Gốc**: (a) prompt bóc tách lấy đúng câu "em rao lại xem" làm ví dụ "câu nhờ — để yeu_cau_viet hoặc bỏ", đá nhau với định nghĩa `xin_dang`; prompt
+   chat ghi "hệ thống tự gửi bản tin…" nên model tưởng bản tin sắp đi kèm; (b)(c) prompt chỉ cấm hỏi lại điều khách nói RÕ, không nói tự suy từ dữ kiện
+   đã có; (d) `_tieu_de_thieu` tách dấu phẩy của số thập phân ("34,5m²", "12,5 tỷ") thành hai từ.
+3. **Sửa**: `OPERATIONS_SYSTEM` — `xin_dang` nhận "em rao lại xem" khi CHƯA có bản nháp, bản nháp đã gửi mà chỉ xin xem lại thì bỏ trống (không thành
+   đồng ý); câu nhờ "để xin_dang / yeu_cau_viet hoặc bỏ". `build_chat_system` — lượt chat không có bản tin kèm, cấm nói "gửi bên dưới"; ghi chú nghiệp vụ
+   "tự hiểu từ dữ kiện đã có rồi làm luôn, không hỏi lại để xác nhận nghĩa / giải thích số lệch; số khách nói thắng số tự tính".
+   `build_fee_followup_system` — khách đính chính số thì sửa luôn, không hỏi lại nghĩa. `_tieu_de_thieu` — số thập phân là một từ (như `wc -w` của
+   `ban-thu-*`).
+4. **Quyết định (BA, uỷ quyền) về "41,6m²"**: diện tích TỰ TÍNH từ ngang × dài đã được ghi sẵn khi khách KHÔNG nói diện tích (`Property` tự tính,
+   "4x15" → 60m², có từ trước) nên đúng ý "tự hiểu dữ liệu khác". Lưới số bản tin (SRS-218) chỉ chặn số tự tính KHÁC số khách đã nói — ca gốc là
+   khách thật hỏi "Ai nói 41.6m2?" khi sổ ghi 34,5m² — nên GIỮ.
+5. **Đo** (quota CLI, `hht` 8 lượt, sau bản sửa prompt): Haiku 2 lần — lượt 6 ra bản tin cả hai, lượt 8 sửa luôn "ngang 5m" không hỏi, mỗi lượt một
+   câu hỏi, không tự nhân diện tích; gọi model 16 / 17 lần (1 lần gọi lại do tiêu đề — trước bản sửa bộ đếm). Sonnet: 19 lần (3 lần gọi lại do bộ đếm
+   tiêu đề — đã sửa ở mục 3).
+   Chạy lại sau sửa bộ đếm: Sonnet 16 lần gọi, 0 lần gọi lại ($0,347 quy đổi); Haiku 19 lần, 3 lần gọi lại (2 lần chữ "đắc địa" — lưới bình luận giá,
+   1 lần gọi khách "mình") → thêm "đắc địa" vào ví dụ khen chung chung trong `GIONG_VUI` để model tránh từ đầu. Kịch bản `dat` (Haiku): bản tin ở lượt 3,
+   "100m²" tự tính từ ngang 5 × dài 20 khi khách không nói diện tích.
+6. **Ba câu hỏi gốc** — (1) *lớp lỗi*: ví dụ trong prompt bóc tách đá nhau với định nghĩa một ô; câu mô tả hệ thống ("hệ thống tự gửi") bị model đọc như
+   lời hứa; bộ đếm tự viết lệch với bộ đếm của script bắn thử. (2) *chỗ khác cùng lớp*: khối hỏi bề ngang hay đường (`khoi_hoi_mat_tien`, SRS-96,
+   chủ dự án "có cho hỏi") vẫn hỏi MỘT lần khi chưa có hai chiều lô — không có dữ kiện để tự hiểu, giữ; các ví dụ khác trong `OPERATIONS_SYSTEM`
+   chưa soát hết xem có đá định nghĩa ô nào không. (3) *kiểm*: `tests/test_khong_hoi_lai_302.py` (4 ca, đỏ khi gỡ bản sửa ở `prompts.py` / `engine.py`).
+
 ### SRS-5.1zzzzzzz301 · Chỉnh prompt để Haiku khen cụ thể như Sonnet, mở đầu không lặp, không chào lại giữa chừng (30/10/2026)
 Chủ dự án 30/10 (sau SRS-300, Haiku rẻ ~9 lần nhưng khen nhạt): "sếp thích kiểu khen lúc test Sonnet" → chọn "cách 3": chỉnh prompt cho Haiku, thử bằng quota CLI.
 
