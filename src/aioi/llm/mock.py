@@ -163,6 +163,10 @@ class MockProvider(LLMProvider):
             for op in plan["operations"]:
                 if isinstance(op.get("fields"), dict) and op["fields"]:
                     op["bang_chung"] = {k: raw for k in op["fields"]}
+            # Như model thật (SRS-5.1zzzzzzz310): đổi trạng thái kèm cụm khách chỉ căn — đồ giả lấy nguyên tin khách cuối có nhắc căn đó.
+            for op in plan["operations"]:
+                if op.get("op") == "set_status" and op.get("targets"):
+                    op["trich_dan_can"] = next((m.content for m in reversed(messages) if m.role == "user"), "")
             _gia_lap_y_luot(plan, messages)
             # Giả lập lượt AI đọc "khách hỏi về gì" (hoi_ve, SRS-5.1zzzzzzz54) — bản thật đọc theo nghĩa; ở đây chỉ là đồ giả
             # cho test offline, trả kèm cụm trích có thật để qua kiểm trích dẫn của engine.

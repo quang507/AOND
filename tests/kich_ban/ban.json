@@ -492,8 +492,9 @@
    ],
    "kiem": {
     "so_can": 2,
+    "trang_thai": "đang bán",
     "luot": {
-     "2": "căn nào"
+     "2": "căn nào|hay căn"
     },
     "luot_khong": {
      "2": "(chuyển|cập nhật|đổi|đánh dấu).{0,40}đã bán"
@@ -591,7 +592,7 @@
      "gia": "1,8"
     },
     "luot_khong": {
-     "1": "huyện|quận nào"
+     "1": "\\bhuyện\\b|quận nào"
     }
    }
   },

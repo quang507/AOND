@@ -1607,7 +1607,9 @@ cho các loại này.
   không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
 - Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
   (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
-  nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Không có dấu hiệu nào mới để tạm dien_tich.
+  nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Căn ĐÃ có diện tích đất (khách nói ở lượt trước) mà khách nói thêm một con
+  số m² KHÁC, không dấu hiệu gì ("135m2 đất nha" rồi "250m2") → đó là diện tích sàn: dien_tich_nha (SRS-5.1zzzzzzz312, tự hiểu từ dữ kiện,
+  không hỏi lại). Không có dấu hiệu nào mới để tạm dien_tich.
   Viết tắt (20/10): "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
   "DTCN" / "dt công nhận" / "diện tích công nhận" = diện tích ĐẤT công nhận trên sổ → dien_tich_dat, KHÔNG BAO GIỜ là sàn (26/10: "DT 4x18m
   – DTCN 71m²" bị ghi thành 71m² sàn).
@@ -1855,9 +1857,10 @@ Các loại "op":
     • khong_rao = NGƯNG RAO (ẩn tin, vẫn giữ dữ liệu) — "bỏ/ẩn/ngưng rao căn X".
     • thoi_dang_ky = RÚT TIN khỏi hệ thống (vẫn giữ dữ liệu) — "thôi đăng ký căn X".
     • rao = ĐĂNG / RAO LẠI một căn đang ẩn — "rao lại căn X", "đăng lại căn X", "bán lại".
-  Đặt "target"/"targets" = căn nào (mã/địa chỉ); bỏ trống nếu đang nói về căn hiện tại. Rổ có NHIỀU căn mà lời khách không chỉ ra
+  Đặt "target"/"targets" = căn nào (mã/địa chỉ); bỏ trống nếu đang nói về căn hiện tại; rổ nhiều căn thì kèm "trich_dan_can". Rổ có NHIỀU căn mà lời khách không chỉ ra
   được căn nào (không mã, không địa chỉ / đường, các lượt gần cũng chưa nói riêng một căn — vd vừa khai hai căn trong một tin rồi "căn đó bán
-  rồi") → KHÔNG tạo set_status, để lượt trả lời hỏi lại căn nào (đổi nhầm trạng thái là ẩn nhầm tin đang rao, SRS-5.1zzzzzzz307).
+  rồi") → VẪN tạo set_status nhưng để trống target và trich_dan_can — hệ thống không đổi căn nào và lượt trả lời hỏi lại căn nào (đổi nhầm
+  trạng thái là ẩn nhầm tin đang rao, SRS-5.1zzzzzzz307 / 310).
 - "remove": người rao muốn BỎ/NGƯNG RAO vài căn cụ thể ("bỏ căn 50 và 3") → "targets" = ["50","3"].
 - "keep_only": người rao nói CHỈ GIỮ RAO một số căn ("tôi chỉ có căn 23, 24") → "targets" =
   ["23","24"] (các căn còn lại chuyển sang không rao).
@@ -1968,7 +1971,9 @@ QUY TẮC:
   không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
 - Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
   (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
-  nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Không có dấu hiệu nào mới để tạm dien_tich.
+  nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Căn ĐÃ có diện tích đất (khách nói ở lượt trước) mà khách nói thêm một con
+  số m² KHÁC, không dấu hiệu gì ("135m2 đất nha" rồi "250m2") → đó là diện tích sàn: dien_tich_nha (SRS-5.1zzzzzzz312, tự hiểu từ dữ kiện,
+  không hỏi lại). Không có dấu hiệu nào mới để tạm dien_tich.
   Viết tắt (20/10): "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
   "DTCN" / "dt công nhận" / "diện tích công nhận" = diện tích ĐẤT công nhận trên sổ → dien_tich_dat, KHÔNG BAO GIỜ là sàn (26/10: "DT 4x18m
   – DTCN 71m²" bị ghi thành 71m² sàn).
@@ -2217,6 +2222,11 @@ def operations_schema() -> dict[str, Any]:
                 "description": "Trạng thái — chỉ dùng cho op set_status. rao=đăng/rao lại; "
                 "khong_rao=ngưng rao (ẩn, vẫn giữ); thoi_dang_ky=rút tin; da_coc=khách đã đặt cọc "
                 "(chưa sang tên); da_ban/da_cho_thue=đã xong.",
+            },
+            "trich_dan_can": {
+                "type": "string",
+                "description": "CHỈ cho set_status khi rổ có từ 2 căn: NGUYÊN VĂN cụm trong lời KHÁCH chỉ ra căn bị đổi (địa chỉ, tên "
+                "đường, mã căn). Khách chỉ nói \"căn đó\" / \"căn kia\" thì để trống (hệ thống hỏi lại căn nào).",
             },
         },
         "required": ["op"],

@@ -59,4 +59,16 @@ TG=$(q "select l.code, n.du_lieu->>'tin_goc' as tg from listings l join sellers 
 echo "$TG" | jq -c '.[]'
 kiem "Nhiều căn: cả hai căn đều có tin gốc nguyên văn" \
   "$(jq '[.[] | select((.tg // "") | contains("Bùi Minh Trực") and contains("Phạm Hùng"))] | length == 2 | if . then 1 else 0 end' <<<"$TG")"
+# SRS-5.1zzzzzzz310: rổ hai căn, khách "căn đó bán rồi" chưa chỉ ra căn nào → KHÔNG tin nào đổi trạng thái trên DB, bot hỏi lại căn nào.
+sleep "${NGHI_GIUA_LUOT:-5}"
+CAU2="à căn đó anh bán được rồi em nhé"
+echo ">> [$BAN] $CAU2"
+TRA2=$(jq -n --arg u "$BAN" --arg t "$CAU2" '{external_user_id:$u, text:$t, sender_name:"Khách thử"}' \
+      | vps "curl -sS -m 120 -X POST http://127.0.0.1:8000/chat-reply -H 'Content-Type: application/json' -d @-")
+jq -r '.replies[]? | "<< " + .' <<<"$TRA2" || echo "<< (không đọc được JSON) $TRA2"
+sleep 5
+ST=$(q "select l.status from listings l join sellers s on s.id = l.seller_id where s.zalo_user_id = '$BAN' order by l.code")
+echo "$ST" | jq -c '[.[].status]'
+kiem "Nhiều căn: \"căn đó bán rồi\" chưa rõ căn → không tin nào thành đã chốt" \
+  "$(jq '[.[] | select(.status == "da_chot")] | length == 0 | if . then 1 else 0 end' <<<"$ST")"
 exit $loi

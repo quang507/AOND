@@ -131,7 +131,7 @@ from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
                   lenh_tra_loi, nhan_nhu_cau, nhan_tu_du_lieu, nhu_cau_cua, tim_sdt)
-from . import agent_ban, agent_mua
+from . import agent_ban, agent_boc, agent_mua
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
@@ -381,6 +381,13 @@ def _phieu_luot(user_key: str | None) -> bool:
     khác = prompt cũ `build_chat_system`."""
     v = os.environ.get("AIOI_PHIEU_LUOT", "").strip().lower()
     return v == "bat" or (v == "thu" and _la_id_thu(user_key))
+
+
+def _model_luot_de() -> str | None:
+    """Model viết lời cho LƯỢT DỄ (SRS-5.1zzzzzzz311, kế hoạch bước 4): env `AIOI_MODEL_LUOT_DE` (một nguồn `cai-vps.sh` dòng MODEL_LUOT_DE);
+    trống / "tat" → lượt dễ dùng model chat như mọi lượt."""
+    v = os.environ.get("AIOI_MODEL_LUOT_DE", "").strip()
+    return None if v.lower() in ("", "tat") else v
 
 
 def _soat_gon(user_key: str | None) -> bool:
@@ -1499,18 +1506,6 @@ def _ban_tin_da_trinh(conv: "Conversation") -> tuple[str, str] | None:
 _TU_RE = re.compile(r"\w+")
 
 
-def _viet_hoa_ca_cum(reply: str) -> bool:
-    """Lời bot có cụm ≥ 3 từ liền nhau viết HOA toàn bộ (vd "NHÀ MẶT TIỀN CAO LỖ") — chủ dự án 28/10 (SRS-5.1zzzzzzz241): tiêu đề tin rao
-    viết thường như câu nói, không viết hoa. Kiểm hình thức chữ (không đoán ý); chữ viết tắt lẻ (MT, HXH, WC) không tính."""
-    for dong in reply.splitlines():
-        chuoi = 0
-        for t in _TU_RE.findall(dong):   # từ có chữ số (4m, 5WC) cắt chuỗi — "HXH MT 4m" là viết tắt, không phải cụm viết hoa
-            chuoi = chuoi + 1 if len(t) >= 2 and t.isalpha() and t.isupper() else 0
-            if chuoi >= 3:
-                return True
-    return False
-
-
 def _mo_dau_da(reply: str) -> bool:
     """Lời bot mở đầu bằng "Dạ" — luật chủ dự án (cấm mở đầu "Dạ", CLAUDE.md §6) mà model có lượt không theo (chat chị N. 20/10: hai
     lượt sau khi đăng tin mở đầu bằng Dạ). Chỉ kiểm chữ đầu; không sửa lời — lệch thì gọi lại model (SRS-5.1zzzzzzz87)."""
@@ -1536,13 +1531,6 @@ def _mo_dau_ghi_nhan(reply: str) -> bool:
 
 
 _NOI_DAU_CAU_RE = re.compile(r"(?i)^\s*(?:(?:vậy|vâng|ok|oke|okela|rồi|thế|thì|được|dạ)\s*[,!.]?\s*)+")
-
-
-def _co_cau_ghi_nhan(loi: str) -> bool:
-    """Lời bot có MỘT câu ghi nhận ở bất kỳ đâu ("Em ghi nhận…", "Vậy em ghi nhận là…", "… Em lưu giá rồi") — SRS-5.1zzzzzzz228 mục 3
-    (ban-thu-srd 27/10: "Vậy em ghi nhận là căn nhà vẫn đang rao" lọt vì lưới chỉ soi đầu lời). Lượt có 📋 chỉ soi phần chat quanh bản tin."""
-    phan = _phan_chat_quanh_ban_tin(loi) if "📋" in (loi or "") else (loi or "")
-    return any(MO_DAU_GHI_NHAN_RE.match(_NOI_DAU_CAU_RE.sub("", c)) for c in re.split(r"(?<=[.!?…])\s+|\n+", phan) if c.strip())
 
 
 _BOT_GUI_ANH_RE = re.compile(r"(?i)(?<![\wà-ỹđ])em\s+(?:sẽ\s+)?(?:gửi|chụp)\s+(?:thêm\s+)?(?:(?:vài|mấy|một|ít)\s+)?(?:tấm\s+)?(?:ảnh|hình)")
@@ -1613,12 +1601,6 @@ def _cau_lap_luot_truoc(reply: str, truoc: str) -> str | None:
 
 
 _GOI_A_RE = re.compile(r"(?<![\wÀ-ỹ])(anh chị|anh|chị|cô chú|cô|chú|bác|em|cháu)\s+(?:ạ|ơi)(?![\wÀ-ỹ])", re.I)
-
-
-def _goi_a(loi: str) -> bool:
-    """Lời bot có tiếng gọi khách kèm "ạ" / "ơi" ("chị ạ", "anh ơi") — tiếng gọi lặp mỗi lượt làm bot đọc như máy (SRS-5.1zzzzzzz220;
-    "ơi" từ SRS-5.1zzzzzzz228: ban-thu-srd 27/10 sáu trên bảy lượt đầu kết "… quá anh ơi!")."""
-    return bool(loi) and _GOI_A_RE.search(loi) is not None
 
 
 _PHI_PHAN_TRAM_RE = re.compile(r"(?<![\d.,])(1|0[.,]5)\s?%")
@@ -2801,10 +2783,12 @@ class Engine:
         is_listing_post = conv.prop.summary_ready() or conv.listing_proposed or (xin_dang and not toi_thieu)
         trinh_nhap = False
         xin_sao = False
+        luot_de = False   # SRS-5.1zzzzzzz311: lượt thu thập bằng phiếu lượt — ứng viên model rẻ (xét thêm điều kiện ở chỗ gọi model)
         if not is_listing_post:
             hoi_lai = bool(next_field and conv.lo.get(next_field, 0) >= 1)   # SRS-5.1zzzzzzz200: đừng nhắn trùng câu cũ
             o_bo_qua = o_truoc if o_truoc in thieu else None
             if _phieu_luot(conv.user_key):   # SRS-5.1zzzzzzz309 (kế hoạch bước 2): phiếu lượt ngắn thay văn xuôi build_chat_system
+                luot_de = True
                 system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua)
             else:
                 system = build_chat_system(
@@ -2882,10 +2866,6 @@ class Engine:
             if conv.y_luot.get("_phuong_vua_tra"):   # SRS-5.1zzzzzzz236: phường hệ thống vừa tra theo số nhà / hẻm — báo một lần, không hỏi
                 system += (f'\n\nPHƯỜNG HỆ THỐNG VỪA TRA (khách CHƯA nói): theo số nhà / hẻm trong địa chỉ, nhà thuộc {conv.y_luot["_phuong_vua_tra"]}. '
                            "KHÔNG hỏi phường. Nhắc khách MỘT câu ngắn nhà thuộc phường này, sai thì khách báo lại.\n")
-            # SRS-5.1zzzzzzz115: lượt này hỏi phường mà kho hẻm thu được 1–4 phường → lời bot phải nhắc (dạng hỏi) — bắn thử 21/10
-            # Haiku có khối "Kho hẻm" trong prompt vẫn hỏi trống "nhà mình thuộc phường nào". Kiểm ở _soat_hinh_thuc.
-            hem_phai_nhac = ([] if is_listing_post or "phuong" not in (cum_hoi or [next_field])
-                             else phuong_kho_hem(self._dia_danh, conv.prop.fields))
             if not is_listing_post:
                 system += self._khoi_hoi_du_an(conv)   # SRS-5.1zzzzzzz181: kho có đúng một dự án cùng đường → hỏi xác nhận MỘT lần
         if conv.y_luot.get("tach_ban_thue"):   # SRS-5.1zzzzzzz241 (OPEN-59 a)
@@ -2969,25 +2949,37 @@ class Engine:
             system += self._project_memory_block(project, conv)  # remember the price list + phân lô; reason over it
             system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
         system += khoi_tin_tra_loi(conv.tin_tra_loi)   # SRS-5.1zzzzzzz270
+        if conv.y_luot.get("chua_ro_can"):   # SRS-5.1zzzzzzz310: dữ kiện hệ thống — chưa đổi căn nào
+            system += ("\nHỆ THỐNG: khách báo đổi trạng thái một căn nhưng lời khách chưa chỉ ra căn nào trong rổ ("
+                       + "; ".join(conv.y_luot["chua_ro_can"]) + "). CHƯA đổi căn nào — hỏi lại khách căn nào, đừng nói đã cập nhật.\n")
         # A seller in a project WITH an inventory → the reply runs through the agent LOOP (same
         # sales-mode prompt + tools). The model decides per turn whether to query the catalog,
         # add a resolved căn, learn a fact, or ask for a link — NO keyword gate (Mảnh B). A plain
         # listing (no project inventory) uses the single chat call, unchanged.
         # Length is model-decided from the prompt (short while chatting, full ad when complete) —
         # NOT clamped by a token cap (Vietnamese is token-dense; a tight cap hard-cuts mid-word).
-        with _do(conv, "tra_loi"):
-            if dung_agent_ban:
-                reply, da_tra = agent_ban.chay(self, conv, project, system, REPLY_MAX_TOKENS)
-                system += da_tra   # lần soát / gọi lại của lượt viết với đúng dữ liệu model vừa tra
-            elif project is not None and project.units:
-                reply = self._agent_reply(conv, project, system, now)
-            else:
-                reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+        # SRS-5.1zzzzzzz311 (kế hoạch bước 4): lượt DỄ — thu thập bằng phiếu lượt, không tra dữ liệu, không kho dự án, lượt không có việc gì
+        # khác (y_luot chỉ còn khoá nội bộ `_`), không khối hỏi về → model rẻ (cả lần soát gọi lại của lượt). Lượt còn lại giữ model chat.
+        m_de = _model_luot_de() if (luot_de and not dung_agent_ban and not (project is not None and project.units)
+                                    and conv.hoi_ve_luot is None and all(k.startswith("_") for k in conv.y_luot)) else None
+        dau_de = MODEL_CHAT_LUOT.set(m_de) if m_de else None
+        try:
+            with _do(conv, "tra_loi"):
+                if dung_agent_ban:
+                    reply, da_tra = agent_ban.chay(self, conv, project, system, REPLY_MAX_TOKENS)
+                    system += da_tra   # lần soát / gọi lại của lượt viết với đúng dữ liệu model vừa tra
+                elif project is not None and project.units:
+                    reply = self._agent_reply(conv, project, system, now)
+                else:
+                    reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
 
-        if not reply:   # SRS-5.1zzzzzzz82: không gửi "kết nối mạng gián đoạn, nhắn lại giúp em" — server giữ chỗ rồi tự thử lại
-            raise LoiTraLoi("lời gửi khách rỗng")
+            if not reply:   # SRS-5.1zzzzzzz82: không gửi "kết nối mạng gián đoạn, nhắn lại giúp em" — server giữ chỗ rồi tự thử lại
+                raise LoiTraLoi("lời gửi khách rỗng")
 
-        reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply), hem_phai_nhac if len(hem_phai_nhac) <= 4 else [])
+            reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply))
+        finally:
+            if dau_de is not None:
+                MODEL_CHAT_LUOT.reset(dau_de)
         la_nhap = _la_ban_nhap(reply)
         if trinh_nhap and (not la_nhap or "zalo" not in reply.lower()):
             # SRS-5.1zzzzzzz204: lượt trình bản nháp mà model đáp như chat thường (ban-thu-ban 26/10 Âu Cơ: đủ loại · vị trí · giá · 4 facet mà
@@ -3000,7 +2992,7 @@ class Engine:
                     "chốt nhắn Zalo, câu hỏi khách duyệt) — không đáp bằng lời chat.")
             with _do(conv, "tra_loi_lai"):
                 lai = self._provider.reply(nhac, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
-            lai = self._soat_hinh_thuc(conv, nhac, _bo_markdown(lai), []) if lai else lai
+            lai = self._soat_hinh_thuc(conv, nhac, _bo_markdown(lai)) if lai else lai
             if lai and _la_ban_nhap(lai) and "zalo" in lai.lower():
                 reply = lai
             elif not la_nhap:
@@ -3092,12 +3084,11 @@ class Engine:
         cau = cau_xin_sao(goi, tre=_xung_tre(p), toi=toi)
         return f"{reply.rstrip()}\n\n{cau}"
 
-    def _soat_hinh_thuc(self, conv: Conversation, system: str, reply: str, phuong_phai_nhac: list[str] | None = None,
+    def _soat_hinh_thuc(self, conv: Conversation, system: str, reply: str,
                         can_mua: list[dict] | None = None) -> str:
         """Luật HÌNH THỨC code kiểm được mà không đọc ý — lệch thì gọi lại model MỘT lần kèm lý do, không tự sửa chữ.
         Bản tin (📋) phải có giá trong tiêu đề (SRS-5.1zzzzzzz86: bắn thử 20/10, bản tin CẬP NHẬT của KB3 bỏ giá dù AD_FORMAT bắt
-        buộc); không mở đầu "Dạ" (SRS-5.1zzzzzzz87). Cả nhánh bán lẫn nhánh mua. `phuong_phai_nhac` (SRS-5.1zzzzzzz115): phường kho
-        hẻm của lượt hỏi phường — lời không nhắc phường nào trong đó thì viết lại."""
+        buộc); không mở đầu "Dạ" (SRS-5.1zzzzzzz87). Cả nhánh bán lẫn nhánh mua."""
         reply = _gan_dau_ban_tin(reply)
         thieu_td = _tieu_de_thieu(reply, conv.prop)
         ly_do: list[str] = []
@@ -3107,11 +3098,6 @@ class Engine:
         gon = _soat_gon(conv.user_key)
         if gon and _mo_dau_da(reply):
             reply = _bo_da_dau(reply)   # "Dạ" mở đầu: code bỏ chữ, không gọi lại model
-        if phuong_phai_nhac and not any(ten_tran(p) in bo_dau(reply) for p in phuong_phai_nhac):
-            ds = ", ".join(phuong_phai_nhac)
-            mem.append(f"Lời vừa viết hỏi phường mà không nhắc phường kho hẻm ({ds}) — câu hỏi phường phải nêu "
-                         + (f"{ds} ở dạng hỏi xác nhận (\"nhà mình ở {ds} đúng không …?\")" if len(phuong_phai_nhac) == 1
-                            else "các phường này cho khách chọn") + ", không hỏi trống \"thuộc phường nào\".")
         if thieu_td:
             ly_do.append("Bản tin vừa viết có TIÊU ĐỀ thiếu " + ", ".join(thieu_td)
                          + "; tiêu đề 20–25 từ khi dữ liệu đủ, đủ vị trí · diện tích · giá.")
@@ -3138,8 +3124,6 @@ class Engine:
                          "thứ tự, KHÔNG in ra; viết thẳng nội dung.")
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
-        if _viet_hoa_ca_cum(reply):   # SRS-5.1zzzzzzz241
-            mem.append("Lời vừa viết có cụm chữ viết HOA toàn bộ — viết thường như câu nói (chỉ hoa chữ đầu câu và tên riêng), kể cả tiêu đề tin rao.")
         if _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
             ly_do.append("Lời vừa viết gọi khách là \"mình\" (\"em xin lỗi mình\", \"Mình đang cần…\") — KHÔNG dùng \"mình\" gọi khách hay tự xưng: "
                          "gọi đúng cách khách xưng (em / cháu / anh / chị), chưa rõ thì \"anh/chị\"; tự xưng đúng QUY TẮC XƯNG HÔ ở trên. "
@@ -3151,12 +3135,6 @@ class Engine:
         if _nhieu_cau_hoi(reply):   # SRS-5.1zzzzzzz252 (chủ dự án 28/10: "dặn hỏi 1 câu rồi mà nó lại hỏi nhiều thế")
             ly_do.append("Lời vừa viết hỏi khách NHIỀU HƠN MỘT câu — mỗi lượt chỉ hỏi MỘT ý (một dấu \"?\"), hỏi xong thì dừng chờ khách trả lời; "
                          "ý còn lại để lượt sau.")
-        # SRS-5.1zzzzzzz228 mục 3 (chủ dự án 27/10: "câu nào cũng dc, đừng trùng 3 4 câu em ghi nhận, 1 lần là dc" — thay "bỏ hẳn" của SRS-131):
-        # câu ghi nhận được nói MỘT lần trong cuộc chat; lượt trước đã có một câu như vậy thì lượt này gọi lại.
-        if _co_cau_ghi_nhan(reply) and any(_co_cau_ghi_nhan(t.content) for t in conv.history if t.role == "assistant" and t.content):
-            mem.append("Lời vừa viết có câu ghi nhận (\"Em ghi nhận / Em đã ghi… / Em lưu…\") mà em ĐÃ nói một câu kiểu này ở lượt trước — "
-                         "chỉ được một lần trong cuộc chat: lượt này đáp thẳng vào điều khách vừa nói (một lợi ích cụ thể, hoặc vào thẳng việc; "
-                         "bản tin cập nhật thì mở thẳng bằng 📋).")
         if conv.role != "buyer" and _bot_hua_gui_anh(reply):
             ly_do.append("Lời vừa viết nói \"em gửi ảnh\" cho chủ nhà — ngược vai: ảnh căn là CHỦ NHÀ chụp gửi cho em; muốn xin ảnh thì mời "
                          "chủ nhà chụp gửi.")
@@ -3186,11 +3164,6 @@ class Engine:
                 if lap:
                     mem.append(f"Câu \"{lap[:60]}\" quanh bản tin lặp gần nguyên văn lượt trước — câu dẫn và câu hỏi chốt mỗi lượt một cách "
                                  "nói khác (hỏi đã ưng chưa / còn chỗ nào chỉnh / đăng luôn nhé), ngắn thôi.")
-        if "📋" not in reply and _goi_a(reply) and _goi_a(_phan_chat_quanh_ban_tin(truoc) if "📋" in truoc else truoc):
-            # SRS-5.1zzzzzzz220 (chat 27/10: "…thuận tiện cho việc đi lại ạ. Chị cho em…", "…dễ xoay xe, chị ạ!", "…thuận lợi cho chị ạ!" — bốn
-            # lượt liền, khách: "sao lại chị ạ liên tục"): kiểm HÌNH THỨC lời của chính bot, không đọc ý khách.
-            mem.append("Lượt trước em đã gọi khách kèm \"ạ\" / \"ơi\" (\"chị ạ\", \"anh ơi\") — lượt này đừng lặp: bỏ hẳn tiếng gọi, nói tự "
-                         "nhiên như nhắn Zalo cho người quen, và đổi khuôn câu (đừng \"… quá anh ơi!\" lượt nào cũng vậy).")
         moi = self._phuong_moi_cua_cu(conv)
         if moi and ("📋" in reply or _is_formatted_post(reply)) and ten_tran(moi) not in bo_dau(reply):
             ly_do.append(f"Bản tin vừa viết ghi phường theo tên CŨ — từ 01/07/2025 phường đó nay là {moi}: ghi \"{moi}\" trong tiêu đề / mô tả "
@@ -3274,8 +3247,6 @@ class Engine:
         ly_do = []
         if _mo_dau_da(reply):
             ly_do.append("Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\".")
-        if _viet_hoa_ca_cum(reply):   # SRS-5.1zzzzzzz241
-            ly_do.append("Lời vừa viết có cụm chữ viết HOA toàn bộ — viết thường như câu nói (chỉ hoa chữ đầu câu và tên riêng), kể cả tiêu đề tin rao.")
         if _goi_khach_la_minh(reply, _detect_customer_pronoun(conv)):
             ly_do.append("Lời vừa viết gọi khách là \"mình\" — gọi đúng cách khách xưng (anh / chị / cô / chú), chỉ \"nhà mình / căn mình\" "
                          "khi nói về căn của khách.")
@@ -4625,8 +4596,14 @@ class Engine:
                 conv.cau_hoi_cho = kho.cau_hoi_cho_nguoi_ban(conv.user_key)
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
         conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
-        with _do(conv, "lap_thao_tac"):
-            plan = self._provider.extract(system, src, operations_schema_mua() if gon else operations_schema_ban() if ban_gon else operations_schema())
+        plan = None
+        if ban_gon and agent_boc.bat(conv.user_key, _la_id_thu(conv.user_key)):
+            # SRS-5.1zzzzzzz310 (kế hoạch bước 3): người bán đọc bằng agent gọi công cụ ghi (code kiểm từng lần gọi); agent hỏng → form dưới.
+            with _do(conv, "lap_thao_tac"):
+                plan = agent_boc.lap(self, conv, system, src, operations_schema_ban())
+        if plan is None:
+            with _do(conv, "lap_thao_tac"):
+                plan = self._provider.extract(system, src, operations_schema_mua() if gon else operations_schema_ban() if ban_gon else operations_schema())
         if gon and plan.get("user_intent") == "sell":
             # SRS-5.1zzzzzzz293: form gọn không có ô thao tác rổ hàng — khách mua chuyển sang gửi bán thì đọc lại cả lượt bằng form đầy đủ.
             log.warning("Kế hoạch: form mua gọn đọc ra ý bán — đọc lại bằng form đầy đủ")
@@ -4809,6 +4786,8 @@ class Engine:
 
         # Xin xem bản vẽ / hỏi dự án / tả dự án / xác nhận xoá (SRS-5.1zzzzzzz55): nhận khi cụm trích có trong tin vừa nhắn.
         conv.y_luot = {}
+        if plan.get("_chua_ro_can"):   # SRS-5.1zzzzzzz310: agent bóc từ chối đổi trạng thái vì lời khách chưa chỉ ra căn nào
+            conv.y_luot["chua_ro_can"] = list(plan["_chua_ro_can"])
         if la_ngoai_viec:
             conv.y_luot["ngoai_viec"] = conv.so_luot_ngoai_viec   # SRS-5.1zzzzzzz177
         for k in ("xin_xem_ban_ve", "cau_hoi_du_an", "mo_ta_du_an"):
@@ -5520,6 +5499,22 @@ class Engine:
         data = self._provider.extract(EXTRACTION_SYSTEM, conv.messages(), extraction_schema())
         return {k: v for k, v in data.items() if isinstance(v, str)}
 
+    def _chua_ro_can(self, conv: Conversation, op: dict) -> list[str] | None:
+        """Cổng đổi trạng thái (SRS-5.1zzzzzzz310, cổng nguyên văn cho việc ẩn / đổi tin): rổ có từ 2 căn thì `trich_dan_can` phải nằm nguyên
+        trong lời khách lượt này và chỉ ra đúng một căn (cùng căn với `target` nếu có). Không đạt → nhãn các căn để hỏi lại; đạt / rổ một căn → None."""
+        that = [li for li in conv.listings if not self._is_stub_listing(li)]
+        if len(that) < 2:
+            return None
+        trich = str(op.get("trich_dan_can") or "").strip()
+        if trich and _trich_dan_khop(trich, conv.loi_khach_luot):
+            tg = self._op_targets(op)
+            li = self._match_listing(conv, trich)
+            # Mỗi căn đích phải do chính cụm khách chỉ ra ("căn 42 với 41" → 42 và 41); không có đích thì cụm tự chỉ ra một căn.
+            if (tg and all(self._match_listing(conv, t) is not None and (_trich_dan_khop(t, trich) or self._match_listing(conv, t) is li)
+                           for t in tg)) or (not tg and li is not None):
+                return None
+        return [x.label() for x in that]
+
     @staticmethod
     def _op_targets(op: dict) -> list[str]:
         raw = list(op.get("targets") or [])
@@ -5606,6 +5601,15 @@ class Engine:
             receipts.append(("add", targets))
             return
         if kind == "set_status":
+            chua_ro = self._chua_ro_can(conv, op)
+            if chua_ro:
+                # SRS-5.1zzzzzzz310: rổ từ 2 căn mà cụm khách không chỉ ra đúng một căn → KHÔNG đổi (bộ chấm hai_can_da_ban: "căn đó bán rồi" →
+                # form đánh dấu căn đang nói là đã bán); lời trả lời hỏi lại căn nào.
+                log.warning("Không đổi trạng thái: lời khách chưa chỉ ra căn nào trong rổ %d căn", len(chua_ro))
+                conv.y_luot["chua_ro_can"] = chua_ro
+                return
+            if not targets and op.get("trich_dan_can") and len(conv.listings) > 1:
+                targets = [str(op["trich_dan_can"])]   # cụm khách chỉ căn (đã qua cổng) là đích — không rơi về căn đang nói
             status = STATUS_MAP.get(op.get("status") or "")
             listings = self._resolve_targets(conv, targets) if targets else []
             if listings:  # the referenced căn(s) exist → mark each and switch context to them

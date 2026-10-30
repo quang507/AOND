@@ -4,7 +4,7 @@ mẫu duyệt tin nói lại mỗi lần khách "ok"; (3) "… chị ạ" cuối
 "Phường 2" nên bản tin in tên cũ. Mỗi bài đỏ khi tắt bản sửa tương ứng."""
 from aioi import cau_mau
 from aioi.dia_danh import TraDiaDanh, khoi_dia_danh
-from aioi.engine import Engine, Turn, _goi_a
+from aioi.engine import Engine, Turn
 from aioi.prompts import build_fee_followup_system, khoi_trang_thai_web
 from aioi.schema import Property
 from aioi.web import SITE_HOST, SITE_URL, link_tin
@@ -74,19 +74,6 @@ def test_engine_nho_da_bao_dang_va_ban_tin_moi_thi_bao_lai():
 
 
 # ---------- (3) "chị ạ" lặp ----------
-
-def test_tieng_goi_a_hai_luot_lien_thi_goi_lai():
-    assert _goi_a("Nhà 4x16m ngay Parc Mall, ngang rộng dễ xoay xe, chị ạ!") and _goi_a("rộng rãi quá anh ạ.")
-    assert not _goi_a("Dạ được ạ.") and not _goi_a("Nhà chị ở đâu?")
-    spy = _Spy(loi=["Diện tích sử dụng 120m² là rộng rãi lắm, hợp gia đình đông người. Nhà mấy lầu, mấy phòng ngủ?"])
-    eng = Engine(spy)
-    c = eng.conversation("k-220b")
-    c.prop.loai_hinh = "nha_pho"
-    c.history.append(Turn("assistant", "Nhà 64m² ngay Parc Mall rất thuận lợi cho chị ạ! Giá mong muốn bao nhiêu?", 0.0))
-    c.history.append(Turn("user", "dtsd 120m", 0.0))
-    eng._soat_hinh_thuc(c, "SYS", "Diện tích sử dụng 120m² nhà mình rộng rãi quá chị ạ, rất hợp gia đình đông người.")
-    assert len(spy.systems) == 1 and "tiếng gọi" in spy.systems[0]
-
 
 def test_mot_luot_co_chi_a_khong_bi_goi_lai():   # cách nói mới: lượt trước không có
     spy = _Spy()
