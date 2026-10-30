@@ -139,12 +139,13 @@ if [ -d /opt/aond_core/src/aioi ]; then
   # 28/10/2026 (SRS-5.1zzzzzzz235, chủ dự án: "đổi model chạy thật đang chạy cho khách là sonnet đi … để sonnet 5.5 đi, khi nào cần thì
   # thôi đổi lại"): model CHAT của lõi một nguồn ở dòng dưới — đổi lại Haiku thì sửa đúng dòng này (vd claude-haiku-5-5) rồi chạy cai-vps.
   # Chỉ lượt chat / trả lời; bóc tách (AIOI_EXTRACT_MODEL) và đọc ảnh giữ nguyên.
-  MODEL_CHAT="claude-sonnet-5-5"
+  # SRS-5.1zzzzzzz308 (chủ dự án 30/10: "dùng haiku hết luôn cũng dc"): bộ chấm 27 kịch bản Haiku 284–288/289 ≈ Sonnet 288, rẻ ~11 lần.
+  MODEL_CHAT="claude-haiku-5-5"
   # SRS-5.1zzzzzzz239 (chủ dự án 28/10/2026: "nếu bắn product đổi sang key gemini bắn từ từ"): ID thử (`la_id_thu`, các ô ban-thu-*) gọi
   # model THẲNG Gemini, không tốn tiền Claude. Muốn bắn thử bằng đúng model khách thật thì đổi dòng này thành "tat" rồi chạy cai-vps.
   # 28/10/2026 (SRS-5.1zzzzzzz243, chủ dự án: "đổi thành claude sonnet 5.5 xem nó có nịnh tốt ko"): bắn thử bằng Sonnet 5.5 như khách thật
   # (bóc tách Haiku như khách thật). Quay lại Gemini cho đỡ tiền thì đổi thành "gemini".
-  MODEL_CHAT_THU="claude-sonnet-5-5"
+  MODEL_CHAT_THU="claude-haiku-5-5"
   # SRS-5.1zzzzzzz246 (chủ dự án 28/10/2026: "bạn thử tắt công cụ cố định xem"): "tat" = lời trả khách là chữ thường như bản anh Luận;
   # "bat" = lại ép công cụ hai ô gui_khach (tự soát + lời gửi, SRS-76). Áp cho mọi khách, kể cả ID thử.
   CONG_CU_GUI_KHACH="tat"
@@ -166,7 +167,8 @@ if [ -d /opt/aond_core/src/aioi ]; then
   SOAT_GON="bat"
   # SRS-5.1zzzzzzz307 (B2 bước 2, chủ dự án 30/10: "làm nốt b2 nhưng vẫn lưu các hàm để dễ gọi"): lượt viết lời NGƯỜI BÁN không nhét sẵn rổ hàng /
   # bộ nhớ dự án / giá đã gửi — model tự gọi công cụ tra (thân công cụ là hàm khối cũ). "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = như cũ.
-  AGENT_BAN="thu"
+  # SRS-5.1zzzzzzz308 (chủ dự án 30/10: "làm đi thử thì trên cli" — thử bằng bộ chấm + chat tay quota CLI thay bắn production): mọi khách.
+  AGENT_BAN="bat"
   # SRS-5.1zzzzzzz299 (30/10/2026, Claude hết tiền, Gemini dự phòng chỉ đỡ 1 lượt): model Gemini dự phòng MỘT NGUỒN ở đây → GEMINI_MODEL trong .env
   # lõi. gemini-3.8-flash / gemini-flash-latest quá giờ với khoá miễn phí (đo 30/10); 3.5-flash và 3.1-flash-lite trả lời 8–10 s một lượt.
   MODEL_GEMINI="gemini-3.5-flash,gemini-3.1-flash-lite"

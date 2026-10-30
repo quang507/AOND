@@ -4515,7 +4515,8 @@ class Engine:
                     return li
         ref_tokens = set(normalize_project_name(ref).split())
         for li in conv.listings:
-            addr = li.prop.fields.get("dia_chi")
+            # SRS-5.1zzzzzzz308: căn mở từ tin nhắn hai căn chỉ có ô `duong` (không `dia_chi`) — "căn Phạm Hùng" phải tìm ra căn đó.
+            addr = " ".join(v for v in (li.prop.fields.get("dia_chi"), li.prop.fields.get("duong")) if v)
             if addr and len(ref_tokens & set(normalize_project_name(addr).split())) >= 2:
                 return li
         return None
@@ -5580,7 +5581,10 @@ class Engine:
                 # bleeds from the previous căn.
                 li = conv.new_listing()
                 li.history_start = max(0, len(conv.history) - 1)
-                data = self._loc_o_tin(conv, self._extract_fields(conv))   # cùng cổng bằng chứng (SRS-5.1zzzzzzz86)
+                # SRS-5.1zzzzzzz308 (thử CLI 30/10: "anh có 2 căn: căn 1 … Bùi Minh Trực 5 tỷ, căn 2 … Phạm Hùng 12 tỷ" → hai căn đều mang dữ
+                # liệu Bùi Minh Trực, căn Phạm Hùng mất): đọc lại cả tin nhắn chứa HAI căn thì lấy nhầm căn đầu. Ô AI đã bóc RIÊNG cho căn mới
+                # trong thao tác "add" là nguồn (cùng cổng bằng chứng); chỉ đọc lại khi thao tác không kèm ô nào.
+                data = _data() if fields else self._loc_o_tin(conv, self._extract_fields(conv))   # cùng cổng bằng chứng (SRS-5.1zzzzzzz86)
                 if targets:
                     data["ma_so_can"] = targets[0]
                 changed.update(li.prop.update(data))

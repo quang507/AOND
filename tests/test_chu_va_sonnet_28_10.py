@@ -57,6 +57,8 @@ def test_model_chat_khach_that_mot_nguon_o_cai_vps(monkeypatch):
     từ MỘT dòng MODEL_CHAT; ID thử mặc định chat cùng model khách thật."""
     import pathlib
     s = (pathlib.Path(__file__).parents[1] / "bot/bridge-zca/cai-vps.sh").read_text(encoding="utf-8")
-    assert 'MODEL_CHAT="claude-sonnet-5-5"' in s and "AIOI_CHAT_MODEL=%s" in s
+    # SRS-5.1zzzzzzz308: chủ dự án 30/10 đổi sang Haiku ("dùng haiku hết luôn cũng dc") — vẫn MỘT dòng, tên model Claude.
+    import re
+    assert re.search(r'^\s*MODEL_CHAT="claude-[a-z0-9-]+"$', s, re.M) and "AIOI_CHAT_MODEL=%s" in s
     monkeypatch.delenv("AIOI_CHAT_MODEL_THU", raising=False)
     assert model_chat_thu() is None

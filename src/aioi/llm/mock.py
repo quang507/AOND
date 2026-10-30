@@ -153,6 +153,12 @@ class MockProvider(LLMProvider):
         if "operations" in props:
             flat = self.extract(system, messages, {"properties": {}})  # reuse the flat brain
             plan = _flat_to_operations(flat)
+            # Như model thật: ô của thao tác "add" căn mới là ô của RIÊNG tin vừa nhắn, không gộp cả lịch sử (SRS-5.1zzzzzzz308).
+            for op in plan["operations"]:
+                if op.get("op") == "add" and op.get("can_khac_trich") and len([m for m in messages if m.role == "user"]) > 1:
+                    cuoi_tin = [m for m in messages if m.role == "user"][-1:]
+                    rieng = _flat_to_operations(self.extract(system, cuoi_tin, {"properties": {}}))["operations"]
+                    op["fields"] = next((o["fields"] for o in rieng if o.get("fields")), op.get("fields") or {})
             # Đồ giả bóc bằng từ khoá trên chính lời khách → bằng chứng là lời khách (SRS-5.1zzzzzzz73).
             for op in plan["operations"]:
                 if isinstance(op.get("fields"), dict) and op["fields"]:

@@ -226,10 +226,11 @@ class DuPhongProvider(LLMProvider):
 
     def converse(self, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]],
                  max_tokens: int = 1024) -> ToolTurn:
-        # Vòng công cụ chỉ Claude chạy; dự phòng trả lời chữ không gọi công cụ (vòng lặp của engine vẫn dừng đúng).
+        # Vòng công cụ chỉ Claude chạy; dự phòng trả lời chữ không gọi công cụ (vòng lặp của engine vẫn dừng đúng). stop_reason "du_phong" cho
+        # vòng nào cần biết lời không qua công cụ (agent bán viết lại với đủ khối dữ liệu, SRS-5.1zzzzzzz308).
         msgs = [Message(m["role"], m["content"]) for m in messages if isinstance(m.get("content"), str)]
         return self._thu("converse", lambda: self._chinh.converse(system, messages, tools, max_tokens),
-                         lambda n, m, k: ToolTurn(text=self._chu(n, m, k, system, msgs, max_tokens), tool_calls=[]))
+                         lambda n, m, k: ToolTurn(text=self._chu(n, m, k, system, msgs, max_tokens), tool_calls=[], stop_reason="du_phong"))
 
     @staticmethod
     def _anh(items: list[tuple[bytes, str]]) -> list[dict[str, Any]]:
