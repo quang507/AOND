@@ -162,7 +162,8 @@ if [ -d /opt/aond_core/src/aioi ]; then
   FORM_BAN_GON="bat"
   # SRS-5.1zzzzzzz298 (B2 bước 1, chủ dự án 29/10): soát lời chế độ gọn — luật giọng / lặp chỉ ghi log, tối đa MỘT lần gọi lại model, "Dạ" do code
   # bỏ. "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = như cũ (gọi lại tới 2 lần, mọi luật).
-  SOAT_GON="thu"
+  # SRS-5.1zzzzzzz304: bộ chấm kịch bản (15 kịch bản, Sonnet + Haiku) cho điểm như chế độ cũ, Haiku ít gọi lại hơn → bật cho mọi khách.
+  SOAT_GON="bat"
   # SRS-5.1zzzzzzz299 (30/10/2026, Claude hết tiền, Gemini dự phòng chỉ đỡ 1 lượt): model Gemini dự phòng MỘT NGUỒN ở đây → GEMINI_MODEL trong .env
   # lõi. gemini-3.8-flash / gemini-flash-latest quá giờ với khoá miễn phí (đo 30/10); 3.5-flash và 3.1-flash-lite trả lời 8–10 s một lượt.
   MODEL_GEMINI="gemini-3.5-flash,gemini-3.1-flash-lite"

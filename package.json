@@ -19,7 +19,9 @@
     "kiem": "bun run kieu && bun run kieu:bot && bun run build && bun run test:bot && bun run test:rohang && bun run truyvet",
     "test:ranhgioi": "node bot/tests/ranh-gioi.mjs",
     "srd": "node scripts/sinh-srd-docx.mjs",
-    "test:py": "python -m pytest -q tests"
+    "test:py": "python -m pytest -q tests",
+    "cham": "python scripts/cham-kich-ban.py",
+    "chat:cli": "python scripts/chat-cli.py"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

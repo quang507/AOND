@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shutil
 import subprocess
 import tempfile
 import time
@@ -42,7 +43,8 @@ def _chay_cli(model: str, system: str, loi_nhan: str, schema: dict[str, Any] | N
         f = os.path.join(thu_muc, "system.txt")
         with open(f, "w", encoding="utf-8") as h:
             h.write(system)
-        lenh = ["claude", "-p", "--model", model, "--output-format", "json", "--system-prompt-file", f,
+        # Windows: npm cài `claude.cmd` — subprocess không tự thêm đuôi, phải tìm đường dẫn đủ (SRS-5.1zzzzzzz304).
+        lenh = [shutil.which("claude") or "claude", "-p", "--model", model, "--output-format", "json", "--system-prompt-file", f,
                 "--tools", "", "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence"]
         if schema is not None:
             lenh += ["--json-schema", json.dumps(schema, ensure_ascii=False), "--max-turns", "3"]
