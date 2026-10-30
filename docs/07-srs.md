@@ -9058,6 +9058,23 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz299 · Claude hết tiền: Gemini dự phòng chỉ đỡ một lượt vì model mặc định quá giờ — đổi danh sách model, một nguồn ở cai-vps.sh (30/10/2026)
+Ca gốc: 29/10 15:57 UTC tài khoản Anthropic báo "credit balance is too low" (sổ lỗi `HET TIEN API`); từ 15:59 mọi lượt chỉ nhận câu giữ chỗ (20 lượt hỏng, 8 lần
+thử lại hỏng). Chủ dự án 30/10: "bạn dùng key gemini free trước đi … mỗi thứ gọi vào 1 việc" (dán 6 khoá).
+
+1. **Soát**: cả 6 khoá chủ dự án dán đều gọi được Gemini và ĐÃ có trong Vault theo việc — 3 khoá chat (`GEMINI_API_KEY`, `_2`, `_3`) và 3 khoá nhúng
+   vector (`GEMINI_NHUNG_4/5/6` = Check xe / NhaDat Radar / Goi-My). Không cần thêm khoá. Gốc thật: model dự phòng mặc định `gemini-3.8-flash` QUÁ GIỜ
+   với khoá miễn phí (cả 3 khoá; `gemini-flash-latest` cũng vậy) → vòng dự phòng tiêu hết ngân sách 40 s rồi ném lỗi Claude. `gemini-3.5-flash`,
+   `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite` trả lời được (chạy lại hai lượt người bán trên engine: 8–10 s / lượt).
+2. **Sửa**: `MODEL_GEMINI="gemini-3.5-flash,gemini-3.1-flash-lite"` trong `cai-vps.sh` ghi `GEMINI_MODEL` vào `.env` lõi (ghi đè dòng cũ) — một nguồn; mặc định
+   `config.Settings.gemini_chat_models` khớp. Không đổi thứ tự nguồn: Claude vẫn chính, hết tiền thì nghỉ Claude 300 s và đi thẳng Gemini.
+3. **Chất lượng khi chạy Gemini (đo, chưa sửa)**: bóc tách sót ô — lượt "Bán nhà phố … giá 5 tỷ" cả hai model không ghi giá; lượt "ngang 4 dài 15, 1 trệt 2 lầu,
+   sổ hồng riêng, đang ở" sót kết cấu / pháp lý / hiện trạng → bot hỏi lại điều khách đã nói (cùng ghi nhận SRS-239). Đỡ hơn bot câm; không dùng làm đường chính.
+   Gemini miễn phí: Google được dùng nội dung để cải thiện sản phẩm (điều khoản Gemini API) — đã báo chủ dự án; chủ dự án chọn dùng.
+4. **Ba câu hỏi gốc** — (1) *lớp lỗi*: tên model dự phòng ghi cứng trong code / `.env` VPS, không ai kiểm còn chạy; chỉ lộ khi Claude hỏng. (2) *chỗ khác cùng
+   lớp*: model Groq (`qwen/qwen3.8-27b`, `openai/gpt-oss-120b`) chưa kiểm — chưa có khoá Groq trong lần soát này. (3) *kiểm*: `tests/test_gemini_du_phong_299.py`
+   (đỏ khi gỡ bản sửa); bắn thử sau khi cài (ID thử cũng đi Claude trước → dự phòng Gemini).
+
 ### SRS-5.1zzzzzzz298 · B2 bước 1: lớp soát lời — luật giọng / lặp thôi gọi lại model, tối đa một lần gọi lại (29/10/2026)
 Chủ dự án 29/10 (về bốn khâu phía bán trong bản review: Haiku đọc form 27.518 chữ → code áp → Sonnet viết từ ~28 khối → ~34 luật regex soát lời,
 gọi lại tối đa 2 lần): "Đoạn này có xoá hay bỏ không hay như thế nào trước rồi làm b2".

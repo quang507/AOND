@@ -160,13 +160,16 @@ if [ -d /opt/aond_core/src/aioi ]; then
   # SRS-5.1zzzzzzz298 (B2 bước 1, chủ dự án 29/10): soát lời chế độ gọn — luật giọng / lặp chỉ ghi log, tối đa MỘT lần gọi lại model, "Dạ" do code
   # bỏ. "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = như cũ (gọi lại tới 2 lần, mọi luật).
   SOAT_GON="thu"
+  # SRS-5.1zzzzzzz299 (30/10/2026, Claude hết tiền, Gemini dự phòng chỉ đỡ 1 lượt): model Gemini dự phòng MỘT NGUỒN ở đây → GEMINI_MODEL trong .env
+  # lõi. gemini-3.8-flash / gemini-flash-latest quá giờ với khoá miễn phí (đo 30/10); 3.5-flash và 3.1-flash-lite trả lời 8–10 s một lượt.
+  MODEL_GEMINI="gemini-3.5-flash,gemini-3.1-flash-lite"
   if [ -f /opt/aond_core/.env ]; then
     umask 077
-    grep -vE '^AIOI_(CHAT_MODEL(_THU)?|CONG_CU_GUI_KHACH|DONG_TRICH_XUAT|AGENT_MUA|FORM_MUA_GON|SOAT_GON)=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
-    printf 'AIOI_CHAT_MODEL=%s\nAIOI_CHAT_MODEL_THU=%s\nAIOI_CONG_CU_GUI_KHACH=%s\nAIOI_DONG_TRICH_XUAT=%s\nAIOI_AGENT_MUA=%s\nAIOI_FORM_MUA_GON=%s\nAIOI_SOAT_GON=%s\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$CONG_CU_GUI_KHACH" "$DONG_TRICH_XUAT" "$AGENT_MUA" "$FORM_MUA_GON" "$SOAT_GON" >> /opt/aond_core/.env.moi
+    grep -vE '^AIOI_(CHAT_MODEL(_THU)?|CONG_CU_GUI_KHACH|DONG_TRICH_XUAT|AGENT_MUA|FORM_MUA_GON|SOAT_GON)=|^GEMINI_MODEL=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
+    printf 'AIOI_CHAT_MODEL=%s\nAIOI_CHAT_MODEL_THU=%s\nAIOI_CONG_CU_GUI_KHACH=%s\nAIOI_DONG_TRICH_XUAT=%s\nAIOI_AGENT_MUA=%s\nAIOI_FORM_MUA_GON=%s\nAIOI_SOAT_GON=%s\nGEMINI_MODEL=%s\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$CONG_CU_GUI_KHACH" "$DONG_TRICH_XUAT" "$AGENT_MUA" "$FORM_MUA_GON" "$SOAT_GON" "$MODEL_GEMINI" >> /opt/aond_core/.env.moi
     chown --reference=/opt/aond_core/.env /opt/aond_core/.env.moi; chmod 600 /opt/aond_core/.env.moi
     mv /opt/aond_core/.env.moi /opt/aond_core/.env
-    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT, ID thử = $MODEL_CHAT_THU, công cụ gửi khách = $CONG_CU_GUI_KHACH, dòng trích xuất = $DONG_TRICH_XUAT, agent mua = $AGENT_MUA, form mua gọn = $FORM_MUA_GON, soát gọn = $SOAT_GON"
+    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT, ID thử = $MODEL_CHAT_THU, công cụ gửi khách = $CONG_CU_GUI_KHACH, dòng trích xuất = $DONG_TRICH_XUAT, agent mua = $AGENT_MUA, form mua gọn = $FORM_MUA_GON, soát gọn = $SOAT_GON, Gemini dự phòng = $MODEL_GEMINI"
   fi
   systemctl restart aond-core
   for i in $(seq 1 60); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done
