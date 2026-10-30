@@ -513,6 +513,211 @@
      "2": "12 tỷ"
     }
    }
+  },
+  {
+   "id": "ma_lo_7m",
+   "mo_ta": "Chat thật 28/10 (tester): trả lời cụt từng ý — 7m, mặt tiền lớn, 135m2 đất, 250m2 sàn; rồi bảo đăng",
+   "cau": [
+    "chào em",
+    "bán nhà Mã Lò 12.5 tỉ",
+    "7m lận em nha",
+    "mặt tiền lớn",
+    "135m2 đất nha",
+    "250m2",
+    "ừ đăng đi"
+   ],
+   "kiem": {
+    "loai": "nha_pho",
+    "o": {
+     "gia": "12,5",
+     "dien_tich_dat": "135",
+     "dien_tich_nha": "250"
+    }
+   }
+  },
+  {
+   "id": "aeon_tan_phu",
+   "mo_ta": "Chat thật 27/10 (tester): bán gấp nhà gần Aeon Tân Phú, 4x15, 1 trệt 1 lửng 3 lầu, HXH 6m, duyệt tin, chưa biết phí",
+   "cau": [
+    "a muốn bán nhà a đang ở. bán gấp",
+    "nhà gần TTTM Aeon Mall Tân Phú e",
+    "6,2 tỏi",
+    "4x15",
+    "a xây kín đất",
+    "nhà 1 trệt 1 lửng 3 lầu",
+    "Đường Số 5A - P. Bình Hưng Hoà A",
+    "hxh 6m e",
+    "Sổ hồng riêng, đã hoàn công. Sang tên công chứng ngay trong ngày.",
+    "ok rồi e",
+    "chưa e nha"
+   ],
+   "kiem": {
+    "loai": "nha_pho",
+    "o": {
+     "gia": "6,2"
+    },
+    "luot": {
+     "11": "1 ?%"
+    }
+   }
+  },
+  {
+   "id": "can_ho_thue",
+   "mo_ta": "Cho thuê căn hộ chung cư — tin thuê, không nói phí 1% giá bán",
+   "cau": [
+    "Cho thuê căn hộ 2 phòng ngủ chung cư Sunrise City quận 7, nội thất đầy đủ",
+    "giá 15 triệu một tháng"
+   ],
+   "kiem": {
+    "cho_thue": true,
+    "loai": "chung_cu",
+    "o": {
+     "gia": "15"
+    },
+    "cam": [
+     "1 ?% ?(giá|giao)"
+    ]
+   }
+  },
+  {
+   "id": "dat_nen_long_an",
+   "mo_ta": "Đất nền xã + tỉnh — không hỏi huyện (từ 1/7/2025 không còn cấp huyện)",
+   "cau": [
+    "bán lô đất nền 5x20 xã Đức Hòa Hạ, Long An, sổ riêng thổ cư 100%, giá 1,8 tỷ"
+   ],
+   "kiem": {
+    "loai": "dat",
+    "o": {
+     "gia": "1,8"
+    },
+    "luot_khong": {
+     "1": "huyện|quận nào"
+    }
+   }
+  },
+  {
+   "id": "binh_phuoc",
+   "mo_ta": "Bình Phước cũ ngoài vùng nhận tin — không soạn bản tin",
+   "cau": [
+    "bán đất Đồng Xoài Bình Phước 500m2 giá 2 tỷ",
+    "đăng giúp anh"
+   ],
+   "kiem": {
+    "khong_nhap": true
+   }
+  },
+  {
+   "id": "xung_chu",
+   "mo_ta": "Khách xưng chú — bot gọi chú, không gọi anh",
+   "cau": [
+    "chú muốn bán căn nhà hẻm đường Phan Xích Long Phú Nhuận giá 8 tỷ"
+   ],
+   "kiem": {
+    "luot": {
+     "1": "chú"
+    },
+    "o": {
+     "gia": "8"
+    }
+   }
+  },
+  {
+   "id": "doi_gia",
+   "mo_ta": "Khách đổi giá giữa chừng — ô giá theo số mới",
+   "cau": [
+    "bán nhà hẻm xe hơi đường Nguyễn Kiệm Gò Vấp, 4x18, 1 trệt 2 lầu, sổ hồng riêng, giá 8 tỷ",
+    "à anh giảm còn 7,5 tỷ nha em"
+   ],
+   "kiem": {
+    "o": {
+     "gia": "7,5"
+    }
+   }
+  },
+  {
+   "id": "hoi_phi_truoc",
+   "mo_ta": "Hỏi phí ngay câu đầu, chưa rõ vai — nêu mức phí, không đoán vai",
+   "cau": [
+    "bên em tính phí sao, anh có căn nhà muốn gửi bán mà chưa biết có nên gửi không"
+   ],
+   "kiem": {
+    "luot": {
+     "1": "1 ?%"
+    }
+   }
+  },
+  {
+   "id": "uy_tin",
+   "mo_ta": "Khách lo lừa đảo — giới thiệu đúng tên nền tảng",
+   "cau": [
+    "bên em là công ty gì vậy, có phải lừa đảo không"
+   ],
+   "kiem": {
+    "luot": {
+     "1": "ai ơi nhà đất|aioinhadat"
+    }
+   }
+  },
+  {
+   "id": "tieng_long",
+   "mo_ta": "Tiếng lóng HXH / SHR / 1T2L / tỏi — hiểu đúng, không hỏi lại nghĩa",
+   "cau": [
+    "bán nhà HXH Nguyễn Kiệm Gò Vấp, SHR, 4x18, 1T2L, 7 tỏi"
+   ],
+   "kiem": {
+    "o": {
+     "gia": "7"
+    },
+    "luot_khong": {
+     "1": "nghĩa là|là gì|viết tắt"
+    }
+   }
+  },
+  {
+   "id": "tin_cut",
+   "mo_ta": "Khách nhắn nhiều tin cụt — gom đủ ô",
+   "cau": [
+    "bán nhà",
+    "quận 10",
+    "đường Sư Vạn Hạnh",
+    "hẻm 5m",
+    "giá 9 tỷ"
+   ],
+   "kiem": {
+    "o": {
+     "gia": "9"
+    }
+   }
+  },
+  {
+   "id": "mat_bang_thue",
+   "mo_ta": "Cho thuê mặt bằng kinh doanh mặt tiền — tin thuê, giá theo tháng",
+   "cau": [
+    "cho thuê mặt bằng kinh doanh mặt tiền đường Hai Bà Trưng quận 1, ngang 6m, giá 80 triệu một tháng"
+   ],
+   "kiem": {
+    "cho_thue": true,
+    "o": {
+     "gia": "80"
+    }
+   }
+  },
+  {
+   "id": "ban_gap_lo_ly_do",
+   "mo_ta": "Khách kể lý do bán (nợ ngân hàng) — không đưa chuyện riêng vào bản tin",
+   "cau": [
+    "anh cần bán gấp nhà hẻm đường Lê Đức Thọ Gò Vấp vì đang nợ ngân hàng",
+    "4x16, 1 trệt 2 lầu, sổ hồng riêng, giá 6 tỷ",
+    "đăng đi em"
+   ],
+   "kiem": {
+    "o": {
+     "gia": "6"
+    },
+    "luot_khong": {
+     "3": "nợ ngân hàng"
+    }
+   }
   }
  ]
 }
