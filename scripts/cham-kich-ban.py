@@ -28,8 +28,17 @@ def _chay_mot(kb: dict, chat: str, boc: str) -> dict:
     os.environ.setdefault("AIOI_FORM_BAN_GON", "bat")
     os.environ.pop("SUPABASE_SERVICE_ROLE_KEY", None)
     import logging
+    dem = {"goi": 0, "goi_lai": 0, "usd": 0.0, "soat": []}
+
+    class _BatSoat(logging.Handler):   # lưới soát nào kích (đầu mỗi lý do) — dữ liệu để quyết gỡ luật nào
+        def emit(self, r: logging.LogRecord) -> None:
+            m = r.getMessage()
+            if "lệch luật" in m:
+                dem["soat"].append(("gọi lại: " if "gọi lại model" in m or "lần hai" in m else "ghi log: ") + m.split(": ", 1)[-1][:300])
+    lg = logging.getLogger("aioi")
+    lg.addHandler(_BatSoat())
     if not os.environ.get("CHAM_LOG"):
-        logging.disable(logging.WARNING)   # log lõi từng lượt (đặt CHAM_LOG=1 để xem)
+        lg.propagate = False   # log lõi từng lượt không in ra màn hình (đặt CHAM_LOG=1 để xem)
     from aioi.config import load_settings
     from aioi.engine import Engine, SqliteConversationStore, _so_khong_co_trong_tin
     from aioi.llm import build_provider
@@ -37,7 +46,6 @@ def _chay_mot(kb: dict, chat: str, boc: str) -> dict:
     from tests.kich_ban.cham import loi_pham
 
     p = build_provider(load_settings())
-    dem = {"goi": 0, "goi_lai": 0, "usd": 0.0}
     goc = getattr(p, "_goi", None)
     if goc is not None:   # provider claude_cli: đếm lần gọi / gọi lại / tiền quy đổi
         def _goi(model, system, messages, schema=None):
@@ -102,6 +110,12 @@ def main() -> int:
             tong[k] += v
     print(f"\n== TỔNG {tong['dat']}/{tong['phep']} phép đạt · gọi model {tong['goi']} · gọi lại {tong['goi_lai']} · ${tong['usd']:.4f} quy đổi"
           + (f"  (trước {sum(r['dat'] for r in cu.values())}/{sum(len(r['diem']) for r in cu.values())})" if cu else ""))
+    from collections import Counter
+    soat = Counter(ly[:9] + x.strip()[:40] for kq in kqs for ly in kq.get("soat", []) for x in ly[9:].split(" | "))
+    if soat:
+        print("\n== Lưới soát đã kích (số lần):")
+        for ten, n in soat.most_common():
+            print(f"  {n:3} × {ten}")
     if a.ra:
         json.dump({"chat": a.chat, "boc": a.boc, "ket_qua": kqs, "tong": tong}, open(a.ra, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     return 0
