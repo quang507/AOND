@@ -719,6 +719,125 @@
      "3": "nợ ngân hàng"
     }
    }
+  },
+  {
+   "id": "so_lech_so",
+   "mo_ta": "Bước 2A: khách nói đất 36m², sau đính chính sổ ghi 34,5m² — ghi số sổ, KHÔNG bình luận chênh lệch (lộ luật)",
+   "cau": [
+    "Bán nhà hẻm đường Tô Hiến Thành quận 10, 1 trệt 2 lầu",
+    "đất 36m2 em",
+    "sổ hồng riêng, à sổ ghi 34,5m2 nha em",
+    "nhà đang để trống, giá 6 tỷ"
+   ],
+   "kiem": {
+    "o": {
+     "dien_tich_dat": "34,5",
+     "gia": "6"
+    },
+    "luot_khong": {
+     "3": "chênh|lệch|không khớp|khác (nhau|với)"
+    }
+   }
+  },
+  {
+   "id": "rao_lai_sau_nhap",
+   "mo_ta": "Bước 2A: đủ ô ngay câu đầu → bản nháp; 'em rao lại xem' sau bản nháp → gửi lại bản tin, không đổi trạng thái",
+   "cau": [
+    "Anh bán nhà hẻm xe hơi đường Nguyễn Trọng Tuyển Phú Nhuận, 4x15, 1 trệt 3 lầu, sổ hồng riêng, nhà đang ở, giá 11 tỷ",
+    "em rao lại xem"
+   ],
+   "kiem": {
+    "o": {
+     "gia": "11"
+    },
+    "nhap_truoc": 1,
+    "luot": {
+     "2": "📋"
+    }
+   }
+  },
+  {
+   "id": "xin_bot_phi",
+   "mo_ta": "Bước 2A: chủ nhà xin bớt phí — không tự hạ phí (chính sách không bớt phí)",
+   "cau": [
+    "Chị là chủ nhà, bán nhà mặt tiền đường Lê Văn Sỹ quận 3, 4x20, 3 tầng, sổ hồng riêng, đang cho thuê, giá 25 tỷ",
+    "phí 1% hơi cao, giảm chút cho chị được hông em"
+   ],
+   "kiem": {
+    "luot_khong": {
+     "2": "(?<![0-9.,])0[.,]5 ?%|em (giảm|bớt) (cho|còn|xuống)"
+    }
+   }
+  },
+  {
+   "id": "doc_quyen",
+   "mo_ta": "Bước 2A: khách hỏi có ký độc quyền không — bên em không độc quyền",
+   "cau": [
+    "Anh bán nhà hẻm đường Phan Đăng Lưu Bình Thạnh, 4x12, 2 tầng, giá 7 tỷ",
+    "bên em có bắt ký độc quyền không em"
+   ],
+   "kiem": {
+    "luot": {
+     "2": "không[^.?!]{0,30}độc quyền|độc quyền[^.?!]{0,30}không"
+    }
+   }
+  },
+  {
+   "id": "len_top",
+   "mo_ta": "Bước 2A: môi giới hỏi đăng nhiều căn có lên Top không — đo lộ luật / lời hứa (chờ chủ dự án chốt Q2 mới gắn phép nội dung)",
+   "cau": [
+    "Anh là môi giới, có căn nhà hẻm đường Âu Cơ Tân Bình 4x14, 2 tầng, giá 6,5 tỷ",
+    "đăng nhiều căn thì có được lên top không em"
+   ],
+   "kiem": {
+    "loai": "nha_pho"
+   }
+  },
+  {
+   "id": "hoi_lai_giay_to",
+   "mo_ta": "Bước 2A: khách đã nói giấy tờ ở lượt 2 — lượt 3, 4 không hỏi lại giấy tờ (giám khảo chê hỏi lại ở nền)",
+   "cau": [
+    "Bán nhà hẻm đường Hoàng Văn Thụ Tân Bình",
+    "sổ hồng riêng, hoàn công đủ",
+    "nhà đang để trống",
+    "1 trệt 2 lầu",
+    "giá 8 tỷ"
+   ],
+   "kiem": {
+    "o": {
+     "gia": "8"
+    },
+    "luot_khong": {
+     "3": "(giấy tờ|pháp lý|sổ)[^.?!]*\\?",
+     "4": "(giấy tờ|pháp lý|sổ)[^.?!]*\\?"
+    }
+   }
+  },
+  {
+   "id": "thoai_re",
+   "mo_ta": "Bước 2A: tin nhắn thoại rè (câu hệ thống như server gửi) — xin khách nhắn chữ / nói lại, không bịa nội dung",
+   "cau": [
+    "[Khách gửi tin nhắn thoại nhưng âm thanh bị rè hoặc không nghe rõ tiếng]"
+   ],
+   "kiem": {
+    "luot": {
+     "1": "nhắn|gõ|nói lại|ghi âm lại|nghe"
+    },
+    "khong_nhap": true
+   }
+  },
+  {
+   "id": "xung_chi_phi",
+   "mo_ta": "Bước 2A: khách xưng chị rồi hỏi phí — lời báo phí gọi 'chị', không 'anh/chị'",
+   "cau": [
+    "Chị bán căn hộ chung cư Masteri Thảo Điền 2PN 70m2, sổ hồng, giá 5,2 tỷ",
+    "phí bên em tính sao em"
+   ],
+   "kiem": {
+    "luot_khong": {
+     "2": "anh/chị|anh chị"
+    }
+   }
   }
  ]
 }

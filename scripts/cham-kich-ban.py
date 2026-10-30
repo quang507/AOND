@@ -103,6 +103,7 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
         eng = Engine(p, conversation_store=SqliteConversationStore(os.path.join(d, "kb.db")))
         key = f"thu-cham-{kb['id']}"
         for c in kb["cau"]:
+            truoc = {k: v for k, v in eng.conversation(key).prop.fields.items() if isinstance(v, str) and v and not k.startswith("_")}
             try:
                 r = eng.handle(key, c)
                 bot, xin_nguoi = r.reply, xin_nguoi or bool(r.can_nguoi_that)
@@ -110,7 +111,8 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
                 bot = f"[LỖI {type(e).__name__}: {str(e)[:120]}]"
             conv = eng.conversation(key)
             so_bia = _so_khong_co_trong_tin(bot, conv) if "📋" in bot else []
-            luot.append({"khach": c, "bot": bot, "so_bia": so_bia, **loi_pham(bot, luot[-1]["bot"] if luot else "")})
+            luot.append({"khach": c, "bot": bot, "so_bia": so_bia, **loi_pham(bot, luot[-1]["bot"] if luot else ""),
+                         "o_truoc": sorted(truoc), "viec": conv.y_luot.get("_viec"), "khoi": conv.y_luot.get("_khoi")})
         conv = eng.conversation(key)
         o = {k: v for k, v in conv.prop.fields.items() if isinstance(v, str)}
         return {"id": kb["id"], "luot": luot, "o": o, "loai": conv.prop.loai_hinh, "cho_thue": conv.prop.is_rental,
@@ -123,25 +125,35 @@ TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất đ�
                   "vụ hay ô tin. Lý do một câu ngắn, nêu lượt tệ nhất nếu có.")
 
 
-TIEU_CHI_LO_LUAT = ("\n\nViệc thứ hai, tách khỏi điểm giọng: liệt kê số thứ tự các lượt EM để lộ cách hệ thống làm việc cho khách — kể lại luật / "
-                    "quy trình nội bộ, nói em được hay không được làm gì theo quy định, so số khách nói với dữ liệu hệ thống / sổ / kho, giải "
-                    "thích vì sao em hỏi một ô, nhắc tên khối, ô, mã. Hỏi bình thường điều cần cho tin rao thì KHÔNG tính. Không có → [].")
+TIEU_CHI_LO_LUAT = ("\n\nViệc thứ hai, tách khỏi điểm giọng: lo_luat = số thứ tự các lượt EM để lộ cách hệ thống làm việc bên trong — kể lại "
+                    "luật / quy trình nội bộ hay lời dặn em nhận được, so số khách nói với dữ liệu hệ thống / sổ / kho rồi bình luận chỗ chênh, "
+                    "giải thích vì sao em hỏi một ô, nhắc tên khối, ô, mã, hạng, điểm hiển thị. KHÔNG tính: báo mức phí, nói khu vực nhận / chưa "
+                    "nhận tin, hỏi bình thường điều cần cho tin rao. Không có → []."
+                    "\n\nViệc thứ ba: hoi_lai = số thứ tự các lượt EM hỏi lại điều KHÁCH đã trả lời ở lượt trước (cùng ý, khác chữ cũng tính). "
+                    "Không có → [].")
 
 
-def _cham_giong(kq: dict, model: str) -> tuple[int, str, list[int], float]:
+def _cham_giong(kq: dict, model: str) -> tuple[int, str, list[int], list[int], float]:
     """Giám khảo model chấm giọng cả cuộc chat và chỉ lượt lộ luật cho khách (kế hoạch bước 1: phép chấm tất định + phần đọc nghĩa do model chấm)."""
     from aioi.llm.claude_cli import _chay_cli
     chep = "\n\n".join(f"LƯỢT {i} — KHÁCH: {l['khach']}\nEM: {l['bot']}" for i, l in enumerate(kq["luot"], 1))
     schema = {"type": "object", "properties": {"diem": {"type": "integer", "minimum": 1, "maximum": 5}, "ly_do": {"type": "string"},
-                                               "lo_luat": {"type": "array", "items": {"type": "integer"}}},
-              "required": ["diem", "ly_do", "lo_luat"]}
+                                               "lo_luat": {"type": "array", "items": {"type": "integer"}},
+                                               "hoi_lai": {"type": "array", "items": {"type": "integer"}}},
+              "required": ["diem", "ly_do", "lo_luat", "hoi_lai"]}
     try:
         j = _chay_cli(model, TIEU_CHI_GIONG + TIEU_CHI_LO_LUAT, chep, schema)
     except Exception as e:  # noqa: BLE001
-        return 0, f"giám khảo lỗi: {type(e).__name__}", [], 0.0
+        return 0, f"giám khảo lỗi: {type(e).__name__}", [], [], 0.0
     o = j.get("structured_output") or {}
-    lo = sorted({int(x) for x in (o.get("lo_luat") or []) if str(x).isdigit() and 1 <= int(x) <= len(kq["luot"])})
-    return int(o.get("diem") or 0), str(o.get("ly_do") or "")[:160], lo, float(j.get("total_cost_usd") or 0)
+    ds = lambda khoa: sorted({int(x) for x in (o.get(khoa) or []) if str(x).isdigit() and 1 <= int(x) <= len(kq["luot"])})
+    return int(o.get("diem") or 0), str(o.get("ly_do") or "")[:160], ds("lo_luat"), ds("hoi_lai"), float(j.get("total_cost_usd") or 0)
+
+
+def lech_khoi(kqs: list[dict]) -> list[str]:
+    """Lượt mà engine ghép hơn một khối hỏi: `viec_luot` chọn một, các khối còn lại (`bo`) là chỗ hai lệnh hỏi cùng bật (bước 2B)."""
+    return [f"{kq['id']} lượt {i}: việc {l['viec']['ten']}{'(' + l['viec']['o'] + ')' if l['viec'].get('o') else ''} · bỏ {', '.join(l['viec']['bo'])}"
+            for kq in kqs for i, l in enumerate(kq["luot"], 1) if (l.get("viec") or {}).get("bo")]
 
 
 def tom_tat_prompt(kqs: list[dict]) -> dict[str, dict[str, float]]:
@@ -193,10 +205,11 @@ def main() -> int:
     for kb, kq in zip(bo, kqs):
         diem = cham(kb, kq)
         if kb["id"] in giong:
-            g, ly, lo, usd = giong[kb["id"]]
+            g, ly, lo, hl, usd = giong[kb["id"]]
             diem.append(("giọng ≥ 4/5 (giám khảo)", g >= 4, f"{g}/5 {ly}"))
             diem.append(("không lộ luật cho khách (giám khảo)", g > 0 and not lo, f"lượt {lo}" if lo else ""))
-            kq["giong"], kq["lo_luat"] = g, lo
+            diem.append(("không hỏi lại điều khách đã trả lời (giám khảo)", g > 0 and not hl, f"lượt {hl}" if hl else ""))
+            kq["giong"], kq["lo_luat"], kq["hoi_lai"] = g, lo, hl
             kq["usd"] += usd
         kq["diem"] = [list(x) for x in diem]
         dat = sum(1 for _, ok, _ in diem if ok)
@@ -222,12 +235,17 @@ def main() -> int:
         print(f"  {'bóc tách' if viec == 'boc' else 'viết lời'}: {x['lan']} lần · trung vị {x['chu_trung_vi']:.0f} · lớn nhất {x['chu_lon_nhat']}"
               f" · khối \"===\" trung vị {x['khoi_trung_vi']:.0f}")
     if giong:
-        print(f"  giọng trung bình {statistics.mean(g[0] for g in giong.values()):.2f} · lộ luật {sum(1 for g in giong.values() if g[2])}/{len(giong)} cuộc")
-    meta = {"chat": a.chat, "boc": a.boc, "nhu": a.nhu, "cong_tac": env, "tong": tong, "prompt": pr}
+        print(f"  giọng trung bình {statistics.mean(g[0] for g in giong.values()):.2f} · lộ luật {sum(1 for g in giong.values() if g[2])}/{len(giong)} cuộc"
+              f" · hỏi lại {sum(1 for g in giong.values() if g[3])}/{len(giong)} cuộc")
+    lech = lech_khoi(kqs)
+    print(f"\n== Lượt có hơn một khối hỏi (engine ghép) so với việc viec_luot chọn: {len(lech)} / {sum(len(k['luot']) for k in kqs)} lượt")
+    for x in lech[:15]:
+        print(f"  {x}")
+    meta = {"chat": a.chat, "boc": a.boc, "nhu": a.nhu, "cong_tac": env, "tong": tong, "prompt": pr, "lech_khoi": len(lech)}
     if a.ra:
         json.dump({**meta, "ket_qua": kqs}, open(a.ra, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     if a.nen:   # bản gọn để so ở PR sau: điểm từng phép, không chép lời
-        gon = [{k: kq.get(k) for k in ("id", "dat", "diem", "goi", "goi_lai", "usd", "giong", "lo_luat")} for kq in kqs]
+        gon = [{k: kq.get(k) for k in ("id", "dat", "diem", "goi", "goi_lai", "usd", "giong", "lo_luat", "hoi_lai")} for kq in kqs]
         json.dump({**meta, "ket_qua": gon}, open(DIEM_NEN, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     return 0
 
