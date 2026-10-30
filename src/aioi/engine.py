@@ -1380,7 +1380,9 @@ def _tieu_de_thieu(reply: str, prop: "Property") -> list[str]:
     so_gia = _so_trong(gia)
     thieu = [f"giá ({gia})"] if so_gia and not (so_gia & _so_trong(tieu_de)) else []
     # SRS-5.1zzzzzzz218 (bắn thử 27/10: tiêu đề Nguyễn Trãi 28 từ dù AD_FORMAT "15–25 từ" — chưa lưới nào đếm): đếm chữ, bỏ icon.
-    so_tu = len([w for w in re.sub(r"[^\w\s]", " ", tieu_de).split() if w])
+    # SRS-5.1zzzzzzz302: số thập phân ("34,5m²", "12,5 tỷ") là MỘT từ như `wc -w` của ban-thu — trước đây tách dấu phẩy thành hai, tiêu đề
+    # 24 từ đếm ra 26–27 nên gọi lại model ở hầu hết bản tin (thử quota CLI 30/10: Sonnet 3/3 bản tin bị gọi lại).
+    so_tu = len([w for w in re.sub(r"[^\w\s]", " ", re.sub(r"(?<=\d)[.,](?=\d)", "", tieu_de)).split() if w])
     if so_tu > TIEU_DE_TOI_DA_TU:
         thieu.append(f"độ dài: {so_tu} từ, quá {TIEU_DE_TOI_DA_TU} — rút gọn")
     return thieu
