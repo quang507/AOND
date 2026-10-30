@@ -5,7 +5,7 @@ KHÔNG dùng cho bot phục vụ khách thật (VPS): quota gói Claude Code dà
 Bật bằng `AIOI_LLM_PROVIDER=claude_cli` khi chạy `cli.py` / `scripts/thu-cli.py` trên máy mình.
 
 Khác đường API (kết quả không đại diện hoàn toàn): lịch sử chat gửi thành MỘT bản ghi chép trong lời nhắn (CLI không nhận lượt assistant);
-không có công cụ (vòng agent mua chạy như model không gọi công cụ); không đọc ảnh; mỗi lần gọi CLI khởi động vài giây; không có dấu cache
+công cụ của vòng agent được GIẢ LẬP bằng đầu ra JSON (`converse`: mỗi vòng model trả {goi, loi}, SRS-5.1zzzzzzz307); không đọc ảnh; mỗi lần gọi CLI khởi động vài giây; không có dấu cache
 riêng (`RANH_GIOI_CACHE` bị bỏ). Bóc tách dùng `--json-schema` của CLI (đầu ra có cấu trúc)."""
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ import tempfile
 import time
 from typing import Any, Callable
 
-from .base import MODEL_CHAT_LUOT, LLMProvider, Message, bo_ranh_gioi
+from .base import MODEL_CHAT_LUOT, LLMProvider, Message, ToolCall, ToolTurn, bo_ranh_gioi
 from .claude import chuan_theo_schema
 
 log = logging.getLogger(__name__)
@@ -59,6 +59,38 @@ def _chay_cli(model: str, system: str, loi_nhan: str, schema: dict[str, Any] | N
     return j
 
 
+def _khoi(b: Any) -> dict[str, Any]:
+    return b if isinstance(b, dict) else {k: getattr(b, k, None) for k in ("type", "text", "id", "name", "input", "content")}
+
+
+def _tin_agent(messages: list[dict[str, Any]]) -> list[Message]:
+    """Tin của vòng agent (chuỗi, hoặc khối text / tool_use / tool_result kiểu API) → `Message` chữ cho bản ghi chép. Kết quả công cụ ghi rõ là
+    hệ thống tra, không phải khách nói."""
+    ra: list[Message] = []
+    for m in messages:
+        c = m.get("content")
+        if isinstance(c, str):
+            ra.append(Message(m["role"], c))
+            continue
+        dong = []
+        for b in map(_khoi, c or []):
+            if b.get("type") == "text" and b.get("text"):
+                dong.append(str(b["text"]))
+            elif b.get("type") == "tool_use":
+                dong.append(f"[em gọi công cụ {b.get('name')} {json.dumps(b.get('input') or {}, ensure_ascii=False)}]")
+            elif b.get("type") == "tool_result":
+                dong.append(f"[KẾT QUẢ CÔNG CỤ — hệ thống tra, KHÔNG phải khách nói]: {b.get('content')}")
+        ra.append(Message(m["role"], "\n".join(dong)))
+    return ra
+
+
+def _huong_dan_cong_cu(tools: list[dict[str, Any]]) -> str:
+    ds = "\n".join(f"- {t['name']}: {t.get('description', '')} Đầu vào (JSON schema): "
+                   f"{json.dumps(t.get('input_schema') or {}, ensure_ascii=False)}" for t in tools)
+    return ("\n\n=== CÁCH GỌI CÔNG CỤ (trả JSON) ===\nCông cụ:\n" + ds + "\nCần gọi công cụ: điền \"goi\" (mỗi phần tử {ten, vao}) và để "
+            "\"loi\" rỗng — hệ thống chạy rồi đưa kết quả. Không cần (hoặc đã có kết quả): \"goi\" = [] và \"loi\" = đúng lời gửi khách.\n")
+
+
 class ClaudeCliProvider(LLMProvider):
     """`chat` / `reply` dùng model chat (AIOI_CHAT_MODEL, hoặc model của lượt), `extract` dùng AIOI_EXTRACT_MODEL. Đếm số lần gọi và tiền quy
     đổi CLI báo (`total_cost_usd` — giá niêm yết, quota gói không trừ tiền thật) để so model."""
@@ -93,6 +125,28 @@ class ClaudeCliProvider(LLMProvider):
                 log.warning("claude_cli extract: không đọc được JSON — trả rỗng")
                 kq = {}
         return chuan_theo_schema(kq, json_schema)
+
+    def converse(self, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]],
+                 max_tokens: int = 1024) -> ToolTurn:
+        """Một vòng agent GIẢ LẬP (CLI không nhận định nghĩa công cụ riêng): model trả JSON {goi: [{ten, vao}], loi}; `assistant_content` là các
+        khối tool_use kiểu API để vòng sau ghi lại vào bản ghi chép (SRS-5.1zzzzzzz307)."""
+        ten = [t["name"] for t in tools]
+        schema = {"type": "object", "properties": {
+            "goi": {"type": "array", "items": {"type": "object", "properties": {"ten": {"type": "string", "enum": ten}, "vao": {"type": "object"}},
+                                               "required": ["ten", "vao"]}},
+            "loi": {"type": "string"}}, "required": ["goi", "loi"]}
+        j = self._goi(MODEL_CHAT_LUOT.get() or self._chat_model, system + _huong_dan_cong_cu(tools), _tin_agent(messages), schema)
+        kq = j.get("structured_output")
+        if not isinstance(kq, dict):
+            try:
+                kq = json.loads(str(j.get("result") or "{}"))
+            except ValueError:
+                kq = {"goi": [], "loi": str(j.get("result") or "")}
+        goi = [g for g in (kq.get("goi") or []) if isinstance(g, dict) and g.get("ten") in ten]
+        calls = [ToolCall(id=f"cli{self.so_lan}_{i}", name=g["ten"], input=dict(g.get("vao") or {})) for i, g in enumerate(goi)]
+        noi = [{"type": "tool_use", "id": c.id, "name": c.name, "input": c.input} for c in calls]
+        return ToolTurn(text="" if calls else str(kq.get("loi") or "").strip(), tool_calls=calls, assistant_content=noi or None,
+                        stop_reason="tool_use" if calls else "end_turn")
 
     def describe_media(self, items: list[tuple[bytes, str]], instruction: str, max_tokens: int = 1024) -> str:
         raise NotImplementedError("claude_cli: chưa đọc ảnh / PDF (chỉ để test lời chat)")
