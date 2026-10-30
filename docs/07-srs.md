@@ -994,7 +994,9 @@ tiền API ("có 200% api credit rồi") → bắn thử production sau khi gộ
 3. **Đo** (27 kịch bản / 289 phép, agent bật): Sonnet 288 + 288 (phép trượt duy nhất: `hai_can_da_ban` — lỗi bóc tách đổi nhầm trạng thái SRS-307,
    còn), gọi lại 7 + 5; Haiku 284 + 288 (lần 1 trượt thêm 4 phép giọng ở kịch bản một căn, agent không chạy). Chat tay CLI: hỏi giá căn đã gửi →
    trả đúng giá cả hai căn qua công cụ `ro_hang`.
-4. **Kiểm**: `tests/test_hai_can_mot_tin_308.py` (đỏ khi gỡ bản sửa engine), `test_agent_ban_307.py::test_du_phong_…`,
+4. **Quyết định chủ dự án** 30/10: "dùng haiku hết luôn cũng dc" → `MODEL_CHAT` và `MODEL_CHAT_THU` trong `cai-vps.sh` = `claude-haiku-5-5`
+   (viết lời khách thật + ID thử; bóc tách vốn Haiku). Căn cứ: điểm bộ chấm ở mục 3, tiền quy đổi Haiku ~$0,4 / Sonnet ~$4–5 một lần chạy.
+5. **Kiểm**: `tests/test_hai_can_mot_tin_308.py` (đỏ khi gỡ bản sửa engine), `test_agent_ban_307.py::test_du_phong_…`,
    `test_du_phong.py::test_converse_du_phong_danh_dau_stop_reason_308`.
 
 ### SRS-5.1zzzzzzz307 · B2 bước 2: agent phía bán tự tra rổ hàng / bộ nhớ dự án / giá đã gửi; rổ nhiều căn chưa rõ căn nào thì hỏi lại (30/10/2026)

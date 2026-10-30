@@ -139,12 +139,13 @@ if [ -d /opt/aond_core/src/aioi ]; then
   # 28/10/2026 (SRS-5.1zzzzzzz235, chủ dự án: "đổi model chạy thật đang chạy cho khách là sonnet đi … để sonnet 5.5 đi, khi nào cần thì
   # thôi đổi lại"): model CHAT của lõi một nguồn ở dòng dưới — đổi lại Haiku thì sửa đúng dòng này (vd claude-haiku-5-5) rồi chạy cai-vps.
   # Chỉ lượt chat / trả lời; bóc tách (AIOI_EXTRACT_MODEL) và đọc ảnh giữ nguyên.
-  MODEL_CHAT="claude-sonnet-5-5"
+  # SRS-5.1zzzzzzz308 (chủ dự án 30/10: "dùng haiku hết luôn cũng dc"): bộ chấm 27 kịch bản Haiku 284–288/289 ≈ Sonnet 288, rẻ ~11 lần.
+  MODEL_CHAT="claude-haiku-5-5"
   # SRS-5.1zzzzzzz239 (chủ dự án 28/10/2026: "nếu bắn product đổi sang key gemini bắn từ từ"): ID thử (`la_id_thu`, các ô ban-thu-*) gọi
   # model THẲNG Gemini, không tốn tiền Claude. Muốn bắn thử bằng đúng model khách thật thì đổi dòng này thành "tat" rồi chạy cai-vps.
   # 28/10/2026 (SRS-5.1zzzzzzz243, chủ dự án: "đổi thành claude sonnet 5.5 xem nó có nịnh tốt ko"): bắn thử bằng Sonnet 5.5 như khách thật
   # (bóc tách Haiku như khách thật). Quay lại Gemini cho đỡ tiền thì đổi thành "gemini".
-  MODEL_CHAT_THU="claude-sonnet-5-5"
+  MODEL_CHAT_THU="claude-haiku-5-5"
   # SRS-5.1zzzzzzz246 (chủ dự án 28/10/2026: "bạn thử tắt công cụ cố định xem"): "tat" = lời trả khách là chữ thường như bản anh Luận;
   # "bat" = lại ép công cụ hai ô gui_khach (tự soát + lời gửi, SRS-76). Áp cho mọi khách, kể cả ID thử.
   CONG_CU_GUI_KHACH="tat"
