@@ -2,6 +2,17 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz301 · Chỉnh prompt để Haiku khen cụ thể như Sonnet, mở đầu không lặp, không chào lại giữa chừng (30/10/2026)
+Chủ dự án 30/10: "sếp thích kiểu khen lúc test Sonnet" → chỉnh prompt cho Haiku.
+- `GIONG_VUI`: khen cụ thể đúng điểm khách vừa nói, cấm khen chung chung. `khoi_mo_dau_vua_dung`: báo trước các cụm mở đầu vừa dùng và "không chào
+  lại giữa chừng". Khối chào lần đầu chỉ khi khách chưa đưa ô tin.
+- Kiểm: `tests/test_giong_khen_301.py`.
+
+### SRS-5.1zzzzzzz300 · Test lời bot bằng quota gói Claude Code (`claude -p`), không tốn tiền API (30/10/2026)
+Chủ dự án 30/10: "cài claude code dùng quota của bên mình đi".
+- Provider `claude_cli` (`AIOI_LLM_PROVIDER=claude_cli`) gọi `claude -p` — CHỈ để test, không phục vụ khách thật (khách thật dùng API key).
+- Kiểm: `tests/test_claude_cli_300.py`.
+
 ### SRS-5.1zzzzzzz299 · Claude hết tiền: Gemini dự phòng chỉ đỡ một lượt vì model mặc định quá giờ — đổi danh sách model, một nguồn ở cai-vps.sh (30/10/2026)
 Ca gốc: 29/10 15:57 UTC tài khoản Anthropic hết tiền; Gemini dự phòng chỉ đỡ một lượt vì model mặc định quá giờ với khoá miễn phí.
 - `MODEL_GEMINI="gemini-3.5-flash,gemini-3.1-flash-lite"` trong `cai-vps.sh` (một nguồn). Gemini bóc tách sót ô — chỉ dùng làm dự phòng.
