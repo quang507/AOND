@@ -980,6 +980,19 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz306 · Gỡ lưới soát theo số đo: "em gửi ảnh" chỉ soi phần chat; bộ chấm ghi lưới nào kích (30/10/2026)
+Chủ dự án 30/10: "thôi bạn chạy thử và triển khai theo kế hoạch đi" (kế hoạch SRS-304: gỡ luật theo số đo `bun run cham`).
+
+1. **Đo**: `bun run cham` nay ghi lưới soát nào kích mỗi lượt (`soat` trong JSON) và in bảng đếm cuối lần chạy. Mốc 25 kịch bản: Sonnet 9–13
+   lần gọi lại / lần chạy, trong đó 7/9 là lưới "em gửi ảnh" (SRS-228 mục 4).
+2. **Lớp lỗi**: lưới soi CẢ thân bản tin 📋 — câu mời chốt viết cho NGƯỜI MUA "nhắn Zalo cho em, em gửi thêm hình và hẹn đi coi" đúng vai và
+   AD_FORMAT khối 4 cho phép, nên lưới bắt nhầm rồi gọi lại Sonnet viết cả bản tin. Sửa: `_bot_hua_gui_anh` soi `_phan_chat_quanh_ban_tin`.
+3. **Chỗ khác cùng lớp**: các lưới khác soi lời chat đã tách bản tin (lặp mở đầu, câu lặp, bình luận giá); lưới bản tin (số bịa, hẻm, pháp lý)
+   cố ý soi thân tin. "Dạ" còn kích ở Haiku là ca «Dạ không, …» — code không tự bỏ chữ vì đổi nghĩa (SRS-230), giữ.
+4. **Kết quả** (2 lần mỗi bên, trước → sau): Sonnet điểm 267 + 267 → 268 + 266 (phép trượt: bóc tách Haiku không ghi loại hình `nct_q5`, không
+   liên quan), gọi lại 13 + 9 → 4 + 4, tiền quy đổi $5,19 + $4,26 → $3,86 + $3,79; Haiku 268 + 264 → 265 + 267, gọi lại 12 + 13 → 7 + 8.
+5. **Kiểm**: `tests/test_soat_anh_ban_tin_306.py` đỏ khi gỡ bản sửa (câu mời chốt trong bản tin bị bắt), phần chat quanh bản tin vẫn bị bắt.
+
 ### SRS-5.1zzzzzzz305 · Nhật ký SRS cũ sang tệp lưu trữ; lỗi từng gặp thành kịch bản chấm, không thành luật prompt (30/10/2026)
 Chủ dự án 30/10: "xóa bớt srs bỏ các lỗi vào prompt dc ko" → chọn cách 1: chuyển SRS cũ sang lưu trữ (không xoá), lỗi vào kịch bản chấm.
 

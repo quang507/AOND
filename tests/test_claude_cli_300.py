@@ -34,3 +34,25 @@ def test_chat_va_extract_dung_khuon():
 def test_ghi_chep_giu_thu_tu_va_vai():
     s = _ghi_chep([Message("user", "a"), Message("assistant", "b"), Message("user", "c")])
     assert s.index("KHÁCH: a") < s.index("EM (bot): b") < s.index("KHÁCH: c")
+
+
+def test_converse_gia_lap_cong_cu_307():
+    """SRS-5.1zzzzzzz307: CLI không nhận công cụ riêng — vòng agent giả lập bằng JSON {goi, loi}; vòng sau ghi lại lời gọi + kết quả."""
+    goi = []
+    tra = iter([{"structured_output": {"goi": [{"ten": "tra", "vao": {"q": "x"}}, {"ten": "la", "vao": {}}], "loi": "để em xem"}},
+                {"structured_output": {"goi": [], "loi": "Có rồi anh"}}])
+
+    def chay(model, system, loi_nhan, schema):
+        goi.append((system, loi_nhan, schema))
+        return next(tra)
+
+    p = ClaudeCliProvider(_st(), chay=chay)
+    cc = [{"name": "tra", "description": "Tra kho.", "input_schema": {"type": "object"}}]
+    t1 = p.converse("S", [{"role": "user", "content": "hỏi"}], cc)
+    assert [c.name for c in t1.tool_calls] == ["tra"] and t1.text == ""           # công cụ lạ bị bỏ; lượt gọi công cụ không có lời
+    assert goi[0][2]["properties"]["goi"]["items"]["properties"]["ten"]["enum"] == ["tra"] and "tra: Tra kho." in goi[0][0]
+    tin = [{"role": "user", "content": "hỏi"}, {"role": "assistant", "content": t1.assistant_content},
+           {"role": "user", "content": [{"type": "tool_result", "tool_use_id": t1.tool_calls[0].id, "content": "KQ123"}]}]
+    t2 = p.converse("S", tin, cc)
+    assert t2.text == "Có rồi anh" and not t2.tool_calls
+    assert "em gọi công cụ tra" in goi[1][1] and "KQ123" in goi[1][1] and "KHÔNG phải khách nói" in goi[1][1]

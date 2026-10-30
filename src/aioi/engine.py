@@ -1542,8 +1542,9 @@ _BOT_GUI_ANH_RE = re.compile(r"(?i)(?<![\wà-ỹđ])em\s+(?:sẽ\s+)?(?:gửi|ch
 
 def _bot_hua_gui_anh(loi: str) -> bool:
     """Lời bot PHÍA BÁN nói "em gửi (thêm) ảnh" — ngược vai: ảnh căn là chủ nhà chụp gửi, bot không có ảnh nào để gửi chủ nhà
-    (SRS-5.1zzzzzzz228 mục 4, ban-thu-srd 27/10: "Anh có muốn em gửi thêm ảnh thực tế để tin nổi bật hơn không ạ?")."""
-    return bool(loi) and _BOT_GUI_ANH_RE.search(loi) is not None
+    (SRS-5.1zzzzzzz228 mục 4, ban-thu-srd 27/10: "Anh có muốn em gửi thêm ảnh thực tế để tin nổi bật hơn không ạ?"). Chỉ soi phần CHAT: thân bản tin
+    📋 viết cho NGƯỜI MUA, câu mời chốt "nhắn Zalo cho em, em gửi thêm hình" đúng vai và AD_FORMAT cho phép (SRS-5.1zzzzzzz306)."""
+    return bool(loi) and _BOT_GUI_ANH_RE.search(_phan_chat_quanh_ban_tin(loi)) is not None
 
 
 _DA_DAU_RE = re.compile(r"(?i)^\s*dạ(?![a-zà-ỹđ])[\s,.!…]*")
