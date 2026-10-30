@@ -28,7 +28,7 @@ class Settings:
     supabase_service_role_key: str | None = None
     gemini_api_keys: tuple[str, ...] = ()  # nhúng câu tìm địa danh theo nghĩa (dia_danh.py); không có = chỉ tra theo chữ
     # Đường dự phòng khi Claude hỏng (SRS-5.1zzzzzzz117, llm/du_phong.py): model theo thứ tự thử, ngăn bằng dấu phẩy.
-    gemini_chat_models: tuple[str, ...] = ("gemini-3.8-flash",)
+    gemini_chat_models: tuple[str, ...] = ("gemini-3.5-flash", "gemini-3.1-flash-lite")
     groq_chat_models: tuple[str, ...] = ("qwen/qwen3.8-27b", "openai/gpt-oss-120b")
     groq_api_keys: tuple[str, ...] = ()
 
@@ -57,7 +57,7 @@ def load_settings() -> Settings:
         supabase_url=os.getenv("SUPABASE_URL", "https://rqxmmqmctpklqcmbfxuj.supabase.co"),
         supabase_service_role_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY") or None,
         gemini_api_keys=_ds_khoa("GEMINI_API_KEY", "GEMINI_API_KEYS"),
-        gemini_chat_models=_ds_khoa("GEMINI_MODEL") or ("gemini-3.8-flash",),
+        gemini_chat_models=_ds_khoa("GEMINI_MODEL") or ("gemini-3.5-flash", "gemini-3.1-flash-lite"),   # SRS-5.1zzzzzzz299
         groq_chat_models=_ds_khoa("GROQ_MODEL") or ("qwen/qwen3.8-27b", "openai/gpt-oss-120b"),
         groq_api_keys=_ds_khoa("GROQ_API_KEY", "GROQ_API_KEYS"),
     )
