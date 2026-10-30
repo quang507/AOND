@@ -26,6 +26,7 @@ def _chay_mot(kb: dict, chat: str, boc: str) -> dict:
     os.environ.update({"AIOI_LLM_PROVIDER": os.environ.get("AIOI_LLM_PROVIDER", "claude_cli"), "AIOI_CHAT_MODEL": chat, "AIOI_EXTRACT_MODEL": boc})
     os.environ.setdefault("AIOI_SOAT_GON", "bat")
     os.environ.setdefault("AIOI_FORM_BAN_GON", "bat")
+    os.environ.setdefault("AIOI_AGENT_BAN", "thu")   # như VPS (ID chấm là ID thử)
     os.environ.pop("SUPABASE_SERVICE_ROLE_KEY", None)
     import logging
     dem = {"goi": 0, "goi_lai": 0, "usd": 0.0, "soat": []}

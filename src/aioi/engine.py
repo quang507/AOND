@@ -130,7 +130,7 @@ from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
                   lenh_tra_loi, nhan_nhu_cau, nhan_tu_du_lieu, nhu_cau_cua, tim_sdt)
-from . import agent_mua
+from . import agent_ban, agent_mua
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
@@ -2945,9 +2945,17 @@ class Engine:
                    or self._khoi_hoi_trung_ten(conv))
         # SRS-5.1zzzzzzz207: bỏ khối khen theo lượt — giọng theo bản anh Luận ("khen ngợi điểm mạnh trước" nằm sẵn trong prompt).
         system += (uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else ""
-        system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
-        system += self._project_memory_block(project, conv)  # remember the price list + phân lô; reason over it
-        system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
+        # SRS-5.1zzzzzzz307 (B2 bước 2): công tắc AGENT_BAN bật → ba khối dữ liệu dưới thành công cụ model tự tra (agent_ban, thân công cụ là
+        # chính ba hàm này); prompt chỉ còn một dòng báo có dữ liệu gì. Lượt không có dữ liệu nào để tra (ba khối đều rỗng) → không mở vòng công
+        # cụ, viết như cũ (khỏi tốn lượt gọi model vô ích). Tắt → đường cũ y nguyên.
+        goi_y_tra = agent_ban.goi_y(self, conv, project) if agent_ban.bat(conv.user_key, _la_id_thu(conv.user_key)) else ""
+        dung_agent_ban = bool(goi_y_tra)
+        if dung_agent_ban:
+            system += goi_y_tra
+        else:
+            system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
+            system += self._project_memory_block(project, conv)  # remember the price list + phân lô; reason over it
+            system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
         system += khoi_tin_tra_loi(conv.tin_tra_loi)   # SRS-5.1zzzzzzz270
         # A seller in a project WITH an inventory → the reply runs through the agent LOOP (same
         # sales-mode prompt + tools). The model decides per turn whether to query the catalog,
@@ -2956,7 +2964,10 @@ class Engine:
         # Length is model-decided from the prompt (short while chatting, full ad when complete) —
         # NOT clamped by a token cap (Vietnamese is token-dense; a tight cap hard-cuts mid-word).
         with _do(conv, "tra_loi"):
-            if project is not None and project.units:
+            if dung_agent_ban:
+                reply, da_tra = agent_ban.chay(self, conv, project, system, REPLY_MAX_TOKENS)
+                system += da_tra   # lần soát / gọi lại của lượt viết với đúng dữ liệu model vừa tra
+            elif project is not None and project.units:
                 reply = self._agent_reply(conv, project, system, now)
             else:
                 reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
