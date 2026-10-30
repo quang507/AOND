@@ -847,7 +847,8 @@ Ca gốc bộ chấm `hai_can_da_ban`: rổ hai căn, "căn đó anh bán đư�
 - `agent_boc.py`: 5 công cụ (`ghi_o`, `them_can`, `doi_trang_thai`, `bo_can`, `ghi_y_khach`, đầu vào cắt từ schema form), code kiểm từng lần gọi. Đo 408 phép:
   form 406 / 404 · agent Sonnet 404 / 403 (+40–75 % tiền) · agent Haiku 402 / 401 → `AGENT_BOC = thu`, chưa bật khách thật.
 - Cổng dùng chung (`Engine._chua_ro_can`): rổ ≥ 2 căn thì `set_status` phải kèm `trich_dan_can` nằm nguyên trong lời khách, chỉ ra đúng căn; không thì không đổi,
-  lời trả lời hỏi lại căn nào. Form có cổng: CHO_SO_BUOC_3. Kịch bản thêm kiểm trạng thái căn không đổi.
+  lời trả lời hỏi lại căn nào; form chưa rõ căn vẫn báo set_status trống cụm để code chặn. Form + cổng: 401 / 402, `hai_can_da_ban` đạt 2/2 (trước 1/2);
+  các phép trượt còn lại cùng loại với mọi lần chạy ("mình", mở lặp, `ma_lo_7m`, `dat_nen_long_an`) — dao động giữa các lần ±3 phép.
 - Kiểm: `tests/test_agent_boc_310.py` (ca form đỏ khi gỡ cổng). Chỗ cùng lớp: `remove` / `keep_only` đã có bước xác nhận trước khi ẩn.
 
 ### SRS-5.1zzzzzzz309 · Kế hoạch bước 1–2: bộ chấm 40 kịch bản + giám khảo giọng; phiếu lượt ngắn cho lượt thu thập người bán (30/10/2026)
