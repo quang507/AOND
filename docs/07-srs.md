@@ -834,6 +834,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz309 · Kế hoạch bước 1–2: bộ chấm 40 kịch bản + giám khảo giọng; phiếu lượt ngắn cho lượt thu thập người bán (30/10/2026)
+Chủ dự án 30/10 (kế hoạch 4 bước): bộ kịch bản offline là nguồn sự thật; prompt viết lời ngắn "giọng + dữ liệu + một việc"; không mở PR / bắn production khi không cần.
+- Bước 1: `tests/kich_ban/ban.json` 40 kịch bản (2 từ chat tester DB, ẩn danh; còn lại tự viết); `bun run cham --giong` thêm giám khảo LLM chấm giọng 1–5.
+- Bước 2: `prompts.build_phieu_luot` (~3.000 chữ, `build_chat_system` ~10.000) sau công tắc `PHIEU_LUOT` (`cai-vps.sh`) = `bat`. Đo 2 lần mỗi bản, 447 phép:
+  cũ 405 / 402, giọng TB 2,45 / 2,35, $7,6 / $6,4 → phiếu lượt 407 / 407, giọng 2,62 / 2,67, $5,6 / $5,3; lỗi nghiệp vụ không thêm (hai_can_da_ban, ma_lo_7m còn — để bước 3).
+- Quy trình (CLAUDE.md §7): một PR mỗi bước; bắn production chỉ khi đổi DB / Zalo / bridge / công cụ ghi / cài VPS. Kiểm: `tests/test_phieu_luot_309.py`.
+
 ### SRS-5.1zzzzzzz308 · Agent phía bán cho mọi khách; hai căn một tin giữ đúng ô; dự phòng không mù dữ liệu (30/10/2026)
 Chủ dự án 30/10: "làm đi thử thì trên cli", rồi nạp $200 API; "dùng haiku hết luôn cũng dc" → cùng ngày "chuyển sang sonnet 5.5 luôn".
 - `AGENT_BAN=bat` cho mọi khách (thử bằng bộ chấm + chat tay CLI). Viết lời: thử Haiku rồi quay lại Sonnet 5.5 (`MODEL_CHAT`, `MODEL_CHAT_THU`).
@@ -891,11 +898,6 @@ Chủ dự án 30/10: "sếp thích kiểu khen lúc test Sonnet" → chỉnh pr
 Chủ dự án 30/10: "cài claude code dùng quota của bên mình đi".
 - Provider `claude_cli` (`AIOI_LLM_PROVIDER=claude_cli`) gọi `claude -p` — CHỈ để test, không phục vụ khách thật (khách thật dùng API key).
 - Kiểm: `tests/test_claude_cli_300.py`.
-
-### SRS-5.1zzzzzzz299 · Claude hết tiền: Gemini dự phòng chỉ đỡ một lượt vì model mặc định quá giờ — đổi danh sách model, một nguồn ở cai-vps.sh (30/10/2026)
-Ca gốc: 29/10 15:57 UTC tài khoản Anthropic hết tiền; Gemini dự phòng chỉ đỡ một lượt vì model mặc định quá giờ với khoá miễn phí.
-- `MODEL_GEMINI="gemini-3.5-flash,gemini-3.1-flash-lite"` trong `cai-vps.sh` (một nguồn). Gemini bóc tách sót ô — chỉ dùng làm dự phòng.
-- Kiểm: `tests/test_gemini_du_phong_299.py`.
 
 ---
 

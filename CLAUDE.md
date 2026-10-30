@@ -83,6 +83,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
   | `AGENT_MUA` / `AGENT_BAN` | `bat` / `bat` | lượt viết lời có công cụ (`agent_mua.py` chỉ đọc + `hen_xem` / `hoi_chu_nha`; `agent_ban.py` tra rổ / dự án / giá) — SRS-290 / 307 |
   | `FORM_MUA_GON` / `FORM_BAN_GON` | `bat` / `bat` | form bóc tách gọn CẮT từ form đầy đủ — sửa luật ở form đầy đủ — SRS-293 / 303 |
   | `SOAT_GON` | `bat` | luật giọng / lặp chỉ ghi log, gọi lại tối đa 1 lần — SRS-298 |
+  | `PHIEU_LUOT` | `bat` | lượt thu thập người bán viết từ phiếu lượt ngắn (`prompts.build_phieu_luot`) thay `build_chat_system` — SRS-309 |
   | `CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246 |
 
   `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini

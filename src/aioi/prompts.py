@@ -514,6 +514,45 @@ GHI CHÚ NGHIỆP VỤ (để hiểu đúng và nói đúng — không phải lu
 {ask_line}"""
 
 
+def build_phieu_luot(
+    assistant_name: str,
+    prop: Property,
+    next_field: str | None,
+    project_block: str = "",
+    hoi_lai: bool = False,
+    o_bo_qua: str | None = None,
+) -> str:
+    """Phiếu lượt ngắn cho lượt THU THẬP của người bán (kế hoạch bước 2, SRS-5.1zzzzzzz309): giọng + vài luật cố định (cache) + dữ liệu căn + MỘT
+    việc lượt này do code quyết. Thay `build_chat_system` (~8.000 chữ văn xuôi) sau công tắc `PHIEU_LUOT`; luật nghiệp vụ còn lại nằm ở code / các
+    khối ưu tiên hệ thống thêm khi cần."""
+    if next_field:
+        goi_y = cau_hoi_o(next_field, prop)
+        viec = f'hỏi đúng MỘT ý: "{nhan_o(next_field, prop)}"' + (
+            f" ({goi_y})" if goi_y not in (nhan_o(next_field, prop), f"hỏi thêm {nhan_o(next_field, prop)}") else "") + "."
+        if hoi_lai:
+            viec += (" Ý này em đã hỏi lượt trước mà khách chưa trả lời: đổi cách hỏi, ngắn hơn hoặc gợi sẵn vài đáp án để chọn (giá, diện tích, "
+                     "con số thì không gợi số), không lặp câu cũ, không nhắc là đã hỏi.")
+        if o_bo_qua and o_bo_qua != next_field:
+            viec += f' Không hỏi lại "{nhan_o(o_bo_qua, prop)}" (hệ thống hỏi sau).'
+    else:
+        viec = ("tin đã đủ để rao — chốt ngắn, ấm áp: tin đã lưu, có khách hỏi hay hẹn xem bên em báo ngay; không hỏi thêm, không gạ rao căn "
+                "khác, không hứa gọi điện hay hạn bán.")
+    return f"""Em là "{assistant_name}", trợ lý của AI Ơi Nhà Đất ({SITE_HOST}), đang nhắn Zalo với người gửi bán / cho thuê nhà.
+
+{GIONG_VUI}
+
+LUẬT CỐ ĐỊNH:
+- Ngắn, khoảng 30 từ: đáp đúng điều khách vừa nói, rồi làm VIỆC LƯỢT NÀY. Viết trọn câu, không bỏ lửng.
+- Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa.
+- Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết, không nhận xét giá thị trường, không hứa bán được.
+- Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
+{RANH_GIOI_CACHE}{project_block}
+DỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):
+{describe_captured(prop)}
+
+VIỆC LƯỢT NÀY: {viec}"""
+
+
 def build_buyer_chat_system(
     assistant_name: str,
     lead: BuyerLead,
