@@ -9058,6 +9058,25 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz304 · Bộ kịch bản chấm tự động offline; chat tay bằng quota CLI; bật soát gọn cho mọi khách (30/10/2026)
+Chủ dự án 30/10: "lập kế hoạch làm, xong thực thi đi" (sau khi thống nhất: ngừng vá mỗi lỗi một luật, gỡ luật phải có số đo); "có cách nào để tôi
+test tay bằng cli quota ko".
+
+1. **Bộ chấm**: `tests/kich_ban/ban.json` — 15 kịch bản người bán lấy từ `ban-thu-ban.sh` / `ban-thu-kb.sh` / `ban-thu-srd.sh` (không dữ liệu khách
+   thật); `tests/kich_ban/cham.py` chấm tất định: ô tin, loại, cho thuê, số căn, báo người thật, bản tin ra ở lượt ≤ N, không soạn tin ngoài vùng,
+   regex cấm / phải có theo lượt, và 7 luật chung trên lời cuối (Dạ, gọi "mình", bình luận giá, số bịa, > 1 câu hỏi, câu ghi nhận, mở đầu lặp) —
+   dùng chung hàm với lớp soát của lõi. `bun run cham` (`scripts/cham-kich-ban.py`) chạy song song bằng `claude -p`, in điểm / lần gọi / gọi lại /
+   tiền quy đổi, `--so-voi` để so với lần trước. Phía mua chưa có (cần kho giả cho căn).
+2. **Mốc chuẩn** (Haiku bóc tách): viết lời Sonnet 165/165 phép, 147–148 lần gọi, 4–5 lần gọi lại, $2,6–3,6 quy đổi; Haiku 163–164/165, 8–10 lần
+   gọi lại, ~$0,3 (rẻ ~11 lần). Hai lần chạy cùng cấu hình lệch nhau vài lần gọi lại — so phải chạy ≥ 2 lần.
+3. **Thí nghiệm gỡ — quyết định (BA, uỷ quyền) theo số đo**:
+   - Soát gọn (SRS-298) so chế độ cũ: điểm bằng nhau cả hai model, Haiku ít gọi lại hơn (8 so 10) → `SOAT_GON="bat"` cho mọi khách.
+   - Bỏ mã SRS / ngày ở phần cố định của prompt lúc gửi (−2–3 % chữ): Sonnet tụt 165 → 162–164/165 (gọi khách "mình" 1–3 lần), gọi lại 4–5 → 11–12,
+     lặp lại hai lần như nhau → KHÔNG làm. Gốc chưa rõ; bài học: sửa "vô hại" cũng phải đo.
+4. **Chat tay**: `bun run chat:cli` (`scripts/chat-cli.py`) — gõ tin như khách, in lời bot, ô vừa ghi, lần gọi, tiền quy đổi; `/o` xem ô, `/moi`
+   cuộc chat mới, `--luu` giữ cuộc chat. `claude_cli` tìm lệnh bằng `shutil.which` (Windows cài `claude.cmd`).
+5. **Kiểm**: `tests/test_cham_kich_ban_304.py` (tệp kịch bản hợp lệ, phép chấm bắt đúng ô sai / bản tin muộn / Dạ / hai câu hỏi).
+
 ### SRS-5.1zzzzzzz303 · Ngưỡng gọi lại vì tiêu đề dài 30 từ (prompt vẫn 15–25); form bóc tách gọn cho người bán (30/10/2026)
 Chủ dự án 30/10 (hỏi vì sao bot phải viết lại): "prompt đầu tiên cho nó 25 từ nhưng nâng hạn mức lại thành 30 từ đi. prompt bóc tách sao mà dài,
 giờ có agent làm rồi thì ngắn lại dc ko".
