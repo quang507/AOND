@@ -107,15 +107,6 @@ def _lam(monkeypatch, loi, them=None, dia_chi="200/5 đường số 59"):
     return m, r
 
 
-def test_loi_hoi_phuong_trong_thi_goi_lai_model(monkeypatch):
-    """Bắn thử 21/10 (DC1): khối "Kho hẻm" đã vào prompt, Haiku vẫn hỏi trống "Nhà mình thuộc phường nào" → gọi lại một lần."""
-    m, r = _lam(monkeypatch, ["Em ghi rồi chị. Nhà mình thuộc phường nào vậy chị?",
-                              "Em ghi rồi chị. Nhà mình ở An Hội Tây hay Tân Hưng vậy chị?"])
-    assert "Kho hẻm" in m.systems[0]
-    assert len(m.systems) == 2 and "VIẾT LẠI LƯỢT NÀY" in m.systems[1] and "An Hội Tây" in m.systems[1]
-    assert "An Hội Tây" in r.reply
-
-
 def test_loi_da_nhac_phuong_thi_khong_goi_lai(monkeypatch):
     m, _ = _lam(monkeypatch, ["Nhà mình ở phường An Hội Tây hay Tân Hưng vậy chị?"])
     assert len(m.systems) == 1

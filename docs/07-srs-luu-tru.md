@@ -2,6 +2,12 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz302 · Bot tự hiểu từ dữ kiện đã có, không hỏi lại; "em rao lại xem" ra bản tin; đếm từ tiêu đề đúng số thập phân (30/10/2026)
+Chủ dự án 30/10: "từ các dữ liệu đã có thì bot tự hiểu dữ liệu khác", "không cần hỏi lại".
+- "Em rao lại xem" khi chưa có bản nháp → `xin_dang` (ví dụ cũ trong prompt đá định nghĩa ô); lượt chat không có bản tin thì không nói "gửi bên dưới".
+- Bot tự hiểu từ dữ kiện đã có, không hỏi lại để xác nhận nghĩa; khách đính chính số thì sửa luôn. Bộ đếm từ tiêu đề coi số thập phân là một từ.
+- Kiểm: `tests/test_khong_hoi_lai_302.py`.
+
 ### SRS-5.1zzzzzzz301 · Chỉnh prompt để Haiku khen cụ thể như Sonnet, mở đầu không lặp, không chào lại giữa chừng (30/10/2026)
 Chủ dự án 30/10: "sếp thích kiểu khen lúc test Sonnet" → chỉnh prompt cho Haiku.
 - `GIONG_VUI`: khen cụ thể đúng điểm khách vừa nói, cấm khen chung chung. `khoi_mo_dau_vua_dung`: báo trước các cụm mở đầu vừa dùng và "không chào

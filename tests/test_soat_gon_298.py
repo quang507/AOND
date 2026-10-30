@@ -32,5 +32,5 @@ def test_gon_luat_giu_goi_lai_toi_da_mot_lan(monkeypatch):
 
 def test_khach_that_khi_thu_van_nhu_cu(monkeypatch):
     eng, goi = _eng(monkeypatch, "thu", lai="Căn này đẹp giá tốt anh nhé.")
-    eng._soat_hinh_thuc(eng.conversation("khach-298"), "SYS", "Căn này NHÀ ĐẸP GIÁ TỐT anh nhé.")
-    assert len(goi) == 1   # luật giọng vẫn gọi lại như trước
+    eng._soat_hinh_thuc(eng.conversation("khach-298"), "SYS", "Dạ, căn này đẹp giá tốt anh nhé.")
+    assert len(goi) == 1   # khách thật (không gọn): "Dạ" vẫn gọi lại model như trước

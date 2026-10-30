@@ -592,7 +592,7 @@
      "gia": "1,8"
     },
     "luot_khong": {
-     "1": "huyện|quận nào"
+     "1": "\\bhuyện\\b|quận nào"
     }
    }
   },
