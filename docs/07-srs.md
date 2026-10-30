@@ -980,6 +980,27 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz307 · B2 bước 2: agent phía bán tự tra rổ hàng / bộ nhớ dự án / giá đã gửi; rổ nhiều căn chưa rõ căn nào thì hỏi lại (30/10/2026)
+Chủ dự án 30/10: "xong làm nốt b2 nhưng vẫn lưu các hàm để dễ gọi" (B2 bước 2 theo SRS-298: khối dữ liệu thành công cụ agent tự tra).
+
+1. **Quyết định (BA, uỷ quyền)**: bóc tách vẫn Haiku + cổng bằng chứng (như phía mua, chủ dự án 29/10 "bóc tách vẫn dùng haiku") — chi phí mỗi
+   lượt không đổi. Agent chỉ thay cách đưa DỮ LIỆU vào lượt viết lời; không gỡ hàm nào.
+2. **Code**: `src/aioi/agent_ban.py` — ba công cụ `ro_hang` / `bo_nho_du_an` / `gia_da_gui`, thân là CHÍNH `_basket_block` /
+   `_project_memory_block` / `_seller_price_block`; dự án có bảng căn thì kèm bộ công cụ kho cũ (`_inventory_tools`). Prompt chỉ còn một dòng
+   "DỮ LIỆU CÓ THỂ TRA"; lượt không có dữ liệu nào thì không mở vòng công cụ (prompt y như cũ). Trần 3 lần gọi / 25 s như phía mua; kết quả đã
+   tra nối vào prompt cho các lần soát / gọi lại của lượt. Công tắc `AGENT_BAN` trong `cai-vps.sh` = `thu` (chỉ ID thử). `claude -p` giả lập vòng
+   công cụ bằng JSON `{goi, loi}` để bộ chấm offline chấm được agent.
+3. **Kịch bản mới lộ lỗi cũ** (`hai_can_da_ban`: khai hai căn một tin rồi "căn đó bán rồi"): bóc tách đổi trạng thái căn đang nói 4/4 lần (đường
+   cũ). *Lớp lỗi*: `set_status` bỏ trống target = "căn hiện tại", form không dặn ca rổ nhiều căn chưa rõ căn nào. Sửa theo nghĩa ở form đầy đủ
+   (bản gọn cắt từ đó): không chỉ ra được căn nào → không tạo `set_status`, để lượt trả lời hỏi lại. Luật "hỏi lại căn nào" vốn nằm TRONG khối rổ
+   hàng — nay khối đó chỉ tới model qua công cụ, nên chuyển sang `agent_ban.HUONG_DAN`. *Còn*: Haiku bóc tách vẫn đổi nhầm 5/16 lần đo sau sửa;
+   Sonnet viết lời đôi lần vẫn tự nhận một căn.
+4. **Đo** (26 kịch bản, 2 lần mỗi bên, agent bật cho ID chấm): Sonnet 277/278 + 274/278, gọi lại 7 + 6, $3,65 + $3,48; Haiku 277/278 + 276/278,
+   gọi lại 9 + 10. 25 kịch bản cũ: Sonnet 268 + 265 (trước 268 + 266), Haiku 267 + 267 (trước 265 + 267) — phép trượt thêm của Sonnet ở lượt
+   không có dữ liệu để tra (agent không chạy), xếp vào dao động.
+5. **Kiểm**: `tests/test_agent_ban_307.py` (5 ca; ca bật agent và hết trần đỏ khi gỡ bản sửa engine), `test_claude_cli_300.py::
+   test_converse_gia_lap_cong_cu_307`. Bắn thử production chưa chạy (tài khoản Anthropic hết tiền từ 29/10 — đang chạy Gemini dự phòng).
+
 ### SRS-5.1zzzzzzz306 · Gỡ lưới soát theo số đo: "em gửi ảnh" chỉ soi phần chat; bộ chấm ghi lưới nào kích (30/10/2026)
 Chủ dự án 30/10: "thôi bạn chạy thử và triển khai theo kế hoạch đi" (kế hoạch SRS-304: gỡ luật theo số đo `bun run cham`).
 
