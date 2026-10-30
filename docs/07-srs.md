@@ -9058,6 +9058,20 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz300 · Test lời bot bằng quota gói Claude Code (`claude -p`), không tốn tiền API (30/10/2026)
+Chủ dự án 30/10 (Claude API hết tiền; hỏi dùng quota CLI để test): "cài claude code dùng quota của bên mình đi".
+
+1. **Làm**: provider `claude_cli` (`src/aioi/llm/claude_cli.py`, bật bằng `AIOI_LLM_PROVIDER=claude_cli`) gọi `claude -p` trong thư mục trống: prompt hệ
+   thống qua `--system-prompt-file`, lời nhắn qua stdin (chạy được cả Windows), không công cụ / MCP / cấu hình dự án, không lưu phiên; bóc tách dùng
+   `--json-schema`. Script `scripts/thu-cli.py` chạy kịch bản người bán (`hht` = chat anh Luận 26/10, `dat`) trên DB tạm, không đụng Supabase / Zalo,
+   in lời bot, ô đã ghi, số lần gọi, giây, tiền QUY ĐỔI theo giá niêm yết (quota gói không trừ tiền thật).
+2. **Chỉ để test** — không dùng cho bot phục vụ khách thật: quota gói Claude Code dành cho người dùng tự làm việc; bot trả lời khách là sản phẩm → API key.
+   Khác đường API: lịch sử chat gửi thành một bản ghi chép, không công cụ (agent mua như không gọi công cụ), không đọc ảnh, mỗi lần gọi khởi động vài giây.
+3. **Kết quả đo đầu** (30/10, kịch bản `dat` 3 lượt và `hht` 8 lượt, bóc tách Haiku 5.5): viết lời Sonnet 5.5 $0,1326 / $0,3605 quy đổi; viết lời Haiku 5.5
+   $0,0138 / $0,0406 — rẻ ~9 lần. Cả hai ghi đủ ô, ra bản nháp, sửa đúng chỗ khách đính chính. Haiku khen nhạt hơn, lượt đầu có câu tự giới thiệu kiểu
+   máy; chủ dự án: "sếp thích kiểu khen lúc test Sonnet".
+4. **Kiểm**: `tests/test_claude_cli_300.py` (khuôn gọi, không chạy CLI thật).
+
 ### SRS-5.1zzzzzzz299 · Claude hết tiền: Gemini dự phòng chỉ đỡ một lượt vì model mặc định quá giờ — đổi danh sách model, một nguồn ở cai-vps.sh (30/10/2026)
 Ca gốc: 29/10 15:57 UTC tài khoản Anthropic báo "credit balance is too low" (sổ lỗi `HET TIEN API`); từ 15:59 mọi lượt chỉ nhận câu giữ chỗ (20 lượt hỏng, 8 lần
 thử lại hỏng). Chủ dự án 30/10: "bạn dùng key gemini free trước đi … mỗi thứ gọi vào 1 việc" (dán 6 khoá).

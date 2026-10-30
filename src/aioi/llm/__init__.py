@@ -19,6 +19,10 @@ def build_provider(settings: Settings) -> LLMProvider:
         if not any(n.khoa for n in nguon):
             return chinh
         return DuPhongProvider(chinh, nguon, so=getattr(chinh, "_so", None))
+    if provider == "claude_cli":   # SRS-5.1zzzzzzz300: CHỈ ĐỂ TEST trên máy mình — gọi model qua `claude -p` (quota gói Claude Code)
+        from .claude_cli import ClaudeCliProvider
+
+        return ClaudeCliProvider(settings)
     if provider == "mock":
         from .mock import MockProvider
 
