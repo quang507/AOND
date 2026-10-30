@@ -52,13 +52,9 @@ def test_phi_troi_theo_so_tin_ban_khong_dem_tin_thue():
 
 
 def test_tieu_de_khong_viet_hoa_ca_cum():
-    """SRS-5.1zzzzzzz241 (chủ dự án 28/10: "tiêu đề tin rao không cần viết hoa để như này"): cụm ≥ 3 từ HOA toàn bộ là lệch luật cứng."""
-    from aioi.engine import _viet_hoa_ca_cum
+    """SRS-5.1zzzzzzz241 (chủ dự án 28/10: "tiêu đề tin rao không cần viết hoa để như này"): luật nằm ở prompt AD_FORMAT. Lưới soát HOA đã gỡ
+    (SRS-5.1zzzzzzz312, chủ dự án 30/10: "không cần, gỡ đi")."""
     from aioi.prompts import AD_FORMAT
-    assert _viet_hoa_ca_cum("📋 Bản tin:\nCHỊ ƠI, NHÀ MẶT TIỀN CAO LỖ NGAY PARC MALL, giá 10 tỷ")
-    assert _viet_hoa_ca_cum("Anh chị ơi, BÁN GẤP NHÀ hẻm xe hơi")             # cách nói chưa bắn
-    assert not _viet_hoa_ca_cum("📋 Bản tin cập nhật: Chị ơi, nhà mặt tiền Cao Lỗ ngay Parc Mall, Phường 2 Quận 8, 3 lầu 4 phòng ngủ, giá 10 tỷ, đi là ưng!")
-    assert not _viet_hoa_ca_cum("Nhà HXH MT 4m, 5 WC, giá 10 tỷ")            # viết tắt lẻ
     assert "viết hoa gây chú ý" not in AD_FORMAT and "KHÔNG viết HOA" in AD_FORMAT
 
 

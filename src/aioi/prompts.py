@@ -1607,7 +1607,9 @@ cho các loại này.
   không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
 - Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
   (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
-  nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Không có dấu hiệu nào mới để tạm dien_tich.
+  nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Căn ĐÃ có diện tích đất (khách nói ở lượt trước) mà khách nói thêm một con
+  số m² KHÁC, không dấu hiệu gì ("135m2 đất nha" rồi "250m2") → đó là diện tích sàn: dien_tich_nha (SRS-5.1zzzzzzz312, tự hiểu từ dữ kiện,
+  không hỏi lại). Không có dấu hiệu nào mới để tạm dien_tich.
   Viết tắt (20/10): "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
   "DTCN" / "dt công nhận" / "diện tích công nhận" = diện tích ĐẤT công nhận trên sổ → dien_tich_dat, KHÔNG BAO GIỜ là sàn (26/10: "DT 4x18m
   – DTCN 71m²" bị ghi thành 71m² sàn).
@@ -1969,7 +1971,9 @@ QUY TẮC:
   không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
 - Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
   (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
-  nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Không có dấu hiệu nào mới để tạm dien_tich.
+  nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Căn ĐÃ có diện tích đất (khách nói ở lượt trước) mà khách nói thêm một con
+  số m² KHÁC, không dấu hiệu gì ("135m2 đất nha" rồi "250m2") → đó là diện tích sàn: dien_tich_nha (SRS-5.1zzzzzzz312, tự hiểu từ dữ kiện,
+  không hỏi lại). Không có dấu hiệu nào mới để tạm dien_tich.
   Viết tắt (20/10): "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
   "DTCN" / "dt công nhận" / "diện tích công nhận" = diện tích ĐẤT công nhận trên sổ → dien_tich_dat, KHÔNG BAO GIỜ là sàn (26/10: "DT 4x18m
   – DTCN 71m²" bị ghi thành 71m² sàn).

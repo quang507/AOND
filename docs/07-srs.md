@@ -834,6 +834,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz312 · Gỡ 4 lưới soát chưa từng kích; nhà phố có diện tích đất rồi thì số m² thứ hai là sàn; sửa phép chấm "huyện" (30/10/2026)
+Chủ dự án 30/10 ("không cần, gỡ đi"): gỡ lưới "câu ghi nhận một lần" (SRS-229), "HOA cả cụm" (SRS-241, luật vẫn ở `AD_FORMAT`), "anh ơi" lặp,
+"hỏi phường phải nhắc kho hẻm" (SRS-115, khối Kho hẻm trong prompt giữ) — 0/280 cuộc chấm kích, ở chế độ gọn chỉ ghi log; test giữ lưới gỡ theo.
+- `ma_lo_7m` (lớp lỗi: số m² trống ghi tạm `dien_tich`, phiếu lượt không hỏi lại theo SRS-302 → ô sàn trống): form + EXTRACTION đọc "đã có đất, số m² khác"
+  là `dien_tich_nha`. `dat_nen_long_an`: phép chấm "huyện" khớp nhầm "c**huyện**" → `\bhuyện\b`. Đo 408 phép: 402 / 403 → 406 / 406
+  (`ma_lo_7m`, `dat_nen_long_an` đạt 2/2); giọng 2,58 / 2,50 → 2,45 / 2,45 (thay đổi không đụng lời viết, dao động giám khảo 2,35–2,70).
+
 ### SRS-5.1zzzzzzz311 · Kế hoạch bước 4: lượt dễ của người bán viết bằng model rẻ; luật soát chưa gỡ (30/10/2026)
 - `MODEL_LUOT_DE` (`cai-vps.sh`): lượt thu thập bằng phiếu lượt, không tra dữ liệu, không việc khác (`y_luot` chỉ khoá `_`, không hỏi về) → model rẻ, cả lần soát
   gọi lại; lượt khác giữ `MODEL_CHAT`. Đo 408 phép: Sonnet mọi lượt 402 / 400, giọng 2,65 / 2,62, $5,0 / $5,3 · Haiku lượt dễ 404 / 402,
@@ -898,12 +905,6 @@ Chủ dự án 30/10: "nâng hạn mức lại thành 30 từ"; "prompt bóc tá
 - Form bóc tách người bán gọn `OPERATIONS_SYSTEM_BAN` (cắt mục việc khách mua, −19 % chữ) khi vai đã là người bán; đọc ra ý mua → đọc lại form đầy đủ.
   Công tắc `FORM_BAN_GON`. Luật trong prompt viết lời chỉ nói việc làm, không kèm lý do (Haiku từng kể lý do cho khách).
 - Kiểm: `tests/test_form_ban_gon_303.py`, `test_sua_ban_tin_theo_y_27_10.py`.
-
-### SRS-5.1zzzzzzz302 · Bot tự hiểu từ dữ kiện đã có, không hỏi lại; "em rao lại xem" ra bản tin; đếm từ tiêu đề đúng số thập phân (30/10/2026)
-Chủ dự án 30/10: "từ các dữ liệu đã có thì bot tự hiểu dữ liệu khác", "không cần hỏi lại".
-- "Em rao lại xem" khi chưa có bản nháp → `xin_dang` (ví dụ cũ trong prompt đá định nghĩa ô); lượt chat không có bản tin thì không nói "gửi bên dưới".
-- Bot tự hiểu từ dữ kiện đã có, không hỏi lại để xác nhận nghĩa; khách đính chính số thì sửa luôn. Bộ đếm từ tiêu đề coi số thập phân là một từ.
-- Kiểm: `tests/test_khong_hoi_lai_302.py`.
 
 ---
 
