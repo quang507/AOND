@@ -478,6 +478,23 @@
    "kiem": {
     "trang_thai": "đã cọc"
    }
+  },
+  {
+   "id": "hai_can_da_ban",
+   "mo_ta": "Rổ hai căn, khách báo 'căn đó bán rồi' chưa rõ căn nào → hỏi lại căn nào (SRS-307: dữ liệu rổ qua công cụ ro_hang)",
+   "cau": [
+    "anh có 2 căn cần bán: căn 1 nhà hẻm đường Bùi Minh Trực quận 8 giá 5 tỷ, căn 2 nhà mặt tiền đường Phạm Hùng quận 8 giá 12 tỷ",
+    "à căn đó anh bán được rồi em nhé"
+   ],
+   "kiem": {
+    "so_can": 2,
+    "luot": {
+     "2": "căn nào"
+    },
+    "luot_khong": {
+     "2": "(chuyển|cập nhật|đổi|đánh dấu).{0,40}đã bán"
+    }
+   }
   }
  ]
 }
