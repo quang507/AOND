@@ -32,3 +32,18 @@ def test_nhac_ten_duong_tim_ra_can_chi_co_o_duong():
     conv = eng.conversation("s308m")
     li = eng._match_listing(conv, "căn Bùi Minh Trực")
     assert li is not None and li.prop.fields.get("gia") == "5 tỷ" and li.listing_id != conv.active_listing_id
+
+
+class _AiThieuTrich(_Ai):
+    def extract(self, system, messages, json_schema):
+        kq = super().extract(system, messages, json_schema)
+        if "operations" in json_schema.get("properties", {}):
+            kq["operations"][1].pop("can_khac_trich")   # bắn thử production 30/10: Haiku trả "add" không kèm cụm trích
+        return kq
+
+
+def test_add_thieu_cum_trich_sau_update_cung_luot_van_la_can_khac():
+    eng = Engine(_AiThieuTrich(Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")))
+    eng.handle("s308t", TIN)
+    ds = [li.prop.fields for li in eng.conversation("s308t").listings]
+    assert {(f.get("duong"), f.get("gia")) for f in ds} == {("Bùi Minh Trực", "5 tỷ"), ("Phạm Hùng", "12 tỷ")}
