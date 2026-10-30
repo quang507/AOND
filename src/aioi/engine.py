@@ -131,7 +131,7 @@ from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
                   lenh_tra_loi, nhan_nhu_cau, nhan_tu_du_lieu, nhu_cau_cua, tim_sdt)
-from . import agent_ban, agent_mua
+from . import agent_ban, agent_boc, agent_mua
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
@@ -2969,6 +2969,9 @@ class Engine:
             system += self._project_memory_block(project, conv)  # remember the price list + phân lô; reason over it
             system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
         system += khoi_tin_tra_loi(conv.tin_tra_loi)   # SRS-5.1zzzzzzz270
+        if conv.y_luot.get("chua_ro_can"):   # SRS-5.1zzzzzzz310: dữ kiện hệ thống — chưa đổi căn nào
+            system += ("\nHỆ THỐNG: khách báo đổi trạng thái một căn nhưng lời khách chưa chỉ ra căn nào trong rổ ("
+                       + "; ".join(conv.y_luot["chua_ro_can"]) + "). CHƯA đổi căn nào — hỏi lại khách căn nào, đừng nói đã cập nhật.\n")
         # A seller in a project WITH an inventory → the reply runs through the agent LOOP (same
         # sales-mode prompt + tools). The model decides per turn whether to query the catalog,
         # add a resolved căn, learn a fact, or ask for a link — NO keyword gate (Mảnh B). A plain
@@ -4625,8 +4628,14 @@ class Engine:
                 conv.cau_hoi_cho = kho.cau_hoi_cho_nguoi_ban(conv.user_key)
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
         conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
-        with _do(conv, "lap_thao_tac"):
-            plan = self._provider.extract(system, src, operations_schema_mua() if gon else operations_schema_ban() if ban_gon else operations_schema())
+        plan = None
+        if ban_gon and agent_boc.bat(conv.user_key, _la_id_thu(conv.user_key)):
+            # SRS-5.1zzzzzzz310 (kế hoạch bước 3): người bán đọc bằng agent gọi công cụ ghi (code kiểm từng lần gọi); agent hỏng → form dưới.
+            with _do(conv, "lap_thao_tac"):
+                plan = agent_boc.lap(self, conv, system, src, operations_schema_ban())
+        if plan is None:
+            with _do(conv, "lap_thao_tac"):
+                plan = self._provider.extract(system, src, operations_schema_mua() if gon else operations_schema_ban() if ban_gon else operations_schema())
         if gon and plan.get("user_intent") == "sell":
             # SRS-5.1zzzzzzz293: form gọn không có ô thao tác rổ hàng — khách mua chuyển sang gửi bán thì đọc lại cả lượt bằng form đầy đủ.
             log.warning("Kế hoạch: form mua gọn đọc ra ý bán — đọc lại bằng form đầy đủ")
@@ -4809,6 +4818,8 @@ class Engine:
 
         # Xin xem bản vẽ / hỏi dự án / tả dự án / xác nhận xoá (SRS-5.1zzzzzzz55): nhận khi cụm trích có trong tin vừa nhắn.
         conv.y_luot = {}
+        if plan.get("_chua_ro_can"):   # SRS-5.1zzzzzzz310: agent bóc từ chối đổi trạng thái vì lời khách chưa chỉ ra căn nào
+            conv.y_luot["chua_ro_can"] = list(plan["_chua_ro_can"])
         if la_ngoai_viec:
             conv.y_luot["ngoai_viec"] = conv.so_luot_ngoai_viec   # SRS-5.1zzzzzzz177
         for k in ("xin_xem_ban_ve", "cau_hoi_du_an", "mo_ta_du_an"):
