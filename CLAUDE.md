@@ -30,7 +30,7 @@ Thứ tự đọc = thứ tự phụ thuộc. Tài liệu sau **không được 
 | 4 | `docs/04-information-architecture.md` | Sitemap, URL/SEO, content model, taxonomy | `IA-` |
 | 5 | `docs/05-wireframes.md` | Wireframe low-fi | `WF-` |
 | 6 | `docs/06-ui-design.md` | Design system, token, component, tone giọng | `UI-` |
-| 7 | `docs/07-srs.md` | Đặc tả phần mềm: kiến trúc, data model, API, acceptance; nhật ký sửa SRS-5.1… từ 26/10/2026 | `SRS-` |
+| 7 | `docs/07-srs.md` | Đặc tả phần mềm: kiến trúc, data model, API, acceptance; 10 mục nhật ký sửa SRS-5.1… mới nhất | `SRS-` |
 | 7 | `docs/07-srs-luu-tru.md` | Nhật ký sửa cũ — LƯU TRỮ, chỉ tra cứu, không thêm mục | `SRS-` |
 | 8 | `docs/08-traceability.md` | Ma trận truy vết BR → FR → UF → WF → SRS | — |
 | 9 | `docs/09-open-issues.md` | Mâu thuẫn / quyết định còn treo | `OPEN-` |
