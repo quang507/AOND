@@ -9058,6 +9058,28 @@ Chủ dự án 26/10 (sau khi tôi liệt kê phần chưa lấy): "lấy lời 
 3. **Ô `uu_the`** (`prompts.property_field_props`, `schema._merge_uu_the`, `engine._loc_uu_the` / `_loc_o_tin`, `supabase_store._O_KHONG_PHAI_THONG_SO`, `describe_captured`): điều khách TỰ NÓI mà không có ô riêng vào mảng cụm ngắn; CỘNG DỒN (không đè), nối bằng " · "; vào dữ liệu bản tin để model dùng. **Khác anh Luận**: chỉ giữ cụm NẰM NGUYÊN trong lời khách lượt đó (`_trich_dan_khop`), cụm AI tự suy bị bỏ và ghi sổ `bo_luot` — giữ luật SRS-73 của mình. Không là ô hỏi (không vào `missing_fields`), không chặn bản nháp, không đưa vào bộ đọc thông số của DB.
 4. **Ba câu hỏi gốc** — (1) *Lớp lỗi*: "bóc tách theo khung ô cố định nên điều khách nói ngoài khung rơi mất"; (2) *Chỗ khác cùng lớp*: ô tự do chỉ có cho phía bán; khách MUA tả nhu cầu ngoài khung (`BuyerLead`) chưa có ô tương tự; luật bóc tách "tin mới nhất không thêm gì thì không tạo update" của anh Luận CHƯA lấy (bản mình có cổng bằng chứng làm việc tương tự); (3) *Bài đỏ khi tắt bản sửa*: `tests/test_uu_the_tu_do.py` (6 ca), `tests/test_giong_rao_cho.py`. Cổng `_loc_uu_the` chưa chạy với model thật.
 
+### SRS-5.1zzzzzzz303 · Ngưỡng gọi lại vì tiêu đề dài 30 từ (prompt vẫn 15–25); form bóc tách gọn cho người bán (30/10/2026)
+Chủ dự án 30/10 (hỏi vì sao bot phải viết lại): "prompt đầu tiên cho nó 25 từ nhưng nâng hạn mức lại thành 30 từ đi. prompt bóc tách sao mà dài,
+giờ có agent làm rồi thì ngắn lại dc ko".
+
+1. **Tiêu đề**: `AD_FORMAT` vẫn dặn 15–25 từ; `TIEU_DE_TOI_DA_TU` = 30 — lưới `_tieu_de_thieu` chỉ gọi lại model khi tiêu đề quá 30 từ. Câu dặn khi
+   gọi lại bỏ "(không quá 25)". `ban-thu-ban.sh` / `ban-thu-kb.sh` kiểm ≤ 30 (+1 biểu tượng).
+2. **Form bán gọn**: agent hiện chỉ có ở phía MUA (SRS-290, công cụ chỉ đọc); phía bán vẫn đọc ý bằng form đầy đủ. Làm như form mua gọn (SRS-293):
+   `OPERATIONS_SYSTEM_BAN` CẮT mục "VIỆC CỦA KHÁCH MUA" khỏi `OPERATIONS_SYSTEM` (27.670 → 23.405 chữ, −15 %), `operations_schema_ban` bỏ
+   `buyer_lead` / `mua` / `xong_viec_mua` (24.635 → 18.827 chữ, −24 %); tổng −19 % mỗi lượt đọc ý người bán. Chỉ dùng khi vai đã là `seller` từ
+   lượt trước (lượt đầu chưa rõ vai vẫn form đầy đủ); đọc ra `user_intent = buy` → đọc lại cả lượt bằng form đầy đủ. Công tắc `FORM_BAN_GON` trong
+   `cai-vps.sh` → `AIOI_FORM_BAN_GON` (hiện `bat`).
+3. **Chưa cắt thêm (BA, uỷ quyền)**: phần còn lại của form là thao tác rổ hàng, duyệt bản nháp, pháp lý, xưng hô, tiếng lóng — đều dùng ở lượt bán.
+   Thay hẳn form bằng agent phía bán (B2 bước 2, SRS-298) là việc lớn hơn, chưa làm.
+4. **Kiểm**: `tests/test_form_ban_gon_303.py` (cắt không viết lại định nghĩa ô; lượt hai của người bán dùng form gọn; ý mua → đọc lại form đầy đủ;
+   công tắc tắt / `thu` với khách thật giữ form đầy đủ — đỏ khi gỡ bản sửa); `tests/test_sua_ban_tin_theo_y_27_10.py` (28 từ không gọi lại,
+   34 từ gọi lại); `tests/test_cache_ranh_gioi.py` (form bán gọn đứng trước dấu cache).
+5. **Đo bằng quota CLI** (form bán gọn bật): lượt đầu form đầy đủ ~33.200 token vào, từ lượt 2 ~27.500 (−17 %); ô ghi đủ, bản tin ra ở "Em rao lại
+   xem", sửa "ngang 5m" không hỏi lại (Haiku 3 lần, Sonnet 1 lần `hht`; Haiku `dat` ra bản tin lượt 3). Lỗi thấy và sửa cùng mục: luật SRS-302 "số
+   lệch thì giữ số khách nói (sổ có thể tóp hậu)" bị Haiku KỂ LẠI cho khách ("sổ khách ghi 34,5m² — chênh khá nhiều… em giữ đúng số khách nói") →
+   viết lại thành "dùng đúng số khách nói, không tự nhân, KHÔNG nhắc chuyện số lệch — việc này em tự biết"; chạy lại 2 lần Haiku không còn.
+   Lớp lỗi: luật giải thích LÝ DO trong prompt viết lời bị model rẻ chép thành lời nói với khách — luật mới chỉ nói việc làm, không kèm lý do.
+
 ### SRS-5.1zzzzzzz302 · Bot tự hiểu từ dữ kiện đã có, không hỏi lại; "em rao lại xem" ra bản tin; đếm từ tiêu đề đúng số thập phân (30/10/2026)
 Chủ dự án 30/10 (xem báo cáo thử CLI SRS-301): "làm cho ra việc luôn khen cho hay luôn đi", "từ các dữ liệu đã có thì bot tự hiểu dữ liệu khác",
 "không cần hỏi lại".

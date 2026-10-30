@@ -235,13 +235,15 @@ def test_chu_roi_khong_thanh_cau_hoi_treo_cho_luot_doc_anh():
     assert Engine._pending_seller_question(_conv("[khách gửi sticker]")) == ""
 
 
-def test_tieu_de_qua_25_tu_bi_bat():
+def test_tieu_de_qua_30_tu_bi_bat():
     from aioi.engine import _tieu_de_thieu, TIEU_DE_TOI_DA_TU
     p = Property(loai_hinh="nha_pho"); p.fields["gia"] = "25 tỷ"
     dai = ("📋 Bản tin cập nhật:\n\n🔥 Bà con ơi, nhà mặt tiền Nguyễn Trãi Phường Chợ Quán 25 tỷ, 4x20m, 1 trệt 3 lầu, sổ hồng riêng, đầu tư hay ở đều hợp!"
            "\n\nMô tả.")   # 28 từ (bắn thử 27/10)
+    assert _tieu_de_thieu(dai, p) == []   # SRS-5.1zzzzzzz303: prompt dặn 15–25 từ, lưới chỉ gọi lại khi quá 30
+    dai = dai.replace("đều hợp!", "đều hợp, hẻm xe hơi tới tận cửa nhà luôn!")   # 34 từ
     ly = _tieu_de_thieu(dai, p)
-    assert len(ly) == 1 and "quá 25" in ly[0]
+    assert len(ly) == 1 and "quá 30" in ly[0]
     ngan = "📋 Bản tin cập nhật:\n\n🏠 Anh chị ơi, mặt tiền 5m đường Hoàng Hoa Thám Bình Thạnh, 3 tầng kiên cố, giá 12,5 tỷ thương lượng nhẹ!\n\nMô tả."
     p.fields["gia"] = "12,5 tỷ"
-    assert _tieu_de_thieu(ngan, p) == [] and TIEU_DE_TOI_DA_TU == 25
+    assert _tieu_de_thieu(ngan, p) == [] and TIEU_DE_TOI_DA_TU == 30
