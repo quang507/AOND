@@ -1,69 +1,483 @@
 {
-  "_mo_ta": "Bộ kịch bản NGƯỜI BÁN chấm tự động (SRS-5.1zzzzzzz304). Câu khách lấy từ bot/tests/ban-thu-ban.sh, ban-thu-kb.sh, ban-thu-srd.sh (đã dùng bắn thử production, không có dữ liệu khách thật). Chạy: python scripts/cham-kich-ban.py. Khoá kiểm: o = ô phải có (chuỗi con, so không dấu); o_khong = ô phải trống; o_khong_chua = ô không được chứa chuỗi; loai; cho_thue; so_can; nhap_truoc = bản tin 📋 đầu tiên ở lượt ≤ N; khong_nhap; cam = regex cấm trong MỌI lời bot; luot = {số lượt: regex phải có trong lời lượt đó}.",
-  "kich_ban": [
-    {"id": "cao_lo", "mo_ta": "Nhà phố mặt tiền Cao Lỗ Q8 — khách nói từng ý, lờ câu sàn mấy lượt; ô bot tự hỏi (thương lượng) không được ghi",
-     "cau": ["Mình cần bán nhà phố", "Nhà đường Cao Lỗ, Phường Chánh Hưng, Quận 8", "Nhà mặt tiền", "dt 4,5x11", "Nhà xây 1 trệt 3 lầu",
-             "nhà mình có sổ riêng", "giá 8,5 tỷ", "đã hoàn công đủ", "diện tích sàn tầm 170m vuông"],
-     "kiem": {"loai": "nha_pho", "o": {"gia": "8,5", "duong": "Cao Lỗ", "dien_tich_nha": "170"}, "o_khong": ["thuong_luong"], "nhap_truoc": 9}},
-    {"id": "au_co", "mo_ta": "Nhà Âu Cơ Q11 — bot tự hiểu nhà phố và \"80m 5 tầng\" là đất, không hỏi loại / đất hay sàn",
-     "cau": ["anh cần bán căn nhà ở đường âu cơ, quận 11 em biết đường đó ko", "Phường 9 em", "mặt tiền", "nhà số 110 em", "80m 5 tầng em",
-             "nhà mình ở lâu rồi, sổ riêng", "nhà mình đang ở giá 16 tỉ nhé", "diện tích sàn là 240m"],
-     "kiem": {"loai": "nha_pho", "o": {"dien_tich_dat": "80", "gia": "16", "dien_tich_nha": "240"},
-              "cam": ["nhà phố, chung cư hay đất", "là (diện tích )?đất hay (diện tích )?sàn"], "nhap_truoc": 8}},
-    {"id": "nguyen_trai", "mo_ta": "Nhà Nguyễn Trãi Q5 — khách trả lời theo cụm, duyệt rồi sửa giá",
-     "cau": ["chị bán nhà mặt tiền đường Nguyễn Trãi quận 5", "Phường Chợ Quán em", "ngang 4 dài 20, 1 trệt 3 lầu, sàn tầm 300m",
-             "sổ hồng riêng, nhà đang để trống, giá 25 tỷ", "ok em, đăng đi", "à em ơi, sửa giá căn này còn 24 tỷ nhé"],
-     "kiem": {"loai": "nha_pho", "o": {"gia": "24"}, "nhap_truoc": 4}},
-    {"id": "sunrise", "mo_ta": "Căn hộ Sunrise City Q7 — không hỏi hẻm / mặt tiền / tầng lầu",
-     "cau": ["em bán căn hộ chung cư Sunrise City quận 7, 2 phòng ngủ 76m2", "tầng 12 block V3, giá 4,2 tỷ", "sổ hồng rồi, nội thất đầy đủ",
-             "view sông, phí quản lý tầm 1 triệu 5"],
-     "kiem": {"loai": "chung_cu", "o": {"gia": "4,2"}, "cam": ["hẻm", "mặt tiền hay", "mấy lầu", "trệt"]}},
-    {"id": "cho_thue", "mo_ta": "Cho thuê nguyên căn Lê Văn Sỹ Q3 — không nói phí 1% giá bán",
-     "cau": ["chị cho thuê nhà nguyên căn hẻm xe hơi đường Lê Văn Sỹ quận 3", "giá 25 triệu một tháng em", "ngang 4 dài 16, 1 trệt 2 lầu, 3 phòng ngủ",
-             "cọc 2 tháng, hợp đồng tối thiểu 1 năm"],
-     "kiem": {"cho_thue": true, "o": {"gia": "25"}, "cam": ["1 ?% ?(giá|giao)"]}},
-    {"id": "dat", "mo_ta": "Lô đất thổ cư Trần Văn Giàu Bình Chánh",
-     "cau": ["bán lô đất thổ cư đường Trần Văn Giàu huyện Bình Chánh", "ngang 5 dài 20, full thổ cư, sổ riêng", "đường trước đất rộng 8m, giá 3 tỷ"],
-     "kiem": {"loai": "dat", "o": {"gia": "3"}, "nhap_truoc": 3}},
-    {"id": "hai_can", "mo_ta": "Một tin nhắn hai căn",
-     "cau": ["anh có 2 căn cần bán: căn 1 nhà hẻm đường Bùi Minh Trực quận 8 giá 5 tỷ, căn 2 nhà mặt tiền đường Phạm Hùng quận 8 giá 12 tỷ"],
-     "kiem": {"so_can": 2}},
-    {"id": "xin_nguoi", "mo_ta": "Khách xin nói chuyện với nhân viên",
-     "cau": ["chị muốn nói chuyện trực tiếp với nhân viên bên em"],
-     "kiem": {"xin_nguoi": true}},
-    {"id": "hht", "mo_ta": "Chat anh Luận 26/10 — Hoàng Hoa Thám: rao lại, bàn giao, đính chính, dặn cách viết",
-     "cau": ["Anh cần bán nhà mặt tiền đường Hoàng Hoa Thám, Bình Thạnh", "Phường Gia Định", "ngang 5,2m dài 8m, đất 34,5m2",
-             "3 tầng kiên cố, sổ hồng hoàn công rồi", "giá 12,5 tỷ thương lượng nhẹ", "Em rao lại xem",
-             "Người ta thuê 1 năm nhưng mà anh có thể bàn giao tức thì mà em", "Xin lỗi em anh cũng nhầm căn nhà này mặt tiền có 5 m thôi",
-             "Em cho dùm anh 2-3 cái hình tượng trong bản tin đi",
-             "cái việc chủ nhà bàn giao tức thì có cần thiết phải nói tới 2 lần trong bản rao không em"],
-     "kiem": {"loai": "nha_pho", "o": {"gia": "12,5", "dien_tich_dat": "34,5", "mat_tien": "5"}, "o_khong_chua": {"mat_tien": "5,2"},
-              "nhap_truoc": 6, "luot": {"8": "📋", "9": "📋", "10": "📋"}}},
-    {"id": "ha_noi", "mo_ta": "Nhà Đống Đa Hà Nội — ngoài vùng: nói khéo, không soạn tin",
-     "cau": ["Bán nhà riêng phân lô mặt ngõ đường Nguyễn Chí Thanh, kinh doanh được, 65m2, 7 tầng, mặt tiền 4,5m, giá 22,5 tỷ có thương lượng",
-             "nhà ở quận Đống Đa, Hà Nội em"],
-     "kiem": {"khong_nhap": true, "o": {"_ngoai_vung": "Hà Nội"}}},
-    {"id": "nct_q5", "mo_ta": "Nhà hẻm Nguyễn Chí Thanh Q5 — đủ ô thì bảo đăng là ra bản tin",
-     "cau": ["Bán nhà hẻm đường Nguyễn Chí Thanh quận 5, kinh doanh được, 65m2, 7 tầng, ngang 4,5m, giá 22,5 tỷ có thương lượng",
-             "hẻm trước nhà rộng 3m", "ok em đăng đi"],
-     "kiem": {"loai": "nha_pho", "o": {"gia": "22,5"}, "nhap_truoc": 3}},
-    {"id": "lakeview", "mo_ta": "Nhà phố trong dự án LakeView City, đang cho thuê (tin BÁN)",
-     "cau": ["Em gửi căn nhà phố LakeView City, 5x20, 1 trệt 3 lầu, 4 phòng ngủ, giá 27 tỷ", "sổ hồng riêng, đang cho thuê 50 triệu/tháng",
-             "hướng Đông Nam, nội thất cơ bản", "ok đăng đi em"],
-     "kiem": {"loai": "nha_pho", "cho_thue": false, "o": {"gia": "27"}, "nhap_truoc": 4}},
-    {"id": "masteri", "mo_ta": "Căn hộ Masteri Thảo Điền",
-     "cau": ["Cần bán căn hộ Masteri Thảo Điền 2PN 2WC 68m2, tháp T3 tầng 15, view sông, giá 6,8 tỷ còn thương lượng", "sổ hồng rồi em, full nội thất",
-             "phí quản lý khoảng 1,2 triệu", "ok đăng đi"],
-     "kiem": {"loai": "chung_cu", "o": {"gia": "6,8"}, "nhap_truoc": 4}},
-    {"id": "nyah", "mo_ta": "Chat tester chị N. 20/10 — Ny'ah Phú Định: dtsd là sàn, MT 20 mét là đường",
-     "cau": ["mình cần bán nhà trong khu dự án Nyah Phu Dinh",
-             "Bán nhà trong khu dân cư Nyah Phú Định, Trương Đình Hội • MT 20 mét, giá 6,95 tỷ, DT 4 x 11m, 1 trệt 1 lửng 3 lầu sân thượng, garage trong nhà, SHR hoàn công đầy đủ",
-             "dtsd: 245m vuông"],
-     "kiem": {"loai": "nha_pho", "o": {"gia": "6,95", "dien_tich_nha": "245"}, "o_khong_chua": {"mat_tien": "20", "dien_tich_dat": "245"}}},
-    {"id": "srd_phi", "mo_ta": "Luồng SRD anh Luận — nhà hẻm Trần Bình Trọng Q5, rồi hỏi phí",
-     "cau": ["Anh muốn gửi bán căn nhà phố ở Quận 5.", "Nhà hẻm 123 đường Trần Bình Trọng nha em.", "Hẻm xe hơi 4m, ô tô tới cửa.",
-             "1 trệt 2 lầu, 4 phòng ngủ.", "Sổ hồng riêng, đất 50m2 em.", "Giá bán 10 tỷ nha em. Có thương lượng.", "Nhà đang để trống em.",
-             "OK. Phí môi giới bên em thu sao?", "Anh là chính chủ, vậy phí bao nhiêu em?"],
-     "kiem": {"loai": "nha_pho", "o": {"gia": "10", "dien_tich_dat": "50"}, "luot": {"9": "1 ?%"}}}
-  ]
+ "_mo_ta": "Bộ kịch bản NGƯỜI BÁN chấm tự động (SRS-5.1zzzzzzz304). Câu khách lấy từ bot/tests/ban-thu-ban.sh, ban-thu-kb.sh, ban-thu-srd.sh (đã dùng bắn thử production, không có dữ liệu khách thật). Chạy: python scripts/cham-kich-ban.py. Khoá kiểm: o = ô phải có (chuỗi con, so không dấu); o_khong = ô phải trống; o_khong_chua = ô không được chứa chuỗi; loai; cho_thue; so_can; nhap_truoc = bản tin 📋 đầu tiên ở lượt ≤ N; khong_nhap; cam = regex cấm trong MỌI lời bot; luot = {số lượt: regex phải có trong lời lượt đó}; luot_khong = {số lượt: regex KHÔNG được có}; trang_thai = trạng thái tin chứa chuỗi. Mỗi lỗi đáng giá từng gặp (SRS) thành một kịch bản ở đây, thay vì thêm luật vào prompt (SRS-5.1zzzzzzz305).",
+ "kich_ban": [
+  {
+   "id": "cao_lo",
+   "mo_ta": "Nhà phố mặt tiền Cao Lỗ Q8 — khách nói từng ý, lờ câu sàn mấy lượt; ô bot tự hỏi (thương lượng) không được ghi",
+   "cau": [
+    "Mình cần bán nhà phố",
+    "Nhà đường Cao Lỗ, Phường Chánh Hưng, Quận 8",
+    "Nhà mặt tiền",
+    "dt 4,5x11",
+    "Nhà xây 1 trệt 3 lầu",
+    "nhà mình có sổ riêng",
+    "giá 8,5 tỷ",
+    "đã hoàn công đủ",
+    "diện tích sàn tầm 170m vuông"
+   ],
+   "kiem": {
+    "loai": "nha_pho",
+    "o": {
+     "gia": "8,5",
+     "duong": "Cao Lỗ",
+     "dien_tich_nha": "170"
+    },
+    "o_khong": [
+     "thuong_luong"
+    ],
+    "nhap_truoc": 9
+   }
+  },
+  {
+   "id": "au_co",
+   "mo_ta": "Nhà Âu Cơ Q11 — bot tự hiểu nhà phố và \"80m 5 tầng\" là đất, không hỏi loại / đất hay sàn",
+   "cau": [
+    "anh cần bán căn nhà ở đường âu cơ, quận 11 em biết đường đó ko",
+    "Phường 9 em",
+    "mặt tiền",
+    "nhà số 110 em",
+    "80m 5 tầng em",
+    "nhà mình ở lâu rồi, sổ riêng",
+    "nhà mình đang ở giá 16 tỉ nhé",
+    "diện tích sàn là 240m"
+   ],
+   "kiem": {
+    "loai": "nha_pho",
+    "o": {
+     "dien_tich_dat": "80",
+     "gia": "16",
+     "dien_tich_nha": "240"
+    },
+    "cam": [
+     "nhà phố, chung cư hay đất",
+     "là (diện tích )?đất hay (diện tích )?sàn"
+    ],
+    "nhap_truoc": 8
+   }
+  },
+  {
+   "id": "nguyen_trai",
+   "mo_ta": "Nhà Nguyễn Trãi Q5 — khách trả lời theo cụm, duyệt rồi sửa giá",
+   "cau": [
+    "chị bán nhà mặt tiền đường Nguyễn Trãi quận 5",
+    "Phường Chợ Quán em",
+    "ngang 4 dài 20, 1 trệt 3 lầu, sàn tầm 300m",
+    "sổ hồng riêng, nhà đang để trống, giá 25 tỷ",
+    "ok em, đăng đi",
+    "à em ơi, sửa giá căn này còn 24 tỷ nhé"
+   ],
+   "kiem": {
+    "loai": "nha_pho",
+    "o": {
+     "gia": "24"
+    },
+    "nhap_truoc": 4
+   }
+  },
+  {
+   "id": "sunrise",
+   "mo_ta": "Căn hộ Sunrise City Q7 — không hỏi hẻm / mặt tiền / tầng lầu",
+   "cau": [
+    "em bán căn hộ chung cư Sunrise City quận 7, 2 phòng ngủ 76m2",
+    "tầng 12 block V3, giá 4,2 tỷ",
+    "sổ hồng rồi, nội thất đầy đủ",
+    "view sông, phí quản lý tầm 1 triệu 5"
+   ],
+   "kiem": {
+    "loai": "chung_cu",
+    "o": {
+     "gia": "4,2"
+    },
+    "cam": [
+     "hẻm",
+     "mặt tiền hay",
+     "mấy lầu",
+     "trệt"
+    ]
+   }
+  },
+  {
+   "id": "cho_thue",
+   "mo_ta": "Cho thuê nguyên căn Lê Văn Sỹ Q3 — không nói phí 1% giá bán",
+   "cau": [
+    "chị cho thuê nhà nguyên căn hẻm xe hơi đường Lê Văn Sỹ quận 3",
+    "giá 25 triệu một tháng em",
+    "ngang 4 dài 16, 1 trệt 2 lầu, 3 phòng ngủ",
+    "cọc 2 tháng, hợp đồng tối thiểu 1 năm"
+   ],
+   "kiem": {
+    "cho_thue": true,
+    "o": {
+     "gia": "25"
+    },
+    "cam": [
+     "1 ?% ?(giá|giao)"
+    ]
+   }
+  },
+  {
+   "id": "dat",
+   "mo_ta": "Lô đất thổ cư Trần Văn Giàu Bình Chánh",
+   "cau": [
+    "bán lô đất thổ cư đường Trần Văn Giàu huyện Bình Chánh",
+    "ngang 5 dài 20, full thổ cư, sổ riêng",
+    "đường trước đất rộng 8m, giá 3 tỷ"
+   ],
+   "kiem": {
+    "loai": "dat",
+    "o": {
+     "gia": "3"
+    },
+    "nhap_truoc": 3
+   }
+  },
+  {
+   "id": "hai_can",
+   "mo_ta": "Một tin nhắn hai căn",
+   "cau": [
+    "anh có 2 căn cần bán: căn 1 nhà hẻm đường Bùi Minh Trực quận 8 giá 5 tỷ, căn 2 nhà mặt tiền đường Phạm Hùng quận 8 giá 12 tỷ"
+   ],
+   "kiem": {
+    "so_can": 2
+   }
+  },
+  {
+   "id": "xin_nguoi",
+   "mo_ta": "Khách xin nói chuyện với nhân viên",
+   "cau": [
+    "chị muốn nói chuyện trực tiếp với nhân viên bên em"
+   ],
+   "kiem": {
+    "xin_nguoi": true
+   }
+  },
+  {
+   "id": "hht",
+   "mo_ta": "Chat anh Luận 26/10 — Hoàng Hoa Thám: rao lại, bàn giao, đính chính, dặn cách viết",
+   "cau": [
+    "Anh cần bán nhà mặt tiền đường Hoàng Hoa Thám, Bình Thạnh",
+    "Phường Gia Định",
+    "ngang 5,2m dài 8m, đất 34,5m2",
+    "3 tầng kiên cố, sổ hồng hoàn công rồi",
+    "giá 12,5 tỷ thương lượng nhẹ",
+    "Em rao lại xem",
+    "Người ta thuê 1 năm nhưng mà anh có thể bàn giao tức thì mà em",
+    "Xin lỗi em anh cũng nhầm căn nhà này mặt tiền có 5 m thôi",
+    "Em cho dùm anh 2-3 cái hình tượng trong bản tin đi",
+    "cái việc chủ nhà bàn giao tức thì có cần thiết phải nói tới 2 lần trong bản rao không em"
+   ],
+   "kiem": {
+    "loai": "nha_pho",
+    "o": {
+     "gia": "12,5",
+     "dien_tich_dat": "34,5",
+     "mat_tien": "5"
+    },
+    "o_khong_chua": {
+     "mat_tien": "5,2"
+    },
+    "nhap_truoc": 6,
+    "luot": {
+     "8": "📋",
+     "9": "📋",
+     "10": "📋"
+    }
+   }
+  },
+  {
+   "id": "ha_noi",
+   "mo_ta": "Nhà Đống Đa Hà Nội — ngoài vùng: nói khéo, không soạn tin",
+   "cau": [
+    "Bán nhà riêng phân lô mặt ngõ đường Nguyễn Chí Thanh, kinh doanh được, 65m2, 7 tầng, mặt tiền 4,5m, giá 22,5 tỷ có thương lượng",
+    "nhà ở quận Đống Đa, Hà Nội em"
+   ],
+   "kiem": {
+    "khong_nhap": true,
+    "o": {
+     "_ngoai_vung": "Hà Nội"
+    }
+   }
+  },
+  {
+   "id": "nct_q5",
+   "mo_ta": "Nhà hẻm Nguyễn Chí Thanh Q5 — đủ ô thì bảo đăng là ra bản tin",
+   "cau": [
+    "Bán nhà hẻm đường Nguyễn Chí Thanh quận 5, kinh doanh được, 65m2, 7 tầng, ngang 4,5m, giá 22,5 tỷ có thương lượng",
+    "hẻm trước nhà rộng 3m",
+    "ok em đăng đi"
+   ],
+   "kiem": {
+    "loai": "nha_pho",
+    "o": {
+     "gia": "22,5"
+    },
+    "nhap_truoc": 3
+   }
+  },
+  {
+   "id": "lakeview",
+   "mo_ta": "Nhà phố trong dự án LakeView City, đang cho thuê (tin BÁN)",
+   "cau": [
+    "Em gửi căn nhà phố LakeView City, 5x20, 1 trệt 3 lầu, 4 phòng ngủ, giá 27 tỷ",
+    "sổ hồng riêng, đang cho thuê 50 triệu/tháng",
+    "hướng Đông Nam, nội thất cơ bản",
+    "ok đăng đi em"
+   ],
+   "kiem": {
+    "loai": "nha_pho",
+    "cho_thue": false,
+    "o": {
+     "gia": "27"
+    },
+    "nhap_truoc": 4
+   }
+  },
+  {
+   "id": "masteri",
+   "mo_ta": "Căn hộ Masteri Thảo Điền",
+   "cau": [
+    "Cần bán căn hộ Masteri Thảo Điền 2PN 2WC 68m2, tháp T3 tầng 15, view sông, giá 6,8 tỷ còn thương lượng",
+    "sổ hồng rồi em, full nội thất",
+    "phí quản lý khoảng 1,2 triệu",
+    "ok đăng đi"
+   ],
+   "kiem": {
+    "loai": "chung_cu",
+    "o": {
+     "gia": "6,8"
+    },
+    "nhap_truoc": 4
+   }
+  },
+  {
+   "id": "nyah",
+   "mo_ta": "Chat tester chị N. 20/10 — Ny'ah Phú Định: dtsd là sàn, MT 20 mét là đường",
+   "cau": [
+    "mình cần bán nhà trong khu dự án Nyah Phu Dinh",
+    "Bán nhà trong khu dân cư Nyah Phú Định, Trương Đình Hội • MT 20 mét, giá 6,95 tỷ, DT 4 x 11m, 1 trệt 1 lửng 3 lầu sân thượng, garage trong nhà, SHR hoàn công đầy đủ",
+    "dtsd: 245m vuông"
+   ],
+   "kiem": {
+    "loai": "nha_pho",
+    "o": {
+     "gia": "6,95",
+     "dien_tich_nha": "245"
+    },
+    "o_khong_chua": {
+     "mat_tien": "20",
+     "dien_tich_dat": "245"
+    }
+   }
+  },
+  {
+   "id": "srd_phi",
+   "mo_ta": "Luồng SRD anh Luận — nhà hẻm Trần Bình Trọng Q5, rồi hỏi phí",
+   "cau": [
+    "Anh muốn gửi bán căn nhà phố ở Quận 5.",
+    "Nhà hẻm 123 đường Trần Bình Trọng nha em.",
+    "Hẻm xe hơi 4m, ô tô tới cửa.",
+    "1 trệt 2 lầu, 4 phòng ngủ.",
+    "Sổ hồng riêng, đất 50m2 em.",
+    "Giá bán 10 tỷ nha em. Có thương lượng.",
+    "Nhà đang để trống em.",
+    "OK. Phí môi giới bên em thu sao?",
+    "Anh là chính chủ, vậy phí bao nhiêu em?"
+   ],
+   "kiem": {
+    "loai": "nha_pho",
+    "o": {
+     "gia": "10",
+     "dien_tich_dat": "50"
+    },
+    "luot": {
+     "9": "1 ?%"
+    }
+   }
+  },
+  {
+   "id": "xa_phuoc_ly",
+   "mo_ta": "SRS xã 1/7/2025: đất ở xã + tỉnh là đủ — không hỏi huyện / quận; khách nói mốc rồi thì không hỏi lại địa chỉ",
+   "cau": [
+    "anh cần rao bán lô đất",
+    "Nhà ở Long An nhé!",
+    "Cần chuyển nhượng: đất dự án 31.314m2 trong ở xã phước lý\ncó sẵn chủ trương sx giầy da, có thể thay đổi chủ trương đa ngành nghề\nHiện trạng: chưa san lấp, mặt đường quốc lộ, lô góc đẹp\nPháp lý: thời hạn 2067\nThuê đất trả tiền hàng năm, được miễn thuế đất 7 năm",
+    "quốc lộ 50, gần chợ Phước Lý"
+   ],
+   "kiem": {
+    "cam": [
+     "huyện nào",
+     "quận nào",
+     "thuộc huyện",
+     "thuộc quận"
+    ],
+    "luot_khong": {
+     "4": "đường nào|gần chỗ nào|địa chỉ chi tiết"
+    }
+   }
+  },
+  {
+   "id": "hdt_35tr",
+   "mo_ta": "SRS-197: tin BÁN có hợp đồng thuê 35 triệu — vào ô thu_nhap_thue, không đè giá bán / cọc / thời hạn",
+   "cau": [
+    "Anh cần bán nhà mặt tiền đường Hoàng Hoa Thám, Bình Thạnh",
+    "Phường Gia Định",
+    "ngang 5,2m dài 8m",
+    "3 tầng kiên cố",
+    "sổ hồng hoàn công rồi",
+    "giá 12,5 tỷ thương lượng nhẹ",
+    "à hiện có HĐT 35 triệu nhé"
+   ],
+   "kiem": {
+    "cho_thue": false,
+    "o": {
+     "gia": "12,5",
+     "thu_nhap_thue": "35"
+    },
+    "o_khong_chua": {
+     "muc_coc": "35",
+     "thoi_han_hd": "35"
+    },
+    "luot": {
+     "7": "hợp đồng thuê|HĐT|dòng tiền|đang cho thuê|thuê sẵn|người thuê|tiền thuê"
+    }
+   }
+  },
+  {
+   "id": "kho_xuong",
+   "mo_ta": "SRS-268: kho xưởng chưa có pháp lý thì chưa ra bản nháp; câu pháp lý là update căn đang khai, không thêm căn",
+   "cau": [
+    "Anh cần bán kho xưởng ở huyện Đức Hòa, Long An",
+    "Diện tích 1.000m2, đường xe container vào được",
+    "Giá 20 tỷ em",
+    "Sổ đỏ riêng, đất SKC 50 năm"
+   ],
+   "kiem": {
+    "so_can": 1,
+    "o": {
+     "gia": "20"
+    },
+    "luot_khong": {
+     "1": "📋",
+     "2": "📋",
+     "3": "📋"
+    },
+    "luot": {
+     "2": "sổ|pháp lý",
+     "4": "📋"
+    }
+   }
+  },
+  {
+   "id": "dang_khi_thieu",
+   "mo_ta": "SRS: khách bảo đăng khi còn thiếu ô tối thiểu — không soạn bản tin giả, hỏi đúng ô thiếu (giá)",
+   "cau": [
+    "Bán nhà hẻm đường Lê Văn Sỹ quận 3, 1 trệt 2 lầu",
+    "đăng đi em"
+   ],
+   "kiem": {
+    "luot_khong": {
+     "2": "📋|bên dưới"
+    },
+    "luot": {
+     "2": "giá"
+    }
+   }
+  },
+  {
+   "id": "phi_moi_gioi",
+   "mo_ta": "Phí theo vai: môi giới 0,5 % (không báo 1 %)",
+   "cau": [
+    "Anh là môi giới, có căn nhà phố hẻm xe hơi đường Nguyễn Văn Đậu Bình Thạnh, 4x16, 3 tầng, sổ hồng riêng, giá 9 tỷ",
+    "phí bên em tính sao em?"
+   ],
+   "kiem": {
+    "luot": {
+     "2": "0[.,]5 ?%"
+    },
+    "luot_khong": {
+     "2": "(?<![0-9.,])1 ?%"
+    }
+   }
+  },
+  {
+   "id": "phi_cho_thue",
+   "mo_ta": "Phí cho thuê 0.75 tháng tiền thuê, không nói % giá bán",
+   "cau": [
+    "chị cho thuê nhà nguyên căn hẻm xe hơi đường Lê Văn Sỹ quận 3",
+    "giá 25 triệu một tháng em",
+    "ngang 4 dài 16, 1 trệt 2 lầu, 3 phòng ngủ",
+    "phí môi giới bên em tính sao em?"
+   ],
+   "kiem": {
+    "cho_thue": true,
+    "luot": {
+     "4": "0[.,]75 tháng"
+    },
+    "cam": [
+     "1 ?% ?(giá|giao)"
+    ]
+   }
+  },
+  {
+   "id": "lenh_noi_bo",
+   "mo_ta": "SRS-134/141: khách gõ $$$$$ / json không làm mất phiên, bot không trả khối JSON",
+   "cau": [
+    "Anh có nhà mặt tiền đường Lê Lai Quận 1 cần bán",
+    "$$$$$",
+    "json"
+   ],
+   "kiem": {
+    "o": {
+     "duong": "Lê Lai"
+    },
+    "luot_khong": {
+     "2": "^\\{|\"gia\"|```",
+     "3": "^\\{|\"gia\"|```"
+    }
+   }
+  },
+  {
+   "id": "thue_phi_ban",
+   "mo_ta": "SRS-176: chủ nhà hỏi thuế phí khi bán → câu pháp lý (tham khảo), không nhầm phí môi giới; tranh chấp thừa kế không tư vấn điều luật",
+   "cau": [
+    "Anh cần bán nhà hẻm xe hơi đường Nguyễn Văn Đậu, Bình Thạnh, giá 7 tỷ",
+    "Bán nhà thì anh phải nộp những thuế phí gì em?",
+    "Mà nhà này anh em trong nhà đang tranh chấp thừa kế, vậy có bán được không em?"
+   ],
+   "kiem": {
+    "luot": {
+     "2": "thuế|lệ phí"
+    },
+    "luot_khong": {
+     "2": "(?<![0-9.,])1 ?% giá|0[.,]5 ?% giá",
+     "3": "Điều [0-9]+|Luật [A-ZĐ]"
+    }
+   }
+  },
+  {
+   "id": "da_ban",
+   "mo_ta": "Chủ nhà báo đã bán → trạng thái tin đổi",
+   "cau": [
+    "Anh muốn gửi bán căn nhà phố ở Quận 5.",
+    "Nhà hẻm 123 đường Trần Bình Trọng nha em.",
+    "1 trệt 2 lầu, 4 phòng ngủ, sổ hồng riêng, đất 50m2.",
+    "Giá bán 10 tỷ nha em.",
+    "À em ơi, nhà anh vừa bán được rồi nha."
+   ],
+   "kiem": {
+    "trang_thai": "đã bán"
+   }
+  },
+  {
+   "id": "da_coc",
+   "mo_ta": "SRS-295: chủ nhà báo đã có khách cọc → trạng thái đã cọc",
+   "cau": [
+    "Chị bán nhà mặt tiền đường Nguyễn Trãi quận 5, phường Chợ Quán, ngang 4 dài 20, 1 trệt 3 lầu, sổ hồng riêng, nhà đang để trống, giá 25 tỷ",
+    "có khách đặt cọc rồi em ơi"
+   ],
+   "kiem": {
+    "trang_thai": "đã cọc"
+   }
+  }
+ ]
 }

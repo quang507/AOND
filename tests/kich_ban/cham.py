@@ -51,6 +51,12 @@ def cham(kb: dict[str, Any], kq: dict[str, Any]) -> list[tuple[str, bool, str]]:
         i = int(so)
         bot = luot[i - 1]["bot"] if i <= len(luot) else ""
         ra.append((f"lượt {i} có /{mau}/", re.search(mau, bot or "", re.I) is not None, (bot or "")[:50].replace("\n", " ")))
+    for so, mau in k.get("luot_khong", {}).items():
+        i = int(so)
+        bot = luot[i - 1]["bot"] if i <= len(luot) else ""
+        ra.append((f"lượt {i} không có /{mau}/", re.search(mau, bot or "", re.I) is None, (bot or "")[:50].replace("\n", " ")))
+    if "trang_thai" in k:
+        ra.append((f"trạng thái ∋ {k['trang_thai']}", chua(kq.get("trang_thai"), k["trang_thai"]), str(kq.get("trang_thai"))))
     # Luật cứng chung mọi kịch bản — đếm số lượt phạm trên LỜI CUỐI gửi khách (sau khi lõi đã gọi lại).
     for ten, khoa in (("không mở \"Dạ\"", "da"), ("không gọi khách \"mình\"", "minh"), ("không bình luận giá", "binh_gia"),
                       ("bản tin không có số bịa", "so_bia"), ("tối đa 1 câu hỏi / lượt", "nhieu_hoi"),

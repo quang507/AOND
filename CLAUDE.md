@@ -2,7 +2,7 @@
 
 Tài liệu điều hướng cho mọi phiên làm việc trên repo này. Đọc file này trước khi chạm vào file khác.
 Bản đầy đủ cũ (tới 28/10/2026, gồm lịch sử phần TypeScript đã gỡ) ở `.claude/lich-su-claude-md.md` — chỉ tra cứu, không nạp, không cập nhật.
-**Lý do, ca gốc và cách kiểm của từng thay đổi nằm ở `docs/07-srs.md` (mục SRS-5.1…, mới nhất ở đầu).** File này chỉ giữ điều ĐANG ÁP.
+**Lý do, ca gốc và cách kiểm của từng thay đổi nằm ở `docs/07-srs.md` (mục SRS-5.1…, mới nhất ở đầu; trước 26/10/2026 ở `docs/07-srs-luu-tru.md`, SRS-305).** File này chỉ giữ điều ĐANG ÁP.
 
 ## 1. Dự án là gì
 
@@ -30,7 +30,8 @@ Thứ tự đọc = thứ tự phụ thuộc. Tài liệu sau **không được 
 | 4 | `docs/04-information-architecture.md` | Sitemap, URL/SEO, content model, taxonomy | `IA-` |
 | 5 | `docs/05-wireframes.md` | Wireframe low-fi | `WF-` |
 | 6 | `docs/06-ui-design.md` | Design system, token, component, tone giọng | `UI-` |
-| 7 | `docs/07-srs.md` | Đặc tả phần mềm: kiến trúc, data model, API, acceptance; nhật ký sửa SRS-5.1… | `SRS-` |
+| 7 | `docs/07-srs.md` | Đặc tả phần mềm: kiến trúc, data model, API, acceptance; nhật ký sửa SRS-5.1… từ 26/10/2026 | `SRS-` |
+| 7 | `docs/07-srs-luu-tru.md` | Nhật ký sửa trước 26/10/2026 — LƯU TRỮ, chỉ tra cứu, không thêm mục | `SRS-` |
 | 8 | `docs/08-traceability.md` | Ma trận truy vết BR → FR → UF → WF → SRS | — |
 | 9 | `docs/09-open-issues.md` | Mâu thuẫn / quyết định còn treo | `OPEN-` |
 | 10 | `docs/10-ke-hoach-kiem-thu.md` | Kế hoạch kiểm thử 4 tầng | `TS-` |
@@ -119,7 +120,7 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 - Gộp vào `main` có đổi `src/aioi/` hoặc `bot/bridge-zca/` → `.github/workflows/tu-cai-vps.yml` TỰ chạy cai-vps (lõi khởi động lại ~1 phút).
 
 **Vòng giao việc của agent** (SRS-265 / 297 — gom việc cùng chủ đề vào MỘT PR, đừng mỗi sửa nhỏ một vòng):
-1. Trước khi sửa: đọc mục SRS liên quan (`grep -n "<từ khoá>" docs/07-srs.md`) + mục tương ứng của `.claude/luat-dang-ap.md`.
+1. Trước khi sửa: đọc mục SRS liên quan (`grep -n "<từ khoá>" docs/07*.md`) + mục tương ứng của `.claude/luat-dang-ap.md`.
 2. Sửa → `bun run test:py` (+ bài kiểm đỏ khi gỡ bản sửa) → `bun run truyvet` → commit, push → PR draft.
 3. Có migration: chạy thử trên DB thật trong giao dịch huỷ, rồi áp TRƯỚC khi gộp (`apply-migration.yml` ô `migration_file`, kèm `commit_schema = commit`).
 4. `bash scripts/cho-workflow.sh kiem.yml <nhánh>` → xanh thì bỏ draft, gộp squash → `bash scripts/sau-gop.sh` (tự chờ cài VPS nếu có, đồng bộ nhánh).
