@@ -2,7 +2,7 @@
 
 Tài liệu điều hướng cho mọi phiên làm việc trên repo này. Đọc file này trước khi chạm vào file khác.
 Bản đầy đủ cũ (tới 28/10/2026, gồm lịch sử phần TypeScript đã gỡ) ở `.claude/lich-su-claude-md.md` — chỉ tra cứu, không nạp, không cập nhật.
-**Lý do, ca gốc và cách kiểm của từng thay đổi nằm ở `docs/07-srs.md` (mục SRS-5.1…, mới nhất ở đầu; trước 26/10/2026 ở `docs/07-srs-luu-tru.md`, SRS-305).** File này chỉ giữ điều ĐANG ÁP.
+**Lý do, ca gốc và cách kiểm của từng thay đổi nằm ở `docs/07-srs.md` (10 mục SRS-5.1… mới nhất, mới nhất ở đầu; mục cũ hơn ở `docs/07-srs-luu-tru.md`).** File này chỉ giữ điều ĐANG ÁP.
 
 ## 1. Dự án là gì
 
@@ -30,8 +30,8 @@ Thứ tự đọc = thứ tự phụ thuộc. Tài liệu sau **không được 
 | 4 | `docs/04-information-architecture.md` | Sitemap, URL/SEO, content model, taxonomy | `IA-` |
 | 5 | `docs/05-wireframes.md` | Wireframe low-fi | `WF-` |
 | 6 | `docs/06-ui-design.md` | Design system, token, component, tone giọng | `UI-` |
-| 7 | `docs/07-srs.md` | Đặc tả phần mềm: kiến trúc, data model, API, acceptance; nhật ký sửa SRS-5.1… từ 26/10/2026 | `SRS-` |
-| 7 | `docs/07-srs-luu-tru.md` | Nhật ký sửa trước 26/10/2026 — LƯU TRỮ, chỉ tra cứu, không thêm mục | `SRS-` |
+| 7 | `docs/07-srs.md` | Đặc tả phần mềm: kiến trúc, data model, API, acceptance; 10 mục nhật ký sửa SRS-5.1… mới nhất | `SRS-` |
+| 7 | `docs/07-srs-luu-tru.md` | Nhật ký sửa cũ — LƯU TRỮ, chỉ tra cứu, không thêm mục | `SRS-` |
 | 8 | `docs/08-traceability.md` | Ma trận truy vết BR → FR → UF → WF → SRS | — |
 | 9 | `docs/09-open-issues.md` | Mâu thuẫn / quyết định còn treo | `OPEN-` |
 | 10 | `docs/10-ke-hoach-kiem-thu.md` | Kế hoạch kiểm thử 4 tầng | `TS-` |
@@ -55,6 +55,7 @@ Tài liệu gốc 2024 không còn trong repo (OPEN-48). Nguồn sự thật: b�
 7. **Sửa lỗi / cải tiến bot và web không cần cấp FR trước** (30/09/2026): ghi một mục SRS ở `docs/07` cùng commit với code + test (ca gốc, nguyên nhân, chỗ sửa, cách kiểm).
 8. **Mỗi lần sửa lỗi trả lời ba câu** trong mục docs/07 đó (01/10/2026): (1) *lớp lỗi* — cơ chế nào cho lỗi lọt; (2) *chỗ khác cùng lớp* — đã soát, sửa / còn; (3) *bài kiểm đỏ khi tắt bản sửa*, kèm ít nhất một cách nói mới. Lỗi kiểu "máy đoán ý bằng từ khoá" thì KHÔNG thêm từ vào regex — đưa quyết định sang AI (đọc theo nghĩa, code kiểm cụm trích), từ khoá chỉ là lưới đỡ.
 9. Thêm ghi chú vào file này chỉ khi đó là LUẬT ĐANG ÁP mà phiên sau dễ làm sai; một dòng, kèm mã SRS. Chi tiết để ở docs/07.
+10. **Mục SRS ngắn**: tối đa ~5 dòng (ca gốc · lớp lỗi · sửa · kiểm). `docs/07-srs.md` chỉ giữ 10 mục mới nhất — thêm mục mới thì chuyển mục cũ nhất sang `docs/07-srs-luu-tru.md`.
 
 ## 5. Ranh giới bảo mật — TUYỆT ĐỐI
 
@@ -72,7 +73,19 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 
 - **Bộ não duy nhất: lõi Python `src/aioi/`** (từ 18/10/2026; chủ dự án: "dồn 100% vào lõi Python, tránh hai con AI sửa chéo"). Logic nghiệp vụ, prompt (`prompts.py`), bóc tách, xưng hô (`xung_ho.py`), phí, phiên chat (`engine.py`), câu hỏi theo loại BĐS (`schema.py`: `CORE_FIELDS`, `CORE_THEO_LOAI`, `FACETS`), phía mua (`mua.py`), kho Supabase (`supabase_store.py`), tra địa danh (`dia_danh.py`), pháp lý (`phap_ly.py`), câu mẫu (`cau_mau.py`). Test: `tests/` (pytest), chạy `bun run test:py`.
 - **VPS**: `aond-core.service` cổng 8000 tại `/opt/aond_core`; bridge gọi `http://127.0.0.1:8000/chat-reply`. Hai bridge: `nhadat-bridge` (ký gửi) và `nhadat-bridge-tu-van.service` (`SO_NHAN=tu_van`). Cài / khởi động lại: workflow `apply-migration.yml` ô `dung_lai = cai-vps` (đưa `src/aioi` lên, khởi động lại lõi — **báo trước người đang chat thử**). `zca-js` ghim `2.2.0` trong `cai-vps.sh`; nâng thì đọc CHANGELOG trước.
-- **Model**: lượt chat khách thật = **Sonnet 5.5** (SRS-235; 30/10 thử Haiku rồi quay lại Sonnet, SRS-308), một dòng `MODEL_CHAT` trong `bot/bridge-zca/cai-vps.sh` ghi `AIOI_CHAT_MODEL` vào `.env` lõi (SRS-235); bóc tách vẫn Haiku. ID thử (`la_id_thu`, các ô `ban-thu-*`) chat bằng `MODEL_CHAT_THU` trong `cai-vps.sh` → `AIOI_CHAT_MODEL_THU` — hiện `claude-sonnet-5-5` như khách thật (SRS-243 / 308); `gemini` = gọi THẲNG Gemini cả lượt kể cả bóc tách (engine đặt `NGUON_LUOT`, Gemini hỏng không rơi về Claude, SRS-239 — Gemini bóc tách sai ô nên kết quả bắn thử không đại diện); giá trị khác `gemini` / `tat` là tên model Claude (`MODEL_CHAT_LUOT` — đường gọi model chat mới phải đọc `MODEL_CHAT_LUOT.get() or self._chat_model`). Lời trả khách: công tắc `CONG_CU_GUI_KHACH` trong `cai-vps.sh` (hiện `tat` = chữ thường như anh Luận; `bat` = ép công cụ `gui_khach`, SRS-246). Lượt trả lời phía mua là vòng agent công cụ CHỈ ĐỌC (`agent_mua.py`, ≤ 3 lần gọi, 25 s) theo công tắc `AGENT_MUA` trong `cai-vps.sh` (hiện `bat` = mọi khách từ 29/10, SRS-296; `thu` = ID thử / `tat`); công cụ ghi chỉ `hen_xem` / `hoi_chu_nha` qua cùng hàm ghi + chống trùng của đường cũ (SRS-292), không công cụ chạy code / ra web (SRS-290). Bóc tách khách đã ở vai mua dùng form gọn (`OPERATIONS_SYSTEM_MUA` / `operations_schema_mua` CẮT từ form đầy đủ — sửa luật ở form đầy đủ, đừng viết lại bản gọn) theo công tắc `FORM_MUA_GON` (hiện `bat`, SRS-293 / 296); vai bán tương tự `OPERATIONS_SYSTEM_BAN` / `FORM_BAN_GON` (hiện `bat`, SRS-303). Lượt viết lời người bán: agent `agent_ban.py` tự tra rổ hàng / bộ nhớ dự án / giá đã gửi qua công cụ (thân công cụ = hàm khối cũ) theo công tắc `AGENT_BAN` (hiện `bat`, SRS-307 / 308). Claude hỏng → Gemini rồi Groq (`llm/du_phong.py`), có trần: mỗi lần ≤ 15 s, cả vòng ≤ 40 s, bridge chỉ chờ 90 s — đừng nới.
+- **Model và công tắc** — một nguồn: các dòng biến trong `bot/bridge-zca/cai-vps.sh` (cai-vps ghi vào `.env` lõi). Đổi = sửa dòng đó + gộp (tự cài VPS).
+
+  | Biến | Hiện | Ý nghĩa |
+  |---|---|---|
+  | `MODEL_CHAT` | `claude-sonnet-5-5` | model viết lời khách thật (bóc tách luôn Haiku) — SRS-235 / 308 |
+  | `MODEL_CHAT_THU` | `claude-sonnet-5-5` | model của ID thử (`ban-thu-*`); `gemini` = gọi thẳng Gemini — SRS-239 / 243 |
+  | `AGENT_MUA` / `AGENT_BAN` | `bat` / `bat` | lượt viết lời có công cụ (`agent_mua.py` chỉ đọc + `hen_xem` / `hoi_chu_nha`; `agent_ban.py` tra rổ / dự án / giá) — SRS-290 / 307 |
+  | `FORM_MUA_GON` / `FORM_BAN_GON` | `bat` / `bat` | form bóc tách gọn CẮT từ form đầy đủ — sửa luật ở form đầy đủ — SRS-293 / 303 |
+  | `SOAT_GON` | `bat` | luật giọng / lặp chỉ ghi log, gọi lại tối đa 1 lần — SRS-298 |
+  | `CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246 |
+
+  `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini
+  rồi Groq (`llm/du_phong.py`): mỗi lần ≤ 15 s, cả vòng ≤ 40 s, bridge chờ 90 s — đừng nới.
 - **Supabase** project `rqxmmqmctpklqcmbfxuj` (Tokyo, gói Free — không tự sao lưu, chủ dự án chấp nhận). Edge function còn lại: `escalation-feed` (bridge kéo việc / báo sống / QR), `geocode-listings`, `media-cleanup`; `_shared/` còn cho ba hàm đó và web (`luat-tien.ts`, `luat-lien-he.ts`, `nhan.ts`, `ds-phuong.ts`, `tien-ich.ts`).
 - **Web**: Vercel không dựng preview cho nhánh `claude/**` (`vercel.json` `git.deploymentEnabled`, SRS-247) và bỏ qua bản dựng `main` khi lần đẩy không đổi file web (`ignoreCommand`, SRS-248 — thêm thư mục web mới thì thêm vào danh sách đó). Next.js 15 + TS + Tailwind 4 ở root (`app/`, `components/`, `lib/`, `public/`), Bun (`bun.lock`), Vercel. Đọc Supabase bằng publishable key qua RLS; mô tả listing luôn qua `sanitizeDescription()`.
 - **Kho tệp = Supabase Storage**: ảnh căn `listing-public/<uuid tin>/` (web đọc `listing_media` + `listing_photos_v`); sổ đỏ / giấy tờ / tệp dự án `listing-private` (`kho_anh.py`). `masterdb-raw` cố ý không có policy (chỉ `service_role`) — đừng trỏ web vào. `listing-photos` đã khoá.
