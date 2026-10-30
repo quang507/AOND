@@ -32,6 +32,7 @@ Thứ tự đọc = thứ tự phụ thuộc. Tài liệu sau **không được 
 | 6 | `docs/06-ui-design.md` | Design system, token, component, tone giọng | `UI-` |
 | 7 | `docs/07-srs.md` | Đặc tả phần mềm: kiến trúc, data model, API, acceptance; 10 mục nhật ký sửa SRS-5.1… mới nhất | `SRS-` |
 | 7 | `docs/07-srs-luu-tru.md` | Nhật ký sửa cũ — LƯU TRỮ, chỉ tra cứu, không thêm mục | `SRS-` |
+| — | `docs/02-…`, `08-…`, `10-…-luu-tru.md` | Bản đầy đủ cũ của FR (02 §2.4), ma trận (08 §8.3), bộ test đã ngừng (10 §10.7) — LƯU TRỮ, chỉ tra cứu | — |
 | 8 | `docs/08-traceability.md` | Ma trận truy vết BR → FR → UF → WF → SRS | — |
 | 9 | `docs/09-open-issues.md` | Mâu thuẫn / quyết định còn treo | `OPEN-` |
 | 10 | `docs/10-ke-hoach-kiem-thu.md` | Kế hoạch kiểm thử 4 tầng | `TS-` |

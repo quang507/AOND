@@ -38,6 +38,7 @@ flowchart LR
 | [06-ui-design.md](06-ui-design.md) | Design system + tone giọng chat | UI, Dev, Content |
 | [07-srs.md](07-srs.md) | Đặc tả kỹ thuật: kiến trúc, DB, API, NFR; nhật ký sửa từ 26/10/2026 | Dev, QA, Vendor |
 | [07-srs-luu-tru.md](07-srs-luu-tru.md) | Nhật ký sửa cũ (ngoài 10 mục mới nhất) — lưu trữ, chỉ tra cứu | Dev |
+| [02-requirements-luu-tru.md](02-requirements-luu-tru.md) · [08-traceability-luu-tru.md](08-traceability-luu-tru.md) · [10-ke-hoach-kiem-thu-luu-tru.md](10-ke-hoach-kiem-thu-luu-tru.md) | Bản đầy đủ cũ của 02 §2.4 (FR), 08 §8.3 (ma trận), 10 §10.7 (bộ test đã ngừng) — lưu trữ, chỉ tra cứu (30/10/2026) | Dev |
 | [08-traceability.md](08-traceability.md) | Ma trận truy vết | PO, QA |
 | [09-open-issues.md](09-open-issues.md) | 67 vấn đề (cả 67 đã chốt hoặc đã đóng — đợt 28/10/2026 đóng các mục mất đối tượng khi gỡ phần TypeScript và bỏ CTV, chủ dự án chốt nốt 11 mục còn chờ; 0 còn chờ) | Founder, PO |
 | [10-ke-hoach-kiem-thu.md](10-ke-hoach-kiem-thu.md) | Kế hoạch kiểm thử 4 tầng (suite TS-*) | QA, Dev, PO |
