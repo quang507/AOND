@@ -157,6 +157,9 @@ if [ -d /opt/aond_core/src/aioi ]; then
   # SRS-5.1zzzzzzz293 (chủ dự án 29/10/2026: "bớt prompt dài đi, cấu trúc form json ngắn hơn"): lượt Haiku đọc ý khách MUA dùng form gọn (chỉ phần
   # phía mua, ≈ một nửa chữ). "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = form đầy đủ như cũ.
   FORM_MUA_GON="bat"
+  # SRS-5.1zzzzzzz303 (chủ dự án 30/10: "prompt bóc tách sao mà dài … ngắn lại dc ko"): lượt đọc ý NGƯỜI BÁN (vai đã rõ) bỏ mục việc khách mua
+  # (form −15 % chữ, schema −24 %); đọc ra ý mua thì đọc lại bằng form đầy đủ. "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = form đầy đủ.
+  FORM_BAN_GON="bat"
   # SRS-5.1zzzzzzz298 (B2 bước 1, chủ dự án 29/10): soát lời chế độ gọn — luật giọng / lặp chỉ ghi log, tối đa MỘT lần gọi lại model, "Dạ" do code
   # bỏ. "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = như cũ (gọi lại tới 2 lần, mọi luật).
   SOAT_GON="thu"
@@ -165,11 +168,11 @@ if [ -d /opt/aond_core/src/aioi ]; then
   MODEL_GEMINI="gemini-3.5-flash,gemini-3.1-flash-lite"
   if [ -f /opt/aond_core/.env ]; then
     umask 077
-    grep -vE '^AIOI_(CHAT_MODEL(_THU)?|CONG_CU_GUI_KHACH|DONG_TRICH_XUAT|AGENT_MUA|FORM_MUA_GON|SOAT_GON)=|^GEMINI_MODEL=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
-    printf 'AIOI_CHAT_MODEL=%s\nAIOI_CHAT_MODEL_THU=%s\nAIOI_CONG_CU_GUI_KHACH=%s\nAIOI_DONG_TRICH_XUAT=%s\nAIOI_AGENT_MUA=%s\nAIOI_FORM_MUA_GON=%s\nAIOI_SOAT_GON=%s\nGEMINI_MODEL=%s\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$CONG_CU_GUI_KHACH" "$DONG_TRICH_XUAT" "$AGENT_MUA" "$FORM_MUA_GON" "$SOAT_GON" "$MODEL_GEMINI" >> /opt/aond_core/.env.moi
+    grep -vE '^AIOI_(CHAT_MODEL(_THU)?|CONG_CU_GUI_KHACH|DONG_TRICH_XUAT|AGENT_MUA|FORM_MUA_GON|FORM_BAN_GON|SOAT_GON)=|^GEMINI_MODEL=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
+    printf 'AIOI_CHAT_MODEL=%s\nAIOI_CHAT_MODEL_THU=%s\nAIOI_CONG_CU_GUI_KHACH=%s\nAIOI_DONG_TRICH_XUAT=%s\nAIOI_AGENT_MUA=%s\nAIOI_FORM_MUA_GON=%s\nAIOI_FORM_BAN_GON=%s\nAIOI_SOAT_GON=%s\nGEMINI_MODEL=%s\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$CONG_CU_GUI_KHACH" "$DONG_TRICH_XUAT" "$AGENT_MUA" "$FORM_MUA_GON" "$FORM_BAN_GON" "$SOAT_GON" "$MODEL_GEMINI" >> /opt/aond_core/.env.moi
     chown --reference=/opt/aond_core/.env /opt/aond_core/.env.moi; chmod 600 /opt/aond_core/.env.moi
     mv /opt/aond_core/.env.moi /opt/aond_core/.env
-    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT, ID thử = $MODEL_CHAT_THU, công cụ gửi khách = $CONG_CU_GUI_KHACH, dòng trích xuất = $DONG_TRICH_XUAT, agent mua = $AGENT_MUA, form mua gọn = $FORM_MUA_GON, soát gọn = $SOAT_GON, Gemini dự phòng = $MODEL_GEMINI"
+    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT, ID thử = $MODEL_CHAT_THU, công cụ gửi khách = $CONG_CU_GUI_KHACH, dòng trích xuất = $DONG_TRICH_XUAT, agent mua = $AGENT_MUA, form mua gọn = $FORM_MUA_GON, form bán gọn = $FORM_BAN_GON, soát gọn = $SOAT_GON, Gemini dự phòng = $MODEL_GEMINI"
   fi
   systemctl restart aond-core
   for i in $(seq 1 60); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done

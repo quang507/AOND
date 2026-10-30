@@ -67,6 +67,7 @@ from .prompts import (
     MO_DAU_GHI_NHAN_RE,
     EXTRACTION_SYSTEM,
     OPERATIONS_SYSTEM,
+    OPERATIONS_SYSTEM_BAN,
     OPERATIONS_SYSTEM_MUA,
     PROJECT_EXTRACTION_SYSTEM,
     UNIT_TYPE_EXTRACTION_SYSTEM,
@@ -116,6 +117,7 @@ from .prompts import (
     inventory_scope_schema,
     media_group_schema,
     operations_schema,
+    operations_schema_ban,
     operations_schema_mua,
     INVENTORY_SCOPE_SYSTEM,
     project_extraction_schema,
@@ -392,6 +394,15 @@ def _form_mua_gon(conv: "Conversation") -> bool:
     if conv.role != "buyer":
         return False
     v = os.environ.get("AIOI_FORM_MUA_GON", "").strip().lower()
+    return v == "bat" or (v == "thu" and _la_id_thu(conv.user_key))
+
+
+def _form_ban_gon(conv: "Conversation") -> bool:
+    """Lượt lập thao tác của NGƯỜI BÁN (vai đã rõ từ lượt trước) dùng form gọn (SRS-5.1zzzzzzz303): bỏ mục việc khách mua và ba khoá phía mua.
+    Công tắc `AIOI_FORM_BAN_GON` (một nguồn `bot/bridge-zca/cai-vps.sh` dòng FORM_BAN_GON): "thu" = chỉ ID thử, "bat" = mọi khách."""
+    if conv.role != "seller":
+        return False
+    v = os.environ.get("AIOI_FORM_BAN_GON", "").strip().lower()
     return v == "bat" or (v == "thu" and _la_id_thu(conv.user_key))
 
 
@@ -1388,7 +1399,9 @@ def _tieu_de_thieu(reply: str, prop: "Property") -> list[str]:
     return thieu
 
 
-TIEU_DE_TOI_DA_TU = 25   # AD_FORMAT: tiêu đề 15–25 từ (đổi thì đổi cả AD_FORMAT và ban-thu-ban.sh / ban-thu-kb.sh đếm wc -w)
+# Ngưỡng GỌI LẠI model vì tiêu đề dài: prompt vẫn dặn 15–25 từ (AD_FORMAT), lưới chỉ bắt khi quá 30 (chủ dự án 30/10, SRS-5.1zzzzzzz303 —
+# tiêu đề 26–30 từ không đáng một lần gọi lại). Đổi thì đổi cả ban-thu-ban.sh / ban-thu-kb.sh đếm wc -w.
+TIEU_DE_TOI_DA_TU = 30
 
 
 def _tieu_de_can_ho_co_mt(reply: str, prop: "Property") -> bool:
@@ -3077,7 +3090,7 @@ class Engine:
                             else "các phường này cho khách chọn") + ", không hỏi trống \"thuộc phường nào\".")
         if thieu_td:
             ly_do.append("Bản tin vừa viết có TIÊU ĐỀ thiếu " + ", ".join(thieu_td)
-                         + "; tiêu đề 20–25 từ khi dữ liệu đủ (không quá 25), đủ vị trí · diện tích · giá.")
+                         + "; tiêu đề 20–25 từ khi dữ liệu đủ, đủ vị trí · diện tích · giá.")
         lo_rieng = _lo_thong_tin_rieng(reply, conv.prop)
         if lo_rieng:
             ly_do.append("Bản tin rao vừa viết có thông tin RIÊNG của chủ (" + ", ".join(lo_rieng) + ") — bản tin lên web cho người mua "
@@ -4551,7 +4564,9 @@ class Engine:
         # sure of, it leaves operations empty so the reply can confirm first.
         project = self.project_for(conv.prop, conv)
         gon = _form_mua_gon(conv)
-        system = ((OPERATIONS_SYSTEM_MUA if gon else OPERATIONS_SYSTEM)   # SRS-5.1zzzzzzz293: khách mua đọc bằng form gọn
+        ban_gon = not gon and _form_ban_gon(conv)   # SRS-5.1zzzzzzz303: người bán đọc bằng form bỏ phần việc khách mua
+        form = OPERATIONS_SYSTEM_MUA if gon else OPERATIONS_SYSTEM_BAN if ban_gon else OPERATIONS_SYSTEM
+        system = (form   # SRS-5.1zzzzzzz293: khách mua đọc bằng form gọn
                   + RANH_GIOI_CACHE + self._project_memory_block(project, conv))   # SRS-5.1zzzzzzz166: phần cố định chung mọi khách
         if project is not None and project.docs_cho(conv.user_key):
             system += (
@@ -4586,11 +4601,17 @@ class Engine:
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
         conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
         with _do(conv, "lap_thao_tac"):
-            plan = self._provider.extract(system, src, operations_schema_mua() if gon else operations_schema())
+            plan = self._provider.extract(system, src, operations_schema_mua() if gon else operations_schema_ban() if ban_gon else operations_schema())
         if gon and plan.get("user_intent") == "sell":
             # SRS-5.1zzzzzzz293: form gọn không có ô thao tác rổ hàng — khách mua chuyển sang gửi bán thì đọc lại cả lượt bằng form đầy đủ.
             log.warning("Kế hoạch: form mua gọn đọc ra ý bán — đọc lại bằng form đầy đủ")
             system = OPERATIONS_SYSTEM + system[len(OPERATIONS_SYSTEM_MUA):]
+            with _do(conv, "lap_thao_tac"):
+                plan = self._provider.extract(system, src, operations_schema())
+        if ban_gon and plan.get("user_intent") == "buy":
+            # SRS-5.1zzzzzzz303: form bán gọn không có ô việc khách mua — người bán chuyển sang hỏi mua thì đọc lại cả lượt bằng form đầy đủ.
+            log.warning("Kế hoạch: form bán gọn đọc ra ý mua — đọc lại bằng form đầy đủ")
+            system = OPERATIONS_SYSTEM + system[len(OPERATIONS_SYSTEM_BAN):]
             with _do(conv, "lap_thao_tac"):
                 plan = self._provider.extract(system, src, operations_schema())
         if isinstance(plan.get("operations"), str):

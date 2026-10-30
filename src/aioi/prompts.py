@@ -501,8 +501,8 @@ GHI CHÚ NGHIỆP VỤ (để hiểu đúng và nói đúng — không phải lu
 - Mở lượt theo khối GIỌNG ở trên (cảm xúc thật với điều khách vừa kể, hoặc vào thẳng việc); hệ thống tự lưu nên không cần báo đã ghi / đã lưu.
 - Điều khách đã nói rõ (giá, địa chỉ, diện tích…) thì KHÔNG hỏi lại để xác nhận; KHÔNG nói như thể đã nhận tài liệu / bảng giá / ảnh khách chưa gửi (xin thêm ảnh thì được).
 - Tự hiểu từ dữ kiện đã có rồi làm luôn, KHÔNG hỏi lại khách để xác nhận nghĩa hay giải thích số lệch (chủ dự án 30/10, SRS-5.1zzzzzzz302):
-  "mặt tiền có 5m thôi" sau khi đã có ngang 5,2m là khách sửa bề ngang; số ngang × dài khác diện tích khách nói thì giữ số khách nói (sổ có thể
-  nở / tóp hậu), không tự tính lại, không bắt khách kiểm.
+  "mặt tiền có 5m thôi" sau khi đã có ngang 5,2m là khách sửa bề ngang. Diện tích: dùng đúng số khách nói, KHÔNG tự nhân ngang × dài, KHÔNG
+  nhắc với khách chuyện số lệch hay tóp / nở hậu — việc này em tự biết, không nói ra (SRS-5.1zzzzzzz303).
 - Giá thị trường: em không có số liệu thị trường — không nêu con số giá khu vực, không so với căn khác; khách HỎI giá cao hay thấp thì khối
   định giá ở dưới quyết. Khách VỪA NÊU giá: thay vì "em đã ghi giá…", ĐƯỢC khen MỘT câu định tính gắn với điểm khách đã kể (tự đặt câu) —
   không con số thị trường, không hứa bán được (SRS-5.1zzzzzzz214, chủ dự án 27/10).
@@ -2064,6 +2064,18 @@ KHOA_FORM_MUA = ("user_intent", "buyer_lead", "mua", "xong_viec_mua", "hoi_ve", 
 def operations_schema_mua() -> dict[str, Any]:
     p = operations_schema()["properties"]
     return {"type": "object", "properties": {k: p[k] for k in KHOA_FORM_MUA if k in p}, "required": ["user_intent"]}
+
+
+# SRS-5.1zzzzzzz303 (chủ dự án 30/10: "prompt bóc tách sao mà dài … ngắn lại dc ko"): form gọn cho NGƯỜI BÁN — CẮT mục việc của khách mua khỏi
+# form đầy đủ (sửa luật ở form đầy đủ, đừng viết lại bản này) và bỏ ba khoá phía mua khỏi schema. Lượt đọc ra ý mua → engine đọc lại bằng form đầy đủ.
+OPERATIONS_SYSTEM_BAN = (OPERATIONS_SYSTEM[:OPERATIONS_SYSTEM.index("VIỆC CỦA KHÁCH MUA")]
+                         + OPERATIONS_SYSTEM[OPERATIONS_SYSTEM.index("TRẢ LỜI CÂU KHÁCH HỎI ("):])
+KHOA_BO_FORM_BAN = ("buyer_lead", "mua", "xong_viec_mua")
+
+
+def operations_schema_ban() -> dict[str, Any]:
+    s = operations_schema()
+    return {**s, "properties": {k: v for k, v in s["properties"].items() if k not in KHOA_BO_FORM_BAN}}
 
 
 # ── Scoping a price-list import by what the seller actually sells ─────────────────────
