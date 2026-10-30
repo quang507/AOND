@@ -80,6 +80,12 @@ def chay(engine: Any, conv: Any, project: Any, system: str, max_tokens: int) -> 
     bat_dau = time.monotonic()
     for vong in range(MAX_VONG):
         turn = engine._provider.converse(he, tin, cong_cu, max_tokens=max_tokens)
+        if turn.stop_reason == "du_phong":
+            # Claude lỗi → model dự phòng (Gemini / Groq) không gọi được công cụ và prompt đã bỏ các khối dữ liệu: bỏ lời đó, viết lại như
+            # đường cũ với ĐỦ khối (cùng hàm khối) — không để lượt dự phòng mù rổ hàng / bảng giá.
+            them = "".join(_khoi(engine, conv, project, t) for t in ("ro_hang", "bo_nho_du_an", "gia_da_gui"))
+            log.warning("Agent bán: dự phòng không gọi công cụ — viết lại với đủ khối dữ liệu")
+            return engine._provider.reply(system + them, conv.messages(), max_tokens=max_tokens).strip(), them
         if not turn.tool_calls:
             loi = (turn.text or "").strip()   # lời cuối — chữ ở lượt có gọi công cụ KHÔNG gửi khách
             break

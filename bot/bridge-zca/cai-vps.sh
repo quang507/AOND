@@ -166,7 +166,8 @@ if [ -d /opt/aond_core/src/aioi ]; then
   SOAT_GON="bat"
   # SRS-5.1zzzzzzz307 (B2 bước 2, chủ dự án 30/10: "làm nốt b2 nhưng vẫn lưu các hàm để dễ gọi"): lượt viết lời NGƯỜI BÁN không nhét sẵn rổ hàng /
   # bộ nhớ dự án / giá đã gửi — model tự gọi công cụ tra (thân công cụ là hàm khối cũ). "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = như cũ.
-  AGENT_BAN="thu"
+  # SRS-5.1zzzzzzz308 (chủ dự án 30/10: "làm đi thử thì trên cli" — thử bằng bộ chấm + chat tay quota CLI thay bắn production): mọi khách.
+  AGENT_BAN="bat"
   # SRS-5.1zzzzzzz299 (30/10/2026, Claude hết tiền, Gemini dự phòng chỉ đỡ 1 lượt): model Gemini dự phòng MỘT NGUỒN ở đây → GEMINI_MODEL trong .env
   # lõi. gemini-3.8-flash / gemini-flash-latest quá giờ với khoá miễn phí (đo 30/10); 3.5-flash và 3.1-flash-lite trả lời 8–10 s một lượt.
   MODEL_GEMINI="gemini-3.5-flash,gemini-3.1-flash-lite"

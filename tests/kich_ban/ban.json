@@ -133,12 +133,16 @@
   },
   {
    "id": "hai_can",
-   "mo_ta": "Một tin nhắn hai căn",
+   "mo_ta": "Một tin nhắn hai căn — căn sau giữ đúng ô của nó (SRS-308: đọc lại cả tin làm căn sau mang dữ liệu căn đầu)",
    "cau": [
     "anh có 2 căn cần bán: căn 1 nhà hẻm đường Bùi Minh Trực quận 8 giá 5 tỷ, căn 2 nhà mặt tiền đường Phạm Hùng quận 8 giá 12 tỷ"
    ],
    "kiem": {
-    "so_can": 2
+    "so_can": 2,
+    "o": {
+     "duong": "Phạm Hùng",
+     "gia": "12"
+    }
    }
   },
   {
@@ -493,6 +497,20 @@
     },
     "luot_khong": {
      "2": "(chuyển|cập nhật|đổi|đánh dấu).{0,40}đã bán"
+    }
+   }
+  },
+  {
+   "id": "hai_can_hoi_gia",
+   "mo_ta": "Rổ hai căn, khách hỏi lại giá một căn đã gửi → trả đúng số (SRS-307/308: dữ liệu rổ qua công cụ)",
+   "cau": [
+    "anh có 2 căn cần bán: căn 1 nhà hẻm đường Bùi Minh Trực quận 8 giá 5 tỷ, căn 2 nhà mặt tiền đường Phạm Hùng quận 8 giá 12 tỷ",
+    "căn Phạm Hùng anh báo giá bao nhiêu em nhỉ, anh quên mất"
+   ],
+   "kiem": {
+    "so_can": 2,
+    "luot": {
+     "2": "12 tỷ"
     }
    }
   }

@@ -217,3 +217,12 @@ def test_model_qua_han_thi_nghi_luot_sau_di_thang_model_ke(monkeypatch):
     dong_ho[0] += du_phong.NGHI_MODEL_GIAY + 1                              # hết giờ nghỉ → thử lại g-lite
     p.chat("s", M)
     assert goi[-2:] == ["g-lite", "g-flash"]
+
+
+def test_converse_du_phong_danh_dau_stop_reason_308():
+    """SRS-5.1zzzzzzz308: lời dự phòng của vòng công cụ mang stop_reason "du_phong" — agent bán biết để viết lại với đủ khối dữ liệu."""
+    class ClaudeCC(ClaudeGia):
+        def converse(self, system, messages, tools, max_tokens=1024): return self._chay(None)
+    p = DuPhongProvider(ClaudeCC(HetTien()), _nguon(), goi=lambda n, k, than, han: _dap("chữ dự phòng"))
+    t = p.converse("s", [{"role": "user", "content": "chị bán nhà"}], [{"name": "ro_hang"}])
+    assert t.text == "chữ dự phòng" and not t.tool_calls and t.stop_reason == "du_phong"

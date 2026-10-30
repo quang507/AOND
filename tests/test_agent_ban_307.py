@@ -77,3 +77,13 @@ def test_ro_nhieu_can_khong_ro_can_nao_thi_khong_doi_trang_thai_va_hoi_lai():
     for form in (prompts.OPERATIONS_SYSTEM, prompts.OPERATIONS_SYSTEM_BAN):
         assert "KHÔNG tạo set_status, để lượt trả lời hỏi lại căn nào" in form
     assert "HỎI LẠI căn nào" in agent_ban.HUONG_DAN
+
+
+def test_du_phong_khong_goi_cong_cu_thi_viet_lai_voi_du_khoi_du_lieu_308(monkeypatch):
+    """SRS-5.1zzzzzzz308: Claude lỗi → Gemini dự phòng không gọi công cụ, prompt agent đã bỏ khối dữ liệu → bỏ lời đó, viết lại với ĐỦ khối."""
+    monkeypatch.setenv("AIOI_AGENT_BAN", "bat")
+    ai = _Ai([ToolTurn(text="Lời mù dữ liệu.", tool_calls=[], stop_reason="du_phong")])
+    eng = _eng(ai, "s308")
+    r = eng.handle("s308", "căn đó bán rồi em")
+    assert r.reply != "Lời mù dữ liệu." and len(ai.he) == 1
+    assert any("RỔ HÀNG CỦA KHÁCH" in s for s in ai.he_reply)
