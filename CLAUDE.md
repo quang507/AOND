@@ -85,7 +85,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
   | `SOAT_GON` | `bat` | luật giọng / lặp chỉ ghi log, gọi lại tối đa 1 lần — SRS-298 |
   | `PHIEU_LUOT` | `bat` | lượt thu thập người bán viết từ phiếu lượt ngắn (`prompts.build_phieu_luot`) thay `build_chat_system` — SRS-309 |
   | `AGENT_BOC` | `thu` | đọc ý người bán bằng agent gọi công cụ ghi (`agent_boc.py`) thay form JSON; chưa hơn form nên chỉ ID thử — SRS-310 |
-  | `MODEL_LUOT_DE` | CHO_GIA_TRI | model viết lời cho lượt dễ của người bán (thu thập, không tra dữ liệu, không việc khác) — SRS-311 |
+  | `MODEL_LUOT_DE` | `tat` | model viết lời cho lượt dễ của người bán (thu thập, không tra dữ liệu, không việc khác) — SRS-311 |
   | `CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246 |
 
   `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini

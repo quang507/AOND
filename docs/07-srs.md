@@ -836,7 +836,8 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
 
 ### SRS-5.1zzzzzzz311 · Kế hoạch bước 4: lượt dễ của người bán viết bằng model rẻ; luật soát chưa gỡ (30/10/2026)
 - `MODEL_LUOT_DE` (`cai-vps.sh`): lượt thu thập bằng phiếu lượt, không tra dữ liệu, không việc khác (`y_luot` chỉ khoá `_`, không hỏi về) → model rẻ, cả lần soát
-  gọi lại; lượt khác giữ `MODEL_CHAT`. Đo: CHO_SO_BUOC_4.
+  gọi lại; lượt khác giữ `MODEL_CHAT`. Đo 408 phép: Sonnet mọi lượt 402 / 400, giọng 2,65 / 2,62, $5,0 / $5,3 · Haiku lượt dễ 404 / 402,
+  giọng 2,38 / 2,40, $3,4 / $3,4 (−35 % tiền, giọng tụt) → `tat` (chủ dự án 30/10 chọn Sonnet vì chất lượng); bật = đổi một dòng.
 - Luật soát: 280 cuộc chấm, lưới kích nhiều nhất "gọi khách là mình" (40 lần, bắt lỗi thật); lưới không kích lần nào đều là quyết định chủ dự án có test
   (kho hẻm SRS-115, HOA SRS-241, câu ghi nhận SRS-229, "anh ơi" lặp) và ở chế độ gọn chỉ ghi log — chưa gỡ, gỡ là đảo quyết định đã chốt.
 - Kiểm: `tests/test_model_luot_de_311.py` (đỏ khi gỡ chỗ đặt model).
