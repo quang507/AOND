@@ -116,7 +116,19 @@ def _chay_cong_cu(engine: Any, conv: Any, ten: str, vao: dict[str, Any], plan: d
 
 
 def lap(engine: Any, conv: Any, system: str, src: list[Any], schema: dict[str, Any]) -> dict[str, Any] | None:
-    """Một lượt đọc ý bằng công cụ. Trả kế hoạch cùng dạng form cũ; None khi model không gọi được công cụ (engine đọc bằng form)."""
+    """Một lượt đọc ý bằng công cụ. Trả kế hoạch cùng dạng form cũ; None khi model không gọi được công cụ (engine đọc bằng form). Model của
+    vòng: `AIOI_AGENT_BOC_MODEL` (một nguồn `cai-vps.sh` dòng MODEL_AGENT_BOC), trống = model chat."""
+    from .llm.base import MODEL_CHAT_LUOT
+    m = os.environ.get("AIOI_AGENT_BOC_MODEL", "").strip()
+    dau = MODEL_CHAT_LUOT.set(m) if m else None
+    try:
+        return _lap(engine, conv, system, src, schema)
+    finally:
+        if dau is not None:
+            MODEL_CHAT_LUOT.reset(dau)
+
+
+def _lap(engine: Any, conv: Any, system: str, src: list[Any], schema: dict[str, Any]) -> dict[str, Any] | None:
     from .llm.base import RANH_GIOI_CACHE
     he = system.replace("Trả về JSON đúng schema.", "", 1)
     he = he.replace(RANH_GIOI_CACHE, HUONG_DAN + RANH_GIOI_CACHE, 1) if RANH_GIOI_CACHE in he else he + HUONG_DAN
