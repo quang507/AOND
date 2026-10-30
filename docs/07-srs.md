@@ -985,6 +985,9 @@ Chủ dự án 30/10: "xong làm nốt b2 nhưng vẫn lưu các hàm để dễ
 
 1. **Quyết định (BA, uỷ quyền)**: bóc tách vẫn Haiku + cổng bằng chứng (như phía mua, chủ dự án 29/10 "bóc tách vẫn dùng haiku") — chi phí mỗi
    lượt không đổi. Agent chỉ thay cách đưa DỮ LIỆU vào lượt viết lời; không gỡ hàm nào.
+   Khối địa danh / trạng thái tin / câu khách mua hỏi KHÔNG đổi thành công cụ — chúng chỉ vào prompt khi lượt cần (AI đã đọc ý), đổi chỉ tốn
+   thêm lượt gọi. Chủ dự án 30/10 chốt: "cái nào mà ko cần đổi thì ko đổi" — B2 dừng ở đây; còn lại chỉ là bật `AGENT_BAN` cho mọi khách sau
+   khi bắn thử production đạt (cần nạp tiền Anthropic).
 2. **Code**: `src/aioi/agent_ban.py` — ba công cụ `ro_hang` / `bo_nho_du_an` / `gia_da_gui`, thân là CHÍNH `_basket_block` /
    `_project_memory_block` / `_seller_price_block`; dự án có bảng căn thì kèm bộ công cụ kho cũ (`_inventory_tools`). Prompt chỉ còn một dòng
    "DỮ LIỆU CÓ THỂ TRA"; lượt không có dữ liệu nào thì không mở vòng công cụ (prompt y như cũ). Trần 3 lần gọi / 25 s như phía mua; kết quả đã
