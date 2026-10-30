@@ -37,7 +37,7 @@ flowchart LR
 | [05-wireframes.md](05-wireframes.md) | Wireframe low-fi 14 màn hình | UX, UI, Dev |
 | [06-ui-design.md](06-ui-design.md) | Design system + tone giọng chat | UI, Dev, Content |
 | [07-srs.md](07-srs.md) | Đặc tả kỹ thuật: kiến trúc, DB, API, NFR; nhật ký sửa từ 26/10/2026 | Dev, QA, Vendor |
-| [07-srs-luu-tru.md](07-srs-luu-tru.md) | Nhật ký sửa trước 26/10/2026 — lưu trữ, chỉ tra cứu | Dev |
+| [07-srs-luu-tru.md](07-srs-luu-tru.md) | Nhật ký sửa cũ (ngoài 10 mục mới nhất) — lưu trữ, chỉ tra cứu | Dev |
 | [08-traceability.md](08-traceability.md) | Ma trận truy vết | PO, QA |
 | [09-open-issues.md](09-open-issues.md) | 67 vấn đề (cả 67 đã chốt hoặc đã đóng — đợt 28/10/2026 đóng các mục mất đối tượng khi gỡ phần TypeScript và bỏ CTV, chủ dự án chốt nốt 11 mục còn chờ; 0 còn chờ) | Founder, PO |
 | [10-ke-hoach-kiem-thu.md](10-ke-hoach-kiem-thu.md) | Kế hoạch kiểm thử 4 tầng (suite TS-*) | QA, Dev, PO |

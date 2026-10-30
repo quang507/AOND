@@ -70,7 +70,7 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 - Gỡ / thêm luật prompt hay luật soát phải chạy `bun run cham` ≥ 2 lần mỗi bên và so điểm (SRS-304); điểm tụt thì không gộp.
 - Lưới soát lời phía bán soi phần CHAT (`_phan_chat_quanh_ban_tin`); chỉ lưới về nội dung tin (số, hẻm, pháp lý, tiêu đề) soi thân bản tin 📋 — thân tin viết cho người mua (SRS-306).
 - Agent phía bán (`agent_ban.py`, công tắc `AGENT_BAN`, SRS-307): khối DỮ LIỆU (rổ hàng, bộ nhớ dự án, giá đã gửi) đi qua công cụ — thân công cụ là chính hàm khối của engine, sửa ở hàm đó. Luật HÀNH VI đừng giấu trong khối dữ liệu (model chỉ thấy khi gọi công cụ) — đặt ở `agent_ban.HUONG_DAN`. Khối dữ liệu mới thì thêm vào `CONG_CU` + `_khoi`.
-- Lỗi bot đáng giữ → thêm kịch bản vào `tests/kich_ban/ban.json`, không thêm câu luật vào prompt (SRS-305). Nhật ký SRS trước 26/10/2026 ở `docs/07-srs-luu-tru.md` — không thêm mục vào đó.
+- Lỗi bot đáng giữ → thêm kịch bản vào `tests/kich_ban/ban.json`, không thêm câu luật vào prompt (SRS-305). `docs/07-srs.md` giữ 10 mục nhật ký mới nhất, mục cũ ở `docs/07-srs-luu-tru.md` (không thêm mục mới vào đó).
 - Mỗi lượt MỘT khối "ƯU TIÊN LƯỢT NÀY" (cần người > pháp lý > ngoài việc > hỏi về); khối mới đặt vào chuỗi `or` đó (SRS-178). Lượt được phép không có câu hỏi — đừng thêm lưới "lời phải có câu hỏi"; nhưng tối đa MỘT câu hỏi (`_nhieu_cau_hoi`, SRS-252), khối dặn hỏi xác nhận phải là câu hỏi duy nhất, không cộng thêm.
 - Độ dài: "ngắn vừa vừa", ý chính rồi dừng (SRS-97).
 
