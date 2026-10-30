@@ -989,6 +989,9 @@ tiền API ("có 200% api credit rồi") → bắn thử production sau khi gộ
    cả lịch sử nên che lỗi. Sửa: dùng ô của thao tác `add` (cùng cổng bằng chứng), chỉ đọc lại khi thao tác không kèm ô; đồ giả lấy ô từ riêng
    tin vừa nhắn. *Chỗ khác cùng lớp*: `_match_listing` chỉ so `dia_chi` — căn mở từ tin hai căn chỉ có `duong` → so cả `duong`. Kịch bản `hai_can`
    trước chỉ đếm số căn (lọt lỗi) → nay kiểm ô căn sau; thêm `hai_can_hoi_gia`.
+   Bắn thử production `ban-thu-nhieu-can` (sau khi gộp, API Anthropic chạy lại — Haiku, $0,0063 / lượt): DB vẫn MỘT tin — kế hoạch [update căn 1,
+   add căn 2] mà `add` thiếu `can_khac_trich` → lưới SRS-268 ghi căn 2 đè căn 1. Sửa: thao tác trước trong CÙNG lượt đã ghi căn đang khai thì
+   `add` là căn khác (không cần cụm trích); `add` đứng riêng vẫn giữ lưới.
 2. **Dự phòng**: Gemini không gọi công cụ mà prompt agent đã bỏ khối dữ liệu → `du_phong.converse` trả `stop_reason="du_phong"`, agent bán bỏ lời
    đó và viết lại với đủ khối (như đường cũ).
 3. **Đo** (27 kịch bản / 289 phép, agent bật): Sonnet 288 + 288 (phép trượt duy nhất: `hai_can_da_ban` — lỗi bóc tách đổi nhầm trạng thái SRS-307,

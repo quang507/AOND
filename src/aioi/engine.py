@@ -5568,7 +5568,10 @@ class Engine:
                 if targets:
                     data["ma_so_can"] = targets[0]
                 changed.update(conv.active.prop.update(data))
-            elif not self._co_cum_can_khac(conv, op.get("can_khac_trich")):
+            elif not changed and not self._co_cum_can_khac(conv, op.get("can_khac_trich")):
+                # SRS-5.1zzzzzzz308 (bắn thử ban-thu-nhieu-can 30/10: "anh có 2 căn: căn 1 … căn 2 …" → kế hoạch [update căn 1, add căn 2] mà add
+                # thiếu cụm trích → căn 2 đè lên căn 1, DB một tin): thao tác trước TRONG CÙNG lượt đã ghi căn đang khai thì "add" sau đó là căn
+                # khác — không cần cụm trích. Ca SRS-268 (chỉ một "add" đứng riêng) vẫn giữ lưới.
                 # SRS-5.1zzzzzzz268 (bắn thử ban-thu-kiem E): khách kho xưởng chỉ nói thêm "Sổ đỏ riêng, đất SKC 50 năm", AI lập thao
                 # tác trả "add" → căn mới rỗng, bản nháp không ra, bot hỏi lại vị trí. "add" mở căn mới phải kèm cụm khách nói căn KHÁC
                 # (AI đọc nghĩa, code chỉ kiểm cụm nằm trong lời khách); không có thì đó là thông tin của căn đang khai.
