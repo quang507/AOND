@@ -83,6 +83,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
   | `AGENT_MUA` / `AGENT_BAN` | `bat` / `bat` | lượt viết lời có công cụ (`agent_mua.py` chỉ đọc + `hen_xem` / `hoi_chu_nha`; `agent_ban.py` tra rổ / dự án / giá) — SRS-290 / 307 |
   | `FORM_MUA_GON` / `FORM_BAN_GON` | `bat` / `bat` | form bóc tách gọn CẮT từ form đầy đủ — sửa luật ở form đầy đủ — SRS-293 / 303 |
   | `SOAT_GON` | `bat` | luật giọng / lặp chỉ ghi log, gọi lại tối đa 1 lần — SRS-298 |
+  | `PHIEU_LUOT` | `bat` | lượt thu thập người bán viết từ phiếu lượt ngắn (`prompts.build_phieu_luot`) thay `build_chat_system` — SRS-309 |
   | `CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246 |
 
   `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini
@@ -133,14 +134,14 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 - CI: `.github/workflows/kiem.yml` TỰ chạy khi mở PR / đẩy thêm commit vào nhánh có PR — không dispatch tay (SRS-297).
 - Gộp vào `main` có đổi `src/aioi/` hoặc `bot/bridge-zca/` → `.github/workflows/tu-cai-vps.yml` TỰ chạy cai-vps (lõi khởi động lại ~1 phút).
 
-**Vòng giao việc của agent** (SRS-265 / 297 — gom việc cùng chủ đề vào MỘT PR, đừng mỗi sửa nhỏ một vòng):
+**Vòng giao việc của agent** (SRS-265 / 297 — MỘT PR cho mỗi bước / việc lớn; sửa docs, đổi cấu hình, mục SRS đi CHUNG PR của việc chính, không mở PR riêng — chủ dự án 30/10):
 1. Trước khi sửa: đọc mục SRS liên quan (`grep -n "<từ khoá>" docs/07*.md`) + mục tương ứng của `.claude/luat-dang-ap.md`.
 2. Sửa → `bun run test:py` (+ bài kiểm đỏ khi gỡ bản sửa) → `bun run truyvet` → commit, push → PR draft.
 3. Có migration: chạy thử trên DB thật trong giao dịch huỷ, rồi áp TRƯỚC khi gộp (`apply-migration.yml` ô `migration_file`, kèm `commit_schema = commit`).
 4. `bash scripts/cho-workflow.sh kiem.yml <nhánh>` → xanh thì bỏ draft, gộp squash → `bash scripts/sau-gop.sh` (tự chờ cài VPS nếu có, đồng bộ nhánh).
-5. Hành vi bot đổi → chạy `bun run cham` (bộ kịch bản offline bằng quota CLI, so điểm với bản trước, SRS-304) rồi mới bắn thử production (`ban-thu-*`); báo kết quả thật, chưa chạy thì nói chưa. Chat tay: `bun run chat:cli`.
+5. Hành vi bot đổi (lời, bóc tách, prompt, luật soát) → chỉ cần `bun run cham` (≥ 2 lần, so điểm với bản trước, SRS-304; `--giong` thêm điểm giọng). Bắn thử production (`ban-thu-*`, tốn tiền thật) CHỈ khi đổi phần bộ chấm offline không với tới: ghi DB, Zalo / bridge, công cụ ghi thật, cài VPS. Báo kết quả thật, chưa chạy thì nói chưa. Chat tay: `bun run chat:cli`.
 6. Docs: mỗi thay đổi MỘT mục SRS ở docs/07 (quyết định chủ dự án ghi cùng commit). docs/08 chỉ khi đổi FR / tài liệu tầng trên. Luật mới → một dòng ở `.claude/luat-dang-ap.md`; CLAUDE.md chỉ đổi khi đổi quy trình / ranh giới.
-- **Bắn thử production** (ô `giu_du_lieu = giu` giữ hội thoại cho CRM, chủ dự án tự xoá — SRS-245; ID thử chạy model theo `MODEL_CHAT_THU`, hiện Sonnet 5.5 — SRS-243; chủ dự án 28/10: ưu tiên test offline, bắn production thì bắn chậm `NGHI_GIUA_LUOT`; tự dọn): `apply-migration.yml` ô `dung_lai` = `ban-thu-ban` / `ban-thu-mua` / `ban-thu-srd` / `ban-thu-ai` / `ban-thu-vm` / `ban-thu-khach-ao` / `ban-thu-5-khach` / `ban-thu-kb` / `ban-thu-dc` / `ban-thu-xa` / `ban-thu-sau` / `ban-thu-nhieu-can` / `ban-thu-dap-y` / `ban-thu-luan` / `ban-thu-kiem`; đọc log lõi `doc-log-loi`; nạp dữ liệu `nap-duong` / `nap-du-an` / `nap-tin-mau` / `nap-luat`; đo tìm nhà `do-tim-nha`. Script ở `bot/tests/ban-thu-*.sh`.
+- **Bắn thử production** (ô `giu_du_lieu = giu` giữ hội thoại cho CRM, chủ dự án tự xoá — SRS-245; ID thử chạy model theo `MODEL_CHAT_THU` — SRS-243; chủ dự án 28/10: ưu tiên test offline, bắn production thì bắn chậm `NGHI_GIUA_LUOT`; tự dọn): `apply-migration.yml` ô `dung_lai` = `ban-thu-ban` / `ban-thu-mua` / `ban-thu-srd` / `ban-thu-ai` / `ban-thu-vm` / `ban-thu-khach-ao` / `ban-thu-5-khach` / `ban-thu-kb` / `ban-thu-dc` / `ban-thu-xa` / `ban-thu-sau` / `ban-thu-nhieu-can` / `ban-thu-dap-y` / `ban-thu-luan` / `ban-thu-kiem`; đọc log lõi `doc-log-loi`; nạp dữ liệu `nap-duong` / `nap-du-an` / `nap-tin-mau` / `nap-luat`; đo tìm nhà `do-tim-nha`. Script ở `bot/tests/ban-thu-*.sh`.
 - Người và máy dùng chung script trong `package.json` — đừng gõ lệnh rời.
 
 **Skill PM mượn ngoài** (`phuryn/pm-skills`, MIT; khai ở `.claude/settings.json`, không ghim commit): chỉ làm khung trình bày, kết quả đổi sang tiếng Việt và gắn ID tay. Đã dùng: `/product-strategy` (`docs/00 §0.4`), `/north-star-metric` (`§0.5`), `/strategy-red-team` (`§0.7`), `/intended-vs-implemented`, `/test-scenarios`, `/job-stories`.

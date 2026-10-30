@@ -74,6 +74,7 @@ from .prompts import (
     build_buyer_chat_system,
     khoi_tin_tra_loi,
     build_chat_system,
+    build_phieu_luot,
     build_column_map_system,
     build_project_docs_block,
     build_transcribe_instruction,
@@ -373,6 +374,13 @@ def _nhieu_cau_hoi(loi: str) -> bool:
     chat = (loi or "").split("📋", 1)[0]
     chat = re.sub(r"https?://\S+", " ", chat)
     return len(re.findall(r"\?+", chat)) > 1
+
+
+def _phieu_luot(user_key: str | None) -> bool:
+    """Công tắc `AIOI_PHIEU_LUOT` (một nguồn `bot/bridge-zca/cai-vps.sh` dòng PHIEU_LUOT, SRS-5.1zzzzzzz309): "bat" = mọi khách, "thu" = chỉ ID thử,
+    khác = prompt cũ `build_chat_system`."""
+    v = os.environ.get("AIOI_PHIEU_LUOT", "").strip().lower()
+    return v == "bat" or (v == "thu" and _la_id_thu(user_key))
 
 
 def _soat_gon(user_key: str | None) -> bool:
@@ -2794,11 +2802,15 @@ class Engine:
         trinh_nhap = False
         xin_sao = False
         if not is_listing_post:
-            system = build_chat_system(
-                conv.assistant.name, conv.prop, next_field, conv.vai_phi, project_block, cum=cum_hoi,
-                hoi_lai=bool(next_field and conv.lo.get(next_field, 0) >= 1),   # SRS-5.1zzzzzzz200: đừng nhắn trùng câu cũ
-                o_bo_qua=o_truoc if o_truoc in thieu else None,
-            ) + khoi_xin_dang(toi_thieu, conv.prop) + self._khoi_diem_tin(conv, now)
+            hoi_lai = bool(next_field and conv.lo.get(next_field, 0) >= 1)   # SRS-5.1zzzzzzz200: đừng nhắn trùng câu cũ
+            o_bo_qua = o_truoc if o_truoc in thieu else None
+            if _phieu_luot(conv.user_key):   # SRS-5.1zzzzzzz309 (kế hoạch bước 2): phiếu lượt ngắn thay văn xuôi build_chat_system
+                system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua)
+            else:
+                system = build_chat_system(
+                    conv.assistant.name, conv.prop, next_field, conv.vai_phi, project_block, cum=cum_hoi, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua,
+                )
+            system += khoi_xin_dang(toi_thieu, conv.prop) + self._khoi_diem_tin(conv, now)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
             trinh_nhap = True

@@ -4,6 +4,7 @@ không tốn tiền API, SRS-300); DB tạm, không đụng Supabase / Zalo. Đ�
   python scripts/cham-kich-ban.py --ra /tmp/sonnet.json                                  # viết lời Sonnet 5.5, bóc tách Haiku 5.5
   python scripts/cham-kich-ban.py --chat claude-haiku-5-5 --ra /tmp/haiku.json --so-voi /tmp/sonnet.json
   python scripts/cham-kich-ban.py --chi hht,dat --song-song 2                            # vài kịch bản
+  python scripts/cham-kich-ban.py --giong                                               # thêm điểm giọng do model chấm (tốn quota)
   AIOI_SOAT_GON=tat python scripts/cham-kich-ban.py ...                                  # công tắc lõi đặt bằng biến môi trường như VPS
 
 In bảng: mỗi kịch bản số phép đạt / tổng, lần gọi model, lần gọi lại (lõi bắt lỗi rồi bắt viết lại), giây, tiền quy đổi.
@@ -27,6 +28,7 @@ def _chay_mot(kb: dict, chat: str, boc: str) -> dict:
     os.environ.setdefault("AIOI_SOAT_GON", "bat")
     os.environ.setdefault("AIOI_FORM_BAN_GON", "bat")
     os.environ.setdefault("AIOI_AGENT_BAN", "thu")   # như VPS (ID chấm là ID thử)
+    os.environ.setdefault("AIOI_PHIEU_LUOT", "thu")
     os.environ.pop("SUPABASE_SERVICE_ROLE_KEY", None)
     import logging
     dem = {"goi": 0, "goi_lai": 0, "usd": 0.0, "soat": []}
@@ -77,6 +79,26 @@ def _chay_mot(kb: dict, chat: str, boc: str) -> dict:
                 "so_can": len(conv.listings), "trang_thai": conv.active.status, "xin_nguoi": xin_nguoi, "giay": round(time.monotonic() - bat_dau, 1), **dem}
 
 
+TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất động sản (xưng em) nhắn Zalo với người gửi bán / cho thuê, thang 1–5. 5 = tự nhiên "
+                  "như môi giới trẻ nhắn người quen, khen CỤ THỂ đúng điều khách vừa nói, mỗi lượt mở khác nhau, không lặp câu, không thuyết giảng; "
+                  "3 = đúng việc nhưng hơi khuôn; 1 = máy móc, khen chung chung, lặp mở đầu / lặp câu. CHỈ chấm giọng, không chấm đúng sai nghiệp "
+                  "vụ hay ô tin. Lý do một câu ngắn, nêu lượt tệ nhất nếu có.")
+
+
+def _cham_giong(kq: dict, model: str) -> tuple[int, str, float]:
+    """Giám khảo model chấm giọng cả cuộc chat (kế hoạch bước 1: phép chấm tất định + giọng do model chấm)."""
+    from aioi.llm.claude_cli import _chay_cli
+    chep = "\n\n".join(f"KHÁCH: {l['khach']}\nEM: {l['bot']}" for l in kq["luot"])
+    schema = {"type": "object", "properties": {"diem": {"type": "integer", "minimum": 1, "maximum": 5}, "ly_do": {"type": "string"}},
+              "required": ["diem", "ly_do"]}
+    try:
+        j = _chay_cli(model, TIEU_CHI_GIONG, chep, schema)
+    except Exception as e:  # noqa: BLE001
+        return 0, f"giám khảo lỗi: {type(e).__name__}", 0.0
+    o = j.get("structured_output") or {}
+    return int(o.get("diem") or 0), str(o.get("ly_do") or "")[:160], float(j.get("total_cost_usd") or 0)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--bo", default=os.path.join(GOC, "tests", "kich_ban", "ban.json"))
@@ -86,6 +108,7 @@ def main() -> int:
     ap.add_argument("--song-song", type=int, default=4)
     ap.add_argument("--ra", default="", help="ghi kết quả JSON")
     ap.add_argument("--so-voi", default="", help="JSON kết quả lần trước để so")
+    ap.add_argument("--giong", nargs="?", const="claude-sonnet-5-5", default="", help="thêm phép chấm giọng do model chấm (mặc định Sonnet 5.5)")
     a = ap.parse_args()
     from tests.kich_ban.cham import cham
 
@@ -94,11 +117,21 @@ def main() -> int:
         bo = [k for k in bo if k["id"] in set(a.chi.split(","))]
     with ProcessPoolExecutor(max_workers=a.song_song) as ex:
         kqs = list(ex.map(_chay_mot, bo, [a.chat] * len(bo), [a.boc] * len(bo)))
+    giong = {}
+    if a.giong:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=a.song_song) as ex:
+            giong = dict(zip([k["id"] for k in bo], ex.map(lambda kq: _cham_giong(kq, a.giong), kqs)))
     cu = {r["id"]: r for r in json.load(open(a.so_voi, encoding="utf-8"))["ket_qua"]} if a.so_voi else {}
     tong = {"dat": 0, "phep": 0, "goi": 0, "goi_lai": 0, "usd": 0.0}
     print(f"== viết lời {a.chat} · bóc tách {a.boc} · {len(bo)} kịch bản\n")
     for kb, kq in zip(bo, kqs):
         diem = cham(kb, kq)
+        if kb["id"] in giong:
+            g, ly, usd = giong[kb["id"]]
+            diem.append(("giọng ≥ 4/5 (giám khảo)", g >= 4, f"{g}/5 {ly}"))
+            kq["giong"] = g
+            kq["usd"] += usd
         kq["diem"] = [list(x) for x in diem]
         dat = sum(1 for _, ok, _ in diem if ok)
         so = f"  (trước {cu[kb['id']]['dat']}/{len(cu[kb['id']]['diem'])})" if kb["id"] in cu else ""

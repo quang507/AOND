@@ -2,6 +2,11 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz299 · Claude hết tiền: Gemini dự phòng chỉ đỡ một lượt vì model mặc định quá giờ — đổi danh sách model, một nguồn ở cai-vps.sh (30/10/2026)
+Ca gốc: 29/10 15:57 UTC tài khoản Anthropic hết tiền; Gemini dự phòng chỉ đỡ một lượt vì model mặc định quá giờ với khoá miễn phí.
+- `MODEL_GEMINI="gemini-3.5-flash,gemini-3.1-flash-lite"` trong `cai-vps.sh` (một nguồn). Gemini bóc tách sót ô — chỉ dùng làm dự phòng.
+- Kiểm: `tests/test_gemini_du_phong_299.py`.
+
 ### SRS-5.1zzzzzzz298 · B2 bước 1: lớp soát lời — luật giọng / lặp thôi gọi lại model, tối đa một lần gọi lại (29/10/2026)
 Chủ dự án 29/10 (về bốn khâu phía bán trong bản review: Haiku đọc form 27.518 chữ → code áp → Sonnet viết từ ~28 khối → ~34 luật regex soát lời,
 gọi lại tối đa 2 lần): "Đoạn này có xoá hay bỏ không hay như thế nào trước rồi làm b2".
