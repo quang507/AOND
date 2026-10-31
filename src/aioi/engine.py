@@ -2823,6 +2823,7 @@ class Engine:
             system = build_fee_followup_system(
                 conv.assistant.name, conv.prop, conv.vai_phi, project_block, web=web_tin,
                 duyet=conv.duyet_luot, phi_da_bao=bool(conv.prop.fields.get("_phi_da_bao")), yeu_cau_moi=conv.y_luot.get("yeu_cau_viet"),
+                goi=goi_toi_khach(customer_pronoun)[0],
             )
             len_web = bool(web_tin and web_tin.get("len_web"))
             if len_web and not any(t.role == "assistant" and "📋" in (t.content or "") for t in conv.history):
@@ -2923,7 +2924,8 @@ class Engine:
                 f"Con số phí đúng theo VAI NGƯỜI RAO / BỐI CẢNH ở trên (bán: {PT_CHU} chính chủ, {PT_MG} môi giới; cho thuê: {PHI_THUE} "
                 "= 3/4 của MỘT tháng tiền thuê; chưa rõ vai thì nêu cả hai hoặc hỏi khéo khách là chủ nhà hay môi giới). Sau đó nối lại nội dung căn đang trao đổi.\n"
                 + ((_fee_hint(conv.vai_phi) + "\n") if _fee_hint(conv.vai_phi) else "")
-                + ((khoi_bao_phi(conv.vai_phi, conv.prop.is_rental) + "\n") if khoi_bao_phi(conv.vai_phi, conv.prop.is_rental) else "")
+                + ((khoi_bao_phi(conv.vai_phi, conv.prop.is_rental, goi_toi_khach(customer_pronoun)[0]) + "\n")
+                   if muc_phi(conv.vai_phi, conv.prop.is_rental) else "")
             )
         elif conv.hoi_ve_luot == "uy_tin":
             hoi_ve_khoi = (

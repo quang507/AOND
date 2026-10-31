@@ -838,6 +838,62 @@
      "2": "anh/chị|anh chị"
     }
    }
+  },
+  {
+   "id": "ngan_binh_long",
+   "mo_ta": "Chat THẬT chị N. 28/10 (theo nhật ký SRS-233, số nhà đổi): chủ nhà Bình Long, Bình Hưng Hòa A (phường cũ bị chia), 70m², 3 tỷ — bản nháp không tự thêm 'chính chủ' / sổ hồng",
+   "cau": [
+    "12 Bình Long, Bình Hưng Hòa A, Bình Tân, 70m2, giá 3 tỷ",
+    "diện tích sàn",
+    "đăng giúp chị"
+   ],
+   "kiem": {
+    "o": {
+     "gia": "3",
+     "dien_tich_nha": "70"
+    },
+    "o_khong": [
+     "dien_tich_dat"
+    ],
+    "cam": [
+     "(?i)chính chủ",
+     "(?i)sổ (hồng|đỏ)"
+    ]
+   }
+  },
+  {
+   "id": "ngan_cho_thue",
+   "mo_ta": "Chat THẬT chị N. 20/10 (theo nhật ký SRS-90): cho thuê nhà trọ NGUYÊN CĂN — là nhà phố, không hỏi gác lửng / máy lạnh / WC riêng như phòng trọ",
+   "cau": [
+    "Cho thuê nhà trọ nguyên căn Âu Dương Lân P3 Q8, 4m x 4.5m, 1 trệt 1 lầu, 3.7 triệu/tháng",
+    "ok"
+   ],
+   "kiem": {
+    "loai": "nha_pho",
+    "cho_thue": true,
+    "o": {
+     "gia": "3,7"
+    },
+    "cam": [
+     "(?i)gác lửng|máy lạnh|WC riêng|giờ giấc"
+    ]
+   }
+  },
+  {
+   "id": "ngan_mua",
+   "mo_ta": "Chat THẬT chị N. 23/10 (theo nhật ký SRS-147): khách đi MUA nói nhu cầu — không bị hỏi như người bán",
+   "cau": [
+    "mình mua để ở",
+    "nhà mình 2 vợ chồng 2 con",
+    "mình đi làm quận 1",
+    "tầm 40-50m vuông"
+   ],
+   "kiem": {
+    "cam": [
+     "(?i)gửi (bán|căn)|chung cư, nhà phố hay đất|đang muốn bán"
+    ],
+    "khong_nhap": true
+   }
   }
  ]
 }
