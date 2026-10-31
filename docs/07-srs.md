@@ -834,6 +834,16 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz314 · Bước 2A/2B: 8 kịch bản mới + giám khảo "hỏi lại"; `viec_luot` chọn MỘT việc mỗi lượt phía bán (chỉ ghi, chưa đổi lời) (30/10/2026)
+Chủ dự án 30/10 ("chạy lun đi"). Lớp lỗi đo được: engine ghép nhiều khối hỏi cùng lượt — 16 / 169 lượt (khối ưu tiên / hỏi mặt tiền / trình nháp vẫn kèm "VIỆC LƯỢT NÀY: hỏi ô X" của phiếu lượt). `viec_luot.py` hàm thuần, thứ tự ưu tiên một chỗ; engine ghi `y_luot["_viec"]` / `["_khoi"]`, bộ chấm in chỗ lệch. Kịch bản mới bắt hai lỗi thật: `doc_quyen` (phiếu lượt không mang chính sách — "chưa có thông tin chắc nên không dám nói bừa", 2/2 lần) và `xung_chi_phi` (câu mẫu `bao_phi` không nhận xưng hô → "Anh/chị", `prompts.khoi_bao_phi`). `--cham-lai` chấm lại bản ghi không gọi model.
+Điểm nền mới (48 kịch bản, tiêu chí giám khảo mới): 569 / 571 trên 623 phép; tất định 472 / 472 trên 479 (sau sửa phép `hoi_lai_giay_to`); giọng 2,96 / 2,92; lộ luật 3 / 2 cuộc; hỏi lại 3 / 3 cuộc.
+Kiểm: `tests/test_viec_luot_314.py`, `tests/test_kich_ban_2a_314.py` (mỗi kịch bản mới trượt trên bản ghi cài lỗi tay).
+
+### SRS-5.1zzzzzzz313 · Bộ chấm chạy như khách thật (công tắc + model đọc từ cai-vps.sh); đo cỡ prompt; giám khảo chỉ lượt lộ luật; điểm nền (30/10/2026)
+Lớp lỗi: ID chấm là ID thử, nên công tắc "thu" (`AGENT_BOC`) bật trong bộ chấm mà khách thật không bật, và model bóc tách lệch VPS (bộ chấm Haiku 5.5, VPS mặc định config `claude-haiku-4-5`) — số SRS-310…312 đo đường agent bóc. Sửa: `cong_tac_vps()` đọc dòng `printf` của cai-vps.sh, mặc định "thu" = tắt (`--nhu thu` để đo ID thử); in cỡ prompt bóc tách / viết lời; giám khảo thêm phép "không lộ luật"; `--nen` ghi `tests/kich_ban/diem_nen.json`, lần sau tự so.
+Điểm nền hai lần (40 kịch bản, Sonnet viết · Haiku 4.5 bóc): tất định 407 / 405 trên 408; giọng 2,62 / 2,73 (≥ 4/5: 3 / 4 cuộc); lộ luật 2 / 3 cuộc (giám khảo bắt nhầm cả câu phí / vùng đúng quy định — 1 cờ thật: "10 căn trở lên lên Top"); gọi lại 7 / 7; prompt bóc tách trung vị 24,1 nghìn chữ, viết lời 4,7 nghìn (lớn nhất 16,4 nghìn).
+Kiểm: `tests/test_cham_nhu_khach.py` (đỏ khi bộ chấm không đổi "thu" thành tắt).
+
 ### SRS-5.1zzzzzzz312 · Gỡ 4 lưới soát chưa từng kích; nhà phố có diện tích đất rồi thì số m² thứ hai là sàn; sửa phép chấm "huyện" (30/10/2026)
 Chủ dự án 30/10 ("không cần, gỡ đi"): gỡ lưới "câu ghi nhận một lần" (SRS-229), "HOA cả cụm" (SRS-241, luật vẫn ở `AD_FORMAT`), "anh ơi" lặp,
 "hỏi phường phải nhắc kho hẻm" (SRS-115, khối Kho hẻm trong prompt giữ) — 0/280 cuộc chấm kích, ở chế độ gọn chỉ ghi log; test giữ lưới gỡ theo.
@@ -891,20 +901,6 @@ Chủ dự án 30/10: "chạy thử và triển khai theo kế hoạch đi" (g�
 Chủ dự án 30/10: "xóa bớt srs bỏ các lỗi vào prompt dc ko" → "1 đi".
 - Nhật ký SRS cũ chuyển nguyên văn sang `docs/07-srs-luu-tru.md` (mã giữ nguyên, không xoá). Đợt 2 cùng ngày: `docs/07` chỉ giữ 10 mục mới nhất.
 - Lỗi bot đáng giữ → thêm kịch bản vào `tests/kich_ban/ban.json` (nay 27 kịch bản), không thêm câu luật vào prompt.
-
-### SRS-5.1zzzzzzz304 · Bộ kịch bản chấm tự động offline; chat tay bằng quota CLI; bật soát gọn cho mọi khách (30/10/2026)
-Chủ dự án 30/10: "lập kế hoạch làm, xong thực thi đi"; "có cách nào để tôi test tay bằng cli quota ko".
-- `bun run cham` (`scripts/cham-kich-ban.py` + `tests/kich_ban/`): chạy kịch bản người bán offline bằng `claude -p`, chấm tất định (ô, loại, số căn,
-  bản tin đúng lượt, 7 luật lời), in điểm / gọi lại / tiền quy đổi, `--so-voi` so lần trước. So phải chạy ≥ 2 lần (dao động vài lần gọi lại).
-- `bun run chat:cli`: chat tay bằng quota CLI. `SOAT_GON=bat` cho mọi khách (điểm bằng chế độ cũ). Bỏ mã SRS khỏi prompt làm điểm tụt → không làm.
-- Kiểm: `tests/test_cham_kich_ban_304.py`.
-
-### SRS-5.1zzzzzzz303 · Ngưỡng gọi lại vì tiêu đề dài 30 từ (prompt vẫn 15–25); form bóc tách gọn cho người bán (30/10/2026)
-Chủ dự án 30/10: "nâng hạn mức lại thành 30 từ"; "prompt bóc tách sao mà dài … ngắn lại dc ko".
-- Tiêu đề: prompt vẫn dặn 15–25 từ, lưới chỉ gọi lại khi quá 30 (`TIEU_DE_TOI_DA_TU`).
-- Form bóc tách người bán gọn `OPERATIONS_SYSTEM_BAN` (cắt mục việc khách mua, −19 % chữ) khi vai đã là người bán; đọc ra ý mua → đọc lại form đầy đủ.
-  Công tắc `FORM_BAN_GON`. Luật trong prompt viết lời chỉ nói việc làm, không kèm lý do (Haiku từng kể lý do cho khách).
-- Kiểm: `tests/test_form_ban_gon_303.py`, `test_sua_ban_tin_theo_y_27_10.py`.
 
 ---
 

@@ -2,6 +2,20 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz304 · Bộ kịch bản chấm tự động offline; chat tay bằng quota CLI; bật soát gọn cho mọi khách (30/10/2026)
+Chủ dự án 30/10: "lập kế hoạch làm, xong thực thi đi"; "có cách nào để tôi test tay bằng cli quota ko".
+- `bun run cham` (`scripts/cham-kich-ban.py` + `tests/kich_ban/`): chạy kịch bản người bán offline bằng `claude -p`, chấm tất định (ô, loại, số căn,
+  bản tin đúng lượt, 7 luật lời), in điểm / gọi lại / tiền quy đổi, `--so-voi` so lần trước. So phải chạy ≥ 2 lần (dao động vài lần gọi lại).
+- `bun run chat:cli`: chat tay bằng quota CLI. `SOAT_GON=bat` cho mọi khách (điểm bằng chế độ cũ). Bỏ mã SRS khỏi prompt làm điểm tụt → không làm.
+- Kiểm: `tests/test_cham_kich_ban_304.py`.
+
+### SRS-5.1zzzzzzz303 · Ngưỡng gọi lại vì tiêu đề dài 30 từ (prompt vẫn 15–25); form bóc tách gọn cho người bán (30/10/2026)
+Chủ dự án 30/10: "nâng hạn mức lại thành 30 từ"; "prompt bóc tách sao mà dài … ngắn lại dc ko".
+- Tiêu đề: prompt vẫn dặn 15–25 từ, lưới chỉ gọi lại khi quá 30 (`TIEU_DE_TOI_DA_TU`).
+- Form bóc tách người bán gọn `OPERATIONS_SYSTEM_BAN` (cắt mục việc khách mua, −19 % chữ) khi vai đã là người bán; đọc ra ý mua → đọc lại form đầy đủ.
+  Công tắc `FORM_BAN_GON`. Luật trong prompt viết lời chỉ nói việc làm, không kèm lý do (Haiku từng kể lý do cho khách).
+- Kiểm: `tests/test_form_ban_gon_303.py`, `test_sua_ban_tin_theo_y_27_10.py`.
+
 ### SRS-5.1zzzzzzz302 · Bot tự hiểu từ dữ kiện đã có, không hỏi lại; "em rao lại xem" ra bản tin; đếm từ tiêu đề đúng số thập phân (30/10/2026)
 Chủ dự án 30/10: "từ các dữ liệu đã có thì bot tự hiểu dữ liệu khác", "không cần hỏi lại".
 - "Em rao lại xem" khi chưa có bản nháp → `xin_dang` (ví dụ cũ trong prompt đá định nghĩa ô); lượt chat không có bản tin thì không nói "gửi bên dưới".
