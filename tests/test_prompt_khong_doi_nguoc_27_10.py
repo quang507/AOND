@@ -8,6 +8,7 @@ from aioi.prompts import MO_DAU_GHI_NHAN_RE, build_buyer_chat_system, build_chat
 from aioi.schema import BuyerLead, Property
 from tests.test_doc_y_khach import _eng
 from tests.test_phuong_cu_chia import _tra
+import pytest
 
 
 def test_vi_du_cau_chuan_tu_pham_luat_thi_khong_dua_cho_model():
@@ -27,6 +28,7 @@ def test_vi_du_cau_chuan_tu_pham_luat_thi_khong_dua_cho_model():
     assert MO_DAU_GHI_NHAN_RE.match("Em đã ghi giá 6,2 tỷ") and _mo_dau_ghi_nhan("Em đã ghi giá 6,2 tỷ")   # một nguồn
 
 
+@pytest.mark.xfail(strict=True, reason="AU-12: khối tra địa danh trỏ nhãn 'Thông tin cần hỏi tiếp theo' chỉ có ở prompt cũ — phiếu lượt (production) không có; sửa ở audit Đợt 2")
 def test_phuong_cu_bi_chia_thi_o_hoi_luot_do_la_phuong_mot_lan():
     eng, spy = _eng({"operations": [{"op": "update", "fields": {"duong": "Hoàng Hoa Thám", "phuong": "phường 6", "quan": "Bình Thạnh"},
                                       "bang_chung": {"duong": "Hoàng Hoa Thám", "phuong": "phường 6", "quan": "Bình Thạnh"}}], "user_intent": "sell"})

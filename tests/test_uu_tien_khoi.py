@@ -6,6 +6,7 @@ from aioi import prompts
 from aioi.engine import KHOI_MOT_UU_TIEN
 from aioi.schema import BuyerLead, Property
 from tests.test_viec_mua import KhoGia, _engine
+import pytest
 
 CHU_NHA = {"operations": [{"op": "update", "target": "", "fields": {"dia_chi": "12 Lê Lai, Quận 1"}, "bang_chung": {"dia_chi": "12 Lê Lai, Quận 1"}}],
            "user_intent": "sell"}
@@ -30,6 +31,7 @@ def test_hoi_ve_phi_la_khoi_uu_tien_duy_nhat_khong_ep_khen():
     assert s.count("=== ƯU TIÊN LƯỢT NÀY") == 1
 
 
+@pytest.mark.nhanh_cu(AIOI_PHIEU_LUOT="tat")   # chữ của build_chat_system; lượt thu thập production dùng phiếu lượt — SRS-309
 def test_luot_thuong_khong_con_khoi_khen_theo_luot():
     # SRS-207: khối "LƯỢT THÔNG TIN THỨ N" bỏ — khen theo bản anh Luận nằm sẵn trong prompt ("Khen ngợi điểm mạnh của BĐS trước").
     kho = KhoGia()

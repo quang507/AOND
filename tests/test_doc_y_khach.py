@@ -4,9 +4,10 @@ Lớp lỗi: máy đoán ý khách bằng từ khoá trên chữ khách gõ — 
 chữ "em" khách dùng để GỌI bot ("đăng đi em") bị coi là khách tự xưng em.
 """
 from aioi.engine import Engine, STICKER_TRUNG_TINH, _detect_customer_pronoun
+from tests.gia import KhongCongCu
 
 
-class _Spy:
+class _Spy(KhongCongCu):   # đường production có vòng agent (SRS-316)
     def __init__(self, plan):
         self.plan, self.systems = plan, []
 

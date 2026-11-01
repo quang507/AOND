@@ -78,7 +78,8 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 
   | Biến | Hiện | Ý nghĩa |
   |---|---|---|
-  | `MODEL_CHAT` | `claude-sonnet-5-5` | model viết lời khách thật (bóc tách: `AIOI_EXTRACT_MODEL` không đặt → mặc định `config.py` `claude-haiku-4-5`) — SRS-235 / 308 / 313 |
+  | `MODEL_CHAT` | `claude-sonnet-5-5` | model viết lời khách thật — SRS-235 / 308 |
+  | `MODEL_BOC` | `claude-haiku-5-5` | model bóc tách (`AIOI_EXTRACT_MODEL`); sổ `bot_usage_model` xác nhận production chạy model này — SRS-316 |
   | `MODEL_CHAT_THU` | `claude-sonnet-5-5` | model của ID thử (`ban-thu-*`); `gemini` = gọi thẳng Gemini — SRS-239 / 243 |
   | `AGENT_MUA` / `AGENT_BAN` | `bat` / `bat` | lượt viết lời có công cụ (`agent_mua.py` chỉ đọc + `hen_xem` / `hoi_chu_nha`; `agent_ban.py` tra rổ / dự án / giá) — SRS-290 / 307 |
   | `FORM_MUA_GON` / `FORM_BAN_GON` | `bat` / `bat` | form bóc tách gọn CẮT từ form đầy đủ — sửa luật ở form đầy đủ — SRS-293 / 303 |
@@ -136,6 +137,7 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 ```
 
 - CI: `.github/workflows/kiem.yml` TỰ chạy khi mở PR / đẩy thêm commit vào nhánh có PR — không dispatch tay (SRS-297).
+- Test chạy công tắc production (`tests/conftest.py` đọc `cai-vps.sh`); bài kiểm nhánh cũ phải gắn `@pytest.mark.nhanh_cu(AIOI_…="tat")`, bài lộ lỗi production thì `xfail(strict=True)` kèm mã audit — đừng `monkeypatch` về `tat` để cho xanh (SRS-316).
 - Gộp vào `main` có đổi `src/aioi/` hoặc `bot/bridge-zca/` → `.github/workflows/tu-cai-vps.yml` TỰ chạy cai-vps (lõi khởi động lại ~1 phút).
 
 **Vòng giao việc của agent** (SRS-265 / 297 — MỘT PR cho mỗi bước / việc lớn; sửa docs, đổi cấu hình, mục SRS đi CHUNG PR của việc chính, không mở PR riêng — chủ dự án 30/10):

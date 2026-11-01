@@ -2,6 +2,12 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz306 · Gỡ lưới soát theo số đo: "em gửi ảnh" chỉ soi phần chat; bộ chấm ghi lưới nào kích (30/10/2026)
+Chủ dự án 30/10: "chạy thử và triển khai theo kế hoạch đi" (gỡ luật theo số đo).
+- Bộ chấm ghi lưới soát nào kích. 7/9 lần Sonnet bị gọi lại là lưới "em gửi ảnh" bắt nhầm câu mời chốt trong bản tin (viết cho người mua) →
+  `_bot_hua_gui_anh` chỉ soi phần chat. Sonnet gọi lại 9–13 → 4 mỗi lần chạy, điểm không đổi.
+- Kiểm: `tests/test_soat_anh_ban_tin_306.py`.
+
 ### SRS-5.1zzzzzzz305 · Nhật ký SRS cũ sang tệp lưu trữ; lỗi từng gặp thành kịch bản chấm, không thành luật prompt (30/10/2026)
 Chủ dự án 30/10: "xóa bớt srs bỏ các lỗi vào prompt dc ko" → "1 đi".
 - Nhật ký SRS cũ chuyển nguyên văn sang `docs/07-srs-luu-tru.md` (mã giữ nguyên, không xoá). Đợt 2 cùng ngày: `docs/07` chỉ giữ 10 mục mới nhất.

@@ -4,6 +4,7 @@
 Lỗi (1) (cờ cần người không bật vì hai luồng cùng tạo dòng `buyers`) ở tests/test_seller_dua_tao.py."""
 from aioi.engine import Engine, _bo_da_dau
 from aioi.xung_ho import goi_khach_la_minh
+import pytest
 
 
 def test_minh_nghia_chung_ta_khong_bi_bat():
@@ -37,6 +38,7 @@ class _Spy:
     chat = reply
 
 
+@pytest.mark.nhanh_cu(AIOI_SOAT_GON="tat")   # soát chế độ cũ (gọi lại vì giọng / lặp); production chế độ gọn — SRS-298
 def test_hai_lan_viet_lai_van_da_thi_code_bo():
     spy = _Spy(["Dạ không sao anh, em sửa ngay.", "Dạ không sao anh, em sửa ngay nha."])
     eng = Engine(spy)
@@ -46,6 +48,7 @@ def test_hai_lan_viet_lai_van_da_thi_code_bo():
     assert len(spy.systems) == 2 and ra == "Không sao anh, em sửa ngay nha."
 
 
+@pytest.mark.nhanh_cu(AIOI_SOAT_GON="tat")   # soát chế độ cũ (gọi lại vì giọng / lặp); production chế độ gọn — SRS-298
 def test_luot_dau_dung_da_van_goi_lai_truoc():   # chưa viết lại lần nào thì không cắt chữ — model được sửa trước
     spy = _Spy(["Không sao anh, em sửa ngay."])
     eng = Engine(spy)

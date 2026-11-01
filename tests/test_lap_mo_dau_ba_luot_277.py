@@ -5,8 +5,10 @@ from aioi.engine import Turn
 from aioi.prompts import build_buyer_chat_system
 from aioi.schema import BuyerLead
 from tests.test_doc_y_khach import _eng
+import pytest
 
 
+@pytest.mark.nhanh_cu(AIOI_SOAT_GON="tat")   # soát chế độ cũ (gọi lại vì giọng / lặp); production chế độ gọn — SRS-298
 def test_lap_mo_dau_cach_hai_luot_goi_lai_model():
     eng, spy = _eng({"operations": [], "user_intent": "sell"})
     c = eng.conversation("lap277")

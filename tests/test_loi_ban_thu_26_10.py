@@ -4,6 +4,7 @@ lượt sau khi khách lờ, gợi ý số giá khi hỏi lại."""
 from aioi import prompts
 from aioi.engine import Conversation, Engine, Turn, _chi_tiet_khong_co_du_lieu, _mo_dau_ghi_nhan, _nhan_khoi_trong_tin
 from aioi.schema import Property
+import pytest
 
 
 def test_cau_ghi_nhan_that_tu_ban_thu_deu_bi_bat():
@@ -80,6 +81,7 @@ def test_o_vua_hoi_khach_chua_tra_loi_thi_dan_model_khong_hoi_lai():
     assert "KHÔNG hỏi lại ý đó" not in prompts.build_chat_system("Th•ái", p, "dien_tich_nha", o_bo_qua="dien_tich_nha")
 
 
+@pytest.mark.nhanh_cu(AIOI_PHIEU_LUOT="tat")   # chữ của build_chat_system; lượt thu thập production dùng phiếu lượt — SRS-309
 def test_engine_truyen_o_luot_truoc_khi_doi_o():
     """Đường thật qua Engine.handle: lượt trước hỏi diện tích sàn, khách nói kết cấu (không trả lời sàn) → hệ thống đổi ô, system gửi model
     phải dặn KHÔNG hỏi lại diện tích sàn."""

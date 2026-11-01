@@ -829,6 +829,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz316 · Audit Đợt 0: test chạy công tắc production; model bóc tách một nguồn ở cai-vps.sh; điểm nền dựng lại (01/11/2026)
+Lớp lỗi (AU-05 / AU-25): env test rỗng = mọi công tắc tắt → test đi nhánh production không đi; model bóc tách chỉ nằm trong `.env` VPS — SRS-313 ghi nhầm
+VPS dùng mặc định `claude-haiku-4-5`, sổ `bot_usage_model` 28/10–01/11 chỉ có `claude-haiku-5-5` (điểm nền cũ đo sai model). Sửa: dòng `MODEL_BOC` ở `cai-vps.sh`;
+`tests/cau_hinh_vps.py` một bộ đọc cho `tests/conftest.py` + bộ chấm. Bật lên đỏ 40 bài: 23 do đồ giả (form mua gọn không có `operations`, thiếu `converse`) — sửa
+đồ giả, nay chạy đường production; 16 bài nhánh cũ gắn `nhanh_cu`; 1 lỗi thật AU-12 (khối địa danh trỏ nhãn chỉ có ở prompt cũ) `xfail(strict)` cho Đợt 2.
+Kiểm: `test_cau_hinh_nhu_production_316.py` (đỏ khi gỡ conftest; đỏ khi gỡ cổng `_gia_tri_ghi`). Điểm nền: CHO_SO_316.
+
 ### SRS-5.1zzzzzzz315 · Quyết định chủ dự án 31/10–01/11; câu báo phí viết lại, gọi đúng xưng hô; ẩn danh + dọn docs lệch code (01/11/2026)
 Chủ dự án: giữ danh sách cảm thán `GIONG_VUI`; chat chị N. / anh L. là thật → kịch bản (đã ẩn danh); lên Top có (BĐS tiêu biểu đẩy đầu trang web); "q3 viết lại"; 01/11 "2 áp đi".
 Lớp lỗi: `cau_mau.cau("bao_phi" / "hoi_phi")` không nhận xưng hô → "Anh/chị" cứng (bộ chấm `xung_chi_phi`). Sửa: câu mới "Đăng tin bên em miễn phí ạ. Phí môi giới là {phi}, chỉ thu khi giao dịch thành công — chưa thành thì {goi} không tốn đồng nào.", `goi` truyền theo khách; migration `20261031a_cau_mau_bao_phi` ĐÃ áp DB thật 01/11. `Engine._ghi_viec` bọc `try/except` + `log.warning` (phần đo không chặn lời gửi khách).
@@ -891,12 +898,6 @@ Chủ dự án 30/10: "làm nốt b2 nhưng vẫn lưu các hàm để dễ gọ
 - Khối địa danh / trạng thái tin / câu khách mua hỏi KHÔNG đổi (vốn chỉ vào prompt khi cần). `claude -p` giả lập vòng công cụ bằng JSON.
 - Còn: rổ nhiều căn "căn đó bán rồi" — bóc tách vẫn đổi nhầm trạng thái ~6/16 lần (kịch bản `hai_can_da_ban`), để agent bóc tách xử lý.
 - Kiểm: `tests/test_agent_ban_307.py`.
-
-### SRS-5.1zzzzzzz306 · Gỡ lưới soát theo số đo: "em gửi ảnh" chỉ soi phần chat; bộ chấm ghi lưới nào kích (30/10/2026)
-Chủ dự án 30/10: "chạy thử và triển khai theo kế hoạch đi" (gỡ luật theo số đo).
-- Bộ chấm ghi lưới soát nào kích. 7/9 lần Sonnet bị gọi lại là lưới "em gửi ảnh" bắt nhầm câu mời chốt trong bản tin (viết cho người mua) →
-  `_bot_hua_gui_anh` chỉ soi phần chat. Sonnet gọi lại 9–13 → 4 mỗi lần chạy, điểm không đổi.
-- Kiểm: `tests/test_soat_anh_ban_tin_306.py`.
 
 ---
 

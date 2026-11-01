@@ -4,6 +4,7 @@ from aioi.engine import (Conversation, SellerRole, Turn, _CHI_TIET_BIA_RE, _cau_
 from aioi.prompts import build_buyer_chat_system, build_chat_system, operations_schema
 from aioi.schema import BuyerLead, Property
 from tests.test_doc_y_khach import _eng
+import pytest
 
 
 def test_lap_mo_dau_va_lap_cau_luot_truoc():
@@ -17,6 +18,7 @@ def test_lap_mo_dau_va_lap_cau_luot_truoc():
     assert _cau_lap_luot_truoc("📋 Bản tin cập nhật: Bán nhà hẻm 4m Phạm Thế Hiển giá 5 tỷ 8", "📋 Bản tin cập nhật: Bán nhà hẻm 4m Phạm Thế Hiển giá 5 tỷ 8") is None
 
 
+@pytest.mark.nhanh_cu(AIOI_SOAT_GON="tat")   # soát chế độ cũ (gọi lại vì giọng / lặp); production chế độ gọn — SRS-298
 def test_lap_cau_luot_truoc_goi_lai_model():
     eng, spy = _eng({"operations": [], "user_intent": "sell"})
     c = eng.conversation("lap1")

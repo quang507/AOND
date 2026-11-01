@@ -2,12 +2,14 @@
 (tin phụ debug) hay lệnh `json` — gõ những chữ đó chỉ là tin nhắn thường. Đỏ khi một trong ba lệnh quay lại."""
 from aioi.engine import TurnResult
 from tests.test_doc_y_khach import _eng
+import pytest
 
 
 def _plan(k, v, bc):
     return {"operations": [{"op": "update", "fields": {k: v}, "bang_chung": {k: bc}}], "user_intent": "sell"}
 
 
+@pytest.mark.nhanh_cu(AIOI_DONG_TRICH_XUAT="tat")   # bài kiểm "$$$$$" là tin thường; tin phụ trích xuất bật ở production — SRS-252
 def test_dau_la_khong_con_xoa_phien_va_khong_bat_che_do_test():
     eng, spy = _eng(_plan("gia", "6 tỷ", "6 tỷ"))
     eng.handle("u1", "nhà anh giá 6 tỷ")

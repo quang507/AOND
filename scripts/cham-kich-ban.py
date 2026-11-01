@@ -19,7 +19,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import statistics
 import sys
 import tempfile
@@ -28,23 +27,9 @@ from concurrent.futures import ProcessPoolExecutor
 
 GOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path[:0] = [os.path.join(GOC, "src"), GOC]
-CAI_VPS = os.path.join(GOC, "bot", "bridge-zca", "cai-vps.sh")
 DIEM_NEN = os.path.join(GOC, "tests", "kich_ban", "diem_nen.json")
 
-
-def cong_tac_vps(duong: str = CAI_VPS, nhu: str = "khach") -> dict[str, str]:
-    """Biến môi trường lõi mà cai-vps ghi vào `.env` (dòng `printf 'AIOI_…=%s…' "$BIEN"…`) với giá trị gán trong tệp. `nhu="khach"`: giá trị
-    "thu" thành "tat" và model riêng của ID thử tắt — ID chấm là ID thử nên không đổi thì đo đường khách thật không đi."""
-    chu = open(duong, encoding="utf-8").read()
-    dong = next(d for d in chu.splitlines() if d.strip().startswith("printf 'AIOI_"))
-    khoa = re.findall(r"([A-Z_]+)=%s", dong)
-    bien = re.findall(r'"\$([A-Z_]+)"', dong)
-    gan = dict(re.findall(r'(?m)^\s*([A-Z_]+)="([^"]*)"', chu))
-    env = {k: gan.get(b, "") for k, b in zip(khoa, bien)}
-    if nhu == "khach":
-        env = {k: ("tat" if v == "thu" else v) for k, v in env.items()}
-        env["AIOI_CHAT_MODEL_THU"] = "tat"
-    return env
+from tests.cau_hinh_vps import cong_tac_vps  # noqa: E402 — một nguồn với tests/conftest.py (SRS-5.1zzzzzzz316)
 
 
 def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
@@ -171,7 +156,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--bo", default=os.path.join(GOC, "tests", "kich_ban", "ban.json"))
     ap.add_argument("--chat", default="", help="model viết lời; trống = MODEL_CHAT trong cai-vps.sh")
-    ap.add_argument("--boc", default="", help="model bóc tách; trống = như lõi VPS (AIOI_EXTRACT_MODEL hoặc mặc định config)")
+    ap.add_argument("--boc", default="", help="model bóc tách; trống = MODEL_BOC trong cai-vps.sh")
     ap.add_argument("--nhu", choices=("khach", "thu"), default="khach", help="công tắc \"thu\" tính tắt (khách thật) hay bật (ID thử)")
     ap.add_argument("--nen", action="store_true", help="ghi điểm nền vào tests/kich_ban/diem_nen.json")
     ap.add_argument("--cham-lai", default="", help="chấm lại bản ghi JSON đã lưu bằng --ra (không gọi model), vd sau khi sửa phép chấm")
@@ -188,9 +173,8 @@ def main() -> int:
         bo = [k for k in bo if k["id"] in set(a.chi.split(","))]
     env = cong_tac_vps(nhu=a.nhu)
     a.chat = a.chat or env.get("AIOI_CHAT_MODEL", "")
-    if not a.boc:
-        from aioi.config import load_settings
-        a.boc = os.environ.get("AIOI_EXTRACT_MODEL") or load_settings().extract_model
+    if not a.boc:   # SRS-5.1zzzzzzz316: model bóc tách như VPS — dòng MODEL_BOC trong cai-vps.sh (env đặt tay vẫn thắng)
+        a.boc = os.environ.get("AIOI_EXTRACT_MODEL") or env.get("AIOI_EXTRACT_MODEL", "")
     giong = {}
     if a.cham_lai:   # chấm lại bản ghi đã lưu (--ra) bằng phép chấm hiện tại — không gọi model; điểm giám khảo giữ như lúc chạy
         cu_kq = {r["id"]: r for r in json.load(open(a.cham_lai, encoding="utf-8"))["ket_qua"]}
