@@ -119,7 +119,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-137 [deprecated 28/10/2026] | — | — | — | — |
 | FR-138 [deprecated 28/10/2026] | — | — | — | — |
 | FR-139 | UF-04, UF-05 | WF-04 | — | — |
-| FR-140 | UF-04, UF-09 | — | SRS-5.1zzzzzzz170, SRS-5.1zzzzzzz216 | TS-HOICHU, TS-CTV |
+| FR-140 | UF-04, UF-09 | — | SRS-5.1zzzzzzz170, SRS-5.1zzzzzzz216, SRS-5.1zzzzzzz238 | TS-HOICHU-02 |
 | FR-141 | UF-04 | — | — | — |
 | FR-142 | UF-04, UF-07 | — | SRS-5.1zzzzzzz22 | — |
 | FR-143 | UF-04 | — | — | — |
@@ -155,7 +155,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-171 (ranh giới) | UF-04, UF-05 | — | — | TS-RANHGIOI-01 |
 | NFR-11 (đọc DB) | — | — | SRS-3.0 | — |
 | NFR-16 (kho gốc) | — | — | — | TS-MASTERDB |
-| FR-173 | UF-05, UF-11 | — | SRS-5.1zzzzzzz170 | TS-CTV-01 |
+| FR-173 | UF-05, UF-11 | — | SRS-5.1zzzzzzz170, SRS-5.1zzzzzzz238 | TS-HOICHU-02 |
 | FR-174 | UF-04, UF-09, UF-10 | — | — | TS-DIABAN-01 |
 | FR-175 | — | — | — | — |
 | FR-176 | UF-10 | — | — | TS-KYGUI-01, TS-VAN-01, TS-VAN-02, TS-VAN-04, TS-VAN-07, TS-VAN-06, TS-VAN-09, TS-BLDL-05, TS-BLDL-06 |

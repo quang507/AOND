@@ -102,7 +102,7 @@ thì "máy xanh, máy tao đỏ" và không ai biết bên nào đúng.
 
 | Bộ | ID | Lệnh | Job CI | Kiểm cái gì |
 |---|---|---|---|---|
-| `tests/` (157 file pytest) | **TS-PY-01** | `bun run test:py` (= `python -m pytest -q tests`; cài trước `pip install -e ".[dev]" httpx` như CI) | `bot`, bước "Lõi Python — pytest" | Lõi Python: phiên chat, định tuyến bán / mua, bóc tách có bằng chứng, câu mẫu, phí, xưng hô, lưới soát lời bot, gợi căn, báo căn mới, gửi nhắc, lệnh Zalo, pháp lý. Model giả: chỉ kiểm code nhận đúng KHI model trả đúng, không kiểm model hiểu đúng |
+| `tests/` (203 file pytest, 01/11/2026) | **TS-PY-01** | `bun run test:py` (= `python -m pytest -q tests`; cài trước `pip install -e ".[dev]" httpx` như CI) | `bot`, bước "Lõi Python — pytest" | Lõi Python: phiên chat, định tuyến bán / mua, bóc tách có bằng chứng, câu mẫu, phí, xưng hô, lưới soát lời bot, gợi căn, báo căn mới, gửi nhắc, lệnh Zalo, pháp lý. Model giả: chỉ kiểm code nhận đúng KHI model trả đúng, không kiểm model hiểu đúng |
 | các file `bot/tests/*.mjs` liệt kê trong script `test:bot` | TS-RANHGIOI, TS-NHAC, TS-LUAT-03, TS-NHAN-01, TS-SEC-AUTO (tự kiểm) | `bun run test:bot` | `bot` | Code TypeScript còn sống: web (`lib/`), ba edge function, `_shared/` còn lại, bridge, script nạp mẫu / đo tìm nhà (tự kiểm offline) |
 | `bot/tests/sql/*.sql` | **TS-SQL-01**, TS-STREET-DA-01 | `bun run test:sql` | `bot` | Trigger / hàm SQL chạy thật trên Postgres tạm. Thoát 2 = máy không có Postgres = chưa kiểm được |
 | `scripts/xuat-ro-hang.tu-kiem.mjs` | TS-ROHANG | `bun run test:rohang` | `rohang` | Bản xuất rổ hàng không ghi vào repo, không nuốt dòng thiếu |
@@ -120,6 +120,7 @@ thì "máy xanh, máy tao đỏ" và không ai biết bên nào đúng.
 |---|---|---|---|---|
 | `bot/tests/ts-sec-anon.mjs` | TS-SEC-AUTO | **Internet tới `*.supabase.co`** + DB production đang chạy. KHÔNG cần secret: bắn bằng khoá publishable công khai | `bun run test:sec` — CI job `baomat`, **cố ý không nằm trong `kiem`** | Thoát 0 = đạt · 1 = có cửa mở · **2 = CHƯA KIỂM ĐƯỢC** (proxy chặn, DB ngủ). Thoát 2 KHÔNG phải "đạt" |
 | `scripts/soat-migration.mjs`, `scripts/soat-db.mjs` | TS-MIG-01/02, TS-DB-01 | Internet + khoá công khai | `bun run soat:migration`, `bun run soat:db` — CI job `migration`, `soatdb` | Đỏ khi repo ↔ DB lệch hoặc có phát hiện mới ngoài bản nền |
+| `scripts/cham-kich-ban.py` + `tests/kich_ban/ban.json` (51 kịch bản người bán, có chat thật chị N.) | **TS-CHAM-01** | **`claude` CLI đã đăng nhập** (quota gói Claude Code, không tốn tiền API); ~50 phút / lần | `bun run cham --giong` (mặc định chạy như khách thật theo công tắc `cai-vps.sh`); `--cham-lai <bản ghi>` chấm lại không gọi model | So với `tests/kich_ban/diem_nen.json`: phép tất định, giọng, lộ luật, hỏi lại, lượt ghép nhiều khối hỏi. Đổi lời / prompt / luật soát phải chạy ≥ 2 lần mỗi bên (SRS-5.1zzzzzzz304 / 313 / 314) |
 | `bot/tests/vai-tro.sql` | **TS-SEC3** | **Quyền SQL trên DB thật.** CI chỉ có khoá công khai | Dashboard → SQL Editor → dán cả file → Run; hoặc MCP `execute_sql` | Kết bằng `raise exception 'KQ: …'` nên mọi dòng chèn TỰ CUỘN LẠI. Mọi mục phải `OK`; một chữ `HONG` là một cửa mở |
 
 **Bắn thử production — tiền thật, chạy tay qua workflow `apply-migration.yml` ô `dung_lai`:** mỗi ô chạy
@@ -231,8 +232,8 @@ Tập không phá huỷ của TS-SEC, bắn khoá **công khai** `sb_publishable
 | TS-LIVE-02 | acc khác nhắn: `chào em, anh tìm nhà quận 5 tầm 5 tỷ` | trả trong vài giây, gợi ý căn khớp ngân sách, không xổ ngẫu nhiên | ⏭ |
 | TS-LIVE-03 | `căn BDS-Q5-0133 còn không em` | chào đúng căn (P16 · 4,8 tỷ · 57.4m²), không bịa tình trạng | ⏭ |
 | TS-LIVE-04 | `gửi anh xem hình căn đó với` | căn chưa có ảnh → "để em hỏi lại chủ nhà", không bịa có hình | ⏭ |
-| TS-LIVE-05 | `cho anh gặp người thật đi` | `needs_human = true` + 1 `reminders` kind `escalation` gán CTV | ⏭ |
-| TS-LIVE-06 | điền `ctvs.phone`, chờ ≤60s | bridge resolve SĐT → uid, nhắn CTV, ghi ngược `ctvs.zalo_user_id` (FR-150) | ⏭ |
+| TS-LIVE-05 | `cho anh gặp người thật đi` | `needs_human = true` + 1 `reminders` kind `escalation` cho admin (CTV bỏ 28/10/2026) | ⏭ |
+| TS-LIVE-06 | [deprecated 28/10/2026 — bảng `ctvs` đã gỡ, SRS-5.1zzzzzzz238] điền `ctvs.phone`, chờ ≤60s | bridge resolve SĐT → uid, nhắn CTV (FR-150) | ⏭ |
 | TS-LIVE-07 | acc đã gán `sellers.zalo_user_id` nhắn `Bán nhà hẻm xe hơi phường 8, DT đất 4x16, 1 trệt 2 lầu, giá 8.5 tỷ` | tin `cho_thong_tin`, `property_type = nha_pho`, `price_raw = "8.5 tỷ"`, câu hỏi đầu là diện tích đất | ⏭ |
 | TS-LIVE-08 | trả lời câu diện tích | fact lưu; đủ giá + DT + phường → tin nhảy `dang_ban`, bot báo "đã lên web" | ⏭ |
 | TS-LIVE-09 | tin không đoán được loại, trả `hông biết nữa` | hỏi lại kèm lựa chọn, không ghi fact `loai_bds` | ⏭ |

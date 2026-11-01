@@ -52,3 +52,17 @@ def test_engine_ghi_viec_va_khoi_moi_luot():
     eng.handle("thu-viec-1", "Bán nhà phố đường Cao Lỗ quận 8")
     y = eng.conversation("thu-viec-1").y_luot
     assert y["_viec"]["ten"] and isinstance(y["_khoi"], list)
+
+
+def test_loi_viec_luot_khong_lam_hong_luot(monkeypatch):
+    """SRS-5.1zzzzzzz315: `viec_luot` chỉ để đo — nó ném lỗi thì lượt vẫn trả lời khách (gỡ try/except ở `Engine._ghi_viec` → đỏ)."""
+    import aioi.engine as eng_mod
+    from aioi.config import Settings
+    from aioi.llm.mock import MockProvider
+
+    def hong(_t):
+        raise RuntimeError("hỏng thử")
+    monkeypatch.setattr(eng_mod, "viec_luot", hong)
+    eng = eng_mod.Engine(MockProvider(Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")))
+    r = eng.handle("thu-viec-hong", "Bán nhà phố đường Cao Lỗ quận 8")
+    assert r.reply and "_viec" not in eng.conversation("thu-viec-hong").y_luot

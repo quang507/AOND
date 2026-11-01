@@ -2739,7 +2739,7 @@ class Engine:
         if conv.prop.fields.get("_ngoai_vung"):
             system = (build_ngoai_vung_system(conv.assistant.name, conv.prop.fields["_ngoai_vung"])
                       + khoi_xung_ho(customer_pronoun, conv.assistant.name, _xung_ho_doan(conv)) + khoi_can_nguoi(conv) + khoi_phap_ly(conv))
-            self._ghi_viec(conv, TrangThaiLuot(pha="ngoai_vung"), ["ngoai_vung"])
+            self._ghi_viec(conv, lambda: TrangThaiLuot(pha="ngoai_vung"), ["ngoai_vung"])
             reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if not reply:
                 raise LoiTraLoi("lời gửi khách rỗng")
@@ -2989,7 +2989,7 @@ class Engine:
         m_de = _model_luot_de() if (luot_de and not dung_agent_ban and not (project is not None and project.units)
                                     and conv.hoi_ve_luot is None and all(k.startswith("_") for k in conv.y_luot)) else None
         dau_de = MODEL_CHAT_LUOT.set(m_de) if m_de else None
-        self._ghi_viec(conv, TrangThaiLuot(
+        self._ghi_viec(conv, lambda: TrangThaiLuot(
             pha="thu_thap" if not is_listing_post else "trinh_nhap" if trinh_nhap else "sau_nhap", next_field=None if is_listing_post else next_field,
             khoi=tuple(khoi), hoi_ve=conv.hoi_ve_luot, muon_dang=bool(conv.y_luot.get("xin_dang")), thieu_toi_thieu=bool(toi_thieu),
             da_co_nhap=any(t.role == "assistant" and "📋" in (t.content or "") for t in conv.history), trang_thai=conv.active.status or "",
@@ -3273,11 +3273,15 @@ class Engine:
         return reply
 
     @staticmethod
-    def _ghi_viec(conv: Conversation, t: TrangThaiLuot, khoi: list[str]) -> None:
-        """SRS-5.1zzzzzzz314 (bước 2B): ghi việc `viec_luot` chọn cạnh các khối engine thực sự ghép — chỉ để đo (bộ chấm), không đổi lời."""
-        v = viec_luot(t)
-        conv.y_luot["_khoi"] = list(khoi)
-        conv.y_luot["_viec"] = {"ten": v.ten, "o": v.o, "bo": list(v.bo)}
+    def _ghi_viec(conv: Conversation, dung: Callable[[], TrangThaiLuot], khoi: list[str]) -> None:
+        """SRS-5.1zzzzzzz314 (bước 2B): ghi việc `viec_luot` chọn cạnh các khối engine thực sự ghép — chỉ để đo (bộ chấm), không đổi lời.
+        Lỗi ở đây (dựng trạng thái hay chọn việc) chỉ ghi log, không làm hỏng lượt trả lời khách (SRS-5.1zzzzzzz315)."""
+        try:
+            v = viec_luot(dung())
+            conv.y_luot["_khoi"] = list(khoi)
+            conv.y_luot["_viec"] = {"ten": v.ten, "o": v.o, "bo": list(v.bo)}
+        except Exception as e:  # noqa: BLE001 — phần đo, không được chặn lời gửi khách
+            log.warning("viec_luot lỗi (bỏ qua, lượt vẫn trả lời): %s: %s", type(e).__name__, e)
 
     @staticmethod
     def _ly_do_cung(conv: Conversation, reply: str) -> list[str]:

@@ -78,7 +78,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 
   | Biến | Hiện | Ý nghĩa |
   |---|---|---|
-  | `MODEL_CHAT` | `claude-sonnet-5-5` | model viết lời khách thật (bóc tách luôn Haiku) — SRS-235 / 308 |
+  | `MODEL_CHAT` | `claude-sonnet-5-5` | model viết lời khách thật (bóc tách: `AIOI_EXTRACT_MODEL` không đặt → mặc định `config.py` `claude-haiku-4-5`) — SRS-235 / 308 / 313 |
   | `MODEL_CHAT_THU` | `claude-sonnet-5-5` | model của ID thử (`ban-thu-*`); `gemini` = gọi thẳng Gemini — SRS-239 / 243 |
   | `AGENT_MUA` / `AGENT_BAN` | `bat` / `bat` | lượt viết lời có công cụ (`agent_mua.py` chỉ đọc + `hen_xem` / `hoi_chu_nha`; `agent_ban.py` tra rổ / dự án / giá) — SRS-290 / 307 |
   | `FORM_MUA_GON` / `FORM_BAN_GON` | `bat` / `bat` | form bóc tách gọn CẮT từ form đầy đủ — sửa luật ở form đầy đủ — SRS-293 / 303 |
@@ -86,11 +86,13 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
   | `PHIEU_LUOT` | `bat` | lượt thu thập người bán viết từ phiếu lượt ngắn (`prompts.build_phieu_luot`) thay `build_chat_system` — SRS-309 |
   | `AGENT_BOC` | `thu` | đọc ý người bán bằng agent gọi công cụ ghi (`agent_boc.py`) thay form JSON; chưa hơn form nên chỉ ID thử — SRS-310 |
   | `MODEL_LUOT_DE` | `tat` | model viết lời cho lượt dễ của người bán (thu thập, không tra dữ liệu, không việc khác) — SRS-311 |
-  | `CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246 |
+  | `CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246. Ngoại lệ quy ước: code đọc `!= "tat"`, trống = BẬT |
+  | `DONG_TRICH_XUAT` | `bat` | tin phụ "$$$$$ Đã trích xuất" sau mỗi lượt, MỌI cuộc chat (giai đoạn test; chạy thật đổi `tat`) — SRS-252 |
+  | `MODEL_GEMINI` | `gemini-3.5-flash,gemini-3.1-flash-lite` | Gemini dự phòng khi Claude hỏng — SRS-299 |
 
   `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini
   rồi Groq (`llm/du_phong.py`): mỗi lần ≤ 15 s, cả vòng ≤ 40 s, bridge chờ 90 s — đừng nới.
-- **Supabase** project `rqxmmqmctpklqcmbfxuj` (Tokyo, gói Free — không tự sao lưu, chủ dự án chấp nhận). Edge function còn lại: `escalation-feed` (bridge kéo việc / báo sống / QR), `geocode-listings`, `media-cleanup`; `_shared/` còn cho ba hàm đó và web (`luat-tien.ts`, `luat-lien-he.ts`, `nhan.ts`, `ds-phuong.ts`, `tien-ich.ts`).
+- **Supabase** project `rqxmmqmctpklqcmbfxuj` (Tokyo, gói Free — không tự sao lưu, chủ dự án chấp nhận). Edge function còn lại: `escalation-feed` (bridge kéo việc / báo sống / QR), `geocode-listings`, `media-cleanup`; `_shared/` còn cho ba hàm đó và web (`claude.ts`, `gate.ts`, `geocode.ts`, `tin_nhac.ts`, `extraction/`: `luat-tien.ts`, `luat-lien-he.ts`, `nhan.ts`, `ds-phuong.ts`, `tien-ich.ts`).
 - **Web**: Vercel không dựng preview cho nhánh `claude/**` (`vercel.json` `git.deploymentEnabled`, SRS-247) và bỏ qua bản dựng `main` khi lần đẩy không đổi file web (`ignoreCommand`, SRS-248 — thêm thư mục web mới thì thêm vào danh sách đó). Next.js 15 + TS + Tailwind 4 ở root (`app/`, `components/`, `lib/`, `public/`), Bun (`bun.lock`), Vercel. Đọc Supabase bằng publishable key qua RLS; mô tả listing luôn qua `sanitizeDescription()`.
 - **Kho tệp = Supabase Storage**: ảnh căn `listing-public/<uuid tin>/` (web đọc `listing_media` + `listing_photos_v`); sổ đỏ / giấy tờ / tệp dự án `listing-private` (`kho_anh.py`). `masterdb-raw` cố ý không có policy (chỉ `service_role`) — đừng trỏ web vào. `listing-photos` đã khoá.
 - **Logging lõi**: lõi không cấu hình `logging` nên `log.info` KHÔNG ra journal — log để truy lỗi trên VPS phải là `warning` (SRS-233). Đọc log: ô `doc-log-loi`.
