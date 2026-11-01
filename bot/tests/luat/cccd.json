@@ -47,6 +47,11 @@
    "vi_sao": "SĐT và CCCD nối dấu phẩy (review PR #241 lần 2)"
   },
   {
+   "cau": "0900000177,079200000019",
+   "mong": "[số],[số]",
+   "vi_sao": "SĐT 10 số rồi CCCD sau dấu phẩy — nhóm trước dấu phẩy không đứng riêng"
+  },
+  {
    "cau": "giá 850000000",
    "mong": "giá 850000000",
    "vi_sao": "9 số trần là giá, không có chữ CMND"
@@ -75,6 +80,21 @@
    "cau": "thửa 079 tờ 200",
    "mong": "thửa 079 tờ 200",
    "vi_sao": "số thửa / tờ bản đồ"
+  },
+  {
+   "cau": "2.090.000.000.000",
+   "mong": "2.090.000.000.000",
+   "vi_sao": "giá nghìn tỷ — nhóm 090 sau \"2.\" không phải CCCD (review PR #241)"
+  },
+  {
+   "cau": "giá 1.050.000.000.000",
+   "mong": "giá 1.050.000.000.000",
+   "vi_sao": "giá nghìn tỷ"
+  },
+  {
+   "cau": "giá 3.050.000.000.000đ",
+   "mong": "giá 3.050.000.000.000đ",
+   "vi_sao": "giá nghìn tỷ dính đ"
   }
  ]
 }

@@ -14,7 +14,12 @@ NGAN = "[ .-]"                                    # một dấu ngăn giữa hai
 # Ranh giới (SRS-5.1zzzzzzz317, review PR #241): trước số không được là chữ số. Dấu "." "," đứng trước KHÔNG chặn — "0900000123,0911222333" là
 # hai số; số bắt đầu giữa một giá ("1.084.500.000") thì phần còn lại vẫn là dạng tiền nên `KHONG_PHAI_TIEN` chặn. Sau số: không chữ số, và
 # không ".," + một nhóm 1–3 số đứng riêng (đuôi của dãy dài hơn / của tiền, "0900.000.123.456").
-TRUOC = "(?<![0-9])"
+# Không nằm trong một UUID (review PR #241): UUID chỉ có hex + gạch, nên số trong nhóm cuối 12 ký tự luôn bị kẹp bởi hex / gạch. Chặn khi trước số
+# là chữ a–f đứng sau một ký tự hex hoặc gạch ("…-fe0900…", "…-a0900…"), hoặc khi trước số là "hex-" VÀ dãy số + chữ hex vừa khít đuôi 12 ký tự
+# rồi hết từ ("…-9bbb-0900000171ab"). "Zalo0900…", "Phone0900…" vẫn che (chữ đứng trước không phải hex); "0900000123-0900000124anh" vẫn che
+# (sau "an" còn chữ "h", không phải đuôi UUID).
+TRUOC = ("(?<![0-9])(?<![0-9a-fA-F-][a-fA-F])"
+         "(?:(?<![0-9a-fA-F]-)|(?![0-9]{10}[a-fA-F][0-9a-fA-F](?![0-9A-Za-z])|[0-9]{11}[a-fA-F](?![0-9A-Za-z])))")
 SAU = "(?![0-9])(?![.,][0-9]{1,3}(?![0-9]))"
 KHONG_PHAI_TIEN = "(?![0-9]{1,3}(?:[.,][0-9]{3}){2,}(?![0-9]))"   # nhóm 1–3 số rồi ≥ 2 nhóm ".000" là tiền ("84.500.000.000")
 # Đầu số: "(+84)", "+84", "84" (được kèm số 0 thừa: "+84 0900…"), hoặc "0".
@@ -43,7 +48,9 @@ def che_sdt(text: str | None, thay: str | None = None) -> str:
 # ── Số giấy tờ (CCCD / CMND) — cùng ranh giới với SĐT. Chỉ lõi Python dùng (SQL `che_sdt` không che giấy tờ). ──
 # CCCD: 12 số, mở đầu bằng 0 (mã tỉnh 001–096), liền hoặc có dấu ngăn ("079 200 000 001"). Nhìn-sau chặn cả "<chữ/số>-" để đuôi UUID
 # "…-9c33-000000000001" không bị che.
-CCCD = re.compile("(?<![0-9])(?<![0-9A-Za-z]-)" + f"0(?:{NGAN}?[0-9]){{11}}" + SAU)   # không chặn dạng tiền: tiền không mở đầu 0, "079.200.000.004" là CCCD
+# Giá nghìn tỷ "2.090.000.000.000": trước số 0 là một nhóm 1–3 chữ số đứng riêng + ".," → không phải CCCD.
+CCCD = re.compile("(?<![0-9])(?<![0-9A-Za-z]-)"
+                  "(?<!(?<![0-9])[0-9][.,])(?<!(?<![0-9])[0-9]{2}[.,])(?<!(?<![0-9])[0-9]{3}[.,])" + f"0(?:{NGAN}?[0-9]){{11}}" + SAU)   # không chặn dạng tiền: tiền không mở đầu 0, "079.200.000.004" là CCCD
 # CMND 9 số trùng dạng giá viết trần ("850000000"), nên chỉ che khi đứng ngay sau chữ CMND / CCCD / chứng minh / căn cước.
 CMND_CANH_CHU = re.compile(r"(?i)((?:cmnd|cccd|căn cước(?: công dân)?|chứng minh(?: nhân dân)?)\s*(?:số\s*)?[:：]?\s*)"
                            f"([0-9](?:{NGAN}?[0-9]){{8}})" + SAU)

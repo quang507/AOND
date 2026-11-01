@@ -132,3 +132,11 @@ def test_hai_so_noi_dau_phay_cham_review_241_lan_2():
     assert tim_sdt("sđt 0900000170,0911222337") == "0900000170"
     for am in ("giá 12.500.000.000", "12,500,000,000", "8,4 tỷ", "0,85 tỷ", "từ 2-3 tỷ", "ngày 01.11.2026", "giá 2,084,500,000"):
         assert che_sdt(am, thay="[số]") == am, am
+
+
+def test_khong_che_uuid_va_gia_nghin_ty_review_241_lan_3():
+    # Cách viết không có trong bảng ca: UUID chữ hoa, đuôi "84…" trong UUID, SĐT sau "Mobile" (chữ "e" sau "l"), giá nghìn tỷ dấu phẩy.
+    assert che_sdt("A1B2C3D4-1111-4AAA-9BBB-FE0900000178") == "A1B2C3D4-1111-4AAA-9BBB-FE0900000178"
+    assert che_sdt("a1b2c3d4-1111-4aaa-9bbb-e84900000179") == "a1b2c3d4-1111-4aaa-9bbb-e84900000179"
+    assert che_sdt("Mobile0900000180", thay="[số]") == "Mobile[số]"
+    assert che_so_ca_nhan("giá 2,090,000,000,000", thay="[số]") == "giá 2,090,000,000,000"
