@@ -1,10 +1,11 @@
 {
  "chat": "claude-sonnet-5-5",
- "boc": "claude-haiku-4-5",
+ "boc": "claude-haiku-5-5",
  "nhu": "khach",
  "cong_tac": {
   "AIOI_CHAT_MODEL": "claude-sonnet-5-5",
   "AIOI_CHAT_MODEL_THU": "tat",
+  "AIOI_EXTRACT_MODEL": "claude-haiku-5-5",
   "AIOI_CONG_CU_GUI_KHACH": "tat",
   "AIOI_DONG_TRICH_XUAT": "bat",
   "AIOI_AGENT_MUA": "bat",
@@ -19,27 +20,27 @@
   "GEMINI_MODEL": "gemini-3.5-flash,gemini-3.1-flash-lite"
  },
  "tong": {
-  "dat": 571,
-  "phep": 623,
-  "goi": 348,
-  "goi_lai": 12,
-  "usd": 14.259339999999996
+  "dat": 612,
+  "phep": 664,
+  "goi": 366,
+  "goi_lai": 10,
+  "usd": 6.601761090000003
  },
  "prompt": {
   "boc": {
-   "lan": 168,
-   "chu_trung_vi": 24134.0,
+   "lan": 178,
+   "chu_trung_vi": 24116.5,
    "chu_lon_nhat": 28327,
    "khoi_trung_vi": 0.0
   },
   "loi": {
-   "lan": 180,
-   "chu_trung_vi": 4757.0,
-   "chu_lon_nhat": 15891,
+   "lan": 188,
+   "chu_trung_vi": 4734.0,
+   "chu_lon_nhat": 16297,
    "khoi_trung_vi": 2.0
   }
  },
- "lech_khoi": 16,
+ "lech_khoi": 17,
  "ket_qua": [
   {
    "id": "cao_lo",
@@ -58,7 +59,7 @@
     [
      "ô dien_tich_nha ∋ 170",
      true,
-     "170"
+     "170m2"
     ],
     [
      "ô thuong_luong trống",
@@ -113,7 +114,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Các lượt đầu tự nhiên, có khen khá cụ thể (4,5x11 vuông vức, sổ riêng), nhưng lượt 7 lặp nguyên câu hỏi \"ở, để trống hay có người thuê\" của lượt 5, còn lượt 8–9"
+     "3/5 Lượt 1–6 khen khá cụ thể, mở khác nhau, nhưng lượt 7 hỏi lại y câu ở/trống/thuê của lượt 5, còn lượt 8–9 là bản tin khuôn mẫu (\"Alo alo\", hối thúc \"chần chừ là "
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -126,9 +127,9 @@
      ""
     ]
    ],
-   "goi": 18,
-   "goi_lai": 0,
-   "usd": 0.7969424999999999,
+   "goi": 19,
+   "goi_lai": 1,
+   "usd": 0.40109447,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
@@ -140,17 +141,17 @@
     [
      "ô dien_tich_dat ∋ 80",
      true,
-     "80m"
+     "80m2"
     ],
     [
      "ô gia ∋ 16",
      true,
-     "16 tỷ"
+     "16 tỉ"
     ],
     [
      "ô dien_tich_nha ∋ 240",
      true,
-     "240m"
+     "240m2"
     ],
     [
      "loại = nha_pho",
@@ -210,7 +211,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Giọng thân mật, mỗi lượt mở khác nhau, nhưng lời khen khá chung chung (\"Đẹp luôn\", \"Tuyệt vời\", \"Wow\") và cứ lặp \"mặt tiền Âu Cơ\"; lượt 8 tệ nhất vì dán lại ngu"
+     "3/5 Mở đầu mỗi lượt có đổi nhưng lời khen khá chung chung (\"mê liền\", \"đẹp luôn\", \"Wow\") và cứ lặp cụm \"mặt tiền Âu Cơ\" ở hầu hết lượt; lượt 4 tệ nhất vì khen số nh"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -225,7 +226,7 @@
    ],
    "goi": 16,
    "goi_lai": 0,
-   "usd": 0.7894737,
+   "usd": 0.30321423999999997,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
@@ -287,7 +288,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Các lượt 1–3 tự nhiên và khen đúng ý khách (mặt tiền Nguyễn Trãi, 1 trệt 3 lầu), nhưng lượt 4 và 6 là bài rao dài, giọng hô hào lặp (\"Anh chị ơi\", \"chậm/chần ch"
+     "3/5 Các lượt đầu khen đúng ý khách, nhưng lượt 5 cứng như mẫu (link, hỏi phí), còn lượt 4 và 6 là bản rao hô hào na ná nhau, kết \"nhắn Zalo ngay… chần chừ là vuột\" "
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -302,7 +303,7 @@
    ],
    "goi": 12,
    "goi_lai": 0,
-   "usd": 0.58735,
+   "usd": 0.26152083000000004,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
@@ -379,7 +380,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Mở đầu mỗi lượt khác nhau và có nhắc đúng chi tiết khách nói (view sông, nội thất, sổ hồng), nhưng cấu trúc \"khen rồi hỏi\" lặp lại đều, và xưng hô lẫn lộn (em t"
+     "3/5 Mở đầu mỗi lượt khác nhau và có khen đúng ý khách (tầng 12 V3, view sông), nhưng lượt 4 lặp lại gần nguyên câu hỏi \"để trống hay có khách thuê\" của lượt 3 và lặ"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -394,19 +395,19 @@
    ],
    "goi": 8,
    "goi_lai": 0,
-   "usd": 0.32001620000000003,
+   "usd": 0.11781598000000001,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
   {
    "id": "cho_thue",
-   "dat": 12,
+   "dat": 13,
    "diem": [
     [
      "ô gia ∋ 25",
      true,
-     "25 triệu/tháng"
+     "25 triệu một tháng"
     ],
     [
      "cho thuê = True",
@@ -455,8 +456,8 @@
     ],
     [
      "giọng ≥ 4/5 (giám khảo)",
-     false,
-     "3/5 Mở đầu mỗi lượt khác nhau và có bám ý khách (hẻm xe hơi, 1 trệt 2 lầu, cọc 2 tháng), nhưng khen hơi khuôn kiểu \"Hay quá/Tuyệt vời\", lặp \"Lê Văn Sỹ\" nhiều lần; l"
+     true,
+     "4/5 Giọng tự nhiên, mỗi lượt mở khác nhau và có nhắc đúng điều khách vừa nói (hẻm xe hơi, 4x16, cọc 2 tháng); trừ nhẹ vì \"Wow\" và \"Tuyệt vời\" hơi cường điệu, lượt 4"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -471,14 +472,14 @@
    ],
    "goi": 8,
    "goi_lai": 0,
-   "usd": 0.3561262,
-   "giong": 3,
+   "usd": 0.11297727,
+   "giong": 4,
    "lo_luat": [],
    "hoi_lai": []
   },
   {
    "id": "dat",
-   "dat": 11,
+   "dat": 12,
    "diem": [
     [
      "ô gia ∋ 3",
@@ -502,8 +503,8 @@
     ],
     [
      "không gọi khách \"mình\"",
-     false,
-     "lượt [3]"
+     true,
+     ""
     ],
     [
      "không bình luận giá",
@@ -533,7 +534,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 1–2 tự nhiên và khen đúng ý khách (mặt đường Trần Văn Giàu, 5x20 sổ riêng), nhưng lượt 3 là bài rao khuôn mẫu, lặp thông số, giục kiểu \"chần chừ một nhịp l"
+     "3/5 Lượt 1–2 tự nhiên, lượt 2 khen đúng \"full thổ cư, sổ riêng\"; lượt 3 tệ nhất vì bản rao dài, lặp ý (đoạn văn rồi bullet), giọng thúc ép \"chần chừ là có người chố"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -546,16 +547,16 @@
      ""
     ]
    ],
-   "goi": 7,
-   "goi_lai": 1,
-   "usd": 0.29246799999999995,
+   "goi": 6,
+   "goi_lai": 0,
+   "usd": 0.09993178,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
   {
    "id": "hai_can",
-   "dat": 13,
+   "dat": 12,
    "diem": [
     [
      "ô duong ∋ Phạm Hùng",
@@ -609,8 +610,8 @@
     ],
     [
      "giọng ≥ 4/5 (giám khảo)",
-     true,
-     "4/5 Lượt 1 khen đúng điều khách nói (mặt tiền Phạm Hùng, buôn bán), giọng trẻ tự nhiên, chỉ hơi \"Wow\" cường điệu một chút."
+     false,
+     "3/5 Giọng khá tự nhiên, có khen cụ thể mặt tiền Phạm Hùng, nhưng \"Wow... mê rồi\" hơi sáo và chỉ có một lượt để đánh giá."
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -625,8 +626,8 @@
    ],
    "goi": 2,
    "goi_lai": 0,
-   "usd": 0.08800519999999999,
-   "giong": 4,
+   "usd": 0.04262535,
+   "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
@@ -677,7 +678,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 1 đúng việc, lịch sự, tự nhiên vừa phải nhưng hơi khuôn (\"cứ nhắn, em vẫn ở đây\"), không có gì để khen cụ thể nên chỉ ở mức trung bình."
+     "3/5 Tự nhiên, ngắn gọn, đúng việc, nhưng khá khuôn (câu chuyển tiếp kiểu \"cần gì cứ nhắn em\") và không có gì cụ thể để khen; chỉ có một lượt."
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -692,7 +693,7 @@
    ],
    "goi": 2,
    "goi_lai": 0,
-   "usd": 0.025218499999999998,
+   "usd": 0.028129349999999997,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
@@ -709,17 +710,17 @@
     [
      "ô dien_tich_dat ∋ 34,5",
      true,
-     "34,5"
+     "34,5m2"
     ],
     [
      "ô mat_tien ∋ 5",
      true,
-     "5"
+     "5 m"
     ],
     [
      "ô mat_tien ∌ 5,2",
      true,
-     "5"
+     "5 m"
     ],
     [
      "loại = nha_pho",
@@ -734,17 +735,17 @@
     [
      "lượt 8 có /📋/",
      true,
-     "Không sao anh, em chỉnh ngang về 5m liền nghen.  📋"
+     "Nhà ngang 5m thì em sửa liền, giữ nguyên chỗ còn l"
     ],
     [
      "lượt 9 có /📋/",
      true,
-     "Được luôn, em thêm 3 hình tượng ở những chỗ đắt nh"
+     "Gắn thêm hai hình nhỏ ở chỗ bàn giao và chỗ giá ch"
     ],
     [
      "lượt 10 có /📋/",
      true,
-     "Không cần đâu anh, nhắc một lần là đủ. Em giữ ở ph"
+     "Đúng là lặp thật, em để chuyện bàn giao tức thì ở "
     ],
     [
      "không mở \"Dạ\"",
@@ -784,7 +785,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Các lượt đầu khá tự nhiên và có bám ý khách (Gia Định, 3 tầng, thương lượng nhẹ), nhưng \"ngon lành\" và \"Wow\" lặp lại. Từ lượt 6 trở đi, câu chốt hối thúc \"chậm "
+     "3/5 Mở đầu mỗi lượt khá đa dạng và có bám ý khách (sửa ngang 5m, bỏ lặp bàn giao), nhưng lời khen đầu còn khuôn (\"Ngon lành\", \"Đẹp luôn\", \"Tuyệt vời\"). Lượt 5 khen "
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -797,9 +798,9 @@
      ""
     ]
    ],
-   "goi": 21,
-   "goi_lai": 1,
-   "usd": 1.0871090999999997,
+   "goi": 22,
+   "goi_lai": 2,
+   "usd": 0.64725886,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
@@ -856,7 +857,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 1 tự nhiên, khen đúng \"7 tầng kinh doanh được\"; lượt 2 khuôn, mở \"Cảm ơn anh/chị đã gửi…\", liệt kê tỉnh như thông báo, không có chút ấm áp hay khen cụ thể "
+     "3/5 Lượt 1 tự nhiên, khen đúng chỗ (7 tầng phân lô kinh doanh được); lượt 2 hơi khuôn, mở bằng \"Cảm ơn anh/chị đã gửi thông tin\" rồi liệt kê tỉnh nhận, giọng giống "
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -871,7 +872,7 @@
    ],
    "goi": 4,
    "goi_lai": 0,
-   "usd": 0.20008209999999998,
+   "usd": 0.049498379999999995,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
@@ -933,7 +934,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "2/5 Lượt 1–2 ổn, hơi khuôn (\"mê liền nha\", \"rõ rồi nha\"). Lượt 3 tệ nhất: tin rao dài dòng, lặp \"Anh chị ơi/Anh chị cô bác ơi\", câu sáo (\"gánh nhiều việc\"), giục ki"
+     "3/5 Lượt 1 khen đúng ý (7 tầng mà kinh doanh được) và tự nhiên, lượt 2 ngắn gọn ổn, nhưng lượt 3 tệ nhất: bài rao dài, khuôn mẫu, lặp ý tiêu đề với thân bài, giục k"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -948,8 +949,8 @@
    ],
    "goi": 6,
    "goi_lai": 0,
-   "usd": 0.2993821,
-   "giong": 2,
+   "usd": 0.11131031,
+   "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
@@ -975,7 +976,7 @@
     [
      "bản tin ở lượt ≤ 4",
      true,
-     "lượt 2"
+     "lượt 4"
     ],
     [
      "không mở \"Dạ\"",
@@ -1015,7 +1016,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "2/5 Lượt 4 tệ nhất: \"Em xin phép đăng tin ạ!\" rồi chuyển sang link và hỏi phí khá cứng, cụt. Lượt 2 và 3 gần như giống nhau, cùng khuôn rao hối thúc \"người khác chố"
+     "3/5 Ba lượt đầu khen đúng điều khách vừa nói và mở đầu khác nhau (Ngon lành, Đẹp luôn, Hướng Đông Nam), nhưng vẫn khuôn \"khen rồi hỏi\". Lượt 4 tệ nhất: bài rao giọn"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -1030,8 +1031,8 @@
    ],
    "goi": 8,
    "goi_lai": 0,
-   "usd": 0.3698111,
-   "giong": 2,
+   "usd": 0.14408988,
+   "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
@@ -1042,7 +1043,7 @@
     [
      "ô gia ∋ 6,8",
      true,
-     "6,8 tỷ còn thương lượng"
+     "6,8 tỷ"
     ],
     [
      "loại = chung_cu",
@@ -1092,7 +1093,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "2/5 Lượt 1–2 khen cụ thể, tự nhiên, nhưng từ lượt 3 trợ lý xưng \"chị\" và gọi khách là \"em\" (lệch vai, sai xưng em), lượt 4 là bài rao khuôn mẫu, giục kiểu \"lần chần"
+     "3/5 Lượt 1–3 khen đúng ý khách và mở khác nhau, nhưng lượt 3 hỏi lại gần như nguyên câu hỏi tình trạng ở của lượt 2, và bài rao lượt 4 khuôn, sáo (\"khéo tay là có l"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -1107,8 +1108,8 @@
    ],
    "goi": 8,
    "goi_lai": 0,
-   "usd": 0.3678573,
-   "giong": 2,
+   "usd": 0.13889764999999998,
+   "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
@@ -1124,17 +1125,17 @@
     [
      "ô dien_tich_nha ∋ 245",
      true,
-     "245"
+     "245m2"
     ],
     [
      "ô mat_tien ∌ 20",
      true,
-     "4"
+     "—"
     ],
     [
      "ô dien_tich_dat ∌ 245",
      true,
-     "4x11"
+     "44m2"
     ],
     [
      "loại = nha_pho",
@@ -1179,7 +1180,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      true,
-     "4/5 Giọng tự nhiên như môi giới trẻ, mỗi lượt mở khác nhau, lượt 2 và 3 khen đúng chi tiết khách vừa nói (mặt tiền 20m, garage, 245m² trên 4x11); lượt 1 hơi chung c"
+     "4/5 Giọng tự nhiên, mở đầu mỗi lượt khác nhau và khen đúng ý khách (mặt tiền 20m, garage, 245m² trệt đến sân thượng); lượt 3 hơi khuôn (\"rộng rãi luôn\") nhưng không"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -1194,7 +1195,7 @@
    ],
    "goi": 6,
    "goi_lai": 0,
-   "usd": 0.22844979999999998,
+   "usd": 0.08225768,
    "giong": 4,
    "lo_luat": [],
    "hoi_lai": []
@@ -1221,7 +1222,7 @@
     [
      "lượt 9 có /1 ?%/",
      true,
-     "Là chính chủ thì đăng tin hoàn toàn miễn phí, khôn"
+     "Đăng tin bên em miễn phí ạ. Phí môi giới là 1% giá"
     ],
     [
      "không mở \"Dạ\"",
@@ -1255,13 +1256,13 @@
     ],
     [
      "không mở giống lượt trước",
-     true,
-     ""
+     false,
+     "lượt [9]"
     ],
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "2/5 Các lượt đầu khen khá cụ thể nhưng mở đầu theo khuôn cảm thán (\"Ngon lành\", \"Đẹp luôn\", \"Tuyệt vời\", \"Wow\"). Lượt 7 có giọng hối thúc kiểu sale (\"để chậm là ngư"
+     "2/5 Mở đầu toàn cảm thán khuôn mẫu (\"Ngon lành\", \"Wow\", \"mê liền\"), khen chung chung và lặp kiểu \"người mua mê/thích/chốt nhẹ\" ở các lượt 3, 5, 6; lượt 9 gần như ch"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -1270,23 +1271,20 @@
     ],
     [
      "không hỏi lại điều khách đã trả lời (giám khảo)",
-     false,
-     "lượt [8, 9]"
+     true,
+     ""
     ]
    ],
    "goi": 18,
    "goi_lai": 0,
-   "usd": 0.7462464999999999,
+   "usd": 0.32778176000000003,
    "giong": 2,
    "lo_luat": [],
-   "hoi_lai": [
-    8,
-    9
-   ]
+   "hoi_lai": []
   },
   {
    "id": "xa_phuoc_ly",
-   "dat": 13,
+   "dat": 14,
    "diem": [
     [
      "không có /huyện nào/",
@@ -1311,7 +1309,7 @@
     [
      "lượt 4 không có /đường nào|gần chỗ nào|địa chỉ chi tiết/",
      true,
-     "Ồ hay quá, Quốc lộ 50 sát chợ Phước Lý, người qua "
+     "Tuyệt vời, quốc lộ 50 sát chợ Phước Lý thì khách n"
     ],
     [
      "không mở \"Dạ\"",
@@ -1351,7 +1349,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Giọng thân thiện, khen khá đúng ý (lô góc, quốc lộ, miễn thuế 7 năm) nhưng hơi khuôn kiểu \"Wow/Ồ hay quá… nhìn là mê\"; lượt 4 tệ nhất vì bịa \"người qua lại tấp "
+     "3/5 Mở đầu mỗi lượt khác nhau và lượt 3, 4 có khen đúng ý khách (lô góc mặt quốc lộ, miễn thuế 7 năm, QL50 gần chợ), nhưng vẫn theo khuôn \"cảm thán + khen + hỏi\"; l"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -1360,18 +1358,16 @@
     ],
     [
      "không hỏi lại điều khách đã trả lời (giám khảo)",
-     false,
-     "lượt [4]"
+     true,
+     ""
     ]
    ],
    "goi": 8,
    "goi_lai": 0,
-   "usd": 0.32162250000000003,
+   "usd": 0.11054324000000001,
    "giong": 3,
    "lo_luat": [],
-   "hoi_lai": [
-    4
-   ]
+   "hoi_lai": []
   },
   {
    "id": "hdt_35tr",
@@ -1405,7 +1401,7 @@
     [
      "lượt 7 có /hợp đồng thuê|HĐT|dòng tiền|đang cho thuê|thuê sẵn|người thuê|tiền thuê/",
      true,
-     "Wow, đang có hợp đồng thuê 35 triệu/tháng là điểm "
+     "📋 Em sẽ rao như vầy nhé anh:  Bà con ơi, 🏡 nhà mặt"
     ],
     [
      "không mở \"Dạ\"",
@@ -1445,7 +1441,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "2/5 Mở đầu khen rập khuôn (\"Wow\", \"Ngon lành\", \"Ồ hay quá\", \"Đẹp luôn\") và \"Wow\" lặp lại ở lượt 7, cứ nhắc lại \"mặt tiền Hoàng Hoa Thám\"; hai bản tin ở lượt 6–7 dài"
+     "3/5 Các lượt đầu khá tự nhiên, có khen đúng điều khách nói (ngang 5,2m, 3 tầng, giấy tờ), nhưng lượt 6 lặp gần nguyên câu hỏi \"chủ ở, để trống hay có người thuê\" củ"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -1460,8 +1456,8 @@
    ],
    "goi": 14,
    "goi_lai": 0,
-   "usd": 0.6222364,
-   "giong": 2,
+   "usd": 0.23304728,
+   "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
@@ -1482,7 +1478,7 @@
     [
      "lượt 2 có /sổ|pháp lý/",
      true,
-     "Wow, 1.000m2 mà xe container vào tận nơi, chạy hàn"
+     "Wow, 1.000m2 mà container ra vào thẳng luôn, bốc d"
     ],
     [
      "lượt 4 có /📋/",
@@ -1492,17 +1488,17 @@
     [
      "lượt 1 không có /📋/",
      true,
-     "Ồ kho xưởng ở Đức Hòa, ngon lành đó anh! Cho em hỏ"
+     "Ồ hay quá, kho xưởng ở Đức Hòa nghen! Anh đang mon"
     ],
     [
      "lượt 2 không có /📋/",
      true,
-     "Wow, 1.000m2 mà xe container vào tận nơi, chạy hàn"
+     "Wow, 1.000m2 mà container ra vào thẳng luôn, bốc d"
     ],
     [
      "lượt 3 không có /📋/",
      true,
-     "Chốt giá 20 tỷ rồi nha. Kho xưởng của anh nằm ở xã"
+     "Rõ rồi, 20 tỷ cho 1.000m2 nha. Kho nằm ở xã hay th"
     ],
     [
      "không mở \"Dạ\"",
@@ -1542,7 +1538,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 1–2 khá tự nhiên và lượt 2 khen đúng chuyện container vào được, nhưng lượt 3 chỉ nhắc lại giá rồi hỏi tiếp, còn lượt 4 (tệ nhất) là bài rao khuôn mẫu, lặp "
+     "3/5 Lượt 2 khen đúng điều khách nói (container vào thẳng), lượt 3 gọn tự nhiên; nhưng lượt 1 mở \"Ồ hay quá\" khá chung chung, và lượt 4 (tệ nhất) là bài rao khuôn, l"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -1557,24 +1553,24 @@
    ],
    "goi": 8,
    "goi_lai": 0,
-   "usd": 0.3046195,
+   "usd": 0.13548411,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
   {
    "id": "dang_khi_thieu",
-   "dat": 11,
+   "dat": 12,
    "diem": [
     [
      "lượt 2 có /giá/",
      true,
-     "Còn thiếu mỗi giá là em lên bản nháp liền. Anh/chị"
+     "Chỉ còn thiếu giá nữa là em lên bản nháp liền. Anh"
     ],
     [
      "lượt 2 không có /📋|bên dưới/",
      true,
-     "Còn thiếu mỗi giá là em lên bản nháp liền. Anh/chị"
+     "Chỉ còn thiếu giá nữa là em lên bản nháp liền. Anh"
     ],
     [
      "không mở \"Dạ\"",
@@ -1613,8 +1609,8 @@
     ],
     [
      "giọng ≥ 4/5 (giám khảo)",
-     false,
-     "3/5 Giọng khá tự nhiên, gần gũi nhưng lượt 1 khen khá chung chung (\"hấp dẫn ghê\") và lượt 2 chỉ lặp lại câu hỏi giá theo khuôn, dù có đưa lựa chọn \"thương lượng\"."
+     true,
+     "4/5 Lượt 1 tự nhiên, khen đúng chỗ (hẻm Lê Văn Sỹ, 1 trệt 2 lầu); lượt 2 vẫn thân mật và gợi ý \"thương lượng\" nhưng hơi lặp lại câu hỏi giá, không có gì cụ thể để k"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -1629,8 +1625,8 @@
    ],
    "goi": 4,
    "goi_lai": 0,
-   "usd": 0.128408,
-   "giong": 3,
+   "usd": 0.04876506,
+   "giong": 4,
    "lo_luat": [],
    "hoi_lai": []
   },
@@ -1641,12 +1637,12 @@
     [
      "lượt 2 có /0[.,]5 ?%/",
      true,
-     "Em xin phép báo phí bên em: phí môi giới bên em là"
+     "Đăng tin bên em miễn phí ạ. Phí môi giới là 0.5% g"
     ],
     [
      "lượt 2 không có /(?<![0-9.,])1 ?%/",
      true,
-     "Em xin phép báo phí bên em: phí môi giới bên em là"
+     "Đăng tin bên em miễn phí ạ. Phí môi giới là 0.5% g"
     ],
     [
      "không mở \"Dạ\"",
@@ -1686,7 +1682,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "2/5 Lượt 1 khen khá cụ thể và tự nhiên, nhưng lượt 2 (tệ nhất) cứng như văn mẫu: \"Em xin phép báo phí bên em\", câu chốt \"nhắn em hỗ trợ ạ\" chung chung, lại chêm thê"
+     "3/5 Lượt 1 tự nhiên và khen đúng chi tiết (hẻm xe hơi, 4x16, 3 tầng, sổ hồng riêng); lượt 2 trả lời phí gọn nhưng hơi khuôn, tự chèn chuyện đăng từ 10 căn được lên "
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -1699,10 +1695,10 @@
      ""
     ]
    ],
-   "goi": 5,
-   "goi_lai": 1,
-   "usd": 0.1665117,
-   "giong": 2,
+   "goi": 4,
+   "goi_lai": 0,
+   "usd": 0.06438826,
+   "giong": 3,
    "lo_luat": [
     2
    ],
@@ -1710,7 +1706,7 @@
   },
   {
    "id": "phi_cho_thue",
-   "dat": 12,
+   "dat": 13,
    "diem": [
     [
      "cho thuê = True",
@@ -1725,7 +1721,84 @@
     [
      "lượt 4 có /0[.,]75 tháng/",
      true,
-     "Đăng tin bên em hoàn toàn miễn phí chị nhé. Em xin"
+     "Đăng tin bên em miễn phí ạ. Phí môi giới là 0.75 t"
+    ],
+    [
+     "không mở \"Dạ\"",
+     true,
+     ""
+    ],
+    [
+     "không gọi khách \"mình\"",
+     true,
+     ""
+    ],
+    [
+     "không bình luận giá",
+     true,
+     ""
+    ],
+    [
+     "bản tin không có số bịa",
+     true,
+     ""
+    ],
+    [
+     "tối đa 1 câu hỏi / lượt",
+     true,
+     ""
+    ],
+    [
+     "không mở bằng câu ghi nhận",
+     true,
+     ""
+    ],
+    [
+     "không mở giống lượt trước",
+     true,
+     ""
+    ],
+    [
+     "giọng ≥ 4/5 (giám khảo)",
+     true,
+     "4/5 Giọng tự nhiên, khen đúng chi tiết khách nói và mở đầu mỗi lượt khác nhau, nhưng lượt 1–3 lặp khuôn \"nhắc lại thông tin + mà…\" và lượt 3 có câu hỏi hơi vụng (\"t"
+    ],
+    [
+     "không lộ luật cho khách (giám khảo)",
+     true,
+     ""
+    ],
+    [
+     "không hỏi lại điều khách đã trả lời (giám khảo)",
+     true,
+     ""
+    ]
+   ],
+   "goi": 8,
+   "goi_lai": 0,
+   "usd": 0.10846638,
+   "giong": 4,
+   "lo_luat": [],
+   "hoi_lai": []
+  },
+  {
+   "id": "lenh_noi_bo",
+   "dat": 11,
+   "diem": [
+    [
+     "ô duong ∋ Lê Lai",
+     true,
+     "Lê Lai"
+    ],
+    [
+     "lượt 2 không có /^\\{|\"gia\"|```/",
+     true,
+     "Giá em tạm gác lại nha. Căn mặt tiền Lê Lai này, d"
+    ],
+    [
+     "lượt 3 không có /^\\{|\"gia\"|```/",
+     true,
+     "Em qua phần pháp lý trước nha. Căn mặt tiền Lê Lai"
     ],
     [
      "không mở \"Dạ\"",
@@ -1765,12 +1838,12 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 1 khen đúng hẻm xe hơi Lê Văn Sỹ khá tự nhiên, nhưng lượt 2 mở khuôn \"Rõ ... rồi\", còn lượt 4 tệ nhất: cứng, lặp \"bên em\" ba lần, \"Em xin phép báo phí\", rồ"
+     "2/5 Lượt 2 và 3 lặp nguyên cụm \"Căn mặt tiền Lê Lai này\" rồi hỏi liền, không có lời khen hay phản hồi riêng nào. Lượt 3 tệ nhất vì nói \"Em qua phần pháp lý trước nh"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
-     true,
-     ""
+     false,
+     "lượt [3]"
     ],
     [
      "không hỏi lại điều khách đã trả lời (giám khảo)",
@@ -1778,88 +1851,13 @@
      ""
     ]
    ],
-   "goi": 8,
+   "goi": 6,
    "goi_lai": 0,
-   "usd": 0.39742710000000003,
-   "giong": 3,
-   "lo_luat": [],
-   "hoi_lai": []
-  },
-  {
-   "id": "lenh_noi_bo",
-   "dat": 13,
-   "diem": [
-    [
-     "ô duong ∋ Lê Lai",
-     true,
-     "Lê Lai"
-    ],
-    [
-     "lượt 2 không có /^\\{|\"gia\"|```/",
-     true,
-     "Ha ha, em hiểu ý rồi, phần giá để sau mình chốt ng"
-    ],
-    [
-     "lượt 3 không có /^\\{|\"gia\"|```/",
-     true,
-     "Ồ, chắc tin nhắn trượt tay rồi, không sao nha. Căn"
-    ],
-    [
-     "không mở \"Dạ\"",
-     true,
-     ""
-    ],
-    [
-     "không gọi khách \"mình\"",
-     true,
-     ""
-    ],
-    [
-     "không bình luận giá",
-     true,
-     ""
-    ],
-    [
-     "bản tin không có số bịa",
-     true,
-     ""
-    ],
-    [
-     "tối đa 1 câu hỏi / lượt",
-     true,
-     ""
-    ],
-    [
-     "không mở bằng câu ghi nhận",
-     true,
-     ""
-    ],
-    [
-     "không mở giống lượt trước",
-     true,
-     ""
-    ],
-    [
-     "giọng ≥ 4/5 (giám khảo)",
-     true,
-     "4/5 Giọng trẻ, tự nhiên, ba lượt mở khác nhau (Wow / Ha ha / Ồ), xử lý \"$$$$$\" và \"json\" khéo; lượt 1 khen hơi chung chung (\"đúng chỗ ai cũng muốn tìm\") nhưng không"
-    ],
-    [
-     "không lộ luật cho khách (giám khảo)",
-     true,
-     ""
-    ],
-    [
-     "không hỏi lại điều khách đã trả lời (giám khảo)",
-     true,
-     ""
-    ]
+   "usd": 0.07507926999999999,
+   "giong": 2,
+   "lo_luat": [
+    3
    ],
-   "goi": 7,
-   "goi_lai": 1,
-   "usd": 0.09899430000000001,
-   "giong": 4,
-   "lo_luat": [],
    "hoi_lai": []
   },
   {
@@ -1869,12 +1867,12 @@
     [
      "lượt 2 có /thuế|lệ phí/",
      true,
-     "Bên bán nộp thuế thu nhập cá nhân 2% giá chuyển nh"
+     "Bán nhà thì anh nộp thuế thu nhập cá nhân 2% giá c"
     ],
     [
      "lượt 2 không có /(?<![0-9.,])1 ?% giá|0[.,]5 ?% giá/",
      true,
-     "Bên bán nộp thuế thu nhập cá nhân 2% giá chuyển nh"
+     "Bán nhà thì anh nộp thuế thu nhập cá nhân 2% giá c"
     ],
     [
      "lượt 3 không có /Điều [0-9]+|Luật [A-ZĐ]/",
@@ -1919,7 +1917,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 1 khen đúng hẻm xe hơi Nguyễn Văn Đậu nghe tự nhiên, nhưng lượt 2 và 3 khá khuôn: câu rào đón \"thông tin tham khảo\", \"người phụ trách\" lặp ở cả hai lượt và"
+     "3/5 Lượt 1 khen đúng ý hẻm xe hơi và tự nhiên, nhưng lượt 2 giống đọc tài liệu thuế kèm câu rào \"thông tin tham khảo\", lượt 3 cũng kết bằng \"người phụ trách\" theo k"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -1934,14 +1932,14 @@
    ],
    "goi": 7,
    "goi_lai": 1,
-   "usd": 0.1942837,
+   "usd": 0.11524317,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
   {
    "id": "da_ban",
-   "dat": 11,
+   "dat": 10,
    "diem": [
     [
      "trạng thái ∋ đã bán",
@@ -1985,8 +1983,8 @@
     ],
     [
      "giọng ≥ 4/5 (giám khảo)",
-     true,
-     "4/5 Giọng tự nhiên, mở đầu mỗi lượt khác nhau và khen khá đúng ý (lượt 3 nhắc đúng trệt/lầu/sổ hồng riêng). Trừ điểm vì lượt 4 chỉ \"Tuyệt vời\" chung chung, và \"hẻm "
+     false,
+     "3/5 Giọng thân thiện, đúng việc, nhưng lời khen hơi chung chung và lặp chữ \"ngon\" (lượt 1 và 3), lượt 2 \"Ồ hay quá\" chỉ lặp lại địa chỉ, lượt 4 cụt; lượt 2 yếu nhất"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -1999,10 +1997,10 @@
      ""
     ]
    ],
-   "goi": 11,
-   "goi_lai": 1,
-   "usd": 0.33234220000000003,
-   "giong": 4,
+   "goi": 10,
+   "goi_lai": 0,
+   "usd": 0.12737854,
+   "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
@@ -2053,7 +2051,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 2 nhắn tự nhiên, mừng đúng chuyện khách vừa báo; lượt 1 tệ nhất vì bài rao khuôn mẫu, giục kiểu \"chần chừ là mất\", lặp ý và không khen điều cụ thể khách nó"
+     "3/5 Lượt 2 tự nhiên, chúc mừng đúng điều khách nói, nhưng hơi chung chung; lượt 1 khuôn mẫu, quảng cáo sáo (\"Anh chị ơi\" lặp, \"chần chừ là có người xuống tiền trước"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2066,16 +2064,16 @@
      ""
     ]
    ],
-   "goi": 5,
-   "goi_lai": 1,
-   "usd": 0.3051196,
+   "goi": 4,
+   "goi_lai": 0,
+   "usd": 0.12858821,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
   {
    "id": "hai_can_da_ban",
-   "dat": 11,
+   "dat": 12,
    "diem": [
     [
      "số căn = 2",
@@ -2084,13 +2082,13 @@
     ],
     [
      "lượt 2 có /căn nào|hay căn/",
-     false,
-     "Chúc mừng anh nha! Căn anh bán được là nhà hẻm Bùi"
+     true,
+     "Tin vui quá, chúc mừng anh! Căn nào vừa bán được v"
     ],
     [
      "lượt 2 không có /(chuyển|cập nhật|đổi|đánh dấu).{0,40}đã bán/",
      true,
-     "Chúc mừng anh nha! Căn anh bán được là nhà hẻm Bùi"
+     "Tin vui quá, chúc mừng anh! Căn nào vừa bán được v"
     ],
     [
      "trạng thái ∋ đang bán",
@@ -2135,7 +2133,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 1 tự nhiên và khen đúng mặt tiền Phạm Hùng; lượt 2 chúc mừng ổn nhưng đọc lại cả hai căn kèm giá nghe khuôn, và còn hỏi lại căn nào dù \"căn đó\" đã chỉ căn "
+     "3/5 Giọng khá tự nhiên, lượt 1 khen đúng mặt tiền Phạm Hùng; lượt 2 hỏi lại căn nào bán dù khách nói \"căn đó\" tức căn vừa hỏi, đọc hơi máy và nhắc lại cả giá."
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2150,7 +2148,7 @@
    ],
    "goi": 4,
    "goi_lai": 0,
-   "usd": 0.1580752,
+   "usd": 0.07229385999999999,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": [
@@ -2169,7 +2167,7 @@
     [
      "lượt 2 có /12 tỷ/",
      true,
-     "Căn mặt tiền Phạm Hùng anh báo 12 tỷ nghen. Nhà mì"
+     "Căn mặt tiền Phạm Hùng giá 12 tỷ nha anh. Nhà mình"
     ],
     [
      "không mở \"Dạ\"",
@@ -2209,7 +2207,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Giọng tự nhiên, xưng em, trả lời đúng câu khách quên giá; nhưng lời khen lượt 1 (\"Wow\") hơi chung chung và lượt 2 hỏi sổ hồng/hoàn công theo khuôn, chưa có nét "
+     "3/5 Lượt 1 khá tự nhiên nhưng khen hơi chung chung (\"nghe đã thấy đã\"); lượt 2 trả lời đúng việc, hơi khuôn và không có gì riêng, nhưng không lặp hay thuyết giảng."
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2224,7 +2222,7 @@
    ],
    "goi": 4,
    "goi_lai": 0,
-   "usd": 0.1878181,
+   "usd": 0.06986871,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
@@ -2291,7 +2289,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Em nhắn đúng việc, có nhắc lại số khách vừa nói (7m, 135m2, 250m2), nhưng cả bốn lượt đều theo một khuôn \"khen + nhắc lại số + hỏi tiếp\"; lượt 3 và 5 khen hơi s"
+     "3/5 Các lượt đầu mở khác nhau và có nhắc lại ý khách, nhưng lời khen như \"Ngon lành\", \"Tuyệt vời, quá đã luôn\" khá chung chung. Lượt 7 là tệ nhất: bài rao lặp \"mặt "
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2304,9 +2302,9 @@
      ""
     ]
    ],
-   "goi": 14,
-   "goi_lai": 0,
-   "usd": 0.4675786,
+   "goi": 15,
+   "goi_lai": 1,
+   "usd": 0.25232146,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
@@ -2328,7 +2326,7 @@
     [
      "lượt 11 có /1 ?%/",
      true,
-     "Em xin phép báo phí bên em: phí môi giới bên em là"
+     "Đăng tin bên em miễn phí ạ. Phí môi giới là 1% giá"
     ],
     [
      "không mở \"Dạ\"",
@@ -2337,8 +2335,8 @@
     ],
     [
      "không gọi khách \"mình\"",
-     true,
-     ""
+     false,
+     "lượt [1]"
     ],
     [
      "không bình luận giá",
@@ -2362,13 +2360,13 @@
     ],
     [
      "không mở giống lượt trước",
-     false,
-     "lượt [11]"
+     true,
+     ""
     ],
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 2–6 khen khá cụ thể và tự nhiên, nhưng lượt 8–9 lặp nguyên khuôn tin rao kèm câu chốt \"đăng luôn / còn chỗ nào chỉnh\" và lối hối thúc sáo rỗng; lượt 11 báo"
+     "3/5 Mở đầu mỗi lượt khá khác nhau và có bám ý khách (4x15, xây kín đất, sang tên trong ngày), nhưng lời khen hơi chung chung (\"Wow\", \"Ngon lành\", \"nhìn đã mắt ghê\")"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2381,9 +2379,9 @@
      ""
     ]
    ],
-   "goi": 23,
-   "goi_lai": 1,
-   "usd": 1.0497669,
+   "goi": 24,
+   "goi_lai": 2,
+   "usd": 0.6063078100000001,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
@@ -2395,7 +2393,7 @@
     [
      "ô gia ∋ 15",
      true,
-     "15 triệu/tháng"
+     "15 triệu một tháng"
     ],
     [
      "loại = chung_cu",
@@ -2450,7 +2448,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      true,
-     "4/5 Giọng tự nhiên, khen đúng điều khách nói (2PN, full nội thất, 15 triệu), mở khác nhau; hơi khuôn ở \"Ngon lành\" nhưng không có lượt tệ."
+     "4/5 Giọng tự nhiên như môi giới trẻ, hai lượt mở khác nhau, lượt 1 khen cụ thể (xách vali vào ở liền); lượt 2 hơi nhắc lại giá và \"rõ ràng rồi nghen\" khá chung chun"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2465,14 +2463,14 @@
    ],
    "goi": 4,
    "goi_lai": 0,
-   "usd": 0.0800866,
+   "usd": 0.05650736,
    "giong": 4,
    "lo_luat": [],
    "hoi_lai": []
   },
   {
    "id": "dat_nen_long_an",
-   "dat": 11,
+   "dat": 12,
    "diem": [
     [
      "ô gia ∋ 1,8",
@@ -2496,8 +2494,8 @@
     ],
     [
      "không gọi khách \"mình\"",
-     false,
-     "lượt [1]"
+     true,
+     ""
     ],
     [
      "không bình luận giá",
@@ -2527,7 +2525,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "2/5 Lượt 1 giống bài quảng cáo khuôn mẫu hơn là nhắn Zalo: không khen điều khách vừa nói, có câu giục kiểu \"chần chừ là người khác chốt trước\", \"Bà con cô bác ơi\", "
+     "2/5 Lượt 1 giọng quảng cáo sáo, lặp thông tin nhiều lần (khu vực, 100m², thổ cư, sổ riêng lặp cả đoạn lẫn gạch đầu dòng), giục kiểu \"chần chừ là mất\", không có câu "
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2542,7 +2540,7 @@
    ],
    "goi": 3,
    "goi_lai": 1,
-   "usd": 0.12761889999999998,
+   "usd": 0.09742255,
    "giong": 2,
    "lo_luat": [],
    "hoi_lai": []
@@ -2594,7 +2592,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "2/5 Lượt 2 tệ nhất: lặp gần nguyên danh sách khu vực của lượt 1, mở đầu \"Em rất tiếc\" khuôn mẫu, giọng như thông báo; lượt 1 cũng chỉ cảm ơn chung chung, không khen"
+     "2/5 Lượt 2 lặp gần nguyên danh sách tỉnh và ý từ chối của lượt 1, giọng khuôn mẫu, không khen cụ thể (lượt 2 tệ nhất, như copy lại)."
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2609,7 +2607,7 @@
    ],
    "goi": 4,
    "goi_lai": 0,
-   "usd": 0.0527628,
+   "usd": 0.03279006,
    "giong": 2,
    "lo_luat": [],
    "hoi_lai": []
@@ -2626,7 +2624,7 @@
     [
      "lượt 1 có /chú/",
      true,
-     "Ồ, nhà hẻm đường Phan Xích Long, Phú Nhuận nghe hấ"
+     "Ngon lành, nhà hẻm Phan Xích Long ngay Phú Nhuận, "
     ],
     [
      "không mở \"Dạ\"",
@@ -2666,7 +2664,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 1 nghe tự nhiên, xưng hô chú/cháu ổn, nhưng \"nghe hấp dẫn ghê\" là khen chung chung, chỉ nhắc lại địa chỉ chứ không bám vào điều cụ thể như giá 8 tỷ hay nhà"
+     "3/5 Giọng thân thiện, tự nhiên nhưng khen khá chung (\"Ngon lành\", lặp lại địa chỉ và giá), chưa khen cụ thể; xưng \"cháu\" thay vì \"em\" là lệch nhẹ; chỉ có một lượt n"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2681,14 +2679,14 @@
    ],
    "goi": 2,
    "goi_lai": 0,
-   "usd": 0.09647620000000001,
+   "usd": 0.014136359999999999,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
   {
    "id": "doi_gia",
-   "dat": 10,
+   "dat": 11,
    "diem": [
     [
      "ô gia ∋ 7,5",
@@ -2732,8 +2730,8 @@
     ],
     [
      "giọng ≥ 4/5 (giám khảo)",
-     false,
-     "3/5 Lượt 1 tự nhiên và khen đúng chi tiết (hẻm xe hơi, 4x18, sổ hồng riêng). Lượt 2 khuôn và cụt: chỉ báo \"em chỉnh theo rồi\" rồi hỏi phường, không phản ứng gì với "
+     true,
+     "4/5 Giọng tự nhiên như môi giới trẻ (\"đủ bài luôn\", \"nghen\"), lượt 1 khen đúng 4x18, 1 trệt 2 lầu, sổ hồng và hai lượt mở đầu khác nhau. Lượt 2 hơi nhạt vì không có"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2748,8 +2746,8 @@
    ],
    "goi": 4,
    "goi_lai": 0,
-   "usd": 0.1106727,
-   "giong": 3,
+   "usd": 0.06042986,
+   "giong": 4,
    "lo_luat": [],
    "hoi_lai": []
   },
@@ -2760,7 +2758,7 @@
     [
      "lượt 1 có /1 ?%/",
      true,
-     "Em xin phép báo phí bên em: phí môi giới bên em là"
+     "Đăng tin bên em miễn phí ạ. Phí môi giới là 1% giá"
     ],
     [
      "không mở \"Dạ\"",
@@ -2800,7 +2798,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 1 trả lời đúng việc nhưng khá khuôn: \"Em xin phép báo phí\", lặp ý \"chỉ thu khi thành công / không thành thì không tốn\", câu \"nhắn em hỗ trợ ạ\" là chèn sẵn,"
+     "3/5 Lượt 1 trả lời đúng việc, giọng thân thiện nhưng hơi khuôn: khách đã xưng \"anh\" mà em vẫn gọi \"anh/chị\", chưa có câu khen hay đáp riêng vào chuyện \"chưa biết có"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2815,7 +2813,7 @@
    ],
    "goi": 2,
    "goi_lai": 0,
-   "usd": 0.0624686,
+   "usd": 0.030760230000000003,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
@@ -2827,7 +2825,7 @@
     [
      "lượt 1 có /ai ơi nhà đất|aioinhadat/",
      true,
-     "Anh/chị hỏi vậy là đúng rồi, cẩn thận là tốt. Em l"
+     "Anh/chị hỏi vậy là đúng rồi, cẩn thận là tốt nha. "
     ],
     [
      "không mở \"Dạ\"",
@@ -2867,7 +2865,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Mở bằng việc công nhận nỗi lo của khách khá tự nhiên, nhưng phần giới thiệu nghe như văn mẫu quảng bá (\"nền tảng công nghệ kết nối...\") và câu chốt \"cứ yên tâm "
+     "3/5 Lượt 1 mở khá tự nhiên (\"cẩn thận là tốt nha\") và đáp đúng nỗi lo của khách, nhưng phần sau hơi khuôn kiểu kịch bản trấn an (\"cứ yên tâm chia sẻ...\")."
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2882,7 +2880,7 @@
    ],
    "goi": 2,
    "goi_lai": 0,
-   "usd": 0.036629300000000004,
+   "usd": 0.03568885000000001,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
@@ -2899,7 +2897,7 @@
     [
      "lượt 1 không có /nghĩa là|là gì|viết tắt/",
      true,
-     "Ngon lành, hẻm xe hơi mà sổ hồng riêng lại ngang 4"
+     "Wow, hẻm xe hơi mà sổ hồng riêng, ngang 4 dài 18 v"
     ],
     [
      "không mở \"Dạ\"",
@@ -2939,7 +2937,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      true,
-     "4/5 Lượt 1 tự nhiên, khen đúng hẻm xe hơi, sổ hồng riêng và ngang 4m, rồi hỏi tiếp bình thường. Chỉ có một lượt nên chưa thấy được độ đa dạng giữa các lượt."
+     "4/5 Lượt duy nhất: mở tự nhiên, khen cụ thể (hẻm xe hơi, sổ hồng riêng, 4x18, 1 trệt 2 lầu), hỏi tiếp đúng việc; hơi dài và \"ngon lành luôn\" hơi sáo nhưng vẫn giống"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -2954,14 +2952,14 @@
    ],
    "goi": 2,
    "goi_lai": 0,
-   "usd": 0.0698059,
+   "usd": 0.02868021,
    "giong": 4,
    "lo_luat": [],
    "hoi_lai": []
   },
   {
    "id": "tin_cut",
-   "dat": 11,
+   "dat": 10,
    "diem": [
     [
      "ô gia ∋ 9",
@@ -3005,8 +3003,8 @@
     ],
     [
      "giọng ≥ 4/5 (giám khảo)",
-     true,
-     "4/5 Mỗi lượt mở khác nhau, nhắn tự nhiên như môi giới trẻ, khen hẻm 5m xe hơi vào được khá cụ thể; lượt 3 \"nghe là thấy ưng rồi\" hơi sáo và lượt 5 \"Rồi\" hơi cụt."
+     false,
+     "2/5 Giọng hào hứng quá đà và khuôn: lượt 2 và 3 đều \"mê liền/mê rồi\", khen chung chung kiểu \"Wow\", \"Ngon lành\", lượt 5 lặp lại câu hỏi ngang x dài đã hỏi ở lượt 3. "
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -3021,8 +3019,8 @@
    ],
    "goi": 10,
    "goi_lai": 0,
-   "usd": 0.3499467,
-   "giong": 4,
+   "usd": 0.1213127,
+   "giong": 2,
    "lo_luat": [],
    "hoi_lai": []
   },
@@ -3078,7 +3076,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "2/5 Lượt 1 giống bản quảng cáo rập khuôn, hô hào \"chần chừ là mất\", \"kẻo lỡ nhịp\", lặp ý và lặp câu, không khen điều cụ thể khách vừa nói, không giống môi giới trẻ "
+     "2/5 Lượt 1 giống bài quảng cáo khuôn mẫu: lặp \"mặt tiền Hai Bà Trưng, Quận 1, 6m, 80 triệu\" nhiều lần (đoạn văn rồi gạch đầu dòng), thúc ép \"coi chừng người khác nh"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -3093,7 +3091,7 @@
    ],
    "goi": 2,
    "goi_lai": 0,
-   "usd": 0.0911749,
+   "usd": 0.06753635,
    "giong": 2,
    "lo_luat": [],
    "hoi_lai": []
@@ -3110,7 +3108,7 @@
     [
      "lượt 3 không có /nợ ngân hàng/",
      true,
-     "📋 Em sẽ rao như vầy nhé anh:  🏡 Anh chị ơi, nhà ph"
+     "📋 Em sẽ rao như vầy nhé anh:  🏡 Bà con ơi, nhà hẻm"
     ],
     [
      "không mở \"Dạ\"",
@@ -3150,7 +3148,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "2/5 Lượt 2 tệ nhất: \"Wow... đẹp luôn\" khen chung chung và gọi \"mặt tiền\" dù khách nói hẻm. Lượt 1 chỉ nói \"em hiểu\" chứ không đáp lại chuyện nợ ngân hàng. Lượt 3 là"
+     "2/5 Lượt 1 và 2 ổn, lượt 2 khen đúng sổ hồng và 1 trệt 2 lầu. Lượt 3 tệ nhất: tin rao dài dòng, lặp ý (đoạn văn rồi gạch đầu dòng), hai lần mở \"Bà con ơi / Anh chị "
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -3163,9 +3161,9 @@
      ""
     ]
    ],
-   "goi": 7,
-   "goi_lai": 1,
-   "usd": 0.3261387,
+   "goi": 6,
+   "goi_lai": 0,
+   "usd": 0.11516007,
    "giong": 2,
    "lo_luat": [],
    "hoi_lai": []
@@ -3177,7 +3175,7 @@
     [
      "ô dien_tich_dat ∋ 34,5",
      true,
-     "34,5"
+     "34,5m2"
     ],
     [
      "ô gia ∋ 6",
@@ -3187,7 +3185,7 @@
     [
      "lượt 3 không có /chênh|lệch|không khớp|khác (nhau|với)/",
      true,
-     "Sổ hồng riêng, tuyệt vời! Em ghi theo sổ 34,5m2 ch"
+     "Sổ hồng riêng thì giấy tờ sạch, em ghi đúng 34,5m2"
     ],
     [
      "không mở \"Dạ\"",
@@ -3227,7 +3225,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 2–3 khá tự nhiên và mở đầu mỗi lượt khác nhau, nhưng lượt 1 khen chung chung (\"nghe là mê rồi\"). Lượt 4 tệ nhất: bài rao khuôn, lặp ý sổ hồng/để trống/34,5"
+     "3/5 Ba lượt đầu khá tự nhiên, khen đúng ý (36m2 mà lên 1 trệt 2 lầu), nhưng lượt 4 là bài rao khuôn mẫu, lặp địa chỉ và giá nhiều lần, giục kiểu \"chậm tay là ngồi t"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -3240,16 +3238,16 @@
      ""
     ]
    ],
-   "goi": 9,
-   "goi_lai": 1,
-   "usd": 0.38227830000000007,
+   "goi": 8,
+   "goi_lai": 0,
+   "usd": 0.13786279,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
   {
    "id": "rao_lai_sau_nhap",
-   "dat": 11,
+   "dat": 12,
    "diem": [
     [
      "ô gia ∋ 11",
@@ -3258,13 +3256,13 @@
     ],
     [
      "bản tin ở lượt ≤ 1",
-     false,
-     "lượt 2"
+     true,
+     "lượt 1"
     ],
     [
      "lượt 2 có /📋/",
      true,
-     "📋 Em sẽ rao như vầy nhé anh chị:  Anh chị ơi, nhà "
+     "Được luôn, em viết lại cho giọng rao tươi và mời g"
     ],
     [
      "không mở \"Dạ\"",
@@ -3304,7 +3302,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "2/5 Lượt 2 là bản rao khuôn mẫu, không khen điều cụ thể khách nói, lặp \"Anh chị ơi\" và lặp nội dung ở đầu lẫn thân bài, kết giục \"chần chừ là có người chốt trước\" n"
+     "2/5 Cả hai lượt đều là bài rao khuôn mẫu, khen chung chung, giục chốt kiểu \"chần chừ là về tay người khác\"; lượt 2 gần như lặp lượt 1 (cùng cấu trúc, cùng câu \"an c"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -3317,9 +3315,9 @@
      ""
     ]
    ],
-   "goi": 2,
+   "goi": 4,
    "goi_lai": 0,
-   "usd": 0.1101569,
+   "usd": 0.07704834,
    "giong": 2,
    "lo_luat": [],
    "hoi_lai": []
@@ -3331,7 +3329,7 @@
     [
      "lượt 2 không có /(?<![0-9.,])0[.,]5 ?%|em (giảm|bớt) (cho|còn|xuống)/",
      true,
-     "Em hiểu chị muốn tính toán kỹ cho căn Lê Văn Sỹ nà"
+     "Đăng tin bên em miễn phí ạ. Phí môi giới là 1% giá"
     ],
     [
      "không mở \"Dạ\"",
@@ -3371,7 +3369,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "2/5 Lượt 1 tệ nhất: bản rao lặp ý ba lần (tiêu đề, đoạn văn, gạch đầu dòng), giọng hô hào \"Bà con ơi\" và ép \"chần chừ là lọt tay người khác\"; lượt 2 trả lời đúng vi"
+     "3/5 Lượt 1 khen cụ thể đúng chi tiết khách nói nhưng \"Wow... đẹp hồ sơ\" hơi sáo; lượt 2 đúng việc, trả lời phí rõ nhưng hơi khuôn, thiếu ấm áp, câu \"chưa dám hứa\" h"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -3384,10 +3382,10 @@
      ""
     ]
    ],
-   "goi": 4,
-   "goi_lai": 0,
-   "usd": 0.2559563,
-   "giong": 2,
+   "goi": 5,
+   "goi_lai": 1,
+   "usd": 0.09590469000000001,
+   "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
@@ -3398,7 +3396,7 @@
     [
      "lượt 2 có /không[^.?!]{0,30}độc quyền|độc quyền[^.?!]{0,30}không/",
      false,
-     "Chuyện ký độc quyền thì em chưa có thông tin chắc "
+     "Chuyện ký độc quyền thì em chưa có thông tin chính"
     ],
     [
      "không mở \"Dạ\"",
@@ -3438,7 +3436,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      true,
-     "4/5 Giọng tự nhiên, lượt 1 khen đúng căn 4x12 hai tầng giá 7 tỷ; lượt 2 hơi khuôn, \"không dám nói bừa\" hơi cứng nhưng không lặp câu hay lặp mở đầu."
+     "4/5 Giọng tự nhiên như môi giới trẻ (\"nghen\", \"nghe là muốn xem liền\"), hai lượt mở khác nhau và có nhắc đúng căn khách nói; lượt 1 hơi khen kiểu chung chung (\"Ngon"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -3453,7 +3451,7 @@
    ],
    "goi": 4,
    "goi_lai": 0,
-   "usd": 0.11083670000000001,
+   "usd": 0.05394906,
    "giong": 4,
    "lo_luat": [],
    "hoi_lai": []
@@ -3505,7 +3503,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 1 khá tự nhiên và khen đúng 4x14, hẻm Âu Cơ, 6,5 tỷ, nhưng còn gọi \"anh/chị\" dù khách đã xưng anh. Lượt 2 (tệ nhất) hơi khuôn, giải thích cơ chế điểm và ch"
+     "3/5 Lượt 1 khen đúng căn 4x14 hai tầng Âu Cơ, tự nhiên; lượt 2 đúng việc nhưng khuôn, nhắc điểm \"83/100\" như báo cáo và tự nói \"chủ đang ở\" khi khách chưa nói."
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -3520,7 +3518,7 @@
    ],
    "goi": 4,
    "goi_lai": 0,
-   "usd": 0.1345197,
+   "usd": 0.05669156,
    "giong": 3,
    "lo_luat": [
     2
@@ -3539,12 +3537,12 @@
     [
      "lượt 3 không có /(giấy tờ|pháp lý|sổ (hồng|đỏ|riêng|chung))[^.?!]*\\?/",
      true,
-     "Ngon lành, nhà trống thì khách xem xong là vào ở đ"
+     "Ồ hay quá, nhà để trống thì khách tới xem thoải má"
     ],
     [
      "lượt 4 không có /(giấy tờ|pháp lý|sổ (hồng|đỏ|riêng|chung))[^.?!]*\\?/",
      true,
-     "Wow, 1 trệt 2 lầu nghe đã thấy chỗ ở thoải mái. Că"
+     "Tuyệt vời, 1 trệt 2 lầu là có đủ tầng cho cả nhà ở"
     ],
     [
      "không mở \"Dạ\"",
@@ -3584,7 +3582,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Các lượt đầu mở đầu khác nhau và có bám ý khách (sổ hồng, nhà trống), nhưng \"Ồ hay quá\", \"Wow\" khá chung chung; lượt 5 tệ nhất vì bài rao dài khuôn mẫu, hai đoạ"
+     "3/5 Lượt 1–3 khá tự nhiên và khen đúng ý khách, nhưng lượt 4 khen chung chung và lặp lại câu hỏi diện tích của lượt 2, còn lượt 5 là bản rao khuôn mẫu, giục kiểu \"c"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -3597,9 +3595,9 @@
      ""
     ]
    ],
-   "goi": 11,
-   "goi_lai": 1,
-   "usd": 0.429912,
+   "goi": 10,
+   "goi_lai": 0,
+   "usd": 0.15083777,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
@@ -3616,7 +3614,7 @@
     [
      "lượt 1 có /nhắn|gõ|nói lại|ghi âm lại|nghe/",
      true,
-     "Chào anh/chị, em là H•ải, trợ lý ký gửi nhà đất củ"
+     "Chào anh/chị, em là H•ải của AI Ơi Nhà Đất. Tin th"
     ],
     [
      "không mở \"Dạ\"",
@@ -3656,7 +3654,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt duy nhất đúng việc, thân thiện, xin nhắn lại tự nhiên, nhưng mở đầu hơi khuôn (giới thiệu đầy đủ tên công ty) và không có gì cụ thể để khen vì khách chưa n"
+     "3/5 Một lượt duy nhất, đúng việc và thân thiện (\"nghen\"), nhưng câu chào hơi khuôn và tên \"H•ải\" lạ; chưa có gì để khen cụ thể vì khách chưa nói được gì."
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -3669,21 +3667,21 @@
      ""
     ]
    ],
-   "goi": 2,
-   "goi_lai": 0,
-   "usd": 0.028764,
+   "goi": 3,
+   "goi_lai": 1,
+   "usd": 0.03446478,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
   },
   {
    "id": "xung_chi_phi",
-   "dat": 9,
+   "dat": 10,
    "diem": [
     [
      "lượt 2 không có /anh/chị|anh chị/",
-     false,
-     "Đăng tin bên em hoàn toàn miễn phí. Em xin phép bá"
+     true,
+     "Đăng tin bên em miễn phí ạ. Phí môi giới là 1% giá"
     ],
     [
      "không mở \"Dạ\"",
@@ -3723,7 +3721,7 @@
     [
      "giọng ≥ 4/5 (giám khảo)",
      false,
-     "3/5 Lượt 1 tự nhiên, có nhắc đúng 2PN 70m2 sổ hồng; lượt 2 khuôn, giọng thông báo (\"Em xin phép báo phí\", \"nhắn em hỗ trợ ạ\") và gọi \"anh/chị\" dù khách xưng chị."
+     "3/5 Lượt 1 tự nhiên và khen đúng điều khách nói (sổ hồng, 2PN Masteri). Lượt 2 trả lời phí đủ nhưng hơi khuôn, kiểu đọc bảng giá, rồi chuyển chủ đề bằng \"Quay lại c"
     ],
     [
      "không lộ luật cho khách (giám khảo)",
@@ -3738,10 +3736,253 @@
    ],
    "goi": 4,
    "goi_lai": 0,
-   "usd": 0.1137927,
+   "usd": 0.06733231,
    "giong": 3,
    "lo_luat": [],
    "hoi_lai": []
+  },
+  {
+   "id": "ngan_binh_long",
+   "dat": 13,
+   "diem": [
+    [
+     "ô gia ∋ 3",
+     true,
+     "3 tỷ"
+    ],
+    [
+     "ô dien_tich_nha ∋ 70",
+     true,
+     "70m2"
+    ],
+    [
+     "ô dien_tich_dat trống",
+     true,
+     ""
+    ],
+    [
+     "không có /(?i)chính chủ/",
+     true,
+     ""
+    ],
+    [
+     "không có /(?i)sổ (hồng|đỏ)/",
+     false,
+     "lượt [2]"
+    ],
+    [
+     "không mở \"Dạ\"",
+     true,
+     ""
+    ],
+    [
+     "không gọi khách \"mình\"",
+     true,
+     ""
+    ],
+    [
+     "không bình luận giá",
+     true,
+     ""
+    ],
+    [
+     "bản tin không có số bịa",
+     true,
+     ""
+    ],
+    [
+     "tối đa 1 câu hỏi / lượt",
+     true,
+     ""
+    ],
+    [
+     "không mở bằng câu ghi nhận",
+     true,
+     ""
+    ],
+    [
+     "không mở giống lượt trước",
+     true,
+     ""
+    ],
+    [
+     "giọng ≥ 4/5 (giám khảo)",
+     false,
+     "2/5 Lượt 3 tệ nhất: tin rao dài dòng, lặp ý (mở đầu \"Bà con ơi\" rồi \"Anh chị cô bác ơi\", nhắc lại mặt tiền/70m²/3 tỷ nhiều lần), giục chốt kiểu dọa \"chần chừ là mất"
+    ],
+    [
+     "không lộ luật cho khách (giám khảo)",
+     true,
+     ""
+    ],
+    [
+     "không hỏi lại điều khách đã trả lời (giám khảo)",
+     true,
+     ""
+    ]
+   ],
+   "goi": 6,
+   "goi_lai": 0,
+   "usd": 0.12666598999999998,
+   "giong": 2,
+   "lo_luat": [],
+   "hoi_lai": []
+  },
+  {
+   "id": "ngan_cho_thue",
+   "dat": 13,
+   "diem": [
+    [
+     "ô gia ∋ 3,7",
+     true,
+     "3.7 triệu/tháng"
+    ],
+    [
+     "loại = nha_pho",
+     true,
+     "nha_pho"
+    ],
+    [
+     "cho thuê = True",
+     true,
+     "True"
+    ],
+    [
+     "không có /(?i)gác lửng|máy lạnh|WC riêng|giờ giấc/",
+     true,
+     ""
+    ],
+    [
+     "không mở \"Dạ\"",
+     true,
+     ""
+    ],
+    [
+     "không gọi khách \"mình\"",
+     true,
+     ""
+    ],
+    [
+     "không bình luận giá",
+     true,
+     ""
+    ],
+    [
+     "bản tin không có số bịa",
+     true,
+     ""
+    ],
+    [
+     "tối đa 1 câu hỏi / lượt",
+     true,
+     ""
+    ],
+    [
+     "không mở bằng câu ghi nhận",
+     true,
+     ""
+    ],
+    [
+     "không mở giống lượt trước",
+     true,
+     ""
+    ],
+    [
+     "giọng ≥ 4/5 (giám khảo)",
+     false,
+     "2/5 Lượt 2 lặp gần nguyên lời khen \"có cả trệt lẫn lầu\" của lượt 1 và mở bằng \"Tuyệt\" khuôn mẫu, khen chung chung kiểu máy; lượt 1 ổn hơn nhưng cũng hơi sáo."
+    ],
+    [
+     "không lộ luật cho khách (giám khảo)",
+     true,
+     ""
+    ],
+    [
+     "không hỏi lại điều khách đã trả lời (giám khảo)",
+     true,
+     ""
+    ]
+   ],
+   "goi": 4,
+   "goi_lai": 0,
+   "usd": 0.06176648999999999,
+   "giong": 2,
+   "lo_luat": [],
+   "hoi_lai": []
+  },
+  {
+   "id": "ngan_mua",
+   "dat": 10,
+   "diem": [
+    [
+     "không soạn bản tin",
+     true,
+     "lượt None"
+    ],
+    [
+     "không có /(?i)gửi (bán|căn)|chung cư, nhà phố hay đất|đang muốn bán/",
+     true,
+     ""
+    ],
+    [
+     "không mở \"Dạ\"",
+     true,
+     ""
+    ],
+    [
+     "không gọi khách \"mình\"",
+     true,
+     ""
+    ],
+    [
+     "không bình luận giá",
+     true,
+     ""
+    ],
+    [
+     "bản tin không có số bịa",
+     true,
+     ""
+    ],
+    [
+     "tối đa 1 câu hỏi / lượt",
+     true,
+     ""
+    ],
+    [
+     "không mở bằng câu ghi nhận",
+     true,
+     ""
+    ],
+    [
+     "không mở giống lượt trước",
+     true,
+     ""
+    ],
+    [
+     "giọng ≥ 4/5 (giám khảo)",
+     false,
+     "2/5 Cả 4 lượt cùng khuôn \"câu nhắc lại ý khách + Anh/chị … khu/quận nào ạ?\", gần như lặp câu hỏi; lượt 4 tệ nhất vì hỏi lại \"quận nào\" như chưa nghe khách nói làm ở"
+    ],
+    [
+     "không lộ luật cho khách (giám khảo)",
+     true,
+     ""
+    ],
+    [
+     "không hỏi lại điều khách đã trả lời (giám khảo)",
+     false,
+     "lượt [4]"
+    ]
+   ],
+   "goi": 8,
+   "goi_lai": 0,
+   "usd": 0.06263355999999999,
+   "giong": 2,
+   "lo_luat": [],
+   "hoi_lai": [
+    4
+   ]
   }
  ]
 }

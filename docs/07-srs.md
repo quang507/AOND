@@ -834,7 +834,8 @@ Lớp lỗi (AU-05 / AU-25): env test rỗng = mọi công tắc tắt → test 
 VPS dùng mặc định `claude-haiku-4-5`, sổ `bot_usage_model` 28/10–01/11 chỉ có `claude-haiku-5-5` (điểm nền cũ đo sai model). Sửa: dòng `MODEL_BOC` ở `cai-vps.sh`;
 `tests/cau_hinh_vps.py` một bộ đọc cho `tests/conftest.py` + bộ chấm. Bật lên đỏ 40 bài: 23 do đồ giả (form mua gọn không có `operations`, thiếu `converse`) — sửa
 đồ giả, nay chạy đường production; 16 bài nhánh cũ gắn `nhanh_cu`; 1 lỗi thật AU-12 (khối địa danh trỏ nhãn chỉ có ở prompt cũ) `xfail(strict)` cho Đợt 2.
-Kiểm: `test_cau_hinh_nhu_production_316.py` (đỏ khi gỡ conftest; đỏ khi gỡ cổng `_gia_tri_ghi`). Điểm nền: CHO_SO_316.
+Kiểm: `test_cau_hinh_nhu_production_316.py` (đỏ khi gỡ conftest; đỏ khi gỡ cổng `_gia_tri_ghi`). Điểm nền mới (51 kịch bản, bóc Haiku 5.5, hai lần):
+tất định 507 / 500 trên 511; tổng 612 / 606 trên 664; giọng 2,94 / 3,02; lộ luật 3 / 4 cuộc; hỏi lại 2 / 3 cuộc — `diem_nen.json` ghi lần 1.
 
 ### SRS-5.1zzzzzzz315 · Quyết định chủ dự án 31/10–01/11; câu báo phí viết lại, gọi đúng xưng hô; ẩn danh + dọn docs lệch code (01/11/2026)
 Chủ dự án: giữ danh sách cảm thán `GIONG_VUI`; chat chị N. / anh L. là thật → kịch bản (đã ẩn danh); lên Top có (BĐS tiêu biểu đẩy đầu trang web); "q3 viết lại"; 01/11 "2 áp đi".
