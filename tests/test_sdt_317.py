@@ -123,3 +123,12 @@ def test_tin_goc_va_tin_noi_bo_che_cccd():
 def test_luoi_so_do_che_them_cccd_co_dau_ngan():
     kq = _redact_personal_data("Số CCCD: 079 200 000 016\nCMND 025000017")
     assert "079 200" not in kq and "025000017" not in kq
+
+
+def test_hai_so_noi_dau_phay_cham_review_241_lan_2():
+    # Cách viết không có trong bảng ca: nhóm có cách rồi nối phẩy, chấm + cách, và qua tim_sdt.
+    assert che_sdt("0900 000 168,0911 222 335", thay="[số]") == "[số],[số]"
+    assert che_sdt("số: 0900.000.169.0911.222.336", thay="[số]") == "số: [số].[số]"
+    assert tim_sdt("sđt 0900000170,0911222337") == "0900000170"
+    for am in ("giá 12.500.000.000", "12,500,000,000", "8,4 tỷ", "0,85 tỷ", "từ 2-3 tỷ", "ngày 01.11.2026", "giá 2,084,500,000"):
+        assert che_sdt(am, thay="[số]") == am, am

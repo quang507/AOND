@@ -11,9 +11,11 @@ from __future__ import annotations
 import re
 
 NGAN = "[ .-]"                                    # một dấu ngăn giữa hai chữ số: cách, chấm, gạch
-TRUOC = "(?<![0-9])(?<![0-9][.,])"                # không bắt từ giữa một con số ("12.500.000.000"); gạch không phải dấu của tiền nên
-                                                  # "0900000123-0900000124" là hai số (SRS-5.1zzzzzzz317, review)
-SAU = "(?![0-9])(?![.,][0-9])"                    # không cắt ngang một dãy số dài hơn
+# Ranh giới (SRS-5.1zzzzzzz317, review PR #241): trước số không được là chữ số. Dấu "." "," đứng trước KHÔNG chặn — "0900000123,0911222333" là
+# hai số; số bắt đầu giữa một giá ("1.084.500.000") thì phần còn lại vẫn là dạng tiền nên `KHONG_PHAI_TIEN` chặn. Sau số: không chữ số, và
+# không ".," + một nhóm 1–3 số đứng riêng (đuôi của dãy dài hơn / của tiền, "0900.000.123.456").
+TRUOC = "(?<![0-9])"
+SAU = "(?![0-9])(?![.,][0-9]{1,3}(?![0-9]))"
 KHONG_PHAI_TIEN = "(?![0-9]{1,3}(?:[.,][0-9]{3}){2,}(?![0-9]))"   # nhóm 1–3 số rồi ≥ 2 nhóm ".000" là tiền ("84.500.000.000")
 # Đầu số: "(+84)", "+84", "84" (được kèm số 0 thừa: "+84 0900…"), hoặc "0".
 DAU = r"\(\+84\)[ .-]?0?|\+84[ .-]?0?|84[ .-]?0?|0"
@@ -41,7 +43,7 @@ def che_sdt(text: str | None, thay: str | None = None) -> str:
 # ── Số giấy tờ (CCCD / CMND) — cùng ranh giới với SĐT. Chỉ lõi Python dùng (SQL `che_sdt` không che giấy tờ). ──
 # CCCD: 12 số, mở đầu bằng 0 (mã tỉnh 001–096), liền hoặc có dấu ngăn ("079 200 000 001"). Nhìn-sau chặn cả "<chữ/số>-" để đuôi UUID
 # "…-9c33-000000000001" không bị che.
-CCCD = re.compile("(?<![0-9])(?<![0-9A-Za-z][.,-])" + f"0(?:{NGAN}?[0-9]){{11}}" + SAU)   # không chặn dạng tiền: tiền không mở đầu 0, "079.200.000.004" là CCCD
+CCCD = re.compile("(?<![0-9])(?<![0-9A-Za-z]-)" + f"0(?:{NGAN}?[0-9]){{11}}" + SAU)   # không chặn dạng tiền: tiền không mở đầu 0, "079.200.000.004" là CCCD
 # CMND 9 số trùng dạng giá viết trần ("850000000"), nên chỉ che khi đứng ngay sau chữ CMND / CCCD / chứng minh / căn cước.
 CMND_CANH_CHU = re.compile(r"(?i)((?:cmnd|cccd|căn cước(?: công dân)?|chứng minh(?: nhân dân)?)\s*(?:số\s*)?[:：]?\s*)"
                            f"([0-9](?:{NGAN}?[0-9]){{8}})" + SAU)

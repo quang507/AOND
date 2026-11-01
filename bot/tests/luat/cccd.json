@@ -42,6 +42,11 @@
    "vi_sao": "giấy tờ và SĐT cùng câu"
   },
   {
+   "cau": "sđt 0900000167,079200000018",
+   "mong": "sđt [số],[số]",
+   "vi_sao": "SĐT và CCCD nối dấu phẩy (review PR #241 lần 2)"
+  },
+  {
    "cau": "giá 850000000",
    "mong": "giá 850000000",
    "vi_sao": "9 số trần là giá, không có chữ CMND"
