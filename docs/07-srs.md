@@ -833,7 +833,7 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
 Ca gốc AU-01: lưới che sổ đỏ (`engine._PII_PHONE_RE`) và SQL `che_sdt` chỉ bắt chữ số liền → "0900 000 123", "+84 900 000 123" lọt (đo trên Postgres 16 cục bộ: SQL cũ lọt 10/17 ca dương);
 bản `\d[\d .-]{7,}\d` của tin gốc / tin nội bộ che cả giá "12.500.000.000". (1) Lớp lỗi: 9 regex SĐT viết tay, không bảng ca chung. Sửa: `src/aioi/sdt.py`
 (`MAU_SDT`, `che_sdt(text, thay=)`); nối engine sổ đỏ, `tin_goc`, `prompts.khoi_cau_chuan`, 3 chỗ `supabase_store`; `mua` giữ `SDT_DOC` / `GIONG_SDT` (nhận diện) dựng cùng mảnh;
-migration `20261101a_che_sdt_mot_mau` chép nguyên `MAU_SDT` (chưa áp). (2) Cùng lớp — review PR #241: hai số nối gạch "0900…-0900…" và "(+84) …" lọt (sửa ở mẫu + `luat-lien-he.ts`);
+migration `20261101a_che_sdt_mot_mau` chép nguyên `MAU_SDT` (chủ dự án "áp đi" 01/11; chạy thử 43/43 trên DB thật PG 17.11 rồi áp). (2) Cùng lớp — review PR #241: hai số nối gạch "0900…-0900…" và "(+84) …" lọt (sửa ở mẫu + `luat-lien-he.ts`);
 bốn chỗ bỏ `\d[\d .-]{7,}\d` làm CCCD hết che (tin gốc còn vào văn bản nhúng) → `che_so_ca_nhan` = `che_giay_to` (CCCD 12 số, CMND 9 số sát chữ) + `che_sdt`. Còn: web chỉ buộc bắt mọi ca dương (được che thừa).
 (3) Kiểm: `luat/sdt.json` (21 dương / 22 âm, `bun run doi-chieu:sdt` Python ↔ SQL ↔ TS, cổng CI 11), `luat/cccd.json` (14 ca) + `tests/test_sdt_317.py` (cách viết mới "0900 000 160/0900 000 161", "0792.0000.0010"); đỏ khi gỡ.
 
