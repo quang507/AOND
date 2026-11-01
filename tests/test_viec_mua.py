@@ -68,7 +68,7 @@ class AiGia(MockProvider):
         self.ke_hoach, self.system = ke_hoach, []
 
     def extract(self, system, messages, json_schema):
-        if "operations" in (json_schema.get("properties") or {}):
+        if "user_intent" in (json_schema.get("properties") or {}):   # mọi form lập thao tác, cả form mua gọn (SRS-316)
             return dict(self.ke_hoach)
         return super().extract(system, messages, json_schema)
 

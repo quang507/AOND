@@ -9,6 +9,7 @@ from aioi.engine import Engine
 from aioi.llm.base import Message
 from aioi.llm.mock import MockProvider
 from aioi.so_token import SoToken
+import pytest
 
 
 class _Api:
@@ -24,6 +25,7 @@ class _Api:
         return SimpleNamespace(model=kw["model"], usage=usage, content=[tu_soat, cong_cu], stop_reason="tool_use")
 
 
+@pytest.mark.nhanh_cu(AIOI_CONG_CU_GUI_KHACH="bat")   # đường ép công cụ gui_khach; production tắt — SRS-246
 def test_chi_loi_gui_khach_toi_khach():
     from aioi.llm.claude import ClaudeProvider
     p = ClaudeProvider(Settings(provider="claude", anthropic_api_key="test", chat_model="claude-haiku-4-5", vision_model="v"))
@@ -104,6 +106,7 @@ def test_ban_nhap_bo_cau_dan_truoc_dong_mo_dau():
     assert cat_truoc_mo_dau("Mình sẽ rao như vầy nhé bạn:\nBán đất") == f"{MO_DAU_NHAP[0]}\nBán đất"
 
 
+@pytest.mark.nhanh_cu(AIOI_CONG_CU_GUI_KHACH="bat")   # đường ép công cụ gui_khach; production tắt — SRS-246
 def test_model_khong_nhan_ep_cong_cu_thi_chuyen_auto():
     """SRS-5.1zzzzzzz244 (bắn thử 28/10, Sonnet 5.5): API trả 400 "tool_choice: type tool and any are not supported" cho MỌI lượt chat →
     khách chỉ nhận câu chờ. Nay gửi lại với tool_choice auto, nhớ model; model trả chữ thường (không gọi công cụ) thì lấy chữ đó.

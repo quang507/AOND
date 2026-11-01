@@ -6,6 +6,7 @@ from aioi.projects import CHAC_CHAN, Project, UnitType
 
 ADMIN = CHAC_CHAN + "admin:test"   # phiếu admin: vào kho chung ngay (SRS-5.1zzzzzzz249)
 from aioi.kho_tep import MediaRef
+import pytest
 
 
 def _engine(fetcher=None, resolver=None, provider=None, folder_namer=None, media_store=None,
@@ -1296,6 +1297,7 @@ class _SystemCapturingProvider(MockProvider):
         return super().chat(system, messages, max_tokens)
 
 
+@pytest.mark.nhanh_cu(AIOI_AGENT_BAN="tat")   # khối bộ nhớ dự án nằm sẵn trong prompt; production đi qua công cụ bo_nho_du_an — SRS-307
 def test_project_memory_is_always_in_context_for_a_project_seller():
     # AOND must NOT 'forget' the project's price list / phân lô between turns — a seller whose
     # listing belongs to a project carries that memory into EVERY turn (so a later "à quên căn

@@ -150,7 +150,7 @@ class MockProvider(LLMProvider):
         # Operation-plan schema: run the same keyword extraction, then reshape the flat flags
         # into an ordered list of operations (the engine's new contract). Keeps all the offline
         # keyword logic; only the OUTPUT shape changes.
-        if "operations" in props:
+        if "operations" in props or "user_intent" in props:   # form đầy đủ / bán gọn / MUA GỌN (không có "operations", SRS-293) — SRS-5.1zzzzzzz316
             flat = self.extract(system, messages, {"properties": {}})  # reuse the flat brain
             plan = _flat_to_operations(flat)
             # Như model thật: ô của thao tác "add" căn mới là ô của RIÊNG tin vừa nhắn, không gộp cả lịch sử (SRS-5.1zzzzzzz308).

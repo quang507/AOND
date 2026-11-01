@@ -7,6 +7,7 @@ from aioi.engine import Engine, Turn, _phan_chat_quanh_ban_tin
 from aioi.llm.base import RANH_GIOI_CACHE
 from aioi.prompts import GIONG_VUI, build_chat_system, build_fee_followup_system
 from aioi.schema import Property
+import pytest
 
 
 class _Spy:
@@ -75,6 +76,7 @@ def _conv(eng, truoc: str):
     return c
 
 
+@pytest.mark.nhanh_cu(AIOI_SOAT_GON="tat")   # soát chế độ cũ (gọi lại vì giọng / lặp); production chế độ gọn — SRS-298
 def test_cau_chot_lap_nguyen_van_sau_ban_tin_thi_goi_lai():
     spy = _Spy(loi=["Ồ thêm icon là nổi liền anh!\n\n" + BAN + "\n\nAnh ưng bản này chưa, em đăng luôn nhé?"])
     eng = Engine(spy)
@@ -92,6 +94,7 @@ def test_cau_dan_va_cau_chot_khac_luot_truoc_thi_khong_goi_lai():   # cách nói
     assert eng._soat_hinh_thuc(c, "SYS", loi) == loi and not spy.systems
 
 
+@pytest.mark.nhanh_cu(AIOI_SOAT_GON="tat")   # soát chế độ cũ (gọi lại vì giọng / lặp); production chế độ gọn — SRS-298
 def test_luot_chat_thuong_van_bi_lu_oi_lap_nhu_cu():
     spy = _Spy(loi=["Nhà 3 tầng là điểm cộng lớn đó anh."])
     eng = Engine(spy)

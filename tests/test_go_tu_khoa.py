@@ -3,9 +3,10 @@ phường / quận trong chữ địa chỉ. Lượt AI lập thao tác đọc t
 Mỗi ca dùng một cách nói bộ từ khoá cũ KHÔNG bắt được (hoặc bắt nhầm)."""
 from aioi.engine import Engine, Listing
 from aioi.schema import Property
+from tests.gia import KhongCongCu
 
 
-class _Spy:
+class _Spy(KhongCongCu):   # đường production có vòng agent (SRS-316)
     def __init__(self, plan, tai_lieu=False):
         self.plan, self.tai_lieu, self.systems, self.extract_systems = plan, tai_lieu, [], []
 

@@ -12,7 +12,7 @@ class AiNho(AiGia):
         self.lap = []
 
     def extract(self, system, messages, json_schema):
-        if "operations" in (json_schema.get("properties") or {}):
+        if "user_intent" in (json_schema.get("properties") or {}):   # mọi form lập thao tác, cả form mua gọn (SRS-316)
             self.lap.append(system)
         return super().extract(system, messages, json_schema)
 
