@@ -907,7 +907,7 @@
      "2": "(?s)^(?=.*(bớt|giảm|cố định|giữ nguyên))(?=.*thành công)(?=.*hợp đồng)(?=.*(độc quyền|nhiều nơi|nhiều bên|chỗ khác|nơi khác))(?=.*(hoa hồng|mức chia|chia (thêm|nào)))"
     },
     "luot_khong": {
-     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%"
+     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%|(?:^|\\n)[ \\t]*([-•*+]|[1-4][.)])[ \\t]|\\(\\s*[1-4]\\s*\\)"
     }
    }
   },
@@ -923,7 +923,7 @@
      "2": "(?s)^(?=.*(bớt|giảm|cố định|giữ nguyên))(?=.*thành công)(?=.*hợp đồng)(?=.*(độc quyền|nhiều nơi|nhiều bên|chỗ khác|nơi khác))(?=.*(hoa hồng|mức chia|chia (thêm|nào)))"
     },
     "luot_khong": {
-     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%"
+     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%|(?:^|\\n)[ \\t]*([-•*+]|[1-4][.)])[ \\t]|\\(\\s*[1-4]\\s*\\)"
     }
    }
   },
@@ -939,7 +939,7 @@
      "2": "(?s)^(?=.*(bớt|giảm|cố định|giữ nguyên))(?=.*thành công)(?=.*hợp đồng)(?=.*(độc quyền|nhiều nơi|nhiều bên|chỗ khác|nơi khác))(?=.*(hoa hồng|mức chia|chia (thêm|nào)))"
     },
     "luot_khong": {
-     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%|(sáng|chiều|tối) (mai|nay)|giờ (ký|hẹn)"
+     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%|(sáng|chiều|tối) (mai|nay)|giờ (ký|hẹn)|(?:^|\\n)[ \\t]*([-•*+]|[1-4][.)])[ \\t]|\\(\\s*[1-4]\\s*\\)"
     }
    }
   },
@@ -955,7 +955,23 @@
      "2": "(?s)^(?=.*(bớt|giảm|cố định|giữ nguyên))(?=.*thành công)(?=.*hợp đồng)(?=.*(độc quyền|nhiều nơi|nhiều bên|chỗ khác|nơi khác))(?=.*(hoa hồng|mức chia|chia (thêm|nào)))"
     },
     "luot_khong": {
-     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%"
+     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%|(?:^|\\n)[ \\t]*([-•*+]|[1-4][.)])[ \\t]|\\(\\s*[1-4]\\s*\\)"
+    }
+   }
+  },
+  {
+   "id": "phi_doc_quyen_hong",
+   "mo_ta": "SRS-318: cách nói mới chưa bắn — khách (xưng chị) hỏi có bắt ký độc quyền hông vì còn gửi chỗ khác → đáp đúng ý độc quyền trước, đủ 4 ý, không danh sách",
+   "cau": [
+    "chị có căn nhà phố hẻm xe hơi đường Cô Giang quận 1, 4x15, 3 tầng, sổ hồng riêng, giá 15 tỷ muốn gửi bán",
+    "bên em có bắt ký độc quyền hông, chị còn gửi chỗ khác"
+   ],
+   "kiem": {
+    "luot": {
+     "2": "(?s)^(?=.*(bớt|giảm|cố định|giữ nguyên))(?=.*thành công)(?=.*hợp đồng)(?=.*(độc quyền|nhiều nơi|nhiều bên|chỗ khác|nơi khác))(?=.*(hoa hồng|mức chia|chia (thêm|nào)))"
+    },
+    "luot_khong": {
+     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%|(?:^|\\n)[ \\t]*([-•*+]|[1-4][.)])[ \\t]|\\(\\s*[1-4]\\s*\\)"
     }
    }
   }

@@ -272,13 +272,14 @@ PT_CHU = _pt(SALE_FEE_RATE[SellerRole.CHU_NHA])     # "1%"
 PT_MG = _pt(SALE_FEE_RATE[SellerRole.MOI_GIOI])     # "0.5%"
 PHI_THUE = f"{RENTAL_FEE_MONTHS:g} tháng tiền thuê"  # "0.75 tháng tiền thuê"
 
-# Chính sách phí — MỘT nguồn (SRS-5.1zzzzzzz241 chủ dự án 28/10; SRS-5.1zzzzzzz318 Q2 01/11: lượt thu thập khách hỏi phí thì nói ĐỦ 4 ý). Dùng ở
+# Chính sách phí — MỘT nguồn (SRS-5.1zzzzzzz241 chủ dự án 28/10; SRS-5.1zzzzzzz318 Q2 01/11: lượt thu thập khách hỏi phí thì nói ĐỦ 4 ý, giọng theo
+# khuôn anh Luận). Viết thành DỮ KIỆN văn xuôi, không đánh số (1)…(4): model đọc lại y nguyên dạng danh sách thành câu như đọc điều khoản. Dùng ở
 # `BUSINESS_CONTEXT` (prompt cũ / bản nháp) và khối "KHÁCH HỎI VỀ PHÍ" của engine (phiếu lượt không có BUSINESS_CONTEXT). Không có con số: con số
 # phí theo vai do `muc_phi` / `khoi_bao_phi` / `_fee_hint` nói.
-CHINH_SACH_PHI = ("- CHÍNH SÁCH khi khách hỏi (chủ dự án chốt 28/10/2026, SRS-5.1zzzzzzz241): (1) KHÔNG bớt / giảm phí — khách xin bớt thì nói khéo "
-                  "mức phí cố định, bù lại chỉ thu khi giao dịch thành công; (2) CÓ ký hợp đồng môi giới bằng văn bản (thống nhất phí) — khách hỏi "
-                  "thì nói có; khách muốn ký thì nói em nối người phụ trách, KHÔNG hẹn giờ, KHÔNG tự gửi mẫu; (3) KHÔNG độc quyền — chủ nhà gửi "
-                  "bán nhiều nơi vẫn được; (4) môi giới gửi hàng: phí theo mức môi giới, không có mức chia hoa hồng nào khác.")
+CHINH_SACH_PHI = ("- CHÍNH SÁCH GỬI BÁN (dữ kiện để em hiểu rồi nói bằng lời mình; chủ dự án chốt 28/10/2026 và 01/11/2026, SRS-5.1zzzzzzz241 / "
+                  "318): mức phí của bên em cố định, không bớt, bù lại chỉ thu khi giao dịch thành công. Bên em có ký hợp đồng môi giới bằng văn bản "
+                  "để thống nhất phí; khách muốn ký thì em nối người phụ trách, không hẹn giờ, không tự gửi mẫu. Bên em không làm độc quyền, chủ nhà "
+                  "gửi bán nhiều nơi vẫn được. Môi giới gửi hàng thì phí theo mức môi giới, không có khoản chia hoa hồng nào khác.")
 
 BUSINESS_CONTEXT = f"""BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ — chỉ nói ra khi khách hỏi, đừng thuyết giảng):
 - Người rao bán/cho thuê BĐS bằng cách chat Zalo tự nhiên (KHÔNG form). Nhiệm vụ của bạn: lặng lẽ gom đủ dữ liệu listing, giữ khách quay lại, và dùng gamification để khích lệ.

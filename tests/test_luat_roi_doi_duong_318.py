@@ -3,6 +3,7 @@ PHIEU_LUOT=bat, SOAT_GON=bat). Lớp lỗi: luật / nhãn nằm ở prompt cũ 
 đường mới thì luật rơi mà không bài nào đỏ."""
 import glob
 import os
+import re
 
 from aioi.config import Settings
 from aioi.engine import Engine, FetchedMedia
@@ -28,14 +29,15 @@ def test_khach_hoi_phi_luot_thu_thap_co_du_chinh_sach():
     he = _luot_ban("Nhà mặt tiền Hoàng Hoa Thám, chị giảm chút phí cho em được hông", dict(BAN, hoi_ve="phi"))
     viet = [s for s in he if "KHÁCH HỎI VỀ PHÍ" in s]
     assert viet and f"{NHAN_VIEC_LUOT}:" in viet[0] and "GHI CHÚ NGHIỆP VỤ" not in viet[0]   # đường phiếu lượt, không phải prompt cũ
-    assert CHINH_SACH_PHI in viet[0] and "ĐỦ cả 4 ý" in viet[0]
+    assert CHINH_SACH_PHI in viet[0] and "Đáp ĐÚNG điều khách vừa hỏi trước, bằng MỘT câu" in viet[0] and "không đánh số" in viet[0]
     assert "BỐI CẢNH ở trên" not in viet[0]                                      # khối không còn trỏ phần không có trong phiếu lượt
 
 
 def test_chinh_sach_phi_mot_nguon():
     assert CHINH_SACH_PHI in BUSINESS_CONTEXT
     nguon = open(os.path.join(GOC, "src", "aioi", "prompts.py"), encoding="utf-8").read()
-    assert nguon.count("KHÔNG độc quyền") == 1 and nguon.count("không có mức chia hoa hồng") == 1   # không chép hai nơi
+    assert nguon.count("không làm độc quyền") == 1 and nguon.count("không có khoản chia hoa hồng") == 1   # không chép hai nơi
+    assert not re.search(r"\([1-4]\)", CHINH_SACH_PHI)   # dữ kiện văn xuôi, không danh sách đánh số (model đọc lại y nguyên)
 
 
 def test_tin_dang_hien_bi_soat_ngay_lan_dau_duoi_soat_gon():

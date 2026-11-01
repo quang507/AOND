@@ -3117,13 +3117,15 @@ class Engine:
         hoi_ve_khoi = ""
         if conv.hoi_ve_luot == "phi":
             hoi_ve_khoi = (
-                "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ PHÍ: ===\n"
-                "Trả lời RÕ RÀNG trước: đăng tin MIỄN PHÍ; CHỈ thu phí khi giao dịch thành công, không thành thì không tốn đồng nào. "
-                f"Con số phí theo dòng VAI NGƯỜI RAO / câu mẫu báo phí bên dưới (bán: {PT_CHU} chính chủ, {PT_MG} môi giới; cho thuê: {PHI_THUE} "
-                "= 3/4 của MỘT tháng tiền thuê; chưa rõ vai thì nêu cả hai hoặc hỏi khéo khách là chủ nhà hay môi giới). "
-                # SRS-5.1zzzzzzz318 (Q2, chủ dự án 01/11): lượt thu thập (phiếu lượt không có BUSINESS_CONTEXT) vẫn nói ĐỦ 4 ý chính sách.
-                "Nói ĐỦ cả 4 ý chính sách dưới — kể cả ý (4) môi giới gửi hàng không chia hoa hồng nào khác, dù khách là chủ nhà — gọn trong vài câu Zalo "
-                "(không đánh số, không thuyết giảng, không thêm ưu đãi / con số nào khác). "
+                "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ PHÍ / CHÍNH SÁCH GỬI BÁN: ===\n"
+                # SRS-5.1zzzzzzz318 (chủ dự án 01/11: ĐỦ 4 ý chính sách, giọng theo khuôn anh Luận — bản đầu đọc cả khối như điều khoản, giám khảo
+                # chấm 2/5). Phiếu lượt không có BUSINESS_CONTEXT nên dữ kiện chính sách đi kèm khối này. Giọng do GIONG_VUI, không dặn thêm ở đây.
+                "Đáp ĐÚNG điều khách vừa hỏi trước, bằng MỘT câu. Rồi nói lướt cho ĐỦ các ý còn lại của CHÍNH SÁCH GỬI BÁN dưới — phí cố định không "
+                "bớt, chỉ thu khi thành công; có hợp đồng môi giới bằng văn bản; không độc quyền; và cả ý môi giới gửi hàng không chia hoa hồng nào "
+                "khác (dù khách là chủ nhà) — lồng tự nhiên vào 1–2 câu ngắn, không đánh số, không gạch đầu dòng, không thêm ưu đãi / con số nào khác. "
+                f"Con số phí chỉ nói khi khách hỏi MỨC phí (bao nhiêu, tính sao), và CHỈ lấy từ dòng VAI NGƯỜI RAO / câu mẫu báo phí bên dưới (bán: "
+                f"{PT_CHU} chính chủ, {PT_MG} môi giới; cho thuê: {PHI_THUE} = 3/4 của MỘT tháng tiền thuê; chưa rõ vai thì nêu cả hai hoặc hỏi khéo "
+                "khách là chủ nhà hay môi giới); khách hỏi ý khác (độc quyền, hợp đồng, xin bớt) thì không cần đọc lại câu báo phí. "
                 "Sau đó nối lại nội dung căn đang trao đổi.\n"
                 + CHINH_SACH_PHI + "\n"
                 + ((_fee_hint(conv.vai_phi) + "\n") if _fee_hint(conv.vai_phi) else "")
