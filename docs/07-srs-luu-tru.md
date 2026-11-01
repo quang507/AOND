@@ -2,6 +2,25 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz305 · Nhật ký SRS cũ sang tệp lưu trữ; lỗi từng gặp thành kịch bản chấm, không thành luật prompt (30/10/2026)
+Chủ dự án 30/10: "xóa bớt srs bỏ các lỗi vào prompt dc ko" → "1 đi".
+- Nhật ký SRS cũ chuyển nguyên văn sang `docs/07-srs-luu-tru.md` (mã giữ nguyên, không xoá). Đợt 2 cùng ngày: `docs/07` chỉ giữ 10 mục mới nhất.
+- Lỗi bot đáng giữ → thêm kịch bản vào `tests/kich_ban/ban.json` (nay 27 kịch bản), không thêm câu luật vào prompt.
+
+### SRS-5.1zzzzzzz304 · Bộ kịch bản chấm tự động offline; chat tay bằng quota CLI; bật soát gọn cho mọi khách (30/10/2026)
+Chủ dự án 30/10: "lập kế hoạch làm, xong thực thi đi"; "có cách nào để tôi test tay bằng cli quota ko".
+- `bun run cham` (`scripts/cham-kich-ban.py` + `tests/kich_ban/`): chạy kịch bản người bán offline bằng `claude -p`, chấm tất định (ô, loại, số căn,
+  bản tin đúng lượt, 7 luật lời), in điểm / gọi lại / tiền quy đổi, `--so-voi` so lần trước. So phải chạy ≥ 2 lần (dao động vài lần gọi lại).
+- `bun run chat:cli`: chat tay bằng quota CLI. `SOAT_GON=bat` cho mọi khách (điểm bằng chế độ cũ). Bỏ mã SRS khỏi prompt làm điểm tụt → không làm.
+- Kiểm: `tests/test_cham_kich_ban_304.py`.
+
+### SRS-5.1zzzzzzz303 · Ngưỡng gọi lại vì tiêu đề dài 30 từ (prompt vẫn 15–25); form bóc tách gọn cho người bán (30/10/2026)
+Chủ dự án 30/10: "nâng hạn mức lại thành 30 từ"; "prompt bóc tách sao mà dài … ngắn lại dc ko".
+- Tiêu đề: prompt vẫn dặn 15–25 từ, lưới chỉ gọi lại khi quá 30 (`TIEU_DE_TOI_DA_TU`).
+- Form bóc tách người bán gọn `OPERATIONS_SYSTEM_BAN` (cắt mục việc khách mua, −19 % chữ) khi vai đã là người bán; đọc ra ý mua → đọc lại form đầy đủ.
+  Công tắc `FORM_BAN_GON`. Luật trong prompt viết lời chỉ nói việc làm, không kèm lý do (Haiku từng kể lý do cho khách).
+- Kiểm: `tests/test_form_ban_gon_303.py`, `test_sua_ban_tin_theo_y_27_10.py`.
+
 ### SRS-5.1zzzzzzz302 · Bot tự hiểu từ dữ kiện đã có, không hỏi lại; "em rao lại xem" ra bản tin; đếm từ tiêu đề đúng số thập phân (30/10/2026)
 Chủ dự án 30/10: "từ các dữ liệu đã có thì bot tự hiểu dữ liệu khác", "không cần hỏi lại".
 - "Em rao lại xem" khi chưa có bản nháp → `xin_dang` (ví dụ cũ trong prompt đá định nghĩa ô); lượt chat không có bản tin thì không nói "gửi bên dưới".
@@ -458,7 +477,7 @@ Chủ dự án test phía mua 29/10 14:16: "sao có vẻ phản hồi chậm z t
 ### SRS-5.1zzzzzzz278 · Phía mua: không giới thiệu lại cùng một căn nhà dưới mã tin khác; không chen tin báo căn mới khi khách đang chat (29/10/2026)
 Chủ dự án hỏi 29/10: "còn sửa gì ở phía mua dc nữa ko". Soát chat mua 28/10 (hai cuộc chat cùng kịch bản, Zalo thật):
 
-1. **Ca gốc (a)**: 146 Trần Bình Trọng có HAI tin đang hiển thị (mã EBCB3EEA và B6B04A44, hai người rao — ở đây là hai lượt bắn thử). Bot giới
+1. **Ca gốc (a)**: số xxx Trần Bình Trọng có HAI tin đang hiển thị (mã EBCB3EEA và B6B04A44, hai người rao — ở đây là hai lượt bắn thử). Bot giới
    thiệu EBCB3EEA trong chat; 17:11 tin báo căn mới gửi B6B04A44 như "căn mới". Ngoài đời hai môi giới rao cùng một nhà là chuyện thường.
    - Gốc: `bao_can_moi` / `can_phu_hop` chỉ loại theo id tin (đã báo / đã dán link / đã chê) — không biết hai tin là một nhà.
    - Sửa: `mua.khoa_nha(street, ward, dia_chi)` = số nhà (đầu ô `boc_tach.dia_chi`) + đường + phường, bỏ dấu; thiếu số nhà → không gộp.
@@ -1311,7 +1330,7 @@ gửi `tools`, lời là chữ; `bat` → ép như cũ; gỡ công tắc thì đ
 với `giu_du_lieu = giu` để đọc trên CRM.
 
 ### SRS-5.1zzzzzzz245 · Khách xưng "chú" mà bot gọi "anh": giới tính Zalo vào prompt như lời khách tự xưng; bắn thử giữ được dữ liệu cho CRM (28/10/2026)
-Ca gốc: chủ dự án chat thử 28/10 bằng Zalo hồ sơ nam — "chú bán nhà ở 125 Bình Long…" (cùng câu ca SRS-233). Lượt đầu bot gọi "chú", tin nhắc
+Ca gốc: chủ dự án chat thử 28/10 bằng Zalo hồ sơ nam — "chú bán nhà ở Bình Long…" (cùng câu ca SRS-233). Lượt đầu bot gọi "chú", tin nhắc
 5 phút mở "Anh ơi…", các lượt sau "Anh cho em hỏi…". Log lõi (`doc-log-loi` 03:38–08:35 UTC, đã thêm dòng "Xưng hô") KHÔNG có dòng "Xưng hô" nào của
 cuộc chat: lượt lập thao tác (Haiku) không trả `xung_ho` hợp lệ, nên SRS-233 (giữ chữ "chú") chưa bao giờ chạy với ca này.
 Nguyên nhân: (a) `xung_ho` trống thì `_detect_customer_pronoun` lấy giới tính hồ sơ Zalo (`xung_ho_goi_y`, SRS-163) và `khoi_xung_ho("anh")` ghi
@@ -1486,8 +1505,8 @@ Chủ dự án 28/10: "làm cả hai đi" (hook SessionStart + rút gọn CLAUDE
 5. **Ba câu gốc** — (1) *Lớp lỗi*: thay đổi kiến trúc / phạm vi chỉ ghi vào nhật ký sửa (§5.1) và ghi chú harness, không quay lại tầng trên — mỗi lần sửa đúng quy ước "ghi SRS ở docs/07" nhưng không có bước "tầng nào nay sai"; (2) *chỗ khác cùng lớp*: comment đầu `bot/bridge-zca/index.mjs` ghi "gọi edge function chat-reply" — sửa cùng đợt; `docs/SRD-AI-Oi-Nha-Dat.docx` sinh từ md cũ — cần `bun run srd` lại; (3) *kiểm*: `scripts/soat-truy-vet.sh` SẠCH (ID, truy vết, số đếm); không có máy kiểm "docs nói đúng code" — vẫn phải soát tay theo đợt.
 
 ### SRS-5.1zzzzzzz236 · Khách cho số nhà / hẻm cụ thể thì tra phường trước, không ra mới hỏi (28/10/2026)
-Chủ dự án 28/10 (sau khi bàn Google Maps: "mắc lắm"): "khi mà người ta đưa địa chỉ cụ thể hoặc hẻm cụ thể thì nó search phường trước bằng nominatim, nếu seach không được mới hỏi". Chat chị Ngân cùng ngày: "125 Bình Long, Bình Hưng Hòa A" → bot hỏi phường mới mấy lượt rồi báo admin tra.
-1. **Đo trước khi làm** (20 địa chỉ, Nominatim công khai, 28/10): toà nhà / dự án ra đúng số nhà 4/10, nhà phố thường 0/10 — phần lớn chỉ ra mức đường, và mức đường có lúc SAI phường (125 Bình Long, Bình Tân → Phường Phú Thọ Hòa). Nominatim nay trả tên phường MỚI ở `address.suburb` (ghi chú SRS-224 "Nominatim chưa biết tên phường mới" đã cũ). Vì vậy chỉ nhận kết quả ĐÚNG số nhà; với nhà thường bước này hiếm khi trúng — bot vẫn hỏi như cũ.
+Chủ dự án 28/10 (sau khi bàn Google Maps: "mắc lắm"): "khi mà người ta đưa địa chỉ cụ thể hoặc hẻm cụ thể thì nó search phường trước bằng nominatim, nếu seach không được mới hỏi". Chat chị N. cùng ngày: "Bình Long, Bình Hưng Hòa A" → bot hỏi phường mới mấy lượt rồi báo admin tra.
+1. **Đo trước khi làm** (20 địa chỉ, Nominatim công khai, 28/10): toà nhà / dự án ra đúng số nhà 4/10, nhà phố thường 0/10 — phần lớn chỉ ra mức đường, và mức đường có lúc SAI phường (Bình Long, Bình Tân → Phường Phú Thọ Hòa). Nominatim nay trả tên phường MỚI ở `address.suburb` (ghi chú SRS-224 "Nominatim chưa biết tên phường mới" đã cũ). Vì vậy chỉ nhận kết quả ĐÚNG số nhà; với nhà thường bước này hiếm khi trúng — bot vẫn hỏi như cũ.
 2. **Bản đồ** — `TraDiaDanh.phuong_theo_so_nha(dia_chi, duong, quan)`: `dia_chi` mở bằng số nhà ("125", "12/3", "156B") → rpc `tra_nominatim` (có sẵn, 20260925f; `p_chi_tiet`, chờ ≤ 4 giây) với "<số> <đường>, <quận>, Thành phố Hồ Chí Minh". Nhận khi `house_number` đúng số và `road` đúng tên đường (bỏ dấu, bỏ chữ "đường"); `suburb` phải tra ra MỘT phường trong kho (`phuong`) và nằm trong các phường con đường đi qua (kho `duong`, theo quận nếu biết) — và trong phường của hẻm nếu kho hẻm có. Nhớ theo (số, đường, quận); lỗi mạng không nhớ.
 3. **Hẻm** — bản đồ không ra thì kho hẻm (SRS-115) chỉ có MỘT phường → ghi luôn (trước: hỏi "nhà mình ở X đúng không"). Hẻm nằm ở 2–4 phường vẫn kể cho khách chọn như cũ.
 4. **Ghi** — `engine._phuong_tu_dia_chi` (sau bước chuẩn địa danh, trước khi chọn câu hỏi): ô `phuong` = phường tra được, `_phuong_he_thong` = `so_nha` / `hem` (kho ghi `ward_source = suy_doan`), `_phuong_tra_dc` = địa chỉ đã tra (mỗi địa chỉ tra một lần, qua khởi động lại). Lượt đó prompt có khối "PHƯỜNG HỆ THỐNG VỪA TRA": không hỏi phường, nhắc khách một câu, sai thì khách báo. Khách đổi địa chỉ → phường hệ thống bị gỡ để tra lại; khách tự nói phường → thành phường của khách. Ngoại lệ có chủ đích của "ô tin chỉ ghi điều khách nói" (SRS-73), cùng loại với ghi tạm hai phường (SRS-214 mục 8). Dòng log `phường theo số nhà: trúng / không ra`, `Phường từ địa chỉ: <phường> (<nguồn>)` — không in địa chỉ khách.
@@ -1501,7 +1520,7 @@ Chủ dự án 28/10 (sau lượt `ban-thu-srd` Sonnet 4.6, SRS-234): "đổi mo
 4. **Ba câu gốc** — (1) *Lớp lỗi*: không phải sửa lỗi — đổi cấu hình; model chat từng chỉ nằm trong `.env` trên VPS (không ai thấy trong repo, lệch mặc định `config.py`); (2) *chỗ khác cùng lớp*: `AIOI_EXTRACT_MODEL`, `AIOI_VISION_MODEL` vẫn chỉ ở `.env` / mặc định code; (3) *kiểm*: `tests/test_chu_va_sonnet_28_10.py::test_model_chat_khach_that_mot_nguon_o_cai_vps`; sau cài soi `/health` (in `chat_model`) và `bot_usage_model`.
 
 ### SRS-5.1zzzzzzz234 · ID thử chat bằng Sonnet để so giọng; khách tự xưng chú / cô / bác được gọi đúng ở câu mẫu (28/10/2026)
-Chủ dự án 28/10: "thử Sonnet cho tài khoản thử đi" (ảnh bot anh Luận: dòng chat `sonnet-4-6`, khen "Có hợp đồng thuê 35 triệu/tháng sẵn – khách mua vừa có chỗ ở vừa có dòng tiền ngay"); chat chị Ngân 10:40 "chú bán nhà ở 125 Bình Long…" → tin nhắc 10:46 "Anh ơi, em hỏi lại chút nha: … nhà mình ở phường nào vậy chú?".
+Chủ dự án 28/10: "thử Sonnet cho tài khoản thử đi" (ảnh bot anh Luận: dòng chat `sonnet-4-6`, khen "Có hợp đồng thuê 35 triệu/tháng sẵn – khách mua vừa có chỗ ở vừa có dòng tiền ngay"); chat chị N. 10:40 "chú bán nhà ở Bình Long…" → tin nhắc 10:46 "Anh ơi, em hỏi lại chút nha: … nhà mình ở phường nào vậy chú?".
 1. **Sonnet cho ID thử**: `llm.base.MODEL_CHAT_LUOT` (contextvar) đè model chat của MỘT lượt; `Engine.handle` đặt `model_chat_thu()` khi `user_key` là ID thử (`_la_id_thu`, cùng tiền tố với hàm DB `la_id_thu`) rồi trả lại sau lượt. Env `AIOI_CHAT_MODEL_THU` (mặc định `claude-sonnet-4-6` — cùng model bot anh Luận; `tat` để tắt). Chỉ lượt chat / reply / agent đổi; bóc tách (`extract`) và đọc ảnh giữ nguyên. Sổ token ghi model thật của lượt nên `/admin` quy tiền đúng. Khách thật vẫn Haiku (quyết định chủ dự án "Vẫn haiku"). Chưa đo — so bằng `ban-thu-srd` (Haiku: run 40482808043, 27/10).
 2. **Chú / cô / bác**: `xung_ho = "chu_co_bac"` là một nhóm, câu mẫu (`xung_ho.goi_toi`) không biết chữ khách xưng nên rơi về "anh/chị" (hoặc giới tính Zalo "anh"). Nay lượt AI đọc `chu_co_bac` có cụm trích chứa chữ có dấu (chú, cô, bác, dì, cậu, mợ, thím, ông, bà) thì lưu `"chu_co_bac:<chữ>"` (cùng cột SQLite, qua khởi động lại); `_detect_customer_pronoun` trả `"elder:<chữ>"`; `goi_toi` → (chữ đó, "cháu"); `khoi_xung_ho` dặn gọi đúng chữ, xưng "cháu"; dòng mở bản nháp "📋 Cháu sẽ rao như vầy nhé chú:" (`_MO_DAU_RE` nhận "Cháu"). Khách chỉ GỌI bot là con / cháu thì không có chữ riêng → như cũ. Dòng log `Xưng hô: AI=… nhận=… đang=…` (không lời khách) để truy lần sau — lần này không biết tin nhắc ra "Anh" vì nhóm mất chữ hay vì lượt đọc không nhận (giới tính Zalo "anh" là gợi ý khi chưa nhận).
 3. **Ba câu gốc** — (1) *Lớp lỗi*: phân loại gộp làm mất dữ kiện mà chỗ dùng sau cần (nhóm "người lớn tuổi" không giữ chữ xưng); (2) *chỗ khác cùng lớp*: `xung_ho_goi_y` (giới tính Zalo chỉ anh / chị — đúng phạm vi); `seller_role` có trích riêng; (3) *kiểm*: `tests/test_chu_va_sonnet_28_10.py` (chú lưu kèm chữ, tin nhắc "Chú ơi, cháu…", gọi bot là "con" không đoán chữ, ID thử → model thử / khách thật → mặc định, `tat` tắt). Chưa thử Zalo thật.
@@ -1511,7 +1530,7 @@ Bắn thử `ban-thu-ai` (run 40620359025): chủ nhà "Bán nhà thì anh phả
 1. **Gốc**: lời bot là đúng khối "KHÁCH HỎI VỀ PHÍ" ⇒ lượt AI đọc ý đã nhận `hoi_ve = "phi"` và KHÔNG nhận `hoi_phap_ly` (khối pháp lý đứng trước khối phí trong chuỗi ưu tiên SRS-178, có thì đã thắng). Phía mua cùng câu thuế phí thì đạt. Chưa biết AI không điền `hoi_phap_ly` hay điền mà cụm trích lệch — log lõi không ghi hai khoá này. Lời dặn cũ chỉ có ở mục `hoi_ve` ("KHÔNG phải … thuế, phí sang tên"); mục pháp lý không nói gì về chữ "phí", và ngữ cảnh phía bán đầy luật phí môi giới.
 2. **Sửa**: `OPERATIONS_SYSTEM` mục pháp lý: câu có chữ "phí" mà hỏi khoản PHẢI NỘP khi mua / bán / sang tên là câu pháp lý, kể cả khi người hỏi là chủ nhà đang rao → `hoi_phap_ly`, không `hoi_ve = "phi"`; hỏi lẫn cả hai → chỉ `hoi_phap_ly`. Dòng log `Hỏi về: hoi_ve=… nhận=… · hoi_phap_ly=… nhận=…` (cụm trích chỉ in cho ID thử) để lượt bắn sau thấy AI đọc gì.
 3. **Log mức info**: lõi không cấu hình `logging` nên mọi `log.info` của `aioi` KHÔNG ra journal — hai dòng "dự án theo nghĩa" / "điều luật theo nghĩa" mà `ban-thu-ai.sh` tìm chưa bao giờ được in (185 trượt mà không có dấu vết). Nâng hai dòng đó lên `warning`; `doc-log-loi.sh` và `ban-thu-ai.sh` lọc thêm `Hỏi về` / `Mua:`. Thêm dòng log để truy lỗi trên VPS thì dùng `warning`, hoặc cấu hình `logging` cho lõi trước.
-4. **Chat chị Ngân 28/10 (sau khi cài #142)**: chủ nhà "125 Bình Long, Bình Hưng Hòa A, Bình Tân, 70m2, giá 3 tỷ" → "diện tích sàn" → bản nháp. Đúng: không hỏi "có phải dự án 8X Rainbow" (119 Bình Long — khác số nhà, SRS-232). Lỗi: (a) bản nháp viết "Chính chủ bán…", "Nhà có sổ hồng rõ ràng" — chị chưa nói vai lẫn pháp lý (`sellers.seller_type = ccrb` chỉ là `suy_doan`); gốc: `AD_FORMAT` (khuôn anh Luận) bảo mô tả "kể đủ … pháp lý" và ví dụ gạch đầu dòng "sổ hồng chính chủ", lưới SRS-208 chỉ bắt tiện ích / tình trạng nhà. Sửa: đoạn chống bịa của mình thêm "kể pháp lý ĐÃ CÓ, chưa có thì bỏ; chính chủ chỉ khi chủ nhà tự nói", lưới `engine._phap_ly_vai_khong_co_du_lieu` trong `_soat_hinh_thuc` — bản tin 📋 có sổ hồng / sổ đỏ / pháp lý / hoàn công mà căn chưa có ô `KHOA_PHAP_LY` và khách chưa nói giấy tờ, hoặc "chính chủ" mà vai chưa là chủ nhà và khách chưa nói "chính chủ / chủ nhà" → gọi lại model. (b) "Bình Hưng Hòa A" cũ chia về Bình Hưng Hòa + Bình Trị Đông (`phuong_cu`, `toan_bo = false`); `dia_danh.phuong_moi_tu_cu` chỉ tra phường cũ ĐÁNH SỐ nên hệ thống không biết phường bị chia, kho đường không có Bình Long → bot hỏi trống "tên phường mới sau sáp nhập", chị "không nhớ" → bot xin "số nhà" dù địa chỉ đã có 125. Sửa: tra cả phường cũ có tên (so tên bỏ dấu, bỏ chữ loại; tên trùng một phường MỚI thì coi là tên mới → không tra), `_goi_y_phuong` không có gợi ý kho đường thì kể các phường mới của phường cũ bị chia; khối trạng thái web không xin lại số nhà khi `dia_chi` mở bằng số (`co_so_nha`). Không đổi `_phuong_chia_da_chon` (chọn phường theo tên): "Bình Hưng Hòa A" chứa nguyên "Bình Hưng Hòa" nên sẽ tự chọn nhầm. (c) Chị duyệt "đăng giúp chị", 5 phút sau tin nhắc vẫn "Em gửi chị bản nháp tin đăng…" (không kèm bản nháp): `followup` chỉ xét `listing_proposed` (còn bật sau duyệt). Nay chỉ nhắc bản nháp khi khách CHƯA nhắn gì sau bản tin 📋 gần nhất; còn lại đi đường nhắc câu đang chờ. (d) Bot xin số nhà sai (mục b), chị gõ "138 B" (lúc đầu nói 125) → `dia_chi` đổi thành 138B không hỏi lại — chưa sửa, ghi nhận; gốc là câu xin số nhà đã có. Admin ĐÃ được báo tra phường (nhắc `escalation` 10:19, đúng đường).
+4. **Chat chị N. 28/10 (sau khi cài #142)**: chủ nhà "Bình Long, Bình Hưng Hòa A, Bình Tân, 70m2, giá 3 tỷ" → "diện tích sàn" → bản nháp. Đúng: không hỏi "có phải dự án 8X Rainbow" (dự án cùng đường Bình Long, khác số nhà, SRS-232). Lỗi: (a) bản nháp viết "Chính chủ bán…", "Nhà có sổ hồng rõ ràng" — chị chưa nói vai lẫn pháp lý (`sellers.seller_type = ccrb` chỉ là `suy_doan`); gốc: `AD_FORMAT` (khuôn anh Luận) bảo mô tả "kể đủ … pháp lý" và ví dụ gạch đầu dòng "sổ hồng chính chủ", lưới SRS-208 chỉ bắt tiện ích / tình trạng nhà. Sửa: đoạn chống bịa của mình thêm "kể pháp lý ĐÃ CÓ, chưa có thì bỏ; chính chủ chỉ khi chủ nhà tự nói", lưới `engine._phap_ly_vai_khong_co_du_lieu` trong `_soat_hinh_thuc` — bản tin 📋 có sổ hồng / sổ đỏ / pháp lý / hoàn công mà căn chưa có ô `KHOA_PHAP_LY` và khách chưa nói giấy tờ, hoặc "chính chủ" mà vai chưa là chủ nhà và khách chưa nói "chính chủ / chủ nhà" → gọi lại model. (b) "Bình Hưng Hòa A" cũ chia về Bình Hưng Hòa + Bình Trị Đông (`phuong_cu`, `toan_bo = false`); `dia_danh.phuong_moi_tu_cu` chỉ tra phường cũ ĐÁNH SỐ nên hệ thống không biết phường bị chia, kho đường không có Bình Long → bot hỏi trống "tên phường mới sau sáp nhập", chị "không nhớ" → bot xin "số nhà" dù địa chỉ đã có 125. Sửa: tra cả phường cũ có tên (so tên bỏ dấu, bỏ chữ loại; tên trùng một phường MỚI thì coi là tên mới → không tra), `_goi_y_phuong` không có gợi ý kho đường thì kể các phường mới của phường cũ bị chia; khối trạng thái web không xin lại số nhà khi `dia_chi` mở bằng số (`co_so_nha`). Không đổi `_phuong_chia_da_chon` (chọn phường theo tên): "Bình Hưng Hòa A" chứa nguyên "Bình Hưng Hòa" nên sẽ tự chọn nhầm. (c) Chị duyệt "đăng giúp chị", 5 phút sau tin nhắc vẫn "Em gửi chị bản nháp tin đăng…" (không kèm bản nháp): `followup` chỉ xét `listing_proposed` (còn bật sau duyệt). Nay chỉ nhắc bản nháp khi khách CHƯA nhắn gì sau bản tin 📋 gần nhất; còn lại đi đường nhắc câu đang chờ. (d) Bot xin số nhà sai (mục b), chị gõ "138 B" (lúc đầu nói 125) → `dia_chi` đổi thành 138B không hỏi lại — chưa sửa, ghi nhận; gốc là câu xin số nhà đã có. Admin ĐÃ được báo tra phường (nhắc `escalation` 10:19, đúng đường).
 5. **Đề xuất pháp lý (chủ dự án 28/10: "làm theo đề xuất")**: bot trả lời ngay từ kho, không hứa "kiểm tra luật rồi gửi sau" (không có đường gửi lại — cùng lớp lời hứa SRS-216); câu kết vẫn là "cần thì em nối người phụ trách" (đường `can_nguoi_that` có thật). Chủ nhà hỏi 4 mục thuế phí → `engine._can_cua_chu` đổi giá rao (`gia`) ra đồng bằng `parse_vnd` của DB và đưa dòng "SỐ TÍNH THEO CĂN … căn của khách đang rao" như phía mua (`phap_ly.khoi_phi_theo_can(ten_can=…)`).
 6. **Ba câu gốc** — (1) *Lớp lỗi*: hai nhãn ý nghĩa chồng nhau ("phí" bên mình / thuế phí nhà nước) mà lời dặn phân biệt chỉ đặt ở một nhãn; dấu vết chẩn đoán in ở mức bị nuốt; (2) *chỗ khác cùng lớp*: `hoi_ve = "dinh_gia"` ↔ `hoi_phap_ly` (khách hỏi "giá đất nhà nước" — chưa gặp ca); các `log.info` còn lại ở `dia_danh` (phường / đường theo nghĩa) vẫn mức info, có lời khách; (3) *kiểm*: `tests/test_phap_ly.py::test_chu_nha_hoi_thue_phi_khong_bi_doc_thanh_phi_moi_gioi` — bỏ lời dặn mới → đỏ; AI điền cả hai thì khối pháp lý thắng, không có khối phí; `tests/test_chat_ngan_28_10.py` (phường cũ có tên bị chia, trùng tên mới, khác quận; bản nháp bịa pháp lý / chính chủ; thuế theo giá rao — bỏ `_can_cua_chu` → đỏ). Chỗ khác cùng lớp (khuôn bảo "kể đủ X" mà dữ liệu không có X): "vị trí & kết nối", "công năng" — chưa thấy ca bịa. Lời dặn chỉ được model thật kiểm — chưa bắn lại.
 
@@ -3487,7 +3506,7 @@ Hai lỗi giọng còn lại của lượt a1 ("Anh để lại giá 10 tỷ có
 
 **Bài kiểm, đỏ khi tắt bản sửa** (`bun bot/tests/kiem-bang-chung.mjs` GOC-U01…U13; e2e GOC-01…04b, chạy `bash bot/tests/e2e/chay.sh`):
 - Lớp 1: GOC-01 (`gon` và `du`): câu treo pháp lý, ô giá đã `expired`, model r2 trả "Dạ em cảm ơn anh." → lời gửi đi có "?", ô chờ mới có câu hỏi đi kèm, sổ van có `damBaoCauHoi`. GOC-U01…03: "Nhà mình mấy tầng rồi anh" / "sổ riêng hay chung ạ" là câu hỏi dù không có "?".
-- Lớp 2: GOC-02/02b (ca gốc: hai tin Quận 6 / Quận 5 đúng giá, nhãn căn 2 không dán căn 1, không "chưa rõ quận"); GOC-02c **cách nói MỚI** "Bên anh đang có hai sản phẩm nhờ em đăng: nhà Lê Quang Định Bình Thạnh 4x18 giá 9 tỷ 2, và căn hộ Sunrise City Q7 70m2 3 tỷ 8" (không có "căn 1 / căn 2") → hai tin đúng loại; GOC-U06: AI không đánh số → `[]` (regex đỡ), ZH-12/13 giữ xanh.
+- Lớp 2: GOC-02/02b (ca gốc: hai tin Quận 6 / Quận 5 đúng giá, nhãn căn 2 không dán căn 1, không "chưa rõ quận"); GOC-02c **cách nói MỚI** "Bên anh đang có hai sản phẩm nhờ em đăng: nhà anh Q. Định Bình Thạnh 4x18 giá 9 tỷ 2, và căn hộ Sunrise City Q7 70m2 3 tỷ 8" (không có "căn 1 / căn 2") → hai tin đúng loại; GOC-U06: AI không đánh số → `[]` (regex đỡ), ZH-12/13 giữ xanh.
 - Lớp 3: GOC-03 (ca gốc, có `vai`): không hỏi ngược, có lời ghi nhận môi giới, vẫn hỏi tiếp; GOC-03b **cách nói MỚI** "bên anh là sàn nha em" (AI gán ve_bot, không đọc vai) → không hỏi ngược; GOC-03c đối chứng "em là người hay máy vậy" vẫn là hỏi ngược; GOC-U07…U10.
 - Lớp 4: GOC-04 (ca gốc: không còn tin mở, model r3 nói "đang rao" → mệnh đề bỏ, sổ van `boHuaDaDang(khong_tin_mo)`, prompt r3 có dòng KHÔNG CÓ); GOC-04b đối chứng còn tin `dang_ban` → "vẫn đang rao" giữ; GOC-U11…U13 (vế phủ định giữ, bong bóng 🤖 / câu hỏi không tính).
 
@@ -3515,9 +3534,9 @@ Hai lỗi giọng còn lại của lượt a1 ("Anh để lại giá 10 tỷ có
 
 ### SRS-5.1zzr · Ô quan trọng ghi NGUYÊN VĂN cụm khách gõ, theo loại BĐS; model chỉ chỉ ra cụm (06/10/2026)
 
-`[nguồn: chủ dự án 06/10/2026 — test Zalo 14:06 "Nhà ở hẻm 137 Nguyễn Trãi quận 5" → 💾 vị trí "137 hẻm Nguyễn Trãi"; quyết định: "thôi trông vào model đi, nhưng các thông tin quan trọng của BĐS vẫn là giá trị ghi là đoạn trích dẫn nguyên văn trong tin khách", "mỗi loại BĐS có 1 trường quan trọng khác nhau"; đối chiếu AOND: `dia_chi` lưu chữ model viết, không kiểm nguyên văn, commit 05/10 của họ vá ghi đè địa chỉ]`
+`[nguồn: chủ dự án 06/10/2026 — test Zalo 14:06 "Nhà ở hẻm xxx Nguyễn Trãi quận 5" → 💾 vị trí "xxx hẻm Nguyễn Trãi"; quyết định: "thôi trông vào model đi, nhưng các thông tin quan trọng của BĐS vẫn là giá trị ghi là đoạn trích dẫn nguyên văn trong tin khách", "mỗi loại BĐS có 1 trường quan trọng khác nhau"; đối chiếu AOND: `dia_chi` lưu chữ model viết, không kiểm nguyên văn, commit 05/10 của họ vá ghi đè địa chỉ]`
 
-- **Ca gốc**: khách gõ "hẻm 137 Nguyễn Trãi", model đọc đúng cụm nhưng viết lại "137 hẻm Nguyễn Trãi" (đảo thứ tự), code lấy `gia_tri` của model làm địa chỉ. Kiểm bằng chứng cũ chỉ bắt chữ cái / con số có trong trích dẫn, không bắt THỨ TỰ, và prompt có ví dụ "88 hẻm Tân Kỳ Tân Quý" dạy đúng kiểu đó.
+- **Ca gốc**: khách gõ "hẻm xxx Nguyễn Trãi", model đọc đúng cụm nhưng viết lại "xxx hẻm Nguyễn Trãi" (đảo thứ tự), code lấy `gia_tri` của model làm địa chỉ. Kiểm bằng chứng cũ chỉ bắt chữ cái / con số có trong trích dẫn, không bắt THỨ TỰ, và prompt có ví dụ "88 hẻm Tân Kỳ Tân Quý" dạy đúng kiểu đó.
 - **Lớp lỗi**: *ô chữ lấy bản model soạn lại thay vì chữ khách* — mọi ô text đi qua `chonDeGhi` / `docAiChinh` / `giaTriChoCauTreo` / `kiemTraLoiCau` đều có thể bị viết lại (đảo, thêm chữ, "làm đẹp"). Trước đây từng vá lẻ ở phí quản lý (gắn lại "/m2"), mặt tiền (giữ chữ "mặt tiền"), từng ô một.
 - **Sửa** (một chỗ, `_shared/extraction/kiem-bang-chung.ts`): `kiemDeXuat` điền `cum_goc` = cụm NGUYÊN VĂN trong tin (đúng dấu, hoa thường, thứ tự) cho mọi đề xuất đạt (`cumGocTrongTin`, quét cửa sổ theo từ). Bảng **`O_NGUYEN_VAN` theo loại BĐS** là nơi DUY NHẤT quyết ô nào nguyên văn: chung cho mọi loại (địa chỉ, tên dự án, pháp lý, giấy tờ hiện có, dự kiến ra sổ, hiện trạng sử dụng, hạn hợp đồng thuê); nhà phố / cấp 4 / biệt thự / toà nhà thêm kết cấu (+ hiện trạng, sân vườn, compound, PCCC, lấp đầy); căn hộ thêm nội thất, view, toà tháp; đất thêm thổ cư, quy hoạch, lên thổ cư, xây dựng, hạ tầng, đường vào, nguồn nước, ranh giới, mục đích, thời hạn, hình thức thuê đất, hình dáng; kho xưởng thêm container, trạm điện, nước thải, PCCC; phòng trọ thêm nội thất, giờ giấc, điện nước; mặt bằng thêm ngành hàng, thời hạn thuê, trượt giá, fit-out. `giaTriNguyenVan()` gọt chữ dẫn ("ở", "nhà", "tại"), tiểu từ cuối (cùng `gonGiaTriFact`), riêng địa chỉ bỏ đuôi phường / quận và bề rộng hẻm (có ô riêng); hai ngoại lệ có chủ đích: cụm là VIẾT TẮT một từ ngắn ("shr") thì lấy bản viết đủ của model (đã qua kiểm cùng mã), và model chỉ THÊM DẤU cho đúng phần đó ("126 Hung Vuong" + "Hùng Vương" → "126 Hùng Vương"; "pham the hien" → "Phạm Thế Hiển") thì ghép bản có dấu vào đúng chỗ — đảo / thêm bớt chữ thì không khớp, lấy cụm khách. Bốn đường ghi gọi chung hàm này; `kiemTraLoiCau` nhận thêm `{cauHoi, loai}` từ chat-reply. Số (giá, diện tích, số tầng…) không nằm trong bảng: cột là số, kiểm số có trong tin đã có. Prompt bóc tách: luật "ĐÚNG THỨ TỰ CHỮ khách gõ, không đảo", trích dẫn `duong` là cụm địa chỉ nguyên văn.
 - **Chỗ khác cùng lớp**: `tenDuongDayDu` (thêm chữ "đường" cho tên số) nay chỉ còn chạy khi không ra cụm; `chonViTri` (ghép số nhà luật + đường AI) vẫn dùng ở chế độ `chinh` không phải `ai`; cột `street` vẫn là tên đường model đọc (có dấu) — cố ý, đó là khoá tra từ điển, không phải chữ hiển thị. AOND không có lớp này (chữ model lưu thẳng).
@@ -3538,11 +3557,11 @@ Hai lỗi giọng còn lại của lượt a1 ("Anh để lại giá 10 tỷ có
 
 `[nguồn: bắn thử production thu-ai-0610 06/10/2026 10:28 UTC, workflow ban-thu.yml, 8 lượt; chủ dự án: "merg rồi tự test 1 cái đi"]`
 
-- **Ca gốc**: "chào em" → "đúng rồi" → "nhà anh ở hẻm 137 Nguyễn Trãi, P. Nguyễn Cư Trinh, Q1" → "4x16, 1 trệt 2 lầu" → "5 tỷ 2, shr" → "anh đứng tên, không thế chấp" → "ok đăng đi" → "phí sao em". AI bóc tách (Haiku, 4,7–6,1 s/lượt) đề xuất ĐÚNG ở cả ba lượt có dữ kiện (`loai_bds=nha_pho`, `duong=hẻm 137 Nguyễn Trãi`, `quan=Quận 1`; `ngang=4 dai=16 so_tang=3`; `gia=5 tỷ 2 phap_ly=sổ hồng riêng`) nhưng `listings` = 0, `listing_facts` = 0; mọi lượt "🤖 Không bóc tách được gì"; bot "Em ghi rồi anh, 4x16 trệt 2 lầu" (miệng), hỏi "sổ riêng hay chung" BA lần (cả sau khi khách gõ "shr"), "ok đăng đi" → "Em sẽ rao căn nhà của anh tích cực" cho một tin không tồn tại. Sổ lỗi trống — hỏng im.
+- **Ca gốc**: "chào em" → "đúng rồi" → "nhà anh ở hẻm xxx Nguyễn Trãi, P. Nguyễn Cư Trinh, Q1" → "4x16, 1 trệt 2 lầu" → "5 tỷ 2, shr" → "anh đứng tên, không thế chấp" → "ok đăng đi" → "phí sao em". AI bóc tách (Haiku, 4,7–6,1 s/lượt) đề xuất ĐÚNG ở cả ba lượt có dữ kiện (`loai_bds=nha_pho`, `duong=hẻm xxx Nguyễn Trãi`, `quan=Quận 1`; `ngang=4 dai=16 so_tang=3`; `gia=5 tỷ 2 phap_ly=sổ hồng riêng`) nhưng `listings` = 0, `listing_facts` = 0; mọi lượt "🤖 Không bóc tách được gì"; bot "Em ghi rồi anh, 4x16 trệt 2 lầu" (miệng), hỏi "sổ riêng hay chung" BA lần (cả sau khi khách gõ "shr"), "ok đăng đi" → "Em sẽ rao căn nhà của anh tích cực" cho một tin không tồn tại. Sổ lỗi trống — hỏng im.
 - **Lớp lỗi**: *cổng "đây có phải câu rao không" là luật từ khoá*. `wantsSell` đòi chữ "bán / rao / cho thuê" (+ loại + chi tiết) và là đường DUY NHẤT mở tin; `nenHoiModelVai` từ chối hỏi model khi đã có hồ sơ bán (coHoSoBan) nên lượt sau câu gật không bao giờ được AI phân vai; đường "fact rời" (`canNeo`) chỉ ghi vào tin CÓ SẴN. Người vừa nói "đúng rồi" (= tôi bán) rồi tả căn như người ta vẫn tả (không ai nói "bán nhà" lần nữa) rơi qua kẽ ba cơ chế đó. Mock e2e xanh suốt vì mọi ca "gật vai" (V1.15–V1.17) dừng ngay sau câu gật, không có ca nào gửi lượt kế.
 - **Chỗ khác cùng lớp**: (đã sửa) `raoKhongChuLoai` 30/09 — "hẻm 3m, 3x15, 2 lầu, bán 6 tỷ" không chữ loại; FR-205 — luật không kết luận được thì hỏi model, nhưng CHỈ với người lạ. (còn, ghi nhận) `nenHoiModelVai` vẫn tắt với người đã có hồ sơ bán — chấp nhận vì nay có `raoNgam`; `coMuiDuLieuRao` (cổng cho AI đọc) vẫn là từ khoá — chế độ `ai` đã bỏ cổng đó cho người có tin / câu treo, nay người CHƯA có tin cũng được AI đọc vì `coMuiAi || wantsSell` đủ rộng cho câu tả căn.
 - **Sửa** (`chat-reply/index.ts`, ngay trước khối tạo tin r1): cổng `raoNgam` — người bán **không có tin mở** (`dsMo.length === 0`), không câu treo, không ảnh, không ý mua, lượt AI (chế độ `chinh`/`ai`, đã chạy song song) trả `ket` với `so_can ≤ 1`, không phải câu hỏi lại (`hoi_lai.co_hoi`), và `docAiChinh` ra loại / địa chỉ / giá / diện tích / ngang hoặc bất kỳ fact nào ngoài `du_an_ten` / `bo_sung` → coi là câu rao, đi đúng khối tạo tin hiện có (cột lõi của AI, dấu `_thong_so_ai`, vòng hỏi nhỏ giọt). AI không chạy / hỏng → luật đỡ: `nhanDienNhieuFact` có `vi_tri` hoặc `gia`. Không thêm regex đoán ý, không thêm van, không đụng `wantsSell`.
-- **Kiểm, đỏ khi tắt** (e2e, cuối `run.mjs`): RN-00 gật vai → hồ sơ bán chưa có tin; RN-01 chế độ `ai`, "nhà anh ở hẻm 137 Nguyễn Trãi, P. Nguyễn Cư Trinh, Q1" → 1 tin nhà phố Quận 1 `cho_thong_tin`, địa chỉ nguyên văn, có câu treo, không "Không bóc tách được gì"; RN-02 "4x16, 1 trệt 2 lầu" → vẫn 1 tin, có kích thước / kết cấu; RN-03 AI tắt, "nhà anh ở hẻm 137 Nguyễn Trãi quận 1, giá 5 tỷ 2" → mở tin giá 5 tỷ 2 (câu có giá nên luật cũ `coHangCoGia` cũng nhận — ca này canh luật đỡ không gãy, KHÔNG phải ca đỏ-khi-tắt); RN-04 "phí sao em" khi chưa có tin → KHÔNG mở tin; AHT-00/00b (ca 30/09 "địa chỉ nói TRƯỚC câu rao") nay tin mở ngay từ câu địa chỉ, câu rao kế vào đúng tin đó — mock AI của ca đó đổi sang trả theo từng câu như AI thật. Đã chạy tắt cổng: RN-01, RN-02, AHT-00 đỏ. Cách nói mới chưa bắn: "căn của anh nằm trong hẻm xe hơi đường Lê Văn Sỹ, 3 lầu" (không "bán", không "nhà anh ở"). Sau deploy: bắn lại đúng 8 câu thu-ai-0610.
+- **Kiểm, đỏ khi tắt** (e2e, cuối `run.mjs`): RN-00 gật vai → hồ sơ bán chưa có tin; RN-01 chế độ `ai`, "nhà anh ở hẻm xxx Nguyễn Trãi, P. Nguyễn Cư Trinh, Q1" → 1 tin nhà phố Quận 1 `cho_thong_tin`, địa chỉ nguyên văn, có câu treo, không "Không bóc tách được gì"; RN-02 "4x16, 1 trệt 2 lầu" → vẫn 1 tin, có kích thước / kết cấu; RN-03 AI tắt, "nhà anh ở hẻm xxx Nguyễn Trãi quận 1, giá 5 tỷ 2" → mở tin giá 5 tỷ 2 (câu có giá nên luật cũ `coHangCoGia` cũng nhận — ca này canh luật đỡ không gãy, KHÔNG phải ca đỏ-khi-tắt); RN-04 "phí sao em" khi chưa có tin → KHÔNG mở tin; AHT-00/00b (ca 30/09 "địa chỉ nói TRƯỚC câu rao") nay tin mở ngay từ câu địa chỉ, câu rao kế vào đúng tin đó — mock AI của ca đó đổi sang trả theo từng câu như AI thật. Đã chạy tắt cổng: RN-01, RN-02, AHT-00 đỏ. Cách nói mới chưa bắn: "căn của anh nằm trong hẻm xe hơi đường Lê Văn Sỹ, 3 lầu" (không "bán", không "nhà anh ở"). Sau deploy: bắn lại đúng 8 câu thu-ai-0610.
 
 ### SRS-5.1zzu · Ô đo đếm phải nhận giá trị có số; "ok đăng đi" là bảo đăng dù model đọc bình thường (06/10/2026)
 
@@ -3561,7 +3580,7 @@ Hai lỗi giọng còn lại của lượt a1 ("Anh để lại giá 10 tỷ có
 - **Ca gốc**: lần này Haiku ở câu địa chỉ KHÔNG trả `loai_bds` (lần 13:30 có; trả `loai_giao_dich=ban` trích "giao bán" — chữ của BOT trong lời chào, bị kiểm bằng chứng bỏ) → tin mở với loại `chua_ro`, câu treo `loai_bds`. Năm lượt kế ("4x16, 1 trệt 2 lầu", "5 tỷ 2, shr", "anh đứng tên, không thế chấp", "ok đăng đi", "phí sao em") đều nhận NGUYÊN VĂN "Dạ em chưa rõ lắm ạ, nhà mình thuộc loại nào ta: nhà phố, nhà cấp 4, chung cư, đất, biệt thự, phòng trọ hay mặt bằng ạ?". "ok đăng đi" (AI lần này đọc đúng `du_roi`) bị nuốt; "phí sao em" (AI đọc đúng `dich_vu`) không được trả lời; "4x16" rơi (chỉ còn kết cấu 3 tầng, `area_m2` trống); giá và pháp lý vẫn vào nhờ đường bóng.
 - **Lớp lỗi**: *một nhánh trả lời sớm (`return`) đứng trước mọi lưới chung* — nhánh câu treo LOẠI thoát ngay khi AI không ra loại, trước hỏi ngược, ý định đăng / đủ rồi, fact kèm theo đường câu treo, và chống lặp; câu hỏi lại là chuỗi cố định nên lặp y hệt. Phụ: đường bóng `ghiBongBocTach` dùng `chonDeGhi` trần, không ghép ngang × dài như `docAiChinh`.
 - **Chỗ khác cùng lớp**: nhánh `duyet_tin` (chờ duyệt nháp) cũng loại trừ ở nhiều cổng nhưng có đường gật / sửa / hỏi ngược riêng — không lặp vô hạn; nhánh `danh_gia`, `hinh_anh` loại trừ `chuMuonDang` — ghi nhận, chưa thấy ca thật. Cùng ngày: SRS-5.1zzt (cổng mở tin) và SRS-5.1zzu (cổng ý định) — ba lần bắn cùng 8 câu, ba cổng chặn khác nhau. Lộ thêm khi viết e2e RN-07e: `raoSuong` (02/10) coi "nhà phố" là câu rao suông (AI đọc ra `loai_bds`) dù bot đang hỏi đúng câu loại → "căn đó hay căn khác"; nay câu treo là `loai_bds` thì tên loại là câu trả lời.
-- **Không làm**: KHÔNG đoán loại bằng luật khi AI đã đọc (ZR-06, chủ dự án 02/10 "xóa luôn mấy luật này đi… để AI viết"). Sửa ở prompt: `boc-rao.ts` KHOÁ `loai_bds` — "tin RAO hay câu TẢ CĂN của người bán, kể cả không có chữ bán / cho thuê ('nhà anh ở hẻm 137 Nguyễn Trãi') LUÔN đưa loai_bds khi có chữ chỉ loại".
+- **Không làm**: KHÔNG đoán loại bằng luật khi AI đã đọc (ZR-06, chủ dự án 02/10 "xóa luôn mấy luật này đi… để AI viết"). Sửa ở prompt: `boc-rao.ts` KHOÁ `loai_bds` — "tin RAO hay câu TẢ CĂN của người bán, kể cả không có chữ bán / cho thuê ('nhà anh ở hẻm xxx Nguyễn Trãi') LUÔN đưa loai_bds khi có chữ chỉ loại".
 - **Sửa** (`chat-reply/index.ts`, nhánh `pendingReq.question === "loai_bds"`, khối `!pt`): (a) `hoiLaiAi` có hỏi ngược → trả lời trước bằng `dapHoiNguocTienDinh` / `dapChuaCoDuLieu` (phí đúng vai và loại giao dịch qua `cauPhi`), câu loại hỏi kèm; (b) `yDinhAi` ra `du_roi` (AI hoặc `laChiLenhDang`) → `dang_luon_thieu` "em đăng liền, chỉ còn thiếu loại nhà (nhà phố hay nhà cấp 4)", không hỏi câu khác; (c) đếm lần bot đã hỏi loại trong lịch sử (`lichSuRows`) — từ lần hai câu NGẮN khác: "cho em biết nhà mình là nhà phố hay nhà cấp 4 để em ghi đúng loại nha". `ghiBongBocTach`: ngang và dài AI đọc ra, tin chưa có diện tích → ghi `dien_tich` "AxB" (`kichThuoc` export từ `kiem-bang-chung.ts`).
 - **Kiểm, đỏ khi tắt** (e2e): RN-07 AI không ra loại → tin `chua_ro`, câu treo `loai_bds`; RN-07b "4x16, 1 trệt 2 lầu" → diện tích vào tin, hỏi lại bằng câu ngắn khác; RN-07c "phí sao em" → có "1%" trước câu loại; RN-07d "ok đăng đi" → `dang_luon`, "đăng liền… loại nhà", không lặp "thuộc loại nào ta"; RN-07e "nhà phố" → `nha_pho`, câu loại đóng. ZR-06 giữ (không gọi `guess_property_type_answer`). Cách nói mới chưa bắn: "căn này 5 tấm, hẻm 6m" (không chữ nhà) rồi "đăng lẹ giúp anh". Sau deploy: bắn lại 8 câu thu-ai-0610 lần bốn.
 
@@ -3573,7 +3592,7 @@ Hai lỗi giọng còn lại của lượt a1 ("Anh để lại giá 10 tỷ có
 - **Lớp lỗi**: *lớp kiểm câu trả lời chỉ hỏi "cụm trích có thật trong tin không", không hỏi "cụm đó có đang là câu trả lời của ô KHÁC không"*. Không phải lỗi chữ "gấp" / "chấp": cùng câu đã rơi vào ô hẻm trước đó. SRS-5.1zzu vá được lần 13:30 chỉ vì ô hẻm là ô đo đếm (đòi số); ô phán đoán / có-không (gấp, thương lượng, thang máy…) không có kiểu để soát nên vẫn lọt.
 - **Chỗ khác cùng lớp**: `kiemCapNhat` (khách sửa một phần ô) và `giaTriChoCauTreo` (lấy từ đề xuất AI theo khoá) không dùng câu trả lời tự do của AI nên không dính; đường câu treo trong nhánh chia mảnh theo căn đã có `laTreo` riêng — ghi nhận, chưa thấy ca thật. `giaTriHopKieu` (SRS-5.1zzu) giữ nguyên làm lưới thứ hai cho ô đo đếm.
 - **Sửa**: `kiem-bang-chung.ts` `traLoiThuocOKhac(trích, câu hỏi, đề xuất AI, fact luật)`: gỡ khỏi cụm trích của câu trả lời mọi cụm mà CÙNG LƯỢT đã gán cho ô khác (trích dẫn đề xuất AI + câu trả lời luật đọc ra; ô cùng nhóm với câu đang hỏi không tính); còn lại chỉ xưng hô / tiểu từ cuối câu / từ nối → câu trả lời không thuộc ô đang hỏi. Danh sách tiểu từ cố ý KHÔNG có chữ tự nó là câu trả lời có/không ("có", "rồi", "dạ", "ừ", "ok", "vâng") — còn sót một chữ đó thì vẫn coi là câu trả lời. `chat-reply`: `traLoiAi` qua lớp này; thuộc ô khác → như AI nói không trả lời (câu treo đi đường lệch, fact kèm vẫn ghi đúng ô). Prompt `boc-rao.ts` mục TRẢ LỜI CÂU ĐANG HỎI: "một cụm chỉ trả lời một ý; chữ không / có / rồi / chưa nằm trong cụm của ý khác không trả lời câu có/không đang hỏi". Không thêm từ khoá nào của ô gấp.
-- **Kiểm, đỏ khi tắt**: đơn vị `kiem-bang-chung.mjs` MC-01…08 (hai ca gốc; "không gấp, anh đứng tên" và "có, sổ hồng riêng" vẫn là câu trả lời; fact cùng ô không gạt; cách nói MỚI chưa bắn: hỏi thang máy mà khách "giá 5 tỷ 2 nha em", hỏi hẻm mà khách "hẻm 137 Nguyễn Trãi" — địa chỉ); e2e RN-08 (hỏi gấp, AI gán nguyên câu → không ghi ô gấp, ô đứng tên vẫn có), RN-08b đối chứng ("không gấp, anh đứng tên" → ô gấp "không gấp"). Sau deploy: bắn lại 8 câu thu-ai-0610.
+- **Kiểm, đỏ khi tắt**: đơn vị `kiem-bang-chung.mjs` MC-01…08 (hai ca gốc; "không gấp, anh đứng tên" và "có, sổ hồng riêng" vẫn là câu trả lời; fact cùng ô không gạt; cách nói MỚI chưa bắn: hỏi thang máy mà khách "giá 5 tỷ 2 nha em", hỏi hẻm mà khách "hẻm xxx Nguyễn Trãi" — địa chỉ); e2e RN-08 (hỏi gấp, AI gán nguyên câu → không ghi ô gấp, ô đứng tên vẫn có), RN-08b đối chứng ("không gấp, anh đứng tên" → ô gấp "không gấp"). Sau deploy: bắn lại 8 câu thu-ai-0610.
 
 ### SRS-5.1zzx · Hạng Vàng: đo phản hồi trên lượt bot chủ động, nói đúng quyền lợi (06/10/2026)
 
@@ -3840,7 +3859,7 @@ Hai lỗi giọng còn lại của lượt a1 ("Anh để lại giá 10 tỷ có
 
 `[nguồn: chủ dự án 08/10/2026 — "có người thử đang cần rao bán mà nó nhận là cho thuê"; chat thử …vxii]`
 
-- **Ca gốc**: "Tôi cần bán đất mặt tiền" (mở tin: bán, đất) → câu rao dài "Vị trí: 156 An Dương Vương … Phù hợp xây nhà vừa ở vừa kinh doanh, hoặc xây căn hộ cho thuê" → 🤖 "loại: BĐS cho thuê", bot hỏi lại "nhà mình thuộc loại nào", bản nháp "Cho thuê đất … 8,8 tỷ/tháng".
+- **Ca gốc**: "Tôi cần bán đất mặt tiền" (mở tin: bán, đất) → câu rao dài "Vị trí: xxx An Dương Vương … Phù hợp xây nhà vừa ở vừa kinh doanh, hoặc xây căn hộ cho thuê" → 🤖 "loại: BĐS cho thuê", bot hỏi lại "nhà mình thuộc loại nào", bản nháp "Cho thuê đất … 8,8 tỷ/tháng".
 - **Lớp lỗi**: *AI đọc đúng từ ngữ cảnh, lớp kiểm trích dẫn quá hẹp bỏ đi, rồi luật từ khoá đoán đè lên dữ liệu đã có*. AI đọc cả hội thoại, trả `loai_giao_dich` = bán (trích "cần bán") và `loai_bds` = đất (trích "bán đất") — hai cụm ở CÂU TRƯỚC. `kiemDeXuat` chỉ tìm trích dẫn trong câu này → bỏ; `sDeal` rơi xuống `dealCauRao` (từ khoá) trên câu này: có "cho thuê", không có "bán" → cho thuê; loại → "chưa rõ"; cả hai GHI ĐÈ lên tin rỗng đang mang đúng giá trị.
 - **Chỗ khác cùng lớp**: (a) quận / phường / đường AI trích từ câu trước cũng bị bỏ ở đường này — nhưng đó là ý của TỪNG căn, mở rộng phạm vi trích cho chúng dễ kéo nhầm địa chỉ căn khác; giữ hẹp, ghi đây. (b) `dealCauRao` còn dùng ở luật dự phòng khi AI không chạy, và ở tin nhiều căn (AI đứng ngoài) — giữ làm lưới đỡ. (c) đường câu trả lời câu treo ghi fact `loai_giao_dich` qua trigger đồng bộ — không ghi đè bằng từ khoá.
 - **Sửa**: khi câu rao đang điền vào TIN RỖNG mở từ chính các câu trước, hai khoá `loai_giao_dich` / `loai_bds` được kiểm trích dẫn trên các tin chủ nhà trước (`tinChuNhaGoc`) nếu câu này không có. AI đã chạy mà không nói bán / thuê → giữ loại của tin rỗng, rồi loại giao dịch của người rao, rồi mặc định bán (lời chào hỏi "cần rao bán"); không đoán bằng từ khoá. AI không chạy → như cũ. Câu mới NÓI RÕ đổi ý thì AI trích trong chính câu đó và giá trị mới thắng. "Một căn vừa bán vừa cho thuê" chưa có thiết kế — OPEN-59.
@@ -4903,12 +4922,12 @@ e2e **1247/1247**. Không bắn production (chủ dự án 12/10: tiền API "t�
 
 ### SRS-5.1zzzzzh · Test Zalo + bắn production ba kịch bản: phường đoán từ tên đường, mất đường, lộ ghi chú nội bộ, hỏi lại điều đã biết (12/10/2026)
 
-`[nguồn: chủ dự án test Zalo 12/10/2026 kịch bản 1 ("hẻm 120 Trần Hưng Đạo quận 5" → phường Tân Hưng), dán nguyên hội thoại: "đạt ko"; bắn production
+`[nguồn: chủ dự án test Zalo 12/10/2026 kịch bản 1 ("hẻm xxx Trần Hưng Đạo quận 5" → phường Tân Hưng), dán nguyên hội thoại: "đạt ko"; bắn production
 `ban-thu.yml` ba ID thử `thu-kb-dat` / `thu-kb-thue` / `thu-kb-mua` cùng ngày (log job, bảng `boc_tach_bong`, `inbound_ledger`); chủ dự án: "ok sửa hết từ gốc rồi merge đi"]`
 
 Mười hai điểm từ ba kịch bản + một điểm từ test Zalo. Mỗi lớp dưới đây ghi: ca gốc, lớp lỗi, sửa, chỗ khác cùng lớp.
 
-**(0) Phường đoán gần đúng từ TÊN ĐƯỜNG.** Ca gốc: "hẻm 120 Trần Hưng Đạo quận 5" → `timPhuongTrongCau` khớp sai-một-chữ "Trần Hưng" ≈ "Tân Hưng" (Q7 cũ),
+**(0) Phường đoán gần đúng từ TÊN ĐƯỜNG.** Ca gốc: "hẻm xxx Trần Hưng Đạo quận 5" → `timPhuongTrongCau` khớp sai-một-chữ "Trần Hưng" ≈ "Tân Hưng" (Q7 cũ),
 ghi phường Tân Hưng cho nhà Quận 5, bản nháp "Phường Tân Hưng, Quận 5". Lớp lỗi: dò tên phường bằng khớp gần đúng trên MỌI câu địa chỉ, trong khi chữ sau
 "hẻm / kiệt / ngõ / số N" là tên ĐƯỜNG; và quận khách nói cùng câu chưa được coi là quận đã biết.
 - Sửa: `timPhuongTrongCau` coi chữ sau "hẻm / kiệt / ngõ / số N" là tên đường (chỉ "đường N" đánh số mới cho chữ sau là phường) và trả `ganDung`;
@@ -4983,7 +5002,7 @@ Không phải code: chủ dự án đặt Zalo admin ở `/admin`.
 
 | Ca | Nội dung | Tắt bản sửa |
 |---|---|---|
-| ZZZZZH-00 / 00b / 00d / 00e / 00c | "hẻm 120 Trần Hưng Đạo quận 5", "nhà 120/5 tran hung dao q5" (mới), không quận, "nhà ở trần hưng đạo" → không phường Tân Hưng; đối chứng đang hỏi phường "tan hungg" → Tân Hưng | 00e đỏ khi bỏ `ganDung`; `phuong-trong-cau.mjs` đỏ 4 ca khi bỏ luật "hẻm N" |
+| ZZZZZH-00 / 00b / 00d / 00e / 00c | "hẻm xxx Trần Hưng Đạo quận 5", "nhà xxx/x tran hung dao q5" (mới), không quận, "nhà ở trần hưng đạo" → không phường Tân Hưng; đối chứng đang hỏi phường "tan hungg" → Tân Hưng | 00e đỏ khi bỏ `ganDung`; `phuong-trong-cau.mjs` đỏ 4 ca khi bỏ luật "hẻm N" |
 | ZZZZZH-02 / 02b | "đường Vườn Thơm, xã Bình Lợi" (gốc), "đường Láng Le Bàu Cò xã Tân Nhựt" (mới) → vị trí ghi, không hỏi lại đường | đỏ |
 | ZZZZZH-04 | tin cho thuê → dòng ĐÃ BIẾT có "cho thuê" | đỏ |
 | ZZZZZH-04b / 04c | căn hộ Sunrise City (gốc), Sunrise Riverside Nhà Bè (mới) → phường từ kho dự án, không hỏi phường | đỏ |
@@ -5002,7 +5021,7 @@ e2e **1262/1262**. Prompt đổi ở `prompts.ts` (`SELLER_FEWSHOT`) → `dong-b
 
 **Soát trước khi sửa.** Mục 3 ĐÃ có từ 25/09/2026 (FR-209, `cauHoiPhuongGoiY` nhánh "đã biết quận → tra bảng `duong`"): một phường → `phuong_goi_y` + câu
 "Em tra thấy đường X thuộc Phường Y (Quận Z cũ), đúng không anh ạ?"; 2–3 phường → `cauChonPhuong`. Bảng `duong` production 12/10: Trần Hưng Đạo ở Quận 5 đi qua
-Phường An Đông, Chợ Quán, Chợ Lớn; Lương Nhữ Học chỉ Chợ Lớn. e2e dựng lại ca gốc "hẻm 120 Trần Hưng Đạo" Quận 5: bot kể đúng ba phường, khách gõ "chợ quán" /
+Phường An Đông, Chợ Quán, Chợ Lớn; Lương Nhữ Học chỉ Chợ Lớn. e2e dựng lại ca gốc "hẻm xxx Trần Hưng Đạo" Quận 5: bot kể đúng ba phường, khách gõ "chợ quán" /
 "an đông em" / "cho lon" / "không phải, chợ quán" đều ghi đúng. Câu phường tới sau pháp lý / kết cấu là theo `required_facts.priority`, không đổi. Lỗi Tân Hưng của
 ca gốc là khớp gần đúng, đã sửa ở SRS-5.1zzzzzh (0). Soát ra HAI chỗ hỏng ở bước khách TRẢ LỜI câu gợi ý:
 
@@ -5039,7 +5058,7 @@ pháp lý / kết cấu (đổi thứ tự là sửa `required_facts`, chưa có
 
 | Ca | Nội dung | Tắt bản sửa |
 |---|---|---|
-| ZZZZZI-01 | "hẻm 120 Trần Hưng Đạo" Quận 5 → câu phường kể An Đông / Chợ Quán / Chợ Lớn (không Bến Thành Q1), cất `phuong_lua_chon`, chưa ghi phường | — (đối chứng hành vi FR-209) |
+| ZZZZZI-01 | "hẻm xxx Trần Hưng Đạo" Quận 5 → câu phường kể An Đông / Chợ Quán / Chợ Lớn (không Bến Thành Q1), cất `phuong_lua_chon`, chưa ghi phường | — (đối chứng hành vi FR-209) |
 | ZZZZZI-02 / 02b | "cái thứ 2" (gốc), "cái ở giữa á em" (mới) → Phường Chợ Quán, câu phường đóng, không "chưa tìm thấy phường" | đỏ khi bỏ khối `phuong_lua_chon` |
 | ZZZZZI-03 / 03b | AI nói Phường Bến Thành (ngoài danh sách); trích dẫn không có trong tin → không ghi, câu phường treo | 03 đỏ khi bỏ điều kiện "trong danh sách"; 03b đỏ khi bỏ kiểm trích dẫn |
 | ZZZZZI-04 / 04b | gợi ý một phường, khách "ừ" (gốc), "ờ" (mới) → Phường Chợ Lớn | đỏ khi trả sàn 2 chữ |
@@ -5701,7 +5720,7 @@ tải về thành data URL). Tắt bản sửa thì ANH-01 đỏ.
 ### SRS-5.1zzzzzzg · Khách nhắn giật cục → gộp cụm thành một lượt (13/10/2026)
 
 **Nguồn.** Chủ dự án 13/10 tối: "nếu khách nhắn giật cục đó thì sửa làm sao" → đề xuất gộp cụm → "gật". Zalo thật 13/10 17:20–17:23 (đất Q8):
-"Đường 156 An Dương Vương" rồi 11 giây sau "Phường Phú Định"; "xây được 6 tầng" / "Đất có sổ đỏ chính chủ" / ảnh cách nhau 8–10 giây —
+"Đường xxx An Dương Vương" rồi 11 giây sau "Phường Phú Định"; "xây được 6 tầng" / "Đất có sổ đỏ chính chủ" / ảnh cách nhau 8–10 giây —
 3 ngày chỉ có 4 cặp tin cách nhau dưới 30 giây, đều ở chat này.
 
 **Lớp lỗi.** Mỗi tin là một lượt độc lập: lượt trước ghi fact rồi IM (nhường lượt SRS-5.1zzzzzq), lượt cuối trả lời. Hai lỗ: (1) fact
@@ -5726,7 +5745,7 @@ soi tin mới hơn) đã làm đúng việc này cho ẢNH; chữ thì chưa.
 phòng ngủ của lượt anh em), GOPCUM-02 (tin chữ mới hơn trong lúc chờ → `dau_luot`, không fact, không gọi model, không lời bot), GOPCUM-03
 (tin mới hơn là ảnh → không thoát, fact vẫn ghi), GOPCUM-04 (tin cách 20 s → không gộp, vẫn mốc 🤖). Tắt bản sửa: GOPCUM-01 đỏ (lượt
 không ghi hướng của tin trước), GOPCUM-02 đỏ (lượt vẫn ghi fact + gọi model). DAM-S2 / DAM-S3 (tin 2 vào ngay sau tin 1) nay thoát ở cổng
-chờ (`dau_luot`) — sớm hơn cổng "đủ rồi" / trước gửi; TOIUU-07 +2 truy vấn (công tắc + tin lân cận). Thả cảm xúc không gộp (ZR-05 giữ). Cách nói mới chưa bắn: "Đường 156 An Dương Vương" ⏎ "Phường Phú Định" ⏎ "hẻm 5m".
+chờ (`dau_luot`) — sớm hơn cổng "đủ rồi" / trước gửi; TOIUU-07 +2 truy vấn (công tắc + tin lân cận). Thả cảm xúc không gộp (ZR-05 giữ). Cách nói mới chưa bắn: "Đường xxx An Dương Vương" ⏎ "Phường Phú Định" ⏎ "hẻm 5m".
 e2e thay giấc chờ bằng `globalThis.__nguGopCum`.
 
 **Đo trên production** (14/10/2026 00:12–00:14, ID thử `thu-gc-01`, đã dọn): hai tin cách 65 ms → một lượt thoát `dau_luot` sau 4,1 s, lượt
@@ -5796,7 +5815,7 @@ Còn lại ngoài phạm vi: 🤖 cho câu lệnh "tiếp đi em" vẫn in "Khô
 
 ### SRS-5.1zzzzzzj · Bản nháp: gộp dòng "🏫 Tiện ích" vào dòng "📝 Thêm" (14/10/2026)
 
-**Nguồn.** Chủ dự án 14/10 (ảnh bản nháp 105/12 Trần Bình Trọng: "📝 Thêm: hiện trạng đang để trống" và "🏫 Tiện ích: mặt tiền 4m · gần cầu
+**Nguồn.** Chủ dự án 14/10 (ảnh bản nháp hẻm xxx Trần Bình Trọng: "📝 Thêm: hiện trạng đang để trống" và "🏫 Tiện ích: mặt tiền 4m · gần cầu
 Phú Xuân" là hai dòng rời): "để ô tiện ích và thêm gộp lại luôn". Quyết định trình bày, không phải lỗi bóc tách.
 
 **Quy tắc.** `tin-nhap.ts` in MỘT dòng "📝 Thêm": phần tiện ích đi trước (mặt tiền từ cột `frontage_m`, tiện ích khách liệt kê `tien_ich_gan`,
@@ -5809,11 +5828,11 @@ ZZZZZZ-01/01b (phần tiện ích chọn lọc nằm đầu dòng Thêm, không 
 ### SRS-5.1zzzzzzk · Khách gọi tên phường khác phường gợi ý không phải gật; lượt chốt tin không ghi đè địa chỉ cùng nội dung (14/10/2026)
 
 **Nguồn.** Người test thật (cô, nhà Huỳnh Tấn Phát, 10:17–10:38 giờ VN, tin `BDS-NP-XX-0001`). (1) Bot gợi ý "Cháu tra thấy đường Huỳnh Tấn Phát
-số 1235 thuộc Phường Tân Thuận (Quận 7 cũ), đúng không cô ạ?", cô đáp "Phường Phú Thuận nhé" → lượt ý ngắn đọc "nhé" là `dong_y` →
+số xxxx thuộc Phường Tân Thuận (Quận 7 cũ), đúng không cô ạ?", cô đáp "Phường Phú Thuận nhé" → lượt ý ngắn đọc "nhé" là `dong_y` →
 `nhanGoiY` lấy phường gợi ý → tin ghi **Phường Tân Thuận** (fact 10:37:01 "Phường Phú Thuận" rồi 10:37:02 "Phường Tân Thuận" đè lên). Dữ
-liệu sai lên tin công khai. (2) Lượt đầu ghi địa chỉ "1235 Huỳnh Tấn Phát" (đã qua từ điển đường); lượt CHỐT TIN trước bản nháp đọc lại cả
-hội thoại ("đường huỳnh tấn phát" / "số 1235") và ghi đè `vi_tri` = "đường huỳnh tấn phát số 1235" → `location_raw` thô, cột `street` thành
-"huỳnh tấn phát số 1235", 📍 in chữ thường. (3) "Phí ok" → model viết "Cương cũ có gì cần hỗ trợ thêm không ạ?" — lỗi chữ của chính model ở
+liệu sai lên tin công khai. (2) Lượt đầu ghi địa chỉ "số xxxx Huỳnh Tấn Phát" (đã qua từ điển đường); lượt CHỐT TIN trước bản nháp đọc lại cả
+hội thoại ("đường huỳnh tấn phát" / "số xxxx") và ghi đè `vi_tri` = "đường huỳnh tấn phát số xxxx" → `location_raw` thô, cột `street` thành
+"huỳnh tấn phát số xxxx", 📍 in chữ thường. (3) "Phí ok" → model viết "Cương cũ có gì cần hỗ trợ thêm không ạ?" — lỗi chữ của chính model ở
 lượt viết (sổ `van_kich` không có van nào ở lượt đó); chưa có cách chặn tất định, ghi nhận.
 
 **Lớp lỗi.** (1) Tín hiệu GẬT của AI được dùng mà không đối chiếu với NỘI DUNG câu: câu vừa gật vừa gọi tên một phường khác thì phần
@@ -5852,8 +5871,8 @@ giữa lượt → vẫn trả lời, câu đóng). Tắt: ba ca đỏ (lượt 
 ### SRS-5.1zzzzzzm · Địa chỉ một cửa: vi_tri chuẩn hoá ở `ghiFact`, phường tra bảng `duong` trước và kể ra cho chọn, câu trả lời phường một quyết định (14/10/2026)
 
 **Nguồn.** Chủ dự án sau SRS-5.1zzzzzzk: "do code nên lạc xa vậy à, vậy thì nghĩ cách sửa từ gốc đi". Hai người test thật cùng ngày:
-(1) nhà Huỳnh Tấn Phát 10:17–10:38 — địa chỉ "1235 Huỳnh Tấn Phát" bị lượt chốt ghi lại "đường huỳnh tấn phát số 1235", cột `street` thành
-"huỳnh tấn phát số 1235"; chưa biết quận nên bot tra Nominatim, Nominatim trả MỘT phường (Tân Thuận) cho con đường bảng `duong` biết chạy
+(1) nhà Huỳnh Tấn Phát 10:17–10:38 — địa chỉ "số xxxx Huỳnh Tấn Phát" bị lượt chốt ghi lại "đường huỳnh tấn phát số xxxx", cột `street` thành
+"huỳnh tấn phát số xxxx"; chưa biết quận nên bot tra Nominatim, Nominatim trả MỘT phường (Tân Thuận) cho con đường bảng `duong` biết chạy
 qua Phú Thuận · Tân Mỹ · Tân Thuận (Quận 7) + Xã Nhà Bè → hỏi có/không một phường đoán; khách "Phường Phú Thuận nhé" → hai chỗ ghi cùng lượt
 (tên AI đọc rồi gật gợi ý), Tân Thuận đè. (2) nhà phố Cao Lỗ 11:26 — bài rao nhắc nhiều địa danh → `match_projects` khớp một dự án Quận 7,
 phường của dự án (Tân Hưng) chép vào tin nhà phố, tin lên kệ "📍 Cao Lỗ, Phường Tân Hưng" (quận trống).
@@ -5888,7 +5907,7 @@ quyết (OPEN). Mock e2e không dựng cột `street` từ `location_raw` như t
 `tra-phuong.mjs` `phuongQuanCuaDuong` / `cauChonPhuongQuan`; SQL `ten-duong.sql` 5 ca "số N" cuối (chạy trên Postgres tạm với 20261014a);
 e2e ZZZZZZM-01 (chưa quận, 4 phường TP.HCM + 1 Đồng Nai → kể 4 kèm quận, không đoán), 02/02b/02c ("Phường Phú Thuận nhé" AI + gật / AI im /
 tra_loi "phú thuận" → Phú Thuận, Quận 7, danh sách xoá), 03 (chọn Nhà Bè → quận Nhà Bè), 04 (gật trơn trước danh sách → treo), 05/05b (một
-phường → có/không, gật → phường + quận), 06/06b (cửa ghiFact: "đường huỳnh tấn phát số 1235" / "số 1235 huynh tan phat" → "1235 Huỳnh Tấn
+phường → có/không, gật → phường + quận), 06/06b (cửa ghiFact: "đường huỳnh tấn phát số xxxx" / "số xxxx huynh tan phat" → "số xxxx Huỳnh Tấn
 Phát"), 07 (nhà phố khớp dự án → không chép phường kho). Kỳ vọng đổi theo thiết kế mới: PH-13 (kể phường kèm quận thay câu Nominatim),
 DUONG-01 (cửa tra thêm một lần bằng tên đã sửa). Tắt (b): 06 đỏ; tắt (d): 01 đỏ; tắt (e): 02 đỏ, ZZZZZI-03 đỏ; tắt (f): 07 đỏ.
 
@@ -6075,7 +6094,7 @@ không đổi thì phải mang "(như cũ)".
 
 ### SRS-5.1zzzzzzy · Câu bị rút khi nhường lượt không phải "khách đã né" (14/10/2026)
 
-**Nguồn.** Người test thật 14/10 07:57 (căn hộ 2225 Phạm Thế Hiển, Q8): khách nhắn "địa chỉ 2225 Phạm Thế Hiển" rồi 16 giây sau "căn mình 60m2".
+**Nguồn.** Người test thật 14/10 07:57 (căn hộ số xxxx Phạm Thế Hiển, Q8): khách nhắn "địa chỉ số xxxx Phạm Thế Hiển" rồi 16 giây sau "căn mình 60m2".
 Lượt tin đầu mở câu số phòng ngủ rồi nhường lượt; SRS-5.1zzzzzzp rút câu đó bằng cách đặt `expired`. Bot hỏi tầng, giá, pháp lý — không bao giờ
 hỏi số phòng ngủ của căn hộ.
 
@@ -6122,7 +6141,7 @@ số căn đủ thông tin (hệ số `diem_nguoi_ban` tới 10 căn), ≥ 80 đ
 
 ### SRS-5.1zzzzzzz3 · Căn hộ phải hỏi tên chung cư dù đã có địa chỉ đường (14/10/2026)
 
-**Nguồn.** Người test thật 14/10 07:55–07:59 (Zalo …4980): "Chung cư đường Phạm Thế Hiển quận 8", "địa chỉ 2225 Phạm Thế Hiển" → bot ghi vị
+**Nguồn.** Người test thật 14/10 07:55–07:59 (Zalo …xxxx): "Chung cư đường Phạm Thế Hiển quận 8", "địa chỉ số xxxx Phạm Thế Hiển" → bot ghi vị
 trí rồi hỏi phường, diện tích, tầng, giá, pháp lý — không bao giờ hỏi căn hộ thuộc chung cư nào. Chủ dự án: "sửa luôn, tất cả các thứ sửa từ gốc".
 
 **Lớp lỗi.** Một ô gánh hai thứ khác nhau: với căn hộ, `vi_tri` vừa là địa chỉ đường vừa là tên dự án, và `listing_missing_facts` coi ô đó là có
@@ -6186,8 +6205,8 @@ Sau merge đẩy `tone_rules` lên `bot_prompts`.
 
 ### SRS-5.1zzzzzzz7 · Trả lời câu hỏi tên dự án không phải rao căn mới (14/10/2026)
 
-**Nguồn.** Người test thật 14/10 16:33 (Zalo …4980, căn hộ 2225 Phạm Thế Hiển): bot hỏi "Dự án mình tên gì", khách "Dự án Green river" → bot
-"trước đó anh chị có căn 2225 Phạm Thế Hiển… căn anh chị vừa nhắc là căn đó hay căn khác ạ?", tên dự án không được ghi lượt đó.
+**Nguồn.** Người test thật 14/10 16:33 (Zalo …xxxx, căn hộ số xxxx Phạm Thế Hiển): bot hỏi "Dự án mình tên gì", khách "Dự án Green river" → bot
+"trước đó anh chị có căn số xxxx Phạm Thế Hiển… căn anh chị vừa nhắc là căn đó hay căn khác ạ?", tên dự án không được ghi lượt đó.
 
 **Lớp lỗi.** Câu TRẢ LỜI câu treo bị đọc là RAO CĂN MỚI: cổng "rao suông" (`raoSuong`) coi tin có ý rao khi AI đọc ra loại BĐS / loại giao dịch
 (chữ "Dự án" → căn hộ) và tin không có số; chỉ câu trả lời câu LOẠI BĐS được miễn. Thêm nữa, câu treo `du_an_ten` không đọc được khoá AI `du_an`
@@ -6334,7 +6353,7 @@ câu rao CÓ nói quận (dựa vào luật lấp) → dữ liệu dựng ca gá
 
 ### SRS-5.1zzzzzzz15 · Đợt 1 gỡ code đoán nghĩa: "chưa ok" không phải gật, AI nhận nguyên tin, căn đó / căn khác và dự án do AI (14/10/2026)
 
-**Ca gốc.** Zalo thật 14/10 10:09–10:49 (tester …4980, bài rao Conic Boulevard). (a) Bot chờ duyệt bản nháp, khách "chị thấy chưa ok" → 🤖 "đồng ý
+**Ca gốc.** Zalo thật 14/10 10:09–10:49 (tester …xxxx, bài rao Conic Boulevard). (a) Bot chờ duyệt bản nháp, khách "chị thấy chưa ok" → 🤖 "đồng ý
 bản nháp, em đăng tin", tin lên kệ (sổ `boc_tach_bong`: `y_dinh du_roi` + `tra_loi` "chấp thuận đăng", trích "ok"). (b) "em bổ sung xong cho chị xem
 bản nháp trước khi rao nhé" → "chị gửi nội dung tin qua đây". (c) "Bạn có thông tin về Conic Boulevard không?" → bot không trả lời dù kho có dự
 án. (d) "em rao thêm cho chị tiện ích trong khu chung cư này chứ" → "căn đó hay căn khác". (e) Căn hộ "ngay mặt tiền Quốc lộ 1" → bản nháp
@@ -6368,7 +6387,7 @@ e2e 1419/1419 (SEC-06 nâng trần sổ 4.000 → 12.000; ZH-10 đỏ ở bản 
 
 ### SRS-5.1zzzzzzz16 · Soát lại lượt test 14/10 10:09–10:49: chữ "pháp lý" theo loại, "sẽ lên kệ" khi đã lên kệ, ô trả lời gộp hai ô, log tên trợ lý (14/10/2026)
 
-**Ca gốc.** Chủ dự án: "xem lại mấy test lúc nãy, sửa từ gốc, cái nào chưa sửa được báo". Đối chiếu từng lượt của tester …4980 (bài rao Conic
+**Ca gốc.** Chủ dự án: "xem lại mấy test lúc nãy, sửa từ gốc, cái nào chưa sửa được báo". Đối chiếu từng lượt của tester …xxxx (bài rao Conic
 Boulevard) với SRS-5.1zzzzzzz10…15: các lỗi đã có bản sửa (duyệt / địa chỉ / hai tin / quận / tên dự án / "chưa ok" / căn đó-căn khác / tra kho /
 mặt tiền căn hộ / cắt tin) không làm lại. Còn bốn chỗ: (a) căn hộ nhận gợi ý "thêm pháp lý (loại sổ, hoàn công)"; (b) tin ĐÃ lên kệ mà bot nói "Tin
 sẽ lên kệ trong hôm nay"; (c) "căn chị 3 pn, 2wc" → ô số phòng ngủ ghi "3 phòng ngủ, 2 WC"; (d) log quản trị `so.hoi_thoai` ghi "Thái (bot)" trong
@@ -9044,9 +9063,9 @@ nhưng kho hẻm (bảng `duong`, `loai = hem`, nạp từ OSM) có hẻm 137 c�
 
 1. **Lớp**: bot tra địa danh theo tên đường mà bỏ phần số trong địa chỉ — kho có 25.564 hẻm kèm phường, lõi chưa đọc.
 2. **Sửa** (`src/aioi/dia_danh.py`): `so_hem_cua` đọc KHUÔN SỐ của ô `dia_chi` (đã do AI ghi, qua cổng bằng chứng) — "137/28" → hẻm 137
-   (phần cuối là số nhà), "hẻm 965" → 965, "285 Cách Mạng Tháng Tám" (không chữ hẻm, không "/") → không có hẻm; số đi sau chữ "hẻm" thắng,
+   (phần cuối là số nhà), "hẻm xxx" → xxx, "xxx Cách Mạng Tháng Tám" (không chữ hẻm, không "/") → không có hẻm; số đi sau chữ "hẻm" thắng,
    không thì số có "/" đầu tiên ("Đường số 59, nhà 137/28" không lấy "59"); số trong chính tên đường bị gỡ trước khi đọc. Bắn thử
-   trước khi sửa (DC2) cho thấy khách gõ "hẻm 965 Quang Trung" mà AI ghi ô dia_chi "965 Quang Trung" — nên khi ô `lo_gioi_hem` nói căn
+   trước khi sửa (DC2) cho thấy khách gõ "hẻm xxx Quang Trung" mà AI ghi ô dia_chi "xxx Quang Trung" — nên khi ô `lo_gioi_hem` nói căn
    trong hẻm thì số trần đầu địa chỉ cũng là số hẻm (chưa biết hẻm hay mặt tiền thì không đoán). `TraDiaDanh.phuong_theo_hem` đọc bảng `duong` theo đường mẹ +
    số hẻm, lọc theo quận khách nói. `khoi_dia_danh`: chưa có phường mà hẻm ra 1 phường → dặn model hỏi xác nhận dạng HỎI ("nhà mình ở
    An Hội Tây đúng không anh/chị?"), 2–4 phường → kể cho khách chọn; thay cho gợi ý theo đường, có ở mọi lượt (cả lượt tin rao đầu).
@@ -9120,7 +9139,7 @@ web; chạy lại khi Anthropic có số dư.
 ### SRS-5.1zzzzzzz117 · Claude hỏng thì trả lời bằng Gemini, rồi Groq (21/10/2026)
 
 Tài khoản Anthropic hết số dư lúc 10:14 UTC 21/10 — từ đó mọi lượt là câu giữ chỗ "em đang xem kỹ…", bot câm với cả khách thật (sổ lỗi
-42 dòng trong 3 phút bắn thử). Lê Quang: "cho key anthropic hết thì qua gemini, hết lun thì qua groq".
+42 dòng trong 3 phút bắn thử). anh Q.: "cho key anthropic hết thì qua gemini, hết lun thì qua groq".
 
 1. **Lớp**: lõi Python chỉ có MỘT đường gọi model (`llm/claude.py`); lưới Groq / Gemini của bot TypeScript gỡ 18/10 (b2f2d44) cùng bot cũ,
    không chép sang lõi. Mọi hỏng ở nhà cung cấp (hết tiền, quá tải, quá hạn) thành bot câm.
@@ -9147,7 +9166,7 @@ model nói "đang tiếp cận nhiều khách hàng quan tâm" dù khối số l
 
 ### SRS-5.1zzzzzzz118 · Không mở đầu hai lượt liền bằng câu ghi nhận (21/10/2026)
 
-Lê Quang 21/10 gửi ảnh chat lúc 17:57 (lượt chạy dự phòng Gemini, SRS-5.1zzzzzzz117): ba lượt liền bot mở "Em đã ghi nhận đầy đủ thông tin…",
+anh Q. 21/10 gửi ảnh chat lúc 17:57 (lượt chạy dự phòng Gemini, SRS-5.1zzzzzzz117): ba lượt liền bot mở "Em đã ghi nhận đầy đủ thông tin…",
 "Em ghi nhận Phường An Phú Đông rồi…", "Em ghi nhận sổ hồng riêng…" — "sao nó ghi nhận lắm thế".
 
 1. **Lớp**: luật giọng `LUAT_GHI_NHAN` (SRS-5.1zzzzzzz102, "ngắn không thì nó láo") bắt đáp nhận MỖI lượt khách cho thông tin và đưa
@@ -9161,7 +9180,7 @@ Lê Quang 21/10 gửi ảnh chat lúc 17:57 (lượt chạy dự phòng Gemini, 
 3. **Cùng lớp còn lại**: các khuôn mở đầu khác ("Em cảm ơn…") chưa soát lặp; chưa đo được bao nhiêu lượt Haiku lặp kiểu này (ảnh là
    lượt Gemini).
 
-Cùng ngày, Lê Quang: "oke hoặc cái gì đó flexible vào" — câu mẫu ghi nhận trong prompt (bốn chỗ cùng gieo "Em ghi rồi…") đổi thành
+Cùng ngày, anh Q.: "oke hoặc cái gì đó flexible vào" — câu mẫu ghi nhận trong prompt (bốn chỗ cùng gieo "Em ghi rồi…") đổi thành
 nhiều kiểu ("Em ghi rồi ạ.", "Em cảm ơn chị.", "Em lưu vào tin rồi nha anh.", "Em nắm rồi chị.", "Em thêm vào tin rồi anh."), vẫn mở bằng
 việc em làm (luật không từ đệm, SRS-5.1zzzzzzz80/84/102) và không "Dạ" (quyết định chủ dự án) — "Oke…" / "Dạ oke…" mở đầu cần chủ dự
 án gỡ hai luật đó trước, chưa làm. Bước soát mở rộng: hai lượt liền cùng BA CHỮ ĐẦU (`_cung_mo_dau`) cũng gọi lại model.
@@ -9171,7 +9190,7 @@ khi gỡ bản sửa.
 
 ### SRS-5.1zzzzzzz119 · Khen nhiều hơn, vẫn có cơ sở (21/10/2026)
 
-Lê Quang 21/10 chuyển ý sếp: "sếp tôi cần nó khen nhiều hơn" — thay quyết định 19/10 (SRS-5.1zzzzzzz75, "khen quá nhiều, khen tào lao" →
+anh Q. 21/10 chuyển ý sếp: "sếp tôi cần nó khen nhiều hơn" — thay quyết định 19/10 (SRS-5.1zzzzzzz75, "khen quá nhiều, khen tào lao" →
 "khen ít, có cơ sở").
 
 1. **Lớp**: đổi quyết định giọng, không phải lỗi. Luật khen MỘT nguồn (`LUAT_KHEN`) vẫn là chỗ duy nhất quyết khen; hai câu khác trong
@@ -9189,7 +9208,7 @@ Kiểm: `tests/test_khen_co_co_so.py` thêm `test_khen_nhieu_hon_van_co_co_so` �
 
 ### SRS-5.1zzzzzzz120 · Câu ghi nhận ví dụ ở bảng câu mẫu; lượt đầu bỏ văn mẫu cảm ơn dài (21/10/2026)
 
-Lê Quang 21/10: "mấy cái em ghi nhận sửa ở chỗ mẫu câu luôn đi và xem phản hồi của nó để sửa thêm mỗi chỗ khác". Sổ `cau_chuan` hôm đó
+anh Q. 21/10: "mấy cái em ghi nhận sửa ở chỗ mẫu câu luôn đi và xem phản hồi của nó để sửa thêm mỗi chỗ khác". Sổ `cau_chuan` hôm đó
 (342 câu bot): mở bằng "Em cảm ơn" 46 lượt, "Cảm ơn anh/chị" 44, "Em ghi nhận" 42, "Em ghi rồi" 21; lượt đầu tiên của người rao hầu như
 luôn "Em cảm ơn anh/chị đã tin tưởng gửi thông tin nhà cho bên em ạ. Em ghi rồi, …".
 
@@ -9208,7 +9227,7 @@ Kiểm: `tests/test_ghi_nhan_mau.py` (6 ca; đỏ trên prompt cũ — 3 ca vỡ
 
 ### SRS-5.1zzzzzzz121 · Bản nháp không gạch đầu dòng vẫn một tin nhắn; prompt lượt hỏi bớt ví dụ lặp (22/10/2026)
 
-Lê Quang gửi ảnh bản nháp nhà phố Thạnh Lộc ra NĂM bong bóng: "bản nháp này ổn rồi, nhưng cần gộp vào 1 ô chat thôi". Cùng lượt: "còn cái nào
+anh Q. gửi ảnh bản nháp nhà phố Thạnh Lộc ra NĂM bong bóng: "bản nháp này ổn rồi, nhưng cần gộp vào 1 ô chat thôi". Cùng lượt: "còn cái nào
 ko flexible nữa ko fix luôn, bot prompt cho ngắn hơn có linh hoạt hơn ko".
 
 1. **Lớp lỗi (bong bóng)**: bộ chia tin nhắn (`delivery.chunk_reply`) nhận bản tin rao bằng HÌNH DÁNG (có gạch đầu dòng / `---`), còn cờ
@@ -9229,7 +9248,7 @@ Kiểm: `tests/test_delivery.py::test_ban_nhap_khong_gach_dau_dong_van_mot_tin_n
 
 ### SRS-5.1zzzzzzz122 · Đọc nghĩa sticker (khách gửi sticker "HI!" = lời chào) (22/10/2026)
 
-Lê Quang gửi ảnh: sticker thỏ vẫy tay "HI!" → bot đáp "Em nhận được sticker của anh rồi ạ. Anh cho em hỏi thêm diện tích…" ("hello này nó biết là
+anh Q. gửi ảnh: sticker thỏ vẫy tay "HI!" → bot đáp "Em nhận được sticker của anh rồi ạ. Anh cho em hỏi thêm diện tích…" ("hello này nó biết là
 sticker thôi à, ko biết là hello à" → "thì dùng gemini đi").
 
 1. **Lớp lỗi**: kênh làm mất NGHĨA của tin rồi để lõi đoán — bridge (SRS-5.1zzzzzzz22) gán MỌI sticker chuỗi trung tính "[khách gửi sticker]" vì
@@ -9250,7 +9269,7 @@ Kiểm: `tests/test_sticker.py` (6 ca; ca `test_sticker_da_doc_van_khong_bao_gio
 
 ### SRS-5.1zzzzzzz123 · Lời chào không còn làm mới phiên; lệnh làm mới là "$$$$$" (22/10/2026)
 
-Lê Quang: "giờ đừng để hello thành reset nữa, lệnh reset sẽ là $$$$$ người ta nhắn 5 dấu này". Thay quyết định 20/10/2026 ("hello là tôi đang test, đó
+anh Q.: "giờ đừng để hello thành reset nữa, lệnh reset sẽ là $$$$$ người ta nhắn 5 dấu này". Thay quyết định 20/10/2026 ("hello là tôi đang test, đó
 là ý của tôi" — `is_greeting_reset`).
 
 1. **Lớp lỗi**: một lời khách THƯỜNG (chào) gắn với thao tác PHÁ DỮ LIỆU (xoá phiên) — khách thật chào giữa chừng, hay sticker chào (SRS-5.1zzzzzzz122)
@@ -9266,7 +9285,7 @@ Kiểm: `tests/test_lenh_lam_moi.py` (5 ca; 2 ca đỏ khi quay về bản cũ).
 
 ### SRS-5.1zzzzzzz124 · Khen nhiều hơn lần hai: khen cả cách khách làm việc, bên mua có luật khen (22/10/2026)
 
-Lê Quang hỏi lại: "cho nó khen nhiều hơn dc ko" (sau SRS-5.1zzzzzzz119).
+anh Q. hỏi lại: "cho nó khen nhiều hơn dc ko" (sau SRS-5.1zzzzzzz119).
 
 1. **Lớp lỗi**: không phải lỗi — đổi mức độ giọng. Luật khen MỘT nguồn (`LUAT_KHEN`) vẫn là chỗ duy nhất quyết khen; tồn đọng từ SRS-119 ghi
    rõ "phía người mua chưa có luật khen riêng" (bắn thử 21/10: "Vay khoảng 50% là phương án rất hợp lý" — nhận xét tài chính không có cơ sở).
@@ -9282,7 +9301,7 @@ Kiểm: `tests/test_khen_co_co_so.py::test_khen_nhieu_hon_lan_hai_khen_ca_cach_k
 
 ### SRS-5.1zzzzzzz125 · Lời chào đầu tiên do AI đọc, bỏ danh sách từ khoá (22/10/2026)
 
-Lê Quang trả lời câu hỏi "chỗ nào còn bắt theo từ khoá": "cho lời chào đầu tiên đi thẳng qua AI thay vì danh sách từ khoá, và bỏ danh sách ở chỗ 2 —
+anh Q. trả lời câu hỏi "chỗ nào còn bắt theo từ khoá": "cho lời chào đầu tiên đi thẳng qua AI thay vì danh sách từ khoá, và bỏ danh sách ở chỗ 2 —
 đúng; json chả ai bấm nhầm đâu" (lệnh `json` / `thong tin` giữ nguyên).
 
 1. **Lớp lỗi**: máy đoán "khách đang chào" bằng danh sách chữ cố định (hello, hi, alo, helo, hế lô, halo, chào em / bot, 👋, "[sticker cảm xúc]" + hai
@@ -9301,7 +9320,7 @@ Kiểm: `tests/test_lenh_lam_moi.py::test_loi_chao_dau_tien_do_ai_doc_khong_con_
 
 ### SRS-5.1zzzzzzz126 · Địa chỉ xã + tỉnh là đủ, không hỏi quận / huyện; đất hỏi "gần chỗ nào hoặc đường nào" (22/10/2026)
 
-Lê Quang test đất 31.314 m² "ở xã phước lý" (Long An): bot xin "tên đường, phường và quận", rồi hỏi "Xã Phước Lý thuộc huyện nào của Long An vậy anh?". Phản hồi:
+anh Q. test đất 31.314 m² "ở xã phước lý" (Long An): bot xin "tên đường, phường và quận", rồi hỏi "Xã Phước Lý thuộc huyện nào của Long An vậy anh?". Phản hồi:
 "xã phước lý tức là hết huyện rồi, kiểu giờ địa chỉ thì nó có thể coi rõ hơn. về ở gần chỗ nào, hoặc đường nào, khi nào bên em đi xem dc ko".
 
 1. **Lớp lỗi**: câu hỏi địa chỉ viết theo hệ hành chính BA CẤP cũ (đường / phường / quận) trong khi từ 1/7/2025 chỉ còn hai cấp (tỉnh / thành → xã /
@@ -9317,7 +9336,7 @@ Kiểm: `tests/test_dia_chi_xa.py` (2 ca, đỏ trên prompt cũ).
 
 ### SRS-5.1zzzzzzz127 · Chỉ còn `$$$$$` làm mới phiên; script bắn thử đất ở xã (22/10/2026)
 
-Lê Quang (trả lời câu hỏi ở SRS-123): "giờ chỉ còn cái $$$$$ mới xóa hết thôi" — bỏ cả các lệnh gõ tay cũ.
+anh Q. (trả lời câu hỏi ở SRS-123): "giờ chỉ còn cái $$$$$ mới xóa hết thôi" — bỏ cả các lệnh gõ tay cũ.
 
 1. **Lớp lỗi**: như SRS-123 — một câu khách có thể gõ thường ("xóa hết", "reset session") gắn với thao tác PHÁ DỮ LIỆU (xoá cả phiên).
 2. **Sửa** (`engine.py`): `la_lenh_lam_moi = cmd == LENH_LAM_MOI` (`$$$$$`); `/reset`, `/clear`, `/xoa`, "reset session", "xóa hết" thành lời thường — "xóa hết" đi qua lượt AI
@@ -9330,7 +9349,7 @@ Kiểm: `tests/test_lenh_lam_moi.py::test_lenh_cu_khong_con_lam_moi_chi_con_nam_
 
 ### SRS-5.1zzzzzzz128 · Nạp 96 xã / phường tỉnh Tây Ninh (Long An cũ); bot nhận "xã Phước Lý" là xã của Tây Ninh (22/10/2026)
 
-Lê Quang: "xã phước lý tức là hết huyện rồi, kiểu giờ địa chỉ thì nó có thể coi rõ hơn… nạp danh sách xã Long An đi". Sau bắn thử `ban-thu-xa` (Gemini, 22/10): bot không còn hỏi
+anh Q.: "xã phước lý tức là hết huyện rồi, kiểu giờ địa chỉ thì nó có thể coi rõ hơn… nạp danh sách xã Long An đi". Sau bắn thử `ban-thu-xa` (Gemini, 22/10): bot không còn hỏi
 huyện (SRS-126) nhưng `listings.ward` vẫn null và lời bot chưa biết xã ấy thuộc tỉnh nào.
 
 1. **Lớp lỗi**: kho địa danh chỉ phủ TP.HCM (`wards` 168 phường, khoá chính là tên ngắn, ràng buộc `tinh_cu` ∈ {TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu}, và là nguồn DUY NHẤT của cột
@@ -9349,8 +9368,8 @@ Kiểm thêm: `bot/tests/ban-thu-xa.sh` (production, Gemini): không hỏi huy�
 
 ### SRS-5.1zzzzzzz129 · Nạp 95 xã / phường tỉnh Đồng Nai; xã Bình Phước cũ vẫn NGOÀI vùng nhận tin (22/10/2026)
 
-Lê Quang hỏi bot đã biết xã phường Bình Dương / Đồng Nai / Vũng Tàu chưa; đọc DB: Bình Dương + Vũng Tàu nằm sẵn trong `wards` (168 = 102 TP.HCM cũ + 36 + 30) và `duong`, còn Đồng Nai chỉ có
-677 tên đường, chưa có bảng xã. Lê Quang: "chạy … để bot biết đi về bình phước đúng". Bình Phước cũ nay thuộc tỉnh Đồng Nai nhưng vẫn ngoài vùng (chủ dự án 20/10: "bỏ").
+anh Q. hỏi bot đã biết xã phường Bình Dương / Đồng Nai / Vũng Tàu chưa; đọc DB: Bình Dương + Vũng Tàu nằm sẵn trong `wards` (168 = 102 TP.HCM cũ + 36 + 30) và `duong`, còn Đồng Nai chỉ có
+677 tên đường, chưa có bảng xã. anh Q.: "chạy … để bot biết đi về bình phước đúng". Bình Phước cũ nay thuộc tỉnh Đồng Nai nhưng vẫn ngoài vùng (chủ dự án 20/10: "bỏ").
 
 1. **Lớp lỗi**: cùng SRS-128 — kho địa danh không phủ xã ngoài TP.HCM. Thêm một lớp riêng: tỉnh MỚI không nói được tỉnh CŨ, trong khi luật vùng nhận tin tính theo tỉnh cũ; và cùng tên xã có ở hai tỉnh
    (Xã Tân Hưng, Xã Lộc Ninh: Tây Ninh và Đồng Nai/Bình Phước cũ) nên khoá chính tên đầy đủ một mình sẽ ghi đè dòng của tỉnh kia.
@@ -9368,7 +9387,7 @@ Lê Quang hỏi bot đã biết xã phường Bình Dương / Đồng Nai / Vũn
 
 ### SRS-5.1zzzzzzz130 · Chế độ test: gõ `$$$$$` rồi mỗi lượt có thêm tin phụ "đã trích xuất / đã hiểu gì" (22/10/2026)
 
-Lê Quang: "thêm 1 đoạn tin nhắn ban đầu người ta bắt đầu với $$$$$ sau đó là đã trích xuất gì, đã hiểu gì … mỗi tin nhắn đều có 1 tin $$$$$ trích xuất thông tin gì … từ tin nhắn đầu luôn, viết từ code".
+anh Q.: "thêm 1 đoạn tin nhắn ban đầu người ta bắt đầu với $$$$$ sau đó là đã trích xuất gì, đã hiểu gì … mỗi tin nhắn đều có 1 tin $$$$$ trích xuất thông tin gì … từ tin nhắn đầu luôn, viết từ code".
 Trước đó tester phải gõ `json` riêng mỗi lượt để soi ô đã bóc.
 
 1. **Lớp lỗi / nhu cầu**: bóc tách là bước thấy được ít nhất — lời bot đúng mà ô ghi sai (SRS-87, 109…) chỉ lộ khi mở `json`; mỗi lần soi là một lượt chat. Cần tin soi đi cùng lượt, KHÔNG do AI viết (AI viết thì lại phải soát nó).
@@ -9376,19 +9395,19 @@ Trước đó tester phải gõ `json` riêng mỗi lượt để soi ô đã b�
 3. **Chưa làm / hạn chế**: (a) không có lệnh tắt — thoát chế độ bằng xoá khách đó trên CRM (hoặc `reset_nguoi_test`); khách thật nào gõ đúng `$$$$$` cũng nhận tin phụ; (b) lệnh `json`, tin nhắc và đường chuyển người không qua server lượt thường nên có thể không kèm tin phụ; (c) phía người mua chỉ liệt kê ô phiếu đang có, chưa phân biệt ô lượt này.
 4. **Kiểm**: `tests/test_che_do_test.py` (8 ca): `$$$$$` bật chế độ + tin phụ ngay tin đầu; tin phụ không vào lịch sử / lời trả lời; không gõ lệnh thì không có; ô trích xuất + "em hiểu" + "còn thiếu"; ngoài vùng; lỗi trả rỗng; sống qua mở lại SQLite; qua server `/chat-reply` tin phụ là tin cuối của `replies` và không ghi vào CRM. Đã thử gỡ đoạn sửa ở `engine.py` / `server.py`: 5/8 đỏ.
 
-**Bản 2 (cùng ngày, Lê Quang: "trong mỗi tin phụ … gửi luôn đã tốn bao nhiêu tiền", "như đợt trước đã trích xuất", "xem vì sao giá 9.2 nó không nhớ")**:
+**Bản 2 (cùng ngày, anh Q.: "trong mỗi tin phụ … gửi luôn đã tốn bao nhiêu tiền", "như đợt trước đã trích xuất", "xem vì sao giá 9.2 nó không nhớ")**:
 (a) dòng "Tốn lượt này: $… — model: vào / ra / cache ghi / đọc / số lượt gọi": `so_token.bat_dau_luot()` đầu `Engine.handle`, mỗi `SoToken.ghi` / `ghi_du_phong` cộng vào bộ nhớ của luồng (cả lượt chạy trên một luồng), `che_do_test.tien_usd` quy ra đô bằng `BANG_GIA` — bản chép của `lib/gia-model.ts` (VPS chỉ có `src/aioi`), `tests/test_che_do_test.py` so từng dòng với file TS và đỏ khi lệch. Không có giá (model lạ) thì nói "chưa rõ giá", không đoán; Groq / Gemini = $0 theo bảng. Chỉ tính các lượt gọi AI TRONG `Engine.handle` (chưa tính chép tin thoại Whisper, đọc ảnh ở server nếu có).
 (b) Ô trích xuất viết theo kiểu bản TS cũ (bong bóng 🤖): `• giá: "9.2" → làm chuẩn "9,2 tỷ" (mới | đổi từ "…")` — cụm khách nói là bằng chứng AI đưa (`conv.bc_luot`), dòng "Đã hiểu: yêu cầu ĐỔI thông tin: giá → "9.5"" khi ô đã có giá trị khác.
 (c) "AI đề xuất: update(gia)" (thao tác lượt lập thao tác trả về) và khối "Đã BỎ (AI đề xuất nhưng code không ghi)" kèm lý do từ ba cổng bỏ ô (`_gia_tri_ghi`: không có bằng chứng / đổi loại đã chốt; `_mot_cum_mot_o`: trùng cụm / bề ngang lớn hơn lô). Nhờ đó "vì sao bot không nhớ ô X" đọc được ngay trên chat: AI không đề xuất, hay code bỏ, hay ghi rồi mất.
 (d) **"Giá 9.2 không nhớ" — chưa tìm ra nguyên nhân thật.** Hội thoại gốc không còn (DB `conversations` / `messages` trống, lịch sử nằm ở SQLite trên VPS). Thử offline 17 cách khách gõ ("9.2", "giá 9.2 nha em", "9 rưỡi", "9.2 tỷ", AI trả "9,2 tỷ" / "9.2" / "9200000000", cụm trích thiếu hoặc lệch…) đều ghi được `gia` qua cổng bằng chứng và `Property._has("gia")` đúng. Nên nguyên nhân nằm ngoài cổng đó (lượt AI không đưa ô `gia` — nhất là khi Claude hết tiền và lượt lập thao tác chạy bằng Gemini bản nhẹ — hoặc đổi sang căn khác trong rổ). Tin phụ bản 2 sinh ra để bắt đúng ca này ở lần sau.
-(e) **Chat thật 22/10 11:54–12:05 sau khi lên VPS (Lê Quang dán lại)**: khách nói "Bán nhà chính chủ ở quận 10 giá 9.2" ngay tin đầu, nhưng đến 12:03 bot vẫn hỏi "mức giá bán mong muốn" và 12:04 trả lời "không nhớ giá sao?" bằng "để em kiểm tra giao dịch gần đây" — giá chỉ vào tin khi khách nhắc lại "giá 9.2" (12:05). Xác nhận lỗi có thật ở lượt đầu; nguyên nhân vẫn chưa xác định (xem d) — cần một ca bắn lại với tin phụ để thấy "AI đề xuất" có `gia` hay không. Cùng đoạn chat thấy thêm: bot nói "hẻm xe hơi rộng rãi" khi khách chỉ nói "hẻm 130 Cách Mạng Tháng 8" (tự thêm ý), và lời chào `$$$$$` có câu "Em đã làm mới phiên chat và xóa toàn bộ thông tin nháp trước đó rồi ạ" — chủ dự án: "bỏ câu này luôn" → câu mẫu `lenh_lam_moi` bỏ câu đó (migration `20261022c`, chỉ đổi dòng chưa bị sửa ở CRM).
+(e) **Chat thật 22/10 11:54–12:05 sau khi lên VPS (anh Q. dán lại)**: khách nói "Bán nhà chính chủ ở quận 10 giá 9.2" ngay tin đầu, nhưng đến 12:03 bot vẫn hỏi "mức giá bán mong muốn" và 12:04 trả lời "không nhớ giá sao?" bằng "để em kiểm tra giao dịch gần đây" — giá chỉ vào tin khi khách nhắc lại "giá 9.2" (12:05). Xác nhận lỗi có thật ở lượt đầu; nguyên nhân vẫn chưa xác định (xem d) — cần một ca bắn lại với tin phụ để thấy "AI đề xuất" có `gia` hay không. Cùng đoạn chat thấy thêm: bot nói "hẻm xe hơi rộng rãi" khi khách chỉ nói "hẻm xxx Cách Mạng Tháng 8" (tự thêm ý), và lời chào `$$$$$` có câu "Em đã làm mới phiên chat và xóa toàn bộ thông tin nháp trước đó rồi ạ" — chủ dự án: "bỏ câu này luôn" → câu mẫu `lenh_lam_moi` bỏ câu đó (migration `20261022c`, chỉ đổi dòng chưa bị sửa ở CRM).
 
-**Bản 3 (cùng ngày, Lê Quang: "nếu người ta có gõ $$$$$ lúc chào thì mới vào chế độ test, xóa hết data cũ, không cần thông báo, và sau đó mới có câu phụ … còn người mới chào bình thường thì ko cần")**:
+**Bản 3 (cùng ngày, anh Q.: "nếu người ta có gõ $$$$$ lúc chào thì mới vào chế độ test, xóa hết data cũ, không cần thông báo, và sau đó mới có câu phụ … còn người mới chào bình thường thì ko cần")**:
 lệnh `$$$$$` nay IM LẶNG — xoá phiên + bật `che_do_test`, `reply` rỗng, không ghi lượt bot vào lịch sử, không gọi model (server trả `replies = []`, bridge không gửi gì, như đường "vượt trần"). Tin kế tiếp của khách đi đúng đường người mới (khối "LƯỢT ĐẦU TIÊN", lời chào do AI đọc — SRS-125) và từ đó mỗi lượt kèm tin phụ. Khách chào bình thường không gõ `$$$$$` thì không có gì khác. Câu mẫu `lenh_lam_moi` không còn chỗ dùng → bỏ khỏi `MAC_DINH`, xoá dòng DB (`20261022d`). Kiểm: `tests/test_lenh_lam_moi.py` (im lặng, sạch, chào lại như người mới; không gọi model), `tests/test_che_do_test.py` (tin phụ bắt đầu từ tin kế tiếp; server `replies == []`).
 
 ### SRS-5.1zzzzzzz131 · Bỏ hẳn câu ghi nhận; 100% lượt mở bằng lời khen, kể cả vị trí (22/10/2026)
 
-Lê Quang (sau khi đọc chat 11:54–12:05 toàn "Em ghi nhận vị trí này rồi anh", "Em lưu lại thông tin nhà phố rồi anh"): "giờ xóa hết mấy cái em ghi nhận em bla bla đi,
+anh Q. (sau khi đọc chat 11:54–12:05 toàn "Em ghi nhận vị trí này rồi anh", "Em lưu lại thông tin nhà phố rồi anh"): "giờ xóa hết mấy cái em ghi nhận em bla bla đi,
 và khen nhiều hơn vị trí các thứ cũng 100% khen".
 
 1. **Lớp**: cùng lớp SRS-102/118/120 (giọng đáp đầu lượt). Trước: đáp nhận một vế rồi hỏi, ví dụ lấy từ câu mẫu `ghi_nhan_mau`, lưới chỉ bắt HAI lượt liền
@@ -9402,7 +9421,7 @@ và khen nhiều hơn vị trí các thứ cũng 100% khen".
    `ghi_nhan_mau` + `cau_mau.vi_du_ghi_nhan` + chỗ giữ `<<VI_DU_GHI_NHAN>>` gỡ (migration `20261022e` xoá dòng DB); mô tả công cụ `gui_khach` (`llm/claude.py`) sửa theo.
 3. **Giả định BA**: "100% khen" hiểu là mọi lượt khách CHO THÔNG TIN đều mở bằng khen; khách chỉ "có / đúng rồi" thì nối thẳng câu hỏi (không khen gượng). Các cấm bịa thị trường /
    giá là quyết định chủ dự án 21/10 chưa bị bỏ nên giữ — nếu "100%" nghĩa là được nói "vị trí đắc địa, dễ bán" thì phải chủ dự án chốt lại.
-**Bản 2 (cùng ngày, Lê Quang: "100% khen là 3 lần khách đưa thông tin đầu tiên thì 100% khen hết")**: "100%" áp cho BA LƯỢT ĐẦU khách cho thông tin; từ lượt
+**Bản 2 (cùng ngày, anh Q.: "100% khen là 3 lần khách đưa thông tin đầu tiên thì 100% khen hết")**: "100%" áp cho BA LƯỢT ĐẦU khách cho thông tin; từ lượt
 thứ tư khen khi có điểm tốt thật / cách khách làm việc, không gượng. Lõi đếm `Conversation.so_luot_thong_tin` (tăng khi lượt ghi được ô — `captured` sau
 `_ap_dung_ke_hoach`; `$$$$$` về 0; lưu SQLite cột `so_luot_thong_tin`, nạp lại qua Supabase load như `xung_ho`), chèn `prompts.khoi_khen_theo_luot(n)`
 ("LƯỢT THÔNG TIN THỨ N — trong / đã qua 3 lượt đầu") vào system lượt trả lời; `LUAT_KHEN` viết lại theo đúng câu chủ dự án. Kiểm: `tests/test_khen_3_luot.py`
@@ -9414,7 +9433,7 @@ thứ tư khen khi có điểm tốt thật / cách khách làm việc, không g
 
 ### SRS-5.1zzzzzzz132 · Lưới bình luận giá và lưới giá trị dạng kích thước — từ bắn thử ban-thu-92 (22/10/2026)
 
-Bắn thử `ban-thu-92` (kịch bản tái hiện chat Lê Quang 11:54–12:05, Gemini lite vì Claude hết số dư): 13/13 phép kiểm đạt — `$$$$$` im lặng, giá vào ô ngay lượt 1
+Bắn thử `ban-thu-92` (kịch bản tái hiện chat anh Q. 11:54–12:05, Gemini lite vì Claude hết số dư): 13/13 phép kiểm đạt — `$$$$$` im lặng, giá vào ô ngay lượt 1
 (ca "không nhớ giá" KHÔNG tái hiện), không "em ghi nhận", không "hẻm xe hơi", không hỏi lại giá — nhưng đọc lời bot thấy hai lỗi phép kiểm chưa phủ:
 (a) "không nhớ giá sao?" → "Mức giá 9,2 tỷ cho căn nhà 6 tầng trung tâm này quá hợp lý rồi anh/chị nhỉ!" (bình luận giá, luật KHEN cấm); (b) khách gõ "5x10" →
 AI ghi cả `kich_thuoc` lẫn `dien_tich_trang_thiet_bi` = "5x10", cổng bằng chứng nhận (cụm có thật), lưới trùng cụm bỏ qua vì giá trị một từ.
@@ -9433,7 +9452,7 @@ AI ghi cả `kich_thuoc` lẫn `dien_tich_trang_thiet_bi` = "5x10", cổng bằn
 
 ### SRS-5.1zzzzzzz133 · Vòng dự phòng Gemini / Groq có hạn — theo dõi thật 13:36 22/10/2026
 
-Theo dõi lượt test của Lê Quang sau khi xoá sạch dữ liệu (ID Zalo …3339): `$$$$$` lúc 13:36:12 im lặng đúng thiết kế; tin kế tiếp gọi Claude 13:36:54 báo hết số
+Theo dõi lượt test của anh Q. sau khi xoá sạch dữ liệu (ID Zalo …xxxx): `$$$$$` lúc 13:36:12 im lặng đúng thiết kế; tin kế tiếp gọi Claude 13:36:54 báo hết số
 dư; 13:38:23 lượt Gemini dự phòng đầu tiên mới thành công (riêng bóc tách 90 s); 13:39:51 bridge ghi sổ "bridge xử lý tin gom: The operation was aborted due to
 timeout" (hạn chờ `HAN_CHO_BO_NAO` 90 s); tới 13:41 `messages` vẫn 0 dòng — lượt chưa xong hoặc xong mà bridge không còn chờ để gửi. Khách không nhận được lời nào.
 Chủ dự án: "rút ngắn đi".
@@ -9454,14 +9473,14 @@ Chủ dự án: "rút ngắn đi".
 
 **Bản 2 (cùng ngày, theo dõi tiếp 13:52 sau khi lên VPS):** "chào em" 13:52:24 → bóc tách qua Gemini 3 s; bước TRẢ LỜI Gemini quá hạn ở cả hai model
 (2 × 20 s) → chạm ngân sách 40 s, Groq chưa bao giờ được thử → câu giữ chỗ 13:53:15; lượt thử lại nền (`_thu_lai_nen`) đi đúng đường đó lần nữa → 13:54:19
-câu xin lỗi + báo admin (`needs_human`). Lê Quang: "sao nó lại trả lời thế, hết cả key gemini à" — không phải hết hạn mức, là Gemini chậm ở lượt trả lời
+câu xin lỗi + báo admin (`needs_human`). anh Q.: "sao nó lại trả lời thế, hết cả key gemini à" — không phải hết hạn mức, là Gemini chậm ở lượt trả lời
 (bóc tách vẫn nhanh; chưa đo được vì sao từ ngoài VPS). Sửa: `HAN_MOT_LAN_GIAY = 15` (hai lần quá hạn = 30 s vẫn còn chỗ cho Groq trong 40 s) và
 `NGHI_MODEL_GIAY = 600` — cặp (nguồn, model) quá hạn thì nghỉ 10 phút, lượt sau đi thẳng model / nguồn kế (cùng ý `NGHI_CLAUDE_GIAY`). Kiểm (+2 ca): hai
 model Gemini cùng quá hạn (đồng hồ giả cộng đúng `han`) → thứ tự gọi `g-lite, g-flash, qwen-x`; model quá hạn → lượt kế bỏ qua nó, hết giờ nghỉ mới thử lại.
 
 ### SRS-5.1zzzzzzz134 · Tin nội bộ mở bằng `$$$$$`; khoá Gemini chat một nguồn Vault — 22/10/2026
 
-Lê Quang thấy trên Zalo test một tin "🙋 Khách cần người thật — Lê Quang (người bán): “(hệ thống: lượt trả lời hỏng hai lần)”. Mở /admin/tin-nhan để nhận
+anh Q. thấy trên Zalo test một tin "🙋 Khách cần người thật — anh Q. (người bán): “(hệ thống: lượt trả lời hỏng hai lần)”. Mở /admin/tin-nhan để nhận
 khách." nằm lẫn với lời bot gửi khách, rồi nói: "tin nào là tin debug tin nào là tin cho khách thật phải phân tách rõ ra, tin cho debug phải bắt đầu với $$$$$".
 Cùng lượt, chủ dự án đưa một khoá Gemini mới (Vault `GEMINI_API_KEY_4`; khoá KHÔNG ghi vào repo, đã gửi qua chat — nên xoay khoá sau khi test xong).
 
@@ -9479,7 +9498,7 @@ Cùng lượt, chủ dự án đưa một khoá Gemini mới (Vault `GEMINI_API_
 
 ### SRS-5.1zzzzzzz135 · Khoá Claude một nguồn Vault → `.env` lõi — 22/10/2026
 
-Lê Quang: "đổi lại key anthropic đi, và theo dõi". `kiem-khoa.yml` (lượt 15:15 giờ VN): khoá `ANTHROPIC_API_KEY` trong Vault trả 200 (còn dùng), trong khi lõi trên VPS vẫn bắn
+anh Q.: "đổi lại key anthropic đi, và theo dõi". `kiem-khoa.yml` (lượt 15:15 giờ VN): khoá `ANTHROPIC_API_KEY` trong Vault trả 200 (còn dùng), trong khi lõi trên VPS vẫn bắn
 "credit balance is too low" — khoá trong `/opt/aond_core/.env` là bản khác, đặt tay từ trước. **Lớp**: cùng một khoá có hai chỗ ở (Vault, `.env` VPS) không ai đồng bộ — SRS-134 đã làm cho
 Gemini. **Sửa**: workflow đọc thêm `ANTHROPIC_API_KEY` từ Vault, che log, đưa qua stdin; `cai-vps.sh` ghi đè đúng dòng `ANTHROPIC_API_KEY` trong `.env` lõi (chmod 600, không in giá trị) trước khi
 khởi động lại. **Chưa làm**: `GROQ_API_KEY` chưa có trong Vault nên Groq không được đồng bộ (dự phòng cuối vẫn dùng khoá `.env` cũ). **Kiểm**: `tests/test_tin_noi_bo_tien_to.py` (+1 ca).
@@ -9654,7 +9673,7 @@ Ca gốc: chat thử Zalo 23/10, lỗi 4 sau khi sửa SRS-145. Chủ dự án: 
 
 ### SRS-5.1zzzzzzz147 · Lõi khởi động lại không được làm mất ngữ cảnh khách MUA — 23/10/2026
 
-Ca gốc: chat thử 23/10 (tester chị N., cùng ca của chủ dự án), khách đang đi mua (14 lượt: "mình mua để ở", "nhà mình 2 vợ chồng 2 con", "mình đi làm quận 1", bot hỏi diện tích) thì lõi khởi động lại (lượt triển khai `cai-vps` của chính phiên làm việc, 04:14 UTC). Tin kế "tầm 40-50m vuông" (11:15 VN, tin đầu tiên sau khởi động) bị bot trả lời như người bán ("Anh/chị đang muốn gửi căn chung cư, nhà phố hay đất vậy ạ?"), ghi vào hội thoại BÁN dưới nhãn "Chủ nhà", ~5 phút sau bot gửi tin nhắc hỏi lại câu bán. Trên CRM một người hiện thành hai khách (một dòng bán, một dòng mua "Khách Zalo ####"). DB lúc soát: cả hai Zalo (4980, 3339) đều có MỘT dòng `sellers` + MỘT dòng `listings` rỗng (`chua_ro`, `cho_thong_tin`, không diện tích / giá, tạo đúng lượt chào "Hello") và một hội thoại mua riêng (14 / 12 tin) so với hội thoại bán (5 / 2 tin).
+Ca gốc: chat thử 23/10 (tester chị N., cùng ca của chủ dự án), khách đang đi mua (14 lượt: "mình mua để ở", "nhà mình 2 vợ chồng 2 con", "mình đi làm quận 1", bot hỏi diện tích) thì lõi khởi động lại (lượt triển khai `cai-vps` của chính phiên làm việc, 04:14 UTC). Tin kế "tầm 40-50m vuông" (11:15 VN, tin đầu tiên sau khởi động) bị bot trả lời như người bán ("Anh/chị đang muốn gửi căn chung cư, nhà phố hay đất vậy ạ?"), ghi vào hội thoại BÁN dưới nhãn "Chủ nhà", ~5 phút sau bot gửi tin nhắc hỏi lại câu bán. Trên CRM một người hiện thành hai khách (một dòng bán, một dòng mua "Khách Zalo ####"). DB lúc soát: cả hai Zalo (xxxx, xxxx) đều có MỘT dòng `sellers` + MỘT dòng `listings` rỗng (`chua_ro`, `cho_thong_tin`, không diện tích / giá, tạo đúng lượt chào "Hello") và một hội thoại mua riêng (14 / 12 tin) so với hội thoại bán (5 / 2 tin).
 
 1. **Lớp lỗi**: `SupabaseConversationStore.load` (nạp phiên sau khi bộ nhớ mất) chỉ biết MỘT phía: (a) đi từ dòng `sellers`, đọc chỉ hội thoại bán; (b) gán `role = "seller"` hễ có BẤT KỲ dòng `listings` nào — kể cả ô nháp rỗng tạo ở lượt chào; (c) khách không có dòng `sellers` (chỉ đi mua) thì trả `None` và xoá cả SQLite, tức luôn là người mới. Trong lúc chạy liên tục bộ nhớ trong tiến trình che lỗi này, nên chỉ lộ sau mỗi lần khởi động lại.
 2. **Sửa**: `src/aioi/supabase_store.py` — `_tin_that(row)` (tin có nội dung thật, không tính ô nháp rỗng) quyết định `role = "seller"`; `_phien_mua` đọc hội thoại mua (chỉ đọc, không tạo); khách chưa có tin thật và lượt mua gần nhất MỚI hơn lượt bán thì nạp lịch sử mua + `role = "buyer"` (hồ sơ nhu cầu vẫn từ SQLite); khách không có `sellers` nhưng có hội thoại mua thì dựng phiên từ đó (`_conv_tu_phien_mua`) thay vì trả `None`; xoá ở CRM (cả hai phía trống) vẫn cho phiên mới như cũ. `_lich_su` tách ra dùng chung.
@@ -9675,7 +9694,7 @@ Hai quyết định của chủ dự án 23/10 (đọc ví dụ chatbot bất đ
 Ca gốc: chat thử của chị N. (tester) và chủ dự án, mỗi người hiện HAI dòng ở `/admin/tin-nhan` — một "bán" mang tên Zalo, một "mua" mang tên "Khách Zalo ####" — và lịch sử mua / bán đứt nhau (là một phần nguyên nhân mất ngữ cảnh ở SRS-147). Chủ dự án: "gộp 2 cái này làm 1, dùng tên Zalo thôi… 1 zalo tính là 1 khách, 1 chỗ trong tin nhắn thôi, không tách ra… gộp trực tiếp luôn". Đồng thời chủ dự án chốt GIỮ 63 cột `listings` ("từ từ vẫn giữ vậy đi") — OPEN-64 chọn phương án (a), không chuyển cột vào `boc_tach`.
 
 1. **Lớp lỗi**: mỗi VAI tự tạo hội thoại của riêng nó (`conversations.seller_id` hoặc `buyer_id`), trong khi bảng cho phép một hội thoại mang cả hai id (`conversations_co_vai_check` chỉ đòi ít nhất một) và trang CRM đã có nhãn "bán + mua" (FR-214). `_save` còn tạo dòng `sellers` + hội thoại bán rỗng cho cả khách chỉ đi mua. Dòng `buyers` tạo ra mang tên giữ chỗ vì lượt mua không kèm tên Zalo.
-2. **Sửa**: (a) **Dữ liệu hiện có gộp trực tiếp trên production** bằng `scripts/gop-hoi-thoai-theo-zalo.sql` (3 hội thoại còn lại: 3339 → 14 tin, 4980 → 19 tin, 8895 giữ 35 tin), đích là hội thoại bắt đầu sớm nhất, tin nhắn + `cau_chuan` chuyển sang đích, sao lưu ở `luu_tru.hoi_thoai_gop_20261023` / `tin_nhan_gop_20261023`, dòng mua dùng tên Zalo của dòng bán. (b) **Lõi** `src/aioi/supabase_store.py`: `_hoi_thoai_chung(user_key, ten, vai)` tìm theo `seller_id` HOẶC `buyer_id` (`_tim_hoi_thoai`), gắn thêm id còn thiếu vào hội thoại đã có, chỉ tạo mới khi khách chưa có hội thoại nào; `ghi_luot_chat`, `bao_can_nguoi`, `_save`, `load` đều đi qua đó; `_save` bỏ qua khách đang ở vai mua (không tạo `sellers` / hội thoại bán rỗng); `load` đọc một hội thoại và suy vai từ người KHÁCH nói cuối (`messages.sender`), dòng tin rỗng không làm khách thành người bán (SRS-147); `reset()` xoá cả hội thoại chung. `src/aioi/mua.py` `khach_mua`: dòng mua dùng tên Zalo của dòng bán, và vá tên giữ chỗ "Khách Zalo ####". (c) **CRM** `app/admin/tin-nhan/page.tsx`: chip "Người mua" đếm theo `buyer_id` (trước là tổng trừ số người bán, sai khi một hội thoại mang cả hai vai).
+2. **Sửa**: (a) **Dữ liệu hiện có gộp trực tiếp trên production** bằng `scripts/gop-hoi-thoai-theo-zalo.sql` (3 hội thoại còn lại: xxxx → 14 tin, xxxx → 19 tin, 8895 giữ 35 tin), đích là hội thoại bắt đầu sớm nhất, tin nhắn + `cau_chuan` chuyển sang đích, sao lưu ở `luu_tru.hoi_thoai_gop_20261023` / `tin_nhan_gop_20261023`, dòng mua dùng tên Zalo của dòng bán. (b) **Lõi** `src/aioi/supabase_store.py`: `_hoi_thoai_chung(user_key, ten, vai)` tìm theo `seller_id` HOẶC `buyer_id` (`_tim_hoi_thoai`), gắn thêm id còn thiếu vào hội thoại đã có, chỉ tạo mới khi khách chưa có hội thoại nào; `ghi_luot_chat`, `bao_can_nguoi`, `_save`, `load` đều đi qua đó; `_save` bỏ qua khách đang ở vai mua (không tạo `sellers` / hội thoại bán rỗng); `load` đọc một hội thoại và suy vai từ người KHÁCH nói cuối (`messages.sender`), dòng tin rỗng không làm khách thành người bán (SRS-147); `reset()` xoá cả hội thoại chung. `src/aioi/mua.py` `khach_mua`: dòng mua dùng tên Zalo của dòng bán, và vá tên giữ chỗ "Khách Zalo ####". (c) **CRM** `app/admin/tin-nhan/page.tsx`: chip "Người mua" đếm theo `buyer_id` (trước là tổng trừ số người bán, sai khi một hội thoại mang cả hai vai).
 3. **Chỗ khác cùng lớp**: còn — `reset()` chỉ đi từ `sellers` nên khách chỉ có dòng `buyers` gõ `$$$$$` không xoá hội thoại (đúng như trước, chưa sửa); bảng `reminders` / `info_requests` vẫn tách theo `seller_id` / `buyer_id` (đúng thiết kế: việc của từng vai); `listings` vẫn 63 cột (OPEN-64 chọn giữ). Tên Zalo chỉ vá khi dòng đang mang tên giữ chỗ "Khách Zalo", không ghi đè tên admin đã sửa tay.
 4. **Kiểm**: `tests/test_mot_khach_mot_hoi_thoai.py` (4 ca trên DB giả CÓ TRẠNG THÁI: bán → mua → bán và mua → bán đều chỉ một hội thoại; khách mua không sinh `sellers`; tên mua = tên Zalo) — tắt bản sửa thì cả 4 đỏ; `tests/test_nap_lai_phien_mua.py` viết lại cho hội thoại chung (vai từ người nói cuối). Đo sau gộp trên DB thật: 3 hội thoại, 0 hội thoại mồ côi, tên mua = tên Zalo.
 
@@ -9728,7 +9747,7 @@ Ca gốc: ảnh chat thử 23/10 (14:29) — khách nói tìm mua nhà gần ch�
 
 ### SRS-5.1zzzzzzz155 · Bản tin rao không được tự thêm "hẻm" / "mặt tiền" khi dữ liệu căn chưa có (23/10/2026)
 
-Ca gốc: chat thử "Mr Thu Ngô" 23/10 (14:03–14:12 giờ VN). Khách nói lần lượt "a bán nhà", "quận Tân Bình", "12", "Lê Lai", "39m2 e.1 trệt 3 lầu", "7 tỷ 3" — không một tin nào nhắc hẻm hay mặt tiền; `listings` của căn không có `access_type`, `boc_tach` không có ô hẻm. Bản nháp bot gửi có tiêu đề "Bán nhà hẻm Lê Lai Q.Tân Bình 39m², 1 trệt 3 lầu, 7,3 tỷ" trong khi đoạn mô tả ngay dưới ghi "Nhà nằm trên đường Lê Lai". Chủ dự án hỏi: "tiêu đề nó biết hẻm, có bịa không" — trả lời: CÓ bịa (đối chiếu tin nhắn thật trong `messages` và dữ liệu căn); chủ dự án nhắc thêm: hẻm là địa chỉ có dấu "/" (ví dụ "12/3 Lê Lai") — địa chỉ ở đây không có.
+Ca gốc: chat thử "khách T." 23/10 (14:03–14:12 giờ VN). Khách nói lần lượt "a bán nhà", "quận Tân Bình", "12", "Lê Lai", "39m2 e.1 trệt 3 lầu", "7 tỷ 3" — không một tin nào nhắc hẻm hay mặt tiền; `listings` của căn không có `access_type`, `boc_tach` không có ô hẻm. Bản nháp bot gửi có tiêu đề "Bán nhà hẻm Lê Lai Q.Tân Bình 39m², 1 trệt 3 lầu, 7,3 tỷ" trong khi đoạn mô tả ngay dưới ghi "Nhà nằm trên đường Lê Lai". Chủ dự án hỏi: "tiêu đề nó biết hẻm, có bịa không" — trả lời: CÓ bịa (đối chiếu tin nhắn thật trong `messages` và dữ liệu căn); chủ dự án nhắc thêm: hẻm là địa chỉ có dấu "/" (ví dụ "12/3 Lê Lai") — địa chỉ ở đây không có.
 
 1. **Lớp lỗi**: văn bản rao do AI viết tự do mà ngoài giá (`_tieu_de_thieu`) và "MT" của căn hộ (`_tieu_de_can_ho_co_mt`) KHÔNG có lưới kiểm lời trong bản tin với dữ liệu căn. Luật viết tin (`AD_FORMAT`) lại mời model nêu "mặt tiền / hẻm xe hơi" làm điểm mạnh và có ví dụ "Cho thuê nhà hẻm 3m…" — model chép mẫu khi dữ liệu không có. Câu "NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN" trong prompt không có máy canh.
 2. **Sửa**: `engine.py` — `_hem_mt_khong_co_du_lieu` (trong `_soat_hinh_thuc`): bản tin 📋 có hẻm / HXH / ngõ / mặt tiền / MT mà căn chưa ghi `lo_gioi_hem` / `mat_tien` và lời KHÁCH của căn đang nói không có chữ đó (không dấu cũng nhận; địa chỉ có dạng số/số — cùng dấu hiệu `Property.update` dùng để gán "Nhà hẻm" — nhận làm bằng chứng cho "hẻm" / "ngõ") thì gọi lại model MỘT lần kèm lý do, không tự sửa chữ; câu hỏi cuối bản tin không tính. `prompts.py` — `AD_FORMAT` nói rõ chỉ nêu điểm dữ liệu đã ghi, ví dụ chỉ minh hoạ cách viết.
@@ -9737,16 +9756,16 @@ Ca gốc: chat thử "Mr Thu Ngô" 23/10 (14:03–14:12 giờ VN). Khách nói l
 
 ### SRS-5.1zzzzzzz156 · Phép soát DB số 8 không đếm việc báo nội bộ (`escalation`) vào người mua (23/10/2026)
 
-Ca gốc: CI PR #84 đỏ ở cổng "DB — tám phép soát trạng thái" với phát hiện MỚI mức nặng "người nhận quá 2 tin chủ động trong 24 giờ — …4980: 3 tin". Người nhận 4980 là chị Ngân (khách thử). Ba dòng `reminders` đã `sent` trong 24 giờ: một tin báo căn mới (`match`, bài thử 13:47 giờ VN) và HAI dòng `escalation` lúc 14:42–14:43 sinh ra khi chị chốt lịch xem một căn và để lại số điện thoại (đúng chuỗi SRS-148 / 153: lịch hẹn → việc báo người phụ trách).
+Ca gốc: CI PR #84 đỏ ở cổng "DB — tám phép soát trạng thái" với phát hiện MỚI mức nặng "người nhận quá 2 tin chủ động trong 24 giờ — …xxxx: 3 tin". Người nhận …xxxx là chị N. (khách thử). Ba dòng `reminders` đã `sent` trong 24 giờ: một tin báo căn mới (`match`, bài thử 13:47 giờ VN) và HAI dòng `escalation` lúc 14:42–14:43 sinh ra khi chị chốt lịch xem một căn và để lại số điện thoại (đúng chuỗi SRS-148 / 153: lịch hẹn → việc báo người phụ trách).
 
 1. **Lớp lỗi**: phép soát số 8 suy "người nhận" của một dòng `reminders` bằng `coalesce(sellers.zalo_user_id, buyers.zalo_user_id)` cho MỌI loại. Với `escalation`, `escalation-feed` chọn đích là chủ nhà → CTV → admin; `buyer_id` ở đó chỉ nói việc về khách nào, không phải người nhận. Phép soát chưa từng gặp dòng như vậy vì trước SRS-153 gần như không có lịch hẹn xem thật chạy qua.
 2. **Sửa**: migration `20261023c_soat_db_khong_dem_escalation_cho_nguoi_mua.sql` — chỉ đổi phép số 8: dòng `escalation` chỉ tính cho chủ nhà (`seller_id`) khi có, không tính cho `buyer_id`; các loại khác giữ nguyên. Bảy phép còn lại giữ nguyên chữ.
 3. **Chỗ khác cùng lớp**: còn — dòng `escalation` có `seller_id` nhưng ghi chú nội bộ (`laTinNoiBo`) thực ra đi tới admin, nhưng phép soát vẫn đếm cho chủ nhà (đếm thừa, chưa gặp ca); `reminders` loại `report` không gắn ai nên không bị đếm. Phép soát đếm theo `reminders` chứ không theo tin thật đã tới Zalo — tin báo căn mới gửi thẳng qua bridge `/send` được ghi một dòng `match` để làm sổ nên đếm được, nhưng tin chat thường không đi qua đây.
-4. **Kiểm**: cổng CI "DB — tám phép soát trạng thái" xanh sau khi áp migration lên DB (kiểm bằng CI; không có bài kiểm cục bộ riêng vì phép soát chạy trên DB thật). Trước sửa: đỏ với "…4980: 3 tin" (chạy CI PR #84).
+4. **Kiểm**: cổng CI "DB — tám phép soát trạng thái" xanh sau khi áp migration lên DB (kiểm bằng CI; không có bài kiểm cục bộ riêng vì phép soát chạy trên DB thật). Trước sửa: đỏ với "…xxxx: 3 tin" (chạy CI PR #84).
 
 ### SRS-5.1zzzzzzz157 · Lịch hẹn xem: gộp giờ nói thêm, bot thấy lịch đã ghi, không tự thêm "nay"; địa chỉ chỉ có tên đường tự ghi mặt tiền (23/10/2026)
 
-Ca gốc: chat thật của chị Ngân (khách thử) 14:19–14:48 giờ VN, đọc từ `messages` và `viewings`. Khách chỉ nói "khi nào cũng được" → "ngày nào cũng rảnh" → "chiều" → "căn 2" → (số điện thoại) → (hỏi lãi suất, vốn tự có) → "4h" → "có". Bot lúc 14:42 viết "lịch hẹn xem chiều nay" và lúc 14:45 "chốt lịch xem Quang Trung chiều nay, chị muốn xem mấy giờ", lúc 14:46 "Chị xác nhận giúp em, 4 giờ chiều nay xem căn Quang Trung có phù hợp với chị không ạ?"; khách đáp "có" thì bot hỏi "Chị cho em hỏi ngày nào để em chốt lịch". Chữ "nay" khách chưa từng nói — bot tự thêm rồi tự hỏi lại ngày. Bảng `viewings` chỉ có một dòng, `time_text` = "chiều" (không có "4h", không có ngày) nên người phụ trách chỉ nhận "chiều". Người xem chat góp ý câu xác nhận nên là "Chị xác nhận giúp em, 4 giờ chiều nay mình đến xem căn Quang Trung đúng không ạ?".
+Ca gốc: chat thật của chị N. (khách thử) 14:19–14:48 giờ VN, đọc từ `messages` và `viewings`. Khách chỉ nói "khi nào cũng được" → "ngày nào cũng rảnh" → "chiều" → "căn 2" → (số điện thoại) → (hỏi lãi suất, vốn tự có) → "4h" → "có". Bot lúc 14:42 viết "lịch hẹn xem chiều nay" và lúc 14:45 "chốt lịch xem Quang Trung chiều nay, chị muốn xem mấy giờ", lúc 14:46 "Chị xác nhận giúp em, 4 giờ chiều nay xem căn Quang Trung có phù hợp với chị không ạ?"; khách đáp "có" thì bot hỏi "Chị cho em hỏi ngày nào để em chốt lịch". Chữ "nay" khách chưa từng nói — bot tự thêm rồi tự hỏi lại ngày. Bảng `viewings` chỉ có một dòng, `time_text` = "chiều" (không có "4h", không có ngày) nên người phụ trách chỉ nhận "chiều". Người xem chat góp ý câu xác nhận nên là "Chị xác nhận giúp em, 4 giờ chiều nay mình đến xem căn Quang Trung đúng không ạ?".
 
 1. **Lớp lỗi**: (a) trạng thái lịch hẹn nằm ở DB mà lời đáp không thấy — mỗi lượt model tự đoán đang ở bước nào, nên tự thêm ngày rồi hỏi lại; (b) `ghi_hen_xem` chỉ ghi chữ giờ lần đầu, giờ khách nói THÊM không vào DB (điều tôi đã nêu là giới hạn ở SRS-153 mục 3 — nay có ca thật); (c) khối "chưa ghi việc gì" của SRS-153 dặn "thiếu ngày giờ thì hỏi" nhưng không nói lịch đã có gì.
 2. **Sửa**: `mua.py` — `gop_gio_hen` (giờ đã có thì giữ, chữ cũ nằm trong chữ mới thì lấy chữ mới, còn lại nối "chiều, 4h"); `ghi_hen_xem` PATCH `time_text` của lịch chờ đã có thay vì bỏ qua; `lich_dang_cho(buyer_id)` đọc lịch chờ; `khoi_lich_dang_cho` đưa vào lời đáp phía mua các lịch đã ghi kèm luật: chỉ nói ngày khi chữ đã ghi hoặc lời khách có ngày đó (không tự thêm "nay"), khách nói ngày nào cũng được thì gợi ý MỘT ngày gần nhất, đủ ngày + giờ thì xác nhận đúng MỘT lần theo mẫu "Chị xác nhận giúp em, <ngày giờ> mình đến xem căn <đường / khu> đúng không ạ?", khách đáp "có / đúng" thì cảm ơn và nói người phụ trách sẽ gọi — không hỏi lại. `engine.py` — `_viec_mua` nạp lịch chờ vào `y_luot["lich_cho"]` và khối được nối cùng khối căn / việc đã ghi. `schema.py` — chủ dự án chốt "địa chỉ chỉ có tên đường thì tự ghi là mặt tiền": có `duong`, địa chỉ không có "/" / hẻm / ngõ / ngách / kiệt, ô `lo_gioi_hem` trống và loại BĐS có ô đó → ghi "Mặt tiền" (cùng chỗ luật dấu "/" → "Nhà hẻm"); khách nói hẻm sau đó thì AI ghi đè bằng bằng chứng như mọi ô.
@@ -9755,7 +9774,7 @@ Ca gốc: chat thật của chị Ngân (khách thử) 14:19–14:48 giờ VN, �
 
 ### SRS-5.1zzzzzzz158 · Câu xác nhận lịch hẹn xem là câu mẫu cố định (23/10/2026)
 
-Ca gốc: người xem chat chị Ngân góp ý câu bot hỏi xác nhận lịch ("Chị xác nhận giúp em, 4 giờ chiều nay xem căn Quang Trung có phù hợp với chị không ạ?" — "hỏi nhọc nhằn quá") nên viết "Chị xác nhận giúp em, 4 giờ chiều nay mình đến xem căn Quang Trung đúng không ạ?"; chủ dự án: "lấy câu mẫu nè". Ở SRS-157 câu này do model tự viết theo khối lệnh nên không đảm bảo đúng chữ.
+Ca gốc: người xem chat chị N. góp ý câu bot hỏi xác nhận lịch ("Chị xác nhận giúp em, 4 giờ chiều nay xem căn Quang Trung có phù hợp với chị không ạ?" — "hỏi nhọc nhằn quá") nên viết "Chị xác nhận giúp em, 4 giờ chiều nay mình đến xem căn Quang Trung đúng không ạ?"; chủ dự án: "lấy câu mẫu nè". Ở SRS-157 câu này do model tự viết theo khối lệnh nên không đảm bảo đúng chữ.
 
 1. **Lớp lỗi**: câu bot cần nói đúng từng chữ nhưng nằm trong lệnh cho model, không ở `cau_mau.py` — chủ dự án không sửa được ở CRM, mỗi lượt model diễn đạt một kiểu.
 2. **Sửa**: `cau_mau.MAC_DINH["xac_nhan_lich"]` = "{Goi} xác nhận giúp {toi}, {gio} mình đến xem căn {can} đúng không ạ?" (bắt buộc giữ {gio} và {can} khi sửa ở CRM, thiếu thì dùng mặc định); migration `20261023d_cau_mau_xac_nhan_lich.sql` nạp dòng bảng `cau_mau`; `mua.khoi_lich_dang_cho` đưa câu (đã điền cách gọi / xưng hô theo `mua.goi_toi`: khách xưng "em" thì bot xưng "mình") và dặn model chép NGUYÊN VĂN, chỉ thay phần `<…>` bằng ngày giờ khách đã nói và đường / khu của căn.
@@ -9764,7 +9783,7 @@ Ca gốc: người xem chat chị Ngân góp ý câu bot hỏi xác nhận lịc
 
 ### SRS-5.1zzzzzzz159 · Tin báo căn mới tách 4 tin Zalo ngắn, kèm tới 4 ảnh (23/10/2026)
 
-Ca gốc: chủ dự án xem tin báo căn mới gửi chị Ngân (một khối chữ dài + 2 ảnh) và muốn nghe giống người nhắn: "3 4 tin gì đó… 'Chị ơi em đang có căn này hợp với nhu cầu của chị nè chị xem qua nha.' → thông số, vì sao hợp → link → 3–4 tấm ảnh nếu được".
+Ca gốc: chủ dự án xem tin báo căn mới gửi chị N. (một khối chữ dài + 2 ảnh) và muốn nghe giống người nhắn: "3 4 tin gì đó… 'Chị ơi em đang có căn này hợp với nhu cầu của chị nè chị xem qua nha.' → thông số, vì sao hợp → link → 3–4 tấm ảnh nếu được".
 
 1. **Lớp lỗi**: tin chủ động là MỘT chuỗi chữ ghép sẵn gửi một lần — câu mẫu không có khái niệm nhiều tin, nên dù sửa chữ ở CRM cũng không đổi được nhịp nhắn.
 2. **Sửa**: `cau_mau` — `bao_can_moi` / `bao_can_moi_vuot` viết lại thành bốn đoạn cách nhau một dòng trống, MỖI ĐOẠN là một tin: mở lời · `{Mo_ta}. {vi_sao}` · link · câu hỏi lịch xem (chỗ giữ chữ mới `{Mo_ta}` = `{mo_ta}` viết hoa chữ đầu, `{vi_sao}`). `bao_can_moi.vi_sao_hop` ghép câu "Hợp vì …" CHỈ từ điều bộ lọc cứng của `can_moi_khop` đã kiểm (đúng khu, đúng loại, giá trong ngân sách — bỏ khi căn vượt ngân sách vì câu mẫu `_vuot` tự nói phần vượt —, xe hơi vào được); không AI. `bao_can_moi.tach_tin` tách đoạn. `server._gui_bao_can_moi` gửi từng đoạn qua bridge, nghỉ `NHIP_BAO_CAN_MOI_GIAY` (mặc định 1,5 s) giữa các tin, ảnh gắn vào tin có link căn (bridge gửi chữ rồi ảnh); tin đầu hụt → False (lượt sau thử lại, dòng giữ chỗ được gỡ), tin sau hụt → dừng nhưng vẫn tính đã báo (khách đã nhận phần đầu, gửi lại là báo đúp); lịch sử + CRM ghi đúng những đoạn đã đi (một lượt, các đoạn nối bằng dòng trống). `TOI_DA_ANH` 2 → 4 (bridge `/send` đã chặn ở 4). Migration `20261023e_cau_mau_bao_can_moi_nhieu_tin.sql`: đổi cả cột `cau` cho dòng CHƯA ai sửa (server đọc mọi dòng bảng làm câu "đã sửa" nên chỉ đổi mặc định thì DB vẫn đè câu cũ), giữ câu chủ dự án đã sửa tay.
@@ -9782,16 +9801,16 @@ Ca gốc: chủ dự án muốn tin báo căn mới nghe như người nhắn (S
 
 ### SRS-5.1zzzzzzz161 · Số điện thoại gõ sai độ dài không được "cảm ơn như đã nhận"; nhắc "chú ý điện thoại", không "máy" (23/10/2026)
 
-Ca gốc: chat chị Ngân 23/10 15:47 — bot xin số lúc chốt lịch xem, chị CỐ TÌNH gõ thiếu một số ("070772473", 9 số). `tim_sdt` đã loại đúng (không ghi DB, không báo người phụ trách) nhưng lượt đó model không biết có một dãy số bị loại nên tự viết "Cảm ơn chị đã gửi số điện thoại ạ… em đã ghi lịch…"; sau đó còn nhắn "Chị chú ý máy giúp em nhé" (chủ dự án: "sửa lại chị chú ý điện thoại, ko dùng từ máy").
+Ca gốc: chat chị N. 23/10 15:47 — bot xin số lúc chốt lịch xem, chị CỐ TÌNH gõ thiếu một số ("0707xxxxx", 9 số). `tim_sdt` đã loại đúng (không ghi DB, không báo người phụ trách) nhưng lượt đó model không biết có một dãy số bị loại nên tự viết "Cảm ơn chị đã gửi số điện thoại ạ… em đã ghi lịch…"; sau đó còn nhắn "Chị chú ý máy giúp em nhé" (chủ dự án: "sửa lại chị chú ý điện thoại, ko dùng từ máy").
 
 1. **Lớp lỗi**: code từ chối một đầu vào nhưng không cho model biết đã từ chối — model chỉ thấy lời khách nên mặc định "đã nhận". Cùng lớp SRS-153 (lượt không ghi gì mà vẫn nói đã giữ lịch).
 2. **Sửa**: `mua.giong_sdt_sai(text)` — dãy số đầu 0 / +84, 7–13 số mà `tim_sdt` không nhận (thiếu / thừa số, sai đầu số). `engine._viec_mua`: bot đã xin số (cờ `_da_xin_sdt`) và khách gõ dãy như vậy → thêm một dòng việc "số vừa gõ KHÔNG đúng… CHƯA ghi được: KHÔNG cảm ơn, KHÔNG nói đã nhận, KHÔNG hứa người phụ trách gọi; xin gõ lại một lần". Chưa xin số thì không nhắc (khách gõ mã tin, giá… không bị coi là số). Lời dặn ghi số / khối lịch hẹn thêm "nhắc khách 'chú ý điện thoại', KHÔNG dùng chữ 'máy'".
 3. **Chỗ khác cùng lớp**: còn — các đường ghi khác cũng chỉ ghi khi đạt cổng (mã căn, giờ hẹn) và đã có dòng "CHƯA GHI" cho lượt không ghi gì; riêng giờ hẹn nói không rõ chưa có dòng báo riêng. Lời "chú ý điện thoại" vẫn do model viết (không phải câu mẫu cố định); khối lịch vẫn nói "người phụ trách sẽ gọi" cả khi lịch chưa có số (chưa đọc cột `viewings.phone` ở `lich_dang_cho`).
-4. **Kiểm**: `tests/test_sdt_hen_xem_tai_chinh.py` — `giong_sdt_sai` (số thiếu / thừa là sai; số đúng, giá "0,5 tỷ", "0.75 tháng", giờ "9h - 10h" không phải); khách gõ "070772473" sau khi bot xin số → không PATCH `viewings`, không đẻ nhắc, lời dặn model có "KHÔNG cảm ơn"; gõ lại đủ số thì ghi và có "chú ý điện thoại". Tắt nhánh `giong_sdt_sai` thì ca đỏ (đã thử). Chưa thử trên Zalo thật.
+4. **Kiểm**: `tests/test_sdt_hen_xem_tai_chinh.py` — `giong_sdt_sai` (số thiếu / thừa là sai; số đúng, giá "0,5 tỷ", "0.75 tháng", giờ "9h - 10h" không phải); khách gõ "0707xxxxx" sau khi bot xin số → không PATCH `viewings`, không đẻ nhắc, lời dặn model có "KHÔNG cảm ơn"; gõ lại đủ số thì ghi và có "chú ý điện thoại". Tắt nhánh `giong_sdt_sai` thì ca đỏ (đã thử). Chưa thử trên Zalo thật.
 
 ### SRS-5.1zzzzzzz162 · Khách gõ "ok" liên tiếp sau khi lịch hẹn đã xác nhận (23/10/2026)
 
-Ca gốc: chủ dự án hỏi "nếu khách Ok ok liên tục bot có bị rối ko". Ảnh chat chị Ngân 15:48: khách gõ "ok" sau khi lịch đã ghi, bot lại viết câu xác nhận "Chị xác nhận giúp em, chủ nhật… đúng không ạ?". Khối `LỊCH HẸN XEM ĐÃ GHI` nằm trong lời dặn model ở MỌI lượt sau khi ghi lịch mà không có trạng thái "đã xác nhận xong", nên mỗi "ok" là một cơ hội để model lặp câu xác nhận / lặp "người phụ trách sẽ gọi".
+Ca gốc: chủ dự án hỏi "nếu khách Ok ok liên tục bot có bị rối ko". Ảnh chat chị N. 15:48: khách gõ "ok" sau khi lịch đã ghi, bot lại viết câu xác nhận "Chị xác nhận giúp em, chủ nhật… đúng không ạ?". Khối `LỊCH HẸN XEM ĐÃ GHI` nằm trong lời dặn model ở MỌI lượt sau khi ghi lịch mà không có trạng thái "đã xác nhận xong", nên mỗi "ok" là một cơ hội để model lặp câu xác nhận / lặp "người phụ trách sẽ gọi".
 
 1. **Lớp lỗi**: lời dặn model mô tả việc cần làm mà không nói khi nào việc đã xong — model chỉ có lịch sử chat để tự suy. Cùng lớp SRS-157 (model không thấy lịch đã ghi).
 2. **Sửa**: `mua.khoi_lich_dang_cho` thêm một ý: khách chỉ đáp ngắn đồng ý / cảm ơn, không thêm thông tin mới, và lời em trước đó đã xác nhận lịch → đáp đúng MỘT câu rất ngắn, không lặp câu xác nhận, không nhắc lại ngày giờ / căn / người phụ trách, không hỏi thêm; "ok" nhiều lần thì mỗi lần vẫn một câu ngắn. Cố ý KHÔNG dò chữ "ok" bằng từ khoá ở code (lớp "máy đoán ý bằng từ khoá", CLAUDE.md §6) — model đọc nghĩa và đọc lời em trước trong lịch sử.
@@ -9810,7 +9829,7 @@ Ca gốc: chủ dự án (23/10): "thả tim ở câu chào, câu xác nhận ti
 
 ### SRS-5.1zzzzzzz164 · Lịch xem đã chốt thì báo admin; log giới tính Zalo thô (23/10/2026)
 
-Ca gốc: soát chat chị Ngân 15:46–15:49 (ca CŨ, trước SRS-161): lịch `proposed`, nhắc `escalation` chỉ tới admin (căn mẫu `SEED0016` không gắn người bán, hội thoại không có CTV), khách xác nhận giờ rồi không có gì ghi / báo thêm. Chủ dự án: "nếu 2 bên đã chốt giờ thì báo admin cũng được"; "có thể kiểm tra và gọi ở Zalo cũng được" (nên lời "người phụ trách sẽ gọi" giữ nguyên dù lịch chưa có số).
+Ca gốc: soát chat chị N. 15:46–15:49 (ca CŨ, trước SRS-161): lịch `proposed`, nhắc `escalation` chỉ tới admin (căn mẫu `SEED0016` không gắn người bán, hội thoại không có CTV), khách xác nhận giờ rồi không có gì ghi / báo thêm. Chủ dự án: "nếu 2 bên đã chốt giờ thì báo admin cũng được"; "có thể kiểm tra và gọi ở Zalo cũng được" (nên lời "người phụ trách sẽ gọi" giữ nguyên dù lịch chưa có số).
 
 1. **Đã có sẵn (đọc code)**: `viewings_bao_ctv_va_email` đẻ một nhắc `escalation` (gắn `ctv_id` nếu hội thoại có CTV, không thì admin) + câu `xac_nhan_lich`; bridge chọn đích `chủ nhà (seller_id) → CTV → admin` (`escalation-feed`), nhưng nhắc của lịch xem KHÔNG gắn `seller_id` nên chưa hề nhắn thẳng chủ nhà — chỉ CTV hoặc admin. CTV nhắn `#mã: ok giờ` → lịch `confirmed` + báo khách.
 2. **Sửa**: migration `20261023f` — `info_request_bao_lai_khach`: câu `xac_nhan_lich` do CTV trả lời (ctv_id có, assignee không phải admin) và có lịch → thêm MỘT nhắc `escalation` không gắn seller / ctv (bridge đưa về admin): "Lịch xem #mã đã chốt … báo để admin nắm". Admin tự trả lời thì không báo thêm. Bọc `begin … exception` + `log_loi('lich_chot_bao_admin')`.
@@ -9847,7 +9866,7 @@ Ca gốc: chủ dự án (23/10): "xóa tin nhắn thôi còn nhà trong kho v�
 
 ### SRS-5.1zzzzzzz168 · Bot nói thật về ảnh căn; rổ mẫu phủ từng quận + ảnh minh hoạ (24/10/2026)
 
-Ca gốc: chủ dự án Lê Quang chat thử 24/10 ~01:00 (ảnh chụp CRM + Zalo). (a) Hỏi "căn này có ảnh không em" → bot: "Có ảnh anh ạ, ảnh căn này em gửi ngay sau tin nhắn này" — không ảnh nào tới, vì 130 căn mẫu `seed_thu` chưa có dòng `listing_media`. (b) Hỏi "nhà phố Quận 5 dưới 7 tỷ hẻm xe hơi", "căn hộ 2PN Quận 10 thuê 15 triệu", "nhà phố Gò Vấp hẻm xe hơi dưới 6 tỷ ≥ 4 phòng ngủ" → bot nói chưa có căn. Đối chiếu DB: (b) đúng với dữ liệu lúc đó — Quận 5 chỉ có SEED0005 (đúng 7,0 tỷ, không "dưới 7") và SEED0010 (hẻm xe máy), Quận 10 không có căn hộ thuê nào, Gò Vấp không có căn ≥ 4PN dưới 6 tỷ; `tim_nha` chạy đúng (kiểm bằng gọi thẳng hàm). Chỉ (a) là lỗi của bot.
+Ca gốc: chủ dự án anh Q. chat thử 24/10 ~01:00 (ảnh chụp CRM + Zalo). (a) Hỏi "căn này có ảnh không em" → bot: "Có ảnh anh ạ, ảnh căn này em gửi ngay sau tin nhắn này" — không ảnh nào tới, vì 130 căn mẫu `seed_thu` chưa có dòng `listing_media`. (b) Hỏi "nhà phố Quận 5 dưới 7 tỷ hẻm xe hơi", "căn hộ 2PN Quận 10 thuê 15 triệu", "nhà phố Gò Vấp hẻm xe hơi dưới 6 tỷ ≥ 4 phòng ngủ" → bot nói chưa có căn. Đối chiếu DB: (b) đúng với dữ liệu lúc đó — Quận 5 chỉ có SEED0005 (đúng 7,0 tỷ, không "dưới 7") và SEED0010 (hẻm xe máy), Quận 10 không có căn hộ thuê nào, Gò Vấp không có căn ≥ 4PN dưới 6 tỷ; `tim_nha` chạy đúng (kiểm bằng gọi thẳng hàm). Chỉ (a) là lỗi của bot.
 
 1. **Lớp lỗi**: lời dặn model hứa một việc hệ thống làm có điều kiện (gửi ảnh khi căn có ảnh) như thể luôn làm, và model không được biết điều kiện (căn nào có ảnh). Cùng lớp với "đã chuyển / đã giữ lịch" khi chưa ghi gì (SRS-5.1zzzzzzz153, `khoi_viec_vua_ghi([])`).
 2. **Sửa (bot)**: `KhoNguoiMua._so_anh_theo_ma` / `_gan_so_anh` đếm ảnh của từng căn ở `listing_photos_v` — đúng nguồn ảnh gửi kèm (`anh_can`) — một lượt đọc cho cả danh sách, gắn `_so_anh` trong `tim_nha` và `can_theo_ma`; `dong_can` ghi "ảnh: có N ảnh" hoặc "ảnh: CHƯA có ảnh nào"; không đọc được thì không ghi gì. `khoi_can_cho_khach`: bỏ câu "ảnh căn tự gửi kèm ngay sau", dặn nói thật khi CHƯA có ảnh, không hứa ảnh khi dòng căn không nói gì về ảnh.
@@ -9857,7 +9876,7 @@ Ca gốc: chủ dự án Lê Quang chat thử 24/10 ~01:00 (ảnh chụp CRM + Z
 
 ### SRS-5.1zzzzzzz169 · Khách mua xin ảnh thì được gửi ảnh, kể cả xin lại trong 24 giờ (24/10/2026)
 
-Ca gốc: chủ dự án Lê Quang chat thử 24/10: "Khách xin lại ảnh trong 24 giờ: bot không gửi lại, chỉ nhắc ảnh đã gửi ở trên. Fix đi và người mua hỏi ảnh cũng đưa cho họ dc".
+Ca gốc: chủ dự án anh Q. chat thử 24/10: "Khách xin lại ảnh trong 24 giờ: bot không gửi lại, chỉ nhắc ảnh đã gửi ở trên. Fix đi và người mua hỏi ảnh cũng đưa cho họ dc".
 
 1. **Lớp lỗi**: đường gửi ảnh chỉ có MỘT cò — lời bot có link căn (`anh_can_gui_kem` đọc mã từ link) — kèm chặn 24 giờ mỗi (khách, căn). Việc khách CHỦ ĐỘNG xin ảnh không có đường nào; model chỉ còn cách nhắc "ảnh em đã gửi ở trên". Cùng lớp với SRS-5.1zzzzzzz168 (lời bot hứa một việc hệ thống làm có điều kiện) và SRS-5.1zzzzzzz153 (bot nói đã làm khi hệ thống chưa làm).
 2. **Sửa**: (a) lượt lập thao tác có thêm `mua.xin_anh` (boolean, AI đọc theo nghĩa — không dò từ khoá), nhận khi cụm trích có trong tin khách (cùng cổng với các việc mua khác). (b) `Engine._viec_mua`: mã căn lấy từ `mua.ma_can`, thiếu thì từ link trong lời bot gần nhất; căn có ảnh (`_so_anh` khác 0) → `conv.y_luot["xin_anh"]` + dặn model "hệ thống gửi ảnh NGAY SAU tin này, KHÔNG nói đã gửi ở trên"; căn chưa có ảnh → nói thật, không hứa; không rõ căn nào → hỏi lại MỘT câu. (c) `TurnResult.xin_anh` → `server.py` truyền `xin=` cho `anh_can_gui_kem`: căn khách xin luôn gửi, bỏ chặn 24 giờ; `SoAnhDaGui` nhớ đã gửi bao nhiêu ảnh, xin tiếp thì gửi các ảnh CHƯA gửi, hết thì quay lại từ đầu (tối đa 4 ảnh một lượt như cũ). Tin bot tự giới thiệu căn vẫn chặn 24 giờ như SRS-5.1zzzzzzz145.
@@ -9944,7 +9963,7 @@ Chủ dự án 25/10 sau kiểm kê tài sản: "Câu chuẩn 460 dòng sao lạ
 
 ### SRS-5.1zzzzzzz181 · Gắn `project_id` cho tin rao: tên gần giống + cùng đường thì gắn thẳng, còn lại hỏi một lần; thêm 10 tên trợ lý (25/10/2026)
 Chủ dự án 25/10 sau khi xem kho dự án: "nối project_id cho tin rao trước, nối xong là biết người đó đang rao tin trong dự án nào không, có cần hỏi lại ko" → "đồng ý, làm đi"; "tên gần giống địa chỉ giống thì cho vào thẳng luôn, 100m thì hỏi, thông tin trên mogi có địa chỉ ko". Kèm: "tên của bot dạng … có nghĩa mà thêm hay bớt dấu cũng được … thái mai hải lai khải tài đại đài nhài giai, vậy thôi ko có nghĩa ko cho vào … thêm vào cạnh kho cũ".
-1. **Ca gốc / hiện trạng đo được**: `listings.project_id` 0/248 (242 tin mẫu `seed_thu` không ghi tên dự án; trong 8 tin thật chỉ 1 tin nêu dự án — chat 24/10 "Khu nhà phố NYAL" ở 198 Trương Đình Hội). Kho có "Ny'ah Phú Định" (58A Trương Đình Hội) nhưng `_du_an` chỉ gắn khi tên TRÙNG HẲN (`cung_ten_du_an`, SRS-86) nên không gắn. **Mogi có địa chỉ**: `projects` nguồn mogi 2.361/2.361 dòng có `location_raw` (402 dòng bắt đầu bằng số nhà, còn lại tên đường / khu), 2.201 có toạ độ, 2.361 có phường.
+1. **Ca gốc / hiện trạng đo được**: `listings.project_id` 0/248 (242 tin mẫu `seed_thu` không ghi tên dự án; trong 8 tin thật chỉ 1 tin nêu dự án — chat 24/10 "Khu nhà phố NYAL" ở đường Trương Đình Hội). Kho có "Ny'ah Phú Định" (58A Trương Đình Hội) nhưng `_du_an` chỉ gắn khi tên TRÙNG HẲN (`cung_ten_du_an`, SRS-86) nên không gắn. **Mogi có địa chỉ**: `projects` nguồn mogi 2.361/2.361 dòng có `location_raw` (402 dòng bắt đầu bằng số nhà, còn lại tên đường / khu), 2.201 có toạ độ, 2.361 có phường.
 2. **Sửa**: (a) `supabase_store._du_an` — tên chưa trùng thì thử thêm: dự án trong kho có địa chỉ chứa tên đường của căn (`_du_an_cung_duong`, cùng phường nếu cả hai biết) VÀ tên gần giống (`ten_gan_giong_du_an`: một từ lõi ≥ 4 ký tự trùng / lệch ≤ 1 ký tự, bỏ từ chung "khu / nhà / phố / city…") VÀ đúng MỘT dự án thoả → gắn thẳng `project_id` + phường dự án, không hỏi. (b) `du_an_goi_y` + `engine._khoi_hoi_du_an` / `_khoi_du_an_da_hoi` — còn lại, nếu kho có đúng MỘT dự án cùng đường thì bot hỏi xác nhận MỘT lần ("căn này thuộc dự án X đúng không ạ?", dạng hỏi, thay câu hỏi kế; cờ `_goi_y_du_an` lưu cùng tin), khách gật thì lượt AI lập thao tác ghi `du_an` (qua cổng bằng chứng `_O_GHEP`), lượt kế đóng cờ; từ hai dự án trở lên không hỏi, không gắn. Không hỏi khi vừa hỏi xác nhận tên đường (`goi_y_duong`), khi đang soạn / duyệt bản nháp. (c) `assistants.ASSISTANT_NAMES` thêm Thái, Mai, Hải, Lai, Khải, Tài, Đại, Đài, Nhài, Giai (30 tên); `assign_assistant` chia theo băm nên sau khi đổi độ dài kho, MỘT SỐ khách đang chat sẽ đổi tên trợ lý.
 3. **Chưa làm — quy tắc "trong 100 m thì hỏi"**: toạ độ tin chỉ có sau khi `geocode-listings` chạy và hiện 241/248 tin ở mức `duong` (tâm đường), 4 mức `phường` — không phải toạ độ số nhà, nên khoảng cách 100 m tới dự án không đáng tin; thay bằng "cùng đường + đúng một dự án" ở mục 2b. Muốn đúng 100 m thì cần toạ độ cấp số nhà (OSM / Nominatim) trước. Tên trợ lý chủ dự án duyệt "có nghĩa": tra từ điển bằng tìm kiếm web chỉ ra nghĩa cho một phần từ (nhài, khải, đại, đài); danh sách này là của chủ dự án, chưa đối chiếu từ điển chính thống.
 4. **Lớp lỗi / chỗ khác cùng lớp**: "đoán thuộc dự án nào bằng tên trùng hẳn" bỏ lọt tên viết khác (Ny'ah / NYAL). Cùng lớp: `phuong_theo_du_an` (đã đi qua `_du_an` nên được hưởng), `project_for` (tra theo tên ô `du_an` — chưa dùng gợi ý, sẽ dùng khi cờ gật ghi `du_an`). Khách MUA hỏi dự án vẫn chưa tra kho (SRS-180 mục 3).

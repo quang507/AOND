@@ -28,7 +28,7 @@ def test_moi_cau_mau_khong_mo_dau_da():
 
 
 def test_ba_cau_cu_goi_theo_cach_xung():
-    assert cau_mau.cau("bao_phi", "anh", phi="1% giá chốt").endswith("Anh cần biết thêm thông tin, nhắn em hỗ trợ ạ.")
+    assert cau_mau.cau("bao_phi", "anh", phi="1% giá chốt").endswith("chưa thành thì anh không tốn đồng nào.")
     assert cau_mau.cau("nhac_ban_nhap", "chị") == "Em gửi chị bản nháp tin đăng, chị cần chỉnh sửa thêm nhắn em hỗ trợ ạ!"
     assert "9h sáng mai anh đến xem căn" in cau_mau.cau("xac_nhan_lich", "anh", toi="em", gio="9h sáng mai", can="Trần Bình Trọng")
 

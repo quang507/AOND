@@ -30,10 +30,10 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     "hoi_phi": ("{Goi} có thể vào {web} để theo dõi tin rao ạ. {Goi} biết phí môi giới bên em chưa ạ?",
                 "Ngay sau câu duyệt tin — tin nhắn thứ hai, câu hỏi phí (bot nói theo tinh thần câu này)",
                 "SRS-5.1zzzzzzz81 / 98 · bản anh Luận + câu tester 21/10"),
-    "bao_phi": ("Em xin phép báo phí bên em: phí môi giới bên em là {phi}. Chỉ thu khi giao dịch thành công. {Goi} cần biết thêm thông "
-                "tin, nhắn em hỗ trợ ạ.",
+    "bao_phi": ("Đăng tin bên em miễn phí ạ. Phí môi giới là {phi}, chỉ thu khi giao dịch thành công — chưa thành thì {goi} không tốn "
+                "đồng nào.",
                 "Báo con số phí (khách chưa biết phí / hỏi phí). {phi} = mức phí theo vai + bán hay thuê, code điền (vd \"0.75 tháng "
-                "tiền thuê\") — câu sửa phải giữ {phi}", "SRS-5.1zzzzzzz111 · câu tester sửa ở Câu chuẩn 21/10"),
+                "tiền thuê\") — câu sửa phải giữ {phi}", "SRS-5.1zzzzzzz111 · câu tester sửa ở Câu chuẩn 21/10; 31/10 chủ dự án: viết lại, bỏ giọng tổng đài (SRS-5.1zzzzzzz315)"),
     "nhac_ban_nhap": ("Em gửi {goi} bản nháp tin đăng, {goi} cần chỉnh sửa thêm nhắn em hỗ trợ ạ!",
                       "Tin nhắc sau 5 phút khách chưa trả lời bản nháp", "SRS-5.1zzzzzzz99 / 101 · câu tester 21/10"),
     "nhac_ban_nhap_em": ("{Toi} gửi {goi} bản nháp tin đăng, {goi} cần chỉnh sửa thêm nhắn {toi} hỗ trợ nhé!",

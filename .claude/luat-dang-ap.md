@@ -68,6 +68,8 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 - Bot tự hiểu từ dữ kiện đã có rồi làm, KHÔNG hỏi lại khách để xác nhận nghĩa / số lệch (chủ dự án 30/10); số khách nói thắng số tự tính (SRS-302). Ví dụ trong prompt bóc tách không được đá định nghĩa ô.
 - Form bóc tách người bán gọn (`OPERATIONS_SYSTEM_BAN`, SRS-303) CẮT từ form đầy đủ như form mua gọn — sửa luật ở `OPERATIONS_SYSTEM`. Tiêu đề: prompt dặn 15–25 từ, lưới gọi lại khi quá 30.
 - Gỡ / thêm luật prompt hay luật soát phải chạy `bun run cham` ≥ 2 lần mỗi bên và so điểm (SRS-304); điểm tụt thì không gộp.
+- Bộ chấm đọc công tắc + model từ `cai-vps.sh` và mặc định chạy NHƯ KHÁCH THẬT ("thu" = tắt); đo đường ID thử thì `--nhu thu`. Điểm nền ở `tests/kich_ban/diem_nen.json` — đổi nền (`--nen`) cùng PR với thay đổi đã đo (SRS-313).
+- Việc của lượt phía bán: thứ tự ưu tiên MỘT chỗ ở `viec_luot.py` (SRS-314); khối hỏi mới thì thêm tên vào `KHOI_HOI` + ghi `khoi.append` ở engine, đừng thêm câu "câu hỏi duy nhất" vào prompt.
 - Lưới soát lời phía bán soi phần CHAT (`_phan_chat_quanh_ban_tin`); chỉ lưới về nội dung tin (số, hẻm, pháp lý, tiêu đề) soi thân bản tin 📋 — thân tin viết cho người mua (SRS-306).
 - Agent phía bán (`agent_ban.py`, công tắc `AGENT_BAN`, SRS-307): khối DỮ LIỆU (rổ hàng, bộ nhớ dự án, giá đã gửi) đi qua công cụ — thân công cụ là chính hàm khối của engine, sửa ở hàm đó. Luật HÀNH VI đừng giấu trong khối dữ liệu (model chỉ thấy khi gọi công cụ) — đặt ở `agent_ban.HUONG_DAN`. Khối dữ liệu mới thì thêm vào `CONG_CU` + `_khoi`.
 - Phiếu lượt (`prompts.build_phieu_luot`, công tắc `PHIEU_LUOT`, SRS-309): lượt thu thập người bán KHÔNG còn đọc `build_chat_system` — sửa giọng / việc lượt ở phiếu lượt; luật mới thì thêm kịch bản ở `tests/kich_ban/` và đo `bun run cham --giong` trước khi thêm chữ vào prompt.
@@ -102,11 +104,11 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 - Hỏi chủ nhà căn còn bán: `hoi_con_ban.py`, tin chưa xác nhận 20 ngày (chủ dự án chốt), một tin / người bán, 8–20 giờ; chủ đáp còn → `con_ban` → `listings.xac_nhan_con_ban_at`. Căn đã cọc → hỏi `O_COC` (ô riêng), mỗi lượt một ô. Phí hợp đồng = mức chuẩn, không có phí thoả thuận (SRS-295).
 - Tin chống Zalo xoá kết nối (FR-63): `giu_ket_noi.py`, khách im 6–7 ngày, 8–20 giờ, câu mẫu cố định, giữ chỗ `reminders` `reengage` (SRS-238).
 - Nhắc `followup` / `sold` / `feedback` / `admin_reply` / `len_web` do LÕI gửi (`gui_nhac.py`, vòng 60 s; `len_web` chờ tin `dang_ban` rồi nhắn chủ nhà — bot chỉ hứa "tin hiển thị em nhắn" khi `hen_bao_len_web` đã ghi, SRS-254); thêm loại nhắc = thêm vào `KIND_LOI` + `soan_tin`, đừng mở đường gửi thứ hai; đừng ghi `noi_dung_gui` khi còn pending (SRS-216).
-- Tin nội bộ (🙋 ⭐ 🩺) gửi CTV / admin mở bằng `$$$$$ `; tin cho khách thật không bao giờ có (SRS-134) — trừ tin phụ "Đã trích xuất" khi công tắc `DONG_TRICH_XUAT` trong `cai-vps.sh` = `bat` (giai đoạn test, SRS-252; chạy thật thì `tat`). Ảnh gửi qua `/send` của bridge, vòng tải ảnh chỉ ở `guiAnhQuaUrl` (mọi ảnh một tin, SRS-280).
+- Tin nội bộ (🙋 ⭐ 🩺) gửi admin mở bằng `$$$$$ `; tin cho khách thật không bao giờ có (SRS-134) — trừ tin phụ "Đã trích xuất" khi công tắc `DONG_TRICH_XUAT` trong `cai-vps.sh` = `bat` (giai đoạn test, SRS-252; chạy thật thì `tat`). Ảnh gửi qua `/send` của bridge, vòng tải ảnh chỉ ở `guiAnhQuaUrl` (mọi ảnh một tin, SRS-280).
 - Việc bridge kéo qua `escalation-feed`: đích ID thử bị huỷ ở `pull` (`la_id_thu`), gửi hụt báo `hut` (thử lại 5 phút × lần, 5 lần → `dead`) — đường gửi mới phải có trần như vậy (SRS-276).
 - Tin khách bấm "Trả lời" trên Zalo: bridge `quote_text` → `conv.tin_tra_loi` → `prompts.khoi_tin_tra_loi`; nội dung trích KHÔNG phải lời khách, không làm bằng chứng ô tin (SRS-270).
 - Tin khách tới lúc bot đang soạn: lời vừa soạn bỏ, lượt kế đọc gộp (`server._bo_loi_cu_neu_co_tin_moi`, SRS-279) — đừng gửi lời soạn trên hội thoại đã cũ.
-- Lệnh gõ tay trên Zalo (`lenh_zalo.py`): `/quit` (xoá phiên), `/state`, `/listings`, `/whoami`, `/import`, `/project`, `/link`; chạy TRƯỚC model, không vào lịch sử (SRS-211).
+- Lệnh gõ tay trên Zalo (`lenh_zalo.py`): `/quit` (xoá phiên), `/state`, `/listings`, `/whoami`, `/seller`, `/import`, `/project`, `/link`; chạy TRƯỚC model, không vào lịch sử — riêng `/link` bỏ chữ lệnh rồi đi tiếp đường tin thường (SRS-211).
 
 **Prompt, cache, chi phí**
 - `RANH_GIOI_CACHE` (`llm/base.py`): phần cố định trước dấu, dữ liệu đổi mỗi lượt sau dấu; dựng prompt mới thì đặt dấu đúng chỗ, khối cố định mới chèn trước dấu (SRS-166 / 213). Batch API không hợp (chat thời gian thực).

@@ -295,12 +295,13 @@ def muc_phi(role: SellerRole, thue: bool) -> str | None:
     return f"{PT_CHU} giá chốt nếu là chủ nhà, {PT_MG} nếu là môi giới"
 
 
-def khoi_bao_phi(role: SellerRole, thue: bool) -> str:
-    """Dặn model báo phí bằng NGUYÊN VĂN câu mẫu `bao_phi` (câu tester sửa, chủ dự án sửa tiếp ở CRM). Rỗng khi không có con số."""
+def khoi_bao_phi(role: SellerRole, thue: bool, goi: str = "anh/chị") -> str:
+    """Dặn model báo phí bằng NGUYÊN VĂN câu mẫu `bao_phi` (chủ dự án sửa ở CRM), gọi khách đúng cách khách xưng (`goi`, SRS-5.1zzzzzzz315).
+    Rỗng khi không có con số."""
     phi = muc_phi(role, thue)
     if not phi:
         return ""
-    return f'Báo phí bằng NGUYÊN VĂN câu mẫu: "{cau_mau.cau("bao_phi", phi=phi)}"'
+    return f'Báo phí bằng NGUYÊN VĂN câu mẫu: "{cau_mau.cau("bao_phi", goi, phi=phi)}"'
 
 
 def _fee_hint(role: SellerRole) -> str:
@@ -1094,6 +1095,7 @@ def build_fee_followup_system(
     duyet: str | None = None,
     phi_da_bao: bool = False,
     yeu_cau_moi: list[str] | None = None,
+    goi: str = "anh/chị",
 ) -> str:
     """Step 2: customer has seen the draft — react to their feedback, then talk fee (§V).
 
@@ -1120,7 +1122,7 @@ def build_fee_followup_system(
     hoi_phi = (
         "\n  • RỒI XUỐNG MỘT DÒNG TRỐNG (đoạn riêng — hệ thống gửi thành tin nhắn riêng cho đỡ rối mắt; SRS-5.1zzzzzzz98) và HỎI "
         "PHÍ NHẸ NHÀNG như bản anh Luận (tinh thần \"anh/chị có biết phí môi giới của tụi em chưa ạ?\"): mời khách vào web theo dõi "
-        f"tin rồi hỏi khách đã biết phí môi giới bên em chưa (câu mẫu: \"{cau_mau.cau('hoi_phi', **({'web': link_tin(web['ma'])} if (web or {}).get('ma') else {}))}\") — đây là câu hỏi DUY NHẤT "
+        f"tin rồi hỏi khách đã biết phí môi giới bên em chưa (câu mẫu: \"{cau_mau.cau('hoi_phi', goi, **({'web': link_tin(web['ma'])} if (web or {}).get('ma') else {}))}\") — đây là câu hỏi DUY NHẤT "
         "của lượt này. Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách. Đoạn này tối đa 2 câu ngắn."
         if (web is None or web.get("len_web")) and not phi_da_bao else ""
     )
@@ -1129,7 +1131,7 @@ def build_fee_followup_system(
         # câu hỏi phí là bước kịch bản, không biết phí ĐÃ được báo trong cuộc chat.
         hoi_phi = ("\n  • Khách ĐÃ được báo phí trong cuộc chat này: KHÔNG hỏi lại khách biết phí chưa, không nhắc lại con số phí. "
                    f"Được mời khách vào {link_tin((web or {}).get('ma'))} theo dõi tin, một câu ngắn.")
-    bao_phi = khoi_bao_phi(user_type, prop.is_rental)
+    bao_phi = khoi_bao_phi(user_type, prop.is_rental, goi)
     bao_phi = f"\n  {bao_phi}" if bao_phi else ""
     yeu_cau = khoi_yeu_cau_viet(prop, yeu_cau_moi)
     hoi_sau = ""

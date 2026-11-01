@@ -120,10 +120,14 @@ def test_cau_bao_phi_tester_sua_toi_loi_bot():
     from aioi.revenue import SellerRole
     thue = build_fee_followup_system("x", Property(loai_hinh="nha_pho", is_rental=True), user_type=SellerRole.CHU_NHA,
                                      web={"len_web": True})
-    assert ("Em xin phép báo phí bên em: phí môi giới bên em là 0.75 tháng tiền thuê. Chỉ thu khi giao dịch thành công. "
-            "Anh/chị cần biết thêm thông tin, nhắn em hỗ trợ ạ.") in thue
-    assert "phí môi giới bên em là 1% giá chốt." in khoi_bao_phi(SellerRole.CHU_NHA, False)
-    assert "phí môi giới bên em là 0.5% giá chốt." in khoi_bao_phi(SellerRole.MOI_GIOI, False)
+    assert ("Đăng tin bên em miễn phí ạ. Phí môi giới là 0.75 tháng tiền thuê, chỉ thu khi giao dịch thành công — chưa thành thì anh/chị "
+            "không tốn đồng nào.") in thue
+    assert "Phí môi giới là 1% giá chốt," in khoi_bao_phi(SellerRole.CHU_NHA, False)
+    assert "Phí môi giới là 0.5% giá chốt," in khoi_bao_phi(SellerRole.MOI_GIOI, False)
+    # SRS-5.1zzzzzzz315 (bộ chấm `xung_chi_phi`: khách xưng chị mà câu phí gọi "Anh/chị"): gọi đúng cách khách xưng
+    assert "thì chị không tốn" in khoi_bao_phi(SellerRole.CHU_NHA, False, "chị")
+    assert "thì chị không tốn" in build_fee_followup_system("x", Property(loai_hinh="nha_pho"), user_type=SellerRole.CHU_NHA,
+                                                             web={"len_web": True}, goi="chị")
     assert khoi_bao_phi(SellerRole.CHU_DAU_TU, False) == ""   # chủ đầu tư: phí thoả thuận riêng, không báo con số
 
 
@@ -133,14 +137,14 @@ def test_cau_bao_phi_sua_o_crm_phai_giu_cho_muc_phi():
     cau_mau.dang_ky(lambda: {"bao_phi": "Phí bên em là {phi}, chỉ thu khi thành công ạ."})
     assert '"Phí bên em là 1% giá chốt, chỉ thu khi thành công ạ."' in khoi_bao_phi(SellerRole.CHU_NHA, False)
     cau_mau.dang_ky(lambda: {"bao_phi": "Phí bên em rẻ lắm ạ."})   # sửa mất {phi} → bot nói câu không có con số: dùng câu gốc
-    assert "phí môi giới bên em là 1% giá chốt." in khoi_bao_phi(SellerRole.CHU_NHA, False)
+    assert "Phí môi giới là 1% giá chốt," in khoi_bao_phi(SellerRole.CHU_NHA, False)
 
 
 def test_khach_hoi_phi_cung_doc_cau_bao_phi():
     """Nhánh khách chủ động hỏi phí (engine) dùng cùng câu mẫu, không viết câu phí riêng."""
     goc = (pathlib.Path(cau_mau.__file__).parent / "engine.py").read_text()
     khoi = goc[goc.index('if conv.hoi_ve_luot == "phi":'):goc.index('elif conv.hoi_ve_luot == "uy_tin":')]
-    assert "khoi_bao_phi(conv.vai_phi, conv.prop.is_rental)" in khoi   # SRS-5.1zzzzzzz240: vai tính phí
+    assert "khoi_bao_phi(conv.vai_phi, conv.prop.is_rental, goi_toi_khach(customer_pronoun)[0])" in khoi   # SRS-240 vai, SRS-315 xưng hô
 
 
 def test_cau_code_ghep_goi_theo_cach_khach_xung():
