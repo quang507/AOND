@@ -6,7 +6,6 @@
 from aioi.engine import Engine
 from aioi.prompts import OPERATIONS_SYSTEM
 from tests.test_doc_y_khach import _Spy
-import pytest
 
 
 class _SpyDa(_Spy):
@@ -39,14 +38,6 @@ def test_can_trung_duong_gia_an_theo_khi_biet_ngoai_vung():
     eng.handle("nv9", "nhà ở quận Đống Đa, Hà Nội em")
     assert moi.prop.fields["_ngoai_vung"] == "Hà Nội" and cu.prop.fields.get("_ngoai_vung") == "Hà Nội"
     assert "_ngoai_vung" not in khac.prop.fields
-
-
-@pytest.mark.nhanh_cu(AIOI_SOAT_GON="tat")   # soát chế độ cũ (gọi lại vì giọng / lặp); production chế độ gọn — SRS-298
-def test_nhanh_ngoai_vung_khong_mo_dau_da():
-    spy = _SpyDa(_plan_ha_noi(), ["Dạ, em rất tiếc là bên em chưa nhận Hà Nội ạ.", "Em rất tiếc, bên em chưa nhận Hà Nội ạ."])
-    eng = Engine(spy)
-    r = eng.handle("nv10", "nhà ở quận Đống Đa, Hà Nội em")
-    assert not r.reply.startswith("Dạ") and "VIẾT LẠI LƯỢT NÀY" in spy.systems[-1]
 
 
 def test_lam_ro_dia_chi_la_update_khong_add():

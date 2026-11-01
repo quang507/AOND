@@ -17,9 +17,7 @@ class _AiGhiModel(MockProvider):
 
 
 def _luot(monkeypatch, key, *tin):
-    monkeypatch.setenv("AIOI_PHIEU_LUOT", "bat")
     monkeypatch.setenv("AIOI_MODEL_LUOT_DE", "model-re")
-    monkeypatch.setenv("AIOI_AGENT_BAN", "tat")
     ai = _AiGhiModel()
     eng = Engine(ai)
     for t in tin:
@@ -41,6 +39,5 @@ def test_luot_khach_hoi_phi_giu_model_chat(monkeypatch):
 def test_cong_tac_tat_khong_doi_model(monkeypatch):
     monkeypatch.setenv("AIOI_MODEL_LUOT_DE", "tat")
     ai = _AiGhiModel()
-    monkeypatch.setenv("AIOI_PHIEU_LUOT", "bat")
     Engine(ai).handle("chu-311c", "Anh cần bán nhà phố đường Lê Lai quận 1")
     assert ai.model and all(x is None for x in ai.model)

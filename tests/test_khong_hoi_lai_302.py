@@ -5,7 +5,6 @@ Ca đỏ khi gỡ bản sửa ở prompts.py."""
 from aioi.prompts import OPERATIONS_SYSTEM, build_fee_followup_system
 from aioi.schema import Property
 from tests.test_engine import _engine
-import pytest
 
 
 def test_rao_lai_xem_khi_chua_co_ban_nhap_la_xin_dang():
@@ -13,7 +12,6 @@ def test_rao_lai_xem_khi_chua_co_ban_nhap_la_xin_dang():
     assert "để xin_dang / yeu_cau_viet hoặc bỏ" in OPERATIONS_SYSTEM
 
 
-@pytest.mark.nhanh_cu(AIOI_PHIEU_LUOT="tat")   # chữ của build_chat_system; lượt thu thập production dùng phiếu lượt — SRS-309
 def test_nhanh_chat_khong_hua_gui_ban_tin():
     eng = _engine()
     seen: list[str] = []
@@ -21,7 +19,7 @@ def test_nhanh_chat_khong_hua_gui_ban_tin():
     eng._provider.chat = lambda system, messages, **k: seen.append(system) or goc(system, messages, **k)
     eng.handle("chu-302", "Anh cần bán nhà mặt tiền đường Hoàng Hoa Thám, Bình Thạnh")
     loi = [s for s in seen if "VIỆC LƯỢT NÀY: hỏi đúng MỘT ý" in s]
-    assert loi and "KHÔNG có bản tin kèm theo" in loi[-1] and "KHÔNG hỏi lại khách để xác nhận nghĩa" in loi[-1]
+    assert loi and "Lượt này không có bản tin kèm theo" in loi[-1] and "không hỏi để xác nhận nghĩa" in loi[-1]   # phiếu lượt (SRS-319)
 
 
 def test_sau_ban_nhap_dinh_chinh_so_thi_sua_luon():

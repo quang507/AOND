@@ -1,6 +1,6 @@
 """Đồ giả dùng chung cho test (audit Đợt 0, SRS-5.1zzzzzzz316, R6).
 
-Production bật vòng agent (`AGENT_BAN` / `AGENT_MUA` = bat), nên engine gọi `provider.converse(...)`. Đồ giả viết tay chỉ có `chat` / `reply`
+Vòng agent bán / mua luôn chạy (công tắc gỡ ở Đợt 8, SRS-5.1zzzzzzz319), nên engine gọi `provider.converse(...)`. Đồ giả viết tay chỉ có `chat` / `reply`
 / `extract` thì vỡ ở đường production. Trộn `KhongCongCu` vào: vòng công cụ trả lời bằng chữ, không gọi công cụ — đúng như mặc định
 `LLMProvider.converse` (model không hỗ trợ công cụ), vòng agent vẫn dừng."""
 from __future__ import annotations

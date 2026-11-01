@@ -1,7 +1,7 @@
 """19/10/2026 (SRS-5.1zzzzzzz68): bộ câu hỏi theo loại BĐS chỉ còn ở `schema.py`. Toà nhà / CHDV và phòng trọ chung nhóm nhà ở
 nhưng hỏi bộ riêng (chép ý từ bảng `required_facts` đã gỡ): trước bản này phòng trọ bị hỏi kết cấu + hoàn công như nhà phố,
 toà nhà bị hỏi tình trạng bàn giao thay vì số phòng + dòng tiền. Đỏ khi bỏ `CORE_THEO_LOAI`."""
-from aioi.prompts import build_chat_system, property_field_props
+from aioi.prompts import build_phieu_luot, property_field_props
 from aioi.schema import CORE_THEO_LOAI, Property
 
 
@@ -34,7 +34,7 @@ def test_o_rieng_co_cho_trong_schema_boc_tach():
 
 def test_cau_hoi_ke_dung_y_cua_loai():
     # Câu hỏi kế đưa cho model là ý tự nhiên của ô (NATURAL_QUESTIONS), không phải tên slug.
-    s = build_chat_system("T•ai", Property(loai_hinh="phong_tro"), "gio_giac")
+    s = build_phieu_luot("T•ai", Property(loai_hinh="phong_tro"), "gio_giac")
     assert "giờ giấc tự do hay có giờ đóng cổng" in s
 
 

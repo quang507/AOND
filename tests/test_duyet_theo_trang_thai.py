@@ -2,13 +2,11 @@
 giúp mình", "ổn", "ok đăng tin này nhé", "ok" — bốn lần không được tính là duyệt, bot hỏi lại mãi. Gốc: luật duyệt chỉ nhận khi tin
 NGAY TRƯỚC của bot là bản nháp (vị trí tin), và lời bảo đăng bị bỏ khi bản nháp đã gửi. Nay duyệt đọc theo TRẠNG THÁI (bản nháp đã
 gửi), lời bảo đăng sau bản nháp là đồng ý. Kèm: tên dự án không dấu, nhớ lần hụt tra kho dự án, mở đầu "Dạ" thì gọi lại model."""
-from aioi.engine import Engine, _mo_dau_da
 from aioi.projects import find_matching_key
 from aioi.prompts import OPERATIONS_SYSTEM
 from aioi.supabase_store import SupabaseConversationStore
 from tests.test_duyet_ban_nhap import _eng
 from tests.test_tieu_de_co_gia import _SpyLan
-import pytest
 
 
 def test_loi_bao_dang_sau_ban_nhap_la_dong_y(monkeypatch):
@@ -64,18 +62,6 @@ def test_tra_du_an_hut_khong_nho():
     assert kho._du_an({"du_an": "Nyah Phú Định"}) is None and len(tra) == 1   # hụt nhớ 5 phút: không gọi lại ngay (SRS-5.1zzzzzzz96)
     kho._du_an_hut["Nyah Phú Định"] -= 301
     assert kho._du_an({"du_an": "Nyah Phú Định"})["id"] == "p1"   # vào kho rồi thì lượt sau 5 phút gắn được
-
-
-@pytest.mark.nhanh_cu(AIOI_SOAT_GON="tat")   # soát chế độ cũ (gọi lại vì giọng / lặp); production chế độ gọn — SRS-298
-def test_mo_dau_da_thi_goi_lai_mot_lan():
-    assert _mo_dau_da("Dạ không sao ạ") and _mo_dau_da("  dạ, em hiểu") and not _mo_dau_da("Dạng nhà phố") and not _mo_dau_da("Em")
-    spy = _SpyLan({"operations": []}, ["Dạ, em hiểu ạ.", "Em hiểu ạ."])
-    eng = Engine(spy)
-    conv = eng.conversation("da1")
-    conv.prop.loai_hinh = "nha_pho"
-    eng.handle("da1", "chưa tiện")
-    assert len(spy.systems) == 2 and "VIẾT LẠI LƯỢT NÀY" in spy.systems[-1] and "Dạ" in spy.systems[-1]
-    assert conv.history[-1].content == "Em hiểu ạ."
 
 
 def test_mot_cum_mot_o_va_mat_tien_khong_lon_hon_lo():

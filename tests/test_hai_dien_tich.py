@@ -3,7 +3,7 @@
 Lớp lỗi: bí danh trong `_has` + đồng bộ dien_tich ↔ dien_tich_dat cho MỘT con số đứng thay cả hai ô, nên nhà phố ra bản nháp khi
 chưa biết diện tích nhà, và con số khách chưa nói là đất hay nhà bị tự gán thành diện tích đất.
 """
-from aioi.prompts import build_chat_system
+from aioi.prompts import build_phieu_luot
 from aioi.schema import Property
 
 _DU = {"dia_chi": "146 Trần Bình Trọng", "duong": "Trần Bình Trọng", "phuong": "Phường 2", "gia": "10 tỷ",
@@ -33,10 +33,10 @@ def test_kich_thuoc_van_tinh_ra_dien_tich_dat():
 
 def test_khong_hoi_lai_con_so_da_ro_la_dat():
     p = Property(loai_hinh="nha_pho", fields={**_DU, "dien_tich": "80m2"})
-    assert "CHƯA RÕ là diện tích ĐẤT hay" in build_chat_system("Linh", p, "dien_tich_dat")
+    assert "chưa rõ là diện tích ĐẤT hay diện tích NHÀ" in build_phieu_luot("Linh", p, "dien_tich_dat")
     p.update({"dien_tich_dat": "80 m2"})                  # khách vừa nói "80m2 đó là đất"
-    he = build_chat_system("Linh", p, "dien_tich_nha")
-    assert "CHƯA RÕ là diện tích ĐẤT hay" not in he and "diện tích nhà" in he
+    he = build_phieu_luot("Linh", p, "dien_tich_nha")
+    assert "chưa rõ là diện tích ĐẤT hay diện tích NHÀ" not in he and "diện tích nhà" in he
 
 
 def test_chung_cu_van_mot_dien_tich():

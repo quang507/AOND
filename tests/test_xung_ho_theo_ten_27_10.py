@@ -5,8 +5,7 @@ from aioi import cau_mau
 from aioi.assistants import ASSISTANT_NAMES
 from aioi.bao_can_moi import viet_tin
 from aioi.engine import _detect_customer_pronoun, _goi_khach_la_minh, _mo_dau_ghi_nhan, khoi_xung_ho
-from aioi.prompts import build_chat_system, cat_truoc_mo_dau, operations_schema
-from aioi.schema import Property
+from aioi.prompts import cat_truoc_mo_dau, operations_schema
 from aioi.xung_ho import TEN_NAM, TEN_NU, goi_toi
 from tests.test_doc_y_khach import _eng
 
@@ -75,8 +74,3 @@ def test_mo_dau_ghi_nhan_bat_ghi_o_va_chu_ngu_moi():
 
 def test_goi_khach_la_minh_bat_ca_khi_khach_xung_em():
     assert _goi_khach_la_minh("Em ơi, mình hỏi chút nha, nhà em ở đâu?", "em") and not _goi_khach_la_minh("Nhà em ở phường nào vậy em?", "em")
-
-
-def test_prompt_cho_khen_gia_dinh_tinh_khong_so_lieu():
-    he = build_chat_system("Mai", Property(), "dia_chi")
-    assert "ĐƯỢC khen MỘT câu định tính" in he and "không con số thị trường" in he and 'thay vì "em đã ghi giá…"' in he

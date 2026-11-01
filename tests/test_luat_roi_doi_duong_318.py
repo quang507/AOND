@@ -1,5 +1,5 @@
-"""01/11/2026 (SRS-5.1zzzzzzz318, audit Đợt 2 — luật rơi khi đổi đường, AU-02 / AU-06 / AU-11 / AU-12). Mọi bài chạy công tắc production (conftest:
-PHIEU_LUOT=bat, SOAT_GON=bat). Lớp lỗi: luật / nhãn nằm ở prompt cũ (`build_chat_system`) hoặc ở nhánh soát chỉ chạy khi công tắc tắt, nên khi bật
+"""01/11/2026 (SRS-5.1zzzzzzz318, audit Đợt 2 — luật rơi khi đổi đường, AU-02 / AU-06 / AU-11 / AU-12). Mọi bài chạy đường production (phiếu lượt +
+soát gọn — từ Đợt 8, SRS-5.1zzzzzzz319, là đường duy nhất). Lớp lỗi: luật / nhãn nằm ở prompt cũ (`build_chat_system`) hoặc ở nhánh soát chỉ chạy khi công tắc tắt, nên khi bật
 đường mới thì luật rơi mà không bài nào đỏ."""
 import glob
 import os
@@ -57,15 +57,9 @@ def test_tin_dang_hien_bi_soat_ngay_lan_dau_duoi_soat_gon():
     assert Ghi.goi and "ĐANG HIỂN THỊ" in Ghi.goi[-1]
 
 
-def test_luot_anh_so_qua_phieu_luot_khong_khen_so(monkeypatch):
-    """AU-11: lượt ảnh sổ luôn gọi build_chat_system (không theo công tắc), trong đó "khen điểm mạnh trước" đá nhau với "KHÔNG khen sổ"."""
-    import aioi.engine as eng_mod
-
-    def _cam(*a, **k):
-        raise AssertionError("lượt ảnh sổ không được dùng build_chat_system")
-
-    monkeypatch.setattr(eng_mod, "build_chat_system", _cam)
-
+def test_luot_anh_so_qua_phieu_luot_khong_khen_so():
+    """AU-11: lượt ảnh sổ luôn gọi build_chat_system (không theo công tắc), trong đó "khen điểm mạnh trước" đá nhau với "KHÔNG khen sổ".
+    Prompt cũ đã xoá ở Đợt 8 (canh ở tests/test_go_cong_tac_319.py); bài này giữ phần lời dặn của phiếu lượt ảnh sổ."""
     class Ghi(MockProvider):
         he: list = []
 

@@ -18,7 +18,7 @@ def test_moi_cach_xung_ho_deu_cam_da_va_ban():
 
 
 def test_chinh_sach_chung_khong_cho_goi_ban_khong_doan_theo_zalo():
-    s = prompts.build_chat_system("Hằng", prompts.Property(loai_hinh="nha_pho"), "gia")   # SRS-207: chính sách chung nay là prompt bản anh Luận
+    s = prompts.build_phieu_luot("Hằng", prompts.Property(loai_hinh="nha_pho"), "gia")   # Đợt 8 (SRS-5.1zzzzzzz319): phiếu lượt là đường duy nhất
     assert '(hoặc "bạn")' not in s and "Zalo nam giới" not in s and "Zalo nữ giới" not in s
 
 

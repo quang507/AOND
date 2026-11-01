@@ -9,7 +9,7 @@
 import os
 
 from aioi.config import Settings
-from aioi.engine import Engine, _phieu_luot, _soat_gon
+from aioi.engine import Engine
 from aioi.llm.mock import MockProvider
 from tests.cau_hinh_vps import cong_tac, cong_tac_vps
 
@@ -17,7 +17,7 @@ from tests.cau_hinh_vps import cong_tac, cong_tac_vps
 def test_test_chay_cong_tac_production():
     for k, v in cong_tac().items():
         assert os.environ.get(k) == v, k
-    assert _phieu_luot(None) and _soat_gon(None)          # khách thật: hai đường đã bật cho mọi khách
+    assert os.environ["AIOI_DONG_TRICH_XUAT"] == "bat"     # công tắc "bat" ở VPS = mọi khách
     assert os.environ["AIOI_AGENT_BOC"] == "tat"          # "thu" ở VPS = khách thật KHÔNG đi đường này
 
 

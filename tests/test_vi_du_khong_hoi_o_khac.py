@@ -6,7 +6,7 @@ trong `missing_fields()`. Ví dụ trong prompt chỉ được minh hoạ lời 
 """
 import re
 
-from aioi.prompts import build_chat_system
+from aioi.prompts import build_phieu_luot
 from aioi.schema import Property
 
 
@@ -24,7 +24,7 @@ def test_gia_da_co_thi_khong_nam_trong_o_can_hoi():
 
 def test_prompt_khong_con_vi_du_cau_dap_kem_cau_hoi():
     # SRS-207: quy tắc 5 (ví dụ "Khách: … -> …") bỏ theo prompt bản anh Luận — không còn ví dụ nào để model chép câu hỏi của một ô.
-    system = build_chat_system("T•ai", _prop_da_co_gia(), "dien_tich_dat")
+    system = build_phieu_luot("T•ai", _prop_da_co_gia(), "dien_tich_dat")
     assert not [d for d in system.splitlines() if d.strip().startswith("- Khách:")]
 
 
@@ -32,7 +32,7 @@ def test_khong_cau_hoi_mau_nao_ve_gia_ngoai_o_cau_hoi_ke():
     """Cách nói MỚI: dựng prompt cho ô khác (hẻm) trên tin đã có giá — không chỗ nào trong prompt được kèm câu hỏi giá mẫu ngoài khối
     "VIỆC LƯỢT NÀY" (khối đó chỉ có khi ô kế chính là giá)."""
     p = _prop_da_co_gia()
-    system = build_chat_system("T•ai", p, "lo_gioi_hem")
+    system = build_phieu_luot("T•ai", p, "lo_gioi_hem")
     ngoai_khoi_hoi = system.rsplit("VIỆC LƯỢT NÀY: hỏi đúng MỘT ý", 1)[0]
     assert ngoai_khoi_hoi != system
     assert not re.search(r"mong muốn (?:thu về )?giá|giá (?:bao nhiêu|khoảng bao nhiêu) vậy", ngoai_khoi_hoi, re.I)

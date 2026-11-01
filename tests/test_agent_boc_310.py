@@ -41,9 +41,7 @@ class _AiAgent(_Ai):
 
 
 def _hai_luot(monkeypatch, key, tin2, vong, cong_tac="thu"):
-    monkeypatch.setenv("AIOI_FORM_BAN_GON", "bat")
     monkeypatch.setenv("AIOI_AGENT_BOC", cong_tac)
-    monkeypatch.setenv("AIOI_AGENT_BAN", "tat")
     ai = _AiAgent(vong)
     eng = Engine(ai)
     eng.handle(key, TIN)
@@ -106,9 +104,7 @@ class _AiForm(_AiAgent):
 
 
 def test_duong_form_ro_hai_can_doan_can_khong_doi(monkeypatch):
-    monkeypatch.setenv("AIOI_FORM_BAN_GON", "bat")
     monkeypatch.setenv("AIOI_AGENT_BOC", "tat")
-    monkeypatch.setenv("AIOI_AGENT_BAN", "tat")
     ai = _AiForm([])
     eng = Engine(ai)
     eng.handle("chu-310f", TIN)

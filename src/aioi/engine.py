@@ -392,8 +392,7 @@ def _la_id_thu(user_key: str | None) -> bool:
 
 def _form_mua_gon(conv: "Conversation") -> bool:
     """Lượt lập thao tác của khách MUA dùng form gọn (SRS-5.1zzzzzzz293): prompt + schema chỉ phần phía mua, bỏ phần thao tác rổ hàng người bán
-    (≈ một nửa chữ, schema 36 → 16 khoá). Công tắc `AIOI_FORM_MUA_GON` (một nguồn `bot/bridge-zca/cai-vps.sh` dòng FORM_MUA_GON): "thu" = chỉ ID
-    thử…" — công tắc gỡ ở Đợt 8, SRS-5.1zzzzzzz319: mọi khách mua."""
+    (≈ một nửa chữ, schema 36 → 16 khoá). Mọi khách mua (công tắc FORM_MUA_GON gỡ ở Đợt 8, SRS-5.1zzzzzzz319)."""
     return conv.role == "buyer"
 
 

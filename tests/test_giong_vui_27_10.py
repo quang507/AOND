@@ -5,9 +5,8 @@ lượt, câu dẫn "Em sửa rồi ạ" kiểu báo cáo, cụm lặp y nguyên
 from aioi import prompts
 from aioi.engine import Engine, Turn, _phan_chat_quanh_ban_tin
 from aioi.llm.base import RANH_GIOI_CACHE
-from aioi.prompts import GIONG_VUI, build_chat_system, build_fee_followup_system
+from aioi.prompts import GIONG_VUI, build_fee_followup_system, build_phieu_luot
 from aioi.schema import Property
-import pytest
 
 
 class _Spy:
@@ -38,7 +37,7 @@ def _prop() -> Property:
 
 
 def test_khoi_giong_mot_nguon_o_ca_hai_prompt_truoc_dau_cache():
-    s = build_chat_system("Th•ái", _prop(), "ket_cau")
+    s = build_phieu_luot("Th•ái", _prop(), "ket_cau")
     assert GIONG_VUI in s and s.index(GIONG_VUI) < s.index(RANH_GIOI_CACHE)
     s2 = build_fee_followup_system("Th•ái", _prop())
     assert GIONG_VUI in s2 and s2.index(GIONG_VUI) < s2.index(RANH_GIOI_CACHE)
@@ -76,16 +75,6 @@ def _conv(eng, truoc: str):
     return c
 
 
-@pytest.mark.nhanh_cu(AIOI_SOAT_GON="tat")   # soát chế độ cũ (gọi lại vì giọng / lặp); production chế độ gọn — SRS-298
-def test_cau_chot_lap_nguyen_van_sau_ban_tin_thi_goi_lai():
-    spy = _Spy(loi=["Ồ thêm icon là nổi liền anh!\n\n" + BAN + "\n\nAnh ưng bản này chưa, em đăng luôn nhé?"])
-    eng = Engine(spy)
-    c = _conv(eng, "Em sửa rồi ạ.\n\n" + BAN + "\n\n" + CHOT)
-    ra = eng._soat_hinh_thuc(c, "SYS", "Em sửa rồi ạ.\n\n" + BAN.replace("chỉ 12,5 tỷ", "giá 12,5 tỷ") + "\n\n" + CHOT)
-    assert len(spy.systems) == 1 and "quanh bản tin lặp gần nguyên văn" in spy.systems[0] and "cùng mấy chữ" in spy.systems[0]
-    assert ra.startswith("Ồ thêm icon")
-
-
 def test_cau_dan_va_cau_chot_khac_luot_truoc_thi_khong_goi_lai():   # cách nói mới chưa bắn
     spy = _Spy()
     eng = Engine(spy)
@@ -93,14 +82,3 @@ def test_cau_dan_va_cau_chot_khac_luot_truoc_thi_khong_goi_lai():   # cách nói
     loi = "Ngon rồi, thêm icon là tin nổi hẳn anh ơi!\n\n" + BAN + "\n\nAnh ưng bản này chưa, em đăng luôn nhé?"
     assert eng._soat_hinh_thuc(c, "SYS", loi) == loi and not spy.systems
 
-
-@pytest.mark.nhanh_cu(AIOI_SOAT_GON="tat")   # soát chế độ cũ (gọi lại vì giọng / lặp); production chế độ gọn — SRS-298
-def test_luot_chat_thuong_van_bi_lu_oi_lap_nhu_cu():
-    spy = _Spy(loi=["Nhà 3 tầng là điểm cộng lớn đó anh."])
-    eng = Engine(spy)
-    c = eng.conversation("k-219b")
-    c.prop.loai_hinh = "nha_pho"
-    c.history.append(Turn("assistant", "Em xin lỗi anh, em hiểu nhầm rồi ạ.", 0.0))
-    c.history.append(Turn("user", "nhà 3 tầng", 0.0))
-    eng._soat_hinh_thuc(c, "SYS", "Em xin lỗi anh, để em xem lại ạ.")
-    assert len(spy.systems) == 1 and "cùng mấy chữ" in spy.systems[0]

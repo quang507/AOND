@@ -1,10 +1,9 @@
 """26/10/2026 (SRS-5.1zzzzzzz213): lỗi khách ảo có cảm xúc (run 40377269267) — lặp câu / lặp mở đầu, phí báo theo vai đoán, hỏi phường 6 lượt sau
 bản nháp, tin rao tả khu / sự kiện không có, pháp lý đổi "cháu" thành "em". Mỗi ca đỏ khi gỡ bản sửa; cách nói chưa bắn ở mỗi ca."""
-from aioi.engine import (Conversation, SellerRole, Turn, _CHI_TIET_BIA_RE, _cau_lap_luot_truoc, _cung_mo_dau, _vai_co_bang_chung, khoi_phap_ly)
-from aioi.prompts import build_buyer_chat_system, build_chat_system, operations_schema
-from aioi.schema import BuyerLead, Property
+from aioi.engine import (Conversation, SellerRole, _CHI_TIET_BIA_RE, _cau_lap_luot_truoc, _cung_mo_dau, _vai_co_bang_chung, khoi_phap_ly)
+from aioi.prompts import build_buyer_chat_system, operations_schema
+from aioi.schema import BuyerLead
 from tests.test_doc_y_khach import _eng
-import pytest
 
 
 def test_lap_mo_dau_va_lap_cau_luot_truoc():
@@ -16,18 +15,6 @@ def test_lap_mo_dau_va_lap_cau_luot_truoc():
     assert _cau_lap_luot_truoc("Em cứ thong thả bàn với bạn nha.", "Cảm ơn em nha, em cứ thong thả bàn với bạn.") is None   # 6 chữ nhưng khác câu
     assert _cau_lap_luot_truoc("Em sẽ nhắn ngay khi có căn ở Gò Vấp hay Phú Nhuận ạ.", "Khi có căn ở Gò Vấp hay Phú Nhuận, em sẽ nhắn ngay.") is None
     assert _cau_lap_luot_truoc("📋 Bản tin cập nhật: Bán nhà hẻm 4m Phạm Thế Hiển giá 5 tỷ 8", "📋 Bản tin cập nhật: Bán nhà hẻm 4m Phạm Thế Hiển giá 5 tỷ 8") is None
-
-
-@pytest.mark.nhanh_cu(AIOI_SOAT_GON="tat")   # soát chế độ cũ (gọi lại vì giọng / lặp); production chế độ gọn — SRS-298
-def test_lap_cau_luot_truoc_goi_lai_model():
-    eng, spy = _eng({"operations": [], "user_intent": "sell"})
-    c = eng.conversation("lap1")
-    c.role = "seller"
-    c.history.append(Turn("assistant", "Hiện bên em chưa có căn nào ở Gò Vấp hay Phú Nhuận nên em chưa dám hứa thời gian.", 0.0))
-    spy.loi = ["Em hiểu cảm giác lo của chị ạ.\nHiện bên em chưa có căn nào ở Gò Vấp hay Phú Nhuận nên em chưa dám hứa thời gian.", "Lượt này em nói khác."]
-    spy.chat = lambda system, messages, **k: spy.systems.append(system) or spy.loi.pop(0)
-    eng.handle("lap1", "chị vẫn thấy hơi lo")
-    assert any("lặp gần nguyên văn" in s for s in spy.systems[-1:]) and c.history[-1].content == "Lượt này em nói khác."
 
 
 def test_vai_chi_nhan_khi_khach_goi_ten_vai():
@@ -83,5 +70,4 @@ def test_phap_ly_xung_ho_theo_luot_va_prompt_khong_lap():
     c.y_luot["hoi_phap_ly"] = "giay_to_cong_chung"
     k = khoi_phap_ly(c)
     assert not k or 'đang xưng "cháu" thì "cháu"' in k
-    assert "Không lặp lại câu / ý đã nói ở lượt trước" in build_chat_system("Lan", Property(), "gia")
     assert "Không lặp lại câu / ý đã nói ở lượt trước" in build_buyer_chat_system("Lan", BuyerLead(), "ngan_sach")

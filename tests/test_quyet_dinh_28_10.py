@@ -60,11 +60,10 @@ def test_tieu_de_khong_viet_hoa_ca_cum():
 
 def test_chinh_sach_ba_cau_nguoi_ban_hay_hoi():
     """OPEN-63 (chủ dự án 28/10: "không bớt phí, có kí hd, không độc quyền"): chính sách nằm ở BUSINESS_CONTEXT, vào prompt phía bán."""
-    from aioi.prompts import BUSINESS_CONTEXT, build_chat_system
-    from aioi.schema import Property
+    from aioi.prompts import BUSINESS_CONTEXT, CHINH_SACH_PHI
     for y in ("cố định, không bớt", "có ký hợp đồng môi giới", "không làm độc quyền", "không có khoản chia hoa hồng"):   # SRS-318: văn xuôi
         assert y in BUSINESS_CONTEXT
-    assert "không làm độc quyền" in build_chat_system("Lan·Anh", Property(), None, SellerRole.UNKNOWN, "")
+    assert "không làm độc quyền" in CHINH_SACH_PHI   # phiếu lượt không mang BUSINESS_CONTEXT — khối hỏi phí mang CHINH_SACH_PHI (SRS-318 / 319)
 
 
 def test_vua_ban_vua_cho_thue_mo_hai_tin_chung_can():
