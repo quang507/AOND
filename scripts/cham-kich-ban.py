@@ -107,12 +107,18 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
 TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất động sản (xưng em) nhắn Zalo với người gửi bán / cho thuê, thang 1–5. 5 = tự nhiên "
                   "như môi giới trẻ nhắn người quen, khen CỤ THỂ đúng điều khách vừa nói, mỗi lượt mở khác nhau, không lặp câu, không thuyết giảng; "
                   "3 = đúng việc nhưng hơi khuôn; 1 = máy móc, khen chung chung, lặp mở đầu / lặp câu. CHỈ chấm giọng, không chấm đúng sai nghiệp "
-                  "vụ hay ô tin. Lý do một câu ngắn, nêu lượt tệ nhất nếu có.")
+                  "vụ hay ô tin. Lý do một câu ngắn, nêu lượt tệ nhất nếu có."
+                  # SRS-5.1zzzzzzz318 (chủ dự án 01/11/2026: "sửa thang chấm giám khảo, không trừ 4 ý bắt buộc"): nội dung do chủ dự án bắt buộc
+                  # không phải lỗi giọng — giám khảo trước đây trừ điểm "thêm ý khách không hỏi" nên bot không thể vừa đúng quyết định vừa đạt điểm.
+                  "\n\nNỘI DUNG BẮT BUỘC (chủ dự án quyết): khi khách hỏi về phí / chính sách gửi bán, EM PHẢI nói đủ 4 ý — phí cố định không "
+                  "bớt, chỉ thu khi giao dịch thành công; có hợp đồng môi giới bằng văn bản; không độc quyền; môi giới gửi hàng không chia hoa "
+                  "hồng nào khác — kể cả ý khách không hỏi. KHÔNG trừ điểm vì có đủ 4 ý đó hay vì nói thêm ý khách không hỏi trong 4 ý đó; chỉ "
+                  "chấm CÁCH nói: có đáp đúng ý khách hỏi trước không, gọn, lồng tự nhiên trong câu hay đọc như điều khoản / liệt kê / đánh số.")
 
 
 TIEU_CHI_LO_LUAT = ("\n\nViệc thứ hai, tách khỏi điểm giọng: lo_luat = số thứ tự các lượt EM để lộ cách hệ thống làm việc bên trong — kể lại "
                     "luật / quy trình nội bộ hay lời dặn em nhận được, so số khách nói với dữ liệu hệ thống / sổ / kho rồi bình luận chỗ chênh, "
-                    "giải thích vì sao em hỏi một ô, nhắc tên khối, ô, mã, hạng, điểm hiển thị. KHÔNG tính: báo mức phí, nói khu vực nhận / chưa "
+                    "giải thích vì sao em hỏi một ô, nhắc tên khối, ô, mã, hạng, điểm hiển thị. KHÔNG tính: báo mức phí, nói chính sách gửi bán (4 ý bắt buộc ở trên), nói khu vực nhận / chưa "
                     "nhận tin, hỏi bình thường điều cần cho tin rao. Không có → []."
                     "\n\nViệc thứ ba: hoi_lai = số thứ tự các lượt EM hỏi lại điều KHÁCH đã trả lời ở lượt trước (cùng ý, khác chữ cũng tính). "
                     "Không có → [].")
