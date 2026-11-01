@@ -30,6 +30,7 @@ from . import phap_ly
 from .prompts import KHOI_MOT_UU_TIEN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
+from .sdt import che_sdt
 from . import che_do_test
 from .delivery import _is_formatted_post
 from .prompts import _MO_DAU_RE   # dòng mở bản nháp "(📋) Em/Mình sẽ rao như vầy nhé…:" (SRS-5.1zzzzzzz132)
@@ -237,7 +238,6 @@ _AGENT_TOOL_GUIDE = (
 # A sổ đỏ / legal cert in a PROJECT is treated as SHARED knowledge for its LAND facts, but the
 # owner's IDENTITY must be stripped before it is stored/relayed (user decision 2026-07). These
 # power a deterministic backstop under the LLM redaction in build_transcribe_instruction.
-_PII_PHONE_RE = re.compile(r"(?<!\d)(?:\+?84|0)\d{9}(?!\d)")          # VN phone number
 _PII_ID_RE = re.compile(r"(?<!\d)\d{9}(?:\d{3})?(?!\d)")              # CMND (9) / CCCD (12) digits
 _PII_KEYWORD_RE = re.compile(r"(?i)\b(cccd|cmnd|căn cước công dân|chứng minh nhân dân)\b")
 _PII_OWNER_RE = re.compile(                                          # a "Chủ sở hữu: <tên>" field
@@ -268,7 +268,7 @@ def _redact_personal_data(text: str) -> str:
     if not text:
         return text
     text = _PII_OWNER_RE.sub(r"\1 [đã ẩn]", text)
-    text = _PII_PHONE_RE.sub("[đã ẩn]", text)
+    text = che_sdt(text, thay="[đã ẩn]")      # SĐT trước số CCCD: mẫu SĐT không bắt dãy 9/12 số của `_PII_ID_RE` (SRS-5.1zzzzzzz317)
     text = _PII_ID_RE.sub("[đã ẩn]", text)
     return text
 

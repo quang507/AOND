@@ -5,12 +5,12 @@ Lưu ở `listing_noi_bo.du_lieu->'tin_goc'` (bảng chỉ admin đọc, KHÔNG 
 nhúng. Hàm thuần — không I/O, tính lại từ lịch sử mỗi lần lưu nên ghi lặp không đẻ trùng."""
 from __future__ import annotations
 
-import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
 
+from .sdt import che_sdt
+
 TOI_DA_CHU = 3000       # trần văn bản nhúng của phần này (`van_ban_nhung` cũng cắt 3000); giữ các tin MỚI nhất
-_SDT = re.compile(r"\d[\d .-]{7,}\d")
 # Từ đưa đẩy / xưng hô / đáp lời — bỏ ra hết mà không còn gì thì lượt đó không mang thông tin về căn ("ok em", "dạ vâng ạ", "cảm ơn anh").
 # Bot hỏi từng ô nên chủ nhà trả lời NGẮN ("giá 8,5 tỷ", "Nhà mặt tiền") — đó chính là thông tin, nên không lọc theo độ dài.
 _DUA_DAY = frozenset({"ok", "oke", "okay", "ừ", "ừm", "ừa", "um", "uh", "ờ", "dạ", "vâng", "vầng", "được", "rồi", "em", "anh", "chị", "chú", "cô",
@@ -35,7 +35,7 @@ def gom_tin_goc(turns: Iterable[Any], bat_dau: int, ket_thuc: int, *, toi_da: in
         if getattr(t, "role", None) != "user" or not la_tin_co_thong_tin(getattr(t, "content", "")):
             continue
         ngay = datetime.fromtimestamp(float(getattr(t, "at", 0) or 0), _VN).strftime("%d/%m")
-        dong.append(f"{ngay}: {_SDT.sub('[số]', ' '.join(t.content.split()))}")
+        dong.append(f"{ngay}: {che_sdt(' '.join(t.content.split()), thay='[số]')}")
     giu: list[str] = []
     tong = 0
     for d in reversed(dong):

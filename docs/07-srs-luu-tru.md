@@ -2,6 +2,14 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz307 · B2 bước 2: agent phía bán tự tra rổ hàng / bộ nhớ dự án / giá đã gửi; rổ nhiều căn chưa rõ căn nào thì hỏi lại (30/10/2026)
+Chủ dự án 30/10: "làm nốt b2 nhưng vẫn lưu các hàm để dễ gọi"; "cái nào mà ko cần đổi thì ko đổi".
+- `agent_ban.py`: rổ hàng / bộ nhớ dự án / giá đã gửi thành công cụ `ro_hang` / `bo_nho_du_an` / `gia_da_gui`, thân = chính hàm khối cũ; prompt
+  chỉ còn một dòng báo dữ liệu có thể tra; lượt không có gì để tra thì không mở vòng công cụ. Trần 3 lần gọi / 25 s. Luật hành vi đặt ở `HUONG_DAN`.
+- Khối địa danh / trạng thái tin / câu khách mua hỏi KHÔNG đổi (vốn chỉ vào prompt khi cần). `claude -p` giả lập vòng công cụ bằng JSON.
+- Còn: rổ nhiều căn "căn đó bán rồi" — bóc tách vẫn đổi nhầm trạng thái ~6/16 lần (kịch bản `hai_can_da_ban`), để agent bóc tách xử lý.
+- Kiểm: `tests/test_agent_ban_307.py`.
+
 ### SRS-5.1zzzzzzz306 · Gỡ lưới soát theo số đo: "em gửi ảnh" chỉ soi phần chat; bộ chấm ghi lưới nào kích (30/10/2026)
 Chủ dự án 30/10: "chạy thử và triển khai theo kế hoạch đi" (gỡ luật theo số đo).
 - Bộ chấm ghi lưới soát nào kích. 7/9 lần Sonnet bị gọi lại là lưới "em gửi ảnh" bắt nhầm câu mời chốt trong bản tin (viết cho người mua) →

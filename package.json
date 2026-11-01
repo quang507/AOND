@@ -13,6 +13,7 @@
     "soat:migration": "node scripts/soat-migration.mjs",
     "soat:db": "node scripts/soat-db.mjs",
     "doi-chieu:tien": "bun bot/tests/doi-chieu-tien.mjs",
+    "doi-chieu:sdt": "python3 bot/tests/doi-chieu-sdt.py",
     "truyvet": "bash scripts/soat-truy-vet.sh",
     "test:rohang": "node scripts/xuat-ro-hang.tu-kiem.mjs",
     "ro-hang": "node scripts/xuat-ro-hang.mjs",
