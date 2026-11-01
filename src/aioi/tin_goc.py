@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
 
-from .sdt import che_sdt
+from .sdt import che_so_ca_nhan
 
 TOI_DA_CHU = 3000       # trần văn bản nhúng của phần này (`van_ban_nhung` cũng cắt 3000); giữ các tin MỚI nhất
 # Từ đưa đẩy / xưng hô / đáp lời — bỏ ra hết mà không còn gì thì lượt đó không mang thông tin về căn ("ok em", "dạ vâng ạ", "cảm ơn anh").
@@ -35,7 +35,7 @@ def gom_tin_goc(turns: Iterable[Any], bat_dau: int, ket_thuc: int, *, toi_da: in
         if getattr(t, "role", None) != "user" or not la_tin_co_thong_tin(getattr(t, "content", "")):
             continue
         ngay = datetime.fromtimestamp(float(getattr(t, "at", 0) or 0), _VN).strftime("%d/%m")
-        dong.append(f"{ngay}: {che_sdt(' '.join(t.content.split()), thay='[số]')}")
+        dong.append(f"{ngay}: {che_so_ca_nhan(' '.join(t.content.split()), thay='[số]')}")
     giu: list[str] = []
     tong = 0
     for d in reversed(dong):

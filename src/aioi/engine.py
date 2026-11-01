@@ -30,7 +30,7 @@ from . import phap_ly
 from .prompts import KHOI_MOT_UU_TIEN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
-from .sdt import che_sdt
+from .sdt import che_giay_to, che_sdt
 from . import che_do_test
 from .delivery import _is_formatted_post
 from .prompts import _MO_DAU_RE   # dòng mở bản nháp "(📋) Em/Mình sẽ rao như vầy nhé…:" (SRS-5.1zzzzzzz132)
@@ -268,7 +268,8 @@ def _redact_personal_data(text: str) -> str:
     if not text:
         return text
     text = _PII_OWNER_RE.sub(r"\1 [đã ẩn]", text)
-    text = che_sdt(text, thay="[đã ẩn]")      # SĐT trước số CCCD: mẫu SĐT không bắt dãy 9/12 số của `_PII_ID_RE` (SRS-5.1zzzzzzz317)
+    text = che_giay_to(text, thay="[đã ẩn]")  # CCCD có dấu ngăn / CMND sát chữ; dãy liền vẫn do `_PII_ID_RE` dưới (SRS-5.1zzzzzzz317)
+    text = che_sdt(text, thay="[đã ẩn]")      # mẫu SĐT không bắt dãy 9/12 số của `_PII_ID_RE`
     text = _PII_ID_RE.sub("[đã ẩn]", text)
     return text
 

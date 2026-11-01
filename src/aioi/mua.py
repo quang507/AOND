@@ -59,7 +59,7 @@ def tim_sdt(text: str) -> str | None:
     for m in SDT_DOC.finditer(text or ""):
         so = re.sub(r"\D", "", m.group(0))
         if so.startswith("84"):
-            so = "0" + so[2:]
+            so = "0" + so[2:].removeprefix("0")   # "+84 0900…" có số 0 thừa (SRS-5.1zzzzzzz317)
         if len(so) == 10 and so[:2] in ("03", "05", "07", "08", "09"):
             return so
     return None

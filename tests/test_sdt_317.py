@@ -11,13 +11,14 @@ import re
 from aioi.engine import _redact_personal_data
 from aioi.mua import giong_sdt_sai, tim_sdt
 from aioi.prompts import khoi_cau_chuan
-from aioi.sdt import MAU_SDT, che_sdt
+from aioi.sdt import MAU_SDT, che_sdt, che_so_ca_nhan
 from aioi.supabase_store import SupabaseConversationStore
 from aioi.tin_goc import gom_tin_goc
 from aioi.engine import Turn
 
 GOC = os.path.join(os.path.dirname(__file__), "..")
 CA = json.load(open(os.path.join(GOC, "bot", "tests", "luat", "sdt.json"), encoding="utf-8"))["ca"]
+CA_GIAY_TO = json.load(open(os.path.join(GOC, "bot", "tests", "luat", "cccd.json"), encoding="utf-8"))["ca"]
 # Cách viết KHÔNG có trong bảng ca (nhóm 2-2-2-2-2, nhóm 4-6, +84 rồi chấm) — chặn kiểu "vá cho đúng bảng".
 MOI = ["09 00 00 01 41", "0900 000141", "+84.900.000.142"]
 
@@ -90,3 +91,35 @@ def test_khong_con_regex_sdt_viet_tay_ngoai_sdt_py():
            if not t.endswith(os.sep + "sdt.py")
            for i, d in enumerate(open(t, encoding="utf-8"), 1) if mau_cu.search(d)]
     assert not lot, lot
+
+
+def test_bang_ca_giay_to():
+    """Review PR #241: bốn chỗ trước dùng `\\d[\\d .-]{7,}\\d` (che cả CCCD) đổi sang `che_sdt` thì CCCD lọt — tin gốc còn vào văn bản nhúng."""
+    for c in CA_GIAY_TO:
+        assert che_so_ca_nhan(c["cau"], thay="[số]") == c["mong"], c
+
+
+def test_cach_viet_moi_review_241():
+    # Không có trong hai bảng ca: hai SĐT nối "/", +84 ngoặc liền số, CCCD nhóm 4-4-4 chấm, CMND sau "CCCD:" có gạch.
+    assert che_sdt("gọi 0900 000 160/0900 000 161", thay="[số]") == "gọi [số]/[số]"
+    assert che_sdt("(+84)900000162", thay="[số]") == "[số]"
+    assert che_so_ca_nhan("cccd 0792.0000.0010 ạ", thay="[số]") == "cccd [số] ạ"
+    assert che_so_ca_nhan("CCCD: 025-000-011", thay="[số]") == "CCCD: [số]"
+    assert tim_sdt("+84 0900 000 163") == "0900000163" and tim_sdt("(+84) 900 000 164") == "0900000164"
+
+
+def test_tin_goc_va_tin_noi_bo_che_cccd():
+    kq = gom_tin_goc([Turn("user", "CCCD chú 079 200 000 012, giá 850000000", 1_791_000_000.0)], 0, 1)
+    assert "079 200 000 012" not in kq and "850000000" in kq
+    kho = _Kho()
+    kho.bao_can_nguoi("u", "cccd 079200000013 nha", "Anh B.", "seller")
+    kho._ghi_noi_bo("l1", {"giay_to": "CMND 025 000 014"})
+    kho.ghi_danh_gia("u", 1, "đưa số căn cước 079-200-000-015 rồi", "Anh B.")
+    chu = json.dumps([d for _m, _e, d in kho.goi], ensure_ascii=False)
+    for so in ("079200000013", "025 000 014", "079-200-000-015"):
+        assert so not in chu, so
+
+
+def test_luoi_so_do_che_them_cccd_co_dau_ngan():
+    kq = _redact_personal_data("Số CCCD: 079 200 000 016\nCMND 025000017")
+    assert "079 200" not in kq and "025000017" not in kq
