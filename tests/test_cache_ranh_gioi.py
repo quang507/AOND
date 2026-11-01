@@ -38,8 +38,8 @@ def test_prompt_ban_chung_phan_on_dinh_qua_cac_luot():
     b = p.build_chat_system("Lan", Property(), "duong", project_block="=== DỰ ÁN X ===")
     (ta, da), (tb, db) = tach_on_dinh(a), tach_on_dinh(b)
     assert ta == tb and len(ta) > 5000        # phần chính sách dài đứng yên dù ô hỏi tiếp / khối dự án đổi
-    assert "Thông tin cần hỏi tiếp theo" in da and "DỰ ÁN X" in db and RANH_GIOI_CACHE not in da + db
-    assert "Thông tin cần hỏi tiếp theo" not in ta
+    assert "VIỆC LƯỢT NÀY: hỏi đúng MỘT ý" in da and "DỰ ÁN X" in db and RANH_GIOI_CACHE not in da + db
+    assert "VIỆC LƯỢT NÀY: hỏi đúng MỘT ý" not in ta
 
 
 def test_prompt_mua_va_lap_thao_tac_co_ranh_gioi():

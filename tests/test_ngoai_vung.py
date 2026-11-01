@@ -20,7 +20,7 @@ def test_khach_noi_ro_tinh_ngoai_vung_thi_noi_kheo_khong_hoi_tiep():
     eng.handle("nv1", "nhà ở quận Đống Đa, Hà Nội em")
     he = spy.systems[-1]
     assert "NGOÀI KHU VỰC NHẬN TIN (Hà Nội)" in he and VUNG_NHAN_TIN in he
-    assert "Thông tin cần hỏi tiếp theo" not in he                     # không hỏi ô thiếu
+    assert "hỏi đúng MỘT ý" not in he                                   # không hỏi ô thiếu
     conv = eng.conversation("nv1")
     assert conv.prop.fields["_ngoai_vung"] == "Hà Nội"
     spy.plan = {"operations": []}                                       # lượt sau AI không nhắc lại → cờ vẫn theo căn
