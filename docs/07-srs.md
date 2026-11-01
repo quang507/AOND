@@ -829,6 +829,18 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz318 · Audit Đợt 2: luật rơi khi đổi đường — chính sách phí ở lượt thu thập, một bảng luật soát, nhãn việc lượt chung, ảnh sổ qua phiếu lượt (01/11/2026)
+Quyết định chủ dự án 01/11 (Q2): lượt THU THẬP, khách hỏi phí / chính sách thì nói ĐỦ 4 ý (không bớt, chỉ thu khi thành công · có HĐ môi giới văn bản · không
+độc quyền · môi giới không chia hoa hồng khác), gọn, giọng Zalo; con số vẫn do `muc_phi` / `khoi_bao_phi`. Q3: lên Top là thật — giữ câu "≥10 căn lên Top".
+Chủ dự án 01/11 (tiếp): GIỮ đủ 4 ý, giọng theo khuôn anh Luận (`GIONG_VUI`), không đọc như điều khoản; "sửa thang chấm giám khảo, không trừ 4 ý bắt buộc" →
+`TIEU_CHI_GIONG` chỉ chấm CÁCH nói 4 ý; cùng lớp (giám khảo chấm sai luật đã chốt): khách xưng em → bot xưng anh / chị (SRS-214) không trừ điểm. Khối phí: đáp đúng
+ý hỏi một câu, các ý còn lại ĐÚNG MỘT câu, không lặp ý câu báo phí (bài đỏ: `test_khach_hoi_phi_luot_thu_thap_co_du_chinh_sach`).
+(1) Lớp lỗi: luật / nhãn nằm ở prompt cũ hoặc nhánh soát chỉ chạy khi công tắc tắt, nên bật PHIEU_LUOT / SOAT_GON là luật rơi mà không bài nào đỏ. Sửa: hằng
+`CHINH_SACH_PHI` (BUSINESS_CONTEXT dùng lại) vào khối hỏi phí, `hoi_ve=phi` gồm câu hỏi chính sách (độc quyền, HĐ); bảng `LUAT_SOAT` một nguồn cho lần đầu + gọi
+lại (lưới SRS-292 nay chạy dưới SOAT_GON); `NHAN_VIEC_LUOT`; ảnh sổ qua `build_phieu_luot(viec=)`, bỏ "khen điểm mạnh" ↔ "không khen sổ". (2) Còn: AU-13 (ngoặc
+vuông / SLANG_NOTES) chờ Q1; `_viet_hoa_ca_cum` audit nêu đã không còn trong code. (3) Kiểm: `test_luat_roi_doi_duong_318.py` (4 bài đỏ khi gỡ từng bản sửa; cách
+nói mới "chị giảm chút phí cho em được hông"); AU-12 hết xfail; 4 kịch bản `phi_*` trong `ban.json`; `cham` hai lần (số ở mô tả PR).
+
 ### SRS-5.1zzzzzzz317 · Audit Đợt 1: một mẫu SĐT cho mọi chỗ che / nhận; SQL `che_sdt` bắt cả số có dấu cách; CCCD che lại ở tin gốc / tin nội bộ (01/11/2026)
 Ca gốc AU-01: lưới che sổ đỏ (`engine._PII_PHONE_RE`) và SQL `che_sdt` chỉ bắt chữ số liền → "0900 000 123", "+84 900 000 123" lọt (đo trên Postgres 16 cục bộ: SQL cũ lọt 10/17 ca dương);
 bản `\d[\d .-]{7,}\d` của tin gốc / tin nội bộ che cả giá "12.500.000.000". (1) Lớp lỗi: 9 regex SĐT viết tay, không bảng ca chung. Sửa: `src/aioi/sdt.py`
@@ -893,14 +905,6 @@ Chủ dự án 30/10 (kế hoạch 4 bước): bộ kịch bản offline là ngu
 - Bước 2: `prompts.build_phieu_luot` (~3.000 chữ, `build_chat_system` ~10.000) sau công tắc `PHIEU_LUOT` (`cai-vps.sh`) = `bat`. Đo 2 lần mỗi bản, 447 phép:
   cũ 405 / 402, giọng TB 2,45 / 2,35, $7,6 / $6,4 → phiếu lượt 407 / 407, giọng 2,62 / 2,67, $5,6 / $5,3; lỗi nghiệp vụ không thêm (hai_can_da_ban, ma_lo_7m còn — để bước 3).
 - Quy trình (CLAUDE.md §7): một PR mỗi bước; bắn production chỉ khi đổi DB / Zalo / bridge / công cụ ghi / cài VPS. Kiểm: `tests/test_phieu_luot_309.py`.
-
-### SRS-5.1zzzzzzz308 · Agent phía bán cho mọi khách; hai căn một tin giữ đúng ô; dự phòng không mù dữ liệu (30/10/2026)
-Chủ dự án 30/10: "làm đi thử thì trên cli", rồi nạp $200 API; "dùng haiku hết luôn cũng dc" → cùng ngày "chuyển sang sonnet 5.5 luôn".
-- `AGENT_BAN=bat` cho mọi khách (thử bằng bộ chấm + chat tay CLI). Viết lời: thử Haiku rồi quay lại Sonnet 5.5 (`MODEL_CHAT`, `MODEL_CHAT_THU`).
-- Hai căn một tin: nhánh `add` đọc lại cả tin nên căn sau mang dữ liệu căn đầu → dùng ô của thao tác `add`; `add` thiếu cụm trích mà cùng lượt đã ghi
-  căn đang khai thì vẫn là căn khác; `_match_listing` so cả ô `duong`. Gemini dự phòng không gọi công cụ → agent bán viết lại với đủ khối dữ liệu.
-- Đo: bộ chấm 289 phép — Sonnet 288 + 288, Haiku 284 + 288. Production `ban-thu-nhieu-can` (2 tin) và `ban-thu-ban` đạt.
-- Kiểm: `tests/test_hai_can_mot_tin_308.py`, `test_agent_ban_307.py::test_du_phong_*`, `test_du_phong.py::test_converse_du_phong_*`.
 
 ---
 

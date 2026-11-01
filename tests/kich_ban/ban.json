@@ -894,6 +894,86 @@
     ],
     "khong_nhap": true
    }
+  },
+  {
+   "id": "phi_xin_bot",
+   "mo_ta": "SRS-318 (Q2 01/11): lượt thu thập, khách xin bớt phí → đủ 4 ý chính sách, không bịa ưu đãi / con số",
+   "cau": [
+    "Anh cần bán nhà hẻm xe hơi đường Nguyễn Văn Đậu Bình Thạnh, 4x16, 3 tầng, sổ hồng riêng, giá 9 tỷ",
+    "phí bên em bớt cho anh chút được không?"
+   ],
+   "kiem": {
+    "luot": {
+     "2": "(?s)^(?=.*(bớt|giảm|cố định|giữ nguyên))(?=.*thành công)(?=.*hợp đồng)(?=.*(độc quyền|nhiều nơi|nhiều bên|chỗ khác|nơi khác))(?=.*(hoa hồng|mức chia|chia (thêm|nào)))"
+    },
+    "luot_khong": {
+     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%|(?:^|\\n)[ \\t]*([-•*+]|[1-4][.)])[ \\t]|\\(\\s*[1-4]\\s*\\)"
+    }
+   }
+  },
+  {
+   "id": "phi_doc_quyen",
+   "mo_ta": "SRS-318: hỏi có độc quyền không → đủ 4 ý chính sách",
+   "cau": [
+    "Anh cần bán nhà hẻm xe hơi đường Nguyễn Văn Đậu Bình Thạnh, 4x16, 3 tầng, sổ hồng riêng, giá 9 tỷ",
+    "anh gửi bên em thì có phải độc quyền không, hay gửi thêm chỗ khác được?"
+   ],
+   "kiem": {
+    "luot": {
+     "2": "(?s)^(?=.*(bớt|giảm|cố định|giữ nguyên))(?=.*thành công)(?=.*hợp đồng)(?=.*(độc quyền|nhiều nơi|nhiều bên|chỗ khác|nơi khác))(?=.*(hoa hồng|mức chia|chia (thêm|nào)))"
+    },
+    "luot_khong": {
+     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%|(?:^|\\n)[ \\t]*([-•*+]|[1-4][.)])[ \\t]|\\(\\s*[1-4]\\s*\\)"
+    }
+   }
+  },
+  {
+   "id": "phi_hop_dong",
+   "mo_ta": "SRS-318: hỏi có ký hợp đồng môi giới không → đủ 4 ý chính sách, không hẹn giờ ký",
+   "cau": [
+    "Anh cần bán nhà hẻm xe hơi đường Nguyễn Văn Đậu Bình Thạnh, 4x16, 3 tầng, sổ hồng riêng, giá 9 tỷ",
+    "bên em có ký hợp đồng môi giới không em?"
+   ],
+   "kiem": {
+    "luot": {
+     "2": "(?s)^(?=.*(bớt|giảm|cố định|giữ nguyên))(?=.*thành công)(?=.*hợp đồng)(?=.*(độc quyền|nhiều nơi|nhiều bên|chỗ khác|nơi khác))(?=.*(hoa hồng|mức chia|chia (thêm|nào)))"
+    },
+    "luot_khong": {
+     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%|(sáng|chiều|tối) (mai|nay)|giờ (ký|hẹn)|(?:^|\\n)[ \\t]*([-•*+]|[1-4][.)])[ \\t]|\\(\\s*[1-4]\\s*\\)"
+    }
+   }
+  },
+  {
+   "id": "phi_giam_chut",
+   "mo_ta": "SRS-318: cách nói mới chưa bắn — 'chị giảm chút phí cho em được hông' (khách xưng em)",
+   "cau": [
+    "em có căn nhà hẻm đường Lê Văn Sỹ quận 3, 1 trệt 2 lầu, sổ hồng riêng, giá 7 tỷ muốn gửi bán",
+    "chị giảm chút phí cho em được hông"
+   ],
+   "kiem": {
+    "luot": {
+     "2": "(?s)^(?=.*(bớt|giảm|cố định|giữ nguyên))(?=.*thành công)(?=.*hợp đồng)(?=.*(độc quyền|nhiều nơi|nhiều bên|chỗ khác|nơi khác))(?=.*(hoa hồng|mức chia|chia (thêm|nào)))"
+    },
+    "luot_khong": {
+     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%|(?:^|\\n)[ \\t]*([-•*+]|[1-4][.)])[ \\t]|\\(\\s*[1-4]\\s*\\)"
+    }
+   }
+  },
+  {
+   "id": "phi_doc_quyen_hong",
+   "mo_ta": "SRS-318: cách nói mới chưa bắn — khách (xưng chị) hỏi có bắt ký độc quyền hông vì còn gửi chỗ khác → đáp đúng ý độc quyền trước, đủ 4 ý, không danh sách",
+   "cau": [
+    "chị có căn nhà phố hẻm xe hơi đường Cô Giang quận 1, 4x15, 3 tầng, sổ hồng riêng, giá 15 tỷ muốn gửi bán",
+    "bên em có bắt ký độc quyền hông, chị còn gửi chỗ khác"
+   ],
+   "kiem": {
+    "luot": {
+     "2": "(?s)^(?=.*(bớt|giảm|cố định|giữ nguyên))(?=.*thành công)(?=.*hợp đồng)(?=.*(độc quyền|nhiều nơi|nhiều bên|chỗ khác|nơi khác))(?=.*(hoa hồng|mức chia|chia (thêm|nào)))"
+    },
+    "luot_khong": {
+     "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%|(?:^|\\n)[ \\t]*([-•*+]|[1-4][.)])[ \\t]|\\(\\s*[1-4]\\s*\\)"
+    }
+   }
   }
  ]
 }

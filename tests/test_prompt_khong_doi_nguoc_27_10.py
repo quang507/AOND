@@ -28,25 +28,24 @@ def test_vi_du_cau_chuan_tu_pham_luat_thi_khong_dua_cho_model():
     assert MO_DAU_GHI_NHAN_RE.match("Em đã ghi giá 6,2 tỷ") and _mo_dau_ghi_nhan("Em đã ghi giá 6,2 tỷ")   # một nguồn
 
 
-@pytest.mark.xfail(strict=True, reason="AU-12: khối tra địa danh trỏ nhãn 'Thông tin cần hỏi tiếp theo' chỉ có ở prompt cũ — phiếu lượt (production) không có; sửa ở audit Đợt 2")
 def test_phuong_cu_bi_chia_thi_o_hoi_luot_do_la_phuong_mot_lan():
     eng, spy = _eng({"operations": [{"op": "update", "fields": {"duong": "Hoàng Hoa Thám", "phuong": "phường 6", "quan": "Bình Thạnh"},
                                       "bang_chung": {"duong": "Hoàng Hoa Thám", "phuong": "phường 6", "quan": "Bình Thạnh"}}], "user_intent": "sell"})
     eng._dia_danh = _tra()
     eng.handle("pc1", "nhà ở Hoàng Hoa Thám phường 6 Bình Thạnh")
     he = spy.systems[-1]
-    assert 'Thông tin cần hỏi tiếp theo: "phường' in he and "chia về nhiều phường mới (Phường Bình Lợi Trung, Phường Gia Định)" in he
+    assert 'VIỆC LƯỢT NÀY: hỏi đúng MỘT ý: "phường' in he and 'Khi dòng "VIỆC LƯỢT NÀY" là hỏi phường' in he and "chia về nhiều phường mới (Phường Bình Lợi Trung, Phường Gia Định)" in he
     assert "thay cho câu hỏi kế" not in he and eng.conversation("pc1").prop.fields["_phuong_chia_da_hoi"] == "1"
     eng._provider.plan = {"operations": [], "user_intent": "sell"} if hasattr(eng._provider, "plan") else None
     eng.handle("pc1", "nhà có sổ riêng nha")                      # lượt sau không ép hỏi phường nữa (cổng web lo tiếp)
-    assert 'Thông tin cần hỏi tiếp theo: "phường' not in spy.systems[-1]
+    assert 'VIỆC LƯỢT NÀY: hỏi đúng MỘT ý: "phường' not in spy.systems[-1]
 
 
 def test_prompt_khong_con_dong_doi_nguoc_va_moi_phu_dinh():
     he = build_chat_system("Mai", Property(), "gia")
     assert 'Xưng "em", gọi khách "anh/chị".' not in he and "theo khối QUY TẮC XƯNG HÔ" in he
     assert '("Em ghi nhận…"' not in he and "không cần báo đã ghi / đã lưu" in he and '"Wow"' in he   # chủ dự án 27/10: "lời dặn thuận hoặc câu khen, wow các kiểu"
-    assert "xin thêm ảnh thì được" in he and 'Thông tin cần hỏi tiếp theo: "giá' in he
+    assert "xin thêm ảnh thì được" in he and 'VIỆC LƯỢT NÀY: hỏi đúng MỘT ý: "giá' in he
     mua = build_buyer_chat_system("Mai", BuyerLead(), "ngan_sach")
     assert 'không câu ghi nhận "em ghi nhận"' not in mua and "không báo đã ghi / đã lưu" in mua
     anh = build_media_read_instruction("Mai", None, Property(), "gia")

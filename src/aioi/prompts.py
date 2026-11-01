@@ -272,13 +272,22 @@ PT_CHU = _pt(SALE_FEE_RATE[SellerRole.CHU_NHA])     # "1%"
 PT_MG = _pt(SALE_FEE_RATE[SellerRole.MOI_GIOI])     # "0.5%"
 PHI_THUE = f"{RENTAL_FEE_MONTHS:g} tháng tiền thuê"  # "0.75 tháng tiền thuê"
 
+# Chính sách phí — MỘT nguồn (SRS-5.1zzzzzzz241 chủ dự án 28/10; SRS-5.1zzzzzzz318 Q2 01/11: lượt thu thập khách hỏi phí thì nói ĐỦ 4 ý, giọng theo
+# khuôn anh Luận). Viết thành DỮ KIỆN văn xuôi, không đánh số (1)…(4): model đọc lại y nguyên dạng danh sách thành câu như đọc điều khoản. Dùng ở
+# `BUSINESS_CONTEXT` (prompt cũ / bản nháp) và khối "KHÁCH HỎI VỀ PHÍ" của engine (phiếu lượt không có BUSINESS_CONTEXT). Không có con số: con số
+# phí theo vai do `muc_phi` / `khoi_bao_phi` / `_fee_hint` nói.
+CHINH_SACH_PHI = ("- CHÍNH SÁCH GỬI BÁN (dữ kiện để em hiểu rồi nói bằng lời mình; chủ dự án chốt 28/10/2026 và 01/11/2026, SRS-5.1zzzzzzz241 / "
+                  "318): mức phí của bên em cố định, không bớt, bù lại chỉ thu khi giao dịch thành công. Bên em có ký hợp đồng môi giới bằng văn bản "
+                  "để thống nhất phí; khách muốn ký thì em nối người phụ trách, không hẹn giờ, không tự gửi mẫu. Bên em không làm độc quyền, chủ nhà "
+                  "gửi bán nhiều nơi vẫn được. Môi giới gửi hàng thì phí theo mức môi giới, không có khoản chia hoa hồng nào khác.")
+
 BUSINESS_CONTEXT = f"""BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ — chỉ nói ra khi khách hỏi, đừng thuyết giảng):
 - Người rao bán/cho thuê BĐS bằng cách chat Zalo tự nhiên (KHÔNG form). Nhiệm vụ của bạn: lặng lẽ gom đủ dữ liệu listing, giữ khách quay lại, và dùng gamification để khích lệ.
 - HAI loại khách — hãy nhận biết qua hội thoại rồi tư vấn cho đúng:
   • Bên SỞ HỮU (chủ nhà; hoặc nhà đầu tư lướt sóng giữ HĐMB): phí {PT_CHU} giá chốt khi bán, hoặc {PHI_THUE} (ba phần tư của MỘT tháng tiền thuê, tuyệt đối không nói nhầm thành 3 hay 4 tháng).
   • Bên MÔI GIỚI (nhân viên môi giới; hoặc sàn giao dịch): phí {PT_MG} giá chốt khi bán, hoặc {PHI_THUE}. Khích lệ đăng thêm hàng (≥10 căn) để lên Top.
   • CHỦ ĐẦU TƯ: phí KHÔNG theo {PT_CHU}/{PT_MG} — thoả thuận riêng với dự án; đừng tự báo con số.
-- CHÍNH SÁCH khi khách hỏi (chủ dự án chốt 28/10/2026, SRS-5.1zzzzzzz241): (1) KHÔNG bớt / giảm phí — khách xin bớt thì nói khéo mức phí cố định, bù lại chỉ thu khi giao dịch thành công; (2) CÓ ký hợp đồng môi giới bằng văn bản (thống nhất phí) — khách hỏi thì nói có; khách muốn ký thì nói em nối người phụ trách, KHÔNG hẹn giờ, KHÔNG tự gửi mẫu; (3) KHÔNG độc quyền — chủ nhà gửi bán nhiều nơi vẫn được; (4) môi giới gửi hàng: phí {PT_MG} giá chốt như trên, không có mức chia hoa hồng nào khác.
+{CHINH_SACH_PHI}
 - PHÍ CHỈ thu khi giao dịch THÀNH CÔNG. TUYỆT ĐỐI không bịa con số phí/ưu đãi/cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì nêu cả hai mức (chủ nhà {PT_CHU}, môi giới {PT_MG}) hoặc hỏi khách là chủ nhà hay môi giới.
 - Gamification: có Điểm uy tín và hạng Đồng/Bạc/Vàng — số THẬT nằm ở khối "ĐIỂM TIN" cuối prompt (hệ thống tính); chỉ nói số trong khối đó, gợi ý cách tăng điểm theo ô còn thiếu ghi ở đó (ảnh, sổ hồng, thông tin còn thiếu)."""
 
@@ -428,6 +437,11 @@ GIONG_VUI = """GIỌNG (bắt buộc): em là một môi giới trẻ đang HÀO
 - Hào hứng nhưng vẫn thật: cảm thán không thêm chi tiết khách chưa nói, không nêu số / so giá thị trường, không hứa bán được."""
 
 
+# Nhãn dòng việc của lượt (SRS-5.1zzzzzzz318, AU-12) — MỘT nguồn cho phiếu lượt, prompt cũ và mọi khối trỏ tới nó (địa danh, xin đăng…).
+# Trước đây prompt cũ ghi "Thông tin cần hỏi tiếp theo", phiếu lượt ghi "VIỆC LƯỢT NÀY": khối trỏ nhãn cũ thì ở production trỏ vào khoảng không.
+NHAN_VIEC_LUOT = "VIỆC LƯỢT NÀY"
+
+
 def build_chat_system(
     assistant_name: str,
     prop: Property,
@@ -458,7 +472,7 @@ def build_chat_system(
         )
     elif next_field:
         ask_line = (
-            f'Thông tin cần hỏi tiếp theo: "{nhan_o(next_field, prop)}"'
+            f'{NHAN_VIEC_LUOT}: hỏi đúng MỘT ý: "{nhan_o(next_field, prop)}"'
             + (f" ({cau_hoi_o(next_field, prop)})" if cau_hoi_o(next_field, prop) not in (nhan_o(next_field, prop), f"hỏi thêm {nhan_o(next_field, prop)}") else "")
             + ". Hãy khen ngợi điểm mạnh của BĐS trước, rồi hỏi đúng 1 thông tin này một cách tự nhiên. CHỈ hỏi ý này — KHÔNG tự hỏi ý khác "
             "ngoài danh sách (thương lượng, lý do bán, thế chấp…); khách tự nói thì lưu vào tin, không hỏi lại."
@@ -524,11 +538,14 @@ def build_phieu_luot(
     project_block: str = "",
     hoi_lai: bool = False,
     o_bo_qua: str | None = None,
+    viec: str | None = None,
 ) -> str:
     """Phiếu lượt ngắn cho lượt THU THẬP của người bán (kế hoạch bước 2, SRS-5.1zzzzzzz309): giọng + vài luật cố định (cache) + dữ liệu căn + MỘT
     việc lượt này do code quyết. Thay `build_chat_system` (~8.000 chữ văn xuôi) sau công tắc `PHIEU_LUOT`; luật nghiệp vụ còn lại nằm ở code / các
-    khối ưu tiên hệ thống thêm khi cần."""
-    if next_field:
+    khối ưu tiên hệ thống thêm khi cần. `viec`: việc riêng do engine đặt (lượt ảnh sổ, SRS-5.1zzzzzzz318) thay việc hỏi ô."""
+    if viec:
+        pass
+    elif next_field:
         goi_y = cau_hoi_o(next_field, prop)
         viec = f'hỏi đúng MỘT ý: "{nhan_o(next_field, prop)}"' + (
             f" ({goi_y})" if goi_y not in (nhan_o(next_field, prop), f"hỏi thêm {nhan_o(next_field, prop)}") else "") + "."
@@ -545,7 +562,7 @@ def build_phieu_luot(
 {GIONG_VUI}
 
 LUẬT CỐ ĐỊNH:
-- Ngắn, khoảng 30 từ: đáp đúng điều khách vừa nói, rồi làm VIỆC LƯỢT NÀY. Viết trọn câu, không bỏ lửng.
+- Ngắn, khoảng 30 từ: đáp đúng điều khách vừa nói, rồi làm {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
 - Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa.
 - Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết, không nhận xét giá thị trường, không hứa bán được.
 - Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
@@ -553,7 +570,7 @@ LUẬT CỐ ĐỊNH:
 DỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):
 {describe_captured(prop)}
 
-VIỆC LƯỢT NÀY: {viec}"""
+{NHAN_VIEC_LUOT}: {viec}"""
 
 
 def build_buyer_chat_system(
@@ -861,7 +878,7 @@ def khoi_xin_dang(thieu: list[str], prop: Property | None = None) -> str:
     # SRS-5.1zzzzzzz107 (bắn thử 207, KB1): lượt này bot mở bằng câu duyệt tin (cau_mau duyet_tin, chép từ ví dụ câu chuẩn) rồi mới hỏi ô
     # thiếu — khách tưởng tin đã đăng. Câu duyệt chỉ dành cho lượt khách duyệt bản nháp đã lên web.
     return (f"\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN ===\nTin còn thiếu {y} — thiếu là chưa đăng được. Nói ngắn: còn thiếu ý này là em lên bản "
-            "nháp liền, rồi hỏi đúng ý đó (theo \"Thông tin cần hỏi tiếp theo\"). KHÔNG soạn bài đăng, KHÔNG nói đã đăng, KHÔNG nói "
+            f"nháp liền, rồi hỏi đúng ý đó (theo dòng \"{NHAN_VIEC_LUOT}\"). KHÔNG soạn bài đăng, KHÔNG nói đã đăng, KHÔNG nói "
             f"\"{cau_mau.cau('duyet_tin')}\" hay \"em đăng ngay\" (chưa có bản nháp thì chưa đăng được).\n")
 
 
@@ -1999,7 +2016,9 @@ QUY TẮC:
   (hello, hi, chào em, xin chào…) chưa nói nhu cầu nhà đất; "dong_y" khi tin CHỈ là lời đáp ngắn đồng ý / cảm ơn (ok, vâng, ừ, được rồi,
   cảm ơn…) KHÔNG kèm thông tin hay câu hỏi mới. Còn lại bỏ trống. Có điền thì loi_xa_giao_trich_dan = NGUYÊN VĂN cụm đó trong tin khách.
 - KHÁCH HỎI VỀ GÌ (19/10/2026, đọc theo NGHĨA tin khách vừa nhắn, không theo từ khoá): hoi_ve = "phi" khi khách hỏi phí / hoa
-  hồng / có mất tiền không của BÊN MÌNH (KHÔNG phải phí quản lý, thuế, phí sang tên của căn nhà); "uy_tin" khi khách hỏi công
+  hồng / có mất tiền không của BÊN MÌNH (KHÔNG phải phí quản lý, thuế, phí sang tên của căn nhà), hoặc hỏi CHÍNH SÁCH gửi bán với bên
+  mình — xin bớt phí, có ký hợp đồng môi giới không, có độc quyền không / gửi bán nhiều nơi được không, môi giới có chia hoa hồng không
+  (01/11/2026, SRS-5.1zzzzzzz318); "uy_tin" khi khách hỏi công
   ty là ai, có uy tín / lừa đảo không, trụ sở ở đâu; "link_web" khi khách hỏi link tin, xem tin ở đâu, tin trên web thế nào;
   "tinh_hinh_ban" (21/10) khi CHỦ NHÀ hỏi căn của mình đã có ai hỏi / quan tâm / hẹn xem chưa, bán tới đâu rồi; "dinh_gia" khi
   chủ nhà hỏi giá mình đưa cao hay thấp, giá thị trường khu đó bao nhiêu, nên bán giá nào.
@@ -2277,7 +2296,7 @@ def operations_schema() -> dict[str, Any]:
             "hoi_ve": {
                 "type": "string",
                 "enum": ["phi", "uy_tin", "link_web", "tinh_hinh_ban", "dinh_gia"],
-                "description": "Khách vừa hỏi về: phi = phí / hoa hồng của bên mình; uy_tin = công ty / uy tín / lừa đảo; "
+                "description": "Khách vừa hỏi về: phi = phí / hoa hồng của bên mình, hoặc chính sách gửi bán (bớt phí, hợp đồng môi giới, độc quyền, chia hoa hồng); uy_tin = công ty / uy tín / lừa đảo; "
                 "link_web = link tin / xem tin trên web; tinh_hinh_ban = chủ nhà hỏi đã có ai hỏi / quan tâm / xem căn mình chưa, "
                 "bán tới đâu; dinh_gia = chủ nhà hỏi giá mình đưa cao hay thấp, giá thị trường khu đó bao nhiêu. Không hỏi những điều "
                 "đó thì bỏ trống.",

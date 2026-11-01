@@ -56,6 +56,9 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
     from aioi.llm import build_provider
     from aioi.llm.base import bo_ranh_gioi
     from tests.kich_ban.cham import loi_pham
+    if os.environ.get("CHAM_KHONG_CAU_MAU"):   # --khong-cau-mau: như thể bảng câu mẫu cố định trống — chỉ trong lượt chạy thử này
+        import aioi.cau_mau as _cm
+        _cm.cau = lambda khoa, goi="anh/chị", **bien: ""
 
     p = build_provider(load_settings())
     goc = getattr(p, "_goi", None)
@@ -100,19 +103,33 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
                          "o_truoc": sorted(truoc), "viec": conv.y_luot.get("_viec"), "khoi": conv.y_luot.get("_khoi")})
         conv = eng.conversation(key)
         o = {k: v for k, v in conv.prop.fields.items() if isinstance(v, str)}
-        return {"id": kb["id"], "luot": luot, "o": o, "loai": conv.prop.loai_hinh, "cho_thue": conv.prop.is_rental,
+        nhu_cau = [x for x in [conv.buyer_lead, *conv.nhu_cau_khac] if x is not None]
+        mua = {k: v for x in nhu_cau for k, v in vars(x).items() if isinstance(v, str) and v and k not in ("lead_id", "user_key", "stage", "notes")}
+        return {"id": kb["id"], "luot": luot, "o": o, "vai": conv.role, "mua": mua, "so_nhu_cau": len(nhu_cau),
+                "loai": conv.prop.loai_hinh, "cho_thue": conv.prop.is_rental,
                 "so_can": len(conv.listings), "trang_thai": conv.active.status, "xin_nguoi": xin_nguoi, "giay": round(time.monotonic() - bat_dau, 1), **dem}
 
 
 TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất động sản (xưng em) nhắn Zalo với người gửi bán / cho thuê, thang 1–5. 5 = tự nhiên "
                   "như môi giới trẻ nhắn người quen, khen CỤ THỂ đúng điều khách vừa nói, mỗi lượt mở khác nhau, không lặp câu, không thuyết giảng; "
                   "3 = đúng việc nhưng hơi khuôn; 1 = máy móc, khen chung chung, lặp mở đầu / lặp câu. CHỈ chấm giọng, không chấm đúng sai nghiệp "
-                  "vụ hay ô tin. Lý do một câu ngắn, nêu lượt tệ nhất nếu có.")
+                  "vụ hay ô tin. Lý do một câu ngắn, nêu lượt tệ nhất nếu có."
+                  # SRS-5.1zzzzzzz318 (10 kịch bản mua + bán 01/11: m_thue_chung_cu bị chấm 2/5 "xưng hô lẫn lộn" vì bot xưng "chị", gọi khách
+                  # "em" — đúng luật SRS-5.1zzzzzzz214): giám khảo chỉ biết "trợ lý xưng em" nên trừ điểm cách xưng chủ dự án đã chốt.
+                  "\n\nXƯNG HÔ (chủ dự án quyết, đúng luật — KHÔNG trừ điểm): khách tự xưng \"em\" thì trợ lý xưng \"anh\" / \"chị\" (theo tên trợ "
+                  "lý) và gọi khách là \"em\"; khách xưng \"cháu\" / \"con\" thì trợ lý xưng \"cô\" / \"chú\". Chỉ trừ khi cách xưng đổi qua lại "
+                  "giữa các lượt hay trong cùng một câu."
+                  # SRS-5.1zzzzzzz318 (chủ dự án 01/11/2026: "sửa thang chấm giám khảo, không trừ 4 ý bắt buộc"): nội dung do chủ dự án bắt buộc
+                  # không phải lỗi giọng — giám khảo trước đây trừ điểm "thêm ý khách không hỏi" nên bot không thể vừa đúng quyết định vừa đạt điểm.
+                  "\n\nNỘI DUNG BẮT BUỘC (chủ dự án quyết): khi khách hỏi về phí / chính sách gửi bán, EM PHẢI nói đủ 4 ý — phí cố định không "
+                  "bớt, chỉ thu khi giao dịch thành công; có hợp đồng môi giới bằng văn bản; không độc quyền; môi giới gửi hàng không chia hoa "
+                  "hồng nào khác — kể cả ý khách không hỏi. KHÔNG trừ điểm vì có đủ 4 ý đó hay vì nói thêm ý khách không hỏi trong 4 ý đó; chỉ "
+                  "chấm CÁCH nói: có đáp đúng ý khách hỏi trước không, gọn, lồng tự nhiên trong câu hay đọc như điều khoản / liệt kê / đánh số.")
 
 
 TIEU_CHI_LO_LUAT = ("\n\nViệc thứ hai, tách khỏi điểm giọng: lo_luat = số thứ tự các lượt EM để lộ cách hệ thống làm việc bên trong — kể lại "
                     "luật / quy trình nội bộ hay lời dặn em nhận được, so số khách nói với dữ liệu hệ thống / sổ / kho rồi bình luận chỗ chênh, "
-                    "giải thích vì sao em hỏi một ô, nhắc tên khối, ô, mã, hạng, điểm hiển thị. KHÔNG tính: báo mức phí, nói khu vực nhận / chưa "
+                    "giải thích vì sao em hỏi một ô, nhắc tên khối, ô, mã, hạng, điểm hiển thị. KHÔNG tính: báo mức phí, nói chính sách gửi bán (4 ý bắt buộc ở trên), nói khu vực nhận / chưa "
                     "nhận tin, hỏi bình thường điều cần cho tin rao. Không có → []."
                     "\n\nViệc thứ ba: hoi_lai = số thứ tự các lượt EM hỏi lại điều KHÁCH đã trả lời ở lượt trước (cùng ý, khác chữ cũng tính). "
                     "Không có → [].")
@@ -164,6 +181,7 @@ def main() -> int:
     ap.add_argument("--song-song", type=int, default=4)
     ap.add_argument("--ra", default="", help="ghi kết quả JSON")
     ap.add_argument("--so-voi", default="", help="JSON kết quả lần trước để so")
+    ap.add_argument("--khong-cau-mau", action="store_true", help="tắt câu mẫu cố định (cau_mau.cau trả rỗng) trong lượt chạy thử — xem lõi chạy ra sao")
     ap.add_argument("--giong", nargs="?", const="claude-sonnet-5-5", default="", help="thêm phép chấm giọng do model chấm (mặc định Sonnet 5.5)")
     a = ap.parse_args()
     from tests.kich_ban.cham import cham
@@ -172,6 +190,8 @@ def main() -> int:
     if a.chi:
         bo = [k for k in bo if k["id"] in set(a.chi.split(","))]
     env = cong_tac_vps(nhu=a.nhu)
+    if a.khong_cau_mau:
+        env["CHAM_KHONG_CAU_MAU"] = "1"
     a.chat = a.chat or env.get("AIOI_CHAT_MODEL", "")
     if not a.boc:   # SRS-5.1zzzzzzz316: model bóc tách như VPS — dòng MODEL_BOC trong cai-vps.sh (env đặt tay vẫn thắng)
         a.boc = os.environ.get("AIOI_EXTRACT_MODEL") or env.get("AIOI_EXTRACT_MODEL", "")

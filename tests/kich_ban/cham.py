@@ -35,6 +35,12 @@ def cham(kb: dict[str, Any], kq: dict[str, Any]) -> list[tuple[str, bool, str]]:
         ra.append((f"loại = {k['loai']}", loai == k["loai"] or loai.startswith(k["loai"] + "_"), loai))
     if "cho_thue" in k:
         ra.append((f"cho thuê = {k['cho_thue']}", bool(kq.get("cho_thue")) == k["cho_thue"], str(kq.get("cho_thue"))))
+    if "vai" in k:
+        ra.append((f"vai = {k['vai']}", kq.get("vai") == k["vai"], str(kq.get("vai"))))
+    for ten, mong in k.get("mua", {}).items():   # nhu cầu người mua (buyer_lead + các bộ khác), so không dấu
+        ra.append((f"mua {ten} ∋ {mong}", chua((kq.get("mua") or {}).get(ten), mong), str((kq.get("mua") or {}).get(ten) or "—")[:60]))
+    if "so_nhu_cau" in k:
+        ra.append((f"số bộ nhu cầu ≥ {k['so_nhu_cau']}", (kq.get("so_nhu_cau") or 0) >= k["so_nhu_cau"], str(kq.get("so_nhu_cau"))))
     if "so_can" in k:
         ra.append((f"số căn = {k['so_can']}", kq.get("so_can") == k["so_can"], str(kq.get("so_can"))))
     if k.get("xin_nguoi"):

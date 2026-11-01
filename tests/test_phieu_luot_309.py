@@ -35,4 +35,4 @@ def test_id_thu_dung_phieu_luot(monkeypatch):
 def test_khach_that_khi_thu_va_cong_tac_tat_giu_prompt_cu(monkeypatch):
     for key, gt in (("chu-309", "thu"), ("thu-309b", "tat")):
         he = _hai_luot(key, monkeypatch, gt)
-        assert he and all("VIỆC LƯỢT NÀY" not in s for s in he)
+        assert he and all("GHI CHÚ NGHIỆP VỤ" in s for s in he)   # prompt cũ (nhãn việc lượt nay dùng chung, SRS-318)

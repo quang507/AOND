@@ -21,6 +21,8 @@ import urllib.parse
 import urllib.request
 from typing import Callable
 
+from .prompts import NHAN_VIEC_LUOT
+
 log = logging.getLogger("aioi.dia_danh")
 
 URL_NHUNG = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent"
@@ -578,7 +580,7 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
         # SRS-5.1zzzzzzz191 (chat anh Luận 26/10): khách nói "phường 6" — phường CŨ đánh số bị chia về hai phường mới nên hệ thống không tự ghi
         # được phường; bản trước bot cứ hỏi tiếp việc khác rồi tới lúc duyệt tin mới hỏi trống "phường mới nào". Hỏi NGAY, kèm các lựa chọn.
         dong.append(f'Khách nói phường "{fields.get("phuong")}" — đó là phường CŨ (trước sáp nhập); từ 01/07/2025 nó chia về nhiều phường mới ({", ".join(chia)}) '
-                    f'nên CHƯA biết nhà thuộc phường nào. Khi "Thông tin cần hỏi tiếp theo" là phường: kể hai phường mới cho khách '
+                    f'nên CHƯA biết nhà thuộc phường nào. Khi dòng "{NHAN_VIEC_LUOT}" là hỏi phường: kể hai phường mới cho khách '
                     f'chọn (vd "{fields.get("phuong")} cũ giờ chia về {" hoặc ".join(chia)}, nhà mình ở phường nào ạ?"), KHÔNG hỏi trống "phường nào". '
                     "Khách đã chọn hay nói phường khác thì ghi theo khách, không hỏi lại. Danh sách phường do hệ thống tra, KHÔNG phải khách nói.")
     mot = getattr(tra, "phuong_cu_moi", None)

@@ -2,6 +2,14 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz308 · Agent phía bán cho mọi khách; hai căn một tin giữ đúng ô; dự phòng không mù dữ liệu (30/10/2026)
+Chủ dự án 30/10: "làm đi thử thì trên cli", rồi nạp $200 API; "dùng haiku hết luôn cũng dc" → cùng ngày "chuyển sang sonnet 5.5 luôn".
+- `AGENT_BAN=bat` cho mọi khách (thử bằng bộ chấm + chat tay CLI). Viết lời: thử Haiku rồi quay lại Sonnet 5.5 (`MODEL_CHAT`, `MODEL_CHAT_THU`).
+- Hai căn một tin: nhánh `add` đọc lại cả tin nên căn sau mang dữ liệu căn đầu → dùng ô của thao tác `add`; `add` thiếu cụm trích mà cùng lượt đã ghi
+  căn đang khai thì vẫn là căn khác; `_match_listing` so cả ô `duong`. Gemini dự phòng không gọi công cụ → agent bán viết lại với đủ khối dữ liệu.
+- Đo: bộ chấm 289 phép — Sonnet 288 + 288, Haiku 284 + 288. Production `ban-thu-nhieu-can` (2 tin) và `ban-thu-ban` đạt.
+- Kiểm: `tests/test_hai_can_mot_tin_308.py`, `test_agent_ban_307.py::test_du_phong_*`, `test_du_phong.py::test_converse_du_phong_*`.
+
 ### SRS-5.1zzzzzzz307 · B2 bước 2: agent phía bán tự tra rổ hàng / bộ nhớ dự án / giá đã gửi; rổ nhiều căn chưa rõ căn nào thì hỏi lại (30/10/2026)
 Chủ dự án 30/10: "làm nốt b2 nhưng vẫn lưu các hàm để dễ gọi"; "cái nào mà ko cần đổi thì ko đổi".
 - `agent_ban.py`: rổ hàng / bộ nhớ dự án / giá đã gửi thành công cụ `ro_hang` / `bo_nho_du_an` / `gia_da_gui`, thân = chính hàm khối cũ; prompt
