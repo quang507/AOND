@@ -829,6 +829,16 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz317 · Audit Đợt 1: một mẫu SĐT cho mọi chỗ che / nhận; SQL `che_sdt` bắt cả số có dấu cách; CCCD che lại ở tin gốc / tin nội bộ (01/11/2026)
+Ca gốc AU-01: lưới che sổ đỏ (`engine._PII_PHONE_RE`) và SQL `che_sdt` chỉ bắt chữ số liền → "0900 000 123", "+84 900 000 123" lọt (đo trên Postgres 16 cục bộ: SQL cũ lọt 10/17 ca dương);
+bản `\d[\d .-]{7,}\d` của tin gốc / tin nội bộ che cả giá "12.500.000.000". (1) Lớp lỗi: 9 regex SĐT viết tay, không bảng ca chung. Sửa: `src/aioi/sdt.py`
+(`MAU_SDT`, `che_sdt(text, thay=)`); nối engine sổ đỏ, `tin_goc`, `prompts.khoi_cau_chuan`, 3 chỗ `supabase_store`; `mua` giữ `SDT_DOC` / `GIONG_SDT` (nhận diện) dựng cùng mảnh;
+migration `20261101a_che_sdt_mot_mau` chép nguyên `MAU_SDT` (chủ dự án "áp đi" 01/11; chạy thử 43/43 trên DB thật PG 17.11 rồi áp). (2) Cùng lớp — review PR #241: hai số nối gạch "0900…-0900…", "(+84) …", rồi hai số nối phẩy / chấm "0900…,0911…" lọt (ranh giới coi mọi ".,-" sát chữ số là tiền; sửa mẫu + `luat-lien-he.ts`,
+migration `20261101b_che_sdt_dau_phay` (áp 01/11 sau chạy thử 56/56 trên DB thật); doi-chieu phía TS nay so cả chuỗi che, không chỉ "có SĐT"). Che nhầm: `20261101a` (đã áp) che đuôi UUID
+"…-fe0900000171" (sổ lỗi bridge có dạng này) → chặn số kẹp giữa hex / gạch; CCCD che giá nghìn tỷ "2.090.000.000.000" → chặn khi trước số 0 là nhóm 1–3 số + ".,";
+bốn chỗ bỏ `\d[\d .-]{7,}\d` làm CCCD hết che (tin gốc còn vào văn bản nhúng) → `che_so_ca_nhan` = `che_giay_to` (CCCD 12 số, CMND 9 số sát chữ) + `che_sdt`. Còn: web chỉ buộc bắt mọi ca dương (được che thừa).
+(3) Kiểm: `luat/sdt.json` (25 dương / 31 âm, `bun run doi-chieu:sdt` Python ↔ SQL ↔ TS, cổng CI 11), `luat/cccd.json` (19 ca) + `tests/test_sdt_317.py` (cách viết mới "0900 000 160/0900 000 161", "0792.0000.0010"); đỏ khi gỡ.
+
 ### SRS-5.1zzzzzzz316 · Audit Đợt 0: test chạy công tắc production; model bóc tách một nguồn ở cai-vps.sh; điểm nền dựng lại (01/11/2026)
 Lớp lỗi (AU-05 / AU-25): env test rỗng = mọi công tắc tắt → test đi nhánh production không đi; model bóc tách chỉ nằm trong `.env` VPS — SRS-313 ghi nhầm
 VPS dùng mặc định `claude-haiku-4-5`, sổ `bot_usage_model` 28/10–01/11 chỉ có `claude-haiku-5-5` (điểm nền cũ đo sai model). Sửa: dòng `MODEL_BOC` ở `cai-vps.sh`;
@@ -891,14 +901,6 @@ Chủ dự án 30/10: "làm đi thử thì trên cli", rồi nạp $200 API; "d�
   căn đang khai thì vẫn là căn khác; `_match_listing` so cả ô `duong`. Gemini dự phòng không gọi công cụ → agent bán viết lại với đủ khối dữ liệu.
 - Đo: bộ chấm 289 phép — Sonnet 288 + 288, Haiku 284 + 288. Production `ban-thu-nhieu-can` (2 tin) và `ban-thu-ban` đạt.
 - Kiểm: `tests/test_hai_can_mot_tin_308.py`, `test_agent_ban_307.py::test_du_phong_*`, `test_du_phong.py::test_converse_du_phong_*`.
-
-### SRS-5.1zzzzzzz307 · B2 bước 2: agent phía bán tự tra rổ hàng / bộ nhớ dự án / giá đã gửi; rổ nhiều căn chưa rõ căn nào thì hỏi lại (30/10/2026)
-Chủ dự án 30/10: "làm nốt b2 nhưng vẫn lưu các hàm để dễ gọi"; "cái nào mà ko cần đổi thì ko đổi".
-- `agent_ban.py`: rổ hàng / bộ nhớ dự án / giá đã gửi thành công cụ `ro_hang` / `bo_nho_du_an` / `gia_da_gui`, thân = chính hàm khối cũ; prompt
-  chỉ còn một dòng báo dữ liệu có thể tra; lượt không có gì để tra thì không mở vòng công cụ. Trần 3 lần gọi / 25 s. Luật hành vi đặt ở `HUONG_DAN`.
-- Khối địa danh / trạng thái tin / câu khách mua hỏi KHÔNG đổi (vốn chỉ vào prompt khi cần). `claude -p` giả lập vòng công cụ bằng JSON.
-- Còn: rổ nhiều căn "căn đó bán rồi" — bóc tách vẫn đổi nhầm trạng thái ~6/16 lần (kịch bản `hai_can_da_ban`), để agent bóc tách xử lý.
-- Kiểm: `tests/test_agent_ban_307.py`.
 
 ---
 

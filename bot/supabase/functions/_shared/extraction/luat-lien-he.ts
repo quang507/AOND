@@ -22,9 +22,14 @@
  *   · sau số cuối không được là chữ số (13 chữ số liền không phải SĐT);
  *   · cả cụm mà viết kiểu TIỀN — nhóm 1–3 số rồi ≥ 2 nhóm ".000" ("84.000.000.000")
  *     — thì không phải SĐT. "0903.123.456" nhóm đầu 4 số nên vẫn là SĐT.
+ *
+ * 01/11/2026 (SRS-5.1zzzzzzz317, review PR #241): đầu số "(+84)" trong ngoặc lọt — nay nhận; hai số nối dấu phẩy /
+ * chấm ("0900…,0911…") lọt vì trước đầu số cấm cả "." "," — nay chỉ cấm chữ số (giá vẫn do nhánh dạng tiền chặn). Bảng ca chung
+ * Số nằm trong UUID ("…-9bbb-fe0900000171") không che — cùng điều kiện với `MAU_SDT` (src/aioi/sdt.py).
+ * `bot/tests/luat/sdt.json` (`bun run doi-chieu:sdt`) buộc bản này bắt mọi ca dương.
  */
 export const SDT_NGUON =
-  "(?<![\\d.,])(?!\\d{1,3}(?:\\.\\d{3}){2,}(?![\\d]))(?:\\+?84|0)(?:[\\s.\\-]?\\d){8,10}(?![\\d])";
+  "(?<![\\d])(?<![0-9a-fA-F-][a-fA-F])(?:(?<![0-9a-fA-F]-)|(?![0-9]{10}[a-fA-F][0-9a-fA-F](?![0-9A-Za-z])|[0-9]{11}[a-fA-F](?![0-9A-Za-z])))(?!\\d{1,3}(?:\\.\\d{3}){2,}(?![\\d]))(?:\\(\\+84\\)|\\+?84|0)(?:[\\s.\\-]?\\d){8,10}(?![\\d])";
 /**
  * Kênh liên hệ ngoài: Zalo, Facebook, Viber, Telegram kèm ID đi sau.
  *

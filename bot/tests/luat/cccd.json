@@ -1,0 +1,100 @@
+{
+ "_doc": "BẢNG CA số giấy tờ (SRS-5.1zzzzzzz317, review PR #241). Đọc bằng `aioi.sdt.che_so_ca_nhan(cau, thay=\"[số]\")` — hàm che của tin gốc (vào văn bản nhúng) và 3 đường ghi của `supabase_store`. CCCD: 12 số mở đầu 0, liền hoặc có dấu ngăn; CMND 9 số chỉ che khi đứng sát chữ CMND / CCCD / chứng minh / căn cước (9 số trần trùng giá). Chỉ Python (SQL `che_sdt` không che giấy tờ). Số giả, không lấy từ DB / log / chat.",
+ "ca": [
+  {
+   "cau": "CCCD 079200000001",
+   "mong": "CCCD [số]",
+   "vi_sao": "12 số liền"
+  },
+  {
+   "cau": "CCCD 079 200 000 002",
+   "mong": "CCCD [số]",
+   "vi_sao": "nhóm 3-3-3-3"
+  },
+  {
+   "cau": "căn cước 079-200-000-003",
+   "mong": "căn cước [số]",
+   "vi_sao": "gạch ngang"
+  },
+  {
+   "cau": "số 079.200.000.004 nhé",
+   "mong": "số [số] nhé",
+   "vi_sao": "dấu chấm, không có chữ CCCD"
+  },
+  {
+   "cau": "CMND 025000005",
+   "mong": "CMND [số]",
+   "vi_sao": "9 số sát chữ CMND"
+  },
+  {
+   "cau": "chứng minh nhân dân số: 025 000 006",
+   "mong": "chứng minh nhân dân số: [số]",
+   "vi_sao": "9 số có dấu cách sau nhãn"
+  },
+  {
+   "cau": "cmnd025000007",
+   "mong": "cmnd[số]",
+   "vi_sao": "dính liền chữ"
+  },
+  {
+   "cau": "CCCD 079200000009, sđt 0900 000 159",
+   "mong": "CCCD [số], sđt [số]",
+   "vi_sao": "giấy tờ và SĐT cùng câu"
+  },
+  {
+   "cau": "sđt 0900000167,079200000018",
+   "mong": "sđt [số],[số]",
+   "vi_sao": "SĐT và CCCD nối dấu phẩy (review PR #241 lần 2)"
+  },
+  {
+   "cau": "0900000177,079200000019",
+   "mong": "[số],[số]",
+   "vi_sao": "SĐT 10 số rồi CCCD sau dấu phẩy — nhóm trước dấu phẩy không đứng riêng"
+  },
+  {
+   "cau": "giá 850000000",
+   "mong": "giá 850000000",
+   "vi_sao": "9 số trần là giá, không có chữ CMND"
+  },
+  {
+   "cau": "giá 125.000.000.000",
+   "mong": "giá 125.000.000.000",
+   "vi_sao": "12 chữ số kiểu tiền"
+  },
+  {
+   "cau": "giá 100000000000",
+   "mong": "giá 100000000000",
+   "vi_sao": "12 số không mở đầu 0"
+  },
+  {
+   "cau": "3f9a0e10-0000-4b1a-9c33-000000000001",
+   "mong": "3f9a0e10-0000-4b1a-9c33-000000000001",
+   "vi_sao": "đuôi UUID 12 số"
+  },
+  {
+   "cau": "1730419200000",
+   "mong": "1730419200000",
+   "vi_sao": "epoch ms 13 số"
+  },
+  {
+   "cau": "thửa 079 tờ 200",
+   "mong": "thửa 079 tờ 200",
+   "vi_sao": "số thửa / tờ bản đồ"
+  },
+  {
+   "cau": "2.090.000.000.000",
+   "mong": "2.090.000.000.000",
+   "vi_sao": "giá nghìn tỷ — nhóm 090 sau \"2.\" không phải CCCD (review PR #241)"
+  },
+  {
+   "cau": "giá 1.050.000.000.000",
+   "mong": "giá 1.050.000.000.000",
+   "vi_sao": "giá nghìn tỷ"
+  },
+  {
+   "cau": "giá 3.050.000.000.000đ",
+   "mong": "giá 3.050.000.000.000đ",
+   "vi_sao": "giá nghìn tỷ dính đ"
+  }
+ ]
+}

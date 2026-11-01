@@ -27,6 +27,7 @@ from typing import Callable, Any, TYPE_CHECKING
 from .kho_anh import BUCKET_CONG_KHAI, BUCKET_RIENG, la_uuid
 from .mua import KhoNguoiMua
 from .revenue import SALE_FEE_RATE
+from .sdt import che_so_ca_nhan
 from .prompts import FIELD_LABELS
 from .schema import HOUSE_TYPES, O_NOI_BO, TYPE_TO_GROUP, Property, _calc_area_from_dimension
 
@@ -853,7 +854,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         if self._request("POST", "rpc/la_id_thu", data={"p": user_key}) is True:
             return True
         vai = "người mua" if role == "buyer" else "người bán"
-        loi = re.sub(r"\d[\d .-]{7,}\d", "[số]", str(trich or ""))[:160]   # không đẩy SĐT khách vào tin nội bộ
+        loi = che_so_ca_nhan(str(trich or ""), thay="[số]")[:160]   # không đẩy SĐT khách vào tin nội bộ
         self._post("reminders", {
             "kind": "escalation", "status": "pending", "due_at": now_iso, "seller_id": seller_id,
             "buyer_id": self.khach_mua(user_key, ten) if role == "buyer" else None,
@@ -908,7 +909,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         """Ô riêng của chủ + tin nhắn gốc → `listing_noi_bo` (SRS-5.1zzzzzzz116, 142). Không lưu SĐT (che như `ghi_danh_gia`). Lỗi chỉ ghi log —
         tin vẫn lưu, ô vẫn còn trong phiên (SQLite trên VPS giữ bản đầy đủ). `tin_goc` tính lại từ lịch sử mỗi lần nên ghi đè cả cột `du_lieu`
         là an toàn; nó đã che SĐT và có trần riêng (không bị cắt 500 chữ như ô riêng)."""
-        du_lieu: dict[str, Any] = {k: re.sub(r"\d[\d .-]{7,}\d", "[số]", str(v))[:500] for k, v in rieng.items()}
+        du_lieu: dict[str, Any] = {k: che_so_ca_nhan(str(v), thay="[số]")[:500] for k, v in rieng.items()}
         if tin_goc:
             du_lieu["tin_goc"] = tin_goc
         try:
@@ -946,7 +947,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         if not (self.is_configured and user_key and 1 <= int(sao) <= 5):
             return False
         now_iso = datetime.now(timezone.utc).isoformat()
-        loi = re.sub(r"\d[\d .-]{7,}\d", "[số]", str(trich or ""))[:300]   # không lưu SĐT khách
+        loi = che_so_ca_nhan(str(trich or ""), thay="[số]")[:300]   # không lưu SĐT khách
         bao = int(sao) <= 2 and self._request("POST", "rpc/la_id_thu", data={"p": user_key}) is not True
         vai = "mua" if role == "buyer" else "ban"
         self._post("danh_gia_ai?on_conflict=zalo_user_id", {

@@ -210,3 +210,33 @@ jobs:
           bun-version: latest
       - name: docTien (TS) và parse_vnd (SQL) ra cùng một số trên mọi ca
         run: bun run doi-chieu:tien
+
+  # ── CỔNG THỨ 11: LUẬT SĐT PYTHON ↔ SQL ↔ TS CÙNG MỘT BẢNG CA (SRS-5.1zzzzzzz317) ──
+  # Mẫu gốc `src/aioi/sdt.py`; SQL `public.che_sdt` chép nguyên chuỗi; bảng ca `bot/tests/luat/sdt.json`.
+  # Phía SQL chạy hàm trong migration MỚI NHẤT trên Postgres của CI (không đụng DB thật), gói begin … rollback —
+  # nên migration chưa áp vẫn kiểm được trước khi gộp. TS `coSdt` (web) chỉ cần bắt mọi ca dương.
+  doichieusdt:
+    name: Luật SĐT — Python, SQL, TS cùng một bảng ca
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: kiem
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: kiem
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Có psql
+        run: command -v psql || (sudo apt-get update -q && sudo apt-get install -y -q postgresql-client)
+      - name: che_sdt (Python) và che_sdt (SQL) ra cùng chuỗi, coSdt (TS) không lọt ca dương
+        run: bun run doi-chieu:sdt

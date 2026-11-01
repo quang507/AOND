@@ -9,6 +9,8 @@ import functools
 import re
 from typing import Any
 
+from .sdt import che_sdt
+
 from .projects import Project, UnitType
 from .revenue import RENTAL_FEE_MONTHS, SALE_FEE_RATE, SellerRole
 from . import cau_mau
@@ -2429,7 +2431,6 @@ def tai_lieu_chung_schema() -> dict[str, Any]:
 
 
 
-_SDT = re.compile(r"(?<!\d)(?:\+?84|0)(?:[\s.\-]?\d){8,10}(?!\d)")
 _AI_CAU_CHUAN = {"buyer": "Khách", "seller": "Khách", "bot": "Bot", "human": "Người thật"}
 
 
@@ -2454,7 +2455,7 @@ def khoi_cau_chuan(rows: list[dict] | None) -> str:
     dữ kiện trong ví dụ. Không có dòng → "" (prompt như cũ)."""
     if not rows:
         return ""
-    cat = lambda x, n: (lambda t: t if len(t) <= n else t[:n].rstrip() + "…")(_SDT.sub("0xxxxxxxxx", " ".join(str(x or "").split())))
+    cat = lambda x, n: (lambda t: t if len(t) <= n else t[:n].rstrip() + "…")(che_sdt(" ".join(str(x or "").split()), thay="0xxxxxxxxx"))
     # SRS-5.1zzzzzzz215: ví dụ "nên nói" (câu chuẩn, hoặc câu bot cũ được giữ) phải hợp luật hình thức đang áp; câu bot cũ chỉ in khi có
     # ĐIỂM (để model biết đó là cách nói cần tránh) — in không điểm là dạy thêm một lần nữa kiểu ghi nhận.
     def _nen_noi(r: dict) -> str | None:   # câu được trình là "nên nói": câu chuẩn sửa tay, hoặc câu bot cũ chấm ≥ 4; câu điểm thấp là cách cần tránh

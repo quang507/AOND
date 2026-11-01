@@ -25,6 +25,7 @@ from typing import Any, Callable
 
 from .xung_ho import goi_toi as _goi_toi
 from . import cau_mau
+from .sdt import GIONG_SDT, SDT_DOC
 
 log = logging.getLogger("aioi.mua")
 
@@ -52,27 +53,22 @@ def lenh_tra_loi(text: str) -> tuple[str, str] | None:
     return (m.group(1).upper(), m.group(2).strip()) if m and m.group(2).strip() else None
 
 
-_SDT_KHACH = re.compile(r"(?<!\d)(?:\+?84|0)(?:[\s.\-]?\d){8,9}(?!\d)")
-
-
+# Mẫu đọc / nhận dãy giống SĐT dựng từ cùng mẫu gốc với bộ che (`sdt.py`, SRS-5.1zzzzzzz317) — đây là NHẬN DIỆN, không phải che.
 def tim_sdt(text: str) -> str | None:
     """Số điện thoại di động VN trong lời khách (SRS-5.1zzzzzzz148): chấp nhận cách gõ có khoảng trắng / chấm / gạch và +84; trả dạng 0xxxxxxxxx."""
-    for m in _SDT_KHACH.finditer(text or ""):
+    for m in SDT_DOC.finditer(text or ""):
         so = re.sub(r"\D", "", m.group(0))
         if so.startswith("84"):
-            so = "0" + so[2:]
+            so = "0" + so[2:].removeprefix("0")   # "+84 0900…" có số 0 thừa (SRS-5.1zzzzzzz317)
         if len(so) == 10 and so[:2] in ("03", "05", "07", "08", "09"):
             return so
     return None
 
 
-_SO_GIONG_SDT = re.compile(r"(?<!\d)(?:\+?84|0)(?:[\s.\-]?\d){6,12}(?!\d)")
-
-
 def giong_sdt_sai(text: str) -> bool:
     """Khách gõ một dãy số GIỐNG số điện thoại (đầu 0 / +84, 7–13 số) nhưng `tim_sdt` không nhận — thiếu hoặc thừa chữ số, hoặc sai đầu số
     (SRS-5.1zzzzzzz161, chat chị Ngân 23/10: gõ thiếu một số "070772473", bot vẫn "cảm ơn chị đã gửi số" mà DB không ghi gì)."""
-    return tim_sdt(text) is None and bool(_SO_GIONG_SDT.search(text or ""))
+    return tim_sdt(text) is None and bool(GIONG_SDT.search(text or ""))
 
 
 def _q(s: str) -> str:
