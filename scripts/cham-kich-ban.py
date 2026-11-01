@@ -114,6 +114,11 @@ TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất đ�
                   "như môi giới trẻ nhắn người quen, khen CỤ THỂ đúng điều khách vừa nói, mỗi lượt mở khác nhau, không lặp câu, không thuyết giảng; "
                   "3 = đúng việc nhưng hơi khuôn; 1 = máy móc, khen chung chung, lặp mở đầu / lặp câu. CHỈ chấm giọng, không chấm đúng sai nghiệp "
                   "vụ hay ô tin. Lý do một câu ngắn, nêu lượt tệ nhất nếu có."
+                  # SRS-5.1zzzzzzz318 (10 kịch bản mua + bán 01/11: m_thue_chung_cu bị chấm 2/5 "xưng hô lẫn lộn" vì bot xưng "chị", gọi khách
+                  # "em" — đúng luật SRS-5.1zzzzzzz214): giám khảo chỉ biết "trợ lý xưng em" nên trừ điểm cách xưng chủ dự án đã chốt.
+                  "\n\nXƯNG HÔ (chủ dự án quyết, đúng luật — KHÔNG trừ điểm): khách tự xưng \"em\" thì trợ lý xưng \"anh\" / \"chị\" (theo tên trợ "
+                  "lý) và gọi khách là \"em\"; khách xưng \"cháu\" / \"con\" thì trợ lý xưng \"cô\" / \"chú\". Chỉ trừ khi cách xưng đổi qua lại "
+                  "giữa các lượt hay trong cùng một câu."
                   # SRS-5.1zzzzzzz318 (chủ dự án 01/11/2026: "sửa thang chấm giám khảo, không trừ 4 ý bắt buộc"): nội dung do chủ dự án bắt buộc
                   # không phải lỗi giọng — giám khảo trước đây trừ điểm "thêm ý khách không hỏi" nên bot không thể vừa đúng quyết định vừa đạt điểm.
                   "\n\nNỘI DUNG BẮT BUỘC (chủ dự án quyết): khi khách hỏi về phí / chính sách gửi bán, EM PHẢI nói đủ 4 ý — phí cố định không "
