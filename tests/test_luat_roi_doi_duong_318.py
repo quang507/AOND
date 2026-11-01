@@ -30,6 +30,7 @@ def test_khach_hoi_phi_luot_thu_thap_co_du_chinh_sach():
     viet = [s for s in he if "KHÁCH HỎI VỀ PHÍ" in s]
     assert viet and f"{NHAN_VIEC_LUOT}:" in viet[0] and "GHI CHÚ NGHIỆP VỤ" not in viet[0]   # đường phiếu lượt, không phải prompt cũ
     assert CHINH_SACH_PHI in viet[0] and "Đáp ĐÚNG điều khách vừa hỏi trước, bằng MỘT câu" in viet[0] and "không đánh số" in viet[0]
+    assert "ĐÚNG MỘT câu ngắn" in viet[0]                                         # các ý còn lại gói một câu (bản trước 3–4 câu, đọc như điều khoản)
     assert "BỐI CẢNH ở trên" not in viet[0]                                      # khối không còn trỏ phần không có trong phiếu lượt
 
 

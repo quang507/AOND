@@ -832,6 +832,9 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
 ### SRS-5.1zzzzzzz318 · Audit Đợt 2: luật rơi khi đổi đường — chính sách phí ở lượt thu thập, một bảng luật soát, nhãn việc lượt chung, ảnh sổ qua phiếu lượt (01/11/2026)
 Quyết định chủ dự án 01/11 (Q2): lượt THU THẬP, khách hỏi phí / chính sách thì nói ĐỦ 4 ý (không bớt, chỉ thu khi thành công · có HĐ môi giới văn bản · không
 độc quyền · môi giới không chia hoa hồng khác), gọn, giọng Zalo; con số vẫn do `muc_phi` / `khoi_bao_phi`. Q3: lên Top là thật — giữ câu "≥10 căn lên Top".
+Chủ dự án 01/11 (tiếp): GIỮ đủ 4 ý, giọng theo khuôn anh Luận (`GIONG_VUI`), không đọc như điều khoản; "sửa thang chấm giám khảo, không trừ 4 ý bắt buộc" →
+`TIEU_CHI_GIONG` chỉ chấm CÁCH nói 4 ý; cùng lớp (giám khảo chấm sai luật đã chốt): khách xưng em → bot xưng anh / chị (SRS-214) không trừ điểm. Khối phí: đáp đúng
+ý hỏi một câu, các ý còn lại ĐÚNG MỘT câu, không lặp ý câu báo phí (bài đỏ: `test_khach_hoi_phi_luot_thu_thap_co_du_chinh_sach`).
 (1) Lớp lỗi: luật / nhãn nằm ở prompt cũ hoặc nhánh soát chỉ chạy khi công tắc tắt, nên bật PHIEU_LUOT / SOAT_GON là luật rơi mà không bài nào đỏ. Sửa: hằng
 `CHINH_SACH_PHI` (BUSINESS_CONTEXT dùng lại) vào khối hỏi phí, `hoi_ve=phi` gồm câu hỏi chính sách (độc quyền, HĐ); bảng `LUAT_SOAT` một nguồn cho lần đầu + gọi
 lại (lưới SRS-292 nay chạy dưới SOAT_GON); `NHAN_VIEC_LUOT`; ảnh sổ qua `build_phieu_luot(viec=)`, bỏ "khen điểm mạnh" ↔ "không khen sổ". (2) Còn: AU-13 (ngoặc

@@ -3122,7 +3122,8 @@ class Engine:
                 # chấm 2/5). Phiếu lượt không có BUSINESS_CONTEXT nên dữ kiện chính sách đi kèm khối này. Giọng do GIONG_VUI, không dặn thêm ở đây.
                 "Đáp ĐÚNG điều khách vừa hỏi trước, bằng MỘT câu. Rồi nói lướt cho ĐỦ các ý còn lại của CHÍNH SÁCH GỬI BÁN dưới — phí cố định không "
                 "bớt, chỉ thu khi thành công; có hợp đồng môi giới bằng văn bản; không độc quyền; và cả ý môi giới gửi hàng không chia hoa hồng nào "
-                "khác (dù khách là chủ nhà) — lồng tự nhiên vào 1–2 câu ngắn, không đánh số, không gạch đầu dòng, không thêm ưu đãi / con số nào khác. "
+                "khác (dù khách là chủ nhà) — gói các ý CÒN LẠI vào ĐÚNG MỘT câu ngắn nối bằng \"còn\" / \"và\" (ý nào câu đáp hay câu báo phí đã "
+                "nói thì không nói lại), không đánh số, không gạch đầu dòng, không thêm ưu đãi / con số nào khác. "
                 f"Con số phí chỉ nói khi khách hỏi MỨC phí (bao nhiêu, tính sao), và CHỈ lấy từ dòng VAI NGƯỜI RAO / câu mẫu báo phí bên dưới (bán: "
                 f"{PT_CHU} chính chủ, {PT_MG} môi giới; cho thuê: {PHI_THUE} = 3/4 của MỘT tháng tiền thuê; chưa rõ vai thì nêu cả hai hoặc hỏi khéo "
                 "khách là chủ nhà hay môi giới); khách hỏi ý khác (độc quyền, hợp đồng, xin bớt) thì không cần đọc lại câu báo phí. "
