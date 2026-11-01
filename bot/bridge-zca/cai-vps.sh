@@ -156,26 +156,8 @@ if [ -d /opt/aond_core/src/aioi ]; then
   # SRS-5.1zzzzzzz252 (chủ dự án 28/10/2026: "vẫn trong giai đoạn test có dòng $ đã trích xuất nữa đi"): "bat" = sau mỗi lượt gửi thêm tin
   # phụ "$$$$$ Đã trích xuất…" cho MỌI cuộc chat; chạy với khách thật thì đổi thành "tat" rồi chạy cai-vps.
   DONG_TRICH_XUAT="bat"
-  # SRS-5.1zzzzzzz290 (chủ dự án 29/10/2026: "Ok thử … sang kiểu Suy nghĩ -> Chọn công cụ -> Thực thi -> Đánh giá"): lượt trả lời khách MUA có
-  # công cụ chỉ đọc (tra căn / dự án), model tự quyết có tra không. "thu" = chỉ ID thử (bắn thử trước); "bat" = mọi khách; "tat" = như cũ.
-  AGENT_MUA="bat"
-  # SRS-5.1zzzzzzz293 (chủ dự án 29/10/2026: "bớt prompt dài đi, cấu trúc form json ngắn hơn"): lượt Haiku đọc ý khách MUA dùng form gọn (chỉ phần
-  # phía mua, ≈ một nửa chữ). "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = form đầy đủ như cũ.
-  FORM_MUA_GON="bat"
-  # SRS-5.1zzzzzzz303 (chủ dự án 30/10: "prompt bóc tách sao mà dài … ngắn lại dc ko"): lượt đọc ý NGƯỜI BÁN (vai đã rõ) bỏ mục việc khách mua
-  # (form −15 % chữ, schema −24 %); đọc ra ý mua thì đọc lại bằng form đầy đủ. "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = form đầy đủ.
-  FORM_BAN_GON="bat"
-  # SRS-5.1zzzzzzz298 (B2 bước 1, chủ dự án 29/10): soát lời chế độ gọn — luật giọng / lặp chỉ ghi log, tối đa MỘT lần gọi lại model, "Dạ" do code
-  # bỏ. "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = như cũ (gọi lại tới 2 lần, mọi luật).
-  # SRS-5.1zzzzzzz304: bộ chấm kịch bản (15 kịch bản, Sonnet + Haiku) cho điểm như chế độ cũ, Haiku ít gọi lại hơn → bật cho mọi khách.
-  SOAT_GON="bat"
-  # SRS-5.1zzzzzzz307 (B2 bước 2, chủ dự án 30/10: "làm nốt b2 nhưng vẫn lưu các hàm để dễ gọi"): lượt viết lời NGƯỜI BÁN không nhét sẵn rổ hàng /
-  # bộ nhớ dự án / giá đã gửi — model tự gọi công cụ tra (thân công cụ là hàm khối cũ). "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = như cũ.
-  # SRS-5.1zzzzzzz308 (chủ dự án 30/10: "làm đi thử thì trên cli" — thử bằng bộ chấm + chat tay quota CLI thay bắn production): mọi khách.
-  AGENT_BAN="bat"
-  # SRS-5.1zzzzzzz309 (kế hoạch bước 2): lượt thu thập của người bán viết từ "phiếu lượt" ngắn (giọng + dữ liệu căn + một việc) thay văn xuôi
-  # build_chat_system. "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = prompt cũ. Bật mọi khách: bộ chấm 40 kịch bản hai lần đều hơn prompt cũ.
-  PHIEU_LUOT="bat"
+  # Đợt 8 (chủ dự án 01/11/2026, Q1 "vĩnh viễn"; SRS-5.1zzzzzzz319): AGENT_MUA, FORM_MUA_GON, FORM_BAN_GON, SOAT_GON, AGENT_BAN, PHIEU_LUOT đã
+  # gỡ khỏi code — đường mới là đường duy nhất. Dòng .env cũ của chúng bị lọc bỏ ở bước ghi .env dưới.
   # SRS-5.1zzzzzzz310 (kế hoạch bước 3): lượt đọc ý người bán (vai đã rõ, form bán gọn bật) bằng agent gọi công cụ ghi (agent_boc.py) thay form JSON.
   # "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = form cũ.
   AGENT_BOC="thu"
@@ -189,10 +171,10 @@ if [ -d /opt/aond_core/src/aioi ]; then
   if [ -f /opt/aond_core/.env ]; then
     umask 077
     grep -vE '^AIOI_(CHAT_MODEL(_THU)?|EXTRACT_MODEL|CONG_CU_GUI_KHACH|DONG_TRICH_XUAT|AGENT_MUA|AGENT_BAN|PHIEU_LUOT|AGENT_BOC(_MODEL)?|MODEL_LUOT_DE|FORM_MUA_GON|FORM_BAN_GON|SOAT_GON)=|^GEMINI_MODEL=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
-    printf 'AIOI_CHAT_MODEL=%s\nAIOI_CHAT_MODEL_THU=%s\nAIOI_EXTRACT_MODEL=%s\nAIOI_CONG_CU_GUI_KHACH=%s\nAIOI_DONG_TRICH_XUAT=%s\nAIOI_AGENT_MUA=%s\nAIOI_FORM_MUA_GON=%s\nAIOI_FORM_BAN_GON=%s\nAIOI_SOAT_GON=%s\nAIOI_AGENT_BAN=%s\nAIOI_PHIEU_LUOT=%s\nAIOI_AGENT_BOC=%s\nAIOI_AGENT_BOC_MODEL=%s\nAIOI_MODEL_LUOT_DE=%s\nGEMINI_MODEL=%s\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$MODEL_BOC" "$CONG_CU_GUI_KHACH" "$DONG_TRICH_XUAT" "$AGENT_MUA" "$FORM_MUA_GON" "$FORM_BAN_GON" "$SOAT_GON" "$AGENT_BAN" "$PHIEU_LUOT" "$AGENT_BOC" "$MODEL_AGENT_BOC" "$MODEL_LUOT_DE" "$MODEL_GEMINI" >> /opt/aond_core/.env.moi
+    printf 'AIOI_CHAT_MODEL=%s\nAIOI_CHAT_MODEL_THU=%s\nAIOI_EXTRACT_MODEL=%s\nAIOI_CONG_CU_GUI_KHACH=%s\nAIOI_DONG_TRICH_XUAT=%s\nAIOI_AGENT_BOC=%s\nAIOI_AGENT_BOC_MODEL=%s\nAIOI_MODEL_LUOT_DE=%s\nGEMINI_MODEL=%s\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$MODEL_BOC" "$CONG_CU_GUI_KHACH" "$DONG_TRICH_XUAT" "$AGENT_BOC" "$MODEL_AGENT_BOC" "$MODEL_LUOT_DE" "$MODEL_GEMINI" >> /opt/aond_core/.env.moi
     chown --reference=/opt/aond_core/.env /opt/aond_core/.env.moi; chmod 600 /opt/aond_core/.env.moi
     mv /opt/aond_core/.env.moi /opt/aond_core/.env
-    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT, ID thử = $MODEL_CHAT_THU, bóc tách = $MODEL_BOC, công cụ gửi khách = $CONG_CU_GUI_KHACH, dòng trích xuất = $DONG_TRICH_XUAT, agent mua = $AGENT_MUA, form mua gọn = $FORM_MUA_GON, form bán gọn = $FORM_BAN_GON, soát gọn = $SOAT_GON, agent bán = $AGENT_BAN, phiếu lượt = $PHIEU_LUOT, agent bóc = $AGENT_BOC ($MODEL_AGENT_BOC), lượt dễ = $MODEL_LUOT_DE, Gemini dự phòng = $MODEL_GEMINI"
+    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT, ID thử = $MODEL_CHAT_THU, bóc tách = $MODEL_BOC, công cụ gửi khách = $CONG_CU_GUI_KHACH, dòng trích xuất = $DONG_TRICH_XUAT, agent bóc = $AGENT_BOC ($MODEL_AGENT_BOC), lượt dễ = $MODEL_LUOT_DE, Gemini dự phòng = $MODEL_GEMINI"
   fi
   systemctl restart aond-core
   for i in $(seq 1 60); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done

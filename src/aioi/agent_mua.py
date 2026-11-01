@@ -4,13 +4,11 @@ còn bóc tách vẫn dùng haiku … tại mấy cái code từ khóa bạn là
 Lượt viết lời cho khách mua (Sonnet) được bộ công cụ: model tự quyết có cần tra kho không (khách đổi tiêu chí, hỏi chi tiết một căn, hỏi dự án /
 khu) thay vì code dựng sẵn một lần tra cố định; và (SRS-292) ghi hẹn xem / câu hỏi chủ nhà khi bóc tách Haiku bỏ sót — cùng hàm ghi, cùng chống
 trùng của đường cũ. Bóc tách ô (Haiku) và các việc ghi khác giữ nguyên đường cũ có cổng kiểm. Có trần: tối đa `MAX_VONG` lần gọi model, ngừng tra sau `HAN_GIAY` giây; hết trần mà
-chưa có lời thì viết lời thường kèm kết quả đã tra. Công tắc `AIOI_AGENT_MUA` (một nguồn ở `bot/bridge-zca/cai-vps.sh` dòng AGENT_MUA):
-"bat" = mọi khách, "thu" = chỉ ID thử, khác = tắt."""
+chưa có lời thì viết lời thường kèm kết quả đã tra. Chạy cho mọi khách mua (công tắc AGENT_MUA gỡ ở Đợt 8, SRS-5.1zzzzzzz319)."""
 from __future__ import annotations
 
 import copy
 import logging
-import os
 import time
 from typing import Any
 
@@ -100,10 +98,6 @@ CONG_CU: list[dict[str, Any]] = [
     },
 ]
 
-
-def bat(user_key: str, la_id_thu: bool) -> bool:
-    v = os.environ.get("AIOI_AGENT_MUA", "").strip().lower()
-    return v == "bat" or (v == "thu" and la_id_thu)
 
 
 def _chu(x: Any, n: int = 80) -> str:

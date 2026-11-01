@@ -2,15 +2,14 @@
 
 Lượt viết lời cho người rao không nhét sẵn các khối DỮ LIỆU vào prompt mọi lượt (rổ hàng, bộ nhớ dự án, giá khách đã gửi) — prompt chỉ còn MỘT
 dòng báo có dữ liệu gì, model tự gọi công cụ tra khi cần. Thân công cụ là CHÍNH các hàm khối cũ của engine (`_basket_block`,
-`_project_memory_block`, `_seller_price_block`) — không viết lại, công tắc tắt thì đường cũ chạy y nguyên. Dự án có bảng căn thì kèm luôn bộ
+`_project_memory_block`, `_seller_price_block`) — không viết lại. Dự án có bảng căn thì kèm luôn bộ
 công cụ kho dự án cũ (`_inventory_tools` / `_exec_tool`). Bóc tách ô vẫn là Haiku + cổng bằng chứng như cũ (không đổi tiền mỗi lượt).
 
 Có trần như phía mua: tối đa `MAX_VONG` lần gọi model, ngừng tra sau `HAN_GIAY` giây; hết trần mà chưa có lời thì viết lời thường kèm kết quả đã
-tra. Công tắc `AIOI_AGENT_BAN` (một nguồn `bot/bridge-zca/cai-vps.sh` dòng AGENT_BAN): "bat" = mọi khách, "thu" = chỉ ID thử, khác = tắt."""
+tra. Chạy cho mọi người bán (công tắc AGENT_BAN gỡ ở Đợt 8, SRS-5.1zzzzzzz319)."""
 from __future__ import annotations
 
 import logging
-import os
 import time
 from typing import Any
 
@@ -42,10 +41,6 @@ CONG_CU: list[dict[str, Any]] = [
 ]
 _TEN = {c["name"] for c in CONG_CU}
 
-
-def bat(user_key: str | None, la_id_thu: bool) -> bool:
-    v = os.environ.get("AIOI_AGENT_BAN", "").strip().lower()
-    return v == "bat" or (v == "thu" and la_id_thu)
 
 
 def _khoi(engine: Any, conv: Any, project: Any, ten: str) -> str:
