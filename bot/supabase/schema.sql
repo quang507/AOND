@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-01 15:45 (giờ VN)
+-- Sinh lúc: 2026-11-01 16:28 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -2370,7 +2370,7 @@ CREATE OR REPLACE FUNCTION public.che_sdt(p text)
  IMMUTABLE
  SET search_path TO 'public'
 AS $function$
-  select regexp_replace(coalesce(p, ''), '(?<![0-9])(?<![0-9][.,])(?![0-9]{1,3}(?:[.,][0-9]{3}){2,}(?![0-9]))(\(\+84\)[ .-]?0?|\+84[ .-]?0?|84[ .-]?0?|0)[ .-]?([1-9])[ .-]?([0-9])[ .-]?([0-9])(?:[ .-]?[0-9]){6,7}(?![0-9])(?![.,][0-9])', '0\2\3\4xxxxxx', 'g')
+  select regexp_replace(coalesce(p, ''), '(?<![0-9])(?<![0-9a-fA-F-][a-fA-F])(?:(?<![0-9a-fA-F]-)|(?![0-9]{10}[a-fA-F][0-9a-fA-F](?![0-9A-Za-z])|[0-9]{11}[a-fA-F](?![0-9A-Za-z])))(?![0-9]{1,3}(?:[.,][0-9]{3}){2,}(?![0-9]))(\(\+84\)[ .-]?0?|\+84[ .-]?0?|84[ .-]?0?|0)[ .-]?([1-9])[ .-]?([0-9])[ .-]?([0-9])(?:[ .-]?[0-9]){6,7}(?![0-9])(?![.,][0-9]{1,3}(?![0-9]))', '0\2\3\4xxxxxx', 'g')
 $function$
 ;
 
