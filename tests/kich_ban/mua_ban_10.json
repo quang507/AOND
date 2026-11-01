@@ -1,0 +1,176 @@
+{
+ "_mo_ta": "10 kịch bản mua + bán chạy offline (01/11/2026, chủ dự án: \"bắn 10 test đủ các hàm code có sẵn đi xem nó nhận ko, vừa mua vừa bán, xóa các câu mẫu có sẵn đi xem nó chạy ntn\"). Chạy: python scripts/cham-kich-ban.py --bo tests/kich_ban/mua_ban_10.json --khong-cau-mau. Khoá kiểm như ban.json, thêm: vai = conv.role; mua = ô nhu cầu người mua (so không dấu); so_nhu_cau = số bộ nhu cầu tối thiểu. Số điện thoại là số giả.",
+ "kich_ban": [
+  {
+   "id": "b_nha_pho_tron_luong",
+   "mo_ta": "Bán nhà phố: thu thập → bản nháp → duyệt → hỏi phí sau duyệt",
+   "cau": [
+    "Anh cần bán nhà hẻm xe hơi đường Nguyễn Thượng Hiền, Phường 5, Quận 3",
+    "ngang 4 dài 15, 1 trệt 3 lầu, 4 phòng ngủ",
+    "sổ hồng riêng hoàn công đủ, nhà đang ở",
+    "giá 11 tỷ có thương lượng",
+    "ok đăng đi em",
+    "phí bên em tính sao?"
+   ],
+   "kiem": {
+    "vai": "seller",
+    "loai": "nha_pho",
+    "o": {
+     "gia": "11",
+     "duong": "Nguyễn Thượng Hiền"
+    },
+    "nhap_truoc": 5,
+    "luot": {
+     "6": "1 ?%|0[.,]5 ?%"
+    }
+   }
+  },
+  {
+   "id": "b_cho_thue_can_ho",
+   "mo_ta": "Cho thuê căn hộ: tiền thuê theo tháng, cọc, phí cho thuê",
+   "cau": [
+    "chị cho thuê căn hộ chung cư The Sun Avenue quận 2, 2 phòng ngủ 2 WC, 75m2",
+    "giá 18 triệu một tháng, nội thất đầy đủ, cọc 2 tháng",
+    "phí cho thuê bên em tính sao em?"
+   ],
+   "kiem": {
+    "vai": "seller",
+    "cho_thue": true,
+    "o": {
+     "gia": "18"
+    },
+    "luot": {
+     "3": "0[.,]75 tháng"
+    },
+    "cam": [
+     "(?<![0-9.,])1 ?% ?(giá|giao)"
+    ]
+   }
+  },
+  {
+   "id": "b_hai_can_mot_tin",
+   "mo_ta": "Một tin nhắn hai căn → hai tin rao",
+   "cau": [
+    "anh có 2 căn cần bán: căn 1 nhà hẻm đường Âu Dương Lân quận 8 giá 4,5 tỷ, căn 2 đất nền 5x20 xã Đức Hòa Hạ Long An giá 1,6 tỷ"
+   ],
+   "kiem": {
+    "vai": "seller",
+    "so_can": 2
+   }
+  },
+  {
+   "id": "b_hoi_thue_phi_nha_nuoc",
+   "mo_ta": "Chủ nhà hỏi thuế phí khi bán → câu pháp lý, không nhầm phí môi giới",
+   "cau": [
+    "Anh bán nhà hẻm đường Phạm Văn Chiêu Gò Vấp, 4x14, 2 tầng, sổ riêng, giá 5,8 tỷ",
+    "bán nhà thì anh phải nộp những khoản thuế phí gì cho nhà nước em?"
+   ],
+   "kiem": {
+    "vai": "seller",
+    "o": {
+     "gia": "5,8"
+    },
+    "luot": {
+     "2": "thuế|lệ phí"
+    },
+    "luot_khong": {
+     "2": "(?<![0-9.,])1 ?% giá|0[.,]5 ?% giá"
+    }
+   }
+  },
+  {
+   "id": "b_xin_gap_nguoi",
+   "mo_ta": "Chủ nhà đòi gặp người thật → báo người phụ trách",
+   "cau": [
+    "chị muốn bán căn nhà mặt tiền đường Lý Thường Kiệt quận 10, giá 30 tỷ",
+    "thôi cho chị nói chuyện với người thật đi em, chat máy chị không yên tâm"
+   ],
+   "kiem": {
+    "vai": "seller",
+    "xin_nguoi": true
+   }
+  },
+  {
+   "id": "b_uy_tin_link",
+   "mo_ta": "Hỏi công ty / uy tín rồi hỏi xem tin ở đâu",
+   "cau": [
+    "bên em là công ty gì, có lừa đảo không vậy",
+    "anh có căn nhà hẻm đường Lê Quang Định Bình Thạnh giá 6 tỷ, đăng rồi xem tin ở đâu em?"
+   ],
+   "kiem": {
+    "vai": "seller",
+    "luot": {
+     "1": "ai ơi nhà đất|aioinhadat"
+    }
+   }
+  },
+  {
+   "id": "m_tim_nha_pho",
+   "mo_ta": "Người mua nhà phố: khu, ngân sách, phòng, hẻm xe hơi",
+   "cau": [
+    "Chào em, anh đang tìm mua nhà phố ở Phú Nhuận, tầm 8 tỷ",
+    "nhà khoảng 3 phòng ngủ, hẻm xe hơi nha em, mua để ở"
+   ],
+   "kiem": {
+    "vai": "buyer",
+    "mua": {
+     "khu_vuc": "Phú Nhuận",
+     "ngan_sach": "8"
+    }
+   }
+  },
+  {
+   "id": "m_thue_chung_cu",
+   "mo_ta": "Người thuê chung cư: quận, ngân sách tháng, số phòng",
+   "cau": [
+    "em muốn thuê căn hộ 2 phòng ngủ ở quận 7, tầm 15 triệu một tháng",
+    "có nội thất càng tốt, em dọn vào đầu tháng sau"
+   ],
+   "kiem": {
+    "vai": "buyer",
+    "mua": {
+     "loai_giao_dich": "thue",
+     "khu_vuc": "7",
+     "ngan_sach": "15"
+    }
+   }
+  },
+  {
+   "id": "m_hen_xem_cho_so",
+   "mo_ta": "Người mua muốn xem nhà và cho số điện thoại (số giả)",
+   "cau": [
+    "anh tìm nhà phố quận 10 tầm 12 tỷ",
+    "có căn nào em gửi anh xem, cuối tuần anh qua xem được",
+    "số anh 0900 000 201 nha em"
+   ],
+   "kiem": {
+    "vai": "buyer",
+    "mua": {
+     "khu_vuc": "10",
+     "ngan_sach": "12"
+    },
+    "cam": [
+     "0900 ?000 ?201"
+    ]
+   }
+  },
+  {
+   "id": "v_vua_ban_vua_mua",
+   "mo_ta": "Một khách vừa bán nhà Quận 8 vừa tìm mua căn hộ Quận 7",
+   "cau": [
+    "anh muốn bán căn nhà hẻm đường Dương Bá Trạc quận 8, 4x12, 2 tầng, sổ hồng riêng, giá 5 tỷ",
+    "bán xong anh muốn mua lại một căn hộ 2 phòng ngủ ở quận 7 tầm 3 tỷ, em tìm giúp anh luôn nha"
+   ],
+   "kiem": {
+    "o": {
+     "gia": "5",
+     "duong": "Dương Bá Trạc"
+    },
+    "mua": {
+     "khu_vuc": "7",
+     "ngan_sach": "3"
+    }
+   }
+  }
+ ]
+}

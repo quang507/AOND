@@ -56,6 +56,9 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
     from aioi.llm import build_provider
     from aioi.llm.base import bo_ranh_gioi
     from tests.kich_ban.cham import loi_pham
+    if os.environ.get("CHAM_KHONG_CAU_MAU"):   # --khong-cau-mau: như thể bảng câu mẫu cố định trống — chỉ trong lượt chạy thử này
+        import aioi.cau_mau as _cm
+        _cm.cau = lambda khoa, goi="anh/chị", **bien: ""
 
     p = build_provider(load_settings())
     goc = getattr(p, "_goi", None)
@@ -100,7 +103,10 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
                          "o_truoc": sorted(truoc), "viec": conv.y_luot.get("_viec"), "khoi": conv.y_luot.get("_khoi")})
         conv = eng.conversation(key)
         o = {k: v for k, v in conv.prop.fields.items() if isinstance(v, str)}
-        return {"id": kb["id"], "luot": luot, "o": o, "loai": conv.prop.loai_hinh, "cho_thue": conv.prop.is_rental,
+        nhu_cau = [x for x in [conv.buyer_lead, *conv.nhu_cau_khac] if x is not None]
+        mua = {k: v for x in nhu_cau for k, v in vars(x).items() if isinstance(v, str) and v and k not in ("lead_id", "user_key", "stage", "notes")}
+        return {"id": kb["id"], "luot": luot, "o": o, "vai": conv.role, "mua": mua, "so_nhu_cau": len(nhu_cau),
+                "loai": conv.prop.loai_hinh, "cho_thue": conv.prop.is_rental,
                 "so_can": len(conv.listings), "trang_thai": conv.active.status, "xin_nguoi": xin_nguoi, "giay": round(time.monotonic() - bat_dau, 1), **dem}
 
 
@@ -170,6 +176,7 @@ def main() -> int:
     ap.add_argument("--song-song", type=int, default=4)
     ap.add_argument("--ra", default="", help="ghi kết quả JSON")
     ap.add_argument("--so-voi", default="", help="JSON kết quả lần trước để so")
+    ap.add_argument("--khong-cau-mau", action="store_true", help="tắt câu mẫu cố định (cau_mau.cau trả rỗng) trong lượt chạy thử — xem lõi chạy ra sao")
     ap.add_argument("--giong", nargs="?", const="claude-sonnet-5-5", default="", help="thêm phép chấm giọng do model chấm (mặc định Sonnet 5.5)")
     a = ap.parse_args()
     from tests.kich_ban.cham import cham
@@ -178,6 +185,8 @@ def main() -> int:
     if a.chi:
         bo = [k for k in bo if k["id"] in set(a.chi.split(","))]
     env = cong_tac_vps(nhu=a.nhu)
+    if a.khong_cau_mau:
+        env["CHAM_KHONG_CAU_MAU"] = "1"
     a.chat = a.chat or env.get("AIOI_CHAT_MODEL", "")
     if not a.boc:   # SRS-5.1zzzzzzz316: model bóc tách như VPS — dòng MODEL_BOC trong cai-vps.sh (env đặt tay vẫn thắng)
         a.boc = os.environ.get("AIOI_EXTRACT_MODEL") or env.get("AIOI_EXTRACT_MODEL", "")
