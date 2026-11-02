@@ -635,8 +635,7 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
         # SRS-5.1zzzzzzz359 (chủ dự án 02/11: không hỏi khách phường): phường cũ chia về nhiều phường mới — hệ thống tự xác định theo địa chỉ /
         # bản đồ; bản trước (SRS-191) dặn kể các phường mới cho khách chọn.
         dong.append(f'Khách nói phường "{fields.get("phuong")}" — phường CŨ (trước sáp nhập), nay chia về nhiều phường mới ({", ".join(chia)}). '
-                    "Hệ thống tự xác định phường mới theo địa chỉ trên bản đồ (không ra thì người phụ trách điền) — KHÔNG hỏi khách phường, "
-                    "KHÔNG kể các phường này cho khách chọn, KHÔNG tự chọn một phường.")
+                    "Hệ thống tự xác định phường mới theo địa chỉ trên bản đồ (không ra thì người phụ trách điền) — KHÔNG tự chọn một phường.")
     mot = getattr(tra, "phuong_cu_moi", None)
     mot = mot(fields.get("phuong"), fields.get("quan")) if mot and len(chia) < 2 else None
     if mot:
@@ -644,7 +643,7 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
         # em"): cột `ward` ghi đúng Phường Chánh Hưng nhưng model chỉ thấy ô "Phường 2" nên nói / rao theo tên cũ.
         dong.append(f'Khách nói phường "{fields.get("phuong")}" — tên TRƯỚC sáp nhập; từ 01/07/2025 nay là {mot} (hệ thống tra, chỉ về MỘT phường '
                     f'nên chắc chắn). Khi nói với khách và trong bản tin dùng tên MỚI "{mot}" (được kèm "{fields.get("phuong")} cũ" trong ngoặc); báo khách '
-                    "đúng MỘT lần, câu ngắn, ở lượt đầu nhắc tới phường — lượt sau không nhắc lại; KHÔNG hỏi lại phường.")
+                    "đúng MỘT lần, câu ngắn, ở lượt đầu nhắc tới phường — lượt sau không nhắc lại.")
     # SRS-5.1zzzzzzz366 (chủ dự án 02/11: "không hỏi lại tên đường nữa, tự áp tên vào"): bỏ hai dòng HỎI xác nhận tên đường (SRS-61
     # gần một tên kho, SRS-271 khớp nhiều tên) — engine tự áp tên kho trong khu khách nói, không ra thì giữ chữ khách.
     # SRS-5.1zzzzzzz359: bỏ hai dòng "Kho hẻm / Kho đường" đưa danh sách phường cho khách chọn (SRS-115 / 228) — phường do hệ

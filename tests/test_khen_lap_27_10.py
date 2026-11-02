@@ -64,7 +64,7 @@ def test_luot_bao_admin_thoi_hoi_phuong_ngay():
         assert "can_nguoi_that" not in c.y_luot and web["phuong_bao_admin"]
     from aioi.prompts import khoi_trang_thai_web
     k = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "phuong_bao_admin": True})
-    assert "KHÔNG hỏi khách phường" in k[0] and "người phụ trách đã được báo" in k[0]
+    assert "hỏi phường" not in k[0].lower() and "người phụ trách đã được báo" in k[0]  # SRS-367: dòng cấm rải rác đã gỡ — bất biến chặn ở đầu ra (_soat_hoi_dung_o)
 
 
 # ---------- Mục 3: câu ghi nhận ở giữa lời cũng nhận ra; mục 4: "em gửi ảnh" ngược vai ----------

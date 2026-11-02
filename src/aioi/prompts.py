@@ -26,7 +26,6 @@ from .schema import (
     O_COC,
     O_NOI_BO,
     O_SAU_DANG,
-    O_HE_THONG_TRA,
     Property,
     PropertyGroup,
     BuyerLead,
@@ -145,14 +144,6 @@ FIELD_LABELS: dict[str, str] = {
     "thang_may": "có cần nhà có thang máy không",
     "nguoi_quyet_dinh": "ngoài anh/chị còn ai cùng quyết định mua",
 }
-
-# SRS-5.1zzzzzzz367 (chấm 02/11: hỏi phường còn 3/201 lượt — "Căn nằm ở đường nào, phường nào…"): ô HỆ THỐNG tự xác định
-# (`schema.O_HE_THONG_TRA`) không bao giờ là câu hỏi, kể cả ghép vào câu hỏi địa chỉ. MỘT nguồn: luật cố định của phiếu lượt thu thập
-# (`build_phieu_luot`) và lưới soát lời bot (`engine._soat_hoi_o_he_thong`) cùng đọc hai tên dưới đây.
-NHAN_O_HE_THONG = " / ".join(FIELD_LABELS[o].split(" (")[0] for o in sorted(O_HE_THONG_TRA))
-TU_O_HE_THONG = tuple(t.strip() for t in NHAN_O_HE_THONG.split("/") if t.strip())
-LUAT_O_HE_THONG = (f"- {NHAN_O_HE_THONG.capitalize()} do hệ thống tự xác định theo địa chỉ trên bản đồ: KHÔNG hỏi khách {NHAN_O_HE_THONG}, "
-                   "kể cả gộp vào câu hỏi địa chỉ hay câu hỏi khác.")
 
 # Lời hỏi tự nhiên như môi giới thực tế (tránh đọc tên slug khô cứng)
 NATURAL_QUESTIONS: dict[str, str] = {
@@ -571,7 +562,6 @@ LUẬT CỐ ĐỊNH:
 - Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ câu xác nhận mà {NHAN_VIEC_LUOT} giao.
 - Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết, không nhận xét giá thị trường, không hứa bán được.
 - Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
-{LUAT_O_HE_THONG}
 {TIN_HE_THONG}
 
 {SLANG_NOTES}
@@ -1109,11 +1099,10 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
         nhan = ", ".join(FIELD_LABELS[o].split(" (")[0] for o in thieu)
         hoi = FIELD_LABELS[thieu[0]]
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu {nhan}. {cam}"
-        viec = f"nói chỉ cần thêm {nhan} là tin lên web, rồi hỏi ĐÚNG 1 câu về {hoi}. KHÔNG hỏi / nhắc phường (bên em tự xác định)."
+        viec = f"nói chỉ cần thêm {nhan} là tin lên web, rồi hỏi ĐÚNG 1 câu về {hoi}."
     elif thieu_phuong:
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): bên em đang hoàn tất thông tin vị trí, người phụ trách đã được báo. {cam}"
-        viec = ("báo ngắn bên em đang hoàn tất để đưa tin lên; KHÔNG hỏi khách phường / xã / số nhà / gần đâu, KHÔNG nói thiếu phường, KHÔNG kể "
-                "tên phường nào; còn lại đáp điều khách vừa nói như thường.")
+        viec = "báo ngắn bên em đang hoàn tất để đưa tin lên; còn lại đáp điều khách vừa nói như thường."
     elif web.get("chua_ban_nhap"):
         ly_do = f"TIN CHƯA LÊN WEB: chưa đủ thông tin để soạn tin. {cam}"
         viec = "nói em cần thêm vài thông tin để soạn tin đăng, rồi hỏi tiếp đúng câu đang cần hỏi."
@@ -2512,6 +2501,27 @@ thì mảng rỗng."""
 
 # SRS-5.1zzzzzzz353: cùng lượt AI đó cho LỜI CHAT (bản trước: lưới từ khoá `_BINH_LUAN_GIA`, đổi chữ là lọt). Lời chat cấm cả khẳng định thị trường
 # (SRS-5.1zzzzzzz132: dễ bán, đắt khách…) — khác bản tin, nơi ý chung về khu là quyết định chủ dự án "kệ" (§6.3).
+# SRS-5.1zzzzzzz367 (chủ dự án 02/11: "phải sửa từ gốc chứ"): đầu ra model không bị soát theo ô hệ thống chọn — AI đọc lời bot SẮP GỬI, khai
+# các ô mà lời đó hỏi (cùng khoá ô tin như `bot_vua_hoi`) kèm cụm nguyên văn; code kiểm cụm có trong lời rồi so với ô được phép
+# (`engine._soat_hoi_dung_o`). Không dặn model "đừng hỏi ô X" — chặn ở đầu ra, một chỗ.
+SOAT_O_HOI_SYSTEM = """Dưới đây là lời trợ lý môi giới SẮP GỬI người bán / cho thuê nhà, kèm tin người bán vừa nhắn và DANH SÁCH Ô tin của căn.
+Liệt kê MỌI chỗ lời trợ lý HỎI / XIN / NHỜ người bán cung cấp hay xác nhận một thông tin của căn — có dấu "?" hay không đều tính
+("cho em xin giá nhé", "anh gửi em số nhà nha").
+Mỗi chỗ một mục: o = khoá ô đúng nhất trong DANH SÁCH Ô; trich = cụm NGUYÊN VĂN ngắn trong lời trợ lý chứa chỗ hỏi đó (chép đúng chữ).
+- Hỏi số nhà / tên đường khi người bán CHƯA nói đường → dia_chi. Hỏi lại / xác nhận tên đường người bán ĐÃ nói → duong. Hỏi phường / xã → phuong.
+- Một câu hỏi gộp nhiều ô (vd "đường nào, phường nào") → mỗi ô một mục, cùng trich được.
+- khach_vua_hoi = true chỉ khi chỗ hỏi đó là để trả lời / làm rõ điều người bán VỪA hỏi trợ lý trong tin vừa nhắn; khi đó trich_khach = cụm
+  nguyên văn trong tin người bán. Còn lại false, trich_khach rỗng.
+- KHÔNG tính: câu hỏi về bản tin (xem, duyệt, đăng luôn), phí, lịch xem nhà, chấm sao, câu chào; chữ trong phần bản tin rao (sau 📋).
+- Không có chỗ hỏi nào → cau_hoi = []."""
+
+
+def soat_o_hoi_schema() -> dict:
+    return {"type": "object", "properties": {"cau_hoi": {"type": "array", "items": {"type": "object", "properties": {
+        "o": {"type": "string"}, "trich": {"type": "string"}, "khach_vua_hoi": {"type": "boolean"}, "trich_khach": {"type": "string"}},
+        "required": ["o", "trich"]}}}, "required": ["cau_hoi"]}
+
+
 SOAT_BINH_GIA_CHAT_SYSTEM = """Dưới đây là một tin nhắn trợ lý môi giới vừa viết cho khách. Tìm các câu / cụm trợ lý tự NHẬN XÉT MỨC GIÁ hay THỊ TRƯỜNG:
 khen hay chê giá (rẻ, hợp lý, mềm, dễ chịu, đáng tiền, hời, vừa tầm, cao / thấp so với khu), hứa người mua chắc được bớt, hoặc đoán thị trường
 (dễ bán, đắt khách, thanh khoản tốt, nhiều người tìm / hỏi). KHÔNG tính: nhắc lại con số khách đưa ("em ghi giá 9 tỷ"), câu hỏi, giá rao của

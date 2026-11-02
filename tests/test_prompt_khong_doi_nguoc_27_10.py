@@ -36,7 +36,7 @@ def test_phuong_cu_bi_chia_thi_o_hoi_luot_do_la_phuong_mot_lan():
     eng.handle("pc1", "nhà ở Hoàng Hoa Thám phường 6 Bình Thạnh")
     he = spy.systems[-1]
     assert 'hỏi đúng MỘT ý: "phường' not in he and "chia về nhiều phường mới (Phường Bình Lợi Trung, Phường Gia Định)" in he
-    assert "KHÔNG hỏi khách phường" in he and "_phuong_chia_da_hoi" not in eng.conversation("pc1").prop.fields
+    assert "hỏi phường" not in he.lower() and "_phuong_chia_da_hoi" not in eng.conversation("pc1").prop.fields
 
 
 def test_prompt_khong_con_dong_doi_nguoc_va_moi_phu_dinh():

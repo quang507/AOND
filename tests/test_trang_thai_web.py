@@ -28,7 +28,7 @@ def test_chi_noi_da_dang_khi_tin_dang_hien_thi():
 def test_thieu_phuong_thi_hoi_phuong_moi_khong_hoi_hem():
     # SRS-5.1zzzzzzz359: tin chờ phường → không hỏi khách phường (bản cũ: "phường MỚI sau sáp nhập").
     s = build_fee_followup_system("Hằng", _nha(), web={"len_web": False, "thieu": ["phuong"]})
-    assert DA_DANG not in s and "phường MỚI sau sáp nhập" not in s and "KHÔNG hỏi khách phường" in s
+    assert DA_DANG not in s and "phường MỚI sau sáp nhập" not in s and "hỏi phường" not in s.lower()
     assert "phí môi giới của tụi em chưa" not in s  # SRS-5.1zzzzzzz81: tin chưa lên web → không thêm câu phí
     s = build_fee_followup_system("Hằng", _nha(), web={"len_web": False, "thieu": ["gia", "dien_tich"]})
     assert "còn thiếu giá, diện tích" in s and "hỏi ĐÚNG 1 câu về giá" in s
@@ -121,6 +121,6 @@ def test_da_bao_admin_tra_phuong_thi_khong_ke_phuong_khi_con_thieu_o_khac():
     for web in ({"len_web": False, "thieu": ["dien_tich_dat", "phuong"], "phuong_bao_admin": True},
                 {"len_web": False, "thieu": ["dien_tich_nha", "dien_tich_dat", "phuong"]}):
         duyet, _ = khoi_trang_thai_web(web)
-        assert "phường" not in duyet.split("còn thiếu")[1].split(".")[0].lower() and "KHÔNG hỏi / nhắc phường" in duyet
+        assert "phường" not in duyet.split("còn thiếu")[1].split(".")[0].lower() and "phường" not in duyet.lower()
 
 

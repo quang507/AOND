@@ -60,7 +60,7 @@ def _tra():
 def test_khoi_dia_danh_bao_phuong_cu_bi_chia_ngay_khi_khach_noi_phuong_so():
     # SRS-191 (kể hai phường cho khách chọn) → SRS-5.1zzzzzzz359: dữ kiện phường cũ đã chia vẫn vào prompt, nhưng KHÔNG hỏi / kể cho khách chọn.
     k = khoi_dia_danh(_tra(), {"phuong": "phường 6", "quan": "Bình Thạnh", "duong": "Hoàng Hoa Thám"}, None)
-    assert "Phường Bình Lợi Trung" in k and "Phường Gia Định" in k and "KHÔNG hỏi khách phường" in k and "cho khách chọn" in k
+    assert "Phường Bình Lợi Trung" in k and "Phường Gia Định" in k and "hỏi phường" not in k.lower() and "cho khách chọn" not in k  # SRS-367: dòng cấm rải rác đã gỡ — bất biến chặn ở đầu ra (_soat_hoi_dung_o)
     assert "nhà mình ở phường nào" not in k
     assert "phường CŨ" not in khoi_dia_danh(_tra(), {"phuong": "Gia Định", "quan": "Bình Thạnh"}, None)
     assert "phường CŨ" not in khoi_dia_danh(_tra(), {"phuong": "phường 6"}, None)

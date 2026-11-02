@@ -218,7 +218,7 @@ def test_tin_cho_phuong_ma_ten_duong_nhap_nhang_thi_hoi_duong_truoc():
     from aioi.prompts import khoi_trang_thai_web
     uv = ["Mã Lò (Quận Bình Tân)", "Mã Lộ (Quận 1)"]
     k = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "goi_y_phuong": [], "phuong_da_hoi": True, "duong_nhap_nhang": uv})[0]
-    assert "Mã Lò" not in k and "KHÔNG hỏi khách phường" in k
+    assert "Mã Lò" not in k and "hỏi phường" not in k.lower()  # SRS-367: dòng cấm rải rác đã gỡ — bất biến chặn ở đầu ra (_soat_hoi_dung_o)
 
 
 def test_khach_noi_quan_thi_chon_duong_cung_quan():
