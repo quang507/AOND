@@ -2,6 +2,14 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz311 · Kế hoạch bước 4: lượt dễ của người bán viết bằng model rẻ; luật soát chưa gỡ (30/10/2026)
+- `MODEL_LUOT_DE` (`cai-vps.sh`): lượt thu thập bằng phiếu lượt, không tra dữ liệu, không việc khác (`y_luot` chỉ khoá `_`, không hỏi về) → model rẻ, cả lần soát
+  gọi lại; lượt khác giữ `MODEL_CHAT`. Đo 408 phép: Sonnet mọi lượt 402 / 400, giọng 2,65 / 2,62, $5,0 / $5,3 · Haiku lượt dễ 404 / 402,
+  giọng 2,38 / 2,40, $3,4 / $3,4 (−35 % tiền, giọng tụt) → `tat` (chủ dự án 30/10 chọn Sonnet vì chất lượng); bật = đổi một dòng.
+- Luật soát: 280 cuộc chấm, lưới kích nhiều nhất "gọi khách là mình" (40 lần, bắt lỗi thật); lưới không kích lần nào đều là quyết định chủ dự án có test
+  (kho hẻm SRS-115, HOA SRS-241, câu ghi nhận SRS-229, "anh ơi" lặp) và ở chế độ gọn chỉ ghi log — chưa gỡ, gỡ là đảo quyết định đã chốt.
+- Kiểm: `tests/test_model_luot_de_311.py` (đỏ khi gỡ chỗ đặt model).
+
 ### SRS-5.1zzzzzzz310 · Kế hoạch bước 3: agent bóc tách bằng công cụ ghi (giữ thử); cổng đổi trạng thái rổ nhiều căn cho mọi khách (30/10/2026)
 Ca gốc bộ chấm `hai_can_da_ban`: rổ hai căn, "căn đó anh bán được rồi" → form đánh dấu căn đang nói là đã bán (lớp lỗi: model đoán căn, code không kiểm).
 - `agent_boc.py`: 5 công cụ (`ghi_o`, `them_can`, `doi_trang_thai`, `bo_can`, `ghi_y_khach`, đầu vào cắt từ schema form), code kiểm từng lần gọi. Đo 408 phép:
