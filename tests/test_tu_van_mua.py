@@ -14,20 +14,13 @@ def _lead(**f) -> BuyerLead:
 
 
 def _hoi_het(b: BuyerLead) -> list[str]:
-    ra = []
-    for _ in range(12):
-        o = b.next_question_field()
-        if o is None or o not in O_TU_VAN_MUA:
-            ra.append(o)
-            break
-        ra.append(o)
-        b.fields["_da_hoi"] = ",".join(sorted(set((b.fields.get("_da_hoi") or "").split(",")) - {""} | {o}))
-    return ra
+    """SRS-5.1zzzzzzz335: không còn cây hỏi từng ô — danh sách ý còn thiếu (`y_con_thieu`) cho câu hỏi mở; mỗi ý ghi `_da_hoi` thì rơi khỏi danh sách."""
+    return b.y_con_thieu()
 
 
 def test_thu_tu_bay_cau_moi_cau_mot_lan_roi_toi_chot():
     assert _hoi_het(_lead()) == ["moi_truong_song", "thanh_vien", "noi_lam_viec", "dien_tich_mong_muon", "thang_may",
-                                 "nguoi_quyet_dinh", "vay_ngan_hang", "tien_do_mua"]
+                                 "nguoi_quyet_dinh", "vay_ngan_hang", "tien_do_mua"]   # xe hơi khách đã nói → không có trong danh sách
 
 
 def test_can_ho_khong_hoi_thang_may_va_bo_cau_da_biet():
@@ -58,9 +51,12 @@ def test_engine_danh_dau_da_hoi_va_ghi_nhu_cau_xuong_buyers():
     ke = {**KHACH_MUA, "buyer_lead": {**KHACH_MUA["buyer_lead"], "muc_dich": "để ở", "yeu_cau_xe_hoi": "hẻm xe hơi",
                                      "so_phong_ngu": "3PN"}}
     eng, ai = _engine(kho, ke)
+    ai.chat = lambda system, messages, max_tokens=256: ai.system.append(system) or (
+        "Em có căn này hợp nè. Anh có cần ưu tiên khu yên tĩnh hay gần chỗ làm không?")   # câu hỏi mở bot thật sự hỏi
     eng.handle("mua-7", "Em tìm nhà phố quận 5 tầm 5 tỷ để ở, hẻm xe hơi, 3 phòng ngủ")
     lead = eng.conversation("mua-7").buyer_lead
-    assert "moi_truong_song" in (lead.fields.get("_da_hoi") or "")
+    da = lead.fields.get("_da_hoi") or ""
+    assert "moi_truong_song" in da and "noi_lam_viec" in da and "thanh_vien" not in da   # SRS-335: ghi đúng ý có trong câu hỏi của bot
     ke["buyer_lead"] = {**ke["buyer_lead"], "thanh_vien": "vợ chồng với ông bà"}
     eng.handle("mua-7", "nhà có vợ chồng em với ông bà")
     ghi = [d for d in kho.ghi("PATCH", "buyers") if isinstance(d, dict) and d.get("preferences")]

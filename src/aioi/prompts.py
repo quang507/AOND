@@ -531,6 +531,23 @@ DỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):
 {NHAN_VIEC_LUOT}: {viec}"""
 
 
+# SRS-5.1zzzzzzz335: tên ngắn của các ý nhu cầu cho câu hỏi MỞ phía mua — model gợi 2–3 ý làm ví dụ; engine đối chiếu tên này với lời bot
+# để biết ý nào đã hỏi (`_da_hoi`). Một nguồn với `BuyerLead.y_con_thieu`.
+Y_MO_MUA: dict[str, str] = {
+    "loai_bds": "chỉ tìm nhà phố hay xem cả căn hộ / đất", "so_phong_ngu": "số phòng ngủ", "nhan_nha_khi_nao": "khi nào nhận nhà", "muc_dich": "mua để ở hay đầu tư",
+    "vay_ngan_hang": "cách thanh toán", "moi_truong_song": "khu yên tĩnh hay gần chợ / trường", "thanh_vien": "nhà mấy người ở",
+    "noi_lam_viec": "gần chỗ làm / trường của con", "dien_tich_mong_muon": "diện tích", "thang_may": "thang máy",
+    "tien_do_mua": "khi nào muốn đi xem", "yeu_cau_xe_hoi": "chỗ đậu xe",
+}
+# Dấu nhận ý trong CÂU HỎI của lời bot (chỉ câu có "?") — engine ghi `_da_hoi` những ý bot thật sự đã hỏi (SRS-5.1zzzzzzz335).
+Y_MO_DAU: dict[str, tuple[str, ...]] = {
+    "loai_bds": ("căn hộ", "chung cư", "đất nền", "loại nhà", "loại hình"), "so_phong_ngu": ("phòng ngủ",), "nhan_nha_khi_nao": ("nhận nhà",), "muc_dich": ("để ở", "đầu tư"), "vay_ngan_hang": ("thanh toán", "vay"),
+    "moi_truong_song": ("yên tĩnh", "chợ", "trường", "công viên"), "thanh_vien": ("mấy người", "thành viên", "ai ở"),
+    "noi_lam_viec": ("chỗ làm", "đi làm", "con đi học", "trường của con"), "dien_tich_mong_muon": ("diện tích",), "thang_may": ("thang máy",),
+    "tien_do_mua": ("đi xem", "khi nào"), "yeu_cau_xe_hoi": ("đậu xe", "xe hơi", "ô tô"),
+}
+
+
 def build_buyer_chat_system(
     assistant_name: str,
     lead: BuyerLead,
@@ -538,13 +555,21 @@ def build_buyer_chat_system(
 ) -> str:
     """System prompt dành riêng cho nhánh Người Mua / Người Thuê."""
     # SRS-5.1zzzzzzz116: bỏ "xin số điện thoại" — người mua không phải để lại số (bất biến §1, CLAUDE.md); gợi ý câu theo môi giới.
+    from .schema import CAU_MO_MUA
+    y_thieu = [Y_MO_MUA[o] for o in lead.y_con_thieu() if o in Y_MO_MUA] if next_field == CAU_MO_MUA else []
     ask_line = (
+        # SRS-5.1zzzzzzz335 (ca thật 02/11): đủ ba ô cốt lõi thì KHÔNG theo cây cố định — một câu mở, tuỳ chọn, ý do AI chọn trong danh sách.
+        "Cuối tin (sau phần căn nếu có), hỏi MỘT câu mở, TUỲ CHỌN, mời khách thêm tiêu chí nếu muốn — kiểu \"anh có cần ưu tiên thêm gì không, "
+        "ví dụ …\": gợi 2–3 ý làm ví dụ, CHỌN trong danh sách này, ý hợp nhất với lời khách nêu trước: " + "; ".join(y_thieu) + ". "
+        "Ý khách đã nói thì bỏ. \"chỗ đậu xe\" chỉ nêu khi khách đã nhắc xe / đậu xe; KHÔNG câu nào ngầm cho rằng khách có xe hơi."
+        if next_field == CAU_MO_MUA else
+
         f'Thông tin cần khai thác tiếp theo: "{FIELD_LABELS.get(next_field, next_field)}" ({NATURAL_QUESTIONS.get(next_field, "")}). '
         "Hỏi đúng 1 câu này, NGẮN (khoảng 15 chữ, một ý, không giải thích vì sao hỏi), tự nhiên, thân tình — đặt ở CUỐI tin, sau phần "
         "giới thiệu căn nếu có. Khách đã kể ý này rồi (trong hội thoại) thì không hỏi lại, hỏi tiếp chuyện khác."
         if next_field
-        else "Em đã hỏi đủ về nhu cầu của khách — KHÔNG hỏi thêm câu nào về nhu cầu nữa (SRS-5.1zzzzzzz154). Cảm ơn khách, giới thiệu MỘT căn "
-             "phù hợp nhất trong danh sách (nếu có), rồi hỏi khách có muốn đi xem căn này không và hẹn lịch đi xem thực tế ngay trên Zalo — KHÔNG xin "
+        else "Em đã hỏi đủ về nhu cầu của khách — KHÔNG hỏi thêm câu nào về nhu cầu nữa (SRS-5.1zzzzzzz154). Giới thiệu các căn phù hợp "
+             "trong danh sách (2–3 căn nếu có), rồi hỏi khách có muốn đi xem căn này không và hẹn lịch đi xem thực tế ngay trên Zalo — KHÔNG xin "
              "số điện thoại, trừ khi phần \"EM VỪA GHI LƯỢT NÀY\" bảo xin lúc khách chốt lịch xem."
     )
     return f"""Bạn là "{assistant_name}", trợ lý tư vấn tìm mua/thuê bất động sản của AI Ơi Nhà Đất ({SITE_HOST}).
@@ -553,11 +578,8 @@ BỐI CẢNH TƯ VẤN KHÁCH MUA / THUÊ:
 - Khách đang tìm kiếm BĐS qua Zalo. Mục tiêu của bạn: hiểu rõ chân dung & tiêu chí tìm kiếm của khách, lưu trữ nhu cầu để khớp căn chính xác nhất từ rổ hàng.
 - NGUYÊN TẮC HỎI NHỎ GIỌT (1 câu hỏi / lượt):
   • Tầng 1 (Cốt lõi): Khu vực / Quận mong muốn, Tầm tài chính / Ngân sách dự kiến, Loại BĐS tìm kiếm.
-  • Tầng 2 (Làm rõ theo loại BĐS):
-    - Khách tìm Nhà đất: hỏi mua để làm gì (ở, cho thuê, kinh doanh…), đường trước nhà cần rộng cỡ nào, số phòng ngủ, hướng phong thủy.
-    - Khách tìm Chung cư: hỏi số phòng ngủ (1PN/2PN/3PN), thời gian nhận nhà (ở liền hay chờ xây), có dự án ưa thích chưa.
-    - Khách tìm Dự án / Đất: hỏi mục đích đầu tư ngắn/dài hạn, tỷ lệ vốn tự có và dự định thanh toán ra sao.
-  • Tầng 3 (Chốt hành động): Hỏi thời gian dự kiến mua/xem nhà, gợi ý quỹ căn phù hợp và hẹn lịch dẫn đi xem thực tế.
+  • Đủ ba ý cốt lõi thì gợi căn trước; câu hỏi thêm (nếu có) là câu MỞ, tuỳ chọn, theo dòng dặn cuối prompt — không theo một danh sách cố định.
+  • Chốt hành động: gợi ý căn phù hợp và hẹn lịch dẫn đi xem thực tế.
 
 QUY TẮC PHẢN HỒI:
 - Trả lời ngắn gọn, ấm áp, như môi giới nhắn Zalo (em KHÔNG có số liệu thị trường — không nhận xét giá / thanh khoản). Xưng hô theo khối QUY TẮC XƯNG HÔ ở cuối.

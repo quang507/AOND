@@ -126,7 +126,8 @@ from .prompts import (
 )
 from .imaging import downscale_image
 from .revenue import SellerRole
-from .schema import O_COC, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
+from .schema import CAU_MO_MUA, O_COC, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
+from .prompts import Y_MO_DAU
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
@@ -2847,6 +2848,14 @@ class Engine:
             if not reply:
                 raise LoiTraLoi("lời gửi khách rỗng")
             reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply), can_mua=can)
+            if next_field == CAU_MO_MUA:
+                # SRS-5.1zzzzzzz335: câu hỏi mở — ý nào trong danh sách `y_con_thieu` thật sự có trong CÂU HỎI của lời bot thì ghi `_da_hoi` (lượt
+                # sau không gợi lại); ý ngoài danh sách không ghi gì. Chỉ đọc lời bot, không đọc lời khách.
+                hoi = " ".join(c for c in re.split(r"(?<=[.!?])\s+", bo_dau(reply).lower()) if "?" in c)
+                chon = [o for o in conv.buyer_lead.y_con_thieu() if any(bo_dau(d) in hoi for d in Y_MO_DAU.get(o, ()))]
+                if chon:
+                    da = [x for x in (conv.buyer_lead.fields.get("_da_hoi") or "").split(",") if x]
+                    conv.buyer_lead.fields["_da_hoi"] = ",".join(sorted(set(da) | set(chon)))
             if xin_sao:
                 reply = self._gan_xin_sao(conv, reply)
             conv.history.append(Turn("assistant", reply, now))

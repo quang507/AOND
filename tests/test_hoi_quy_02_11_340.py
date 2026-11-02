@@ -1,8 +1,7 @@
 """Hai ca hồi quy từ lỗi production 02/11/2026 (SRS-5.1zzzzzzz340) — do phiên KIỂM ĐỘC LẬP dựng, không sửa lõi.
 
 CA 1 nay XANH: bản sửa SRS-331 (PR #257) đã gộp vào main, nên hai ca của lỗi 1 bỏ `xfail` và thành ca hồi quy thường — ĐỎ lại nếu ai gỡ
-nhánh `so_vai`. CA 2 còn là ca chờ, `xfail(strict=True)`: bản sửa gộp xong thì XOÁ dòng `xfail` đó (strict = XPASS cũng đỏ, đúng ý: dấu
-nhắc gỡ marker), KHÔNG xoá ca kiểm.
+nhánh `so_vai`. CA 2 nay cũng XANH: bản sửa SRS-335 (PR #260) gộp cùng nên `xfail` đã gỡ — ca hồi quy thường, KHÔNG xoá ca kiểm.
 
 Lớp lỗi 1 — vai khách nhớ theo người, không theo SỐ Zalo khách đang nhắn: khách hỏi mua ở số tư vấn rồi nhắn số ký gửi thì
 `conv.role` vẫn là "buyer", lượt ở số ký gửi vẫn chạy prompt tư vấn người mua. Chỗ khác cùng lớp: `so_nhan` chỉ được đọc ở lượt ĐẦU
@@ -146,7 +145,6 @@ def test_ca_2_ro_hang_ba_can_vao_prompt_viet_loi():
     assert all(c["street"] in he for c in Q8)
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 2), chưa có bản sửa. Sửa xong thì XOÁ dòng này")
 def test_ca_2_du_tieu_chi_va_co_ro_hang_thi_khong_hoi_duong_truoc_nha():
     """Đủ khu vực + ngân sách + loại và rổ có căn → không được dặn hỏi "đường trước nhà rộng cỡ nào / hẻm xe hơi".
 
@@ -157,8 +155,6 @@ def test_ca_2_du_tieu_chi_va_co_ro_hang_thi_khong_hoi_duong_truoc_nha():
     assert "yêu cầu hẻm xe hơi" not in _cau_hoi_luot(ai.system[-1])
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — quyết định điều phối 02/11 (SRS-340 ca 2): rổ có ≥ 2 căn hợp thì đưa 2–3 căn. "
-                                       "Sửa xong thì XOÁ dòng này")
 def test_ca_2_ro_hang_tu_hai_can_tro_len_thi_duoc_dua_nhieu_can():
     """Quyết định 02/11 (chủ dự án chê bản một căn "chat chán quá"): rổ có ≥ 2 căn hợp thì lượt đó đưa 2–3 căn.
 
@@ -171,7 +167,6 @@ def test_ca_2_ro_hang_tu_hai_can_tro_len_thi_duoc_dua_nhieu_can():
     assert "khách đòi thêm mới đưa căn kế" not in he
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 2), chưa có bản sửa. Sửa xong thì XOÁ dòng này")
 def test_ca_2_cach_noi_moi_khong_hoi_duong_truoc_nha():
     """Cách nói mới, cùng ý: "nhà cấp 4 Q8 ngân sách 6 tỷ, chỗ nào ít ồn" — cũng không được hỏi đường trước nhà."""
     ai = _AiGia({"operations": [], "user_intent": "buy",
