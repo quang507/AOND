@@ -831,6 +831,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz361 · `tim_nha` ưu tiên uy tín người rao: cùng mức khớp thì hạng cao xếp trước (02/11/2026)
+Quyết định chủ dự án 02/11: "quyền lợi theo hạng hạng cao thì cung cấp thông tin uy tín hơn" (khuôn anh Luận `luan8560/AOND` gamification.py: Đồng "xếp cuối luồng ưu tiên", điểm người rao = "Điểm Uy tín"). Trước đây cùng mức khớp thì xếp theo `updated_at` — hạng (OPEN-26) không đi vào gợi ý căn.
+(1) Lớp lỗi: hạng người rao chỉ dùng cho lời / quyền lợi phía bán, đường gợi ý căn phía mua không đọc. (2) Cùng lớp: `bao_can_moi` (báo căn mới khớp) và web không xếp theo hạng — web cố ý (hạng ẩn khỏi web); `bao_can_moi` gửi từng căn khớp, không chọn giữa các căn nên không cần. Sửa: migration `20261103a_tim_nha_uu_tien_uy_tin` — `hang_so_nguoi_ban()` (vàng 3 · bạc 2 · đồng 1 từ `hang_theo_diem(diem_nguoi_ban)`), `tim_nha` xếp `mức khớp ↓, hạng ↓, updated_at ↓`, chỉ tính hạng cho người rao của các căn còn tranh suất cuối; hạng không ra kết quả. CTE `materialized` — không có thì planner gọi hạng theo từng dòng: 9,7 s / lượt "Quận 5" (bản cũ 9 ms) → 79 ms.
+(3) Kiểm: `bot/tests/tim-nha-uy-tin.sql` (tự cuộn lại, thay tạm hạng): bản cũ 3/5 HONG (căn người Đồng cập nhật sau đứng trước), kèm migration 5/5 OK (gồm "căn khớp hơn của người Đồng vẫn đứng đầu"); hàm thật với `service_role`: điểm 85 → 3, 76–78 → 2. Migration CHƯA áp — chờ chủ dự án duyệt.
+
 ### SRS-5.1zzzzzzz358 · Dữ kiện "nhắn khách khi có căn mới (trong 8–20 giờ)" đọc thành "8–20 tiếng nữa" (02/11/2026)
 Ca gốc: khách ảo #274 — hai persona đều nhận "hệ thống sẽ nhắn anh trong khoảng 8–20 giờ tới" và ghi là không hiểu; ý thật là khung giờ 8h–20h.
 (1) Lớp lỗi: dữ kiện đưa model mơ hồ ĐƠN VỊ (thời điểm hay thời lượng) — `mua.khoi_can_cho_khach` ghi "(trong 8–20 giờ)". Sửa: "(chỉ gửi trong khung giờ 8h–20h hằng ngày)".

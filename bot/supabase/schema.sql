@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-02 14:17 (giờ VN)
+-- Sinh lúc: 2026-11-02 23:57 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -3195,6 +3195,21 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.hang_so_nguoi_ban(p_seller_id uuid)
+ RETURNS integer
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  -- Hạng uy tín người rao thành số để xếp: vàng 3 · bạc 2 · đồng 1. Không có người rao (tin admin đăng) = 1 như Đồng.
+  select case public.hang_theo_diem((public.diem_nguoi_ban(p_seller_id) ->> 'diem')::int)
+           when 'vang' then 3 when 'bac' then 2 else 1 end
+   where p_seller_id is not null
+  union all select 1 where p_seller_id is null
+  limit 1
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.hang_theo_diem(p_diem integer)
  RETURNS text
  LANGUAGE sql
@@ -5573,6 +5588,19 @@ AS $function$
        and l.deal::text = p_deal
        and (p_loai is null or l.property_type::text = p_loai)
        and (p_gia_max is null or l.price_vnd <= p_gia_max)
+  ),
+  cham as materialized (
+    select c.*, (c.d_khu + c.d_dt + c.d_pn + c.d_tang + c.d_xe + c.d_vec + c.d_ti)::numeric as d_tong from chon c
+  ),
+  -- SRS-5.1zzzzzzz361: mức khớp của suất cuối cùng — chỉ các căn có mức khớp >= mốc này còn tranh chỗ, nên chỉ tính hạng người rao
+  -- cho họ (diem_nguoi_ban chấm mọi tin của người rao — tính cho cả kho thì chậm).
+  moc as materialized (
+    select d_tong from cham order by d_tong desc, updated_at desc
+    offset greatest(1, least(coalesce(p_limit, 3), 10)) - 1 limit 1
+  ),
+  hang as materialized (
+    select t.seller_id, public.hang_so_nguoi_ban(t.seller_id) as hang_so
+      from (select distinct seller_id from cham where d_tong >= coalesce((select d_tong from moc), -1)) t
   )
   select jsonb_build_object(
            'id', c.id, 'code', c.code, 'property_type', c.property_type, 'deal', c.deal, 'street', c.street, 'ward', c.ward,
@@ -5592,8 +5620,11 @@ AS $function$
              (select string_agg('gần ' || (t->>'ten') || ' ~' || (t->>'m') || ' m', ', ' order by (t->>'m')::numeric)
                 from jsonb_array_elements(c.tien_ich_gan) t
                where t->>'loai' = any(p_tien_ich) and coalesce((t->>'m')::numeric, 99999) <= 1000) end), '') as ly_do
-    from chon c
-   order by (c.d_khu + c.d_dt + c.d_pn + c.d_tang + c.d_xe + c.d_vec + c.d_ti) desc, c.updated_at desc
+    from cham c
+    left join hang h on h.seller_id is not distinct from c.seller_id
+   -- Mức khớp trước; cùng mức khớp thì uy tín người rao (Vàng > Bạc > Đồng — gamification anh Luận: Đồng "xếp cuối luồng ưu tiên");
+   -- hạng KHÔNG thắng mức khớp và không ra kết quả (hạng ẩn khỏi khách / web).
+   order by c.d_tong desc, coalesce(h.hang_so, 1) desc, c.updated_at desc
    limit greatest(1, least(coalesce(p_limit, 3), 10));
 $function$
 ;
@@ -7182,6 +7213,8 @@ revoke all on function public.ham_md5_cong_khai() from public, anon, authenticat
 grant execute on function public.ham_md5_cong_khai() to anon;
 grant execute on function public.ham_md5_cong_khai() to authenticated;
 grant execute on function public.ham_md5_cong_khai() to service_role;
+revoke all on function public.hang_so_nguoi_ban(p_seller_id uuid) from public, anon, authenticated;
+grant execute on function public.hang_so_nguoi_ban(p_seller_id uuid) to service_role;
 revoke all on function public.hang_theo_diem(p_diem integer) from public, anon, authenticated;
 grant execute on function public.hang_theo_diem(p_diem integer) to anon;
 grant execute on function public.hang_theo_diem(p_diem integer) to authenticated;
