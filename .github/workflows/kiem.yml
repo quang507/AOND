@@ -192,6 +192,10 @@ jobs:
       - name: Edge function còn lại không có lỗi kiểu nào
         working-directory: bot/supabase/functions
         run: deno check --node-modules-dir=auto --min-dep-age=0 */index.ts
+      # 02/11/2026: cổng bí mật chạy thật — Bearer service_role không còn qua cổng, chỉ `x-bridge-secret` đúng mới qua.
+      - name: Cổng bí mật chung (_shared/gate.ts) chặn đúng
+        working-directory: bot/supabase/functions
+        run: deno test --allow-env --node-modules-dir=auto --min-dep-age=0 ../../tests/cong-bi-mat.test.ts
 
   # ── CỔNG THỨ 10: LUẬT TIỀN TS ↔ SQL RA CÙNG MỘT SỐ ──────────────────────────
   # Luật tiền phía TS gom về `_shared/extraction/luat-tien.ts` (tầng bốn 11/09),

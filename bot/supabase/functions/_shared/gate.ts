@@ -36,12 +36,8 @@ export async function congBiMat(
   ma = 403,
   loi = "forbidden",
 ): Promise<Response | null> {
-  // Service-to-service (zalo-webhook → chat-reply) luôn qua: ai cầm được
-  // service_role key thì đã đứng trong nhà rồi, cổng này không thêm gì.
-  const svc = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const auth = req.headers.get("authorization") ?? "";
-  if (svc && auth.startsWith("Bearer ") && await bangNhau(auth.slice(7), svc)) return null;
-
+  // 02/11/2026: bỏ vé qua bằng Bearer service_role — chỉ đường "zalo-webhook → chat-reply" (gỡ 18/10) dùng; bridge và cron đều gửi
+  // `x-bridge-secret`. Một khoá service_role lộ không còn tự mở được cổng (bot/tests/cong-bi-mat.test.ts).
   let bimat: string | null = null;
   if (nho && Date.now() - nho.at < NHO_MS) {
     bimat = nho.giaTri;

@@ -829,6 +829,10 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz322 · Cổng bí mật edge function: bỏ vé qua bằng Bearer service_role (02/11/2026)
+Chủ dự án 02/11 ("gate.ts nhánh service_role: gỡ, PR riêng, có bài kiểm cổng"). Lớp lỗi: lối tắt "service-to-service (zalo-webhook → chat-reply)" ở `_shared/gate.ts` còn sống sau khi gỡ hai function đó — một khoá service_role lộ là mở được cả 3 cổng mà không cần `BRIDGE_SECRET`. Đã soát người gọi: bridge (`index.mjs`, `x-bridge-secret` bắt buộc qua `cai-vps.sh`) và hai cron `geocode_tick` / `media_cleanup_tick` (`x-bridge-secret` từ Vault) — không ai dùng Bearer service_role.
+Kiểm: `bot/tests/cong-bi-mat.test.ts` chạy `congBiMat` thật bằng Deno (job CI `kieubot` + `bun run kieu:bot`) — Bearer service_role không kèm secret → 403 (đỏ khi gắn lại nhánh), secret đúng → qua, sai → 403. Cần deploy lại 3 function sau khi gộp.
+
 ### SRS-5.1zzzzzzz321 · Audit Đợt 6: code chết và một nguồn — bỏ dấu một hàm, một cửa tin báo admin chặn ID thử, không rơi về mock, không hỏi lại sổ (02/11/2026)
 Ca gốc: ban-thu-mua 02/11 nhắn admin thật lịch xem của "Khách thử"; 9 hàm bỏ dấu chép tay; hai `_hoi_thoai_mua` trong một class (bản sau đè im lặng); thiếu `ANTHROPIC_API_KEY` thì lõi
 lặng lẽ chạy `MockProvider`; cham `xa_phuoc_ly`: khách nói "thuê đất trả tiền hàng năm" (ô `phap_ly`) mà đất vẫn hỏi "đã có sổ đỏ chưa". (1) Lớp lỗi: một việc nhiều bản, mỗi bản tự nhớ luật.
@@ -896,13 +900,6 @@ Kiểm: `tests/test_viec_luot_314.py`, `tests/test_kich_ban_2a_314.py` (mỗi k�
 Lớp lỗi: ID chấm là ID thử, nên công tắc "thu" (`AGENT_BOC`) bật trong bộ chấm mà khách thật không bật, và model bóc tách lệch VPS (bộ chấm Haiku 5.5, VPS mặc định config `claude-haiku-4-5`) — số SRS-310…312 đo đường agent bóc. Sửa: `cong_tac_vps()` đọc dòng `printf` của cai-vps.sh, mặc định "thu" = tắt (`--nhu thu` để đo ID thử); in cỡ prompt bóc tách / viết lời; giám khảo thêm phép "không lộ luật"; `--nen` ghi `tests/kich_ban/diem_nen.json`, lần sau tự so.
 Điểm nền hai lần (40 kịch bản, Sonnet viết · Haiku 4.5 bóc): tất định 407 / 405 trên 408; giọng 2,62 / 2,73 (≥ 4/5: 3 / 4 cuộc); lộ luật 2 / 3 cuộc (giám khảo bắt nhầm cả câu phí / vùng đúng quy định — 1 cờ thật: "10 căn trở lên lên Top"); gọi lại 7 / 7; prompt bóc tách trung vị 24,1 nghìn chữ, viết lời 4,7 nghìn (lớn nhất 16,4 nghìn).
 Kiểm: `tests/test_cham_nhu_khach.py` (đỏ khi bộ chấm không đổi "thu" thành tắt).
-
-### SRS-5.1zzzzzzz312 · Gỡ 4 lưới soát chưa từng kích; nhà phố có diện tích đất rồi thì số m² thứ hai là sàn; sửa phép chấm "huyện" (30/10/2026)
-Chủ dự án 30/10 ("không cần, gỡ đi"): gỡ lưới "câu ghi nhận một lần" (SRS-229), "HOA cả cụm" (SRS-241, luật vẫn ở `AD_FORMAT`), "anh ơi" lặp,
-"hỏi phường phải nhắc kho hẻm" (SRS-115, khối Kho hẻm trong prompt giữ) — 0/280 cuộc chấm kích, ở chế độ gọn chỉ ghi log; test giữ lưới gỡ theo.
-- `ma_lo_7m` (lớp lỗi: số m² trống ghi tạm `dien_tich`, phiếu lượt không hỏi lại theo SRS-302 → ô sàn trống): form + EXTRACTION đọc "đã có đất, số m² khác"
-  là `dien_tich_nha`. `dat_nen_long_an`: phép chấm "huyện" khớp nhầm "c**huyện**" → `\bhuyện\b`. Đo 408 phép: 402 / 403 → 406 / 406
-  (`ma_lo_7m`, `dat_nen_long_an` đạt 2/2); giọng 2,58 / 2,50 → 2,45 / 2,45 (thay đổi không đụng lời viết, dao động giám khảo 2,35–2,70).
 
 ---
 
