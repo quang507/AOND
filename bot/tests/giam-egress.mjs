@@ -5,6 +5,7 @@
 //  G-03 không `select("*")` trên `listings` / `projects` ở web và chat-reply (vector `nhung` ~9,8 KB/dòng).
 //  G-04 (03/10, SRS-5.1zl) mọi generateStaticParams trả [] — kể cả khi tham số lấy từ từ điển (/[tag]): trang dựng sẵn vẫn hỏi
 //       DB lúc render, nhân với số lượt build. G-05: trang công khai không cache dưới 1 giờ (revalidate / unstable_cache).
+//  G-07 (02/11, SRS-5.1zzzzzzz332) trang công khai không `force-dynamic` — /ds/[token] từng là ƒ, mỗi lượt mở một lambda + một RPC.
 //  G-06 chat-reply không select nguyên bảng bot_prompts — chỉ khoá DB khác bản code qua rpc doc_prompt_khac.
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -39,6 +40,12 @@ for (const p of trang) {
   if (!m) continue;
   kiem(`G-04 ${p.slice(goc.length)}: generateStaticParams trả []`, /^\s*return \[\];\s*$/.test(m[1]), m[1].trim().slice(0, 80));
 }
+// G-07: không `force-dynamic` ở trang công khai (route động dùng generateStaticParams trả [] + revalidate).
+for (const p of duyet(join(goc, "app")).filter((x) => x.endsWith("page.tsx") && !/\/(admin|quan-ly|tai-khoan)\//.test(x))) {
+  const s = readFileSync(p, "utf8");
+  if (/export const dynamic\s*=\s*["']force-dynamic["']/.test(s)) kiem(`G-07 ${p.slice(goc.length)}: không force-dynamic`, false, "route ƒ — dùng generateStaticParams [] + revalidate");
+}
+kiem("G-07 đã soát các trang công khai", true);
 // G-05: revalidate < 3600 ở trang / thành phần công khai (bỏ qua admin, quản lý, tài khoản).
 for (const p of [...duyet(join(goc, "app")), ...duyet(join(goc, "lib")), ...duyet(join(goc, "components"))]) {
   if (/\/(admin|quan-ly|tai-khoan)\//.test(p)) continue;
