@@ -49,4 +49,18 @@ assert.equal(v.ward, "Lái Thiêu");
 assert.equal(chonDong({ ...R, ten: "Sunrise", tinh: "Hồ Chí Minh", quan: "Quận 2" }, kho).row.id, "c");
 assert.ok(chonDong({ ...R, ten: "Sunrise", tinh: "Hồ Chí Minh", quan: "Quận 9" }, kho).mo_ho, "mơ hồ thì không ghép bừa");
 assert.equal(chonDong({ ...R, ten: "Dự án Mới Tinh" }, kho), null);
+// Tên viết khác giữa hai nguồn (đo 02/11/2026 trên kho thật) — không ghép được thì đẻ dòng trùng.
+const kho2 = [
+  { id: "e", name: "Eco Retreat Long An", province: "Long An", district: "Huyện Bến Lức" },
+  { id: "g", name: "Glory Heights - Vinhomes Grand Park", province: "Hồ Chí Minh", district: "Quận 9 (TP. Thủ Đức)" },
+  { id: "w", name: "Khu Đô Thị Waterpoint", province: "Long An", district: "Huyện Bến Lức" },
+  { id: "f", name: "Fiato City Nhơn Trạch", province: "Đồng Nai", district: "Huyện Nhơn Trạch" },
+  { id: "l", name: "D'lusso Emerald", province: "Hồ Chí Minh", district: "Quận 2 (TP. Thủ Đức)" },
+];
+const thu = (ten, quan, tinh) => chonDong({ ten, quan, tinh }, kho2)?.row?.id ?? null;
+assert.equal(thu("Eco Retreat", "Bến Lức", "Long An"), "e");
+assert.equal(thu("Glory Heights", "Quận 9", "Hồ Chí Minh"), "g");
+assert.equal(thu("WATERPOINT", "Bến Lức", "Long An"), "w");
+assert.equal(thu("Fiato Updown Thủ Đức", "Thủ Đức", "Hồ Chí Minh"), null, "khác dự án thì không ghép");
+assert.equal(thu("LUSSO SAIGON", "Thuận An", "Bình Dương"), null);
 console.log("thu-du-an-rever: đạt");

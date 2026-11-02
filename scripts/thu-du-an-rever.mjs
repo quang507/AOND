@@ -162,13 +162,33 @@ export const khoaTen = (s) => boDau(String(s ?? "").replace(/\([^)]*\)/g, " "))
   .replace(/\b(du an|khu can ho|can ho|chung cu|khu do thi|khu dan cu)\b/g, " ")
   .replace(/[^a-z0-9]+/g, " ").trim();
 const soQuan = (s) => boDau(s).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+const boHanhChinh = (s) => soQuan(String(s ?? "").replace(/\([^)]*\)/g, " ")).replace(/^(huyen|quan|thanh pho|tp|thi xa|tinh)\s+/, "");
+
+/** Các khoá tên của một dự án (02/11/2026, đo trên 26 dự án Rever: khớp nguyên tên chỉ 5/26): tên đủ, phần trước " - " ("Glory Heights -
+ *  Vinhomes Grand Park", "IMPERIA SENSA PARK - MIK GROUP"), và tên bỏ quận / tỉnh dính đuôi ("Eco Retreat Long An", "Antares Beach Vũng Tàu"). */
+export function cacKhoa(ten, quan, tinh) {
+  const goc = [ten, String(ten ?? "").split(/\s+[-–|]\s+/)[0]];
+  const duoi = [boHanhChinh(quan), boHanhChinh(tinh), "vung tau", "ba ria vung tau", "sai gon", "thu duc"].filter(Boolean);
+  const ra = new Set();
+  for (const g of goc) {
+    let k = khoaTen(g);
+    if (!k) continue;
+    ra.add(k);
+    for (let doi = true; doi;) {
+      doi = false;
+      for (const d of duoi) if (k.endsWith(` ${d}`) && k.length > d.length + 3) { k = k.slice(0, -d.length - 1).trim(); ra.add(k); doi = true; }
+    }
+  }
+  return ra;
+}
 
 /** Chọn dòng kho cho một dự án Rever: trả {row} | {mo_ho: [...]} | null. */
 export function chonDong(R, kho) {
-  const k = khoaTen(R.ten);
-  if (!k) return null;
+  const k = cacKhoa(R.ten, R.quan, R.tinh);
+  if (!k.size) return null;
   const tinh = tinhTrongVung(R.tinh);
-  let ung = kho.filter((p) => khoaTen(p.name) === k && (!p.province || !tinh || tinhTrongVung(p.province) === tinh));
+  let ung = kho.filter((p) => (!p.province || !tinh || tinhTrongVung(p.province) === tinh) &&
+    [...(p._khoa ??= cacKhoa(p.name, p.district, p.province))].some((x) => k.has(x)));
   if (ung.length <= 1) return ung.length ? { row: ung[0] } : null;
   const q = soQuan(R.quan);
   const cungQuan = q ? ung.filter((p) => ` ${soQuan(p.district)} `.includes(` ${q} `)) : [];   // "quận 1" không khớp "quận 12"
