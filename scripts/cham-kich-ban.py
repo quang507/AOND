@@ -88,7 +88,8 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
         _boc_viec("converse", lambda a, k: "boc" if any(t.get("name") == "ghi_o" for t in (k.get("tools") or (a[2] if len(a) > 2 else []))) else "loi")
     luot, xin_nguoi, bat_dau = [], False, time.monotonic()
     with tempfile.TemporaryDirectory(prefix="cham-") as d:
-        eng = Engine(p, conversation_store=SqliteConversationStore(os.path.join(d, "kb.db")))
+        kho = SqliteConversationStore(os.path.join(d, "kb.db"))
+        eng = Engine(p, conversation_store=kho)
         key = f"thu-cham-{kb['id']}"
         # SRS-5.1zzzzzzz340 (kiểm độc lập): kịch bản khai `so` = số Zalo khách nhắn — một chuỗi cho cả cuộc chat, hoặc danh sách
         # song song với `cau` ("tu_van" / "" ) để dựng ca khách đổi số giữa cuộc. Không khai = như cũ (số ký gửi).
@@ -130,7 +131,17 @@ TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất đ�
                   "\n\nNỘI DUNG BẮT BUỘC (chủ dự án quyết): khi khách hỏi về phí / chính sách gửi bán, EM PHẢI nói đủ 4 ý — phí cố định không "
                   "bớt, chỉ thu khi giao dịch thành công; có hợp đồng môi giới bằng văn bản; không độc quyền; môi giới gửi hàng không chia hoa "
                   "hồng nào khác — kể cả ý khách không hỏi. KHÔNG trừ điểm vì có đủ 4 ý đó hay vì nói thêm ý khách không hỏi trong 4 ý đó; chỉ "
-                  "chấm CÁCH nói: có đáp đúng ý khách hỏi trước không, gọn, lồng tự nhiên trong câu hay đọc như điều khoản / liệt kê / đánh số.")
+                  "chấm CÁCH nói: có đáp đúng ý khách hỏi trước không, gọn, lồng tự nhiên trong câu hay đọc như điều khoản / liệt kê / đánh số."
+                  # SRS-5.1zzzzzzz341 (điều phối 02/11/2026, theo CLAUDE.md §6.3 "giọng rao chợ GIỮ"): hai lượt chấm 02/11 có 6/10 cuộc bị
+                  # giọng 2 với lý do "giọng quảng cáo khuôn, giục ép" — tức giám khảo đang trừ chính điều chủ dự án đã chốt, nên trần điểm
+                  # giọng bị rubric kẹp chứ không phải bot kém. Vẫn trừ khi câu giục DỰNG RA sự thật không có.
+                  "\n\nGIỌNG TIN RAO (chủ dự án quyết, đúng luật — KHÔNG trừ điểm): BẢN TIN RAO (đoạn sau 📋) viết giọng rao chợ: gọi mời "
+                  "(\"Bà con ơi\", \"Anh chị cô bác ơi\"), chữ dân dã, emoji, gạch đầu dòng thông số, và MỘT câu chốt giục xem sớm "
+                  "(\"chần chừ là người khác chốt trước\", \"ai nhanh tay người đó có phần\"). KHÔNG trừ điểm vì bản tin có giọng đó, có câu "
+                  "chốt giục, hay vì nó khác giọng lời chat. CHỈ trừ khi: (a) câu giục DỰNG RA sự thật không có — \"đã có người đặt cọc\", "
+                  "\"còn một căn duy nhất\", \"chủ sắp tăng giá\" khi không có dữ kiện nào như vậy; (b) bản tin lặp cùng một ý / cùng một con "
+                  "số ba lần trở lên; (c) LỜI CHAT (đoạn ngoài bản tin) cũng rao chợ hay cũng giục. Giọng rao chợ trong bản tin tự nó không "
+                  "phải lỗi.")
 
 
 TIEU_CHI_LO_LUAT = ("\n\nViệc thứ hai, tách khỏi điểm giọng: lo_luat = số thứ tự các lượt EM để lộ cách hệ thống làm việc bên trong — kể lại "
@@ -206,12 +217,14 @@ def main() -> int:
         cu_kq = {r["id"]: r for r in json.load(open(a.cham_lai, encoding="utf-8"))["ket_qua"]}
         bo = [k for k in bo if k["id"] in cu_kq]
         kqs = [cu_kq[k["id"]] for k in bo]
-        giong = {k["id"]: (r["giong"], next((g for t, _, g in r.get("diem", []) if t.startswith("giọng")), "").split(" ", 1)[-1],
-                           r.get("lo_luat") or [], r.get("hoi_lai") or [], 0.0) for k, r in zip(bo, kqs) if r.get("giong")}
+        if not a.giong:   # SRS-5.1zzzzzzz341: có --giong thì CHẤM LẠI giám khảo trên chính bản ghi này (A/B rubric: cùng hội thoại,
+            # chỉ khác thang chấm — đổi rubric mà chạy lại lõi thì dao động model trộn vào, không đọc được rubric đổi bao nhiêu).
+            giong = {k["id"]: (r["giong"], next((g for t, _, g in r.get("diem", []) if t.startswith("giọng")), "").split(" ", 1)[-1],
+                               r.get("lo_luat") or [], r.get("hoi_lai") or [], 0.0) for k, r in zip(bo, kqs) if r.get("giong")}
     else:
         with ProcessPoolExecutor(max_workers=a.song_song) as ex:
             kqs = list(ex.map(_chay_mot, bo, [a.chat] * len(bo), [a.boc] * len(bo), [env] * len(bo)))
-    if a.giong and not a.cham_lai:
+    if a.giong:
         from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=a.song_song) as ex:
             giong = dict(zip([k["id"] for k in bo], ex.map(lambda kq: _cham_giong(kq, a.giong), kqs)))
