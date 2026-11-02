@@ -829,6 +829,10 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz323 · Dọn code TypeScript / script tàn dư thời trước lõi Python; nhánh tin soạn sẵn của escalation-feed; bảng phường cũ bản code (02/11/2026)
+Chủ dự án 02/11: "dọn các cái cũ không dùng luôn". Lớp lỗi: gỡ bot TypeScript (18/10) xoá function nhưng để lại export chỉ chúng gọi, nên code chết sống qua `tsc` / test. Soát 143 tệp TS / MJS trên `c520771`: không tệp nào chết hẳn; xoá 30 export 0 chỗ gọi (`claude.ts` `secretOf` / `DemLuuLuong`, 12 trong `lib/format.ts`, `Q5_CENTER`, 9 icon, 6 khối `ui.tsx`), 5 export chỉ test gọi (`luat-lien-he.ts`, `nhan.ts`) kèm ca test, `PHUONG_CU` (bộ sinh `sinh-ds-phuong.mjs` chỉ còn `PHUONG_MOI`, `ds-phuong.ts` ~42 → 10 KB), nhánh `soanSan` của escalation-feed (DB thật 0 dòng pending có `noi_dung_gui`), `scripts/gop-hoi-thoai-theo-zalo.sql` (chạy một lần 23/10, ghi cột `ctv_id` đã gỡ). Sửa `bot/tests/vai-tro.sql` (bỏ `inbound_*`, `giu_luot_gui` đã gỡ; chạy DB thật: mọi dòng OK, tự cuộn lại) và chữ `sinh-srd-docx.mjs` theo hiện trạng (lõi Python, bỏ CTV / chat-reply / required_facts).
+Kiểm: `kieu`, `kieu:bot` (bắt được `docBiMat` còn dùng bộ nhớ bí mật — giữ), `build` (route giống CI main), `test:bot`, `test:py`, `truyvet`, `soat:db`, `soat:migration`. Tầng DB: chỉ lập bảng đề xuất trong PR, chưa gỡ.
+
 ### SRS-5.1zzzzzzz322 · Cổng bí mật edge function: bỏ vé qua bằng Bearer service_role (02/11/2026)
 Chủ dự án 02/11 ("gate.ts nhánh service_role: gỡ, PR riêng, có bài kiểm cổng"). Lớp lỗi: lối tắt "service-to-service (zalo-webhook → chat-reply)" ở `_shared/gate.ts` còn sống sau khi gỡ hai function đó — một khoá service_role lộ là mở được cả 3 cổng mà không cần `BRIDGE_SECRET`. Đã soát người gọi: bridge (`index.mjs`, `x-bridge-secret` bắt buộc qua `cai-vps.sh`) và hai cron `geocode_tick` / `media_cleanup_tick` (`x-bridge-secret` từ Vault) — không ai dùng Bearer service_role.
 Kiểm: `bot/tests/cong-bi-mat.test.ts` chạy `congBiMat` thật bằng Deno (job CI `kieubot` + `bun run kieu:bot`) — Bearer service_role không kèm secret → 403 (đỏ khi gắn lại nhánh), secret đúng → qua, sai → 403. Cần deploy lại 3 function sau khi gộp.
@@ -895,11 +899,6 @@ Kiểm: `test_cau_mau.py::test_cau_bao_phi_tester_sua_toi_loi_bot` (đỏ khi b�
 Chủ dự án 30/10 ("chạy lun đi"). Lớp lỗi đo được: engine ghép nhiều khối hỏi cùng lượt — 16 / 169 lượt (khối ưu tiên / hỏi mặt tiền / trình nháp vẫn kèm "VIỆC LƯỢT NÀY: hỏi ô X" của phiếu lượt). `viec_luot.py` hàm thuần, thứ tự ưu tiên một chỗ; engine ghi `y_luot["_viec"]` / `["_khoi"]`, bộ chấm in chỗ lệch. Kịch bản mới bắt hai lỗi thật: `doc_quyen` (phiếu lượt không mang chính sách — "chưa có thông tin chắc nên không dám nói bừa", 2/2 lần) và `xung_chi_phi` (câu mẫu `bao_phi` không nhận xưng hô → "Anh/chị", `prompts.khoi_bao_phi`). `--cham-lai` chấm lại bản ghi không gọi model.
 Điểm nền mới (48 kịch bản, tiêu chí giám khảo mới): 569 / 571 trên 623 phép; tất định 472 / 472 trên 479 (sau sửa phép `hoi_lai_giay_to`); giọng 2,96 / 2,92; lộ luật 3 / 2 cuộc; hỏi lại 3 / 3 cuộc.
 Kiểm: `tests/test_viec_luot_314.py`, `tests/test_kich_ban_2a_314.py` (mỗi kịch bản mới trượt trên bản ghi cài lỗi tay).
-
-### SRS-5.1zzzzzzz313 · Bộ chấm chạy như khách thật (công tắc + model đọc từ cai-vps.sh); đo cỡ prompt; giám khảo chỉ lượt lộ luật; điểm nền (30/10/2026)
-Lớp lỗi: ID chấm là ID thử, nên công tắc "thu" (`AGENT_BOC`) bật trong bộ chấm mà khách thật không bật, và model bóc tách lệch VPS (bộ chấm Haiku 5.5, VPS mặc định config `claude-haiku-4-5`) — số SRS-310…312 đo đường agent bóc. Sửa: `cong_tac_vps()` đọc dòng `printf` của cai-vps.sh, mặc định "thu" = tắt (`--nhu thu` để đo ID thử); in cỡ prompt bóc tách / viết lời; giám khảo thêm phép "không lộ luật"; `--nen` ghi `tests/kich_ban/diem_nen.json`, lần sau tự so.
-Điểm nền hai lần (40 kịch bản, Sonnet viết · Haiku 4.5 bóc): tất định 407 / 405 trên 408; giọng 2,62 / 2,73 (≥ 4/5: 3 / 4 cuộc); lộ luật 2 / 3 cuộc (giám khảo bắt nhầm cả câu phí / vùng đúng quy định — 1 cờ thật: "10 căn trở lên lên Top"); gọi lại 7 / 7; prompt bóc tách trung vị 24,1 nghìn chữ, viết lời 4,7 nghìn (lớn nhất 16,4 nghìn).
-Kiểm: `tests/test_cham_nhu_khach.py` (đỏ khi bộ chấm không đổi "thu" thành tắt).
 
 ---
 

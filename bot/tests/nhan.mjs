@@ -1,6 +1,6 @@
 // nhan.mjs — FR-211 (TS-NHAN-01): từ điển nhãn tìm kiếm — nhận đúng, không nhận nhầm, phủ định.
 // Tiền định: không mạng, không DB, không model.   bun bot/tests/nhan.mjs
-import { ganNhan, laThuanNhan, tenNhan, tenNhanKhongTrung, NHAN_HOP_LE, TU_DIEN_NHAN } from "../supabase/functions/_shared/extraction/nhan.ts";
+import { ganNhan, tenNhan, NHAN_HOP_LE, TU_DIEN_NHAN } from "../supabase/functions/_shared/extraction/nhan.ts";
 
 let hong = 0, tong = 0;
 const ok = (ten, dat, chi = "") => { tong++; if (!dat) hong++; console.log(`${dat ? "✓" : "✗"} ${ten}${dat ? "" : `  → ${chi}`}`); };
@@ -59,22 +59,6 @@ ok("mọi khoá snake_case + có tên", Object.entries(TU_DIEN_NHAN).every(([k, 
 ok("NHAN_HOP_LE khớp từ điển", NHAN_HOP_LE.size === Object.keys(TU_DIEN_NHAN).length && NHAN_HOP_LE.has("yen_tinh"));
 ok("tenNhan: khoá lạ in thẳng", tenNhan(["yen_tinh", "la_lam"]) === "yên tĩnh · la lam", tenNhan(["yen_tinh", "la_lam"]));
 ok("tenNhan: rỗng", tenNhan([]) === "" && tenNhan(null) === "");
-
-// 25/09/2026 (bắn thật lx-13): thông số đã in "lửng … sân thượng" thì dòng nhãn không in lặp; nhãn khác vẫn in.
-ok("tenNhanKhongTrung: bỏ 'sân thượng', 'có gác lửng' khi thông số đã có; giữ 'yên tĩnh'",
-  tenNhanKhongTrung(["san_thuong", "gac_lung", "yen_tinh"], "4x15m · trệt + lửng + 2 lầu + sân thượng · sổ hồng riêng") === "yên tĩnh",
-  tenNhanKhongTrung(["san_thuong", "gac_lung", "yen_tinh"], "4x15m · trệt + lửng + 2 lầu + sân thượng · sổ hồng riêng"));
-ok("tenNhanKhongTrung: thông số chưa nói → in đủ", tenNhanKhongTrung(["san_thuong"], "4x15m · trệt + 2 lầu") === "sân thượng");
-ok("tenNhanKhongTrung: rỗng", tenNhanKhongTrung([], "x") === "" && tenNhanKhongTrung(null, "x") === "");
-
-// 25/09/2026 (bắn thật lx-14): mảnh chỉ nói đúng nhãn đã vào listings.nhan → không ghi "bổ sung" lần hai.
-for (const [cau, mong] of [["khu yên tĩnh", true], ["sát chợ", true], ["không ngập", true], ["khu này yên tĩnh lắm", true],
-  ["gần chợ Bình Tây", false], ["khu này yên tĩnh, gần chợ Bình Tây", false], ["hàng xóm thân thiện", false], ["yên tĩnh, hàng xóm thân thiện", false], ["mưa lớn không lo dột", false]]) {
-  ok(`laThuanNhan('${cau}') → ${mong}`, laThuanNhan(cau) === mong);
-}
-
-ok("laThuanNhan: tin CHƯA mang nhãn đó → không trùng (giữ thông tin)", laThuanNhan("khu an ninh", ["yen_tinh"]) === false);
-ok("laThuanNhan: tin đang mang nhãn đó → trùng", laThuanNhan("khu an ninh", ["an_ninh", "yen_tinh"]) === true);
 
 ok("ganNhan: 'ô tô vô tận nhà' (miền Nam: vô = vào) → xe hơi vào nhà", ganNhan("ô tô vô tận nhà").includes("xe_hoi_vao_nha"));
 // 25/09/2026 (bắn thật lx-19): nhà HÀNG XÓM mới xây không phải nhãn của căn đang rao.

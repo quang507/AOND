@@ -24,23 +24,9 @@ const BTN_BASE =
 export function Btn({ variant = "secondary", className = "", ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
   return <button type="button" className={`${BTN_BASE} ${BTN[variant]} ${className}`} {...rest} />;
 }
-export function BtnLink({ href, variant = "secondary", className = "", children, title }: { href: string; variant?: Variant; className?: string; children: ReactNode; title?: string }) {
-  return <Link href={href} title={title} className={`${BTN_BASE} ${BTN[variant]} ${className}`}>{children}</Link>;
-}
 
 export function Card({ className = "", children }: { className?: string; children: ReactNode }) {
   return <section className={`rounded-lg border border-line bg-white ${className}`}>{children}</section>;
-}
-export function CardHead({ title, sub, right }: { title: ReactNode; sub?: ReactNode; right?: ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
-      <div>
-        <h2 className="text-base font-bold text-navy">{title}</h2>
-        {sub && <p className="mt-0.5 text-xs text-mute">{sub}</p>}
-      </div>
-      {right && <div className="flex items-center gap-2">{right}</div>}
-    </div>
-  );
 }
 
 export function PageHeader({ title, sub, crumbs, actions }: { title: string; sub?: ReactNode; crumbs?: Array<{ href?: string; label: string }>; actions?: ReactNode }) {
@@ -75,36 +61,4 @@ const BADGE: Record<Tone, string> = {
 };
 export function Badge({ tone = "neutral", className = "", children }: { tone?: Tone; className?: string; children: ReactNode }) {
   return <span className={`inline-block rounded px-1.5 py-0.5 text-[11px] font-semibold leading-tight ${BADGE[tone]} ${className}`}>{children}</span>;
-}
-
-export function Alert({ tone = "warn", children, onClose }: { tone?: Tone; children: ReactNode; onClose?: () => void }) {
-  const mau = tone === "danger" ? "border-red-300 bg-red-50 text-red-800" : tone === "ok" ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-amber-300 bg-amber-50 text-amber-900";
-  return (
-    <div role="alert" className={`mt-4 flex items-start justify-between gap-3 rounded-md border px-4 py-2.5 text-sm ${mau}`}>
-      <div>{children}</div>
-      {onClose && <button type="button" onClick={onClose} aria-label="Đóng" className="font-bold opacity-70 hover:opacity-100">×</button>}
-    </div>
-  );
-}
-
-export const INPUT = "rounded-md border border-line bg-white px-3 py-2 text-sm text-navy outline-none focus:border-brand focus-visible:ring-2 focus-visible:ring-brand/30";
-
-export function EmptyState({ title, hint, action }: { title: string; hint?: ReactNode; action?: ReactNode }) {
-  return (
-    <div className="px-6 py-12 text-center">
-      <p className="text-sm font-semibold text-navy">{title}</p>
-      {hint && <p className="mt-1 text-sm text-mute">{hint}</p>}
-      {action && <div className="mt-4">{action}</div>}
-    </div>
-  );
-}
-
-export function KhuVucQuanTri({ role }: { role: "anon" | "user" }) {
-  return (
-    <div className="mx-auto max-w-md px-4 py-16 text-center">
-      <h1 className="text-2xl font-bold text-navy">Khu vực quản trị</h1>
-      <p className="mt-2 text-sm text-mute">{role === "anon" ? "Cần đăng nhập bằng tài khoản quản trị." : "Tài khoản này không có quyền quản trị."}</p>
-      {role === "anon" && <BtnLink href="/dang-nhap" variant="primary" className="mt-5">Đăng nhập</BtnLink>}
-    </div>
-  );
 }
