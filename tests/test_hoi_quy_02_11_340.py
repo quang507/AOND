@@ -148,10 +148,27 @@ def test_ca_2_ro_hang_ba_can_vao_prompt_viet_loi():
 
 @pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 2), chưa có bản sửa. Sửa xong thì XOÁ dòng này")
 def test_ca_2_du_tieu_chi_va_co_ro_hang_thi_khong_hoi_duong_truoc_nha():
-    """Đủ khu vực + ngân sách + loại và rổ có căn → không được dặn hỏi "đường trước nhà rộng cỡ nào / hẻm xe hơi"."""
+    """Đủ khu vực + ngân sách + loại và rổ có căn → không được dặn hỏi "đường trước nhà rộng cỡ nào / hẻm xe hơi".
+
+    Khách KHÔNG nhắc gì tới xe hơi / ô tô trong lời của mình, nên ô này không phải điều khách cần."""
     eng, ai, khoa = _q8()
+    assert "xe" not in "anh đang cần tìm mua nhà quận 8 dưới 7 tỉ yên tĩnh"   # tiền đề của ca: khách chưa nhắc xe
     assert eng.conversation(khoa).buyer_lead.next_question_field() != "yeu_cau_xe_hoi"
     assert "yêu cầu hẻm xe hơi" not in _cau_hoi_luot(ai.system[-1])
+
+
+@pytest.mark.xfail(strict=True, reason="ca chờ — quyết định điều phối 02/11 (SRS-340 ca 2): rổ có ≥ 2 căn hợp thì đưa 2–3 căn. "
+                                       "Sửa xong thì XOÁ dòng này")
+def test_ca_2_ro_hang_tu_hai_can_tro_len_thi_duoc_dua_nhieu_can():
+    """Quyết định 02/11 (chủ dự án chê bản một căn "chat chán quá"): rổ có ≥ 2 căn hợp thì lượt đó đưa 2–3 căn.
+
+    Phép chấm ở mức PROMPT, vì bộ này chạy model giả: lời dặn "mỗi lượt giới thiệu MỘT căn tốt nhất" của
+    `mua.khoi_can_cho_khach` phải mất đi — còn nó thì model không thể đưa 2–3 căn dù rổ có 3 căn. Phần "mở bằng tầm giá"
+    và số căn thật bot kể cần bộ chấm có rổ hàng (kịch bản `cham`), ghi ở PR kế."""
+    _eng_, ai, _ = _q8()
+    he = ai.system[-1]
+    assert "MỘT căn tốt nhất" not in he
+    assert "khách đòi thêm mới đưa căn kế" not in he
 
 
 @pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 2), chưa có bản sửa. Sửa xong thì XOÁ dòng này")
