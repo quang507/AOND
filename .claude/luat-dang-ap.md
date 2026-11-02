@@ -55,8 +55,8 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 
 **Hỏi & bản nháp (phía bán)**
 - Sàn rao (`Property.minimal_missing`) = loại hình + vị trí (địa chỉ / đường / dự án HOẶC khu vực) + giá; tự soạn bài khi đủ ba nhóm `NHOM_SOAN` — quy mô · pháp lý · hiện trạng (chủ dự án 28/10, SRS-260; cho thuê bỏ pháp lý). Đổi bộ ô cơ bản là quyết định chủ dự án — đừng tự thêm / bớt. Ô còn thiếu hỏi SAU khi duyệt, mỗi lượt MỘT ô; khách lờ một ô 2 lần thì để sau.
-- Vai lượt mơ hồ theo SỐ khách đang nhắn (ký gửi → bán, tư vấn → mua) khi vai được đặt ở số khác (`Conversation.so_vai`, SRS-328); hội thoại khoá theo người, đừng giữ vai qua số.
-- Duyệt bản nháp: MỘT nơi `Engine._quyet_duyet` (SRS-327) — cụm trích ở tin vừa nhắn, hoặc (chỉ đồng ý) ở tin khách SAU bản nháp 📋 chưa duyệt (mốc `_duyet_ban`, SRS-247); `xin_dang` không đè `khong_dong_y`, không duyệt lại bản đã duyệt.
+- Vai lượt mơ hồ theo SỐ khách đang nhắn (ký gửi → bán, tư vấn → mua) khi vai được đặt ở số khác (`Conversation.so_vai`, SRS-329); hội thoại khoá theo người, đừng giữ vai qua số.
+- Duyệt bản nháp: MỘT nơi `Engine._quyet_duyet` (SRS-328) — cụm trích ở tin vừa nhắn, hoặc (chỉ đồng ý) ở tin khách SAU bản nháp 📋 chưa duyệt (mốc `_duyet_ban`, SRS-247); `xin_dang` không đè `khong_dong_y`, không duyệt lại bản đã duyệt.
 - Lượt trình bản nháp phải ra bản tin có dòng mở riêng chứa 📋 (code gắn lại nếu thiếu, `_gan_dau_ban_tin`); mọi bước nhận bản tin dựa vào dấu này (SRS-204 / 222).
 - Bản tin không tự thêm điều căn chưa có: hẻm / mặt tiền (SRS-155), tiện ích / tình trạng nhà (SRS-208), pháp lý / "chính chủ" (SRS-233), số không có trong ô tin / lời khách (`_so_khong_co_trong_tin`, SRS-218) → `_soat_hinh_thuc` gọi lại model. Bình giá và khoe khan hiếm trong tin rao: chủ dự án chấp nhận — đừng chặn.
 - Lời khách dặn CÁCH VIẾT bản tin → ô `yeu_cau_viet` → khối `khoi_yeu_cau_viet` ở mọi prompt soạn tin (SRS-218). Bot KHÔNG tự học qua chat; đổi hành vi chỉ qua câu chuẩn / câu mẫu / code.
@@ -76,7 +76,7 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 - Một nguồn (SRS-321): bỏ dấu chỉ qua `aioi.chu.bo_dau`; tin báo admin từ lõi chỉ qua `SupabaseConversationStore._xep_tin_admin` (chặn ID thử); test bật mock tường minh (`AIOI_LLM_PROVIDER=mock`), lõi không tự rơi về mock.
 - Sự thật của căn trên bản tin (SRS-320): vai / pháp lý / đường vào / tiện ích / tình trạng do AI đọc nghĩa (`prompts.SU_THAT_CAN`, `TIEN_ICH_GAN`, kèm cụm trích) → ô nội bộ `_<khoá>`; lưới `engine._khang_dinh_khong_co_du_lieu` chỉ so bản tin với các ô đó — KHÔNG đọc lời khách, không thêm regex trên lời khách.
 - Đổi đường (SRS-318): luật soát thêm vào bảng `engine.LUAT_SOAT` (một nguồn; không còn lần soát thứ hai, SRS-319), không viết danh sách riêng; khối trỏ dòng việc lượt dùng `prompts.NHAN_VIEC_LUOT`; chính sách phí một nguồn `prompts.CHINH_SACH_PHI`.
-- Việc của lượt phía bán: thứ tự ưu tiên MỘT chỗ ở `viec_luot.py` (SRS-314); engine GỠ khối hỏi trong `bo` (SRS-327). Khối hỏi mới: thêm tên vào `KHOI_HOI`, ghép qua `_hoi(tên, lời, khi_bo, hoan)` (hoan trả cờ "đã hỏi"), đừng thêm câu "câu hỏi duy nhất" vào prompt.
+- Việc của lượt phía bán: thứ tự ưu tiên MỘT chỗ ở `viec_luot.py` (SRS-314); engine GỠ khối hỏi trong `bo` (SRS-328). Khối hỏi mới: thêm tên vào `KHOI_HOI`, ghép qua `_hoi(tên, lời, khi_bo, hoan)` (hoan trả cờ "đã hỏi"), đừng thêm câu "câu hỏi duy nhất" vào prompt.
 - Câu hỏi xác nhận chỉ 4 chỗ, mỗi chỗ tối đa MỘT lần mỗi căn (Q4, 02/11): mặt tiền ngang / đường, căn thuộc dự án X, số lệch kho dự án, diện tích đất hay sàn; ngoài ra SRS-302 "không hỏi lại".
 - Việc bot tự giao (`hoi_ngoai_viec`, `xin_xem_ban_ve`, `cau_hoi_du_an`, `mo_ta_du_an`, `xong_viec_mua`) nhận theo ý AI đọc, không đòi cụm nguyên văn (Q5); ô dữ liệu giữ cổng trích.
 - Lưới soát lời phía bán soi phần CHAT (`_phan_chat_quanh_ban_tin`); chỉ lưới về nội dung tin (số, hẻm, pháp lý, tiêu đề) soi thân bản tin 📋 — thân tin viết cho người mua (SRS-306).

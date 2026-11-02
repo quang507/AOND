@@ -459,7 +459,7 @@ def _dien_tich_mo_ho(prop: Property, next_field: str | None) -> str | None:
     """Con số diện tích khách nói mà CHƯA rõ đất hay nhà, khi lượt này hỏi một trong hai ô đó (SRS-5.1zzzzzzz52; chuyển từ prompt cũ sang phiếu
     lượt ở Đợt 8, SRS-5.1zzzzzzz319). Con số đã khớp ô đất / nhà khách nói thì hết mơ hồ."""
     mo_ho = prop.fields.get("dien_tich")
-    # Q4 (chủ dự án 02/11/2026, SRS-5.1zzzzzzz327): hỏi xác nhận đất hay nhà tối đa MỘT lần mỗi căn — cờ `_dt_mo_ho_da_hoi` engine ghi ở lượt hỏi.
+    # Q4 (chủ dự án 02/11/2026, SRS-5.1zzzzzzz328): hỏi xác nhận đất hay nhà tối đa MỘT lần mỗi căn — cờ `_dt_mo_ho_da_hoi` engine ghi ở lượt hỏi.
     if next_field not in ("dien_tich_dat", "dien_tich_nha") or not mo_ho or prop.fields.get("_dt_mo_ho_da_hoi"):
         return None
     def _so(v: str | None) -> str | None:
@@ -484,7 +484,7 @@ def khoi_su_that_can(fields: dict, chu_nha: bool) -> str:
             f"- Tình trạng nhà: {'mới xây' if fields.get('_tinh_trang_nha') == 'moi_xay' else 'KHÔNG ghi nhà mới / mới xây / giữ gìn / sạch sẽ'}\n")
 
 
-# Đợt 4 (SRS-5.1zzzzzzz327): lượt có việc hỏi khác ưu tiên hơn ô kế (khối ưu tiên, hỏi tên đường / dự án / mặt tiền…) — engine thay việc hỏi ô bằng
+# Đợt 4 (SRS-5.1zzzzzzz328): lượt có việc hỏi khác ưu tiên hơn ô kế (khối ưu tiên, hỏi tên đường / dự án / mặt tiền…) — engine thay việc hỏi ô bằng
 # việc của khối thắng, GỌI ĐÚNG TÊN khối (cham Đợt 4 lần 1: câu chung "làm đúng khối hệ thống bên dưới" → model bám khối ĐIỂM TIN ngay dưới, đọc
 # "Tin đang 73/100" thay vì hỏi mặt tiền — 5 lượt lộ luật).
 _VIEC_KHOI = {

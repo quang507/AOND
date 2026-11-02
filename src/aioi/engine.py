@@ -341,12 +341,12 @@ def _ly_do_trinh_nhap(reply: str) -> list[str]:
 
 
 def _ai_co_y(v: object) -> bool:
-    """Ý AI đọc theo nghĩa (Q5, SRS-5.1zzzzzzz327): chuỗi tóm ý khác rỗng hoặc True — không đòi cụm nguyên văn."""
+    """Ý AI đọc theo nghĩa (Q5, SRS-5.1zzzzzzz328): chuỗi tóm ý khác rỗng hoặc True — không đòi cụm nguyên văn."""
     return v is True or (isinstance(v, str) and bool(v.strip()))
 
 
 def _dat_co(f: dict, khoa: str, cu: str | None) -> None:
-    """Trả cờ nội bộ của ô tin về giá trị trước lượt (None = xoá) — hoàn tác khối hỏi bị gỡ (Đợt 4, SRS-5.1zzzzzzz327)."""
+    """Trả cờ nội bộ của ô tin về giá trị trước lượt (None = xoá) — hoàn tác khối hỏi bị gỡ (Đợt 4, SRS-5.1zzzzzzz328)."""
     if cu is None:
         f.pop(khoa, None)
     else:
@@ -597,7 +597,7 @@ class Conversation:
     # khách nhắn tới số Zalo NÀO — "" = số ký gửi (số cũ), SO_TU_VAN = số tư vấn người mua. Chỉ quyết vai MẶC ĐỊNH của lượt mơ hồ và số gửi tin
     # chủ động cho khách; khách nhắn nhầm số vẫn được trả lời đúng việc (`user_intent` của lượt thắng).
     so_nhan: str = ""
-    # Persisted (SRS-5.1zzzzzzz328, ca thật 02/11): vai hiện tại được đặt trên số nào ("ky_gui" / SO_TU_VAN; None = chưa biết — dữ liệu cũ). Hội thoại
+    # Persisted (SRS-5.1zzzzzzz329, ca thật 02/11): vai hiện tại được đặt trên số nào ("ky_gui" / SO_TU_VAN; None = chưa biết — dữ liệu cũ). Hội thoại
     # khoá theo NGƯỜI, không theo số: lượt mơ hồ ở số KHÁC số đặt vai thì vai về mặc định của số đang nhắn (ký gửi → bán, tư vấn → mua).
     so_vai: str | None = None
     tin_tra_loi: str = ""   # nội dung tin khách bấm "Trả lời" trên Zalo, chỉ của lượt đang chạy (SRS-5.1zzzzzzz270); không lưu
@@ -935,7 +935,7 @@ class SqliteConversationStore(ConversationStore):
             ("conversations", "che_do_test", "''"),   # cột cũ chế độ test (SRS-195: không còn bật)
             ("conversations", "so_luot_thong_tin", "'0'"),   # SRS-5.1zzzzzzz131 bản 2: lượt thông tin thứ mấy (3 lượt đầu khen 100%)
             ("conversations", "so_nhan", "''"),   # SRS-5.1zzzzzzz210: khách nhắn số ký gửi ("") hay số tư vấn
-            ("conversations", "so_vai", "''"),   # SRS-5.1zzzzzzz328: vai đặt trên số nào ('' = chưa biết)
+            ("conversations", "so_vai", "''"),   # SRS-5.1zzzzzzz329: vai đặt trên số nào ('' = chưa biết)
             ("conversations", "nhuong_san_den", "''"),   # SRS-5.1zzzzzzz216: người thật đang nói tới lúc nào (epoch giây)
         ):
             try:  # migrate older tables that predate this column
@@ -2938,7 +2938,7 @@ class Engine:
         xin_sao = False
         luot_de = False   # SRS-5.1zzzzzzz311: lượt thu thập bằng phiếu lượt — ứng viên model rẻ (xét thêm điều kiện ở chỗ gọi model)
         khoi: list[str] = []   # SRS-5.1zzzzzzz314: tên khối hỏi / dữ kiện engine ghép lượt này — bộ chấm so với `viec_luot`
-        # Đợt 4 (SRS-5.1zzzzzzz327, AU-09): khối HỎI ghép bằng dấu chỗ; `viec_luot` chọn MỘT việc rồi khối thừa bị gỡ (thay bằng phần dữ kiện của nó,
+        # Đợt 4 (SRS-5.1zzzzzzz328, AU-09): khối HỎI ghép bằng dấu chỗ; `viec_luot` chọn MỘT việc rồi khối thừa bị gỡ (thay bằng phần dữ kiện của nó,
         # nếu có) và cờ "đã hỏi" của nó trả lại — câu hỏi đó để lượt sau. Bản trước ≥ 7 khối cùng tự nhận là "câu hỏi DUY NHẤT".
         hoi: dict[str, tuple[str, str, Callable[[], None] | None]] = {}
 
@@ -3195,7 +3195,7 @@ class Engine:
                 raise LoiTraLoi("lời gửi khách rỗng")
 
             # SRS-5.1zzzzzzz204: lượt trình bản nháp mà model đáp như chat thường (ban-thu-ban 26/10 Âu Cơ: tám lượt không có bản tin vì
-            # `listing_proposed` đã bật), hoặc bản tin thiếu câu mời nhắn Zalo (khối 4 của AD_FORMAT). AU-14 (Đợt 4, SRS-5.1zzzzzzz327): lý do này
+            # `listing_proposed` đã bật), hoặc bản tin thiếu câu mời nhắn Zalo (khối 4 của AD_FORMAT). AU-14 (Đợt 4, SRS-5.1zzzzzzz328): lý do này
             # đi CHUNG vòng soát hình thức — cả lượt tối đa MỘT lần gọi lại (bản trước: soát → cổng bản nháp → soát = tới 3 lần, sát trần 90 s
             # của bridge). Lần gọi lại không ra bản tin thì không đè bản tin đã có.
             goc = _bo_markdown(reply)
@@ -3332,7 +3332,7 @@ class Engine:
 
     @staticmethod
     def _quyet_duyet(conv: Conversation, plan: dict, cuoi: str) -> str | None:
-        """Khách duyệt bản nháp lượt này không — MỘT nơi quyết (Đợt 4, AU-10, SRS-5.1zzzzzzz327; bản trước bốn chỗ ghi đè nhau). Thứ tự:
+        """Khách duyệt bản nháp lượt này không — MỘT nơi quyết (Đợt 4, AU-10, SRS-5.1zzzzzzz328; bản trước bốn chỗ ghi đè nhau). Thứ tự:
         1. Chưa trình bản nháp, hay tin là sticker trung tính của bridge (không rõ vui / bực, bản TS laStickerTrungTinh) → không quyết.
         2. AI đọc dong_y / khong_dong_y, cụm trích có trong tin vừa nhắn (SRS-5.1zzzzzzz47).
         3. AI đọc dong_y trễ một lượt: cụm nằm trong một tin khách gửi SAU bản nháp 📋 đang chờ, bản đó CHƯA duyệt (SRS-5.1zzzzzzz247).
@@ -3356,7 +3356,7 @@ class Engine:
 
     @staticmethod
     def _ghi_viec(conv: Conversation, dung: Callable[[], TrangThaiLuot], khoi: list[str]) -> Viec | None:
-        """Việc `viec_luot` chọn cho lượt (SRS-5.1zzzzzzz314; từ Đợt 4 engine gỡ các khối hỏi trong `bo`, SRS-5.1zzzzzzz327). Ghi cho bộ chấm
+        """Việc `viec_luot` chọn cho lượt (SRS-5.1zzzzzzz314; từ Đợt 4 engine gỡ các khối hỏi trong `bo`, SRS-5.1zzzzzzz328). Ghi cho bộ chấm
         `_viec` và `_khoi` = khối CÒN LẠI. Lỗi (dựng trạng thái hay chọn việc) chỉ ghi log, trả None — lượt vẫn trả lời (SRS-5.1zzzzzzz315)."""
         try:
             v = viec_luot(dung())
@@ -4816,7 +4816,7 @@ class Engine:
             conv.so_vai = so_luot
             conv.role = "seller"
         elif conv.so_vai is not None and conv.so_vai != so_luot:
-            # SRS-5.1zzzzzzz328 (ca thật 02/11: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi → bot hỏi "khu vực tìm mua"): lượt mơ hồ ở số KHÁC
+            # SRS-5.1zzzzzzz329 (ca thật 02/11: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi → bot hỏi "khu vực tìm mua"): lượt mơ hồ ở số KHÁC
             # số đã đặt vai → vai mặc định của số đang nhắn. Nhu cầu mua / tin rao của số kia giữ nguyên, chỉ không quyết vai.
             conv.role = "buyer" if so_luot == SO_TU_VAN else "seller"
             if conv.role == "buyer" and conv.buyer_lead is None:
@@ -4842,7 +4842,7 @@ class Engine:
         # ngoài nhà đất khi CHƯA tỏ ý bán / mua → không ghi ô (operations rỗng), không tạo tin, đếm lượt để lần hai đề nghị nối người.
         nv = plan.get("hoi_ngoai_viec")
         la_ngoai_viec = False
-        # Q5 (chủ dự án 02/11/2026, SRS-5.1zzzzzzz327): việc bot tự giao — nhận theo ý AI đọc, không đòi cụm nguyên văn (SRS-281).
+        # Q5 (chủ dự án 02/11/2026, SRS-5.1zzzzzzz328): việc bot tự giao — nhận theo ý AI đọc, không đòi cụm nguyên văn (SRS-281).
         if isinstance(nv, str) and nv.strip() and intent not in ("buy", "sell") and not has_seller_context:
             conv.so_luot_ngoai_viec += 1
             la_ngoai_viec = True   # ghi vào y_luot SAU chỗ làm mới y_luot bên dưới
@@ -4894,12 +4894,12 @@ class Engine:
         # Xin xem bản vẽ / hỏi dự án / tả dự án / xác nhận xoá (SRS-5.1zzzzzzz55): nhận khi cụm trích có trong tin vừa nhắn.
         conv.y_luot = {}
         if doi_so:
-            conv.y_luot["_doi_so"] = True   # SRS-5.1zzzzzzz328: lượt đầu của vai này trên số đang nhắn — chào theo số
+            conv.y_luot["_doi_so"] = True   # SRS-5.1zzzzzzz329: lượt đầu của vai này trên số đang nhắn — chào theo số
         if plan.get("_chua_ro_can"):   # SRS-5.1zzzzzzz310: agent bóc từ chối đổi trạng thái vì lời khách chưa chỉ ra căn nào
             conv.y_luot["chua_ro_can"] = list(plan["_chua_ro_can"])
         if la_ngoai_viec:
             conv.y_luot["ngoai_viec"] = conv.so_luot_ngoai_viec   # SRS-5.1zzzzzzz177
-        for k in ("xin_xem_ban_ve", "cau_hoi_du_an", "mo_ta_du_an"):   # Q5 (SRS-5.1zzzzzzz327): theo ý AI đọc, không so nguyên văn
+        for k in ("xin_xem_ban_ve", "cau_hoi_du_an", "mo_ta_du_an"):   # Q5 (SRS-5.1zzzzzzz328): theo ý AI đọc, không so nguyên văn
             if _ai_co_y(plan.get(k)):
                 conv.y_luot[k] = True
         if conv.y_luot.get("xin_xem_ban_ve") and plan.get("ban_do_du_an") is True:
@@ -4942,7 +4942,7 @@ class Engine:
         sao = doc_sao(plan.get("danh_gia_sao"))
         if sao and vua_xin_sao(bot_truoc) and _trich_dan_khop(plan.get("danh_gia_trich_dan"), cuoi):
             conv.y_luot["danh_gia"] = (sao, str(plan["danh_gia_trich_dan"]).strip())
-        if _ai_co_y(plan.get("xong_viec_mua")):   # Q5 (SRS-5.1zzzzzzz327)
+        if _ai_co_y(plan.get("xong_viec_mua")):   # Q5 (SRS-5.1zzzzzzz328)
             conv.y_luot["xong_viec_mua"] = True
         # Căn nằm ngoài vùng nhận tin (SRS-5.1zzzzzzz86): AI đọc tỉnh / thành, code kiểm cụm địa danh có trong một trong sáu lượt
         # khách gần nhất (tỉnh có thể đã nói ở lượt trước). Cờ gắn lên căn SAU khi áp thao tác (căn mới có thể vừa được tạo).

@@ -557,7 +557,7 @@ def phuong_kho_hem(tra: TraDiaDanh | None, fields: dict[str, str]) -> list[str]:
 def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: str | None, hoi_duong: bool = True) -> str:
     """Khối cho prompt trả lời: tên đường khách gõ gần với đường nào trong kho (hỏi xác nhận, lượt nào cũng được — không chỉ lúc
     hỏi địa chỉ), và khi sắp hỏi phường thì đường đó đi qua những phường nào. Hệ thống tra, không phải khách nói.
-    `hoi_duong=False`: bỏ hai dòng HỎI xác nhận tên đường, giữ dữ kiện (Đợt 4, SRS-5.1zzzzzzz327 — engine gỡ câu hỏi đường khi lượt có việc
+    `hoi_duong=False`: bỏ hai dòng HỎI xác nhận tên đường, giữ dữ kiện (Đợt 4, SRS-5.1zzzzzzz328 — engine gỡ câu hỏi đường khi lượt có việc
     hỏi khác ưu tiên hơn, dữ kiện xã / phường mới vẫn vào prompt)."""
     if tra is None:
         return ""

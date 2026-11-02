@@ -1,4 +1,4 @@
-"""02/11/2026 (SRS-5.1zzzzzzz327, audit Đợt 4 — một quyết định một nơi; chủ dự án chốt Q4, Q5 cùng ngày).
+"""02/11/2026 (SRS-5.1zzzzzzz328, audit Đợt 4 — một quyết định một nơi; chủ dự án chốt Q4, Q5 cùng ngày).
 
 Lớp lỗi: nhiều nơi cùng quyết một đầu ra, không có thứ tự — ≥ 7 khối tự nhận "câu hỏi DUY NHẤT" cùng bật (AU-09), duyệt bản nháp ghi đè ở bốn
 chỗ (AU-10), hai lệnh ngược nhau phía mua (AU-04), lượt bản nháp gọi lại tới 3 lần (AU-14), cổng cụm nguyên văn chặn việc bot tự giao (Q5).

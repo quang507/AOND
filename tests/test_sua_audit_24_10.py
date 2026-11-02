@@ -40,7 +40,7 @@ def test_khach_da_to_y_ban_thi_hoi_viec_khac_van_ghi_o():
 
 
 def test_ngoai_viec_nhan_theo_y_ai_doc_khong_doi_nguyen_van():
-    """Q5 (chủ dự án 02/11/2026, SRS-5.1zzzzzzz327): hoi_ngoai_viec là việc bot tự giao — nhận theo ý AI đọc (tóm ý), không đòi cụm nguyên văn.
+    """Q5 (chủ dự án 02/11/2026, SRS-5.1zzzzzzz328): hoi_ngoai_viec là việc bot tự giao — nhận theo ý AI đọc (tóm ý), không đòi cụm nguyên văn.
     Bản trước (SRS-177) bỏ khi cụm không nằm trong lời khách, nên AI tóm ý ("hỏi lịch cắt đồng hồ nước") bị rơi."""
     kho = KhoGia()
     for cau in ("Bên điện lực bao giờ tới gắn lại công tơ vậy em", "chỗ em cúp nước mấy hôm rồi, ai xử lý vậy"):   # cách nói mới, gián tiếp

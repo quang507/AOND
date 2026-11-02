@@ -964,7 +964,7 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
         return ("\nCĂN ĐANG RAO: khách chưa nêu đủ khu vực và ngân sách nên chưa tìm căn. Lượt này CHƯA giới thiệu căn nào và KHÔNG nói \"chưa có "
                 "căn\"; chỉ hỏi đúng câu thông tin ở trên, thật ngắn (xưng hô y như các lượt trước).\n")
     if not can:
-        # AU-04 (Đợt 4, SRS-5.1zzzzzzz327): lời hứa báo lại thành DỮ KIỆN — vòng `bao_can_moi` thật sự nhắn khách khi có căn mới khớp (8–20 giờ,
+        # AU-04 (Đợt 4, SRS-5.1zzzzzzz328): lời hứa báo lại thành DỮ KIỆN — vòng `bao_can_moi` thật sự nhắn khách khi có căn mới khớp (8–20 giờ,
         # `buyers.bao_can_moi` mặc định bật), nên được nói; bản trước "nói sẽ báo" đụng "không hứa sẽ báo lại" của `khoi_viec_vua_ghi([])`.
         return ("\nCĂN ĐANG RAO: chưa có căn nào khớp nhu cầu khách. KHÔNG giới thiệu căn nào, KHÔNG bịa căn. DỮ KIỆN: hệ thống tự nhắn khách khi "
                 "có căn mới khớp nhu cầu (trong 8–20 giờ) — được nói có căn phù hợp em nhắn liền, trừ khi khách đã bảo đừng báo "
