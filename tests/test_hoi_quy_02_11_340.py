@@ -1,7 +1,8 @@
 """Hai ca hồi quy từ lỗi production 02/11/2026 (SRS-5.1zzzzzzz340) — do phiên KIỂM ĐỘC LẬP dựng, không sửa lõi.
 
-CA CHỜ: cả hai `xfail(strict=True)` vì lõi trên main 02/11 còn sai. Bản sửa gộp xong thì XOÁ dòng `xfail` đó (strict = XPASS cũng đỏ,
-đúng ý: dấu nhắc gỡ marker), KHÔNG xoá ca kiểm.
+CA 1 nay XANH: bản sửa SRS-331 (PR #257) đã gộp vào main, nên hai ca của lỗi 1 bỏ `xfail` và thành ca hồi quy thường — ĐỎ lại nếu ai gỡ
+nhánh `so_vai`. CA 2 còn là ca chờ, `xfail(strict=True)`: bản sửa gộp xong thì XOÁ dòng `xfail` đó (strict = XPASS cũng đỏ, đúng ý: dấu
+nhắc gỡ marker), KHÔNG xoá ca kiểm.
 
 Lớp lỗi 1 — vai khách nhớ theo người, không theo SỐ Zalo khách đang nhắn: khách hỏi mua ở số tư vấn rồi nhắn số ký gửi thì
 `conv.role` vẫn là "buyer", lượt ở số ký gửi vẫn chạy prompt tư vấn người mua. Chỗ khác cùng lớp: `so_nhan` chỉ được đọc ở lượt ĐẦU
@@ -38,7 +39,6 @@ def _hai_so(khach_mua: str, khach_ky_gui: str, khoa: str = "thu-hai-so"):
     return eng, spy
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 1); bản sửa ở PR #257 (SRS-331), đã kiểm là chuyển xanh. Gộp #257 xong thì XOÁ dòng này")
 def test_ca_1_vai_mua_khong_theo_khach_sang_so_ky_gui_khi_moi_chao():
     """Lượt ở số ký gửi chỉ là lời chào → phải quay về luồng ký gửi, không chạy prompt tư vấn người mua."""
     eng, spy = _hai_so("anh đang tìm mua nhà quận 8 tầm 7 tỷ", "chào em")
@@ -48,7 +48,6 @@ def test_ca_1_vai_mua_khong_theo_khach_sang_so_ky_gui_khi_moi_chao():
     assert "người gửi bán / cho thuê" in he
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 1); bản sửa ở PR #257 (SRS-331), đã kiểm là chuyển xanh. Gộp #257 xong thì XOÁ dòng này")
 def test_ca_1_cach_noi_moi_khong_hoi_khu_vuc_tim_mua_o_so_ky_gui():
     """Cách nói mới (lời chào khác, không có chữ "chào"): vẫn không được hỏi tiếp chuyện tìm mua ở số ký gửi."""
     eng, spy = _hai_so("chị cần mua căn hộ Quận 7 tầm 3 tỷ", "alo em ơi", khoa="thu-hai-so-b")
