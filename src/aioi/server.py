@@ -29,7 +29,7 @@ from .drive import khoa_drive, make_folder_namer, make_resolver
 from .dia_danh import TraDiaDanh
 from .giao_lo import dia_ban_tu_nga_tu
 from .han_muc import HanMuc
-from .engine import Engine, SqliteConversationStore
+from .engine import Engine, SqliteConversationStore, cho_duyet_ban_nhap
 from .followup import followup_manager
 from .llm import build_provider
 from .projects import SqliteProjectStore, SupabaseProjectStore
@@ -150,6 +150,7 @@ class ZaloBridgePayload(BaseModel):
     sent_bubbles: int | None = None
     done: bool | None = None
     human_note: bool | None = None      # bridge: tin ĐI RA từ acc clone không phải bot gửi = admin gõ tay → bot nhường sân (SRS-5.1zzzzzzz216)
+    su_kien: str | None = None          # loại sự kiện Zalo: "reaction" = khách thả cảm xúc lên một tin (SRS-5.1zzzzzzz364); trống = tin nhắn
 
 
 class ZaloBridgeResponse(BaseModel):
@@ -638,6 +639,18 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
                                nhan_luc=nhan_luc)
         return ZaloBridgeResponse(reply="", replies=[], nhip_go=[], assistant_name="", captured=[], next_field=None,
                                   property_score=0.0, user_score=0.0, tier="", completeness=0.0)
+
+    # SRS-5.1zzzzzzz364 (chat thật 01–02/11: khách mua chỉ thả /-heart 6 lần trong 3 giờ, bot nhắn lại 4 lần "Em vẫn ở đây…", "Tim đủ đầy
+    # rồi ạ ❤️…"): lượt CHỈ là cảm xúc (theo LOẠI SỰ KIỆN bridge gửi — `su_kien`, hay msg_id `react-` của bridge cũ; không đọc chữ) thì không
+    # trả lời, chỉ ghi CRM. Ngoại lệ: bản nháp đang chờ duyệt (thả tim = đồng ý, FR-142), hoặc bot chưa từng nhắn khách này (chào một lần).
+    if payload.su_kien == "reaction" or str(payload.msg_id or "").startswith("react-"):
+        conv_cx = _engine.conversation(payload.external_user_id)
+        if not cho_duyet_ban_nhap(conv_cx) and any(t.role == "assistant" for t in conv_cx.history):
+            log.warning("Lượt chỉ thả cảm xúc — không trả lời")
+            sync_to_supabase_async(external_user_id=payload.external_user_id, incoming_text=(payload.text or "").strip()
+                                   or "[khách thả cảm xúc]", bot_reply="", zalo_msg_id=payload.msg_id, user_name=zalo_name,
+                                   nhan_luc=nhan_luc)
+            return _dap_rong()
 
     # 1. Check if incoming file/message is a voice note
     audio_url = None

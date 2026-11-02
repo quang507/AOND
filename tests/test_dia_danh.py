@@ -95,11 +95,12 @@ def test_ten_gan():
 
 
 def test_khoi_prompt_ke_phuong_cho_khach_chon():
+    # SRS-5.1zzzzzzz359: bỏ dòng "Kho đường … khi hỏi phường, kể các phường này cho khách chọn" — khối không còn đưa danh sách phường để hỏi.
     duong = {"Lê Văn Sỹ": [{"ten": "Lê Văn Sỹ", "khoang_cach": 0, "phuong": ["Phường Nhiêu Lộc", "Phường Phú Nhuận"]}]}
     t, _ = _tra(duong=duong)
-    k = khoi_dia_danh(t, {"duong": "Lê Văn Sỹ"}, "phuong")
-    assert "Phường Nhiêu Lộc, Phường Phú Nhuận" in k and "KHÔNG phải khách nói" in k
-    assert khoi_dia_danh(t, {"duong": "Lê Văn Sỹ"}, "gia") == ""
+    for o in ("phuong", "gia"):
+        k = khoi_dia_danh(t, {"duong": "Lê Văn Sỹ"}, o)
+        assert "Phường Nhiêu Lộc" not in k and "kể các phường" not in k
     assert khoi_dia_danh(None, {"duong": "Lê Văn Sỹ"}, "phuong") == ""
 
 
@@ -224,14 +225,12 @@ def test_ten_duong_khop_nhieu_duong_thi_hoi_khach_chon():
 
 
 def test_tin_cho_phuong_ma_ten_duong_nhap_nhang_thi_hoi_duong_truoc():
-    """SRS-5.1zzzzzzz271 (chat 29/10, căn Mã Lò): khách duyệt tin, tin chờ phường, tên đường khớp hai đường → hỏi đường nào (kể tên), không
-    hỏi trống "gần chợ, trường hay ngã tư"."""
+    """SRS-5.1zzzzzzz271 (căn Mã Lò) → SRS-5.1zzzzzzz359: cổng web không hỏi gì về phường nữa; tên đường nhập nhằng vẫn hỏi đường nào ở khối
+    địa danh (`khoi_dia_danh`, lượt nào cũng có), không ở cổng web."""
     from aioi.prompts import khoi_trang_thai_web
     uv = ["Mã Lò (Quận Bình Tân)", "Mã Lộ (Quận 1)"]
     k = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "goi_y_phuong": [], "phuong_da_hoi": True, "duong_nhap_nhang": uv})[0]
-    assert "Mã Lò (Quận Bình Tân) / Mã Lộ (Quận 1)" in k and "KHÔNG hỏi chợ" in k
-    cu = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "goi_y_phuong": [], "phuong_da_hoi": True})[0]
-    assert "Mã Lò" not in cu
+    assert "Mã Lò" not in k and "KHÔNG hỏi khách phường" in k
 
 
 def test_khach_noi_quan_thi_chon_duong_cung_quan():

@@ -75,7 +75,7 @@ def test_ra_ban_nhap_thi_o_con_thieu_de_sau_khi_duyet():
     conv.prop.fields.update({**_MOI, "dien_tich_dat": "60m2", "phap_ly": "sổ hồng riêng", "tinh_trang_ban_giao": "đang ở"})
     eng.handle("ct1", "nhà em ở Lê Lợi nhé")
     assert conv.listing_proposed
-    assert "phuong" in conv.prop.hoan                       # ô thiếu không bị hỏi trước bản nháp
+    assert "phuong" not in conv.prop.missing_fields()       # SRS-359: phường không bao giờ là câu hỏi cho khách
     assert "dia_chi" not in conv.prop.hoan and "gia" not in conv.prop.hoan   # ô tối thiểu không bao giờ để sau
 
 

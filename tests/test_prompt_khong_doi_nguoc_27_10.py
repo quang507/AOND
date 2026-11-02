@@ -29,16 +29,14 @@ def test_vi_du_cau_chuan_tu_pham_luat_thi_khong_dua_cho_model():
 
 
 def test_phuong_cu_bi_chia_thi_o_hoi_luot_do_la_phuong_mot_lan():
+    # SRS-215 (ép lượt đó hỏi phường) → SRS-5.1zzzzzzz359: phường cũ đã chia KHÔNG thành câu hỏi; dữ kiện chia vẫn vào prompt, dặn không hỏi.
     eng, spy = _eng({"operations": [{"op": "update", "fields": {"duong": "Hoàng Hoa Thám", "phuong": "phường 6", "quan": "Bình Thạnh"},
                                       "bang_chung": {"duong": "Hoàng Hoa Thám", "phuong": "phường 6", "quan": "Bình Thạnh"}}], "user_intent": "sell"})
     eng._dia_danh = _tra()
     eng.handle("pc1", "nhà ở Hoàng Hoa Thám phường 6 Bình Thạnh")
     he = spy.systems[-1]
-    assert 'VIỆC LƯỢT NÀY: hỏi đúng MỘT ý: "phường' in he and 'Khi dòng "VIỆC LƯỢT NÀY" là hỏi phường' in he and "chia về nhiều phường mới (Phường Bình Lợi Trung, Phường Gia Định)" in he
-    assert "thay cho câu hỏi kế" not in he and eng.conversation("pc1").prop.fields["_phuong_chia_da_hoi"] == "1"
-    eng._provider.plan = {"operations": [], "user_intent": "sell"} if hasattr(eng._provider, "plan") else None
-    eng.handle("pc1", "nhà có sổ riêng nha")                      # lượt sau không ép hỏi phường nữa (cổng web lo tiếp)
-    assert 'VIỆC LƯỢT NÀY: hỏi đúng MỘT ý: "phường' not in spy.systems[-1]
+    assert 'hỏi đúng MỘT ý: "phường' not in he and "chia về nhiều phường mới (Phường Bình Lợi Trung, Phường Gia Định)" in he
+    assert "KHÔNG hỏi khách phường" in he and "_phuong_chia_da_hoi" not in eng.conversation("pc1").prop.fields
 
 
 def test_prompt_khong_con_dong_doi_nguoc_va_moi_phu_dinh():
