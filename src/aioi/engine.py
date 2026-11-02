@@ -368,6 +368,15 @@ def _tin_khach_sau_ban_nhap(conv: "Conversation") -> tuple[str | None, list[str]
     return None, []
 
 
+def cho_duyet_ban_nhap(conv: "Conversation") -> bool:
+    """Có bản nháp 📋 đang chờ khách duyệt (đã trình, bản gần nhất CHƯA duyệt) — SRS-5.1zzzzzzz364: lượt khách chỉ thả cảm xúc chỉ được xử lý
+    khi đang chờ duyệt (thả tim = đồng ý, FR-142)."""
+    if not getattr(conv, "listing_proposed", False):
+        return False
+    moc, _ = _tin_khach_sau_ban_nhap(conv)
+    return moc is not None and conv.prop.fields.get("_duyet_ban") != moc
+
+
 _XUNG_HO_CAU_RE = re.compile(r"(?<![\wÀ-ỹ/])(Anh/chị|anh/chị|Em|em)(?![\wÀ-ỹ/])")
 
 

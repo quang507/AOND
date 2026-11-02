@@ -382,7 +382,7 @@ async function thaTim(threadId, dich) {
   }
 }
 
-async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cliMsgId, quote) {
+async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cliMsgId, quote, suKien) {
   const imgList = Array.isArray(imageUrls) ? imageUrls : (imageUrls ? [imageUrls] : []);
   const imgDesc = imgList.length > 1 ? `[${imgList.length} ?nh]` : (imgList.length === 1 ? "[?nh]" : "");
   console.log(`? [${threadId}] ${text || (tep ? `[file ${tep.ten ?? ""}]` : (imgDesc || "[tin nh?n]"))}`);
@@ -403,6 +403,8 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cl
     // SRS-5.1zzzzzzz270 (chủ dự án 29/10: "người ta bấm nút trả lời thì bot có đọc chính xác hơn dc ko"): khách bấm "Trả lời" một tin trên
     // Zalo → zca-js để nội dung tin được trích ở `message.data.quote.msg`; chuyển cho lõi để biết khách đang đáp tin nào.
     quote_text: quote || undefined,
+    // SRS-5.1zzzzzzz364: loại sự kiện ("reaction" = khách thả cảm xúc) — lõi quyết có trả lời không theo loại, không đọc chữ.
+    su_kien: suKien || undefined,
     gioi_tinh: userGenderCache.get(String(threadId)),
     msg_id: msgId,
     channel: "zalo_personal_test",
@@ -661,6 +663,7 @@ try {
         `[khách thả cảm xúc ${icon}]`,
         undefined,
         `react-${tid}-${rMsgId}`,
+        undefined, undefined, undefined, undefined, "reaction",
       );
     } catch (e) {
       // FR-152 d: `console.error` một mình là MẤT — bridge chạy nền hàng tuần,
