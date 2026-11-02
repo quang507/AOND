@@ -96,6 +96,7 @@ from .prompts import (
     TAI_LIEU_CHUNG_SYSTEM,
     tai_lieu_chung_schema,
     SOAT_BINH_GIA_SYSTEM,
+    SOAT_BINH_GIA_CHAT_SYSTEM,
     soat_binh_gia_schema,
     build_greeting,
     khoi_chao_lan_dau,
@@ -1732,29 +1733,52 @@ def _gon(x: str) -> str:
     return re.sub(r"\s+", " ", x or "").strip().lower()
 
 
-def _binh_gia_trong_tin(eng, conv, reply: str) -> list[str]:
-    """SRS-5.1zzzzzzz336: cụm NHẬN XÉT MỨC GIÁ trong bản tin — AI (model bóc tách) đọc nghĩa, code chỉ nhận cụm có NGUYÊN VĂN trong bản tin
-    (gộp khoảng trắng, vì tin xuống dòng giữa cụm). Lỗi gọi model → [] (không chặn lượt), ghi log."""
-    tin = reply.split("📋", 1)[1] if "📋" in reply else reply
+def _binh_gia_trong_tin(eng, conv, reply: str, ban_tin: bool = True) -> list[str] | None:
+    """SRS-5.1zzzzzzz336 / 353: cụm NHẬN XÉT MỨC GIÁ (lời chat: cả thị trường) trong lời bot — AI (model bóc tách) đọc nghĩa, code chỉ nhận cụm
+    có NGUYÊN VĂN trong lời (gộp khoảng trắng, vì tin xuống dòng giữa cụm). None = AI không chạy được (lỗi gọi, hay trả thiếu `cum`) — chỗ gọi
+    tự quyết lưới đỡ."""
+    tin = reply.split("📋", 1)[1] if ban_tin and "📋" in reply else reply
     try:
         with _do(conv, "soat_binh_gia"):
-            data = eng._provider.extract(SOAT_BINH_GIA_SYSTEM, [Message("user", tin[:4000])], soat_binh_gia_schema())
+            data = eng._provider.extract(SOAT_BINH_GIA_SYSTEM if ban_tin else SOAT_BINH_GIA_CHAT_SYSTEM, [Message("user", tin[:4000])],
+                                         soat_binh_gia_schema())
     except Exception as e:   # noqa: BLE001 — soát là lưới phụ, model hỏng thì lượt vẫn đi
-        log.warning("Soát bình luận giá bản tin lỗi: %s", type(e).__name__)
-        return []
+        log.warning("Soát bình luận giá lỗi: %s", type(e).__name__)
+        return None
+    cum = data.get("cum") if isinstance(data, dict) else None
+    if not isinstance(cum, list):
+        return None
     goc = _gon(tin)
-    return [c.strip() for c in (data.get("cum") or []) if isinstance(c, str) and c.strip() and _gon(c) in goc]
+    return [c.strip() for c in cum if isinstance(c, str) and c.strip() and _gon(c) in goc]
+
+
+# SRS-5.1zzzzzzz353: LỌC THÔ trên lời CỦA BOT (không đọc lời khách) để khỏi gọi AI mỗi lượt chat — chỉ câu KHẲNG ĐỊNH (không phải câu hỏi) có nhắc
+# số tiền / giá / thị trường mới đưa AI đọc nghĩa. Lọc thô quyết "có cần đọc không", AI quyết "có phải nhận xét không".
+_LOC_THO_GIA = re.compile(r"(\d+(?:[.,]\d+)?\s*(?:tỷ|tỉ|triệu)|(?<![\wÀ-ỹ])giá(?![\wÀ-ỹ])|thị trường|thanh khoản|dễ bán|bớt|hời|"
+                          r"(?<![\wÀ-ỹ])rẻ(?![\wÀ-ỹ])|(?<![\wÀ-ỹ])đắt(?![\wÀ-ỹ]))", re.I)
+
+
+def _can_doc_gia(reply: str) -> bool:
+    cau = [c for c in re.split(r"(?<=[.!?…])\s+|\n+", reply or "") if c.strip() and not c.strip().endswith("?")]
+    return any(_LOC_THO_GIA.search(c) for c in cau) or _BINH_LUAN_GIA.search(reply or "") is not None
 
 
 def _soat_binh_luan_gia(eng, conv, reply, nc) -> list[str]:
     if _la_ban_tin(reply):   # bản tin: AI đọc nghĩa (điều phối 02/11: tin cũng không bình luận giá — SRS-5.1zzzzzzz336)
-        cum = _binh_gia_trong_tin(eng, conv, reply)
+        cum = _binh_gia_trong_tin(eng, conv, reply) or []
         return ([f"Bản tin vừa viết nhận xét mức giá (" + ", ".join(f"\"{c}\"" for c in cum) + ") — em không có dữ liệu thị trường, "
                  "bỏ hẳn các câu đó khỏi bản tin: chỉ nêu đúng con số giá chủ đưa (và chủ cho thương lượng nếu chủ đã nói), không khen / chê "
                  "giá, không hứa người mua được bớt."] if cum else [])
-    bl = _binh_luan_gia(reply)   # lời chat: lưới hình thức trên lời bot (SRS-5.1zzzzzzz132)
-    return ([f"Lời vừa viết nhận xét giá / thị trường (\"{bl}\") — em không có dữ liệu thị trường, CẤM bình luận giá hợp lý / "
-             "đắt khách / dễ bán. Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn."] if bl else [])
+    # Lời chat (SRS-5.1zzzzzzz353): AI đọc nghĩa khi lọc thô trúng; AI không chạy được thì lưới từ khoá cũ đỡ (SRS-5.1zzzzzzz132).
+    if not _can_doc_gia(reply):
+        return []
+    cum = _binh_gia_trong_tin(eng, conv, reply, ban_tin=False)
+    if cum is None:
+        bl = _binh_luan_gia(reply)
+        cum = [bl] if bl else []
+    return ([f"Lời vừa viết nhận xét giá / thị trường (" + ", ".join(f"\"{c}\"" for c in cum) + ") — em không có dữ liệu thị trường, CẤM "
+             "bình luận giá hợp lý / đắt khách / dễ bán. Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn."]
+            if cum else [])
 
 
 def _soat_so_can_mua(eng, conv, reply, nc) -> list[str]:

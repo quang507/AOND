@@ -831,6 +831,18 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz353 · Lời chat nhận xét giá / thị trường: AI đọc nghĩa, code kiểm cụm trích; từ khoá chỉ đỡ khi AI không chạy (02/11/2026)
+Ca gốc: việc để sau đóng gói của SRS-336 — lời CHAT vẫn soát bằng lưới từ khoá `_BINH_LUAN_GIA`, đổi chữ là lọt ("tầm 9 tỷ là dễ chịu lắm rồi", "nhà cỡ đó đi nhanh lắm").
+(1) Lớp lỗi: quyết định "có phải nhận xét giá" nằm ở danh sách từ khoá (§4.8). Sửa: lọc thô trên LỜI BOT (câu khẳng định có số tiền / giá / thị trường, hay lưới cũ trúng) → AI bóc tách đọc nghĩa (`SOAT_BINH_GIA_CHAT_SYSTEM`, có cả khẳng định thị trường như SRS-132) → code nhận cụm có nguyên văn; AI lỗi / trả thiếu `cum` thì lưới cũ đỡ. Không có lượt AI sau lời bot nào để gộp, nên lọc thô giữ số lần gọi thấp: đo trên bản ghi chấm 02/11, 38 / 165 lượt chat trúng lọc thô (+38 lần gọi model bóc tách / 201 lượt).
+(2) Cùng lớp: bản tin đã đi đường AI (SRS-336); `_binh_gia_trong_tin` dùng chung, trả `None` khi AI không chạy.
+(3) Kiểm: `test_binh_gia_chat_353.py` (2 cách nói mới lưới cũ bỏ lọt; AI nói không thì không gọi lại dù lưới cũ trúng; AI hỏng thì lưới cũ đỡ; câu hỏi giá / không nhắc giá không gọi AI) — bỏ đường AI: 2 đỏ.
+
+### SRS-5.1zzzzzzz352 · Lượt gọi lại duy nhất nhận bản viết lại mà không soát lại: "4 tầng", "72m²" ra tới khách (02/11/2026)
+Ca gốc: SRS-350 — `cao_lo` lượt 8 (lưới `goi_minh` tiêu lượt gọi lại, bản viết lại thêm "4 tầng"); `ka_lo_trinh_tu` (bản viết lại tự nhân 4×18 = "72m²").
+(1) Lớp lỗi: `_soat_hinh_thuc` soát → gọi lại MỘT lần → nhận bản mới không soát, nên mọi luật `ly_do` chỉ giữ được bản đầu. Sửa: soát lại bản viết lại bằng chính `LUAT_SOAT` (code, KHÔNG gọi model viết lời lần hai); còn lệch thì giữ bản ít lệch SỰ THẬT hơn (`LUAT_SU_THAT`: riêng tư, khẳng định, phí, tin đang hiện, bình giá, số bịa), rồi tới ít lệch hình thức; hoà thì giữ bản viết lại. Lượt viết lại là bản tin / lời có giá thì lưới bình giá gọi AI bóc tách thêm một lần.
+(2) Cùng lớp: mọi dòng `ly_do` đều được soát trên bản viết lại; `test_sua_ban_tin_theo_y_27_10` thêm `_duong_vao` vào dữ kiện vì bản viết lại của bài đó khẳng định "mặt tiền" khi dữ liệu chưa có — lưới mới bắt đúng.
+(3) Kiểm: `test_goi_lai_mot_lan_350.py` gỡ `xfail`; thêm ca "72m²" (cách nói mới) và ca bản viết lại sạch thì nhận — nhận luôn bản viết lại như cũ: 2 đỏ.
+
 ### SRS-5.1zzzzzzz351 · Cổng web đỏ oan vì `next/font/google`: ghim font Plus Jakarta Sans trong repo, dựng không cần mạng (02/11/2026)
 Ca gốc: cổng "Web — kiểu dữ liệu + dựng" đỏ oan 3 lần 02/11 (#250, #254, #265): `next/font` → `TypeError: Cannot read properties of null (reading '1')` ở `@next/font/dist/google/loader.js` — mỗi lượt dựng tải metadata font từ Google, runner lúc lấy được lúc không.
 (1) Lớp lỗi: bước dựng phụ thuộc dịch vụ ngoài. (2) Cùng lớp: dựng trong namespace không mạng (`unshare -n bun run build`) chỉ hỏng ở font — không chỗ nào khác gọi ra ngoài lúc dựng. Sửa: `app/fonts/` ba woff2 variable 200–800 (latin / vietnamese / latin-ext, fontsource 5.3.0, OFL kèm theo), `next/font/local` mỗi subset một lần gọi kèm `unicode-range`; `--font-jakarta` (globals.css) ghép ba họ, chỉ họ cuối giữ font dự phòng chỉnh cỡ.
