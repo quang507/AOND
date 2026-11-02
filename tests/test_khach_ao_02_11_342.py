@@ -114,7 +114,7 @@ def test_ca_3_khong_noi_chu_ro_voi_khach():
 # ---------------------------------------------------------------- ca 4: chỗ gọi THỨ HAI cùng lớp lỗi ca 1
 
 @pytest.mark.xfail(strict=True, reason="ca chờ — cùng lớp ca 1, chỗ gọi thứ hai (`cat_truoc_mo_dau`) SỬA lời đã đúng thành sai "
-                                       "(SRS-343). Sửa xong thì XOÁ dòng này")
+                                       "(SRS-344). Sửa xong thì XOÁ dòng này")
 def test_ca_4_cat_truoc_mo_dau_khong_sua_loi_dung_thanh_sai():
     """Chỗ gọi thứ hai của `mo_dau_nhap`, đã nêu là "cùng lớp còn sót" khi dựng ca 1 (SRS-342).
 
