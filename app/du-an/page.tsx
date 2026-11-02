@@ -5,23 +5,18 @@ import FavButton from "@/components/FavButton";
 import { IconPin, IconSearch } from "@/components/icons";
 import { formatPrice, zaloLink } from "@/lib/format";
 import { supabase } from "@/lib/supabase";
+import { TEN_VUNG, VUNG_NHAN_TIN } from "@/lib/vung";
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Danh sách Dự án Bất động sản HCM, Bình Dương, Đồng Nai, Long An, Tây Ninh | AI Ơi Nhà Đất",
+  title: `Danh sách Dự án Bất động sản ${TEN_VUNG} | AI Ơi Nhà Đất`,
   description:
-    "Tra cứu thông tin dự án bất động sản căn hộ, khu dân cư, biệt thự tại TP.HCM, Bình Dương, Đồng Nai, Long An, Tây Ninh. Cập nhật bảng giá, tiến độ bàn giao và chủ đầu tư.",
+    `Tra cứu thông tin dự án bất động sản căn hộ, khu dân cư, biệt thự tại ${TEN_VUNG}. Cập nhật bảng giá, tiến độ bàn giao và chủ đầu tư.`,
 };
 
-const PROVINCE_TABS = [
-  { id: "all", label: "Tất cả khu vực" },
-  { id: "Hồ Chí Minh", label: "TP. Hồ Chí Minh" },
-  { id: "Bình Dương", label: "Bình Dương" },
-  { id: "Đồng Nai", label: "Đồng Nai" },
-  { id: "Long An", label: "Long An" },
-  { id: "Tây Ninh", label: "Tây Ninh" },
-];
+// 02/11/2026 (SRS-5.1zzzzzzz334): tab tỉnh từng gõ tay 5 tỉnh, thiếu Bà Rịa – Vũng Tàu (7 dự án chỉ thấy ở "Tất cả"). Nay dựng từ `lib/vung.ts`.
+const PROVINCE_TABS = [{ id: "all", label: "Tất cả khu vực" }, ...VUNG_NHAN_TIN.map((v) => ({ id: v.tinh, label: v.nhan }))];
 
 // 18/10/2026 (SRS-5.1zzzzzzz45, chủ dự án "mình cần data đúng"): trang này đọc file tĩnh `data/mogi_projects.json` (bản crawl
 // cũ, thiếu dự án), gắn ảnh nhà mẫu khi thiếu ảnh và nhãn "✓ Xác thực" cho mọi dự án. Nay đọc bảng `projects` (2.361 dự án 5 tỉnh,
