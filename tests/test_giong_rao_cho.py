@@ -14,7 +14,7 @@ def test_co_khoi_mo_chot_nhan_zalo_va_khong_hoi():
 
 
 def test_moi_tin_mot_ve_cam_chep_cau_mau():
-    assert "MỖI TIN MỘT VẺ" in A and "TUYỆT ĐỐI KHÔNG chép y nguyên" in A
+    assert "MỖI TIN MỘT VẺ" in A and "không có hai tin nào trùng từng chữ" in A   # Q8 (SRS-5.1zzzzzzz336): không còn câu mẫu để "cấm chép"
 
 
 def test_tin_cong_khai_noi_voi_dam_dong_khong_noi_rieng_voi_chu_nha():
@@ -41,11 +41,12 @@ def test_cam_khoe_khan_hiem_va_chep_loi_khen_cua_bot():
     assert "khan hiếm khi ĐÚNG sự thật" in A and "từng HỎI hay từng KHEN" in A and "không phải dữ liệu" in A
 
 
-def test_cau_moi_zalo_theo_cau_mau_cua_anh_luan_kem_luat_moi_tin_mot_ve():
-    # SRS-5.1zzzzzzz205 (chủ dự án 26/10: "Câu mời Zalo: anh Luận cho model tự diễn đạt theo câu mẫu. làm theo anh Luận"): thay kiểu lời do code
-    # chọn của SRS-203 bằng câu mẫu + luật "đừng chép y nguyên" như bản anh Luận.
-    assert 'Mở màn gọi "anh chị cô bác".' in A
-    assert "Nhanh tay nhắn Zalo cho em ngay" in A and "TUYỆT ĐỐI KHÔNG chép y nguyên" in A
+def test_cau_moi_zalo_ta_cach_viet_khong_cau_mau_moi_tin_mot_ve():
+    # SRS-5.1zzzzzzz205 (26/10: câu mẫu + "đừng chép y nguyên" theo anh Luận) → Q8 (chủ dự án 02/11, SRS-5.1zzzzzzz336): BỎ câu minh hoạ hoàn
+    # chỉnh ("Bà con ơi…", câu mời chốt mẫu), giữ giọng rao chợ bằng cách TẢ cách viết — câu mẫu vẫn bị chép dù có luật cấm chép.
+    for cau in ("Nhanh tay nhắn Zalo cho em ngay", "tiền vô liền tay", "hốt mất", '"Bà con ơi,"', '"Anh chị ơi,"', '"anh chị cô bác"'):
+        assert cau not in A, cau
+    assert "KHÔNG đưa câu mẫu nào" in A and "lời gọi đám đông người mua" in A and "FOMO" in A
     assert not hasattr(prompts, "KIEU_LOI_TIN_RAO") and "KIỂU LỜI CỦA TIN NÀY" not in prompts.build_listing_proposal_system(
         "Lan", prompts.Property(loai_hinh="nha_pho", fields={"gia": "9 tỷ", "dia_chi": "12 Lê Lợi"}))
 

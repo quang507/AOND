@@ -288,7 +288,7 @@ BUSINESS_CONTEXT = f"""BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ 
   • CHỦ ĐẦU TƯ: phí KHÔNG theo {PT_CHU}/{PT_MG} — thoả thuận riêng với dự án; đừng tự báo con số.
 {CHINH_SACH_PHI}
 - PHÍ CHỈ thu khi giao dịch THÀNH CÔNG. TUYỆT ĐỐI không bịa con số phí/ưu đãi/cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì nêu cả hai mức (chủ nhà {PT_CHU}, môi giới {PT_MG}) hoặc hỏi khách là chủ nhà hay môi giới.
-- Gamification: có Điểm uy tín và hạng Đồng/Bạc/Vàng — số THẬT nằm ở khối "ĐIỂM TIN" cuối prompt (hệ thống tính); chỉ nói số trong khối đó, gợi ý cách tăng điểm theo ô còn thiếu ghi ở đó (ảnh, sổ hồng, thông tin còn thiếu)."""
+- Gamification: điểm …/100 của TIN và hạng Đồng/Bạc/Vàng của NGƯỜI RAO — số THẬT nằm ở khối "ĐIỂM TIN" cuối prompt (hệ thống tính), khối chỉ có ở lượt ra tin hoặc khi khách hỏi điểm; lượt không có khối thì KHÔNG nhắc điểm / hạng (chủ dự án 02/11)."""
 
 
 def muc_phi(role: SellerRole, thue: bool) -> str | None:
@@ -750,7 +750,10 @@ def khoi_diem_tin(diem_tin: float, hang: str, diem_nguoi: float, thieu: list[str
         "\n\n=== ĐIỂM TIN (hệ thống tính, số THẬT — chỉ nói số ở đây, không tự đặt số khác) ===\n"
         f"Tin này: {diem_tin:.0f}/100. Người rao: hạng {hang} ({diem_nguoi:.0f}/100). Ảnh đã nhận: {so_anh} tấm.\n"
         f"Để tăng điểm: {cach}.\n"
-        "Chỉ nhắc điểm / hạng khi khách hỏi, hoặc một câu ngắn khi khích lệ gửi thêm thông tin — không nhắc mỗi lượt, không hứa lên Top.\n"
+        "Khối này chỉ có ở lượt ra tin (bản nháp / báo tin đã lên) hoặc khi khách hỏi điểm — nói gọn điểm tin, hạng người rao và cách tăng điểm, "
+        "không hứa lên Top.\n"
+        "Gọi đúng chữ (chủ dự án 02/11, SRS-5.1zzzzzzz336): điểm …/100 là điểm của TIN / CĂN; Đồng / Bạc / Vàng là hạng của NGƯỜI RAO — "
+        "không gọi điểm tin là hạng, không gọi hạng là điểm.\n"
     )
 
 
@@ -811,10 +814,10 @@ def describe_captured(prop: Property) -> str:
 # Khuôn tin rao = NGUYÊN VĂN bản anh Luận (`luan8560/AOND` 207a145) — SRS-5.1zzzzzzz207, chủ dự án 26/10: "lấy 100% của bên aond".
 # Chỉ nối thêm đoạn chống bịa của mình ở cuối (dữ liệu căn là nguồn duy nhất; bóc tách / sự thật giữ của mình).
 AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU MỘT DÒNG TRỐNG giữa các khối):
-1) TIÊU ĐỀ: **15–25 từ**, viết như câu nói thường (chỉ hoa chữ đầu câu và tên riêng — KHÔNG viết HOA cả cụm / cả dòng), MỞ bằng câu gọi mời ("Bà con ơi,", "Anh chị ơi,") rồi dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm). CẤM mở bằng "Trời ơi".
+1) TIÊU ĐỀ: **15–25 từ**, viết như câu nói thường (chỉ hoa chữ đầu câu và tên riêng — KHÔNG viết HOA cả cụm / cả dòng), MỞ bằng một lời gọi người mua theo kiểu rao chợ (tự chọn chữ, mỗi tin một kiểu) rồi dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm). CẤM mở bằng "Trời ơi".
 
-2) MÔ TẢ: MỘT đoạn **70–150 từ**, giọng RAO CHỢ — nói chuyện TRỰC TIẾP với đám đông người mua như đang mời ngay tại chỗ: mời gọi, nồng nhiệt, hối hả, lầy một chút, KHÔNG phải văn báo chí chỉn chu. Mở màn gọi "anh chị cô bác". Kể đủ vị trí & kết nối, công năng, điểm nổi bật, pháp lý — bằng lời đời thường, có nhịp, có cảm xúc. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này. Chỉ hối/khan hiếm khi ĐÚNG sự thật (chủ thật sự cần bán gấp, căn thật sự hiếm) — KHÔNG bịa độ gấp. CẤM dùng "trời ơi".
-   ĐẶT "ANH CHỊ" CÓ CHỦ ĐÍCH (quan trọng): KHÔNG rải đều mỗi câu. Chỉ gọi "anh chị" ở các ĐỈNH CẢM XÚC để người đọc tự đặt mình vào — (a) ĐỈNH QUYỀN LỢI: khi khoe cái lợi lớn họ sẽ được ("anh chị mua vô là tiền vô liền tay"); (b) ĐỈNH MẤT CƠ HỘI: dồn vào CÂU MỜI CHỐT cuối bài (mục 4). Cộng câu gọi mời mở màn là đủ ~3 lần, không hơn.
+2) MÔ TẢ: MỘT đoạn **70–150 từ**, giọng RAO CHỢ — nói chuyện TRỰC TIẾP với đám đông người mua như đang mời ngay tại chỗ: mời gọi, nồng nhiệt, hối hả, lầy một chút, KHÔNG phải văn báo chí chỉn chu. Mở màn bằng lời gọi đám đông người mua (tự chọn chữ). Kể đủ vị trí & kết nối, công năng, điểm nổi bật, pháp lý — bằng lời đời thường, có nhịp, có cảm xúc. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này. Chỉ hối/khan hiếm khi ĐÚNG sự thật (chủ thật sự cần bán gấp, căn thật sự hiếm) — KHÔNG bịa độ gấp. CẤM dùng "trời ơi".
+   ĐẶT "ANH CHỊ" CÓ CHỦ ĐÍCH (quan trọng): KHÔNG rải đều mỗi câu. Chỉ gọi "anh chị" ở các ĐỈNH CẢM XÚC để người đọc tự đặt mình vào — (a) ĐỈNH QUYỀN LỢI: khi khoe cái lợi lớn họ sẽ được; (b) ĐỈNH MẤT CƠ HỘI: dồn vào CÂU MỜI CHỐT cuối bài (mục 4). Cộng câu gọi mời mở màn là đủ ~3 lần, không hơn.
    CÂU PHẢI RÕ: đủ DẤU CÂU và nhịp, đọc lọt tai; VIẾT RÕ, không viết tắt cụt ("mặt tiền đường"/"ngang 5.3m" — KHÔNG "MT"; "phòng ngủ" — KHÔNG "PN"); KHÔNG lặp từ/ý sát nhau (tránh "MT ... MT"); LUÔN kèm đơn vị ("12.5 tỷ", "5.3m", "35m²").
 
 3) **4–5 GẠCH ĐẦU DÒNG** (mỗi dòng 1 ý đắt giá nhất — vd mặt tiền/kết cấu/pháp lý/giá).
@@ -822,9 +825,9 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU M
    - CHỈ thêm chữ phân biệt khi KHÔNG tự rõ: "132m² đất · 120m² xây dựng", "mặt tiền 12m", "6 tầng có thang máy".
    - Mỗi gạch đầu dòng ngắn gọn, không trùng ý nhau.
 
-4) CÂU MỜI CHỐT (CTA — bắt buộc): MỘT–HAI câu cuối KÊU GỌI người đọc NHẮN TIN / liên hệ Zalo cho mình NGAY, gắn liền với nỗi sợ hụt mất (FOMO) để thúc hành động — mệnh lệnh trực tiếp, KHÔNG phải câu hỏi lấy lệ. Mẫu: "Nhanh tay nhắn Zalo cho em ngay — chậm một bước là người ta hốt mất của anh chị à nghen!". Có thể kèm sẽ gửi thêm hình / hẹn đi coi. Viết như MỞ LỜI ĐỐI THOẠI để khách bấm vào là chat tiếp được liền.
+4) CÂU MỜI CHỐT (CTA — bắt buộc): MỘT–HAI câu cuối KÊU GỌI người đọc NHẮN TIN / liên hệ Zalo cho mình NGAY, gắn liền với nỗi sợ hụt mất (FOMO) để thúc hành động — mệnh lệnh trực tiếp, KHÔNG phải câu hỏi lấy lệ. Có thể kèm sẽ gửi thêm hình / hẹn đi coi. Viết như MỞ LỜI ĐỐI THOẠI để khách bấm vào là chat tiếp được liền.
 
-ĐA DẠNG — MỖI TIN MỘT VẺ (bắt buộc): mọi câu ví dụ ở trên ("anh chị mua vô là tiền vô liền tay", "chậm một bước là người ta hốt mất của anh chị à nghen", "Nhanh tay nhắn Zalo cho em ngay"...) CHỈ là MINH HOẠ giọng — TUYỆT ĐỐI KHÔNG chép y nguyên. Mỗi lần soạn phải TỰ diễn đạt MỚI: đổi câu mở màn, đổi cách khoe quyền lợi, đổi móc câu FOMO, đổi câu mời Zalo, đổi nhịp — sao cho không có hai tin nào trùng từng chữ. Giữ NGUYÊN TẮC (giọng chợ, cấu trúc, sự thật), nhưng LỜI phải tươi mới mỗi lần.
+ĐA DẠNG — MỖI TIN MỘT VẺ (bắt buộc): khuôn này cố ý KHÔNG đưa câu mẫu nào (câu mẫu hoàn chỉnh bị chép y nguyên qua nhiều tin — SRS-5.1zzzzzzz336). Mỗi lần soạn phải TỰ diễn đạt: đổi câu mở màn, đổi cách khoe quyền lợi, đổi móc câu FOMO, đổi câu mời Zalo, đổi nhịp — sao cho không có hai tin nào trùng từng chữ. Giữ NGUYÊN TẮC (giọng chợ, cấu trúc, sự thật), nhưng LỜI phải tươi mới mỗi lần.
 
 GIỌNG & XƯNG HÔ (bắt buộc): đây là TIN RAO CÔNG KHAI cho NHIỀU người mua đọc — KHÔNG phải tin nhắn nói riêng với người bán. Nói với CẢ ĐÁM ĐÔNG ("anh chị", "cô bác") — TUYỆT ĐỐI KHÔNG xưng hô 1 người kiểu nói riêng với chủ nhà ("anh ơi", "anh thấy đó", "em gửi anh", "cơ hội này không nhiều anh ơi").
 
@@ -913,6 +916,12 @@ _GOI_KHACH = {"anh": "anh", "chi": "chị"}
 _TRE = ("em", "chau")   # khách xưng em / cháu → biến thể câu mẫu `_em`, bot xưng `toi` (anh / chị / cô / chú theo tên — SRS-5.1zzzzzzz214)
 
 
+def _xh_tre(xung_ho: str) -> str:
+    """Cách gọi cho câu mẫu biến thể `_em` (khách xưng nhỏ hơn bot hoặc là người lớn tuổi): em / cháu giữ nguyên, "elder:cô" giữ nguyên để
+    `mo_dau_nhap` gọi đúng "cô" (SRS-5.1zzzzzzz336, khách ảo 02/11: "📋 Cháu sẽ rao như vầy nhé em:" với cô Sáu 62 tuổi — bản cũ rơi về "em")."""
+    return xung_ho if xung_ho in _TRE or (xung_ho.startswith("elder:") and xung_ho.partition(":")[2]) else "em"
+
+
 def mo_dau_nhap(xung_ho: str = "unknown", toi: str = "anh") -> str:
     """Dòng mở đầu bản nháp theo cách khách tự xưng (SRS-5.1zzzzzzz90: khách xưng "chị" mà dòng này vẫn "anh chị"). `toi` = bot tự xưng khi
     khách xưng em / cháu (`xung_ho.goi_toi`)."""
@@ -943,7 +952,7 @@ def cat_truoc_mo_dau(reply: str, xung_ho: str = "unknown", toi: str = "anh") -> 
     if not khop:
         return reply
     _, cuoi, la_em = max(khop, key=lambda k: k[1])
-    return (mo_dau_nhap(xung_ho if xung_ho in _TRE else "em", toi) if la_em else mo_dau_nhap(xung_ho if xung_ho not in _TRE else "unknown")) + reply[cuoi:]
+    return (mo_dau_nhap(_xh_tre(xung_ho), toi) if la_em else mo_dau_nhap(xung_ho if xung_ho not in _TRE else "unknown")) + reply[cuoi:]
 
 
 _MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em|Anh|Chị|Cô|Chú|Cháu) sẽ rao như vầy nhé[^:\n]{0,20}:")
@@ -987,11 +996,12 @@ def build_listing_proposal_system(
     Used once the listing is "khá đầy đủ". This is NOT a 30-word chat reply, so the word
     cap does NOT apply. CRUCIALLY: do NOT mention the fee yet — that comes after approval.
     """
-    xh_tre = xung_ho if xung_ho in _TRE else "em"
+    xh_tre = _xh_tre(xung_ho)
     yeu_cau = khoi_yeu_cau_viet(prop, yeu_cau_moi)
     opener = mo_dau_nhap(xh_tre, toi) if customer_is_em else mo_dau_nhap(xung_ho)
     goi = _GOI_KHACH.get(xung_ho, "anh/chị")
-    closer = (cau_mau.cau("hoi_ban_nhap_em", "em" if xh_tre == "em" else "cháu", toi=toi) if customer_is_em
+    closer = (cau_mau.cau("hoi_ban_nhap_em", xh_tre.partition(":")[2] if xh_tre.startswith("elder:") else ("em" if xh_tre == "em" else "cháu"),
+                          toi="cháu" if xh_tre.startswith("elder:") else toi) if customer_is_em
               else cau_mau.cau("hoi_ban_nhap", goi))   # sửa ở CRM (SRS-5.1zzzzzzz110)
 
     # SRS-5.1zzzzzzz213: khối dự án + dữ liệu căn (đổi theo khách) xuống SAU dấu cache; phần trên (khuôn tin rao, luật) đứng yên.
@@ -2334,10 +2344,10 @@ def operations_schema() -> dict[str, Any]:
             },
             "hoi_ve": {
                 "type": "string",
-                "enum": ["phi", "uy_tin", "link_web", "tinh_hinh_ban", "dinh_gia"],
+                "enum": ["phi", "uy_tin", "link_web", "tinh_hinh_ban", "dinh_gia", "diem_tin"],
                 "description": "Khách vừa hỏi về: phi = phí / hoa hồng của bên mình, hoặc chính sách gửi bán (bớt phí, hợp đồng môi giới, độc quyền, chia hoa hồng); uy_tin = công ty / uy tín / lừa đảo; "
                 "link_web = link tin / xem tin trên web; tinh_hinh_ban = chủ nhà hỏi đã có ai hỏi / quan tâm / xem căn mình chưa, "
-                "bán tới đâu; dinh_gia = chủ nhà hỏi giá mình đưa cao hay thấp, giá thị trường khu đó bao nhiêu. Không hỏi những điều "
+                "bán tới đâu; diem_tin = khách hỏi điểm của tin, hạng người rao hay chuyện lên Top; dinh_gia = chủ nhà hỏi giá mình đưa cao hay thấp, giá thị trường khu đó bao nhiêu. Không hỏi những điều "
                 "đó thì bỏ trống.",
             },
             "hoi_phap_ly": {"type": "string", "enum": list(phap_ly.KHOA) + [phap_ly.KHAC],
@@ -2491,6 +2501,27 @@ def tai_lieu_chung_schema() -> dict[str, Any]:
         "required": ["tai_lieu_chung"],
     }
 
+
+
+# SRS-5.1zzzzzzz336 (ca 2 của SRS-342, điều phối 02/11: bản tin KHÔNG bình luận giá): AI đọc nghĩa bản tin, code chỉ kiểm cụm trích có nguyên văn
+# trong bản tin (`engine._binh_gia_trong_tin`). Lưới từ khoá `_BINH_LUAN_GIA` đổi chữ là lọt ("tầm giá này là dễ chịu lắm rồi", "có cửa bớt lộc").
+# Phạm vi CHỈ nhận xét MỨC GIÁ — ý chung / khẳng định thị trường trong tin là quyết định chủ dự án "kệ" / "để đó, ổn" (CLAUDE.md §6.3).
+SOAT_BINH_GIA_SYSTEM = """Dưới đây là một bản tin rao bất động sản do trợ lý viết. Tìm các câu / cụm NHẬN XÉT VỀ MỨC GIÁ: khen hay chê giá (rẻ,
+hợp lý, mềm, dễ chịu, đáng tiền, hời, vừa túi tiền, giá tốt), so giá với khu vực, hoặc gợi cho người mua là chắc được bớt / có cửa trả giá.
+KHÔNG tính: con số giá, chữ "giá rao" / "giá chủ đưa", câu báo chủ nhà cho thương lượng (dữ kiện, không phải nhận xét), khen điểm KHÁC của căn
+(vị trí, nhà đẹp, tiện ích), ý chung về khu, câu mời xem. Trả JSON: `cum` = các cụm CHÉP NGUYÊN VĂN từ bản tin (đúng từng chữ), không có
+thì mảng rỗng."""
+
+
+def soat_binh_gia_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            "cum": {"type": "array", "items": {"type": "string"},
+                    "description": "Cụm nhận xét mức giá, chép nguyên văn từ bản tin; không có thì []."},
+        },
+        "required": ["cum"],
+    }
 
 
 _AI_CAU_CHUAN = {"buyer": "Khách", "seller": "Khách", "bot": "Bot", "human": "Người thật"}
