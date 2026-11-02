@@ -6,7 +6,6 @@ Mọi bài chạy qua `Engine.handle` (trừ bài đọc prompt); mỗi bài đ�
 from __future__ import annotations
 
 from aioi.engine import Engine
-from aioi.prompts import VIEC_THEO_KHOI
 from tests.gia import KhongCongCu
 
 LOI = "Dạ vâng, em ghi rồi. Nhà mình giá bao nhiêu vậy anh?"
@@ -63,7 +62,9 @@ def test_hai_khoi_hoi_cung_kich_chi_con_mot():
     eng.handle("d4", "nhà mặt tiền 5m em nha")
     s = ai.systems[-1]
     assert "BỀ NGANG HAY ĐƯỜNG" in s                                   # việc thắng: xác nhận mặt tiền (Q4 a)
-    assert "hỏi đúng MỘT ý" not in s and VIEC_THEO_KHOI in s           # câu hỏi ô kế của phiếu lượt bị gỡ
+    viec = s.split("VIỆC LƯỢT NÀY:")[-1]
+    assert "hỏi đúng MỘT ý" not in s and '"BỀ NGANG HAY ĐƯỜNG"' in viec   # câu hỏi ô kế bị gỡ; dòng việc GỌI TÊN khối thắng
+    assert "không nhắc điểm tin" in viec                               # cham Đợt 4 lần 1: câu chung → model đọc "Tin đang 73/100"
     y = eng.conversation("d4").y_luot
     assert y["_viec"]["ten"] == "xac_nhan_mat_tien" and "hoi_o" not in y["_khoi"]
 

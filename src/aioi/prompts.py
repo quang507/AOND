@@ -484,8 +484,23 @@ def khoi_su_that_can(fields: dict, chu_nha: bool) -> str:
             f"- Tình trạng nhà: {'mới xây' if fields.get('_tinh_trang_nha') == 'moi_xay' else 'KHÔNG ghi nhà mới / mới xây / giữ gìn / sạch sẽ'}\n")
 
 
-# Đợt 4 (SRS-5.1zzzzzzz325): lượt có việc hỏi khác ưu tiên hơn ô kế (khối ưu tiên, hỏi tên đường / dự án / mặt tiền…) — engine thay việc hỏi ô bằng câu này.
-VIEC_THEO_KHOI = "làm đúng khối hệ thống bên dưới — câu hỏi (nếu có) của lượt là câu của khối đó; không hỏi thêm ô tin nào khác."
+# Đợt 4 (SRS-5.1zzzzzzz325): lượt có việc hỏi khác ưu tiên hơn ô kế (khối ưu tiên, hỏi tên đường / dự án / mặt tiền…) — engine thay việc hỏi ô bằng
+# việc của khối thắng, GỌI ĐÚNG TÊN khối (cham Đợt 4 lần 1: câu chung "làm đúng khối hệ thống bên dưới" → model bám khối ĐIỂM TIN ngay dưới, đọc
+# "Tin đang 73/100" thay vì hỏi mặt tiền — 5 lượt lộ luật).
+_VIEC_KHOI = {
+    "xac_nhan_mat_tien": 'hỏi lại đúng MỘT câu theo khối "BỀ NGANG HAY ĐƯỜNG" bên dưới: con số đó là bề ngang căn hay đường trước nhà rộng chừng đó.',
+    "hoi_du_an": 'hỏi xác nhận MỘT câu theo khối "DỰ ÁN GỢI Ý" bên dưới: căn có thuộc dự án đó không.',
+    "hoi_dia_danh": 'hỏi xác nhận tên đường theo khối "TRA CỨU ĐỊA DANH" bên dưới.',
+    "hoi_gia_tin_moi": 'báo khách em lên cả hai tin và hỏi giá của tin mới theo khối "HỆ THỐNG VỪA MỞ THÊM MỘT TIN" bên dưới.',
+    "hoi_can_nao": "hỏi khách đang nói căn nào trong rổ (hệ thống chưa đổi căn nào).",
+    "hoi_trung_ten": 'hỏi đúng câu của khối "ƯU TIÊN LƯỢT NÀY — HỎI TÊN DỰ ÁN" bên dưới.',
+}
+VIEC_THEO_KHOI = 'trả lời theo khối "ƯU TIÊN LƯỢT NÀY" bên dưới.'
+
+
+def viec_theo_khoi(ten_viec: str) -> str:
+    """Dòng việc của phiếu lượt khi việc `ten_viec` (`viec_luot`) thắng câu hỏi ô kế — không hỏi thêm ô tin nào, không nhắc điểm tin."""
+    return _VIEC_KHOI.get(ten_viec, VIEC_THEO_KHOI) + " Không hỏi thêm ô tin nào khác, không nhắc điểm tin."
 
 
 def viec_phieu(prop: Property, next_field: str | None, hoi_lai: bool = False, o_bo_qua: str | None = None) -> str:
@@ -526,7 +541,7 @@ def build_phieu_luot(
 
 LUẬT CỐ ĐỊNH:
 - Ngắn, khoảng 30 từ: đáp đúng điều khách vừa nói, rồi làm {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
-- Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ khi {NHAN_VIEC_LUOT} hay khối hệ thống bên dưới bảo hỏi xác nhận.
+- Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ câu xác nhận mà {NHAN_VIEC_LUOT} giao.
 - Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết, không nhận xét giá thị trường, không hứa bán được.
 - Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
 {TIN_HE_THONG}

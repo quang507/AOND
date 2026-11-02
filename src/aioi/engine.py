@@ -27,7 +27,7 @@ from uuid import uuid4
 
 from . import gamification as g
 from . import phap_ly
-from .prompts import VIEC_THEO_KHOI, _dien_tich_mo_ho, viec_phieu
+from .prompts import _dien_tich_mo_ho, viec_phieu, viec_theo_khoi
 from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, SU_THAT_CAN, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
@@ -2963,7 +2963,7 @@ class Engine:
                         f_tin.pop("_dt_mo_ho_da_hoi", None)
                     if chia:
                         f_tin.pop("_phuong_chia_da_hoi", None)
-                viec_o = _hoi("hoi_o", viec_txt, VIEC_THEO_KHOI, _hoan_hoi_o)
+                viec_o = _hoi("hoi_o", viec_txt, "", _hoan_hoi_o)   # khi bị gỡ: việc của khối thắng (`viec_theo_khoi`, điền sau khi chọn)
             system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua, viec=viec_o)
             system += khoi_xin_dang(toi_thieu, conv.prop) + self._khoi_diem_tin(conv, now)
         elif not conv.listing_proposed:
@@ -3173,6 +3173,8 @@ class Engine:
             da_co_nhap=any(t.role == "assistant" and "📋" in (t.content or "") for t in conv.history), trang_thai=conv.active.status or "",
             duyet=conv.duyet_luot, yeu_cau_viet=bool(conv.y_luot.get("yeu_cau_viet"))), khoi)
         bo = set(viec.bo) if viec is not None else set()   # viec_luot lỗi → giữ mọi khối như trước Đợt 4 (lượt vẫn trả lời)
+        if "hoi_o" in bo and "hoi_o" in hoi:
+            hoi["hoi_o"] = (hoi["hoi_o"][0], viec_theo_khoi(viec.ten), hoi["hoi_o"][2])
         for ten, (loi, khi_bo, hoan) in hoi.items():
             system = system.replace(f"\x00{ten}\x00", khi_bo if ten in bo else loi)
             if ten in bo and hoan is not None:
