@@ -22,7 +22,7 @@ def test_khoi_can_noi_nhu_nguoi_khong_lo_chu_noi_bo():
     assert "#A1" in khoi                                              # mã vẫn có cho thao tác (quan tâm / hẹn xem), nhưng...
     assert "KHÔNG nói mã ra lời" in khoi and "Không nói chữ \"rổ\"" in khoi   # ...cấm nói ra
     assert "RỔ" not in khoi and "luôn kèm mã" not in khoi            # chữ nội bộ cũ đã bỏ
-    assert "MỘT căn tốt nhất" in khoi and "MỘT lời khen" in khoi      # SRS-160: mỗi lượt một căn, mở bằng một lời khen ngắn
+    assert "MỘT căn tốt nhất" not in khoi and "2–3 căn" in khoi and "tầm giá" in khoi   # SRS-335: rổ ≥ 2 căn thì đưa 2–3 căn, mở bằng tầm giá
     assert "nói em" not in khoi.lower()                               # "em" cứng làm model xưng lẫn với "cháu"
     rong = khoi_can_cho_khach([])
     assert "RỔ" not in rong and "nói em" not in rong.lower() and "KHÔNG bịa căn" in rong
@@ -143,9 +143,9 @@ def test_chua_co_tieu_chi_thi_khong_goi_y_can_khong_goi_db():
 
 def test_khoi_can_dat_thu_tu_khen_can_roi_moi_hoi_ngan():
     khoi = khoi_can_cho_khach([_can("A1", 5.5e9)])
-    assert "BỐN ĐOẠN" in khoi and "MỘT DÒNG TRỐNG" in khoi and "khoảng 15 chữ" in khoi          # SRS-160: bốn tin, câu hỏi ngắn ở đoạn cuối
-    assert "không khen lần hai ở cuối" in khoi and "KHÔNG nhắc lại" in khoi         # một lời khen mở tin, không lặp căn đã gửi
-    assert khoi.index("(1) Mở lời") < khoi.index("(2) Thông số") < khoi.index("(3) Link") < khoi.index("(4) Tối đa MỘT câu hỏi")   # thứ tự: mở lời · thông số + vì sao hợp · link · hỏi
+    # SRS-5.1zzzzzzz335 (chủ dự án 02/11 "chat chán quá"): bỏ khuôn BỐN ĐOẠN và "kể ĐÚNG vì sao hợp"; câu hỏi vẫn ở cuối, căn cũ không nhắc lại
+    assert "BỐN ĐOẠN" not in khoi and "kể lại ĐÚNG" not in khoi and "KHÔNG nhắc lại" in khoi
+    assert khoi.index("tầm giá") < khoi.index("Tối đa MỘT câu hỏi, ở cuối tin")
 
 
 def test_prompt_mua_noi_can_truoc_hoi_sau_va_cau_hoi_ngan():

@@ -78,7 +78,7 @@ def test_tin_cho_phuong_hoi_khac_va_khong_bia_ten_phuong():
 def test_khong_hua_hoi_chu_nha_khi_chua_ghi_viec():
     # Anh M. "căn nào đang có HĐ thuê thì gửi" → "em sẽ hỏi chủ nhà rồi báo lại" mà không việc nào được ghi: khối căn bản cũ dặn LUÔN hứa.
     k = khoi_can_cho_khach([CAN])
-    assert "nói sẽ hỏi chủ nhà" not in k and "KHÔNG hứa sẽ hỏi chủ hay báo lại" in k and "EM VỪA GHI LƯỢT NÀY" in k
+    assert "nói sẽ hỏi chủ nhà" not in k and "KHÔNG hứa hỏi chủ hay báo lại" in k and "EM VỪA GHI LƯỢT NÀY" in k
 
 
 def test_khach_gat_hoi_giup_thi_chuyen_cau_hoi_luot_truoc_cho_chu_nha():
@@ -105,4 +105,4 @@ def test_vi_du_mo_loi_khong_ep_goi_khach_la_chi():
     # Khách ảo 26/10 (SRS-5.1zzzzzzz213): anh D. 45 tuổi bị bot mở lời "Chị ơi, em đang có căn…" — model chép xưng hô của ví dụ trong khối căn
     # (cùng lớp SRS-196: ví dụ trong prompt bị chép nguyên).
     k = khoi_can_cho_khach([CAN])
-    assert "Chị ơi" not in k and "tự đặt câu" in k     # SRS-5.1zzzzzzz253: bỏ hẳn câu ví dụ thay vì dặn "đừng chép"
+    assert "Chị ơi" not in k and "câu nối với điều khách vừa nói" in k     # SRS-253 / 335: không có câu ví dụ mở lời để chép

@@ -735,6 +735,8 @@ O_TU_VAN_MUA: tuple[str, ...] = ("moi_truong_song", "thanh_vien", "noi_lam_viec"
 
 # Khách mua chỉ bị hỏi tối đa chừng này câu về nhu cầu khi đã đủ tiêu chí để gợi ý căn (SRS-5.1zzzzzzz154).
 MAX_CAU_HOI_MUA = 2
+# SRS-5.1zzzzzzz335: "ô" giả của câu hỏi MỞ phía mua (đủ khu vực + ngân sách + loại) — không phải ô dữ liệu.
+CAU_MO_MUA = "_cau_mo"
 
 
 def _so_nguyen(v: Any) -> int:
@@ -777,45 +779,31 @@ class BuyerLead:
             return "khu_vuc"
         if not self.ngan_sach and not self.fields.get("ngan_sach"):
             return "ngan_sach"
-        if not self.loai_bds and not self.fields.get("loai_bds"):
-            return "loai_bds"
+        # Giai đoạn 2 (SRS-5.1zzzzzzz335; điều phối 02/11: "anh đang muốn tìm loại hình nào?" ngay sau khi vừa đưa 3 nhà phố là vô lý): loại BĐS không
+        # còn là ô CHẶN — đủ khu vực + ngân sách là đủ để tìm căn; loại còn trống thì thành một ý trong câu hỏi mở (`y_con_thieu`).
+        # Giai đoạn 2 (SRS-5.1zzzzzzz335, ca thật 02/11 "nhà Q8 dưới 7 tỉ yên tĩnh" → bot hỏi hẻm xe hơi; chủ dự án: "chat chán quá"): KHÔNG còn cây
+        # cố định — đủ ba ô cốt lõi thì một câu MỞ, tuỳ chọn; code đưa danh sách ý còn thiếu (`y_con_thieu`), AI chọn ý hợp lời khách nhất.
+        return CAU_MO_MUA if self.y_con_thieu() else None
 
-        # Giai đoạn 2: Chi tiết theo loại BĐS (Deep-dive)
+    def y_con_thieu(self) -> list[str]:
+        """Ý nhu cầu còn thiếu SAU ba ô cốt lõi, đã bỏ ý khách đã nói và ý đã hỏi (`_da_hoi`) — danh sách cho câu hỏi mở (SRS-5.1zzzzzzz335).
+        Thứ tự chỉ là gợi ý (theo loại BĐS); AI chọn ý hợp nhất với lời khách. Xe hơi / đậu xe đứng cuối và prompt chỉ cho hỏi khi khách nhắc xe."""
         loai = (self.loai_bds or self.fields.get("loai_bds", "")).lower()
+        nha = loai in ("nha_pho", "biet_thu", "nha_cap_4")
+        ung: list[str] = [] if loai else ["loai_bds"]
         if loai in ("chung_cu", "can_ho", "condo"):
-            if not self.so_phong_ngu and not self.fields.get("so_phong_ngu"):
-                return "so_phong_ngu"
-            if not self.fields.get("nhan_nha_khi_nao"):
-                return "nhan_nha_khi_nao"
-        elif loai in ("nha_pho", "biet_thu", "nha_cap_4"):
-            if not self.yeu_cau_xe_hoi and not self.fields.get("yeu_cau_xe_hoi"):
-                return "yeu_cau_xe_hoi"
-            if not self.so_phong_ngu and not self.fields.get("so_phong_ngu"):
-                return "so_phong_ngu"
+            ung += ["so_phong_ngu", "nhan_nha_khi_nao"]
+        elif nha:
+            ung += ["so_phong_ngu"]
         elif loai in ("du_an", "dat_du_an"):
-            if not self.muc_dich and not self.fields.get("muc_dich"):
-                return "muc_dich"
-            if not self.vay_ngan_hang and not self.fields.get("vay_ngan_hang"):
-                return "vay_ngan_hang"
-
-        if not self.muc_dich and not self.fields.get("muc_dich"):
-            return "muc_dich"
-
-        # Giai đoạn 2b (SRS-5.1zzzzzzz116; chủ dự án gửi 7 câu môi giới hỏi khách mua): hiểu cách khách sống để chọn căn — mỗi câu hỏi
-        # MỘT lần (`_da_hoi`, engine ghi lúc hỏi), khách lờ thì qua câu kế, không kẹt. Thang máy chỉ hỏi khi tìm nhà đất (căn hộ có sẵn).
+            ung += ["muc_dich", "vay_ngan_hang"]
+        ung += ["muc_dich"] + [o for o in O_TU_VAN_MUA if o != "thang_may" or nha] + ["tien_do_mua"] + (["yeu_cau_xe_hoi"] if nha else [])
         da_hoi = set((self.fields.get("_da_hoi") or "").split(","))
-        for o in O_TU_VAN_MUA:
-            if o == "thang_may" and loai not in ("nha_pho", "biet_thu", "nha_cap_4"):
-                continue
-            if o in da_hoi or getattr(self, o, None) or self.fields.get(o):
-                continue
-            return o
-
-        # Giai đoạn 3: Làm rõ rồi thì hỏi thêm gì? (Closing & Hẹn xem)
-        if not self.tien_do_mua and not self.fields.get("tien_do_mua"):
-            return "tien_do_mua"
-
-        return None
+        ra: list[str] = []
+        for o in ung:
+            if o not in ra and o not in da_hoi and not getattr(self, o, None) and not self.fields.get(o):
+                ra.append(o)
+        return ra
 
     def update(self, data: dict[str, str]) -> list[str]:
         newly = []

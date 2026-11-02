@@ -280,7 +280,7 @@ Tag rỗng → giữ bố cục, thay lưới bằng hộp mời kết nối c�
 ---
 
 ## WF-08 — Mini-site rao tin `/raoban/dang-tin` → UF-09, FR-91
-🟡 một phần: ô một câu rao nằm ở `/quan-ly` (cần đăng nhập) + `/api/listing/parse`; `/raoban` là landing đẩy sang Zalo. Kênh chính là rao trong Zalo (UF-10).
+🟡 một phần: ô một câu rao nằm ở `/quan-ly` (cần đăng nhập; `/api/listing/parse` gỡ 02/11/2026, SRS-5.1zzzzzzz333 — bóc câu rao do lõi Python làm bằng AI); `/raoban` là landing đẩy sang Zalo. Kênh chính là rao trong Zalo (UF-10).
 
 ```
 ┌──────────────────────────────────────────┐
@@ -309,7 +309,7 @@ Tag rỗng → giữ bố cục, thay lưới bằng hộp mời kết nối c�
 ---
 
 ## WF-09 — Xác nhận bản bóc tách `/raoban/xac-nhan` → FR-92, FR-94, FR-96
-🟡 một phần: bóc tách (`/api/listing/parse`, trigger `boc_thong_so`) và upload ảnh (`components/UploadAnh.tsx`) có; form sửa từng trường, chọn chính chủ/môi giới, trường dự án trên web: chưa (trong Zalo bot hỏi nhỏ giọt thay thế).
+🟡 một phần: bóc tách (lõi Python trong Zalo, trigger `boc_thong_so`; `/api/listing/parse` gỡ 02/11/2026, SRS-5.1zzzzzzz333 — bóc câu rao do lõi Python làm bằng AI) và upload ảnh (`components/UploadAnh.tsx`) có; form sửa từng trường, chọn chính chủ/môi giới, trường dự án trên web: chưa (trong Zalo bot hỏi nhỏ giọt thay thế).
 
 ```
 ┌──────────────────────────────────────────┐
