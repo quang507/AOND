@@ -1,6 +1,6 @@
-"""30/10/2026 (SRS-5.1zzzzzzz307, B2 bước 2). Chủ dự án: "làm nốt b2 nhưng vẫn lưu các hàm để dễ gọi". Công tắc AGENT_BAN bật: lượt viết lời
+"""30/10/2026 (SRS-5.1zzzzzzz307, B2 bước 2). Chủ dự án: "làm nốt b2 nhưng vẫn lưu các hàm để dễ gọi". Lượt viết lời
 người bán KHÔNG nhét sẵn khối rổ hàng / bộ nhớ dự án / giá đã gửi — prompt chỉ có một dòng báo dữ liệu có thể tra, model gọi công cụ; thân công cụ
-là CHÍNH hàm khối cũ. Tắt: đường cũ y nguyên. Ca 1–2 đỏ khi gỡ bản sửa."""
+là CHÍNH hàm khối cũ. Từ Đợt 8 (SRS-5.1zzzzzzz319) chạy cho mọi người bán, công tắc AGENT_BAN đã gỡ. Ca 1 đỏ khi gỡ bản sửa."""
 from aioi.config import Settings
 from aioi.engine import Engine
 from aioi.llm.base import ToolCall, ToolTurn
@@ -32,8 +32,7 @@ def _eng(ai, key):
     return eng
 
 
-def test_bat_thi_khoi_du_lieu_thanh_cong_cu_va_model_tu_tra(monkeypatch):
-    monkeypatch.setenv("AIOI_AGENT_BAN", "thu")
+def test_bat_thi_khoi_du_lieu_thanh_cong_cu_va_model_tu_tra():
     ai = _Ai([ToolTurn(text="", tool_calls=[ToolCall("t1", "ro_hang", {})], assistant_content=[]),
               ToolTurn(text="Căn Cao Lỗ hay căn Âu Cơ anh?", tool_calls=[])])
     eng = _eng(ai, "thu-307")
@@ -45,16 +44,7 @@ def test_bat_thi_khoi_du_lieu_thanh_cong_cu_va_model_tu_tra(monkeypatch):
     assert ket["type"] == "tool_result" and ket["content"] == eng._basket_block(eng.conversation("thu-307")).strip()
 
 
-def test_tat_thi_duong_cu_y_nguyen(monkeypatch):
-    monkeypatch.setenv("AIOI_AGENT_BAN", "thu")
-    ai = _Ai([])
-    eng = _eng(ai, "khach-307")          # không phải ID thử → "thu" không áp
-    eng.handle("khach-307", "căn đó bán rồi em")
-    assert not ai.he and any("RỔ HÀNG CỦA KHÁCH" in s for s in ai.he_reply)
-
-
-def test_het_tran_thi_viet_loi_thuong_kem_ket_qua_tra(monkeypatch):
-    monkeypatch.setenv("AIOI_AGENT_BAN", "bat")
+def test_het_tran_thi_viet_loi_thuong_kem_ket_qua_tra():
     lap = ToolTurn(text="", tool_calls=[ToolCall("t", "gia_da_gui", {})], assistant_content=[])
     ai = _Ai([lap, lap, lap, lap])
     eng = _eng(ai, "s307")
@@ -63,8 +53,7 @@ def test_het_tran_thi_viet_loi_thuong_kem_ket_qua_tra(monkeypatch):
     assert any("KẾT QUẢ EM VỪA TRA" in s and "A1" in s for s in ai.he_reply)
 
 
-def test_khong_co_du_lieu_de_tra_thi_khong_mo_vong_cong_cu(monkeypatch):
-    monkeypatch.setenv("AIOI_AGENT_BAN", "bat")
+def test_khong_co_du_lieu_de_tra_thi_khong_mo_vong_cong_cu():
     ai = _Ai([])
     Engine(ai).handle("s307b", "bán nhà hẻm Cao Lỗ quận 8 giá 8 tỷ")   # một căn, không dự án, không bảng giá → không có gì để tra
     assert not ai.he and ai.he_reply
@@ -79,9 +68,8 @@ def test_ro_nhieu_can_khong_ro_can_nao_thi_khong_doi_trang_thai_va_hoi_lai():
     assert "HỎI LẠI căn nào" in agent_ban.HUONG_DAN
 
 
-def test_du_phong_khong_goi_cong_cu_thi_viet_lai_voi_du_khoi_du_lieu_308(monkeypatch):
+def test_du_phong_khong_goi_cong_cu_thi_viet_lai_voi_du_khoi_du_lieu_308():
     """SRS-5.1zzzzzzz308: Claude lỗi → Gemini dự phòng không gọi công cụ, prompt agent đã bỏ khối dữ liệu → bỏ lời đó, viết lại với ĐỦ khối."""
-    monkeypatch.setenv("AIOI_AGENT_BAN", "bat")
     ai = _Ai([ToolTurn(text="Lời mù dữ liệu.", tool_calls=[], stop_reason="du_phong")])
     eng = _eng(ai, "s308")
     r = eng.handle("s308", "căn đó bán rồi em")

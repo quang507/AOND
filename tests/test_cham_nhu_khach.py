@@ -10,10 +10,10 @@ _sp.loader.exec_module(cham_kich_ban)
 
 MAU = '''  MODEL_CHAT="claude-sonnet-5-5"
   MODEL_CHAT_THU="gemini"
-  SOAT_GON="bat"
+  DONG_TRICH_XUAT="bat"
   AGENT_BOC="thu"
   MODEL_AGENT_BOC=""
-    printf 'AIOI_CHAT_MODEL=%s\\nAIOI_CHAT_MODEL_THU=%s\\nAIOI_SOAT_GON=%s\\nAIOI_AGENT_BOC=%s\\nAIOI_AGENT_BOC_MODEL=%s\\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$SOAT_GON" "$AGENT_BOC" "$MODEL_AGENT_BOC" >> x
+    printf 'AIOI_CHAT_MODEL=%s\\nAIOI_CHAT_MODEL_THU=%s\\nAIOI_DONG_TRICH_XUAT=%s\\nAIOI_AGENT_BOC=%s\\nAIOI_AGENT_BOC_MODEL=%s\\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$DONG_TRICH_XUAT" "$AGENT_BOC" "$MODEL_AGENT_BOC" >> x
 '''
 
 
@@ -21,7 +21,7 @@ def test_cong_tac_nhu_khach_that(tmp_path):
     f = tmp_path / "cai-vps.sh"
     f.write_text(MAU, encoding="utf-8")
     env = cham_kich_ban.cong_tac_vps(str(f))
-    assert env["AIOI_CHAT_MODEL"] == "claude-sonnet-5-5" and env["AIOI_SOAT_GON"] == "bat"
+    assert env["AIOI_CHAT_MODEL"] == "claude-sonnet-5-5" and env["AIOI_DONG_TRICH_XUAT"] == "bat"
     assert env["AIOI_AGENT_BOC"] == "tat"            # "thu" chỉ bật cho ID thử — khách thật đi form
     assert env["AIOI_CHAT_MODEL_THU"] == "tat"       # model riêng của ID thử không áp cho khách thật
     thu = cham_kich_ban.cong_tac_vps(str(f), nhu="thu")
@@ -30,7 +30,7 @@ def test_cong_tac_nhu_khach_that(tmp_path):
 
 def test_cong_tac_tep_that_du_cac_cong_tac_chinh():
     env = cham_kich_ban.cong_tac_vps()
-    for k in ("AIOI_CHAT_MODEL", "AIOI_SOAT_GON", "AIOI_PHIEU_LUOT", "AIOI_AGENT_BAN", "AIOI_FORM_BAN_GON", "AIOI_AGENT_BOC"):
+    for k in ("AIOI_CHAT_MODEL", "AIOI_CONG_CU_GUI_KHACH", "AIOI_DONG_TRICH_XUAT", "AIOI_AGENT_BOC", "AIOI_MODEL_LUOT_DE"):
         assert k in env, k
     assert "thu" not in env.values()
 

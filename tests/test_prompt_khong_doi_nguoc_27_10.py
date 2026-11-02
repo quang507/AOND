@@ -4,7 +4,7 @@ rồi…" trong khi luật cấm ghi nhận; (2) dòng "Thông tin cần hỏi t
 (3) dòng cứng 'Xưng "em", gọi khách "anh/chị"' ngược khối xưng hô theo tên (SRS-214); (4) lời dặn ảnh "ghi nhận ngắn gọn ảnh"; (5) mồi phủ định có ví dụ.
 Mỗi ca đỏ khi gỡ bản sửa."""
 from aioi.engine import _mo_dau_ghi_nhan
-from aioi.prompts import MO_DAU_GHI_NHAN_RE, build_buyer_chat_system, build_chat_system, build_media_read_instruction, khoi_cau_chuan, mau_cau_chuan_hop_le
+from aioi.prompts import MO_DAU_GHI_NHAN_RE, build_buyer_chat_system, build_media_read_instruction, build_phieu_luot, khoi_cau_chuan, mau_cau_chuan_hop_le
 from aioi.schema import BuyerLead, Property
 from tests.test_doc_y_khach import _eng
 from tests.test_phuong_cu_chia import _tra
@@ -42,10 +42,10 @@ def test_phuong_cu_bi_chia_thi_o_hoi_luot_do_la_phuong_mot_lan():
 
 
 def test_prompt_khong_con_dong_doi_nguoc_va_moi_phu_dinh():
-    he = build_chat_system("Mai", Property(), "gia")
-    assert 'Xưng "em", gọi khách "anh/chị".' not in he and "theo khối QUY TẮC XƯNG HÔ" in he
-    assert '("Em ghi nhận…"' not in he and "không cần báo đã ghi / đã lưu" in he and '"Wow"' in he   # chủ dự án 27/10: "lời dặn thuận hoặc câu khen, wow các kiểu"
-    assert "xin thêm ảnh thì được" in he and 'VIỆC LƯỢT NÀY: hỏi đúng MỘT ý: "giá' in he
+    he = build_phieu_luot("Mai", Property(), "gia")   # Đợt 8 (SRS-5.1zzzzzzz319): phiếu lượt là đường duy nhất
+    assert 'Xưng "em", gọi khách "anh/chị".' not in he
+    assert '("Em ghi nhận…"' not in he and '"Wow"' in he   # chủ dự án 27/10: "lời dặn thuận hoặc câu khen, wow các kiểu"
+    assert 'VIỆC LƯỢT NÀY: hỏi đúng MỘT ý: "giá' in he
     mua = build_buyer_chat_system("Mai", BuyerLead(), "ngan_sach")
     assert 'không câu ghi nhận "em ghi nhận"' not in mua and "không báo đã ghi / đã lưu" in mua
     anh = build_media_read_instruction("Mai", None, Property(), "gia")

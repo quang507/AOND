@@ -76,7 +76,6 @@ from .prompts import (
     UNIT_TYPE_EXTRACTION_SYSTEM,
     build_buyer_chat_system,
     khoi_tin_tra_loi,
-    build_chat_system,
     build_phieu_luot,
     build_column_map_system,
     build_project_docs_block,
@@ -379,25 +378,11 @@ def _nhieu_cau_hoi(loi: str) -> bool:
     return len(re.findall(r"\?+", chat)) > 1
 
 
-def _phieu_luot(user_key: str | None) -> bool:
-    """Công tắc `AIOI_PHIEU_LUOT` (một nguồn `bot/bridge-zca/cai-vps.sh` dòng PHIEU_LUOT, SRS-5.1zzzzzzz309): "bat" = mọi khách, "thu" = chỉ ID thử,
-    khác = prompt cũ `build_chat_system`."""
-    v = os.environ.get("AIOI_PHIEU_LUOT", "").strip().lower()
-    return v == "bat" or (v == "thu" and _la_id_thu(user_key))
-
-
 def _model_luot_de() -> str | None:
     """Model viết lời cho LƯỢT DỄ (SRS-5.1zzzzzzz311, kế hoạch bước 4): env `AIOI_MODEL_LUOT_DE` (một nguồn `cai-vps.sh` dòng MODEL_LUOT_DE);
     trống / "tat" → lượt dễ dùng model chat như mọi lượt."""
     v = os.environ.get("AIOI_MODEL_LUOT_DE", "").strip()
     return None if v.lower() in ("", "tat") else v
-
-
-def _soat_gon(user_key: str | None) -> bool:
-    """Soát lời chế độ gọn (SRS-5.1zzzzzzz298, B2 bước 1): luật giọng / lặp chỉ ghi log, tối đa MỘT lần gọi lại model, "Dạ" do code bỏ. Công tắc
-    `AIOI_SOAT_GON` (một nguồn `bot/bridge-zca/cai-vps.sh` dòng SOAT_GON): "thu" = chỉ ID thử, "bat" = mọi khách, khác = như cũ."""
-    v = os.environ.get("AIOI_SOAT_GON", "").strip().lower()
-    return v == "bat" or (v == "thu" and _la_id_thu(user_key))
 
 
 def _la_id_thu(user_key: str | None) -> bool:
@@ -407,21 +392,14 @@ def _la_id_thu(user_key: str | None) -> bool:
 
 def _form_mua_gon(conv: "Conversation") -> bool:
     """Lượt lập thao tác của khách MUA dùng form gọn (SRS-5.1zzzzzzz293): prompt + schema chỉ phần phía mua, bỏ phần thao tác rổ hàng người bán
-    (≈ một nửa chữ, schema 36 → 16 khoá). Công tắc `AIOI_FORM_MUA_GON` (một nguồn `bot/bridge-zca/cai-vps.sh` dòng FORM_MUA_GON): "thu" = chỉ ID
-    thử, "bat" = mọi khách, khác = form đầy đủ như cũ."""
-    if conv.role != "buyer":
-        return False
-    v = os.environ.get("AIOI_FORM_MUA_GON", "").strip().lower()
-    return v == "bat" or (v == "thu" and _la_id_thu(conv.user_key))
+    (≈ một nửa chữ, schema 36 → 16 khoá). Mọi khách mua (công tắc FORM_MUA_GON gỡ ở Đợt 8, SRS-5.1zzzzzzz319)."""
+    return conv.role == "buyer"
 
 
 def _form_ban_gon(conv: "Conversation") -> bool:
     """Lượt lập thao tác của NGƯỜI BÁN (vai đã rõ từ lượt trước) dùng form gọn (SRS-5.1zzzzzzz303): bỏ mục việc khách mua và ba khoá phía mua.
-    Công tắc `AIOI_FORM_BAN_GON` (một nguồn `bot/bridge-zca/cai-vps.sh` dòng FORM_BAN_GON): "thu" = chỉ ID thử, "bat" = mọi khách."""
-    if conv.role != "seller":
-        return False
-    v = os.environ.get("AIOI_FORM_BAN_GON", "").strip().lower()
-    return v == "bat" or (v == "thu" and _la_id_thu(conv.user_key))
+    Mọi người bán (công tắc FORM_BAN_GON gỡ ở Đợt 8, SRS-5.1zzzzzzz319)."""
+    return conv.role == "seller"
 
 
 def _loc_viec_mua(mua: dict) -> dict:
@@ -1631,8 +1609,8 @@ def _bo_markdown(reply: str) -> str:
 
 
 # ── Bảng luật soát hình thức (SRS-5.1zzzzzzz318, audit AU-06) ──────────────────────────────────────────────────────────────────────────────
-# MỘT bảng cho cả lần soát đầu (`Engine._soat_hinh_thuc`) lẫn lần soát bản gọi lại (`Engine._ly_do_cung`). Mỗi dòng: (tên, nhóm, soát lại ở bản gọi
-# lại?, hàm). Nhóm "ly_do" = gọi lại model; "mem" = luật giọng / lặp, chế độ gọn (SOAT_GON) chỉ ghi log. Trước đây lần gọi lại có danh sách chép
+# MỘT bảng cho lần soát lời (`Engine._soat_hinh_thuc`). Mỗi dòng: (tên, nhóm, hàm). Nhóm "ly_do" = gọi lại model (tối đa một lần); "mem" = luật
+# giọng / lặp, chỉ ghi log (chế độ gọn là đường duy nhất từ Đợt 8, SRS-5.1zzzzzzz319; cột "soát lại bản gọi lại" bỏ cùng lần soát thứ hai). Trước đây lần gọi lại có danh sách chép
 # riêng: lưới SRS-292 (không rao lại 📋 cho tin đang hiển thị) chỉ nằm ở danh sách đó, mà chế độ gọn không chạy lần soát thứ hai → lưới không chạy ở
 # production. Hàm nhận (engine | None, conv, lời, ngữ cảnh) và trả danh sách lý do; luật cần engine / ngữ cảnh không đánh dấu soát lại.
 
@@ -1801,28 +1779,28 @@ def _soat_yeu_cau_viet(eng, conv, reply, nc) -> list[str]:   # SRS-5.1zzzzzzz218
     return []
 
 
-LUAT_SOAT: tuple[tuple[str, str, bool, Callable[..., list[str]]], ...] = (
-    ("tieu_de", "ly_do", False, _soat_tieu_de),
-    ("lo_rieng", "ly_do", False, _soat_lo_rieng),
-    ("bia_hem", "ly_do", False, _soat_bia_hem),
-    ("bia_chi_tiet", "ly_do", False, _soat_bia_chi_tiet),
-    ("bia_phap_ly", "ly_do", False, _soat_bia_phap_ly),
-    ("ten_khoi", "ly_do", False, _soat_ten_khoi),
-    ("da_mo_dau", "ly_do", True, _soat_da),
-    ("goi_minh", "ly_do", True, _soat_goi_minh),
-    ("phi_vai", "ly_do", True, _soat_phi_vai),
-    ("tin_dang_hien", "ly_do", True, _soat_tin_dang_hien),
-    ("mot_cau_hoi", "ly_do", True, _soat_mot_cau_hoi),
-    ("hua_gui_anh", "ly_do", False, _soat_hua_gui_anh),
-    ("lap", "mem", False, _soat_lap),
-    ("phuong_cu", "ly_do", False, _soat_phuong_cu),
-    ("mt_can_ho", "ly_do", False, _soat_mt_can_ho),
-    ("don_vi", "ly_do", False, _soat_don_vi),
-    ("binh_luan_gia", "ly_do", False, _soat_binh_luan_gia),
-    ("so_can_mua", "ly_do", False, _soat_so_can_mua),
-    ("dap_ok_dai", "mem", False, _soat_dap_ok_dai),
-    ("so_trong_tin", "ly_do", False, _soat_so_trong_tin),
-    ("yeu_cau_viet", "ly_do", False, _soat_yeu_cau_viet),
+LUAT_SOAT: tuple[tuple[str, str, Callable[..., list[str]]], ...] = (
+    ("tieu_de", "ly_do", _soat_tieu_de),
+    ("lo_rieng", "ly_do", _soat_lo_rieng),
+    ("bia_hem", "ly_do", _soat_bia_hem),
+    ("bia_chi_tiet", "ly_do", _soat_bia_chi_tiet),
+    ("bia_phap_ly", "ly_do", _soat_bia_phap_ly),
+    ("ten_khoi", "ly_do", _soat_ten_khoi),
+    ("da_mo_dau", "ly_do", _soat_da),
+    ("goi_minh", "ly_do", _soat_goi_minh),
+    ("phi_vai", "ly_do", _soat_phi_vai),
+    ("tin_dang_hien", "ly_do", _soat_tin_dang_hien),
+    ("mot_cau_hoi", "ly_do", _soat_mot_cau_hoi),
+    ("hua_gui_anh", "ly_do", _soat_hua_gui_anh),
+    ("lap", "mem", _soat_lap),
+    ("phuong_cu", "ly_do", _soat_phuong_cu),
+    ("mt_can_ho", "ly_do", _soat_mt_can_ho),
+    ("don_vi", "ly_do", _soat_don_vi),
+    ("binh_luan_gia", "ly_do", _soat_binh_luan_gia),
+    ("so_can_mua", "ly_do", _soat_so_can_mua),
+    ("dap_ok_dai", "mem", _soat_dap_ok_dai),
+    ("so_trong_tin", "ly_do", _soat_so_trong_tin),
+    ("yeu_cau_viet", "ly_do", _soat_yeu_cau_viet),
 )
 
 
@@ -2908,7 +2886,7 @@ class Engine:
             xin_sao = bool(conv.y_luot.get("xong_viec_mua") and can) and self._nen_xin_sao(conv)
             if xin_sao:
                 system += KHOI_SAP_XIN_SAO
-            if agent_mua.bat(conv.user_key, _la_id_thu(conv.user_key)) and getattr(self._convstore, "can_phu_hop", None) is not None:
+            if getattr(self._convstore, "can_phu_hop", None) is not None:
                 # SRS-5.1zzzzzzz290: lượt viết lời có công cụ CHỈ ĐỌC (tra căn / dự án) — model tự quyết có tra không; căn tra được vào `can`
                 # để lưới soát số / ảnh biết. Bóc tách (Haiku) và việc GHI giữ đường cũ.
                 reply, tra = agent_mua.chay(self, conv, system, REPLY_MAX_TOKENS)
@@ -2990,13 +2968,8 @@ class Engine:
                 khoi.append("hoi_o")
             hoi_lai = bool(next_field and conv.lo.get(next_field, 0) >= 1)   # SRS-5.1zzzzzzz200: đừng nhắn trùng câu cũ
             o_bo_qua = o_truoc if o_truoc in thieu else None
-            if _phieu_luot(conv.user_key):   # SRS-5.1zzzzzzz309 (kế hoạch bước 2): phiếu lượt ngắn thay văn xuôi build_chat_system
-                luot_de = True
-                system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua)
-            else:
-                system = build_chat_system(
-                    conv.assistant.name, conv.prop, next_field, conv.vai_phi, project_block, cum=cum_hoi, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua,
-                )
+            luot_de = True   # SRS-5.1zzzzzzz309 / 319: phiếu lượt là đường duy nhất của lượt thu thập (prompt cũ đã xoá ở Đợt 8)
+            system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua)
             system += khoi_xin_dang(toi_thieu, conv.prop) + self._khoi_diem_tin(conv, now)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
@@ -3170,15 +3143,11 @@ class Engine:
         system += (uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else ""
         # SRS-5.1zzzzzzz307 (B2 bước 2): công tắc AGENT_BAN bật → ba khối dữ liệu dưới thành công cụ model tự tra (agent_ban, thân công cụ là
         # chính ba hàm này); prompt chỉ còn một dòng báo có dữ liệu gì. Lượt không có dữ liệu nào để tra (ba khối đều rỗng) → không mở vòng công
-        # cụ, viết như cũ (khỏi tốn lượt gọi model vô ích). Tắt → đường cũ y nguyên.
-        goi_y_tra = agent_ban.goi_y(self, conv, project) if agent_ban.bat(conv.user_key, _la_id_thu(conv.user_key)) else ""
+        # cụ, viết như cũ (khỏi tốn lượt gọi model vô ích).
+        # Đợt 8 (SRS-5.1zzzzzzz319): công tắc gỡ — ba khối luôn là công cụ; không có gì để tra thì ba khối đều rỗng, khỏi mở vòng công cụ.
+        goi_y_tra = agent_ban.goi_y(self, conv, project)
         dung_agent_ban = bool(goi_y_tra)
-        if dung_agent_ban:
-            system += goi_y_tra
-        else:
-            system += self._basket_block(conv)  # basket awareness → disambiguate "căn nào?"
-            system += self._project_memory_block(project, conv)  # remember the price list + phân lô; reason over it
-            system += self._seller_price_block(conv)  # the seller's OWN prices → answer, don't lie "chưa có"
+        system += goi_y_tra
         system += khoi_tin_tra_loi(conv.tin_tra_loi)   # SRS-5.1zzzzzzz270
         if conv.y_luot.get("chua_ro_can"):   # SRS-5.1zzzzzzz310: dữ kiện hệ thống — chưa đổi căn nào
             khoi.append("chua_ro_can")
@@ -3331,16 +3300,14 @@ class Engine:
         # SRS-5.1zzzzzzz298 (B2 bước 1): luật GIỌNG / LẶP (không đổi sự thật, tiền, quyền riêng) vào `mem` — chế độ gọn chỉ ghi log, không gọi
         # lại model; luật giữ sự thật / tiền / riêng tư / bản tin / luật cứng chủ dự án (một câu hỏi, không gọi "mình") vẫn vào `ly_do`.
         mem: list[str] = []
-        gon = _soat_gon(conv.user_key)
-        if gon and _mo_dau_da(reply):
+        # Chế độ gọn là đường duy nhất (Đợt 8, SRS-5.1zzzzzzz319): luật mềm chỉ ghi log, tối đa MỘT lần gọi lại.
+        if _mo_dau_da(reply):
             reply = _bo_da_dau(reply)   # "Dạ" mở đầu: code bỏ chữ, không gọi lại model
         nc = {"system": system, "can_mua": can_mua}
-        for _ten, nhom, _lan_hai, kiem in LUAT_SOAT:   # SRS-5.1zzzzzzz318 (AU-06): MỘT bảng luật cho lần đầu và lần gọi lại
+        for _ten, nhom, kiem in LUAT_SOAT:   # SRS-5.1zzzzzzz318 (AU-06): MỘT bảng luật
             (mem if nhom == "mem" else ly_do).extend(kiem(self, conv, reply, nc))
-        if gon and mem:
+        if mem:
             log.warning("Lời bot lệch luật giọng / lặp (%d, chế độ gọn — không gọi lại): %s", len(mem), " | ".join(x[:40] for x in mem))
-        elif mem:
-            ly_do += mem
         if ly_do:
             # Đầu mỗi lý do (không lời khách) để truy lưới nào kích — bắn thử 368 chỉ thấy "1 lý do", không biết lý do gì.
             log.warning("Lời bot lệch luật hình thức (%d lý do: %s) — gọi lại model", len(ly_do), " | ".join(x[:40] for x in ly_do))
@@ -3350,24 +3317,8 @@ class Engine:
                     conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if lai:
                 reply = _gan_dau_ban_tin(_bo_markdown(lai))
-                # SRS-5.1zzzzzzz228 (ban-thu-srd 27/10: bản gọi lại vẫn mở bằng Dạ, "… em hiểu rồi anh…"): luật CỨNG (Dạ, gọi khách "mình",
-                # phí sai vai) soát lại bản gọi lại; còn lệch thì gọi thêm MỘT lần. Luật mềm (lặp, khen) không gọi lần hai — tốn tiền mỗi lượt.
-                con = [] if gon else self._ly_do_cung(conv, reply)   # chế độ gọn: tối đa MỘT lần gọi lại (SRS-5.1zzzzzzz298)
-                if gon and _mo_dau_da(reply):
+                if _mo_dau_da(reply):   # tối đa MỘT lần gọi lại (SRS-5.1zzzzzzz298); "Dạ" còn sót thì code bỏ chữ
                     reply = _bo_da_dau(reply)
-                if con:
-                    log.warning("Bản gọi lại vẫn lệch luật cứng (%s) — gọi lại lần hai", " | ".join(x[:40] for x in con))
-                    with _do(conv, "tra_loi_lai"):
-                        lai2 = self._provider.reply(
-                            system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\n" + " ".join(con) + " Viết lại TOÀN BỘ lượt trả lời.\n",
-                            conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
-                    if lai2:
-                        reply = _gan_dau_ban_tin(_bo_markdown(lai2))
-                    if _mo_dau_da(reply):   # hai lần viết lại vẫn mở "Dạ" — code bỏ chữ đó khi bỏ không đổi nghĩa (SRS-5.1zzzzzzz230)
-                        bo = _bo_da_dau(reply)
-                        if bo != reply:
-                            log.warning("Bỏ chữ Dạ mở đầu sau hai lần viết lại")
-                            reply = bo
         return reply
 
     @staticmethod
@@ -3380,12 +3331,6 @@ class Engine:
             conv.y_luot["_viec"] = {"ten": v.ten, "o": v.o, "bo": list(v.bo)}
         except Exception as e:  # noqa: BLE001 — phần đo, không được chặn lời gửi khách
             log.warning("viec_luot lỗi (bỏ qua, lượt vẫn trả lời): %s: %s", type(e).__name__, e)
-
-    @staticmethod
-    def _ly_do_cung(conv: Conversation, reply: str) -> list[str]:
-        """Luật hình thức CỨNG của lời bot (quyết định chủ dự án, không có ngoại lệ theo ngữ cảnh) — soát lại bản gọi lại. Cùng bảng `LUAT_SOAT`
-        với lần đầu (SRS-5.1zzzzzzz318, AU-06): trước đây là danh sách chép riêng, lưới SRS-292 chỉ nằm ở đây nên không chạy dưới SOAT_GON."""
-        return [x for _ten, _nhom, lan_hai, kiem in LUAT_SOAT if lan_hai for x in kiem(None, conv, reply, {})]
 
     @staticmethod
     def _inventory_tools() -> list[dict]:

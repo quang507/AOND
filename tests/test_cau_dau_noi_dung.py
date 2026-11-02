@@ -4,12 +4,12 @@ chước chuỗi được trích. Nay luật nói điều NÊN làm kèm ví d�
 (một chỗ, mọi lượt reply). Không lọc chữ ở đầu ra. Đỏ khi prompt còn trích chuỗi mẫu xấu hoặc ô gửi khách thiếu luật câu đầu."""
 from aioi.assistants import assign_assistant
 from aioi.llm.claude import _GUI_KHACH
-from aioi.prompts import build_chat_system
+from aioi.prompts import build_phieu_luot
 from aioi.schema import Property
 
 
 def test_prompt_khong_trich_chuoi_mau_xau():
-    he = build_chat_system(assign_assistant("x").name, Property(loai_hinh="nha_pho"), "phuong")
+    he = build_phieu_luot(assign_assistant("x").name, Property(loai_hinh="nha_pho"), "phuong")
     assert "Dạ không" not in he
     assert "Dạ không" not in str(_GUI_KHACH)
 

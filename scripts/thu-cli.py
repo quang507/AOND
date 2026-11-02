@@ -37,8 +37,7 @@ def main() -> int:
     ap.add_argument("--so-luot", type=int, default=0, help="chỉ chạy N lượt đầu (0 = hết)")
     a = ap.parse_args()
 
-    os.environ.update({"AIOI_LLM_PROVIDER": "claude_cli", "AIOI_CHAT_MODEL": a.chat, "AIOI_EXTRACT_MODEL": a.boc,
-                       "AIOI_SOAT_GON": os.environ.get("AIOI_SOAT_GON", "bat")})
+    os.environ.update({"AIOI_LLM_PROVIDER": "claude_cli", "AIOI_CHAT_MODEL": a.chat, "AIOI_EXTRACT_MODEL": a.boc})
     os.environ.pop("SUPABASE_SERVICE_ROLE_KEY", None)   # không ghi sổ token / kho thật
     from aioi.config import load_settings
     from aioi.engine import Engine, SqliteConversationStore

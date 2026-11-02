@@ -829,6 +829,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz319 · Audit Đợt 8: gỡ đường cũ 6 công tắc, xoá prompt cũ `build_chat_system`; phiếu lượt mang tin hệ thống, tiếng lóng, hỏi diện tích đất / nhà (02/11/2026)
+Quyết định chủ dự án 01/11 (Q1): công tắc "vĩnh viễn", "xóa code cũ lun". Gỡ nhánh `tat` / `thu` của `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON`, `FORM_BAN_GON`,
+`AGENT_MUA`, `AGENT_BAN` (code, `cai-vps.sh`, CLAUDE.md); bỏ lần soát thứ hai (`_ly_do_cung`, cột "soát lại" của `LUAT_SOAT`). `AGENT_BOC` giữ (chỉ ID thử, SRS-310 chưa hơn form).
+(1) Lớp lỗi: luật chỉ sống ở prompt cũ thì xoá prompt cũ là luật rơi (AU-13). (2) Cùng lớp đã soát: tin hệ thống ngoặc vuông (`prompts.TIN_HE_THONG`), `SLANG_NOTES`, hỏi lại
+"diện tích đó đất hay nhà" (`_dien_tich_mo_ho`) chuyển vào `build_phieu_luot`; luật còn lại của prompt cũ là giọng / văn đã có ở `GIONG_VUI` hoặc code. (3) Kiểm: `test_go_cong_tac_319.py`
+(đỏ khi gỡ ba luật khỏi phiếu lượt; không file nào đọc sáu biến); `test:py` 1312; `cham` ×2 trên 51 kịch bản: tất định 508 / 507, tổng 623 / 617, giọng 3,16 / 3,08 (trước 3,04 / 2,94).
+
 ### SRS-5.1zzzzzzz318 · Audit Đợt 2: luật rơi khi đổi đường — chính sách phí ở lượt thu thập, một bảng luật soát, nhãn việc lượt chung, ảnh sổ qua phiếu lượt (01/11/2026)
 Quyết định chủ dự án 01/11 (Q2): lượt THU THẬP, khách hỏi phí / chính sách thì nói ĐỦ 4 ý (không bớt, chỉ thu khi thành công · có HĐ môi giới văn bản · không
 độc quyền · môi giới không chia hoa hồng khác), gọn, giọng Zalo; con số vẫn do `muc_phi` / `khoi_bao_phi`. Q3: lên Top là thật — giữ câu "≥10 căn lên Top".
@@ -898,13 +905,6 @@ Ca gốc bộ chấm `hai_can_da_ban`: rổ hai căn, "căn đó anh bán đư�
   lời trả lời hỏi lại căn nào; form chưa rõ căn vẫn báo set_status trống cụm để code chặn. Form + cổng: 401 / 402, `hai_can_da_ban` đạt 2/2 (trước 1/2);
   các phép trượt còn lại cùng loại với mọi lần chạy ("mình", mở lặp, `ma_lo_7m`, `dat_nen_long_an`) — dao động giữa các lần ±3 phép.
 - Kiểm: `tests/test_agent_boc_310.py` (ca form đỏ khi gỡ cổng). Chỗ cùng lớp: `remove` / `keep_only` đã có bước xác nhận trước khi ẩn.
-
-### SRS-5.1zzzzzzz309 · Kế hoạch bước 1–2: bộ chấm 40 kịch bản + giám khảo giọng; phiếu lượt ngắn cho lượt thu thập người bán (30/10/2026)
-Chủ dự án 30/10 (kế hoạch 4 bước): bộ kịch bản offline là nguồn sự thật; prompt viết lời ngắn "giọng + dữ liệu + một việc"; không mở PR / bắn production khi không cần.
-- Bước 1: `tests/kich_ban/ban.json` 40 kịch bản (2 từ chat tester DB, ẩn danh; còn lại tự viết); `bun run cham --giong` thêm giám khảo LLM chấm giọng 1–5.
-- Bước 2: `prompts.build_phieu_luot` (~3.000 chữ, `build_chat_system` ~10.000) sau công tắc `PHIEU_LUOT` (`cai-vps.sh`) = `bat`. Đo 2 lần mỗi bản, 447 phép:
-  cũ 405 / 402, giọng TB 2,45 / 2,35, $7,6 / $6,4 → phiếu lượt 407 / 407, giọng 2,62 / 2,67, $5,6 / $5,3; lỗi nghiệp vụ không thêm (hai_can_da_ban, ma_lo_7m còn — để bước 3).
-- Quy trình (CLAUDE.md §7): một PR mỗi bước; bắn production chỉ khi đổi DB / Zalo / bridge / công cụ ghi / cài VPS. Kiểm: `tests/test_phieu_luot_309.py`.
 
 ---
 

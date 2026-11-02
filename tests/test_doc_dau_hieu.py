@@ -34,6 +34,5 @@ def test_cau_hoi_gia_khong_kem_thuong_luong():
 def test_khach_da_noi_phuong_thi_nhan_theo_khach():
     # Bắn thử 19/10: kho gợi ý "Âu Cơ thuộc Phường Hòa Bình", khách nói "Phường 9" → bot hỏi lại "Phường 9 hay Hòa Bình".
     import inspect
-    from aioi import dia_danh, prompts
+    from aioi import dia_danh
     assert "ghi theo khách, không hỏi lại" in inspect.getsource(dia_danh.khoi_dia_danh)
-    assert "KHÔNG hỏi lại để đối chiếu" in inspect.getsource(prompts)

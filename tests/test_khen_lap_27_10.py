@@ -3,7 +3,6 @@
 "có phải Phường Chợ Quán không" lặp 5 lượt, bản gọi lại vẫn mở "Dạ". Đỏ khi tắt từng bản sửa."""
 from aioi.engine import Engine, Turn
 from aioi.prompts import GIONG_VUI
-import pytest
 
 
 class _Spy:
@@ -61,17 +60,6 @@ def test_luot_bao_admin_thoi_hoi_phuong_ngay():
     c.y_luot = {}
     web = eng._trang_thai_web(c)
     assert "nhờ admin tra" in c.y_luot["can_nguoi_that"] and web["phuong_bao_admin"]
-
-
-# ---------- C: bản gọi lại còn lệch luật cứng thì gọi thêm một lần ----------
-
-@pytest.mark.nhanh_cu(AIOI_SOAT_GON="tat")   # soát chế độ cũ (gọi lại vì giọng / lặp); production chế độ gọn — SRS-298
-def test_ban_goi_lai_van_mo_da_thi_goi_lan_hai():
-    spy = _Spy(["Dạ không, em hiểu rồi anh, cần gấp em lo nhanh.", "Cần gấp thì em đẩy tin nhanh cho anh. Nhà mấy phòng ngủ?"])
-    eng = Engine(spy)
-    c = _conv(eng, "k-228d")
-    ra = eng._soat_hinh_thuc(c, "SYS", "Dạ em hiểu rồi anh, em lo nhanh.")
-    assert len(spy.systems) == 2 and ra.startswith("Cần gấp")
 
 
 # ---------- Mục 3: câu ghi nhận ở giữa lời cũng nhận ra; mục 4: "em gửi ảnh" ngược vai ----------

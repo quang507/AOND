@@ -3,7 +3,7 @@ giá của anh Luận luôn, đừng có nhắn trùng thế"). Lớp lỗi: c�
 loại / vị trí / giá vẫn bị hỏi 5–8 lượt diện tích, kết cấu, hẻm…, và ô khách lờ bị hỏi y nguyên câu cũ (chat 26/10: "tổng diện tích sàn"
 4 lượt liền). Nay: `minimal_missing` = loại hình + vị trí + giá; ô còn lại hỏi SAU khi khách duyệt, mỗi facet một câu. Đỏ khi
 bỏ `minimal_missing` khỏi `summary_ready` hoặc bỏ đánh dấu `hoan` lúc ra bản nháp."""
-from aioi.prompts import build_chat_system, build_listing_proposal_system
+from aioi.prompts import build_listing_proposal_system, build_phieu_luot
 from aioi.schema import Property, facet_of
 from tests.test_doc_y_khach import _eng
 
@@ -87,9 +87,9 @@ def test_ban_nhap_noi_thang_du_de_rao_va_cam_do_chu():
 
 def test_o_vua_hoi_ma_khach_chua_tra_loi_thi_doi_cach_hoi():
     p = Property(loai_hinh="nha_pho", fields={"dia_chi": "12 Lê Lợi", "duong": "Lê Lợi"})
-    s = build_chat_system("Linh", p, "gia", hoi_lai=True)
-    assert "ĐỔI cách hỏi" in s
-    assert "ĐỔI cách hỏi" not in build_chat_system("Linh", p, "gia")
+    s = build_phieu_luot("Linh", p, "gia", hoi_lai=True)
+    assert "đổi cách hỏi" in s
+    assert "đổi cách hỏi" not in build_phieu_luot("Linh", p, "gia")
 
 
 def test_dat_thuong_mai_kho_xuong_doi_vi_tri_dien_tich_phap_ly():

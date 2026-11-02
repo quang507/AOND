@@ -6,7 +6,6 @@ from aioi.projects import CHAC_CHAN, Project, UnitType
 
 ADMIN = CHAC_CHAN + "admin:test"   # phiếu admin: vào kho chung ngay (SRS-5.1zzzzzzz249)
 from aioi.kho_tep import MediaRef
-import pytest
 
 
 def _engine(fetcher=None, resolver=None, provider=None, folder_namer=None, media_store=None,
@@ -1297,33 +1296,6 @@ class _SystemCapturingProvider(MockProvider):
         return super().chat(system, messages, max_tokens)
 
 
-@pytest.mark.nhanh_cu(AIOI_AGENT_BAN="tat")   # khối bộ nhớ dự án nằm sẵn trong prompt; production đi qua công cụ bo_nho_du_an — SRS-307
-def test_project_memory_is_always_in_context_for_a_project_seller():
-    # AOND must NOT 'forget' the project's price list / phân lô between turns — a seller whose
-    # listing belongs to a project carries that memory into EVERY turn (so a later "à quên căn
-    # góc lớn nhất" can be resolved instead of creating a junk listing).
-    settings = Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")
-    eng = _engine(provider=_SystemCapturingProvider(settings))
-    eng.register_project("Nyah Phú Định")
-    proj = eng._projects.get("Nyah Phú Định")
-    proj.docs.append({"title": "phân lô", "markdown": "Lô 42: 43.75m²; Lô 50: 57.31m²"})
-    eng._projects.save(proj)
-    conv = eng.conversation("q")
-    conv.prop.fields["du_an"] = "Nyah Phú Định"
-
-    eng.handle("q", "Cho em hỏi diện tích lô 42 bao nhiêu vậy?")
-    assert "43.75m²" in _SystemCapturingProvider.last_system   # factual → docs in context
-
-    _SystemCapturingProvider.last_system = ""
-    eng.handle("q", "Dạ em chào anh")                          # even a plain turn keeps the memory
-    assert "43.75m²" in _SystemCapturingProvider.last_system
-
-    # but a seller NOT in that project doesn't get its memory dumped
-    _SystemCapturingProvider.last_system = ""
-    eng.handle("other", "Dạ em chào anh")
-    assert "43.75m²" not in _SystemCapturingProvider.last_system
-
-
 def test_ingest_doc_bytes_stores_markdown_on_project(monkeypatch):
     import aioi.engine as E
     monkeypatch.setattr(E, "fetch_raw", lambda url, **kw: (b"%PDF-1.4 fake phan lo", "application/pdf"))
@@ -1742,4 +1714,3 @@ def test_post_approval_marks_status_dang_ban():
     r2 = eng.handle("u_appr", "đăng đi em")
     assert "aioinhadat.com" in r2.reply
     assert conv.active.status == "đang bán"
-

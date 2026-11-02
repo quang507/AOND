@@ -1,5 +1,6 @@
 """29/10/2026 (SRS-5.1zzzzzzz290). Chủ dự án: "Ok thử … sang kiểu Suy nghĩ -> Chọn công cụ -> Thực thi -> Đánh giá thôi còn bóc tách vẫn dùng
-haiku". Lượt viết lời phía mua có công cụ CHỈ ĐỌC; model tự quyết có tra không; bóc tách + việc ghi giữ đường cũ. Ca 1–4 đỏ khi gỡ bản sửa."""
+haiku". Lượt viết lời phía mua có công cụ CHỈ ĐỌC; model tự quyết có tra không; bóc tách + việc ghi giữ đường cũ.
+Từ Đợt 8 (SRS-5.1zzzzzzz319) chạy cho mọi khách mua, công tắc AGENT_MUA đã gỡ. Ca 1–3 đỏ khi gỡ bản sửa."""
 from aioi.llm.base import ToolCall, ToolTurn
 from tests.test_viec_mua import CAN, KHACH_MUA, AiGia, KhoGia
 from aioi.engine import Engine
@@ -33,8 +34,7 @@ def _goi(ten, **inp):
     return ToolCall(id=f"t-{ten}", name=ten, input=inp)
 
 
-def test_model_tu_tra_can_theo_tieu_chi_moi_roi_moi_viet_loi(monkeypatch):
-    monkeypatch.setenv("AIOI_AGENT_MUA", "thu")
+def test_model_tu_tra_can_theo_tieu_chi_moi_roi_moi_viet_loi():
     kho = KhoQ7()
     ai = AiCongCu(KHACH_MUA, [ToolTurn(text="để em xem", tool_calls=[_goi("tim_can", khu_vuc="Quận 7")], assistant_content=[]),
                               ToolTurn(text="Có căn Nguyễn Thị Thập Quận 7 hợp anh nè.", tool_calls=[])])
@@ -47,8 +47,7 @@ def test_model_tu_tra_can_theo_tieu_chi_moi_roi_moi_viet_loi(monkeypatch):
     assert "CÔNG CỤ TRA KHO" in ai.he_cc[0]
 
 
-def test_het_tran_vong_thi_viet_loi_thuong_kem_ket_qua_tra(monkeypatch):
-    monkeypatch.setenv("AIOI_AGENT_MUA", "bat")
+def test_het_tran_vong_thi_viet_loi_thuong_kem_ket_qua_tra():
     lap = ToolTurn(text="", tool_calls=[_goi("xem_can", ma=["ABCD1234"])], assistant_content=[])
     ai = AiCongCu(KHACH_MUA, [lap, lap, lap, lap])
     eng = Engine(ai, conversation_store=KhoGia())
@@ -58,8 +57,7 @@ def test_het_tran_vong_thi_viet_loi_thuong_kem_ket_qua_tra(monkeypatch):
     assert any("KẾT QUẢ EM VỪA TRA KHO" in s and "#ABCD1234" in s for s in ai.system)
 
 
-def test_cong_cu_loi_thi_noi_that_khong_vo_luot(monkeypatch):
-    monkeypatch.setenv("AIOI_AGENT_MUA", "bat")
+def test_cong_cu_loi_thi_noi_that_khong_vo_luot():
 
     class KhoHong(KhoGia):
         def du_an_theo_khu(self, khu, toi_da=8):
@@ -72,24 +70,9 @@ def test_cong_cu_loi_thi_noi_that_khong_vo_luot(monkeypatch):
     assert "Tra kho lỗi" in ai.goi_cc[1][-1]["content"][0]["content"]
 
 
-def test_cong_tac_thu_chi_bat_cho_id_thu(monkeypatch):
-    monkeypatch.setenv("AIOI_AGENT_MUA", "thu")
-    ai = AiCongCu(KHACH_MUA, [ToolTurn(text="không được tới đây", tool_calls=[])])
-    r = Engine(ai, conversation_store=KhoGia()).handle("khach-that-290", "Em tìm nhà phố quận 5 tầm 5 tỷ")
-    assert ai.goi_cc == [] and "không được tới đây" not in r.reply   # khách thật: đường cũ, không vòng công cụ
-
-
-def test_tat_thi_nhu_cu(monkeypatch):
-    monkeypatch.delenv("AIOI_AGENT_MUA", raising=False)
-    ai = AiCongCu(KHACH_MUA, [])
-    Engine(ai, conversation_store=KhoGia()).handle("thu-290e", "Em tìm nhà phố quận 5 tầm 5 tỷ")
-    assert ai.goi_cc == []
-
-
 # --- SRS-5.1zzzzzzz292 -------------------------------------------------------------------------------------------------------------------
-def test_bo_tach_bo_sot_hen_xem_thi_agent_ghi_lich(monkeypatch):
+def test_bo_tach_bo_sot_hen_xem_thi_agent_ghi_lich():
     """Bắn thử ban-thu-mua lần 2 (29/10): Haiku không đọc ra hẹn xem / câu hỏi chủ nhà → việc mất. Nay Sonnet ghi qua công cụ."""
-    monkeypatch.setenv("AIOI_AGENT_MUA", "bat")
     kho = KhoGia()
     ai = AiCongCu(KHACH_MUA, [ToolTurn(text="", tool_calls=[_goi("hen_xem", ma="ABCD1234", gio="3h chiều thứ 7"),
                                                            _goi("hoi_chu_nha", ma="ABCD1234", cau_hoi="Nhà có sổ hồng riêng không?")],
@@ -102,8 +85,7 @@ def test_bo_tach_bo_sot_hen_xem_thi_agent_ghi_lich(monkeypatch):
     assert all(k["content"].startswith("ĐÃ GHI") for k in ket)
 
 
-def test_bo_tach_da_ghi_thi_agent_khong_ghi_lai(monkeypatch):
-    monkeypatch.setenv("AIOI_AGENT_MUA", "bat")
+def test_bo_tach_da_ghi_thi_agent_khong_ghi_lai():
     kho = KhoGia()
     ai = AiCongCu({**KHACH_MUA, "mua": {"ma_can": ["ABCD1234"], "hen_xem": "3h chiều thứ 7"}},
                   [ToolTurn(text="", tool_calls=[_goi("hen_xem", ma="ABCD1234", gio="3h chiều thứ 7")], assistant_content=[]),
@@ -113,8 +95,7 @@ def test_bo_tach_da_ghi_thi_agent_khong_ghi_lai(monkeypatch):
     assert "đã ghi ở lượt này rồi" in ai.goi_cc[1][-1]["content"][0]["content"]
 
 
-def test_cong_cu_ghi_can_khong_hien_thi_khong_ghi(monkeypatch):
-    monkeypatch.setenv("AIOI_AGENT_MUA", "bat")
+def test_cong_cu_ghi_can_khong_hien_thi_khong_ghi():
     kho = KhoGia()
     ai = AiCongCu(KHACH_MUA, [ToolTurn(text="", tool_calls=[_goi("hoi_chu_nha", ma="ZZZZ9999", cau_hoi="Còn không?")], assistant_content=[]),
                               ToolTurn(text="Căn đó em không thấy nữa ạ.", tool_calls=[])])
@@ -148,7 +129,8 @@ def test_tin_ngoai_chat_dang_hien_khong_trinh_lai_ban_tin():
     eng.handle("chu-292", "căn đó sổ hồng riêng chính chủ nha em, công chứng ngay được")
     assert any("TIN NÀY ĐANG HIỂN THỊ TRÊN WEB" in s for s in seen)
     assert conv.y_luot.get("_tin_dang_hien_ngoai_chat")
-    assert any("ĐANG HIỂN THỊ" in x for x in Engine._ly_do_cung(conv, "Em cập nhật rồi.\n\n📋 Bản tin cập nhật:\nNhà phố"))
+    from aioi.engine import _soat_tin_dang_hien
+    assert any("ĐANG HIỂN THỊ" in x for x in _soat_tin_dang_hien(None, conv, "Em cập nhật rồi.\n\n📋 Bản tin cập nhật:\nNhà phố", {}))
 
 
 def test_huong_dan_gui_chu_nha_ngay_khong_hoi_xin_phep():

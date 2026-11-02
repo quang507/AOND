@@ -440,95 +440,22 @@ GIONG_VUI = """GIỌNG (bắt buộc): em là một môi giới trẻ đang HÀO
 # Nhãn dòng việc của lượt (SRS-5.1zzzzzzz318, AU-12) — MỘT nguồn cho phiếu lượt, prompt cũ và mọi khối trỏ tới nó (địa danh, xin đăng…).
 # Trước đây prompt cũ ghi "Thông tin cần hỏi tiếp theo", phiếu lượt ghi "VIỆC LƯỢT NÀY": khối trỏ nhãn cũ thì ở production trỏ vào khoảng không.
 NHAN_VIEC_LUOT = "VIỆC LƯỢT NÀY"
+# Tin hệ thống server chèn vào lời khách (`server.py`: tin thoại, sticker, cảm xúc) — model phải hiểu đúng (AU-13, chuyển từ prompt cũ, SRS-5.1zzzzzzz319).
+TIN_HE_THONG = ('- Tin hệ thống trong ngoặc vuông: "[Tin nhắn thoại của khách]: …" — trả lời như khách gõ chữ; "[Khách gửi tin nhắn thoại nhưng …]" — '
+                'chưa nghe được, xin khách nói lại hoặc nhắn chữ; "[khách gửi sticker…]" — đáp ngắn thân thiện, không coi là đồng ý; "[khách thả cảm '
+                'xúc …]" — tim / like là ưng.')
 
 
-def build_chat_system(
-    assistant_name: str,
-    prop: Property,
-    next_field: str | None,
-    user_type: SellerRole = SellerRole.UNKNOWN,
-    project_block: str = "",
-    cum: list[str] | None = None,
-    hoi_lai: bool = False,
-    o_bo_qua: str | None = None,
-) -> str:
-    """Lượt chat người bán — GIỌNG theo bản anh Luận (`luan8560/AOND` 207a145, `build_chat_system`), SRS-5.1zzzzzzz207 (chủ dự án 26/10:
-    "lấy 100% của bên aond… cái nào cần gỡ bớt cho tự do thì gỡ, nhưng phần bóc tách… thì ko lấy"). Thêm vào khuôn anh Luận chỉ phần
-    NGHIỆP VỤ không phải giọng (tiếng lóng, địa chỉ / phường, tin hệ thống trong ngoặc, trạng thái tin) và lời hỏi lại khi khách chưa
-    trả lời ô vừa hỏi (`hoi_lai`, SRS-200). `cum` giữ cho chữ ký cũ (hỏi gộp cụm đã bỏ, SRS-136): chỉ hỏi ô đầu."""
-    ambiguous_area = prop.fields.get("dien_tich")
-    # Con số đó khách đã nói là đất (hoặc nhà) rồi thì hết mơ hồ — hỏi ô còn lại, đừng hỏi lại "80m2 là đất hay nhà" (SRS-5.1zzzzzzz52).
+def _dien_tich_mo_ho(prop: Property, next_field: str | None) -> str | None:
+    """Con số diện tích khách nói mà CHƯA rõ đất hay nhà, khi lượt này hỏi một trong hai ô đó (SRS-5.1zzzzzzz52; chuyển từ prompt cũ sang phiếu
+    lượt ở Đợt 8, SRS-5.1zzzzzzz319). Con số đã khớp ô đất / nhà khách nói thì hết mơ hồ."""
+    mo_ho = prop.fields.get("dien_tich")
+    if next_field not in ("dien_tich_dat", "dien_tich_nha") or not mo_ho:
+        return None
     def _so(v: str | None) -> str | None:
         m = re.search(r"\d+(?:[.,]\d+)?", v or "")
         return m.group(0).replace(",", ".") if m else None
-    if ambiguous_area and _so(ambiguous_area) in (_so(prop.fields.get("dien_tich_dat")), _so(prop.fields.get("dien_tich_nha"))):
-        ambiguous_area = None
-    if next_field in ("dien_tich_dat", "dien_tich_nha") and ambiguous_area:
-        ask_line = (
-            f'Khách đã cho biết diện tích {ambiguous_area} nhưng CHƯA RÕ là diện tích ĐẤT hay '
-            f'diện tích NHÀ (nhà phố/biệt thự/nhà cấp 4 có 2 diện tích khác nhau). Khen ngợi '
-            f'điểm mạnh trước, rồi hỏi lại đúng 1 câu để xác nhận {ambiguous_area} đó là đất '
-            "hay nhà."
-        )
-    elif next_field:
-        ask_line = (
-            f'{NHAN_VIEC_LUOT}: hỏi đúng MỘT ý: "{nhan_o(next_field, prop)}"'
-            + (f" ({cau_hoi_o(next_field, prop)})" if cau_hoi_o(next_field, prop) not in (nhan_o(next_field, prop), f"hỏi thêm {nhan_o(next_field, prop)}") else "")
-            + ". Hãy khen ngợi điểm mạnh của BĐS trước, rồi hỏi đúng 1 thông tin này một cách tự nhiên. CHỈ hỏi ý này — KHÔNG tự hỏi ý khác "
-            "ngoài danh sách (thương lượng, lý do bán, thế chấp…); khách tự nói thì lưu vào tin, không hỏi lại."
-            + (" Ô này em ĐÃ hỏi ở lượt trước mà khách chưa trả lời: ĐỔI cách hỏi (ngắn hơn, hoặc gợi sẵn vài đáp án để khách chọn nhanh — "
-               "riêng giá / diện tích / con số thì KHÔNG đưa số gợi ý), KHÔNG lặp lại nguyên câu cũ, và đừng nhắc là mình đã hỏi." if hoi_lai else "")
-            # SRS-5.1zzzzzzz208 (bắn thử 368 Cao Lỗ: hệ thống đã chuyển sang hỏi pháp lý, model vẫn hỏi lại diện tích sàn vừa hỏi): nói
-            # thẳng ô vừa hỏi mà khách chưa trả lời là ô KHÔNG hỏi lượt này — model hay "nối" câu hỏi của lượt trước.
-            + (f' Lượt trước em hỏi "{nhan_o(o_bo_qua, prop)}" mà khách chưa trả lời: lượt này KHÔNG hỏi lại ý đó (hệ thống hỏi sau).'
-               if o_bo_qua and o_bo_qua != next_field else "")
-        )
-    else:
-        ask_line = (
-            "Tin đã đủ dữ liệu và sẵn sàng rao — KHÔNG còn gì cần hỏi. Nếu khách không có yêu "
-            "cầu mới, hãy CHỐT cuộc trò chuyện một cách lịch sự, ấm áp: xác nhận tin đã được lưu và "
-            "sẽ đem đi chào khách; có khách hỏi hay hẹn xem thì bên em báo ngay (SRS-5.1zzzzzzz267: câu khách hỏi đi thẳng tới chủ nhà, lịch "
-            "xem qua người phụ trách — KHÔNG hứa gọi điện, KHÔNG hứa hạn bán), rồi chúc khách một ngày tốt lành. TUYỆT ĐỐI đừng hỏi thêm cho có, đừng gạ khách rao thêm căn khác."
-        )
-    fee = _fee_hint(user_type)
-    return f"""Bạn là "{assistant_name}", một trợ lý ảo bất động sản của AI Ơi Nhà Đất ({SITE_HOST}).
-
-{BUSINESS_CONTEXT}
-
-ĐỘ DÀI (tự cân nhắc theo ý khách, KHÔNG có luật cứng):
-- MẶC ĐỊNH khi đang trò chuyện thu thập thông tin: trả lời NGẮN, khoảng 30 từ — khen vài từ rồi hỏi đúng 1 thông tin.
-- KHI khách yêu cầu xem/đăng toàn bộ tin: hệ thống tự gửi bản tin rao khi căn đã có loại hình, vị trí và giá — lượt chat này KHÔNG tự soạn bài đăng, và lượt này KHÔNG có bản tin kèm theo — đừng nói em gửi / gửi bên dưới (SRS-5.1zzzzzzz302).
-- Dù ngắn hay dài, LUÔN viết TRỌN VẸN. TUYỆT ĐỐI không dừng giữa chừng, không bỏ lửng danh sách, không kết thúc bằng "…" hoặc "-".
-
-QUY TẮC KHÁC:
-- Mỗi lượt hỏi thì chỉ hỏi TỐI ĐA 1 thông tin. Khen ngợi điểm mạnh của BĐS trước khi hỏi. KHÔNG bắt khách điền form.
-- KHÔNG tự gợi ý hay hỏi khách rao THÊM căn/BĐS khác khi khách CHƯA hề nhắc tới — nếu khách muốn rao thêm, họ sẽ tự nói. Khi một tin đã xong và khách không có yêu cầu mới, hãy CHỐT lịch sự (hẹn liên hệ khi có khách, chúc ngày tốt lành), đừng kéo dài hay hỏi vu vơ.
-- Nguyên tắc trung thực: chỉ dùng (a) thông tin khách cung cấp, và (b) KIẾN THỨC CHUNG DỰ ÁN em đã có sẵn (mục "BỘ NHỚ DỰ ÁN" / "MẪU NHÀ" bên dưới — dữ liệu đã xác minh). KHÔNG bịa ngoài hai nguồn đó, KHÔNG suy diễn vật liệu/thông tin từ ảnh. Nếu đoán, dùng "hình như là" và xác nhận lại.
-- QUAN TRỌNG: kiến thức chung dự án (mẫu nhà, phân lô, tiện ích, chủ đầu tư...) là thứ em ĐÃ CÓ và ĐƯỢC DÙNG thoải mái để trả lời — đây KHÔNG phải "tra internet". Khi khách hỏi "mẫu nhà này thế nào / căn mấy tầng mấy phòng", hãy TRẢ LỜI NGAY từ bộ nhớ, TUYỆT ĐỐI đừng nói "em không tự tra được dữ liệu dự án" khi bộ nhớ đã có.
-- Ngắn gọn, thân thiện, đậm chất địa phương Việt Nam. Xưng hô theo khối QUY TẮC XƯNG HÔ ở cuối (mặc định xưng "em", gọi "anh/chị").
-
-{GIONG_VUI}
-
-GHI CHÚ NGHIỆP VỤ (để hiểu đúng và nói đúng — không phải luật giọng):
-- Địa chỉ: khách nói XÃ / phường + tỉnh (vd "xã Phước Lý, Long An") là ĐỦ cấp hành chính — từ 1/7/2025 không còn cấp quận / huyện, KHÔNG hỏi "thuộc huyện / quận nào"; đất chưa có tên đường thì hỏi "gần chỗ nào hoặc đường nào" (quốc lộ, khu công nghiệp, chợ, trường…).
-- Khách ĐÃ nói phường (tên mới hay phường số cũ) → nhận theo lời khách, KHÔNG hỏi lại để đối chiếu với phường kho gợi ý (hệ thống tự đổi phường cũ sang mới).
-- Tên đường và quận khách nói không khớp nhau (vd Phạm Văn Hai ở Tân Bình mà khách nói Bình Tân) thì hỏi xác nhận nhẹ một câu, đừng ghi mù quáng.
-- Tin hệ thống trong ngoặc vuông: "[Tin nhắn thoại của khách]: …" — trả lời như khách gõ chữ; "[Khách gửi tin nhắn thoại nhưng …]" — chưa nghe được, xin khách nói lại hoặc nhắn chữ; "[khách gửi sticker…]" — đáp ngắn thân thiện, không coi là đồng ý; "[khách thả cảm xúc …]" — tim / like là ưng.
-- Trạng thái tin: KHÔNG tự nói tin "đã đăng / đang hiển thị trên web" — chỉ nói theo khối trạng thái hệ thống đưa (nếu có).
-- Mở lượt theo khối GIỌNG ở trên (cảm xúc thật với điều khách vừa kể, hoặc vào thẳng việc); hệ thống tự lưu nên không cần báo đã ghi / đã lưu.
-- Điều khách đã nói rõ (giá, địa chỉ, diện tích…) thì KHÔNG hỏi lại để xác nhận; KHÔNG nói như thể đã nhận tài liệu / bảng giá / ảnh khách chưa gửi (xin thêm ảnh thì được).
-- Tự hiểu từ dữ kiện đã có rồi làm luôn, KHÔNG hỏi lại khách để xác nhận nghĩa hay giải thích số lệch (chủ dự án 30/10, SRS-5.1zzzzzzz302):
-  "mặt tiền có 5m thôi" sau khi đã có ngang 5,2m là khách sửa bề ngang. Diện tích: dùng đúng số khách nói, KHÔNG tự nhân ngang × dài, KHÔNG
-  nhắc với khách chuyện số lệch hay tóp / nở hậu — việc này em tự biết, không nói ra (SRS-5.1zzzzzzz303).
-- Giá thị trường: em không có số liệu thị trường — không nêu con số giá khu vực, không so với căn khác; khách HỎI giá cao hay thấp thì khối
-  định giá ở dưới quyết. Khách VỪA NÊU giá: thay vì "em đã ghi giá…", ĐƯỢC khen MỘT câu định tính gắn với điểm khách đã kể (tự đặt câu) —
-  không con số thị trường, không hứa bán được (SRS-5.1zzzzzzz214, chủ dự án 27/10).
-- Không lặp lại câu / ý đã nói ở lượt trước (lời xin lỗi, trấn an "yên tâm", "cứ nhắn lại", "em sẽ báo"): mỗi ý nói MỘT lần, lượt sau vào thẳng việc; không mở đầu hai lượt liền nhau bằng cùng mấy chữ.
-
-{SLANG_NOTES}
-{RANH_GIOI_CACHE}{project_block}
-{(chr(10) + fee) if fee else ""}
-{ask_line}"""
+    return None if _so(mo_ho) in (_so(prop.fields.get("dien_tich_dat")), _so(prop.fields.get("dien_tich_nha"))) else mo_ho
 
 
 def build_phieu_luot(
@@ -541,10 +468,13 @@ def build_phieu_luot(
     viec: str | None = None,
 ) -> str:
     """Phiếu lượt ngắn cho lượt THU THẬP của người bán (kế hoạch bước 2, SRS-5.1zzzzzzz309): giọng + vài luật cố định (cache) + dữ liệu căn + MỘT
-    việc lượt này do code quyết. Thay `build_chat_system` (~8.000 chữ văn xuôi) sau công tắc `PHIEU_LUOT`; luật nghiệp vụ còn lại nằm ở code / các
+    việc lượt này do code quyết. Đường DUY NHẤT của lượt thu thập từ Đợt 8 (SRS-5.1zzzzzzz319, prompt cũ `build_chat_system` đã xoá); luật nghiệp vụ còn lại nằm ở code / các
     khối ưu tiên hệ thống thêm khi cần. `viec`: việc riêng do engine đặt (lượt ảnh sổ, SRS-5.1zzzzzzz318) thay việc hỏi ô."""
+    mo_ho = _dien_tich_mo_ho(prop, next_field)
     if viec:
         pass
+    elif mo_ho:
+        viec = f"khách đã nói diện tích {mo_ho} nhưng chưa rõ là diện tích ĐẤT hay diện tích NHÀ (nhà phố / biệt thự có hai diện tích khác nhau): hỏi lại đúng MỘT câu xem {mo_ho} đó là đất hay nhà."
     elif next_field:
         goi_y = cau_hoi_o(next_field, prop)
         viec = f'hỏi đúng MỘT ý: "{nhan_o(next_field, prop)}"' + (
@@ -566,6 +496,9 @@ LUẬT CỐ ĐỊNH:
 - Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa.
 - Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết, không nhận xét giá thị trường, không hứa bán được.
 - Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
+{TIN_HE_THONG}
+
+{SLANG_NOTES}
 {RANH_GIOI_CACHE}{project_block}
 DỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):
 {describe_captured(prop)}

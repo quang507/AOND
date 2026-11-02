@@ -12,5 +12,6 @@ def test_cau_hoi_dia_chi_khong_bao_hoi_quan_huyen_va_co_cau_hoi_dat_gan_cho_nao(
 
 
 def test_prompt_nguoi_rao_noi_xa_cong_tinh_la_du_cap_hanh_chinh():
-    s = prompts.build_chat_system("Hằng", Property(loai_hinh="dat"), "dia_chi")
-    assert "ĐỦ cấp hành chính" in s and 'KHÔNG hỏi "thuộc' in s and "gần chỗ nào hoặc đường nào" in s
+    s = prompts.build_phieu_luot("Hằng", Property(loai_hinh="dat"), "dia_chi")   # Đợt 8 (SRS-5.1zzzzzzz319): phiếu lượt
+    viec = s.rsplit("VIỆC LƯỢT NÀY:", 1)[1]
+    assert "KHÔNG hỏi quận / huyện" in viec and "gần chỗ nào hoặc đường nào" in viec

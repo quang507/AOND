@@ -1,5 +1,5 @@
 from aioi.prompts import (
-    build_chat_system,
+    build_phieu_luot,
     build_fee_followup_system,
     build_project_block,
     build_project_docs_block,
@@ -59,7 +59,7 @@ def test_known_project_facts_injected_not_reconfirmed():
     proj = Project("Botanic Tower", amenities=["hồ bơi", "gym"],
                    attributes={"cổng": "Nguyễn Thượng Hiền"})
     block = build_project_block(proj, "Botanic Tower")
-    s = build_chat_system("T•ai", _prop(), "gia", SellerRole.UNKNOWN, project_block=block)
+    s = build_phieu_luot("T•ai", _prop(), "gia", project_block=block)
     assert "Botanic Tower" in s and "hồ bơi" in s
     assert "XÁC NHẬN nhẹ" not in s and "ĐỪNG hỏi lại để xác nhận" in s
 
@@ -97,7 +97,7 @@ def test_known_unit_type_does_not_trigger_acquisition():
 
 
 def test_no_project_block_when_none():
-    s = build_chat_system("T•ai", _prop(), "gia")
+    s = build_phieu_luot("T•ai", _prop(), "gia")
     assert "DỮ LIỆU DỰ ÁN" not in s
     assert build_project_block(None, None) == ""
 
@@ -105,15 +105,15 @@ def test_no_project_block_when_none():
 def test_ambiguous_house_area_prompts_a_resolving_question():
     p = Property(loai_hinh="nha_pho")
     p.fields.update({"dia_chi": "146 Trần Bình Trọng, Q5", "dien_tich": "80m2", "gia": "10 tỷ"})
-    s = build_chat_system("T•ai", p, "dien_tich_dat")
+    s = build_phieu_luot("T•ai", p, "dien_tich_dat")
     assert "80m2" in s  # references the number already given, doesn't ask blind
-    assert "CHƯA RÕ" in s
+    assert "chưa rõ là diện tích ĐẤT hay diện tích NHÀ" in s
 
 
 def test_normal_missing_field_question_unaffected_by_ambiguous_area_check():
     # _prop() has no ambiguous dien_tich sitting around -> the ordinary ask_line, unchanged.
-    s = build_chat_system("T•ai", _prop(), "gia")
-    assert "CHƯA RÕ" not in s
+    s = build_phieu_luot("T•ai", _prop(), "gia")
+    assert "chưa rõ là diện tích ĐẤT hay diện tích NHÀ" not in s
     assert '"giá"' in s  # asks about the actual next_field ("gia"), not diện tích at all
 
 

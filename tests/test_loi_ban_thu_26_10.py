@@ -4,7 +4,6 @@ lượt sau khi khách lờ, gợi ý số giá khi hỏi lại."""
 from aioi import prompts
 from aioi.engine import Conversation, Engine, Turn, _chi_tiet_khong_co_du_lieu, _mo_dau_ghi_nhan, _nhan_khoi_trong_tin
 from aioi.schema import Property
-import pytest
 
 
 def test_cau_ghi_nhan_that_tu_ban_thu_deu_bi_bat():
@@ -65,9 +64,9 @@ def test_khach_lo_cau_gia_thi_luot_sau_hoi_y_khac_truoc():
 
 
 def test_hoi_lai_khong_goi_y_con_so_va_khong_hoi_lai_dieu_da_noi():
-    s = prompts.build_chat_system("Lan", Property(loai_hinh="nha_pho"), "gia", hoi_lai=True)
-    assert "KHÔNG đưa số gợi ý" in s
-    assert "KHÔNG hỏi lại để xác nhận" in s and "bảng giá" in s
+    s = prompts.build_phieu_luot("Lan", Property(loai_hinh="nha_pho"), "gia", hoi_lai=True)
+    assert "con số thì không gợi số" in s
+    assert "Điều khách đã nói thì không hỏi lại" in s
     assert "KHÔNG in tên khối" in prompts.AD_FORMAT and "giữ gìn kỹ" in prompts.AD_FORMAT
 
 
@@ -75,13 +74,12 @@ def test_o_vua_hoi_khach_chua_tra_loi_thi_dan_model_khong_hoi_lai():
     """Bắn thử 368 Cao Lỗ: lượt "1 trệt 3 lầu" hệ thống chọn hỏi pháp lý mà model vẫn hỏi lại diện tích sàn — lời dặn phải nói ô đó KHÔNG hỏi."""
     p = Property()
     p.loai_hinh = "nha_pho"
-    s = prompts.build_chat_system("Th•ái", p, "phap_ly_hoan_cong", o_bo_qua="dien_tich_nha")
+    s = prompts.build_phieu_luot("Th•ái", p, "phap_ly_hoan_cong", o_bo_qua="dien_tich_nha")
     dong = s.split(prompts.RANH_GIOI_CACHE, 1)[1]
-    assert "KHÔNG hỏi lại ý đó" in dong and prompts.nhan_o("dien_tich_nha", p) in dong
-    assert "KHÔNG hỏi lại ý đó" not in prompts.build_chat_system("Th•ái", p, "dien_tich_nha", o_bo_qua="dien_tich_nha")
+    assert f'Không hỏi lại "{prompts.nhan_o("dien_tich_nha", p)}"' in dong
+    assert "Không hỏi lại" not in prompts.build_phieu_luot("Th•ái", p, "dien_tich_nha", o_bo_qua="dien_tich_nha")
 
 
-@pytest.mark.nhanh_cu(AIOI_PHIEU_LUOT="tat")   # chữ của build_chat_system; lượt thu thập production dùng phiếu lượt — SRS-309
 def test_engine_truyen_o_luot_truoc_khi_doi_o():
     """Đường thật qua Engine.handle: lượt trước hỏi diện tích sàn, khách nói kết cấu (không trả lời sàn) → hệ thống đổi ô, system gửi model
     phải dặn KHÔNG hỏi lại diện tích sàn."""
@@ -108,7 +106,7 @@ def test_engine_truyen_o_luot_truoc_khi_doi_o():
     eng.handle("k-208b", "Nhà xây 1 trệt 3 lầu")
     dong = bat.he[0].split(prompts.RANH_GIOI_CACHE, 1)[1]
     assert c.o_vua_hoi != "dien_tich_nha"
-    assert "KHÔNG hỏi lại ý đó" in dong and prompts.nhan_o("dien_tich_nha", c.prop) in dong
+    assert f'Không hỏi lại "{prompts.nhan_o("dien_tich_nha", c.prop)}"' in dong   # phiếu lượt (SRS-319)
 
 
 def test_dtcn_la_dat_va_quy_hoach_khong_phai_lo_gioi_hien_tai():

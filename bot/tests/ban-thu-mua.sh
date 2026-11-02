@@ -54,7 +54,7 @@ chat "$MUA" "Căn #$MA anh thấy được đó em. Chiều thứ 7 này 3h anh 
 sleep 2
 chat "$BAN" "Dạ căn đó sổ hồng riêng chính chủ nha em, công chứng ngay được"
 LOI_BAN="$TRA"
-# SRS-5.1zzzzzzz286 / 290: khách mở bộ nhu cầu thứ hai; hỏi chi tiết căn (vòng agent tự quyết có tra kho không — AGENT_MUA=thu bật cho ID thử).
+# SRS-5.1zzzzzzz286 / 290: khách mở bộ nhu cầu thứ hai; hỏi chi tiết căn (vòng agent tự quyết có tra kho không — agent mua chạy cho mọi khách, SRS-319).
 chat "$MUA" "À anh tìm thêm giùm con anh một căn hộ quận 7 tầm 3 tỷ nữa nha em"
 chat "$MUA" "Còn căn #$MA hồi nãy diện tích bao nhiêu, mấy tầng vậy em?"
 sleep 10   # lõi lưu tin nền sau khi trả lời (luu_nen, SRS-5.1zzzzzzz92) — soi DB sớm quá thì ô vừa ghi chưa xuống

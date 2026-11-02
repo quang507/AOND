@@ -7,13 +7,13 @@ from aioi.schema import Property
 def test_nha_pho_trong_du_an_khong_hoi_tang_toa():
     p = Property(loai_hinh="nha_pho", fields={"du_an": "LakeView City", "gia": "27 tỷ"})
     assert "ma_so_can" in p.missing_fields()
-    he = prompts.build_chat_system("Lan", p, "ma_so_can")
+    he = prompts.build_phieu_luot("Lan", p, "ma_so_can")
     assert "tầng và tòa" not in he and "số lô" in he
 
 
 def test_can_ho_van_hoi_tang_toa():
     p = Property(loai_hinh="chung_cu", fields={"du_an": "Masteri Thảo Điền"})
-    assert "tầng và tòa" in prompts.build_chat_system("Lan", p, "ma_so_can")
+    assert "tầng và tòa" in prompts.build_phieu_luot("Lan", p, "ma_so_can")
 
 
 def test_nhan_o_mot_cho():
