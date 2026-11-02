@@ -831,6 +831,18 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz363 · Bản tin tự nhân ngang × dài ra m² khi đất nở hậu: "đất 90m²" khách không nói (02/11/2026)
+Ca gốc (chat thật 01–02/11): khách "mặt tiền 6m dài 15 nở hậu 3" → bản tin "đất 90m² ngang 6m nở hậu… càng vô sâu càng rộng nhờ nở hậu 3m". 6 × 15 chỉ đúng khi không nở hậu.
+(1) Lớp lỗi: dữ kiện bản tin (`khoi_su_that_can`) không nói căn CHƯA có số m² nào, còn `AD_FORMAT` dặn "LUÔN kèm đơn vị (35m²)" → model tự nhân; lưới số SRS-218 bắt được "90m²" nhưng lượt gọi lại chưa được soát lại (đã sửa ở SRS-352). Sửa: dòng "Diện tích" do code quyết theo ô tin — có ô diện tích khách nói thì in đúng số đó, chưa có thì "CHƯA có số m² — KHÔNG tự nhân, in nguyên kích thước (kèm nở hậu)".
+(2) Cùng lớp: "72m²" (SRS-352, lượt viết lại); phía mua `dong_can` lấy `area_m2` thật của kho. Còn: bản cuối vẫn lệch số sau lượt gọi lại thì chưa gọt chữ (chỉ giữ bản ít lệch hơn).
+(3) Kiểm: `test_dien_tich_no_hau_363.py` (ca thật + cách nói mới "ngang 4 dài 20 hậu 5m"; có ô diện tích thì in đúng; lưới vẫn bắt 90m²) — gỡ dòng dữ kiện: 3 đỏ.
+
+### SRS-5.1zzzzzzz362 · Gợi ý tên đường lấy từ tên huyện, đường quận khác: "Ngô Bệ (Quận Tân Bình), Nhà Đồ" cho khách ở Nhà Bè (02/11/2026)
+Ca gốc (chat thật 01–02/11): "anh cần bán căn nhà cấp 4 ở nhà bè", "3 tỉ em" → "Nhà mình nằm đường nào vậy: Ngô Bệ (Quận Tân Bình), Nhà Đồ, hay một đường khác ở Nhà Bè?".
+(1) Lớp lỗi: khớp gần tên đường (`TraDiaDanh._duong`, RPC `tim_duong` sai 1–2 ký tự) không biết chữ khách gõ là tên ĐỊA BÀN, cũng không lọc theo khu khách đã nói. Sửa: chữ trùng đúng tên quận / huyện / phường / xã trong kho (`_la_ten_dia_ban`) mà kho không có đường trùng đúng → không khớp gần, không gợi ý; đã biết quận → bỏ ứng viên khớp gần thuộc quận khác (đường kho không ghi quận thì giữ).
+(2) Cùng lớp: soát mọi đường khớp gần tên đường — `ung_vien_duong` / `goi_y_duong` / khối địa danh đều đọc `_duong` (cùng sửa); nhánh theo nghĩa đã lọc `LOAI_KHONG_PHAI_DUONG` + quận; hai tên ngang nhau đã chọn theo quận (SRS-273). Còn: RPC `tim_duong` (SQL) không lọc quận — lọc ở lõi.
+(3) Kiểm: `test_goi_y_duong_trong_khu_362.py` (ca thật; cách nói mới "Bình Chánh, đường quach dieu" chỉ có tên gần ở Tân Phú) — tắt từng bước lọc: đỏ đúng bài.
+
 ### SRS-5.1zzzzzzz361 · `tim_nha` ưu tiên uy tín người rao: cùng mức khớp thì hạng cao xếp trước (02/11/2026)
 Quyết định chủ dự án 02/11: "quyền lợi theo hạng hạng cao thì cung cấp thông tin uy tín hơn" (khuôn anh Luận `luan8560/AOND` gamification.py: Đồng "xếp cuối luồng ưu tiên", điểm người rao = "Điểm Uy tín"). Trước đây cùng mức khớp thì xếp theo `updated_at` — hạng (OPEN-26) không đi vào gợi ý căn.
 (1) Lớp lỗi: hạng người rao chỉ dùng cho lời / quyền lợi phía bán, đường gợi ý căn phía mua không đọc. (2) Cùng lớp: `bao_can_moi` (báo căn mới khớp) và web không xếp theo hạng — web cố ý (hạng ẩn khỏi web); `bao_can_moi` gửi từng căn khớp, không chọn giữa các căn nên không cần. Sửa: migration `20261103a_tim_nha_uu_tien_uy_tin` — `hang_so_nguoi_ban()` (vàng 3 · bạc 2 · đồng 1 từ `hang_theo_diem(diem_nguoi_ban)`), `tim_nha` xếp `mức khớp ↓, hạng ↓, updated_at ↓`, chỉ tính hạng cho người rao của các căn còn tranh suất cuối; hạng không ra kết quả. CTE `materialized` — không có thì planner gọi hạng theo từng dòng: 9,7 s / lượt "Quận 5" (bản cũ 9 ms) → 79 ms.
