@@ -913,6 +913,12 @@ _GOI_KHACH = {"anh": "anh", "chi": "chị"}
 _TRE = ("em", "chau")   # khách xưng em / cháu → biến thể câu mẫu `_em`, bot xưng `toi` (anh / chị / cô / chú theo tên — SRS-5.1zzzzzzz214)
 
 
+def _xh_tre(xung_ho: str) -> str:
+    """Cách gọi cho câu mẫu biến thể `_em` (khách xưng nhỏ hơn bot hoặc là người lớn tuổi): em / cháu giữ nguyên, "elder:cô" giữ nguyên để
+    `mo_dau_nhap` gọi đúng "cô" (SRS-5.1zzzzzzz336, khách ảo 02/11: "📋 Cháu sẽ rao như vầy nhé em:" với cô Sáu 62 tuổi — bản cũ rơi về "em")."""
+    return xung_ho if xung_ho in _TRE or (xung_ho.startswith("elder:") and xung_ho.partition(":")[2]) else "em"
+
+
 def mo_dau_nhap(xung_ho: str = "unknown", toi: str = "anh") -> str:
     """Dòng mở đầu bản nháp theo cách khách tự xưng (SRS-5.1zzzzzzz90: khách xưng "chị" mà dòng này vẫn "anh chị"). `toi` = bot tự xưng khi
     khách xưng em / cháu (`xung_ho.goi_toi`)."""
@@ -943,7 +949,7 @@ def cat_truoc_mo_dau(reply: str, xung_ho: str = "unknown", toi: str = "anh") -> 
     if not khop:
         return reply
     _, cuoi, la_em = max(khop, key=lambda k: k[1])
-    return (mo_dau_nhap(xung_ho if xung_ho in _TRE else "em", toi) if la_em else mo_dau_nhap(xung_ho if xung_ho not in _TRE else "unknown")) + reply[cuoi:]
+    return (mo_dau_nhap(_xh_tre(xung_ho), toi) if la_em else mo_dau_nhap(xung_ho if xung_ho not in _TRE else "unknown")) + reply[cuoi:]
 
 
 _MO_DAU_RE = re.compile(r"(?:📋\s*)?(Mình|Em|Anh|Chị|Cô|Chú|Cháu) sẽ rao như vầy nhé[^:\n]{0,20}:")
@@ -987,11 +993,12 @@ def build_listing_proposal_system(
     Used once the listing is "khá đầy đủ". This is NOT a 30-word chat reply, so the word
     cap does NOT apply. CRUCIALLY: do NOT mention the fee yet — that comes after approval.
     """
-    xh_tre = xung_ho if xung_ho in _TRE else "em"
+    xh_tre = _xh_tre(xung_ho)
     yeu_cau = khoi_yeu_cau_viet(prop, yeu_cau_moi)
     opener = mo_dau_nhap(xh_tre, toi) if customer_is_em else mo_dau_nhap(xung_ho)
     goi = _GOI_KHACH.get(xung_ho, "anh/chị")
-    closer = (cau_mau.cau("hoi_ban_nhap_em", "em" if xh_tre == "em" else "cháu", toi=toi) if customer_is_em
+    closer = (cau_mau.cau("hoi_ban_nhap_em", xh_tre.partition(":")[2] if xh_tre.startswith("elder:") else ("em" if xh_tre == "em" else "cháu"),
+                          toi="cháu" if xh_tre.startswith("elder:") else toi) if customer_is_em
               else cau_mau.cau("hoi_ban_nhap", goi))   # sửa ở CRM (SRS-5.1zzzzzzz110)
 
     # SRS-5.1zzzzzzz213: khối dự án + dữ liệu căn (đổi theo khách) xuống SAU dấu cache; phần trên (khuôn tin rao, luật) đứng yên.

@@ -20,8 +20,6 @@ def test_mo_dau_nhap_rieng_no_goi_dung_nguoi_lon_tuoi():
     assert mo_dau_nhap("elder:chú", toi="cháu") == "📋 Cháu sẽ rao như vầy nhé chú:"
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — khách ảo 02/11 (SRS-342 ca 1): khách xưng \"cô\" mà dòng mở bản nháp gọi "
-                                       "khách là \"em\". Sửa xong thì XOÁ dòng này")
 def test_ca_1_ban_nhap_khong_goi_khach_lon_tuoi_la_em():
     """Khách ảo 1 (cô Sáu, 62 tuổi, xưng "cô", gọi bot "con"): cả cuộc chat bot gọi "cô" / xưng "cháu", nhưng dòng mở bản
     nháp ra NGUYÊN VĂN "📋 Cháu sẽ rao như vầy nhé em:" — xưng hô lẫn trong một câu, trái SRS-214.
@@ -35,7 +33,6 @@ def test_ca_1_ban_nhap_khong_goi_khach_lon_tuoi_la_em():
     assert "nhé cô:" in he
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — cùng lớp lỗi ca 1, cách gọi khác (\"chú\"). Sửa xong thì XOÁ dòng này")
 def test_ca_1_cung_lop_cach_goi_khac_chu():
     """Cùng lớp, cách nói khác: khách xưng "chú" cũng phải được gọi "chú", không phải "em"."""
     he = build_listing_proposal_system("Hoài", Property(), customer_is_em=True, xung_ho="elder:chú", toi="cháu")
