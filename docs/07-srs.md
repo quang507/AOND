@@ -831,6 +831,18 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz349 · Khối ĐIỂM TIN tự gắn số /100 vào HẠNG của người rao: bot nói "anh đang hạng Vàng (94/100)" trên production (02/11/2026)
+Ca gốc: lượt chấm đóng gói main `2d68576` ra lộ luật 11/59, 10 trong đó là lượt ra bản nháp nói "Tin này đang được 89/100 điểm, anh đang hạng Vàng (94/100)". Cùng câu đó có trên PRODUCTION: `ban-thu-ban` run 41429007819 in hai lần, mà bộ đó vẫn 54/54 vì không có phép nào soi.
+(1) Lớp lỗi: `prompts.khoi_diem_tin` in dòng dữ liệu `"Người rao: hạng {hang} ({diem_nguoi}/100)"` — tự gộp HẠNG với một số /100 — rồi dòng sau mới dặn "không gọi hạng là điểm". Lời dặn mâu thuẫn với dữ liệu đưa kèm, nên bot lặp lại đúng điều khối đưa; không phải bot không nghe lời. Khối này trước SRS-336 chỉ có ở lượt hỏi ô, nay có ở MỌI lượt ra bản nháp nên lộ ra 10 lượt. (2) Cùng lớp: soát các khối dữ kiện khác phía bán — chỉ khối này gộp hai thang đo khác loại vào một dòng.
+Sửa: việc của phiên lõi, không phải phiên kiểm. Hướng: bỏ `({diem_nguoi}/100)` khỏi dòng hạng, hoặc ghi rõ là "điểm uy tín của người rao" tách khỏi "điểm tin" — chủ dự án chốt, vì luật 02/11 chỉ phân biệt "điểm của TIN" với "hạng của NGƯỜI", chưa nói tới `diem_nguoi` dạng /100.
+(3) Kiểm: phép thử tách biến — cùng bộ chấm, bản ghi #266 (`6adfbb0`, khối chỉ ở lượt hỏi ô) → lộ luật 0; bản ghi main → 11. Lượt chấm "ĐẠT" báo ở #266 chạy trên head CŨ: nhánh được đẩy thêm commit sau khi dựng worktree (`git diff 6adfbb0 eebd948 -- src/aioi/` = 3 tệp).
+
+### SRS-5.1zzzzzzz348 · Thang chấm thiếu dòng "Không có → []" của lo_luat (nhất quán rubric, KHÔNG phải nguyên nhân số lộ luật) (02/11/2026)
+Ca gốc: khi viết lại đoạn `lo_luat` ở SRS-346 (#265, đã gộp), phiên kiểm làm mất dòng `"Không có → []."`; ba việc còn lại (`hoi_lai`, `da_doi`, `diem_sai_luc`) vẫn có.
+(1) Lớp lỗi: sửa thang chấm mà không chấm lại ngay trên một bản ghi cũ đã biết số — `--cham-lai --giong` dựng ở SRS-341 đúng để làm việc đó. (2) Cùng lớp: soát cả bốn việc, nay đủ 4 dòng.
+Sửa: khôi phục dòng đó.
+(3) Kiểm: chấm lại CÙNG bản ghi `final-1.json` → lộ luật 12 → 11, tức tác dụng nhỏ, cùng cỡ nhiễu giám khảo. **ĐÍNH CHÍNH bản đầu của mục này**: tôi đã viết dòng thiếu là nguyên nhân lộ luật nhảy 0 → 12 — SAI. Phép thử tách biến (cùng bộ chấm, hai bản ghi) cho: bản ghi #266 → 0, bản ghi main → 11. Nguyên nhân ở LÕI, ghi ở SRS-349. Bài học: đoán nguyên nhân thì chạy phép thử tách biến trước khi viết.
+
 ### SRS-5.1zzzzzzz347 · Bịa tiện ích bằng "nằm sát / đối diện / kề" lọt cả hai phép chấm (02/11/2026)
 Ca gốc: khách ảo 02/11 SAU #260 — bot nói "Căn trên đường Quang Trung, 69 m², 2,7 tỷ, **nằm sát Co-opmart**", rồi khi khách hỏi lấy đâu ra thì tự nhận "Trong thông tin em đang có về ba căn này thì không ghi những chỗ đó".
 (1) Lớp lỗi của phép ĐO: phép `ka_bia_tien_ich` cả bản đầu (phiên kiểm, SRS-342) lẫn bản thu hẹp (#266, SRS-336) đều neo vào chữ "gần", nên mọi cách nói khoảng cách khác đều lọt — y lớp lỗi từ khoá §4.8, lần này ở phía bộ chấm. (2) Cùng lớp: soát các phép `cam` còn lại trong `khach_ao_342.json` — chỉ phép này neo vào một giới từ; các phép khác neo vào con số hay tên riêng.

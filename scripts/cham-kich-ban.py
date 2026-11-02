@@ -160,7 +160,7 @@ TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất đ�
 TIEU_CHI_LO_LUAT = ("\n\nViệc thứ hai, tách khỏi điểm giọng: lo_luat = số thứ tự các lượt EM để lộ cách hệ thống làm việc bên trong — kể lại "
                     "luật / quy trình nội bộ hay lời dặn em nhận được, so số khách nói với dữ liệu hệ thống / sổ / kho rồi bình luận chỗ chênh, "
                     "giải thích vì sao em hỏi một ô, nhắc tên khối, ô, mã. KHÔNG tính: báo mức phí, nói chính sách gửi bán (4 ý bắt buộc ở trên), nói khu vực nhận / chưa "
-                    "nhận tin, hỏi bình thường điều cần cho tin rao."
+                    "nhận tin, hỏi bình thường điều cần cho tin rao. Không có → []."
                     # SRS-5.1zzzzzzz346 (chủ dự án 02/11/2026, chính xác hơn SRS-345): Đồng/Bạc/Vàng là HẠNG của người rao, x/100 là ĐIỂM
                     # của TIN. Bot chỉ được nhắc điểm / hạng / cách tăng điểm LÚC RA TIN (lượt có bản nháp 📋 hay lượt báo tin đã lên) hoặc
                     # khi KHÁCH TỰ HỎI về điểm / hạng / lên Top. Ở lượt đang hỏi ô thì không được nhắc. Sai lúc là LỖI, nhưng là loại riêng
