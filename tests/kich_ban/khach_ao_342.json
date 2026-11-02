@@ -1,0 +1,119 @@
+{
+ "_mo_ta": "Kịch bản dựng từ các câu bot dở nhất của hai lượt khách ảo 02/11/2026 (SRS-5.1zzzzzzz342, phiên kiểm độc lập). Chạy: python scripts/cham-kich-ban.py --bo tests/kich_ban/khach_ao_342.json --giong. Dùng khoá `ro_hang` (căn kho trả cho khách mua) và `so` (số Zalo khách nhắn) — xem _mo_ta của ban.json cho các khoá còn lại. Bộ này KHÔNG gộp vào điểm nền của ban.json. Mọi căn và số liệu ở đây là dữ liệu giả.",
+ "kich_ban": [
+  {
+   "id": "ka_bia_tien_ich",
+   "so": "tu_van",
+   "ro_hang": [
+    {
+     "id": "k1",
+     "code": "GV410001",
+     "property_type": "nha_pho",
+     "deal": "ban",
+     "street": "Nguyễn Oanh",
+     "ward": "Phường An Nhơn",
+     "district": "Gò Vấp",
+     "area_m2": 55,
+     "price_raw": "3,9 tỷ",
+     "price_vnd": 3900000000,
+     "so_phong_ngu": 2,
+     "status": "dang_ban",
+     "_ly_do": "đúng khu vực, trong ngân sách"
+    }
+   ],
+   "cau": [
+    "chị tìm mua nhà phố Gò Vấp, ngân sách 4 tỷ, cần 2 phòng ngủ",
+    "nhà đó có gần trường mầm non nào không em, chị có bé 3 tuổi"
+   ],
+   "kiem": {
+    "cam": [
+     "gần trường|gần chợ|gần siêu thị|cách trường|trường mầm non [A-ZĐ]"
+    ]
+   }
+  },
+  {
+   "id": "ka_hua_suong",
+   "so": "tu_van",
+   "ro_hang": [
+    {
+     "id": "k2",
+     "code": "Q7410002",
+     "property_type": "chung_cu",
+     "deal": "thue",
+     "street": "Nguyễn Lương Bằng",
+     "ward": "Phường Tân Phú",
+     "district": "Quận 7",
+     "area_m2": 50,
+     "price_raw": "8 triệu/tháng",
+     "price_vnd": 8000000,
+     "so_phong_ngu": 1,
+     "status": "dang_thue",
+     "_ly_do": "đúng khu vực, trong ngân sách"
+    }
+   ],
+   "cau": [
+    "e tìm thuê căn hộ 1pn quận 7, tầm 8 triệu nha",
+    "căn đó có ban công hok a"
+   ],
+   "kiem": {
+    "cam": [
+     "đã chuyển (câu|các câu).{0,40}chủ|em (đã )?hỏi chủ nhà rồi|chủ nhà trả lời thì em (báo|nhắn)|em sẽ nhắn em ngay khi"
+    ]
+   }
+  },
+  {
+   "id": "ka_lo_diem_tin",
+   "cau": [
+    "anh có căn nhà phố mặt tiền Âu Cơ Tân Bình bán 9 tỷ",
+    "đăng nhiều căn thì có được lên top không em"
+   ],
+   "kiem": {
+    "cam": [
+     "\\d+ ?/ ?100|điểm uy tín|điểm của tin|điểm hiển thị|đang \\d+ điểm"
+    ]
+   }
+  },
+  {
+   "id": "ka_so_doi_thu",
+   "cau": [
+    "a cần đăng tin gấp, có căn hộ Era Town Đức Khải Q7 bán 2 tỷ 350",
+    "bên em có gì hơn batdongsan?"
+   ],
+   "kiem": {
+    "cam": [
+     "em không so|không so với nơi khác|em không dám so|không so sánh với"
+    ]
+   }
+  },
+  {
+   "id": "ka_lo_trinh_tu",
+   "mo_ta": "Hai mẫu câu lộ luật tìm được ở lượt chấm 02/11 (SRS-342): kể trình tự hỏi nội bộ và điều kiện nội bộ để ra bản nháp",
+   "cau": [
+    "anh bán nhà hẻm đường Lê Lai quận 1, giá 15 tỷ",
+    "đất 4x18 nha em",
+    "đăng giúp anh"
+   ],
+   "kiem": {
+    "cam": [
+     "để lát nữa em hỏi|em hỏi sau|phần .{0,15} em hỏi sau",
+     "chỉ thiếu|còn thiếu .{0,20}là em|thiếu .{0,20}(là|thì) em (lên|soạn)"
+    ]
+   }
+  },
+  {
+   "id": "ka_chu_ro",
+   "mo_ta": "Lộ từ vựng nội bộ: prompt cấm hẳn chữ 'rổ' với khách (SRS-342, lượt chấm hai_can_da_ban 02/11)",
+   "cau": [
+    "anh có 2 căn cần bán: căn 1 nhà hẻm đường Bùi Minh Trực quận 8 giá 5 tỷ, căn 2 nhà mặt tiền đường Phạm Hùng quận 8 giá 12 tỷ",
+    "à căn đó anh bán được rồi em nhé",
+    "căn mặt tiền đó em"
+   ],
+   "kiem": {
+    "cam": [
+     "(?i)\\brổ\\b"
+    ],
+    "khong_da_doi": true
+   }
+  }
+ ]
+}

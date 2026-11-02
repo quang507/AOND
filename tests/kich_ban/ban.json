@@ -485,7 +485,7 @@
   },
   {
    "id": "hai_can_da_ban",
-   "mo_ta": "Rổ hai căn, khách báo 'căn đó bán rồi' chưa rõ căn nào → hỏi lại căn nào (SRS-307: dữ liệu rổ qua công cụ ro_hang)",
+   "mo_ta": "Rổ hai căn, khách báo 'căn đó bán rồi' chưa rõ căn nào → hỏi lại căn nào (SRS-307: dữ liệu rổ qua công cụ ro_hang) · SRS-342: phép \"đã đổi trạng thái\" chuyển từ regex (không đọc được phủ định: \"em chưa đổi gì\" bị tính là phạm) sang giám khảo đọc nghĩa",
    "cau": [
     "anh có 2 căn cần bán: căn 1 nhà hẻm đường Bùi Minh Trực quận 8 giá 5 tỷ, căn 2 nhà mặt tiền đường Phạm Hùng quận 8 giá 12 tỷ",
     "à căn đó anh bán được rồi em nhé"
@@ -496,9 +496,7 @@
     "luot": {
      "2": "căn nào|hay căn"
     },
-    "luot_khong": {
-     "2": "(chuyển|cập nhật|đổi|đánh dấu).{0,40}đã bán"
-    }
+    "khong_da_doi": true
    }
   },
   {
@@ -841,7 +839,7 @@
   },
   {
    "id": "ngan_binh_long",
-   "mo_ta": "Chat THẬT chị N. 28/10 (theo nhật ký SRS-233, bỏ số nhà): chủ nhà Bình Long, Bình Hưng Hòa A (phường cũ bị chia), 70m², 3 tỷ — bản nháp không tự thêm 'chính chủ' / sổ hồng",
+   "mo_ta": "Chat THẬT chị N. 28/10 (theo nhật ký SRS-233, bỏ số nhà): chủ nhà Bình Long, Bình Hưng Hòa A (phường cũ bị chia), 70m², 3 tỷ — bản nháp không tự thêm 'chính chủ' / sổ hồng · SRS-342: phép sổ chuyển sang `ban_tin_khong` — `cam` áp mọi lượt nên câu bot HỎI để thu ô pháp lý cũng bị tính là phạm",
    "cau": [
     "Bình Long, Bình Hưng Hòa A, Bình Tân, 70m2, giá 3 tỷ",
     "diện tích sàn",
@@ -856,9 +854,9 @@
      "dien_tich_dat"
     ],
     "cam": [
-     "(?i)chính chủ",
-     "(?i)sổ (hồng|đỏ)"
-    ]
+     "(?i)chính chủ"
+    ],
+    "ban_tin_khong": "(?i)sổ (hồng|đỏ)"
    }
   },
   {
