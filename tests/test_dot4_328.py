@@ -187,3 +187,10 @@ def test_viec_tu_giao_nhan_theo_y_ai_doc():
         eng, _ = _eng({"hoi_ngoai_viec": "hỏi việc điện / rác của khu", "user_intent": "unknown"}, truoc={})
         eng.handle("d4", cau)
         assert eng.conversation("d4").so_luot_ngoai_viec == 1, cau
+
+
+def test_hoi_lai_khong_neu_ly_do():
+    """cham Đợt 4 (`aeon_tan_phu`): hỏi lại loại BĐS kèm lý do bịa "để em xếp tin đúng mục" — lời dặn hỏi lại cấm nêu lý do."""
+    from aioi.prompts import viec_phieu
+    from aioi.schema import Property
+    assert "không nêu lý do" in viec_phieu(Property(), "loai_hinh", hoi_lai=True)

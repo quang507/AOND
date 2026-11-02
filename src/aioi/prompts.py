@@ -518,7 +518,7 @@ def viec_phieu(prop: Property, next_field: str | None, hoi_lai: bool = False, o_
             f" ({goi_y})" if goi_y not in (nhan_o(next_field, prop), f"hỏi thêm {nhan_o(next_field, prop)}") else "") + "."
         if hoi_lai:
             viec += (" Ý này em đã hỏi lượt trước mà khách chưa trả lời: đổi cách hỏi, ngắn hơn hoặc gợi sẵn vài đáp án để chọn (giá, diện tích, "
-                     "con số thì không gợi số), không lặp câu cũ, không nhắc là đã hỏi.")
+                     "con số thì không gợi số), không lặp câu cũ, không nhắc là đã hỏi, không nêu lý do vì sao cần hỏi.")
         if o_bo_qua and o_bo_qua != next_field:
             viec += f' Lượt này không hỏi lại "{nhan_o(o_bo_qua, prop)}" và không nhắc tới nó.'
         return viec
