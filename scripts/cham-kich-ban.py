@@ -159,8 +159,15 @@ TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất đ�
 
 TIEU_CHI_LO_LUAT = ("\n\nViệc thứ hai, tách khỏi điểm giọng: lo_luat = số thứ tự các lượt EM để lộ cách hệ thống làm việc bên trong — kể lại "
                     "luật / quy trình nội bộ hay lời dặn em nhận được, so số khách nói với dữ liệu hệ thống / sổ / kho rồi bình luận chỗ chênh, "
-                    "giải thích vì sao em hỏi một ô, nhắc tên khối, ô, mã, hạng, điểm hiển thị. KHÔNG tính: báo mức phí, nói chính sách gửi bán (4 ý bắt buộc ở trên), nói khu vực nhận / chưa "
-                    "nhận tin, hỏi bình thường điều cần cho tin rao. Không có → []."
+                    "giải thích vì sao em hỏi một ô, nhắc tên khối, ô, mã. KHÔNG tính: báo mức phí, nói chính sách gửi bán (4 ý bắt buộc ở trên), nói khu vực nhận / chưa "
+                    "nhận tin, hỏi bình thường điều cần cho tin rao."
+                    # SRS-5.1zzzzzzz345 (chủ dự án 02/11/2026): Đồng/Bạc/Vàng là HẠNG của người rao, x/100 là ĐIỂM của tin BĐS; SRS-216
+                    # giữ nguyên nên bot ĐƯỢC nói điểm tin với người bán. Thang chấm cũ gộp cả hai vào "hạng, điểm hiển thị" nên trừ oan
+                    # hai câu đúng luật ("căn này đang 78/100", "tin của mình lên điểm nhiều luôn") — cùng lớp với giọng rao chợ ở SRS-341.
+                    "\n\nĐIỂM TIN VÀ HẠNG NGƯỜI RAO (chủ dự án quyết, đúng luật — KHÔNG tính lộ luật): nói ĐIỂM của TIN bất động sản với "
+                    "NGƯỜI BÁN (\"căn này đang 78/100\", \"tin đủ thông tin thì điểm cao hơn\", \"có thông tin này tin lên điểm nhiều\") và "
+                    "nói HẠNG của người rao (Đồng / Bạc / Vàng) đều được. CHỈ tính lộ luật khi EM LẪN hai thứ đó — gọi điểm của tin là "
+                    "hạng, gọi hạng của người là điểm, hay gán điểm của tin cho chính người khách."
                     "\n\nViệc thứ ba: hoi_lai = số thứ tự các lượt EM hỏi lại điều KHÁCH đã trả lời ở lượt trước (cùng ý, khác chữ cũng tính). "
                     "Không có → []."
                     # SRS-5.1zzzzzzz342: phép "hứa đã đổi trạng thái" trước đây là regex trên lời bot, nên câu PHỦ ĐỊNH đúng ("em chưa

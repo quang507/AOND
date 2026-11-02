@@ -831,11 +831,17 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
-### SRS-5.1zzzzzzz344 · Lộ điểm tin có cách nói thứ hai; `cat_truoc_mo_dau` sửa lời xưng hô ĐÚNG thành sai (02/11/2026)
-Ca gốc: chấm độc lập #250 (SRS-328) ra lộ luật 3/59 ở cả ba lượt chấm, vượt ngưỡng nền mới ≤ 2. Câu mới: "Có thông tin này, tin của mình lên điểm nhiều luôn" — cùng lớp với "căn này đang 78/100" của nền nhưng đổi chữ nên kịch bản `ka_lo_diem_tin` cũ không bắt.
-(1) Lớp lỗi: phép cấm là lưới từ khoá trên lời bot, nên mọi cách nói mới đều lọt — y lớp lỗi §4.8. (2) Cùng lớp: soát chỗ gọi `mo_dau_nhap` còn sót đã nêu ở SRS-342 → `prompts.cat_truoc_mo_dau` cũng ép `xung_ho if xung_ho in _TRE else "em"`, và nặng hơn ca 1: model viết ĐÚNG "📋 Cháu sẽ rao như vầy nhé cô:" mà hàm SỬA thành "nhé em:" — lõi tự làm hỏng một lời đã đúng.
-Sửa (KHÔNG đụng `src/aioi/`): `ka_lo_diem_tin` thêm ba cách nói ("lên điểm", "được điểm", "điểm càng cao hơn", "cộng điểm") và một lượt khách nữa; thêm ca chờ tất định cho `cat_truoc_mo_dau` kèm cách gọi "chú" chưa bắn.
-(3) Kiểm: `test:py` 1353 passed, 6 xfailed; mẫu cấm mới bắt cả ba câu lộ điểm đã gặp và không bắt oan câu hỏi sổ / câu "đăng tin miễn phí".
+### SRS-5.1zzzzzzz345 · Điểm của TIN khác hạng của NGƯỜI RAO: thang chấm thôi tính "78/100" là lộ luật; kịch bản đảo sang kiểm đúng chữ (02/11/2026)
+Chủ dự án 02/11: Đồng / Bạc / Vàng là HẠNG của người rao, x/100 là ĐIỂM của tin BĐS, và SRS-216 giữ nguyên — bot ĐƯỢC nói điểm tin với người bán. Nên "căn này đang 78/100" và "Có thông tin này, tin của mình lên điểm nhiều luôn" KHÔNG phải lộ luật.
+(1) Lớp lỗi (của phép ĐO, không của bot): `TIEU_CHI_LO_LUAT` gộp "hạng, điểm hiển thị" thành một nên trừ oan hành vi chủ dự án cho phép — cùng lớp với giọng rao chợ ở SRS-341, và cùng lớp với hai phép chấm tự sai ở SRS-342. Chính tôi đưa kịch bản `ka_lo_diem_tin` vào #263 nên đây là sửa lỗi của mình. (2) Cùng lớp: soát lại mọi phép `cam` tự thêm trong `khach_ao_342.json` theo các quyết định §6.3 — còn lại đều cấm điều chưa được chủ dự án cho phép.
+Sửa: `TIEU_CHI_LO_LUAT` bỏ "hạng, điểm hiển thị" khỏi danh sách lộ và thêm đoạn miễn trừ, CHỈ tính khi lẫn hai thứ; `ka_lo_diem_tin` → `ka_diem_tin_dung_chu`, phép cấm đảo sang bắt chuyện lẫn (gọi điểm là hạng, gọi hạng là điểm, gán điểm của tin cho người).
+(3) Kiểm: phép mới bắt 4/4 câu lẫn ("Tin của anh đang hạng 78/100", "Anh đang 78/100", "Tin này đang hạng Vàng", "Điểm Bạc của anh") và tha 4/4 câu đúng luật. Hệ quả cho nền: lộ luật của #250 từ 3 còn 1.
+
+### SRS-5.1zzzzzzz344 · `cat_truoc_mo_dau` sửa lời xưng hô ĐÚNG thành sai (02/11/2026)
+Ca gốc: soát chỗ gọi `mo_dau_nhap` còn sót đã nêu ở SRS-342.
+(1) Lớp lỗi: `prompts.cat_truoc_mo_dau` cũng ép `xung_ho if xung_ho in _TRE else "em"`, và nặng hơn ca 1: model viết ĐÚNG "📋 Cháu sẽ rao như vầy nhé cô:" mà hàm SỬA thành "nhé em:" — lõi tự làm hỏng một lời đã đúng.
+Sửa (KHÔNG đụng `src/aioi/`): ca chờ tất định cho `cat_truoc_mo_dau` kèm cách gọi "chú" chưa bắn. Phần "lộ điểm tin" của bản đầu đã bỏ theo quyết định chủ dự án (SRS-345).
+(3) Kiểm: `test:py` 1353 passed, 6 xfailed.
 
 ### SRS-5.1zzzzzzz342 · Ca đỏ từ khách ảo và lượt chấm 02/11; sửa hai phép chấm tự sai; bộ chấm nhận rổ hàng (02/11/2026)
 Ca gốc: ba lượt khách ảo + bốn lượt chấm 02/11. Bịa tiện ích ("gần trường Hồng Hà", rồi sau #260 là "gần Vincom Plaza Quang Trung khoảng 100 m" — bot tự nhận tin không ghi); dòng mở bản nháp gọi khách 62 tuổi xưng "cô" là "em"; lộ "căn này đang 78/100", "trong rổ", "phần giá để lát nữa em hỏi sau", "chỉ thiếu loại hình là em lên bản nháp liền"; bản tin bình luận giá "giá còn mềm mỏng thế này", "có cửa bớt lộc"; hứa suông "đã chuyển câu hỏi cho chủ nhà" (cả 5 persona).

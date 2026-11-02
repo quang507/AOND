@@ -62,7 +62,7 @@
    }
   },
   {
-   "id": "ka_lo_diem_tin",
+   "id": "ka_diem_tin_dung_chu",
    "cau": [
     "anh có căn nhà phố mặt tiền Âu Cơ Tân Bình bán 9 tỷ",
     "đăng nhiều căn thì có được lên top không em",
@@ -70,10 +70,10 @@
    ],
    "kiem": {
     "cam": [
-     "\\d+ ?/ ?100|điểm uy tín|điểm của tin|điểm hiển thị|đang \\d+ điểm|lên điểm|được điểm|điểm (càng )?cao hơn|cộng điểm"
+     "hạng \\d+ ?/ ?100|điểm (?:Đồng|Bạc|Vàng)|(?:anh|chị|em|cô|chú|mình) (?:đang|hiện(?: đang)?) \\d+ ?/ ?100|tin [^.?!\\n]{0,25}hạng (?:Đồng|Bạc|Vàng)"
     ]
    },
-   "mo_ta": "Lộ điểm hiển thị của tin — HAI cách nói: \"căn này đang 78/100\" (nền 02/11) và \"tin của mình lên điểm nhiều luôn\" (lượt chấm #250 02/11, cùng lớp, đổi chữ là lọt)"
+   "mo_ta": "Điểm tin gọi ĐÚNG CHỮ. Chủ dự án 02/11 (SRS-5.1zzzzzzz345): Đồng/Bạc/Vàng là HẠNG của người rao, x/100 là ĐIỂM của tin BĐS, và SRS-216 giữ nguyên — bot ĐƯỢC nói điểm tin với người bán. Nên \"căn này đang 78/100\" và \"tin của mình lên điểm nhiều luôn\" KHÔNG phải lỗi; chỉ cấm LẪN hai thứ (gọi điểm là hạng, gọi hạng là điểm, gán điểm của tin cho người)."
   },
   {
    "id": "ka_so_doi_thu",
