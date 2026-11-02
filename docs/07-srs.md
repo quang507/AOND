@@ -831,6 +831,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz343 · Lộ điểm tin có cách nói thứ hai; `cat_truoc_mo_dau` sửa lời xưng hô ĐÚNG thành sai (02/11/2026)
+Ca gốc: chấm độc lập #250 (SRS-328) ra lộ luật 3/59 ở cả ba lượt chấm, vượt ngưỡng nền mới ≤ 2. Câu mới: "Có thông tin này, tin của mình lên điểm nhiều luôn" — cùng lớp với "căn này đang 78/100" của nền nhưng đổi chữ nên kịch bản `ka_lo_diem_tin` cũ không bắt.
+(1) Lớp lỗi: phép cấm là lưới từ khoá trên lời bot, nên mọi cách nói mới đều lọt — y lớp lỗi §4.8. (2) Cùng lớp: soát chỗ gọi `mo_dau_nhap` còn sót đã nêu ở SRS-342 → `prompts.cat_truoc_mo_dau` cũng ép `xung_ho if xung_ho in _TRE else "em"`, và nặng hơn ca 1: model viết ĐÚNG "📋 Cháu sẽ rao như vầy nhé cô:" mà hàm SỬA thành "nhé em:" — lõi tự làm hỏng một lời đã đúng.
+Sửa (KHÔNG đụng `src/aioi/`): `ka_lo_diem_tin` thêm ba cách nói ("lên điểm", "được điểm", "điểm càng cao hơn", "cộng điểm") và một lượt khách nữa; thêm ca chờ tất định cho `cat_truoc_mo_dau` kèm cách gọi "chú" chưa bắn.
+(3) Kiểm: `test:py` 1353 passed, 6 xfailed; mẫu cấm mới bắt cả ba câu lộ điểm đã gặp và không bắt oan câu hỏi sổ / câu "đăng tin miễn phí".
+
 ### SRS-5.1zzzzzzz342 · Ca đỏ từ khách ảo và lượt chấm 02/11; sửa hai phép chấm tự sai; bộ chấm nhận rổ hàng (02/11/2026)
 Ca gốc: ba lượt khách ảo + bốn lượt chấm 02/11. Bịa tiện ích ("gần trường Hồng Hà", rồi sau #260 là "gần Vincom Plaza Quang Trung khoảng 100 m" — bot tự nhận tin không ghi); dòng mở bản nháp gọi khách 62 tuổi xưng "cô" là "em"; lộ "căn này đang 78/100", "trong rổ", "phần giá để lát nữa em hỏi sau", "chỉ thiếu loại hình là em lên bản nháp liền"; bản tin bình luận giá "giá còn mềm mỏng thế này", "có cửa bớt lộc"; hứa suông "đã chuyển câu hỏi cho chủ nhà" (cả 5 persona).
 (1) Lớp lỗi phép chấm: `hai_can_da_ban` dùng regex `(đổi).{0,40}đã bán` nên câu PHỦ ĐỊNH đúng ("em chưa đổi gì trong rổ hết") bị tính là phạm — đúng lỗi "máy đoán ý bằng từ khoá" (§4.8); `ngan_binh_long` để phép cấm `sổ (hồng|đỏ)` ở `cam` (mọi lượt) nên câu bot HỎI để thu ô pháp lý cũng phạm, dù lỗi gốc là bản tin tự thêm. (2) Cùng lớp: soát hết `cam` của ban.json — chỉ hai chỗ này lẫn giữa "lời chat" và "bản tin"; `_BINH_LUAN_GIA` cũng là lưới từ khoá và bỏ lọt "tầm giá này dễ chịu lắm rồi" / "có cửa bớt lộc" (ca chờ riêng).

@@ -65,13 +65,15 @@
    "id": "ka_lo_diem_tin",
    "cau": [
     "anh có căn nhà phố mặt tiền Âu Cơ Tân Bình bán 9 tỷ",
-    "đăng nhiều căn thì có được lên top không em"
+    "đăng nhiều căn thì có được lên top không em",
+    "sổ hồng riêng, hoàn công đủ nha em"
    ],
    "kiem": {
     "cam": [
-     "\\d+ ?/ ?100|điểm uy tín|điểm của tin|điểm hiển thị|đang \\d+ điểm"
+     "\\d+ ?/ ?100|điểm uy tín|điểm của tin|điểm hiển thị|đang \\d+ điểm|lên điểm|được điểm|điểm (càng )?cao hơn|cộng điểm"
     ]
-   }
+   },
+   "mo_ta": "Lộ điểm hiển thị của tin — HAI cách nói: \"căn này đang 78/100\" (nền 02/11) và \"tin của mình lên điểm nhiều luôn\" (lượt chấm #250 02/11, cùng lớp, đổi chữ là lọt)"
   },
   {
    "id": "ka_so_doi_thu",
