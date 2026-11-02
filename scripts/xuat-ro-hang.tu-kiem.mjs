@@ -59,7 +59,7 @@ function chay(args, env) {
 }
 
 function moServer({ listings, media = [], tongGia = null }) {
-  const bang = { listings, media };
+  const bang = { listings, listing_media: media };   // bảng ảnh là `listing_media` (bảng `media` cũ gỡ 02/11/2026)
   const sv = createServer((req, res) => {
     const ten = req.url.split("?")[0].replace("/rest/v1/", "");
     const rows = bang[ten] ?? [];
