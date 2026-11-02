@@ -2517,6 +2517,15 @@ KHÔNG tính: con số giá, chữ "giá rao" / "giá chủ đưa", câu báo ch
 thì mảng rỗng."""
 
 
+# SRS-5.1zzzzzzz353: cùng lượt AI đó cho LỜI CHAT (bản trước: lưới từ khoá `_BINH_LUAN_GIA`, đổi chữ là lọt). Lời chat cấm cả khẳng định thị trường
+# (SRS-5.1zzzzzzz132: dễ bán, đắt khách…) — khác bản tin, nơi ý chung về khu là quyết định chủ dự án "kệ" (§6.3).
+SOAT_BINH_GIA_CHAT_SYSTEM = """Dưới đây là một tin nhắn trợ lý môi giới vừa viết cho khách. Tìm các câu / cụm trợ lý tự NHẬN XÉT MỨC GIÁ hay THỊ TRƯỜNG:
+khen hay chê giá (rẻ, hợp lý, mềm, dễ chịu, đáng tiền, hời, vừa tầm, cao / thấp so với khu), hứa người mua chắc được bớt, hoặc đoán thị trường
+(dễ bán, đắt khách, thanh khoản tốt, nhiều người tìm / hỏi). KHÔNG tính: nhắc lại con số khách đưa ("em ghi giá 9 tỷ"), câu hỏi, giá rao của
+các tin trong dự án có nêu số tin / thời điểm (dữ kiện hệ thống), báo chủ cho thương lượng, khen điểm KHÁC của căn. Trả JSON: `cum` = các cụm
+CHÉP NGUYÊN VĂN từ tin nhắn (đúng từng chữ), không có thì mảng rỗng."""
+
+
 def soat_binh_gia_schema() -> dict[str, Any]:
     return {
         "type": "object",

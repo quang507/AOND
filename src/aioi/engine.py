@@ -96,6 +96,7 @@ from .prompts import (
     TAI_LIEU_CHUNG_SYSTEM,
     tai_lieu_chung_schema,
     SOAT_BINH_GIA_SYSTEM,
+    SOAT_BINH_GIA_CHAT_SYSTEM,
     soat_binh_gia_schema,
     build_greeting,
     khoi_chao_lan_dau,
@@ -1738,29 +1739,52 @@ def _gon(x: str) -> str:
     return re.sub(r"\s+", " ", x or "").strip().lower()
 
 
-def _binh_gia_trong_tin(eng, conv, reply: str) -> list[str]:
-    """SRS-5.1zzzzzzz336: cụm NHẬN XÉT MỨC GIÁ trong bản tin — AI (model bóc tách) đọc nghĩa, code chỉ nhận cụm có NGUYÊN VĂN trong bản tin
-    (gộp khoảng trắng, vì tin xuống dòng giữa cụm). Lỗi gọi model → [] (không chặn lượt), ghi log."""
-    tin = reply.split("📋", 1)[1] if "📋" in reply else reply
+def _binh_gia_trong_tin(eng, conv, reply: str, ban_tin: bool = True) -> list[str] | None:
+    """SRS-5.1zzzzzzz336 / 353: cụm NHẬN XÉT MỨC GIÁ (lời chat: cả thị trường) trong lời bot — AI (model bóc tách) đọc nghĩa, code chỉ nhận cụm
+    có NGUYÊN VĂN trong lời (gộp khoảng trắng, vì tin xuống dòng giữa cụm). None = AI không chạy được (lỗi gọi, hay trả thiếu `cum`) — chỗ gọi
+    tự quyết lưới đỡ."""
+    tin = reply.split("📋", 1)[1] if ban_tin and "📋" in reply else reply
     try:
         with _do(conv, "soat_binh_gia"):
-            data = eng._provider.extract(SOAT_BINH_GIA_SYSTEM, [Message("user", tin[:4000])], soat_binh_gia_schema())
+            data = eng._provider.extract(SOAT_BINH_GIA_SYSTEM if ban_tin else SOAT_BINH_GIA_CHAT_SYSTEM, [Message("user", tin[:4000])],
+                                         soat_binh_gia_schema())
     except Exception as e:   # noqa: BLE001 — soát là lưới phụ, model hỏng thì lượt vẫn đi
-        log.warning("Soát bình luận giá bản tin lỗi: %s", type(e).__name__)
-        return []
+        log.warning("Soát bình luận giá lỗi: %s", type(e).__name__)
+        return None
+    cum = data.get("cum") if isinstance(data, dict) else None
+    if not isinstance(cum, list):
+        return None
     goc = _gon(tin)
-    return [c.strip() for c in (data.get("cum") or []) if isinstance(c, str) and c.strip() and _gon(c) in goc]
+    return [c.strip() for c in cum if isinstance(c, str) and c.strip() and _gon(c) in goc]
+
+
+# SRS-5.1zzzzzzz353: LỌC THÔ trên lời CỦA BOT (không đọc lời khách) để khỏi gọi AI mỗi lượt chat — chỉ câu KHẲNG ĐỊNH (không phải câu hỏi) có nhắc
+# số tiền / giá / thị trường mới đưa AI đọc nghĩa. Lọc thô quyết "có cần đọc không", AI quyết "có phải nhận xét không".
+_LOC_THO_GIA = re.compile(r"(\d+(?:[.,]\d+)?\s*(?:tỷ|tỉ|triệu)|(?<![\wÀ-ỹ])giá(?![\wÀ-ỹ])|thị trường|thanh khoản|dễ bán|bớt|hời|"
+                          r"(?<![\wÀ-ỹ])rẻ(?![\wÀ-ỹ])|(?<![\wÀ-ỹ])đắt(?![\wÀ-ỹ]))", re.I)
+
+
+def _can_doc_gia(reply: str) -> bool:
+    cau = [c for c in re.split(r"(?<=[.!?…])\s+|\n+", reply or "") if c.strip() and not c.strip().endswith("?")]
+    return any(_LOC_THO_GIA.search(c) for c in cau) or _BINH_LUAN_GIA.search(reply or "") is not None
 
 
 def _soat_binh_luan_gia(eng, conv, reply, nc) -> list[str]:
     if _la_ban_tin(reply):   # bản tin: AI đọc nghĩa (điều phối 02/11: tin cũng không bình luận giá — SRS-5.1zzzzzzz336)
-        cum = _binh_gia_trong_tin(eng, conv, reply)
+        cum = _binh_gia_trong_tin(eng, conv, reply) or []
         return ([f"Bản tin vừa viết nhận xét mức giá (" + ", ".join(f"\"{c}\"" for c in cum) + ") — em không có dữ liệu thị trường, "
                  "bỏ hẳn các câu đó khỏi bản tin: chỉ nêu đúng con số giá chủ đưa (và chủ cho thương lượng nếu chủ đã nói), không khen / chê "
                  "giá, không hứa người mua được bớt."] if cum else [])
-    bl = _binh_luan_gia(reply)   # lời chat: lưới hình thức trên lời bot (SRS-5.1zzzzzzz132)
-    return ([f"Lời vừa viết nhận xét giá / thị trường (\"{bl}\") — em không có dữ liệu thị trường, CẤM bình luận giá hợp lý / "
-             "đắt khách / dễ bán. Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn."] if bl else [])
+    # Lời chat (SRS-5.1zzzzzzz353): AI đọc nghĩa khi lọc thô trúng; AI không chạy được thì lưới từ khoá cũ đỡ (SRS-5.1zzzzzzz132).
+    if not _can_doc_gia(reply):
+        return []
+    cum = _binh_gia_trong_tin(eng, conv, reply, ban_tin=False)
+    if cum is None:
+        bl = _binh_luan_gia(reply)
+        cum = [bl] if bl else []
+    return ([f"Lời vừa viết nhận xét giá / thị trường (" + ", ".join(f"\"{c}\"" for c in cum) + ") — em không có dữ liệu thị trường, CẤM "
+             "bình luận giá hợp lý / đắt khách / dễ bán. Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn."]
+            if cum else [])
 
 
 def _soat_so_can_mua(eng, conv, reply, nc) -> list[str]:
@@ -1822,6 +1846,15 @@ LUAT_SOAT: tuple[tuple[str, str, Callable[..., list[str]]], ...] = (
     ("so_trong_tin", "ly_do", _soat_so_trong_tin),
     ("yeu_cau_viet", "ly_do", _soat_yeu_cau_viet),
 )
+# SRS-5.1zzzzzzz352: luật giữ SỰ THẬT / TIỀN / RIÊNG TƯ — khi phải chọn giữa bản đầu và bản viết lại (cả hai còn lệch), lệch nhóm này nặng hơn lệch
+# hình thức (gọi "mình", hai câu hỏi, tên khối…). Ca `cao_lo`: bản đầu chỉ lệch `goi_minh` (bắt oan), bản viết lại thêm "4 tầng" bịa.
+LUAT_SU_THAT = frozenset({"lo_rieng", "khang_dinh", "phi_vai", "tin_dang_hien", "binh_luan_gia", "so_can_mua", "so_trong_tin"})
+
+
+def _nang_nhe(lech: list[tuple[str, str]]) -> tuple[int, int]:
+    """(số lệch sự thật, số lệch hình thức) — so sánh bộ đôi: ít lệch sự thật hơn thắng, rồi mới tới hình thức."""
+    nang = sum(1 for ten, _ in lech if ten in LUAT_SU_THAT)
+    return nang, len(lech) - nang
 
 
 class Engine:
@@ -3404,9 +3437,14 @@ class Engine:
         if _mo_dau_da(reply):
             reply = _bo_da_dau(reply)   # "Dạ" mở đầu: code bỏ chữ, không gọi lại model
         nc = {"system": system, "can_mua": can_mua}
-        for _ten, nhom, kiem in LUAT_SOAT:   # SRS-5.1zzzzzzz318 (AU-06): MỘT bảng luật
-            (mem if nhom == "mem" else ly_do).extend(kiem(self, conv, reply, nc))
-        ly_do = list(them or []) + ly_do
+        lech: list[tuple[str, str]] = []
+        for ten, nhom, kiem in LUAT_SOAT:   # SRS-5.1zzzzzzz318 (AU-06): MỘT bảng luật
+            if nhom == "mem":
+                mem.extend(kiem(self, conv, reply, nc))
+            else:
+                lech.extend((ten, x) for x in kiem(self, conv, reply, nc))
+        lech = [("cong_ban_nhap", x) for x in (them or [])] + lech   # lý do code thấy trước (cổng bản nháp) — tính như lệch hình thức
+        ly_do = [x for _, x in lech]
         if mem:
             log.warning("Lời bot lệch luật giọng / lặp (%d, chế độ gọn — không gọi lại): %s", len(mem), " | ".join(x[:40] for x in mem))
         if ly_do:
@@ -3417,9 +3455,18 @@ class Engine:
                     system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\n" + " ".join(ly_do) + " Viết lại TOÀN BỘ lượt trả lời.\n",
                     conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if lai and (nhan is None or nhan(_bo_markdown(lai))):
-                reply = _gan_dau_ban_tin(_bo_markdown(lai))
-                if _mo_dau_da(reply):   # tối đa MỘT lần gọi lại (SRS-5.1zzzzzzz298); "Dạ" còn sót thì code bỏ chữ
-                    reply = _bo_da_dau(reply)
+                lai = _gan_dau_ban_tin(_bo_markdown(lai))
+                if _mo_dau_da(lai):   # tối đa MỘT lần gọi lại (SRS-5.1zzzzzzz298); "Dạ" còn sót thì code bỏ chữ
+                    lai = _bo_da_dau(lai)
+                # SRS-5.1zzzzzzz352: SOÁT LẠI bản viết lại (code, không gọi lại model lần hai). Bản trước nhận bản mới không soát, nên mọi luật
+                # `ly_do` chỉ giữ được bản ĐẦU — `cao_lo` lọt "4 tầng", `ka_lo_trinh_tu` lọt "72m²". Còn lệch thì giữ bản ít lệch SỰ THẬT hơn
+                # (rồi tới ít lệch hình thức); hoà thì giữ bản viết lại (đã sửa đúng điều được dặn).
+                lech_lai = [(ten, x) for ten, nhom, kiem in LUAT_SOAT if nhom != "mem" for x in kiem(self, conv, lai, nc)]
+                if _nang_nhe(lech_lai) <= _nang_nhe(lech):
+                    reply = lai
+                if lech_lai:
+                    log.warning("Bản viết lại vẫn lệch (%d: %s) — giữ bản %s", len(lech_lai), " | ".join(t for t, _ in lech_lai),
+                                "viết lại" if reply is lai else "đầu")
         return reply
 
     @staticmethod
