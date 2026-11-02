@@ -552,6 +552,8 @@ def dong_nguon_phu(specs) -> list[tuple[str, str]]:
     if _chu(r.get("khoang_gia")):
         ra.append(("khoảng giá tham khảo", _chu(r["khoang_gia"])))
     ngay = _chu(r.get("ngay"))
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", ngay):   # model đọc "02/11/2026", không đọc ISO ra lời khách
+        ngay = "/".join(reversed(ngay.split("-")))
     b = r.get("gia_rao_ban") if isinstance(r.get("gia_rao_ban"), dict) else {}
     if _so(b.get("tr_m2_thap")) and _so(b.get("tr_m2_cao")) and _so(b.get("so_tin")):
         ra.append(("giá rao bán thị trường", f"{_so(b['tr_m2_thap'])}–{_so(b['tr_m2_cao'])} triệu/m², giữa {_so(b.get('tr_m2_giua'))} "

@@ -676,6 +676,21 @@ KHOI_DINH_GIA = (
 )
 
 
+def khoi_dinh_gia(gia_rao: str | None) -> str:
+    """Khối định giá phía bán (SRS-5.1zzzzzzz325, chủ dự án 02/11/2026: chủ căn hộ hỏi "giá tôi đưa cao không" thì "nêu giá rao bán thị
+    trường X–Y triệu/m²"; thay một phần SRS-5.1zzzzzzz116). Dự án có giá rao gộp (`projects.dong_nguon_phu`) → nêu khoảng đó kèm số tin + ngày
+    lấy, nói rõ là giá RAO; KHÔNG phán giá chủ cao / thấp (lưới `_BINH_LUAN_GIA` giữ). Không có số liệu → lời cũ `KHOI_DINH_GIA`."""
+    if not (gia_rao or "").strip():
+        return KHOI_DINH_GIA
+    return (
+        "\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI GIÁ THỊ TRƯỜNG / GIÁ CAO HAY THẤP: ===\n"
+        f"Dữ kiện hệ thống — giá rao bán thị trường của dự án này: {gia_rao.strip()}.\n"
+        "Nêu ĐÚNG khoảng giá/m² này, kèm số tin và thời điểm lấy, nói rõ đây là giá các tin đang RAO bán, không phải giá giao dịch chốt. "
+        "KHÔNG nhận xét giá chủ đưa cao / thấp / hợp lý, KHÔNG tự quy đổi ra giá căn, KHÔNG so với căn khác — để chủ tự so; tin vẫn rao theo "
+        "giá chủ muốn. KHÔNG nêu tên trang / nguồn lấy số. KHÔNG hứa chuyên viên sẽ xem khu vực / báo lại (SRS-5.1zzzzzzz216).\n"
+    )
+
+
 def khoi_diem_tin(diem_tin: float, hang: str, diem_nguoi: float, thieu: list[str], so_anh: int, prop: Property | None = None) -> str:
     """Khối ĐIỂM TIN đưa cho model phía bán (SRS-5.1zzzzzzz216, chủ dự án 27/10: "3 làm đi"): `BUSINESS_CONTEXT` bảo bot nói về điểm uy
     tín / hạng mà trước đó không khối nào mang số thật, nên model chỉ có thể bịa. Số do `gamification` tính (cùng nguồn `TurnResult`),
