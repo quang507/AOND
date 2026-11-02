@@ -1,0 +1,162 @@
+"""Hai ca hồi quy từ lỗi production 02/11/2026 (SRS-5.1zzzzzzz340) — do phiên KIỂM ĐỘC LẬP dựng, không sửa lõi.
+
+CA CHỜ: cả hai `xfail(strict=True)` vì lõi trên main 02/11 còn sai. Bản sửa gộp xong thì XOÁ dòng `xfail` đó (strict = XPASS cũng đỏ,
+đúng ý: dấu nhắc gỡ marker), KHÔNG xoá ca kiểm.
+
+Lớp lỗi 1 — vai khách nhớ theo người, không theo SỐ Zalo khách đang nhắn: khách hỏi mua ở số tư vấn rồi nhắn số ký gửi thì
+`conv.role` vẫn là "buyer", lượt ở số ký gửi vẫn chạy prompt tư vấn người mua. Chỗ khác cùng lớp: `so_nhan` chỉ được đọc ở lượt ĐẦU
+(`engine` nhánh `khoi_chao_tu_van` kiểm `not any(t.role == "assistant")`) nên mọi lượt sau không soát lại số — ca 1 phủ chỗ đó.
+
+Lớp lỗi 2 — cây hỏi nhu cầu người mua chạy trước rổ hàng: đã đủ khu vực + ngân sách + loại và rổ có 3 căn khớp mà
+`BuyerLead.next_question_field()` vẫn trả `yeu_cau_xe_hoi`, nên prompt vẫn dặn hỏi "đường trước nhà cần rộng cỡ nào" (ca production:
+"anh đang cần tìm mua nhà quận 8 dưới 7 tỉ yên tĩnh" → bot hỏi hẻm rộng cỡ nào để xe hơi vào).
+
+Số điện thoại / ID trong bài là giả; khoá hội thoại dùng tiền tố ID thử (`thu-`).
+"""
+import pytest
+
+from aioi.config import Settings
+from aioi.engine import SO_TU_VAN, Engine
+from aioi.llm.mock import MockProvider
+from aioi.supabase_store import SupabaseConversationStore
+from tests.test_doc_y_khach import _eng
+
+# ---------------------------------------------------------------- ca 1: vai theo số Zalo khách nhắn
+
+def _hai_so(khach_mua: str, khach_ky_gui: str):
+    """Một khách: lượt đầu ở số TƯ VẤN (hỏi mua), lượt sau ở số KÝ GỬI. Trả (engine, spy)."""
+    eng, spy = _eng({"operations": [], "user_intent": "buy"})
+    eng.conversation("thu-hai-so").so_nhan = SO_TU_VAN
+    eng.handle("thu-hai-so", khach_mua)
+    eng.conversation("thu-hai-so").so_nhan = ""        # bridge ký gửi không gửi so_nhan
+    eng.handle("thu-hai-so", khach_ky_gui)
+    return eng, spy
+
+
+@pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 1); bản sửa ở PR #250 (SRS-329). Sửa xong thì XOÁ dòng này")
+def test_ca_1_vai_mua_khong_theo_khach_sang_so_ky_gui_khi_moi_chao():
+    """Lượt ở số ký gửi chỉ là lời chào → phải quay về luồng ký gửi, không chạy prompt tư vấn người mua."""
+    eng, spy = _hai_so("anh đang tìm mua nhà quận 8 tầm 7 tỷ", "chào em")
+    he = spy.systems[-1]
+    assert eng.conversation("thu-hai-so").role != "buyer"
+    assert "trợ lý tư vấn tìm mua/thuê" not in he
+    assert "người gửi bán / cho thuê" in he
+
+
+@pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 1); bản sửa ở PR #250 (SRS-329). Sửa xong thì XOÁ dòng này")
+def test_ca_1_cach_noi_moi_khong_hoi_khu_vuc_tim_mua_o_so_ky_gui():
+    """Cách nói mới (lời chào khác, không có chữ "chào"): vẫn không được hỏi tiếp chuyện tìm mua ở số ký gửi."""
+    eng, spy = _hai_so("chị cần mua căn hộ Quận 7 tầm 3 tỷ", "alo em ơi")
+    he = spy.systems[-1]
+    assert eng.conversation("thu-hai-so").role != "buyer"
+    assert "Khu vực / Quận mong muốn" not in he        # cây hỏi nhu cầu người mua
+
+
+def test_ca_1_khach_noi_ban_o_so_ky_gui_thi_vao_vai_ban():
+    """Không phải lời chào mà nói luôn chuyện gửi bán: vai phải đổi sang bán (lưới đỡ, hiện tại đã xanh)."""
+    eng, spy = _eng({"operations": [], "user_intent": "buy"})
+    eng.conversation("thu-hai-so-2").so_nhan = SO_TU_VAN
+    eng.handle("thu-hai-so-2", "anh tìm mua nhà quận 8 tầm 7 tỷ")
+    eng._provider.plan = {"operations": [], "user_intent": "sell"}
+    eng.conversation("thu-hai-so-2").so_nhan = ""
+    eng.handle("thu-hai-so-2", "giờ anh muốn gửi bán căn nhà của anh")
+    assert eng.conversation("thu-hai-so-2").role == "seller"
+
+
+# ---------------------------------------------------------------- ca 2: đủ tiêu chí + có rổ hàng thì đưa căn, không hỏi hẻm
+
+Q8 = [
+    {"id": "a1", "code": "Q8AA0001", "property_type": "nha_pho", "deal": "ban", "street": "Phạm Thế Hiển",
+     "ward": "Phường Chánh Hưng", "district": "Quận 8", "area_m2": 60, "price_raw": "6,3 tỷ", "price_vnd": 6_300_000_000,
+     "status": "dang_ban"},
+    {"id": "a2", "code": "Q8AA0002", "property_type": "nha_pho", "deal": "ban", "street": "Dạ Nam",
+     "ward": "Phường Bình Đông", "district": "Quận 8", "area_m2": 52, "price_raw": "5,5 tỷ", "price_vnd": 5_500_000_000,
+     "status": "dang_ban"},
+    {"id": "a3", "code": "Q8AA0003", "property_type": "nha_pho", "deal": "ban", "street": "Hưng Phú",
+     "ward": "Phường Rạch Ông", "district": "Quận 8", "area_m2": 48, "price_raw": "4,8 tỷ", "price_vnd": 4_800_000_000,
+     "status": "dang_ban"},
+]
+
+
+class _KhoQ8(SupabaseConversationStore):
+    """PostgREST giả: `tim_nha` trả đúng 3 căn nhà phố Quận 8 dưới 7 tỷ (rổ hàng của ca production)."""
+
+    def __init__(self):
+        super().__init__(url="https://x.invalid", key="khoa-gia")
+
+    def _request(self, method, endpoint, data=None, prefer=None):
+        if endpoint.startswith("rpc/parse_vnd"):
+            return 7_000_000_000
+        if endpoint.startswith("rpc/tim_nha"):
+            return [{"can": c, "diem": 5, "ly_do": "đúng khu vực, trong ngân sách"} for c in Q8]
+        if endpoint.startswith("rpc/"):
+            return 1
+        return []
+
+    def load(self, user_key):
+        return None
+
+    def save(self, conv):
+        return None
+
+
+class _AiGia(MockProvider):
+    def __init__(self, ke_hoach):
+        super().__init__(Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y"))
+        self.ke_hoach, self.system = ke_hoach, []
+
+    def extract(self, system, messages, json_schema):
+        if "user_intent" in (json_schema.get("properties") or {}):
+            return dict(self.ke_hoach)
+        return super().extract(system, messages, json_schema)
+
+    def chat(self, system, messages, max_tokens=256):
+        self.system.append(system)
+        return "Em gửi anh căn ở Quận 8 ạ."
+
+    def reply(self, system, messages, **k):
+        return self.chat(system, messages)
+
+
+def _cau_hoi_luot(he: str) -> str:
+    """Chỉ phần DẶN HỎI của lượt này (`build_buyer_chat_system` ask_line) — không tính cây hỏi tĩnh in sẵn trong prompt."""
+    i = he.find("Thông tin cần khai thác tiếp theo:")
+    return "" if i < 0 else he[i:i + 400]
+
+
+def _q8(cau="anh đang cần tìm mua nhà quận 8 dưới 7 tỉ yên tĩnh", khoa="thu-q8"):
+    ai = _AiGia({"operations": [], "user_intent": "buy",
+                 "buyer_lead": {"loai_giao_dich": "mua", "loai_bds": "nha_pho", "khu_vuc": "quận 8",
+                                "ngan_sach": "dưới 7 tỉ", "moi_truong_song": "yên tĩnh"}})
+    eng = Engine(ai, conversation_store=_KhoQ8())
+    eng.conversation(khoa).so_nhan = SO_TU_VAN
+    eng.handle(khoa, cau)
+    return eng, ai, khoa
+
+
+def test_ca_2_ro_hang_ba_can_vao_prompt_viet_loi():
+    """Lưới đỡ (hiện tại đã xanh): cả 3 căn phải tới model — bot có căn thật để kể, không phải bịa."""
+    _eng_, ai, _ = _q8()
+    he = ai.system[-1]
+    assert "CĂN ĐANG RAO" in he
+    assert all(c["street"] in he for c in Q8)
+
+
+@pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 2), chưa có bản sửa. Sửa xong thì XOÁ dòng này")
+def test_ca_2_du_tieu_chi_va_co_ro_hang_thi_khong_hoi_duong_truoc_nha():
+    """Đủ khu vực + ngân sách + loại và rổ có căn → không được dặn hỏi "đường trước nhà rộng cỡ nào / hẻm xe hơi"."""
+    eng, ai, khoa = _q8()
+    assert eng.conversation(khoa).buyer_lead.next_question_field() != "yeu_cau_xe_hoi"
+    assert "yêu cầu hẻm xe hơi" not in _cau_hoi_luot(ai.system[-1])
+
+
+@pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 2), chưa có bản sửa. Sửa xong thì XOÁ dòng này")
+def test_ca_2_cach_noi_moi_khong_hoi_duong_truoc_nha():
+    """Cách nói mới, cùng ý: "nhà cấp 4 Q8 ngân sách 6 tỷ, chỗ nào ít ồn" — cũng không được hỏi đường trước nhà."""
+    ai = _AiGia({"operations": [], "user_intent": "buy",
+                 "buyer_lead": {"loai_giao_dich": "mua", "loai_bds": "nha_cap_4", "khu_vuc": "Q8",
+                                "ngan_sach": "6 tỷ", "moi_truong_song": "ít ồn"}})
+    eng = Engine(ai, conversation_store=_KhoQ8())
+    eng.conversation("thu-q8b").so_nhan = SO_TU_VAN
+    eng.handle("thu-q8b", "nhà cấp 4 Q8 ngân sách 6 tỷ, tìm chỗ nào ít ồn")
+    assert "yêu cầu hẻm xe hơi" not in _cau_hoi_luot(ai.system[-1])
