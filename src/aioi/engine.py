@@ -40,17 +40,15 @@ from .anh_can import da_gui_het
 from .assistants import Assistant, assign_assistant
 from .drive import extract_drive_id
 from .fetch import (
-    DEFAULT_BATCH_BUDGET,
     FetchedMedia,
     FetchError,
     fetch_media,
     fetch_raw,
     is_drive_folder,
-    sniff_media_type,
 )
 from .llm import LLMProvider, Message
 from .llm.base import CHI_GEMINI, MODEL_CHAT_LUOT, NGUON_LUOT, RANH_GIOI_CACHE, model_chat_thu
-from .web import SITE_HOST, link_tin
+from .web import SITE_HOST
 from . import bulk
 from . import inventory as inv
 from .viec_luot import TrangThaiLuot, viec_luot
@@ -112,7 +110,6 @@ from .prompts import (
     build_project_block,
     DEED_VISION_INSTRUCTION,
     FIELD_LABELS,
-    NATURAL_QUESTIONS,
     deed_extraction_schema,
     column_map_schema,
     extraction_schema,
@@ -252,14 +249,6 @@ _PII_OWNER_RE = re.compile(                                          # a "Chủ 
 _LEGAL_TITLE_HINTS = ("sổ đỏ", "sổ hồng", "gcn", "gcnqsdđ", "giấy chứng nhận")
 
 
-def _looks_personal_doc(markdown: str) -> bool:
-    """A doc carries PERSONAL data only when there's an actual identity SIGNAL — an owner/party
-    field, or a CCCD/CMND number/keyword. A mere mention of 'GCN'/'quyền sử dụng đất' (which shows
-    up in phân-lô and quy-hoạch legends) is NOT enough, else a site map gets mis-flagged."""
-    m = markdown or ""
-    return bool(_PII_OWNER_RE.search(m) or _PII_ID_RE.search(m) or _PII_KEYWORD_RE.search(m))
-
-
 def _redact_personal_data(text: str) -> str:
     """Strip personal IDENTITY from a doc kept as SHARED project knowledge: blank the value of an
     owner/party field, and any CMND/CCCD or phone number. LAND facts (diện tích, thửa, tờ, quy
@@ -321,7 +310,7 @@ def _trich_dan_khop(trich: str | None, cau: str | None) -> bool:
     """Cụm AI trích có nằm NGUYÊN trong câu khách không (bỏ dấu, bỏ dấu câu, gộp khoảng trắng) — AI đọc nghĩa, code chỉ kiểm bằng
     chứng. Dấu câu bỏ từ SRS-5.1zzzzzzz107 (bắn thử 207: khách "quận Đống Đa, Hà Nội", AI trích bỏ dấu phẩy → trượt, tin Hà Nội lọt
     vùng); chữ và số vẫn phải khớp nguyên."""
-    gon = lambda s: re.sub(r"\s+", " ", _strip_accents(str(s or "")).lower()).strip()
+    gon = lambda s: re.sub(r"\s+", " ", bo_dau(str(s or "")).lower()).strip()
     t = gon(trich)
     if t and t in gon(cau):
         return True
@@ -422,7 +411,7 @@ def _loc_viec_mua(mua: dict) -> dict:
 def _chu_co_trong_loi_khach(cum: str | None, loi_khach: list[str]) -> bool:
     """Cụm AI GHÉP từ nhiều tin ngắn của khách ("9h sáng thứ 7" từ "thứ 7" / "sáng nhé" / "9h", SRS-5.1zzzzzzz153) có bằng chứng không:
     MỌI chữ / số của cụm đều nằm trong lời KHÁCH (vài lượt gần nhất, không tính lời bot). Cụm có chữ khách chưa từng nói thì không nhận."""
-    tach = lambda s: set(re.findall(r"[0-9a-z]+", re.sub(r"\s+", " ", _strip_accents(str(s or "")).lower())))
+    tach = lambda s: set(re.findall(r"[0-9a-z]+", re.sub(r"\s+", " ", bo_dau(str(s or "")).lower())))
     can = tach(cum)
     return bool(can) and can <= set().union(*(tach(x) for x in loi_khach)) if loi_khach else False
 
@@ -451,7 +440,7 @@ _DON_VI = frozenset({"m", "met", "ty", "ti", "trieu", "tr", "k", "ngan", "nghin"
 
 
 def _tu(s: str | None) -> set[str]:
-    return set(re.findall(r"[a-z0-9]+", _strip_accents(re.sub(r"(?i)m\s*[2²]", "m", str(s or ""))).lower()))
+    return set(re.findall(r"[a-z0-9]+", bo_dau(re.sub(r"(?i)m\s*[2²]", "m", str(s or ""))).lower()))
 
 
 GIA_TRI_NGUYEN_CAU_TU = 10   # giá trị ô dài từng này từ mà bằng ĐÚNG cả tin khách = AI chép nguyên câu, không trích cụm
@@ -463,7 +452,7 @@ def _gia_tri_la_cau(k: str, v: str, tin_khach: str) -> str | None:
     v = (v or "").strip()
     if v.endswith("?"):
         return "giá trị ô là câu hỏi, không phải dữ liệu căn"
-    gon = lambda x: re.sub(r"\s+", " ", re.sub(r"[^\w\s/]", " ", _strip_accents(x or "").lower())).strip()
+    gon = lambda x: re.sub(r"\s+", " ", re.sub(r"[^\w\s/]", " ", bo_dau(x or "").lower())).strip()
     if k not in _O_GHEP and len(v.split()) >= GIA_TRI_NGUYEN_CAU_TU and gon(v) == gon(tin_khach):
         return "giá trị ô là nguyên cả câu khách nhắn — AI phải trích cụm dữ liệu, câu nhờ / dặn không phải ô tin"
     return None
@@ -478,11 +467,6 @@ def _gia_tri_chong_do(k: str, v: str, loi_khach: str) -> bool:
     if k in _O_SO_DO:
         return {w for w in _tu(v) if not w[0].isdigit()} <= du | _DON_VI
     return _tu(v) <= du
-
-
-def _strip_accents(s: str) -> str:
-    s = (s or "").replace("đ", "d").replace("Đ", "D")  # NFD won't decompose đ — map it first
-    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
 
 
 @dataclass
@@ -601,7 +585,6 @@ class Conversation:
     truoc_luot: dict = field(default_factory=dict)
     truoc_id: str = ""
     bc_luot: dict = field(default_factory=dict)
-    de_xuat_luot: list = field(default_factory=list)   # thao tác lượt AI lập thao tác đề xuất ("update(gia)") — tin phụ chế độ test
     bo_luot: list = field(default_factory=list)        # (ô, lý do) ô AI đề xuất mà code bỏ — tin phụ chế độ test nói "vì sao không nhớ"
     # Transient: điều lượt AI đọc được ở tin vừa nhắn, đã kiểm trích dẫn (SRS-5.1zzzzzzz55): "xin_xem_ban_ve", "cau_hoi_du_an",
     # "mo_ta_du_an" (True khi có), "xac_nhan_xoa" ("dong_y" / "tu_choi").
@@ -1439,7 +1422,7 @@ def _ban_tin_truoc(conv: "Conversation") -> str:
 
 def _do_giong_ban_tin(a: str, b: str) -> float:
     """Độ giống hai bản tin (0–1) trên chữ bỏ dấu, bỏ khoảng trắng thừa — chỉ so hình thức."""
-    gon = lambda x: re.sub(r"\s+", " ", _strip_accents(x or "").lower()).strip()
+    gon = lambda x: re.sub(r"\s+", " ", bo_dau(x or "").lower()).strip()
     if not gon(a) or not gon(b):
         return 0.0
     return difflib.SequenceMatcher(None, gon(a), gon(b)).ratio()
@@ -1549,7 +1532,7 @@ def _cau_lap_luot_truoc(reply: str, truoc: str) -> str | None:
     em chưa có căn nào ở Gò Vấp hay Phú Nhuận…" ×3 — khách ảo 26/10). So chữ bỏ dấu, bỏ dấu câu; không đụng bản tin 📋 và link."""
     if not reply or not truoc:
         return None
-    gon = lambda c: re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", _strip_accents(c).lower())).strip()
+    gon = lambda c: re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", bo_dau(c).lower())).strip()
     cu = {gon(c) for c in re.split(r"[.!?\n]+", truoc) if len(c.split()) >= 6}
     for c in re.split(r"[.!?\n]+", reply):
         if len(c.split()) >= 6 and "http" not in c and "📋" not in c and gon(c) in cu:
@@ -4685,12 +4668,6 @@ class Engine:
         # warning chứ không info: lõi chạy dưới uvicorn chỉ in từ mức warning (bắn thử 19/10: dòng info không hiện trong journal).
         # Tin phụ chế độ test (SRS-5.1zzzzzzz130): kể ô AI đề xuất CÓ giá trị; khoá AI trả rỗng / null tách riêng — chúng không qua cổng bằng
         # chứng nên không có dòng "Bỏ ô" nào (bắn thử 22/10: Gemini trả gan_nga_tu / unit_type = null, tin phụ cũ kể như AI đề xuất thật).
-        def _mo_ta(o: dict) -> str:
-            f = o.get("fields") if isinstance(o.get("fields"), dict) else {}
-            co = sorted(k for k, v in f.items() if isinstance(v, str) and v.strip())
-            rong = sorted(k for k in f if k not in co)
-            return f"{o.get('op')}({', '.join(co) or '-'})" + (f" · rỗng: {', '.join(rong)}" if rong else "")
-        conv.de_xuat_luot = [_mo_ta(o) for o in (plan.get("operations") or []) if isinstance(o, dict)]
         log.warning("Kế hoạch: %s", [(o.get("op"), sorted(o["fields"].keys()) if isinstance(o.get("fields"), dict) else type(o.get("fields")).__name__)
                                    if isinstance(o, dict) else type(o).__name__ for o in plan.get("operations") or []])
 
@@ -4792,7 +4769,7 @@ class Engine:
         # SRS-5.1zzzzzzz245 (chat thử 28/10 "chú bán nhà ở 125 Bình Long…": log không có dòng "Xưng hô" nào, bot gọi "Anh" theo giới tính Zalo):
         # công cụ không ép enum nên AI có thể trả chữ ("chú", "cháu") thay mã — trước đây rơi im lặng. Chuẩn hoá ĐẦU RA AI (không đọc lời khách).
         x_tho = plan.get("xung_ho")
-        x = _MA_XUNG_HO.get(_strip_accents(str(x_tho or "")).strip().lower().replace(" ", "_"))
+        x = _MA_XUNG_HO.get(bo_dau(str(x_tho or "")).strip().lower().replace(" ", "_"))
         if x_tho and not x:
             log.warning("Xưng hô: AI trả giá trị ngoài danh sách %r", str(x_tho)[:20])
         if x in ("em", "anh", "chi", "chau", "chu_co_bac"):
@@ -4806,7 +4783,7 @@ class Engine:
             chu = {"em": ("em", "e"), "anh": ("anh", "a"), "chi": ("chi", "c"), "chau": ("chau", "con"),
                    "chu_co_bac": ("chu", "co", "bac", "di", "cau", "thim", "ong", "ba", "con", "chau")}[x]
             # Chữ tắt một ký tự so trên chữ CÒN dấu: "ạ" bỏ dấu thành "a", "ê" thành "e" — so trên chữ bỏ dấu thì "dạ em gửi ạ" cũng thành "anh".
-            hop = bool({c for c in chu if len(c) > 1} & set(re.findall(r"[a-z]+", _strip_accents(str(trich or "")).lower()))
+            hop = bool({c for c in chu if len(c) > 1} & set(re.findall(r"[a-z]+", bo_dau(str(trich or "")).lower()))
                        or {c for c in chu if len(c) == 1} & set(re.findall(r"\w+", str(trich or "").lower())))
             cu = (conv.xung_ho or "").partition(":")[0]
             nguon = [cuoi] if (cu and cu != x) else gan
@@ -4894,7 +4871,7 @@ class Engine:
             # Cụm nằm nguyên trong tin, HOẶC mọi chữ của cụm đều có trong tin (AI hay rút gọn / đảo chữ: "đem lên tiêu đề nhấn mạnh"
             # từ "em lại đem lên trên tiêu đề nhấn mạnh") — bắn thử 27/10 (run 40447321762) sổ chỉ giữ 2/4 lời dặn.
             # và so không khoảng trắng: khách gõ "5 m", AI trích "5m" (run 40449155997 bỏ mất "mặt tiền 5 m xứng đáng để nói").
-            lien = lambda t: re.sub(r"[^0-9a-z]", "", _strip_accents(str(t or "")).lower())
+            lien = lambda t: re.sub(r"[^0-9a-z]", "", bo_dau(str(t or "")).lower())
             giu = [str(x).strip() for x in yc if isinstance(x, str) and x.strip()
                    and (_trich_dan_khop(x, cuoi) or _chu_co_trong_loi_khach(x, [cuoi]) or (lien(x) and lien(x) in lien(cuoi)))]
             if len(giu) != len([x for x in yc if isinstance(x, str) and x.strip()]) or giu:
@@ -5506,7 +5483,7 @@ class Engine:
         đường rộng 20m, lô 4x11)."""
         thu_tu = conv.prop.expected_fields()
         hang = lambda o: thu_tu.index(o) if o in thu_tu else len(thu_tu)
-        gon = lambda x: " ".join(_strip_accents(x).lower().split())
+        gon = lambda x: " ".join(bo_dau(x).lower().split())
         da_co = {gon(v): k for k, v in conv.prop.fields.items() if isinstance(v, str) and not k.startswith("_")}
         nhom: dict[str, list[str]] = {}
         for k, v in out.items():

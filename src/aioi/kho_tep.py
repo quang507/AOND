@@ -90,9 +90,6 @@ class MediaRef:
             d["ban_nho"] = self.ban_nho
         return d
 
-    @staticmethod
-    def from_dict(d: dict[str, str]) -> "MediaRef":
-        return MediaRef(d["item_id"], d["web_url"], d["path"], d["filename"], d.get("content_type", ""), d.get("ban_nho", ""))
 
 
 class MediaStore(ABC):

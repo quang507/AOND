@@ -9,12 +9,12 @@ import json
 import logging
 import os
 import re
-import unicodedata
 from typing import Any
 
 from ..config import Settings
 from ..imaging import downscale_image
 from ..so_token import SoToken
+from ..chu import bo_dau
 from .base import MODEL_CHAT_LUOT, LLMProvider, Message, ToolCall, ToolTurn, tach_on_dinh
 
 log = logging.getLogger(__name__)
@@ -65,10 +65,6 @@ def chuan_theo_schema(v: Any, schema: dict[str, Any]) -> Any:
     if t == "array" and isinstance(v, list):
         return [chuan_theo_schema(x, schema.get("items") or {}) for x in v]
     return v
-
-
-def _bo_dau(s: str) -> str:
-    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn").replace("đ", "d")
 
 
 _GUI_KHACH: dict[str, Any] = {
@@ -192,7 +188,7 @@ class ClaudeProvider(LLMProvider):
             self._so.ghi("chat", MODEL_CHAT_LUOT.get() or self._chat_model, resp)
             o = next((dict(b.input or {}) for b in resp.content if b.type == "tool_use"), {})
             # Bắn thử 20/10: Haiku gõ tên ô có dấu ("loi_gui_khách") → lời rỗng, tốn một lượt gọi lại. Nhận tên ô theo chữ bỏ dấu.
-            loi = str(next((v for k, v in o.items() if _bo_dau(k) == "loi_gui_khach"), "") or "").strip()
+            loi = str(next((v for k, v in o.items() if bo_dau(k) == "loi_gui_khach"), "") or "").strip()
             if not loi and not o:   # SRS-5.1zzzzzzz244: tool_choice auto, model trả chữ thường không gọi công cụ → lấy chữ đó
                 loi = "".join(b.text for b in resp.content if b.type == "text").strip()
                 if cong_cu:

@@ -1,4 +1,4 @@
-// SRS-5.1zzzzzzz321 — bộ bóc / ghép của scripts/thu-du-an-rever.mjs trên HTML tự dựng (không lưu trang nguồn vào repo).
+// SRS-5.1zzzzzzz323 — bộ bóc / ghép của scripts/thu-du-an-rever.mjs trên HTML tự dựng (không lưu trang nguồn vào repo).
 // Đỏ khi: bóc sai khối thông số hai mẫu trang; giá rao giữ tin gõ sai diện tích; dữ kiện trong chú thích HTML lọt vào; ghép đè ô đã có;
 // tên trùng nhiều quận mà vẫn ghép bừa; dự án ngoài vùng lọt.
 import assert from "node:assert/strict";

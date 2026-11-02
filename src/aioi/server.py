@@ -251,7 +251,6 @@ def message(msg: IncomingMessage) -> Reply:
 # Lượt hỏng (SRS-5.1zzzzzzz82): câu giữ chỗ không đổ lỗi cho mạng, không bắt khách gõ lại; luồng nền thử lại sau THU_LAI_SAU giây.
 # Câu mặc định; câu đang dùng đọc qua cau_mau (chủ dự án sửa ở CRM, SRS-5.1zzzzzzz106).
 CAU_GIU_CHO = cau_mau.cau("giu_cho")
-CAU_THU_LAI_HONG = cau_mau.cau("thu_lai_hong")
 
 
 def _cau_theo_khach(uk: str, khoa: str) -> str:

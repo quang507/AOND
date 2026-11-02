@@ -18,7 +18,7 @@ import os
 import re
 import threading
 import time
-import unicodedata
+from .chu import bo_dau
 import urllib.request
 from dataclasses import dataclass, field
 
@@ -67,8 +67,7 @@ def _loc_anh(images: object) -> list[str]:
 
 def _lien(s: str) -> str:
     """Bỏ dấu, chữ thường, chỉ giữ a-z0-9 (giống `bo_dau` + regexp của match_projects)."""
-    s = unicodedata.normalize("NFD", s.replace("đ", "d").replace("Đ", "D"))
-    return re.sub(r"[^a-z0-9]+", "", "".join(c for c in s if not unicodedata.combining(c)).lower())
+    return re.sub(r"[^a-z0-9]+", "", bo_dau(s))
 
 
 def tim_anh_du_an(cau: str, goi=_goi_match_projects) -> AnhDuAn | None:

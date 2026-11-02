@@ -829,12 +829,19 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
-### SRS-5.1zzzzzzz321 · Làm giàu kho dự án từ rever.vn (crawl theo luật mogi), một kho `projects`; bot đọc `specs.rever` (02/11/2026)
+### SRS-5.1zzzzzzz323 · Làm giàu kho dự án từ rever.vn (crawl theo luật mogi), một kho `projects`; bot đọc `specs.rever` (02/11/2026)
 Quyết định chủ dự án 02/11: chọn phương án (a) — crawl Rever theo luật OPEN-56 (chỉ dữ kiện, mô tả viết lại, giữ `source_url`, không tin rao lẻ / SĐT / ảnh), dù điều khoản rever.vn
-§3.1–3.2 cấm dùng thương mại / sao chép (`robots.txt` cho phép); "dữ liệu bên mình là 1 chỗ" → GHÉP vào dòng `projects` có sẵn (khớp tên bỏ dấu + tỉnh, trùng tên thì khớp quận; mơ hồ bỏ qua),
-chỉ điền ô trống, dữ kiện ở `specs.rever` (thông số, khoảng giá, giá rao GỘP: số tin + giá/m² thấp / giữa / cao + ngày lấy); chưa có thì dòng mới `source = 'rever'`. Script `scripts/thu-du-an-rever.mjs`, nạp qua ô `nap-du-an-rever`.
-Bot: `projects.dong_nguon_phu` cho cả hai phía (nguồn phụ không đè nguồn chính, không nêu tên nguồn ra khách). Tin `listings` của mình chưa nối `project_id` (0/248) nên chưa tự tính được khoảng giá theo dự án.
-Kiểm: `tests/test_nguon_phu_rever.py` (3/4 đỏ khi gỡ đọc `specs.rever`), `bot/tests/thu-du-an-rever.mjs` (HTML tự dựng: hai mẫu trang, bỏ tin gõ sai "62633 m²", khối trong chú thích HTML, không ghép bừa).
+§3.1–3.2 cấm dùng thương mại / sao chép (`robots.txt` cho phép); "dữ liệu bên mình là 1 chỗ" → GHÉP vào dòng `projects` có sẵn (`cacKhoa`: tên đủ, phần trước " - ", bỏ quận / tỉnh đuôi; cùng tỉnh;
+trùng nhiều dòng thì khớp quận; mơ hồ bỏ qua), chỉ điền ô trống, dữ kiện ở `specs.rever` (thông số, khoảng giá, giá rao GỘP: số tin + giá/m² thấp / giữa / cao + ngày lấy); chưa có thì dòng mới `source = 'rever'`.
+Script `scripts/thu-du-an-rever.mjs`, nạp qua ô `nap-du-an-rever`. Bot: `projects.dong_nguon_phu` cho cả hai phía (không đè nguồn chính, không nêu tên nguồn ra khách). `listings` của mình chưa nối `project_id` (0/248).
+Lớp lỗi khớp tên: khớp nguyên tên chỉ 5/26 trên mẫu thật → dòng trùng. Kiểm: `tests/test_nguon_phu_rever.py` (3/4 đỏ khi gỡ đọc `specs.rever`), `bot/tests/thu-du-an-rever.mjs` (hai mẫu trang, tin gõ sai "62633 m²", chú thích HTML, tên viết khác giữa hai nguồn).
+
+### SRS-5.1zzzzzzz321 · Audit Đợt 6: code chết và một nguồn — bỏ dấu một hàm, một cửa tin báo admin chặn ID thử, không rơi về mock, không hỏi lại sổ (02/11/2026)
+Ca gốc: ban-thu-mua 02/11 nhắn admin thật lịch xem của "Khách thử"; 9 hàm bỏ dấu chép tay; hai `_hoi_thoai_mua` trong một class (bản sau đè im lặng); thiếu `ANTHROPIC_API_KEY` thì lõi
+lặng lẽ chạy `MockProvider`; cham `xa_phuoc_ly`: khách nói "thuê đất trả tiền hàng năm" (ô `phap_ly`) mà đất vẫn hỏi "đã có sổ đỏ chưa". (1) Lớp lỗi: một việc nhiều bản, mỗi bản tự nhớ luật.
+Sửa: `aioi.chu.bo_dau`; `SupabaseConversationStore._xep_tin_admin` (mọi tin admin từ lõi, chặn `la_id_thu`); thiếu khoá thì báo lỗi, mock chỉ khi `AIOI_LLM_PROVIDER=mock`; `_has` ô sổ nhận ô `phap_ly`;
+xoá code chỉ test gọi / không ai dùng (`quote_fee`, `nmg_eligibility`, `perks_for`, `_looks_personal_doc`, `de_xuat_luot`…); nhóm pháp lý nhạy cảm một nguồn `phap_ly.NHOM_NHAY_CAM`. (2) Còn (làn DB / web):
+trigger `viewings_bao_admin_va_email` nhắn admin cả lịch xem của ID thử; `/du-an` lấy vùng một nguồn. (3) Kiểm: `test_dot6_321.py` (trên main cả tệp đỏ — thiếu `aioi.chu`; bài tiền tố ID thử Python == SQL là bài canh, xanh cả hai bản); `cham` ×2.
 
 ### SRS-5.1zzzzzzz320 · Audit Đợt 3: bỏ đoán ý khách bằng từ khoá — AI đọc nghĩa vai / pháp lý / đường vào / tiện ích / tình trạng; một lưới bản tin (02/11/2026)
 Quyết định chủ dự án 02/11: KHÔNG dùng từ khoá trên lời khách để quyết ý, kể cả làm lưới đỡ. Ca gốc: "tôi không phải chính chủ" vẫn tính chủ nhà (`_VAI_RE`), "chưa có sổ hồng" tính có pháp lý,
@@ -896,13 +903,6 @@ Kiểm: `tests/test_viec_luot_314.py`, `tests/test_kich_ban_2a_314.py` (mỗi k�
 Lớp lỗi: ID chấm là ID thử, nên công tắc "thu" (`AGENT_BOC`) bật trong bộ chấm mà khách thật không bật, và model bóc tách lệch VPS (bộ chấm Haiku 5.5, VPS mặc định config `claude-haiku-4-5`) — số SRS-310…312 đo đường agent bóc. Sửa: `cong_tac_vps()` đọc dòng `printf` của cai-vps.sh, mặc định "thu" = tắt (`--nhu thu` để đo ID thử); in cỡ prompt bóc tách / viết lời; giám khảo thêm phép "không lộ luật"; `--nen` ghi `tests/kich_ban/diem_nen.json`, lần sau tự so.
 Điểm nền hai lần (40 kịch bản, Sonnet viết · Haiku 4.5 bóc): tất định 407 / 405 trên 408; giọng 2,62 / 2,73 (≥ 4/5: 3 / 4 cuộc); lộ luật 2 / 3 cuộc (giám khảo bắt nhầm cả câu phí / vùng đúng quy định — 1 cờ thật: "10 căn trở lên lên Top"); gọi lại 7 / 7; prompt bóc tách trung vị 24,1 nghìn chữ, viết lời 4,7 nghìn (lớn nhất 16,4 nghìn).
 Kiểm: `tests/test_cham_nhu_khach.py` (đỏ khi bộ chấm không đổi "thu" thành tắt).
-
-### SRS-5.1zzzzzzz312 · Gỡ 4 lưới soát chưa từng kích; nhà phố có diện tích đất rồi thì số m² thứ hai là sàn; sửa phép chấm "huyện" (30/10/2026)
-Chủ dự án 30/10 ("không cần, gỡ đi"): gỡ lưới "câu ghi nhận một lần" (SRS-229), "HOA cả cụm" (SRS-241, luật vẫn ở `AD_FORMAT`), "anh ơi" lặp,
-"hỏi phường phải nhắc kho hẻm" (SRS-115, khối Kho hẻm trong prompt giữ) — 0/280 cuộc chấm kích, ở chế độ gọn chỉ ghi log; test giữ lưới gỡ theo.
-- `ma_lo_7m` (lớp lỗi: số m² trống ghi tạm `dien_tich`, phiếu lượt không hỏi lại theo SRS-302 → ô sàn trống): form + EXTRACTION đọc "đã có đất, số m² khác"
-  là `dien_tich_nha`. `dat_nen_long_an`: phép chấm "huyện" khớp nhầm "c**huyện**" → `\bhuyện\b`. Đo 408 phép: 402 / 403 → 406 / 406
-  (`ma_lo_7m`, `dat_nen_long_an` đạt 2/2); giọng 2,58 / 2,50 → 2,45 / 2,45 (thay đổi không đụng lời viết, dao động giám khảo 2,35–2,70).
 
 ---
 

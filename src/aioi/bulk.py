@@ -10,7 +10,7 @@ from __future__ import annotations
 import csv
 import io
 import re
-import unicodedata
+from .chu import bo_dau
 import zipfile
 
 # Normalized header → field slug.
@@ -45,8 +45,7 @@ TYPE_NAME_TO_SLUG: dict[str, str] = {
 
 
 def _norm(s: str) -> str:
-    s = unicodedata.normalize("NFD", s or "").casefold().replace("đ", "d")  # đ isn't a decomposable accent
-    s = "".join(c for c in s if unicodedata.category(c) != "Mn")  # strip accents
+    s = bo_dau(s)   # một hàm bỏ dấu (SRS-5.1zzzzzzz321)
     return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", s)).strip()
 
 

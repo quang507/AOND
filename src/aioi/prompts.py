@@ -5,7 +5,6 @@ images, friendly local tone, and the assistant's assigned persona.
 """
 from __future__ import annotations
 
-import functools
 import re
 from typing import Any
 
@@ -791,9 +790,8 @@ _NGOAI_VUNG_DU_TEN_TRONG = ("binh phuoc",)
 
 def trong_vung_nhan_tin(tinh: str | None) -> bool:
     """Tên tỉnh / thành (AI đọc) có nằm trong vùng nhận tin của chủ dự án không — đối chiếu danh sách cố định, không đoán ý."""
-    import unicodedata
-    s = unicodedata.normalize("NFD", (tinh or "").replace("đ", "d").replace("Đ", "D").lower())
-    s = " " + re.sub(r"[^a-z0-9]+", " ", "".join(c for c in s if unicodedata.category(c) != "Mn")) + " "
+    from .chu import bo_dau
+    s = " " + re.sub(r"[^a-z0-9]+", " ", bo_dau(tinh)) + " "
     if any(f" {x} " in s for x in _NGOAI_VUNG_DU_TEN_TRONG):
         return False
     return any(f" {x} " in s for x in _TEN_TRONG_VUNG)
@@ -1994,8 +1992,7 @@ QUY TẮC:
 - HỎI PHÁP LÝ / THỦ TỤC / THUẾ PHÍ (25/10/2026, SRS-5.1zzzzzzz176, đọc theo NGHĨA): khách (mua hay bán) hỏi một điều về thủ tục, giấy tờ,
   thuế phí, quy định mua bán / thuê nhà đất nói chung — KHÔNG phải hỏi về một căn cụ thể đang rao, KHÔNG phải phí môi giới bên mình (đó là
   hoi_ve = "phi") → hoi_phap_ly = khoá hợp nhất trong DANH MỤC PHÁP LÝ bên dưới; không mục nào hợp → "khac". Kèm phap_ly_trich_dan =
-  NGUYÊN VĂN câu hỏi của khách. Câu thuộc nhóm TRANH CHẤP / KIỆN TỤNG / THỪA KẾ, CHIA DI SẢN / LY HÔN CHIA TÀI SẢN / NGHI GIẤY TỜ GIẢ, LỪA
-  ĐẢO / CÁCH GIẢM, TRÁNH THUẾ / hồ sơ cụ thể cần người đọc giấy tờ → phap_ly_nhay_cam = true (vẫn điền hoi_phap_ly nếu có khoá hợp).
+  NGUYÊN VĂN câu hỏi của khách. Câu thuộc nhóm {NHOM_NHAY_CAM} → phap_ly_nhay_cam = true (vẫn điền hoi_phap_ly nếu có khoá hợp).
   Khách chỉ kể tình trạng pháp lý căn của mình ("sổ hồng riêng", "chưa hoàn công") KHÔNG phải câu hỏi → bỏ trống.
   Câu có chữ "phí" mà hỏi khoản PHẢI NỘP khi mua / bán / sang tên nhà (thuế, lệ phí, phí công chứng — "bán nhà phải nộp những thuế
   phí gì", "sang tên tốn phí gì") là câu PHÁP LÝ, kể cả khi người hỏi là CHỦ NHÀ đang rao tin → hoi_phap_ly, KHÔNG hoi_ve = "phi".
@@ -2055,6 +2052,8 @@ Trả về JSON đúng schema."""
 # 18/10/2026: chuỗi trên không phải f-string nên model từng nhận nguyên chữ "{SLANG_NOTES}" — thay ở đây (trong chuỗi còn
 # ngoặc nhọn của ví dụ JSON nên không đổi cả chuỗi thành f-string).
 OPERATIONS_SYSTEM = OPERATIONS_SYSTEM.replace("{SLANG_NOTES}", SLANG_NOTES)
+# Nhóm câu pháp lý nhạy cảm MỘT nguồn `phap_ly.NHOM_NHAY_CAM` (audit Đợt 6: hằng không ai dùng, ý được gõ tay ở prompt và schema).
+OPERATIONS_SYSTEM = OPERATIONS_SYSTEM.replace("{NHOM_NHAY_CAM}", " / ".join(phap_ly.NHOM_NHAY_CAM))
 # SRS-5.1zzzzzzz176: danh mục khoá pháp lý lấy từ phap_ly.MAC_DINH (khoá cố định trong code; DB chỉ sửa câu trả lời).
 OPERATIONS_SYSTEM = OPERATIONS_SYSTEM.replace("{DANH_MUC_PHAP_LY}", phap_ly.danh_muc_cho_prompt())
 
@@ -2281,8 +2280,7 @@ def operations_schema() -> dict[str, Any]:
                             "description": "Khách hỏi pháp lý / thủ tục / thuế phí nhà đất nói chung: khoá trong DANH MỤC PHÁP LÝ, "
                             "hoặc khac khi không mục nào hợp. Không hỏi thì bỏ trống."},
             "phap_ly_trich_dan": {"type": "string", "description": "Nguyên văn câu hỏi pháp lý của khách (bắt buộc khi có hoi_phap_ly)."},
-            "phap_ly_nhay_cam": {"type": "boolean", "description": "true khi câu pháp lý thuộc nhóm tranh chấp / thừa kế / ly hôn / nghi "
-                                 "giấy tờ giả / tránh thuế / hồ sơ cụ thể cần người đọc."},
+            "phap_ly_nhay_cam": {"type": "boolean", "description": "true khi câu pháp lý thuộc nhóm: " + " / ".join(phap_ly.NHOM_NHAY_CAM) + "."},
             "xung_ho": {
                 "type": "string",
                 "enum": ["em", "anh", "chi", "chau", "chu_co_bac"],

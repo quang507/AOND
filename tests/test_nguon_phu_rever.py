@@ -1,4 +1,4 @@
-"""SRS-5.1zzzzzzz321 (chủ dự án 02/11/2026 chọn crawl Rever theo luật mogi để làm giàu kho dự án). Dữ kiện Rever nằm ở `specs.rever` của
+"""SRS-5.1zzzzzzz323 (chủ dự án 02/11/2026 chọn crawl Rever theo luật mogi để làm giàu kho dự án). Dữ kiện Rever nằm ở `specs.rever` của
 CHÍNH dòng `projects` (một kho). Đỏ khi: bot không đọc `specs.rever`; nguồn phụ đè nguồn chính (mogi / nhập tay); giá rao gộp mất số tin /
 ngày lấy (model sẽ nói như giá chốt); tên nguồn lộ ra lời khách; ô rỗng thành dòng dữ kiện."""
 from aioi import du_an_mua

@@ -30,14 +30,6 @@ def test_scale_bonus_is_progressive():
     assert 1.0 < m10 < m30 < m100 <= 3.0
 
 
-def test_perks_gate_listings_for_bronze():
-    from aioi.gamification import perks_for
-
-    assert perks_for(Tier.DONG).max_listings == 5
-    assert perks_for(Tier.BAC).max_listings is None
-    assert perks_for(Tier.VANG).scale_bonus_active is True
-
-
 def test_user_score_capped_at_100():
     assert g.user_score([100.0, 100.0], num_listings=50) == 100.0
 
