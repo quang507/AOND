@@ -829,6 +829,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz325 · Chủ căn hộ hỏi giá cao không: nêu giá rao bán thị trường của dự án (thay một phần SRS-116) (02/11/2026)
+Quyết định chủ dự án 02/11 (xác nhận trong phiên): chủ căn hộ hỏi "giá tôi đưa cao không" thì nêu "giá rao bán thị trường X–Y triệu/m²". Ca gốc: SRS-324 đưa dòng giá rao vào khối dự án phía bán
+trong khi `KHOI_DINH_GIA` dặn "CHƯA có dữ liệu định giá" — model nhận hai lời ngược nhau. (1) Lớp lỗi: thêm dữ kiện vào khối chung mà không soát luật cấm đang áp cho cùng dữ kiện.
+Sửa: `prompts.khoi_dinh_gia(gia_rao)` — dự án có giá rao gộp thì nêu khoảng + số tin + ngày (dd/mm/yyyy), nói rõ giá RAO, không phán cao / thấp, không quy đổi ra giá căn, không nêu nguồn; không có số liệu (nhà phố, dự án thiếu) giữ lời cũ; `_BINH_LUAN_GIA` giữ.
+(2) Cùng lớp: phía mua `du_an_mua` đã nói "tham khảo", không có luật cấm ngược. (3) Kiểm: `tests/test_dinh_gia_rao_325.py` qua `Engine.handle` (4/6 đỏ khi trả về `KHOI_DINH_GIA`; hai cách nói mới "có bị hớ so với mặt bằng", "người ta rao bao nhiêu một mét"); `cham --giong` ×2 (số ở mô tả PR).
+
 ### SRS-5.1zzzzzzz324 · Làm giàu kho dự án từ rever.vn (crawl theo luật mogi), một kho `projects`; bot đọc `specs.rever` (02/11/2026)
 Quyết định chủ dự án 02/11: chọn phương án (a) — crawl Rever theo luật OPEN-56 (chỉ dữ kiện, mô tả viết lại, giữ `source_url`, không tin rao lẻ / SĐT / ảnh), dù điều khoản rever.vn
 §3.1–3.2 cấm dùng thương mại / sao chép (`robots.txt` cho phép); "dữ liệu bên mình là 1 chỗ" → GHÉP vào dòng `projects` có sẵn (`cacKhoa`: tên đủ, phần trước " - ", bỏ quận / tỉnh đuôi; cùng tỉnh;
@@ -895,12 +901,6 @@ VPS dùng mặc định `claude-haiku-4-5`, sổ `bot_usage_model` 28/10–01/11
 đồ giả, nay chạy đường production; 16 bài nhánh cũ gắn `nhanh_cu`; 1 lỗi thật AU-12 (khối địa danh trỏ nhãn chỉ có ở prompt cũ) `xfail(strict)` cho Đợt 2.
 Kiểm: `test_cau_hinh_nhu_production_316.py` (đỏ khi gỡ conftest; đỏ khi gỡ cổng `_gia_tri_ghi`). Điểm nền mới (51 kịch bản, bóc Haiku 5.5, hai lần):
 tất định 507 / 500 trên 511; tổng 612 / 606 trên 664; giọng 2,94 / 3,02; lộ luật 3 / 4 cuộc; hỏi lại 2 / 3 cuộc — `diem_nen.json` ghi lần 1.
-
-### SRS-5.1zzzzzzz315 · Quyết định chủ dự án 31/10–01/11; câu báo phí viết lại, gọi đúng xưng hô; ẩn danh + dọn docs lệch code (01/11/2026)
-Chủ dự án: giữ danh sách cảm thán `GIONG_VUI`; chat chị N. / anh L. là thật → kịch bản (đã ẩn danh); lên Top có (BĐS tiêu biểu đẩy đầu trang web); "q3 viết lại"; 01/11 "2 áp đi".
-Lớp lỗi: `cau_mau.cau("bao_phi" / "hoi_phi")` không nhận xưng hô → "Anh/chị" cứng (bộ chấm `xung_chi_phi`). Sửa: câu mới "Đăng tin bên em miễn phí ạ. Phí môi giới là {phi}, chỉ thu khi giao dịch thành công — chưa thành thì {goi} không tốn đồng nào.", `goi` truyền theo khách; migration `20261031a_cau_mau_bao_phi` ĐÃ áp DB thật 01/11. `Engine._ghi_viec` bọc `try/except` + `log.warning` (phần đo không chặn lời gửi khách).
-Docs: bỏ tàn dư CTV, lịch cron theo `schema.sql` (docs/07 §1–§3, SRS-5.3), FR-140 / 173 / 174 + docs/08, docs/10 TS-CHAM-01, docs/13 theo công tắc, CLAUDE.md bảng công tắc; ẩn danh tên / số nhà / Zalo ID / SĐT ở docs/07-srs-luu-tru.
-Kiểm: `test_cau_mau.py::test_cau_bao_phi_tester_sua_toi_loi_bot` (đỏ khi bỏ `goi`), `test_viec_luot_314.py::test_loi_viec_luot_khong_lam_hong_luot` (đỏ khi gỡ phần bọc).
 
 ---
 

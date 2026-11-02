@@ -42,6 +42,7 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 - Câu "🤔 có phải dự án X" (tên gần trùng) chỉ hỏi khi dự án kho CÙNG vị trí với căn (`_cung_vi_tri_du_an`), là câu hỏi duy nhất của lượt (`_hoi_trung_ten`; lời đã có câu hỏi thì sang lượt sau) (SRS-254).
 - Chung / riêng theo khuôn anh Luận: căn kế thừa dự án ⊕ mẫu nhà, căn thắng, giá luôn riêng; phía mua qua `projects.dong_ke_thua` (`Engine._gan_ke_thua`), web trang dự án đọc `thong_tin` đè cột mogi (SRS-283).
 - Lời người bán về dự án là PHIẾU theo hạng (Đồng 1 / Bạc 2 / Vàng 3, chốt ≥ 6, phe khác ≤ 2), admin (`admins`) = `chac_chan:` ghi thẳng; mã phiếu chỉ do `Engine._ma_phieu` tính — đừng nhận phiếu từ model. Tệp mẫu nhà lưu `du-an/…` (bucket công khai) để gửi được.
+- Nguồn phụ Rever ở `specs.rever` (SRS-324): chỉ điền ô trống, không nêu tên nguồn ra khách; chủ căn hộ hỏi giá cao không → `khoi_dinh_gia` nêu giá RAO X–Y triệu/m² + số tin + ngày, không phán cao / thấp; không có số liệu thì "chưa có dữ liệu định giá" (SRS-325).
 
 **Địa chỉ / phường**
 - Cột `listings.ward` chỉ mang `wards.ten_day_du` hoặc null; DB chặn lần cuối (`20261009b`). Xã Tây Ninh / Đồng Nai ở bảng riêng `xa_tinh_khac`, không nhét vào `wards`.

@@ -16,7 +16,7 @@ def test_cap_nguon_phu_co_so_tin_va_ngay():
     assert d["số block"] == "4" and "loại hình" not in d          # ô rỗng không thành dữ kiện
     assert d["khoảng giá tham khảo"].startswith("46.77")
     assert "45,2–62,5 triệu/m²" in d["giá rao bán thị trường"] and "18 tin" in d["giá rao bán thị trường"]
-    assert "2026-11-02" in d["giá rao bán thị trường"]
+    assert "02/11/2026" in d["giá rao bán thị trường"]
 
 
 def test_khong_co_rever_thi_rong():
