@@ -71,6 +71,8 @@ KQ=$(q "with l as (select id from listings where code = '$MA'), b as (select id 
    (select count(*) from reminders m where m.listing_id in (select id from l)) as reminders,
    (select count(*) from reminders m where m.listing_id in (select id from l) and m.kind = 'escalation' and m.seller_id is not null) as nhac_chu_nha,
    (select count(*) from reminders m where m.listing_id in (select id from l) and m.kind = 'followup' and m.buyer_id in (select id from b)) as bao_lai_khach,
+   (select count(*) from reminders m where m.listing_id in (select id from l) and m.kind = 'escalation' and m.seller_id is null and m.viewing_id is not null) as nhac_admin_lich,
+   (select count(*) from info_requests r where r.listing_id in (select id from l) and r.question = 'xac_nhan_lich') as xac_nhan_lich,
    (select status from listings where id in (select id from l)) as listing_status,
    (select coalesce(boc_tach->>'phap_ly', boc_tach->>'phap_ly_hoan_cong', boc_tach->>'phap_ly_so_hong', boc_tach->>'phap_ly_so_do') from listings where id in (select id from l)) as phap_ly")
 jq '.[0]' <<<"$KQ"
@@ -99,6 +101,9 @@ kiem "chủ nhà trả lời → câu hỏi chuyển answered" \
 kiem "có tin nhắn chủ nhà (reminders escalation giao người bán)" "$(jq '(.nhac_chu_nha|tonumber) >= 1 | if . then 1 else 0 end' <<<"$r")"
 kiem "chủ nhà trả lời pháp lý → ô pháp lý của tin được ghi" "$(jq '(.phap_ly // "") != "" | if . then 1 else 0 end' <<<"$r")"
 kiem "có nhắc báo lại khách mua (reminders followup)" "$(jq '(.bao_lai_khach|tonumber) >= 1 | if . then 1 else 0 end' <<<"$r")"
+# SRS-330: lịch hẹn của ID thử vẫn ghi `viewings` nhưng trigger `viewings_bao_admin_va_email` không nhắc admin / không giao câu xác nhận lịch.
+kiem "ID thử hẹn xem không tạo tin admin (reminders escalation theo lịch = 0)" "$(jq '(.nhac_admin_lich|tonumber) == 0 | if . then 1 else 0 end' <<<"$r")"
+kiem "ID thử hẹn xem không giao câu xác nhận lịch cho admin" "$(jq '(.xac_nhan_lich|tonumber) == 0 | if . then 1 else 0 end' <<<"$r")"
 kiem "khách có ≥ 2 bộ nhu cầu (buyer_needs, SRS-286)" "$(jq '(.bo_nhu_cau|tonumber) >= 2 | if . then 1 else 0 end' <<<"$r")"
 AGENT=$(vps "journalctl -u aond-core --since '-6 min' --no-pager -o cat | grep -F 'Agent mua:' | tail -6" || true)
 echo "== vòng agent mua (SRS-290):"; echo "$AGENT"
