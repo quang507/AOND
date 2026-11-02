@@ -1,8 +1,8 @@
 """Việc của lượt phía bán — MỘT việc, code quyết (kế hoạch bước 2B, SRS-5.1zzzzzzz314).
 
 Hàm thuần: đọc ảnh chụp trạng thái lượt (`TrangThaiLuot`, engine dựng) và trả về đúng một `Viec`. Thứ tự ưu tiên CHỈ đặt ở đây.
-Hiện engine chỉ GHI việc này (`conv.y_luot["_viec"]`) cạnh các khối nó thực sự ghép (`conv.y_luot["_khoi"]`) để bộ chấm đo chỗ lệch;
-lời gửi khách chưa đọc từ đây (bước 2C nối vào phiếu lượt, sau công tắc).
+Từ Đợt 4 (SRS-5.1zzzzzzz328) engine DÙNG kết quả: khối hỏi nằm trong `bo` bị gỡ khỏi prompt (và cờ "đã hỏi" của nó trả lại), nên mỗi
+lượt chỉ còn MỘT câu hỏi. `conv.y_luot["_viec"]` / `["_khoi"]` (khối còn lại sau khi gỡ) vẫn ghi cho bộ chấm.
 """
 from __future__ import annotations
 
@@ -40,8 +40,7 @@ def viec_luot(t: TrangThaiLuot) -> Viec:
     > dữ kiện hệ thống cần hỏi lại (căn nào, tên dự án) > việc của pha (trình nháp; sau nháp: sửa / đăng / hỏi sau; thu thập: hỏi một ô)."""
     k = set(t.khoi)
     v = _chon(t, k)
-    dung = {v.ten} | ({"dia_danh"} if (v.ten, v.o) == ("hoi_o", "phuong") else set())   # khối địa danh kể phường là phần của câu hỏi phường
-    return Viec(v.ten, v.o, tuple(sorted((k & KHOI_HOI) - dung - _KHOI_CUA.get(v.ten, set()))))
+    return Viec(v.ten, v.o, tuple(sorted((k & KHOI_HOI) - {v.ten} - _KHOI_CUA.get(v.ten, set()))))
 
 
 # Khối mà một việc dùng lại (không tính là lệch): việc "hoi_o" của ô giá khi vừa tách bán / thuê là chính khối tach_ban_thue.
@@ -70,7 +69,10 @@ def _chon(t: TrangThaiLuot, k: set[str]) -> Viec:
         return Viec("hoi_can_nao")
     if "hoi_trung_ten" in k:
         return Viec("hoi_trung_ten")
-    if "tin_dang_hien_ngoai_chat" in k:
+    if "tin_dang_hien_ngoai_chat" in k:   # tin tạo ngoài chat đang hiển thị: không phải câu hỏi — câu hỏi sau đăng (cọc, hỏi thêm, sao) vẫn được hỏi
+        for khoi in ("hoi_coc", "hoi_sau_dang", "xin_sao"):
+            if khoi in k:
+                return Viec(khoi)
         return Viec("cap_nhat_tin_dang_hien")
     if t.pha == "trinh_nhap":
         return Viec("trinh_nhap")
@@ -86,8 +88,8 @@ def _chon(t: TrangThaiLuot, k: set[str]) -> Viec:
     # thu thập
     if "tach_ban_thue" in k:
         return Viec("hoi_gia_tin_moi")
-    if "dia_danh" in k:
-        return Viec("hoi_o", "phuong") if t.next_field == "phuong" else Viec("hoi_dia_danh")
+    if "dia_danh" in k:   # khối "dia_danh" chỉ bật khi hỏi xác nhận TÊN ĐƯỜNG (dữ kiện phường / xã đi riêng, không phải câu hỏi) — hỏi đường TRƯỚC
+        return Viec("hoi_dia_danh")
     if "hoi_du_an" in k:
         return Viec("hoi_du_an")
     if "mat_tien" in k:

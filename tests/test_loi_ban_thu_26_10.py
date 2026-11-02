@@ -83,7 +83,7 @@ def test_o_vua_hoi_khach_chua_tra_loi_thi_dan_model_khong_hoi_lai():
     p.loai_hinh = "nha_pho"
     s = prompts.build_phieu_luot("Th•ái", p, "phap_ly_hoan_cong", o_bo_qua="dien_tich_nha")
     dong = s.split(prompts.RANH_GIOI_CACHE, 1)[1]
-    assert f'Không hỏi lại "{prompts.nhan_o("dien_tich_nha", p)}"' in dong
+    assert f'không hỏi lại "{prompts.nhan_o("dien_tich_nha", p)}"' in dong
     assert "Không hỏi lại" not in prompts.build_phieu_luot("Th•ái", p, "dien_tich_nha", o_bo_qua="dien_tich_nha")
 
 
@@ -113,7 +113,7 @@ def test_engine_truyen_o_luot_truoc_khi_doi_o():
     eng.handle("k-208b", "Nhà xây 1 trệt 3 lầu")
     dong = bat.he[0].split(prompts.RANH_GIOI_CACHE, 1)[1]
     assert c.o_vua_hoi != "dien_tich_nha"
-    assert f'Không hỏi lại "{prompts.nhan_o("dien_tich_nha", c.prop)}"' in dong   # phiếu lượt (SRS-319)
+    assert f'không hỏi lại "{prompts.nhan_o("dien_tich_nha", c.prop)}"' in dong   # phiếu lượt (SRS-319)
 
 
 def test_dtcn_la_dat_va_quy_hoach_khong_phai_lo_gioi_hien_tai():
