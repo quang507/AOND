@@ -8,7 +8,7 @@ so all fields are optional and start empty.
 from __future__ import annotations
 
 import re
-import unicodedata
+from .chu import bo_dau
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -72,8 +72,7 @@ import time
 
 def _gop_y(cu: str, them: str) -> str:
     """Gộp ý `them` vào chuỗi `cu` của cùng một ô: mọi chữ của `them` đã có trong `cu` → giữ `cu`; ngược lại nối " · " (SRS-5.1zzzzzzz218)."""
-    tu = lambda x: set(re.findall(r"[a-z0-9]+", unicodedata.normalize("NFD", (x or "").replace("đ", "d").replace("Đ", "D")).lower()
-                                 .encode("ascii", "ignore").decode()))
+    tu = lambda x: set(re.findall(r"[a-z0-9]+", bo_dau(x)))
     if not cu:
         return them
     if tu(them) <= tu(cu):

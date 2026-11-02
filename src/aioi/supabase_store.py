@@ -730,21 +730,6 @@ class SupabaseConversationStore(KhoNguoiMua):
             self._conv_cache[f"mua:{bid}"] = conv_id
         return conv_id
 
-    def _get_or_create_conversation(self, seller_id: str) -> str | None:
-        """Giữ tên cũ cho chỗ gọi theo `seller_id` (đã có dòng `sellers`): tìm cả hội thoại gắn `buyer_id` của cùng khách."""
-        if seller_id in self._conv_cache:
-            return self._conv_cache[seller_id]
-        rows = self._get(f"sellers?id=eq.{seller_id}&select=zalo_user_id")
-        if rows and rows[0].get("zalo_user_id"):
-            uk = rows[0]["zalo_user_id"]
-            self._seller_cache.setdefault(uk, seller_id)
-            return self._hoi_thoai_chung(uk, None, "seller")
-        return None
-
-    def _hoi_thoai_mua(self, user_key: str, ten: str | None = None) -> str | None:
-        """Hội thoại của khách khi nói chuyện ở vai MUA — cùng MỘT hội thoại với vai bán (SRS-5.1zzzzzzz149)."""
-        return self._hoi_thoai_chung(user_key, ten, "buyer")
-
     def _ghi_so_loi(self, nguon: str, chi_tiet: str) -> None:
         """Một dòng sổ lỗi qua `log_loi` (DB che SĐT). Không bao giờ ném — ghi sổ hỏng thì chỉ còn journal."""
         try:
@@ -838,6 +823,18 @@ class SupabaseConversationStore(KhoNguoiMua):
             log.warning("Đọc human_hold lỗi: %s", e)
         return False
 
+    def _xep_tin_admin(self, row: dict, user_key: str | None = None) -> bool:
+        """MỘT cửa cho mọi tin nội bộ nhắn admin (`reminders` kind "escalation", bridge kéo qua escalation-feed) từ lõi — SRS-5.1zzzzzzz321
+        (bắn thử ban-thu-mua 02/11: lịch xem của "Khách thử" nhắn tới admin thật). ID thử (`la_id_thu`, cùng danh sách với DB) thì không xếp.
+        Thiếu `user_key` mà có `buyer_id` thì tra Zalo ID của người mua. Trả True khi đã xếp."""
+        if not user_key and row.get("buyer_id"):
+            r = self._get(f"buyers?id=eq.{row['buyer_id']}&select=zalo_user_id&limit=1")
+            user_key = (r[0].get("zalo_user_id") if r else None) or None
+        if user_key and self._request("POST", "rpc/la_id_thu", data={"p": user_key}) is True:
+            return False
+        self._post("reminders", {"kind": "escalation", "status": "pending", **row}, prefer="return=minimal")
+        return True
+
     def bao_can_nguoi(self, user_key: str, trich: str, ten: str | None = None, role: str = "seller") -> bool:
         """Khách xin gặp người thật (SRS-5.1zzzzzzz82): bật `needs_human` (khung "khách cần người thật" trên /admin) và xếp một tin
         nội bộ "🙋" vào `reminders` — bridge kéo qua escalation-feed rồi nhắn Zalo cho admin (tin nội bộ không bao giờ tới
@@ -851,15 +848,12 @@ class SupabaseConversationStore(KhoNguoiMua):
             return False
         now_iso = datetime.now(timezone.utc).isoformat()
         self._patch(f"conversations?id=eq.{conv_id}", {"needs_human": True, "needs_human_at": now_iso})
-        if self._request("POST", "rpc/la_id_thu", data={"p": user_key}) is True:
-            return True
         vai = "người mua" if role == "buyer" else "người bán"
         loi = che_so_ca_nhan(str(trich or ""), thay="[số]")[:160]   # không đẩy SĐT khách vào tin nội bộ
-        self._post("reminders", {
-            "kind": "escalation", "status": "pending", "due_at": now_iso, "seller_id": seller_id,
-            "buyer_id": self.khach_mua(user_key, ten) if role == "buyer" else None,
+        self._xep_tin_admin({
+            "due_at": now_iso, "seller_id": seller_id, "buyer_id": self.khach_mua(user_key, ten) if role == "buyer" else None,
             "note": f"🙋 Khách cần người thật — {ten or 'khách Zalo'} ({vai}): “{loi}”. Mở /admin/tin-nhan để nhận khách.",
-        }, prefer="return=minimal")
+        }, user_key)
         return True
 
     def cau_mau_tu_kho(self) -> dict[str, str]:
@@ -948,20 +942,19 @@ class SupabaseConversationStore(KhoNguoiMua):
             return False
         now_iso = datetime.now(timezone.utc).isoformat()
         loi = che_so_ca_nhan(str(trich or ""), thay="[số]")[:300]   # không lưu SĐT khách
-        bao = int(sao) <= 2 and self._request("POST", "rpc/la_id_thu", data={"p": user_key}) is not True
         vai = "mua" if role == "buyer" else "ban"
+        bao = False
+        if int(sao) <= 2:   # tin nội bộ qua MỘT cửa `_xep_tin_admin` (ID thử không nhắn admin)
+            seller_id = None if role == "buyer" else self._get_or_create_seller(user_key, ten)
+            bao = self._xep_tin_admin({
+                "due_at": now_iso, "seller_id": seller_id, "buyer_id": self.khach_mua(user_key, ten) if role == "buyer" else None,
+                "note": f"⭐ Khách chấm {int(sao)} sao cho AI — {ten or 'khách Zalo'} "
+                        f"({'người mua' if role == 'buyer' else 'người bán'}): “{loi[:160]}”. Xem /admin/danh-gia, mở /admin/tin-nhan để hỗ trợ.",
+            }, user_key)
         self._post("danh_gia_ai?on_conflict=zalo_user_id", {
             "zalo_user_id": user_key, "vai": vai, "ten_khach": (ten or None), "sao": int(sao), "loi_khach": loi,
             "tra_loi_luc": now_iso, "da_bao_admin": bool(bao),
         }, prefer="resolution=merge-duplicates,return=minimal")
-        if bao:
-            seller_id = None if role == "buyer" else self._get_or_create_seller(user_key, ten)
-            self._post("reminders", {
-                "kind": "escalation", "status": "pending", "due_at": now_iso, "seller_id": seller_id,
-                "buyer_id": self.khach_mua(user_key, ten) if role == "buyer" else None,
-                "note": f"⭐ Khách chấm {int(sao)} sao cho AI — {ten or 'khách Zalo'} "
-                        f"({'người mua' if role == 'buyer' else 'người bán'}): “{loi[:160]}”. Xem /admin/danh-gia, mở /admin/tin-nhan để hỗ trợ.",
-            }, prefer="return=minimal")
         return True
 
     # --- ConversationStore Protocol --------------------------------------

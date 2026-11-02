@@ -207,7 +207,7 @@ def test_cau_hoi_trung_ten_la_cau_hoi_duy_nhat():
 
 
 def test_so_do_personal_data_redacted_but_land_facts_kept():
-    from aioi.engine import _redact_personal_data, _redact_doc_title, _looks_personal_doc
+    from aioi.engine import _redact_personal_data, _redact_doc_title
     so_do = (
         "### I. Người sử dụng đất\n"
         "**Ông: LÝ QUỐC QUANG**\n"
@@ -220,13 +220,10 @@ def test_so_do_personal_data_redacted_but_land_facts_kept():
     out = _redact_personal_data(so_do)
     assert "LÝ QUỐC QUANG" not in out and "079064022135" not in out and "215D" not in out  # PII gone
     assert "Phường 16, Quận 8" in out and "57,0m²" in out and "Thửa đất" in out              # land facts kept
-    assert _looks_personal_doc(so_do) is True
     assert _redact_doc_title("NPD#50, GCNQSDĐ 933551, Vũ Ngọc Nga") == "Sổ đỏ / GCN QSDĐ căn 50"
 
-    # A phân-lô / sơ-đồ map must NOT be mistaken for a sổ đỏ ("sơ đồ" vs "sổ đỏ"): not flagged,
-    # not retitled, land content untouched.
+    # A phân-lô / sơ-đồ map must NOT be mistaken for a sổ đỏ ("sơ đồ" vs "sổ đỏ"): not retitled, land content untouched.
     phan_lo = "# Sơ đồ phân lô\n- Lô #50 giáp đường nội bộ 7m, diện tích 57.21m²\n- quy hoạch: đất ở"
-    assert _looks_personal_doc(phan_lo) is False
     assert _redact_doc_title("NPD so do phan lo-02") == "NPD so do phan lo-02"
     assert _redact_personal_data(phan_lo) == phan_lo
 

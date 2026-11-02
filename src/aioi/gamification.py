@@ -6,7 +6,6 @@ Tiers          = Đồng (<50) / Bạc (50–79) / Vàng (>=80).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import Enum
 
 
@@ -22,35 +21,6 @@ def tier_for(score: float) -> Tier:
     if score >= 50:
         return Tier.BAC
     return Tier.DONG
-
-
-@dataclass(frozen=True)
-class TierPerks:
-    """Đặc quyền cấp bậc (SRD §IV.3)."""
-
-    max_listings: int | None  # None = không giới hạn
-    scale_bonus_active: bool
-    description: str
-
-
-def perks_for(tier: Tier) -> TierPerks:
-    if tier is Tier.VANG:
-        return TierPerks(
-            max_listings=None,
-            scale_bonus_active=True,
-            description="NMG được M•ai ưu tiên chuyển khách nét; CCRB đẩy rổ hàng tới 20 NMG lõi.",
-        )
-    if tier is Tier.BAC:
-        return TierPerks(
-            max_listings=None,
-            scale_bonus_active=True,
-            description="Mở rổ hàng không giới hạn, kích hoạt Thưởng quy mô.",
-        )
-    return TierPerks(
-        max_listings=5,
-        scale_bonus_active=False,
-        description="Giới hạn 5 căn rao, bị xếp cuối luồng ưu tiên.",
-    )
 
 
 def property_score(completeness: float, timeliness: float) -> float:

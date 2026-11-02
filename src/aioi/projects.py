@@ -15,6 +15,8 @@ import json
 import re
 import sqlite3
 import unicodedata
+
+from .chu import bo_dau
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -288,12 +290,10 @@ _GENERIC_PREFIX = (
 )
 
 
-def _bo_dau(s: str) -> str:
-    s = s.replace("đ", "d").replace("Đ", "D")
-    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
 
 
-_GENERIC_PREFIX_BO_DAU = tuple(_bo_dau(p) for p in _GENERIC_PREFIX)
+
+_GENERIC_PREFIX_BO_DAU = tuple(bo_dau(p) for p in _GENERIC_PREFIX)
 
 
 def _strip_generic_prefix(name: str) -> str:
@@ -329,7 +329,7 @@ def find_matching_key(query: str, stored_keys: Iterable[str]) -> str | None:
     # spaceless + generic-prefix-stripped exact match (catches the duplicate-project variants)
     def canon(s: str) -> str:
         # (3) bỏ dấu (SRS-5.1zzzzzzz87): khách gõ không dấu "nyah phu dinh" vẫn là "Ny'ah Phú Định".
-        s = _strip_generic_prefix(_bo_dau(s))
+        s = _strip_generic_prefix(bo_dau(s))
         return s.replace(" ", "")
     q = canon(query)
     if q:
