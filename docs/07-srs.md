@@ -829,6 +829,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz327 · Dựng lại `so.ro_hang` từ số không; gắn lại `security_invoker` mà 20261102a làm rơi (02/11/2026)
+Ca gốc: `dung-lai-db.mjs` bước `cau-truc` chạy `so.ro_hang` bản 20260907c / f — đọc `public.media` (gỡ 20261102a) và `listings.legacy_sst` / `source_url` (gỡ 20261022g, nên hỏng từ 22/10); soát thêm thấy 20261102a `create or replace view` không ghi `with (...)` → Postgres thay hết tuỳ chọn view, mất `security_invoker = true` (chưa lộ: anon / authenticated đã revoke, `so` không ra API).
+(1) Lớp lỗi: định nghĩa view nằm rải ở nhiều migration, dựng lại chạy bản cũ; `create or replace view` lặng lẽ xoá tuỳ chọn. (2) Cùng lớp: câu `so` cũ khác (`so.nguoi_ban`, `so.hoi_thoai`) không đọc cột / bảng đã gỡ. Sửa: migration `20261102b_so_ro_hang_hien_hanh` = định nghĩa hiện hành (có `security_invoker`, revoke / grant); dựng lại bỏ câu `so.ro_hang` của file cũ (`cauSoTruRoHang`) rồi chạy 20261102b; không sửa migration cũ.
+(3) Kiểm: `bot/tests/hat-giong-dung-lai.mjs` thêm 4 ca (đỏ 2 ca khi gỡ bộ lọc); chạy thử 20261102b trong giao dịch huỷ trên DB thật; chưa có lượt diễn tập dựng lại trên project rỗng (soát tĩnh).
+
 ### SRS-5.1zzzzzzz326 · Gỡ bảng `media` cũ, view `public_media` / `ro_hang_ban`, hàm `kd_ten` / `tim_nghia_san_sang` (02/11/2026)
 Chủ dự án 02/11 ("gỡ hết mấy thứ đó" — bảng đề xuất tầng DB ở SRS-323). Migration `20261102a_go_media_cu` (một giao dịch): định nghĩa lại `admin_xoa_het_khach_va_ro_hang` / `admin_khoi_phuc_lan_xoa` bỏ `media`, `so.ro_hang.so_anh` chỉ đếm `listing_media`, rồi gỡ. `xuat-ro-hang.mjs` đọc `listing_media`.
 (1) Lớp lỗi: soát "0 chỗ gọi" bằng grep code + `schema.sql` bỏ sót schema `so` (`xuat_schema()` không xuất `so`) — chạy thử lần đầu đổ "view so.ro_hang depends on table media". (2) Cùng lớp: soát `pg_depend` + thân hàm + `cron.job` trên DB thật: chỉ `public_media`, `so.ro_hang`, hàm xoá hết, một chú thích trong `xuat_schema()`; hai view chẩn đoán `media_mo_coi_*` không phụ thuộc (giữ).
@@ -877,18 +882,6 @@ Quyết định chủ dự án 01/11 (Q1): công tắc "vĩnh viễn", "xóa cod
 (1) Lớp lỗi: luật chỉ sống ở prompt cũ thì xoá prompt cũ là luật rơi (AU-13). (2) Cùng lớp đã soát: tin hệ thống ngoặc vuông (`prompts.TIN_HE_THONG`), `SLANG_NOTES`, hỏi lại
 "diện tích đó đất hay nhà" (`_dien_tich_mo_ho`) chuyển vào `build_phieu_luot`; luật còn lại của prompt cũ là giọng / văn đã có ở `GIONG_VUI` hoặc code. (3) Kiểm: `test_go_cong_tac_319.py`
 (đỏ khi gỡ ba luật khỏi phiếu lượt; không file nào đọc sáu biến); `test:py` 1312; `cham` ×2 trên 51 kịch bản: tất định 508 / 507, tổng 623 / 617, giọng 3,16 / 3,08 (trước 3,04 / 2,94).
-
-### SRS-5.1zzzzzzz318 · Audit Đợt 2: luật rơi khi đổi đường — chính sách phí ở lượt thu thập, một bảng luật soát, nhãn việc lượt chung, ảnh sổ qua phiếu lượt (01/11/2026)
-Quyết định chủ dự án 01/11 (Q2): lượt THU THẬP, khách hỏi phí / chính sách thì nói ĐỦ 4 ý (không bớt, chỉ thu khi thành công · có HĐ môi giới văn bản · không
-độc quyền · môi giới không chia hoa hồng khác), gọn, giọng Zalo; con số vẫn do `muc_phi` / `khoi_bao_phi`. Q3: lên Top là thật — giữ câu "≥10 căn lên Top".
-Chủ dự án 01/11 (tiếp): GIỮ đủ 4 ý, giọng theo khuôn anh Luận (`GIONG_VUI`), không đọc như điều khoản; "sửa thang chấm giám khảo, không trừ 4 ý bắt buộc" →
-`TIEU_CHI_GIONG` chỉ chấm CÁCH nói 4 ý; cùng lớp (giám khảo chấm sai luật đã chốt): khách xưng em → bot xưng anh / chị (SRS-214) không trừ điểm. Khối phí: đáp đúng
-ý hỏi một câu, các ý còn lại ĐÚNG MỘT câu, không lặp ý câu báo phí (bài đỏ: `test_khach_hoi_phi_luot_thu_thap_co_du_chinh_sach`).
-(1) Lớp lỗi: luật / nhãn nằm ở prompt cũ hoặc nhánh soát chỉ chạy khi công tắc tắt, nên bật PHIEU_LUOT / SOAT_GON là luật rơi mà không bài nào đỏ. Sửa: hằng
-`CHINH_SACH_PHI` (BUSINESS_CONTEXT dùng lại) vào khối hỏi phí, `hoi_ve=phi` gồm câu hỏi chính sách (độc quyền, HĐ); bảng `LUAT_SOAT` một nguồn cho lần đầu + gọi
-lại (lưới SRS-292 nay chạy dưới SOAT_GON); `NHAN_VIEC_LUOT`; ảnh sổ qua `build_phieu_luot(viec=)`, bỏ "khen điểm mạnh" ↔ "không khen sổ". (2) Còn: AU-13 (ngoặc
-vuông / SLANG_NOTES) chờ Q1; `_viet_hoa_ca_cum` audit nêu đã không còn trong code. (3) Kiểm: `test_luat_roi_doi_duong_318.py` (4 bài đỏ khi gỡ từng bản sửa; cách
-nói mới "chị giảm chút phí cho em được hông"); AU-12 hết xfail; 4 kịch bản `phi_*` trong `ban.json`; `cham` hai lần (số ở mô tả PR).
 
 ---
 
