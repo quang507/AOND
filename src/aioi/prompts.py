@@ -811,10 +811,10 @@ def describe_captured(prop: Property) -> str:
 # Khuôn tin rao = NGUYÊN VĂN bản anh Luận (`luan8560/AOND` 207a145) — SRS-5.1zzzzzzz207, chủ dự án 26/10: "lấy 100% của bên aond".
 # Chỉ nối thêm đoạn chống bịa của mình ở cuối (dữ liệu căn là nguồn duy nhất; bóc tách / sự thật giữ của mình).
 AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU MỘT DÒNG TRỐNG giữa các khối):
-1) TIÊU ĐỀ: **15–25 từ**, viết như câu nói thường (chỉ hoa chữ đầu câu và tên riêng — KHÔNG viết HOA cả cụm / cả dòng), MỞ bằng câu gọi mời ("Bà con ơi,", "Anh chị ơi,") rồi dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm). CẤM mở bằng "Trời ơi".
+1) TIÊU ĐỀ: **15–25 từ**, viết như câu nói thường (chỉ hoa chữ đầu câu và tên riêng — KHÔNG viết HOA cả cụm / cả dòng), MỞ bằng một lời gọi người mua theo kiểu rao chợ (tự chọn chữ, mỗi tin một kiểu) rồi dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm). CẤM mở bằng "Trời ơi".
 
-2) MÔ TẢ: MỘT đoạn **70–150 từ**, giọng RAO CHỢ — nói chuyện TRỰC TIẾP với đám đông người mua như đang mời ngay tại chỗ: mời gọi, nồng nhiệt, hối hả, lầy một chút, KHÔNG phải văn báo chí chỉn chu. Mở màn gọi "anh chị cô bác". Kể đủ vị trí & kết nối, công năng, điểm nổi bật, pháp lý — bằng lời đời thường, có nhịp, có cảm xúc. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này. Chỉ hối/khan hiếm khi ĐÚNG sự thật (chủ thật sự cần bán gấp, căn thật sự hiếm) — KHÔNG bịa độ gấp. CẤM dùng "trời ơi".
-   ĐẶT "ANH CHỊ" CÓ CHỦ ĐÍCH (quan trọng): KHÔNG rải đều mỗi câu. Chỉ gọi "anh chị" ở các ĐỈNH CẢM XÚC để người đọc tự đặt mình vào — (a) ĐỈNH QUYỀN LỢI: khi khoe cái lợi lớn họ sẽ được ("anh chị mua vô là tiền vô liền tay"); (b) ĐỈNH MẤT CƠ HỘI: dồn vào CÂU MỜI CHỐT cuối bài (mục 4). Cộng câu gọi mời mở màn là đủ ~3 lần, không hơn.
+2) MÔ TẢ: MỘT đoạn **70–150 từ**, giọng RAO CHỢ — nói chuyện TRỰC TIẾP với đám đông người mua như đang mời ngay tại chỗ: mời gọi, nồng nhiệt, hối hả, lầy một chút, KHÔNG phải văn báo chí chỉn chu. Mở màn bằng lời gọi đám đông người mua (tự chọn chữ). Kể đủ vị trí & kết nối, công năng, điểm nổi bật, pháp lý — bằng lời đời thường, có nhịp, có cảm xúc. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này. Chỉ hối/khan hiếm khi ĐÚNG sự thật (chủ thật sự cần bán gấp, căn thật sự hiếm) — KHÔNG bịa độ gấp. CẤM dùng "trời ơi".
+   ĐẶT "ANH CHỊ" CÓ CHỦ ĐÍCH (quan trọng): KHÔNG rải đều mỗi câu. Chỉ gọi "anh chị" ở các ĐỈNH CẢM XÚC để người đọc tự đặt mình vào — (a) ĐỈNH QUYỀN LỢI: khi khoe cái lợi lớn họ sẽ được; (b) ĐỈNH MẤT CƠ HỘI: dồn vào CÂU MỜI CHỐT cuối bài (mục 4). Cộng câu gọi mời mở màn là đủ ~3 lần, không hơn.
    CÂU PHẢI RÕ: đủ DẤU CÂU và nhịp, đọc lọt tai; VIẾT RÕ, không viết tắt cụt ("mặt tiền đường"/"ngang 5.3m" — KHÔNG "MT"; "phòng ngủ" — KHÔNG "PN"); KHÔNG lặp từ/ý sát nhau (tránh "MT ... MT"); LUÔN kèm đơn vị ("12.5 tỷ", "5.3m", "35m²").
 
 3) **4–5 GẠCH ĐẦU DÒNG** (mỗi dòng 1 ý đắt giá nhất — vd mặt tiền/kết cấu/pháp lý/giá).
@@ -822,9 +822,9 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU M
    - CHỈ thêm chữ phân biệt khi KHÔNG tự rõ: "132m² đất · 120m² xây dựng", "mặt tiền 12m", "6 tầng có thang máy".
    - Mỗi gạch đầu dòng ngắn gọn, không trùng ý nhau.
 
-4) CÂU MỜI CHỐT (CTA — bắt buộc): MỘT–HAI câu cuối KÊU GỌI người đọc NHẮN TIN / liên hệ Zalo cho mình NGAY, gắn liền với nỗi sợ hụt mất (FOMO) để thúc hành động — mệnh lệnh trực tiếp, KHÔNG phải câu hỏi lấy lệ. Mẫu: "Nhanh tay nhắn Zalo cho em ngay — chậm một bước là người ta hốt mất của anh chị à nghen!". Có thể kèm sẽ gửi thêm hình / hẹn đi coi. Viết như MỞ LỜI ĐỐI THOẠI để khách bấm vào là chat tiếp được liền.
+4) CÂU MỜI CHỐT (CTA — bắt buộc): MỘT–HAI câu cuối KÊU GỌI người đọc NHẮN TIN / liên hệ Zalo cho mình NGAY, gắn liền với nỗi sợ hụt mất (FOMO) để thúc hành động — mệnh lệnh trực tiếp, KHÔNG phải câu hỏi lấy lệ. Có thể kèm sẽ gửi thêm hình / hẹn đi coi. Viết như MỞ LỜI ĐỐI THOẠI để khách bấm vào là chat tiếp được liền.
 
-ĐA DẠNG — MỖI TIN MỘT VẺ (bắt buộc): mọi câu ví dụ ở trên ("anh chị mua vô là tiền vô liền tay", "chậm một bước là người ta hốt mất của anh chị à nghen", "Nhanh tay nhắn Zalo cho em ngay"...) CHỈ là MINH HOẠ giọng — TUYỆT ĐỐI KHÔNG chép y nguyên. Mỗi lần soạn phải TỰ diễn đạt MỚI: đổi câu mở màn, đổi cách khoe quyền lợi, đổi móc câu FOMO, đổi câu mời Zalo, đổi nhịp — sao cho không có hai tin nào trùng từng chữ. Giữ NGUYÊN TẮC (giọng chợ, cấu trúc, sự thật), nhưng LỜI phải tươi mới mỗi lần.
+ĐA DẠNG — MỖI TIN MỘT VẺ (bắt buộc): khuôn này cố ý KHÔNG đưa câu mẫu nào (câu mẫu hoàn chỉnh bị chép y nguyên qua nhiều tin — SRS-5.1zzzzzzz336). Mỗi lần soạn phải TỰ diễn đạt: đổi câu mở màn, đổi cách khoe quyền lợi, đổi móc câu FOMO, đổi câu mời Zalo, đổi nhịp — sao cho không có hai tin nào trùng từng chữ. Giữ NGUYÊN TẮC (giọng chợ, cấu trúc, sự thật), nhưng LỜI phải tươi mới mỗi lần.
 
 GIỌNG & XƯNG HÔ (bắt buộc): đây là TIN RAO CÔNG KHAI cho NHIỀU người mua đọc — KHÔNG phải tin nhắn nói riêng với người bán. Nói với CẢ ĐÁM ĐÔNG ("anh chị", "cô bác") — TUYỆT ĐỐI KHÔNG xưng hô 1 người kiểu nói riêng với chủ nhà ("anh ơi", "anh thấy đó", "em gửi anh", "cơ hội này không nhiều anh ơi").
 
