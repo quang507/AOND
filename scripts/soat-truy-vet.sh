@@ -203,6 +203,34 @@ else
 '
 fi
 
+# ── 8. Tên hàm / lịch cron ở docs/07 §2 phải có thật (Đợt 7, SRS-5.1zzzzzzz338) ─
+# §2 tả kiến trúc ĐANG chạy: tên hàm `x()` và lịch `*-tick` nhắc ở đó phải có trong schema.sql hoặc src/. Dòng nói về thứ đã gỡ
+# (đoạn có chữ "gỡ", "deprecated", "không còn") bỏ qua — đó là ghi chép lịch sử.
+thieu_kt=$(python3 - <<'PY'
+import re, pathlib, sys
+goc = pathlib.Path('.')
+d = (goc / 'docs/07-srs.md').read_text(encoding='utf-8')
+s2 = d[d.index('\n## 2. '):d.index('\n## 3. ')]
+nguon = (goc / 'bot/supabase/schema.sql').read_text(encoding='utf-8')
+nguon += ''.join(p.read_text(encoding='utf-8') for p in (goc / 'src').rglob('*.py'))
+nguon += ''.join(p.read_text(encoding='utf-8') for p in (goc / 'bot/supabase/functions').rglob('*.ts'))
+thieu = set()
+for dong in re.split(r'\n\s*\n', s2):   # theo ĐOẠN: đoạn [deprecated] trải nhiều dòng
+    if re.search(r'gỡ|deprecated|không còn', dong, re.I):
+        continue
+    for ten in re.findall(r'`([a-z_][a-z0-9_]{2,})\(\)`', dong):
+        if not re.search(rf'\b{ten}\b', nguon): thieu.add(ten + '()')
+    for ten in re.findall(r'`([a-z0-9]+(?:-[a-z0-9]+)*-tick)`', dong):
+        if f"'{ten}'" not in nguon: thieu.add(ten)
+print(' '.join(sorted(thieu)))
+PY
+)
+if [[ -n "$thieu_kt" ]]; then
+  canh "docs/07 §2 nhắc tên không có trong schema.sql / src/: $thieu_kt — sửa docs theo code, hoặc ghi rõ đã gỡ"
+else
+  xanh "docs/07 §2: mọi tên hàm / lịch cron đều có thật"
+fi
+
 printf '\n── Số đếm hiện tại ──\n'
 printf '%s BR · %s FR · %s NFR · %s UF · %s WF · %s OPEN · %s INS\n' \
   "$n_br" "$n_fr" "$n_nfr" "$n_uf" "$n_wf" "$n_open" "$n_ins"
