@@ -3005,14 +3005,7 @@ class Engine:
             next_field = toi_thieu[0]
             cum_hoi = [o for o in conv.prop.cum_hoi(next_field, thieu) if o in toi_thieu] or [next_field]
             conv.o_vua_hoi, conv.cum_vua_hoi = next_field, cum_hoi
-        # SRS-5.1zzzzzzz215 (soát prompt 27/10): khách nói phường cũ bị chia ("phường 6" Bình Thạnh) → khối địa danh bảo hỏi phường, trong khi dòng
-        # dòng việc của lượt (NHAN_VIEC_LUOT) bảo CHỈ hỏi ô khác — hai lệnh kéo hai hướng. Nay ô hỏi lượt đó LÀ phường (một lần, cờ ở ô tin).
-        phuong_chia_luot = False
-        if next_field and next_field != "phuong" and not xin_dang and not conv.prop.fields.get("_phuong_chia_da_hoi") and self._phuong_cu_bi_chia(conv):
-            conv.prop.fields["_phuong_chia_da_hoi"] = "1"
-            phuong_chia_luot = True
-            next_field, cum_hoi = "phuong", ["phuong"]
-            conv.o_vua_hoi, conv.cum_vua_hoi = next_field, cum_hoi
+        # SRS-5.1zzzzzzz359: bỏ nhánh SRS-215 ép lượt hỏi PHƯỜNG khi khách nói phường cũ bị chia — phường hệ thống tự tra, không hỏi khách.
         # Project awareness: if the listing's project is registered, inherit its verified
         # facts (and lightly confirm); if it's named but unknown, prompt the bot to acquire
         # knowledge (ask the seller / request a link); if no project, nothing.
@@ -3050,12 +3043,10 @@ class Engine:
                 if mo_ho:   # Q4 (d): hỏi đất hay nhà MỘT lần mỗi căn
                     f_tin["_dt_mo_ho_da_hoi"] = "1"
 
-                def _hoan_hoi_o(mo_ho=mo_ho, chia=phuong_chia_luot, f_tin=f_tin) -> None:
+                def _hoan_hoi_o(mo_ho=mo_ho, f_tin=f_tin) -> None:
                     conv.o_vua_hoi, conv.cum_vua_hoi = None, []   # lượt này không hỏi ô nào — lượt sau không tính là khách lờ
                     if mo_ho:
                         f_tin.pop("_dt_mo_ho_da_hoi", None)
-                    if chia:
-                        f_tin.pop("_phuong_chia_da_hoi", None)
                 viec_o = _hoi("hoi_o", viec_txt, "", _hoan_hoi_o)   # khi bị gỡ: việc của khối thắng (`viec_theo_khoi`, điền sau khi chọn)
             system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua, viec=viec_o)
             system += khoi_xin_dang(toi_thieu, conv.prop)   # lượt hỏi ô: KHÔNG có khối ĐIỂM TIN (chủ dự án 02/11, SRS-5.1zzzzzzz336)
@@ -4555,42 +4546,26 @@ class Engine:
         except Exception as e:  # noqa: BLE001
             log.warning("trang_thai_web lỗi: %s", e)
             return {"len_web": None}
-        if "phuong" in (web.get("thieu") or []):   # SRS-5.1zzzzzzz212: tin chờ phường — hỏi khác, chỉ kể phường hệ thống tra được
-            n = conv.lo.get("phuong", 0)
-            web["phuong_da_hoi"] = n >= 1 or "phuong" in conv.prop.hoan
-            web["goi_y_phuong"] = self._goi_y_phuong(conv)
-            f0 = conv.prop.fields
-            if not web["goi_y_phuong"] and self._dia_danh is not None and f0.get("duong"):
-                # SRS-5.1zzzzzzz271: tên đường khớp nhiều đường (Mã Lò / Mã Lộ) — hỏi đường nào trước, không hỏi trống "gần chợ, ngã tư".
-                web["duong_nhap_nhang"] = self._dia_danh.ung_vien_duong(f0.get("duong"), f0.get("quan"))
-            web["co_so_nha"] = bool(re.match(r"\s*(?:số\s*)?\d+[a-zA-Z]?(?:/\d+[a-zA-Z]?)*\b", str(conv.prop.fields.get("dia_chi") or ""), re.I))
-            # SRS-5.1zzzzzzz213 (khách ảo 26/10: anh K. bị hỏi phường 6 lượt sau bản nháp vì sổ lờ chỉ đếm ở lượt thu thập, không đếm ở cổng
-            # web): mỗi lượt cổng này hỏi phường cũng tính một lần lờ (một lần mỗi lượt). Hỏi tới lần thứ 3 mà chưa ra → báo người phụ trách tra
-            # phường (cùng đường `can_nguoi_that`, có nhắc admin thật), bot thôi hỏi.
-            if conv.prop.fields.get("_phuong_bao_admin"):
-                web["phuong_bao_admin"] = True   # admin đã được báo: không hỏi phường nữa, không đếm lờ nữa (nhật ký 27/10: lờ lên tới 16)
-            elif not conv.y_luot.get("_cong_web_phuong"):
-                conv.y_luot["_cong_web_phuong"] = True
-                conv.lo["phuong"] = n + 1
-                # SRS-5.1zzzzzzz214 mục 8 (chủ dự án 27/10: "khách không chọn thì lưu cả 2 luôn"): đã hỏi một lần mà khách không chọn, kho tra được
-                # 2–4 phường ứng viên (đường / hẻm, hoặc phường cũ bị chia) → ghi tạm CẢ các phường đó vào ô, tin lên web, thôi hỏi, không báo admin.
-                # Đây là ô do HỆ THỐNG ghi theo quyết định chủ dự án (ngoại lệ "ô tin chỉ ghi điều khách nói", SRS-73) — đánh dấu `_phuong_he_thong`.
-                ung_vien = self._ung_vien_phuong(conv, web)
-                if n >= 1 and 2 <= len(ung_vien) <= 4:
-                    conv.prop.fields["phuong"] = " / ".join(ung_vien)
-                    conv.prop.fields["_phuong_he_thong"] = "1"
-                    web["thieu"] = [o for o in (web.get("thieu") or []) if o != "phuong"]
-                    web["phuong_he_thong"] = ung_vien
-                    return web
-                # SRS-5.1zzzzzzz214 mục 7 (chat anh Luận 27/10 06:34–06:44 VN: 15 tin 🙋 tới admin trong 10 phút): `y_luot` làm mới mỗi lượt nên
-                # "chưa có can_nguoi_that" luôn đúng → từ lượt 3 trở đi lượt nào cũng báo. Cờ nhớ qua lượt nằm ở ô tin: báo admin MỘT lần mỗi căn.
-                f = conv.prop.fields
-                if n >= 2 and not conv.y_luot.get("can_nguoi_that") and not f.get("_phuong_bao_admin"):
-                    f["_phuong_bao_admin"] = "1"
-                    web["phuong_bao_admin"] = True   # SRS-5.1zzzzzzz228: lượt báo admin cũng thôi hỏi — phường hỏi tối đa 2 lần
-                    conv.y_luot["bao_admin_he_thong"] = True
-                    conv.y_luot["can_nguoi_that"] = ("Bot hỏi phường 3 lượt chưa ra — nhờ admin tra và điền phường ở Sửa tin: "
-                                                     + ", ".join(str(f[k]) for k in ("du_an", "duong", "dia_chi", "quan") if f.get(k)))
+        if "phuong" in (web.get("thieu") or []):
+            # SRS-5.1zzzzzzz359 (chủ dự án 02/11: phường "gắn lên bản đồ để biết chứ không hỏi khách"; ca thật 01–02/11: khách duyệt "Ok" → bot
+            # "Chỉ cần thêm phường là em đưa tin lên web ngay… nhà anh thuộc phường nào ạ?"; "ừ đăng đi em" → "em tra ra khu này là Xã Nhà Bè,
+            # nhà anh thuộc xã này đúng không?"). Bản trước (SRS-212 / 213 / 214 / 228): hỏi phường tới 2 lần, ghi tạm "A / B", rồi mới báo admin.
+            # Nay: hệ thống tra ra ĐÚNG MỘT phường thì ghi luôn; không ra thì báo người phụ trách MỘT lần — không hỏi khách, không nói "thiếu phường".
+            f = conv.prop.fields
+            ung_vien = self._goi_y_phuong(conv)
+            chia = self._phuong_chia(conv)   # khách nói phường cũ đã chia: phường hệ thống ghi phải là một trong các phường mới đó
+            if len(ung_vien) == 1 and (not chia or ung_vien[0] in chia):
+                f["phuong"] = ung_vien[0]
+                f["_phuong_he_thong"] = "kho"
+                conv.y_luot["_phuong_vua_tra"] = ung_vien[0]
+                web["thieu"] = [o for o in (web.get("thieu") or []) if o != "phuong"]
+                return web
+            web["phuong_bao_admin"] = True
+            if not f.get("_phuong_bao_admin") and not conv.y_luot.get("can_nguoi_that"):
+                f["_phuong_bao_admin"] = "1"
+                conv.y_luot["bao_admin_he_thong"] = True
+                conv.y_luot["can_nguoi_that"] = ("Hệ thống chưa tự xác định được phường (bản đồ / kho đường) — nhờ admin tra và điền phường ở Sửa "
+                                                 "tin: " + ", ".join(str(f[k]) for k in ("du_an", "duong", "dia_chi", "phuong", "quan") if f.get(k)))
         return web
 
     def _phuong_moi_cua_cu(self, conv: Conversation) -> str | None:
@@ -4604,17 +4579,18 @@ class Engine:
             log.warning("phường mới của phường cũ: lỗi %s", e)
             return None
 
-    def _phuong_cu_bi_chia(self, conv: Conversation) -> bool:
-        """Khách nói phường cũ đánh số mà phường đó chia về ≥ 2 phường mới (`TraDiaDanh.phuong_cu_chia`, cần quận). Kho hỏng → False."""
+    def _phuong_chia(self, conv: Conversation) -> list[str]:
+        """Các phường MỚI mà phường cũ khách nói bị chia về (≥ 2, `TraDiaDanh.phuong_cu_chia`, cần quận); không chia / kho hỏng → []."""
         chia = getattr(self._dia_danh, "phuong_cu_chia", None)
         if not chia:
-            return False
+            return []
         f = conv.prop.fields
         try:
-            return len(chia(f.get("phuong"), f.get("quan")) or []) >= 2
+            ds = list(chia(f.get("phuong"), f.get("quan")) or [])
         except Exception as e:  # noqa: BLE001
             log.warning("phuong_cu_chia lỗi: %s", e)
-            return False
+            return []
+        return ds if len(ds) >= 2 else []
 
     def _ung_vien_phuong(self, conv: Conversation, web: dict) -> list[str]:
         """Phường ứng viên (tên đầy đủ) để ghi tạm cả hai khi khách không chọn (SRS-5.1zzzzzzz214 mục 8): kho đường / hẻm trước, không có thì các
@@ -4633,34 +4609,48 @@ class Engine:
             return []
 
     def _phuong_tu_dia_chi(self, conv: Conversation, captured: list[str]) -> list[str]:
-        """SRS-5.1zzzzzzz236 (chủ dự án 28/10: "đưa địa chỉ cụ thể hoặc hẻm cụ thể thì nó search phường trước bằng nominatim, nếu search không
-        được mới hỏi"): chưa có phường mà ô dia_chi có số nhà / số hẻm → (1) bản đồ ra ĐÚNG số nhà (`TraDiaDanh.phuong_theo_so_nha`), không thì
-        (2) kho hẻm chỉ có MỘT phường → ghi phường vào ô, đánh dấu do hệ thống (`_phuong_he_thong`, kho ghi `ward_source = suy_doan`). Mỗi địa
-        chỉ tra một lần (`_phuong_tra_dc`); khách đổi địa chỉ thì phường hệ thống ghi theo địa chỉ cũ bị gỡ để tra lại. Ngoại lệ có chủ đích
-        của "ô tin chỉ ghi điều khách nói" (SRS-73), như ghi tạm hai phường ở SRS-214 mục 8."""
+        """Phường do HỆ THỐNG xác định, không hỏi khách (SRS-5.1zzzzzzz359, chủ dự án 02/11: "tên phường mới, tên phường cũ được tự động chuyển
+        thành phường mới bằng cách gắn lên bản đồ để biết chứ không hỏi khách"; trước đó SRS-236: tra số nhà, "search không được mới hỏi").
+        Chạy khi chưa có phường, hoặc khách nói phường CŨ đã chia về nhiều phường mới (phường cũ → MỘT phường mới thì kho / prompt đã đổi tên,
+        SRS-220). Thứ tự: (1) bản đồ ra ĐÚNG số nhà (`phuong_theo_so_nha`); (2) toạ độ điểm hẻm / Nominatim → RPC `phuong_tai_diem`
+        (`phuong_theo_toa_do`; RPC chưa có thì bỏ qua); (3) kho hẻm / kho đường chỉ đi qua MỘT phường. Phường cũ đã chia: kết quả phải là một
+        trong các phường mới của nó. Không ra → để trống; cổng web báo người phụ trách (`_trang_thai_web`). Ghi ô với `_phuong_he_thong`
+        (kho ghi `ward_source = suy_doan`) — ngoại lệ có chủ đích của "ô tin chỉ ghi điều khách nói" (SRS-73). Mỗi địa chỉ tra một lần
+        (`_phuong_tra_dc`); khách đổi địa chỉ thì phường hệ thống ghi theo địa chỉ cũ bị gỡ để tra lại."""
         f = conv.prop.fields
         dc = str(f.get("dia_chi") or "").strip()
-        if "phuong" in captured and f.get("_phuong_he_thong") in ("so_nha", "hem"):
+        khoa = dc or f"đường:{f.get('duong') or ''}"   # chỉ có tên đường (chưa số nhà) cũng tra (bước kho đường, SRS-5.1zzzzzzz359)
+        if "phuong" in captured:
             f.pop("_phuong_he_thong", None)   # khách tự nói phường lượt này: phường là của khách, không gỡ theo địa chỉ nữa
-        if f.get("_phuong_he_thong") in ("so_nha", "hem") and f.get("_phuong_tra_dc") != dc:
+            f.pop("_phuong_tra_dc", None)     # phường cũ khách vừa nói có thể đã chia — tra lại
+        if f.get("_phuong_he_thong") and f.get("_phuong_tra_dc") != khoa:
             f.pop("phuong", None)
             f.pop("_phuong_he_thong", None)
-        if f.get("phuong") or not dc or not f.get("duong") or f.get("_phuong_tra_dc") == dc:
+        chia = self._phuong_chia(conv) if f.get("phuong") else []
+        if (f.get("phuong") and not chia) or not f.get("duong") or f.get("_phuong_tra_dc") == khoa:
             return []
-        if not re.match(r"\s*(?:số\s*)?\d", dc, re.I) and not re.search(r"\b(?:hẻm|hxh|kiệt|ngõ)\s*\d", dc, re.I):
-            return []
-        f["_phuong_tra_dc"] = dc
-        nguon, p = "so_nha", None
-        tra = getattr(self._dia_danh, "phuong_theo_so_nha", None)
+        f["_phuong_tra_dc"] = khoa
+        nguon, p = "", None
         try:
-            p = tra(dc, f.get("duong"), f.get("quan")) if tra else None
+            tra = getattr(self._dia_danh, "phuong_theo_so_nha", None)
+            p = tra(dc, f.get("duong"), f.get("quan")) if (tra and dc) else None
+            nguon = "so_nha"
             if not p:
-                hem = phuong_kho_hem(self._dia_danh, f)
-                nguon, p = "hem", (hem[0] if len(hem) == 1 else None)
-        except Exception as e:  # noqa: BLE001 — tra hỏng thì bot hỏi phường như cũ
+                tra = getattr(self._dia_danh, "phuong_theo_toa_do", None)
+                p, nguon = (tra(dc, f.get("duong"), f.get("quan")) if tra else None), "toa_do"
+            if not p:
+                hem = phuong_kho_hem(self._dia_danh, {**f, "phuong": ""})
+                if not hem:
+                    d = self._dia_danh.duong(f.get("duong"), f.get("quan"))
+                    hem = list(d["phuong"]) if d else []
+                    nguon = "duong"
+                else:
+                    nguon = "hem"
+                p = hem[0] if len(hem) == 1 else (next(iter(set(hem) & set(chia))) if chia and len(set(hem) & set(chia)) == 1 else None)
+        except Exception as e:  # noqa: BLE001 — tra hỏng thì để trống, cổng web báo người phụ trách
             log.warning("phường từ địa chỉ: lỗi %s", e)
             return []
-        if not p:
+        if not p or (chia and p not in chia):
             return []
         log.warning("Phường từ địa chỉ: %s (%s)", p, nguon)
         f["_phuong_he_thong"] = nguon

@@ -54,25 +54,24 @@ def test_chu_tat_khong_bi_dau_a_lam_gia():
 
 
 def test_o_bot_that_su_hoi_cung_tinh_lo():
-    # Cô T.: hệ thống chọn hỏi giá, model hỏi phường; sổ "lờ" chỉ ghi giá nên phường bị hỏi lại như lần đầu (3 lần cả cuộc chat).
-    eng, _ = _eng({"operations": [], "user_intent": "sell", "bot_vua_hoi": ["phuong", "khong_co_o_nay"]})
+    # Cô T.: hệ thống chọn hỏi giá, model hỏi ô khác; sổ "lờ" chỉ ghi giá nên ô đó bị hỏi lại như lần đầu. (SRS-359: ví dụ cũ là phường — nay
+    # phường không còn hỏi; dùng ô diện tích đất.)
+    eng, _ = _eng({"operations": [], "user_intent": "sell", "bot_vua_hoi": ["dien_tich_dat", "khong_co_o_nay"]})
     c = eng.conversation("ph5k")
     c.role = "seller"
     c.prop.loai_hinh = "nha_pho"
     c.prop.fields.update({"duong": "Trần Hưng Đạo", "quan": "Quận 5"})
     c.o_vua_hoi, c.cum_vua_hoi = "gia", ["gia"]
     eng.handle("ph5k", "sao hỏi nhiều vậy con")
-    assert c.lo.get("phuong") == 1 and "khong_co_o_nay" not in c.lo
+    assert c.lo.get("dien_tich_dat") == 1 and "khong_co_o_nay" not in c.lo
 
 
 def test_tin_cho_phuong_hoi_khac_va_khong_bia_ten_phuong():
-    # Lượt duyệt: bản cũ chỉ bảo "hỏi phường mới" không kèm danh sách → bot tự kể "Nguyễn Cư Trinh, Phường 11 hay Phường 4".
-    co = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "goi_y_phuong": ["Phường An Đông", "Phường Chợ Quán"]})[0]
-    assert "Phường An Đông, Phường Chợ Quán" in co and "KHÔNG kể phường nào khác" in co
-    da_hoi = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "phuong_da_hoi": True})[0]
-    assert "số nhà / số hẻm" in da_hoi and "KHÔNG tự kể tên phường" in da_hoi
-    chua = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"]})[0]
-    assert "KHÔNG tự kể tên phường" in chua
+    # SRS-212 (bot tự kể "Nguyễn Cư Trinh, Phường 11 hay Phường 4") → SRS-5.1zzzzzzz359: tin chờ phường thì KHÔNG hỏi / kể phường nào nữa.
+    for web in ({"len_web": False, "thieu": ["phuong"], "goi_y_phuong": ["Phường An Đông", "Phường Chợ Quán"]},
+                {"len_web": False, "thieu": ["phuong"], "phuong_da_hoi": True}, {"len_web": False, "thieu": ["phuong"]}):
+        co = khoi_trang_thai_web(web)[0]
+        assert "Phường An Đông" not in co and "KHÔNG hỏi khách phường" in co and "KHÔNG kể tên phường nào" in co
 
 
 def test_khong_hua_hoi_chu_nha_khi_chua_ghi_viec():

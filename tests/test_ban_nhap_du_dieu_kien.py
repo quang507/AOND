@@ -18,20 +18,20 @@ def test_ca_that_hoi_duong_roi_phuong_roi_ket_cau():
     # 26/10 (SRS-5.1zzzzzzz200, theo anh Luận): "đủ rao" = loại hình + vị trí + giá. Câu đầu đã có cả ba nên ra bản nháp ngay;
     # phường / diện tích nhà / kết cấu không chặn nữa, chỉ được hỏi tiếp (phường trước, vì tin cần phường mới lên web).
     assert p.minimal_missing() == [] and p.summary_ready()     # SRS-260: đủ giá · khu vực · quy mô · pháp lý · hiện trạng
-    assert p.missing_fields()[:2] == ["phuong", "dia_chi"]   # SRS-260: khu vực đủ soạn — phường (điều kiện lên web) rồi tên đường hỏi sau
+    assert p.missing_fields()[0] == "dia_chi" and "phuong" not in p.missing_fields()   # SRS-359: phường hệ thống tự tra, không hỏi
     # thiếu giá hoặc vị trí → chưa rao, và hai ô đó luôn đứng đầu danh sách hỏi
     q = Property(loai_hinh="nha_pho", fields={"dia_chi": "Trần Hưng Đạo", "duong": "Trần Hưng Đạo", "dien_tich_dat": "60m2"})
     assert not q.summary_ready() and q.missing_fields()[0] == "gia"
     r = Property(loai_hinh="nha_pho", fields={"gia": "5 tỷ"})
     assert not r.summary_ready() and r.missing_fields()[0] == "dia_chi"
     p.update({"duong": "Trần Hưng Đạo", "dia_chi": "Trần Hưng Đạo"})
-    assert p.summary_ready() and p.missing_fields()[0] == "phuong" and "dien_tich_nha" in p.missing_fields()
+    assert p.summary_ready() and "phuong" not in p.missing_fields() and "dien_tich_nha" in p.missing_fields()   # SRS-359
 
 
 def test_khong_doan_bang_tu_khoa_tren_dia_chi():
     # dia_chi có đủ chữ nhưng AI chưa tách tên đường / phường → vẫn chặn: quyết định thuộc AI, không thuộc regex.
     p = _nha(dia_chi="123 Trần Hưng Đạo, Phường 1, Quận 5", ket_cau="3 tầng")
-    assert p.blocking_fields() == ["dia_chi", "phuong"]
+    assert p.blocking_fields() == ["dia_chi"]   # SRS-359: phường không còn là ô bắt buộc hỏi khách
     p.update({"duong": "Trần Hưng Đạo", "phuong": "Phường 1"})
     assert p.blocking_fields() == [] and p.summary_ready()   # SRS-5.1zzzzzzz200: diện tích nhà không còn chặn bản nháp
 
@@ -41,7 +41,7 @@ def test_chung_cu_can_ten_du_an_va_so_phong_ngu_phuong_lay_tu_du_an():
                                                "tang_toa": "tầng 12 block A", "ban_cong_view": "Đông Nam", "noi_that": "full",
                                                "phi_quan_ly": "15k/m2",
                                                "phap_ly_so_hong": "sổ hồng riêng", "hien_trang_su_dung": "để trống"})   # SRS-260
-    assert p.blocking_fields() == ["du_an", "so_phong_ngu", "phuong"]
+    assert p.blocking_fields() == ["du_an", "so_phong_ngu"]   # SRS-359
     p.update({"du_an": "Sunrise City", "so_phong_ngu": "2PN 2WC"})
     assert p.blocking_fields() == [] and p.summary_ready()  # có dự án: phường lấy theo dự án khi ghi CRM
 

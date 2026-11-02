@@ -48,18 +48,23 @@ def test_luot_truoc_la_ban_tin_thi_chi_xet_phan_chat():
 # ---------- B2: phường hỏi tối đa 2 lần — lượt báo admin cũng thôi hỏi ----------
 
 def test_luot_bao_admin_thoi_hoi_phuong_ngay():
+    """SRS-5.1zzzzzzz359 (chủ dự án 02/11: không hỏi khách phường) thay SRS-213 / 214 / 228 (hỏi tới 2 lần rồi mới báo admin): tin chờ phường
+    mà hệ thống không tra ra → báo người phụ trách NGAY lượt đầu, MỘT lần (cờ ở ô tin), không đếm lờ, khối prompt không hỏi phường."""
     eng = Engine(_Spy())
     c = _conv(eng, "k-228c")
     c.prop.fields.update({"duong": "Trần Bình Trọng", "quan": "Quận 5"})
-    eng._convstore = type("K", (), {"trang_thai_tin": lambda self, conv: {"len_web": False, "thieu": ["phuong"]},
-                                    "save": lambda self, conv: None})()
+    eng._convstore = type("K", (), {"trang_thai_tin": lambda self, conv: {"len_web": False, "thieu": ["phuong"]}, "save": lambda self, conv: None})()
+    c.y_luot = {}
+    web = eng._trang_thai_web(c)
+    assert web["phuong_bao_admin"] and "nhờ admin tra" in c.y_luot["can_nguoi_that"] and "phuong" not in c.lo
+    assert c.prop.fields.get("_phuong_bao_admin") == "1"
     for _ in range(2):
         c.y_luot = {}
         web = eng._trang_thai_web(c)
-        assert not web.get("phuong_bao_admin")
-    c.y_luot = {}
-    web = eng._trang_thai_web(c)
-    assert "nhờ admin tra" in c.y_luot["can_nguoi_that"] and web["phuong_bao_admin"]
+        assert "can_nguoi_that" not in c.y_luot and web["phuong_bao_admin"]
+    from aioi.prompts import khoi_trang_thai_web
+    k = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "phuong_bao_admin": True})
+    assert "KHÔNG hỏi khách phường" in k[0] and "người phụ trách đã được báo" in k[0]
 
 
 # ---------- Mục 3: câu ghi nhận ở giữa lời cũng nhận ra; mục 4: "em gửi ảnh" ngược vai ----------
