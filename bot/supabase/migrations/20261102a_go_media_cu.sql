@@ -4,6 +4,8 @@
 -- `media` 0 dòng nên không chép sang `luu_tru` (không có gì để giữ). Hai hàm xoá / khôi phục khách vẫn liệt kê `media` — định nghĩa lại
 -- trước, bỏ `media` khỏi danh sách (bản ghi `media` cũ trong `luu_tru.ban_ghi`, nếu có, không khôi phục nữa vì bảng không còn).
 
+begin;  -- một giao dịch: lỗi giữa chừng không để DB nửa vời (hàm đã đổi mà bảng còn)
+
 CREATE OR REPLACE FUNCTION public.admin_xoa_het_khach_va_ro_hang(p_xac_nhan text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -117,8 +119,56 @@ begin
 end $function$
 ;
 
+-- View `so.ro_hang` (sổ người đọc) đếm ảnh = media + listing_media: định nghĩa lại chỉ đếm `listing_media` trước khi gỡ bảng `media`.
+-- Cùng cột, cùng thứ tự (CREATE OR REPLACE giữ quyền đã cấp).
+create or replace view so.ro_hang as
+ SELECT row_number() OVER (ORDER BY l.created_at, l.id)::integer AS stt,
+        CASE l.deal
+            WHEN 'ban'::listing_deal THEN 'Bán'::text
+            ELSE 'Cho thuê'::text
+        END AS ban_hay_thue,
+    regexp_replace(regexp_replace(TRIM(BOTH FROM l.location_raw), '\r?\n'::text, ' — '::text, 'g'::text), '(,\s*Quận 5)?,\s*(tp\.?|thành phố)?\s*Hồ Chí Minh\.?\s*$'::text, ''::text, 'i'::text) AS vi_tri,
+    replace(l.area_m2::text, '.'::text, ','::text) || ' m²'::text AS dien_tich,
+    COALESCE(l.price_raw, replace(round(l.price_vnd::numeric / '1000000000'::numeric, 2)::text, '.'::text, ','::text) || ' tỷ'::text) AS gia,
+    regexp_replace(regexp_replace(TRIM(BOTH E' \r\n\t'::text FROM l.description), '\s*\r?\n\s*[-•+*]?\s*'::text, ' · '::text, 'g'::text), '^[-•+*]\s*'::text, ''::text) AS mo_ta,
+    s.phone AS so_dien_thoai,
+    s.name AS nguoi_ban,
+    l.code AS ma_tin,
+        CASE l.property_type
+            WHEN 'nha_pho'::property_type THEN 'nhà phố'::text
+            WHEN 'nha_cap4'::property_type THEN 'nhà cấp 4'::text
+            WHEN 'chung_cu'::property_type THEN 'chung cư'::text
+            WHEN 'dat'::property_type THEN 'đất'::text
+            WHEN 'biet_thu'::property_type THEN 'biệt thự'::text
+            WHEN 'phong_tro'::property_type THEN 'phòng trọ'::text
+            WHEN 'mat_bang'::property_type THEN 'mặt bằng'::text
+            ELSE 'chưa rõ'::text
+        END AS loai,
+        CASE l.status
+            WHEN 'cho_thong_tin'::text THEN 'chờ thông tin'::text
+            WHEN 'dang_ban'::text THEN 'đang bán'::text
+            WHEN 'dang_quan_tam'::text THEN 'đang quan tâm'::text
+            WHEN 'da_coc'::text THEN 'đã cọc'::text
+            WHEN 'da_chot'::text THEN 'đã chốt'::text
+            WHEN 'an'::text THEN 'ẩn'::text
+            ELSE l.status
+        END AS trang_thai,
+    ( SELECT count(*) AS count
+           FROM listing_media lm
+          WHERE lm.listing_id = l.id) AS so_anh,
+    'https://nhadat.cc/nha-dat/'::text || l.code AS link_web,
+    l.source AS nguon,
+    l.created_at::date AS ngay_vao,
+    l.id
+   FROM listings l
+     LEFT JOIN sellers s ON s.id = l.seller_id
+  ORDER BY l.created_at;
+comment on view so.ro_hang is '[SỔ] Rổ hàng nhìn như masterDB/nhà Q5.xlsx: 9 cột đầu đúng thứ tự sheet (stt · bán hay thuê · vị trí · diện tích · giá · mô tả · SĐT · người bán), cột thêm xếp sau. Cả bán lẫn cho thuê. so_dien_thoai là SĐT NGƯỜI BÁN đã ký, không phải SĐT theo tin như Excel. so_anh đếm listing_media (bảng media cũ gỡ 02/11/2026). Chỉ đọc; sửa thì sửa public.listings.';
+
 drop view if exists public.public_media;
 drop view if exists public.ro_hang_ban;
 drop table if exists public.media;
 drop function if exists public.kd_ten(text);
 drop function if exists public.tim_nghia_san_sang();
+
+commit;
