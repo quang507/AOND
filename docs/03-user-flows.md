@@ -220,7 +220,7 @@ mục tiêu là B *nhắn lại*, chỉ gửi trong 8h–21h VN (FR-133).
 
 ## UF-09 — S rao tin từ website
 **Actor** CCRB / NMG · **FR** FR-90…FR-96, FR-101, FR-114
-🟡 một phần: `/raoban` + `/api/listing/parse` (bóc câu rao) + upload ảnh (FR-96) + `/quan-ly`; đăng nhập là Google/magic link chứ không Zalo SSO; biến thể câu rao (FR-93) chưa dựng.
+🟡 một phần: `/raoban` + upload ảnh (FR-96) + `/quan-ly`; đăng nhập là Google/magic link chứ không Zalo SSO; biến thể câu rao (FR-93) chưa dựng. Bóc câu rao: lõi Python trong Zalo (`/api/listing/parse` gỡ 02/11/2026, SRS-5.1zzzzzzz333 — bóc câu rao do lõi Python làm bằng AI)
 
 ```mermaid
 flowchart TD

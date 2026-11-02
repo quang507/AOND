@@ -708,7 +708,9 @@ Lượt hỏng: lõi trả câu mẫu `giu_cho` và tự thử lại nền.
 `url` = `/{tag}` khi tổ hợp khớp đúng một tag, không thì `/mua-ban|/cho-thue?…`; `GET ?go=1` trả 302 cho form không JS. Kết quả do trang đích truy vấn (một nơi lọc);
 0 kết quả → chip lọc + hộp Zalo mang câu gốc, không `relaxed`.
 
-### SRS-4.6 · `POST /api/listing/parse` (FR-92)
+### SRS-4.6 · `POST /api/listing/parse` (FR-92) [deprecated]
+> Gỡ 02/11/2026 (SRS-5.1zzzzzzz333): không còn nơi gọi; FR-92 do lõi Python bóc bằng AI (`src/aioi/`), DB còn `boc_thong_so()` (FR-172). Mô tả dưới giữ để tra cứu.
+
 `app/api/listing/parse/route.ts`: `{text}` (nhận cả `raw_pitch`; `GET ?text=`) → `{text, fields, confidence, needs_review[]}` bằng luật `parseListing` (không DB, không model).
 Trường: deal, property_type, ward, district, street, landmark, bedrooms, price_raw/price_vnd, access_type, alley_width_m, frontage_m/length_m/rear_width_m, area_m2, floors,
 legal_status, has_completion, negotiable, direction, has_elevator, car_in_house, corner_lot, furnishing. Là bản xem trước cho `/raoban`; đường bóc thật lúc đăng là `boc_thong_so()` ở DB (FR-172).
@@ -828,6 +830,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 ---
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
+
+### SRS-5.1zzzzzzz333 · Gỡ `/api/listing/parse` + `parseListing` (bóc câu rao bằng luật ở web, không còn nơi gọi) (02/11/2026)
+Ca gốc: soát code chết — route `POST /api/listing/parse` (SRS-4.6) và `parseListing` (~90 dòng luật bóc câu rao trong `lib/parse-query.ts`) không còn ai gọi: web, bot, script, workflow (grep 0 chỗ ngoài định nghĩa). Bóc câu rao thật do lõi Python làm bằng AI; DB còn `boc_thong_so()` (FR-172).
+(1) Lớp lỗi: chuyển bóc tách sang lõi AI mà để lại bản luật phía web — một bộ đoán ý bằng từ khoá nằm chờ người nối lại. (2) Cùng lớp: `parseQuery` (ô tìm kiếm web) còn dùng luật — giữ (không có AI ở ô tìm, chi phí mỗi lượt gõ); đề xuất xử lý câu phủ định ở mô tả PR, không thêm từ khoá.
+Sửa: xoá route + khối `parseListing` / `ParsedListing`; SRS-4.6, TS-WEB2-S09 đánh `[deprecated]`; IA-14, UF-09, WF-08/09, docs/08 bỏ đường dẫn. (3) Kiểm: `kieu`, `build` (route `/api/listing/parse` hết khỏi bảng), `test:bot`, `test:py`, `truyvet`.
 
 ### SRS-5.1zzzzzzz330 · Lịch hẹn / câu hỏi của ID thử không nhắn admin, không bắn cảnh báo ngoài (02/11/2026)
 Ca gốc: bắn thử ban-thu-mua 02/11 — lịch xem của "Khách thử" vẫn nhắn admin thật; SRS-321 chỉ chặn đường lõi (`_xep_tin_admin`), còn trigger `viewings_bao_admin_va_email` (nhắc admin + câu `xac_nhan_lich` + email [VIEWING]) chạy cho mọi người mua.

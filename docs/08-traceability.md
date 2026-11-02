@@ -82,7 +82,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-79 | UF-06, UF-11 | WF-14 | SRS-5.5 | AC-10, TS-V48-79 |
 | FR-80 | — | WF-12 | — | AC-09, TS-ADM2-12 |
 | FR-81 | UF-11 | — | SRS-5.5 | AC-10, TS-GIUCHAN |
-| FR-90…FR-96 | UF-09 | WF-08, WF-09 | SRS-4.6 | AC-07, TS-WEB2-P01 |
+| FR-90…FR-96 | UF-09 | WF-08, WF-09 | SRS-4.6 [deprecated], lõi Python `src/aioi/` (FR-92) | AC-07, TS-WEB2-P01 |
 | FR-98 | UF-05 | WF-10 | SRS-4.2 | AC-03 |
 | FR-99 | UF-04 | WF-05 | SRS-5.1 | TS-V48-99, TS-WEB2 |
 | FR-100 | UF-12 | WF-11 | SRS-4.3, SRS-3.8b | AC-11, TS-WEB2-P06 |
