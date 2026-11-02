@@ -2,13 +2,6 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
-### SRS-5.1zzzzzzz319 · Audit Đợt 8: gỡ đường cũ 6 công tắc, xoá prompt cũ `build_chat_system`; phiếu lượt mang tin hệ thống, tiếng lóng, hỏi diện tích đất / nhà (02/11/2026)
-Quyết định chủ dự án 01/11 (Q1): công tắc "vĩnh viễn", "xóa code cũ lun". Gỡ nhánh `tat` / `thu` của `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON`, `FORM_BAN_GON`,
-`AGENT_MUA`, `AGENT_BAN` (code, `cai-vps.sh`, CLAUDE.md); bỏ lần soát thứ hai (`_ly_do_cung`, cột "soát lại" của `LUAT_SOAT`). `AGENT_BOC` giữ (chỉ ID thử, SRS-310 chưa hơn form).
-(1) Lớp lỗi: luật chỉ sống ở prompt cũ thì xoá prompt cũ là luật rơi (AU-13). (2) Cùng lớp đã soát: tin hệ thống ngoặc vuông (`prompts.TIN_HE_THONG`), `SLANG_NOTES`, hỏi lại
-"diện tích đó đất hay nhà" (`_dien_tich_mo_ho`) chuyển vào `build_phieu_luot`; luật còn lại của prompt cũ là giọng / văn đã có ở `GIONG_VUI` hoặc code. (3) Kiểm: `test_go_cong_tac_319.py`
-(đỏ khi gỡ ba luật khỏi phiếu lượt; không file nào đọc sáu biến); `test:py` 1312; `cham` ×2 trên 51 kịch bản: tất định 508 / 507, tổng 623 / 617, giọng 3,16 / 3,08 (trước 3,04 / 2,94).
-
 ### SRS-5.1zzzzzzz318 · Audit Đợt 2: luật rơi khi đổi đường — chính sách phí ở lượt thu thập, một bảng luật soát, nhãn việc lượt chung, ảnh sổ qua phiếu lượt (01/11/2026)
 Quyết định chủ dự án 01/11 (Q2): lượt THU THẬP, khách hỏi phí / chính sách thì nói ĐỦ 4 ý (không bớt, chỉ thu khi thành công · có HĐ môi giới văn bản · không
 độc quyền · môi giới không chia hoa hồng khác), gọn, giọng Zalo; con số vẫn do `muc_phi` / `khoi_bao_phi`. Q3: lên Top là thật — giữ câu "≥10 căn lên Top".

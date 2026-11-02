@@ -829,12 +829,6 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
-### SRS-5.1zzzzzzz329 · Vai theo SỐ khách đang nhắn ở lượt mơ hồ: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi không còn bị hỏi khu vực tìm mua (02/11/2026)
-Ca thật chủ dự án 02/11 (cùng một Zalo): 10:37 số tư vấn "anh đang cần tìm mua nhà quận 8 dưới 7 tỉ" → đúng; 10:38 số ký gửi "chào em" → "Anh muốn tìm ở khu vực nào ạ?". Chủ dự án: số ký gửi mặc định BÁN, nói mua mới hỗ trợ mua; số tư vấn giữ SRS-210.
-(1) Lớp lỗi: hội thoại khoá theo NGƯỜI (Zalo ID), `so_nhan` ghi đè mỗi tin; nhánh "đang mua thì ở lại vai mua" chạy trước mặc định theo số. Sửa: `Conversation.so_vai` (số đặt vai, lưu SQLite); lượt mơ hồ ở số khác → vai mặc định của số đang nhắn, lượt đó chào theo số
-(`_doi_so`); ý mua / bán của lượt vẫn thắng; nhu cầu mua / tin rao số kia giữ nguyên. (2) Cùng lớp: lời chào lượt đầu hai số (đã sửa cùng cờ); còn: dữ liệu cũ chưa có `so_vai` giữ cách cũ tới lượt có ý mua / bán.
-(3) Kiểm: `test_vai_theo_so_329.py` qua `Engine.handle` (gỡ nhánh `so_vai` → 2/5 đỏ; ba cách chào: "chào em", "alo em ơi", "hi bé").
-
 ### SRS-5.1zzzzzzz328 · Audit Đợt 4: một quyết định một nơi — MỘT câu hỏi mỗi lượt, duyệt bản nháp một hàm, vai một nguồn, phía mua hết lệnh ngược, lượt bản nháp một lần gọi lại; Q4 / Q5 (02/11/2026)
 Chủ dự án 02/11: Q4 — hỏi xác nhận ĐÚNG 4 chỗ (mặt tiền ngang / đường, căn thuộc dự án X, số lệch kho dự án, diện tích đất hay sàn), mỗi chỗ tối đa MỘT lần mỗi căn, ngoài ra giữ SRS-302; Q5 — `hoi_ngoai_viec`, `xin_xem_ban_ve`, `cau_hoi_du_an`, `mo_ta_du_an`, `xong_viec_mua` theo ý AI đọc, bỏ cổng nguyên văn.
 (1) Lớp lỗi: nhiều nơi cùng quyết một đầu ra, không thứ tự — ≥ 7 khối tự nhận "câu hỏi DUY NHẤT" cùng bật (AU-09); duyệt ghi đè ở 4 chỗ, `xin_dang` đè `khong_dong_y` và duyệt lại bản đã duyệt (AU-10); vai chính chủ trên tin ≠ vai tính phí (AU-03);
@@ -887,6 +881,13 @@ Quyết định chủ dự án 02/11: KHÔNG dùng từ khoá trên lời khách
 `tien_ich_gan`, `tinh_trang_nha` kèm cụm trích (code kiểm cụm); lưới `_khang_dinh_khong_co_du_lieu` chỉ đối chiếu bản tin với các ô đó, chưa rõ / AI hỏng thì bản tin không khẳng định; lượt viết bản tin
 nhận khối `khoi_su_that_can`. (2) Cùng lớp đã sửa: tự ghi "Mặt tiền" (nay để sau bản nháp), `_can_xe_hoi` phía mua (AI trả `can_xe_hoi`), `loai_tien_ich` (AI trả mã), `phuong_kho_hem`, lọc "không / có" ở `tin_goc`;
 còn lại: tìm kiếm web `lib/parse-query.ts` + `ganNhan`, `parseListing`, cổng chữ xưng hô, `MockProvider` (bảng ở mô tả PR). (3) Kiểm: `test_khang_dinh_320.py` qua `Engine.handle` (9/11 đỏ trên main); kịch bản `khong_phai_chinh_chu`, `so_dang_lam`, `xa_cho`; `cham` ×2 (số ở mô tả PR).
+
+### SRS-5.1zzzzzzz319 · Audit Đợt 8: gỡ đường cũ 6 công tắc, xoá prompt cũ `build_chat_system`; phiếu lượt mang tin hệ thống, tiếng lóng, hỏi diện tích đất / nhà (02/11/2026)
+Quyết định chủ dự án 01/11 (Q1): công tắc "vĩnh viễn", "xóa code cũ lun". Gỡ nhánh `tat` / `thu` của `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON`, `FORM_BAN_GON`,
+`AGENT_MUA`, `AGENT_BAN` (code, `cai-vps.sh`, CLAUDE.md); bỏ lần soát thứ hai (`_ly_do_cung`, cột "soát lại" của `LUAT_SOAT`). `AGENT_BOC` giữ (chỉ ID thử, SRS-310 chưa hơn form).
+(1) Lớp lỗi: luật chỉ sống ở prompt cũ thì xoá prompt cũ là luật rơi (AU-13). (2) Cùng lớp đã soát: tin hệ thống ngoặc vuông (`prompts.TIN_HE_THONG`), `SLANG_NOTES`, hỏi lại
+"diện tích đó đất hay nhà" (`_dien_tich_mo_ho`) chuyển vào `build_phieu_luot`; luật còn lại của prompt cũ là giọng / văn đã có ở `GIONG_VUI` hoặc code. (3) Kiểm: `test_go_cong_tac_319.py`
+(đỏ khi gỡ ba luật khỏi phiếu lượt; không file nào đọc sáu biến); `test:py` 1312; `cham` ×2 trên 51 kịch bản: tất định 508 / 507, tổng 623 / 617, giọng 3,16 / 3,08 (trước 3,04 / 2,94).
 
 ---
 
