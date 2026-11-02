@@ -520,7 +520,7 @@ def viec_phieu(prop: Property, next_field: str | None, hoi_lai: bool = False, o_
             viec += (" Ý này em đã hỏi lượt trước mà khách chưa trả lời: đổi cách hỏi, ngắn hơn hoặc gợi sẵn vài đáp án để chọn (giá, diện tích, "
                      "con số thì không gợi số), không lặp câu cũ, không nhắc là đã hỏi, không nêu lý do vì sao cần hỏi.")
         if o_bo_qua and o_bo_qua != next_field:
-            viec += f' Lượt này không hỏi lại "{nhan_o(o_bo_qua, prop)}" và không nhắc tới nó.'
+            viec += f' Lượt này không hỏi lại "{nhan_o(o_bo_qua, prop)}": vào thẳng câu hỏi mới, không nhắc ý cũ, không nói kiểu "qua phần khác".'
         return viec
     return ("tin đã đủ để rao — chốt ngắn, ấm áp: tin đã lưu, có khách hỏi hay hẹn xem bên em báo ngay; không hỏi thêm, không gạ rao căn "
             "khác, không hứa gọi điện hay hạn bán.")
