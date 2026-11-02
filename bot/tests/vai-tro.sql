@@ -31,8 +31,8 @@ declare
   o text := ''; b uuid; c uuid; l uuid; s uuid; n int; t text;
   -- Bảng KHÔNG vai công khai nào được đọc. `admins` và `chat_quota` nằm đây vì
   -- một cái là danh sách người có quyền, một cái là hạn mức chống đốt tiền.
-  BANG_KIN text[] := array['buyers','sellers','messages','conversations','inbound_ledger',
-                           'inbound_events','media_cleanup_queue','admins','chat_quota'];
+  -- (02/11/2026: bỏ `inbound_ledger` / `inbound_events` — hai bảng gỡ cùng bot TypeScript, 20261018i.)
+  BANG_KIN text[] := array['buyers','sellers','messages','conversations','media_cleanup_queue','admins','chat_quota'];
   -- View cấp cho `authenticated`. Chủ sở hữu là `postgres` (có BYPASSRLS) nên
   -- chúng KHÔNG được bảo vệ bởi RLS — hàng rào duy nhất là mệnh đề WHERE bên
   -- trong chính view. Vì vậy phải kiểm từng cái, không suy ra từ RLS.
@@ -44,8 +44,6 @@ begin
   insert into listings (code, seller_id, status, price_raw, ward) values ('VAITRO-0001', s,'cho_thong_tin','5 ty','Phuong 4') returning id into l;
   insert into conversations (buyer_id, channel, started_at, needs_human, needs_human_at) values (b,'zalo_oa',now(),true,now()) returning id into c;
   insert into messages (conversation_id, sender, body) values (c,'buyer','sdt toi la 0903xxxxxx');
-  insert into inbound_ledger (zalo_msg_id, status) values ('VAITRO-M1','completed');
-  insert into inbound_events (event_id, zalo_user_id, payload) values ('VAITRO-M1','VAITRO-B1','{"x":1}'::jsonb);
   insert into media_cleanup_queue (bucket, storage_path) values ('listing-public','vaitro/x.jpg');
 
   select count(*) into n from conversations where id=c;
@@ -66,8 +64,6 @@ begin
   exception when others then o := o||'OK anon:ghi-listings '; end;
   begin perform bump_user_quota('x',1); o := o||'HONG anon:bump_user_quota ';
   exception when others then o := o||'OK anon:bump_user_quota '; end;
-  begin perform giu_luot_gui('VAITRO-M1'); o := o||'HONG anon:giu_luot_gui ';
-  exception when others then o := o||'OK anon:giu_luot_gui '; end;
   begin perform xuat_schema(); o := o||'HONG anon:xuat_schema ';
   exception when others then o := o||'OK anon:xuat_schema '; end;
   o := o || '| ';
@@ -101,18 +97,18 @@ begin
   select count(*) into n from messages;             o := o || case when n>0 then 'OK' else 'HONG' end || ' [dc]admin:messages ';
   select count(*) into n from khach_can_nguoi_that; o := o || case when n>0 then 'OK' else 'HONG' end || ' [dc]admin:view-khach ';
   select count(*) into n from listings where id=l;  o := o || case when n=1 then 'OK' else 'HONG' end || ' [dc]admin:tin-chua-dang ';
-  begin execute 'select count(*) from public.inbound_ledger' into n;
-    o := o || case when n=0 then 'OK' else 'HONG' end || ' admin:KHONG-doc-inbound_ledger ';
-  exception when insufficient_privilege then o := o || 'OK admin:inbound_ledger(no-grant) '; end;
+  begin execute 'select count(*) from public.media_cleanup_queue' into n;
+    o := o || case when n=0 then 'OK' else 'HONG' end || ' admin:KHONG-doc-media_cleanup_queue ';
+  exception when insufficient_privilege then o := o || 'OK admin:media_cleanup_queue(no-grant) '; end;
   o := o || '| ';
 
   -- ══ SERVICE_ROLE ══ — cũng là đối chứng dương: bot phải làm được việc.
   set local role service_role;
   set local request.jwt.claims = '{"role":"service_role"}';
-  select count(*) into n from inbound_ledger; o := o || case when n>0 then 'OK' else 'HONG' end || ' [dc]svc:inbound_ledger ';
+  select count(*) into n from media_cleanup_queue; o := o || case when n>0 then 'OK' else 'HONG' end || ' [dc]svc:media_cleanup_queue ';
   select count(*) into n from messages;       o := o || case when n>0 then 'OK' else 'HONG' end || ' [dc]svc:messages ';
-  begin perform giu_luot_gui('VAITRO-M1'); o := o||'OK [dc]svc:giu_luot_gui ';
-  exception when others then o := o||'HONG svc:giu_luot_gui '; end;
+  begin perform la_id_thu('VAITRO-B1'); o := o||'OK [dc]svc:la_id_thu ';
+  exception when others then o := o||'HONG svc:la_id_thu '; end;
 
   reset role;
   raise exception 'KQ: %', o;

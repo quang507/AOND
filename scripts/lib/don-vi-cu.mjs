@@ -1,6 +1,6 @@
 // don-vi-cu.mjs — tách cột `wards.don_vi_cu` ("trên cơ sở toàn bộ Phường 12 và Phường 14 thuộc quận Gò Vấp.") thành
 // danh sách PHƯỜNG / XÃ CŨ (trước 07/2025) → phường mới. THUẦN, không mạng. Dùng sinh dữ liệu bảng `phuong_cu`
-// (migration 20260930a) và bài kiểm bot/tests/phan-loai-duong.mjs.
+// (migration 20260930a), qua bot/tests/lib/phuong-that.mjs (bộ sinh ds-phuong.ts và bài kiểm phuong-cu-truoc-2025.mjs).
 //
 // Chủ dự án 30/09/2026: "vector đường lớn phường quận mới và cũ và dự án đi" — khách vẫn nói "phường 12 Gò Vấp",
 // "phường Thảo Điền", bot phải biết đó là phường mới nào, quận cũ nào.
