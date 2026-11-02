@@ -2368,8 +2368,9 @@ def operations_schema() -> dict[str, Any]:
             "xung_ho_trich_dan": {"type": "string", "description": "Nguyên văn cụm chứa chữ khách tự xưng / gọi bot (bắt buộc khi có xung_ho)."},
             "bot_vua_hoi": {"type": "array", "items": {"type": "string"},
                             "description": "Khoá các ô mà tin GẦN NHẤT của bot thật sự hỏi khách (vd [\"phuong\"]). Không hỏi ô nào → []."},
-            "xin_xem_ban_ve": {"type": "string", "description": "Tóm ngắn ý khách xin xem / xin gửi bản vẽ, mặt bằng (bản "
-                               "vẽ), sơ đồ, phối cảnh, layout, brochure. Không xin thì bỏ trống."},
+            "xin_xem_ban_ve": {"type": "string", "description": "Tóm ngắn ý khách XIN bên em gửi / cho xem bản vẽ, mặt bằng (bản "
+                               "vẽ), sơ đồ, phối cảnh, layout, brochure. Khách tự gửi / kể thông tin căn của mình (\"em gửi căn…\") "
+                               "thì bỏ trống. Không xin thì bỏ trống."},
             "ban_do_du_an": {"type": "boolean", "description": "Có xin_xem_ban_ve VÀ thứ khách xin là bản đồ / phân lô / quy "
                              "hoạch / mặt bằng tổng thể của cả dự án (không phải bản vẽ một căn)."},
             "cau_hoi_du_an": {"type": "string", "description": "Tóm ngắn câu khách HỎI thông tin dự án / mẫu nhà / lô / gói. "

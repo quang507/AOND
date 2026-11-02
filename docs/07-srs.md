@@ -831,14 +831,33 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz358 · Dữ kiện "nhắn khách khi có căn mới (trong 8–20 giờ)" đọc thành "8–20 tiếng nữa" (02/11/2026)
+Ca gốc: khách ảo #274 — hai persona đều nhận "hệ thống sẽ nhắn anh trong khoảng 8–20 giờ tới" và ghi là không hiểu; ý thật là khung giờ 8h–20h.
+(1) Lớp lỗi: dữ kiện đưa model mơ hồ ĐƠN VỊ (thời điểm hay thời lượng) — `mua.khoi_can_cho_khach` ghi "(trong 8–20 giờ)". Sửa: "(chỉ gửi trong khung giờ 8h–20h hằng ngày)".
+(2) Cùng lớp: soát chuỗi đưa model có số + giờ / ngày / phút ở `mua`, `prompts`, `engine`, `agent_*`, `phap_ly`: dòng "báo căn mới ĐÃ BẬT" ở `engine` ("trong giờ 8–20h") có mốc đồng hồ — giữ (phiên test cùng kết luận, ca 357 khoá nguyên văn); khoảng ngày ở `phap_ly` là thời lượng thật. Hai mô tả "8–20 giờ" trong `cau_mau.py` (dòng 115, 172) để phiên web·DB (file giao cho phiên đó vòng này).
+(3) Kiểm: gỡ `xfail` `test_khung_gio_8_20_357.py` (không sửa assert); `test_khung_gio_ro_don_vi_358.py` thêm cách nói "8 đến 20 tiếng" — trả câu cũ: đỏ.
+
+### SRS-5.1zzzzzzz355 · Khách hỏi phí lần hai: bot đọc lại nguyên bài chính sách lượt trước (02/11/2026)
+Ca gốc: `srd_phi` lượt 9 ("Anh là chính chủ, vậy phí bao nhiêu em?") gần như dán lại lượt 8 — đủ bốn ý chính sách lần nữa, cùng câu mở.
+(1) Lớp lỗi: khối ưu tiên phí lượt nào cũng dặn "nói cho ĐỦ các ý chính sách" (SRS-318) mà không biết lượt trước đã nói, dù code có cờ `_phi_da_bao`; luật "không mở / lặp như lượt trước" (`lap`) ở nhóm `mem` (SRS-298) nên chỉ ghi log. Sửa: cờ đã bật từ lượt trước thì khối đổi sang "đáp đúng điều vừa hỏi, câu mở khác, không nhắc lại chính sách"; con số phí vẫn từ dòng VAI NGƯỜI RAO.
+(2) Cùng lớp: khối dặn "đủ" khác — báo phí lúc duyệt dùng `phi_da_bao` sẵn (SRS-212). `lap` vẫn ở `mem` (quyết định SRS-298, không đổi ở đây).
+(3) Kiểm: `test_phi_hoi_lan_hai_355.py` (lần đầu đủ chính sách, lần hai không; cách nói mới "thế em lấy anh mấy phần trăm") — bỏ nhánh mới: đỏ.
+
+### SRS-5.1zzzzzzz354 · Tin kể căn bị đọc nhầm là xin bản vẽ: lượt cắt sớm, mất giá và loại nhà (02/11/2026)
+Ca gốc: `lakeview` lượt 1 (lúc có lúc không) "Em gửi căn nhà phố LakeView City, 5x20, 1 trệt 3 lầu, 4 phòng ngủ, giá 27 tỷ" → câu mẫu `chua_co_ban_ve`, mất giá 27 tỷ, mất loại nhà phố.
+(1) Lớp lỗi / điều kiện bật: AI bóc tách điền `xin_xem_ban_ve` (mô tả ô có "xin gửi bản vẽ", khách nói "em GỬI căn"; ô nhận theo ý AI từ Q5, không cụm trích) → nhánh xin bản vẽ trả lời và `return` TRƯỚC bước ghi ô, nên dữ liệu cùng lượt bị bỏ. Sửa: chỉ cắt sớm khi cùng lượt AI KHÔNG có thao tác ghi ô (`update` / `add` có `fields`) — kiểm cấu trúc đầu ra AI, không đọc chữ khách; mô tả ô dặn khách tự gửi / kể căn thì bỏ trống.
+(2) Cùng lớp: nhánh câu hỏi dự án (`cau_hoi_du_an`) cũng `return` trước bước ghi ô — GIỮ, vì cố ý (SRS cũ: câu hỏi "lô 42 và 50?" từng bị đọc thành thêm căn).
+(3) Kiểm: `test_ke_can_khong_phai_xin_ban_ve_354.py` (ca lakeview + cách nói mới "Gửi em căn shophouse … 18 tỷ"; xin bản vẽ thật vẫn trả lời bản vẽ) — bỏ điều kiện: đỏ.
 ### SRS-5.1zzzzzzz356 · Câu mẫu nói chữ "rổ" / "rổ hàng" với khách — lưới `tu_noi_bo` không với tới câu mẫu (02/11/2026)
 Ca gốc (phiên test, #270): `da_an_het`, `da_cap_nhat_ro`, `giu_nguyen_ro`, `nhap_bang_tinh`, `chua_co_ban_ve` ("Em không đụng gì tới rổ hàng") nói "rổ" với khách; câu mẫu không qua `_soat_hinh_thuc` nên lưới SRS-343 không bắt. Sửa: chữ trong `cau_mau.py` ("các tin của {goi}", "các tin", "danh sách tin"; không thêm chỗ trống mới); migration `20261102d_cau_mau_bo_chu_ro` (cách 20261027e: chỉ đổi dòng `cau = mac_dinh` — soát DB 02/11: cả 5 dòng chưa ai sửa tay) — CHƯA áp, chờ chủ dự án duyệt.
 (1) Lớp lỗi: lưới soát chữ chỉ đặt trên lời model; chữ code / câu mẫu đi đường riêng tới khách. (2) Cùng lớp — soát mọi chuỗi có "rổ" trong `src/aioi`: còn 4 chuỗi code tự ghép gửi khách KHÔNG qua lưới, cùng ở `engine.py` (làn bot, chưa sửa ở PR này): bảng giá 0 căn "cho căn nào vào rổ rao" (~3885), nhập bảng giá "vào rổ hàng" / "rổ hàng đã có đủ" (~3898, ~3900), `{viec}` mặc định "đổi trạng thái rao của rổ hàng" của `xac_nhan_an` (~5489). `gui_nhac` / `bao_can_moi` / `hoi_con_ban` / `giu_ket_noi`: không có. `lenh_zalo` có nhưng là tin debug `$$$$$` (người thử gõ lệnh), không phải lời khách.
 (3) Kiểm: `tests/test_cau_mau_khong_tu_noi_bo_356.py` dùng chính `engine._TU_NOI_BO_RE` (một nguồn): mọi câu mẫu, câu đã điền, và câu trong migration — trả `cau_mau.py` về cũ → 3/3 đỏ.
 
+
+
 ### SRS-5.1zzzzzzz353 · Lời chat nhận xét giá / thị trường: AI đọc nghĩa, code kiểm cụm trích; từ khoá chỉ đỡ khi AI không chạy (02/11/2026)
 Ca gốc: việc để sau đóng gói của SRS-336 — lời CHAT vẫn soát bằng lưới từ khoá `_BINH_LUAN_GIA`, đổi chữ là lọt ("tầm 9 tỷ là dễ chịu lắm rồi", "nhà cỡ đó đi nhanh lắm").
-(1) Lớp lỗi: quyết định "có phải nhận xét giá" nằm ở danh sách từ khoá (§4.8). Sửa: lọc thô trên LỜI BOT (câu khẳng định có số tiền / giá / thị trường, hay lưới cũ trúng) → AI bóc tách đọc nghĩa (`SOAT_BINH_GIA_CHAT_SYSTEM`, có cả khẳng định thị trường như SRS-132) → code nhận cụm có nguyên văn; AI lỗi / trả thiếu `cum` thì lưới cũ đỡ. Không có lượt AI sau lời bot nào để gộp, nên lọc thô giữ số lần gọi thấp: đo trên bản ghi chấm 02/11, 38 / 165 lượt chat trúng lọc thô (+38 lần gọi model bóc tách / 201 lượt).
+(1) Lớp lỗi: quyết định "có phải nhận xét giá" nằm ở danh sách từ khoá (§4.8). Sửa: lọc thô trên LỜI BOT (câu khẳng định có số tiền / giá / thị trường, hay lưới cũ trúng) → AI bóc tách đọc nghĩa (`SOAT_BINH_GIA_CHAT_SYSTEM`, có cả khẳng định thị trường như SRS-132) → code nhận cụm có nguyên văn; AI lỗi / trả thiếu `cum` thì lưới cũ đỡ. Không có lượt AI sau lời bot nào để gộp, nên lọc thô giữ số lần gọi thấp: ước lượng trên bản ghi chấm 02/11 là +38 lần gọi model bóc tách / 201 lượt (38 / 165 lượt chat trúng lọc thô); lượt chấm độc lập của #273 đo thật +58.
 (2) Cùng lớp: bản tin đã đi đường AI (SRS-336); `_binh_gia_trong_tin` dùng chung, trả `None` khi AI không chạy.
 (3) Kiểm: `test_binh_gia_chat_353.py` (2 cách nói mới lưới cũ bỏ lọt; AI nói không thì không gọi lại dù lưới cũ trúng; AI hỏng thì lưới cũ đỡ; câu hỏi giá / không nhắc giá không gọi AI) — bỏ đường AI: 2 đỏ.
 

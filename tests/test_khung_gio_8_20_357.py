@@ -40,7 +40,6 @@ def test_cac_cho_khac_trong_loi_viet_ro_khung_gio():
     assert "khung 8–20 giờ" in inspect.getsource(bao_can_moi)      # có chữ "khung"
 
 
-@pytest.mark.xfail(strict=True, reason="SRS-357: dữ kiện '(trong 8–20 giờ)' đọc thành thời lượng → bot hẹn mốc giờ bịa")
 def test_du_kien_khong_doc_thanh_thoi_luong():
     k = _khoi_khong_co_can()
     lo = THOI_LUONG.findall(k)
