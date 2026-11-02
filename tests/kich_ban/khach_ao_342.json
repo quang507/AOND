@@ -54,13 +54,13 @@
    ],
    "cau": [
     "e tìm thuê căn hộ 1pn quận 7, tầm 8 triệu nha",
-    "căn đó có ban công hok a"
+    "căn đó có ban công hok a",
+    "v chừng nào có phòng mới thì a nhắn e nha"
    ],
    "kiem": {
-    "cam": [
-     "đã chuyển (câu|các câu).{0,40}chủ|em (đã )?hỏi chủ nhà rồi|chủ nhà trả lời thì em (báo|nhắn)|em sẽ nhắn em ngay khi"
-    ]
-   }
+    "khong_hua_suong": true
+   },
+   "mo_ta": "Hứa việc hệ thống không làm. SRS-5.1zzzzzzz342 bắt bằng regex; khách ảo 02/11 (vòng sau đóng gói) cho thấy 4 trong 5 câu production LỌT vì regex neo vào chữ: \"Chủ nhà trả lời LÀ em báo\" (phép chỉ có \"trả lời THÌ em báo\"), \"Chủ nhà xác nhận thì em báo\", \"Em đã ghi lịch xem căn … chiều tối cuối tuần này\", \"hệ thống sẽ nhắn anh trong khoảng 8–20 giờ tới\". SRS-5.1zzzzzzz357: chuyển sang giám khảo đọc nghĩa (§4.8 — không thêm nhánh regex). Lượt 3 mời đúng chỗ bot hay hẹn mốc giờ."
   },
   {
    "id": "ka_diem_tin_dung_chu",
