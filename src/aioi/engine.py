@@ -132,7 +132,7 @@ from .prompts import (
 )
 from .imaging import downscale_image
 from .revenue import SellerRole
-from .schema import CAU_MO_MUA, O_COC, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
+from .schema import CAU_MO_MUA, FACETS, O_COC, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .prompts import Y_MO_DAU
 from .dia_danh import TraDiaDanh, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
@@ -1692,6 +1692,9 @@ _KHOI_O: dict[str, frozenset[str]] = {   # khối hỏi còn lại sau `viec_luo
     "tach_ban_thue": frozenset({"gia", "gia_thue"}),
 }
 _O_DIEN_TICH = frozenset({"dien_tich", "dien_tich_dat", "dien_tich_nha"})   # hỏi "đất hay nhà" (Q4 d) chạm cả ba
+# Ô cùng nhóm (schema.FACETS) là cùng một ý hỏi với khách — "sổ đỏ riêng" khi hệ thống chọn `phap_ly_hoan_cong`, "ngang x dài" khi chọn
+# `dien_tich_dat`. Chấm 02/11 (SRS-5.1zzzzzzz368): so đúng khoá thì 34 lượt bị gọi lại oan, có lượt bản viết lại bỏ luôn câu hỏi ô được chọn.
+_NHOM_O: dict[str, frozenset[str]] = {k: frozenset(keys) for _, _, keys in FACETS for k in keys}
 
 
 def _nhan_o_hoi(o: str) -> str:
@@ -1738,6 +1741,7 @@ def _hoi_sai_o(eng, conv: "Conversation", reply: str) -> list[tuple[str, str, st
         return []
     khai = _khai_o_hoi(eng, conv, reply) or []
     cho, f, v = _o_duoc_hoi(conv), conv.prop.fields, conv.y_luot.get("_viec") or {}
+    cung_nhom = set(cho).union(*(_NHOM_O.get(o, frozenset()) for o in cho))
     out: list[tuple[str, str, str]] = []
     for x in khai:
         o, trich = x["o"], str(x.get("trich") or "")
@@ -1749,7 +1753,7 @@ def _hoi_sai_o(eng, conv: "Conversation", reply: str) -> list[tuple[str, str, st
             continue
         elif f.get(o):
             out.append((o, trich, f'hỏi lại {_nhan_o_hoi(o)} ("{trich}") — khách đã cho thông tin này'))
-        elif v.get("ten") == "hoi_o":
+        elif v.get("ten") == "hoi_o" and o not in cung_nhom:
             chon = ", ".join(_nhan_o_hoi(c) for c in sorted(cho)) or "không ô nào"
             out.append((o, trich, f'hỏi {_nhan_o_hoi(o)} ("{trich}") — lượt này hệ thống chọn hỏi {chon}'))
     return out

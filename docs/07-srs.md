@@ -796,6 +796,7 @@ Ca gốc (chấm main 48f9912): `cao_lo` l1, `xa_phuoc_ly` l1, `aeon_tan_phu` l5
 (1) Lớp lỗi: đầu ra model không bị soát theo ô hệ thống chọn — `O_HE_THONG_TRA` chỉ lọc vòng chọn câu hỏi, `bot_vua_hoi` đọc ở lượt SAU. Sửa: một bất biến, một chỗ chặn `engine._soat_hoi_dung_o` (`LUAT_SOAT`): AI khai ô lời bot hỏi + cụm nguyên văn (`SOAT_O_HOI_SYSTEM`), code kiểm cụm, so ô được phép; lệch → gọi lại một lần, vẫn lệch → gọt vế hỏi sai. `O_HE_THONG_TRA = {phuong, duong}` một nguồn; gỡ các dòng cấm rải rác; lời dặn `dia_chi` bỏ "phường / xã".
 (2) Cùng lớp: mọi ô không được hỏi (phường, xác nhận tên đường, ô đã có, ô không chọn) chặn cùng chỗ. Chi phí: +1 lượt Haiku mỗi lời phía bán. Còn: gọt hết chữ thì giữ lời; số gọi lại tăng chưa đo (`cham`).
 (3) Kiểm: `test_khong_hoi_phuong_moi_luot_367.py` (ba câu thật, xác nhận tên đường, tự hỏi "mấy tầng" khi chọn hỏi giá; không bắt oan) — gỡ `hoi_dung_o`: 10/12 đỏ.
+Chấm 59 kịch bản 02/11: 519/522 nhưng gọi lại 65 (34 oan: AI khai ô gần nghĩa — `phap_ly_so_do` khi chọn `phap_ly_hoan_cong`, `kich_thuoc` khi chọn `dien_tich_dat`; có lượt bỏ luôn câu hỏi). Sửa: ô cùng nhóm `schema.FACETS` với ô được chọn tính là đúng ô.
 
 ### SRS-5.1zzzzzzz366 · Bot hỏi lại tên đường ("ý anh là đường X?", "Mã Lò hay Mã Lộ?") thay vì tự áp tên chuẩn (02/11/2026)
 Chủ dự án 02/11 (nguyên văn): "không hỏi lại tên đường nữa, tự áp tên vào" — thay SRS-61 / 271.

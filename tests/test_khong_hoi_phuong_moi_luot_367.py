@@ -140,3 +140,20 @@ def test_mot_bat_bien_mot_cho_chan():
     assert O_HE_THONG_TRA == frozenset({"phuong", "duong"})
     assert "phường" not in NATURAL_QUESTIONS["dia_chi"]   # lời dặn hỏi địa chỉ không còn bảo model hỏi phường
     assert not hasattr(eng_mod, "_soat_hoi_o_he_thong")   # lưới từ khoá bản vá đầu đã gỡ
+
+
+def test_o_cung_nhom_voi_o_duoc_chon_khong_bi_bat():
+    """SRS-5.1zzzzzzz368 (chấm 02/11: 34 lượt gọi lại oan): hệ thống chọn `phap_ly_hoan_cong`, model hỏi "sổ đỏ riêng" — AI khai
+    `phap_ly_so_do`; chọn `dien_tich_dat`, model hỏi "ngang x dài" — AI khai `kich_thuoc`. Cùng nhóm `schema.FACETS` = cùng ý hỏi."""
+    p = _Gia([])
+    e = Engine(p)
+    KHAI["Nhà mình có sổ đỏ riêng chính chủ chưa anh?"] = [{"o": "phap_ly_so_do", "trich": "sổ đỏ riêng chính chủ"}]
+    KHAI["Lô đất ngang x dài bao nhiêu vậy anh?"] = [{"o": "kich_thuoc", "trich": "ngang x dài bao nhiêu"}]
+    for cau, o in (("Nhà mình có sổ đỏ riêng chính chủ chưa anh?", "phap_ly_hoan_cong"),
+                   ("Lô đất ngang x dài bao nhiêu vậy anh?", "dien_tich_dat")):
+        assert e._soat_hinh_thuc(_conv(e, o), "SYS", cau) == cau
+    assert not p.goi_lai
+    # khác nhóm vẫn bắt: chọn hỏi giá mà hỏi sổ
+    p2 = _Gia(["Anh muốn bán giá bao nhiêu ạ?"])
+    e2 = Engine(p2)
+    assert e2._soat_hinh_thuc(_conv(e2, "gia"), "SYS", "Nhà mình có sổ đỏ riêng chính chủ chưa anh?") == "Anh muốn bán giá bao nhiêu ạ?"
