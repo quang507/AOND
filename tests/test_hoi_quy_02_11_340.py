@@ -23,17 +23,22 @@ from tests.test_doc_y_khach import _eng
 
 # ---------------------------------------------------------------- ca 1: vai theo số Zalo khách nhắn
 
-def _hai_so(khach_mua: str, khach_ky_gui: str):
-    """Một khách: lượt đầu ở số TƯ VẤN (hỏi mua), lượt sau ở số KÝ GỬI. Trả (engine, spy)."""
+def _hai_so(khach_mua: str, khach_ky_gui: str, khoa: str = "thu-hai-so"):
+    """Một khách: lượt đầu ở số TƯ VẤN (hỏi mua), lượt sau là lời chào ở số KÝ GỬI. Trả (engine, spy).
+
+    Lượt chào là lượt MƠ HỒ: lượt lập thao tác không đọc ra ý mua hay bán, nên `user_intent` trống — đúng như production.
+    (Bản đầu của bài này để `user_intent = "buy"` cho cả hai lượt; như vậy lượt chào không còn mơ hồ và bài đỏ vì chính nó,
+    không vì lõi. Giữ ghi chú này để phiên sau không lặp lại.)"""
     eng, spy = _eng({"operations": [], "user_intent": "buy"})
-    eng.conversation("thu-hai-so").so_nhan = SO_TU_VAN
-    eng.handle("thu-hai-so", khach_mua)
-    eng.conversation("thu-hai-so").so_nhan = ""        # bridge ký gửi không gửi so_nhan
-    eng.handle("thu-hai-so", khach_ky_gui)
+    eng.conversation(khoa).so_nhan = SO_TU_VAN
+    eng.handle(khoa, khach_mua)
+    spy.plan = {"operations": []}                      # lượt mơ hồ: AI không đọc ra ý mua / bán
+    eng.conversation(khoa).so_nhan = ""                # bridge ký gửi không gửi so_nhan
+    eng.handle(khoa, khach_ky_gui)
     return eng, spy
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 1); bản sửa ở PR #250 (SRS-329). Sửa xong thì XOÁ dòng này")
+@pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 1); bản sửa ở PR #257 (SRS-331), đã kiểm là chuyển xanh. Gộp #257 xong thì XOÁ dòng này")
 def test_ca_1_vai_mua_khong_theo_khach_sang_so_ky_gui_khi_moi_chao():
     """Lượt ở số ký gửi chỉ là lời chào → phải quay về luồng ký gửi, không chạy prompt tư vấn người mua."""
     eng, spy = _hai_so("anh đang tìm mua nhà quận 8 tầm 7 tỷ", "chào em")
@@ -43,10 +48,10 @@ def test_ca_1_vai_mua_khong_theo_khach_sang_so_ky_gui_khi_moi_chao():
     assert "người gửi bán / cho thuê" in he
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 1); bản sửa ở PR #250 (SRS-329). Sửa xong thì XOÁ dòng này")
+@pytest.mark.xfail(strict=True, reason="ca chờ — lỗi production 02/11 (SRS-340 ca 1); bản sửa ở PR #257 (SRS-331), đã kiểm là chuyển xanh. Gộp #257 xong thì XOÁ dòng này")
 def test_ca_1_cach_noi_moi_khong_hoi_khu_vuc_tim_mua_o_so_ky_gui():
     """Cách nói mới (lời chào khác, không có chữ "chào"): vẫn không được hỏi tiếp chuyện tìm mua ở số ký gửi."""
-    eng, spy = _hai_so("chị cần mua căn hộ Quận 7 tầm 3 tỷ", "alo em ơi")
+    eng, spy = _hai_so("chị cần mua căn hộ Quận 7 tầm 3 tỷ", "alo em ơi", khoa="thu-hai-so-b")
     he = spy.systems[-1]
     assert eng.conversation("thu-hai-so").role != "buyer"
     assert "Khu vực / Quận mong muốn" not in he        # cây hỏi nhu cầu người mua
