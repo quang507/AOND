@@ -2,6 +2,13 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz309 · Kế hoạch bước 1–2: bộ chấm 40 kịch bản + giám khảo giọng; phiếu lượt ngắn cho lượt thu thập người bán (30/10/2026)
+Chủ dự án 30/10 (kế hoạch 4 bước): bộ kịch bản offline là nguồn sự thật; prompt viết lời ngắn "giọng + dữ liệu + một việc"; không mở PR / bắn production khi không cần.
+- Bước 1: `tests/kich_ban/ban.json` 40 kịch bản (2 từ chat tester DB, ẩn danh; còn lại tự viết); `bun run cham --giong` thêm giám khảo LLM chấm giọng 1–5.
+- Bước 2: `prompts.build_phieu_luot` (~3.000 chữ, `build_chat_system` ~10.000) sau công tắc `PHIEU_LUOT` (`cai-vps.sh`) = `bat`. Đo 2 lần mỗi bản, 447 phép:
+  cũ 405 / 402, giọng TB 2,45 / 2,35, $7,6 / $6,4 → phiếu lượt 407 / 407, giọng 2,62 / 2,67, $5,6 / $5,3; lỗi nghiệp vụ không thêm (hai_can_da_ban, ma_lo_7m còn — để bước 3).
+- Quy trình (CLAUDE.md §7): một PR mỗi bước; bắn production chỉ khi đổi DB / Zalo / bridge / công cụ ghi / cài VPS. Kiểm: `tests/test_phieu_luot_309.py`.
+
 ### SRS-5.1zzzzzzz308 · Agent phía bán cho mọi khách; hai căn một tin giữ đúng ô; dự phòng không mù dữ liệu (30/10/2026)
 Chủ dự án 30/10: "làm đi thử thì trên cli", rồi nạp $200 API; "dùng haiku hết luôn cũng dc" → cùng ngày "chuyển sang sonnet 5.5 luôn".
 - `AGENT_BAN=bat` cho mọi khách (thử bằng bộ chấm + chat tay CLI). Viết lời: thử Haiku rồi quay lại Sonnet 5.5 (`MODEL_CHAT`, `MODEL_CHAT_THU`).
