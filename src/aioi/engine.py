@@ -27,7 +27,7 @@ from uuid import uuid4
 
 from . import gamification as g
 from . import phap_ly
-from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, YEU_CAU_VIET_TOI_DA
+from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, SU_THAT_CAN, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
 from .sdt import che_giay_to, che_sdt
@@ -128,7 +128,7 @@ from .prompts import (
 )
 from .imaging import downscale_image
 from .revenue import SellerRole
-from .schema import KHOA_PHAP_LY, O_COC, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
+from .schema import O_COC, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .dia_danh import TraDiaDanh, goi_y_duong, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
@@ -310,16 +310,11 @@ def _hai_chieu_lo(fields: dict) -> str | None:
                  if x and re.search(r"\d\s*[x×*]\s*\d", str(x))), None)
 
 
-_VAI_RE = re.compile(r"(?i)(chính chủ|chinh chu|chủ nhà|chu nha|chủ sở hữu|chu so huu|đứng tên|dung ten|môi giới|moi gioi|\bmg\b|sàn|san giao dich|"
-                     r"rổ hàng|ro hang|giỏ hàng|gio hang|chủ đầu tư|chu dau tu|\bcđt\b|\bcdt\b|lướt sóng|luot song|sang nhượng|sang nhuong|hđmb|hdmb|"
-                     r"đầu tư|dau tu|bán chênh|ban chenh)")
-
-
 def _vai_co_bang_chung(trich: str | None, loi_khach: list[str]) -> bool:
-    """Vai người rao chỉ nhận khi cụm AI trích GỌI TÊN vai (chính chủ / môi giới / sàn / chủ đầu tư / lướt sóng…) và nằm nguyên trong một tin
-    khách gần đây (SRS-5.1zzzzzzz213; luật cũ của bản TS `vaiTuCau`: "bán lô đất", "chú có căn nhà" không phải vai)."""
+    """Vai người rao nhận khi AI (đọc theo NGHĨA) trả vai kèm cụm trích nằm nguyên trong một tin khách gần đây (SRS-5.1zzzzzzz213). Không còn
+    đòi cụm phải có chữ "chính chủ / môi giới…" (`_VAI_RE`, bỏ ở SRS-5.1zzzzzzz320): "tôi không phải chính chủ" vẫn có chữ đó nên lọt."""
     t = str(trich or "").strip()
-    return bool(t) and bool(_VAI_RE.search(t)) and any(_trich_dan_khop(t, c) for c in loi_khach)
+    return bool(t) and any(_trich_dan_khop(t, c) for c in loi_khach)
 
 
 def _trich_dan_khop(trich: str | None, cau: str | None) -> bool:
@@ -1179,83 +1174,68 @@ def _lo_thong_tin_rieng(reply: str, prop: Property) -> list[str]:
             and prop.fields[k].strip().lower() in thap]
 
 
-_HEM_MT_RE = re.compile(r"(?<![\wÀ-ỹ])(hẻm|hxh|ngõ|mặt tiền|mt)(?![\wÀ-ỹ])", re.I)
+# ── Sự thật của căn trên bản tin (SRS-5.1zzzzzzz320, chủ dự án 02/11: KHÔNG dùng từ khoá trên lời khách để quyết ý) ─────────────────────────
+# AI đọc theo NGHĨA ra trạng thái (prompts.SU_THAT_CAN, TIEN_ICH_GAN) kèm cụm trích; engine ghi ô nội bộ "_<khoá>" khi cụm trích có trong lời khách.
+# Lưới bản tin chỉ đối chiếu chữ của BẢN TIN với các ô đó + vai: chưa rõ / AI hỏng → bản tin không được khẳng định. Thay ba lưới hẻm / tiện ích /
+# pháp lý-vai cũ (SRS-155 / 208 / 233), vốn lấy bằng chứng bằng từ khoá trên lời khách nên "không phải mặt tiền", "chưa có sổ hồng", "cho em hỏi"
+# (khớp "chợ"), "thị trường" (khớp "trường") đều lọt.
+
+def _ghi_su_that_can(conv: "Conversation", plan: dict, loi_khach: list[str]) -> None:
+    """Ghi trạng thái AI trả vào ô nội bộ của căn đang nói khi cụm trích có trong lời khách gần đây. "chua_ro" / trống không xoá giá trị đã có
+    (AI có thể chỉ không nhắc lại); giá trị mới có bằng chứng thì thay (khách đính chính)."""
+    for khoa, gia_tri, _ in SU_THAT_CAN:
+        v = plan.get(khoa)
+        if v in gia_tri and v != "chua_ro" and _vai_co_bang_chung(plan.get(f"{khoa}_trich_dan"), loi_khach):
+            conv.prop.fields[f"_{khoa}"] = v
+    ds = plan.get("tien_ich_gan")
+    if isinstance(ds, list) and _vai_co_bang_chung(plan.get("tien_ich_gan_trich_dan"), loi_khach):
+        conv.prop.fields["_tien_ich_gan"] = ",".join(m for m in TIEN_ICH_GAN if m in ds)
 
 
-def _hem_mt_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
-    """Bản tin 📋 nói HẺM / HXH / NGÕ / MẶT TIỀN / MT mà ô tin của căn chưa có loại đường vào (SRS-5.1zzzzzzz155; chat thử 23/10: khách chỉ nói
-    "Lê Lai", "39m2, 1 trệt 3 lầu", "7 tỷ 3" — tiêu đề bản nháp ghi "Bán nhà hẻm Lê Lai"). Chỉ đối chiếu ô tin (`lo_gioi_hem`, `mat_tien`, và chữ
-    đó có trong một ô đã ghi như địa chỉ "hẻm 12"), KHÔNG đọc lời khách (audit Đợt 3, SRS-5.1zzzzzzz320): ô tin đã qua cổng bằng chứng. Không có 📋 → []."""
-    if "📋" not in (reply or ""):
-        return []
-    if conv.prop.fields.get("lo_gioi_hem") or conv.prop.fields.get("mat_tien"):
-        return []
-    tin = _than_ban_tin(reply)
-    phan = f"{tin[0]}\n{tin[1]}" if tin else _dong_tieu_de(reply)
-    bat = {m.lower() for m in _HEM_MT_RE.findall(phan)}
-    return [tu for tu in sorted(bat) if not _co_trong_o_tin(conv.prop, tu)]
+# (cụm khẳng định trên bản tin, điều kiện được phép). Chỉ đọc chữ của BẢN TIN bot viết.
+_KD_CHINH_CHU = re.compile(r"(?i)chính chủ")
+_KD_PHAP_LY = re.compile(r"(?i)(sổ hồng|sổ đỏ|sổ riêng|hoàn công|pháp lý (?:rõ ràng|đầy đủ|chuẩn|sạch|minh bạch))")
+_KD_HEM_XE_HOI = re.compile(r"(?i)(?<![\wÀ-ỹ])(hẻm xe hơi|hẻm ô tô|hxh)(?![\wÀ-ỹ])")
+_KD_HEM = re.compile(r"(?i)(?<![\wÀ-ỹ])(hẻm|ngõ|kiệt)(?![\wÀ-ỹ])")
+# "mặt tiền 5m" / "mặt tiền ngang" là BỀ NGANG (định dạng), không phải khẳng định nhà mặt tiền đường.
+_KD_MAT_TIEN = re.compile(r"(?i)(?<![\wÀ-ỹ])(mặt tiền|mt)(?![\wÀ-ỹ])(?!\s*(?:ngang\b|rộng\b|\d))")
+_KD_TIEN_ICH = {"cho": r"gần chợ|chợ búa", "truong_hoc": r"trường học|gần trường", "benh_vien": r"bệnh viện", "sieu_thi": r"siêu thị",
+                "cong_vien": r"công viên", "ttm": r"trung tâm thương mại|\bttm\b"}
+_KD_MOI_XAY = re.compile(r"(?i)(nhà mới|mới xây|xây mới)")
+# Tả khu / sự kiện / tình trạng không có loại dữ kiện nào để khách xác nhận (SRS-208 / 213) — bản tin không được viết.
+_KD_KHONG_CO_NGUON = re.compile(r"(?i)(giữ gìn|sạch sẽ|sầm uất|nhiều người hỏi|nhiều người quan tâm|khách hỏi nhiều|nhiều khách hỏi|đông dân cư)")
+_DIA_CHI_HEM = re.compile(r"\b\d+[a-zA-Z]*/[\da-zA-Z/]+")   # số nhà "12/3" là nhà trong hẻm — đọc định dạng địa chỉ, không đoán ý
 
 
-# SRS-5.1zzzzzzz208 (bắn thử 26/10 trên giọng anh Luận, chủ dự án: "Bịa chi tiết khách không nói" là lỗi): tin rao viết "ra vô chợ búa, trường học
-# gần gần đó" khi khách không nhắc, "nhà được giữ gìn kỹ, sạch sẽ" khi khách chỉ nói "ở lâu rồi". Cụm TIỆN ÍCH quanh nhà / TÌNH TRẠNG nhà có
-# trong bản tin mà không có trong lời khách của căn đang nói → gọi lại model. So chữ của chính bản tin, không đoán ý khách.
-# SRS-5.1zzzzzzz213 (khách ảo 26/10, tin rao căn Era Town: "khu dân cư sầm uất phía Nam Sài Gòn", "được nhiều người hỏi thăm lắm" — tả khu vực
-# và sự kiện không có): thêm cụm tả khu / sự kiện giả vào lưới bịa chi tiết.
-_CHI_TIET_BIA_RE = re.compile(r"(?i)(gần chợ|chợ búa|trường học|bệnh viện|siêu thị|công viên|trung tâm thương mại|giữ gìn|sạch sẽ|mới xây|nhà mới"
-                              r"|sầm uất|nhiều người hỏi|nhiều người quan tâm|khách hỏi nhiều|nhiều khách hỏi|đông dân cư)")
-
-
-def _chi_tiet_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
-    """Cụm tiện ích quanh nhà / tình trạng nhà trong bản tin 📋 (tiêu đề + mô tả + gạch) mà KHÔNG ô tin nào của căn có (audit Đợt 3, AU-07,
-    SRS-5.1zzzzzzz320). Bản trước so gốc bỏ dấu ("cho", "moi") trên lời khách — "cho" / "mới" có ở hầu hết câu nên lưới gần như không bắt
-    gì. Không có 📋 → []."""
-    if "📋" not in (reply or ""):
-        return []
-    tin = _than_ban_tin(reply)
-    phan = f"{tin[0]}\n{tin[1]}" if tin else reply
-    bat = {m.lower() for m in _CHI_TIET_BIA_RE.findall(phan)}
-    goc = {"gần chợ": "chợ", "chợ búa": "chợ", "trường học": "trường", "nhà mới": "mới"}
-    return [t for t in sorted(bat) if not _co_trong_o_tin(conv.prop, goc.get(t, t))]
-
-
-def _co_trong_o_tin(prop: Property, cum: str) -> bool:
-    """Cụm `cum` có trong một ô tin đã ghi (ô đã qua cổng bằng chứng lời khách). So CÓ DẤU, nguyên từ; ô khách gõ không dấu thì so bản bỏ dấu
-    — để "chợ" không khớp "cho thuê" mà "gan cho Ba Chieu" vẫn khớp (SRS-5.1zzzzzzz320)."""
-    can = cum.lower()
-    for v in prop.fields.values():
-        if not isinstance(v, str) or not v.strip():
-            continue
-        thap = v.lower()
-        if bo_dau(thap) == thap:
-            thap, mau = thap, bo_dau(can)
-        else:
-            mau = can
-        if re.search(rf"(?<![\wÀ-ỹ]){re.escape(mau)}(?![\wÀ-ỹ])", thap):
-            return True
-    return False
-
-
-# SRS-5.1zzzzzzz233 (chat chị Ngân 28/10: chị chỉ nói địa chỉ, 70m² sàn, 3 tỷ — bản nháp viết "Chính chủ bán…", "Nhà có sổ hồng rõ ràng"). Khuôn tin
-# rao bảo "kể đủ … pháp lý" nên model tự điền pháp lý / vai khi căn chưa có. Pháp lý và vai người bán là sự thật pháp lý của tin công khai.
-_PHAP_LY_VAI_RE = re.compile(r"(?i)(sổ hồng|sổ đỏ|pháp lý|hoàn công|chính chủ)")
-
-
-def _phap_ly_vai_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
-    """Cụm pháp lý (sổ hồng / sổ đỏ / pháp lý / hoàn công) hay "chính chủ" trong bản tin 📋 mà căn chưa có ô pháp lý, hoặc (với "chính chủ") vai
-    tính phí không phải chủ nhà. So chữ bản tin với ô đã ghi và `vai_phi`, không đọc lời khách; không có 📋 → []."""
+def _khang_dinh_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
+    """Cụm bản tin 📋 KHẲNG ĐỊNH vai / pháp lý / đường vào / tiện ích / tình trạng mà dữ kiện căn không xác nhận. Không có 📋 → []."""
     if "📋" not in (reply or ""):
         return []
     tin = _than_ban_tin(reply)
     phan = f"{tin[0]}\n{tin[1]}" if tin else reply
-    bat = {m.lower() for m in _PHAP_LY_VAI_RE.findall(phan)}
-    if not bat:
-        return []
-    # Audit Đợt 3 (AU-03, SRS-5.1zzzzzzz320): chỉ đối chiếu ô pháp lý đã qua cổng bằng chứng và vai TÍNH PHÍ — bản trước dò chữ khách nên
-    # "chưa có sổ hồng" thành có pháp lý, môi giới nói "chủ nhà nhờ anh bán" thành "Chính chủ" (trong khi phí tính theo môi giới).
     f = conv.prop.fields
-    co_phap_ly = any(str(f.get(k) or "").strip() for k in KHOA_PHAP_LY)
-    chu_nha = getattr(conv, "vai_phi", None) == SellerRole.CHU_NHA
-    return sorted(t for t in bat if (t == "chính chủ" and not chu_nha) or (t != "chính chủ" and not co_phap_ly))
+    tien_ich = set(str(f.get("_tien_ich_gan") or "").split(","))
+    duong = f.get("_duong_vao")
+    so_hem = any(_DIA_CHI_HEM.search(str(f.get(k) or "")) for k in ("dia_chi", "so_nha"))
+    ra: list[str] = []
+
+    def them(rx, duoc: bool):
+        if not duoc:
+            ra.extend(m.group(0) for m in (rx.finditer(phan) if hasattr(rx, "finditer") else re.finditer(rx, phan, re.I)))
+
+    them(_KD_CHINH_CHU, getattr(conv, "user_type", None) == SellerRole.CHU_NHA)
+    them(_KD_PHAP_LY, f.get("_phap_ly_trang_thai") == "co_so")
+    them(_KD_HEM_XE_HOI, duong == "hem_xe_hoi")
+    them(_KD_HEM, duong in ("hem", "hem_xe_hoi") or so_hem)
+    them(_KD_MAT_TIEN, duong == "mat_tien")
+    for ma, rx in _KD_TIEN_ICH.items():
+        them(re.compile(rf"(?i)({rx})"), ma in tien_ich)
+    them(_KD_MOI_XAY, f.get("_tinh_trang_nha") == "moi_xay")
+    them(_KD_KHONG_CO_NGUON, False)
+    gap: dict[str, str] = {}
+    for x in ra:
+        gap.setdefault(x.lower(), x)
+    return sorted(gap)
 
 
 # Bản tin in nguyên tên khối của khuôn ("Gạch đầu dòng:", "Mô tả:" — bắn thử 26/10 tin rao đất). Chỉ soát đầu dòng của bản tin 📋.
@@ -1508,7 +1488,6 @@ def _mo_dau_ghi_nhan(reply: str) -> bool:
     return MO_DAU_GHI_NHAN_RE.match(reply or "") is not None   # một nguồn với bộ lọc ví dụ câu chuẩn (SRS-5.1zzzzzzz215)
 
 
-_NOI_DAU_CAU_RE = re.compile(r"(?i)^\s*(?:(?:vậy|vâng|ok|oke|okela|rồi|thế|thì|được|dạ)\s*[,!.]?\s*)+")
 
 
 _BOT_GUI_ANH_RE = re.compile(r"(?i)(?<![\wà-ỹđ])em\s+(?:sẽ\s+)?(?:gửi|chụp)\s+(?:thêm\s+)?(?:(?:vài|mấy|một|ít)\s+)?(?:tấm\s+)?(?:ảnh|hình)")
@@ -1578,7 +1557,6 @@ def _cau_lap_luot_truoc(reply: str, truoc: str) -> str | None:
     return None
 
 
-_GOI_A_RE = re.compile(r"(?<![\wÀ-ỹ])(anh chị|anh|chị|cô chú|cô|chú|bác|em|cháu)\s+(?:ạ|ơi)(?![\wÀ-ỹ])", re.I)
 
 
 _PHI_PHAN_TRAM_RE = re.compile(r"(?<![\d.,])(1|0[.,]5)\s?%")
@@ -1622,24 +1600,11 @@ def _soat_lo_rieng(eng, conv, reply, nc) -> list[str]:
              "đọc, bỏ hẳn các ý đó khỏi bản tin."] if lo_rieng else [])
 
 
-def _soat_bia_hem(eng, conv, reply, nc) -> list[str]:
-    bia_hem = _hem_mt_khong_co_du_lieu(reply, conv)
-    return (["Bản tin rao vừa viết có chữ " + ", ".join(f"\"{x}\"" for x in bia_hem) + " nhưng chủ nhà CHƯA nói nhà ở hẻm / mặt tiền "
-             "(dữ liệu căn chưa có) — bỏ hẳn các chữ đó khỏi tiêu đề và mô tả, KHÔNG đoán loại đường vào; ví dụ trong luật chỉ để "
-             "minh hoạ cách viết gọn."] if bia_hem else [])
-
-
-def _soat_bia_chi_tiet(eng, conv, reply, nc) -> list[str]:
-    bia_ct = _chi_tiet_khong_co_du_lieu(reply, conv)
-    return (["Bản tin rao vừa viết có " + ", ".join(f"\"{x}\"" for x in bia_ct) + " nhưng chủ nhà KHÔNG hề nói — bỏ hẳn các ý đó; "
-             "mọi ý trong tin chỉ lấy từ dữ liệu căn / lời chủ nhà, không thêm tiện ích quanh nhà hay tình trạng nhà."] if bia_ct else [])
-
-
-def _soat_bia_phap_ly(eng, conv, reply, nc) -> list[str]:
-    bia_pl = _phap_ly_vai_khong_co_du_lieu(reply, conv)
-    return (["Bản tin rao vừa viết có " + ", ".join(f"\"{x}\"" for x in bia_pl) + " nhưng chủ nhà CHƯA nói pháp lý / giấy tờ (hoặc chưa "
-             "nói mình là chủ nhà) — bỏ hẳn các ý đó khỏi tiêu đề, mô tả và gạch đầu dòng, KHÔNG viết \"pháp lý rõ ràng\" hay đoán loại sổ."]
-            if bia_pl else [])
+def _soat_khang_dinh(eng, conv, reply, nc) -> list[str]:
+    kd = _khang_dinh_khong_co_du_lieu(reply, conv)
+    return (["Bản tin rao vừa viết khẳng định " + ", ".join(f"\"{x}\"" for x in kd) + " nhưng chủ nhà CHƯA xác nhận điều đó (vai, giấy tờ, "
+             "đường vào, tiện ích quanh nhà, tình trạng nhà chưa rõ hoặc khách nói ngược lại) — bỏ hẳn các ý đó khỏi tiêu đề, mô tả và gạch "
+             "đầu dòng, KHÔNG đoán."] if kd else [])
 
 
 def _soat_ten_khoi(eng, conv, reply, nc) -> list[str]:
@@ -1779,9 +1744,7 @@ def _soat_yeu_cau_viet(eng, conv, reply, nc) -> list[str]:   # SRS-5.1zzzzzzz218
 LUAT_SOAT: tuple[tuple[str, str, Callable[..., list[str]]], ...] = (
     ("tieu_de", "ly_do", _soat_tieu_de),
     ("lo_rieng", "ly_do", _soat_lo_rieng),
-    ("bia_hem", "ly_do", _soat_bia_hem),
-    ("bia_chi_tiet", "ly_do", _soat_bia_chi_tiet),
-    ("bia_phap_ly", "ly_do", _soat_bia_phap_ly),
+    ("khang_dinh", "ly_do", _soat_khang_dinh),   # SRS-5.1zzzzzzz320: một lưới thay bia_hem / bia_chi_tiet / bia_phap_ly
     ("ten_khoi", "ly_do", _soat_ten_khoi),
     ("da_mo_dau", "ly_do", _soat_da),
     ("goi_minh", "ly_do", _soat_goi_minh),
@@ -2978,6 +2941,7 @@ class Engine:
                 conv.assistant.name, conv.prop, project_block, customer_is_em=customer_is_em, xung_ho=customer_pronoun,
                 toi=goi_toi_khach(customer_pronoun, conv.assistant.name)[1], yeu_cau_moi=conv.y_luot.get("yeu_cau_viet"),
             )
+            system += khoi_su_that_can(conv.prop.fields, conv.user_type == SellerRole.CHU_NHA)   # SRS-5.1zzzzzzz320
         else:
             web_tin = self._trang_thai_web(conv)
             if web_tin is not None and conv.prop.fields.get("_da_bao_dang"):
@@ -2993,6 +2957,7 @@ class Engine:
                 duyet=conv.duyet_luot, phi_da_bao=bool(conv.prop.fields.get("_phi_da_bao")), yeu_cau_moi=conv.y_luot.get("yeu_cau_viet"),
                 goi=goi_toi_khach(customer_pronoun)[0],
             )
+            system += khoi_su_that_can(conv.prop.fields, conv.user_type == SellerRole.CHU_NHA)   # SRS-5.1zzzzzzz320
             len_web = bool(web_tin and web_tin.get("len_web"))
             if len_web and not any(t.role == "assistant" and "📋" in (t.content or "") for t in conv.history):
                 # SRS-5.1zzzzzzz292 (bắn thử ban-thu-mua 29/10, hai lần liền): tin tạo NGOÀI chat đang hiển thị, chủ nhà trả lời câu khách mua kèm
@@ -4735,10 +4700,17 @@ class Engine:
         # cụm trích GỌI TÊN vai và nằm trong lời khách gần đây (bất biến phí, CLAUDE.md "chỉ thành tu_nhan khi cụm trích GỌI TÊN vai"); chưa
         # có bằng chứng thì giữ UNKNOWN → câu phí nêu cả hai mức.
         vua_thanh_cdt = False
+        gan_khach = [t.content for t in conv.history if t.role == "user" and t.content][-6:]
         if raw_role in {r.value for r in SellerRole if r is not SellerRole.UNKNOWN} and _vai_co_bang_chung(
-                plan.get("seller_role_trich_dan"), [t.content for t in conv.history if t.role == "user" and t.content][-6:]):
+                plan.get("seller_role_trich_dan"), gan_khach):
             vua_thanh_cdt = raw_role == SellerRole.CHU_DAU_TU.value and conv.user_type is not SellerRole.CHU_DAU_TU
             conv.user_type = SellerRole(raw_role)
+        elif (raw_role == "nguoi_nha_nho_ban" and conv.user_type is SellerRole.CHU_NHA
+              and _vai_co_bang_chung(plan.get("seller_role_trich_dan"), gan_khach)):
+            # SRS-5.1zzzzzzz320: người nhà đăng giùm không phải chính chủ — không giữ vai chủ nhà (bản tin không được ghi "Chính chủ"). Phí:
+            # về UNKNOWN như khách chưa nói vai (câu phí nêu cả hai mức), không tự gán mức mới.
+            conv.user_type = SellerRole.UNKNOWN
+        _ghi_su_that_can(conv, plan, gan_khach)
         if plan.get("is_rental"):
             conv.prop.is_rental = True
 

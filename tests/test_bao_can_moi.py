@@ -13,7 +13,7 @@ TRUA = datetime(2026, 10, 23, 5, 0, tzinfo=UTC)        # 12:00 giờ Việt Nam
 KHUYA = datetime(2026, 10, 23, 15, 0, tzinfo=UTC)      # 22:00 giờ Việt Nam
 NGAN = {"id": "b1", "name": "Ngân", "zalo_user_id": "zl-ngan",
         "preferences": {"khu_vuc": "Quận 5", "loai_bds": "nha_pho", "ngan_sach": "tầm 7 tỷ", "loai_giao_dich": "mua",
-                        "yeu_cau_xe_hoi": "hẻm xe hơi"}}
+                        "yeu_cau_xe_hoi": "hẻm xe hơi", "can_xe_hoi": "co"}}
 
 
 def tin(id_, code, gia, quan="Quận 5", loai="nha_pho", access="hem_xe_hoi", deal="ban"):

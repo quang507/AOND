@@ -440,6 +440,16 @@ GIONG_VUI = """GIỌNG (bắt buộc): em là một môi giới trẻ đang HÀO
 # Nhãn dòng việc của lượt (SRS-5.1zzzzzzz318, AU-12) — MỘT nguồn cho phiếu lượt, prompt cũ và mọi khối trỏ tới nó (địa danh, xin đăng…).
 # Trước đây prompt cũ ghi "Thông tin cần hỏi tiếp theo", phiếu lượt ghi "VIỆC LƯỢT NÀY": khối trỏ nhãn cũ thì ở production trỏ vào khoảng không.
 NHAN_VIEC_LUOT = "VIỆC LƯỢT NÀY"
+# Sự thật của căn do AI đọc theo nghĩa (SRS-5.1zzzzzzz320) — (khoá, giá trị, mô tả cho schema). Engine ghi vào ô nội bộ "_<khoá>" khi cụm trích
+# có trong lời khách; lưới bản tin (`engine._khang_dinh_khong_co_du_lieu`) chỉ đối chiếu các ô này + vai, không đọc lời khách.
+SU_THAT_CAN: tuple[tuple[str, tuple[str, ...], str], ...] = (
+    ("phap_ly_trang_thai", ("co_so", "chua_co", "dang_lam", "giay_tay", "chua_ro"),
+     "Giấy tờ căn theo NGHĨA lời khách: co_so = đã có sổ hồng / sổ đỏ; chua_co; dang_lam (sổ đang làm); giay_tay; chua_ro."),
+    ("duong_vao", ("mat_tien", "hem", "hem_xe_hoi", "chua_ro"),
+     "Đường vào nhà: mat_tien; hem; hem_xe_hoi; chua_ro (\"không phải mặt tiền, hẻm 3m\" → hem)."),
+    ("tinh_trang_nha", ("moi_xay", "dang_o", "cu", "chua_ro"), "Tình trạng nhà khách nói: moi_xay; dang_o; cu; chua_ro."),
+)
+TIEN_ICH_GAN: tuple[str, ...] = ("cho", "truong_hoc", "benh_vien", "sieu_thi", "cong_vien", "ttm")
 # Tin hệ thống server chèn vào lời khách (`server.py`: tin thoại, sticker, cảm xúc) — model phải hiểu đúng (AU-13, chuyển từ prompt cũ, SRS-5.1zzzzzzz319).
 TIN_HE_THONG = ('- Tin hệ thống trong ngoặc vuông: "[Tin nhắn thoại của khách]: …" — trả lời như khách gõ chữ; "[Khách gửi tin nhắn thoại nhưng …]" — '
                 'chưa nghe được, xin khách nói lại hoặc nhắn chữ; "[khách gửi sticker…]" — đáp ngắn thân thiện, không coi là đồng ý; "[khách thả cảm '
@@ -456,6 +466,22 @@ def _dien_tich_mo_ho(prop: Property, next_field: str | None) -> str | None:
         m = re.search(r"\d+(?:[.,]\d+)?", v or "")
         return m.group(0).replace(",", ".") if m else None
     return None if _so(mo_ho) in (_so(prop.fields.get("dien_tich_dat")), _so(prop.fields.get("dien_tich_nha"))) else mo_ho
+
+
+def khoi_su_that_can(fields: dict, chu_nha: bool) -> str:
+    """Dữ kiện cho lượt viết BẢN TIN (SRS-5.1zzzzzzz320): điều nào đã được khách xác nhận (AI đọc theo nghĩa) thì được khẳng định, còn lại thì
+    KHÔNG — cùng nguồn với lưới `engine._khang_dinh_khong_co_du_lieu`, để model khỏi viết rồi bị gọi lại."""
+    pl = {"co_so": "đã có sổ — được ghi loại sổ khách nói", "chua_co": "CHƯA có sổ", "dang_lam": "sổ ĐANG LÀM", "giay_tay": "giấy tay"}
+    dv = {"mat_tien": "mặt tiền đường", "hem": "trong hẻm (KHÔNG ghi hẻm xe hơi / HXH)", "hem_xe_hoi": "hẻm xe hơi"}
+    ti = [x for x in str(fields.get("_tien_ich_gan") or "").split(",") if x]
+    nhan_ti = {"cho": "chợ", "truong_hoc": "trường học", "benh_vien": "bệnh viện", "sieu_thi": "siêu thị", "cong_vien": "công viên", "ttm": "TTTM"}
+    return ("\nSỰ THẬT ĐÃ XÁC NHẬN (bản tin chỉ khẳng định điều có ở đây; chưa rõ thì KHÔNG viết, không đoán):\n"
+            f"- Vai: {'chủ nhà — được ghi Chính chủ' if chu_nha else 'chưa xác nhận là chủ nhà — KHÔNG ghi Chính chủ'}\n"
+            f"- Giấy tờ: {pl.get(fields.get('_phap_ly_trang_thai'), 'chưa rõ — KHÔNG ghi sổ hồng / sổ đỏ / sổ riêng / pháp lý rõ ràng')}"
+            + (" — KHÔNG ghi sổ hồng / sổ đỏ / hoàn công" if fields.get("_phap_ly_trang_thai") in ("chua_co", "dang_lam", "giay_tay") else "") + "\n"
+            f"- Đường vào: {dv.get(fields.get('_duong_vao'), 'chưa rõ — KHÔNG ghi mặt tiền / hẻm / HXH')}\n"
+            f"- Tiện ích gần: {', '.join(nhan_ti[x] for x in ti if x in nhan_ti) or 'chưa có — KHÔNG ghi gần chợ / trường / bệnh viện / siêu thị / công viên'}\n"
+            f"- Tình trạng nhà: {'mới xây' if fields.get('_tinh_trang_nha') == 'moi_xay' else 'KHÔNG ghi nhà mới / mới xây / giữ gìn / sạch sẽ'}\n")
 
 
 def build_phieu_luot(
@@ -1837,8 +1863,17 @@ vào được", "hẻm 4m" KHÔNG thành "mặt tiền", "3 lầu" KHÔNG thành
 nguyên cụm bang_chung thay cho giá trị.
 
 Ngoài "operations", nếu khách TỰ NÓI RA vai thì đặt "seller_role"
-(chu_nha/luot_song/moi_gioi/san/chu_dau_tu) kèm "seller_role_trich_dan" = nguyên văn cụm khách gọi tên vai ("a là môi giới", "nhà chính chủ",
+(chu_nha/luot_song/moi_gioi/san/chu_dau_tu/nguoi_nha_nho_ban) kèm "seller_role_trich_dan" = nguyên văn cụm khách gọi tên vai ("a là môi giới", "nhà chính chủ",
 "bên sàn em"); cách nói việc ("a cần đăng tin", "nhà em", "chú có căn nhà") KHÔNG phải vai — bỏ trống (phí báo theo vai, đoán sai là báo sai tiền); nếu là tin cho thuê đặt "is_rental"=true ("đang cho thuê X/tháng" khi rao BÁN là hiện trạng, không phải tin cho thuê).
+
+SỰ THẬT CỦA CĂN (SRS-5.1zzzzzzz320, chủ dự án 02/11: đọc theo NGHĨA cả câu, hiểu phủ định "không phải", "chưa", "đang làm", "xa", "cách"):
+trạng thái HIỆN TẠI theo cả cuộc trò chuyện về căn đang nói, mỗi khoá kèm "<khoá>_trich_dan" = nguyên văn cụm khách nói. Khách chưa nói
+hoặc chưa chắc → bỏ trống (bản tin sẽ KHÔNG khẳng định điều đó). "không phải chính chủ" / "nhà chị gái em, em đăng giùm" KHÔNG là chu_nha
+(người nhà → seller_role "nguoi_nha_nho_ban").
+- "phap_ly_trang_thai": co_so (đã có sổ hồng / sổ đỏ) · chua_co · dang_lam (sổ đang làm) · giay_tay · chua_ro.
+- "duong_vao": mat_tien · hem · hem_xe_hoi · chua_ro ("không phải mặt tiền, hẻm 3m" → hem).
+- "tien_ich_gan": danh sách CHỈ tiện ích khách khẳng định CÓ GẦN: cho, truong_hoc, benh_vien, sieu_thi, cong_vien, ttm ("xa chợ" → không có cho).
+- "tinh_trang_nha": moi_xay · dang_o · cu · chua_ro.
 
 PHÂN BIỆT Ý ĐỊNH KHÁCH ("user_intent") BẰNG TOÀN BỘ NGỮ CẢNH (Semantic Understanding):
 - "sell": Người bán / cho thuê gửi thông tin BĐS của họ, HOẶC người bán hỏi thăm tình hình bán/thị trường (vd: "giá này có khách mua không em?", "có ai hỏi mua chưa?", "bên mua có trả giá không?"). Việc nhắc tới chữ "mua" trong câu hỏi VẪN LÀ "sell"!
@@ -2193,12 +2228,20 @@ def operations_schema() -> dict[str, Any]:
             "operations": {"type": "array", "items": op, "description": "Danh sách thao tác theo thứ tự."},
             "seller_role": {
                 "type": "string",
-                "enum": ["chu_nha", "luot_song", "moi_gioi", "san", "chu_dau_tu"],
-                "description": "Vai trò người rao khi khách TỰ NÓI RA vai (\"a là môi giới\", \"nhà chính chủ\", \"bên sàn\"). Bỏ trống nếu chưa chắc.",
+                "enum": ["chu_nha", "luot_song", "moi_gioi", "san", "chu_dau_tu", "nguoi_nha_nho_ban"],
+                "description": "Vai trò người rao khi khách TỰ NÓI RA vai (\"a là môi giới\", \"nhà chính chủ\", \"bên sàn\"), đọc theo nghĩa: "
+                "\"tôi không phải chính chủ\" KHÔNG là chu_nha; người nhà đăng giùm → nguoi_nha_nho_ban. Bỏ trống nếu chưa chắc.",
             },
             "seller_role_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách tự nói vai (bắt buộc khi có seller_role); "
                                       "\"a cần đăng tin\", \"nhà em\" KHÔNG phải vai → bỏ trống cả hai."},
             "is_rental": {"type": "boolean", "description": MO_TA_CHO_THUE},
+            # SRS-5.1zzzzzzz320 (chủ dự án 02/11: không dùng từ khoá trên lời khách để quyết ý): sự thật của căn do AI đọc theo NGHĨA, code chỉ
+            # kiểm cụm trích; lưới bản tin đối chiếu các giá trị này, chua_ro / trống thì bản tin không được khẳng định.
+            **{k: {"type": "string", "enum": list(v), "description": d} for k, v, d in SU_THAT_CAN},
+            "tien_ich_gan": {"type": "array", "items": {"type": "string", "enum": list(TIEN_ICH_GAN)},
+                             "description": "Tiện ích khách KHẲNG ĐỊNH có gần căn (\"xa chợ\", \"cho em hỏi\" → không có). Không nói → bỏ trống."},
+            **{f"{k}_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách nói (bắt buộc khi có " + k + ")."}
+               for k in [x[0] for x in SU_THAT_CAN] + ["tien_ich_gan"]},
             # SRS-5.1zzzzzzz241 (OPEN-59 a): một căn vừa bán vừa cho thuê → hai tin chung căn.
             "ca_ban_ca_thue": {"type": "boolean", "description": "true CHỈ KHI khách nói CÙNG căn đang nói muốn VỪA bán VỪA cho thuê (\"bán "
                                "hay cho thuê đều được\", \"ai thuê cũng cho, mua cũng bán\"). \"Đang cho thuê 30 triệu\" khi rao bán là hiện trạng → bỏ trống."},
@@ -2331,6 +2374,8 @@ def operations_schema() -> dict[str, Any]:
                     "khu_vuc": {"type": "string", "description": "Quận, huyện, tên dự án tìm kiếm"},
                     "so_phong_ngu": {"type": "string", "description": "Số phòng ngủ (vd: 2PN, 3PN)"},
                     "yeu_cau_xe_hoi": {"type": "string", "description": "Hẻm xe hơi, xe hơi vào nhà, chỗ đậu ô tô..."},
+                    "can_xe_hoi": {"type": "string", "enum": ["co", "khong"], "description": "Đọc theo NGHĨA: co = khách CẦN ô tô vào / đậu được; "
+                                   "khong = không cần (\"xe máy là được\", \"chưa cần\", \"hẻm nhỏ cũng được\"). Chưa nói / tùy → bỏ trống."},
                     "huong": {"type": "string", "description": "Hướng phong thủy mong muốn"},
                     "muc_dich": {"type": "string", "description": "ở, đầu tư lướt, đầu tư cho thuê, kinh doanh"},
                     "tien_do_mua": {"type": "string", "description": "mua ngay trong tháng, chuẩn bị tài chính, tham khảo"},

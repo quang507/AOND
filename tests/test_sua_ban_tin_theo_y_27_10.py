@@ -158,7 +158,7 @@ def test_khong_dan_gi_thi_khong_goi_lai():
     c = eng.conversation("k-218d")
     c.prop.loai_hinh = "nha_pho"
     c.prop.fields.update({"gia": "12,5 tỷ", "dien_tich_dat": "34,5m2", "dien_tich_nha": "100m2", "kich_thuoc": "5x8", "so_tang": "3",
-                          "mat_tien": "5m"})   # có mặt tiền thật — lưới hẻm / mặt tiền (SRS-155) không kích
+                          "mat_tien": "5m", "_duong_vao": "mat_tien"})   # sự thật AI đọc: nhà mặt tiền — lưới khẳng định (SRS-320) không kích
     c.listing_proposed = True
     c.history.append(Turn("assistant", BAN_1, 0.0))
     c.history.append(Turn("user", "ok", 0.0))

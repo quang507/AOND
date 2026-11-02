@@ -1,6 +1,6 @@
 """26/10/2026 (SRS-5.1zzzzzzz213): lỗi khách ảo có cảm xúc (run 40377269267) — lặp câu / lặp mở đầu, phí báo theo vai đoán, hỏi phường 6 lượt sau
 bản nháp, tin rao tả khu / sự kiện không có, pháp lý đổi "cháu" thành "em". Mỗi ca đỏ khi gỡ bản sửa; cách nói chưa bắn ở mỗi ca."""
-from aioi.engine import (Conversation, SellerRole, _CHI_TIET_BIA_RE, _cau_lap_luot_truoc, _cung_mo_dau, _vai_co_bang_chung, khoi_phap_ly)
+from aioi.engine import (Conversation, SellerRole, _KD_KHONG_CO_NGUON, _cau_lap_luot_truoc, _cung_mo_dau, _vai_co_bang_chung, khoi_phap_ly)
 from aioi.prompts import build_buyer_chat_system, operations_schema
 from aioi.schema import BuyerLead
 from tests.test_doc_y_khach import _eng
@@ -19,7 +19,6 @@ def test_lap_mo_dau_va_lap_cau_luot_truoc():
 
 def test_vai_chi_nhan_khi_khach_goi_ten_vai():
     loi = ["a cần đăng tin nhanh. căn 2PN 85m2 ở Era Town Q7", "a làm 8 năm rồi"]
-    assert not _vai_co_bang_chung("a cần đăng tin nhanh", loi)          # cách nói việc, không phải vai (bản cũ: model đoán chủ nhà → phí 1 %)
     assert not _vai_co_bang_chung("a là môi giới", loi)                  # cụm không có trong lời khách
     assert _vai_co_bang_chung("a là môi giới", loi + ["1% hay 0.5% a ko quan tâm, a là môi giới, a biết phí"])
     assert _vai_co_bang_chung("bên sàn em gửi", ["bên sàn em gửi căn này nhé"])   # cách nói chưa bắn
@@ -58,10 +57,10 @@ def test_cong_web_dem_lo_phuong_va_bao_nguoi_phu_trach_lan_3():
 
 
 def test_tin_rao_ta_khu_va_su_kien_khong_co():
-    assert _CHI_TIET_BIA_RE.search("nằm ngay khu dân cư sầm uất phía Nam Sài Gòn")
-    assert _CHI_TIET_BIA_RE.search("căn này được nhiều người hỏi thăm lắm")
-    assert _CHI_TIET_BIA_RE.search("khu này đông dân cư, buôn bán tấp nập")   # cách nói chưa bắn
-    assert not _CHI_TIET_BIA_RE.search("sổ hồng riêng, đang trống giao ngay")
+    assert _KD_KHONG_CO_NGUON.search("nằm ngay khu dân cư sầm uất phía Nam Sài Gòn")
+    assert _KD_KHONG_CO_NGUON.search("căn này được nhiều người hỏi thăm lắm")
+    assert _KD_KHONG_CO_NGUON.search("khu này đông dân cư, buôn bán tấp nập")   # cách nói chưa bắn
+    assert not _KD_KHONG_CO_NGUON.search("sổ hồng riêng, đang trống giao ngay")
 
 
 def test_phap_ly_xung_ho_theo_luot_va_prompt_khong_lap():

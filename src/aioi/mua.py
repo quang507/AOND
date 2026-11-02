@@ -117,9 +117,11 @@ def _so_dau(v: Any) -> float | None:
     return float(m.group(0).replace(",", ".")) if m else None
 
 
-def _can_xe_hoi(v: Any) -> bool:
-    t = str(v or "").strip()
-    return bool(t) and not re.match(r"(?i)\s*(không|khong|ko)\b", t)
+def _can_xe_hoi(lead_or_fields: Any) -> bool:
+    """Khách mua CẦN xe hơi vào được — AI đọc theo nghĩa, trả ô `can_xe_hoi` = "co" / "khong" (SRS-5.1zzzzzzz320). Bản trước coi mọi câu không
+    mở bằng "không" là cần: "chưa cần", "xe máy là được", "tùy" đều bị lọc mất căn hẻm nhỏ."""
+    f = lead_or_fields if isinstance(lead_or_fields, dict) else (getattr(lead_or_fields, "fields", {}) or {})
+    return str(f.get("can_xe_hoi") or "").strip().lower() == "co"
 
 
 # Ô nhu cầu mang NGHĨA (khách tả bằng lời) — những ô này mới đáng nhúng; số / khu vực / giá đã lọc hoặc tính điểm bằng cột.
@@ -159,7 +161,7 @@ def khoang_dien_tich(lead: Any) -> tuple[float | None, float | None]:
 # Ô một bộ nhu cầu ghi xuống DB (`buyers.preferences` = bộ đang nói; `buyer_needs.preferences` = từng bộ) — SRS-5.1zzzzzzz286.
 O_NHU_CAU_GHI = ("loai_giao_dich", "loai_bds", "ngan_sach", "khu_vuc", "so_phong_ngu", "yeu_cau_xe_hoi", "huong", "muc_dich", "tien_do_mua",
                  "vay_ngan_hang", "moi_truong_song", "thanh_vien", "noi_lam_viec", "dien_tich_mong_muon", "thang_may", "nguoi_quyet_dinh",
-                 "so_tang_mong_muon", "tien_ich_mong_muon", "loai_tien_ich", "nhu_cau", "ngan_sach_tu", "ngan_sach_den", "dien_tich_tu", "dien_tich_den")
+                 "so_tang_mong_muon", "tien_ich_mong_muon", "loai_tien_ich", "can_xe_hoi", "nhu_cau", "ngan_sach_tu", "ngan_sach_den", "dien_tich_tu", "dien_tich_den")
 
 
 def nhu_cau_cua(lead: Any) -> dict[str, Any]:
@@ -204,12 +206,6 @@ def khoi_nhu_cau(dang_noi: Any, khac: list) -> str:
     dong += [f"- ĐÃ CẤT: «{nhan_nhu_cau(l) or 'chưa đặt nhãn'}» — {_tom_nhu_cau(l)}" for l in khac or []]
     return ("\nBỘ NHU CẦU CỦA KHÁCH (một khách có thể tìm nhiều căn cho mục đích / người khác nhau; mỗi bộ có khu vực, ngân sách riêng):\n"
             + "\n".join(dong) + "\n")
-
-
-def _khong_dau(s: str) -> str:
-    import unicodedata
-    s = unicodedata.normalize("NFD", str(s or "").lower()).replace("đ", "d")
-    return "".join(ch for ch in s if unicodedata.category(ch) != "Mn")
 
 
 def loai_tien_ich(lead: Any) -> list[str]:
@@ -457,7 +453,7 @@ class KhoNguoiMua:
             "p_khu": _sach_khu(str(getattr(lead, "khu_vuc", None) or f.get("khu_vuc") or "")),
             "p_dt_min": khoang_dien_tich(lead)[0],
             "p_pn_min": (int(_so_dau(getattr(lead, "so_phong_ngu", None) or f.get("so_phong_ngu")) or 0) or None),
-            "p_xe_hoi": _can_xe_hoi(getattr(lead, "yeu_cau_xe_hoi", None) or f.get("yeu_cau_xe_hoi")),
+            "p_xe_hoi": _can_xe_hoi(lead),
             "p_limit": toi_da,
             "p_tien_ich": loai_tien_ich(lead) or None,   # SRS-5.1zzzzzzz179: loại tiện ích khách muốn gần (≤ 1 km, cộng điểm)
             "p_tang_min": _so_tang(lead),                # SRS-5.1zzzzzzz262: số tầng khách muốn (tính cả trệt, cộng điểm)
@@ -612,7 +608,7 @@ class KhoNguoiMua:
         except Exception as e:  # noqa: BLE001
             log.warning("can_moi_khop lỗi: %s", e)
             return []
-        if _can_xe_hoi(getattr(lead, "yeu_cau_xe_hoi", None) or f.get("yeu_cau_xe_hoi")):
+        if _can_xe_hoi(lead):
             rows = [r for r in rows if str(r.get("access_type")) in ("mat_tien", "hem_xe_tai", "hem_xe_hoi") or r.get("car_in_house")]
         if ns:
             for r in rows:

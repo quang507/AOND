@@ -3,7 +3,7 @@ loại đường vào — nhưng tiêu đề bản nháp ghi "Bán nhà hẻm L�
 cho phép "mặt tiền / hẻm xe hơi" làm điểm mạnh và có ví dụ "nhà hẻm", model chép theo; ngoài giá và "MT" căn hộ không có lưới nào kiểm lời trong bản tin
 với dữ liệu căn. Đỏ khi bản tin có hẻm / HXH / ngõ / mặt tiền / MT không có dữ liệu mà không bị gọi lại, hoặc khi bản tin có dữ liệu thật bị bắt oan."""
 from aioi.assistants import assign_assistant
-from aioi.engine import Conversation, Engine, Turn, _hem_mt_khong_co_du_lieu
+from aioi.engine import Conversation, Engine, Turn, _khang_dinh_khong_co_du_lieu as _kd
 from tests.test_khen_100 import _SpyHangDoi
 
 TIN_BIA = ("📋 Em sẽ rao như vầy nhé anh chị:\n\nBán nhà hẻm Lê Lai Q.Tân Bình 39m², 1 trệt 3 lầu, 7,3 tỷ\n\n"
@@ -21,23 +21,21 @@ def _conv(*loi_khach, **fields):
 
 def test_tieu_de_hem_khong_co_du_lieu_bi_bat():
     conv = _conv("a bán nhà", "Lê Lai e", "39m2 e.1 trệt 3 lầu", "7 tỷ 3", duong="Lê Lai", gia="7 tỷ 3")
-    assert [x.lower() for x in _hem_mt_khong_co_du_lieu(TIN_BIA, conv)] == ["hẻm"]
-    assert _hem_mt_khong_co_du_lieu(TIN_BIA.replace("nhà hẻm", "nhà MT"), conv) == ["mt"]
-    assert _hem_mt_khong_co_du_lieu("Bản tin chưa có hẻm hay mặt tiền thì em hỏi: nhà mình hẻm hay mặt tiền vậy anh?", conv) == []   # không phải bản tin 📋
+    assert _kd(TIN_BIA, conv) == ["hẻm"]
+    assert _kd(TIN_BIA.replace("nhà hẻm", "nhà MT"), conv) == ["mt"]
+    assert _kd("Bản tin chưa có hẻm hay mặt tiền thì em hỏi: nhà mình hẻm hay mặt tiền vậy anh?", conv) == []   # không phải bản tin 📋
 
 
-def test_co_du_lieu_trong_o_tin_thi_khong_bat():
-    """Audit Đợt 3 (SRS-5.1zzzzzzz320): chỉ đối chiếu ô tin (đã qua cổng bằng chứng), không đọc lời khách."""
-    assert _hem_mt_khong_co_du_lieu(TIN_BIA, _conv("Lê Lai", lo_gioi_hem="Nhà hẻm")) == []                           # ô đã ghi
-    assert _hem_mt_khong_co_du_lieu(TIN_BIA.replace("nhà hẻm", "nhà MT"), _conv("Lê Lai", mat_tien="5m")) == []
-    assert _hem_mt_khong_co_du_lieu(TIN_BIA, _conv("Lê Lai", dia_chi="hẻm 12 Lê Lai")) == []                        # chữ có trong ô địa chỉ
-    assert _hem_mt_khong_co_du_lieu(TIN_BIA, _conv("Lê Lai", dia_chi="hem 12 Le Lai")) == []                        # ô gõ không dấu
-    # khách nói "hẻm" mà ô chưa ghi → lưới vẫn bắt (không còn đọc lời khách; ô ghi được thì `Property.update` đã gán lo_gioi_hem)
-    assert [x.lower() for x in _hem_mt_khong_co_du_lieu(TIN_BIA, _conv("nhà trong hẻm Lê Lai 39m2", gia="7 tỷ 3"))] == ["hẻm"]
-    # chữ trùng một phần không bị bắt: "MTA", "hẻm" nằm trong câu hỏi cuối bản tin
-    assert _hem_mt_khong_co_du_lieu(TIN_BIA.replace("nhà hẻm", "căn hộ MTA"), _conv("Lê Lai")) == []
-    assert _hem_mt_khong_co_du_lieu(TIN_BIA.replace("nhà hẻm ", "nhà ").replace("hấp dẫn chưa ạ?", "nhà mình hẻm hay mặt tiền vậy ạ?"),
-                                    _conv("Lê Lai")) == []
+def test_duong_vao_theo_su_that_ai_doc():
+    """SRS-5.1zzzzzzz320: chỉ đối chiếu ô `_duong_vao` (AI đọc nghĩa) và số nhà dạng "12/3" (định dạng), không đọc lời khách."""
+    assert _kd(TIN_BIA, _conv("Lê Lai", _duong_vao="hem")) == []
+    assert _kd(TIN_BIA.replace("nhà hẻm", "nhà MT"), _conv("Lê Lai", _duong_vao="mat_tien")) == []
+    assert _kd(TIN_BIA.replace("nhà hẻm", "nhà HXH"), _conv("Lê Lai", _duong_vao="hem")) == ["hxh"]          # hẻm thường ≠ hẻm xe hơi
+    assert _kd(TIN_BIA, _conv("Lê Lai", dia_chi="12/3 Lê Lai")) == []                                         # số nhà có "/" là nhà hẻm
+    assert _kd(TIN_BIA.replace("nhà hẻm", "nhà mặt tiền"), _conv("không phải mặt tiền đâu em, hẻm 3m", _duong_vao="hem")) == ["mặt tiền"]
+    assert _kd(TIN_BIA.replace("nhà hẻm", "nhà ngang 5m mặt tiền 5m"), _conv("Lê Lai")) == []              # "mặt tiền 5m" là bề ngang
+    assert _kd(TIN_BIA.replace("nhà hẻm", "căn hộ MTA"), _conv("Lê Lai")) == []
+    assert _kd(TIN_BIA.replace("nhà hẻm ", "nhà ").replace("hấp dẫn chưa ạ?", "nhà mình hẻm hay mặt tiền vậy ạ?"), _conv("Lê Lai")) == []
 
 
 def test_ban_tin_bia_hem_bi_goi_lai_mot_lan():
@@ -48,4 +46,4 @@ def test_ban_tin_bia_hem_bi_goi_lai_mot_lan():
     conv.history.append(Turn("user", "Lê Lai e, 39m2 1 trệt 3 lầu, 7 tỷ 3", 0.0))
     ra = eng._soat_hinh_thuc(conv, "SYS", TIN_BIA)
     assert "hẻm" not in ra.lower().split("\n\n")[1]
-    assert any("VIẾT LẠI LƯỢT NÀY" in s and "\"hẻm\"" in s and "CHƯA nói nhà ở hẻm" in s for s in spy.systems)
+    assert any("VIẾT LẠI LƯỢT NÀY" in s and "\"hẻm\"" in s and "CHƯA xác nhận" in s for s in spy.systems)

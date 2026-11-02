@@ -54,10 +54,13 @@ def test_engine_dua_lich_da_ghi_vao_loi_dap_khach_mua():
     assert kho.ghi("PATCH", "viewings?id=eq.v1") == [{"time_text": "chiều, 4h"}]               # "4h" nói sau vào lịch cũ ("chiều")
 
 
-def test_dia_chi_chi_co_ten_duong_tu_ghi_mat_tien():
-    p = Property(loai_hinh="nha_pho")
-    p.update({"duong": "Lê Lai", "dia_chi": "Lê Lai"})
-    assert p.fields.get("lo_gioi_hem") == "Mặt tiền"
+def test_dia_chi_chi_co_ten_duong_khong_tu_ghi_mat_tien():
+    """SRS-5.1zzzzzzz320 (chủ dự án 02/11: không dùng từ khoá trên lời khách để quyết ý): bản trước tự ghi "Mặt tiền" khi địa chỉ thiếu chữ hẻm —
+    "HXH Lê Lai", "hẽm 4m" (gõ sai) thành mặt tiền trên tin công khai. Nay không ghi; ô đường vào để SAU bản nháp (vẫn khỏi hỏi trước, SRS-157)."""
+    for dc in ("Lê Lai", "HXH Lê Lai", "hẽm 4m Lê Lai"):
+        p = Property(loai_hinh="nha_pho")
+        p.update({"duong": "Lê Lai", "dia_chi": dc})
+        assert not p.fields.get("lo_gioi_hem") and "lo_gioi_hem" in p.hoan and "lo_gioi_hem" not in p.missing_fields(), dc
     # có dấu "/" thì là hẻm (luật có sẵn), khách nói hẻm / ngõ thì không tự ghi mặt tiền
     p = Property(loai_hinh="nha_pho")
     p.update({"duong": "Lê Lai", "dia_chi": "12/3 Lê Lai"})
