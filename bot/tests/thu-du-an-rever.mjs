@@ -10,7 +10,7 @@ const HTML = `<section class="block-header"><h1 class="is-h4">La Pura</h1>
   <span class="badge is-rounded is-primary">Rever phân phối chính thức</span><span class="badge is-rounded">Đang mở bán</span>
   <a href="#location" class="block-address is-underlined">Đại lộ Bình Dương, Lái Thiêu, Thuận An, Bình Dương</a></section>
   <li class="box-summary-item"><span>Khoảng giá</span></div><div class="value">46.77 - 62.5 triệu/ m²</div></li>
-  <a href="/chu-dau-tu/phat-dat" class="value">Phát Đạt</a>
+  <a href="/chu-dau-tu/phat-dat" class="value">Phát Đạt</a><a href="/chu-dau-tu/phat-dat" class="more">Xem chi tiết</a><a href="/chu-dau-tu/phat-dat">Xem thêm</a>
   <ul class="detail-more"><li><p class="left">Số block</p><p class="right notranslate">4</p></li>
   <li><p class="left">Mật độ xây dựng (%)</p><p class="right notranslate">0</p></li>
   <li><p class="left">Loại hình</p><p class="list-utilities is-align-right right"><span class="list-utilities-item">Căn hộ</span><span class="list-utilities-item">Shophouse</span></p></li></ul>

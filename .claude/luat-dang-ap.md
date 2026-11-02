@@ -133,7 +133,7 @@ curl -s -X POST "https://rqxmmqmctpklqcmbfxuj.supabase.co/rest/v1/rpc/xuat_schem
   -H "Content-Type: application/json" -d '{}' | jq -r . > bot/supabase/schema.sql
 ```
 
-- Dựng lại DB: chỉ nạp `schema.sql` (+ file schema `so`, `luu_tru` — `xuat_schema()` không quét hai schema đó) qua `scripts/dung-lai-db.mjs` / ô `dung_lai`; KHÔNG replay thư mục migration.
+- Dựng lại DB: chỉ nạp `schema.sql` (+ file schema `so`, `luu_tru` — `xuat_schema()` không quét hai schema đó) qua `scripts/dung-lai-db.mjs` / ô `dung_lai`; KHÔNG replay thư mục migration. `so.ro_hang` dựng từ định nghĩa hiện hành `20261102b` (câu `so.ro_hang` của 20260907c / f bị bỏ — đọc bảng / cột đã gỡ); đổi view này thì migration mới ghi `with (security_invoker = true)` và trỏ `dung-lai-db.mjs` sang (SRS-327).
 - Cổng CI: `soat-migration.mjs` (so md5 từng thân hàm schema.sql ↔ DB qua `ham_md5_cong_khai()`), `soat-db.mjs` (8 phép soát trạng thái DB qua `soat_db_cong_khai()`; bản nền `scripts/soat-db-da-biet.json`). **Thêm dòng vào bản nền / `DA-DOI-CHIEU.json` là một quyết định kèm lý do, không phải cách làm cổng xanh.**
 - **View MỚI mặc định LỘ** cho `anon` / `authenticated` (default privileges): `revoke all … from anon, authenticated` TRƯỚC rồi mới grant. Bảng / cột mới thêm `comment on` trong cùng migration.
 - `=` trong khối `NOT (…)` trên cột có thể NULL là bẫy — dùng `IS NOT DISTINCT FROM` (`bot/tests/null-ba-tri.mjs`).
