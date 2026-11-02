@@ -2,6 +2,15 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz310 · Kế hoạch bước 3: agent bóc tách bằng công cụ ghi (giữ thử); cổng đổi trạng thái rổ nhiều căn cho mọi khách (30/10/2026)
+Ca gốc bộ chấm `hai_can_da_ban`: rổ hai căn, "căn đó anh bán được rồi" → form đánh dấu căn đang nói là đã bán (lớp lỗi: model đoán căn, code không kiểm).
+- `agent_boc.py`: 5 công cụ (`ghi_o`, `them_can`, `doi_trang_thai`, `bo_can`, `ghi_y_khach`, đầu vào cắt từ schema form), code kiểm từng lần gọi. Đo 408 phép:
+  form 406 / 404 · agent Sonnet 404 / 403 (+40–75 % tiền) · agent Haiku 402 / 401 → `AGENT_BOC = thu`, chưa bật khách thật.
+- Cổng dùng chung (`Engine._chua_ro_can`): rổ ≥ 2 căn thì `set_status` phải kèm `trich_dan_can` nằm nguyên trong lời khách, chỉ ra đúng căn; không thì không đổi,
+  lời trả lời hỏi lại căn nào; form chưa rõ căn vẫn báo set_status trống cụm để code chặn. Form + cổng: 401 / 402, `hai_can_da_ban` đạt 2/2 (trước 1/2);
+  các phép trượt còn lại cùng loại với mọi lần chạy ("mình", mở lặp, `ma_lo_7m`, `dat_nen_long_an`) — dao động giữa các lần ±3 phép.
+- Kiểm: `tests/test_agent_boc_310.py` (ca form đỏ khi gỡ cổng). Chỗ cùng lớp: `remove` / `keep_only` đã có bước xác nhận trước khi ẩn.
+
 ### SRS-5.1zzzzzzz309 · Kế hoạch bước 1–2: bộ chấm 40 kịch bản + giám khảo giọng; phiếu lượt ngắn cho lượt thu thập người bán (30/10/2026)
 Chủ dự án 30/10 (kế hoạch 4 bước): bộ kịch bản offline là nguồn sự thật; prompt viết lời ngắn "giọng + dữ liệu + một việc"; không mở PR / bắn production khi không cần.
 - Bước 1: `tests/kich_ban/ban.json` 40 kịch bản (2 từ chat tester DB, ẩn danh; còn lại tự viết); `bun run cham --giong` thêm giám khảo LLM chấm giọng 1–5.

@@ -829,6 +829,14 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz320 · Audit Đợt 3: bỏ đoán ý khách bằng từ khoá — AI đọc nghĩa vai / pháp lý / đường vào / tiện ích / tình trạng; một lưới bản tin (02/11/2026)
+Quyết định chủ dự án 02/11: KHÔNG dùng từ khoá trên lời khách để quyết ý, kể cả làm lưới đỡ. Ca gốc: "tôi không phải chính chủ" vẫn tính chủ nhà (`_VAI_RE`), "chưa có sổ hồng" tính có pháp lý,
+"không phải mặt tiền" cho ghi "mặt tiền", "cho em hỏi" / "thị trường" / "mời" mở cửa "gần chợ" / "trường học" / "nhà mới"; `Property.update` tự ghi "Mặt tiền" khi thiếu chữ hẻm ("HXH Lê Lai").
+(1) Lớp lỗi: code quyết ý bằng chữ có / vắng trong lời khách — không hiểu phủ định, khớp nhầm chữ. Sửa: AI trả `seller_role` (+ `nguoi_nha_nho_ban`), `phap_ly_trang_thai`, `duong_vao`,
+`tien_ich_gan`, `tinh_trang_nha` kèm cụm trích (code kiểm cụm); lưới `_khang_dinh_khong_co_du_lieu` chỉ đối chiếu bản tin với các ô đó, chưa rõ / AI hỏng thì bản tin không khẳng định; lượt viết bản tin
+nhận khối `khoi_su_that_can`. (2) Cùng lớp đã sửa: tự ghi "Mặt tiền" (nay để sau bản nháp), `_can_xe_hoi` phía mua (AI trả `can_xe_hoi`), `loai_tien_ich` (AI trả mã), `phuong_kho_hem`, lọc "không / có" ở `tin_goc`;
+còn lại: tìm kiếm web `lib/parse-query.ts` + `ganNhan`, `parseListing`, cổng chữ xưng hô, `MockProvider` (bảng ở mô tả PR). (3) Kiểm: `test_khang_dinh_320.py` qua `Engine.handle` (9/11 đỏ trên main); kịch bản `khong_phai_chinh_chu`, `so_dang_lam`, `xa_cho`; `cham` ×2 (số ở mô tả PR).
+
 ### SRS-5.1zzzzzzz319 · Audit Đợt 8: gỡ đường cũ 6 công tắc, xoá prompt cũ `build_chat_system`; phiếu lượt mang tin hệ thống, tiếng lóng, hỏi diện tích đất / nhà (02/11/2026)
 Quyết định chủ dự án 01/11 (Q1): công tắc "vĩnh viễn", "xóa code cũ lun". Gỡ nhánh `tat` / `thu` của `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON`, `FORM_BAN_GON`,
 `AGENT_MUA`, `AGENT_BAN` (code, `cai-vps.sh`, CLAUDE.md); bỏ lần soát thứ hai (`_ly_do_cung`, cột "soát lại" của `LUAT_SOAT`). `AGENT_BOC` giữ (chỉ ID thử, SRS-310 chưa hơn form).
@@ -896,15 +904,6 @@ Chủ dự án 30/10 ("không cần, gỡ đi"): gỡ lưới "câu ghi nhận m
 - Luật soát: 280 cuộc chấm, lưới kích nhiều nhất "gọi khách là mình" (40 lần, bắt lỗi thật); lưới không kích lần nào đều là quyết định chủ dự án có test
   (kho hẻm SRS-115, HOA SRS-241, câu ghi nhận SRS-229, "anh ơi" lặp) và ở chế độ gọn chỉ ghi log — chưa gỡ, gỡ là đảo quyết định đã chốt.
 - Kiểm: `tests/test_model_luot_de_311.py` (đỏ khi gỡ chỗ đặt model).
-
-### SRS-5.1zzzzzzz310 · Kế hoạch bước 3: agent bóc tách bằng công cụ ghi (giữ thử); cổng đổi trạng thái rổ nhiều căn cho mọi khách (30/10/2026)
-Ca gốc bộ chấm `hai_can_da_ban`: rổ hai căn, "căn đó anh bán được rồi" → form đánh dấu căn đang nói là đã bán (lớp lỗi: model đoán căn, code không kiểm).
-- `agent_boc.py`: 5 công cụ (`ghi_o`, `them_can`, `doi_trang_thai`, `bo_can`, `ghi_y_khach`, đầu vào cắt từ schema form), code kiểm từng lần gọi. Đo 408 phép:
-  form 406 / 404 · agent Sonnet 404 / 403 (+40–75 % tiền) · agent Haiku 402 / 401 → `AGENT_BOC = thu`, chưa bật khách thật.
-- Cổng dùng chung (`Engine._chua_ro_can`): rổ ≥ 2 căn thì `set_status` phải kèm `trich_dan_can` nằm nguyên trong lời khách, chỉ ra đúng căn; không thì không đổi,
-  lời trả lời hỏi lại căn nào; form chưa rõ căn vẫn báo set_status trống cụm để code chặn. Form + cổng: 401 / 402, `hai_can_da_ban` đạt 2/2 (trước 1/2);
-  các phép trượt còn lại cùng loại với mọi lần chạy ("mình", mở lặp, `ma_lo_7m`, `dat_nen_long_an`) — dao động giữa các lần ±3 phép.
-- Kiểm: `tests/test_agent_boc_310.py` (ca form đỏ khi gỡ cổng). Chỗ cùng lớp: `remove` / `keep_only` đã có bước xác nhận trước khi ẩn.
 
 ---
 
