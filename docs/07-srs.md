@@ -833,14 +833,24 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
 Ca thật chủ dự án 02/11 (cùng một Zalo): 10:37 số tư vấn "anh đang cần tìm mua nhà quận 8 dưới 7 tỉ" → đúng; 10:38 số ký gửi "chào em" → "Anh muốn tìm ở khu vực nào ạ?". Chủ dự án: số ký gửi mặc định BÁN, nói mua mới hỗ trợ mua; số tư vấn giữ SRS-210.
 (1) Lớp lỗi: hội thoại khoá theo NGƯỜI (Zalo ID), `so_nhan` ghi đè mỗi tin; nhánh "đang mua thì ở lại vai mua" chạy trước mặc định theo số. Sửa: `Conversation.so_vai` (số đặt vai, lưu SQLite); lượt mơ hồ ở số khác → vai mặc định của số đang nhắn, lượt đó chào theo số
 (`_doi_so`); ý mua / bán của lượt vẫn thắng; nhu cầu mua / tin rao số kia giữ nguyên. (2) Cùng lớp: lời chào lượt đầu hai số (đã sửa cùng cờ); còn: dữ liệu cũ chưa có `so_vai` giữ cách cũ tới lượt có ý mua / bán.
-(3) Kiểm: `test_vai_theo_so_326.py` qua `Engine.handle` (gỡ nhánh `so_vai` → 2/5 đỏ; ba cách chào: "chào em", "alo em ơi", "hi bé").
+(3) Kiểm: `test_vai_theo_so_328.py` qua `Engine.handle` (gỡ nhánh `so_vai` → 2/5 đỏ; ba cách chào: "chào em", "alo em ơi", "hi bé").
 
 ### SRS-5.1zzzzzzz327 · Audit Đợt 4: một quyết định một nơi — MỘT câu hỏi mỗi lượt, duyệt bản nháp một hàm, vai một nguồn, phía mua hết lệnh ngược, lượt bản nháp một lần gọi lại; Q4 / Q5 (02/11/2026)
 Chủ dự án 02/11: Q4 — hỏi xác nhận ĐÚNG 4 chỗ (mặt tiền ngang / đường, căn thuộc dự án X, số lệch kho dự án, diện tích đất hay sàn), mỗi chỗ tối đa MỘT lần mỗi căn, ngoài ra giữ SRS-302; Q5 — `hoi_ngoai_viec`, `xin_xem_ban_ve`, `cau_hoi_du_an`, `mo_ta_du_an`, `xong_viec_mua` theo ý AI đọc, bỏ cổng nguyên văn.
 (1) Lớp lỗi: nhiều nơi cùng quyết một đầu ra, không thứ tự — ≥ 7 khối tự nhận "câu hỏi DUY NHẤT" cùng bật (AU-09); duyệt ghi đè ở 4 chỗ, `xin_dang` đè `khong_dong_y` và duyệt lại bản đã duyệt (AU-10); vai chính chủ trên tin ≠ vai tính phí (AU-03);
 phía mua "hỏi khách có muốn em hỏi chủ" ↔ "KHÔNG hỏi lại", "nói sẽ báo" ↔ "không hứa báo lại" (AU-04); lượt bản nháp gọi lại tới 3 lần (AU-14). Sửa: khối hỏi ghép qua `_hoi()` (dấu chỗ), `viec_luot` chọn một, khối thừa gỡ + trả cờ "đã hỏi" (mặt tiền thêm `_mt_cho_hoi`;
 đất / nhà cờ `_dt_mo_ho_da_hoi`); `Engine._quyet_duyet`; bản tin "Chính chủ" theo `vai_phi`; lời hứa báo lại thành dữ kiện vòng `bao_can_moi`; cổng bản nháp đi chung vòng soát (một lần gọi lại, không đè bản tin bằng lời chat). (2) Còn: Q4 (c) là lời dặn trong vòng agent dự án, code chưa đếm.
-(3) Kiểm: `test_dot4_322.py` (10 bài, mỗi bài đỏ khi gỡ bản sửa tương ứng; AU-14 trên engine cũ: 4 lần gọi > trần 2); `cham` ×2 (số ở mô tả PR).
+(3) Kiểm: `test_dot4_327.py` (10 bài, mỗi bài đỏ khi gỡ bản sửa tương ứng; AU-14 trên engine cũ: 4 lần gọi > trần 2); `cham` ×2 (số ở mô tả PR).
+### SRS-5.1zzzzzzz326 · Gỡ bảng `media` cũ, view `public_media` / `ro_hang_ban`, hàm `kd_ten` / `tim_nghia_san_sang` (02/11/2026)
+Chủ dự án 02/11 ("gỡ hết mấy thứ đó" — bảng đề xuất tầng DB ở SRS-323). Migration `20261102a_go_media_cu` (một giao dịch): định nghĩa lại `admin_xoa_het_khach_va_ro_hang` / `admin_khoi_phuc_lan_xoa` bỏ `media`, `so.ro_hang.so_anh` chỉ đếm `listing_media`, rồi gỡ. `xuat-ro-hang.mjs` đọc `listing_media`.
+(1) Lớp lỗi: soát "0 chỗ gọi" bằng grep code + `schema.sql` bỏ sót schema `so` (`xuat_schema()` không xuất `so`) — chạy thử lần đầu đổ "view so.ro_hang depends on table media". (2) Cùng lớp: soát `pg_depend` + thân hàm + `cron.job` trên DB thật: chỉ `public_media`, `so.ro_hang`, hàm xoá hết, một chú thích trong `xuat_schema()`; hai view chẩn đoán `media_mo_coi_*` không phụ thuộc (giữ).
+(3) Kiểm: chạy thử trong giao dịch huỷ trên DB thật (`so.ro_hang` 249 dòng, 3 đối tượng đã gỡ, hai view chẩn đoán còn đọc được; sau rollback bảng còn nguyên), `soat:db`, `soat:migration`, `test:rohang`.
+
+### SRS-5.1zzzzzzz325 · Chủ căn hộ hỏi giá cao không: nêu giá rao bán thị trường của dự án (thay một phần SRS-116) (02/11/2026)
+Quyết định chủ dự án 02/11 (xác nhận trong phiên): chủ căn hộ hỏi "giá tôi đưa cao không" thì nêu "giá rao bán thị trường X–Y triệu/m²". Ca gốc: SRS-324 đưa dòng giá rao vào khối dự án phía bán
+trong khi `KHOI_DINH_GIA` dặn "CHƯA có dữ liệu định giá" — model nhận hai lời ngược nhau. (1) Lớp lỗi: thêm dữ kiện vào khối chung mà không soát luật cấm đang áp cho cùng dữ kiện.
+Sửa: `prompts.khoi_dinh_gia(gia_rao)` — dự án có giá rao gộp thì nêu khoảng + số tin + ngày (dd/mm/yyyy), nói rõ giá RAO, không phán cao / thấp, không quy đổi ra giá căn, không nêu nguồn; không có số liệu (nhà phố, dự án thiếu) giữ lời cũ; `_BINH_LUAN_GIA` giữ.
+(2) Cùng lớp: phía mua `du_an_mua` đã nói "tham khảo", không có luật cấm ngược. (3) Kiểm: `tests/test_dinh_gia_rao_325.py` qua `Engine.handle` (4/6 đỏ khi trả về `KHOI_DINH_GIA`; hai cách nói mới "có bị hớ so với mặt bằng", "người ta rao bao nhiêu một mét"); `cham --giong` ×2 (số ở mô tả PR).
 
 ### SRS-5.1zzzzzzz324 · Làm giàu kho dự án từ rever.vn (crawl theo luật mogi), một kho `projects`; bot đọc `specs.rever` (02/11/2026)
 Quyết định chủ dự án 02/11: chọn phương án (a) — crawl Rever theo luật OPEN-56 (chỉ dữ kiện, mô tả viết lại, giữ `source_url`, không tin rao lẻ / SĐT / ảnh), dù điều khoản rever.vn
@@ -878,28 +888,6 @@ Quyết định chủ dự án 01/11 (Q1): công tắc "vĩnh viễn", "xóa cod
 (1) Lớp lỗi: luật chỉ sống ở prompt cũ thì xoá prompt cũ là luật rơi (AU-13). (2) Cùng lớp đã soát: tin hệ thống ngoặc vuông (`prompts.TIN_HE_THONG`), `SLANG_NOTES`, hỏi lại
 "diện tích đó đất hay nhà" (`_dien_tich_mo_ho`) chuyển vào `build_phieu_luot`; luật còn lại của prompt cũ là giọng / văn đã có ở `GIONG_VUI` hoặc code. (3) Kiểm: `test_go_cong_tac_319.py`
 (đỏ khi gỡ ba luật khỏi phiếu lượt; không file nào đọc sáu biến); `test:py` 1312; `cham` ×2 trên 51 kịch bản: tất định 508 / 507, tổng 623 / 617, giọng 3,16 / 3,08 (trước 3,04 / 2,94).
-
-### SRS-5.1zzzzzzz318 · Audit Đợt 2: luật rơi khi đổi đường — chính sách phí ở lượt thu thập, một bảng luật soát, nhãn việc lượt chung, ảnh sổ qua phiếu lượt (01/11/2026)
-Quyết định chủ dự án 01/11 (Q2): lượt THU THẬP, khách hỏi phí / chính sách thì nói ĐỦ 4 ý (không bớt, chỉ thu khi thành công · có HĐ môi giới văn bản · không
-độc quyền · môi giới không chia hoa hồng khác), gọn, giọng Zalo; con số vẫn do `muc_phi` / `khoi_bao_phi`. Q3: lên Top là thật — giữ câu "≥10 căn lên Top".
-Chủ dự án 01/11 (tiếp): GIỮ đủ 4 ý, giọng theo khuôn anh Luận (`GIONG_VUI`), không đọc như điều khoản; "sửa thang chấm giám khảo, không trừ 4 ý bắt buộc" →
-`TIEU_CHI_GIONG` chỉ chấm CÁCH nói 4 ý; cùng lớp (giám khảo chấm sai luật đã chốt): khách xưng em → bot xưng anh / chị (SRS-214) không trừ điểm. Khối phí: đáp đúng
-ý hỏi một câu, các ý còn lại ĐÚNG MỘT câu, không lặp ý câu báo phí (bài đỏ: `test_khach_hoi_phi_luot_thu_thap_co_du_chinh_sach`).
-(1) Lớp lỗi: luật / nhãn nằm ở prompt cũ hoặc nhánh soát chỉ chạy khi công tắc tắt, nên bật PHIEU_LUOT / SOAT_GON là luật rơi mà không bài nào đỏ. Sửa: hằng
-`CHINH_SACH_PHI` (BUSINESS_CONTEXT dùng lại) vào khối hỏi phí, `hoi_ve=phi` gồm câu hỏi chính sách (độc quyền, HĐ); bảng `LUAT_SOAT` một nguồn cho lần đầu + gọi
-lại (lưới SRS-292 nay chạy dưới SOAT_GON); `NHAN_VIEC_LUOT`; ảnh sổ qua `build_phieu_luot(viec=)`, bỏ "khen điểm mạnh" ↔ "không khen sổ". (2) Còn: AU-13 (ngoặc
-vuông / SLANG_NOTES) chờ Q1; `_viet_hoa_ca_cum` audit nêu đã không còn trong code. (3) Kiểm: `test_luat_roi_doi_duong_318.py` (4 bài đỏ khi gỡ từng bản sửa; cách
-nói mới "chị giảm chút phí cho em được hông"); AU-12 hết xfail; 4 kịch bản `phi_*` trong `ban.json`; `cham` hai lần (số ở mô tả PR).
-
-### SRS-5.1zzzzzzz317 · Audit Đợt 1: một mẫu SĐT cho mọi chỗ che / nhận; SQL `che_sdt` bắt cả số có dấu cách; CCCD che lại ở tin gốc / tin nội bộ (01/11/2026)
-Ca gốc AU-01: lưới che sổ đỏ (`engine._PII_PHONE_RE`) và SQL `che_sdt` chỉ bắt chữ số liền → "0900 000 123", "+84 900 000 123" lọt (đo trên Postgres 16 cục bộ: SQL cũ lọt 10/17 ca dương);
-bản `\d[\d .-]{7,}\d` của tin gốc / tin nội bộ che cả giá "12.500.000.000". (1) Lớp lỗi: 9 regex SĐT viết tay, không bảng ca chung. Sửa: `src/aioi/sdt.py`
-(`MAU_SDT`, `che_sdt(text, thay=)`); nối engine sổ đỏ, `tin_goc`, `prompts.khoi_cau_chuan`, 3 chỗ `supabase_store`; `mua` giữ `SDT_DOC` / `GIONG_SDT` (nhận diện) dựng cùng mảnh;
-migration `20261101a_che_sdt_mot_mau` chép nguyên `MAU_SDT` (chủ dự án "áp đi" 01/11; chạy thử 43/43 trên DB thật PG 17.11 rồi áp). (2) Cùng lớp — review PR #241: hai số nối gạch "0900…-0900…", "(+84) …", rồi hai số nối phẩy / chấm "0900…,0911…" lọt (ranh giới coi mọi ".,-" sát chữ số là tiền; sửa mẫu + `luat-lien-he.ts`,
-migration `20261101b_che_sdt_dau_phay` (áp 01/11 sau chạy thử 56/56 trên DB thật); doi-chieu phía TS nay so cả chuỗi che, không chỉ "có SĐT"). Che nhầm: `20261101a` (đã áp) che đuôi UUID
-"…-fe0900000171" (sổ lỗi bridge có dạng này) → chặn số kẹp giữa hex / gạch; CCCD che giá nghìn tỷ "2.090.000.000.000" → chặn khi trước số 0 là nhóm 1–3 số + ".,";
-bốn chỗ bỏ `\d[\d .-]{7,}\d` làm CCCD hết che (tin gốc còn vào văn bản nhúng) → `che_so_ca_nhan` = `che_giay_to` (CCCD 12 số, CMND 9 số sát chữ) + `che_sdt`. Còn: web chỉ buộc bắt mọi ca dương (được che thừa).
-(3) Kiểm: `luat/sdt.json` (25 dương / 31 âm, `bun run doi-chieu:sdt` Python ↔ SQL ↔ TS, cổng CI 11), `luat/cccd.json` (19 ca) + `tests/test_sdt_317.py` (cách viết mới "0900 000 160/0900 000 161", "0792.0000.0010"); đỏ khi gỡ.
 
 ---
 

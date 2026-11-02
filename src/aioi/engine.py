@@ -90,6 +90,7 @@ from .prompts import (
     khoi_hoi_sau_dang,
     khoi_tinh_hinh_ban,
     KHOI_DINH_GIA,
+    khoi_dinh_gia,
     khoi_hoi_ve_mua,
     khoi_trang_thai_web,
     TAI_LIEU_CHUNG_SYSTEM,
@@ -3126,8 +3127,8 @@ class Engine:
         elif conv.hoi_ve_luot == "tinh_hinh_ban":
             web = self._trang_thai_web(conv) if is_listing_post else {"len_web": False}
             hoi_ve_khoi = khoi_tinh_hinh_ban(self._tinh_hinh_tin(conv), bool(web and web.get("len_web")))
-        elif conv.hoi_ve_luot == "dinh_gia":
-            hoi_ve_khoi = KHOI_DINH_GIA
+        elif conv.hoi_ve_luot == "dinh_gia":   # SRS-5.1zzzzzzz325: dự án có giá rao gộp thì nêu khoảng đó, không có thì lời cũ
+            hoi_ve_khoi = khoi_dinh_gia((project.goc or {}).get("giá rao bán thị trường") if project is not None else None)
         # SRS-5.1zzzzzzz178: MỘT khối ưu tiên mỗi lượt, theo thứ tự cần người > pháp lý > ngoài việc > hỏi về (phí / uy tín / link / tình hình /
         # định giá); có khối ưu tiên thì không ép khen theo lượt, không hỏi ô kế. Không có thì mới tới khối khen theo lượt.
         uu_tien = ""

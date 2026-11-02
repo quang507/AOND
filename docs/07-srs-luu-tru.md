@@ -2,6 +2,28 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz318 · Audit Đợt 2: luật rơi khi đổi đường — chính sách phí ở lượt thu thập, một bảng luật soát, nhãn việc lượt chung, ảnh sổ qua phiếu lượt (01/11/2026)
+Quyết định chủ dự án 01/11 (Q2): lượt THU THẬP, khách hỏi phí / chính sách thì nói ĐỦ 4 ý (không bớt, chỉ thu khi thành công · có HĐ môi giới văn bản · không
+độc quyền · môi giới không chia hoa hồng khác), gọn, giọng Zalo; con số vẫn do `muc_phi` / `khoi_bao_phi`. Q3: lên Top là thật — giữ câu "≥10 căn lên Top".
+Chủ dự án 01/11 (tiếp): GIỮ đủ 4 ý, giọng theo khuôn anh Luận (`GIONG_VUI`), không đọc như điều khoản; "sửa thang chấm giám khảo, không trừ 4 ý bắt buộc" →
+`TIEU_CHI_GIONG` chỉ chấm CÁCH nói 4 ý; cùng lớp (giám khảo chấm sai luật đã chốt): khách xưng em → bot xưng anh / chị (SRS-214) không trừ điểm. Khối phí: đáp đúng
+ý hỏi một câu, các ý còn lại ĐÚNG MỘT câu, không lặp ý câu báo phí (bài đỏ: `test_khach_hoi_phi_luot_thu_thap_co_du_chinh_sach`).
+(1) Lớp lỗi: luật / nhãn nằm ở prompt cũ hoặc nhánh soát chỉ chạy khi công tắc tắt, nên bật PHIEU_LUOT / SOAT_GON là luật rơi mà không bài nào đỏ. Sửa: hằng
+`CHINH_SACH_PHI` (BUSINESS_CONTEXT dùng lại) vào khối hỏi phí, `hoi_ve=phi` gồm câu hỏi chính sách (độc quyền, HĐ); bảng `LUAT_SOAT` một nguồn cho lần đầu + gọi
+lại (lưới SRS-292 nay chạy dưới SOAT_GON); `NHAN_VIEC_LUOT`; ảnh sổ qua `build_phieu_luot(viec=)`, bỏ "khen điểm mạnh" ↔ "không khen sổ". (2) Còn: AU-13 (ngoặc
+vuông / SLANG_NOTES) chờ Q1; `_viet_hoa_ca_cum` audit nêu đã không còn trong code. (3) Kiểm: `test_luat_roi_doi_duong_318.py` (4 bài đỏ khi gỡ từng bản sửa; cách
+nói mới "chị giảm chút phí cho em được hông"); AU-12 hết xfail; 4 kịch bản `phi_*` trong `ban.json`; `cham` hai lần (số ở mô tả PR).
+
+### SRS-5.1zzzzzzz317 · Audit Đợt 1: một mẫu SĐT cho mọi chỗ che / nhận; SQL `che_sdt` bắt cả số có dấu cách; CCCD che lại ở tin gốc / tin nội bộ (01/11/2026)
+Ca gốc AU-01: lưới che sổ đỏ (`engine._PII_PHONE_RE`) và SQL `che_sdt` chỉ bắt chữ số liền → "0900 000 123", "+84 900 000 123" lọt (đo trên Postgres 16 cục bộ: SQL cũ lọt 10/17 ca dương);
+bản `\d[\d .-]{7,}\d` của tin gốc / tin nội bộ che cả giá "12.500.000.000". (1) Lớp lỗi: 9 regex SĐT viết tay, không bảng ca chung. Sửa: `src/aioi/sdt.py`
+(`MAU_SDT`, `che_sdt(text, thay=)`); nối engine sổ đỏ, `tin_goc`, `prompts.khoi_cau_chuan`, 3 chỗ `supabase_store`; `mua` giữ `SDT_DOC` / `GIONG_SDT` (nhận diện) dựng cùng mảnh;
+migration `20261101a_che_sdt_mot_mau` chép nguyên `MAU_SDT` (chủ dự án "áp đi" 01/11; chạy thử 43/43 trên DB thật PG 17.11 rồi áp). (2) Cùng lớp — review PR #241: hai số nối gạch "0900…-0900…", "(+84) …", rồi hai số nối phẩy / chấm "0900…,0911…" lọt (ranh giới coi mọi ".,-" sát chữ số là tiền; sửa mẫu + `luat-lien-he.ts`,
+migration `20261101b_che_sdt_dau_phay` (áp 01/11 sau chạy thử 56/56 trên DB thật); doi-chieu phía TS nay so cả chuỗi che, không chỉ "có SĐT"). Che nhầm: `20261101a` (đã áp) che đuôi UUID
+"…-fe0900000171" (sổ lỗi bridge có dạng này) → chặn số kẹp giữa hex / gạch; CCCD che giá nghìn tỷ "2.090.000.000.000" → chặn khi trước số 0 là nhóm 1–3 số + ".,";
+bốn chỗ bỏ `\d[\d .-]{7,}\d` làm CCCD hết che (tin gốc còn vào văn bản nhúng) → `che_so_ca_nhan` = `che_giay_to` (CCCD 12 số, CMND 9 số sát chữ) + `che_sdt`. Còn: web chỉ buộc bắt mọi ca dương (được che thừa).
+(3) Kiểm: `luat/sdt.json` (25 dương / 31 âm, `bun run doi-chieu:sdt` Python ↔ SQL ↔ TS, cổng CI 11), `luat/cccd.json` (19 ca) + `tests/test_sdt_317.py` (cách viết mới "0900 000 160/0900 000 161", "0792.0000.0010"); đỏ khi gỡ.
+
 ### SRS-5.1zzzzzzz316 · Audit Đợt 0: test chạy công tắc production; model bóc tách một nguồn ở cai-vps.sh; điểm nền dựng lại (01/11/2026)
 Lớp lỗi (AU-05 / AU-25): env test rỗng = mọi công tắc tắt → test đi nhánh production không đi; model bóc tách chỉ nằm trong `.env` VPS — SRS-313 ghi nhầm
 VPS dùng mặc định `claude-haiku-4-5`, sổ `bot_usage_model` 28/10–01/11 chỉ có `claude-haiku-5-5` (điểm nền cũ đo sai model). Sửa: dòng `MODEL_BOC` ở `cai-vps.sh`;
