@@ -27,9 +27,10 @@
    ],
    "kiem": {
     "cam": [
-     "gần trường|gần chợ|gần siêu thị|cách trường|trường mầm non [A-ZĐ]"
+     "gần (?:trường |chợ |siêu thị |bệnh viện )?(?:mầm non |tiểu học )?(?-i:[A-ZĐ])|cách (?:trường|chợ|siêu thị)[^.?!\\n]{0,30}\\d+ ?(?:m|km)\\b|trường mầm non (?-i:[A-ZĐ])"
     ]
-   }
+   },
+   "mo_ta": "Bịa tiện ích: bot KHẲNG ĐỊNH gần một nơi có tên (trường Hồng Hà, Vincom…) hoặc cách N m / km khi rổ không có dữ liệu tiện ích. Phép cũ (re.I) bắt nhầm câu hỏi nêu ý \"gần chợ / trường\" và câu \"chưa có thông tin các trường mầm non quanh căn\" — không phải bịa (SRS-5.1zzzzzzz336)"
   },
   {
    "id": "ka_hua_suong",
