@@ -3,7 +3,8 @@
 Nguồn: `apply-migration.yml` ô `ban-thu-khach-ao` trên main, 5 persona do model đóng vai. Mỗi ca dưới đây trích NGUYÊN VĂN
 câu bot đã nói với khách ảo rồi quy về chỗ sinh ra nó trong lõi, để lỗi không quay lại bằng cách nói khác.
 
-CA CHỜ: `xfail(strict=True)`. Bản sửa gộp xong thì XOÁ dòng `xfail` (strict = XPASS cũng đỏ, đúng ý), KHÔNG xoá ca kiểm.
+Mọi ca ở tệp này nay XANH (bản sửa SRS-331 / 336 / 343 đã gộp) — giữ làm ca hồi quy, ĐỎ lại nếu bản sửa bị gỡ. Ca chờ mới thêm sau
+thì dùng `xfail(strict=True)` và xoá dòng đó khi bản sửa gộp (strict = XPASS cũng đỏ, đúng ý làm dấu nhắc).
 Số điện thoại / tên trong bài là hư cấu; persona khách ảo cũng là hư cấu.
 """
 import pytest
@@ -133,3 +134,24 @@ def test_ca_3_khong_noi_chu_ro_voi_khach():
     from aioi.engine import _soat_hinh_thuc_tu_vung_noi_bo   # chưa có — ca chờ đúng nghĩa
     for loi in (LOI_CO_RO, LOI_CO_RO_MOI):
         assert _soat_hinh_thuc_tu_vung_noi_bo(loi)
+
+
+# ---------------------------------------------------------------- ca 4: chỗ gọi THỨ HAI cùng lớp lỗi ca 1
+
+def test_ca_4_cat_truoc_mo_dau_khong_sua_loi_dung_thanh_sai():
+    """Chỗ gọi thứ hai của `mo_dau_nhap`, đã nêu là "cùng lớp còn sót" khi dựng ca 1 (SRS-342).
+
+    Nặng hơn ca 1: model viết ĐÚNG ("📋 Cháu sẽ rao như vầy nhé cô:") mà `prompts.cat_truoc_mo_dau` thay bằng
+    "nhé em:" — lõi tự làm hỏng một lời đã đúng. Cùng nguyên nhân: `xung_ho if xung_ho in _TRE else "em"`, và
+    `_TRE == ("em", "chau")` nên "elder:cô" rơi xuống "em".
+
+    NAY XANH: bản sửa SRS-336 (#266) chữa chung gốc `_TRE` nên cả hai chỗ gọi cùng đúng — đúng như ca này dự đoán khi dựng.
+    Bỏ `xfail`, thành ca hồi quy thường: ĐỎ lại nếu ai đưa lối ép `else "em"` trở về.
+    """
+    from aioi.prompts import cat_truoc_mo_dau
+    vao = "Em ghi nhận đủ rồi cô ạ.\n📋 Cháu sẽ rao như vầy nhé cô:\n\n🏡 Nhà hẻm 4m Phạm Thế Hiển, Quận 8"
+    ra = cat_truoc_mo_dau(vao, xung_ho="elder:cô", toi="cháu")
+    assert "nhé cô:" in ra and "nhé em:" not in ra
+    # cách gọi khác, chưa bắn ở đâu
+    vao2 = vao.replace("cô", "chú")
+    assert "nhé chú:" in cat_truoc_mo_dau(vao2, xung_ho="elder:chú", toi="cháu")

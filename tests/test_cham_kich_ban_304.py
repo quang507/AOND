@@ -8,7 +8,7 @@ from tests.kich_ban.cham import cham, chua, loi_pham
 BO = os.path.join(os.path.dirname(__file__), "kich_ban", "ban.json")
 # SRS-5.1zzzzzzz342: `khong_da_doi` = phép đọc nghĩa do giám khảo chấm (bật riêng từng kịch bản, xem scripts/cham-kich-ban.py).
 KHOA = {"o", "o_khong", "o_khong_chua", "loai", "cho_thue", "so_can", "xin_nguoi", "nhap_truoc", "khong_nhap", "cam", "luot", "luot_khong",
-        "trang_thai", "ban_tin_khong", "khong_da_doi"}
+        "trang_thai", "ban_tin_khong", "khong_da_doi", "khong_diem_sai_luc"}
 
 
 def _kq(bots, o=None, **k):

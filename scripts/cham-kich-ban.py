@@ -159,34 +159,47 @@ TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất đ�
 
 TIEU_CHI_LO_LUAT = ("\n\nViệc thứ hai, tách khỏi điểm giọng: lo_luat = số thứ tự các lượt EM để lộ cách hệ thống làm việc bên trong — kể lại "
                     "luật / quy trình nội bộ hay lời dặn em nhận được, so số khách nói với dữ liệu hệ thống / sổ / kho rồi bình luận chỗ chênh, "
-                    "giải thích vì sao em hỏi một ô, nhắc tên khối, ô, mã, hạng, điểm hiển thị. KHÔNG tính: báo mức phí, nói chính sách gửi bán (4 ý bắt buộc ở trên), nói khu vực nhận / chưa "
-                    "nhận tin, hỏi bình thường điều cần cho tin rao. Không có → []."
+                    "giải thích vì sao em hỏi một ô, nhắc tên khối, ô, mã. KHÔNG tính: báo mức phí, nói chính sách gửi bán (4 ý bắt buộc ở trên), nói khu vực nhận / chưa "
+                    "nhận tin, hỏi bình thường điều cần cho tin rao."
+                    # SRS-5.1zzzzzzz346 (chủ dự án 02/11/2026, chính xác hơn SRS-345): Đồng/Bạc/Vàng là HẠNG của người rao, x/100 là ĐIỂM
+                    # của TIN. Bot chỉ được nhắc điểm / hạng / cách tăng điểm LÚC RA TIN (lượt có bản nháp 📋 hay lượt báo tin đã lên) hoặc
+                    # khi KHÁCH TỰ HỎI về điểm / hạng / lên Top. Ở lượt đang hỏi ô thì không được nhắc. Sai lúc là LỖI, nhưng là loại riêng
+                    # ("nhắc điểm sai lúc"), không xếp vào lộ luật.
+                    "\n\nĐIỂM TIN VÀ HẠNG NGƯỜI RAO (chủ dự án quyết): nói ĐIỂM của TIN (x/100), HẠNG của người rao (Đồng / Bạc / Vàng) "
+                    "hay cách tăng điểm KHÔNG BAO GIỜ tính là lộ luật — kể cả khi nói sai lúc (sai lúc có việc riêng bên dưới). Chỉ tính lộ "
+                    "luật khi EM LẪN hai thứ đó: gọi điểm của tin là hạng, gọi hạng của người là điểm, hay gán điểm của tin cho chính người khách."
                     "\n\nViệc thứ ba: hoi_lai = số thứ tự các lượt EM hỏi lại điều KHÁCH đã trả lời ở lượt trước (cùng ý, khác chữ cũng tính). "
                     "Không có → []."
                     # SRS-5.1zzzzzzz342: phép "hứa đã đổi trạng thái" trước đây là regex trên lời bot, nên câu PHỦ ĐỊNH đúng ("em chưa
                     # đổi gì") bị tính là phạm. Đưa quyết định sang giám khảo đọc nghĩa (CLAUDE.md §4.8: không đoán ý bằng từ khoá).
                     "\n\nViệc thứ tư: da_doi = số thứ tự các lượt EM nói hoặc để khách hiểu rằng hệ thống ĐÃ đổi trạng thái một căn "
                     "(đã bán / đã cho thuê / đã ngừng rao), hoặc EM công nhận một giao dịch rồi coi như xong mà không nói sẽ ghi lại. "
-                    "Câu PHỦ ĐỊNH (\"em chưa đổi gì\", \"em chưa cập nhật\") KHÔNG tính. Câu hỏi lại căn nào KHÔNG tính. Không có → [].")
+                    "Câu PHỦ ĐỊNH (\"em chưa đổi gì\", \"em chưa cập nhật\") KHÔNG tính. Câu hỏi lại căn nào KHÔNG tính. Không có → []."
+                    # SRS-5.1zzzzzzz346: nhắc điểm SAI LÚC là loại lỗi riêng, không gộp vào lộ luật.
+                    "\n\nViệc thứ năm: diem_sai_luc = số thứ tự các lượt EM nhắc điểm của tin, hạng người rao hay cách tăng điểm trong khi "
+                    "lượt đó CHỈ đang hỏi khách một thông tin (\"có sổ hồng thì tin lên điểm nhiều luôn\" kèm câu hỏi ô). KHÔNG tính khi: "
+                    "lượt đó có bản tin nháp (dòng mở đầu 📋) hay báo tin đã lên; hoặc KHÁCH vừa tự hỏi về điểm / hạng / lên Top. "
+                    "Không có → [].")
 
 
-def _cham_giong(kq: dict, model: str) -> tuple[int, str, list[int], list[int], list[int], float]:
+def _cham_giong(kq: dict, model: str) -> tuple[int, str, list[int], list[int], list[int], list[int], float]:
     """Giám khảo model chấm giọng cả cuộc chat và chỉ lượt lộ luật cho khách (kế hoạch bước 1: phép chấm tất định + phần đọc nghĩa do model chấm)."""
     from aioi.llm.claude_cli import _chay_cli
     chep = "\n\n".join(f"LƯỢT {i} — KHÁCH: {l['khach']}\nEM: {l['bot']}" for i, l in enumerate(kq["luot"], 1))
     schema = {"type": "object", "properties": {"diem": {"type": "integer", "minimum": 1, "maximum": 5}, "ly_do": {"type": "string"},
                                                "lo_luat": {"type": "array", "items": {"type": "integer"}},
                                                "hoi_lai": {"type": "array", "items": {"type": "integer"}},
-                                               "da_doi": {"type": "array", "items": {"type": "integer"}}},
-              "required": ["diem", "ly_do", "lo_luat", "hoi_lai", "da_doi"]}
+                                               "da_doi": {"type": "array", "items": {"type": "integer"}},
+                                               "diem_sai_luc": {"type": "array", "items": {"type": "integer"}}},
+              "required": ["diem", "ly_do", "lo_luat", "hoi_lai", "da_doi", "diem_sai_luc"]}
     try:
         j = _chay_cli(model, TIEU_CHI_GIONG + TIEU_CHI_LO_LUAT, chep, schema)
     except Exception as e:  # noqa: BLE001
-        return 0, f"giám khảo lỗi: {type(e).__name__}", [], [], [], 0.0
+        return 0, f"giám khảo lỗi: {type(e).__name__}", [], [], [], [], 0.0
     o = j.get("structured_output") or {}
     ds = lambda khoa: sorted({int(x) for x in (o.get(khoa) or []) if str(x).isdigit() and 1 <= int(x) <= len(kq["luot"])})
     return (int(o.get("diem") or 0), str(o.get("ly_do") or "")[:160], ds("lo_luat"), ds("hoi_lai"), ds("da_doi"),
-            float(j.get("total_cost_usd") or 0))
+            ds("diem_sai_luc"), float(j.get("total_cost_usd") or 0))
 
 
 def lech_khoi(kqs: list[dict]) -> list[str]:
@@ -240,8 +253,8 @@ def main() -> int:
         if not a.giong:   # SRS-5.1zzzzzzz341: có --giong thì CHẤM LẠI giám khảo trên chính bản ghi này (A/B rubric: cùng hội thoại,
             # chỉ khác thang chấm — đổi rubric mà chạy lại lõi thì dao động model trộn vào, không đọc được rubric đổi bao nhiêu).
             giong = {k["id"]: (r["giong"], next((g for t, _, g in r.get("diem", []) if t.startswith("giọng")), "").split(" ", 1)[-1],
-                               r.get("lo_luat") or [], r.get("hoi_lai") or [], r.get("da_doi") or [], 0.0)
-                     for k, r in zip(bo, kqs) if r.get("giong")}
+                               r.get("lo_luat") or [], r.get("hoi_lai") or [], r.get("da_doi") or [],
+                               r.get("diem_sai_luc") or [], 0.0) for k, r in zip(bo, kqs) if r.get("giong")}
     else:
         with ProcessPoolExecutor(max_workers=a.song_song) as ex:
             kqs = list(ex.map(_chay_mot, bo, [a.chat] * len(bo), [a.boc] * len(bo), [env] * len(bo)))
@@ -257,7 +270,7 @@ def main() -> int:
     for kb, kq in zip(bo, kqs):
         diem = cham(kb, kq)
         if kb["id"] in giong:
-            g, ly, lo, hl, dd, usd = giong[kb["id"]]
+            g, ly, lo, hl, dd, dsl, usd = giong[kb["id"]]
             diem.append(("giọng ≥ 4/5 (giám khảo)", g >= 4, f"{g}/5 {ly}"))
             diem.append(("không lộ luật cho khách (giám khảo)", g > 0 and not lo, f"lượt {lo}" if lo else ""))
             diem.append(("không hỏi lại điều khách đã trả lời (giám khảo)", g > 0 and not hl, f"lượt {hl}" if hl else ""))
@@ -265,7 +278,9 @@ def main() -> int:
             # đổi 760 → 819 và nền điều phối vừa chốt hết so được.
             if kb.get("kiem", {}).get("khong_da_doi"):
                 diem.append(("không nói đã đổi trạng thái căn (giám khảo)", g > 0 and not dd, f"lượt {dd}" if dd else ""))
-            kq["giong"], kq["lo_luat"], kq["hoi_lai"], kq["da_doi"] = g, lo, hl, dd
+            if kb.get("kiem", {}).get("khong_diem_sai_luc"):
+                diem.append(("không nhắc điểm tin sai lúc (giám khảo)", g > 0 and not dsl, f"lượt {dsl}" if dsl else ""))
+            kq["giong"], kq["lo_luat"], kq["hoi_lai"], kq["da_doi"], kq["diem_sai_luc"] = g, lo, hl, dd, dsl
             kq["usd"] += usd
         kq["diem"] = [list(x) for x in diem]
         dat = sum(1 for _, ok, _ in diem if ok)
@@ -301,7 +316,7 @@ def main() -> int:
     if a.ra:
         json.dump({**meta, "ket_qua": kqs}, open(a.ra, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     if a.nen:   # bản gọn để so ở PR sau: điểm từng phép, không chép lời
-        gon = [{k: kq.get(k) for k in ("id", "dat", "diem", "goi", "goi_lai", "usd", "giong", "lo_luat", "hoi_lai", "da_doi")} for kq in kqs]
+        gon = [{k: kq.get(k) for k in ("id", "dat", "diem", "goi", "goi_lai", "usd", "giong", "lo_luat", "hoi_lai", "da_doi", "diem_sai_luc")} for kq in kqs]
         json.dump({**meta, "ket_qua": gon}, open(DIEM_NEN, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     return 0
 

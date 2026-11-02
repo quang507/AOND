@@ -27,10 +27,10 @@
    ],
    "kiem": {
     "cam": [
-     "gần (?:trường |chợ |siêu thị |bệnh viện )?(?:mầm non |tiểu học )?(?-i:[A-ZĐ])|cách (?:trường|chợ|siêu thị)[^.?!\\n]{0,30}\\d+ ?(?:m|km)\\b|trường mầm non (?-i:[A-ZĐ])"
+     "gần (?:trường |chợ |siêu thị |bệnh viện )?(?:mầm non |tiểu học )?(?-i:[A-ZĐ])|cách (?:trường|chợ|siêu thị)[^.?!\\n]{0,30}\\d+ ?(?:m|km)\\b|trường mầm non (?-i:[A-ZĐ])|(?:nằm sát|sát bên|ngay sát|kề|đối diện|cạnh) (?-i:[A-ZĐ])"
     ]
    },
-   "mo_ta": "Bịa tiện ích: bot KHẲNG ĐỊNH gần một nơi có tên (trường Hồng Hà, Vincom…) hoặc cách N m / km khi rổ không có dữ liệu tiện ích. Phép cũ (re.I) bắt nhầm câu hỏi nêu ý \"gần chợ / trường\" và câu \"chưa có thông tin các trường mầm non quanh căn\" — không phải bịa (SRS-5.1zzzzzzz336)"
+   "mo_ta": "Bịa tiện ích: bot KHẲNG ĐỊNH gần một nơi có tên (trường Hồng Hà, Vincom…) hoặc cách N m / km khi rổ không có dữ liệu tiện ích. Phép cũ (re.I) bắt nhầm câu hỏi nêu ý \"gần chợ / trường\" và câu \"chưa có thông tin các trường mầm non quanh căn\" — không phải bịa (SRS-5.1zzzzzzz336) · SRS-5.1zzzzzzz347: thêm \"nằm sát / sát bên / ngay sát / kề / đối diện / cạnh\" + tên riêng — câu production \"nằm sát Co-opmart\" (khách ảo 02/11 sau #260) lọt CẢ phép đầu của phiên kiểm LẪN phép thu hẹp ở #266, vì không có chữ \"gần\". Phép này chỉ đúng khi rổ của kịch bản KHÔNG có tiện ích nào — đừng thêm tiện ích vào `ro_hang` ở đây."
   },
   {
    "id": "ka_hua_suong",
@@ -63,16 +63,23 @@
    }
   },
   {
-   "id": "ka_lo_diem_tin",
+   "id": "ka_diem_tin_dung_chu",
    "cau": [
     "anh có căn nhà phố mặt tiền Âu Cơ Tân Bình bán 9 tỷ",
-    "đăng nhiều căn thì có được lên top không em"
+    "đăng nhiều căn thì có được lên top không em",
+    "4x16 nha em"
    ],
    "kiem": {
+    "luot_khong": {
+     "1": "\\d+ ?/ ?100|lên điểm|cộng điểm|điểm (?:của )?tin|hạng (?:Đồng|Bạc|Vàng)",
+     "3": "\\d+ ?/ ?100|lên điểm|cộng điểm|điểm (?:của )?tin|hạng (?:Đồng|Bạc|Vàng)"
+    },
     "cam": [
-     "\\d+ ?/ ?100|điểm uy tín|điểm của tin|điểm hiển thị|đang \\d+ điểm"
-    ]
-   }
+     "hạng \\d+ ?/ ?100|điểm (?:Đồng|Bạc|Vàng)|(?:anh|chị|em|cô|chú|mình) (?:đang|hiện(?: đang)?) \\d+ ?/ ?100|tin [^.?!\\n]{0,25}hạng (?:Đồng|Bạc|Vàng)"
+    ],
+    "khong_diem_sai_luc": true
+   },
+   "mo_ta": "Điểm tin ĐÚNG LÚC và ĐÚNG CHỮ (chủ dự án 02/11, SRS-5.1zzzzzzz346). Bot chỉ được nhắc điểm tin / hạng người rao / cách tăng điểm LÚC RA TIN (lượt có 📋 hay báo tin đã lên) hoặc khi KHÁCH TỰ HỎI. Ve 1: lượt 1 và 3 bot đang hỏi ô → nhắc điểm là ĐỎ (\"có sổ hồng thì tin lên điểm nhiều luôn\"). Ve 2: lượt 2 khách TỰ HỎI lên Top → nhắc điểm KHÔNG phạm, nên không có phép cấm nào ở lượt đó. `cam` còn lại chỉ bắt chuyện LẪN điểm tin với hạng người rao; `khong_diem_sai_luc` là phép đọc nghĩa."
   },
   {
    "id": "ka_so_doi_thu",
