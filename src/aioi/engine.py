@@ -2989,6 +2989,7 @@ class Engine:
             self.unit_type_for(conv.prop),
             conv.prop.fields.get("unit_type"),
         )
+        phi_da_noi_truoc = bool(conv.prop.fields.get("_phi_da_bao"))   # SRS-5.1zzzzzzz355: lượt TRƯỚC đã báo phí / chính sách chưa
         if conv.hoi_ve_luot == "phi":   # SRS-5.1zzzzzzz212: lượt này bot báo phí (khối ưu tiên phí) — lượt duyệt sau không hỏi "biết phí chưa"
             conv.prop.fields["_phi_da_bao"] = "1"
         is_listing_post = conv.prop.summary_ready() or conv.listing_proposed or (xin_dang and not toi_thieu)
@@ -3151,7 +3152,21 @@ class Engine:
         # Khối ưu tiên theo điều khách HỎI — lượt AI lập thao tác đọc theo nghĩa (conv.hoi_ve_luot, SRS-5.1zzzzzzz54); bản trước
         # dò từ khoá ("chi phí" nào cũng thành hỏi phí). Con số phí theo vai từ _fee_hint, không viết tay.
         hoi_ve_khoi = ""
-        if conv.hoi_ve_luot == "phi":
+        if conv.hoi_ve_luot == "phi" and phi_da_noi_truoc:
+            # SRS-5.1zzzzzzz355 (`srd_phi` lượt 9 dán lại gần nguyên lượt 8): khối dưới lượt nào cũng dặn "nói cho ĐỦ các ý chính sách" — không
+            # biết lượt trước đã nói, nên khách hỏi tiếp ("anh là chính chủ, vậy phí bao nhiêu") thì bot đọc lại cả bài. Dữ kiện có sẵn (cờ
+            # `_phi_da_bao`), không đọc chữ khách: chính sách đã nói thì lượt này chỉ đáp đúng điều vừa hỏi.
+            hoi_ve_khoi = (
+                "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI TIẾP VỀ PHÍ (chính sách gửi bán EM ĐÃ NÓI ở lượt trước): ===\n"
+                "Đáp ĐÚNG điều khách vừa hỏi bằng một–hai câu ngắn, câu mở KHÁC lượt trước. KHÔNG nhắc lại các ý chính sách đã nói (miễn phí đăng, "
+                "cố định không bớt, hợp đồng, không độc quyền, không chia hoa hồng) trừ khi khách hỏi đúng ý đó. "
+                f"Con số phí CHỈ lấy từ dòng VAI NGƯỜI RAO / câu mẫu báo phí bên dưới (bán: {PT_CHU} chính chủ, {PT_MG} môi giới; cho thuê: "
+                f"{PHI_THUE}). Sau đó nối lại nội dung căn đang trao đổi.\n"
+                + ((_fee_hint(conv.vai_phi) + "\n") if _fee_hint(conv.vai_phi) else "")
+                + ((khoi_bao_phi(conv.vai_phi, conv.prop.is_rental, goi_toi_khach(customer_pronoun)[0]) + "\n")
+                   if muc_phi(conv.vai_phi, conv.prop.is_rental) else "")
+            )
+        elif conv.hoi_ve_luot == "phi":
             hoi_ve_khoi = (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ PHÍ / CHÍNH SÁCH GỬI BÁN: ===\n"
                 # SRS-5.1zzzzzzz318 (chủ dự án 01/11: ĐỦ 4 ý chính sách, giọng theo khuôn anh Luận — bản đầu đọc cả khối như điều khoản, giám khảo

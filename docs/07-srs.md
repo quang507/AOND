@@ -831,6 +831,18 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz355 · Khách hỏi phí lần hai: bot đọc lại nguyên bài chính sách lượt trước (02/11/2026)
+Ca gốc: `srd_phi` lượt 9 ("Anh là chính chủ, vậy phí bao nhiêu em?") gần như dán lại lượt 8 — đủ bốn ý chính sách lần nữa, cùng câu mở.
+(1) Lớp lỗi: khối ưu tiên phí lượt nào cũng dặn "nói cho ĐỦ các ý chính sách" (SRS-318) mà không biết lượt trước đã nói, dù code có cờ `_phi_da_bao`; luật "không mở / lặp như lượt trước" (`lap`) ở nhóm `mem` (SRS-298) nên chỉ ghi log. Sửa: cờ đã bật từ lượt trước thì khối đổi sang "đáp đúng điều vừa hỏi, câu mở khác, không nhắc lại chính sách"; con số phí vẫn từ dòng VAI NGƯỜI RAO.
+(2) Cùng lớp: khối dặn "đủ" khác — báo phí lúc duyệt dùng `phi_da_bao` sẵn (SRS-212). `lap` vẫn ở `mem` (quyết định SRS-298, không đổi ở đây).
+(3) Kiểm: `test_phi_hoi_lan_hai_355.py` (lần đầu đủ chính sách, lần hai không; cách nói mới "thế em lấy anh mấy phần trăm") — bỏ nhánh mới: đỏ.
+
+### SRS-5.1zzzzzzz354 · Tin kể căn bị đọc nhầm là xin bản vẽ: lượt cắt sớm, mất giá và loại nhà (02/11/2026)
+Ca gốc: `lakeview` lượt 1 (lúc có lúc không) "Em gửi căn nhà phố LakeView City, 5x20, 1 trệt 3 lầu, 4 phòng ngủ, giá 27 tỷ" → câu mẫu `chua_co_ban_ve`, mất giá 27 tỷ, mất loại nhà phố.
+(1) Lớp lỗi / điều kiện bật: AI bóc tách điền `xin_xem_ban_ve` (mô tả ô có "xin gửi bản vẽ", khách nói "em GỬI căn"; ô nhận theo ý AI từ Q5, không cụm trích) → nhánh xin bản vẽ trả lời và `return` TRƯỚC bước ghi ô, nên dữ liệu cùng lượt bị bỏ. Sửa: chỉ cắt sớm khi cùng lượt AI KHÔNG có thao tác ghi ô (`update` / `add` có `fields`) — kiểm cấu trúc đầu ra AI, không đọc chữ khách; mô tả ô dặn khách tự gửi / kể căn thì bỏ trống.
+(2) Cùng lớp: nhánh câu hỏi dự án (`cau_hoi_du_an`) cũng `return` trước bước ghi ô — GIỮ, vì cố ý (SRS cũ: câu hỏi "lô 42 và 50?" từng bị đọc thành thêm căn).
+(3) Kiểm: `test_ke_can_khong_phai_xin_ban_ve_354.py` (ca lakeview + cách nói mới "Gửi em căn shophouse … 18 tỷ"; xin bản vẽ thật vẫn trả lời bản vẽ) — bỏ điều kiện: đỏ.
+
 ### SRS-5.1zzzzzzz351 · Cổng web đỏ oan vì `next/font/google`: ghim font Plus Jakarta Sans trong repo, dựng không cần mạng (02/11/2026)
 Ca gốc: cổng "Web — kiểu dữ liệu + dựng" đỏ oan 3 lần 02/11 (#250, #254, #265): `next/font` → `TypeError: Cannot read properties of null (reading '1')` ở `@next/font/dist/google/loader.js` — mỗi lượt dựng tải metadata font từ Google, runner lúc lấy được lúc không.
 (1) Lớp lỗi: bước dựng phụ thuộc dịch vụ ngoài. (2) Cùng lớp: dựng trong namespace không mạng (`unshare -n bun run build`) chỉ hỏng ở font — không chỗ nào khác gọi ra ngoài lúc dựng. Sửa: `app/fonts/` ba woff2 variable 200–800 (latin / vietnamese / latin-ext, fontsource 5.3.0, OFL kèm theo), `next/font/local` mỗi subset một lần gọi kèm `unicode-range`; `--font-jakarta` (globals.css) ghép ba họ, chỉ họ cuối giữ font dự phòng chỉnh cỡ.
