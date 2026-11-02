@@ -3055,9 +3055,9 @@ class Engine:
                 system += KHOI_TIN_DANG_HIEN_NGOAI_CHAT
                 khoi.append("tin_dang_hien_ngoai_chat")
             if conv.duyet_luot == "dong_y" and len_web:
-                conv.prop.fields["_phi_da_hoi"] = "1"
+                conv.prop.fields["_phi_da_hoi"] = "1"   # lượt duyệt hỏi phí (hoi_phi) — lượt sau là lúc xin chấm sao
                 if conv.hoi_ve_luot != "diem_tin":   # SRS-5.1zzzzzzz336: lượt báo tin đã lên — lúc ra tin, có khối ĐIỂM TIN
-                    system += self._khoi_diem_tin(conv, now)   # lượt duyệt hỏi phí (hoi_phi) — lượt sau là lúc xin chấm sao
+                    system += self._khoi_diem_tin(conv, now)
             if len_web and (conv.duyet_luot == "dong_y" or web_tin.get("da_bao_dang")):
                 conv.prop.fields["_da_bao_dang"] = "1"
             # Hết việc của tin (tin đã lên web, đã hỏi phí ở lượt duyệt, lượt này khách không hỏi gì mới, không sửa tin — chỉ trả lời cụm
@@ -3325,7 +3325,7 @@ class Engine:
             so_anh = len(conv.active.media or [])
         except Exception:  # noqa: BLE001 — chưa có căn nào
             so_anh = 0
-        return khoi_diem_tin(diem, g.tier_for(diem_nguoi).value, diem_nguoi, conv.prop.missing_fields(), so_anh, conv.prop)
+        return khoi_diem_tin(diem, g.tier_for(diem_nguoi).value, conv.prop.missing_fields(), so_anh, conv.prop)   # hạng: chỉ tên (SRS-349)
 
     def _ghep_cau_chuan(self, system: str, conv: "Conversation | None" = None) -> str:
         """Ghép khối câu chuẩn vào system TRƯỚC `RANH_GIOI_CACHE` (SRS-5.1zzzzzzz180): khối giống nhau cho mọi khách và chỉ đổi khi người

@@ -137,9 +137,9 @@ def test_prompt_ban_co_khoi_diem_tin_so_that():
         eng, spy = _eng({"operations": [{"op": "set", "field": "loai_hinh", "value": "nhà phố", "bang_chung": "nhà phố"}], "hoi_ve": "diem_tin"})
         eng.handle(f"dt2-{i}", cau)
         he = spy.systems[-1]
-        m = re.search(r"=== ĐIỂM TIN .*?===\nTin này: (\d+)/100\. Người rao: hạng (Đồng|Bạc|Vàng) \((\d+)/100\)", he)
+        m = re.search(r"=== ĐIỂM TIN .*?===\nĐIỂM TIN \(của căn\): (\d+)/100\..*\nHẠNG NGƯỜI RAO: (Đồng|Bạc|Vàng)\.\n", he)
         assert m and "KHÁCH HỎI ĐIỂM TIN" in he, cau
-        assert "Để tăng điểm:" in he and "không hứa lên Top" in he and he.count("=== ĐIỂM TIN") == 1
+        assert "Để tăng điểm tin:" in he and "không hứa lên Top" in he and he.count("=== ĐIỂM TIN") == 1
 
 
 def test_khoi_dinh_gia_khong_hua_chuyen_vien_bao_lai():
@@ -223,3 +223,18 @@ def test_file_qua_lon_bao_admin_that_qua_duong_can_nguoi_that():
     r = eng._escalate_oversize(conv, ["https://drive.google.com/file/d/abc/view"], now=1.0)
     assert r.can_nguoi_that and r.can_nguoi_that.startswith("gửi file quá 20 MB") and "drive.google.com" in r.can_nguoi_that
     assert r.reply == cau_mau.cau("file_qua_lon")
+
+
+def test_hang_nguoi_rao_khong_kem_so_349():
+    """SRS-5.1zzzzzzz349 (chấm main 02/11, lộ luật 11/59 — câu production "anh đang hạng Vàng (94/100)"): khối ĐIỂM TIN in hạng người rao
+    KÈM số /100 cạnh điểm tin, model ghép lẫn. Chủ dự án 02/11: Đồng / Bạc / Vàng là của NGƯỜI RAO, x/100 là của TIN → hạng chỉ có TÊN.
+    Đỏ khi trả lại dòng cũ `hạng {hang} ({diem_nguoi}/100)`: trong khối chỉ được có MỘT số /100 (điểm tin), không số nào đi liền tên hạng."""
+    for i, (cau, hoi_ve) in enumerate((("đăng nhiều căn thì có được lên top không em", "diem_tin"),
+                                       ("anh là hạng gì rồi, mấy sao vậy em", "diem_tin"))):   # cách nói mới
+        eng, spy = _eng({"operations": [{"op": "set", "field": "loai_hinh", "value": "nhà phố", "bang_chung": "nhà phố"}], "hoi_ve": hoi_ve})
+        eng.handle(f"h349-{i}", cau)
+        he = spy.systems[-1]
+        khoi = he[he.index("=== ĐIỂM TIN"):]
+        assert len(re.findall(r"\d+\s*/\s*100", khoi)) == 1, cau                       # chỉ điểm TIN có /100
+        assert not re.search(r"(Đồng|Bạc|Vàng)\W{0,3}\(?\s*\d", khoi), cau             # không số nào đi liền tên hạng
+        assert re.search(r"HẠNG NGƯỜI RAO: (Đồng|Bạc|Vàng)\.", khoi), cau

@@ -740,20 +740,23 @@ def khoi_dinh_gia(gia_rao: str | None) -> str:
     )
 
 
-def khoi_diem_tin(diem_tin: float, hang: str, diem_nguoi: float, thieu: list[str], so_anh: int, prop: Property | None = None) -> str:
+def khoi_diem_tin(diem_tin: float, hang: str, thieu: list[str], so_anh: int, prop: Property | None = None) -> str:
     """Khối ĐIỂM TIN đưa cho model phía bán (SRS-5.1zzzzzzz216, chủ dự án 27/10: "3 làm đi"): `BUSINESS_CONTEXT` bảo bot nói về điểm uy
     tín / hạng mà trước đó không khối nào mang số thật, nên model chỉ có thể bịa. Số do `gamification` tính (cùng nguồn `TurnResult`),
-    ô còn thiếu = `Property.missing_fields()` theo nhãn `nhan_o`. Đặt SAU `RANH_GIOI_CACHE` (đổi mỗi lượt). Chữ dặn không chứa chữ số."""
+    ô còn thiếu = `Property.missing_fields()` theo nhãn `nhan_o`. Đặt SAU `RANH_GIOI_CACHE` (đổi mỗi lượt). Chữ dặn không chứa chữ số.
+    SRS-5.1zzzzzzz349 (chấm main 02/11, lộ luật 11/59: "anh đang hạng Vàng (94/100)"): hạng NGƯỜI RAO chỉ có TÊN, không số — bản trước in
+    "hạng Vàng (94/100)" cạnh "Tin này: 78/100", hai con số cùng dạng nên model ghép lẫn. Số /100 duy nhất trong khối là điểm của TIN."""
     nhan = [nhan_o(o, prop).split(" (")[0] for o in (thieu or [])[:5]]
     cach = ", ".join(nhan) if nhan else "tin đã đủ ô — chỉ còn chủ nhà chụp gửi ảnh thật nếu chưa có"
     return (
         "\n\n=== ĐIỂM TIN (hệ thống tính, số THẬT — chỉ nói số ở đây, không tự đặt số khác) ===\n"
-        f"Tin này: {diem_tin:.0f}/100. Người rao: hạng {hang} ({diem_nguoi:.0f}/100). Ảnh đã nhận: {so_anh} tấm.\n"
-        f"Để tăng điểm: {cach}.\n"
+        f"ĐIỂM TIN (của căn): {diem_tin:.0f}/100. Ảnh đã nhận: {so_anh} tấm.\n"
+        f"HẠNG NGƯỜI RAO: {hang}.\n"
+        f"Để tăng điểm tin: {cach}.\n"
         "Khối này chỉ có ở lượt ra tin (bản nháp / báo tin đã lên) hoặc khi khách hỏi điểm — nói gọn điểm tin, hạng người rao và cách tăng điểm, "
         "không hứa lên Top.\n"
-        "Gọi đúng chữ (chủ dự án 02/11, SRS-5.1zzzzzzz336): điểm …/100 là điểm của TIN / CĂN; Đồng / Bạc / Vàng là hạng của NGƯỜI RAO — "
-        "không gọi điểm tin là hạng, không gọi hạng là điểm.\n"
+        "Gọi đúng chữ (chủ dự án 02/11): điểm …/100 là điểm của TIN / CĂN; Đồng / Bạc / Vàng là hạng của NGƯỜI RAO, chỉ nói bằng TÊN hạng, "
+        "KHÔNG kèm con số nào, không đặt chung một câu với điểm tin.\n"
     )
 
 
