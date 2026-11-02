@@ -160,7 +160,7 @@ if [ -d /opt/aond_core/src/aioi ]; then
   # gỡ khỏi code — đường mới là đường duy nhất. Dòng .env cũ của chúng bị lọc bỏ ở bước ghi .env dưới.
   # SRS-5.1zzzzzzz310 (kế hoạch bước 3): lượt đọc ý người bán (vai đã rõ, form bán gọn bật) bằng agent gọi công cụ ghi (agent_boc.py) thay form JSON.
   # "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = form cũ.
-  AGENT_BOC="thu"
+  AGENT_BOC="bat"
   MODEL_AGENT_BOC=""   # model của vòng agent bóc; trống = MODEL_CHAT
   # SRS-5.1zzzzzzz311 (kế hoạch bước 4): model viết lời cho LƯỢT DỄ của người bán (thu thập bằng phiếu lượt, không tra dữ liệu, không việc
   # khác); "tat" = mọi lượt dùng MODEL_CHAT.

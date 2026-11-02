@@ -55,7 +55,8 @@ def test_khong_phai_chinh_chu_van_bi_bat():
     assert "chính chủ" in _bat(vl) and eng.conversation("kd-320").user_type is not SellerRole.CHU_NHA
 
 
-def test_nguoi_nha_dang_gium_khong_chinh_chu_va_ha_vai_da_nhan():
+def test_nguoi_nha_dang_gium_khong_chinh_chu_va_ha_vai_da_nhan(monkeypatch):
+    monkeypatch.setenv("AIOI_AGENT_BOC", "tat")   # đồ giả trả kiểu form: kiểm đường form (dự phòng khi model không gọi được công cụ)
     eng = Engine(_AI({"seller_role": "chu_nha", "seller_role_trich_dan": "nhà của chị"}, [SACH]))
     eng.handle("kd-nn", "nhà của chị ở Lê Lai")
     assert eng.conversation("kd-nn").user_type is SellerRole.CHU_NHA

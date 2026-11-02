@@ -17,7 +17,8 @@ def test_phieu_luot_ngan_co_giong_va_mot_viec():
     assert "không hỏi thêm" in build_phieu_luot("Mai·Anh", prop, None)
 
 
-def test_khach_that_dung_phieu_luot():
+def test_khach_that_dung_phieu_luot(monkeypatch):
+    monkeypatch.setenv("AIOI_AGENT_BOC", "tat")   # đồ giả trả kiểu form: kiểm đường form (dự phòng khi model không gọi được công cụ)
     ai = AiGhiForm(BAN)
     eng = Engine(ai, conversation_store=KhoGia())
     eng.handle("chu-309", "Anh cần bán nhà mặt tiền đường Hoàng Hoa Thám")

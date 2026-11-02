@@ -831,6 +831,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz369 · Khách thật đi form JSON cũ, bắn thử đi agent bóc: hai bộ kiểm đo hai đường (03/11/2026)
+Ca gốc: chủ dự án 02/11 — "chạy con bot như 1 agent, bot sẽ đọc schematic trước sau đó mới dùng từ khóa để làm chuẩn lại". `cai-vps.sh` để `AGENT_BOC="thu"` từ SRS-310 (30/10): ID thử đọc ý người bán bằng agent gọi công cụ cắt từ schema (`agent_boc.py`), khách thật vẫn form JSON lớn (Haiku 19–24k token vào mỗi lần, `bot_usage_model` 26/10–02/11).
+(1) Lớp lỗi: công tắc "thu" bỏ quên — `ban-thu-*` (ID thử) đo đường agent, bộ chấm (`cham-kich-ban.py` chạy như khách thật) đo đường form, khách thật đi form; không bộ kiểm nào đo đúng đường mình tưởng. Sửa: `AGENT_BOC="bat"` — mọi người bán đi agent; form chỉ còn là đường dự phòng khi model không gọi được công cụ (`agent_boc` trả None).
+(2) Cùng lớp: soát các công tắc "thu" khác trong `cai-vps.sh` — `MODEL_CHAT_THU` (model riêng ID thử) còn; các công tắc Đợt 8 đã gỡ (SRS-319). Hai bài đồ giả trả kiểu form (`test_khang_dinh_320`, `test_phieu_luot_309`) ghim `tat` để vẫn kiểm đường dự phòng.
+(3) Kiểm: `test_cau_hinh_nhu_production_316` khẳng định khách thật = `bat` (đỏ khi trả về "thu"); chấm như khách thật với agent so nền 598ecca trước khi gộp.
+
 ### SRS-5.1zzzzzzz365 · Sổ lỗi "ghi tin vào messages hỏng: 409 Conflict" 34 lần: lời bot của lượt trùng tin mất khỏi CRM (02/11/2026)
 Ca gốc: `bot_errors` 21/10–01/11 23:12 — "supabase sync: ghi tin vào messages hỏng: HTTPError 409" 34 lần; "TypeError: argument of type 'NoneType' is not iterable" 15 lần 28/10 16:22 – 29/10 04:52.
 (1) Lớp lỗi: `messages.zalo_msg_id` là khoá duy nhất; cùng một tin Zalo tới hai lần (bridge thử lại khi mạng nghẽn; khách thả cảm xúc nhiều lần lên CÙNG một tin — msg_id `react-<luồng>-<tin>`) → 409 → `ghi_luot_chat` coi mọi 409 là "hội thoại đã xoá", ghi lại vẫn 409 rồi ném → dòng LỜI BOT của lượt đó không vào CRM (mất tin thật, không phải chỉ ồn sổ). Sửa: dòng khách ghi `on_conflict=zalo_msg_id` + `resolution=ignore-duplicates` (trùng khoá là đúng thiết kế: một tin Zalo một dòng); đường 409 do hội thoại bị xoá (khoá ngoại) giữ nguyên. TypeError: đã hết từ SRS-276 (`f0dda59`, 29/10 05:35 UTC — `.get("name", "")` trả None khi cột NULL), không sửa thêm.
