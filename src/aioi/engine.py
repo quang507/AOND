@@ -1728,6 +1728,12 @@ def _la_ban_tin(reply: str) -> bool:
     return "📋" in reply or _is_formatted_post(reply) or _MO_DAU_RE.search(reply) is not None
 
 
+def _ke_hoach_ghi_o(plan: dict | None) -> bool:
+    """Kế hoạch AI có thao tác ghi dữ liệu căn (update / add kèm fields) — SRS-5.1zzzzzzz354."""
+    return any(isinstance(op, dict) and op.get("op") in ("update", "add") and op.get("fields")
+               for op in ((plan or {}).get("operations") or []))
+
+
 def _gon(x: str) -> str:
     return re.sub(r"\s+", " ", x or "").strip().lower()
 
@@ -2759,7 +2765,10 @@ class Engine:
         #     request, not a basket edit — answer with the model's stored drawing if we have it,
         #     else offer to get it. Handled BEFORE extraction so it can never mutate the basket
         #     (a mis-parse once pruned the rổ hàng from "bản vẽ căn 24").
-        if conv.y_luot.get("xin_xem_ban_ve"):
+        # SRS-5.1zzzzzzz354 (`lakeview` lượt 1, lúc có lúc không): "Em gửi căn nhà phố LakeView City, 5x20, … giá 27 tỷ" → AI điền `xin_xem_ban_ve`
+        # (ô nhận theo ý AI từ Q5) → lượt bị cắt ở đây, TRƯỚC bước ghi ô, mất giá / loại nhà. Cùng lượt AI lập thao tác ghi ô (update / add có
+        # fields) thì tin là KỂ CĂN, không phải xin bản vẽ thuần — đi đường thường. Kiểm cấu trúc đầu ra AI, không đọc chữ khách.
+        if conv.y_luot.get("xin_xem_ban_ve") and not _ke_hoach_ghi_o(ke_hoach):
             reply = self._media_request_reply(conv, q_project, text)
             conv.history.append(Turn("assistant", reply, now))
             conv.last_ai_at = now
