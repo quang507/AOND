@@ -1,4 +1,4 @@
-"""Phía người mua trên Supabase (19/10/2026, docs/07 SRS-5.1zzzzzzz70; chủ dự án: "đưa 4 việc vào lõi python").
+"""Phía người mua trên Supabase (docs/07 SRS-5.1zzzzzzz70; chủ dự án: "đưa 4 việc vào lõi python").
 
 Bot TypeScript cũ ghi bốn việc phía mua; lõi Python trước bản này chỉ hỏi nhu cầu khách, không ghi gì. Máy phía sau đã có trên DB
 và chạy theo dòng được ghi — lõi chỉ cần GHI ĐÚNG DÒNG:
@@ -1066,7 +1066,7 @@ def khoi_viec_vua_ghi(viec: list[str]) -> str:
                 "admin đã nhận được gì, không hứa sẽ hỏi chủ nhà hay báo lại việc chưa ghi (dữ kiện tự nhắn khi có căn mới ở khối CĂN ĐANG RAO thì được nói). Khách muốn xem nhà mà còn thiếu căn nào hoặc ngày giờ nào thì hỏi đúng chỗ thiếu "
                 "bằng MỘT câu ngắn.\n")
     return ("\nEM VỪA GHI LƯỢT NÀY (nói đúng các việc này, không hứa thêm việc khác): " + "; ".join(viec) + ".\n"
-            "Cả lượt tối đa MỘT câu hỏi: việc nào ở trên dặn hỏi thì câu đó THAY câu hỏi nhu cầu (SRS-5.1zzzzzzz253).\n")
+            "Cả lượt tối đa MỘT câu hỏi: việc nào ở trên dặn hỏi thì câu đó THAY câu hỏi nhu cầu.\n")
 
 
 def khoi_cau_hoi_cho(cau: list[dict]) -> str:

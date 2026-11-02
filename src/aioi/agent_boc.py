@@ -1,4 +1,4 @@
-"""Agent bóc tách phía BÁN — kế hoạch bước 3 (SRS-5.1zzzzzzz310, chủ dự án 30/10/2026: "các công cụ đơn giản thì viết trước sau đó … chỉ chọn
+"""Agent bóc tách phía BÁN — kế hoạch bước 3 (chủ dự án 30/10/2026: "các công cụ đơn giản thì viết trước sau đó … chỉ chọn
 để chạy", "chuyển sang sonnet 5.5 luôn").
 
 Lượt đọc ý người bán không trả MỘT khối JSON lớn (form `OPERATIONS_SYSTEM_BAN` + schema) nữa mà gọi công cụ do code viết sẵn: `ghi_o`

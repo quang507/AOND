@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz357 · Khách ảo: "(trong 8–20 giờ)" thành mốc hẹn bịa; phép `ka_hua_suong` neo chữ nên 4/5 câu lọt (02/11/2026)
+Ca gốc: khách ảo trên main `5e934ae`, 5 persona (4 · 2 · 2 · 2 · 3 sao); hai persona nhận "nhắn trong khoảng 8–20 giờ tới".
+(1) Lớp lỗi: dữ kiện prompt mơ hồ đơn vị (sửa ở SRS-358); phép chấm `ka_hua_suong` neo chữ "thì em báo" nên lọt "là em báo", "xác nhận thì em báo". Sửa: chuyển sang giám khảo đọc nghĩa (việc `hua_suong`, mẫu số `ban.json` giữ 760).
+(2) Cùng lớp: §4.8 như SRS-350. (3) Kiểm: `test_khung_gio_8_20_357.py` khoá nguyên văn dòng engine.
+
 ### SRS-5.1zzzzzzz356 · Câu mẫu nói chữ "rổ" / "rổ hàng" với khách — lưới `tu_noi_bo` không với tới câu mẫu (02/11/2026)
 Ca gốc (phiên test, #270): `da_an_het`, `da_cap_nhat_ro`, `giu_nguyen_ro`, `nhap_bang_tinh`, `chua_co_ban_ve` ("Em không đụng gì tới rổ hàng") nói "rổ" với khách; câu mẫu không qua `_soat_hinh_thuc` nên lưới SRS-343 không bắt. Sửa: chữ trong `cau_mau.py` ("các tin của {goi}", "các tin", "danh sách tin"; không thêm chỗ trống mới); migration `20261102d_cau_mau_bo_chu_ro` (cách 20261027e: chỉ đổi dòng `cau = mac_dinh` — soát DB 02/11: cả 5 dòng chưa ai sửa tay) — CHƯA áp, chờ chủ dự án duyệt.
 (1) Lớp lỗi: lưới soát chữ chỉ đặt trên lời model; chữ code / câu mẫu đi đường riêng tới khách. (2) Cùng lớp — soát mọi chuỗi có "rổ" trong `src/aioi`: còn 4 chuỗi code tự ghép gửi khách KHÔNG qua lưới, cùng ở `engine.py` (làn bot, chưa sửa ở PR này): bảng giá 0 căn "cho căn nào vào rổ rao" (~3885), nhập bảng giá "vào rổ hàng" / "rổ hàng đã có đủ" (~3898, ~3900), `{viec}` mặc định "đổi trạng thái rao của rổ hàng" của `xac_nhan_an` (~5489). `gui_nhac` / `bao_can_moi` / `hoi_con_ban` / `giu_ket_noi`: không có. `lenh_zalo` có nhưng là tin debug `$$$$$` (người thử gõ lệnh), không phải lời khách.

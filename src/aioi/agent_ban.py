@@ -1,4 +1,4 @@
-"""Vòng agent phía BÁN — B2 bước 2 (SRS-5.1zzzzzzz307, chủ dự án 30/10/2026: "làm nốt b2 nhưng vẫn lưu các hàm để dễ gọi").
+"""Vòng agent phía BÁN — B2 bước 2 (chủ dự án 30/10/2026: "làm nốt b2 nhưng vẫn lưu các hàm để dễ gọi").
 
 Lượt viết lời cho người rao không nhét sẵn các khối DỮ LIỆU vào prompt mọi lượt (rổ hàng, bộ nhớ dự án, giá khách đã gửi) — prompt chỉ còn MỘT
 dòng báo có dữ liệu gì, model tự gọi công cụ tra khi cần. Thân công cụ là CHÍNH các hàm khối cũ của engine (`_basket_block`,
@@ -6,7 +6,7 @@ dòng báo có dữ liệu gì, model tự gọi công cụ tra khi cần. Thân
 công cụ kho dự án cũ (`_inventory_tools` / `_exec_tool`). Bóc tách ô vẫn là Haiku + cổng bằng chứng như cũ (không đổi tiền mỗi lượt).
 
 Có trần như phía mua: tối đa `MAX_VONG` lần gọi model, ngừng tra sau `HAN_GIAY` giây; hết trần mà chưa có lời thì viết lời thường kèm kết quả đã
-tra. Chạy cho mọi người bán (công tắc AGENT_BAN gỡ ở Đợt 8, SRS-5.1zzzzzzz319)."""
+tra. Chạy cho mọi người bán (công tắc AGENT_BAN gỡ ở Đợt 8)."""
 from __future__ import annotations
 
 import logging
