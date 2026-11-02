@@ -9,7 +9,7 @@ Tài liệu này nói **yêu cầu là gì và trạng thái hôm nay**. Con tr�
 
 | ID | Mục tiêu | Đo bằng |
 |---|---|---|
-| BR-01 | Phủ 90% nguồn hàng mua/bán/thuê trên từng cụm địa bàn đang mở (Quận 5 cũ là cụm khởi điểm; địa bàn mở rộng Sài Gòn + Long An — FR-174) | Số listing active / ước lượng tổng thị trường |
+| BR-01 | Phủ 90% nguồn hàng mua/bán/thuê trên từng cụm địa bàn đang mở (Quận 5 cũ là cụm khởi điểm; địa bàn mở rộng Sài Gòn + Long An — FR-174). Trọng tâm bán (Sài Gòn + Long An) ≠ vùng nhận tin (6 tỉnh, `prompts.VUNG_NHAN_TIN` / `lib/vung.ts`) — chủ dự án giữ nguyên, không đổi BR-01 `[nguồn: chủ dự án 02/11/2026, chat]`. | Số listing active / ước lượng tổng thị trường |
 | BR-02 | Xây mạng lưới 20 NMG, mỗi người chuyên một khu trong địa bàn | Số NMG active đạt chuẩn |
 | BR-03 | 10 cuộc chat mới/ngày, ≥30 tin/cuộc, không rác | Bảng thống kê hội thoại (FR-71) |
 | BR-04 | 1 giao dịch / 2 ngày, TB 10 tỉ | Sổ giao dịch |
@@ -262,7 +262,7 @@ Phạm vi MVP: **đặt nền dữ liệu**, chưa làm UI giỏ hàng riêng.
 | FR-171 | ✅ **Tối ưu chi phí vận hành, không đổi hành vi với khách.** | S | yêu cầu chủ dự án 02/09/2026; số đo `[giả định BA — đo trên DB thật + e2e]` |
 | FR-172 | ✅ **Tin rao CÓ CẤU TRÚC chuẩn sàn.** | M | yêu cầu chủ dự án 02/09/2026; số đo `[giả định BA — đo trên DB thật]` |
 | FR-173 | ✅ **Câu khách hỏi đi về chủ nhà trước (hạn 12 giờ); quá hạn hoặc không có chủ nhà thì về admin (hạn 5 giờ); admin quá hạn thì nhắc lại + email.** Phần CTV / hạng CTV bỏ 28/10/2026. | M | quyết định chủ dự án 03/09/2026; bỏ CTV 28/10/2026 `[nguồn: SRS-5.1zzzzzzz238, schema.sql info_request_sla_tick]` |
-| FR-174 | 🟡 **Địa bàn mở — Sài Gòn (phường mới) + Long An, trọng tâm bán.** Vùng bot NHẬN tin rao rộng hơn: TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai (`prompts.VUNG_NHAN_TIN`). | M | quyết định chủ dự án 03/09/2026; 15/09/2026; 17/09/2026; vùng nhận tin 20/10/2026 `[nguồn: SRS-5.1zzzzzzz86]` |
+| FR-174 | 🟡 **Địa bàn mở — Sài Gòn (phường mới) + Long An, trọng tâm bán.** Vùng bot NHẬN tin rao rộng hơn: TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai (`prompts.VUNG_NHAN_TIN`). Hai khái niệm khác nhau, chủ dự án giữ cả hai 02/11/2026 (soát SRS-5.1zzzzzzz338 không coi là lệch). | M | quyết định chủ dự án 03/09/2026; 15/09/2026; 17/09/2026; vùng nhận tin 20/10/2026 `[nguồn: SRS-5.1zzzzzzz86]` |
 | FR-175 | ✅ **Rổ hàng đọc như Excel, không cần vào Supabase.** | M | phản hồi sếp qua chủ dự án 07/09/2026; chủ dự án 09/09/2026 |
 | FR-176 | ✅ **Giọng người bán tự nhiên — câu sau bám câu trước, câu lệch thì hỏi lại.** | M | sếp qua chủ dự án 07/09/2026; log bridge 15:36–15:40; Gemini share "AI Ơi Nhà Đất" (d) 17/09/2026 (Zalo thật 16:42): câu rao mang ĐỊA CHỈ ở đường khác căn đang hỏi ("cô có căn nhà hẻm 4m Trần Hưng Đạo…" khi đang hỏi phường căn hẻm 4m Nguyễn Trãi) là căn KHÁC → mở tin mới, không ghi vào tin cũ; vị trí ghi từ câu dài chỉ lấy mệnh đề địa chỉ. 💾 báo cả HỒ SƠ vừa lưu: lượt mở hồ sơ có `Zalo: "…xxxx"` (che, 4 ký tự cuối), lượt ghi cách gọi có `cách gọi: "cô"`. Câu hỏi phường ngắn, nhắc địa chỉ đã có: "Hẻm 4m Trần Hưng Đạo đó phường mấy cô nhỉ?"; model chép nguyên văn câu hỏi kế, không thêm lý do. |
 | FR-177 | ✅ **Nhận ký gửi như môi giới giỏi: hỏi một thứ, khích lệ một câu, chốt bằng bản nháp tin có điểm.** | M | sếp qua chủ dự án 07/09/2026; chủ dự án 09/09/2026; Gemini "Kịch bản huấn luyện môi giới BĐS" |

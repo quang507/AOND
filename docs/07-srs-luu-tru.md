@@ -2,6 +2,78 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz331 · Vai theo SỐ khách đang nhắn ở lượt mơ hồ: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi không còn bị hỏi khu vực tìm mua (02/11/2026)
+Ca thật chủ dự án 02/11 (cùng một Zalo): 10:37 số tư vấn "anh đang cần tìm mua nhà quận 8 dưới 7 tỉ" → đúng; 10:38 số ký gửi "chào em" → "Anh muốn tìm ở khu vực nào ạ?". Chủ dự án: số ký gửi mặc định BÁN, nói mua mới hỗ trợ mua; số tư vấn giữ SRS-210.
+(1) Lớp lỗi: hội thoại khoá theo NGƯỜI (Zalo ID), `so_nhan` ghi đè mỗi tin; nhánh "đang mua thì ở lại vai mua" chạy trước mặc định theo số. Sửa: `Conversation.so_vai` (số đặt vai, lưu SQLite); lượt mơ hồ ở số khác → vai mặc định của số đang nhắn, lượt đó chào theo số
+(`_doi_so`); ý mua / bán của lượt vẫn thắng; nhu cầu mua / tin rao số kia giữ nguyên. (2) Cùng lớp: lời chào lượt đầu hai số (cùng cờ); còn: dữ liệu cũ chưa có `so_vai` giữ cách cũ tới lượt có ý mua / bán. Tách khỏi Đợt 4 (#250) để gộp sớm.
+(3) Kiểm: `test_vai_theo_so_331.py` qua `Engine.handle` (gỡ nhánh `so_vai` → 2/5 đỏ; ba cách chào: "chào em", "alo em ơi", "hi bé"); `cham` ×2 (số ở mô tả PR).
+
+### SRS-5.1zzzzzzz330 · Lịch hẹn / câu hỏi của ID thử không nhắn admin, không bắn cảnh báo ngoài (02/11/2026)
+Ca gốc: bắn thử ban-thu-mua 02/11 — lịch xem của "Khách thử" vẫn nhắn admin thật; SRS-321 chỉ chặn đường lõi (`_xep_tin_admin`), còn trigger `viewings_bao_admin_va_email` (nhắc admin + câu `xac_nhan_lich` + email [VIEWING]) chạy cho mọi người mua.
+(1) Lớp lỗi: chặn ID thử ở một cửa (lõi) trong khi DB có cửa riêng tự nhắn admin. (2) Cùng lớp: `trg_info_request_thong_bao_khach_hoi` bắn `canh_bao_ngoai` cho mọi câu `buyer_ask` kể cả ID thử — chặn cùng migration; `notify_info_request_escalation` không chặn (nhắn chủ nhà là việc ban-thu-mua kiểm). Sửa: migration `20261102c_viewings_bo_qua_id_thu` — ID thử (`la_id_thu`) thì `viewings` vẫn ghi, trigger thoát sớm.
+(3) Kiểm: `bot/tests/viewings-id-thu.sql` (tự cuộn lại; đặt tạm `ntfy_topic` để hàng đợi pg_net không đạt câm; đối chứng khách thật vẫn được nhắc / email) — trên DB thật trước sửa 4/4 ca [thu] HONG, kèm sửa 7/7 OK; `ban-thu-mua.sh` thêm 2 ca "ID thử không tạo tin admin". Chủ dự án duyệt áp ("Cho áp"); áp lên DB thật 02/11 07:17 (run 41405341880, `commit_schema = commit`).
+
+### SRS-5.1zzzzzzz328 · Audit Đợt 4: một quyết định một nơi — MỘT câu hỏi mỗi lượt, duyệt bản nháp một hàm, vai một nguồn, phía mua hết lệnh ngược, lượt bản nháp một lần gọi lại; Q4 / Q5 (02/11/2026)
+Chủ dự án 02/11: Q4 — hỏi xác nhận ĐÚNG 4 chỗ (mặt tiền ngang / đường, căn thuộc dự án X, số lệch kho dự án, diện tích đất hay sàn), mỗi chỗ tối đa MỘT lần mỗi căn, ngoài ra giữ SRS-302; Q5 — `hoi_ngoai_viec`, `xin_xem_ban_ve`, `cau_hoi_du_an`, `mo_ta_du_an`, `xong_viec_mua` theo ý AI đọc, bỏ cổng nguyên văn.
+(1) Lớp lỗi: nhiều nơi cùng quyết một đầu ra, không thứ tự — ≥ 7 khối tự nhận "câu hỏi DUY NHẤT" cùng bật (AU-09); duyệt ghi đè ở 4 chỗ, `xin_dang` đè `khong_dong_y` và duyệt lại bản đã duyệt (AU-10); vai chính chủ trên tin ≠ vai tính phí (AU-03);
+phía mua "hỏi khách có muốn em hỏi chủ" ↔ "KHÔNG hỏi lại", "nói sẽ báo" ↔ "không hứa báo lại" (AU-04); lượt bản nháp gọi lại tới 3 lần (AU-14). Sửa: khối hỏi ghép qua `_hoi()` (dấu chỗ), `viec_luot` chọn một, khối thừa gỡ + trả cờ "đã hỏi" (mặt tiền thêm `_mt_cho_hoi`;
+đất / nhà cờ `_dt_mo_ho_da_hoi`); `Engine._quyet_duyet`; bản tin "Chính chủ" theo `vai_phi`; lời hứa báo lại thành dữ kiện vòng `bao_can_moi`; cổng bản nháp đi chung vòng soát (một lần gọi lại, không đè bản tin bằng lời chat). (2) Còn: Q4 (c) là lời dặn trong vòng agent dự án, code chưa đếm.
+Chấm lần 1–2 lộ luật (đọc "Tin đang 73/100", kể "anh nói rõ rồi nên em không hỏi"): dòng việc gọi đúng tên khối thắng, xác nhận mặt tiền có nhánh quay về ô kế; `_hai_chieu_lo` nhận "4m x 4.5m". (3) Kiểm: `test_dot4_328.py` (10 bài, mỗi bài đỏ khi gỡ bản sửa tương ứng; AU-14 trên engine cũ: 4 lần gọi > trần 2); `cham` ×2 (số ở mô tả PR).
+
+### SRS-5.1zzzzzzz327 · Dựng lại `so.ro_hang` từ số không; gắn lại `security_invoker` mà 20261102a làm rơi (02/11/2026)
+Ca gốc: `dung-lai-db.mjs` bước `cau-truc` chạy `so.ro_hang` bản 20260907c / f — đọc `public.media` (gỡ 20261102a) và `listings.legacy_sst` / `source_url` (gỡ 20261022g, nên hỏng từ 22/10); soát thêm thấy 20261102a `create or replace view` không ghi `with (...)` → Postgres thay hết tuỳ chọn view, mất `security_invoker = true` (chưa lộ: anon / authenticated đã revoke, `so` không ra API).
+(1) Lớp lỗi: định nghĩa view nằm rải ở nhiều migration, dựng lại chạy bản cũ; `create or replace view` lặng lẽ xoá tuỳ chọn. (2) Cùng lớp: câu `so` cũ khác (`so.nguoi_ban`, `so.hoi_thoai`) không đọc cột / bảng đã gỡ. Sửa: migration `20261102b_so_ro_hang_hien_hanh` = định nghĩa hiện hành (có `security_invoker`, revoke / grant); dựng lại bỏ câu `so.ro_hang` của file cũ (`cauSoTruRoHang`) rồi chạy 20261102b; không sửa migration cũ.
+(3) Kiểm: `bot/tests/hat-giong-dung-lai.mjs` thêm 4 ca (đỏ 2 ca khi gỡ bộ lọc); chạy thử 20261102b trong giao dịch huỷ trên DB thật; chưa có lượt diễn tập dựng lại trên project rỗng (soát tĩnh).
+
+### SRS-5.1zzzzzzz326 · Gỡ bảng `media` cũ, view `public_media` / `ro_hang_ban`, hàm `kd_ten` / `tim_nghia_san_sang` (02/11/2026)
+Chủ dự án 02/11 ("gỡ hết mấy thứ đó" — bảng đề xuất tầng DB ở SRS-323). Migration `20261102a_go_media_cu` (một giao dịch): định nghĩa lại `admin_xoa_het_khach_va_ro_hang` / `admin_khoi_phuc_lan_xoa` bỏ `media`, `so.ro_hang.so_anh` chỉ đếm `listing_media`, rồi gỡ. `xuat-ro-hang.mjs` đọc `listing_media`.
+(1) Lớp lỗi: soát "0 chỗ gọi" bằng grep code + `schema.sql` bỏ sót schema `so` (`xuat_schema()` không xuất `so`) — chạy thử lần đầu đổ "view so.ro_hang depends on table media". (2) Cùng lớp: soát `pg_depend` + thân hàm + `cron.job` trên DB thật: chỉ `public_media`, `so.ro_hang`, hàm xoá hết, một chú thích trong `xuat_schema()`; hai view chẩn đoán `media_mo_coi_*` không phụ thuộc (giữ).
+(3) Kiểm: chạy thử trong giao dịch huỷ trên DB thật (`so.ro_hang` 249 dòng, 3 đối tượng đã gỡ, hai view chẩn đoán còn đọc được; sau rollback bảng còn nguyên), `soat:db`, `soat:migration`, `test:rohang`.
+
+### SRS-5.1zzzzzzz325 · Chủ căn hộ hỏi giá cao không: nêu giá rao bán thị trường của dự án (thay một phần SRS-116) (02/11/2026)
+Quyết định chủ dự án 02/11 (xác nhận trong phiên): chủ căn hộ hỏi "giá tôi đưa cao không" thì nêu "giá rao bán thị trường X–Y triệu/m²". Ca gốc: SRS-324 đưa dòng giá rao vào khối dự án phía bán
+trong khi `KHOI_DINH_GIA` dặn "CHƯA có dữ liệu định giá" — model nhận hai lời ngược nhau. (1) Lớp lỗi: thêm dữ kiện vào khối chung mà không soát luật cấm đang áp cho cùng dữ kiện.
+Sửa: `prompts.khoi_dinh_gia(gia_rao)` — dự án có giá rao gộp thì nêu khoảng + số tin + ngày (dd/mm/yyyy), nói rõ giá RAO, không phán cao / thấp, không quy đổi ra giá căn, không nêu nguồn; không có số liệu (nhà phố, dự án thiếu) giữ lời cũ; `_BINH_LUAN_GIA` giữ.
+(2) Cùng lớp: phía mua `du_an_mua` đã nói "tham khảo", không có luật cấm ngược. (3) Kiểm: `tests/test_dinh_gia_rao_325.py` qua `Engine.handle` (4/6 đỏ khi trả về `KHOI_DINH_GIA`; hai cách nói mới "có bị hớ so với mặt bằng", "người ta rao bao nhiêu một mét"); `cham --giong` ×2 (số ở mô tả PR).
+
+### SRS-5.1zzzzzzz324 · Làm giàu kho dự án từ rever.vn (crawl theo luật mogi), một kho `projects`; bot đọc `specs.rever` (02/11/2026)
+Quyết định chủ dự án 02/11: chọn phương án (a) — crawl Rever theo luật OPEN-56 (chỉ dữ kiện, mô tả viết lại, giữ `source_url`, không tin rao lẻ / SĐT / ảnh), dù điều khoản rever.vn
+§3.1–3.2 cấm dùng thương mại / sao chép (`robots.txt` cho phép); "dữ liệu bên mình là 1 chỗ" → GHÉP vào dòng `projects` có sẵn (`cacKhoa`: tên đủ, phần trước " - ", bỏ quận / tỉnh đuôi; cùng tỉnh;
+trùng nhiều dòng thì khớp quận; mơ hồ bỏ qua), chỉ điền ô trống, dữ kiện ở `specs.rever` (bảng thông số: số block / tầng / căn, mật độ, diện tích căn, khởi công, giao nhà; khoảng giá; giá rao GỘP: số tin + giá/m² thấp / giữa / cao + ngày lấy); chưa có thì dòng mới `source = 'rever'`.
+Script `scripts/thu-du-an-rever.mjs`, nạp qua ô `nap-du-an-rever`. Bot: `projects.dong_nguon_phu` cho cả hai phía (không đè nguồn chính, không nêu tên nguồn ra khách). `listings` của mình chưa nối `project_id` (0/248).
+Lớp lỗi khớp tên: khớp nguyên tên chỉ 5/26 trên mẫu thật → dòng trùng. Kiểm: `tests/test_nguon_phu_rever.py` (3/4 đỏ khi gỡ đọc `specs.rever`), `bot/tests/thu-du-an-rever.mjs` (hai mẫu trang, tin gõ sai "62633 m²", chú thích HTML, tên viết khác giữa hai nguồn).
+Sau nạp 02/11: 944 dự án Rever, 915 trong vùng → ghép 562, mới 344 (gộp tay thêm 59 dòng trùng tên khác chút → 285 mới), mơ hồ 9; gỡ 2 ghép nhầm (An Phú, Bình Đăng); nút "Xem chi tiết / Xem thêm" lọt vào chủ đầu tư (591 dòng) — lọc ở script + làm sạch DB, ca kiểm trong `thu-du-an-rever.mjs`.
+
+### SRS-5.1zzzzzzz323 · Dọn code TypeScript / script tàn dư thời trước lõi Python; nhánh tin soạn sẵn của escalation-feed; bảng phường cũ bản code (02/11/2026)
+Chủ dự án 02/11: "dọn các cái cũ không dùng luôn". Lớp lỗi: gỡ bot TypeScript (18/10) xoá function nhưng để lại export chỉ chúng gọi, nên code chết sống qua `tsc` / test. Soát 143 tệp TS / MJS trên `c520771`: không tệp nào chết hẳn; xoá 30 export 0 chỗ gọi (`claude.ts` `secretOf` / `DemLuuLuong`, 12 trong `lib/format.ts`, `Q5_CENTER`, 9 icon, 6 khối `ui.tsx`), 5 export chỉ test gọi (`luat-lien-he.ts`, `nhan.ts`) kèm ca test, `PHUONG_CU` (bộ sinh `sinh-ds-phuong.mjs` chỉ còn `PHUONG_MOI`, `ds-phuong.ts` ~42 → 10 KB), nhánh `soanSan` của escalation-feed (DB thật 0 dòng pending có `noi_dung_gui`), `scripts/gop-hoi-thoai-theo-zalo.sql` (chạy một lần 23/10, ghi cột `ctv_id` đã gỡ). Sửa `bot/tests/vai-tro.sql` (bỏ `inbound_*`, `giu_luot_gui` đã gỡ; chạy DB thật: mọi dòng OK, tự cuộn lại) và chữ `sinh-srd-docx.mjs` theo hiện trạng (lõi Python, bỏ CTV / chat-reply / required_facts).
+Kiểm: `kieu`, `kieu:bot` (bắt được `docBiMat` còn dùng bộ nhớ bí mật — giữ), `build` (route giống CI main), `test:bot`, `test:py`, `truyvet`, `soat:db`, `soat:migration`. Tầng DB: chỉ lập bảng đề xuất trong PR, chưa gỡ.
+
+### SRS-5.1zzzzzzz322 · Cổng bí mật edge function: bỏ vé qua bằng Bearer service_role (02/11/2026)
+Chủ dự án 02/11 ("gate.ts nhánh service_role: gỡ, PR riêng, có bài kiểm cổng"). Lớp lỗi: lối tắt "service-to-service (zalo-webhook → chat-reply)" ở `_shared/gate.ts` còn sống sau khi gỡ hai function đó — một khoá service_role lộ là mở được cả 3 cổng mà không cần `BRIDGE_SECRET`. Đã soát người gọi: bridge (`index.mjs`, `x-bridge-secret` bắt buộc qua `cai-vps.sh`) và hai cron `geocode_tick` / `media_cleanup_tick` (`x-bridge-secret` từ Vault) — không ai dùng Bearer service_role.
+Kiểm: `bot/tests/cong-bi-mat.test.ts` chạy `congBiMat` thật bằng Deno (job CI `kieubot` + `bun run kieu:bot`) — Bearer service_role không kèm secret → 403 (đỏ khi gắn lại nhánh), secret đúng → qua, sai → 403. Cần deploy lại 3 function sau khi gộp.
+
+### SRS-5.1zzzzzzz321 · Audit Đợt 6: code chết và một nguồn — bỏ dấu một hàm, một cửa tin báo admin chặn ID thử, không rơi về mock, không hỏi lại sổ (02/11/2026)
+Ca gốc: ban-thu-mua 02/11 nhắn admin thật lịch xem của "Khách thử"; 9 hàm bỏ dấu chép tay; hai `_hoi_thoai_mua` trong một class (bản sau đè im lặng); thiếu `ANTHROPIC_API_KEY` thì lõi
+lặng lẽ chạy `MockProvider`; cham `xa_phuoc_ly`: khách nói "thuê đất trả tiền hàng năm" (ô `phap_ly`) mà đất vẫn hỏi "đã có sổ đỏ chưa". (1) Lớp lỗi: một việc nhiều bản, mỗi bản tự nhớ luật.
+Sửa: `aioi.chu.bo_dau`; `SupabaseConversationStore._xep_tin_admin` (mọi tin admin từ lõi, chặn `la_id_thu`); thiếu khoá thì báo lỗi, mock chỉ khi `AIOI_LLM_PROVIDER=mock`; `_has` ô sổ nhận ô `phap_ly`;
+xoá code chỉ test gọi / không ai dùng (`quote_fee`, `nmg_eligibility`, `perks_for`, `_looks_personal_doc`, `de_xuat_luot`…); nhóm pháp lý nhạy cảm một nguồn `phap_ly.NHOM_NHAY_CAM`. (2) Còn (làn DB / web):
+trigger `viewings_bao_admin_va_email` nhắn admin cả lịch xem của ID thử; `/du-an` lấy vùng một nguồn. (3) Kiểm: `test_dot6_321.py` (trên main cả tệp đỏ — thiếu `aioi.chu`; bài tiền tố ID thử Python == SQL là bài canh, xanh cả hai bản); `cham` ×2.
+
+### SRS-5.1zzzzzzz320 · Audit Đợt 3: bỏ đoán ý khách bằng từ khoá — AI đọc nghĩa vai / pháp lý / đường vào / tiện ích / tình trạng; một lưới bản tin (02/11/2026)
+Quyết định chủ dự án 02/11: KHÔNG dùng từ khoá trên lời khách để quyết ý, kể cả làm lưới đỡ. Ca gốc: "tôi không phải chính chủ" vẫn tính chủ nhà (`_VAI_RE`), "chưa có sổ hồng" tính có pháp lý,
+"không phải mặt tiền" cho ghi "mặt tiền", "cho em hỏi" / "thị trường" / "mời" mở cửa "gần chợ" / "trường học" / "nhà mới"; `Property.update` tự ghi "Mặt tiền" khi thiếu chữ hẻm ("HXH Lê Lai").
+(1) Lớp lỗi: code quyết ý bằng chữ có / vắng trong lời khách — không hiểu phủ định, khớp nhầm chữ. Sửa: AI trả `seller_role` (+ `nguoi_nha_nho_ban`), `phap_ly_trang_thai`, `duong_vao`,
+`tien_ich_gan`, `tinh_trang_nha` kèm cụm trích (code kiểm cụm); lưới `_khang_dinh_khong_co_du_lieu` chỉ đối chiếu bản tin với các ô đó, chưa rõ / AI hỏng thì bản tin không khẳng định; lượt viết bản tin
+nhận khối `khoi_su_that_can`. (2) Cùng lớp đã sửa: tự ghi "Mặt tiền" (nay để sau bản nháp), `_can_xe_hoi` phía mua (AI trả `can_xe_hoi`), `loai_tien_ich` (AI trả mã), `phuong_kho_hem`, lọc "không / có" ở `tin_goc`;
+còn lại: tìm kiếm web `lib/parse-query.ts` + `ganNhan`, `parseListing`, cổng chữ xưng hô, `MockProvider` (bảng ở mô tả PR). (3) Kiểm: `test_khang_dinh_320.py` qua `Engine.handle` (9/11 đỏ trên main); kịch bản `khong_phai_chinh_chu`, `so_dang_lam`, `xa_cho`; `cham` ×2 (số ở mô tả PR).
+
+### SRS-5.1zzzzzzz319 · Audit Đợt 8: gỡ đường cũ 6 công tắc, xoá prompt cũ `build_chat_system`; phiếu lượt mang tin hệ thống, tiếng lóng, hỏi diện tích đất / nhà (02/11/2026)
+Quyết định chủ dự án 01/11 (Q1): công tắc "vĩnh viễn", "xóa code cũ lun". Gỡ nhánh `tat` / `thu` của `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON`, `FORM_BAN_GON`,
+`AGENT_MUA`, `AGENT_BAN` (code, `cai-vps.sh`, CLAUDE.md); bỏ lần soát thứ hai (`_ly_do_cung`, cột "soát lại" của `LUAT_SOAT`). `AGENT_BOC` giữ (chỉ ID thử, SRS-310 chưa hơn form).
+(1) Lớp lỗi: luật chỉ sống ở prompt cũ thì xoá prompt cũ là luật rơi (AU-13). (2) Cùng lớp đã soát: tin hệ thống ngoặc vuông (`prompts.TIN_HE_THONG`), `SLANG_NOTES`, hỏi lại
+"diện tích đó đất hay nhà" (`_dien_tich_mo_ho`) chuyển vào `build_phieu_luot`; luật còn lại của prompt cũ là giọng / văn đã có ở `GIONG_VUI` hoặc code. (3) Kiểm: `test_go_cong_tac_319.py`
+(đỏ khi gỡ ba luật khỏi phiếu lượt; không file nào đọc sáu biến); `test:py` 1312; `cham` ×2 trên 51 kịch bản: tất định 508 / 507, tổng 623 / 617, giọng 3,16 / 3,08 (trước 3,04 / 2,94).
+
 ### SRS-5.1zzzzzzz318 · Audit Đợt 2: luật rơi khi đổi đường — chính sách phí ở lượt thu thập, một bảng luật soát, nhãn việc lượt chung, ảnh sổ qua phiếu lượt (01/11/2026)
 Quyết định chủ dự án 01/11 (Q2): lượt THU THẬP, khách hỏi phí / chính sách thì nói ĐỦ 4 ý (không bớt, chỉ thu khi thành công · có HĐ môi giới văn bản · không
 độc quyền · môi giới không chia hoa hồng khác), gọn, giọng Zalo; con số vẫn do `muc_phi` / `khoi_bao_phi`. Q3: lên Top là thật — giữ câu "≥10 căn lên Top".
