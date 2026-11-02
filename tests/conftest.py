@@ -15,6 +15,9 @@ import pytest
 from tests.cau_hinh_vps import cong_tac
 
 CONG_TAC_PRODUCTION = cong_tac()
+# SRS-5.1zzzzzzz321: lõi không còn lặng lẽ rơi về mock khi thiếu ANTHROPIC_API_KEY — test bật mock TƯỜNG MINH (đặt trước khi module nào
+# dựng provider lúc import, vd `server`). Bài nào cần provider khác tự đặt.
+os.environ.setdefault("AIOI_LLM_PROVIDER", "mock")
 
 
 def pytest_configure(config):

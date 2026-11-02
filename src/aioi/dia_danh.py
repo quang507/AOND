@@ -15,7 +15,6 @@ import json
 import logging
 import re
 import time
-import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -37,9 +36,7 @@ TU_CHUNG_PHUONG = frozenset({"phuong", "xa", "thi", "tran", "p", "tt"})
 TU_CHUNG_DUONG = frozenset({"duong", "pho", "hem", "hxh", "ngo", "kiet"})
 
 
-def bo_dau(s: str) -> str:
-    s = unicodedata.normalize("NFD", s or "").replace("đ", "d").replace("Đ", "D")
-    return "".join(c for c in s if unicodedata.category(c) != "Mn").lower()
+from .chu import bo_dau   # noqa: E402 — một hàm bỏ dấu cho cả lõi (SRS-5.1zzzzzzz321)
 
 
 def ten_tran(ten: str | None) -> str:

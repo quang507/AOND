@@ -31,7 +31,6 @@ BRIDGE_SEND_URL = os.environ.get("BRIDGE_SEND_URL", "http://127.0.0.1:5005/send"
 BRIDGE_SEND_URL_TU_VAN = os.environ.get("BRIDGE_SEND_URL_TU_VAN", "http://127.0.0.1:5006/send")
 
 
-_GOI = {"em": "Em", "anh": "Anh", "chi": "Chị"}
 
 
 def cau_hoi_cuoi_cua_bot(conv) -> str:

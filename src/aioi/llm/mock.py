@@ -10,6 +10,7 @@ import re
 from typing import Any
 
 from ..config import Settings
+from ..chu import bo_dau
 from .base import LLMProvider, Message
 
 # Very small keyword map mirroring the SRD transcripts. Real extraction is the LLM's job.
@@ -443,12 +444,6 @@ _MOCK_DENY = {"khong", "ko", "k", "thoi", "dung lai", "khoan", "dung co", "huy",
               "khong xoa", "sai"}
 
 
-def _mock_bo_dau(s: str) -> str:
-    import unicodedata
-    s = s.replace("đ", "d").replace("Đ", "D")
-    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
-
-
 def _gia_lap_y_luot(plan: dict[str, Any], messages: list[Message]) -> None:
     cuoi = next((m.content for m in reversed(messages) if m.role == "user"), "")
     low = cuoi.lower()
@@ -464,7 +459,7 @@ def _gia_lap_y_luot(plan: dict[str, Any], messages: list[Message]) -> None:
         plan["cau_hoi_du_an"] = cuoi
     if any(h in low for h in _MOCK_LEARN):
         plan["mo_ta_du_an"] = cuoi
-    t = re.sub(r"[^\w\s]", " ", _mock_bo_dau(low)).strip()
+    t = re.sub(r"[^\w\s]", " ", bo_dau(low)).strip()
     if t and len(t) <= 40:
         w = set(t.split())
         if t in _MOCK_DENY or w & _MOCK_DENY:

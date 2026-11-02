@@ -829,6 +829,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz321 · Audit Đợt 6: code chết và một nguồn — bỏ dấu một hàm, một cửa tin báo admin chặn ID thử, không rơi về mock, không hỏi lại sổ (02/11/2026)
+Ca gốc: ban-thu-mua 02/11 nhắn admin thật lịch xem của "Khách thử"; 9 hàm bỏ dấu chép tay; hai `_hoi_thoai_mua` trong một class (bản sau đè im lặng); thiếu `ANTHROPIC_API_KEY` thì lõi
+lặng lẽ chạy `MockProvider`; cham `xa_phuoc_ly`: khách nói "thuê đất trả tiền hàng năm" (ô `phap_ly`) mà đất vẫn hỏi "đã có sổ đỏ chưa". (1) Lớp lỗi: một việc nhiều bản, mỗi bản tự nhớ luật.
+Sửa: `aioi.chu.bo_dau`; `SupabaseConversationStore._xep_tin_admin` (mọi tin admin từ lõi, chặn `la_id_thu`); thiếu khoá thì báo lỗi, mock chỉ khi `AIOI_LLM_PROVIDER=mock`; `_has` ô sổ nhận ô `phap_ly`;
+xoá code chỉ test gọi / không ai dùng (`quote_fee`, `nmg_eligibility`, `perks_for`, `_looks_personal_doc`, `de_xuat_luot`…); nhóm pháp lý nhạy cảm một nguồn `phap_ly.NHOM_NHAY_CAM`. (2) Còn (làn DB / web):
+trigger `viewings_bao_admin_va_email` nhắn admin cả lịch xem của ID thử; `/du-an` lấy vùng một nguồn. (3) Kiểm: `test_dot6_321.py` (trên main cả tệp đỏ — thiếu `aioi.chu`; bài tiền tố ID thử Python == SQL là bài canh, xanh cả hai bản); `cham` ×2.
+
 ### SRS-5.1zzzzzzz320 · Audit Đợt 3: bỏ đoán ý khách bằng từ khoá — AI đọc nghĩa vai / pháp lý / đường vào / tiện ích / tình trạng; một lưới bản tin (02/11/2026)
 Quyết định chủ dự án 02/11: KHÔNG dùng từ khoá trên lời khách để quyết ý, kể cả làm lưới đỡ. Ca gốc: "tôi không phải chính chủ" vẫn tính chủ nhà (`_VAI_RE`), "chưa có sổ hồng" tính có pháp lý,
 "không phải mặt tiền" cho ghi "mặt tiền", "cho em hỏi" / "thị trường" / "mời" mở cửa "gần chợ" / "trường học" / "nhà mới"; `Property.update` tự ghi "Mặt tiền" khi thiếu chữ hẻm ("HXH Lê Lai").
@@ -896,14 +903,6 @@ Chủ dự án 30/10 ("không cần, gỡ đi"): gỡ lưới "câu ghi nhận m
 - `ma_lo_7m` (lớp lỗi: số m² trống ghi tạm `dien_tich`, phiếu lượt không hỏi lại theo SRS-302 → ô sàn trống): form + EXTRACTION đọc "đã có đất, số m² khác"
   là `dien_tich_nha`. `dat_nen_long_an`: phép chấm "huyện" khớp nhầm "c**huyện**" → `\bhuyện\b`. Đo 408 phép: 402 / 403 → 406 / 406
   (`ma_lo_7m`, `dat_nen_long_an` đạt 2/2); giọng 2,58 / 2,50 → 2,45 / 2,45 (thay đổi không đụng lời viết, dao động giám khảo 2,35–2,70).
-
-### SRS-5.1zzzzzzz311 · Kế hoạch bước 4: lượt dễ của người bán viết bằng model rẻ; luật soát chưa gỡ (30/10/2026)
-- `MODEL_LUOT_DE` (`cai-vps.sh`): lượt thu thập bằng phiếu lượt, không tra dữ liệu, không việc khác (`y_luot` chỉ khoá `_`, không hỏi về) → model rẻ, cả lần soát
-  gọi lại; lượt khác giữ `MODEL_CHAT`. Đo 408 phép: Sonnet mọi lượt 402 / 400, giọng 2,65 / 2,62, $5,0 / $5,3 · Haiku lượt dễ 404 / 402,
-  giọng 2,38 / 2,40, $3,4 / $3,4 (−35 % tiền, giọng tụt) → `tat` (chủ dự án 30/10 chọn Sonnet vì chất lượng); bật = đổi một dòng.
-- Luật soát: 280 cuộc chấm, lưới kích nhiều nhất "gọi khách là mình" (40 lần, bắt lỗi thật); lưới không kích lần nào đều là quyết định chủ dự án có test
-  (kho hẻm SRS-115, HOA SRS-241, câu ghi nhận SRS-229, "anh ơi" lặp) và ở chế độ gọn chỉ ghi log — chưa gỡ, gỡ là đảo quyết định đã chốt.
-- Kiểm: `tests/test_model_luot_de_311.py` (đỏ khi gỡ chỗ đặt model).
 
 ---
 

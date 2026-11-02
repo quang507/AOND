@@ -17,11 +17,10 @@ có thật, đang hiện trên web, rồi mới ghi.
 from __future__ import annotations
 
 import logging
-import os
 import re
 import time
 import urllib.parse
-from typing import Any, Callable
+from typing import Any
 
 from .xung_ho import goi_toi as _goi_toi
 from . import cau_mau
@@ -692,11 +691,9 @@ class KhoNguoiMua:
                 return False
             lich = co[0]
             self._request("PATCH", f"viewings?id=eq.{lich['id']}", data={"phone": sdt}, prefer="return=minimal")
-            self._post("reminders", {"kind": "escalation", "buyer_id": buyer_id, "listing_id": lich.get("listing_id"),
-                                     "viewing_id": lich["id"],
-                                     "due_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                                     "note": f"Khách lịch xem #{lich.get('listing_code') or '?'} để lại SĐT {sdt}, gọi xác nhận giúp em nha"},
-                       prefer="return=minimal")
+            self._xep_tin_admin({"buyer_id": buyer_id, "listing_id": lich.get("listing_id"), "viewing_id": lich["id"],   # SRS-5.1zzzzzzz321
+                                 "due_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                                 "note": f"Khách lịch xem #{lich.get('listing_code') or '?'} để lại SĐT {sdt}, gọi xác nhận giúp em nha"})
             return True
         except Exception as e:  # noqa: BLE001
             log.warning("ghi_sdt_hen_xem lỗi: %s", e)
