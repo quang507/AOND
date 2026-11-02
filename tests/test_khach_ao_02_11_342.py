@@ -98,8 +98,6 @@ LOI_CO_RO = "Chúc mừng anh nha! Em chưa đổi gì trong rổ hết. Căn đ
 LOI_CO_RO_MOI = "Dạ rổ hàng bên em đang có hai căn của anh, em giữ nguyên nha."   # cách nói mới, chưa bắn
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — khách ảo / chấm 02/11 (SRS-342): bot nói \"trong rổ\" với khách, lõi không có "
-                                       "lưới nào soát từ vựng nội bộ này. Sửa xong thì XOÁ dòng này")
 def test_ca_3_khong_noi_chu_ro_voi_khach():
     """Lượt chấm `hai_can_da_ban` 02/11: "Em chưa đổi gì **trong rổ** hết." — prompt cấm hẳn chữ "rổ"
     (`mua.khoi_can_cho_khach`: "Không nói chữ \\"rổ\\""), nhưng không có lưới soát nào bắt, nên lời vẫn gửi khách.

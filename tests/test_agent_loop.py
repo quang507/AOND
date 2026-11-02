@@ -43,7 +43,7 @@ def test_agent_loop_resolves_by_characteristic_and_adds_to_basket(tmp_path):
     script = [
         ToolTurn("", [ToolCall("t1", "tim_can", {"lon_nhat": "dien_tich_dat"})]),
         ToolTurn("", [ToolCall("t2", "them_can_vao_ro", {"ma_so_can": "26"})]),
-        ToolTurn("Em thêm căn 26 (Office 2, 16.566 tỷ) vào rổ rồi ạ!", []),
+        ToolTurn("Em thêm căn 26 (Office 2, 16.566 tỷ) vào danh sách của anh/chị rồi ạ!", []),   # SRS-343: lời bot không dùng chữ "rổ"
     ]
     eng = _engine(script, tmp_path)
     r = eng.handle("s", "à quên, tôi bán luôn căn góc diện tích lớn nhất nữa nha em")
