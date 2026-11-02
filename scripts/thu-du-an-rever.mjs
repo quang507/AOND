@@ -114,7 +114,9 @@ export function bocChiTiet(html, slug) {
     if (k && v && !RONG.test(v) && !(k in thongSo)) thongSo[k] = v;
   }
   const khoangGia = goHtml(/<span>Khoảng giá<\/span>[\s\S]*?class="value[^"]*">([\s\S]*?)<\/(?:div|p)>/.exec(sach)?.[1]).replace(/⁺/g, "+");
-  const cdt = [...new Set([...sach.matchAll(/href="\/chu-dau-tu\/[^"]+"[^>]*>([\s\S]*?)<\/a>/g)].map((m) => goHtml(m[1])).filter(Boolean))];
+  // Nút "Xem chi tiết / Xem thêm" cũng là link /chu-dau-tu/ — lượt nạp 02/11/2026 ghi chúng vào chủ đầu tư của 591 dự án.
+  const cdt = [...new Set([...sach.matchAll(/href="\/chu-dau-tu\/[^"]+"[^>]*>([\s\S]*?)<\/a>/g)].map((m) => goHtml(m[1]))
+    .filter((t) => t && !/^xem (chi tiết|thêm)$/i.test(t)))];
 
   const vungTi = /id="amenity"[\s\S]*?<\/view-more>/.exec(sach)?.[0] ?? "";
   const tienIch = [...new Set([...vungTi.matchAll(/<span class="value">([\s\S]*?)<\/span>/g)].map((m) => goHtml(m[1])).filter(Boolean))];
