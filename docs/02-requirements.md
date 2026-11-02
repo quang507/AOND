@@ -21,6 +21,9 @@ Tài liệu này nói **yêu cầu là gì và trạng thái hôm nay**. Con tr�
 
 ## 2.2 Persona
 
+> **Cập nhật 02/11/2026:** persona, hành trình, bản đồ thấu cảm, kế hoạch nghiên cứu và insight → cơ hội viết lại theo dữ liệu thật ở
+> `12-nghien-cuu-nguoi-dung.md` (PS-A…PS-E). Các P1–P4 dưới đây giữ để tra; P5 (CTV) đã bỏ.
+
 ### P1 — Chị Dương, 42, người mua để ở
 Tìm nhà Quận 5 dưới 12 tỉ, HXH. Đã bị 4 sàn gọi làm phiền nên **không để lại số ĐT**.
 Hỏi rất cụ thể: sổ đỏ, hoàn công, quy hoạch, ảnh cái hẻm. Quyết định theo tháng, không theo phiên.

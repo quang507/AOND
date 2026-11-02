@@ -170,7 +170,7 @@ Chân dung từ 24 hội thoại mẫu `chats w B.docx`:
 | Bên | Phí | Ghi chú |
 |---|---|---|
 | B (mua/thuê) | **0đ** | Lời hứa thương hiệu |
-| CCRB | **1%** giá trị BĐS | 0.5% trả CTV, 0.5% giữ lại |
+| CCRB | **1%** giá trị BĐS | *[02/11/2026: CTV bỏ 28/10 — toàn bộ phí về công ty; từ tin bán thứ 3 tính như NMG (OPEN-28). Mô hình hiện hành: `12 §12.1`]* |
 | NMG | **0.5%** giá trị BĐS | NMG tự dẫn khách |
 | Cho thuê | **3/4 tháng tiền thuê** | Quy đổi từ mức 1% |
 
