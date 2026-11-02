@@ -17,6 +17,7 @@ def _tra(nomi=None, diem=None, duong=None, rpc_loi=False):
         if ten == "tra_nominatim":
             return nomi or []
         if ten == "phuong_tai_diem":
+            assert set(p) == {"p_lat", "p_lng"}, p   # chữ ký RPC thật (bot/supabase/migrations/20261103b_ranh_gioi_phuong.sql)
             if rpc_loi:
                 raise RuntimeError("PGRST202: function phuong_tai_diem not found")   # RPC chưa áp (SRS-360)
             return diem

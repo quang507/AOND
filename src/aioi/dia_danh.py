@@ -481,7 +481,7 @@ class TraDiaDanh:
 
     def phuong_theo_toa_do(self, dia_chi: str | None, ten_duong: str | None, quan: str | None = None) -> str | None:
         """SRS-5.1zzzzzzz359 (chủ dự án 02/11: phường "gắn lên bản đồ để biết chứ không hỏi khách"): lấy TOẠ ĐỘ của chỗ khách nói rồi hỏi DB
-        điểm đó thuộc phường nào (RPC `phuong_tai_diem(lat, lng)`, SRS-5.1zzzzzzz360 phía web·DB). Toạ độ theo thứ tự: (a) điểm hẻm trong kho
+        điểm đó thuộc phường nào (RPC `phuong_tai_diem(p_lat, p_lng)`, SRS-5.1zzzzzzz360 phía web·DB). Toạ độ theo thứ tự: (a) điểm hẻm trong kho
         (bảng `duong`, loai = hem, cùng đường + số hẻm); (b) Nominatim trả đúng con đường (mức số nhà hay mức đường). Phường ra phải là MỘT
         phường trong kho và nằm trong các phường con đường / hẻm đi qua (kho biết) — điểm mức đường trên con đường dài có thể rơi sang phường
         khác. RPC chưa có / lỗi → None (sang bước kho đường / hẻm)."""
@@ -518,7 +518,7 @@ class TraDiaDanh:
         kq = None
         for lat, lng in diem[:1]:
             try:
-                ra = self._rpc("phuong_tai_diem", {"lat": lat, "lng": lng})
+                ra = self._rpc("phuong_tai_diem", {"p_lat": lat, "p_lng": lng})   # chữ ký SRS-360 (#281): (p_lat, p_lng) → text
             except Exception as e:  # noqa: BLE001 — RPC chưa có (SRS-360) / lỗi: bỏ qua bước này
                 log.warning("phường theo toạ độ: RPC phuong_tai_diem lỗi %s", type(e).__name__)
                 return None
