@@ -1627,6 +1627,20 @@ def _soat_ten_khoi(eng, conv, reply, nc) -> list[str]:
              "thứ tự, KHÔNG in ra; viết thẳng nội dung."] if nhan else [])
 
 
+# SRS-5.1zzzzzzz343 (ca 3 của SRS-342): từ vựng NỘI BỘ trong LỜI BOT (không đọc lời khách) — "rổ" / "rổ hàng" là chữ hệ thống, khách không hiểu.
+_TU_NOI_BO_RE = re.compile(r"(?<![\wÀ-ỹ])rổ(?: hàng)?(?![\wÀ-ỹ])", re.I)
+
+
+def _soat_hinh_thuc_tu_vung_noi_bo(reply: str) -> list[str]:
+    """Lời bot có chữ nội bộ ("rổ", "rổ hàng") → lý do gọi lại model một lần."""
+    return (["Lời vừa viết dùng chữ nội bộ \"rổ\" — nói với khách là \"các căn anh/chị đã gửi\" / \"tin của anh/chị\", KHÔNG dùng chữ \"rổ\"."]
+            if _TU_NOI_BO_RE.search(reply or "") else [])
+
+
+def _soat_tu_noi_bo(eng, conv, reply, nc) -> list[str]:
+    return _soat_hinh_thuc_tu_vung_noi_bo(reply)
+
+
 def _soat_da(eng, conv, reply, nc) -> list[str]:
     return ["Lời vừa viết mở đầu bằng \"Dạ\" — câu đầu phải vào thẳng nội dung, không \"Dạ\"."] if _mo_dau_da(reply) else []
 
@@ -1760,6 +1774,7 @@ LUAT_SOAT: tuple[tuple[str, str, Callable[..., list[str]]], ...] = (
     ("lo_rieng", "ly_do", _soat_lo_rieng),
     ("khang_dinh", "ly_do", _soat_khang_dinh),   # SRS-5.1zzzzzzz320: một lưới thay bia_hem / bia_chi_tiet / bia_phap_ly
     ("ten_khoi", "ly_do", _soat_ten_khoi),
+    ("tu_noi_bo", "ly_do", _soat_tu_noi_bo),   # SRS-5.1zzzzzzz343
     ("da_mo_dau", "ly_do", _soat_da),
     ("goi_minh", "ly_do", _soat_goi_minh),
     ("phi_vai", "ly_do", _soat_phi_vai),
