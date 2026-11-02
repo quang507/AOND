@@ -829,6 +829,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz331 · Vai theo SỐ khách đang nhắn ở lượt mơ hồ: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi không còn bị hỏi khu vực tìm mua (02/11/2026)
+Ca thật chủ dự án 02/11 (cùng một Zalo): 10:37 số tư vấn "anh đang cần tìm mua nhà quận 8 dưới 7 tỉ" → đúng; 10:38 số ký gửi "chào em" → "Anh muốn tìm ở khu vực nào ạ?". Chủ dự án: số ký gửi mặc định BÁN, nói mua mới hỗ trợ mua; số tư vấn giữ SRS-210.
+(1) Lớp lỗi: hội thoại khoá theo NGƯỜI (Zalo ID), `so_nhan` ghi đè mỗi tin; nhánh "đang mua thì ở lại vai mua" chạy trước mặc định theo số. Sửa: `Conversation.so_vai` (số đặt vai, lưu SQLite); lượt mơ hồ ở số khác → vai mặc định của số đang nhắn, lượt đó chào theo số
+(`_doi_so`); ý mua / bán của lượt vẫn thắng; nhu cầu mua / tin rao số kia giữ nguyên. (2) Cùng lớp: lời chào lượt đầu hai số (cùng cờ); còn: dữ liệu cũ chưa có `so_vai` giữ cách cũ tới lượt có ý mua / bán. Tách khỏi Đợt 4 (#250) để gộp sớm.
+(3) Kiểm: `test_vai_theo_so_331.py` qua `Engine.handle` (gỡ nhánh `so_vai` → 2/5 đỏ; ba cách chào: "chào em", "alo em ơi", "hi bé"); `cham` ×2 (số ở mô tả PR).
+
 ### SRS-5.1zzzzzzz327 · Dựng lại `so.ro_hang` từ số không; gắn lại `security_invoker` mà 20261102a làm rơi (02/11/2026)
 Ca gốc: `dung-lai-db.mjs` bước `cau-truc` chạy `so.ro_hang` bản 20260907c / f — đọc `public.media` (gỡ 20261102a) và `listings.legacy_sst` / `source_url` (gỡ 20261022g, nên hỏng từ 22/10); soát thêm thấy 20261102a `create or replace view` không ghi `with (...)` → Postgres thay hết tuỳ chọn view, mất `security_invoker = true` (chưa lộ: anon / authenticated đã revoke, `so` không ra API).
 (1) Lớp lỗi: định nghĩa view nằm rải ở nhiều migration, dựng lại chạy bản cũ; `create or replace view` lặng lẽ xoá tuỳ chọn. (2) Cùng lớp: câu `so` cũ khác (`so.nguoi_ban`, `so.hoi_thoai`) không đọc cột / bảng đã gỡ. Sửa: migration `20261102b_so_ro_hang_hien_hanh` = định nghĩa hiện hành (có `security_invoker`, revoke / grant); dựng lại bỏ câu `so.ro_hang` của file cũ (`cauSoTruRoHang`) rồi chạy 20261102b; không sửa migration cũ.
