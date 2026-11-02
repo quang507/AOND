@@ -8,6 +8,13 @@
    Trước 26/08 skin đi theo theme King — nhưng King là "WordPress Viral
    Magazine Theme", trong 225KB CSS của nó có 0 class property/listing/agent,
    không có gì để mượn cho trang nhà đất. Đổi về Veedoo (quyết định 26/08). */
+
+/* Font Plus Jakarta Sans ghim trong repo (app/layout.tsx, SRS-5.1zzzzzzz351): ba họ theo subset, trình duyệt chọn theo unicode-range
+   từng ký tự. Đặt trên :root vì ba biến --font-jakarta-* do class trên <html> sinh ra. */
+:root {
+  --font-jakarta: var(--font-jakarta-latin), var(--font-jakarta-viet), var(--font-jakarta-latin-ext);
+}
+
 @theme {
   --color-brand: #0068ff;
   --color-brand-dark: #0052cc;
