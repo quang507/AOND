@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-01 16:28 (giờ VN)
+-- Sinh lúc: 2026-11-02 11:11 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -402,16 +402,6 @@ END) stored,
   nhung_luc timestamp with time zone,
   cung_can_id uuid,
   xac_nhan_con_ban_at timestamp with time zone
-);
-
-create table if not exists public.media (
-  id uuid not null default gen_random_uuid(),
-  listing_id uuid not null,
-  category text not null default 'photo'::text,
-  storage_provider text not null default 'onedrive'::text,
-  storage_path text not null,
-  approved boolean not null default false,
-  created_at timestamp with time zone not null default now()
 );
 
 create table if not exists public.media_cleanup_queue (
@@ -879,9 +869,6 @@ do $d$ begin
   alter table public.listings add constraint listings_ward_source_check CHECK ((ward_source = ANY (ARRAY['suy_doan'::text, 'chu_xac_nhan'::text, 'admin'::text, 'admin_xac_minh'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.media add constraint media_pkey PRIMARY KEY (id);
-exception when duplicate_object then null; end $d$;
-do $d$ begin
   alter table public.media_cleanup_queue add constraint media_cleanup_queue_pkey PRIMARY KEY (id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -1073,9 +1060,6 @@ do $d$ begin
   alter table public.listings add constraint listings_seller_id_fkey FOREIGN KEY (seller_id) REFERENCES sellers(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.media add constraint media_listing_id_fkey FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE;
-exception when duplicate_object then null; end $d$;
-do $d$ begin
   alter table public.messages add constraint messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES conversations(id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -1165,7 +1149,6 @@ create index if not exists listings_project_idx ON public.listings USING btree (
 create index if not exists listings_project_unit_idx ON public.listings USING btree (project_id, unit_code) WHERE ((project_id IS NOT NULL) AND (unit_code IS NOT NULL));
 create index if not exists listings_seller_id_idx ON public.listings USING btree (seller_id);
 create index if not exists media_cleanup_can_lam_idx ON public.media_cleanup_queue USING btree (trang_thai, created_at) WHERE (trang_thai = ANY (ARRAY['cho'::text, 'dang_lam'::text]));
-create index if not exists media_listing_id_idx ON public.media USING btree (listing_id);
 create index if not exists messages_conv_seq_idx ON public.messages USING btree (conversation_id, seq DESC);
 create index if not exists messages_conv_time_idx ON public.messages USING btree (conversation_id, created_at);
 create index if not exists phuong_cu_nhung_hnsw ON public.phuong_cu USING hnsw (nhung extensions.halfvec_cosine_ops);
@@ -1398,7 +1381,7 @@ begin
   -- Dòng khôi phục là dữ liệu CŨ: không cho trigger chạy lại (gửi tin, hỏi bù, cấp mã mới…) và không kiểm khoá ngoại theo
   -- thứ tự (sellers ↔ listings vòng tròn qua active_listing_id).
   set local session_replication_role = replica;
-  foreach t in array array['sellers', 'buyers', 'listings', 'conversations', 'messages', 'info_requests', 'media', 'listing_media', 'listing_views', 'property_events', 'interests',
+  foreach t in array array['sellers', 'buyers', 'listings', 'conversations', 'messages', 'info_requests', 'listing_media', 'listing_views', 'property_events', 'interests',
                            'viewings', 'deals', 'curated_lists', 'chat_quota', 'reminders', 'listing_noi_bo'] loop
     -- Cột sinh (generated) không chèn được — chỉ lấy cột thường của bảng HIỆN TẠI.
     select string_agg(quote_ident(a.attname), ', ' order by a.attnum), string_agg('r.' || quote_ident(a.attname), ', ' order by a.attnum)
@@ -1469,7 +1452,7 @@ begin
   -- chép hỏng thì không xoá gì. Khôi phục: `admin_khoi_phuc_lan_xoa(lan)`. Kho lưu nằm CÙNG DB: đỡ được bấm nút xoá,
   -- không đỡ được mất cả DB (không có sao lưu ngoài — OPEN-25).
   insert into luu_tru.lan_xoa (ai) values (coalesce(auth.uid()::text, current_user)) returning lan into v_lan;
-  foreach t in array array['sellers', 'buyers', 'listings', 'conversations', 'messages', 'info_requests', 'media', 'listing_media', 'listing_views', 'property_events', 'interests',
+  foreach t in array array['sellers', 'buyers', 'listings', 'conversations', 'messages', 'info_requests', 'listing_media', 'listing_views', 'property_events', 'interests',
                            'viewings', 'deals', 'curated_lists', 'chat_quota', 'listing_noi_bo'] loop
     execute format('insert into luu_tru.ban_ghi (lan, bang, du_lieu) select $1, %L, to_jsonb(x) from public.%I x', t, t)
       using v_lan;
@@ -1485,7 +1468,6 @@ begin
   delete from messages where true;               get diagnostics n = row_count; v := v || jsonb_build_object('messages', n);
   delete from info_requests where true;          get diagnostics n = row_count; v := v || jsonb_build_object('info_requests', n);
   delete from listing_media where true;          get diagnostics n = row_count; v := v || jsonb_build_object('listing_media', n);
-  delete from media where true;                  get diagnostics n = row_count; v := v || jsonb_build_object('media', n);
   delete from listing_views where true;          get diagnostics n = row_count; v := v || jsonb_build_object('listing_views', n);
   delete from property_events where true;        get diagnostics n = row_count; v := v || jsonb_build_object('property_events', n);
   delete from interests where true;              get diagnostics n = row_count; v := v || jsonb_build_object('interests', n);
@@ -3383,18 +3365,6 @@ begin
   end if;
   return j;
 end $function$
-;
-
-CREATE OR REPLACE FUNCTION public.kd_ten(p text)
- RETURNS text
- LANGUAGE sql
- IMMUTABLE PARALLEL SAFE
- SET search_path TO 'public'
-AS $function$
-  select btrim(regexp_replace(
-    regexp_replace(lower(public.bo_dau(coalesce(p, ''))), '[^a-z0-9 ]+', '', 'g'),
-    '\s+', ' ', 'g'))
-$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.khach_can_giu_ket_noi(p_tu_ngay integer DEFAULT 6, p_den_ngay integer DEFAULT 7, p_limit integer DEFAULT 10)
@@ -5576,20 +5546,6 @@ AS $function$
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.tim_nghia_san_sang()
- RETURNS boolean
- LANGUAGE sql
- STABLE SECURITY DEFINER
- SET search_path TO 'public', 'pg_temp'
-AS $function$
-  select coalesce(public.cau_hinh('tim_theo_nghia'), 'tat') = 'bat'
-     -- 20260930e: cron tạm dừng vì khoá NỀN chạm trần; có khoá thứ hai thì cron chạy khoá 2, câu tìm của khách vẫn còn khoá 1.
-     and (coalesce(nullif(public.cau_hinh('nhung_tam_dung_den'), '')::timestamptz, '-infinity'::timestamptz) <= now()
-          or public.get_secret('GEMINI_API_KEY_2') is not null)
-     and public.get_secret('GEMINI_API_KEY') is not null;
-$function$
-;
-
 CREATE OR REPLACE FUNCTION public.tim_nha(p_deal text, p_loai text DEFAULT NULL::text, p_gia_max bigint DEFAULT NULL::bigint, p_khu text DEFAULT NULL::text, p_dt_min numeric DEFAULT NULL::numeric, p_pn_min integer DEFAULT NULL::integer, p_xe_hoi boolean DEFAULT false, p_vec double precision[] DEFAULT NULL::double precision[], p_limit integer DEFAULT 3, p_tien_ich text[] DEFAULT NULL::text[], p_tang_min integer DEFAULT NULL::integer)
  RETURNS TABLE(can jsonb, diem numeric, ly_do text)
  LANGUAGE sql
@@ -6348,14 +6304,6 @@ end $function$
 ;
 
 -- ══ View ══
-create or replace view public.public_media with (security_invoker=true) as
- SELECT id,
-    listing_id,
-    category,
-    storage_path
-   FROM media m
-  WHERE approved;
-
 create or replace view public.media_mo_coi_storage as
  SELECT bucket_id AS bucket,
     name AS storage_path,
@@ -6627,75 +6575,6 @@ create or replace view public.public_listings with (security_invoker=true) as
     legacy_code
    FROM listings;
 
-create or replace view public.ro_hang_ban with (security_invoker=true) as
- SELECT code AS ma,
-        CASE property_type
-            WHEN 'nha_pho'::property_type THEN 'nhà phố'::text
-            WHEN 'nha_cap4'::property_type THEN 'nhà cấp 4'::text
-            WHEN 'chung_cu'::property_type THEN 'chung cư'::text
-            WHEN 'dat'::property_type THEN 'đất'::text
-            WHEN 'biet_thu'::property_type THEN 'biệt thự'::text
-            WHEN 'phong_tro'::property_type THEN 'phòng trọ'::text
-            WHEN 'mat_bang'::property_type THEN 'mặt bằng'::text
-            ELSE 'chưa rõ'::text
-        END AS loai,
-    ward AS phuong,
-    street AS duong,
-    area_m2 AS dien_tich_m2,
-    round(price_vnd::numeric / 1000000000::numeric, 2) AS gia_ty,
-    round(price_per_m2_vnd::numeric / 1000000::numeric, 1) AS gia_m2_trieu,
-    frontage_m AS ngang,
-    length_m AS dai,
-    COALESCE(floors_text, floors || ' tầng'::text) AS ket_cau,
-    bedrooms AS phong_ngu,
-    bathrooms AS phong_tam,
-        CASE legal_status
-            WHEN 'so_hong_rieng'::text THEN 'sổ hồng riêng'::text
-            WHEN 'so_hong_chung'::text THEN 'sổ hồng chung'::text
-            WHEN 'so_hong'::text THEN 'có sổ'::text
-            WHEN 'hdmb'::text THEN 'hợp đồng mua bán'::text
-            WHEN 'giay_tay'::text THEN 'giấy tay'::text
-            ELSE NULL::text
-        END ||
-        CASE
-            WHEN has_completion THEN ', hoàn công'::text
-            ELSE ''::text
-        END AS phap_ly,
-        CASE access_type
-            WHEN 'mat_tien'::text THEN 'mặt tiền'::text
-            WHEN 'hem_xe_tai'::text THEN 'hẻm xe tải'::text
-            WHEN 'hem_xe_hoi'::text THEN 'hẻm xe hơi'::text
-            WHEN 'hem_xe_may'::text THEN 'hẻm xe máy'::text
-            WHEN 'hem'::text THEN 'trong hẻm'::text
-            ELSE NULL::text
-        END || COALESCE((' '::text || alley_width_m) || 'm'::text, ''::text) AS duong_vao,
-        CASE status
-            WHEN 'cho_thong_tin'::text THEN 'chờ thông tin'::text
-            WHEN 'dang_ban'::text THEN 'đang bán'::text
-            WHEN 'dang_quan_tam'::text THEN 'đang quan tâm'::text
-            WHEN 'da_coc'::text THEN 'đã cọc'::text
-            WHEN 'da_chot'::text THEN 'đã chốt'::text
-            WHEN 'an'::text THEN 'ẩn'::text
-            ELSE status
-        END AS trang_thai,
-    NULLIF(concat_ws(' · '::text,
-        CASE
-            WHEN property_type_source = 'suy_doan'::text THEN 'LOẠI do máy đoán'::text
-            ELSE NULL::text
-        END,
-        CASE
-            WHEN price_source = 'suy_doan'::text THEN 'GIÁ do máy đoán'::text
-            ELSE NULL::text
-        END,
-        CASE
-            WHEN ward_source = 'suy_doan'::text THEN 'PHƯỜNG do máy đoán'::text
-            ELSE NULL::text
-        END), ''::text) AS canh_bao,
-    created_at AS ngay_vao_ro,
-    id
-   FROM listings l
-  WHERE deal = 'ban'::listing_deal;
-
 create or replace view public.khach_can_nguoi_that as
  SELECT c.id AS conversation_id,
         CASE
@@ -6847,7 +6726,6 @@ alter table public.listing_media enable row level security;
 alter table public.listing_noi_bo enable row level security;
 alter table public.listing_views enable row level security;
 alter table public.listings enable row level security;
-alter table public.media enable row level security;
 alter table public.media_cleanup_queue enable row level security;
 alter table public.messages enable row level security;
 alter table public.nhung_viec enable row level security;
@@ -6979,8 +6857,6 @@ drop policy if exists listings_own_read on public.listings;
 create policy listings_own_read on public.listings as permissive for SELECT to authenticated using ((seller_id IN ( SELECT sellers.id
    FROM sellers
   WHERE (sellers.auth_user_id = ( SELECT auth.uid() AS uid)))));
-drop policy if exists anon_read_media on public.media;
-create policy anon_read_media on public.media as permissive for SELECT to anon, authenticated using (((approved = true) AND (category = 'photo'::text)));
 drop policy if exists messages_admin_read on public.messages;
 create policy messages_admin_read on public.messages as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
@@ -7061,7 +6937,6 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.li
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listing_photos_v to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listing_views to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listings to service_role;
-grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.media to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.media_cleanup_queue to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.media_mo_coi_db to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.media_mo_coi_storage to service_role;
@@ -7076,10 +6951,8 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ph
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.projects to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.property_events to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.public_listings to service_role;
-grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.public_media to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.quan_cu to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.reminders to service_role;
-grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ro_hang_ban to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.seller_ranks to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.sellers to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.tien_ich to service_role;
@@ -7095,7 +6968,6 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.info_request
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.interests to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.listing_views to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.listings to authenticated;
-grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.media to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.messages to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.projects to authenticated;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, UPDATE on public.reminders to authenticated;
@@ -7113,7 +6985,6 @@ grant REFERENCES, SELECT, TRIGGER on public.info_requests to anon;
 grant REFERENCES, SELECT, TRIGGER on public.interests to anon;
 grant REFERENCES, SELECT, TRIGGER on public.listing_views to anon;
 grant REFERENCES, SELECT, TRIGGER on public.listings to anon;
-grant REFERENCES, SELECT, TRIGGER on public.media to anon;
 grant REFERENCES, SELECT, TRIGGER on public.messages to anon;
 grant REFERENCES, SELECT, TRIGGER on public.projects to anon;
 grant REFERENCES, SELECT, TRIGGER on public.property_events to authenticated;
@@ -7138,7 +7009,6 @@ grant SELECT on public.listing_media to anon;
 grant SELECT on public.listing_noi_bo to authenticated;
 grant SELECT on public.listing_photos_v to anon;
 grant SELECT on public.listing_photos_v to authenticated;
-grant SELECT on public.ro_hang_ban to authenticated;
 grant SELECT on public.seller_ranks to authenticated;
 grant SELECT on public.tien_ich to authenticated;
 grant SELECT on public.van_ban_luat to authenticated;
@@ -7322,9 +7192,6 @@ revoke all on function public.jsonb_bo_rong(j jsonb) from public, anon, authenti
 grant execute on function public.jsonb_bo_rong(j jsonb) to anon;
 grant execute on function public.jsonb_bo_rong(j jsonb) to authenticated;
 grant execute on function public.jsonb_bo_rong(j jsonb) to service_role;
-revoke all on function public.kd_ten(p text) from public, anon, authenticated;
-grant execute on function public.kd_ten(p text) to authenticated;
-grant execute on function public.kd_ten(p text) to service_role;
 revoke all on function public.khach_can_giu_ket_noi(p_tu_ngay integer, p_den_ngay integer, p_limit integer) from public, anon, authenticated;
 grant execute on function public.khach_can_giu_ket_noi(p_tu_ngay integer, p_den_ngay integer, p_limit integer) to service_role;
 revoke all on function public.khoa_nhung_nen() from public, anon, authenticated;
@@ -7480,8 +7347,6 @@ revoke all on function public.tim_moc(p_tim text) from public, anon, authenticat
 grant execute on function public.tim_moc(p_tim text) to anon;
 grant execute on function public.tim_moc(p_tim text) to authenticated;
 grant execute on function public.tim_moc(p_tim text) to service_role;
-revoke all on function public.tim_nghia_san_sang() from public, anon, authenticated;
-grant execute on function public.tim_nghia_san_sang() to service_role;
 revoke all on function public.tim_nha(p_deal text, p_loai text, p_gia_max bigint, p_khu text, p_dt_min numeric, p_pn_min integer, p_xe_hoi boolean, p_vec double precision[], p_limit integer, p_tien_ich text[], p_tang_min integer) from public, anon, authenticated;
 grant execute on function public.tim_nha(p_deal text, p_loai text, p_gia_max bigint, p_khu text, p_dt_min numeric, p_pn_min integer, p_xe_hoi boolean, p_vec double precision[], p_limit integer, p_tien_ich text[], p_tang_min integer) to service_role;
 revoke all on function public.tin_can_geocode(p_limit integer) from public, anon, authenticated;

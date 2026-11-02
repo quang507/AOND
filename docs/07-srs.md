@@ -829,6 +829,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz326 · Gỡ bảng `media` cũ, view `public_media` / `ro_hang_ban`, hàm `kd_ten` / `tim_nghia_san_sang` (02/11/2026)
+Chủ dự án 02/11 ("gỡ hết mấy thứ đó" — bảng đề xuất tầng DB ở SRS-323). Migration `20261102a_go_media_cu` (một giao dịch): định nghĩa lại `admin_xoa_het_khach_va_ro_hang` / `admin_khoi_phuc_lan_xoa` bỏ `media`, `so.ro_hang.so_anh` chỉ đếm `listing_media`, rồi gỡ. `xuat-ro-hang.mjs` đọc `listing_media`.
+(1) Lớp lỗi: soát "0 chỗ gọi" bằng grep code + `schema.sql` bỏ sót schema `so` (`xuat_schema()` không xuất `so`) — chạy thử lần đầu đổ "view so.ro_hang depends on table media". (2) Cùng lớp: soát `pg_depend` + thân hàm + `cron.job` trên DB thật: chỉ `public_media`, `so.ro_hang`, hàm xoá hết, một chú thích trong `xuat_schema()`; hai view chẩn đoán `media_mo_coi_*` không phụ thuộc (giữ).
+(3) Kiểm: chạy thử trong giao dịch huỷ trên DB thật (`so.ro_hang` 249 dòng, 3 đối tượng đã gỡ, hai view chẩn đoán còn đọc được; sau rollback bảng còn nguyên), `soat:db`, `soat:migration`, `test:rohang`.
+
 ### SRS-5.1zzzzzzz325 · Chủ căn hộ hỏi giá cao không: nêu giá rao bán thị trường của dự án (thay một phần SRS-116) (02/11/2026)
 Quyết định chủ dự án 02/11 (xác nhận trong phiên): chủ căn hộ hỏi "giá tôi đưa cao không" thì nêu "giá rao bán thị trường X–Y triệu/m²". Ca gốc: SRS-324 đưa dòng giá rao vào khối dự án phía bán
 trong khi `KHOI_DINH_GIA` dặn "CHƯA có dữ liệu định giá" — model nhận hai lời ngược nhau. (1) Lớp lỗi: thêm dữ kiện vào khối chung mà không soát luật cấm đang áp cho cùng dữ kiện.
@@ -884,24 +889,6 @@ Chủ dự án 01/11 (tiếp): GIỮ đủ 4 ý, giọng theo khuôn anh Luận 
 lại (lưới SRS-292 nay chạy dưới SOAT_GON); `NHAN_VIEC_LUOT`; ảnh sổ qua `build_phieu_luot(viec=)`, bỏ "khen điểm mạnh" ↔ "không khen sổ". (2) Còn: AU-13 (ngoặc
 vuông / SLANG_NOTES) chờ Q1; `_viet_hoa_ca_cum` audit nêu đã không còn trong code. (3) Kiểm: `test_luat_roi_doi_duong_318.py` (4 bài đỏ khi gỡ từng bản sửa; cách
 nói mới "chị giảm chút phí cho em được hông"); AU-12 hết xfail; 4 kịch bản `phi_*` trong `ban.json`; `cham` hai lần (số ở mô tả PR).
-
-### SRS-5.1zzzzzzz317 · Audit Đợt 1: một mẫu SĐT cho mọi chỗ che / nhận; SQL `che_sdt` bắt cả số có dấu cách; CCCD che lại ở tin gốc / tin nội bộ (01/11/2026)
-Ca gốc AU-01: lưới che sổ đỏ (`engine._PII_PHONE_RE`) và SQL `che_sdt` chỉ bắt chữ số liền → "0900 000 123", "+84 900 000 123" lọt (đo trên Postgres 16 cục bộ: SQL cũ lọt 10/17 ca dương);
-bản `\d[\d .-]{7,}\d` của tin gốc / tin nội bộ che cả giá "12.500.000.000". (1) Lớp lỗi: 9 regex SĐT viết tay, không bảng ca chung. Sửa: `src/aioi/sdt.py`
-(`MAU_SDT`, `che_sdt(text, thay=)`); nối engine sổ đỏ, `tin_goc`, `prompts.khoi_cau_chuan`, 3 chỗ `supabase_store`; `mua` giữ `SDT_DOC` / `GIONG_SDT` (nhận diện) dựng cùng mảnh;
-migration `20261101a_che_sdt_mot_mau` chép nguyên `MAU_SDT` (chủ dự án "áp đi" 01/11; chạy thử 43/43 trên DB thật PG 17.11 rồi áp). (2) Cùng lớp — review PR #241: hai số nối gạch "0900…-0900…", "(+84) …", rồi hai số nối phẩy / chấm "0900…,0911…" lọt (ranh giới coi mọi ".,-" sát chữ số là tiền; sửa mẫu + `luat-lien-he.ts`,
-migration `20261101b_che_sdt_dau_phay` (áp 01/11 sau chạy thử 56/56 trên DB thật); doi-chieu phía TS nay so cả chuỗi che, không chỉ "có SĐT"). Che nhầm: `20261101a` (đã áp) che đuôi UUID
-"…-fe0900000171" (sổ lỗi bridge có dạng này) → chặn số kẹp giữa hex / gạch; CCCD che giá nghìn tỷ "2.090.000.000.000" → chặn khi trước số 0 là nhóm 1–3 số + ".,";
-bốn chỗ bỏ `\d[\d .-]{7,}\d` làm CCCD hết che (tin gốc còn vào văn bản nhúng) → `che_so_ca_nhan` = `che_giay_to` (CCCD 12 số, CMND 9 số sát chữ) + `che_sdt`. Còn: web chỉ buộc bắt mọi ca dương (được che thừa).
-(3) Kiểm: `luat/sdt.json` (25 dương / 31 âm, `bun run doi-chieu:sdt` Python ↔ SQL ↔ TS, cổng CI 11), `luat/cccd.json` (19 ca) + `tests/test_sdt_317.py` (cách viết mới "0900 000 160/0900 000 161", "0792.0000.0010"); đỏ khi gỡ.
-
-### SRS-5.1zzzzzzz316 · Audit Đợt 0: test chạy công tắc production; model bóc tách một nguồn ở cai-vps.sh; điểm nền dựng lại (01/11/2026)
-Lớp lỗi (AU-05 / AU-25): env test rỗng = mọi công tắc tắt → test đi nhánh production không đi; model bóc tách chỉ nằm trong `.env` VPS — SRS-313 ghi nhầm
-VPS dùng mặc định `claude-haiku-4-5`, sổ `bot_usage_model` 28/10–01/11 chỉ có `claude-haiku-5-5` (điểm nền cũ đo sai model). Sửa: dòng `MODEL_BOC` ở `cai-vps.sh`;
-`tests/cau_hinh_vps.py` một bộ đọc cho `tests/conftest.py` + bộ chấm. Bật lên đỏ 40 bài: 23 do đồ giả (form mua gọn không có `operations`, thiếu `converse`) — sửa
-đồ giả, nay chạy đường production; 16 bài nhánh cũ gắn `nhanh_cu`; 1 lỗi thật AU-12 (khối địa danh trỏ nhãn chỉ có ở prompt cũ) `xfail(strict)` cho Đợt 2.
-Kiểm: `test_cau_hinh_nhu_production_316.py` (đỏ khi gỡ conftest; đỏ khi gỡ cổng `_gia_tri_ghi`). Điểm nền mới (51 kịch bản, bóc Haiku 5.5, hai lần):
-tất định 507 / 500 trên 511; tổng 612 / 606 trên 664; giọng 2,94 / 3,02; lộ luật 3 / 4 cuộc; hỏi lại 2 / 3 cuộc — `diem_nen.json` ghi lần 1.
 
 ---
 

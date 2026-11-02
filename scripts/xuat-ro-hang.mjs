@@ -9,7 +9,7 @@
 //
 //   ĐÂY KHÔNG PHẢI BẢN SAO LƯU.
 //
-// Nó chỉ xuất `listings` (kèm ô `boc_tach`) + `media` (2 bảng). KHÔNG có
+// Nó chỉ xuất `listings` (kèm ô `boc_tach`) + `listing_media` (2 bảng). KHÔNG có
 // `conversations`, `messages`, `deals`, `buyers`, `sellers`.
 // Mất hội thoại là mất chính luận điểm sản phẩm. Và markdown không giữ UUID, khoá ngoại,
 // `status`, `*_source` — đọc lại được, DỰNG LẠI KHÔNG ĐƯỢC.
@@ -27,10 +27,9 @@
 //       node scripts/xuat-ro-hang.mjs --ban                → chỉ tin BÁN (bỏ tin cho thuê)
 //   PHẢI có chữ `node` ở đầu. Gõ mỗi tên file thì Windows mở Notepad.
 //
-// VỀ ẢNH: `media.storage_path` hiện là đường dẫn TƯƠNG ĐỐI kiểu
-// `masterDB/photos/1/1.jpg`, `storage_provider='onedrive'` — byte ảnh KHÔNG
-// nằm trong Supabase (`storage.objects` = 0 dòng, kiểm 06/09/2026). Không đưa
-// `--anh` thì `tin.md` chỉ LIỆT KÊ đường dẫn; đưa thì script chép file thật.
+// VỀ ẢNH: đọc `listing_media` (bucket + `storage_path`, ảnh căn trong Supabase Storage). Bảng `media` cũ (đường dẫn
+// tương đối `masterDB/photos/…`) gỡ 02/11/2026. Không đưa `--anh` thì `tin.md` chỉ LIỆT KÊ đường dẫn; đưa thì script
+// thử chép file thật từ thư mục gốc đã cho (giữ cho bản sao cục bộ có cùng đường dẫn tương đối).
 //
 // THƯ MỤC ĐÍCH NẰM NGOÀI REPO, và script TỪ CHỐI ghi vào trong repo: `tin.md`
 // mang mô tả nguyên văn (có SĐT thật) và `location_raw` (địa chỉ nhà dân),
@@ -338,7 +337,7 @@ function vietCsv(ds) {
 const soTay = {
   xuat_luc: new Date().toISOString(),
   nguon: URL_DU_AN,
-  KHONG_PHAI_BAN_SAO_LUU: "Chỉ 2 bảng (listings kèm ô boc_tach, media). " +
+  KHONG_PHAI_BAN_SAO_LUU: "Chỉ 2 bảng (listings kèm ô boc_tach, listing_media). " +
     "Không dựng lại được DB từ thư mục này. Dự án không còn sao lưu DB (bỏ 11/09/2026).",
   chi_ban, co_chep_anh: !!goc_anh, so_tin: 0, so_anh_chep: 0, so_anh_thieu: 0,
   trang_thai: "chua_xong",
@@ -355,7 +354,7 @@ try {
   const loc = chi_ban ? "&deal=eq.ban" : "";
   const [listings, media] = await Promise.all([
     keo("listings", "*", `${loc}&order=ward.asc,price_vnd.desc`),
-    keo("media", "listing_id,storage_path,category,approved"),
+    keo("listing_media", "listing_id,bucket,storage_path,sort_order"),   // 02/11/2026: bảng `media` cũ (0 dòng) gỡ
   ]);
 
   const anhTheoTin = new Map();
