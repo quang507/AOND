@@ -2,6 +2,20 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz316 · Audit Đợt 0: test chạy công tắc production; model bóc tách một nguồn ở cai-vps.sh; điểm nền dựng lại (01/11/2026)
+Lớp lỗi (AU-05 / AU-25): env test rỗng = mọi công tắc tắt → test đi nhánh production không đi; model bóc tách chỉ nằm trong `.env` VPS — SRS-313 ghi nhầm
+VPS dùng mặc định `claude-haiku-4-5`, sổ `bot_usage_model` 28/10–01/11 chỉ có `claude-haiku-5-5` (điểm nền cũ đo sai model). Sửa: dòng `MODEL_BOC` ở `cai-vps.sh`;
+`tests/cau_hinh_vps.py` một bộ đọc cho `tests/conftest.py` + bộ chấm. Bật lên đỏ 40 bài: 23 do đồ giả (form mua gọn không có `operations`, thiếu `converse`) — sửa
+đồ giả, nay chạy đường production; 16 bài nhánh cũ gắn `nhanh_cu`; 1 lỗi thật AU-12 (khối địa danh trỏ nhãn chỉ có ở prompt cũ) `xfail(strict)` cho Đợt 2.
+Kiểm: `test_cau_hinh_nhu_production_316.py` (đỏ khi gỡ conftest; đỏ khi gỡ cổng `_gia_tri_ghi`). Điểm nền mới (51 kịch bản, bóc Haiku 5.5, hai lần):
+tất định 507 / 500 trên 511; tổng 612 / 606 trên 664; giọng 2,94 / 3,02; lộ luật 3 / 4 cuộc; hỏi lại 2 / 3 cuộc — `diem_nen.json` ghi lần 1.
+
+### SRS-5.1zzzzzzz315 · Quyết định chủ dự án 31/10–01/11; câu báo phí viết lại, gọi đúng xưng hô; ẩn danh + dọn docs lệch code (01/11/2026)
+Chủ dự án: giữ danh sách cảm thán `GIONG_VUI`; chat chị N. / anh L. là thật → kịch bản (đã ẩn danh); lên Top có (BĐS tiêu biểu đẩy đầu trang web); "q3 viết lại"; 01/11 "2 áp đi".
+Lớp lỗi: `cau_mau.cau("bao_phi" / "hoi_phi")` không nhận xưng hô → "Anh/chị" cứng (bộ chấm `xung_chi_phi`). Sửa: câu mới "Đăng tin bên em miễn phí ạ. Phí môi giới là {phi}, chỉ thu khi giao dịch thành công — chưa thành thì {goi} không tốn đồng nào.", `goi` truyền theo khách; migration `20261031a_cau_mau_bao_phi` ĐÃ áp DB thật 01/11. `Engine._ghi_viec` bọc `try/except` + `log.warning` (phần đo không chặn lời gửi khách).
+Docs: bỏ tàn dư CTV, lịch cron theo `schema.sql` (docs/07 §1–§3, SRS-5.3), FR-140 / 173 / 174 + docs/08, docs/10 TS-CHAM-01, docs/13 theo công tắc, CLAUDE.md bảng công tắc; ẩn danh tên / số nhà / Zalo ID / SĐT ở docs/07-srs-luu-tru.
+Kiểm: `test_cau_mau.py::test_cau_bao_phi_tester_sua_toi_loi_bot` (đỏ khi bỏ `goi`), `test_viec_luot_314.py::test_loi_viec_luot_khong_lam_hong_luot` (đỏ khi gỡ phần bọc).
+
 ### SRS-5.1zzzzzzz314 · Bước 2A/2B: 8 kịch bản mới + giám khảo "hỏi lại"; `viec_luot` chọn MỘT việc mỗi lượt phía bán (chỉ ghi, chưa đổi lời) (30/10/2026)
 Chủ dự án 30/10 ("chạy lun đi"). Lớp lỗi đo được: engine ghép nhiều khối hỏi cùng lượt — 16 / 169 lượt (khối ưu tiên / hỏi mặt tiền / trình nháp vẫn kèm "VIỆC LƯỢT NÀY: hỏi ô X" của phiếu lượt). `viec_luot.py` hàm thuần, thứ tự ưu tiên một chỗ; engine ghi `y_luot["_viec"]` / `["_khoi"]`, bộ chấm in chỗ lệch. Kịch bản mới bắt hai lỗi thật: `doc_quyen` (phiếu lượt không mang chính sách — "chưa có thông tin chắc nên không dám nói bừa", 2/2 lần) và `xung_chi_phi` (câu mẫu `bao_phi` không nhận xưng hô → "Anh/chị", `prompts.khoi_bao_phi`). `--cham-lai` chấm lại bản ghi không gọi model.
 Điểm nền mới (48 kịch bản, tiêu chí giám khảo mới): 569 / 571 trên 623 phép; tất định 472 / 472 trên 479 (sau sửa phép `hoi_lai_giay_to`); giọng 2,96 / 2,92; lộ luật 3 / 2 cuộc; hỏi lại 3 / 3 cuộc.

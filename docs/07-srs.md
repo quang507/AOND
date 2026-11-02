@@ -829,6 +829,19 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz326 · Vai theo SỐ khách đang nhắn ở lượt mơ hồ: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi không còn bị hỏi khu vực tìm mua (02/11/2026)
+Ca thật chủ dự án 02/11 (cùng một Zalo): 10:37 số tư vấn "anh đang cần tìm mua nhà quận 8 dưới 7 tỉ" → đúng; 10:38 số ký gửi "chào em" → "Anh muốn tìm ở khu vực nào ạ?". Chủ dự án: số ký gửi mặc định BÁN, nói mua mới hỗ trợ mua; số tư vấn giữ SRS-210.
+(1) Lớp lỗi: hội thoại khoá theo NGƯỜI (Zalo ID), `so_nhan` ghi đè mỗi tin; nhánh "đang mua thì ở lại vai mua" chạy trước mặc định theo số. Sửa: `Conversation.so_vai` (số đặt vai, lưu SQLite); lượt mơ hồ ở số khác → vai mặc định của số đang nhắn, lượt đó chào theo số
+(`_doi_so`); ý mua / bán của lượt vẫn thắng; nhu cầu mua / tin rao số kia giữ nguyên. (2) Cùng lớp: lời chào lượt đầu hai số (đã sửa cùng cờ); còn: dữ liệu cũ chưa có `so_vai` giữ cách cũ tới lượt có ý mua / bán.
+(3) Kiểm: `test_vai_theo_so_326.py` qua `Engine.handle` (gỡ nhánh `so_vai` → 2/5 đỏ; ba cách chào: "chào em", "alo em ơi", "hi bé").
+
+### SRS-5.1zzzzzzz325 · Audit Đợt 4: một quyết định một nơi — MỘT câu hỏi mỗi lượt, duyệt bản nháp một hàm, vai một nguồn, phía mua hết lệnh ngược, lượt bản nháp một lần gọi lại; Q4 / Q5 (02/11/2026)
+Chủ dự án 02/11: Q4 — hỏi xác nhận ĐÚNG 4 chỗ (mặt tiền ngang / đường, căn thuộc dự án X, số lệch kho dự án, diện tích đất hay sàn), mỗi chỗ tối đa MỘT lần mỗi căn, ngoài ra giữ SRS-302; Q5 — `hoi_ngoai_viec`, `xin_xem_ban_ve`, `cau_hoi_du_an`, `mo_ta_du_an`, `xong_viec_mua` theo ý AI đọc, bỏ cổng nguyên văn.
+(1) Lớp lỗi: nhiều nơi cùng quyết một đầu ra, không thứ tự — ≥ 7 khối tự nhận "câu hỏi DUY NHẤT" cùng bật (AU-09); duyệt ghi đè ở 4 chỗ, `xin_dang` đè `khong_dong_y` và duyệt lại bản đã duyệt (AU-10); vai chính chủ trên tin ≠ vai tính phí (AU-03);
+phía mua "hỏi khách có muốn em hỏi chủ" ↔ "KHÔNG hỏi lại", "nói sẽ báo" ↔ "không hứa báo lại" (AU-04); lượt bản nháp gọi lại tới 3 lần (AU-14). Sửa: khối hỏi ghép qua `_hoi()` (dấu chỗ), `viec_luot` chọn một, khối thừa gỡ + trả cờ "đã hỏi" (mặt tiền thêm `_mt_cho_hoi`;
+đất / nhà cờ `_dt_mo_ho_da_hoi`); `Engine._quyet_duyet`; bản tin "Chính chủ" theo `vai_phi`; lời hứa báo lại thành dữ kiện vòng `bao_can_moi`; cổng bản nháp đi chung vòng soát (một lần gọi lại, không đè bản tin bằng lời chat). (2) Còn: Q4 (c) là lời dặn trong vòng agent dự án, code chưa đếm.
+(3) Kiểm: `test_dot4_322.py` (10 bài, mỗi bài đỏ khi gỡ bản sửa tương ứng; AU-14 trên engine cũ: 4 lần gọi > trần 2); `cham` ×2 (số ở mô tả PR).
+
 ### SRS-5.1zzzzzzz324 · Làm giàu kho dự án từ rever.vn (crawl theo luật mogi), một kho `projects`; bot đọc `specs.rever` (02/11/2026)
 Quyết định chủ dự án 02/11: chọn phương án (a) — crawl Rever theo luật OPEN-56 (chỉ dữ kiện, mô tả viết lại, giữ `source_url`, không tin rao lẻ / SĐT / ảnh), dù điều khoản rever.vn
 §3.1–3.2 cấm dùng thương mại / sao chép (`robots.txt` cho phép); "dữ liệu bên mình là 1 chỗ" → GHÉP vào dòng `projects` có sẵn (`cacKhoa`: tên đủ, phần trước " - ", bỏ quận / tỉnh đuôi; cùng tỉnh;
@@ -887,20 +900,6 @@ migration `20261101b_che_sdt_dau_phay` (áp 01/11 sau chạy thử 56/56 trên D
 "…-fe0900000171" (sổ lỗi bridge có dạng này) → chặn số kẹp giữa hex / gạch; CCCD che giá nghìn tỷ "2.090.000.000.000" → chặn khi trước số 0 là nhóm 1–3 số + ".,";
 bốn chỗ bỏ `\d[\d .-]{7,}\d` làm CCCD hết che (tin gốc còn vào văn bản nhúng) → `che_so_ca_nhan` = `che_giay_to` (CCCD 12 số, CMND 9 số sát chữ) + `che_sdt`. Còn: web chỉ buộc bắt mọi ca dương (được che thừa).
 (3) Kiểm: `luat/sdt.json` (25 dương / 31 âm, `bun run doi-chieu:sdt` Python ↔ SQL ↔ TS, cổng CI 11), `luat/cccd.json` (19 ca) + `tests/test_sdt_317.py` (cách viết mới "0900 000 160/0900 000 161", "0792.0000.0010"); đỏ khi gỡ.
-
-### SRS-5.1zzzzzzz316 · Audit Đợt 0: test chạy công tắc production; model bóc tách một nguồn ở cai-vps.sh; điểm nền dựng lại (01/11/2026)
-Lớp lỗi (AU-05 / AU-25): env test rỗng = mọi công tắc tắt → test đi nhánh production không đi; model bóc tách chỉ nằm trong `.env` VPS — SRS-313 ghi nhầm
-VPS dùng mặc định `claude-haiku-4-5`, sổ `bot_usage_model` 28/10–01/11 chỉ có `claude-haiku-5-5` (điểm nền cũ đo sai model). Sửa: dòng `MODEL_BOC` ở `cai-vps.sh`;
-`tests/cau_hinh_vps.py` một bộ đọc cho `tests/conftest.py` + bộ chấm. Bật lên đỏ 40 bài: 23 do đồ giả (form mua gọn không có `operations`, thiếu `converse`) — sửa
-đồ giả, nay chạy đường production; 16 bài nhánh cũ gắn `nhanh_cu`; 1 lỗi thật AU-12 (khối địa danh trỏ nhãn chỉ có ở prompt cũ) `xfail(strict)` cho Đợt 2.
-Kiểm: `test_cau_hinh_nhu_production_316.py` (đỏ khi gỡ conftest; đỏ khi gỡ cổng `_gia_tri_ghi`). Điểm nền mới (51 kịch bản, bóc Haiku 5.5, hai lần):
-tất định 507 / 500 trên 511; tổng 612 / 606 trên 664; giọng 2,94 / 3,02; lộ luật 3 / 4 cuộc; hỏi lại 2 / 3 cuộc — `diem_nen.json` ghi lần 1.
-
-### SRS-5.1zzzzzzz315 · Quyết định chủ dự án 31/10–01/11; câu báo phí viết lại, gọi đúng xưng hô; ẩn danh + dọn docs lệch code (01/11/2026)
-Chủ dự án: giữ danh sách cảm thán `GIONG_VUI`; chat chị N. / anh L. là thật → kịch bản (đã ẩn danh); lên Top có (BĐS tiêu biểu đẩy đầu trang web); "q3 viết lại"; 01/11 "2 áp đi".
-Lớp lỗi: `cau_mau.cau("bao_phi" / "hoi_phi")` không nhận xưng hô → "Anh/chị" cứng (bộ chấm `xung_chi_phi`). Sửa: câu mới "Đăng tin bên em miễn phí ạ. Phí môi giới là {phi}, chỉ thu khi giao dịch thành công — chưa thành thì {goi} không tốn đồng nào.", `goi` truyền theo khách; migration `20261031a_cau_mau_bao_phi` ĐÃ áp DB thật 01/11. `Engine._ghi_viec` bọc `try/except` + `log.warning` (phần đo không chặn lời gửi khách).
-Docs: bỏ tàn dư CTV, lịch cron theo `schema.sql` (docs/07 §1–§3, SRS-5.3), FR-140 / 173 / 174 + docs/08, docs/10 TS-CHAM-01, docs/13 theo công tắc, CLAUDE.md bảng công tắc; ẩn danh tên / số nhà / Zalo ID / SĐT ở docs/07-srs-luu-tru.
-Kiểm: `test_cau_mau.py::test_cau_bao_phi_tester_sua_toi_loi_bot` (đỏ khi bỏ `goi`), `test_viec_luot_314.py::test_loi_viec_luot_khong_lam_hong_luot` (đỏ khi gỡ phần bọc).
 
 ---
 

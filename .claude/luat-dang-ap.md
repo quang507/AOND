@@ -54,6 +54,7 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 
 **Hỏi & bản nháp (phía bán)**
 - Sàn rao (`Property.minimal_missing`) = loại hình + vị trí (địa chỉ / đường / dự án HOẶC khu vực) + giá; tự soạn bài khi đủ ba nhóm `NHOM_SOAN` — quy mô · pháp lý · hiện trạng (chủ dự án 28/10, SRS-260; cho thuê bỏ pháp lý). Đổi bộ ô cơ bản là quyết định chủ dự án — đừng tự thêm / bớt. Ô còn thiếu hỏi SAU khi duyệt, mỗi lượt MỘT ô; khách lờ một ô 2 lần thì để sau.
+- Vai lượt mơ hồ theo SỐ khách đang nhắn (ký gửi → bán, tư vấn → mua) khi vai được đặt ở số khác (`Conversation.so_vai`, SRS-326); hội thoại khoá theo người, đừng giữ vai qua số.
 - Duyệt bản nháp: MỘT nơi `Engine._quyet_duyet` (SRS-325) — cụm trích ở tin vừa nhắn, hoặc (chỉ đồng ý) ở tin khách SAU bản nháp 📋 chưa duyệt (mốc `_duyet_ban`, SRS-247); `xin_dang` không đè `khong_dong_y`, không duyệt lại bản đã duyệt.
 - Lượt trình bản nháp phải ra bản tin có dòng mở riêng chứa 📋 (code gắn lại nếu thiếu, `_gan_dau_ban_tin`); mọi bước nhận bản tin dựa vào dấu này (SRS-204 / 222).
 - Bản tin không tự thêm điều căn chưa có: hẻm / mặt tiền (SRS-155), tiện ích / tình trạng nhà (SRS-208), pháp lý / "chính chủ" (SRS-233), số không có trong ô tin / lời khách (`_so_khong_co_trong_tin`, SRS-218) → `_soat_hinh_thuc` gọi lại model. Bình giá và khoe khan hiếm trong tin rao: chủ dự án chấp nhận — đừng chặn.
