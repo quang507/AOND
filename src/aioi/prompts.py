@@ -481,7 +481,22 @@ def khoi_su_that_can(fields: dict, chu_nha: bool) -> str:
             + (" — KHÔNG ghi sổ hồng / sổ đỏ / hoàn công" if fields.get("_phap_ly_trang_thai") in ("chua_co", "dang_lam", "giay_tay") else "") + "\n"
             f"- Đường vào: {dv.get(fields.get('_duong_vao'), 'chưa rõ — KHÔNG ghi mặt tiền / hẻm / HXH')}\n"
             f"- Tiện ích gần: {', '.join(nhan_ti[x] for x in ti if x in nhan_ti) or 'chưa có — KHÔNG ghi gần chợ / trường / bệnh viện / siêu thị / công viên'}\n"
-            f"- Tình trạng nhà: {'mới xây' if fields.get('_tinh_trang_nha') == 'moi_xay' else 'KHÔNG ghi nhà mới / mới xây / giữ gìn / sạch sẽ'}\n")
+            f"- Tình trạng nhà: {'mới xây' if fields.get('_tinh_trang_nha') == 'moi_xay' else 'KHÔNG ghi nhà mới / mới xây / giữ gìn / sạch sẽ'}\n"
+            + _dong_dien_tich(fields))
+
+
+def _dong_dien_tich(fields: dict) -> str:
+    """SRS-5.1zzzzzzz363 (chat thật 01–02/11: khách "mặt tiền 6m dài 15 nở hậu 3" → bản tin "đất 90m² … nở hậu 3m" — 6 × 15 chỉ đúng khi KHÔNG
+    nở hậu, khách không nói diện tích): ô diện tích nào khách đã nói thì in đúng số đó; chưa có ô nào thì dòng dữ kiện nói rõ KHÔNG có số m² —
+    chỉ in nguyên kích thước (và nở hậu nếu có). Code quyết theo ô tin, không đoán."""
+    co = [f"{nhan} {fields[k]}" for k, nhan in (("dien_tich_dat", "đất"), ("dien_tich", "diện tích"), ("dien_tich_nha", "sàn"))
+          if isinstance(fields.get(k), str) and fields[k].strip()]
+    if co:
+        return f"- Diện tích (khách nói): {'; '.join(co)} — chỉ in đúng các số này.\n"
+    kt = " ".join(x for x in (str(fields.get("kich_thuoc") or "").strip(),
+                              f"nở hậu {fields['no_hau']}" if str(fields.get("no_hau") or "").strip() else "") if x)
+    return (f"- Diện tích: CHƯA có số m² nào từ khách — KHÔNG tự nhân ngang × dài ra m² (nở hậu / méo thì càng sai), chỉ in nguyên kích thước"
+            + (f" \"{kt}\"" if kt else "") + ".\n")
 
 
 # Đợt 4 (SRS-5.1zzzzzzz328): lượt có việc hỏi khác ưu tiên hơn ô kế (khối ưu tiên, hỏi tên đường / dự án / mặt tiền…) — engine thay việc hỏi ô bằng
