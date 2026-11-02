@@ -5,11 +5,15 @@ import { supabase, type ListingCard as CardRow } from "@/lib/supabase";
 import { zaloLink } from "@/lib/format";
 
 // FR-100 / UF-12 / WF-11 (dựng 04/09/2026) — danh sách riêng `/ds/{token}`.
-// Không generateStaticParams (token là bí mật, không liệt kê được) → route ƒ,
-// dựng theo từng request; một RPC `doc_danh_sach` (security definer) là toàn
-// bộ truy vấn. `noindex, nofollow` (AC-11, IA-11). Không hiện tên/Zalo của B.
+// Một RPC `doc_danh_sach` (security definer) là toàn bộ truy vấn. `noindex, nofollow` (AC-11, IA-11). Không hiện tên/Zalo của B.
 // Hết hạn / token sai → trang "hết hạn" + Zalo, KHÔNG 404 trắng (IA-P1).
-export const dynamic = "force-dynamic";
+// 02/11/2026 (SRS-5.1zzzzzzz332): bỏ `force-dynamic` (route ƒ, mỗi lượt mở một lambda + một RPC). Token bí mật nên không liệt kê được —
+// `generateStaticParams` trả `[]`: không dựng sẵn trang nào, lượt mở đầu dựng rồi cache, sống `revalidate` giây. Danh sách hết hạn
+// (sống 30 ngày) thì trang cũ còn tối đa 1 giờ trước khi đổi sang "hết hạn" (G-05: trang công khai cache ≥ 1 giờ).
+export const revalidate = 3600;
+export function generateStaticParams() {
+  return [];
+}
 
 type Ds = { title: string | null; created_at: string; expires_at: string; listings: CardRow[] };
 

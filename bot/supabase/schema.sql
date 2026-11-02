@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-02 11:11 (giờ VN)
+-- Sinh lúc: 2026-11-02 14:17 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -5725,6 +5725,8 @@ declare
   v_buyer text;
 begin
   if new.source is distinct from 'buyer_ask' then return new; end if;
+  -- 20261102c (SRS-330): khách là ID thử thì không bắn cảnh báo ra ngoài.
+  if exists (select 1 from buyers b where b.id = new.buyer_id and public.la_id_thu(b.zalo_user_id)) then return new; end if;
 
   if new.question is not null and btrim(new.question) <> '' then
     select coalesce('#' || code, '') into v_bds from listings where id = new.listing_id;
@@ -5956,6 +5958,10 @@ begin
   v_code := coalesce(v_code, new.listing_code, '?');
   select b.zalo_user_id, b.name into v_uid, v_ten from buyers b where b.id = new.buyer_id;
   v_gio := coalesce(to_char(new.slot at time zone 'Asia/Ho_Chi_Minh', 'HH24:MI DD/MM'), new.time_text, '?');
+
+  -- 20261102c (SRS-330): ID thử (`la_id_thu`, cùng danh sách với lõi) — lịch hẹn vẫn ghi, KHÔNG nhắc admin, không giao câu xác nhận
+  -- lịch, không email. Bắn thử ban-thu-mua 02/11 từng nhắn admin thật lịch xem của "Khách thử".
+  if public.la_id_thu(v_uid) then return null; end if;
 
   -- (a) nhắc admin ngay
   begin
