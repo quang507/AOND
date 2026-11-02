@@ -831,6 +831,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz348 · Thang chấm mất dòng "Không có → []" của lo_luat: lộ luật nhảy 0 → 12 trên cùng lõi (02/11/2026)
+Ca gốc: lượt chấm đóng gói trên main `2d68576` ra lộ luật 12/59, trong khi đỉnh chồng #266 — `src/aioi/` GIỐNG HỆT (`git diff eebd948..2d68576 -- src/aioi/` rỗng) — ra 0/59 bốn mươi phút trước.
+(1) Lớp lỗi: khi viết lại đoạn `lo_luat` của `TIEU_CHI_LO_LUAT` ở SRS-346 (PR #265, ĐÃ GỘP), phiên kiểm làm mất dòng `"Không có → []."` ở cuối việc đó; ba việc còn lại (`hoi_lai`, `da_doi`, `diem_sai_luc`) vẫn có. Thiếu lời cho phép trả mảng rỗng, giám khảo có xu hướng liệt kê cho đủ. Đây là lỗi của PHÉP ĐO do chính phiên kiểm gây ra, không phải lỗi bot — và nó làm sai chính cổng dùng để quyết đóng gói. (2) Cùng lớp: soát cả bốn việc của rubric — nay đủ 4 dòng `"Không có → []"`.
+Sửa (KHÔNG đụng `src/aioi/`): khôi phục dòng đó cho `lo_luat`.
+(3) Kiểm: chấm lại CÙNG bản ghi `final-1.json`, chỉ khác dòng vừa khôi phục — số ghi ở PR. Bài học cho phiên sau: sửa thang chấm thì phải chấm lại ngay trên một bản ghi cũ đã biết số, đừng chờ tới lượt chấm quyết định.
+
 ### SRS-5.1zzzzzzz347 · Bịa tiện ích bằng "nằm sát / đối diện / kề" lọt cả hai phép chấm (02/11/2026)
 Ca gốc: khách ảo 02/11 SAU #260 — bot nói "Căn trên đường Quang Trung, 69 m², 2,7 tỷ, **nằm sát Co-opmart**", rồi khi khách hỏi lấy đâu ra thì tự nhận "Trong thông tin em đang có về ba căn này thì không ghi những chỗ đó".
 (1) Lớp lỗi của phép ĐO: phép `ka_bia_tien_ich` cả bản đầu (phiên kiểm, SRS-342) lẫn bản thu hẹp (#266, SRS-336) đều neo vào chữ "gần", nên mọi cách nói khoảng cách khác đều lọt — y lớp lỗi từ khoá §4.8, lần này ở phía bộ chấm. (2) Cùng lớp: soát các phép `cam` còn lại trong `khach_ao_342.json` — chỉ phép này neo vào một giới từ; các phép khác neo vào con số hay tên riêng.
