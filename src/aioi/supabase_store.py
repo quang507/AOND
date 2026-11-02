@@ -789,7 +789,12 @@ class SupabaseConversationStore(KhoNguoiMua):
                    "body": incoming_text, "created_at": nhan_luc or now_iso}
             if zalo_msg_id:
                 msg["zalo_msg_id"] = str(zalo_msg_id)
-            self._post("messages", msg, prefer="return=minimal")
+            # SRS-5.1zzzzzzz365 (sổ lỗi 21/10–01/11: "ghi tin vào messages hỏng: HTTP Error 409: Conflict" 34 lần): `zalo_msg_id` là khoá duy
+            # nhất — cùng một tin tới hai lần (bridge thử lại khi mạng nghẽn; khách thả cảm xúc nhiều lần lên CÙNG một tin, msg_id
+            # `react-<luồng>-<tin>`) → 409 → `ghi_luot_chat` tưởng hội thoại đã xoá, ghi lại vẫn 409 rồi ném: dòng LỜI BOT của lượt đó mất khỏi
+            # CRM. Trùng khoá là đúng thiết kế (một tin Zalo một dòng) → bỏ qua dòng trùng, vẫn ghi lời bot.
+            self._post("messages?on_conflict=zalo_msg_id" if zalo_msg_id else "messages", msg,
+                       prefer="resolution=ignore-duplicates,return=minimal" if zalo_msg_id else "return=minimal")
         if bot_reply:
             # `nguoi_gui` = "human" khi câu là của admin (gõ tay trên acc clone / ô gửi ở /admin/tin-nhan) — CRM tô màu riêng (SRS-216).
             self._post("messages", {"conversation_id": conv_id, "sender": nguoi_gui if nguoi_gui in ("bot", "human") else "bot",

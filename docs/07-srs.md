@@ -831,6 +831,18 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz365 · Sổ lỗi "ghi tin vào messages hỏng: 409 Conflict" 34 lần: lời bot của lượt trùng tin mất khỏi CRM (02/11/2026)
+Ca gốc: `bot_errors` 21/10–01/11 23:12 — "supabase sync: ghi tin vào messages hỏng: HTTPError 409" 34 lần; "TypeError: argument of type 'NoneType' is not iterable" 15 lần 28/10 16:22 – 29/10 04:52.
+(1) Lớp lỗi: `messages.zalo_msg_id` là khoá duy nhất; cùng một tin Zalo tới hai lần (bridge thử lại khi mạng nghẽn; khách thả cảm xúc nhiều lần lên CÙNG một tin — msg_id `react-<luồng>-<tin>`) → 409 → `ghi_luot_chat` coi mọi 409 là "hội thoại đã xoá", ghi lại vẫn 409 rồi ném → dòng LỜI BOT của lượt đó không vào CRM (mất tin thật, không phải chỉ ồn sổ). Sửa: dòng khách ghi `on_conflict=zalo_msg_id` + `resolution=ignore-duplicates` (trùng khoá là đúng thiết kế: một tin Zalo một dòng); đường 409 do hội thoại bị xoá (khoá ngoại) giữ nguyên. TypeError: đã hết từ SRS-276 (`f0dda59`, 29/10 05:35 UTC — `.get("name", "")` trả None khi cột NULL), không sửa thêm.
+(2) Cùng lớp: dòng lời bot / tin admin không có `zalo_msg_id` nên không trùng khoá; `supabase save` 409 (2 lần, 20–22/10) là đường lưu tin rao, chưa thấy lại sau 22/10.
+(3) Kiểm: `test_tin_trung_msg_id_365.py` (thả cảm xúc hai lần cùng tin; bridge thử lại) — gỡ bản sửa: đỏ đúng "HTTP Error 409: Conflict".
+
+### SRS-5.1zzzzzzz364 · Bot trả lời từng lượt khách chỉ thả cảm xúc (02/11/2026)
+Ca gốc (chat thật 01–02/11): khách mua chỉ thả /-heart 6 lần trong 3 giờ, bot nhắn lại 4 lần ("Em vẫn ở đây…", "Tim đủ đầy rồi ạ ❤️…").
+(1) Lớp lỗi: lượt CẢM XÚC (bridge `reaction`) đi chung đường lượt tin nhắn → model luôn viết lời. Sửa: bridge gửi `su_kien: "reaction"`; lõi theo LOẠI SỰ KIỆN (hoặc msg_id `react-` của bridge cũ) — không đọc chữ — không trả lời, chỉ ghi CRM; ngoại lệ: bản nháp đang chờ duyệt (thả tim = đồng ý, FR-142; `engine.cho_duyet_ban_nhap`) hoặc bot chưa từng nhắn khách (trả lời một lần).
+(2) Cùng lớp: sticker đã có đường riêng (đọc nghĩa sticker, SRS-122); khách GÕ chữ kèm tim vẫn là tin nhắn. Bridge đổi → tự cài VPS khởi động lại cả bridge.
+(3) Kiểm: `test_cam_xuc_khong_tra_loi_364.py` (bridge mới / cũ; bản nháp chờ duyệt vẫn xử lý; chưa từng chào trả lời một lần; cách nói mới "tim đủ đầy rồi em ❤️" gõ chữ vẫn trả lời) — tắt nhánh: đỏ.
+
 ### SRS-5.1zzzzzzz358 · Dữ kiện "nhắn khách khi có căn mới (trong 8–20 giờ)" đọc thành "8–20 tiếng nữa" (02/11/2026)
 Ca gốc: khách ảo #274 — hai persona đều nhận "hệ thống sẽ nhắn anh trong khoảng 8–20 giờ tới" và ghi là không hiểu; ý thật là khung giờ 8h–20h.
 (1) Lớp lỗi: dữ kiện đưa model mơ hồ ĐƠN VỊ (thời điểm hay thời lượng) — `mua.khoi_can_cho_khach` ghi "(trong 8–20 giờ)". Sửa: "(chỉ gửi trong khung giờ 8h–20h hằng ngày)".
