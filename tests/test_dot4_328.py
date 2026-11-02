@@ -63,10 +63,20 @@ def test_hai_khoi_hoi_cung_kich_chi_con_mot():
     s = ai.systems[-1]
     assert "BỀ NGANG HAY ĐƯỜNG" in s                                   # việc thắng: xác nhận mặt tiền (Q4 a)
     viec = s.split("VIỆC LƯỢT NÀY:")[-1]
-    assert "hỏi đúng MỘT ý" not in s and '"BỀ NGANG HAY ĐƯỜNG"' in viec   # câu hỏi ô kế bị gỡ; dòng việc GỌI TÊN khối thắng
-    assert "không nhắc điểm tin" in viec                               # cham Đợt 4 lần 1: câu chung → model đọc "Tin đang 73/100"
+    assert '"BỀ NGANG HAY ĐƯỜNG"' in viec and s.count("hỏi đúng MỘT ý") == 1   # dòng việc GỌI TÊN khối thắng; ô kế chỉ còn là nhánh dự phòng
+    assert "không nhắc điểm tin" in viec.lower()                       # cham Đợt 4 lần 1: câu chung → model đọc "Tin đang 73/100"
+    assert "hỏi đúng MỘT ý" in viec and "không giải thích" in viec      # lần 2: khách nói rõ ngang → quay về ô kế, không kể đã bỏ qua
     y = eng.conversation("d4").y_luot
     assert y["_viec"]["ten"] == "xac_nhan_mat_tien" and "hoi_o" not in y["_khoi"]
+
+
+def test_kich_thuoc_co_chu_m_la_du_hai_chieu():
+    """cham Đợt 4 lần 2 (`ngan_cho_thue`): "4m x 4.5m" không được nhận là hai chiều lô → khối mặt tiền bật sai."""
+    from aioi.engine import _hai_chieu_lo
+    assert _hai_chieu_lo({"kich_thuoc": "4m x 4.5m"}) and _hai_chieu_lo({"kich_thuoc": "5 x 20"}) and not _hai_chieu_lo({"kich_thuoc": "ngang 4m"})
+    eng, ai = _eng(MT, truoc={**CO_SAN, "kich_thuoc": "4m x 4.5m"})
+    eng.handle("d4", "mặt tiền 5m em nha")
+    assert "BỀ NGANG HAY ĐƯỜNG" not in ai.systems[-1]
 
 
 def test_ba_khoi_hoi_du_an_thang_mat_tien_doi_luot_sau():

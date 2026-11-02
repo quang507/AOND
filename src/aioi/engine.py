@@ -298,7 +298,7 @@ DAU_TA_ANH_CHUP = "[Khách gửi ảnh chụp:"
 def _hai_chieu_lo(fields: dict) -> str | None:
     """Ô mang hai chiều lô dạng "4 x 11m" — kích thước trước, diện tích đất sau (SRS-5.1zzzzzzz93 / 96)."""
     return next((str(x) for x in (fields.get("kich_thuoc"), fields.get("dien_tich_dat"))
-                 if x and re.search(r"\d\s*[x×*]\s*\d", str(x))), None)
+                 if x and re.search(r"\d\s*m?\s*[x×*]\s*\d", str(x), re.I)), None)   # "4m x 4.5m" (cham Đợt 4: bản cũ bỏ sót chữ m)
 
 
 def _vai_co_bang_chung(trich: str | None, loi_khach: list[str]) -> bool:
@@ -3175,7 +3175,7 @@ class Engine:
             duyet=conv.duyet_luot, yeu_cau_viet=bool(conv.y_luot.get("yeu_cau_viet"))), khoi)
         bo = set(viec.bo) if viec is not None else set()   # viec_luot lỗi → giữ mọi khối như trước Đợt 4 (lượt vẫn trả lời)
         if "hoi_o" in bo and "hoi_o" in hoi:
-            hoi["hoi_o"] = (hoi["hoi_o"][0], viec_theo_khoi(viec.ten), hoi["hoi_o"][2])
+            hoi["hoi_o"] = (hoi["hoi_o"][0], viec_theo_khoi(viec.ten, hoi["hoi_o"][0]), hoi["hoi_o"][2])
         for ten, (loi, khi_bo, hoan) in hoi.items():
             system = system.replace(f"\x00{ten}\x00", khi_bo if ten in bo else loi)
             if ten in bo and hoan is not None:

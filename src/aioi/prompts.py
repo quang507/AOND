@@ -488,7 +488,6 @@ def khoi_su_that_can(fields: dict, chu_nha: bool) -> str:
 # việc của khối thắng, GỌI ĐÚNG TÊN khối (cham Đợt 4 lần 1: câu chung "làm đúng khối hệ thống bên dưới" → model bám khối ĐIỂM TIN ngay dưới, đọc
 # "Tin đang 73/100" thay vì hỏi mặt tiền — 5 lượt lộ luật).
 _VIEC_KHOI = {
-    "xac_nhan_mat_tien": 'hỏi lại đúng MỘT câu theo khối "BỀ NGANG HAY ĐƯỜNG" bên dưới: con số đó là bề ngang căn hay đường trước nhà rộng chừng đó.',
     "hoi_du_an": 'hỏi xác nhận MỘT câu theo khối "DỰ ÁN GỢI Ý" bên dưới: căn có thuộc dự án đó không.',
     "hoi_dia_danh": 'hỏi xác nhận tên đường theo khối "TRA CỨU ĐỊA DANH" bên dưới.',
     "hoi_gia_tin_moi": 'báo khách em lên cả hai tin và hỏi giá của tin mới theo khối "HỆ THỐNG VỪA MỞ THÊM MỘT TIN" bên dưới.',
@@ -498,8 +497,13 @@ _VIEC_KHOI = {
 VIEC_THEO_KHOI = 'trả lời theo khối "ƯU TIÊN LƯỢT NÀY" bên dưới.'
 
 
-def viec_theo_khoi(ten_viec: str) -> str:
-    """Dòng việc của phiếu lượt khi việc `ten_viec` (`viec_luot`) thắng câu hỏi ô kế — không hỏi thêm ô tin nào, không nhắc điểm tin."""
+def viec_theo_khoi(ten_viec: str, viec_o: str = "") -> str:
+    """Dòng việc của phiếu lượt khi việc `ten_viec` (`viec_luot`) thắng câu hỏi ô kế — không hỏi thêm ô tin nào, không nhắc điểm tin.
+    Xác nhận mặt tiền có điều kiện (khách đã nói rõ "ngang" thì không hỏi): khi đó lượt quay về việc hỏi ô kế `viec_o`, KHÔNG kể là đã bỏ qua
+    (cham Đợt 4 lần 2: "ngang 4,5m anh/chị nói rõ rồi nên em giữ nguyên" — model kể lời dặn ra cho khách)."""
+    if ten_viec == "xac_nhan_mat_tien":
+        return ('nếu khối "BỀ NGANG HAY ĐƯỜNG" bên dưới cần hỏi thì hỏi đúng MỘT câu đó (con số là bề ngang căn hay đường trước nhà). Nếu khách '
+                "đã nói rõ là bề ngang thì không nhắc chuyện này, không giải thích, mà " + (viec_o or "chốt ngắn.") + " Không nhắc điểm tin.")
     return _VIEC_KHOI.get(ten_viec, VIEC_THEO_KHOI) + " Không hỏi thêm ô tin nào khác, không nhắc điểm tin."
 
 
@@ -516,7 +520,7 @@ def viec_phieu(prop: Property, next_field: str | None, hoi_lai: bool = False, o_
             viec += (" Ý này em đã hỏi lượt trước mà khách chưa trả lời: đổi cách hỏi, ngắn hơn hoặc gợi sẵn vài đáp án để chọn (giá, diện tích, "
                      "con số thì không gợi số), không lặp câu cũ, không nhắc là đã hỏi.")
         if o_bo_qua and o_bo_qua != next_field:
-            viec += f' Không hỏi lại "{nhan_o(o_bo_qua, prop)}" (hệ thống hỏi sau).'
+            viec += f' Lượt này không hỏi lại "{nhan_o(o_bo_qua, prop)}" và không nhắc tới nó.'
         return viec
     return ("tin đã đủ để rao — chốt ngắn, ấm áp: tin đã lưu, có khách hỏi hay hẹn xem bên em báo ngay; không hỏi thêm, không gạ rao căn "
             "khác, không hứa gọi điện hay hạn bán.")
