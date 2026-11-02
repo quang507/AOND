@@ -5343,7 +5343,7 @@ class Engine:
         if bid and mua.get("ngung_bao") in ("tat", "bat") and kho.ngung_bao_can(bid, mua["ngung_bao"] == "tat"):
             viec.append("khách KHÔNG muốn nhận tin tự động báo căn mới: hệ thống ĐÃ TẮT — nói ngắn là em không gửi tin báo căn nữa, khách cần "
                         "thì nhắn em bất cứ lúc nào; KHÔNG hỏi lý do, KHÔNG nài" if mua["ngung_bao"] == "tat" else
-                        "khách xin được báo khi có căn mới: hệ thống ĐÃ BẬT — nói ngắn có căn hợp nhu cầu em nhắn liền (trong giờ 8–20h)")
+                        "khách xin được báo khi có căn mới: hệ thống ĐÃ BẬT — nói ngắn có căn hợp nhu cầu em nhắn liền (tin chỉ gửi trong khung giờ 8h–20h hằng ngày)")
         # SRS-5.1zzzzzzz175: khách chê căn → ghi `interests` khong_hop + lý do nguyên văn; không gợi / không báo lại căn đó.
         khong_hop = mua.get("khong_hop") is True
         if khong_hop:

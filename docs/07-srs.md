@@ -831,6 +831,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz358 · Dữ kiện "nhắn khách khi có căn mới (trong 8–20 giờ)" đọc thành "8–20 tiếng nữa" (02/11/2026)
+Ca gốc: khách ảo #274 — hai persona đều nhận "hệ thống sẽ nhắn anh trong khoảng 8–20 giờ tới" và ghi là không hiểu; ý thật là khung giờ 8h–20h.
+(1) Lớp lỗi: dữ kiện đưa model mơ hồ ĐƠN VỊ (thời điểm hay thời lượng) — `mua.khoi_can_cho_khach` ghi "(trong 8–20 giờ)". Sửa: "chỉ gửi trong khung giờ 8h–20h hằng ngày, không phải \"trong 8–20 giờ tới\"".
+(2) Cùng lớp: soát chuỗi đưa model có số + giờ / ngày / phút ở `mua`, `prompts`, `engine`, `agent_*`, `phap_ly`: dòng "báo căn mới ĐÃ BẬT" ở `engine` ("trong giờ 8–20h") sửa cùng; các khoảng ngày ở `phap_ly` là thời lượng thật, đúng nghĩa. Hai mô tả "8–20 giờ" trong `cau_mau.py` (dòng 115, 172) để phiên web·DB (file giao cho phiên đó vòng này).
+(3) Kiểm: `test_khung_gio_ro_don_vi_358.py` (khối chưa có căn; dòng ĐÃ BẬT — cách nói thứ hai) — trả câu cũ: 2 đỏ.
+
 ### SRS-5.1zzzzzzz355 · Khách hỏi phí lần hai: bot đọc lại nguyên bài chính sách lượt trước (02/11/2026)
 Ca gốc: `srd_phi` lượt 9 ("Anh là chính chủ, vậy phí bao nhiêu em?") gần như dán lại lượt 8 — đủ bốn ý chính sách lần nữa, cùng câu mở.
 (1) Lớp lỗi: khối ưu tiên phí lượt nào cũng dặn "nói cho ĐỦ các ý chính sách" (SRS-318) mà không biết lượt trước đã nói, dù code có cờ `_phi_da_bao`; luật "không mở / lặp như lượt trước" (`lap`) ở nhóm `mem` (SRS-298) nên chỉ ghi log. Sửa: cờ đã bật từ lượt trước thì khối đổi sang "đáp đúng điều vừa hỏi, câu mở khác, không nhắc lại chính sách"; con số phí vẫn từ dòng VAI NGƯỜI RAO.

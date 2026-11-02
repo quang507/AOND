@@ -979,7 +979,7 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
         # AU-04 (Đợt 4, SRS-5.1zzzzzzz328): lời hứa báo lại thành DỮ KIỆN — vòng `bao_can_moi` thật sự nhắn khách khi có căn mới khớp (8–20 giờ,
         # `buyers.bao_can_moi` mặc định bật), nên được nói; bản trước "nói sẽ báo" đụng "không hứa sẽ báo lại" của `khoi_viec_vua_ghi([])`.
         return ("\nCĂN ĐANG RAO: chưa có căn nào khớp nhu cầu khách. KHÔNG giới thiệu căn nào, KHÔNG bịa căn. DỮ KIỆN: hệ thống tự nhắn khách khi "
-                "có căn mới khớp nhu cầu (trong 8–20 giờ) — được nói có căn phù hợp em nhắn liền, trừ khi khách đã bảo đừng báo "
+                "có căn mới khớp nhu cầu (chỉ gửi trong khung giờ 8h–20h hằng ngày, không phải \"trong 8–20 giờ tới\") — được nói có căn phù hợp em nhắn liền, trừ khi khách đã bảo đừng báo "
                 "(xưng hô y như các lượt trước).\n")
     # SRS-5.1zzzzzzz212 (bắn thử 5 khách, anh M.: "căn nào đang có HĐ thuê thì gửi" → bot "em sẽ hỏi chủ nhà rồi báo lại" mà không có việc nào
     # được ghi): lời hứa chỉ khi đã ghi việc thật. SRS-5.1zzzzzzz335 (ca thật 02/11 "nhà Q8 dưới 7 tỉ yên tĩnh": rổ 3 căn hợp mà bot đưa 1 căn
