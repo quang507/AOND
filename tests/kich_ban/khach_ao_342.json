@@ -66,14 +66,19 @@
    "cau": [
     "anh có căn nhà phố mặt tiền Âu Cơ Tân Bình bán 9 tỷ",
     "đăng nhiều căn thì có được lên top không em",
-    "sổ hồng riêng, hoàn công đủ nha em"
+    "4x16 nha em"
    ],
    "kiem": {
+    "luot_khong": {
+     "1": "\\d+ ?/ ?100|lên điểm|cộng điểm|điểm (?:của )?tin|hạng (?:Đồng|Bạc|Vàng)",
+     "3": "\\d+ ?/ ?100|lên điểm|cộng điểm|điểm (?:của )?tin|hạng (?:Đồng|Bạc|Vàng)"
+    },
     "cam": [
      "hạng \\d+ ?/ ?100|điểm (?:Đồng|Bạc|Vàng)|(?:anh|chị|em|cô|chú|mình) (?:đang|hiện(?: đang)?) \\d+ ?/ ?100|tin [^.?!\\n]{0,25}hạng (?:Đồng|Bạc|Vàng)"
-    ]
+    ],
+    "khong_diem_sai_luc": true
    },
-   "mo_ta": "Điểm tin gọi ĐÚNG CHỮ. Chủ dự án 02/11 (SRS-5.1zzzzzzz345): Đồng/Bạc/Vàng là HẠNG của người rao, x/100 là ĐIỂM của tin BĐS, và SRS-216 giữ nguyên — bot ĐƯỢC nói điểm tin với người bán. Nên \"căn này đang 78/100\" và \"tin của mình lên điểm nhiều luôn\" KHÔNG phải lỗi; chỉ cấm LẪN hai thứ (gọi điểm là hạng, gọi hạng là điểm, gán điểm của tin cho người)."
+   "mo_ta": "Điểm tin ĐÚNG LÚC và ĐÚNG CHỮ (chủ dự án 02/11, SRS-5.1zzzzzzz346). Bot chỉ được nhắc điểm tin / hạng người rao / cách tăng điểm LÚC RA TIN (lượt có 📋 hay báo tin đã lên) hoặc khi KHÁCH TỰ HỎI. Ve 1: lượt 1 và 3 bot đang hỏi ô → nhắc điểm là ĐỎ (\"có sổ hồng thì tin lên điểm nhiều luôn\"). Ve 2: lượt 2 khách TỰ HỎI lên Top → nhắc điểm KHÔNG phạm, nên không có phép cấm nào ở lượt đó. `cam` còn lại chỉ bắt chuyện LẪN điểm tin với hạng người rao; `khong_diem_sai_luc` là phép đọc nghĩa."
   },
   {
    "id": "ka_so_doi_thu",

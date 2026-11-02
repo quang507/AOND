@@ -831,6 +831,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz346 · Điểm tin chỉ được nhắc LÚC RA TIN hoặc khi khách tự hỏi; "nhắc điểm sai lúc" là loại lỗi riêng (02/11/2026)
+Chủ dự án 02/11, chính xác hơn SRS-345: bot chỉ được nhắc điểm tin x/100, hạng người rao và cách tăng điểm (a) ở lượt RA TIN — có bản nháp 📋 hay báo tin đã lên, hoặc (b) khi KHÁCH TỰ HỎI về điểm / hạng / lên Top. Ở lượt đang hỏi ô thì không được nhắc: "có sổ hồng thì tin lên điểm nhiều luôn" là SAI LUẬT.
+(1) Lớp lỗi của phép ĐO: SRS-345 miễn trừ quá rộng (mọi lúc), nên bỏ lọt chuyện nhắc sai lúc; trước đó lại trừ quá rộng (mọi lúc đều là lộ luật). Cả hai đều do phép đo không biết NGỮ CẢNH LƯỢT — thứ regex không đọc được. (2) Cùng lớp: `da_doi` (SRS-342) cũng là phán xét theo ngữ cảnh và đã để giám khảo đọc nghĩa; làm y vậy ở đây.
+Sửa: `TIEU_CHI_LO_LUAT` nói rõ nhắc điểm KHÔNG BAO GIỜ là lộ luật (kể cả sai lúc), chỉ lẫn điểm / hạng mới là lộ; thêm việc thứ năm `diem_sai_luc` cho giám khảo, bật riêng từng kịch bản bằng `kiem.khong_diem_sai_luc` nên mẫu số giữ nguyên. `ka_diem_tin_dung_chu` thành HAI VẾ: lượt 1 và 3 bot hỏi ô → nhắc điểm là đỏ (`luot_khong`); lượt 2 khách tự hỏi Top → không có phép cấm nào.
+(3) Kiểm: `test:py` 1353 passed, 6 xfailed; lưới đỡ tất định của vế 1 bắt 3/3 câu sai lúc và tha 2/2 câu hỏi ô bình thường.
+
 ### SRS-5.1zzzzzzz345 · Điểm của TIN khác hạng của NGƯỜI RAO: thang chấm thôi tính "78/100" là lộ luật; kịch bản đảo sang kiểm đúng chữ (02/11/2026)
 Chủ dự án 02/11: Đồng / Bạc / Vàng là HẠNG của người rao, x/100 là ĐIỂM của tin BĐS, và SRS-216 giữ nguyên — bot ĐƯỢC nói điểm tin với người bán. Nên "căn này đang 78/100" và "Có thông tin này, tin của mình lên điểm nhiều luôn" KHÔNG phải lộ luật.
 (1) Lớp lỗi (của phép ĐO, không của bot): `TIEU_CHI_LO_LUAT` gộp "hạng, điểm hiển thị" thành một nên trừ oan hành vi chủ dự án cho phép — cùng lớp với giọng rao chợ ở SRS-341, và cùng lớp với hai phép chấm tự sai ở SRS-342. Chính tôi đưa kịch bản `ka_lo_diem_tin` vào #263 nên đây là sửa lỗi của mình. (2) Cùng lớp: soát lại mọi phép `cam` tự thêm trong `khach_ao_342.json` theo các quyết định §6.3 — còn lại đều cấm điều chưa được chủ dự án cho phép.
