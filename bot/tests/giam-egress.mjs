@@ -6,6 +6,8 @@
 //  G-04 (03/10, SRS-5.1zl) mọi generateStaticParams trả [] — kể cả khi tham số lấy từ từ điển (/[tag]): trang dựng sẵn vẫn hỏi
 //       DB lúc render, nhân với số lượt build. G-05: trang công khai không cache dưới 1 giờ (revalidate / unstable_cache).
 //  G-07 (02/11, SRS-5.1zzzzzzz332) trang công khai không `force-dynamic` — /ds/[token] từng là ƒ, mỗi lượt mở một lambda + một RPC.
+//  G-08 (02/11, SRS-5.1zzzzzzz351) web không import `next/font/google` — mỗi lượt dựng tải font từ Google, runner CI lúc được lúc
+//       không làm cổng web đỏ oan; font ghim ở app/fonts/ (next/font/local).
 //  G-06 chat-reply không select nguyên bảng bot_prompts — chỉ khoá DB khác bản code qua rpc doc_prompt_khac.
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -46,6 +48,12 @@ for (const p of duyet(join(goc, "app")).filter((x) => x.endsWith("page.tsx") && 
   if (/export const dynamic\s*=\s*["']force-dynamic["']/.test(s)) kiem(`G-07 ${p.slice(goc.length)}: không force-dynamic`, false, "route ƒ — dùng generateStaticParams [] + revalidate");
 }
 kiem("G-07 đã soát các trang công khai", true);
+// G-08: không tải font từ Google lúc dựng.
+{
+  const goi = [...duyet(join(goc, "app")), ...duyet(join(goc, "components")), ...duyet(join(goc, "lib"))]
+    .filter((p) => /from\s+["']next\/font\/google["']/.test(readFileSync(p, "utf8")));
+  kiem("G-08 không import next/font/google (dựng phải chạy không cần mạng)", goi.length === 0, goi.map((p) => p.slice(goc.length)).join(", "));
+}
 // G-05: revalidate < 3600 ở trang / thành phần công khai (bỏ qua admin, quản lý, tài khoản).
 for (const p of [...duyet(join(goc, "app")), ...duyet(join(goc, "lib")), ...duyet(join(goc, "components"))]) {
   if (/\/(admin|quan-ly|tai-khoan)\//.test(p)) continue;
