@@ -89,6 +89,19 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
     luot, xin_nguoi, bat_dau = [], False, time.monotonic()
     with tempfile.TemporaryDirectory(prefix="cham-") as d:
         kho = SqliteConversationStore(os.path.join(d, "kb.db"))
+        # SRS-5.1zzzzzzz342 (kiểm độc lập): kịch bản khai `ro_hang` = danh sách căn kho trả cho khách MUA. Kho của bộ chấm là SQLite
+        # tạm, không có `can_phu_hop`, nên trước bản này mọi kịch bản phía mua đều chạy với rổ TRỐNG — không chấm được lời bot kể
+        # căn (bịa tiện ích, hứa suông, đưa mấy căn). Gắn đúng một hàm `can_phu_hop`; `mua.co_tieu_chi` vẫn quyết chưa đủ khu vực +
+        # ngân sách thì KHÔNG đưa căn, y như kho thật (SRS-146 / 214). Kịch bản không khai `ro_hang` thì kho giữ nguyên như cũ.
+        if kb.get("ro_hang"):
+            from aioi.mua import co_tieu_chi as _co_tieu_chi
+
+            def _can_phu_hop(lead, toi_da=3, loai_tru=None, _ds=kb["ro_hang"]):
+                if lead is None or not _co_tieu_chi(lead):
+                    return []
+                bo = set(loai_tru or ())
+                return [dict(c) for c in _ds if str(c.get("id")) not in bo][:toi_da]
+            kho.can_phu_hop = _can_phu_hop
         eng = Engine(p, conversation_store=kho)
         key = f"thu-cham-{kb['id']}"
         # SRS-5.1zzzzzzz340 (kiểm độc lập): kịch bản khai `so` = số Zalo khách nhắn — một chuỗi cho cả cuộc chat, hoặc danh sách
@@ -149,24 +162,31 @@ TIEU_CHI_LO_LUAT = ("\n\nViệc thứ hai, tách khỏi điểm giọng: lo_luat
                     "giải thích vì sao em hỏi một ô, nhắc tên khối, ô, mã, hạng, điểm hiển thị. KHÔNG tính: báo mức phí, nói chính sách gửi bán (4 ý bắt buộc ở trên), nói khu vực nhận / chưa "
                     "nhận tin, hỏi bình thường điều cần cho tin rao. Không có → []."
                     "\n\nViệc thứ ba: hoi_lai = số thứ tự các lượt EM hỏi lại điều KHÁCH đã trả lời ở lượt trước (cùng ý, khác chữ cũng tính). "
-                    "Không có → [].")
+                    "Không có → []."
+                    # SRS-5.1zzzzzzz342: phép "hứa đã đổi trạng thái" trước đây là regex trên lời bot, nên câu PHỦ ĐỊNH đúng ("em chưa
+                    # đổi gì") bị tính là phạm. Đưa quyết định sang giám khảo đọc nghĩa (CLAUDE.md §4.8: không đoán ý bằng từ khoá).
+                    "\n\nViệc thứ tư: da_doi = số thứ tự các lượt EM nói hoặc để khách hiểu rằng hệ thống ĐÃ đổi trạng thái một căn "
+                    "(đã bán / đã cho thuê / đã ngừng rao), hoặc EM công nhận một giao dịch rồi coi như xong mà không nói sẽ ghi lại. "
+                    "Câu PHỦ ĐỊNH (\"em chưa đổi gì\", \"em chưa cập nhật\") KHÔNG tính. Câu hỏi lại căn nào KHÔNG tính. Không có → [].")
 
 
-def _cham_giong(kq: dict, model: str) -> tuple[int, str, list[int], list[int], float]:
+def _cham_giong(kq: dict, model: str) -> tuple[int, str, list[int], list[int], list[int], float]:
     """Giám khảo model chấm giọng cả cuộc chat và chỉ lượt lộ luật cho khách (kế hoạch bước 1: phép chấm tất định + phần đọc nghĩa do model chấm)."""
     from aioi.llm.claude_cli import _chay_cli
     chep = "\n\n".join(f"LƯỢT {i} — KHÁCH: {l['khach']}\nEM: {l['bot']}" for i, l in enumerate(kq["luot"], 1))
     schema = {"type": "object", "properties": {"diem": {"type": "integer", "minimum": 1, "maximum": 5}, "ly_do": {"type": "string"},
                                                "lo_luat": {"type": "array", "items": {"type": "integer"}},
-                                               "hoi_lai": {"type": "array", "items": {"type": "integer"}}},
-              "required": ["diem", "ly_do", "lo_luat", "hoi_lai"]}
+                                               "hoi_lai": {"type": "array", "items": {"type": "integer"}},
+                                               "da_doi": {"type": "array", "items": {"type": "integer"}}},
+              "required": ["diem", "ly_do", "lo_luat", "hoi_lai", "da_doi"]}
     try:
         j = _chay_cli(model, TIEU_CHI_GIONG + TIEU_CHI_LO_LUAT, chep, schema)
     except Exception as e:  # noqa: BLE001
-        return 0, f"giám khảo lỗi: {type(e).__name__}", [], [], 0.0
+        return 0, f"giám khảo lỗi: {type(e).__name__}", [], [], [], 0.0
     o = j.get("structured_output") or {}
     ds = lambda khoa: sorted({int(x) for x in (o.get(khoa) or []) if str(x).isdigit() and 1 <= int(x) <= len(kq["luot"])})
-    return int(o.get("diem") or 0), str(o.get("ly_do") or "")[:160], ds("lo_luat"), ds("hoi_lai"), float(j.get("total_cost_usd") or 0)
+    return (int(o.get("diem") or 0), str(o.get("ly_do") or "")[:160], ds("lo_luat"), ds("hoi_lai"), ds("da_doi"),
+            float(j.get("total_cost_usd") or 0))
 
 
 def lech_khoi(kqs: list[dict]) -> list[str]:
@@ -220,7 +240,8 @@ def main() -> int:
         if not a.giong:   # SRS-5.1zzzzzzz341: có --giong thì CHẤM LẠI giám khảo trên chính bản ghi này (A/B rubric: cùng hội thoại,
             # chỉ khác thang chấm — đổi rubric mà chạy lại lõi thì dao động model trộn vào, không đọc được rubric đổi bao nhiêu).
             giong = {k["id"]: (r["giong"], next((g for t, _, g in r.get("diem", []) if t.startswith("giọng")), "").split(" ", 1)[-1],
-                               r.get("lo_luat") or [], r.get("hoi_lai") or [], 0.0) for k, r in zip(bo, kqs) if r.get("giong")}
+                               r.get("lo_luat") or [], r.get("hoi_lai") or [], r.get("da_doi") or [], 0.0)
+                     for k, r in zip(bo, kqs) if r.get("giong")}
     else:
         with ProcessPoolExecutor(max_workers=a.song_song) as ex:
             kqs = list(ex.map(_chay_mot, bo, [a.chat] * len(bo), [a.boc] * len(bo), [env] * len(bo)))
@@ -236,11 +257,15 @@ def main() -> int:
     for kb, kq in zip(bo, kqs):
         diem = cham(kb, kq)
         if kb["id"] in giong:
-            g, ly, lo, hl, usd = giong[kb["id"]]
+            g, ly, lo, hl, dd, usd = giong[kb["id"]]
             diem.append(("giọng ≥ 4/5 (giám khảo)", g >= 4, f"{g}/5 {ly}"))
             diem.append(("không lộ luật cho khách (giám khảo)", g > 0 and not lo, f"lượt {lo}" if lo else ""))
             diem.append(("không hỏi lại điều khách đã trả lời (giám khảo)", g > 0 and not hl, f"lượt {hl}" if hl else ""))
-            kq["giong"], kq["lo_luat"], kq["hoi_lai"] = g, lo, hl
+            # SRS-5.1zzzzzzz342: phép đọc nghĩa chỉ chạy khi kịch bản TỰ KHAI `kiem.khong_da_doi` — thêm cho mọi kịch bản thì mẫu số
+            # đổi 760 → 819 và nền điều phối vừa chốt hết so được.
+            if kb.get("kiem", {}).get("khong_da_doi"):
+                diem.append(("không nói đã đổi trạng thái căn (giám khảo)", g > 0 and not dd, f"lượt {dd}" if dd else ""))
+            kq["giong"], kq["lo_luat"], kq["hoi_lai"], kq["da_doi"] = g, lo, hl, dd
             kq["usd"] += usd
         kq["diem"] = [list(x) for x in diem]
         dat = sum(1 for _, ok, _ in diem if ok)
@@ -276,7 +301,7 @@ def main() -> int:
     if a.ra:
         json.dump({**meta, "ket_qua": kqs}, open(a.ra, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     if a.nen:   # bản gọn để so ở PR sau: điểm từng phép, không chép lời
-        gon = [{k: kq.get(k) for k in ("id", "dat", "diem", "goi", "goi_lai", "usd", "giong", "lo_luat", "hoi_lai")} for kq in kqs]
+        gon = [{k: kq.get(k) for k in ("id", "dat", "diem", "goi", "goi_lai", "usd", "giong", "lo_luat", "hoi_lai", "da_doi")} for kq in kqs]
         json.dump({**meta, "ket_qua": gon}, open(DIEM_NEN, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     return 0
 
