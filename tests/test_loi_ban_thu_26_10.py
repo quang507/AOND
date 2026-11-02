@@ -36,9 +36,17 @@ def test_tin_rao_bia_tien_ich_va_tinh_trang_nha_bi_bat():
     assert set(_chi_tiet_khong_co_du_lieu(BAN_TIN, c)) == {"chợ búa", "trường học", "giữ gìn", "sạch sẽ"}
 
 
-def test_khach_tu_noi_tien_ich_thi_khong_bat():
-    c = _conv("Nhà mặt tiền Cao Lỗ gần chợ, gần trường học", "nhà mới sơn sạch sẽ, giữ gìn kỹ", "giá 8,5 tỷ")
+def test_o_tin_co_tien_ich_thi_khong_bat():
+    """Audit Đợt 3 (AU-07, SRS-5.1zzzzzzz320): đối chiếu ô tin, không dò lời khách — "chợ" không khớp "cho thuê"."""
+    c = _conv("Nhà mặt tiền Cao Lỗ")
+    c.prop.fields.update(diem_noi_bat="gần chợ, gần trường học", tinh_trang_ban_giao="nhà mới sơn sạch sẽ, giữ gìn kỹ")
     assert _chi_tiet_khong_co_du_lieu(BAN_TIN.replace("chợ búa", "gần chợ"), c) == []
+    c2 = _conv("Nhà mặt tiền Cao Lỗ")
+    c2.prop.fields.update(diem_noi_bat="gan cho Ba Chieu", tinh_trang_ban_giao="đang cho thuê")   # ô gõ không dấu vẫn khớp
+    assert _chi_tiet_khong_co_du_lieu("📋 Em sẽ rao như vầy nhé:\n\nNhà gần chợ, giá 5 tỷ\n\n- 5 tỷ", c2) == []
+    c3 = _conv("nhà mình gần chợ lắm em")                                          # khách nói mà ô chưa ghi → vẫn bắt
+    c3.prop.fields.update(tinh_trang_ban_giao="đang cho thuê")                    # "cho thuê" không phải "chợ"
+    assert _chi_tiet_khong_co_du_lieu("📋 Em sẽ rao như vầy nhé:\n\nNhà gần chợ, giá 5 tỷ\n\n- 5 tỷ", c3) == ["gần chợ"]
     assert _chi_tiet_khong_co_du_lieu("Nhà gần siêu thị, giá 5 tỷ.", c) == []          # không phải bản tin 📋 → không soát
 
 

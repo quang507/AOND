@@ -17,15 +17,18 @@ GOC = pathlib.Path(__file__).parents[1]
 
 
 # ── (2) tiện ích ──────────────────────────────────────────────────────────────────────────────────────────────────────
-def test_loai_tien_ich_tu_o_khach_noi():
-    assert loai_tien_ich(BuyerLead(fields={"tien_ich_mong_muon": "gần trường học với bệnh viện"})) == ["truong_hoc", "benh_vien"]
-    assert loai_tien_ich(BuyerLead(fields={"moi_truong_song": "yên tĩnh, gần chợ"})) == ["cho"]
-    assert loai_tien_ich(BuyerLead(fields={"moi_truong_song": "yên tĩnh"})) == [] and loai_tien_ich(BuyerLead()) == []
+def test_loai_tien_ich_tu_ma_ai_tra():
+    """Audit Đợt 3 (AU-08, SRS-5.1zzzzzzz320): mã do AI đọc nghĩa trả ở ô `loai_tien_ich`; code không đọc chữ khách nữa."""
+    assert loai_tien_ich(BuyerLead(fields={"loai_tien_ich": "benh_vien, truong_hoc"})) == ["truong_hoc", "benh_vien"]
+    assert loai_tien_ich(BuyerLead(fields={"loai_tien_ich": "cho; ma_la"})) == ["cho"]                  # mã lạ bỏ
+    # bản cũ dò chữ: "môi trường yên tĩnh" → truong_hoc, "gần chỗ làm" → cho
+    assert loai_tien_ich(BuyerLead(fields={"moi_truong_song": "môi trường yên tĩnh", "tien_ich_mong_muon": "gần chỗ làm"})) == []
+    assert loai_tien_ich(BuyerLead()) == []
 
 
 def test_tim_nha_gui_p_tien_ich():
     kho = KhoTim()
-    kho.can_phu_hop(_lead(fields={"tien_ich_mong_muon": "gần trường học"}))
+    kho.can_phu_hop(_lead(fields={"tien_ich_mong_muon": "gần trường học", "loai_tien_ich": "truong_hoc"}))
     assert _tim(kho)[0][1]["p_tien_ich"] == ["truong_hoc"]
     kho2 = KhoTim()
     kho2.can_phu_hop(_lead())
@@ -33,7 +36,7 @@ def test_tim_nha_gui_p_tien_ich():
 
 
 def test_can_khong_du_lieu_tien_ich_ghi_chua_ro():
-    lead = BuyerLead(fields={"tien_ich_mong_muon": "gần trường"})
+    lead = BuyerLead(fields={"tien_ich_mong_muon": "gần trường", "loai_tien_ich": "truong_hoc"})
     chua = danh_dau_lech([dict(CAN)], lead)[0]
     assert chua["_chua_ro_tien_ich"] == ["trường học"] and "CHƯA RÕ có gần trường học" in dong_can(chua)
     co = danh_dau_lech([{**CAN, "tien_ich_gan": [{"loai": "truong_hoc", "ten": "THCS Hồng Bàng", "m": 400}]}], lead)[0]

@@ -53,11 +53,15 @@ BAN_NHAP = ("📋 Em sẽ rao như vầy nhé chị:\n\nChính chủ bán nhà p
 def test_ban_nhap_bia_phap_ly_va_chinh_chu_bi_bat():
     c = _conv("chị cần bán nhà", "Chị bán nhà ở 125 Bình Long, Bình Hưng Hòa A, Bình Tân, 70m2, giá 3 tỷ", "diện tích sàn")
     assert _phap_ly_vai_khong_co_du_lieu(BAN_NHAP, c) == ["chính chủ", "sổ hồng"]
-    c2 = _conv("Nhà chính chủ, sổ hồng riêng, 125 Bình Long giá 3 tỷ")             # khách tự nói → không bắt
+    c2 = _conv("Nhà chính chủ, sổ hồng riêng, 125 Bình Long giá 3 tỷ")             # ô pháp lý đã ghi + vai chủ nhà → không bắt
+    c2.prop.fields["phap_ly"] = "sổ hồng riêng"
+    c2.user_type = SellerRole.CHU_NHA
     assert _phap_ly_vai_khong_co_du_lieu(BAN_NHAP, c2) == []
-    c3 = _conv("bán nhà 125 Bình Long giá 3 tỷ, giấy tờ đầy đủ")                  # nói giấy tờ, chưa nói vai
-    c3.user_type = SellerRole.CHU_NHA                                              # vai đã nhận có bằng chứng ở lượt khác
-    assert _phap_ly_vai_khong_co_du_lieu(BAN_NHAP, c3) == []
+    # Audit Đợt 3 (AU-03, SRS-5.1zzzzzzz320): không đọc lời khách nữa — môi giới nói "chủ nhà nhờ anh bán" vẫn bị bắt "chính chủ",
+    # "chưa có sổ hồng" (ô pháp lý trống) vẫn bị bắt "sổ hồng".
+    c3 = _conv("chủ nhà nhờ anh bán căn 125 Bình Long, chưa có sổ hồng, giá 3 tỷ")
+    c3.user_type = SellerRole.MOI_GIOI
+    assert _phap_ly_vai_khong_co_du_lieu(BAN_NHAP, c3) == ["chính chủ", "sổ hồng"]
     assert _phap_ly_vai_khong_co_du_lieu("Nhà có sổ hồng, giá 3 tỷ.", c) == []    # không phải bản tin 📋 → không soát
     assert "\"chính chủ\" chỉ viết khi chủ nhà tự nói là chủ" in prompts.AD_FORMAT
 

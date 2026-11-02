@@ -2355,6 +2355,9 @@ def operations_schema() -> dict[str, Any]:
                                           "(\"nhà 4 tầng\" → \"4\"; \"1 trệt 3 lầu\" → \"4\"). Khách không nói số tầng thì bỏ trống."},
                     "tien_ich_mong_muon": {"type": "string", "description": "NGUYÊN VĂN cụm khách nói muốn gần tiện ích nào: trường học, bệnh viện, "
                                            "chợ, siêu thị, công viên (vd \"gần trường học\", \"gần chợ với bệnh viện\"). Không nói thì bỏ trống."},
+                    "loai_tien_ich": {"type": "string", "description": "MÃ loại tiện ích khách muốn GẦN, đọc theo nghĩa, cách nhau dấu phẩy, CHỈ "
+                                      "trong: truong_hoc, benh_vien, cho, sieu_thi, cong_vien (vd \"gần chợ với bệnh viện\" → \"cho, benh_vien\"). "
+                                      "Ý khác không phải 5 loại này (\"môi trường yên tĩnh\", \"gần chỗ làm\") → bỏ trống."},
                     "thang_may": {"type": "string", "description": "có cần thang máy không"},
                     "nguoi_quyet_dinh": {"type": "string", "description": "ai cùng quyết định mua (vợ / chồng / bố mẹ…) — không ghi họ tên"},
                 },

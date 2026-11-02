@@ -26,15 +26,14 @@ def test_tieu_de_hem_khong_co_du_lieu_bi_bat():
     assert _hem_mt_khong_co_du_lieu("Bản tin chưa có hẻm hay mặt tiền thì em hỏi: nhà mình hẻm hay mặt tiền vậy anh?", conv) == []   # không phải bản tin 📋
 
 
-def test_co_du_lieu_hoac_khach_da_noi_thi_khong_bat():
-    assert _hem_mt_khong_co_du_lieu(TIN_BIA, _conv("nhà trong hẻm Lê Lai 39m2", gia="7 tỷ 3")) == []                 # khách nói chữ hẻm
-    assert _hem_mt_khong_co_du_lieu(TIN_BIA, _conv("nhà trong hem Le Lai", gia="7 tỷ 3")) == []                       # gõ không dấu
+def test_co_du_lieu_trong_o_tin_thi_khong_bat():
+    """Audit Đợt 3 (SRS-5.1zzzzzzz320): chỉ đối chiếu ô tin (đã qua cổng bằng chứng), không đọc lời khách."""
     assert _hem_mt_khong_co_du_lieu(TIN_BIA, _conv("Lê Lai", lo_gioi_hem="Nhà hẻm")) == []                           # ô đã ghi
-    assert _hem_mt_khong_co_du_lieu(TIN_BIA.replace("nhà hẻm", "nhà MT"), _conv("nhà mặt tiền Lê Lai")) == []
-    assert _hem_mt_khong_co_du_lieu(TIN_BIA.replace("nhà hẻm", "nhà HXH"), _conv("hẻm xe hơi đường Lê Lai")) == []
-    # địa chỉ có dấu "/" là nhà hẻm (cùng luật `Property.update` gán lo_gioi_hem) — khách nói "12/3 Lê Lai" thì "hẻm" có cơ sở; "Lê Lai" trơn thì không
-    assert _hem_mt_khong_co_du_lieu(TIN_BIA, _conv("nhà 12/3 Lê Lai, 39m2", gia="7 tỷ 3")) == []
-    assert [x.lower() for x in _hem_mt_khong_co_du_lieu(TIN_BIA, _conv("nhà Lê Lai, 39m2 1 trệt 3 lầu", gia="7 tỷ 3"))] == ["hẻm"]
+    assert _hem_mt_khong_co_du_lieu(TIN_BIA.replace("nhà hẻm", "nhà MT"), _conv("Lê Lai", mat_tien="5m")) == []
+    assert _hem_mt_khong_co_du_lieu(TIN_BIA, _conv("Lê Lai", dia_chi="hẻm 12 Lê Lai")) == []                        # chữ có trong ô địa chỉ
+    assert _hem_mt_khong_co_du_lieu(TIN_BIA, _conv("Lê Lai", dia_chi="hem 12 Le Lai")) == []                        # ô gõ không dấu
+    # khách nói "hẻm" mà ô chưa ghi → lưới vẫn bắt (không còn đọc lời khách; ô ghi được thì `Property.update` đã gán lo_gioi_hem)
+    assert [x.lower() for x in _hem_mt_khong_co_du_lieu(TIN_BIA, _conv("nhà trong hẻm Lê Lai 39m2", gia="7 tỷ 3"))] == ["hẻm"]
     # chữ trùng một phần không bị bắt: "MTA", "hẻm" nằm trong câu hỏi cuối bản tin
     assert _hem_mt_khong_co_du_lieu(TIN_BIA.replace("nhà hẻm", "căn hộ MTA"), _conv("Lê Lai")) == []
     assert _hem_mt_khong_co_du_lieu(TIN_BIA.replace("nhà hẻm ", "nhà ").replace("hấp dẫn chưa ạ?", "nhà mình hẻm hay mặt tiền vậy ạ?"),
