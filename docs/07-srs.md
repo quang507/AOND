@@ -829,6 +829,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz330 · Lịch hẹn / câu hỏi của ID thử không nhắn admin, không bắn cảnh báo ngoài (02/11/2026)
+Ca gốc: bắn thử ban-thu-mua 02/11 — lịch xem của "Khách thử" vẫn nhắn admin thật; SRS-321 chỉ chặn đường lõi (`_xep_tin_admin`), còn trigger `viewings_bao_admin_va_email` (nhắc admin + câu `xac_nhan_lich` + email [VIEWING]) chạy cho mọi người mua.
+(1) Lớp lỗi: chặn ID thử ở một cửa (lõi) trong khi DB có cửa riêng tự nhắn admin. (2) Cùng lớp: `trg_info_request_thong_bao_khach_hoi` bắn `canh_bao_ngoai` cho mọi câu `buyer_ask` kể cả ID thử — chặn cùng migration; `notify_info_request_escalation` không chặn (nhắn chủ nhà là việc ban-thu-mua kiểm). Sửa: migration `20261102c_viewings_bo_qua_id_thu` — ID thử (`la_id_thu`) thì `viewings` vẫn ghi, trigger thoát sớm.
+(3) Kiểm: `bot/tests/viewings-id-thu.sql` (tự cuộn lại; đặt tạm `ntfy_topic` để hàng đợi pg_net không đạt câm; đối chứng khách thật vẫn được nhắc / email) — trên DB thật trước sửa 4/4 ca [thu] HONG, kèm sửa 7/7 OK; `ban-thu-mua.sh` thêm 2 ca "ID thử không tạo tin admin".
+
 ### SRS-5.1zzzzzzz332 · `/ds/[token]` thôi là route ƒ; giữ ƒ có chủ ý cho trang đọc `searchParams` (02/11/2026)
 Ca gốc: soát bảng route — `/cho-thue`, `/mua-ban`, `/du-an`, `/ds/[token]` là ƒ. `/ds/[token]` đặt `force-dynamic` (mỗi lượt mở một lambda + một RPC `doc_danh_sach`) vì "token bí mật không liệt kê được" — nhưng `generateStaticParams` trả `[]` không cần liệt kê.
 Quyết định (BA, uỷ quyền): ba trang lọc đọc `searchParams` → Next 15 buộc dựng động, đã bọc `unstable_cache` (đúng luật web); giữ ƒ, không chuyển bộ lọc sang client / path chỉ để đổi ký hiệu. (1) Lớp lỗi: `force-dynamic` không có bài chặn. (2) Cùng lớp: soát `app/**/page.tsx` công khai — chỉ trang này.
