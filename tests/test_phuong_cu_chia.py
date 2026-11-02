@@ -58,14 +58,12 @@ def _tra():
 
 
 def test_khoi_dia_danh_bao_phuong_cu_bi_chia_ngay_khi_khach_noi_phuong_so():
+    # SRS-191 (kể hai phường cho khách chọn) → SRS-5.1zzzzzzz359: dữ kiện phường cũ đã chia vẫn vào prompt, nhưng KHÔNG hỏi / kể cho khách chọn.
     k = khoi_dia_danh(_tra(), {"phuong": "phường 6", "quan": "Bình Thạnh", "duong": "Hoàng Hoa Thám"}, None)
-    assert "Phường Bình Lợi Trung" in k and "Phường Gia Định" in k and "KHÔNG hỏi trống" in k
-    assert "CHƯA biết nhà thuộc phường nào" in k
-    # khách đã chọn phường mới / chưa nói quận / phường cũ chỉ về một phường mới → không có khối
-    assert "phường CŨ đánh số" not in khoi_dia_danh(_tra(), {"phuong": "Gia Định", "quan": "Bình Thạnh"}, None)
-    assert "phường CŨ đánh số" not in khoi_dia_danh(_tra(), {"phuong": "phường 6"}, None)
-    assert "phường CŨ đánh số" not in khoi_dia_danh(_tra(), {"phuong": "phường 6", "quan": "Quận 5"}, None)
-    # không có đường vẫn có khối (trước đó nhánh "không đường" chỉ trả dòng xã)
+    assert "Phường Bình Lợi Trung" in k and "Phường Gia Định" in k and "KHÔNG hỏi khách phường" in k and "cho khách chọn" in k
+    assert "nhà mình ở phường nào" not in k
+    assert "phường CŨ" not in khoi_dia_danh(_tra(), {"phuong": "Gia Định", "quan": "Bình Thạnh"}, None)
+    assert "phường CŨ" not in khoi_dia_danh(_tra(), {"phuong": "phường 6"}, None)
     assert "Phường Gia Định" in khoi_dia_danh(_tra(), {"phuong": "phường 6", "quan": "Bình Thạnh"}, None)
 
 
@@ -91,6 +89,9 @@ def test_dia_ban_ghi_phuong_khi_khach_goi_ten_mot_phuong_moi_du_dia_chi_con_phuo
 # --- SRS-5.1zzzzzzz214 mục 8 (chủ dự án 27/10/2026: "khách không chọn thì lưu cả 2 luôn") — hỏi một lần, khách không chọn thì hệ thống ghi tạm
 # cả các phường ứng viên, tin lên web, không báo admin; cột `ward` lấy phường đầu tra được (nguồn suy đoán).
 def test_cong_web_khach_khong_chon_thi_ghi_tam_ca_hai_phuong():
+    """SRS-214 mục 8 (ghi tạm "A / B" sau khi hỏi mà khách không chọn) → SRS-5.1zzzzzzz359: không hỏi, không ghi tạm hai phường. Ca thật 01–02/11:
+    khách duyệt "Ok" → bot "Phường 6 cũ giờ chia về Phường Bình Lợi Trung hoặc Phường Gia Định, nhà anh thuộc phường nào ạ?". Nay: phường cũ
+    chia mà hệ thống không tra ra → để nguyên, báo người phụ trách một lần."""
     from tests.test_doc_y_khach import _eng
     eng, _ = _eng({"operations": []})
     eng._dia_danh = _tra()
@@ -99,24 +100,9 @@ def test_cong_web_khach_khong_chon_thi_ghi_tam_ca_hai_phuong():
     eng._convstore = type("K", (), {"trang_thai_tin": lambda self, conv: {"len_web": False, "thieu": ["phuong"]}, "save": lambda self, conv: None,
                                     "load": lambda self, k: None})()
     c.y_luot = {}
-    web = eng._trang_thai_web(c)          # lượt 1: hỏi (kể hai phường)
-    assert "phuong" in web["thieu"] and c.prop.fields["phuong"] == "phường 6" and c.lo["phuong"] == 1
-    c.y_luot = {}
-    web = eng._trang_thai_web(c)          # lượt 2: khách vẫn không chọn → ghi tạm cả hai
-    assert c.prop.fields["phuong"] == "Phường Bình Lợi Trung / Phường Gia Định" and c.prop.fields["_phuong_he_thong"] == "1"
-    assert "phuong" not in web["thieu"] and web["phuong_he_thong"] == ["Phường Bình Lợi Trung", "Phường Gia Định"]
-    assert "can_nguoi_that" not in c.y_luot and "_phuong_bao_admin" not in c.prop.fields
-    from aioi.prompts import khoi_trang_thai_web
-    k = khoi_trang_thai_web({"len_web": False, "thieu": [], "phuong_he_thong": web["phuong_he_thong"]})
-    assert "ghi tạm CẢ các phường Phường Bình Lợi Trung / Phường Gia Định" in k[0] and "KHÔNG hỏi phường nữa" in k[1]
-    # kho đường / phường cũ không tra ra ứng viên → vẫn đường cũ: hỏi tới lần 3 rồi báo admin một lần
-    eng._dia_danh = None
-    c2 = eng.conversation("ph3")
-    c2.prop.fields.update({"du_an": "Era Town Đức Khải", "quan": "Quận 7"})
-    for _ in range(3):
-        c2.y_luot = {}
-        eng._trang_thai_web(c2)
-    assert "nhờ admin tra" in c2.y_luot["can_nguoi_that"] and "phuong" not in c2.prop.fields
+    web = eng._trang_thai_web(c)
+    assert c.prop.fields["phuong"] == "phường 6" and "_phuong_he_thong" not in c.prop.fields and "phuong" not in c.lo
+    assert web["phuong_bao_admin"] and "nhờ admin tra" in c.y_luot["can_nguoi_that"]
 
 
 def test_dia_ban_cot_ward_lay_phuong_dau_tra_duoc_khi_o_ghi_ca_hai():

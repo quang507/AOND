@@ -266,11 +266,15 @@ HOUSE_AREA_FIELDS: list[str] = ["dien_tich_dat", "dien_tich_nha"]
 # Luận (`summary_ready`: đủ ô nhận diện + completeness ≥ 0.75); giữ ô bắt buộc riêng của mình (tên đường, phường — DB cần mới đăng).
 SUMMARY_READY_COMPLETENESS: float = 0.75
 
+# SRS-5.1zzzzzzz359 (chủ dự án 02/11): ô HỆ THỐNG tự xác định, không bao giờ là câu hỏi cho khách — phường (cũ → mới, toạ độ trên bản đồ, kho
+# đường / hẻm). Khách tự nói thì vẫn ghi như mọi ô.
+O_HE_THONG_TRA: frozenset[str] = frozenset({"phuong"})
+
 # 20/10/2026 (SRS-5.1zzzzzzz79; chủ dự án: "hỏi theo cụm"): ô hỏi GỘP một câu như môi giới ("nhà ngang dài bao nhiêu, xây mấy tầng
 # anh?") thay vì mỗi lượt một ô. Ô thiếu đầu tiên quyết cụm; lượt đó hỏi các ô còn thiếu trong cùng cụm (tối đa 3). Ô không thuộc cụm
 # nào hỏi riêng như cũ.
 CUM_HOI: list[tuple[str, ...]] = [
-    ("dia_chi", "phuong", "lo_gioi_hem"),            # 20/10 (SRS-5.1zzzzzzz81): hẻm / mặt tiền hỏi trước bản nháp như anh Luận
+    ("dia_chi", "lo_gioi_hem"),            # 20/10 (SRS-5.1zzzzzzz81): hẻm / mặt tiền hỏi trước bản nháp như anh Luận; phường hệ thống tự tra (SRS-359)
     ("dien_tich_dat", "dien_tich_nha", "ket_cau"),   # kích thước = cách nói khác của diện tích đất, không hỏi thêm
     ("dien_tich", "so_phong_ngu"),
     ("phap_ly_hoan_cong", "gia", "tinh_trang_ban_giao"),
@@ -505,11 +509,9 @@ class Property:
                 can.append("dia_chi")
             if not (f.get("lo_gioi_duong") or f.get("tho_cu")):
                 can.append("lo_gioi_duong")
-        # Mọi loại định vị bằng địa chỉ: phải biết phường mới đăng được (DB). Căn hộ có tên dự án lấy phường của dự án
-        # (supabase_store._dia_ban), không hỏi khách.
-        if ("dia_chi" in self.identity_fields() and not f.get("phuong")
-                and not (self.group is PropertyGroup.CONDO and f.get("du_an"))):
-            can.insert(can.index("dia_chi") + 1, "phuong") if "dia_chi" in can else can.append("phuong")
+        # SRS-5.1zzzzzzz359 (chủ dự án 02/11: "tên phường mới, tên phường cũ được tự động chuyển thành phường mới bằng cách gắn lên bản đồ để
+        # biết chứ không hỏi khách"): phường KHÔNG còn là ô bắt buộc hỏi khách — hệ thống tự tra (`Engine._phuong_tu_dia_chi`), không ra thì
+        # để trống + báo admin.
         return can
 
     def missing_fields(self) -> list[str]:
@@ -522,15 +524,7 @@ class Property:
         ra = [x for x in expected if x in identity and (not self._has(x) or x in chan)]
         ra += [x for x in chan if x not in expected]
         ra += [x for x in expected if x not in identity and (not self._has(x) or x in chan)]
-        # Phường hỏi NGAY sau địa chỉ (đường → phường; địa chỉ xong rồi thì phường lên đầu, sau loại hình), kể cả khi nhóm
-        # nhận diện còn ô khác (diện tích nhà) chen giữa.
-        if "phuong" in ra:
-            ra.remove("phuong")
-            if "dia_chi" in ra:
-                ra.insert(ra.index("dia_chi") + 1, "phuong")
-            else:
-                ra.insert(1 if ra[:1] == ["loai_hinh"] else 0, "phuong")
-        ra = [x for x in ra if x not in HOI_SAU_KHI_RA_TIN and x not in self.hoan]
+        ra = [x for x in ra if x not in HOI_SAU_KHI_RA_TIN and x not in self.hoan and x not in O_HE_THONG_TRA]
         # Sàn tối thiểu hỏi TRƯỚC (loại hình → vị trí → giá); rồi MỖI facet chính còn trống MỘT ô (ô đứng đầu của facet theo thứ tự hỏi);
         # rồi phường và các ô còn lại (SRS-5.1zzzzzzz200 / 202).
         san = self.minimal_missing()   # SRS-5.1zzzzzzz260: chỉ ô sàn còn thiếu đứng đầu (có khu vực thì địa chỉ cụ thể hỏi sau)
@@ -541,8 +535,6 @@ class Property:
             if o:
                 moi_facet.append(o)
         giua = dau + moi_facet
-        if "phuong" in ra and "phuong" not in giua:
-            giua.append("phuong")
         return giua + [x for x in ra if x not in giua]
 
     def hoan_duoc(self, o: str) -> bool:
@@ -557,7 +549,7 @@ class Property:
         # lượt nào prompt cũng hỏi lại và chặn luôn các bước sau (xin chấm sao, hỏi thêm sau khi đăng).
         da_hoi = set((self.fields.get("_sau_da_hoi") or "").split(","))
         return next((o for o in self.expected_fields()
-                     if o in self.hoan and not self._has(o) and f"hoan:{o}" not in da_hoi and not self._facet_da_co(o)), None)
+                     if o not in O_HE_THONG_TRA and o in self.hoan and not self._has(o) and f"hoan:{o}" not in da_hoi and not self._facet_da_co(o)), None)
 
     def _facet_da_co(self, o: str) -> bool:
         """MỘT câu hỏi cho MỖI facet còn trống (SRS-5.1zzzzzzz200, mô hình facet của anh Luận): facet của ô `o` đã có ô khác khách cho (vd

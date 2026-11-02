@@ -26,9 +26,10 @@ def test_chi_noi_da_dang_khi_tin_dang_hien_thi():
 
 
 def test_thieu_phuong_thi_hoi_phuong_moi_khong_hoi_hem():
+    # SRS-5.1zzzzzzz359: tin chờ phường → không hỏi khách phường (bản cũ: "phường MỚI sau sáp nhập").
     s = build_fee_followup_system("Hằng", _nha(), web={"len_web": False, "thieu": ["phuong"]})
-    assert DA_DANG not in s and "phường MỚI sau sáp nhập" in s
-    assert "phí môi giới của tụi em chưa" not in s  # SRS-5.1zzzzzzz81: tin chưa lên web → hỏi ô thiếu, không thêm câu phí
+    assert DA_DANG not in s and "phường MỚI sau sáp nhập" not in s and "KHÔNG hỏi khách phường" in s
+    assert "phí môi giới của tụi em chưa" not in s  # SRS-5.1zzzzzzz81: tin chưa lên web → không thêm câu phí
     s = build_fee_followup_system("Hằng", _nha(), web={"len_web": False, "thieu": ["gia", "dien_tich"]})
     assert "còn thiếu giá, diện tích" in s and "hỏi ĐÚNG 1 câu về giá" in s
     s = build_fee_followup_system("Hằng", _nha(), web={"len_web": True, "thieu": []})
@@ -114,15 +115,12 @@ def test_xac_nhan_ngan_mot_cau_khong_mo_dau_da():
 
 
 def test_da_bao_admin_tra_phuong_thi_khong_ke_phuong_khi_con_thieu_o_khac():
-    """SRS-5.1zzzzzzz240 (ban-thu-srd 28/10): admin đã được báo tra phường, tin còn thiếu cả diện tích (ô đứng trước phường) → khối không
-    được kể phường vào "chỉ cần thêm …" (bot hỏi phường lần 3–4). Đỏ khi bỏ lọc `phuong_bao_admin`."""
+    """SRS-240 → SRS-5.1zzzzzzz359: tin thiếu cả diện tích và phường — "chỉ cần thêm …" chỉ kể ô khách trả lời được, không bao giờ kể phường
+    (đã báo admin hay chưa)."""
     from aioi.prompts import khoi_trang_thai_web
-    for thieu in (["dien_tich_dat", "phuong"], ["dien_tich_nha", "dien_tich_dat", "phuong"]):
-        duyet, _ = khoi_trang_thai_web({"len_web": False, "thieu": thieu, "phuong_bao_admin": True})
-        viec = duyet.split("KHÔNG hỏi khách về phường")[0]
-        assert "phường mới" not in duyet and "Phường thì admin ĐÃ được báo" in duyet
-        assert "phường" not in viec.split("còn thiếu")[1].split(".")[0].lower()
-        assert "lên web ngay" not in duyet
-    # chưa báo admin: phường vẫn được kể như cũ
-    duyet, _ = khoi_trang_thai_web({"len_web": False, "thieu": ["dien_tich_dat", "phuong"]})
-    assert "phường" in duyet.split("còn thiếu")[1].split(".")[0].lower()
+    for web in ({"len_web": False, "thieu": ["dien_tich_dat", "phuong"], "phuong_bao_admin": True},
+                {"len_web": False, "thieu": ["dien_tich_nha", "dien_tich_dat", "phuong"]}):
+        duyet, _ = khoi_trang_thai_web(web)
+        assert "phường" not in duyet.split("còn thiếu")[1].split(".")[0].lower() and "KHÔNG hỏi / nhắc phường" in duyet
+
+

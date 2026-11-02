@@ -1,7 +1,7 @@
 """21/10/2026 (SRS-5.1zzzzzzz115). Chủ dự án: "họ nói 137/28 đường số 59 con bot có hiểu ko". Đường số 59 đi qua 7 phường nên bot chỉ
 hỏi phường trống; kho hẻm (bảng duong, loai = hem) có hẻm 137 của Đường số 59 ở MỘT phường (An Hội Tây). Đỏ khi bot không dùng số hẻm
 trong địa chỉ để gợi ý phường, hoặc lấy nhầm số nhà mặt tiền làm số hẻm."""
-from aioi.dia_danh import TraDiaDanh, khoi_dia_danh, so_hem_cua
+from aioi.dia_danh import TraDiaDanh, khoi_dia_danh, phuong_kho_hem, so_hem_cua
 
 BAY_PHUONG = ["Phường An Hội Tây", "Phường An Khánh", "Phường Bình Dương", "Phường Bình Phú", "Phường Bình Trưng",
               "Phường Hiệp Bình", "Phường Tân Hưng"]
@@ -44,9 +44,10 @@ def test_so_hem_cua():
 
 
 def test_137_28_duong_so_59_goi_y_an_hoi_tay():
+    # Kho hẻm vẫn thu hẹp đúng (dữ liệu cho bước tra phường của hệ thống); SRS-5.1zzzzzzz359: khối prompt không còn dòng "Kho hẻm … đúng không".
+    assert phuong_kho_hem(_tra(), {"duong": "đường số 59", "dia_chi": "137/28 đường số 59"}) == ["Phường An Hội Tây"]
     k = khoi_dia_danh(_tra(), {"duong": "đường số 59", "dia_chi": "137/28 đường số 59"}, "phuong")
-    assert "Kho hẻm" in k and "Phường An Hội Tây" in k and "đúng không" in k
-    assert "Phường Tân Hưng" not in k                                  # không kể cả 7 phường của đường
+    assert "Kho hẻm" not in k and "đúng không" not in k
 
 
 def test_mat_tien_khong_lay_phuong_cua_hem_cung_so():
@@ -67,10 +68,8 @@ def test_quan_khach_noi_loc_hem():
 
 def test_ai_bo_chu_hem_van_tra_duoc_khi_can_trong_hem():
     """Bắn thử 21/10 (DC2): khách gõ "hẻm 965 Quang Trung", ô dia_chi AI ghi "965 Quang Trung" (mất chữ hẻm)."""
-    k = khoi_dia_danh(_tra(), {"duong": "Quang Trung", "dia_chi": "965 Quang Trung", "_duong_vao": "hem"}, "phuong")   # AI đọc nghĩa (SRS-320)
-    assert "Phường An Hội Tây" in k
-    k = khoi_dia_danh(_tra(), {"duong": "Quang Trung", "dia_chi": "965 Quang Trung"}, "phuong")   # chưa biết hẻm hay mặt tiền
-    assert "Kho hẻm" not in k
+    assert phuong_kho_hem(_tra(), {"duong": "Quang Trung", "dia_chi": "965 Quang Trung", "_duong_vao": "hem"}) == ["Phường An Hội Tây"]   # SRS-320
+    assert phuong_kho_hem(_tra(), {"duong": "Quang Trung", "dia_chi": "965 Quang Trung"}) == []   # chưa biết hẻm hay mặt tiền
     assert so_hem_cua("đường số 59", "Đường số 59", la_hem=True) == []                       # số trong tên đường không phải hẻm
 
 
@@ -128,8 +127,9 @@ def test_da_co_phuong_khong_soat(monkeypatch):
 
 
 def test_kho_hem_chi_vao_luot_hoi_phuong():
-    """SRS-5.1zzzzzzz228 (ban-thu-srd 27/10: "có phải Phường Chợ Quán không" lặp 5 lượt — khối kho hẻm kèm sẵn câu hỏi nằm trong prompt mọi
-    lượt, cả sau khi admin đã được báo tra phường). Lượt hỏi ô khác / lượt sau bản nháp không có khối này. Đỏ khi bỏ điều kiện."""
+    """SRS-228 (khối kho hẻm kèm câu hỏi lặp 5 lượt) → SRS-5.1zzzzzzz359: không lượt nào có khối kho hẻm nữa (phường hệ thống tự tra)."""
     f = {"duong": "đường số 59", "dia_chi": "137/28 đường số 59"}
-    assert "Kho hẻm" in khoi_dia_danh(_tra(), f, "phuong")
-    assert "Kho hẻm" not in khoi_dia_danh(_tra(), f, "gia") and "Kho hẻm" not in khoi_dia_danh(_tra(), f, None)
+    for o in ("phuong", "gia", None):
+        assert "Kho hẻm" not in khoi_dia_danh(_tra(), f, o)
+
+
