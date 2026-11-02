@@ -122,3 +122,16 @@ def test_dong_can_co_duong_vao_va_tien_ich_that():
     k = khoi_can_cho_khach(Q8)
     assert "thường yên tĩnh hơn mặt tiền" in k and "không lấy tên trường / chợ nào khác" in k
     assert "BỐN ĐOẠN" not in k and "kể lại ĐÚNG" not in k
+
+
+def test_q8_khach_noi_mua_nha_chung_chung_khong_hoi_trong_loai_hinh():
+    """Điều phối 02/11 (bản "sau" của PR này): khách nói "mua nhà" chung chung (bóc tách để trống loại), bot đưa 3 nhà phố rồi hỏi "anh đang muốn
+    tìm loại hình bất động sản nào ạ?" — vô lý. Loại không còn là ô chặn: đủ khu vực + ngân sách thì câu hỏi mở, loại còn trống là một ý
+    trong danh sách (AI gộp tự nhiên, vd "chỉ tìm nhà phố hay xem cả căn hộ")."""
+    for cau, lead in (("anh đang cần tìm mua nhà quận 8 dưới 7 tỉ yên tĩnh", {"khu_vuc": "quận 8", "ngan_sach": "dưới 7 tỉ", "moi_truong_song": "yên tĩnh"}),
+                      ("tìm giúp chị chỗ ở q8 tầm 6 tỷ", {"khu_vuc": "q8", "ngan_sach": "6 tỷ"})):   # cách nói mới, không chữ "nhà"
+        eng, ai = _mua(cau, lead, khoa="thu-loai-" + cau[:5])
+        he = ai.system[-1]
+        assert "Thông tin cần khai thác tiếp theo" not in he, cau                          # không còn câu hỏi trống ô cốt lõi
+        assert all(c["code"] in he for c in Q8), cau
+        assert "chỉ tìm nhà phố hay xem cả căn hộ / đất" in _dan_hoi(he), cau

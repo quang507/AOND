@@ -79,8 +79,9 @@ def test_buyer_lead_questioning_sequence():
     assert lead.next_question_field() == "ngan_sach"
     lead.ngan_sach = "3-4 tỷ"
 
-    # Next: loai_bds
-    assert lead.next_question_field() == "loai_bds"
+    # SRS-5.1zzzzzzz335: loại BĐS không còn là ô chặn — đủ khu vực + ngân sách thì câu hỏi mở, loại còn trống là một ý trong danh sách
+    from aioi.schema import CAU_MO_MUA as _MO
+    assert lead.next_question_field() == _MO and lead.y_con_thieu()[0] == "loai_bds"
     lead.loai_bds = "chung_cu"
 
     # SRS-5.1zzzzzzz335: đủ ba ô cốt lõi thì MỘT câu hỏi mở, tuỳ chọn — danh sách ý còn thiếu do code đưa, AI chọn; hết ý thì thôi hỏi

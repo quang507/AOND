@@ -534,14 +534,14 @@ DỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):
 # SRS-5.1zzzzzzz335: tên ngắn của các ý nhu cầu cho câu hỏi MỞ phía mua — model gợi 2–3 ý làm ví dụ; engine đối chiếu tên này với lời bot
 # để biết ý nào đã hỏi (`_da_hoi`). Một nguồn với `BuyerLead.y_con_thieu`.
 Y_MO_MUA: dict[str, str] = {
-    "so_phong_ngu": "số phòng ngủ", "nhan_nha_khi_nao": "khi nào nhận nhà", "muc_dich": "mua để ở hay đầu tư",
+    "loai_bds": "chỉ tìm nhà phố hay xem cả căn hộ / đất", "so_phong_ngu": "số phòng ngủ", "nhan_nha_khi_nao": "khi nào nhận nhà", "muc_dich": "mua để ở hay đầu tư",
     "vay_ngan_hang": "cách thanh toán", "moi_truong_song": "khu yên tĩnh hay gần chợ / trường", "thanh_vien": "nhà mấy người ở",
     "noi_lam_viec": "gần chỗ làm / trường của con", "dien_tich_mong_muon": "diện tích", "thang_may": "thang máy",
     "tien_do_mua": "khi nào muốn đi xem", "yeu_cau_xe_hoi": "chỗ đậu xe",
 }
 # Dấu nhận ý trong CÂU HỎI của lời bot (chỉ câu có "?") — engine ghi `_da_hoi` những ý bot thật sự đã hỏi (SRS-5.1zzzzzzz335).
 Y_MO_DAU: dict[str, tuple[str, ...]] = {
-    "so_phong_ngu": ("phòng ngủ",), "nhan_nha_khi_nao": ("nhận nhà",), "muc_dich": ("để ở", "đầu tư"), "vay_ngan_hang": ("thanh toán", "vay"),
+    "loai_bds": ("căn hộ", "chung cư", "đất nền", "loại nhà", "loại hình"), "so_phong_ngu": ("phòng ngủ",), "nhan_nha_khi_nao": ("nhận nhà",), "muc_dich": ("để ở", "đầu tư"), "vay_ngan_hang": ("thanh toán", "vay"),
     "moi_truong_song": ("yên tĩnh", "chợ", "trường", "công viên"), "thanh_vien": ("mấy người", "thành viên", "ai ở"),
     "noi_lam_viec": ("chỗ làm", "đi làm", "con đi học", "trường của con"), "dien_tich_mong_muon": ("diện tích",), "thang_may": ("thang máy",),
     "tien_do_mua": ("đi xem", "khi nào"), "yeu_cau_xe_hoi": ("đậu xe", "xe hơi", "ô tô"),

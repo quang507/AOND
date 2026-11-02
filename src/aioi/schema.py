@@ -779,9 +779,8 @@ class BuyerLead:
             return "khu_vuc"
         if not self.ngan_sach and not self.fields.get("ngan_sach"):
             return "ngan_sach"
-        if not self.loai_bds and not self.fields.get("loai_bds"):
-            return "loai_bds"
-
+        # Giai đoạn 2 (SRS-5.1zzzzzzz335; điều phối 02/11: "anh đang muốn tìm loại hình nào?" ngay sau khi vừa đưa 3 nhà phố là vô lý): loại BĐS không
+        # còn là ô CHẶN — đủ khu vực + ngân sách là đủ để tìm căn; loại còn trống thì thành một ý trong câu hỏi mở (`y_con_thieu`).
         # Giai đoạn 2 (SRS-5.1zzzzzzz335, ca thật 02/11 "nhà Q8 dưới 7 tỉ yên tĩnh" → bot hỏi hẻm xe hơi; chủ dự án: "chat chán quá"): KHÔNG còn cây
         # cố định — đủ ba ô cốt lõi thì một câu MỞ, tuỳ chọn; code đưa danh sách ý còn thiếu (`y_con_thieu`), AI chọn ý hợp lời khách nhất.
         return CAU_MO_MUA if self.y_con_thieu() else None
@@ -791,7 +790,7 @@ class BuyerLead:
         Thứ tự chỉ là gợi ý (theo loại BĐS); AI chọn ý hợp nhất với lời khách. Xe hơi / đậu xe đứng cuối và prompt chỉ cho hỏi khi khách nhắc xe."""
         loai = (self.loai_bds or self.fields.get("loai_bds", "")).lower()
         nha = loai in ("nha_pho", "biet_thu", "nha_cap_4")
-        ung: list[str] = []
+        ung: list[str] = [] if loai else ["loai_bds"]
         if loai in ("chung_cu", "can_ho", "condo"):
             ung += ["so_phong_ngu", "nhan_nha_khi_nao"]
         elif nha:
