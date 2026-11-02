@@ -3162,10 +3162,21 @@ class Engine:
         dung_agent_ban = bool(goi_y_tra)
         system += goi_y_tra
         system += khoi_tin_tra_loi(conv.tin_tra_loi)   # SRS-5.1zzzzzzz270
+        # SRS-5.1zzzzzzz343 (cham hai_can_da_ban sau #260: "Em chưa đổi gì trong rổ hết" — chữ nội bộ của khối này lọt ra lời khách): không dùng chữ "rổ".
         if conv.y_luot.get("chua_ro_can"):   # SRS-5.1zzzzzzz310: dữ kiện hệ thống — chưa đổi căn nào
-            dk_can = ("\nHỆ THỐNG: khách báo đổi trạng thái một căn nhưng lời khách chưa chỉ ra căn nào trong rổ ("
+            dk_can = ("\nHỆ THỐNG: khách báo đổi trạng thái một căn nhưng lời khách chưa chỉ ra căn nào trong các căn khách đã gửi ("
                       + "; ".join(conv.y_luot["chua_ro_can"]) + "). CHƯA đổi căn nào")
             system += _hoi("chua_ro_can", dk_can + " — hỏi lại khách căn nào, đừng nói đã cập nhật.\n", dk_can + " — đừng nói đã cập nhật.\n")
+        elif len([li for li in conv.listings if not self._is_stub_listing(li)]) >= 2 and not any(
+                r and r[0] == "set_status" for r in (conv.last_receipts or [])):
+            # SRS-5.1zzzzzzz343 (cham hai_can_da_ban 2/2 trượt sau #260, cũng có trên nền: "à căn đó anh bán được rồi em nhé" → AI bóc tách không tạo
+            # thao tác đổi trạng thái → không có cờ chua_ro_can → model viết lời tự chọn một căn và chúc mừng, dữ liệu vẫn "đang bán"). DỮ KIỆN
+            # hệ thống, không đoán ý khách bằng chữ: lượt này không đổi trạng thái căn nào — model đọc nghĩa lời khách, nếu khách báo bán / cho thuê
+            # / ngưng mà chưa rõ căn thì hỏi lại.
+            nhan = "; ".join(li.label() for li in conv.listings if not self._is_stub_listing(li))
+            system += ("\nHỆ THỐNG: khách đang có nhiều căn (" + nhan + "). Lượt này hệ thống KHÔNG đổi trạng thái căn nào. Nếu khách vừa báo "
+                       "một căn đã bán / đã cho thuê / ngưng bán thì hỏi lại đúng căn nào (kể tên các căn cho khách chọn); KHÔNG tự chọn một căn, "
+                       "KHÔNG chúc mừng như đã chốt một căn cụ thể, KHÔNG nói đã cập nhật.\n")
         # A seller in a project WITH an inventory → the reply runs through the agent LOOP (same
         # sales-mode prompt + tools). The model decides per turn whether to query the catalog,
         # add a resolved căn, learn a fact, or ask for a link — NO keyword gate (Mảnh B). A plain
