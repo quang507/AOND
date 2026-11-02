@@ -10,9 +10,9 @@ Kiến trúc chung: `docs/07-srs.md` §2. Không sinh ID.
 Nguyên tắc xuyên suốt: **AI đọc ý theo nghĩa, code kiểm trích dẫn.** Ô tin chỉ ghi điều KHÁCH nói (SRS-5.1zzzzzzz73);
 lời bot lệch luật hình thức thì gọi lại model một lần, không tự sửa chữ (`_soat_hinh_thuc`).
 
-Sơ đồ vẽ theo công tắc ĐANG BẬT trên VPS (một nguồn `bot/bridge-zca/cai-vps.sh`, cập nhật 01/11/2026 `[nguồn: cai-vps.sh, engine.py]`):
-`FORM_BAN_GON` / `FORM_MUA_GON` = bat, `PHIEU_LUOT` = bat, `AGENT_BAN` / `AGENT_MUA` = bat, `SOAT_GON` = bat; `AGENT_BOC` = thu (chỉ ID thử);
-`MODEL_LUOT_DE` = tat. Tắt công tắc nào thì nhánh đó về đường cũ ghi trong ngoặc.
+Sơ đồ vẽ đường DUY NHẤT đang chạy (cập nhật 02/11/2026 `[nguồn: cai-vps.sh, engine.py, SRS-5.1zzzzzzz319]`): sáu công tắc `FORM_BAN_GON` / `FORM_MUA_GON`, `PHIEU_LUOT`, `AGENT_BAN` / `AGENT_MUA`, `SOAT_GON` đã gỡ hẳn cùng đường cũ (`build_chat_system`) —
+form gọn, phiếu lượt, agent và soát gọn là đường duy nhất. Công tắc còn lại đổi được ở `cai-vps.sh`: `AGENT_BOC` = thu (chỉ ID thử),
+`MODEL_LUOT_DE` = tat.
 
 ## 13.1 Toàn cảnh: từ bridge tới lời trả về
 
@@ -71,7 +71,7 @@ flowchart TD
   ROLE -->|seller| S["§13.3 nhánh bán"]
   S --> RP["model trả lời<br/>bán: agent_ban.chay (có dữ liệu để tra) · _agent_reply (dự án có rổ căn) · _provider.reply<br/>mua: agent_mua.chay (kho có tim_nha) hoặc _provider.reply"]
   B --> RP
-  RP --> SO["_soat_hinh_thuc (SOAT_GON)<br/>luật cứng lệch → gọi lại model MỘT lần; luật giọng / lặp chỉ ghi log; Dạ code bỏ"]
+  RP --> SO["_soat_hinh_thuc<br/>luật cứng lệch → gọi lại model MỘT lần; luật giọng / lặp chỉ ghi log; Dạ code bỏ"]
   SO --> NH{"lượt trình bản nháp mà<br/>chưa ra bản tin 📋 / thiếu câu mời Zalo?"}
   NH -->|có| LAI["gọi lại MỘT lần; vẫn không ra → listing_proposed = False"] --> BRS
   NH -->|không| BRS["_build_result<br/>lưu: supabase_store.luu_nen / save<br/>(listings.boc_tach, conversations, …)"]
@@ -83,7 +83,7 @@ flowchart TD
 flowchart TD
   S0["_o_hoi_ke(missing_fields)<br/>ô khách lờ 2 lần để sau"] --> S1["cum_hoi · xin_dang → thieu_toi_thieu"]
   S1 --> S2{"summary_ready()<br/>hoặc đã trình bản nháp<br/>hoặc khách bảo đăng đủ sàn?"}
-  S2 -->|chưa| C1["build_phieu_luot — phiếu lượt ngắn: GIONG_VUI + dữ liệu căn + VIỆC LƯỢT NÀY<br/>(PHIEU_LUOT tắt: build_chat_system)<br/>+ khoi_xin_dang + _khoi_diem_tin"]
+  S2 -->|chưa| C1["build_phieu_luot — phiếu lượt ngắn: GIONG_VUI + dữ liệu căn + VIỆC LƯỢT NÀY<br/>+ khoi_xin_dang + _khoi_diem_tin"]
   S2 -->|"đủ, chưa trình"| C2["build_listing_proposal_system<br/>bản tin 📋 theo AD_FORMAT"]
   S2 -->|"đã trình"| C3["build_fee_followup_system<br/>duyệt · phí · trạng thái web<br/>+ khoi_hoi_sau_dang (mỗi lượt một ô)"]
   C1 & C2 & C3 --> K["khối ghép thêm:<br/>khoi_dia_danh · _khoi_hoi_du_an · khoi_hoi_mat_tien · khoi_chao_lan_dau<br/>khoi_xung_ho · _ghep_cau_chuan (trước RANH_GIOI_CACHE)<br/>MỘT khối ưu tiên: khoi_can_nguoi > khoi_phap_ly > khoi_ngoai_viec > hỏi về > hỏi trùng tên<br/>dữ liệu rổ / dự án / giá: agent_ban.goi_y → công cụ tra (AGENT_BAN tắt: _basket_block · _project_memory_block · _seller_price_block)"]
