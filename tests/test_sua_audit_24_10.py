@@ -98,7 +98,7 @@ def test_tim_nha_danh_dau_lech_tren_duong_that():
     eng, ai = _engine(kho, {"operations": [], "user_intent": "buy",
                             "buyer_lead": {"loai_giao_dich": "mua", "loai_bds": "nha_pho", "khu_vuc": "Quận 5", "ngan_sach": "5 tỷ", "so_phong_ngu": "4"}})
     eng.handle("mua-pn", "Em tìm nhà phố quận 5 tầm 5 tỷ, 4 phòng ngủ")
-    assert any("CHƯA RÕ số phòng ngủ (khách cần 4)" in s and "MỌI điểm lệch" in s for s in ai.system)   # CAN không có bedrooms
+    assert any("CHƯA RÕ số phòng ngủ (khách cần 4)" in s and "nói thẳng điểm lệch" in s for s in ai.system)   # CAN không có bedrooms
 
 
 class KhoBaoChat(KhoBao):

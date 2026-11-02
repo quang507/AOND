@@ -913,6 +913,18 @@ def dong_can(c: dict) -> str:
         phan.append(f"pháp lý {c['legal_status']}")
     if c.get("direction"):
         phan.append(f"hướng {c['direction']}")
+    # SRS-5.1zzzzzzz335: đường vào (mặt tiền / hẻm) và tiện ích CÓ THẬT quanh căn — model suy luận từ đây ("trong hẻm nên thường yên tĩnh"),
+    # nói "gần <tên>" chỉ khi dòng này có (khách ảo 02/11: bot bịa "gần trường Hồng Hà" khi dòng căn không ghi tiện ích nào).
+    duong_vao = {"mat_tien": "mặt tiền đường", "hem_xe_hoi": "trong hẻm xe hơi", "hem_xe_tai": "trong hẻm xe tải",
+                 "hem_xe_may": "trong hẻm xe máy", "hem": "trong hẻm"}.get(str(c.get("access_type") or ""))
+    if duong_vao:
+        rong = _so_dau(c.get("alley_width_m")) if duong_vao.startswith("trong hẻm") else None
+        phan.append(duong_vao + (f" (hẻm rộng {rong:g} m)" if rong else ""))
+    gan = c.get("tien_ich_gan")
+    if isinstance(gan, list):
+        met = lambda t: float(t["m"]) if isinstance(t.get("m"), (int, float)) else _so_dau(t.get("m"))   # 0 m (sát bên) vẫn là số
+        ti = sorted((t for t in gan if isinstance(t, dict) and t.get("ten") and met(t) is not None and met(t) <= 1000), key=met)[:3]
+        phan += [f"gần {t['ten']} ~{met(t):g} m" for t in ti]
     if c.get("status") == "da_coc":
         phan.append("(đã có khách cọc)")
     if c.get("_ke_thua"):   # SRS-5.1zzzzzzz283: phần chung của dự án / mẫu nhà mà căn kế thừa
@@ -967,29 +979,29 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
         return ("\nCĂN ĐANG RAO: chưa có căn nào khớp nhu cầu khách. KHÔNG giới thiệu căn nào, KHÔNG bịa căn; nói sẽ báo khi có căn phù hợp "
                 "(xưng hô y như các lượt trước).\n")
     # SRS-5.1zzzzzzz212 (bắn thử 5 khách, anh M.: "căn nào đang có HĐ thuê thì gửi" → bot "em sẽ hỏi chủ nhà rồi báo lại" mà không có việc nào
-    # được ghi): câu cũ dặn LUÔN hứa hỏi chủ nhà, đè lên `khoi_viec_vua_ghi([])` ("không hứa sẽ báo lại"). Lời hứa chỉ khi đã ghi việc thật.
-    return ("\nCĂN ĐANG RAO (chỉ được giới thiệu các căn dưới đây; không đọc số nhà; thông tin không có ở dòng của căn thì KHÔNG đoán: nói thật "
-            "tin chưa ghi thông tin đó. CHỈ nói đã chuyển câu hỏi cho chủ nhà khi phần \"EM VỪA GHI LƯỢT NÀY\" có việc chuyển câu đó; không có "
-            "thì hỏi khách có muốn em hỏi chủ của căn đang nói không — KHÔNG hứa sẽ báo lại). CÁCH NÓI — như người môi giới nhắn Zalo cho khách, từng tin ngắn, không như bảng liệt kê:\n"
+    # được ghi): lời hứa chỉ khi đã ghi việc thật. SRS-5.1zzzzzzz335 (ca thật 02/11 "nhà Q8 dưới 7 tỉ yên tĩnh": rổ 3 căn hợp mà bot đưa 1 căn
+    # theo khuôn BỐN ĐOẠN — "Căn nằm đúng khu vực anh chọn.", "Tin chưa ghi thông tin về độ yên tĩnh."; chủ dự án: "chat chán quá"): bỏ khuôn
+    # đếm đoạn và "kể ĐÚNG vì sao hợp"; đưa 2–3 căn một lượt, mở bằng tầm giá; được SUY LUẬN có chữ "thường" từ thông số có thật trong dòng căn.
+    return ("\nCĂN ĐANG RAO (chỉ được giới thiệu các căn dưới đây; không đọc số nhà; điều dòng căn KHÔNG ghi thì không khẳng định — nói gọn là tin "
+            "chưa ghi. CHỈ nói đã chuyển câu hỏi cho chủ nhà khi phần \"EM VỪA GHI LƯỢT NÀY\" có việc chuyển câu đó; không có thì KHÔNG hứa hỏi "
+            "chủ hay báo lại). CÁCH NÓI — ấm, như người môi giới nhắn Zalo cho khách, không như bảng liệt kê:\n"
+            "  • Có từ 2 căn trở lên thì giới thiệu 2–3 căn hợp nhất trong MỘT lượt: mở bằng một câu nối với điều khách vừa nói và tầm giá chung "
+            "(vd \"em có 3 căn, từ 2,8 đến 5,3 tỷ\"), rồi MỖI căn một câu ngắn nêu điểm đáng chú ý nhất VỚI KHÁCH NÀY, kèm dòng \"link …\" "
+            "của căn. Chỉ có 1 căn thì nói căn đó. Không lặp lại máy móc yêu cầu của khách; không gạch đầu dòng, không dấu \"·\", không viết tắt "
+            "\"P.\" \"Q.\". Tách tin (dòng trống) chỉ khi thật cần cho dễ đọc.\n"
             "  • Mã # CHỈ để ghi thao tác: KHÔNG nói mã ra lời, không viết dấu #. Không nói chữ \"rổ\".\n"
-            "  • Mỗi lượt giới thiệu MỘT căn tốt nhất (khách đòi thêm mới đưa căn kế). Viết thành BỐN ĐOẠN, MỖI ĐOẠN cách nhau MỘT DÒNG TRỐNG — mỗi "
-            "đoạn là một tin Zalo riêng. KHÔNG gạch đầu dòng, không dấu \"·\", không viết tắt \"P.\" \"Q.\" (viết \"phường\", \"quận\"):\n"
-            "      (1) Mở lời như người nhắn, GỌI KHÁCH đúng theo khối xưng hô bên dưới (tự đặt câu, ngắn). Luật khen: nếu có điều đáng khen khách vừa nói thì mở bằng MỘT lời khen ngắn gắn đúng điều đó, cùng đoạn này — "
-            "không bịa thị trường, không bình luận giá, không thêm chi tiết khách chưa nói.\n"
-            "      (2) Thông số ngắn (khu vực, diện tích, giá, phòng ngủ) rồi VÌ SAO HỢP — kể lại ĐÚNG phần \"vì sao hợp\" của căn, không thêm. "
-            "Căn ghi \"KHÁC khu vực\", \"VƯỢT ngân sách\", \"ÍT phòng ngủ\", \"CHƯA RÕ số phòng ngủ\", \"NHỎ hơn diện tích\" hay \"CHƯA RÕ có gần "
-            "…\" thì nói thẳng MỌI điểm lệch đó trong một câu ngắn ở đoạn này (khác khu nào / vượt bao nhiêu % / thiếu mấy phòng / chưa rõ gần "
-            "trường nào), không giấu điểm nào; chỉ đưa căn như vậy khi không có căn đúng. Tiện ích gần (trường, chợ…) CHỈ nói khi dòng căn ghi "
-            "\"gần <tên> ~<m> m\" — không có thì KHÔNG nói gần, không đoán. Giá mỗi m² chỉ nói khi dòng căn có \"≈ … triệu/m²\".\n"
-            "      (3) Link: dán nguyên văn dòng \"link …\" của căn để khách xem chi tiết. Dòng căn ghi \"có … ảnh\" thì ảnh tự gửi kèm ngay sau, không "
-            "cần nhắc; ghi \"CHƯA có ảnh\" thì sẽ KHÔNG có ảnh nào gửi kèm.\n"
-            "      (4) Tối đa MỘT câu hỏi, thật ngắn (khoảng 15 chữ), không giải thích vì sao hỏi — câu thông tin cần hỏi tiếp ở trên, hoặc hỏi khách "
-            "có muốn xem thử không. Khách vừa hỏi điều gì và em đã trả lời đủ, hoặc khách đang bận / hẹn sau, thì KHÔNG cần câu hỏi (SRS-178).\n"
-            "  • Xưng hô GIỮ NGUYÊN như các lượt trước, không đổi qua lại giữa em / cháu / tôi trong cùng một tin. Không tua lại toàn bộ yêu cầu "
-            "của khách; không khen lần hai ở cuối tin.\n"
-            "  • Khách hỏi ảnh / hình của căn: làm đúng phần \"EM VỪA GHI LƯỢT NÀY\"; không có việc ảnh nào thì KHÔNG hứa gửi ảnh, KHÔNG hứa xin chủ "
-            "nhà. Dòng căn ghi \"CHƯA có ảnh\" thì nói THẬT là căn này chưa có ảnh trên hệ thống.\n"
-            "  • Căn đã giới thiệu ở các tin trước thì KHÔNG nhắc lại, trừ khi khách hỏi; nếu không còn căn mới thì chỉ hỏi câu kế:\n"
+            "  • SUY LUẬN HỢP LÝ từ thông số CÓ THẬT trong dòng căn được, kèm chữ \"thường\": căn \"trong hẻm\" / \"hẻm xe hơi\" thì \"trong hẻm "
+            "nên thường yên tĩnh hơn mặt tiền\"; căn \"mặt tiền\" mà khách muốn yên tĩnh thì nói thật là mặt tiền đường, thường ồn hơn. KHÔNG khẳng "
+            "định chắc kiểu \"khu này yên tĩnh\", không thêm điều dòng căn không có.\n"
+            "  • Căn ghi \"KHÁC khu vực\", \"VƯỢT ngân sách\", \"ÍT phòng ngủ\", \"CHƯA RÕ số phòng ngủ\", \"NHỎ hơn diện tích\" hay \"CHƯA RÕ "
+            "có gần …\" thì nói thẳng điểm lệch đó, không giấu; chỉ đưa căn như vậy khi không có căn đúng. Tiện ích gần (trường, chợ…) CHỈ nói "
+            "đúng tên trong dòng \"gần <tên> ~<m> m\" của căn — dòng căn không có thì KHÔNG nói gần, không đoán, không lấy tên trường / chợ nào "
+            "khác. Giá mỗi m² chỉ nói khi dòng căn có \"≈ … triệu/m²\".\n"
+            "  • Dòng căn ghi \"có … ảnh\" thì ảnh tự gửi kèm sau link, không cần nhắc; ghi \"CHƯA có ảnh\" thì sẽ KHÔNG có ảnh nào gửi kèm. Khách "
+            "hỏi ảnh: làm đúng phần \"EM VỪA GHI LƯỢT NÀY\"; không có việc ảnh nào thì KHÔNG hứa gửi ảnh, KHÔNG hứa xin chủ nhà.\n"
+            "  • Tối đa MỘT câu hỏi, ở cuối tin, theo dòng dặn hỏi ở trên (hoặc hỏi khách muốn xem thử căn nào). Khách vừa hỏi điều gì và em đã trả "
+            "lời đủ, hoặc khách đang bận / hẹn sau, thì KHÔNG cần câu hỏi (SRS-178).\n"
+            "  • Xưng hô GIỮ NGUYÊN như các lượt trước. Căn đã giới thiệu ở các tin trước thì KHÔNG nhắc lại, trừ khi khách hỏi.\n"
             + "\n".join(f"- {dong_can(c)}" for c in can) + "\n")
 
 

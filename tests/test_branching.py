@@ -83,31 +83,23 @@ def test_buyer_lead_questioning_sequence():
     assert lead.next_question_field() == "loai_bds"
     lead.loai_bds = "chung_cu"
 
-    # Next: so_phong_ngu
-    assert lead.next_question_field() == "so_phong_ngu"
+    # SRS-5.1zzzzzzz335: đủ ba ô cốt lõi thì MỘT câu hỏi mở, tuỳ chọn — danh sách ý còn thiếu do code đưa, AI chọn; hết ý thì thôi hỏi
+    from aioi.schema import CAU_MO_MUA
+    assert lead.next_question_field() == CAU_MO_MUA
+    y = lead.y_con_thieu()
+    assert y[:2] == ["so_phong_ngu", "nhan_nha_khi_nao"] and "thang_may" not in y and "yeu_cau_xe_hoi" not in y   # căn hộ: không thang máy / xe
     lead.so_phong_ngu = "2PN"
-
-    # For Condo: next is nhan_nha_khi_nao
-    assert lead.next_question_field() == "nhan_nha_khi_nao"
-    lead.fields["nhan_nha_khi_nao"] = "ở ngay"
-
-    # Then purpose, the consulting questions (SRS-5.1zzzzzzz116 — asked once each; condo skips elevator), then timeline (closing)
-    assert lead.next_question_field() == "muc_dich"
-    lead.muc_dich = "để ở"
-    for o in ("moi_truong_song", "thanh_vien", "noi_lam_viec", "dien_tich_mong_muon", "nguoi_quyet_dinh", "vay_ngan_hang"):
-        assert lead.next_question_field() == o
-        lead.fields["_da_hoi"] = ",".join(x for x in ((lead.fields.get("_da_hoi") or "") + "," + o).split(",") if x)
-    assert lead.next_question_field() == "tien_do_mua"
-    lead.tien_do_mua = "mua trong tháng"
+    lead.fields["_da_hoi"] = ",".join(x for x in y if x != "so_phong_ngu")
     assert lead.next_question_field() is None
 
     # Test House branching
     house_lead = BuyerLead(user_key="buyer_house", khu_vuc="Q1", ngan_sach="10 tỷ", loai_bds="nha_pho")
-    assert house_lead.next_question_field() == "yeu_cau_xe_hoi"
+    from aioi.schema import CAU_MO_MUA
+    assert house_lead.next_question_field() == CAU_MO_MUA and house_lead.y_con_thieu()[-1] == "yeu_cau_xe_hoi"   # SRS-335: xe hơi không còn bắt buộc, đứng cuối
 
     # Test Project branching
     proj_lead = BuyerLead(user_key="buyer_proj", khu_vuc="Đồng Nai", ngan_sach="3 tỷ", loai_bds="du_an")
-    assert proj_lead.next_question_field() == "muc_dich"
+    assert proj_lead.y_con_thieu()[0] == "muc_dich"
 
 
 def test_sqlite_buyer_sync(tmp_path):
