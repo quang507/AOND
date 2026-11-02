@@ -76,6 +76,8 @@ from .prompts import (
     build_buyer_chat_system,
     khoi_tin_tra_loi,
     build_phieu_luot,
+    NHAN_O_HE_THONG,
+    TU_O_HE_THONG,
     build_column_map_system,
     build_project_docs_block,
     build_transcribe_instruction,
@@ -1683,6 +1685,24 @@ def _soat_mot_cau_hoi(eng, conv, reply, nc) -> list[str]:   # SRS-5.1zzzzzzz252 
              "ý còn lại để lượt sau."] if _nhieu_cau_hoi(reply) else [])
 
 
+_HOI_O_HE_THONG_RE = re.compile(
+    r"(?:{t})\s+(?:nào|gì|mấy|bao nhiêu)|thuộc\s+(?:{t})|tên\s+(?:{t})|(?:{t})\s+hay\b|\bhay\s+(?:{t})".format(t="|".join(TU_O_HE_THONG)),
+    re.IGNORECASE)
+
+
+def _hoi_o_he_thong(loi: str) -> bool:
+    """Câu HỎI trong lời chat (câu có "?", bỏ phần bản tin) hỏi khách phường / xã — ô hệ thống tự tra (SRS-5.1zzzzzzz367). Kiểm lời của
+    chính bot (lưới đỡ khi model lỡ ghép vào câu hỏi địa chỉ), không đọc ý khách."""
+    chat = (loi or "").split("📋", 1)[0]
+    return any(_HOI_O_HE_THONG_RE.search(c) for c in re.findall(r"[^.!?\n]*\?", chat))
+
+
+def _soat_hoi_o_he_thong(eng, conv, reply, nc) -> list[str]:
+    return ([f"Lời vừa viết hỏi khách {NHAN_O_HE_THONG} — ô này hệ thống tự xác định theo địa chỉ, KHÔNG hỏi khách: bỏ phần hỏi "
+             f"{NHAN_O_HE_THONG}, giữ phần còn lại của câu hỏi (vd chỉ hỏi số nhà / tên đường)."]
+            if conv.role != "buyer" and _hoi_o_he_thong(reply) else [])
+
+
 def _soat_hua_gui_anh(eng, conv, reply, nc) -> list[str]:
     return (["Lời vừa viết nói \"em gửi ảnh\" cho chủ nhà — ngược vai: ảnh căn là CHỦ NHÀ chụp gửi cho em; muốn xin ảnh thì mời "
              "chủ nhà chụp gửi."] if conv.role != "buyer" and _bot_hua_gui_anh(reply) else [])
@@ -1844,6 +1864,7 @@ LUAT_SOAT: tuple[tuple[str, str, Callable[..., list[str]]], ...] = (
     ("phi_vai", "ly_do", _soat_phi_vai),
     ("tin_dang_hien", "ly_do", _soat_tin_dang_hien),
     ("mot_cau_hoi", "ly_do", _soat_mot_cau_hoi),
+    ("hoi_o_he_thong", "ly_do", _soat_hoi_o_he_thong),   # SRS-5.1zzzzzzz367
     ("hua_gui_anh", "ly_do", _soat_hua_gui_anh),
     ("lap", "mem", _soat_lap),
     ("phuong_cu", "ly_do", _soat_phuong_cu),

@@ -26,6 +26,7 @@ from .schema import (
     O_COC,
     O_NOI_BO,
     O_SAU_DANG,
+    O_HE_THONG_TRA,
     Property,
     PropertyGroup,
     BuyerLead,
@@ -145,11 +146,19 @@ FIELD_LABELS: dict[str, str] = {
     "nguoi_quyet_dinh": "ngoài anh/chị còn ai cùng quyết định mua",
 }
 
+# SRS-5.1zzzzzzz367 (chấm 02/11: hỏi phường còn 3/201 lượt — "Căn nằm ở đường nào, phường nào…"): ô HỆ THỐNG tự xác định
+# (`schema.O_HE_THONG_TRA`) không bao giờ là câu hỏi, kể cả ghép vào câu hỏi địa chỉ. MỘT nguồn: luật cố định của phiếu lượt thu thập
+# (`build_phieu_luot`) và lưới soát lời bot (`engine._soat_hoi_o_he_thong`) cùng đọc hai tên dưới đây.
+NHAN_O_HE_THONG = " / ".join(FIELD_LABELS[o].split(" (")[0] for o in sorted(O_HE_THONG_TRA))
+TU_O_HE_THONG = tuple(t.strip() for t in NHAN_O_HE_THONG.split("/") if t.strip())
+LUAT_O_HE_THONG = (f"- {NHAN_O_HE_THONG.capitalize()} do hệ thống tự xác định theo địa chỉ trên bản đồ: KHÔNG hỏi khách {NHAN_O_HE_THONG}, "
+                   "kể cả gộp vào câu hỏi địa chỉ hay câu hỏi khác.")
+
 # Lời hỏi tự nhiên như môi giới thực tế (tránh đọc tên slug khô cứng)
 NATURAL_QUESTIONS: dict[str, str] = {
     # Identity & chung
     "loai_hinh": "Xác nhận nhẹ căn này là chung cư, nhà phố hay đất",
-    "dia_chi": "Hỏi phần địa chỉ CÒN THIẾU (tên đường, phường / xã, tỉnh nếu chưa rõ; KHÔNG hỏi quận / huyện — đã bỏ từ 1/7/2025). Đất ở xã chưa có tên đường: hỏi đất gần chỗ nào hoặc đường nào — phần đã có trong dữ liệu đã biết thì KHÔNG hỏi lại",
+    "dia_chi": "Hỏi phần địa chỉ CÒN THIẾU (số nhà / tên đường, tỉnh nếu chưa rõ; KHÔNG hỏi quận / huyện — đã bỏ từ 1/7/2025). Đất ở xã chưa có tên đường: hỏi đất gần chỗ nào hoặc đường nào — phần đã có trong dữ liệu đã biết thì KHÔNG hỏi lại",
     "ma_so_can": "Hỏi mã căn hộ hoặc số nhà, tầng và tòa",
     "du_an": "Hỏi tên chung cư hoặc khu đô thị/dự án",
     "dien_tich": "Hỏi diện tích sử dụng của căn mình khoảng bao nhiêu mét vuông",
@@ -562,6 +571,7 @@ LUẬT CỐ ĐỊNH:
 - Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ câu xác nhận mà {NHAN_VIEC_LUOT} giao.
 - Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết, không nhận xét giá thị trường, không hứa bán được.
 - Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
+{LUAT_O_HE_THONG}
 {TIN_HE_THONG}
 
 {SLANG_NOTES}

@@ -41,7 +41,7 @@ def test_luot_truoc_la_ban_tin_thi_chi_xet_phan_chat():
     c.history.append(Turn("assistant", "📋 Em sẽ rao như vầy nhé anh:\n\nNhà 10 tỷ\n\nAnh chị cô bác ơi, nhà đẹp.\n\n- 10 tỷ\n\n"
                                        "Nhắn Zalo cho em nha!\n\nAnh xem được chưa?", 0.0))
     c.history.append(Turn("user", "ok", 0.0))
-    loi = "Có khách hỏi là tốt rồi anh ơi. Phường nhà mình là phường nào?"
+    loi = "Có khách hỏi là tốt rồi anh ơi. Hẻm trước nhà rộng tầm mấy mét vậy anh?"   # SRS-367: câu mẫu cũ hỏi phường — nay bị lưới hoi_o_he_thong bắt
     assert eng._soat_hinh_thuc(c, "SYS", loi) == loi and not spy.systems
 
 
