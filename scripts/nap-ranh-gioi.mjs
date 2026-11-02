@@ -76,16 +76,37 @@ const daCo = new Set((await rest("ranh_gioi_phuong?select=ten")).map((r) => r.te
 let tra = 0, ghiDuoc = 0;
 const hong = [];
 
-for (const w of wards) {
-  if (CHI && w.ten_day_du !== CHI) continue;
-  if (!CHI && !TAT_CA && daCo.has(w.ten)) continue;
+// 03/11 (lượt đầu từng phường kẹt ở Overpass: 12/168 sau 18 phút): MỘT truy vấn lấy mọi relation admin_level=6 trong hộp bao TP.HCM
+// (+ hộp riêng Côn Đảo), khớp tên tại máy; phường thiếu mới tra riêng từng cái.
+const theoTen = new Map();
+for (const hop of [BBOX_HCM, ...Object.values(BBOX_RIENG)]) {
+  const kq = await overpass(`[out:json][timeout:600][maxsize:1073741824];rel["boundary"="administrative"]["admin_level"="6"](${hop});out geom;`);
+  tra++;
+  for (const rel of kq?.elements?.filter((e) => e.type === "relation") ?? []) {
+    const ten = rel.tags?.name;
+    if (!ten) continue;
+    if (!theoTen.has(ten)) theoTen.set(ten, []);
+    theoTen.get(ten).push(rel);
+  }
+  console.log(`  hộp ${hop}: ${kq?.elements?.length ?? "không trả lời"} relation`);
+}
+
+async function relCua(w) {
+  if (theoTen.has(w.ten_day_du)) return theoTen.get(w.ten_day_du);
   const hop = BBOX_RIENG[w.ten_day_du] ?? BBOX_HCM;
   const kq = await overpass(`[out:json][timeout:120];rel["boundary"="administrative"]["admin_level"="6"]["name"="${w.ten_day_du}"](${hop});out geom;`);
   tra++;
-  const rels = kq?.elements?.filter((e) => e.type === "relation") ?? [];
-  if (!rels.length) { hong.push(`${w.ten_day_du}: không có relation admin_level=6`); await nghi(2000); continue; }
+  await nghi(2000);
+  return kq?.elements?.filter((e) => e.type === "relation") ?? [];
+}
+
+for (const w of wards) {
+  if (CHI && w.ten_day_du !== CHI) continue;
+  if (!CHI && !TAT_CA && daCo.has(w.ten)) continue;
+  const rels = await relCua(w);
+  if (!rels.length) { hong.push(`${w.ten_day_du}: không có relation admin_level=6`); continue; }
   const ung = rels.map((rel) => ({ rel, kq: relationThanhVong(rel) })).filter((x) => x.kq);
-  if (!ung.length) { hong.push(`${w.ten_day_du}: ${rels.length} relation, không ghép được vành kín`); await nghi(2000); continue; }
+  if (!ung.length) { hong.push(`${w.ten_day_du}: ${rels.length} relation, không ghép được vành kín`); continue; }
   const tam = (k) => [(k.min_lat + k.max_lat) / 2, (k.min_lng + k.max_lng) / 2];
   const xa = (x) => (w.lat == null ? 0 : (tam(x.kq.khung)[0] - w.lat) ** 2 + (tam(x.kq.khung)[1] - w.lng) ** 2);
   const chon = ung.sort((a, b) => xa(a) - xa(b))[0];
@@ -100,11 +121,9 @@ for (const w of wards) {
     });
   }
   ghiDuoc++;
-  console.log(`  ${w.ten_day_du}: ${chon.kq.vong.type}, relation ${chon.rel.id}`);
-  await nghi(2000);
 }
 
-console.log(`\nĐã tra ${tra} phường, ${DRY ? "sẽ ghi" : "ghi"} ${ghiDuoc}, hỏng ${hong.length}.`);
+console.log(`\nĐã gọi Overpass ${tra} lượt, ${DRY ? "sẽ ghi" : "ghi"} ${ghiDuoc}, hỏng ${hong.length}.`);
 for (const h of hong) console.log(`  ✗ ${h}`);
 if (DRY) process.exit(0);
 
