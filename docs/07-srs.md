@@ -829,6 +829,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz321 · Làm giàu kho dự án từ rever.vn (crawl theo luật mogi), một kho `projects`; bot đọc `specs.rever` (02/11/2026)
+Quyết định chủ dự án 02/11: chọn phương án (a) — crawl Rever theo luật OPEN-56 (chỉ dữ kiện, mô tả viết lại, giữ `source_url`, không tin rao lẻ / SĐT / ảnh), dù điều khoản rever.vn
+§3.1–3.2 cấm dùng thương mại / sao chép (`robots.txt` cho phép); "dữ liệu bên mình là 1 chỗ" → GHÉP vào dòng `projects` có sẵn (khớp tên bỏ dấu + tỉnh, trùng tên thì khớp quận; mơ hồ bỏ qua),
+chỉ điền ô trống, dữ kiện ở `specs.rever` (thông số, khoảng giá, giá rao GỘP: số tin + giá/m² thấp / giữa / cao + ngày lấy); chưa có thì dòng mới `source = 'rever'`. Script `scripts/thu-du-an-rever.mjs`, nạp qua ô `nap-du-an-rever`.
+Bot: `projects.dong_nguon_phu` cho cả hai phía (nguồn phụ không đè nguồn chính, không nêu tên nguồn ra khách). Tin `listings` của mình chưa nối `project_id` (0/248) nên chưa tự tính được khoảng giá theo dự án.
+Kiểm: `tests/test_nguon_phu_rever.py` (3/4 đỏ khi gỡ đọc `specs.rever`), `bot/tests/thu-du-an-rever.mjs` (HTML tự dựng: hai mẫu trang, bỏ tin gõ sai "62633 m²", khối trong chú thích HTML, không ghép bừa).
+
 ### SRS-5.1zzzzzzz320 · Audit Đợt 3: bỏ đoán ý khách bằng từ khoá — AI đọc nghĩa vai / pháp lý / đường vào / tiện ích / tình trạng; một lưới bản tin (02/11/2026)
 Quyết định chủ dự án 02/11: KHÔNG dùng từ khoá trên lời khách để quyết ý, kể cả làm lưới đỡ. Ca gốc: "tôi không phải chính chủ" vẫn tính chủ nhà (`_VAI_RE`), "chưa có sổ hồng" tính có pháp lý,
 "không phải mặt tiền" cho ghi "mặt tiền", "cho em hỏi" / "thị trường" / "mời" mở cửa "gần chợ" / "trường học" / "nhà mới"; `Property.update` tự ghi "Mặt tiền" khi thiếu chữ hẻm ("HXH Lê Lai").
@@ -896,14 +903,6 @@ Chủ dự án 30/10 ("không cần, gỡ đi"): gỡ lưới "câu ghi nhận m
 - `ma_lo_7m` (lớp lỗi: số m² trống ghi tạm `dien_tich`, phiếu lượt không hỏi lại theo SRS-302 → ô sàn trống): form + EXTRACTION đọc "đã có đất, số m² khác"
   là `dien_tich_nha`. `dat_nen_long_an`: phép chấm "huyện" khớp nhầm "c**huyện**" → `\bhuyện\b`. Đo 408 phép: 402 / 403 → 406 / 406
   (`ma_lo_7m`, `dat_nen_long_an` đạt 2/2); giọng 2,58 / 2,50 → 2,45 / 2,45 (thay đổi không đụng lời viết, dao động giám khảo 2,35–2,70).
-
-### SRS-5.1zzzzzzz311 · Kế hoạch bước 4: lượt dễ của người bán viết bằng model rẻ; luật soát chưa gỡ (30/10/2026)
-- `MODEL_LUOT_DE` (`cai-vps.sh`): lượt thu thập bằng phiếu lượt, không tra dữ liệu, không việc khác (`y_luot` chỉ khoá `_`, không hỏi về) → model rẻ, cả lần soát
-  gọi lại; lượt khác giữ `MODEL_CHAT`. Đo 408 phép: Sonnet mọi lượt 402 / 400, giọng 2,65 / 2,62, $5,0 / $5,3 · Haiku lượt dễ 404 / 402,
-  giọng 2,38 / 2,40, $3,4 / $3,4 (−35 % tiền, giọng tụt) → `tat` (chủ dự án 30/10 chọn Sonnet vì chất lượng); bật = đổi một dòng.
-- Luật soát: 280 cuộc chấm, lưới kích nhiều nhất "gọi khách là mình" (40 lần, bắt lỗi thật); lưới không kích lần nào đều là quyết định chủ dự án có test
-  (kho hẻm SRS-115, HOA SRS-241, câu ghi nhận SRS-229, "anh ơi" lặp) và ở chế độ gọn chỉ ghi log — chưa gỡ, gỡ là đảo quyết định đã chốt.
-- Kiểm: `tests/test_model_luot_de_311.py` (đỏ khi gỡ chỗ đặt model).
 
 ---
 

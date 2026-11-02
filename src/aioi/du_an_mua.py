@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .projects import dong_nguon_phu
+
 TIEU_DE = "DỰ ÁN TRONG KHO"          # dấu mốc: `engine._so_khong_co_trong_can` cho phép con số nằm trong khối này
 CAT_KIEN_THUC = 2800                  # tối đa chữ kiến thức chủ dự án đưa cho model mỗi lượt
 CAT_TIEN_ICH = 8
@@ -56,6 +58,10 @@ def dong_du_an(p: dict[str, Any]) -> list[str]:
     tu, den = sp.get("dien_tich_tu_m2"), sp.get("dien_tich_den_m2")
     if isinstance(tu, (int, float)) and isinstance(den, (int, float)) and tu and den:
         d.append(f"- Diện tích sản phẩm: {tu:g}–{den:g} m²")
+    da_noi = {"tổng diện tích"} if _chu(sp.get("tong_dien_tich")) else set()
+    for k, v in dong_nguon_phu(sp):          # `specs.rever` (SRS-5.1zzzzzzz321)
+        if k not in da_noi:
+            d.append(f"- {k[:1].upper()}{k[1:]}: {v}")
     if _chu(sp.get("nam_khoi_cong")) or _chu(sp.get("nam_hoan_thanh")):
         d.append("- Thời gian: " + "; ".join(x for x in (f"khởi công {_chu(sp.get('nam_khoi_cong'))}" if _chu(sp.get("nam_khoi_cong")) else "",
                                                           f"hoàn thành {_chu(sp.get('nam_hoan_thanh'))}" if _chu(sp.get("nam_hoan_thanh")) else "") if x))

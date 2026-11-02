@@ -214,6 +214,7 @@ từ batdongsan → chưa cạnh tranh SEO trực diện 6 tháng đầu.
 | Chat-first quốc tế | (concept `demo2Vitalify.docx`) | — | Chưa có bản địa hoá Zalo |
 | Portal thế hệ mới | **radanhadat.vn** (MCDX, 10/2024) | Đăng tin 0đ, công cụ cho môi giới, SEO facet mạnh | Listing-first bán hiển thị; không có tầng hội thoại giữ khách — §1.5b |
 | Portal tối giản | **mogi.vn** | Danh mục 2 cấp phân biệt MT/hẻm; SEO tới cấp đường; trang giá theo quận | ~7 trường cấu trúc; lộ SĐT + toạ độ trong HTML (ngược FR-104); không có khái niệm chính chủ — INS-13 |
+| Môi giới O2O có vốn | **rever.vn** | Đội chuyên viên + app + hotline 24/7, ký gửi có xác thực, phân phối F1 dự án, trang dự án có khoảng giá/m² và thông số; vốn Mekong Capital [nguồn: rever.vn, điều khoản sử dụng, brandsvietnam.com — WebFetch/WebSearch 02/11/2026] | Nuôi đội môi giới (chi phí cao); không chat Zalo 24/7; người bán vẫn qua chuyên viên. Dữ kiện dự án đã nạp vào kho (SRS-5.1zzzzzzz321) |
 
 ### 1.5b Phân tích sâu đối thủ trực tiếp: radanhadat.vn
 
