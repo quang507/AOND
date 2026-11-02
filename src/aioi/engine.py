@@ -597,6 +597,9 @@ class Conversation:
     # khách nhắn tới số Zalo NÀO — "" = số ký gửi (số cũ), SO_TU_VAN = số tư vấn người mua. Chỉ quyết vai MẶC ĐỊNH của lượt mơ hồ và số gửi tin
     # chủ động cho khách; khách nhắn nhầm số vẫn được trả lời đúng việc (`user_intent` của lượt thắng).
     so_nhan: str = ""
+    # Persisted (SRS-5.1zzzzzzz331, ca thật 02/11): vai hiện tại được đặt trên số nào ("ky_gui" / SO_TU_VAN; None = chưa biết — dữ liệu cũ). Hội thoại
+    # khoá theo NGƯỜI, không theo số: lượt mơ hồ ở số KHÁC số đặt vai thì vai về mặc định của số đang nhắn (ký gửi → bán, tư vấn → mua).
+    so_vai: str | None = None
     tin_tra_loi: str = ""   # nội dung tin khách bấm "Trả lời" trên Zalo, chỉ của lượt đang chạy (SRS-5.1zzzzzzz270); không lưu
     # Persisted (SRS-5.1zzzzzzz216, 27/10/2026): NGƯỜI THẬT đang nói chuyện với khách tới mốc này (epoch giây) — admin gõ tay trên acc
     # clone (bridge `human_note`, trước đây lõi bỏ qua trường này và coi lời admin là lời khách) hoặc gửi từ /admin/tin-nhan. Chưa tới mốc
@@ -932,6 +935,7 @@ class SqliteConversationStore(ConversationStore):
             ("conversations", "che_do_test", "''"),   # cột cũ chế độ test (SRS-195: không còn bật)
             ("conversations", "so_luot_thong_tin", "'0'"),   # SRS-5.1zzzzzzz131 bản 2: lượt thông tin thứ mấy (3 lượt đầu khen 100%)
             ("conversations", "so_nhan", "''"),   # SRS-5.1zzzzzzz210: khách nhắn số ký gửi ("") hay số tư vấn
+            ("conversations", "so_vai", "''"),   # SRS-5.1zzzzzzz331: vai đặt trên số nào ('' = chưa biết)
             ("conversations", "nhuong_san_den", "''"),   # SRS-5.1zzzzzzz216: người thật đang nói tới lúc nào (epoch giây)
         ):
             try:  # migrate older tables that predate this column
@@ -947,14 +951,14 @@ class SqliteConversationStore(ConversationStore):
         active_lead_id = conv.buyer_lead.lead_id if conv.buyer_lead else ""
         self._conn.execute(
             "INSERT INTO conversations(user_key, user_type, last_ai_at, active_listing_id, "
-            "history_json, price_book_json, role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan, nhuong_san_den) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) "
+            "history_json, price_book_json, role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan, nhuong_san_den, so_vai) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(user_key) DO UPDATE SET "
             "user_type=excluded.user_type, last_ai_at=excluded.last_ai_at, "
             "active_listing_id=excluded.active_listing_id, history_json=excluded.history_json, "
             "price_book_json=excluded.price_book_json, role=excluded.role, "
             "active_lead_id=excluded.active_lead_id, xung_ho=excluded.xung_ho, che_do_test=excluded.che_do_test, "
-            "so_luot_thong_tin=excluded.so_luot_thong_tin, so_nhan=excluded.so_nhan, nhuong_san_den=excluded.nhuong_san_den",
+            "so_luot_thong_tin=excluded.so_luot_thong_tin, so_nhan=excluded.so_nhan, nhuong_san_den=excluded.nhuong_san_den, so_vai=excluded.so_vai",
             (
                 conv.user_key,
                 conv.user_type.value,
@@ -969,6 +973,7 @@ class SqliteConversationStore(ConversationStore):
                 str(int(conv.so_luot_thong_tin or 0)),
                 conv.so_nhan or "",
                 str(conv.nhuong_san_den or 0) if conv.nhuong_san_den else "",
+                conv.so_vai or "",
             ),
         )
         for bl in ([conv.buyer_lead] if conv.buyer_lead is not None else []) + list(conv.nhu_cau_khac):
@@ -1037,7 +1042,7 @@ class SqliteConversationStore(ConversationStore):
     def load(self, user_key: str) -> Conversation | None:
         row = self._conn.execute(
             "SELECT user_type, last_ai_at, active_listing_id, history_json, price_book_json, "
-            "role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan, nhuong_san_den FROM conversations WHERE user_key=?",
+            "role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan, nhuong_san_den, so_vai FROM conversations WHERE user_key=?",
             (user_key,),
         ).fetchone()
         if row is None:
@@ -1115,6 +1120,7 @@ class SqliteConversationStore(ConversationStore):
             so_luot_thong_tin=int(row[9] or 0) if len(row) > 9 else 0,
             so_nhan=(row[10] or "") if len(row) > 10 else "",
             nhuong_san_den=float(row[11]) if len(row) > 11 and row[11] else 0.0,
+            so_vai=(row[12] or None) if len(row) > 12 else None,
         )
 
     def reset(self, user_key: str) -> None:
@@ -2840,7 +2846,7 @@ class Engine:
             system += du_an_mua.khoi_du_an(conv.y_luot.get("du_an_mua"))   # SRS-5.1zzzzzzz184: dữ kiện dự án trong kho cho câu khách hỏi
             system += du_an_mua.khoi_du_an_khu(conv.y_luot.get("du_an_khu"))   # SRS-5.1zzzzzzz250: "quận X có dự án gì"
             system += du_an_mua.khoi_can_du_an(conv.y_luot.get("can_du_an"))   # SRS-5.1zzzzzzz250: căn còn bán trong một dự án
-            if conv.so_nhan == SO_TU_VAN and not any(t.role == "assistant" for t in conv.history):
+            if conv.so_nhan == SO_TU_VAN and (conv.y_luot.get("_doi_so") or not any(t.role == "assistant" for t in conv.history)):
                 # SRS-5.1zzzzzzz210: lượt đầu ở số tư vấn — chào theo câu mẫu chỉ hỏi chuyện tìm mua / thuê (số ký gửi giữ lời chào hai lựa chọn).
                 system += khoi_chao_tu_van(conv.assistant.name, cau_mau.cau("chao_tu_van", goi_toi_khach(customer_pronoun)[0], ten=conv.assistant.name))
             uu_tien = (khoi_can_nguoi(conv) or khoi_phap_ly(conv, self._can_dang_noi(conv, can))   # SRS-5.1zzzzzzz178: một khối ưu tiên
@@ -3071,7 +3077,7 @@ class Engine:
 
         # SRS-5.1zzzzzzz301: khối chào chỉ khi khách CHƯA đưa thông tin nào (ô tin trống) hoặc lượt đọc ý thấy khách chỉ chào — thử bằng quota CLI
         # 30/10, Haiku đọc nhầm "nếu khách chỉ chào" và tự giới thiệu kiểu máy dù khách đã nói nhu cầu ngay tin đầu.
-        if (not is_listing_post and not any(t.role == "assistant" for t in conv.history)
+        if (not is_listing_post and (conv.y_luot.get("_doi_so") or not any(t.role == "assistant" for t in conv.history))
                 and (not conv.prop.fields_khach() or conv.y_luot.get("tha_tim") == "chao")):
             system += khoi_chao_lan_dau(conv.assistant.name, cau_mau.cau("chao_lan_dau", goi_toi_khach(customer_pronoun)[0], ten=conv.assistant.name))
         system = self._ghep_cau_chuan(system + khoi_xung_ho(customer_pronoun, conv.assistant.name, _xung_ho_doan(conv)), conv) + self._khoi_danh_gia(conv)
@@ -4796,7 +4802,10 @@ class Engine:
             # "buy", lúc không; không ra thì lượt đi nhánh bán ("nhà phố hay chung cư?"), câu hỏi không tới ai. Lưới đỡ bằng DỮ LIỆU: mã tin
             # khách gõ là một căn đang hiện trên hệ thống (khách chưa có việc bán nào) → khách đang hỏi căn để mua / thuê.
             intent = "buy"
+        so_luot = SO_TU_VAN if conv.so_nhan == SO_TU_VAN else "ky_gui"
+        doi_so = False
         if intent == "buy" and not (has_seller_context and dang_giua_viec_ban):
+            conv.so_vai = so_luot
             conv.role = "buyer"
             if conv.buyer_lead is None:
                 conv.buyer_lead = BuyerLead(user_key=conv.user_key)
@@ -4804,7 +4813,15 @@ class Engine:
                 self._chon_nhu_cau(conv, plan["buyer_lead"])
                 conv.buyer_lead.update({k: v for k, v in plan["buyer_lead"].items() if k not in ("nhu_cau_moi", "nhu_cau_thoi")})
         elif intent == "sell":
+            conv.so_vai = so_luot
             conv.role = "seller"
+        elif conv.so_vai is not None and conv.so_vai != so_luot:
+            # SRS-5.1zzzzzzz331 (ca thật 02/11: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi → bot hỏi "khu vực tìm mua"): lượt mơ hồ ở số KHÁC
+            # số đã đặt vai → vai mặc định của số đang nhắn. Nhu cầu mua / tin rao của số kia giữ nguyên, chỉ không quyết vai.
+            conv.role = "buyer" if so_luot == SO_TU_VAN else "seller"
+            if conv.role == "buyer" and conv.buyer_lead is None:
+                conv.buyer_lead = BuyerLead(user_key=conv.user_key)
+            conv.so_vai, doi_so = so_luot, True
         elif conv.role == "buyer" and conv.buyer_lead is not None:
             pass   # lượt mơ hồ ("ok", "xem được không") của người đang nói chuyện mua: ở lại nhánh mua
         elif has_seller_context:
@@ -4815,6 +4832,8 @@ class Engine:
             conv.role = "buyer"
             if conv.buyer_lead is None:
                 conv.buyer_lead = BuyerLead(user_key=conv.user_key)
+        if conv.so_vai is None and conv.role in ("buyer", "seller"):
+            conv.so_vai = so_luot   # vai đặt (hay giữ) trên số này
 
         conv.duyet_luot = None   # quyết ở `_quyet_duyet` (một nơi, Đợt 4) sau khi đọc xong xin_dang / yeu_cau_viet
         y = plan.get("duyet_ban_nhap")
@@ -4874,6 +4893,8 @@ class Engine:
 
         # Xin xem bản vẽ / hỏi dự án / tả dự án / xác nhận xoá (SRS-5.1zzzzzzz55): nhận khi cụm trích có trong tin vừa nhắn.
         conv.y_luot = {}
+        if doi_so:
+            conv.y_luot["_doi_so"] = True   # SRS-5.1zzzzzzz331: lượt đầu của vai này trên số đang nhắn — chào theo số
         if plan.get("_chua_ro_can"):   # SRS-5.1zzzzzzz310: agent bóc từ chối đổi trạng thái vì lời khách chưa chỉ ra căn nào
             conv.y_luot["chua_ro_can"] = list(plan["_chua_ro_can"])
         if la_ngoai_viec:

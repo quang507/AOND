@@ -1322,6 +1322,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             conv.che_do_test = cu.che_do_test
             conv.so_luot_thong_tin = cu.so_luot_thong_tin
             conv.so_nhan = cu.so_nhan   # SRS-5.1zzzzzzz210: số Zalo khách nhắn tới — Supabase không có cột này
+            conv.so_vai = cu.so_vai   # vai đặt trên số nào (SRS-5.1zzzzzzz331) — chỉ SQLite
             conv.nhuong_san_den = cu.nhuong_san_den   # SRS-5.1zzzzzzz216: người thật đang nói tới lúc nào — chỉ SQLite
         return conv
 
@@ -1456,6 +1457,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 conv.che_do_test = cu.che_do_test   # chế độ test $$$$$ (SRS-5.1zzzzzzz130) — Supabase không có cột này
                 conv.so_luot_thong_tin = cu.so_luot_thong_tin   # lượt thông tin thứ mấy (SRS-5.1zzzzzzz131 bản 2)
                 conv.so_nhan = cu.so_nhan   # số Zalo khách nhắn tới (SRS-5.1zzzzzzz210) — Supabase không có cột này
+                conv.so_vai = cu.so_vai   # vai đặt trên số nào (SRS-5.1zzzzzzz331) — chỉ SQLite
                 conv.nhuong_san_den = cu.nhuong_san_den   # người thật đang nói tới lúc nào (SRS-5.1zzzzzzz216) — chỉ SQLite
                 if conv.user_type.value == "unknown":
                     conv.user_type = cu.user_type
