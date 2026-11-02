@@ -67,7 +67,10 @@ def cham(kb: dict[str, Any], kq: dict[str, Any]) -> list[tuple[str, bool, str]]:
     if "trang_thai" in k:
         ra.append((f"trạng thái ∋ {k['trang_thai']}", chua(kq.get("trang_thai"), k["trang_thai"]), str(kq.get("trang_thai"))))
     # Luật cứng chung mọi kịch bản — đếm số lượt phạm trên LỜI CUỐI gửi khách (sau khi lõi đã gọi lại).
-    for ten, khoa in (("không mở \"Dạ\"", "da"), ("không gọi khách \"mình\"", "minh"), ("không bình luận giá", "binh_gia"),
+    # SRS-5.1zzzzzzz350: phép "gọi khách mình" chuyển sang giám khảo đọc nghĩa (`goi_minh` trong scripts/cham-kich-ban.py) — bản regex
+    # bắt oan "theo ý mình" / "đứng tên mình" trong BẢN TIN (nói với người mua) và "mình" nghĩa CHÚNG TA, cả hai đều đúng luật
+    # (CLAUDE.md: cấm "mình" ĐẠI TỪ NGÔI HAI; cho phép nghĩa chúng ta). Ô `minh` vẫn tính để tra cứu, không còn là phép chấm ở đây.
+    for ten, khoa in (("không mở \"Dạ\"", "da"), ("không bình luận giá", "binh_gia"),
                       ("bản tin không có số bịa", "so_bia"), ("tối đa 1 câu hỏi / lượt", "nhieu_hoi"),
                       ("không mở bằng câu ghi nhận", "ghi_nhan"), ("không mở giống lượt trước", "lap_mo_dau")):
         lo = [i for i, l in enumerate(luot, 1) if l.get(khoa)]
