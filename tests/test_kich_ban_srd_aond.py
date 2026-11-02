@@ -235,6 +235,7 @@ def test_nhom2_khach_da_tra_loi_het_thi_xin_anh():
 def test_nhom3_khoi_diem_chi_dua_so_that_va_cach_tang_diem():
     k = khoi_diem_tin(62.4, "Bạc", 70.0, ["dien_tich_nha", "huong"], 0, Property(loai_hinh="nha_pho"))
     assert "62/100" in k and "Bạc" in k and "Để tăng điểm" in k and "không hứa lên Top" in k
+    assert "điểm của TIN / CĂN" in k and "hạng của NGƯỜI RAO" in k   # SRS-5.1zzzzzzz336: điểm là của tin, hạng là của người rao
 
 
 def test_nhom3_ro_hang_tang_thi_he_so_thuong_tang_dan():

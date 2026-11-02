@@ -751,6 +751,8 @@ def khoi_diem_tin(diem_tin: float, hang: str, diem_nguoi: float, thieu: list[str
         f"Tin này: {diem_tin:.0f}/100. Người rao: hạng {hang} ({diem_nguoi:.0f}/100). Ảnh đã nhận: {so_anh} tấm.\n"
         f"Để tăng điểm: {cach}.\n"
         "Chỉ nhắc điểm / hạng khi khách hỏi, hoặc một câu ngắn khi khích lệ gửi thêm thông tin — không nhắc mỗi lượt, không hứa lên Top.\n"
+        "Gọi đúng chữ (chủ dự án 02/11, SRS-5.1zzzzzzz336): điểm …/100 là điểm của TIN / CĂN; Đồng / Bạc / Vàng là hạng của NGƯỜI RAO — "
+        "không gọi điểm tin là hạng, không gọi hạng là điểm.\n"
     )
 
 
