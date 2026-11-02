@@ -1,4 +1,4 @@
-"""02/11/2026 (SRS-5.1zzzzzzz326, ca thật chủ dự án): tìm mua ở số TƯ VẤN ("anh đang cần tìm mua nhà quận 8 dưới 7 tỉ") rồi "chào em" ở số KÝ GỬI
+"""02/11/2026 (SRS-5.1zzzzzzz328, ca thật chủ dự án): tìm mua ở số TƯ VẤN ("anh đang cần tìm mua nhà quận 8 dưới 7 tỉ") rồi "chào em" ở số KÝ GỬI
 → bot hỏi "anh muốn tìm ở khu vực nào". Lớp lỗi: hội thoại khoá theo NGƯỜI, vai mua của số kia giữ qua lượt mơ hồ. Bất biến: lượt mơ hồ ở số khác số
 đặt vai → vai mặc định của số đang nhắn (ký gửi → bán, tư vấn → mua); ý mua / bán của lượt vẫn thắng. Đỏ khi gỡ nhánh `so_vai`."""
 from __future__ import annotations

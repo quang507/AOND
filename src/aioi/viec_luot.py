@@ -1,7 +1,7 @@
 """Việc của lượt phía bán — MỘT việc, code quyết (kế hoạch bước 2B, SRS-5.1zzzzzzz314).
 
 Hàm thuần: đọc ảnh chụp trạng thái lượt (`TrangThaiLuot`, engine dựng) và trả về đúng một `Viec`. Thứ tự ưu tiên CHỈ đặt ở đây.
-Từ Đợt 4 (SRS-5.1zzzzzzz325) engine DÙNG kết quả: khối hỏi nằm trong `bo` bị gỡ khỏi prompt (và cờ "đã hỏi" của nó trả lại), nên mỗi
+Từ Đợt 4 (SRS-5.1zzzzzzz327) engine DÙNG kết quả: khối hỏi nằm trong `bo` bị gỡ khỏi prompt (và cờ "đã hỏi" của nó trả lại), nên mỗi
 lượt chỉ còn MỘT câu hỏi. `conv.y_luot["_viec"]` / `["_khoi"]` (khối còn lại sau khi gỡ) vẫn ghi cho bộ chấm.
 """
 from __future__ import annotations
