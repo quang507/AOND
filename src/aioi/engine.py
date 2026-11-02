@@ -1816,6 +1816,15 @@ LUAT_SOAT: tuple[tuple[str, str, Callable[..., list[str]]], ...] = (
     ("so_trong_tin", "ly_do", _soat_so_trong_tin),
     ("yeu_cau_viet", "ly_do", _soat_yeu_cau_viet),
 )
+# SRS-5.1zzzzzzz352: luật giữ SỰ THẬT / TIỀN / RIÊNG TƯ — khi phải chọn giữa bản đầu và bản viết lại (cả hai còn lệch), lệch nhóm này nặng hơn lệch
+# hình thức (gọi "mình", hai câu hỏi, tên khối…). Ca `cao_lo`: bản đầu chỉ lệch `goi_minh` (bắt oan), bản viết lại thêm "4 tầng" bịa.
+LUAT_SU_THAT = frozenset({"lo_rieng", "khang_dinh", "phi_vai", "tin_dang_hien", "binh_luan_gia", "so_can_mua", "so_trong_tin"})
+
+
+def _nang_nhe(lech: list[tuple[str, str]]) -> tuple[int, int]:
+    """(số lệch sự thật, số lệch hình thức) — so sánh bộ đôi: ít lệch sự thật hơn thắng, rồi mới tới hình thức."""
+    nang = sum(1 for ten, _ in lech if ten in LUAT_SU_THAT)
+    return nang, len(lech) - nang
 
 
 class Engine:
@@ -3380,9 +3389,14 @@ class Engine:
         if _mo_dau_da(reply):
             reply = _bo_da_dau(reply)   # "Dạ" mở đầu: code bỏ chữ, không gọi lại model
         nc = {"system": system, "can_mua": can_mua}
-        for _ten, nhom, kiem in LUAT_SOAT:   # SRS-5.1zzzzzzz318 (AU-06): MỘT bảng luật
-            (mem if nhom == "mem" else ly_do).extend(kiem(self, conv, reply, nc))
-        ly_do = list(them or []) + ly_do
+        lech: list[tuple[str, str]] = []
+        for ten, nhom, kiem in LUAT_SOAT:   # SRS-5.1zzzzzzz318 (AU-06): MỘT bảng luật
+            if nhom == "mem":
+                mem.extend(kiem(self, conv, reply, nc))
+            else:
+                lech.extend((ten, x) for x in kiem(self, conv, reply, nc))
+        lech = [("cong_ban_nhap", x) for x in (them or [])] + lech   # lý do code thấy trước (cổng bản nháp) — tính như lệch hình thức
+        ly_do = [x for _, x in lech]
         if mem:
             log.warning("Lời bot lệch luật giọng / lặp (%d, chế độ gọn — không gọi lại): %s", len(mem), " | ".join(x[:40] for x in mem))
         if ly_do:
@@ -3393,9 +3407,18 @@ class Engine:
                     system + "\n\n=== VIẾT LẠI LƯỢT NÀY ===\n" + " ".join(ly_do) + " Viết lại TOÀN BỘ lượt trả lời.\n",
                     conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
             if lai and (nhan is None or nhan(_bo_markdown(lai))):
-                reply = _gan_dau_ban_tin(_bo_markdown(lai))
-                if _mo_dau_da(reply):   # tối đa MỘT lần gọi lại (SRS-5.1zzzzzzz298); "Dạ" còn sót thì code bỏ chữ
-                    reply = _bo_da_dau(reply)
+                lai = _gan_dau_ban_tin(_bo_markdown(lai))
+                if _mo_dau_da(lai):   # tối đa MỘT lần gọi lại (SRS-5.1zzzzzzz298); "Dạ" còn sót thì code bỏ chữ
+                    lai = _bo_da_dau(lai)
+                # SRS-5.1zzzzzzz352: SOÁT LẠI bản viết lại (code, không gọi lại model lần hai). Bản trước nhận bản mới không soát, nên mọi luật
+                # `ly_do` chỉ giữ được bản ĐẦU — `cao_lo` lọt "4 tầng", `ka_lo_trinh_tu` lọt "72m²". Còn lệch thì giữ bản ít lệch SỰ THẬT hơn
+                # (rồi tới ít lệch hình thức); hoà thì giữ bản viết lại (đã sửa đúng điều được dặn).
+                lech_lai = [(ten, x) for ten, nhom, kiem in LUAT_SOAT if nhom != "mem" for x in kiem(self, conv, lai, nc)]
+                if _nang_nhe(lech_lai) <= _nang_nhe(lech):
+                    reply = lai
+                if lech_lai:
+                    log.warning("Bản viết lại vẫn lệch (%d: %s) — giữ bản %s", len(lech_lai), " | ".join(t for t, _ in lech_lai),
+                                "viết lại" if reply is lai else "đầu")
         return reply
 
     @staticmethod
