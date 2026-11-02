@@ -137,8 +137,8 @@ def test_chua_co_tieu_chi_thi_khong_goi_y_can_khong_goi_db():
     assert kho.so_parse == 0
     chua = khoi_can_cho_khach([], chua_co_tieu_chi=True)
     assert "chưa nêu đủ khu vực và ngân sách" in chua and "KHÔNG nói \"chưa có căn\"" in chua
-    assert "báo khi có căn" not in chua                                             # câu "chưa có căn" chỉ dành cho khách ĐÃ nêu tiêu chí
-    assert "báo khi có căn" in khoi_can_cho_khach([], chua_co_tieu_chi=False)
+    assert "em nhắn liền" not in chua                                             # câu "chưa có căn" chỉ dành cho khách ĐÃ nêu tiêu chí
+    assert "có căn phù hợp em nhắn" in khoi_can_cho_khach([], chua_co_tieu_chi=False)   # AU-04: lời hứa là dữ kiện vòng bao_can_moi
 
 
 def test_khoi_can_dat_thu_tu_khen_can_roi_moi_hoi_ngan():

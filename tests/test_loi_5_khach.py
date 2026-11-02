@@ -78,7 +78,7 @@ def test_tin_cho_phuong_hoi_khac_va_khong_bia_ten_phuong():
 def test_khong_hua_hoi_chu_nha_khi_chua_ghi_viec():
     # Anh M. "căn nào đang có HĐ thuê thì gửi" → "em sẽ hỏi chủ nhà rồi báo lại" mà không việc nào được ghi: khối căn bản cũ dặn LUÔN hứa.
     k = khoi_can_cho_khach([CAN])
-    assert "nói sẽ hỏi chủ nhà" not in k and "KHÔNG hứa sẽ báo lại" in k and "EM VỪA GHI LƯỢT NÀY" in k
+    assert "nói sẽ hỏi chủ nhà" not in k and "KHÔNG hứa sẽ hỏi chủ hay báo lại" in k and "EM VỪA GHI LƯỢT NÀY" in k
 
 
 def test_khach_gat_hoi_giup_thi_chuyen_cau_hoi_luot_truoc_cho_chu_nha():

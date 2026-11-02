@@ -31,9 +31,10 @@ def test_cau_khach_hoi_thang_viec_cua_pha():
     assert _v(pha="ngoai_vung", khoi=("ngoai_vung",))[0] == ("ngoai_vung", None)
 
 
-def test_khoi_dia_danh_ke_phuong_la_cau_hoi_phuong():
+def test_khoi_dia_danh_la_hoi_ten_duong_truoc():
+    """Đợt 4 (SRS-5.1zzzzzzz325): khối "dia_danh" chỉ bật khi hỏi xác nhận TÊN ĐƯỜNG; dữ kiện phường / xã không còn là khối hỏi. Hỏi đường trước."""
     viec, bo = _v(pha="thu_thap", next_field="phuong", khoi=("hoi_o", "dia_danh"))
-    assert viec == ("hoi_o", "phuong") and not bo
+    assert viec == ("hoi_dia_danh", None) and bo == {"hoi_o"}
     assert _v(pha="thu_thap", next_field="gia", khoi=("hoi_o", "dia_danh"))[0] == ("hoi_dia_danh", None)
 
 

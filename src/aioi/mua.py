@@ -964,13 +964,16 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
         return ("\nCĂN ĐANG RAO: khách chưa nêu đủ khu vực và ngân sách nên chưa tìm căn. Lượt này CHƯA giới thiệu căn nào và KHÔNG nói \"chưa có "
                 "căn\"; chỉ hỏi đúng câu thông tin ở trên, thật ngắn (xưng hô y như các lượt trước).\n")
     if not can:
-        return ("\nCĂN ĐANG RAO: chưa có căn nào khớp nhu cầu khách. KHÔNG giới thiệu căn nào, KHÔNG bịa căn; nói sẽ báo khi có căn phù hợp "
+        # AU-04 (Đợt 4, SRS-5.1zzzzzzz325): lời hứa báo lại thành DỮ KIỆN — vòng `bao_can_moi` thật sự nhắn khách khi có căn mới khớp (8–20 giờ,
+        # `buyers.bao_can_moi` mặc định bật), nên được nói; bản trước "nói sẽ báo" đụng "không hứa sẽ báo lại" của `khoi_viec_vua_ghi([])`.
+        return ("\nCĂN ĐANG RAO: chưa có căn nào khớp nhu cầu khách. KHÔNG giới thiệu căn nào, KHÔNG bịa căn. DỮ KIỆN: hệ thống tự nhắn khách khi "
+                "có căn mới khớp nhu cầu (trong 8–20 giờ) — được nói có căn phù hợp em nhắn liền, trừ khi khách đã bảo đừng báo "
                 "(xưng hô y như các lượt trước).\n")
     # SRS-5.1zzzzzzz212 (bắn thử 5 khách, anh M.: "căn nào đang có HĐ thuê thì gửi" → bot "em sẽ hỏi chủ nhà rồi báo lại" mà không có việc nào
     # được ghi): câu cũ dặn LUÔN hứa hỏi chủ nhà, đè lên `khoi_viec_vua_ghi([])` ("không hứa sẽ báo lại"). Lời hứa chỉ khi đã ghi việc thật.
     return ("\nCĂN ĐANG RAO (chỉ được giới thiệu các căn dưới đây; không đọc số nhà; thông tin không có ở dòng của căn thì KHÔNG đoán: nói thật "
             "tin chưa ghi thông tin đó. CHỈ nói đã chuyển câu hỏi cho chủ nhà khi phần \"EM VỪA GHI LƯỢT NÀY\" có việc chuyển câu đó; không có "
-            "thì hỏi khách có muốn em hỏi chủ của căn đang nói không — KHÔNG hứa sẽ báo lại). CÁCH NÓI — như người môi giới nhắn Zalo cho khách, từng tin ngắn, không như bảng liệt kê:\n"
+            "thì KHÔNG hứa sẽ hỏi chủ hay báo lại, và không hỏi lại khách có muốn em hỏi chủ không — AU-04). CÁCH NÓI — như người môi giới nhắn Zalo cho khách, từng tin ngắn, không như bảng liệt kê:\n"
             "  • Mã # CHỈ để ghi thao tác: KHÔNG nói mã ra lời, không viết dấu #. Không nói chữ \"rổ\".\n"
             "  • Mỗi lượt giới thiệu MỘT căn tốt nhất (khách đòi thêm mới đưa căn kế). Viết thành BỐN ĐOẠN, MỖI ĐOẠN cách nhau MỘT DÒNG TRỐNG — mỗi "
             "đoạn là một tin Zalo riêng. KHÔNG gạch đầu dòng, không dấu \"·\", không viết tắt \"P.\" \"Q.\" (viết \"phường\", \"quận\"):\n"
@@ -1048,7 +1051,7 @@ def khoi_viec_vua_ghi(viec: list[str]) -> str:
         # SRS-5.1zzzzzzz153: lượt không ghi gì thì cũng phải DẶN — bản trước im lặng nên model tự nói "em chuyển lịch cho chủ nhà rồi / giữ sẵn
         # lịch rồi" (ảnh chat chị N. 23/10) trong khi DB không có lịch hẹn nào, không ai được báo.
         return ("\nLƯỢT NÀY EM CHƯA GHI VIỆC GÌ lên hệ thống: TUYỆT ĐỐI KHÔNG nói đã chuyển / đã báo / đã giữ / đã xếp lịch, không nói chủ nhà hay "
-                "admin đã nhận được gì, không hứa sẽ báo lại. Khách muốn xem nhà mà còn thiếu căn nào hoặc ngày giờ nào thì hỏi đúng chỗ thiếu "
+                "admin đã nhận được gì, không hứa sẽ hỏi chủ nhà hay báo lại việc chưa ghi (dữ kiện tự nhắn khi có căn mới ở khối CĂN ĐANG RAO thì được nói). Khách muốn xem nhà mà còn thiếu căn nào hoặc ngày giờ nào thì hỏi đúng chỗ thiếu "
                 "bằng MỘT câu ngắn.\n")
     return ("\nEM VỪA GHI LƯỢT NÀY (nói đúng các việc này, không hứa thêm việc khác): " + "; ".join(viec) + ".\n"
             "Cả lượt tối đa MỘT câu hỏi: việc nào ở trên dặn hỏi thì câu đó THAY câu hỏi nhu cầu (SRS-5.1zzzzzzz253).\n")

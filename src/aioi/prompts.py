@@ -459,7 +459,8 @@ def _dien_tich_mo_ho(prop: Property, next_field: str | None) -> str | None:
     """Con số diện tích khách nói mà CHƯA rõ đất hay nhà, khi lượt này hỏi một trong hai ô đó (SRS-5.1zzzzzzz52; chuyển từ prompt cũ sang phiếu
     lượt ở Đợt 8, SRS-5.1zzzzzzz319). Con số đã khớp ô đất / nhà khách nói thì hết mơ hồ."""
     mo_ho = prop.fields.get("dien_tich")
-    if next_field not in ("dien_tich_dat", "dien_tich_nha") or not mo_ho:
+    # Q4 (chủ dự án 02/11/2026, SRS-5.1zzzzzzz325): hỏi xác nhận đất hay nhà tối đa MỘT lần mỗi căn — cờ `_dt_mo_ho_da_hoi` engine ghi ở lượt hỏi.
+    if next_field not in ("dien_tich_dat", "dien_tich_nha") or not mo_ho or prop.fields.get("_dt_mo_ho_da_hoi"):
         return None
     def _so(v: str | None) -> str | None:
         m = re.search(r"\d+(?:[.,]\d+)?", v or "")
@@ -483,6 +484,29 @@ def khoi_su_that_can(fields: dict, chu_nha: bool) -> str:
             f"- Tình trạng nhà: {'mới xây' if fields.get('_tinh_trang_nha') == 'moi_xay' else 'KHÔNG ghi nhà mới / mới xây / giữ gìn / sạch sẽ'}\n")
 
 
+# Đợt 4 (SRS-5.1zzzzzzz325): lượt có việc hỏi khác ưu tiên hơn ô kế (khối ưu tiên, hỏi tên đường / dự án / mặt tiền…) — engine thay việc hỏi ô bằng câu này.
+VIEC_THEO_KHOI = "làm đúng khối hệ thống bên dưới — câu hỏi (nếu có) của lượt là câu của khối đó; không hỏi thêm ô tin nào khác."
+
+
+def viec_phieu(prop: Property, next_field: str | None, hoi_lai: bool = False, o_bo_qua: str | None = None) -> str:
+    """Dòng việc hỏi ô của phiếu lượt (tách khỏi `build_phieu_luot` ở Đợt 4 để engine thay bằng `VIEC_THEO_KHOI` khi việc khác thắng)."""
+    mo_ho = _dien_tich_mo_ho(prop, next_field)
+    if mo_ho:
+        return f"khách đã nói diện tích {mo_ho} nhưng chưa rõ là diện tích ĐẤT hay diện tích NHÀ (nhà phố / biệt thự có hai diện tích khác nhau): hỏi lại đúng MỘT câu xem {mo_ho} đó là đất hay nhà."
+    if next_field:
+        goi_y = cau_hoi_o(next_field, prop)
+        viec = f'hỏi đúng MỘT ý: "{nhan_o(next_field, prop)}"' + (
+            f" ({goi_y})" if goi_y not in (nhan_o(next_field, prop), f"hỏi thêm {nhan_o(next_field, prop)}") else "") + "."
+        if hoi_lai:
+            viec += (" Ý này em đã hỏi lượt trước mà khách chưa trả lời: đổi cách hỏi, ngắn hơn hoặc gợi sẵn vài đáp án để chọn (giá, diện tích, "
+                     "con số thì không gợi số), không lặp câu cũ, không nhắc là đã hỏi.")
+        if o_bo_qua and o_bo_qua != next_field:
+            viec += f' Không hỏi lại "{nhan_o(o_bo_qua, prop)}" (hệ thống hỏi sau).'
+        return viec
+    return ("tin đã đủ để rao — chốt ngắn, ấm áp: tin đã lưu, có khách hỏi hay hẹn xem bên em báo ngay; không hỏi thêm, không gạ rao căn "
+            "khác, không hứa gọi điện hay hạn bán.")
+
+
 def build_phieu_luot(
     assistant_name: str,
     prop: Property,
@@ -494,31 +518,15 @@ def build_phieu_luot(
 ) -> str:
     """Phiếu lượt ngắn cho lượt THU THẬP của người bán (kế hoạch bước 2, SRS-5.1zzzzzzz309): giọng + vài luật cố định (cache) + dữ liệu căn + MỘT
     việc lượt này do code quyết. Đường DUY NHẤT của lượt thu thập từ Đợt 8 (SRS-5.1zzzzzzz319, prompt cũ `build_chat_system` đã xoá); luật nghiệp vụ còn lại nằm ở code / các
-    khối ưu tiên hệ thống thêm khi cần. `viec`: việc riêng do engine đặt (lượt ảnh sổ, SRS-5.1zzzzzzz318) thay việc hỏi ô."""
-    mo_ho = _dien_tich_mo_ho(prop, next_field)
-    if viec:
-        pass
-    elif mo_ho:
-        viec = f"khách đã nói diện tích {mo_ho} nhưng chưa rõ là diện tích ĐẤT hay diện tích NHÀ (nhà phố / biệt thự có hai diện tích khác nhau): hỏi lại đúng MỘT câu xem {mo_ho} đó là đất hay nhà."
-    elif next_field:
-        goi_y = cau_hoi_o(next_field, prop)
-        viec = f'hỏi đúng MỘT ý: "{nhan_o(next_field, prop)}"' + (
-            f" ({goi_y})" if goi_y not in (nhan_o(next_field, prop), f"hỏi thêm {nhan_o(next_field, prop)}") else "") + "."
-        if hoi_lai:
-            viec += (" Ý này em đã hỏi lượt trước mà khách chưa trả lời: đổi cách hỏi, ngắn hơn hoặc gợi sẵn vài đáp án để chọn (giá, diện tích, "
-                     "con số thì không gợi số), không lặp câu cũ, không nhắc là đã hỏi.")
-        if o_bo_qua and o_bo_qua != next_field:
-            viec += f' Không hỏi lại "{nhan_o(o_bo_qua, prop)}" (hệ thống hỏi sau).'
-    else:
-        viec = ("tin đã đủ để rao — chốt ngắn, ấm áp: tin đã lưu, có khách hỏi hay hẹn xem bên em báo ngay; không hỏi thêm, không gạ rao căn "
-                "khác, không hứa gọi điện hay hạn bán.")
+    khối ưu tiên hệ thống thêm khi cần. `viec`: việc riêng do engine đặt (lượt ảnh sổ SRS-5.1zzzzzzz318; dấu chỗ của việc hỏi ô, Đợt 4) thay việc hỏi ô."""
+    viec = viec or viec_phieu(prop, next_field, hoi_lai, o_bo_qua)
     return f"""Em là "{assistant_name}", trợ lý của AI Ơi Nhà Đất ({SITE_HOST}), đang nhắn Zalo với người gửi bán / cho thuê nhà.
 
 {GIONG_VUI}
 
 LUẬT CỐ ĐỊNH:
 - Ngắn, khoảng 30 từ: đáp đúng điều khách vừa nói, rồi làm {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
-- Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa.
+- Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ khi {NHAN_VIEC_LUOT} hay khối hệ thống bên dưới bảo hỏi xác nhận.
 - Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết, không nhận xét giá thị trường, không hứa bán được.
 - Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
 {TIN_HE_THONG}
@@ -1883,7 +1891,7 @@ PHÂN BIỆT Ý ĐỊNH KHÁCH ("user_intent") BẰNG TOÀN BỘ NGỮ CẢNH (S
   không em", "9h nhé" đáp lại lời hẹn xem) là "buy" dù trước đó họ từng gửi bán.
 - "unknown": Chào hỏi chung, hỏi phí, hỏi công ty mà chưa rõ họ muốn bán hay mua.
 - "hoi_ngoai_viec" (25/10/2026, SRS-5.1zzzzzzz177): khách hỏi / kể việc KHÔNG thuộc mua bán / thuê nhà đất (đồng hồ nước, điện, phí quản lý
-  khu dân cư, hành chính, chuyện riêng, hỏi nhầm công ty khác…) và CHƯA tỏ ý gửi bán hay tìm mua → hoi_ngoai_viec = NGUYÊN VĂN câu đó,
+  khu dân cư, hành chính, chuyện riêng, hỏi nhầm công ty khác…) và CHƯA tỏ ý gửi bán hay tìm mua → hoi_ngoai_viec = tóm ngắn ý câu đó (đọc theo nghĩa, Q5 02/11/2026),
   user_intent = "unknown", operations RỖNG — KHÔNG ghi ô nào từ câu đó, kể cả địa chỉ / tên khu khách nêu để hỏi việc khác (chat thử 24/10:
   cư dân hỏi "đồng hồ nước trước cổng ngày nào cắt" bị hỏi địa chỉ rồi thành tin rao). Câu hỏi pháp lý / thủ tục nhà đất → hoi_phap_ly,
   không phải mục này. Khách đã nói rõ bán / mua rồi mới hỏi việc khác → bỏ trống.
@@ -2291,13 +2299,13 @@ def operations_schema() -> dict[str, Any]:
             "xung_ho_trich_dan": {"type": "string", "description": "Nguyên văn cụm chứa chữ khách tự xưng / gọi bot (bắt buộc khi có xung_ho)."},
             "bot_vua_hoi": {"type": "array", "items": {"type": "string"},
                             "description": "Khoá các ô mà tin GẦN NHẤT của bot thật sự hỏi khách (vd [\"phuong\"]). Không hỏi ô nào → []."},
-            "xin_xem_ban_ve": {"type": "string", "description": "Nguyên văn cụm khách xin xem / xin gửi bản vẽ, mặt bằng (bản "
+            "xin_xem_ban_ve": {"type": "string", "description": "Tóm ngắn ý khách xin xem / xin gửi bản vẽ, mặt bằng (bản "
                                "vẽ), sơ đồ, phối cảnh, layout, brochure. Không xin thì bỏ trống."},
             "ban_do_du_an": {"type": "boolean", "description": "Có xin_xem_ban_ve VÀ thứ khách xin là bản đồ / phân lô / quy "
                              "hoạch / mặt bằng tổng thể của cả dự án (không phải bản vẽ một căn)."},
-            "cau_hoi_du_an": {"type": "string", "description": "Nguyên văn câu khách HỎI thông tin dự án / mẫu nhà / lô / gói. "
+            "cau_hoi_du_an": {"type": "string", "description": "Tóm ngắn câu khách HỎI thông tin dự án / mẫu nhà / lô / gói. "
                               "Khách kể thông tin căn của mình thì bỏ trống."},
-            "mo_ta_du_an": {"type": "string", "description": "Nguyên văn cụm khách TẢ kiến thức chung của dự án / mẫu nhà. "
+            "mo_ta_du_an": {"type": "string", "description": "Tóm ngắn điều khách TẢ về kiến thức chung của dự án / mẫu nhà. "
                             "Không có thì bỏ trống."},
             "can_nguoi_that": {"type": "string", "description": "Câu ngắn tóm ý khách XIN nói chuyện / gặp / gọi điện với người "
                                "thật (nhân viên, quản lý). Không xin thì bỏ trống."},
@@ -2320,7 +2328,7 @@ def operations_schema() -> dict[str, Any]:
                              "Khách không chấm thì bỏ trống."},
             "danh_gia_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách chấm (bắt buộc khi có danh_gia_sao)."},
             "xong_viec_mua": {"type": "string", "description": "KHÁCH MUA cho biết đã nhận đủ thông tin căn, không cần hỏi thêm (vd "
-                              "\"ok cảm ơn em, vậy đủ rồi\", \"để anh sắp xếp đi xem\"): chép NGUYÊN VĂN cụm đó. Khách còn hỏi "
+                              "\"ok cảm ơn em, vậy đủ rồi\", \"để anh sắp xếp đi xem\"): tóm ngắn ý đó (đọc theo nghĩa, không cần chép nguyên văn). Khách còn hỏi "
                               "hay đang là người bán thì bỏ trống."},
             "mua": {
                 "type": "object",
@@ -2351,7 +2359,7 @@ def operations_schema() -> dict[str, Any]:
                 "description": "Người rao vừa trả lời một câu khách mua hỏi.",
             },
             "con_ban": {"type": "boolean", "description": "Người rao xác nhận căn VẪN CÒN bán / cho thuê khi bot vừa hỏi (xem CĂN CÒN BÁN)."},
-            "hoi_ngoai_viec": {"type": "string", "description": "Nguyên văn câu khách hỏi / kể việc ngoài mua bán, thuê nhà đất khi chưa "
+            "hoi_ngoai_viec": {"type": "string", "description": "Tóm ngắn việc khách hỏi / kể ngoài mua bán, thuê nhà đất khi chưa "
                                "tỏ ý bán hay mua (đồng hồ nước, điện, hành chính khu dân cư…). Không có thì bỏ trống."},
             "user_intent": {
                 "type": "string",

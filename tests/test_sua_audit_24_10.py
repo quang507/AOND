@@ -39,11 +39,15 @@ def test_khach_da_to_y_ban_thi_hoi_viec_khac_van_ghi_o():
     assert not any("KHÁCH HỎI VIỆC NGOÀI NHÀ ĐẤT" in s for s in ai.system)
 
 
-def test_cum_trich_ngoai_viec_bia_thi_bo():
+def test_ngoai_viec_nhan_theo_y_ai_doc_khong_doi_nguyen_van():
+    """Q5 (chủ dự án 02/11/2026, SRS-5.1zzzzzzz325): hoi_ngoai_viec là việc bot tự giao — nhận theo ý AI đọc (tóm ý), không đòi cụm nguyên văn.
+    Bản trước (SRS-177) bỏ khi cụm không nằm trong lời khách, nên AI tóm ý ("hỏi lịch cắt đồng hồ nước") bị rơi."""
     kho = KhoGia()
-    eng, _ = _engine(kho, NGOAI)
-    eng.handle("nv-3", "Địa chỉ 198 Trương Đình Hội ạ")
-    assert eng.conversation("nv-3").so_luot_ngoai_viec == 0
+    for cau in ("Bên điện lực bao giờ tới gắn lại công tơ vậy em", "chỗ em cúp nước mấy hôm rồi, ai xử lý vậy"):   # cách nói mới, gián tiếp
+        eng, _ = _engine(kho, {**NGOAI, "hoi_ngoai_viec": "hỏi lịch điện / nước của khu"})
+        eng.handle("nv-3", cau)
+        conv = eng.conversation("nv-3")
+        assert conv.so_luot_ngoai_viec == 1 and not conv.prop.fields.get("dia_chi"), cau
 
 
 class _Kho(SupabaseConversationStore):
