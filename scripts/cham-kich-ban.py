@@ -90,7 +90,13 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
     with tempfile.TemporaryDirectory(prefix="cham-") as d:
         eng = Engine(p, conversation_store=SqliteConversationStore(os.path.join(d, "kb.db")))
         key = f"thu-cham-{kb['id']}"
-        for c in kb["cau"]:
+        # SRS-5.1zzzzzzz340 (kiểm độc lập): kịch bản khai `so` = số Zalo khách nhắn — một chuỗi cho cả cuộc chat, hoặc danh sách
+        # song song với `cau` ("tu_van" / "" ) để dựng ca khách đổi số giữa cuộc. Không khai = như cũ (số ký gửi).
+        so_moi_luot = kb.get("so")
+        for i_luot, c in enumerate(kb["cau"]):
+            if so_moi_luot is not None:
+                so = so_moi_luot[i_luot] if isinstance(so_moi_luot, list) else so_moi_luot
+                eng.conversation(key).so_nhan = str(so or "")
             truoc = {k: v for k, v in eng.conversation(key).prop.fields.items() if isinstance(v, str) and v and not k.startswith("_")}
             try:
                 r = eng.handle(key, c)
