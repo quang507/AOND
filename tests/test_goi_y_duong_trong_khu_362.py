@@ -33,4 +33,4 @@ def test_da_biet_quan_thi_chi_goi_y_duong_trong_quan():
     assert t.duong("quach dieu", "Huyện Bình Chánh") is None
     assert "Quách Đình Bảo" not in khoi_dia_danh(t, {"duong": "quach dieu", "quan": "Huyện Bình Chánh"}, "gia")
     t2 = _tra({"quach dieu": [{"ten": "Quách Điêu", "khoang_cach": 1, "quan_cu": ["Huyện Bình Chánh"], "phuong": ["Xã Vĩnh Lộc"]}]}, {})
-    assert '"Quách Điêu"' in khoi_dia_danh(t2, {"duong": "quach dieu", "quan": "Huyện Bình Chánh"}, "gia")   # cùng huyện thì vẫn gợi ý
+    assert t2.duong("quach dieu", "Huyện Bình Chánh")["ten"] == "Quách Điêu"   # cùng huyện thì ra tên (SRS-366: hệ thống tự áp, không hỏi)

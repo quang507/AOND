@@ -504,7 +504,6 @@ def _dong_dien_tich(fields: dict) -> str:
 # "Tin đang 73/100" thay vì hỏi mặt tiền — 5 lượt lộ luật).
 _VIEC_KHOI = {
     "hoi_du_an": 'hỏi xác nhận MỘT câu theo khối "DỰ ÁN GỢI Ý" bên dưới: căn có thuộc dự án đó không.',
-    "hoi_dia_danh": 'hỏi xác nhận tên đường theo khối "TRA CỨU ĐỊA DANH" bên dưới.',
     "hoi_gia_tin_moi": 'báo khách em lên cả hai tin và hỏi giá của tin mới theo khối "HỆ THỐNG VỪA MỞ THÊM MỘT TIN" bên dưới.',
     "hoi_can_nao": "hỏi khách đang nói căn nào trong các căn khách đã gửi (hệ thống chưa đổi căn nào).",
     "hoi_trung_ten": 'hỏi đúng câu của khối "ƯU TIÊN LƯỢT NÀY — HỎI TÊN DỰ ÁN" bên dưới.',
@@ -1760,8 +1759,8 @@ def property_field_props() -> dict[str, Any]:
     properties["duong"] = {
         "type": "string",
         "description": "Tên đường khách nêu (không số nhà, không 'hẻm'/'mặt tiền', không phường/quận). Khách gõ KHÔNG DẤU ('duong ma lo', "
-        "'nha mat tien le van sy') vẫn là tên đường — ghi đúng chữ khách gõ, không tự thêm dấu (hệ thống tra kho đường, tên khớp nhiều đường "
-        "thì hỏi lại khách, SRS-5.1zzzzzzz274). Chưa nêu thì bỏ trống.",
+        "'nha mat tien le van sy') vẫn là tên đường — ghi đúng chữ khách gõ, không tự thêm dấu (hệ thống tra kho đường và tự áp tên chuẩn, "
+        "SRS-5.1zzzzzzz274 / 366). Chưa nêu thì bỏ trống.",
     }
     properties["phuong"] = {
         "type": "string",

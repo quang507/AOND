@@ -53,6 +53,7 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 - Số nhà / hẻm cụ thể → tra phường TRƯỚC (`engine._phuong_tu_dia_chi`): bản đồ (`TraDiaDanh.phuong_theo_so_nha`, rpc `tra_nominatim`) chỉ nhận khi ra ĐÚNG số nhà + đúng đường và phường nằm trong kho đường / hẻm — đừng nới sang kết quả mức đường; không ra thì kho hẻm một phường; vẫn không ra mới hỏi (SRS-236).
 - Phường hỏi tối đa 2 lần rồi báo admin MỘT lần mỗi căn (`_phuong_bao_admin`); khối "Kho hẻm" chỉ vào lượt hệ thống hỏi phường (SRS-228). Địa chỉ chỉ có tên đường (không "/", hẻm, ngõ) → `lo_gioi_hem = "Mặt tiền"` (SRS-157).
 - Tên đường khớp ngang nhau nhiều đường (bỏ dấu: Mã Lò / Mã Lộ) → gõ đúng dấu thì nhận tên đó, không thì kể các tên cho khách chọn (`TraDiaDanh.ung_vien_duong`, SRS-270 / 271).
+- Tên đường: KHÔNG hỏi khách xác nhận (chủ dự án 02/11, SRS-366) — `Engine._chuan_dia_danh` áp tên kho trong khu khách nói (`TraDiaDanh.duong`, đường quận khác bị loại SRS-362), không ra thì giữ chữ khách; chỉ hỏi khi khách CHƯA nói đường.
 - Từ điển tên đường bảng `duong` nạp bằng `node scripts/nap-duong.mjs`, không ghi tay; toạ độ tin tra `duong` trước Nominatim (SRS-224).
 
 **Hỏi & bản nháp (phía bán)**

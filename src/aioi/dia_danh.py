@@ -351,9 +351,9 @@ class TraDiaDanh:
         return tra_xa(self._kho_xa[1], ten)
 
     def ung_vien_duong(self, ten: str | None, quan: str | None = None) -> list[str]:
-        """SRS-5.1zzzzzzz271 (chủ dự án 29/10: "khách gõ sai tên mà ra 2 đường thì hỏi lại là mã lò hay mã lộ"): tên khách gõ khớp NGANG
-        NHAU ≥ 2 đường trong kho (vd "ma lo" → Mã Lò / Mã Lộ) nên `duong()` không chọn → các tên đó kèm quận cũ ("Mã Lò (Quận Bình Tân)")
-        để bot hỏi khách là đường nào. Chọn được một tên / không khớp → []."""
+        """Tên khách gõ khớp NGANG NHAU ≥ 2 đường trong kho (vd "ma lo" → Mã Lò / Mã Lộ) nên `duong()` không chọn → các tên đó kèm quận
+        cũ ("Mã Lò (Quận Bình Tân)"). Chọn được một tên / không khớp → []. Từ SRS-5.1zzzzzzz366 không dùng để hỏi khách (chủ dự án 02/11:
+        "không hỏi lại tên đường nữa") — chỉ để ô duong giữ chữ khách gõ khi chưa biết khu (`Engine._duong_chu_khach`)."""
         if self.duong(ten, quan) is not None:
             return []
         return list(self._nhap_nhang.get(((ten or "").strip().lower(), quan), []))
@@ -601,45 +601,20 @@ def nhung_gemini(khoa: list[str], han_giay: float = 2.5) -> Callable[[str], list
     return nhung
 
 
-def _goi_y(tra: TraDiaDanh | None, fields: dict[str, str]) -> dict | None:
-    """Tên đường khách gõ chưa khớp đúng kho mà gần MỘT tên trong kho ("trần ninh trọng" → Trần Bình Trọng)."""
-    if tra is None or not fields.get("duong"):
-        return None
-    d = tra.duong(fields.get("duong"), fields.get("quan"))
-    return d if d and not d["chac"] and d["ten"] != fields.get("duong") else None
-
-
-def goi_y_duong(tra: TraDiaDanh | None, fields: dict[str, str]) -> str:
-    """Dòng cho lượt AI lập thao tác: khách xác nhận tên kho gợi ý (hay tự sửa) thì AI ghi lại ô duong / dia_chi theo lời khách."""
-    uv = tra.ung_vien_duong(fields.get("duong"), fields.get("quan")) if tra is not None and fields.get("duong") else []
-    if uv:   # SRS-5.1zzzzzzz271
-        return (f'TÊN ĐƯỜNG NHIỀU KHẢ NĂNG: ô duong đang ghi "{fields["duong"]}", kho có {" / ".join(uv)} (bot đã / sẽ hỏi khách là '
-                "đường nào). Khách chọn / nói rõ một tên (kể cả chỉ nói quận) → ghi duong = đúng tên kho đó (có dấu, bỏ phần ngoặc) và "
-                "sửa tên đường trong dia_chi cho khớp; khách không nhắc tới → không đổi.\n")
-    d = _goi_y(tra, fields)
-    if not d:
-        return ""
-    return (f'TÊN ĐƯỜNG CHƯA KHỚP KHO: ô duong đang ghi "{fields["duong"]}", kho đường có "{d["ten"]}" (bot đã / sẽ hỏi xác nhận). '
-            f'Khách xác nhận đúng là {d["ten"]} (vd "đúng rồi", "ừ", "phải") → ghi duong = "{d["ten"]}" và sửa tên đường trong '
-            "dia_chi cho khớp; khách nói tên khác → ghi theo lời khách; khách không nhắc tới → không đổi.\n")
-
-
 def phuong_kho_hem(tra: TraDiaDanh | None, fields: dict[str, str]) -> list[str]:
     """SRS-5.1zzzzzzz115: số hẻm trong địa chỉ thu hẹp phường — chủ dự án 21/10 "họ nói 137/28 đường số 59 con bot có hiểu ko"
     (Đường số 59 qua 7 phường, hẻm 137 của nó chỉ ở An Hội Tây). Chưa có phường thì gợi ý ở MỌI lượt (cả lượt tin rao đầu) và
     thay cho gợi ý theo đường; luôn ở dạng HỎI — kho hẻm từ OSM có thể thiếu / lệch. Engine dùng cùng danh sách để kiểm lời bot."""
-    if tra is None or not fields.get("duong") or fields.get("phuong") or _goi_y(tra, fields):
+    if tra is None or not fields.get("duong") or fields.get("phuong"):
         return []
     d = tra.duong(fields.get("duong"), fields.get("quan"))
     return tra.phuong_theo_hem(fields.get("dia_chi"), d["ten"] if d else fields.get("duong"), fields.get("quan"),
                                fields.get("_duong_vao") in ("hem", "hem_xe_hoi") or "/" in (fields.get("dia_chi") or ""))   # SRS-5.1zzzzzzz320
 
 
-def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: str | None, hoi_duong: bool = True) -> str:
-    """Khối cho prompt trả lời: tên đường khách gõ gần với đường nào trong kho (hỏi xác nhận, lượt nào cũng được — không chỉ lúc
-    hỏi địa chỉ); dữ kiện xã / phường mới do hệ thống tra (không hỏi khách phường — SRS-5.1zzzzzzz359).
-    `hoi_duong=False`: bỏ hai dòng HỎI xác nhận tên đường, giữ dữ kiện (Đợt 4, SRS-5.1zzzzzzz328 — engine gỡ câu hỏi đường khi lượt có việc
-    hỏi khác ưu tiên hơn, dữ kiện xã / phường mới vẫn vào prompt)."""
+def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: str | None) -> str:
+    """Khối DỮ KIỆN cho prompt trả lời: xã / phường mới do hệ thống tra (không hỏi khách phường — SRS-5.1zzzzzzz359). Không có dòng hỏi
+    nào: tên đường hệ thống tự áp tên kho (`Engine._chuan_dia_danh`, SRS-5.1zzzzzzz366), không hỏi khách xác nhận."""
     if tra is None:
         return ""
     dong: list[str] = []
@@ -670,20 +645,8 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
         dong.append(f'Khách nói phường "{fields.get("phuong")}" — tên TRƯỚC sáp nhập; từ 01/07/2025 nay là {mot} (hệ thống tra, chỉ về MỘT phường '
                     f'nên chắc chắn). Khi nói với khách và trong bản tin dùng tên MỚI "{mot}" (được kèm "{fields.get("phuong")} cũ" trong ngoặc); báo khách '
                     "đúng MỘT lần, câu ngắn, ở lượt đầu nhắc tới phường — lượt sau không nhắc lại; KHÔNG hỏi lại phường.")
-    if not fields.get("duong"):
-        return ("\n\nTRA CỨU ĐỊA DANH (hệ thống tra kho đường / phường, KHÔNG phải khách nói; không tự chọn thay khách):\n- " + "\n- ".join(dong)) if dong else ""
-    goi_y = _goi_y(tra, fields)
-    if goi_y and hoi_duong:
-        dong.append(f'Tên đường khách gõ "{fields["duong"]}" gần với đường "{goi_y["ten"]}" trong kho, kho không có tên khách gõ. '
-                    f'Lượt này hỏi khéo xác nhận có phải đường "{goi_y["ten"]}" không TRƯỚC, thay cho câu hỏi kế (theo đúng cách xưng '
-                    "hô lượt này), không nhắc chữ khách gõ sai. Trong hội thoại khách đã trả lời giữ tên của mình thì thôi, không hỏi lại.")
-    uv = [] if goi_y else tra.ung_vien_duong(fields.get("duong"), fields.get("quan"))
-    if uv and hoi_duong:
-        # SRS-5.1zzzzzzz271 (chủ dự án 29/10: "khách gõ sai tên mà ra 2 đường thì hỏi lại là mã lò hay mã lộ"): tên khách gõ khớp ngang nhau
-        # nhiều đường — chưa biết đường nào thì cũng chưa tra được phường / quận.
-        dong.append(f'Tên đường khách gõ "{fields["duong"]}" khớp NHIỀU đường trong kho: {" / ".join(uv)}. Lượt này hỏi khéo khách là '
-                    "đường nào TRƯỚC (kể các tên trên kèm quận cũ cho khách chọn), thay cho câu hỏi kế; khách đã chọn trong hội thoại thì "
-                    "thôi, không hỏi lại. KHÔNG tự chọn thay khách.")
+    # SRS-5.1zzzzzzz366 (chủ dự án 02/11: "không hỏi lại tên đường nữa, tự áp tên vào"): bỏ hai dòng HỎI xác nhận tên đường (SRS-61
+    # gần một tên kho, SRS-271 khớp nhiều tên) — engine tự áp tên kho trong khu khách nói, không ra thì giữ chữ khách.
     # SRS-5.1zzzzzzz359: bỏ hai dòng "Kho hẻm / Kho đường" đưa danh sách phường cho khách chọn (SRS-115 / 228) — phường do hệ
     # thống tự tra (`Engine._phuong_tu_dia_chi`), không còn lượt nào hỏi phường.
     if not dong:

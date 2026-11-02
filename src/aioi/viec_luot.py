@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 # Khối mà engine ghép vào prompt kèm lời dặn HỎI khách (mỗi khối tự nhận là câu hỏi của lượt). Hai khối trở lên cùng bật = lệch.
-KHOI_HOI = frozenset({"hoi_trung_ten", "chua_ro_can", "tach_ban_thue", "dia_danh", "hoi_du_an", "mat_tien", "hoi_coc", "hoi_sau_dang",
+KHOI_HOI = frozenset({"hoi_trung_ten", "chua_ro_can", "tach_ban_thue", "hoi_du_an", "mat_tien", "hoi_coc", "hoi_sau_dang",
                       "xin_sao", "hoi_o"})
 
 
@@ -44,7 +44,7 @@ def viec_luot(t: TrangThaiLuot) -> Viec:
 
 
 # Khối mà một việc dùng lại (không tính là lệch): việc "hoi_o" của ô giá khi vừa tách bán / thuê là chính khối tach_ban_thue.
-_KHOI_CUA = {"hoi_dia_danh": {"dia_danh"}, "hoi_du_an": {"hoi_du_an"}, "xac_nhan_mat_tien": {"mat_tien"}, "hoi_can_nao": {"chua_ro_can"},
+_KHOI_CUA = {"hoi_du_an": {"hoi_du_an"}, "xac_nhan_mat_tien": {"mat_tien"}, "hoi_can_nao": {"chua_ro_can"},
              "hoi_trung_ten": {"hoi_trung_ten"}, "hoi_coc": {"hoi_coc"}, "hoi_sau_dang": {"hoi_sau_dang"}, "xin_sao": {"xin_sao"},
              "hoi_gia_tin_moi": {"tach_ban_thue"}}
 
@@ -88,8 +88,6 @@ def _chon(t: TrangThaiLuot, k: set[str]) -> Viec:
     # thu thập
     if "tach_ban_thue" in k:
         return Viec("hoi_gia_tin_moi")
-    if "dia_danh" in k:   # khối "dia_danh" chỉ bật khi hỏi xác nhận TÊN ĐƯỜNG (dữ kiện phường / xã đi riêng, không phải câu hỏi) — hỏi đường TRƯỚC
-        return Viec("hoi_dia_danh")
     if "hoi_du_an" in k:
         return Viec("hoi_du_an")
     if "mat_tien" in k:
