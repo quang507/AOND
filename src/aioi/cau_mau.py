@@ -79,12 +79,12 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                     "KHÔNG xóa dữ liệu đâu — chỉ ẩn tin, rao lại lúc nào cũng được.)",
                     "Khách bảo gỡ / ẩn căn — hỏi xác nhận trước. {viec} = việc sắp làm (vd \"NGƯNG RAO căn A12\")",
                     "Hỏi trước khi ẩn"),
-    "da_an_het": ("Em đã NGƯNG RAO toàn bộ rổ hàng ạ — các tin giờ ở trạng thái **không rao** (em vẫn giữ nguyên dữ liệu, {goi} muốn "
+    "da_an_het": ("Em đã NGƯNG RAO toàn bộ các tin của {goi} ạ — các tin giờ ở trạng thái **không rao** (em vẫn giữ nguyên dữ liệu, {goi} muốn "
                   "rao lại căn nào cứ nhắn em). 🙈", "Khách đồng ý ẩn hết", "Hỏi trước khi ẩn"),
     "da_an_bot": ("Em đã cập nhật — giờ còn **{n} căn đang rao** ạ. Các căn kia em chuyển sang **không rao** (vẫn giữ dữ liệu, rao lại "
                   "được bất cứ lúc nào nha). ✅", "Khách đồng ý ẩn bớt / chỉ giữ vài căn. {n} = số căn còn rao", "Hỏi trước khi ẩn"),
-    "da_cap_nhat_ro": ("Em đã cập nhật rổ hàng rồi ạ.", "Khách đồng ý, việc khác ngoài ẩn", "Hỏi trước khi ẩn"),
-    "giu_nguyen_ro": ("Em giữ nguyên rổ hàng, không xóa gì đâu ạ 👍", "Khách không đồng ý ẩn", "Hỏi trước khi ẩn"),
+    "da_cap_nhat_ro": ("Em đã cập nhật các tin rồi ạ.", "Khách đồng ý, việc khác ngoài ẩn", "Hỏi trước khi ẩn"),
+    "giu_nguyen_ro": ("Em giữ nguyên các tin, không xóa gì đâu ạ 👍", "Khách không đồng ý ẩn", "Hỏi trước khi ẩn"),
     "file_qua_lon": ("File to quá ạ (>20MB), xin lỗi em chưa xử lý được 😔. Em đã báo admin rồi ạ — {goi} không cần làm gì thêm đâu. "
                      "Admin của em sẽ vào chat này đọc file / link rồi xử lý sau nhé!",
                      "Khách gửi file / ảnh quá 20 MB — đã báo admin", "Nhận tệp"),
@@ -94,12 +94,12 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                            "Khách gửi link ảnh / tệp không tải được", "Nhận tệp"),
     "link_web_trong": ("Em mở link nhưng chưa đọc được nội dung ạ 😅. {Goi} gửi link khác, hoặc dán nội dung giúp em nhé.",
                        "Khách gửi link trang web mà trang trống", "Nhận tệp"),
-    "nhap_bang_tinh": ("Em nhận được bảng tính rồi, đã nhập {n} căn vào rổ hàng ạ! 🎉 {Goi} xem lại giúp em nhé.",
+    "nhap_bang_tinh": ("Em nhận được bảng tính rồi, đã nhập {n} căn vào danh sách tin ạ! 🎉 {Goi} xem lại giúp em nhé.",
                        "Khách gửi link bảng tính (rổ hàng). {n} = số căn đã nhập", "Nhận tệp"),
     "bang_tinh_trong": ("Em có nhận bảng tính nhưng chưa đọc ra căn nào — {goi} kiểm tra lại các cột (loại hình, địa chỉ, diện tích, "
                         "giá...) giúp em nhé.", "Bảng tính không đọc ra căn nào", "Nhận tệp"),
     "chua_co_ban_ve": ("Em CHƯA có bản vẽ/mặt bằng {can} ạ 😅. {Goi} có file bản vẽ thì gửi giúp em, em gắn vào tin ngay nhé! "
-                       "(Em không đụng gì tới rổ hàng đâu ạ.)",
+                       "(Các tin đang rao em giữ nguyên ạ.)",
                        "Khách xin bản vẽ / mặt bằng mà chưa có. {can} = căn đang nói (vd \"căn A12 (mẫu Fusion)\"). 27/10 (SRS-216): bỏ \"để em xin bên "
                        "dự án rồi gửi lại\" — không có đường nào xin; bản vẽ admin nạp vào kho dự án thì bot tự gửi như ảnh dự án", "Bản vẽ · SRS-5.1zzzzzzz216"),
     "nhac_hoi_lai": ("{Goi} ơi, {toi} hỏi lại chút nha: {hoi}",
