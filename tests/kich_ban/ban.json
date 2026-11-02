@@ -485,7 +485,7 @@
   },
   {
    "id": "hai_can_da_ban",
-   "mo_ta": "Rổ hai căn, khách báo 'căn đó bán rồi' chưa rõ căn nào → hỏi lại căn nào (SRS-307: dữ liệu rổ qua công cụ ro_hang) · SRS-342: phép \"đã đổi trạng thái\" chuyển từ regex (không đọc được phủ định: \"em chưa đổi gì\" bị tính là phạm) sang giám khảo đọc nghĩa",
+   "mo_ta": "Rổ hai căn, khách báo 'căn đó bán rồi' chưa rõ căn nào → hỏi lại căn nào (SRS-307: dữ liệu rổ qua công cụ ro_hang) · SRS-342: phép \"đã đổi trạng thái\" chuyển từ regex (không đọc được phủ định: \"em chưa đổi gì\" bị tính là phạm) sang giám khảo đọc nghĩa · SRS-350: phép \"hỏi lại căn nào\" cũng chuyển sang giám khảo — regex /căn nào|hay căn/ đánh oan câu hỏi lại đúng nghĩa mà dùng chữ khác (\"hay nhà mặt tiền Phạm Hùng\")",
    "cau": [
     "anh có 2 căn cần bán: căn 1 nhà hẻm đường Bùi Minh Trực quận 8 giá 5 tỷ, căn 2 nhà mặt tiền đường Phạm Hùng quận 8 giá 12 tỷ",
     "à căn đó anh bán được rồi em nhé"
@@ -493,9 +493,7 @@
    "kiem": {
     "so_can": 2,
     "trang_thai": "đang bán",
-    "luot": {
-     "2": "căn nào|hay căn"
-    },
+    "khong_tu_chon_can": true,
     "khong_da_doi": true
    }
   },
