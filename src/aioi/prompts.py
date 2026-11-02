@@ -288,7 +288,7 @@ BUSINESS_CONTEXT = f"""BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ 
   • CHỦ ĐẦU TƯ: phí KHÔNG theo {PT_CHU}/{PT_MG} — thoả thuận riêng với dự án; đừng tự báo con số.
 {CHINH_SACH_PHI}
 - PHÍ CHỈ thu khi giao dịch THÀNH CÔNG. TUYỆT ĐỐI không bịa con số phí/ưu đãi/cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì nêu cả hai mức (chủ nhà {PT_CHU}, môi giới {PT_MG}) hoặc hỏi khách là chủ nhà hay môi giới.
-- Gamification: có Điểm uy tín và hạng Đồng/Bạc/Vàng — số THẬT nằm ở khối "ĐIỂM TIN" cuối prompt (hệ thống tính); chỉ nói số trong khối đó, gợi ý cách tăng điểm theo ô còn thiếu ghi ở đó (ảnh, sổ hồng, thông tin còn thiếu)."""
+- Gamification: điểm …/100 của TIN và hạng Đồng/Bạc/Vàng của NGƯỜI RAO — số THẬT nằm ở khối "ĐIỂM TIN" cuối prompt (hệ thống tính), khối chỉ có ở lượt ra tin hoặc khi khách hỏi điểm; lượt không có khối thì KHÔNG nhắc điểm / hạng (chủ dự án 02/11)."""
 
 
 def muc_phi(role: SellerRole, thue: bool) -> str | None:
@@ -750,7 +750,8 @@ def khoi_diem_tin(diem_tin: float, hang: str, diem_nguoi: float, thieu: list[str
         "\n\n=== ĐIỂM TIN (hệ thống tính, số THẬT — chỉ nói số ở đây, không tự đặt số khác) ===\n"
         f"Tin này: {diem_tin:.0f}/100. Người rao: hạng {hang} ({diem_nguoi:.0f}/100). Ảnh đã nhận: {so_anh} tấm.\n"
         f"Để tăng điểm: {cach}.\n"
-        "Chỉ nhắc điểm / hạng khi khách hỏi, hoặc một câu ngắn khi khích lệ gửi thêm thông tin — không nhắc mỗi lượt, không hứa lên Top.\n"
+        "Khối này chỉ có ở lượt ra tin (bản nháp / báo tin đã lên) hoặc khi khách hỏi điểm — nói gọn điểm tin, hạng người rao và cách tăng điểm, "
+        "không hứa lên Top.\n"
         "Gọi đúng chữ (chủ dự án 02/11, SRS-5.1zzzzzzz336): điểm …/100 là điểm của TIN / CĂN; Đồng / Bạc / Vàng là hạng của NGƯỜI RAO — "
         "không gọi điểm tin là hạng, không gọi hạng là điểm.\n"
     )
@@ -2343,10 +2344,10 @@ def operations_schema() -> dict[str, Any]:
             },
             "hoi_ve": {
                 "type": "string",
-                "enum": ["phi", "uy_tin", "link_web", "tinh_hinh_ban", "dinh_gia"],
+                "enum": ["phi", "uy_tin", "link_web", "tinh_hinh_ban", "dinh_gia", "diem_tin"],
                 "description": "Khách vừa hỏi về: phi = phí / hoa hồng của bên mình, hoặc chính sách gửi bán (bớt phí, hợp đồng môi giới, độc quyền, chia hoa hồng); uy_tin = công ty / uy tín / lừa đảo; "
                 "link_web = link tin / xem tin trên web; tinh_hinh_ban = chủ nhà hỏi đã có ai hỏi / quan tâm / xem căn mình chưa, "
-                "bán tới đâu; dinh_gia = chủ nhà hỏi giá mình đưa cao hay thấp, giá thị trường khu đó bao nhiêu. Không hỏi những điều "
+                "bán tới đâu; diem_tin = khách hỏi điểm của tin, hạng người rao hay chuyện lên Top; dinh_gia = chủ nhà hỏi giá mình đưa cao hay thấp, giá thị trường khu đó bao nhiêu. Không hỏi những điều "
                 "đó thì bỏ trống.",
             },
             "hoi_phap_ly": {"type": "string", "enum": list(phap_ly.KHOA) + [phap_ly.KHAC],

@@ -19,7 +19,7 @@ class TrangThaiLuot:
     pha: str
     next_field: str | None = None
     khoi: tuple[str, ...] = ()
-    hoi_ve: str | None = None          # phi | uy_tin | link_web | tinh_hinh_ban | dinh_gia (AI đọc theo nghĩa)
+    hoi_ve: str | None = None          # phi | uy_tin | link_web | tinh_hinh_ban | dinh_gia | diem_tin (AI đọc theo nghĩa)
     muon_dang: bool = False            # khách bảo đăng / rao (lại) — nghĩa cụ thể do trạng thái quyết
     thieu_toi_thieu: bool = False      # chưa đủ ô tối thiểu để ra bản nháp (loại · vị trí · giá)
     da_co_nhap: bool = False           # đã trình bản nháp 📋

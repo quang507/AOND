@@ -3015,7 +3015,7 @@ class Engine:
                         f_tin.pop("_phuong_chia_da_hoi", None)
                 viec_o = _hoi("hoi_o", viec_txt, "", _hoan_hoi_o)   # khi bị gỡ: việc của khối thắng (`viec_theo_khoi`, điền sau khi chọn)
             system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua, viec=viec_o)
-            system += khoi_xin_dang(toi_thieu, conv.prop) + self._khoi_diem_tin(conv, now)
+            system += khoi_xin_dang(toi_thieu, conv.prop)   # lượt hỏi ô: KHÔNG có khối ĐIỂM TIN (chủ dự án 02/11, SRS-5.1zzzzzzz336)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
             trinh_nhap = True
@@ -3027,6 +3027,9 @@ class Engine:
                 toi=goi_toi_khach(customer_pronoun, conv.assistant.name)[1], yeu_cau_moi=conv.y_luot.get("yeu_cau_viet"),
             )
             system += khoi_su_that_can(conv.prop.fields, conv.vai_phi == SellerRole.CHU_NHA)   # SRS-5.1zzzzzzz320; vai một nguồn `vai_phi` (Đợt 4)
+            # Chủ dự án 02/11 (SRS-5.1zzzzzzz336): điểm tin / hạng / cách tăng điểm CHỈ nói lúc ra tin — lượt ra bản nháp có khối, lượt hỏi ô không.
+            if conv.hoi_ve_luot != "diem_tin":   # khách hỏi điểm thì khối đi cùng khối ưu tiên "diem_tin" (một lần)
+                system += self._khoi_diem_tin(conv, now)
         else:
             web_tin = self._trang_thai_web(conv)
             if web_tin is not None and conv.prop.fields.get("_da_bao_dang"):
@@ -3052,7 +3055,9 @@ class Engine:
                 system += KHOI_TIN_DANG_HIEN_NGOAI_CHAT
                 khoi.append("tin_dang_hien_ngoai_chat")
             if conv.duyet_luot == "dong_y" and len_web:
-                conv.prop.fields["_phi_da_hoi"] = "1"   # lượt duyệt hỏi phí (hoi_phi) — lượt sau là lúc xin chấm sao
+                conv.prop.fields["_phi_da_hoi"] = "1"
+                if conv.hoi_ve_luot != "diem_tin":   # SRS-5.1zzzzzzz336: lượt báo tin đã lên — lúc ra tin, có khối ĐIỂM TIN
+                    system += self._khoi_diem_tin(conv, now)   # lượt duyệt hỏi phí (hoi_phi) — lượt sau là lúc xin chấm sao
             if len_web and (conv.duyet_luot == "dong_y" or web_tin.get("da_bao_dang")):
                 conv.prop.fields["_da_bao_dang"] = "1"
             # Hết việc của tin (tin đã lên web, đã hỏi phí ở lượt duyệt, lượt này khách không hỏi gì mới, không sửa tin — chỉ trả lời cụm
@@ -3176,6 +3181,9 @@ class Engine:
         elif conv.hoi_ve_luot == "tinh_hinh_ban":
             web = self._trang_thai_web(conv) if is_listing_post else {"len_web": False}
             hoi_ve_khoi = khoi_tinh_hinh_ban(self._tinh_hinh_tin(conv), bool(web and web.get("len_web")))
+        elif conv.hoi_ve_luot == "diem_tin":   # SRS-5.1zzzzzzz336: khách tự hỏi điểm / hạng / lên Top — lượt ngoài lúc ra tin có số để trả lời
+            hoi_ve_khoi = ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI ĐIỂM TIN / HẠNG / LÊN TOP: ===\n"
+                           "Trả lời đúng điều khách hỏi bằng số ở khối ĐIỂM TIN ngay dưới, không hứa lên Top.\n" + self._khoi_diem_tin(conv, now))
         elif conv.hoi_ve_luot == "dinh_gia":   # SRS-5.1zzzzzzz325: dự án có giá rao gộp thì nêu khoảng đó, không có thì lời cũ
             hoi_ve_khoi = khoi_dinh_gia((project.goc or {}).get("giá rao bán thị trường") if project is not None else None)
         # SRS-5.1zzzzzzz178: MỘT khối ưu tiên mỗi lượt, theo thứ tự cần người > pháp lý > ngoài việc > hỏi về (phí / uy tín / link / tình hình /
@@ -4912,7 +4920,7 @@ class Engine:
         # trong sáu lượt khách gần nhất (xưng hô giữ qua các lượt).
         conv.hoi_ve_luot = None
         h = plan.get("hoi_ve")
-        if h in ("phi", "uy_tin", "link_web", "tinh_hinh_ban", "dinh_gia"):   # SRS-5.1zzzzzzz281: tra khối dữ kiện theo ý AI đọc, không so nguyên văn
+        if h in ("phi", "uy_tin", "link_web", "tinh_hinh_ban", "dinh_gia", "diem_tin"):   # SRS-5.1zzzzzzz281: tra khối dữ kiện theo ý AI đọc, không so nguyên văn
             conv.hoi_ve_luot = h
         # SRS-5.1zzzzzzz245 (chat thử 28/10 "chú bán nhà ở 125 Bình Long…": log không có dòng "Xưng hô" nào, bot gọi "Anh" theo giới tính Zalo):
         # công cụ không ép enum nên AI có thể trả chữ ("chú", "cháu") thay mã — trước đây rơi im lặng. Chuẩn hoá ĐẦU RA AI (không đọc lời khách).
