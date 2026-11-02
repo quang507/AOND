@@ -27,9 +27,10 @@
    ],
    "kiem": {
     "cam": [
-     "gần trường|gần chợ|gần siêu thị|cách trường|trường mầm non [A-ZĐ]"
+     "gần (?:trường |chợ |siêu thị |bệnh viện )?(?:mầm non |tiểu học )?(?-i:[A-ZĐ])|cách (?:trường|chợ|siêu thị)[^.?!\\n]{0,30}\\d+ ?(?:m|km)\\b|trường mầm non (?-i:[A-ZĐ])|(?:nằm sát|sát bên|ngay sát|kề|đối diện|cạnh) (?-i:[A-ZĐ])"
     ]
-   }
+   },
+   "mo_ta": "Bịa tiện ích: bot KHẲNG ĐỊNH gần một nơi có tên (trường Hồng Hà, Vincom…) hoặc cách N m / km khi rổ không có dữ liệu tiện ích. Phép cũ (re.I) bắt nhầm câu hỏi nêu ý \"gần chợ / trường\" và câu \"chưa có thông tin các trường mầm non quanh căn\" — không phải bịa (SRS-5.1zzzzzzz336) · SRS-5.1zzzzzzz347: thêm \"nằm sát / sát bên / ngay sát / kề / đối diện / cạnh\" + tên riêng — câu production \"nằm sát Co-opmart\" (khách ảo 02/11 sau #260) lọt CẢ phép đầu của phiên kiểm LẪN phép thu hẹp ở #266, vì không có chữ \"gần\". Phép này chỉ đúng khi rổ của kịch bản KHÔNG có tiện ích nào — đừng thêm tiện ích vào `ro_hang` ở đây."
   },
   {
    "id": "ka_hua_suong",

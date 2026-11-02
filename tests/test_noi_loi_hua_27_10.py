@@ -128,12 +128,18 @@ def test_khong_ghi_noi_dung_gui_khi_con_pending():
 
 # --- 2. Khối ĐIỂM TIN ---------------------------------------------------------------------------------------------------------------
 def test_prompt_ban_co_khoi_diem_tin_so_that():
+    # Chủ dự án 02/11 (SRS-5.1zzzzzzz336: "lượt nào cũng nói thì bị ngu à, chỉ nói lúc ra tin thôi"): lượt HỎI Ô không có khối (bản trước
+    # khối đi theo MỌI lượt hỏi ô → "có sổ hồng thì tin lên điểm nhiều luôn"); khách TỰ HỎI điểm (AI đọc `hoi_ve = diem_tin`) thì có số thật.
     eng, spy = _eng({"operations": [{"op": "set", "field": "loai_hinh", "value": "nhà phố", "bang_chung": "nhà phố"}]})
     eng.handle("dt1", "em ơi anh có căn nhà phố cần bán")
-    he = spy.systems[-1]
-    m = re.search(r"=== ĐIỂM TIN .*?===\nTin này: (\d+)/100\. Người rao: hạng (Đồng|Bạc|Vàng) \((\d+)/100\)", he)
-    assert m, he[-600:]
-    assert "Để tăng điểm:" in he and "không hứa lên Top" in he
+    assert "=== ĐIỂM TIN" not in spy.systems[-1]
+    for i, cau in enumerate(("đăng nhiều căn thì có được lên top không em", "tin của anh giờ được mấy chấm rồi em")):   # cách nói mới thứ hai
+        eng, spy = _eng({"operations": [{"op": "set", "field": "loai_hinh", "value": "nhà phố", "bang_chung": "nhà phố"}], "hoi_ve": "diem_tin"})
+        eng.handle(f"dt2-{i}", cau)
+        he = spy.systems[-1]
+        m = re.search(r"=== ĐIỂM TIN .*?===\nTin này: (\d+)/100\. Người rao: hạng (Đồng|Bạc|Vàng) \((\d+)/100\)", he)
+        assert m and "KHÁCH HỎI ĐIỂM TIN" in he, cau
+        assert "Để tăng điểm:" in he and "không hứa lên Top" in he and he.count("=== ĐIỂM TIN") == 1
 
 
 def test_khoi_dinh_gia_khong_hua_chuyen_vien_bao_lai():

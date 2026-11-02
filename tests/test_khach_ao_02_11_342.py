@@ -3,7 +3,8 @@
 Nguồn: `apply-migration.yml` ô `ban-thu-khach-ao` trên main, 5 persona do model đóng vai. Mỗi ca dưới đây trích NGUYÊN VĂN
 câu bot đã nói với khách ảo rồi quy về chỗ sinh ra nó trong lõi, để lỗi không quay lại bằng cách nói khác.
 
-CA CHỜ: `xfail(strict=True)`. Bản sửa gộp xong thì XOÁ dòng `xfail` (strict = XPASS cũng đỏ, đúng ý), KHÔNG xoá ca kiểm.
+Mọi ca ở tệp này nay XANH (bản sửa SRS-331 / 336 / 343 đã gộp) — giữ làm ca hồi quy, ĐỎ lại nếu bản sửa bị gỡ. Ca chờ mới thêm sau
+thì dùng `xfail(strict=True)` và xoá dòng đó khi bản sửa gộp (strict = XPASS cũng đỏ, đúng ý làm dấu nhắc).
 Số điện thoại / tên trong bài là hư cấu; persona khách ảo cũng là hư cấu.
 """
 import pytest
@@ -20,8 +21,6 @@ def test_mo_dau_nhap_rieng_no_goi_dung_nguoi_lon_tuoi():
     assert mo_dau_nhap("elder:chú", toi="cháu") == "📋 Cháu sẽ rao như vầy nhé chú:"
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — khách ảo 02/11 (SRS-342 ca 1): khách xưng \"cô\" mà dòng mở bản nháp gọi "
-                                       "khách là \"em\". Sửa xong thì XOÁ dòng này")
 def test_ca_1_ban_nhap_khong_goi_khach_lon_tuoi_la_em():
     """Khách ảo 1 (cô Sáu, 62 tuổi, xưng "cô", gọi bot "con"): cả cuộc chat bot gọi "cô" / xưng "cháu", nhưng dòng mở bản
     nháp ra NGUYÊN VĂN "📋 Cháu sẽ rao như vầy nhé em:" — xưng hô lẫn trong một câu, trái SRS-214.
@@ -35,7 +34,6 @@ def test_ca_1_ban_nhap_khong_goi_khach_lon_tuoi_la_em():
     assert "nhé cô:" in he
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — cùng lớp lỗi ca 1, cách gọi khác (\"chú\"). Sửa xong thì XOÁ dòng này")
 def test_ca_1_cung_lop_cach_goi_khac_chu():
     """Cùng lớp, cách nói khác: khách xưng "chú" cũng phải được gọi "chú", không phải "em"."""
     he = build_listing_proposal_system("Hoài", Property(), customer_is_em=True, xung_ho="elder:chú", toi="cháu")
@@ -64,20 +62,43 @@ def test_luoi_binh_luan_gia_bat_duoc_cum_da_gap():
     assert _BINH_LUAN_GIA.search(BAN_TIN_BINH_GIA)
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — lưới từ khoá `_BINH_LUAN_GIA` bỏ lọt cách nói mới (SRS-342). Sửa xong thì XOÁ dòng này")
-def test_ca_2b_luoi_binh_luan_gia_bo_lot_cach_noi_moi():
+class _AiSoatGia:
+    """Model bóc tách giả cho lưới bình luận giá bản tin (SRS-5.1zzzzzzz336): trả `cum` cho sẵn, ghi lại đoạn được đưa đọc."""
+
+    def __init__(self, cum):
+        self.cum, self.doc = cum, []
+
+    def extract(self, system, messages, json_schema):
+        assert "cum" in json_schema["properties"]
+        self.doc.append(messages[-1].content)
+        return {"cum": list(self.cum)}
+
+
+def _soat_gia(cum, ban_tin):
+    from aioi.config import Settings
+    from aioi.engine import Engine, _soat_binh_luan_gia
+    from aioi.llm.mock import MockProvider
+    eng = Engine(MockProvider(Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y")))
+    ai = _AiSoatGia(cum)
+    eng._provider = ai
+    return _soat_binh_luan_gia(eng, eng.conversation("thu-soat-gia-342"), ban_tin, {}), ai
+
+
+def test_ca_2b_cach_noi_moi_do_ai_doc_nghia_code_kiem_cum_trich():
     """Hai cách nói CÙNG Ý mà lưới từ khoá không thấy: "tầm giá này là dễ chịu lắm rồi", "có cửa bớt lộc".
 
     Lớp lỗi: lưới là danh sách từ khoá, nên đổi chữ là lọt — đúng điều CLAUDE.md §4.8 nói về lỗi "máy đoán ý bằng từ khoá".
-    Bản sửa nên để AI đọc nghĩa quyết (như `hoi_ve`), từ khoá chỉ làm lưới đỡ.
+    Bản ban đầu của ca này đòi `_BINH_LUAN_GIA` bắt hai cụm trên — chỉ đạt được bằng cách thêm từ vào regex, trái §4.8. Viết lại
+    (SRS-5.1zzzzzzz336): AI đọc nghĩa bản tin, code chỉ kiểm cụm trích có NGUYÊN VĂN trong bản tin ("có cửa\nbớt lộc" xuống dòng vẫn nhận);
+    cụm AI bịa (không có trong tin) bị bỏ.
     """
-    from aioi.engine import _BINH_LUAN_GIA
-    assert _BINH_LUAN_GIA.search("tầm giá này là dễ chịu lắm rồi")
-    assert _BINH_LUAN_GIA.search("có cửa bớt lộc")
+    ly_do, ai = _soat_gia(["tầm giá này là dễ chịu lắm rồi", "có cửa bớt lộc", "giá rẻ nhất khu"], BAN_TIN_BINH_GIA_MOI)
+    assert ly_do and "tầm giá này là dễ chịu lắm rồi" in ly_do[0] and "có cửa bớt lộc" in ly_do[0]
+    assert "giá rẻ nhất khu" not in ly_do[0]                      # cụm không có trong bản tin → không nhận
+    assert "Nguyễn Chí Thanh" in ai.doc[0]                         # AI được đưa đúng bản tin để đọc
+    assert _soat_gia(["giá rẻ nhất khu"], BAN_TIN_BINH_GIA_MOI)[0] == []   # chỉ có cụm bịa → không gọi lại model
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — quyết định điều phối 02/11 (SRS-342): bản tin KHÔNG được bình luận giá. Lõi "
-                                       "đang miễn trừ mọi lượt có bản tin (`_la_ban_tin`). Sửa xong thì XOÁ dòng này")
 def test_ca_2_ban_tin_binh_luan_gia_phai_bi_soat():
     """`nct_q5` lượt 3 (hai lượt chấm 02/11): bản tin nói "có cửa bớt lộc", "giá còn mềm mỏng thế này".
 
@@ -86,10 +107,16 @@ def test_ca_2_ban_tin_binh_luan_gia_phai_bi_soat():
     GIÁ, không phải ý chung về vị trí. Điều phối 02/11 chốt: bản tin cũng không được bình luận giá.
 
     Hệ quả phụ đã báo ở #261: vì lõi miễn trừ mà `cham.loi_pham` thì không, hai bên KHÔNG cùng một nguồn luật.
+    Viết lại theo SRS-5.1zzzzzzz336: lượt bản tin đi qua lưới (AI đọc nghĩa), không còn miễn trừ.
     """
-    from aioi.engine import _binh_luan_gia, _la_ban_tin
-    for bt in (BAN_TIN_BINH_GIA, BAN_TIN_BINH_GIA_MOI):
-        assert (None if _la_ban_tin(bt) else _binh_luan_gia(bt)) is not None
+    for bt, cum in ((BAN_TIN_BINH_GIA, "giá còn mềm mỏng thế này"), (BAN_TIN_BINH_GIA_MOI, "tầm giá này là dễ chịu lắm rồi")):
+        ly_do, ai = _soat_gia([cum], bt)
+        assert ai.doc and ly_do and cum in ly_do[0]
+
+
+def test_ca_2_ban_tin_khong_binh_gia_thi_khong_goi_lai():
+    """Lưới đỡ: AI không thấy cụm nào → không lý do (bản tin chỉ nêu con số giá chủ đưa thì không bị gọi lại)."""
+    assert _soat_gia([], BAN_TIN_BINH_GIA.split("\n\nGiá chủ rao")[0])[0] == []
 
 
 # ---------------------------------------------------------------- ca 3: lộ từ vựng nội bộ "rổ" với khách
@@ -98,8 +125,6 @@ LOI_CO_RO = "Chúc mừng anh nha! Em chưa đổi gì trong rổ hết. Căn đ
 LOI_CO_RO_MOI = "Dạ rổ hàng bên em đang có hai căn của anh, em giữ nguyên nha."   # cách nói mới, chưa bắn
 
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — khách ảo / chấm 02/11 (SRS-342): bot nói \"trong rổ\" với khách, lõi không có "
-                                       "lưới nào soát từ vựng nội bộ này. Sửa xong thì XOÁ dòng này")
 def test_ca_3_khong_noi_chu_ro_voi_khach():
     """Lượt chấm `hai_can_da_ban` 02/11: "Em chưa đổi gì **trong rổ** hết." — prompt cấm hẳn chữ "rổ"
     (`mua.khoi_can_cho_khach`: "Không nói chữ \\"rổ\\""), nhưng không có lưới soát nào bắt, nên lời vẫn gửi khách.
@@ -113,14 +138,15 @@ def test_ca_3_khong_noi_chu_ro_voi_khach():
 
 # ---------------------------------------------------------------- ca 4: chỗ gọi THỨ HAI cùng lớp lỗi ca 1
 
-@pytest.mark.xfail(strict=True, reason="ca chờ — cùng lớp ca 1, chỗ gọi thứ hai (`cat_truoc_mo_dau`) SỬA lời đã đúng thành sai "
-                                       "(SRS-344). Sửa xong thì XOÁ dòng này")
 def test_ca_4_cat_truoc_mo_dau_khong_sua_loi_dung_thanh_sai():
     """Chỗ gọi thứ hai của `mo_dau_nhap`, đã nêu là "cùng lớp còn sót" khi dựng ca 1 (SRS-342).
 
     Nặng hơn ca 1: model viết ĐÚNG ("📋 Cháu sẽ rao như vầy nhé cô:") mà `prompts.cat_truoc_mo_dau` thay bằng
     "nhé em:" — lõi tự làm hỏng một lời đã đúng. Cùng nguyên nhân: `xung_ho if xung_ho in _TRE else "em"`, và
     `_TRE == ("em", "chau")` nên "elder:cô" rơi xuống "em".
+
+    NAY XANH: bản sửa SRS-336 (#266) chữa chung gốc `_TRE` nên cả hai chỗ gọi cùng đúng — đúng như ca này dự đoán khi dựng.
+    Bỏ `xfail`, thành ca hồi quy thường: ĐỎ lại nếu ai đưa lối ép `else "em"` trở về.
     """
     from aioi.prompts import cat_truoc_mo_dau
     vao = "Em ghi nhận đủ rồi cô ạ.\n📋 Cháu sẽ rao như vầy nhé cô:\n\n🏡 Nhà hẻm 4m Phạm Thế Hiển, Quận 8"

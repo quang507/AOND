@@ -235,15 +235,18 @@ def test_nhom2_khach_da_tra_loi_het_thi_xin_anh():
 def test_nhom3_khoi_diem_chi_dua_so_that_va_cach_tang_diem():
     k = khoi_diem_tin(62.4, "Bạc", 70.0, ["dien_tich_nha", "huong"], 0, Property(loai_hinh="nha_pho"))
     assert "62/100" in k and "Bạc" in k and "Để tăng điểm" in k and "không hứa lên Top" in k
+    assert "điểm của TIN / CĂN" in k and "hạng của NGƯỜI RAO" in k   # SRS-5.1zzzzzzz336: điểm là của tin, hạng là của người rao
 
 
 def test_nhom3_ro_hang_tang_thi_he_so_thuong_tang_dan():
     assert scale_bonus_multiplier(1) <= scale_bonus_multiplier(10) <= scale_bonus_multiplier(30) <= scale_bonus_multiplier(60)
 
 
-def test_nhom4_prompt_ban_co_khoi_diem_tin_moi_luot():
+def test_nhom4_diem_tin_chi_o_luot_ra_tin():
+    # Chủ dự án 02/11 (SRS-5.1zzzzzzz336): "chỉ nói lúc ra tin thôi" — khối ĐIỂM TIN có ở lượt ra bản nháp, KHÔNG ở các lượt hỏi ô trước đó
+    # (bản trước: "mỗi lượt", model chèn "có sổ hồng thì tin lên điểm nhiều luôn" giữa lúc hỏi ô).
     eng, spy = _chuan_bi()
     _chay_luong_30(eng, spy)
-    spy.ke_hoach, spy.loi = _ghi({}, {}), "Vâng anh."
-    eng.handle("srd-30", "ok")
-    assert any("=== ĐIỂM TIN" in s for s in spy.systems[-3:])
+    nhap = [i for i, s in enumerate(spy.systems) if "BỐ CỤC TIN RAO" in s]
+    assert nhap and "=== ĐIỂM TIN" in spy.systems[nhap[0]]
+    assert not any("=== ĐIỂM TIN" in s for s in spy.systems[:nhap[0]])

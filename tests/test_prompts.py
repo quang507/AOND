@@ -121,7 +121,7 @@ def test_tieu_de_theo_ban_anh_luan():
     """SRS-5.1zzzzzzz207 (chủ dự án 26/10: "lấy 100% của bên aond"): tiêu đề theo khuôn anh Luận — 15–25 từ, mở bằng câu gọi mời, dồn điểm mạnh;
     thay luật 20–25 từ + ví dụ tiêu đề của SRS-190 / 192."""
     from aioi.prompts import AD_FORMAT
-    assert "15–25 từ" in AD_FORMAT and "MỞ bằng câu gọi mời" in AD_FORMAT and 'CẤM mở bằng "Trời ơi"' in AD_FORMAT
+    assert "15–25 từ" in AD_FORMAT and "MỞ bằng một lời gọi người mua" in AD_FORMAT and 'CẤM mở bằng "Trời ơi"' in AD_FORMAT
     assert "Tiêu đề phải\ncó GIÁ" in AD_FORMAT                          # lưới code `_tieu_de_thieu` vẫn đòi giá trong tiêu đề
 
 

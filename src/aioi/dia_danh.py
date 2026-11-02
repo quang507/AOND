@@ -554,9 +554,11 @@ def phuong_kho_hem(tra: TraDiaDanh | None, fields: dict[str, str]) -> list[str]:
                                fields.get("_duong_vao") in ("hem", "hem_xe_hoi") or "/" in (fields.get("dia_chi") or ""))   # SRS-5.1zzzzzzz320
 
 
-def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: str | None) -> str:
+def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: str | None, hoi_duong: bool = True) -> str:
     """Khối cho prompt trả lời: tên đường khách gõ gần với đường nào trong kho (hỏi xác nhận, lượt nào cũng được — không chỉ lúc
-    hỏi địa chỉ), và khi sắp hỏi phường thì đường đó đi qua những phường nào. Hệ thống tra, không phải khách nói."""
+    hỏi địa chỉ), và khi sắp hỏi phường thì đường đó đi qua những phường nào. Hệ thống tra, không phải khách nói.
+    `hoi_duong=False`: bỏ hai dòng HỎI xác nhận tên đường, giữ dữ kiện (Đợt 4, SRS-5.1zzzzzzz328 — engine gỡ câu hỏi đường khi lượt có việc
+    hỏi khác ưu tiên hơn, dữ kiện xã / phường mới vẫn vào prompt)."""
     if tra is None:
         return ""
     dong: list[str] = []
@@ -591,12 +593,12 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
     if not fields.get("duong"):
         return ("\n\nTRA CỨU ĐỊA DANH (hệ thống tra kho đường / phường, KHÔNG phải khách nói; không tự chọn thay khách):\n- " + "\n- ".join(dong)) if dong else ""
     goi_y = _goi_y(tra, fields)
-    if goi_y:
+    if goi_y and hoi_duong:
         dong.append(f'Tên đường khách gõ "{fields["duong"]}" gần với đường "{goi_y["ten"]}" trong kho, kho không có tên khách gõ. '
                     f'Lượt này hỏi khéo xác nhận có phải đường "{goi_y["ten"]}" không TRƯỚC, thay cho câu hỏi kế (theo đúng cách xưng '
                     "hô lượt này), không nhắc chữ khách gõ sai. Trong hội thoại khách đã trả lời giữ tên của mình thì thôi, không hỏi lại.")
     uv = [] if goi_y else tra.ung_vien_duong(fields.get("duong"), fields.get("quan"))
-    if uv:
+    if uv and hoi_duong:
         # SRS-5.1zzzzzzz271 (chủ dự án 29/10: "khách gõ sai tên mà ra 2 đường thì hỏi lại là mã lò hay mã lộ"): tên khách gõ khớp ngang nhau
         # nhiều đường — chưa biết đường nào thì cũng chưa tra được phường / quận.
         dong.append(f'Tên đường khách gõ "{fields["duong"]}" khớp NHIỀU đường trong kho: {" / ".join(uv)}. Lượt này hỏi khéo khách là '

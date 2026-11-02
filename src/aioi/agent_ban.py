@@ -26,17 +26,17 @@ HUONG_DAN = (
     "- ro_hang: khách đang có nhiều căn và báo một việc lên 'một căn' (đã bán, đổi giá, có khách…) hoặc nói chưa rõ căn nào. Lời khách "
     "không chỉ ra được căn nào → HỎI LẠI căn nào (nêu địa chỉ các căn để khách chọn), KHÔNG tự nhận là căn nào, KHÔNG nói đã đổi trạng thái.\n"
     "- bo_nho_du_an: khách hỏi / nhắc về dự án, mẫu nhà, phân lô, bảng giá dự án.\n"
-    "- gia_da_gui: khách hỏi lại giá căn của họ đã gửi (bảng giá, căn trong rổ).\n"
+    "- gia_da_gui: khách hỏi lại giá căn của họ đã gửi (bảng giá, các căn khách đã gửi). Nói với khách KHÔNG dùng chữ \"rổ\".\n"
     "Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có, không đoán. Lời gửi khách viết ở lượt cuối, sau khi tra xong; không "
     "viết 'để em tra / em kiểm tra'.\n"
 )
 
 CONG_CU: list[dict[str, Any]] = [
-    {"name": "ro_hang", "description": "Danh sách các căn trong rổ hàng của khách (căn nào đang nói tới).",
+    {"name": "ro_hang", "description": "Danh sách các căn khách (người rao) đã gửi (căn nào đang nói tới).",
      "input_schema": {"type": "object", "properties": {}}},
     {"name": "bo_nho_du_an", "description": "Bộ nhớ dự án của căn đang nói: thông tin chung, mẫu nhà, tài liệu phân lô / bảng giá đã có.",
      "input_schema": {"type": "object", "properties": {}}},
-    {"name": "gia_da_gui", "description": "Giá các căn khách (người rao) đã gửi — từ bảng giá và các căn trong rổ.",
+    {"name": "gia_da_gui", "description": "Giá các căn khách (người rao) đã gửi — từ bảng giá và các căn khách đã gửi.",
      "input_schema": {"type": "object", "properties": {}}},
 ]
 _TEN = {c["name"] for c in CONG_CU}
