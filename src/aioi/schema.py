@@ -606,6 +606,8 @@ class Property:
             return bool(self.fields.get("tinh_trang_ban_giao") or self.fields.get("thoi_gian_ban_giao"))
         if name == "phap_ly_hoan_cong":   # khách đã nói sổ (ô phap_ly) thì không hỏi riêng hoàn công (SRS-5.1zzzzzzz76)
             return bool(self.fields.get("phap_ly_hoan_cong") or self.fields.get("phap_ly"))
+        if name in ("phap_ly_so_do", "phap_ly_so_hong"):   # SRS-5.1zzzzzzz321: khách đã nói giấy tờ (ô phap_ly: "thuê đất trả tiền hàng năm") thì
+            return bool(self.fields.get(name) or self.fields.get("phap_ly"))   # không hỏi lại "có sổ đỏ chưa" (cham xa_phuoc_ly, Đợt 8 và Đợt 3)
         if name == "dien_tich":   # BĐS một diện tích (chung cư / đất / công nghiệp)
             return bool(self.fields.get("dien_tich") or self.fields.get("dien_tich_dat") or self.fields.get("kich_thuoc"))
         # Nhà có đất riêng: diện tích ĐẤT và diện tích NHÀ là hai ô riêng, mỗi ô phải có chính nó (bản anh Luận,

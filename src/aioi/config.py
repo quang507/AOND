@@ -34,9 +34,12 @@ class Settings:
 
     @property
     def effective_provider(self) -> str:
-        """Fall back to the offline mock provider when Claude is selected but no key is present."""
+        """Provider thật sẽ chạy. SRS-5.1zzzzzzz321 (audit Đợt 6): bản trước thiếu `ANTHROPIC_API_KEY` thì lặng lẽ chạy `MockProvider` (đoán ý
+        bằng từ khoá) — ở production lõi vẫn "chạy" và trả lời khách bằng mock. Nay thiếu khoá thì báo lỗi, lõi không khởi động; mock chỉ khi
+        đặt TƯỜNG MINH `AIOI_LLM_PROVIDER=mock` (test / dev)."""
         if self.provider == "claude" and not self.anthropic_api_key:
-            return "mock"
+            raise RuntimeError("Thiếu ANTHROPIC_API_KEY cho AIOI_LLM_PROVIDER=claude — lõi không chạy bằng mock. Đặt khoá trong .env "
+                               "(cai-vps.sh), hoặc AIOI_LLM_PROVIDER=mock khi test / dev.")
         return self.provider
 
 

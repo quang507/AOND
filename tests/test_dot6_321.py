@@ -75,3 +75,24 @@ def test_code_chet_da_xoa():
     assert not hasattr(engine, "_looks_personal_doc") and not hasattr(server, "CAU_THU_LAI_HONG")
     assert not hasattr(kho_tep.MediaRef, "from_dict") and not hasattr(SupabaseConversationStore, "_get_or_create_conversation")
     assert "de_xuat_luot" not in engine.Conversation.__dataclass_fields__
+
+
+def test_khach_da_noi_phap_ly_thi_khong_hoi_lai_so():
+    """cham `xa_phuoc_ly` (Đợt 8 và Đợt 3): khách nói "thuê đất trả tiền hàng năm" (ô phap_ly), đất vẫn hỏi ô phap_ly_so_do "đã có sổ đỏ chưa"."""
+    from aioi.schema import Property
+    for loai, o in (("dat", "phap_ly_so_do"), ("chung_cu", "phap_ly_so_hong")):
+        p = Property(loai_hinh=loai, fields={"phap_ly": "thuê đất trả tiền hàng năm", "dia_chi": "QL50, Phước Lý", "gia": "50 tỷ"})
+        assert o not in p.missing_fields(), loai
+        p2 = Property(loai_hinh=loai, fields={"dia_chi": "QL50, Phước Lý", "gia": "50 tỷ"})
+        assert o in p2.expected_fields() and not p2._has(o)     # chưa nói gì về giấy tờ thì vẫn là ô còn thiếu
+
+
+def test_production_thieu_khoa_khong_chay_bang_mock():
+    """Audit Đợt 6: `config` thiếu ANTHROPIC_API_KEY thì lặng lẽ chạy MockProvider (đoán bằng từ khoá) — production trả lời khách bằng mock."""
+    import pytest
+    from aioi.config import Settings
+    from aioi.llm import build_provider
+    s = Settings(provider="claude", anthropic_api_key=None, chat_model="x", vision_model="y")
+    with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY"):
+        build_provider(s)
+    assert type(build_provider(Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y"))).__name__ == "MockProvider"
