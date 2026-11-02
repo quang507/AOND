@@ -225,6 +225,16 @@ class TraDiaDanh:
 
     # --- tra --------------------------------------------------------------------------------------
 
+    def _la_ten_dia_ban(self, ten: str) -> bool:
+        """Chữ khách gõ trùng ĐÚNG (bỏ dấu) tên một quận / huyện / phường / xã trong kho (SRS-5.1zzzzzzz362)."""
+        ds = self._thu("tim_dia_danh", {"p_ten": ten, "p_toi_da": 1})
+        if any(u.get("loai") in ("phuong_moi", "phuong_cu", "quan_cu") and u.get("khoang_cach", 9) == 0 for u in ds):
+            return True
+        try:
+            return self.xa(ten) is not None
+        except Exception:  # noqa: BLE001
+            return False
+
     def _thu(self, ten: str, payload: dict) -> list:
         try:
             return self._rpc(ten, payload)
@@ -364,6 +374,16 @@ class TraDiaDanh:
         if not ten:
             return None
         ds = self._thu("tim_duong", {"p_ten": ten, "p_quan": quan, "p_toi_da": 2})
+        # SRS-5.1zzzzzzz362 (chat thật 01–02/11: "anh cần bán căn nhà cấp 4 ở nhà bè" → "Nhà mình nằm đường nào vậy: Ngô Bệ (Quận Tân Bình), Nhà
+        # Đồ, hay một đường khác ở Nhà Bè?"): (1) chữ khách gõ trùng ĐÚNG tên một địa bàn (quận / huyện / phường / xã) mà kho không có con đường
+        # trùng đúng tên đó → không phải tên đường, không khớp gần; (2) đã biết quận → chỉ khớp gần trong quận đó (đường quận khác không phải
+        # điều khách nói). Đọc dữ liệu kho, không đoán bằng từ khoá.
+        if not any(u.get("khoang_cach", 9) == 0 for u in ds or []) and self._la_ten_dia_ban(ten):
+            log.warning("đường: chữ khách gõ là tên địa bàn, không khớp gần tên đường")
+            return None
+        if ds and quan and any(u.get("khoang_cach", 9) > 0 for u in ds):
+            ds = [u for u in ds if u.get("khoang_cach", 9) == 0 or not [q for q in (u.get("quan_cu") or []) if q]
+                  or any(_cung_quan(q, quan) for q in (u.get("quan_cu") or []) if q)]
         if ds:
             gan = min(u.get("khoang_cach", 9) for u in ds)
             cung = [u.get("ten") for u in ds if u.get("khoang_cach", 9) == gan]
