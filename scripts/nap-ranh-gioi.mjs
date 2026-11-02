@@ -47,7 +47,7 @@ const nghi = (ms) => new Promise((r) => setTimeout(r, ms));
 async function overpass(query, lan = 0) {
   try {
     const r = await fetch(OVERPASS_DS[lan % OVERPASS_DS.length], {
-      method: "POST",
+      method: "POST", signal: AbortSignal.timeout(150000),
       headers: { "User-Agent": UA, "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
       body: "data=" + encodeURIComponent(query),
     });
@@ -55,8 +55,8 @@ async function overpass(query, lan = 0) {
     if (!r.ok) { console.error(`  ! Overpass ${r.status}`); return null; }
     return await r.json();
   } catch (e) {
-    if (lan >= 4) { console.error(`  ! ${e.message} — bỏ lượt này`); return null; }
-    await nghi(15000 * (lan + 1));
+    if (lan >= 2) { console.error(`  ! ${e.message} — bỏ lượt này`); return null; }
+    await nghi(10000 * (lan + 1));
     return overpass(query, lan + 1);
   }
 }
@@ -76,44 +76,50 @@ const daCo = new Set((await rest("ranh_gioi_phuong?select=ten")).map((r) => r.te
 let tra = 0, ghiDuoc = 0;
 const hong = [];
 
-// 03/11 (lượt đầu từng phường kẹt ở Overpass: 12/168 sau 18 phút): MỘT truy vấn lấy mọi relation admin_level=6 trong hộp bao TP.HCM
-// (+ hộp riêng Côn Đảo), khớp tên tại máy; phường thiếu mới tra riêng từng cái.
-const theoTen = new Map();
-for (const hop of [BBOX_HCM, ...Object.values(BBOX_RIENG)]) {
-  const kq = await overpass(`[out:json][timeout:600][maxsize:1073741824];rel["boundary"="administrative"]["admin_level"="6"](${hop});out geom;`);
-  tra++;
-  for (const rel of kq?.elements?.filter((e) => e.type === "relation") ?? []) {
-    const ten = rel.tags?.name;
-    if (!ten) continue;
-    if (!theoTen.has(ten)) theoTen.set(ten, []);
-    theoTen.get(ten).push(rel);
-  }
-  console.log(`  hộp ${hop}: ${kq?.elements?.length ?? "không trả lời"} relation`);
+// 03/11: lượt Overpass từng phường kẹt (12/168 sau 18 phút), lượt gộp cả hộp bao treo > 20 phút. Nguồn CHÍNH nay là Nominatim
+// `polygon_geojson=1` — trả sẵn đa giác ranh giới của relation hành chính (khỏi ghép way), cùng dịch vụ DB đã dùng ổn để geocode tin
+// (`tra_nominatim`). Luật dùng Nominatim: ≤ 1 lượt / giây, có User-Agent. Không ra thì Overpass từng phường (có hạn giờ) làm dự phòng.
+function khungCua(g) {
+  const pts = (g.type === "Polygon" ? [g.coordinates] : g.coordinates).flat(1).flat(1);
+  return { min_lat: Math.min(...pts.map((p) => p[1])), max_lat: Math.max(...pts.map((p) => p[1])),
+           min_lng: Math.min(...pts.map((p) => p[0])), max_lng: Math.max(...pts.map((p) => p[0])) };
 }
-
+async function nominatim(w) {
+  const q = `${w.ten_day_du}, Thành phố Hồ Chí Minh`;
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&polygon_geojson=1&countrycodes=vn&limit=5&q=${encodeURIComponent(q)}`;
+  try {
+    const r = await fetch(url, { headers: { "User-Agent": UA, "Accept-Language": "vi" }, signal: AbortSignal.timeout(30000) });
+    if (!r.ok) { console.error(`  ! Nominatim ${r.status}`); return []; }
+    return (await r.json())
+      .filter((x) => x.osm_type === "relation" && x.category === "boundary" && ["Polygon", "MultiPolygon"].includes(x.geojson?.type))
+      .map((x) => ({ id: x.osm_id, kq: { vong: x.geojson, khung: khungCua(x.geojson) }, ten: x.name }));
+  } catch (e) { console.error(`  ! Nominatim ${e.message}`); return []; }
+}
 async function relCua(w) {
-  if (theoTen.has(w.ten_day_du)) return theoTen.get(w.ten_day_du);
+  const ds = (await nominatim(w)).filter((x) => x.ten === w.ten_day_du);
+  await nghi(1100);
+  if (ds.length) return { ds, nguon: "Nominatim" };
   const hop = BBOX_RIENG[w.ten_day_du] ?? BBOX_HCM;
   const kq = await overpass(`[out:json][timeout:120];rel["boundary"="administrative"]["admin_level"="6"]["name"="${w.ten_day_du}"](${hop});out geom;`);
   tra++;
-  await nghi(2000);
-  return kq?.elements?.filter((e) => e.type === "relation") ?? [];
+  const rels = kq?.elements?.filter((e) => e.type === "relation") ?? [];
+  return { ds: rels.map((rel) => ({ id: rel.id, kq: relationThanhVong(rel) })).filter((x) => x.kq), nguon: "Overpass", tho: rels.length };
 }
 
+let da = 0;
 for (const w of wards) {
   if (CHI && w.ten_day_du !== CHI) continue;
   if (!CHI && !TAT_CA && daCo.has(w.ten)) continue;
-  const rels = await relCua(w);
-  if (!rels.length) { hong.push(`${w.ten_day_du}: không có relation admin_level=6`); continue; }
-  const ung = rels.map((rel) => ({ rel, kq: relationThanhVong(rel) })).filter((x) => x.kq);
-  if (!ung.length) { hong.push(`${w.ten_day_du}: ${rels.length} relation, không ghép được vành kín`); continue; }
+  const { ds: ung, nguon: tu, tho } = await relCua(w);
+  if (++da % 20 === 0) console.log(`  … ${da} phường đã xét`);
+  if (!ung.length) { hong.push(`${w.ten_day_du}: không có đa giác (Nominatim + Overpass${tho ? `, ${tho} relation không ghép được` : ""})`); continue; }
   const tam = (k) => [(k.min_lat + k.max_lat) / 2, (k.min_lng + k.max_lng) / 2];
   const xa = (x) => (w.lat == null ? 0 : (tam(x.kq.khung)[0] - w.lat) ** 2 + (tam(x.kq.khung)[1] - w.lng) ** 2);
   const chon = ung.sort((a, b) => xa(a) - xa(b))[0];
-  if (rels.length > 1) console.log(`  ~ ${w.ten_day_du}: ${rels.length} relation cùng tên, chọn ${chon.rel.id} (gần tâm wards nhất)`);
+  if (ung.length > 1) console.log(`  ~ ${w.ten_day_du}: ${ung.length} đa giác cùng tên, chọn relation ${chon.id}`);
   const dong = {
     ten: w.ten, vong: chon.kq.vong, ...chon.kq.khung,
-    nguon: `OSM relation ${chon.rel.id}, Overpass ${NGAY}`, giay_phep: "ODbL 1.0 — © OpenStreetMap contributors", nap_luc: new Date().toISOString(),
+    nguon: `OSM relation ${chon.id}, ${tu} ${NGAY}`, giay_phep: "ODbL 1.0 — © OpenStreetMap contributors", nap_luc: new Date().toISOString(),
   };
   if (!DRY) {
     await rest("ranh_gioi_phuong?on_conflict=ten", {
