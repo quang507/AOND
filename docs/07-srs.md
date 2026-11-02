@@ -829,6 +829,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz332 · `/ds/[token]` thôi là route ƒ; giữ ƒ có chủ ý cho trang đọc `searchParams` (02/11/2026)
+Ca gốc: soát bảng route — `/cho-thue`, `/mua-ban`, `/du-an`, `/ds/[token]` là ƒ. `/ds/[token]` đặt `force-dynamic` (mỗi lượt mở một lambda + một RPC `doc_danh_sach`) vì "token bí mật không liệt kê được" — nhưng `generateStaticParams` trả `[]` không cần liệt kê.
+Quyết định (BA, uỷ quyền): ba trang lọc đọc `searchParams` → Next 15 buộc dựng động, đã bọc `unstable_cache` (đúng luật web); giữ ƒ, không chuyển bộ lọc sang client / path chỉ để đổi ký hiệu. (1) Lớp lỗi: `force-dynamic` không có bài chặn. (2) Cùng lớp: soát `app/**/page.tsx` công khai — chỉ trang này.
+Sửa: `/ds/[token]` `generateStaticParams` trả `[]` + `revalidate = 3600` (G-05; danh sách hết hạn còn hiện tối đa 1 giờ). (3) Kiểm: `giam-egress.mjs` G-07 cấm `force-dynamic` ở trang công khai (đỏ khi trả bản cũ); bảng route: `/ds/[token]` ƒ → ●, còn lại không đổi.
+
 ### SRS-5.1zzzzzzz331 · Vai theo SỐ khách đang nhắn ở lượt mơ hồ: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi không còn bị hỏi khu vực tìm mua (02/11/2026)
 Ca thật chủ dự án 02/11 (cùng một Zalo): 10:37 số tư vấn "anh đang cần tìm mua nhà quận 8 dưới 7 tỉ" → đúng; 10:38 số ký gửi "chào em" → "Anh muốn tìm ở khu vực nào ạ?". Chủ dự án: số ký gửi mặc định BÁN, nói mua mới hỗ trợ mua; số tư vấn giữ SRS-210.
 (1) Lớp lỗi: hội thoại khoá theo NGƯỜI (Zalo ID), `so_nhan` ghi đè mỗi tin; nhánh "đang mua thì ở lại vai mua" chạy trước mặc định theo số. Sửa: `Conversation.so_vai` (số đặt vai, lưu SQLite); lượt mơ hồ ở số khác → vai mặc định của số đang nhắn, lượt đó chào theo số
