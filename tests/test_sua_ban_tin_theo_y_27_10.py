@@ -120,7 +120,10 @@ def test_khong_ra_ban_tin_sau_loi_dan_thi_goi_lai():
     eng = Engine(spy)
     c = eng.conversation("k-218b")
     c.prop.loai_hinh = "nha_pho"
-    c.prop.fields.update({"gia": "12,5 tỷ", "dien_tich_dat": "34,5m2", "dien_tich_nha": "100m2", "kich_thuoc": "5x8", "so_tang": "3"})
+    # `_duong_vao`: bản viết lại khẳng định "mặt tiền" — từ SRS-5.1zzzzzzz352 bản viết lại được soát lại, thiếu dữ kiện thì `khang_dinh` (sự thật)
+    # nặng hơn lệch của bản đầu nên giữ bản đầu. Bài này kiểm việc gọi lại khi chưa ra bản tin, không kiểm đường vào.
+    c.prop.fields.update({"gia": "12,5 tỷ", "dien_tich_dat": "34,5m2", "dien_tich_nha": "100m2", "kich_thuoc": "5x8", "so_tang": "3",
+                          "_duong_vao": "mat_tien"})
     c.listing_proposed = True
     c.history.append(Turn("user", "mặt tiền 5m xứng đáng để nói đó em", 0.0))
     c.y_luot = {"yeu_cau_viet": ["mặt tiền 5m xứng đáng để nói"]}
