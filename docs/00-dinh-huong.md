@@ -1,6 +1,6 @@
 # 00 — Định hướng (BRD hợp nhất Aioinhadat × nhadat.cc)
 
-Phiên bản: **v1.5** · Ngày: **28/10/2026** · Trạng thái: **tên, địa bàn đã chốt; kiến trúc = lõi Python `src/aioi/`; CTV bỏ hẳn 28/10/2026 — mọi việc người thật phía mua về chủ nhà (nếu có trên hệ thống) hoặc admin; còn §0.8**
+Phiên bản: **v1.5** · Ngày: **28/10/2026** · Trạng thái: **tên, địa bàn đã chốt; kiến trúc = lõi Python `src/aioi/`; CTV bỏ hẳn 28/10/2026 — mọi việc người thật phía mua về chủ nhà (nếu có trên hệ thống) hoặc admin; §0.8 đã chốt hết (cập nhật 02/11/2026)**
 
 **Nhật ký phiên bản**
 
@@ -165,9 +165,9 @@ SRS-5.1zzzzzzz167), rổ thử mua là 242 tin mẫu `seed_thu`.
 
 | Đợt | Việc | Neo |
 |---|---|---|
-| 1 · Chốt | §0.8 (OPEN-41, 27 nửa sau) + OPEN-21 (5 vai), 26 (quyền lợi hạng), 28 (phí). OPEN-42 mất đối tượng khi bỏ CTV | 09 |
+| 1 · Chốt | ✅ Xong — OPEN-27 (15/09 + 20/10), 26 (05/10), 21 / 28 / 41 (28/10); OPEN-42 mất đối tượng khi bỏ CTV. Bổ sung 02/11: tên phường cũ tự gắn phường mới qua bản đồ (OPEN-27), hạng cao ưu tiên khi gợi ý căn (OPEN-26, SRS-5.1zzzzzzz361) | 09 |
 | 2 · Đo I3 | 20 tin có chủ thật trên hệ thống; đo tỷ lệ câu khách hỏi được chủ nhà trả lời trong 12 giờ, và phần admin phải đỡ | SRS-5.1zzzzzzz170 |
-| 2b · Địa bàn | Đợt 1 xong 03/09 (không ghi cứng Quận 5, copy nói Sài Gòn + Long An). Đợt 2 khi OPEN-27 nửa sau chốt: SEO theo khu mới, mở cụm kề Q5 cũ + một huyện Long An có hàng thật | FR-174 |
+| 2b · Địa bàn | Đợt 1 xong 03/09 (không ghi cứng Quận 5, copy nói Sài Gòn + Long An). Đợt 2 (OPEN-27 nửa sau chốt 15/09; vùng nhận tin 6 tỉnh 20/10): SEO theo khu mới, mở cụm kề Q5 cũ + một huyện Long An có hàng thật | FR-174 |
 | 3 · Dữ liệu | 7 hạng mục theo `01 §1.5c` (sự kiện tin, khớp tin–hồ sơ, giá khu vực…) | INS-13 |
 | 4 · AOND còn thiếu | Màn hình nhãn hội thoại; quét người bán im >5 ngày (drip TS đã gỡ); thưởng quy mô | FR-135/141/172, §0.3 |
 | 5 · Vận hành | Không sao lưu (chủ dự án bỏ 11/09/2026, chấp nhận rủi ro); lên Pro ngay khi có giao dịch thật đầu tiên | NFR-16, OPEN-25 |
@@ -200,13 +200,13 @@ khách một tên, FR-181; 13 tên có chấm giữa từ 25/10), **luồng CTV*
 bán — FR-174). Đã chốt 04/09/2026: **giữ chân khách mốc 5 ngày** (FR-60 đổi từ 3 ngày; FR-63
 buộc giữ kết nối từ ngày 6) và **dựng hết phần tài liệu có mà code chưa** (OPEN-43 → xem
 `10 §10.8.4`) [nguồn: chủ dự án 04/09/2026 "dựng hết đi, giữ chân 5 ngày"]. Đã chốt
-28/10/2026: **bỏ hẳn CTV** [nguồn: chủ dự án 28/10/2026, chat — bỏ CTV]. Còn:
+28/10/2026: **bỏ hẳn CTV** [nguồn: chủ dự án 28/10/2026, chat — bỏ CTV]. **Không còn mục nào chờ chốt** (soát theo `09`, 02/11/2026) — bảng dưới giữ để tra:
 
 | ID | Câu hỏi | Khuyến nghị BA |
 |---|---|---|
-| OPEN-27 nửa sau | Tên hiển thị cũ hay mới; DB lưu gì; mã tin; mở phường/huyện nào trước; cho thuê có giữ | Hiển thị cả hai tên; bảng `wards` một nguồn; giữ mã tin; mở cụm kề Q5 cũ + một huyện Long An có hàng; giữ cho thuê như đang có |
+| OPEN-27 nửa sau | ✅ chốt 15/09/2026 (DB lưu tên phường mới, `wards`), 20/10/2026 (vùng nhận tin 6 tỉnh); 02/11/2026: "tên phường mới, tên phường cũ được tự động chuyển thành phường mới bằng cách gắn lên bản đồ để biết chứ không hỏi khách" [nguồn: chủ dự án 02/11/2026, chat] | — |
 | OPEN-40 | ✅ chốt 09/09/2026 tối — làm cả bốn loại (`toa_nha`, `dat_nong_nghiep`, `dat_kinh_doanh`, `kho_xuong`); bộ câu hỏi nay ở `src/aioi/schema.py` (SRS-5.1zzzzzzz68) | — |
-| OPEN-41 | Model: giữ Claude hay Gemini → local theo AOND §VII | Code đã chạy theo khuyến nghị: Claude chính (chat Sonnet 5.5, bóc tách Haiku), Gemini → Groq dự phòng (SRS-5.1zzzzzzz117, SRS-5.1zzzzzzz235). Đề nghị đóng |
+| OPEN-41 | ✅ chốt 28/10/2026 (a): Claude đường chính (chat Sonnet 5.5, bóc tách Haiku), Gemini → Groq dự phòng (SRS-5.1zzzzzzz117, SRS-5.1zzzzzzz235) | — |
 | OPEN-42 | *[mất đối tượng 28/10/2026 — bỏ CTV]* Hạn trả lời và mốc hạng CTV | Đóng ở `09` |
 | **OPEN-48** | ✅ **ĐÃ CHỐT 08/09/2026**: Bỏ toàn bộ nhóm tính năng thừa kế 2024 (mini-site rao web, tài khoản, trang phụ SEO cũ). Chuẩn hóa 100% tài liệu theo Aioinhadat 2026 | Đã chốt theo lệnh sếp và chủ dự án |
 | OPEN-65 | Hạn admin trả lời câu khách hỏi | ✅ Chốt 28/10/2026: 5 giờ (SRS-5.1zzzzzzz238); ngưỡng dừng I3 vẫn *[giả định BA]* |
@@ -227,8 +227,12 @@ trường, và **mã tin không bao giờ đọc ra trong chat** — mua lẫn b
 địa chỉ. Mã vẫn là khoá liên kết web ↔ chat (IA-P3): web hiện, khách gõ vào thì
 bot hiểu; phía mua bot gửi link trang tin thay vì đọc mã (SRS-5.1zzzzzzz145). OPEN-50 (ngưỡng điểm để tin được rao) đã đóng 28/10/2026: không còn cổng điểm 70, tin lên web theo trigger `listings_quyet_dinh_dang_tin`.
 
+**Hiện trạng 02/11/2026:** main đóng băng ở `598ecca` sau lượt chấm cuối đạt nền; chỉ mở lại khi có lỗi khách thật hoặc quyết định
+mới của chủ dự án. Người dùng thật: chủ dự án, anh L. (khuôn bot), chị N., anh T.; DB có 3 tin thật (ngoài 242 tin mẫu `seed_thu`)
+[nguồn: điều phối 02/11/2026; số tin đếm trên DB 02/11/2026].
+
 **DH-07.** Cho tới khi §0.8 chốt, việc mới đi theo cột phải và tầng dưới ghi
-`[giả định BA]` ở chỗ phụ thuộc.
+`[giả định BA]` ở chỗ phụ thuộc. *(02/11/2026: §0.8 đã chốt hết.)*
 
 ---
 
