@@ -42,6 +42,7 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 - Câu "🤔 có phải dự án X" (tên gần trùng) chỉ hỏi khi dự án kho CÙNG vị trí với căn (`_cung_vi_tri_du_an`), là câu hỏi duy nhất của lượt (`_hoi_trung_ten`; lời đã có câu hỏi thì sang lượt sau) (SRS-254).
 - Chung / riêng theo khuôn anh Luận: căn kế thừa dự án ⊕ mẫu nhà, căn thắng, giá luôn riêng; phía mua qua `projects.dong_ke_thua` (`Engine._gan_ke_thua`), web trang dự án đọc `thong_tin` đè cột mogi (SRS-283).
 - Lời người bán về dự án là PHIẾU theo hạng (Đồng 1 / Bạc 2 / Vàng 3, chốt ≥ 6, phe khác ≤ 2), admin (`admins`) = `chac_chan:` ghi thẳng; mã phiếu chỉ do `Engine._ma_phieu` tính — đừng nhận phiếu từ model. Tệp mẫu nhà lưu `du-an/…` (bucket công khai) để gửi được.
+- Phường: KHÔNG bao giờ hỏi khách (chủ dự án 02/11, SRS-359) — hệ thống tra (cũ → mới, toạ độ → `phuong_tai_diem`, kho đường / hẻm một phường), không ra thì báo người phụ trách; ô hệ thống tự tra nằm ở `schema.O_HE_THONG_TRA`.
 - Điểm …/100 là điểm của TIN / căn; Đồng / Bạc / Vàng là hạng của NGƯỜI RAO, chỉ có TÊN — không đưa số /100 của người rao cho model (SRS-349), không gọi lẫn. Chỉ nói lúc RA TIN (bản nháp / báo đăng) hoặc khi khách hỏi (`hoi_ve = diem_tin`): khối ĐIỂM TIN chỉ nối ở các lượt đó, lượt hỏi ô không có (chủ dự án 02/11, SRS-336).
 - Nguồn phụ Rever ở `specs.rever` (SRS-324): chỉ điền ô trống, không nêu tên nguồn ra khách; chủ căn hộ hỏi giá cao không → `khoi_dinh_gia` nêu giá RAO X–Y triệu/m² + số tin + ngày, không phán cao / thấp; không có số liệu thì "chưa có dữ liệu định giá" (SRS-325).
 

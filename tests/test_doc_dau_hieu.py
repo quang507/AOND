@@ -22,7 +22,7 @@ def test_co_ten_duong_thi_khong_hoi_lai_dia_chi():
     from aioi.schema import Property
     p = Property(loai_hinh="nha_pho", fields={"duong": "Âu Cơ", "quan": "Quận 11"})
     thieu = p.missing_fields()
-    assert "dia_chi" not in thieu and thieu[0] == "gia" and "phuong" in thieu   # SRS-5.1zzzzzzz200: giá là ô tối thiểu, hỏi trước
+    assert "dia_chi" not in thieu and thieu[0] == "gia" and "phuong" not in thieu   # SRS-200: giá hỏi trước; SRS-359: phường không hỏi
 
 
 def test_cau_hoi_gia_khong_kem_thuong_luong():
@@ -32,7 +32,10 @@ def test_cau_hoi_gia_khong_kem_thuong_luong():
 
 
 def test_khach_da_noi_phuong_thi_nhan_theo_khach():
-    # Bắn thử 19/10: kho gợi ý "Âu Cơ thuộc Phường Hòa Bình", khách nói "Phường 9" → bot hỏi lại "Phường 9 hay Hòa Bình".
+    # SRS-5.1zzzzzzz359: khối địa danh không còn lượt "hỏi phường"; phường khách tự nói thì ghi như mọi ô (engine), hệ thống không hỏi lại.
     import inspect
     from aioi import dia_danh
-    assert "ghi theo khách, không hỏi lại" in inspect.getsource(dia_danh.khoi_dia_danh)
+    src = inspect.getsource(dia_danh.khoi_dia_danh)
+    assert "KHÔNG hỏi khách phường" in src and "khi hỏi phường" not in src
+
+

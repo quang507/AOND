@@ -420,7 +420,8 @@ class TraDiaDanh:
         search phường trước bằng nominatim, nếu search không được mới hỏi"). Đo 28/10 trên 20 địa chỉ: toà nhà / dự án ra đúng số 4/10, nhà
         thường 0/10; kết quả chỉ ở mức ĐƯỜNG có lúc sai phường (125 Bình Long, Bình Tân → Phú Thọ Hòa) — nên chỉ nhận khi Nominatim trả đúng
         số nhà + đúng tên đường, phường ra phải là MỘT phường trong kho, nằm trong các phường con đường đi qua (và của hẻm, nếu kho hẻm có).
-        Không chắc / lỗi mạng → None (bot hỏi như cũ). Nhớ theo (số, đường, quận); lỗi mạng không nhớ."""
+        Không chắc / lỗi mạng → None (bước tra kế của `Engine._phuong_tu_dia_chi`; SRS-5.1zzzzzzz359: không hỏi khách). Nhớ theo (số, đường,
+        quận); lỗi mạng không nhớ."""
         m = _SO_NHA_DAU.match(dia_chi or "")
         if not m or not ten_duong:
             return None
@@ -453,6 +454,66 @@ class TraDiaDanh:
                 log.warning("phường theo số nhà: bản đồ ra phường ngoài kho đường / hẻm — bỏ")
                 kq = None
         log.warning("phường theo số nhà: %s", "trúng" if kq else "không ra")
+        if len(nho) > 500:
+            nho.clear()
+        nho[khoa] = kq
+        return kq
+
+    def phuong_theo_toa_do(self, dia_chi: str | None, ten_duong: str | None, quan: str | None = None) -> str | None:
+        """SRS-5.1zzzzzzz359 (chủ dự án 02/11: phường "gắn lên bản đồ để biết chứ không hỏi khách"): lấy TOẠ ĐỘ của chỗ khách nói rồi hỏi DB
+        điểm đó thuộc phường nào (RPC `phuong_tai_diem(lat, lng)`, SRS-5.1zzzzzzz360 phía web·DB). Toạ độ theo thứ tự: (a) điểm hẻm trong kho
+        (bảng `duong`, loai = hem, cùng đường + số hẻm); (b) Nominatim trả đúng con đường (mức số nhà hay mức đường). Phường ra phải là MỘT
+        phường trong kho và nằm trong các phường con đường / hẻm đi qua (kho biết) — điểm mức đường trên con đường dài có thể rơi sang phường
+        khác. RPC chưa có / lỗi → None (sang bước kho đường / hẻm)."""
+        if not ten_duong or self._rpc is None:
+            return None
+        khoa = ("toa_do", bo_dau(dia_chi or ""), bo_dau(ten_duong), _khoa_quan(quan))
+        nho = self._nho_so_nha
+        if khoa in nho:
+            return nho[khoa]
+        diem: list[tuple[float, float]] = []
+        so = so_hem_cua(dia_chi, ten_duong, "/" in (dia_chi or ""))
+        if so and self._doc is not None:
+            try:
+                for d in self._doc("duong", {"select": "lat,lng,quan_cu", "loai": "eq.hem", "duong_me": f"eq.{ten_duong}",
+                                             "so_hem": "in.(" + ",".join(f'"{x}"' for x in so) + ")"}) or []:
+                    if d.get("lat") is not None and d.get("lng") is not None and _cung_quan(d.get("quan_cu"), quan):
+                        diem.append((float(d["lat"]), float(d["lng"])))
+            except Exception as e:  # noqa: BLE001 — tra bản đồ là phần thêm
+                log.warning("phường theo toạ độ: đọc điểm hẻm lỗi %s", e)
+        if not diem:
+            m = _SO_NHA_DAU.match(dia_chi or "")
+            q = f"{m.group(1) + ' ' if m else ''}{ten_duong}, {quan + ', ' if quan else ''}Thành phố Hồ Chí Minh"
+            try:
+                ds = self._rpc("tra_nominatim", {"p_q": q, "p_limit": 3, "p_chi_tiet": True, "p_cho_giay": 4})
+            except Exception as e:  # noqa: BLE001
+                log.warning("phường theo toạ độ: Nominatim lỗi %s", e)
+                return None
+            duong_khoa = _loi(ten_duong, TU_CHUNG_DUONG)
+            for r in ds if isinstance(ds, list) else []:
+                a = r.get("address") or {}
+                if _loi(str(a.get("road") or ""), TU_CHUNG_DUONG) == duong_khoa and r.get("lat") and r.get("lon"):
+                    diem.append((float(r["lat"]), float(r["lon"])))
+                    break
+        kq = None
+        for lat, lng in diem[:1]:
+            try:
+                ra = self._rpc("phuong_tai_diem", {"lat": lat, "lng": lng})
+            except Exception as e:  # noqa: BLE001 — RPC chưa có (SRS-360) / lỗi: bỏ qua bước này
+                log.warning("phường theo toạ độ: RPC phuong_tai_diem lỗi %s", type(e).__name__)
+                return None
+            ten = ra if isinstance(ra, str) else (ra[0] if isinstance(ra, list) and ra else ra)
+            if isinstance(ten, dict):
+                ten = ten.get("phuong") or ten.get("ten")
+            kq = self.phuong(ten) if isinstance(ten, str) and ten.strip() else None
+        if kq:
+            d = self.duong(ten_duong, quan)
+            hop_le = list(d["phuong"]) if d else []
+            hem = self.phuong_theo_hem(dia_chi, d["ten"] if d else ten_duong, quan)
+            if (hop_le and kq not in hop_le) or (hem and kq not in hem):
+                log.warning("phường theo toạ độ: phường ngoài kho đường / hẻm — bỏ")
+                kq = None
+        log.warning("phường theo toạ độ: %s", "trúng" if kq else "không ra")
         if len(nho) > 500:
             nho.clear()
         nho[khoa] = kq
@@ -556,7 +617,7 @@ def phuong_kho_hem(tra: TraDiaDanh | None, fields: dict[str, str]) -> list[str]:
 
 def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: str | None, hoi_duong: bool = True) -> str:
     """Khối cho prompt trả lời: tên đường khách gõ gần với đường nào trong kho (hỏi xác nhận, lượt nào cũng được — không chỉ lúc
-    hỏi địa chỉ), và khi sắp hỏi phường thì đường đó đi qua những phường nào. Hệ thống tra, không phải khách nói.
+    hỏi địa chỉ); dữ kiện xã / phường mới do hệ thống tra (không hỏi khách phường — SRS-5.1zzzzzzz359).
     `hoi_duong=False`: bỏ hai dòng HỎI xác nhận tên đường, giữ dữ kiện (Đợt 4, SRS-5.1zzzzzzz328 — engine gỡ câu hỏi đường khi lượt có việc
     hỏi khác ưu tiên hơn, dữ kiện xã / phường mới vẫn vào prompt)."""
     if tra is None:
@@ -576,12 +637,11 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
     chia = getattr(tra, "phuong_cu_chia", None)
     chia = chia(fields.get("phuong"), fields.get("quan")) if chia else []
     if len(chia) >= 2:
-        # SRS-5.1zzzzzzz191 (chat anh Luận 26/10): khách nói "phường 6" — phường CŨ đánh số bị chia về hai phường mới nên hệ thống không tự ghi
-        # được phường; bản trước bot cứ hỏi tiếp việc khác rồi tới lúc duyệt tin mới hỏi trống "phường mới nào". Hỏi NGAY, kèm các lựa chọn.
-        dong.append(f'Khách nói phường "{fields.get("phuong")}" — đó là phường CŨ (trước sáp nhập); từ 01/07/2025 nó chia về nhiều phường mới ({", ".join(chia)}) '
-                    f'nên CHƯA biết nhà thuộc phường nào. Khi dòng "{NHAN_VIEC_LUOT}" là hỏi phường: kể hai phường mới cho khách '
-                    f'chọn (vd "{fields.get("phuong")} cũ giờ chia về {" hoặc ".join(chia)}, nhà mình ở phường nào ạ?"), KHÔNG hỏi trống "phường nào". '
-                    "Khách đã chọn hay nói phường khác thì ghi theo khách, không hỏi lại. Danh sách phường do hệ thống tra, KHÔNG phải khách nói.")
+        # SRS-5.1zzzzzzz359 (chủ dự án 02/11: không hỏi khách phường): phường cũ chia về nhiều phường mới — hệ thống tự xác định theo địa chỉ /
+        # bản đồ; bản trước (SRS-191) dặn kể các phường mới cho khách chọn.
+        dong.append(f'Khách nói phường "{fields.get("phuong")}" — phường CŨ (trước sáp nhập), nay chia về nhiều phường mới ({", ".join(chia)}). '
+                    "Hệ thống tự xác định phường mới theo địa chỉ trên bản đồ (không ra thì người phụ trách điền) — KHÔNG hỏi khách phường, "
+                    "KHÔNG kể các phường này cho khách chọn, KHÔNG tự chọn một phường.")
     mot = getattr(tra, "phuong_cu_moi", None)
     mot = mot(fields.get("phuong"), fields.get("quan")) if mot and len(chia) < 2 else None
     if mot:
@@ -604,25 +664,8 @@ def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: st
         dong.append(f'Tên đường khách gõ "{fields["duong"]}" khớp NHIỀU đường trong kho: {" / ".join(uv)}. Lượt này hỏi khéo khách là '
                     "đường nào TRƯỚC (kể các tên trên kèm quận cũ cho khách chọn), thay cho câu hỏi kế; khách đã chọn trong hội thoại thì "
                     "thôi, không hỏi lại. KHÔNG tự chọn thay khách.")
-    d = tra.duong(fields.get("duong"), fields.get("quan"))
-    ph = d["phuong"] if d else []
-    # SRS-5.1zzzzzzz228 (ban-thu-srd 27/10: bot hỏi "có phải Phường Chợ Quán không" 5 lượt liền, cả sau khi đã báo admin tra phường): dòng
-    # kho hẻm kèm sẵn câu hỏi nên model hỏi phường ở MỌI lượt có khối này — chỉ đưa ở lượt hệ thống chọn hỏi phường.
-    ph_hem = phuong_kho_hem(tra, fields) if next_field == "phuong" else []
-    if len(ph_hem) == 1:
-        dong.append(f"Kho hẻm: hẻm trong địa chỉ khách chỉ có ở {ph_hem[0]} — khi hỏi phường, hỏi xác nhận dạng HỎI (\"nhà mình ở "
-                    f"{ph_hem[0]} đúng không anh/chị?\"), KHÔNG khẳng định; khách nói phường khác thì ghi theo khách, không hỏi lại.")
-    elif 2 <= len(ph_hem) <= 4:
-        dong.append(f"Kho hẻm: hẻm trong địa chỉ khách nằm ở {', '.join(ph_hem)} — khi hỏi phường, kể các phường này cho khách chọn.")
-    elif next_field == "phuong" and not goi_y and 1 <= len(ph) <= 4:
-        if len(ph) == 1:
-            # SRS-5.1zzzzzzz79: bắn thử 20/10 bot nói "đường Âu Cơ thuộc khu vực Phường Hòa Bình" rồi lại hỏi phường — gợi ý kho được
-            # nói như sự thật. Chỉ được nhắc ở dạng câu hỏi.
-            dong.append(f"Kho đường: đường {d['ten']} nằm ở {ph[0]} — hỏi khách nhà thuộc phường nào; muốn gợi ý thì chỉ ở dạng HỎI "
-                        f"(\"có phải {ph[0]} không anh/chị?\"), KHÔNG khẳng định đường / nhà thuộc {ph[0]}; khách nói phường khác thì "
-                        "ghi theo khách, không hỏi lại (kho có thể thiếu đoạn).")
-        else:
-            dong.append(f"Kho đường: đường {d['ten']} đi qua {', '.join(ph)} — khi hỏi phường, kể các phường này cho khách chọn.")
+    # SRS-5.1zzzzzzz359: bỏ hai dòng "Kho hẻm / Kho đường" đưa danh sách phường cho khách chọn (SRS-115 / 228) — phường do hệ
+    # thống tự tra (`Engine._phuong_tu_dia_chi`), không còn lượt nào hỏi phường.
     if not dong:
         return ""
     return ("\n\nTRA CỨU ĐỊA DANH (hệ thống tra kho đường / phường, KHÔNG phải khách nói; không tự chọn thay khách):\n- "

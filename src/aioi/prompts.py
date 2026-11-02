@@ -1076,51 +1076,20 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
     cam = ("TUYỆT ĐỐI KHÔNG nói tin đã đăng / đã lên web / đang hiển thị, KHÔNG bảo khách vào web xem tin của mình, KHÔNG nói "
            f"\"{cau_mau.cau('duyet_tin')}\" (SRS-5.1zzzzzzz107).")
     thieu = [o for o in (web.get("thieu") or []) if o in FIELD_LABELS]
-    # SRS-5.1zzzzzzz240 (ban-thu-srd 28/10: admin đã được báo tra phường mà bot vẫn "chỉ cần anh cho em xin phường" — tin còn thiếu cả diện
-    # tích nên `thieu[0]` không phải phường, nhánh dưới kể phường vào "chỉ cần thêm …"). Đã báo admin thì phường ra khỏi việc hỏi khách.
-    admin_tra_phuong = ""
-    if web.get("phuong_bao_admin") and "phuong" in thieu and thieu[0] != "phuong":
-        thieu = [o for o in thieu if o != "phuong"]
-        admin_tra_phuong = " Phường thì admin ĐÃ được báo để tra và điền — KHÔNG hỏi khách về phường / số nhà / gần đâu nữa."
-    ghi_tam = [p for p in (web.get("phuong_he_thong") or []) if isinstance(p, str)]
-    if ghi_tam and not thieu:
-        # SRS-5.1zzzzzzz214 mục 8 (chủ dự án 27/10: "khách không chọn thì lưu cả 2 luôn"): hệ thống vừa ghi tạm cả các phường ứng viên.
-        ly_do = (f"TIN ĐANG ĐƯỢC ĐƯA LÊN WEB: khách chưa chọn phường mới nên hệ thống ghi tạm CẢ các phường {' / '.join(ghi_tam)} (hệ thống tra, "
-                 f"không phải khách nói). {cam}")
-        viec = (f"báo khách MỘT câu ngắn: nhà nằm ở ranh {' / '.join(ghi_tam)} nên em ghi cả hai, khách muốn sửa phường thì nhắn em; KHÔNG hỏi "
-                "phường nữa, rồi tiếp việc đang dở.")
-    elif thieu and thieu[0] == "phuong" and web.get("phuong_bao_admin"):
-        # SRS-5.1zzzzzzz214 mục 7: đã báo admin tra phường (sau 3 lượt hỏi) → thôi hỏi, không nhắc lại mỗi lượt.
-        ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu phường, admin ĐÃ được báo để tra và điền. {cam}"
-        viec = ("KHÔNG hỏi khách về phường / số nhà / gần đâu nữa; nếu khách hỏi tin thì nói bên em đang tra phường rồi lên web, còn lại đáp "
-                "điều khách vừa nói và hỏi ô khác (nếu có) như thường.")
-    elif thieu:
+    # SRS-5.1zzzzzzz359 (chủ dự án 02/11: phường hệ thống tự tra, KHÔNG hỏi khách; ca thật 01–02/11 "Chỉ cần thêm phường là em đưa tin lên web
+    # ngay… nhà anh thuộc phường nào ạ?"): phường ra khỏi danh sách hỏi khách — engine đã ghi phường tra được hoặc báo người phụ trách. Bỏ các
+    # nhánh SRS-212 / 214 / 240 (kể phường cho khách chọn, hỏi số nhà / gần chợ để tra, ghi tạm "A / B").
+    thieu_phuong = "phuong" in thieu
+    thieu = [o for o in thieu if o != "phuong"]
+    if thieu:
         nhan = ", ".join(FIELD_LABELS[o].split(" (")[0] for o in thieu)
         hoi = FIELD_LABELS[thieu[0]]
-        if thieu[0] == "phuong":
-            hoi = ("phường của nhà theo tên phường MỚI sau sáp nhập (phường khách nói chưa khớp được một phường mới duy nhất — "
-                   "có thể phường cũ đã chia về nhiều phường mới)")
-            # SRS-5.1zzzzzzz212 (bắn thử 5 khách, cô T.: phường hỏi lần 3 ở lượt duyệt, bot tự kể "Nguyễn Cư Trinh, Phường 11 hay Phường 4"
-            # — khối này không đưa danh sách nào nên model bịa). Chủ dự án 26/10: "thiếu thông tin thì hỏi khác".
-            goi_y = [p for p in (web.get("goi_y_phuong") or []) if isinstance(p, str)][:4]
-            nhap_nhang = [d for d in (web.get("duong_nhap_nhang") or []) if isinstance(d, str)][:4]
-            if nhap_nhang:   # SRS-5.1zzzzzzz271: chưa biết đường nào thì chưa tra được phường — hỏi đường trước
-                hoi = (f"nhà nằm ở đường nào — tên đường khách gõ khớp nhiều đường trong kho: {' / '.join(nhap_nhang)} (hệ thống tra, không "
-                       "phải khách nói); kể các tên này kèm quận cũ cho khách chọn (biết đường thì bên em tự tra phường), KHÔNG hỏi chợ / "
-                       "trường / ngã tư, KHÔNG tự chọn thay khách")
-            elif goi_y:
-                hoi += (f" — kể ĐÚNG các phường hệ thống tra được cho khách chọn: {', '.join(goi_y)} (hệ thống tra, không phải khách nói); "
-                        "KHÔNG kể phường nào khác")
-            elif web.get("phuong_da_hoi"):
-                hoi = ("chỗ của nhà theo CÁCH KHÁC vì khách đã được hỏi phường mà chưa trả lời: "
-                       + ("hỏi nhà gần chỗ nào (chợ, trường, ngã tư) — khách ĐÃ cho số nhà, KHÔNG xin lại số nhà"
-                          if web.get("co_so_nha") else "hỏi số nhà / số hẻm, hoặc nhà gần chỗ nào (chợ, trường, ngã tư)")
-                       + " để bên em tự tra phường — KHÔNG hỏi lại chữ \"phường nào\", KHÔNG tự kể tên phường nào")
-            else:
-                hoi += " — KHÔNG tự kể tên phường nào (hệ thống chưa tra được danh sách)"
-        ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu {nhan}.{admin_tra_phuong} {cam}"
-        viec = (f"nói còn cần thêm {nhan} (phường bên em đang tra), rồi hỏi ĐÚNG 1 câu về {hoi}." if admin_tra_phuong
-                else f"nói chỉ cần thêm {nhan} là tin lên web ngay, rồi hỏi ĐÚNG 1 câu về {hoi}.")
+        ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu {nhan}. {cam}"
+        viec = f"nói chỉ cần thêm {nhan} là tin lên web, rồi hỏi ĐÚNG 1 câu về {hoi}. KHÔNG hỏi / nhắc phường (bên em tự xác định)."
+    elif thieu_phuong:
+        ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): bên em đang hoàn tất thông tin vị trí, người phụ trách đã được báo. {cam}"
+        viec = ("báo ngắn bên em đang hoàn tất để đưa tin lên; KHÔNG hỏi khách phường / xã / số nhà / gần đâu, KHÔNG nói thiếu phường, KHÔNG kể "
+                "tên phường nào; còn lại đáp điều khách vừa nói như thường.")
     elif web.get("chua_ban_nhap"):
         ly_do = f"TIN CHƯA LÊN WEB: chưa đủ thông tin để soạn tin. {cam}"
         viec = "nói em cần thêm vài thông tin để soạn tin đăng, rồi hỏi tiếp đúng câu đang cần hỏi."
@@ -2085,7 +2054,7 @@ QUY TẮC:
   NGUYÊN VĂN cụm chứa chữ xưng / chữ gọi đó.
 - BOT VỪA HỎI GÌ (SRS-5.1zzzzzzz212): bot_vua_hoi = danh sách KHOÁ ô (đúng tên khoá ở fields: phuong, dia_chi, gia, dien_tich_dat,
   phap_ly_hoan_cong…) mà TIN GẦN NHẤT CỦA BOT thật sự hỏi khách — đọc theo nghĩa câu hỏi của bot, không theo việc khách trả lời
-  ("cho em xin phường nhà mình" → ["phuong"]; "nhà ở đường nào, phường nào" → ["dia_chi", "phuong"]). Bot không hỏi ô nào → [].
+  ("cho em xin giá anh muốn bán" → ["gia"]; "nhà ngang dài bao nhiêu, mấy tầng" → ["kich_thuoc", "so_tang"]). Bot không hỏi ô nào → [].
 - XIN XEM BẢN VẼ (19/10/2026): xin_xem_ban_ve = NGUYÊN VĂN cụm khách XIN XEM / XIN GỬI bản vẽ, mặt bằng (bản vẽ tầng / căn /
   tổng thể), sơ đồ, phối cảnh, layout, brochure. "cho thuê mặt bằng kinh doanh", "bán mặt bằng" là LOẠI BĐS, không phải xin bản
   vẽ → bỏ trống. Có điền thì operations RỖNG (xin xem không phải sửa rổ hàng). Khách xin bản đồ / phân lô / quy hoạch / mặt
