@@ -19,8 +19,6 @@ export const WARD_CENTROIDS: Record<string, [number, number]> = {
   "Phường 15": [10.7534, 106.6559],
 };
 
-export const Q5_CENTER: [number, number] = [10.7561, 106.6703];
-
 // Danh sách phường Quận 5 — MỘT nguồn (FR-171 j). Trước đây bốn bản lệch nhau
 // (trang chủ 14, /quan-ly 15, form admin 16, bản đồ 15); 15 phường là đúng
 // địa giới cũ đang dùng ở đây (INS-12), và là 15 phường có toạ độ.

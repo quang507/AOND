@@ -1,7 +1,7 @@
 "use client";
 // Dashboard nhà môi giới (FR-124 — port ý tưởng dashboard NhaDat-Radar).
 // Đăng tin vẫn theo tinh thần INS-05: MỘT câu rao + phường + giá, AI bóc tách
-// chi tiết sau (bot ask-seller sẽ hỏi bổ sung). Tin mới vào `cho_thong_tin`,
+// chi tiết sau (lõi Python hỏi bổ sung qua Zalo). Tin mới vào `cho_thong_tin`,
 // đủ giá + diện tích + phường thì trigger FR-139 tự đẩy lên web.
 import { useEffect, useState } from "react";
 import Link from "next/link";

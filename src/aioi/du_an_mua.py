@@ -59,7 +59,7 @@ def dong_du_an(p: dict[str, Any]) -> list[str]:
     if isinstance(tu, (int, float)) and isinstance(den, (int, float)) and tu and den:
         d.append(f"- Diện tích sản phẩm: {tu:g}–{den:g} m²")
     da_noi = {"tổng diện tích"} if _chu(sp.get("tong_dien_tich")) else set()
-    for k, v in dong_nguon_phu(sp):          # `specs.rever` (SRS-5.1zzzzzzz323)
+    for k, v in dong_nguon_phu(sp):          # `specs.rever` (SRS-5.1zzzzzzz324)
         if k not in da_noi:
             d.append(f"- {k[:1].upper()}{k[1:]}: {v}")
     if _chu(sp.get("nam_khoi_cong")) or _chu(sp.get("nam_hoan_thanh")):

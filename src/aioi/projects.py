@@ -543,7 +543,7 @@ def _so(v) -> str:
 
 
 def dong_nguon_phu(specs) -> list[tuple[str, str]]:
-    """Dữ kiện nguồn phụ `specs.rever` (scripts/thu-du-an-rever.mjs, SRS-5.1zzzzzzz323) → các cặp (nhãn, giá trị) cho cả hai phía bot.
+    """Dữ kiện nguồn phụ `specs.rever` (scripts/thu-du-an-rever.mjs, SRS-5.1zzzzzzz324) → các cặp (nhãn, giá trị) cho cả hai phía bot.
     Chỉ ô có chữ thật; giá rao gộp kèm số tin + ngày lấy để model nói "tham khảo", không nói như giá chốt. Không nêu tên nguồn ra khách."""
     r = specs.get("rever") if isinstance(specs, dict) else None
     if not isinstance(r, dict):

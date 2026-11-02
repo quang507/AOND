@@ -6,7 +6,7 @@
 // mà hai chỗ dùng — vì lỗi đầu tiên nó bắt được nằm ở TƯƠNG TÁC giữa nhãn và
 // luật: nhãn có chữ "Zalo", luật mạng xã hội khớp chữ "Zalo", nên bản cũ hai
 // lượt `replace` chèn nhãn vào giữa nhãn ("[liên hệ qua [liên hệ qua Zalo…").
-import { thayLienHe, thayLienHeCoId, coSdt } from "../supabase/functions/_shared/extraction/luat-lien-he.ts";
+import { thayLienHe } from "../supabase/functions/_shared/extraction/luat-lien-he.ts";
 
 const NHAN_WEB = " [liên hệ qua Zalo AI Ơi Nhà Đất] ";
 const NHAN_BOT = " [liên hệ qua Zalo] ";
@@ -60,15 +60,6 @@ for (const [cau, mong] of [
   ["bàn 028 3855 1234", `bàn ${L}`],
   ["giá 5 tỷ, lh 0903123456", `giá 5 tỷ, lh ${L}`],
 ]) la(`VẪN che: ${JSON.stringify(cau)}`, gon(thayLienHe(cau, NHAN_BOT)), mong);
-
-la("coSdt gọi hai lần liền trên cùng câu vẫn true (không kẹt lastIndex)",
-  [coSdt("0903123456"), coSdt("0903123456")].join(","), "true,true");
-
-// 22/09/2026 (bộ đo giọng M03): câu BOT tự nói — "Zalo" trần giữ, kênh có ID / SĐT vẫn che.
-la("bot nói 'liên hệ qua Zalo' → giữ nguyên chữ", gon(thayLienHeCoId("anh chị phụ trách sẽ liên hệ qua Zalo với mình ạ", NHAN_BOT)), "anh chị phụ trách sẽ liên hệ qua Zalo với mình ạ");
-la("bot lỡ chép 'zalo: abc' → che", gon(thayLienHeCoId("nhắn zalo: abc nha", NHAN_BOT)), `nhắn ${gon(NHAN_BOT)} nha`);
-la("bot lỡ chép SĐT → che", gon(thayLienHeCoId("gọi 0903 123 456 nha", NHAN_BOT)), `gọi ${gon(NHAN_BOT)} nha`);
-la("'fb nha.dat.q5' (ID có dấu chấm) → che", gon(thayLienHeCoId("xem fb nha.dat.q5", NHAN_BOT)), `xem ${gon(NHAN_BOT)}`);
 
 console.log(`\n${dat} đạt · ${hong} hỏng`);
 if (hong) { console.log("\x1b[31mLUẬT CHE LIÊN HỆ HỎNG\x1b[0m"); process.exitCode = 1; }

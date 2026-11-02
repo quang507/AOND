@@ -4,8 +4,8 @@
 // gửi → ack lại. FR-149: kéo cả kind `report` (báo cáo hằng ngày) về Zalo admin.
 // POST { action: "pull" } → { items: [{id, note, text, name, zalo_user_id, phone}] }
 // POST { action: "ack", id } → { ok: true }
-// FR-202 (11/09): pull trả thêm lời nhắc nudge ĐÃ SOẠN SẴN (`noi_dung_gui`) cho
-// người mua hoặc chủ nhà — chưa có OA thì đường ra duy nhất là acc clone.
+// FR-202 (nhánh lời nhắc soạn sẵn `noi_dung_gui`) gỡ 02/11/2026: tin cho khách do LÕI gửi (`gui_nhac.py`); DB thật
+// không còn dòng pending nào có `noi_dung_gui`.
 // FR-203 (11/09): POST { action: "qr", trang_thai, qr_png? } — bridge báo trạng
 // thái đăng nhập + ảnh QR để /admin hiện ra quét; pull trả `quet_lai` khi admin
 // bấm "Đăng nhập lại".
@@ -157,32 +157,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Dòng nudge soạn sẵn (`noi_dung_gui`, 20260911b) cũng ack ở đây. Ghi tin
-    // vào hội thoại ĐÚNG LÚC NÀY — sau khi bridge báo đã gửi — chứ không phải
-    // lúc nudge soạn: ghi lúc soạn là `so.hoi_thoai` hiện một câu bot "đã nói"
-    // mà khách chưa từng nhận (đúng cái lỗi C1 đã sửa ở nhánh OA).
-    const { data: rr } = await client.from("reminders")
-      .select("kind, noi_dung_gui, buyer_id, seller_id").eq("id", id).maybeSingle();
-    if (rr?.noi_dung_gui && !KINDS.includes(rr.kind)) {
-      // Cùng cách chọn hội thoại với nudge (nhánh OA): cuộc mới nhất của đúng
-      // người đó. Chủ nhà chưa từng có cuộc nào thì thôi — không đẻ cuộc rỗng.
-      const cot = rr.buyer_id ? "buyer_id" : "seller_id";
-      const ai = rr.buyer_id ?? rr.seller_id;
-      const { data: cv } = ai
-        ? await client.from("conversations").select("id").eq(cot, ai)
-          .order("started_at", { ascending: false }).limit(1).maybeSingle()
-        : { data: null };
-      if (cv?.id) {
-        const { error: mErr } = await client.from("messages")
-          .insert({ conversation_id: cv.id, sender: "bot", body: rr.noi_dung_gui });
-        if (mErr) await ghiLoi(client, "escalation-feed ghi tin nhac", mErr.message);
-      }
-    }
-
     await client.from("reminders")
       .update({ status: "sent", sent_at: new Date().toISOString() })
       .eq("id", id)
-      .or(`kind.in.(${KINDS.join(",")}),noi_dung_gui.not.is.null`);
+      .in("kind", KINDS);
     return jsonResponse({ ok: true, learned_zalo_id: !!learned });
   }
 
@@ -192,17 +170,6 @@ Deno.serve(async (req) => {
     .from("reminders")
     .select("id, kind, note, seller_id, sellers(name, zalo_user_id, phone)")
     .eq("status", "pending").in("kind", KINDS)
-    .lte("due_at", new Date().toISOString())
-    .or(`next_retry_at.is.null,next_retry_at.lte.${new Date().toISOString()}`)
-    .limit(10);
-  // Lời nhắc nudge đã SOẠN SẴN (lịch xem, lời hứa, báo lại câu trả lời…) mà
-  // chưa có OA để gửi — chủ dự án 11/09: "dùng zalo clone gửi cho id zalo".
-  // Người nhận là người mua HOẶC chủ nhà, nên phải tra cả `buyers`. KHÔNG bao
-  // giờ trả SĐT người mua (NFR-07): chưa có Zalo ID thì nudge đã không cất tin.
-  const { data: soanSan } = await client
-    .from("reminders")
-    .select("id, kind, note, noi_dung_gui, buyer_id, seller_id, buyers(name, zalo_user_id), sellers(name, zalo_user_id, phone)")
-    .eq("status", "pending").not("noi_dung_gui", "is", null)
     .lte("due_at", new Date().toISOString())
     .or(`next_retry_at.is.null,next_retry_at.lte.${new Date().toISOString()}`)
     .limit(10);
@@ -242,20 +209,6 @@ Deno.serve(async (req) => {
       phone: uid ? null : sdt,
     };
   });
-  for (const r of soanSan ?? []) {
-    const mua = r.buyers as Target;
-    const ban = r.sellers as Target;
-    const uid = mua?.zalo_user_id ?? ban?.zalo_user_id ?? null;
-    // Người mua: KHÔNG BAO GIỜ trả SĐT (NFR-07) — họ tới bằng Zalo nên luôn có
-    // uid. Chủ nhà: như SEC-07 ở trên, chỉ trả SĐT khi chưa biết uid.
-    const phone = mua ? null : uid ? null : ban?.phone ?? null;
-    if (!uid && !phone) continue;
-    items.push({
-      id: r.id, note: r.note, text: String(r.noi_dung_gui),
-      name: mua?.name ?? ban?.name ?? "khách", noi_bo: false, zalo_user_id: uid, phone,
-    });
-  }
-
   // SRS-5.1zzzzzzz276: đích là ID THỬ (bắn thử tạo người bán / người mua `thu-…`) — Zalo không có người đó, gửi là "Tham số không hợp lệ".
   // Không đưa bridge; huỷ dòng việc (vẫn giữ dòng để bài bắn thử đếm được). Tiền tố chỉ ở `la_id_thu` (chỗ DUY NHẤT).
   const thu = new Set<string>();

@@ -6,7 +6,7 @@
 // đọc md). File .docx là BẢN XUẤT: sửa ở md rồi chạy `bun run srd` sinh lại, không sửa tay file .docx.
 //
 // Nội dung chép từ: docs/00 (định hướng), 02 (BR/FR/NFR), 06 §6.8 (tone), 07 (kiến trúc, SRS-5.1zz*),
-// 09 (còn treo) và `bot/supabase/functions/_shared/prompts.ts` (câu mẫu, few-shot). Không có số liệu mới.
+// 09 (còn treo) và `src/aioi/cau_mau.py` + `src/aioi/prompts.py` (câu mẫu, giọng; cập nhật 02/11/2026 theo lõi Python). Không có số liệu mới.
 import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -87,7 +87,7 @@ const trangBia = [
     ["Phạm vi địa bàn", "Sài Gòn (TP.HCM theo phường mới sau 01/07/2025) + Long An; trọng tâm là bán; cụm khởi điểm Quận 5 cũ"],
     ["Quy mô mục tiêu", "Theo SRD gốc: 200–300 người dùng/ngày, 6.000–9.000 tin nhắn/ngày (NFR-05: chưa đo trên lưu lượng thật; hạ tầng đang ở bậc Free)"],
     ["Kênh", "Zalo (bridge tài khoản cá nhân trên VPS; Zalo OA webhook đã viết, chờ OA duyệt) · Website SEO · /admin"],
-    ["Trạng thái", "Đã dựng và chạy thật: web, kho tin, bot hai mặt (bán + mua), hỏi-đáp qua chủ nhà / CTV, điểm & hạng, keep-alive, nhận file / bảng giá / CSV, sổ lỗi + còi. Chưa có vòng người thật đủ để đo (docs/00 §0.9)"],
+    ["Trạng thái", "Đã dựng và chạy thật: web, kho tin, bot hai mặt (bán + mua), hỏi-đáp qua chủ nhà / admin, điểm & hạng, keep-alive, nhận file / bảng giá / CSV, sổ lỗi + còi. Chưa có vòng người thật đủ để đo (docs/00 §0.9)"],
   ], [2340, 7020]),
   new Paragraph({ spacing: { after: 240 } }),
   new Paragraph({ heading: HeadingLevel.HEADING_1, children: [run("Mục lục", { bold: true, size: 28 })] }),
@@ -99,7 +99,7 @@ const trangBia = [
 const mucI = [
   h1("I. TRIẾT LÝ THIẾT KẾ & MỤC TIÊU HỆ THỐNG"),
   b("Trải nghiệm rao bán tự nhiên", "Người rao không điền form, không dropdown. Gõ một câu rao như nhắn Zalo (hoặc gửi ảnh, bảng giá, file CSV) là có tin; AI bóc tách trường, hỏi bù đúng MỘT thông tin mỗi lượt, khen trước hỏi sau, nhặt dần nhiều ngày (FR-144, FR-177, FR-208)."),
-  b("Tích luỹ dữ liệu ngầm", "Mọi điều chủ nhà nói đều được ghi vào đúng ô, kể cả khi trả lời lệch câu hỏi; câu không ghi được vào ô thì ghi chú, không hỏi lại (FR-233). Câu khách mua hỏi mà kho chưa có được chuyển thành câu hỏi cho chủ nhà / CTV và quay về kho như một fact có nguồn (FR-173)."),
+  b("Tích luỹ dữ liệu ngầm", "Mọi điều chủ nhà nói đều được ghi vào đúng ô, kể cả khi trả lời lệch câu hỏi; câu không ghi được vào ô thì ghi chú, không hỏi lại (FR-233). Câu khách mua hỏi mà kho chưa có được chuyển thành câu hỏi cho chủ nhà / admin và quay về kho như một fact có nguồn (FR-173)."),
   b("Bot là trung gian toàn phần", "Người mua không để lại số điện thoại, không trả phí; chủ nhà và khách không nhắn trực tiếp cho nhau; liên hệ chỉ mở ở bước chốt lịch xem nhà (FR-104, NFR-07, BR-06)."),
   b("Trung thực", "Không khẳng định pháp lý, quy hoạch, còn / hết khi chưa xác minh — chuyển thành câu hỏi. Chưa chắc thì \"hình như là…\" rồi hỏi lại. Không bịa số, giá, phí, tiện ích (DH-02 bất biến 3)."),
   b("Web là phễu", "Mọi trang web đẩy người dùng về Zalo; không kéo hội thoại ra khỏi Zalo (DH-02 bất biến 1)."),
@@ -115,19 +115,19 @@ const mucII = [
   b("Xưng hô", "Em xưng \"em\"; gọi khách \"anh / chị\" theo cách khách tự xưng hoặc dặn; chưa biết thì \"anh chị\" (lớn tuổi: \"cô chú\") hoặc bỏ đại từ. Không viết \"anh/chị\" gạch chéo; không gọi khách là \"mình\", không tự xưng \"mình\" (05/10/2026)."),
   b("Một tin ~30 từ", "Ghi nhận hay khen đúng điều khách vừa nói bằng vài chữ, rồi hỏi đúng MỘT thông tin. Khách đưa nhiều thứ một lúc thì nhận hết trong một câu, vẫn chỉ hỏi một ý. Dài hơn chỉ khi khách hỏi điều cần giải thích. Phía mua được gộp 2–3 ý vào một câu hỏi liền mạch."),
   b("Khen phải thật và gắn khách mua", "Chỉ khen khi lời khách có điểm mạnh thật (hẻm xe hơi, nở hậu, sổ riêng, gần chợ…) và nói nó giúp gì cho việc bán. Không khen suông, không khen hai tin liền, không khen điều khách không nói. Không nhận xét giá khách đưa khi họ không hỏi."),
-  b("Hệ thống đưa Ý, model đặt câu (05/10/2026)", "Câu lệnh mỗi lượt là khuôn ĐÃ BIẾT / CHỦ NHÀ VỪA NHẮN / CẦN HỎI: <ý>. Code chọn ý hỏi kế (bảng required_facts + câu đang treo); câu mẫu chỉ kèm khi là câu code tra ra mang lựa chọn cụ thể (tên đường, phường, nghĩa viết tắt) hoặc chủ dự án đã sửa câu đó ở dashboard."),
+  b("Hệ thống đưa Ý, model đặt câu (05/10/2026)", "Câu lệnh mỗi lượt là khuôn ĐÃ BIẾT / CHỦ NHÀ VỪA NHẮN / CẦN HỎI: <ý>. Code chọn ý hỏi kế (bộ ô theo loại trong `src/aioi/schema.py` + câu đang treo; mỗi lượt MỘT việc — `viec_luot`); câu mẫu chỉ kèm khi là câu code tra ra mang lựa chọn cụ thể (tên đường, phường, nghĩa viết tắt) hoặc chủ dự án đã sửa câu đó ở dashboard."),
   b("Trung thực với ảnh và với bản thân", "Không suy diễn vật liệu từ ảnh; \"hình như là…\" rồi xác nhận. Hỏi thẳng người hay máy thì nói thật là trợ lý AI, việc cần người thật có anh/chị phụ trách theo sát — không bao giờ nhận là người thật."),
   b("Không dấu hiệu máy", "Không gạch dài, không markdown, không emoji hình (🏠💰), không \"Quý khách / Vui lòng / Hệ thống ghi nhận / Tuyệt vời!\". Mặt cười gõ tay kiểu Zalo (:) :D =)) ^^) dùng thưa, khoảng một phần ba số tin, không trong tin có số liệu. Chào một lần đầu hội thoại; mở bằng \"Dạ\" chỉ khi đáp lại điều khách vừa đưa."),
-  b("Không đọc mã tin", "Gọi căn bằng địa chỉ hay đặc điểm (\"căn hẻm Trần Bình Trọng của anh\"); mã tin chỉ ở web, CTV, admin (FR-178)."),
+  b("Không đọc mã tin", "Gọi căn bằng địa chỉ hay đặc điểm (\"căn hẻm Trần Bình Trọng của anh\"); mã tin chỉ ở web và admin (FR-178)."),
   b("Không hỏi số điện thoại", "ngoài bước chốt lịch xem nhà, và khi đó kèm lý do (\"để cộng tác viên gọi xác nhận trước ~30 phút\") và đường từ chối (\"không tiện để số thì hẹn qua Zalo cũng được ạ\")."),
   b("Lùi lại đúng lúc", "Khách bận, bực, hứa gửi sau: nói ngắn, không hỏi thêm trong tin đó; câu hỏi treo lại cho vòng hỏi bù. AI đọc cảm xúc (bực, nghi ngờ, muốn dừng) → báo admin, ngừng hỏi."),
-  b("Hai bản prompt, DB đè code", "Bản trong git là prompts.ts (TONE_RULES, SELLER_SCRIPT_RULES, SELLER_FEWSHOT, FEE_RULES, HUMAN_CHAT_RULES, SLANG_NOTES, CAU_HOI_MAU, CAU_TIEN_DINH); bản sửa tay là bảng bot_prompts — sửa ở Table Editor là bot đổi giọng trong 60 giây, không cần deploy. `bun run prompt` so md5 hai bên."),
+  b("Câu mẫu: hai bản, DB đè code", "Bản trong git là `src/aioi/cau_mau.py` (MAC_DINH); bản sửa tay là bảng cau_mau — chủ dự án sửa ở /admin/cau-chuan, lõi đọc lại trong 60 giây, không cần cài lại. Giọng một nguồn `prompts.GIONG_VUI`; lượt thu thập viết từ phiếu lượt ngắn."),
   b("Bong bóng 🤖 (báo lại đã lưu)", "Công tắc app_config.bao_lai_da_luu: tat · thay_doi · day_du · admin (chỉ ghi messages cho /admin, không gửi khách)."),
 ];
 
 const mucIII = [
   h1("III. DANH MỤC BĐS & CẤU TRÚC DỮ LIỆU ĐỘNG (DYNAMIC SCHEMA)"),
-  p("AI nhận diện loại hình BĐS từ câu rao; mỗi loại có bộ câu hỏi riêng trong bảng required_facts (khoá property_type × fact_key × deal, có priority — đổi thứ tự hỏi là đổi số trong DB, không sửa code). Tin có cấu trúc chuẩn sàn (FR-172): bảng listings 67 cột (thông số, nguồn, trạng thái), mỗi ô thông số ghi kèm bậc nguồn (chủ xác nhận 3 > admin 2 > suy đoán 1)."),
+  p("AI nhận diện loại hình BĐS từ câu rao; mỗi loại có bộ ô riêng trong code (`schema.CORE_THEO_LOAI`, `FACETS`). Tin có cấu trúc chuẩn sàn (FR-172): bảng listings (thông số, nguồn, trạng thái; ô tin một nguồn `boc_tach`), mỗi ô thông số ghi kèm bậc nguồn (chủ xác nhận 3 > admin 2 > suy đoán 1)."),
   b("Nhóm 1 — Nhà ở & kinh doanh dân dụng", "nhà phố, nhà cấp 4, biệt thự, chung cư, toà nhà / CHDV. Cốt lõi: địa chỉ → hẻm rộng mấy mét, ô tô vào được không → kết cấu (tầng, lửng, sân thượng) → diện tích sổ (ngang × dài, nở hậu) → pháp lý một ý (sổ riêng / chung) → phường → giá → gấp hay được giá → ảnh. Chung cư: dự án, toà, tầng, view, phí quản lý, bàn giao. Hỏi bù sau khi lên tin: đứng tên, thế chấp, quy hoạch / lộ giới / tranh chấp / hoàn công, hẻm thông hay cụt, ngập nước, hiện trạng sử dụng."),
   b("Nhóm 2 — Đất", "đất thổ cư, đất dự án, đất nông nghiệp. Cốt lõi: đường vào, kích thước, thổ cư bao nhiêu m², hướng, cột điện / hố ga / đường đâm, xây tự do hay theo mẫu, sổ riêng hay đất dự án chờ sổ, lên thổ cư được không, nguồn nước, ranh đất."),
   b("Nhóm 3 — Sản xuất & thương mại", "đất SKC / TMD, kho xưởng. Cốt lõi: thời hạn sử dụng đất, hình thức trả tiền thuê đất, chiều cao thông thuỷ, tải trọng sàn, trạm biến áp, xử lý nước thải, container 40 feet vào được không, PCCC."),
@@ -156,13 +156,13 @@ const mucIV = [
   b("Hạng Đồng", "tối đa 5 căn đang rao; hết trần bot nói thật và chỉ cách lên Bạc, không mở tin mới."),
   b("Hạng Bạc", "mở rổ hàng không giới hạn, kích hoạt thưởng quy mô."),
   b("Hạng Vàng", "Mọi người bán Vàng (chính chủ lẫn môi giới): tin được xếp lên đầu kho khi khách mua nhắn bot đã nói đủ khu vực + ngân sách (chỉ trong chat, không phải thứ tự trên web). CCRB Vàng: tin vừa lên kệ được đẩy tới ≤ 20 NMG lõi có Zalo (ưu tiên Vàng → đang hoạt động → điểm), mỗi NMG ≤ 1 tin / ngày."),
-  b("Hạng CTV", "theo tỷ lệ trả lời câu khách hỏi đúng hạn (Vàng ≥ 90 % / Bạc ≥ 70 % / Đồng); trễ hạn thì rớt hạng và admin đỡ khách (FR-173; ngưỡng định cỡ lại khi có ~30 câu thật — OPEN-42)."),
+  b("CTV", "bỏ hẳn 28/10/2026 (chủ dự án): câu khách hỏi đi chủ nhà rồi admin, không còn hạng CTV (OPEN-42 đóng)."),
 ];
 
 const mucV = [
   h1("V. CHÍNH SÁCH DOANH THU & PHÂN LOẠI USER"),
   b("Người mua / người thuê (B)", "miễn phí hoàn toàn, không để lại số điện thoại, tương tác qua Zalo với trợ lý trực 24/7."),
-  b("CCRB (chính chủ)", "rao miễn phí; phí 1 % giá chốt khi giao dịch thành công, hoặc 3/4 tháng tiền thuê. Hệ thống điều phối CTV dẫn khách (CTV hưởng 0,5 %)."),
+  b("CCRB (chính chủ)", "rao miễn phí; phí 1 % giá chốt khi giao dịch thành công, hoặc 3/4 tháng tiền thuê."),
   b("NMG (môi giới)", "rao miễn phí; phí 0,5 % giá chốt hoặc 3/4 tháng tiền thuê. Chuẩn tối thiểu: ≥ 10 BĐS đang rao và tỷ lệ chốt ≥ 5 % / 6 tháng — tính bằng hàm chuan_nmg, ghi cột dat_chuan_nmg cho admin, không tự nhắn NMG (05/10/2026)."),
   b("Chủ đầu tư dự án", "phí thoả thuận riêng — bot tuyệt đối không tự báo số, \"để em kết nối bộ phận hợp tác dự án\" (OPEN-21, OPEN-28 còn treo)."),
   b("Cách nói phí", "chỉ khi được hỏi, hoặc đúng lúc hệ thống báo DẪN PHÍ sau khi chủ nhà duyệt tin (\"Em cho chào căn nhà của anh ngay ạ, mà anh biết phí bên em chưa ạ?\"). Khách thấy đắt: không tốn đồng nào cho tới khi bán được, bên em đi tìm khách và lo thương lượng; không ép."),
@@ -171,23 +171,23 @@ const mucV = [
 
 const mucVI = [
   h1("VI. LOGIC GIA HẠN CỬA SỔ ZALO & LÀM GIÀU DỮ LIỆU (KEEP-ALIVE)"),
-  b("Cơ chế người bán (SRS-5.1zzc, theo SRD §VI)", "Cron seller_keep_alive_tick quét NGƯỜI im > 5 ngày để vượt luật 7 ngày của Zalo; mỗi người một lượt / 5 ngày, ngẫu nhiên 1–2 căn đang rao. Còn thông tin chưa hỏi thì hỏi bù đúng một ý (ask-seller), hết thì hỏi \"căn … còn bán không\". Trả lời do AI đọc: còn → giữ tin, đóng dấu last_confirmed_at; bán rồi / ngưng → đóng đúng căn."),
+  b("Giữ kết nối và hỏi còn bán (lõi gửi)", "`giu_ket_noi.py`: khách im 6–7 ngày (luật 7 ngày của Zalo), 8–20 giờ, câu mẫu cố định. `hoi_con_ban.py`: tin chưa xác nhận 20 ngày → hỏi chủ căn còn bán; chủ đáp còn → `xac_nhan_con_ban_at`; bán / cọc / dừng → đổi đúng căn."),
   b("Xoay tua câu hỏi", "Không hỏi dồn: mỗi lần một trường còn thiếu hoặc xin ảnh; văn phong [ghi nhận] + [hỏi một ý]. Với NMG mỗi ngày chỉ hỏi 1–2 căn trong rổ. Trả lời một căn = cửa sổ 7 ngày mở lại cho cả tài khoản."),
   b("Người mua", "Mốc 5 ngày im lặng → tin giữ chân theo đúng nhu cầu cũ; từ ngày 6 buộc giữ kết nối (\"nhờ anh nhắn cho em 1 tin, nếu không Zalo sẽ xoá kết nối\"). Tin đang bán im 30 ngày thì hỏi lại chủ nhà (FR-103). Gặp lại thì nhắc đúng nhu cầu cũ, không hỏi lại từ đầu."),
   b("Giờ và trần", "Tin chủ động chỉ 8h–21h giờ VN (lệch phút theo cron); trần 100 tin / 24 giờ / khách, chạm trần thì một câu nhẹ rồi im tới hết ngày; tối đa 2 bong bóng mỗi lượt."),
-  b("Nhịp gửi như người gõ (05/10/2026)", "Công tắc app_config.nhip_go = bat → chat-reply trả nhip_go[] (độ dài tin trước / 25 ký tự·giây, kẹp 600–2.500 ms), webhook OA và bridge cùng nghỉ theo đó; mặc định vẫn 300 ms."),
-  b("Vòng hỏi-đáp (FR-173)", "Khách hỏi điều kho chưa có → câu hỏi giao CHỦ NHÀ (nếu có Zalo), hạn 12 giờ → quá hạn giao CTV ít việc nhất, hạn 120 phút → quá hạn nhắc admin, CTV tụt hạng → quá 48 giờ báo thật cho khách kèm căn khác. Trả lời bằng mẫu \"#mã: câu trả lời\" → vào kho thành fact, bot báo lại khách."),
+  b("Nhịp gửi như người gõ (05/10/2026)", "Lõi trả nhip_go[] cho từng bong bóng (25 ký tự·giây, kẹp 0,3–2 giây — `delivery.typing_delay`), bridge nghỉ theo đó."),
+  b("Vòng hỏi-đáp (FR-173)", "Khách hỏi điều kho chưa có → câu hỏi giao CHỦ NHÀ (nếu có Zalo), hạn 12 giờ → quá hạn hoặc không có chủ nhà thì giao admin, hạn 5 giờ → admin quá hạn thì nhắc lại + email. Trả lời bằng mẫu \"#mã: câu trả lời\" → vào kho thành fact, bot báo lại khách."),
   b("Nhắc lời hứa", "Chủ hứa \"tối gửi ảnh / mai báo\" → bot cảm ơn, chờ, hệ thống tự nhắc đúng hẹn (reminders kind promise). Lịch xem nhà: nhắc trước buổi xem kèm bản đồ; 4 giờ sau xin chấm sao ngay trong chat."),
 ];
 
 const mucVII = [
   h1("VII. KIẾN TRÚC HỆ THỐNG & LUỒNG DỮ LIỆU"),
-  b("Hạ tầng", "Supabase (Postgres + RLS trên mọi bảng + pgvector · Edge Functions Deno: chat-reply (bộ não), zalo-webhook, ask-seller, nudge, inbound-sweep, media-cleanup, geocode-listings, escalation-feed, ctv-report · Storage 4 bucket: listing-public, listing-private, masterdb-raw, listing-photos đã khoá · Vault giữ khoá API · pg_cron + pg_net cho lịch). Web Next.js 15 + Tailwind 4 trên Vercel, đọc DB bằng khoá công khai qua RLS, mô tả tin luôn qua bộ lọc SĐT. Bridge zca-js (tài khoản Zalo clone) trên VPS; Zalo OA webhook chờ duyệt. Tất cả ở bậc Free; không sao lưu (OPEN-25, chủ dự án chấp nhận 11/09/2026)."),
+  b("Hạ tầng", "Supabase (Postgres + RLS trên mọi bảng + pgvector · Edge Functions Deno còn 3: escalation-feed, geocode-listings, media-cleanup · Storage 4 bucket: listing-public, listing-private, masterdb-raw, listing-photos đã khoá · Vault giữ khoá API · pg_cron + pg_net cho lịch). Web Next.js 15 + Tailwind 4 trên Vercel, đọc DB bằng khoá công khai qua RLS, mô tả tin luôn qua bộ lọc SĐT. Bộ não là lõi Python `src/aioi/` trên VPS (aond-core); bridge zca-js (tài khoản Zalo clone) gọi lõi. Tất cả ở bậc Free; không sao lưu (OPEN-25, chủ dự án chấp nhận 11/09/2026)."),
   b("AI", "Claude (Anthropic) cho bóc tách chính có trích dẫn, lượt có ảnh / PDF và trợ lý có công cụ nhánh mua; chuỗi dự phòng Groq → Gemini đổi bằng secret, không cần deploy; Gemini embedding 768 chiều cho tìm theo nghĩa. Ranh giới bóc tách ⟂ AI có máy canh: mã tiền định không gọi SDK, tầng AI không ghi bảng nghiệp vụ."),
-  b("Dữ liệu", "46 bảng (soát 06/10/2026), năm nhóm [RỔ HÀNG] [NGƯỜI & HỘI THOẠI] [BOT & HÀNG ĐỢI] [CTV] [HỆ THỐNG] cùng các view đọc cho người và admin; chú thích bảng nằm TRONG DB (comment on). Ba hàng đợi bằng bảng (inbound_ledger, reminders, media_cleanup_queue) với hợp đồng thuê và thư chết — tin không mất khi một bên offline (NFR-04). Schema `so` cho người đọc như Excel (so.ro_hang, so.nguoi_ban, so.hoi_thoai). Dữ liệu thử và thật tách bằng la_id_thu()."),
-  b("Luồng người bán", "Tin Zalo → webhook / bridge → chat-reply nhận vai → lượt AI bóc tách (ngữ cảnh + bộ nhớ) → kiểm bằng chứng → ghi ô theo bậc nguồn → code chọn Ý cần hỏi kế → model đặt câu → van an toàn (che liên hệ, chặn bịa, một câu hỏi, xưng hô) → gửi. Đủ dữ liệu → bản nháp → gật → lên kệ → dẫn phí → keep-alive / hỏi bù."),
-  b("Luồng người mua", "Web (SEO, trang tin, widget Zalo mang ngữ cảnh) → Zalo → khai thác khu vực + tầm giá → gợi ≤ 3 căn từ KHO (ưu tiên gấp → nghĩa → mới; người bán Vàng lên đầu) → khách hỏi căn → bot khai mọi thứ đã lưu, chưa có thì hỏi chủ nhà / CTV → đặt lịch xem (CTV dẫn) → chấm sao → vòng đời tin (sold báo người đang chờ). Trợ lý có công cụ (app_config.tro_ly): tìm tiện ích quanh khu vực, xem căn; công cụ ghi phải có trích dẫn."),
-  b("Live Chat Monitor (/admin/tin-nhan)", "Mỗi hội thoại một nhãn: AI_HANDLING · WAITING_HINT (khách hỏi mà câu đang treo chờ chủ nhà / CTV, hoặc khách nhắn > 10 phút chưa có tin bot) · NEED_HUMAN (cờ cần người thật, hoặc đang giữ người); nút Giữ khách / Trả bot (cướp quyền). /admin còn: sổ lỗi, nhịp tim, đồng hồ tiền model theo từng model, hồ sơ người bán, duyệt tin, điểm & hạng."),
+  b("Dữ liệu", "Các nhóm bảng [RỔ HÀNG] [NGƯỜI & HỘI THOẠI] [BOT & HÀNG ĐỢI] [HỆ THỐNG] cùng các view đọc cho người và admin; chú thích bảng nằm TRONG DB (comment on). Hai hàng đợi bằng bảng (reminders, media_cleanup_queue) với hợp đồng thuê và thư chết — tin không mất khi một bên offline (NFR-04). Schema `so` cho người đọc như Excel (so.ro_hang, so.nguoi_ban, so.hoi_thoai). Dữ liệu thử và thật tách bằng la_id_thu()."),
+  b("Luồng người bán", "Tin Zalo → bridge → lõi Python nhận vai → lượt AI đọc ý (form gọn) → kiểm bằng chứng → ghi ô theo bậc nguồn → code chọn việc của lượt → model viết từ phiếu lượt → van an toàn (che liên hệ, chặn bịa, một câu hỏi, xưng hô) → gửi. Đủ dữ liệu → bản nháp → gật → lên kệ → dẫn phí → keep-alive / hỏi bù."),
+  b("Luồng người mua", "Web (SEO, trang tin, widget Zalo mang ngữ cảnh) → Zalo → khai thác khu vực + tầm giá → gợi ≤ 3 căn từ KHO (ưu tiên gấp → nghĩa → mới; người bán Vàng lên đầu) → khách hỏi căn → bot khai mọi thứ đã lưu, chưa có thì hỏi chủ nhà / admin → đặt lịch xem (admin chốt) → chấm sao → vòng đời tin (sold báo người đang chờ). Trợ lý có công cụ (app_config.tro_ly): tìm tiện ích quanh khu vực, xem căn; công cụ ghi phải có trích dẫn."),
+  b("Live Chat Monitor (/admin/tin-nhan)", "Mỗi hội thoại một nhãn: AI_HANDLING · WAITING_HINT (khách hỏi mà câu đang treo chờ chủ nhà / admin, hoặc khách nhắn > 10 phút chưa có tin bot) · NEED_HUMAN (cờ cần người thật, hoặc đang giữ người); nút Giữ khách / Trả bot (cướp quyền). /admin còn: sổ lỗi, nhịp tim, đồng hồ tiền model theo từng model, hồ sơ người bán, duyệt tin, điểm & hạng."),
   b("Quan trắc", "Sổ lỗi bot_errors (SĐT luôn che), bot_health_tick mỗi giờ quét kết quả thật của net._http_response (không tin trạng thái cron), còi ntfy đọc lại bằng chứng gửi tới; trần lượt / ngày và chuông hết tiền. Sổ van_kich ghi mỗi lần một van hậu kiểm đổi lời model (van nào, trước, sau) — đo trước khi quyết bỏ van; công tắc luat_loi_bot: gọn (mặc định) tắt toàn bộ van sửa văn, chỉ còn lưới an toàn và ghi đúng ô (06/10/2026)."),
   b("Chống tái phát (10 cổng CI mỗi PR)", "kiểu TS web + deno check bot · build · e2e hội thoại offline (959 ca, mock DB + mock model) + bộ kiểm chuyên đề (luật phá dữ liệu phải có bảng câu không được kích, ranh giới AI, nhúng khoá ngoại, giảm egress, kho tệp) · truy vết ID docs · TS-SEC hồi quy RLS trên DB thật · migration repo ↔ DB · md5 từng hàm schema.sql ↔ DB · soát trạng thái DB (8 phép) · luật tiền TS ↔ SQL · bộ đo bóc tách 110 ca so với nền."),
   b("Tài liệu", "Nguồn sự thật là docs/00…13 (Markdown, có ID truy vết DH- BR- FR- UF- WF- SRS- OPEN- TS-); mỗi lần sửa bot / web ghi một mục SRS kèm ca gốc, nguyên nhân, chỗ sửa, cách kiểm. File .docx này là bản xuất gộp."),
@@ -203,7 +203,7 @@ const mucVIII = [
     ["§II", "Kho tên trợ lý (tên người thật), mỗi khách một tên", "✅", "FR-181, 20 tên"],
     ["§II", "Quy tắc 30 từ, khen trước hỏi 1/lần, \"hình như là\"", "✅", "TONE_RULES / SELLER_SCRIPT_RULES viết lại theo demo AOND 05/10; không chép emoji 😊🔥 và khen mỗi câu"],
     ["§II", "Nút bấm nhanh trong tin", "⏳", "Bridge gửi chữ, chưa gửi nút (OPEN-33, chờ OA)"],
-    ["§III", "Ba nhóm BĐS + thông số cho thuê", "✅", "required_facts theo loại (FR-186), thêm toà nhà / đất nông nghiệp / SKC / kho xưởng"],
+    ["§III", "Ba nhóm BĐS + thông số cho thuê", "✅", "bộ ô theo loại `schema.CORE_THEO_LOAI` (FR-186), thêm toà nhà / đất nông nghiệp / SKC / kho xưởng"],
     ["§IV", "Điểm người rao 50 % hoàn chỉnh + 50 % kịp thời", "✅", "SRS-5.1zzd (05/10) — chỉ ghi DB, không nhắn"],
     ["§IV", "Thưởng quy mô; hạng Đồng / Bạc / Vàng + đặc quyền", "✅", "FR-183, SRS-5.1zzf (OPEN-26 chốt 05/10)"],
     ["§IV", "Tin \"điểm giảm còn X\" cho người rao", "❌", "Chủ dự án 05/10: không thông báo"],
@@ -212,7 +212,7 @@ const mucVIII = [
     ["§VII", "Gemini → máy local", "❌", "Claude / Supabase; OPEN-41"],
     ["§VII", "SharePoint 5 lớp", "❌", "Supabase Storage (FR-165)"],
     ["§VII", "Live Chat Monitor: nhãn + nút cướp quyền", "✅", "SRS-5.1zzg, FR-189"],
-    ["§VII", "Bot-to-bot m•ai ↔ t•ai hỏi chủ", "🔶", "Một bot, hai mặt; câu hỏi đi chủ nhà 12 giờ → CTV → admin (FR-173)"],
+    ["§VII", "Bot-to-bot m•ai ↔ t•ai hỏi chủ", "🔶", "Một bot, hai mặt; câu hỏi đi chủ nhà 12 giờ → admin 5 giờ (FR-173)"],
     ["Demo 05/10", "Đọc bảng giá / phân lô; nhập CSV; \"chỉ giữ căn A\"; link Drive / PDF; nghỉ gõ", "✅", "SRS-5.1zzj…zzm (PR #431)"],
     ["Demo 05/10", "Bóc tách của demo (bịa đường, ghi sai ô, ghi đè địa chỉ)", "❌", "Giữ bóc tách có trích dẫn + từ điển + ghi thêm không ghi đè (docs/06 §6.8)"],
   ], [900, 3660, 560, 4240]),
@@ -225,16 +225,16 @@ const mucIX = [
   b("OPEN-27 nửa sau", "Tên hiển thị cũ / mới cho khu vực; mở phường / huyện nào trước; cho thuê có giữ."),
   b("OPEN-33 / OPEN-51", "Webhook Zalo OA chưa kiểm chữ ký; token OA sống 25 giờ chưa ai làm mới (chờ OA duyệt)."),
   b("OPEN-41", "Nhà cung cấp model: giữ Claude / Supabase hay theo SRD gốc Gemini → local. Lớp gọi model đã gom một chỗ."),
-  b("OPEN-42", "Ngưỡng CTV (120 phút; Vàng ≥ 90 % / Bạc ≥ 70 %) định cỡ lại khi có ~30 câu thật."),
+  b("OPEN-42", "Đóng 28/10/2026 — bỏ hẳn CTV, ngưỡng CTV không còn dùng."),
   b("OPEN-50", "Ngưỡng điểm tin để được rao (hiện cổng 70/100)."),
-  b("Việc kế tiếp theo đánh giá 21/09 (docs/00 §0.9)", "đưa 20 tin có chủ thật vào vòng CTV và đo tỷ lệ trả lời trong 48 giờ; kéo 10 người mua thật qua widget Zalo và đếm cờ cần người thật; vượt ngưỡng dừng thì sửa mô hình, không sửa prompt."),
+  b("Việc kế tiếp theo đánh giá 21/09 (docs/00 §0.9)", "đưa 20 tin có chủ thật vào vòng hỏi chủ nhà và đo tỷ lệ trả lời trong 48 giờ; kéo 10 người mua thật qua widget Zalo và đếm cờ cần người thật; vượt ngưỡng dừng thì sửa mô hình, không sửa prompt."),
 ];
 
 // ---------- kịch bản ----------
 const kichBan = [
   pageBreak(),
   h1("TỔNG HỢP KỊCH BẢN HỘI THOẠI MẪU (TRANSCRIPTS) - AI ƠI NHÀ ĐẤT"),
-  note(`Cập nhật ${NGAY}. Các câu dưới đây chép từ câu mẫu (CAU_HOI_MAU, CAU_TIEN_DINH), luật phí (FEE_RULES) và ví dụ giọng (SELLER_FEWSHOT) trong bot/supabase/functions/_shared/prompts.ts. Hệ thống chỉ đưa Ý cần hỏi, model tự đặt câu, nên lời thật trên Zalo sẽ khác từ ngữ nhưng cùng nhịp: ghi nhận vài chữ, hỏi đúng một ý. {ac} = cách gọi khách (anh / chị / cô chú). Phần II là MÔ PHỎNG ghép từ câu mẫu, không phải log Zalo thật.`),
+  note(`Cập nhật ${NGAY}. Các câu dưới đây chép từ câu mẫu src/aioi/cau_mau.py và giọng src/aioi/prompts.py (bản soạn lúc còn bot TypeScript, ý giữ nguyên). Hệ thống chỉ đưa Ý cần hỏi, model tự đặt câu, nên lời thật trên Zalo sẽ khác từ ngữ nhưng cùng nhịp: ghi nhận vài chữ, hỏi đúng một ý. {ac} = cách gọi khách (anh / chị / cô chú). Phần II là MÔ PHỎNG ghép từ câu mẫu, không phải log Zalo thật.`),
   h2("PHẦN I: THƯ VIỆN KỊCH BẢN MẪU THEO TÌNH HUỐNG"),
 
   h3("1. Nhóm kịch bản gửi bán lần đầu (tiếp nhận BĐS mới)"),
@@ -275,21 +275,21 @@ const kichBan = [
   p("Mục đích: trả lời thật, nhanh, không gọi điện, không lộ số; đủ khu vực + tầm giá là gợi căn và để khách dẫn chuyện."),
   b("5.1. Chào lần đầu", "\"Dạ em chào anh chị, em là {ten} bên AI Ơi Nhà Đất ạ. Anh chị đang muốn mua, thuê hay đang có nhà cần bán / cho thuê ạ?\""),
   b("5.2. Khai thác nhu cầu", "\"Anh tìm khu nào, tầm giá bao nhiêu ạ?\" (gộp 2–3 ý); đủ hai thứ đó thì NGỪNG dò hồ sơ, gợi ≤ 3 căn mỗi căn một dòng \"vị trí · giá · diện tích\"."),
-  b("5.3. Khách hỏi điều kho chưa có", "\"Dạ em hỏi lại chủ nhà rồi báo anh nha. Trong khi chờ, anh có câu hỏi gì khác về căn này không ạ?\" → câu hỏi đi chủ nhà 12 giờ → CTV 120 phút; có trả lời: \"Em đã hỏi chủ nhà. Có chuyển anh ngay.\""),
+  b("5.3. Khách hỏi điều kho chưa có", "\"Dạ em hỏi lại chủ nhà rồi báo anh nha. Trong khi chờ, anh có câu hỏi gì khác về căn này không ạ?\" → câu hỏi đi chủ nhà 12 giờ → admin 5 giờ; có trả lời: \"Em đã hỏi chủ nhà. Có chuyển anh ngay.\""),
   b("5.4. Kho trống", "nói thật em ghi nhu cầu và báo ngay khi có căn khớp; không \"có nhiều\", không hẹn giờ xem khi chưa có căn."),
   b("5.5. Xin số chủ nhà", "giải thích bên em có cộng tác viên dẫn xem, chủ nhà và khách không trao đổi trực tiếp; không đưa số."),
   b("5.6. Đặt lịch xem", "chốt hôm nào mấy giờ → \"Em ghi nhận lịch xem căn Trần Bình Trọng, P4 lúc 9h sáng Thứ 3 12/10. Em thu xếp rồi báo lại chị nha.\" Chỉ lúc này mới xin SĐT kèm lý do và đường từ chối; không cho số vẫn đặt lịch."),
   b("5.7. Sau buổi xem", "\"Căn nhà này có gì chưa phù hợp ạ? Chị chia sẻ với em đi. Để em tìm căn khác cho phù hợp với chị nha.\"; chấm sao ngay trong chat, ≤ 3 sao hỏi đúng một câu chưa ưng chỗ nào."),
-  b("5.8. Cần người thật", "khách đòi gặp người thật, bức xúc, đàm phán hồi kết: vẫn trả lời tử tế + \"để em nhờ anh chị phụ trách khu này nhắn lại liền ạ\"; CTV trước, quá 30 phút lên admin."),
+  b("5.8. Cần người thật", "khách đòi gặp người thật, bức xúc, đàm phán hồi kết: vẫn trả lời tử tế + \"để em nhờ anh chị phụ trách khu này nhắn lại liền ạ\"; báo thẳng admin."),
 
-  h3("6. Kịch bản chuyển giao nội bộ (vòng nối CTV)"),
-  b("6.1. Câu hỏi về CTV / chủ nhà", "tin escalation kèm mẫu: \"#BDS-xxxx: <câu khách hỏi>\" — trả lời bằng \"#BDS-xxxx: <câu trả lời>\" là vào kho, bot báo lại khách."),
-  b("6.2. Quá hạn", "chủ nhà im 12 giờ → CTV; CTV im 120 phút → admin nhắc + CTV tụt hạng; 48 giờ → bot báo thật cho khách kèm căn khác."),
-  b("6.3. Báo cáo 17h", "ctv-report tổng hợp theo từng CTV (đơn đang chăm, tương tác hôm nay, lịch xem sắp tới, đơn chờ người thật) gửi MỘT tin về Zalo cá nhân admin, nguyên văn không bọc lời chào (FR-137, FR-149)."),
+  h3("6. Kịch bản chuyển giao nội bộ (vòng nối chủ nhà / admin)"),
+  b("6.1. Câu hỏi về chủ nhà / admin", "tin escalation kèm mẫu: \"#BDS-xxxx: <câu khách hỏi>\" — trả lời bằng \"#BDS-xxxx: <câu trả lời>\" là vào kho, bot báo lại khách."),
+  b("6.2. Quá hạn", "chủ nhà im 12 giờ → giao admin (hạn 5 giờ); admin quá hạn → nhắc lại + email."),
+  b("6.3. Tin nội bộ", "tin cho admin (🙋 ⭐ 🩺) đi qua escalation-feed, bridge mở bằng \"$$$$$ \" để người cầm máy phân biệt với tin khách; báo cáo 17h ctv-report đã gỡ (FR-137 deprecated)."),
 
   pageBreak(),
   h2("PHẦN II: GIẢ LẬP LUỒNG HỘI THOẠI THỰC TẾ (NGƯỜI BÁN, 30 CÂU)"),
-  note("Mô phỏng vòng đời một tin rao nhà phố theo thứ tự hỏi của required_facts và câu mẫu trong code (trái: người rao · phải: trợ lý). Lời trợ lý trên Zalo thật do model đặt câu nên khác từ ngữ; các mốc hệ thống (bản nháp, dẫn phí, keep-alive, hỏi bù) là cố định. Chưa phải log thật."),
+  note("Mô phỏng vòng đời một tin rao nhà phố theo thứ tự hỏi của bộ ô trong `schema.py` và câu mẫu trong code (trái: người rao · phải: trợ lý). Lời trợ lý trên Zalo thật do model đặt câu nên khác từ ngữ; các mốc hệ thống (bản nháp, dẫn phí, giữ kết nối, hỏi còn bán) là cố định. Chưa phải log thật."),
   chat([
     ["S", "Anh muốn nhờ đăng bán căn nhà phố ở Quận 5."],
     ["B", "Dạ em cảm ơn anh tin tưởng :) Anh cho em xin địa chỉ nhà để em kiểm tra giá khu vực nha?"],

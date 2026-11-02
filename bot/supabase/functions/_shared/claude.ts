@@ -3,39 +3,13 @@
 // (anthropicClient, dự phòng Groq/Gemini, đồng hồ tiền) và gửi Zalo OA — chỉ bot TypeScript cũ dùng; bộ não là lõi Python.
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 
-/** Đếm lưu lượng Supabase của một lượt (03/10/2026, giảm egress): số lần gọi + byte phản hồi, gộp theo đường dẫn REST. */
-export type DemLuuLuong = { so: number; byte: number; theo: Record<string, [number, number]> };
-
-export function serviceClient(dem?: DemLuuLuong): SupabaseClient {
-  return createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    dem ? {
-      global: {
-        fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
-          const res = await fetch(input, init);
-          try {
-            const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
-            const khoa = `${init?.method ?? "GET"} ${url.pathname.replace(/^\/rest\/v1\//, "")}`;
-            const b = (await res.clone().arrayBuffer()).byteLength;
-            dem.so++;
-            dem.byte += b;
-            const t = dem.theo[khoa] ??= [0, 0];
-            t[0]++;
-            t[1] += b;
-          } catch { /* đếm hụt không được chặn đường đi */ }
-          return res;
-        },
-      },
-    } : undefined,
-  );
+export function serviceClient(): SupabaseClient {
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 }
 
 /**
- * SRS-5.1zzzzzzz (chủ dự án 14/10 "giảm độ trễ đi"): mỗi lượt chat-reply gọi `get_secret` ~8 lần (sổ lưu lượng `_luu_luong`). Giá trị ĐỌC
- * ĐƯỢC nhớ theo TỪNG client (mỗi request một client) tối đa 60 giây; null / lỗi KHÔNG nhớ (SEC-02, e2e "VAULT HỤT MỘT LẦN → đọc lại ngay").
- * Nhớ theo client chứ không theo cả isolate: request sau đọc lại Vault, nên xoá / xoay khoá có hiệu lực ngay lượt kế (e2e webhook CK-4 đổi
- * khoá giữa các ca và bắt được bản nhớ chung isolate đầu tiên).
+ * Bí mật ĐỌC ĐƯỢC từ Vault nhớ theo TỪNG client (mỗi request một client) tối đa 60 giây; null / lỗi KHÔNG nhớ (SEC-02). Nhớ theo client chứ
+ * không theo cả isolate: request sau đọc lại Vault, nên xoá / xoay khoá có hiệu lực ngay lượt kế.
  */
 const NHO_BI_MAT_MS = 60_000;
 const nhoBiMat = new WeakMap<object, Map<string, { v: string; luc: number }>>();
@@ -49,19 +23,8 @@ const datNho = (db: object, name: string, v: string) => {
   m.set(name, { v, luc: Date.now() });
 };
 
-/** Secret lấy từ env (supabase secrets) trước, không có thì đọc Vault. */
-export async function secretOf(db: SupabaseClient, name: string): Promise<string | null> {
-  const fromEnv = Deno.env.get(name);
-  if (fromEnv) return fromEnv;
-  const nho = layNho(db, name);
-  if (nho) return nho;
-  const { data } = await db.rpc("get_secret", { secret_name: name });
-  if (typeof data === "string" && data) datNho(db, name, data);
-  return (data as string) ?? null;
-}
-
 /**
- * SEC-02 — `secretOf` gộp hai chuyện khác hẳn nhau vào cùng một `null`:
+ * SEC-02 — hàm đọc cũ `secretOf` (gỡ 02/11/2026 cùng bot TypeScript) gộp hai chuyện khác hẳn nhau vào cùng một `null`:
  * "secret CHƯA ĐẶT" và "ĐỌC HỤT secret" (Vault lỗi, DB quá tải, timeout, hết
  * kết nối). Cổng cũ coi cả hai là "mở", nên một lần DB nghẹn là bảy edge
  * function thành công khai — đúng lúc hệ thống yếu nhất. Hàm này tách hai

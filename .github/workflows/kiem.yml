@@ -164,8 +164,8 @@ jobs:
         run: bun run soat:db
 
   # ── CỔNG THỨ 9: KIỂM KIỂU CHO BOT ─────────────────────────────────────────
-  # `tsconfig.json` loại hẳn thư mục `bot` nên 3.900 dòng `chat-reply` và tám
-  # function kia CHƯA TỪNG qua kiểm kiểu. Bật lần đầu 11/09: 15 lỗi — tất cả là
+  # `tsconfig.json` loại hẳn thư mục `bot` nên edge function (nay còn 3: escalation-feed,
+  # geocode-listings, media-cleanup) không qua `tsc` của web. Bật lần đầu 11/09: 15 lỗi — tất cả là
   # kiểu KHAI SAI so với dữ liệu thật (RPC trả `r_dead` mà kiểu không có, select
   # có `created_at` mà kiểu không có…). Lần này chưa cái nào thành lỗi chạy,
   # nhưng một kiểu nói dối là chỗ lỗi chạy kế tiếp sẽ nấp.
@@ -192,6 +192,10 @@ jobs:
       - name: Edge function còn lại không có lỗi kiểu nào
         working-directory: bot/supabase/functions
         run: deno check --node-modules-dir=auto --min-dep-age=0 */index.ts
+      # 02/11/2026: cổng bí mật chạy thật — Bearer service_role không còn qua cổng, chỉ `x-bridge-secret` đúng mới qua.
+      - name: Cổng bí mật chung (_shared/gate.ts) chặn đúng
+        working-directory: bot/supabase/functions
+        run: deno test --allow-env --node-modules-dir=auto --min-dep-age=0 ../../tests/cong-bi-mat.test.ts
 
   # ── CỔNG THỨ 10: LUẬT TIỀN TS ↔ SQL RA CÙNG MỘT SỐ ──────────────────────────
   # Luật tiền phía TS gom về `_shared/extraction/luat-tien.ts` (tầng bốn 11/09),

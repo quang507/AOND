@@ -98,34 +98,6 @@ export function ganNhan(text: string | null | undefined): string[] {
   return ra;
 }
 
-/**
- * Mảnh chữ chỉ nói đúng (các) nhãn — "khu yên tĩnh", "gần chợ lắm" — bỏ phần khớp nhãn + chữ đệm mà không còn gì.
- * Mảnh như vậy đã vào `listings.nhan`; ghi thêm vào "bổ sung" là trùng (25/09/2026, bắn thật lx-14: nhãn "yên tĩnh" và
- * "Kèm: thông tin bổ sung: khu yên tĩnh" trong cùng một khung 🤖).
- */
-export function laThuanNhan(text: string | null | undefined, nhanCuaTin?: readonly string[] | null): boolean {
-  const khoa = ganNhan(text);
-  if (!khoa.length) return false;
-  // Chỉ trùng khi tin THẬT SỰ mang (các) nhãn đó — "khu an ninh" ở tin chưa có nhãn an ninh là thông tin, giữ.
-  if (nhanCuaTin && !khoa.every((k) => nhanCuaTin.includes(k))) return false;
-  const DEM = /\b(?:khu nay|khu vuc|xung quanh|khu|nha|can|rat|lam|luon|qua|co|la|va|voi|o|day|nay|do|em|anh|chi|a|nhe|ben)\b/g;
-  // Chữ đệm bỏ TRƯỚC ("khu yên tĩnh" → "yên tĩnh"), rồi bỏ phần khớp nhãn, rồi chữ đệm lần nữa.
-  let kd = boDau(text ?? "").replace(/[^a-z0-9%\s]+/g, " ").replace(DEM, " ").replace(/\s+/g, " ").trim();
-  for (const k of khoa) kd = kd.replace(new RegExp(TU_DIEN_NHAN[k].khop.source, "g"), " ");
-  kd = kd.replace(DEM, " ").replace(/\s+/g, " ").trim();
-  return kd === "";
-}
-
-/**
- * Như `tenNhan` nhưng BỎ nhãn mà chữ đã in ở phần trên của cùng bong bóng / bản nháp khớp rồi (25/09/2026, bắn thật
- * lx-13: thông số "trệt + lửng + 2 lầu + sân thượng" rồi dòng nhãn lại "sân thượng · có gác lửng"). Nhãn vẫn nằm
- * nguyên trong `listings.nhan` để lọc — chỉ không in lặp.
- */
-export function tenNhanKhongTrung(nhan: readonly string[] | null | undefined, daIn: string): string {
-  const kd = boDau(daIn ?? "");
-  return tenNhan((nhan ?? []).filter((k) => !TU_DIEN_NHAN[k]?.khop.test(kd)));
-}
-
 /** Tên đọc được của một danh sách nhãn: ["yen_tinh","gan_cho"] → "yên tĩnh · gần chợ". */
 export function tenNhan(nhan: readonly string[] | null | undefined): string {
   return (nhan ?? []).map((k) => TU_DIEN_NHAN[k]?.ten ?? k.replace(/_/g, " ")).join(" · ");
