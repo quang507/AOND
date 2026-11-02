@@ -53,6 +53,9 @@ def cham(kb: dict[str, Any], kq: dict[str, Any]) -> list[tuple[str, bool, str]]:
     for mau in k.get("cam", []):
         lo = [i for i, l in enumerate(luot, 1) if re.search(mau, l["bot"] or "", re.I)]
         ra.append((f"không có /{mau}/", not lo, f"lượt {lo}" if lo else ""))
+    if "ban_tin_khong" in k:   # SRS-5.1zzzzzzz320: chỉ soi phần BẢN TIN (sau 📋) mọi lượt — lời chat được nhắc tới chữ đó
+        lo = [i for i, l in enumerate(luot, 1) if "📋" in (l["bot"] or "") and re.search(k["ban_tin_khong"], l["bot"].split("📋", 1)[1], re.I)]
+        ra.append((f"bản tin không có /{k['ban_tin_khong']}/", not lo, f"lượt {lo}" if lo else ""))
     for so, mau in k.get("luot", {}).items():
         i = int(so)
         bot = luot[i - 1]["bot"] if i <= len(luot) else ""

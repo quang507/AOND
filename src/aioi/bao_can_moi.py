@@ -104,7 +104,7 @@ def vi_sao_hop(c: dict, lead: Any = None, kieu: int = 0) -> str:
         phan.append(f"đúng loại {ten_loai}")
     if g("ngan_sach") and not c.get("_vuot_ngan_sach"):
         phan.append(f"giá trong ngân sách {g('ngan_sach')}")
-    if _can_xe_hoi(g("yeu_cau_xe_hoi")):
+    if _can_xe_hoi(lead):
         phan.append("xe hơi vào được")
     cau = (f"{MO_VI_SAO[kieu % len(MO_VI_SAO)]} " + ", ".join(phan) + ".") if phan else ""
     if c.get("_thieu_pn"):   # SRS-5.1zzzzzzz177: nói thẳng điểm lệch phòng ngủ, không giấu

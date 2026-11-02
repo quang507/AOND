@@ -67,7 +67,7 @@ def test_quan_khach_noi_loc_hem():
 
 def test_ai_bo_chu_hem_van_tra_duoc_khi_can_trong_hem():
     """Bắn thử 21/10 (DC2): khách gõ "hẻm 965 Quang Trung", ô dia_chi AI ghi "965 Quang Trung" (mất chữ hẻm)."""
-    k = khoi_dia_danh(_tra(), {"duong": "Quang Trung", "dia_chi": "965 Quang Trung", "lo_gioi_hem": "Nhà hẻm"}, "phuong")
+    k = khoi_dia_danh(_tra(), {"duong": "Quang Trung", "dia_chi": "965 Quang Trung", "_duong_vao": "hem"}, "phuong")   # AI đọc nghĩa (SRS-320)
     assert "Phường An Hội Tây" in k
     k = khoi_dia_danh(_tra(), {"duong": "Quang Trung", "dia_chi": "965 Quang Trung"}, "phuong")   # chưa biết hẻm hay mặt tiền
     assert "Kho hẻm" not in k

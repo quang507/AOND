@@ -554,7 +554,7 @@ def phuong_kho_hem(tra: TraDiaDanh | None, fields: dict[str, str]) -> list[str]:
         return []
     d = tra.duong(fields.get("duong"), fields.get("quan"))
     return tra.phuong_theo_hem(fields.get("dia_chi"), d["ten"] if d else fields.get("duong"), fields.get("quan"),
-                               "hem" in bo_dau(fields.get("lo_gioi_hem") or ""))
+                               fields.get("_duong_vao") in ("hem", "hem_xe_hoi") or "/" in (fields.get("dia_chi") or ""))   # SRS-5.1zzzzzzz320
 
 
 def khoi_dia_danh(tra: TraDiaDanh | None, fields: dict[str, str], next_field: str | None) -> str:

@@ -2,7 +2,7 @@
 và khoe khan hiếm thì chấp nhận được). Đỏ khi tắt bản sửa: câu ghi nhận lọt, tin rao bịa tiện ích / tình trạng nhà, in tên khối, hỏi lại giá ngay
 lượt sau khi khách lờ, gợi ý số giá khi hỏi lại."""
 from aioi import prompts
-from aioi.engine import Conversation, Engine, Turn, _chi_tiet_khong_co_du_lieu, _mo_dau_ghi_nhan, _nhan_khoi_trong_tin
+from aioi.engine import Conversation, Engine, Turn, _khang_dinh_khong_co_du_lieu, _mo_dau_ghi_nhan, _nhan_khoi_trong_tin
 from aioi.schema import Property
 
 
@@ -33,13 +33,20 @@ BAN_TIN = ("📋 Em sẽ rao như vầy nhé anh chị:\n\nAnh chị ơi, bán n
 
 def test_tin_rao_bia_tien_ich_va_tinh_trang_nha_bi_bat():
     c = _conv("Nhà đường Cao Lỗ, mặt tiền", "nhà mình ở lâu rồi, sổ riêng", "giá 8,5 tỷ")
-    assert set(_chi_tiet_khong_co_du_lieu(BAN_TIN, c)) == {"chợ búa", "trường học", "giữ gìn", "sạch sẽ"}
+    c.prop.fields.update(_duong_vao="mat_tien")
+    assert set(_khang_dinh_khong_co_du_lieu(BAN_TIN, c)) == {"chợ búa", "trường học", "giữ gìn", "sạch sẽ"}
 
 
-def test_khach_tu_noi_tien_ich_thi_khong_bat():
-    c = _conv("Nhà mặt tiền Cao Lỗ gần chợ, gần trường học", "nhà mới sơn sạch sẽ, giữ gìn kỹ", "giá 8,5 tỷ")
-    assert _chi_tiet_khong_co_du_lieu(BAN_TIN.replace("chợ búa", "gần chợ"), c) == []
-    assert _chi_tiet_khong_co_du_lieu("Nhà gần siêu thị, giá 5 tỷ.", c) == []          # không phải bản tin 📋 → không soát
+def test_tien_ich_theo_su_that_ai_doc():
+    """SRS-5.1zzzzzzz320: tiện ích chỉ theo `_tien_ich_gan` AI đọc — "cho em hỏi", "thị trường", "mời" không còn mở cửa cho "gần chợ" /
+    "trường học" / "nhà mới"."""
+    c = _conv("Nhà mặt tiền Cao Lỗ")
+    c.prop.fields.update(_duong_vao="mat_tien", _tien_ich_gan="cho,truong_hoc")
+    assert _khang_dinh_khong_co_du_lieu(BAN_TIN.replace(" Chủ ở lâu nên nhà được giữ gìn kỹ, sạch sẽ và chắc chắn.", ""), c) == []
+    c2 = _conv("cho em hỏi phí bao nhiêu", "giá thị trường khu này sao em", "mời anh qua xem nhà")
+    tin = "📋 Em sẽ rao như vầy nhé:\n\nNhà mới gần chợ, gần trường học, giá 5 tỷ\n\n- 5 tỷ"
+    assert _khang_dinh_khong_co_du_lieu(tin, c2) == ["gần chợ", "gần trường", "nhà mới"]
+    assert _khang_dinh_khong_co_du_lieu("Nhà gần siêu thị, giá 5 tỷ.", c) == []          # không phải bản tin 📋 → không soát
 
 
 def test_ten_khoi_trong_tin_bi_bat():

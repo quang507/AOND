@@ -4,7 +4,7 @@ hệ thống chỉ tra phường cũ ĐÁNH SỐ nên bot hỏi trống "tên ph
 giá căn mình đang rao. Đỏ khi tắt từng bản sửa."""
 from aioi import phap_ly, prompts
 from aioi.dia_danh import phuong_cu_chia
-from aioi.engine import Conversation, Engine, Turn, _phap_ly_vai_khong_co_du_lieu
+from aioi.engine import Conversation, Engine, Turn, _khang_dinh_khong_co_du_lieu
 from aioi.revenue import SellerRole
 from tests.test_phap_ly import CHU_NHA
 from tests.test_viec_mua import KhoGia, _engine
@@ -52,13 +52,12 @@ BAN_NHAP = ("📋 Em sẽ rao như vầy nhé chị:\n\nChính chủ bán nhà p
 
 def test_ban_nhap_bia_phap_ly_va_chinh_chu_bi_bat():
     c = _conv("chị cần bán nhà", "Chị bán nhà ở 125 Bình Long, Bình Hưng Hòa A, Bình Tân, 70m2, giá 3 tỷ", "diện tích sàn")
-    assert _phap_ly_vai_khong_co_du_lieu(BAN_NHAP, c) == ["chính chủ", "sổ hồng"]
-    c2 = _conv("Nhà chính chủ, sổ hồng riêng, 125 Bình Long giá 3 tỷ")             # khách tự nói → không bắt
-    assert _phap_ly_vai_khong_co_du_lieu(BAN_NHAP, c2) == []
-    c3 = _conv("bán nhà 125 Bình Long giá 3 tỷ, giấy tờ đầy đủ")                  # nói giấy tờ, chưa nói vai
-    c3.user_type = SellerRole.CHU_NHA                                              # vai đã nhận có bằng chứng ở lượt khác
-    assert _phap_ly_vai_khong_co_du_lieu(BAN_NHAP, c3) == []
-    assert _phap_ly_vai_khong_co_du_lieu("Nhà có sổ hồng, giá 3 tỷ.", c) == []    # không phải bản tin 📋 → không soát
+    assert _khang_dinh_khong_co_du_lieu(BAN_NHAP, c) == ["chính chủ", "mặt tiền", "sổ hồng"]
+    c2 = _conv("Nhà chính chủ, sổ hồng riêng, mặt tiền 125 Bình Long giá 3 tỷ")     # sự thật AI đọc + vai chủ nhà → không bắt
+    c2.prop.fields.update(_phap_ly_trang_thai="co_so", _duong_vao="mat_tien")
+    c2.user_type = SellerRole.CHU_NHA
+    assert _khang_dinh_khong_co_du_lieu(BAN_NHAP, c2) == []
+    assert _khang_dinh_khong_co_du_lieu("Nhà có sổ hồng, giá 3 tỷ.", c) == []    # không phải bản tin 📋 → không soát
     assert "\"chính chủ\" chỉ viết khi chủ nhà tự nói là chủ" in prompts.AD_FORMAT
 
 

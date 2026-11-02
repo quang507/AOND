@@ -15,7 +15,7 @@ TOI_DA_CHU = 3000       # trần văn bản nhúng của phần này (`van_ban_n
 # Bot hỏi từng ô nên chủ nhà trả lời NGẮN ("giá 8,5 tỷ", "Nhà mặt tiền") — đó chính là thông tin, nên không lọc theo độ dài.
 _DUA_DAY = frozenset({"ok", "oke", "okay", "ừ", "ừm", "ừa", "um", "uh", "ờ", "dạ", "vâng", "vầng", "được", "rồi", "em", "anh", "chị", "chú", "cô",
                       "bác", "nha", "nhé", "nhen", "nhỉ", "ạ", "à", "ơi", "cảm", "ơn", "cám", "thanks", "thank", "you", "đúng", "phải", "vậy",
-                      "thế", "có", "không", "ko", "k", "hi", "hello", "chào", "alo"})
+                      "thế", "hi", "hello", "chào", "alo"})   # "có" / "không" / "chưa" là thông tin ("không có sổ"), không lọc (SRS-5.1zzzzzzz320)
 _VN = timezone(timedelta(hours=7))
 
 

@@ -974,6 +974,49 @@
      "2": "ưu đãi|khuyến mãi|chiết khấu|giảm còn|bớt còn|(?<![0-9.,])(0[.,][1-46-9]|[2-9]) ?%|(?:^|\\n)[ \\t]*([-•*+]|[1-4][.)])[ \\t]|\\(\\s*[1-4]\\s*\\)"
     }
    }
+  },
+  {
+   "id": "khong_phai_chinh_chu",
+   "mo_ta": "SRS-320: người nhà đăng giùm, nói rõ không phải chính chủ → bản tin không ghi \"Chính chủ\"",
+   "cau": [
+    "Em đăng giùm nhà của chị gái em, nhà hẻm xe hơi đường Nguyễn Thị Thập phường Tân Hưng Quận 7, 4x16, 3 tầng",
+    "em không phải chính chủ đâu nha, chị em nhờ thôi",
+    "sổ hồng riêng rồi, giá 8 tỷ",
+    "nhà đang trống",
+    "em rao thử đi"
+   ],
+   "kiem": {
+    "nhap_truoc": 5,
+    "ban_tin_khong": "chính chủ"
+   }
+  },
+  {
+   "id": "so_dang_lam",
+   "mo_ta": "SRS-320: sổ đang làm → bản tin không ghi sổ hồng / sổ đỏ / pháp lý rõ ràng",
+   "cau": [
+    "Anh bán nhà hẻm xe hơi đường Nguyễn Thị Thập phường Tân Hưng Quận 7, ngang 4 dài 16, 2 tầng, giá 7 tỷ",
+    "sổ đang làm nha em, chắc tháng sau mới có",
+    "nhà đang ở",
+    "em lên tin đi"
+   ],
+   "kiem": {
+    "nhap_truoc": 4,
+    "ban_tin_khong": "sổ hồng|sổ đỏ|sổ riêng|hoàn công|pháp lý (rõ ràng|đầy đủ|chuẩn|sạch)"
+   }
+  },
+  {
+   "id": "xa_cho",
+   "mo_ta": "SRS-320: \"xa chợ\" → bản tin không ghi gần chợ",
+   "cau": [
+    "Chị bán nhà hẻm xe hơi đường Nguyễn Thị Thập phường Tân Hưng Quận 7, 4x16, 3 tầng, sổ hồng riêng, giá 8 tỷ",
+    "nhà hơi xa chợ chút nhưng yên tĩnh lắm em",
+    "nhà đang ở",
+    "em rao thử đi"
+   ],
+   "kiem": {
+    "nhap_truoc": 4,
+    "ban_tin_khong": "gần chợ|chợ búa"
+   }
   }
  ]
 }
