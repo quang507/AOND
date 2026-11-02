@@ -60,5 +60,20 @@ ok("mọi câu insert cấp cao nhất trong migration được bước du-lieu 
 ok("bridge_dang_nhap (ca gốc 08/10) nằm trong BANG của dung-lai-db", PHU.has("bridge_dang_nhap"), [...PHU].join(","));
 ok("bài quét thấy được câu khởi tạo của bridge_dang_nhap (không quét hụt)", gap.has("bridge_dang_nhap"), [...gap].join(","));
 ok("bài quét KHÔNG nhặt câu insert trong thân hàm (chat_quota chỉ insert trong hàm)", !gap.has("chat_quota"), [...gap].join(","));
+
+// 02/11/2026: schema `so` khi dựng lại — câu cũ của 20260907c / f còn chạy (trừ câu `so.ro_hang`) không được đọc bảng / cột đã gỡ;
+// `so.ro_hang` dựng bằng 20261102b SAU vòng `so`, có `security_invoker`.
+const fileMig = (t) => join(MIG, readdirSync(MIG).find((x) => x.startsWith(`${t}_`)));
+const conLai = ["20260907c", "20260907f", "20260907g", "20260924f"]
+  .flatMap((t) => capCao(readFileSync(fileMig(t), "utf8")).split(";").filter((c) => !/\bso\.ro_hang\b/i.test(c)).map((c) => `${t}: ${c.trim().slice(0, 80)}`));
+const gay = conLai.filter((c) => /\b(public\.)?media\s+m\b|legacy_sst|source_url/.test(c));
+ok("câu schema `so` cũ còn chạy khi dựng lại không đọc media / legacy_sst / source_url", gay.length === 0, gay.join("\n       "));
+ok("vòng schema `so` bỏ câu so.ro_hang (cauSoTruRoHang, cùng mẫu với bài này)",
+  /chay\(`\$\{t\} \(schema so\)`, cauSoTruRoHang\(/.test(dl) && dl.includes("!/\\bso\\.ro_hang\\b/i.test("));
+const viTriSo = dl.indexOf("cauSoTruRoHang(docFile"), viTriB = dl.indexOf('fileMig("20261102b")');
+ok("20261102b (so.ro_hang hiện hành) chạy SAU vòng schema `so`", viTriSo > 0 && viTriB > viTriSo, `${viTriSo} / ${viTriB}`);
+const b = capCao(readFileSync(fileMig("20261102b"), "utf8"));
+ok("20261102b có security_invoker, không đọc media / legacy_sst",
+  /create or replace view so\.ro_hang with \(security_invoker = true\)/i.test(b) && !/\bmedia\s+m\b|legacy_sst/.test(b));
 console.log(hong ? `\nHẠT GIỐNG DỰNG LẠI: ${hong} CA HỎNG` : "\nHẠT GIỐNG DỰNG LẠI: ĐẠT");
 process.exit(hong ? 1 : 0);

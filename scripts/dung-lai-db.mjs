@@ -99,6 +99,9 @@ export function tachCau(s) {
 }
 
 const boChuThich = (c) => c.replace(/^(\s*--[^\n]*\n)+/, "").trim();
+
+// Câu của một file schema `so` cũ, trừ mọi câu đụng `so.ro_hang` (bản view cũ đọc cột / bảng đã gỡ — xem bước cau-truc).
+export const cauSoTruRoHang = (s) => tachCau(s).filter((c) => !/\bso\.ro_hang\b/i.test(boChuThich(c)));
 const dau120 = (c) => boChuThich(c).replace(/\s+/g, " ").slice(0, 120);
 
 // Chạy lại trên DB đã dựng một phần: khoá chính / UNIQUE đã có ném 42P16 / 42P07 (khối do $d$ của schema.sql chỉ bắt
@@ -220,7 +223,10 @@ if (buoc === "kiem") {
   hong += await chay("20261008b (xuat_schema xuất đúng cột sinh / identity)", tachCau(docFile(fileMig("20261008b"))));
   hong += await chay("20261008a", tachCau(docFile(fileMig("20261008a"))));
   // 20261014d: thêm 20260924f — lượt dựng 08/10 bỏ sót nó, log so.hoi_thoai ghi cứng "Thái (bot)".
-  for (const t of ["20260907c", "20260907f", "20260907g", "20260924f"]) hong += await chay(`${t} (schema so)`, tachCau(docFile(fileMig(t))));
+  // 02/11/2026: bản `so.ro_hang` của 20260907c / f đọc `public.media` (gỡ 20261102a) và `listings.legacy_sst` / `source_url` (gỡ
+  // 20261022g) — bỏ câu `so.ro_hang` của chúng, dựng view bằng định nghĩa hiện hành 20261102b ở cuối. Không sửa migration cũ.
+  for (const t of ["20260907c", "20260907f", "20260907g", "20260924f"]) hong += await chay(`${t} (schema so)`, cauSoTruRoHang(docFile(fileMig(t))));
+  hong += await chay("20261102b (so.ro_hang hiện hành)", tachCau(docFile(fileMig("20261102b"))));
   console.log(`\nbảng public: ${JSON.stringify(await sql("select count(*)::int as n from pg_tables where schemaname = 'public'", true))}`);
   process.exit(hong ? 1 : 0);
 } else if (buoc === "bu") {
