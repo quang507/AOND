@@ -54,8 +54,8 @@ def test_feed_khong_dua_bridge_viec_toi_id_thu():
 def test_feed_hut_co_tran_va_hen_thu_lai():
     ts = _ts()
     assert 'action === "hut"' in ts and "HUT_TOI_DA" in ts and 'status: "dead"' in ts
-    # cả hai truy vấn kéo việc đều bỏ dòng đang chờ thử lại
-    assert ts.count("next_retry_at.is.null,next_retry_at.lte.") == 2
+    # truy vấn kéo việc bỏ dòng đang chờ thử lại (nhánh tin soạn sẵn — truy vấn thứ hai — gỡ 02/11/2026)
+    assert ts.count("next_retry_at.is.null,next_retry_at.lte.") == 1
 
 
 def test_bridge_bao_hut_khi_gui_loi():

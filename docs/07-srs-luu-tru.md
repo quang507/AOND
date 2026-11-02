@@ -2,6 +2,23 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+### SRS-5.1zzzzzzz314 · Bước 2A/2B: 8 kịch bản mới + giám khảo "hỏi lại"; `viec_luot` chọn MỘT việc mỗi lượt phía bán (chỉ ghi, chưa đổi lời) (30/10/2026)
+Chủ dự án 30/10 ("chạy lun đi"). Lớp lỗi đo được: engine ghép nhiều khối hỏi cùng lượt — 16 / 169 lượt (khối ưu tiên / hỏi mặt tiền / trình nháp vẫn kèm "VIỆC LƯỢT NÀY: hỏi ô X" của phiếu lượt). `viec_luot.py` hàm thuần, thứ tự ưu tiên một chỗ; engine ghi `y_luot["_viec"]` / `["_khoi"]`, bộ chấm in chỗ lệch. Kịch bản mới bắt hai lỗi thật: `doc_quyen` (phiếu lượt không mang chính sách — "chưa có thông tin chắc nên không dám nói bừa", 2/2 lần) và `xung_chi_phi` (câu mẫu `bao_phi` không nhận xưng hô → "Anh/chị", `prompts.khoi_bao_phi`). `--cham-lai` chấm lại bản ghi không gọi model.
+Điểm nền mới (48 kịch bản, tiêu chí giám khảo mới): 569 / 571 trên 623 phép; tất định 472 / 472 trên 479 (sau sửa phép `hoi_lai_giay_to`); giọng 2,96 / 2,92; lộ luật 3 / 2 cuộc; hỏi lại 3 / 3 cuộc.
+Kiểm: `tests/test_viec_luot_314.py`, `tests/test_kich_ban_2a_314.py` (mỗi kịch bản mới trượt trên bản ghi cài lỗi tay).
+
+### SRS-5.1zzzzzzz313 · Bộ chấm chạy như khách thật (công tắc + model đọc từ cai-vps.sh); đo cỡ prompt; giám khảo chỉ lượt lộ luật; điểm nền (30/10/2026)
+Lớp lỗi: ID chấm là ID thử, nên công tắc "thu" (`AGENT_BOC`) bật trong bộ chấm mà khách thật không bật, và model bóc tách lệch VPS (bộ chấm Haiku 5.5, VPS mặc định config `claude-haiku-4-5`) — số SRS-310…312 đo đường agent bóc. Sửa: `cong_tac_vps()` đọc dòng `printf` của cai-vps.sh, mặc định "thu" = tắt (`--nhu thu` để đo ID thử); in cỡ prompt bóc tách / viết lời; giám khảo thêm phép "không lộ luật"; `--nen` ghi `tests/kich_ban/diem_nen.json`, lần sau tự so.
+Điểm nền hai lần (40 kịch bản, Sonnet viết · Haiku 4.5 bóc): tất định 407 / 405 trên 408; giọng 2,62 / 2,73 (≥ 4/5: 3 / 4 cuộc); lộ luật 2 / 3 cuộc (giám khảo bắt nhầm cả câu phí / vùng đúng quy định — 1 cờ thật: "10 căn trở lên lên Top"); gọi lại 7 / 7; prompt bóc tách trung vị 24,1 nghìn chữ, viết lời 4,7 nghìn (lớn nhất 16,4 nghìn).
+Kiểm: `tests/test_cham_nhu_khach.py` (đỏ khi bộ chấm không đổi "thu" thành tắt).
+
+### SRS-5.1zzzzzzz312 · Gỡ 4 lưới soát chưa từng kích; nhà phố có diện tích đất rồi thì số m² thứ hai là sàn; sửa phép chấm "huyện" (30/10/2026)
+Chủ dự án 30/10 ("không cần, gỡ đi"): gỡ lưới "câu ghi nhận một lần" (SRS-229), "HOA cả cụm" (SRS-241, luật vẫn ở `AD_FORMAT`), "anh ơi" lặp,
+"hỏi phường phải nhắc kho hẻm" (SRS-115, khối Kho hẻm trong prompt giữ) — 0/280 cuộc chấm kích, ở chế độ gọn chỉ ghi log; test giữ lưới gỡ theo.
+- `ma_lo_7m` (lớp lỗi: số m² trống ghi tạm `dien_tich`, phiếu lượt không hỏi lại theo SRS-302 → ô sàn trống): form + EXTRACTION đọc "đã có đất, số m² khác"
+  là `dien_tich_nha`. `dat_nen_long_an`: phép chấm "huyện" khớp nhầm "c**huyện**" → `\bhuyện\b`. Đo 408 phép: 402 / 403 → 406 / 406
+  (`ma_lo_7m`, `dat_nen_long_an` đạt 2/2); giọng 2,58 / 2,50 → 2,45 / 2,45 (thay đổi không đụng lời viết, dao động giám khảo 2,35–2,70).
+
 ### SRS-5.1zzzzzzz311 · Kế hoạch bước 4: lượt dễ của người bán viết bằng model rẻ; luật soát chưa gỡ (30/10/2026)
 - `MODEL_LUOT_DE` (`cai-vps.sh`): lượt thu thập bằng phiếu lượt, không tra dữ liệu, không việc khác (`y_luot` chỉ khoá `_`, không hỏi về) → model rẻ, cả lần soát
   gọi lại; lượt khác giữ `MODEL_CHAT`. Đo 408 phép: Sonnet mọi lượt 402 / 400, giọng 2,65 / 2,62, $5,0 / $5,3 · Haiku lượt dễ 404 / 402,

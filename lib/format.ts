@@ -80,14 +80,6 @@ export const ACCESS_LABEL: Record<string, string> = {
   hem_xe_may: "Hẻm xe máy",
   hem: "Trong hẻm",
 };
-/** Nhãn ngắn cho thẻ tin (khách Quận 5 đọc "HXH"/"MT" quen hơn chữ đầy đủ). */
-export const ACCESS_SHORT: Record<string, string> = {
-  mat_tien: "MT",
-  hem_xe_tai: "HXT",
-  hem_xe_hoi: "HXH",
-  hem_xe_may: "Hẻm xe máy",
-  hem: "Hẻm",
-};
 export const LEGAL_LABEL: Record<string, string> = {
   so_hong_rieng: "Sổ hồng riêng",
   so_hong_chung: "Sổ hồng chung",
@@ -145,66 +137,4 @@ export function zaloLink(context?: string): string {
 const IMG_BASE = "/img";
 export function placeholderImg(_seed?: string): string {
   return `${IMG_BASE}/chua-co-anh.svg`;
-}
-
-export function fmtPrice(v: number | null, deal?: string): string {
-  if (!v) return "Thoả thuận";
-  const suffix = deal === "cho_thue" ? "/th" : "";
-  if (v >= 1e9) {
-    const t = v / 1e9;
-    return (t % 1 ? t.toFixed(2).replace(/\.?0+$/, "") : String(t)) + " tỷ" + suffix;
-  }
-  if (v >= 1e6) return (Math.round(v / 1e5) / 10).toString().replace(/\.0$/, "") + " triệu" + suffix;
-  return Math.round(v / 1e3) + "k";
-}
-
-export const fmtPpm2 = (v: number) => (v >= 1e6 ? (v / 1e6).toFixed(1).replace(/\.0$/, "") + " tr/m²" : Math.round(v / 1e3) + "k/m²");
-
-export function shortPrice(v: number | null): string {
-  if (!v) return "TL";
-  if (v >= 1e9) { const t = v / 1e9; return (t % 1 ? t.toFixed(1) : String(t)) + "tỷ"; }
-  return Math.round(v / 1e6) + "tr";
-}
-
-export const canonDistrict = (s: string | null | undefined) => (s || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
-
-export function fresh(min: number | null): string {
-  if (min == null) return "";
-  const m = Math.max(0, min);
-  if (m < 1) return "vừa xong";
-  if (m < 60) return `${Math.round(m)} phút trước`;
-  if (m < 1440) return `${Math.round(m / 60)} giờ trước`;
-  return `${Math.round(m / 1440)} ngày trước`;
-}
-
-export const PROP: Record<string, string> = {
-  nha: "Nhà", dat: "Đất nền", can_ho: "Căn hộ",
-  mat_bang: "Mặt bằng", phong_tro: "Phòng trọ", khac: "Nhà đất khác",
-};
-
-export const AMEN: Record<string, string> = {
-  pet: "🐾 Thú cưng", furnished: "🛋 Nội thất", ac: "❄ Máy lạnh", parking: "🅿 Chỗ để xe",
-  security: "🔒 An ninh", near_market: "📍 Gần trung tâm", elevator: "🛗 Thang máy", corner: "📐 Lô góc",
-  pool: "🏊 Hồ bơi", gym: "🏋 Gym", school: "🏫 Trường học", park: "🌳 Công viên", mall: "🛍 TTTM",
-};
-
-export function thumb(kind: string): { bg: string; icon: string } {
-  const map: Record<string, [string, string, string]> = {
-    nha: ["#3B82F6", "#1E40AF", "🏠"], dat: ["#10B981", "#047857", "🌳"],
-    can_ho: ["#8B5CF6", "#5B21B6", "🏢"], mat_bang: ["#F59E0B", "#B45309", "🏬"],
-    phong_tro: ["#EC4899", "#9D174D", "🚪"], khac: ["#64748B", "#334155", "🏘️"],
-  };
-  const c = map[kind] || map.khac;
-  return { bg: `linear-gradient(135deg, ${c[0]}, ${c[1]})`, icon: c[2] };
-}
-
-export const coLinkThat = (u: string | null | undefined): boolean =>
-  !!u && u !== "#" && /^https?:\/\//i.test(u);
-
-export const escHtml = (s: unknown): string =>
-  String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-
-export function catChu(s: string, n: number): string {
-  if (s.length <= n) return s;
-  return Array.from(s).slice(0, n).join("");
 }

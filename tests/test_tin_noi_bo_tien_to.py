@@ -15,7 +15,7 @@ def _doc(rel: str) -> str:
 def test_escalation_feed_danh_co_noi_bo_theo_dich():
     ts = _doc("bot/supabase/functions/escalation-feed/index.ts")
     assert "noi_bo: !chuNha" in ts                                   # đích CTV / admin = nội bộ, đích chủ nhà = không
-    assert re.search(r'name: mua\?\.name \?\? ban\?\.name \?\? "khách", noi_bo: false', ts)   # tin soạn sẵn cho khách / chủ nhà: không tiền tố
+    assert "noi_dung_gui" not in ts.split("\n", 8)[-1]               # nhánh tin soạn sẵn đã gỡ (02/11/2026): tin cho khách do lõi gửi
 
 
 def test_bridge_mo_tin_noi_bo_bang_dong_dola():
