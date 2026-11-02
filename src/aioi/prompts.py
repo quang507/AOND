@@ -2500,6 +2500,27 @@ def tai_lieu_chung_schema() -> dict[str, Any]:
 
 
 
+# SRS-5.1zzzzzzz336 (ca 2 của SRS-342, điều phối 02/11: bản tin KHÔNG bình luận giá): AI đọc nghĩa bản tin, code chỉ kiểm cụm trích có nguyên văn
+# trong bản tin (`engine._binh_gia_trong_tin`). Lưới từ khoá `_BINH_LUAN_GIA` đổi chữ là lọt ("tầm giá này là dễ chịu lắm rồi", "có cửa bớt lộc").
+# Phạm vi CHỈ nhận xét MỨC GIÁ — ý chung / khẳng định thị trường trong tin là quyết định chủ dự án "kệ" / "để đó, ổn" (CLAUDE.md §6.3).
+SOAT_BINH_GIA_SYSTEM = """Dưới đây là một bản tin rao bất động sản do trợ lý viết. Tìm các câu / cụm NHẬN XÉT VỀ MỨC GIÁ: khen hay chê giá (rẻ,
+hợp lý, mềm, dễ chịu, đáng tiền, hời, vừa túi tiền, giá tốt), so giá với khu vực, hoặc gợi cho người mua là chắc được bớt / có cửa trả giá.
+KHÔNG tính: con số giá, chữ "giá rao" / "giá chủ đưa", câu báo chủ nhà cho thương lượng (dữ kiện, không phải nhận xét), khen điểm KHÁC của căn
+(vị trí, nhà đẹp, tiện ích), ý chung về khu, câu mời xem. Trả JSON: `cum` = các cụm CHÉP NGUYÊN VĂN từ bản tin (đúng từng chữ), không có
+thì mảng rỗng."""
+
+
+def soat_binh_gia_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            "cum": {"type": "array", "items": {"type": "string"},
+                    "description": "Cụm nhận xét mức giá, chép nguyên văn từ bản tin; không có thì []."},
+        },
+        "required": ["cum"],
+    }
+
+
 _AI_CAU_CHUAN = {"buyer": "Khách", "seller": "Khách", "bot": "Bot", "human": "Người thật"}
 
 

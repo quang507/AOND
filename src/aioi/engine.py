@@ -95,6 +95,8 @@ from .prompts import (
     khoi_trang_thai_web,
     TAI_LIEU_CHUNG_SYSTEM,
     tai_lieu_chung_schema,
+    SOAT_BINH_GIA_SYSTEM,
+    soat_binh_gia_schema,
     build_greeting,
     khoi_chao_lan_dau,
     khoi_chao_tu_van,
@@ -1726,8 +1728,31 @@ def _la_ban_tin(reply: str) -> bool:
     return "📋" in reply or _is_formatted_post(reply) or _MO_DAU_RE.search(reply) is not None
 
 
+def _gon(x: str) -> str:
+    return re.sub(r"\s+", " ", x or "").strip().lower()
+
+
+def _binh_gia_trong_tin(eng, conv, reply: str) -> list[str]:
+    """SRS-5.1zzzzzzz336: cụm NHẬN XÉT MỨC GIÁ trong bản tin — AI (model bóc tách) đọc nghĩa, code chỉ nhận cụm có NGUYÊN VĂN trong bản tin
+    (gộp khoảng trắng, vì tin xuống dòng giữa cụm). Lỗi gọi model → [] (không chặn lượt), ghi log."""
+    tin = reply.split("📋", 1)[1] if "📋" in reply else reply
+    try:
+        with _do(conv, "soat_binh_gia"):
+            data = eng._provider.extract(SOAT_BINH_GIA_SYSTEM, [Message("user", tin[:4000])], soat_binh_gia_schema())
+    except Exception as e:   # noqa: BLE001 — soát là lưới phụ, model hỏng thì lượt vẫn đi
+        log.warning("Soát bình luận giá bản tin lỗi: %s", type(e).__name__)
+        return []
+    goc = _gon(tin)
+    return [c.strip() for c in (data.get("cum") or []) if isinstance(c, str) and c.strip() and _gon(c) in goc]
+
+
 def _soat_binh_luan_gia(eng, conv, reply, nc) -> list[str]:
-    bl = None if _la_ban_tin(reply) else _binh_luan_gia(reply)   # bản tin có ý chung ("đắc địa") — chủ dự án: "kệ"; chỉ soát lời CHAT
+    if _la_ban_tin(reply):   # bản tin: AI đọc nghĩa (điều phối 02/11: tin cũng không bình luận giá — SRS-5.1zzzzzzz336)
+        cum = _binh_gia_trong_tin(eng, conv, reply)
+        return ([f"Bản tin vừa viết nhận xét mức giá (" + ", ".join(f"\"{c}\"" for c in cum) + ") — em không có dữ liệu thị trường, "
+                 "bỏ hẳn các câu đó khỏi bản tin: chỉ nêu đúng con số giá chủ đưa (và chủ cho thương lượng nếu chủ đã nói), không khen / chê "
+                 "giá, không hứa người mua được bớt."] if cum else [])
+    bl = _binh_luan_gia(reply)   # lời chat: lưới hình thức trên lời bot (SRS-5.1zzzzzzz132)
     return ([f"Lời vừa viết nhận xét giá / thị trường (\"{bl}\") — em không có dữ liệu thị trường, CẤM bình luận giá hợp lý / "
              "đắt khách / dễ bán. Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn."] if bl else [])
 
