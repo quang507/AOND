@@ -189,12 +189,16 @@ TIEU_CHI_LO_LUAT = ("\n\nViệc thứ hai, tách khỏi điểm giọng: lo_luat
                     "CHÚNG TA (\"mình xử lý nhanh nghen\", \"để mình bàn cho gọn\"); \"mình\" phản thân hay sở hữu của chính người nghe "
                     "(\"theo ý mình\", \"đứng tên mình\", \"nhà mình\", \"tính dòng tiền cho mình\"); và MỌI chỗ nằm trong BẢN TIN RAO "
                     "(đoạn sau 📋 — tin rao nói với người mua, không phải nói với khách đang chat). Không có → []."
+                    # SRS-5.1zzzzzzz357: phép `cam` của `ka_hua_suong` neo vào chữ ("trả lời THÌ em báo") nên 4 trong 5 câu production
+                    # 02/11 lọt. Đưa sang đọc nghĩa, đúng §4.8 — không thêm nhánh regex.
+                    "\n\nViệc thứ tám: hua_suong = số thứ tự các lượt EM nói mình ĐÃ LÀM hay CHẮC CHẮN SẼ LÀM một việc mà hệ thống không làm: đã chuyển câu hỏi cho chủ nhà, đã hỏi chủ nhà, chủ nhà trả lời là sẽ báo lại, đã ghi / đã xếp lịch xem, đã giao cho một người phụ trách, hay hẹn một MỐC THỜI GIAN cụ thể cho việc hệ thống làm (\"nhắn trong khoảng 8–20 giờ tới\", \"trong hôm nay\"). KHÔNG tính: nói chung là có căn hợp thì em nhắn (không kèm mốc thời gian), mời khách tự nhắn lại, hay việc khách vừa nhờ mà em nói sẽ làm ở lượt sau. Không có → []."
                     "\n\nViệc thứ bảy: tu_chon_can = số thứ tự các lượt khách nói về MỘT căn mà chưa chỉ rõ căn nào (\"căn đó bán rồi\") "
                     "trong khi khách đang có từ hai căn, và EM TỰ CHỌN một căn thay vì hỏi lại. Em hỏi lại căn nào — bằng bất kỳ chữ gì "
                     "(\"căn nào\", \"hay nhà mặt tiền … hay nhà hẻm …\") — thì KHÔNG tính. Không có → [].")
 
 
-def _cham_giong(kq: dict, model: str) -> tuple[int, str, list[int], list[int], list[int], list[int], list[int], list[int], float]:
+def _cham_giong(kq: dict, model: str) -> tuple[int, str, list[int], list[int], list[int], list[int], list[int], list[int],
+                                                list[int], float]:
     """Giám khảo model chấm giọng cả cuộc chat và chỉ lượt lộ luật cho khách (kế hoạch bước 1: phép chấm tất định + phần đọc nghĩa do model chấm)."""
     from aioi.llm.claude_cli import _chay_cli
     chep = "\n\n".join(f"LƯỢT {i} — KHÁCH: {l['khach']}\nEM: {l['bot']}" for i, l in enumerate(kq["luot"], 1))
@@ -204,16 +208,17 @@ def _cham_giong(kq: dict, model: str) -> tuple[int, str, list[int], list[int], l
                                                "da_doi": {"type": "array", "items": {"type": "integer"}},
                                                "diem_sai_luc": {"type": "array", "items": {"type": "integer"}},
                                                "goi_minh": {"type": "array", "items": {"type": "integer"}},
-                                               "tu_chon_can": {"type": "array", "items": {"type": "integer"}}},
-              "required": ["diem", "ly_do", "lo_luat", "hoi_lai", "da_doi", "diem_sai_luc", "goi_minh", "tu_chon_can"]}
+                                               "tu_chon_can": {"type": "array", "items": {"type": "integer"}},
+                                               "hua_suong": {"type": "array", "items": {"type": "integer"}}},
+              "required": ["diem", "ly_do", "lo_luat", "hoi_lai", "da_doi", "diem_sai_luc", "goi_minh", "tu_chon_can", "hua_suong"]}
     try:
         j = _chay_cli(model, TIEU_CHI_GIONG + TIEU_CHI_LO_LUAT, chep, schema)
     except Exception as e:  # noqa: BLE001
-        return 0, f"giám khảo lỗi: {type(e).__name__}", [], [], [], [], [], [], 0.0
+        return 0, f"giám khảo lỗi: {type(e).__name__}", [], [], [], [], [], [], [], 0.0
     o = j.get("structured_output") or {}
     ds = lambda khoa: sorted({int(x) for x in (o.get(khoa) or []) if str(x).isdigit() and 1 <= int(x) <= len(kq["luot"])})
     return (int(o.get("diem") or 0), str(o.get("ly_do") or "")[:160], ds("lo_luat"), ds("hoi_lai"), ds("da_doi"),
-            ds("diem_sai_luc"), ds("goi_minh"), ds("tu_chon_can"), float(j.get("total_cost_usd") or 0))
+            ds("diem_sai_luc"), ds("goi_minh"), ds("tu_chon_can"), ds("hua_suong"), float(j.get("total_cost_usd") or 0))
 
 
 def lech_khoi(kqs: list[dict]) -> list[str]:
@@ -268,7 +273,8 @@ def main() -> int:
             # chỉ khác thang chấm — đổi rubric mà chạy lại lõi thì dao động model trộn vào, không đọc được rubric đổi bao nhiêu).
             giong = {k["id"]: (r["giong"], next((g for t, _, g in r.get("diem", []) if t.startswith("giọng")), "").split(" ", 1)[-1],
                                r.get("lo_luat") or [], r.get("hoi_lai") or [], r.get("da_doi") or [],
-                               r.get("diem_sai_luc") or [], r.get("goi_minh") or [], r.get("tu_chon_can") or [], 0.0)
+                               r.get("diem_sai_luc") or [], r.get("goi_minh") or [], r.get("tu_chon_can") or [],
+                               r.get("hua_suong") or [], 0.0)
                      for k, r in zip(bo, kqs) if r.get("giong")}
     else:
         with ProcessPoolExecutor(max_workers=a.song_song) as ex:
@@ -285,7 +291,7 @@ def main() -> int:
     for kb, kq in zip(bo, kqs):
         diem = cham(kb, kq)
         if kb["id"] in giong:
-            g, ly, lo, hl, dd, dsl, gm, tcc, usd = giong[kb["id"]]
+            g, ly, lo, hl, dd, dsl, gm, tcc, hs, usd = giong[kb["id"]]
             diem.append(("giọng ≥ 4/5 (giám khảo)", g >= 4, f"{g}/5 {ly}"))
             diem.append(("không lộ luật cho khách (giám khảo)", g > 0 and not lo, f"lượt {lo}" if lo else ""))
             diem.append(("không hỏi lại điều khách đã trả lời (giám khảo)", g > 0 and not hl, f"lượt {hl}" if hl else ""))
@@ -299,8 +305,10 @@ def main() -> int:
             diem.append(("không gọi khách \"mình\" (giám khảo)", g > 0 and not gm, f"lượt {gm}" if gm else ""))
             if kb.get("kiem", {}).get("khong_tu_chon_can"):
                 diem.append(("không tự chọn căn khi khách chưa rõ (giám khảo)", g > 0 and not tcc, f"lượt {tcc}" if tcc else ""))
+            if kb.get("kiem", {}).get("khong_hua_suong"):
+                diem.append(("không hứa việc hệ thống không làm (giám khảo)", g > 0 and not hs, f"lượt {hs}" if hs else ""))
             kq["giong"], kq["lo_luat"], kq["hoi_lai"], kq["da_doi"], kq["diem_sai_luc"] = g, lo, hl, dd, dsl
-            kq["goi_minh"], kq["tu_chon_can"] = gm, tcc
+            kq["goi_minh"], kq["tu_chon_can"], kq["hua_suong"] = gm, tcc, hs
             kq["usd"] += usd
         kq["diem"] = [list(x) for x in diem]
         dat = sum(1 for _, ok, _ in diem if ok)
@@ -336,7 +344,7 @@ def main() -> int:
     if a.ra:
         json.dump({**meta, "ket_qua": kqs}, open(a.ra, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     if a.nen:   # bản gọn để so ở PR sau: điểm từng phép, không chép lời
-        gon = [{k: kq.get(k) for k in ("id", "dat", "diem", "goi", "goi_lai", "usd", "giong", "lo_luat", "hoi_lai", "da_doi", "diem_sai_luc", "goi_minh", "tu_chon_can")} for kq in kqs]
+        gon = [{k: kq.get(k) for k in ("id", "dat", "diem", "goi", "goi_lai", "usd", "giong", "lo_luat", "hoi_lai", "da_doi", "diem_sai_luc", "goi_minh", "tu_chon_can", "hua_suong")} for kq in kqs]
         json.dump({**meta, "ket_qua": gon}, open(DIEM_NEN, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     return 0
 
