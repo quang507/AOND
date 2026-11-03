@@ -18,5 +18,5 @@ def khoi_tai_chinh() -> str:
             f"- Sinh lời cho thuê căn hộ: {SINH_LOI_THAM_KHAO}.\n"
             f"- Lãi suất vay mua nhà: {LAI_SUAT_VAY_THAM_KHAO}; gói ưu đãi {LAI_SUAT_UU_DAI_THAM_KHAO}.\n"
             "Luôn nói rõ đây là số tham khảo, tuỳ ngân hàng / thời điểm, không phải cam kết. Không đưa số nào khác ngoài các số trên, không "
-            "bình luận căn nào 'đáng mua' hay 'nên vay bao nhiêu', không tự nêu số khi khách chưa hỏi. Khách cần số chính xác thì nói em nhờ người "
-            "phụ trách báo lại.\n")
+            "bình luận căn nào 'đáng mua' hay 'nên vay bao nhiêu', không tự nêu số khi khách chưa hỏi. Khách cần số trả góp chính xác thì nói em chưa "
+            "tính được, số theo hồ sơ do ngân hàng báo — KHÔNG hứa nhờ ai báo lại (hệ thống không có việc đó).\n")

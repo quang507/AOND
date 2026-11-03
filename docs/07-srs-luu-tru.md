@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz364 · Bot trả lời từng lượt khách chỉ thả cảm xúc (02/11/2026)
+Ca gốc (chat thật): khách thả /-heart 6 lần trong 3 giờ, bot nhắn lại 4 lần.
+(1) Lớp lỗi: lượt cảm xúc đi chung đường tin nhắn. Sửa: bridge gửi `su_kien: "reaction"` (bridge cũ: msg_id `react-`); lõi theo loại sự kiện không trả lời, chỉ ghi CRM — trừ bản nháp chờ duyệt (`engine.cho_duyet_ban_nhap`) hoặc chưa từng nhắn khách.
+(2) Cùng lớp: sticker có đường riêng (SRS-122); gõ chữ kèm tim vẫn là tin nhắn. (3) Kiểm: `test_cam_xuc_khong_tra_loi_364.py` — tắt nhánh: đỏ.
+
 ### SRS-5.1zzzzzzz363 · Bản tin tự nhân ngang × dài ra m² khi đất nở hậu ("đất 90m²" khách không nói) (02/11/2026)
 Ca gốc (chat thật): "mặt tiền 6m dài 15 nở hậu 3" → bản tin "đất 90m²".
 (1) Lớp lỗi: dữ kiện bản tin không nói căn CHƯA có số m², `AD_FORMAT` dặn luôn kèm m² → model tự nhân. Sửa: `khoi_su_that_can` thêm dòng "Diện tích" do code quyết — có ô thì in đúng số khách nói, không có thì "CHƯA có số m² — KHÔNG tự nhân".

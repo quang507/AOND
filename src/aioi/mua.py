@@ -201,8 +201,10 @@ def khoi_nhu_cau(dang_noi: Any, khac: list) -> str:
     đang tìm cho bộ nào (SRS-5.1zzzzzzz286). Khách mới có một bộ chưa nhãn thì vẫn kể (để AI biết khi nào là bộ MỚI)."""
     if dang_noi is None:
         return ""
-    dong = [f"- ĐANG NÓI: «{nhan_nhu_cau(dang_noi) or 'chưa đặt nhãn'}» — {_tom_nhu_cau(dang_noi)}"]
-    dong += [f"- ĐÃ CẤT: «{nhan_nhu_cau(l) or 'chưa đặt nhãn'}» — {_tom_nhu_cau(l)}" for l in khac or []]
+    # Chữ giữ chỗ "chưa đặt nhãn" từng bị AI chép thành nhu cầu của khách (chủ dự án 03/11, SRS-5.1zzzzzzz375) — chưa có nhãn thì bỏ trống.
+    _nh = lambda l: f"«{nhan_nhu_cau(l)}» — " if nhan_nhu_cau(l) else ""
+    dong = [f"- ĐANG NÓI: {_nh(dang_noi)}{_tom_nhu_cau(dang_noi)}"]
+    dong += [f"- ĐÃ CẤT: {_nh(l)}{_tom_nhu_cau(l)}" for l in khac or []]
     return ("\nBỘ NHU CẦU CỦA KHÁCH (một khách có thể tìm nhiều căn cho mục đích / người khác nhau; mỗi bộ có khu vực, ngân sách riêng):\n"
             + "\n".join(dong) + "\n")
 
