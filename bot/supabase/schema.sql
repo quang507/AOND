@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-03 11:10 (giờ VN)
+-- Sinh lúc: 2026-11-03 01:06 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -4893,7 +4893,7 @@ end
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.phuong_tai_diem(lat double precision, lng double precision)
+CREATE OR REPLACE FUNCTION public.phuong_tai_diem(p_lat double precision, p_lng double precision)
  RETURNS text
  LANGUAGE sql
  STABLE SECURITY DEFINER
@@ -4902,10 +4902,10 @@ AS $function$
   select w.ten_day_du
     from public.ranh_gioi_phuong r
     join public.wards w on w.ten = r.ten
-   where phuong_tai_diem.lat is not null and phuong_tai_diem.lng is not null
-     and phuong_tai_diem.lat between r.min_lat and r.max_lat
-     and phuong_tai_diem.lng between r.min_lng and r.max_lng
-     and public.diem_trong_vong(phuong_tai_diem.lat, phuong_tai_diem.lng, r.vong)
+   where p_lat is not null and p_lng is not null
+     and p_lat between r.min_lat and r.max_lat
+     and p_lng between r.min_lng and r.max_lng
+     and public.diem_trong_vong(p_lat, p_lng, r.vong)
    order by (r.max_lat - r.min_lat) * (r.max_lng - r.min_lng)   -- hai đa giác chồng (dữ liệu lệch) → lấy phường nhỏ hơn
    limit 1
 $function$
@@ -7425,8 +7425,8 @@ grant execute on function public.o_boc_tach(p jsonb) to service_role;
 revoke all on function public.parse_vnd(p text) from public, anon, authenticated;
 grant execute on function public.parse_vnd(p text) to authenticated;
 grant execute on function public.parse_vnd(p text) to service_role;
-revoke all on function public.phuong_tai_diem(lat double precision, lng double precision) from public, anon, authenticated;
-grant execute on function public.phuong_tai_diem(lat double precision, lng double precision) to service_role;
+revoke all on function public.phuong_tai_diem(p_lat double precision, p_lng double precision) from public, anon, authenticated;
+grant execute on function public.phuong_tai_diem(p_lat double precision, p_lng double precision) to service_role;
 revoke all on function public.quota_tieu_hao() from public, anon, authenticated;
 grant execute on function public.quota_tieu_hao() to authenticated;
 grant execute on function public.quota_tieu_hao() to service_role;

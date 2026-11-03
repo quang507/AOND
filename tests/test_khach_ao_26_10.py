@@ -48,7 +48,7 @@ def test_cong_web_dem_lo_phuong_va_bao_nguoi_phu_trach_lan_3():
         assert "can_nguoi_that" not in c.y_luot and web["phuong_bao_admin"]
     from aioi.prompts import khoi_trang_thai_web
     k = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "phuong_bao_admin": True})
-    assert "KHÔNG hỏi khách phường" in k[0] and "người phụ trách đã được báo" in k[0]
+    assert "hỏi phường" not in k[0].lower() and "người phụ trách đã được báo" in k[0]  # SRS-367: dòng cấm rải rác đã gỡ — bất biến chặn ở đầu ra (_soat_hoi_dung_o)
 
 
 def test_tin_rao_ta_khu_va_su_kien_khong_co():

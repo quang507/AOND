@@ -1,6 +1,7 @@
 """SRS-5.1zzzzzzz181 (chủ dự án 25/10/2026: "nối project_id cho tin rao… có cần hỏi lại ko" → "đồng ý"). Ca gốc: chat chị N. 20/10 — "Khu nhà phố
 NYAL" ở 198 Trương Đình Hội, kho có "Ny'ah Phú Định" ở 58A Trương Đình Hội; tên khác nên `_du_an` không gắn `project_id` (đúng, không đoán).
 Nay kho có ĐÚNG MỘT dự án cùng đường thì bot hỏi xác nhận MỘT lần, khách gật mới ghi `du_an` (rồi `_du_an` gắn `project_id` khi lưu)."""
+import json
 from aioi.supabase_store import SupabaseConversationStore
 from tests.test_duyet_ban_nhap import _Kho, _eng
 
@@ -71,7 +72,7 @@ def test_hoi_mot_lan_roi_khach_gat_thi_ai_duoc_dan_ghi_du_an(monkeypatch):
     eng._convstore = kho = _KhoGoiY(NYAH)
     _tin_chua_xong(eng, conv)
     ops: list[str] = []
-    monkeypatch.setattr(eng._provider, "extract", lambda system, messages, schema: ops.append(system) or {"operations": []}, raising=False)
+    monkeypatch.setattr(eng._provider, "extract", lambda system, messages, schema: (ops.append(system) if "operations" in json.dumps(schema) else None) or {"operations": []}, raising=False)   # SRS-367: bỏ lượt soát ô hỏi
 
     eng.handle("u-duyet", "nhà ngay Trương Đình Hội")
     assert 'dự án "Ny\'ah Phú Định"' in seen[-1] and "đúng không ạ" in seen[-1]

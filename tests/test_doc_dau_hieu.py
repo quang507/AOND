@@ -36,6 +36,6 @@ def test_khach_da_noi_phuong_thi_nhan_theo_khach():
     import inspect
     from aioi import dia_danh
     src = inspect.getsource(dia_danh.khoi_dia_danh)
-    assert "KHÔNG hỏi khách phường" in src and "khi hỏi phường" not in src
+    assert "khi hỏi phường" not in src and "KHÔNG hỏi khách phường" not in src  # SRS-367: dòng cấm rải rác đã gỡ — bất biến chặn ở đầu ra (_soat_hoi_dung_o)
 
 

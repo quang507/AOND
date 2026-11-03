@@ -266,9 +266,11 @@ HOUSE_AREA_FIELDS: list[str] = ["dien_tich_dat", "dien_tich_nha"]
 # Luận (`summary_ready`: đủ ô nhận diện + completeness ≥ 0.75); giữ ô bắt buộc riêng của mình (tên đường, phường — DB cần mới đăng).
 SUMMARY_READY_COMPLETENESS: float = 0.75
 
-# SRS-5.1zzzzzzz359 (chủ dự án 02/11): ô HỆ THỐNG tự xác định, không bao giờ là câu hỏi cho khách — phường (cũ → mới, toạ độ trên bản đồ, kho
-# đường / hẻm). Khách tự nói thì vẫn ghi như mọi ô.
-O_HE_THONG_TRA: frozenset[str] = frozenset({"phuong"})
+# SRS-5.1zzzzzzz359 / 366 / 367 (chủ dự án 02/11): ô HỆ THỐNG tự xác định, không bao giờ là câu hỏi cho khách — NGUỒN DUY NHẤT: vòng chọn
+# câu hỏi (`missing_fields`) lọc theo đây, lưới soát lời bot (`engine._soat_hoi_dung_o`) chặn đầu ra theo đây, bước áp tên kho
+# (`Engine._chuan_dia_danh`) chỉ chạy cho ô có ở đây. Phường: cũ → mới, toạ độ trên bản đồ, kho đường / hẻm. Đường: tên khách đã nói, hệ
+# thống áp tên kho (hỏi đường khi khách CHƯA nói là hỏi ô `dia_chi`). Thêm ô hệ thống tự tra = thêm khoá vào đây. Khách tự nói thì vẫn ghi.
+O_HE_THONG_TRA: frozenset[str] = frozenset({"phuong", "duong"})
 
 # 20/10/2026 (SRS-5.1zzzzzzz79; chủ dự án: "hỏi theo cụm"): ô hỏi GỘP một câu như môi giới ("nhà ngang dài bao nhiêu, xây mấy tầng
 # anh?") thay vì mỗi lượt một ô. Ô thiếu đầu tiên quyết cụm; lượt đó hỏi các ô còn thiếu trong cùng cụm (tối đa 3). Ô không thuộc cụm

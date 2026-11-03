@@ -26,6 +26,7 @@ from .schema import (
     O_COC,
     O_NOI_BO,
     O_SAU_DANG,
+    O_HE_THONG_TRA,
     Property,
     PropertyGroup,
     BuyerLead,
@@ -149,7 +150,7 @@ FIELD_LABELS: dict[str, str] = {
 NATURAL_QUESTIONS: dict[str, str] = {
     # Identity & chung
     "loai_hinh": "Xác nhận nhẹ căn này là chung cư, nhà phố hay đất",
-    "dia_chi": "Hỏi phần địa chỉ CÒN THIẾU (tên đường, phường / xã, tỉnh nếu chưa rõ; KHÔNG hỏi quận / huyện — đã bỏ từ 1/7/2025). Đất ở xã chưa có tên đường: hỏi đất gần chỗ nào hoặc đường nào — phần đã có trong dữ liệu đã biết thì KHÔNG hỏi lại",
+    "dia_chi": "Hỏi phần địa chỉ CÒN THIẾU (số nhà / tên đường, tỉnh nếu chưa rõ; KHÔNG hỏi quận / huyện — đã bỏ từ 1/7/2025). Đất ở xã chưa có tên đường: hỏi đất gần chỗ nào hoặc đường nào — phần đã có trong dữ liệu đã biết thì KHÔNG hỏi lại",
     "ma_so_can": "Hỏi mã căn hộ hoặc số nhà, tầng và tòa",
     "du_an": "Hỏi tên chung cư hoặc khu đô thị/dự án",
     "dien_tich": "Hỏi diện tích sử dụng của căn mình khoảng bao nhiêu mét vuông",
@@ -275,8 +276,7 @@ PHI_THUE = f"{RENTAL_FEE_MONTHS:g} tháng tiền thuê"  # "0.75 tháng tiền t
 # khuôn anh Luận). Viết thành DỮ KIỆN văn xuôi, không đánh số (1)…(4): model đọc lại y nguyên dạng danh sách thành câu như đọc điều khoản. Dùng ở
 # `BUSINESS_CONTEXT` (prompt cũ / bản nháp) và khối "KHÁCH HỎI VỀ PHÍ" của engine (phiếu lượt không có BUSINESS_CONTEXT). Không có con số: con số
 # phí theo vai do `muc_phi` / `khoi_bao_phi` / `_fee_hint` nói.
-CHINH_SACH_PHI = ("- CHÍNH SÁCH GỬI BÁN (dữ kiện để em hiểu rồi nói bằng lời mình; chủ dự án chốt 28/10/2026 và 01/11/2026, SRS-5.1zzzzzzz241 / "
-                  "318): mức phí của bên em cố định, không bớt, bù lại chỉ thu khi giao dịch thành công. Bên em có ký hợp đồng môi giới bằng văn bản "
+CHINH_SACH_PHI = ("- CHÍNH SÁCH GỬI BÁN (dữ kiện để em hiểu rồi nói bằng lời mình): mức phí của bên em cố định, không bớt, bù lại chỉ thu khi giao dịch thành công. Bên em có ký hợp đồng môi giới bằng văn bản "
                   "để thống nhất phí; khách muốn ký thì em nối người phụ trách, không hẹn giờ, không tự gửi mẫu. Bên em không làm độc quyền, chủ nhà "
                   "gửi bán nhiều nơi vẫn được. Môi giới gửi hàng thì phí theo mức môi giới, không có khoản chia hoa hồng nào khác.")
 
@@ -288,7 +288,7 @@ BUSINESS_CONTEXT = f"""BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ 
   • CHỦ ĐẦU TƯ: phí KHÔNG theo {PT_CHU}/{PT_MG} — thoả thuận riêng với dự án; đừng tự báo con số.
 {CHINH_SACH_PHI}
 - PHÍ CHỈ thu khi giao dịch THÀNH CÔNG. TUYỆT ĐỐI không bịa con số phí/ưu đãi/cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì nêu cả hai mức (chủ nhà {PT_CHU}, môi giới {PT_MG}) hoặc hỏi khách là chủ nhà hay môi giới.
-- Gamification: điểm …/100 của TIN và hạng Đồng/Bạc/Vàng của NGƯỜI RAO — số THẬT nằm ở khối "ĐIỂM TIN" cuối prompt (hệ thống tính), khối chỉ có ở lượt ra tin hoặc khi khách hỏi điểm; lượt không có khối thì KHÔNG nhắc điểm / hạng (chủ dự án 02/11)."""
+- Gamification: điểm …/100 của TIN và hạng Đồng/Bạc/Vàng của NGƯỜI RAO — số THẬT nằm ở khối "ĐIỂM TIN" cuối prompt (hệ thống tính), khối chỉ có ở lượt ra tin hoặc khi khách hỏi điểm; lượt không có khối thì KHÔNG nhắc điểm / hạng."""
 
 
 def muc_phi(role: SellerRole, thue: bool) -> str | None:
@@ -504,7 +504,6 @@ def _dong_dien_tich(fields: dict) -> str:
 # "Tin đang 73/100" thay vì hỏi mặt tiền — 5 lượt lộ luật).
 _VIEC_KHOI = {
     "hoi_du_an": 'hỏi xác nhận MỘT câu theo khối "DỰ ÁN GỢI Ý" bên dưới: căn có thuộc dự án đó không.',
-    "hoi_dia_danh": 'hỏi xác nhận tên đường theo khối "TRA CỨU ĐỊA DANH" bên dưới.',
     "hoi_gia_tin_moi": 'báo khách em lên cả hai tin và hỏi giá của tin mới theo khối "HỆ THỐNG VỪA MỞ THÊM MỘT TIN" bên dưới.',
     "hoi_can_nao": "hỏi khách đang nói căn nào trong các căn khách đã gửi (hệ thống chưa đổi căn nào).",
     "hoi_trung_ten": 'hỏi đúng câu của khối "ƯU TIÊN LƯỢT NÀY — HỎI TÊN DỰ ÁN" bên dưới.',
@@ -559,7 +558,7 @@ def build_phieu_luot(
 {GIONG_VUI}
 
 LUẬT CỐ ĐỊNH:
-- Ngắn, khoảng 30 từ: đáp đúng điều khách vừa nói, rồi làm {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
+- Đáp đúng điều khách vừa nói, rồi làm {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
 - Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ câu xác nhận mà {NHAN_VIEC_LUOT} giao.
 - Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết, không nhận xét giá thị trường, không hứa bán được.
 - Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
@@ -610,7 +609,7 @@ def build_buyer_chat_system(
         "Hỏi đúng 1 câu này, NGẮN (khoảng 15 chữ, một ý, không giải thích vì sao hỏi), tự nhiên, thân tình — đặt ở CUỐI tin, sau phần "
         "giới thiệu căn nếu có. Khách đã kể ý này rồi (trong hội thoại) thì không hỏi lại, hỏi tiếp chuyện khác."
         if next_field
-        else "Em đã hỏi đủ về nhu cầu của khách — KHÔNG hỏi thêm câu nào về nhu cầu nữa (SRS-5.1zzzzzzz154). Giới thiệu các căn phù hợp "
+        else "Em đã hỏi đủ về nhu cầu của khách — KHÔNG hỏi thêm câu nào về nhu cầu nữa. Giới thiệu các căn phù hợp "
              "trong danh sách (2–3 căn nếu có), rồi hỏi khách có muốn đi xem căn này không và hẹn lịch đi xem thực tế ngay trên Zalo — KHÔNG xin "
              "số điện thoại, trừ khi phần \"EM VỪA GHI LƯỢT NÀY\" bảo xin lúc khách chốt lịch xem."
     )
@@ -627,15 +626,15 @@ QUY TẮC PHẢN HỒI:
 - Trả lời ngắn gọn, ấm áp, như môi giới nhắn Zalo (em KHÔNG có số liệu thị trường — không nhận xét giá / thanh khoản). Xưng hô theo khối QUY TẮC XƯNG HÔ ở cuối.
 - Mỗi lượt CHỈ hỏi tối đa 1 thông tin còn thiếu, bằng MỘT câu ngắn.
 - Không lặp lại câu / ý đã nói ở lượt trước ("chưa có căn phù hợp", "em sẽ nhắn khi có", lời cảm ơn, lời trấn an): mỗi ý nói MỘT lần, lượt sau nói ngắn hơn bằng chữ khác hoặc bỏ; không mở đầu hai lượt liền nhau bằng cùng mấy chữ.
-- CÂU HỎI NHU CẦU LÀ CÂU MỞ (SRS-5.1zzzzzzz212, bài UX phỏng vấn định tính): hỏi "như thế nào / tầm bao nhiêu / ở đâu / kể em nghe", tránh câu
+- CÂU HỎI NHU CẦU LÀ CÂU MỞ (bài UX phỏng vấn định tính): hỏi "như thế nào / tầm bao nhiêu / ở đâu / kể em nghe", tránh câu
   Có/Không ("cần hẻm xe hơi không?") và câu gài sẵn đáp án hay tính từ cảm xúc ("tiện lắm đúng không?", "chắc chị thích…"). Câu mời xem nhà
   ("anh/chị muốn đi xem thử không?") vẫn được.
-- GỢI Ý TRƯỚC, HỎI SAU (23/10/2026): khi phần "CĂN ĐANG RAO" ở cuối có căn thì nói căn NGAY trong tin này, câu hỏi thêm nằm CUỐI tin;
+- GỢI Ý TRƯỚC, HỎI SAU: khi phần "CĂN ĐANG RAO" ở cuối có căn thì nói căn NGAY trong tin này, câu hỏi thêm nằm CUỐI tin;
   chưa có căn (khách chưa nêu ĐỦ khu vực và ngân sách) thì chỉ hỏi.
 - Tuyệt đối không bịa đặt căn ảo không có trong rổ hàng.
-- KHEN KHI CÓ ĐIỂM THẬT (22/10 "100% khen" → 25/10 chủ dự án nới, SRS-5.1zzzzzzz178): khách nêu thêm nhu cầu thì mở bằng MỘT mệnh đề khen
+- KHEN KHI CÓ ĐIỂM THẬT (22/10 "100% khen" → 25/10 chủ dự án nới): khách nêu thêm nhu cầu thì mở bằng MỘT mệnh đề khen
   ngắn nếu có điều đáng khen — lợi ích cụ thể của điều khách muốn (khu đi lại tiện, gần trường cho con…); không có thì vào thẳng việc.
-  Đừng khen CÁCH khách nói ("anh nêu rõ … nên em dễ lọc") — lặp lượt nào cũng vậy thành văn mẫu (SRS-5.1zzzzzzz277). Hai lượt gần nhau
+  Đừng khen CÁCH khách nói ("anh nêu rõ … nên em dễ lọc") — lặp lượt nào cũng vậy thành văn mẫu. Hai lượt gần nhau
   không mở cùng kiểu; nhiều lượt vào thẳng việc là bình thường. KHÔNG thêm chi tiết khách chưa nói ("gia đình", "con nhỏ"…), không báo đã ghi / đã lưu (hệ thống tự lưu). CẤM nhận xét tài chính ("vay 50% là hợp lý") và CẤM khen lựa chọn là
   đáng mua / sinh lời (em không có số liệu thị trường). Khách TỰ hỏi lãi suất / sinh lời thì chỉ nói số ở khối SỐ LIỆU THAM KHẢO bên dưới (nếu có), kèm "tham khảo".
 
@@ -657,7 +656,7 @@ def khoi_chao_tu_van(assistant_name: str, mau: str) -> str:
     đang tìm mua / thuê gì. Khách đã nói nhu cầu (kể cả muốn bán — nhắn nhầm số vẫn được trả lời) thì bỏ qua khối này."""
     return ("\n\n=== LƯỢT ĐẦU TIÊN CỦA CUỘC CHAT (số tư vấn người mua) ===\nNếu khách CHỈ chào hỏi (kể cả chào bằng sticker hay biểu tượng), "
             f"chưa nói nhu cầu: chào lại ngắn, giới thiệu em là {assistant_name}, rồi mời khách kể đang tìm mua hay thuê căn như thế nào — MỘT câu "
-            "hỏi MỞ, không liệt kê loại nhà / khu vực / mua-thuê thành nhiều lựa chọn (SRS-5.1zzzzzzz212). Mẫu câu "
+            "hỏi MỞ, không liệt kê loại nhà / khu vực / mua-thuê thành nhiều lựa chọn. Mẫu câu "
             f"(đổi chữ cho tự nhiên, giữ ý, KHÔNG chép nguyên): \"{mau}\"\nKhách đã nói nhu cầu ngay trong tin đầu thì bỏ qua đoạn này.\n")
 
 
@@ -733,10 +732,9 @@ KHOI_MOT_UU_TIEN = ("(Khối ƯU TIÊN LƯỢT NÀY ở trên quyết nội dung
 
 KHOI_DINH_GIA = (
     "\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI GIÁ THỊ TRƯỜNG / GIÁ CAO HAY THẤP: ===\n"
-    "Bên em CHƯA có dữ liệu định giá (SRS-5.1zzzzzzz116): KHÔNG nêu con số giá thị trường, KHÔNG nhận xét giá chủ đưa cao / thấp / hợp "
+    "Bên em CHƯA có dữ liệu định giá: KHÔNG nêu con số giá thị trường, KHÔNG nhận xét giá chủ đưa cao / thấp / hợp "
     "lý, KHÔNG so với căn khác. Nói ngắn, thật: bên em chưa có số liệu để định giá, tin vẫn rao theo giá chủ muốn; chủ muốn tham khảo thì "
-    "xem các tin cùng khu đang rao trên web bên em. KHÔNG hứa chuyên viên sẽ xem khu vực / báo lại (không có đường nào làm việc đó — "
-    "SRS-5.1zzzzzzz216).\n"
+    "xem các tin cùng khu đang rao trên web bên em. KHÔNG hứa chuyên viên sẽ xem khu vực / báo lại (không có đường nào làm việc đó).\n"
 )
 
 
@@ -751,7 +749,7 @@ def khoi_dinh_gia(gia_rao: str | None) -> str:
         f"Dữ kiện hệ thống — giá rao bán thị trường của dự án này: {gia_rao.strip()}.\n"
         "Nêu ĐÚNG khoảng giá/m² này, kèm số tin và thời điểm lấy, nói rõ đây là giá các tin đang RAO bán, không phải giá giao dịch chốt. "
         "KHÔNG nhận xét giá chủ đưa cao / thấp / hợp lý, KHÔNG tự quy đổi ra giá căn, KHÔNG so với căn khác — để chủ tự so; tin vẫn rao theo "
-        "giá chủ muốn. KHÔNG nêu tên trang / nguồn lấy số. KHÔNG hứa chuyên viên sẽ xem khu vực / báo lại (SRS-5.1zzzzzzz216).\n"
+        "giá chủ muốn. KHÔNG nêu tên trang / nguồn lấy số. KHÔNG hứa chuyên viên sẽ xem khu vực / báo lại.\n"
     )
 
 
@@ -770,7 +768,7 @@ def khoi_diem_tin(diem_tin: float, hang: str, thieu: list[str], so_anh: int, pro
         f"Để tăng điểm tin: {cach}.\n"
         "Khối này chỉ có ở lượt ra tin (bản nháp / báo tin đã lên) hoặc khi khách hỏi điểm — nói gọn điểm tin, hạng người rao và cách tăng điểm, "
         "không hứa lên Top.\n"
-        "Gọi đúng chữ (chủ dự án 02/11): điểm …/100 là điểm của TIN / CĂN; Đồng / Bạc / Vàng là hạng của NGƯỜI RAO, chỉ nói bằng TÊN hạng, "
+        "Gọi đúng chữ: điểm …/100 là điểm của TIN / CĂN; Đồng / Bạc / Vàng là hạng của NGƯỜI RAO, chỉ nói bằng TÊN hạng, "
         "KHÔNG kèm con số nào, không đặt chung một câu với điểm tin.\n"
     )
 
@@ -845,7 +843,7 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU M
 
 4) CÂU MỜI CHỐT (CTA — bắt buộc): MỘT–HAI câu cuối KÊU GỌI người đọc NHẮN TIN / liên hệ Zalo cho mình NGAY, gắn liền với nỗi sợ hụt mất (FOMO) để thúc hành động — mệnh lệnh trực tiếp, KHÔNG phải câu hỏi lấy lệ. Có thể kèm sẽ gửi thêm hình / hẹn đi coi. Viết như MỞ LỜI ĐỐI THOẠI để khách bấm vào là chat tiếp được liền.
 
-ĐA DẠNG — MỖI TIN MỘT VẺ (bắt buộc): khuôn này cố ý KHÔNG đưa câu mẫu nào (câu mẫu hoàn chỉnh bị chép y nguyên qua nhiều tin — SRS-5.1zzzzzzz336). Mỗi lần soạn phải TỰ diễn đạt: đổi câu mở màn, đổi cách khoe quyền lợi, đổi móc câu FOMO, đổi câu mời Zalo, đổi nhịp — sao cho không có hai tin nào trùng từng chữ. Giữ NGUYÊN TẮC (giọng chợ, cấu trúc, sự thật), nhưng LỜI phải tươi mới mỗi lần.
+ĐA DẠNG — MỖI TIN MỘT VẺ (bắt buộc): khuôn này cố ý KHÔNG đưa câu mẫu nào (câu mẫu hoàn chỉnh bị chép y nguyên qua nhiều tin). Mỗi lần soạn phải TỰ diễn đạt: đổi câu mở màn, đổi cách khoe quyền lợi, đổi móc câu FOMO, đổi câu mời Zalo, đổi nhịp — sao cho không có hai tin nào trùng từng chữ. Giữ NGUYÊN TẮC (giọng chợ, cấu trúc, sự thật), nhưng LỜI phải tươi mới mỗi lần.
 
 GIỌNG & XƯNG HÔ (bắt buộc): đây là TIN RAO CÔNG KHAI cho NHIỀU người mua đọc — KHÔNG phải tin nhắn nói riêng với người bán. Nói với CẢ ĐÁM ĐÔNG ("anh chị", "cô bác") — TUYỆT ĐỐI KHÔNG xưng hô 1 người kiểu nói riêng với chủ nhà ("anh ơi", "anh thấy đó", "em gửi anh", "cơ hội này không nhiều anh ơi").
 
@@ -853,7 +851,7 @@ ICON/EMOJI (bắt buộc): MẶC ĐỊNH cả bản rao chỉ dùng **2–3 icon
 
 ĐỊNH DẠNG KHOẢNG CÁCH (bắt buộc): MỘT dòng trống NGĂN giữa các khối (tiêu đề / mô tả / gạch đầu dòng / câu mời chốt). Trong khối gạch đầu dòng thì KHÔNG chèn dòng trống giữa các gạch.
 
-NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN (giữ của mình — chống bịa, SRS-5.1zzzzzzz73): mọi ý trong tin phải có trong dữ liệu căn / lời chủ nhà. Câu bot
+NỘI DUNG CHỈ TỪ DỮ LIỆU CĂN (giữ của mình — chống bịa): mọi ý trong tin phải có trong dữ liệu căn / lời chủ nhà. Câu bot
 từng HỎI hay từng KHEN trong lúc chat không phải dữ liệu. KHÔNG thêm tiện ích quanh nhà (chợ, trường học, bệnh viện, siêu thị…) hay tình trạng nhà
 (mới, sạch sẽ, giữ gìn kỹ) khi chủ nhà không nói — "ở lâu rồi", "đang ở" không có nghĩa là nhà sạch / mới. "Kể đủ … pháp lý" ở trên là kể pháp lý
 ĐÃ CÓ trong dữ liệu: chưa có thì BỎ hẳn ý pháp lý (không "sổ hồng", "sổ đỏ", "pháp lý rõ ràng", "hoàn công"); "chính chủ" chỉ viết khi chủ nhà tự nói là chủ. Dữ liệu chưa nói nhà ở hẻm hay mặt tiền thì KHÔNG viết "hẻm" / "HXH" / "mặt tiền";
@@ -889,7 +887,7 @@ def khoi_hoi_mat_tien(gia_tri: str) -> str:
         f"\nBỀ NGANG HAY ĐƯỜNG (hệ thống đã kiểm): lượt này em ghi \"{gia_tri}\" là BỀ NGANG của căn, nhưng chưa có kích thước lô "
         "(ngang × dài) để đối chiếu. Nếu khách nói kiểu \"mặt tiền … m\" / \"MT … m\" (có thể là độ rộng con đường trước nhà), câu hỏi "
         "DUY NHẤT của lượt này là hỏi lại cho chắc: số đó là bề ngang của căn hay đường trước nhà rộng chừng đó — KHÔNG hỏi thêm ô nào "
-        "khác (ô kế tiếp để lượt sau, SRS-5.1zzzzzzz252). Khách đã nói rõ \"ngang\" / \"bề ngang\" / \"đường rộng\" thì KHÔNG hỏi.\n"
+        "khác (ô kế tiếp để lượt sau). Khách đã nói rõ \"ngang\" / \"bề ngang\" / \"đường rộng\" thì KHÔNG hỏi.\n"
     )
 
 
@@ -1038,7 +1036,7 @@ Dòng 1: {opener}
 Dòng cuối cùng:
 {closer}
 
-QUY TẮC BẮT BUỘC (theo bản anh Luận, SRS-5.1zzzzzzz207):
+QUY TẮC BẮT BUỘC (theo bản anh Luận):
 - CHỈ dùng dữ liệu được cung cấp bên dưới. TUYỆT ĐỐI không bịa, không suy diễn thêm số liệu/vật liệu/tiện ích.
 - Văn phong thân thiện, đậm chất địa phương Việt Nam.
 - Viết TRỌN VẸN, không bỏ lửng câu, không kết thúc bằng "…".
@@ -1089,7 +1087,7 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
             "như môi giới dễ dàng tìm kiếm, kết nối.",
         )
     cam = ("TUYỆT ĐỐI KHÔNG nói tin đã đăng / đã lên web / đang hiển thị, KHÔNG bảo khách vào web xem tin của mình, KHÔNG nói "
-           f"\"{cau_mau.cau('duyet_tin')}\" (SRS-5.1zzzzzzz107).")
+           f"\"{cau_mau.cau('duyet_tin')}\".")
     thieu = [o for o in (web.get("thieu") or []) if o in FIELD_LABELS]
     # SRS-5.1zzzzzzz359 (chủ dự án 02/11: phường hệ thống tự tra, KHÔNG hỏi khách; ca thật 01–02/11 "Chỉ cần thêm phường là em đưa tin lên web
     # ngay… nhà anh thuộc phường nào ạ?"): phường ra khỏi danh sách hỏi khách — engine đã ghi phường tra được hoặc báo người phụ trách. Bỏ các
@@ -1100,11 +1098,10 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
         nhan = ", ".join(FIELD_LABELS[o].split(" (")[0] for o in thieu)
         hoi = FIELD_LABELS[thieu[0]]
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu {nhan}. {cam}"
-        viec = f"nói chỉ cần thêm {nhan} là tin lên web, rồi hỏi ĐÚNG 1 câu về {hoi}. KHÔNG hỏi / nhắc phường (bên em tự xác định)."
+        viec = f"nói chỉ cần thêm {nhan} là tin lên web, rồi hỏi ĐÚNG 1 câu về {hoi}."
     elif thieu_phuong:
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): bên em đang hoàn tất thông tin vị trí, người phụ trách đã được báo. {cam}"
-        viec = ("báo ngắn bên em đang hoàn tất để đưa tin lên; KHÔNG hỏi khách phường / xã / số nhà / gần đâu, KHÔNG nói thiếu phường, KHÔNG kể "
-                "tên phường nào; còn lại đáp điều khách vừa nói như thường.")
+        viec = "báo ngắn bên em đang hoàn tất để đưa tin lên; còn lại đáp điều khách vừa nói như thường."
     elif web.get("chua_ban_nhap"):
         ly_do = f"TIN CHƯA LÊN WEB: chưa đủ thông tin để soạn tin. {cam}"
         viec = "nói em cần thêm vài thông tin để soạn tin đăng, rồi hỏi tiếp đúng câu đang cần hỏi."
@@ -1133,6 +1130,7 @@ def build_fee_followup_system(
     phi_da_bao: bool = False,
     yeu_cau_moi: list[str] | None = None,
     goi: str = "anh/chị",
+    viet_lai_tin: bool = True,
 ) -> str:
     """Step 2: customer has seen the draft — react to their feedback, then talk fee (§V).
 
@@ -1157,7 +1155,7 @@ def build_fee_followup_system(
     # SRS-5.1zzzzzzz81 (chủ dự án: "theo anh Luận"): khách duyệt → hỏi khách biết phí chưa. Tin chưa lên web thì lượt đó đã phải hỏi
     # ô còn thiếu (`khoi_trang_thai_web`) — không thêm câu phí cho khỏi thành hai câu hỏi.
     hoi_phi = (
-        "\n  • RỒI XUỐNG MỘT DÒNG TRỐNG (đoạn riêng — hệ thống gửi thành tin nhắn riêng cho đỡ rối mắt; SRS-5.1zzzzzzz98) và HỎI "
+        "\n  • RỒI XUỐNG MỘT DÒNG TRỐNG (đoạn riêng — hệ thống gửi thành tin nhắn riêng cho đỡ rối mắt) và HỎI "
         "PHÍ NHẸ NHÀNG như bản anh Luận (tinh thần \"anh/chị có biết phí môi giới của tụi em chưa ạ?\"): mời khách vào web theo dõi "
         f"tin rồi hỏi khách đã biết phí môi giới bên em chưa (câu mẫu: \"{cau_mau.cau('hoi_phi', goi, **({'web': link_tin(web['ma'])} if (web or {}).get('ma') else {}))}\") — đây là câu hỏi DUY NHẤT "
         "của lượt này. Chỉ khi khách hỏi cụ thể mới báo con số phí, đúng theo loại khách. Đoạn này tối đa 2 câu ngắn."
@@ -1171,6 +1169,9 @@ def build_fee_followup_system(
     bao_phi = khoi_bao_phi(user_type, prop.is_rental, goi)
     bao_phi = f"\n  {bao_phi}" if bao_phi else ""
     yeu_cau = khoi_yeu_cau_viet(prop, yeu_cau_moi)
+    # SRS-5.1zzzzzzz368: khuôn bản tin (AD_FORMAT, ~5k ký tự, sau ranh giới cache) chỉ đi kèm lượt có thể phải rao lại bản tin
+    # (`viet_lai_tin`, engine quyết theo ý khách lượt này) — lượt duyệt / hỏi phí / chuyện khác không cần.
+    khoi_viet = f"KHI RAO LẠI BẢN TIN ĐÃ SỬA:\n{AD_FORMAT}\n" if viet_lai_tin else ""
     hoi_sau = ""
     o_sau = prop.cau_hoi_sau_ra_tin() if (web is None or web.get("len_web")) else None
     if o_sau:   # SRS-5.1zzzzzzz80: ô khách lờ 2 lần trước bản nháp — hỏi lại một lần, SAU lượt nói chuyện phí (lượt duyệt chỉ hỏi phí)
@@ -1191,7 +1192,7 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
 {hoi_link}
 - NẾU khách muốn CHỈNH SỬA THẬT SỰ (vd "tiêu đề nhiều thông tin quá", "đổi tiêu đề...", "giá sửa lại...", "nhà có 3 lầu...", "bớt lặp", "thêm icon"):
   • Khách ĐÍNH CHÍNH một số ("mặt tiền có 5m thôi", "nhầm, giá 12 tỷ") → tự hiểu theo dữ liệu đang có (sau ngang 5,2m thì 5m là bề ngang)
-    và sửa luôn, KHÔNG hỏi lại nghĩa, KHÔNG bắt khách kiểm số lệch (chủ dự án 30/10, SRS-5.1zzzzzzz302).
+    và sửa luôn, KHÔNG hỏi lại nghĩa, KHÔNG bắt khách kiểm số lệch.
   • TRƯỚC dấu 📋: MỘT câu ngắn đáp đúng điều khách vừa nói, theo khối GIỌNG (đồng tình, cảm thán nếu điều đó hay, hoặc nói thẳng sẽ sửa
     gì) — KHÔNG mở bằng câu báo cáo "Em sửa rồi ạ / Em cập nhật lại bản tin", KHÔNG nhắc phí.
   • RAO LẠI BẢN TIN ĐÃ SỬA (xuống dòng, dòng RIÊNG "📋 Bản tin cập nhật:" — giữ dấu 📋) theo ĐÚNG bố cục tin rao dưới đây — sửa ĐÚNG chỗ khách nói trên bản tin trước;
@@ -1213,9 +1214,7 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
 DANH SÁCH GIÁ TRỊ (dùng để thuyết phục, chỉ nêu thứ có thật):
 {FEE_VALUE_POINTS}{fee_block}
 
-KHI RAO LẠI BẢN TIN ĐÃ SỬA:
-{AD_FORMAT}
-{yeu_cau}
+{khoi_viet}{yeu_cau}
 DỮ LIỆU BĐS:
 {describe_captured(prop)}"""
 
@@ -1352,7 +1351,7 @@ Nếu ảnh bị mờ hoặc KHÔNG PHẢI giấy tờ pháp lý BĐS (vd ảnh 
 # ảnh sẵn có (nhận sổ / gom nhóm), không thêm lần gọi model.
 MO_TA_KHONG_PHAI_ANH_CAN = ("true nếu là ẢNH nhưng KHÔNG phải ảnh chụp thật của căn đang rao: ảnh mạng / ảnh quảng cáo có chữ, logo, watermark của bên khác, "
                 "phối cảnh 3D / ảnh minh hoạ, ảnh không liên quan nhà đất. Ảnh nhà, phòng, hẻm, đường trước nhà, view chụp thật → false; giấy tờ, "
-                "bảng dữ liệu → false. Phân vân thì false (OPEN-53, SRS-5.1zzzzzzz241).")
+                "bảng dữ liệu → false. Phân vân thì false (OPEN-53).")
 
 
 def deed_extraction_schema() -> dict[str, Any]:
@@ -1633,31 +1632,31 @@ Nếu khách nói RÕ đâu là đất, đâu là nhà, dùng dien_tich_dat (di�
 MỘT con số m2 mà KHÔNG có dấu hiệu nào (xem ĐỌC DẤU HIỆU dưới) thì lưu tạm vào dien_tich (đừng bỏ trống, đừng bịa
 thêm số) để hệ thống hỏi lại xác nhận sau. Chung cư/CHDV/khách sạn/đất/kho xưởng chỉ có 1 diện tích — luôn dùng dien_tich
 cho các loại này.
-ĐỌC DẤU HIỆU NHƯ MÔI GIỚI LÂU NĂM (19/10/2026, SRS-5.1zzzzzzz74 — chủ dự án: "bot thông minh phải hiểu dấu hiệu căn này thuộc về gì"):
+ĐỌC DẤU HIỆU NHƯ MÔI GIỚI LÂU NĂM ("bot thông minh phải hiểu dấu hiệu căn này thuộc về gì"):
 - Loại hình (loai_hinh) suy theo dấu hiệu, không chờ khách gọi tên: "căn nhà" / "nhà" kèm số tầng / lầu, mặt tiền, hẻm, hoặc nằm ở
   các quận nội thành cũ của TP.HCM (Quận 1–12, Phú Nhuận, Bình Thạnh, Tân Bình, Tân Phú, Gò Vấp, Bình Tân, Thủ Đức…) → nha_pho.
   "căn hộ", "chung cư", "block / tầng X căn Y", tên toà chung cư → chung_cu. "lô đất", "đất nền", "đất thổ cư", "đất trống" → dat.
   Cho thuê NGUYÊN CĂN ("nhà nguyên căn", "nhà trọ nguyên căn", "thuê nguyên căn" — cả căn nhà có trệt / lầu / phòng ngủ) → nha_pho;
-  phong_tro chỉ khi cho thuê TỪNG PHÒNG trong dãy / nhà trọ (20/10: khách "cho thuê nhà trọ nguyên căn, 1 trệt 1 lầu 2PN" bị xếp
+  phong_tro chỉ khi cho thuê TỪNG PHÒNG trong dãy / nhà trọ (khách "cho thuê nhà trọ nguyên căn, 1 trệt 1 lầu 2PN" bị xếp
   phòng trọ, bot hỏi gác lửng / WC riêng).
   "Nhà" / "căn nhà" trong khu dự án / khu dân cư (vd "bán nhà trong khu dự án Nyah Phú Định") → nha_pho; chung_cu chỉ khi khách nói
-  căn hộ / chung cư / tòa / block / tầng X (20/10: bot hỏi "tòa nào, tầng mấy" cho nhà phố trong dự án).
+  căn hộ / chung cư / tòa / block / tầng X (bot hỏi "tòa nào, tầng mấy" cho nhà phố trong dự án).
   Vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An, Bình Dương, Đồng Nai, Tây Ninh…) mà khách chỉ nói "nhà",
   không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
 - Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
   (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
   nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Căn ĐÃ có diện tích đất (khách nói ở lượt trước) mà khách nói thêm một con
-  số m² KHÁC, không dấu hiệu gì ("135m2 đất nha" rồi "250m2") → đó là diện tích sàn: dien_tich_nha (SRS-5.1zzzzzzz312, tự hiểu từ dữ kiện,
+  số m² KHÁC, không dấu hiệu gì ("135m2 đất nha" rồi "250m2") → đó là diện tích sàn: dien_tich_nha (tự hiểu từ dữ kiện,
   không hỏi lại). Không có dấu hiệu nào mới để tạm dien_tich.
-  Viết tắt (20/10): "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
-  "DTCN" / "dt công nhận" / "diện tích công nhận" = diện tích ĐẤT công nhận trên sổ → dien_tich_dat, KHÔNG BAO GIỜ là sàn (26/10: "DT 4x18m
+  Viết tắt: "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
+  "DTCN" / "dt công nhận" / "diện tích công nhận" = diện tích ĐẤT công nhận trên sổ → dien_tich_dat, KHÔNG BAO GIỜ là sàn ("DT 4x18m
   – DTCN 71m²" bị ghi thành 71m² sàn).
   "dts" có thể là diện tích sổ hoặc sàn: con số bằng ngang × dài khách đã nói (4x11 → 44) là ĐẤT; còn lại để tạm dien_tich. Số
   bằng ngang × dài luôn là diện tích ĐẤT, không bao giờ là diện tích sàn của nhà nhiều tầng.
   "MT 20m" / "mặt tiền đường 20m" nói cạnh TÊN ĐƯỜNG là độ rộng con ĐƯỜNG → lo_gioi_duong; mat_tien là bề ngang của chính căn
   nhà (lô 4x11 → ngang 4m), không bao giờ lớn hơn chiều của lô.
   Độ rộng theo QUY HOẠCH ("quy hoạch mở rộng 25m", "lộ giới quy hoạch 20m", "sắp mở rộng đường") là chuyện SAU NÀY → quy_hoach, KHÔNG
-  ghi vào lo_gioi_duong (lo_gioi_duong = đường rộng bao nhiêu BÂY GIỜ). 26/10: "mặt tiền quy hoạch mở rộng 25m" bị ghi lo_gioi_duong = 25 rồi
+  ghi vào lo_gioi_duong (lo_gioi_duong = đường rộng bao nhiêu BÂY GIỜ). Ví dụ: "mặt tiền quy hoạch mở rộng 25m" bị ghi lo_gioi_duong = 25 rồi
   tin rao viết "đường rộng 25m".
 QUAN TRỌNG — mã số căn: BĐS dự án lúc MỞ BÁN (chưa hoàn thành) thường được định danh bằng
 MÃ SỐ CĂN (vd "căn số 42", "A-15-03", "block B tầng 5 căn 3") và CHƯA có địa chỉ đường. Nếu
@@ -1687,7 +1686,7 @@ QUAN TRỌNG — lý do bán và chuyện riêng tư: nếu người rao chia s�
 (con cái định cư/đi xa, vợ chồng không ở, nợ nần, bệnh tật, về quê...), hãy trích vào ly_do_ban
 để lưu trữ nội bộ cho admin hỗ trợ. TUYỆT ĐỐI KHÔNG xếp các câu chuyện riêng tư này vào tiện ích
 hay mô tả công khai của căn nhà.
-QUAN TRỌNG — địa chỉ tách phần (18/10/2026): ngoài dia_chi (nguyên cụm địa chỉ khách nói), tách RIÊNG:
+QUAN TRỌNG — địa chỉ tách phần: ngoài dia_chi (nguyên cụm địa chỉ khách nói), tách RIÊNG:
 - duong: TÊN ĐƯỜNG khách nêu (vd "Trần Hưng Đạo", "Đường số 5", "Hẻm 137 Lê Văn Sỹ" → "Lê Văn Sỹ"). Chỉ tên đường thật —
   KHÔNG điền "hẻm", "mặt tiền", tên quận/phường, kích thước. Khách chưa nêu tên đường thì BỎ TRỐNG.
 - phuong: PHƯỜNG / XÃ khách nêu, chép đúng cách khách gọi, kiểu cũ hay kiểu mới đều được ("Phường 1", "P.13", "Phường Chợ
@@ -1760,8 +1759,8 @@ def property_field_props() -> dict[str, Any]:
     properties["duong"] = {
         "type": "string",
         "description": "Tên đường khách nêu (không số nhà, không 'hẻm'/'mặt tiền', không phường/quận). Khách gõ KHÔNG DẤU ('duong ma lo', "
-        "'nha mat tien le van sy') vẫn là tên đường — ghi đúng chữ khách gõ, không tự thêm dấu (hệ thống tra kho đường, tên khớp nhiều đường "
-        "thì hỏi lại khách, SRS-5.1zzzzzzz274). Chưa nêu thì bỏ trống.",
+        "'nha mat tien le van sy') vẫn là tên đường — ghi đúng chữ khách gõ, không tự thêm dấu (hệ thống tra kho đường và tự áp tên chuẩn). "
+        "Chưa nêu thì bỏ trống.",
     }
     properties["phuong"] = {
         "type": "string",
@@ -1885,9 +1884,9 @@ Các loại "op":
   = ["42","41"] và thông tin CHUNG trong "fields". CHỈ dùng "add" khi rõ ràng là căn KHÁC căn
   đang khai (vd "còn một căn nữa", "qua căn khác", địa chỉ hoàn toàn khác). Khách BỔ SUNG / LÀM RÕ địa chỉ của căn đang
   khai (thêm quận, tỉnh / thành, phường, số nhà cho cùng con đường — vd vừa nói "đường Nguyễn Chí Thanh" rồi "nhà ở quận Đống
-  Đa, Hà Nội") là "update" căn đó, KHÔNG "add", dù địa danh khác điều em đoán (SRS-5.1zzzzzzz108).
+  Đa, Hà Nội") là "update" căn đó, KHÔNG "add", dù địa danh khác điều em đoán.
   "add" 1 căn PHẢI kèm "can_khac_trich" = nguyên văn cụm khách nói căn khác; khách nói thêm loại đất / pháp lý / diện tích
-  của căn đang khai (vd kho xưởng rồi "sổ đỏ riêng, đất SKC 50 năm") là "update" (SRS-5.1zzzzzzz268).
+  của căn đang khai (vd kho xưởng rồi "sổ đỏ riêng, đất SKC 50 năm") là "update".
 - "set_status": người rao đổi TRẠNG THÁI một căn — HỄ TIN NHẮN THỂ HIỆN là tạo op này (mọi trạng
   thái của hệ thống đều đến từ lời nhắn, không có nút bấm). "status":
     • da_ban = "bán rồi / đã bán / bán xong / chốt rồi"; da_cho_thue = "cho thuê rồi / đã cho thuê".
@@ -1899,7 +1898,7 @@ Các loại "op":
   Đặt "target"/"targets" = căn nào (mã/địa chỉ); bỏ trống nếu đang nói về căn hiện tại; rổ nhiều căn thì kèm "trich_dan_can". Rổ có NHIỀU căn mà lời khách không chỉ ra
   được căn nào (không mã, không địa chỉ / đường, các lượt gần cũng chưa nói riêng một căn — vd vừa khai hai căn trong một tin rồi "căn đó bán
   rồi") → VẪN tạo set_status nhưng để trống target và trich_dan_can — hệ thống không đổi căn nào và lượt trả lời hỏi lại căn nào (đổi nhầm
-  trạng thái là ẩn nhầm tin đang rao, SRS-5.1zzzzzzz307 / 310).
+  trạng thái là ẩn nhầm tin đang rao).
 - "remove": người rao muốn BỎ/NGƯNG RAO vài căn cụ thể ("bỏ căn 50 và 3") → "targets" = ["50","3"].
 - "keep_only": người rao nói CHỈ GIỮ RAO một số căn ("tôi chỉ có căn 23, 24") → "targets" =
   ["23","24"] (các căn còn lại chuyển sang không rao).
@@ -1910,14 +1909,14 @@ Các loại "op":
 MƠ HỒ / VÔ NGHĨA / MÉO TIẾNG (lỗi voice-to-text, vd "tránh nhau vi vu nhé") → TUYỆT ĐỐI KHÔNG tạo
 op hủy; để operations RỖNG. Thà bỏ sót còn hơn ẩn nhầm.
 
-BÓC TÁCH KHÔNG THIẾU (SRS-5.1zzzzzzz205): điều khách TỰ NÓI mà không khớp ô nào (gần trường / chợ, nhà mới sơn, tặng nội thất, khu an ninh, hẻm thông,
+BÓC TÁCH KHÔNG THIẾU: điều khách TỰ NÓI mà không khớp ô nào (gần trường / chợ, nhà mới sơn, tặng nội thất, khu an ninh, hẻm thông,
 2 mặt tiền…) → đưa vào mảng "uu_the" trong fields, mỗi ý một cụm ngắn CHÉP NGUYÊN VĂN lời khách; vẫn tuyệt đối KHÔNG bịa.
 CHỈ GHI ĐIỀU KHÁCH NÓI: mỗi ô trong "fields" phải kèm "bang_chung" = nguyên văn cụm trong lời KHÁCH. Câu BOT hỏi hay gợi ý
 ("có để giá thương lượng nhẹ không ạ?") KHÔNG phải lời khách: khách chưa trả lời đúng ý đó thì không ghi ô đó. Không tự suy
 (nhà "mới xây", "nội thất đẹp"…) khi khách không nói. Ô thiếu bằng chứng bị hệ thống bỏ.
-MỖI CỤM KHÁCH NÓI VÀO ĐÚNG MỘT Ô theo nghĩa (SRS-5.1zzzzzzz86; bắn thử: "7 tầng" vào cả ô số phòng ngủ, "phí quản lý" vào cả ô
+MỖI CỤM KHÁCH NÓI VÀO ĐÚNG MỘT Ô theo nghĩa (bắn thử: "7 tầng" vào cả ô số phòng ngủ, "phí quản lý" vào cả ô
 giá điện nước) — không chép một cụm sang ô khác nghĩa.
-GIÁ TRỊ Ô CŨNG CHỈ LÀ ĐIỀU KHÁCH NÓI (SRS-5.1zzzzzzz86): không suy thêm từ một con số hay một chữ — "ngõ rộng 3m" KHÔNG thành "ô tô
+GIÁ TRỊ Ô CŨNG CHỈ LÀ ĐIỀU KHÁCH NÓI: không suy thêm từ một con số hay một chữ — "ngõ rộng 3m" KHÔNG thành "ô tô
 vào được", "hẻm 4m" KHÔNG thành "mặt tiền", "3 lầu" KHÔNG thành "có thang máy". Giá trị có từ khách không gõ thì hệ thống ghi
 nguyên cụm bang_chung thay cho giá trị.
 
@@ -1925,7 +1924,7 @@ Ngoài "operations", nếu khách TỰ NÓI RA vai thì đặt "seller_role"
 (chu_nha/luot_song/moi_gioi/san/chu_dau_tu/nguoi_nha_nho_ban) kèm "seller_role_trich_dan" = nguyên văn cụm khách gọi tên vai ("a là môi giới", "nhà chính chủ",
 "bên sàn em"); cách nói việc ("a cần đăng tin", "nhà em", "chú có căn nhà") KHÔNG phải vai — bỏ trống (phí báo theo vai, đoán sai là báo sai tiền); nếu là tin cho thuê đặt "is_rental"=true ("đang cho thuê X/tháng" khi rao BÁN là hiện trạng, không phải tin cho thuê).
 
-SỰ THẬT CỦA CĂN (SRS-5.1zzzzzzz320, chủ dự án 02/11: đọc theo NGHĨA cả câu, hiểu phủ định "không phải", "chưa", "đang làm", "xa", "cách"):
+SỰ THẬT CỦA CĂN (đọc theo NGHĨA cả câu, hiểu phủ định "không phải", "chưa", "đang làm", "xa", "cách"):
 trạng thái HIỆN TẠI theo cả cuộc trò chuyện về căn đang nói, mỗi khoá kèm "<khoá>_trich_dan" = nguyên văn cụm khách nói. Khách chưa nói
 hoặc chưa chắc → bỏ trống (bản tin sẽ KHÔNG khẳng định điều đó). "không phải chính chủ" / "nhà chị gái em, em đăng giùm" KHÔNG là chu_nha
 (người nhà → seller_role "nguoi_nha_nho_ban").
@@ -1938,18 +1937,18 @@ PHÂN BIỆT Ý ĐỊNH KHÁCH ("user_intent") BẰNG TOÀN BỘ NGỮ CẢNH (S
 - "sell": Người bán / cho thuê gửi thông tin BĐS của họ, HOẶC người bán hỏi thăm tình hình bán/thị trường (vd: "giá này có khách mua không em?", "có ai hỏi mua chưa?", "bên mua có trả giá không?"). Việc nhắc tới chữ "mua" trong câu hỏi VẪN LÀ "sell"!
 - "buy": Khách thể hiện rõ nhu cầu cá nhân ĐANG TÌM MUA hoặc TÌM THUÊ BĐS (vd: "tôi cần tìm mua căn nhà phố", "tìm thuê chung cư 2PN", "anh muốn mua đầu tư tầm 5 tỷ"). Nếu có thông tin nhu cầu thì trích xuất vào "buyer_lead".
   Khách hỏi về MỘT CĂN ĐANG RAO bằng mã tin (#ABCD1234) hay link tin trên web — hỏi giá, kích thước, pháp lý, xin ảnh, hẹn xem — mà căn đó
-  không phải của họ cũng là "buy" (SRS-5.1zzzzzzz273), dù họ nhắn số ký gửi.
+  không phải của họ cũng là "buy", dù họ nhắn số ký gửi.
   KHÁCH VỪA MUA VỪA BÁN: một người có thể rao bán vài căn và cũng đang tìm mua. Mỗi tin xét THEO NGHĨA CỦA TIN ĐÓ trong cuộc trò chuyện, không theo việc họ từng
   rao bán: khách hỏi / hẹn xem / hỏi giá / hỏi chủ nhà về căn bot VỪA giới thiệu hoặc báo cho họ xem (vd "mình xem thử thứ 7 được không", "căn đó còn
   không em", "9h nhé" đáp lại lời hẹn xem) là "buy" dù trước đó họ từng gửi bán.
 - "unknown": Chào hỏi chung, hỏi phí, hỏi công ty mà chưa rõ họ muốn bán hay mua.
-- "hoi_ngoai_viec" (25/10/2026, SRS-5.1zzzzzzz177): khách hỏi / kể việc KHÔNG thuộc mua bán / thuê nhà đất (đồng hồ nước, điện, phí quản lý
-  khu dân cư, hành chính, chuyện riêng, hỏi nhầm công ty khác…) và CHƯA tỏ ý gửi bán hay tìm mua → hoi_ngoai_viec = tóm ngắn ý câu đó (đọc theo nghĩa, Q5 02/11/2026),
-  user_intent = "unknown", operations RỖNG — KHÔNG ghi ô nào từ câu đó, kể cả địa chỉ / tên khu khách nêu để hỏi việc khác (chat thử 24/10:
+- "hoi_ngoai_viec": khách hỏi / kể việc KHÔNG thuộc mua bán / thuê nhà đất (đồng hồ nước, điện, phí quản lý
+  khu dân cư, hành chính, chuyện riêng, hỏi nhầm công ty khác…) và CHƯA tỏ ý gửi bán hay tìm mua → hoi_ngoai_viec = tóm ngắn ý câu đó (đọc theo nghĩa),
+  user_intent = "unknown", operations RỖNG — KHÔNG ghi ô nào từ câu đó, kể cả địa chỉ / tên khu khách nêu để hỏi việc khác (vd
   cư dân hỏi "đồng hồ nước trước cổng ngày nào cắt" bị hỏi địa chỉ rồi thành tin rao). Câu hỏi pháp lý / thủ tục nhà đất → hoi_phap_ly,
   không phải mục này. Khách đã nói rõ bán / mua rồi mới hỏi việc khác → bỏ trống.
 
-VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / thuê — 19/10/2026): đọc theo NGHĨA tin khách VỪA nhắn.
+VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / thuê): đọc theo NGHĨA tin khách VỪA nhắn.
 - "ma_can": mã căn khách đang nói tới — chỉ lấy mã khách gõ (#ABCD1234, BDS-Q5-0012) hoặc mã trong danh sách CĂN ĐANG CÓ bot vừa
   gửi khi khách chỉ rõ căn đó ("căn đầu", "căn 5 tỷ ở Q5"). Không chắc căn nào thì để trống.
 - "quan_tam": true khi khách tỏ ý thích / muốn tìm hiểu / muốn xem căn đó.
@@ -1961,25 +1960,25 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
   ngay được không, 2 tuần nữa khách dọn vào được không?"). Khách vừa ĐỒNG Ý để em hỏi giúp ("ừ hỏi giúp anh", "hỏi đi em") → câu hỏi là
   điều khách hỏi ở các lượt trước — kể cả xin thêm ảnh khi em đã gửi hết ảnh. Câu này được gửi chủ nhà NGAY khi em ghi — chỉ ghi khi khách thật muốn biết điều đó. Hỏi thứ dòng của căn đã có (giá, diện tích) thì để trống.
   Khách hỏi về DỰ ÁN đang nói (còn căn tầng cao không, tầng mấy, căn góc…) mà khối dự án / căn trong dự án không có câu trả lời thì cũng
-  ghi vào đây (hệ thống hỏi chủ nhà có căn trong dự án, không có thì hỏi admin — SRS-5.1zzzzzzz250).
+  ghi vào đây (hệ thống hỏi chủ nhà có căn trong dự án, không có thì hỏi admin).
 - "xin_anh": true khi khách xin XEM ẢNH / HÌNH của căn (vd "cho xem ảnh", "gửi hình đi em", "có hình thật không", "gửi lại ảnh giúp anh"),
   kể cả khi bot đã gửi ảnh ở trên rồi. Khách chỉ hỏi chung "căn này đẹp không" thì để trống.
-- "khong_hop" (25/10/2026, SRS-5.1zzzzzzz175): true khi khách CHÊ / TỪ CHỐI căn đang nói tới — không hợp, không thích, bỏ qua căn này,
+- "khong_hop": true khi khách CHÊ / TỪ CHỐI căn đang nói tới — không hợp, không thích, bỏ qua căn này,
   xa quá, đắt quá, hẻm nhỏ quá… ("căn đó không hợp", "thôi bỏ căn này", "xa trường con quá", "giá đó cao quá anh không với tới"). Kèm
   "ly_do" = lý do khách nêu, viết ngắn theo ý khách (bỏ trống nếu khách không nói vì sao). Khách chỉ hỏi thêm hay so sánh chưa quyết thì để trống.
-- "ngung_bao" (25/10/2026, SRS-5.1zzzzzzz175): "tat" khi khách bảo ĐỪNG gửi / đừng nhắn / đừng báo căn nữa, ngưng tin tự động ("đừng gửi
+- "ngung_bao": "tat" khi khách bảo ĐỪNG gửi / đừng nhắn / đừng báo căn nữa, ngưng tin tự động ("đừng gửi
   nữa em", "thôi khỏi báo căn", "ngưng nhắn anh nha"); "bat" khi khách XIN được báo lại khi có căn mới ("có căn mới thì nhắn anh"). Khách
   chỉ từ chối MỘT căn (khong_hop) không phải ngưng báo → bỏ trống.
-- "hoi_du_an" (25/10/2026, SRS-5.1zzzzzzz184): tên dự án khi khách hỏi THÔNG TIN về một dự án (chủ đầu tư là ai, tiện ích, pháp lý,
+- "hoi_du_an": tên dự án khi khách hỏi THÔNG TIN về một dự án (chủ đầu tư là ai, tiện ích, pháp lý,
   giá, bàn giao, "dự án X có gì / tốt không / của ai") — khách gõ sai / tắt mà em nhận ra dự án thì viết đúng tên. Khách chỉ nhắc tên dự án
   như vị trí tìm nhà (không hỏi về dự án) thì để trống.
-- "du_an_khu_vuc" (28/10/2026, SRS-5.1zzzzzzz250): khu vực khi khách hỏi khu đó CÓ NHỮNG DỰ ÁN NÀO ("quận 7 có dự án gì",
+- "du_an_khu_vuc": khu vực khi khách hỏi khu đó CÓ NHỮNG DỰ ÁN NÀO ("quận 7 có dự án gì",
   "bên Thủ Đức có chung cư nào"); kèm "du_an_khu_vuc_chuan" = tên hành chính đầy đủ của khu đó ("Quận 7", "Thủ Đức", "Phường Phú Định").
   Khách tìm CĂN ở khu đó (không hỏi danh sách dự án) thì để trống.
-- "tim_du_an" (28/10/2026, SRS-5.1zzzzzzz250): tên dự án (viết đúng tên nếu khách gõ sai / tắt) khi khách muốn TÌM / XEM CĂN đang bán hoặc cho thuê TRONG dự án đó, hay xin
+- "tim_du_an": tên dự án (viết đúng tên nếu khách gõ sai / tắt) khi khách muốn TÌM / XEM CĂN đang bán hoặc cho thuê TRONG dự án đó, hay xin
   danh sách / bảng căn còn bán của dự án ("Masteri còn căn nào không", "gửi anh bảng căn còn bán ở Ny'ah"). Chỉ hỏi thông tin dự án thì dùng
   "hoi_du_an", không dùng ô này.
-- "can_cu_the" (29/10/2026, SRS-5.1zzzzzzz262): cụm tả MỘT căn CỤ THỂ họ đã thấy / nghe ở đâu đó mà KHÔNG gõ mã, và hỏi còn
+- "can_cu_the": cụm tả MỘT căn CỤ THỂ họ đã thấy / nghe ở đâu đó mà KHÔNG gõ mã, và hỏi còn
   không / hỏi về chính căn đó (vd "nhà hẻm xe hơi Trần Bình Trọng giá 10 tỷ còn không", "căn 2PN Sunrise City 3 tỷ đăng hôm qua"). Khách tả
   NHU CẦU tìm nhà ("tìm nhà quận 5 tầm 10 tỷ", "cần nhà 4 tầng gần trường") hay nói căn bot VỪA giới thiệu thì để trống.
 - Mọi việc ở đây được hệ thống LÀM NGAY khi em ghi (ghi lịch, gửi ảnh, nhắn chủ nhà, tắt báo căn…) — chỉ ghi việc khách muốn ở tin VỪA nhắn:
@@ -1988,9 +1987,9 @@ VIỆC CỦA KHÁCH MUA ("mua", chỉ khi người nhắn là khách tìm mua / 
 TRẢ LỜI CÂU KHÁCH HỎI ("tra_loi_khach_hoi", chỉ khi có khối CÂU KHÁCH MUA ĐANG HỎI CHỦ NHÀ và người rao vừa trả lời đúng câu đó):
 "id" của câu, "tra_loi" là nguyên văn câu trả lời của người rao. Người rao nói chuyện khác thì để trống.
 Câu trả lời đó là thông tin về CHÍNH căn được hỏi (pháp lý, hướng, hẻm, số phòng…) → NGOÀI "tra_loi_khach_hoi", ghi luôn vào ô tin bằng MỘT op
-"update" target = mã căn được hỏi, kèm "bang_chung" là cụm người rao vừa nói (SRS-5.1zzzzzzz257) — không thì tin vẫn thiếu ô đó và em hỏi lại.
+"update" target = mã căn được hỏi, kèm "bang_chung" là cụm người rao vừa nói — không thì tin vẫn thiếu ô đó và em hỏi lại.
 
-CĂN CÒN BÁN ("con_ban", SRS-5.1zzzzzzz295): bot vừa hỏi chủ nhà căn còn bán / còn cho thuê không, và người rao đáp căn VẪN CÒN ("còn", "vẫn còn
+CĂN CÒN BÁN ("con_ban"): bot vừa hỏi chủ nhà căn còn bán / còn cho thuê không, và người rao đáp căn VẪN CÒN ("còn", "vẫn còn
 em", "chưa bán") → con_ban = true. Người rao báo đã bán / đã cọc / dừng bán → dùng op "set_status" như thường, KHÔNG đặt con_ban.
 
 QUY TẮC:
@@ -2006,51 +2005,50 @@ QUY TẮC:
   chỉ giữ, xóa hết...). Nhắc một mã căn trong câu hỏi KHÔNG BAO GIỜ là remove/keep_only/clear.
 - Diện tích: nhà phố/biệt thự/nhà cấp 4 có 2 diện tích. Rõ đất/nhà → dien_tich_dat/dien_tich_nha (xem ĐỌC DẤU HIỆU bên dưới);
   không có dấu hiệu nào → để tạm dien_tich. Loại khác chỉ có 1 dien_tich.
-ĐỌC DẤU HIỆU NHƯ MÔI GIỚI LÂU NĂM (19/10/2026, SRS-5.1zzzzzzz74 — chủ dự án: "bot thông minh phải hiểu dấu hiệu căn này thuộc về gì"):
+ĐỌC DẤU HIỆU NHƯ MÔI GIỚI LÂU NĂM ("bot thông minh phải hiểu dấu hiệu căn này thuộc về gì"):
 - Loại hình (loai_hinh) suy theo dấu hiệu, không chờ khách gọi tên: "căn nhà" / "nhà" kèm số tầng / lầu, mặt tiền, hẻm, hoặc nằm ở
   các quận nội thành cũ của TP.HCM (Quận 1–12, Phú Nhuận, Bình Thạnh, Tân Bình, Tân Phú, Gò Vấp, Bình Tân, Thủ Đức…) → nha_pho.
   "căn hộ", "chung cư", "block / tầng X căn Y", tên toà chung cư → chung_cu. "lô đất", "đất nền", "đất thổ cư", "đất trống" → dat.
   Cho thuê NGUYÊN CĂN ("nhà nguyên căn", "nhà trọ nguyên căn", "thuê nguyên căn" — cả căn nhà có trệt / lầu / phòng ngủ) → nha_pho;
-  phong_tro chỉ khi cho thuê TỪNG PHÒNG trong dãy / nhà trọ (20/10: khách "cho thuê nhà trọ nguyên căn, 1 trệt 1 lầu 2PN" bị xếp
+  phong_tro chỉ khi cho thuê TỪNG PHÒNG trong dãy / nhà trọ (khách "cho thuê nhà trọ nguyên căn, 1 trệt 1 lầu 2PN" bị xếp
   phòng trọ, bot hỏi gác lửng / WC riêng).
   "Nhà" / "căn nhà" trong khu dự án / khu dân cư (vd "bán nhà trong khu dự án Nyah Phú Định") → nha_pho; chung_cu chỉ khi khách nói
-  căn hộ / chung cư / tòa / block / tầng X (20/10: bot hỏi "tòa nào, tầng mấy" cho nhà phố trong dự án).
+  căn hộ / chung cư / tòa / block / tầng X (bot hỏi "tòa nào, tầng mấy" cho nhà phố trong dự án).
   Vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An, Bình Dương, Đồng Nai, Tây Ninh…) mà khách chỉ nói "nhà",
   không có số tầng / lầu → có thể là nhà cấp 4, nhà vườn hay nhà phố → để trống loai_hinh, hệ thống sẽ hỏi.
 - Diện tích nhà phố: một con số m² nói KÈM số tầng / lầu hoặc kích thước ("80m 5 tầng", "nhà 60m2 3 lầu", "4x20") là diện tích ĐẤT
   (cách nói chuẩn của giới mua bán: diện tích công nhận trên sổ) → dien_tich_dat. Chỉ là diện tích nhà (dien_tich_nha) khi khách
   nói "sàn", "sử dụng", "xây dựng", "tổng diện tích sàn". Căn ĐÃ có diện tích đất (khách nói ở lượt trước) mà khách nói thêm một con
-  số m² KHÁC, không dấu hiệu gì ("135m2 đất nha" rồi "250m2") → đó là diện tích sàn: dien_tich_nha (SRS-5.1zzzzzzz312, tự hiểu từ dữ kiện,
+  số m² KHÁC, không dấu hiệu gì ("135m2 đất nha" rồi "250m2") → đó là diện tích sàn: dien_tich_nha (tự hiểu từ dữ kiện,
   không hỏi lại). Không có dấu hiệu nào mới để tạm dien_tich.
-  Viết tắt (20/10): "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
-  "DTCN" / "dt công nhận" / "diện tích công nhận" = diện tích ĐẤT công nhận trên sổ → dien_tich_dat, KHÔNG BAO GIỜ là sàn (26/10: "DT 4x18m
+  Viết tắt: "dtsd" / "DTSD" / "dt sử dụng" = diện tích SỬ DỤNG → dien_tich_nha; "dtđ" / "dt đất" = đất → dien_tich_dat.
+  "DTCN" / "dt công nhận" / "diện tích công nhận" = diện tích ĐẤT công nhận trên sổ → dien_tich_dat, KHÔNG BAO GIỜ là sàn ("DT 4x18m
   – DTCN 71m²" bị ghi thành 71m² sàn).
   "dts" có thể là diện tích sổ hoặc sàn: con số bằng ngang × dài khách đã nói (4x11 → 44) là ĐẤT; còn lại để tạm dien_tich. Số
   bằng ngang × dài luôn là diện tích ĐẤT, không bao giờ là diện tích sàn của nhà nhiều tầng.
   "MT 20m" / "mặt tiền đường 20m" nói cạnh TÊN ĐƯỜNG là độ rộng con ĐƯỜNG → lo_gioi_duong; mat_tien là bề ngang của chính căn
   nhà (lô 4x11 → ngang 4m), không bao giờ lớn hơn chiều của lô.
   Độ rộng theo QUY HOẠCH ("quy hoạch mở rộng 25m", "lộ giới quy hoạch 20m", "sắp mở rộng đường") là chuyện SAU NÀY → quy_hoach, KHÔNG
-  ghi vào lo_gioi_duong (lo_gioi_duong = đường rộng bao nhiêu BÂY GIỜ). 26/10: "mặt tiền quy hoạch mở rộng 25m" bị ghi lo_gioi_duong = 25 rồi
+  ghi vào lo_gioi_duong (lo_gioi_duong = đường rộng bao nhiêu BÂY GIỜ). Ví dụ: "mặt tiền quy hoạch mở rộng 25m" bị ghi lo_gioi_duong = 25 rồi
   tin rao viết "đường rộng 25m".
 - Đừng nhầm mã số căn với số phòng ngủ/số tầng.
-- DUYỆT BẢN NHÁP (18/10/2026; 20/10 theo trạng thái): chỉ khi có dòng "TRẠNG THÁI: bot ĐÃ gửi bản tin nháp" bên dưới (bot đã gửi
+- DUYỆT BẢN NHÁP (theo trạng thái): chỉ khi có dòng "TRẠNG THÁI: bot ĐÃ gửi bản tin nháp" bên dưới (bot đã gửi
   bản nháp — kể cả khi sau đó bot nhắc hay hỏi xác nhận "đã ổn chưa"), đọc theo NGHĨA tin khách vừa nhắn: đồng ý cho đăng (ok, được rồi, đăng đi, chuẩn rồi, thả tim / like…) →
   duyet_ban_nhap = "dong_y"; KHÔNG đồng ý / chưa muốn đăng / muốn sửa trước rồi mới đăng → "khong_dong_y". Hỏi lại, hỏi phí,
   nói chuyện khác hay chưa rõ → bỏ trống. Có điền thì duyet_trich_dan = NGUYÊN VĂN cụm trong tin khách cho thấy điều đó.
   "[khách gửi sticker]" / "[khách gửi sticker: …]" là nhãn dán → KHÔNG phải đồng ý, bỏ trống. "[khách thả cảm xúc ❤️]" / 👍 / 👌 (thả
   lên tin bot hoặc gõ trong tin) là đồng ý.
-- LỜI XÃ GIAO (23/10/2026, đọc theo NGHĨA tin khách vừa nhắn, không theo từ khoá): loi_xa_giao = "chao" khi tin CHỈ là lời chào hỏi
+- LỜI XÃ GIAO (đọc theo NGHĨA tin khách vừa nhắn, không theo từ khoá): loi_xa_giao = "chao" khi tin CHỈ là lời chào hỏi
   (hello, hi, chào em, xin chào…) chưa nói nhu cầu nhà đất; "dong_y" khi tin CHỈ là lời đáp ngắn đồng ý / cảm ơn (ok, vâng, ừ, được rồi,
   cảm ơn…) KHÔNG kèm thông tin hay câu hỏi mới. Còn lại bỏ trống. Có điền thì loi_xa_giao_trich_dan = NGUYÊN VĂN cụm đó trong tin khách.
-- KHÁCH HỎI VỀ GÌ (19/10/2026, đọc theo NGHĨA tin khách vừa nhắn, không theo từ khoá): hoi_ve = "phi" khi khách hỏi phí / hoa
+- KHÁCH HỎI VỀ GÌ (đọc theo NGHĨA tin khách vừa nhắn, không theo từ khoá): hoi_ve = "phi" khi khách hỏi phí / hoa
   hồng / có mất tiền không của BÊN MÌNH (KHÔNG phải phí quản lý, thuế, phí sang tên của căn nhà), hoặc hỏi CHÍNH SÁCH gửi bán với bên
-  mình — xin bớt phí, có ký hợp đồng môi giới không, có độc quyền không / gửi bán nhiều nơi được không, môi giới có chia hoa hồng không
-  (01/11/2026, SRS-5.1zzzzzzz318); "uy_tin" khi khách hỏi công
+  mình — xin bớt phí, có ký hợp đồng môi giới không, có độc quyền không / gửi bán nhiều nơi được không, môi giới có chia hoa hồng không; "uy_tin" khi khách hỏi công
   ty là ai, có uy tín / lừa đảo không, trụ sở ở đâu; "link_web" khi khách hỏi link tin, xem tin ở đâu, tin trên web thế nào;
-  "tinh_hinh_ban" (21/10) khi CHỦ NHÀ hỏi căn của mình đã có ai hỏi / quan tâm / hẹn xem chưa, bán tới đâu rồi; "dinh_gia" khi
+  "tinh_hinh_ban" khi CHỦ NHÀ hỏi căn của mình đã có ai hỏi / quan tâm / hẹn xem chưa, bán tới đâu rồi; "dinh_gia" khi
   chủ nhà hỏi giá mình đưa cao hay thấp, giá thị trường khu đó bao nhiêu, nên bán giá nào.
   Không hỏi những điều đó → bỏ trống.
-- HỎI PHÁP LÝ / THỦ TỤC / THUẾ PHÍ (25/10/2026, SRS-5.1zzzzzzz176, đọc theo NGHĨA): khách (mua hay bán) hỏi một điều về thủ tục, giấy tờ,
+- HỎI PHÁP LÝ / THỦ TỤC / THUẾ PHÍ (đọc theo NGHĨA): khách (mua hay bán) hỏi một điều về thủ tục, giấy tờ,
   thuế phí, quy định mua bán / thuê nhà đất nói chung — KHÔNG phải hỏi về một căn cụ thể đang rao, KHÔNG phải phí môi giới bên mình (đó là
   hoi_ve = "phi") → hoi_phap_ly = khoá hợp nhất trong DANH MỤC PHÁP LÝ bên dưới; không mục nào hợp → "khac". Kèm phap_ly_trich_dan =
   NGUYÊN VĂN câu hỏi của khách. Câu thuộc nhóm {NHOM_NHAY_CAM} → phap_ly_nhay_cam = true (vẫn điền hoi_phap_ly nếu có khoá hợp).
@@ -2062,15 +2060,15 @@ QUY TẮC:
 {DANH_MUC_PHAP_LY}
 - KHÁCH TỰ XƯNG (đọc cả các lượt trước): xung_ho = "em" khi khách tự xưng em ("nhà em", "em gửi"); "anh" / "chi" khi khách
   tự xưng anh / chị; "chau" khi khách TỰ XƯNG cháu / con ("cháu muốn bán nhà", "con có căn…"); "chu_co_bac" khi khách tự xưng chú / cô / bác / dì
-  — chữ đó đứng làm CHỦ NGỮ câu khách kể việc của mình ("chú bán nhà ở…", "cô có căn…", "bác cần bán gấp") là TỰ XƯNG (SRS-5.1zzzzzzz245).
+  — chữ đó đứng làm CHỦ NGỮ câu khách kể việc của mình ("chú bán nhà ở…", "cô có căn…", "bác cần bán gấp") là TỰ XƯNG.
   Chỉ điền ĐÚNG MÃ trong danh sách (em / anh / chi / chau / chu_co_bac), không điền chữ khách gõ. Chữ "em" khách dùng để GỌI bot ("đăng đi em") không
   phải tự xưng. Khách gõ tắt cũng tính: "e" = em, "a" = anh, "c" = chị ("e tìm thuê", "a là MG"). Khách GỌI bot là "con" /
   "cháu" ("sao hỏi nhiều vậy con") = khách lớn tuổi → "chu_co_bac". Chưa thấy → bỏ trống. Có điền thì xung_ho_trich_dan =
   NGUYÊN VĂN cụm chứa chữ xưng / chữ gọi đó.
-- BOT VỪA HỎI GÌ (SRS-5.1zzzzzzz212): bot_vua_hoi = danh sách KHOÁ ô (đúng tên khoá ở fields: phuong, dia_chi, gia, dien_tich_dat,
+- BOT VỪA HỎI GÌ: bot_vua_hoi = danh sách KHOÁ ô (đúng tên khoá ở fields: phuong, dia_chi, gia, dien_tich_dat,
   phap_ly_hoan_cong…) mà TIN GẦN NHẤT CỦA BOT thật sự hỏi khách — đọc theo nghĩa câu hỏi của bot, không theo việc khách trả lời
   ("cho em xin giá anh muốn bán" → ["gia"]; "nhà ngang dài bao nhiêu, mấy tầng" → ["kich_thuoc", "so_tang"]). Bot không hỏi ô nào → [].
-- XIN XEM BẢN VẼ (19/10/2026): xin_xem_ban_ve = NGUYÊN VĂN cụm khách XIN XEM / XIN GỬI bản vẽ, mặt bằng (bản vẽ tầng / căn /
+- XIN XEM BẢN VẼ: xin_xem_ban_ve = NGUYÊN VĂN cụm khách XIN XEM / XIN GỬI bản vẽ, mặt bằng (bản vẽ tầng / căn /
   tổng thể), sơ đồ, phối cảnh, layout, brochure. "cho thuê mặt bằng kinh doanh", "bán mặt bằng" là LOẠI BĐS, không phải xin bản
   vẽ → bỏ trống. Có điền thì operations RỖNG (xin xem không phải sửa rổ hàng). Khách xin bản đồ / phân lô / quy hoạch / mặt
   bằng tổng thể của cả DỰ ÁN (không phải bản vẽ một căn / một mẫu nhà) thì thêm ban_do_du_an = true.
@@ -2078,21 +2076,21 @@ QUY TẮC:
   bao nhiêu", "gói Max gồm gì", "mẫu này mấy phòng"). Khách KỂ thông tin căn của mình ("căn này 50m2") không phải câu hỏi → bỏ trống.
 - TẢ DỰ ÁN: mo_ta_du_an = NGUYÊN VĂN cụm khách TẢ kiến thức CHUNG của dự án / mẫu nhà (tiện ích, cổng, pháp lý dự án, bố trí mẫu
   nhà, số tầng của mẫu…) để hệ thống học lại. Chỉ nói giá / căn riêng của mình → bỏ trống.
-- XIN GẶP NGƯỜI THẬT (20/10/2026, SRS-5.1zzzzzzz82): can_nguoi_that = câu ngắn tóm ý khách XIN nói chuyện / gặp / gọi điện với
+- XIN GẶP NGƯỜI THẬT: can_nguoi_that = câu ngắn tóm ý khách XIN nói chuyện / gặp / gọi điện với
   NGƯỜI (nhân viên, quản lý, môi giới, "người thật", "không muốn chat với máy"). Hỏi bot là người hay máy, hay chỉ than chậm, KHÔNG
   phải xin gặp người → bỏ trống. Có điền thì vẫn ghi các ô tin khác như thường.
-- NGOÀI VÙNG NHẬN TIN (20/10/2026, SRS-5.1zzzzzzz86): bên mình chỉ nhận rao ở TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai — tính theo địa giới cũ lẫn mới (TP.HCM
+- NGOÀI VÙNG NHẬN TIN: bên mình chỉ nhận rao ở TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai — tính theo địa giới cũ lẫn mới (TP.HCM
   mới gồm Bình Dương và Bà Rịa – Vũng Tàu cũ; Tây Ninh mới gồm Long An cũ; Đồng Nai cũ — Biên Hòa, Long Thành, Nhơn Trạch, Trảng Bom… —
   là TRONG vùng; chỉ phần Bình Phước cũ — Đồng Xoài, Bình Long, Phước Long… — dù nay thuộc Đồng Nai vẫn là NGOÀI vùng).
   ngoai_vung = tên tỉnh / thành của căn KHI khách đã nói rõ địa danh nằm ngoài vùng (vd "quận Đống Đa, Hà Nội" → "Hà Nội"; "nhà
   ở Đà Nẵng" → "Đà Nẵng"; "Đồng Xoài, Bình Phước" → "Bình Phước"). Tên thành phố / thị xã / quận / huyện / đảo đủ biết tỉnh là ĐÃ
-  RÕ, điền luôn dù khách không nói tên tỉnh (21/10, SRS-5.1zzzzzzz100: "Trần Phú, Nha Trang" → "Khánh Hòa"; "Ngô Quyền, Hải Phòng" →
+  RÕ, điền luôn dù khách không nói tên tỉnh ("Trần Phú, Nha Trang" → "Khánh Hòa"; "Ngô Quyền, Hải Phòng" →
   "Hải Phòng"; Đà Lạt → "Lâm Đồng"; Phú Quốc → "Kiên Giang"). Chỉ có tên đường (trùng ở nhiều tỉnh) hay chưa rõ nơi nào → bỏ
   trống, KHÔNG đoán. Có điền thì ngoai_vung_trich_dan = NGUYÊN VĂN cụm địa danh khách nói.
-- KHÁCH BẢO ĐĂNG (20/10/2026, SRS-5.1zzzzzzz86): xin_dang = NGUYÊN VĂN cụm khách bảo đăng tin / lên tin / xin xem bản tin hoàn chỉnh
-  (vd "ok em đăng đi", "đăng giúp anh", "soạn tin cho chị xem", "em rao lại xem" khi CHƯA có bản nháp — SRS-5.1zzzzzzz302). Chỉ hỏi phí, hỏi
+- KHÁCH BẢO ĐĂNG: xin_dang = NGUYÊN VĂN cụm khách bảo đăng tin / lên tin / xin xem bản tin hoàn chỉnh
+  (vd "ok em đăng đi", "đăng giúp anh", "soạn tin cho chị xem", "em rao lại xem" khi CHƯA có bản nháp). Chỉ hỏi phí, hỏi
   link web, hay đang kể thông tin căn → bỏ trống. Bản nháp ĐÃ gửi mà khách chỉ xin xem lại / rao lại (không bảo đăng) → bỏ trống.
-- KHÁCH DẶN CÁCH VIẾT BẢN TIN (27/10/2026, SRS-5.1zzzzzzz218): yeu_cau_viet = danh sách cụm NGUYÊN VĂN trong tin khách vừa nhắn dặn bot
+- KHÁCH DẶN CÁCH VIẾT BẢN TIN: yeu_cau_viet = danh sách cụm NGUYÊN VĂN trong tin khách vừa nhắn dặn bot
   viết / sửa bản tin THẾ NÀO — không phải dữ liệu căn: nhấn mạnh hay bớt ý nào ("mặt tiền 5m xứng đáng để nói", "đừng đem lên tiêu đề"),
   không lặp ("bàn giao tức thì nói 2 lần"), thêm / bớt icon ("cho dùm anh 2-3 cái hình tượng"), ngắn / dài hơn, đổi giọng, đổi tiêu đề.
   Mỗi ý MỘT cụm, chép đúng chữ khách. Khách chỉ ĐÍNH CHÍNH số liệu ("mặt tiền có 5m thôi") thì đó là dữ liệu → ghi ô, KHÔNG phải yeu_cau_viet.
@@ -2503,6 +2501,38 @@ thì mảng rỗng."""
 
 # SRS-5.1zzzzzzz353: cùng lượt AI đó cho LỜI CHAT (bản trước: lưới từ khoá `_BINH_LUAN_GIA`, đổi chữ là lọt). Lời chat cấm cả khẳng định thị trường
 # (SRS-5.1zzzzzzz132: dễ bán, đắt khách…) — khác bản tin, nơi ý chung về khu là quyết định chủ dự án "kệ" (§6.3).
+# SRS-5.1zzzzzzz367 (chủ dự án 02/11: "phải sửa từ gốc chứ"): đầu ra model không bị soát theo ô hệ thống chọn — AI đọc lời bot SẮP GỬI, khai
+# các ô mà lời đó hỏi (cùng khoá ô tin như `bot_vua_hoi`) kèm cụm nguyên văn; code kiểm cụm có trong lời rồi so với ô được phép
+# (`engine._soat_hoi_dung_o`). Không dặn model "đừng hỏi ô X" — chặn ở đầu ra, một chỗ.
+SOAT_O_HOI_SYSTEM = """Dưới đây là lời trợ lý môi giới SẮP GỬI người bán / cho thuê nhà, kèm tin người bán vừa nhắn và DANH SÁCH Ô tin của căn.
+Liệt kê MỌI chỗ lời trợ lý HỎI / XIN / NHỜ người bán cung cấp hay xác nhận một thông tin của căn — có dấu "?" hay không đều tính
+("cho em xin giá nhé", "anh gửi em số nhà nha").
+Mỗi chỗ một mục: o = khoá ô đúng nhất trong DANH SÁCH Ô; trich = cụm NGUYÊN VĂN ngắn trong lời trợ lý chứa chỗ hỏi đó (chép đúng chữ).
+- Hỏi số nhà / tên đường khi người bán CHƯA nói đường → dia_chi. Hỏi lại / xác nhận tên đường người bán ĐÃ nói → duong. Hỏi phường / xã → phuong.
+- Một câu hỏi gộp nhiều ô (vd "đường nào, phường nào") → mỗi ô một mục, cùng trich được.
+- khach_vua_hoi = true chỉ khi chỗ hỏi đó là để trả lời / làm rõ điều người bán VỪA hỏi trợ lý trong tin vừa nhắn; khi đó trich_khach = cụm
+  nguyên văn trong tin người bán. Còn lại false, trich_khach rỗng.
+- KHÔNG tính: câu hỏi về bản tin (xem, duyệt, đăng luôn), phí, lịch xem nhà, chấm sao, câu chào; chữ trong phần bản tin rao (sau 📋).
+- Không có chỗ hỏi nào → cau_hoi = []."""
+# SRS-5.1zzzzzzz368: danh sách ô nằm trong system (cache được), chỉ ô phía bán + ô hệ thống tự tra.
+_O_CHI_PHIA_MUA = frozenset({"khu_vuc", "loai_bds", "muc_dich", "ngan_sach", "nhan_nha_khi_nao", "tien_do_mua", "tien_ich_mong_muon",
+                             "yeu_cau_xe_hoi"})
+
+
+def _nhan_o_soat(o: str) -> str:
+    return "tên đường" if o == "duong" else FIELD_LABELS.get(o, o).split(" (")[0]
+
+
+SOAT_O_HOI_SYSTEM += "\n\nDANH SÁCH Ô:\n" + "\n".join(
+    f"- {o}: {_nhan_o_soat(o)}" for o in [*[k for k in FIELD_LABELS if k not in _O_CHI_PHIA_MUA], *sorted(O_HE_THONG_TRA - set(FIELD_LABELS))])
+
+
+def soat_o_hoi_schema() -> dict:
+    return {"type": "object", "properties": {"cau_hoi": {"type": "array", "items": {"type": "object", "properties": {
+        "o": {"type": "string"}, "trich": {"type": "string"}, "khach_vua_hoi": {"type": "boolean"}, "trich_khach": {"type": "string"}},
+        "required": ["o", "trich"]}}}, "required": ["cau_hoi"]}
+
+
 SOAT_BINH_GIA_CHAT_SYSTEM = """Dưới đây là một tin nhắn trợ lý môi giới vừa viết cho khách. Tìm các câu / cụm trợ lý tự NHẬN XÉT MỨC GIÁ hay THỊ TRƯỜNG:
 khen hay chê giá (rẻ, hợp lý, mềm, dễ chịu, đáng tiền, hời, vừa tầm, cao / thấp so với khu), hứa người mua chắc được bớt, hoặc đoán thị trường
 (dễ bán, đắt khách, thanh khoản tốt, nhiều người tìm / hỏi). KHÔNG tính: nhắc lại con số khách đưa ("em ghi giá 9 tỷ"), câu hỏi, giá rao của

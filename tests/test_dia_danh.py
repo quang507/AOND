@@ -133,24 +133,19 @@ def test_engine_khong_co_tra_thi_giu_chu_khach(monkeypatch):
     assert Property().fields == {}
 
 
-# --- 19/10/2026 (SRS-5.1zzzzzzz61): "trần ninh trọng" → kho có Trần Bình Trọng → hỏi xác nhận ở MỌI lượt, khách gật thì AI ghi ---
+# --- 19/10/2026 (SRS-5.1zzzzzzz61) → SRS-5.1zzzzzzz366 (chủ dự án 02/11: "không hỏi lại tên đường nữa, tự áp tên vào"): "trần ninh trọng" →
+# kho có Trần Bình Trọng → hệ thống ghi luôn tên kho, khối địa danh không còn câu hỏi xác nhận ---
 
 TBT = {"trần ninh trọng": [{"ten": "Trần Bình Trọng", "khoang_cach": 1, "phuong": ["Phường Chợ Quán", "Phường Bàn Cờ"]}],
        "Trần Bình Trọng": [{"ten": "Trần Bình Trọng", "khoang_cach": 0, "phuong": ["Phường Chợ Quán", "Phường Bàn Cờ"]}]}
 
 
-def test_ten_duong_go_sai_hoi_xac_nhan_ca_khi_cau_ke_khong_phai_dia_chi():
+def test_ten_duong_go_sai_khong_hoi_xac_nhan():
     t, _ = _tra(duong=TBT)
     f = {"duong": "trần ninh trọng", "quan": "Quận 5"}
     for cau_ke in ("gia", "dien_tich_dat", None, "phuong"):
         k = khoi_dia_danh(t, f, cau_ke)
-        assert '"Trần Bình Trọng"' in k and "TRƯỚC" in k, cau_ke
-    assert "Phường Chợ Quán" not in khoi_dia_danh(t, f, "phuong")   # chưa chốt đường thì chưa kể phường
-    from aioi.dia_danh import goi_y_duong
-    assert 'ghi duong = "Trần Bình Trọng"' in goi_y_duong(t, f)
-    # Khách đã xác nhận (AI ghi lại ô duong) → hết hỏi, khối lập thao tác rỗng.
-    f2 = {"duong": "Trần Bình Trọng", "quan": "Quận 5"}
-    assert "TRƯỚC" not in khoi_dia_danh(t, f2, "gia") and goi_y_duong(t, f2) == ""
+        assert "Trần Bình Trọng" not in k and "TRƯỚC" not in k, cau_ke
 
 
 def test_tra_duong_nho_ket_qua_khoi_goi_lai_moi_luot():
@@ -160,7 +155,8 @@ def test_tra_duong_nho_ket_qua_khoi_goi_lai_moi_luot():
     assert goi.count("tim_duong") == 1
 
 
-def test_engine_dua_goi_y_vao_luot_lap_thao_tac_va_luot_tra_loi(monkeypatch):
+def test_engine_ap_ten_kho_khi_go_sai_khong_hoi(monkeypatch):
+    """SRS-5.1zzzzzzz366: bản SRS-61 hỏi "có phải đường Trần Bình Trọng" rồi chờ khách gật — nay code ghi luôn tên kho (cả trong dia_chi)."""
     from aioi.engine import Engine
     from tests.test_engine import _engine
 
@@ -174,11 +170,9 @@ def test_engine_dua_goi_y_vao_luot_lap_thao_tac_va_luot_tra_loi(monkeypatch):
     monkeypatch.setattr(Engine, "_ap_dung_ke_hoach", lambda self, conv, plan: (conv.prop.update(
         {"loai_hinh": "nha_pho", "dia_chi": "12 trần ninh trọng", "duong": "trần ninh trọng", "quan": "Quận 5"}), []))
     e.handle("u-tbt", "bán nhà 12 trần ninh trọng q5")
-    assert any("Trần Bình Trọng" in s and "TRƯỚC" in s for s in he_thong)       # lượt trả lời hỏi xác nhận
-    he_thong.clear()
-    e.handle("u-tbt", "đúng rồi em")
-    assert any("TÊN ĐƯỜNG CHƯA KHỚP KHO" in s for s in he_thong)                # lượt lập thao tác biết để ghi khi khách gật
-    assert e.conversation("u-tbt").prop.fields["duong"] == "trần ninh trọng"     # code không tự sửa khi chỉ "gần"
+    f = e.conversation("u-tbt").prop.fields
+    assert (f["duong"], f["dia_chi"]) == ("Trần Bình Trọng", "12 Trần Bình Trọng")
+    assert not any("TÊN ĐƯỜNG CHƯA KHỚP KHO" in s or "hỏi khéo xác nhận" in s for s in he_thong)
 
 
 def test_engine_thay_ten_duong_khac_dau_trong_dia_chi(monkeypatch):
@@ -206,11 +200,9 @@ def test_duong_trung_ten_bo_dau_khach_go_dung_dau_thi_nhan():
     assert t.duong("ma lo") is None
 
 
-def test_ten_duong_khop_nhieu_duong_thi_hoi_khach_chon():
-    """SRS-5.1zzzzzzz271 (chủ dự án 29/10: "khách gõ sai tên mà ra 2 đường thì hỏi lại là mã lò hay mã lộ"): "ma lo" khớp ngang nhau Mã Lò
-    (Bình Tân) và Mã Lộ (Quận 1) → khối trả lời bảo bot hỏi khách là đường nào (kèm quận cũ), lượt lập thao tác biết ghi tên khách chọn.
-    Cách nói mới: "mã lo" (thiếu một dấu)."""
-    from aioi.dia_danh import goi_y_duong
+def test_ten_duong_khop_nhieu_duong_khong_hoi_khach_chon():
+    """SRS-5.1zzzzzzz271 → SRS-5.1zzzzzzz366: "ma lo" khớp ngang nhau Mã Lò (Bình Tân) và Mã Lộ (Quận 1), chưa biết khu → không hỏi khách
+    chọn (chủ dự án 02/11: "không hỏi lại tên đường nữa"); `ung_vien_duong` vẫn ra hai tên để ô duong giữ chữ khách. Cách nói "mã lo"."""
     ml = [{"ten": "Mã Lò", "khoang_cach": 0, "quan_cu": ["Quận Bình Tân"], "phuong": ["Phường Bình Hưng Hòa", "Phường Bình Trị Đông"]},
           {"ten": "Mã Lộ", "khoang_cach": 0, "quan_cu": ["Quận 1"], "phuong": ["Phường Tân Định"]},
           {"ten": "Ba Tơ", "khoang_cach": 2, "quan_cu": ["Quận 8"], "phuong": ["Phường Bình Đông"]}]
@@ -218,19 +210,15 @@ def test_ten_duong_khop_nhieu_duong_thi_hoi_khach_chon():
         t, _ = _tra(duong={go: ml})
         assert t.ung_vien_duong(go) == ["Mã Lò (Quận Bình Tân)", "Mã Lộ (Quận 1)"]
         k = khoi_dia_danh(t, {"duong": go}, "phuong")
-        assert "Mã Lò (Quận Bình Tân) / Mã Lộ (Quận 1)" in k and "Ba Tơ" not in k
-        assert "TÊN ĐƯỜNG NHIỀU KHẢ NĂNG" in goi_y_duong(t, {"duong": go})
-    t, _ = _tra(duong={"Mã Lò": ml})
-    assert t.ung_vien_duong("Mã Lò") == [] and "NHIỀU" not in khoi_dia_danh(t, {"duong": "Mã Lò"}, "phuong")
+        assert "Mã Lò" not in k and "Mã Lộ" not in k and "NHIỀU" not in k
 
 
 def test_tin_cho_phuong_ma_ten_duong_nhap_nhang_thi_hoi_duong_truoc():
-    """SRS-5.1zzzzzzz271 (căn Mã Lò) → SRS-5.1zzzzzzz359: cổng web không hỏi gì về phường nữa; tên đường nhập nhằng vẫn hỏi đường nào ở khối
-    địa danh (`khoi_dia_danh`, lượt nào cũng có), không ở cổng web."""
+    """SRS-5.1zzzzzzz271 (căn Mã Lò) → SRS-5.1zzzzzzz359: cổng web không hỏi gì về phường nữa (SRS-366: cũng không hỏi tên đường)."""
     from aioi.prompts import khoi_trang_thai_web
     uv = ["Mã Lò (Quận Bình Tân)", "Mã Lộ (Quận 1)"]
     k = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "goi_y_phuong": [], "phuong_da_hoi": True, "duong_nhap_nhang": uv})[0]
-    assert "Mã Lò" not in k and "KHÔNG hỏi khách phường" in k
+    assert "Mã Lò" not in k and "hỏi phường" not in k.lower()  # SRS-367: dòng cấm rải rác đã gỡ — bất biến chặn ở đầu ra (_soat_hoi_dung_o)
 
 
 def test_khach_noi_quan_thi_chon_duong_cung_quan():
