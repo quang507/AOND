@@ -33,7 +33,7 @@ from . import cau_mau
 from . import so_token
 from .sdt import che_giay_to, che_sdt
 from . import che_do_test
-from .delivery import _is_formatted_post
+from .delivery import _is_formatted_post, tach_ban_tin
 from .prompts import _MO_DAU_RE   # dòng mở bản nháp "(📋) Em/Mình sẽ rao như vầy nhé…:" (SRS-5.1zzzzzzz132)
 from .danh_gia import KHOI_SAP_XIN_SAO, cau_xin_sao, doc_sao, khoi_cam_on_sao, vua_xin_sao
 from . import du_an_mua
@@ -1445,19 +1445,10 @@ def _gan_dau_ban_tin(reply: str) -> str:
 
 
 def _phan_chat_quanh_ban_tin(reply: str) -> str:
-    """Phần CHAT của một lượt có bản tin 📋: câu dẫn trước dấu 📋 (bỏ dòng mở "📋 Bản tin cập nhật:") + đoạn cuối sau bản tin nếu là câu hỏi
-    chốt. Lượt không có 📋 → cả lời. Chỉ cắt theo bố cục, không đọc ý (SRS-5.1zzzzzzz219)."""
-    if "📋" not in (reply or ""):
-        return (reply or "").strip()
-    truoc, sau = reply.split("📋", 1)
-    doan = [d.strip() for d in re.split(r"\n\s*\n", sau) if d.strip()]
-    # Câu chốt = đoạn cuối đứng SAU câu mời nhắn Zalo (khối 4 của AD_FORMAT). Không dựa vào dấu "?" — câu chốt thật của bot hay kết bằng "!"
-    # ("…còn chỗ nào cần chỉnh thì anh cứ nhắn em nhé!", chat anh Luận 27/10 lặp 6 lượt).
-    zalo = [i for i, d in enumerate(doan) if "zalo" in d.lower()]
-    cuoi = doan[-1] if doan else ""
-    la_chot = len(doan) >= 2 and not cuoi.lstrip().startswith("-") and (
-        "?" in cuoi or (zalo and zalo[-1] < len(doan) - 1))
-    return (truoc.strip() + "\n" + (cuoi if la_chot else "")).strip()
+    """Phần CHAT của một lượt có bản tin 📋: câu dẫn trước dấu 📋 + câu chốt sau bản tin (cắt theo bố cục, một nguồn `delivery.tach_ban_tin`,
+    SRS-5.1zzzzzzz219 / 373). Lượt không có 📋 → cả lời."""
+    truoc, _ban, chot = tach_ban_tin(reply)
+    return (truoc + "\n" + chot).strip()
 
 
 def _ban_tin_truoc(conv: "Conversation") -> str:

@@ -787,6 +787,10 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz373 · Lượt có bản tin 📋 gửi Zalo dính câu chat mở đầu và câu hỏi chốt thành một tin (03/11/2026)
+Ca gốc chủ dự án test 03/11 (dãy trọ Tân Phú): "Hẻm rộng tới 10m… nghen." + bản tin + "Anh xem còn chỗ nào cần chỉnh không…?" chung MỘT tin — "câu này tách ra".
+(1) Lớp lỗi: `server` giữ nguyên khối cả lời khi `is_listing_post` để bản tin không bị cắt vụn, nên phần chat quanh bản tin đi theo. (2) Sửa: `delivery.tach_ban_tin` (cắt theo bố cục, một nguồn với `engine._phan_chat_quanh_ban_tin` của lưới soát) → ba tin: chat trước 📋, nguyên khối bản tin, câu chốt; cùng lớp: không chỗ gửi bản tin nào khác. (3) Kiểm: `test_tach_ban_tin_373.py` (đỏ khi gửi cả lời một tin). Dữ liệu test của chủ dự án đã xoá theo yêu cầu (`xoa_nguoi_theo_zalo`).
+
 ### SRS-5.1zzzzzzz372 · Nguồn sự thật là `main`: không soát PR đóng / nhánh cũ (03/11/2026)
 Chủ dự án 03/11 (nguyên văn): "xóa luôn PR chứ chat audit cứ dò lại rối quá", "merg đi còn 1 main thôi". GitHub không cho xoá PR (chỉ đóng); 36 nhánh cũ đã soát — nhánh có PR gộp thì code đã ở `main`, nhánh PR đóng (#282 #283 #284 #287 #288) là bản không chọn, nhánh #278 / #279 đã vào `main` qua #277.
 Quyết định: CLAUDE.md §4.11 — phiên sau chỉ đọc `main`, không audit / gộp lại PR đóng hay nhánh cũ trừ khi chủ dự án nêu số PR; gộp xong xoá nhánh. Phiên agent không xoá được nhánh (quyền push chỉ nhánh được giao, 403) — chủ dự án xoá trên GitHub và bật tự xoá nhánh sau gộp.
@@ -834,11 +838,6 @@ Ca gốc (chat thật): khách thả /-heart 6 lần trong 3 giờ, bot nhắn l
 Ca gốc (chat thật): "mặt tiền 6m dài 15 nở hậu 3" → bản tin "đất 90m²".
 (1) Lớp lỗi: dữ kiện bản tin không nói căn CHƯA có số m², `AD_FORMAT` dặn luôn kèm m² → model tự nhân. Sửa: `khoi_su_that_can` thêm dòng "Diện tích" do code quyết — có ô thì in đúng số khách nói, không có thì "CHƯA có số m² — KHÔNG tự nhân".
 (2) Cùng lớp: "72m²" (SRS-352). Còn: bản cuối vẫn lệch số sau gọi lại thì chưa gọt. (3) Kiểm: `test_dien_tich_no_hau_363.py` — gỡ dòng: 3 đỏ.
-
-### SRS-5.1zzzzzzz362 · Gợi ý tên đường lấy từ tên huyện / quận khác ("Ngô Bệ (Tân Bình)" cho khách ở Nhà Bè) (02/11/2026)
-Ca gốc (chat thật): "anh cần bán căn nhà cấp 4 ở nhà bè" → bot kể "Ngô Bệ (Quận Tân Bình), Nhà Đồ".
-(1) Lớp lỗi: khớp gần tên đường không biết chữ khách là tên địa bàn, không lọc theo khu. Sửa: `TraDiaDanh._duong` — chữ trùng đúng tên địa bàn (`_la_ten_dia_ban`) thì không khớp gần; đã biết quận thì bỏ ứng viên quận khác.
-(2) Cùng lớp: mọi đường khớp gần đều qua `_duong`. Còn: RPC `tim_duong` không lọc quận. (3) Kiểm: `test_goi_y_duong_trong_khu_362.py` — tắt từng bước lọc: đỏ.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

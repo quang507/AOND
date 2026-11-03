@@ -23,7 +23,7 @@ from . import phap_ly
 from .anh_du_an import anh_gui_kem
 from .anh_can import anh_can_gui_kem
 from .config import load_settings
-from .delivery import chunk_reply, typing_delay
+from .delivery import chunk_reply, tach_tin_ban_tin, typing_delay
 from .sticker import STICKER_TRUNG_TINH, doc_sticker
 from .drive import khoa_drive, make_folder_namer, make_resolver
 from .dia_danh import TraDiaDanh
@@ -792,9 +792,10 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
     cleaned_reply = _CAU_DAN_THUA.sub("", cleaned_reply).lstrip()
 
     # Deliver via paced bubbles: listing drafts and any formatted ad (bullets / '---') stay as ONE whole message — chunk_reply
-    # nhận tin rao theo bố cục, không so chữ "Em sẽ rao như vầy" (SRS-5.1zzzzzzz64).
+    # nhận tin rao theo bố cục, không so chữ "Em sẽ rao như vầy" (SRS-5.1zzzzzzz64). SRS-5.1zzzzzzz373 (chủ dự án 03/11 "câu này tách ra"):
+    # câu chat trước 📋 và câu chốt sau bản tin là tin RIÊNG; chỉ thân bản tin giữ nguyên khối.
     if r.is_listing_post:
-        bubbles = [cleaned_reply]
+        bubbles = tach_tin_ban_tin(cleaned_reply) or [cleaned_reply]
     else:
         bubbles = [c.replace("**", "") for c in chunk_reply(cleaned_reply)]
     nhip_go = [int(typing_delay(c) * 1000) for c in bubbles]
