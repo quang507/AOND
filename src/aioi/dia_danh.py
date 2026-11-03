@@ -1,4 +1,4 @@
-"""Tra địa danh (phường / quận / đường) cho người bán — chữ trước, NGHĨA sau (19/10/2026, docs/07 SRS-5.1zzzzzzz60).
+"""Tra địa danh (phường / quận / đường) cho người bán — chữ trước, NGHĨA sau (docs/07 SRS-5.1zzzzzzz60).
 
 Chủ dự án: "tôi muốn tra địa chỉ, tra tên đường phường bằng schematic". AI bóc tách đã đọc ra ô `duong` / `phuong` / `quan` theo
 nghĩa (prompts.EXTRACTION_SYSTEM); ở đây chỉ TRA kho:

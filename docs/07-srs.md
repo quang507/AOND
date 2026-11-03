@@ -766,7 +766,7 @@ hỏi còn bán, giữ kết nối) do LÕI chạy vòng riêng (`gui_nhac.py` 6
 Đã gỡ (không còn trong DB): `inbound-sweep-tick`, `nudge-tick`, `seller-drip-tick`, `info-timeout-tick`, `stale-listing-tick`, `ctv-report-tick`, `ctv-sla-tick` (đổi tên).
 
 - Luật: không tin `cron.job_run_details.status` — `net.http_post` trả về khi xếp hàng nên luôn `succeeded`; kết quả thật ở `net._http_response` → `bot_health_tick()` → `bot_errors` (NFR-18).
-- Không dựng job riêng cho `recompute_hot_score` (view `bds_hot`), `match_new_listings` (trigger `bao_tin_moi_khop`), `close_conversations` (FR-131).
+- Không dựng job riêng cho `recompute_hot_score` (view `bds_hot`), `match_new_listings` (trigger `bao_tin_moi_khop` đã gỡ — báo căn mới do lõi `bao_can_moi.py`), `close_conversations` (FR-131).
 
 ### SRS-5.4 · `nudge` v25 [deprecated]
 Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi chạy (`gui_nhac.py`, `bao_can_moi.py`, `hoi_con_ban.py`, `giu_ket_noi.py` — xem SRS-5.3). Mô tả cũ ở `docs/07-srs-luu-tru.md`.
@@ -784,6 +784,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 ---
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
+
+### SRS-5.1zzzzzzz368 · Làm gọn prompt bước 1: khuôn bản tin chỉ khi cần, bỏ mã SRS / ngày trong chữ gửi model, danh sách ô soát vào system (02/11/2026)
+Chủ dự án 02/11: "prompt bot gọn lại hơn dc ko, có chỗ nào bị dài dòng chồng nhau ko" → "làm gọn nó đi". Đo (ký tự): bóc tách bán 25.235, viết lời sau bản nháp 13.470 (gồm `AD_FORMAT` 4.980 nằm SAU ranh giới cache), lượt soát ô hỏi gửi danh sách 94 ô (~3.800) trong tin user.
+(1) Lớp lỗi: khối gắn cố định vào mọi lượt dù chỉ vài lượt cần; lịch sử sửa ("(SRS-…)", ngày) nằm trong chữ gửi model. Sửa: `build_fee_followup_system(viet_lai_tin=)` — khuôn bản tin chỉ khi `engine._co_the_viet_lai_tin` (khách không duyệt, dặn cách viết, hay vừa đổi ô); bỏ mã SRS / ngày trong chuỗi prompt (giữ ở comment / docs); danh sách ô soát vào `SOAT_O_HOI_SYSTEM` (cache), bỏ 8 ô chỉ phía mua.
+(2) Kết quả: sau bản nháp lượt không viết lại 13.470 → 8.358 (−38%); bóc tách bán 25.235 → 24.648; mua 14.167 → 13.763. Còn (bước sau, cần `cham`): schema bóc tách 20.886 (ô `operations` 11.802), danh mục pháp lý 1.777 mọi lượt, `SLANG_NOTES` 1.792 trong phiếu lượt.
+(3) Kiểm: `test_gon_prompt_368.py` (khuôn bản tin theo lượt; quét MỌI hằng prompt + prompt dựng sẵn + schema không còn mã SRS / ngày sửa — bản đầu chỉ soát 6 hằng nên sót 9 chỗ; danh sách ô trong system). `cham` 59 kịch bản: 519/522 cả hai lần. Bỏ "khoảng 30 từ" lặp ở phiếu lượt (đã có trong `GIONG_VUI`).
 
 ### SRS-5.1zzzzzzz367 · Lời bot hỏi ô hệ thống không chọn ("…đường nào, phường nào…" 3/201 lượt) — soát đầu ra theo ô được chọn (02/11/2026)
 Ca gốc (chấm main 48f9912): `cao_lo` l1, `xa_phuoc_ly` l1, `aeon_tan_phu` l5 hỏi phường kèm câu hỏi địa chỉ. Chủ dự án 02/11: "phải sửa từ gốc chứ" (bỏ bản thêm dòng cấm).
@@ -833,11 +839,6 @@ Chủ dự án 02/11 (nguyên văn): "tên phường mới, tên phường cũ �
 Ca gốc: khách ảo #274 — hai persona không hiểu "trong khoảng 8–20 giờ tới"; ý thật là khung giờ 8h–20h.
 (1) Lớp lỗi: dữ kiện đưa model mơ hồ đơn vị (thời điểm hay thời lượng). Sửa: `mua.khoi_can_cho_khach` → "(chỉ gửi trong khung giờ 8h–20h hằng ngày)".
 (2) Cùng lớp: `engine` "trong giờ 8–20h" có mốc đồng hồ — giữ. Còn: hai mô tả "8–20 giờ" trong `cau_mau.py` (phía web·DB). (3) Kiểm: `test_khung_gio_ro_don_vi_358.py` — trả câu cũ: đỏ.
-
-### SRS-5.1zzzzzzz357 · Khách ảo: "(trong 8–20 giờ)" thành mốc hẹn bịa; phép `ka_hua_suong` neo chữ nên 4/5 câu lọt (02/11/2026)
-Ca gốc: khách ảo trên main `5e934ae`, 5 persona (4 · 2 · 2 · 2 · 3 sao); hai persona nhận "nhắn trong khoảng 8–20 giờ tới".
-(1) Lớp lỗi: dữ kiện prompt mơ hồ đơn vị (sửa ở SRS-358); phép chấm `ka_hua_suong` neo chữ "thì em báo" nên lọt "là em báo", "xác nhận thì em báo". Sửa: chuyển sang giám khảo đọc nghĩa (việc `hua_suong`, mẫu số `ban.json` giữ 760).
-(2) Cùng lớp: §4.8 như SRS-350. (3) Kiểm: `test_khung_gio_8_20_357.py` khoá nguyên văn dòng engine.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

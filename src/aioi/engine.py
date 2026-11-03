@@ -1718,8 +1718,7 @@ def _khai_o_hoi(eng, conv: "Conversation", reply: str) -> list[dict] | None:
     nho = conv.y_luot.setdefault("_khai_hoi", {})
     if reply in nho:
         return nho[reply]
-    ds_o = "\n".join(f"- {o}: {_nhan_o_hoi(o)}" for o in [*FIELD_LABELS, *sorted(O_HE_THONG_TRA - set(FIELD_LABELS))])
-    tin = f"DANH SÁCH Ô:\n{ds_o}\n\nTIN NGƯỜI BÁN VỪA NHẮN:\n{conv.loi_khach_luot[:1500]}\n\nLỜI TRỢ LÝ SẮP GỬI:\n{reply[:3000]}"
+    tin = f"TIN NGƯỜI BÁN VỪA NHẮN:\n{conv.loi_khach_luot[:1500]}\n\nLỜI TRỢ LÝ SẮP GỬI:\n{reply[:3000]}"
     try:
         with _do(conv, "soat_o_hoi"):
             data = eng._provider.extract(SOAT_O_HOI_SYSTEM, [Message("user", tin)], soat_o_hoi_schema())
@@ -1787,6 +1786,14 @@ def _bo_cau_hoi_sai(reply: str, trich: list[str]) -> str:
         log.warning("Gọt câu hỏi sai thì hết chữ — giữ lời (ô sai vẫn còn)")
         return reply
     return kq
+
+
+def _co_the_viet_lai_tin(conv: "Conversation", captured: list[str]) -> bool:
+    """SRS-5.1zzzzzzz368: lượt sau bản nháp có thể phải rao lại bản tin (cần khuôn `AD_FORMAT`) — khách không duyệt, dặn cách viết, hay vừa
+    đổi / thêm ô tin (theo AI bóc tách). Lượt duyệt suông / hỏi phí / tán gẫu không kèm khuôn."""
+    if conv.duyet_luot == "dong_y":
+        return False
+    return conv.duyet_luot == "khong_dong_y" or bool(conv.y_luot.get("yeu_cau_viet")) or any(not o.startswith("_") for o in captured or [])
 
 
 def _soat_hua_gui_anh(eng, conv, reply, nc) -> list[str]:
@@ -3197,6 +3204,7 @@ class Engine:
                 conv.assistant.name, conv.prop, conv.vai_phi, project_block, web=web_tin,
                 duyet=conv.duyet_luot, phi_da_bao=bool(conv.prop.fields.get("_phi_da_bao")), yeu_cau_moi=conv.y_luot.get("yeu_cau_viet"),
                 goi=goi_toi_khach(customer_pronoun)[0],
+                viet_lai_tin=_co_the_viet_lai_tin(conv, captured),
             )
             system += khoi_su_that_can(conv.prop.fields, conv.vai_phi == SellerRole.CHU_NHA)   # SRS-5.1zzzzzzz320; vai một nguồn `vai_phi` (Đợt 4)
             len_web = bool(web_tin and web_tin.get("len_web"))
