@@ -96,7 +96,8 @@ def test_khach_gat_hoi_giup_thi_chuyen_cau_hoi_luot_truoc_cho_chu_nha():
 def test_cau_hoi_ban_nhap_va_loi_chao_khong_dan_dat():
     assert "hấp dẫn" not in cau_mau.cau("hoi_ban_nhap") and "hấp dẫn" not in cau_mau.cau("hoi_ban_nhap_em", "em", toi="anh")
     tv = cau_mau.cau("chao_tu_van", ten="Lai")
-    assert "như thế nào" in tv and "chung cư" not in tv and "khu vực" not in tv
+    # SRS-5.1zzzzzzz375 (chủ dự án 03/11 đổi câu chào): hỏi gộp mua / thuê + khu + tầm giá để lọc căn ngay; vẫn không liệt kê loại nhà.
+    assert "khu nào" in tv and "tầm giá" in tv and "chung cư" not in tv
     assert "chung cư" not in cau_mau.cau("chao_lan_dau", ten="Lai")
 
 
