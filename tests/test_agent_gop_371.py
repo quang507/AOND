@@ -75,7 +75,7 @@ def test_buoc_2_doc_ket_qua_ghi_that(monkeypatch):
     assert tin[-1]["content"][0]["type"] == "tool_result" and tin[-2]["role"] == "assistant"
     assert "ĐÃ GHI" in bao and "sổ hồng riêng" in bao.split("ĐÃ GHI", 1)[1].split("\n", 1)[0]
     assert "KHÔNG GHI" in bao and "đầy đủ" in bao.split("KHÔNG GHI", 1)[1].split("\n", 1)[0]
-    assert "VIỆC LƯỢT NÀY:" in bao
+    assert bao.split("\n")[1].startswith("- VIỆC LƯỢT NÀY:"), "việc lượt đứng đầu báo cáo, trước dữ kiện ô trống"
     assert agent_gop.DAU_BUOC_2 in he and GIONG_VUI in he and SLANG_NOTES in he, "system bước 2 = phiếu lượt nguyên vẹn + dặn đánh giá"
     assert "ghi_o" not in {t["name"] for t in tools}, "bước 2 chỉ còn công cụ đọc / tra cứu"
     assert r.reply.startswith("Sổ hồng riêng")

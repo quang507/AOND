@@ -380,14 +380,15 @@ def bao_cao(engine: Any, conv: Any, system: str, captured: list[str]) -> str:
             dong.append(f"- CHƯA ẩn gì — chờ khách xác nhận: {r[1]}")
     if conv.y_luot.get("chua_ro_can"):
         dong.append("- CHƯA ĐỔI trạng thái căn nào (lời khách chưa chỉ ra căn nào)")
+    dau = NHAN_VIEC_LUOT + ":"
+    viec = (system.rsplit(dau, 1)[1].strip().split("\n\n", 1)[0] if dau in system
+            else "theo các khối ưu tiên / dữ kiện hệ thống trong lời nhắc.")
+    # ban-thu-ban 03/11 (kịch bản đất): việc lượt "hỏi giá" mà lời hỏi "xây tối đa mấy tầng" — danh sách ô thiếu đứng ngang việc lượt thì model tự
+    # chọn ô khác. Việc lượt đứng ĐẦU; ô thiếu chỉ là dữ kiện để không nói "đủ rồi", không phải việc để hỏi.
+    dong.insert(1, f"- {dau} {viec} (lượt này CHỈ làm đúng việc này — câu hỏi duy nhất nếu có là câu việc này giao)")
     thieu = [_nhan(o, conv.prop) for o in conv.prop.missing_fields()]
     if thieu:
-        dong.append("- Ô CÒN THIẾU: " + "; ".join(thieu))
-    dau = NHAN_VIEC_LUOT + ":"
-    if dau in system:
-        dong.append(f"- {dau} " + system.rsplit(dau, 1)[1].strip().split("\n\n", 1)[0])
-    else:
-        dong.append(f"- {NHAN_VIEC_LUOT}: theo các khối ưu tiên / dữ kiện hệ thống trong lời nhắc.")
+        dong.append("- Ô còn trống (dữ kiện; hệ thống tự hỏi dần ở các lượt sau — lượt này KHÔNG hỏi ô nào ngoài việc trên): " + "; ".join(thieu))
     return "\n".join(dong)
 
 
