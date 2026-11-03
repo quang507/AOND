@@ -69,7 +69,7 @@ flowchart TD
   ROLE -->|buyer| B["§13.4 nhánh mua"]
   ROLE -->|seller, ngoài vùng| NV["build_ngoai_vung_system"] --> RP
   ROLE -->|seller| S["§13.3 nhánh bán"]
-  S --> RP["model trả lời<br/>bán: agent_ban.chay (có dữ liệu để tra) · _agent_reply (dự án có rổ căn) · _provider.reply<br/>mua: agent_mua.chay (kho có tim_nha) hoặc _provider.reply"]
+  S --> RP["model trả lời<br/>bán đã đi vòng gộp: agent_gop.viet (bước 2, cùng hội thoại công cụ; kết quả ghi = báo cáo sau khi áp)<br/>bán đi form dự phòng: agent_ban.chay (có dữ liệu để tra) · _agent_reply (dự án có rổ căn) · _provider.reply<br/>mua: agent_mua.chay (kho có tim_nha) hoặc _provider.reply"]
   B --> RP
   RP --> SO["_soat_hinh_thuc<br/>luật cứng lệch → gọi lại model MỘT lần; luật giọng / lặp chỉ ghi log; Dạ code bỏ"]
   SO --> NH{"lượt trình bản nháp mà<br/>chưa ra bản tin 📋 / thiếu câu mời Zalo?"}

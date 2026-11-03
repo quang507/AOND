@@ -28,7 +28,7 @@ HUONG_DAN = (
     "chọn khác.\n"
     "- xem_can: khách hỏi chi tiết một căn (theo mã trong link đã gửi) mà dòng căn ở dưới chưa có.\n"
     "- tra_du_an / du_an_trong_khu: khách hỏi về một dự án, hoặc khu nào có dự án gì, mà khối dự án ở dưới chưa có.\n"
-    "Tra tối đa 2 lần. Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có. Vẫn giới thiệu MỘT căn mỗi lượt như luật ở trên.\n"
+    "Tra tối đa 2 lần. Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có. Số căn giới thiệu mỗi lượt theo luật ở trên (rổ có ≥ 2 căn hợp thì 2–3 căn).\n"
     "- hen_xem / hoi_chu_nha (GHI thật) khi khối EM VỪA GHI LƯỢT NÀY CHƯA có việc đó: khách đề nghị giờ / ngày đi xem một căn đã rõ → hen_xem "
     "NGAY; khách hỏi điều về căn mà dòng của căn KHÔNG có câu trả lời (sổ, nội thất, bớt giá, vào ở khi nào…) → hoi_chu_nha NGAY với câu viết "
     "rõ theo ý khách, CHỈ phần dòng căn chưa có (phần đã có — vd sổ hồng — thì trả lời luôn, không chuyển chủ nhà) — khách hỏi tức là muốn biết, KHÔNG hỏi lại khách \"có muốn em hỏi chủ nhà không\". Căn chưa rõ là căn nào hoặc khách chưa "
@@ -184,7 +184,8 @@ def _ghi_viec(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -> s
     kho.ghi_quan_tam(bid, [str(c.get("code"))])
     log.warning("Agent mua: ghi %s qua công cụ (bóc tách không đọc ra)", ten)
     if not hen:
-        return f"ĐÃ GHI: chuyển câu \"{noi}\" về căn #{c.get('code')} cho chủ nhà — có trả lời em báo lại khách ngay."
+        return (f"ĐÃ GHI câu hỏi gửi chủ nhà căn #{c.get('code')}: \"{noi}\". Chủ nhà trả lời thì hệ thống tự nhắn khách (không có mốc giờ) — "
+                "báo khách MỘT lần là đã chuyển, không hứa giờ.")
     ra = f"ĐÃ GHI: lịch hẹn xem căn #{c.get('code')} ({noi}) — chờ xác nhận với chủ nhà rồi báo lại khách."
     lead = conv.buyer_lead
     if lead is not None and not lead.fields.get("_da_xin_sdt"):   # xin số MỘT lần khi chốt lịch (SRS-148), cùng cờ với đường cũ

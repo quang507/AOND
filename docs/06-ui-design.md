@@ -145,7 +145,7 @@ Nút `Xuất Excel` (NFR-11) ❌ chưa dựng. Code: `app/admin/page.tsx`.
 Chưng cất từ 24 hội thoại mẫu `chats w B.docx` + persona aioinhadat + `AOND req +
 chat examples.docx`. **Nguồn sự thật hiện nay (28/10/2026) là lõi Python:
 `src/aioi/prompts.py`** — giọng phía bán là MỘT khối `GIONG_VUI` (SRS-5.1zzzzzzz219),
-`build_chat_system` theo khuôn anh Luận `luan8560/AOND` (SRS-5.1zzzzzzz207), bố cục tin
+~~`build_chat_system`~~ (đã xoá, SRS-5.1zzzzzzz319) → phiếu lượt `build_phieu_luot` / `phieu_co_dinh` theo khuôn anh Luận `luan8560/AOND` (SRS-5.1zzzzzzz207, 309), bố cục tin
 rao `AD_FORMAT`, mức phí `muc_phi`. Câu bot nói nguyên văn ở `src/aioi/cau_mau.py`
 (chủ dự án sửa ở `/admin/cau-chuan`, SRS-5.1zzzzzzz106); câu chuẩn làm ví dụ ở bảng
 `cau_chuan` (SRS-5.1zzzzzzz88). `prompts.ts` và bảng `bot_prompts` đã gỡ 18/10/2026
@@ -157,7 +157,7 @@ rao `AD_FORMAT`, mức phí `muc_phi`. Câu bot nói nguyên văn ở `src/aioi/
 > - **Xưng hô theo `src/aioi/xung_ho.py`** (`goi_toi`): khách xưng "em" → bot xưng anh / chị theo tên trợ lý; khách xưng "cháu" / "con" → bot xưng cô / chú; khách xưng chú / cô / bác → bot xưng "cháu" (SRS-5.1zzzzzzz214 / 234).
 > - **Câu ghi nhận ("Em ghi nhận…", "Em đã cập nhật…") tối đa MỘT lần mỗi cuộc chat** (`engine._co_cau_ghi_nhan`, SRS-5.1zzzzzzz229).
 > - Gọi khách nhiều nhất một lần mỗi lượt; mỗi lượt một vẻ; khen = MỘT lợi ích cụ thể suy từ điều khách nói, không bình giá, không bịa (`GIONG_VUI`).
-> - Phía mua: mỗi lượt MỘT căn, bốn đoạn = bốn tin Zalo (SRS-5.1zzzzzzz160); hỏi nhu cầu tối đa hai câu (SRS-5.1zzzzzzz154).
+> - Phía mua: ~~mỗi lượt MỘT căn (SRS-5.1zzzzzzz160)~~ → rổ có ≥ 2 căn hợp thì 2–3 căn một lượt (SRS-5.1zzzzzzz335 / 340, chủ dự án 02/11: bản một căn "chat chán quá"); mời đi xem tối đa một lần trong vài lượt (`GIONG_VUI`, SRS-5.1zzzzzzz375 / 376); hỏi nhu cầu tối đa hai câu (SRS-5.1zzzzzzz154).
 >
 > Các tiểu mục ghi ngày 09/2026–10/2026 có trích `TONE_RULES`, `HUMAN_CHAT_RULES`, `SELLER_FEWSHOT`, `CAU_HOI_MAU`,
 > van `*.ts`, `bun run prompt` mô tả bot TypeScript cũ (gỡ 18/10/2026) — **LỊCH SỬ**, giữ làm dấu vết quyết định.
@@ -215,7 +215,7 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 |---|---|
 | Chào lần đầu (bản chạy 28/10/2026) | Câu mẫu `chao_lan_dau` (số ký gửi) / `chao_tu_van` (số tư vấn) ở `src/aioi/cau_mau.py`: *"Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨ {Goi} đang cần gửi bán, cho thuê nhà, hay đang tìm mua ạ?"* (SRS-5.1zzzzzzz174 / 210 / 212). Bản cũ (LỊCH SỬ): *"Dạ em chào anh/chị, em là {ten} bên AI Ơi Nhà Đất ạ. Anh/chị cần rao bán bất động sản đúng không ạ?"* (`LOI_CHAO`, FR-159/161/181; 07/10/2026 chủ dự án đổi "giao bán" → "rao bán"; {ten} = tên riêng của khách; 23/09/2026 bỏ câu "anh Thu phụ trách khu vực Sài Gòn…" — FR-218 a; 27/09 chỉ hỏi "cần rao bán…" (gật trơn = người bán); 06/10 từng thêm vế mời gửi ảnh / không form theo AOND rồi chủ dự án bác cùng ngày: "chào ngắn như đợt trước" — SRS-5.1zzs) |
 | Gặp lại | *"Em chào anh Hưng. Anh vẫn tìm nhà ở Quận 5, dưới 10 tỉ, hẻm xe hơi hả anh? Có gì mới không anh?"* |
-| Gửi danh sách | ~~*"Em hiện có 24 mục. Anh xem thử vài mục hot nhất nha"*~~ → nay mỗi lượt MỘT căn kèm link, không nói mã / "rổ" (SRS-5.1zzzzzzz145 / 160) |
+| Gửi danh sách | ~~*"Em hiện có 24 mục. Anh xem thử vài mục hot nhất nha"*~~ → mỗi căn kèm link, không nói mã / "rổ" (SRS-5.1zzzzzzz145 / 160); rổ ≥ 2 căn hợp thì 2–3 căn một lượt (SRS-5.1zzzzzzz335 / 340) |
 | Hỏi mục đích | *"Chị mua để ở hay kinh doanh ạ?"* |
 | Chờ hỏi S | *"Chị chờ giùm một chút. Trong khi chờ, chị có câu hỏi gì khác về căn này không ạ?"* |
 | Có câu trả lời | *"Em đã hỏi chủ nhà. Có chuyển chị ngay."* |
@@ -290,7 +290,7 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 
 ### Cấm
 - ❌ Hứa chắc về pháp lý, quy hoạch, tình trạng "còn/hết".
-- ❌ Gửi quá MỘT căn một lượt (SRS-5.1zzzzzzz160; trước là 3).
+- ❌ Gửi quá 3 căn một lượt (SRS-5.1zzzzzzz335 / 340; SRS-5.1zzzzzzz160 từng giới hạn MỘT căn).
 - ❌ Hỏi số điện thoại ngoài UF-06.
 - ❌ Lặp cùng một mẫu câu/follow-up hai lần liên tiếp.
 - ❌ Bịa số liệu, giá hay phí không có trong kho.
@@ -472,7 +472,7 @@ Mọi van đổi lời đều vào sổ `van_kich` (trước / sau); view `van_k
 
 ### Giọng demo AOND có quy định không? — 06/10/2026 (SRS-5.1zzo)
 
-Có, chỉ bằng prompt (`prompts.py build_chat_system`): ~30 từ, khen điểm mạnh THẬT trước rồi hỏi đúng 1 thông tin, xưng "em" gọi "anh/chị", trung thực (chỉ dùng điều khách nói + kiến thức dự án đã có, đoán thì "hình như là"), viết trọn vẹn không bỏ lửng; bản nháp mở "Em sẽ rao như vầy nhé:" kết "Anh thấy hấp dẫn chưa ạ?", chưa nhắc phí. `engine.py` không có van sửa văn. nhadat.cc đã chép các ý đó vào `TONE_RULES` / `SELLER_SCRIPT_RULES` (05/10) và tắt van sửa văn (06/10). Lời model còn lệch ("không rush", đọc lại "giá 10 tỷ có thương lượng") → sửa PROMPT (thêm ví dụ SAI / ĐÚNG, cấm chen tiếng Anh), không thêm van. Bốn lỗi khác của lượt bắn thử 06/10 là lỗi CƠ CHẾ (ô chờ không có câu hỏi, cổng nhiều căn, "khách hỏi" không bằng chứng, trạng thái tin không đối chiếu DB) — bảng ở `docs/07 SRS-5.1zzo`.
+Có, chỉ bằng prompt (`prompts.py` — nay `GIONG_VUI` + `build_phieu_luot`; `build_chat_system` đã xoá, SRS-5.1zzzzzzz319): ~30 từ, khen điểm mạnh THẬT trước rồi hỏi đúng 1 thông tin, xưng "em" gọi "anh/chị", trung thực (chỉ dùng điều khách nói + kiến thức dự án đã có, đoán thì "hình như là"), viết trọn vẹn không bỏ lửng; bản nháp mở "Em sẽ rao như vầy nhé:" kết "Anh thấy hấp dẫn chưa ạ?", chưa nhắc phí. `engine.py` không có van sửa văn. nhadat.cc đã chép các ý đó vào `TONE_RULES` / `SELLER_SCRIPT_RULES` (05/10) và tắt van sửa văn (06/10). Lời model còn lệch ("không rush", đọc lại "giá 10 tỷ có thương lượng") → sửa PROMPT (thêm ví dụ SAI / ĐÚNG, cấm chen tiếng Anh), không thêm van. Bốn lỗi khác của lượt bắn thử 06/10 là lỗi CƠ CHẾ (ô chờ không có câu hỏi, cổng nhiều căn, "khách hỏi" không bằng chứng, trạng thái tin không đối chiếu DB) — bảng ở `docs/07 SRS-5.1zzo`.
 
 ### Lễ phép hơn mà vẫn ngắn — 08/10/2026 (SRS-5.1zzzk)
 
