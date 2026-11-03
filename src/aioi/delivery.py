@@ -38,6 +38,33 @@ def _is_formatted_post(text: str) -> bool:
     return False
 
 
+def tach_ban_tin(reply: str) -> tuple[str, str, str]:
+    """Lượt có bản tin 📋 → (câu chat trước 📋, nguyên khối bản tin từ 📋, câu chốt sau bản tin). Không có 📋 → (cả lời, "", "").
+    Chỉ cắt theo bố cục, không đọc ý (SRS-5.1zzzzzzz219): câu chốt = đoạn cuối đứng SAU câu mời nhắn Zalo (khối 4 của AD_FORMAT) hoặc
+    có "?", không phải dòng gạch đầu. Một nguồn cho lưới soát phần chat (`engine._phan_chat_quanh_ban_tin`) và tách tin gửi Zalo
+    (SRS-5.1zzzzzzz373: chủ dự án 03/11 "câu này tách ra")."""
+    reply = reply or ""
+    if "📋" not in reply:
+        return reply.strip(), "", ""
+    truoc, sau = reply.split("📋", 1)
+    doan = [d.strip() for d in re.split(r"\n\s*\n", sau) if d.strip()]
+    zalo = [i for i, d in enumerate(doan) if "zalo" in d.lower()]
+    cuoi = doan[-1] if doan else ""
+    la_chot = len(doan) >= 2 and not cuoi.lstrip().startswith("-") and ("?" in cuoi or bool(zalo and zalo[-1] < len(doan) - 1))
+    than = sau.rstrip()
+    if la_chot:
+        than = than[:than.rfind(cuoi)].rstrip()
+    return truoc.strip(), ("📋" + than).strip(), cuoi if la_chot else ""
+
+
+def tach_tin_ban_tin(reply: str) -> list[str]:
+    """Bong bóng Zalo cho lượt có bản tin: câu chat trước, bản tin NGUYÊN KHỐI, câu chốt — ba tin riêng (phần chat vẫn qua `chunk_reply`)."""
+    truoc, ban, chot = tach_ban_tin(reply)
+    if not ban:
+        return [truoc] if truoc else []
+    return [*(chunk_reply(truoc) if truoc else []), ban, *(chunk_reply(chot) if chot else [])]
+
+
 def chunk_reply(reply: str, *, max_chars: int = DEFAULT_MAX_CHARS) -> list[str]:
     """Split a reply into sequential message bubbles for paced delivery.
 
