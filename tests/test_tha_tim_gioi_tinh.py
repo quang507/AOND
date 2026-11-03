@@ -61,8 +61,12 @@ def test_goi_y_xung_ho_tu_gioi_tinh_zalo():
 
 
 def test_khoi_xung_ho_chi_anh_cam_chu_anh_chi_ke_ca_cau_mau():
-    assert "KHÔNG có chữ 'anh/chị'" in khoi_xung_ho("chi") and "Em chào chị" in khoi_xung_ho("chi")
-    assert "KHÔNG có chữ 'anh/chị'" in khoi_xung_ho("anh") and "Em chào anh" in khoi_xung_ho("anh")
+    # SRS-5.1zzzzzzz376: lời chào vẫn theo luật ("kể cả trong lời chào") nhưng không còn câu ví dụ hoàn chỉnh "Em chào anh ạ" — model chép
+    # câu đó giữa cuộc chat (SRS-301); luật cấm "Dạ" chỉ còn một câu.
+    for g in ("chi", "anh"):
+        k = khoi_xung_ho(g)
+        assert "KHÔNG có chữ 'anh/chị'" in k and "kể cả trong lời chào" in k and "Em chào" not in k
+        assert sum("Dạ" in d for d in k.splitlines()) == 1
 
 
 def test_server_dat_goi_y_tu_gioi_tinh_va_co_the_tat(monkeypatch):
