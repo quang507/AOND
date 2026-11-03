@@ -444,6 +444,8 @@ GIONG_VUI = """GIỌNG (bắt buộc, chung cho khách gửi bán và khách tì
 # Nhãn dòng việc của lượt (SRS-5.1zzzzzzz318, AU-12) — MỘT nguồn cho phiếu lượt, prompt cũ và mọi khối trỏ tới nó (địa danh, xin đăng…).
 # Trước đây prompt cũ ghi "Thông tin cần hỏi tiếp theo", phiếu lượt ghi "VIỆC LƯỢT NÀY": khối trỏ nhãn cũ thì ở production trỏ vào khoảng không.
 NHAN_VIEC_LUOT = "VIỆC LƯỢT NÀY"
+# Một nguồn cho luật một câu hỏi ở phiếu lượt người bán và prompt mua (SRS-5.1zzzzzzz379) — mỗi prompt ghép chỉ ghi MỘT lần.
+LUAT_MOT_CAU_HOI = "Tối đa MỘT câu hỏi mỗi lượt"
 # Sự thật của căn do AI đọc theo nghĩa (SRS-5.1zzzzzzz320) — (khoá, giá trị, mô tả cho schema). Engine ghi vào ô nội bộ "_<khoá>" khi cụm trích
 # có trong lời khách; lưới bản tin (`engine._khang_dinh_khong_co_du_lieu`) chỉ đối chiếu các ô này + vai, không đọc lời khách.
 SU_THAT_CAN: tuple[tuple[str, tuple[str, ...], str], ...] = (
@@ -554,8 +556,8 @@ def phieu_co_dinh(assistant_name: str) -> str:
 
 LUẬT CỐ ĐỊNH:
 - Đáp đúng điều khách vừa nói, rồi làm {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
-- Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ câu xác nhận mà {NHAN_VIEC_LUOT} giao.
-- Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết, không nhận xét giá thị trường, không hứa bán được.
+- {LUAT_MOT_CAU_HOI}. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ câu xác nhận mà {NHAN_VIEC_LUOT} giao.
+- Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết (giá thị trường, hứa bán: theo khối GIỌNG).
 - Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
 {TIN_HE_THONG}
 
@@ -630,7 +632,7 @@ def build_buyer_chat_system(
 
 BỐI CẢNH TƯ VẤN KHÁCH MUA / THUÊ:
 - Khách đang tìm kiếm BĐS qua Zalo. Mục tiêu của bạn: hiểu rõ chân dung & tiêu chí tìm kiếm của khách, lưu trữ nhu cầu để khớp căn chính xác nhất từ rổ hàng.
-- HỎI NHỎ GIỌT (tối đa MỘT câu hỏi mỗi lượt, bằng MỘT câu ngắn — đây là nơi duy nhất ghi luật này ở prompt mua):
+- HỎI NHỎ GIỌT ({LUAT_MOT_CAU_HOI}, bằng MỘT câu ngắn — nơi duy nhất ghi luật này ở prompt mua):
   • Tầng 1 (Cốt lõi): Khu vực / Quận mong muốn, Tầm tài chính / Ngân sách dự kiến, Loại BĐS tìm kiếm.
   • Đủ ba ý cốt lõi thì gợi căn trước; câu hỏi thêm (nếu có) là câu MỞ, tuỳ chọn, theo dòng dặn cuối prompt — không theo một danh sách cố định.
   • Đích cuối: khách đi xem căn hợp ý — mời theo luật câu mời chốt ở khối GIỌNG, không phải lượt nào cũng mời.

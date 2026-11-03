@@ -145,7 +145,7 @@ def test_khoi_can_dat_thu_tu_khen_can_roi_moi_hoi_ngan():
     khoi = khoi_can_cho_khach([_can("A1", 5.5e9)])
     # SRS-5.1zzzzzzz335 (chủ dự án 02/11 "chat chán quá"): bỏ khuôn BỐN ĐOẠN và "kể ĐÚNG vì sao hợp"; câu hỏi vẫn ở cuối, căn cũ không nhắc lại
     assert "BỐN ĐOẠN" not in khoi and "kể lại ĐÚNG" not in khoi and "KHÔNG nhắc lại" in khoi
-    assert khoi.index("tầm giá") < khoi.index("Tối đa MỘT câu hỏi, ở cuối tin")
+    assert khoi.index("tầm giá") < khoi.index("Câu hỏi (nếu có) ở cuối tin")
 
 
 def test_prompt_mua_noi_can_truoc_hoi_sau_va_cau_hoi_ngan():

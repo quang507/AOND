@@ -27,3 +27,4 @@ backups/
 node_modules/
 tsconfig.tsbuildinfo
 next-env.d.ts
+.claude/worktrees/
