@@ -787,6 +787,10 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz374 · Tách tin bản nháp lần 2 (dòng mở 📋, điểm tin), tin chat xuống một dòng; CRM Rổ hàng trống vì còn đọc bảng `media` đã gỡ (03/11/2026)
+Chủ dự án test 03/11 (Trần Bình Trọng): "Em sẽ rao như vầy nhé anh: tách ra"; "Tin này đang được 94/100 điểm… hạng Vàng" "tách ra khỏi tin nháp gộp vào câu dưới"; "xuống dòng thôi ko cần xuống 2 dòng"; `/admin/ro-hang` báo "Could not find a relationship between 'listings' and 'media'".
+(1) Lớp lỗi: SRS-373 chỉ tách đoạn cuối có "?" — các đoạn sau câu mời Zalo khác vẫn dính bản tin; tin chat một khối giữ dòng trống của model. CRM: bảng `media` gỡ ở `20261102a` nhưng trang Rổ hàng còn `media(count)`. (2) Sửa: `delivery.tach_ban_tin` — phần sau = MỌI đoạn sau câu mời Zalo; `tach_tin_ban_tin` gửi chat trước · dòng mở 📋 · thân bản tin · phần sau (xuống một dòng); bỏ `media(count)` (soát `app/ lib/ components/`: không chỗ nào khác). (3) Kiểm: `test_tach_ban_tin_373.py`. Dữ liệu không mất: hai căn đúng trạng thái (Trần Bình Trọng đang bán, Trần Hưng Đạo đã chốt).
+
 ### SRS-5.1zzzzzzz373 · Lượt có bản tin 📋 gửi Zalo dính câu chat mở đầu và câu hỏi chốt thành một tin (03/11/2026)
 Ca gốc chủ dự án test 03/11 (dãy trọ Tân Phú): "Hẻm rộng tới 10m… nghen." + bản tin + "Anh xem còn chỗ nào cần chỉnh không…?" chung MỘT tin — "câu này tách ra".
 (1) Lớp lỗi: `server` giữ nguyên khối cả lời khi `is_listing_post` để bản tin không bị cắt vụn, nên phần chat quanh bản tin đi theo. (2) Sửa: `delivery.tach_ban_tin` (cắt theo bố cục, một nguồn với `engine._phan_chat_quanh_ban_tin` của lưới soát) → ba tin: chat trước 📋, nguyên khối bản tin, câu chốt; cùng lớp: không chỗ gửi bản tin nào khác. (3) Kiểm: `test_tach_ban_tin_373.py` (đỏ khi gửi cả lời một tin). Dữ liệu test của chủ dự án đã xoá theo yêu cầu (`xoa_nguoi_theo_zalo`).
@@ -833,11 +837,6 @@ Ca gốc: `bot_errors` 21/10–01/11 "ghi tin vào messages hỏng: HTTPError 40
 Ca gốc (chat thật): khách thả /-heart 6 lần trong 3 giờ, bot nhắn lại 4 lần.
 (1) Lớp lỗi: lượt cảm xúc đi chung đường tin nhắn. Sửa: bridge gửi `su_kien: "reaction"` (bridge cũ: msg_id `react-`); lõi theo loại sự kiện không trả lời, chỉ ghi CRM — trừ bản nháp chờ duyệt (`engine.cho_duyet_ban_nhap`) hoặc chưa từng nhắn khách.
 (2) Cùng lớp: sticker có đường riêng (SRS-122); gõ chữ kèm tim vẫn là tin nhắn. (3) Kiểm: `test_cam_xuc_khong_tra_loi_364.py` — tắt nhánh: đỏ.
-
-### SRS-5.1zzzzzzz363 · Bản tin tự nhân ngang × dài ra m² khi đất nở hậu ("đất 90m²" khách không nói) (02/11/2026)
-Ca gốc (chat thật): "mặt tiền 6m dài 15 nở hậu 3" → bản tin "đất 90m²".
-(1) Lớp lỗi: dữ kiện bản tin không nói căn CHƯA có số m², `AD_FORMAT` dặn luôn kèm m² → model tự nhân. Sửa: `khoi_su_that_can` thêm dòng "Diện tích" do code quyết — có ô thì in đúng số khách nói, không có thì "CHƯA có số m² — KHÔNG tự nhân".
-(2) Cùng lớp: "72m²" (SRS-352). Còn: bản cuối vẫn lệch số sau gọi lại thì chưa gọt. (3) Kiểm: `test_dien_tich_no_hau_363.py` — gỡ dòng: 3 đỏ.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

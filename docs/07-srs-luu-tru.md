@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz363 · Bản tin tự nhân ngang × dài ra m² khi đất nở hậu ("đất 90m²" khách không nói) (02/11/2026)
+Ca gốc (chat thật): "mặt tiền 6m dài 15 nở hậu 3" → bản tin "đất 90m²".
+(1) Lớp lỗi: dữ kiện bản tin không nói căn CHƯA có số m², `AD_FORMAT` dặn luôn kèm m² → model tự nhân. Sửa: `khoi_su_that_can` thêm dòng "Diện tích" do code quyết — có ô thì in đúng số khách nói, không có thì "CHƯA có số m² — KHÔNG tự nhân".
+(2) Cùng lớp: "72m²" (SRS-352). Còn: bản cuối vẫn lệch số sau gọi lại thì chưa gọt. (3) Kiểm: `test_dien_tich_no_hau_363.py` — gỡ dòng: 3 đỏ.
+
 ### SRS-5.1zzzzzzz362 · Gợi ý tên đường lấy từ tên huyện / quận khác ("Ngô Bệ (Tân Bình)" cho khách ở Nhà Bè) (02/11/2026)
 Ca gốc (chat thật): "anh cần bán căn nhà cấp 4 ở nhà bè" → bot kể "Ngô Bệ (Quận Tân Bình), Nhà Đồ".
 (1) Lớp lỗi: khớp gần tên đường không biết chữ khách là tên địa bàn, không lọc theo khu. Sửa: `TraDiaDanh._duong` — chữ trùng đúng tên địa bàn (`_la_ten_dia_ban`) thì không khớp gần; đã biết quận thì bỏ ứng viên quận khác.
