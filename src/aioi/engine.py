@@ -139,7 +139,6 @@ from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_t
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
                   lenh_tra_loi, nhan_nhu_cau, nhan_tu_du_lieu, nhu_cau_cua, tim_sdt)
 from . import agent_ban, agent_gop, agent_mua
-from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
 
@@ -773,14 +772,14 @@ def _khoi_xung_ho_rieng(p: str, ten: str | None = None) -> str:
     elif p == "chi":
         return (
             "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "Khách xưng 'chị'. Gọi khách là 'chị', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu. Cả lượt KHÔNG có chữ 'anh/chị' — kể cả "
-            "khi câu mẫu ở trên viết 'anh/chị', đổi thành 'chị' (vd lời chào: \"Em chào chị ạ\").\n"
+            "Khách xưng 'chị'. Gọi khách là 'chị', bản thân xưng 'em'. Cả lượt KHÔNG có chữ 'anh/chị' — kể cả "
+            "khi câu mẫu ở trên viết 'anh/chị', đổi thành 'chị' (kể cả trong lời chào).\n"
         )
     elif p == "anh":
         return (
             "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
-            "Khách xưng 'anh'. Gọi khách là 'anh', bản thân xưng 'em'. CẤM lặp từ 'DẠ' ở đầu câu. Cả lượt KHÔNG có chữ 'anh/chị' — kể cả "
-            "khi câu mẫu ở trên viết 'anh/chị', đổi thành 'anh' (vd lời chào: \"Em chào anh ạ\").\n"
+            "Khách xưng 'anh'. Gọi khách là 'anh', bản thân xưng 'em'. Cả lượt KHÔNG có chữ 'anh/chị' — kể cả "
+            "khi câu mẫu ở trên viết 'anh/chị', đổi thành 'anh' (kể cả trong lời chào).\n"
         )
     elif p.startswith("elder:"):
         lon = p.partition(":")[2]
@@ -3056,7 +3055,6 @@ class Engine:
             uu_tien = (khoi_can_nguoi(conv) or khoi_phap_ly(conv, self._can_dang_noi(conv, can))   # SRS-5.1zzzzzzz178: một khối ưu tiên
                        or khoi_hoi_ve_mua(conv.hoi_ve_luot))   # SRS-5.1zzzzzzz212: phí / uy tín / định giá cũng có khối ở phía mua
             system += ((uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else "") + khoi_xung_ho(customer_pronoun, conv.assistant.name, _xung_ho_doan(conv))   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
-            system += khoi_tai_chinh()   # số tham khảo tượng trưng, chỉ nói khi khách tự hỏi (SRS-5.1zzzzzzz148)
             system += khoi_tin_tra_loi(conv.tin_tra_loi)   # SRS-5.1zzzzzzz270
             system = self._ghep_cau_chuan(system, conv) + self._khoi_danh_gia(conv)
             # Khách mua báo đã đủ thông tin căn đang xem (SRS-5.1zzzzzzz104) → xin chấm sao một lần.
@@ -5584,8 +5582,8 @@ class Engine:
             if pid:
                 trong = can_da or (kho.can_trong_du_an(pid) if getattr(kho, "can_trong_du_an", None) is not None else [])
                 if trong and kho.ghi_hoi_chu_nha(bid, trong[0], hoi_da):
-                    viec.append(f"chuyển câu \"{hoi_da}\" về dự án {ten} cho chủ nhà có căn #{trong[0].get('code')} trong dự án — có trả lời em "
-                                "báo lại khách ngay")
+                    viec.append(f"chuyển câu \"{hoi_da}\" về dự án {ten} cho chủ nhà có căn #{trong[0].get('code')} trong dự án — báo khách MỘT "
+                                "lần là đã chuyển, chủ nhà trả lời thì hệ thống tự nhắn, không hứa giờ")
                 elif not trong and conv.buyer_lead is not None and conv.buyer_lead.fields.get("_da_bao_admin_du_an") != hoi_da:
                     conv.buyer_lead.fields["_da_bao_admin_du_an"] = hoi_da
                     conv.y_luot["can_nguoi_that"] = f"Khách mua hỏi về dự án {ten}: \"{hoi_da[:200]}\" — kho chưa có căn đang rao trong dự án để hỏi chủ nhà, nhờ admin trả lời"
@@ -5619,7 +5617,7 @@ class Engine:
         da_hoi = [c for c in (dich if hoi else []) if kho.ghi_hoi_chu_nha(bid, c, hoi)]
         conv.y_luot["_da_ghi_hoi_chu_nha"] = {c.get("id") for c in da_hoi}
         if da_hoi:
-            viec.append(f"chuyển câu \"{hoi}\" về {', '.join(ten(c) for c in da_hoi)} cho chủ nhà — có trả lời em báo lại khách ngay; nói rõ "
+            viec.append(f"chuyển câu \"{hoi}\" về {', '.join(ten(c) for c in da_hoi)} cho chủ nhà — báo khách MỘT lần là đã chuyển, chủ nhà trả lời thì hệ thống tự nhắn, không hứa giờ; nói rõ "
                         "căn nào (loại + đường) để khách thấy đúng căn")
         conv.y_luot["lich_cho"] = self._lich_cho(kho, bid)
         return viec, can[:4]

@@ -15,6 +15,7 @@ from .revenue import RENTAL_FEE_MONTHS, SALE_FEE_RATE, SellerRole
 from . import cau_mau
 from . import phap_ly
 from .llm.base import RANH_GIOI_CACHE
+from .tai_chinh import khoi_tai_chinh
 from .web import SITE_HOST, SITE_URL, link_tin
 from .schema import (
     CORE_FIELDS,
@@ -623,29 +624,30 @@ def build_buyer_chat_system(
              "trong danh sách (2–3 căn nếu có; căn đã giới thiệu thì chỉ nhắc tên đường). Mời đi xem / hẹn lịch theo luật câu mời chốt ở khối "
              "GIỌNG (lượt gần đây đã mời thì thôi) — KHÔNG xin số điện thoại, trừ khi phần \"EM VỪA GHI LƯỢT NÀY\" bảo xin lúc khách chốt lịch xem."
     )
-    return f"""Bạn là "{assistant_name}", trợ lý tư vấn tìm mua/thuê bất động sản của AI Ơi Nhà Đất ({SITE_HOST}).
+    return f"""Em là "{assistant_name}", trợ lý tư vấn tìm mua / thuê của AI Ơi Nhà Đất ({SITE_HOST}).
 
 {GIONG_VUI}
 
 BỐI CẢNH TƯ VẤN KHÁCH MUA / THUÊ:
 - Khách đang tìm kiếm BĐS qua Zalo. Mục tiêu của bạn: hiểu rõ chân dung & tiêu chí tìm kiếm của khách, lưu trữ nhu cầu để khớp căn chính xác nhất từ rổ hàng.
-- NGUYÊN TẮC HỎI NHỎ GIỌT (1 câu hỏi / lượt):
+- HỎI NHỎ GIỌT (tối đa MỘT câu hỏi mỗi lượt, bằng MỘT câu ngắn — đây là nơi duy nhất ghi luật này ở prompt mua):
   • Tầng 1 (Cốt lõi): Khu vực / Quận mong muốn, Tầm tài chính / Ngân sách dự kiến, Loại BĐS tìm kiếm.
   • Đủ ba ý cốt lõi thì gợi căn trước; câu hỏi thêm (nếu có) là câu MỞ, tuỳ chọn, theo dòng dặn cuối prompt — không theo một danh sách cố định.
-  • Chốt hành động: gợi ý căn phù hợp và hẹn lịch dẫn đi xem thực tế.
+  • Đích cuối: khách đi xem căn hợp ý — mời theo luật câu mời chốt ở khối GIỌNG, không phải lượt nào cũng mời.
 
 QUY TẮC PHẢN HỒI:
 - Em KHÔNG có số liệu thị trường — không nhận xét giá / thanh khoản. Xưng hô theo khối QUY TẮC XƯNG HÔ ở cuối; giọng theo khối GIỌNG ở trên.
-- Mỗi lượt CHỈ hỏi tối đa 1 thông tin còn thiếu, bằng MỘT câu ngắn.
 - Không lặp lại câu / ý đã nói ở lượt trước ("chưa có căn phù hợp", "em sẽ nhắn khi có", lời cảm ơn, lời trấn an): mỗi ý nói MỘT lần, lượt sau nói ngắn hơn bằng chữ khác hoặc bỏ; không mở đầu hai lượt liền nhau bằng cùng mấy chữ.
 - CÂU HỎI NHU CẦU LÀ CÂU MỞ (bài UX phỏng vấn định tính): hỏi "như thế nào / tầm bao nhiêu / ở đâu / kể em nghe", tránh câu
   Có/Không ("cần hẻm xe hơi không?") và câu gài sẵn đáp án hay tính từ cảm xúc ("tiện lắm đúng không?", "chắc chị thích…"). Câu mời xem nhà
-  ("anh/chị muốn đi xem thử không?") vẫn được.
+  dạng hỏi có / không vẫn được (tự đặt chữ, mỗi lần một kiểu).
 - GỢI Ý TRƯỚC, HỎI SAU: khi phần "CĂN ĐANG RAO" ở cuối có căn thì nói căn NGAY trong tin này, câu hỏi thêm nằm CUỐI tin;
   chưa có căn (khách chưa nêu ĐỦ khu vực và ngân sách) thì chỉ hỏi.
 - Tuyệt đối không bịa đặt căn ảo không có trong rổ hàng.
 - Đừng khen CÁCH khách nói ("anh nêu rõ … nên em dễ lọc"). KHÔNG thêm chi tiết khách chưa nói ("gia đình", "con nhỏ"…), không báo đã ghi / đã lưu nhu cầu (hệ thống tự lưu). CẤM nhận xét tài chính ("vay 50% là hợp lý") và CẤM khen lựa chọn là
   đáng mua / sinh lời (em không có số liệu thị trường). Khách TỰ hỏi lãi suất / sinh lời thì chỉ nói số ở khối SỐ LIỆU THAM KHẢO bên dưới (nếu có), kèm "tham khảo".
+- Với khách tìm mua / thuê, lợi ích để khen là điều khách CẦN mà căn có (gần chỗ làm, đủ phòng, hẻm rộng) — không khen khả năng cho thuê, sinh lời hay "giá dễ chốt".
+{khoi_tai_chinh()}
 
 {RANH_GIOI_CACHE}{ask_line}"""
 
@@ -1031,7 +1033,7 @@ def build_listing_proposal_system(
               else cau_mau.cau("hoi_ban_nhap", goi))   # sửa ở CRM (SRS-5.1zzzzzzz110)
 
     # SRS-5.1zzzzzzz213: khối dự án + dữ liệu căn (đổi theo khách) xuống SAU dấu cache; phần trên (khuôn tin rao, luật) đứng yên.
-    return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất ({SITE_HOST}).
+    return f"""Em là "{assistant_name}", trợ lý của AI Ơi Nhà Đất ({SITE_HOST}).
 
 {BUSINESS_CONTEXT}
 
@@ -1045,6 +1047,8 @@ Dòng 1: {opener}
 
 Dòng cuối cùng:
 {closer}
+
+(Mục 4 trong bản tin và câu hỏi chốt sau bản tin luôn có ở lượt trình / rao lại bản tin — không tính vào luật câu mời chốt của khối GIỌNG.)
 
 QUY TẮC BẮT BUỘC (theo bản anh Luận):
 - CHỈ dùng dữ liệu được cung cấp bên dưới. TUYỆT ĐỐI không bịa, không suy diễn thêm số liệu/vật liệu/tiện ích.
@@ -1189,12 +1193,16 @@ def build_fee_followup_system(
             f"\n- TỪ LƯỢT SAU LƯỢT DUYỆT (khách đã trả lời chuyện phí): tin còn thiếu \"{nhan_o(o_sau, prop)}\" — hỏi thêm ĐÚNG "
             f"1 câu ngắn ({cau_hoi_o(o_sau, prop)}) để tin đầy đủ hơn. Khách chưa tiện thì thôi, không hỏi lại."
         )
-    return f"""Bạn là "{assistant_name}", trợ lý ảo bất động sản của AI Ơi Nhà Đất ({SITE_HOST}).
+    return f"""Em là "{assistant_name}", trợ lý của AI Ơi Nhà Đất ({SITE_HOST}).
 
 {BUSINESS_CONTEXT}
 
 {GIONG_VUI}
-{RANH_GIOI_CACHE}{project_block}
+
+DANH SÁCH GIÁ TRỊ (dùng để thuyết phục, chỉ nêu thứ có thật):
+{FEE_VALUE_POINTS}
+
+{khoi_viet}{RANH_GIOI_CACHE}{project_block}
 NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem bản tin rao và hỏi họ muốn sửa chỗ nào hay đăng luôn. Hãy đọc phản hồi MỚI NHẤT của khách:{khong_dong_y}
 - NẾU khách ĐỒNG Ý / DUYỆT / BẢO ĐĂNG TIN (vd: "đăng đi", "lên bài đi", "lên tin đi", "đăng tin đi", "ok em", "được rồi", "chuẩn rồi em", "không cần sửa gì", hoặc thả tim/like):
 {xac_nhan}{hoi_phi}{hoi_sau}
@@ -1205,11 +1213,11 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
     và sửa luôn, KHÔNG hỏi lại nghĩa, KHÔNG bắt khách kiểm số lệch.
   • TRƯỚC dấu 📋: MỘT câu ngắn đáp đúng điều khách vừa nói, theo khối GIỌNG (đồng tình, cảm thán nếu điều đó hay, hoặc nói thẳng sẽ sửa
     gì) — KHÔNG mở bằng câu báo cáo "Em sửa rồi ạ / Em cập nhật lại bản tin", KHÔNG nhắc phí.
-  • RAO LẠI BẢN TIN ĐÃ SỬA (xuống dòng, dòng RIÊNG "📋 Bản tin cập nhật:" — giữ dấu 📋) theo ĐÚNG bố cục tin rao dưới đây — sửa ĐÚNG chỗ khách nói trên bản tin trước;
+  • RAO LẠI BẢN TIN ĐÃ SỬA (xuống dòng, dòng RIÊNG "📋 Bản tin cập nhật:" — giữ dấu 📋) theo ĐÚNG bố cục tin rao (khối KHI RAO LẠI BẢN TIN ĐÃ SỬA ở trên) — sửa ĐÚNG chỗ khách nói trên bản tin trước;
     chỗ khách không nhắc giữ nguyên DỮ LIỆU và Ý nhưng câu chữ được làm tươi (đổi vài cách nói, sửa lỗi chính tả), KHÔNG chép lại y nguyên
     cả đoạn; KHÔNG soạn lại từ đầu theo ý mình, KHÔNG đem điều khách vừa đính chính lên tiêu đề nếu khách không bảo.
   • SAU bản tin: MỘT câu hỏi chốt ngắn, mỗi lần một cách nói khác lượt trước (hỏi đã ưng chưa / còn chỗ nào chỉnh / đăng luôn nhé) —
-    không lặp lại nguyên câu chốt của bản trước.
+    không lặp lại nguyên câu chốt của bản trước. (Mục 4 trong bản tin và câu hỏi chốt sau bản tin luôn có ở lượt trình / rao lại bản tin — không tính vào luật câu mời chốt của khối GIỌNG.)
   • Khách góp ý về CÁCH VIẾT (nhấn gì, bớt gì, icon, lặp) mà bản tin vẫn không thể hiện được thì phải nói thật vì sao; KHÔNG trả lời "em sẽ
     sửa" rồi không gửi bản tin.
 - NẾU khách trả lời CHƯA BIẾT PHÍ (sau câu hỏi phí): báo NGẮN trong 1–2 câu — con số phí đúng vai + chỉ thu khi giao dịch thành công.
@@ -1221,10 +1229,9 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
   • TUYỆT ĐỐI giữ đúng mức phí chính sách — KHÔNG tự ý giảm giá, KHÔNG hứa ưu đãi/cam kết ngoài chính sách, KHÔNG bịa.
   • Chỉ thuyết phục tối đa 1–2 lần; nếu khách vẫn dứt khoát từ chối thì lịch sự, tôn trọng, để ngỏ cửa, KHÔNG nài ép gây khó chịu.
 
-DANH SÁCH GIÁ TRỊ (dùng để thuyết phục, chỉ nêu thứ có thật):
-{FEE_VALUE_POINTS}{fee_block}
+{fee_block}
 
-{khoi_viet}{yeu_cau}
+{yeu_cau}
 DỮ LIỆU BĐS:
 {describe_captured(prop)}"""
 

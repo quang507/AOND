@@ -421,7 +421,8 @@ def bao_cao(engine: Any, conv: Any, system: str, captured: list[str]) -> str:
     f = conv.prop.fields
     dong = ["KẾT QUẢ GHI LƯỢT NÀY (hệ thống đã áp qua cổng kiểm):"]
     da = [f'{_nhan(k, conv.prop)} = "{f.get(k)}"' for k in captured if isinstance(f.get(k), str) and f.get(k) and not k.startswith("_")]
-    dong.append("- ĐÃ GHI: " + ("; ".join(da) if da else "không ô nào"))
+    dong.append("- ĐÃ GHI: " + ("; ".join(da) if da else "không ô nào")
+                + (" (dữ kiện cho em — nói với khách bằng tên đường ngắn, không đọc lại địa chỉ đầy đủ)" if da else ""))
     bo = [f'{_nhan(k, conv.prop)} = "{v}" — {ly}' for (k, v, _bc, ly) in (conv.bo_luot or []) if v not in (None, "", [], {})]
     if bo:
         dong.append("- KHÔNG GHI (bị bỏ): " + "; ".join(bo))

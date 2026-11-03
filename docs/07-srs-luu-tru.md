@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz365 · Sổ lỗi 409 khi ghi `messages` (34 lần): lời bot của lượt trùng tin mất khỏi CRM (02/11/2026)
+Ca gốc: `bot_errors` 21/10–01/11 "ghi tin vào messages hỏng: HTTPError 409".
+(1) Lớp lỗi: `messages.zalo_msg_id` khoá duy nhất; cùng tin Zalo tới hai lần (bridge thử lại, thả cảm xúc nhiều lần một tin) → 409 → coi là "hội thoại đã xoá", ném lỗi, dòng lời bot mất. Sửa: dòng khách ghi `on_conflict=zalo_msg_id` + `ignore-duplicates`; 409 do khoá ngoại giữ nguyên. TypeError NoneType đã hết từ SRS-276.
+(2) Cùng lớp: lời bot / tin admin không có `zalo_msg_id`. (3) Kiểm: `test_tin_trung_msg_id_365.py` — gỡ bản sửa: đỏ "409 Conflict".
+
 ### SRS-5.1zzzzzzz364 · Bot trả lời từng lượt khách chỉ thả cảm xúc (02/11/2026)
 Ca gốc (chat thật): khách thả /-heart 6 lần trong 3 giờ, bot nhắn lại 4 lần.
 (1) Lớp lỗi: lượt cảm xúc đi chung đường tin nhắn. Sửa: bridge gửi `su_kien: "reaction"` (bridge cũ: msg_id `react-`); lõi theo loại sự kiện không trả lời, chỉ ghi CRM — trừ bản nháp chờ duyệt (`engine.cho_duyet_ban_nhap`) hoặc chưa từng nhắn khách.

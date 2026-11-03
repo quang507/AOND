@@ -787,6 +787,11 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz376 · Review prompt: phía mua giục hẹn mỗi lượt và dặn ngược số căn; "em báo lại khách ngay"; prompt phí 9.455 ký tự ngoài cache (03/11/2026)
+Review prompt (chủ dự án 03/11: "ok bạn sửa lun đi"). (1) Lớp lỗi: luật viết ở nhiều chỗ, chỗ mới sửa không kéo chỗ cũ — bối cảnh mua còn "Chốt hành động: … hẹn lịch" ở mọi lượt (ngược luật câu mời ≤ 1 lần / vài lượt), `agent_mua.HUONG_DAN` còn "MỘT căn mỗi lượt" (ngược quyết định 2–3 căn, SRS-335 / 340), ví dụ câu mời hoàn chỉnh, kết quả công cụ ngôi thứ nhất "có trả lời em báo lại khách ngay" (bị chép, hứa giờ), xưng hô có ví dụ "Em chào anh ạ" (chép giữa chat, SRS-301), luật một câu hỏi ba lần trong prompt mua; định danh "Bạn là … trợ lý ảo" ở lượt nháp / phí.
+(2) Sửa (chỉ câu chữ prompt, không thêm code soát, không cắt GIONG_VUI / SLANG_NOTES / khối anh Luận): `prompts.build_buyer_chat_system` (đích cuối mời theo khối GIỌNG, một chỗ ghi luật một câu hỏi, câu mời tự đặt chữ, khen điều khách cần — không khen cho thuê / sinh lời, khối tài chính vào trước ranh giới cache); `agent_mua` / `engine` câu chuyển chủ nhà thành dữ kiện "hệ thống tự nhắn, không hứa giờ"; ghi chú mục 4 bản tin + câu chốt sau bản tin không tính vào luật câu mời; `agent_gop.bao_cao` dặn tên đường ngắn; `build_fee_followup_system` đưa danh sách giá trị + khuôn bản tin lên trước ranh giới (sau ranh giới 9.455 → 3.981 ký tự).
+(3) Kiểm: CI (chủ dự án dặn không chạy test ở máy); chưa chạy `cham`.
+
 ### SRS-5.1zzzzzzz375 · Một khối giọng vui chung hai phía; phía mua lặp câu mời hẹn / đọc lại địa chỉ, hứa suông vay, báo "chưa có căn" khi khách đổi nhu cầu (03/11/2026)
 Chủ dự án test mua 03/11 (11 lượt): "câu chào nên đổi sao hay hơn", "câu chữ bị lặp", "sửa từ prompt … giọng tự nhiên nhanh nhẹn vui vẻ … đỡ viết code soi xét viết lại", "phía mua hay phía bán thì đừng có giọng vui hay giọng không vui nữa", giữ hai luật "tên đường ngắn" và "mời hẹn xem tối đa một lần trong vài lượt".
 (1) Lớp lỗi: phía mua có luật giọng riêng không có `GIONG_VUI`; khối tài chính DẶN "nhờ người phụ trách báo lại" (hứa suông); chữ giữ chỗ "chưa đặt nhãn" bị AI chép thành nhu cầu; `conv.can_mua` tính trước khi đổi nhu cầu nên thêm nhu cầu thuê Q10 báo không có căn dù kho có `SEED0177`. (2) Sửa: `GIONG_VUI` chung hai phía (+ tên đường ngắn, câu mời chốt ≤ 1 lần / vài lượt, việc đã làm báo một lần, không giải thích kiểu máy), prompt mua bỏ luật giọng riêng; câu chào số tư vấn mới (migration `20261103f`); tài chính bỏ câu hứa; agent mua chỉ hỏi chủ nhà phần dòng căn chưa có; tra căn theo nhu cầu hiện tại. (3) Kiểm: CI; chưa chạy `cham` (chủ dự án dặn không chạy test ở máy).
@@ -831,11 +836,6 @@ Chủ dự án 02/11 (nguyên văn): "không hỏi lại tên đường nữa, t
 (1) Lớp lỗi: dữ kiện hệ thống tra được thành câu hỏi khách — `_chuan_dia_danh` chỉ áp tên khác dấu, khớp gần thì prompt dặn hỏi xác nhận. Sửa: kho ra MỘT tên trong khu khách nói (`TraDiaDanh.duong`; nhiều tên chọn theo quận; quận khác bị loại SRS-362) → ghi luôn vào `duong` + `dia_chi`; khách nói quận sau thì tra lại; không ra → giữ chữ khách. Bỏ hẳn dòng hỏi, `goi_y_duong`, việc `hoi_dia_danh`.
 (2) Cùng lớp: phường (SRS-359). Còn: biết phường chưa biết quận thì chưa lọc theo khu; RPC `tim_duong` không lọc quận (lọc ở lõi).
 (3) Kiểm: `test_ap_ten_duong_366.py` ("25 huynh tan phap" Quận 7 → "25 Huỳnh Tấn Phát"; "ma lo" + Bình Tân lượt sau → Mã Lò) — về luật cũ: đỏ.
-
-### SRS-5.1zzzzzzz365 · Sổ lỗi 409 khi ghi `messages` (34 lần): lời bot của lượt trùng tin mất khỏi CRM (02/11/2026)
-Ca gốc: `bot_errors` 21/10–01/11 "ghi tin vào messages hỏng: HTTPError 409".
-(1) Lớp lỗi: `messages.zalo_msg_id` khoá duy nhất; cùng tin Zalo tới hai lần (bridge thử lại, thả cảm xúc nhiều lần một tin) → 409 → coi là "hội thoại đã xoá", ném lỗi, dòng lời bot mất. Sửa: dòng khách ghi `on_conflict=zalo_msg_id` + `ignore-duplicates`; 409 do khoá ngoại giữ nguyên. TypeError NoneType đã hết từ SRS-276.
-(2) Cùng lớp: lời bot / tin admin không có `zalo_msg_id`. (3) Kiểm: `test_tin_trung_msg_id_365.py` — gỡ bản sửa: đỏ "409 Conflict".
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
