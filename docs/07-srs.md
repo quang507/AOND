@@ -787,6 +787,10 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz375 · Một khối giọng vui chung hai phía; phía mua lặp câu mời hẹn / đọc lại địa chỉ, hứa suông vay, báo "chưa có căn" khi khách đổi nhu cầu (03/11/2026)
+Chủ dự án test mua 03/11 (11 lượt): "câu chào nên đổi sao hay hơn", "câu chữ bị lặp", "sửa từ prompt … giọng tự nhiên nhanh nhẹn vui vẻ … đỡ viết code soi xét viết lại", "phía mua hay phía bán thì đừng có giọng vui hay giọng không vui nữa", giữ hai luật "tên đường ngắn" và "mời hẹn xem tối đa một lần trong vài lượt".
+(1) Lớp lỗi: phía mua có luật giọng riêng không có `GIONG_VUI`; khối tài chính DẶN "nhờ người phụ trách báo lại" (hứa suông); chữ giữ chỗ "chưa đặt nhãn" bị AI chép thành nhu cầu; `conv.can_mua` tính trước khi đổi nhu cầu nên thêm nhu cầu thuê Q10 báo không có căn dù kho có `SEED0177`. (2) Sửa: `GIONG_VUI` chung hai phía (+ tên đường ngắn, câu mời chốt ≤ 1 lần / vài lượt, việc đã làm báo một lần, không giải thích kiểu máy), prompt mua bỏ luật giọng riêng; câu chào số tư vấn mới (migration `20261103e`); tài chính bỏ câu hứa; agent mua chỉ hỏi chủ nhà phần dòng căn chưa có; tra căn theo nhu cầu hiện tại. (3) Kiểm: CI; chưa chạy `cham` (chủ dự án dặn không chạy test ở máy).
+
 ### SRS-5.1zzzzzzz374 · Tách tin bản nháp lần 2 (dòng mở 📋, điểm tin), tin chat xuống một dòng; CRM Rổ hàng trống vì còn đọc bảng `media` đã gỡ (03/11/2026)
 Chủ dự án test 03/11 (Trần Bình Trọng): "Em sẽ rao như vầy nhé anh: tách ra"; "Tin này đang được 94/100 điểm… hạng Vàng" "tách ra khỏi tin nháp gộp vào câu dưới"; "xuống dòng thôi ko cần xuống 2 dòng"; `/admin/ro-hang` báo "Could not find a relationship between 'listings' and 'media'".
 (1) Lớp lỗi: SRS-373 chỉ tách đoạn cuối có "?" — các đoạn sau câu mời Zalo khác vẫn dính bản tin; tin chat một khối giữ dòng trống của model. CRM: bảng `media` gỡ ở `20261102a` nhưng trang Rổ hàng còn `media(count)`. (2) Sửa: `delivery.tach_ban_tin` — phần sau = MỌI đoạn sau câu mời Zalo; `tach_tin_ban_tin` gửi chat trước · dòng mở 📋 · thân bản tin · phần sau (xuống một dòng); bỏ `media(count)` (soát `app/ lib/ components/`: không chỗ nào khác). (3) Kiểm: `test_tach_ban_tin_373.py`. Dữ liệu không mất: hai căn đúng trạng thái (Trần Bình Trọng đang bán, Trần Hưng Đạo đã chốt).
@@ -832,11 +836,6 @@ Chủ dự án 02/11 (nguyên văn): "không hỏi lại tên đường nữa, t
 Ca gốc: `bot_errors` 21/10–01/11 "ghi tin vào messages hỏng: HTTPError 409".
 (1) Lớp lỗi: `messages.zalo_msg_id` khoá duy nhất; cùng tin Zalo tới hai lần (bridge thử lại, thả cảm xúc nhiều lần một tin) → 409 → coi là "hội thoại đã xoá", ném lỗi, dòng lời bot mất. Sửa: dòng khách ghi `on_conflict=zalo_msg_id` + `ignore-duplicates`; 409 do khoá ngoại giữ nguyên. TypeError NoneType đã hết từ SRS-276.
 (2) Cùng lớp: lời bot / tin admin không có `zalo_msg_id`. (3) Kiểm: `test_tin_trung_msg_id_365.py` — gỡ bản sửa: đỏ "409 Conflict".
-
-### SRS-5.1zzzzzzz364 · Bot trả lời từng lượt khách chỉ thả cảm xúc (02/11/2026)
-Ca gốc (chat thật): khách thả /-heart 6 lần trong 3 giờ, bot nhắn lại 4 lần.
-(1) Lớp lỗi: lượt cảm xúc đi chung đường tin nhắn. Sửa: bridge gửi `su_kien: "reaction"` (bridge cũ: msg_id `react-`); lõi theo loại sự kiện không trả lời, chỉ ghi CRM — trừ bản nháp chờ duyệt (`engine.cho_duyet_ban_nhap`) hoặc chưa từng nhắn khách.
-(2) Cùng lớp: sticker có đường riêng (SRS-122); gõ chữ kèm tim vẫn là tin nhắn. (3) Kiểm: `test_cam_xuc_khong_tra_loi_364.py` — tắt nhánh: đỏ.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

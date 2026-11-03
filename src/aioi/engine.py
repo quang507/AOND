@@ -5484,7 +5484,9 @@ class Engine:
         else:
             mo_ho = []
         nhac = kho.can_theo_ma(ma) if ma else []
-        co_san = can_da + [c for c in (conv.can_mua or self._can_goi_y(conv)) if c.get("id") not in {d.get("id") for d in can_da}]
+        # SRS-5.1zzzzzzz375 (test chủ dự án 03/11: thêm nhu cầu "căn hộ thuê Q10, 2PN, 15 triệu" → bot báo chưa có căn dù kho có): `conv.can_mua`
+        # tính ở lượt đọc ý TRƯỚC khi nhu cầu đổi — tra lại theo nhu cầu hiện tại (tim_nha nhớ 60 s theo tham số, cùng nhu cầu thì không gọi lại DB).
+        co_san = can_da + [c for c in self._can_goi_y(conv) if c.get("id") not in {d.get("id") for d in can_da}]
         can = nhac + [c for c in co_san if c.get("id") not in {n.get("id") for n in nhac}]
         viec: list[str] = []
         # SRS-5.1zzzzzzz262 (bắn thử SRD 28/10: khách hỏi "nhà hẻm xe hơi đường Trần Bình Trọng quận 5 giá 10 tỷ còn không" — căn đó chưa lên web,
