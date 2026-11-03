@@ -48,12 +48,11 @@ type Dong = {
   chu_duyet_at?: string | null;
   created_at: string;
   sellers: { name: string | null; phone: string | null; seller_type: string } | null;
-  media: { count: number }[] | null;
   listing_media: { count: number }[] | null;
 };
 
 const COT_CHON =
-  "id, code, legacy_code, deal, district, ward, street, location_raw, area_m2, frontage_m, length_m, floors, floors_text, bedrooms, price_vnd, price_raw, description, property_type, status, can_chu_duyet, chu_duyet_at, created_at, sellers!listings_seller_id_fkey(name, phone, seller_type), media(count), listing_media(count)";
+  "id, code, legacy_code, deal, district, ward, street, location_raw, area_m2, frontage_m, length_m, floors, floors_text, bedrooms, price_vnd, price_raw, description, property_type, status, can_chu_duyet, chu_duyet_at, created_at, sellers!listings_seller_id_fkey(name, phone, seller_type), listing_media(count)";
 
 const TRANG_THAI: Record<string, string> = {
   cho_thong_tin: "chờ thông tin",
@@ -87,7 +86,7 @@ const moTa = (d: Dong) =>
   sanitizeDescription(d.description)
     .replace(/\s*\r?\n\s*[-•+*]?\s*/g, " · ")
     .replace(/^[-•+*]\s*/, "");
-const soAnh = (d: Dong) => (d.media?.[0]?.count ?? 0) + (d.listing_media?.[0]?.count ?? 0);
+const soAnh = (d: Dong) => d.listing_media?.[0]?.count ?? 0;   // bảng media cũ đã gỡ (migration 20261102a) — SRS-5.1zzzzzzz374
 
 const COT: Cot[] = [
   // 09/09 tối: ngày vào đứng ĐẦU (mặc định sắp mới nhất trước) — trước đây nằm cuối, tràn khỏi màn hình.

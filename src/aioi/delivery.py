@@ -39,30 +39,39 @@ def _is_formatted_post(text: str) -> bool:
 
 
 def tach_ban_tin(reply: str) -> tuple[str, str, str]:
-    """Lượt có bản tin 📋 → (câu chat trước 📋, nguyên khối bản tin từ 📋, câu chốt sau bản tin). Không có 📋 → (cả lời, "", "").
-    Chỉ cắt theo bố cục, không đọc ý (SRS-5.1zzzzzzz219): câu chốt = đoạn cuối đứng SAU câu mời nhắn Zalo (khối 4 của AD_FORMAT) hoặc
-    có "?", không phải dòng gạch đầu. Một nguồn cho lưới soát phần chat (`engine._phan_chat_quanh_ban_tin`) và tách tin gửi Zalo
-    (SRS-5.1zzzzzzz373: chủ dự án 03/11 "câu này tách ra")."""
+    """Lượt có bản tin 📋 → (câu chat trước 📋, khối bản tin từ 📋 tới câu mời nhắn Zalo, phần chat sau bản tin). Không có 📋 → (cả lời, "", "").
+    Chỉ cắt theo bố cục, không đọc ý (SRS-5.1zzzzzzz219): phần sau = MỌI đoạn đứng sau câu mời nhắn Zalo (khối 4 của AD_FORMAT — vd điểm
+    tin, hạng người rao, câu hỏi chốt); không có câu mời Zalo thì chỉ đoạn cuối có "?". Một nguồn cho lưới soát phần chat
+    (`engine._phan_chat_quanh_ban_tin`) và tách tin gửi Zalo (SRS-5.1zzzzzzz373 / 374)."""
     reply = reply or ""
     if "📋" not in reply:
         return reply.strip(), "", ""
     truoc, sau = reply.split("📋", 1)
     doan = [d.strip() for d in re.split(r"\n\s*\n", sau) if d.strip()]
     zalo = [i for i, d in enumerate(doan) if "zalo" in d.lower()]
-    cuoi = doan[-1] if doan else ""
-    la_chot = len(doan) >= 2 and not cuoi.lstrip().startswith("-") and ("?" in cuoi or bool(zalo and zalo[-1] < len(doan) - 1))
-    than = sau.rstrip()
-    if la_chot:
-        than = than[:than.rfind(cuoi)].rstrip()
-    return truoc.strip(), ("📋" + than).strip(), cuoi if la_chot else ""
+    if zalo and zalo[-1] < len(doan) - 1:
+        cat = zalo[-1] + 1
+    elif len(doan) >= 2 and "?" in doan[-1] and not doan[-1].lstrip().startswith("-"):
+        cat = len(doan) - 1
+    else:
+        cat = len(doan)
+    return truoc.strip(), ("📋 " + "\n\n".join(doan[:cat])).strip(), "\n".join(doan[cat:])
+
+
+def _mot_dong(chu: str) -> str:
+    """Tin chat gửi khách: các đoạn cách nhau MỘT lần xuống dòng, không dòng trống (chủ dự án 03/11, SRS-5.1zzzzzzz374)."""
+    return re.sub(r"\n\s*\n", "\n", chu.strip())
 
 
 def tach_tin_ban_tin(reply: str) -> list[str]:
-    """Bong bóng Zalo cho lượt có bản tin: câu chat trước, bản tin NGUYÊN KHỐI, câu chốt — ba tin riêng (phần chat vẫn qua `chunk_reply`)."""
-    truoc, ban, chot = tach_ban_tin(reply)
+    """Bong bóng Zalo cho lượt có bản tin: câu chat trước · dòng mở 📋 · thân bản tin NGUYÊN KHỐI (giữ bố cục) · phần chat sau (điểm tin,
+    câu chốt — một tin, xuống một dòng). Không có 📋 → một tin, xuống một dòng."""
+    truoc, ban, sau = tach_ban_tin(reply)
     if not ban:
-        return [truoc] if truoc else []
-    return [*(chunk_reply(truoc) if truoc else []), ban, *(chunk_reply(chot) if chot else [])]
+        return [_mot_dong(truoc)] if truoc else []
+    dau, _, than = ban.partition("\n")
+    khoi = [dau.strip(), than.strip()] if than.strip() and len(dau) <= 120 else [ban]
+    return [*([_mot_dong(truoc)] if truoc else []), *[k for k in khoi if k], *([_mot_dong(sau)] if sau else [])]
 
 
 def chunk_reply(reply: str, *, max_chars: int = DEFAULT_MAX_CHARS) -> list[str]:
