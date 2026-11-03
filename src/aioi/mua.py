@@ -1003,7 +1003,7 @@ def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
             "  • Dòng căn ghi \"có … ảnh\" thì ảnh tự gửi kèm sau link, không cần nhắc; ghi \"CHƯA có ảnh\" thì sẽ KHÔNG có ảnh nào gửi kèm. Khách "
             "hỏi ảnh: làm đúng phần \"EM VỪA GHI LƯỢT NÀY\"; không có việc ảnh nào thì KHÔNG hứa gửi ảnh, KHÔNG hứa xin chủ nhà.\n"
             "  • Tối đa MỘT câu hỏi, ở cuối tin, theo dòng dặn hỏi ở trên (hoặc hỏi khách muốn xem thử căn nào). Khách vừa hỏi điều gì và em đã trả "
-            "lời đủ, hoặc khách đang bận / hẹn sau, thì KHÔNG cần câu hỏi (SRS-178).\n"
+            "lời đủ, hoặc khách đang bận / hẹn sau, thì KHÔNG cần câu hỏi.\n"
             "  • Xưng hô GIỮ NGUYÊN như các lượt trước. Căn đã giới thiệu ở các tin trước thì KHÔNG nhắc lại, trừ khi khách hỏi.\n"
             + "\n".join(f"- {dong_can(c)}" for c in can) + "\n")
 

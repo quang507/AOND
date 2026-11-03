@@ -34,11 +34,15 @@ def test_engine_quyet_viet_lai_tin(duyet, yeu_cau, captured, can):
     assert _co_the_viet_lai_tin(conv, captured) is can
 
 
-def test_chu_gui_model_khong_mang_ma_srs():
-    for ten in ("OPERATIONS_SYSTEM", "OPERATIONS_SYSTEM_BAN", "OPERATIONS_SYSTEM_MUA", "AD_FORMAT", "BUSINESS_CONTEXT", "GIONG_VUI"):
-        assert not re.search(r"SRS-5\.1z", getattr(P, ten)), ten
-    assert not re.search(r"SRS-5\.1z", P.build_phieu_luot("Mai·Anh", _p(), "huong"))
-    assert not re.search(r"SRS-5\.1z", P.build_fee_followup_system("Mai·Anh", _p()))
+def test_chu_gui_model_khong_mang_ma_srs_hay_ngay_sua():
+    """Quét MỌI hằng chữ viết hoa của prompts + prompt dựng sẵn + schema bóc tách (bản đầu chỉ soát 6 hằng — sót 9 chỗ)."""
+    import json
+    lich_su = re.compile(r"SRS-5\.1z|\b\d{1,2}/1[01](?:/2026)?\b")
+    chu = {n: v for n, v in vars(P).items() if n.isupper() and isinstance(v, str)}
+    chu.update(phieu=P.build_phieu_luot("Mai·Anh", _p(), "huong"), sau=P.build_fee_followup_system("Mai·Anh", _p()),
+               nhap=P.build_listing_proposal_system("Mai·Anh", _p(), ""), schema=json.dumps(P.operations_schema(), ensure_ascii=False))
+    lech = {n: lich_su.findall(v)[:3] for n, v in chu.items() if lich_su.search(v)}
+    assert not lech, lech
 
 
 def test_danh_sach_o_soat_trong_system_va_khong_co_o_phia_mua():
