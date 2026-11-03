@@ -9,7 +9,7 @@ import { Suspense, useEffect, useState, type FormEvent, type ReactNode } from "r
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { IconBell, IconChart, IconChat, IconEdit, IconGrid, IconList, IconLogout, IconPlus, IconSettings, IconTarget, IconUsers } from "@/components/icons";
+import { IconBell, IconCalc, IconChart, IconChat, IconEdit, IconGrid, IconList, IconLogout, IconPlus, IconSettings, IconTarget, IconUsers } from "@/components/icons";
 
 type Tab = { href: string; label: string; Icon: (p: { className?: string }) => ReactNode; khop: (p: string, tab: string | null) => boolean };
 type Nhom = { ten: string; tabs: Tab[] };
@@ -37,6 +37,7 @@ const NHOM: Nhom[] = [
     ten: "Hệ thống",
     tabs: [
       { href: "/admin?tab=stats", label: "Báo cáo", Icon: IconChart, khop: (p, t) => p === "/admin" && t === "stats" },
+      { href: "/admin/chi-phi", label: "Chi phí model", Icon: IconCalc, khop: (p) => p.startsWith("/admin/chi-phi") },
       { href: "/admin?tab=ops", label: "Vận hành", Icon: IconSettings, khop: (p, t) => p === "/admin" && t === "ops" },
     ],
   },
