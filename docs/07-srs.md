@@ -738,7 +738,8 @@ Không có bảng token/TTL, không nối fingerprint (OPEN-14); lõi chưa đ�
 4. Chọn MỘT việc cho lượt: `viec_luot` (SRS-314 / 328) → ô cần hỏi / khối hỏi còn lại.
 5. Dựng prompt: phiếu lượt thu thập / bản nháp / sau bản nháp (phía bán) hoặc prompt mua; khối cố định trước RANH_GIOI_CACHE.
 6. Model viết lời (MODEL_CHAT; hỏng → Gemini → Groq, `llm/du_phong.py`). Người bán đi vòng gộp: bước 2 CÙNG cuộc hội thoại công cụ, kết quả
-   công cụ ghi = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt), `agent_gop.viet`.
+   công cụ ghi = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt), `agent_gop.viet`. Người mua: vòng công cụ `agent_mua.chay`
+   (tra `tim_can` / `xem_can` / `tra_du_an` / `du_an_trong_khu`; ghi `hen_xem` / `hoi_chu_nha` khi bóc tách sót, SRS-290 / 292).
 7. Soát đầu ra `_soat_hinh_thuc` theo bảng `LUAT_SOAT` (gồm `hoi_dung_o`, SRS-367): lệch → gọi lại tối đa một lần.
 8. Lưu Supabase (tin, hội thoại, messages) rồi trả lời bridge.
 ```
@@ -789,7 +790,7 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
 
 ### SRS-5.1zzzzzzz376 · Review prompt: phía mua giục hẹn mỗi lượt và dặn ngược số căn; "em báo lại khách ngay"; prompt phí 9.455 ký tự ngoài cache (03/11/2026)
 Review prompt (chủ dự án 03/11: "ok bạn sửa lun đi"). (1) Lớp lỗi: luật viết ở nhiều chỗ, chỗ mới sửa không kéo chỗ cũ — bối cảnh mua còn "Chốt hành động: … hẹn lịch" ở mọi lượt (ngược luật câu mời ≤ 1 lần / vài lượt), `agent_mua.HUONG_DAN` còn "MỘT căn mỗi lượt" (ngược quyết định 2–3 căn, SRS-335 / 340), ví dụ câu mời hoàn chỉnh, kết quả công cụ ngôi thứ nhất "có trả lời em báo lại khách ngay" (bị chép, hứa giờ), xưng hô có ví dụ "Em chào anh ạ" (chép giữa chat, SRS-301), luật một câu hỏi ba lần trong prompt mua; định danh "Bạn là … trợ lý ảo" ở lượt nháp / phí.
-(2) Sửa (chỉ câu chữ prompt, không thêm code soát, không cắt GIONG_VUI / SLANG_NOTES / khối anh Luận): `prompts.build_buyer_chat_system` (đích cuối mời theo khối GIỌNG, một chỗ ghi luật một câu hỏi, câu mời tự đặt chữ, khen điều khách cần — không khen cho thuê / sinh lời, khối tài chính vào trước ranh giới cache); `agent_mua` / `engine` câu chuyển chủ nhà thành dữ kiện "hệ thống tự nhắn, không hứa giờ"; ghi chú mục 4 bản tin + câu chốt sau bản tin không tính vào luật câu mời; `agent_gop.bao_cao` dặn tên đường ngắn; `build_fee_followup_system` đưa danh sách giá trị + khuôn bản tin lên trước ranh giới (sau ranh giới 9.455 → 3.981 ký tự).
+(2) Sửa (chỉ câu chữ prompt, không thêm code soát, không cắt GIONG_VUI / SLANG_NOTES / khối anh Luận): `prompts.build_buyer_chat_system` (đích cuối mời theo khối GIỌNG, một chỗ ghi luật một câu hỏi, câu mời tự đặt chữ, khen điều khách cần — không khen cho thuê / sinh lời, khối tài chính vào trước ranh giới cache); `agent_mua` / `engine` câu chuyển chủ nhà thành dữ kiện "hệ thống tự nhắn, không hứa giờ"; ghi chú mục 4 bản tin + câu chốt sau bản tin không tính vào luật câu mời; `agent_gop.bao_cao` dặn tên đường ngắn; `build_fee_followup_system` đưa danh sách giá trị + khuôn bản tin lên trước ranh giới (sau ranh giới 9.455 → 3.981 ký tự). Đồng bộ docs theo code (chủ dự án 03/11: "đồng bộ code và docs và prompt"): docs/06 bỏ `build_chat_system` đã xoá và "MỘT căn mỗi lượt" → 2–3 căn; docs/13 sơ đồ lời người bán = `agent_gop.viet`; §5.1 thêm vòng công cụ mua.
 (3) Kiểm: CI (chủ dự án dặn không chạy test ở máy); chưa chạy `cham`.
 
 ### SRS-5.1zzzzzzz375 · Một khối giọng vui chung hai phía; phía mua lặp câu mời hẹn / đọc lại địa chỉ, hứa suông vay, báo "chưa có căn" khi khách đổi nhu cầu (03/11/2026)
