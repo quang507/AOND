@@ -138,7 +138,7 @@ from .dia_danh import TraDiaDanh, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tra
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
                   lenh_tra_loi, nhan_nhu_cau, nhan_tu_du_lieu, nhu_cau_cua, tim_sdt)
-from . import agent_ban, agent_boc, agent_mua
+from . import agent_ban, agent_boc, agent_gop, agent_mua
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
@@ -645,6 +645,9 @@ class Conversation:
     # Transient (SRS-5.1zzzzzzz80): số lần khách lờ từng ô (bot hỏi, lượt sau ô vẫn trống) — đủ 2 thì để sau bản nháp.
     lo: dict = field(default_factory=dict)
     cum_vua_hoi: list = field(default_factory=list)   # các ô bot hỏi gộp ở lượt trả lời gần nhất
+    # Transient (SRS-5.1zzzzzzz371): cuộc hội thoại công cụ của vòng agent gộp — bước 1 (ghi) cất ở `_lap_ke_hoach`, bước 2 (viết lời) dùng
+    # tiếp ở chỗ viết lời người bán; mỗi lượt `_handle` làm mới. Không lưu.
+    vong_gop: Any = None
 
     def __post_init__(self) -> None:
         if not self.listings:
@@ -2841,6 +2844,7 @@ class Engine:
         now = now if now is not None else time.time()
         conv = self.conversation(user_key)
         conv.do_luot = {}
+        conv.vong_gop = None
         so_token.bat_dau_luot()   # đếm token của lượt này cho tin phụ chế độ test (SRS-5.1zzzzzzz130)
 
         clean_text = text.strip()
@@ -2877,7 +2881,7 @@ class Engine:
 
         # Lượt AI đọc tin khách MỘT lần, trước mọi nhánh (SRS-5.1zzzzzzz55): xác nhận xoá, câu hỏi dự án, xin bản vẽ đều đọc từ
         # đây thay cho bộ dò từ khoá. Thao tác rổ hàng chỉ áp ở bước 1, sau khi đã chắc tin này là sửa rổ hàng.
-        ke_hoach = self._lap_ke_hoach(conv)
+        ke_hoach = self._lap_ke_hoach(conv, gop=True)
         tl = conv.y_luot.get("tra_loi_khach_hoi")
         if tl and getattr(self._convstore, "tra_loi_cau_hoi", None) is not None:
             conv.y_luot["da_tra_loi_khach"] = self._convstore.tra_loi_cau_hoi(tl["id"], tl["tra_loi"])
@@ -3405,7 +3409,7 @@ class Engine:
         # NOT clamped by a token cap (Vietnamese is token-dense; a tight cap hard-cuts mid-word).
         # SRS-5.1zzzzzzz311 (kế hoạch bước 4): lượt DỄ — thu thập bằng phiếu lượt, không tra dữ liệu, không kho dự án, lượt không có việc gì
         # khác (y_luot chỉ còn khoá nội bộ `_`), không khối hỏi về → model rẻ (cả lần soát gọi lại của lượt). Lượt còn lại giữ model chat.
-        m_de = _model_luot_de() if (luot_de and not dung_agent_ban and not (project is not None and project.units)
+        m_de = _model_luot_de() if (luot_de and not dung_agent_ban and conv.vong_gop is None and not (project is not None and project.units)
                                     and conv.hoi_ve_luot is None and all(k.startswith("_") for k in conv.y_luot)) else None
         dau_de = MODEL_CHAT_LUOT.set(m_de) if m_de else None
         viec = self._ghi_viec(conv, lambda: TrangThaiLuot(
@@ -3423,7 +3427,10 @@ class Engine:
         xin_sao = xin_sao and "xin_sao" not in bo
         try:
             with _do(conv, "tra_loi"):
-                if dung_agent_ban:
+                if conv.vong_gop is not None:   # SRS-5.1zzzzzzz371: bước 2 của vòng agent gộp — cùng cuộc hội thoại công cụ với bước ghi
+                    reply, da_tra = agent_gop.viet(self, conv, project, system, captured, REPLY_MAX_TOKENS)
+                    system += da_tra
+                elif dung_agent_ban:
                     reply, da_tra = agent_ban.chay(self, conv, project, system, REPLY_MAX_TOKENS)
                     system += da_tra   # lần soát / gọi lại của lượt viết với đúng dữ liệu model vừa tra
                 elif project is not None and project.units:
@@ -4910,9 +4917,10 @@ class Engine:
     def _plan_and_apply(self, conv: Conversation) -> tuple[list[str], list[tuple]]:
         return self._ap_dung_ke_hoach(conv, self._lap_ke_hoach(conv))
 
-    def _lap_ke_hoach(self, conv: Conversation) -> dict:
+    def _lap_ke_hoach(self, conv: Conversation, gop: bool = False) -> dict:
         """Lượt AI lập thao tác: đọc tin khách theo nghĩa, ghi các thuộc tính hội thoại (vai, ý mua / bán, duyệt, hỏi về,
-        xưng hô, y_luot) và TRẢ kế hoạch — chưa đụng rổ hàng (`_ap_dung_ke_hoach`)."""
+        xưng hô, y_luot) và TRẢ kế hoạch — chưa đụng rổ hàng (`_ap_dung_ke_hoach`). `gop`: lượt chat thường (`_handle`) — người bán đi vòng
+        agent gộp (SRS-5.1zzzzzzz371) khi công tắc bật; đường ảnh / tệp giữ form."""
         # With a BASKET (>1 căn) the seller acts on ONE căn per message, but a reference may span
         # turns ("...phải nó không?" → "nó đó em") — so read from just AFTER the PREVIOUS user
         # turn: the latest user line plus the bot's question(s) right before it (confirm context),
@@ -4961,7 +4969,12 @@ class Engine:
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
         conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
         plan = None
-        if ban_gon and agent_boc.bat(conv.user_key, _la_id_thu(conv.user_key)):
+        if gop and ban_gon and agent_gop.bat(conv.user_key, _la_id_thu(conv.user_key)):
+            # SRS-5.1zzzzzzz371: MỘT vòng agent Sonnet cho cả đọc ý / ghi và viết lời — bước 1 ở đây (công cụ ghi qua cổng code), bước 2 ở chỗ
+            # viết lời. Vòng hỏng → form JSON (Haiku) dưới làm dự phòng.
+            with _do(conv, "lap_thao_tac"):
+                plan = agent_gop.mo(self, conv, system.split(RANH_GIOI_CACHE, 1)[1])
+        if plan is None and ban_gon and agent_boc.bat(conv.user_key, _la_id_thu(conv.user_key)):
             # SRS-5.1zzzzzzz310 (kế hoạch bước 3): người bán đọc bằng agent gọi công cụ ghi (code kiểm từng lần gọi); agent hỏng → form dưới.
             with _do(conv, "lap_thao_tac"):
                 plan = agent_boc.lap(self, conv, system, src, operations_schema_ban())
@@ -4977,6 +4990,7 @@ class Engine:
         if ban_gon and plan.get("user_intent") == "buy":
             # SRS-5.1zzzzzzz303: form bán gọn không có ô việc khách mua — người bán chuyển sang hỏi mua thì đọc lại cả lượt bằng form đầy đủ.
             log.warning("Kế hoạch: form bán gọn đọc ra ý mua — đọc lại bằng form đầy đủ")
+            conv.vong_gop = None   # sang vai mua: lượt viết lời đi đường phía mua
             system = OPERATIONS_SYSTEM + system[len(OPERATIONS_SYSTEM_BAN):]
             with _do(conv, "lap_thao_tac"):
                 plan = self._provider.extract(system, src, operations_schema())

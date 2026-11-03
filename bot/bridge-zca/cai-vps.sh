@@ -162,6 +162,9 @@ if [ -d /opt/aond_core/src/aioi ]; then
   # "thu" = chỉ ID thử; "bat" = mọi khách; "tat" = form cũ.
   AGENT_BOC="thu"
   MODEL_AGENT_BOC=""   # model của vòng agent bóc; trống = MODEL_CHAT
+  # SRS-5.1zzzzzzz371 (chủ dự án 03/11/2026 "gộp đi"): lượt người bán là MỘT vòng agent MODEL_CHAT — ghi (công cụ qua cổng code) rồi viết lời
+  # trong cùng cuộc hội thoại (agent_gop.py); form JSON MODEL_BOC chỉ còn dự phòng. "thu" = chỉ ID thử; "bat" = mọi người bán; "tat" = đường cũ.
+  AGENT_GOP="thu"
   # SRS-5.1zzzzzzz311 (kế hoạch bước 4): model viết lời cho LƯỢT DỄ của người bán (thu thập bằng phiếu lượt, không tra dữ liệu, không việc
   # khác); "tat" = mọi lượt dùng MODEL_CHAT.
   MODEL_LUOT_DE="tat"
@@ -170,11 +173,11 @@ if [ -d /opt/aond_core/src/aioi ]; then
   MODEL_GEMINI="gemini-3.5-flash,gemini-3.1-flash-lite"
   if [ -f /opt/aond_core/.env ]; then
     umask 077
-    grep -vE '^AIOI_(CHAT_MODEL(_THU)?|EXTRACT_MODEL|CONG_CU_GUI_KHACH|DONG_TRICH_XUAT|AGENT_MUA|AGENT_BAN|PHIEU_LUOT|AGENT_BOC(_MODEL)?|MODEL_LUOT_DE|FORM_MUA_GON|FORM_BAN_GON|SOAT_GON)=|^GEMINI_MODEL=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
-    printf 'AIOI_CHAT_MODEL=%s\nAIOI_CHAT_MODEL_THU=%s\nAIOI_EXTRACT_MODEL=%s\nAIOI_CONG_CU_GUI_KHACH=%s\nAIOI_DONG_TRICH_XUAT=%s\nAIOI_AGENT_BOC=%s\nAIOI_AGENT_BOC_MODEL=%s\nAIOI_MODEL_LUOT_DE=%s\nGEMINI_MODEL=%s\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$MODEL_BOC" "$CONG_CU_GUI_KHACH" "$DONG_TRICH_XUAT" "$AGENT_BOC" "$MODEL_AGENT_BOC" "$MODEL_LUOT_DE" "$MODEL_GEMINI" >> /opt/aond_core/.env.moi
+    grep -vE '^AIOI_(CHAT_MODEL(_THU)?|EXTRACT_MODEL|CONG_CU_GUI_KHACH|DONG_TRICH_XUAT|AGENT_MUA|AGENT_BAN|PHIEU_LUOT|AGENT_BOC(_MODEL)?|AGENT_GOP|MODEL_LUOT_DE|FORM_MUA_GON|FORM_BAN_GON|SOAT_GON)=|^GEMINI_MODEL=' /opt/aond_core/.env > /opt/aond_core/.env.moi || true
+    printf 'AIOI_CHAT_MODEL=%s\nAIOI_CHAT_MODEL_THU=%s\nAIOI_EXTRACT_MODEL=%s\nAIOI_CONG_CU_GUI_KHACH=%s\nAIOI_DONG_TRICH_XUAT=%s\nAIOI_AGENT_BOC=%s\nAIOI_AGENT_BOC_MODEL=%s\nAIOI_AGENT_GOP=%s\nAIOI_MODEL_LUOT_DE=%s\nGEMINI_MODEL=%s\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$MODEL_BOC" "$CONG_CU_GUI_KHACH" "$DONG_TRICH_XUAT" "$AGENT_BOC" "$MODEL_AGENT_BOC" "$AGENT_GOP" "$MODEL_LUOT_DE" "$MODEL_GEMINI" >> /opt/aond_core/.env.moi
     chown --reference=/opt/aond_core/.env /opt/aond_core/.env.moi; chmod 600 /opt/aond_core/.env.moi
     mv /opt/aond_core/.env.moi /opt/aond_core/.env
-    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT, ID thử = $MODEL_CHAT_THU, bóc tách = $MODEL_BOC, công cụ gửi khách = $CONG_CU_GUI_KHACH, dòng trích xuất = $DONG_TRICH_XUAT, agent bóc = $AGENT_BOC ($MODEL_AGENT_BOC), lượt dễ = $MODEL_LUOT_DE, Gemini dự phòng = $MODEL_GEMINI"
+    xong "AIOI_CHAT_MODEL trong .env lõi = $MODEL_CHAT, ID thử = $MODEL_CHAT_THU, bóc tách = $MODEL_BOC, công cụ gửi khách = $CONG_CU_GUI_KHACH, dòng trích xuất = $DONG_TRICH_XUAT, agent bóc = $AGENT_BOC ($MODEL_AGENT_BOC), agent gộp = $AGENT_GOP, lượt dễ = $MODEL_LUOT_DE, Gemini dự phòng = $MODEL_GEMINI"
   fi
   systemctl restart aond-core
   for i in $(seq 1 60); do curl -fsS -m 3 http://127.0.0.1:8000/health >/dev/null 2>&1 && break; sleep 1; done

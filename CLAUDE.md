@@ -82,6 +82,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
   | `MODEL_BOC` | `claude-haiku-5-5` | model bóc tách (`AIOI_EXTRACT_MODEL`); sổ `bot_usage_model` xác nhận production chạy model này — SRS-316 |
   | `MODEL_CHAT_THU` | `claude-sonnet-5-5` | model của ID thử (`ban-thu-*`); `gemini` = gọi thẳng Gemini — SRS-239 / 243 |
   | `AGENT_BOC` | `thu` | đọc ý người bán bằng agent gọi công cụ ghi (`agent_boc.py`) thay form JSON; chưa hơn form nên chỉ ID thử — SRS-310 |
+  | `AGENT_GOP` | `thu` | lượt người bán = MỘT vòng agent Sonnet: ghi bằng công cụ (qua cổng code) rồi viết lời cùng cuộc hội thoại (`agent_gop.py`); form Haiku chỉ dự phòng. Chưa hơn đường cũ (tiền ~3×) nên chỉ ID thử — SRS-371 |
   | `MODEL_LUOT_DE` | `tat` | model viết lời cho lượt dễ của người bán (thu thập, không tra dữ liệu, không việc khác) — SRS-311 |
   | `CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246. Ngoại lệ quy ước: code đọc `!= "tat"`, trống = BẬT |
   | `DONG_TRICH_XUAT` | `bat` | tin phụ "$$$$$ Đã trích xuất" sau mỗi lượt, MỌI cuộc chat (giai đoạn test; chạy thật đổi `tat`) — SRS-252 |

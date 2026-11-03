@@ -1,6 +1,8 @@
 """30/10/2026 (SRS-5.1zzzzzzz310, kế hoạch bước 3). Người bán đọc ý bằng agent gọi công cụ ghi do code viết sẵn; code kiểm từng lần gọi.
 Ca gốc bộ chấm `hai_can_da_ban`: rổ hai căn, khách "căn đó anh bán được rồi" → form đánh dấu căn đang nói là đã bán, bot chúc mừng nhầm căn.
 Ca rổ hai căn đỏ khi gỡ cổng `trich_dan_can` ở `agent_boc._chay_cong_cu`."""
+import pytest
+
 from aioi.config import Settings
 from aioi.engine import Engine
 from aioi.llm.base import ToolCall, ToolTurn
@@ -8,6 +10,9 @@ from aioi.llm.mock import MockProvider
 from aioi.prompts import operations_schema_ban
 from aioi import agent_boc
 from tests.test_hai_can_mot_tin_308 import TIN, _Ai
+
+# Đo đường agent bóc (SRS-5.1zzzzzzz310) — từ SRS-5.1zzzzzzz371 người bán đi vòng agent gộp; agent bóc chỉ chạy khi gộp tắt.
+pytestmark = pytest.mark.nhanh_cu(AIOI_AGENT_GOP="tat")
 
 
 class _AiAgent(_Ai):
