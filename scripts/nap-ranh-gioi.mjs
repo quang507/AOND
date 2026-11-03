@@ -141,7 +141,7 @@ const buoc = Math.max(1, Math.floor(mau.length / 20));
 let dung = 0, n = 0;
 for (let i = 0; i < mau.length && n < 20; i += buoc, n++) {
   const w = mau[i];
-  const ra = await rest("rpc/phuong_tai_diem", { method: "POST", body: JSON.stringify({ p_lat: Number(w.lat), p_lng: Number(w.lng) }) });
+  const ra = await rest("rpc/phuong_tai_diem", { method: "POST", body: JSON.stringify({ lat: Number(w.lat), lng: Number(w.lng) }) });
   const khop = ra === w.ten_day_du;
   if (khop) dung++;
   console.log(`  ${khop ? "✓" : "✗"} (${w.lat}, ${w.lng}) ${w.ten_day_du} → ${ra ?? "null"}`);
