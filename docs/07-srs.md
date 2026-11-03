@@ -787,6 +787,10 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz372 · Nguồn sự thật là `main`: không soát PR đóng / nhánh cũ (03/11/2026)
+Chủ dự án 03/11 (nguyên văn): "xóa luôn PR chứ chat audit cứ dò lại rối quá", "merg đi còn 1 main thôi". GitHub không cho xoá PR (chỉ đóng); 36 nhánh cũ đã soát — nhánh có PR gộp thì code đã ở `main`, nhánh PR đóng (#282 #283 #284 #287 #288) là bản không chọn, nhánh #278 / #279 đã vào `main` qua #277.
+Quyết định: CLAUDE.md §4.11 — phiên sau chỉ đọc `main`, không audit / gộp lại PR đóng hay nhánh cũ trừ khi chủ dự án nêu số PR; gộp xong xoá nhánh. Phiên agent không xoá được nhánh (quyền push chỉ nhánh được giao, 403) — chủ dự án xoá trên GitHub và bật tự xoá nhánh sau gộp.
+
 ### SRS-5.1zzzzzzz371 · Một vòng agent Sonnet cho lượt người bán: ghi bằng công cụ qua cổng code rồi viết lời cùng cuộc hội thoại (03/11/2026)
 Quyết định chủ dự án 03/11 (nguyên văn): "AI đọc lời của khách làm 2 việc cùng lúc, bóc tách ra lưu db và trả lời lại khách. quá trình thu thập diễn ra song song với việc trả lời chăm sóc khách hàng" + "gộp đi"; khung "Suy nghĩ → Chọn công cụ → Thực thi → Đánh giá": Bộ não (Sonnet) + Hồ sơ định danh (system prompt) + Bộ công cụ (Tool Use, hàm backend mô tả bằng JSON); kiến thức nạp bằng công cụ tra cứu (RAG), không nhồi vào prompt. Không công cụ chạy code / terminal; không cắt chữ GIONG_VUI / SLANG_NOTES / luật cố định.
 (1) Lớp lỗi: hai model, hai prompt mỗi lượt (Haiku form JSON 45.390 chữ → Sonnet viết lời) — lời không biết ô nào cổng đã bỏ. (2) Sửa: `agent_gop.py` — bước 1 system = `prompts.phieu_co_dinh` nguyên vẹn + luật ghi chung, công cụ ghi (thân `agent_gop._chay_ghi`) / đọc (`agent_ban`) / `tra_luat_o` (luật form chia đúng một chỗ theo `BANG_LUAT`, nạp sẵn luật ô bot vừa hỏi); engine áp qua cổng cũ; bước 2 cùng hội thoại, kết quả công cụ = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt). Form Haiku chỉ dự phòng. Cùng lớp: phía mua để đợt sau.
@@ -835,11 +839,6 @@ Ca gốc (chat thật): "mặt tiền 6m dài 15 nở hậu 3" → bản tin "đ
 Ca gốc (chat thật): "anh cần bán căn nhà cấp 4 ở nhà bè" → bot kể "Ngô Bệ (Quận Tân Bình), Nhà Đồ".
 (1) Lớp lỗi: khớp gần tên đường không biết chữ khách là tên địa bàn, không lọc theo khu. Sửa: `TraDiaDanh._duong` — chữ trùng đúng tên địa bàn (`_la_ten_dia_ban`) thì không khớp gần; đã biết quận thì bỏ ứng viên quận khác.
 (2) Cùng lớp: mọi đường khớp gần đều qua `_duong`. Còn: RPC `tim_duong` không lọc quận. (3) Kiểm: `test_goi_y_duong_trong_khu_362.py` — tắt từng bước lọc: đỏ.
-
-### SRS-5.1zzzzzzz361 · `tim_nha` ưu tiên uy tín người rao: cùng mức khớp thì hạng cao trước (02/11/2026)
-Chủ dự án 02/11: "quyền lợi theo hạng hạng cao thì cung cấp thông tin uy tín hơn" (khuôn anh Luận: Đồng "xếp cuối luồng ưu tiên").
-(1) Lớp lỗi: hạng người rao không đi vào gợi ý căn phía mua. Sửa: migration `20261103a` — `hang_so_nguoi_ban()`, `tim_nha` xếp mức khớp ↓, hạng ↓, `updated_at` ↓; hạng không ra kết quả; CTE `materialized` (không có: 9,7 s → có: 79 ms).
-(2) Cùng lớp: `bao_can_moi` gửi từng căn khớp, web cố ý ẩn hạng. (3) Kiểm: `bot/tests/tim-nha-uy-tin.sql` — bản cũ 3/5 HONG, có migration 5/5 OK.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
