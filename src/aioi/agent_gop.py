@@ -383,8 +383,7 @@ def bao_cao(engine: Any, conv: Any, system: str, captured: list[str]) -> str:
     dau = NHAN_VIEC_LUOT + ":"
     viec = (system.rsplit(dau, 1)[1].strip().split("\n\n", 1)[0] if dau in system
             else "theo các khối ưu tiên / dữ kiện hệ thống trong lời nhắc.")
-    # ban-thu-ban 03/11 (kịch bản đất): việc lượt "hỏi giá" mà lời hỏi "xây tối đa mấy tầng" — danh sách ô thiếu đứng ngang việc lượt thì model tự
-    # chọn ô khác. Việc lượt đứng ĐẦU; ô thiếu chỉ là dữ kiện để không nói "đủ rồi", không phải việc để hỏi.
+    # Việc lượt đứng ĐẦU báo cáo; ô thiếu chỉ là dữ kiện (không phải việc để hỏi) — một câu hỏi mỗi lượt do engine chọn (`viec_luot`).
     dong.insert(1, f"- {dau} {viec} (lượt này CHỈ làm đúng việc này — câu hỏi duy nhất nếu có là câu việc này giao)")
     thieu = [_nhan(o, conv.prop) for o in conv.prop.missing_fields()]
     if thieu:
