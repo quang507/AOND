@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-03 00:32 (giờ VN)
+-- Sinh lúc: 2026-11-03 11:10 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -1147,7 +1147,6 @@ create index if not exists dieu_luat_nhung_hnsw ON public.dieu_luat USING hnsw (
 create index if not exists duong_ban_do ON public.duong USING btree (lat, lng) INCLUDE (ten, phuong, quan_cu, loai) WHERE (loai = ANY (ARRAY['duong'::text, 'so'::text]));
 create index if not exists duong_hem ON public.duong USING btree (upper(so_hem), bo_dau(duong_me)) WHERE (loai = 'hem'::text);
 create index if not exists duong_lat_lng ON public.duong USING btree (lat, lng);
-create index if not exists duong_nhung_hnsw ON public.duong USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists duong_ten_gon ON public.duong USING btree (length(ten_khong_dau)) INCLUDE (ten_khong_dau, ten, loai, quan_cu, phuong, tinh) WHERE (loai <> 'hem'::text);
 create index if not exists duong_ten_khong_dau_idx ON public.duong USING btree (ten_khong_dau);
 create index if not exists giao_lo_a_idx ON public.giao_lo USING btree (a_khong_dau);
@@ -1176,7 +1175,6 @@ create index if not exists media_cleanup_can_lam_idx ON public.media_cleanup_que
 create index if not exists messages_conv_seq_idx ON public.messages USING btree (conversation_id, seq DESC);
 create index if not exists messages_conv_time_idx ON public.messages USING btree (conversation_id, created_at);
 create index if not exists phuong_cu_nhung_hnsw ON public.phuong_cu USING hnsw (nhung extensions.halfvec_cosine_ops);
-create index if not exists projects_nhung_hnsw ON public.projects USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists projects_priority_idx ON public.projects USING btree (priority, district);
 create index if not exists property_events_at_idx ON public.property_events USING btree (at DESC);
 create index if not exists property_events_buyer_idx ON public.property_events USING btree (buyer_id);
@@ -4393,8 +4391,9 @@ begin
     union all
     (select 'phuong_cu', p.id::text, p.nhung_md5 from public.phuong_cu p where p.nhung is null limit 50)
     union all
-    (select 'duong', d.id::text, d.nhung_md5 from public.duong d where d.nhung is null
-      order by (d.loai = 'hem'), (d.tinh <> 'TP.HCM') limit 100)
+    -- 20261103c (SRS-5.1zzzzzzz362): chỉ nhúng TÊN ĐƯỜNG; hẻm / đường số tra bằng chữ (tim_duong / tim_dia_danh), không nhúng.
+    (select 'duong', d.id::text, d.nhung_md5 from public.duong d where d.nhung is null and d.loai = 'duong'
+      order by (d.tinh <> 'TP.HCM') limit 100)
   loop
     exit when v_gui >= v_tran;
     v_txt := public.van_ban_dia_danh(r.bang, r.khoa);
@@ -4894,7 +4893,7 @@ end
 $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.phuong_tai_diem(p_lat double precision, p_lng double precision)
+CREATE OR REPLACE FUNCTION public.phuong_tai_diem(lat double precision, lng double precision)
  RETURNS text
  LANGUAGE sql
  STABLE SECURITY DEFINER
@@ -4903,10 +4902,10 @@ AS $function$
   select w.ten_day_du
     from public.ranh_gioi_phuong r
     join public.wards w on w.ten = r.ten
-   where p_lat is not null and p_lng is not null
-     and p_lat between r.min_lat and r.max_lat
-     and p_lng between r.min_lng and r.max_lng
-     and public.diem_trong_vong(p_lat, p_lng, r.vong)
+   where phuong_tai_diem.lat is not null and phuong_tai_diem.lng is not null
+     and phuong_tai_diem.lat between r.min_lat and r.max_lat
+     and phuong_tai_diem.lng between r.min_lng and r.max_lng
+     and public.diem_trong_vong(phuong_tai_diem.lat, phuong_tai_diem.lng, r.vong)
    order by (r.max_lat - r.min_lat) * (r.max_lng - r.min_lng)   -- hai đa giác chồng (dữ liệu lệch) → lấy phường nhỏ hơn
    limit 1
 $function$
@@ -7426,8 +7425,8 @@ grant execute on function public.o_boc_tach(p jsonb) to service_role;
 revoke all on function public.parse_vnd(p text) from public, anon, authenticated;
 grant execute on function public.parse_vnd(p text) to authenticated;
 grant execute on function public.parse_vnd(p text) to service_role;
-revoke all on function public.phuong_tai_diem(p_lat double precision, p_lng double precision) from public, anon, authenticated;
-grant execute on function public.phuong_tai_diem(p_lat double precision, p_lng double precision) to service_role;
+revoke all on function public.phuong_tai_diem(lat double precision, lng double precision) from public, anon, authenticated;
+grant execute on function public.phuong_tai_diem(lat double precision, lng double precision) to service_role;
 revoke all on function public.quota_tieu_hao() from public, anon, authenticated;
 grant execute on function public.quota_tieu_hao() to authenticated;
 grant execute on function public.quota_tieu_hao() to service_role;
