@@ -1,0 +1,156 @@
+# Bộ chấm offline (`bun run cham` = scripts/cham-kich-ban.py) chạy trên Actions — SRS-5.1zzzzzzz377.
+# Chủ dự án 03/11/2026: "Chạy cham trên GitHub Actions trước mỗi lần gộp đổi prompt" — mỗi PR đổi lõi bot có bảng điểm
+# trước (diem_nen.json của main) – sau (PR) mà không phải chạy trên máy chủ dự án.
+#
+# cham gọi model bằng `claude -p` (Claude Code CLI, quota gói Claude Code — SRS-300), xác thực bằng secret
+# CLAUDE_CODE_OAUTH_TOKEN (chủ dự án tạo bằng `claude setup-token`). Thiếu secret (chưa thêm, hoặc PR từ fork) →
+# job ghi "CHƯA KIỂM ĐƯỢC" vào summary và thoát 0: không đỏ PR, nhưng cũng KHÔNG phải "đạt".
+#
+# Log công khai (repo PUBLIC): kịch bản trong tests/kich_ban/ là hội thoại tạo sẵn, không có SĐT / tên thật; log lõi
+# từng lượt không in (cham tắt propagate khi không đặt CHAM_LOG). Không in token, không bật CHAM_LOG ở đây.
+# Điểm tụt KHÔNG làm đỏ: đây là bảng để người gộp đọc, không phải cổng chặn (model dao động giữa các lần chạy).
+name: Chấm kịch bản
+
+on:
+  workflow_dispatch:
+    inputs:
+      so_lan:
+        description: "Số lần chạy cả bộ (1–3; SRS-304 khuyên ≥ 2 khi so điểm)"
+        type: number
+        default: 1
+      chi:
+        description: "Chỉ chạy các id kịch bản, ngăn bằng dấu phẩy (trống = cả bộ) — cờ --chi"
+        type: string
+        default: ""
+  pull_request:
+    paths:
+      - "src/aioi/**"
+      - "tests/kich_ban/**"
+      - "scripts/cham-kich-ban.py"
+      - ".github/workflows/cham.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cham-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cham:
+    name: Chấm kịch bản — bảng điểm trước / sau
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      # Phiên bản CLI ghim (ra 19/10/2026, ≥ 2 tuần trước khi thêm workflow). Nâng thì đọc CHANGELOG: cham dùng
+      # --json-schema, --system-prompt-file, --tools "", --setting-sources "", --no-session-persistence.
+      CLAUDE_CODE_VERSION: "2.1.304"
+      CO_KHOA: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+    steps:
+      - name: Có secret CLAUDE_CODE_OAUTH_TOKEN không
+        id: khoa
+        run: |
+          if [ "$CO_KHOA" != "true" ]; then
+            {
+              echo "## Chấm kịch bản"
+              echo
+              echo "**CHƯA KIỂM ĐƯỢC: thiếu secret CLAUDE_CODE_OAUTH_TOKEN**"
+              echo
+              echo "Chủ dự án chạy \`claude setup-token\` trên máy mình, rồi thêm token vào repo: Settings → Secrets and variables → Actions → New repository secret, tên \`CLAUDE_CODE_OAUTH_TOKEN\`. PR từ fork không đọc được secret nên cũng rơi vào đây."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::CHƯA KIỂM ĐƯỢC: thiếu secret CLAUDE_CODE_OAUTH_TOKEN"
+            echo "co=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "co=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.khoa.outputs.co == '1'
+      - uses: actions/setup-python@v5
+        if: steps.khoa.outputs.co == '1'
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        if: steps.khoa.outputs.co == '1'
+        with:
+          node-version: '22'
+      - name: Cài lõi Python + Claude Code CLI
+        if: steps.khoa.outputs.co == '1'
+        run: |
+          python -m pip install -q -e ".[dev]" httpx
+          npm i -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+          claude --version
+
+      - name: claude -p xác thực được không
+        if: steps.khoa.outputs.co == '1'
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          # Một lần gọi nhỏ nhất (Haiku, một lượt) — token hỏng thì báo ngay thay vì 51 kịch bản ra "[LỖI …]".
+          set +e
+          ra=$(echo "Trả lời đúng một chữ: ok" | claude -p --model claude-haiku-5-5 --output-format json --max-turns 1 \
+            --tools "" --strict-mcp-config --setting-sources "" --no-session-persistence 2>/dev/null)
+          ma=$?
+          set -e
+          if [ $ma -ne 0 ] || ! printf '%s' "$ra" | python -c "import json,sys; sys.exit(1 if json.load(sys.stdin).get('is_error') else 0)"; then
+            {
+              echo "## Chấm kịch bản"
+              echo
+              echo "**CHƯA KIỂM ĐƯỢC: \`claude -p\` không chạy được với secret CLAUDE_CODE_OAUTH_TOKEN** (mã $ma) — token hết hạn / sai? Tạo lại bằng \`claude setup-token\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::claude -p không xác thực được bằng CLAUDE_CODE_OAUTH_TOKEN"
+            exit 1
+          fi
+
+      - name: Điểm nền của main (để so trước / sau)
+        if: steps.khoa.outputs.co == '1'
+        run: |
+          # PR: so với diem_nen.json trên main (PR tự ghi lại nền bằng --nen vẫn so được với bản cũ). Không lấy được → cham
+          # tự so với tests/kich_ban/diem_nen.json của chính nhánh.
+          if git fetch -q --depth=1 origin main && git show FETCH_HEAD:tests/kich_ban/diem_nen.json > "$RUNNER_TEMP/nen-main.json" 2>/dev/null; then
+            echo "SO_VOI=$RUNNER_TEMP/nen-main.json" >> "$GITHUB_ENV"
+          fi
+
+      - name: Chạy bộ chấm
+        if: steps.khoa.outputs.co == '1'
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          SO_LAN: ${{ inputs.so_lan || 1 }}
+          CHI: ${{ inputs.chi || '' }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          case "$SO_LAN" in 1|2|3) ;; *) echo "::error::so_lan phải là 1–3 (nhận: $SO_LAN)"; exit 1 ;; esac
+          if [ -n "$CHI" ] && ! printf '%s' "$CHI" | grep -Eq '^[a-z0-9_]+(,[a-z0-9_]+)*$'; then
+            echo "::error::chi chỉ nhận id kịch bản [a-z0-9_] ngăn bằng dấu phẩy"; exit 1
+          fi
+          co=()
+          [ -n "$CHI" ] && co+=(--chi "$CHI")
+          [ -n "${SO_VOI:-}" ] && co+=(--so-voi "$SO_VOI")
+          nen="tests/kich_ban/diem_nen.json của nhánh"
+          [ -n "${SO_VOI:-}" ] && nen="tests/kich_ban/diem_nen.json của main"
+          {
+            echo "## Chấm kịch bản — $SO_LAN lần${CHI:+ · chỉ $CHI}"
+            echo
+            echo "So với: $nen. Cột \"(trước …)\" là điểm nền; điểm tụt không làm đỏ job — model dao động, đọc ≥ 2 lần trước khi kết luận (SRS-304)."
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          for i in $(seq 1 "$SO_LAN"); do
+            python scripts/cham-kich-ban.py "${co[@]}" --ra "$RUNNER_TEMP/cham-$i.json" | tee "$RUNNER_TEMP/cham-$i.txt"
+            tong=$(grep -m1 '^== TỔNG' "$RUNNER_TEMP/cham-$i.txt" || echo "== TỔNG (không thấy dòng tổng)")
+            moi=$(grep -m1 '^== MỖI LƯỢT' "$RUNNER_TEMP/cham-$i.txt" || true)
+            {
+              echo "### Lần $i"
+              echo
+              echo "\`${tong#== }\`"
+              [ -n "$moi" ] && echo && echo "\`${moi#== }\`"
+              echo
+              echo "<details><summary>Bảng đủ (từng kịch bản, phép trượt, lưới soát, cỡ prompt)</summary>"
+              echo
+              echo '```text'
+              cat "$RUNNER_TEMP/cham-$i.txt"
+              echo '```'
+              echo
+              echo "</details>"
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          done
