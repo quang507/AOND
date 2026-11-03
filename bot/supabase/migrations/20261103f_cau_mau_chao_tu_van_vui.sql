@@ -1,4 +1,4 @@
--- 20261103e_cau_mau_chao_tu_van_vui — SRS-5.1zzzzzzz375 (chủ dự án 03/11/2026: "câu chào nên đổi sao hay hơn", giọng "tự nhiên vui vẻ nhanh nhẹn").
+-- 20261103f_cau_mau_chao_tu_van_vui — SRS-5.1zzzzzzz375 (chủ dự án 03/11/2026: "câu chào nên đổi sao hay hơn", giọng "tự nhiên vui vẻ nhanh nhẹn").
 -- Lời chào số tư vấn ngắn, vui, hỏi gộp mua / thuê + khu + tầm giá để lọc căn được ngay. Cùng cách 20261028o: dòng chưa ai sửa (cau = mac_dinh)
 -- chuyển sang câu mới; dòng chủ dự án đã sửa tay ở CRM giữ nguyên.
 insert into public.cau_mau (khoa, cau, mac_dinh, dung_o, nguon, thu_tu) values
