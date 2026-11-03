@@ -57,6 +57,7 @@ Tài liệu gốc 2024 không còn trong repo (OPEN-48). Nguồn sự thật: b�
 8. **Mỗi lần sửa lỗi trả lời ba câu** trong mục docs/07 đó (01/10/2026): (1) *lớp lỗi* — cơ chế nào cho lỗi lọt; (2) *chỗ khác cùng lớp* — đã soát, sửa / còn; (3) *bài kiểm đỏ khi tắt bản sửa*, kèm ít nhất một cách nói mới. Lỗi kiểu "máy đoán ý bằng từ khoá" thì KHÔNG thêm từ vào regex — đưa quyết định sang AI (đọc theo nghĩa, code kiểm cụm trích), từ khoá chỉ là lưới đỡ.
 9. Thêm ghi chú vào file này chỉ khi đó là LUẬT ĐANG ÁP mà phiên sau dễ làm sai; một dòng, kèm mã SRS. Chi tiết để ở docs/07.
 10. **Mục SRS ngắn**: tối đa ~5 dòng (ca gốc · lớp lỗi · sửa · kiểm). `docs/07-srs.md` chỉ giữ 10 mục mới nhất — thêm mục mới thì chuyển mục cũ nhất sang `docs/07-srs-luu-tru.md`.
+11. **Nguồn sự thật là nhánh `main`** (chủ dự án 03/11/2026, SRS-372): PR đã đóng và nhánh cũ KHÔNG soát, không audit, không gộp lại, không trích làm căn cứ — trừ khi chủ dự án nêu đúng số PR. Gộp xong thì xoá nhánh (GitHub tự xoá: Settings → "Automatically delete head branches").
 
 ## 5. Ranh giới bảo mật — TUYỆT ĐỐI
 
