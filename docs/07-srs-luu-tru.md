@@ -2,6 +2,209 @@
 
 Tệp LƯU TRỮ, chỉ tra cứu — không thêm mục mới vào đây. Tách khỏi `docs/07-srs.md` ngày 30/10/2026 (SRS-5.1zzzzzzz305; đợt 2 cùng ngày chuyển tiếp các mục 26–30/10, `docs/07` chỉ giữ 10 mục mới nhất, chủ dự án: "xóa bớt srs" → chọn chuyển sang lưu trữ, không xoá). Mã SRS giữ nguyên để code / test / docs trích vẫn tra được. Mục ở `docs/07-srs.md` mới hơn và thắng mục ở đây; nhiều mục dưới đây nói về phần TypeScript đã gỡ (28/10/2026).
 
+## Đặc tả thời TypeScript (chuyển từ docs/07 §5 ngày 02/11/2026 — edge function `chat-reply` / `nudge` đã gỡ)
+
+### SRS-5.1 · Chu trình `chat-reply` v48
+
+`[nguồn: bot/supabase/functions/chat-reply/index.ts]`
+
+```text
+1. Cổng 1: bí mật (service key | x-bridge-secret); nạp bot_prompts + trần lượt, nhớ tạm 60 s (FR-171 h).
+   mark_sent? → ghi inbound_ledger, return.  human_note? → nhường sân 30' (FR-141), return
+2. Sổ inbound: claim_inbound(msg_id) → in_flight/completed thì trả lại reply đã lưu (FR-162)
+3. Chuẩn hoá: tKD = boDau(text); mọi cổng regex khớp CẢ có dấu lẫn không dấu (FR-161)
+4. Cổng 2: bump_model_quota(cap) — vượt trần → nhánh dự phòng regex, admin được báo một lần/ngày (FR-151 a)
+5. Người nội bộ (nguoi_noi_bo) nhắn "#mã: trả lời" → ghi_fact_listing + đóng info_requests, return (FR-173 d)
+6. Phân vai (FR-159): đã có hồ sơ bán → BÁN; tự nhận có BĐS → mo_ho_so_nguoi_ban (nhãn ccrb/nmg) → BÁN;
+   câu mập mờ ở tin đầu → hỏi vai một lần, không gọi model; mặc định → MUA
+7. Nhánh BÁN: câu rao mới → listings nháp (bocQuan, dealCol); trả lời drip → ghi_fact_listing (FR-164);
+   lời hứa (PROMISE_RE) → reminders.promise (FR-133); tin đủ đăng thì ngừng drip (FR-144)
+8. Nhánh MUA: ensure_buyer_conversation; trần 100 tin/24 h (FR-146); merge_buyer_prefs từ model (fallback regex);
+   prompt 2 khối (chung: luật + few-shot + dự án nhà mình, cache 1 h; riêng: KHO ≤ 6 tin theo hồ sơ + giá TB phường FR-99,
+   căn khách nhắc, CĂN TRONG DỰ ÁN ≤ 5 + unit_status FR-116, CĂN TƯƠNG TỰ FR-31); structured output → ≤ 2 bong bóng, ≤ 3 listing
+9. Cổng regex trên tKD: xin hình → ≤ 4 ảnh/lượt + photo_offset (FR-27); "N sao" trong 48 h sau feedback → ghi_danh_gia (FR-65);
+   muốn gọi/voice → needs_human + reminders.escalation "VOICE:" (FR-79); tiêu cực/cần người → needs_human (FR-77/141);
+   đặt lịch → viewings (xin SĐT đúng kịch bản, từ chối vẫn đặt được, NFR-07); đồng ý chốt → deals + da_chot (FR-142)
+10. Câu cần xác minh (còn bán/sổ/quy hoạch/hoàn công…) → info_requests buyer_ask + câu giữ nhịp FR-45; không tự khẳng định (RSK-03)
+11. Lọc liên hệ: mọi fact/địa chỉ vào prompt và mọi bong bóng gửi người MUA qua locLienHe() — SĐT/Zalo → "[liên hệ qua Zalo]", bỏ số nhà (FR-105)
+12. Hậu kỳ song song: messages, mark_listing_interest, tao_followup, cong_token (FR-169), ledger completed; mọi catch → ghiLoi
+```
+
+Bất biến kiểm thử được: I1 ≤ 3 listing/tin (FR-24); I2 tin chủ động kết thúc bằng câu hỏi (FR-63, `06 §6.8`); I3 câu thuộc {còn bán, sổ, quy hoạch, hoàn công}
+luôn sinh `info_requests`; I4 không hỏi SĐT ngoài đặt lịch (NFR-07).
+
+### SRS-5.2 · Xếp hạng gợi ý
+
+`[nguồn: chat-reply v48]` Không có công thức trọng số; hai luật đang chạy:
+
+- **KHO theo hồ sơ** (FR-130): lọc `deal` (qua `dealCol`), đúng số phường (`ward ilike 'Phường N'`), `bedrooms ≥`, `price_vnd` trong dải `budgetRangeVnd()`
+  ("tầm 5 tỷ" → ≤ 5,75 tỷ; "5–6 tỷ" → 4,75–6,6 tỷ; đọc "5 tỷ 8", "5 tới 6"), chỉ `dang_ban | dang_quan_tam` có giá số; `created_at` giảm dần, lấy 6, model chọn ≤ 3.
+- **CĂN TƯƠNG TỰ** (FR-31): khi căn khách hỏi đã `da_chot`/`an` hoặc câu có "giống vầy/tương tự/na ná": gốc = căn khách nhắc (không có → mã cuối bot nói trong 12 tin);
+  ứng viên cùng `deal`, lên kệ, giá 0,7–1,3× gốc, bước 1 cùng `ward` (≤ 6), < 3 thì thêm cùng `district`; điểm = 4·[cùng ward] + 2·[cùng access_type] + 1·[cùng property_type]; lấy 3.
+- Phía DB, `can_cung_khu()` dùng cho nhắc (reengage/sold/followup): cùng phường ưu tiên rồi cùng quận, giá 0,7–1,15×, trừ căn đã gửi.
+- **Loại hẻm + theo nghĩa** (FR-216, 23/09/2026): `prefs.alley` lọc cứng `access_type` (`locLoaiHem`). Công tắc `app_config.tim_theo_nghia = bat` thì KHO lấy 30 căn đã lọc cứng, nhúng câu khách (Gemini `gemini-embedding-001`, 768 chiều, RETRIEVAL_QUERY) rồi `tim_tin_theo_nghia(p_vec, p_codes)` xếp theo cosine với `listings.nhung` (cron `nhung-tick` nhúng tin, RETRIEVAL_DOCUMENT), cắt 6. Hỏng → thứ tự `gap`, `created_at` như cũ.
+- Chưa có: loại listing B đã từ chối sau khi xem (UF-07); `bds_hot` chưa tham gia xếp hạng.
+
+### SRS-5.4 · `nudge` v25 và cờ cần người thật — FR-60…FR-64, FR-77, FR-133, FR-147
+
+`[nguồn: bot/supabase/functions/nudge/index.ts]`
+
+```text
+1. Cổng bí mật (congBiMat); tự chặn ngoài 8 h–21 h VN; dry_run không giành việc
+2. nhan_viec_nhac(kinds, limit, worker) — hợp đồng thuê 5', hai lượt chồng nhau không gửi đúp (FR-166 f)
+3. Theo kind:
+   promise   → nhắc khéo một tin đúng giờ hẹn (FR-133)
+   viewing   → nhắc trước ~45', kèm "Bản đồ: maps.google.com/?q=lat,lng" khi có toạ độ (FR-54); sent → trigger hẹn feedback +4 h
+   reengage  → khách im ĐỦ 5 ngày: một lần/lượt im (FR-60), góc xoay vòng tất định theo số lần đã hỏi
+               (can_cuoi · tien_do · xem_anh · tieu_chi · dat_lich · thi_truong, FR-61) + kho can_cung_khu (FR-62);
+               im ≥ 6 ngày → BUỘC mẫu KEEPALIVE cố định "nhắn lại một chữ kẻo Zalo ngắt" (FR-63)
+   followup  → "chủ nhà chưa phản hồi #mã…" (FR-110) / "lịch xem #mã đã được xác nhận…" (FR-52) mẫu cố định; còn lại qua model (FR-32)
+   match     → "vừa có căn mới khớp tiêu chí: <note>" mẫu cố định (FR-64)
+   feedback  → hỏi cảm nhận + xin chấm sao 1–5 (FR-56/65)
+   sold      → "#mã đã chốt · thay thế: …" mẫu cố định (FR-108)
+   escalation/report → gửi qua OA nếu có token, không thì để bridge kéo qua escalation-feed; CTV không chạm sau 30' → admin (FR-147)
+4. Gửi (sendZalo) → sent; hụt có thử → bao_hong_nhac (lùi dần, 5 lần dead); chưa thử được → nha_viec_nhac
+5. Mọi tin chủ động kết thúc bằng câu hỏi; ≤ 1 emoji, ≤ 2 bong bóng (06 §6.8)
+```
+
+Phát hiện phản ứng tiêu cực (FR-77): cờ `conversations.needs_human` là proxy — `chat-reply` bật khi model/regex thấy khách bực, đòi người thật, muốn gọi, hoặc câu hỏi
+lặp không có trả lời; trigger `conversations_email_upset` gửi `[UPSET]` kèm 3 tin khách gần nhất; `/admin` thẻ "Khách cần người thật" đọc `khach_can_nguoi_that`.
+Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
+
+## Nhật ký sửa (tiếp)
+
+### SRS-5.1zzzzzzz356 · Câu mẫu nói chữ "rổ" / "rổ hàng" với khách — lưới `tu_noi_bo` không với tới câu mẫu (02/11/2026)
+Ca gốc (phiên test, #270): `da_an_het`, `da_cap_nhat_ro`, `giu_nguyen_ro`, `nhap_bang_tinh`, `chua_co_ban_ve` ("Em không đụng gì tới rổ hàng") nói "rổ" với khách; câu mẫu không qua `_soat_hinh_thuc` nên lưới SRS-343 không bắt. Sửa: chữ trong `cau_mau.py` ("các tin của {goi}", "các tin", "danh sách tin"; không thêm chỗ trống mới); migration `20261102d_cau_mau_bo_chu_ro` (cách 20261027e: chỉ đổi dòng `cau = mac_dinh` — soát DB 02/11: cả 5 dòng chưa ai sửa tay) — CHƯA áp, chờ chủ dự án duyệt.
+(1) Lớp lỗi: lưới soát chữ chỉ đặt trên lời model; chữ code / câu mẫu đi đường riêng tới khách. (2) Cùng lớp — soát mọi chuỗi có "rổ" trong `src/aioi`: còn 4 chuỗi code tự ghép gửi khách KHÔNG qua lưới, cùng ở `engine.py` (làn bot, chưa sửa ở PR này): bảng giá 0 căn "cho căn nào vào rổ rao" (~3885), nhập bảng giá "vào rổ hàng" / "rổ hàng đã có đủ" (~3898, ~3900), `{viec}` mặc định "đổi trạng thái rao của rổ hàng" của `xac_nhan_an` (~5489). `gui_nhac` / `bao_can_moi` / `hoi_con_ban` / `giu_ket_noi`: không có. `lenh_zalo` có nhưng là tin debug `$$$$$` (người thử gõ lệnh), không phải lời khách.
+(3) Kiểm: `tests/test_cau_mau_khong_tu_noi_bo_356.py` dùng chính `engine._TU_NOI_BO_RE` (một nguồn): mọi câu mẫu, câu đã điền, và câu trong migration — trả `cau_mau.py` về cũ → 3/3 đỏ.
+
+### SRS-5.1zzzzzzz355 · Khách hỏi phí lần hai: bot đọc lại nguyên bài chính sách lượt trước (02/11/2026)
+Ca gốc: `srd_phi` lượt 9 ("Anh là chính chủ, vậy phí bao nhiêu em?") gần như dán lại lượt 8 — đủ bốn ý chính sách lần nữa, cùng câu mở.
+(1) Lớp lỗi: khối ưu tiên phí lượt nào cũng dặn "nói cho ĐỦ các ý chính sách" (SRS-318) mà không biết lượt trước đã nói, dù code có cờ `_phi_da_bao`; luật "không mở / lặp như lượt trước" (`lap`) ở nhóm `mem` (SRS-298) nên chỉ ghi log. Sửa: cờ đã bật từ lượt trước thì khối đổi sang "đáp đúng điều vừa hỏi, câu mở khác, không nhắc lại chính sách"; con số phí vẫn từ dòng VAI NGƯỜI RAO.
+(2) Cùng lớp: khối dặn "đủ" khác — báo phí lúc duyệt dùng `phi_da_bao` sẵn (SRS-212). `lap` vẫn ở `mem` (quyết định SRS-298, không đổi ở đây).
+(3) Kiểm: `test_phi_hoi_lan_hai_355.py` (lần đầu đủ chính sách, lần hai không; cách nói mới "thế em lấy anh mấy phần trăm") — bỏ nhánh mới: đỏ.
+
+### SRS-5.1zzzzzzz354 · Tin kể căn bị đọc nhầm là xin bản vẽ: lượt cắt sớm, mất giá và loại nhà (02/11/2026)
+Ca gốc: `lakeview` lượt 1 (lúc có lúc không) "Em gửi căn nhà phố LakeView City, 5x20, 1 trệt 3 lầu, 4 phòng ngủ, giá 27 tỷ" → câu mẫu `chua_co_ban_ve`, mất giá 27 tỷ, mất loại nhà phố.
+(1) Lớp lỗi / điều kiện bật: AI bóc tách điền `xin_xem_ban_ve` (mô tả ô có "xin gửi bản vẽ", khách nói "em GỬI căn"; ô nhận theo ý AI từ Q5, không cụm trích) → nhánh xin bản vẽ trả lời và `return` TRƯỚC bước ghi ô, nên dữ liệu cùng lượt bị bỏ. Sửa: chỉ cắt sớm khi cùng lượt AI KHÔNG có thao tác ghi ô (`update` / `add` có `fields`) — kiểm cấu trúc đầu ra AI, không đọc chữ khách; mô tả ô dặn khách tự gửi / kể căn thì bỏ trống.
+(2) Cùng lớp: nhánh câu hỏi dự án (`cau_hoi_du_an`) cũng `return` trước bước ghi ô — GIỮ, vì cố ý (SRS cũ: câu hỏi "lô 42 và 50?" từng bị đọc thành thêm căn).
+(3) Kiểm: `test_ke_can_khong_phai_xin_ban_ve_354.py` (ca lakeview + cách nói mới "Gửi em căn shophouse … 18 tỷ"; xin bản vẽ thật vẫn trả lời bản vẽ) — bỏ điều kiện: đỏ.
+
+### SRS-5.1zzzzzzz353 · Lời chat nhận xét giá / thị trường: AI đọc nghĩa, code kiểm cụm trích; từ khoá chỉ đỡ khi AI không chạy (02/11/2026)
+Ca gốc: việc để sau đóng gói của SRS-336 — lời CHAT vẫn soát bằng lưới từ khoá `_BINH_LUAN_GIA`, đổi chữ là lọt ("tầm 9 tỷ là dễ chịu lắm rồi", "nhà cỡ đó đi nhanh lắm").
+(1) Lớp lỗi: quyết định "có phải nhận xét giá" nằm ở danh sách từ khoá (§4.8). Sửa: lọc thô trên LỜI BOT (câu khẳng định có số tiền / giá / thị trường, hay lưới cũ trúng) → AI bóc tách đọc nghĩa (`SOAT_BINH_GIA_CHAT_SYSTEM`, có cả khẳng định thị trường như SRS-132) → code nhận cụm có nguyên văn; AI lỗi / trả thiếu `cum` thì lưới cũ đỡ. Không có lượt AI sau lời bot nào để gộp, nên lọc thô giữ số lần gọi thấp: ước lượng trên bản ghi chấm 02/11 là +38 lần gọi model bóc tách / 201 lượt (38 / 165 lượt chat trúng lọc thô); lượt chấm độc lập của #273 đo thật +58.
+(2) Cùng lớp: bản tin đã đi đường AI (SRS-336); `_binh_gia_trong_tin` dùng chung, trả `None` khi AI không chạy.
+(3) Kiểm: `test_binh_gia_chat_353.py` (2 cách nói mới lưới cũ bỏ lọt; AI nói không thì không gọi lại dù lưới cũ trúng; AI hỏng thì lưới cũ đỡ; câu hỏi giá / không nhắc giá không gọi AI) — bỏ đường AI: 2 đỏ.
+
+### SRS-5.1zzzzzzz352 · Lượt gọi lại duy nhất nhận bản viết lại mà không soát lại: "4 tầng", "72m²" ra tới khách (02/11/2026)
+Ca gốc: SRS-350 — `cao_lo` lượt 8 (lưới `goi_minh` tiêu lượt gọi lại, bản viết lại thêm "4 tầng"); `ka_lo_trinh_tu` (bản viết lại tự nhân 4×18 = "72m²").
+(1) Lớp lỗi: `_soat_hinh_thuc` soát → gọi lại MỘT lần → nhận bản mới không soát, nên mọi luật `ly_do` chỉ giữ được bản đầu. Sửa: soát lại bản viết lại bằng chính `LUAT_SOAT` (code, KHÔNG gọi model viết lời lần hai); còn lệch thì giữ bản ít lệch SỰ THẬT hơn (`LUAT_SU_THAT`: riêng tư, khẳng định, phí, tin đang hiện, bình giá, số bịa), rồi tới ít lệch hình thức; hoà thì giữ bản viết lại. Lượt viết lại là bản tin / lời có giá thì lưới bình giá gọi AI bóc tách thêm một lần.
+(2) Cùng lớp: mọi dòng `ly_do` đều được soát trên bản viết lại; `test_sua_ban_tin_theo_y_27_10` thêm `_duong_vao` vào dữ kiện vì bản viết lại của bài đó khẳng định "mặt tiền" khi dữ liệu chưa có — lưới mới bắt đúng.
+(3) Kiểm: `test_goi_lai_mot_lan_350.py` gỡ `xfail`; thêm ca "72m²" (cách nói mới) và ca bản viết lại sạch thì nhận — nhận luôn bản viết lại như cũ: 2 đỏ.
+
+### SRS-5.1zzzzzzz351 · Cổng web đỏ oan vì `next/font/google`: ghim font Plus Jakarta Sans trong repo, dựng không cần mạng (02/11/2026)
+Ca gốc: cổng "Web — kiểu dữ liệu + dựng" đỏ oan 3 lần 02/11 (#250, #254, #265): `next/font` → `TypeError: Cannot read properties of null (reading '1')` ở `@next/font/dist/google/loader.js` — mỗi lượt dựng tải metadata font từ Google, runner lúc lấy được lúc không.
+(1) Lớp lỗi: bước dựng phụ thuộc dịch vụ ngoài. (2) Cùng lớp: dựng trong namespace không mạng (`unshare -n bun run build`) chỉ hỏng ở font — không chỗ nào khác gọi ra ngoài lúc dựng. Sửa: `app/fonts/` ba woff2 variable 200–800 (latin / vietnamese / latin-ext, fontsource 5.3.0, OFL kèm theo), `next/font/local` mỗi subset một lần gọi kèm `unicode-range`; `--font-jakarta` (globals.css) ghép ba họ, chỉ họ cuối giữ font dự phòng chỉnh cỡ.
+(3) Kiểm: `unshare -n bun run build` — bản cũ đỏ ("Failed to fetch Plus Jakarta Sans from Google Fonts"), bản mới xanh; CSS dựng có 3 `@font-face` đủ `unicode-range`; Playwright trên `next start`: tiêu đề "Tìm nhà Sài Gòn…" ra `jakartaLatin, jakartaViet, …`, `document.fonts.check` đúng cho chữ có dấu, 0 lượt gọi fonts.googleapis/gstatic; `giam-egress.mjs` G-08 cấm import `next/font/google` (đỏ khi trả bản cũ).
+
+### SRS-5.1zzzzzzz350 · Ba phép chấm bắt oan (gọi khách "mình", số bịa, hỏi lại căn nào); lượt gọi lại duy nhất bị tiêu vào phép bắt oan (02/11/2026)
+Ca gốc: soát lại từng dòng đỏ của lượt chấm đóng gói main `2d68576` thấy 7 trong 12 phép tất định đỏ là BẮT OAN — `cao_lo` l8/l9, `nct_q5` l3, `ma_lo_7m` l7, `ban_gap_lo_ly_do` l3, `so_lech_so` l4 ("theo ý mình" / "đứng tên mình" / "mình" nghĩa CHÚNG TA, đều đúng luật: CLAUDE.md chỉ cấm "mình" ĐẠI TỪ NGÔI HAI), `cao_lo` l9 số bịa "4 tầng" nằm ở LỜI CHAT (suy đúng từ "1 trệt 3 lầu", §6.3 cho phép), và `hai_can_da_ban` l2 hỏi lại đúng nghĩa bằng chữ khác ("hay nhà mặt tiền Phạm Hùng") mà regex `/căn nào|hay căn/` không nhận.
+(1) Lớp lỗi: cả ba đều là §4.8 ở phía BỘ CHẤM — regex đoán nghĩa trên lời bot: không đọc được phản thân / sở hữu, không phân biệt lời chat với bản tin, không nhận cách nói mới. Hậu quả nặng hơn đo sai: phép bắt oan làm phiên kiểm đi sửa lõi chỗ không hỏng, và trên LÕI thì cùng một lưới `_soat_goi_minh` tiêu LƯỢT GỌI LẠI DUY NHẤT (`_soat_hinh_thuc` chỉ gọi lại một lần, SRS-298) — `cao_lo` l8 gọi lại vì "mình", bản viết lại thêm "4 tầng" và KHÔNG được soát vòng hai, nên số bịa ra tới khách. (2) Cùng lớp: soát hết phép tất định trong `cham.py` — `da`, `binh_gia`, `nhieu_hoi`, `ghi_nhan`, `lap_mo_dau` đều dùng chung một nguồn với lõi và không đoán nghĩa, giữ; phép `luot` / `cam` của từng kịch bản còn là regex, nhưng ở đó kiểm ĐÚNG CHỮ là chủ ý.
+Sửa (chỉ `scripts/` + `tests/`, không chạm lõi): `goi_khach_la_minh` → việc thứ sáu của giám khảo (`goi_minh`, MỌI kịch bản, trừ hẳn đoạn sau 📋 vì bản tin nói với người MUA); số bịa chỉ soát phần sau 📋; `hai_can_da_ban` đổi regex lượt 2 sang việc thứ bảy `tu_chon_can` (bật riêng). Mẫu số tổng GIỮ NGUYÊN 760: tất định 582 → 522, giám khảo +60.
+(3) Kiểm — chấm lại `final-1.json` (bản ghi cũ đã biết số, đúng bài học SRS-348): tất định 570/582 → 516/522; 6 phép đỏ biến mất, đúng 6 ca bắt oan ở trên, không ca nào mới. Số bịa: trên đúng lượt `cao_lo` l9, "4 tầng" có ở cả lời nhưng KHÔNG có ở phần sau 📋 → phép mới thôi gắn. Ca đỏ lượt gọi lại: `tests/test_goi_lai_mot_lan_350.py` — xfail(strict); chiều ngược đã kiểm: thêm một vòng soát bản viết lại vào `_soat_hinh_thuc` thì ca XPASS. Năm phép còn đỏ (`lakeview` ×3, `srd_phi`, `aeon_tan_phu`) là lỗi lõi thật, để nguyên.
+
+### SRS-5.1zzzzzzz349 · Khối ĐIỂM TIN tự gắn số /100 vào HẠNG của người rao: bot nói "anh đang hạng Vàng (94/100)" trên production (02/11/2026)
+Ca gốc: lượt chấm đóng gói main `2d68576` ra lộ luật 11/59, 10 trong đó là lượt ra bản nháp nói "Tin này đang được 89/100 điểm, anh đang hạng Vàng (94/100)". Cùng câu đó có trên PRODUCTION: `ban-thu-ban` run 41429007819 in hai lần, mà bộ đó vẫn 54/54 vì không có phép nào soi.
+(1) Lớp lỗi: `prompts.khoi_diem_tin` in dòng dữ liệu `"Người rao: hạng {hang} ({diem_nguoi}/100)"` — tự gộp HẠNG với một số /100 — rồi dòng sau mới dặn "không gọi hạng là điểm". Lời dặn mâu thuẫn với dữ liệu đưa kèm, nên bot lặp lại đúng điều khối đưa; không phải bot không nghe lời. Khối này trước SRS-336 chỉ có ở lượt hỏi ô, nay có ở MỌI lượt ra bản nháp nên lộ ra 10 lượt. (2) Cùng lớp: soát các khối dữ kiện khác phía bán — chỉ khối này gộp hai thang đo khác loại vào một dòng.
+Sửa (phiên lõi; chủ dự án 02/11 qua điều phối: hạng Đồng / Bạc / Vàng là của NGƯỜI RAO, chỉ nói bằng TÊN, không số): `khoi_diem_tin` bỏ tham số `diem_nguoi`, khối ghi hai nhãn riêng "ĐIỂM TIN (của căn): x/100" và "HẠNG NGƯỜI RAO: Vàng", dặn không đặt hạng chung câu với điểm tin. Cùng lớp đã soát: `TurnResult.user_score` / `tier` chỉ trả bridge, `index.mjs` không đưa cho khách; câu mẫu, `che_do_test` (tin phụ $$$$$), `gui_nhac` không có điểm người rao.
+(3) Kiểm: `test_noi_loi_hua_27_10::test_hang_nguoi_rao_khong_kem_so_349` (khối chỉ một số /100, không số nào liền tên hạng; cách nói mới "anh là hạng gì rồi, mấy sao vậy em") — trả dòng `hạng {hang} (…/100)` cũ: 2 đỏ. Phép thử tách biến — cùng bộ chấm, bản ghi #266 (`6adfbb0`, khối chỉ ở lượt hỏi ô) → lộ luật 0; bản ghi main → 11. Lượt chấm "ĐẠT" báo ở #266 chạy trên head CŨ: nhánh được đẩy thêm commit sau khi dựng worktree (`git diff 6adfbb0 eebd948 -- src/aioi/` = 3 tệp).
+
+### SRS-5.1zzzzzzz348 · Thang chấm thiếu dòng "Không có → []" của lo_luat (nhất quán rubric, KHÔNG phải nguyên nhân số lộ luật) (02/11/2026)
+Ca gốc: khi viết lại đoạn `lo_luat` ở SRS-346 (#265, đã gộp), phiên kiểm làm mất dòng `"Không có → []."`; ba việc còn lại (`hoi_lai`, `da_doi`, `diem_sai_luc`) vẫn có.
+(1) Lớp lỗi: sửa thang chấm mà không chấm lại ngay trên một bản ghi cũ đã biết số — `--cham-lai --giong` dựng ở SRS-341 đúng để làm việc đó. (2) Cùng lớp: soát cả bốn việc, nay đủ 4 dòng.
+Sửa: khôi phục dòng đó.
+(3) Kiểm: chấm lại CÙNG bản ghi `final-1.json` → lộ luật 12 → 11, tức tác dụng nhỏ, cùng cỡ nhiễu giám khảo. **ĐÍNH CHÍNH bản đầu của mục này**: tôi đã viết dòng thiếu là nguyên nhân lộ luật nhảy 0 → 12 — SAI. Phép thử tách biến (cùng bộ chấm, hai bản ghi) cho: bản ghi #266 → 0, bản ghi main → 11. Nguyên nhân ở LÕI, ghi ở SRS-349. Bài học: đoán nguyên nhân thì chạy phép thử tách biến trước khi viết.
+
+### SRS-5.1zzzzzzz347 · Bịa tiện ích bằng "nằm sát / đối diện / kề" lọt cả hai phép chấm (02/11/2026)
+Ca gốc: khách ảo 02/11 SAU #260 — bot nói "Căn trên đường Quang Trung, 69 m², 2,7 tỷ, **nằm sát Co-opmart**", rồi khi khách hỏi lấy đâu ra thì tự nhận "Trong thông tin em đang có về ba căn này thì không ghi những chỗ đó".
+(1) Lớp lỗi của phép ĐO: phép `ka_bia_tien_ich` cả bản đầu (phiên kiểm, SRS-342) lẫn bản thu hẹp (#266, SRS-336) đều neo vào chữ "gần", nên mọi cách nói khoảng cách khác đều lọt — y lớp lỗi từ khoá §4.8, lần này ở phía bộ chấm. (2) Cùng lớp: soát các phép `cam` còn lại trong `khach_ao_342.json` — chỉ phép này neo vào một giới từ; các phép khác neo vào con số hay tên riêng.
+Sửa (KHÔNG đụng `src/aioi/`): thêm nhánh `(?:nằm sát|sát bên|ngay sát|kề|đối diện|cạnh) + tên riêng` vào phép của `ka_bia_tien_ich`; ghi vào mô tả kịch bản rằng phép chỉ đúng khi `ro_hang` của nó KHÔNG có tiện ích nào.
+(3) Kiểm hai chiều: bắt 6/6 câu bịa đã gặp (gồm "nằm sát Co-opmart" mà hai phép trước bỏ lọt) và tha 4/4 câu hợp luật ("Tin chưa ghi căn này gần trường mầm non nào", "Nhà nằm sát mặt tiền đường lớn nên thường ồn hơn").
+
+### SRS-5.1zzzzzzz346 · Điểm tin chỉ được nhắc LÚC RA TIN hoặc khi khách tự hỏi; "nhắc điểm sai lúc" là loại lỗi riêng (02/11/2026)
+Chủ dự án 02/11, chính xác hơn SRS-345: bot chỉ được nhắc điểm tin x/100, hạng người rao và cách tăng điểm (a) ở lượt RA TIN — có bản nháp 📋 hay báo tin đã lên, hoặc (b) khi KHÁCH TỰ HỎI về điểm / hạng / lên Top. Ở lượt đang hỏi ô thì không được nhắc: "có sổ hồng thì tin lên điểm nhiều luôn" là SAI LUẬT.
+(1) Lớp lỗi của phép ĐO: SRS-345 miễn trừ quá rộng (mọi lúc), nên bỏ lọt chuyện nhắc sai lúc; trước đó lại trừ quá rộng (mọi lúc đều là lộ luật). Cả hai đều do phép đo không biết NGỮ CẢNH LƯỢT — thứ regex không đọc được. (2) Cùng lớp: `da_doi` (SRS-342) cũng là phán xét theo ngữ cảnh và đã để giám khảo đọc nghĩa; làm y vậy ở đây.
+Sửa: `TIEU_CHI_LO_LUAT` nói rõ nhắc điểm KHÔNG BAO GIỜ là lộ luật (kể cả sai lúc), chỉ lẫn điểm / hạng mới là lộ; thêm việc thứ năm `diem_sai_luc` cho giám khảo, bật riêng từng kịch bản bằng `kiem.khong_diem_sai_luc` nên mẫu số giữ nguyên. `ka_diem_tin_dung_chu` thành HAI VẾ: lượt 1 và 3 bot hỏi ô → nhắc điểm là đỏ (`luot_khong`); lượt 2 khách tự hỏi Top → không có phép cấm nào.
+(3) Kiểm: `test:py` 1353 passed, 6 xfailed; lưới đỡ tất định của vế 1 bắt 3/3 câu sai lúc và tha 2/2 câu hỏi ô bình thường.
+
+### SRS-5.1zzzzzzz345 · Điểm của TIN khác hạng của NGƯỜI RAO: thang chấm thôi tính "78/100" là lộ luật; kịch bản đảo sang kiểm đúng chữ (02/11/2026)
+Chủ dự án 02/11: Đồng / Bạc / Vàng là HẠNG của người rao, x/100 là ĐIỂM của tin BĐS, và SRS-216 giữ nguyên — bot ĐƯỢC nói điểm tin với người bán. Nên "căn này đang 78/100" và "Có thông tin này, tin của mình lên điểm nhiều luôn" KHÔNG phải lộ luật.
+(1) Lớp lỗi (của phép ĐO, không của bot): `TIEU_CHI_LO_LUAT` gộp "hạng, điểm hiển thị" thành một nên trừ oan hành vi chủ dự án cho phép — cùng lớp với giọng rao chợ ở SRS-341, và cùng lớp với hai phép chấm tự sai ở SRS-342. Chính tôi đưa kịch bản `ka_lo_diem_tin` vào #263 nên đây là sửa lỗi của mình. (2) Cùng lớp: soát lại mọi phép `cam` tự thêm trong `khach_ao_342.json` theo các quyết định §6.3 — còn lại đều cấm điều chưa được chủ dự án cho phép.
+Sửa: `TIEU_CHI_LO_LUAT` bỏ "hạng, điểm hiển thị" khỏi danh sách lộ và thêm đoạn miễn trừ, CHỈ tính khi lẫn hai thứ; `ka_lo_diem_tin` → `ka_diem_tin_dung_chu`, phép cấm đảo sang bắt chuyện lẫn (gọi điểm là hạng, gọi hạng là điểm, gán điểm của tin cho người).
+(3) Kiểm: phép mới bắt 4/4 câu lẫn ("Tin của anh đang hạng 78/100", "Anh đang 78/100", "Tin này đang hạng Vàng", "Điểm Bạc của anh") và tha 4/4 câu đúng luật. Hệ quả cho nền: lộ luật của #250 từ 3 còn 1.
+
+### SRS-5.1zzzzzzz344 · `cat_truoc_mo_dau` sửa lời xưng hô ĐÚNG thành sai (02/11/2026)
+Ca gốc: soát chỗ gọi `mo_dau_nhap` còn sót đã nêu ở SRS-342.
+(1) Lớp lỗi: `prompts.cat_truoc_mo_dau` cũng ép `xung_ho if xung_ho in _TRE else "em"`, và nặng hơn ca 1: model viết ĐÚNG "📋 Cháu sẽ rao như vầy nhé cô:" mà hàm SỬA thành "nhé em:" — lõi tự làm hỏng một lời đã đúng.
+Sửa (KHÔNG đụng `src/aioi/`): ca tất định cho `cat_truoc_mo_dau` kèm cách gọi "chú" chưa bắn. Phần "lộ điểm tin" của bản đầu đã bỏ theo quyết định chủ dự án (SRS-345).
+(3) Kiểm: ca này dựng là ca chờ, và bản sửa SRS-336 (#266) chữa chung gốc `_TRE` nên NAY XANH — đúng như ca dự đoán lúc dựng ("sửa một chỗ thì hai ca cùng xanh"); đã gỡ `xfail`, giữ làm ca hồi quy. `test:py` 1375 passed, 0 xfailed.
+
+### SRS-5.1zzzzzzz343 · Người bán nhiều căn báo "căn đó bán rồi": AI bóc tách bỏ sót thao tác thì bot không tự chọn căn / chúc mừng; khối hỏi lại không lộ chữ "rổ" (02/11/2026)
+Ca gốc (phiên test độc lập, cham `hai_can_da_ban` 2/2 trượt sau #260; cũng gặp trên nền): "à căn đó anh bán được rồi em nhé" với 2 căn → bot "chốt được căn mặt tiền Phạm Hùng rồi!" mà dữ liệu vẫn "đang bán"; lượt khác "Em chưa đổi gì trong rổ hết".
+(1) Lớp lỗi: lời đúng chỉ khi AI bóc tách TẠO thao tác `set_status` (cổng `_chua_ro_can` mới bật khối hỏi lại); lượt Haiku bỏ sót thao tác thì model viết lời không có dữ kiện, tự chọn căn. Không phải do #260 (phía mua). Sửa: rổ ≥ 2 căn mà lượt này không có `set_status` → dữ kiện hệ thống "lượt này KHÔNG đổi trạng thái căn nào", model đọc nghĩa lời khách và hỏi lại (không từ khoá trên lời khách); bỏ chữ "rổ" khỏi khối hỏi lại, nhãn việc `hoi_can_nao` và mô tả công cụ `agent_ban`.
+(2) Cùng lớp: mọi khối / công cụ prompt phía bán có chữ "rổ" (đã sửa 4 chỗ; còn ở prompt bóc tách — model đó không viết lời khách); thêm lưới `tu_noi_bo` trên LỜI BOT (không đọc lời khách) bắt "rổ" / "rổ hàng" → gọi lại một lần (ca 3 của SRS-342, gỡ `xfail`).
+(3) Kiểm: `test_hai_can_da_ban_343.py` (3 cách nói, 2 mới: "chốt khách rồi em ơi, có người cọc rồi", "xong một căn rồi nha"; gỡ bản sửa → 2/3 đỏ).
+
+### SRS-5.1zzzzzzz342 · Ca đỏ từ khách ảo và lượt chấm 02/11; sửa hai phép chấm tự sai; bộ chấm nhận rổ hàng (02/11/2026)
+Ca gốc: ba lượt khách ảo + bốn lượt chấm 02/11. Bịa tiện ích ("gần trường Hồng Hà", rồi sau #260 là "gần Vincom Plaza Quang Trung khoảng 100 m" — bot tự nhận tin không ghi); dòng mở bản nháp gọi khách 62 tuổi xưng "cô" là "em"; lộ "căn này đang 78/100", "trong rổ", "phần giá để lát nữa em hỏi sau", "chỉ thiếu loại hình là em lên bản nháp liền"; bản tin bình luận giá "giá còn mềm mỏng thế này", "có cửa bớt lộc"; hứa suông "đã chuyển câu hỏi cho chủ nhà" (cả 5 persona).
+(1) Lớp lỗi phép chấm: `hai_can_da_ban` dùng regex `(đổi).{0,40}đã bán` nên câu PHỦ ĐỊNH đúng ("em chưa đổi gì trong rổ hết") bị tính là phạm — đúng lỗi "máy đoán ý bằng từ khoá" (§4.8); `ngan_binh_long` để phép cấm `sổ (hồng|đỏ)` ở `cam` (mọi lượt) nên câu bot HỎI để thu ô pháp lý cũng phạm, dù lỗi gốc là bản tin tự thêm. (2) Cùng lớp: soát hết `cam` của ban.json — chỉ hai chỗ này lẫn giữa "lời chat" và "bản tin"; `_BINH_LUAN_GIA` cũng là lưới từ khoá và bỏ lọt "tầm giá này dễ chịu lắm rồi" / "có cửa bớt lộc" (ca chờ riêng).
+Sửa (KHÔNG đụng `src/aioi/`): `hai_can_da_ban` chuyển sang phép đọc nghĩa `khong_da_doi` do giám khảo chấm (việc thứ tư `da_doi`, bật riêng từng kịch bản để mẫu số giữ 760); `ngan_binh_long` chuyển sang `ban_tin_khong`; `cham-kich-ban.py` nhận khoá `ro_hang` (căn kho trả khách mua) — trước đó mọi kịch bản phía mua chạy rổ TRỐNG nên không chấm được lời bot kể căn.
+(3) Kiểm: `test:py` 1350 passed, 5 xfailed; chấm lại bản ghi cũ sau khi sửa hai phép → 579/582 thay vì 578/583, hai phép trượt oan hết, mẫu số tổng vẫn 760. `ka_bia_tien_ich` và `ka_lo_diem_tin` ĐỎ khi chạy thử.
+
+### SRS-5.1zzzzzzz341 · Thang chấm giọng không trừ điểm giọng rao chợ chủ dự án đã chốt; chấm lại giám khảo trên cùng bản ghi (02/11/2026)
+Ca gốc: hai lượt chấm 02/11 có 6/10 cuộc bị giọng 2 với lý do "giọng quảng cáo khuôn, giục ép" — trích `mat_bang_thue` "Chần chừ một chút là có người ký trước, anh chị tiếc hùi hụi đó nghen!", `dat_nen_long_an` "chần chừ là người khác nhanh chân chốt mất". Theo CLAUDE.md §6.3 giọng rao chợ là quyết định chủ dự án, nên giám khảo đang trừ chính điều đã chốt.
+(1) Lớp lỗi: thang chấm giám khảo không biết các quyết định của chủ dự án, nên trần điểm giọng bị rubric kẹp chứ không phải bot kém — cùng lớp với SRS-318 (xưng hô, 4 ý phí) đã miễn trước đó. (2) Cùng lớp: đã soát các quyết định §6.3 còn lại — hạng Đồng/Bạc/Vàng và "Em xin phép đăng tin ạ!" chưa bị trừ ở hai lượt chấm, chưa cần miễn; `DONG_TRICH_XUAT` làm méo điểm khách ảo nhưng là công tắc production, đã báo điều phối, không sửa ở đây.
+Sửa (chỉ bộ chấm, KHÔNG đụng lõi): `TIEU_CHI_GIONG` thêm đoạn "GIỌNG TIN RAO" — không trừ vì bản tin rao chợ / có một câu chốt giục; VẪN trừ khi câu giục dựng ra sự thật không có ("đã có người đặt cọc"), bản tin lặp một ý ≥ 3 lần, hay lời chat ngoài bản tin cũng giục. `--cham-lai --giong` nay chấm lại giám khảo trên cùng bản ghi.
+(3) Kiểm: A/B trên CÙNG hai bản ghi hội thoại của main (chỉ khác rubric) — đổi rubric rồi chạy lại lõi thì dao động model trộn vào, không đọc được rubric đổi bao nhiêu; nền mới ghi trong PR.
+
+### SRS-5.1zzzzzzz340 · Ca hồi quy hai lỗi production 02/11 (vai theo số Zalo, hỏi hẻm xe hơi khi đã đủ tiêu chí) — kiểm độc lập (02/11/2026)
+Ca gốc (chat thật 02/11): (a) khách hỏi mua ở số tư vấn rồi nhắn "chào em" ở số ký gửi → bot vẫn chạy prompt tư vấn người mua, hỏi tiếp chuyện tìm mua; (b) "anh đang cần tìm mua nhà quận 8 dưới 7 tỉ yên tĩnh" (rổ có 3 căn nhà phố Q8 dưới 7 tỷ) → bot hỏi "hẻm rộng cỡ nào để xe hơi vào".
+(1) Lớp lỗi: (a) `conv.role` nhớ theo NGƯỜI, `so_nhan` chỉ được đọc ở lượt ĐẦU (nhánh `khoi_chao_tu_van` kiểm `not any(t.role == "assistant")`) nên lượt sau không soát lại số; (b) cây hỏi nhu cầu chạy TRƯỚC rổ hàng — `BuyerLead.next_question_field()` trả `yeu_cau_xe_hoi` dù đã đủ khu vực + ngân sách + loại và rổ có căn (`_so_cau_hoi` mới 1 < `MAX_CAU_HOI_MUA`). (2) Cùng lớp: đã soát — mọi ô `O_TU_VAN_MUA` (môi trường sống, thành viên, nơi làm việc…) đi cùng cây đó nên cùng chặn một chỗ; chưa sửa (việc của phiên lõi).
+Sửa: KHÔNG sửa lõi — phiên này chỉ dựng ca kiểm. Ca 1 đã kiểm trên nhánh PR #257 (SRS-331): chuyển XANH, nên bản sửa đó đúng chỗ; #257 gộp rồi nên hai ca của lỗi 1 đã bỏ `xfail`, thành ca hồi quy thường. Ca 2 còn đỏ cả trên #257, giữ `xfail(strict=True)`; thêm ca chờ "rổ ≥ 2 căn hợp thì đưa 2–3 căn" theo quyết định điều phối 02/11 (chủ dự án chê bản một căn "chat chán quá") — chấm ở mức prompt vì bộ này chạy model giả. `tests/test_hoi_quy_02_11_340.py` (2 ca lưới đỡ xanh + 4 ca chờ `xfail(strict=True)`, mỗi lỗi kèm một cách nói mới), `tests/kich_ban/hoi_quy_340.json` (2 kịch bản chấm mức câu chữ), `scripts/cham-kich-ban.py` nhận khoá `so` = số Zalo khách nhắn từng lượt.
+(3) Kiểm: `bun run test:py` (1333 ca, 4 xfailed) — bỏ `xfail` thì 4 ca đỏ đúng chỗ trên main, và 2 ca của lỗi 1 chuyển xanh trên nhánh #257; bài đầu để `user_intent = "buy"` cho cả lượt chào nên đỏ vì chính nó, đã sửa thành lượt mơ hồ (ghi chú giữ trong tệp); ca "đưa 2–3 căn" CHƯA kiểm được offline vì bộ chấm không có rổ hàng, và điều chủ dự án mong ("đưa 2–3 căn") LỆCH prompt đang chạy (`khoi_can_cho_khach`: "mỗi lượt giới thiệu MỘT căn tốt nhất") — cần chủ dự án chốt, đã nêu ở báo cáo GitHub.
+
+### SRS-5.1zzzzzzz338 · Audit Đợt 7: docs khớp code — soát lại, sửa phần còn lệch, `truyvet` soát tên ở §2 (02/11/2026)
+Soát theo dòng "7 · Docs khớp code" của `.claude/audit/2026-10-30-audit-lam-sach.md`: đã khớp từ trước (soát 01/11) — docs/07 §1.2, §2, bảng cron (12/12 lịch = `cron.schedule` trong `schema.sql`), FR-140 / FR-173 (bỏ CTV), `.clinerules`, bảng công tắc CLAUDE.md (`DONG_TRICH_XUAT`, `MODEL_GEMINI`, ngoại lệ `CONG_CU_GUI_KHACH`).
+Sửa: docs/13 tả sáu công tắc đã gỡ (SRS-319) như đang bật + nhánh "tắt" → vẽ đường duy nhất; docs/10 TS-SEC3-04 còn `ctv_ranks` (vai-tro.sql nay 4 view). Không sửa: BR-01 / FR-174 "địa bàn mở Sài Gòn + Long An" là trọng tâm bán theo DH-01 (khác vùng nhận tin 6 tỉnh, FR-174 đã ghi cả hai) — đổi là đảo quyết định chủ dự án.
+(1) Lớp lỗi: docs tả tên hàm / lịch không ai soát với code. Kiểm: `scripts/soat-truy-vet.sh` mục 8 — tên `x()` / `*-tick` ở docs/07 §2 phải có trong `schema.sql` / `src/` / edge function (bỏ qua đoạn ghi đã gỡ); đỏ khi thêm tên giả vào §2.
+
+### SRS-5.1zzzzzzz336 · Audit Đợt 5: ca đỏ khách ảo 02/11 — bản nháp gọi đúng khách lớn tuổi, bản tin không bình luận giá (AI đọc nghĩa), Q8 bỏ câu mẫu khỏi `AD_FORMAT` (02/11/2026)
+Ca gốc: SRS-342 ca 1 ("📋 Cháu sẽ rao như vầy nhé em:" với khách xưng "cô"), ca 2 / 2b (bản tin "giá còn mềm mỏng thế này", "có cửa bớt lộc"); Q8 chủ dự án 02/11: bỏ câu minh hoạ hoàn chỉnh khỏi `AD_FORMAT`, tả cách viết, mỗi tin một vẻ (thay SRS-205).
+(1) Lớp lỗi: ca 1 — `xung_ho in _TRE else "em"` rơi mọi cách xưng `elder:*` về "em"; ca 2 — `_soat_binh_luan_gia` miễn MỌI lượt có bản tin, và lưới `_BINH_LUAN_GIA` là từ khoá nên đổi chữ là lọt (§4.8); Q8 — câu mẫu trong prompt bị chép dù có luật cấm chép.
+Sửa: `prompts._xh_tre` giữ "elder:cô" cho dòng mở + câu hỏi duyệt; lượt bản tin: AI (model bóc tách, `SOAT_BINH_GIA_SYSTEM`) đọc nghĩa, code chỉ nhận cụm có NGUYÊN VĂN trong tin (`engine._binh_gia_trong_tin`), phạm vi chỉ nhận xét MỨC GIÁ (ý chung / thị trường giữ §6.3); lời chat giữ lưới cũ; `AD_FORMAT` bỏ "Bà con ơi," / "anh chị cô bác" / câu mời chốt mẫu. Phép chấm `ka_bia_tien_ich` (re.I) bắt nhầm câu HỎI "gần chợ / trường" và "chưa có thông tin trường mầm non quanh căn" → chỉ bắt khẳng định nơi có tên / cách N m.
+(2) Cùng lớp còn: lời chat vẫn lưới từ khoá giá (gọi AI mỗi lượt tốn một lần gọi); bản viết lại sau soát không được soát lại (`ka_lo_trinh_tu` lần 1: bản viết lại thêm "72m²" tự nhân); `ka_lo_diem_tin` ("căn này đang 67/100"): **quyết định chủ dự án 02/11** — giữ SRS-216, bot ĐƯỢC nói điểm tin với người bán; chỉ giữ đúng chữ: điểm x/100 là của căn / tin, hạng Đồng / Bạc / Vàng là của người rao (không gọi lẫn; khối ĐIỂM TIN thêm câu dặn này, bài `test_kich_ban_srd_aond` đỏ khi gỡ) — không đảo SRS-216, phép cấm "\d+/100" của kịch bản trái quyết định này. Việc sau đóng gói (điều phối 02/11, không chặn PR): soát lại bản viết lại sau lượt soát; đưa lời chat sang AI đọc nghĩa cho bình luận giá.
+(3) Kiểm: `test_khach_ao_02_11_342.py` gỡ 4 `xfail`; ca 2 / 2b viết lại theo đường AI (bản cũ chỉ đạt bằng thêm từ vào regex) — trả miễn trừ cũ: 2 đỏ, bỏ kiểm cụm nguyên văn: 1 đỏ; `test_giong_rao_cho` đỏ khi trả câu mẫu; `cham` ×2 (số ở mô tả PR).
+
+Bổ sung (chủ dự án 02/11, nguyên văn: "lượt nào cũng nói thì bị ngu à, chỉ nói lúc ra tin thôi"): điểm tin / hạng người rao / cách tăng điểm chỉ nói lúc RA TIN (lượt bản nháp 📋, lượt báo tin đã lên) hoặc khi khách tự hỏi. (1) Lớp lỗi: khối ĐIỂM TIN nối vào MỌI lượt hỏi ô (phiếu lượt) kèm lời dặn "một câu ngắn khi khích lệ" → model chèn "có sổ hồng thì tin lên điểm nhiều luôn" giữa lúc hỏi. Sửa bằng code, không dặn thêm: khối chỉ nối ở nhánh bản nháp, lượt duyệt có tin lên web, và khối ưu tiên `hoi_ve = diem_tin` (AI đọc nghĩa; giá trị mới của enum); lượt khác không có số để nói. (2) Cùng lớp: dòng Gamification ở `BUSINESS_CONTEXT` và câu dặn trong `khoi_diem_tin` sửa theo; `cau_mau` / `agent_ban` / `gui_nhac` không có chỗ nào nói điểm. Lượt báo đăng chưa có bài riêng. (3) Kiểm: `test_noi_loi_hua_27_10::test_prompt_ban_co_khoi_diem_tin_so_that` (hỏi ô không khối; khách hỏi điểm có số — cách nói mới "tin của anh giờ được mấy chấm rồi em") và `test_kich_ban_srd_aond::test_nhom4_diem_tin_chi_o_luot_ra_tin` — trả khối về lượt hỏi ô: 2 đỏ; bỏ `diem_tin` khỏi danh sách nhận: 1 đỏ.
+
+### SRS-5.1zzzzzzz335 · Phía mua: câu hỏi mở tuỳ chọn thay cây hỏi cố định; 2–3 căn mỗi lượt mở bằng tầm giá; dòng căn có đường vào + tiện ích thật (02/11/2026)
+Ca thật chủ dự án 02/11 (số tư vấn): "anh đang cần tìm mua nhà quận 8 dưới 7 tỉ yên tĩnh" — rổ có 3 nhà phố hợp mà bot đưa 1 căn theo khuôn bốn đoạn ("Căn nằm đúng khu vực anh chọn.", "Tin chưa ghi thông tin về độ yên tĩnh.") rồi hỏi "hẻm rộng cỡ nào để xe hơi ra vào"; chủ dự án: "chat chán quá". Khách ảo phía mua 2,4 / 5: bịa "gần trường Hồng Hà", hứa suông "đã chuyển câu hỏi cho chủ".
+(1) Lớp lỗi: lời phía mua do khuôn cố định quyết — cây `BuyerLead.next_question_field` (xe hơi bắt buộc ngay sau ba ô cốt lõi), "mỗi lượt MỘT căn, BỐN ĐOẠN, kể ĐÚNG vì sao hợp"; dòng căn thiếu đường vào / tiện ích nên model hoặc nói máy móc hoặc bịa. Sửa: đủ ba ô cốt lõi → MỘT câu mở, tuỳ chọn, ý do AI chọn trong `y_con_thieu` (đã bỏ ý khách nói / đã hỏi; "chỗ đậu xe" chỉ khi khách nhắc xe; loại BĐS không còn là ô chặn — còn trống thì là một ý của câu mở, điều phối 02/11: hỏi "loại hình nào" ngay sau khi đưa 3 nhà phố là vô lý), engine ghi `_da_hoi` ý thật sự có trong câu hỏi của bot; 2–3 căn mở bằng tầm giá, suy luận có chữ "thường" từ thông số thật ("trong hẻm nên thường yên tĩnh hơn mặt tiền"); `dong_can` thêm đường vào, độ rộng hẻm, tiện ích ≤ 1 km có tên.
+(2) Cùng lớp: lời "giới thiệu MỘT căn" ở nhánh hết câu hỏi (đã sửa); `loai_tru` không loại căn nào ở ca Q8 (3 căn đều tới model) — 1 căn là do khuôn prompt. Còn: số căn / tầm giá model thật nói chỉ kiểm bằng chat thật (đoạn trước / sau ở PR).
+(3) Kiểm: `test_mua_cau_mo_335.py` (Q8 + 2 cách nói mới, chung cư "vợ chồng có con nhỏ" không gợi lại thành viên, khách nhắc xe thì có "chỗ đậu xe", dòng căn có đường vào / tiện ích — trả `mua.py` cũ: 2/4 đỏ); `test_tu_van_mua` ghi `_da_hoi` theo câu hỏi của bot.
+
+### SRS-5.1zzzzzzz334 · /du-an thiếu tab Bà Rịa – Vũng Tàu; vùng nhận tin một nguồn phía web (02/11/2026)
+Ca gốc: tab tỉnh ở `app/du-an/page.tsx` gõ tay 5 tỉnh, thiếu Bà Rịa – Vũng Tàu (DB `projects.province` có 7 dự án "Bà Rịa - Vũng Tàu" — chỉ thấy ở "Tất cả"); tiêu đề / mô tả trang cũng bỏ tỉnh này. Dữ liệu đúng (bộ nạp `thu-du-an-rever.mjs` ghi đúng chữ), lỗi ở web.
+(1) Lớp lỗi: danh sách vùng chép tay ở web, lệch `prompts.VUNG_NHAN_TIN`. (2) Cùng lớp: soát `app/`, `lib/`, `components/` — chỉ trang này liệt kê tỉnh. Sửa: `lib/vung.ts` (bản sao `VUNG_NHAN_TIN`: `tinh` = chữ trong DB, `nhan` = chữ hiện ra), trang dựng tab + metadata từ đó.
+(3) Kiểm: `tests/test_vung_mot_nguon_334.py` (web ↔ lõi, `tinh` ↔ chữ bộ nạp ghi, trang không gõ tay tên tỉnh) — đỏ khi trả trang về bản cũ, đỏ khi bỏ một tỉnh khỏi `lib/vung.ts`; `kieu`, `build`.
+
+### SRS-5.1zzzzzzz333 · Gỡ `/api/listing/parse` + `parseListing` (bóc câu rao bằng luật ở web, không còn nơi gọi) (02/11/2026)
+Ca gốc: soát code chết — route `POST /api/listing/parse` (SRS-4.6) và `parseListing` (~90 dòng luật bóc câu rao trong `lib/parse-query.ts`) không còn ai gọi: web, bot, script, workflow (grep 0 chỗ ngoài định nghĩa). Bóc câu rao thật do lõi Python làm bằng AI; DB còn `boc_thong_so()` (FR-172).
+(1) Lớp lỗi: chuyển bóc tách sang lõi AI mà để lại bản luật phía web — một bộ đoán ý bằng từ khoá nằm chờ người nối lại. (2) Cùng lớp: `parseQuery` (ô tìm kiếm web) còn dùng luật — giữ (không có AI ở ô tìm, chi phí mỗi lượt gõ); đề xuất xử lý câu phủ định ở mô tả PR, không thêm từ khoá.
+Sửa: xoá route + khối `parseListing` / `ParsedListing`; SRS-4.6, TS-WEB2-S09 đánh `[deprecated]`; IA-14, UF-09, WF-08/09, docs/08 bỏ đường dẫn. (3) Kiểm: `kieu`, `build` (route `/api/listing/parse` hết khỏi bảng), `test:bot`, `test:py`, `truyvet`.
+
+---
+
 ### SRS-5.1zzzzzzz332 · `/ds/[token]` thôi là route ƒ; giữ ƒ có chủ ý cho trang đọc `searchParams` (02/11/2026)
 Ca gốc: soát bảng route — `/cho-thue`, `/mua-ban`, `/du-an`, `/ds/[token]` là ƒ. `/ds/[token]` đặt `force-dynamic` (mỗi lượt mở một lambda + một RPC `doc_danh_sach`) vì "token bí mật không liệt kê được" — nhưng `generateStaticParams` trả `[]` không cần liệt kê.
 Quyết định (BA, uỷ quyền): ba trang lọc đọc `searchParams` → Next 15 buộc dựng động, đã bọc `unstable_cache` (đúng luật web); giữ ƒ, không chuyển bộ lọc sang client / path chỉ để đổi ký hiệu. (1) Lớp lỗi: `force-dynamic` không có bài chặn. (2) Cùng lớp: soát `app/**/page.tsx` công khai — chỉ trang này.

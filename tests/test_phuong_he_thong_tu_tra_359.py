@@ -17,6 +17,7 @@ def _tra(nomi=None, diem=None, duong=None, rpc_loi=False):
         if ten == "tra_nominatim":
             return nomi or []
         if ten == "phuong_tai_diem":
+            assert set(p) == {"p_lat", "p_lng"}, p   # chữ ký RPC thật (bot/supabase/migrations/20261103b_ranh_gioi_phuong.sql)
             if rpc_loi:
                 raise RuntimeError("PGRST202: function phuong_tai_diem not found")   # RPC chưa áp (SRS-360)
             return diem
@@ -77,4 +78,4 @@ def test_cong_web_mot_ung_vien_thi_ghi_luon_khong_ra_thi_bao_admin():
     web = eng._trang_thai_web(c2)                                           # ba phường ứng viên → không chọn bừa, báo người phụ trách
     assert "phuong" not in c2.prop.fields and web["phuong_bao_admin"] and "nhờ admin tra" in c2.y_luot["can_nguoi_that"]
     duyet = khoi_trang_thai_web(web)[0]                                     # ca thật (a): lượt duyệt không hỏi phường
-    assert "thuộc phường nào" not in duyet and "thêm phường" not in duyet.lower() and "KHÔNG hỏi khách phường" in duyet
+    assert "thuộc phường nào" not in duyet and "thêm phường" not in duyet.lower() and "hỏi phường" not in duyet.lower()  # SRS-367: dòng cấm rải rác đã gỡ — bất biến chặn ở đầu ra (_soat_hoi_dung_o)

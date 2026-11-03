@@ -71,7 +71,7 @@ def test_tin_cho_phuong_hoi_khac_va_khong_bia_ten_phuong():
     for web in ({"len_web": False, "thieu": ["phuong"], "goi_y_phuong": ["Phường An Đông", "Phường Chợ Quán"]},
                 {"len_web": False, "thieu": ["phuong"], "phuong_da_hoi": True}, {"len_web": False, "thieu": ["phuong"]}):
         co = khoi_trang_thai_web(web)[0]
-        assert "Phường An Đông" not in co and "KHÔNG hỏi khách phường" in co and "KHÔNG kể tên phường nào" in co
+        assert "Phường An Đông" not in co and "hỏi phường" not in co.lower()  # SRS-367: dòng cấm rải rác đã gỡ — bất biến chặn ở đầu ra (_soat_hoi_dung_o)
 
 
 def test_khong_hua_hoi_chu_nha_khi_chua_ghi_viec():

@@ -32,7 +32,7 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 ### 6.2 Luật đang áp — lõi bot
 
 **Ghi ô tin**
-- Ô tin chỉ ghi điều KHÁCH nói: mỗi ô mới / đổi phải có `bang_chung` nằm nguyên trong lời khách (`Engine._loc_o_tin` → `_gia_tri_ghi`, SRS-73); câu bot hỏi, lời AI tả ảnh không phải bằng chứng. Thêm đường ghi ô mới thì qua cùng cổng. Ngoại lệ có chủ đích, đánh dấu `_phuong_he_thong`: ghi tạm hai phường (SRS-214 mục 8), phường tra theo số nhà / hẻm (SRS-236), phường theo dự án / ngã tư.
+- Ô tin chỉ ghi điều KHÁCH nói: mỗi ô mới / đổi phải có `bang_chung` nằm nguyên trong lời khách (`Engine._loc_o_tin` → `_gia_tri_ghi`, SRS-73); câu bot hỏi, lời AI tả ảnh không phải bằng chứng. Thêm đường ghi ô mới thì qua cùng cổng. Ngoại lệ có chủ đích: ô hệ thống tự tra (`schema.O_HE_THONG_TRA`) — phường (đánh dấu `_phuong_he_thong`, SRS-359), tên đường chuẩn từ kho (SRS-366).
 - Ô tin một nguồn `listings.boc_tach` (đọc CÔNG KHAI với tin đang bán); ô riêng của chủ nhà (`schema.O_NOI_BO`) ghi bảng `listing_noi_bo` (SRS-116). Khoá bắt đầu `_` là nội bộ, không ra khách.
 - Vai người rao (`seller_role`) chỉ nhận khi cụm trích GỌI TÊN vai (`_vai_co_bang_chung`, SRS-213) — phí theo vai đoán là báo sai tiền.
 - Mỗi cờ "đã báo / đã hỏi" nằm ở chỗ nhớ qua lượt (ô tin / SQLite), không ở `y_luot` (làm mới mỗi lượt) (SRS-214).
@@ -42,17 +42,17 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 - Câu "🤔 có phải dự án X" (tên gần trùng) chỉ hỏi khi dự án kho CÙNG vị trí với căn (`_cung_vi_tri_du_an`), là câu hỏi duy nhất của lượt (`_hoi_trung_ten`; lời đã có câu hỏi thì sang lượt sau) (SRS-254).
 - Chung / riêng theo khuôn anh Luận: căn kế thừa dự án ⊕ mẫu nhà, căn thắng, giá luôn riêng; phía mua qua `projects.dong_ke_thua` (`Engine._gan_ke_thua`), web trang dự án đọc `thong_tin` đè cột mogi (SRS-283).
 - Lời người bán về dự án là PHIẾU theo hạng (Đồng 1 / Bạc 2 / Vàng 3, chốt ≥ 6, phe khác ≤ 2), admin (`admins`) = `chac_chan:` ghi thẳng; mã phiếu chỉ do `Engine._ma_phieu` tính — đừng nhận phiếu từ model. Tệp mẫu nhà lưu `du-an/…` (bucket công khai) để gửi được.
-- Phường: KHÔNG bao giờ hỏi khách (chủ dự án 02/11, SRS-359) — hệ thống tra (cũ → mới, toạ độ → `phuong_tai_diem`, kho đường / hẻm một phường), không ra thì báo người phụ trách; ô hệ thống tự tra nằm ở `schema.O_HE_THONG_TRA`.
 - Điểm …/100 là điểm của TIN / căn; Đồng / Bạc / Vàng là hạng của NGƯỜI RAO, chỉ có TÊN — không đưa số /100 của người rao cho model (SRS-349), không gọi lẫn. Chỉ nói lúc RA TIN (bản nháp / báo đăng) hoặc khi khách hỏi (`hoi_ve = diem_tin`): khối ĐIỂM TIN chỉ nối ở các lượt đó, lượt hỏi ô không có (chủ dự án 02/11, SRS-336).
 - Nguồn phụ Rever ở `specs.rever` (SRS-324): chỉ điền ô trống, không nêu tên nguồn ra khách; chủ căn hộ hỏi giá cao không → `khoi_dinh_gia` nêu giá RAO X–Y triệu/m² + số tin + ngày, không phán cao / thấp; không có số liệu thì "chưa có dữ liệu định giá" (SRS-325).
 
 **Địa chỉ / phường**
 - Cột `listings.ward` chỉ mang `wards.ten_day_du` hoặc null; DB chặn lần cuối (`20261009b`). Xã Tây Ninh / Đồng Nai ở bảng riêng `xa_tinh_khac`, không nhét vào `wards`.
 - Tra địa danh: `dia_danh.py` — chữ trước, vector Gemini sau, máy kiểm tên gần chữ khách; vector do lịch `nhung-tick` / `nhung-dia-danh-tick` / `nhung-luat-tick` nuôi — đừng gỡ. Tìm theo nghĩa đi qua `tim_dia_danh_theo_nghia` và `tim_nha(p_vec)`, đừng dựng hàm từng bảng (SRS-180).
-- Phường cũ bị chia → kể các phường mới cho khách chọn, không hỏi trống; phường cũ về đúng một phường mới → dùng tên mới (SRS-191 / 220 / 233). Đừng dùng `chon_phuong_da_goi_ten` cho tên cũ có chữ.
-- Số nhà / hẻm cụ thể → tra phường TRƯỚC (`engine._phuong_tu_dia_chi`): bản đồ (`TraDiaDanh.phuong_theo_so_nha`, rpc `tra_nominatim`) chỉ nhận khi ra ĐÚNG số nhà + đúng đường và phường nằm trong kho đường / hẻm — đừng nới sang kết quả mức đường; không ra thì kho hẻm một phường; vẫn không ra mới hỏi (SRS-236).
-- Phường hỏi tối đa 2 lần rồi báo admin MỘT lần mỗi căn (`_phuong_bao_admin`); khối "Kho hẻm" chỉ vào lượt hệ thống hỏi phường (SRS-228). Địa chỉ chỉ có tên đường (không "/", hẻm, ngõ) → `lo_gioi_hem = "Mặt tiền"` (SRS-157).
-- Tên đường khớp ngang nhau nhiều đường (bỏ dấu: Mã Lò / Mã Lộ) → gõ đúng dấu thì nhận tên đó, không thì kể các tên cho khách chọn (`TraDiaDanh.ung_vien_duong`, SRS-270 / 271).
+- KHÔNG hỏi khách phường, KHÔNG hỏi lại tên đường (chủ dự án 02/11, SRS-359 / 366). Ô hệ thống tự tra một nguồn `schema.O_HE_THONG_TRA`; lời bot hỏi ô ngoài ô hệ thống chọn bị chặn ở ĐẦU RA — một chỗ `engine._soat_hoi_dung_o` (SRS-367); đừng thêm dòng cấm prompt cho từng ô.
+- Phường cũ về đúng một phường mới → dùng tên mới (SRS-220); phường cũ bị chia → hệ thống tự xác định, không kể cho khách chọn (SRS-359). Đừng dùng `chon_phuong_da_goi_ten` cho tên cũ có chữ.
+- Số nhà / hẻm cụ thể → tra phường TRƯỚC (`engine._phuong_tu_dia_chi`): bản đồ (`TraDiaDanh.phuong_theo_so_nha`, rpc `tra_nominatim`) chỉ nhận khi ra ĐÚNG số nhà + đúng đường và phường nằm trong kho đường / hẻm — đừng nới sang kết quả mức đường; không ra thì toạ độ → RPC `phuong_tai_diem(p_lat, p_lng)`, rồi kho hẻm / đường một phường; vẫn không ra thì báo người phụ trách một lần, không hỏi khách (SRS-236 / 359).
+- Địa chỉ chỉ có tên đường (không "/", hẻm, ngõ) → `lo_gioi_hem = "Mặt tiền"` (SRS-157).
+- Tên đường: `Engine._chuan_dia_danh` áp tên kho trong khu khách nói (`TraDiaDanh.duong`; nhiều tên ngang nhau chọn theo quận, SRS-273; quận khác / tên địa bàn bị loại, SRS-362); chưa biết khu thì giữ chữ khách (`_duong_chu_khach`). Chỉ hỏi địa chỉ khi khách CHƯA nói đường (SRS-366).
 - Từ điển tên đường bảng `duong` nạp bằng `node scripts/nap-duong.mjs`, không ghi tay; toạ độ tin tra `duong` trước Nominatim (SRS-224).
 
 **Hỏi & bản nháp (phía bán)**

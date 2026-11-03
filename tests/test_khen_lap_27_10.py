@@ -41,7 +41,7 @@ def test_luot_truoc_la_ban_tin_thi_chi_xet_phan_chat():
     c.history.append(Turn("assistant", "📋 Em sẽ rao như vầy nhé anh:\n\nNhà 10 tỷ\n\nAnh chị cô bác ơi, nhà đẹp.\n\n- 10 tỷ\n\n"
                                        "Nhắn Zalo cho em nha!\n\nAnh xem được chưa?", 0.0))
     c.history.append(Turn("user", "ok", 0.0))
-    loi = "Có khách hỏi là tốt rồi anh ơi. Phường nhà mình là phường nào?"
+    loi = "Có khách hỏi là tốt rồi anh ơi. Hẻm trước nhà rộng tầm mấy mét vậy anh?"   # SRS-367: câu mẫu cũ hỏi phường — nay bị lưới hoi_o_he_thong bắt
     assert eng._soat_hinh_thuc(c, "SYS", loi) == loi and not spy.systems
 
 
@@ -64,7 +64,7 @@ def test_luot_bao_admin_thoi_hoi_phuong_ngay():
         assert "can_nguoi_that" not in c.y_luot and web["phuong_bao_admin"]
     from aioi.prompts import khoi_trang_thai_web
     k = khoi_trang_thai_web({"len_web": False, "thieu": ["phuong"], "phuong_bao_admin": True})
-    assert "KHÔNG hỏi khách phường" in k[0] and "người phụ trách đã được báo" in k[0]
+    assert "hỏi phường" not in k[0].lower() and "người phụ trách đã được báo" in k[0]  # SRS-367: dòng cấm rải rác đã gỡ — bất biến chặn ở đầu ra (_soat_hoi_dung_o)
 
 
 # ---------- Mục 3: câu ghi nhận ở giữa lời cũng nhận ra; mục 4: "em gửi ảnh" ngược vai ----------

@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-02 23:57 (giờ VN)
+-- Sinh lúc: 2026-11-03 01:06 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -525,6 +525,18 @@ create table if not exists public.quan_cu (
   nhung_luc timestamp with time zone
 );
 
+create table if not exists public.ranh_gioi_phuong (
+  ten text not null,
+  vong jsonb not null,
+  min_lat double precision not null,
+  max_lat double precision not null,
+  min_lng double precision not null,
+  max_lng double precision not null,
+  nguon text not null,
+  giay_phep text not null,
+  nap_luc timestamp with time zone not null default now()
+);
+
 create table if not exists public.reminders (
   id uuid not null default gen_random_uuid(),
   kind text not null,
@@ -923,6 +935,15 @@ do $d$ begin
   alter table public.quan_cu add constraint quan_cu_pkey PRIMARY KEY (ten);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.ranh_gioi_phuong add constraint ranh_gioi_phuong_khung CHECK (((min_lat <= max_lat) AND (min_lng <= max_lng)));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.ranh_gioi_phuong add constraint ranh_gioi_phuong_kieu CHECK (((vong ->> 'type'::text) = ANY (ARRAY['Polygon'::text, 'MultiPolygon'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.ranh_gioi_phuong add constraint ranh_gioi_phuong_pkey PRIMARY KEY (ten);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.reminders add constraint reminders_kind_check CHECK ((kind = ANY (ARRAY['promise'::text, 'reengage'::text, 'viewing'::text, 'followup'::text, 'escalation'::text, 'report'::text, 'match'::text, 'feedback'::text, 'sold'::text, 'rating'::text, 'admin_reply'::text, 'len_web'::text, 'con_ban'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -1081,6 +1102,9 @@ do $d$ begin
   alter table public.property_events add constraint property_events_listing_id_fkey FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE;
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.ranh_gioi_phuong add constraint ranh_gioi_phuong_ten_fkey FOREIGN KEY (ten) REFERENCES wards(ten) ON DELETE CASCADE;
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.reminders add constraint reminders_buyer_id_fkey FOREIGN KEY (buyer_id) REFERENCES buyers(id) ON DELETE CASCADE;
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -1123,7 +1147,6 @@ create index if not exists dieu_luat_nhung_hnsw ON public.dieu_luat USING hnsw (
 create index if not exists duong_ban_do ON public.duong USING btree (lat, lng) INCLUDE (ten, phuong, quan_cu, loai) WHERE (loai = ANY (ARRAY['duong'::text, 'so'::text]));
 create index if not exists duong_hem ON public.duong USING btree (upper(so_hem), bo_dau(duong_me)) WHERE (loai = 'hem'::text);
 create index if not exists duong_lat_lng ON public.duong USING btree (lat, lng);
-create index if not exists duong_nhung_hnsw ON public.duong USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists duong_ten_gon ON public.duong USING btree (length(ten_khong_dau)) INCLUDE (ten_khong_dau, ten, loai, quan_cu, phuong, tinh) WHERE (loai <> 'hem'::text);
 create index if not exists duong_ten_khong_dau_idx ON public.duong USING btree (ten_khong_dau);
 create index if not exists giao_lo_a_idx ON public.giao_lo USING btree (a_khong_dau);
@@ -1152,12 +1175,12 @@ create index if not exists media_cleanup_can_lam_idx ON public.media_cleanup_que
 create index if not exists messages_conv_seq_idx ON public.messages USING btree (conversation_id, seq DESC);
 create index if not exists messages_conv_time_idx ON public.messages USING btree (conversation_id, created_at);
 create index if not exists phuong_cu_nhung_hnsw ON public.phuong_cu USING hnsw (nhung extensions.halfvec_cosine_ops);
-create index if not exists projects_nhung_hnsw ON public.projects USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists projects_priority_idx ON public.projects USING btree (priority, district);
 create index if not exists property_events_at_idx ON public.property_events USING btree (at DESC);
 create index if not exists property_events_buyer_idx ON public.property_events USING btree (buyer_id);
 create index if not exists property_events_listing_at_idx ON public.property_events USING btree (listing_id, at DESC);
 create index if not exists quan_cu_nhung_hnsw ON public.quan_cu USING hnsw (nhung extensions.halfvec_cosine_ops);
+create index if not exists ranh_gioi_phuong_khung_idx ON public.ranh_gioi_phuong USING btree (min_lat, max_lat, min_lng, max_lng);
 create index if not exists reminders_buyer_id_idx ON public.reminders USING btree (buyer_id);
 create index if not exists reminders_den_han_idx ON public.reminders USING btree (due_at) WHERE (status = 'pending'::text);
 create index if not exists reminders_due_idx ON public.reminders USING btree (status, due_at);
@@ -2890,6 +2913,48 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.diem_trong_vanh(p_lat double precision, p_lng double precision, p_vanh jsonb)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ IMMUTABLE
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  n int := jsonb_array_length(p_vanh);
+  i int; j int;
+  xi double precision; yi double precision; xj double precision; yj double precision;
+  trong boolean := false;
+begin
+  if n < 3 then return false; end if;
+  j := n - 1;
+  for i in 0 .. n - 1 loop
+    xi := (p_vanh -> i ->> 0)::double precision; yi := (p_vanh -> i ->> 1)::double precision;
+    xj := (p_vanh -> j ->> 0)::double precision; yj := (p_vanh -> j ->> 1)::double precision;
+    if ((yi > p_lat) <> (yj > p_lat)) and (p_lng < (xj - xi) * (p_lat - yi) / (yj - yi) + xi) then
+      trong := not trong;
+    end if;
+    j := i;
+  end loop;
+  return trong;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.diem_trong_vong(p_lat double precision, p_lng double precision, p_vong jsonb)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO 'public', 'pg_catalog'
+AS $function$
+  select coalesce(bool_or(
+           public.diem_trong_vanh(p_lat, p_lng, da -> 0)
+           and not exists (select 1 from jsonb_array_elements(da) with ordinality l(vanh, k)
+                            where k > 1 and public.diem_trong_vanh(p_lat, p_lng, l.vanh))), false)
+    from jsonb_array_elements(case p_vong ->> 'type'
+                                when 'Polygon' then jsonb_build_array(p_vong -> 'coordinates')
+                                else p_vong -> 'coordinates' end) da
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.dieu_luat_doi_chu()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -4326,8 +4391,9 @@ begin
     union all
     (select 'phuong_cu', p.id::text, p.nhung_md5 from public.phuong_cu p where p.nhung is null limit 50)
     union all
-    (select 'duong', d.id::text, d.nhung_md5 from public.duong d where d.nhung is null
-      order by (d.loai = 'hem'), (d.tinh <> 'TP.HCM') limit 100)
+    -- 20261103c (SRS-5.1zzzzzzz362): chỉ nhúng TÊN ĐƯỜNG; hẻm / đường số tra bằng chữ (tim_duong / tim_dia_danh), không nhúng.
+    (select 'duong', d.id::text, d.nhung_md5 from public.duong d where d.nhung is null and d.loai = 'duong'
+      order by (d.tinh <> 'TP.HCM') limit 100)
   loop
     exit when v_gui >= v_tran;
     v_txt := public.van_ban_dia_danh(r.bang, r.khoa);
@@ -4824,6 +4890,24 @@ begin
 exception when others then
   return null;
 end
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.phuong_tai_diem(p_lat double precision, p_lng double precision)
+ RETURNS text
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_catalog'
+AS $function$
+  select w.ten_day_du
+    from public.ranh_gioi_phuong r
+    join public.wards w on w.ten = r.ten
+   where p_lat is not null and p_lng is not null
+     and p_lat between r.min_lat and r.max_lat
+     and p_lng between r.min_lng and r.max_lng
+     and public.diem_trong_vong(p_lat, p_lng, r.vong)
+   order by (r.max_lat - r.min_lat) * (r.max_lng - r.min_lng)   -- hai đa giác chồng (dữ liệu lệch) → lấy phường nhỏ hơn
+   limit 1
 $function$
 ;
 
@@ -6773,6 +6857,7 @@ alter table public.phuong_cu enable row level security;
 alter table public.projects enable row level security;
 alter table public.property_events enable row level security;
 alter table public.quan_cu enable row level security;
+alter table public.ranh_gioi_phuong enable row level security;
 alter table public.reminders enable row level security;
 alter table public.sellers enable row level security;
 alter table public.tien_ich enable row level security;
@@ -6989,6 +7074,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.pr
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.property_events to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.public_listings to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.quan_cu to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ranh_gioi_phuong to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.reminders to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.seller_ranks to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.sellers to service_role;
@@ -7174,6 +7260,10 @@ revoke all on function public.diem_tin(l listings) from public, anon, authentica
 grant execute on function public.diem_tin(l listings) to service_role;
 revoke all on function public.diem_tin(p_listing_id uuid) from public, anon, authenticated;
 grant execute on function public.diem_tin(p_listing_id uuid) to service_role;
+revoke all on function public.diem_trong_vanh(p_lat double precision, p_lng double precision, p_vanh jsonb) from public, anon, authenticated;
+grant execute on function public.diem_trong_vanh(p_lat double precision, p_lng double precision, p_vanh jsonb) to service_role;
+revoke all on function public.diem_trong_vong(p_lat double precision, p_lng double precision, p_vong jsonb) from public, anon, authenticated;
+grant execute on function public.diem_trong_vong(p_lat double precision, p_lng double precision, p_vong jsonb) to service_role;
 revoke all on function public.dieu_luat_doi_chu() from public, anon, authenticated;
 grant execute on function public.dieu_luat_doi_chu() to anon;
 grant execute on function public.dieu_luat_doi_chu() to authenticated;
@@ -7335,6 +7425,8 @@ grant execute on function public.o_boc_tach(p jsonb) to service_role;
 revoke all on function public.parse_vnd(p text) from public, anon, authenticated;
 grant execute on function public.parse_vnd(p text) to authenticated;
 grant execute on function public.parse_vnd(p text) to service_role;
+revoke all on function public.phuong_tai_diem(p_lat double precision, p_lng double precision) from public, anon, authenticated;
+grant execute on function public.phuong_tai_diem(p_lat double precision, p_lng double precision) to service_role;
 revoke all on function public.quota_tieu_hao() from public, anon, authenticated;
 grant execute on function public.quota_tieu_hao() to authenticated;
 grant execute on function public.quota_tieu_hao() to service_role;
