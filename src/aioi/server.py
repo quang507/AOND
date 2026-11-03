@@ -224,7 +224,7 @@ def message(msg: IncomingMessage) -> Reply:
 
     # Cancel previous follow-up timer for this user and schedule a new 5-minute inactivity follow-up
     followup_manager.cancel_followup(msg.user_key)
-    if r.role == "seller" and r.completeness < 1.0:
+    if r.role == "seller" and r.completeness < 1.0 and not r.hen_lai:   # SRS-5.1zzzzzzz369
         followup_manager.schedule_followup(
             user_key=msg.user_key,
             engine=_engine,
@@ -828,7 +828,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
 
     # Cancel previous follow-up timer for this user and schedule a new 5-minute inactivity follow-up
     followup_manager.cancel_followup(payload.external_user_id)
-    if r.role == "seller" and r.completeness < 1.0:
+    if r.role == "seller" and r.completeness < 1.0 and not r.hen_lai:   # SRS-5.1zzzzzzz369
         followup_manager.schedule_followup(
             user_key=payload.external_user_id,
             engine=_engine,
@@ -836,7 +836,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
             role=r.role,
         )
 
-    photos = anh_gui_kem(payload.external_user_id, r.role, payload.text)
+    photos = anh_gui_kem(payload.external_user_id, r.role, r.du_an_anh) if r.du_an_anh else []   # SRS-5.1zzzzzzz369: theo ý AI đọc
     # SRS-5.1zzzzzzz145: căn bot vừa giới thiệu (có link trong lời) → 1–2 ảnh mỗi căn nếu căn đã có ảnh công khai
     photos = (photos + anh_can_gui_kem(payload.external_user_id, r.role, cleaned_reply, xin=r.xin_anh))[:6]
     photos = (list(r.ban_ve) + [p for p in photos if p not in r.ban_ve])[:6]   # bản vẽ khách xin đi trước (SRS-5.1zzzzzzz249)

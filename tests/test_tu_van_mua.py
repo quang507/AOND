@@ -51,6 +51,13 @@ def test_engine_danh_dau_da_hoi_va_ghi_nhu_cau_xuong_buyers():
     ke = {**KHACH_MUA, "buyer_lead": {**KHACH_MUA["buyer_lead"], "muc_dich": "để ở", "yeu_cau_xe_hoi": "hẻm xe hơi",
                                      "so_phong_ngu": "3PN"}}
     eng, ai = _engine(kho, ke)
+    from aioi.prompts import SOAT_Y_MUA_SYSTEM
+    # SRS-5.1zzzzzzz369: ý nào câu hỏi của bot đã hỏi do AI đọc (giả lập), code kiểm cụm trích
+    doc = {"Em có căn này hợp nè. Anh có cần ưu tiên khu yên tĩnh hay gần chỗ làm không?":
+           [{"y": "moi_truong_song", "trich": "khu yên tĩnh"}, {"y": "noi_lam_viec", "trich": "gần chỗ làm"}]}
+    goc_extract = ai.extract
+    ai.extract = lambda system, messages, schema: ({"y_da_hoi": doc.get(messages[0].content.split("LỜI TRỢ LÝ:\n", 1)[1], [])}
+                                                   if system == SOAT_Y_MUA_SYSTEM else goc_extract(system, messages, schema))
     ai.chat = lambda system, messages, max_tokens=256: ai.system.append(system) or (
         "Em có căn này hợp nè. Anh có cần ưu tiên khu yên tĩnh hay gần chỗ làm không?")   # câu hỏi mở bot thật sự hỏi
     eng.handle("mua-7", "Em tìm nhà phố quận 5 tầm 5 tỷ để ở, hẻm xe hơi, 3 phòng ngủ")
@@ -61,3 +68,20 @@ def test_engine_danh_dau_da_hoi_va_ghi_nhu_cau_xuong_buyers():
     eng.handle("mua-7", "nhà có vợ chồng em với ông bà")
     ghi = [d for d in kho.ghi("PATCH", "buyers") if isinstance(d, dict) and d.get("preferences")]
     assert ghi and ghi[-1]["preferences"].get("thanh_vien") == "vợ chồng với ông bà"
+
+
+
+def test_y_da_hoi_khong_bat_chu_trung_am():
+    """SRS-5.1zzzzzzz369 — bản dò chữ bỏ dấu: "vậy" → "vay" (khớp "vay ngân hàng"), "cho em hỏi" khớp "chợ"; bot tưởng đã hỏi nên lượt sau
+    bỏ qua hai ý đó. AI đọc nghĩa: câu này không hỏi ý nào trong danh sách."""
+    from aioi.prompts import SOAT_Y_MUA_SYSTEM
+    kho = KhoGia()
+    ke = {**KHACH_MUA, "buyer_lead": {**KHACH_MUA["buyer_lead"], "muc_dich": "để ở", "so_phong_ngu": "3PN"}}
+    eng, ai = _engine(kho, ke)
+    goc_extract = ai.extract
+    ai.extract = lambda system, messages, schema: ({"y_da_hoi": []} if system == SOAT_Y_MUA_SYSTEM
+                                                   else goc_extract(system, messages, schema))
+    ai.chat = lambda system, messages, max_tokens=256: "Em gửi anh mấy căn nè. Anh thấy căn nào hợp vậy? Cho em hỏi anh muốn đi xem hôm nào?"
+    eng.handle("mua-8", "Em tìm nhà phố quận 5 tầm 5 tỷ để ở, 3 phòng ngủ")
+    da = eng.conversation("mua-8").buyer_lead.fields.get("_da_hoi") or ""
+    assert "vay_ngan_hang" not in da and "moi_truong_song" not in da

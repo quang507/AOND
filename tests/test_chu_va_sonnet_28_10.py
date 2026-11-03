@@ -12,7 +12,7 @@ from tests.test_viec_mua import KhoGia, _engine
 
 
 def test_khach_xung_chu_giu_chu_va_cau_mau_goi_dung():
-    eng, ai = _engine(KhoGia(), {**CHU_NHA, "xung_ho": "chu_co_bac", "xung_ho_trich_dan": "chú bán nhà"})
+    eng, ai = _engine(KhoGia(), {**CHU_NHA, "xung_ho": "chu_co_bac", "xung_ho_trich_dan": "chú bán nhà", "xung_ho_chu": "chú"})
     eng.handle("xh-chu", "chú bán nhà ở 125 Bình Long, Bình Hưng Hòa A, Bình Tân, 70m2, giá 3 tỷ")
     conv = eng.conversation("xh-chu")
     assert conv.xung_ho == "chu_co_bac:chú"
@@ -32,7 +32,7 @@ def test_tin_nhac_goi_chu_khong_goi_anh():
 
 
 def test_khach_goi_bot_la_con_khong_co_chu_rieng():
-    eng, _ = _engine(KhoGia(), {**CHU_NHA, "xung_ho": "chu_co_bac", "xung_ho_trich_dan": "sao hỏi nhiều vậy con"})
+    eng, _ = _engine(KhoGia(), {**CHU_NHA, "xung_ho": "chu_co_bac", "xung_ho_trich_dan": "sao hỏi nhiều vậy con", "xung_ho_chu": "con"})
     eng.handle("xh-con", "sao hỏi nhiều vậy con")
     assert eng.conversation("xh-con").xung_ho == "chu_co_bac"                 # không đoán chú hay cô
     assert goi_toi("elder") == ("anh/chị", "em")

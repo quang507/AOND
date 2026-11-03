@@ -38,17 +38,17 @@ def test_khach_mua_hoi_phi_biet_minh_khong_tra_phi():
 
 
 def test_xung_ho_go_tat_va_goi_bot_la_con():
-    eng, _ = _eng({"operations": [], "xung_ho": "em", "xung_ho_trich_dan": "e tìm thuê"})
+    eng, _ = _eng({"operations": [], "xung_ho": "em", "xung_ho_trich_dan": "e tìm thuê", "xung_ho_chu": "e"})
     eng.handle("x5k1", "e tìm thuê căn hộ 1pn á")
     assert _detect_customer_pronoun(eng.conversation("x5k1")) == "em"
-    eng, _ = _eng({"operations": [], "xung_ho": "chu_co_bac", "xung_ho_trich_dan": "nói lại đi cháu"})   # cách nói chưa bắn
+    eng, _ = _eng({"operations": [], "xung_ho": "chu_co_bac", "xung_ho_trich_dan": "nói lại đi cháu", "xung_ho_chu": "cháu"})   # cách nói chưa bắn
     eng.handle("x5k2", "nói lại đi cháu, cô nghe không rõ")
     assert _detect_customer_pronoun(eng.conversation("x5k2")) == "elder"
 
 
 def test_chu_tat_khong_bi_dau_a_lam_gia():
     # "ạ" bỏ dấu thành "a" — không được thành bằng chứng khách tự xưng "anh".
-    eng, _ = _eng({"operations": [], "xung_ho": "anh", "xung_ho_trich_dan": "dạ gửi ạ"})
+    eng, _ = _eng({"operations": [], "xung_ho": "anh", "xung_ho_trich_dan": "dạ gửi ạ", "xung_ho_chu": "a"})
     eng.handle("x5k3", "dạ gửi ạ")
     assert _detect_customer_pronoun(eng.conversation("x5k3")) == "unknown"
 

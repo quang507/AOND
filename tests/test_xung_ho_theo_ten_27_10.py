@@ -28,13 +28,13 @@ def test_khoi_xung_ho_em_va_chau_theo_ten_khong_minh():
 
 
 def test_khach_tu_xung_chau_duoc_doc_khi_co_cum_trich():
-    eng, _ = _eng({"operations": [], "xung_ho": "chau", "xung_ho_trich_dan": "cháu muốn bán"})
+    eng, _ = _eng({"operations": [], "xung_ho": "chau", "xung_ho_trich_dan": "cháu muốn bán", "xung_ho_chu": "cháu"})
     eng.handle("ch1", "cháu muốn bán căn nhà ở Gò Vấp ạ")          # cách nói chưa bắn
     assert _detect_customer_pronoun(eng.conversation("ch1")) == "chau"
-    eng, _ = _eng({"operations": [], "xung_ho": "chau", "xung_ho_trich_dan": "con có căn"})
+    eng, _ = _eng({"operations": [], "xung_ho": "chau", "xung_ho_trich_dan": "con có căn", "xung_ho_chu": "con"})
     eng.handle("ch2", "con có căn chung cư muốn cho thuê")
     assert _detect_customer_pronoun(eng.conversation("ch2")) == "chau"
-    eng, _ = _eng({"operations": [], "xung_ho": "chau", "xung_ho_trich_dan": "nhà em"})   # cụm không có chữ cháu / con → không nhận
+    eng, _ = _eng({"operations": [], "xung_ho": "chau", "xung_ho_trich_dan": "nhà em", "xung_ho_chu": "cháu"})   # cụm không có chữ cháu / con → không nhận
     eng.handle("ch3", "nhà em ở quận 5")
     assert _detect_customer_pronoun(eng.conversation("ch3")) == "unknown"
     assert "chau" in operations_schema()["properties"]["xung_ho"]["enum"]
@@ -74,3 +74,15 @@ def test_mo_dau_ghi_nhan_bat_ghi_o_va_chu_ngu_moi():
 
 def test_goi_khach_la_minh_bat_ca_khi_khach_xung_em():
     assert _goi_khach_la_minh("Em ơi, mình hỏi chút nha, nhà em ở đâu?", "em") and not _goi_khach_la_minh("Nhà em ở phường nào vậy em?", "em")
+
+
+def test_chu_xung_ngoai_danh_sach_cu_do_ai_khai_van_nhan():
+    """SRS-5.1zzzzzzz369 (chủ dự án 03/11: "không dùng từ khóa nữa"): bỏ danh sách chữ xưng cố định — AI khai đúng chữ khách dùng
+    (`xung_ho_chu`), code chỉ kiểm chữ đó có trong cụm trích. Cách nói mới: "dượng" (bản cũ không có trong danh sách nên bỏ qua)."""
+    eng, _ = _eng({"operations": [], "xung_ho": "chu_co_bac", "xung_ho_trich_dan": "dượng có căn nhà", "xung_ho_chu": "dượng"})
+    eng.handle("dg1", "dượng có căn nhà ở Quận 8 muốn bán")
+    assert eng.conversation("dg1").xung_ho == "chu_co_bac:dượng"
+    # AI khai chữ không có trong cụm trích → không nhận
+    eng, _ = _eng({"operations": [], "xung_ho": "chu_co_bac", "xung_ho_trich_dan": "nhà ở Quận 8", "xung_ho_chu": "dượng"})
+    eng.handle("dg2", "nhà ở Quận 8 muốn bán")
+    assert eng.conversation("dg2").xung_ho is None

@@ -45,10 +45,17 @@ def test_nguoi_ban_khong_nhan_anh_va_khong_gui_lai_trong_24h():
 
 
 def test_chat_reply_tra_photos(monkeypatch):
+    """SRS-5.1zzzzzzz369: ảnh dự án gửi theo tên dự án AI đọc (`mua.hoi_du_an` / `tim_du_an` → `TurnResult.du_an_anh`), không dò tên
+    trên lời khách thô — "Vinhomes anh xem rồi, không thích" (AI không điền ô) thì không gửi."""
+    import dataclasses
     client = TestClient(server.app)
-    monkeypatch.setattr(server, "anh_gui_kem", lambda khach, vai, cau: ANH[:3])
+    goi: list[str] = []
+    monkeypatch.setattr(server, "anh_gui_kem", lambda khach, vai, cau: (goi.append(cau), ANH[:3])[1])
+    goc = server._engine.handle
+    monkeypatch.setattr(server._engine, "handle", lambda *a, **k: dataclasses.replace(goc(*a, **k), du_an_anh="Bcons City"))
     data = client.post("/chat-reply", json={"external_user_id": "zalo_anh_1", "text": "cho xem dự án Bcons"}).json()
-    assert data["photos"] == ANH[:3]
-    monkeypatch.setattr(server, "anh_gui_kem", lambda khach, vai, cau: [])
-    data = client.post("/chat-reply", json={"external_user_id": "zalo_anh_2", "text": "chào em"}).json()
-    assert data["photos"] == []
+    assert data["photos"] == ANH[:3] and goi == ["Bcons City"]
+    goi.clear()
+    monkeypatch.setattr(server._engine, "handle", goc)
+    data = client.post("/chat-reply", json={"external_user_id": "zalo_anh_2", "text": "Bcons anh xem rồi, không thích"}).json()
+    assert data["photos"] == [] and goi == []

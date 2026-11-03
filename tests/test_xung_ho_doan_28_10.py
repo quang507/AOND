@@ -8,10 +8,10 @@ from tests.test_viec_mua import KhoGia, _engine
 
 
 def test_ai_tra_chu_thay_ma_van_nhan():
-    eng, _ = _engine(KhoGia(), {**CHU_NHA, "xung_ho": "chú", "xung_ho_trich_dan": "chú bán nhà"})
+    eng, _ = _engine(KhoGia(), {**CHU_NHA, "xung_ho": "chú", "xung_ho_trich_dan": "chú bán nhà", "xung_ho_chu": "chú"})
     eng.handle("xh-doan-1", "chú bán nhà ở 125 Bình Long, Bình Hưng Hòa A, Bình Tân, 70m2, giá 3 tỷ")
     assert eng.conversation("xh-doan-1").xung_ho == "chu_co_bac:chú"
-    eng2, _ = _engine(KhoGia(), {**CHU_NHA, "xung_ho": "Cô", "xung_ho_trich_dan": "cô có căn hộ"})
+    eng2, _ = _engine(KhoGia(), {**CHU_NHA, "xung_ho": "Cô", "xung_ho_trich_dan": "cô có căn hộ", "xung_ho_chu": "cô"})
     eng2.handle("xh-doan-2", "cô có căn hộ ở Bình Tân muốn bán 2 tỷ 1")          # cách nói mới
     assert _detect_customer_pronoun(eng2.conversation("xh-doan-2")) == "elder:cô"
 

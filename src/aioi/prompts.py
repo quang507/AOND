@@ -580,13 +580,17 @@ Y_MO_MUA: dict[str, str] = {
     "noi_lam_viec": "gần chỗ làm / trường của con", "dien_tich_mong_muon": "diện tích", "thang_may": "thang máy",
     "tien_do_mua": "khi nào muốn đi xem", "yeu_cau_xe_hoi": "chỗ đậu xe",
 }
-# Dấu nhận ý trong CÂU HỎI của lời bot (chỉ câu có "?") — engine ghi `_da_hoi` những ý bot thật sự đã hỏi (SRS-5.1zzzzzzz335).
-Y_MO_DAU: dict[str, tuple[str, ...]] = {
-    "loai_bds": ("căn hộ", "chung cư", "đất nền", "loại nhà", "loại hình"), "so_phong_ngu": ("phòng ngủ",), "nhan_nha_khi_nao": ("nhận nhà",), "muc_dich": ("để ở", "đầu tư"), "vay_ngan_hang": ("thanh toán", "vay"),
-    "moi_truong_song": ("yên tĩnh", "chợ", "trường", "công viên"), "thanh_vien": ("mấy người", "thành viên", "ai ở"),
-    "noi_lam_viec": ("chỗ làm", "đi làm", "con đi học", "trường của con"), "dien_tich_mong_muon": ("diện tích",), "thang_may": ("thang máy",),
-    "tien_do_mua": ("đi xem", "khi nào"), "yeu_cau_xe_hoi": ("đậu xe", "xe hơi", "ô tô"),
-}
+# SRS-5.1zzzzzzz369 (chủ dự án 03/11: "không dùng từ khóa nữa"): ý nào lời bot phía mua đã HỎI — AI đọc nghĩa, code kiểm cụm trích. Bản trước
+# so chuỗi con sau khi bỏ dấu (`Y_MO_DAU`): "vậy" → "vay" khớp "vay ngân hàng", "cho" khớp "chợ", nên lượt sau bot bỏ qua hai ý đó.
+SOAT_Y_MUA_SYSTEM = """Dưới đây là lời trợ lý môi giới vừa viết cho khách TÌM MUA / THUÊ nhà, kèm danh sách Ý NHU CẦU (khoá: nội dung).
+Liệt kê các ý mà CÂU HỎI trong lời trợ lý thật sự hỏi / gợi khách trả lời (kể cả gợi làm ví dụ trong câu hỏi mở). Mỗi ý: y = khoá trong danh sách,
+trich = cụm NGUYÊN VĂN ngắn trong lời trợ lý nói tới ý đó. Chữ trùng âm không phải ý ("vậy" không phải vay, "cho em hỏi" không phải chợ).
+Không có → y_da_hoi = []."""
+
+
+def soat_y_mua_schema() -> dict:
+    return {"type": "object", "properties": {"y_da_hoi": {"type": "array", "items": {"type": "object", "properties": {
+        "y": {"type": "string"}, "trich": {"type": "string"}}, "required": ["y", "trich"]}}}, "required": ["y_da_hoi"]}
 
 
 def build_buyer_chat_system(
@@ -2064,7 +2068,7 @@ QUY TẮC:
   Chỉ điền ĐÚNG MÃ trong danh sách (em / anh / chi / chau / chu_co_bac), không điền chữ khách gõ. Chữ "em" khách dùng để GỌI bot ("đăng đi em") không
   phải tự xưng. Khách gõ tắt cũng tính: "e" = em, "a" = anh, "c" = chị ("e tìm thuê", "a là MG"). Khách GỌI bot là "con" /
   "cháu" ("sao hỏi nhiều vậy con") = khách lớn tuổi → "chu_co_bac". Chưa thấy → bỏ trống. Có điền thì xung_ho_trich_dan =
-  NGUYÊN VĂN cụm chứa chữ xưng / chữ gọi đó.
+  NGUYÊN VĂN cụm chứa chữ xưng / chữ gọi đó, và xung_ho_chu = đúng chữ đó (chép nguyên, vd "chú", "e").
 - BOT VỪA HỎI GÌ: bot_vua_hoi = danh sách KHOÁ ô (đúng tên khoá ở fields: phuong, dia_chi, gia, dien_tich_dat,
   phap_ly_hoan_cong…) mà TIN GẦN NHẤT CỦA BOT thật sự hỏi khách — đọc theo nghĩa câu hỏi của bot, không theo việc khách trả lời
   ("cho em xin giá anh muốn bán" → ["gia"]; "nhà ngang dài bao nhiêu, mấy tầng" → ["kich_thuoc", "so_tang"]). Bot không hỏi ô nào → [].
@@ -2079,6 +2083,8 @@ QUY TẮC:
 - XIN GẶP NGƯỜI THẬT: can_nguoi_that = câu ngắn tóm ý khách XIN nói chuyện / gặp / gọi điện với
   NGƯỜI (nhân viên, quản lý, môi giới, "người thật", "không muốn chat với máy"). Hỏi bot là người hay máy, hay chỉ than chậm, KHÔNG
   phải xin gặp người → bỏ trống. Có điền thì vẫn ghi các ô tin khác như thường.
+- KHÁCH HẸN NÓI SAU: hen_lai = NGUYÊN VĂN cụm khách báo đang bận / để lúc khác trả lời / hẹn giờ nói tiếp ("tối a gửi",
+  "đang chạy xe tí nhắn", "mai bàn tiếp"). Khách chỉ chào, cảm ơn hay đang trả lời bình thường → bỏ trống.
 - NGOÀI VÙNG NHẬN TIN: bên mình chỉ nhận rao ở TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai — tính theo địa giới cũ lẫn mới (TP.HCM
   mới gồm Bình Dương và Bà Rịa – Vũng Tàu cũ; Tây Ninh mới gồm Long An cũ; Đồng Nai cũ — Biên Hòa, Long Thành, Nhơn Trạch, Trảng Bom… —
   là TRONG vùng; chỉ phần Bình Phước cũ — Đồng Xoài, Bình Long, Phước Long… — dù nay thuộc Đồng Nai vẫn là NGOÀI vùng).
@@ -2152,7 +2158,7 @@ OPERATIONS_SYSTEM_MUA = (
 
 # Khoá kế hoạch lượt mua dùng (engine đọc các khoá này ở nhánh mua); thiếu khoá nào thì `plan.get` ra rỗng như lượt không nói.
 KHOA_FORM_MUA = ("user_intent", "buyer_lead", "mua", "xong_viec_mua", "hoi_ve", "hoi_phap_ly", "phap_ly_trich_dan", "phap_ly_nhay_cam",
-                 "xung_ho", "xung_ho_trich_dan", "can_nguoi_that", "loi_xa_giao", "loi_xa_giao_trich_dan", "hoi_ngoai_viec",
+                 "xung_ho", "xung_ho_trich_dan", "xung_ho_chu", "can_nguoi_that", "loi_xa_giao", "loi_xa_giao_trich_dan", "hoi_ngoai_viec",
                  "danh_gia_sao", "danh_gia_trich_dan")
 
 
@@ -2348,6 +2354,8 @@ def operations_schema() -> dict[str, Any]:
                                "chủ ngữ) → chu_co_bac. Chưa thấy thì bỏ trống.",
             },
             "xung_ho_trich_dan": {"type": "string", "description": "Nguyên văn cụm chứa chữ khách tự xưng / gọi bot (bắt buộc khi có xung_ho)."},
+            "xung_ho_chu": {"type": "string", "description": "ĐÚNG chữ khách dùng để tự xưng / gọi bot trong cụm trích, chép nguyên (vd \"em\", "
+                            "\"e\", \"chú\", \"con\") — bắt buộc khi có xung_ho."},
             "bot_vua_hoi": {"type": "array", "items": {"type": "string"},
                             "description": "Khoá các ô mà tin GẦN NHẤT của bot thật sự hỏi khách (vd [\"phuong\"]). Không hỏi ô nào → []."},
             "xin_xem_ban_ve": {"type": "string", "description": "Tóm ngắn ý khách XIN bên em gửi / cho xem bản vẽ, mặt bằng (bản "
@@ -2361,6 +2369,8 @@ def operations_schema() -> dict[str, Any]:
                             "Không có thì bỏ trống."},
             "can_nguoi_that": {"type": "string", "description": "Câu ngắn tóm ý khách XIN nói chuyện / gặp / gọi điện với người "
                                "thật (nhân viên, quản lý). Không xin thì bỏ trống."},
+            "hen_lai": {"type": "string", "description": "NGUYÊN VĂN cụm khách báo đang bận / hẹn lúc khác nói tiếp. Không có thì "
+                        "bỏ trống."},
             "ngoai_vung": {"type": "string", "description": "Tên tỉnh / thành của căn khi khách đã nói rõ căn nằm NGOÀI vùng nhận "
                            "tin (TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai). Trong vùng hoặc chưa rõ thì bỏ "
                            "trống."},
@@ -2501,6 +2511,19 @@ thì mảng rỗng."""
 
 # SRS-5.1zzzzzzz353: cùng lượt AI đó cho LỜI CHAT (bản trước: lưới từ khoá `_BINH_LUAN_GIA`, đổi chữ là lọt). Lời chat cấm cả khẳng định thị trường
 # (SRS-5.1zzzzzzz132: dễ bán, đắt khách…) — khác bản tin, nơi ý chung về khu là quyết định chủ dự án "kệ" (§6.3).
+# SRS-5.1zzzzzzz369 (chủ dự án 03/11: "không dùng từ khóa nữa"): ảnh chủ nhiều căn gửi thuộc căn nào — AI đọc theo nghĩa các tin chủ nhà vừa
+# nhắn, code kiểm cụm trích; bản trước dò số / chữ địa chỉ trên lời khách (`_match_listing`), một con số giá / diện tích có thể khớp nhầm mã căn.
+CHON_CAN_ANH_SYSTEM = """Chủ nhà có nhiều căn đang rao vừa gửi ẢNH. Dưới đây là danh sách căn (mã + mô tả) và các tin chủ nhà vừa nhắn.
+Đọc theo NGHĨA: các tin đó có chỉ ra ảnh là của căn nào không (gọi mã, địa chỉ, tên đường, đặc điểm riêng của một căn).
+- Chỉ ra đúng MỘT căn → ma = mã căn đó, trich = cụm NGUYÊN VĂN trong tin chủ nhà chỉ ra căn (chép đúng chữ).
+- Không chỉ ra, chỉ ra nhiều căn, hay nói căn đó "không phải" / "khác" → ma = "", trich = "".
+- Con số giá, diện tích, số tầng KHÔNG phải mã căn."""
+
+
+def chon_can_anh_schema() -> dict:
+    return {"type": "object", "properties": {"ma": {"type": "string"}, "trich": {"type": "string"}}, "required": ["ma", "trich"]}
+
+
 # SRS-5.1zzzzzzz367 (chủ dự án 02/11: "phải sửa từ gốc chứ"): đầu ra model không bị soát theo ô hệ thống chọn — AI đọc lời bot SẮP GỬI, khai
 # các ô mà lời đó hỏi (cùng khoá ô tin như `bot_vua_hoi`) kèm cụm nguyên văn; code kiểm cụm có trong lời rồi so với ô được phép
 # (`engine._soat_hoi_dung_o`). Không dặn model "đừng hỏi ô X" — chặn ở đầu ra, một chỗ.
@@ -2531,6 +2554,17 @@ def soat_o_hoi_schema() -> dict:
     return {"type": "object", "properties": {"cau_hoi": {"type": "array", "items": {"type": "object", "properties": {
         "o": {"type": "string"}, "trich": {"type": "string"}, "khach_vua_hoi": {"type": "boolean"}, "trich_khach": {"type": "string"}},
         "required": ["o", "trich"]}}}, "required": ["cau_hoi"]}
+
+
+SOAT_KHANG_DINH_SYSTEM = """Dưới đây là bản tin rao nhà trợ lý vừa viết và một số CỤM trong bản tin. Với mỗi cụm, đọc câu chứa cụm: câu có
+KHẲNG ĐỊNH căn nhà CÓ / LÀ đúng điều cụm nói không. khang_dinh = false khi câu phủ định ("không phải hẻm"), nói việc đang làm / chưa có
+("sổ hồng đang làm", "chưa ra sổ đỏ"), hoặc cụm chỉ là chữ trong tên riêng (tên đường, tên dự án). Còn lại true. Trả `cum` = mỗi cụm một
+mục {cum: chép đúng cụm đã cho, khang_dinh}."""
+
+
+def soat_khang_dinh_schema() -> dict[str, Any]:
+    return {"type": "object", "properties": {"cum": {"type": "array", "items": {"type": "object", "properties": {
+        "cum": {"type": "string"}, "khang_dinh": {"type": "boolean"}}, "required": ["cum", "khang_dinh"]}}}, "required": ["cum"]}
 
 
 SOAT_BINH_GIA_CHAT_SYSTEM = """Dưới đây là một tin nhắn trợ lý môi giới vừa viết cho khách. Tìm các câu / cụm trợ lý tự NHẬN XÉT MỨC GIÁ hay THỊ TRƯỜNG:

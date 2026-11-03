@@ -127,14 +127,38 @@ def test_anh_chu_nha_vao_dung_can_theo_ngu_canh():
         if loi:
             c.history.append(Turn("user", loi, time.time()))
         return c
-    e = Engine(AiGia({"operations": []}))
+    from aioi.prompts import CHON_CAN_ANH_SYSTEM
+    doc: dict[str, dict] = {}   # SRS-5.1zzzzzzz369: AI đọc ảnh thuộc căn nào (giả lập theo tin chủ nhà); code kiểm cụm trích
+
+    class _Ai(AiGia):
+        def extract(self, system, messages, schema):
+            if system == CHON_CAN_ANH_SYSTEM:
+                tin = messages[0].content.split("TIN CHỦ NHÀ VỪA NHẮN:\n", 1)[1]
+                return doc.get(tin, {"ma": "", "trich": ""})
+            return super().extract(system, messages, schema)
+    e = Engine(_Ai({"operations": []}))
     e._convstore = SimpleNamespace(can_cho_anh=lambda uk: ["BBBBBBBB"])
     c = conv_moi()
     e._chon_can_nhan_anh(c)
     assert c.active_listing_id == b.listing_id                          # căn khách vừa xin ảnh
+    doc["ảnh căn 12 Trần Bình Trọng nè em"] = {"ma": "AAAAAAAA", "trich": "căn 12 Trần Bình Trọng"}
     c = conv_moi("ảnh căn 12 Trần Bình Trọng nè em")
     e._chon_can_nhan_anh(c)
-    assert c.active_listing_id == a.listing_id                          # chủ nhà gọi tên căn → theo lời chủ nhà
+    assert c.active_listing_id == a.listing_id                          # chủ nhà gọi tên căn → theo lời chủ nhà (AI đọc)
+    # cách nói mới: số trong tin là GIÁ, không phải mã căn — bản dò số cũ khớp nhầm; AI không chỉ ra căn nào → căn khách mua xin ảnh
+    a.prop.fields["ma_so_can"] = "căn số 5"
+    c = conv_moi("ảnh nè em, căn này anh bán 5 tỷ")
+    c.active_listing_id = b.listing_id
+    e._convstore = SimpleNamespace(can_cho_anh=lambda uk: [])
+    e._chon_can_nhan_anh(c)
+    assert c.active_listing_id == b.listing_id                          # "5 tỷ" không kéo ảnh sang căn số 5
+    a.prop.fields.pop("ma_so_can")
+    e._convstore = SimpleNamespace(can_cho_anh=lambda uk: ["BBBBBBBB"])
+    # AI trích cụm không có trong tin → không nhận
+    doc["ảnh căn kia"] = {"ma": "AAAAAAAA", "trich": "căn 12 Trần Bình Trọng"}
+    c = conv_moi("ảnh căn kia")
+    e._chon_can_nhan_anh(c)
+    assert c.active_listing_id == b.listing_id
     e._convstore = SimpleNamespace(can_cho_anh=lambda uk: [])
     c = conv_moi()
     e._chon_can_nhan_anh(c)

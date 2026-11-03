@@ -785,6 +785,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz369 · Gỡ từ khoá trên lời khách ở bốn chỗ còn sót + ô AI "khách hẹn nói sau" + hai lưới bản tin bắt oan (03/11/2026)
+Chủ dự án 03/11: "không dùng từ khóa nữa dùng schematics 100% … hẹn lại chiều nói chuyện … được agent gọi chứ không phải có từ khóa là gọi". Audit: gửi ảnh dự án theo tên trong chữ thô, chọn căn nhận ảnh bằng `_match_listing`, `Y_MO_DAU` so chuỗi, xưng hô theo danh sách chữ `_CHU_LON_TUOI`; không có ô "hẹn nói sau" (tin nhắc 5 phút vẫn chạy); lưới bản tin bắt "sổ hồng đang làm", "khu sầm uất" chính chủ nói.
+(1) Lớp lỗi: code đoán ý khách bằng chữ. Sửa: AI đọc + code kiểm cụm trích — `TurnResult.du_an_anh` (ý mua `hoi_du_an`/`tim_du_an`), `CHON_CAN_ANH_SYSTEM`, `SOAT_Y_MUA_SYSTEM`, ô `xung_ho_chu`; ô `hen_lai` → server bỏ lịch nhắc; lưới bản tin: cụm "không nguồn" có trong lời khách thì không bắt, nhóm chủ đã nói (giấy tờ / đường vào / tình trạng) thì AI đọc câu (`SOAT_KHANG_DINH_SYSTEM`: phủ định / đang làm → bỏ).
+(2) Cùng lớp còn: SQL `boc_thong_so` (pháp lý, đường vào, thương lượng… — Đợt B, cần migration), `tin_goc._DUA_DAY`. Chi phí: +1 Haiku khi khách mua gửi ảnh / hỏi mở, khi lưới bản tin bắt nhóm đã rõ.
+(3) Kiểm: `test_hen_lai_369.py` (cách nói mới "đang đón con tối về a gửi"), `test_anh_du_an.py`, `test_xin_chu_nha_254.py`, `test_tu_van_mua.py`, `test_xung_ho_theo_ten_27_10.py` — gỡ từng bản sửa: đỏ.
+
 ### SRS-5.1zzzzzzz368 · Làm gọn prompt bước 1: khuôn bản tin chỉ khi cần, bỏ mã SRS / ngày trong chữ gửi model, danh sách ô soát vào system (02/11/2026)
 Chủ dự án 02/11: "prompt bot gọn lại hơn dc ko, có chỗ nào bị dài dòng chồng nhau ko" → "làm gọn nó đi". Đo (ký tự): bóc tách bán 25.235, viết lời sau bản nháp 13.470 (gồm `AD_FORMAT` 4.980 nằm SAU ranh giới cache), lượt soát ô hỏi gửi danh sách 94 ô (~3.800) trong tin user.
 (1) Lớp lỗi: khối gắn cố định vào mọi lượt dù chỉ vài lượt cần; lịch sử sửa ("(SRS-…)", ngày) nằm trong chữ gửi model. Sửa: `build_fee_followup_system(viet_lai_tin=)` — khuôn bản tin chỉ khi `engine._co_the_viet_lai_tin` (khách không duyệt, dặn cách viết, hay vừa đổi ô); bỏ mã SRS / ngày trong chuỗi prompt (giữ ở comment / docs); danh sách ô soát vào `SOAT_O_HOI_SYSTEM` (cache), bỏ 8 ô chỉ phía mua.
@@ -834,11 +840,6 @@ Chủ dự án 02/11 (nguyên văn): "tên phường mới, tên phường cũ �
 (1) Lớp lỗi: ô hệ thống tự tra được nằm trong luồng hỏi khách. Sửa: `schema.O_HE_THONG_TRA`; `Engine._phuong_tu_dia_chi` tra (1) bản đồ đúng số nhà, (2) toạ độ → RPC `phuong_tai_diem(p_lat, p_lng)` (SRS-360), (3) kho hẻm / đường một phường; cổng web một ứng viên → ghi, không ra → báo người phụ trách một lần; bỏ các khối hỏi phường.
 (2) Còn: căn hộ có dự án trong kho vẫn hỏi `dia_chi`; DB còn chặn tin lên web khi thiếu `ward` (phía web·DB). Bổ sung: lõi từng gọi RPC với `{lat, lng}` → sửa `{p_lat, p_lng}`.
 (3) Kiểm: `test_phuong_he_thong_tu_tra_359.py` (khoá chữ ký RPC) — trả phường vào ô bắt buộc: đỏ.
-
-### SRS-5.1zzzzzzz358 · Dữ kiện "nhắn khách khi có căn mới (trong 8–20 giờ)" đọc thành "8–20 tiếng nữa" (02/11/2026)
-Ca gốc: khách ảo #274 — hai persona không hiểu "trong khoảng 8–20 giờ tới"; ý thật là khung giờ 8h–20h.
-(1) Lớp lỗi: dữ kiện đưa model mơ hồ đơn vị (thời điểm hay thời lượng). Sửa: `mua.khoi_can_cho_khach` → "(chỉ gửi trong khung giờ 8h–20h hằng ngày)".
-(2) Cùng lớp: `engine` "trong giờ 8–20h" có mốc đồng hồ — giữ. Còn: hai mô tả "8–20 giờ" trong `cau_mau.py` (phía web·DB). (3) Kiểm: `test_khung_gio_ro_don_vi_358.py` — trả câu cũ: đỏ.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

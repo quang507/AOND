@@ -5,17 +5,17 @@ from tests.test_duyet_ban_nhap import _eng
 
 
 def test_cum_trich_phai_chua_chu_xung(monkeypatch):
-    eng, _, _, conv = _eng({"operations": [], "xung_ho": "chi", "xung_ho_trich_dan": "Em gửi căn"}, monkeypatch)
+    eng, _, _, conv = _eng({"operations": [], "xung_ho": "chi", "xung_ho_trich_dan": "Em gửi căn", "xung_ho_chu": "chị"}, monkeypatch)
     eng.handle("u-duyet", "Em gửi căn nhà phố này")
     assert conv.xung_ho is None
 
 
 def test_cum_cu_khong_lat_cach_xung_da_chot(monkeypatch):
-    eng, _, _, conv = _eng({"operations": [], "xung_ho": "em", "xung_ho_trich_dan": "Em gửi"}, monkeypatch)
+    eng, _, _, conv = _eng({"operations": [], "xung_ho": "em", "xung_ho_trich_dan": "Em gửi", "xung_ho_chu": "em"}, monkeypatch)
     eng.handle("u-duyet", "Em gửi căn nhà phố này")
     assert conv.xung_ho == "em"
     monkeypatch.setattr(eng._provider, "extract", lambda s, m, sc: {"operations": [], "xung_ho": "anh",
-                                                                    "xung_ho_trich_dan": "anh"}, raising=False)
+                                                                    "xung_ho_trich_dan": "anh", "xung_ho_chu": "anh"}, raising=False)
     conv.history[-2].content = "Em gửi căn nhà phố này, anh ơi"   # "anh" nằm ở tin CŨ (gọi bot), không phải tin vừa nhắn
     eng.handle("u-duyet", "hướng Đông Nam, nội thất cơ bản")
     assert conv.xung_ho == "em"

@@ -21,7 +21,7 @@ class AiGia(MockProvider):
 
 def test_xung_ho_giu_qua_khoi_dong_lai(tmp_path):
     db = str(tmp_path / "x.db")
-    e1 = Engine(AiGia({"operations": [], "user_intent": "sell", "xung_ho": "anh", "xung_ho_trich_dan": "anh cần bán"}),
+    e1 = Engine(AiGia({"operations": [], "user_intent": "sell", "xung_ho": "anh", "xung_ho_trich_dan": "anh cần bán", "xung_ho_chu": "anh"}),
                 conversation_store=SqliteConversationStore(db))
     e1.handle("k1", "anh cần bán căn nhà ở đường âu cơ")
     assert _detect_customer_pronoun(e1.conversation("k1")) == "anh"

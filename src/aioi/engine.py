@@ -78,6 +78,8 @@ from .prompts import (
     build_phieu_luot,
     SOAT_O_HOI_SYSTEM,
     soat_o_hoi_schema,
+    CHON_CAN_ANH_SYSTEM,
+    chon_can_anh_schema,
     build_column_map_system,
     build_project_docs_block,
     build_transcribe_instruction,
@@ -99,6 +101,8 @@ from .prompts import (
     tai_lieu_chung_schema,
     SOAT_BINH_GIA_SYSTEM,
     SOAT_BINH_GIA_CHAT_SYSTEM,
+    SOAT_KHANG_DINH_SYSTEM,
+    soat_khang_dinh_schema,
     soat_binh_gia_schema,
     build_greeting,
     khoi_chao_lan_dau,
@@ -133,7 +137,7 @@ from .prompts import (
 from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import CAU_MO_MUA, FACETS, O_COC, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
-from .prompts import Y_MO_DAU
+from .prompts import SOAT_Y_MUA_SYSTEM, Y_MO_MUA, soat_y_mua_schema
 from .dia_danh import TraDiaDanh, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
@@ -875,6 +879,7 @@ class TurnResult:
     user_score: float          # 0..100
     tier: str
     escalated: bool = False    # True when this turn was handed to a human admin (oversize media)
+    hen_lai: bool = False               # khách hẹn nói sau (AI đọc, đã kiểm trích) → server bỏ tin nhắc 5 phút (SRS-5.1zzzzzzz369)
     can_nguoi_that: str | None = None   # cụm khách xin gặp người thật (đã kiểm trích dẫn) → server báo admin (SRS-5.1zzzzzzz82)
     # Thả tim lên tin khách vừa nhắn (SRS-5.1zzzzzzz163): lời chào, đồng ý duyệt tin, "ok", hoặc tin vừa cho địa chỉ → bridge gọi addReaction.
     tha_tim: bool = False
@@ -887,6 +892,9 @@ class TurnResult:
     xin_anh: list[str] = field(default_factory=list)
     # Ảnh bản vẽ / mặt bằng mẫu nhà (link công khai) khách vừa xin — bridge gửi kèm sau chữ (SRS-5.1zzzzzzz249).
     ban_ve: list[str] = field(default_factory=list)
+    # SRS-5.1zzzzzzz369: tên dự án khách mua muốn biết / tìm căn (AI đọc nghĩa: `mua.hoi_du_an` / `tim_du_an`) — server gửi kèm ảnh dự án
+    # theo tên này, không dò tên dự án trên lời khách thô ("Vinhomes anh xem rồi, không thích" không còn nhận ảnh Vinhomes).
+    du_an_anh: str = ""
     # Tin phụ "$$$$$ Đã trích xuất…" (công tắc `AIOI_DONG_TRICH_XUAT`, SRS-5.1zzzzzzz252) — server gửi TRƯỚC lời bot, KHÔNG vào lịch sử / CRM.
     chu_thich: str = ""
 
@@ -1170,14 +1178,6 @@ def _xung_ho_doan(conv: Conversation) -> bool:
 
 
 # Chữ người lớn tuổi TỰ XƯNG (có dấu — "co" / "ba" bỏ dấu trùng "có" / số ba). Khách GỌI bot là con / cháu thì không có chữ nào ở đây.
-_CHU_LON_TUOI = ("chú", "cô", "bác", "dì", "cậu", "mợ", "thím", "ông", "bà")
-
-
-def _chu_lon_tuoi(trich: str | None) -> str | None:
-    tu = re.findall(r"\w+", str(trich or "").lower())
-    return next((t for t in tu if t in _CHU_LON_TUOI), None)
-
-
 @contextmanager
 def _do(conv: "Conversation", khau: str):
     """Cộng thời gian (ms) của một khâu vào `conv.do_luot` — chỉ con số, không dữ liệu khách (SRS-5.1zzzzzzz86)."""
@@ -1235,8 +1235,8 @@ _KD_KHONG_CO_NGUON = re.compile(r"(?i)(giữ gìn|sạch sẽ|sầm uất|nhiề
 _DIA_CHI_HEM = re.compile(r"\b\d+[a-zA-Z]*/[\da-zA-Z/]+")   # số nhà "12/3" là nhà trong hẻm — đọc định dạng địa chỉ, không đoán ý
 
 
-def _khang_dinh_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
-    """Cụm bản tin 📋 KHẲNG ĐỊNH vai / pháp lý / đường vào / tiện ích / tình trạng mà dữ kiện căn không xác nhận. Không có 📋 → []."""
+def _kd_theo_nhom(reply: str, conv: "Conversation") -> list[tuple[str, str]]:
+    """(nhóm, cụm) bản tin 📋 KHẲNG ĐỊNH vai / pháp lý / đường vào / tiện ích / tình trạng mà dữ kiện căn không xác nhận. Không có 📋 → []."""
     if "📋" not in (reply or ""):
         return []
     tin = _than_ban_tin(reply)
@@ -1245,25 +1245,49 @@ def _khang_dinh_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
     tien_ich = set(str(f.get("_tien_ich_gan") or "").split(","))
     duong = f.get("_duong_vao")
     so_hem = any(_DIA_CHI_HEM.search(str(f.get(k) or "")) for k in ("dia_chi", "so_nha"))
-    ra: list[str] = []
+    loi_khach = "\n".join(t.content or "" for t in conv.history if t.role == "user")
+    ra: list[tuple[str, str]] = []
 
-    def them(rx, duoc: bool):
+    def them(nhom: str, rx, duoc: bool):
         if not duoc:
-            ra.extend(m.group(0) for m in (rx.finditer(phan) if hasattr(rx, "finditer") else re.finditer(rx, phan, re.I)))
+            ra.extend((nhom, m.group(0)) for m in (rx.finditer(phan) if hasattr(rx, "finditer") else re.finditer(rx, phan, re.I)))
 
-    them(_KD_CHINH_CHU, getattr(conv, "vai_phi", None) == SellerRole.CHU_NHA)   # vai một nguồn với phí (Đợt 4, AU-03): người rao ≥ N tin bán tính như MG
-    them(_KD_PHAP_LY, f.get("_phap_ly_trang_thai") == "co_so")
-    them(_KD_HEM_XE_HOI, duong == "hem_xe_hoi")
-    them(_KD_HEM, duong in ("hem", "hem_xe_hoi") or so_hem)
-    them(_KD_MAT_TIEN, duong == "mat_tien")
+    them("vai", _KD_CHINH_CHU, getattr(conv, "vai_phi", None) == SellerRole.CHU_NHA)   # vai một nguồn với phí (Đợt 4, AU-03)
+    them("phap_ly_trang_thai", _KD_PHAP_LY, f.get("_phap_ly_trang_thai") == "co_so")
+    them("duong_vao", _KD_HEM_XE_HOI, duong == "hem_xe_hoi")
+    them("duong_vao", _KD_HEM, duong in ("hem", "hem_xe_hoi") or so_hem)
+    them("duong_vao", _KD_MAT_TIEN, duong == "mat_tien")
     for ma, rx in _KD_TIEN_ICH.items():
-        them(re.compile(rf"(?i)({rx})"), ma in tien_ich)
-    them(_KD_MOI_XAY, f.get("_tinh_trang_nha") == "moi_xay")
-    them(_KD_KHONG_CO_NGUON, False)
-    gap: dict[str, str] = {}
-    for x in ra:
-        gap.setdefault(x.lower(), x)
-    return sorted(gap)
+        them("tien_ich", re.compile(rf"(?i)({rx})"), ma in tien_ich)
+    them("tinh_trang_nha", _KD_MOI_XAY, f.get("_tinh_trang_nha") == "moi_xay")
+    # SRS-5.1zzzzzzz369: cụm tả khu / tình trạng chính chủ nhà đã nói ("khu sầm uất" trong lời khách) là có nguồn — không bắt.
+    ra.extend(("khong_nguon", m.group(0)) for m in _KD_KHONG_CO_NGUON.finditer(phan) if not _trich_dan_khop(m.group(0), loi_khach))
+    gap: dict[str, tuple[str, str]] = {}
+    for nhom, x in ra:
+        gap.setdefault(x.lower(), (nhom, x))
+    return [(gap[k][0], k) for k in sorted(gap)]
+
+
+def _khang_dinh_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
+    return [x for _, x in _kd_theo_nhom(reply, conv)]
+
+
+def _ai_bo_cum_khong_khang_dinh(eng, conv: "Conversation", reply: str, cum: list[str]) -> set[str]:
+    """SRS-5.1zzzzzzz369: cụm lưới bắt mà chủ nhà ĐÃ nói về nhóm đó (sổ đang làm, đường vào đã rõ) — AI đọc câu chứa cụm: phủ định / đang
+    làm / chưa có / chữ trong tên riêng → không phải khẳng định, bỏ khỏi danh sách bắt. AI hỏng → không bỏ cụm nào (giữ lưới)."""
+    try:
+        with _do(conv, "soat_khang_dinh"):
+            data = eng._provider.extract(SOAT_KHANG_DINH_SYSTEM, [Message("user", "BẢN TIN:\n" + reply.split("📋", 1)[-1][:3000]
+                                                                           + "\n\nCỤM:\n" + "\n".join(f"- {c}" for c in cum))],
+                                         soat_khang_dinh_schema())
+    except Exception as e:   # noqa: BLE001 — soát là lưới
+        log.warning("Soát khẳng định lỗi: %s", type(e).__name__)
+        return set()
+    ds = data.get("cum") if isinstance(data, dict) else None
+    if not isinstance(ds, list):
+        return set()
+    hop = {c.lower() for c in cum}
+    return {str(x.get("cum")).lower() for x in ds if isinstance(x, dict) and x.get("khang_dinh") is False and str(x.get("cum") or "").lower() in hop}
 
 
 # Bản tin in nguyên tên khối của khuôn ("Gạch đầu dòng:", "Mô tả:" — bắn thử 26/10 tin rao đất). Chỉ soát đầu dòng của bản tin 📋.
@@ -1629,7 +1653,12 @@ def _soat_lo_rieng(eng, conv, reply, nc) -> list[str]:
 
 
 def _soat_khang_dinh(eng, conv, reply, nc) -> list[str]:
-    kd = _khang_dinh_khong_co_du_lieu(reply, conv)
+    ds = _kd_theo_nhom(reply, conv)
+    f = conv.prop.fields
+    # Nhóm chủ nhà đã nói rõ (trạng thái khác "chưa rõ") mà bản tin vẫn bị bắt — có thể bản tin đang chép đúng ý chủ ("sổ hồng đang làm") → AI đọc.
+    xet = [x for n, x in ds if n in ("phap_ly_trang_thai", "duong_vao", "tinh_trang_nha") and f.get(f"_{n}") not in (None, "", "chua_ro")]
+    bo = _ai_bo_cum_khong_khang_dinh(eng, conv, reply, xet) if xet else set()
+    kd = [x for _, x in ds if x.lower() not in bo]
     return (["Bản tin rao vừa viết khẳng định " + ", ".join(f"\"{x}\"" for x in kd) + " nhưng chủ nhà CHƯA xác nhận điều đó (vai, giấy tờ, "
              "đường vào, tiện ích quanh nhà, tình trạng nhà chưa rõ hoặc khách nói ngược lại) — bỏ hẳn các ý đó khỏi tiêu đề, mô tả và gạch "
              "đầu dòng, KHÔNG đoán."] if kd else [])
@@ -3081,9 +3110,8 @@ class Engine:
             reply = self._soat_hinh_thuc(conv, system, _bo_markdown(reply), can_mua=can)
             if next_field == CAU_MO_MUA:
                 # SRS-5.1zzzzzzz335: câu hỏi mở — ý nào trong danh sách `y_con_thieu` thật sự có trong CÂU HỎI của lời bot thì ghi `_da_hoi` (lượt
-                # sau không gợi lại); ý ngoài danh sách không ghi gì. Chỉ đọc lời bot, không đọc lời khách.
-                hoi = " ".join(c for c in re.split(r"(?<=[.!?])\s+", bo_dau(reply).lower()) if "?" in c)
-                chon = [o for o in conv.buyer_lead.y_con_thieu() if any(bo_dau(d) in hoi for d in Y_MO_DAU.get(o, ()))]
+                # sau không gợi lại). SRS-5.1zzzzzzz369: AI đọc nghĩa, code kiểm cụm trích (bản dò chữ bỏ dấu bắt "vậy" thành "vay").
+                chon = self._y_mua_da_hoi(conv, reply)
                 if chon:
                     da = [x for x in (conv.buyer_lead.fields.get("_da_hoi") or "").split(",") if x]
                     conv.buyer_lead.fields["_da_hoi"] = ",".join(sorted(set(da) | set(chon)))
@@ -4374,10 +4402,11 @@ class Engine:
         if len(conv.listings) < 2:
             return
         moc = time.time() - 600
-        for t in reversed(conv.history[-6:]):
-            if t.role == "user" and t.at >= moc and (li := self._match_listing(conv, t.content or "")) is not None:
-                conv.active_listing_id = li.listing_id
-                return
+        tin = [t.content for t in conv.history[-6:] if t.role == "user" and t.at >= moc and (t.content or "").strip()]
+        li = self._ai_chon_can_anh(conv, tin) if tin else None
+        if li is not None:
+            conv.active_listing_id = li.listing_id
+            return
         lay = getattr(self._convstore, "can_cho_anh", None)
         ma = lay(conv.user_key) if lay is not None else []
         if not ma or conv.active.ma_tin in ma:
@@ -4386,6 +4415,42 @@ class Engine:
         if li is not None:
             log.warning("Ảnh chủ nhà: chuyển sang căn khách mua đang xin ảnh")
             conv.active_listing_id = li.listing_id
+
+    def _y_mua_da_hoi(self, conv: Conversation, reply: str) -> list[str]:
+        """Ý nhu cầu (`BuyerLead.y_con_thieu`) mà câu hỏi trong lời bot vừa viết thật sự hỏi — AI đọc, cụm trích phải có trong lời. AI lỗi → []."""
+        con = [o for o in conv.buyer_lead.y_con_thieu() if o in Y_MO_MUA]
+        if not con or "?" not in reply:
+            return []
+        ds = "\n".join(f"- {o}: {Y_MO_MUA[o]}" for o in con)
+        try:
+            with _do(conv, "soat_y_mua"):
+                data = self._provider.extract(SOAT_Y_MUA_SYSTEM, [Message("user", f"Ý NHU CẦU:\n{ds}\n\nLỜI TRỢ LÝ:\n{reply[:2000]}")],
+                                              soat_y_mua_schema())
+        except Exception as e:  # noqa: BLE001
+            log.warning("Soát ý phía mua lỗi: %s", type(e).__name__)
+            return []
+        ds_y = (data or {}).get("y_da_hoi") if isinstance(data, dict) else None
+        return [x["y"] for x in ds_y or [] if isinstance(x, dict) and x.get("y") in con and _trich_dan_khop(x.get("trich"), reply)]
+
+    def _ai_chon_can_anh(self, conv: Conversation, tin: list[str]) -> "Listing | None":
+        """SRS-5.1zzzzzzz369: AI đọc các tin chủ nhà vừa nhắn xem ảnh thuộc căn nào; nhận khi mã có trong rổ VÀ cụm trích nằm nguyên trong
+        một tin đó. AI lỗi / không chỉ ra → None (giữ căn đang nói / căn khách mua đang xin ảnh)."""
+        ds = "\n".join(f"- {li.ma_tin}: " + ", ".join(str(v) for v in (li.prop.fields.get(k) for k in
+                       ("loai_hinh", "dia_chi", "duong", "du_an", "ma_so_can", "gia")) if v) for li in conv.listings)
+        try:
+            with _do(conv, "chon_can_anh"):
+                data = self._provider.extract(CHON_CAN_ANH_SYSTEM, [Message("user", f"CĂN ĐANG RAO:\n{ds}\n\nTIN CHỦ NHÀ VỪA NHẮN:\n"
+                                                                    + "\n".join(x[:500] for x in tin))], chon_can_anh_schema())
+        except Exception as e:  # noqa: BLE001 — chọn căn cho ảnh là phần thêm
+            log.warning("Chọn căn cho ảnh lỗi: %s", type(e).__name__)
+            return None
+        ma = str((data or {}).get("ma") or "").strip().lstrip("#").upper() if isinstance(data, dict) else ""
+        trich = (data or {}).get("trich") if isinstance(data, dict) else None
+        li = next((x for x in conv.listings if x.ma_tin == ma), None) if ma else None
+        if li is not None and any(_trich_dan_khop(trich, x) for x in tin):
+            log.warning("Ảnh chủ nhà: AI chọn căn theo tin vừa nhắn")
+            return li
+        return None
 
     @staticmethod
     def _doc_title(filename: str | None, description: str) -> str:
@@ -4841,11 +4906,14 @@ class Engine:
             role=conv.role,
             lead=conv.buyer_lead,
             can_nguoi_that=conv.y_luot.get("can_nguoi_that") if isinstance(conv.y_luot.get("can_nguoi_that"), str) else None,
+            hen_lai=conv.y_luot.get("hen_lai") is True,
             tha_tim=bool(conv.y_luot.get("tha_tim")) or bool(set(captured) & CAC_O_DIA_CHI),
             xin_danh_gia=bool(conv.y_luot.get("xin_danh_gia")),
             danh_gia=conv.y_luot.get("danh_gia"),
             xin_anh=list(conv.y_luot.get("xin_anh") or []),
             ban_ve=list(conv.y_luot.get("ban_ve") or []),
+            du_an_anh=next((str(v).strip() for v in ((conv.y_luot.get("mua") or {}).get(k) for k in ("hoi_du_an", "tim_du_an"))
+                            if isinstance(v, str) and v.strip()), "") if conv.role == "buyer" else "",
             chu_thich=che_do_test.chu_thich(conv, captured, next_f, so_token.tong_luot()) if che_do_test.bat() else "",
         )
 
@@ -5124,17 +5192,16 @@ class Engine:
             # SRS-5.1zzzzzzz212 (bắn thử 5 khách: "e tìm thuê", "a là MG", "sao hoi nhieu vay con" đều bị gọi "anh/chị"): khách Zalo gõ tắt e / a / c,
             # và người lớn tuổi không tự xưng mà GỌI bot là con / cháu — bản trước chỉ nhận chữ tự xưng đủ.
             # SRS-5.1zzzzzzz214: khách TỰ XƯNG "cháu" / "con" ("cháu muốn bán nhà") → bot xưng cô / chú theo tên trợ lý.
-            chu = {"em": ("em", "e"), "anh": ("anh", "a"), "chi": ("chi", "c"), "chau": ("chau", "con"),
-                   "chu_co_bac": ("chu", "co", "bac", "di", "cau", "thim", "ong", "ba", "con", "chau")}[x]
-            # Chữ tắt một ký tự so trên chữ CÒN dấu: "ạ" bỏ dấu thành "a", "ê" thành "e" — so trên chữ bỏ dấu thì "dạ em gửi ạ" cũng thành "anh".
-            hop = bool({c for c in chu if len(c) > 1} & set(re.findall(r"[a-z]+", bo_dau(str(trich or "")).lower()))
-                       or {c for c in chu if len(c) == 1} & set(re.findall(r"\w+", str(trich or "").lower())))
+            # SRS-5.1zzzzzzz369 (chủ dự án 03/11: "không dùng từ khóa nữa"): bỏ danh sách chữ xưng cố định — AI khai ĐÚNG chữ khách dùng
+            # (`xung_ho_chu`), code chỉ kiểm chữ đó là một TỪ trong cụm trích (so chữ còn dấu: "ạ" không thành "a").
+            chu_ai = str(plan.get("xung_ho_chu") or "").strip().lower()
+            hop = bool(chu_ai) and chu_ai in re.findall(r"\w+", str(trich or "").lower())
             cu = (conv.xung_ho or "").partition(":")[0]
             nguon = [cuoi] if (cu and cu != x) else gan
             if hop and any(_trich_dan_khop(trich, c) for c in nguon):
                 # SRS-5.1zzzzzzz233 (chat chị Ngân 28/10: khách "chú bán nhà…", tin nhắc 5 phút mở "Anh ơi…"): nhóm "chu_co_bac" mất chữ khách
                 # xưng nên câu mẫu không gọi đúng được — giữ kèm chữ đó ("chu_co_bac:chú"); chữ cũ còn nếu lần này không thấy chữ nào.
-                lon = _chu_lon_tuoi(trich) if x == "chu_co_bac" else None
+                lon = chu_ai if x == "chu_co_bac" and chu_ai not in ("con", "cháu") else None
                 giu = (conv.xung_ho or "").partition(":")[2] if cu == x else ""
                 conv.xung_ho = f"{x}:{lon or giu}" if x == "chu_co_bac" and (lon or giu) else x
             log.warning("Xưng hô: AI=%s · nhận=%s · đang=%s", x, hop and any(_trich_dan_khop(trich, c) for c in nguon), conv.xung_ho)
@@ -5169,6 +5236,9 @@ class Engine:
         # luôn; bản trước đòi cụm nguyên văn nên lời AI tóm lại bị bỏ, bot không báo admin.
         if isinstance(plan.get("can_nguoi_that"), str) and plan["can_nguoi_that"].strip():
             conv.y_luot["can_nguoi_that"] = str(plan["can_nguoi_that"]).strip()
+        # SRS-5.1zzzzzzz369: khách hẹn nói sau (AI đọc theo nghĩa, code kiểm cụm trích) → server không gửi tin nhắc 5 phút.
+        if _trich_dan_khop(plan.get("hen_lai"), cuoi):
+            conv.y_luot["hen_lai"] = True
         # SRS-5.1zzzzzzz240 (chủ dự án 28/10, OPEN-21 a): người rao vừa tự nhận là chủ đầu tư → không báo con số phí, báo admin MỘT lần (lượt vai
         # đổi sang CĐT) để bộ phận hợp tác dự án liên hệ — lời "em đã báo" nhờ vậy là thật.
         if vua_thanh_cdt:

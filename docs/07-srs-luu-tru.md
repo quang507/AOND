@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz358 · Dữ kiện "nhắn khách khi có căn mới (trong 8–20 giờ)" đọc thành "8–20 tiếng nữa" (02/11/2026)
+Ca gốc: khách ảo #274 — hai persona không hiểu "trong khoảng 8–20 giờ tới"; ý thật là khung giờ 8h–20h.
+(1) Lớp lỗi: dữ kiện đưa model mơ hồ đơn vị (thời điểm hay thời lượng). Sửa: `mua.khoi_can_cho_khach` → "(chỉ gửi trong khung giờ 8h–20h hằng ngày)".
+(2) Cùng lớp: `engine` "trong giờ 8–20h" có mốc đồng hồ — giữ. Còn: hai mô tả "8–20 giờ" trong `cau_mau.py` (phía web·DB). (3) Kiểm: `test_khung_gio_ro_don_vi_358.py` — trả câu cũ: đỏ.
+
 ### SRS-5.1zzzzzzz357 · Khách ảo: "(trong 8–20 giờ)" thành mốc hẹn bịa; phép `ka_hua_suong` neo chữ nên 4/5 câu lọt (02/11/2026)
 Ca gốc: khách ảo trên main `5e934ae`, 5 persona (4 · 2 · 2 · 2 · 3 sao); hai persona nhận "nhắn trong khoảng 8–20 giờ tới".
 (1) Lớp lỗi: dữ kiện prompt mơ hồ đơn vị (sửa ở SRS-358); phép chấm `ka_hua_suong` neo chữ "thì em báo" nên lọt "là em báo", "xác nhận thì em báo". Sửa: chuyển sang giám khảo đọc nghĩa (việc `hua_suong`, mẫu số `ban.json` giữ 760).

@@ -53,7 +53,7 @@ def test_hoi_ve_theo_y_ai_doc_khong_can_trich():
 
 
 def test_xung_ho_do_ai_doc_va_giu_qua_cac_luot():
-    eng, spy = _eng({"operations": [], "xung_ho": "em", "xung_ho_trich_dan": "nhà em"})
+    eng, spy = _eng({"operations": [], "xung_ho": "em", "xung_ho_trich_dan": "nhà em", "xung_ho_chu": "em"})
     eng.handle("x1", "nhà em ở Q8 nha")
     conv = eng.conversation("x1")
     assert _detect_customer_pronoun(conv) == "em" and "KHÁCH TỰ XƯNG LÀ 'EM'" in spy.systems[-1]
