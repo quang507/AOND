@@ -732,11 +732,13 @@ Không có bảng token/TTL, không nối fingerprint (OPEN-14); lõi chưa đ�
 
 ```text
 1. Bridge zca-js → POST /chat-reply (server.chat_reply): sổ msg_id, sự kiện cảm xúc không trả lời (SRS-364), khoá lượt theo người.
-2. Engine.handle: AI bóc tách (OPERATIONS_SYSTEM_BAN / MUA) → ô tin qua cổng bằng chứng `_loc_o_tin` (SRS-73).
+2. Engine.handle: AI đọc ý → ô tin qua cổng bằng chứng `_loc_o_tin` (SRS-73). Người bán (vai đã rõ): bước 1 của MỘT vòng agent
+   Sonnet gọi công cụ ghi / đọc / `tra_luat_o` (`agent_gop.mo`, SRS-371); form JSON (OPERATIONS_SYSTEM_BAN, Haiku) chỉ dự phòng. Còn lại: form.
 3. Tra địa danh: `_chuan_dia_danh` (tên chuẩn, SRS-366), `_phuong_tu_dia_chi` (ô hệ thống tự tra, SRS-359).
 4. Chọn MỘT việc cho lượt: `viec_luot` (SRS-314 / 328) → ô cần hỏi / khối hỏi còn lại.
 5. Dựng prompt: phiếu lượt thu thập / bản nháp / sau bản nháp (phía bán) hoặc prompt mua; khối cố định trước RANH_GIOI_CACHE.
-6. Model viết lời (MODEL_CHAT; hỏng → Gemini → Groq, `llm/du_phong.py`).
+6. Model viết lời (MODEL_CHAT; hỏng → Gemini → Groq, `llm/du_phong.py`). Người bán đi vòng gộp: bước 2 CÙNG cuộc hội thoại công cụ, kết quả
+   công cụ ghi = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt), `agent_gop.viet`.
 7. Soát đầu ra `_soat_hinh_thuc` theo bảng `LUAT_SOAT` (gồm `hoi_dung_o`, SRS-367): lệch → gọi lại tối đa một lần.
 8. Lưu Supabase (tin, hội thoại, messages) rồi trả lời bridge.
 ```
@@ -784,6 +786,11 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 ---
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
+
+### SRS-5.1zzzzzzz371 · Một vòng agent Sonnet cho lượt người bán: ghi bằng công cụ qua cổng code rồi viết lời cùng cuộc hội thoại (03/11/2026)
+Quyết định chủ dự án 03/11 (nguyên văn): "AI đọc lời của khách làm 2 việc cùng lúc, bóc tách ra lưu db và trả lời lại khách. quá trình thu thập diễn ra song song với việc trả lời chăm sóc khách hàng" + "gộp đi"; khung "Suy nghĩ → Chọn công cụ → Thực thi → Đánh giá": Bộ não (Sonnet) + Hồ sơ định danh (system prompt) + Bộ công cụ (Tool Use, hàm backend mô tả bằng JSON); kiến thức nạp bằng công cụ tra cứu (RAG), không nhồi vào prompt. Không công cụ chạy code / terminal; không cắt chữ GIONG_VUI / SLANG_NOTES / luật cố định.
+(1) Lớp lỗi: hai model, hai prompt mỗi lượt (Haiku form JSON 45.390 chữ → Sonnet viết lời) — lời không biết ô nào cổng đã bỏ. (2) Sửa: `agent_gop.py` — bước 1 system = `prompts.phieu_co_dinh` nguyên vẹn + luật ghi chung, công cụ ghi (thân `agent_gop._chay_ghi`) / đọc (`agent_ban`) / `tra_luat_o` (luật form chia đúng một chỗ theo `BANG_LUAT`, nạp sẵn luật ô bot vừa hỏi); engine áp qua cổng cũ; bước 2 cùng hội thoại, kết quả công cụ = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt). Form Haiku chỉ dự phòng. Cùng lớp: phía mua để đợt sau.
+(3) Đo `cham` 59 kịch bản (chữ = system + schema / công cụ mỗi lần gọi): main 520 / 522 · 522 / 522, gọi 3,65 · 3,66 / lượt, 62.391 · 62.376 chữ / lượt, 23,5 · 24,3 s, $8,19 · $7,88 → gộp 519 / 522 · 519 / 522, gọi 3,84 · 3,82, 62.107 · 62.889 chữ, 24,8 · 24,3 s, $23,15 · $19,57 — chưa đạt "ít gọi, ít chữ", tiền ~2,5–3×. Chủ dự án 03/11 (sau khi xem số): "lấy phương án cuối cùng thôi, cứ để vậy đi, giờ tôi cần chú trọng độ chính xác", "các code không dùng thì xóa" → vòng gộp là đường DUY NHẤT của người bán, gỡ công tắc `AGENT_GOP` / `AGENT_BOC` và `agent_boc.py` (công cụ ghi + cổng chuyển vào `agent_gop._chay_ghi`). `ban-thu-ban` hai lần (nhánh cài lên VPS, ID thử đi vòng gộp): 53 đạt / 1 trượt mỗi lần — "Đất: không hỏi tầng / phòng ngủ"; tái hiện bằng CLI với `AGENT_GOP=tat` cũng hỏi y câu đó (khách lờ giá → `viec_luot` chọn `chi_tieu_xay_dung`, gợi ý "được phép xây mấy tầng" khớp regex phép kiểm) — không do vòng gộp, để việc riêng. Báo cáo bước 2 đặt việc lượt lên đầu, ô trống chỉ là dữ kiện. Kiểm: `test_agent_gop_371.py` (đỏ khi gỡ báo cáo / bước 2; không mất dòng luật nào của form).
 
 ### SRS-5.1zzzzzzz370 · Làm gọn DB: bỏ vector hẻm / đường số và hai index HNSW gần như không dùng (02/11/2026)
 Chủ dự án 02/11 duyệt ("ừ làm đi"). Đo trên DB thật (thống kê 31 ngày, reset 02/10): DB 275 MB / 500 MB Free; `duong` 168 MB — 25.539 hẻm + 3.714 đường số mang vector 768 chiều (~44 MB), index `duong_nhung_hnsw` 77 MB dùng 1 lần / 31 ngày; `projects_nhung_hnsw` 5,5 MB, 0 lần.
@@ -833,23 +840,6 @@ Ca gốc (chat thật): "anh cần bán căn nhà cấp 4 ở nhà bè" → bot 
 Chủ dự án 02/11: "quyền lợi theo hạng hạng cao thì cung cấp thông tin uy tín hơn" (khuôn anh Luận: Đồng "xếp cuối luồng ưu tiên").
 (1) Lớp lỗi: hạng người rao không đi vào gợi ý căn phía mua. Sửa: migration `20261103a` — `hang_so_nguoi_ban()`, `tim_nha` xếp mức khớp ↓, hạng ↓, `updated_at` ↓; hạng không ra kết quả; CTE `materialized` (không có: 9,7 s → có: 79 ms).
 (2) Cùng lớp: `bao_can_moi` gửi từng căn khớp, web cố ý ẩn hạng. (3) Kiểm: `bot/tests/tim-nha-uy-tin.sql` — bản cũ 3/5 HONG, có migration 5/5 OK.
-
-### SRS-5.1zzzzzzz360 · Ranh giới phường mới để gắn toạ độ vào phường: bảng `ranh_gioi_phuong` + RPC `phuong_tai_diem` — CHƯA có dữ liệu đa giác (02/11/2026)
-Quyết định chủ dự án 02/11: "tên phường mới, tên phường cũ được tự động chuyển thành phường mới bằng cách gắn lên bản đồ để biết chứ không hỏi khách". DB không có PostGIS; `wards` (168 dòng — chỉ TP.HCM mới) / `phuong_cu` / `duong` chỉ có điểm lat/lng → không biết toạ độ rơi vào phường nào.
-(1) Lớp lỗi: dữ liệu địa giới chỉ có điểm, nên "phường nào" phải hỏi khách. (2) Cùng lớp: `wards` thiếu 5 tỉnh còn lại của vùng nhận tin — đa giác cũng phải có cho chúng. Sửa (khung): migration `20261103b_ranh_gioi_phuong` — bảng `ranh_gioi_phuong` (GeoJSON + khung bao + nguồn + giấy phép), `diem_trong_vanh` / `diem_trong_vong` (ray casting PL/pgSQL; chọn thay PostGIS vì bật PostGIS thêm hàng trăm đối tượng vào `schema.sql` và cần duyệt riêng, vài trăm đa giác lọc khung bao là đủ nhanh), `phuong_tai_diem(p_lat double precision, p_lng double precision) → text` (= `wards.ten_day_du`, không có → null). Nạp: container bị chặn mạng tới Overpass → bộ nạp `scripts/nap-ranh-gioi.mjs` chạy trên Actions (`apply-migration.yml` ô `dung_lai = nap-ranh-gioi`, CHỈ sau khi áp): relation `admin_level=6` tên = `wards.ten_day_du` (khoá của `nap-duong`; điều phối xác minh 02/11 bằng Nominatim: OSM đã có phường SAU sáp nhập, vd Phường Chánh Hưng / Bến Thành ngay dưới thành phố), ghép way thành vành (`scripts/lib/ghep-vanh.mjs`), User-Agent + máy dự phòng, 1 phường / 2 s; cuối lượt in độ phủ + 20 điểm biết trước (tâm `wards`) qua RPC. Phạm vi: 168 phường TP.HCM trong `wards`; 5 tỉnh còn lại chưa có dòng `wards` và `wards.ten` là khoá một cột (tên trùng giữa tỉnh) — cần đổi khoá, việc riêng.
-(3) Kiểm: `bot/tests/phuong-tai-diem.sql` (tự cuộn lại, hình giả: chữ L lõm có lỗ, MultiPolygon) — 8/8 OK trên DB thật trong giao dịch huỷ; thay phép đa giác bằng chỉ khung bao → ca [lo] / [lom] đỏ. `bot/tests/ghep-vanh.mjs` (offline, trong `test:bot`): 8/8 — ghép đoạn lộn thứ tự / ngược chiều, đoạn hở → null, lỗ, nhiều mảnh. Áp 20261103b 02/11 (chủ dự án duyệt). Nạp 02/11 (run 41501261790, Nominatim `polygon_geojson` làm nguồn chính — Overpass từng phường kẹt 12/168, lượt gộp treo): **độ phủ 167 / 168 (99 %)**, **20 / 20 điểm biết trước ra đúng phường**; thiếu Xã Hưng Long (cả Nominatim lẫn Overpass không trả đa giác — soi tay). Lệch tên tham số: lõi (#277) gọi `{"lat","lng"}`, RPC khai `p_lat` / `p_lng` (PostgREST khớp theo tên → mọi lượt lỗi, bot về đường cũ) → `20261103d` đổi tên tham số thành `lat` / `lng` (chưa áp).
-03/11: `20261103d` đổi tham số sang `lat` / `lng` trong khi #280 đã sửa lõi gọi `{p_lat, p_lng}` → lõi gọi hỏng vài phút; `20261103e` trả về `p_lat` / `p_lng` (chữ ký do `test_phuong_he_thong_tu_tra_359.py` khoá). Lớp lỗi: hai phiên sửa hai đầu một chữ ký — đầu DB theo code trên `main`, không theo PR đang mở.
-
-### SRS-5.1zzzzzzz359 · Bot không hỏi khách phường: hệ thống tự xác định, không ra thì báo người phụ trách (02/11/2026)
-Chủ dự án 02/11 (nguyên văn): "tên phường mới, tên phường cũ được tự động chuyển thành phường mới bằng cách gắn lên bản đồ để biết chứ không hỏi khách". Ca thật: "Phường 6 cũ giờ chia về … nhà anh thuộc phường nào ạ?".
-(1) Lớp lỗi: ô hệ thống tự tra được nằm trong luồng hỏi khách. Sửa: `schema.O_HE_THONG_TRA`; `Engine._phuong_tu_dia_chi` tra (1) bản đồ đúng số nhà, (2) toạ độ → RPC `phuong_tai_diem(p_lat, p_lng)` (SRS-360), (3) kho hẻm / đường một phường; cổng web một ứng viên → ghi, không ra → báo người phụ trách một lần; bỏ các khối hỏi phường.
-(2) Còn: căn hộ có dự án trong kho vẫn hỏi `dia_chi`; DB còn chặn tin lên web khi thiếu `ward` (phía web·DB). Bổ sung: lõi từng gọi RPC với `{lat, lng}` → sửa `{p_lat, p_lng}`.
-(3) Kiểm: `test_phuong_he_thong_tu_tra_359.py` (khoá chữ ký RPC) — trả phường vào ô bắt buộc: đỏ.
-
-### SRS-5.1zzzzzzz358 · Dữ kiện "nhắn khách khi có căn mới (trong 8–20 giờ)" đọc thành "8–20 tiếng nữa" (02/11/2026)
-Ca gốc: khách ảo #274 — hai persona không hiểu "trong khoảng 8–20 giờ tới"; ý thật là khung giờ 8h–20h.
-(1) Lớp lỗi: dữ kiện đưa model mơ hồ đơn vị (thời điểm hay thời lượng). Sửa: `mua.khoi_can_cho_khach` → "(chỉ gửi trong khung giờ 8h–20h hằng ngày)".
-(2) Cùng lớp: `engine` "trong giờ 8–20h" có mốc đồng hồ — giữ. Còn: hai mô tả "8–20 giờ" trong `cau_mau.py` (phía web·DB). (3) Kiểm: `test_khung_gio_ro_don_vi_358.py` — trả câu cũ: đỏ.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

@@ -5,7 +5,7 @@ không tốn tiền API, SRS-300); DB tạm, không đụng Supabase / Zalo. Đ�
   python scripts/cham-kich-ban.py --chat claude-haiku-5-5 --ra /tmp/haiku.json --so-voi /tmp/sonnet.json
   python scripts/cham-kich-ban.py --chi hht,dat --song-song 2                            # vài kịch bản
   python scripts/cham-kich-ban.py --giong                                               # thêm điểm giọng do model chấm (tốn quota)
-  AIOI_AGENT_BOC=bat python scripts/cham-kich-ban.py ...                                 # đè một công tắc bằng biến môi trường
+  AIOI_MODEL_LUOT_DE=claude-haiku-5-5 python scripts/cham-kich-ban.py ...               # đè một công tắc bằng biến môi trường
   python scripts/cham-kich-ban.py --nhu thu                                             # chạy như ID thử (công tắc "thu" = bật)
   python scripts/cham-kich-ban.py --giong --nen                                         # ghi điểm nền vào tests/kich_ban/diem_nen.json
 
@@ -69,7 +69,9 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
             dem["goi"] += 1
             dem["usd"] += float(j.get("total_cost_usd") or 0)
             # cỡ prompt: lần có schema = bóc tách / công cụ, không schema = viết lời; khối = số dòng "=== …" ghép vào system
-            dem["prompt"].append([dang[0], model, len(s), s.count("\n=== ") + s.startswith("=== ")])
+            # SRS-5.1zzzzzzz371: chữ = system + schema JSON (lần bóc tách form) — vòng công cụ CLI đã ghép mô tả công cụ vào system; hai đường so ngang nhau
+            chu = len(s) + (len(json.dumps(schema, ensure_ascii=False)) if schema is not None else 0)
+            dem["prompt"].append([dang[0], model, chu, s.count("\n=== ") + s.startswith("=== ")])
             if "=== VIẾT LẠI LƯỢT NÀY ===" in s or "LƯỢT TRƯỚC CỦA EM CHƯA ĐẠT" in s:
                 dem["goi_lai"] += 1
             return j
@@ -85,7 +87,9 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
             setattr(p, ten, boc)
         _boc_viec("extract", lambda a, k: "boc")
         _boc_viec("chat", lambda a, k: "loi")
-        _boc_viec("converse", lambda a, k: "boc" if any(t.get("name") == "ghi_o" for t in (k.get("tools") or (a[2] if len(a) > 2 else []))) else "loi")
+        # SRS-5.1zzzzzzz371: vòng agent gộp — bước 1 (có công cụ ghi) là bóc tách, bước 2 (system có dấu bước 2) là viết lời.
+        _boc_viec("converse", lambda a, k: "loi" if "BƯỚC 2 — ĐÁNH GIÁ KẾT QUẢ" in str(k.get("system") or (a[0] if a else "")) else
+                  "boc" if any(t.get("name") == "ghi_o" for t in (k.get("tools") or (a[2] if len(a) > 2 else []))) else "loi")
     luot, xin_nguoi, bat_dau = [], False, time.monotonic()
     with tempfile.TemporaryDirectory(prefix="cham-") as d:
         kho = SqliteConversationStore(os.path.join(d, "kb.db"))
@@ -227,6 +231,13 @@ def lech_khoi(kqs: list[dict]) -> list[str]:
             for kq in kqs for i, l in enumerate(kq["luot"], 1) if (l.get("viec") or {}).get("bo")]
 
 
+def moi_luot(kqs: list[dict]) -> dict[str, float]:
+    """SRS-5.1zzzzzzz371: số trên MỖI LƯỢT khách — lần gọi model, chữ prompt (system + công cụ, mọi lần gọi kể cả gọi lại), giây (gồm lõi)."""
+    n = sum(len(k["luot"]) for k in kqs) or 1
+    return {"luot": n, "goi": sum(k["goi"] for k in kqs) / n, "chu": sum(x[2] for k in kqs for x in k.get("prompt", [])) / n,
+            "giay": sum(k["giay"] for k in kqs) / n}
+
+
 def tom_tat_prompt(kqs: list[dict]) -> dict[str, dict[str, float]]:
     """Cỡ prompt mỗi lần gọi, theo việc (bóc tách / viết lời): số lần, trung vị và lớn nhất số chữ, trung vị số khối "===" ghép vào."""
     ra = {}
@@ -328,6 +339,8 @@ def main() -> int:
         print("\n== Lưới soát đã kích (số lần):")
         for ten, n in soat.most_common():
             print(f"  {n:3} × {ten}")
+    ml = moi_luot(kqs)
+    print(f"== MỖI LƯỢT ({ml['luot']} lượt): gọi model {ml['goi']:.2f} · chữ prompt {ml['chu']:.0f} · {ml['giay']:.1f} s")
     pr = tom_tat_prompt(kqs)
     print("\n== Cỡ prompt mỗi lần gọi (chữ, đo trên lần chạy này):")
     for viec, x in pr.items():
@@ -340,7 +353,7 @@ def main() -> int:
     print(f"\n== Lượt có hơn một khối hỏi (engine ghép) so với việc viec_luot chọn: {len(lech)} / {sum(len(k['luot']) for k in kqs)} lượt")
     for x in lech[:15]:
         print(f"  {x}")
-    meta = {"chat": a.chat, "boc": a.boc, "nhu": a.nhu, "cong_tac": env, "tong": tong, "prompt": pr, "lech_khoi": len(lech)}
+    meta = {"chat": a.chat, "boc": a.boc, "nhu": a.nhu, "cong_tac": env, "tong": tong, "prompt": pr, "moi_luot": ml, "lech_khoi": len(lech)}
     if a.ra:
         json.dump({**meta, "ket_qua": kqs}, open(a.ra, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     if a.nen:   # bản gọn để so ở PR sau: điểm từng phép, không chép lời

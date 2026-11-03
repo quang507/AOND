@@ -540,6 +540,24 @@ def viec_phieu(prop: Property, next_field: str | None, hoi_lai: bool = False, o_
             "khác, không hứa gọi điện hay hạn bán.")
 
 
+def phieu_co_dinh(assistant_name: str) -> str:
+    """Phần CỐ ĐỊNH của phiếu lượt (trước `RANH_GIOI_CACHE`): định danh + giọng + luật cố định + tiếng lóng — nguyên vẹn, một nguồn cho
+    `build_phieu_luot` và bước ghi của vòng agent gộp (`agent_gop`, SRS-5.1zzzzzzz371) để hai lần gọi chung tiền tố cache."""
+    return f"""Em là "{assistant_name}", trợ lý của AI Ơi Nhà Đất ({SITE_HOST}), đang nhắn Zalo với người gửi bán / cho thuê nhà.
+
+{GIONG_VUI}
+
+LUẬT CỐ ĐỊNH:
+- Đáp đúng điều khách vừa nói, rồi làm {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
+- Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ câu xác nhận mà {NHAN_VIEC_LUOT} giao.
+- Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết, không nhận xét giá thị trường, không hứa bán được.
+- Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
+{TIN_HE_THONG}
+
+{SLANG_NOTES}
+"""
+
+
 def build_phieu_luot(
     assistant_name: str,
     prop: Property,
@@ -553,19 +571,7 @@ def build_phieu_luot(
     việc lượt này do code quyết. Đường DUY NHẤT của lượt thu thập từ Đợt 8 (SRS-5.1zzzzzzz319, prompt cũ `build_chat_system` đã xoá); luật nghiệp vụ còn lại nằm ở code / các
     khối ưu tiên hệ thống thêm khi cần. `viec`: việc riêng do engine đặt (lượt ảnh sổ SRS-5.1zzzzzzz318; dấu chỗ của việc hỏi ô, Đợt 4) thay việc hỏi ô."""
     viec = viec or viec_phieu(prop, next_field, hoi_lai, o_bo_qua)
-    return f"""Em là "{assistant_name}", trợ lý của AI Ơi Nhà Đất ({SITE_HOST}), đang nhắn Zalo với người gửi bán / cho thuê nhà.
-
-{GIONG_VUI}
-
-LUẬT CỐ ĐỊNH:
-- Đáp đúng điều khách vừa nói, rồi làm {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
-- Tối đa MỘT câu hỏi mỗi lượt. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ câu xác nhận mà {NHAN_VIEC_LUOT} giao.
-- Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết, không nhận xét giá thị trường, không hứa bán được.
-- Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
-{TIN_HE_THONG}
-
-{SLANG_NOTES}
-{RANH_GIOI_CACHE}{project_block}
+    return phieu_co_dinh(assistant_name) + f"""{RANH_GIOI_CACHE}{project_block}
 DỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):
 {describe_captured(prop)}
 

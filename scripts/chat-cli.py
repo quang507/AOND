@@ -30,8 +30,6 @@ def main() -> int:
     ap.add_argument("--luu", default="", help="tệp SQLite giữ cuộc chat (mặc định tạm)")
     a = ap.parse_args()
     os.environ.update({"AIOI_LLM_PROVIDER": "claude_cli", "AIOI_CHAT_MODEL": a.chat, "AIOI_EXTRACT_MODEL": a.boc})
-    for k, v in (("AIOI_AGENT_BOC", "thu"),):
-        os.environ.setdefault(k, v)   # như VPS
     os.environ.pop("SUPABASE_SERVICE_ROLE_KEY", None)
     import logging
     logging.disable(logging.WARNING)
