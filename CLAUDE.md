@@ -138,7 +138,7 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 - Gộp vào `main` có đổi `src/aioi/` hoặc `bot/bridge-zca/` → `.github/workflows/tu-cai-vps.yml` TỰ chạy cai-vps (lõi khởi động lại ~1 phút).
 
 **Vòng giao việc của agent** (SRS-265 / 297 — MỘT PR cho mỗi bước / việc lớn; sửa docs, đổi cấu hình, mục SRS đi CHUNG PR của việc chính, không mở PR riêng — chủ dự án 30/10):
-1. Trước khi sửa: đọc mục SRS liên quan (`grep -n "<từ khoá>" docs/07*.md`) + mục tương ứng của `.claude/luat-dang-ap.md`.
+1. Trước khi sửa: đọc mục SRS liên quan (`grep -n "<từ khoá>" docs/07*.md`) + mục tương ứng của `.claude/luat-dang-ap.md`. **Một phiên giữ `src/aioi/` mỗi lúc** (SRS-379): còn PR mở đụng `src/aioi/` của phiên khác thì không sửa `src/aioi/` (kể cả RPC lõi gọi) cho tới khi PR đó gộp / đóng — xem danh sách PR mở trước khi sửa.
 2. Sửa → `bun run test:py` (+ bài kiểm đỏ khi gỡ bản sửa) → `bun run truyvet` → commit, push → PR draft.
 3. Có migration: chạy thử trên DB thật trong giao dịch huỷ, rồi áp TRƯỚC khi gộp (`apply-migration.yml` ô `migration_file`, kèm `commit_schema = commit`).
 4. `bash scripts/cho-workflow.sh kiem.yml <nhánh>` → xanh thì bỏ draft, gộp squash → `bash scripts/sau-gop.sh` (tự chờ cài VPS nếu có, đồng bộ nhánh).
