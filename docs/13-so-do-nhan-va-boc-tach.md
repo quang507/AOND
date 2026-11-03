@@ -11,8 +11,8 @@ Nguyên tắc xuyên suốt: **AI đọc ý theo nghĩa, code kiểm trích dẫ
 lời bot lệch luật hình thức thì gọi lại model một lần, không tự sửa chữ (`_soat_hinh_thuc`).
 
 Sơ đồ vẽ đường DUY NHẤT đang chạy (cập nhật 02/11/2026 `[nguồn: cai-vps.sh, engine.py, SRS-5.1zzzzzzz319]`): sáu công tắc `FORM_BAN_GON` / `FORM_MUA_GON`, `PHIEU_LUOT`, `AGENT_BAN` / `AGENT_MUA`, `SOAT_GON` đã gỡ hẳn cùng đường cũ (`build_chat_system`) —
-form gọn, phiếu lượt, agent và soát gọn là đường duy nhất. Công tắc còn lại đổi được ở `cai-vps.sh`: `AGENT_BOC` = thu (chỉ ID thử),
-`MODEL_LUOT_DE` = tat.
+form gọn, phiếu lượt, agent và soát gọn là đường duy nhất. Từ 03/11/2026 người bán đã rõ vai đi MỘT vòng agent gộp (`agent_gop.py`, SRS-5.1zzzzzzz371;
+`AGENT_BOC` / `AGENT_GOP` gỡ). Công tắc còn lại đổi được ở `cai-vps.sh`: `MODEL_LUOT_DE` = tat.
 
 ## 13.1 Toàn cảnh: từ bridge tới lời trả về
 
@@ -53,7 +53,7 @@ flowchart TD
   URL -->|có| HL["Engine.handle_link"]
   URL -->|không| MA{"lenh_tra_loi '#35;mã: …'<br/>và la_nhan_vien?"}
   MA -->|có| TM["tra_loi_theo_ma<br/>(admin trả lời câu khách mua hỏi)"] --> BRS
-  MA -->|không| KH["_lap_ke_hoach — lượt AI đọc ý<br/>form gọn theo vai: OPERATIONS_SYSTEM_BAN / _MUA (chưa rõ vai: OPERATIONS_SYSTEM)<br/>ID thử: agent_boc gọi công cụ ghi thay form (AGENT_BOC=thu)<br/>ra: operations + vai + ý mua / bán + duyệt + hỏi về + y_luot"]
+  MA -->|không| KH["_lap_ke_hoach — lượt AI đọc ý<br/>form gọn theo vai: OPERATIONS_SYSTEM_BAN / _MUA (chưa rõ vai: OPERATIONS_SYSTEM)<br/>người bán đã rõ vai: bước 1 vòng agent gộp (agent_gop.mo — công cụ ghi / đọc / tra_luat_o), form chỉ dự phòng<br/>ra: operations + vai + ý mua / bán + duyệt + hỏi về + y_luot"]
   KH --> VAI["định tuyến vai theo user_intent của lượt<br/>buy → buyer · sell → seller · mơ hồ: giữ vai / số tư vấn → buyer"]
   VAI --> TLK["tra_loi_cau_hoi<br/>(chủ nhà vừa trả lời câu khách mua hỏi)"]
   TLK --> DX{"đang chờ xác nhận ẩn tin?<br/>pending_destructive"}

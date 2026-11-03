@@ -5,7 +5,7 @@ không tốn tiền API, SRS-300); DB tạm, không đụng Supabase / Zalo. Đ�
   python scripts/cham-kich-ban.py --chat claude-haiku-5-5 --ra /tmp/haiku.json --so-voi /tmp/sonnet.json
   python scripts/cham-kich-ban.py --chi hht,dat --song-song 2                            # vài kịch bản
   python scripts/cham-kich-ban.py --giong                                               # thêm điểm giọng do model chấm (tốn quota)
-  AIOI_AGENT_BOC=bat python scripts/cham-kich-ban.py ...                                 # đè một công tắc bằng biến môi trường
+  AIOI_MODEL_LUOT_DE=claude-haiku-5-5 python scripts/cham-kich-ban.py ...               # đè một công tắc bằng biến môi trường
   python scripts/cham-kich-ban.py --nhu thu                                             # chạy như ID thử (công tắc "thu" = bật)
   python scripts/cham-kich-ban.py --giong --nen                                         # ghi điểm nền vào tests/kich_ban/diem_nen.json
 

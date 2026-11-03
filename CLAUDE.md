@@ -81,14 +81,12 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
   | `MODEL_CHAT` | `claude-sonnet-5-5` | model viết lời khách thật — SRS-235 / 308 |
   | `MODEL_BOC` | `claude-haiku-5-5` | model bóc tách (`AIOI_EXTRACT_MODEL`); sổ `bot_usage_model` xác nhận production chạy model này — SRS-316 |
   | `MODEL_CHAT_THU` | `claude-sonnet-5-5` | model của ID thử (`ban-thu-*`); `gemini` = gọi thẳng Gemini — SRS-239 / 243 |
-  | `AGENT_BOC` | `thu` | đọc ý người bán bằng agent gọi công cụ ghi (`agent_boc.py`) thay form JSON; chưa hơn form nên chỉ ID thử — SRS-310 |
-  | `AGENT_GOP` | `thu` | lượt người bán = MỘT vòng agent Sonnet: ghi bằng công cụ (qua cổng code) rồi viết lời cùng cuộc hội thoại (`agent_gop.py`); form Haiku chỉ dự phòng. Chưa hơn đường cũ (tiền ~3×) nên chỉ ID thử — SRS-371 |
   | `MODEL_LUOT_DE` | `tat` | model viết lời cho lượt dễ của người bán (thu thập, không tra dữ liệu, không việc khác) — SRS-311 |
   | `CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246. Ngoại lệ quy ước: code đọc `!= "tat"`, trống = BẬT |
   | `DONG_TRICH_XUAT` | `bat` | tin phụ "$$$$$ Đã trích xuất" sau mỗi lượt, MỌI cuộc chat (giai đoạn test; chạy thật đổi `tat`) — SRS-252 |
   | `MODEL_GEMINI` | `gemini-3.5-flash,gemini-3.1-flash-lite` | Gemini dự phòng khi Claude hỏng — SRS-299 |
 
-  `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đã gỡ hẳn (đường mới là duy nhất, SRS-319): `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON` / `FORM_BAN_GON`, `AGENT_MUA` / `AGENT_BAN`. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini
+  `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đã gỡ hẳn (đường mới là duy nhất, SRS-319): `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON` / `FORM_BAN_GON`, `AGENT_MUA` / `AGENT_BAN`; SRS-371: `AGENT_BOC` / `AGENT_GOP` — lượt người bán là MỘT vòng agent Sonnet (`agent_gop.py`), form Haiku chỉ dự phòng. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini
   rồi Groq (`llm/du_phong.py`): mỗi lần ≤ 15 s, cả vòng ≤ 40 s, bridge chờ 90 s — đừng nới.
 - **Supabase** project `rqxmmqmctpklqcmbfxuj` (Tokyo, gói Free — không tự sao lưu, chủ dự án chấp nhận). Edge function còn lại: `escalation-feed` (bridge kéo việc / báo sống / QR), `geocode-listings`, `media-cleanup`; `_shared/` còn cho ba hàm đó và web (`claude.ts`, `gate.ts`, `geocode.ts`, `tin_nhac.ts`, `extraction/`: `luat-tien.ts`, `luat-lien-he.ts`, `nhan.ts`, `ds-phuong.ts`, `tien-ich.ts`).
 - **Web**: Vercel không dựng preview cho nhánh `claude/**` (`vercel.json` `git.deploymentEnabled`, SRS-247) và bỏ qua bản dựng `main` khi lần đẩy không đổi file web (`ignoreCommand`, SRS-248 — thêm thư mục web mới thì thêm vào danh sách đó). Next.js 15 + TS + Tailwind 4 ở root (`app/`, `components/`, `lib/`, `public/`), Bun (`bun.lock`), Vercel. Đọc Supabase bằng publishable key qua RLS; mô tả listing luôn qua `sanitizeDescription()`.

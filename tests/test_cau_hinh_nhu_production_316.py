@@ -18,7 +18,6 @@ def test_test_chay_cong_tac_production():
     for k, v in cong_tac().items():
         assert os.environ.get(k) == v, k
     assert os.environ["AIOI_DONG_TRICH_XUAT"] == "bat"     # công tắc "bat" ở VPS = mọi khách
-    assert os.environ["AIOI_AGENT_BOC"] == "tat"          # "thu" ở VPS = khách thật KHÔNG đi đường này
 
 
 def test_model_boc_tach_mot_nguon_o_cai_vps():

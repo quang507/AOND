@@ -1,5 +1,5 @@
 """03/11/2026 (SRS-5.1zzzzzzz371, chủ dự án: "AI đọc lời của khách làm 2 việc cùng lúc, bóc tách ra lưu db và trả lời lại khách" + "gộp đi").
-Lượt người bán là MỘT vòng agent: bước 1 gọi công cụ ghi (qua cổng code), engine áp, bước 2 cùng cuộc hội thoại đọc KẾT QUẢ GHI rồi viết lời.
+Lượt người bán (đường duy nhất, công tắc gỡ) là MỘT vòng agent: bước 1 gọi công cụ ghi (qua cổng code), engine áp, bước 2 cùng cuộc hội thoại đọc KẾT QUẢ GHI rồi viết lời.
 Ca gốc: hai model hai prompt (Haiku bóc tách / Sonnet viết lời) — lời không biết ô nào bị cổng bỏ. Bài `test_buoc_2_doc_ket_qua_ghi_that`
 đỏ khi gỡ báo cáo sau khi áp (`agent_gop.bao_cao`) hay gỡ chỗ gọi bước 2 trong engine."""
 import json
@@ -11,6 +11,7 @@ from aioi.llm.base import RANH_GIOI_CACHE, ToolCall, ToolTurn
 from aioi.llm.mock import MockProvider
 from aioi.prompts import GIONG_VUI, OPERATIONS_SYSTEM_BAN, SLANG_NOTES, build_phieu_luot, operations_schema_ban, phieu_co_dinh
 from aioi.schema import Property
+from tests.test_hai_can_mot_tin_308 import TIN as TIN308, _Ai as _Ai308
 
 TIN1 = "anh bán nhà hẻm đường Bùi Minh Trực quận 8 giá 5 tỷ"
 TIN2 = "nhà sổ hồng riêng nha em"
@@ -47,8 +48,7 @@ class _AiGop(MockProvider):
         return self.loi
 
 
-def _hai_luot(monkeypatch, key, vong, cong_tac="bat"):
-    monkeypatch.setenv("AIOI_AGENT_GOP", cong_tac)
+def _hai_luot(monkeypatch, key, vong):
     ai = _AiGop(vong)
     eng = Engine(ai)
     eng.handle(key, TIN1)
@@ -95,9 +95,65 @@ def test_model_khong_goi_cong_cu_thi_form_du_phong(monkeypatch):
     assert ai.form == 1 and not ai.buoc2 and conv.vong_gop is None
 
 
-def test_cong_tac_tat_giu_duong_cu(monkeypatch):
-    eng, conv, ai, r = _hai_luot(monkeypatch, "thu-371d", VONG_SO_HONG, cong_tac="tat")
-    assert ai.form == 1 and not ai.buoc1
+class _AiHaiCan(_Ai308):
+    """Rổ hai căn (lượt đầu form ra hai căn); lượt sau bước ghi trả `vong`, bước viết lời ghi system lại (chuyển từ test_agent_boc_310, SRS-310)."""
+
+    def __init__(self, vong, form_sau=None):
+        super().__init__(Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y"))
+        self.vong, self.form_sau, self.form, self.he_tra_loi = list(vong), form_sau, 0, []
+
+    def extract(self, system, messages, json_schema):
+        if "operations" in json_schema.get("properties", {}):
+            self.form += 1
+            if self.form_sau is not None and self.form > 1:
+                return self.form_sau
+        kq = super().extract(system, messages, json_schema)
+        if "operations" in json_schema.get("properties", {}):
+            kq["user_intent"] = "sell"
+        return kq
+
+    def converse(self, system, messages, tools, max_tokens=1024):
+        if "ghi_o" in {t["name"] for t in tools}:
+            if not self.vong:
+                return ToolTurn(text="", tool_calls=[])
+            calls = [ToolCall(id=f"h{i}", name=n, input=v) for i, (n, v) in enumerate(self.vong.pop(0))]
+            return ToolTurn(text="", tool_calls=calls, assistant_content=[{"type": "tool_use", "id": c.id, "name": c.name, "input": c.input}
+                                                                         for c in calls], stop_reason="tool_use")
+        self.he_tra_loi.append(system)
+        return ToolTurn(text="Căn nào vậy anh?", tool_calls=[])
+
+    def chat(self, system, messages, max_tokens=256):
+        self.he_tra_loi.append(system)
+        return "Căn nào vậy anh?"
+
+
+def _hai_can(key, tin2, vong, form_sau=None):
+    ai = _AiHaiCan(vong, form_sau)
+    eng = Engine(ai)
+    eng.handle(key, TIN308)
+    eng.handle(key, tin2)
+    return eng.conversation(key), ai
+
+
+def test_ro_hai_can_cau_mo_ho_khong_doi_trang_thai():
+    conv, ai = _hai_can("thu-371e", "à căn đó anh bán được rồi em nhé",
+                        [[("doi_trang_thai", {"target": "Phạm Hùng", "status": "da_ban", "trich_dan_can": "căn đó"}), ("ghi_y_khach", {"user_intent": "sell"})]])
+    assert ai.form == 1 and all(li.status != "đã bán" for li in conv.listings)
+    assert len(conv.y_luot.get("chua_ro_can") or []) == 2 and "CHƯA đổi căn nào" in ai.he_tra_loi[-1]
+
+
+def test_ro_hai_can_khach_goi_ten_duong_thi_doi_dung_can():
+    conv, ai = _hai_can("thu-371f", "căn Phạm Hùng anh bán được rồi em nhé",
+                        [[("doi_trang_thai", {"target": "Phạm Hùng", "status": "da_ban", "trich_dan_can": "căn Phạm Hùng"}),
+                          ("ghi_y_khach", {"user_intent": "sell"})]])
+    assert [li.prop.fields.get("duong") for li in conv.listings if li.status == "đã bán"] == ["Phạm Hùng"]
+
+
+def test_form_du_phong_ro_hai_can_doan_can_khong_doi():
+    """Bước ghi không gọi công cụ → form JSON dự phòng; form đoán căn không kèm cụm khách chỉ căn thì cổng `_chua_ro_can` vẫn chặn."""
+    conv, ai = _hai_can("thu-371g", "à căn đó anh bán được rồi em nhé", [],
+                        form_sau={"operations": [{"op": "set_status", "status": "da_ban", "target": "Phạm Hùng"}], "user_intent": "sell"})
+    assert ai.form == 2 and all(li.status != "đã bán" for li in conv.listings) and "CHƯA đổi căn nào" in ai.he_tra_loi[-1]
 
 
 def test_khong_mat_luat_nao_cua_form():

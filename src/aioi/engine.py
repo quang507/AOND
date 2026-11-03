@@ -138,7 +138,7 @@ from .dia_danh import TraDiaDanh, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tra
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
                   lenh_tra_loi, nhan_nhu_cau, nhan_tu_du_lieu, nhu_cau_cua, tim_sdt)
-from . import agent_ban, agent_boc, agent_gop, agent_mua
+from . import agent_ban, agent_gop, agent_mua
 from .tai_chinh import khoi_tai_chinh
 from .kho_anh import la_uuid
 from .kho_tep import MediaStore, KhoTepError, extension_for, listing_folder, sanitize_filename
@@ -4920,7 +4920,7 @@ class Engine:
     def _lap_ke_hoach(self, conv: Conversation, gop: bool = False) -> dict:
         """Lượt AI lập thao tác: đọc tin khách theo nghĩa, ghi các thuộc tính hội thoại (vai, ý mua / bán, duyệt, hỏi về,
         xưng hô, y_luot) và TRẢ kế hoạch — chưa đụng rổ hàng (`_ap_dung_ke_hoach`). `gop`: lượt chat thường (`_handle`) — người bán đi vòng
-        agent gộp (SRS-5.1zzzzzzz371) khi công tắc bật; đường ảnh / tệp giữ form."""
+        agent gộp (SRS-5.1zzzzzzz371); đường ảnh / tệp giữ form."""
         # With a BASKET (>1 căn) the seller acts on ONE căn per message, but a reference may span
         # turns ("...phải nó không?" → "nó đó em") — so read from just AFTER the PREVIOUS user
         # turn: the latest user line plus the bot's question(s) right before it (confirm context),
@@ -4969,15 +4969,11 @@ class Engine:
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
         conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
         plan = None
-        if gop and ban_gon and agent_gop.bat(conv.user_key, _la_id_thu(conv.user_key)):
+        if gop and ban_gon:
             # SRS-5.1zzzzzzz371: MỘT vòng agent Sonnet cho cả đọc ý / ghi và viết lời — bước 1 ở đây (công cụ ghi qua cổng code), bước 2 ở chỗ
-            # viết lời. Vòng hỏng → form JSON (Haiku) dưới làm dự phòng.
+            # viết lời. Đường duy nhất của người bán (công tắc gỡ, chủ dự án 03/11); vòng hỏng → form JSON (Haiku) dưới làm dự phòng.
             with _do(conv, "lap_thao_tac"):
                 plan = agent_gop.mo(self, conv, system.split(RANH_GIOI_CACHE, 1)[1])
-        if plan is None and ban_gon and agent_boc.bat(conv.user_key, _la_id_thu(conv.user_key)):
-            # SRS-5.1zzzzzzz310 (kế hoạch bước 3): người bán đọc bằng agent gọi công cụ ghi (code kiểm từng lần gọi); agent hỏng → form dưới.
-            with _do(conv, "lap_thao_tac"):
-                plan = agent_boc.lap(self, conv, system, src, operations_schema_ban())
         if plan is None:
             with _do(conv, "lap_thao_tac"):
                 plan = self._provider.extract(system, src, operations_schema_mua() if gon else operations_schema_ban() if ban_gon else operations_schema())

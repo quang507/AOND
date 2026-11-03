@@ -5,7 +5,7 @@ Mỗi lượt người bán là MỘT cuộc hội thoại công cụ với mode
 
 - Bước 1 (`mo`, trong `Engine._lap_ke_hoach`): system = phần cố định của phiếu lượt (định danh + giọng + luật cố định, NGUYÊN VẸN — một nguồn
   `prompts.phieu_co_dinh`) + luật ghi chung + dữ liệu của lượt. Model gọi công cụ GHI (`ghi_o`, `them_can`, `doi_trang_thai`, `bo_can`,
-  `ghi_y_khach` — thân là `agent_boc._chay_cong_cu`, cổng trích + cổng rổ nhiều căn), công cụ ĐỌC (rổ hàng / bộ nhớ dự án / giá đã gửi — thân
+  `ghi_y_khach` — thân `_chay_ghi`, cổng trích + cổng rổ nhiều căn `Engine._chua_ro_can`), công cụ ĐỌC (rổ hàng / bộ nhớ dự án / giá đã gửi — thân
   là hàm khối của engine qua `agent_ban._khoi`) và công cụ TRA CỨU luật `tra_luat_o(o)` (RAG: luật ghi từng ô cắt NGUYÊN từ
   `OPERATIONS_SYSTEM_BAN` + mô tả schema, không nhồi cả 45.000 chữ vào mọi lượt).
 - Engine áp kế hoạch NGAY sau vòng ghi, qua đúng các cổng hiện có (`_ap_dung_ke_hoach` → `_apply_operation` / `_loc_o_tin`, chuẩn địa danh, tra
@@ -14,19 +14,18 @@ Mỗi lượt người bán là MỘT cuộc hội thoại công cụ với mode
   ô còn thiếu / VIỆC LƯỢT NÀY); system = phiếu lượt engine vừa dựng (nguyên vẹn) + dặn đánh giá. Model đọc kết quả rồi viết lời — chỉ nói "đã
   ghi" điều báo cáo ghi.
 
-Công tắc `AIOI_AGENT_GOP` (một nguồn `bot/bridge-zca/cai-vps.sh` dòng AGENT_GOP): "bat" = mọi người bán, "thu" = chỉ ID thử, khác = đường cũ
-(form Haiku + agent_ban). Bước 1 lỗi / dự phòng không gọi được công cụ → trả None, engine đọc bằng form JSON (Haiku) như cũ; bước 2 dự phòng
-→ viết lại như agent_ban với đủ khối dữ liệu."""
+Đường DUY NHẤT của lượt người bán đã rõ vai (chủ dự án 03/11/2026: "lấy phương án cuối cùng thôi", "các code không dùng thì xóa" — công tắc
+AGENT_GOP / AGENT_BOC và agent_boc.py gỡ). Bước 1 lỗi / dự phòng không gọi được công cụ → trả None, engine đọc bằng form JSON (Haiku); bước 2
+dự phòng → viết lại như agent_ban với đủ khối dữ liệu."""
 from __future__ import annotations
 
 import copy
 import json
 import logging
-import os
 import time
 from typing import Any
 
-from . import agent_ban, agent_boc
+from . import agent_ban
 
 log = logging.getLogger(__name__)
 
@@ -34,16 +33,11 @@ MAX_VONG_GHI = 3    # bước 1: ghi / tra → sửa theo kết quả → xong
 MAX_VONG_LOI = 3    # bước 2: tra thêm (nếu cần) → lời
 HAN_GIAY = 30.0     # cả hai bước; trần lõi 40 s, bridge chờ 90 s — không nới
 TRAN_KET_QUA = 6000
-SUA = agent_boc.SUA
+SUA = "Sẽ BỎ"      # dấu trong kết quả công cụ: model cần sửa cụm trích (mở thêm một vòng)
 DAU_BUOC_2 = "=== BƯỚC 2 — ĐÁNH GIÁ KẾT QUẢ RỒI VIẾT LỜI GỬI KHÁCH ==="   # bộ chấm nhận lần gọi viết lời bằng dấu này
 
 GHI = ("ghi_o", "them_can", "doi_trang_thai", "bo_can", "ghi_y_khach")
 DOC = tuple(c["name"] for c in agent_ban.CONG_CU)
-
-
-def bat(user_key: str | None, la_id_thu: bool) -> bool:
-    v = os.environ.get("AIOI_AGENT_GOP", "").strip().lower()
-    return v == "bat" or (v == "thu" and la_id_thu)
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -107,7 +101,7 @@ BANG_LUAT: list[tuple[str, str]] = [
     ("- XÁC NHẬN XOÁ", "tra:xac_nhan_xoa,xac_nhan_trich_dan"),
     ("- ĐỊA CHỈ ĐẦY ĐỦ", HE),
     ("- TIN HỆ THỐNG trong ngoặc vuông", HE),
-    ("Trả về JSON đúng schema.", BO),       # đường công cụ không trả JSON (agent_boc cũng bỏ dòng này)
+    ("Trả về JSON đúng schema.", BO),       # đường công cụ không trả JSON
 ]
 
 # Luật nạp SẴN theo TRẠNG THÁI hội thoại (code quyết, không đoán chữ khách) — đỡ một lần gọi tra cho việc chắc chắn đụng tới lượt này.
@@ -183,6 +177,66 @@ def tra_luat(o: str, schema: dict[str, Any], chia: dict[str, Any]) -> str:
     return "\n".join(ra + [k.strip("\n") for k in khoi]) or f"Khoá {o}: không có luật riêng ngoài mô tả trong công cụ."
 
 
+def _cong_cu_ghi(schema: dict[str, Any]) -> list[dict[str, Any]]:
+    """Năm công cụ ghi, đầu vào cắt từ schema form bán gọn (không viết lại định nghĩa ô) — chuyển từ agent_boc.py (SRS-310, gỡ ở SRS-5.1zzzzzzz371)."""
+    p = schema["properties"]
+    op = p["operations"]["items"]["properties"]
+    lay = lambda *ks: {k: copy.deepcopy(op[k]) for k in ks if k in op}
+    bo = {"op": {"type": "string", "enum": ["remove", "keep_only", "clear"], "description": op["op"]["description"]}, **lay("targets")}
+    y = {k: copy.deepcopy(v) for k, v in p.items() if k != "operations"}
+    return [
+        {"name": "ghi_o", "description": "Ghi / sửa ô tin của MỘT căn (căn đang khai nếu target trống).",
+         "input_schema": {"type": "object", "properties": lay("target", "fields", "bang_chung"), "required": ["fields", "bang_chung"]}},
+        {"name": "them_can", "description": "Mở căn MỚI khác căn đang khai (cần can_khac_trich), kèm ô của căn đó.",
+         "input_schema": {"type": "object", "properties": lay("targets", "fields", "bang_chung", "can_khac_trich"),
+                          "required": ["can_khac_trich"]}},
+        {"name": "doi_trang_thai", "description": "Đổi trạng thái giao dịch của một căn (đã bán, đã cọc, ngưng rao, rao lại…).",
+         "input_schema": {"type": "object", "properties": lay("target", "status", "trich_dan_can"),
+                          "required": ["status"]}},
+        {"name": "bo_can", "description": "Ngưng rao (ẩn, giữ dữ liệu) vài căn / chỉ giữ vài căn / cả rổ — hệ thống hỏi khách xác nhận trước.",
+         "input_schema": {"type": "object", "properties": bo, "required": ["op"]}},
+        {"name": "ghi_y_khach", "description": "Ý khách lượt này ngoài ô tin: vai, ý định, duyệt bản nháp, xin đăng, hỏi về, cần người thật…",
+         "input_schema": {"type": "object", "properties": y}},
+    ]
+
+
+def _chay_ghi(engine: Any, conv: Any, ten: str, vao: dict[str, Any], plan: dict[str, Any]) -> str:
+    """Thân công cụ: kiểm rồi gom vào kế hoạch (chưa áp dụng). Trả lời ngắn cho model."""
+    from .engine import _trich_dan_khop
+    loi_khach = conv.loi_khach_luot
+    if ten == "ghi_y_khach":
+        for k, v in vao.items():
+            if v not in (None, "", [], {}):
+                plan[k] = v
+        return "Đã ghi."
+    if ten in ("ghi_o", "them_can"):
+        fields = vao.get("fields") if isinstance(vao.get("fields"), dict) else {}
+        bc = vao.get("bang_chung") if isinstance(vao.get("bang_chung"), dict) else {}
+        if ten == "them_can" and not _trich_dan_khop(vao.get("can_khac_trich"), loi_khach):
+            return f"{SUA}: KHÔNG mở căn mới — can_khac_trich không nằm nguyên trong lời khách. Ô của căn đang khai thì dùng ghi_o."
+        sai = [k for k, v in fields.items() if isinstance(v, str) and v.strip() and k != "uu_the"
+               and not _trich_dan_khop(bc.get(k), loi_khach)]
+        op = {"op": "update" if ten == "ghi_o" else "add", **{k: v for k, v in vao.items() if k in ("target", "targets", "can_khac_trich")},
+              "fields": fields, "bang_chung": bc}
+        plan["operations"].append(op)
+        nhan = [k for k in fields if k not in sai]
+        return ("Ghi: " + (", ".join(nhan) or "-")) + (
+            f". {SUA} vì cụm trích không nằm nguyên trong lời khách: {', '.join(sai)} — sửa cụm trích đúng nguyên văn rồi gọi lại, hoặc thôi."
+            if sai else ".")
+    if ten == "doi_trang_thai":
+        op = {"op": "set_status", **{k: vao[k] for k in ("target", "status", "trich_dan_can") if vao.get(k)}}
+        chua_ro = engine._chua_ro_can(conv, op)   # cùng cổng với đường áp dụng (`Engine._apply_operation`)
+        if chua_ro:
+            plan["_chua_ro_can"] = chua_ro
+            return "KHÔNG đổi: lời khách chưa chỉ ra căn nào trong rổ (" + "; ".join(chua_ro) + "). Đừng gọi lại — lời trả lời sẽ hỏi khách căn nào."
+        plan["operations"].append(op)
+        return f"Đổi trạng thái: {vao.get('status')}."
+    if ten == "bo_can":
+        plan["operations"].append({"op": vao.get("op"), **({"targets": vao["targets"]} if vao.get("targets") else {})})
+        return "Ghi nhận — hệ thống sẽ hỏi khách xác nhận trước khi ẩn."
+    return "Không rõ công cụ."
+
+
 def _cau_dau(mo_ta: str, tran: int = 160) -> str:
     cau = mo_ta.split(". ", 1)[0]
     return (cau if len(cau) <= tran else cau[:tran].rsplit(" ", 1)[0] + "…") + " (luật đủ: tra_luat_o)"
@@ -199,7 +253,7 @@ def _tra_cong_cu(chia: dict[str, Any]) -> dict[str, Any]:
 def cong_cu(schema: dict[str, Any], chia: dict[str, Any]) -> list[dict[str, Any]]:
     """Công cụ bước 1 (ghi + đọc + tra cứu). Ghi: cắt từ schema form; ô tin là MỘT danh sách khoá kèm mô tả nguyên (chỉ ở ghi_o); khoá ý
     khách có luật riêng chỉ giữ câu đầu của mô tả — mô tả NGUYÊN + luật đủ trả qua tra_luat_o, không viết hai lần mỗi lượt."""
-    tools = copy.deepcopy(agent_boc.cong_cu(schema))
+    tools = _cong_cu_ghi(schema)
     o_tin = schema["properties"]["operations"]["items"]["properties"]["fields"].get("properties") or {}
     ds_o = "; ".join(f"{k}: {v.get('description') or k}" for k, v in o_tin.items())   # mô tả ô NGUYÊN (một bản — luật dài của form qua tra_luat_o)
     for t in tools:
@@ -276,12 +330,12 @@ def _schema() -> dict[str, Any]:
 
 
 def _ghi(engine: Any, conv: Any, ten: str, vao: dict[str, Any], plan: dict[str, Any], o_hop_le: set[str]) -> str:
-    """Thân công cụ ghi: lọc khoá ô lạ (ô tin là danh sách khoá, không còn schema chặn) rồi qua đúng cổng của agent_boc."""
+    """Thân công cụ ghi: lọc khoá ô lạ (ô tin là danh sách khoá, không còn schema chặn) rồi qua cổng `_chay_ghi`."""
     la: list[str] = []
     if isinstance(vao.get("fields"), dict):
         la = [k for k in vao["fields"] if k not in o_hop_le]
         vao["fields"] = {k: (v if isinstance(v, (str, list)) else str(v)) for k, v in vao["fields"].items() if k in o_hop_le}
-    r = agent_boc._chay_cong_cu(engine, conv, ten, vao, plan)
+    r = _chay_ghi(engine, conv, ten, vao, plan)
     return r + (f" Khoá ô không có trong hệ thống, bỏ: {', '.join(la)}." if la else "")
 
 
@@ -319,7 +373,7 @@ def mo(engine: Any, conv: Any, du_lieu: str) -> dict[str, Any] | None:
                     r = _ghi(engine, conv, c.name, vao, plan, o_hop_le)
                     khoa = (c.name, str(vao.get("target") or ""))
                     if c.name in ("ghi_o", "them_can") and len(plan["operations"]) > truoc:
-                        cu = nguon.get(khoa)   # gọi lại sau khi sửa cụm trích → bản mới THAY bản vòng trước (như agent_boc)
+                        cu = nguon.get(khoa)   # gọi lại sau khi sửa cụm trích → bản mới THAY bản vòng trước
                         if cu is not None and cu[0] < vong:
                             plan["operations"][cu[1]] = plan["operations"].pop()
                         else:
