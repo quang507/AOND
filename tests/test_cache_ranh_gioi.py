@@ -37,7 +37,7 @@ def test_prompt_ban_chung_phan_on_dinh_qua_cac_luot():
     a = p.build_phieu_luot("Lan", Property(), "gia")   # Đợt 8 (SRS-5.1zzzzzzz319): phiếu lượt là đường duy nhất của lượt thu thập
     b = p.build_phieu_luot("Lan", Property(), "duong", project_block="=== DỰ ÁN X ===")
     (ta, da), (tb, db) = tach_on_dinh(a), tach_on_dinh(b)
-    assert ta == tb and len(ta) > 4000        # phần giọng + luật cố định đứng yên dù ô hỏi tiếp / khối dự án đổi
+    assert ta == tb and len(ta) > 3000        # phần giọng + luật cố định đứng yên dù ô hỏi tiếp / khối dự án đổi (03/11 gọn giọng + từ lóng: ~3.200)
     assert "VIỆC LƯỢT NÀY: hỏi đúng MỘT ý" in da and "DỰ ÁN X" in db and RANH_GIOI_CACHE not in da + db
     assert "VIỆC LƯỢT NÀY: hỏi đúng MỘT ý" not in ta
 

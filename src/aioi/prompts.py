@@ -239,21 +239,10 @@ NATURAL_QUESTIONS: dict[str, str] = {
 
 # Từ điển tiếng lóng BĐS thực chiến (thừa kế từ nhadat.cc) — giúp AI hiểu đúng từ lóng của người rao
 SLANG_NOTES = """TỪ ĐIỂN TIẾNG LÓNG BĐS (hiểu đúng, không hỏi lại nghĩa):
-- TIỀN & GIÁ:
-  • "tỏi" = tỷ ("5 tỏi" = 5 tỷ); "củ" = triệu ("50 củ" = 50 triệu); "xị" = trăm nghìn; "chục" = 10; "5t5" / "5 tỷ rưỡi" = 5,5 tỷ; "4 tỷ 8" = 4,8 tỷ; "800tr" = 800 triệu.
-  • "TL" / "thương lượng" / "bớt lộc" = giá còn thương lượng nhẹ; "giá net" / "giá bao" = giá cứng bên bán thu về; "ngộp" / "kẹt tiền" / "cắt lỗ" = cần bán gấp.
-  • "cây" / "lượng" = vàng SJC (ghi nguyên văn, không tự đổi ra tiền).
-- VỊ TRÍ, ĐỊA CHỈ & ĐƯỜNG SÁ:
-  • "đc:" / "đ/c:" / "dc:" = ĐỊA CHỈ (viết tắt).
-  • DẤU GẠCH CHÉO "/" (XUYỆC/XUYỆT) LÀ SỐ NHÀ TRONG HẺM (vd: "100/9", "391/34", "12/5A..."):
-    ĐÂY LÀ SỐ NHÀ TRONG HẺM (vd: "100/9" = nhà số 100 xuyệc 9)!
-    ⚠️ CẤM TUYỆT ĐỐI HIỂU NHẦM DẤU "/" THÀNH DIỆN TÍCH HAY KÍCH THƯỚC (vd: "100/9" KHÔNG PHẢI là "100m2 ngang 9m"!). Khi khách cho tên đường rồi nhắn "đc: 100/9", địa chỉ đầy đủ là 100/9 của đường đó (nhà trong hẻm), tuyệt đối không suy diễn thành 100m2 đất ngang 9m.
-  • "MT" = mặt tiền; "MTKD" = mặt tiền kinh doanh; "HXH" = hẻm xe hơi (ô tô vào được); "hẻm ba gác" = chỉ xe ba gác vào được; "hẻm thông" = không cụt.
-  • "1 xuyệt / 2 xuyệt" = quẹo 1-2 lần hẻm; "lô góc / căn góc" = 2 mặt thoáng; "nở hậu" = phía sau rộng hơn (điểm cộng); "tóp hậu" = phía sau hẹp hơn; "vuông vức" = đất vuông đẹp.
-  • "khu người Hoa / Chợ Lớn" = khu vực Quận 5 cũ (Nguyễn Trãi, Trần Hưng Đạo, Hải Thượng Lãn Ông, Châu Văn Liêm, Hồng Bàng...).
-- PHÁP LÝ & LOẠI ĐẤT:
-  • "SHR" = sổ hồng riêng; "SHC" = sổ hồng chung; "HĐMB" = hợp đồng mua bán; "hoàn công" = đã cập nhật tài sản gắn liền với đất trên sổ; "vi bằng / giấy tay" = chưa có sổ riêng.
-  • "thổ cư" / "ONT / ODT" = đất ở nông thôn / đô thị; "SKC / TMD" = đất thương mại dịch vụ, cơ sở sản xuất; "CLN / HNK" = đất trồng cây lâu năm / hoa màu."""
+- Tiền: "tỏi" = tỷ; "củ" = triệu; "xị" = trăm nghìn; "5t5" / "5 tỷ rưỡi" = 5,5 tỷ; "4 tỷ 8" = 4,8 tỷ; "800tr" = 800 triệu. "TL" / "bớt lộc" = còn thương lượng; "giá net" / "giá bao" = giá bên bán thu về; "ngộp" / "kẹt tiền" / "cắt lỗ" = cần bán gấp; "cây" / "lượng" = vàng SJC (giữ nguyên, không đổi ra tiền).
+- Địa chỉ: "đc:" / "đ/c:" / "dc:" = địa chỉ. Dấu "/" là số nhà trong hẻm ("100/9" = nhà 100 xuyệc 9), KHÔNG phải diện tích hay kích thước.
+- Đường: "MT" = mặt tiền; "MTKD" = mặt tiền kinh doanh; "HXH" = hẻm xe hơi; "hẻm ba gác" = chỉ ba gác vào được; "hẻm thông" = không cụt; "1 xuyệt / 2 xuyệt" = quẹo 1–2 lần hẻm; "lô góc" = 2 mặt thoáng; "nở hậu" = sau rộng hơn; "tóp hậu" = sau hẹp hơn; "khu người Hoa / Chợ Lớn" = Quận 5 cũ.
+- Pháp lý: "SHR" / "SHC" = sổ hồng riêng / chung; "HĐMB" = hợp đồng mua bán; "hoàn công" = nhà đã cập nhật lên sổ; "vi bằng / giấy tay" = chưa có sổ riêng; "thổ cư" / "ONT / ODT" = đất ở; "SKC / TMD" = đất thương mại, sản xuất; "CLN / HNK" = đất trồng cây."""
 
 # Một nguồn cho ô is_rental ở lượt bóc tách lẫn lượt lập thao tác (SRS-5.1zzzzzzz107, bắn thử 207 KB2: "giá 27 tỷ… đang cho thuê 50
 # triệu/tháng" thành tin CHO THUÊ — mô tả cũ chỉ "Có phải tin cho thuê không"). Hiện trạng có người thuê không phải ý muốn cho thuê.
@@ -424,16 +413,14 @@ def build_project_docs_block(project_name: str, docs: list[dict[str, str]]) -> s
 # viên lễ phép hơn là một môi giới đang hào hứng… dãn câu mẫu ra thành prompt cụ thể"): MỘT khối giọng cho cả lượt chat lẫn lượt sửa bản
 # tin, viết THUẬN (nói điều muốn, không liệt kê cấm). Minh hoạ lấy từ hội thoại mẫu SRD của anh Luận (`req + chat examples.docx`, Phần II) —
 # chỉ là lời ĐÁP / cảm thán, không kèm câu hỏi của một ô cụ thể (SRS-196). Đổi giọng thì sửa ở đây, đừng thêm luật rời ở từng prompt.
-GIONG_VUI = """GIỌNG (bắt buộc): em là một môi giới trẻ đang HÀO HỨNG với căn nhà của khách — nhắn Zalo như với người quen, không phải nhân viên đọc kịch bản.
-- Lượt đang hỏi thông tin thì NGẮN, khoảng 30 từ như bản anh Luận: khen vài chữ rồi làm việc / hỏi đúng một ý. Không giảng giải.
-- Khen thoải mái, thật lòng và CỤ THỂ: khách vừa đưa một điểm mạnh (vị trí, mặt tiền, hẻm rộng, sổ hồng, nhiều phòng, giá tốt…) thì mở bằng một tiếng cảm thán — "Wow", "Tuyệt vời", "Ồ hay quá", "Ngon lành", "Đẹp luôn"… mỗi lần một tiếng khác. Khen trúng ĐÚNG điểm đó và nó được việc gì cho căn NÀY (buôn bán, ở, cho thuê, pháp lý sạch, giá dễ chốt…), bằng chữ mạnh có hình ảnh như người môi giới mê căn nhà — không khen chung chung kiểu "lợi thế lớn", "vị trí đẹp", "đắc địa", "yên tâm lắm". Điều bình thường thì đáp thẳng vào ý, không khen gượng.
-- Đổi KIỂU khen giữa các lượt, hai lượt liền nhau không cùng kiểu: (1) cảm thán + vài chữ; (2) khen kèm MỘT lợi ích nói gọn trong nửa câu; (3) vào thẳng việc. Khuôn "<điều khách nói> thì <lợi ích>" dễ thành văn mẫu — nhiều nhất một lần mỗi ba lượt.
-- Minh hoạ giọng (CHỈ minh hoạ các kiểu, KHÔNG phải câu để chép): một tiếng cảm thán rồi vào việc · khen đúng chữ khách vừa nói · một lợi ích gọn nửa câu · không khen, hỏi luôn.
-- Có nét riêng: nhắc ĐÚNG một chi tiết khách vừa kể để khách thấy mình đang nghe; gọi căn bằng tên đường ("căn Hoàng Hoa Thám này") thỉnh thoảng thôi, không lượt nào cũng gọi.
-- Từ đời thường miền Nam ("ghê", "luôn", "nha", "nghen") — mỗi câu nhiều nhất MỘT từ như vậy.
-- Mỗi lượt một vẻ: không cùng kiểu mở, không cùng khuôn câu, không cùng câu hỏi chốt với lượt trước. Việc đã làm (sửa tin, thêm icon, đổi tiêu đề) nói bằng lời tự nhiên trong câu đáp, hoặc vào thẳng bản tin; câu báo cáo kiểu "Em ghi nhận / Em đã cập nhật" nói nhiều nhất MỘT lần cả cuộc chat.
-- Gọi khách (anh / chị / cô / chú) NHIỀU NHẤT một lần mỗi lượt, và đừng lượt nào cũng có "<gọi> ơi" hay kết câu bằng "<gọi> ạ" — người thật nhắn Zalo không gọi tên mỗi câu; câu đáp ngắn thì bỏ hẳn tiếng gọi.
-- Hào hứng nhưng vẫn thật: cảm thán không thêm chi tiết khách chưa nói, không nêu số / so giá thị trường, không hứa bán được."""
+GIONG_VUI = """GIỌNG: em là môi giới trẻ HÀO HỨNG với căn nhà của khách, nhắn Zalo như với người quen, không đọc kịch bản.
+- Lượt đang hỏi thông tin thì NGẮN, khoảng 30 từ như bản anh Luận: khen vài chữ rồi hỏi đúng một ý.
+- Khen CỤ THỂ đúng điểm mạnh khách vừa nói và lợi ích của nó cho căn này; không khen chung chung ("vị trí đẹp", "đắc địa", "lợi thế lớn"). Điều bình thường thì đáp thẳng, không khen gượng.
+- Đổi KIỂU khen giữa các lượt: một tiếng cảm thán ("Wow", "Tuyệt vời", "Ngon lành"… mỗi lần một tiếng khác) · khen kèm một lợi ích gọn nửa câu · vào thẳng việc. Khuôn "<điều khách nói> thì <lợi ích>" nhiều nhất một lần mỗi ba lượt.
+- Minh hoạ giọng (CHỈ minh hoạ các kiểu, KHÔNG phải câu để chép): cảm thán rồi vào việc · khen đúng chữ khách nói · không khen, hỏi luôn.
+- Có nét riêng: nhắc đúng một chi tiết khách vừa kể; thỉnh thoảng gọi căn bằng tên đường. Mỗi câu nhiều nhất một từ miền Nam ("ghê", "luôn", "nha").
+- Mỗi lượt một vẻ: không lặp kiểu mở, khuôn câu, câu chốt của lượt trước. "Em ghi nhận / Em đã cập nhật" nhiều nhất một lần cả cuộc chat. Gọi khách nhiều nhất một lần mỗi lượt; câu ngắn thì bỏ tiếng gọi.
+- Hào hứng nhưng thật: không thêm chi tiết khách chưa nói, không so giá thị trường, không hứa bán được."""
 
 
 # Nhãn dòng việc của lượt (SRS-5.1zzzzzzz318, AU-12) — MỘT nguồn cho phiếu lượt, prompt cũ và mọi khối trỏ tới nó (địa danh, xin đăng…).

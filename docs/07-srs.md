@@ -785,6 +785,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz371 · Gọn prompt viết lời theo khuôn anh Luận: khối giọng 2.447 → 1.223 ký tự, từ lóng 2.079 → 1.053 (03/11/2026)
+Chủ dự án 03/11: "prompt bot đang hơi dài nên câu chữ bot nói chưa ổn định … xem bên repo AOND anh Luận rút gọn lại và đi cho khớp". Đo cùng một lượt: anh Luận 8.289 ký tự, AOND 6.593 → 4.424.
+(1) Lớp lỗi: mỗi lần chỉnh giọng thêm một dòng luật / câu cấm, không gộp dòng cũ → khối giọng dài gấp đôi, từ lóng lặp ý và in hoa "CẤM TUYỆT ĐỐI". Sửa: `GIONG_VUI`, `SLANG_NOTES` viết gọn, giữ đủ ý đã chốt (khen cụ thể, đổi kiểu khen, một từ miền Nam / câu, gọi khách ≤ 1 lần / lượt, "/" là số nhà trong hẻm).
+(2) Cùng lớp: prompt bóc tách (~24.000 ký tự / lần, anh Luận ~7.000) — luật viết hai lần ở `OPERATIONS_SYSTEM` và mô tả schema; để việc gộp bóc tách + trả lời làm một vòng agent.
+(3) Kiểm: `bun run test:py` 1436 đạt (`test_cache_ranh_gioi` hạ sàn phần ổn định 4.000 → 3.000 ký tự cho đúng độ dài mới); chưa chạy `bun run cham`.
+
 ### SRS-5.1zzzzzzz370 · Làm gọn DB: bỏ vector hẻm / đường số và hai index HNSW gần như không dùng (02/11/2026)
 Chủ dự án 02/11 duyệt ("ừ làm đi"). Đo trên DB thật (thống kê 31 ngày, reset 02/10): DB 275 MB / 500 MB Free; `duong` 168 MB — 25.539 hẻm + 3.714 đường số mang vector 768 chiều (~44 MB), index `duong_nhung_hnsw` 77 MB dùng 1 lần / 31 ngày; `projects_nhung_hnsw` 5,5 MB, 0 lần.
 (1) Lớp lỗi: dữ liệu nhúng thêm vào mà không đo có ai dùng — tên hẻm / đường số không có nghĩa để tìm theo nghĩa, `nhung_dia_danh_tick` chỉ ĐẨY hẻm xuống cuối hàng đợi (chú thích ghi "không nhúng hẻm") nên vẫn nhúng hết. (2) Cùng lớp: `projects_nhung_hnsw` (bỏ index, giữ cột); `dieu_luat_nhung_hnsw` 5,9 MB dùng 58 lần — giữ. Sửa: migration `20261103c_gon_vector_duong` — xoá vector hẻm / đường số, `nhung_dia_danh_tick` chỉ nhúng `loai = 'duong'`, bỏ hai index (tìm theo nghĩa trên 10.097 tên đường quét tuần tự đo 113 ms); `vacuum full public.duong` chạy riêng sau khi áp để trả chỗ đĩa.
