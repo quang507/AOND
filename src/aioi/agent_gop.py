@@ -16,7 +16,12 @@ Mỗi lượt người bán là MỘT cuộc hội thoại công cụ với mode
 
 Đường DUY NHẤT của lượt người bán đã rõ vai (chủ dự án 03/11/2026: "lấy phương án cuối cùng thôi", "các code không dùng thì xóa" — công tắc
 AGENT_GOP / AGENT_BOC và agent_boc.py gỡ). Bước 1 lỗi / dự phòng không gọi được công cụ → trả None, engine đọc bằng form JSON (Haiku); bước 2
-dự phòng → viết lại như agent_ban với đủ khối dữ liệu."""
+dự phòng → viết lại như agent_ban với đủ khối dữ liệu.
+
+Người MUA đã rõ vai đi CÙNG vòng (SRS-5.1zzzzzzz380, chủ dự án 03/11 duyệt "Phía mua đi cùng kiểu vòng gộp như phía bán — một đường cho cả hai
+phía, sửa luật một chỗ"): `mo_mua` / `viet_mua` dùng chung `_vong_ghi` / `_tin_buoc_2` / `_vong_viet`; system bước 1 = `prompts.mua_co_dinh`
++ `prompts.luat_doc_y_mua` (nguyên form mua gọn), công cụ + thân công cụ + báo cáo ở `agent_mua`. Khách mua chuyển sang ý bán → engine đọc
+lại cả lượt bằng form đầy đủ (đường bán) như form gọn; vòng lỗi → form mua gọn (Haiku) + `agent_mua.chay` làm dự phòng."""
 from __future__ import annotations
 
 import copy
@@ -25,7 +30,7 @@ import logging
 import time
 from typing import Any
 
-from . import agent_ban
+from . import agent_ban, agent_mua
 
 log = logging.getLogger(__name__)
 
@@ -339,25 +344,23 @@ def _ghi(engine: Any, conv: Any, ten: str, vao: dict[str, Any], plan: dict[str, 
     return r + (f" Khoá ô không có trong hệ thống, bỏ: {', '.join(la)}." if la else "")
 
 
-def mo(engine: Any, conv: Any, du_lieu: str) -> dict[str, Any] | None:
-    """Bước 1. Trả kế hoạch cùng dạng form cũ (engine áp như mọi lượt) và cất cuộc hội thoại công cụ vào `conv.vong_gop` cho bước 2. None khi
-    model không gọi được công cụ / lỗi (engine đọc bằng form JSON)."""
-    schema, chia = _schema(), chia_luat()
-    o_hop_le = set(schema["properties"]["operations"]["items"]["properties"]["fields"].get("properties") or {})
-    he = _he_ghi(engine, conv, du_lieu, chia)
-    tools = cong_cu(schema, chia)
-    tin: list[dict] = [{"role": m.role, "content": m.content} for m in conv.messages()]
-    plan: dict[str, Any] = {"operations": []}
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+# Vòng chung HAI vai (SRS-5.1zzzzzzz380, chủ dự án 03/11: "một đường cho cả hai phía, sửa luật một chỗ"): bước 1 `_vong_ghi`, bước 2
+# `_vong_viet`, nối báo cáo `_tin_buoc_2`. Vai chỉ khác system, bộ công cụ và thân công cụ (người bán ở file này, người mua ở `agent_mua`).
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+
+def _vong_ghi(engine: Any, he: str, tin: list[dict], tools: list[dict], chay: Any, nhan: str) -> tuple[list[dict], list[str], float] | None:
+    """Bước 1: model gọi công cụ ghi / tra; `chay(tên, vào, vòng) -> (kết quả, mở thêm vòng)`. Trả (kết quả công cụ lần cuối — bước 2 gửi lại
+    kèm báo cáo, các công cụ đã gọi, mốc giờ) hoặc None khi dự phòng / lỗi / model không gọi công cụ nào (engine đọc bằng form JSON). `tin`
+    được nối thêm tại chỗ (cuộc hội thoại công cụ cất cho bước 2)."""
     da_goi: list[str] = []
-    nguon: dict[tuple[str, str], tuple[int, int]] = {}
     kq: list[dict] = []
     bat_dau = time.monotonic()
-    project = engine.project_for(conv.prop, conv)
     try:
         for vong in range(MAX_VONG_GHI):
             turn = engine._provider.converse(he, tin, tools, max_tokens=2048)
             if turn.stop_reason == "du_phong":
-                log.warning("Agent gộp: dự phòng không gọi công cụ — đọc bằng form")
+                log.warning("%s: dự phòng không gọi công cụ — đọc bằng form", nhan)
                 return None
             if not turn.tool_calls:
                 if vong and tin and tin[-1]["role"] == "user" and isinstance(tin[-1]["content"], list):
@@ -367,43 +370,130 @@ def mo(engine: Any, conv: Any, du_lieu: str) -> dict[str, Any] | None:
             kq, mo_them = [], False
             for c in turn.tool_calls:
                 da_goi.append(c.name)
-                vao = dict(c.input or {})
-                if c.name in GHI:
-                    truoc = len(plan["operations"])
-                    r = _ghi(engine, conv, c.name, vao, plan, o_hop_le)
-                    khoa = (c.name, str(vao.get("target") or ""))
-                    if c.name in ("ghi_o", "them_can") and len(plan["operations"]) > truoc:
-                        cu = nguon.get(khoa)   # gọi lại sau khi sửa cụm trích → bản mới THAY bản vòng trước
-                        if cu is not None and cu[0] < vong:
-                            plan["operations"][cu[1]] = plan["operations"].pop()
-                        else:
-                            nguon[khoa] = (vong, len(plan["operations"]) - 1)
-                    mo_them = mo_them or SUA in r
-                elif c.name == "tra_luat_o":
-                    r, mo_them = tra_luat(vao.get("o"), schema, chia), True
-                elif c.name in DOC:
-                    try:
-                        r = agent_ban._khoi(engine, conv, project, c.name).strip() or "Không có dữ liệu này."
-                    except Exception as e:  # noqa: BLE001 — tra lỗi thì nói thật
-                        log.warning("Agent gộp: công cụ %s lỗi: %s", c.name, type(e).__name__)
-                        r = "Tra lỗi — nói thật là em chưa tra được, không đoán."
-                    mo_them = True
-                else:
-                    r = "Không rõ công cụ."
+                r, them = chay(c.name, dict(c.input or {}), vong)
+                mo_them = mo_them or them
                 kq.append({"type": "tool_result", "tool_use_id": c.id, "content": r[:TRAN_KET_QUA]})
             if not mo_them or vong == MAX_VONG_GHI - 1 or time.monotonic() - bat_dau > HAN_GIAY / 2:
                 break
             tin.append({"role": "user", "content": kq})
             kq = []
     except Exception as e:  # noqa: BLE001 — vòng hỏng thì đọc bằng form, lượt vẫn chạy
-        log.warning("Agent gộp lỗi (%s) — đọc bằng form", type(e).__name__)
+        log.warning("%s lỗi (%s) — đọc bằng form", nhan, type(e).__name__)
         return None
     if not da_goi:
-        log.warning("Agent gộp: model không gọi công cụ nào — đọc bằng form")
+        log.warning("%s: model không gọi công cụ nào — đọc bằng form", nhan)
         return None
-    log.warning("Agent gộp bước 1: công_cụ=%s giây=%.1f", ",".join(da_goi), time.monotonic() - bat_dau)
+    log.warning("%s bước 1: công_cụ=%s giây=%.1f", nhan, ",".join(da_goi), time.monotonic() - bat_dau)
+    return kq, da_goi, bat_dau
+
+
+def _tin_buoc_2(st: dict[str, Any], bao: str) -> list[dict]:
+    """Cuộc hội thoại bước 1 + báo cáo sau khi áp làm kết quả công cụ ghi (lượt gọi công cụ cuối của bước 1 nhận kết quả thật)."""
+    tin = list(st["tin"])
+    kq = [dict(b) for b in st["kq"]]
+    if kq:
+        kq[0]["content"] = bao + "\n\n(Kết quả riêng của lần gọi này: " + str(kq[0]["content"]) + ")"
+        tin.append({"role": "user", "content": kq})
+    else:
+        tin.append({"role": "user", "content": bao})
+    return tin
+
+
+def _vong_viet(engine: Any, he: str, tin: list[dict], tools: list[dict], chay: Any, bat_dau: float, max_tokens: int, nhan: str,
+               bo_ket: tuple[str, ...] = (), tran: int = TRAN_KET_QUA) -> tuple[str, list[str], list[str]] | None:
+    """Bước 2: model đánh giá báo cáo, tra thêm nếu cần (`chay(lần gọi) -> kết quả`), rồi viết lời. Trả (lời — rỗng khi hết trần chưa viết,
+    kết quả tra để ghép vào lời nhắc dự phòng, công cụ đã gọi) hoặc None khi dự phòng không gọi công cụ."""
+    ket: list[str] = []
+    da_goi: list[str] = []
+    loi = ""
+    for vong in range(MAX_VONG_LOI):
+        turn = engine._provider.converse(he, tin, tools, max_tokens=max_tokens)
+        if turn.stop_reason == "du_phong":
+            return None
+        if not turn.tool_calls:
+            loi = (turn.text or "").strip()
+            break
+        if vong == MAX_VONG_LOI - 1 or time.monotonic() - bat_dau > HAN_GIAY:
+            break
+        tin.append({"role": "assistant", "content": turn.assistant_content})
+        kq2 = []
+        for c in turn.tool_calls:
+            da_goi.append(c.name)
+            try:
+                r = chay(c)
+            except Exception as e:  # noqa: BLE001
+                log.warning("%s: công cụ %s lỗi: %s", nhan, c.name, type(e).__name__)
+                r = "Tra lỗi — nói thật là em chưa tra được, không đoán."
+            r = str(r)[:tran]
+            if c.name not in bo_ket:
+                ket.append(f"[{c.name}] {r}")
+            kq2.append({"type": "tool_result", "tool_use_id": c.id, "content": r})
+        tin.append({"role": "user", "content": kq2})
+    return loi, ket, da_goi
+
+
+def mo(engine: Any, conv: Any, du_lieu: str) -> dict[str, Any] | None:
+    """Bước 1 người bán. Trả kế hoạch cùng dạng form cũ (engine áp như mọi lượt) và cất cuộc hội thoại công cụ vào `conv.vong_gop` cho bước 2.
+    None khi model không gọi được công cụ / lỗi (engine đọc bằng form JSON)."""
+    schema, chia = _schema(), chia_luat()
+    o_hop_le = set(schema["properties"]["operations"]["items"]["properties"]["fields"].get("properties") or {})
+    he = _he_ghi(engine, conv, du_lieu, chia)
+    tools = cong_cu(schema, chia)
+    tin: list[dict] = [{"role": m.role, "content": m.content} for m in conv.messages()]
+    plan: dict[str, Any] = {"operations": []}
+    nguon: dict[tuple[str, str], tuple[int, int]] = {}
+    project = engine.project_for(conv.prop, conv)
+
+    def chay(ten: str, vao: dict[str, Any], vong: int) -> tuple[str, bool]:
+        if ten in GHI:
+            truoc = len(plan["operations"])
+            r = _ghi(engine, conv, ten, vao, plan, o_hop_le)
+            khoa = (ten, str(vao.get("target") or ""))
+            if ten in ("ghi_o", "them_can") and len(plan["operations"]) > truoc:
+                cu = nguon.get(khoa)   # gọi lại sau khi sửa cụm trích → bản mới THAY bản vòng trước
+                if cu is not None and cu[0] < vong:
+                    plan["operations"][cu[1]] = plan["operations"].pop()
+                else:
+                    nguon[khoa] = (vong, len(plan["operations"]) - 1)
+            return r, SUA in r
+        if ten == "tra_luat_o":
+            return tra_luat(vao.get("o"), schema, chia), True
+        if ten in DOC:
+            try:
+                return agent_ban._khoi(engine, conv, project, ten).strip() or "Không có dữ liệu này.", True
+            except Exception as e:  # noqa: BLE001 — tra lỗi thì nói thật
+                log.warning("Agent gộp: công cụ %s lỗi: %s", ten, type(e).__name__)
+                return "Tra lỗi — nói thật là em chưa tra được, không đoán.", True
+        return "Không rõ công cụ.", False
+
+    ra = _vong_ghi(engine, he, tin, tools, chay, "Agent gộp")
+    if ra is None:
+        return None
+    kq, _da_goi, bat_dau = ra
     plan.setdefault("user_intent", "sell")
     conv.vong_gop = {"tin": tin, "kq": kq, "bat_dau": bat_dau, "schema": schema, "chia": chia}
+    return plan
+
+
+def mo_mua(engine: Any, conv: Any, du_lieu: str) -> dict[str, Any] | None:
+    """Bước 1 người MUA (SRS-5.1zzzzzzz380): cùng vòng với người bán. System = phần cố định của prompt mua NGUYÊN VẸN (`prompts.mua_co_dinh`)
+    + luật đọc ý NGUYÊN form mua gọn (`prompts.luat_doc_y_mua`) + dữ liệu lượt; công cụ ghi `agent_mua.cong_cu_ghi` (thân `agent_mua.chay_ghi`,
+    ô nhu cầu qua cổng trích `Engine._loc_nhu_cau`). Trả kế hoạch cùng dạng form mua (engine áp như mọi lượt) và cất cuộc hội thoại vào
+    `conv.vong_mua`; None → engine đọc bằng form JSON (Haiku)."""
+    from .llm.base import RANH_GIOI_CACHE
+    from .prompts import luat_doc_y_mua, mua_co_dinh
+    he = mua_co_dinh(conv.assistant.name) + agent_mua.HUONG_DAN_GHI + luat_doc_y_mua() + "\n" + RANH_GIOI_CACHE + du_lieu
+    tin: list[dict] = [{"role": m.role, "content": m.content} for m in conv.messages()]
+    plan: dict[str, Any] = {"operations": []}
+    st: dict[str, Any] = {"nhan": [], "bo": {}}
+    ra = _vong_ghi(engine, he, tin, agent_mua.cong_cu_ghi(),
+                   lambda ten, vao, _vong: agent_mua.chay_ghi(engine, conv, ten, vao, plan, st), "Agent gộp mua")
+    if ra is None:
+        return None
+    kq, _da_goi, bat_dau = ra
+    if not plan.get("user_intent"):   # model quên ý định: có ghi nhu cầu / việc căn là đang mua, không thì để engine quyết theo vai cũ
+        plan["user_intent"] = "buy" if plan.get("buyer_lead") or plan.get("mua") else "unknown"
+    conv.vong_mua = {"tin": tin, "kq": kq, "bat_dau": bat_dau, **st}
     return plan
 
 
@@ -457,56 +547,62 @@ def viet(engine: Any, conv: Any, project: Any, system: str, captured: list[str],
     huong_dan = HUONG_DAN_VIET + agent_ban.HUONG_DAN + (_AGENT_TOOL_GUIDE if kho_du_an else "")
     he = system.replace(RANH_GIOI_CACHE, huong_dan + RANH_GIOI_CACHE, 1) if RANH_GIOI_CACHE in system else system + huong_dan
     tools = cong_cu_viet(st["chia"]) + (engine._inventory_tools() if kho_du_an else [])
-    tin = list(st["tin"])
-    kq = [dict(b) for b in st["kq"]]
-    if kq:
-        kq[0]["content"] = bao + "\n\n(Kết quả riêng của lần gọi này: " + str(kq[0]["content"]) + ")"
-        tin.append({"role": "user", "content": kq})
-    else:
-        tin.append({"role": "user", "content": bao})
-    ket: list[str] = []
-    da_goi: list[str] = []
-    loi = ""
-    for vong in range(MAX_VONG_LOI):
-        turn = engine._provider.converse(he, tin, tools, max_tokens=max_tokens)
-        if turn.stop_reason == "du_phong":
-            them = "".join(agent_ban._khoi(engine, conv, project, t) for t in DOC)
-            log.warning("Agent gộp: dự phòng không gọi công cụ — viết lại với đủ khối dữ liệu")
-            khoi_bao = "\n\n=== " + bao + "\n"
-            return engine._provider.reply(system + khoi_bao + them, conv.messages(), max_tokens=max_tokens).strip(), khoi_bao + them
-        if not turn.tool_calls:
-            loi = (turn.text or "").strip()
-            break
-        if vong == MAX_VONG_LOI - 1 or time.monotonic() - st["bat_dau"] > HAN_GIAY:
-            break
-        tin.append({"role": "assistant", "content": turn.assistant_content})
-        kq2 = []
-        for c in turn.tool_calls:
-            da_goi.append(c.name)
-            vao = dict(c.input or {})
-            try:
-                if c.name == "tra_luat_o":
-                    r = tra_luat(vao.get("o"), st["schema"], st["chia"])
-                elif c.name in DOC:
-                    r = agent_ban._khoi(engine, conv, project, c.name).strip() or "Không có dữ liệu này."
-                elif kho_du_an:
-                    r = engine._exec_tool(conv, project, c)
-                else:
-                    r = "Không rõ công cụ."
-            except Exception as e:  # noqa: BLE001
-                log.warning("Agent gộp: công cụ %s lỗi: %s", c.name, type(e).__name__)
-                r = "Tra lỗi — nói thật là em chưa tra được, không đoán."
-            r = str(r)[:TRAN_KET_QUA]
-            if c.name != "tra_luat_o":
-                ket.append(f"[{c.name}] {r}")
-            kq2.append({"type": "tool_result", "tool_use_id": c.id, "content": r})
-        tin.append({"role": "user", "content": kq2})
+    tin = _tin_buoc_2(st, bao)
+
+    def chay(c: Any) -> str:
+        vao = dict(c.input or {})
+        if c.name == "tra_luat_o":
+            return tra_luat(vao.get("o"), st["schema"], st["chia"])
+        if c.name in DOC:
+            return agent_ban._khoi(engine, conv, project, c.name).strip() or "Không có dữ liệu này."
+        if kho_du_an:
+            return engine._exec_tool(conv, project, c)
+        return "Không rõ công cụ."
+
+    ra = _vong_viet(engine, he, tin, tools, chay, st["bat_dau"], max_tokens, "Agent gộp", bo_ket=("tra_luat_o",))
+    if ra is None:
+        them = "".join(agent_ban._khoi(engine, conv, project, t) for t in DOC)
+        log.warning("Agent gộp: dự phòng không gọi công cụ — viết lại với đủ khối dữ liệu")
+        khoi_bao = "\n\n=== " + bao + "\n"
+        return engine._provider.reply(system + khoi_bao + them, conv.messages(), max_tokens=max_tokens).strip(), khoi_bao + them
+    loi, ket, da_goi = ra
     them = ("\n\n=== " + bao + "\n") + (("\n=== KẾT QUẢ EM VỪA TRA (hệ thống tra, không phải khách nói) ===\n" + "\n".join(ket) + "\n")
                                          if ket else "")
     if not loi:
         loi = engine._provider.reply(system + them, conv.messages(), max_tokens=max_tokens).strip()
     log.warning("Agent gộp bước 2: công_cụ=%s giây=%.1f", ",".join(da_goi) or "-", time.monotonic() - st["bat_dau"])
     return loi, them
+
+
+def viet_mua(engine: Any, conv: Any, system: str, next_field: str | None, viec: list[str], can: list[dict],
+             max_tokens: int) -> tuple[str, list[dict]]:
+    """Bước 2 người MUA (SRS-5.1zzzzzzz380): cùng cuộc hội thoại công cụ với bước 1 — báo cáo sau khi áp (`agent_mua.bao_cao`) làm kết quả
+    công cụ ghi; system = prompt mua engine vừa dựng (nguyên vẹn) + dặn đánh giá + hướng dẫn tra kho; công cụ CHỈ ĐỌC (`tim_can`, `xem_can`,
+    `tra_du_an`, `du_an_trong_khu` — thân `agent_mua.chay_cong_cu`). Trả (lời, các căn công cụ đã tra — để lưới soát số / ảnh biết)."""
+    from .llm.base import RANH_GIOI_CACHE
+    st, conv.vong_mua = conv.vong_mua, None
+    bao = agent_mua.bao_cao(conv, system, next_field, viec, can, st)
+    huong_dan = HUONG_DAN_VIET + agent_mua.HUONG_DAN_DOC + agent_mua.DONG_CUOI
+    he = system.replace(RANH_GIOI_CACHE, huong_dan + RANH_GIOI_CACHE, 1) if RANH_GIOI_CACHE in system else system + huong_dan
+    gom: list[dict] = []
+
+    def chay(c: Any) -> str:
+        if c.name in agent_mua.GHI_DU_PHONG:   # bước ghi đã đóng — không có đường ghi thứ hai
+            return "Bước ghi lượt này đã đóng — không ghi; nói theo KẾT QUẢ GHI LƯỢT NÀY."
+        return agent_mua.chay_cong_cu(engine, conv, c.name, dict(c.input or {}), gom)
+
+    ra = _vong_viet(engine, he, _tin_buoc_2(st, bao), copy.deepcopy(agent_mua.CONG_CU_DOC), chay, st["bat_dau"], max_tokens,
+                    "Agent gộp mua", tran=agent_mua.TRAN_KET_QUA)
+    khoi_bao = "\n\n=== " + bao + "\n"
+    if ra is None:
+        log.warning("Agent gộp mua: dự phòng không gọi công cụ — viết lại kèm kết quả ghi")
+        return engine._provider.reply(system + khoi_bao, conv.messages(), max_tokens=max_tokens).strip(), gom
+    loi, ket, da_goi = ra
+    if not loi:
+        them = khoi_bao + (("\n=== KẾT QUẢ EM VỪA TRA KHO (hệ thống tra, không phải khách nói) ===\n" + "\n".join(ket) + "\n") if ket else "")
+        loi = engine._provider.reply(system + them, conv.messages(), max_tokens=max_tokens).strip()
+    log.warning("Agent gộp mua bước 2: công_cụ=%s căn_tra=%d giây=%.1f", ",".join(da_goi) or "-", len(gom), time.monotonic() - st["bat_dau"])
+    return loi, gom
 
 
 def bang_luat_md() -> str:

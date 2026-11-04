@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz370 · Làm gọn DB: bỏ vector hẻm / đường số và hai index HNSW gần như không dùng (02/11/2026)
+Chủ dự án 02/11 duyệt ("ừ làm đi"). Đo trên DB thật (thống kê 31 ngày, reset 02/10): DB 275 MB / 500 MB Free; `duong` 168 MB — 25.539 hẻm + 3.714 đường số mang vector 768 chiều (~44 MB), index `duong_nhung_hnsw` 77 MB dùng 1 lần / 31 ngày; `projects_nhung_hnsw` 5,5 MB, 0 lần.
+(1) Lớp lỗi: dữ liệu nhúng thêm vào mà không đo có ai dùng — tên hẻm / đường số không có nghĩa để tìm theo nghĩa, `nhung_dia_danh_tick` chỉ ĐẨY hẻm xuống cuối hàng đợi (chú thích ghi "không nhúng hẻm") nên vẫn nhúng hết. (2) Cùng lớp: `projects_nhung_hnsw` (bỏ index, giữ cột); `dieu_luat_nhung_hnsw` 5,9 MB dùng 58 lần — giữ. Sửa: migration `20261103c_gon_vector_duong` — xoá vector hẻm / đường số, `nhung_dia_danh_tick` chỉ nhúng `loai = 'duong'`, bỏ hai index (tìm theo nghĩa trên 10.097 tên đường quét tuần tự đo 113 ms); `vacuum full public.duong` chạy riêng sau khi áp để trả chỗ đĩa.
+(3) Kiểm: chạy thử trong giao dịch huỷ trên DB thật — update 29.253 dòng 16 s, bỏ 2 index 0,2 s, còn 10.097 vector; tìm theo chữ (`tim_duong`, `tim_dia_danh`) không đổi. Số dung lượng trước / sau ghi ở PR.
+
 ### SRS-5.1zzzzzzz368 · Làm gọn prompt bước 1: khuôn bản tin chỉ khi cần, bỏ mã SRS / ngày trong chữ gửi model, danh sách ô soát vào system (02/11/2026)
 Chủ dự án 02/11: "prompt bot gọn lại hơn dc ko, có chỗ nào bị dài dòng chồng nhau ko" → "làm gọn nó đi". Đo (ký tự): bóc tách bán 25.235, viết lời sau bản nháp 13.470 (gồm `AD_FORMAT` 4.980 nằm SAU ranh giới cache), lượt soát ô hỏi gửi danh sách 94 ô (~3.800) trong tin user.
 (1) Lớp lỗi: khối gắn cố định vào mọi lượt dù chỉ vài lượt cần; lịch sử sửa ("(SRS-…)", ngày) nằm trong chữ gửi model. Sửa: `build_fee_followup_system(viet_lai_tin=)` — khuôn bản tin chỉ khi `engine._co_the_viet_lai_tin` (khách không duyệt, dặn cách viết, hay vừa đổi ô); bỏ mã SRS / ngày trong chuỗi prompt (giữ ở comment / docs); danh sách ô soát vào `SOAT_O_HOI_SYSTEM` (cache), bỏ 8 ô chỉ phía mua.

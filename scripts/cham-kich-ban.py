@@ -87,9 +87,9 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
             setattr(p, ten, boc)
         _boc_viec("extract", lambda a, k: "boc")
         _boc_viec("chat", lambda a, k: "loi")
-        # SRS-5.1zzzzzzz371: vòng agent gộp — bước 1 (có công cụ ghi) là bóc tách, bước 2 (system có dấu bước 2) là viết lời.
+        # SRS-5.1zzzzzzz371 / 380: vòng agent gộp hai vai — bước 1 (có công cụ ghi) là bóc tách, bước 2 (system có dấu bước 2) là viết lời.
         _boc_viec("converse", lambda a, k: "loi" if "BƯỚC 2 — ĐÁNH GIÁ KẾT QUẢ" in str(k.get("system") or (a[0] if a else "")) else
-                  "boc" if any(t.get("name") == "ghi_o" for t in (k.get("tools") or (a[2] if len(a) > 2 else []))) else "loi")
+                  "boc" if any(t.get("name") in ("ghi_o", "ghi_nhu_cau") for t in (k.get("tools") or (a[2] if len(a) > 2 else []))) else "loi")
     luot, xin_nguoi, bat_dau = [], False, time.monotonic()
     with tempfile.TemporaryDirectory(prefix="cham-") as d:
         kho = SqliteConversationStore(os.path.join(d, "kb.db"))

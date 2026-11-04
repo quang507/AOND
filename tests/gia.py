@@ -12,9 +12,9 @@ from aioi.llm.base import Message, ToolTurn
 
 class KhongCongCu:
     def converse(self, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]], max_tokens: int = 1024) -> ToolTurn:
-        if any(t.get("name") == "ghi_o" for t in tools):
-            # Bước ghi của vòng agent gộp / agent bóc (SRS-5.1zzzzzzz371): model không gọi công cụ → engine đọc bằng form. Không lấy lời đã soạn
-            # của đồ giả (`chat`) — lời đó dành cho lượt viết lời.
+        if any(t.get("name") in ("ghi_o", "ghi_nhu_cau") for t in tools):
+            # Bước ghi của vòng agent gộp người bán (SRS-5.1zzzzzzz371) / người mua (SRS-5.1zzzzzzz380): model không gọi công cụ → engine đọc
+            # bằng form. Không lấy lời đã soạn của đồ giả (`chat`) — lời đó dành cho lượt viết lời.
             return ToolTurn(text="", tool_calls=[])
         msgs = [Message(m["role"], m["content"]) for m in messages if isinstance(m.get("content"), str)]
         return ToolTurn(text=self.chat(system, msgs, max_tokens=max_tokens), tool_calls=[])
