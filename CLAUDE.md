@@ -133,6 +133,7 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 ```
 
 - CI: `.github/workflows/kiem.yml` TỰ chạy khi mở PR / đẩy thêm commit vào nhánh có PR — không dispatch tay (SRS-297).
+- `cham.yml`: bộ chấm offline chạy trên Actions khi PR đổi `src/aioi/**` / `tests/kich_ban/**`, so với `diem_nen.json` của main (cần secret `CLAUDE_CODE_OAUTH_TOKEN`; thiếu thì báo chưa kiểm được, không đỏ) — SRS-377.
 - Test chạy công tắc production (`tests/conftest.py` đọc `cai-vps.sh`); bài kiểm nhánh cũ phải gắn `@pytest.mark.nhanh_cu(AIOI_…="tat")`, bài lộ lỗi production thì `xfail(strict=True)` kèm mã audit — đừng `monkeypatch` về `tat` để cho xanh (SRS-316).
 - Gộp vào `main` có đổi `src/aioi/` hoặc `bot/bridge-zca/` → `.github/workflows/tu-cai-vps.yml` TỰ chạy cai-vps (lõi khởi động lại ~1 phút).
 

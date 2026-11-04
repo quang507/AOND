@@ -27,7 +27,7 @@ from uuid import uuid4
 
 from . import gamification as g
 from . import phap_ly
-from .prompts import _dien_tich_mo_ho, viec_phieu, viec_theo_khoi
+from .prompts import _dien_tich_mo_ho, khoi_nhan_vat, viec_phieu, viec_theo_khoi
 from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, SU_THAT_CAN, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
@@ -3866,7 +3866,7 @@ class Engine:
         the price-free shared catalog — otherwise AOND wrongly says 'em chưa có giá'."""
         structured = self._structured_shared_block(project)  # mẫu nhà specs + project facts
         system = (
-            f'Bạn là "{conv.assistant.name}", trợ lý BĐS của AI Ơi Nhà Đất. '
+            khoi_nhan_vat(conv.assistant.name, "khách", kem_giong=False)
             + build_project_docs_block(project.name, project.docs_cho(conv.user_key))
             + (f"\n\n=== KIẾN THỨC CHUNG DỰ ÁN (em ĐÃ CÓ SẴN) ===\n{structured}\n" if structured else "")
             + self._seller_price_block(conv)

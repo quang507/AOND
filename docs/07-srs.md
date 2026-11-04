@@ -732,17 +732,14 @@ Không có bảng token/TTL, không nối fingerprint (OPEN-14); lõi chưa đ�
 
 ```text
 1. Bridge zca-js → POST /chat-reply (server.chat_reply): sổ msg_id, sự kiện cảm xúc không trả lời (SRS-364), khoá lượt theo người.
-2. Engine.handle: AI đọc ý → ô tin qua cổng bằng chứng `_loc_o_tin` (SRS-73). Vai đã rõ: bước 1 của MỘT vòng agent Sonnet gọi công cụ
-   ghi — người bán `agent_gop.mo` (ghi / đọc / `tra_luat_o`, SRS-371), người mua `agent_gop.mo_mua` (`ghi_nhu_cau` qua cổng trích
-   `_loc_nhu_cau`, `viec_can`, `ghi_y_khach`; ra ý bán → đọc lại form đầy đủ, SRS-380); form JSON (OPERATIONS_SYSTEM_BAN / _MUA, Haiku) chỉ
-   dự phòng. Lượt chưa rõ vai: form OPERATIONS_SYSTEM.
+2. Engine.handle: AI đọc ý → ô tin qua cổng bằng chứng `_loc_o_tin` (SRS-73). Người bán (vai đã rõ): bước 1 của MỘT vòng agent
+   Sonnet gọi công cụ ghi / đọc / `tra_luat_o` (`agent_gop.mo`, SRS-371); form JSON (OPERATIONS_SYSTEM_BAN, Haiku) chỉ dự phòng. Còn lại: form.
 3. Tra địa danh: `_chuan_dia_danh` (tên chuẩn, SRS-366), `_phuong_tu_dia_chi` (ô hệ thống tự tra, SRS-359).
 4. Chọn MỘT việc cho lượt: `viec_luot` (SRS-314 / 328) → ô cần hỏi / khối hỏi còn lại.
 5. Dựng prompt: phiếu lượt thu thập / bản nháp / sau bản nháp (phía bán) hoặc prompt mua; khối cố định trước RANH_GIOI_CACHE.
-6. Model viết lời (MODEL_CHAT; hỏng → Gemini → Groq, `llm/du_phong.py`). Đã đi vòng gộp: bước 2 CÙNG cuộc hội thoại công cụ, kết quả
-   công cụ ghi = báo cáo sau khi áp (đã ghi / bỏ vì sao / ý thiếu / việc lượt) — người bán `agent_gop.viet`, người mua `agent_gop.viet_mua`
-   (công cụ chỉ đọc `tim_can` / `xem_can` / `tra_du_an` / `du_an_trong_khu`, SRS-380). Lượt mua đầu / form dự phòng: `agent_mua.chay`
-   (tra + ghi `hen_xem` / `hoi_chu_nha` khi form sót, SRS-290 / 292).
+6. Model viết lời (MODEL_CHAT; hỏng → Gemini → Groq, `llm/du_phong.py`). Người bán đi vòng gộp: bước 2 CÙNG cuộc hội thoại công cụ, kết quả
+   công cụ ghi = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt), `agent_gop.viet`. Người mua: vòng công cụ `agent_mua.chay`
+   (tra `tim_can` / `xem_can` / `tra_du_an` / `du_an_trong_khu`; ghi `hen_xem` / `hoi_chu_nha` khi bóc tách sót, SRS-290 / 292).
 7. Soát đầu ra `_soat_hinh_thuc` theo bảng `LUAT_SOAT` (gồm `hoi_dung_o`, SRS-367): lệch → gọi lại tối đa một lần.
 8. Lưu Supabase (tin, hội thoại, messages) rồi trả lời bridge.
 ```
@@ -791,6 +788,15 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz377 · Bộ chấm offline `cham` chạy trên GitHub Actions cho PR đổi lõi bot (03/11/2026)
+Ca gốc: chủ dự án 03/11 ("làm 2 …", đề xuất "chạy cham trên GitHub Actions trước mỗi lần gộp đổi prompt") — SRS-375 / 376 gộp với "chưa chạy `cham`" vì cham chỉ chạy được trên máy có Claude Code. (1) Lớp lỗi: thước đo trước–sau (SRS-304) phụ thuộc máy người, nên PR đổi prompt gộp không có điểm. (2) Sửa: `.github/workflows/cham.yml` — `pull_request` khi đổi `src/aioi/**`, `tests/kich_ban/**`, script chấm, chính workflow; `workflow_dispatch` (ô `so_lan` 1–3, ô `chi`); cài `@anthropic-ai/claude-code@2.1.304`, xác thực secret `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`), gọi thử một lần Haiku trước; so với `diem_nen.json` của main qua `--so-voi`; dòng TỔNG + bảng đủ vào job summary. Không đổi `cham-kich-ban.py`. Thiếu secret / PR từ fork → summary "CHƯA KIỂM ĐƯỢC", thoát 0; token hỏng → đỏ; điểm tụt không đỏ (bảng đọc, không phải cổng).
+(3) Kiểm: `actionlint` sạch, `bun run truyvet`; chưa chạy thật trên Actions vì secret chưa có (lần chạy đầu của PR này phải ra "CHƯA KIỂM ĐƯỢC").
+
+### SRS-5.1zzzzzzz381 · Khối nhân vật "thấu hiểu, chăm sóc khách" đứng đầu mọi prompt bot nói với khách (04/11/2026)
+Chủ dự án 04/11 (nguyên văn): "Tôi nghĩ insigh của con bot sẽ là thấu hiểu chăm sóc khách hàng cùng với các tính cách từ trước đó. các prompt về nhân vật tính cách nên để đầu trong prompt bot". Trước: phiếu lượt / prompt mua mở bằng một dòng định danh rồi GIỌNG; bản nháp / phí mở bằng BỐI CẢNH (phí, gamification), bản nháp không có GIỌNG; ngoài vùng / đọc ảnh / trả lời tài liệu dự án mở "Bạn là … trợ lý ảo".
+(1) Lớp lỗi: định danh viết tay ở từng hàm dựng prompt, không có khối nhân vật chung. (2) Sửa: `prompts.khoi_nhan_vat` (nhân vật + thấu hiểu, chăm sóc — chỉ đọc nỗi lo từ chính lời khách, không đoán thêm) đứng ĐẦU phiếu lượt, prompt mua, bản nháp, sau bản nháp (kèm `GIONG_VUI` ngay sau, nguyên chữ), ngoài vùng, đọc ảnh, trả lời tài liệu dự án (không kèm giọng); trước `RANH_GIOI_CACHE`. Không cắt chữ GIONG / từ lóng / khối anh Luận.
+(3) Kiểm: `test_nhan_vat_381.py` (mở bằng nhân vật, một lần, giọng ngay sau, trước ranh giới cache; trả định danh cũ: đỏ). Chưa chạy `cham` (chờ secret).
+
 ### SRS-5.1zzzzzzz380 · Lượt người mua vào cùng vòng agent gộp với người bán: ghi bằng công cụ qua cổng code rồi viết lời cùng cuộc hội thoại (03/11/2026)
 Quyết định chủ dự án 03/11 (nguyên văn): "làm … 5" — đề xuất 5 "Phía mua đi cùng kiểu vòng gộp như phía bán — một đường cho cả hai phía, sửa luật một chỗ". (1) Lớp lỗi: phía mua còn hai model hai prompt mỗi lượt (Haiku form `OPERATIONS_SYSTEM_MUA` → Sonnet `agent_mua.chay`), lời không biết ô nào được ghi; ô nhu cầu không có cổng trích.
 (2) Sửa: vòng chung `agent_gop._vong_ghi` / `_tin_buoc_2` / `_vong_viet` cho hai vai; `mo_mua` — system `prompts.mua_co_dinh` + `luat_doc_y_mua()` (nguyên form mua gọn) — công cụ `ghi_nhu_cau` (cổng `Engine._loc_nhu_cau`: cụm trích nằm nguyên trong lời khách, ô số theo `_so_khop`; bỏ → "Sẽ BỎ", model sửa trong vòng), `viec_can` (engine áp qua `_viec_mua`: ghi_hen_xem / ghi_hoi_chu_nha / chống trùng / xin số một lần), `ghi_y_khach`; ra ý bán → đọc lại cả lượt form đầy đủ; `viet_mua` — báo cáo `agent_mua.bao_cao`, công cụ chỉ đọc. Form Haiku + `agent_mua.chay` chỉ còn dự phòng (và lượt đầu chưa rõ vai). Không đổi chữ GIONG_VUI / SLANG_NOTES / khối anh Luận / form; trần 30 s như SRS-371.
@@ -826,30 +832,6 @@ Quyết định: CLAUDE.md §4.11 — phiên sau chỉ đọc `main`, không aud
 Quyết định chủ dự án 03/11 (nguyên văn): "AI đọc lời của khách làm 2 việc cùng lúc, bóc tách ra lưu db và trả lời lại khách. quá trình thu thập diễn ra song song với việc trả lời chăm sóc khách hàng" + "gộp đi"; khung "Suy nghĩ → Chọn công cụ → Thực thi → Đánh giá": Bộ não (Sonnet) + Hồ sơ định danh (system prompt) + Bộ công cụ (Tool Use, hàm backend mô tả bằng JSON); kiến thức nạp bằng công cụ tra cứu (RAG), không nhồi vào prompt. Không công cụ chạy code / terminal; không cắt chữ GIONG_VUI / SLANG_NOTES / luật cố định.
 (1) Lớp lỗi: hai model, hai prompt mỗi lượt (Haiku form JSON 45.390 chữ → Sonnet viết lời) — lời không biết ô nào cổng đã bỏ. (2) Sửa: `agent_gop.py` — bước 1 system = `prompts.phieu_co_dinh` nguyên vẹn + luật ghi chung, công cụ ghi (thân `agent_gop._chay_ghi`) / đọc (`agent_ban`) / `tra_luat_o` (luật form chia đúng một chỗ theo `BANG_LUAT`, nạp sẵn luật ô bot vừa hỏi); engine áp qua cổng cũ; bước 2 cùng hội thoại, kết quả công cụ = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt). Form Haiku chỉ dự phòng. Cùng lớp: phía mua để đợt sau.
 (3) Đo `cham` 59 kịch bản (chữ = system + schema / công cụ mỗi lần gọi): main 520 / 522 · 522 / 522, gọi 3,65 · 3,66 / lượt, 62.391 · 62.376 chữ / lượt, 23,5 · 24,3 s, $8,19 · $7,88 → gộp 519 / 522 · 519 / 522, gọi 3,84 · 3,82, 62.107 · 62.889 chữ, 24,8 · 24,3 s, $23,15 · $19,57 — chưa đạt "ít gọi, ít chữ", tiền ~2,5–3×. Chủ dự án 03/11 (sau khi xem số): "lấy phương án cuối cùng thôi, cứ để vậy đi, giờ tôi cần chú trọng độ chính xác", "các code không dùng thì xóa" → vòng gộp là đường DUY NHẤT của người bán, gỡ công tắc `AGENT_GOP` / `AGENT_BOC` và `agent_boc.py` (công cụ ghi + cổng chuyển vào `agent_gop._chay_ghi`). `ban-thu-ban` hai lần (nhánh cài lên VPS, ID thử đi vòng gộp): 53 đạt / 1 trượt mỗi lần — "Đất: không hỏi tầng / phòng ngủ"; tái hiện bằng CLI với `AGENT_GOP=tat` cũng hỏi y câu đó (khách lờ giá → `viec_luot` chọn `chi_tieu_xay_dung`, gợi ý "được phép xây mấy tầng" khớp regex phép kiểm) — không do vòng gộp, để việc riêng. Báo cáo bước 2 đặt việc lượt lên đầu, ô trống chỉ là dữ kiện. Kiểm: `test_agent_gop_371.py` (đỏ khi gỡ báo cáo / bước 2; không mất dòng luật nào của form).
-
-### SRS-5.1zzzzzzz370 · Làm gọn DB: bỏ vector hẻm / đường số và hai index HNSW gần như không dùng (02/11/2026)
-Chủ dự án 02/11 duyệt ("ừ làm đi"). Đo trên DB thật (thống kê 31 ngày, reset 02/10): DB 275 MB / 500 MB Free; `duong` 168 MB — 25.539 hẻm + 3.714 đường số mang vector 768 chiều (~44 MB), index `duong_nhung_hnsw` 77 MB dùng 1 lần / 31 ngày; `projects_nhung_hnsw` 5,5 MB, 0 lần.
-(1) Lớp lỗi: dữ liệu nhúng thêm vào mà không đo có ai dùng — tên hẻm / đường số không có nghĩa để tìm theo nghĩa, `nhung_dia_danh_tick` chỉ ĐẨY hẻm xuống cuối hàng đợi (chú thích ghi "không nhúng hẻm") nên vẫn nhúng hết. (2) Cùng lớp: `projects_nhung_hnsw` (bỏ index, giữ cột); `dieu_luat_nhung_hnsw` 5,9 MB dùng 58 lần — giữ. Sửa: migration `20261103c_gon_vector_duong` — xoá vector hẻm / đường số, `nhung_dia_danh_tick` chỉ nhúng `loai = 'duong'`, bỏ hai index (tìm theo nghĩa trên 10.097 tên đường quét tuần tự đo 113 ms); `vacuum full public.duong` chạy riêng sau khi áp để trả chỗ đĩa.
-(3) Kiểm: chạy thử trong giao dịch huỷ trên DB thật — update 29.253 dòng 16 s, bỏ 2 index 0,2 s, còn 10.097 vector; tìm theo chữ (`tim_duong`, `tim_dia_danh`) không đổi. Số dung lượng trước / sau ghi ở PR.
-
-### SRS-5.1zzzzzzz368 · Làm gọn prompt bước 1: khuôn bản tin chỉ khi cần, bỏ mã SRS / ngày trong chữ gửi model, danh sách ô soát vào system (02/11/2026)
-Chủ dự án 02/11: "prompt bot gọn lại hơn dc ko, có chỗ nào bị dài dòng chồng nhau ko" → "làm gọn nó đi". Đo (ký tự): bóc tách bán 25.235, viết lời sau bản nháp 13.470 (gồm `AD_FORMAT` 4.980 nằm SAU ranh giới cache), lượt soát ô hỏi gửi danh sách 94 ô (~3.800) trong tin user.
-(1) Lớp lỗi: khối gắn cố định vào mọi lượt dù chỉ vài lượt cần; lịch sử sửa ("(SRS-…)", ngày) nằm trong chữ gửi model. Sửa: `build_fee_followup_system(viet_lai_tin=)` — khuôn bản tin chỉ khi `engine._co_the_viet_lai_tin` (khách không duyệt, dặn cách viết, hay vừa đổi ô); bỏ mã SRS / ngày trong chuỗi prompt (giữ ở comment / docs); danh sách ô soát vào `SOAT_O_HOI_SYSTEM` (cache), bỏ 8 ô chỉ phía mua.
-(2) Kết quả: sau bản nháp lượt không viết lại 13.470 → 8.358 (−38%); bóc tách bán 25.235 → 24.648; mua 14.167 → 13.763. Còn (bước sau, cần `cham`): schema bóc tách 20.886 (ô `operations` 11.802), danh mục pháp lý 1.777 mọi lượt, `SLANG_NOTES` 1.792 trong phiếu lượt.
-(3) Kiểm: `test_gon_prompt_368.py` (khuôn bản tin theo lượt; quét MỌI hằng prompt + prompt dựng sẵn + schema không còn mã SRS / ngày sửa — bản đầu chỉ soát 6 hằng nên sót 9 chỗ; danh sách ô trong system). `cham` 59 kịch bản: 519/522 cả hai lần. Bỏ "khoảng 30 từ" lặp ở phiếu lượt (đã có trong `GIONG_VUI`).
-
-### SRS-5.1zzzzzzz367 · Lời bot hỏi ô hệ thống không chọn ("…đường nào, phường nào…" 3/201 lượt) — soát đầu ra theo ô được chọn (02/11/2026)
-Ca gốc (chấm main 48f9912): `cao_lo` l1, `xa_phuoc_ly` l1, `aeon_tan_phu` l5 hỏi phường kèm câu hỏi địa chỉ. Chủ dự án 02/11: "phải sửa từ gốc chứ" (bỏ bản thêm dòng cấm).
-(1) Lớp lỗi: đầu ra model không bị soát theo ô hệ thống chọn — `O_HE_THONG_TRA` chỉ lọc vòng chọn câu hỏi, `bot_vua_hoi` đọc ở lượt SAU. Sửa: một bất biến, một chỗ chặn `engine._soat_hoi_dung_o` (`LUAT_SOAT`): AI khai ô lời bot hỏi + cụm nguyên văn (`SOAT_O_HOI_SYSTEM`), code kiểm cụm, so ô được phép; lệch → gọi lại một lần, vẫn lệch → gọt vế hỏi sai. `O_HE_THONG_TRA = {phuong, duong}` một nguồn; gỡ các dòng cấm rải rác; lời dặn `dia_chi` bỏ "phường / xã".
-(2) Cùng lớp: mọi ô không được hỏi (phường, xác nhận tên đường, ô đã có, ô không chọn) chặn cùng chỗ. Chi phí: +1 lượt Haiku mỗi lời phía bán. Còn: gọt hết chữ thì giữ lời; số gọi lại tăng chưa đo (`cham`).
-(3) Kiểm: `test_khong_hoi_phuong_moi_luot_367.py` (ba câu thật, xác nhận tên đường, tự hỏi "mấy tầng" khi chọn hỏi giá; không bắt oan) — gỡ `hoi_dung_o`: 10/12 đỏ.
-Chấm 59 kịch bản 02/11: 519/522 nhưng gọi lại 65 (34 oan: AI khai ô gần nghĩa — `phap_ly_so_do` khi chọn `phap_ly_hoan_cong`, `kich_thuoc` khi chọn `dien_tich_dat`; có lượt bỏ luôn câu hỏi). Sửa: ô cùng nhóm `schema.FACETS` với ô được chọn tính là đúng ô.
-
-### SRS-5.1zzzzzzz366 · Bot hỏi lại tên đường ("ý anh là đường X?", "Mã Lò hay Mã Lộ?") thay vì tự áp tên chuẩn (02/11/2026)
-Chủ dự án 02/11 (nguyên văn): "không hỏi lại tên đường nữa, tự áp tên vào" — thay SRS-61 / 271.
-(1) Lớp lỗi: dữ kiện hệ thống tra được thành câu hỏi khách — `_chuan_dia_danh` chỉ áp tên khác dấu, khớp gần thì prompt dặn hỏi xác nhận. Sửa: kho ra MỘT tên trong khu khách nói (`TraDiaDanh.duong`; nhiều tên chọn theo quận; quận khác bị loại SRS-362) → ghi luôn vào `duong` + `dia_chi`; khách nói quận sau thì tra lại; không ra → giữ chữ khách. Bỏ hẳn dòng hỏi, `goi_y_duong`, việc `hoi_dia_danh`.
-(2) Cùng lớp: phường (SRS-359). Còn: biết phường chưa biết quận thì chưa lọc theo khu; RPC `tim_duong` không lọc quận (lọc ở lõi).
-(3) Kiểm: `test_ap_ten_duong_366.py` ("25 huynh tan phap" Quận 7 → "25 Huỳnh Tấn Phát"; "ma lo" + Bình Tân lượt sau → Mã Lò) — về luật cũ: đỏ.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
