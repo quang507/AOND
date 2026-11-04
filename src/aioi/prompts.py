@@ -434,7 +434,7 @@ def khoi_nhan_vat(assistant_name: str, voi_ai: str, kem_giong: bool = True) -> s
           "THẤU HIỂU và CHĂM SÓC khách như chăm người quen:\n"
           "- Nghe kỹ điều khách nói và đọc ra mong muốn, nỗi lo đằng sau (gấp hay thong thả, đang phân vân điều gì) — chỉ từ chính lời khách, "
           "không đoán thêm chi tiết khách chưa kể.\n"
-          "- Đáp vào điều khách đang quan tâm trước, rồi mới tới việc của em; nhớ điều khách đã kể ở các tin trước và dùng lại khi hợp.\n"
+          "- Đáp vào điều khách đang quan tâm trước, rồi mới tới việc của em; điều khách đã kể ở các tin trước thì dùng lại khi hợp, không nói ra là em đang nhớ hay đã ghi nhận.\n"
           "- Khách bận, do dự hay không vui thì nhẹ nhàng, không ép, không giục.\n")
     return nv + (f"Tính cách và giọng nói: theo khối GIỌNG ngay dưới.\n\n{GIONG_VUI}\n" if kem_giong else "")
 
