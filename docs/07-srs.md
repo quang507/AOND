@@ -732,14 +732,17 @@ Không có bảng token/TTL, không nối fingerprint (OPEN-14); lõi chưa đ�
 
 ```text
 1. Bridge zca-js → POST /chat-reply (server.chat_reply): sổ msg_id, sự kiện cảm xúc không trả lời (SRS-364), khoá lượt theo người.
-2. Engine.handle: AI đọc ý → ô tin qua cổng bằng chứng `_loc_o_tin` (SRS-73). Người bán (vai đã rõ): bước 1 của MỘT vòng agent
-   Sonnet gọi công cụ ghi / đọc / `tra_luat_o` (`agent_gop.mo`, SRS-371); form JSON (OPERATIONS_SYSTEM_BAN, Haiku) chỉ dự phòng. Còn lại: form.
+2. Engine.handle: AI đọc ý → ô tin qua cổng bằng chứng `_loc_o_tin` (SRS-73). Vai đã rõ: bước 1 của MỘT vòng agent Sonnet gọi công cụ
+   ghi — người bán `agent_gop.mo` (ghi / đọc / `tra_luat_o`, SRS-371), người mua `agent_gop.mo_mua` (`ghi_nhu_cau` qua cổng trích
+   `_loc_nhu_cau`, `viec_can`, `ghi_y_khach`; ra ý bán → đọc lại form đầy đủ, SRS-380); form JSON (OPERATIONS_SYSTEM_BAN / _MUA, Haiku) chỉ
+   dự phòng. Lượt chưa rõ vai: form OPERATIONS_SYSTEM.
 3. Tra địa danh: `_chuan_dia_danh` (tên chuẩn, SRS-366), `_phuong_tu_dia_chi` (ô hệ thống tự tra, SRS-359).
 4. Chọn MỘT việc cho lượt: `viec_luot` (SRS-314 / 328) → ô cần hỏi / khối hỏi còn lại.
 5. Dựng prompt: phiếu lượt thu thập / bản nháp / sau bản nháp (phía bán) hoặc prompt mua; khối cố định trước RANH_GIOI_CACHE.
-6. Model viết lời (MODEL_CHAT; hỏng → Gemini → Groq, `llm/du_phong.py`). Người bán đi vòng gộp: bước 2 CÙNG cuộc hội thoại công cụ, kết quả
-   công cụ ghi = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt), `agent_gop.viet`. Người mua: vòng công cụ `agent_mua.chay`
-   (tra `tim_can` / `xem_can` / `tra_du_an` / `du_an_trong_khu`; ghi `hen_xem` / `hoi_chu_nha` khi bóc tách sót, SRS-290 / 292).
+6. Model viết lời (MODEL_CHAT; hỏng → Gemini → Groq, `llm/du_phong.py`). Đã đi vòng gộp: bước 2 CÙNG cuộc hội thoại công cụ, kết quả
+   công cụ ghi = báo cáo sau khi áp (đã ghi / bỏ vì sao / ý thiếu / việc lượt) — người bán `agent_gop.viet`, người mua `agent_gop.viet_mua`
+   (công cụ chỉ đọc `tim_can` / `xem_can` / `tra_du_an` / `du_an_trong_khu`, SRS-380). Lượt mua đầu / form dự phòng: `agent_mua.chay`
+   (tra + ghi `hen_xem` / `hoi_chu_nha` khi form sót, SRS-290 / 292).
 7. Soát đầu ra `_soat_hinh_thuc` theo bảng `LUAT_SOAT` (gồm `hoi_dung_o`, SRS-367): lệch → gọi lại tối đa một lần.
 8. Lưu Supabase (tin, hội thoại, messages) rồi trả lời bridge.
 ```
@@ -787,6 +790,11 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 ---
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
+
+### SRS-5.1zzzzzzz380 · Lượt người mua vào cùng vòng agent gộp với người bán: ghi bằng công cụ qua cổng code rồi viết lời cùng cuộc hội thoại (03/11/2026)
+Quyết định chủ dự án 03/11 (nguyên văn): "làm … 5" — đề xuất 5 "Phía mua đi cùng kiểu vòng gộp như phía bán — một đường cho cả hai phía, sửa luật một chỗ". (1) Lớp lỗi: phía mua còn hai model hai prompt mỗi lượt (Haiku form `OPERATIONS_SYSTEM_MUA` → Sonnet `agent_mua.chay`), lời không biết ô nào được ghi; ô nhu cầu không có cổng trích.
+(2) Sửa: vòng chung `agent_gop._vong_ghi` / `_tin_buoc_2` / `_vong_viet` cho hai vai; `mo_mua` — system `prompts.mua_co_dinh` + `luat_doc_y_mua()` (nguyên form mua gọn) — công cụ `ghi_nhu_cau` (cổng `Engine._loc_nhu_cau`: cụm trích nằm nguyên trong lời khách, ô số theo `_so_khop`; bỏ → "Sẽ BỎ", model sửa trong vòng), `viec_can` (engine áp qua `_viec_mua`: ghi_hen_xem / ghi_hoi_chu_nha / chống trùng / xin số một lần), `ghi_y_khach`; ra ý bán → đọc lại cả lượt form đầy đủ; `viet_mua` — báo cáo `agent_mua.bao_cao`, công cụ chỉ đọc. Form Haiku + `agent_mua.chay` chỉ còn dự phòng (và lượt đầu chưa rõ vai). Không đổi chữ GIONG_VUI / SLANG_NOTES / khối anh Luận / form; trần 30 s như SRS-371.
+(3) Kiểm: `test_agent_gop_mua_380.py` 7 ca — gỡ cổng: 2 đỏ; gỡ báo cáo / bước 2: 2 đỏ; gỡ bước 1: 4 đỏ; `test_form_mua_gon_293` thành ca dự phòng. CHƯA chạy `cham` / bắn thử (chấm sau qua `cham.yml`).
 
 ### SRS-5.1zzzzzzz379 · Mỗi luật một chỗ trong prompt ghép; một phiên giữ `src/aioi/` mỗi lúc (03/11/2026)
 Chủ dự án 03/11: "làm 2 3 5 6 7 8" (đề xuất 6: mỗi luật một chỗ; 7: một phiên giữ lõi). Ca gốc: prompt mua ghi luật một câu hỏi hai lần (bối cảnh + `mua.khoi_can_cho_khach`) và khối căn tự giục "hỏi khách muốn xem thử căn nào" mỗi lượt; phiếu bán ghi "không hứa bán / so giá" ở cả khối GIỌNG lẫn LUẬT CỐ ĐỊNH; 03/11 hai phiên sửa hai đầu chữ ký `phuong_tai_diem`.

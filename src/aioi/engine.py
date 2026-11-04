@@ -424,6 +424,13 @@ def _form_ban_gon(conv: "Conversation") -> bool:
     return conv.role == "seller"
 
 
+# Vòng agent gộp phía mua (SRS-5.1zzzzzzz380, `Engine._loc_nhu_cau`): nhãn bộ nhu cầu AI đặt (không qua cổng trích) và ô nhu cầu là SỐ (cụm trích
+# nhận khi mọi số có trong lời khách — "dưới 7 tỉ" → ngan_sach_den "7 tỷ"). Danh sách khoá schema, không phải từ khoá đọc lời khách.
+_NHAN_NHU_CAU = ("nhu_cau", "nhu_cau_moi", "nhu_cau_thoi")
+_O_SO_MUA = ("ngan_sach", "ngan_sach_tu", "ngan_sach_den", "dien_tich_mong_muon", "dien_tich_tu", "dien_tich_den", "so_phong_ngu",
+             "so_tang_mong_muon")
+
+
 def _loc_viec_mua(mua: dict) -> dict:
     """Việc khách mua AI đọc ra ở lượt lập thao tác — NHẬN LUÔN theo ý AI đọc (SRS-5.1zzzzzzz281, chủ dự án 29/10: "sửa để ai hiểu ý khách, thực
     thi đúng ý khách"). Bản trước (SRS-232 / 280) đòi mỗi việc có cụm NGUYÊN VĂN trong lời khách — AI sửa chính tả / diễn lại / chuẩn tên dự án
@@ -647,6 +654,8 @@ class Conversation:
     # Transient (SRS-5.1zzzzzzz371): cuộc hội thoại công cụ của vòng agent gộp — bước 1 (ghi) cất ở `_lap_ke_hoach`, bước 2 (viết lời) dùng
     # tiếp ở chỗ viết lời người bán; mỗi lượt `_handle` làm mới. Không lưu.
     vong_gop: Any = None
+    # Transient (SRS-5.1zzzzzzz380): cùng vai trò cho lượt NGƯỜI MUA (`agent_gop.mo_mua` → `agent_gop.viet_mua`). Không lưu.
+    vong_mua: Any = None
 
     def __post_init__(self) -> None:
         if not self.listings:
@@ -2834,7 +2843,7 @@ class Engine:
         now = now if now is not None else time.time()
         conv = self.conversation(user_key)
         conv.do_luot = {}
-        conv.vong_gop = None
+        conv.vong_gop = conv.vong_mua = None
         so_token.bat_dau_luot()   # đếm token của lượt này cho tin phụ chế độ test (SRS-5.1zzzzzzz130)
 
         clean_text = text.strip()
@@ -3061,9 +3070,13 @@ class Engine:
             xin_sao = bool(conv.y_luot.get("xong_viec_mua") and can) and self._nen_xin_sao(conv)
             if xin_sao:
                 system += KHOI_SAP_XIN_SAO
-            if getattr(self._convstore, "can_phu_hop", None) is not None:
-                # SRS-5.1zzzzzzz290: lượt viết lời có công cụ CHỈ ĐỌC (tra căn / dự án) — model tự quyết có tra không; căn tra được vào `can`
-                # để lưới soát số / ảnh biết. Bóc tách (Haiku) và việc GHI giữ đường cũ.
+            if conv.vong_mua is not None:
+                # SRS-5.1zzzzzzz380: bước 2 của vòng agent gộp phía mua — cùng cuộc hội thoại công cụ với bước ghi, đọc báo cáo sau khi áp.
+                reply, tra = agent_gop.viet_mua(self, conv, system, next_field, viec, can, REPLY_MAX_TOKENS)
+                can = can + [c for c in tra if c.get("id") not in {d.get("id") for d in can}]
+            elif getattr(self._convstore, "can_phu_hop", None) is not None:
+                # SRS-5.1zzzzzzz290: đường DỰ PHÒNG (vòng gộp lỗi → form Haiku đọc ý): lượt viết lời có công cụ tra (+ ghi hen_xem / hoi_chu_nha
+                # khi form sót, SRS-292) — căn tra được vào `can` để lưới soát số / ảnh biết.
                 reply, tra = agent_mua.chay(self, conv, system, REPLY_MAX_TOKENS)
                 can = can + [c for c in tra if c.get("id") not in {d.get("id") for d in can}]
             else:
@@ -4963,12 +4976,18 @@ class Engine:
             # viết lời. Đường duy nhất của người bán (công tắc gỡ, chủ dự án 03/11); vòng hỏng → form JSON (Haiku) dưới làm dự phòng.
             with _do(conv, "lap_thao_tac"):
                 plan = agent_gop.mo(self, conv, system.split(RANH_GIOI_CACHE, 1)[1])
+        elif gop and gon:
+            # SRS-5.1zzzzzzz380 (chủ dự án 03/11 duyệt "Phía mua đi cùng kiểu vòng gộp như phía bán — một đường cho cả hai phía, sửa luật một
+            # chỗ"): khách mua cũng MỘT vòng agent — bước 1 ở đây (ô nhu cầu / việc căn / ý khách qua công cụ ghi), bước 2 ở chỗ viết lời mua.
+            with _do(conv, "lap_thao_tac"):
+                plan = agent_gop.mo_mua(self, conv, system.split(RANH_GIOI_CACHE, 1)[1])
         if plan is None:
             with _do(conv, "lap_thao_tac"):
                 plan = self._provider.extract(system, src, operations_schema_mua() if gon else operations_schema_ban() if ban_gon else operations_schema())
         if gon and plan.get("user_intent") == "sell":
             # SRS-5.1zzzzzzz293: form gọn không có ô thao tác rổ hàng — khách mua chuyển sang gửi bán thì đọc lại cả lượt bằng form đầy đủ.
             log.warning("Kế hoạch: form mua gọn đọc ra ý bán — đọc lại bằng form đầy đủ")
+            conv.vong_mua = None   # sang vai bán: đọc lại cả lượt bằng form đầy đủ, viết lời đi đường phía bán (SRS-5.1zzzzzzz380)
             system = OPERATIONS_SYSTEM + system[len(OPERATIONS_SYSTEM_MUA):]
             with _do(conv, "lap_thao_tac"):
                 plan = self._provider.extract(system, src, operations_schema())
@@ -5089,6 +5108,8 @@ class Engine:
                 conv.buyer_lead = BuyerLead(user_key=conv.user_key)
         if conv.so_vai is None and conv.role in ("buyer", "seller"):
             conv.so_vai = so_luot   # vai đặt (hay giữ) trên số này
+        if conv.role != "buyer":
+            conv.vong_mua = None   # SRS-5.1zzzzzzz380: vai lượt này không còn là mua (vd đổi số Zalo) — bước 2 mua không chạy
 
         conv.duyet_luot = None   # quyết ở `_quyet_duyet` (một nơi, Đợt 4) sau khi đọc xong xin_dang / yeu_cau_viet
         y = plan.get("duyet_ban_nhap")
@@ -5425,6 +5446,36 @@ class Engine:
             conv.nhu_cau_khac = [cur] + [l for l in conv.nhu_cau_khac if l is not cu and l is not cur]
             conv.buyer_lead = cu
             cu.fields.pop("_thoi_tim", None)   # khách quay lại nói bộ đã thôi → tìm lại
+
+    @staticmethod
+    def _loc_nhu_cau(conv: Conversation, fields: dict, bang_chung: dict) -> tuple[dict, list[tuple[str, Any, str]]]:
+        """Cổng trích cho ô nhu cầu khách mua ghi bằng công cụ (vòng agent gộp, SRS-5.1zzzzzzz380): cùng nguyên tắc ô tin (`_gia_tri_ghi`) —
+        ô chỉ ghi điều KHÁCH nói: cụm AI trích (hoặc chính giá trị) nằm nguyên trong lời khách lượt này (`_trich_dan_khop`); ô số nhận khi mọi
+        số của cụm trích có trong lời khách (`_so_khop`); giá trị không đổi thì giữ. Nhãn bộ nhu cầu (`nhu_cau*`) là nhãn AI đặt, so nhãn ở
+        `_chon_nhu_cau` (SRS-287) — không phải lời khách. Trả (ô nhận, [(ô, giá trị, lý do bỏ)])."""
+        loi, lead = conv.loi_khach_luot, conv.buyer_lead
+        giu: dict = {}
+        bo: list[tuple[str, Any, str]] = []
+        for k, v in (fields or {}).items():
+            if v in (None, "", [], {}):
+                continue
+            if k in _NHAN_NHU_CAU:
+                giu[k] = v
+                continue
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
+                v = str(v)
+            if not isinstance(v, str):
+                bo.append((k, v, "giá trị không phải chữ"))
+                continue
+            cu = (getattr(lead, k, None) or lead.fields.get(k)) if lead is not None else None
+            bc = bang_chung.get(k) if isinstance((bang_chung or {}).get(k), str) else None
+            if cu == v or any(_trich_dan_khop(x, loi) for x in (bc, v)) or (k in _O_SO_MUA and bc and _so_khop(bc, v, loi)):
+                giu[k] = v
+            else:
+                bo.append((k, v, "cụm trích không nằm nguyên trong lời khách"))
+        if bo:
+            log.warning("Bỏ ô nhu cầu (không bằng chứng): %s", [k for k, _v, _l in bo])   # chỉ tên ô, không giá trị
+        return giu, bo
 
     def _can_goi_y(self, conv: Conversation) -> list[dict]:
         """Căn gợi ý cho khách mua, bỏ căn khách đã chê (SRS-5.1zzzzzzz175) — MỘT cửa cho cả lượt lập thao tác lẫn lượt trả lời."""

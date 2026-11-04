@@ -626,6 +626,12 @@ def build_buyer_chat_system(
              "trong danh sách (2–3 căn nếu có; căn đã giới thiệu thì chỉ nhắc tên đường). Mời đi xem / hẹn lịch theo luật câu mời chốt ở khối "
              "GIỌNG (lượt gần đây đã mời thì thôi) — KHÔNG xin số điện thoại, trừ khi phần \"EM VỪA GHI LƯỢT NÀY\" bảo xin lúc khách chốt lịch xem."
     )
+    return mua_co_dinh(assistant_name) + f"""{RANH_GIOI_CACHE}{ask_line}"""
+
+
+def mua_co_dinh(assistant_name: str) -> str:
+    """Phần CỐ ĐỊNH của prompt mua (trước `RANH_GIOI_CACHE`): định danh + giọng + bối cảnh + quy tắc phản hồi — nguyên vẹn, một nguồn cho
+    `build_buyer_chat_system` và bước ghi của vòng agent gộp phía mua (`agent_gop.mo_mua`, SRS-5.1zzzzzzz380), như `phieu_co_dinh` phía bán."""
     return f"""Em là "{assistant_name}", trợ lý tư vấn tìm mua / thuê của AI Ơi Nhà Đất ({SITE_HOST}).
 
 {GIONG_VUI}
@@ -651,7 +657,7 @@ QUY TẮC PHẢN HỒI:
 - Với khách tìm mua / thuê, lợi ích để khen là điều khách CẦN mà căn có (gần chỗ làm, đủ phòng, hẻm rộng) — không khen khả năng cho thuê, sinh lời hay "giá dễ chốt".
 {khoi_tai_chinh()}
 
-{RANH_GIOI_CACHE}{ask_line}"""
+"""
 
 
 def khoi_chao_lan_dau(assistant_name: str, mau: str) -> str:
@@ -2141,10 +2147,12 @@ OPERATIONS_SYSTEM = OPERATIONS_SYSTEM.replace("{DANH_MUC_PHAP_LY}", phap_ly.danh
 # (đa phần thao tác rổ hàng phía BÁN) + schema 24 nghìn chữ / 36 khoá / 163 ô — trong khi lượt mua chỉ dùng khoảng 16 khoá. Bắn thử 29/10 Haiku
 # 2/4 lần bỏ trống cả việc hẹn xem + câu hỏi chủ nhà của một câu rõ ràng. Form gọn = CÙNG chữ các đoạn phía mua / dùng chung, cắt từ prompt gốc
 # theo mốc (một nguồn: sửa prompt gốc là form gọn đổi theo); mốc mất thì `tests/test_form_mua_gon_293.py` đỏ.
-_MO_DAU_FORM_MUA = """Bạn là bộ ĐỌC Ý tin nhắn của KHÁCH TÌM MUA / THUÊ nhà đất cho AI Ơi Nhà Đất.
+_KHUNG_FORM_MUA = """Bạn là bộ ĐỌC Ý tin nhắn của KHÁCH TÌM MUA / THUÊ nhà đất cho AI Ơi Nhà Đất.
 Đọc TIN NHẮN MỚI NHẤT của khách theo NGHĨA (các tin trước chỉ là NGỮ CẢNH để hiểu "căn đó", "giờ đó") và điền form JSON: ý định
 (user_intent), nhu cầu (buyer_lead), việc khách muốn làm với căn (mua), và các ô dùng chung bên dưới. Ô nào tin không nói thì BỎ TRỐNG.
-Khách chuyển sang nói chuyện GỬI BÁN / CHO THUÊ căn của chính họ → user_intent = "sell" (hệ thống sẽ đọc lại bằng form đầy đủ).
+"""
+# Khung form (JSON) tách khỏi luật đọc ý để vòng agent gộp phía mua (SRS-5.1zzzzzzz380) dùng NGUYÊN phần luật — `luat_doc_y_mua`.
+_MO_DAU_FORM_MUA = _KHUNG_FORM_MUA + """Khách chuyển sang nói chuyện GỬI BÁN / CHO THUÊ căn của chính họ → user_intent = "sell" (hệ thống sẽ đọc lại bằng form đầy đủ).
 
 """
 _MUC_FORM_MUA = ("- LỜI XÃ GIAO", "- KHÁCH HỎI VỀ GÌ", "- HỎI PHÁP LÝ", "- KHÁCH TỰ XƯNG", "- XIN GẶP NGƯỜI THẬT", "- TIN HỆ THỐNG")
@@ -2178,6 +2186,15 @@ KHOA_FORM_MUA = ("user_intent", "buyer_lead", "mua", "xong_viec_mua", "hoi_ve", 
 def operations_schema_mua() -> dict[str, Any]:
     p = operations_schema()["properties"]
     return {"type": "object", "properties": {k: p[k] for k in KHOA_FORM_MUA if k in p}, "required": ["user_intent"]}
+
+
+DONG_JSON = "\n\nTrả về JSON đúng schema."
+
+
+def luat_doc_y_mua() -> str:
+    """Luật đọc ý khách mua cho bước ghi của vòng agent gộp (SRS-5.1zzzzzzz380): NGUYÊN form mua gọn, chỉ bỏ khung "điền form JSON" và dòng
+    "Trả về JSON" (đường công cụ không trả JSON) — sửa luật ở `OPERATIONS_SYSTEM` là cả form lẫn vòng công cụ đổi theo."""
+    return OPERATIONS_SYSTEM_MUA[len(_KHUNG_FORM_MUA):].replace(DONG_JSON, "")
 
 
 # SRS-5.1zzzzzzz303 (chủ dự án 30/10: "prompt bóc tách sao mà dài … ngắn lại dc ko"): form gọn cho NGƯỜI BÁN — CẮT mục việc của khách mua khỏi

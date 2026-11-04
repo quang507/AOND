@@ -21,7 +21,7 @@ MAX_VONG = 3        # lần gọi model tối đa trong một lượt (2 lượt
 HAN_GIAY = 25.0     # quá chừng này giây thì không tra thêm (trần lõi 40 s, bridge chờ 90 s)
 TRAN_KET_QUA = 3000
 
-HUONG_DAN = (
+HUONG_DAN_DOC = (
     "\n\n=== CÔNG CỤ TRA KHO (chỉ ĐỌC) ===\n"
     "Em có công cụ tra kho thật của hệ thống. Tự quyết có cần tra không: điều đã có ở các khối dưới thì trả lời luôn, KHÔNG tra lại.\n"
     "- tim_can: khách đổi / thêm tiêu chí (khu, giá, loại, phòng ngủ, diện tích) mà khối CĂN ĐANG RAO chưa theo kịp, hoặc khách muốn xem lựa "
@@ -29,13 +29,18 @@ HUONG_DAN = (
     "- xem_can: khách hỏi chi tiết một căn (theo mã trong link đã gửi) mà dòng căn ở dưới chưa có.\n"
     "- tra_du_an / du_an_trong_khu: khách hỏi về một dự án, hoặc khu nào có dự án gì, mà khối dự án ở dưới chưa có.\n"
     "Tra tối đa 2 lần. Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có. Số căn giới thiệu mỗi lượt theo luật ở trên (rổ có ≥ 2 căn hợp thì 2–3 căn).\n"
+)
+# Hai công cụ GHI của đường dự phòng (SRS-5.1zzzzzzz292) — vòng agent gộp (SRS-5.1zzzzzzz380) ghi ở bước 1, bước 2 chỉ còn HUONG_DAN_DOC + DONG_CUOI.
+HUONG_DAN_GHI_VIEC = (
     "- hen_xem / hoi_chu_nha (GHI thật) khi khối EM VỪA GHI LƯỢT NÀY CHƯA có việc đó: khách đề nghị giờ / ngày đi xem một căn đã rõ → hen_xem "
     "NGAY; khách hỏi điều về căn mà dòng của căn KHÔNG có câu trả lời (sổ, nội thất, bớt giá, vào ở khi nào…) → hoi_chu_nha NGAY với câu viết "
     "rõ theo ý khách, CHỈ phần dòng căn chưa có (phần đã có — vd sổ hồng — thì trả lời luôn, không chuyển chủ nhà) — khách hỏi tức là muốn biết, KHÔNG hỏi lại khách \"có muốn em hỏi chủ nhà không\". Căn chưa rõ là căn nào hoặc khách chưa "
     "nói giờ thì KHÔNG gọi — hỏi lại khách.\n"
     "Chỉ nói đã ghi / đã chuyển chủ nhà khi khối EM VỪA GHI LƯỢT NÀY có việc đó HOẶC kết quả hen_xem / hoi_chu_nha báo ĐÃ GHI (kết quả công cụ "
-    "thắng câu 'lượt này em chưa ghi việc gì'). Lời gửi khách viết ở lượt cuối, sau khi tra / ghi xong; không viết 'để em tra / em kiểm tra'.\n"
+    "thắng câu 'lượt này em chưa ghi việc gì'). "
 )
+DONG_CUOI = "Lời gửi khách viết ở lượt cuối, sau khi tra / ghi xong; không viết 'để em tra / em kiểm tra'.\n"
+HUONG_DAN = HUONG_DAN_DOC + HUONG_DAN_GHI_VIEC + DONG_CUOI   # đường dự phòng `chay` (form Haiku đọc ý), chữ như trước SRS-5.1zzzzzzz380
 
 CONG_CU: list[dict[str, Any]] = [
     {
@@ -97,6 +102,119 @@ CONG_CU: list[dict[str, Any]] = [
         "input_schema": {"type": "object", "properties": {"khu": {"type": "string"}}, "required": ["khu"]},
     },
 ]
+GHI_DU_PHONG = ("hen_xem", "hoi_chu_nha")
+CONG_CU_DOC = [c for c in CONG_CU if c["name"] not in GHI_DU_PHONG]   # bước 2 vòng gộp: chỉ đọc (bước ghi đã đóng)
+
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+# Bước 1 của vòng agent gộp phía mua (SRS-5.1zzzzzzz380, chủ dự án 03/11: "Phía mua đi cùng kiểu vòng gộp như phía bán"): công cụ GHI cắt từ
+# schema form mua gọn (không viết lại định nghĩa ô) — kết quả gom vào kế hoạch cùng dạng form, engine áp qua đúng đường cũ
+# (`_chon_nhu_cau` + `BuyerLead.update`, `_loc_viec_mua` + `_viec_mua`: ghi_hen_xem / ghi_hoi_chu_nha / chống trùng / xin số một lần).
+# ---------------------------------------------------------------------------------------------------------------------------------------------
+GHI = ("ghi_nhu_cau", "viec_can", "ghi_y_khach")
+
+HUONG_DAN_GHI = (
+    "\n\n=== BƯỚC 1 — ĐỌC Ý KHÁCH VÀ GHI VÀO HỆ THỐNG (gọi công cụ; CHƯA viết lời gửi khách) ===\n"
+    "Lượt này em làm HAI việc cùng lúc: ghi điều khách nói vào hệ thống và trả lời khách. Bước 1: đọc tin khách mới nhất (các tin trước chỉ là "
+    "ngữ cảnh), GỌI CÔNG CỤ cho từng việc ghi — gọi hết trong MỘT lượt; luôn gọi ghi_y_khach (ít nhất user_intent). Hệ thống áp từng lần ghi "
+    "qua cổng kiểm rồi trả kết quả: đã ghi gì, bỏ ô nào vì sao, ý còn thiếu và VIỆC LƯỢT NÀY — bước 2 em mới viết lời gửi khách (bước 2 có công "
+    "cụ tra kho). Ở bước 1 KHÔNG viết lời gửi khách.\n"
+    "Kết quả có dòng \"Sẽ BỎ\" (cụm trích không nằm nguyên trong lời khách) thì sửa cụm trích đúng nguyên văn rồi gọi lại, hoặc thôi.\n\n"
+    "LUẬT ĐỌC Ý (mọi lượt; khoá trong luật là khoá của công cụ: buyer_lead → ghi_nhu_cau, khối \"mua\" → viec_can, còn lại → ghi_y_khach):\n"
+)
+
+
+def cong_cu_ghi() -> list[dict[str, Any]]:
+    from .prompts import operations_schema_mua
+    p = operations_schema_mua()["properties"]
+    return [
+        {"name": "ghi_nhu_cau",
+         "description": "Ghi ô nhu cầu tìm mua / thuê khách nói ở bộ nhu cầu đang nói (" + str(p["buyer_lead"].get("description") or "")
+                        + ") Mỗi ô có giá trị chữ kèm bang_chung = NGUYÊN VĂN cụm trong lời khách làm căn cứ (nhãn nhu_cau / nhu_cau_moi / "
+                        "nhu_cau_thoi không cần).",
+         "input_schema": {"type": "object", "properties": {
+             "fields": {"type": "object", "properties": copy.deepcopy(p["buyer_lead"]["properties"])},
+             "bang_chung": {"type": "object", "description": "ô → nguyên văn cụm trong lời khách", "additionalProperties": {"type": "string"}}},
+             "required": ["fields", "bang_chung"]}},
+        {"name": "viec_can",
+         "description": "Việc khách muốn làm với căn đang rao (khối \"mua\" trong luật): quan tâm, hẹn xem, hỏi chủ nhà, xin ảnh, chê căn, "
+                        "ngưng / bật báo căn, hỏi / tìm dự án, căn cụ thể. Hệ thống LÀM NGAY sau bước này (mã căn đối chiếu kho).",
+         "input_schema": {"type": "object", "properties": copy.deepcopy(p["mua"]["properties"])}},
+        {"name": "ghi_y_khach",
+         "description": "Ý khách lượt này ngoài nhu cầu / việc căn: ý định (user_intent), hỏi về, pháp lý, xưng hô, xin người thật, lời xã "
+                        "giao, đã đủ thông tin căn, chấm sao…",
+         "input_schema": {"type": "object", "properties": {k: copy.deepcopy(v) for k, v in p.items() if k not in ("buyer_lead", "mua")}}},
+    ]
+
+
+def chay_ghi(engine: Any, conv: Any, ten: str, vao: dict[str, Any], plan: dict[str, Any], st: dict[str, Any]) -> tuple[str, bool]:
+    """Thân công cụ ghi bước 1: kiểm rồi gom vào kế hoạch (chưa áp). Trả (lời cho model, có cần mở thêm vòng để model sửa cụm trích)."""
+    from .agent_gop import SUA
+    if ten == "ghi_nhu_cau":
+        fields = vao.get("fields") if isinstance(vao.get("fields"), dict) else {}
+        bc = vao.get("bang_chung") if isinstance(vao.get("bang_chung"), dict) else {}
+        giu, bo = engine._loc_nhu_cau(conv, fields, bc)   # cổng trích: ô nhu cầu chỉ ghi điều khách nói
+        plan.setdefault("buyer_lead", {}).update(giu)
+        for k in giu:
+            st["bo"].pop(k, None)
+        st["bo"].update({k: (v, ly) for k, v, ly in bo})
+        st["nhan"] = list(dict.fromkeys(st["nhan"] + [k for k in giu if not k.startswith("nhu_cau")]))
+        return ("Ghi: " + (", ".join(giu) or "-") + (
+            f". {SUA} vì cụm trích không nằm nguyên trong lời khách: {', '.join(k for k, _v, _l in bo)} — sửa cụm trích đúng nguyên văn rồi gọi "
+            "lại, hoặc thôi." if bo else ".")), bool(bo)
+    if ten == "viec_can":
+        mua = plan.setdefault("mua", {})
+        for k, v in vao.items():
+            if k == "ma_can" and isinstance(v, list):
+                mua["ma_can"] = list(dict.fromkeys([*(mua.get("ma_can") or []), *v]))
+            elif v not in (None, "", [], {}):
+                mua[k] = v
+        return "Đã nhận — hệ thống làm sau bước này (mã căn đối chiếu kho; kết quả ở bước 2).", False
+    if ten == "ghi_y_khach":
+        for k, v in vao.items():
+            if v not in (None, "", [], {}):
+                plan[k] = v
+        return "Đã ghi.", False
+    return "Không rõ công cụ.", False
+
+
+def bao_cao(conv: Any, system: str, next_field: str | None, viec: list[str], can: list[dict], st: dict[str, Any]) -> str:
+    """Kết quả thật sau khi engine áp kế hoạch — trả cho model ở kết quả công cụ ghi (bước "Đánh giá"), cùng khuôn `agent_gop.bao_cao`. Việc
+    lượt do engine chọn (`next_field` của `BuyerLead.next_question_field`) — chỉ TRỎ về dòng dặn hỏi đã có trong lời nhắc, không chép lại."""
+    from .prompts import FIELD_LABELS, NHAN_VIEC_LUOT, Y_MO_MUA
+    from .schema import CAU_MO_MUA
+    lead = conv.buyer_lead
+    nhan = lambda k: Y_MO_MUA.get(k) or FIELD_LABELS.get(k) or k
+    if "ƯU TIÊN LƯỢT NÀY" in system:
+        viec_luot = "theo khối ƯU TIÊN LƯỢT NÀY trong lời nhắc"
+    elif next_field == CAU_MO_MUA:
+        viec_luot = "gợi căn (nếu có), rồi MỘT câu hỏi mở tuỳ chọn theo dòng dặn hỏi trong lời nhắc"
+    elif next_field:
+        viec_luot = f'hỏi ý "{nhan(next_field)}" theo dòng dặn hỏi trong lời nhắc (có căn thì gợi căn trước)'
+    else:
+        viec_luot = "gợi căn hợp (nếu có), KHÔNG hỏi thêm nhu cầu"
+    dong = ["KẾT QUẢ GHI LƯỢT NÀY (hệ thống đã áp qua cổng kiểm):",
+            f"- {NHAN_VIEC_LUOT}: {viec_luot} (lượt này CHỈ làm đúng việc này — câu hỏi duy nhất nếu có là câu việc này hoặc việc với căn bên "
+            "dưới giao)"]
+    if conv.role != "buyer" or lead is None:
+        dong.append("- Người nhắn không ở vai mua lượt này — không ghi nhu cầu.")
+    else:
+        da = [f'{nhan(k)} = "{getattr(lead, k, None) or lead.fields.get(k)}"' for k in st["nhan"]
+              if isinstance(getattr(lead, k, None) or lead.fields.get(k), str) and (getattr(lead, k, None) or lead.fields.get(k))]
+        dong.append("- ĐÃ GHI nhu cầu: " + ("; ".join(da) if da else "không ô nào") + (" (hệ thống tự lưu — không báo khách đã lưu)" if da else ""))
+    if st["bo"]:
+        dong.append("- KHÔNG GHI (bị bỏ): " + "; ".join(f'{nhan(k)} = "{v}" — {ly}' for k, (v, ly) in st["bo"].items()))
+    if "EM VỪA GHI LƯỢT NÀY" in system or "LƯỢT NÀY EM CHƯA GHI VIỆC GÌ" in system:
+        dong.append("- VIỆC VỚI CĂN: theo khối " + ("EM VỪA GHI LƯỢT NÀY" if viec else "LƯỢT NÀY EM CHƯA GHI VIỆC GÌ") + " trong lời nhắc")
+    else:
+        dong.append("- VIỆC VỚI CĂN: " + ("; ".join(viec) if viec else "lượt này chưa ghi việc nào — không nói đã chuyển / đã báo / đã giữ lịch"))
+    if lead is not None and conv.role == "buyer":
+        if can:
+            dong.append(f"- Căn đang rao hợp nhu cầu: {len(can)} căn (dòng căn ở khối CĂN ĐANG RAO)")
+        thieu = [nhan(o) for o in ("khu_vuc", "ngan_sach") if not (getattr(lead, o, None) or lead.fields.get(o))]
+        if thieu:
+            dong.append("- Ý cốt lõi còn thiếu (chưa đủ thì chưa gợi căn; câu hỏi nếu có theo việc trên): " + "; ".join(thieu))
+    return "\n".join(dong)
 
 
 

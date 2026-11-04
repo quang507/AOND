@@ -1,17 +1,27 @@
 """29/10/2026 (SRS-5.1zzzzzzz293). Chủ dự án: "Hay là bớt prompt dài đi, cấu trúc form json ngắn hơn ổn hơn k". Lượt Haiku đọc ý khách MUA dùng
 form gọn (prompt + schema chỉ phần phía mua) thay vì form 27 nghìn chữ / 36 khoá phần lớn là thao tác rổ hàng người bán.
-Từ Đợt 8 (SRS-5.1zzzzzzz319) form gọn là đường duy nhất cho khách mua (công tắc FORM_MUA_GON đã gỡ). Ca engine đỏ khi gỡ bản sửa."""
+Từ Đợt 8 (SRS-5.1zzzzzzz319) form gọn là đường duy nhất cho khách mua (công tắc FORM_MUA_GON đã gỡ). Từ SRS-5.1zzzzzzz380 lượt khách mua đi
+vòng agent gộp (`agent_gop.mo_mua`) — form gọn là đường DỰ PHÒNG khi vòng lỗi / model không gọi công cụ: đồ giả ở đây không gọi công cụ nên
+các ca dưới kiểm chính đường dự phòng (`test_khach_mua_doc_bang_form_gon` soát vòng gộp có được thử trước). Ca engine đỏ khi gỡ bản sửa."""
+from aioi.llm.base import ToolTurn
 from aioi.prompts import KHOA_FORM_MUA, OPERATIONS_SYSTEM, OPERATIONS_SYSTEM_MUA, operations_schema, operations_schema_mua
 from tests.test_viec_mua import KHACH_MUA, AiGia, KhoGia
 from aioi.engine import Engine
 
 
 class AiGhiForm(AiGia):
-    """Ghi lại form (system + khoá schema) của mọi lượt lập thao tác; trả `ke_hoach` (hoặc lần lượt `cac_ke_hoach`)."""
+    """Ghi lại form (system + khoá schema) của mọi lượt lập thao tác; trả `ke_hoach` (hoặc lần lượt `cac_ke_hoach`). Bước ghi của vòng gộp
+    phía mua: không gọi công cụ (→ form dự phòng), đếm số lần thử ở `vong_gop`."""
 
     def __init__(self, ke_hoach, cac_ke_hoach=None):
         super().__init__(ke_hoach)
-        self.form, self.cac = [], list(cac_ke_hoach or [])
+        self.form, self.cac, self.vong_gop = [], list(cac_ke_hoach or []), 0
+
+    def converse(self, system, messages, tools, max_tokens=1024):
+        if "ghi_nhu_cau" in {t["name"] for t in tools}:
+            self.vong_gop += 1
+            return ToolTurn(text="", tool_calls=[])
+        return super().converse(system, messages, tools, max_tokens)
 
     def extract(self, system, messages, json_schema):
         p = json_schema.get("properties") or {}
@@ -39,8 +49,10 @@ def _hai_luot(user_key, cac=None):
 
 
 def test_khach_mua_doc_bang_form_gon():
+    """Đường dự phòng (SRS-5.1zzzzzzz380): vòng gộp được thử ĐÚNG một lần ở lượt mua đã rõ vai, model không gọi công cụ → form mua gọn."""
     ai, _ = _hai_luot("khach-293")
     sys2, khoa2 = ai.form[-1]
+    assert ai.vong_gop == 1 and len(ai.form) == 2
     assert "operations" not in khoa2 and sys2.startswith(OPERATIONS_SYSTEM_MUA)
 
 

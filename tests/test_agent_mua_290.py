@@ -1,6 +1,8 @@
 """29/10/2026 (SRS-5.1zzzzzzz290). Chủ dự án: "Ok thử … sang kiểu Suy nghĩ -> Chọn công cụ -> Thực thi -> Đánh giá thôi còn bóc tách vẫn dùng
 haiku". Lượt viết lời phía mua có công cụ CHỈ ĐỌC; model tự quyết có tra không; bóc tách + việc ghi giữ đường cũ.
-Từ Đợt 8 (SRS-5.1zzzzzzz319) chạy cho mọi khách mua, công tắc AGENT_MUA đã gỡ. Ca 1–3 đỏ khi gỡ bản sửa."""
+Từ Đợt 8 (SRS-5.1zzzzzzz319) chạy cho mọi khách mua, công tắc AGENT_MUA đã gỡ. Từ SRS-5.1zzzzzzz380 `agent_mua.chay` là đường viết lời của lượt
+mua CHƯA rõ vai (lượt đầu — form đầy đủ đọc ý, như các ca một lượt dưới đây) và đường DỰ PHÒNG khi vòng agent gộp phía mua lỗi; lượt mua đã
+rõ vai đi `agent_gop.viet_mua` (tests/test_agent_gop_mua_380.py). Ca 1–3 đỏ khi gỡ bản sửa."""
 from aioi.llm.base import ToolCall, ToolTurn
 from tests.test_viec_mua import CAN, KHACH_MUA, AiGia, KhoGia
 from aioi.engine import Engine

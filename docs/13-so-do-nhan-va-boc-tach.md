@@ -12,7 +12,7 @@ lời bot lệch luật hình thức thì gọi lại model một lần, không 
 
 Sơ đồ vẽ đường DUY NHẤT đang chạy (cập nhật 02/11/2026 `[nguồn: cai-vps.sh, engine.py, SRS-5.1zzzzzzz319]`): sáu công tắc `FORM_BAN_GON` / `FORM_MUA_GON`, `PHIEU_LUOT`, `AGENT_BAN` / `AGENT_MUA`, `SOAT_GON` đã gỡ hẳn cùng đường cũ (`build_chat_system`) —
 form gọn, phiếu lượt, agent và soát gọn là đường duy nhất. Từ 03/11/2026 người bán đã rõ vai đi MỘT vòng agent gộp (`agent_gop.py`, SRS-5.1zzzzzzz371;
-`AGENT_BOC` / `AGENT_GOP` gỡ). Công tắc còn lại đổi được ở `cai-vps.sh`: `MODEL_LUOT_DE` = tat.
+`AGENT_BOC` / `AGENT_GOP` gỡ); người mua đã rõ vai đi cùng vòng đó (`agent_gop.mo_mua` / `viet_mua`, SRS-5.1zzzzzzz380). Công tắc còn lại đổi được ở `cai-vps.sh`: `MODEL_LUOT_DE` = tat.
 
 ## 13.1 Toàn cảnh: từ bridge tới lời trả về
 
@@ -53,7 +53,7 @@ flowchart TD
   URL -->|có| HL["Engine.handle_link"]
   URL -->|không| MA{"lenh_tra_loi '#35;mã: …'<br/>và la_nhan_vien?"}
   MA -->|có| TM["tra_loi_theo_ma<br/>(admin trả lời câu khách mua hỏi)"] --> BRS
-  MA -->|không| KH["_lap_ke_hoach — lượt AI đọc ý<br/>form gọn theo vai: OPERATIONS_SYSTEM_BAN / _MUA (chưa rõ vai: OPERATIONS_SYSTEM)<br/>người bán đã rõ vai: bước 1 vòng agent gộp (agent_gop.mo — công cụ ghi / đọc / tra_luat_o), form chỉ dự phòng<br/>ra: operations + vai + ý mua / bán + duyệt + hỏi về + y_luot"]
+  MA -->|không| KH["_lap_ke_hoach — lượt AI đọc ý<br/>chưa rõ vai: form OPERATIONS_SYSTEM<br/>người bán đã rõ vai: bước 1 vòng agent gộp (agent_gop.mo — công cụ ghi / đọc / tra_luat_o)<br/>người mua đã rõ vai: bước 1 cùng vòng (agent_gop.mo_mua — ghi_nhu_cau qua cổng trích, viec_can, ghi_y_khach; ra ý bán → đọc lại form đầy đủ)<br/>vòng lỗi: form OPERATIONS_SYSTEM_BAN / _MUA (Haiku) dự phòng<br/>ra: operations + vai + ý mua / bán + duyệt + hỏi về + y_luot"]
   KH --> VAI["định tuyến vai theo user_intent của lượt<br/>buy → buyer · sell → seller · mơ hồ: giữ vai / số tư vấn → buyer"]
   VAI --> TLK["tra_loi_cau_hoi<br/>(chủ nhà vừa trả lời câu khách mua hỏi)"]
   TLK --> DX{"đang chờ xác nhận ẩn tin?<br/>pending_destructive"}
@@ -69,7 +69,7 @@ flowchart TD
   ROLE -->|buyer| B["§13.4 nhánh mua"]
   ROLE -->|seller, ngoài vùng| NV["build_ngoai_vung_system"] --> RP
   ROLE -->|seller| S["§13.3 nhánh bán"]
-  S --> RP["model trả lời<br/>bán đã đi vòng gộp: agent_gop.viet (bước 2, cùng hội thoại công cụ; kết quả ghi = báo cáo sau khi áp)<br/>bán đi form dự phòng: agent_ban.chay (có dữ liệu để tra) · _agent_reply (dự án có rổ căn) · _provider.reply<br/>mua: agent_mua.chay (kho có tim_nha) hoặc _provider.reply"]
+  S --> RP["model trả lời<br/>bán đã đi vòng gộp: agent_gop.viet (bước 2, cùng hội thoại công cụ; kết quả ghi = báo cáo sau khi áp)<br/>bán đi form dự phòng: agent_ban.chay (có dữ liệu để tra) · _agent_reply (dự án có rổ căn) · _provider.reply<br/>mua đã đi vòng gộp: agent_gop.viet_mua (bước 2, cùng hội thoại công cụ; công cụ chỉ đọc)<br/>mua lượt đầu / form dự phòng: agent_mua.chay (kho có tim_nha) hoặc _provider.reply"]
   B --> RP
   RP --> SO["_soat_hinh_thuc<br/>luật cứng lệch → gọi lại model MỘT lần; luật giọng / lặp chỉ ghi log; Dạ code bỏ"]
   SO --> NH{"lượt trình bản nháp mà<br/>chưa ra bản tin 📋 / thiếu câu mời Zalo?"}
@@ -97,8 +97,18 @@ flowchart TD
   B0["BuyerLead.next_question_field<br/>tối đa MAX_CAU_HOI_MUA câu nhu cầu"] --> B1["build_buyer_chat_system"]
   B1 --> B2["_viec_mua: lịch hẹn, số điện thoại,<br/>quan tâm, chê căn, xin ảnh (mua.py)<br/>căn gợi ý qua _can_goi_y → rpc tim_nha"]
   B2 --> B3["khoi_can_cho_khach · khoi_viec_vua_ghi · khoi_lich_dang_cho<br/>du_an_mua.khoi_du_an · khoi_chao_tu_van (số tư vấn, lượt đầu)<br/>MỘT khối ưu tiên: khoi_can_nguoi > khoi_phap_ly > khoi_hoi_ve_mua<br/>khoi_xung_ho · khoi_tai_chinh · _ghep_cau_chuan"]
-  B3 --> B4["agent_mua.chay (tra căn / dự án, hen_xem, hoi_chu_nha) hoặc _provider.reply → _soat_hinh_thuc(can_mua)"]
+  B3 --> G{"bước 1 vòng gộp đã chạy?<br/>(conv.vong_mua)"}
+  G -->|có| B4["agent_gop.viet_mua — bước 2 cùng hội thoại công cụ:<br/>kết quả ghi = agent_mua.bao_cao (việc lượt · nhu cầu đã ghi / bị bỏ · việc với căn · ý cốt lõi thiếu)<br/>công cụ chỉ đọc: tim_can · xem_can · tra_du_an · du_an_trong_khu"]
+  G -->|không: lượt đầu / vòng lỗi| B5["agent_mua.chay (tra căn / dự án + hen_xem / hoi_chu_nha khi form sót)<br/>hoặc _provider.reply"]
+  B4 --> SO2["_soat_hinh_thuc(can_mua)"]
+  B5 --> SO2
 ```
+
+Bước 1 của lượt mua đã rõ vai (`_lap_ke_hoach` → `agent_gop.mo_mua`, SRS-5.1zzzzzzz380): system = `prompts.mua_co_dinh` (phần cố định của
+`build_buyer_chat_system`, nguyên vẹn) + `agent_mua.HUONG_DAN_GHI` + `prompts.luat_doc_y_mua()` (nguyên form mua gọn, bỏ khung JSON) trước
+`RANH_GIOI_CACHE`, dữ liệu lượt (dòng căn, nhu cầu) sau. Công cụ ghi gom vào kế hoạch cùng dạng form; engine áp qua đường cũ: ô nhu cầu
+qua `Engine._loc_nhu_cau` (cụm trích nằm nguyên trong lời khách) rồi `_chon_nhu_cau` / `BuyerLead.update`, việc căn qua `_loc_viec_mua` →
+`_viec_mua` (ghi_hen_xem gộp giờ, ghi_hoi_chu_nha chống câu trùng, xin số MỘT lần). `user_intent = "sell"` → đọc lại cả lượt bằng form đầy đủ.
 
 Sau lượt, ảnh căn bot vừa dán link đi kèm qua `anh_can_gui_kem` (§13.1). Tin chủ động cho khách (nhắc, báo căn mới) không đi
 đường này: lõi gửi qua `POST /send` của bridge (`gui_nhac.py`, `bao_can_moi.py`, `followup.py`), xem `docs/07-srs.md` §2.
