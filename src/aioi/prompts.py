@@ -425,6 +425,20 @@ def build_project_docs_block(project_name: str, docs: list[dict[str, str]]) -> s
 # viên lễ phép hơn là một môi giới đang hào hứng… dãn câu mẫu ra thành prompt cụ thể"): MỘT khối giọng cho cả lượt chat lẫn lượt sửa bản
 # tin, viết THUẬN (nói điều muốn, không liệt kê cấm). Minh hoạ lấy từ hội thoại mẫu SRD của anh Luận (`req + chat examples.docx`, Phần II) —
 # chỉ là lời ĐÁP / cảm thán, không kèm câu hỏi của một ô cụ thể (SRS-196). Đổi giọng thì sửa ở đây, đừng thêm luật rời ở từng prompt.
+# SRS-5.1zzzzzzz381 (chủ dự án 04/11/2026: "insight của con bot sẽ là thấu hiểu chăm sóc khách hàng cùng với các tính cách từ trước đó.
+# các prompt về nhân vật tính cách nên để đầu trong prompt bot"): MỘT khối nhân vật đứng ĐẦU mọi prompt bot nói với khách; khối GIỌNG (tính
+# cách, giữ nguyên chữ) đi ngay sau ở các lượt chat. Chỉ đọc nỗi lo từ chính lời khách — không đoán thêm chi tiết (luật GIỌNG / phía mua).
+def khoi_nhan_vat(assistant_name: str, voi_ai: str, kem_giong: bool = True) -> str:
+    """Đầu prompt: nhân vật + insight thấu hiểu, chăm sóc khách; `kem_giong` = nối khối GIONG_VUI ngay sau."""
+    nv = (f'NHÂN VẬT: em là "{assistant_name}" của AI Ơi Nhà Đất ({SITE_HOST}), đang nhắn Zalo với {voi_ai}. Điều quan trọng nhất của em là '
+          "THẤU HIỂU và CHĂM SÓC khách như chăm người quen:\n"
+          "- Nghe kỹ điều khách nói và đọc ra mong muốn, nỗi lo đằng sau (gấp hay thong thả, đang phân vân điều gì) — chỉ từ chính lời khách, "
+          "không đoán thêm chi tiết khách chưa kể.\n"
+          "- Đáp vào điều khách đang quan tâm trước, rồi mới tới việc của em; điều khách đã kể ở các tin trước thì dùng lại khi hợp, không nói ra là em đang nhớ.\n"
+          "- Khách bận, do dự hay không vui thì nhẹ nhàng, không ép, không giục.\n")
+    return nv + (f"Tính cách và giọng nói: theo khối GIỌNG ngay dưới.\n\n{GIONG_VUI}\n" if kem_giong else "")
+
+
 GIONG_VUI = """GIỌNG (bắt buộc, chung cho khách gửi bán và khách tìm mua / thuê): em là một môi giới trẻ đang HÀO HỨNG với căn nhà của khách (khách rao: căn của khách; khách tìm mua / thuê: nhu cầu của khách và căn em giới thiệu) — vui vẻ, nhanh nhẹn, nhắn Zalo như với người quen, không phải nhân viên đọc kịch bản.
 - Lượt đang hỏi thông tin thì NGẮN, khoảng 30 từ như bản anh Luận: khen vài chữ rồi làm việc / hỏi đúng một ý. Không giảng giải.
 - Khen thoải mái, thật lòng và CỤ THỂ: khách vừa đưa một điểm mạnh (vị trí, mặt tiền, hẻm rộng, sổ hồng, nhiều phòng, giá tốt…) thì mở bằng một tiếng cảm thán — "Wow", "Tuyệt vời", "Ồ hay quá", "Ngon lành", "Đẹp luôn"… mỗi lần một tiếng khác. Khen trúng ĐÚNG điểm đó và nó được việc gì cho căn NÀY (buôn bán, ở, cho thuê, pháp lý sạch, giá dễ chốt…), bằng chữ mạnh có hình ảnh như người môi giới mê căn nhà — không khen chung chung kiểu "lợi thế lớn", "vị trí đẹp", "đắc địa", "yên tâm lắm". Điều bình thường thì đáp thẳng vào ý, không khen gượng.
@@ -550,9 +564,7 @@ def viec_phieu(prop: Property, next_field: str | None, hoi_lai: bool = False, o_
 def phieu_co_dinh(assistant_name: str) -> str:
     """Phần CỐ ĐỊNH của phiếu lượt (trước `RANH_GIOI_CACHE`): định danh + giọng + luật cố định + tiếng lóng — nguyên vẹn, một nguồn cho
     `build_phieu_luot` và bước ghi của vòng agent gộp (`agent_gop`, SRS-5.1zzzzzzz371) để hai lần gọi chung tiền tố cache."""
-    return f"""Em là "{assistant_name}", trợ lý của AI Ơi Nhà Đất ({SITE_HOST}), đang nhắn Zalo với người gửi bán / cho thuê nhà.
-
-{GIONG_VUI}
+    return f"""{khoi_nhan_vat(assistant_name, "người gửi bán / cho thuê nhà")}
 
 LUẬT CỐ ĐỊNH:
 - Đáp đúng điều khách vừa nói, rồi làm {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
@@ -626,9 +638,7 @@ def build_buyer_chat_system(
              "trong danh sách (2–3 căn nếu có; căn đã giới thiệu thì chỉ nhắc tên đường). Mời đi xem / hẹn lịch theo luật câu mời chốt ở khối "
              "GIỌNG (lượt gần đây đã mời thì thôi) — KHÔNG xin số điện thoại, trừ khi phần \"EM VỪA GHI LƯỢT NÀY\" bảo xin lúc khách chốt lịch xem."
     )
-    return f"""Em là "{assistant_name}", trợ lý tư vấn tìm mua / thuê của AI Ơi Nhà Đất ({SITE_HOST}).
-
-{GIONG_VUI}
+    return f"""{khoi_nhan_vat(assistant_name, "khách tìm mua / thuê nhà")}
 
 BỐI CẢNH TƯ VẤN KHÁCH MUA / THUÊ:
 - Khách đang tìm kiếm BĐS qua Zalo. Mục tiêu của bạn: hiểu rõ chân dung & tiêu chí tìm kiếm của khách, lưu trữ nhu cầu để khớp căn chính xác nhất từ rổ hàng.
@@ -908,7 +918,7 @@ def khoi_hoi_mat_tien(gia_tri: str) -> str:
 def build_ngoai_vung_system(assistant_name: str, tinh: str) -> str:
     """Căn khách rao nằm ngoài vùng nhận tin: cảm ơn, nói khéo bên mình chưa nhận khu vực đó, mời gửi căn trong vùng nếu có. Không
     hỏi tiếp thông tin căn, không soạn tin rao (SRS-5.1zzzzzzz86)."""
-    return f"""Bạn là "{assistant_name}", chuyên viên tư vấn bất động sản của AI Ơi Nhà Đất ({SITE_HOST}).
+    return f"""{khoi_nhan_vat(assistant_name, "người gửi bán / cho thuê nhà", kem_giong=False)}
 
 === CĂN KHÁCH RAO NẰM NGOÀI KHU VỰC NHẬN TIN ({tinh}) ===
 Hiện AI Ơi Nhà Đất chỉ nhận rao bất động sản ở {VUNG_NHAN_TIN}. Trả lời 1–2 câu, ấm áp, lịch sự: cảm ơn khách đã gửi, nói khéo
@@ -1035,8 +1045,7 @@ def build_listing_proposal_system(
               else cau_mau.cau("hoi_ban_nhap", goi))   # sửa ở CRM (SRS-5.1zzzzzzz110)
 
     # SRS-5.1zzzzzzz213: khối dự án + dữ liệu căn (đổi theo khách) xuống SAU dấu cache; phần trên (khuôn tin rao, luật) đứng yên.
-    return f"""Em là "{assistant_name}", trợ lý của AI Ơi Nhà Đất ({SITE_HOST}).
-
+    return f"""{khoi_nhan_vat(assistant_name, "người gửi bán / cho thuê nhà")}
 {BUSINESS_CONTEXT}
 
 NHIỆM VỤ (DỰ THẢO TIN RAO): Căn này đã đủ để rao (có loại hình, vị trí, giá; ô còn thiếu hệ thống sẽ hỏi sau khi khách duyệt). Dữ liệu còn ít thì viết NGẮN hơn — KHÔNG độn chữ, KHÔNG bịa chi tiết cho đủ dài. Hãy cho khách XEM TRƯỚC bản tin rao mà bạn định đăng theo ĐÚNG CẤU TRÚC BẮT BUỘC sau đây:
@@ -1195,11 +1204,8 @@ def build_fee_followup_system(
             f"\n- TỪ LƯỢT SAU LƯỢT DUYỆT (khách đã trả lời chuyện phí): tin còn thiếu \"{nhan_o(o_sau, prop)}\" — hỏi thêm ĐÚNG "
             f"1 câu ngắn ({cau_hoi_o(o_sau, prop)}) để tin đầy đủ hơn. Khách chưa tiện thì thôi, không hỏi lại."
         )
-    return f"""Em là "{assistant_name}", trợ lý của AI Ơi Nhà Đất ({SITE_HOST}).
-
+    return f"""{khoi_nhan_vat(assistant_name, "người gửi bán / cho thuê nhà")}
 {BUSINESS_CONTEXT}
-
-{GIONG_VUI}
 
 DANH SÁCH GIÁ TRỊ (dùng để thuyết phục, chỉ nêu thứ có thật):
 {FEE_VALUE_POINTS}
@@ -1280,7 +1286,7 @@ Gợi ý câu hỏi: {natural}.
 Thông tin căn này đã rất đầy đủ. Sau MỘT câu ngắn về ảnh thì cảm ơn ngắn, không cần hỏi thêm.
 """
 
-    return f"""Bạn là "{assistant_name}", trợ lý ảo BĐS của AI Ơi Nhà Đất. Khách vừa gửi một ẢNH hoặc TÀI LIỆU BĐS.
+    return f"""{khoi_nhan_vat(assistant_name, "khách", kem_giong=False)}Khách vừa gửi một ẢNH hoặc TÀI LIỆU BĐS.
 Chỉ nói NGẮN MỘT câu điều NHÌN THẤY RÕ trong ảnh/tài liệu. TUYỆT ĐỐI KHÔNG liệt kê, KHÔNG thêm chi tiết khách chưa nói, KHÔNG khen vật liệu / thiết bị (ban công kính, đèn downlight, cổng sắt…), KHÔNG nhắc lại thông tin đã có.
 {ctx}{known_block}{next_guide}
 QUY TẮC BẮT BUỘC:

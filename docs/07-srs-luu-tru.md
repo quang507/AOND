@@ -73,6 +73,25 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz368 · Làm gọn prompt bước 1: khuôn bản tin chỉ khi cần, bỏ mã SRS / ngày trong chữ gửi model, danh sách ô soát vào system (02/11/2026)
+Chủ dự án 02/11: "prompt bot gọn lại hơn dc ko, có chỗ nào bị dài dòng chồng nhau ko" → "làm gọn nó đi". Đo (ký tự): bóc tách bán 25.235, viết lời sau bản nháp 13.470 (gồm `AD_FORMAT` 4.980 nằm SAU ranh giới cache), lượt soát ô hỏi gửi danh sách 94 ô (~3.800) trong tin user.
+(1) Lớp lỗi: khối gắn cố định vào mọi lượt dù chỉ vài lượt cần; lịch sử sửa ("(SRS-…)", ngày) nằm trong chữ gửi model. Sửa: `build_fee_followup_system(viet_lai_tin=)` — khuôn bản tin chỉ khi `engine._co_the_viet_lai_tin` (khách không duyệt, dặn cách viết, hay vừa đổi ô); bỏ mã SRS / ngày trong chuỗi prompt (giữ ở comment / docs); danh sách ô soát vào `SOAT_O_HOI_SYSTEM` (cache), bỏ 8 ô chỉ phía mua.
+(2) Kết quả: sau bản nháp lượt không viết lại 13.470 → 8.358 (−38%); bóc tách bán 25.235 → 24.648; mua 14.167 → 13.763. Còn (bước sau, cần `cham`): schema bóc tách 20.886 (ô `operations` 11.802), danh mục pháp lý 1.777 mọi lượt, `SLANG_NOTES` 1.792 trong phiếu lượt.
+(3) Kiểm: `test_gon_prompt_368.py` (khuôn bản tin theo lượt; quét MỌI hằng prompt + prompt dựng sẵn + schema không còn mã SRS / ngày sửa — bản đầu chỉ soát 6 hằng nên sót 9 chỗ; danh sách ô trong system). `cham` 59 kịch bản: 519/522 cả hai lần. Bỏ "khoảng 30 từ" lặp ở phiếu lượt (đã có trong `GIONG_VUI`).
+
+### SRS-5.1zzzzzzz367 · Lời bot hỏi ô hệ thống không chọn ("…đường nào, phường nào…" 3/201 lượt) — soát đầu ra theo ô được chọn (02/11/2026)
+Ca gốc (chấm main 48f9912): `cao_lo` l1, `xa_phuoc_ly` l1, `aeon_tan_phu` l5 hỏi phường kèm câu hỏi địa chỉ. Chủ dự án 02/11: "phải sửa từ gốc chứ" (bỏ bản thêm dòng cấm).
+(1) Lớp lỗi: đầu ra model không bị soát theo ô hệ thống chọn — `O_HE_THONG_TRA` chỉ lọc vòng chọn câu hỏi, `bot_vua_hoi` đọc ở lượt SAU. Sửa: một bất biến, một chỗ chặn `engine._soat_hoi_dung_o` (`LUAT_SOAT`): AI khai ô lời bot hỏi + cụm nguyên văn (`SOAT_O_HOI_SYSTEM`), code kiểm cụm, so ô được phép; lệch → gọi lại một lần, vẫn lệch → gọt vế hỏi sai. `O_HE_THONG_TRA = {phuong, duong}` một nguồn; gỡ các dòng cấm rải rác; lời dặn `dia_chi` bỏ "phường / xã".
+(2) Cùng lớp: mọi ô không được hỏi (phường, xác nhận tên đường, ô đã có, ô không chọn) chặn cùng chỗ. Chi phí: +1 lượt Haiku mỗi lời phía bán. Còn: gọt hết chữ thì giữ lời; số gọi lại tăng chưa đo (`cham`).
+(3) Kiểm: `test_khong_hoi_phuong_moi_luot_367.py` (ba câu thật, xác nhận tên đường, tự hỏi "mấy tầng" khi chọn hỏi giá; không bắt oan) — gỡ `hoi_dung_o`: 10/12 đỏ.
+Chấm 59 kịch bản 02/11: 519/522 nhưng gọi lại 65 (34 oan: AI khai ô gần nghĩa — `phap_ly_so_do` khi chọn `phap_ly_hoan_cong`, `kich_thuoc` khi chọn `dien_tich_dat`; có lượt bỏ luôn câu hỏi). Sửa: ô cùng nhóm `schema.FACETS` với ô được chọn tính là đúng ô.
+
+### SRS-5.1zzzzzzz366 · Bot hỏi lại tên đường ("ý anh là đường X?", "Mã Lò hay Mã Lộ?") thay vì tự áp tên chuẩn (02/11/2026)
+Chủ dự án 02/11 (nguyên văn): "không hỏi lại tên đường nữa, tự áp tên vào" — thay SRS-61 / 271.
+(1) Lớp lỗi: dữ kiện hệ thống tra được thành câu hỏi khách — `_chuan_dia_danh` chỉ áp tên khác dấu, khớp gần thì prompt dặn hỏi xác nhận. Sửa: kho ra MỘT tên trong khu khách nói (`TraDiaDanh.duong`; nhiều tên chọn theo quận; quận khác bị loại SRS-362) → ghi luôn vào `duong` + `dia_chi`; khách nói quận sau thì tra lại; không ra → giữ chữ khách. Bỏ hẳn dòng hỏi, `goi_y_duong`, việc `hoi_dia_danh`.
+(2) Cùng lớp: phường (SRS-359). Còn: biết phường chưa biết quận thì chưa lọc theo khu; RPC `tim_duong` không lọc quận (lọc ở lõi).
+(3) Kiểm: `test_ap_ten_duong_366.py` ("25 huynh tan phap" Quận 7 → "25 Huỳnh Tấn Phát"; "ma lo" + Bình Tân lượt sau → Mã Lò) — về luật cũ: đỏ.
+
 ### SRS-5.1zzzzzzz365 · Sổ lỗi 409 khi ghi `messages` (34 lần): lời bot của lượt trùng tin mất khỏi CRM (02/11/2026)
 Ca gốc: `bot_errors` 21/10–01/11 "ghi tin vào messages hỏng: HTTPError 409".
 (1) Lớp lỗi: `messages.zalo_msg_id` khoá duy nhất; cùng tin Zalo tới hai lần (bridge thử lại, thả cảm xúc nhiều lần một tin) → 409 → coi là "hội thoại đã xoá", ném lỗi, dòng lời bot mất. Sửa: dòng khách ghi `on_conflict=zalo_msg_id` + `ignore-duplicates`; 409 do khoá ngoại giữ nguyên. TypeError NoneType đã hết từ SRS-276.
