@@ -143,7 +143,7 @@ CODE3=$(q "select l.code, l.status from listings l join sellers s on s.id = l.se
 read -r MA3 TT3 <<<"$CODE3"
 echo "== Nguyễn Trãi: mã $MA3, trạng thái $TT3"
 if [[ "$TT3" =~ ^(dang_ban|dang_quan_tam|da_coc)$ ]]; then
-  WEB=$(curl -sS -m 30 "https://aioinhadat.vercel.app/nha-dat/$MA3" || true)
+  WEB=$(curl -sS -m 30 "https://aond.vercel.app/nha-dat/$MA3" || true)
   kiem "Nguyễn Trãi: trang tin trên web có đường và phường" "$(grep -q 'Nguyễn Trãi' <<<"$WEB" && grep -q 'Chợ Quán' <<<"$WEB" && echo 1 || echo 0)"
 else echo "== Nguyễn Trãi: tin chưa ở trạng thái hiện web — không soát trang web"; fi
 chat "$BAN3" "à em ơi, sửa giá căn này còn 24 tỷ nhé"

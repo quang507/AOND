@@ -12,7 +12,7 @@ Luận điểm: *listing chỉ là mồi, giao dịch xảy ra trong cuộc trò
 - **Kênh chat**: Zalo cá nhân qua bridge `zca-js` trên tài khoản Zalo clone (quyết định chủ dự án, không bàn lại). Hai số chuyên việc: số **ký gửi** (người bán; câu chào chỉ hỏi gửi bán / cho thuê, SRS-251; người mua nhắn nhầm vẫn được trả lời) và số **tư vấn người mua** (SRS-210); kiến thức dự án dùng chung. Trợ lý mỗi khách một tên người thật có chấm giữa (`assistants.ASSISTANT_NAMES`, SRS-183).
 - **Người bán (S)** — **CCRB** (chính chủ) và **NMG** (môi giới) — rao bằng một câu rao thường, AI bóc tách ô và viết bản tin.
 - **Người mua (B)** không trả phí; bot gợi căn, hẹn xem. Chỉ xin số điện thoại MỘT lần khi khách chốt lịch xem (SRS-148).
-- **Web** (Next.js) là kênh SEO + listing + bản đồ, đẩy người dùng sang Zalo. Link do `src/aioi/web.py` quyết (env `AIOI_SITE_URL`, mặc định `aioinhadat.vercel.app`; `nhadat.cc` / `aioinhadat.com` chưa trỏ về web).
+- **Web** (Next.js) là kênh SEO + listing + bản đồ, đẩy người dùng sang Zalo. Link do `src/aioi/web.py` quyết (env `AIOI_SITE_URL`, mặc định `aond.vercel.app` — project Vercel mới từ 05/11/2026, team cũ bị tạm dừng, SRS-383; `nhadat.cc` / `aioinhadat.com` chưa trỏ về web).
 - **Doanh thu 100% phía bán**: CCRB 1%, NMG 0,5% giá trị giao dịch; cho thuê 0,75 tháng tiền thuê. Một nguồn: `prompts.muc_phi`.
 - **Vùng nhận tin**: TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu, Long An, Tây Ninh, Đồng Nai (không nhận Bình Phước cũ). Một nguồn: `prompts.VUNG_NHAN_TIN`.
 

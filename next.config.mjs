@@ -31,7 +31,7 @@ const nextConfig = {
       {
         source: "/:path*",
         has: [{ type: "host", value: "nhadat-cc.vercel.app" }],
-        destination: "https://aioinhadat.vercel.app/:path*",
+        destination: "https://aond.vercel.app/:path*",
         permanent: true,
       },
     ];
