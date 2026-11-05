@@ -788,6 +788,11 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz384 · Web có hai số Zalo: nút người bán trỏ số ký gửi, còn lại số tư vấn mua (05/11/2026)
+Chủ dự án 05/11: "giờ có 2 zalo mua và bán lận" khi đặt biến Zalo cho project Vercel mới. Trước: web một biến `NEXT_PUBLIC_ZALO_URL` cho mọi nút, nút "rao bán" / "môi giới gửi hàng" dẫn người bán vào số tư vấn mua (SRS-210 tách hai số).
+(1) Lớp lỗi: web chưa theo việc tách hai số của bot. (2) Sửa: `lib/format.ts` thêm `NEXT_PUBLIC_ZALO_URL_BAN` (số ký gửi) cho ngữ cảnh `seller_cta`, `nmg-apply`, `raoban`; mọi nút khác giữ `NEXT_PUBLIC_ZALO_URL` (số tư vấn); chưa đặt biến bán thì dùng chung. Không ghi số điện thoại vào repo (đặt trên Vercel).
+(3) Kiểm: `bun run kieu`; sau khi gộp + đặt biến, nút "Rao bán" ở trang chủ trỏ số ký gửi.
+
 ### SRS-5.1zzzzzzz383 · Web chuyển sang project Vercel mới `aond.vercel.app` (team cũ bị tạm dừng) (05/11/2026)
 Ca gốc: 05/11 `aioinhadat.vercel.app` trả 402 DEPLOYMENT_DISABLED — team Vercel cũ bị tạm dừng tới 04/12 vì vượt "Fluid Active CPU" của gói Hobby; mọi link bot gửi khách chết. Chủ dự án 05/11: "tôi muốn đổi vercel sang 1 môi trường khác"; dựng project `aond` ở team mới (AIOiNhaDat).
 (1) Lớp lỗi: bản dựng đầu của project mới bị `ignoreCommand` (SRS-248) huỷ vì commit cuối không đổi file web → `aond.vercel.app` 404 DEPLOYMENT_NOT_FOUND. (2) Sửa: tên miền mặc định một nguồn mỗi phía — `src/aioi/web.py` (bot) và `lib/format.ts` (web) → `https://aond.vercel.app`; redirect `nhadat-cc` trong `next.config.mjs`, script bắn thử; lần gộp đổi file web nên Vercel dựng. Còn: Supabase Auth (URL đăng nhập CRM) phải thêm tên miền mới — chủ dự án làm trên dashboard.
@@ -829,10 +834,6 @@ Chủ dự án test mua 03/11 (11 lượt): "câu chào nên đổi sao hay hơn
 ### SRS-5.1zzzzzzz374 · Tách tin bản nháp lần 2 (dòng mở 📋, điểm tin), tin chat xuống một dòng; CRM Rổ hàng trống vì còn đọc bảng `media` đã gỡ (03/11/2026)
 Chủ dự án test 03/11 (Trần Bình Trọng): "Em sẽ rao như vầy nhé anh: tách ra"; "Tin này đang được 94/100 điểm… hạng Vàng" "tách ra khỏi tin nháp gộp vào câu dưới"; "xuống dòng thôi ko cần xuống 2 dòng"; `/admin/ro-hang` báo "Could not find a relationship between 'listings' and 'media'".
 (1) Lớp lỗi: SRS-373 chỉ tách đoạn cuối có "?" — các đoạn sau câu mời Zalo khác vẫn dính bản tin; tin chat một khối giữ dòng trống của model. CRM: bảng `media` gỡ ở `20261102a` nhưng trang Rổ hàng còn `media(count)`. (2) Sửa: `delivery.tach_ban_tin` — phần sau = MỌI đoạn sau câu mời Zalo; `tach_tin_ban_tin` gửi chat trước · dòng mở 📋 · thân bản tin · phần sau (xuống một dòng); bỏ `media(count)` (soát `app/ lib/ components/`: không chỗ nào khác). (3) Kiểm: `test_tach_ban_tin_373.py`. Dữ liệu không mất: hai căn đúng trạng thái (Trần Bình Trọng đang bán, Trần Hưng Đạo đã chốt).
-
-### SRS-5.1zzzzzzz373 · Lượt có bản tin 📋 gửi Zalo dính câu chat mở đầu và câu hỏi chốt thành một tin (03/11/2026)
-Ca gốc chủ dự án test 03/11 (dãy trọ Tân Phú): "Hẻm rộng tới 10m… nghen." + bản tin + "Anh xem còn chỗ nào cần chỉnh không…?" chung MỘT tin — "câu này tách ra".
-(1) Lớp lỗi: `server` giữ nguyên khối cả lời khi `is_listing_post` để bản tin không bị cắt vụn, nên phần chat quanh bản tin đi theo. (2) Sửa: `delivery.tach_ban_tin` (cắt theo bố cục, một nguồn với `engine._phan_chat_quanh_ban_tin` của lưới soát) → ba tin: chat trước 📋, nguyên khối bản tin, câu chốt; cùng lớp: không chỗ gửi bản tin nào khác. (3) Kiểm: `test_tach_ban_tin_373.py` (đỏ khi gửi cả lời một tin). Dữ liệu test của chủ dự án đã xoá theo yêu cầu (`xoa_nguoi_theo_zalo`).
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
