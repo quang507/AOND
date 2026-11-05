@@ -123,8 +123,13 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aond.vercel
 
 export const ZALO_OA_URL =
   process.env.NEXT_PUBLIC_ZALO_URL ?? "https://zalo.me/nhadatcc";
+// Hai số Zalo (CLAUDE.md §1, SRS-210 / 384): NEXT_PUBLIC_ZALO_URL = số TƯ VẤN người mua (mặc định mọi nút);
+// NEXT_PUBLIC_ZALO_URL_BAN = số KÝ GỬI cho các nút người bán / môi giới gửi hàng. Chưa đặt thì dùng chung số tư vấn.
+export const ZALO_BAN_URL = process.env.NEXT_PUBLIC_ZALO_URL_BAN ?? ZALO_OA_URL;
+const NGU_CANH_BAN = new Set(["seller_cta", "nmg-apply", "raoban"]);
 export function zaloLink(context?: string): string {
-  return context ? `${ZALO_OA_URL}?ref=${encodeURIComponent(context)}` : ZALO_OA_URL;
+  const goc = context && NGU_CANH_BAN.has(context) ? ZALO_BAN_URL : ZALO_OA_URL;
+  return context ? `${goc}?ref=${encodeURIComponent(context)}` : goc;
 }
 
 // Tin / dự án chưa có ảnh thật → khung trung tính "Chưa có ảnh". 18/10/2026 (SRS-5.1zzzzzzz45, chủ dự án "mình cần data đúng"):
