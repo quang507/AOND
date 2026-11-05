@@ -119,7 +119,7 @@ export function formatPricePerM2(vnd: number | null, deal: "ban" | "cho_thue"): 
 // Vercel (hoặc sửa fallback dưới); OA duyệt xong đổi về link OA.
 // NFR-09 — gốc URL tuyệt đối cho canonical / OpenGraph / sitemap / JSON-LD.
 // 09/09/2026: project Vercel đổi tên nhadat-cc → aioinhadat, domain theo tên.
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aioinhadat.vercel.app";
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aond.vercel.app";
 
 export const ZALO_OA_URL =
   process.env.NEXT_PUBLIC_ZALO_URL ?? "https://zalo.me/nhadatcc";

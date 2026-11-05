@@ -73,6 +73,10 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz372 · Nguồn sự thật là `main`: không soát PR đóng / nhánh cũ (03/11/2026)
+Chủ dự án 03/11 (nguyên văn): "xóa luôn PR chứ chat audit cứ dò lại rối quá", "merg đi còn 1 main thôi". GitHub không cho xoá PR (chỉ đóng); 36 nhánh cũ đã soát — nhánh có PR gộp thì code đã ở `main`, nhánh PR đóng (#282 #283 #284 #287 #288) là bản không chọn, nhánh #278 / #279 đã vào `main` qua #277.
+Quyết định: CLAUDE.md §4.11 — phiên sau chỉ đọc `main`, không audit / gộp lại PR đóng hay nhánh cũ trừ khi chủ dự án nêu số PR; gộp xong xoá nhánh. Phiên agent không xoá được nhánh (quyền push chỉ nhánh được giao, 403) — chủ dự án xoá trên GitHub và bật tự xoá nhánh sau gộp.
+
 ### SRS-5.1zzzzzzz371 · Một vòng agent Sonnet cho lượt người bán: ghi bằng công cụ qua cổng code rồi viết lời cùng cuộc hội thoại (03/11/2026)
 Quyết định chủ dự án 03/11 (nguyên văn): "AI đọc lời của khách làm 2 việc cùng lúc, bóc tách ra lưu db và trả lời lại khách. quá trình thu thập diễn ra song song với việc trả lời chăm sóc khách hàng" + "gộp đi"; khung "Suy nghĩ → Chọn công cụ → Thực thi → Đánh giá": Bộ não (Sonnet) + Hồ sơ định danh (system prompt) + Bộ công cụ (Tool Use, hàm backend mô tả bằng JSON); kiến thức nạp bằng công cụ tra cứu (RAG), không nhồi vào prompt. Không công cụ chạy code / terminal; không cắt chữ GIONG_VUI / SLANG_NOTES / luật cố định.
 (1) Lớp lỗi: hai model, hai prompt mỗi lượt (Haiku form JSON 45.390 chữ → Sonnet viết lời) — lời không biết ô nào cổng đã bỏ. (2) Sửa: `agent_gop.py` — bước 1 system = `prompts.phieu_co_dinh` nguyên vẹn + luật ghi chung, công cụ ghi (thân `agent_gop._chay_ghi`) / đọc (`agent_ban`) / `tra_luat_o` (luật form chia đúng một chỗ theo `BANG_LUAT`, nạp sẵn luật ô bot vừa hỏi); engine áp qua cổng cũ; bước 2 cùng hội thoại, kết quả công cụ = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt). Form Haiku chỉ dự phòng. Cùng lớp: phía mua để đợt sau.

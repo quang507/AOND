@@ -788,6 +788,11 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz383 · Web chuyển sang project Vercel mới `aond.vercel.app` (team cũ bị tạm dừng) (05/11/2026)
+Ca gốc: 05/11 `aioinhadat.vercel.app` trả 402 DEPLOYMENT_DISABLED — team Vercel cũ bị tạm dừng tới 04/12 vì vượt "Fluid Active CPU" của gói Hobby; mọi link bot gửi khách chết. Chủ dự án 05/11: "tôi muốn đổi vercel sang 1 môi trường khác"; dựng project `aond` ở team mới (AIOiNhaDat).
+(1) Lớp lỗi: bản dựng đầu của project mới bị `ignoreCommand` (SRS-248) huỷ vì commit cuối không đổi file web → `aond.vercel.app` 404 DEPLOYMENT_NOT_FOUND. (2) Sửa: tên miền mặc định một nguồn mỗi phía — `src/aioi/web.py` (bot) và `lib/format.ts` (web) → `https://aond.vercel.app`; redirect `nhadat-cc` trong `next.config.mjs`, script bắn thử; lần gộp đổi file web nên Vercel dựng. Còn: Supabase Auth (URL đăng nhập CRM) phải thêm tên miền mới — chủ dự án làm trên dashboard.
+(3) Kiểm: `test:py` 1462 đạt; sau khi gộp kiểm `curl https://aond.vercel.app/` ra 200 và bot gửi link tên miền mới.
+
 ### SRS-5.1zzzzzzz382 · Gỡ regex đoán ý khách: kiểm kê toàn lõi — loại D đã về 0, gỡ regex chết, cổng chặn regex mới (05/11/2026)
 Chủ dự án 05/11 (nguyên văn): "gỡ regex đi" (đề xuất 8 đã duyệt 03/11: bớt regex khi vòng agent đã quyết thay, cổng an toàn thì giữ). Kiểm kê `src/aioi/` (trừ `llm/mock.py`): 194 lời gọi `re.*` (48 hằng `re.compile`) — soát lời bot (A), định dạng / số / tiền / SĐT / địa chỉ / chuẩn hoá (B), cổng cụm trích / PII (C); loại D (đọc lời khách để đoán ý) = 0, vì SRS-55 / 213 / 281 / 320 / 328 đã chuyển sang trường AI + cụm trích. Bảng đầy đủ ở mô tả PR.
 (1) Lớp lỗi: không cổng nào chặn regex mới đọc lời khách, và regex chết (`_PII_KEYWORD_RE`, `_TU_RE` không ai gọi) làm kiểm kê tưởng còn nhiều. (2) Sửa: gỡ hai regex chết → 192 lời gọi (47 hằng), loại D vẫn 0; không đổi hành vi, không thêm trường AI.
@@ -828,10 +833,6 @@ Chủ dự án test 03/11 (Trần Bình Trọng): "Em sẽ rao như vầy nhé a
 ### SRS-5.1zzzzzzz373 · Lượt có bản tin 📋 gửi Zalo dính câu chat mở đầu và câu hỏi chốt thành một tin (03/11/2026)
 Ca gốc chủ dự án test 03/11 (dãy trọ Tân Phú): "Hẻm rộng tới 10m… nghen." + bản tin + "Anh xem còn chỗ nào cần chỉnh không…?" chung MỘT tin — "câu này tách ra".
 (1) Lớp lỗi: `server` giữ nguyên khối cả lời khi `is_listing_post` để bản tin không bị cắt vụn, nên phần chat quanh bản tin đi theo. (2) Sửa: `delivery.tach_ban_tin` (cắt theo bố cục, một nguồn với `engine._phan_chat_quanh_ban_tin` của lưới soát) → ba tin: chat trước 📋, nguyên khối bản tin, câu chốt; cùng lớp: không chỗ gửi bản tin nào khác. (3) Kiểm: `test_tach_ban_tin_373.py` (đỏ khi gửi cả lời một tin). Dữ liệu test của chủ dự án đã xoá theo yêu cầu (`xoa_nguoi_theo_zalo`).
-
-### SRS-5.1zzzzzzz372 · Nguồn sự thật là `main`: không soát PR đóng / nhánh cũ (03/11/2026)
-Chủ dự án 03/11 (nguyên văn): "xóa luôn PR chứ chat audit cứ dò lại rối quá", "merg đi còn 1 main thôi". GitHub không cho xoá PR (chỉ đóng); 36 nhánh cũ đã soát — nhánh có PR gộp thì code đã ở `main`, nhánh PR đóng (#282 #283 #284 #287 #288) là bản không chọn, nhánh #278 / #279 đã vào `main` qua #277.
-Quyết định: CLAUDE.md §4.11 — phiên sau chỉ đọc `main`, không audit / gộp lại PR đóng hay nhánh cũ trừ khi chủ dự án nêu số PR; gộp xong xoá nhánh. Phiên agent không xoá được nhánh (quyền push chỉ nhánh được giao, 403) — chủ dự án xoá trên GitHub và bật tự xoá nhánh sau gộp.
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 from urllib.parse import urlparse
 
-SITE_URL = os.environ.get("AIOI_SITE_URL", "https://aioinhadat.vercel.app").rstrip("/")
+SITE_URL = os.environ.get("AIOI_SITE_URL", "https://aond.vercel.app").rstrip("/")
 SITE_HOST = urlparse(SITE_URL).netloc or SITE_URL
 
 

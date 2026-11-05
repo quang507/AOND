@@ -99,7 +99,7 @@ XIN=$(mot "select count(*) as n from info_requests r join listings l on l.id = r
 kiem "F: khách xin ảnh căn chưa có ảnh → câu xin ảnh giao chủ nhà (info_requests)" "$([ "$XIN" -ge 1 ] && echo 1 || echo 0)"
 # Ảnh nhà thật có sẵn trên web của dự án (public/img/house1.jpg). Ảnh rổ mẫu SEED là ảnh minh hoạ — AI chấm ảnh (OPEN-53) bỏ đúng,
 # lần bắn 29/10 trượt F vì thế (SRS-5.1zzzzzzz268).
-ANH="https://aioinhadat.vercel.app/img/house1.jpg"
+ANH="https://aond.vercel.app/img/house1.jpg"
 curl -sS -m 20 -o /dev/null -f "$ANH" || ANH=""
 if [ -n "$ANH" ]; then
   gui "$CHU" "$(jq -n --arg u "$ANH" '{text:"", image_urls:[$u]}')" "(chủ nhà gửi 1 ảnh, không kèm chữ)"
