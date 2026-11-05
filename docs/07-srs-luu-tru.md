@@ -73,6 +73,10 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz374 · Tách tin bản nháp lần 2 (dòng mở 📋, điểm tin), tin chat xuống một dòng; CRM Rổ hàng trống vì còn đọc bảng `media` đã gỡ (03/11/2026)
+Chủ dự án test 03/11 (Trần Bình Trọng): "Em sẽ rao như vầy nhé anh: tách ra"; "Tin này đang được 94/100 điểm… hạng Vàng" "tách ra khỏi tin nháp gộp vào câu dưới"; "xuống dòng thôi ko cần xuống 2 dòng"; `/admin/ro-hang` báo "Could not find a relationship between 'listings' and 'media'".
+(1) Lớp lỗi: SRS-373 chỉ tách đoạn cuối có "?" — các đoạn sau câu mời Zalo khác vẫn dính bản tin; tin chat một khối giữ dòng trống của model. CRM: bảng `media` gỡ ở `20261102a` nhưng trang Rổ hàng còn `media(count)`. (2) Sửa: `delivery.tach_ban_tin` — phần sau = MỌI đoạn sau câu mời Zalo; `tach_tin_ban_tin` gửi chat trước · dòng mở 📋 · thân bản tin · phần sau (xuống một dòng); bỏ `media(count)` (soát `app/ lib/ components/`: không chỗ nào khác). (3) Kiểm: `test_tach_ban_tin_373.py`. Dữ liệu không mất: hai căn đúng trạng thái (Trần Bình Trọng đang bán, Trần Hưng Đạo đã chốt).
+
 ### SRS-5.1zzzzzzz373 · Lượt có bản tin 📋 gửi Zalo dính câu chat mở đầu và câu hỏi chốt thành một tin (03/11/2026)
 Ca gốc chủ dự án test 03/11 (dãy trọ Tân Phú): "Hẻm rộng tới 10m… nghen." + bản tin + "Anh xem còn chỗ nào cần chỉnh không…?" chung MỘT tin — "câu này tách ra".
 (1) Lớp lỗi: `server` giữ nguyên khối cả lời khi `is_listing_post` để bản tin không bị cắt vụn, nên phần chat quanh bản tin đi theo. (2) Sửa: `delivery.tach_ban_tin` (cắt theo bố cục, một nguồn với `engine._phan_chat_quanh_ban_tin` của lưới soát) → ba tin: chat trước 📋, nguyên khối bản tin, câu chốt; cùng lớp: không chỗ gửi bản tin nào khác. (3) Kiểm: `test_tach_ban_tin_373.py` (đỏ khi gửi cả lời một tin). Dữ liệu test của chủ dự án đã xoá theo yêu cầu (`xoa_nguoi_theo_zalo`).
