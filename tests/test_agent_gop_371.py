@@ -73,7 +73,10 @@ def test_buoc_2_doc_ket_qua_ghi_that(monkeypatch):
     he, tin, tools = ai.buoc2[0]
     bao = tin[-1]["content"][0]["content"]
     assert tin[-1]["content"][0]["type"] == "tool_result" and tin[-2]["role"] == "assistant"
-    assert "ĐÃ GHI" in bao and "sổ hồng riêng" in bao.split("ĐÃ GHI", 1)[1].split("\n", 1)[0]
+    assert "Ô vừa lưu" in bao and "sổ hồng riêng" in bao.split("Ô vừa lưu", 1)[1].split("\n", 1)[0]
+    # SRS-5.1zzzzzzz386: không còn nhãn "ĐÃ GHI" / câu "chỉ nói đã ghi…" gợi model báo "em ghi rồi" mọi lượt
+    assert "- ĐÃ GHI:" not in bao and "không báo khách" in bao.split("Ô vừa lưu", 1)[1].split("\n", 1)[0]
+    assert "Chỉ nói đã ghi" not in agent_gop.HUONG_DAN_VIET and "không báo khách là em đã ghi" in agent_gop.HUONG_DAN_VIET
     assert "KHÔNG GHI" in bao and "đầy đủ" in bao.split("KHÔNG GHI", 1)[1].split("\n", 1)[0]
     assert bao.split("\n")[1].startswith("- VIỆC LƯỢT NÀY:"), "việc lượt đứng đầu báo cáo, trước dữ kiện ô trống"
     assert agent_gop.DAU_BUOC_2 in he and GIONG_VUI in he and SLANG_NOTES in he, "system bước 2 = phiếu lượt nguyên vẹn + dặn đánh giá"

@@ -296,8 +296,8 @@ HUONG_DAN_GHI = (
 HUONG_DAN_VIET = (
     "\n\n" + DAU_BUOC_2 + "\n"
     "Em vừa đọc ý khách và gọi công cụ ghi (bước 1). Kết quả công cụ cuối là KẾT QUẢ GHI LƯỢT NÀY — hệ thống đã áp qua cổng kiểm. Đánh giá kết "
-    "quả đó rồi viết lời gửi khách theo đúng các luật ở trên và việc lượt này. Chỉ nói đã ghi / đã cập nhật / đã đổi với điều kết quả báo ĐÃ "
-    "GHI; ô bị bỏ hay chưa đổi thì không nói là đã ghi. Không kể cho khách tên công cụ, tên ô, cổng kiểm hay kết quả hệ thống. Bước ghi lượt "
+    "quả đó rồi viết lời gửi khách theo đúng các luật ở trên và việc lượt này. Hệ thống tự lưu — không báo khách là em đã ghi / đã cập nhật, "
+    "đáp thẳng vào ý khách. Không kể cho khách tên công cụ, tên ô, cổng kiểm hay kết quả hệ thống. Bước ghi lượt "
     "này đã đóng (bước 2 chỉ còn công cụ đọc).\n"
 )
 
@@ -511,8 +511,9 @@ def bao_cao(engine: Any, conv: Any, system: str, captured: list[str]) -> str:
     f = conv.prop.fields
     dong = ["KẾT QUẢ GHI LƯỢT NÀY (hệ thống đã áp qua cổng kiểm):"]
     da = [f'{_nhan(k, conv.prop)} = "{f.get(k)}"' for k in captured if isinstance(f.get(k), str) and f.get(k) and not k.startswith("_")]
-    dong.append("- ĐÃ GHI: " + ("; ".join(da) if da else "không ô nào")
-                + (" (dữ kiện cho em — nói với khách bằng tên đường ngắn, không đọc lại địa chỉ đầy đủ)" if da else ""))
+    # 20261105 (SRS-5.1zzzzzzz386): dòng này là dữ kiện, không phải việc báo khách — nhãn cũ "ĐÃ GHI" mỗi lượt gợi model nói "em ghi rồi" mọi lượt.
+    dong.append("- Ô vừa lưu (hệ thống tự lưu, không báo khách là đã ghi): " + ("; ".join(da) if da else "không ô nào")
+                + (" (nhắc tới thì dùng tên đường ngắn, không đọc lại địa chỉ đầy đủ)" if da else ""))
     bo = [f'{_nhan(k, conv.prop)} = "{v}" — {ly}' for (k, v, _bc, ly) in (conv.bo_luot or []) if v not in (None, "", [], {})]
     if bo:
         dong.append("- KHÔNG GHI (bị bỏ): " + "; ".join(bo))
