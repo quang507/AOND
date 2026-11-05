@@ -34,6 +34,14 @@ const nextConfig = {
         destination: "https://aond.vercel.app/:path*",
         permanent: true,
       },
+      // SRS-5.1zzzzzzz385: project cũ (team bị tạm dừng tới 04/12/2026) giữ tên miền aioinhadat.vercel.app — không xoá để không ai
+      // chiếm tên miền mà link bot đã gửi khách; khi team chạy lại, mọi link cũ chuyển sang project mới.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "aioinhadat.vercel.app" }],
+        destination: "https://aond.vercel.app/:path*",
+        permanent: true,
+      },
     ];
   },
   async headers() {

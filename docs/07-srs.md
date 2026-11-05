@@ -788,6 +788,11 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz385 · Giữ project Vercel cũ, link `aioinhadat.vercel.app` cũ tự chuyển sang `aond.vercel.app` (05/11/2026)
+Chủ dự án 05/11: "xóa project vercel cũ dc chưa". Quyết định (BA, uỷ quyền): KHÔNG xoá — xoá thì tên `aioinhadat` được nhả, người khác lập project trùng tên chiếm `aioinhadat.vercel.app`, mọi link bot đã gửi khách qua Zalo trỏ sang trang lạ (rủi ro lừa đảo). Project cũ ở team bị tạm dừng (tới 04/12) nên không tốn gì.
+(1) Lớp lỗi: đổi tên miền làm chết link cũ trong lịch sử chat. (2) Sửa: `next.config.mjs` thêm chuyển hướng 308 host `aioinhadat.vercel.app` → `aond.vercel.app` (cùng kiểu `nhadat-cc`); có hiệu lực khi team cũ chạy lại và dựng `main`.
+(3) Kiểm: `bun run kieu`; sau 04/12 `curl -I https://aioinhadat.vercel.app/nha-dat/<mã>` ra 308 tới tên miền mới.
+
 ### SRS-5.1zzzzzzz384 · Web có hai số Zalo: nút người bán trỏ số ký gửi, còn lại số tư vấn mua (05/11/2026)
 Chủ dự án 05/11: "giờ có 2 zalo mua và bán lận" khi đặt biến Zalo cho project Vercel mới. Trước: web một biến `NEXT_PUBLIC_ZALO_URL` cho mọi nút, nút "rao bán" / "môi giới gửi hàng" dẫn người bán vào số tư vấn mua (SRS-210 tách hai số).
 (1) Lớp lỗi: web chưa theo việc tách hai số của bot. (2) Sửa: `lib/format.ts` thêm `NEXT_PUBLIC_ZALO_URL_BAN` (số ký gửi) cho ngữ cảnh `seller_cta`, `nmg-apply`, `raoban`; mọi nút khác giữ `NEXT_PUBLIC_ZALO_URL` (số tư vấn); chưa đặt biến bán thì dùng chung. Không ghi số điện thoại vào repo (đặt trên Vercel).
@@ -830,10 +835,6 @@ Review prompt (chủ dự án 03/11: "ok bạn sửa lun đi"). (1) Lớp lỗi:
 ### SRS-5.1zzzzzzz375 · Một khối giọng vui chung hai phía; phía mua lặp câu mời hẹn / đọc lại địa chỉ, hứa suông vay, báo "chưa có căn" khi khách đổi nhu cầu (03/11/2026)
 Chủ dự án test mua 03/11 (11 lượt): "câu chào nên đổi sao hay hơn", "câu chữ bị lặp", "sửa từ prompt … giọng tự nhiên nhanh nhẹn vui vẻ … đỡ viết code soi xét viết lại", "phía mua hay phía bán thì đừng có giọng vui hay giọng không vui nữa", giữ hai luật "tên đường ngắn" và "mời hẹn xem tối đa một lần trong vài lượt".
 (1) Lớp lỗi: phía mua có luật giọng riêng không có `GIONG_VUI`; khối tài chính DẶN "nhờ người phụ trách báo lại" (hứa suông); chữ giữ chỗ "chưa đặt nhãn" bị AI chép thành nhu cầu; `conv.can_mua` tính trước khi đổi nhu cầu nên thêm nhu cầu thuê Q10 báo không có căn dù kho có `SEED0177`. (2) Sửa: `GIONG_VUI` chung hai phía (+ tên đường ngắn, câu mời chốt ≤ 1 lần / vài lượt, việc đã làm báo một lần, không giải thích kiểu máy), prompt mua bỏ luật giọng riêng; câu chào số tư vấn mới (migration `20261103f`); tài chính bỏ câu hứa; agent mua chỉ hỏi chủ nhà phần dòng căn chưa có; tra căn theo nhu cầu hiện tại. (3) Kiểm: CI; chưa chạy `cham` (chủ dự án dặn không chạy test ở máy).
-
-### SRS-5.1zzzzzzz374 · Tách tin bản nháp lần 2 (dòng mở 📋, điểm tin), tin chat xuống một dòng; CRM Rổ hàng trống vì còn đọc bảng `media` đã gỡ (03/11/2026)
-Chủ dự án test 03/11 (Trần Bình Trọng): "Em sẽ rao như vầy nhé anh: tách ra"; "Tin này đang được 94/100 điểm… hạng Vàng" "tách ra khỏi tin nháp gộp vào câu dưới"; "xuống dòng thôi ko cần xuống 2 dòng"; `/admin/ro-hang` báo "Could not find a relationship between 'listings' and 'media'".
-(1) Lớp lỗi: SRS-373 chỉ tách đoạn cuối có "?" — các đoạn sau câu mời Zalo khác vẫn dính bản tin; tin chat một khối giữ dòng trống của model. CRM: bảng `media` gỡ ở `20261102a` nhưng trang Rổ hàng còn `media(count)`. (2) Sửa: `delivery.tach_ban_tin` — phần sau = MỌI đoạn sau câu mời Zalo; `tach_tin_ban_tin` gửi chat trước · dòng mở 📋 · thân bản tin · phần sau (xuống một dòng); bỏ `media(count)` (soát `app/ lib/ components/`: không chỗ nào khác). (3) Kiểm: `test_tach_ban_tin_373.py`. Dữ liệu không mất: hai căn đúng trạng thái (Trần Bình Trọng đang bán, Trần Hưng Đạo đã chốt).
 
 ## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
 
