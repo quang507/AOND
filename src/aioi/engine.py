@@ -243,7 +243,6 @@ _AGENT_TOOL_GUIDE = (
 # owner's IDENTITY must be stripped before it is stored/relayed (user decision 2026-07). These
 # power a deterministic backstop under the LLM redaction in build_transcribe_instruction.
 _PII_ID_RE = re.compile(r"(?<!\d)\d{9}(?:\d{3})?(?!\d)")              # CMND (9) / CCCD (12) digits
-_PII_KEYWORD_RE = re.compile(r"(?i)\b(cccd|cmnd|căn cước công dân|chứng minh nhân dân)\b")
 _PII_OWNER_RE = re.compile(                                          # a "Chủ sở hữu: <tên>" field
     # Personal-identity FIELD labels — the ":" requirement keeps "Ông:/Bà:" from catching a place
     # name like "Bà Rịa" (no colon). The property's own address ("Địa chỉ:" in the thửa section) is
@@ -1489,9 +1488,6 @@ def _ban_tin_da_trinh(conv: "Conversation") -> tuple[str, str] | None:
         if t.role == "assistant" and "📋" in t.content:
             return _than_ban_tin(t.content)
     return None
-
-
-_TU_RE = re.compile(r"\w+")
 
 
 def _mo_dau_da(reply: str) -> bool:
