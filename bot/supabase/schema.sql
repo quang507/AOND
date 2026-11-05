@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-03 16:56 (giờ VN)
+-- Sinh lúc: 2026-11-05 16:40 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -1174,12 +1174,10 @@ create index if not exists listings_seller_id_idx ON public.listings USING btree
 create index if not exists media_cleanup_can_lam_idx ON public.media_cleanup_queue USING btree (trang_thai, created_at) WHERE (trang_thai = ANY (ARRAY['cho'::text, 'dang_lam'::text]));
 create index if not exists messages_conv_seq_idx ON public.messages USING btree (conversation_id, seq DESC);
 create index if not exists messages_conv_time_idx ON public.messages USING btree (conversation_id, created_at);
-create index if not exists phuong_cu_nhung_hnsw ON public.phuong_cu USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists projects_priority_idx ON public.projects USING btree (priority, district);
 create index if not exists property_events_at_idx ON public.property_events USING btree (at DESC);
 create index if not exists property_events_buyer_idx ON public.property_events USING btree (buyer_id);
 create index if not exists property_events_listing_at_idx ON public.property_events USING btree (listing_id, at DESC);
-create index if not exists quan_cu_nhung_hnsw ON public.quan_cu USING hnsw (nhung extensions.halfvec_cosine_ops);
 create index if not exists ranh_gioi_phuong_khung_idx ON public.ranh_gioi_phuong USING btree (min_lat, max_lat, min_lng, max_lng);
 create index if not exists reminders_buyer_id_idx ON public.reminders USING btree (buyer_id);
 create index if not exists reminders_den_han_idx ON public.reminders USING btree (due_at) WHERE (status = 'pending'::text);
@@ -1198,7 +1196,6 @@ create index if not exists viewings_buyer_id_idx ON public.viewings USING btree 
 create index if not exists viewings_listing_id_idx ON public.viewings USING btree (listing_id);
 CREATE UNIQUE INDEX viewings_mot_hen_cho_moi_can_idx ON public.viewings USING btree (buyer_id, COALESCE(listing_code, (listing_id)::text)) WHERE (status = 'pending'::text);
 create index if not exists viewings_status_slot_idx ON public.viewings USING btree (status, slot);
-create index if not exists wards_nhung_hnsw ON public.wards USING hnsw (nhung extensions.halfvec_cosine_ops);
 
 -- ══ Hàm ══
 CREATE OR REPLACE FUNCTION public.admin_cap_nhat_khach(p_buyer_id uuid, p_preferences jsonb, p_notes text)
@@ -4697,9 +4694,17 @@ begin
   loop
     exit when v_gui >= v_tran;
     v_txt := public.van_ban_du_an(r.id);
-    if v_txt is null or length(v_txt) < 10 then continue; end if;
+    -- 20261105a (SRS-5.1zzzzzzz385): dự án không có chữ / chữ không đổi → ghi mốc đã soát để lượt sau không băm lại (409 dự án bị băm lại
+    -- mỗi 2 phút: updated_at đổi mà văn bản không đổi, hoặc thiếu chữ). Bảng projects không có trigger cập nhật updated_at.
+    if v_txt is null or length(v_txt) < 10 then
+      update public.projects set nhung_md5 = coalesce(nhung_md5, ''), nhung_luc = now() where id = r.id;
+      continue;
+    end if;
     v_md5 := md5(v_txt);
-    if r.nhung_md5 is not distinct from v_md5 then continue; end if;
+    if r.nhung_md5 is not distinct from v_md5 then
+      update public.projects set nhung_luc = now() where id = r.id;
+      continue;
+    end if;
     insert into public.nhung_viec_du_an (project_id, request_id, md5)
     values (r.id, net.http_post(
       url := 'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent',
@@ -7547,8 +7552,8 @@ select cron.schedule('listing-interest-decay', '0 20 * * *', 'update public.list
    where status = ''dang_quan_tam'' and last_interest_at < now() - interval ''7 days''');
 select cron.schedule('media-chet-tick', '0 * * * *', 'select public.chon_viec_don_chet()');
 select cron.schedule('media-cleanup-tick', '*/5 * * * *', 'select public.media_cleanup_tick()');
-select cron.schedule('nhung-dia-danh-tick', '1-59/2 * * * *', 'select public.nhung_dia_danh_tick()');
-select cron.schedule('nhung-luat-tick', '1-59/2 * * * *', 'select public.nhung_luat_tick()');
-select cron.schedule('nhung-tick', '*/2 * * * *', 'select public.nhung_tick()');
+select cron.schedule('nhung-dia-danh-tick', '7-59/15 * * * *', 'select public.nhung_dia_danh_tick()');
+select cron.schedule('nhung-luat-tick', '12-59/15 * * * *', 'select public.nhung_luat_tick()');
+select cron.schedule('nhung-tick', '*/5 * * * *', 'select public.nhung_tick()');
 select cron.schedule('soat-du-lieu-tick', '5 1 * * *', 'select public.soat_du_lieu_tick()');
 

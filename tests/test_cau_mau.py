@@ -120,7 +120,7 @@ def test_cau_bao_phi_tester_sua_toi_loi_bot():
     from aioi.revenue import SellerRole
     thue = build_fee_followup_system("x", Property(loai_hinh="nha_pho", is_rental=True), user_type=SellerRole.CHU_NHA,
                                      web={"len_web": True})
-    assert ("Đăng tin bên em miễn phí ạ. Phí môi giới là 0.75 tháng tiền thuê, chỉ thu khi giao dịch thành công — chưa thành thì anh/chị "
+    assert ("Đăng tin bên em miễn phí ạ. Phí môi giới là 0.75 tháng tiền thuê, chỉ thu khi giao dịch thành công — chưa thành công thì anh/chị "
             "không tốn đồng nào.") in thue
     assert "Phí môi giới là 1% giá chốt," in khoi_bao_phi(SellerRole.CHU_NHA, False)
     assert "Phí môi giới là 0.5% giá chốt," in khoi_bao_phi(SellerRole.MOI_GIOI, False)
