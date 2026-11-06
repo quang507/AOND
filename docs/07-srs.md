@@ -728,6 +728,16 @@ Không có bảng token/TTL, không nối fingerprint (OPEN-14); lõi chưa đ�
 
 ### SRS-5.1 · Chu trình một lượt chat (lõi Python)
 
+### SRS-5.1zzzzzzz393 · Tinh gọn bộ câu hỏi rẽ nhánh theo loại hình BĐS: ưu tiên câu hỏi trực quan dễ thấy, đưa câu hỏi kỹ thuật sâu (tải trọng sàn, kVA trạm biến áp, chỉ tiêu xây dựng) xuống nhóm thứ cấp (06/11/2026)
+Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại hình nên hỏi gì đi", duyệt tinh gọn bộ câu hỏi. Trước: Kho xưởng hỏi dồn dập "chiều cao trần", "tải trọng sàn (tấn/m2)", "trạm biến áp công suất bao nhiêu kVA", khách không phải kỹ sư kết cấu nên bối rối trả lời "chị không biết"; Đất nền hỏi chỉ tiêu quy hoạch / vướng cột điện trước khi hỏi lộ giới hẻm và thổ cư.
+(1) Lớp lỗi: thứ tự ưu tiên câu hỏi trong CORE_FIELDS xếp câu hỏi kỹ thuật trừu tượng lên trước câu hỏi thực tế quan sát được; NATURAL_QUESTIONS gợi ý hỏi số kVA gây khó cho chủ nhà.
+(2) Sửa:
+  - `src/aioi/schema.py`: Reorder `CORE_FIELDS[PropertyGroup.INDUSTRIAL]` đưa `tieu_chuan_container` (xe tải / container vào được không) và `tram_bien_ap` (điện 3 pha sản xuất) lên trước `chieu_cao_tran`; đẩy `tai_trong_san` (tải trọng sàn) và `thoi_han_su_dung` xuống cuối (nhóm thứ cấp, không ép hỏi sớm).
+  - `src/aioi/schema.py`: Reorder `CORE_FIELDS[PropertyGroup.LAND]` ưu tiên `kich_thuoc`, `tho_cu`, `lo_gioi_duong`, `phap_ly_so_do`, `quy_hoach` lên trước `chi_tieu_xay_dung` và `yeu_to_ha_tang`.
+  - `src/aioi/schema.py`: Bổ sung cụm hỏi gộp `("tieu_chuan_container", "tram_bien_ap")` vào `CUM_HOI` để bot hỏi tự nhiên trong 1 lượt (tối đa 2 ý theo SRS-391).
+  - `src/aioi/prompts.py`: Sửa gợi ý hỏi cho `tram_bien_ap` (bỏ chữ kVA, hỏi có điện 3 pha / trạm riêng không) và `tai_trong_san` (chỉ hỏi nếu khách biết).
+(3) Kiểm: `test_toi_uu_loai_hinh_393.py` (3/3 đạt), hồi quy `test_branching.py`, `test_schema.py`, `test_toi_uu_ky_gui_391.py` đạt 100%. Soát truy vết SẠCH.
+
 `[nguồn: src/aioi/server.py, src/aioi/engine.py]` Edge function `chat-reply` v48 (TypeScript) đã gỡ, lõi Python là bộ não duy nhất từ 18/10/2026 — mô tả cũ ở `docs/07-srs-luu-tru.md`.
 
 ```text
@@ -871,8 +881,3 @@ Chủ dự án 05/11: "cấu trúc db hiện tại đã tối ưu nhất chưa �
 Chủ dự án 05/11: "giờ có 2 zalo mua và bán lận" khi đặt biến Zalo cho project Vercel mới. Trước: web một biến `NEXT_PUBLIC_ZALO_URL` cho mọi nút, nút "rao bán" / "môi giới gửi hàng" dẫn người bán vào số tư vấn mua (SRS-210 tách hai số).
 (1) Lớp lỗi: web chưa theo việc tách hai số của bot. (2) Sửa: `lib/format.ts` thêm `NEXT_PUBLIC_ZALO_URL_BAN` (số ký gửi) cho ngữ cảnh `seller_cta`, `nmg-apply`, `raoban`; mọi nút khác giữ `NEXT_PUBLIC_ZALO_URL` (số tư vấn); chưa đặt biến bán thì dùng chung. Không ghi số điện thoại vào repo (đặt trên Vercel).
 (3) Kiểm: `bun run kieu`; sau khi gộp + đặt biến, nút "Rao bán" ở trang chủ trỏ số ký gửi.
-
-### SRS-5.1zzzzzzz383 · Web chuyển sang project Vercel mới `aond.vercel.app` (team cũ bị tạm dừng) (05/11/2026)
-Ca gốc: 05/11 `aioinhadat.vercel.app` trả 402 DEPLOYMENT_DISABLED — team Vercel cũ bị tạm dừng tới 04/12 vì vượt "Fluid Active CPU" của gói Hobby; mọi link bot gửi khách chết. Chủ dự án 05/11: "tôi muốn đổi vercel sang 1 môi trường khác"; dựng project `aond` ở team mới (AIOiNhaDat).
-(1) Lớp lỗi: bản dựng đầu của project mới bị `ignoreCommand` (SRS-248) huỷ vì commit cuối không đổi file web → `aond.vercel.app` 404 DEPLOYMENT_NOT_FOUND. (2) Sửa: tên miền mặc định một nguồn mỗi phía — `src/aioi/web.py` (bot) và `lib/format.ts` (web) → `https://aond.vercel.app`; redirect `nhadat-cc` trong `next.config.mjs`, script bắn thử; lần gộp đổi file web nên Vercel dựng. Còn: Supabase Auth (URL đăng nhập CRM) phải thêm tên miền mới — chủ dự án làm trên dashboard.
-(3) Kiểm: `test:py` 1462 đạt; sau khi gộp kiểm `curl https://aond.vercel.app/` ra 200 và bot gửi link tên miền mới.

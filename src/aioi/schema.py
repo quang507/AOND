@@ -165,20 +165,20 @@ CORE_FIELDS: dict[PropertyGroup, list[str]] = {
     ],
     PropertyGroup.LAND: [
         "kich_thuoc",         # Kích thước (ngang x dài)
-        "phap_ly_so_do",      # Sổ đỏ riêng (SRS-5.1zzzzzzz260: pháp lý là ô cơ bản trước bản nháp)
-        "chi_tieu_xay_dung",  # Chỉ tiêu xây dựng
-        "quy_hoach",          # Quy hoạch
-        "yeu_to_ha_tang",     # Hạ tầng (vướng cột điện / hố ga)
-        "lo_gioi_duong",      # Lộ giới đường trước đất (18/10: ô bắt buộc của đất nền — phải bóc được)
         "tho_cu",             # Diện tích thổ cư
+        "lo_gioi_duong",      # Lộ giới đường trước đất (18/10: ô bắt buộc của đất nền — phải bóc được)
+        "phap_ly_so_do",      # Sổ đỏ riêng (SRS-5.1zzzzzzz260: pháp lý là ô cơ bản trước bản nháp)
+        "quy_hoach",          # Quy hoạch
+        "chi_tieu_xay_dung",  # Chỉ tiêu xây dựng
+        "yeu_to_ha_tang",     # Hạ tầng (vướng cột điện / hố ga)
     ],
     PropertyGroup.INDUSTRIAL: [
+        "tieu_chuan_container",  # Tiêu chuẩn Container (đường xe tải / container vào tận nơi - SRS-393)
+        "tram_bien_ap",       # Nguồn điện sản xuất (điện 3 pha / trạm biến áp)
+        "chieu_cao_tran",     # Chiều cao trần
         "phap_ly_so_do",      # Sổ đỏ (SRS-5.1zzzzzzz263: kho xưởng phải có pháp lý trước bản nháp)
         "thoi_han_su_dung",   # Thời hạn sử dụng đất
-        "chieu_cao_tran",     # Chiều cao trần
-        "tai_trong_san",      # Tải trọng sàn
-        "tram_bien_ap",       # Trạm biến áp
-        "tieu_chuan_container",  # Tiêu chuẩn Container
+        "tai_trong_san",      # Tải trọng sàn (SRS-5.1zzzzzzz393: đưa xuống cuối, không ép hỏi sớm)
     ],
     PropertyGroup.COMMERCIAL: [
         "phap_ly_so_do",      # Sổ đỏ / sổ hồng (SRS-5.1zzzzzzz263: BĐS thương mại phải có pháp lý trước bản nháp; tin cho thuê bỏ qua)
@@ -281,6 +281,7 @@ CUM_HOI: list[tuple[str, ...]] = [
     ("dien_tich", "so_phong_ngu"),
     ("phap_ly_hoan_cong", "gia", "tinh_trang_ban_giao"),
     ("du_an", "tang_toa"),
+    ("tieu_chuan_container", "tram_bien_ap"),  # SRS-5.1zzzzzzz393: hỏi gộp đường xe tải/cont và điện 3 pha cho kho xưởng
 ]
 # 22/10/2026 (SRS-5.1zzzzzzz136); 06/11/2026 (SRS-5.1zzzzzzz391, chủ dự án: "mỗi lượt hỏi tối đa 2 ý thôi"):
 # nâng số ô cùng cụm được hỏi gộp mỗi lượt lên tối đa 2 ý để hội thoại tự nhiên, không tra khảo máy móc.

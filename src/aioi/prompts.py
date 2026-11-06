@@ -207,8 +207,8 @@ NATURAL_QUESTIONS: dict[str, str] = {
     # Kho xưởng
     "thoi_han_su_dung": "Hỏi thời hạn sử dụng đất đến năm nào",
     "chieu_cao_tran": "Hỏi chiều cao trần kho xưởng (m)",
-    "tai_trong_san": "Hỏi tải trọng sàn (tấn/m2)",
-    "tram_bien_ap": "Hỏi trạm biến áp công suất bao nhiêu kVA và nguồn điện 3 pha",
+    "tai_trong_san": "Hỏi sàn kho chịu tải được bao nhiêu tấn nếu khách biết",
+    "tram_bien_ap": "Hỏi nguồn điện có điện 3 pha hay trạm biến áp riêng cho sản xuất không",
     "tieu_chuan_container": "Hỏi xe container 20ft/40ft vào tận cửa xưởng được không",
     "pccc": "Hỏi hệ thống PCCC đã nghiệm thu chưa",
     # Mặt bằng & Thương mại
