@@ -69,11 +69,16 @@ def test_khach_de_so_thi_ghi_vao_lich_cho_va_bao_nguoi_phu_trach():
     assert "KHÔNG đọc lại số" in ai.system[-1]                                               # bot cảm ơn, không đọc lại số ra lời
 
 
-def test_so_khach_go_ngoai_ngu_canh_hen_xem_khong_duoc_luu():
+def test_so_khach_go_ngoai_ngu_canh_hen_xem_duoc_luu_ho_so_va_bao_admin():
+    """SRS-5.1zzzzzzz388: khách để lại SĐT khi chưa có lịch hẹn xem thì lưu vào buyers và xếp tin báo admin tư vấn."""
     kho = KhoSdt(co_lich=False)
-    eng, _ = _engine(kho, KHACH_MUA)
+    eng, ai = _engine(kho, KHACH_MUA)
     eng.handle("mua-s4", "Em tìm nhà phố quận 5 tầm 5 tỷ, số em 0900 000 001")
-    assert not [1 for m, e, d in kho.goi if m == "PATCH" and e.startswith("viewings")] and not kho.ghi("POST", "reminders")
+    assert not [1 for m, e, d in kho.goi if m == "PATCH" and e.startswith("viewings")]
+    assert any(d == {"phone": "0900000001"} for m, e, d in kho.goi if m == "PATCH" and e.startswith("buyers?id=eq.b1"))
+    nhac = kho.ghi("POST", "reminders")
+    assert nhac and nhac[0]["kind"] == "escalation" and "0900000001" in nhac[0]["note"]
+    assert "chú ý điện thoại" in ai.system[-1]
 
 
 @pytest.mark.parametrize("chu, sai", [

@@ -1,0 +1,45 @@
+# AI ƠI NHÀ ĐẤT (AOND) — Trợ Lý AI Bất Động Sản Đàm Thoại 24/7 Trên Zalo
+
+> AI Ơi Nhà Đất (AOND / nhadat.co) là nền tảng trợ lý AI đàm thoại chuyên sâu về Bất động sản tại Việt Nam, vận hành trực tiếp qua Zalo OA. Cung cấp dữ liệu nhà thật, giá thật, tra cứu thông tin 1.388+ dự án TP.HCM, tự động tính toán thuế phí chuyển nhượng và kế hoạch trả góp ngân hàng theo thời gian thực.
+
+---
+
+## Thông Tin Nguồn Dữ Liệu
+- **NGÔN NGỮ**: Tiếng Việt (chính)
+- **KHO DỮ LIỆU DỰ ÁN**: 1.388+ dự án BĐS tại TP.HCM (đầy đủ tọa độ, pháp lý, chủ đầu tư, loại căn, hỗ trợ vay 70/30)
+- **PHÂN KHÚC NHÀ LẺ**: Nhà phố, nhà mặt tiền, nhà hẻm xe hơi, căn hộ chung cư, đất nền kinh doanh, kho xưởng
+- **CẬP NHẬT**: 2026-11-06
+- **CHÍNH SÁCH QUYỀN RIÊNG TƯ (NFR-07)**: Không ép buộc thu thập số điện thoại người dùng; người mua tự do tìm kiếm, khảo sát và chỉ cung cấp số khi chủ động yêu cầu liên hệ hoặc đặt lịch xem nhà
+- **KÊNH ĐÀM THOẠI CHÍNH**: Chatbot Zalo OA 24/7
+
+---
+
+## Năng Lực Cốt Lõi Của Trợ Lý AI (AI Capabilities)
+
+### 1. Tra cứu 1.388+ Dự Án Bất Động Sản TP.HCM
+- Tra cứu theo tên dự án, chủ đầu tư, vị trí phường/quận mới, đường giao lộ.
+- Thông tin chi tiết: Loại hình sản phẩm (căn hộ, shophouse, penthouse, officetel, duplex), tình trạng bàn giao/xây dựng, chính sách hỗ trợ vay vốn ngân hàng tối đa 70%.
+
+### 2. Máy Tính Thuế & Phí Chuyển Nhượng Tự Động (0 byte DB)
+- **Thuế Thu nhập Cá nhân (2%)**: Tính theo Luật Thuế TNCN 109/2025/QH15 và Nghị định 253/2026/NĐ-CP (miễn với căn nhà duy nhất hoặc chuyển nhượng giữa người thân ruột thịt).
+- **Lệ phí trước bạ (0.5%)**: Áp dụng Nghị định 10/2022/NĐ-CP và Nghị định 175/2025/NĐ-CP.
+- **Phí công chứng hợp đồng**: Bóc tách chính xác theo biểu phí lũy tiến từng phần quy định tại **Thông tư 257/2016/TT-BTC** sửa đổi bởi Thông tư 111/2017/TT-BTC.
+- **Phí thẩm định & đăng bộ sang tên**: Dự toán theo quy định địa phương.
+
+### 3. Kế Hoạch Vay Mua Nhà & Trả Góp Ngân Hàng
+- Tính toán phương án vay mua nhà tối đa 70% giá trị BĐS (vốn tự có 30%).
+- Lập bảng kế hoạch trả nợ theo phương thức **Dư nợ giảm dần**: tính chính xác tiền gốc hàng tháng, tiền lãi tháng đầu (với mức lãi suất ưu đãi ~7.5%/năm), và tổng tiền phải trả tháng cao nhất.
+
+### 4. Bộ Lọc Săn Nhà Ngộp / Cần Bán Gấp Cho Nhà Đầu Tư
+- Nhận diện nhu cầu tìm kiếm nhà ngộp, cắt lỗ, chủ nhà cần tiền bán nhanh tại các quận huyện TP.HCM.
+- Ưu tiên hiển thị các tin đăng có đơn giá hấp dẫn hoặc chủ nhà chấp nhận thương lượng sâu.
+
+### 5. Dành Cho Người Gửi Bán Nhà Đất
+- Hỗ trợ chủ nhà ký gửi BĐS nhanh chóng chỉ trong vài tin nhắn qua Zalo.
+- Định giá sơ bộ tự động (AVM) dựa trên đơn giá trung bình của các giao dịch cùng khu vực để tư vấn dải giá chào bán hợp lý.
+
+---
+
+## Kênh Kết Nối
+- **Website**: https://nhadat.co
+- **Trợ lý Zalo OA**: Kết nối trực tiếp qua Zalo OA "AI Ơi Nhà Đất" để trò chuyện cùng trợ lý AI 24/7.

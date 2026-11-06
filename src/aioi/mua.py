@@ -690,19 +690,23 @@ class KhoNguoiMua:
             return []
 
     def ghi_sdt_hen_xem(self, buyer_id: str, sdt: str) -> bool:
-        """Khách để số điện thoại sau khi hẹn xem (SRS-5.1zzzzzzz148, chủ dự án 23/10: lúc hẹn xem thì lấy được số): ghi vào lịch đang chờ
-        mới nhất CHƯA có số, rồi báo admin (CTV bỏ 28/10/2026). Không có lịch chờ → không ghi gì:
-        số khách gõ ngoài ngữ cảnh hẹn xem không được lưu."""
+        """Khách để số điện thoại: ưu tiên ghi vào lịch đang chờ mới nhất CHƯA có số (kèm xem căn),
+        nếu không có lịch chờ thì lưu số vào hồ sơ khách và xếp tin báo admin tư vấn (bảo toàn lead, SRS-5.1zzzzzzz388)."""
         try:
             co = self._get(f"viewings?buyer_id=eq.{buyer_id}&status=in.(proposed,pending)&phone=is.null"
                            "&order=created_at.desc&limit=1&select=id,listing_id,listing_code")
-            if not co:
-                return False
-            lich = co[0]
-            self._request("PATCH", f"viewings?id=eq.{lich['id']}", data={"phone": sdt}, prefer="return=minimal")
-            self._xep_tin_admin({"buyer_id": buyer_id, "listing_id": lich.get("listing_id"), "viewing_id": lich["id"],   # SRS-5.1zzzzzzz321
+            if co:
+                lich = co[0]
+                self._request("PATCH", f"viewings?id=eq.{lich['id']}", data={"phone": sdt}, prefer="return=minimal")
+                self._xep_tin_admin({"buyer_id": buyer_id, "listing_id": lich.get("listing_id"), "viewing_id": lich["id"],   # SRS-5.1zzzzzzz321
+                                     "due_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                                     "note": f"Khách lịch xem #{lich.get('listing_code') or '?'} để lại SĐT {sdt}, gọi xác nhận giúp em nha"})
+                return True
+            # Không có lịch chờ: cập nhật SĐT vào hồ sơ khách và xếp tin báo admin tư vấn (SRS-5.1zzzzzzz388)
+            self._request("PATCH", f"buyers?id=eq.{buyer_id}", data={"phone": sdt}, prefer="return=minimal")
+            self._xep_tin_admin({"buyer_id": buyer_id,
                                  "due_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                                 "note": f"Khách lịch xem #{lich.get('listing_code') or '?'} để lại SĐT {sdt}, gọi xác nhận giúp em nha"})
+                                 "note": f"Khách để lại SĐT {sdt} khi đang chat, gọi tư vấn hỗ trợ giúp em nha"})
             return True
         except Exception as e:  # noqa: BLE001
             log.warning("ghi_sdt_hen_xem lỗi: %s", e)

@@ -5570,11 +5570,11 @@ class Engine:
                                 + (f" (lý do khách nói: \"{ly_do}\")" if ly_do else "")
                                 + ": hệ thống sẽ không gợi / không báo lại căn đó. Nói ngắn đã ghi nhận, KHÔNG thuyết phục lại; có căn khác trong "
                                 "CĂN ĐANG RAO thì giới thiệu căn kế, không thì hỏi MỘT câu khách muốn khác đi điểm nào (câu hỏi DUY NHẤT của lượt)")
-        # SRS-5.1zzzzzzz148 (chủ dự án 23/10: lúc hẹn xem thì lấy được số điện thoại khách): số CHỈ được ghi vào lịch hẹn đang chờ chưa có số,
-        # lấy từ lời khách (số là dữ liệu có khuôn, không phải đoán ý); không có lịch chờ thì số khách gõ không được lưu.
+        # SRS-5.1zzzzzzz148, SRS-5.1zzzzzzz388: số điện thoại lấy từ lời khách (dữ liệu có khuôn). Có lịch hẹn chờ → ghi vào lịch;
+        # chưa có lịch → lưu vào hồ sơ khách và báo admin hỗ trợ (bảo toàn 100% lead, không để sót).
         sdt = tim_sdt(text)
         if bid and sdt and kho.ghi_sdt_hen_xem(bid, sdt):
-            viec.append("ghi số điện thoại khách vào lịch hẹn để người phụ trách gọi xác nhận (cảm ơn ngắn, KHÔNG đọc lại số; nhắc khách "
+            viec.append("ghi số điện thoại khách để người phụ trách gọi xác nhận lịch / tư vấn hỗ trợ (cảm ơn ngắn, KHÔNG đọc lại số; nhắc khách "
                         "\"chú ý điện thoại\", KHÔNG dùng chữ \"máy\")")
         elif bid and lead is not None and lead.fields.get("_da_xin_sdt") and giong_sdt_sai(text):
             # SRS-5.1zzzzzzz161: bot đã xin số mà khách gõ dãy giống số điện thoại nhưng sai độ dài / đầu số — không ghi, không cảm ơn như đã nhận.

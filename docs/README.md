@@ -45,6 +45,7 @@ flowchart LR
 | [11-quy-trinh.md](11-quy-trinh.md) | **Quy trình BA và tester** — hai vòng làm việc, ba cổng, máy kiểm gì / người kiểm gì, định nghĩa XONG | Tất cả |
 | [SRD-AI-Oi-Nha-Dat.docx](SRD-AI-Oi-Nha-Dat.docx) | **SRD gộp (.docx)** — bản đọc nhanh theo bố cục SRD Aioinhadat 06/2026 (7 mục I–VII + đối chiếu + còn treo + thư viện kịch bản + hội thoại giả lập 30 câu). **Bản xuất, không phải nguồn sự thật**: sinh từ các file md ở đây bằng `bun run srd` (`scripts/sinh-srd-docx.mjs`, 06/10/2026 theo yêu cầu chủ dự án "đổi thành đuôi docx như bên AOND"); sửa nội dung thì sửa md rồi sinh lại, không sửa tay file .docx | Sếp, chủ dự án, người mới, đối tác đọc một lần |
 | [13-so-do-nhan-va-boc-tach.md](13-so-do-nhan-va-boc-tach.md) | **Sơ đồ luồng bot** (09/09/2026) — tin Zalo vào → nhận vai → bóc tách tiền định → hỏi câu kế → prompt bot 4 lượt → JSON chia nhóm; hai tầng bóc tách ⟂ AI; cron người bán. Mermaid, không sinh ID | Dev, chủ dự án |
+| [14-tinh-nang-tai-chinh-thue-phi-lead.md](14-tinh-nang-tai-chinh-thue-phi-lead.md) | **Tính năng Tài chính, Thuế phí chuyển nhượng, Bộ lọc Bán nhanh & Bảo toàn Lead SĐT** (06/11/2026, SRS-5.1zzzzzzz388) — Năng lực chọn lọc từ MOSO đưa vào Zalo Chatbot 1:1, bảo toàn 500 MB Supabase Free (0 byte DB) | Dev, BA, PO |
 
 ## Đọc từ đâu
 
