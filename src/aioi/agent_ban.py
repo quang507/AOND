@@ -80,6 +80,38 @@ CONG_CU: list[dict[str, Any]] = [
              "vai_nguoi_gui": {"type": "string", "enum": ["chu_nha", "moi_gioi"], "description": "chu_nha (chủ nhà: 1% bán, 0.75 tháng thuê) hoặc moi_gioi (môi giới/sàn: 0.5% bán, 0.75 tháng thuê)"},
              "loai_giao_dich": {"type": "string", "enum": ["ban", "thue"], "description": "ban (bán) hoặc thue (cho thuê)"}
          }
+     }},
+    {"name": "tra_cuu_phong_thuy",
+     "description": "Tra cứu phong thủy Bát Trạch: Cung phi, Can chi, hướng hợp mệnh, đánh giá hướng nhà chủ nhà đang gửi bán hoặc cách hóa giải hướng khi khách chê.",
+     "input_schema": {
+         "type": "object",
+         "properties": {
+             "nam_sinh": {"type": "integer", "description": "Năm sinh gia chủ"},
+             "gioi_tinh": {"type": "string", "description": "'nam' hoặc 'nu'"},
+             "huong_nha": {"type": "string", "description": "Hướng nhà/ban công"}
+         },
+         "required": ["nam_sinh"]
+     }},
+    {"name": "tham_dinh_quy_hoach",
+     "description": "Thẩm định quy hoạch lộ giới hẻm/đường và chức năng sử dụng đất cho căn nhà chủ đang gửi bán theo Quyết định 56/2021/QĐ-UBND TP.HCM.",
+     "input_schema": {
+         "type": "object",
+         "properties": {
+             "dia_chi": {"type": "string", "description": "Địa chỉ căn nhà"},
+             "quan_huyen": {"type": "string", "description": "Quận/huyện"}
+         },
+         "required": ["dia_chi"]
+     }},
+    {"name": "goi_y_dam_phan",
+     "description": "Gợi ý chiến lược giữ giá, biên độ thương lượng và mức bớt lộc khi người bán hỏi nên bớt cho khách mua bao nhiêu là hợp lý.",
+     "input_schema": {
+         "type": "object",
+         "properties": {
+             "gia_vnd": {"type": "number", "description": "Giá bán đang rao"},
+             "loai_hinh": {"type": "string", "description": "Loại hình BĐS"},
+             "khu_vuc": {"type": "string", "description": "Khu vực BĐS"}
+         },
+         "required": ["gia_vnd"]
      }}
 ]
 _TEN = {c["name"] for c in CONG_CU}
@@ -103,6 +135,29 @@ def _khoi(engine: Any, conv: Any, project: Any, ten: str, vao: dict[str, Any] | 
     if ten == "tinh_phi_moi_gioi":
         from .dinh_gia import tinh_phi_moi_gioi_tool
         return tinh_phi_moi_gioi_tool(conv, vao)
+    if ten == "tra_cuu_phong_thuy":
+        from . import phong_thuy
+        nam = int(vao.get("nam_sinh") or 0)
+        if not nam:
+            return "Cần cung cấp năm sinh của gia chủ để tra cứu phong thủy."
+        gt = str(vao.get("gioi_tinh") or "nam")
+        huong = vao.get("huong_nha")
+        return phong_thuy.dinh_dang_phong_thuy_chat(nam, gioi_tinh=gt, huong_nha=huong or None)
+    if ten == "tham_dinh_quy_hoach":
+        from . import quy_hoach
+        dc = str(vao.get("dia_chi") or "")
+        if not dc:
+            return "Cần cung cấp địa chỉ hoặc tên đường để thẩm định quy hoạch."
+        qh = str(vao.get("quan_huyen") or "")
+        return quy_hoach.tra_cuu_quy_hoach_lo_gioi(dc, quan_huyen=qh)
+    if ten == "goi_y_dam_phan":
+        from . import dam_phan
+        gia_vnd = int(vao.get("gia_vnd") or 0)
+        if not gia_vnd:
+            return "Cần cung cấp giá rao (gia_vnd) để gợi ý khoảng giá đàm phán."
+        lh = str(vao.get("loai_hinh") or "nha_pho")
+        kv = str(vao.get("khu_vuc") or "")
+        return dam_phan.goi_y_khoang_gia_dam_phan(gia_vnd, loai_hinh=lh, khu_vuc=kv, nguoi_hoi="ban")
     return ""
 
 

@@ -728,16 +728,6 @@ Không có bảng token/TTL, không nối fingerprint (OPEN-14); lõi chưa đ�
 
 ### SRS-5.1 · Chu trình một lượt chat (lõi Python)
 
-### SRS-5.1zzzzzzz393 · Tinh gọn bộ câu hỏi rẽ nhánh theo loại hình BĐS: ưu tiên câu hỏi trực quan dễ thấy, đưa câu hỏi kỹ thuật sâu (tải trọng sàn, kVA trạm biến áp, chỉ tiêu xây dựng) xuống nhóm thứ cấp (06/11/2026)
-Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại hình nên hỏi gì đi", duyệt tinh gọn bộ câu hỏi. Trước: Kho xưởng hỏi dồn dập "chiều cao trần", "tải trọng sàn (tấn/m2)", "trạm biến áp công suất bao nhiêu kVA", khách không phải kỹ sư kết cấu nên bối rối trả lời "chị không biết"; Đất nền hỏi chỉ tiêu quy hoạch / vướng cột điện trước khi hỏi lộ giới hẻm và thổ cư.
-(1) Lớp lỗi: thứ tự ưu tiên câu hỏi trong CORE_FIELDS xếp câu hỏi kỹ thuật trừu tượng lên trước câu hỏi thực tế quan sát được; NATURAL_QUESTIONS gợi ý hỏi số kVA gây khó cho chủ nhà.
-(2) Sửa:
-  - `src/aioi/schema.py`: Reorder `CORE_FIELDS[PropertyGroup.INDUSTRIAL]` đưa `tieu_chuan_container` (xe tải / container vào được không) và `tram_bien_ap` (điện 3 pha sản xuất) lên trước `chieu_cao_tran`; đẩy `tai_trong_san` (tải trọng sàn) và `thoi_han_su_dung` xuống cuối (nhóm thứ cấp, không ép hỏi sớm).
-  - `src/aioi/schema.py`: Reorder `CORE_FIELDS[PropertyGroup.LAND]` ưu tiên `kich_thuoc`, `tho_cu`, `lo_gioi_duong`, `phap_ly_so_do`, `quy_hoach` lên trước `chi_tieu_xay_dung` và `yeu_to_ha_tang`.
-  - `src/aioi/schema.py`: Bổ sung cụm hỏi gộp `("tieu_chuan_container", "tram_bien_ap")` vào `CUM_HOI` để bot hỏi tự nhiên trong 1 lượt (tối đa 2 ý theo SRS-391).
-  - `src/aioi/prompts.py`: Sửa gợi ý hỏi cho `tram_bien_ap` (bỏ chữ kVA, hỏi có điện 3 pha / trạm riêng không) và `tai_trong_san` (chỉ hỏi nếu khách biết).
-(3) Kiểm: `test_toi_uu_loai_hinh_393.py` (3/3 đạt), hồi quy `test_branching.py`, `test_schema.py`, `test_toi_uu_ky_gui_391.py` đạt 100%. Soát truy vết SẠCH.
-
 `[nguồn: src/aioi/server.py, src/aioi/engine.py]` Edge function `chat-reply` v48 (TypeScript) đã gỡ, lõi Python là bộ não duy nhất từ 18/10/2026 — mô tả cũ ở `docs/07-srs-luu-tru.md`.
 
 ```text
@@ -797,6 +787,33 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 ---
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
+
+### SRS-5.1zzzzzzz394 · Tích hợp 5 Tinh hoa PropTech của MOSO vào AOND Chatbot Zalo: Phong thủy Bát Trạch, So sánh đối đầu dự án, Thẩm định quy hoạch lộ giới, Gợi ý đàm phán giá và Tiêu chí an cư gia đình (06/11/2026)
+- **Ca gốc**: Sau khi nạp trọn vẹn kho 1.388 dự án MOSO TP.HCM vào Supabase (`thu-du-an-moso.mjs`), khai thác sâu các tính năng cao cấp của nền tảng MOSO để nâng tầm trải nghiệm tư vấn thực chiến của Chatbot Zalo cả hai nhánh Mua & Bán [nguồn: chủ dự án 06/11/2026: "ok cho thêm 5 tinh hoa của moso vào đi"].
+- **Lớp lỗi**:
+  1. Khách mua nhà/đất thường rất quan tâm phong thủy hướng nhà theo năm sinh gia chủ (Đông/Tây Tứ Mệnh), nhưng bot trước đây chỉ trả lời chung chung hoặc không biết tính Cung phi / Quái số chính xác.
+  2. Khách phân vân giữa các dự án lân cận trong cùng phân khúc chưa có công cụ so sánh đối đầu (Head-to-head) về chủ đầu tư, giá m², tiện ích và quy mô.
+  3. Khách mua/bán nhà hẻm hay băn khoăn về lộ giới hẻm mở rộng, quy hoạch phân khu 1/2000 và chỉ giới xây dựng theo QĐ 56/2021/QĐ-UBND TP.HCM.
+  4. Người mua thường lúng túng khi thương lượng giá, không biết mức bớt hợp lý; người bán không biết cách giữ giá.
+  5. Bộ tiêu chí sống gia đình đa thế hệ (tầng đẹp 8-18, căn góc, ban công Đông Nam mát mẻ, tránh phòng rác/thang máy) chưa được đóng gói thành tư vấn chuyên sâu.
+- **Sửa**:
+  1. Module `src/aioi/phong_thuy.py`: Thuật toán tính Can Chi, Cung phi Quái số chuẩn Bát Trạch; phân loại 4 hướng tốt (Sinh Khí, Diên Niên, Thiên Y, Phục Vị) vs 4 hướng xấu; đánh giá hướng nhà thực tế và lời khuyên đón gió mát Nam/Đông Nam, hóa giải hướng xấu.
+  2. Module `src/aioi/du_an_so_sanh.py`: So sánh đối đầu 2 dự án từ kho dữ liệu hoặc kiến thức chuyên gia (CĐT, giá m², quy mô block/tầng, tiện ích, pháp lý).
+  3. Module `src/aioi/quy_hoach.py`: Thẩm định quy hoạch chi tiết lộ giới hẻm/đường theo QĐ 56/2021/QĐ-UBND TP.HCM, phân loại đất ở hiện hữu vs xây dựng mới/hỗn hợp vs giao thông dự phóng; hướng dẫn tra cứu cổng QLĐT.
+  4. Module `src/aioi/dam_phan.py`: Gợi ý biên độ thương lượng thực chiến 3 mức (Bid mở màn, Giá mục tiêu chốt cọc, Mức bớt lộc) kèm 3 đòn bẩy cọc nhanh và phương án thuế phí.
+  5. Module `src/aioi/tieu_chi_gia_dinh.py`: Tư vấn 5 trụ cột vàng chọn nhà gia đình (tầng trung 8-18, căn góc 2 mặt thoáng, ban công Đông Nam, an toàn khuôn viên nội khu, bán kính học tập/y tế <1.5km).
+  6. Tích hợp trọn bộ 5 công cụ vào `agent_mua.CONG_CU` (`so_sanh_du_an`, `tra_cuu_phong_thuy`, `tham_dinh_quy_hoach`, `goi_y_dam_phan`, `bo_loc_gia_dinh`) và 3 công cụ vào `agent_ban.CONG_CU` (`tra_cuu_phong_thuy`, `tham_dinh_quy_hoach`, `goi_y_dam_phan`), tự động kế thừa vào `agent_gop.DOC`. Bảo toàn 0 byte footprint trên DB.
+- **Kiểm**: `tests/test_tinh_hoa_moso_394.py` (6/6 tests đạt 100%), kiểm tra hồi quy toàn diện đạt 100%, `scripts/soat-truy-vet.sh` SẠCH.
+
+### SRS-5.1zzzzzzz393 · Tinh gọn bộ câu hỏi rẽ nhánh theo loại hình BĐS: ưu tiên câu hỏi trực quan dễ thấy, đưa câu hỏi kỹ thuật sâu (tải trọng sàn, kVA trạm biến áp, chỉ tiêu xây dựng) xuống nhóm thứ cấp (06/11/2026)
+Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại hình nên hỏi gì đi", duyệt tinh gọn bộ câu hỏi. Trước: Kho xưởng hỏi dồn dập "chiều cao trần", "tải trọng sàn (tấn/m2)", "trạm biến áp công suất bao nhiêu kVA", khách không phải kỹ sư kết cấu nên bối rối trả lời "chị không biết"; Đất nền hỏi chỉ tiêu quy hoạch / vướng cột điện trước khi hỏi lộ giới hẻm và thổ cư.
+(1) Lớp lỗi: thứ tự ưu tiên câu hỏi trong CORE_FIELDS xếp câu hỏi kỹ thuật trừu tượng lên trước câu hỏi thực tế quan sát được; NATURAL_QUESTIONS gợi ý hỏi số kVA gây khó cho chủ nhà.
+(2) Sửa:
+  - `src/aioi/schema.py`: Reorder `CORE_FIELDS[PropertyGroup.INDUSTRIAL]` đưa `tieu_chuan_container` (xe tải / container vào được không) và `tram_bien_ap` (điện 3 pha sản xuất) lên trước `chieu_cao_tran`; đẩy `tai_trong_san` (tải trọng sàn) và `thoi_han_su_dung` xuống cuối (nhóm thứ cấp, không ép hỏi sớm).
+  - `src/aioi/schema.py`: Reorder `CORE_FIELDS[PropertyGroup.LAND]` ưu tiên `kich_thuoc`, `tho_cu`, `lo_gioi_duong`, `phap_ly_so_do`, `quy_hoach` lên trước `chi_tieu_xay_dung` và `yeu_to_ha_tang`.
+  - `src/aioi/schema.py`: Bổ sung cụm hỏi gộp `("tieu_chuan_container", "tram_bien_ap")` vào `CUM_HOI` để bot hỏi tự nhiên trong 1 lượt (tối đa 2 ý theo SRS-391).
+  - `src/aioi/prompts.py`: Sửa gợi ý hỏi cho `tram_bien_ap` (bỏ chữ kVA, hỏi có điện 3 pha / trạm riêng không) và `tai_trong_san` (chỉ hỏi nếu khách biết).
+(3) Kiểm: `test_toi_uu_loai_hinh_393.py` (3/3 đạt), hồi quy `test_branching.py`, `test_schema.py`, `test_toi_uu_ky_gui_391.py` đạt 100%. Soát truy vết SẠCH.
 
 ### SRS-5.1zzzzzzz392 · Thống nhất đơn model Sonnet cho toàn bộ chu trình, loại bỏ gọi chéo Haiku bóc tách và hoàn thiện 1 vòng chuẩn MOSO (06/11/2026)
 - **Ca gốc**: Đối soát ảnh Zalo thực tế (`media_1793951947524_b6608d63.jpg` và `media_1793951936394_26f342b5.jpg`): mỗi lượt chat bot vẫn hiện `Tốn: $... (claude-haiku-5-5 ... | claude-sonnet-5-5 ...)` do kiến trúc cũ chia 2 vòng (Haiku bóc form json -> Sonnet viết lời). Đồng thời khi khách chỉ chào hỏi ("chào em") hoặc câu không có ô mới, `agent_gop._vong_ghi` coi việc không gọi tool là lỗi và rơi về form Haiku `[nguồn: chủ dự án 06/11/2026: "ủa sao bảo làm moso chỉ chạy 1 vòng chứ không phải 2 vòng", "Ok sửa push lên vps để tui test thử, chạy sonnet"]`.
@@ -876,8 +893,3 @@ Chủ dự án 05/11 (soát chat thử): câu "Chỉ nói đã ghi / đã cập 
 ### SRS-5.1zzzzzzz385 · Ba lịch nhúng vector chạy 2.160 lượt / ngày (≈ 24 phút CPU) khi không còn gì để nhúng; 409 dự án băm lại mãi (05/11/2026)
 Chủ dự án 05/11: "cấu trúc db hiện tại đã tối ưu nhất chưa … nên sửa ntn". Đo 24 giờ (`cron.job_run_details`): `nhung-dia-danh-tick` 1,28 s, `nhung-tick` 0,44 s, `nhung-luat-tick` 0,28 s mỗi lượt × 720; chạy tay 20 / 229 / 11 ms (phần còn lại là chi phí mở kết nối mỗi lượt cron).
 (1) Lớp lỗi: lịch dựng cho lúc nhúng hàng loạt giữ nguyên nhịp 2 phút sau khi đã nhúng xong; vòng dự án không ghi mốc khi chữ không đổi / thiếu chữ. (2) Sửa: migration `20261105a` — tin + dự án 5 phút, địa danh + luật 15 phút (không gỡ lịch); `nhung_tick` sửa tại chỗ trên định nghĩa đang chạy (báo lỗi nếu lệch); bỏ 3 HNSW 0 lần quét trên bảng nhỏ; giữ HNSW `listings` / `dieu_luat` và 3 index UNIQUE "mot_*" của `reminders` (ràng buộc). (3) Kiểm: áp 05/11 qua `apply-migration.yml` (không chạy thử riêng — khối DO tự báo lỗi nếu định nghĩa lệch); soát DB sau áp: ba lịch đúng nhịp mới, `nhung_tick` có đoạn 20261105a, 3 index đã bỏ.
-
-### SRS-5.1zzzzzzz384 · Web có hai số Zalo: nút người bán trỏ số ký gửi, còn lại số tư vấn mua (05/11/2026)
-Chủ dự án 05/11: "giờ có 2 zalo mua và bán lận" khi đặt biến Zalo cho project Vercel mới. Trước: web một biến `NEXT_PUBLIC_ZALO_URL` cho mọi nút, nút "rao bán" / "môi giới gửi hàng" dẫn người bán vào số tư vấn mua (SRS-210 tách hai số).
-(1) Lớp lỗi: web chưa theo việc tách hai số của bot. (2) Sửa: `lib/format.ts` thêm `NEXT_PUBLIC_ZALO_URL_BAN` (số ký gửi) cho ngữ cảnh `seller_cta`, `nmg-apply`, `raoban`; mọi nút khác giữ `NEXT_PUBLIC_ZALO_URL` (số tư vấn); chưa đặt biến bán thì dùng chung. Không ghi số điện thoại vào repo (đặt trên Vercel).
-(3) Kiểm: `bun run kieu`; sau khi gộp + đặt biến, nút "Rao bán" ở trang chủ trỏ số ký gửi.

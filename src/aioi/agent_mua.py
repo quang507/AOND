@@ -157,6 +157,69 @@ CONG_CU: list[dict[str, Any]] = [
         "description": "Các dự án trong kho ở một quận / phường, kèm số căn đang rao.",
         "input_schema": {"type": "object", "properties": {"khu": {"type": "string"}}, "required": ["khu"]},
     },
+    {
+        "name": "so_sanh_du_an",
+        "description": "So sánh 2 dự án BĐS đối đầu (chủ đầu tư, phân khúc giá m², quy mô block/tầng, tiện ích nội khu, pháp lý bàn giao) từ kho 1.388 dự án hoặc kiến thức chuyên gia để tư vấn khách mua.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "du_an_1": {"type": "string", "description": "Tên dự án thứ nhất (VD: 'Akari City', 'Vinhomes Grand Park')"},
+                "du_an_2": {"type": "string", "description": "Tên dự án thứ hai (VD: 'Moonlight Boulevard', 'Masteri Centre Point')"},
+            },
+            "required": ["du_an_1", "du_an_2"],
+        },
+    },
+    {
+        "name": "tra_cuu_phong_thuy",
+        "description": "Tra cứu phong thủy Bát Trạch: Cung phi, Can chi, nhóm Đông Tứ Mệnh vs Tây Tứ Mệnh, 4 hướng tốt đón tài lộc (Sinh Khí, Thiên Y, Diên Niên, Phục Vị), 4 hướng xấu và đánh giá hướng nhà đang xem theo năm sinh gia chủ.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "nam_sinh": {"type": "integer", "description": "Năm sinh dương lịch của gia chủ (VD: 1988, 1990)"},
+                "gioi_tinh": {"type": "string", "description": "'nam' hoặc 'nu' (mặc định 'nam')"},
+                "huong_nha": {"type": "string", "description": "Hướng nhà hoặc hướng ban công đang xem xét (VD: 'Đông Nam', 'Tây Nam', 'Chính Nam')"},
+            },
+            "required": ["nam_sinh"],
+        },
+    },
+    {
+        "name": "tham_dinh_quy_hoach",
+        "description": "Thẩm định quy hoạch chi tiết và lộ giới đường/hẻm: Lộ giới mở rộng, chỉ giới xây dựng, khoảng lùi (QĐ 56/2021/QĐ-UBND TP.HCM), phân biệt đất ở hiện hữu ổn định vs đất nhóm nhà ở xây mới/hỗn hợp vs đất cây xanh/giao thông dự phóng.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "dia_chi": {"type": "string", "description": "Địa chỉ hoặc tên đường cần tra cứu quy hoạch"},
+                "quan_huyen": {"type": "string", "description": "Quận/huyện (VD: 'Quận 7', 'Bình Thạnh', 'Thủ Đức')"},
+            },
+            "required": ["dia_chi"],
+        },
+    },
+    {
+        "name": "goi_y_dam_phan",
+        "description": "Gợi ý khoảng giá đàm phán thương lượng thực chiến theo loại hình BĐS tại TP.HCM (3 mức: Bid mở màn ép giá, Mức mục tiêu dễ chốt cọc, Mức bớt lộc) và các đòn bẩy thương lượng cọc nhanh.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "gia_vnd": {"type": "integer", "description": "Giá chủ nhà đang rao bằng VNĐ"},
+                "ma": {"type": "string", "description": "Mã căn đang xem nếu muốn lấy giá từ căn đó"},
+                "loai_hinh": {"type": "string", "description": "Loại hình: 'can_ho', 'nha_pho', 'mat_tien', 'dat_nen'"},
+                "khu_vuc": {"type": "string", "description": "Quận/huyện khảo sát"},
+            },
+        },
+    },
+    {
+        "name": "bo_loc_gia_dinh",
+        "description": "Tư vấn bộ tiêu chuẩn lựa chọn nhà ở cho gia đình đa thế hệ (ông bà, trẻ nhỏ): Tầng trung lý tưởng 8-18, căn góc 2 mặt thoáng, ban công Đông Nam mát mẻ, an toàn nội khu, tránh cửa phòng rác / buồng thang máy.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "khu_vuc": {"type": "string", "description": "Khu vực tìm kiếm"},
+                "ngan_sach": {"type": "string", "description": "Ngân sách dự kiến"},
+                "so_phong_ngu": {"type": "string", "description": "Số phòng ngủ (mặc định 2)"},
+                "uu_tien": {"type": "string", "description": "Ưu tiên đặc biệt của gia đình (VD: 'gần trường học', 'ban công mát')"},
+            },
+        },
+    },
 ]
 GHI_DU_PHONG = ("hen_xem", "hoi_chu_nha", "luu_so_dien_thoai")
 CONG_CU_DOC = [c for c in CONG_CU if c["name"] not in GHI_DU_PHONG]   # bước 2 vòng gộp: chỉ đọc (bước ghi đã đóng)
@@ -370,6 +433,48 @@ def chay_cong_cu(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -
             if not khu or getattr(kho, "du_an_theo_khu", None) is None:
                 return "Thiếu tên khu."
             return du_an_mua.khoi_du_an_khu({"khu": khu, "ds": kho.du_an_theo_khu(khu)}).strip() or "Kho chưa có dự án ở khu này."
+        if ten == "so_sanh_du_an":
+            from . import du_an_so_sanh
+            d1 = _chu(inp.get("du_an_1"))
+            d2 = _chu(inp.get("du_an_2"))
+            if not d1 or not d2:
+                return "Cần cung cấp đủ tên 2 dự án (du_an_1 và du_an_2) để so sánh."
+            return du_an_so_sanh.so_sanh_hai_du_an(engine, conv, d1, d2)
+        if ten == "tra_cuu_phong_thuy":
+            from . import phong_thuy
+            nam = int(inp.get("nam_sinh") or 0)
+            if not nam:
+                return "Cần cung cấp năm sinh của gia chủ để tra cứu phong thủy."
+            gt = _chu(inp.get("gioi_tinh")) or "nam"
+            huong = _chu(inp.get("huong_nha"))
+            return phong_thuy.dinh_dang_phong_thuy_chat(nam, gioi_tinh=gt, huong_nha=huong or None)
+        if ten == "tham_dinh_quy_hoach":
+            from . import quy_hoach
+            dc = _chu(inp.get("dia_chi"))
+            if not dc:
+                return "Cần cung cấp địa chỉ hoặc tên đường để thẩm định quy hoạch."
+            qh = _chu(inp.get("quan_huyen"))
+            return quy_hoach.tra_cuu_quy_hoach_lo_gioi(dc, quan_huyen=qh)
+        if ten == "goi_y_dam_phan":
+            from . import dam_phan
+            gia_vnd = int(inp.get("gia_vnd") or 0)
+            if not gia_vnd and inp.get("ma"):
+                ma = _chu(inp.get("ma"), 20).lstrip("#").upper()
+                can = kho.can_theo_ma([ma]) if getattr(kho, "can_theo_ma", None) is not None else []
+                if can and can[0].get("price_vnd"):
+                    gia_vnd = int(can[0]["price_vnd"])
+            if not gia_vnd:
+                return "Cần cung cấp giá rao (gia_vnd) hoặc mã căn để gợi ý khoảng giá đàm phán."
+            lh = _chu(inp.get("loai_hinh")) or "nha_pho"
+            kv = _chu(inp.get("khu_vuc"))
+            return dam_phan.goi_y_khoang_gia_dam_phan(gia_vnd, loai_hinh=lh, khu_vuc=kv)
+        if ten == "bo_loc_gia_dinh":
+            from . import tieu_chi_gia_dinh
+            kv = _chu(inp.get("khu_vuc"))
+            ns = _chu(inp.get("ngan_sach"))
+            spn = _chu(inp.get("so_phong_ngu")) or "2"
+            ut = _chu(inp.get("uu_tien"))
+            return tieu_chi_gia_dinh.tu_van_tieu_chi_gia_dinh(khu_vuc=kv, ngan_sach=ns, so_phong_ngu=spn, uu_tien=ut)
     except Exception as e:  # noqa: BLE001 — tra lỗi thì nói thật, lượt vẫn trả lời
         log.warning("Agent mua: công cụ %s lỗi: %s", ten, type(e).__name__)
         return "Tra kho lỗi — nói thật là em chưa tra được, không đoán."
