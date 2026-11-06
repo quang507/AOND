@@ -1,6 +1,6 @@
 # 14 — Tính năng Tài chính, Thuế phí chuyển nhượng, Bộ lọc Bán nhanh & Bảo toàn Lead SĐT cho Chatbot Zalo
 
-Phiên bản: **v1.0** · Ngày: **2026-11-06** · Trạng thái: **Đã duyệt triển khai (SRS-5.1zzzzzzz388)** · Phụ trách: **Dev & BA Agent**
+Phiên bản: **v1.2** · Ngày: **2026-11-06** · Trạng thái: **Đã duyệt triển khai (SRS-5.1zzzzzzz388, SRS-5.1zzzzzzz389, SRS-5.1zzzzzzz390)** · Phụ trách: **Dev & BA Agent**
 
 ---
 
@@ -117,11 +117,14 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 
 ---
 
-### 2.5 Module 5: Định giá sơ bộ tự động AVM trong Chat (`src/aioi/agent_ban.py`)
+### 2.5 Module 5: Định giá sơ bộ tự động AVM trong Chat (`src/aioi/dinh_gia.py` & `src/aioi/agent_ban.py`)
 
-* Khi khách gửi bán hỏi: *"Nhà tôi 4x15 hẻm xe hơi P.15 Q.8 bán được bao nhiêu?"*
-* Bot tổng hợp dữ liệu median đơn giá m² đất của các căn cùng đường/phường trong DB.
-* Phản hồi dải giá tham khảo: $\pm 10\%$ quanh giá trị median diện tích đất.
+* Khi khách gửi bán hỏi: *"Nhà tôi 4x15 hẻm xe hơi P.15 Q.8 bán được bao nhiêu?"*, *"Giá 12 tỷ anh đưa có cao quá không em?"*
+* Bot gọi công cụ nguyên tử `dinh_gia_tham_khao` (AVM):
+  - Tra cứu giá thị trường theo tên dự án (nếu có) hoặc theo khu vực (quận/huyện, phường, đường) và loại hình.
+  - Tổng hợp đơn giá m² đất/nhà phổ biến đang rao trong cùng khu vực.
+  - Phản hồi dải giá tham khảo: $\pm 10\%$ quanh đơn giá phổ biến, kèm diện tích quy đổi.
+  - Khẳng định nguyên tắc tôn trọng quyền quyết định giá của chủ nhà, không tự ý phán xét giá đắt/rẻ.
 
 ---
 
@@ -150,10 +153,37 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 
 ---
 
+### 2.8 Module 8: Bộ công cụ Ký Gửi Nhà Đất & Hỗ trợ Người Bán chuẩn MOSO (`src/aioi/agent_ban.py` & `src/aioi/dinh_gia.py` - SRS-5.1zzzzzzz390)
+
+#### A. Đối sánh Quy trình Ký Gửi / Đăng Tin: MOSO vs AOND
+| Tiêu chí | MOSO (`/dang-tin`, `post_listing`) | AOND Zalo Chatbot (`agent_ban.py`, `agent_gop.py`) |
+|---|---|---|
+| **Kênh tiếp nhận** | Biểu mẫu Web/App, nhập liệu tĩnh | Hội thoại Zalo OA 1:1, tự nhiên, nhận ảnh sổ hồng & bảng tính |
+| **Tốc độ ra tin** | "AI tạo tin chỉ 30 giây" | AI soạn tin tức thì chuẩn khuôn mẫu `AD_FORMAT` (4 phần đắt giá) |
+| **Bảo mật người bán** | "Ẩn số nhà" trên tin công khai | Ẩn số nhà chính xác, che SĐT chủ nhà khỏi web công khai (chống môi giới ngoài quấy rầy) |
+| **Chuẩn mực xác thực** | Tiêu chuẩn "3 THẬT" (Thông tin thật, Giá thật, Hình ảnh thật) | Xác thực "3 Thật", cổng bằng chứng trích dẫn, sổ hồng riêng |
+| **Chính sách phí** | 8 MP (8.000đ)/30 ngày, 5 MP xác thực | **CHỈ THU KHI THÀNH CÔNG** (1% bán, 0.75 tháng thuê) — 0 đồng trước |
+| **Công cụ tương tác (Tool)** | Không có đàm thoại định giá | `dinh_gia_tham_khao` (AVM), `kiem_tra_phap_ly_so`, `tinh_phi_moi_gioi` |
+
+#### B. Chi tiết 3 Công cụ Nguyên tử cho Người Bán
+1. **`dinh_gia_tham_khao` (Automated Valuation Model - AVM)**:
+   - Tra cứu khoảng đơn giá m² đất/nhà tham khảo theo khu vực (quận/huyện, phường, đường) hoặc theo dự án.
+   - Tính toán dải giá tham khảo gợi ý $\pm 10\%$ quanh mức giá phổ biến của thị trường.
+   - Tôn trọng quyền định giá của chủ nhà, giải thích khách quan số liệu thị trường đang rao.
+2. **`kiem_tra_phap_ly_so` (Tra cứu Pháp lý & Sổ hồng)**:
+   - Giải đáp các vướng mắc pháp lý phổ biến của chủ nhà trước khi ký gửi: nhà chưa hoàn công, sổ đang thế chấp vay ngân hàng, mua bán vi bằng thừa phát lại, đồng sở hữu / thừa kế, quy hoạch lộ giới.
+   - Dẫn chiếu điều luật chính xác từ Luật Đất đai 2024 và Luật Công chứng 2024 dựa trên kho chuẩn `src/aioi/phap_ly.py` (`MAC_DINH`).
+3. **`tinh_phi_moi_gioi` (Minh bạch Phí Ký Gửi)**:
+   - Tính toán minh bạch số tiền hoa hồng môi giới dự kiến theo giá trị BĐS (1% bán cho chủ nhà, 0.5% cho môi giới liên kết, 0.75 tháng tiền thuê).
+   - Cam kết 4 điểm vàng: 0 đồng chi phí trước, bảo vệ thông tin ẩn số nhà & che SĐT, đạt chuẩn 3 Thật tối ưu hiển thị Top, hỗ trợ thủ tục pháp lý công chứng trọn gói.
+
+---
+
 ## 3. Kế hoạch Kiểm thử & Truy vết
 
 1. **Unit Test Python (`tests/`)**:
    - `test_thue_phi_tai_chinh.py`: Kiểm tra tính phí công chứng tại các mốc 40 triệu đến 600 tỷ; kiểm tra tính thuế TNCN 2% và lệ phí trước bạ 0.5%; kiểm tra công thức trả góp ngân hàng dư nợ giảm dần.
    - `test_sdt_hen_xem_tai_chinh.py`: Kiểm tra trường hợp khách gửi SĐT khi **chưa có lịch hẹn xem**, xác nhận SĐT vẫn được lưu vào `buyers` và có thông báo gửi Admin.
    - `test_agent_mua_tools_389.py`: Kiểm tra toàn bộ 4 công cụ nguyên tử Function Calling (`so_sanh_can`, `tinh_thue_phi`, `tinh_vay_tra_gop`, `luu_so_dien_thoai`) thực thi trực tiếp qua `chay_cong_cu`.
+   - `test_agent_ban_tools_390.py`: Kiểm tra toàn bộ 3 công cụ nguyên tử Ký Gửi phía Người Bán (`dinh_gia_tham_khao`, `kiem_tra_phap_ly_so`, `tinh_phi_moi_gioi`).
 2. **Soát truy vết**: Chạy `scripts/soat-truy-vet.sh` đảm bảo không gãy liên kết ID nào.

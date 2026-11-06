@@ -2,7 +2,24 @@
 mọi chỗ khác, nhưng khi khách chốt lịch xem bot xin MỘT lần, số khách gõ chỉ được ghi vào lịch hẹn đang chờ và báo người phụ trách; (2) "số liệu tài chính cứ để số
 tượng trưng đã" — số tham khảo ở MỘT chỗ (`tai_chinh.py`), chỉ nói khi khách tự hỏi, kèm chữ "tham khảo". Đỏ khi: xin số khi chưa có lịch hẹn, xin lặp, ghi số khi không có
 lịch chờ, nhận chuỗi không phải số di động, hoặc khối tài chính mất / nói số ngoài danh sách. Số dùng trong test là số giả."""
-import pytest
+try:
+    import pytest
+except ImportError:
+    class _MockMark:
+        @staticmethod
+        def parametrize(names, values):
+            def decorator(fn):
+                def wrapper(*args, **kwargs):
+                    for val in values:
+                        if isinstance(val, tuple):
+                            fn(*val)
+                        else:
+                            fn(val)
+                return wrapper
+            return decorator
+    class _MockPytest:
+        mark = _MockMark()
+    pytest = _MockPytest()
 
 from aioi import tai_chinh
 from aioi.mua import tim_sdt

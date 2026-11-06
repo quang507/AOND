@@ -460,7 +460,7 @@ def mo(engine: Any, conv: Any, du_lieu: str) -> dict[str, Any] | None:
             return tra_luat(vao.get("o"), schema, chia), True
         if ten in DOC:
             try:
-                return agent_ban._khoi(engine, conv, project, ten).strip() or "Không có dữ liệu này.", True
+                return agent_ban._khoi(engine, conv, project, ten, vao).strip() or "Không có dữ liệu này.", True
             except Exception as e:  # noqa: BLE001 — tra lỗi thì nói thật
                 log.warning("Agent gộp: công cụ %s lỗi: %s", ten, type(e).__name__)
                 return "Tra lỗi — nói thật là em chưa tra được, không đoán.", True
@@ -555,14 +555,14 @@ def viet(engine: Any, conv: Any, project: Any, system: str, captured: list[str],
         if c.name == "tra_luat_o":
             return tra_luat(vao.get("o"), st["schema"], st["chia"])
         if c.name in DOC:
-            return agent_ban._khoi(engine, conv, project, c.name).strip() or "Không có dữ liệu này."
+            return agent_ban._khoi(engine, conv, project, c.name, vao).strip() or "Không có dữ liệu này."
         if kho_du_an:
             return engine._exec_tool(conv, project, c)
         return "Không rõ công cụ."
 
     ra = _vong_viet(engine, he, tin, tools, chay, st["bat_dau"], max_tokens, "Agent gộp", bo_ket=("tra_luat_o",))
     if ra is None:
-        them = "".join(agent_ban._khoi(engine, conv, project, t) for t in DOC)
+        them = "".join(agent_ban._khoi(engine, conv, project, t) for t in ("ro_hang", "bo_nho_du_an", "gia_da_gui"))
         log.warning("Agent gộp: dự phòng không gọi công cụ — viết lại với đủ khối dữ liệu")
         khoi_bao = "\n\n=== " + bao + "\n"
         return engine._provider.reply(system + khoi_bao + them, conv.messages(), max_tokens=max_tokens).strip(), khoi_bao + them
