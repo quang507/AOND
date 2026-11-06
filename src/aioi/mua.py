@@ -335,9 +335,16 @@ class KhoNguoiMua:
         if not (self.is_configured and len(k) >= 2):
             return []
         mau = _q(f"(^|[^0-9]){re.escape(k)}([^0-9]|$)")
+        cot = "id,name,district,ward,province,status_text,unit_types"
         try:
-            ds = self._get(f'projects?or=(district.imatch."{mau}",ward.imatch."{mau}")&select=id,name,district,ward'
-                           f"&order=priority.asc.nullslast,name.asc&limit={toi_da}")
+            from .chu import bo_dau
+            bd = bo_dau(k)
+            la_tp = any(p in bd for p in ("tp hcm", "tp.hcm", "ho chi minh", "hcm", "sai gon", "toan thanh pho", "toan tp"))
+            if la_tp:
+                ds = self._get(f"projects?province=ilike.*Hồ Chí Minh*&select={cot}&order=priority.asc.nullslast,name.asc&limit={toi_da}")
+            else:
+                ds = self._get(f'projects?or=(district.imatch."{mau}",ward.imatch."{mau}")&select={cot}'
+                               f"&order=priority.asc.nullslast,name.asc&limit={toi_da}")
             if not ds:
                 return []
             hien = ",".join(TRANG_THAI_HIEN)

@@ -80,6 +80,10 @@ def dong_du_an(p: dict[str, Any]) -> list[str]:
     for k, v in (tt.get("thuoc_tinh") or {}).items():
         if _chu(k) and _chu(v):
             d.append(f"- {_chu(k)[:60]}: {_chu(v)[:200]}")
+    sp_moso = sp.get("moso") if isinstance(sp, dict) and isinstance(sp.get("moso"), dict) else {}
+    if sp_moso.get("bank_support") and not any("vay" in str(k).lower() for k in (tt.get("thuoc_tinh") or {})):
+        vay = sp_moso.get("max_loan_ratio") or 70
+        d.append(f"- Hỗ trợ vay ngân hàng: Có (thông thường vay tối đa ~{vay}%, vốn tự có tối thiểu ~30%)")
     return d
 
 
@@ -121,11 +125,24 @@ def khoi_du_an_khu(kq: dict[str, Any] | None) -> str:
     dau = f'\n\n=== {TIEU_DE} — KHU "{_chu(kq["khu"])}" (khách MUA hỏi khu này có dự án nào; hệ thống tra kho, KHÔNG phải khách nói) ===\n'
     ds = [d for d in (kq.get("ds") or []) if isinstance(d, dict) and _chu(d.get("name"))]
     if not ds:
-        return dau + ("Kho CHƯA có dự án nào ghi ở khu này (hoặc tra lỗi). Nói thật ngắn, hỏi khách khu lân cận / tên dự án cụ thể; KHÔNG kể dự án "
-                      "từ trí nhớ.\n")
-    dong = [f"- {_chu(d['name'])}" + (f" — đang có {d['so_can']} căn rao" if d.get("so_can") else "") for d in ds]
-    return dau + "\n".join(dong) + ("\nCÁCH NÓI: kể vài tên trong danh sách này (kho có thể còn dự án khác ở khu đó — đừng nói \"chỉ có\"); dự án có "
-                                    "căn đang rao thì gợi khách xem căn; hỏi MỘT câu khách quan tâm dự án nào (THAY câu hỏi nhu cầu lượt này). KHÔNG thêm dự án ngoài danh sách.\n")
+        return dau + ("Kho CHƯA có dự án nào ghi ở khu này (hoặc tra lỗi). Nói thật ngắn là hiện chưa thấy dự án đang mở bán ở khu vực này trên hệ thống; "
+                      "hỏi khách có muốn mở rộng tìm thử ở khu vực lân cận hoặc toàn thành phố không, kèm hỏi ngân sách dự kiến; "
+                      "KHÔNG kể dự án từ trí nhớ, KHÔNG kết luận thị trường không có.\n")
+    dong = []
+    for d in ds:
+        st = _chu(d.get("status_text"))
+        quan = _chu(d.get("district"))
+        thong_tin = []
+        if quan and quan.lower() not in _chu(kq.get("khu")).lower():
+            thong_tin.append(quan)
+        if st:
+            thong_tin.append(st)
+        phu = f" ({', '.join(thong_tin)})" if thong_tin else ""
+        so_can = f" — đang có {d['so_can']} căn rao" if d.get("so_can") else ""
+        dong.append(f"- {_chu(d['name'])}{so_can}{phu}")
+    return dau + "\n".join(dong) + ("\nCÁCH NÓI: các dự án lớn đa phần đều hỗ trợ vay ngân hàng (tối đa ~70%, vốn tự có tối thiểu ~30%). "
+                                    "Kể vài tên trong danh sách này (kho có thể còn dự án khác ở khu đó — đừng nói \"chỉ có\"); dự án có "
+                                    "căn đang rao thì gợi khách xem căn; hỏi MỘT câu khách quan tâm dự án nào hoặc muốn lọc riêng dự án còn mở bán / hỗ trợ vay ngân hàng / theo tầm giá (THAY câu hỏi nhu cầu lượt này). KHÔNG thêm dự án ngoài danh sách.\n")
 
 
 def khoi_can_du_an(kq: dict[str, Any] | None) -> str:
