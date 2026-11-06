@@ -103,8 +103,16 @@ const lamTronGia = (v) => {
 };
 
 export function vaGhep(row, M) {
+  const newSpecs = { ...(row.specs ?? {}) };
+  delete newSpecs.moso;
+  delete newSpecs.rever;
+  if (M.average_price_m2) newSpecs.don_gia_tb_m2 = M.average_price_m2;
+  if (M.number_of_units) newSpecs.tong_so_can = M.number_of_units;
+
   const vao = {
-    specs: { ...(row.specs ?? {}), moso: M },
+    specs: newSpecs,
+    source: "aond",
+    source_url: null,
   };
   if (trong(row.developer) && M.developer) vao.developer = M.developer;
   if (trong(row.status_text) && M.status_text) vao.status_text = M.status_text;
@@ -121,6 +129,12 @@ export function vaGhep(row, M) {
     thuocTinh["Hỗ trợ vay ngân hàng"] = `Tối đa ${M.max_loan_ratio || 70}%`;
     thuocTinh["Vốn tự có tối thiểu"] = "30%";
   }
+  if (M.number_of_units && !thuocTinh["Tổng số căn"]) {
+    thuocTinh["Tổng số căn"] = String(M.number_of_units);
+  }
+  if (M.average_price_m2 && !thuocTinh["Đơn giá trung bình"]) {
+    thuocTinh["Đơn giá trung bình"] = `${Math.round(M.average_price_m2 / 1e6)} triệu/m²`;
+  }
   tt.thuoc_tinh = thuocTinh;
   vao.thong_tin = tt;
   return vao;
@@ -136,6 +150,13 @@ export function dongMoi(M) {
     },
     tien_ich: [],
   };
+  if (M.number_of_units) tt.thuoc_tinh["Tổng số căn"] = String(M.number_of_units);
+  if (M.average_price_m2) tt.thuoc_tinh["Đơn giá trung bình"] = `${Math.round(M.average_price_m2 / 1e6)} triệu/m²`;
+
+  const specs = {};
+  if (M.average_price_m2) specs.don_gia_tb_m2 = M.average_price_m2;
+  if (M.number_of_units) specs.tong_so_can = M.number_of_units;
+
   return {
     name: M.name,
     slug: `${slugHoa(M.name)}-ms`,
@@ -147,10 +168,10 @@ export function dongMoi(M) {
     price_min: lamTronGia(M.price_min),
     price_max: lamTronGia(M.price_max),
     unit_types: chuyenDoiUnitTypes(M.unit_types),
-    specs: { moso: M },
+    specs,
     thong_tin: tt,
-    source: "moso",
-    source_url: M.url || null,
+    source: "aond",
+    source_url: null,
     priority: 70,
   };
 }

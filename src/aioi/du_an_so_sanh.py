@@ -21,31 +21,49 @@ def _dinh_dang_gia(p_min: Any, p_max: Any) -> str:
 
 
 def _lay_tien_ich(d: dict[str, Any]) -> list[str]:
+    tt = d.get("thong_tin") if isinstance(d.get("thong_tin"), dict) else {}
+    ti = tt.get("tien_ich") if isinstance(tt.get("tien_ich"), list) else []
+    if ti:
+        return [str(x) for x in ti[:5]]
+    am = d.get("amenities") or []
+    if isinstance(am, list) and am:
+        return [str(x) for x in am[:5]]
     specs = d.get("specs") or {}
     moso = specs.get("moso") if isinstance(specs, dict) else {}
     if isinstance(moso, dict) and moso.get("facilities"):
         fac = moso["facilities"]
         if isinstance(fac, list):
             return [str(x) for x in fac[:5]]
-    am = d.get("amenities") or []
-    if isinstance(am, list) and am:
-        return [str(x) for x in am[:5]]
     return ["Hồ bơi", "Công viên cây xanh", "Khu vui chơi trẻ em", "Shophouse thương mại"]
 
 
 def _lay_quy_mo(d: dict[str, Any]) -> str:
-    specs = d.get("specs") or {}
-    moso = specs.get("moso") if isinstance(specs, dict) else {}
+    tt = d.get("thong_tin") if isinstance(d.get("thong_tin"), dict) else {}
+    th = tt.get("thuoc_tinh") if isinstance(tt.get("thuoc_tinh"), dict) else {}
     parts = []
-    if isinstance(moso, dict):
+    if th.get("Số block"):
+        parts.append(f"{th['Số block']} block")
+    if th.get("Số tầng"):
+        parts.append(f"{th['Số tầng']} tầng")
+    if th.get("Tổng số căn"):
+        parts.append(f"{th['Tổng số căn']} căn")
+    if th.get("Mật độ xây dựng"):
+        parts.append(f"MĐXD {th['Mật độ xây dựng']}")
+
+    specs = d.get("specs") or {}
+    if not parts and isinstance(specs, dict):
+        if specs.get("tong_so_can"):
+            parts.append(f"{specs['tong_so_can']} căn")
+        if specs.get("tong_dien_tich"):
+            parts.append(f"Khuôn viên {specs['tong_dien_tich']}")
+        moso = specs.get("moso") if isinstance(specs.get("moso"), dict) else {}
         if moso.get("blocks"):
             parts.append(f"{moso['blocks']} block")
         if moso.get("floors"):
             parts.append(f"{moso['floors']} tầng")
         if moso.get("total_area"):
             parts.append(f"Khuôn viên {moso['total_area']}")
-    if not parts and d.get("thong_tin"):
-        parts.append(str(d["thong_tin"])[:60])
+
     return ", ".join(parts) if parts else "Quy mô tiêu chuẩn"
 
 

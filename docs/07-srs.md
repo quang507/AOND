@@ -788,6 +788,26 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz396 · Hợp nhất toàn bộ dữ liệu từ các nguồn (Mogi, Rever, MOSO) thành 1 chuẩn dữ liệu AOND duy nhất; xóa nhãn nguồn và làm sạch specs (06/11/2026)
+- **Ca gốc**: Sau khi làm giàu kho dự án từ Mogi, Rever và MOSO, kho `projects` (hơn 2.900 dự án) bị phân mảnh cấu trúc: dữ liệu nằm rải rác trong `specs.moso`, `specs.rever`, `specs.gia_dong`, mang nhãn nguồn riêng lẻ (`source = 'moso'`, `source = 'rever'`, `source = 'mogi'`), chứa URL trỏ ra ngoài (`source_url`) và lời thoại bot còn chữ "theo nguồn" [nguồn: chủ dự án 06/11/2026: "gộp chung nguồn dữ liệu từ các nguồn vào thành 1 rồi xóa nguồn đi cho thành 1 loại giống nhau"].
+- **Lớp lỗi**:
+  1. Phân mảnh schema: Cùng một thông tin (chủ đầu tư, trạng thái, số căn, khoảng giá, tiện ích) nhưng dự án thì nằm ở cột gốc, dự án nằm trong `specs.moso`, dự án nằm trong `specs.rever`.
+  2. Lộ nguồn ngoài: Cột `source` và `source_url` chứa nhãn và link dẫn ra ngoài (moso.vn, rever.vn, mogi.vn), vi phạm nguyên tắc SSOT độc quyền nội bộ của AOND.
+  3. Lời thoại bot `du_an_mua.py` và `du_an_so_sanh.py` còn truy vấn `specs.get("moso")`, `specs.get("rever")` và in dòng `- Giá (theo nguồn): ...`.
+- **Sửa**:
+  1. Tạo kịch bản hợp nhất dữ liệu `scripts/hop-nhat-nguon-du-an.mjs`:
+     - Điền khuyết các cột gốc: `developer`, `status_text`, `price_min`, `price_max` (làm tròn số nguyên bigint).
+     - Gộp khử trùng toàn bộ tiện ích từ `amenities` + `rever.tien_ich` + `moso.amenities`.
+     - Chuẩn hóa `thong_tin.thuoc_tinh`: Hỗ trợ vay 70%, Vốn tự có 30%, Tổng số căn, Số block, Số tầng, MĐXD, Đơn giá TB/m², Giá rao bán/thuê thị trường.
+     - Làm sạch phẳng `specs`: Xóa bỏ hoàn toàn các object con `moso` và `rever`, chỉ lưu các trường kỹ thuật phẳng (`don_gia_tb_m2`, `tong_so_can`, `tong_dien_tich`, `dien_tich_tu_m2`, `dien_tich_den_m2`, `nam_khoi_cong`, `nam_hoan_thanh`, `ban_giao`).
+     - Thống nhất nguồn: `source = 'aond'`, xóa toàn bộ link ngoài `source_url = null`.
+  2. Cập nhật `scripts/thu-du-an-moso.mjs`: Lưu trực tiếp vào schema phẳng và `thong_tin`, đặt `source = 'aond'`, không tạo lồng `specs.moso`.
+  3. Cập nhật mã nguồn Python:
+     - `src/aioi/du_an_mua.py`: Bỏ chữ "(theo nguồn)", đọc trực tiếp `sp.get('don_gia_tb_m2')` và `sp.get('tong_so_can')`.
+     - `src/aioi/projects.py`: `dong_nguon_phu` đọc từ `specs` phẳng và `thong_tin`.
+     - `src/aioi/du_an_so_sanh.py`: `_lay_quy_mo` và `_lay_tien_ich` ưu tiên đọc từ `thong_tin.thuoc_tinh` và `amenities` đã chuẩn hoá.
+- **Kiểm**: `tests/test_hop_nhat_du_an_396.py` (4/4 tests đạt), `tests/test_nguon_phu_rever.py` (4/4 tests đạt), `scripts/soat-truy-vet.sh` SẠCH.
+
 ### SRS-5.1zzzzzzz395 · Tối ưu hóa các luồng hội thoại AOND theo trải nghiệm PropTech của MOSO: Gợi ý dải giá khi thiếu tiêu chí, No-Results fallback thông minh và Bảo mật cam kết khi xin ảnh (06/11/2026)
 - **Ca gốc**: Rà soát các luồng hội thoại sẵn có của AOND phát hiện 3 điểm nghẽn trải nghiệm: (1) Khách mua mới nói khu vực (hoặc chỉ nói ngân sách) thì bot từ chối tìm căn và hỏi cộc lốc ngược lại khách; (2) Khi không có căn nào khớp 100% tiêu chí thì bot báo cụt 'không có căn nào' khiến hội thoại đi vào ngõ cụt; (3) Lời xin ảnh và sổ hồng ở luồng bán chưa nêu cam kết bảo mật khiến chủ nhà e ngại [nguồn: chủ dự án 06/11/2026: "cái này có giống bên moso không Ok làm đi"].
 - **Lớp lỗi**:
@@ -900,7 +920,3 @@ Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại h
 - **Lớp lỗi**: Quy ước Cổng 1 trong `CLAUDE.md §7` và `docs/11 §11.5` quy định cứng nhắc "chạy trước mọi commit đụng...", khiến AI áp dụng máy móc sau từng commit lẻ thay vì kiểm tra theo phạm vi và kiểm tra trước khi push/PR.
 - **Sửa**: Cập nhật `CLAUDE.md §7`, `docs/11-quy-trinh.md §11.5`, `.claude/skills/ba-pipeline/SKILL.md`: commit nháp/WIP không cần test; sửa docs chỉ chạy `bun run truyvet`; sửa web chỉ `bun run kieu`; chỉ chạy test liên quan khi sửa lõi; toàn bộ `bun run kiem` chỉ chạy 1 lần trước khi mở PR/gộp. Chuyển mục cũ nhất `SRS-5.1zzzzzzz376` sang `docs/07-srs-luu-tru.md` để giữ đúng 10 mục.
 - **Kiểm**: Soát `CLAUDE.md`, `docs/11-quy-trinh.md`, `docs/07-srs.md`; chạy `bun run truyvet` xanh.
-
-### SRS-5.1zzzzzzz386 · Bot báo "em ghi rồi" gần như mọi lượt; câu phí "chưa thành thì … không tốn đồng nào" thiếu chữ (05/11/2026)
-Chủ dự án 05/11 (soát chat thử): câu "Chỉ nói đã ghi / đã cập nhật … với điều kết quả báo ĐÃ GHI" cộng báo cáo lượt nào cũng có dòng "ĐÃ GHI" "đang ngầm gợi model báo đã ghi ở mọi lượt … xóa cái này đi"; khách hỏi "câu cuối chưa 'thành' … có phải thiếu chữ công". Hứa việc hệ thống không làm: để sau ("có khi lúc đó admin sẽ nhắn").
-(1) Lớp lỗi: lời dặn chặn "báo ghi sai" lại nêu việc báo ghi mỗi lượt, nhãn báo cáo "ĐÃ GHI" thành việc cần nói; câu mẫu `bao_phi` gõ thiếu chữ. (2) Sửa: `agent_gop.HUONG_DAN_VIET` — hệ thống tự lưu, không báo khách đã ghi; `bao_cao` đổi nhãn "Ô vừa lưu (hệ thống tự lưu, không báo khách là đã ghi)"; `cau_mau.bao_phi` "chưa thành công thì" + migration `20261105b` (dòng DB chưa sửa tay). Đường dự phòng phía mua (`agent_mua.HUONG_DAN_GHI_VIEC`, chặn báo hẹn xem khi chưa ghi) giữ. (3) Kiểm: `test_agent_gop_371` đỏ khi còn nhãn / câu cũ; `test_cau_mau*` theo câu mới. CI; chưa chạy `cham` (chủ dự án dặn không chạy test ở máy).

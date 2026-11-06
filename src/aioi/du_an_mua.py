@@ -51,20 +51,25 @@ def dong_du_an(p: dict[str, Any]) -> list[str]:
     elif thap or cao:
         d.append(f"- Giá niêm yết tham khảo: từ {thap or cao}")
     sp = p.get("specs") if isinstance(p.get("specs"), dict) else {}
+    tt = p.get("thong_tin") if isinstance(p.get("thong_tin"), dict) else {}
     if _chu(sp.get("tong_dien_tich")):
         d.append(f"- Tổng diện tích: {_chu(sp['tong_dien_tich'])}")
     if _chu(sp.get("gia_dong")):
-        d.append(f"- Giá (theo nguồn): {_chu(sp['gia_dong'])}")
+        d.append(f"- Khoảng giá tham khảo: {_chu(sp['gia_dong'])}")
     tu, den = sp.get("dien_tich_tu_m2"), sp.get("dien_tich_den_m2")
     if isinstance(tu, (int, float)) and isinstance(den, (int, float)) and tu and den:
         d.append(f"- Diện tích sản phẩm: {tu:g}–{den:g} m²")
     da_noi = {"tổng diện tích"} if _chu(sp.get("tong_dien_tich")) else set()
-    for k, v in dong_nguon_phu(sp):          # `specs.rever` (SRS-5.1zzzzzzz324)
+    for k, v in dong_nguon_phu(sp):          # dữ kiện bổ sung (quy mô, số căn, khoảng giá)
         if k not in da_noi:
             d.append(f"- {k[:1].upper()}{k[1:]}: {v}")
     if _chu(sp.get("nam_khoi_cong")) or _chu(sp.get("nam_hoan_thanh")):
-        d.append("- Thời gian: " + "; ".join(x for x in (f"khởi công {_chu(sp.get('nam_khoi_cong'))}" if _chu(sp.get("nam_khoi_cong")) else "",
-                                                          f"hoàn thành {_chu(sp.get('nam_hoan_thanh'))}" if _chu(sp.get("nam_hoan_thanh")) else "") if x))
+        d.append("- Thời gian: " + "; ".join(x for x in (f"khởi công {_chu(sp.get('nam_khoi_cong'))}" if _chu(sp.get('nam_khoi_cong')) else "",
+                                                          f"hoàn thành {_chu(sp.get('nam_hoan_thanh'))}" if _chu(sp.get('nam_hoan_thanh')) else "") if x))
+    if sp.get("don_gia_tb_m2") and not any("trung bình" in str(k).lower() for k in (tt.get("thuoc_tinh") or {})):
+        d.append(f"- Đơn giá trung bình: {round(sp['don_gia_tb_m2'] / 1e6):g} triệu/m²")
+    if sp.get("tong_so_can") and not any("tổng số căn" in str(k).lower() for k in (tt.get("thuoc_tinh") or {})):
+        d.append(f"- Tổng số căn: {sp['tong_so_can']}")
     loai = p.get("unit_types")
     if isinstance(loai, list) and loai:
         ten = [_chu(x.get("name") or x.get("ten")) if isinstance(x, dict) else _chu(x) for x in loai]

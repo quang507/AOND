@@ -543,24 +543,31 @@ def _so(v) -> str:
 
 
 def dong_nguon_phu(specs) -> list[tuple[str, str]]:
-    """Dữ kiện nguồn phụ `specs.rever` (scripts/thu-du-an-rever.mjs, SRS-5.1zzzzzzz324) → các cặp (nhãn, giá trị) cho cả hai phía bot.
-    Chỉ ô có chữ thật; giá rao gộp kèm số tin + ngày lấy để model nói "tham khảo", không nói như giá chốt. Không nêu tên nguồn ra khách."""
-    r = specs.get("rever") if isinstance(specs, dict) else None
-    if not isinstance(r, dict):
+    """Dữ kiện bổ sung từ kho dự án đã hợp nhất (SRS-5.1zzzzzzz396) → các cặp (nhãn, giá trị) cho cả hai phía bot.
+    Chỉ ô có chữ thật; giá rao gộp kèm số tin để model nói "tham khảo", không nói như giá chốt. Tuyệt đối không nêu tên nguồn ra khách."""
+    if not isinstance(specs, dict):
         return []
-    ra = [(k, _chu(v)) for k, v in (r.get("du_kien") or {}).items() if _chu(k) and _chu(v)]
-    if _chu(r.get("khoang_gia")):
-        ra.append(("khoảng giá tham khảo", _chu(r["khoang_gia"])))
-    ngay = _chu(r.get("ngay"))
-    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", ngay):   # model đọc "02/11/2026", không đọc ISO ra lời khách
-        ngay = "/".join(reversed(ngay.split("-")))
-    b = r.get("gia_rao_ban") if isinstance(r.get("gia_rao_ban"), dict) else {}
-    if _so(b.get("tr_m2_thap")) and _so(b.get("tr_m2_cao")) and _so(b.get("so_tin")):
-        ra.append(("giá rao bán thị trường", f"{_so(b['tr_m2_thap'])}–{_so(b['tr_m2_cao'])} triệu/m², giữa {_so(b.get('tr_m2_giua'))} "
-                                             f"triệu/m² ({_so(b['so_tin'])} tin, lấy {ngay})"))
-    t = r.get("gia_rao_thue") if isinstance(r.get("gia_rao_thue"), dict) else {}
-    if _so(t.get("tr_thang_thap")) and _so(t.get("tr_thang_cao")) and _so(t.get("so_tin")):
-        ra.append(("giá rao thuê thị trường", f"{_so(t['tr_thang_thap'])}–{_so(t['tr_thang_cao'])} triệu/tháng ({_so(t['so_tin'])} tin, lấy {ngay})"))
+    ra: list[tuple[str, str]] = []
+    r = specs.get("rever") if isinstance(specs.get("rever"), dict) else None
+    if isinstance(r, dict):
+        ra.extend((k, _chu(v)) for k, v in (r.get("du_kien") or {}).items() if _chu(k) and _chu(v))
+        if _chu(r.get("khoang_gia")):
+            ra.append(("khoảng giá tham khảo", _chu(r["khoang_gia"])))
+        ngay = _chu(r.get("ngay"))
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", ngay):   # model đọc "02/11/2026", không đọc ISO ra lời khách
+            ngay = "/".join(reversed(ngay.split("-")))
+        b = r.get("gia_rao_ban") if isinstance(r.get("gia_rao_ban"), dict) else {}
+        if _so(b.get("tr_m2_thap")) and _so(b.get("tr_m2_cao")) and _so(b.get("so_tin")):
+            ra.append(("giá rao bán thị trường", f"{_so(b['tr_m2_thap'])}–{_so(b['tr_m2_cao'])} triệu/m², giữa {_so(b.get('tr_m2_giua'))} "
+                                                 f"triệu/m² ({_so(b['so_tin'])} tin, lấy {ngay})"))
+        t = r.get("gia_rao_thue") if isinstance(r.get("gia_rao_thue"), dict) else {}
+        if _so(t.get("tr_thang_thap")) and _so(t.get("tr_thang_cao")) and _so(t.get("so_tin")):
+            ra.append(("giá rao thuê thị trường", f"{_so(t['tr_thang_thap'])}–{_so(t['tr_thang_cao'])} triệu/tháng ({_so(t['so_tin'])} tin, lấy {ngay})"))
+
+    if specs.get("tong_so_can") and not any(k == "số căn" for k, _ in ra):
+        ra.append(("số căn", str(specs["tong_so_can"])))
+    if specs.get("don_gia_tb_m2") and not any("đơn giá" in k.lower() or "khoảng giá" in k.lower() for k, _ in ra):
+        ra.append(("đơn giá trung bình", f"{round(specs['don_gia_tb_m2'] / 1e6):g} triệu/m²"))
     return ra
 
 
