@@ -72,8 +72,8 @@ def fetch_all_moso_projects(location: str = "Hồ Chí Minh", limit: int = 50) -
                 for item in results:
                     district, province = clean_location(item.get("address", ""))
                     prices = item.get("unitPrices") or []
-                    p_min = prices[0] if len(prices) > 0 and prices[0] else None
-                    p_max = prices[1] if len(prices) > 1 and prices[1] else p_min
+                    p_min = round(prices[0]) if len(prices) > 0 and prices[0] is not None else None
+                    p_max = round(prices[1]) if len(prices) > 1 and prices[1] is not None else p_min
 
                     sale_status = item.get("saleStatus") or ""
                     status_vn = STATUS_MAP.get(sale_status, sale_status)

@@ -96,14 +96,22 @@ export function chuyenDoiUnitTypes(types) {
   });
 }
 
+const lamTronGia = (v) => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.round(n) : null;
+};
+
 export function vaGhep(row, M) {
   const vao = {
     specs: { ...(row.specs ?? {}), moso: M },
   };
   if (trong(row.developer) && M.developer) vao.developer = M.developer;
   if (trong(row.status_text) && M.status_text) vao.status_text = M.status_text;
-  if (trong(row.price_min) && M.price_min) vao.price_min = M.price_min;
-  if (trong(row.price_max) && M.price_max) vao.price_max = M.price_max;
+  const pMin = lamTronGia(M.price_min);
+  const pMax = lamTronGia(M.price_max);
+  if (trong(row.price_min) && pMin !== null) vao.price_min = pMin;
+  if (trong(row.price_max) && pMax !== null) vao.price_max = pMax;
   if (trong(row.unit_types) && M.unit_types?.length) {
     vao.unit_types = chuyenDoiUnitTypes(M.unit_types);
   }
@@ -136,8 +144,8 @@ export function dongMoi(M) {
     district: M.district || null,
     location_raw: M.location_raw || (M.district ? `${M.district}, TP.HCM` : "TP.HCM"),
     status_text: M.status_text || null,
-    price_min: M.price_min || null,
-    price_max: M.price_max || null,
+    price_min: lamTronGia(M.price_min),
+    price_max: lamTronGia(M.price_max),
     unit_types: chuyenDoiUnitTypes(M.unit_types),
     specs: { moso: M },
     thong_tin: tt,
