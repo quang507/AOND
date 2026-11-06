@@ -132,10 +132,28 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 
 ---
 
+### 2.7 Module 7: Kiến trúc Function Calling chuẩn nguyên tử theo mô hình MOSO (`src/aioi/agent_mua.py` - SRS-5.1zzzzzzz389)
+
+#### A. Đối sánh kiến trúc MOSO vs AOND
+- **Mô hình cũ của AOND**: Chạy 2 vòng tuần tự cứng nhắc (Vòng 1 bóc tách ô nhu cầu/regex -> Code Python gọi DB -> Nhồi chuỗi text nghìn chữ vào Vòng 2 -> Gọi LLM lần 2 để trả lời). Kiến trúc này tốn gấp đôi độ trễ mạng và dễ gãy khi khách hỏi câu phức tạp nhiều ý.
+- **Mô hình nâng cấp chuẩn Function Calling MOSO**: Cung cấp trực tiếp cho LLM bộ công cụ nguyên tử (Atomic Tools) qua JSON Schema trong `CONG_CU`:
+  1. `tim_can` (tương đương `search_listings`): Tìm kiếm BĐS theo nhiều tiêu chí lọc linh hoạt.
+  2. `xem_can` (tương đương `read_page`): Đọc chi tiết thông số của 1–3 căn đang hiện.
+  3. `so_sanh_can` (tương đương `compare_listings`): So sánh 2–5 căn theo giá, đơn giá m² đất, diện tích, vị trí và pháp lý.
+  4. `tra_du_an` & `du_an_trong_khu` (tương đương `search_projects`): Tra cứu thông tin 1.388 dự án TP.HCM.
+  5. `tinh_thue_phi`: Tính chi tiết thuế TNCN 2%, trước bạ 0.5%, công chứng TT 257/2016.
+  6. `tinh_vay_tra_gop`: Lập phương án vay mua nhà & lịch trả nợ dư nợ giảm dần (vốn 30%, vay 70%).
+  7. `luu_so_dien_thoai` (tương đương `request_contact`): Tiếp nhận SĐT của khách để lưu hồ sơ và báo chuyên viên liên hệ ngay.
+  8. `hen_xem`: Ghi lịch hẹn xem nhà trực tiếp.
+  9. `hoi_chu_nha`: Gửi câu hỏi chuyên sâu cho chủ nhà/admin.
+- LLM tự quyết định khi nào cần gọi tool trong vòng lặp hội thoại `converse`, hỗ trợ multi-turn reasoning và câu chat phức tạp tự nhiên.
+
+---
+
 ## 3. Kế hoạch Kiểm thử & Truy vết
 
 1. **Unit Test Python (`tests/`)**:
-   - `test_thue_phi.py`: Kiểm tra tính phí công chứng tại các mốc 800 triệu, 2 tỷ, 4.5 tỷ, 8 tỷ, 50 tỷ; kiểm tra tính thuế TNCN 2% và lệ phí trước bạ 0.5%.
-   - `test_tai_chinh_tra_gop.py`: Kiểm tra công thức trả góp dư nợ giảm dần, vốn 30%, vay 70%, lãi tháng 1 và gốc chia đều.
-   - `test_bao_toan_sdt_lead.py`: Kiểm tra trường hợp khách gửi SĐT khi **chưa có lịch hẹn xem**, xác nhận SĐT vẫn được lưu vào `buyers` và có thông báo gửi Admin.
+   - `test_thue_phi_tai_chinh.py`: Kiểm tra tính phí công chứng tại các mốc 40 triệu đến 600 tỷ; kiểm tra tính thuế TNCN 2% và lệ phí trước bạ 0.5%; kiểm tra công thức trả góp ngân hàng dư nợ giảm dần.
+   - `test_sdt_hen_xem_tai_chinh.py`: Kiểm tra trường hợp khách gửi SĐT khi **chưa có lịch hẹn xem**, xác nhận SĐT vẫn được lưu vào `buyers` và có thông báo gửi Admin.
+   - `test_agent_mua_tools_389.py`: Kiểm tra toàn bộ 4 công cụ nguyên tử Function Calling (`so_sanh_can`, `tinh_thue_phi`, `tinh_vay_tra_gop`, `luu_so_dien_thoai`) thực thi trực tiếp qua `chay_cong_cu`.
 2. **Soát truy vết**: Chạy `scripts/soat-truy-vet.sh` đảm bảo không gãy liên kết ID nào.

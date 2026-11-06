@@ -22,21 +22,24 @@ HAN_GIAY = 25.0     # quá chừng này giây thì không tra thêm (trần lõi
 TRAN_KET_QUA = 3000
 
 HUONG_DAN_DOC = (
-    "\n\n=== CÔNG CỤ TRA KHO (chỉ ĐỌC) ===\n"
-    "Em có công cụ tra kho thật của hệ thống. Tự quyết có cần tra không: điều đã có ở các khối dưới thì trả lời luôn, KHÔNG tra lại.\n"
-    "- tim_can: khách đổi / thêm tiêu chí (khu, giá, loại, phòng ngủ, diện tích) mà khối CĂN ĐANG RAO chưa theo kịp, hoặc khách muốn xem lựa "
-    "chọn khác.\n"
+    "\n\n=== CÔNG CỤ TRA KHO & TÍNH TOÁN (chỉ ĐỌC / TÍNH TOÁN) ===\n"
+    "Em có bộ công cụ tra kho và tính toán thật của hệ thống (Function Calling tự nhiên theo phong cách PropTech MOSO). Tự quyết có cần tra / tính không:\n"
+    "- tim_can: khách đổi / thêm tiêu chí (khu, giá, loại, phòng ngủ, diện tích) mà khối CĂN ĐANG RAO chưa theo kịp, hoặc khách muốn xem lựa chọn khác.\n"
     "- xem_can: khách hỏi chi tiết một căn (theo mã trong link đã gửi) mà dòng căn ở dưới chưa có.\n"
+    "- so_sanh_can: khách muốn so sánh 2 hay nhiều căn với nhau về giá, đơn giá m² đất, diện tích, đường vào.\n"
     "- tra_du_an / du_an_trong_khu: khách hỏi về một dự án, hoặc khu nào có dự án gì, mà khối dự án ở dưới chưa có.\n"
+    "- tinh_thue_phi: khách hỏi thuế phí chuyển nhượng, sang tên, bên nào chịu khoản nào, phí công chứng bao nhiêu.\n"
+    "- tinh_vay_tra_gop: khách hỏi phương án vay mua nhà, vốn tự có bao nhiêu, mỗi tháng trả góp bao nhiêu tiền gốc và lãi.\n"
     "Tra tối đa 2 lần. Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có. Số căn giới thiệu mỗi lượt theo luật ở trên (rổ có ≥ 2 căn hợp thì 2–3 căn).\n"
 )
-# Hai công cụ GHI của đường dự phòng (SRS-5.1zzzzzzz292) — vòng agent gộp (SRS-5.1zzzzzzz380) ghi ở bước 1, bước 2 chỉ còn HUONG_DAN_DOC + DONG_CUOI.
+# Các công cụ GHI của đường dự phòng (SRS-5.1zzzzzzz292, SRS-5.1zzzzzzz389) — vòng agent gộp (SRS-5.1zzzzzzz380) ghi ở bước 1, bước 2 chỉ còn HUONG_DAN_DOC + DONG_CUOI.
 HUONG_DAN_GHI_VIEC = (
-    "- hen_xem / hoi_chu_nha (GHI thật) khi khối EM VỪA GHI LƯỢT NÀY CHƯA có việc đó: khách đề nghị giờ / ngày đi xem một căn đã rõ → hen_xem "
+    "- hen_xem / hoi_chu_nha / luu_so_dien_thoai (GHI thật) khi khối EM VỪA GHI LƯỢT NÀY CHƯA có việc đó: khách đề nghị giờ / ngày đi xem một căn đã rõ → hen_xem "
     "NGAY; khách hỏi điều về căn mà dòng của căn KHÔNG có câu trả lời (sổ, nội thất, bớt giá, vào ở khi nào…) → hoi_chu_nha NGAY với câu viết "
-    "rõ theo ý khách, CHỈ phần dòng căn chưa có (phần đã có — vd sổ hồng — thì trả lời luôn, không chuyển chủ nhà) — khách hỏi tức là muốn biết, KHÔNG hỏi lại khách \"có muốn em hỏi chủ nhà không\". Căn chưa rõ là căn nào hoặc khách chưa "
+    "rõ theo ý khách, CHỈ phần dòng căn chưa có (phần đã có — vd sổ hồng — thì trả lời luôn, không chuyển chủ nhà); khách để lại số điện thoại "
+    "để nhờ tư vấn / gọi lại → luu_so_dien_thoai NGAY. Căn chưa rõ là căn nào hoặc khách chưa "
     "nói giờ thì KHÔNG gọi — hỏi lại khách.\n"
-    "Chỉ nói đã ghi / đã chuyển chủ nhà khi khối EM VỪA GHI LƯỢT NÀY có việc đó HOẶC kết quả hen_xem / hoi_chu_nha báo ĐÃ GHI (kết quả công cụ "
+    "Chỉ nói đã ghi / đã chuyển chủ nhà khi khối EM VỪA GHI LƯỢT NÀY có việc đó HOẶC kết quả hen_xem / hoi_chu_nha / luu_so_dien_thoai báo ĐÃ GHI (kết quả công cụ "
     "thắng câu 'lượt này em chưa ghi việc gì'). "
 )
 DONG_CUOI = "Lời gửi khách viết ở lượt cuối, sau khi tra / ghi xong; không viết 'để em tra / em kiểm tra'.\n"
@@ -72,6 +75,59 @@ CONG_CU: list[dict[str, Any]] = [
         },
     },
     {
+        "name": "so_sanh_can",
+        "description": "So sánh 2 đến 5 căn đang rao theo giá, đơn giá m² đất, diện tích, vị trí và pháp lý để khách cân nhắc lựa chọn (tương đương compare_listings).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "ma": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Danh sách 2 đến 5 mã căn cần so sánh (vd [\"ABCD1234\", \"XYZW5678\"])",
+                }
+            },
+            "required": ["ma"],
+        },
+    },
+    {
+        "name": "tinh_thue_phi",
+        "description": "Tính toán chi tiết các khoản thuế & lệ phí chuyển nhượng nhà đất (Thuế TNCN 2%, Lệ phí trước bạ 0.5%, Phí công chứng TT 257/2016, lệ phí đăng bộ) cho người mua và người bán.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "gia_vnd": {"type": "integer", "description": "Giá trị giao dịch căn nhà bằng VNĐ (vd 5000000000)"},
+                "ma": {"type": "string", "description": "Mã căn đang xem nếu muốn tính theo giá căn đó"},
+                "can_duy_nhat": {"type": "boolean", "description": "True nếu là căn nhà duy nhất của người bán (được miễn thuế TNCN)"},
+            },
+        },
+    },
+    {
+        "name": "tinh_vay_tra_gop",
+        "description": "Tính phương án vay ngân hàng và lịch trả góp hàng tháng theo dư nợ giảm dần (vốn tự có 30%, vay 70%, tiền gốc hàng tháng, tiền lãi tháng đầu).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "gia_vnd": {"type": "integer", "description": "Giá trị căn nhà bằng VNĐ (vd 5000000000)"},
+                "ma": {"type": "string", "description": "Mã căn đang xem nếu muốn tính theo giá căn đó"},
+                "ty_le_vay": {"type": "number", "description": "Tỷ lệ vay (mặc định 0.7 = 70%)"},
+                "so_nam": {"type": "integer", "description": "Thời hạn vay (năm, mặc định 20)"},
+                "lai_suat_nam": {"type": "number", "description": "Lãi suất ưu đãi năm đầu (%/năm, mặc định 7.5)"},
+            },
+        },
+    },
+    {
+        "name": "luu_so_dien_thoai",
+        "description": "GHI số điện thoại của khách vào hệ thống để người phụ trách gọi hỗ trợ tư vấn / xác nhận khi khách chủ động để lại số.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "sdt": {"type": "string", "description": "Số điện thoại di động 10 số của khách"},
+                "ghi_chu": {"type": "string", "description": "Ghi chú thêm về nhu cầu của khách"},
+            },
+            "required": ["sdt"],
+        },
+    },
+    {
         "name": "hen_xem",
         "description": "GHI lịch hẹn khách đi xem MỘT căn đang hiện (chờ chủ nhà xác nhận rồi báo khách). Chỉ khi khách đã nói muốn xem và giờ / ngày.",
         "input_schema": {
@@ -102,7 +158,7 @@ CONG_CU: list[dict[str, Any]] = [
         "input_schema": {"type": "object", "properties": {"khu": {"type": "string"}}, "required": ["khu"]},
     },
 ]
-GHI_DU_PHONG = ("hen_xem", "hoi_chu_nha")
+GHI_DU_PHONG = ("hen_xem", "hoi_chu_nha", "luu_so_dien_thoai")
 CONG_CU_DOC = [c for c in CONG_CU if c["name"] not in GHI_DU_PHONG]   # bước 2 vòng gộp: chỉ đọc (bước ghi đã đóng)
 
 
@@ -250,7 +306,50 @@ def chay_cong_cu(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -
             can = kho.can_theo_ma(ma) if ma and getattr(kho, "can_theo_ma", None) is not None else []
             gom.extend(can)
             return _dong(engine, can) if can else "Không có căn nào đang hiện với mã đó (có thể đã bán / ẩn)."
-        if ten in ("hen_xem", "hoi_chu_nha"):
+        if ten == "so_sanh_can":
+            ma = [_chu(m, 20).lstrip("#").upper() for m in (inp.get("ma") or []) if _chu(m)][:5]
+            if len(ma) < 2:
+                return "Cần ít nhất 2 mã căn để so sánh."
+            can = kho.can_theo_ma(ma) if getattr(kho, "can_theo_ma", None) is not None else []
+            gom.extend(can)
+            if not can:
+                return "Không tìm thấy các căn này trong kho để so sánh."
+            dong = ["SO SÁNH CÁC CĂN TRONG KHO:"]
+            for c in can:
+                gia = c.get("price_vnd") or 0
+                gia_text = c.get("price_text") or (f"{gia / 1_000_000_000:.2f} tỷ" if gia else "Đang cập nhật")
+                dt = c.get("legal_area_m2") or c.get("usable_area_m2") or 0
+                don_gia = round(gia / dt / 1_000_000, 1) if gia and dt else 0
+                phap_ly = c.get("legal_status") or "Đang cập nhật"
+                dong.append(f"- Căn #{c.get('code')}: Giá {gia_text} | Đơn giá đất ~{don_gia} tr/m² | Diện tích {dt}m² | {c.get('street') or ''}, {c.get('ward') or ''} | Pháp lý: {phap_ly}")
+            return "\n".join(dong)
+        if ten == "tinh_thue_phi":
+            from . import thue_phi
+            gia_vnd = int(inp.get("gia_vnd") or 0)
+            if not gia_vnd and inp.get("ma"):
+                ma = _chu(inp.get("ma"), 20).lstrip("#").upper()
+                can = kho.can_theo_ma([ma]) if getattr(kho, "can_theo_ma", None) is not None else []
+                if can and can[0].get("price_vnd"):
+                    gia_vnd = int(can[0]["price_vnd"])
+            if not gia_vnd:
+                return "Cần cung cấp giá trị căn nhà (gia_vnd) hoặc mã căn để tính thuế phí."
+            can_duy_nhat = bool(inp.get("can_duy_nhat", False))
+            return thue_phi.dinh_dang_thue_phi_chat(gia_vnd, can_duy_nhat=can_duy_nhat)
+        if ten == "tinh_vay_tra_gop":
+            from . import tai_chinh
+            gia_vnd = int(inp.get("gia_vnd") or 0)
+            if not gia_vnd and inp.get("ma"):
+                ma = _chu(inp.get("ma"), 20).lstrip("#").upper()
+                can = kho.can_theo_ma([ma]) if getattr(kho, "can_theo_ma", None) is not None else []
+                if can and can[0].get("price_vnd"):
+                    gia_vnd = int(can[0]["price_vnd"])
+            if not gia_vnd:
+                return "Cần cung cấp giá trị căn nhà (gia_vnd) hoặc mã căn để tính phương án vay trả góp."
+            ty_le = float(inp.get("ty_le_vay") or 0.7)
+            so_nam = int(inp.get("so_nam") or 20)
+            lai_suat = float(inp.get("lai_suat_nam") or 7.5)
+            return tai_chinh.dinh_dang_vay_chat(gia_vnd, ty_le_vay=ty_le, so_nam=so_nam, lai_suat_nam=lai_suat)
+        if ten in ("hen_xem", "hoi_chu_nha", "luu_so_dien_thoai"):
             return _ghi_viec(engine, conv, ten, inp, gom)
         if ten == "tra_du_an":
             t = _chu(inp.get("ten"))
@@ -278,9 +377,17 @@ def chay_cong_cu(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -
 
 
 def _ghi_viec(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -> str:
-    """Việc GHI của vòng agent (SRS-5.1zzzzzzz292): bóc tách Haiku bỏ sót hẹn xem / câu hỏi chủ nhà thì Sonnet ghi được — CÙNG hàm ghi của đường
-    cũ (`ghi_hen_xem` gộp giờ, `ghi_hoi_chu_nha` không tạo câu trùng đang chờ), chỉ căn đang hiện, căn lượt này đã ghi thì không ghi lại."""
+    """Việc GHI của vòng agent (SRS-5.1zzzzzzz292, SRS-5.1zzzzzzz389): bóc tách bỏ sót hẹn xem / câu hỏi chủ nhà / SĐT thì Sonnet ghi được qua công cụ."""
     kho = engine._convstore
+    if ten == "luu_so_dien_thoai":
+        sdt = _chu(inp.get("sdt"))
+        bid = kho.khach_mua(conv.user_key) if getattr(kho, "khach_mua", None) is not None else None
+        if not (bid and sdt):
+            return "Chưa đủ thông tin số điện thoại để lưu."
+        ok = kho.ghi_sdt_hen_xem(bid, sdt)
+        if ok:
+            return f"ĐÃ LƯU số điện thoại {sdt} của khách vào hệ thống để người phụ trách gọi hỗ trợ tư vấn."
+        return "Chưa lưu được số điện thoại (lỗi kho)."
     hen = ten == "hen_xem"
     ma = _chu(inp.get("ma"), 20).lstrip("#").upper()
     noi = _chu(inp.get("gio") if hen else inp.get("cau_hoi"), 300)

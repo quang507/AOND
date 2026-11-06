@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz379 · Mỗi luật một chỗ trong prompt ghép; một phiên giữ `src/aioi/` mỗi lúc (03/11/2026)
+Chủ dự án 03/11: "làm 2 3 5 6 7 8" (đề xuất 6: mỗi luật một chỗ; 7: một phiên giữ lõi). Ca gốc: prompt mua ghi luật một câu hỏi hai lần (bối cảnh + `mua.khoi_can_cho_khach`) và khối căn tự giục "hỏi khách muốn xem thử căn nào" mỗi lượt; phiếu bán ghi "không hứa bán / so giá" ở cả khối GIỌNG lẫn LUẬT CỐ ĐỊNH; 03/11 hai phiên sửa hai đầu chữ ký `phuong_tai_diem`.
+(1) Lớp lỗi: luật chép tay ở nhiều khối, sửa một chỗ không kéo chỗ khác; nhiều phiên sửa chéo lõi. (2) Sửa: `prompts.LUAT_MOT_CAU_HOI` một nguồn cho phiếu bán + prompt mua; khối căn mua bỏ luật trùng, câu mời theo khối GIỌNG; LUẬT CỐ ĐỊNH trỏ khối GIỌNG cho giá thị trường / hứa bán. Không đụng khối GIỌNG / từ lóng / khối anh Luận (luật phí trùng ở `build_fee_followup_system` là của anh Luận — giữ). CLAUDE.md §7 bước 1: một phiên giữ `src/aioi/`.
+(3) Kiểm: `test_mot_cho_379.py` (mỗi luật đúng một lần mỗi prompt; trả dòng cũ của khối căn: đỏ).
+
 ### SRS-5.1zzzzzzz377 · Bộ chấm offline `cham` chạy trên GitHub Actions cho PR đổi lõi bot (03/11/2026)
 Ca gốc: chủ dự án 03/11 ("làm 2 …", đề xuất "chạy cham trên GitHub Actions trước mỗi lần gộp đổi prompt") — SRS-375 / 376 gộp với "chưa chạy `cham`" vì cham chỉ chạy được trên máy có Claude Code. (1) Lớp lỗi: thước đo trước–sau (SRS-304) phụ thuộc máy người, nên PR đổi prompt gộp không có điểm. (2) Sửa: `.github/workflows/cham.yml` — `pull_request` khi đổi `src/aioi/**`, `tests/kich_ban/**`, script chấm, chính workflow; `workflow_dispatch` (ô `so_lan` 1–3, ô `chi`); cài `@anthropic-ai/claude-code@2.1.304`, xác thực secret `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`), gọi thử một lần Haiku trước; so với `diem_nen.json` của main qua `--so-voi`; dòng TỔNG + bảng đủ vào job summary. Không đổi `cham-kich-ban.py`. Thiếu secret / PR từ fork → summary "CHƯA KIỂM ĐƯỢC", thoát 0; token hỏng → đỏ; điểm tụt không đỏ (bảng đọc, không phải cổng).
 (3) Kiểm: `actionlint` sạch, `bun run truyvet`; chưa chạy thật trên Actions vì secret chưa có (lần chạy đầu của PR này phải ra "CHƯA KIỂM ĐƯỢC").
