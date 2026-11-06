@@ -186,7 +186,7 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 | Tiêu chí | Hệ thống Cũ (Anh Luận / Tuần tự) | Hệ thống Mới Tinh Gọn (SRS-5.1zzzzzzz391) |
 |---|---|---|
 | **Dung lượng System Prompt** | ~7.100 tokens (>24.500 ký tự), phân mảnh 6 file | **~1.150 tokens (4.136 ký tự)**, tập trung, chuẩn hoá |
-| **Cơ chế xử lý** | 2 vòng tuần tự cứng (Haiku bóc form $ightarrow$ Sonnet viết lời) | **Function Calling nguyên tử**: LLM tự động gọi tool khi cần |
+| **Cơ chế xử lý** | 2 vòng tuần tự cứng (Haiku bóc form → Sonnet viết lời) | **Function Calling nguyên tử**: LLM tự động gọi tool khi cần |
 | **Chi phí token / lượt** | $0.09 – $0.13 / lượt (Sonnet nuốt tới 13.1k tokens) | **~$0.015 / lượt** (giảm ~85% chi phí token vào) |
 | **Ràng buộc luật & cấm đoán** | 40+ câu "CẤM..." tiêu cực rải rác | **Nguyên tắc hành động tích cực (Positive Directives)** |
 | **Phân vai & Tác phong** | Hỏi máy móc theo thứ tự ô trống | **Thấu hiểu tâm lý & Chăm sóc khách hàng (Customer Insight)** |
@@ -206,6 +206,27 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 4. **Fast-Draft tại 50 điểm & Giới hạn tối đa 2 ý/lượt (`CUM_TOI_DA = 2`)**:
    - Gỡ bỏ `hien_trang` khỏi danh sách chặn bản nháp. Ngay khi có đủ 4 trụ cột vàng (Loại hình, Địa chỉ/Khu vực, Diện tích, Giá), bot xuất xưởng ngay bản nháp tin rao chợ để khách xem và chốt sửa.
    - Giới hạn mỗi lượt trao đổi chỉ hỏi tối đa 1–2 ý quan trọng nhất để khách không bị ngợp.
+
+---
+
+### 2.10 Module 10: Thống Nhất Đơn Model Sonnet & Khắc Phục Tách Vòng Haiku (SRS-5.1zzzzzzz392)
+
+#### A. Đối sánh Luồng Gọi Model: Đa Model Cũ vs Đơn Model Sonnet Chuẩn MOSO
+| Tiêu chí | Cơ chế Cũ (Haiku + Sonnet) | Chuẩn Đơn Model Sonnet (SRS-5.1zzzzzzz392) |
+|---|---|---|
+| **Model bóc tách (`AIOI_EXTRACT_MODEL`)** | `claude-haiku-5-5` | **`claude-sonnet-5-5`** |
+| **Model hội thoại (`AIOI_CHAT_MODEL`)** | `claude-sonnet-5-5` | **`claude-sonnet-5-5`** |
+| **Số lần gọi model / lượt** | 2 lần (Haiku quét form $
+ightarrow$ Sonnet viết lời) | **1 lần duy nhất** (Sonnet vừa tự điều phối công cụ vừa viết lời) |
+| **Hiện tượng debug header** | Hiện cả 2 dòng `claude-haiku` và `claude-sonnet` | **Chỉ còn 1 dòng thuần nhất `claude-sonnet-5-5`** |
+| **Xử lý câu chào hỏi ("chào em")** | Rơi về form Haiku 24k ký tự vô ích | **Xử lý trực tiếp trên Sonnet với kế hoạch rỗng, không gọi Haiku** |
+
+#### B. Chi tiết Kỹ thuật Cấu hình VPS & Mã nguồn
+1. **Đồng bộ hóa `cai-vps.sh`**:
+   - Gán `MODEL_BOC="claude-sonnet-5-5"` đồng bộ tuyệt đối với `MODEL_CHAT="claude-sonnet-5-5"`.
+   - File `.env` tại `/opt/aond_core/.env` khi cập nhật sẽ có `AIOI_EXTRACT_MODEL=claude-sonnet-5-5`.
+2. **Khắc phục điểm rơi về Haiku trong `agent_gop.py`**:
+   - Khi `_vong_ghi` không có công cụ nào được gọi (do khách chỉ chào hỏi hoặc hỏi câu chung chung), hệ thống không coi là lỗi để rơi về form Haiku, mà hoàn thành lượt ghi êm ái để Sonnet bước 2 sinh câu trả lời tự nhiên.
 
 ---
 

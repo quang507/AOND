@@ -788,6 +788,18 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz392 · Thống nhất đơn model Sonnet cho toàn bộ chu trình, loại bỏ gọi chéo Haiku bóc tách và hoàn thiện 1 vòng chuẩn MOSO (06/11/2026)
+- **Ca gốc**: Đối soát ảnh Zalo thực tế (`media_1793951947524_b6608d63.jpg` và `media_1793951936394_26f342b5.jpg`): mỗi lượt chat bot vẫn hiện `Tốn: $... (claude-haiku-5-5 ... | claude-sonnet-5-5 ...)` do kiến trúc cũ chia 2 vòng (Haiku bóc form json -> Sonnet viết lời). Đồng thời khi khách chỉ chào hỏi ("chào em") hoặc câu không có ô mới, `agent_gop._vong_ghi` coi việc không gọi tool là lỗi và rơi về form Haiku `[nguồn: chủ dự án 06/11/2026: "ủa sao bảo làm moso chỉ chạy 1 vòng chứ không phải 2 vòng", "Ok sửa push lên vps để tui test thử, chạy sonnet"]`.
+- **Lớp lỗi**:
+  1. `bot/bridge-zca/cai-vps.sh` gán `MODEL_BOC="claude-haiku-5-5"` khiến `.env` trên VPS ép `AIOI_EXTRACT_MODEL=claude-haiku-5-5`, làm mọi lượt bóc tách gọi Haiku thay vì thuần nhất Sonnet.
+  2. `config.load_settings()` mặc định `extract_model` rơi về `claude-haiku-4-5` thay vì ăn theo `chat_model` (`claude-sonnet-5-5`).
+  3. Khi khách chào hỏi thông thường, `_vong_ghi` trả `None` do `da_goi` rỗng, kích hoạt fallback form JSON của Haiku.
+- **Sửa**:
+  1. Đổi `MODEL_BOC="claude-sonnet-5-5"` trong `bot/bridge-zca/cai-vps.sh` để VPS đồng bộ 100% sang Sonnet 5.5.
+  2. Trong `src/aioi/config.py`: mặc định `chat_model` là `claude-sonnet-5-5` và `extract_model` ăn theo `chat_model`.
+  3. Cập nhật `agent_gop.py`: khi không có công cụ nào được gọi, trả về kết quả rỗng hợp lệ thay vì rơi về form Haiku, giữ trọn vẹn chu trình Sonnet 1 vòng chuẩn MOSO.
+- **Kiểm**: `tests/test_cau_hinh_nhu_production_316.py` (env VPS bóc tách bằng Sonnet 5.5 khớp `MODEL_BOC`), các bài test hồi quy 390, 391.
+
 ### SRS-5.1zzzzzzz391 · Tái cấu trúc toàn diện Prompt và Quy trình Ký gửi: Thu gọn System Prompt <1.500 tokens, tích hợp Customer Insight, chuyển luật sang Công cụ nguyên tử, Cắt bỏ Negative Constraints, Fast-Draft 50 điểm và CUM_TOI_DA = 2 (06/11/2026)
 - **Ca gốc**: Đối soát ảnh Zalo thực tế (`media_1793949317018_0b4e5069.jpg`) và mã nguồn gốc của anh Luận (`https://github.com/luan8560/AOND`): một lượt chat tốn tới $0.09 – $0.13 do Sonnet nuốt 13.1k tokens, System Prompt nhồi 7.100 tokens (>24.500 ký tự) với 40+ câu cấm tiêu cực khiến mô hình phản ứng gượng gạo; bot bắt bẻ hỏi đủ 10 tiêu chí (hiện trạng, nội thất) mới chịu ra tin nháp, và khi khách hỏi dự án/vay ngân hàng thì bot bị đơ do thiếu Tool tra cứu `[nguồn: chủ dự án 06/11/2026: "Thu gọn System Prompt từ 7.000 tokens xuống dưới 1.500 tokens Chuyển các luật tra cứu cồng kềnh thành CÔNG CỤ NGUYÊN TỬ (Tools)Cắt bỏ các luật cấm tiêu cực (Negative Constraints) ok tôi duyệt", "insight là thấu hiểu và chăm sóc khách hàng nữa, cho vào chỗ phân vai luôn", "vậy mỗi lượt hỏi tối đa 2 ý thôi"]`.
 - **Lớp lỗi**:
@@ -864,8 +876,3 @@ Chủ dự án 05/11: "giờ có 2 zalo mua và bán lận" khi đặt biến Za
 Ca gốc: 05/11 `aioinhadat.vercel.app` trả 402 DEPLOYMENT_DISABLED — team Vercel cũ bị tạm dừng tới 04/12 vì vượt "Fluid Active CPU" của gói Hobby; mọi link bot gửi khách chết. Chủ dự án 05/11: "tôi muốn đổi vercel sang 1 môi trường khác"; dựng project `aond` ở team mới (AIOiNhaDat).
 (1) Lớp lỗi: bản dựng đầu của project mới bị `ignoreCommand` (SRS-248) huỷ vì commit cuối không đổi file web → `aond.vercel.app` 404 DEPLOYMENT_NOT_FOUND. (2) Sửa: tên miền mặc định một nguồn mỗi phía — `src/aioi/web.py` (bot) và `lib/format.ts` (web) → `https://aond.vercel.app`; redirect `nhadat-cc` trong `next.config.mjs`, script bắn thử; lần gộp đổi file web nên Vercel dựng. Còn: Supabase Auth (URL đăng nhập CRM) phải thêm tên miền mới — chủ dự án làm trên dashboard.
 (3) Kiểm: `test:py` 1462 đạt; sau khi gộp kiểm `curl https://aond.vercel.app/` ra 200 và bot gửi link tên miền mới.
-
-### SRS-5.1zzzzzzz382 · Gỡ regex đoán ý khách: kiểm kê toàn lõi — loại D đã về 0, gỡ regex chết, cổng chặn regex mới (05/11/2026)
-Chủ dự án 05/11 (nguyên văn): "gỡ regex đi" (đề xuất 8 đã duyệt 03/11: bớt regex khi vòng agent đã quyết thay, cổng an toàn thì giữ). Kiểm kê `src/aioi/` (trừ `llm/mock.py`): 194 lời gọi `re.*` (48 hằng `re.compile`) — soát lời bot (A), định dạng / số / tiền / SĐT / địa chỉ / chuẩn hoá (B), cổng cụm trích / PII (C); loại D (đọc lời khách để đoán ý) = 0, vì SRS-55 / 213 / 281 / 320 / 328 đã chuyển sang trường AI + cụm trích. Bảng đầy đủ ở mô tả PR.
-(1) Lớp lỗi: không cổng nào chặn regex mới đọc lời khách, và regex chết (`_PII_KEYWORD_RE`, `_TU_RE` không ai gọi) làm kiểm kê tưởng còn nhiều. (2) Sửa: gỡ hai regex chết → 192 lời gọi (47 hằng), loại D vẫn 0; không đổi hành vi, không thêm trường AI.
-(3) Kiểm: `test_kiem_ke_regex_382.py` — trần số regex mỗi file (thêm regex: đỏ, phải xếp loại ở mục SRS), vai qua `seller_role` + cụm trích với cách nói không chữ khoá ("sổ đứng tên tôi"); trả `_TU_RE`: 2 đỏ. Chưa chạy `cham` / bắn thử.

@@ -142,9 +142,9 @@ if [ -d /opt/aond_core/src/aioi ]; then
   # SRS-5.1zzzzzzz308: chủ dự án 30/10 chuyển Haiku ("dùng haiku hết luôn cũng dc") rồi cùng ngày quay lại Sonnet ("nếu chạy vậy thì ko tốn nhiều
   # đâu, chuyển sang sonnet 5.5 luôn" — kèm hướng agent công cụ). Bộ chấm 27 kịch bản: Sonnet 288/289, Haiku 284–288, Sonnet đắt ~10 lần.
   MODEL_CHAT="claude-sonnet-5-5"
-  # SRS-5.1zzzzzzz316 (audit Đợt 0): model BÓC TÁCH một nguồn ở đây (trước chỉ nằm trong .env VPS, sổ `bot_usage_model` 28/10–01/11 ghi
-  # claude-haiku-5-5 — không phải mặc định config.py). Bộ chấm và test đọc dòng này.
-  MODEL_BOC="claude-haiku-5-5"
+  # SRS-5.1zzzzzzz316; SRS-5.1zzzzzzz392 (chủ dự án 06/11: "chạy sonnet", thống nhất toàn bộ chu trình sang Sonnet 5.5, bỏ Haiku):
+  # model BÓC TÁCH một nguồn ở đây đồng bộ cùng MODEL_CHAT.
+  MODEL_BOC="claude-sonnet-5-5"
   # SRS-5.1zzzzzzz239 (chủ dự án 28/10/2026: "nếu bắn product đổi sang key gemini bắn từ từ"): ID thử (`la_id_thu`, các ô ban-thu-*) gọi
   # model THẲNG Gemini, không tốn tiền Claude. Muốn bắn thử bằng đúng model khách thật thì đổi dòng này thành "tat" rồi chạy cai-vps.
   # 28/10/2026 (SRS-5.1zzzzzzz243, chủ dự án: "đổi thành claude sonnet 5.5 xem nó có nịnh tốt ko"): bắn thử bằng Sonnet 5.5 như khách thật

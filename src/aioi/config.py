@@ -45,12 +45,14 @@ class Settings:
 
 
 def load_settings() -> Settings:
+    chat_m = os.getenv("AIOI_CHAT_MODEL", "claude-sonnet-5-5")
+    extract_m = os.getenv("AIOI_EXTRACT_MODEL", chat_m)
     return Settings(
         provider=os.getenv("AIOI_LLM_PROVIDER", "claude").strip().lower(),
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY") or None,
-        chat_model=os.getenv("AIOI_CHAT_MODEL", "claude-haiku-4-5"),
+        chat_model=chat_m,
         vision_model=os.getenv("AIOI_VISION_MODEL", "claude-opus-4-8"),
-        extract_model=os.getenv("AIOI_EXTRACT_MODEL", "claude-haiku-4-5"),
+        extract_model=extract_m,
 
         google_api_key=os.getenv("GOOGLE_API_KEY") or None,
         db_path=os.getenv("AIOI_DB_PATH", "aioi.db"),

@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz382 · Gỡ regex đoán ý khách: kiểm kê toàn lõi — loại D đã về 0, gỡ regex chết, cổng chặn regex mới (05/11/2026)
+Chủ dự án 05/11 (nguyên văn): "gỡ regex đi" (đề xuất 8 đã duyệt 03/11: bớt regex khi vòng agent đã quyết thay, cổng an toàn thì giữ). Kiểm kê `src/aioi/` (trừ `llm/mock.py`): 194 lời gọi `re.*` (48 hằng `re.compile`) — soát lời bot (A), định dạng / số / tiền / SĐT / địa chỉ / chuẩn hoá (B), cổng cụm trích / PII (C); loại D (đọc lời khách để đoán ý) = 0, vì SRS-55 / 213 / 281 / 320 / 328 đã chuyển sang trường AI + cụm trích. Bảng đầy đủ ở mô tả PR.
+(1) Lớp lỗi: không cổng nào chặn regex mới đọc lời khách, và regex chết (`_PII_KEYWORD_RE`, `_TU_RE` không ai gọi) làm kiểm kê tưởng còn nhiều. (2) Sửa: gỡ hai regex chết → 192 lời gọi (47 hằng), loại D vẫn 0; không đổi hành vi, không thêm trường AI.
+(3) Kiểm: `test_kiem_ke_regex_382.py` — trần số regex mỗi file (thêm regex: đỏ, phải xếp loại ở mục SRS), vai qua `seller_role` + cụm trích với cách nói không chữ khoá ("sổ đứng tên tôi"); trả `_TU_RE`: 2 đỏ. Chưa chạy `cham` / bắn thử.
+
 ### SRS-5.1zzzzzzz381 · Khối nhân vật "thấu hiểu, chăm sóc khách" đứng đầu mọi prompt bot nói với khách (04/11/2026)
 Chủ dự án 04/11 (nguyên văn): "Tôi nghĩ insigh của con bot sẽ là thấu hiểu chăm sóc khách hàng cùng với các tính cách từ trước đó. các prompt về nhân vật tính cách nên để đầu trong prompt bot". Trước: phiếu lượt / prompt mua mở bằng một dòng định danh rồi GIỌNG; bản nháp / phí mở bằng BỐI CẢNH (phí, gamification), bản nháp không có GIỌNG; ngoài vùng / đọc ảnh / trả lời tài liệu dự án mở "Bạn là … trợ lý ảo".
 (1) Lớp lỗi: định danh viết tay ở từng hàm dựng prompt, không có khối nhân vật chung. (2) Sửa: `prompts.khoi_nhan_vat` (nhân vật + thấu hiểu, chăm sóc — chỉ đọc nỗi lo từ chính lời khách, không đoán thêm) đứng ĐẦU phiếu lượt, prompt mua, bản nháp, sau bản nháp (kèm `GIONG_VUI` ngay sau, nguyên chữ), ngoài vùng, đọc ảnh, trả lời tài liệu dự án (không kèm giọng); trước `RANH_GIOI_CACHE`. Không cắt chữ GIONG / từ lóng / khối anh Luận.
