@@ -35,6 +35,9 @@ HUONG_DAN = (
     "- dinh_gia_tham_khao: khách hỏi giá thị trường khu này bao nhiêu, giá họ đưa ra cao hay thấp, hoặc nhờ định giá căn nhà/căn hộ/đất nền gửi bán.\n"
     "- kiem_tra_phap_ly_so: khách hỏi về sổ đỏ/sổ hồng, nhà chưa hoàn công, nhà đang thế chấp ngân hàng, mua bán vi bằng, giấy tờ công chứng cần chuẩn bị.\n"
     "- tinh_phi_moi_gioi: khách hỏi phí dịch vụ, hoa hồng môi giới, ký gửi có mất tiền không, hoặc chính sách thu phí.\n"
+    "- tra_cuu_phong_thuy: khách hỏi phong thủy hướng nhà, năm sinh hợp hướng nào, hoặc cách hóa giải hướng khi khách chê.\n"
+    "- tham_dinh_quy_hoach: khách hỏi quy hoạch lộ giới hẻm/đường, đất có dính quy hoạch treo, khoảng lùi xây dựng.\n"
+    "- goi_y_dam_phan: khách hỏi nên bớt cho khách mua bao nhiêu, bí quyết giữ giá tài sản khi thương lượng.\n"
     "Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có, không đoán. Lời gửi khách viết ở lượt cuối, sau khi tra xong; không "
     "viết 'để em tra / em kiểm tra'.\n"
 )

@@ -788,6 +788,21 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz395 · Tối ưu hóa các luồng hội thoại AOND theo trải nghiệm PropTech của MOSO: Gợi ý dải giá khi thiếu tiêu chí, No-Results fallback thông minh và Bảo mật cam kết khi xin ảnh (06/11/2026)
+- **Ca gốc**: Rà soát các luồng hội thoại sẵn có của AOND phát hiện 3 điểm nghẽn trải nghiệm: (1) Khách mua mới nói khu vực (hoặc chỉ nói ngân sách) thì bot từ chối tìm căn và hỏi cộc lốc ngược lại khách; (2) Khi không có căn nào khớp 100% tiêu chí thì bot báo cụt 'không có căn nào' khiến hội thoại đi vào ngõ cụt; (3) Lời xin ảnh và sổ hồng ở luồng bán chưa nêu cam kết bảo mật khiến chủ nhà e ngại [nguồn: chủ dự án 06/11/2026: "cái này có giống bên moso không Ok làm đi"].
+- **Lớp lỗi**:
+  1. `agent_mua.chay_cong_cu`: hàm `tim_can` khi thiếu 1 trong 2 tiêu chí (khu_vuc hoặc ngan_sach) chỉ trả về một câu nhắc thiếu khô cứng, không khai thác bảng benchmark giá và danh mục dự án để tư vấn chủ động như MOSO.
+  2. Khi `kho.can_phu_hop` trả về rỗng (0 kết quả), bot dừng lại thay vì đưa ra nhận định mặt bằng giá thực tế và đề xuất phương án thay thế lân cận.
+  3. `prompts.NATURAL_QUESTIONS["hinh_anh"]` chỉ dặn xin ảnh để chấm điểm cao, thiếu lời cam kết bảo mật tuyệt đối che số nhà/số sổ.
+- **Sửa**:
+  1. Nâng cấp `agent_mua.chay_cong_cu["tim_can"]`:
+     - Khi có khu vực mà chưa có ngân sách: Tự động tra cứu dải giá thị trường theo phân vùng (`_BANG_GIA_BENCHMARK`) và dự án tiêu biểu (`kho.du_an_theo_khu`) để gợi ý khoảng giá căn hộ/nhà phố trước khi hỏi ngân sách.
+     - Khi có ngân sách mà chưa có khu vực: Khẳng định tiềm năng ngân sách và gợi ý các khu vực sôi động tại TP.HCM phù hợp tầm tiền.
+     - Khi không có căn khớp (0 kết quả): Hướng dẫn model giải thích thực tế mặt bằng giá tại khu vực đó và đề xuất các phương án thay thế khả thi (mở rộng quận lân cận hoặc loại hình/diện tích tương đương).
+  2. Cập nhật `agent_ban.HUONG_DAN`: bổ sung chỉ dẫn gọi công cụ phong thủy, quy hoạch, đàm phán trong vòng agent bán.
+  3. Sửa `prompts.NATURAL_QUESTIONS["hinh_anh"]`: Bổ sung cam kết bảo mật 100%, tự động che số nhà và số sổ khi đăng web.
+- **Kiểm**: `tests/test_toi_uu_luong_395.py` (5/5 tests đạt 100%), kiểm tra hồi quy toàn diện đạt 100%, `scripts/soat-truy-vet.sh` SẠCH.
+
 ### SRS-5.1zzzzzzz394 · Tích hợp 5 Tinh hoa PropTech của MOSO vào AOND Chatbot Zalo: Phong thủy Bát Trạch, So sánh đối đầu dự án, Thẩm định quy hoạch lộ giới, Gợi ý đàm phán giá và Tiêu chí an cư gia đình (06/11/2026)
 - **Ca gốc**: Sau khi nạp trọn vẹn kho 1.388 dự án MOSO TP.HCM vào Supabase (`thu-du-an-moso.mjs`), khai thác sâu các tính năng cao cấp của nền tảng MOSO để nâng tầm trải nghiệm tư vấn thực chiến của Chatbot Zalo cả hai nhánh Mua & Bán [nguồn: chủ dự án 06/11/2026: "ok cho thêm 5 tinh hoa của moso vào đi"].
 - **Lớp lỗi**:
@@ -889,7 +904,3 @@ Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại h
 ### SRS-5.1zzzzzzz386 · Bot báo "em ghi rồi" gần như mọi lượt; câu phí "chưa thành thì … không tốn đồng nào" thiếu chữ (05/11/2026)
 Chủ dự án 05/11 (soát chat thử): câu "Chỉ nói đã ghi / đã cập nhật … với điều kết quả báo ĐÃ GHI" cộng báo cáo lượt nào cũng có dòng "ĐÃ GHI" "đang ngầm gợi model báo đã ghi ở mọi lượt … xóa cái này đi"; khách hỏi "câu cuối chưa 'thành' … có phải thiếu chữ công". Hứa việc hệ thống không làm: để sau ("có khi lúc đó admin sẽ nhắn").
 (1) Lớp lỗi: lời dặn chặn "báo ghi sai" lại nêu việc báo ghi mỗi lượt, nhãn báo cáo "ĐÃ GHI" thành việc cần nói; câu mẫu `bao_phi` gõ thiếu chữ. (2) Sửa: `agent_gop.HUONG_DAN_VIET` — hệ thống tự lưu, không báo khách đã ghi; `bao_cao` đổi nhãn "Ô vừa lưu (hệ thống tự lưu, không báo khách là đã ghi)"; `cau_mau.bao_phi` "chưa thành công thì" + migration `20261105b` (dòng DB chưa sửa tay). Đường dự phòng phía mua (`agent_mua.HUONG_DAN_GHI_VIEC`, chặn báo hẹn xem khi chưa ghi) giữ. (3) Kiểm: `test_agent_gop_371` đỏ khi còn nhãn / câu cũ; `test_cau_mau*` theo câu mới. CI; chưa chạy `cham` (chủ dự án dặn không chạy test ở máy).
-
-### SRS-5.1zzzzzzz385 · Ba lịch nhúng vector chạy 2.160 lượt / ngày (≈ 24 phút CPU) khi không còn gì để nhúng; 409 dự án băm lại mãi (05/11/2026)
-Chủ dự án 05/11: "cấu trúc db hiện tại đã tối ưu nhất chưa … nên sửa ntn". Đo 24 giờ (`cron.job_run_details`): `nhung-dia-danh-tick` 1,28 s, `nhung-tick` 0,44 s, `nhung-luat-tick` 0,28 s mỗi lượt × 720; chạy tay 20 / 229 / 11 ms (phần còn lại là chi phí mở kết nối mỗi lượt cron).
-(1) Lớp lỗi: lịch dựng cho lúc nhúng hàng loạt giữ nguyên nhịp 2 phút sau khi đã nhúng xong; vòng dự án không ghi mốc khi chữ không đổi / thiếu chữ. (2) Sửa: migration `20261105a` — tin + dự án 5 phút, địa danh + luật 15 phút (không gỡ lịch); `nhung_tick` sửa tại chỗ trên định nghĩa đang chạy (báo lỗi nếu lệch); bỏ 3 HNSW 0 lần quét trên bảng nhỏ; giữ HNSW `listings` / `dieu_luat` và 3 index UNIQUE "mot_*" của `reminders` (ràng buộc). (3) Kiểm: áp 05/11 qua `apply-migration.yml` (không chạy thử riêng — khối DO tự báo lỗi nếu định nghĩa lệch); soát DB sau áp: ba lịch đúng nhịp mới, `nhung_tick` có đoạn 20261105a, 3 index đã bỏ.

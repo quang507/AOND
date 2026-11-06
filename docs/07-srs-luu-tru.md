@@ -73,6 +73,10 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz385 · Ba lịch nhúng vector chạy 2.160 lượt / ngày (≈ 24 phút CPU) khi không còn gì để nhúng; 409 dự án băm lại mãi (05/11/2026)
+Chủ dự án 05/11: "cấu trúc db hiện tại đã tối ưu nhất chưa … nên sửa ntn". Đo 24 giờ (`cron.job_run_details`): `nhung-dia-danh-tick` 1,28 s, `nhung-tick` 0,44 s, `nhung-luat-tick` 0,28 s mỗi lượt × 720; chạy tay 20 / 229 / 11 ms (phần còn lại là chi phí mở kết nối mỗi lượt cron).
+(1) Lớp lỗi: lịch dựng cho lúc nhúng hàng loạt giữ nguyên nhịp 2 phút sau khi đã nhúng xong; vòng dự án không ghi mốc khi chữ không đổi / thiếu chữ. (2) Sửa: migration `20261105a` — tin + dự án 5 phút, địa danh + luật 15 phút (không gỡ lịch); `nhung_tick` sửa tại chỗ trên định nghĩa đang chạy (báo lỗi nếu lệch); bỏ 3 HNSW 0 lần quét trên bảng nhỏ; giữ HNSW `listings` / `dieu_luat` và 3 index UNIQUE "mot_*" của `reminders` (ràng buộc). (3) Kiểm: áp 05/11 qua `apply-migration.yml` (không chạy thử riêng — khối DO tự báo lỗi nếu định nghĩa lệch); soát DB sau áp: ba lịch đúng nhịp mới, `nhung_tick` có đoạn 20261105a, 3 index đã bỏ.
+
 ### SRS-5.1zzzzzzz384 · Web có hai số Zalo: nút người bán trỏ số ký gửi, còn lại số tư vấn mua (05/11/2026)
 Chủ dự án 05/11: "giờ có 2 zalo mua và bán lận" khi đặt biến Zalo cho project Vercel mới. Trước: web một biến `NEXT_PUBLIC_ZALO_URL` cho mọi nút, nút "rao bán" / "môi giới gửi hàng" dẫn người bán vào số tư vấn mua (SRS-210 tách hai số).
 (1) Lớp lỗi: web chưa theo việc tách hai số của bot. (2) Sửa: `lib/format.ts` thêm `NEXT_PUBLIC_ZALO_URL_BAN` (số ký gửi) cho ngữ cảnh `seller_cta`, `nmg-apply`, `raoban`; mọi nút khác giữ `NEXT_PUBLIC_ZALO_URL` (số tư vấn); chưa đặt biến bán thì dùng chung. Không ghi số điện thoại vào repo (đặt trên Vercel).

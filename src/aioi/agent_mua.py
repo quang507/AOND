@@ -358,12 +358,53 @@ def chay_cong_cu(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -
                 lead.fields.pop("ngan_sach_tu", None)   # ngân sách mới nói bằng một câu → sàn / trần cũ không còn đúng
                 lead.fields.pop("ngan_sach_den", None)
             lead.update({k: _chu(v) for k, v in inp.items() if k in CONG_CU[0]["input_schema"]["properties"] and _chu(v)})
+
+            kv = _chu(lead.fields.get("khu_vuc") or getattr(lead, "khu_vuc", ""))
+            ns = _chu(lead.fields.get("ngan_sach") or getattr(lead, "ngan_sach", ""))
+
             if not co_tieu_chi(lead):
-                return "Chưa đủ khu vực và ngân sách để tìm — hỏi khách phần còn thiếu, chưa giới thiệu căn."
+                if kv and not ns:
+                    from . import dinh_gia
+                    vung = dinh_gia._phan_vung(kv)
+                    bg = dinh_gia._BANG_GIA_BENCHMARK.get(vung, dinh_gia._BANG_GIA_BENCHMARK["noi_thanh"])
+                    ch_min, ch_max = bg.get("can_ho", (40, 75))
+                    np_min, np_max = bg.get("nha_pho", (80, 150))
+                    du_an_ds = []
+                    if getattr(kho, "du_an_theo_khu", None) is not None:
+                        try:
+                            da_list = kho.du_an_theo_khu(kv)
+                            if da_list:
+                                du_an_ds = [d.get("name") for d in da_list[:3] if d.get("name")]
+                        except Exception:
+                            pass
+                    da_str = f" Dự án tiêu biểu: {', '.join(du_an_ds)}." if du_an_ds else ""
+                    return (
+                        f"Khách đã nêu khu vực '{kv}' nhưng CHƯA CÓ NGÂN SÁCH. Hướng dẫn tư vấn MOSO: "
+                        f"(1) Khẳng định bên em có rổ hàng tốt tại {kv}; "
+                        f"(2) Nêu dải giá thị trường tham khảo (căn hộ ~{ch_min}-{ch_max} triệu/m², nhà phố ~{np_min}-{np_max} triệu/m² đất.{da_str}); "
+                        f"(3) Hỏi khách đang nhắm tầm tài chính khoảng bao nhiêu (hoặc nhu cầu mấy phòng ngủ) để em lọc đúng căn phù hợp nhất."
+                    )
+                if ns and not kv:
+                    return (
+                        f"Khách đã nêu ngân sách '{ns}' nhưng CHƯA CHỌN KHU VỰC. Hướng dẫn tư vấn MOSO: "
+                        f"(1) Khẳng định tầm tài chính {ns} có nhiều lựa chọn tốt; "
+                        f"(2) Gợi ý một số khu vực sôi động tại TP.HCM phù hợp tầm giá này; "
+                        f"(3) Hỏi khách muốn ưu tiên gần nơi làm việc hoặc trường học nào để em khoanh vùng chính xác nhất."
+                    )
+                return "Chưa đủ khu vực và ngân sách để tìm — hỏi khách khu vực mong muốn và tầm tài chính dự kiến."
+
             lay = getattr(kho, "can_khong_hop", None)
             can = kho.can_phu_hop(lead, loai_tru=lay(conv.user_key) if lay is not None else None)
             gom.extend(can)
-            return ("CĂN ĐANG RAO hợp tiêu chí vừa tra:\n" + _dong(engine, can)) if can else "Không có căn đang rao nào hợp tiêu chí này."
+            if can:
+                return "CĂN ĐANG RAO hợp tiêu chí vừa tra:\n" + _dong(engine, can)
+            return (
+                f"Hiện kho chưa có căn nào khớp 100% tất cả tiêu chí (khu vực '{kv}', ngân sách '{ns}'). "
+                f"ĐỪNG CHỈ NÓI 'KHÔNG CÓ' RỒI DỪNG LẠI. Hướng dẫn tư vấn MOSO: "
+                f"(1) Nêu ngắn gọn thực tế mặt bằng giá tại {kv}; "
+                f"(2) Gợi ý phương án thay thế khả thi (mở rộng sang khu vực lân cận hoặc loại hình/diện tích tương đương trong tầm ngân sách này); "
+                f"(3) Hỏi khách có muốn em mở rộng phạm vi tìm kiếm hoặc lưu thông tin để khi có căn mới bung hàng sẽ báo ngay không."
+            )
         if ten == "xem_can":
             ma = [_chu(m, 20).lstrip("#") for m in (inp.get("ma") or []) if _chu(m)][:3]
             can = kho.can_theo_ma(ma) if ma and getattr(kho, "can_theo_ma", None) is not None else []

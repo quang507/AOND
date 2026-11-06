@@ -187,7 +187,7 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "nam_xay": "Hỏi nhà xây năm nào, đã sửa lại lần nào chưa",
     "hd_thue_con": "Hỏi hợp đồng thuê hiện tại còn bao lâu",
     "thu_nhap_thue": "Hỏi tiền thuê nhà đang thu mỗi tháng khoảng bao nhiêu (chỉ khi nhà đang có người thuê)",
-    "hinh_anh": "Mời gửi hình ảnh thực tế hoặc hình sổ để hồ sơ được chấm điểm cao",
+    "hinh_anh": "Mời gửi thêm vài tấm hình thực tế căn nhà / sổ hồng để tin đăng đạt độ tin cậy cao; khẳng định bên em luôn bảo mật tuyệt đối, che số nhà và số sổ khi đăng web",
     # Chung cư / Căn hộ
     "so_phong_ngu": "Hỏi căn mình thiết kế mấy phòng ngủ và mấy WC",
     "tang_toa": "Hỏi căn mình ở tầng mấy, thuộc tòa/block nào",
