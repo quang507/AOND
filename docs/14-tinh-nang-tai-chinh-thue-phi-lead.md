@@ -179,11 +179,42 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 
 ---
 
+
+### 2.9 Module 9: Tái Cấu Trúc Toàn Diện Prompt & Quy Trình Ký Gửi Tinh Gọn (SRS-5.1zzzzzzz391)
+
+#### A. Đối sánh Kiến trúc Trước & Sau Tái Cấu Trúc
+| Tiêu chí | Hệ thống Cũ (Anh Luận / Tuần tự) | Hệ thống Mới Tinh Gọn (SRS-5.1zzzzzzz391) |
+|---|---|---|
+| **Dung lượng System Prompt** | ~7.100 tokens (>24.500 ký tự), phân mảnh 6 file | **~1.150 tokens (4.136 ký tự)**, tập trung, chuẩn hoá |
+| **Cơ chế xử lý** | 2 vòng tuần tự cứng (Haiku bóc form $ightarrow$ Sonnet viết lời) | **Function Calling nguyên tử**: LLM tự động gọi tool khi cần |
+| **Chi phí token / lượt** | $0.09 – $0.13 / lượt (Sonnet nuốt tới 13.1k tokens) | **~$0.015 / lượt** (giảm ~85% chi phí token vào) |
+| **Ràng buộc luật & cấm đoán** | 40+ câu "CẤM..." tiêu cực rải rác | **Nguyên tắc hành động tích cực (Positive Directives)** |
+| **Phân vai & Tác phong** | Hỏi máy móc theo thứ tự ô trống | **Thấu hiểu tâm lý & Chăm sóc khách hàng (Customer Insight)** |
+| **Nhịp độ đặt câu hỏi** | 1 ô đơn lẻ kéo dài hoặc dồn dập | **Tối đa 2 ý mỗi lượt hỏi (`CUM_TOI_DA = 2`)** |
+| **Ngưỡng ra tin nháp** | Chặn cứng đòi đủ 10 tiêu chí (hiện trạng, nội thất) | **Fast-Draft tại ~50 điểm** (4 trụ cột: Loại, Vị trí, DT, Giá) |
+
+#### B. Chi tiết 4 Cải tiến Trọng điểm
+1. **Thu gọn System Prompt <1.500 tokens**:
+   - Chuyển các luật tra cứu cồng kềnh (bảng giá đất, luật sổ hồng, công thức hoa hồng, danh mục dự án & lãi vay) sang các Công cụ nguyên tử (Tools) độc lập.
+   - Giữ nguyên 100% tinh hoa bản sắc chợ BĐS Sài Gòn của anh Luận (`luan8560/AOND`): Cấu trúc 4 phần `AD_FORMAT` (Tiêu đề rao chợ 15–25 từ; Mô tả 70–150 từ có nhịp cảm xúc; 4–5 gạch đầu dòng đắt giá; CTA thúc Zalo FOMO); từ điển tiếng lóng BĐS Sài Gòn (*tỏi, củ, xuyệc hẻm "/", giá net, ngộp, SHR, DTCN*); nguyên tắc trung thực tuyệt đối.
+2. **Cắt bỏ các luật cấm tiêu cực (Negative Constraints)**:
+   - Thay thế các câu cấm đoán tiêu cực gây gò bó mô hình ("CẤM...", "TUYỆT ĐỐI KHÔNG...") bằng các chỉ thị hành động tích cực: tập trung lắng nghe, trả lời trọng tâm, giải thích chân thành, đồng hành cùng khách.
+3. **Phân vai Thấu hiểu & Chăm sóc khách hàng (Customer Insight & Empathy)**:
+   - Thấu hiểu nỗi lo của chủ nhà (sợ bán hớ, sợ bị ép giá, nhà để trống sốt ruột, ngại thủ tục pháp lý).
+   - Thấu hiểu áp lực của người mua (sợ dính quy hoạch, lo lắng pháp lý tranh chấp, gánh nặng lãi suất vay ngân hàng).
+   - Tự động đổi vai mượt mà khi khách chuyển từ ký gửi sang hỏi mua căn hộ/nhà phố.
+4. **Fast-Draft tại 50 điểm & Giới hạn tối đa 2 ý/lượt (`CUM_TOI_DA = 2`)**:
+   - Gỡ bỏ `hien_trang` khỏi danh sách chặn bản nháp. Ngay khi có đủ 4 trụ cột vàng (Loại hình, Địa chỉ/Khu vực, Diện tích, Giá), bot xuất xưởng ngay bản nháp tin rao chợ để khách xem và chốt sửa.
+   - Giới hạn mỗi lượt trao đổi chỉ hỏi tối đa 1–2 ý quan trọng nhất để khách không bị ngợp.
+
+---
+
 ## 3. Kế hoạch Kiểm thử & Truy vết
 
 1. **Unit Test Python (`tests/`)**:
    - `test_thue_phi_tai_chinh.py`: Kiểm tra tính phí công chứng tại các mốc 40 triệu đến 600 tỷ; kiểm tra tính thuế TNCN 2% và lệ phí trước bạ 0.5%; kiểm tra công thức trả góp ngân hàng dư nợ giảm dần.
    - `test_sdt_hen_xem_tai_chinh.py`: Kiểm tra trường hợp khách gửi SĐT khi **chưa có lịch hẹn xem**, xác nhận SĐT vẫn được lưu vào `buyers` và có thông báo gửi Admin.
    - `test_agent_mua_tools_389.py`: Kiểm tra toàn bộ 4 công cụ nguyên tử Function Calling (`so_sanh_can`, `tinh_thue_phi`, `tinh_vay_tra_gop`, `luu_so_dien_thoai`) thực thi trực tiếp qua `chay_cong_cu`.
+   - `test_toi_uu_ky_gui_391.py`: Kiểm tra Fast-Draft tại 50 điểm không bị chặn bởi hiện trạng, CUM_TOI_DA = 2, System Prompt < 1.500 tokens, tích hợp Customer Insight và Function Calling.
    - `test_agent_ban_tools_390.py`: Kiểm tra toàn bộ 3 công cụ nguyên tử Ký Gửi phía Người Bán (`dinh_gia_tham_khao`, `kiem_tra_phap_ly_so`, `tinh_phi_moi_gioi`).
 2. **Soát truy vết**: Chạy `scripts/soat-truy-vet.sh` đảm bảo không gãy liên kết ID nào.

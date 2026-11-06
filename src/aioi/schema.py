@@ -282,9 +282,9 @@ CUM_HOI: list[tuple[str, ...]] = [
     ("phap_ly_hoan_cong", "gia", "tinh_trang_ban_giao"),
     ("du_an", "tang_toa"),
 ]
-# 22/10/2026 (SRS-5.1zzzzzzz136; chủ dự án: "bỏ hỏi gộp", "mỗi lần hỏi thì hỏi 1 câu cho đơn giản"): mỗi lượt đúng MỘT ô. CUM_HOI giữ nguyên
-# (chỗ nào cần hỏi gộp lại thì nâng số này), chỉ tối đa 1 nên `cum_hoi` trả đúng ô đang hỏi.
-CUM_TOI_DA = 1
+# 22/10/2026 (SRS-5.1zzzzzzz136); 06/11/2026 (SRS-5.1zzzzzzz391, chủ dự án: "mỗi lượt hỏi tối đa 2 ý thôi"):
+# nâng số ô cùng cụm được hỏi gộp mỗi lượt lên tối đa 2 ý để hội thoại tự nhiên, không tra khảo máy móc.
+CUM_TOI_DA = 2
 
 # Đất nền / thổ cư phải có tên đường + lộ giới hoặc thổ cư mới soạn tin; đất nông nghiệp thường ở xã, không có tên đường —
 # không chặn theo tên đường để khỏi kẹt câu hỏi.
@@ -465,6 +465,12 @@ class Property:
                 continue
             ra.append(fid)
         return ra
+
+    def fast_draft_ready(self) -> bool:
+        """Sẵn sàng ra bản nháp nhanh (SRS-5.1zzzzzzz391): có đủ 4 trụ cột vàng (loại hình + vị trí/khu vực + giá)
+        và có thông tin quy mô (diện tích hoặc kích thước hoặc số phòng) — không cần chờ pháp lý hay hiện trạng."""
+        quy_mo_keys = tuple(_KEYS_FACET["dat"] + _KEYS_FACET["cong_trinh"])
+        return self.can_publish() and any(self._has(k) for k in quy_mo_keys)
 
     def summary_ready(self) -> bool:
         """Đủ để SOẠN bài rao (SRS-5.1zzzzzzz260, chủ dự án 28/10): `can_publish` (loại hình + vị trí hoặc khu vực + giá) VÀ không còn nhóm

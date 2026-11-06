@@ -12,7 +12,7 @@ def _nha(**f):
 def test_o_thieu_dau_tien_quyet_cum_va_hoi_gop():
     p = _nha(duong="Âu Cơ", dia_chi="110 Âu Cơ", phuong="Phường 9", quan="Quận 11", lo_gioi_hem="mặt tiền", gia="16 tỷ")
     thieu = p.missing_fields()
-    assert p.cum_hoi(thieu[0], thieu) == ["dien_tich_dat"]    # SRS-5.1zzzzzzz136 (22/10: "bỏ hỏi gộp"): mỗi lượt đúng một ô
+    assert p.cum_hoi(thieu[0], thieu) == ["dien_tich_dat", "dien_tich_nha"]  # SRS-5.1zzzzzzz391: CUM_TOI_DA = 2 tối đa 2 ý
     s = build_phieu_luot("Hằng", p, thieu[0])
     assert "MỘT CỤM, hỏi gộp" not in s and "diện tích đất" in s
 
