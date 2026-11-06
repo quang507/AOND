@@ -50,9 +50,7 @@ soát tính nhất quán của bộ tài liệu.
 
 ## Checklist tự kiểm trước khi commit
 
-- [ ] `bun run kiem` xanh (kiểu + dựng + e2e bot + soát truy vết). Chỉ soát tài
-      liệu thì `bun run truyvet` — nó bắt luôn ID gãy, FR thiếu dòng truy vết,
-      số đếm README lệch và SĐT thật lọt vào `docs/`.
+- [ ] Khi chuẩn bị mở PR / push đụng `docs/`: chạy `bun run truyvet` xanh (soát ID gãy, truy vết, PII). Không cần chạy `bun run kiem` nếu chỉ sửa tài liệu.
 - [ ] Mọi `FR-` mới đều xuất hiện trong `08-traceability.md`.
 - [ ] Mọi `UF-`, `WF-`, `SRS-`, `AC-` được tham chiếu đều **tồn tại thật**.
 - [ ] Không có ID trùng, không có ID bị nhảy cóc mà không giải thích.

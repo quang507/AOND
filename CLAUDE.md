@@ -125,9 +125,17 @@ Chi tiết ở `.claude/luat-dang-ap.md` §6.4 / §6.5 — **đọc trước khi
 Quy trình đầy đủ: `docs/11-quy-trinh.md`. Bản rút gọn cho agent: `.claude/skills/ba-pipeline/SKILL.md`.
 Phiên cloud có hook `SessionStart` (`.claude/hooks/session-start.sh`) cài sẵn phụ thuộc Python + Bun.
 
+### 7.1 Kiểm tra khoanh vùng thông minh (Smart Scoping — chống tràn ngữ cảnh)
+*Quyết định chủ dự án 06/11/2026 (SRS-5.1zzzzzzz387): TUYỆT ĐỐI KHÔNG chạy kiểm tra máy móc toàn bộ trước mọi commit nhỏ làm tràn bộ nhớ token và làm chậm phiên.*
+- **Commit nháp / lưu tiến độ (WIP):** Commit tự do không cần test.
+- **Sửa tài liệu (`docs/`):** CHỈ chạy `bun run truyvet` (1–2 giây) trước khi mở PR / push. Không build web, không test bot hay pytest.
+- **Sửa web / UI (`app/`, `components/`):** CHỈ chạy `bun run kieu` (type-check nhanh) khi hoàn tất việc sửa web.
+- **Sửa lõi Python (`src/aioi/`):** Chỉ chạy file test liên quan (ví dụ `pytest tests/test_xxx.py`). Chỉ chạy `bun run test:py` trước khi mở PR.
+- **Kiểm tra toàn bộ (`bun run kiem`):** CHỈ chạy một lần duy nhất trước khi tạo PR hoặc chuẩn bị gộp (Merge). Hãy để GitHub Actions (CI Cổng 2) làm hàng rào tự động cuối cùng.
+
 ```bash
-bun run test:py    # pytest lõi Python — chạy trước mọi commit đụng src/aioi
-bun run kiem       # tsc + deno check 3 edge function + build web + test:bot + test:rohang + truyvet
+bun run test:py    # pytest lõi Python — chỉ chạy trước khi mở PR đụng src/aioi
+bun run kiem       # kiểm tra toàn bộ — CHỈ chạy một lần trước khi tạo PR hoặc chuẩn bị merge
 bun run truyvet    # scripts/soat-truy-vet.sh: ID gãy, FR thiếu truy vết, PII trong docs, khoá service_role, raw.githubusercontent
 bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa kiểm được", không phải "đạt"
 ```
@@ -139,7 +147,7 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 
 **Vòng giao việc của agent** (SRS-265 / 297 — MỘT PR cho mỗi bước / việc lớn; sửa docs, đổi cấu hình, mục SRS đi CHUNG PR của việc chính, không mở PR riêng — chủ dự án 30/10):
 1. Trước khi sửa: đọc mục SRS liên quan (`grep -n "<từ khoá>" docs/07*.md`) + mục tương ứng của `.claude/luat-dang-ap.md`. **Một phiên giữ `src/aioi/` mỗi lúc** (SRS-379): còn PR mở đụng `src/aioi/` của phiên khác thì không sửa `src/aioi/` (kể cả RPC lõi gọi) cho tới khi PR đó gộp / đóng — xem danh sách PR mở trước khi sửa.
-2. Sửa → `bun run test:py` (+ bài kiểm đỏ khi gỡ bản sửa) → `bun run truyvet` → commit, push → PR draft.
+2. Sửa → kiểm tra khoanh vùng theo phạm vi thay đổi (Smart Scoping ở §7.1, không chạy test toàn bộ máy móc) → commit, push → PR draft.
 3. Có migration: chạy thử trên DB thật trong giao dịch huỷ, rồi áp TRƯỚC khi gộp (`apply-migration.yml` ô `migration_file`, kèm `commit_schema = commit`).
 4. `bash scripts/cho-workflow.sh kiem.yml <nhánh>` → xanh thì bỏ draft, gộp squash → `bash scripts/sau-gop.sh` (tự chờ cài VPS nếu có, đồng bộ nhánh).
 5. Hành vi bot đổi (lời, bóc tách, prompt, luật soát) → chỉ cần `bun run cham` (≥ 2 lần, so điểm với bản trước, SRS-304; `--giong` thêm điểm giọng). Bắn thử production (`ban-thu-*`, tốn tiền thật) CHỈ khi đổi phần bộ chấm offline không với tới: ghi DB, Zalo / bridge, công cụ ghi thật, cài VPS. Báo kết quả thật, chưa chạy thì nói chưa. Chat tay: `bun run chat:cli`.
@@ -157,5 +165,5 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 
 | Agent | Việc | Khi nào |
 |---|---|---|
-| `soat-truy-vet` | Soát ID gãy, truy vết thiếu, số đếm lệch, PII | Trước mọi commit đụng docs/ |
+| `soat-truy-vet` | Soát ID gãy, truy vết thiếu, số đếm lệch, PII | Trước khi mở PR / push đụng docs/ (không chạy từng commit nhỏ) |
 | `reviewer` | Review diff/PR theo checklist BA, chỉ báo finding | Khi review PR |

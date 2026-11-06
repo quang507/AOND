@@ -50,7 +50,7 @@ dev làm cho nó đúng.** Ba việc, ba lượt, theo thứ tự đó.
 
 6. Chuyển mũ: báo tester có FR mới (bước 11.3).
 
-7. bash scripts/soat-truy-vet.sh  → phải SẠCH mới commit.
+7. bash scripts/soat-truy-vet.sh  → chạy trước khi mở PR / push đụng docs/ (không bắt buộc sau từng commit nhỏ).
 ```
 
 **Vì sao bước 5 phải cùng commit:** một FR không có dòng truy vết là một FR
@@ -169,11 +169,18 @@ trả JSON có `message`), có bài dò đường chạy trước, và có mã t
 
 ## 11.5 Ba cổng
 
-**Cổng 1 — trước commit** (người, tại máy):
+**Cổng 1 — trước khi Push / Mở PR** (người & agent, kiểm tra khoanh vùng theo phạm vi):
+*Từ 06/11/2026 (SRS-5.1zzzzzzz387): Không chạy kiểm tra máy móc toàn bộ trước MỌI commit nhỏ làm tràn bộ nhớ token và chậm phiên. Phân bổ hợp lý theo phạm vi:*
+- Commit nháp / lưu tiến độ (WIP): commit tự do không cần test.
+- Đụng `docs/`: chỉ chạy `bun run truyvet` (1–2 giây) trước khi mở PR / push.
+- Đụng web (`app/`, `components/`): chỉ chạy `bun run kieu` hoặc `bun run build` khi hoàn tất phần web.
+- Đụng lõi Python (`src/aioi/`): chỉ chạy file test liên quan; chạy `bun run test:py` trước khi mở PR.
+- Toàn bộ `bun run kiem`: chỉ chạy 1 lần trước khi tạo PR hoặc chuẩn bị gộp, hoặc để CI Cổng 2 trên GitHub Actions kiểm tra tự động.
 
 ```bash
-bun run kiem     # kiểu + deno check + dựng + test:bot + rổ hàng + soát truy vết, một lệnh
-bun run test:py  # lõi Python — KHÔNG nằm trong `kiem`, sửa src/aioi/ thì chạy thêm
+bun run truyvet  # soát tài liệu nhanh (1-2s) trước khi push đụng docs/
+bun run test:py  # pytest lõi Python — chỉ chạy trước khi mở PR đụng src/aioi
+bun run kiem     # kiểm tra toàn bộ — CHỈ chạy 1 lần trước khi mở PR / merge
 ```
 
 Đụng migration RLS/GRANT thì chạy thêm TS-SEC bằng tay.

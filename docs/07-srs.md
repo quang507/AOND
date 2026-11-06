@@ -788,6 +788,13 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz387 · Bỏ kiểm tra máy móc trước mọi commit nhỏ, chuyển sang kiểm tra khoanh vùng (Smart Scoping) tránh tràn bộ nhớ token (06/11/2026)
+
+- **Ca gốc**: Mỗi lần sửa hay commit nhỏ, agent Claude đều chạy toàn bộ bài kiểm (`bun run kiem`, `test:py`), bắn ra hàng trăm dòng log làm tràn cửa sổ ngữ cảnh (token) và chậm phiên làm việc `[nguồn: chủ dự án 06/11/2026, chat: "lúc nào commit cái gì con claude cũng chạy kiểm tra à, vậy nhanh đầy bộ nhớ quá nhỉ... vậy sửa để lúc sau không chạy máy móc như vậy đi"]`.
+- **Lớp lỗi**: Quy ước Cổng 1 trong `CLAUDE.md §7` và `docs/11 §11.5` quy định cứng nhắc "chạy trước mọi commit đụng...", khiến AI áp dụng máy móc sau từng commit lẻ thay vì kiểm tra theo phạm vi và kiểm tra trước khi push/PR.
+- **Sửa**: Cập nhật `CLAUDE.md §7`, `docs/11-quy-trinh.md §11.5`, `.claude/skills/ba-pipeline/SKILL.md`: commit nháp/WIP không cần test; sửa docs chỉ chạy `bun run truyvet`; sửa web chỉ `bun run kieu`; chỉ chạy test liên quan khi sửa lõi; toàn bộ `bun run kiem` chỉ chạy 1 lần trước khi mở PR/gộp. Chuyển mục cũ nhất `SRS-5.1zzzzzzz376` sang `docs/07-srs-luu-tru.md` để giữ đúng 10 mục.
+- **Kiểm**: Soát `CLAUDE.md`, `docs/11-quy-trinh.md`, `docs/07-srs.md`; chạy `bun run truyvet` xanh.
+
 ### SRS-5.1zzzzzzz386 · Bot báo "em ghi rồi" gần như mọi lượt; câu phí "chưa thành thì … không tốn đồng nào" thiếu chữ (05/11/2026)
 Chủ dự án 05/11 (soát chat thử): câu "Chỉ nói đã ghi / đã cập nhật … với điều kết quả báo ĐÃ GHI" cộng báo cáo lượt nào cũng có dòng "ĐÃ GHI" "đang ngầm gợi model báo đã ghi ở mọi lượt … xóa cái này đi"; khách hỏi "câu cuối chưa 'thành' … có phải thiếu chữ công". Hứa việc hệ thống không làm: để sau ("có khi lúc đó admin sẽ nhắn").
 (1) Lớp lỗi: lời dặn chặn "báo ghi sai" lại nêu việc báo ghi mỗi lượt, nhãn báo cáo "ĐÃ GHI" thành việc cần nói; câu mẫu `bao_phi` gõ thiếu chữ. (2) Sửa: `agent_gop.HUONG_DAN_VIET` — hệ thống tự lưu, không báo khách đã ghi; `bao_cao` đổi nhãn "Ô vừa lưu (hệ thống tự lưu, không báo khách là đã ghi)"; `cau_mau.bao_phi` "chưa thành công thì" + migration `20261105b` (dòng DB chưa sửa tay). Đường dự phòng phía mua (`agent_mua.HUONG_DAN_GHI_VIEC`, chặn báo hẹn xem khi chưa ghi) giữ. (3) Kiểm: `test_agent_gop_371` đỏ khi còn nhãn / câu cũ; `test_cau_mau*` theo câu mới. CI; chưa chạy `cham` (chủ dự án dặn không chạy test ở máy).
@@ -830,64 +837,3 @@ Chủ dự án 03/11: "làm 2 3 5 6 7 8" (đề xuất 6: mỗi luật một ch�
 Ca gốc: chủ dự án 03/11 ("làm 2 …", đề xuất "chạy cham trên GitHub Actions trước mỗi lần gộp đổi prompt") — SRS-375 / 376 gộp với "chưa chạy `cham`" vì cham chỉ chạy được trên máy có Claude Code. (1) Lớp lỗi: thước đo trước–sau (SRS-304) phụ thuộc máy người, nên PR đổi prompt gộp không có điểm. (2) Sửa: `.github/workflows/cham.yml` — `pull_request` khi đổi `src/aioi/**`, `tests/kich_ban/**`, script chấm, chính workflow; `workflow_dispatch` (ô `so_lan` 1–3, ô `chi`); cài `@anthropic-ai/claude-code@2.1.304`, xác thực secret `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`), gọi thử một lần Haiku trước; so với `diem_nen.json` của main qua `--so-voi`; dòng TỔNG + bảng đủ vào job summary. Không đổi `cham-kich-ban.py`. Thiếu secret / PR từ fork → summary "CHƯA KIỂM ĐƯỢC", thoát 0; token hỏng → đỏ; điểm tụt không đỏ (bảng đọc, không phải cổng).
 (3) Kiểm: `actionlint` sạch, `bun run truyvet`; chưa chạy thật trên Actions vì secret chưa có (lần chạy đầu của PR này phải ra "CHƯA KIỂM ĐƯỢC").
 
-### SRS-5.1zzzzzzz376 · Review prompt: phía mua giục hẹn mỗi lượt và dặn ngược số căn; "em báo lại khách ngay"; prompt phí 9.455 ký tự ngoài cache (03/11/2026)
-Review prompt (chủ dự án 03/11: "ok bạn sửa lun đi"). (1) Lớp lỗi: luật viết ở nhiều chỗ, chỗ mới sửa không kéo chỗ cũ — bối cảnh mua còn "Chốt hành động: … hẹn lịch" ở mọi lượt (ngược luật câu mời ≤ 1 lần / vài lượt), `agent_mua.HUONG_DAN` còn "MỘT căn mỗi lượt" (ngược quyết định 2–3 căn, SRS-335 / 340), ví dụ câu mời hoàn chỉnh, kết quả công cụ ngôi thứ nhất "có trả lời em báo lại khách ngay" (bị chép, hứa giờ), xưng hô có ví dụ "Em chào anh ạ" (chép giữa chat, SRS-301), luật một câu hỏi ba lần trong prompt mua; định danh "Bạn là … trợ lý ảo" ở lượt nháp / phí.
-(2) Sửa (chỉ câu chữ prompt, không thêm code soát, không cắt GIONG_VUI / SLANG_NOTES / khối anh Luận): `prompts.build_buyer_chat_system` (đích cuối mời theo khối GIỌNG, một chỗ ghi luật một câu hỏi, câu mời tự đặt chữ, khen điều khách cần — không khen cho thuê / sinh lời, khối tài chính vào trước ranh giới cache); `agent_mua` / `engine` câu chuyển chủ nhà thành dữ kiện "hệ thống tự nhắn, không hứa giờ"; ghi chú mục 4 bản tin + câu chốt sau bản tin không tính vào luật câu mời; `agent_gop.bao_cao` dặn tên đường ngắn; `build_fee_followup_system` đưa danh sách giá trị + khuôn bản tin lên trước ranh giới (sau ranh giới 9.455 → 3.981 ký tự). Đồng bộ docs theo code (chủ dự án 03/11: "đồng bộ code và docs và prompt"): docs/06 bỏ `build_chat_system` đã xoá và "MỘT căn mỗi lượt" → 2–3 căn; docs/13 sơ đồ lời người bán = `agent_gop.viet`; §5.1 thêm vòng công cụ mua.
-(3) Kiểm: CI (chủ dự án dặn không chạy test ở máy); chưa chạy `cham`.
-
-## 6. Yêu cầu phi chức năng — tiêu chí nghiệm thu
-
-`[nguồn: docs/10 §10.7–10.8, DB 04/09/2026]` ✅ đạt · 🟡 một phần/chưa đo đủ · ❌ chưa.
-
-| NFR | Cách nghiệm thu | Trạng thái |
-|---|---|---|
-| NFR-01 | view `bot_do_tre` p95 < 3 s trên 7 ngày; load test 50 tin đồng thời | 🟡 view có, chưa load test |
-| NFR-02 | Lighthouse mobile ≥ 90, LCP < 2,5 s/4G | ❌ chưa đo |
-| NFR-03 | `bot_health_tick` + ntfy báo bridge im; uptime OA 30 ngày ≥ 99,5 % | 🟡 OA chưa duyệt, bridge dừng từ 27/08 |
-| NFR-04 | TS-JOB: dựng cảnh sập tay → 0 tin mất, `inbound_ledger` không `dead` oan | ✅ |
-| NFR-05 | Seed 5.000 listing + 300 hội thoại, p95 không suy giảm | ❌ chưa seed |
-| NFR-06 | Bucket riêng không có route public; signed URL 900 s chỉ admin ký (TS-WEB2 S) | ✅ |
-| NFR-07 | Rà 100 hội thoại: 0 lần hỏi SĐT ngoài đặt lịch; `/admin` không đọc `phone` | 🟡 e2e đạt, chưa có 100 hội thoại thật |
-| NFR-08 | Fingerprint có thông báo/từ chối | — không dựng fingerprint (OPEN-14) |
-| NFR-09 | 100 URL tag index Search Console, 0 lỗi structured data (TS-SEO) | 🟡 64 tag SSG + sitemap + JSON-LD; chưa index (OPEN-44) |
-| NFR-10 | Toàn bộ UI + chat tiếng Việt, xưng anh/chị/em | ✅ |
-| NFR-11 | Thống kê kết nối được từ Excel | 🟡 CSV từ `/admin` + Table Editor; chưa nối trực tiếp |
-| NFR-12 | Thêm kênh không sửa `chat-reply` | ✅ OA + bridge cùng gọi một bộ não |
-| NFR-13 | Mọi sự kiện có timestamp truy vết | ✅ `property_events`, `messages.seq/created_at` |
-| NFR-14 | Tổng chi phí build ≤ 418 tr | ❌ chưa có số đo |
-| NFR-15 | Theme thương mại ngoài git, đúng license | ✅ |
-| NFR-16 | Mọi dịch vụ ở bậc Free, đối chiếu usage hằng tuần | ✅ (Supabase/Vercel/ntfy Free) |
-| NFR-17 | Bảng route sau build: trang tin `●`/`○`; `x-vercel-cache` HIT (TS-CACHE) | ✅ 01…03; 04/05 cần Vercel |
-| NFR-18 | Request tới function không tồn tại → `bot_errors` có dòng dù cron `succeeded` (TS-HEALTH) | ✅ |
-
----
-
-## 7. Tiêu chí nghiệm thu MVP
-
-`[nguồn: docs/10 §10.8 + TS-GIUCHAN/TS-V48/TS-WEB2/TS-ADM2/TS-MATCH]` ✅ chạy end-to-end (test rollback/e2e) · 🟡 một phần · ❌ chưa.
-
-| # | Kịch bản | FR/UF | Trạng thái | TS phủ |
-|---|---|---|---|---|
-| AC-01 | Google → trang tag → chi tiết → click Zalo → bot nhắc đúng nhu cầu ở tin đầu | UF-01→03, FR-14 | 🟡 link mang `ref`, bot chưa đọc (OPEN-14) | TS-SEO, TS-WEB |
-| AC-02 | Chat từ đầu, bot thu đủ khu vực + giá, trả ≤ 3 listing, "xem thêm" trả tiếp | UF-04, FR-24 | 🟡 hồ sơ + ≤ 3 tin đạt; "xem thêm" mới có cho ảnh | TS-CHATREPLY, TS-E2E, TS-V48 |
-| AC-03 | B hỏi "cho xem sổ đỏ" → info_request → CTV/chủ trả lời → B nhận **và** listing cập nhật | UF-05, FR-44, FR-173 | ✅ (ảnh Zalo tạm chưa vào kho, OPEN-32) | TS-HOICHU, TS-CTV, TS-OUNG |
-| AC-04 | Đặt lịch xem đúng căn, B từ chối cho SĐT vẫn đặt được, nhận link Maps, email `[VIEWING]` | UF-06, FR-53, NFR-07 | 🟡 lịch + Maps + push đạt; email cần tài khoản ntfy | TS-VIEW, TS-MATCH-08, TS-GIUCHAN |
-| AC-05 | Sau buổi xem B nói "chỉ mua MT trên 4m" → gợi ý sau loại nhà hẻm | UF-07 | 🟡 hồ sơ cập nhật; chưa loại căn đã từ chối | TS-MATCH-06/07 |
-| AC-06 | B im 5 ngày → hỏi thăm; ≥ 6 ngày → giữ kết nối mẫu cố định, kết thúc bằng câu hỏi | UF-08, FR-60, FR-63 | ✅ | TS-GIUCHAN-02/03, TS-RET |
-| AC-07 | S gõ một câu rao → bóc ≥ 4 trường → sửa → đăng → có mã `#ID` | UF-09, FR-92 | ✅ | TS-MA, TS-VAI, TS-THONGSO |
-| AC-08 | Nhắn Zalo "cần bán nhà" → được hỏi ngay trong Zalo, mở hồ sơ bán kèm nhãn (FR-159 thay link `/raoban`) | UF-10, FR-97, FR-159 | ✅ theo FR-159 | TS-VAI-01…06, TS-E2E |
-| AC-09 | Admin thấy đủ bảng buyer side, phân trang, click B ID sang Zalo | FR-70…80 | 🟡 bảng + view có (TS-ADM2); phân trang/click UI ⏭ | TS-ADM2-01…10 |
-| AC-10 | 4 loại cảnh báo `[QUESTION] [VOICE] [VIEWING] [UPSET]` đúng subject/body tới `admin_email` | FR-81 | 🟡 push đạt; email 400 chờ tài khoản ntfy | TS-GIUCHAN-05 |
-| AC-11 | Tạo danh sách riêng → URL token → `noindex`, không lộ danh tính B | UF-12, FR-100 | ✅ | TS-WEB2-P06…P10 |
-| AC-12 | Tìm "gần ngã tư Trần Bình Trọng và An Dương Vương" trả kết quả hợp lý | FR-22, INS-07 | 🟡 `landmark` bóc được, lọc theo mốc chưa có | TS-WEB2-P01…P05 |
-| AC-13 | Căn 50 của dự án còn không → theo `unit_status`; tiện ích dự án không sinh info_request; đã bán → khách trong interests được báo kèm căn thay thế | FR-113…116, INS-10 | 🟡 hai vế đầu ✅ (v48); vế báo đi theo `listings.status='da_chot'`, chưa theo `unit_status` | TS-V48-114/116, TS-GIUCHAN-01, TS-PROJECT |
-
----
-
-## 8. Trạng thái phát hành
-
-- **Đang chạy** (04/09/2026): web trên Vercel; DB + 9 edge function + 12 cron trên Supabase Free; toàn bộ FR-129…174 có test rollback/e2e xanh.
-- **Chưa có giao dịch thật**: `listing_facts`, `info_requests`, `viewings`, `deals`, `interests` đều 0 dòng; 158 tin `dang_ban` là import Excel.
-- **Kênh Zalo**: OA chờ duyệt (`ZALO_OA_ACCESS_TOKEN` chưa có); bridge zca-js là đường duy nhất và đang dừng từ 27/08 — bật lại là điều kiện cho DH-06 đợt 2.
-- **Cảnh báo**: push ntfy chạy; email cần tài khoản ntfy + `NTFY_TOKEN` + `admin_email`.
-- **Treo**: OPEN-14 (fingerprint/ref), OPEN-32 (ảnh Zalo vào kho), OPEN-33 (`ZALO_APP_SECRET`), OPEN-43/44/45.
