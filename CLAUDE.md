@@ -80,7 +80,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
   | Biến | Hiện | Ý nghĩa |
   |---|---|---|
   | `MODEL_CHAT` | `claude-sonnet-5-5` | model viết lời khách thật — SRS-235 / 308 |
-  | `MODEL_BOC` | `claude-haiku-5-5` | model bóc tách (`AIOI_EXTRACT_MODEL`); sổ `bot_usage_model` xác nhận production chạy model này — SRS-316 |
+  | `MODEL_BOC` | `claude-sonnet-5-5` | model bóc tách (`AIOI_EXTRACT_MODEL`); đồng bộ cùng MODEL_CHAT — SRS-392 |
   | `MODEL_CHAT_THU` | `claude-sonnet-5-5` | model của ID thử (`ban-thu-*`); `gemini` = gọi thẳng Gemini — SRS-239 / 243 |
   | `MODEL_LUOT_DE` | `tat` | model viết lời cho lượt dễ của người bán (thu thập, không tra dữ liệu, không việc khác) — SRS-311 |
   | `CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246. Ngoại lệ quy ước: code đọc `!= "tat"`, trống = BẬT |
