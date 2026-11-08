@@ -73,6 +73,15 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz389 · Nâng cấp kiến trúc Function Calling chuẩn nguyên tử theo mô hình MOSO: bổ sung so sánh căn, tính thuế phí, tính trả góp, lưu SĐT (06/11/2026)
+- **Ca gốc**: Đối chiếu cơ chế của MOSO phát hiện hệ thống MOSO dùng Function Calling tự nhiên với các công cụ nguyên tử (`search_listings`, `compare_listings`, `search_projects`, `request_contact`) để LLM tự quyết định khi nào gọi; trong khi AOND bị phân tách cứng nhắc 2 vòng (Vòng 1 bóc tách form/regex nhồi dữ liệu -> Vòng 2 viết lời), vừa làm chậm thời gian phản hồi gấp 2 vừa dễ gãy khi khách hỏi câu phức tạp nhiều ý `[nguồn: chủ dự án 06/11/2026: "kiểm tra lại bên moso làm ntn xong sửa công nghệ lại cho bên mình lun"]`.
+- **Lớp lỗi**: `agent_mua.CONG_CU` thiếu các tool nguyên tử cốt lõi (`so_sanh_can`, `tinh_thue_phi`, `tinh_vay_tra_gop`, `luu_so_dien_thoai`), khiến model không thể gọi trực tiếp trong vòng hội thoại tự nhiên khi khách hỏi so sánh, thuế phí hoặc để lại số điện thoại.
+- **Sửa**:
+  1. Mở rộng `src/aioi/agent_mua.py`: bổ sung 4 công cụ nguyên tử chuẩn JSON Schema vào `CONG_CU`: `so_sanh_can` (so sánh 2-5 căn theo giá, đơn giá m² đất, diện tích, pháp lý), `tinh_thue_phi` (tính chi tiết thuế TNCN 2%, trước bạ 0.5%, công chứng TT 257), `tinh_vay_tra_gop` (tính phương án vay 70%, vốn 30%, gốc/lãi dư nợ giảm dần), `luu_so_dien_thoai` (lưu SĐT vào buyers và báo admin).
+  2. Cập nhật `agent_mua.chay_cong_cu` và `_ghi_viec` để thực thi trực tiếp các tool này trong chuỗi hội thoại `converse`.
+  3. Đưa `so_sanh_can`, `tinh_thue_phi`, `tinh_vay_tra_gop` vào `CONG_CU_DOC` để bước 2 vòng gộp và vòng dự phòng đều gọi được.
+- **Kiểm**: `tests/test_agent_mua_tools_389.py` (5/5 ca test đạt: kiểm tra danh sách tool, so sánh căn, tính thuế phí, tính trả góp, lưu SĐT); `scripts/soat-truy-vet.sh` sạch.
+
 ### SRS-5.1zzzzzzz388 · Tích hợp công cụ tính thuế phí, trả góp ngân hàng, vá hứng Lead SĐT và phân loại bán nhanh cho Chatbot Zalo (06/11/2026)
 - **Ca gốc**: Sau khi đối chiếu bộ công cụ trực tuyến của đối thủ MOSO (`/cong-cu/`, 1.388 dự án TP.HCM), phát hiện AOND Zalo Chatbot thiếu công cụ tính thuế phí & trả góp thực chiến; `src/aioi/mua.py` (dòng 694–695) vứt bỏ SĐT khách để lại ngoài ngữ cảnh hẹn xem; khách tìm mua/đầu tư chưa có bộ lọc nhà ngộp/bán gấp `[nguồn: chủ dự án 06/11/2026: "lập kế hoạch lấy được cái nào để cho vào chatbot zalo của AOND và bằng cách nào... duyệt viết docs trước rồi làm"]`.
 - **Lớp lỗi**: (1) `tai_chinh.py` dặn bot "chưa tính được" khiến bot bị động khi khách hỏi số trả góp; (2) `phap_ly.py` chỉ nêu điều luật chữ, không có máy tính bóc tách từng đồng; (3) `mua.py::ghi_sdt_hen_xem` kiểm `viewings` chờ, không có thì bỏ rơi SĐT làm mất lead; (4) tìm kiếm chưa có cờ ưu tiên hàng ngộp/bán nhanh.
