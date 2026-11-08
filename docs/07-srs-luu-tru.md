@@ -73,6 +73,24 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz390 · Hoàn thiện bộ công cụ Function Calling cho luồng Ký Gửi (Agent Bán) theo chuẩn MOSO: Định giá sơ bộ AVM, Tra cứu pháp lý & sổ hồng, Tính phí môi giới minh bạch (06/11/2026)
+- **Ca gốc**: Sau khi chuẩn hóa các công cụ tìm kiếm và tư vấn mua chuẩn Function Calling theo mô hình MOSO (`SRS-5.1zzzzzzz389`), tiếp tục hoàn thiện nhánh Ký Gửi nhà đất phía người bán / người rao (`agent_ban.py` và `agent_gop.py`). Người bán khi nhắn tin ký gửi Zalo thường có 3 nhu cầu hỏi cấp thiết: (1) "Khu này giá thị trường bao nhiêu?", "Giá tôi rao cao hay thấp?" (định giá tham khảo); (2) "Sổ này chưa hoàn công có bán được không?", "Sổ đang thế chấp ngân hàng sang tên thế nào?" (tư vấn pháp lý sổ hồng); (3) "Ký gửi có mất phí trước không?", "Phí hoa hồng bên em tính sao?" (chính sách phí môi giới) `[nguồn: chủ dự án 06/11/2026: "bên aond còn nhập kí gửi nữa"]`.
+- **Lớp lỗi**:
+  1. `agent_ban.CONG_CU` chỉ có 3 công cụ đọc cục bộ (`ro_hang`, `bo_nho_du_an`, `gia_da_gui`). Khi chủ nhà hỏi giá thị trường, `prompts.KHOI_DINH_GIA` trước đây trả lời bị động "Bên em CHƯA có dữ liệu định giá" khiến chủ nhà thất vọng.
+  2. Kho kiến thức pháp lý tại `src/aioi/phap_ly.py` (`MAC_DINH`) chỉ được nhồi qua form phân loại hoặc regex, chưa có Tool nguyên tử để LLM chủ động gọi tra cứu điều luật chính xác khi chủ nhà hỏi về sổ hồng, sang tên, công chứng, thế chấp.
+  3. Phí môi giới (`revenue.py`: 1% bán, 0.75 tháng thuê, No Win - No Fee) chưa được đóng gói thành tool `tinh_phi_moi_gioi` tính toán số tiền hoa hồng thực tế theo giá căn để giải tỏa tâm lý e ngại mất tiền của người gửi bán.
+  4. Cơ chế bảo vệ tin chuẩn "3 Thật" (thông tin thật, giá thật, hình ảnh thật) và tính năng Ẩn số nhà, che SĐT người bán khỏi web công khai (chống bị môi giới khác quấy rầy) chưa được thể hiện như một cam kết bảo mật bằng công cụ.
+- **Sửa**:
+  1. Xây dựng module định giá tham khảo AVM `src/aioi/dinh_gia.py`: tính toán khoảng giá tham khảo theo khu vực (phường/quận/tỉnh) và loại hình; trả về đơn giá m² đất, dải giá thị trường ±10%, nói rõ đây là giá rao tham khảo, tôn trọng quyền quyết định giá của chủ nhà.
+  2. Mở rộng `src/aioi/agent_ban.py`: bổ sung 3 công cụ nguyên tử mới vào `CONG_CU`:
+     - `dinh_gia_tham_khao`: tra cứu khoảng giá thị trường/định giá sơ bộ theo loại hình, khu vực, diện tích.
+     - `kiem_tra_phap_ly_so`: tra cứu quy định pháp lý, điều kiện chuyển nhượng, thủ tục sang tên, thế chấp từ `phap_ly.py`.
+     - `tinh_phi_moi_gioi`: tính phí môi giới minh bạch theo giá trị BĐS và loại hình (bán 1%, thuê 0.75 tháng), khẳng định chính sách "Chỉ thu khi giao dịch thành công — 0 đồng trước", cam kết bảo mật Ẩn số nhà & che SĐT.
+  3. Cập nhật `agent_ban._khoi` và `agent_ban.HUONG_DAN` để hỗ trợ các tham số linh hoạt và hướng dẫn LLM cách gọi công cụ tự nhiên.
+  4. Đồng bộ trong `agent_gop.py`: `DOC = tuple(c["name"] for c in agent_ban.CONG_CU)` tự động nhận diện và gọi các công cụ này ở cả bước ghi và bước viết lời.
+  5. Cập nhật tài liệu tại `docs/14-tinh-nang-tai-chinh-thue-phi-lead.md` §2.8.
+- **Kiểm**: `tests/test_agent_ban_tools_390.py` (kiểm tra đầy đủ các công cụ mới: định giá AVM, pháp lý sổ hồng, tính phí môi giới); `scripts/soat-truy-vet.sh` đạt 100% SẠCH.
+
 ### SRS-5.1zzzzzzz389 · Nâng cấp kiến trúc Function Calling chuẩn nguyên tử theo mô hình MOSO: bổ sung so sánh căn, tính thuế phí, tính trả góp, lưu SĐT (06/11/2026)
 - **Ca gốc**: Đối chiếu cơ chế của MOSO phát hiện hệ thống MOSO dùng Function Calling tự nhiên với các công cụ nguyên tử (`search_listings`, `compare_listings`, `search_projects`, `request_contact`) để LLM tự quyết định khi nào gọi; trong khi AOND bị phân tách cứng nhắc 2 vòng (Vòng 1 bóc tách form/regex nhồi dữ liệu -> Vòng 2 viết lời), vừa làm chậm thời gian phản hồi gấp 2 vừa dễ gãy khi khách hỏi câu phức tạp nhiều ý `[nguồn: chủ dự án 06/11/2026: "kiểm tra lại bên moso làm ntn xong sửa công nghệ lại cho bên mình lun"]`.
 - **Lớp lỗi**: `agent_mua.CONG_CU` thiếu các tool nguyên tử cốt lõi (`so_sanh_can`, `tinh_thue_phi`, `tinh_vay_tra_gop`, `luu_so_dien_thoai`), khiến model không thể gọi trực tiếp trong vòng hội thoại tự nhiên khi khách hỏi so sánh, thuế phí hoặc để lại số điện thoại.

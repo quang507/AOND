@@ -15,10 +15,12 @@ import threading
 import time
 from datetime import datetime, timezone
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from . import cau_mau
+from . import khoa_noi_bo
 from . import phap_ly
 from .anh_du_an import anh_gui_kem
 from .anh_can import anh_can_gui_kem
@@ -109,7 +111,26 @@ _so_loi = SoToken.tu_cau_hinh(_settings.supabase_url, _settings.supabase_service
 # Trần lượt trả lời mỗi người + cả ngày (SRS-5.1zzzzzzz53) — chặn TRƯỚC mọi lượt gọi model / Whisper.
 _han_muc = HanMuc.tu_cau_hinh(_settings.supabase_url, _settings.supabase_service_role_key)
 
-app = FastAPI(title="AI Ơi Nhà Đất (AOND) API", version="0.2.0")
+# SRS-5.1zzzzzzz400 (audit N3): tắt /docs, /redoc, /openapi.json — lõi chỉ phục vụ bridge, không cần trang tự mô tả.
+app = FastAPI(title="AI Ơi Nhà Đất (AOND) API", version="0.2.0", docs_url=None, redoc_url=None, openapi_url=None)
+
+# Đường không cần khoá: chỉ /health (trien-khai-146.sh chờ nó, không lộ gì ngoài tên model).
+_DUONG_MO = frozenset({"/health"})
+
+
+@app.middleware("http")
+async def _gac_khoa_noi_bo(request: Request, call_next):
+    """SRS-5.1zzzzzzz400 (audit N3): mọi đường trừ /health cần header `x-noi-bo-key` khớp `AIOI_NOI_BO_KEY` — /chat-reply, /message,
+    /reset/{id}, /reset-all, /trigger-followup. Tiến trình khác trên máy 146 không còn đọc rổ hàng, giả lệnh admin hay xoá khách."""
+    if request.url.path in _DUONG_MO:
+        return await call_next(request)
+    ma = khoa_noi_bo.kiem(request.headers.get(khoa_noi_bo.TEN_HEADER))
+    if ma == 503:
+        log.error("Lõi chưa đặt %s — từ chối %s", khoa_noi_bo.ENV, request.url.path)
+        return JSONResponse({"detail": f"lõi chưa đặt {khoa_noi_bo.ENV}"}, status_code=503)
+    if ma:
+        return JSONResponse({"detail": "sai khoá nội bộ"}, status_code=401)
+    return await call_next(request)
 
 
 class IncomingMessage(BaseModel):
@@ -279,7 +300,8 @@ def _gui_bridge(user_key: str, text: str, photos: list[str] | None = None) -> di
     if photos:
         goi["photos"] = photos
     # Ảnh được tải rồi gửi từng tấm (mỗi tấm tới 15 s) — hạn chờ dài hơn tin chữ thuần.
-    req = urllib.request.Request(url, data=json.dumps(goi).encode("utf-8"), headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(url, data=json.dumps(goi).encode("utf-8"),
+                                 headers={"Content-Type": "application/json", **khoa_noi_bo.dau_gui()})
     with urllib.request.urlopen(req, timeout=10 + 20 * len(photos or [])) as resp:
         try:
             return json.loads(resp.read().decode("utf-8")) or {}

@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 
 from .xung_ho import goi_toi, tre
 from . import cau_mau
+from . import khoa_noi_bo
 from .engine import Turn, _detect_customer_pronoun, _image_count
 from .supabase_sync import sync_to_supabase_async
 
@@ -197,7 +198,7 @@ class FollowUpManager:
             req = urllib.request.Request(
                 BRIDGE_SEND_URL,
                 data=req_data,
-                headers={"Content-Type": "application/json"},
+                headers={"Content-Type": "application/json", **khoa_noi_bo.dau_gui()}  # SRS-5.1zzzzzzz400,
             )
             try:
                 with urllib.request.urlopen(req, timeout=10) as resp:

@@ -19,6 +19,22 @@ CONG_TAC_PRODUCTION = cong_tac()
 # dựng provider lúc import, vd `server`). Bài nào cần provider khác tự đặt.
 os.environ.setdefault("AIOI_LLM_PROVIDER", "mock")
 
+# SRS-5.1zzzzzzz400: lõi đòi header `x-noi-bo-key` ở mọi đường trừ /health. Bài test gọi lõi qua TestClient như bridge thật → mọi
+# TestClient mặc định kèm khoá thử; bài kiểm chính cái cổng (test_khoa_noi_bo.py) tự gỡ / đổi header.
+KHOA_NOI_BO_THU = "khoa-noi-bo-chi-de-test"
+os.environ["AIOI_NOI_BO_KEY"] = KHOA_NOI_BO_THU
+
+from fastapi.testclient import TestClient as _TestClient  # noqa: E402
+
+_tc_init_goc = _TestClient.__init__
+
+
+def _tc_init_kem_khoa(self, *a, headers=None, **kw):
+    _tc_init_goc(self, *a, headers={"x-noi-bo-key": KHOA_NOI_BO_THU, **(headers or {})}, **kw)
+
+
+_TestClient.__init__ = _tc_init_kem_khoa
+
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "nhanh_cu(**cong_tac): bài kiểm nhánh cũ — đặt các công tắc này thay cấu hình production")

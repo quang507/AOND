@@ -212,12 +212,31 @@ if (!api) {
 await baoDangNhap("dang_nhap");
 console.log("Bridge sẵn sàng — nhắn thử vào acc clone từ một acc khác.");
 
-const brainHeaders = {
+// Header gửi escalation-feed trên Supabase: BRIDGE_SECRET (FR-151) đặt ở CẢ hai nơi
+// (Vault của Supabase + env máy chạy bridge) là feed chỉ nhận request từ bridge.
+const feedHeaders = {
   Authorization: `Bearer ${ANON_KEY}`,
   "Content-Type": "application/json",
-  // Đặt BRIDGE_SECRET ở CẢ hai nơi (Vault của Supabase + env máy chạy bridge)
-  // là chat-reply chỉ còn nhận request từ bridge. Chưa đặt thì vẫn chạy như cũ.
   ...(process.env.BRIDGE_SECRET ? { "x-bridge-secret": process.env.BRIDGE_SECRET } : {}),
+};
+
+// SRS-5.1zzzzzzz400 (audit N3 + C5): chặng bridge ↔ lõi dùng khoá RIÊNG `AIOI_NOI_BO_KEY`
+// (cùng giá trị trong .env của lõi và .env của bridge). Lõi từ chối mọi request không
+// có khoá; bridge /send cũng vậy. BRIDGE_SECRET không còn đi tới lõi — trước đây ai
+// chiếm cổng 8000 lúc lõi khởi động lại là lấy được khoá mở escalation-feed.
+// Khoá nội bộ cũng KHÔNG gửi lên Supabase (feedHeaders ở trên không có nó).
+const NOI_BO_KEY = String(process.env.AIOI_NOI_BO_KEY || "").trim();
+if (!NOI_BO_KEY) {
+  console.error("⚠️ Thiếu AIOI_NOI_BO_KEY trong bot/bridge-zca/.env — lõi sẽ trả 503, /send từ chối mọi tin chủ động.");
+}
+const brainHeaders = {
+  "Content-Type": "application/json",
+  ...(NOI_BO_KEY ? { "x-noi-bo-key": NOI_BO_KEY } : {}),
+};
+const dungKhoaNoiBo = (v) => {
+  if (!NOI_BO_KEY || typeof v !== "string") return false;
+  const a = Buffer.from(v.trim()), b = Buffer.from(NOI_BO_KEY);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 };
 
 // FR-141: phân biệt tin bot vừa gửi vs NGƯỜI THẬT gõ tay trên acc clone —
@@ -240,7 +259,6 @@ const errDetail = (e) => {
 };
 
 const FEED_URL = FEED_URL_DN;
-const feedHeaders = brainHeaders; // brainHeaders đã kèm x-bridge-secret
 
 // FR-152: đẩy lỗi lên sổ chung `bot_errors` (xem ở /admin). console.error chỉ
 // sống trong cửa sổ terminal đang mở — đóng cửa sổ là mất, mà bridge thì chạy
@@ -305,6 +323,11 @@ async function postJson(url, headers, payload, hanCho = 20_000) {
         method: "POST", headers, body: JSON.stringify(payload),
         signal: AbortSignal.timeout(hanCho),
       });
+      // SRS-5.1zzzzzzz400: lõi từ chối vì khoá nội bộ (thiếu / lệch giữa hai .env) → ném lỗi rõ ràng thay vì
+      // coi {"detail": …} là một câu trả lời rỗng rồi im lặng.
+      if (String(url).endsWith("/chat-reply") &&(res.status === 401 || res.status === 503)) {
+        throw new Error(`Lõi từ chối ${res.status} — kiểm AIOI_NOI_BO_KEY hai .env có trùng không`);
+      }
       return await res.json();
     } catch (e) {
       last = e;
@@ -824,12 +847,27 @@ async function guiAnhQuaUrl(threadId, urls) {
 
 // Local HTTP Send API on 127.0.0.1:5005 for proactive messages (follow-up, reminders)
 const SEND_PORT = process.env.SEND_PORT || (LA_TU_VAN ? 5006 : 5005);   // SRS-5.1zzzzzzz210: lõi gửi tin chủ động số tư vấn qua 5006
+const traLoiLoi = (res, ma, loi) => { res.writeHead(ma, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: loi })); };
 try {
   const sendServer = http.createServer(async (req, res) => {
     if (req.method === 'POST' && req.url === '/send') {
+      // SRS-5.1zzzzzzz400 (audit N3): chỉ lõi gửi được — khoá nội bộ (so hằng thời gian), chỉ JSON, body tối đa 64 KB.
+      // Trước đây tiến trình nào trên máy 146 cũng nhắn Zalo tuỳ ý từ số clone tới mọi uid, và đẩy body vô hạn vào RAM.
+      const traLoi = (ma, loi) => traLoiLoi(res, ma, loi);
+      if (!NOI_BO_KEY) { traLoi(503, 'bridge chưa đặt AIOI_NOI_BO_KEY'); req.resume(); return; }
+      if (!dungKhoaNoiBo(req.headers['x-noi-bo-key'])) { traLoi(401, 'sai khoá nội bộ'); req.resume(); return; }
+      if (!String(req.headers['content-type'] || '').toLowerCase().startsWith('application/json')) { traLoi(415, 'chỉ nhận application/json'); req.resume(); return; }
+      const TRAN_BODY = 64 * 1024;
       let body = '';
-      req.on('data', (chunk) => { body += chunk; });
+      let qua = false;
+      req.setEncoding('utf8');
+      req.on('data', (chunk) => {
+        if (qua) return;
+        body += chunk;
+        if (Buffer.byteLength(body) > TRAN_BODY) { qua = true; body = ''; traLoi(413, 'body quá 64 KB'); req.destroy(); }
+      });
       req.on('end', async () => {
+        if (qua) return;
         try {
           const { threadId, message, photos } = JSON.parse(body || '{}');
           if (threadId && message) {

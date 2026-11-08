@@ -788,11 +788,17 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz400 · Lõi và bridge không xác thực — tiến trình nào trên máy 146 cũng đọc rổ hàng, xoá khách, nhắn Zalo từ số clone (08/11/2026)
+- **Ca gốc**: audit bảo mật 08/11 (N3 + C5). Lõi `127.0.0.1:8000` nhận `/chat-reply` (Zalo ID bất kỳ + `/state` lộ nhu cầu; ID admin + `#MÃ` giả lệnh), `/reset/{id}` xoá khách trên Supabase thật, `/docs` mở; bridge `/send` nhắn tuỳ ý tới mọi uid, body vô hạn. Bridge còn gửi `BRIDGE_SECRET` tới lõi (ai chiếm cổng 8000 lúc khởi động lại là có khoá escalation-feed). `[nguồn: chủ dự án 08/11/2026: "Vá N3 tiếp"]`
+- **Lớp lỗi**: coi "chỉ nghe 127.0.0.1" là ranh giới tin cậy trên máy dùng chung. Chỗ khác cùng lớp: mọi đường của lõi (`/message`, `/reset-all`, `/trigger-followup`) và cả hai cổng `/send` (5005, 5006) — sửa hết.
+- **Sửa**: khoá chung `AIOI_NOI_BO_KEY` (header `x-noi-bo-key`, so hằng thời gian) ở `.env` lõi + `.env` bridge. Lõi (`khoa_noi_bo.py`, middleware): mọi đường trừ `/health` đòi khoá, thiếu khoá trên máy → 503 (không mở trần); tắt `/docs` `/openapi.json`; lõi gửi `/send` kèm khoá. Bridge: `/send` đòi khoá + chỉ `application/json` + trần 64 KB; gọi lõi chỉ kèm khoá nội bộ, `BRIDGE_SECRET` chỉ đi escalation-feed. Script `bot/tests/ban-thu-*.sh` thời VPS (curl thẳng lõi) phải thêm header khi chuyển sang 146.
+- **Kiểm**: `tests/test_khoa_noi_bo.py` — 5 đường không khoá → 401, sai khoá → 401, thiếu khoá trên máy → 503, `/health` mở, `/docs` 404, `_gui_bridge` kèm khoá, mã bridge có kiểm khoá / 413 / 415. Trên 146: request không khoá → 401, chat qua bridge vẫn chạy.
+
 ### SRS-5.1zzzzzzz399 · Máy 146: user Windows thường sửa được mã chạy dưới SYSTEM và đọc được `.env` (08/11/2026)
 - **Ca gốc**: audit bảo mật 08/11 (N2). `C:\aond` (cả `.env`, `zalo-session*.json`, `src`, `svc_*.cmd`, `venv`) thừa hưởng ACL gốc `C:\`: `Authenticated Users: Modify`, `Users: Read`; ba task AOND chạy dưới SYSTEM, máy có tài khoản thường đang bật. `[nguồn: chủ dự án 08/11/2026: "Vá N2 tiếp"]`
-- **Lớp lỗi**: thư mục dịch vụ tạo thẳng dưới `C:\` không ai siết quyền. Chỗ khác cùng lớp: `C:\gatemonitor`, `C:\goi-bot`, `C:\stock-bot`, `C:\radar`, `C:\openwa-server` (cũng chạy dưới SYSTEM) và `C:\Python311`, `C:\gm_venv`, `C:\tools` (runtime của mọi venv) — chỉ siết `C:\aond` thì user thường vẫn lên SYSTEM qua thư mục khác. Sửa cả 9.
-- **Sửa**: `scripts/siet-acl-146.ps1` (sao lưu ACL vào `C:\ProgramData\acl-backup-20261108`, tắt thừa kế): thư mục dịch vụ chỉ SYSTEM + Administrators; runtime dùng chung thêm Users đọc / chạy. `trien-khai-146.sh` chép bằng `robocopy` không `/SEC` nên file mới thừa hưởng quyền đã siết.
-- **Kiểm**: `icacls /findsid` Authenticated Users = 0 file ở cả 9 thư mục; `.env`, cookie Zalo, `engine.py`, `svc_aond_core.cmd` chỉ còn SYSTEM + Administrators; 8 dịch vụ Running, `/health` OK, task định kỳ chạy sau đó rc = 0.
+- **Lớp lỗi**: thư mục dịch vụ tạo thẳng dưới `C:\` không ai siết quyền. Các bot khác trên 146 (`C:\gatemonitor`, `C:\goi-bot`…) cùng lớp nhưng không thuộc repo này: bản đầu siết cả 9 thư mục, chủ dự án chốt chỉ sửa AOND ("bot khác kệ nó bạn cần sửa ở bot AOND thôi") → trả nguyên ACL cũ cho 8 thư mục kia cùng ngày từ bản sao lưu.
+- **Sửa**: `scripts/siet-acl-146.ps1` (sao lưu ACL vào `C:\ProgramData\acl-backup-20261108`, tắt thừa kế): `C:\aond` chỉ SYSTEM + Administrators. `trien-khai-146.sh` chép bằng `robocopy` không `/SEC` nên file mới thừa hưởng quyền đã siết. Lõi chạy `C:\aond\venv`.
+- **Kiểm**: `icacls` Authenticated Users = 0 ở `C:\aond` (cả `.env`, cookie Zalo, `svc_aond_core.cmd`); 8 thư mục bot khác trở lại `Authenticated Users:(I)(M)` như trước; dịch vụ Running, `/health` OK.
 
 ### SRS-5.1zzzzzzz398 · Cổng quyền hàm admin dùng `current_user` — mọi tài khoản đăng nhập web gọi được hàm xoá hết (08/11/2026)
 - **Ca gốc**: audit bảo mật 08/11 (N1). Tài khoản `authenticated` không phải admin gọi `admin_cap_nhat_khach` trên DB thật → `{"ok": true}`; cùng lỗi ở `admin_xoa_het_khach_va_ro_hang`, `admin_khoi_phuc_lan_xoa`, `don_du_lieu_thu`, `admin_gan_bds_quan_tam`, `admin_xoa_bds_quan_tam`, `log_loi` (trần 200 dòng/giờ của anon vô hiệu). `[nguồn: chủ dự án 08/11/2026: "Vá N1 ngay"]`
@@ -918,20 +924,3 @@ Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại h
   4. Nâng `CUM_TOI_DA = 2` trong `src/aioi/schema.py`; gỡ bỏ `hien_trang` khỏi điều kiện chặn soạn nháp trong `facet_trong()`, kích hoạt Fast-Draft sớm tại ~50 điểm.
 - **Kiểm**: `tests/test_toi_uu_ky_gui_391.py` kiểm tra Fast-Draft không bị chặn bởi hiện trạng, `CUM_TOI_DA = 2`, System Prompt < 1.500 tokens, tích hợp Customer Insight và công cụ nguyên tử.
 
-### SRS-5.1zzzzzzz390 · Hoàn thiện bộ công cụ Function Calling cho luồng Ký Gửi (Agent Bán) theo chuẩn MOSO: Định giá sơ bộ AVM, Tra cứu pháp lý & sổ hồng, Tính phí môi giới minh bạch (06/11/2026)
-- **Ca gốc**: Sau khi chuẩn hóa các công cụ tìm kiếm và tư vấn mua chuẩn Function Calling theo mô hình MOSO (`SRS-5.1zzzzzzz389`), tiếp tục hoàn thiện nhánh Ký Gửi nhà đất phía người bán / người rao (`agent_ban.py` và `agent_gop.py`). Người bán khi nhắn tin ký gửi Zalo thường có 3 nhu cầu hỏi cấp thiết: (1) "Khu này giá thị trường bao nhiêu?", "Giá tôi rao cao hay thấp?" (định giá tham khảo); (2) "Sổ này chưa hoàn công có bán được không?", "Sổ đang thế chấp ngân hàng sang tên thế nào?" (tư vấn pháp lý sổ hồng); (3) "Ký gửi có mất phí trước không?", "Phí hoa hồng bên em tính sao?" (chính sách phí môi giới) `[nguồn: chủ dự án 06/11/2026: "bên aond còn nhập kí gửi nữa"]`.
-- **Lớp lỗi**:
-  1. `agent_ban.CONG_CU` chỉ có 3 công cụ đọc cục bộ (`ro_hang`, `bo_nho_du_an`, `gia_da_gui`). Khi chủ nhà hỏi giá thị trường, `prompts.KHOI_DINH_GIA` trước đây trả lời bị động "Bên em CHƯA có dữ liệu định giá" khiến chủ nhà thất vọng.
-  2. Kho kiến thức pháp lý tại `src/aioi/phap_ly.py` (`MAC_DINH`) chỉ được nhồi qua form phân loại hoặc regex, chưa có Tool nguyên tử để LLM chủ động gọi tra cứu điều luật chính xác khi chủ nhà hỏi về sổ hồng, sang tên, công chứng, thế chấp.
-  3. Phí môi giới (`revenue.py`: 1% bán, 0.75 tháng thuê, No Win - No Fee) chưa được đóng gói thành tool `tinh_phi_moi_gioi` tính toán số tiền hoa hồng thực tế theo giá căn để giải tỏa tâm lý e ngại mất tiền của người gửi bán.
-  4. Cơ chế bảo vệ tin chuẩn "3 Thật" (thông tin thật, giá thật, hình ảnh thật) và tính năng Ẩn số nhà, che SĐT người bán khỏi web công khai (chống bị môi giới khác quấy rầy) chưa được thể hiện như một cam kết bảo mật bằng công cụ.
-- **Sửa**:
-  1. Xây dựng module định giá tham khảo AVM `src/aioi/dinh_gia.py`: tính toán khoảng giá tham khảo theo khu vực (phường/quận/tỉnh) và loại hình; trả về đơn giá m² đất, dải giá thị trường ±10%, nói rõ đây là giá rao tham khảo, tôn trọng quyền quyết định giá của chủ nhà.
-  2. Mở rộng `src/aioi/agent_ban.py`: bổ sung 3 công cụ nguyên tử mới vào `CONG_CU`:
-     - `dinh_gia_tham_khao`: tra cứu khoảng giá thị trường/định giá sơ bộ theo loại hình, khu vực, diện tích.
-     - `kiem_tra_phap_ly_so`: tra cứu quy định pháp lý, điều kiện chuyển nhượng, thủ tục sang tên, thế chấp từ `phap_ly.py`.
-     - `tinh_phi_moi_gioi`: tính phí môi giới minh bạch theo giá trị BĐS và loại hình (bán 1%, thuê 0.75 tháng), khẳng định chính sách "Chỉ thu khi giao dịch thành công — 0 đồng trước", cam kết bảo mật Ẩn số nhà & che SĐT.
-  3. Cập nhật `agent_ban._khoi` và `agent_ban.HUONG_DAN` để hỗ trợ các tham số linh hoạt và hướng dẫn LLM cách gọi công cụ tự nhiên.
-  4. Đồng bộ trong `agent_gop.py`: `DOC = tuple(c["name"] for c in agent_ban.CONG_CU)` tự động nhận diện và gọi các công cụ này ở cả bước ghi và bước viết lời.
-  5. Cập nhật tài liệu tại `docs/14-tinh-nang-tai-chinh-thue-phi-lead.md` §2.8.
-- **Kiểm**: `tests/test_agent_ban_tools_390.py` (kiểm tra đầy đủ các công cụ mới: định giá AVM, pháp lý sổ hồng, tính phí môi giới); `scripts/soat-truy-vet.sh` đạt 100% SẠCH.
