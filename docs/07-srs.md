@@ -788,6 +788,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz398 · Cổng quyền hàm admin dùng `current_user` — mọi tài khoản đăng nhập web gọi được hàm xoá hết (08/11/2026)
+- **Ca gốc**: audit bảo mật 08/11 (N1). Tài khoản `authenticated` không phải admin gọi `admin_cap_nhat_khach` trên DB thật → `{"ok": true}`; cùng lỗi ở `admin_xoa_het_khach_va_ro_hang`, `admin_khoi_phuc_lan_xoa`, `don_du_lieu_thu`, `admin_gan_bds_quan_tam`, `admin_xoa_bds_quan_tam`, `log_loi` (trần 200 dòng/giờ của anon vô hiệu). `[nguồn: chủ dự án 08/11/2026: "Vá N1 ngay"]`
+- **Lớp lỗi**: trong hàm SECURITY DEFINER, `current_user` là chủ hàm (`postgres`) nên vế `current_user in ('postgres', …)` luôn đúng. TS-SEC3 kiểm bằng `set role` (vẫn phiên `postgres`) nên không bắt được. Chỗ khác cùng lớp: soát mọi hàm SECURITY DEFINER trong `public` — 8 hàm, sửa cả 8 (`xuat_schema` không cấp cho `authenticated` nên chưa hở).
+- **Sửa** (migration `20261108b`): 5 hàm `admin_*` chỉ còn `la_admin()` hoặc `service_role`; `don_du_lieu_thu`, `log_loi`, `xuat_schema` đổi sang `session_user` (vai đăng nhập: PostgREST = `authenticator`, pg_cron / mgmt-api = `postgres` / `supabase_admin`, đo `pg_stat_activity`); thu EXECUTE `don_du_lieu_thu` của `authenticated` (web không gọi).
+- **Kiểm**: chạy thử trên DB thật trong giao dịch huỷ: người thường bị chặn cả 6 hàm, admin thật và `service_role` qua, `xuat_schema` từ mgmt-api qua. `tests/test_cong_admin_khong_dung_current_user.py` đỏ khi `schema.sql` còn hàm SECURITY DEFINER dùng `current_user`.
+
 ### SRS-5.1zzzzzzz397 · Soát và sửa đợt MOSO 06/11 (SRS-388…396): số sai, cam kết không có thật, luật bản nháp bị bỏ (08/11/2026)
 - **Ca gốc**: Đợt 06/11 đẩy thẳng main 14 commit. Hậu quả: 10 test đỏ, CI đỏ. Nhiều công cụ mới trả số sai hoặc bịa dữ kiện. `[nguồn: chủ dự án 08/11/2026: "có định giá, đọc kĩ code đi", "không đi qua PR, sửa lỗi của nó xem, dùng bản prompt gọn để bắn thử 1 đoạn"]`
 - **Giữ**: định giá tham khảo, `CUM_TOI_DA = 2` (chủ dự án duyệt 06/11), prompt gọn + Customer Insight, bộ công cụ nguyên tử.
@@ -932,14 +938,3 @@ Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại h
   2. Cập nhật `agent_mua.chay_cong_cu` và `_ghi_viec` để thực thi trực tiếp các tool này trong chuỗi hội thoại `converse`.
   3. Đưa `so_sanh_can`, `tinh_thue_phi`, `tinh_vay_tra_gop` vào `CONG_CU_DOC` để bước 2 vòng gộp và vòng dự phòng đều gọi được.
 - **Kiểm**: `tests/test_agent_mua_tools_389.py` (5/5 ca test đạt: kiểm tra danh sách tool, so sánh căn, tính thuế phí, tính trả góp, lưu SĐT); `scripts/soat-truy-vet.sh` sạch.
-
-### SRS-5.1zzzzzzz388 · Tích hợp công cụ tính thuế phí, trả góp ngân hàng, vá hứng Lead SĐT và phân loại bán nhanh cho Chatbot Zalo (06/11/2026)
-- **Ca gốc**: Sau khi đối chiếu bộ công cụ trực tuyến của đối thủ MOSO (`/cong-cu/`, 1.388 dự án TP.HCM), phát hiện AOND Zalo Chatbot thiếu công cụ tính thuế phí & trả góp thực chiến; `src/aioi/mua.py` (dòng 694–695) vứt bỏ SĐT khách để lại ngoài ngữ cảnh hẹn xem; khách tìm mua/đầu tư chưa có bộ lọc nhà ngộp/bán gấp `[nguồn: chủ dự án 06/11/2026: "lập kế hoạch lấy được cái nào để cho vào chatbot zalo của AOND và bằng cách nào... duyệt viết docs trước rồi làm"]`.
-- **Lớp lỗi**: (1) `tai_chinh.py` dặn bot "chưa tính được" khiến bot bị động khi khách hỏi số trả góp; (2) `phap_ly.py` chỉ nêu điều luật chữ, không có máy tính bóc tách từng đồng; (3) `mua.py::ghi_sdt_hen_xem` kiểm `viewings` chờ, không có thì bỏ rơi SĐT làm mất lead; (4) tìm kiếm chưa có cờ ưu tiên hàng ngộp/bán nhanh.
-- **Sửa**:
-  1. Module `src/aioi/thue_phi.py`: tính chuẩn Thuế TNCN 2%, Trước bạ 0,5%, Phí công chứng lũy tiến theo Thông tư 257/2016/TT-BTC, lệ phí thẩm định/đăng bộ; định dạng tin nhắn Zalo chi tiết hai bên mua/bán.
-  2. Nâng cấp `src/aioi/tai_chinh.py`: hàm `tinh_vay_tra_gop` theo phương thức dư nợ giảm dần (vốn tự có 30%, vay 70%, gốc đều hàng tháng, lãi tháng đầu).
-  3. Vá `src/aioi/mua.py`: khi khách để lại SĐT bất kỳ lúc nào, nếu chưa có lịch hẹn xem thì lưu ngay vào `buyers.phone` và kích hoạt thông báo admin/sự kiện để chuyên viên liên hệ, không để lọt lead.
-  4. Bộ lọc `ban_gap`: nhận diện từ khóa ngộp/bán gấp/cắt lỗ trong câu chat để ưu tiên gợi ý rổ hàng bán nhanh.
-  5. Đầy đủ tài liệu tại `docs/14-tinh-nang-tai-chinh-thue-phi-lead.md`; bảo toàn 100% dung lượng Supabase Free (0 byte DB footprint).
-- **Kiểm**: `test_thue_phi.py`, `test_tai_chinh_tra_gop.py`, `test_bao_toan_sdt_lead.py`; `bash scripts/soat-truy-vet.sh` sạch.
