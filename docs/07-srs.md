@@ -788,6 +788,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz399 · Máy 146: user Windows thường sửa được mã chạy dưới SYSTEM và đọc được `.env` (08/11/2026)
+- **Ca gốc**: audit bảo mật 08/11 (N2). `C:\aond` (cả `.env`, `zalo-session*.json`, `src`, `svc_*.cmd`, `venv`) thừa hưởng ACL gốc `C:\`: `Authenticated Users: Modify`, `Users: Read`; ba task AOND chạy dưới SYSTEM, máy có tài khoản thường đang bật. `[nguồn: chủ dự án 08/11/2026: "Vá N2 tiếp"]`
+- **Lớp lỗi**: thư mục dịch vụ tạo thẳng dưới `C:\` không ai siết quyền. Chỗ khác cùng lớp: `C:\gatemonitor`, `C:\goi-bot`, `C:\stock-bot`, `C:\radar`, `C:\openwa-server` (cũng chạy dưới SYSTEM) và `C:\Python311`, `C:\gm_venv`, `C:\tools` (runtime của mọi venv) — chỉ siết `C:\aond` thì user thường vẫn lên SYSTEM qua thư mục khác. Sửa cả 9.
+- **Sửa**: `scripts/siet-acl-146.ps1` (sao lưu ACL vào `C:\ProgramData\acl-backup-20261108`, tắt thừa kế): thư mục dịch vụ chỉ SYSTEM + Administrators; runtime dùng chung thêm Users đọc / chạy. `trien-khai-146.sh` chép bằng `robocopy` không `/SEC` nên file mới thừa hưởng quyền đã siết.
+- **Kiểm**: `icacls /findsid` Authenticated Users = 0 file ở cả 9 thư mục; `.env`, cookie Zalo, `engine.py`, `svc_aond_core.cmd` chỉ còn SYSTEM + Administrators; 8 dịch vụ Running, `/health` OK, task định kỳ chạy sau đó rc = 0.
+
 ### SRS-5.1zzzzzzz398 · Cổng quyền hàm admin dùng `current_user` — mọi tài khoản đăng nhập web gọi được hàm xoá hết (08/11/2026)
 - **Ca gốc**: audit bảo mật 08/11 (N1). Tài khoản `authenticated` không phải admin gọi `admin_cap_nhat_khach` trên DB thật → `{"ok": true}`; cùng lỗi ở `admin_xoa_het_khach_va_ro_hang`, `admin_khoi_phuc_lan_xoa`, `don_du_lieu_thu`, `admin_gan_bds_quan_tam`, `admin_xoa_bds_quan_tam`, `log_loi` (trần 200 dòng/giờ của anon vô hiệu). `[nguồn: chủ dự án 08/11/2026: "Vá N1 ngay"]`
 - **Lớp lỗi**: trong hàm SECURITY DEFINER, `current_user` là chủ hàm (`postgres`) nên vế `current_user in ('postgres', …)` luôn đúng. TS-SEC3 kiểm bằng `set role` (vẫn phiên `postgres`) nên không bắt được. Chỗ khác cùng lớp: soát mọi hàm SECURITY DEFINER trong `public` — 8 hàm, sửa cả 8 (`xuat_schema` không cấp cho `authenticated` nên chưa hở).
@@ -929,12 +935,3 @@ Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại h
   4. Đồng bộ trong `agent_gop.py`: `DOC = tuple(c["name"] for c in agent_ban.CONG_CU)` tự động nhận diện và gọi các công cụ này ở cả bước ghi và bước viết lời.
   5. Cập nhật tài liệu tại `docs/14-tinh-nang-tai-chinh-thue-phi-lead.md` §2.8.
 - **Kiểm**: `tests/test_agent_ban_tools_390.py` (kiểm tra đầy đủ các công cụ mới: định giá AVM, pháp lý sổ hồng, tính phí môi giới); `scripts/soat-truy-vet.sh` đạt 100% SẠCH.
-
-### SRS-5.1zzzzzzz389 · Nâng cấp kiến trúc Function Calling chuẩn nguyên tử theo mô hình MOSO: bổ sung so sánh căn, tính thuế phí, tính trả góp, lưu SĐT (06/11/2026)
-- **Ca gốc**: Đối chiếu cơ chế của MOSO phát hiện hệ thống MOSO dùng Function Calling tự nhiên với các công cụ nguyên tử (`search_listings`, `compare_listings`, `search_projects`, `request_contact`) để LLM tự quyết định khi nào gọi; trong khi AOND bị phân tách cứng nhắc 2 vòng (Vòng 1 bóc tách form/regex nhồi dữ liệu -> Vòng 2 viết lời), vừa làm chậm thời gian phản hồi gấp 2 vừa dễ gãy khi khách hỏi câu phức tạp nhiều ý `[nguồn: chủ dự án 06/11/2026: "kiểm tra lại bên moso làm ntn xong sửa công nghệ lại cho bên mình lun"]`.
-- **Lớp lỗi**: `agent_mua.CONG_CU` thiếu các tool nguyên tử cốt lõi (`so_sanh_can`, `tinh_thue_phi`, `tinh_vay_tra_gop`, `luu_so_dien_thoai`), khiến model không thể gọi trực tiếp trong vòng hội thoại tự nhiên khi khách hỏi so sánh, thuế phí hoặc để lại số điện thoại.
-- **Sửa**:
-  1. Mở rộng `src/aioi/agent_mua.py`: bổ sung 4 công cụ nguyên tử chuẩn JSON Schema vào `CONG_CU`: `so_sanh_can` (so sánh 2-5 căn theo giá, đơn giá m² đất, diện tích, pháp lý), `tinh_thue_phi` (tính chi tiết thuế TNCN 2%, trước bạ 0.5%, công chứng TT 257), `tinh_vay_tra_gop` (tính phương án vay 70%, vốn 30%, gốc/lãi dư nợ giảm dần), `luu_so_dien_thoai` (lưu SĐT vào buyers và báo admin).
-  2. Cập nhật `agent_mua.chay_cong_cu` và `_ghi_viec` để thực thi trực tiếp các tool này trong chuỗi hội thoại `converse`.
-  3. Đưa `so_sanh_can`, `tinh_thue_phi`, `tinh_vay_tra_gop` vào `CONG_CU_DOC` để bước 2 vòng gộp và vòng dự phòng đều gọi được.
-- **Kiểm**: `tests/test_agent_mua_tools_389.py` (5/5 ca test đạt: kiểm tra danh sách tool, so sánh căn, tính thuế phí, tính trả góp, lưu SĐT); `scripts/soat-truy-vet.sh` sạch.
