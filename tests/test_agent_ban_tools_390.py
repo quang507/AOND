@@ -69,12 +69,18 @@ def test_cong_cu_dinh_gia_tham_khao():
             "gia_chu_dinh_ban": 10_000_000_000,
         },
     )
-    assert "KẾT QUẢ ĐỊNH GIÁ THAM KHẢO THỊ TRƯỜNG (AVM)" in ra
+    assert "ĐỊNH GIÁ THAM KHẢO" in ra
     assert "Quận 7" in ra
     assert "90 – 160 triệu/m²" in ra
-    assert "7.2 tỷ – 12.8 tỷ" in ra
-    assert "Đối chiếu: Giá 10 tỷ của anh/chị nằm rất chuẩn" in ra
+    assert "7,2 tỷ – 12,8 tỷ" in ra
+    assert "giá khách 10 tỷ nằm trong dải tham khảo" in ra
     assert "quyền quyết định giá bán hoàn toàn thuộc về khách" in ra
+
+    # 08/11: vùng lạ / loại hình không có trong bảng → không có số (bản 06/11 mặc định nội thành)
+    assert "KHÔNG CÓ SỐ" in dinh_gia_tham_khao_tool(eng, None, None, {"khu_vuc": "Hà Giang", "loai_hinh": "nha_pho", "dien_tich": 80})
+    assert "KHÔNG CÓ SỐ" in dinh_gia_tham_khao_tool(eng, None, None, {"khu_vuc": "Quận 7", "loai_hinh": "dat_nong_nghiep"})
+    # "Quận 12" không còn bị đọc thành Quận 1 (trung tâm)
+    assert tinh_dinh_gia_tham_khao(khu_vuc="Quận 12", loai_hinh="nha_pho")["vung"] == "ngoai_thanh"
 
     # 2. Định giá căn hộ theo dự án có sẵn dữ liệu
     p = ProjectGia("Sunrise City", "50–60 triệu/m²")
@@ -105,20 +111,20 @@ def test_cong_cu_tinh_phi_moi_gioi():
     # 1. Chủ nhà bán căn 10 tỷ (phí 1% = 100 triệu)
     ra_ban = tinh_phi_moi_gioi_tool(conv, {"gia_vnd": 10_000_000_000, "vai_nguoi_gui": "chu_nha", "loai_giao_dich": "ban"})
     assert "1%" in ra_ban
-    assert "100.000.000 đ" in ra_ban
-    assert "0 ĐỒNG TRƯỚC" in ra_ban
-    assert "ẨN SỐ NHÀ & CHE SĐT" in ra_ban
-    assert "QUY CHUẨN 3 THẬT" in ra_ban
+    assert "100 triệu" in ra_ban
+    assert "0 đồng trước" in ra_ban and "ẩn số nhà" in ra_ban
+    # 08/11: bỏ cam kết hệ thống không có
+    assert "3 THẬT" not in ra_ban.upper() and "Top" not in ra_ban and "SĐT" not in ra_ban
 
     # 2. Môi giới gửi bán liên kết (phí 0.5% = 50 triệu)
     ra_mg = tinh_phi_moi_gioi_tool(conv, {"gia_vnd": 10_000_000_000, "vai_nguoi_gui": "moi_gioi", "loai_giao_dich": "ban"})
-    assert "0.5%" in ra_mg
-    assert "50.000.000 đ" in ra_mg
+    assert "0,5%" in ra_mg
+    assert "50 triệu" in ra_mg
 
     # 3. Cho thuê 20 triệu/tháng (0.75 tháng = 15 triệu)
     ra_thue = tinh_phi_moi_gioi_tool(conv, {"gia_vnd": 20_000_000, "loai_giao_dich": "thue"})
-    assert "3/4 tháng" in ra_thue
-    assert "15.000.000 đ" in ra_thue
+    assert "0,75 tháng" in ra_thue
+    assert "15 triệu" in ra_thue
 
 
 def test_agent_ban_khoi_dispatch():
@@ -126,8 +132,8 @@ def test_agent_ban_khoi_dispatch():
     conv = ConvGiaBan()
 
     # Tra dinh_gia_tham_khao
-    r1 = _khoi(eng, conv, None, "dinh_gia_tham_khao", {"khu_vuc": "Quận 1", "dien_tich": 100})
-    assert "AVM" in r1
+    r1 = _khoi(eng, conv, None, "dinh_gia_tham_khao", {"khu_vuc": "Quận 1", "loai_hinh": "nha_pho", "dien_tich": 100})
+    assert "ĐỊNH GIÁ THAM KHẢO" in r1 and "180 – 320 triệu/m²" in r1
     assert "Quận 1" in r1
 
     # Tra kiem_tra_phap_ly_so
@@ -136,4 +142,4 @@ def test_agent_ban_khoi_dispatch():
 
     # Tra tinh_phi_moi_gioi
     r3 = _khoi(eng, conv, None, "tinh_phi_moi_gioi", {"gia_vnd": 5_000_000_000})
-    assert "50.000.000 đ" in r3
+    assert "50 triệu" in r3

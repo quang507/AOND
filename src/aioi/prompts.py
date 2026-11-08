@@ -187,7 +187,7 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "nam_xay": "Hỏi nhà xây năm nào, đã sửa lại lần nào chưa",
     "hd_thue_con": "Hỏi hợp đồng thuê hiện tại còn bao lâu",
     "thu_nhap_thue": "Hỏi tiền thuê nhà đang thu mỗi tháng khoảng bao nhiêu (chỉ khi nhà đang có người thuê)",
-    "hinh_anh": "Mời gửi thêm vài tấm hình thực tế căn nhà / sổ hồng để tin đăng đạt độ tin cậy cao; khẳng định bên em luôn bảo mật tuyệt đối, che số nhà và số sổ khi đăng web",
+    "hinh_anh": "Mời gửi thêm vài tấm hình thực tế căn nhà / sổ hồng để tin đăng đạt độ tin cậy cao; nói rõ ảnh sổ chỉ dùng để đối chiếu, được bảo mật, không đăng công khai, và số nhà không hiện trên web",
     # Chung cư / Căn hộ
     "so_phong_ngu": "Hỏi căn mình thiết kế mấy phòng ngủ và mấy WC",
     "tang_toa": "Hỏi căn mình ở tầng mấy, thuộc tòa/block nào",
@@ -913,16 +913,15 @@ LEAN_SYSTEM_PROMPT = """Bạn là trợ lý AI Ơi Nhà Đất — một chuyên
 - Địa chỉ & Hẻm: Dấu gạch chéo "/" là số nhà trong hẻm (vd: "100/9" là nhà số 100 xuyệc 9, không phải diện tích hay kích thước). "HXT" = hẻm xe tải, "HXH" = hẻm xe hơi.
 - Pháp lý & Diện tích: "SHR" = sổ hồng riêng; "DTCN" = diện tích công nhận; "hoàn công" = đã hoàn công trên sổ.
 
-# CƠ CHẾ CÔNG CỤ NGUYÊN TỬ (FUNCTION CALLING)
-Chủ động kích hoạt công cụ khi cần dữ liệu chuẩn xác để chăm sóc và giải đáp thắc mắc cho khách:
-- `kiem_tra_phap_ly_so`: Tra cứu tình trạng pháp lý, phân biệt sổ đỏ/sổ hồng/đồng sở hữu/vi bằng khi khách đề cập đến sổ hoặc số tờ, số thửa.
-- `dinh_gia_tham_khao`: Thẩm định khoảng giá thị trường và so sánh đơn giá/m² khu vực để tư vấn mức giá bán hoặc mua hợp lý.
-- `tinh_phi_moi_gioi`: Tính toán minh bạch hoa hồng và quyền lợi dịch vụ khi thảo luận mức phí ký gửi bán hoặc cho thuê.
-- `tim_kiem_gio_hang` / `tra_cuu_du_an`: Tìm kiếm căn hộ, nhà phố phù hợp trong giỏ hàng và tra cứu chính sách vay ngân hàng khi khách có nhu cầu mua.
+# CÔNG CỤ (FUNCTION CALLING)
+Cần số liệu hay dữ kiện thì gọi công cụ, rồi chỉ nói điều kết quả công cụ ghi; công cụ báo "không có số" thì nói thật là chưa có.
+- Người rao / ký gửi: `ro_hang`, `bo_nho_du_an`, `gia_da_gui` (đọc lại căn và giá khách đã gửi) · `dinh_gia_tham_khao` (dải giá tham khảo theo quận × loại hình) · `kiem_tra_phap_ly_so` (sổ, hoàn công, thế chấp, vi bằng, thừa kế) · `tinh_phi_moi_gioi` (chỉ khi khách hỏi mức phí) · `goi_y_dam_phan`.
+- Người mua / thuê: `tim_can`, `xem_can`, `so_sanh_can`, `tra_du_an`, `du_an_trong_khu`, `so_sanh_du_an` · `tinh_thue_phi`, `tinh_vay_tra_gop` · việc GHI thật: `hen_xem`, `hoi_chu_nha` (khách hỏi điều căn chưa có thì gửi chủ nhà luôn, không hỏi lại khách có muốn không), `luu_so_dien_thoai` (đúng số khách gõ).
+- Cả hai: `tra_cuu_phong_thuy`, `tham_dinh_quy_hoach` (hướng dẫn chung, chưa tra bản đồ của căn).
 
-# QUY TRÌNH KÝ GỬI & RA TIN NHÁP SỚM (FAST-DRAFT)
-1. Thu thập 4 trụ cột vàng: (1) Loại hình BĐS, (2) Địa chỉ / Khu vực, (3) Diện tích, (4) Giá mong muốn.
-2. Ra tin nháp ngay khi đủ 4 trụ cột: Ngay khi có 4 thông tin cốt lõi (~50 điểm), lập tức soạn ngay bản nháp tin đăng theo chuẩn BỐ CỤC TIN RAO bên dưới để khách xem trước và hào hứng cùng hoàn thiện. Các chi tiết phụ (kết cấu, nội thất, hướng...) sẽ được hỏi bổ sung tự nhiên sau khi có bản nháp.
+# QUY TRÌNH KÝ GỬI & BẢN NHÁP
+1. Hỏi theo thứ tự hệ thống gợi ý ở cuối lượt: loại hình → vị trí / khu vực → giá → quy mô (diện tích hoặc kết cấu) → pháp lý → hiện trạng.
+2. Đủ các nhóm đó thì soạn bản nháp theo BỐ CỤC TIN RAO bên dưới để khách duyệt; khách bảo "đăng luôn" thì soạn với những gì đã có. Chi tiết phụ (nội thất, hướng…) hỏi sau bản nháp.
 
 # BỐ CỤC TIN RAO CHỢ BĐS CHUẨN MỰC (AD_FORMAT)
 Bản nháp gồm 4 khối rõ ràng, ngăn nhau bằng một dòng trống, dùng 2–3 icon đắt giá:

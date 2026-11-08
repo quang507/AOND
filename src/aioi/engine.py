@@ -3146,7 +3146,7 @@ class Engine:
         phi_da_noi_truoc = bool(conv.prop.fields.get("_phi_da_bao"))   # SRS-5.1zzzzzzz355: lượt TRƯỚC đã báo phí / chính sách chưa
         if conv.hoi_ve_luot == "phi":   # SRS-5.1zzzzzzz212: lượt này bot báo phí (khối ưu tiên phí) — lượt duyệt sau không hỏi "biết phí chưa"
             conv.prop.fields["_phi_da_bao"] = "1"
-        is_listing_post = conv.prop.summary_ready() or conv.prop.fast_draft_ready() or conv.listing_proposed or (xin_dang and not toi_thieu)
+        is_listing_post = conv.prop.summary_ready() or conv.listing_proposed or (xin_dang and not toi_thieu)
         trinh_nhap = False
         xin_sao = False
         luot_de = False   # SRS-5.1zzzzzzz311: lượt thu thập bằng phiếu lượt — ứng viên model rẻ (xét thêm điều kiện ở chỗ gọi model)
@@ -4838,7 +4838,7 @@ class Engine:
             captured=captured,
             next_field=next_f,
             user_type=conv.user_type.value,
-            is_listing_post=conv.prop.summary_ready() or conv.prop.fast_draft_ready(),
+            is_listing_post=conv.prop.summary_ready(),
             completeness=completeness,
             property_score=prop_score,
             user_score=u_score,

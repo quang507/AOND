@@ -467,12 +467,6 @@ class Property:
             ra.append(fid)
         return ra
 
-    def fast_draft_ready(self) -> bool:
-        """Sẵn sàng ra bản nháp nhanh (SRS-5.1zzzzzzz391): có đủ 4 trụ cột vàng (loại hình + vị trí/khu vực + giá)
-        và có thông tin quy mô (diện tích hoặc kích thước hoặc số phòng) — không cần chờ pháp lý hay hiện trạng."""
-        quy_mo_keys = tuple(_KEYS_FACET["dat"] + _KEYS_FACET["cong_trinh"])
-        return self.can_publish() and any(self._has(k) for k in quy_mo_keys)
-
     def summary_ready(self) -> bool:
         """Đủ để SOẠN bài rao (SRS-5.1zzzzzzz260, chủ dự án 28/10): `can_publish` (loại hình + vị trí hoặc khu vực + giá) VÀ không còn nhóm
         cơ bản trống (quy mô · pháp lý · hiện trạng, `NHOM_SOAN`; ô khách lờ 2 lần thì để sau). Chưa đủ thì bot hỏi tiếp, mỗi nhóm một câu. Khách bảo đăng sớm thì chỉ cần sàn tối thiểu (`thieu_toi_thieu`). Phường / diện tích là điều kiện lên WEB

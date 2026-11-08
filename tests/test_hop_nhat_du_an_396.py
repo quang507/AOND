@@ -9,7 +9,7 @@ Yêu cầu:
 from __future__ import annotations
 
 from aioi.du_an_mua import dong_du_an
-from aioi.du_an_so_sanh import _lay_quy_mo, _lay_tien_ich, so_sanh_hai_du_an
+from aioi.du_an_so_sanh import so_sanh_hai_du_an
 from aioi.projects import dong_nguon_phu
 
 
@@ -59,36 +59,29 @@ def test_dong_nguon_phu_doc_specs_phang():
 
 
 def test_so_sanh_doc_schema_hop_nhat():
+    """08/11: so sánh dùng `dong_du_an` (một hàm đọc dự án) thay cho `_lay_quy_mo` / `_lay_tien_ich` riêng."""
     p1 = {
         "name": "Akari City",
         "developer": "Nam Long",
-        "thong_tin": {
-            "thuoc_tinh": {
-                "Số block": "6",
-                "Số tầng": "30",
-                "Tổng số căn": "5000",
-            },
-            "tien_ich": ["Hồ bơi", "Gym", "Clubhouse"],
-        },
+        "thong_tin": {"thuoc_tinh": {"Số block": "6", "Số tầng": "30", "Tổng số căn": "5000"}, "tien_ich": ["Hồ bơi", "Gym", "Clubhouse"]},
         "specs": {"don_gia_tb_m2": 48000000},
     }
-    qm = _lay_quy_mo(p1)
-    assert "6 block" in qm
-    assert "30 tầng" in qm
-    assert "5000 căn" in qm
 
-    ti = _lay_tien_ich(p1)
-    assert "Hồ bơi" in ti
-    assert "Gym" in ti
+    class Kho:
+        def tra_du_an(self, ten):
+            return {"khop": "ro", "du_an": p1} if "akari" in ten.lower() else {"khop": "khong"}
+
+    class Eng:
+        _convstore = Kho()
+
+    out = so_sanh_hai_du_an(Eng(), None, "Akari City", "X")
+    assert "Nam Long" in out and "48 triệu/m²" in out and "Hồ bơi" in out
 
 
 def test_so_sanh_hai_du_an_khong_crash():
     class DummyEngine:
         _convstore = None
 
-    class DummyConv:
-        pass
-
-    out = so_sanh_hai_du_an(DummyEngine(), DummyConv(), "Akari City", "Mizuki Park")
-    assert "AKARI CITY vs MIZUKI PARK" in out
-    assert "CHỦ ĐẦU TƯ & UY TÍN:" in out
+    out = so_sanh_hai_du_an(DummyEngine(), None, "Akari City", "Mizuki Park")
+    assert "Akari City vs Mizuki Park" in out
+    assert out.count("KHÔNG có trong kho") == 2

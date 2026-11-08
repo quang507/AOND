@@ -4,7 +4,7 @@
 1. tra_cuu_phong_thuy (Bát Trạch, Can Chi, Cung phi, Đông/Tây Tứ Mệnh, đánh giá hướng nhà).
 2. so_sanh_du_an (So sánh đối đầu 2 dự án lân cận từ kho 1.388 dự án MOSO).
 3. tham_dinh_quy_hoach (Quy hoạch lộ giới hẻm/đường, phân khu 1/2000, QĐ 56/2021/QĐ-UBND).
-4. goi_y_dam_phan (Biên độ thương lượng 3 bước giá, đòn bẩy chốt cọc nhanh).
+4. goi_y_dam_phan (khoảng thương lượng tham khảo theo loại hình, hai phía mua / bán).
 5. bo_loc_gia_dinh (Tiêu chuẩn an cư gia đình: tầng đẹp 8-18, căn góc, ban công Đông Nam mát).
 """
 from __future__ import annotations
@@ -82,14 +82,18 @@ def test_tinh_hoa_1_phong_thuy():
     assert tinh_can_chi(1992) == "Nhâm Thân"
 
     # 2. Kiểm tra Cung Phi (Quái Số)
-    # Nam 1988: 1+9+8+8 = 26 -> 2+6=8. 10-8 = 2 (Cung Khôn - Tây Tứ Mệnh)
-    assert tinh_quai_so(1988, "nam") == 2
-    # Nữ 1988: 8+5 = 13 -> 1+3 = 4 (Cung Tốn - Đông Tứ Mệnh)
-    assert tinh_quai_so(1988, "nu") == 4
+    # Cộng HAI SỐ CUỐI năm (sửa 08/11 — bản 06/11 cộng cả 4 chữ số ra Khôn 2, sai). Nam 1988: 8+8=16 -> 7; 10-7 = 3 (Chấn, Đông Tứ Mệnh)
+    assert tinh_quai_so(1988, "nam") == 3
+    # Nữ 1988: 7+5 = 12 -> 3 (Chấn)
+    assert tinh_quai_so(1988, "nu") == 3
+    # Bảng tra phổ biến: 1990 nam Khảm 1 / nữ Cấn 8 (5 hóa 8); 1985 nam Càn 6 / nữ Ly 9; 2000 nam Ly 9 / nữ Càn 6
+    assert (tinh_quai_so(1990, "nam"), tinh_quai_so(1990, "nu")) == (1, 8)
+    assert (tinh_quai_so(1985, "nam"), tinh_quai_so(1985, "nu")) == (6, 9)
+    assert (tinh_quai_so(2000, "nam"), tinh_quai_so(2000, "nu")) == (9, 6)
 
     # 3. Tra cứu chi tiết
-    pt = tra_cuu_phong_thuy_chi_tiet(1988, "nam", huong_nha="Đông Bắc")
-    assert pt["nhom_menh"] == "Tây Tứ Mệnh"
+    pt = tra_cuu_phong_thuy_chi_tiet(1988, "nam", huong_nha="Nam")
+    assert pt["nhom_menh"] == "Đông Tứ Mệnh"
     assert pt["danh_gia_huong"]["hop_menh"] is True
     assert pt["danh_gia_huong"]["sao"] == "Sinh Khí"
 
@@ -101,40 +105,34 @@ def test_tinh_hoa_1_phong_thuy():
 
 
 def test_tinh_hoa_2_so_sanh_du_an():
+    """08/11: so sánh dùng chung `du_an_mua.dong_du_an` — giá niêm yết là TỔNG giá, không phải triệu/m²; dự án không có trong kho thì
+    nói không có, không điền "Chủ đầu tư uy tín" / tiện ích mẫu."""
     eng = EngineGia()
     conv = ConvGia()
     kq = so_sanh_hai_du_an(eng, conv, "Akari City", "Mizuki Park")
-    chat_upper = kq.upper()
-    assert "SO SÁNH ĐỐI ĐẦU DỰ ÁN" in chat_upper
-    assert "AKARI CITY" in chat_upper
-    assert "MIZUKI PARK" in chat_upper
-    assert "Nam Long" in kq
-    assert "triệu/m²" in kq
-    assert "TIỆN ÍCH NỘI KHU" in kq
+    assert "SO SÁNH ĐỐI ĐẦU DỰ ÁN" in kq
+    assert "Akari City" in kq and "Mizuki Park" in kq and "Nam Long" in kq
+    assert "triệu/m²" not in kq
+    kq2 = so_sanh_hai_du_an(eng, conv, "Akari City", "Dự Án Ma")
+    assert "KHÔNG có trong kho" in kq2 and "uy tín" not in kq2 and "Hồ bơi, Công viên cây xanh" not in kq2
 
 
 def test_tinh_hoa_3_tham_dinh_quy_hoach():
-    # Hẻm
+    """08/11: công cụ chưa tra bản đồ — nói rõ CHƯA tra địa chỉ, chỉ hướng dẫn chung; không nêu khoảng lùi con số cụ thể."""
     kq_hem = tra_cuu_quy_hoach_lo_gioi("12/4 Hoàng Diệu, Quận 4", quan_huyen="Quận 4")
-    assert "THẨM ĐỊNH QUY HOẠCH" in kq_hem
-    assert "Lộ giới quy hoạch hẻm" in kq_hem
-    assert "Đất Nhóm Nhà Ở Hiện Hữu" in kq_hem
-
-    # Mặt tiền
+    assert "THẨM ĐỊNH QUY HOẠCH" in kq_hem and "CHƯA tra" in kq_hem
+    assert "Lộ giới quy hoạch hẻm" in kq_hem and "đất ở hiện hữu" in kq_hem
     kq_mt = tra_cuu_quy_hoach_lo_gioi("Mặt tiền Nguyễn Thị Thập, Quận 7", quan_huyen="Quận 7")
-    assert "khoảng lùi" in kq_mt
-    assert "Quyết định 56" in kq_mt or "QĐ 56" in kq_mt
+    assert "khoảng lùi" in kq_mt and "3m - 5m" not in kq_mt
 
 
 def test_tinh_hoa_4_goi_y_dam_phan():
-    # Nhà phố 6 tỷ
+    """08/11: khoảng thương lượng trung lập, có nhánh người bán; không còn "đòn bẩy ép giá" chủ nhà (chủ nhà cũng là khách)."""
     kq = goi_y_khoang_gia_dam_phan(6_000_000_000, loai_hinh="nha_pho", khu_vuc="Quận 7")
-    assert "CHIẾN LƯỢC ĐÀM PHÁN GIÁ" in kq
-    assert "6.00 tỷ" in kq or "6 tỷ" in kq
-    assert "Mức Mở Màn Thử Thách" in kq
-    assert "Mức Mục Tiêu Khả Thi" in kq
-    assert "Mức Bớt Lộc May Mắn" in kq
-    assert "Đòn bẩy" in kq
+    assert "KHOẢNG THƯƠNG LƯỢNG" in kq and "6 tỷ" in kq and "Phía người mua" in kq and "Đòn bẩy" not in kq
+    assert "căn hộ" in goi_y_khoang_gia_dam_phan(3_000_000_000, loai_hinh="can_ho")      # bản 06/11: can_ho rơi về nhà phố
+    assert "mặt tiền" in goi_y_khoang_gia_dam_phan(20_000_000_000, loai_hinh="mat_tien")
+    assert "Phía người bán" in goi_y_khoang_gia_dam_phan(6_000_000_000, nguoi_hoi="ban")
 
 
 def test_tinh_hoa_5_bo_loc_gia_dinh():
@@ -170,7 +168,7 @@ def test_tich_hop_tools_vao_agent_mua_va_agent_ban():
     assert "THẨM ĐỊNH QUY HOẠCH" in r_qh
 
     r_dp = chay_cong_cu(eng, conv, "goi_y_dam_phan", {"gia_vnd": 5_000_000_000, "loai_hinh": "can_ho"}, gom)
-    assert "CHIẾN LƯỢC ĐÀM PHÁN GIÁ" in r_dp
+    assert "KHOẢNG THƯƠNG LƯỢNG" in r_dp
 
     r_gd = chay_cong_cu(eng, conv, "bo_loc_gia_dinh", {"khu_vuc": "Quận 2", "ngan_sach": "5 tỷ"}, gom)
     assert "TIÊU CHUẨN LỰA CHỌN NHÀ Ở CHO GIA ĐÌNH" in r_gd

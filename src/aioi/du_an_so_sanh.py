@@ -1,135 +1,41 @@
-"""Module So Sánh Tương Quan Dự Án BĐS lân cận (SRS-5.1zzzzzzz394, 06/11/2026).
+"""So sánh hai dự án trong kho (SRS-5.1zzzzzzz394, 06/11/2026; sửa 08/11/2026).
 
-Tinh hoa MOSO:
-- So sánh Head-to-head 2 dự án trong kho 1.388 dự án TP.HCM (hoặc dự án bất kỳ).
-- Đặt cạnh nhau: Chủ đầu tư, Vị trí kết nối, Phân khúc giá (triệu/m²), Quy mô (Block/Tầng),
-  Tiện ích nội khu (hồ bơi, công viên, TTTM), Pháp lý & Tiến độ bàn giao.
-- Khuyến nghị khách quan: Căn nào hợp mua ở thực (gia đình) vs Căn nào hợp đầu tư/cho thuê.
+Đặt dữ kiện hai dự án cạnh nhau bằng CÙNG hàm `du_an_mua.dong_du_an` mà công cụ tra dự án dùng — chỉ ô có dữ liệu thật, giá niêm yết
+đọc đúng là TỔNG giá (`price_min` / `price_max` là giá căn, không phải đơn giá m²). Bản 06/11 chia `price_min` cho 1 triệu rồi ghi
+"triệu/m²", và tự điền "Chủ đầu tư uy tín", "Sổ hồng lâu dài / HĐMB", "Đã bàn giao", "Quy mô tiêu chuẩn", bốn tiện ích mẫu khi kho trống.
+Dự án không có trong kho → nói thẳng là không có, model không được tả từ trí nhớ.
 """
 from __future__ import annotations
 
 from typing import Any
 
-
-def _dinh_dang_gia(p_min: Any, p_max: Any) -> str:
-    if not p_min and not p_max:
-        return "Đang cập nhật"
-    if p_min and p_max and p_min != p_max:
-        return f"{p_min / 1_000_000:.1f} - {p_max / 1_000_000:.1f} triệu/m²"
-    p = p_min or p_max
-    return f"~{p / 1_000_000:.1f} triệu/m²"
+from .du_an_mua import dong_du_an
 
 
-def _lay_tien_ich(d: dict[str, Any]) -> list[str]:
-    tt = d.get("thong_tin") if isinstance(d.get("thong_tin"), dict) else {}
-    ti = tt.get("tien_ich") if isinstance(tt.get("tien_ich"), list) else []
-    if ti:
-        return [str(x) for x in ti[:5]]
-    am = d.get("amenities") or []
-    if isinstance(am, list) and am:
-        return [str(x) for x in am[:5]]
-    specs = d.get("specs") or {}
-    moso = specs.get("moso") if isinstance(specs, dict) else {}
-    if isinstance(moso, dict) and moso.get("facilities"):
-        fac = moso["facilities"]
-        if isinstance(fac, list):
-            return [str(x) for x in fac[:5]]
-    return ["Hồ bơi", "Công viên cây xanh", "Khu vui chơi trẻ em", "Shophouse thương mại"]
-
-
-def _lay_quy_mo(d: dict[str, Any]) -> str:
-    tt = d.get("thong_tin") if isinstance(d.get("thong_tin"), dict) else {}
-    th = tt.get("thuoc_tinh") if isinstance(tt.get("thuoc_tinh"), dict) else {}
-    parts = []
-    if th.get("Số block"):
-        parts.append(f"{th['Số block']} block")
-    if th.get("Số tầng"):
-        parts.append(f"{th['Số tầng']} tầng")
-    if th.get("Tổng số căn"):
-        parts.append(f"{th['Tổng số căn']} căn")
-    if th.get("Mật độ xây dựng"):
-        parts.append(f"MĐXD {th['Mật độ xây dựng']}")
-
-    specs = d.get("specs") or {}
-    if not parts and isinstance(specs, dict):
-        if specs.get("tong_so_can"):
-            parts.append(f"{specs['tong_so_can']} căn")
-        if specs.get("tong_dien_tich"):
-            parts.append(f"Khuôn viên {specs['tong_dien_tich']}")
-        moso = specs.get("moso") if isinstance(specs.get("moso"), dict) else {}
-        if moso.get("blocks"):
-            parts.append(f"{moso['blocks']} block")
-        if moso.get("floors"):
-            parts.append(f"{moso['floors']} tầng")
-        if moso.get("total_area"):
-            parts.append(f"Khuôn viên {moso['total_area']}")
-
-    return ", ".join(parts) if parts else "Quy mô tiêu chuẩn"
-
-
-def so_sanh_hai_du_an(
-    engine: Any,
-    conv: Any,
-    ten_du_an_1: str,
-    ten_du_an_2: str,
-) -> str:
-    """So sánh đối đầu 2 dự án BĐS từ kho dữ liệu hoặc kiến thức chuyên gia."""
+def _tra(engine: Any, ten: str) -> dict[str, Any] | None:
     kho = getattr(engine, "_convstore", None)
-    t1 = ten_du_an_1.strip()
-    t2 = ten_du_an_2.strip()
+    if not ten or kho is None or getattr(kho, "tra_du_an", None) is None:
+        return None
+    nghia = getattr(getattr(engine, "_dia_danh", None), "du_an_theo_nghia", None)
+    try:
+        kq = kho.tra_du_an(ten, theo_nghia=nghia) if nghia else kho.tra_du_an(ten)
+    except Exception:  # noqa: BLE001 — tra lỗi thì coi như không có, nói thật
+        return None
+    du_an = kq.get("du_an") if isinstance(kq, dict) else None
+    return du_an if kq.get("khop") in ("ro", "gan") and isinstance(du_an, dict) else None
 
-    d1: dict[str, Any] | None = None
-    d2: dict[str, Any] | None = None
 
-    if kho and hasattr(kho, "tra_du_an"):
-        try:
-            r1 = kho.tra_du_an(t1)
-            if r1.get("khop") in ("ro", "gan") and r1.get("du_an"):
-                d1 = r1["du_an"]
-        except Exception:
-            pass
-
-        try:
-            r2 = kho.tra_du_an(t2)
-            if r2.get("khop") in ("ro", "gan") and r2.get("du_an"):
-                d2 = r2["du_an"]
-        except Exception:
-            pass
-
-    # Nếu không tra được dòng chi tiết, dựng profile cơ bản để LLM có dữ liệu đối chiếu
-    p1 = d1 or {"name": t1, "developer": "Chủ đầu tư uy tín", "district": "TP.HCM"}
-    p2 = d2 or {"name": t2, "developer": "Chủ đầu tư uy tín", "district": "TP.HCM"}
-
-    dong = [
-        f"📊 SO SÁNH ĐỐI ĐẦU DỰ ÁN: {p1.get('name', t1).upper()} vs {p2.get('name', t2).upper()}",
-        "",
-        f"1️⃣ CHỦ ĐẦU TƯ & UY TÍN:",
-        f"  • {p1.get('name', t1)}: {p1.get('developer') or 'Đang cập nhật'}",
-        f"  • {p2.get('name', t2)}: {p2.get('developer') or 'Đang cập nhật'}",
-        "",
-        f"2️⃣ VỊ TRÍ & KHU VỰC:",
-        f"  • {p1.get('name', t1)}: {p1.get('ward') or ''} {p1.get('district') or ''}, {p1.get('province') or 'TP.HCM'}",
-        f"  • {p2.get('name', t2)}: {p2.get('ward') or ''} {p2.get('district') or ''}, {p2.get('province') or 'TP.HCM'}",
-        "",
-        f"3️⃣ KHOẢNG GIÁ THAM KHẢO:",
-        f"  • {p1.get('name', t1)}: {_dinh_dang_gia(p1.get('price_min'), p1.get('price_max'))}",
-        f"  • {p2.get('name', t2)}: {_dinh_dang_gia(p2.get('price_min'), p2.get('price_max'))}",
-        "",
-        f"4️⃣ QUY MÔ & KHÔNG GIAN:",
-        f"  • {p1.get('name', t1)}: {_lay_quy_mo(p1)}",
-        f"  • {p2.get('name', t2)}: {_lay_quy_mo(p2)}",
-        "",
-        f"5️⃣ TIỆN ÍCH NỘI KHU NỔI BẬT:",
-        f"  • {p1.get('name', t1)}: {', '.join(_lay_tien_ich(p1))}",
-        f"  • {p2.get('name', t2)}: {', '.join(_lay_tien_ich(p2))}",
-        "",
-        f"6️⃣ PHÁP LÝ & BÀN GIAO:",
-        f"  • {p1.get('name', t1)}: {p1.get('legal_status') or 'Sổ hồng lâu dài / HĐMB'} | Trạng thái: {p1.get('status_text') or p1.get('handover') or 'Đã bàn giao'}",
-        f"  • {p2.get('name', t2)}: {p2.get('legal_status') or 'Sổ hồng lâu dài / HĐMB'} | Trạng thái: {p2.get('status_text') or p2.get('handover') or 'Đã bàn giao'}",
-        "",
-        "💡 GÓC NHÌN CHUYÊN VIÊN TƯ VẤN:",
-        f"  • Nếu ưu tiên không gian sống gia đình, tiện ích khép kín: cả hai đều có những điểm mạnh riêng về tiện ích.",
-        f"  • Nếu ưu tiên giá tốt / thanh khoản: so sánh đơn giá m² và vị trí kết nối tới trục giao thông huyết mạch của bạn.",
-    ]
-
-    return "\n".join(dong)
+def so_sanh_hai_du_an(engine: Any, conv: Any, ten_du_an_1: str, ten_du_an_2: str) -> str:
+    """Kết quả công cụ `so_sanh_du_an`: dữ kiện kho của hai dự án đặt cạnh nhau."""
+    dong = [f"=== SO SÁNH ĐỐI ĐẦU DỰ ÁN: {ten_du_an_1.strip()} vs {ten_du_an_2.strip()} (dữ kiện trong kho) ==="]
+    for ten in (ten_du_an_1.strip(), ten_du_an_2.strip()):
+        d = _tra(engine, ten)
+        dong.append("")
+        if d is None:
+            dong.append(f"[{ten}] KHÔNG có trong kho — không tả dự án này từ trí nhớ; nói thật là chưa có dữ liệu.")
+            continue
+        dong.append(f"[{d.get('name') or ten}]")
+        dong += dong_du_an(d) or ["- Kho chưa có dữ kiện nào ngoài tên."]
+    dong += ["", "- Chỉ so trên các ô cả hai cùng có; ô một bên thiếu thì nói là chưa có dữ liệu, không đoán. Không kết luận dự án nào "
+             "'tốt hơn' — nêu khác biệt để khách tự chọn theo nhu cầu (ở thật / cho thuê)."]
+    return "\n".join(dong) + "\n"

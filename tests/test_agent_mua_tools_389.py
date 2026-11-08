@@ -85,14 +85,14 @@ def test_cong_cu_tinh_thue_phi_truc_tiep_hoac_theo_ma_can():
     # Tính theo số tiền trực tiếp: 6 tỷ
     ra_tien = chay_cong_cu(eng, conv, "tinh_thue_phi", {"gia_vnd": 6_000_000_000}, gom)
     assert "6 tỷ" in ra_tien
-    assert "120.000.000 đ" in ra_tien  # TNCN 2%
-    assert "30.000.000 đ" in ra_tien   # Trước bạ 0.5%
-    assert "3.600.000 đ" in ra_tien    # Công chứng TT 257
+    assert "120 triệu" in ra_tien      # TNCN 2%
+    assert "30 triệu" in ra_tien       # Trước bạ 0.5%
+    assert "3,6 triệu" in ra_tien      # Công chứng TT 257
 
     # Tính theo mã căn ABCD1234 (kho có giá 5 tỷ)
     ra_ma = chay_cong_cu(eng, conv, "tinh_thue_phi", {"ma": "ABCD1234"}, gom)
     assert "5 tỷ" in ra_ma
-    assert "100.000.000 đ" in ra_ma
+    assert "100 triệu" in ra_ma
 
 
 def test_cong_cu_tinh_vay_tra_gop_truc_tiep_hoac_theo_ma_can():
@@ -104,10 +104,10 @@ def test_cong_cu_tinh_vay_tra_gop_truc_tiep_hoac_theo_ma_can():
     # Tính vay trực tiếp căn 10 tỷ
     ra_vay = chay_cong_cu(eng, conv, "tinh_vay_tra_gop", {"gia_vnd": 10_000_000_000, "ty_le_vay": 0.7, "so_nam": 20}, gom)
     assert "10 tỷ" in ra_vay
-    assert "3.000.000.000 đ" in ra_vay  # Vốn tự có 30%
-    assert "7.000.000.000 đ" in ra_vay  # Vay 70%
-    assert "29.166.667 đ" in ra_vay     # Gốc tháng
-    assert "43.750.000 đ" in ra_vay     # Lãi tháng đầu
+    assert "3 tỷ" in ra_vay             # Vốn tự có 30%
+    assert "7 tỷ" in ra_vay             # Vay 70%
+    assert "29,2 triệu" in ra_vay       # Gốc tháng
+    assert "43,8 triệu" in ra_vay       # Lãi tháng đầu
     assert "dư nợ giảm dần" in ra_vay
 
 

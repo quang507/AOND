@@ -9,8 +9,10 @@ def test_khong_hoi_cung_mot_o_hai_luot_lien():
     c = Conversation(user_key="k", assistant=assign_assistant("k"))
     thieu = ["dien_tich_dat", "dien_tich_nha", "gia"]
     assert Engine._o_hoi_ke(c, thieu) == "dien_tich_dat"
-    # khách chưa trả lời → hỏi ý khác trước; từ SRS-5.1zzzzzzz136 mỗi lượt một ô (không hỏi gộp) nên chỉ lùi đúng ô vừa hỏi
-    assert Engine._o_hoi_ke(c, thieu) == "dien_tich_nha"
+    # khách chưa trả lời → hỏi ý khác trước. Từ SRS-5.1zzzzzzz391 (CUM_TOI_DA = 2) đất + nhà chung một cụm, lờ cả cụm thì lùi CẢ
+    # cụm (SRS-5.1zzzzzzz79) → sang giá
+    assert c.cum_vua_hoi == ["dien_tich_dat", "dien_tich_nha"]
+    assert Engine._o_hoi_ke(c, thieu) == "gia"
     assert Engine._o_hoi_ke(c, thieu) == "dien_tich_dat"       # rồi mới quay lại
     assert Engine._o_hoi_ke(c, ["gia"]) == "gia" and Engine._o_hoi_ke(c, ["gia"]) == "gia"   # còn mỗi một ô thì vẫn hỏi
 

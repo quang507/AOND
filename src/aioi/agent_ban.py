@@ -137,7 +137,7 @@ def _khoi(engine: Any, conv: Any, project: Any, ten: str, vao: dict[str, Any] | 
         return kiem_tra_phap_ly_so_tool(vao)
     if ten == "tinh_phi_moi_gioi":
         from .dinh_gia import tinh_phi_moi_gioi_tool
-        return tinh_phi_moi_gioi_tool(conv, vao)
+        return tinh_phi_moi_gioi_tool(conv, vao, engine)
     if ten == "tra_cuu_phong_thuy":
         from . import phong_thuy
         nam = int(vao.get("nam_sinh") or 0)

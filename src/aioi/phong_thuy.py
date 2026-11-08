@@ -7,7 +7,6 @@ Tinh hoa MOSO:
 """
 from __future__ import annotations
 
-import re
 from typing import Any
 
 CAN = ["Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "Nhâm", "Quý"]
@@ -155,17 +154,15 @@ def tinh_can_chi(nam: int) -> str:
 
 def tinh_quai_so(nam: int, gioi_tinh: str = "nam") -> int:
     """Tính Quái số (Cung Phi) chuẩn phong thủy Bát Trạch.
-    Thuật toán:
-    - Cộng các chữ số năm sinh cho đến khi còn 1 chữ số (sum9).
-    - Trước năm 2000:
-      Nam = (10 - sum9) % 9; Nữ = (sum9 + 5) % 9
-    - Từ năm 2000 trở đi:
-      Nam = (9 - sum9) % 9; Nữ = (sum9 + 6) % 9
-    (Nếu kết quả = 0 thì là 9. Nếu Nam ra 5 hóa Khôn 2; Nữ ra 5 hóa Cấn 8).
+    Thuật toán: cộng HAI SỐ CUỐI của năm sinh, rút gọn tới khi còn 1 chữ số (L). Sửa 08/11: bản 06/11 cộng cả bốn chữ số năm →
+    sai cung (1988 ra Khôn 2 thay vì Chấn 3).
+    - Trước năm 2000: Nam = (10 - L) % 9; Nữ = (L + 5) % 9
+    - Từ năm 2000:    Nam = (9 - L) % 9;  Nữ = (L + 6) % 9
+    (Kết quả 0 là 9. Nam ra 5 hóa Khôn 2; Nữ ra 5 hóa Cấn 8.)
     """
-    s = sum(int(c) for c in str(nam) if c.isdigit())
+    s = (nam % 100) // 10 + nam % 10
     while s > 9:
-        s = sum(int(c) for c in str(s))
+        s = s // 10 + s % 10
 
     gt = gioi_tinh.strip().lower()
     la_nu = gt in ("nu", "nữ", "female", "gái", "chị", "bà", "em gái")
@@ -215,7 +212,7 @@ def tra_cuu_phong_thuy_chi_tiet(
     }
 
     if huong_nha:
-        k_huong = re.sub(r"[\s_-]+", " ", huong_nha.strip().lower())
+        k_huong = " ".join(huong_nha.lower().replace("_", " ").replace("-", " ").split())
         k_chuan = HUONG_CHUAN.get(k_huong)
         if not k_chuan:
             for raw, c in HUONG_CHUAN.items():

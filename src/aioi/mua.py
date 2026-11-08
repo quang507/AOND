@@ -341,7 +341,7 @@ class KhoNguoiMua:
             bd = bo_dau(k)
             la_tp = any(p in bd for p in ("tp hcm", "tp.hcm", "ho chi minh", "hcm", "sai gon", "toan thanh pho", "toan tp"))
             if la_tp:
-                ds = self._get(f"projects?province=ilike.*Hồ Chí Minh*&select={cot}&order=priority.asc.nullslast,name.asc&limit={toi_da}")
+                ds = self._get(f"projects?province=ilike.{_q('*Hồ Chí Minh*')}&select={cot}&order=priority.asc.nullslast,name.asc&limit={toi_da}")
             else:
                 ds = self._get(f'projects?or=(district.imatch."{mau}",ward.imatch."{mau}")&select={cot}'
                                f"&order=priority.asc.nullslast,name.asc&limit={toi_da}")

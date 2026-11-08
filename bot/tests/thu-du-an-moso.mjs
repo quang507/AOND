@@ -1,6 +1,6 @@
 // SRS-5.1zzzzzzz388 — bộ kiểm tra bóc / ghép / bổ sung dữ liệu MOSO (scripts/thu-du-an-moso.mjs).
 import assert from "node:assert/strict";
-import { cacKhoa, chonDong, vaGhep, dongMoi, chuyenDoiUnitTypes } from "../../scripts/thu-du-an-moso.mjs";
+import { cacKhoa, chonDong, vaGhep, dongMoi, dongVay, chuyenDoiUnitTypes } from "../../scripts/thu-du-an-moso.mjs";
 
 // 1. Kiểm tra chuyển đổi unit types
 const loai = chuyenDoiUnitTypes(["apartment", "townhouse", "shophouse"]);
@@ -63,16 +63,23 @@ const v = vaGhep(c.row, M);
 assert.equal(v.status_text, "Đang mở bán");
 assert.equal(v.price_min, 3500000000);
 assert.equal(v.price_max, 7000000000);
-assert.equal(v.specs.moso.name, "Sunshine Sky City");
+assert.equal(v.specs.moso, undefined);           // SRS-396: không giữ bản sao nguồn trong specs
+assert.equal(v.specs.don_gia_tb_m2, 65000000);
 assert.equal(v.thong_tin.thuoc_tinh["Hỗ trợ vay ngân hàng"], "Tối đa 70%");
 assert.equal(v.thong_tin.thuoc_tinh["Vốn tự có tối thiểu"], "30%");
 
 // 5. Dự án mới hoàn toàn
 const moi = dongMoi(M);
 assert.equal(moi.name, "Sunshine Sky City");
-assert.equal(moi.source, "moso");
+assert.equal(moi.source, "aond");
 assert.equal(moi.province, "Hồ Chí Minh");
 assert.equal(moi.priority, 70);
 assert.equal(moi.thong_tin.thuoc_tinh["Hỗ trợ vay ngân hàng"], "Tối đa 70%");
+
+// 6. Nguồn không nói về vay → không bịa dòng vay (08/11)
+assert.deepEqual(dongVay({ bank_support: false }), {});
+assert.deepEqual(dongVay({ bank_support: true }), {});
+assert.equal(dongMoi({ name: "X" }).thong_tin.thuoc_tinh["Hỗ trợ vay ngân hàng"], undefined);
+assert.equal(dongVay({ bank_support: true, max_loan_ratio: 65 })["Vốn tự có tối thiểu"], "35%");
 
 console.log("thu-du-an-moso: đạt");

@@ -105,7 +105,10 @@ def _chuan_bi():
 
 # ---------- Luồng 30 câu ----------
 
-def test_luong_30_ghi_dung_o_moi_luot_va_ra_ban_nhap_khi_du_o_co_ban():
+def test_luong_30_ghi_dung_o_moi_luot_va_ra_ban_nhap_khi_du_o_co_ban(monkeypatch):
+    # Lời bot đặt sẵn của luồng này hỏi MỘT ý mỗi lượt; từ SRS-5.1zzzzzzz391 engine tính cụm 2 ý là "đã hỏi" nên ý thứ hai bị đếm lờ dù
+    # câu đặt sẵn không hỏi nó → hiện trạng bị để sau oan. Ghim 1 ý cho đúng với kịch bản; luật 2 ý kiểm ở test_toi_uu_ky_gui_391.
+    monkeypatch.setattr("aioi.schema.CUM_TOI_DA", 1)
     eng, spy = _chuan_bi()
     kq = _chay_luong_30(eng, spy)
     c = eng.conversation("srd-30")

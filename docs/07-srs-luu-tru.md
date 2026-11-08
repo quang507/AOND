@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz387 · Bỏ kiểm tra máy móc trước mọi commit nhỏ, chuyển sang kiểm tra khoanh vùng (Smart Scoping) tránh tràn bộ nhớ token (06/11/2026)
+
+- **Ca gốc**: Mỗi lần sửa hay commit nhỏ, agent Claude đều chạy toàn bộ bài kiểm (`bun run kiem`, `test:py`), bắn ra hàng trăm dòng log làm tràn cửa sổ ngữ cảnh (token) và chậm phiên làm việc `[nguồn: chủ dự án 06/11/2026, chat: "lúc nào commit cái gì con claude cũng chạy kiểm tra à, vậy nhanh đầy bộ nhớ quá nhỉ... vậy sửa để lúc sau không chạy máy móc như vậy đi"]`.
+- **Lớp lỗi**: Quy ước Cổng 1 trong `CLAUDE.md §7` và `docs/11 §11.5` quy định cứng nhắc "chạy trước mọi commit đụng...", khiến AI áp dụng máy móc sau từng commit lẻ thay vì kiểm tra theo phạm vi và kiểm tra trước khi push/PR.
+- **Sửa**: Cập nhật `CLAUDE.md §7`, `docs/11-quy-trinh.md §11.5`, `.claude/skills/ba-pipeline/SKILL.md`: commit nháp/WIP không cần test; sửa docs chỉ chạy `bun run truyvet`; sửa web chỉ `bun run kieu`; chỉ chạy test liên quan khi sửa lõi; toàn bộ `bun run kiem` chỉ chạy 1 lần trước khi mở PR/gộp. Chuyển mục cũ nhất `SRS-5.1zzzzzzz376` sang `docs/07-srs-luu-tru.md` để giữ đúng 10 mục.
+- **Kiểm**: Soát `CLAUDE.md`, `docs/11-quy-trinh.md`, `docs/07-srs.md`; chạy `bun run truyvet` xanh.
+
 ### SRS-5.1zzzzzzz386 · Bot báo "em ghi rồi" gần như mọi lượt; câu phí "chưa thành thì … không tốn đồng nào" thiếu chữ (05/11/2026)
 Chủ dự án 05/11 (soát chat thử): câu "Chỉ nói đã ghi / đã cập nhật … với điều kết quả báo ĐÃ GHI" cộng báo cáo lượt nào cũng có dòng "ĐÃ GHI" "đang ngầm gợi model báo đã ghi ở mọi lượt … xóa cái này đi"; khách hỏi "câu cuối chưa 'thành' … có phải thiếu chữ công". Hứa việc hệ thống không làm: để sau ("có khi lúc đó admin sẽ nhắn").
 (1) Lớp lỗi: lời dặn chặn "báo ghi sai" lại nêu việc báo ghi mỗi lượt, nhãn báo cáo "ĐÃ GHI" thành việc cần nói; câu mẫu `bao_phi` gõ thiếu chữ. (2) Sửa: `agent_gop.HUONG_DAN_VIET` — hệ thống tự lưu, không báo khách đã ghi; `bao_cao` đổi nhãn "Ô vừa lưu (hệ thống tự lưu, không báo khách là đã ghi)"; `cau_mau.bao_phi` "chưa thành công thì" + migration `20261105b` (dòng DB chưa sửa tay). Đường dự phòng phía mua (`agent_mua.HUONG_DAN_GHI_VIEC`, chặn báo hẹn xem khi chưa ghi) giữ. (3) Kiểm: `test_agent_gop_371` đỏ khi còn nhãn / câu cũ; `test_cau_mau*` theo câu mới. CI; chưa chạy `cham` (chủ dự án dặn không chạy test ở máy).

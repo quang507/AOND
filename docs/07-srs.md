@@ -788,6 +788,35 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz397 · Soát và sửa đợt MOSO 06/11 (SRS-388…396): số sai, cam kết không có thật, luật bản nháp bị bỏ (08/11/2026)
+- **Ca gốc**: Đợt 06/11 đẩy thẳng main 14 commit. Hậu quả: 10 test đỏ, CI đỏ. Nhiều công cụ mới trả số sai hoặc bịa dữ kiện. `[nguồn: chủ dự án 08/11/2026: "có định giá, đọc kĩ code đi", "không đi qua PR, sửa lỗi của nó xem, dùng bản prompt gọn để bắn thử 1 đoạn"]`
+- **Giữ**: định giá tham khảo, `CUM_TOI_DA = 2` (chủ dự án duyệt 06/11), prompt gọn + Customer Insight, bộ công cụ nguyên tử.
+- **Sửa — luồng hỏi & prompt**:
+  - Gỡ Fast-Draft. Luật bản nháp SRS-260 (giá · vị trí · quy mô · pháp lý · hiện trạng) vẫn đứng, vì trích dẫn 06/11 không duyệt việc bỏ nó. Fast-Draft còn làm mất lượt hỏi lại diện tích mơ hồ và mặt tiền.
+  - Trả lại câu "hỏi chủ nhà NGAY, KHÔNG hỏi lại khách" mà bản 06/11 lỡ xoá.
+  - `luu_so_dien_thoai` kiểm `tim_sdt`, và số phải có trong lời khách.
+  - `tim_can` không có kết quả thì không dặn model "nêu mặt bằng giá" (không có dữ liệu thì model bịa).
+  - Câu xin ảnh không hứa "che số nhà" trên ảnh.
+  - Prompt gọn chỉ nhắc công cụ có thật. Bỏ "Fast-Draft ~50 điểm".
+  - `du_an_theo_khu` mã hoá tham số `province`.
+- **Sửa — công cụ tính toán**:
+  - Quái số lấy hai số cuối năm sinh. Bản 06/11 ra 1988 nam = Khôn; đúng là Chấn.
+  - Phí công chứng một nguồn `phap_ly.phi_cong_chung`. Bản 06/11 sai bậc > 10 tỷ.
+  - `tai_chinh` kẹp tỷ lệ vay (70 → 0,7) và bỏ chữ "cao nhất". Công cụ trả số liệu, không trả câu "Dạ…" viết sẵn.
+- **Sửa — định giá & đàm phán**:
+  - Phân vùng khớp nguyên từ (Q1 ≠ Q12), thêm Q4/5/6/11. Vùng lạ hoặc loại hình không có trong bảng → "không có số", không đoán nội thành.
+  - Loại hình đọc `prop.loai_hinh`. Bỏ hệ số mặt bằng nhân hai lần.
+  - Phí môi giới lấy theo `SALE_FEE_RATE`. Bỏ "3 Thật / lên Top / che SĐT / công chứng trọn gói".
+  - Đàm phán có nhánh người bán, nhận đúng slug; bỏ "đòn bẩy ép giá" chủ nhà.
+- **Sửa — dự án**:
+  - So sánh dự án dùng `du_an_mua.dong_du_an`. Bản cũ đọc giá tổng thành triệu/m² và tự điền "CĐT uy tín", "Đã bàn giao".
+  - Quy hoạch nói rõ CHƯA tra bản đồ.
+  - Script nạp dự án chỉ ghi dòng vay khi nguồn có tỷ lệ.
+- **Còn treo**:
+  - DB đã chạy `hop-nhat-nguon-du-an.mjs`: 2.924/2.924 dự án mất `specs.moso` / `source_url`. 1.111 dự án mang "Hỗ trợ vay: Tối đa 70%" không phân biệt được thật hay mặc định — cần khôi phục từ sao lưu trước 06/11.
+  - CI `cai-vps` còn trỏ VPS.
+- **Kiểm**: pytest 1503/1503; `test:bot` đạt trừ `giam-egress` (hỏng đường dẫn Windows, cả bản gốc); thêm ca cho từng lỗi trên.
+
 ### SRS-5.1zzzzzzz396 · Hợp nhất toàn bộ dữ liệu từ các nguồn (Mogi, Rever, MOSO) thành 1 chuẩn dữ liệu AOND duy nhất; xóa nhãn nguồn và làm sạch specs (06/11/2026)
 - **Ca gốc**: Sau khi làm giàu kho dự án từ Mogi, Rever và MOSO, kho `projects` (hơn 2.900 dự án) bị phân mảnh cấu trúc: dữ liệu nằm rải rác trong `specs.moso`, `specs.rever`, `specs.gia_dong`, mang nhãn nguồn riêng lẻ (`source = 'moso'`, `source = 'rever'`, `source = 'mogi'`), chứa URL trỏ ra ngoài (`source_url`) và lời thoại bot còn chữ "theo nguồn" [nguồn: chủ dự án 06/11/2026: "gộp chung nguồn dữ liệu từ các nguồn vào thành 1 rồi xóa nguồn đi cho thành 1 loại giống nhau"].
 - **Lớp lỗi**:
@@ -913,10 +942,3 @@ Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại h
   4. Bộ lọc `ban_gap`: nhận diện từ khóa ngộp/bán gấp/cắt lỗ trong câu chat để ưu tiên gợi ý rổ hàng bán nhanh.
   5. Đầy đủ tài liệu tại `docs/14-tinh-nang-tai-chinh-thue-phi-lead.md`; bảo toàn 100% dung lượng Supabase Free (0 byte DB footprint).
 - **Kiểm**: `test_thue_phi.py`, `test_tai_chinh_tra_gop.py`, `test_bao_toan_sdt_lead.py`; `bash scripts/soat-truy-vet.sh` sạch.
-
-### SRS-5.1zzzzzzz387 · Bỏ kiểm tra máy móc trước mọi commit nhỏ, chuyển sang kiểm tra khoanh vùng (Smart Scoping) tránh tràn bộ nhớ token (06/11/2026)
-
-- **Ca gốc**: Mỗi lần sửa hay commit nhỏ, agent Claude đều chạy toàn bộ bài kiểm (`bun run kiem`, `test:py`), bắn ra hàng trăm dòng log làm tràn cửa sổ ngữ cảnh (token) và chậm phiên làm việc `[nguồn: chủ dự án 06/11/2026, chat: "lúc nào commit cái gì con claude cũng chạy kiểm tra à, vậy nhanh đầy bộ nhớ quá nhỉ... vậy sửa để lúc sau không chạy máy móc như vậy đi"]`.
-- **Lớp lỗi**: Quy ước Cổng 1 trong `CLAUDE.md §7` và `docs/11 §11.5` quy định cứng nhắc "chạy trước mọi commit đụng...", khiến AI áp dụng máy móc sau từng commit lẻ thay vì kiểm tra theo phạm vi và kiểm tra trước khi push/PR.
-- **Sửa**: Cập nhật `CLAUDE.md §7`, `docs/11-quy-trinh.md §11.5`, `.claude/skills/ba-pipeline/SKILL.md`: commit nháp/WIP không cần test; sửa docs chỉ chạy `bun run truyvet`; sửa web chỉ `bun run kieu`; chỉ chạy test liên quan khi sửa lõi; toàn bộ `bun run kiem` chỉ chạy 1 lần trước khi mở PR/gộp. Chuyển mục cũ nhất `SRS-5.1zzzzzzz376` sang `docs/07-srs-luu-tru.md` để giữ đúng 10 mục.
-- **Kiểm**: Soát `CLAUDE.md`, `docs/11-quy-trinh.md`, `docs/07-srs.md`; chạy `bun run truyvet` xanh.

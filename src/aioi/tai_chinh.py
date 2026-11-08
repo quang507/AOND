@@ -14,52 +14,37 @@ TY_LE_VAY_TOI_DA_THAM_KHAO = "tối đa khoảng 70% giá trị căn nhà / BĐS
 VON_TU_CO_TOI_THIEU_THAM_KHAO = "tối thiểu khoảng 30% giá trị căn nhà (tiền cọc + vốn ban đầu)"
 
 
+def _kep(x: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, x))
+
+
 def tinh_vay_tra_gop(
     gia_vnd: int,
     ty_le_vay: float = 0.7,
     so_nam: int = 20,
     lai_suat_nam: float = 7.5,
 ) -> dict[str, int | float]:
-    """Tính toán chi tiết khoản vay mua nhà theo phương thức dư nợ giảm dần (SRS-5.1zzzzzzz388)."""
-    if gia_vnd <= 0:
-        return {
-            "gia_vnd": 0, "von_tu_co": 0, "so_tien_vay": 0, "so_nam": so_nam,
-            "so_thang": max(1, so_nam * 12), "lai_suat_nam": lai_suat_nam,
-            "goc_hang_thang": 0, "lai_thang_dau": 0, "tong_thang_dau": 0,
-        }
-
-    von_tu_co = round(gia_vnd * (1.0 - ty_le_vay))
-    so_tien_vay = round(gia_vnd * ty_le_vay)
-    so_thang = max(1, so_nam * 12)
-    goc_hang_thang = round(so_tien_vay / so_thang)
-    lai_thang_dau = round(so_tien_vay * (lai_suat_nam / 100.0) / 12)
-    tong_thang_dau = goc_hang_thang + lai_thang_dau
-
+    """Khoản vay mua nhà, dư nợ giảm dần (SRS-5.1zzzzzzz388; sửa 08/11). Model có thể truyền tỷ lệ vay dạng 70 thay vì 0,7 → quy về
+    phần; tỷ lệ kẹp 0–0,9, thời hạn 1–35 năm, lãi 0–30 %/năm (bản 06/11 nhận 70 thành vay 7000 %)."""
+    ty_le_vay = _kep(ty_le_vay / 100 if ty_le_vay > 1 else ty_le_vay, 0.0, 0.9)
+    so_nam = int(_kep(so_nam, 1, 35))
+    lai_suat_nam = _kep(lai_suat_nam, 0.0, 30.0)
+    so_thang = so_nam * 12
+    so_tien_vay = round(max(gia_vnd, 0) * ty_le_vay)
+    goc = round(so_tien_vay / so_thang)
+    lai_dau = round(so_tien_vay * lai_suat_nam / 100 / 12)
     return {
-        "gia_vnd": gia_vnd,
-        "von_tu_co": von_tu_co,
+        "gia_vnd": max(gia_vnd, 0),
+        "ty_le_vay": ty_le_vay,
+        "von_tu_co": max(gia_vnd, 0) - so_tien_vay,
         "so_tien_vay": so_tien_vay,
         "so_nam": so_nam,
         "so_thang": so_thang,
         "lai_suat_nam": lai_suat_nam,
-        "goc_hang_thang": goc_hang_thang,
-        "lai_thang_dau": lai_thang_dau,
-        "tong_thang_dau": tong_thang_dau,
+        "goc_hang_thang": goc,
+        "lai_thang_dau": lai_dau,
+        "tong_thang_dau": goc + lai_dau,
     }
-
-
-def _dinh_dang_tien(so_tien: int | float) -> str:
-    """Định dạng tiền VNĐ có dấu chấm phân cách hàng nghìn."""
-    return f"{so_tien:,.0f}".replace(",", ".") + " đ"
-
-
-def _dinh_dang_gia_ty(gia_vnd: int) -> str:
-    """Hiển thị giá trị BĐS gọn gàng theo tỷ / triệu."""
-    if gia_vnd >= 1_000_000_000:
-        ty = gia_vnd / 1_000_000_000
-        return f"{ty:.2f}".rstrip("0").rstrip(".") + " tỷ"
-    trieu = gia_vnd / 1_000_000
-    return f"{trieu:.0f} triệu"
 
 
 def dinh_dang_vay_chat(
@@ -68,22 +53,17 @@ def dinh_dang_vay_chat(
     so_nam: int = 20,
     lai_suat_nam: float = 7.5,
 ) -> str:
-    """Định dạng kế hoạch trả góp ngân hàng thành câu trả lời Zalo chuyên nghiệp."""
+    """Kết quả công cụ `tinh_vay_tra_gop` — số liệu để model viết lời, không phải câu gửi khách viết sẵn."""
+    from .phap_ly import tien as t
     kq = tinh_vay_tra_gop(gia_vnd, ty_le_vay=ty_le_vay, so_nam=so_nam, lai_suat_nam=lai_suat_nam)
-    gia_chu = _dinh_dang_gia_ty(gia_vnd)
-    pt_vay = int(ty_le_vay * 100)
-    pt_von = int((1.0 - ty_le_vay) * 100)
-
+    pt = round(float(kq["ty_le_vay"]) * 100)
     return (
-        f"Dạ với căn nhà giá trị **{gia_chu}** ({_dinh_dang_tien(gia_vnd)}), phương án tài chính vay mua nhà tham khảo như sau ạ:\n\n"
-        f"- **Vốn tự có cần chuẩn bị ({pt_von}%):** {_dinh_dang_tien(kq['von_tu_co'])}\n"
-        f"- **Ngân hàng hỗ trợ vay ({pt_vay}%):** {_dinh_dang_tien(kq['so_tien_vay'])}\n"
-        f"- **Thời hạn vay:** {so_nam} năm ({kq['so_thang']} tháng)\n\n"
-        f"📊 **Kế hoạch trả góp hàng tháng (dư nợ giảm dần, lãi ưu đãi ~{lai_suat_nam}%/năm):**\n"
-        f"- **Tiền gốc:** cố định {_dinh_dang_tien(kq['goc_hang_thang'])} / tháng\n"
-        f"- **Tiền lãi tháng đầu:** khoảng {_dinh_dang_tien(kq['lai_thang_dau'])}\n"
-        f"👉 **Tổng tiền trả tháng đầu (cao nhất):** khoảng **{_dinh_dang_tien(kq['tong_thang_dau'])}**, sau đó sẽ giảm dần theo số dư nợ gốc thực tế.\n\n"
-        "*(Số liệu mang tính tham khảo để anh/chị cân đối dòng tiền, con số chính xác sẽ do ngân hàng xét duyệt theo hồ sơ cụ thể ạ)*"
+        f"=== VAY TRẢ GÓP (tham khảo, dư nợ giảm dần) — giá {t(gia_vnd)} ===\n"
+        f"- Vốn tự có ({100 - pt}%): {t(kq['von_tu_co'])} · vay ({pt}%): {t(kq['so_tien_vay'])} · {kq['so_nam']} năm ({kq['so_thang']} tháng)\n"
+        f"- Lãi giả định {kq['lai_suat_nam']:g}%/năm (số tượng trưng, chưa phải lãi ngân hàng thật)\n"
+        f"- Gốc mỗi tháng {t(kq['goc_hang_thang'])}; lãi tháng đầu {t(kq['lai_thang_dau'])}; tháng đầu tổng {t(kq['tong_thang_dau'])}, các tháng sau giảm dần "
+        "theo dư nợ (nếu lãi thả nổi tăng sau ưu đãi thì có thể cao hơn)\n"
+        "- Số chính thức do ngân hàng xét theo hồ sơ.\n"
     )
 
 

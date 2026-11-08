@@ -13,7 +13,7 @@ import time
 from typing import Any
 
 from . import du_an_mua
-from .mua import co_tieu_chi, dong_can
+from .mua import co_tieu_chi, dong_can, tim_sdt
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ HUONG_DAN_DOC = (
 HUONG_DAN_GHI_VIEC = (
     "- hen_xem / hoi_chu_nha / luu_so_dien_thoai (GHI thật) khi khối EM VỪA GHI LƯỢT NÀY CHƯA có việc đó: khách đề nghị giờ / ngày đi xem một căn đã rõ → hen_xem "
     "NGAY; khách hỏi điều về căn mà dòng của căn KHÔNG có câu trả lời (sổ, nội thất, bớt giá, vào ở khi nào…) → hoi_chu_nha NGAY với câu viết "
-    "rõ theo ý khách, CHỈ phần dòng căn chưa có (phần đã có — vd sổ hồng — thì trả lời luôn, không chuyển chủ nhà); khách để lại số điện thoại "
+    "rõ theo ý khách, CHỈ phần dòng căn chưa có (phần đã có — vd sổ hồng — thì trả lời luôn, không chuyển chủ nhà) — khách hỏi tức là muốn biết, KHÔNG hỏi lại khách \"có muốn em hỏi chủ nhà không\" (bắn thử 29/10; bản 06/11 lỡ xoá câu này); khách để lại số điện thoại "
     "để nhờ tư vấn / gọi lại → luu_so_dien_thoai NGAY. Căn chưa rõ là căn nào hoặc khách chưa "
     "nói giờ thì KHÔNG gọi — hỏi lại khách.\n"
     "Chỉ nói đã ghi / đã chuyển chủ nhà khi khối EM VỪA GHI LƯỢT NÀY có việc đó HOẶC kết quả hen_xem / hoi_chu_nha / luu_so_dien_thoai báo ĐÃ GHI (kết quả công cụ "
@@ -399,11 +399,10 @@ def chay_cong_cu(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -
             if can:
                 return "CĂN ĐANG RAO hợp tiêu chí vừa tra:\n" + _dong(engine, can)
             return (
-                f"Hiện kho chưa có căn nào khớp 100% tất cả tiêu chí (khu vực '{kv}', ngân sách '{ns}'). "
-                f"ĐỪNG CHỈ NÓI 'KHÔNG CÓ' RỒI DỪNG LẠI. Hướng dẫn tư vấn MOSO: "
-                f"(1) Nêu ngắn gọn thực tế mặt bằng giá tại {kv}; "
-                f"(2) Gợi ý phương án thay thế khả thi (mở rộng sang khu vực lân cận hoặc loại hình/diện tích tương đương trong tầm ngân sách này); "
-                f"(3) Hỏi khách có muốn em mở rộng phạm vi tìm kiếm hoặc lưu thông tin để khi có căn mới bung hàng sẽ báo ngay không."
+                f"Kho chưa có căn nào khớp đủ tiêu chí (khu vực '{kv}', ngân sách '{ns}'). Nói thật điều đó, rồi: "
+                "(1) gợi ý một hướng nới cụ thể theo tiêu chí khách đã nêu (khu lân cận, diện tích / loại hình gần, ngân sách) và hỏi khách có "
+                "muốn em tìm theo hướng đó không; (2) có căn mới hợp thì hệ thống tự báo khách. Không nêu mặt bằng giá khu vực — kết quả tra "
+                "không có số đó (sửa 08/11: bản 06/11 dặn 'nêu mặt bằng giá' khi không có dữ liệu → model bịa giá).\n"
             )
         if ten == "xem_can":
             ma = [_chu(m, 20).lstrip("#") for m in (inp.get("ma") or []) if _chu(m)][:3]
@@ -526,10 +525,17 @@ def _ghi_viec(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -> s
     """Việc GHI của vòng agent (SRS-5.1zzzzzzz292, SRS-5.1zzzzzzz389): bóc tách bỏ sót hẹn xem / câu hỏi chủ nhà / SĐT thì Sonnet ghi được qua công cụ."""
     kho = engine._convstore
     if ten == "luu_so_dien_thoai":
-        sdt = _chu(inp.get("sdt"))
+        # Sửa 08/11: số phải là SĐT di động VN hợp lệ (`tim_sdt`, cùng bộ nhận với bóc tách) và — khi có lịch sử — nằm trong lời khách
+        # gần đây; bản 06/11 lưu bất cứ chuỗi nào model truyền (model chép sai một số là lưu số sai, báo admin gọi nhầm người).
+        sdt = tim_sdt(_chu(inp.get("sdt")))
+        if not sdt:
+            return "Chưa lưu: số không phải SĐT di động Việt Nam hợp lệ (10 số, đầu 03/05/07/08/09) — nhờ khách gõ lại, KHÔNG nói đã lưu."
+        lich_su = [t.content for t in (getattr(conv, "history", None) or []) if getattr(t, "role", "") == "user" and t.content][-6:]
+        if lich_su and sdt not in {tim_sdt(x) for x in lich_su}:
+            return "Chưa lưu: số này không có trong tin khách vừa gửi — KHÔNG nói đã lưu; chỉ lưu đúng số khách gõ."
         bid = kho.khach_mua(conv.user_key) if getattr(kho, "khach_mua", None) is not None else None
-        if not (bid and sdt):
-            return "Chưa đủ thông tin số điện thoại để lưu."
+        if not bid:
+            return "Chưa lưu được số điện thoại (chưa có hồ sơ khách) — KHÔNG nói đã lưu."
         ok = kho.ghi_sdt_hen_xem(bid, sdt)
         if ok:
             return f"ĐÃ LƯU số điện thoại {sdt} của khách vào hệ thống để người phụ trách gọi hỗ trợ tư vấn."

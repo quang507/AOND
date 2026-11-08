@@ -1,5 +1,5 @@
 """SRS-5.1zzzzzzz391 — Kiểm tra tinh gọn System Prompt <1.500 tokens, tích hợp Customer Insight,
-công cụ nguyên tử Function Calling, Fast-Draft tại 50 điểm và CUM_TOI_DA = 2."""
+công cụ nguyên tử Function Calling, CUM_TOI_DA = 2 (Fast-Draft đã gỡ 08/11)."""
 try:
     import pytest
 except ImportError:
@@ -44,25 +44,13 @@ def test_cum_toi_da_bang_hai():
     assert len(cum) <= 2
 
 
-def test_fast_draft_ready_tai_bon_tru_cot_vang():
-    """Đủ 4 trụ cột (loại hình, địa chỉ/quận, diện tích, giá) là kích hoạt Fast-Draft không cần chờ hiện trạng/pháp lý."""
-    # Thiếu diện tích -> Chưa thể Fast-Draft
-    p_thieu = Property(loai_hinh="nha_pho", fields={"dia_chi": "150 Trần Bình Trọng", "quan": "Quận 5", "gia": "12 tỷ"})
-    assert not p_thieu.fast_draft_ready()
-
-    # Đủ 4 trụ cột -> Sẵn sàng Fast-Draft ngay (không cần tinh_trang_ban_giao hay phap_ly)
-    p_du = Property(
-        loai_hinh="nha_pho",
-        fields={
-            "dia_chi": "150 Trần Bình Trọng",
-            "quan": "Quận 5",
-            "dien_tich_dat": "80m2",
-            "gia": "12 tỷ",
-            "lo_gioi_hem": "mặt tiền"
-        }
-    )
-    assert p_du.can_publish()
-    assert p_du.fast_draft_ready()
+def test_ban_nhap_van_cho_phap_ly_va_hien_trang():
+    """08/11: gỡ Fast-Draft của bản 06/11 — luật chủ dự án 28/10 (SRS-5.1zzzzzzz260) vẫn đứng: giá · vị trí · quy mô · pháp lý ·
+    hiện trạng rồi mới ra bản nháp. Trích dẫn chủ dự án ở SRS-391 chỉ duyệt prompt gọn, công cụ, bỏ câu cấm, insight, 2 ý/lượt."""
+    f = {"dia_chi": "150 Trần Bình Trọng", "quan": "Quận 5", "dien_tich_dat": "80m2", "gia": "12 tỷ", "lo_gioi_hem": "mặt tiền"}
+    p = Property(loai_hinh="nha_pho", fields=dict(f))
+    assert p.can_publish() and not p.summary_ready()
+    assert not hasattr(p, "fast_draft_ready")
 
 
 def test_function_calling_atomic_tools_san_sang():
@@ -71,10 +59,19 @@ def test_function_calling_atomic_tools_san_sang():
     assert res_avm["don_gia_min"] > 0
     assert res_avm["gia_max"] > res_avm["gia_min"]
 
-    res_pl = kiem_tra_phap_ly_so_tool({"loai_so": "so_hong_rieng", "tinh_trang": "chua_hoan_cong"})
+    res_pl = kiem_tra_phap_ly_so_tool({"chu_de": "chua_hoan_cong"})
     assert "CĂN CỨ PHÁP LÝ" in res_pl
-    assert "Luật Đất đai 2024" in res_pl
 
-    res_phi = tinh_phi_moi_gioi_tool(None, {"gia_chot": 12.0, "loai_giao_dich": "ban", "vai_tro": "chu_nha"})
-    assert "1%" in res_phi
-    assert "0 ĐỒNG TRƯỚC" in res_phi
+    res_phi = tinh_phi_moi_gioi_tool(None, {"gia_vnd": 12_000_000_000, "loai_giao_dich": "ban", "vai_nguoi_gui": "chu_nha"})
+    assert "1%" in res_phi and "120 triệu" in res_phi
+    assert "0 đồng trước" in res_phi
+
+
+def test_lean_prompt_chi_nhac_cong_cu_co_that():
+    """08/11: bản 06/11 dặn gọi `tim_kiem_gio_hang` / `tra_cuu_du_an` — không công cụ nào tên vậy, và còn "Fast-Draft ~50 điểm" trái
+    luật bản nháp SRS-260. Mọi tên trong dấu `…` của prompt gọn phải là công cụ thật của agent_ban / agent_mua."""
+    from aioi import agent_ban, agent_mua
+    that = {c["name"] for c in agent_ban.CONG_CU} | {c["name"] for c in agent_mua.CONG_CU}
+    ten = set(P.LEAN_SYSTEM_PROMPT.split("`")[1::2])
+    assert ten and ten <= that, ten - that
+    assert "50 điểm" not in P.LEAN_SYSTEM_PROMPT and "pháp lý" in P.LEAN_SYSTEM_PROMPT

@@ -105,16 +105,17 @@ def test_tim_can_khong_co_ket_qua_co_fallback_thong_minh():
     gom: list[dict] = []
 
     res = chay_cong_cu(eng, conv, "tim_can", {"khu_vuc": "Quận 1", "ngan_sach": "2 tỷ"}, gom)
-    assert "Hiện kho chưa có căn nào khớp 100%" in res
-    assert "ĐỪNG CHỈ NÓI 'KHÔNG CÓ' RỒI DỪNG LẠI" in res
-    assert "thực tế mặt bằng giá" in res
-    assert "Gợi ý phương án thay thế" in res
+    # 08/11: vẫn gợi ý nới tiêu chí, nhưng không dặn "nêu mặt bằng giá" khi không có dữ liệu (model bịa giá)
+    assert "chưa có căn nào khớp" in res
+    assert "gợi ý một hướng nới" in res
+    assert "Không nêu mặt bằng giá" in res
 
 
 def test_bao_mat_hinh_anh_prompts():
     loi = NATURAL_QUESTIONS["hinh_anh"]
     assert "bảo mật" in loi.lower()
-    assert "che số nhà" in loi.lower()
+    # 08/11: ảnh sổ vào bucket riêng (kho_anh.BUCKET_RIENG), số nhà ẩn ở chữ trên web (FR-104); hệ thống KHÔNG che số nhà trên ảnh
+    assert "không đăng công khai" in loi and "che số nhà" not in loi.lower()
 
 
 def test_huong_dan_agent_ban_co_cac_cong_cu_moi():

@@ -20,7 +20,7 @@ TIEU_CHUAN_GIA_DINH = {
     },
     "huong_mat": {
         "ten": "Ban công hướng Đông Nam / Nam",
-        "ly_do": "Đón trọn vẹn luồng gió mùa Đông Nam mát lành quanh năm, tránh nắng gắt thiêu đốt từ hướng Tây vào buổi chiều, tiết kiệm 30-40% tiền điện máy lạnh hàng tháng."
+        "ly_do": "Đón trọn vẹn luồng gió mùa Đông Nam mát lành quanh năm, tránh nắng gắt thiêu đốt từ hướng Tây vào buổi chiều."
     },
     "an_toan_noi_khu": {
         "ten": "Tiện ích an toàn cho trẻ em & người cao tuổi",

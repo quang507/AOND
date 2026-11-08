@@ -125,10 +125,7 @@ export function vaGhep(row, M) {
   }
   const tt = row.thong_tin ? { ...row.thong_tin } : {};
   const thuocTinh = { ...(tt.thuoc_tinh ?? {}) };
-  if (M.bank_support) {
-    thuocTinh["Hỗ trợ vay ngân hàng"] = `Tối đa ${M.max_loan_ratio || 70}%`;
-    thuocTinh["Vốn tự có tối thiểu"] = "30%";
-  }
+  Object.assign(thuocTinh, dongVay(M));
   if (M.number_of_units && !thuocTinh["Tổng số căn"]) {
     thuocTinh["Tổng số căn"] = String(M.number_of_units);
   }
@@ -142,14 +139,15 @@ export function vaGhep(row, M) {
 
 const slugHoa = (s) => boDau(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80);
 
+// Dòng vay chỉ khi nguồn CÓ tỷ lệ vay (08/11: bản 06/11 ghi "Tối đa 70% / 30%" cho MỌI dự án mới, kể cả nguồn không nói gì về vay).
+export function dongVay(M) {
+  const tl = Number(M.max_loan_ratio);
+  if (!M.bank_support || !(tl > 0 && tl < 100)) return {};
+  return { "Hỗ trợ vay ngân hàng": `Tối đa ${tl}%`, "Vốn tự có tối thiểu": `${100 - tl}%` };
+}
+
 export function dongMoi(M) {
-  const tt = {
-    thuoc_tinh: {
-      "Hỗ trợ vay ngân hàng": `Tối đa ${M.max_loan_ratio || 70}%`,
-      "Vốn tự có tối thiểu": "30%",
-    },
-    tien_ich: [],
-  };
+  const tt = { thuoc_tinh: dongVay(M), tien_ich: [] };
   if (M.number_of_units) tt.thuoc_tinh["Tổng số căn"] = String(M.number_of_units);
   if (M.average_price_m2) tt.thuoc_tinh["Đơn giá trung bình"] = `${Math.round(M.average_price_m2 / 1e6)} triệu/m²`;
 

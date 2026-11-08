@@ -80,9 +80,11 @@ export function hopNhatRow(p) {
   const tt = (p.thong_tin && typeof p.thong_tin === "object") ? { ...p.thong_tin } : {};
   const thuocTinh = { ...(tt.thuoc_tinh ?? {}) };
 
-  if (moso.bank_support || thuocTinh["Hỗ trợ vay ngân hàng"]) {
-    thuocTinh["Hỗ trợ vay ngân hàng"] = `Tối đa ${moso.max_loan_ratio || 70}%`;
-    thuocTinh["Vốn tự có tối thiểu"] = "30%";
+  // 08/11: chỉ ghi dòng vay khi nguồn có tỷ lệ thật; không ghi đè dòng đã có bằng mặc định 70/30.
+  const tl = Number(moso.max_loan_ratio);
+  if (moso.bank_support && tl > 0 && tl < 100) {
+    thuocTinh["Hỗ trợ vay ngân hàng"] = `Tối đa ${tl}%`;
+    thuocTinh["Vốn tự có tối thiểu"] = `${100 - tl}%`;
   }
   const soCan = moso.number_of_units || duKien["số căn"];
   if (soCan && !thuocTinh["Tổng số căn"]) thuocTinh["Tổng số căn"] = String(soCan);
