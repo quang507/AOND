@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-05 16:40 (giờ VN)
+-- Sinh lúc: 2026-11-08 14:25 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -1212,7 +1212,7 @@ begin
     where a.email = ((select auth.jwt()) ->> 'email')
   ) into v_is_admin;
 
-  if not v_is_admin and current_user not in ('service_role', 'postgres') then
+  if not v_is_admin and coalesce(auth.role(), '') <> 'service_role' then
     raise exception 'Chỉ admin mới có quyền thực hiện';
   end if;
 
@@ -1316,7 +1316,7 @@ begin
     where a.email = ((select auth.jwt()) ->> 'email')
   ) into v_is_admin;
 
-  if not v_is_admin and current_user not in ('service_role', 'postgres') then
+  if not v_is_admin and coalesce(auth.role(), '') <> 'service_role' then
     raise exception 'Chỉ admin mới có quyền thực hiện';
   end if;
 
@@ -1391,8 +1391,7 @@ declare
   v_r text;
 begin
   if not (public.la_admin()
-          or coalesce(auth.jwt() ->> 'role', '') = 'service_role'
-          or current_user in ('postgres', 'supabase_admin')) then
+          or coalesce(auth.jwt() ->> 'role', '') = 'service_role') then
     raise exception 'chỉ admin được khôi phục' using errcode = '42501';
   end if;
   if not exists (select 1 from luu_tru.lan_xoa where lan = p_lan) then
@@ -1434,7 +1433,7 @@ begin
     where a.email = ((select auth.jwt()) ->> 'email')
   ) into v_is_admin;
 
-  if not v_is_admin and current_user not in ('service_role', 'postgres') then
+  if not v_is_admin and coalesce(auth.role(), '') <> 'service_role' then
     raise exception 'Chỉ admin mới có quyền thực hiện';
   end if;
 
@@ -1459,8 +1458,7 @@ declare
   t text;
 begin
   if not (public.la_admin()
-          or coalesce(auth.jwt() ->> 'role', '') = 'service_role'
-          or current_user in ('postgres', 'supabase_admin')) then
+          or coalesce(auth.jwt() ->> 'role', '') = 'service_role') then
     raise exception 'chỉ admin được xoá hàng loạt' using errcode = '42501';
   end if;
   if coalesce(p_xac_nhan, '') <> 'XOA HET' then
@@ -1471,7 +1469,7 @@ begin
   -- rồi mới xóa"): CHÉP mọi dòng sắp xoá sang `luu_tru.ban_ghi` (một lần xoá = một `lan`) TRƯỚC khi xoá, cùng giao dịch —
   -- chép hỏng thì không xoá gì. Khôi phục: `admin_khoi_phuc_lan_xoa(lan)`. Kho lưu nằm CÙNG DB: đỡ được bấm nút xoá,
   -- không đỡ được mất cả DB (không có sao lưu ngoài — OPEN-25).
-  insert into luu_tru.lan_xoa (ai) values (coalesce(auth.uid()::text, current_user)) returning lan into v_lan;
+  insert into luu_tru.lan_xoa (ai) values (coalesce(auth.uid()::text, session_user)) returning lan into v_lan;
   foreach t in array array['sellers', 'buyers', 'listings', 'conversations', 'messages', 'info_requests', 'listing_media', 'listing_views', 'property_events', 'interests',
                            'viewings', 'deals', 'curated_lists', 'chat_quota', 'listing_noi_bo'] loop
     execute format('insert into luu_tru.ban_ghi (lan, bang, du_lieu) select $1, %L, to_jsonb(x) from public.%I x', t, t)
@@ -3019,7 +3017,7 @@ declare
   v_tin int := 0; v_tin_nhan int := 0; v_nguoi int := 0; v_khach int := 0;
 begin
   -- 20260922f: hàm xoá dữ liệu, mở cho authenticated — chỉ admin, service_role hoặc cron (postgres) được gọi.
-  if not (public.la_admin() or coalesce(auth.role(), '') = 'service_role' or current_user in ('postgres', 'supabase_admin')) then
+  if not (public.la_admin() or coalesce(auth.role(), '') = 'service_role' or session_user in ('postgres', 'supabase_admin')) then
     raise exception 'don_du_lieu_thu: chi admin' using errcode = '42501';
   end if;
   -- 20260929a (FR-245): ID thử đọc từ MỘT chỗ (`la_id_thu`).
@@ -3931,7 +3929,7 @@ declare
   v_nguon int;
   v_tong int;
   v_noi_bo boolean := coalesce(auth.role(), '') = 'service_role'
-                      or current_user in ('postgres', 'supabase_admin');
+                      or session_user in ('postgres', 'supabase_admin');
 begin
   select count(*) filter (where source = v_src), count(*)
     into v_nguon, v_tong
@@ -6158,7 +6156,7 @@ declare
   p text;
 begin
   if not (coalesce(auth.role(), '') = 'service_role'
-          or current_user in ('postgres', 'supabase_admin')) then
+          or session_user in ('postgres', 'supabase_admin')) then
     raise exception 'Chi service_role duoc xuat schema' using errcode = '42501';
   end if;
 
@@ -7282,7 +7280,6 @@ grant execute on function public.doi_chieu_tien_cong_khai(p_cau text[]) to anon;
 grant execute on function public.doi_chieu_tien_cong_khai(p_cau text[]) to authenticated;
 grant execute on function public.doi_chieu_tien_cong_khai(p_cau text[]) to service_role;
 revoke all on function public.don_du_lieu_thu() from public, anon, authenticated;
-grant execute on function public.don_du_lieu_thu() to authenticated;
 grant execute on function public.don_du_lieu_thu() to service_role;
 revoke all on function public.du_an_can_geocode(p_limit integer) from public, anon, authenticated;
 grant execute on function public.du_an_can_geocode(p_limit integer) to service_role;

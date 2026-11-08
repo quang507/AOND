@@ -73,6 +73,17 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz388 · Tích hợp công cụ tính thuế phí, trả góp ngân hàng, vá hứng Lead SĐT và phân loại bán nhanh cho Chatbot Zalo (06/11/2026)
+- **Ca gốc**: Sau khi đối chiếu bộ công cụ trực tuyến của đối thủ MOSO (`/cong-cu/`, 1.388 dự án TP.HCM), phát hiện AOND Zalo Chatbot thiếu công cụ tính thuế phí & trả góp thực chiến; `src/aioi/mua.py` (dòng 694–695) vứt bỏ SĐT khách để lại ngoài ngữ cảnh hẹn xem; khách tìm mua/đầu tư chưa có bộ lọc nhà ngộp/bán gấp `[nguồn: chủ dự án 06/11/2026: "lập kế hoạch lấy được cái nào để cho vào chatbot zalo của AOND và bằng cách nào... duyệt viết docs trước rồi làm"]`.
+- **Lớp lỗi**: (1) `tai_chinh.py` dặn bot "chưa tính được" khiến bot bị động khi khách hỏi số trả góp; (2) `phap_ly.py` chỉ nêu điều luật chữ, không có máy tính bóc tách từng đồng; (3) `mua.py::ghi_sdt_hen_xem` kiểm `viewings` chờ, không có thì bỏ rơi SĐT làm mất lead; (4) tìm kiếm chưa có cờ ưu tiên hàng ngộp/bán nhanh.
+- **Sửa**:
+  1. Module `src/aioi/thue_phi.py`: tính chuẩn Thuế TNCN 2%, Trước bạ 0,5%, Phí công chứng lũy tiến theo Thông tư 257/2016/TT-BTC, lệ phí thẩm định/đăng bộ; định dạng tin nhắn Zalo chi tiết hai bên mua/bán.
+  2. Nâng cấp `src/aioi/tai_chinh.py`: hàm `tinh_vay_tra_gop` theo phương thức dư nợ giảm dần (vốn tự có 30%, vay 70%, gốc đều hàng tháng, lãi tháng đầu).
+  3. Vá `src/aioi/mua.py`: khi khách để lại SĐT bất kỳ lúc nào, nếu chưa có lịch hẹn xem thì lưu ngay vào `buyers.phone` và kích hoạt thông báo admin/sự kiện để chuyên viên liên hệ, không để lọt lead.
+  4. Bộ lọc `ban_gap`: nhận diện từ khóa ngộp/bán gấp/cắt lỗ trong câu chat để ưu tiên gợi ý rổ hàng bán nhanh.
+  5. Đầy đủ tài liệu tại `docs/14-tinh-nang-tai-chinh-thue-phi-lead.md`; bảo toàn 100% dung lượng Supabase Free (0 byte DB footprint).
+- **Kiểm**: `test_thue_phi.py`, `test_tai_chinh_tra_gop.py`, `test_bao_toan_sdt_lead.py`; `bash scripts/soat-truy-vet.sh` sạch.
+
 ### SRS-5.1zzzzzzz387 · Bỏ kiểm tra máy móc trước mọi commit nhỏ, chuyển sang kiểm tra khoanh vùng (Smart Scoping) tránh tràn bộ nhớ token (06/11/2026)
 
 - **Ca gốc**: Mỗi lần sửa hay commit nhỏ, agent Claude đều chạy toàn bộ bài kiểm (`bun run kiem`, `test:py`), bắn ra hàng trăm dòng log làm tràn cửa sổ ngữ cảnh (token) và chậm phiên làm việc `[nguồn: chủ dự án 06/11/2026, chat: "lúc nào commit cái gì con claude cũng chạy kiểm tra à, vậy nhanh đầy bộ nhớ quá nhỉ... vậy sửa để lúc sau không chạy máy móc như vậy đi"]`.
