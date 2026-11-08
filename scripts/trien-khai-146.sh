@@ -15,6 +15,7 @@ ssh "$MAY" "if exist C:\\aond\\thu\\src rmdir /s /q C:\\aond\\thu\\src" >/dev/nu
 scp -q "$TAM/src.tar" "$MAY:C:/aond/thu/src.tar"
 cat > "$TAM/trien-khai.ps1" <<'PS'
 $ErrorActionPreference = "Stop"
+$ProgressPreference = "SilentlyContinue"
 $core = "C:\aond\aond_core"
 Set-Location C:\aond\thu
 tar -xf src.tar
