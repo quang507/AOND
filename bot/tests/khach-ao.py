@@ -128,7 +128,7 @@ def _bot(uid: str, so_nhan: str, ten: str, text: str) -> tuple[list[str], float]
     body = {"external_user_id": uid, "text": text, "sender_name": ten}
     if so_nhan:
         body["so_nhan"] = so_nhan
-    req = urllib.request.Request(f"{CORE}/chat-reply", data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(f"{CORE}/chat-reply", data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "x-noi-bo-key": os.environ.get("AIOI_NOI_BO_KEY", "")})  # SRS-5.1zzzzzzz400
     t = time.time()
     with urllib.request.urlopen(req, timeout=120) as r:
         d = json.loads(r.read().decode())
