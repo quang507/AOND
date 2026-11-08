@@ -93,8 +93,7 @@ def fetch_all_moso_projects(location: str = "Hồ Chí Minh", limit: int = 50) -
                         "price_max": p_max,
                         "average_price_m2": item.get("averagePricePerM2"),
                         "number_of_units": item.get("numberOfUnits"),
-                        "bank_support": True,
-                        "max_loan_ratio": 70
+                        # API moso không trả dữ liệu vay ngân hàng: KHÔNG tự điền mặc định (bản 06/11 gắn cứng 70% cho mọi dự án).
                     }
                     all_projects.append(proj)
 

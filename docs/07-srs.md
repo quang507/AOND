@@ -812,9 +812,10 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
   - So sánh dự án dùng `du_an_mua.dong_du_an`. Bản cũ đọc giá tổng thành triệu/m² và tự điền "CĐT uy tín", "Đã bàn giao".
   - Quy hoạch nói rõ CHƯA tra bản đồ.
   - Script nạp dự án chỉ ghi dòng vay khi nguồn có tỷ lệ.
-- **Còn treo**:
-  - DB đã chạy `hop-nhat-nguon-du-an.mjs`: 2.924/2.924 dự án mất `specs.moso` / `source_url`. 1.111 dự án mang "Hỗ trợ vay: Tối đa 70%" không phân biệt được thật hay mặc định — cần khôi phục từ sao lưu trước 06/11.
-  - CI `cai-vps` còn trỏ VPS.
+  - Tỷ lệ vay 70% là bịa: `crawl_moso_projects.py` gắn cứng `bank_support = true, max_loan_ratio = 70` cho mọi dự án (API moso không có trường vay). Đã bỏ ở crawler, bỏ dòng "vay tối đa ~70%" và lọc "hỗ trợ vay" trong khối dự án phía mua. Migration `20261108a_bo_vay_70_mac_dinh.sql` gỡ cặp "Tối đa 70%" / "30%" khỏi `thuoc_tinh` của 1.111 dự án.
+- **Không khôi phục**: xoá nguồn (`source`, `source_url`, `specs.moso`) và gộp dự án của SRS-396 là quyết định của chủ dự án. `[nguồn: chủ dự án 08/11/2026: "tôi báo xóa nguồn và gộp chung đó"]`
+- **Bỏ VPS khỏi quy trình**: gỡ `tu-cai-vps.yml` (mọi push main từ 06/11 đỏ vì gọi `cai-vps` vào VPS đã gỡ). Thêm `scripts/trien-khai-146.sh`; `sau-gop.sh` gọi nó khi đổi lõi.
+- **Còn treo**: migration `20261108a` chưa áp (cần quyền ghi DB).
 - **Kiểm**: pytest 1503/1503; `test:bot` đạt trừ `giam-egress` (hỏng đường dẫn Windows, cả bản gốc); thêm ca cho từng lỗi trên.
 
 ### SRS-5.1zzzzzzz396 · Hợp nhất toàn bộ dữ liệu từ các nguồn (Mogi, Rever, MOSO) thành 1 chuẩn dữ liệu AOND duy nhất; xóa nhãn nguồn và làm sạch specs (06/11/2026)

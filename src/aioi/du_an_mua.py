@@ -85,10 +85,6 @@ def dong_du_an(p: dict[str, Any]) -> list[str]:
     for k, v in (tt.get("thuoc_tinh") or {}).items():
         if _chu(k) and _chu(v):
             d.append(f"- {_chu(k)[:60]}: {_chu(v)[:200]}")
-    sp_moso = sp.get("moso") if isinstance(sp, dict) and isinstance(sp.get("moso"), dict) else {}
-    if sp_moso.get("bank_support") and not any("vay" in str(k).lower() for k in (tt.get("thuoc_tinh") or {})):
-        vay = sp_moso.get("max_loan_ratio") or 70
-        d.append(f"- Hỗ trợ vay ngân hàng: Có (thông thường vay tối đa ~{vay}%, vốn tự có tối thiểu ~30%)")
     return d
 
 
@@ -145,9 +141,8 @@ def khoi_du_an_khu(kq: dict[str, Any] | None) -> str:
         phu = f" ({', '.join(thong_tin)})" if thong_tin else ""
         so_can = f" — đang có {d['so_can']} căn rao" if d.get("so_can") else ""
         dong.append(f"- {_chu(d['name'])}{so_can}{phu}")
-    return dau + "\n".join(dong) + ("\nCÁCH NÓI: các dự án lớn đa phần đều hỗ trợ vay ngân hàng (tối đa ~70%, vốn tự có tối thiểu ~30%). "
-                                    "Kể vài tên trong danh sách này (kho có thể còn dự án khác ở khu đó — đừng nói \"chỉ có\"); dự án có "
-                                    "căn đang rao thì gợi khách xem căn; hỏi MỘT câu khách quan tâm dự án nào hoặc muốn lọc riêng dự án còn mở bán / hỗ trợ vay ngân hàng / theo tầm giá (THAY câu hỏi nhu cầu lượt này). KHÔNG thêm dự án ngoài danh sách.\n")
+    return dau + "\n".join(dong) + ("\nCÁCH NÓI: kể vài tên trong danh sách này (kho có thể còn dự án khác ở khu đó — đừng nói \"chỉ có\"); dự án có "
+                                    "căn đang rao thì gợi khách xem căn; hỏi MỘT câu khách quan tâm dự án nào hoặc muốn lọc riêng dự án còn mở bán / theo tầm giá (THAY câu hỏi nhu cầu lượt này). KHÔNG thêm dự án ngoài danh sách.\n")
 
 
 def khoi_can_du_an(kq: dict[str, Any] | None) -> str:
