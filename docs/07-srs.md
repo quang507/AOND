@@ -788,6 +788,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz402 · Còi máy 146: lõi chết, bridge số tư vấn chết, Zalo văng phiên chờ quét QR đều không ai báo (11/11/2026)
+- **Ca gốc**: soát đề xuất "watchdog" 11/11 trên DB thật: `bot_health_tick` (cron 15 phút) chỉ canh nhịp `bridge-zca`; nhịp `bridge-zca-tu-van` có ghi mà không ai đọc; lõi chết thì bridge vẫn gõ nhịp đều (`model_chinh` chỉ có khi có lượt gọi Claude); bridge chờ quét QR cũng vẫn gõ nhịp; lời báo còn ghi "VPS / nhadat-bridge". Thêm: `app_config.ntfy_topic` trống → `canh_bao_ngoai` không gửi đâu cả, kênh báo duy nhất là tin 🚨 đi qua chính bridge số ký gửi. `[nguồn: chủ dự án 11/11/2026, "cải thiện mấy cái này" — mục 4 Watchdog]`
+- **Lớp lỗi**: nhịp tim đo "tiến trình gõ cửa" chứ không đo "dịch vụ phục vụ được"; thêm thành phần (số tư vấn, lõi tách khỏi bridge) mà không thêm vào còi. Cùng lớp CÒN: bridge số ký gửi chết thì tin 🚨 nằm chờ và không có kênh ngoài cho tới khi chủ dự án đặt `ntfy_topic`; còi chỉ chạy 7–22 giờ (giữ như cũ).
+- **Sửa**: lõi đóng nhịp `aond-core` mỗi 60 s (`server._vong_nhip_loi`, `SoToken.beat`); migration `20261111a`: `bot_health_tick` gom vào MỘT tin 🚨 (tiết chế 1 giờ như cũ): số ký gửi (giữ hành vi cũ), số tư vấn / lõi im > 15 phút (chỉ khi đã từng có nhịp — chưa triển khai thì không báo nhầm), `bridge_dang_nhap` ở `cho_quet` / `het_han` / `tu_choi` > 10 phút; bỏ chữ "VPS".
+- **Kiểm**: `tests/test_coi_may_146_402.py` (đỏ khi lõi thôi đóng nhịp, migration bỏ một ca, lời báo còn "VPS"); chạy thử trên DB thật trong giao dịch huỷ — giả lập lõi im 20 phút + số tư vấn chờ QR 12 phút → `su_co` đủ 2 dòng, tin 🚨 đúng chữ; sau đó DB không đổi.
+
 ### SRS-5.1zzzzzzz401 · Dọn mã: xoá dump MOSO + script sinh migration một lần, lưu trữ script nạp nguồn ngoài và tàn dư VPS; công tắc lõi sang `bot/cau-hinh-loi.env` (11/11/2026)
 - **Ca gốc**: repo còn `scripts/moso_projects_hcm.json` (794 KB, đã nạp + hợp nhất, SRS-396), `sinh-xa-dong-nai.py` / `sinh-xa-tay-ninh.py` (sinh xong `20261022a/b`), 5 script nạp mogi / rever / MOSO chạy được qua ô `nap-du-an*` (chạy lại là ghi đè nguồn ngoài lên chuẩn `aond`), và `cai-vps.sh` / ô `cai-vps` / `go-trang-thu` SSH vào VPS đã bỏ — nhưng test vẫn đọc công tắc production từ `cai-vps.sh`. `[nguồn: chủ dự án 11/11/2026, yêu cầu dọn mã ba giai đoạn]`
 - **Lớp lỗi**: đổi hạ tầng / đổi nguồn dữ liệu mà công cụ cũ vẫn gọi được và vẫn là "một nguồn" của test. Cùng lớp đã sửa: hai unit systemd `nhadat-bridge*.service` (cùng vào `bot/bridge-zca/archive/`), ô `nap-du-an` / `nap-du-an-rever` / `nap-du-an-moso`, 2 bài kiểm "cai-vps đưa khoá Vault vào .env" + 8 ca AMN canh cai-vps (gỡ cùng chức năng), README còn IP VPS. Cùng lớp CÒN: 14 script `bot/tests/ban-thu-*.sh` / `doc-log-loi.sh` vẫn SSH bằng `VPS_HOST` (ô bắn thử production chết tới khi chuyển sang 146). Giai đoạn 3: soát tĩnh (AST, đóng bao từ mọi chỗ import trong `src/` `tests/` `scripts/`) — `prompts.py` không có tên nào chết, không xoá gì; riêng `LEAN_SYSTEM_PROMPT` (SRS-391) chỉ test dùng, không đường production nào ghép vào prompt — giữ theo yêu cầu, ghi để biết.
@@ -903,15 +909,3 @@ Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại h
   - `src/aioi/schema.py`: Bổ sung cụm hỏi gộp `("tieu_chuan_container", "tram_bien_ap")` vào `CUM_HOI` để bot hỏi tự nhiên trong 1 lượt (tối đa 2 ý theo SRS-391).
   - `src/aioi/prompts.py`: Sửa gợi ý hỏi cho `tram_bien_ap` (bỏ chữ kVA, hỏi có điện 3 pha / trạm riêng không) và `tai_trong_san` (chỉ hỏi nếu khách biết).
 (3) Kiểm: `test_toi_uu_loai_hinh_393.py` (3/3 đạt), hồi quy `test_branching.py`, `test_schema.py`, `test_toi_uu_ky_gui_391.py` đạt 100%. Soát truy vết SẠCH.
-
-### SRS-5.1zzzzzzz392 · Thống nhất đơn model Sonnet cho toàn bộ chu trình, loại bỏ gọi chéo Haiku bóc tách và hoàn thiện 1 vòng chuẩn MOSO (06/11/2026)
-- **Ca gốc**: Đối soát ảnh Zalo thực tế (`media_1793951947524_b6608d63.jpg` và `media_1793951936394_26f342b5.jpg`): mỗi lượt chat bot vẫn hiện `Tốn: $... (claude-haiku-5-5 ... | claude-sonnet-5-5 ...)` do kiến trúc cũ chia 2 vòng (Haiku bóc form json -> Sonnet viết lời). Đồng thời khi khách chỉ chào hỏi ("chào em") hoặc câu không có ô mới, `agent_gop._vong_ghi` coi việc không gọi tool là lỗi và rơi về form Haiku `[nguồn: chủ dự án 06/11/2026: "ủa sao bảo làm moso chỉ chạy 1 vòng chứ không phải 2 vòng", "Ok sửa push lên vps để tui test thử, chạy sonnet"]`.
-- **Lớp lỗi**:
-  1. `bot/bridge-zca/cai-vps.sh` gán `MODEL_BOC="claude-haiku-5-5"` khiến `.env` trên VPS ép `AIOI_EXTRACT_MODEL=claude-haiku-5-5`, làm mọi lượt bóc tách gọi Haiku thay vì thuần nhất Sonnet.
-  2. `config.load_settings()` mặc định `extract_model` rơi về `claude-haiku-4-5` thay vì ăn theo `chat_model` (`claude-sonnet-5-5`).
-  3. Khi khách chào hỏi thông thường, `_vong_ghi` trả `None` do `da_goi` rỗng, kích hoạt fallback form JSON của Haiku.
-- **Sửa**:
-  1. Đổi `MODEL_BOC="claude-sonnet-5-5"` trong `bot/bridge-zca/cai-vps.sh` để VPS đồng bộ 100% sang Sonnet 5.5.
-  2. Trong `src/aioi/config.py`: mặc định `chat_model` là `claude-sonnet-5-5` và `extract_model` ăn theo `chat_model`.
-  3. Cập nhật `agent_gop.py`: khi không có công cụ nào được gọi, trả về kết quả rỗng hợp lệ thay vì rơi về form Haiku, giữ trọn vẹn chu trình Sonnet 1 vòng chuẩn MOSO.
-- **Kiểm**: `tests/test_cau_hinh_nhu_production_316.py` (env VPS bóc tách bằng Sonnet 5.5 khớp `MODEL_BOC`), các bài test hồi quy 390, 391.

@@ -126,6 +126,11 @@ class SoToken:
         self._chay(self._rpc_an_toan, "log_loi",
                    {"p_source": f"claude {nhan}", "p_detail": f"{type(e).__name__}: {str(e)[:500]}"})
 
+    def beat(self, ai: str) -> None:
+        """Dấu sống `bot_health.who = ai` (SRS-5.1zzzzzzz402: lõi đóng dấu 'aond-core' mỗi phút để `bot_health_tick` biết lõi chết)."""
+        if self._rpc is not None:
+            self._chay(self._rpc_an_toan, "beat", {"p_who": ai})
+
     def ghi_loi(self, nguon: str, chi_tiet: str) -> None:
         """Một dòng sổ lỗi (log_loi) cho sự cố ngoài lượt gọi Claude (vd không chép được tin thoại). Không mang nội dung tin khách."""
         if self._rpc is not None:
