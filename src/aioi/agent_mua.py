@@ -29,7 +29,7 @@ HUONG_DAN_DOC = (
     "- so_sanh_can: khách muốn so sánh 2 hay nhiều căn với nhau về giá, đơn giá m² đất, diện tích, đường vào.\n"
     "- tra_du_an / du_an_trong_khu: khách hỏi về một dự án, hoặc khu nào có dự án gì, mà khối dự án ở dưới chưa có.\n"
     "- tinh_thue_phi: khách hỏi thuế phí chuyển nhượng, sang tên, bên nào chịu khoản nào, phí công chứng bao nhiêu.\n"
-    "- tinh_vay_tra_gop: khách hỏi phương án vay mua nhà, vốn tự có bao nhiêu, mỗi tháng trả góp bao nhiêu tiền gốc và lãi.\n"
+    "- tinh_vay_tra_gop: khách hỏi lãi suất, sinh lời cho thuê, vay được bao nhiêu, vốn tự có, mỗi tháng trả góp bao nhiêu.\n"
     "Tra tối đa 2 lần. Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có. Số căn giới thiệu mỗi lượt theo luật ở trên (rổ có ≥ 2 căn hợp thì 2–3 căn).\n"
 )
 # Các công cụ GHI của đường dự phòng (SRS-5.1zzzzzzz292, SRS-5.1zzzzzzz389) — vòng agent gộp (SRS-5.1zzzzzzz380) ghi ở bước 1, bước 2 chỉ còn HUONG_DAN_DOC + DONG_CUOI.
@@ -103,7 +103,8 @@ CONG_CU: list[dict[str, Any]] = [
     },
     {
         "name": "tinh_vay_tra_gop",
-        "description": "Tính phương án vay ngân hàng và lịch trả góp hàng tháng theo dư nợ giảm dần (vốn tự có 30%, vay 70%, tiền gốc hàng tháng, tiền lãi tháng đầu).",
+        "description": "Số tài chính tham khảo (lãi suất vay, sinh lời cho thuê, tỷ lệ vay, vốn tự có) và — khi có giá hoặc mã căn — phương án vay, "
+                       "trả góp hàng tháng theo dư nợ giảm dần. Không có giá vẫn gọi được (chỉ trả số tham khảo).",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -446,12 +447,13 @@ def chay_cong_cu(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -
                 can = kho.can_theo_ma([ma]) if getattr(kho, "can_theo_ma", None) is not None else []
                 if can and can[0].get("price_vnd"):
                     gia_vnd = int(can[0]["price_vnd"])
+            tham_khao = tai_chinh.khoi_tai_chinh().strip()
             if not gia_vnd:
-                return "Cần cung cấp giá trị căn nhà (gia_vnd) hoặc mã căn để tính phương án vay trả góp."
+                return tham_khao + "\n(Chưa có giá căn nên chưa tính trả góp — khách cho biết tầm giá hoặc căn cụ thể thì tính được.)"
             ty_le = float(inp.get("ty_le_vay") or 0.7)
             so_nam = int(inp.get("so_nam") or 20)
             lai_suat = float(inp.get("lai_suat_nam") or 7.5)
-            return tai_chinh.dinh_dang_vay_chat(gia_vnd, ty_le_vay=ty_le, so_nam=so_nam, lai_suat_nam=lai_suat)
+            return tham_khao + "\n\n" + tai_chinh.dinh_dang_vay_chat(gia_vnd, ty_le_vay=ty_le, so_nam=so_nam, lai_suat_nam=lai_suat)
         if ten in ("hen_xem", "hoi_chu_nha", "luu_so_dien_thoai"):
             return _ghi_viec(engine, conv, ten, inp, gom)
         if ten == "tra_du_an":

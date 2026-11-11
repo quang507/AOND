@@ -788,6 +788,15 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz416 · Bảng tài chính phía mua ra công cụ (11/11/2026)
+Chủ dự án 11/11 (dán lại nguyên tắc SRS-391): "Prompt chỉ giữ nhiệm vụ tư duy và hành văn. Mọi dữ liệu tra cứu, tính toán phức tạp phải tách
+ra thành các Công cụ nguyên tử". Soát lại: phí (`tinh_phi_moi_gioi`), dải giá (`dinh_gia_tham_khao`), pháp lý sổ, phong thuỷ, quy hoạch, thuế
+phí, vay đã là công cụ; lượt chào chưa có dữ kiện đã đi đường đọc nhanh (SRS-406, log 146 xác nhận). Bảng còn nằm cứng là `khoi_tai_chinh`
+trong phần cố định prompt mua.
+- `mua_co_dinh` bỏ `khoi_tai_chinh()` (7.155 → 5.898 ký tự); dòng luật đổi thành "gọi `tinh_vay_tra_gop`, chỉ nói số trong kết quả".
+- `tinh_vay_tra_gop` không có giá vẫn trả số tham khảo (lãi suất, sinh lời, tỷ lệ vay, vốn tự có); có giá / mã căn thì kèm bảng trả góp.
+- Lưới soát số phía mua (`_soat_so_can_mua`) coi kết quả công cụ đã tra lượt này (`y_luot["_ket_qua_tra"]`) là nguồn hợp lệ.
+
 ### SRS-5.1zzzzzzz415 · Prompt gọn: hiểu nỗi lo chủ nhà, hỏi như trò chuyện (11/11/2026)
 Chủ dự án 11/11: "chỉ thêm insight, làm sao để đủ thông tin mà không hỏi nhiều cảm giác hỏi cung khiến người ta khó chịu là dc"; "không phải
 báo khách cần gì để ra bản nháp chỉ tự bot ngầm hiểu thôi".

@@ -136,4 +136,6 @@ def test_khoi_tai_chinh_mot_nguon_chi_noi_khi_khach_hoi():
     kho = KhoGia()
     eng, ai = _engine(kho, KHACH_MUA)
     eng.handle("mua-s5", "Em tìm nhà phố quận 5 tầm 5 tỷ")
-    assert tai_chinh.SINH_LOI_THAM_KHAO in ai.system[-1]                                    # khối nằm trong system lượt mua
+    assert tai_chinh.SINH_LOI_THAM_KHAO not in ai.system[-1]                                # SRS-416: số chỉ tới qua công cụ, không cố định
+    from aioi import agent_mua
+    assert tai_chinh.SINH_LOI_THAM_KHAO in agent_mua.chay_cong_cu(eng, eng.conversation("mua-s5"), "tinh_vay_tra_gop", {}, [])

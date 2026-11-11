@@ -1363,7 +1363,7 @@ def _so_khong_co_trong_can(reply: str, can: list[dict] | None, conv: "Conversati
     for t in conv.history[-8:]:
         if t.role == "user" and t.content:
             nguon += " " + t.content
-    for dau, rong in (("SỐ TÍNH THEO CĂN", 1200), ("SỐ LIỆU TÀI CHÍNH THAM KHẢO", 1200), (du_an_mua.TIEU_DE, du_an_mua.CAT_KIEN_THUC + 2500),
+    for dau, rong in (("SỐ TÍNH THEO CĂN", 1200), ("SỐ LIỆU TÀI CHÍNH THAM KHẢO", 1500), ("=== VAY TRẢ GÓP", 1200), (du_an_mua.TIEU_DE, du_an_mua.CAT_KIEN_THUC + 2500),
                       (phap_ly.TIEU_DE_DIEU_LUAT, phap_ly.CAT_DIEU * 3 + 1500)):
         k = system.find(dau)
         if k >= 0:
@@ -1912,7 +1912,7 @@ def _soat_binh_luan_gia(eng, conv, reply, nc) -> list[str]:
 
 def _soat_so_can_mua(eng, conv, reply, nc) -> list[str]:
     can_mua, system = nc.get("can_mua"), nc.get("system") or ""
-    so_la = _so_khong_co_trong_can(reply, can_mua, conv, system) if (can_mua or du_an_mua.TIEU_DE in system) else []
+    so_la = _so_khong_co_trong_can(reply, can_mua, conv, system + "\n" + conv.y_luot.get("_ket_qua_tra", "")) if (can_mua or du_an_mua.TIEU_DE in system) else []
     return (["Lời vừa viết có con số không có trong dữ liệu căn (" + ", ".join(f"\"{x}\"" for x in so_la) + ") — diện tích, giá, "
              "giá mỗi m², số phòng, số tầng CHỈ được lấy đúng số ở dòng của căn (hoặc số khách đã nói), không ước lượng, không "
              "làm tròn khác, không cộng gộp."] if so_la else [])

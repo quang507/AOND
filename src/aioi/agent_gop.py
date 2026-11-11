@@ -599,6 +599,7 @@ def viet_mua(engine: Any, conv: Any, system: str, next_field: str | None, viec: 
         log.warning("Agent gộp mua: dự phòng không gọi công cụ — viết lại kèm kết quả ghi")
         return engine._provider.reply(system + khoi_bao, conv.messages(), max_tokens=max_tokens).strip(), gom
     loi, ket, da_goi = ra
+    conv.y_luot["_ket_qua_tra"] = "\n".join(ket)   # SRS-5.1zzzzzzz416: lưới soát số coi kết quả công cụ là nguồn (số tài chính, thuế phí)
     if not loi:
         them = khoi_bao + (("\n=== KẾT QUẢ EM VỪA TRA KHO (hệ thống tra, không phải khách nói) ===\n" + "\n".join(ket) + "\n") if ket else "")
         loi = engine._provider.reply(system + them, conv.messages(), max_tokens=max_tokens).strip()

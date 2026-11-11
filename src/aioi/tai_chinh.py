@@ -68,7 +68,8 @@ def dinh_dang_vay_chat(
 
 
 def khoi_tai_chinh() -> str:
-    """Khối đưa vào system prompt phía mua: số được phép nói và cách nói."""
+    """Số tham khảo + cách nói — KẾT QUẢ công cụ `tinh_vay_tra_gop` (SRS-5.1zzzzzzz416: không còn nằm cố định trong prompt mua; khách hỏi thì
+    model gọi công cụ mới có số)."""
     return ("\n\nSỐ LIỆU TÀI CHÍNH THAM KHẢO (số tượng trưng, chủ dự án sẽ cập nhật) — CHỈ dùng khi khách TỰ hỏi về sinh lời / lãi suất / vay:\n"
             f"- Sinh lời cho thuê căn hộ: {SINH_LOI_THAM_KHAO}.\n"
             f"- Lãi suất vay mua nhà: {LAI_SUAT_VAY_THAM_KHAO}; gói ưu đãi {LAI_SUAT_UU_DAI_THAM_KHAO}.\n"

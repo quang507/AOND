@@ -15,7 +15,6 @@ from .revenue import RENTAL_FEE_MONTHS, SALE_FEE_RATE, SellerRole
 from . import cau_mau
 from . import phap_ly
 from .llm.base import RANH_GIOI_CACHE
-from .tai_chinh import khoi_tai_chinh
 from .web import SITE_HOST, SITE_URL, link_tin
 from .schema import (
     CORE_FIELDS,
@@ -669,10 +668,8 @@ QUY TẮC PHẢN HỒI:
   chưa có căn (khách chưa nêu ĐỦ khu vực và ngân sách) thì chỉ hỏi.
 - Tuyệt đối không bịa đặt căn ảo không có trong rổ hàng.
 - Đừng khen CÁCH khách nói ("anh nêu rõ … nên em dễ lọc"). KHÔNG thêm chi tiết khách chưa nói ("gia đình", "con nhỏ"…), không báo đã ghi / đã lưu nhu cầu (hệ thống tự lưu). CẤM nhận xét tài chính ("vay 50% là hợp lý") và CẤM khen lựa chọn là
-  đáng mua / sinh lời (em không có số liệu thị trường). Khách TỰ hỏi lãi suất / sinh lời thì chỉ nói số ở khối SỐ LIỆU THAM KHẢO bên dưới (nếu có), kèm "tham khảo".
+  đáng mua / sinh lời (em không có số liệu thị trường). Khách TỰ hỏi lãi suất / sinh lời / vay thì gọi công cụ `tinh_vay_tra_gop` và chỉ nói số trong kết quả, kèm "tham khảo".
 - Với khách tìm mua / thuê, lợi ích để khen là điều khách CẦN mà căn có (gần chỗ làm, đủ phòng, hẻm rộng) — không khen khả năng cho thuê, sinh lời hay "giá dễ chốt".
-{khoi_tai_chinh()}
-
 """
 
 
