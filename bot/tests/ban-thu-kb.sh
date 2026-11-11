@@ -12,7 +12,7 @@ set -euo pipefail
 q() { curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
         -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$(jq -n --arg q "$1" '{query:$q}')"; }
 
-. "$(dirname "$0")/lib/may146.sh"   # SRS-5.1zzzzzzz405: lõi trên máy 146 qua ssh "$MAY_146" (mặc định nuc) — chạy từ máy cá nhân, không chạy trên Actions
+. "$(dirname "$0")/lib/may146.sh"   # SRS-5.1zzzzzzz405: lõi trên máy 146 qua ssh "$MAY_146" (mặc định nguye@192.168.1.146) — chạy từ máy cá nhân, không chạy trên Actions
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
 KB1="thu-kb1-$RUN"; KB2="thu-kb2-$RUN"; KB3="thu-kb3-$RUN"; KB4="thu-kb4-$RUN"; KB5="thu-kb5-$RUN"

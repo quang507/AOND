@@ -74,7 +74,7 @@ chủ dự án phát hiện thì phải bóc ngược năm tầng.
    ├─ Lõi Python (src/aioi/) → ca pytest trong tests/ (bun run test:py, CI job `bot`)
    ├─ Web / edge function / script / SQL → bot/tests/*.mjs (thêm vào `test:bot`)
    │                                       hoặc bot/tests/sql/ (`test:sql`)
-   ├─ Cần model thật → script bắn thử production chạy từ máy có `ssh nuc`
+   ├─ Cần model thật → script bắn thử production chạy từ máy ssh được vào 146
    │                   (`bot/tests/ban-thu-*.sh`; đọc log bằng `doc-log-loi.sh`, SRS-405) —
    │                   tiền thật, ID thử `la_id_thu`, tự dọn (docs/10 §10.7.0)
    └─ Chưa → viết ca chạy tay vào docs/10 §10.7, kèm LỆNH DÁN VÀO CHẠY ĐƯỢC
@@ -125,7 +125,7 @@ của người đẩy commit**. Nay chia lại cho sòng phẳng.
 | Lõi Python — pytest `tests/` (TS-PY-01); `test:bot` (code TypeScript còn sống); `test:sql` (trigger thật trên Postgres tạm) | máy | CI job `bot` | ⚠️ |
 | Xuất rổ hàng không hụt im lặng (TS-ROHANG; TS-MASTERDB gỡ 19/10/2026) | máy | CI job `rohang` | ⚠️ |
 | Kiểu ba edge function, luật tiền TS ↔ SQL, danh sách migration, trạng thái DB | máy | CI job `kieubot`, `doichieutien`, `migration`, `soatdb` | ⚠️ |
-| Lời bot với model THẬT (TS-PROD-01…04) | máy bắn, người đọc log | `bot/tests/ban-thu-*.sh`, `doc-log-loi.sh` chạy từ máy có `ssh nuc` (SRS-405) | không, tay |
+| Lời bot với model THẬT (TS-PROD-01…04) | máy bắn, người đọc log | `bot/tests/ban-thu-*.sh`, `doc-log-loi.sh` chạy từ máy ssh được vào 146 (SRS-405) | không, tay |
 | ID gãy, truy vết thiếu, số đếm README, PII, khoá service_role | máy | CI job `truyvet` | ⚠️ |
 | RLS / GRANT — tập không phá huỷ (TS-SEC-AUTO) | máy | CI job `baomat` | ⚠️ |
 | RLS / GRANT — ma trận 5 vai (TS-SEC3) | người, SQL Editor | `bot/tests/vai-tro.sql` | có, tay |
@@ -254,7 +254,7 @@ qua** (`docs/10 §10.8`).
 | Trigger / hàm SQL trên Postgres tạm | `bun run test:sql` | không (cần Postgres; CI job `bot`) |
 | Kiểu ba edge function | `bun run kieu:bot` | có |
 | Chỉ tự kiểm rổ hàng | `bun run test:rohang` | có |
-| Bắn thử lõi production bằng model thật (tiền thật) | `TOKEN=… bash bot/tests/ban-thu-<tên>.sh` / `doc-log-loi.sh` từ máy có `ssh nuc`; đo tìm nhà: ô `do-tim-nha` | không |
+| Bắn thử lõi production bằng model thật (tiền thật) | `TOKEN=… bash bot/tests/ban-thu-<tên>.sh` / `doc-log-loi.sh` từ máy ssh được vào 146; đo tìm nhà: ô `do-tim-nha` | không |
 | Chỉ soát tài liệu | `bun run truyvet` | có |
 | Hồi quy RLS trên DB thật (cần Internet) | `bun run test:sec` | **không** — cần mạng, để `kiem` không đỏ oan trên máy offline |
 | Ma trận quyền 5 vai (cần quyền SQL) | dán `bot/tests/vai-tro.sql` vào SQL Editor | không |

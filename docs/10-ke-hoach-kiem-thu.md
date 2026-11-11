@@ -123,7 +123,7 @@ thì "máy xanh, máy tao đỏ" và không ai biết bên nào đúng.
 | `scripts/cham-kich-ban.py` + `tests/kich_ban/ban.json` (51 kịch bản người bán, có chat thật chị N.) | **TS-CHAM-01** | **`claude` CLI đã đăng nhập** (quota gói Claude Code, không tốn tiền API); ~50 phút / lần | `bun run cham --giong` (mặc định chạy như khách thật theo công tắc `bot/cau-hinh-loi.env`, SRS-401); `--cham-lai <bản ghi>` chấm lại không gọi model | So với `tests/kich_ban/diem_nen.json`: phép tất định, giọng, lộ luật, hỏi lại, lượt ghép nhiều khối hỏi. Đổi lời / prompt / luật soát phải chạy ≥ 2 lần mỗi bên (SRS-5.1zzzzzzz304 / 313 / 314) |
 | `bot/tests/vai-tro.sql` | **TS-SEC3** | **Quyền SQL trên DB thật.** CI chỉ có khoá công khai | Dashboard → SQL Editor → dán cả file → Run; hoặc MCP `execute_sql` | Kết bằng `raise exception 'KQ: …'` nên mọi dòng chèn TỰ CUỘN LẠI. Mọi mục phải `OK`; một chữ `HONG` là một cửa mở |
 
-**Bắn thử production — tiền thật, chạy tay TỪ MÁY CÁ NHÂN có `ssh nuc` (SRS-5.1zzzzzzz405):** `TOKEN=… bash bot/tests/<tên>.sh`
+**Bắn thử production — tiền thật, chạy tay TỪ MÁY CÁ NHÂN ssh được vào 146 (`nguye@192.168.1.146`, SRS-5.1zzzzzzz405):** `TOKEN=… bash bot/tests/<tên>.sh`
 (đầu file ghi kịch bản và SRS gốc), chat với lõi trên máy 146 qua đường hầm ssh (`bot/tests/lib/may146.sh`, kèm khoá nội bộ) bằng ID thử
 (`la_id_thu`) rồi tự dọn. Không vào CI, không còn ô trên Actions (Actions không với tới 146). Chạy sau mỗi lần đưa lõi lên 146
 (`trien-khai-146.sh` khởi động lại lõi — báo trước người đang chat thử). Pytest xanh với model giả KHÔNG chứng minh

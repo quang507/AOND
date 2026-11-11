@@ -8,7 +8,7 @@ set -euo pipefail
 q() { curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
         -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$(jq -n --arg q "$1" '{query:$q}')"; }
 
-. "$(dirname "$0")/lib/may146.sh"   # SRS-5.1zzzzzzz405: lõi trên máy 146 qua ssh "$MAY_146" (mặc định nuc), đường hầm 127.0.0.1:$CONG_146
+. "$(dirname "$0")/lib/may146.sh"   # SRS-5.1zzzzzzz405: lõi trên máy 146 qua ssh "$MAY_146" (mặc định nguye@192.168.1.146), đường hầm 127.0.0.1:$CONG_146
 
 # Khoá Anthropic cho khách ảo + giám khảo: lấy từ Vault (không in ra màn hình).
 KHOA=$(q "select decrypted_secret as s from vault.decrypted_secrets where name = 'ANTHROPIC_API_KEY'" | jq -r '.[0].s // empty')
