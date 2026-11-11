@@ -87,6 +87,21 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
   5. Đưa công tắc `AIOI_PROMPT_GON=bat` vào `bot/cau-hinh-loi.env` và `C:\aond\aond_core\.env` trên máy 146 để kích hoạt `LEAN_SYSTEM_PROMPT` chạy thật ở production.
 - **Kiểm**: `tests/test_fast_path_va_lean_prompt_403.py` (đạt 4/4 ca: nhận diện câu chào, fast-path bỏ qua extract, prompt <1.500 tokens bảo tồn tên trợ lý có dấu chấm, công tắc kích hoạt thành công); soát migration 406/406; soát truy vết SẠCH. Bắn thử "em ơi" lên máy 146 phản hồi 200 OK với Th•ái.
 
+### SRS-5.1zzzzzzz395 · Tối ưu hóa các luồng hội thoại AOND theo trải nghiệm PropTech của MOSO: Gợi ý dải giá khi thiếu tiêu chí, No-Results fallback thông minh và Bảo mật cam kết khi xin ảnh (06/11/2026)
+- **Ca gốc**: Rà soát các luồng hội thoại sẵn có của AOND phát hiện 3 điểm nghẽn trải nghiệm: (1) Khách mua mới nói khu vực (hoặc chỉ nói ngân sách) thì bot từ chối tìm căn và hỏi cộc lốc ngược lại khách; (2) Khi không có căn nào khớp 100% tiêu chí thì bot báo cụt 'không có căn nào' khiến hội thoại đi vào ngõ cụt; (3) Lời xin ảnh và sổ hồng ở luồng bán chưa nêu cam kết bảo mật khiến chủ nhà e ngại [nguồn: chủ dự án 06/11/2026: "cái này có giống bên moso không Ok làm đi"].
+- **Lớp lỗi**:
+  1. `agent_mua.chay_cong_cu`: hàm `tim_can` khi thiếu 1 trong 2 tiêu chí (khu_vuc hoặc ngan_sach) chỉ trả về một câu nhắc thiếu khô cứng, không khai thác bảng benchmark giá và danh mục dự án để tư vấn chủ động như MOSO.
+  2. Khi `kho.can_phu_hop` trả về rỗng (0 kết quả), bot dừng lại thay vì đưa ra nhận định mặt bằng giá thực tế và đề xuất phương án thay thế lân cận.
+  3. `prompts.NATURAL_QUESTIONS["hinh_anh"]` chỉ dặn xin ảnh để chấm điểm cao, thiếu lời cam kết bảo mật tuyệt đối che số nhà/số sổ.
+- **Sửa**:
+  1. Nâng cấp `agent_mua.chay_cong_cu["tim_can"]`:
+     - Khi có khu vực mà chưa có ngân sách: Tự động tra cứu dải giá thị trường theo phân vùng (`_BANG_GIA_BENCHMARK`) và dự án tiêu biểu (`kho.du_an_theo_khu`) để gợi ý khoảng giá căn hộ/nhà phố trước khi hỏi ngân sách.
+     - Khi có ngân sách mà chưa có khu vực: Khẳng định tiềm năng ngân sách và gợi ý các khu vực sôi động tại TP.HCM phù hợp tầm tiền.
+     - Khi không có căn khớp (0 kết quả): Hướng dẫn model giải thích thực tế mặt bằng giá tại khu vực đó và đề xuất các phương án thay thế khả thi (mở rộng quận lân cận hoặc loại hình/diện tích tương đương).
+  2. Cập nhật `agent_ban.HUONG_DAN`: bổ sung chỉ dẫn gọi công cụ phong thủy, quy hoạch, đàm phán trong vòng agent bán.
+  3. Sửa `prompts.NATURAL_QUESTIONS["hinh_anh"]`: Bổ sung cam kết bảo mật 100%, tự động che số nhà và số sổ khi đăng web.
+- **Kiểm**: `tests/test_toi_uu_luong_395.py` (5/5 tests đạt 100%), kiểm tra hồi quy toàn diện đạt 100%, `scripts/soat-truy-vet.sh` SẠCH.
+
 ### SRS-5.1zzzzzzz394 · Tích hợp 5 Tinh hoa PropTech của MOSO vào AOND Chatbot Zalo: Phong thủy Bát Trạch, So sánh đối đầu dự án, Thẩm định quy hoạch lộ giới, Gợi ý đàm phán giá và Tiêu chí an cư gia đình (06/11/2026)
 - **Ca gốc**: Sau khi nạp trọn vẹn kho 1.388 dự án MOSO TP.HCM vào Supabase (`thu-du-an-moso.mjs`), khai thác sâu các tính năng cao cấp của nền tảng MOSO để nâng tầm trải nghiệm tư vấn thực chiến của Chatbot Zalo cả hai nhánh Mua & Bán [nguồn: chủ dự án 06/11/2026: "ok cho thêm 5 tinh hoa của moso vào đi"].
 - **Lớp lỗi**:
