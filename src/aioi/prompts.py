@@ -748,14 +748,12 @@ def khoi_xin_them_anh(so_anh: int, lan_hai: bool = False) -> str:
     co = f"tin đang có {so_anh} ảnh thật" if so_anh else "tin chưa có ảnh thật nào"
     if lan_hai:
         return ("\n\n=== NHẮC XIN ẢNH LẦN CUỐI (tin đã lên web, " + co + "): ===\n"
-                "Em đã xin ảnh một lần rồi. Việc lượt này: sau lời đáp, xuống một dòng trống rồi nhắc nhẹ MỘT câu — khi nào tiện chủ chụp "
-                "thêm vài tấm gửi em, tin nhiều ảnh khách bấm xem và hỏi nhiều hơn. Không kể lại danh sách góc chụp, không thúc ép.\n")
-    return ("\n\n=== XIN THÊM ẢNH LƯỢT NÀY (tin đã lên web, " + co + " — tin rao đẹp, được khách mua bấm xem nhiều là tin có từ "
-            "5–6 ảnh trở lên): ===\n"
-            "Việc lượt này: sau lời đáp, xuống một dòng trống rồi xin chủ chụp gửi thêm ảnh thực tế của căn, gợi ý vài góc hay thiếu (mặt "
-            "tiền nhìn từ đường, phòng khách, bếp, phòng ngủ, WC, sân thượng / ban công) và nói ngắn lợi ích: tin nhiều ảnh khách hỏi nhiều "
-            "hơn, bán nhanh hơn. Căn đang cho thuê / đang kinh doanh thì ảnh mặt bằng đang kinh doanh bên trong cũng là ảnh của căn, gửi được. "
-            "Nói số ảnh tin đang có đúng như trên, không nói ảnh đã đủ.\n")
+                "Việc lượt này: sau lời đáp, xuống một dòng trống rồi nhắc nhẹ MỘT câu ngắn xin thêm ảnh khi tiện (vd \"Anh tiện thì chụp thêm em "
+                "vài tấm nữa nha.\"). Không kể góc chụp, không thúc ép.\n")
+    return ("\n\n=== XIN THÊM ẢNH LƯỢT NÀY (tin đã lên web, " + co + "; tin đẹp cần 5–6 ảnh): ===\n"
+            "Việc lượt này: sau lời đáp, xuống một dòng trống rồi xin MỘT góc ảnh quan trọng nhất còn thiếu, đúng MỘT câu ngắn (vd nhà mặt tiền "
+            "chưa có ảnh mặt tiền: \"Thiếu mỗi tấm mặt tiền thôi anh — anh chụp giúp em từ bên kia đường nha.\"). Không liệt kê nhiều góc, không "
+            "giải thích dài, không nói ảnh đã đủ. Căn đang cho thuê / kinh doanh thì ảnh mặt bằng đang kinh doanh cũng là ảnh của căn.\n")
 
 
 def khoi_hoi_coc(o: str, prop: Property | None = None) -> str:

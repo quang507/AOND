@@ -967,5 +967,5 @@ Chủ dự án 11/11 (tin #56F988C9 lên web chỉ 2 ảnh, bot còn nói "ảnh
   sau đăng; hết các cụm mà vẫn thiếu thì `anh_lan_2` nhắc nhẹ một lần ở CUỐI. Ghi `sau:anh` / `sau:anh_lan_2` trong `_sau_da_hoi`.
 - Đếm ảnh một nguồn `engine._image_count(conv.active.media)` (cả khối ĐIỂM TIN), mức trần theo `min(ANH_TIN_DEP, max_photos)`; không đọc ô
   chữ `hinh_anh`.
-- `prompts.khoi_xin_them_anh`: nói đúng số ảnh tin đang có, gợi ý góc hay thiếu, căn đang cho thuê / kinh doanh thì ảnh mặt bằng đang kinh
+- `prompts.khoi_xin_them_anh` (rút gọn cùng ngày, chủ dự án "hỏi ngắn hơn"): xin MỘT góc quan trọng nhất còn thiếu bằng MỘT câu ngắn, căn đang cho thuê / kinh doanh thì ảnh mặt bằng đang kinh
   doanh cũng là ảnh của căn; lần hai chỉ một câu, không thúc ép.
