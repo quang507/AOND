@@ -12,14 +12,7 @@ set -euo pipefail
 q() { curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
         -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$(jq -n --arg q "$1" '{query:$q}')"; }
 
-J=$(q "select json_object_agg(name, decrypted_secret) as s from vault.decrypted_secrets where name in ('VPS_HOST','VPS_ROOT_PASSWORD')")
-HOST=$(jq -r '.[0].s.VPS_HOST // empty' <<<"$J"); PW=$(jq -r '.[0].s.VPS_ROOT_PASSWORD // empty' <<<"$J")
-unset J
-for v in "$HOST" "$PW"; do [ -n "$v" ] && echo "::add-mask::$v"; done
-if [ -z "$HOST" ] || [ -z "$PW" ]; then echo "::error::Thiếu VPS_HOST / VPS_ROOT_PASSWORD trong Vault"; exit 1; fi
-command -v sshpass >/dev/null || sudo apt-get install -y -qq sshpass >/dev/null
-export SSHPASS="$PW"; unset PW
-vps() { sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 -o LogLevel=ERROR "root@$HOST" "$@"; }
+. "$(dirname "$0")/lib/may146.sh"   # SRS-5.1zzzzzzz405: lõi trên máy 146 qua ssh "$MAY_146" (mặc định nuc) — chạy từ máy cá nhân, không chạy trên Actions
 
 RUN="${GITHUB_RUN_ID:-$(date +%s)}"
 KB1="thu-kb1-$RUN"; KB2="thu-kb2-$RUN"; KB3="thu-kb3-$RUN"; KB4="thu-kb4-$RUN"; KB5="thu-kb5-$RUN"
@@ -44,7 +37,7 @@ don() {
   [ "${GIU_DU_LIEU:-}" = giu ] || for u in $TAT_CA; do q "select reset_nguoi_test('$u') as kq" | jq -c '.[0]' || true; done
   [ "${GIU_DU_LIEU:-}" = giu ] || q "delete from danh_gia_ai where la_thu and zalo_user_id like 'thu-k%-$RUN'" >/dev/null || true   # SRS-5.1zzzzzzz104
 }
-trap don EXIT
+trap 'don; dong_146' EXIT
 
 so_token() { q "select coalesce(sum(calls),0) as calls, coalesce(sum(in_tokens),0) as i, coalesce(sum(out_tokens),0) as o,
                 coalesce(sum(cache_write_tokens),0) as cw, coalesce(sum(cache_read_tokens),0) as cr

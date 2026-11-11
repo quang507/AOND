@@ -87,6 +87,23 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
   5. Đưa công tắc `AIOI_PROMPT_GON=bat` vào `bot/cau-hinh-loi.env` và `C:\aond\aond_core\.env` trên máy 146 để kích hoạt `LEAN_SYSTEM_PROMPT` chạy thật ở production.
 - **Kiểm**: `tests/test_fast_path_va_lean_prompt_403.py` (đạt 4/4 ca: nhận diện câu chào, fast-path bỏ qua extract, prompt <1.500 tokens bảo tồn tên trợ lý có dấu chấm, công tắc kích hoạt thành công); soát migration 406/406; soát truy vết SẠCH. Bắn thử "em ơi" lên máy 146 phản hồi 200 OK với Th•ái.
 
+### SRS-5.1zzzzzzz394 · Tích hợp 5 Tinh hoa PropTech của MOSO vào AOND Chatbot Zalo: Phong thủy Bát Trạch, So sánh đối đầu dự án, Thẩm định quy hoạch lộ giới, Gợi ý đàm phán giá và Tiêu chí an cư gia đình (06/11/2026)
+- **Ca gốc**: Sau khi nạp trọn vẹn kho 1.388 dự án MOSO TP.HCM vào Supabase (`thu-du-an-moso.mjs`), khai thác sâu các tính năng cao cấp của nền tảng MOSO để nâng tầm trải nghiệm tư vấn thực chiến của Chatbot Zalo cả hai nhánh Mua & Bán [nguồn: chủ dự án 06/11/2026: "ok cho thêm 5 tinh hoa của moso vào đi"].
+- **Lớp lỗi**:
+  1. Khách mua nhà/đất thường rất quan tâm phong thủy hướng nhà theo năm sinh gia chủ (Đông/Tây Tứ Mệnh), nhưng bot trước đây chỉ trả lời chung chung hoặc không biết tính Cung phi / Quái số chính xác.
+  2. Khách phân vân giữa các dự án lân cận trong cùng phân khúc chưa có công cụ so sánh đối đầu (Head-to-head) về chủ đầu tư, giá m², tiện ích và quy mô.
+  3. Khách mua/bán nhà hẻm hay băn khoăn về lộ giới hẻm mở rộng, quy hoạch phân khu 1/2000 và chỉ giới xây dựng theo QĐ 56/2021/QĐ-UBND TP.HCM.
+  4. Người mua thường lúng túng khi thương lượng giá, không biết mức bớt hợp lý; người bán không biết cách giữ giá.
+  5. Bộ tiêu chí sống gia đình đa thế hệ (tầng đẹp 8-18, căn góc, ban công Đông Nam mát mẻ, tránh phòng rác/thang máy) chưa được đóng gói thành tư vấn chuyên sâu.
+- **Sửa**:
+  1. Module `src/aioi/phong_thuy.py`: Thuật toán tính Can Chi, Cung phi Quái số chuẩn Bát Trạch; phân loại 4 hướng tốt (Sinh Khí, Diên Niên, Thiên Y, Phục Vị) vs 4 hướng xấu; đánh giá hướng nhà thực tế và lời khuyên đón gió mát Nam/Đông Nam, hóa giải hướng xấu.
+  2. Module `src/aioi/du_an_so_sanh.py`: So sánh đối đầu 2 dự án từ kho dữ liệu hoặc kiến thức chuyên gia (CĐT, giá m², quy mô block/tầng, tiện ích, pháp lý).
+  3. Module `src/aioi/quy_hoach.py`: Thẩm định quy hoạch chi tiết lộ giới hẻm/đường theo QĐ 56/2021/QĐ-UBND TP.HCM, phân loại đất ở hiện hữu vs xây dựng mới/hỗn hợp vs giao thông dự phóng; hướng dẫn tra cứu cổng QLĐT.
+  4. Module `src/aioi/dam_phan.py`: Gợi ý biên độ thương lượng thực chiến 3 mức (Bid mở màn, Giá mục tiêu chốt cọc, Mức bớt lộc) kèm 3 đòn bẩy cọc nhanh và phương án thuế phí.
+  5. Module `src/aioi/tieu_chi_gia_dinh.py`: Tư vấn 5 trụ cột vàng chọn nhà gia đình (tầng trung 8-18, căn góc 2 mặt thoáng, ban công Đông Nam, an toàn khuôn viên nội khu, bán kính học tập/y tế <1.5km).
+  6. Tích hợp trọn bộ 5 công cụ vào `agent_mua.CONG_CU` (`so_sanh_du_an`, `tra_cuu_phong_thuy`, `tham_dinh_quy_hoach`, `goi_y_dam_phan`, `bo_loc_gia_dinh`) và 3 công cụ vào `agent_ban.CONG_CU` (`tra_cuu_phong_thuy`, `tham_dinh_quy_hoach`, `goi_y_dam_phan`), tự động kế thừa vào `agent_gop.DOC`. Bảo toàn 0 byte footprint trên DB.
+- **Kiểm**: `tests/test_tinh_hoa_moso_394.py` (6/6 tests đạt 100%), kiểm tra hồi quy toàn diện đạt 100%, `scripts/soat-truy-vet.sh` SẠCH.
+
 ### SRS-5.1zzzzzzz393 · Tinh gọn bộ câu hỏi rẽ nhánh theo loại hình BĐS: ưu tiên câu hỏi trực quan dễ thấy, đưa câu hỏi kỹ thuật sâu (tải trọng sàn, kVA trạm biến áp, chỉ tiêu xây dựng) xuống nhóm thứ cấp (06/11/2026)
 Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại hình nên hỏi gì đi", duyệt tinh gọn bộ câu hỏi. Trước: Kho xưởng hỏi dồn dập "chiều cao trần", "tải trọng sàn (tấn/m2)", "trạm biến áp công suất bao nhiêu kVA", khách không phải kỹ sư kết cấu nên bối rối trả lời "chị không biết"; Đất nền hỏi chỉ tiêu quy hoạch / vướng cột điện trước khi hỏi lộ giới hẻm và thổ cư.
 (1) Lớp lỗi: thứ tự ưu tiên câu hỏi trong CORE_FIELDS xếp câu hỏi kỹ thuật trừu tượng lên trước câu hỏi thực tế quan sát được; NATURAL_QUESTIONS gợi ý hỏi số kVA gây khó cho chủ nhà.

@@ -7,6 +7,10 @@
 # khác 0 khi hạ tầng hỏng (dịch vụ không lên / không có lời đáp).
 set -euo pipefail
 
+# SRS-5.1zzzzzzz405: VPS đã bỏ — phần dưới dựng dịch vụ systemd trên Linux nên không chạy được trên máy 146 (Windows). So cạnh trên 146
+# cần dựng một dịch vụ Windows riêng cho bản anh Luận (cổng 8001) — việc riêng, chưa làm. Thoát 2 = "chưa kiểm được", không phải "đạt".
+echo "ban-thu-luan chưa chạy được trên máy 146 (cần dựng dịch vụ Windows riêng cho bản anh Luận) — thoát 2"; exit 2
+
 q() { curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
         -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$(jq -n --arg q "$1" '{query:$q}')"; }
 

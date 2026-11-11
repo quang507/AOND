@@ -788,6 +788,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz405 · 14 script bắn thử production chạy từ máy cá nhân qua ssh vào máy 146 (thay VPS); gỡ các ô bắn thử khỏi Actions (11/11/2026)
+- **Ca gốc**: bỏ VPS 06–08/11 mà `bot/tests/ban-thu-*.sh` + `doc-log-loi.sh` vẫn đọc Vault `VPS_HOST` rồi `sshpass root@VPS` → mọi ô bắn thử chết; GitHub Actions không với tới 146 (lõi chỉ nghe 127.0.0.1, máy sau Tailscale), và mọi đường gọi lõi phải kèm `x-noi-bo-key` (SRS-400). `[nguồn: chủ dự án 11/11/2026: chọn "chạy ssh máy 146 từ máy tôi" thay vì cho Actions vào Tailscale; Host `nuc` → 192.168.1.146, tài khoản admin `nguye`]`
+- **Lớp lỗi**: đổi hạ tầng mà công cụ kiểm vẫn trỏ máy cũ, không bài nào canh. Chỗ khác cùng lớp: lệnh dọn `/reset` của `ban-thu-khach-ao` thiếu khoá nội bộ từ SRS-400 (sửa); `ban-thu-luan` dựng dịch vụ systemd (Linux) cho bản anh Luận — CÒN, script thoát 2 "chưa kiểm được" tới khi có dịch vụ Windows riêng.
+- **Sửa**: `bot/tests/lib/may146.sh` dùng chung: đọc khoá nội bộ qua `ssh "$MAY_146"` (mặc định `nuc`), mở đường hầm `127.0.0.1:$CONG_146 → 8000`, giữ giao diện `vps "…"` cũ (`curl …:8000` chạy tại máy cá nhân, tự kèm khoá; `journalctl …|` → nhật ký 146 trong `C:\aond\logs` từ lúc bắt đầu; lệnh Linux khác → mã 2). 14 script thay khối VPS bằng một dòng nạp; `doc-log-loi` đọc N dòng cuối (log 146 không có giờ nên không lọc theo khoảng giờ). Gỡ 16 ô `ban-thu-*` / `doc-log-loi` khỏi `apply-migration.yml`. Cần `TOKEN` (Management API) ở máy chạy.
+- **Kiểm**: `bot/tests/may146.tu-kiem.sh` (trong `test:bot`, ssh / curl giả) 9/9 — đỏ khi bỏ phần kèm khoá (M146-04/05 hỏng, đã thử); `bash -n` 16 script. CHƯA chạy trên 146 thật từ phiên cloud (không ssh được) — lần chạy đầu ở máy chủ dự án.
+
 ### SRS-5.1zzzzzzz404 · Hoàn tác SRS-403 (lối tắt tin chào + prompt gọn chạy thật): 7 bài canh luật đỏ trên bản đã lên máy 146 (11/11/2026)
 - **Ca gốc**: `99026e5` (SRS-403) đẩy thẳng lên `main` không qua PR / CI rồi triển khai lên 146; chạy `pytest` trên `main` → 7 đỏ / 1515 đạt: lượt người bán mất `TIN_HE_THONG` + `SLANG_NOTES` (`test_go_cong_tac_319`), khối giọng + đầu bước 2 vòng gộp (`test_agent_gop_371`), "ĐIỂM TIN" (`test_kich_ban_srd_aond`), câu chặn hứa gửi bản tin (`test_khong_hoi_lai_302`); "chào em" ở số ký gửi không còn câu chào ký gửi (`test_vai_theo_so_331`, `test_hoi_quy_02_11_340` — lối tắt bỏ qua lượt AI định vai); thêm 4 regex đoán ý trong `chu.py` (`test_kiem_ke_regex_382`, CLAUDE.md §4.8); prompt gọn ghi "tối đa 1–2 ý" trái luật một câu hỏi. `[nguồn: chủ dự án 11/11/2026: "Đồng ý" hoàn tác]`
 - **Lớp lỗi**: đổi hành vi bot đẩy thẳng `main` → không CI, không bộ chấm; prompt gọn THAY phiếu lượt thay vì rút gọn nó nên mọi luật chỉ sống trong phiếu rơi theo. Cùng lớp: `AIOI_PROMPT_GON=bat` còn trong `.env` lõi trên 146 (code không còn đọc — gỡ tay cho khớp `bot/cau-hinh-loi.env`).
@@ -888,20 +894,3 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
   2. Cập nhật `agent_ban.HUONG_DAN`: bổ sung chỉ dẫn gọi công cụ phong thủy, quy hoạch, đàm phán trong vòng agent bán.
   3. Sửa `prompts.NATURAL_QUESTIONS["hinh_anh"]`: Bổ sung cam kết bảo mật 100%, tự động che số nhà và số sổ khi đăng web.
 - **Kiểm**: `tests/test_toi_uu_luong_395.py` (5/5 tests đạt 100%), kiểm tra hồi quy toàn diện đạt 100%, `scripts/soat-truy-vet.sh` SẠCH.
-
-### SRS-5.1zzzzzzz394 · Tích hợp 5 Tinh hoa PropTech của MOSO vào AOND Chatbot Zalo: Phong thủy Bát Trạch, So sánh đối đầu dự án, Thẩm định quy hoạch lộ giới, Gợi ý đàm phán giá và Tiêu chí an cư gia đình (06/11/2026)
-- **Ca gốc**: Sau khi nạp trọn vẹn kho 1.388 dự án MOSO TP.HCM vào Supabase (`thu-du-an-moso.mjs`), khai thác sâu các tính năng cao cấp của nền tảng MOSO để nâng tầm trải nghiệm tư vấn thực chiến của Chatbot Zalo cả hai nhánh Mua & Bán [nguồn: chủ dự án 06/11/2026: "ok cho thêm 5 tinh hoa của moso vào đi"].
-- **Lớp lỗi**:
-  1. Khách mua nhà/đất thường rất quan tâm phong thủy hướng nhà theo năm sinh gia chủ (Đông/Tây Tứ Mệnh), nhưng bot trước đây chỉ trả lời chung chung hoặc không biết tính Cung phi / Quái số chính xác.
-  2. Khách phân vân giữa các dự án lân cận trong cùng phân khúc chưa có công cụ so sánh đối đầu (Head-to-head) về chủ đầu tư, giá m², tiện ích và quy mô.
-  3. Khách mua/bán nhà hẻm hay băn khoăn về lộ giới hẻm mở rộng, quy hoạch phân khu 1/2000 và chỉ giới xây dựng theo QĐ 56/2021/QĐ-UBND TP.HCM.
-  4. Người mua thường lúng túng khi thương lượng giá, không biết mức bớt hợp lý; người bán không biết cách giữ giá.
-  5. Bộ tiêu chí sống gia đình đa thế hệ (tầng đẹp 8-18, căn góc, ban công Đông Nam mát mẻ, tránh phòng rác/thang máy) chưa được đóng gói thành tư vấn chuyên sâu.
-- **Sửa**:
-  1. Module `src/aioi/phong_thuy.py`: Thuật toán tính Can Chi, Cung phi Quái số chuẩn Bát Trạch; phân loại 4 hướng tốt (Sinh Khí, Diên Niên, Thiên Y, Phục Vị) vs 4 hướng xấu; đánh giá hướng nhà thực tế và lời khuyên đón gió mát Nam/Đông Nam, hóa giải hướng xấu.
-  2. Module `src/aioi/du_an_so_sanh.py`: So sánh đối đầu 2 dự án từ kho dữ liệu hoặc kiến thức chuyên gia (CĐT, giá m², quy mô block/tầng, tiện ích, pháp lý).
-  3. Module `src/aioi/quy_hoach.py`: Thẩm định quy hoạch chi tiết lộ giới hẻm/đường theo QĐ 56/2021/QĐ-UBND TP.HCM, phân loại đất ở hiện hữu vs xây dựng mới/hỗn hợp vs giao thông dự phóng; hướng dẫn tra cứu cổng QLĐT.
-  4. Module `src/aioi/dam_phan.py`: Gợi ý biên độ thương lượng thực chiến 3 mức (Bid mở màn, Giá mục tiêu chốt cọc, Mức bớt lộc) kèm 3 đòn bẩy cọc nhanh và phương án thuế phí.
-  5. Module `src/aioi/tieu_chi_gia_dinh.py`: Tư vấn 5 trụ cột vàng chọn nhà gia đình (tầng trung 8-18, căn góc 2 mặt thoáng, ban công Đông Nam, an toàn khuôn viên nội khu, bán kính học tập/y tế <1.5km).
-  6. Tích hợp trọn bộ 5 công cụ vào `agent_mua.CONG_CU` (`so_sanh_du_an`, `tra_cuu_phong_thuy`, `tham_dinh_quy_hoach`, `goi_y_dam_phan`, `bo_loc_gia_dinh`) và 3 công cụ vào `agent_ban.CONG_CU` (`tra_cuu_phong_thuy`, `tham_dinh_quy_hoach`, `goi_y_dam_phan`), tự động kế thừa vào `agent_gop.DOC`. Bảo toàn 0 byte footprint trên DB.
-- **Kiểm**: `tests/test_tinh_hoa_moso_394.py` (6/6 tests đạt 100%), kiểm tra hồi quy toàn diện đạt 100%, `scripts/soat-truy-vet.sh` SẠCH.

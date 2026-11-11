@@ -120,21 +120,22 @@ thì "máy xanh, máy tao đỏ" và không ai biết bên nào đúng.
 |---|---|---|---|---|
 | `bot/tests/ts-sec-anon.mjs` | TS-SEC-AUTO | **Internet tới `*.supabase.co`** + DB production đang chạy. KHÔNG cần secret: bắn bằng khoá publishable công khai | `bun run test:sec` — CI job `baomat`, **cố ý không nằm trong `kiem`** | Thoát 0 = đạt · 1 = có cửa mở · **2 = CHƯA KIỂM ĐƯỢC** (proxy chặn, DB ngủ). Thoát 2 KHÔNG phải "đạt" |
 | `scripts/soat-migration.mjs`, `scripts/soat-db.mjs` | TS-MIG-01/02, TS-DB-01 | Internet + khoá công khai | `bun run soat:migration`, `bun run soat:db` — CI job `migration`, `soatdb` | Đỏ khi repo ↔ DB lệch hoặc có phát hiện mới ngoài bản nền |
-| `scripts/cham-kich-ban.py` + `tests/kich_ban/ban.json` (51 kịch bản người bán, có chat thật chị N.) | **TS-CHAM-01** | **`claude` CLI đã đăng nhập** (quota gói Claude Code, không tốn tiền API); ~50 phút / lần | `bun run cham --giong` (mặc định chạy như khách thật theo công tắc `cai-vps.sh`); `--cham-lai <bản ghi>` chấm lại không gọi model | So với `tests/kich_ban/diem_nen.json`: phép tất định, giọng, lộ luật, hỏi lại, lượt ghép nhiều khối hỏi. Đổi lời / prompt / luật soát phải chạy ≥ 2 lần mỗi bên (SRS-5.1zzzzzzz304 / 313 / 314) |
+| `scripts/cham-kich-ban.py` + `tests/kich_ban/ban.json` (51 kịch bản người bán, có chat thật chị N.) | **TS-CHAM-01** | **`claude` CLI đã đăng nhập** (quota gói Claude Code, không tốn tiền API); ~50 phút / lần | `bun run cham --giong` (mặc định chạy như khách thật theo công tắc `bot/cau-hinh-loi.env`, SRS-401); `--cham-lai <bản ghi>` chấm lại không gọi model | So với `tests/kich_ban/diem_nen.json`: phép tất định, giọng, lộ luật, hỏi lại, lượt ghép nhiều khối hỏi. Đổi lời / prompt / luật soát phải chạy ≥ 2 lần mỗi bên (SRS-5.1zzzzzzz304 / 313 / 314) |
 | `bot/tests/vai-tro.sql` | **TS-SEC3** | **Quyền SQL trên DB thật.** CI chỉ có khoá công khai | Dashboard → SQL Editor → dán cả file → Run; hoặc MCP `execute_sql` | Kết bằng `raise exception 'KQ: …'` nên mọi dòng chèn TỰ CUỘN LẠI. Mọi mục phải `OK`; một chữ `HONG` là một cửa mở |
 
-**Bắn thử production — tiền thật, chạy tay qua workflow `apply-migration.yml` ô `dung_lai`:** mỗi ô chạy
-`bot/tests/<ô>.sh` (đầu file ghi kịch bản và SRS gốc), chat với lõi trên VPS bằng ID thử (`la_id_thu`) rồi tự dọn. Không vào CI.
-Chạy sau mỗi lần cài lõi (`cai-vps` khởi động lại lõi — báo trước người đang chat thử). Pytest xanh với model giả KHÔNG chứng minh
+**Bắn thử production — tiền thật, chạy tay TỪ MÁY CÁ NHÂN có `ssh nuc` (SRS-5.1zzzzzzz405):** `TOKEN=… bash bot/tests/<tên>.sh`
+(đầu file ghi kịch bản và SRS gốc), chat với lõi trên máy 146 qua đường hầm ssh (`bot/tests/lib/may146.sh`, kèm khoá nội bộ) bằng ID thử
+(`la_id_thu`) rồi tự dọn. Không vào CI, không còn ô trên Actions (Actions không với tới 146). Chạy sau mỗi lần đưa lõi lên 146
+(`trien-khai-146.sh` khởi động lại lõi — báo trước người đang chat thử). Pytest xanh với model giả KHÔNG chứng minh
 model thật làm đúng; lỗi thấy ở đây thì viết ca pytest tái hiện trước khi sửa.
 
-| Ô `dung_lai` | ID | Kiểm cái gì |
+| Script (`bot/tests/…sh`) / ô | ID | Kiểm cái gì |
 |---|---|---|
 | `ban-thu-ban`, `ban-thu-mua`, `ban-thu-vm`, `ban-thu-srd`, `ban-thu-ai`, `ban-thu-kb`, `ban-thu-dc`, `ban-thu-xa`, `ban-thu-sau`, `ban-thu-nhieu-can`, `ban-thu-dap-y`, `ban-thu-5-khach` | **TS-PROD-01** | Kịch bản viết sẵn trên lõi production: luồng bán, mua, vừa bán vừa mua, kịch bản SRD anh Luận, các mục AI đọc theo nghĩa, địa chỉ số hẻm, đất ở xã, bộ câu môi giới, một tin hai căn, đáp ý khách, 5 tính cách khách |
 | `ban-thu-khach-ao` | **TS-PROD-02** | 5 khách ảo có cảm xúc do model đóng vai (`bot/tests/khach-ao.py`), giám khảo chấm và trích lỗi kèm đoán nguồn. Là gợi ý để người đọc, không phải phép đạt / trượt |
-| `doc-log-loi` | **TS-PROD-03** | CHỈ ĐỌC nhật ký lõi trên VPS trong một khoảng giờ (ô `migration_file` = "từ\|đến", UTC): lượt nào ghi / bỏ ô nào, dòng `💲` tiền từng lần gọi. Không in lời khách |
-| `do-tim-nha` | **TS-PROD-04** | Đo chất lượng `tim_nha` trên rổ mẫu `seed_thu` (4 chế độ). Đáp án `cau-hoi.json` soạn cho 30 tin cũ — **chưa dùng được** (SRS-5.1zzzzzzz167) |
-| `ban-thu-luan` | — | So cạnh bản của anh Luận (cổng 8001) với lõi mình trên cùng kịch bản (SRS-5.1zzzzzzz199) |
+| `doc-log-loi` | **TS-PROD-03** | CHỈ ĐỌC nhật ký lõi trên máy 146 (N dòng cuối tệp mới nhất trong `C:\aond\logs`; log không có giờ nên không lọc theo khoảng giờ): lượt nào ghi / bỏ ô nào, dòng `💲` tiền từng lần gọi. Không in lời khách |
+| `do-tim-nha` (ô Actions) | **TS-PROD-04** | Đo chất lượng `tim_nha` trên rổ mẫu `seed_thu` (4 chế độ). Đáp án `cau-hoi.json` soạn cho 30 tin cũ — **chưa dùng được** (SRS-5.1zzzzzzz167) |
+| `ban-thu-luan` | — | So cạnh bản của anh Luận (cổng 8001) với lõi mình trên cùng kịch bản (SRS-5.1zzzzzzz199) — CHƯA chạy được trên 146 (cần dịch vụ Windows riêng), thoát 2 |
 
 **Người thật:** chat Zalo thật với ID thử trên hai số (ký gửi, tư vấn — SRS-5.1zzzzzzz210); lệnh `/state`, `/quit` (SRS-5.1zzzzzzz211)
 để xem / xoá phiên. TS-LIVE còn dùng cho thông tuyến bridge. Kịch bản ba điện thoại TS-NGUOI (có vai CTV) đã deprecated.
