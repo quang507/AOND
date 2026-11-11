@@ -5,6 +5,7 @@ images, friendly local tone, and the assistant's assigned persona.
 """
 from __future__ import annotations
 
+import json
 import re
 from typing import Any
 
@@ -777,6 +778,12 @@ def goc_anh_goi_y(prop: "Property | None") -> str:
         goc = GOC_ANH_THEO_NHOM.get(nhom.value, GOC_ANH_THEO_NHOM["nha"])
     if f.get("co_hdt") == "co" or f.get("thu_nhap_thue") or f.get("hd_thue_con"):
         goc += " (căn đang cho thuê / kinh doanh: ảnh mặt bằng đang hoạt động bên trong cũng là ảnh của căn)"
+    try:   # SRS-5.1zzzzzzz422: QC ảnh đã xem bộ ảnh thật của căn → góc nó thấy thiếu đi trước gợi ý chung
+        qc = json.loads(f.get("_qc_anh") or "{}")
+    except ValueError:
+        qc = {}
+    if qc.get("goc_can_xin"):
+        goc = f"QC ảnh vừa xem bộ ảnh của căn, thấy nên xin nhất: {qc['goc_can_xin']}. Gợi ý chung: {goc}"
     return goc
 
 

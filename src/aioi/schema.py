@@ -332,7 +332,8 @@ CUM_XIN_ANH = ("anh", "anh_lan_2")
 # SRS-5.1zzzzzzz295 (chủ dự án 29/10/2026, bước 3 chuỗi tiền: "bot được hỏi" cọc / công chứng): tin chuyển "đã cọc" thì hỏi số tiền cọc, ngày
 # cọc, hạn công chứng — mỗi lượt một ô, mỗi ô một lần (`_coc_da_hoi`). Chuyện giao dịch giữa hai bên → ô RIÊNG, không lên web.
 O_COC: tuple[str, ...] = ("tien_coc", "ngay_coc", "han_cong_chung")
-O_NOI_BO: frozenset[str] = frozenset({"dung_ten_so", "ly_do_ban", "gio_xem", "chia_khoa", *O_COC})
+# `_qc_anh` / `_qc_da_nhan` (SRS-5.1zzzzzzz422): kết quả QC ảnh và số tin QC đã nhắn — việc nội bộ, cùng chỗ chỉ admin đọc.
+O_NOI_BO: frozenset[str] = frozenset({"dung_ten_so", "ly_do_ban", "gio_xem", "chia_khoa", *O_COC, "_qc_anh", "_qc_da_nhan"})
 
 # Thông số cho thuê (áp dụng chung khi là tin cho thuê) — SRD §III.
 RENTAL_FIELDS: list[str] = [

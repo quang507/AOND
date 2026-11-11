@@ -980,3 +980,14 @@ tùy nhánh, và hỏi khéo vào".
 - `followup`: tin đã báo đăng mà dưới mức ảnh tin đẹp → nhắc sau `SAU_DANG_NHAC_GIAY` (600 giây) thay vì 5 phút; model viết tin theo góc hợp
   căn và 6 lượt gần nhất, hụt thì câu mẫu `xin_anh_sau_dang`. Tối đa hai lần, chung mốc `sau:anh` / `sau:anh_lan_2` với lượt hỏi sau đăng.
 - Đủ ảnh (tới mức tin đẹp) thì thôi xin. Tin nhắc tự động chỉ đi 8–20 giờ (`bao_can_moi.trong_khung_gio`); gọi tay `/trigger-followup` không chặn.
+
+### SRS-5.1zzzzzzz422 · QC ảnh tin rao — vòng nền trên máy 146 (11/11/2026)
+Chủ dự án 11/11: "một con loop như quality controller về hình ảnh của các tin rao, xem các hình đang có có giống nội dung rao đăng không, và
+có phù hợp với điểm mạnh của BĐS đang rao không". Chọn: vòng nền trên 146; ghi kết quả + tự nhắn chủ xin góc thiếu.
+- `qc_anh.py` + vòng `_vong_qc_anh` (server, `QC_ANH_CHU_KY_GIAY` 1800 giây, tắt `QC_ANH=tat`): quét `listing-public/<id tin>/`, bộ ảnh ĐỔI
+  (băm tên tệp, sổ `QC_ANH_SO` = `qc_anh.json`) thì model vision chấm một lần theo `SCHEMA`: khớp nội dung, ảnh không khớp (ảnh quán bên
+  trong căn đang cho thuê không tính), thế mạnh đã / chưa có ảnh, `goc_can_xin`, điểm 0–100, nhận xét. Tối đa 10 tin / lượt, 8 ảnh / tin.
+- Kết quả vào ô riêng `_qc_anh` (thêm vào `schema.O_NOI_BO` → `listing_noi_bo`, chỉ admin); `prompts.goc_anh_goi_y` đặt góc QC thấy thiếu
+  lên trước, nên khối xin ảnh trong lượt và tin nhắc 10 phút xin đúng góc đó.
+- Nhắn chủ: còn `goc_can_xin`, 8–20 giờ, chat im từ 10 phút, không đang nhường sân, mỗi căn tối đa 2 tin QC (`_qc_da_nhan`), mỗi bộ ảnh một
+  lần; model viết một câu khéo (`LUAT_XIN_ANH_KHEO`). Ghi mốc `sau:anh`.

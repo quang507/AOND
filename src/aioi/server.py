@@ -531,6 +531,27 @@ def _vong_hoi_con_ban() -> None:
 if os.environ.get("HOI_CON_BAN", "bat") != "tat" and _settings.supabase_service_role_key:
     threading.Thread(target=_vong_hoi_con_ban, daemon=True, name="hoi-con-ban").start()
 
+QC_ANH_CHU_KY_GIAY = int(os.environ.get("QC_ANH_CHU_KY_GIAY", "1800"))
+
+
+def _vong_qc_anh() -> None:
+    """SRS-5.1zzzzzzz422: QC ảnh tin rao — bộ ảnh đổi thì chấm (khớp nội dung, thế mạnh đã / chưa có ảnh), ghi `_qc_anh`, nhắn chủ xin góc
+    thiếu trong 8–20 giờ (logic ở `qc_anh`). Tắt: QC_ANH=tat."""
+    from . import qc_anh
+    time.sleep(240)
+    while True:
+        try:
+            ra = qc_anh.chay_mot_luot(_engine, _gui_nhac_mot, _xung_ho_khach, _ghi_lich_su_nhac)
+            if ra:
+                log.warning("QC ảnh: đã chấm %d tin", len(ra))
+        except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
+            _so_loi.ghi_loi("qc anh", f"{type(e).__name__}: {e}"[:200])
+        time.sleep(QC_ANH_CHU_KY_GIAY)
+
+
+if os.environ.get("QC_ANH", "bat") != "tat" and _settings.supabase_service_role_key:
+    threading.Thread(target=_vong_qc_anh, daemon=True, name="qc-anh").start()
+
 
 _CAU_DAN_THUA = re.compile(r"(?is)(?:^|(?<=\n))\s*Còn\s+(?:một|1)\s+điểm\s+em\s+cần\s+nắm\s+thêm\s*[:：]\s*")
 
