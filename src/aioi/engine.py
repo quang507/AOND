@@ -94,6 +94,7 @@ from .prompts import (
     muc_phi,
     khoi_hoi_coc,
     khoi_hoi_sau_dang,
+    khoi_xin_them_anh,
     khoi_tinh_hinh_ban,
     KHOI_DINH_GIA,
     khoi_dinh_gia,
@@ -136,7 +137,7 @@ from .prompts import (
 )
 from .imaging import downscale_image
 from .revenue import SellerRole
-from .schema import CAU_MO_MUA, FACETS, O_COC, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
+from .schema import ANH_TIN_DEP, CAU_MO_MUA, CUM_XIN_ANH, FACETS, O_COC, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .prompts import Y_MO_DAU
 from .dia_danh import TraDiaDanh, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
@@ -3261,12 +3262,16 @@ class Engine:
             # Hỏi thêm sau khi tin lên web (SRS-5.1zzzzzzz116): từ lượt SAU lượt xin sao (giữ đúng lúc xin sao chủ dự án chốt), lượt khách
             # chấm sao thì chỉ cảm ơn; mỗi lượt MỘT cụm, mỗi cụm MỘT lần (`_sau_da_hoi`, lưu cùng tin).
             if sau_dang and not xin_sao and not conv.y_luot.get("danh_gia"):
-                cum_sau = conv.prop.cum_sau_dang(da_hoi)
+                so_anh = _image_count(conv.active.media or [])
+                cum_sau = conv.prop.cum_sau_dang(da_hoi, so_anh=so_anh, anh_du=min(ANH_TIN_DEP, self._max_photos))
                 if cum_sau:
                     # SRS-5.1zzzzzzz178: mỗi lượt MỘT ô (không hỏi gộp cụm) — ghi "sau:<ô>" để lượt sau tới ô kế của cùng cụm.
+                    # Cụm xin ảnh (SRS-5.1zzzzzzz420) ghi theo mã cụm: hai lần xin cùng một ô ảnh.
                     sau_cu = conv.prop.fields.get("_sau_da_hoi")
-                    conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi | {f"sau:{cum_sau[1][0]}"}))
-                    system += _hoi("hoi_sau_dang", khoi_hoi_sau_dang(cum_sau[1][:1], conv.prop),
+                    xin_anh = cum_sau[0] in CUM_XIN_ANH
+                    conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi | {f"sau:{cum_sau[0] if xin_anh else cum_sau[1][0]}"}))
+                    system += _hoi("hoi_sau_dang", khoi_xin_them_anh(so_anh, cum_sau[0] == "anh_lan_2") if xin_anh
+                                   else khoi_hoi_sau_dang(cum_sau[1][:1], conv.prop),
                                    hoan=lambda cu=sau_cu: _dat_co(conv.prop.fields, "_sau_da_hoi", cu))
                     log.warning("Hỏi sau đăng: cụm %s", cum_sau[0])
 
@@ -3511,7 +3516,7 @@ class Engine:
         tat_ca = [g.property_score(li.prop.completeness(), timeliness) for li in conv.listings] or [diem]
         diem_nguoi = g.user_score(tat_ca, num_listings=len(conv.listings))
         try:
-            so_anh = len(conv.active.media or [])
+            so_anh = _image_count(conv.active.media or [])   # một nguồn đếm ảnh với cụm xin ảnh sau đăng (SRS-420)
         except Exception:  # noqa: BLE001 — chưa có căn nào
             so_anh = 0
         return khoi_diem_tin(diem, g.tier_for(diem_nguoi).value, conv.prop.missing_fields(), so_anh, conv.prop)   # hạng: chỉ tên (SRS-349)
@@ -4870,7 +4875,9 @@ class Engine:
             danh_gia=conv.y_luot.get("danh_gia"),
             xin_anh=list(conv.y_luot.get("xin_anh") or []),
             ban_ve=list(conv.y_luot.get("ban_ve") or []),
-            chu_thich=che_do_test.chu_thich(conv, captured, next_f, so_token.tong_luot()) if che_do_test.bat() else "",
+            chu_thich=che_do_test.chu_thich(conv, captured, next_f, so_token.tong_luot(),
+                                           {"property_score": prop_score, "user_score": u_score, "tier": g.tier_for(u_score).value,
+                                            "completeness": completeness}) if che_do_test.bat() else "",
         )
 
     def _match_listing(self, conv: Conversation, ref: str) -> Listing | None:

@@ -953,3 +953,19 @@ thương mại nên không bao giờ chặn. Thay SRS-5.1zzzzzzz260 (quy mô · 
 - `NHOM_SOAN` = bốn nhóm chính; `summary_ready` = `can_publish` và `len(facet_trong()) <= SOAN_THIEU_TOI_DA` (1).
 - Giữ của bên mình: nhóm chỉ tính khi loại BĐS có ô mong đợi trong nhóm, tin cho thuê bỏ pháp lý, ô khách lờ 2 lần thì để sau.
 - Ca kịch bản production "hẻm Dương Bá Trạc 4x12, 2 tầng, sổ hồng riêng, 5 tỷ": trước hỏi hiện trạng, nay ra bản nháp ngay.
+
+### SRS-5.1zzzzzzz419 · Tin debug "$$$$$" theo khuôn anh Luận (11/11/2026)
+Chủ dự án 11/11 (dán tin `nhà "Nhà đang để trống" → "khong"`): "đoạn tin nhắn debug làm cho giống bên anh Luận hơn". Bản anh Luận (cli.py) in
+`[đã trích xuất: …]` rồi `[điểm BĐS | uy tín | hạng | hoàn chỉnh]`. Bản cũ bên mình in nhãn cắt ở "(" nên ra nhãn cụt ("nhà") và cặp cụm khách →
+giá trị khó đọc.
+- `che_do_test.chu_thich`: mỗi dòng một ngoặc vuông — `[đã trích xuất: khoá=giá trị đã lưu, …]` · `[bỏ: …]` (nếu có) · `[điểm BĐS | uy tín |
+  hạng | hoàn chỉnh | soạn nháp: đủ ✓ / chưa — trống <nhóm> | hỏi tiếp: <ô>]` · `[tốn $…]`. Điểm lấy cùng số TurnResult (engine truyền `diem`).
+
+### SRS-5.1zzzzzzz420 · Xin thêm ảnh sau khi đăng tin (11/11/2026)
+Chủ dự án 11/11 (tin #56F988C9 lên web chỉ 2 ảnh, bot còn nói "ảnh gắn vào đủ"): "cố xin thêm hình ảnh thêm 1 tí nữa sau khi đăng tin".
+- `schema.ANH_TIN_DEP` = 6; `Property.cum_sau_dang(da_hoi, so_anh, anh_du)`: số ảnh thật đã lưu dưới mức này thì cụm `anh` đi ĐẦU chuỗi hỏi
+  sau đăng; hết các cụm mà vẫn thiếu thì `anh_lan_2` nhắc nhẹ một lần ở CUỐI. Ghi `sau:anh` / `sau:anh_lan_2` trong `_sau_da_hoi`.
+- Đếm ảnh một nguồn `engine._image_count(conv.active.media)` (cả khối ĐIỂM TIN), mức trần theo `min(ANH_TIN_DEP, max_photos)`; không đọc ô
+  chữ `hinh_anh`.
+- `prompts.khoi_xin_them_anh`: nói đúng số ảnh tin đang có, gợi ý góc hay thiếu, căn đang cho thuê / kinh doanh thì ảnh mặt bằng đang kinh
+  doanh cũng là ảnh của căn; lần hai chỉ một câu, không thúc ép.

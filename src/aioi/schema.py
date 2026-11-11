@@ -320,6 +320,11 @@ CUM_SAU_DANG: list[tuple[str, tuple[str, ...]]] = [
 # SRS-5.1zzzzzzz197 (chủ dự án 26/10/2026): `thu_nhap_thue` = tiền thuê nhà đang thu mỗi tháng khi TIN BÁN có hợp đồng thuê (HĐT). Không có ô
 # cờ "có HĐT": khách nói "đang cho thuê 35 triệu" thì AI ghi thẳng số tiền (có bằng chứng trong lời khách), `hd_thue_con` là hợp đồng còn bao lâu.
 O_SAU_DANG: frozenset[str] = frozenset(k for _, cum in CUM_SAU_DANG for k in cum) | {"hd_thue_con", "thu_nhap_thue", "co_hdt"}
+# Chủ dự án 11/11/2026 (SRS-5.1zzzzzzz420, "cố xin thêm hình ảnh thêm 1 tí nữa sau khi đăng tin"; tin #56F988C9 lên web chỉ 2 ảnh): tin chưa đủ
+# ANH_TIN_DEP ảnh thật thì cụm XIN ẢNH đi ĐẦU chuỗi hỏi sau đăng, rồi nhắc nhẹ thêm MỘT lần ở CUỐI chuỗi nếu vẫn thiếu. Đếm số ảnh thật
+# đã lưu của căn (engine truyền vào), không đọc ô chữ `hinh_anh` (khách nói "ảnh trong nhà" không có nghĩa là ảnh đã vào tin).
+ANH_TIN_DEP = 6
+CUM_XIN_ANH = ("anh", "anh_lan_2")
 
 # Ô RIÊNG của chủ nhà (SRS-5.1zzzzzzz116): không ghi vào `listings.boc_tach` (đọc công khai qua API cho tin đang bán), không vào bản tin
 # rao — lưu bảng `listing_noi_bo` (chỉ admin đọc). Lý do bán / mức gấp cho người mua biết là mất thế thương lượng của chủ; ai đứng tên,
@@ -564,9 +569,15 @@ class Property:
         keys = next((ks for f, _, ks in FACETS if f == fid), [])
         return any(self._has(k) for k in keys if k != o)
 
-    def cum_sau_dang(self, da_hoi: set[str] | frozenset[str] = frozenset()) -> tuple[str, list[str]] | None:
+    def cum_sau_dang(self, da_hoi: set[str] | frozenset[str] = frozenset(), so_anh: int | None = None,
+                     anh_du: int = ANH_TIN_DEP) -> tuple[str, list[str]] | None:
         """Cụm hỏi kế SAU khi tin lên web (SRS-5.1zzzzzzz116): (mã cụm, các ô còn thiếu) — cụm chưa hỏi lần nào, còn ít nhất một ô
-        chưa có. Tin cho thuê chỉ hỏi dẫn khách xem; chi tiết nhà chỉ cho nhà có đất riêng / toà nhà (căn hộ, đất đã có bộ riêng)."""
+        chưa có. Tin cho thuê chỉ hỏi dẫn khách xem; chi tiết nhà chỉ cho nhà có đất riêng / toà nhà (căn hộ, đất đã có bộ riêng).
+        `so_anh` = số ảnh thật đã lưu của căn (None = không biết → không xin ảnh): dưới `anh_du` thì xin ảnh trước mọi cụm ("anh"), hết
+        cụm mà vẫn thiếu thì nhắc lần hai ("anh_lan_2") — SRS-5.1zzzzzzz420."""
+        thieu_anh = so_anh is not None and so_anh < anh_du
+        if thieu_anh and "sau:anh" not in da_hoi:
+            return "anh", ["hinh_anh"]
         mong = set(self.expected_fields())
         for ma, cum in CUM_SAU_DANG:
             if ma in da_hoi or (self.is_rental and ma != "xem_nha"):
@@ -578,6 +589,8 @@ class Property:
             con = [k for k in cum if k not in mong and not self._has(k) and f"sau:{k}" not in da_hoi]   # SRS-178: mỗi lượt một ô
             if con:
                 return ma, con
+        if thieu_anh and "sau:anh_lan_2" not in da_hoi:
+            return "anh_lan_2", ["hinh_anh"]
         return None
 
     def completeness(self) -> float:

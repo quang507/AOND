@@ -39,7 +39,7 @@ def test_tin_phu_trich_xuat_theo_cong_tac(monkeypatch):
     monkeypatch.setenv("AIOI_DONG_TRICH_XUAT", "bat")
     eng2, _ = _eng(plan)
     ct = eng2.handle("tp-2", "bán nhà 12.5 tỉ").chu_thich
-    assert ct.startswith(che_do_test.DAU + " Đã trích xuất:") and "12.5 tỉ" in ct and "Tốn:" in ct
+    assert ct.startswith(che_do_test.DAU + " [đã trích xuất:") and "gia=" in ct and "[tốn $" in ct and "soạn nháp:" in ct   # SRS-419 khuôn anh Luận
     assert len(ct.splitlines()) <= 4
     assert all(ct not in t.content for t in eng2.conversation("tp-2").history)   # không vào lịch sử model đọc
 

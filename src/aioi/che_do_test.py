@@ -2,7 +2,7 @@
 
 26/10 chủ dự án bỏ chế độ test `$$$$$` (bên anh Luận không có); 28/10: "vẫn trong giai đoạn test có dòng $ đã trích xuất nữa đi". Nay là công tắc
 CHUNG `AIOI_DONG_TRICH_XUAT` (một nguồn `bot/cau-hinh-loi.env`, "bat" / "tat") — áp mọi cuộc chat trong giai đoạn test, tắt một dòng khi chạy thật.
-Tin phụ (tối đa 4 dòng như SRS-139: Ghi · Bỏ · Thiếu / hỏi tiếp · Tốn) ghép HOÀN TOÀN từ dữ liệu lõi đã ghi — không lượt AI nào viết nên không
+Tin phụ (khuôn bản anh Luận từ SRS-5.1zzzzzzz419: [đã trích xuất] · [bỏ] · [điểm | soạn nháp | hỏi tiếp] · [tốn]) ghép HOÀN TOÀN từ dữ liệu lõi đã ghi — không lượt AI nào viết nên không
 bịa, không tốn thêm tiền; KHÔNG vào lịch sử hội thoại / CRM (chỉ nằm trong `replies`), gửi TRƯỚC lời bot (SRS-136). Lỗi → "" (không chặn lượt)."""
 from __future__ import annotations
 
@@ -95,56 +95,50 @@ def _giong(a: object, b: object) -> bool:
 
 
 def _o_vua_ghi(conv: "Conversation", captured: list[str]) -> list[str]:
-    """Ô lượt này ghi, mỗi ô một đoạn ngắn: `nhãn "cụm khách nói" → "giá trị chuẩn" (đổi từ "cũ")`. Người mua: ô phiếu."""
-    ra: list[str] = []
+    """Ô lượt này ghi, dạng `khoá=giá trị đã lưu` như bản anh Luận (SRS-5.1zzzzzzz419 — bản cũ in nhãn cắt ở "(" nên ra "nhà … → khong").
+    Người mua: ô phiếu nhu cầu."""
     if conv.role == "buyer" and conv.buyer_lead is not None:
         bl = conv.buyer_lead
         gom = {"loai_giao_dich": bl.loai_giao_dich, "loai_bds": bl.loai_bds, "ngan_sach": bl.ngan_sach, "khu_vuc": bl.khu_vuc,
                **{k: v for k, v in dict(bl.fields).items() if not str(k).startswith("_")}}
-        for k, v in gom.items():
-            if v and (not captured or k in captured):
-                ra.append(f"{_nhan(k)} \"{_cat(v, 40)}\"")
-        return ra
+        return [f"{k}={_cat(v, 40)}" for k, v in gom.items() if v and (not captured or k in captured)]
     khach = conv.prop.fields_khach()
-    cung_can = conv.truoc_id == conv.active_listing_id
-    for k in captured:
-        if k not in khach or khach[k] in (None, ""):
-            continue
-        trich = conv.bc_luot.get(k)
-        dong = f"{_nhan(k)} \"{_cat(trich or khach[k], 40)}\""
-        if trich and not _giong(trich, khach[k]):
-            dong += f" → \"{_cat(khach[k], 40)}\""
-        cu = conv.truoc_luot.get(k) if cung_can else None
-        if cu and not _giong(cu, khach[k]):
-            dong += f" (đổi từ \"{_cat(cu, 30)}\")"
-        ra.append(dong)
-    return ra
+    ra = [f"loai_hinh={conv.prop.loai_hinh}"] if "loai_hinh" in (captured or []) and conv.prop.loai_hinh else []
+    return ra + [f"{k}={_cat(khach[k], 40)}" for k in captured if k != "loai_hinh" and khach.get(k) not in (None, "")]
 
 
 def _da_bo(conv: "Conversation") -> list[str]:
     """Ô AI đề xuất mà code bỏ — trả lời "vì sao nó không nhớ"."""
-    return [f"{_nhan(k)} \"{_cat(v, 30)}\" vì {ly}" for k, v, _bc, ly in conv.bo_luot]
+    return [f"{k}={_cat(v, 30)} ({ly})" for k, v, _bc, ly in conv.bo_luot]
 
 
 def chu_thich(conv: "Conversation", captured: list[str], next_field: str | None = None,
-              token: dict[str, dict[str, int]] | None = None) -> str:
-    """Tin phụ sau một lượt, tối đa 4 dòng: Ghi · Bỏ (nếu có) · Thiếu / hỏi tiếp · Tốn. Lỗi bất kỳ → "" (không chặn lượt)."""
+              token: dict[str, dict[str, int]] | None = None, diem: dict | None = None) -> str:
+    """Tin phụ sau một lượt theo khuôn bản anh Luận (cli.py: `[đã trích xuất: …]` rồi `[điểm BĐS | uy tín | hạng | hoàn chỉnh]`), mỗi dòng
+    một ngoặc vuông: trích xuất · bỏ (nếu có) · điểm + bản nháp + hỏi tiếp · tốn. `diem`: property_score, user_score, tier, completeness
+    (cùng số TurnResult). Lỗi bất kỳ → "" (không chặn lượt)."""
     try:
+        from .schema import FACET_LABEL
         ghi = _o_vua_ghi(conv, list(captured or []))
-        dong = [f"{DAU} Đã trích xuất: " + (" · ".join(ghi) if ghi else "không có ô mới")]
+        dong = [f"{DAU} [đã trích xuất: " + (", ".join(ghi) if ghi else "không có ô mới") + "]"]
         bo = _da_bo(conv)
         if bo:
-            dong.append("Bỏ: " + " · ".join(bo))
+            dong.append("[bỏ: " + ", ".join(bo) + "]")
         phan: list[str] = []
+        d = diem or {}
+        if conv.role != "buyer" and d:
+            phan.append(f"điểm BĐS {d.get('property_score', 0):.0f} | uy tín {d.get('user_score', 0):.0f} | hạng {d.get('tier', '?')} "
+                        f"| hoàn chỉnh {d.get('completeness', 0):.0%}")
         if conv.role != "buyer":
-            thieu = conv.prop.missing_fields()
-            phan.append("Thiếu: " + (", ".join(_nhan(x) for x in thieu[:5]) or "không") + (" …" if len(thieu) > 5 else "")
-                        + ("" if conv.prop.summary_ready() else " (chưa đủ soạn nháp)"))
+            trong = conv.prop.facet_trong()
+            phan.append("soạn nháp: đủ ✓" if conv.prop.summary_ready() else
+                        "soạn nháp: chưa — " + (f"cần {', '.join(conv.prop.minimal_missing())}" if not conv.prop.can_publish()
+                                                 else "trống " + ", ".join(FACET_LABEL.get(f, f).lower() for f in trong)))
         if next_field:
-            phan.append(f"Hỏi tiếp: {_nhan(next_field)}")
+            phan.append(f"hỏi tiếp: {next_field}")
         if phan:
-            dong.append(" · ".join(phan))
-        dong.append(dong_tien(token))
+            dong.append("[" + " | ".join(phan) + "]")
+        dong.append("[" + dong_tien(token).replace("Tốn: ", "tốn ", 1) + "]")
         return "\n".join(dong)
     except Exception as e:  # noqa: BLE001 — tin phụ chỉ để soi, không được làm hỏng lời trả lời khách
         log.warning("che_do_test.chu_thich lỗi: %s", e)

@@ -743,6 +743,21 @@ def khoi_hoi_sau_dang(keys: list[str], prop: Property | None = None) -> str:
             "xem, chìa khoá) chỉ để bên em nắm, không đưa lên tin.\n")
 
 
+def khoi_xin_them_anh(so_anh: int, lan_hai: bool = False) -> str:
+    """Xin thêm ảnh thật sau khi tin lên web (SRS-5.1zzzzzzz420) — engine quyết khi nào (số ảnh đã lưu dưới mức tin đẹp), model đặt câu."""
+    co = f"tin đang có {so_anh} ảnh thật" if so_anh else "tin chưa có ảnh thật nào"
+    if lan_hai:
+        return ("\n\n=== NHẮC XIN ẢNH LẦN CUỐI (tin đã lên web, " + co + "): ===\n"
+                "Em đã xin ảnh một lần rồi. Việc lượt này: sau lời đáp, xuống một dòng trống rồi nhắc nhẹ MỘT câu — khi nào tiện chủ chụp "
+                "thêm vài tấm gửi em, tin nhiều ảnh khách bấm xem và hỏi nhiều hơn. Không kể lại danh sách góc chụp, không thúc ép.\n")
+    return ("\n\n=== XIN THÊM ẢNH LƯỢT NÀY (tin đã lên web, " + co + " — tin rao đẹp, được khách mua bấm xem nhiều là tin có từ "
+            "5–6 ảnh trở lên): ===\n"
+            "Việc lượt này: sau lời đáp, xuống một dòng trống rồi xin chủ chụp gửi thêm ảnh thực tế của căn, gợi ý vài góc hay thiếu (mặt "
+            "tiền nhìn từ đường, phòng khách, bếp, phòng ngủ, WC, sân thượng / ban công) và nói ngắn lợi ích: tin nhiều ảnh khách hỏi nhiều "
+            "hơn, bán nhanh hơn. Căn đang cho thuê / đang kinh doanh thì ảnh mặt bằng đang kinh doanh bên trong cũng là ảnh của căn, gửi được. "
+            "Nói số ảnh tin đang có đúng như trên, không nói ảnh đã đủ.\n")
+
+
 def khoi_hoi_coc(o: str, prop: Property | None = None) -> str:
     """Căn đã cọc (SRS-5.1zzzzzzz295): hỏi MỘT ô cọc / công chứng — engine chọn ô (`schema.O_COC`), model đặt câu."""
     return ("\n\n=== HỎI THÊM LƯỢT NÀY (căn ĐÃ CỌC — để bên em theo sát tới lúc công chứng): ===\n"
