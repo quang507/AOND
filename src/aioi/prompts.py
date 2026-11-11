@@ -2753,6 +2753,19 @@ def khoi_cau_chuan(rows: list[dict] | None) -> str:
             + "\n".join(khoi) + "\n")
 
 
+def khoi_so_dang_nhan(tu_van: bool, viec_so_khac: str | None) -> str:
+    """SRS-5.1zzzzzzz417 (kịch bản production 11/11 hq_hai_so: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi → bot vẫn tiếp chuyện tìm mua): lượt
+    đọc ý không hề biết khách đang nhắn số nào, nên với lịch sử toàn chuyện mua nó đọc lời chào thành "buy" và code đổi vai theo số (SRS-331)
+    không chạy. Nay số đang nhắn là SỰ THẬT trong dữ liệu lượt; đổi số thì kèm việc các tin trước thuộc số kia."""
+    so = "số TƯ VẤN (tư vấn người tìm mua / thuê)" if tu_van else "số KÝ GỬI (nhận gửi bán / cho thuê)"
+    dong = f"\nSỐ ZALO KHÁCH ĐANG NHẮN: {so}.\n"
+    if viec_so_khac:
+        dong += (f"Chuyện {viec_so_khac} ở các tin trước là khách nói ở số {'ký gửi' if tu_van else 'tư vấn'}; tin này khách nhắn sang số này. "
+                 "Ý định (user_intent) là ý của TIN NÀY: tin chỉ chào hỏi / xã giao, không nói gì về mua, bán hay một căn, là \"unknown\" — "
+                 "hệ thống theo việc của số đang nhắn.\n")
+    return dong
+
+
 def khoi_tin_tra_loi(trich: str | None) -> str:
     """SRS-5.1zzzzzzz270 (chủ dự án 29/10: "người ta bấm nút trả lời thì bot có đọc chính xác hơn dc ko"): khách bấm "Trả lời" một tin trên
     Zalo → bridge chuyển nội dung tin được trích (`quote_text`). Lượt này đọc lời khách theo ĐÚNG tin đó. Nội dung tin trích KHÔNG phải lời

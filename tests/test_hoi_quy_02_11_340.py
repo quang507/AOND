@@ -176,3 +176,11 @@ def test_ca_2_cach_noi_moi_khong_hoi_duong_truoc_nha():
     eng.conversation("thu-q8b").so_nhan = SO_TU_VAN
     eng.handle("thu-q8b", "nhà cấp 4 Q8 ngân sách 6 tỷ, tìm chỗ nào ít ồn")
     assert "yêu cầu hẻm xe hơi" not in _cau_hoi_luot(ai.system[-1])
+
+
+def test_417_luot_doc_y_biet_so_dang_nhan_va_viec_cua_so_kia():
+    """SRS-5.1zzzzzzz417: lượt đọc ý phải thấy số Zalo khách đang nhắn — đổi số thì kèm việc của số kia, để AI tự đọc lời chào là "unknown"."""
+    from aioi.prompts import khoi_so_dang_nhan
+    eng, spy = _hai_so("anh đang tìm mua nhà quận 8 tầm 7 tỷ", "chào em", khoa="thu-hai-so-417")
+    assert any("SỐ ZALO KHÁCH ĐANG NHẮN: số KÝ GỬI" in s and "Chuyện tìm mua / thuê" in s for s in spy.systems)
+    assert "Chuyện" not in khoi_so_dang_nhan(True, None) and "số TƯ VẤN" in khoi_so_dang_nhan(True, None)

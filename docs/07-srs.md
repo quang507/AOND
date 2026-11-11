@@ -927,3 +927,14 @@ Chủ dự án 11/11: "phiếu cũ có mấy cái ko sửa từ gốc mà có m�
 - **Bỏ VPS khỏi quy trình**: gỡ `tu-cai-vps.yml` (mọi push main từ 06/11 đỏ vì gọi `cai-vps` vào VPS đã gỡ). Thêm `scripts/trien-khai-146.sh`; `sau-gop.sh` gọi nó khi đổi lõi.
 - **Đã áp** migration `20261108a` (08/11): 1.111 dự án được gỡ, còn 0 dự án mang dòng vay, 2.924 dự án giữ nguyên `thuoc_tinh`.
 - **Kiểm**: pytest 1503/1503; `test:bot` đạt trừ `giam-egress` (hỏng đường dẫn Windows, cả bản gốc); thêm ca cho từng lỗi trên.
+
+### SRS-5.1zzzzzzz417 · Lượt đọc ý biết số Zalo khách đang nhắn; lưu SĐT nói đúng lịch (11/11/2026)
+Kịch bản production 11/11 (12 kịch bản, máy 146). Chủ dự án: "sửa vào prompt cho AI nó biết chứ không phải regex, sửa từ gốc".
+- **hq_hai_so**: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi → bot vẫn tiếp chuyện tìm mua. Gốc: lượt đọc ý không có dữ kiện số đang
+  nhắn, lịch sử toàn chuyện mua nên AI đọc lời chào thành "buy"; nhánh đổi vai theo số (SRS-331) chỉ chạy khi ý định "unknown" nên không
+  chạy. Nay `khoi_so_dang_nhan` đưa vào dữ liệu lượt đọc ý (agent gộp mua / bán, form đầy đủ): số đang nhắn; đổi số thì thêm việc các tin
+  trước thuộc số kia và ý định là ý của tin này (chào / xã giao → "unknown").
+- **m_hen_xem_cho_so**: khách chưa chọn căn, để số → bot nói "người phụ trách sẽ gọi xác nhận lịch xem cuối tuần". Gốc: kết quả
+  `luu_so_dien_thoai` không nói gì về lịch. Nay kết quả đọc `lich_dang_cho`: có lịch thì nêu căn + giờ, không có thì nói chưa có lịch nào.
+- Không phải lỗi: hai căn một tin (DB 146 có 2 tin riêng đúng), "hồ bơi tràn" (dữ liệu dự án The Sun Avenue), hỏi "biết phí chưa" sau đăng
+  (SRS-81), hq_hem_xe_hoi (bộ chấm bắt chữ "xe hơi" khi bot tả căn có thật).

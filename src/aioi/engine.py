@@ -28,7 +28,7 @@ from uuid import uuid4
 from . import gamification as g
 from . import phap_ly
 from .prompts import _dien_tich_mo_ho, khoi_nhan_vat, viec_phieu, viec_theo_khoi
-from .prompts import NHAN_VIEC_LUOT, prompt_gon_bat
+from .prompts import NHAN_VIEC_LUOT, khoi_so_dang_nhan, prompt_gon_bat
 from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, SU_THAT_CAN, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
@@ -4982,6 +4982,10 @@ class Engine:
                 "operations RỖNG — phần trả lời sẽ hỏi xác nhận; chỉ 'add' sau khi khách xác nhận.\n"
             )
         system += self._basket_block(conv)
+        so_luot = SO_TU_VAN if conv.so_nhan == SO_TU_VAN else "ky_gui"
+        doi = conv.so_vai is not None and conv.so_vai != so_luot and conv.role in ("buyer", "seller")
+        system += khoi_so_dang_nhan(so_luot == SO_TU_VAN,   # SRS-5.1zzzzzzz417: số đang nhắn là dữ kiện của lượt đọc ý
+                                    ("tìm mua / thuê" if conv.role == "buyer" else "gửi bán / cho thuê") if doi else None)
         if conv.listing_proposed:
             # Duyệt bản nháp đọc theo TRẠNG THÁI, không theo vị trí tin (SRS-5.1zzzzzzz87): chat chị N. 20/10 — bot tự hỏi "xác nhận
             # giúp em bản tin đã ổn" thì tin ngay trước không còn là bản nháp, "ổn" / "ok" bị bỏ trống, bot hỏi lại mãi.

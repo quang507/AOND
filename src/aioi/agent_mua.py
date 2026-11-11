@@ -540,7 +540,15 @@ def _ghi_viec(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -> s
             return "Chưa lưu được số điện thoại (chưa có hồ sơ khách) — KHÔNG nói đã lưu."
         ok = kho.ghi_sdt_hen_xem(bid, sdt)
         if ok:
-            return f"ĐÃ LƯU số điện thoại {sdt} của khách vào hệ thống để người phụ trách gọi hỗ trợ tư vấn."
+            # SRS-5.1zzzzzzz417 (kịch bản production 11/11: khách chưa chọn căn, để số → bot nói "người phụ trách sẽ gọi xác nhận lịch xem cuối
+            # tuần"): kết quả cũ không nói gì về lịch nên model tự suy ra có lịch. Nay nói đúng lịch đang chờ trong kho.
+            lay = getattr(kho, "lich_dang_cho", None)
+            lich = lay(bid) if lay is not None else []
+            if lich:
+                ds = "; ".join(f"căn #{x.get('listing_code')} ({x.get('time_text')})" for x in lich)
+                return f"ĐÃ LƯU số điện thoại {sdt} của khách. Lịch xem đang chờ xác nhận: {ds} — người phụ trách gọi xác nhận lịch này."
+            return (f"ĐÃ LƯU số điện thoại {sdt} của khách; người phụ trách sẽ gọi tư vấn. Chưa có lịch xem nào được ghi (chưa có căn và "
+                    "giờ được chốt qua hen_xem).")
         return "Chưa lưu được số điện thoại (lỗi kho)."
     hen = ten == "hen_xem"
     ma = _chu(inp.get("ma"), 20).lstrip("#").upper()
