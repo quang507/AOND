@@ -452,6 +452,21 @@ if os.environ.get("GUI_NHAC", "bat") != "tat" and _settings.supabase_service_rol
     threading.Thread(target=_vong_gui_nhac, daemon=True, name="gui-nhac").start()
 
 
+NHIP_LOI_CHU_KY_GIAY = int(os.environ.get("NHIP_LOI_CHU_KY_GIAY", "60"))
+
+
+def _vong_nhip_loi() -> None:
+    """SRS-5.1zzzzzzz402: dấu sống `aond-core` mỗi phút. Nhịp cũ `model_chinh` chỉ có khi có lượt gọi Claude (đêm vắng khách cũng im), còn
+    nhịp bridge vẫn đều khi lõi chết — nên trước đây lõi chết không ai báo. `bot_health_tick` báo khi nhịp này im quá 15 phút."""
+    while True:
+        _so_loi.beat("aond-core")
+        time.sleep(NHIP_LOI_CHU_KY_GIAY)
+
+
+if _settings.supabase_service_role_key:
+    threading.Thread(target=_vong_nhip_loi, daemon=True, name="nhip-loi").start()
+
+
 def _vong_bao_can_moi() -> None:
     """SRS-5.1zzzzzzz150: quét định kỳ báo khách mua có căn mới vừa nhu cầu (khung 8–20 giờ nằm trong `bao_can_moi`). Tắt: BAO_CAN_MOI=tat."""
     from . import bao_can_moi
