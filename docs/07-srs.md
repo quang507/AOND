@@ -788,6 +788,15 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz415 · Prompt gọn: hiểu nỗi lo chủ nhà, hỏi như trò chuyện (11/11/2026)
+Chủ dự án 11/11: "chỉ thêm insight, làm sao để đủ thông tin mà không hỏi nhiều cảm giác hỏi cung khiến người ta khó chịu là dc"; "không phải
+báo khách cần gì để ra bản nháp chỉ tự bot ngầm hiểu thôi".
+- `LEAN_SYSTEM_PROMPT` thêm HIỂU CHỦ NHÀ (lo ép giá / bán hớ, nhà trống lâu, ngại thủ tục) — nỗi lo nào lộ ra trong lời khách thì đáp bằng
+  việc bên em làm thật (rao theo giá chủ, đưa tin tới khách đang tìm, có khách hỏi báo ngay, phí chỉ thu khi thành công); không gán nỗi lo.
+- Thêm HỎI NHƯ TRÒ CHUYỆN: câu hỏi là sự tò mò về căn, nối từ điều khách vừa kể; hỏi mở cho khách kể nhiều ý một lúc; còn thiếu gì để soạn
+  tin là việc bot tự nắm, khách không hỏi thì không kể. 2.925 → 3.8xx ký tự, không chữ "CẤM / TUYỆT ĐỐI".
+- Không đổi: cổng bản nháp (SRS-260), một câu hỏi mỗi lượt. Phía mua đã có insight ở `khoi_nhan_vat`.
+
 ### SRS-5.1zzzzzzz414 · Prompt lượt hỏi phía bán viết lại theo nguyên tắc, bỏ luật vá (11/11/2026)
 Chủ dự án 11/11: "phiếu cũ có mấy cái ko sửa từ gốc mà có mấy cái sửa vá như tuyệt đối không các thứ", "còn mấy cái luật linh tinh nữa".
 - `LEAN_SYSTEM_PROMPT` (công tắc `AIOI_PROMPT_GON=bat`) viết lại thành năm phần nói thuận: NHÂN VẬT · CÁCH EM NHẮN · SỰ THẬT · tin hệ thống ·
