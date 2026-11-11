@@ -73,6 +73,30 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz403 · [deprecated — hoàn tác bởi SRS-5.1zzzzzzz404] Fast-Path bỏ qua bóc tách tin chào hỏi và đưa LEAN_SYSTEM_PROMPT chạy thật (11/11/2026)
+- **Ca gốc**: Đối soát ảnh nhật ký thực tế (`media_1794374178641_f7b4f6b2.jpg`): một lượt nhắn mở đầu đơn giản "em ơi" tốn tới $0.1103 chủ yếu do ghi Cache (gần 40.000 tokens ghi cache) vì lượt lập thao tác (bóc tách) gửi `OPERATIONS_SYSTEM` (28.6k chữ) + `operations_schema` (41.8k chữ) = hơn 70.000 ký tự dù khách chưa hề cung cấp thông tin căn nhà nào; đồng thời `LEAN_SYSTEM_PROMPT` (<1.500 tokens của SRS-391) trước đây chỉ là chuỗi tĩnh trong test chưa được kích hoạt chạy thật `[nguồn: chủ dự án 11/11/2026: "làm sao để prompt gọn chạy đi, ngáo à, làm xong ko cho chạy thử kiểu gì", "làm cả 2 đi", "nó chạy trên cloud không vào cài trên ssh dc thì phải mày làm đi"]`.
+- **Lớp lỗi**:
+  1. `Engine._lap_ke_hoach` gọi `self._provider.extract` vô điều kiện với prompt 70.000 ký tự ngay cả khi khách chỉ gửi lời chào ("em ơi", "alo", "chào em"...). Anthropic ghi cache 1.25x giá vào gây đội chi phí ~$0.10 vô ích.
+  2. `_hoi_sai_o` gọi phụ `_khai_o_hoi` (thêm ~4.500 ký tự gọi LLM) để soát ô hỏi sai ngay trong lượt chào hỏi thuần tuý.
+  3. `LEAN_SYSTEM_PROMPT` trong `src/aioi/prompts.py` không có hàm đóng gói để đưa vào `_handle` hay `build_phieu_luot`, chưa có công tắc cấu hình môi trường để kích hoạt trên production.
+- **Sửa**:
+  1. Thêm `la_tin_chao_hoi_thuan_tuy(noi_dung)` trong `src/aioi/chu.py` lọc chuẩn xác các câu chào không chứa từ khoá BĐS hay chữ số.
+  2. Trong `Engine._lap_ke_hoach`: khi phát hiện tin chào hỏi thuần tuý, trả về ngay `plan = {"operations": [], "user_intent": "unknown", "loi_xa_giao": "chao", "loi_xa_giao_trich_dan": cuoi_tin}`, bỏ qua hoàn toàn gọi `self._provider.extract`.
+  3. Trong `_hoi_sai_o`: bỏ qua soát ô hỏi sai khi `conv.y_luot.get("tha_tim") == "chao"`, tiết kiệm thêm 4.500 ký tự gọi phụ.
+  4. Bổ sung `lean_system_prompt_cho_luot(...)` trong `src/aioi/prompts.py`, bảo tồn tên trợ lý có dấu chấm giữa (`Th•ái`, `M•ai`), tích hợp Customer Insight và AD_FORMAT.
+  5. Đưa công tắc `AIOI_PROMPT_GON=bat` vào `bot/cau-hinh-loi.env` và `C:\aond\aond_core\.env` trên máy 146 để kích hoạt `LEAN_SYSTEM_PROMPT` chạy thật ở production.
+- **Kiểm**: `tests/test_fast_path_va_lean_prompt_403.py` (đạt 4/4 ca: nhận diện câu chào, fast-path bỏ qua extract, prompt <1.500 tokens bảo tồn tên trợ lý có dấu chấm, công tắc kích hoạt thành công); soát migration 406/406; soát truy vết SẠCH. Bắn thử "em ơi" lên máy 146 phản hồi 200 OK với Th•ái.
+
+### SRS-5.1zzzzzzz393 · Tinh gọn bộ câu hỏi rẽ nhánh theo loại hình BĐS: ưu tiên câu hỏi trực quan dễ thấy, đưa câu hỏi kỹ thuật sâu (tải trọng sàn, kVA trạm biến áp, chỉ tiêu xây dựng) xuống nhóm thứ cấp (06/11/2026)
+Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại hình nên hỏi gì đi", duyệt tinh gọn bộ câu hỏi. Trước: Kho xưởng hỏi dồn dập "chiều cao trần", "tải trọng sàn (tấn/m2)", "trạm biến áp công suất bao nhiêu kVA", khách không phải kỹ sư kết cấu nên bối rối trả lời "chị không biết"; Đất nền hỏi chỉ tiêu quy hoạch / vướng cột điện trước khi hỏi lộ giới hẻm và thổ cư.
+(1) Lớp lỗi: thứ tự ưu tiên câu hỏi trong CORE_FIELDS xếp câu hỏi kỹ thuật trừu tượng lên trước câu hỏi thực tế quan sát được; NATURAL_QUESTIONS gợi ý hỏi số kVA gây khó cho chủ nhà.
+(2) Sửa:
+  - `src/aioi/schema.py`: Reorder `CORE_FIELDS[PropertyGroup.INDUSTRIAL]` đưa `tieu_chuan_container` (xe tải / container vào được không) và `tram_bien_ap` (điện 3 pha sản xuất) lên trước `chieu_cao_tran`; đẩy `tai_trong_san` (tải trọng sàn) và `thoi_han_su_dung` xuống cuối (nhóm thứ cấp, không ép hỏi sớm).
+  - `src/aioi/schema.py`: Reorder `CORE_FIELDS[PropertyGroup.LAND]` ưu tiên `kich_thuoc`, `tho_cu`, `lo_gioi_duong`, `phap_ly_so_do`, `quy_hoach` lên trước `chi_tieu_xay_dung` và `yeu_to_ha_tang`.
+  - `src/aioi/schema.py`: Bổ sung cụm hỏi gộp `("tieu_chuan_container", "tram_bien_ap")` vào `CUM_HOI` để bot hỏi tự nhiên trong 1 lượt (tối đa 2 ý theo SRS-391).
+  - `src/aioi/prompts.py`: Sửa gợi ý hỏi cho `tram_bien_ap` (bỏ chữ kVA, hỏi có điện 3 pha / trạm riêng không) và `tai_trong_san` (chỉ hỏi nếu khách biết).
+(3) Kiểm: `test_toi_uu_loai_hinh_393.py` (3/3 đạt), hồi quy `test_branching.py`, `test_schema.py`, `test_toi_uu_ky_gui_391.py` đạt 100%. Soát truy vết SẠCH.
+
 ### SRS-5.1zzzzzzz392 · Thống nhất đơn model Sonnet cho toàn bộ chu trình, loại bỏ gọi chéo Haiku bóc tách và hoàn thiện 1 vòng chuẩn MOSO (06/11/2026)
 - **Ca gốc**: Đối soát ảnh Zalo thực tế (`media_1793951947524_b6608d63.jpg` và `media_1793951936394_26f342b5.jpg`): mỗi lượt chat bot vẫn hiện `Tốn: $... (claude-haiku-5-5 ... | claude-sonnet-5-5 ...)` do kiến trúc cũ chia 2 vòng (Haiku bóc form json -> Sonnet viết lời). Đồng thời khi khách chỉ chào hỏi ("chào em") hoặc câu không có ô mới, `agent_gop._vong_ghi` coi việc không gọi tool là lỗi và rơi về form Haiku `[nguồn: chủ dự án 06/11/2026: "ủa sao bảo làm moso chỉ chạy 1 vòng chứ không phải 2 vòng", "Ok sửa push lên vps để tui test thử, chạy sonnet"]`.
 - **Lớp lỗi**:
