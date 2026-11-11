@@ -788,6 +788,20 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz403 · Fast-Path bỏ qua bóc tách tin chào hỏi và đưa LEAN_SYSTEM_PROMPT chạy thật (11/11/2026)
+- **Ca gốc**: Đối soát ảnh nhật ký thực tế (`media_1794374178641_f7b4f6b2.jpg`): một lượt nhắn mở đầu đơn giản "em ơi" tốn tới $0.1103 chủ yếu do ghi Cache (gần 40.000 tokens ghi cache) vì lượt lập thao tác (bóc tách) gửi `OPERATIONS_SYSTEM` (28.6k chữ) + `operations_schema` (41.8k chữ) = hơn 70.000 ký tự dù khách chưa hề cung cấp thông tin căn nhà nào; đồng thời `LEAN_SYSTEM_PROMPT` (<1.500 tokens của SRS-391) trước đây chỉ là chuỗi tĩnh trong test chưa được kích hoạt chạy thật `[nguồn: chủ dự án 11/11/2026: "làm sao để prompt gọn chạy đi, ngáo à, làm xong ko cho chạy thử kiểu gì", "làm cả 2 đi", "nó chạy trên cloud không vào cài trên ssh dc thì phải mày làm đi"]`.
+- **Lớp lỗi**:
+  1. `Engine._lap_ke_hoach` gọi `self._provider.extract` vô điều kiện với prompt 70.000 ký tự ngay cả khi khách chỉ gửi lời chào ("em ơi", "alo", "chào em"...). Anthropic ghi cache 1.25x giá vào gây đội chi phí ~$0.10 vô ích.
+  2. `_hoi_sai_o` gọi phụ `_khai_o_hoi` (thêm ~4.500 ký tự gọi LLM) để soát ô hỏi sai ngay trong lượt chào hỏi thuần tuý.
+  3. `LEAN_SYSTEM_PROMPT` trong `src/aioi/prompts.py` không có hàm đóng gói để đưa vào `_handle` hay `build_phieu_luot`, chưa có công tắc cấu hình môi trường để kích hoạt trên production.
+- **Sửa**:
+  1. Thêm `la_tin_chao_hoi_thuan_tuy(noi_dung)` trong `src/aioi/chu.py` lọc chuẩn xác các câu chào không chứa từ khoá BĐS hay chữ số.
+  2. Trong `Engine._lap_ke_hoach`: khi phát hiện tin chào hỏi thuần tuý, trả về ngay `plan = {"operations": [], "user_intent": "unknown", "loi_xa_giao": "chao", "loi_xa_giao_trich_dan": cuoi_tin}`, bỏ qua hoàn toàn gọi `self._provider.extract`.
+  3. Trong `_hoi_sai_o`: bỏ qua soát ô hỏi sai khi `conv.y_luot.get("tha_tim") == "chao"`, tiết kiệm thêm 4.500 ký tự gọi phụ.
+  4. Bổ sung `lean_system_prompt_cho_luot(...)` trong `src/aioi/prompts.py`, bảo tồn tên trợ lý có dấu chấm giữa (`Th•ái`, `M•ai`), tích hợp Customer Insight và AD_FORMAT.
+  5. Đưa công tắc `AIOI_PROMPT_GON=bat` vào `bot/cau-hinh-loi.env` và `C:\aond\aond_core\.env` trên máy 146 để kích hoạt `LEAN_SYSTEM_PROMPT` chạy thật ở production.
+- **Kiểm**: `tests/test_fast_path_va_lean_prompt_403.py` (đạt 4/4 ca: nhận diện câu chào, fast-path bỏ qua extract, prompt <1.500 tokens bảo tồn tên trợ lý có dấu chấm, công tắc kích hoạt thành công); soát migration 406/406; soát truy vết SẠCH. Bắn thử "em ơi" lên máy 146 phản hồi 200 OK với Th•ái.
+
 ### SRS-5.1zzzzzzz402 · Còi máy 146: lõi chết, bridge số tư vấn chết, Zalo văng phiên chờ quét QR đều không ai báo (11/11/2026)
 - **Ca gốc**: soát đề xuất "watchdog" 11/11 trên DB thật: `bot_health_tick` (cron 15 phút) chỉ canh nhịp `bridge-zca`; nhịp `bridge-zca-tu-van` có ghi mà không ai đọc; lõi chết thì bridge vẫn gõ nhịp đều (`model_chinh` chỉ có khi có lượt gọi Claude); bridge chờ quét QR cũng vẫn gõ nhịp; lời báo còn ghi "VPS / nhadat-bridge". Thêm: `app_config.ntfy_topic` trống → `canh_bao_ngoai` không gửi đâu cả, kênh báo duy nhất là tin 🚨 đi qua chính bridge số ký gửi. `[nguồn: chủ dự án 11/11/2026, "cải thiện mấy cái này" — mục 4 Watchdog]`
 - **Lớp lỗi**: nhịp tim đo "tiến trình gõ cửa" chứ không đo "dịch vụ phục vụ được"; thêm thành phần (số tư vấn, lõi tách khỏi bridge) mà không thêm vào còi. Cùng lớp CÒN: bridge số ký gửi chết thì tin 🚨 nằm chờ và không có kênh ngoài cho tới khi chủ dự án đặt `ntfy_topic`; còi chỉ chạy 7–22 giờ (giữ như cũ).
@@ -899,13 +913,3 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
   5. Module `src/aioi/tieu_chi_gia_dinh.py`: Tư vấn 5 trụ cột vàng chọn nhà gia đình (tầng trung 8-18, căn góc 2 mặt thoáng, ban công Đông Nam, an toàn khuôn viên nội khu, bán kính học tập/y tế <1.5km).
   6. Tích hợp trọn bộ 5 công cụ vào `agent_mua.CONG_CU` (`so_sanh_du_an`, `tra_cuu_phong_thuy`, `tham_dinh_quy_hoach`, `goi_y_dam_phan`, `bo_loc_gia_dinh`) và 3 công cụ vào `agent_ban.CONG_CU` (`tra_cuu_phong_thuy`, `tham_dinh_quy_hoach`, `goi_y_dam_phan`), tự động kế thừa vào `agent_gop.DOC`. Bảo toàn 0 byte footprint trên DB.
 - **Kiểm**: `tests/test_tinh_hoa_moso_394.py` (6/6 tests đạt 100%), kiểm tra hồi quy toàn diện đạt 100%, `scripts/soat-truy-vet.sh` SẠCH.
-
-### SRS-5.1zzzzzzz393 · Tinh gọn bộ câu hỏi rẽ nhánh theo loại hình BĐS: ưu tiên câu hỏi trực quan dễ thấy, đưa câu hỏi kỹ thuật sâu (tải trọng sàn, kVA trạm biến áp, chỉ tiêu xây dựng) xuống nhóm thứ cấp (06/11/2026)
-Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại hình nên hỏi gì đi", duyệt tinh gọn bộ câu hỏi. Trước: Kho xưởng hỏi dồn dập "chiều cao trần", "tải trọng sàn (tấn/m2)", "trạm biến áp công suất bao nhiêu kVA", khách không phải kỹ sư kết cấu nên bối rối trả lời "chị không biết"; Đất nền hỏi chỉ tiêu quy hoạch / vướng cột điện trước khi hỏi lộ giới hẻm và thổ cư.
-(1) Lớp lỗi: thứ tự ưu tiên câu hỏi trong CORE_FIELDS xếp câu hỏi kỹ thuật trừu tượng lên trước câu hỏi thực tế quan sát được; NATURAL_QUESTIONS gợi ý hỏi số kVA gây khó cho chủ nhà.
-(2) Sửa:
-  - `src/aioi/schema.py`: Reorder `CORE_FIELDS[PropertyGroup.INDUSTRIAL]` đưa `tieu_chuan_container` (xe tải / container vào được không) và `tram_bien_ap` (điện 3 pha sản xuất) lên trước `chieu_cao_tran`; đẩy `tai_trong_san` (tải trọng sàn) và `thoi_han_su_dung` xuống cuối (nhóm thứ cấp, không ép hỏi sớm).
-  - `src/aioi/schema.py`: Reorder `CORE_FIELDS[PropertyGroup.LAND]` ưu tiên `kich_thuoc`, `tho_cu`, `lo_gioi_duong`, `phap_ly_so_do`, `quy_hoach` lên trước `chi_tieu_xay_dung` và `yeu_to_ha_tang`.
-  - `src/aioi/schema.py`: Bổ sung cụm hỏi gộp `("tieu_chuan_container", "tram_bien_ap")` vào `CUM_HOI` để bot hỏi tự nhiên trong 1 lượt (tối đa 2 ý theo SRS-391).
-  - `src/aioi/prompts.py`: Sửa gợi ý hỏi cho `tram_bien_ap` (bỏ chữ kVA, hỏi có điện 3 pha / trạm riêng không) và `tai_trong_san` (chỉ hỏi nếu khách biết).
-(3) Kiểm: `test_toi_uu_loai_hinh_393.py` (3/3 đạt), hồi quy `test_branching.py`, `test_schema.py`, `test_toi_uu_ky_gui_391.py` đạt 100%. Soát truy vết SẠCH.

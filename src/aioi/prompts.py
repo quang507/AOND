@@ -932,6 +932,28 @@ Bản nháp gồm 4 khối rõ ràng, ngăn nhau bằng một dòng trống, dù
 4. CÂU MỜI CHỐT (CTA): 1–2 câu thôi thúc người đọc nhắn tin Zalo ngay kẻo lỡ cơ hội, mang tính đối thoại trực tiếp để khách bấm vào là kết nối liền."""
 
 
+def lean_system_prompt_cho_luot(
+    assistant_name: str,
+    prop: Property,
+    next_field: str | None,
+    project_block: str = "",
+    viec: str | None = None,
+) -> str:
+    """Phiếu lượt dùng LEAN_SYSTEM_PROMPT tinh gọn (<1.500 tokens) cho production (SRS-5.1zzzzzzz391, SRS-5.1zzzzzzz402).
+    Bảo tồn tên trợ lý có dấu chấm (Th•ái, M•ai), tích hợp Customer Insight, AD_FORMAT và việc lượt này."""
+    viec = viec or viec_phieu(prop, next_field)
+    prompt_base = LEAN_SYSTEM_PROMPT.replace(
+        "Bạn là trợ lý AI Ơi Nhà Đất",
+        f'NHÂN VẬT: Bạn là "{assistant_name}" — trợ lý AI Ơi Nhà Đất ({SITE_HOST}), đang nhắn Zalo với khách'
+    )
+    return (
+        f"{prompt_base}\n\n{RANH_GIOI_CACHE}{project_block}\n"
+        f"DỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):\n{describe_captured(prop)}\n\n"
+        f"{NHAN_VIEC_LUOT}: {viec}"
+    )
+
+
+
 
 # Vùng nhận rao (chủ dự án 20/10/2026: "hcm long an tây ninh bình dương đồng nai vũng tàu thôi"; SRS-5.1zzzzzzz86). Một nguồn cho
 # lượt AI lập thao tác (đọc căn có nằm ngoài vùng không) và lời bot nói khéo khi ngoài vùng.
