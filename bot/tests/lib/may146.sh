@@ -1,11 +1,11 @@
 # may146.sh — nối các script bắn thử (`bot/tests/ban-thu-*.sh`, `doc-log-loi.sh`) với lõi production trên MÁY 146 (SRS-5.1zzzzzzz405).
 # Thay khối VPS cũ (Vault VPS_HOST / VPS_ROOT_PASSWORD + sshpass root@VPS). Chạy TỪ MÁY CÁ NHÂN có `ssh "$MAY_146"` vào thẳng
-# (mặc định Host `nuc` trong ~/.ssh/config, tài khoản admin Windows — cần để đọc khoá trong C:\aond\aond_core\.env, SRS-399).
+# (mặc định `nguye@192.168.1.146` qua LAN, như scripts/trien-khai-146.sh; ngoài mạng đặt MAY_146=nguye@100.85.245.112 (Tailscale); tài khoản admin Windows — cần để đọc khoá trong C:\aond\aond_core\.env, SRS-399).
 # GitHub Actions không với tới 146 (lõi chỉ nghe 127.0.0.1, máy sau Tailscale) nên các script này không chạy trên Actions nữa.
 #
 # Nạp:  . "$(dirname "$0")/lib/may146.sh"   (sau khi script đã định nghĩa q(); đặt `trap 'don; dong_146' EXIT` sau don())
 # Cần:  TOKEN (hoặc SUPABASE_ACCESS_TOKEN) — Management API cho q() đọc / dọn DB; PROJECT_REF mặc định project production.
-# Đặt:  MAY_146 (mặc định nuc), CONG_146 (cổng đường hầm trên máy này, mặc định 18080),
+# Đặt:  MAY_146 (mặc định nguye@192.168.1.146), CONG_146 (cổng đường hầm trên máy này, mặc định 18080),
 #       CHI_DOC_LOG_146=1 — chỉ đọc nhật ký (không cần TOKEN, không lấy khoá, không mở đường hầm).
 #
 # Cung cấp:
@@ -15,7 +15,7 @@
 #   log_146        — nhật ký lõi viết từ lúc nạp tệp này.   log_cuoi_146 N — N dòng cuối tệp nhật ký mới nhất.
 #   dong_146       — đóng đường hầm.   KHOA_146 / AIOI_NOI_BO_KEY (export cho tiến trình con), CONG_146. Không in khoá ra màn hình.
 
-MAY_146="${MAY_146:-nuc}"
+MAY_146="${MAY_146:-nguye@192.168.1.146}"
 CONG_146="${CONG_146:-18080}"
 PROJECT_REF="${PROJECT_REF:-rqxmmqmctpklqcmbfxuj}"
 export MAY_146 CONG_146 PROJECT_REF

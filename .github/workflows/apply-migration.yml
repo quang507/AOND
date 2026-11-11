@@ -107,7 +107,7 @@ jobs:
         run: node bot/tests/tim-nha/do-tim-nha.mjs
 
       # SRS-5.1zzzzzzz405: ô ban-thu-* và doc-log-loi gỡ — lõi ở máy 146 (sau Tailscale, chỉ nghe 127.0.0.1) nên Actions không với tới.
-      # Chạy từ máy cá nhân có `ssh nuc`: TOKEN=… bash bot/tests/ban-thu-<tên>.sh (bot/tests/lib/may146.sh mở đường hầm + kèm khoá nội bộ).
+      # Chạy từ máy cá nhân ssh được vào 146 (nguye@192.168.1.146 / Tailscale 100.85.245.112): TOKEN=… bash bot/tests/ban-thu-<tên>.sh (bot/tests/lib/may146.sh mở đường hầm + kèm khoá nội bộ).
 
       # 08/10/2026: project production cũ bị xoá nhầm — dựng lại từng bước trên project mới rỗng.
       - name: Dựng lại DB (dung_lai)
