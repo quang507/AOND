@@ -415,16 +415,23 @@ def _la_id_thu(user_key: str | None) -> bool:
     return str(user_key or "").startswith(_TIEN_TO_ID_THU)
 
 
+def _vai_tren_so_nay(conv: "Conversation") -> bool:
+    """SRS-5.1zzzzzzz417: vai hiện tại được đặt trên CHÍNH số Zalo khách đang nhắn (dữ liệu cũ chưa có `so_vai` → coi như cùng số). Khác số thì
+    vai cũ chưa phải vai của lượt này: lượt đó do người đọc trung lập đọc, không giao cho agent / form của vai cũ (prompt của chúng dựng sẵn vai
+    đó — kịch bản production 11/11: agent mua đọc "chào em" ở số ký gửi thành "buy")."""
+    return conv.so_vai is None or conv.so_vai == (SO_TU_VAN if conv.so_nhan == SO_TU_VAN else "ky_gui")
+
+
 def _form_mua_gon(conv: "Conversation") -> bool:
     """Lượt lập thao tác của khách MUA dùng form gọn (SRS-5.1zzzzzzz293): prompt + schema chỉ phần phía mua, bỏ phần thao tác rổ hàng người bán
-    (≈ một nửa chữ, schema 36 → 16 khoá). Mọi khách mua (công tắc FORM_MUA_GON gỡ ở Đợt 8, SRS-5.1zzzzzzz319)."""
-    return conv.role == "buyer"
+    (≈ một nửa chữ, schema 36 → 16 khoá). Mọi khách mua (công tắc FORM_MUA_GON gỡ ở Đợt 8, SRS-5.1zzzzzzz319) — trên số đặt vai (SRS-417)."""
+    return conv.role == "buyer" and _vai_tren_so_nay(conv)
 
 
 def _form_ban_gon(conv: "Conversation") -> bool:
     """Lượt lập thao tác của NGƯỜI BÁN (vai đã rõ từ lượt trước) dùng form gọn (SRS-5.1zzzzzzz303): bỏ mục việc khách mua và ba khoá phía mua.
-    Mọi người bán (công tắc FORM_BAN_GON gỡ ở Đợt 8, SRS-5.1zzzzzzz319)."""
-    return conv.role == "seller"
+    Mọi người bán (công tắc FORM_BAN_GON gỡ ở Đợt 8, SRS-5.1zzzzzzz319) — trên số đặt vai (SRS-417)."""
+    return conv.role == "seller" and _vai_tren_so_nay(conv)
 
 
 # Vòng agent gộp phía mua (SRS-5.1zzzzzzz380, `Engine._loc_nhu_cau`): nhãn bộ nhu cầu AI đặt (không qua cổng trích) và ô nhu cầu là SỐ (cụm trích
@@ -5620,8 +5627,10 @@ class Engine:
         # chưa có lịch → lưu vào hồ sơ khách và báo admin hỗ trợ (bảo toàn 100% lead, không để sót).
         sdt = tim_sdt(text)
         if bid and sdt and kho.ghi_sdt_hen_xem(bid, sdt):
-            viec.append("ghi số điện thoại khách để người phụ trách gọi xác nhận lịch / tư vấn hỗ trợ (cảm ơn ngắn, KHÔNG đọc lại số; nhắc khách "
-                        "\"chú ý điện thoại\", KHÔNG dùng chữ \"máy\")")
+            # SRS-5.1zzzzzzz417: lịch của lượt này ghi ở dưới (sau khi rõ căn) — tính luôn vào sự thật để không nói "chưa có lịch" sai.
+            lich = self._lich_cho(kho, bid) or ([{"listing_code": c.get("code"), "time_text": mua.get("hen_xem")} for c in nhac[:3]]
+                                                 if mua.get("hen_xem") and nhac and len(mo_ho) <= 1 else [])
+            viec.append(agent_mua.ket_qua_luu_sdt(lich) + " (cảm ơn ngắn, KHÔNG đọc lại số; nhắc khách \"chú ý điện thoại\", KHÔNG dùng chữ \"máy\")")
         elif bid and lead is not None and lead.fields.get("_da_xin_sdt") and giong_sdt_sai(text):
             # SRS-5.1zzzzzzz161: bot đã xin số mà khách gõ dãy giống số điện thoại nhưng sai độ dài / đầu số — không ghi, không cảm ơn như đã nhận.
             viec.append("số điện thoại khách vừa gõ KHÔNG đúng (số điện thoại di động VN gồm đúng 10 chữ số và bắt đầu bằng số 0, số khách gõ đang thiếu hoặc thừa chữ số) nên em CHƯA ghi được: "

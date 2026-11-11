@@ -934,7 +934,12 @@ Kịch bản production 11/11 (12 kịch bản, máy 146). Chủ dự án: "sử
   nhắn, lịch sử toàn chuyện mua nên AI đọc lời chào thành "buy"; nhánh đổi vai theo số (SRS-331) chỉ chạy khi ý định "unknown" nên không
   chạy. Nay `khoi_so_dang_nhan` đưa vào dữ liệu lượt đọc ý (agent gộp mua / bán, form đầy đủ): số đang nhắn; đổi số thì thêm việc các tin
   trước thuộc số kia và ý định là ý của tin này (chào / xã giao → "unknown").
+  Chạy lại production: vẫn trượt — lượt đó giao cho agent gộp MUA đọc, prompt của nó dựng sẵn vai tư vấn tìm mua nên dòng dữ kiện số không
+  thắng. Gốc thật: người đọc lượt chọn theo vai cũ. Nay `_vai_tren_so_nay`: vai đặt ở số KHÁC số đang nhắn thì form gọn / agent của vai đó
+  không đọc lượt này (`_form_mua_gon`, `_form_ban_gon`) — người đọc trung lập đọc, vai quyết theo ý tin + số.
 - **m_hen_xem_cho_so**: khách chưa chọn căn, để số → bot nói "người phụ trách sẽ gọi xác nhận lịch xem cuối tuần". Gốc: kết quả
-  `luu_so_dien_thoai` không nói gì về lịch. Nay kết quả đọc `lich_dang_cho`: có lịch thì nêu căn + giờ, không có thì nói chưa có lịch nào.
+  `luu_so_dien_thoai` không nói gì về lịch, và đường bóc tách (`_viec_mua`) ghi cứng "gọi xác nhận lịch / tư vấn" — hai nơi tả cùng một việc.
+  Nay một nguồn `agent_mua.ket_qua_luu_sdt(lich)` cho cả hai: có lịch đang chờ (trong kho hoặc vừa hẹn lượt này) thì nêu căn + giờ, không có
+  thì nói chưa có lịch nào.
 - Không phải lỗi: hai căn một tin (DB 146 có 2 tin riêng đúng), "hồ bơi tràn" (dữ liệu dự án The Sun Avenue), hỏi "biết phí chưa" sau đăng
   (SRS-81), hq_hem_xe_hoi (bộ chấm bắt chữ "xe hơi" khi bot tả căn có thật).

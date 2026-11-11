@@ -184,3 +184,16 @@ def test_417_luot_doc_y_biet_so_dang_nhan_va_viec_cua_so_kia():
     eng, spy = _hai_so("anh đang tìm mua nhà quận 8 tầm 7 tỷ", "chào em", khoa="thu-hai-so-417")
     assert any("SỐ ZALO KHÁCH ĐANG NHẮN: số KÝ GỬI" in s and "Chuyện tìm mua / thuê" in s for s in spy.systems)
     assert "Chuyện" not in khoi_so_dang_nhan(True, None) and "số TƯ VẤN" in khoi_so_dang_nhan(True, None)
+
+
+def test_417_doi_so_thi_khong_giao_luot_cho_form_cua_vai_cu():
+    from aioi.engine import Conversation, _form_mua_gon
+    from aioi import agent_mua
+    from aioi.assistants import assign_assistant
+    c = Conversation(user_key="thu-417", assistant=assign_assistant("thu-417"))
+    c.role, c.so_vai, c.so_nhan = "buyer", SO_TU_VAN, ""
+    assert not _form_mua_gon(c)
+    c.so_nhan = SO_TU_VAN
+    assert _form_mua_gon(c)
+    assert "Chưa có lịch xem nào" in agent_mua.ket_qua_luu_sdt([])
+    assert "#AB12" in agent_mua.ket_qua_luu_sdt([{"listing_code": "AB12", "time_text": "9h thứ 7"}])
