@@ -979,3 +979,4 @@ tùy nhánh, và hỏi khéo vào".
   trong lượt (`khoi_xin_them_anh(..., prop)`) và tin nhắc (`build_xin_anh_nhac_system`).
 - `followup`: tin đã báo đăng mà dưới mức ảnh tin đẹp → nhắc sau `SAU_DANG_NHAC_GIAY` (600 giây) thay vì 5 phút; model viết tin theo góc hợp
   căn và 6 lượt gần nhất, hụt thì câu mẫu `xin_anh_sau_dang`. Tối đa hai lần, chung mốc `sau:anh` / `sau:anh_lan_2` với lượt hỏi sau đăng.
+- Đủ ảnh (tới mức tin đẹp) thì thôi xin. Tin nhắc tự động chỉ đi 8–20 giờ (`bao_can_moi.trong_khung_gio`); gọi tay `/trigger-followup` không chặn.

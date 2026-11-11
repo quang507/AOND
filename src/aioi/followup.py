@@ -168,6 +168,13 @@ class FollowUpManager:
             if hen is not None and conv.history and conv.history[-1].at > hen:
                 log.info("Follow-up for %s: có lượt mới sau lúc hẹn. Skipping.", user_key)
                 return
+            # SRS-5.1zzzzzzz421 (chủ dự án 11/11: "bình thường 8h tối là ngưng hỏi"): tin nhắc TỰ ĐỘNG (có giờ hẹn) chỉ đi trong khung 8–20 giờ
+            # như các tin chủ động khác; gọi tay `/trigger-followup` (hen=None) là người quyết, không chặn.
+            from datetime import datetime, timezone
+            from .bao_can_moi import trong_khung_gio
+            if hen is not None and not trong_khung_gio(datetime.now(timezone.utc)):
+                log.info("Follow-up for %s: ngoài khung 8–20 giờ. Skipping.", user_key)
+                return
 
             # SRS-5.1zzzzzzz153: tin nhắc này là của NGƯỜI BÁN (hỏi ô thiếu / xin ảnh). Khách đang nói chuyện ở vai mua (hẹn xem nhà) mà vẫn
             # có rổ bán dở thì KHÔNG nhắc — chị N. 23/10 đang chốt lịch xem nhà nhận "chụp gửi em vài tấm ảnh thực tế".
