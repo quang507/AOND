@@ -74,7 +74,7 @@ def test_khoi_prompt_binh_phuoc_cu_ngoai_vung_dong_nai_cu_khong_hoi_huyen():
     bp = khoi_dia_danh(_tra(), {"phuong": "xã Nha Bích"}, "dia_chi")
     assert "Xã Nha Bích" in bp and "Bình Phước CŨ" in bp and "NGOÀI khu vực nhận tin" in bp
     dn = khoi_dia_danh(_tra(), {"phuong": "xã Long Thành"}, "dia_chi")
-    assert "Xã Long Thành, tỉnh Đồng Nai" in dn and "Bình Phước cũ" in dn and "KHÔNG hỏi quận / huyện / tỉnh" in dn and "NGOÀI" not in dn
+    assert "Xã Long Thành, tỉnh Đồng Nai" in dn and "Bình Phước cũ" in dn and "là đủ để rao" in dn and "NGOÀI" not in dn
     tn = khoi_dia_danh(_tra(), {"phuong": "xã phước lý"}, "dia_chi")
     assert "tỉnh Tây Ninh" in tn and "Long An cũ" in tn
 

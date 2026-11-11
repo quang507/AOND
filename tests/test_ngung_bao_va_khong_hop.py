@@ -126,4 +126,4 @@ def test_cau_chao_so_ky_gui_chi_hoi_gui_ban():
         mau = cau_mau.MAC_DINH[k][0]
         assert "tìm mua" not in mau and "gửi bán hay cho thuê" in mau and mau.count("?") == 1
     assert "tìm mua" in cau_mau.MAC_DINH["chao_tu_van"][0] or "tìm căn" in cau_mau.MAC_DINH["chao_tu_van"][0]
-    assert "KHÔNG hỏi khách có tìm mua" in khoi_chao_lan_dau("Lai", "x")
+    assert "chuyên nhận KÝ GỬI" in khoi_chao_lan_dau("Lai", "x")

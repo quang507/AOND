@@ -304,10 +304,10 @@ HUONG_DAN_VIET = (
 
 def _he_ghi(engine: Any, conv: Any, du_lieu: str, chia: dict[str, Any]) -> str:
     from .llm.base import RANH_GIOI_CACHE
-    from .prompts import describe_captured, phieu_co_dinh
+    from .prompts import co_dinh_ban, describe_captured
     nap = luat_nap_san(conv, chia)
     nap_txt = ("\n=== LUẬT Ô NẠP SẴN (trạng thái hội thoại) ===\n" + "\n\n".join(nap) + "\n") if nap else ""
-    return (phieu_co_dinh(conv.assistant.name) + HUONG_DAN_GHI + "\n\n".join(k.strip("\n") for k in chia["he"]) + "\n"
+    return (co_dinh_ban(conv.assistant.name) + HUONG_DAN_GHI + "\n\n".join(k.strip("\n") for k in chia["he"]) + "\n"
             + RANH_GIOI_CACHE + du_lieu + nap_txt + "\nDỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):\n" + describe_captured(conv.prop) + "\n")
 
 

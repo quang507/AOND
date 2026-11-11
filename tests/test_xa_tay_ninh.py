@@ -50,7 +50,7 @@ def _tra():
 
 def test_khoi_prompt_noi_xa_tinh_la_du_khong_hoi_huyen():
     khoi = khoi_dia_danh(_tra(), {"phuong": "xã phước lý"}, "dia_chi")
-    assert "Xã Phước Lý, tỉnh Tây Ninh" in khoi and "KHÔNG hỏi quận / huyện / tỉnh" in khoi and "Long Thượng" in khoi
+    assert "Xã Phước Lý, tỉnh Tây Ninh" in khoi and "là đủ để rao" in khoi and "Long Thượng" in khoi
     assert khoi_dia_danh(_tra(), {"phuong": "Phường 5"}, "dia_chi") == ""
 
 

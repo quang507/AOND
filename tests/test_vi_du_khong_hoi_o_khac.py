@@ -33,7 +33,7 @@ def test_khong_cau_hoi_mau_nao_ve_gia_ngoai_o_cau_hoi_ke():
     "VIỆC LƯỢT NÀY" (khối đó chỉ có khi ô kế chính là giá)."""
     p = _prop_da_co_gia()
     system = build_phieu_luot("T•ai", p, "lo_gioi_hem")
-    ngoai_khoi_hoi = system.rsplit("VIỆC LƯỢT NÀY: hỏi đúng MỘT ý", 1)[0]
+    ngoai_khoi_hoi = system.rsplit('VIỆC LƯỢT NÀY: hỏi về "', 1)[0]
     assert ngoai_khoi_hoi != system
     assert not re.search(r"mong muốn (?:thu về )?giá|giá (?:bao nhiêu|khoảng bao nhiêu) vậy", ngoai_khoi_hoi, re.I)
     assert not re.search(r"bán tầm bao nhiêu ạ\?", ngoai_khoi_hoi)

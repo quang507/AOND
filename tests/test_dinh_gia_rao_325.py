@@ -34,7 +34,7 @@ def test_can_ho_co_gia_rao_thi_neu_khoang(monkeypatch, cau, trich):
     eng.handle("u-sao", cau)
     khoi = seen[-1]
     assert "giá rao bán thị trường của dự án này: 45,2–62,5 triệu/m²" in khoi and "18 tin" in khoi and "02/11/2026" in khoi
-    assert "KHÔNG nhận xét giá chủ đưa cao / thấp / hợp lý" in khoi
+    assert "để chủ tự so" in khoi
     assert "CHƯA có dữ liệu định giá" not in khoi
 
 

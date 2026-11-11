@@ -13,13 +13,12 @@ from aioi.dinh_gia import tinh_dinh_gia_tham_khao, kiem_tra_phap_ly_so_tool, tin
 
 
 def test_lean_system_prompt_tokens_under_1500():
-    """SRS-5.1zzzzzzz410 (chủ dự án 11/11: trả giọng nhân vật + từ điển tiếng lóng đầy đủ cho prompt ngắn): bỏ trần 1.500 token; prompt ngắn
-    phải có GIỌNG, LUẬT CỐ ĐỊNH, tin hệ thống, tiếng lóng đầy đủ — và KHÔNG mang danh sách công cụ / bố cục tin rao (không thuộc lượt hỏi ô)."""
+    """SRS-5.1zzzzzzz414 (chủ dự án 11/11: "phiếu cũ … sửa vá như tuyệt đối không các thứ"): prompt gọn viết lại theo nguyên tắc — nhân
+    vật, cách nhắn, sự thật, tin hệ thống, tiếng nghề; không mang danh sách công cụ / bố cục tin rao (không thuộc lượt hỏi ô)."""
     lean_prompt = P.LEAN_SYSTEM_PROMPT
-    assert P.GIONG_VUI in lean_prompt and P.SLANG_NOTES in lean_prompt and P.TIN_HE_THONG in lean_prompt and "LUẬT CỐ ĐỊNH" in lean_prompt
+    assert P.TIN_HE_THONG in lean_prompt and "CÁCH EM NHẮN" in lean_prompt and "SỰ THẬT" in lean_prompt and len(lean_prompt) < 4000
     assert "BỐ CỤC TIN RAO" not in lean_prompt and "FUNCTION CALLING" not in lean_prompt
     assert "tỏi" in lean_prompt and "củ" in lean_prompt
-    assert "Truth-grounded" in lean_prompt or "Trung thực tuyệt đối" in lean_prompt
 
 
 def test_khoi_nhan_vat_co_customer_insight():
@@ -70,5 +69,5 @@ def test_lean_prompt_chi_nhac_cong_cu_co_that():
     from aioi import agent_ban, agent_mua
     that = {c["name"] for c in agent_ban.CONG_CU} | {c["name"] for c in agent_mua.CONG_CU}
     ten = set(P.LEAN_SYSTEM_PROMPT.split("`")[1::2])
-    assert ten and ten <= that, ten - that
-    assert "50 điểm" not in P.LEAN_SYSTEM_PROMPT and "pháp lý" in P.LEAN_SYSTEM_PROMPT
+    assert ten <= that, ten - that
+    assert "50 điểm" not in P.LEAN_SYSTEM_PROMPT and "Pháp lý" in P.LEAN_SYSTEM_PROMPT

@@ -25,7 +25,7 @@ def test_kich_thuoc_kem_m2_trong_tieu_de_thi_goi_lai():
 
 def test_xin_dang_khi_chua_co_y_gi_thi_moi_dan_noi_dung():
     trong = khoi_xin_dang(["gia", "dien_tich"], Property(loai_hinh="nha_pho"))
-    assert "dán nội dung" in trong and "KHÔNG hỏi từng ô" in trong
+    assert "dán nội dung" in trong and "vài thông tin chính" in trong
     co = khoi_xin_dang(["gia"], Property(loai_hinh="nha_pho", fields={"dia_chi": "Âu Dương Lân"}))
     assert "dán nội dung" not in co and "Tin còn thiếu" in co
 

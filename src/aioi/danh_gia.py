@@ -49,5 +49,5 @@ def khoi_cam_on_sao(sao: int) -> str:
     return f"\n\n=== KHÁCH VỪA CHẤM {sao} SAO CHO LẦN HỖ TRỢ (hệ thống đã ghi) ===\nLượt này {viec}\n"
 
 
-KHOI_SAP_XIN_SAO = ("\n\n=== LƯỢT NÀY KHÔNG ĐẶT CÂU HỎI ===\nHệ thống tự gửi thêm MỘT câu xin khách chấm sao ngay sau lời em — "
-                    "em trả lời / chốt ý khách vừa nói rồi dừng, KHÔNG hỏi gì thêm, KHÔNG tự xin đánh giá.\n")
+KHOI_SAP_XIN_SAO = ("\n\n=== LƯỢT NÀY KHÔNG ĐẶT CÂU HỎI ===\nNgay sau lời em, hệ thống tự gửi một câu xin khách chấm sao (phần đó hệ "
+                    "thống lo). Việc lượt này: đáp / chốt ý khách vừa nói rồi dừng.\n")

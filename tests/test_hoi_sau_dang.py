@@ -42,7 +42,7 @@ def test_ai_ghi_duoc_o_moi_va_khoi_hoi_dung_y():
     props = property_field_props()
     assert O_SAU_DANG <= set(props)
     k = khoi_hoi_sau_dang(["gio_xem", "chia_khoa"], _nha())
-    assert "khung giờ" in k and "chìa khoá" in k and "KHÔNG xin số điện thoại" in k and "DUY NHẤT" in k
+    assert "khung giờ" in k and "chìa khoá" in k and "KHÔNG xin số điện thoại" in k and "xuống một dòng trống" in k
 
 
 def test_o_rieng_khong_vao_ban_tin():

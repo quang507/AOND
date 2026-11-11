@@ -32,4 +32,4 @@ def test_cau_hoi_dien_tich_san_khong_bi_coi_la_xong_khi_da_biet_so_tang():
     p = _au_co()
     s = build_phieu_luot("Hằng", p, p.missing_fields()[0])   # Đợt 8 (SRS-5.1zzzzzzz319): phiếu lượt
     assert "hoặc số tầng" not in s
-    assert "m² sàn" in s and "hỏi đúng MỘT ý" in s
+    assert "m² sàn" in s and 'hỏi về "' in s

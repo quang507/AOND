@@ -72,6 +72,6 @@ def test_dien_tich_mo_ho_hoi_lai_dat_hay_nha():
     # cách nói mới: số khách đã chốt là đất ("80 m²") thì hết mơ hồ — hỏi ô còn lại bình thường
     p.update({"dien_tich_dat": "80 m²"})
     viec = build_phieu_luot("Lan", p, "dien_tich_nha").rsplit(f"{NHAN_VIEC_LUOT}:", 1)[1]
-    assert "chưa rõ là diện tích ĐẤT" not in viec and "hỏi đúng MỘT ý" in viec
+    assert "chưa rõ là diện tích ĐẤT" not in viec and 'hỏi về "' in viec
     # ô khác (không phải diện tích) thì không chen câu hỏi đất / nhà
     assert "chưa rõ là diện tích ĐẤT" not in build_phieu_luot("Lan", Property(loai_hinh="nha_pho", fields={"dien_tich": "80m2"}), "gia")

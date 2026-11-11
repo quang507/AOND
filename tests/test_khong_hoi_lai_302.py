@@ -18,7 +18,7 @@ def test_nhanh_chat_khong_hua_gui_ban_tin():
     goc = eng._provider.chat
     eng._provider.chat = lambda system, messages, **k: seen.append(system) or goc(system, messages, **k)
     eng.handle("chu-302", "Anh cần bán nhà mặt tiền đường Hoàng Hoa Thám, Bình Thạnh")
-    loi = [s for s in seen if "VIỆC LƯỢT NÀY: hỏi đúng MỘT ý" in s]
+    loi = [s for s in seen if 'VIỆC LƯỢT NÀY: hỏi về "' in s]
     assert loi and "Lượt này không có bản tin kèm theo" in loi[-1] and "không hỏi để xác nhận nghĩa" in loi[-1]   # phiếu lượt (SRS-319)
 
 

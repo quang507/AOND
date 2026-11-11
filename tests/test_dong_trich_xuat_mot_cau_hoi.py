@@ -19,7 +19,7 @@ def test_dem_cau_hoi_bo_ban_tin_va_link():
 
 def test_khoi_mat_tien_la_cau_hoi_duy_nhat():
     k = khoi_hoi_mat_tien("7m")
-    assert "câu hỏi DUY NHẤT" in k and "KHÔNG hỏi thêm ô nào" in k and "gộp" not in k.lower()
+    assert "thay VIỆC LƯỢT NÀY" in k and "bề ngang căn hay đường" in k and "gộp" not in k.lower()
 
 
 def test_loi_hai_cau_hoi_thi_goi_lai_mot_lan(monkeypatch):

@@ -553,19 +553,18 @@ def viec_phieu(prop: Property, next_field: str | None, hoi_lai: bool = False, o_
     """Dòng việc hỏi ô của phiếu lượt (tách khỏi `build_phieu_luot` ở Đợt 4 để engine thay bằng `VIEC_THEO_KHOI` khi việc khác thắng)."""
     mo_ho = _dien_tich_mo_ho(prop, next_field)
     if mo_ho:
-        return f"khách đã nói diện tích {mo_ho} nhưng chưa rõ là diện tích ĐẤT hay diện tích NHÀ (nhà phố / biệt thự có hai diện tích khác nhau): hỏi lại đúng MỘT câu xem {mo_ho} đó là đất hay nhà."
+        return f"khách đã nói diện tích {mo_ho} nhưng chưa rõ là diện tích ĐẤT hay diện tích NHÀ (nhà phố / biệt thự có hai diện tích khác nhau): hỏi lại xem {mo_ho} đó là đất hay nhà."
     if next_field:
         goi_y = cau_hoi_o(next_field, prop)
-        viec = f'hỏi đúng MỘT ý: "{nhan_o(next_field, prop)}"' + (
+        viec = f'hỏi về "{nhan_o(next_field, prop)}"' + (
             f" ({goi_y})" if goi_y not in (nhan_o(next_field, prop), f"hỏi thêm {nhan_o(next_field, prop)}") else "") + "."
         if hoi_lai:
-            viec += (" Ý này em đã hỏi lượt trước mà khách chưa trả lời: đổi cách hỏi, ngắn hơn hoặc gợi sẵn vài đáp án để chọn (giá, diện tích, "
-                     "con số thì không gợi số), không lặp câu cũ, không nhắc là đã hỏi, không nêu lý do vì sao cần hỏi.")
+            viec += (" Ý này em đã hỏi lượt trước mà khách chưa trả lời: hỏi kiểu khác, ngắn hơn hoặc gợi sẵn vài lựa chọn (con số như giá, "
+                     "diện tích thì không gợi số).")
         if o_bo_qua and o_bo_qua != next_field:
-            viec += f' Lượt này không hỏi lại "{nhan_o(o_bo_qua, prop)}": vào thẳng câu hỏi mới, không nhắc ý cũ, không nói kiểu "qua phần khác".'
+            viec += f' Ý "{nhan_o(o_bo_qua, prop)}" khách đã lờ đi — để đó, vào thẳng câu hỏi mới.'
         return viec
-    return ("tin đã đủ để rao — chốt ngắn, ấm áp: tin đã lưu, có khách hỏi hay hẹn xem bên em báo ngay; không hỏi thêm, không gạ rao căn "
-            "khác, không hứa gọi điện hay hạn bán.")
+    return "tin đã đủ để rao — chốt ngắn, ấm áp: tin đã lưu, có khách hỏi hay hẹn xem bên em báo ngay; lượt này không còn gì để hỏi."
 
 
 def phieu_co_dinh(assistant_name: str) -> str:
@@ -681,10 +680,9 @@ def khoi_chao_lan_dau(assistant_name: str, mau: str) -> str:
     """Lượt ĐẦU ở số KÝ GỬI: khách chỉ chào thì AI chào lại theo mẫu ở `cau_mau.chao_lan_dau` (CRM sửa được) rồi hỏi căn gửi bán / cho
     thuê — thay danh sách từ khoá hello / hi / 👋 (SRS-5.1zzzzzzz125). 28/10 (SRS-5.1zzzzzzz251, chủ dự án: "1 số chuyên gửi bán 1 số chuyên
     mua"): không hỏi "hay đang tìm mua" nữa. AI đọc nghĩa: khách đã nói nhu cầu ngay thì bỏ qua khối này."""
-    return ("\n\n=== LƯỢT ĐẦU TIÊN CỦA CUỘC CHAT (số ký gửi) ===\nNếu khách CHỈ chào hỏi (kể cả chào bằng sticker hay biểu tượng), chưa nói "
-            f"nhu cầu nhà đất: chào lại ngắn, giới thiệu em là {assistant_name}, rồi hỏi MỘT câu khách đang có căn muốn gửi bán hay cho thuê — "
-            "số này chuyên KÝ GỬI, KHÔNG hỏi khách có tìm mua không. Hỏi xong thì DỪNG, chờ khách trả lời. Mẫu câu "
-            f"(đổi chữ cho tự nhiên, giữ ý, KHÔNG chép nguyên): \"{mau}\"\nKhách đã nói nhu cầu ngay trong tin đầu thì bỏ qua đoạn này.\n")
+    return ("\n\n=== LƯỢT ĐẦU TIÊN CỦA CUỘC CHAT (số ký gửi) ===\nSố này chuyên nhận KÝ GỬI (gửi bán / cho thuê). Khách chỉ chào (kể cả "
+            f"sticker, biểu tượng), chưa nói nhu cầu: chào lại ngắn, giới thiệu em là {assistant_name}, rồi hỏi khách đang có căn muốn gửi bán "
+            f"hay cho thuê. Ý mẫu (tự đặt chữ): \"{mau}\"\nKhách đã nói nhu cầu ngay trong tin đầu thì bỏ qua đoạn này.\n")
 
 
 def khoi_chao_tu_van(assistant_name: str, mau: str) -> str:
@@ -735,43 +733,38 @@ def khoi_hoi_sau_dang(keys: list[str], prop: Property | None = None) -> str:
         return ""
     y = "; ".join(cau_hoi_o(k, prop) for k in keys)
     return ("\n\n=== HỎI THÊM LƯỢT NÀY (tin đã lên web — để tư vấn khách mua cho sát): ===\n"
-            "Đáp điều khách vừa nói trước (ngắn). Rồi XUỐNG MỘT DÒNG TRỐNG (đoạn riêng) và hỏi MỘT câu ngắn, tự nhiên như môi giới "
-            f"nhắn Zalo, về MỘT ý: {y}. Đây là câu hỏi DUY NHẤT của lượt này (ý khác hệ thống đưa ở lượt sau). Khách không tiện trả lời / lờ đi thì thôi, KHÔNG hỏi "
-            "lại, KHÔNG nài. Thông tin riêng (người đứng tên, lý do bán, giờ xem, chìa khoá) chỉ để bên em nắm, không đưa lên tin.\n")
+            f"Việc lượt này: sau lời đáp, xuống một dòng trống (đoạn riêng) rồi hỏi về: {y}. Thông tin riêng (người đứng tên, lý do bán, giờ "
+            "xem, chìa khoá) chỉ để bên em nắm, không đưa lên tin.\n")
 
 
 def khoi_hoi_coc(o: str, prop: Property | None = None) -> str:
     """Căn đã cọc (SRS-5.1zzzzzzz295): hỏi MỘT ô cọc / công chứng — engine chọn ô (`schema.O_COC`), model đặt câu."""
     return ("\n\n=== HỎI THÊM LƯỢT NÀY (căn ĐÃ CỌC — để bên em theo sát tới lúc công chứng): ===\n"
-            "Đáp điều khách vừa nói trước (ngắn, chúc mừng một câu nếu khách vừa báo cọc). Rồi XUỐNG MỘT DÒNG TRỐNG và hỏi MỘT câu ngắn, tự "
-            f"nhiên như môi giới nhắn Zalo: {cau_hoi_o(o, prop)}. Đây là câu hỏi DUY NHẤT của lượt. Khách không tiện trả lời thì thôi, KHÔNG hỏi lại, "
-            "KHÔNG nài. Thông tin cọc chỉ để bên em nắm, không đưa lên tin.\n")
+            f"Khách vừa báo cọc thì chúc mừng. Việc lượt này: sau lời đáp, xuống một dòng trống rồi hỏi: {cau_hoi_o(o, prop)}. Thông tin cọc "
+            "chỉ để bên em nắm, không đưa lên tin.\n")
 
 
 def khoi_tinh_hinh_ban(so: dict | None, len_web: bool) -> str:
     """Chủ nhà hỏi đã có khách chưa (SRS-5.1zzzzzzz116): đọc SỐ THẬT hệ thống đếm, không để model đoán ("có nhiều khách hỏi lắm")."""
     dau = "\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI TÌNH HÌNH BÁN: ===\n"
     if not len_web:
-        return dau + ("Tin của chủ CHƯA hiển thị trên web nên chưa có khách mua nào thấy. Nói thật như vậy (ngắn) và nói tin lên web "
-                      "thì bên em báo ngay khi có khách hỏi. KHÔNG nói đã có khách.\n")
+        return dau + ("Tin của chủ chưa hiển thị trên web nên chưa khách mua nào thấy. Việc lượt này: nói thật vậy, và khi tin lên web có "
+                      "khách hỏi thì bên em báo ngay.\n")
     if so is None:
-        return dau + ("Hệ thống CHƯA đọc được số liệu của tin lượt này. Nói hiện em chưa xem được số liệu, chủ hỏi lại lúc khác. KHÔNG nói có / chưa có khách, "
-                      "KHÔNG đoán.\n")
+        return dau + "Hệ thống chưa đọc được số liệu của tin lượt này. Việc lượt này: nói em chưa xem được số liệu, hẹn chủ hỏi lại sau.\n"
     return dau + (f"Số liệu THẬT hệ thống đếm cho tin này: {so.get('quan_tam', 0)} khách bấm quan tâm, {so.get('hoi', 0)} câu hỏi từ "
-                  f"khách mua, {so.get('hen_xem', 0)} lịch hẹn xem. Nói ĐÚNG các con số này (số 0 thì nói thật là chưa có, bên em "
-                  "đang đẩy tin tới khách phù hợp). KHÔNG thêm số khác, KHÔNG nói \"nhiều khách\", KHÔNG hứa bao lâu bán được.\n")
+                  f"khách mua, {so.get('hen_xem', 0)} lịch hẹn xem. Việc lượt này: nói đúng các số này (số 0 thì nói chưa có, bên em đang "
+                  "đẩy tin tới khách phù hợp).\n")
 
 
 # SRS-5.1zzzzzzz178: khi lượt có MỘT khối "ƯU TIÊN LƯỢT NÀY" (cần người > pháp lý > ngoài việc > hỏi về phí / uy tín / link / tình hình /
 # định giá) thì khối đó quyết — không ép khen, không hỏi ô kế. Trước đây các khối xếp chồng không thứ tự, model nhận ba bốn lệnh cùng lúc.
-KHOI_MOT_UU_TIEN = ("(Khối ƯU TIÊN LƯỢT NÀY ở trên quyết nội dung lượt: KHÔNG mở bằng lời khen bắt buộc, KHÔNG hỏi thêm ô tin trừ khi khối bảo hỏi; "
-                    "câu hỏi nếu có là câu của khối đó. Vẫn xưng hô đúng luật, ngắn, lịch sự.)\n")
+KHOI_MOT_UU_TIEN = f"(Khối ƯU TIÊN LƯỢT NÀY ở trên thay cho {NHAN_VIEC_LUOT}: lượt này làm việc của khối đó, không hỏi ô tin trừ khi khối bảo hỏi.)\n"
 
 KHOI_DINH_GIA = (
     "\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI GIÁ THỊ TRƯỜNG / GIÁ CAO HAY THẤP: ===\n"
-    "Bên em CHƯA có dữ liệu định giá: KHÔNG nêu con số giá thị trường, KHÔNG nhận xét giá chủ đưa cao / thấp / hợp "
-    "lý, KHÔNG so với căn khác. Nói ngắn, thật: bên em chưa có số liệu để định giá, tin vẫn rao theo giá chủ muốn; chủ muốn tham khảo thì "
-    "xem các tin cùng khu đang rao trên web bên em. KHÔNG hứa chuyên viên sẽ xem khu vực / báo lại (không có đường nào làm việc đó).\n"
+    "Bên em chưa có dữ liệu định giá cho căn này. Việc lượt này: nói thật bên em chưa có số liệu để định giá, tin vẫn rao theo giá chủ "
+    "muốn; chủ muốn tham khảo thì xem các tin cùng khu đang rao trên web bên em.\n"
 )
 
 
@@ -783,10 +776,9 @@ def khoi_dinh_gia(gia_rao: str | None) -> str:
         return KHOI_DINH_GIA
     return (
         "\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI GIÁ THỊ TRƯỜNG / GIÁ CAO HAY THẤP: ===\n"
-        f"Dữ kiện hệ thống — giá rao bán thị trường của dự án này: {gia_rao.strip()}.\n"
-        "Nêu ĐÚNG khoảng giá/m² này, kèm số tin và thời điểm lấy, nói rõ đây là giá các tin đang RAO bán, không phải giá giao dịch chốt. "
-        "KHÔNG nhận xét giá chủ đưa cao / thấp / hợp lý, KHÔNG tự quy đổi ra giá căn, KHÔNG so với căn khác — để chủ tự so; tin vẫn rao theo "
-        "giá chủ muốn. KHÔNG nêu tên trang / nguồn lấy số. KHÔNG hứa chuyên viên sẽ xem khu vực / báo lại.\n"
+        f"Dữ kiện hệ thống (nguồn nội bộ) — giá các tin đang RAO bán của dự án này: {gia_rao.strip()}. Đây là giá rao, không phải giá "
+        "giao dịch chốt.\nViệc lượt này: nêu đúng khoảng giá/m² này kèm số tin và thời điểm lấy, nói rõ là giá rao; để chủ tự so với giá "
+        "của mình — tin vẫn rao theo giá chủ muốn.\n"
     )
 
 
@@ -899,31 +891,54 @@ người đọc là "anh chị" / "cô bác", KHÔNG "bạn". KHÔNG in tên kh�
 nội dung. CẤM viết "đang cập nhật"."""
 
 
-# ── System Prompt Tinh Gọn (<1.500 tokens) tích hợp Insight & Function Calling (SRS-5.1zzzzzzz391) ──
-LEAN_SYSTEM_PROMPT = """Bạn là trợ lý AI Ơi Nhà Đất — một chuyên viên bất động sản bản địa am hiểu sâu sắc thị trường TP.HCM, đồng thời là người bạn đồng hành tận tâm, luôn thấu hiểu tâm lý và chăm sóc khách hàng tinh tế trong từng điểm chạm.
+# ── Prompt gọn lượt hỏi thông tin phía bán (SRS-5.1zzzzzzz414, chủ dự án 11/11: "phiếu cũ có mấy cái ko sửa từ gốc mà sửa vá như
+# tuyệt đối không các thứ") — viết lại theo NGUYÊN TẮC, nói thuận: một nhân vật, cách nhắn, sự thật, tin hệ thống, tiếng nghề. Bỏ các luật
+# đếm / danh sách chữ cấm sinh ra từ từng ca (khen "đắc địa", "<gọi> ơi", "Em ghi nhận" một lần…) — gốc chung của chúng là "nói như người
+# thật, không lặp khuôn của chính mình" nên chỉ ghi nguyên tắc đó. Phần phía mua / bản nháp / sau đăng không thuộc lượt này nên không có
+# ở đây (vẫn ở GIONG_VUI cho các prompt kia). Tắt công tắc `AIOI_PROMPT_GON` thì về phiếu cũ `build_phieu_luot`.
+LEAN_SYSTEM_PROMPT = f"""NHÂN VẬT: em là "{{TEN_TRO_LY}}" của AI Ơi Nhà Đất ({SITE_HOST}), đang nhắn Zalo với người muốn gửi bán / cho thuê nhà. Em là môi
+giới trẻ, mê nhà, nhanh nhẹn — nhắn như với người quen, không đọc kịch bản. Việc của em: nghe khách kể về căn nhà và hỏi dần cho đủ để
+rao, sao cho khách thấy như đang trò chuyện với người hiểu nghề, trân trọng tài sản của mình.
 
-# PHÂN VAI, THẤU HIỂU & CHĂM SÓC KHÁCH HÀNG (CUSTOMER INSIGHT)
-1. Thấu hiểu tâm lý & đồng cảm sâu sắc:
-   - Với chủ nhà ký gửi: Thấu hiểu nỗi lo tài sản lớn bị ép giá, nhà để trống lâu ngày sốt ruột, hay e ngại thủ tục pháp lý rườm rà. Luôn tạo niềm tin vững chắc, trân trọng tài sản của khách và bảo vệ giá trị tối ưu cho chủ nhà.
-   - Với người tìm mua/thuê: Thấu hiểu áp lực tìm tổ ấm an cư vừa túi tiền, nỗi sợ dính quy hoạch rủi ro hay gánh nặng lãi suất vay ngân hàng. Kiên nhẫn lắng nghe, đồng hành và tư vấn chân thành từ góc nhìn quyền lợi của người mua.
-2. Tác phong chăm sóc & giao tiếp tự nhiên:
-   - Luôn đặt mình vào vị trí khách hàng: hồi đáp trọng tâm câu khách vừa hỏi trước. Dùng ngôn từ đời thường, ấm áp, gãy gọn, xưng hô anh/chị lịch thiệp.
-   - Dẫn dắt nhẹ nhàng (MỘT ý mỗi lượt): Mỗi lượt chỉ hỏi MỘT thông tin quan trọng nhất để khách thoải mái chia sẻ, tuyệt đối không tra khảo dồn dập làm khách mệt mỏi.
-3. Trung thực tuyệt đối (Truth-grounded):
-   - Mọi thông số (giá, diện tích, vị trí, tiện ích) chỉ dựa trên lời khách đã xác nhận hoặc dữ liệu hệ thống. Nếu dữ liệu chưa rõ (pháp lý sổ, gói vay, quy hoạch), chủ động báo khách hoặc dùng công cụ tra cứu, không phỏng đoán hay hứa hẹn tùy tiện.
-4. Linh hoạt đổi vai theo nhịp khách:
-   - Khi khách chuyển từ ký gửi sang tìm mua (hoặc ngược lại), lập tức hòa nhịp và chăm sóc nhu cầu mới mượt mà, không ngắt quãng trải nghiệm hay bỏ sót ngữ cảnh.
+CÁCH EM NHẮN:
+- Đáp điều khách vừa nói trước, rồi làm {NHAN_VIEC_LUOT}. Tin ngắn, khoảng 30 từ, trọn câu, {LUAT_MOT_CAU_HOI.lower()}.
+- Khách vừa nói một điểm mạnh thì khen đúng điểm đó và nó lợi gì cho căn này, bằng lời của người mê nhà; điều bình thường thì đáp thẳng.
+- Nói như người thật: mỗi tin một câu mới — cách mở, cách khen, cách gọi khách, câu hỏi đều khác các tin em đã nhắn. Gọi khách khi tự
+  nhiên, không gắn vào mọi câu. Giọng miền Nam vừa phải.
+- Nhớ điều khách đã kể và dùng lại khi hợp. Điều đã biết thì không hỏi lại, không hỏi để xác nhận nghĩa — trừ khi {NHAN_VIEC_LUOT} giao.
+- Khách bận, do dự hay không vui thì nhẹ nhàng, không giục. Việc hệ thống làm là việc em làm: nói bằng lời thường, không kể quy trình.
 
-""" + "\n\n" + GIONG_VUI + f"""
+SỰ THẬT:
+- Chỉ nói điều khách đã kể và dữ liệu bên dưới (căn, dự án, khối hệ thống). Không thêm chi tiết; không đoán hay nhận xét giá (cao, thấp,
+  hợp lý); chỉ hứa điều hệ thống thật sự làm — không hạn bán, không giờ giấc, không gọi điện. Chưa chắc thì nói "hình như" rồi hỏi lại.
+- Điều hệ thống chưa làm thì em chưa nói là đã làm: tin chỉ là đã đăng / đang hiển thị khi khối trạng thái báo vậy, căn chỉ là đã đổi
+  trạng thái khi hệ thống đã đổi.
+- Bên em liên lạc với khách qua chính Zalo này. Khách chưa nhắc căn khác thì em không gợi rao thêm.
+- Có khối việc riêng (ƯU TIÊN, HỎI THÊM…) thì khối đó là việc lượt này; cách nhắn vẫn như trên.
 
-# LUẬT CỐ ĐỊNH
-- Đáp đúng điều khách vừa nói, rồi làm {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
-- {LUAT_MOT_CAU_HOI}. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ câu xác nhận mà {NHAN_VIEC_LUOT} giao.
-- Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo.
 {TIN_HE_THONG}
 
-""" + SLANG_NOTES + """
+HIỂU TIẾNG NGHỀ (hiểu luôn, không hỏi lại nghĩa):
+- Tiền: tỏi = tỷ, củ = triệu, xị = trăm nghìn, 5t5 = 5,5 tỷ, 4 tỷ 8 = 4,8 tỷ; TL / bớt lộc = còn thương lượng; giá net / giá bao = bên bán
+  thu đủ; ngộp / kẹt tiền / cắt lỗ = cần bán gấp; cây / lượng = vàng.
+- Địa chỉ: đc / đ/c = địa chỉ; số có gạch chéo (100/9, 12/5A) là số nhà trong hẻm; 1 xuyệt, 2 xuyệt = hẻm rẽ 1, 2 lần; khu người Hoa /
+  Chợ Lớn = Quận 5 cũ.
+- Đường, đất: MT = mặt tiền, MTKD = mặt tiền kinh doanh, HXH = hẻm xe hơi, hẻm ba gác, hẻm thông = không cụt; lô góc = hai mặt thoáng;
+  sâu = chiều dài; nở hậu / tóp hậu = phía sau rộng / hẹp hơn; vuông vức = đất vuông.
+- Pháp lý: SHR / SHC = sổ hồng riêng / chung; HĐMB = hợp đồng mua bán; hoàn công = nhà đã ghi trên sổ; vi bằng / giấy tay = chưa sổ
+  riêng; thổ cư / ONT / ODT = đất ở; SKC / TMD = đất sản xuất / thương mại; CLN / HNK = đất trồng cây lâu năm / hoa màu.
 """
+
+
+def prompt_gon_bat() -> bool:
+    """Công tắc `AIOI_PROMPT_GON` — một chỗ đọc cho engine (bước viết) và `agent_gop` (bước ghi)."""
+    import os
+    return os.getenv("AIOI_PROMPT_GON", "").strip().lower() == "bat"
+
+
+def co_dinh_ban(assistant_name: str) -> str:
+    """Phần cố định phía bán (trước `RANH_GIOI_CACHE`) theo công tắc: prompt gọn hoặc phiếu cũ (SRS-5.1zzzzzzz414)."""
+    return LEAN_SYSTEM_PROMPT.replace("{TEN_TRO_LY}", assistant_name, 1) if prompt_gon_bat() else phieu_co_dinh(assistant_name)
 
 
 def lean_system_prompt_cho_luot(
@@ -933,16 +948,11 @@ def lean_system_prompt_cho_luot(
     project_block: str = "",
     viec: str | None = None,
 ) -> str:
-    """Phiếu lượt dùng LEAN_SYSTEM_PROMPT (<1.500 tokens) thay `build_phieu_luot` khi `AIOI_PROMPT_GON=bat` (SRS-5.1zzzzzzz408).
-    Chủ dự án 11/11/2026: "dùng prompt ngắn kia" — chấp nhận lượt hỏi ô không còn khối TIN_HE_THONG / SLANG_NOTES dài / giọng."""
+    """Prompt gọn lượt hỏi thông tin phía bán (SRS-5.1zzzzzzz414) — dùng thay `build_phieu_luot` khi `AIOI_PROMPT_GON=bat`.
+    Phần cố định (trước `RANH_GIOI_CACHE`) được cache; sau ranh giới chỉ có dự án, dữ liệu căn và việc lượt này."""
     viec = viec or viec_phieu(prop, next_field)
-    prompt_base = LEAN_SYSTEM_PROMPT.replace(
-        "Bạn là trợ lý AI Ơi Nhà Đất",
-        f'NHÂN VẬT: Bạn là "{assistant_name}" — trợ lý AI Ơi Nhà Đất ({SITE_HOST}), đang nhắn Zalo với khách',
-        1,
-    )
     return (
-        f"{prompt_base}\n\n{RANH_GIOI_CACHE}{project_block}\n"
+        f"{LEAN_SYSTEM_PROMPT.replace('{TEN_TRO_LY}', assistant_name, 1)}\n{RANH_GIOI_CACHE}{project_block}\n"
         f"DỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):\n{describe_captured(prop)}\n\n"
         f"{NHAN_VIEC_LUOT}: {viec}"
     )
@@ -971,10 +981,10 @@ def khoi_hoi_mat_tien(gia_tri: str) -> str:
     """Lượt vừa ghi ô bề ngang căn mà chưa có hai chiều lô để đối chiếu (SRS-5.1zzzzzzz96): "mặt tiền 5m" / "MT 5m" có thể là bề
     ngang căn hoặc độ rộng con đường trước nhà — hỏi lại một lần. Engine chỉ bật khối này một lần mỗi căn."""
     return (
-        f"\nBỀ NGANG HAY ĐƯỜNG (hệ thống đã kiểm): lượt này em ghi \"{gia_tri}\" là BỀ NGANG của căn, nhưng chưa có kích thước lô "
-        "(ngang × dài) để đối chiếu. Nếu khách nói kiểu \"mặt tiền … m\" / \"MT … m\" (có thể là độ rộng con đường trước nhà), câu hỏi "
-        "DUY NHẤT của lượt này là hỏi lại cho chắc: số đó là bề ngang của căn hay đường trước nhà rộng chừng đó — KHÔNG hỏi thêm ô nào "
-        "khác (ô kế tiếp để lượt sau). Khách đã nói rõ \"ngang\" / \"bề ngang\" / \"đường rộng\" thì KHÔNG hỏi.\n"
+        f"\nBỀ NGANG HAY ĐƯỜNG (hệ thống đã kiểm): lượt này em ghi \"{gia_tri}\" là bề ngang của căn, nhưng chưa có kích thước lô "
+        "(ngang × dài) để đối chiếu, mà \"mặt tiền … m\" / \"MT … m\" cũng có thể là độ rộng con đường trước nhà. Khách nói kiểu đó thì việc "
+        f"lượt này (thay {NHAN_VIEC_LUOT}) là hỏi lại số đó là bề ngang căn hay đường trước nhà; khách đã nói rõ \"ngang\" / \"đường rộng\" "
+        "thì đã rõ, làm việc lượt như thường.\n"
     )
 
 
@@ -999,14 +1009,13 @@ def khoi_xin_dang(thieu: list[str], prop: Property | None = None) -> str:
     # từng ô (SRS-5.1zzzzzzz91; chat tester 20/10 hai lần bot hỏi giá / địa chỉ đúng lúc khách đang dán bài).
     if prop is not None and not any(prop.fields.get(k) for k in ("gia", "dien_tich", "dien_tich_dat", "dien_tich_nha", "dia_chi",
                                                                  "duong", "kich_thuoc")):
-        return ("\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN (CHƯA CÓ THÔNG TIN CĂN) ===\nMời khách gửi / dán nội dung tin rao hoặc vài thông "
-                "tin chính (địa chỉ, giá, diện tích) trong ĐÚNG 1 câu ngắn. KHÔNG hỏi từng ô, KHÔNG soạn bài đăng.\n")
+        return ("\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN (CHƯA CÓ THÔNG TIN CĂN) ===\nKhách có thể sắp dán nội dung tin rao. Việc lượt này: mời "
+                "khách gửi / dán nội dung tin hoặc vài thông tin chính (địa chỉ, giá, diện tích).\n")
     y = ", ".join(f'"{nhan_o(o, prop)}"' for o in thieu)
     # SRS-5.1zzzzzzz107 (bắn thử 207, KB1): lượt này bot mở bằng câu duyệt tin (cau_mau duyet_tin, chép từ ví dụ câu chuẩn) rồi mới hỏi ô
     # thiếu — khách tưởng tin đã đăng. Câu duyệt chỉ dành cho lượt khách duyệt bản nháp đã lên web.
-    return (f"\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN ===\nTin còn thiếu {y} — thiếu là chưa đăng được. Nói ngắn: còn thiếu ý này là em lên bản "
-            f"nháp liền, rồi hỏi đúng ý đó (theo dòng \"{NHAN_VIEC_LUOT}\"). KHÔNG soạn bài đăng, KHÔNG nói đã đăng, KHÔNG nói "
-            f"\"{cau_mau.cau('duyet_tin')}\" hay \"em đăng ngay\" (chưa có bản nháp thì chưa đăng được).\n")
+    return (f"\n\n=== KHÁCH VỪA BẢO ĐĂNG TIN ===\nTin còn thiếu {y} — chưa có bản nháp nên chưa đăng được. Việc lượt này: nói còn thiếu "
+            f"ý này là em lên bản nháp liền, rồi hỏi đúng ý đó (theo dòng \"{NHAN_VIEC_LUOT}\").\n")
 
 
 # Dòng mở đầu cố định của bản nháp tin rao. Model hay viết thêm câu dẫn TRƯỚC dòng này ("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như
@@ -1158,8 +1167,8 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
         if web and web.get("da_bao_dang"):
             # SRS-5.1zzzzzzz220 (chat 27/10: câu mẫu duyet_tin nói ba lần cho ba lần "ok"): khách đã được báo đăng tin ở lượt trước —
             # câu duyệt là việc MỘT lần, không phải phản xạ mỗi lần khách đáp "ok".
-            return ("  • Tin ĐÃ đăng và khách ĐÃ được báo ở lượt trước: KHÔNG nói lại câu xin phép đăng tin / tin đã đăng / mời vào web. "
-                    "Khách chỉ đáp ngắn (ok, vâng…) thì đáp MỘT câu rất ngắn, tự nhiên; có việc khác thì làm việc đó.",
+            return ("  • Tin đã đăng và khách đã được báo ở lượt trước — việc đăng tin xong rồi. Khách chỉ đáp ngắn (ok, vâng…) thì đáp lại "
+                    "thật ngắn; có việc khác thì làm việc đó.",
                     f"  • Gửi đúng link trang tin của khách: {lk}")
         return (
             # 20/10 (SRS-5.1zzzzzzz90, tester: "nghe dài mệt quá"); 21/10 (SRS-5.1zzzzzzz98) theo câu tester sửa: cảm ơn + ĐÚNG 1 câu
@@ -1168,14 +1177,12 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
             # bán/cho thuê"): code chọn đúng chữ theo loại tin, không để model chép cụm gộp.
             # 21/10 (SRS-5.1zzzzzzz103): tester "khách nhắn ok thì mình nhắn lại 'Dạ em xin phép đăng tin ạ!' vậy xong"; chủ dự án
             # "ừ đổi, ngắn thì tốt" — bỏ "Dạ" (luật cấm mở đầu Dạ), bỏ câu kể đã đăng + chuyển mạng lưới; link web ở đoạn phí.
-            f"  • Đoạn đầu ĐÚNG 1 câu, nguyên văn: \"{cau_mau.cau('duyet_tin')}\" — KHÔNG thêm câu cảm ơn, KHÔNG kể tin "
-            f"{'cho thuê' if thue else 'bán'} đã đăng ở đâu, không tả lại căn.{vua}",
+            f"  • Đoạn đầu chỉ gồm câu chủ dự án chốt, nguyên văn: \"{cau_mau.cau('duyet_tin')}\" (tin {'cho thuê' if thue else 'bán'}).{vua}",
             f"  • Gửi ngay link trang tin của khách: {lk}\n"
             "  • Giải thích tin đã được hiển thị trên web với đầy đủ hình ảnh, thông số kỹ thuật, vị trí và mức giá để khách mua cũng "
             "như môi giới dễ dàng tìm kiếm, kết nối.",
         )
-    cam = ("TUYỆT ĐỐI KHÔNG nói tin đã đăng / đã lên web / đang hiển thị, KHÔNG bảo khách vào web xem tin của mình, KHÔNG nói "
-           f"\"{cau_mau.cau('duyet_tin')}\".")
+    cam = "Tin chưa đăng, chưa hiển thị trên web — chưa có gì để khách vào xem."
     thieu = [o for o in (web.get("thieu") or []) if o in FIELD_LABELS]
     # SRS-5.1zzzzzzz359 (chủ dự án 02/11: phường hệ thống tự tra, KHÔNG hỏi khách; ca thật 01–02/11 "Chỉ cần thêm phường là em đưa tin lên web
     # ngay… nhà anh thuộc phường nào ạ?"): phường ra khỏi danh sách hỏi khách — engine đã ghi phường tra được hoặc báo người phụ trách. Bỏ các
@@ -1186,10 +1193,10 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
         nhan = ", ".join(FIELD_LABELS[o].split(" (")[0] for o in thieu)
         hoi = FIELD_LABELS[thieu[0]]
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu {nhan}. {cam}"
-        viec = f"nói chỉ cần thêm {nhan} là tin lên web, rồi hỏi ĐÚNG 1 câu về {hoi}."
+        viec = f"nói chỉ cần thêm {nhan} là tin lên web, rồi hỏi về {hoi}."
     elif thieu_phuong and web.get("hoi_so_nha"):   # SRS-5.1zzzzzzz411
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): cần số nhà để định vị căn trên bản đồ. {cam}"
-        viec = "hỏi ĐÚNG 1 câu số nhà của căn (để định vị đúng trên bản đồ) — KHÔNG hỏi phường, KHÔNG nói chữ \"phường\"."
+        viec = "hỏi số nhà của căn để định vị đúng trên bản đồ."
     elif thieu_phuong:
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): bên em đang hoàn tất thông tin vị trí, người phụ trách đã được báo. {cam}"
         viec = "báo ngắn bên em đang hoàn tất để đưa tin lên; còn lại đáp điều khách vừa nói như thường."

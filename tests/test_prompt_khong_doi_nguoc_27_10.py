@@ -35,7 +35,7 @@ def test_phuong_cu_bi_chia_thi_o_hoi_luot_do_la_phuong_mot_lan():
     eng._dia_danh = _tra()
     eng.handle("pc1", "nhà ở Hoàng Hoa Thám phường 6 Bình Thạnh")
     he = spy.systems[-1]
-    assert 'hỏi đúng MỘT ý: "phường' not in he and "chia về nhiều phường mới (Phường Bình Lợi Trung, Phường Gia Định)" in he
+    assert 'hỏi về "phường' not in he and "chia về nhiều phường mới (Phường Bình Lợi Trung, Phường Gia Định)" in he
     assert "hỏi phường" not in he.lower() and "_phuong_chia_da_hoi" not in eng.conversation("pc1").prop.fields
 
 
@@ -43,7 +43,7 @@ def test_prompt_khong_con_dong_doi_nguoc_va_moi_phu_dinh():
     he = build_phieu_luot("Mai", Property(), "gia")   # Đợt 8 (SRS-5.1zzzzzzz319): phiếu lượt là đường duy nhất
     assert 'Xưng "em", gọi khách "anh/chị".' not in he
     assert '("Em ghi nhận…"' not in he and '"Wow"' in he   # chủ dự án 27/10: "lời dặn thuận hoặc câu khen, wow các kiểu"
-    assert 'VIỆC LƯỢT NÀY: hỏi đúng MỘT ý: "giá' in he
+    assert 'VIỆC LƯỢT NÀY: hỏi về "giá' in he
     mua = build_buyer_chat_system("Mai", BuyerLead(), "ngan_sach")
     assert 'không câu ghi nhận "em ghi nhận"' not in mua and "không báo đã ghi / đã lưu" in mua
     anh = build_media_read_instruction("Mai", None, Property(), "gia")

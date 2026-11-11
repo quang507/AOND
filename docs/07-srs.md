@@ -788,6 +788,19 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz414 · Prompt lượt hỏi phía bán viết lại theo nguyên tắc, bỏ luật vá (11/11/2026)
+Chủ dự án 11/11: "phiếu cũ có mấy cái ko sửa từ gốc mà có mấy cái sửa vá như tuyệt đối không các thứ", "còn mấy cái luật linh tinh nữa".
+- `LEAN_SYSTEM_PROMPT` (công tắc `AIOI_PROMPT_GON=bat`) viết lại thành năm phần nói thuận: NHÂN VẬT · CÁCH EM NHẮN · SỰ THẬT · tin hệ thống ·
+  HIỂU TIẾNG NGHỀ. 7.243 → 2.925 ký tự. Bỏ các luật đếm / danh sách chữ cấm sinh từ từng ca; gốc chung ("nói như người thật, không lặp khuôn
+  của chính mình", "điều hệ thống chưa làm thì chưa nói là đã làm", "chỉ hứa điều hệ thống thật sự làm") ghi MỘT lần ở phần cố định.
+- Các khối tình huống engine nối thêm (xin đăng, mặt tiền, chào lượt đầu, hỏi sau đăng, hỏi cọc, tình hình bán, định giá, cần người, ngoài
+  việc, phí, link, nhiều căn, chưa rõ căn, tách bán / thuê, dự án gợi ý, trùng tên, địa danh, trạng thái web, sắp xin sao, tin hiện ngoài
+  chat, `viec_phieu`) chỉ còn SỰ KIỆN hệ thống + VIỆC lượt này; bỏ "KHÔNG / TUYỆT ĐỐI / DUY NHẤT / MỘT câu / không nài / không hứa giờ…"
+  lặp lại phần cố định. Khối thay việc hỏi ô thì nói rõ "thay VIỆC LƯỢT NÀY".
+- Bước ghi của vòng agent gộp (`agent_gop._he_ghi`) dùng cùng phần cố định với bước viết (`prompts.co_dinh_ban`) — trước đó bước ghi luôn
+  dùng phiếu cũ dù đã bật prompt gọn, hai bước một lượt chạy hai bộ luật. Công tắc đọc ở một chỗ (`prompts.prompt_gon_bat`).
+- Tắt công tắc thì về phiếu cũ (`phieu_co_dinh`); khối tình huống dùng chung cả hai đường.
+
 ### SRS-5.1zzzzzzz413 · Rổ hàng Ny'ah Phú Định 50 căn có giá + khôi phục 243 tin thử (11/11/2026)
 - **Ca gốc**: danh mục Ny'ah (đọc ảnh 20/10) thiếu lô 25, 26, sai mẫu nhà, không giá; 243 tin rao mẫu mất sau nút "Xoá hết khách + rổ hàng" lúc 13:33. `[nguồn: chủ dự án 11/11/2026: "căn 25 26 nữa, thêm vào đi … 2 trăm mấy … đâu hết rồi"]`
 - **Sửa** (`20261111b_nyah_ro_hang_va_khoi_phuc_tin.sql`): 50 căn dựng lại từ bảng chuẩn 50 lô (9 lô còn trống 01, 02, 03, 23, 24, 25, 26, 42, 50 có giá, đất thực, bán cặp); khôi phục sellers / listings / listing_noi_bo của lần xoá 12 (không khôi phục hội thoại cũ).

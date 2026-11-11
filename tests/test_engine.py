@@ -201,7 +201,7 @@ def test_cau_hoi_trung_ten_la_cau_hoi_duy_nhat():
     conv.pending_name_note = "Dự án “A” có phải cũng là “B” bên em đang có không ạ?"
     assert eng._hoi_trung_ten(conv, "Anh xem giúp em tách vậy đúng không ạ?") == "Anh xem giúp em tách vậy đúng không ạ?"
     khoi = eng._khoi_hoi_trung_ten(conv)
-    assert "câu hỏi DUY NHẤT" in khoi and "“B”" in khoi and conv.pending_name_note == ""
+    assert "thay VIỆC LƯỢT NÀY" in khoi and "“B”" in khoi and conv.pending_name_note == ""
     conv.pending_name_note = "Dự án “A” có phải cũng là “B” bên em đang có không ạ?"
     assert eng._hoi_trung_ten(conv, "Em đọc xong tài liệu rồi ạ.").endswith("🤔 Dự án “A” có phải cũng là “B” bên em đang có không ạ?")
 

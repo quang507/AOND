@@ -63,9 +63,9 @@ def test_hai_khoi_hoi_cung_kich_chi_con_mot():
     s = ai.systems[-1]
     assert "BỀ NGANG HAY ĐƯỜNG" in s                                   # việc thắng: xác nhận mặt tiền (Q4 a)
     viec = s.split("VIỆC LƯỢT NÀY:")[-1]
-    assert '"BỀ NGANG HAY ĐƯỜNG"' in viec and s.count("hỏi đúng MỘT ý") == 1   # dòng việc GỌI TÊN khối thắng; ô kế chỉ còn là nhánh dự phòng
+    assert '"BỀ NGANG HAY ĐƯỜNG"' in viec and s.count('hỏi về "') == 1   # dòng việc GỌI TÊN khối thắng; ô kế chỉ còn là nhánh dự phòng
     assert "không nhắc điểm tin" in viec.lower()                       # cham Đợt 4 lần 1: câu chung → model đọc "Tin đang 73/100"
-    assert "hỏi đúng MỘT ý" in viec and "không giải thích" in viec      # lần 2: khách nói rõ ngang → quay về ô kế, không kể đã bỏ qua
+    assert 'hỏi về "' in viec and "không giải thích" in viec      # lần 2: khách nói rõ ngang → quay về ô kế, không kể đã bỏ qua
     y = eng.conversation("d4").y_luot
     assert y["_viec"]["ten"] == "xac_nhan_mat_tien" and "hoi_o" not in y["_khoi"]
 
@@ -83,7 +83,7 @@ def test_ba_khoi_hoi_du_an_thang_mat_tien_doi_luot_sau():
     eng, ai = _eng(MT, _Kho("Saigon Royal"))
     eng.handle("d4", "nhà mặt tiền 5m em nha")
     s = ai.systems[-1]
-    assert "DỰ ÁN GỢI Ý" in s and "BỀ NGANG HAY ĐƯỜNG" not in s and "hỏi đúng MỘT ý" not in s
+    assert "DỰ ÁN GỢI Ý" in s and "BỀ NGANG HAY ĐƯỜNG" not in s and 'hỏi về "' not in s
     # Q4: mỗi câu xác nhận tối đa MỘT lần mỗi căn — câu bị gỡ được hỏi ở lượt sau, rồi thôi
     eng.handle("d4", "mặt tiền 5m đó em")
     assert "BỀ NGANG HAY ĐƯỜNG" in ai.systems[-1] and "DỰ ÁN GỢI Ý" not in ai.systems[-1]

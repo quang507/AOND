@@ -20,7 +20,7 @@ def test_chi_noi_da_dang_khi_tin_dang_hien_thi():
     for web in ({"len_web": False, "thieu": ["phuong"]}, {"len_web": False, "thieu": [], "cho_duyet": True},
                 {"len_web": False, "thieu": []}, {"len_web": False, "chua_ban_nhap": True}, {"len_web": None}):
         duyet, link = khoi_trang_thai_web(web)
-        assert DA_DANG not in duyet and "TUYỆT ĐỐI KHÔNG nói tin đã đăng" in duyet, web
+        assert DA_DANG not in duyet and "Tin chưa đăng, chưa hiển thị" in duyet, web
         assert "đã được hiển thị trên web" not in link, web
         assert "đã duyệt" not in link and "cảm ơn" not in link.lower(), web  # khách hỏi link chưa chắc đã duyệt
 
@@ -31,7 +31,7 @@ def test_thieu_phuong_thi_hoi_phuong_moi_khong_hoi_hem():
     assert DA_DANG not in s and "phường MỚI sau sáp nhập" not in s and "hỏi phường" not in s.lower()
     assert "phí môi giới của tụi em chưa" not in s  # SRS-5.1zzzzzzz81: tin chưa lên web → không thêm câu phí
     s = build_fee_followup_system("Hằng", _nha(), web={"len_web": False, "thieu": ["gia", "dien_tich"]})
-    assert "còn thiếu giá, diện tích" in s and "hỏi ĐÚNG 1 câu về giá" in s
+    assert "còn thiếu giá, diện tích" in s and "rồi hỏi về giá" in s
     s = build_fee_followup_system("Hằng", _nha(), web={"len_web": True, "thieu": []})
     assert DA_DANG in s and "phí môi giới của tụi em chưa" in s and "TẠM BỎ QUA BƯỚC HỎI PHÍ" not in s
 

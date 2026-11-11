@@ -20,7 +20,7 @@ def test_mo_dau_ban_tin_theo_cach_khach_xung():
 
 def test_loi_sau_duyet_ngan_va_phi_thue_ba_phan_tu():
     xac_nhan, _ = khoi_trang_thai_web({"len_web": True})
-    assert "ĐÚNG 1 câu" in xac_nhan and "mạng lưới kết nối khách mua ngay" not in xac_nhan and "không tả lại căn" in xac_nhan
+    assert "nguyên văn" in xac_nhan and "mạng lưới kết nối khách mua ngay" not in xac_nhan and "chỉ gồm câu chủ dự án chốt" in xac_nhan
     he = build_fee_followup_system("Đạt", Property(loai_hinh="nha_pho", is_rental=True), web={"len_web": True})
     assert "CHƯA BIẾT PHÍ" in he and "tối đa 2 câu" in he
     # 21/10 (SRS-5.1zzzzzzz97): chủ dự án duyệt câu tester "phí môi giới bên em là 0.75 tháng tiền thuê" — đổi lại quyết định 20/10

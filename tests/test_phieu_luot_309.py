@@ -12,7 +12,7 @@ from tests.test_viec_mua import KhoGia
 def test_phieu_luot_ngan_co_giong_va_mot_viec():
     prop = Property(loai_hinh="nha_pho", fields={"duong": "Hoàng Hoa Thám"})
     p = build_phieu_luot("Mai·Anh", prop, "gia")
-    assert GIONG_VUI in p and RANH_GIOI_CACHE in p and "Hoàng Hoa Thám" in p and "VIỆC LƯỢT NÀY: hỏi đúng MỘT ý" in p
+    assert GIONG_VUI in p and RANH_GIOI_CACHE in p and "Hoàng Hoa Thám" in p and 'VIỆC LƯỢT NÀY: hỏi về "' in p
     assert "đổi cách hỏi" in build_phieu_luot("Mai·Anh", prop, "gia", hoi_lai=True)
     assert "không hỏi thêm" in build_phieu_luot("Mai·Anh", prop, None)
 

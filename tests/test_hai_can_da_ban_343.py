@@ -44,7 +44,7 @@ def test_ai_bo_sot_thao_tac_doi_trang_thai_thi_van_co_du_kien_khong_doi():
         ai.ke = {"user_intent": "sell", "operations": []}                     # AI bóc tách không tạo set_status (ca trượt thật)
         eng.handle("thu-hai-can", cau)
         s = ai.systems[-1]
-        assert "Lượt này hệ thống KHÔNG đổi trạng thái căn nào" in s and "KHÔNG tự chọn một căn" in s, cau
+        assert "Lượt này hệ thống chưa đổi trạng thái căn nào" in s and "kể tên các căn" in s, cau
         assert all(li.active.status != "đã bán" if hasattr(li, "active") else True for li in [eng.conversation("thu-hai-can")])
 
 

@@ -37,7 +37,7 @@ def test_hoi_gia_thi_truong_khong_neu_so(monkeypatch):
     eng, seen, ke, conv = _eng(monkeypatch, _KhoSo())
     ke["plan"] = {"operations": [], "hoi_ve": "dinh_gia", "hoi_ve_trich_dan": "giá vậy cao không"}
     eng.handle("u-sao", "anh để giá vậy cao không em")
-    assert "KHÔNG nêu con số giá thị trường" in seen[-1]
+    assert "chưa có số liệu để định giá" in seen[-1]
 
 
 class _KhoDem(SupabaseConversationStore):

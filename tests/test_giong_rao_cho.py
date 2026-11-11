@@ -60,4 +60,4 @@ def test_loi_chot_hua_lien_he_khi_co_khach_quan_tam_theo_anh_luan():
     p = Property(loai_hinh="nha_pho", fields={"gia": "9 tỷ", "dia_chi": "12 Lê Lợi", "duong": "Lê Lợi"})
     s = prompts.build_phieu_luot("Lan", p, None)   # Đợt 8 (SRS-5.1zzzzzzz319): phiếu lượt
     # SRS-5.1zzzzzzz267: vẫn chốt có lời hứa như anh Luận, nhưng chỉ hứa điều có đường làm thật (câu hỏi → chủ nhà, lịch xem → người phụ trách)
-    assert "có khách hỏi hay hẹn xem bên em báo ngay" in s and "không hứa gọi điện hay hạn bán" in s and "không gạ rao căn" in s
+    assert "có khách hỏi hay hẹn xem bên em báo ngay" in s and "không còn gì để hỏi" in s

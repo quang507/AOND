@@ -28,6 +28,7 @@ from uuid import uuid4
 from . import gamification as g
 from . import phap_ly
 from .prompts import _dien_tich_mo_ho, khoi_nhan_vat, viec_phieu, viec_theo_khoi
+from .prompts import NHAN_VIEC_LUOT, prompt_gon_bat
 from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, SU_THAT_CAN, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
@@ -208,8 +209,8 @@ MAX_AGENT_STEPS = 6
 # keyword gate (that's the point of "Mảnh B": no code catching each case).
 KHOI_TIN_DANG_HIEN_NGOAI_CHAT = (
     "\n\n=== TIN NÀY ĐANG HIỂN THỊ TRÊN WEB (tạo ngoài cuộc chat — em CHƯA từng gửi bản tin nào cho khách) ===\n"
-    "Bỏ qua các dặn về \"vừa cho khách xem bản tin\": điều khách vừa bổ sung / sửa đã được hệ thống ghi thẳng vào tin đang hiển thị. Nói ngắn đã "
-    "cập nhật (nếu khách có bổ sung), KHÔNG rao lại bản tin 📋, KHÔNG hỏi đã ưng chưa / còn chỉnh / đăng luôn.\n"
+    "Điều khách vừa bổ sung / sửa đã được hệ thống ghi thẳng vào tin đang hiển thị — không có bản nháp nào chờ duyệt. Việc lượt này: khách "
+    "có bổ sung thì nói ngắn đã cập nhật.\n"
 )
 
 _AGENT_TOOL_GUIDE = (
@@ -828,13 +829,13 @@ def khoi_can_nguoi(conv: "Conversation") -> str:
     if conv.y_luot.get("cdt_bao_admin"):   # SRS-5.1zzzzzzz240: người rao là chủ đầu tư (OPEN-21 a)
         return (
             "\n\n=== ƯU TIÊN LƯỢT NÀY — NGƯỜI RAO LÀ CHỦ ĐẦU TƯ (hệ thống ĐÃ BÁO bộ phận hợp tác dự án): ===\n"
-            "Phí với chủ đầu tư là thoả thuận riêng — KHÔNG nêu con số % nào. Nói ngắn: em đã báo bộ phận hợp tác dự án, anh/chị phụ trách "
-            "sẽ liên hệ sớm. KHÔNG hứa giờ cụ thể, KHÔNG xin số điện thoại. Sau đó tiếp chuyện dự án / căn như thường.\n"
+            "Phí với chủ đầu tư là thoả thuận riêng nên không có con số % để nêu. Việc lượt này: báo em đã chuyển bộ phận hợp tác dự án, "
+            "anh/chị phụ trách sẽ liên hệ sớm qua Zalo này; rồi tiếp chuyện dự án / căn như thường.\n"
         )
     return (
         "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH XIN GẶP NGƯỜI THẬT (hệ thống đã đọc, ĐÃ BÁO người phụ trách): ===\n"
-        "Nói ngắn, ấm: em đã báo anh/chị phụ trách, anh/chị ấy sẽ nhắn khách sớm. KHÔNG hứa giờ cụ thể, KHÔNG xin số điện thoại. "
-        "Trong lúc chờ, nếu khách muốn em vẫn hỗ trợ tiếp. Không hỏi thêm thông tin căn ở lượt này.\n"
+        "Việc lượt này: báo em đã báo anh/chị phụ trách, anh/chị ấy sẽ nhắn khách sớm qua Zalo này; trong lúc chờ em vẫn hỗ trợ được. "
+        "Lượt này không hỏi thông tin căn.\n"
     )
 
 
@@ -855,12 +856,11 @@ def khoi_ngoai_viec(conv: "Conversation") -> str:
         return ""
     if n == 1:
         return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VIỆC NGOÀI NHÀ ĐẤT (chưa tỏ ý bán / mua): ===\n"
-                "Nói thật NGẮN là việc đó em không nắm (không đoán, không hứa hỏi giúp). KHÔNG hỏi địa chỉ / loại / giá / bất kỳ thông tin căn "
-                "nào, KHÔNG nói khách đang rao hay đang bán, KHÔNG khen. Hỏi MỘT câu ngắn: khách có cần gửi bán"
+                "Em không nắm việc đó. Việc lượt này: nói thật ngắn là em không nắm, rồi hỏi khách có cần gửi bán"
                 + (", cho thuê hay tìm mua" if conv.so_nhan == SO_TU_VAN else " hay cho thuê") + " nhà đất không.\n")
     return (f"\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI LẠI VIỆC NGOÀI NHÀ ĐẤT (lần thứ {n}): ===\n"
-            "KHÔNG hỏi gì về nhà đất nữa, KHÔNG khen. Nói ngắn: bên em chỉ hỗ trợ gửi bán / cho thuê / tìm mua nhà đất, việc này em chưa nắm; nếu "
-            "khách muốn, em nối anh/chị phụ trách để hỏi giúp — hỏi MỘT câu khách có muốn không. KHÔNG nói đã báo ai.\n")
+            "Bên em chỉ hỗ trợ gửi bán / cho thuê / tìm mua nhà đất, và chưa báo ai việc này. Việc lượt này: nói việc này em chưa nắm, rồi hỏi "
+            "khách có muốn em nối anh/chị phụ trách để hỏi giúp không.\n")
 
 
 def khoi_phap_ly(conv: "Conversation", can: dict | None = None) -> str:
@@ -872,7 +872,7 @@ def khoi_phap_ly(conv: "Conversation", can: dict | None = None) -> str:
                           ma_can=str(can.get("code")) if isinstance(can, dict) and can.get("code") else None,
                           dieu=conv.y_luot.get("dieu_luat"), ten_can=can.get("_ten") if isinstance(can, dict) else None)
     # SRS-5.1zzzzzzz213 (khách ảo 26/10: đang "cháu / cô" bỗng "em chưa có thông tin chắc chắn" khi trả lời pháp lý — tư liệu kho viết "em").
-    return k + ("\nXưng hô trong câu trả lời theo khối xưng hô của lượt; tư liệu viết \"em\" thì đổi cho khớp (đang xưng \"cháu\" thì \"cháu\").\n" if k else "")
+    return k + ("\nTư liệu trên viết giọng chung; câu trả lời xưng hô theo khối xưng hô của lượt.\n" if k else "")
 
 
 @dataclass
@@ -2239,7 +2239,7 @@ class Engine:
         if not q:
             return ""
         return ("\n\n=== ƯU TIÊN LƯỢT NÀY — HỎI TÊN DỰ ÁN (hệ thống nghi trùng một dự án CÙNG vị trí trong kho): ===\n"
-                f"Hỏi đúng ý này, là câu hỏi DUY NHẤT của lượt (THAY câu hỏi thông tin kế): {q}\n")
+                f"Việc lượt này (thay {NHAN_VIEC_LUOT}): {q}\n")
 
     def register_unit_type(
         self, project_name: str, name: str, specs: dict[str, str], voter: str = "?"
@@ -3179,7 +3179,7 @@ class Engine:
                     if mo_ho:
                         f_tin.pop("_dt_mo_ho_da_hoi", None)
                 viec_o = _hoi("hoi_o", viec_txt, "", _hoan_hoi_o)   # khi bị gỡ: việc của khối thắng (`viec_theo_khoi`, điền sau khi chọn)
-            if os.getenv("AIOI_PROMPT_GON", "").strip().lower() == "bat":   # SRS-5.1zzzzzzz408: prompt gọn (chủ dự án 11/11)
+            if prompt_gon_bat():   # SRS-5.1zzzzzzz408 / 414: prompt gọn (chủ dự án 11/11)
                 system = lean_system_prompt_cho_luot(conv.assistant.name, conv.prop, next_field, project_block, viec=viec_o)
             else:
                 system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua, viec=viec_o)
@@ -3267,7 +3267,7 @@ class Engine:
             system += khoi_dia_danh(self._dia_danh, conv.prop.fields, None if is_listing_post else next_field)
             if conv.y_luot.get("_phuong_vua_tra"):   # SRS-5.1zzzzzzz236: phường hệ thống vừa tra theo số nhà / hẻm — báo một lần, không hỏi
                 system += (f'\n\nPHƯỜNG HỆ THỐNG VỪA TRA (khách CHƯA nói): theo số nhà / hẻm trong địa chỉ, nhà thuộc {conv.y_luot["_phuong_vua_tra"]}. '
-                           "Nhắc khách MỘT câu ngắn nhà thuộc phường này, sai thì khách báo lại.\n")
+                           "Báo khách nhà thuộc phường này, sai thì khách báo lại.\n")
             if not is_listing_post:
                 k_da = self._khoi_hoi_du_an(conv)   # SRS-5.1zzzzzzz181: kho có đúng một dự án cùng đường → hỏi xác nhận MỘT lần
                 if k_da.strip():   # Q4 (b): gỡ thì trả cờ — hỏi ở lượt sau, vẫn một lần
@@ -3275,12 +3275,11 @@ class Engine:
         if conv.y_luot.get("tach_ban_thue"):   # SRS-5.1zzzzzzz241 (OPEN-59 a)
             loai = "CHO THUÊ" if conv.y_luot["tach_ban_thue"] == "thue" else "BÁN"
             dk_tach = (f"\nHỆ THỐNG VỪA MỞ THÊM MỘT TIN {loai} cho CÙNG căn này (khách muốn vừa bán vừa cho thuê): hai tin, hai giá riêng, chung "
-                       "căn. Báo khách MỘT câu ngắn là em lên cả hai tin")
-            system += _hoi("tach_ban_thue", dk_tach + "; tin nào chưa có giá thì hỏi giá đó, THAY cho câu hỏi kế (một câu hỏi cả lượt) "
-                           f"({'giá thuê theo tháng' if loai == 'CHO THUÊ' else 'giá bán'}).\n", dk_tach + " (lượt này không hỏi giá).\n")
+                       "căn. Báo khách em lên cả hai tin")
+            system += _hoi("tach_ban_thue", dk_tach + f"; tin nào chưa có giá thì việc lượt này (thay {NHAN_VIEC_LUOT}) là hỏi giá đó "
+                           f"({'giá thuê theo tháng' if loai == 'CHO THUÊ' else 'giá bán'}).\n", dk_tach + ".\n")
         if conv.y_luot.get("da_xac_nhan_con_ban"):   # SRS-5.1zzzzzzz295
-            system += ("\nCHỦ NHÀ VỪA XÁC NHẬN CĂN CÒN BÁN / CÒN CHO THUÊ (em đã ghi, tin vẫn hiển thị). Cảm ơn ngắn, nói tin vẫn đang chào khách; "
-                       "không hỏi lại căn còn không.\n")
+            system += "\nCHỦ NHÀ VỪA XÁC NHẬN CĂN CÒN BÁN / CÒN CHO THUÊ (em đã ghi, tin vẫn hiển thị). Cảm ơn ngắn, nói tin vẫn đang chào khách.\n"
         if conv.y_luot.get("da_tra_loi_khach"):
             system += ("\nEM VỪA CHUYỂN câu trả lời của anh/chị cho khách mua đang hỏi (hệ thống báo khách ngay). Cảm ơn ngắn gọn, "
                        "nói em đã báo khách rồi, rồi mới tiếp chuyện tin rao.\n")
@@ -3314,9 +3313,9 @@ class Engine:
             # `_phi_da_bao`), không đọc chữ khách: chính sách đã nói thì lượt này chỉ đáp đúng điều vừa hỏi.
             hoi_ve_khoi = (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI TIẾP VỀ PHÍ (chính sách gửi bán EM ĐÃ NÓI ở lượt trước): ===\n"
-                "Đáp ĐÚNG điều khách vừa hỏi bằng một–hai câu ngắn, câu mở KHÁC lượt trước. KHÔNG nhắc lại các ý chính sách đã nói (miễn phí đăng, "
-                "cố định không bớt, hợp đồng, không độc quyền, không chia hoa hồng) trừ khi khách hỏi đúng ý đó. "
-                f"Con số phí CHỈ lấy từ dòng VAI NGƯỜI RAO / câu mẫu báo phí bên dưới (bán: {PT_CHU} chính chủ, {PT_MG} môi giới; cho thuê: "
+                "Các ý chính sách (miễn phí đăng, phí cố định không bớt, hợp đồng, không độc quyền, không chia hoa hồng) khách đã nghe. Việc lượt "
+                "này: đáp đúng điều khách vừa hỏi. "
+                f"Con số phí chỉ lấy từ dòng VAI NGƯỜI RAO / câu mẫu báo phí bên dưới (bán: {PT_CHU} chính chủ, {PT_MG} môi giới; cho thuê: "
                 f"{PHI_THUE}). Sau đó nối lại nội dung căn đang trao đổi.\n"
                 + ((_fee_hint(conv.vai_phi) + "\n") if _fee_hint(conv.vai_phi) else "")
                 + ((khoi_bao_phi(conv.vai_phi, conv.prop.is_rental, goi_toi_khach(customer_pronoun)[0]) + "\n")
@@ -3327,11 +3326,10 @@ class Engine:
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ PHÍ / CHÍNH SÁCH GỬI BÁN: ===\n"
                 # SRS-5.1zzzzzzz318 (chủ dự án 01/11: ĐỦ 4 ý chính sách, giọng theo khuôn anh Luận — bản đầu đọc cả khối như điều khoản, giám khảo
                 # chấm 2/5). Phiếu lượt không có BUSINESS_CONTEXT nên dữ kiện chính sách đi kèm khối này. Giọng do GIONG_VUI, không dặn thêm ở đây.
-                "Đáp ĐÚNG điều khách vừa hỏi trước, bằng MỘT câu. Rồi nói lướt cho ĐỦ các ý còn lại của CHÍNH SÁCH GỬI BÁN dưới — phí cố định không "
-                "bớt, chỉ thu khi thành công; có hợp đồng môi giới bằng văn bản; không độc quyền; và cả ý môi giới gửi hàng không chia hoa hồng nào "
-                "khác (dù khách là chủ nhà) — gói các ý CÒN LẠI vào ĐÚNG MỘT câu ngắn nối bằng \"còn\" / \"và\" (ý nào câu đáp hay câu báo phí đã "
-                "nói thì không nói lại), không đánh số, không gạch đầu dòng, không thêm ưu đãi / con số nào khác. "
-                f"Con số phí chỉ nói khi khách hỏi MỨC phí (bao nhiêu, tính sao), và CHỈ lấy từ dòng VAI NGƯỜI RAO / câu mẫu báo phí bên dưới (bán: "
+                "Việc lượt này: đáp điều khách vừa hỏi, rồi nói lướt các ý còn lại của CHÍNH SÁCH GỬI BÁN dưới (phí cố định không bớt, chỉ thu khi "
+                "thành công; có hợp đồng môi giới bằng văn bản; không độc quyền; môi giới gửi hàng không chia hoa hồng nào khác, dù khách là chủ "
+                "nhà) — gói trong một câu nói chuyện, nối bằng \"còn\" / \"và\". "
+                f"Con số phí chỉ nói khi khách hỏi mức phí (bao nhiêu, tính sao), và chỉ lấy từ dòng VAI NGƯỜI RAO / câu mẫu báo phí bên dưới (bán: "
                 f"{PT_CHU} chính chủ, {PT_MG} môi giới; cho thuê: {PHI_THUE} = 3/4 của MỘT tháng tiền thuê; chưa rõ vai thì nêu cả hai hoặc hỏi khéo "
                 "khách là chủ nhà hay môi giới); khách hỏi ý khác (độc quyền, hợp đồng, xin bớt) thì không cần đọc lại câu báo phí. "
                 "Sau đó nối lại nội dung căn đang trao đổi.\n"
@@ -3355,7 +3353,7 @@ class Engine:
             web = self._trang_thai_web(conv) if is_listing_post else {"len_web": False, "chua_ban_nhap": True}
             hoi_ve_khoi = (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ LINK HOẶC CÁCH ĐĂNG TRÊN WEB: ===\n"
-                "Khách vừa hỏi xem link bài đăng, xem tin ở đâu hoặc tin trên web đang hiển thị như thế nào. Hãy TRẢ LỜI RÕ RÀNG, CHUYÊN NGHIỆP:\n"
+                "Khách vừa hỏi link bài đăng, xem tin ở đâu hoặc tin trên web hiển thị ra sao. Trả lời theo trạng thái thật của tin:\n"
                 + khoi_trang_thai_web(web, conv.prop.is_rental)[1] + "\n"
             )
         elif conv.hoi_ve_luot == "tinh_hinh_ban":
@@ -3394,7 +3392,7 @@ class Engine:
         if conv.y_luot.get("chua_ro_can"):   # SRS-5.1zzzzzzz310: dữ kiện hệ thống — chưa đổi căn nào
             dk_can = ("\nHỆ THỐNG: khách báo đổi trạng thái một căn nhưng lời khách chưa chỉ ra căn nào trong các căn khách đã gửi ("
                       + "; ".join(conv.y_luot["chua_ro_can"]) + "). CHƯA đổi căn nào")
-            system += _hoi("chua_ro_can", dk_can + " — hỏi lại khách căn nào, đừng nói đã cập nhật.\n", dk_can + " — đừng nói đã cập nhật.\n")
+            system += _hoi("chua_ro_can", dk_can + f". Việc lượt này (thay {NHAN_VIEC_LUOT}): hỏi lại khách căn nào.\n", dk_can + ".\n")
         elif len([li for li in conv.listings if not self._is_stub_listing(li)]) >= 2 and not any(
                 r and r[0] == "set_status" for r in (conv.last_receipts or [])):
             # SRS-5.1zzzzzzz343 (cham hai_can_da_ban 2/2 trượt sau #260, cũng có trên nền: "à căn đó anh bán được rồi em nhé" → AI bóc tách không tạo
@@ -3402,9 +3400,8 @@ class Engine:
             # hệ thống, không đoán ý khách bằng chữ: lượt này không đổi trạng thái căn nào — model đọc nghĩa lời khách, nếu khách báo bán / cho thuê
             # / ngưng mà chưa rõ căn thì hỏi lại.
             nhan = "; ".join(li.label() for li in conv.listings if not self._is_stub_listing(li))
-            system += ("\nHỆ THỐNG: khách đang có nhiều căn (" + nhan + "). Lượt này hệ thống KHÔNG đổi trạng thái căn nào. Nếu khách vừa báo "
-                       "một căn đã bán / đã cho thuê / ngưng bán thì hỏi lại đúng căn nào (kể tên các căn cho khách chọn); KHÔNG tự chọn một căn, "
-                       "KHÔNG chúc mừng như đã chốt một căn cụ thể, KHÔNG nói đã cập nhật.\n")
+            system += ("\nHỆ THỐNG: khách đang có nhiều căn (" + nhan + "). Lượt này hệ thống chưa đổi trạng thái căn nào. Khách vừa báo một căn "
+                       "đã bán / đã cho thuê / ngưng bán mà chưa rõ căn nào thì hỏi lại căn nào (kể tên các căn cho khách chọn).\n")
         # A seller in a project WITH an inventory → the reply runs through the agent LOOP (same
         # sales-mode prompt + tools). The model decides per turn whether to query the catalog,
         # add a resolved căn, learn a fact, or ask for a link — NO keyword gate (Mảnh B). A plain
@@ -5400,8 +5397,8 @@ class Engine:
             return ""
         f["_goi_y_du_an"] = str(d["name"])
         return (f'\n\nDỰ ÁN GỢI Ý (hệ thống tra kho dự án theo tên đường, KHÔNG phải khách nói): kho có dự án "{d["name"]}" ở cùng đường với căn '
-                "này. Lượt này hỏi khéo xác nhận MỘT lần, thay cho câu hỏi kế (theo đúng cách xưng hô lượt này), dạng HỎI "
-                f'("căn này thuộc dự án {d["name"]} đúng không ạ?"), KHÔNG khẳng định. Khách nói không hoặc lờ đi thì thôi, không hỏi lại.')
+                f"này, chưa chắc là cùng dự án. Việc lượt này (thay {NHAN_VIEC_LUOT}): hỏi khéo khách căn có thuộc dự án đó không (hệ thống chỉ "
+                "hỏi một lần).")
 
     @staticmethod
     def _khoi_du_an_da_hoi(conv: "Conversation") -> str:

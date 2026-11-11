@@ -10,7 +10,7 @@ def test_chu_dau_tu_bao_admin_mot_lan_va_khong_bao_so_phi():
     assert c.user_type is SellerRole.CHU_DAU_TU
     assert c.y_luot.get("cdt_bao_admin") and "CHỦ ĐẦU TƯ" in c.y_luot["can_nguoi_that"]
     khoi = khoi_can_nguoi(c)
-    assert "CHỦ ĐẦU TƯ" in khoi and "KHÔNG nêu con số" in khoi
+    assert "CHỦ ĐẦU TƯ" in khoi and "không có con số %" in khoi
     assert any("bộ phận hợp tác dự án" in s for s in spy.systems[-1:])
     # lượt sau vẫn là CĐT (cách nói khác, chưa bắn): không báo lại
     eng.handle("cdt1", "cđt bên anh vẫn muốn đăng nhé")
