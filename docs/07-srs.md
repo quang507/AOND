@@ -981,7 +981,7 @@ tùy nhánh, và hỏi khéo vào".
   căn và 6 lượt gần nhất, hụt thì câu mẫu `xin_anh_sau_dang`. Tối đa hai lần, chung mốc `sau:anh` / `sau:anh_lan_2` với lượt hỏi sau đăng.
 - Đủ ảnh (tới mức tin đẹp) thì thôi xin. Tin nhắc tự động chỉ đi 8–20 giờ (`bao_can_moi.trong_khung_gio`); gọi tay `/trigger-followup` không chặn.
 
-### SRS-5.1zzzzzzz422 · QC ảnh tin rao — vòng nền trên máy 146 (11/11/2026)
+### SRS-5.1zzzzzzz422 · Image LQC (Listing Quality Controller) — QC ảnh tin rao, vòng nền trên máy 146 (11/11/2026)
 Chủ dự án 11/11: "một con loop như quality controller về hình ảnh của các tin rao, xem các hình đang có có giống nội dung rao đăng không, và
 có phù hợp với điểm mạnh của BĐS đang rao không". Chọn: vòng nền trên 146; ghi kết quả + tự nhắn chủ xin góc thiếu.
 - `qc_anh.py` + vòng `_vong_qc_anh` (server, `QC_ANH_CHU_KY_GIAY` 1800 giây, tắt `QC_ANH=tat`): quét `listing-public/<id tin>/`, bộ ảnh ĐỔI

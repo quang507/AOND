@@ -1,4 +1,4 @@
-"""QC ảnh tin rao — SRS-5.1zzzzzzz422 (chủ dự án 11/11/2026: "một con loop như quality controller về hình ảnh của các tin rao, xem các hình
+"""Image LQC (Listing Quality Controller) — QC ảnh tin rao, SRS-5.1zzzzzzz422 (chủ dự án 11/11/2026: "một con loop như quality controller về hình ảnh của các tin rao, xem các hình
 đang có có giống nội dung rao đăng không, và có phù hợp với điểm mạnh của BĐS đang rao không"; chọn: chạy nền trên máy 146, ghi kết quả +
 tự nhắn chủ xin góc thiếu).
 
@@ -176,7 +176,7 @@ def chay_mot_luot(engine: Any, gui: Callable[[str, str], bool], xung_ho_cua: Cal
         kq["so_anh"] = len(tep)
         da_nhan = _ghi_va_nhan(engine, tin, kq, bay_gio, gui, xung_ho_cua, ghi_lich_su)
         so[lid] = {"bam": bam(tep), "luc": time.time(), "ma": tin.get("code"), "ket_qua": kq, "da_nhan": da_nhan}
-        log.warning("QC ảnh #%s: %s/100, khớp=%s, xin: %s%s", tin.get("code"), kq.get("diem"), kq.get("khop_noi_dung"),
+        log.warning("Image LQC #%s: %s/100, khớp=%s, xin: %s%s", tin.get("code"), kq.get("diem"), kq.get("khop_noi_dung"),
                     kq.get("goc_can_xin") or "-", " (đã nhắn chủ)" if da_nhan else "")
         ra.append({"ma": tin.get("code"), "diem": kq.get("diem"), "da_nhan": da_nhan})
     _ghi_so(so)
