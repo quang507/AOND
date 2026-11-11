@@ -76,7 +76,6 @@ from .prompts import (
     build_buyer_chat_system,
     khoi_tin_tra_loi,
     build_phieu_luot,
-    lean_system_prompt_cho_luot,
     SOAT_O_HOI_SYSTEM,
     soat_o_hoi_schema,
     build_column_map_system,
@@ -135,7 +134,6 @@ from .imaging import downscale_image
 from .revenue import SellerRole
 from .schema import CAU_MO_MUA, FACETS, O_COC, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .prompts import Y_MO_DAU
-from .chu import la_tin_chao_hoi_thuan_tuy
 from .dia_danh import TraDiaDanh, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
 from .mua import (co_tieu_chi, giong_sdt_sai, khoi_can_cho_khach, khoi_can_lap_viec, khoi_cau_hoi_cho, khoi_lich_dang_cho, khoi_nhu_cau, khoi_viec_vua_ghi,
@@ -1737,7 +1735,7 @@ def _khai_o_hoi(eng, conv: "Conversation", reply: str) -> list[dict] | None:
 
 def _hoi_sai_o(eng, conv: "Conversation", reply: str) -> list[tuple[str, str, str]]:
     """(ô, cụm trích, lý do) cho mỗi chỗ lời bot hỏi ngoài bất biến SRS-5.1zzzzzzz367. Phía mua không xét (hỏi nhu cầu, không có ô tin)."""
-    if conv.role == "buyer" or not (reply or "").strip() or conv.y_luot.get("tha_tim") == "chao":
+    if conv.role == "buyer" or not (reply or "").strip():
         return []
     khai = _khai_o_hoi(eng, conv, reply) or []
     cho, f, v = _o_duoc_hoi(conv), conv.prop.fields, conv.y_luot.get("_viec") or {}
@@ -3178,11 +3176,7 @@ class Engine:
                     if mo_ho:
                         f_tin.pop("_dt_mo_ho_da_hoi", None)
                 viec_o = _hoi("hoi_o", viec_txt, "", _hoan_hoi_o)   # khi bị gỡ: việc của khối thắng (`viec_theo_khoi`, điền sau khi chọn)
-            if os.getenv("AIOI_PROMPT_GON") == "bat":
-                # SRS-5.1zzzzzzz391/402: Dùng LEAN_SYSTEM_PROMPT tinh gọn (<1.500 tokens) cho lượt viết lời
-                system = lean_system_prompt_cho_luot(conv.assistant.name, conv.prop, next_field, project_block, viec=viec_o)
-            else:
-                system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua, viec=viec_o)
+            system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua, viec=viec_o)
             system += khoi_xin_dang(toi_thieu, conv.prop)   # lượt hỏi ô: KHÔNG có khối ĐIỂM TIN (chủ dự án 02/11, SRS-5.1zzzzzzz336)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
@@ -4973,18 +4967,7 @@ class Engine:
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
         conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
         plan = None
-        cuoi_tin = next((m.content for m in reversed(src) if m.role == "user"), "")
-        if la_tin_chao_hoi_thuan_tuy(conv.loi_khach_luot):
-            # Fast-path tin chào hỏi thuần tuý (SRS-5.1zzzzzzz402): bỏ qua bóc tách 70.000 ký tự (prompt + schema)
-            # tiết kiệm ~40.000 cache write tokens (~$0.10) khi khách chỉ chào hỏi ("em ơi", "alo", "chào em"...).
-            log.info("Fast-path: bỏ qua bóc tách tin chào hỏi '%s'", conv.loi_khach_luot[:50])
-            plan = {
-                "operations": [],
-                "user_intent": "unknown",
-                "loi_xa_giao": "chao",
-                "loi_xa_giao_trich_dan": cuoi_tin,
-            }
-        elif gop and ban_gon:
+        if gop and ban_gon:
             # SRS-5.1zzzzzzz371: MỘT vòng agent Sonnet cho cả đọc ý / ghi và viết lời — bước 1 ở đây (công cụ ghi qua cổng code), bước 2 ở chỗ
             # viết lời. Đường duy nhất của người bán (công tắc gỡ, chủ dự án 03/11); vòng hỏng → form JSON (Haiku) dưới làm dự phòng.
             with _do(conv, "lap_thao_tac"):
