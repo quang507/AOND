@@ -73,16 +73,6 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
-### SRS-5.1zzzzzzz393 · Tinh gọn bộ câu hỏi rẽ nhánh theo loại hình BĐS: ưu tiên câu hỏi trực quan dễ thấy, đưa câu hỏi kỹ thuật sâu (tải trọng sàn, kVA trạm biến áp, chỉ tiêu xây dựng) xuống nhóm thứ cấp (06/11/2026)
-Chủ dự án 06/11 (nguyên văn): "vậy bạn soát lại cơ chế loại hình nên hỏi gì đi", duyệt tinh gọn bộ câu hỏi. Trước: Kho xưởng hỏi dồn dập "chiều cao trần", "tải trọng sàn (tấn/m2)", "trạm biến áp công suất bao nhiêu kVA", khách không phải kỹ sư kết cấu nên bối rối trả lời "chị không biết"; Đất nền hỏi chỉ tiêu quy hoạch / vướng cột điện trước khi hỏi lộ giới hẻm và thổ cư.
-(1) Lớp lỗi: thứ tự ưu tiên câu hỏi trong CORE_FIELDS xếp câu hỏi kỹ thuật trừu tượng lên trước câu hỏi thực tế quan sát được; NATURAL_QUESTIONS gợi ý hỏi số kVA gây khó cho chủ nhà.
-(2) Sửa:
-  - `src/aioi/schema.py`: Reorder `CORE_FIELDS[PropertyGroup.INDUSTRIAL]` đưa `tieu_chuan_container` (xe tải / container vào được không) và `tram_bien_ap` (điện 3 pha sản xuất) lên trước `chieu_cao_tran`; đẩy `tai_trong_san` (tải trọng sàn) và `thoi_han_su_dung` xuống cuối (nhóm thứ cấp, không ép hỏi sớm).
-  - `src/aioi/schema.py`: Reorder `CORE_FIELDS[PropertyGroup.LAND]` ưu tiên `kich_thuoc`, `tho_cu`, `lo_gioi_duong`, `phap_ly_so_do`, `quy_hoach` lên trước `chi_tieu_xay_dung` và `yeu_to_ha_tang`.
-  - `src/aioi/schema.py`: Bổ sung cụm hỏi gộp `("tieu_chuan_container", "tram_bien_ap")` vào `CUM_HOI` để bot hỏi tự nhiên trong 1 lượt (tối đa 2 ý theo SRS-391).
-  - `src/aioi/prompts.py`: Sửa gợi ý hỏi cho `tram_bien_ap` (bỏ chữ kVA, hỏi có điện 3 pha / trạm riêng không) và `tai_trong_san` (chỉ hỏi nếu khách biết).
-(3) Kiểm: `test_toi_uu_loai_hinh_393.py` (3/3 đạt), hồi quy `test_branching.py`, `test_schema.py`, `test_toi_uu_ky_gui_391.py` đạt 100%. Soát truy vết SẠCH.
-
 ### SRS-5.1zzzzzzz392 · Thống nhất đơn model Sonnet cho toàn bộ chu trình, loại bỏ gọi chéo Haiku bóc tách và hoàn thiện 1 vòng chuẩn MOSO (06/11/2026)
 - **Ca gốc**: Đối soát ảnh Zalo thực tế (`media_1793951947524_b6608d63.jpg` và `media_1793951936394_26f342b5.jpg`): mỗi lượt chat bot vẫn hiện `Tốn: $... (claude-haiku-5-5 ... | claude-sonnet-5-5 ...)` do kiến trúc cũ chia 2 vòng (Haiku bóc form json -> Sonnet viết lời). Đồng thời khi khách chỉ chào hỏi ("chào em") hoặc câu không có ô mới, `agent_gop._vong_ghi` coi việc không gọi tool là lỗi và rơi về form Haiku `[nguồn: chủ dự án 06/11/2026: "ủa sao bảo làm moso chỉ chạy 1 vòng chứ không phải 2 vòng", "Ok sửa push lên vps để tui test thử, chạy sonnet"]`.
 - **Lớp lỗi**:
