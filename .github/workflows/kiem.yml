@@ -3,10 +3,8 @@
 # kể của người đẩy commit. Nay máy nói.
 name: Kiểm
 
+# Chủ dự án 11/11/2026: "xóa cái luật cl pr", "sao cứ sửa là m chạy" — KHÔNG tự chạy khi push / PR nữa, chỉ chạy tay.
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 
 jobs:

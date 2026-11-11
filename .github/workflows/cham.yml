@@ -22,12 +22,6 @@ on:
         description: "Chỉ chạy các id kịch bản, ngăn bằng dấu phẩy (trống = cả bộ) — cờ --chi"
         type: string
         default: ""
-  pull_request:
-    paths:
-      - "src/aioi/**"
-      - "tests/kich_ban/**"
-      - "scripts/cham-kich-ban.py"
-      - ".github/workflows/cham.yml"
 
 permissions:
   contents: read
