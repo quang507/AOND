@@ -74,18 +74,18 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 ### 6.1 Kiến trúc hiện tại
 
 - **Bộ não duy nhất: lõi Python `src/aioi/`** (từ 18/10/2026; chủ dự án: "dồn 100% vào lõi Python, tránh hai con AI sửa chéo"). Logic nghiệp vụ, prompt (`prompts.py`), bóc tách, xưng hô (`xung_ho.py`), phí, phiên chat (`engine.py`), câu hỏi theo loại BĐS (`schema.py`: `CORE_FIELDS`, `CORE_THEO_LOAI`, `FACETS`), phía mua (`mua.py`), kho Supabase (`supabase_store.py`), tra địa danh (`dia_danh.py`), pháp lý (`phap_ly.py`), câu mẫu (`cau_mau.py`). Test: `tests/` (pytest), chạy `bun run test:py`.
-- **Máy 146** (từ 06/11/2026 bỏ VPS — chủ dự án 08/11: "không dùng vps nữa chuyển sang máy"; ô `cai-vps` / `go-trang-thu` của `apply-migration.yml` chết theo VPS): lõi `C:\aond\aond_core` (không phải git), task "AOND Core" cổng 8000, bridge `C:\aond\bridge-zca` (task "AOND Zalo Bridge" ký gửi :5005, "AOND Zalo Bridge Tu Van" :5006). Truy cập `ssh nuc` (Tailscale). Đưa lõi lên: `bash scripts/trien-khai-146.sh` (sao lưu `src` cũ, chép, khởi động lại, chờ `/health` — **báo trước người đang chat thử**). `zca-js` ghim `2.2.0`; nâng thì đọc CHANGELOG trước. **Quyền thư mục**: `C:\aond` chỉ cho SYSTEM + Administrators (user thường không đọc / sửa được) — `scripts/siet-acl-146.ps1`, SRS-399. Thư mục bot khác trên 146 không thuộc repo này: không đụng.
-- **Model và công tắc** — giá trị chuẩn vẫn ở các dòng biến trong `bot/bridge-zca/cai-vps.sh` (test đọc file này), nhưng `.env` lõi trên 146 không tự cập nhật: đổi dòng đó thì sửa cả `C:\aond\aond_core\.env` rồi khởi động lại lõi.
+- **Máy 146** (từ 06/11/2026 bỏ VPS — chủ dự án 08/11: "không dùng vps nữa chuyển sang máy"; ô `cai-vps` / `go-trang-thu` gỡ khỏi `apply-migration.yml`, script VPS cũ ở `bot/bridge-zca/archive/` — SRS-401): lõi `C:\aond\aond_core` (không phải git), task "AOND Core" cổng 8000, bridge `C:\aond\bridge-zca` (task "AOND Zalo Bridge" ký gửi :5005, "AOND Zalo Bridge Tu Van" :5006). Truy cập `ssh nuc` (Tailscale). Đưa lõi lên: `bash scripts/trien-khai-146.sh` (sao lưu `src` cũ, chép, khởi động lại, chờ `/health` — **báo trước người đang chat thử**). `zca-js` ghim `2.2.0`; nâng thì đọc CHANGELOG trước. **Quyền thư mục**: `C:\aond` chỉ cho SYSTEM + Administrators (user thường không đọc / sửa được) — `scripts/siet-acl-146.ps1`, SRS-399. Thư mục bot khác trên 146 không thuộc repo này: không đụng.
+- **Model và công tắc** — giá trị chuẩn ở `bot/cau-hinh-loi.env` (`KHOA=giatri`, cùng tên biến với `.env` lõi; test + bộ chấm đọc file này, SRS-401), nhưng `.env` lõi trên 146 không tự cập nhật: đổi dòng đó thì sửa cả `C:\aond\aond_core\.env` rồi khởi động lại lõi.
 
   | Biến | Hiện | Ý nghĩa |
   |---|---|---|
-  | `MODEL_CHAT` | `claude-sonnet-5-5` | model viết lời khách thật — SRS-235 / 308 |
-  | `MODEL_BOC` | `claude-sonnet-5-5` | model bóc tách (`AIOI_EXTRACT_MODEL`); đồng bộ cùng MODEL_CHAT — SRS-392 |
-  | `MODEL_CHAT_THU` | `claude-sonnet-5-5` | model của ID thử (`ban-thu-*`); `gemini` = gọi thẳng Gemini — SRS-239 / 243 |
-  | `MODEL_LUOT_DE` | `tat` | model viết lời cho lượt dễ của người bán (thu thập, không tra dữ liệu, không việc khác) — SRS-311 |
-  | `CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246. Ngoại lệ quy ước: code đọc `!= "tat"`, trống = BẬT |
-  | `DONG_TRICH_XUAT` | `bat` | tin phụ "$$$$$ Đã trích xuất" sau mỗi lượt, MỌI cuộc chat (giai đoạn test; chạy thật đổi `tat`) — SRS-252 |
-  | `MODEL_GEMINI` | `gemini-3.5-flash,gemini-3.1-flash-lite` | Gemini dự phòng khi Claude hỏng — SRS-299 |
+  | `AIOI_CHAT_MODEL` | `claude-sonnet-5-5` | model viết lời khách thật — SRS-235 / 308 |
+  | `AIOI_EXTRACT_MODEL` | `claude-sonnet-5-5` | model bóc tách; đồng bộ cùng model chat — SRS-392 |
+  | `AIOI_CHAT_MODEL_THU` | `claude-sonnet-5-5` | model của ID thử (`ban-thu-*`); `gemini` = gọi thẳng Gemini — SRS-239 / 243 |
+  | `AIOI_MODEL_LUOT_DE` | `tat` | model viết lời cho lượt dễ của người bán (thu thập, không tra dữ liệu, không việc khác) — SRS-311 |
+  | `AIOI_CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246. Ngoại lệ quy ước: code đọc `!= "tat"`, trống = BẬT |
+  | `AIOI_DONG_TRICH_XUAT` | `bat` | tin phụ "$$$$$ Đã trích xuất" sau mỗi lượt, MỌI cuộc chat (giai đoạn test; chạy thật đổi `tat`) — SRS-252 |
+  | `GEMINI_MODEL` | `gemini-3.5-flash,gemini-3.1-flash-lite` | Gemini dự phòng khi Claude hỏng — SRS-299 |
 
   `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đã gỡ hẳn (đường mới là duy nhất, SRS-319): `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON` / `FORM_BAN_GON`, `AGENT_MUA` / `AGENT_BAN`; SRS-371: `AGENT_BOC` / `AGENT_GOP` — lượt người bán và người mua (vai đã rõ) là MỘT vòng agent Sonnet (`agent_gop.py`, SRS-371 / 380), form Haiku chỉ dự phòng. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini
   rồi Groq (`llm/du_phong.py`): mỗi lần ≤ 15 s, cả vòng ≤ 40 s, bridge chờ 90 s — đừng nới.
@@ -142,7 +142,7 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 
 - CI: `.github/workflows/kiem.yml` TỰ chạy khi mở PR / đẩy thêm commit vào nhánh có PR — không dispatch tay (SRS-297).
 - `cham.yml`: bộ chấm offline chạy trên Actions khi PR đổi `src/aioi/**` / `tests/kich_ban/**`, so với `diem_nen.json` của main (cần secret `CLAUDE_CODE_OAUTH_TOKEN`; thiếu thì báo chưa kiểm được, không đỏ) — SRS-377.
-- Test chạy công tắc production (`tests/conftest.py` đọc `cai-vps.sh`); bài kiểm nhánh cũ phải gắn `@pytest.mark.nhanh_cu(AIOI_…="tat")`, bài lộ lỗi production thì `xfail(strict=True)` kèm mã audit — đừng `monkeypatch` về `tat` để cho xanh (SRS-316).
+- Test chạy công tắc production (`tests/conftest.py` đọc `bot/cau-hinh-loi.env`); bài kiểm nhánh cũ phải gắn `@pytest.mark.nhanh_cu(AIOI_…="tat")`, bài lộ lỗi production thì `xfail(strict=True)` kèm mã audit — đừng `monkeypatch` về `tat` để cho xanh (SRS-316).
 - Gộp vào `main` có đổi `src/aioi/` → `bash scripts/sau-gop.sh` đưa lõi lên 146 (lõi khởi động lại ~1 phút). Không còn workflow tự cài (`tu-cai-vps.yml` đã gỡ 08/11). Đổi `bot/bridge-zca/` thì cập nhật bridge trên 146 bằng tay.
 
 **Vòng giao việc của agent** (SRS-265 / 297 — MỘT PR cho mỗi bước / việc lớn; sửa docs, đổi cấu hình, mục SRS đi CHUNG PR của việc chính, không mở PR riêng — chủ dự án 30/10):
@@ -152,7 +152,7 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 4. `bash scripts/cho-workflow.sh kiem.yml <nhánh>` → xanh thì bỏ draft, gộp squash → `bash scripts/sau-gop.sh` (đồng bộ nhánh, đổi lõi thì đưa lên 146).
 5. Hành vi bot đổi (lời, bóc tách, prompt, luật soát) → chỉ cần `bun run cham` (≥ 2 lần, so điểm với bản trước, SRS-304; `--giong` thêm điểm giọng). Bắn thử production (`ban-thu-*`, tốn tiền thật) CHỈ khi đổi phần bộ chấm offline không với tới: ghi DB, Zalo / bridge, công cụ ghi thật, cài VPS. Báo kết quả thật, chưa chạy thì nói chưa. Chat tay: `bun run chat:cli`.
 6. Docs: mỗi thay đổi MỘT mục SRS ở docs/07 (quyết định chủ dự án ghi cùng commit). docs/08 chỉ khi đổi FR / tài liệu tầng trên. Luật mới → một dòng ở `.claude/luat-dang-ap.md`; CLAUDE.md chỉ đổi khi đổi quy trình / ranh giới.
-- **Bắn thử production** (ô `giu_du_lieu = giu` giữ hội thoại cho CRM, chủ dự án tự xoá — SRS-245; ID thử chạy model theo `MODEL_CHAT_THU` — SRS-243; chủ dự án 28/10: ưu tiên test offline, bắn production thì bắn chậm `NGHI_GIUA_LUOT`; tự dọn): `apply-migration.yml` ô `dung_lai` = `ban-thu-ban` / `ban-thu-mua` / `ban-thu-srd` / `ban-thu-ai` / `ban-thu-vm` / `ban-thu-khach-ao` / `ban-thu-5-khach` / `ban-thu-kb` / `ban-thu-dc` / `ban-thu-xa` / `ban-thu-sau` / `ban-thu-nhieu-can` / `ban-thu-dap-y` / `ban-thu-luan` / `ban-thu-kiem`; đọc log lõi `doc-log-loi`; nạp dữ liệu `nap-duong` / `nap-du-an` / `nap-tin-mau` / `nap-luat`; đo tìm nhà `do-tim-nha`. Script ở `bot/tests/ban-thu-*.sh`.
+- **Bắn thử production** (ô `giu_du_lieu = giu` giữ hội thoại cho CRM, chủ dự án tự xoá — SRS-245; ID thử chạy model theo `MODEL_CHAT_THU` — SRS-243; chủ dự án 28/10: ưu tiên test offline, bắn production thì bắn chậm `NGHI_GIUA_LUOT`; tự dọn): `apply-migration.yml` ô `dung_lai` = `ban-thu-ban` / `ban-thu-mua` / `ban-thu-srd` / `ban-thu-ai` / `ban-thu-vm` / `ban-thu-khach-ao` / `ban-thu-5-khach` / `ban-thu-kb` / `ban-thu-dc` / `ban-thu-xa` / `ban-thu-sau` / `ban-thu-nhieu-can` / `ban-thu-dap-y` / `ban-thu-luan` / `ban-thu-kiem`; đọc log lõi `doc-log-loi`; nạp dữ liệu `nap-duong` / `nap-tin-mau` / `nap-luat` (script nạp dự án nguồn ngoài đã lưu ở `scripts/archive/`, không chạy lại — SRS-401); đo tìm nhà `do-tim-nha`. Script ở `bot/tests/ban-thu-*.sh`.
 - Người và máy dùng chung script trong `package.json` — đừng gõ lệnh rời.
 
 **Skill PM mượn ngoài** (`phuryn/pm-skills`, MIT; khai ở `.claude/settings.json`, không ghim commit): chỉ làm khung trình bày, kết quả đổi sang tiếng Việt và gắn ID tay. Đã dùng: `/product-strategy` (`docs/00 §0.4`), `/north-star-metric` (`§0.5`), `/strategy-red-team` (`§0.7`), `/intended-vs-implemented`, `/test-scenarios`, `/job-stories`.

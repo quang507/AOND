@@ -1,4 +1,4 @@
-// Bridge zca-js — chạy trên VPS (systemd `nhadat-bridge`, số tư vấn `nhadat-bridge-tu-van`; cài bằng cai-vps.sh).
+// Bridge zca-js — chạy trên máy 146 (Task Scheduler "AOND Zalo Bridge" :5005, số tư vấn "AOND Zalo Bridge Tu Van" :5006; SRS-5.1zzzzzzz401).
 // Quét QR bằng ACC ZALO CLONE (đừng dùng acc chính — zca-js là API không chính
 // thức, Zalo có thể khoá acc). Tin nhắn đến → gọi lõi Python `aond-core`
 // (http://127.0.0.1:8000/chat-reply, bộ não từ 18/10/2026) → gửi câu trả lời (kèm hình nếu có) lại. Cài & chạy tay:
@@ -66,7 +66,7 @@ const SO_NHAN = String(process.env.SO_NHAN || "").trim().toLowerCase() === "tu_v
 const LA_TU_VAN = SO_NHAN === "tu_van";
 const DUOI = LA_TU_VAN ? "-tu-van" : "";
 
-// Bộ não là lõi Python AOND (`src/aioi/server.py`, `aond-core.service` cổng 8000 trên cùng VPS — README). 18/10/2026: từng đổi
+// Bộ não là lõi Python AOND (`src/aioi/server.py`, task "AOND Core" cổng 8000 trên cùng máy 146 — README). 18/10/2026: từng đổi
 // nhầm sang chat-reply TypeScript trên Supabase; chủ dự án chốt lõi Python, bỏ lõi TypeScript.
 const CHAT_REPLY_URL =
   process.env.CHAT_REPLY_URL || "http://127.0.0.1:8000/chat-reply";
@@ -120,7 +120,7 @@ const SESSION_FILE = path.join(HERE, `zalo-session${DUOI}.json`);
 const { Zalo, ThreadType } = zca;
 // SRS-5.1zzzzzzz177 (25/10/2026): zca-js ≥ 2.0 bắt buộc `imageMetadataGetter` khi gửi ảnh theo đường dẫn file — thiếu thì MỌI tấm hỏng
 // ("Missing imageMetadataGetter", sổ lỗi 23–24/10 ×9) trong khi lõi vẫn nói "ảnh em gửi ngay sau tin này". Đọc tay JPEG / PNG / GIF /
-// WebP (kich-thuoc-anh.mjs), không thêm thư viện; không đọc ra thì gửi 0×0 (zca-js chỉ cần số). Phiên bản zca-js ghim ở cai-vps.sh.
+// WebP (kich-thuoc-anh.mjs), không thêm thư viện; không đọc ra thì gửi 0×0 (zca-js chỉ cần số). zca-js ghim 2.2.0 (CLAUDE.md §6.1).
 async function imageMetadataGetter(filePath) {
   const data = await fs.promises.readFile(filePath);
   const kt = kichThuocAnh(data) || { width: 0, height: 0 };

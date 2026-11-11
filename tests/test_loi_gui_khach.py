@@ -156,7 +156,6 @@ def test_tat_cong_cu_gui_khach_thi_tra_chu_thuong(monkeypatch):
     assert p._client.messages.calls[-1]["tool_choice"] == {"type": "tool", "name": "gui_khach"}
 
 
-def test_cai_vps_tat_cong_cu_mot_dong():
-    import pathlib
-    s = (pathlib.Path(__file__).parents[1] / "bot/bridge-zca/cai-vps.sh").read_text(encoding="utf-8")
-    assert 'CONG_CU_GUI_KHACH="tat"' in s and "AIOI_CONG_CU_GUI_KHACH=%s" in s
+def test_cau_hinh_tat_cong_cu_mot_dong():
+    from tests.cau_hinh_vps import doc_tep
+    assert doc_tep()["AIOI_CONG_CU_GUI_KHACH"] == "tat"

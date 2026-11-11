@@ -1,7 +1,7 @@
 """Bảng giá model + quy đô (SRS-5.1zzzzzzz130 → 195), và tin phụ `$$$$$` "đã trích xuất" sau mỗi lượt (bật lại 28/10/2026, SRS-5.1zzzzzzz252).
 
 26/10 chủ dự án bỏ chế độ test `$$$$$` (bên anh Luận không có); 28/10: "vẫn trong giai đoạn test có dòng $ đã trích xuất nữa đi". Nay là công tắc
-CHUNG `AIOI_DONG_TRICH_XUAT` (`cai-vps.sh` `DONG_TRICH_XUAT`, "bat" / "tat") — áp mọi cuộc chat trong giai đoạn test, tắt một dòng khi chạy thật.
+CHUNG `AIOI_DONG_TRICH_XUAT` (một nguồn `bot/cau-hinh-loi.env`, "bat" / "tat") — áp mọi cuộc chat trong giai đoạn test, tắt một dòng khi chạy thật.
 Tin phụ (tối đa 4 dòng như SRS-139: Ghi · Bỏ · Thiếu / hỏi tiếp · Tốn) ghép HOÀN TOÀN từ dữ liệu lõi đã ghi — không lượt AI nào viết nên không
 bịa, không tốn thêm tiền; KHÔNG vào lịch sử hội thoại / CRM (chỉ nằm trong `replies`), gửi TRƯỚC lời bot (SRS-136). Lỗi → "" (không chặn lượt)."""
 from __future__ import annotations

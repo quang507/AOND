@@ -1,6 +1,6 @@
-// SRS-5.1zzzzzzz388 — bộ kiểm tra bóc / ghép / bổ sung dữ liệu MOSO (scripts/thu-du-an-moso.mjs).
+// SRS-5.1zzzzzzz388 — bộ kiểm tra bóc / ghép / bổ sung dữ liệu MOSO (scripts/archive/thu-du-an-moso.mjs, đã lưu trữ, SRS-5.1zzzzzzz401).
 import assert from "node:assert/strict";
-import { cacKhoa, chonDong, vaGhep, dongMoi, dongVay, chuyenDoiUnitTypes } from "../../scripts/thu-du-an-moso.mjs";
+import { cacKhoa, chonDong, vaGhep, dongMoi, dongVay, chuyenDoiUnitTypes } from "../../scripts/archive/thu-du-an-moso.mjs";
 
 // 1. Kiểm tra chuyển đổi unit types
 const loai = chuyenDoiUnitTypes(["apartment", "townhouse", "shophouse"]);

@@ -9,7 +9,7 @@ không tốn tiền API, SRS-300); DB tạm, không đụng Supabase / Zalo. Đ�
   python scripts/cham-kich-ban.py --nhu thu                                             # chạy như ID thử (công tắc "thu" = bật)
   python scripts/cham-kich-ban.py --giong --nen                                         # ghi điểm nền vào tests/kich_ban/diem_nen.json
 
-Công tắc lõi và model đọc từ `bot/bridge-zca/cai-vps.sh` (một nguồn với VPS). Mặc định chạy NHƯ KHÁCH THẬT: công tắc "thu" coi là tắt, vì ID
+Công tắc lõi và model đọc từ `bot/cau-hinh-loi.env` (một nguồn với test; SRS-5.1zzzzzzz401). Mặc định chạy NHƯ KHÁCH THẬT: công tắc "thu" coi là tắt, vì ID
 chấm là ID thử. Không có --so-voi thì so với `tests/kich_ban/diem_nen.json` nếu có.
 In bảng: mỗi kịch bản số phép đạt / tổng, lần gọi model, lần gọi lại (lõi bắt lỗi rồi bắt viết lại), giây, tiền quy đổi; cuối bảng cỡ prompt
 bóc tách / viết lời mỗi lần gọi đo trên chính lần chạy.
@@ -252,8 +252,8 @@ def tom_tat_prompt(kqs: list[dict]) -> dict[str, dict[str, float]]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--bo", default=os.path.join(GOC, "tests", "kich_ban", "ban.json"))
-    ap.add_argument("--chat", default="", help="model viết lời; trống = MODEL_CHAT trong cai-vps.sh")
-    ap.add_argument("--boc", default="", help="model bóc tách; trống = MODEL_BOC trong cai-vps.sh")
+    ap.add_argument("--chat", default="", help="model viết lời; trống = AIOI_CHAT_MODEL trong bot/cau-hinh-loi.env")
+    ap.add_argument("--boc", default="", help="model bóc tách; trống = AIOI_EXTRACT_MODEL trong bot/cau-hinh-loi.env")
     ap.add_argument("--nhu", choices=("khach", "thu"), default="khach", help="công tắc \"thu\" tính tắt (khách thật) hay bật (ID thử)")
     ap.add_argument("--nen", action="store_true", help="ghi điểm nền vào tests/kich_ban/diem_nen.json")
     ap.add_argument("--cham-lai", default="", help="chấm lại bản ghi JSON đã lưu bằng --ra (không gọi model), vd sau khi sửa phép chấm")
@@ -273,7 +273,7 @@ def main() -> int:
     if a.khong_cau_mau:
         env["CHAM_KHONG_CAU_MAU"] = "1"
     a.chat = a.chat or env.get("AIOI_CHAT_MODEL", "")
-    if not a.boc:   # SRS-5.1zzzzzzz316: model bóc tách như VPS — dòng MODEL_BOC trong cai-vps.sh (env đặt tay vẫn thắng)
+    if not a.boc:   # SRS-5.1zzzzzzz316: model bóc tách như production — dòng AIOI_EXTRACT_MODEL trong bot/cau-hinh-loi.env (env đặt tay vẫn thắng)
         a.boc = os.environ.get("AIOI_EXTRACT_MODEL") or env.get("AIOI_EXTRACT_MODEL", "")
     giong = {}
     if a.cham_lai:   # chấm lại bản ghi đã lưu (--ra) bằng phép chấm hiện tại — không gọi model; điểm giám khảo giữ như lúc chạy

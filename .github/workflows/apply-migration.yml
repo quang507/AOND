@@ -14,7 +14,7 @@ on:
         required: false
         default: ''
       dung_lai:
-        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-du-an | nap-du-an-rever | nap-du-an-moso | nap-duong | nap-giao-lo | cai-vps | go-trang-thu | ban-thu-mua | ban-thu-ban | ban-thu-srd | ban-thu-kb | ban-thu-dc | ban-thu-sau | ban-thu-xa | ban-thu-nhieu-can | ban-thu-dap-y | ban-thu-luan | doc-log-loi | ban-thu-vm | ban-thu-5-khach | ban-thu-khach-ao | do-tim-nha | nap-tin-mau | nap-luat | ban-thu-ai | ban-thu-kiem. Trống = áp migration_file như thường"
+        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-duong | nap-giao-lo | ban-thu-mua | ban-thu-ban | ban-thu-srd | ban-thu-kb | ban-thu-dc | ban-thu-sau | ban-thu-xa | ban-thu-nhieu-can | ban-thu-dap-y | ban-thu-luan | doc-log-loi | ban-thu-vm | ban-thu-5-khach | ban-thu-khach-ao | do-tim-nha | nap-tin-mau | nap-luat | ban-thu-ai | ban-thu-kiem. Trống = áp migration_file như thường"
         required: false
         default: ''
       commit_schema:
@@ -55,8 +55,10 @@ jobs:
 
       # 08/10/2026: nạp dữ liệu tham chiếu cần service_role (kho dự án, từ điển tên đường). Khoá lấy qua Management API
       # bằng chính token này lúc chạy, che trong log, chỉ ghi vào scripts/.env TRÊN MÁY RUNNER (gitignore, không commit).
-      - name: Nạp dữ liệu (nap-du-an / nap-duong)
-        if: ${{ inputs.dung_lai == 'nap-du-an' || inputs.dung_lai == 'nap-du-an-rever' || inputs.dung_lai == 'nap-du-an-moso' || inputs.dung_lai == 'nap-duong' || inputs.dung_lai == 'nap-giao-lo' || inputs.dung_lai == 'nap-ranh-gioi' }}
+      # SRS-5.1zzzzzzz401: ô nap-du-an / nap-du-an-rever / nap-du-an-moso gỡ — script nạp nguồn ngoài lưu ở scripts/archive/ (không chạy lại,
+      # kho dự án một chuẩn `aond`, SRS-5.1zzzzzzz396).
+      - name: Nạp dữ liệu (nap-duong / nap-giao-lo / nap-ranh-gioi)
+        if: ${{ inputs.dung_lai == 'nap-duong' || inputs.dung_lai == 'nap-giao-lo' || inputs.dung_lai == 'nap-ranh-gioi' }}
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
           BUOC: ${{ inputs.dung_lai }}
@@ -71,9 +73,6 @@ jobs:
           # Log job phiên Claude không đọc được — 40 dòng cuối (tên đường / dự án công khai, không có khoá) ra một annotation.
           rc=0
           case "$BUOC" in
-            nap-du-an) node scripts/thu-du-an.mjs > /tmp/nap.log 2>&1 || rc=$? ;;
-            nap-du-an-rever) node scripts/thu-du-an-rever.mjs > /tmp/nap.log 2>&1 || rc=$? ;;
-            nap-du-an-moso) node scripts/thu-du-an-moso.mjs > /tmp/nap.log 2>&1 || rc=$? ;;
             nap-giao-lo) node scripts/nap-giao-lo.mjs --thieu > /tmp/nap.log 2>&1 || rc=$? ;;
             nap-ranh-gioi) node scripts/nap-ranh-gioi.mjs > /tmp/nap.log 2>&1 || rc=$? ;;   # SRS-5.1zzzzzzz360, chỉ sau khi áp 20261103b
             *) node scripts/nap-duong.mjs --thieu > /tmp/nap.log 2>&1 || rc=$? ;;
@@ -83,50 +82,8 @@ jobs:
           echo "::notice title=nap $BUOC (thoát $rc)::$(tail -40 /tmp/nap.log | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
           exit $rc
 
-      # 09/10/2026: cài / cập nhật bridge Zalo clone trên VPS khi chủ dự án không tự SSH được. Thông tin VPS và
-      # BRIDGE_SECRET nằm trong Supabase Vault (VPS_HOST, VPS_ROOT_PASSWORD đặt tạm), đọc qua Management API, che trong
-      # log, BRIDGE_SECRET đi qua stdin (không nằm trên dòng lệnh). Log không in link / ảnh QR — ai cầm QR là đăng nhập
-      # được bridge; QR đọc ở bảng bridge_dang_nhap (chỉ admin). Bước sau luôn GHI ĐÈ VPS_ROOT_PASSWORD + VPS_HOST trong Vault
-      # (DELETE trên vault.secrets qua Management API bị từ chối — lượt 09/10 thoát 22; update_secret thì được).
-      - name: Cài bridge Zalo trên VPS (cai-vps)
-        if: ${{ inputs.dung_lai == 'cai-vps' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: |
-          set -euo pipefail
-          q() { curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
-                  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$(jq -n --arg q "$1" '{query:$q}')"; }
-          # 22/10/2026 (SRS-5.1zzzzzzz134): kéo luôn khoá Gemini chat (GEMINI_API_KEY, _2, _3, _4) — cai-vps.sh ghi vào .env lõi.
-          J=$(q "select json_object_agg(name, decrypted_secret) as s from vault.decrypted_secrets where name in ('VPS_HOST','VPS_ROOT_PASSWORD','BRIDGE_SECRET','GEMINI_API_KEY','GEMINI_API_KEY_2','GEMINI_API_KEY_3','GEMINI_API_KEY_4','ANTHROPIC_API_KEY')")
-          HOST=$(jq -r '.[0].s.VPS_HOST // empty' <<<"$J"); PW=$(jq -r '.[0].s.VPS_ROOT_PASSWORD // empty' <<<"$J"); BS=$(jq -r '.[0].s.BRIDGE_SECRET // empty' <<<"$J")
-          GK=$(jq -r '[.[0].s.GEMINI_API_KEY, .[0].s.GEMINI_API_KEY_2, .[0].s.GEMINI_API_KEY_3, .[0].s.GEMINI_API_KEY_4] | map(select(. != null and . != "")) | join(",")' <<<"$J")
-          AK=$(jq -r '.[0].s.ANTHROPIC_API_KEY // empty' <<<"$J")   # SRS-5.1zzzzzzz135: khoá Claude cũng một nguồn Vault → .env lõi
-          unset J
-          for v in "$HOST" "$PW" "$BS" "$AK" ${GK//,/ }; do [ -n "$v" ] && echo "::add-mask::$v"; done
-          echo "Khoá Gemini chat từ Vault: $(awk -F, '{print ($0==""?0:NF)}' <<<"$GK")"
-          if [ -z "$HOST" ] || [ -z "$PW" ] || [ -z "$BS" ]; then echo "::error::Thiếu VPS_HOST / VPS_ROOT_PASSWORD / BRIDGE_SECRET trong Vault"; exit 1; fi
-          sudo apt-get install -y -qq sshpass >/dev/null
-          export SSHPASS="$PW"
-          rc=0
-          # 10/10/2026 (SRS-5.1zzzzs): cài ĐÚNG nhánh workflow đang chạy (trước luôn lấy main) — bản sửa bridge lên VPS được
-          # trước khi merge. Tên nhánh chỉ nhận ký tự an toàn vì nó đi vào lệnh chạy trên VPS.
-          NHANH_VPS="$GITHUB_REF_NAME"
-          if ! printf '%s' "$NHANH_VPS" | grep -Eq '^[A-Za-z0-9._/-]+$'; then echo "::error::Tên nhánh lạ: $NHANH_VPS"; exit 1; fi
-          # 18/10/2026: lượt cài hỏng (git checkout / quyền .git) vẫn báo xanh — lệnh từ xa thoát theo mã của `tail` cuối chuỗi. Nay giữ
-          # mã thoát của cai-vps.sh (rc_cai) và in commit + origin đang chạy để thấy VPS đã lên code mới chưa.
-          # 19/10 (SRS-5.1zzzzzzz58): script tải theo $GITHUB_SHA — CDN raw giữ bản cũ theo tên nhánh vài phút sau merge.
-          printf '%s\n%s\n%s\n' "$BS" "$GK" "$AK" | sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 "root@$HOST" \
-            "read -r BRIDGE_SECRET; read -r GEMINI_API_KEYS_MOI; read -r ANTHROPIC_KEY_MOI; export BRIDGE_SECRET GEMINI_API_KEYS_MOI ANTHROPIC_KEY_MOI; curl -fsSL https://raw.githubusercontent.com/quang507/AOND/$GITHUB_SHA/bot/bridge-zca/cai-vps.sh -o /root/cai-vps.sh && NHANH='$NHANH_VPS' bash /root/cai-vps.sh </dev/null; rc_cai=\$?; unset BRIDGE_SECRET GEMINI_API_KEYS_MOI ANTHROPIC_KEY_MOI; sleep 25; echo \"== service: \$(systemctl is-active nhadat-bridge)\"; echo \"== code: \$(sudo -u nhadat git -C /opt/nhadat rev-parse --short HEAD) \$(sudo -u nhadat git -C /opt/nhadat remote get-url origin)\"; journalctl -u nhadat-bridge -n 40 --no-pager -o cat | grep -viE 'qr-|http://|https://' | grep -vE '^(\\? \\[|→ |📡)' | tail -25; echo \"== aond-core: \$(systemctl is-active aond-core)\"; systemctl cat aond-core 2>/dev/null | grep -E '^(WorkingDirectory|ExecStart|User|EnvironmentFile)='; journalctl -u aond-core -n 120 --no-pager -o cat | grep -viE 'key|token|secret|password|bearer' | tail -15; echo \"== /opt/aond_core (không phải bản git):\"; du -sh /opt/aond_core/* /opt/aond_core/.[!.]* 2>/dev/null | sort -h | tail -20; echo \"== tên biến .env lõi (không in giá trị):\"; sed -nE 's/^([A-Za-z_][A-Za-z0-9_]*)=.*/\\1/p' /opt/aond_core/.env 2>/dev/null | tr '\\n' ' '; echo; echo \"== khác repo (/opt/nhadat/src/aioi vs /opt/aond_core/src/aioi):\"; diff -rq /opt/nhadat/src/aioi /opt/aond_core/src/aioi 2>&1 | grep -v __pycache__ | head -40; echo \"== cai-vps.sh thoát \$rc_cai\"; exit \$rc_cai" \
-            > /tmp/vps.log 2>&1 || rc=$?
-          unset SSHPASS PW BS GK AK
-          # Che dãy số ≥ 9 chữ số (Zalo ID của acc clone / khách, SĐT) — log repo này công khai.
-          sach() { grep -viE "qr-[a-z0-9]|password|secret=" /tmp/vps.log | sed -E 's/[0-9]{9,}/#/g; s/\r//g'; }
-          sach | tail -90
-          echo "::notice title=cai-vps (thoát $rc)::$(sach | tail -40 | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')"
-          exit $rc
-
-      # 18/10/2026: chủ dự án bỏ bước tự ghi đè VPS_HOST / VPS_ROOT_PASSWORD trong Vault sau mỗi lượt cai-vps ("bỏ cái tự xóa đó đi")
-      # — mỗi lượt hỏng là phải nhập lại mật khẩu. Hai secret nay ở lại Vault (chỉ service_role / Management API đọc được).
+      # SRS-5.1zzzzzzz401: bỏ VPS (06–08/11/2026) — ô cai-vps (cài bridge + lõi qua SSH) và go-trang-thu đã gỡ; lõi / bridge chạy trên
+      # máy 146, đưa lõi lên bằng scripts/trien-khai-146.sh. Script VPS cũ lưu ở bot/bridge-zca/archive/.
 
       # 19/10/2026 (SRS-5.1zzzzzzz71): bắn thử luồng người mua trên lõi Python production bằng ID thử, tự dọn (bot/tests/ban-thu-mua.sh).
       - name: Bắn thử luồng người mua (ban-thu-mua)
@@ -264,42 +221,9 @@ jobs:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
         run: bash bot/tests/ban-thu-xa.sh
 
-      # 18/10/2026 (SRS-5.1zzzzzzz32): chủ dự án "xóa trang chat thử luôn đi" — trang thử chạy bộ não TypeScript đã gỡ. Gỡ đúng
-      # những gì bot/tests/chat/cai-vps.sh (đã xoá, xem git) dựng: 3 unit systemd, 2 lệnh /usr/local/bin, /opt/trang-thu,
-      # /etc/trang-thu.env|.nhanh, user trangthu. Giữ swapfile và cloudflared (có thể còn việc khác dùng). Không đụng bridge / aond-core.
-      - name: Gỡ trang chat thử trên VPS (go-trang-thu)
-        if: ${{ inputs.dung_lai == 'go-trang-thu' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: |
-          set -euo pipefail
-          q() { curl -sS -f -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
-                  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "$(jq -n --arg q "$1" '{query:$q}')"; }
-          J=$(q "select json_object_agg(name, decrypted_secret) as s from vault.decrypted_secrets where name in ('VPS_HOST','VPS_ROOT_PASSWORD')")
-          HOST=$(jq -r '.[0].s.VPS_HOST // empty' <<<"$J"); PW=$(jq -r '.[0].s.VPS_ROOT_PASSWORD // empty' <<<"$J")
-          unset J
-          for v in "$HOST" "$PW"; do [ -n "$v" ] && echo "::add-mask::$v"; done
-          if [ -z "$HOST" ] || [ -z "$PW" ]; then echo "::error::Thiếu VPS_HOST / VPS_ROOT_PASSWORD trong Vault"; exit 1; fi
-          sudo apt-get install -y -qq sshpass >/dev/null
-          export SSHPASS="$PW"
-          sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=20 "root@$HOST" '
-            set -u
-            systemctl disable --now trang-thu-cap-nhat.timer trang-thu-cap-nhat.service trang-thu-ham.service trang-thu.service 2>/dev/null || true
-            rm -f /etc/systemd/system/trang-thu.service /etc/systemd/system/trang-thu-ham.service \
-                  /etc/systemd/system/trang-thu-cap-nhat.service /etc/systemd/system/trang-thu-cap-nhat.timer
-            systemctl daemon-reload; systemctl reset-failed 2>/dev/null || true
-            rm -f /usr/local/bin/trang-thu-link /usr/local/bin/trang-thu-cap-nhat /etc/trang-thu.env /etc/trang-thu.nhanh
-            rm -rf /opt/trang-thu
-            id trangthu >/dev/null 2>&1 && userdel -r trangthu 2>/dev/null || true
-            echo "== còn unit trang-thu: $(systemctl list-unit-files "trang-thu*" --no-legend | wc -l)"
-            echo "== còn /opt/trang-thu: $([ -e /opt/trang-thu ] && echo co || echo khong)"
-            echo "== còn user trangthu: $(id trangthu >/dev/null 2>&1 && echo co || echo khong)"
-            echo "== bridge: $(systemctl is-active nhadat-bridge) · aond-core: $(systemctl is-active aond-core)"
-          '
-
       # 08/10/2026: project production cũ bị xoá nhầm — dựng lại từng bước trên project mới rỗng.
       - name: Dựng lại DB (dung_lai)
-        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-du-an' && inputs.dung_lai != 'nap-du-an-rever' && inputs.dung_lai != 'nap-du-an-moso' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'nap-giao-lo' && inputs.dung_lai != 'nap-ranh-gioi' && inputs.dung_lai != 'cai-vps' && inputs.dung_lai != 'go-trang-thu' && inputs.dung_lai != 'ban-thu-mua' && inputs.dung_lai != 'ban-thu-ban' && inputs.dung_lai != 'ban-thu-srd' && inputs.dung_lai != 'ban-thu-dap-y' && inputs.dung_lai != 'ban-thu-luan' && inputs.dung_lai != 'doc-log-loi' && inputs.dung_lai != 'ban-thu-kb' && inputs.dung_lai != 'ban-thu-dc' && inputs.dung_lai != 'ban-thu-sau' && inputs.dung_lai != 'ban-thu-xa' && inputs.dung_lai != 'ban-thu-nhieu-can' && inputs.dung_lai != 'ban-thu-vm' && inputs.dung_lai != 'ban-thu-5-khach' && inputs.dung_lai != 'ban-thu-khach-ao' && inputs.dung_lai != 'do-tim-nha' && inputs.dung_lai != 'nap-tin-mau' && inputs.dung_lai != 'nap-luat' && inputs.dung_lai != 'ban-thu-ai' && inputs.dung_lai != 'ban-thu-kiem' }}
+        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'nap-giao-lo' && inputs.dung_lai != 'nap-ranh-gioi' && inputs.dung_lai != 'ban-thu-mua' && inputs.dung_lai != 'ban-thu-ban' && inputs.dung_lai != 'ban-thu-srd' && inputs.dung_lai != 'ban-thu-dap-y' && inputs.dung_lai != 'ban-thu-luan' && inputs.dung_lai != 'doc-log-loi' && inputs.dung_lai != 'ban-thu-kb' && inputs.dung_lai != 'ban-thu-dc' && inputs.dung_lai != 'ban-thu-sau' && inputs.dung_lai != 'ban-thu-xa' && inputs.dung_lai != 'ban-thu-nhieu-can' && inputs.dung_lai != 'ban-thu-vm' && inputs.dung_lai != 'ban-thu-5-khach' && inputs.dung_lai != 'ban-thu-khach-ao' && inputs.dung_lai != 'do-tim-nha' && inputs.dung_lai != 'nap-tin-mau' && inputs.dung_lai != 'nap-luat' && inputs.dung_lai != 'ban-thu-ai' && inputs.dung_lai != 'ban-thu-kiem' }}
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
           BUOC: ${{ inputs.dung_lai }}

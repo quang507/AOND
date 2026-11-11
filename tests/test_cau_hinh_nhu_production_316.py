@@ -1,8 +1,8 @@
 """01/11/2026 (SRS-5.1zzzzzzz316, audit Đợt 0, AU-05 / AU-25). Bài canh nền test.
 
-1. Test chạy ĐÚNG công tắc production: `tests/conftest.py` đọc `bot/bridge-zca/cai-vps.sh` — env rỗng từng làm mọi công tắc tắt, test đi
+1. Test chạy ĐÚNG công tắc production: `tests/conftest.py` đọc `bot/cau-hinh-loi.env` (SRS-401; trước là cai-vps.sh) — env rỗng từng làm mọi công tắc tắt, test đi
    đường production không đi. Đỏ khi gỡ conftest.
-2. Model bóc tách một nguồn ở cai-vps.sh (`MODEL_BOC` → `AIOI_EXTRACT_MODEL`): bộ chấm và VPS cùng đọc; sổ `bot_usage_model` 28/10–01/11
+2. Model bóc tách một nguồn (`AIOI_EXTRACT_MODEL` ở `bot/cau-hinh-loi.env`): bộ chấm và test cùng đọc; sổ `bot_usage_model` 28/10–01/11
    ghi production bóc tách bằng claude-haiku-5-5, trong khi bộ chấm từng rơi về mặc định config claude-haiku-4-5.
 3. Cổng bằng chứng (SRS-73) chặn thật trên đường production: đồ giả MockProvider lấy CẢ lời khách làm bằng chứng nên chưa bài nào chạm
    nhánh chặn (AU-25). Đỏ khi gỡ cổng ở `Engine._gia_tri_ghi`."""
@@ -17,10 +17,10 @@ from tests.cau_hinh_vps import cong_tac, cong_tac_vps
 def test_test_chay_cong_tac_production():
     for k, v in cong_tac().items():
         assert os.environ.get(k) == v, k
-    assert os.environ["AIOI_DONG_TRICH_XUAT"] == "bat"     # công tắc "bat" ở VPS = mọi khách
+    assert os.environ["AIOI_DONG_TRICH_XUAT"] == "bat"     # công tắc "bat" = mọi khách
 
 
-def test_model_boc_tach_mot_nguon_o_cai_vps():
+def test_model_boc_tach_mot_nguon():
     env = cong_tac_vps()
     assert env.get("AIOI_EXTRACT_MODEL", "").startswith("claude-")
     assert env["AIOI_EXTRACT_MODEL"] != Settings(provider="mock", anthropic_api_key=None, chat_model="x", vision_model="y").extract_model

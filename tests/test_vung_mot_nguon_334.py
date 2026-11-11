@@ -29,7 +29,7 @@ def test_web_cung_danh_sach_vung_voi_loi():
 
 
 def test_tinh_dung_chu_bo_nap_du_an_ghi():
-    nap = (GOC / "scripts" / "thu-du-an-rever.mjs").read_text(encoding="utf-8")
+    nap = (GOC / "scripts" / "archive" / "thu-du-an-rever.mjs").read_text(encoding="utf-8")
     ghi = set(re.findall(r'\["[a-z ]+",\s*"([^"]+)"\]', nap))
     assert ghi, "không đọc được bảng tỉnh của thu-du-an-rever.mjs"
     thieu = [tinh for tinh, _ in _vung_ts() if tinh not in ghi]

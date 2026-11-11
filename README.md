@@ -10,8 +10,8 @@ Dự án này là kho lưu trữ **DUY NHẤT VÀ CHÍNH THỨC** của toàn b�
 
 | Thư mục / File | Thành phần | Công nghệ | Nhiệm vụ |
 |---|---|---|---|
-| `src/aioi/` | **AOND Core Engine** | Python 3.12+, FastAPI, Uvicorn | Bộ não AI xử lý hội thoại, bóc tách thực thể BĐS, soạn tin catchy, follow-up, xưng hô linh hoạt. Chạy trên VPS Port 8000 (`aond-core.service`). |
-| `bot/bridge-zca/` | **Zalo Personal Bridge** | Node.js, `zca-js` | Cầu nối tài khoản Zalo cá nhân với Core Engine. Nhận tin nhắn, ảnh, giọng nói, sticker và phản hồi theo nhịp gõ tự nhiên. Chạy trên VPS Port 5005 (`nhadat-bridge.service`). |
+| `src/aioi/` | **AOND Core Engine** | Python 3.12+, FastAPI, Uvicorn | Bộ não AI xử lý hội thoại, bóc tách thực thể BĐS, soạn tin catchy, follow-up, xưng hô linh hoạt. Chạy trên máy 146, cổng 8000 (Task Scheduler `\AOND Core`). |
+| `bot/bridge-zca/` | **Zalo Personal Bridge** | Node.js, `zca-js` | Cầu nối tài khoản Zalo cá nhân với Core Engine. Nhận tin nhắn, ảnh, giọng nói, sticker và phản hồi theo nhịp gõ tự nhiên. Chạy trên máy 146: số ký gửi cổng 5005 (`\AOND Zalo Bridge`), số tư vấn cổng 5006 (`\AOND Zalo Bridge Tu Van`). |
 | `bot/supabase/` | **Database & Migrations** | PostgreSQL, Supabase, Deno | 9 edge functions, bộ di trú schema (`migrations/`), và schema chuẩn (`schema.sql`). |
 | `app/`, `components/`, `lib/` | **Web CRM Admin** | Next.js 15, Tailwind 4, React | Bảng điều khiển CRM (`aioinhadat.vercel.app/admin`) quản lý tin nhắn khách, rổ hàng BĐS theo thời gian thực. Deploy tự động qua Vercel. |
 | `docs/` | **Bộ tài liệu BA** | Markdown | Nguồn sự thật: yêu cầu, luồng, đặc tả `docs/07-srs.md`, truy vết `docs/08`. |
@@ -27,9 +27,9 @@ Dự án này là kho lưu trữ **DUY NHẤT VÀ CHÍNH THỨC** của toàn b�
 2. **Supabase Cloud (`rqxmmqmctpklqcmbfxuj`):**
    * **Single Source of Truth:** Nguồn dữ liệu chân lý duy nhất. Toàn bộ `sellers`, `conversations`, `messages`, `listings` (thông số kỹ thuật và `boc_tach` JSONB) được lưu trữ tại đây.
    * **Cơ chế tự động reset:** Khi quản trị viên bấm **XÓA** trên Web CRM, Bot Zalo lập tức nhận biết và reset phiên làm việc về trạng thái mới tinh.
-3. **VPS Production (`103.126.162.93`):**
-   * `aond-core.service` (Port 8000): Thực thi AI Engine.
-   * `nhadat-bridge.service` (Port 5005): Thực thi Zalo Bridge nối acc clone.
+3. **Máy 146 (Windows, Task Scheduler — thay VPS từ 06–08/11/2026, SRS-5.1zzzzzzz401):**
+   * `\AOND Core` (cổng 8000): Thực thi AI Engine. Đưa lõi lên: `bash scripts/trien-khai-146.sh`.
+   * `\AOND Zalo Bridge` (cổng 5005, số ký gửi) và `\AOND Zalo Bridge Tu Van` (cổng 5006, số tư vấn): Zalo Bridge nối acc clone.
 
 ---
 

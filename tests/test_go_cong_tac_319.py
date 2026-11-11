@@ -12,7 +12,7 @@ from aioi import agent_ban, agent_mua, engine, prompts
 from aioi.llm.base import RANH_GIOI_CACHE
 from aioi.prompts import NHAN_VIEC_LUOT, SLANG_NOTES, TIN_HE_THONG, build_phieu_luot
 from aioi.schema import Property
-from tests.cau_hinh_vps import CAI_VPS, cong_tac_vps
+from tests.cau_hinh_vps import TEP_CAU_HINH, cong_tac_vps
 from tests.test_form_ban_gon_303 import BAN
 from tests.test_form_mua_gon_293 import AiGhiForm
 from tests.test_viec_mua import KhoGia
@@ -40,12 +40,12 @@ def test_khong_con_ham_duong_cu():
     assert all(len(dong) == 3 for dong in engine.LUAT_SOAT)   # (ten, nhom, fn) — không còn cột chế độ cũ
 
 
-def test_cai_vps_khong_con_ghi_sau_cong_tac():
+def test_cau_hinh_khong_con_ghi_sau_cong_tac():
     env = cong_tac_vps()
     assert not {f"AIOI_{t}" for t in SAU_TEN} & set(env)
-    chu = open(CAI_VPS, encoding="utf-8").read()
+    chu = open(TEP_CAU_HINH, encoding="utf-8").read()
     for t in SAU_TEN:
-        assert not re.search(rf'(?m)^\s*{t}="', chu), t   # không còn dòng gán giá trị
+        assert not re.search(rf'(?m)^\s*AIOI_{t}=', chu), t   # không còn dòng gán giá trị
 
 
 def test_phieu_luot_mang_tin_he_thong_va_tieng_long_o_phan_co_dinh():

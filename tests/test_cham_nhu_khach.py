@@ -1,4 +1,4 @@
-"""Bộ chấm đọc công tắc từ cai-vps.sh và mặc định chạy NHƯ KHÁCH THẬT (ID chấm là ID thử: không đổi "thu" thì đo đường khách thật không đi).
+"""Bộ chấm đọc công tắc từ bot/cau-hinh-loi.env (SRS-401; trước là cai-vps.sh) và mặc định chạy NHƯ KHÁCH THẬT (ID chấm là ID thử: không đổi "thu" thì đo đường khách thật không đi).
 Không gọi model."""
 import importlib.util
 import os
@@ -8,17 +8,18 @@ _sp = importlib.util.spec_from_file_location("cham_kich_ban", os.path.join(GOC, 
 cham_kich_ban = importlib.util.module_from_spec(_sp)
 _sp.loader.exec_module(cham_kich_ban)
 
-MAU = '''  MODEL_CHAT="claude-sonnet-5-5"
-  MODEL_CHAT_THU="gemini"
-  DONG_TRICH_XUAT="bat"
-  CONG_TAC_X="thu"
-  MODEL_CONG_TAC_X=""
-    printf 'AIOI_CHAT_MODEL=%s\\nAIOI_CHAT_MODEL_THU=%s\\nAIOI_DONG_TRICH_XUAT=%s\\nAIOI_CONG_TAC_X=%s\\nAIOI_CONG_TAC_X_MODEL=%s\\n' "$MODEL_CHAT" "$MODEL_CHAT_THU" "$DONG_TRICH_XUAT" "$CONG_TAC_X" "$MODEL_CONG_TAC_X" >> x
-'''
+MAU = """# chú thích bỏ qua
+AIOI_CHAT_MODEL=claude-sonnet-5-5
+AIOI_CHAT_MODEL_THU=gemini
+
+AIOI_DONG_TRICH_XUAT=bat
+AIOI_CONG_TAC_X=thu
+AIOI_CONG_TAC_X_MODEL=
+"""
 
 
 def test_cong_tac_nhu_khach_that(tmp_path):
-    f = tmp_path / "cai-vps.sh"
+    f = tmp_path / "cau-hinh-loi.env"
     f.write_text(MAU, encoding="utf-8")
     env = cham_kich_ban.cong_tac_vps(str(f))
     assert env["AIOI_CHAT_MODEL"] == "claude-sonnet-5-5" and env["AIOI_DONG_TRICH_XUAT"] == "bat"

@@ -1,8 +1,8 @@
-// SRS-5.1zzzzzzz324 — bộ bóc / ghép của scripts/thu-du-an-rever.mjs trên HTML tự dựng (không lưu trang nguồn vào repo).
+// SRS-5.1zzzzzzz324 — bộ bóc / ghép của scripts/archive/thu-du-an-rever.mjs (đã lưu trữ, SRS-5.1zzzzzzz401) trên HTML tự dựng (không lưu trang nguồn vào repo).
 // Đỏ khi: bóc sai khối thông số hai mẫu trang; giá rao giữ tin gõ sai diện tích; dữ kiện trong chú thích HTML lọt vào; ghép đè ô đã có;
 // tên trùng nhiều quận mà vẫn ghép bừa; dự án ngoài vùng lọt.
 import assert from "node:assert/strict";
-import { bocChiTiet, chonDong, vaGhep, tinhTrongVung, khoaTen } from "../../scripts/thu-du-an-rever.mjs";
+import { bocChiTiet, chonDong, vaGhep, tinhTrongVung, khoaTen } from "../../scripts/archive/thu-du-an-rever.mjs";
 
 const the = (gia, dt, loai = "mua") => `<article class="card card-listing"><a class="price-cost card-listing-price" href="https://rever.vn/${loai}/x">${gia}</a>
   <ul class="card-summary"><li><span class="text-summary">${dt} m²</span></li></ul></article>`;

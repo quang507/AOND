@@ -73,6 +73,20 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz391 · Tái cấu trúc toàn diện Prompt và Quy trình Ký gửi: Thu gọn System Prompt <1.500 tokens, tích hợp Customer Insight, chuyển luật sang Công cụ nguyên tử, Cắt bỏ Negative Constraints, Fast-Draft 50 điểm và CUM_TOI_DA = 2 (06/11/2026)
+- **Ca gốc**: Đối soát ảnh Zalo thực tế (`media_1793949317018_0b4e5069.jpg`) và mã nguồn gốc của anh Luận (`https://github.com/luan8560/AOND`): một lượt chat tốn tới $0.09 – $0.13 do Sonnet nuốt 13.1k tokens, System Prompt nhồi 7.100 tokens (>24.500 ký tự) với 40+ câu cấm tiêu cực khiến mô hình phản ứng gượng gạo; bot bắt bẻ hỏi đủ 10 tiêu chí (hiện trạng, nội thất) mới chịu ra tin nháp, và khi khách hỏi dự án/vay ngân hàng thì bot bị đơ do thiếu Tool tra cứu `[nguồn: chủ dự án 06/11/2026: "Thu gọn System Prompt từ 7.000 tokens xuống dưới 1.500 tokens Chuyển các luật tra cứu cồng kềnh thành CÔNG CỤ NGUYÊN TỬ (Tools)Cắt bỏ các luật cấm tiêu cực (Negative Constraints) ok tôi duyệt", "insight là thấu hiểu và chăm sóc khách hàng nữa, cho vào chỗ phân vai luôn", "vậy mỗi lượt hỏi tối đa 2 ý thôi"]`.
+- **Lớp lỗi**:
+  1. Prompt phân mảnh qua 6+ file, nhồi cả văn bản luật, bảng giá, chính sách phí vào System Prompt khiến chi phí token tăng vọt và bot nói chuyện mất tự nhiên.
+  2. Nhiều luật cấm tiêu cực ("CẤM...", "TUYỆT ĐỐI...") khiến LLM bị gò bó hoặc sinh ảo giác né luật.
+  3. `schema.NHOM_SOAN` chặn bản nháp vì thiếu `hien_trang` ("tinh_trang_ban_giao", "hien_trang_su_dung"), trong khi khách ký gửi chỉ cần 4 trụ cột vàng (Loại hình, Vị trí/Khu vực, Diện tích, Giá ~50 điểm) là đã có thể ra bản nháp rao chợ sơ khởi để khách hào hứng duyệt và cùng sửa.
+  4. `schema.CUM_TOI_DA = 1` gò bó mỗi lượt chỉ 1 câu hỏi đơn điệu, không khai thác được sự phối hợp tự nhiên 1–2 ý của người môi giới chuyên nghiệp.
+- **Sửa**:
+  1. Thu gọn System Prompt xuống ~1.150 tokens (4.136 ký tự, giảm 85%), kế thừa 100% tinh hoa anh Luận: `AD_FORMAT` 4 phần đắt giá, từ điển tiếng lóng Sài Gòn, nguyên tắc trung thực tuyệt đối.
+  2. Tích hợp trực tiếp Phân vai Thấu hiểu & Chăm sóc khách hàng (Customer Insight & Empathy) cho cả người bán lẫn người mua; cắt bỏ toàn bộ negative constraints sang positive directives.
+  3. Chuyển các luật tra cứu nặng thành Function Calling tools: `kiem_tra_phap_ly_so`, `dinh_gia_tham_khao`, `tinh_phi_moi_gioi`, `tim_kiem_gio_hang` / `tra_cuu_du_an`.
+  4. Nâng `CUM_TOI_DA = 2` trong `src/aioi/schema.py`; gỡ bỏ `hien_trang` khỏi điều kiện chặn soạn nháp trong `facet_trong()`, kích hoạt Fast-Draft sớm tại ~50 điểm.
+- **Kiểm**: `tests/test_toi_uu_ky_gui_391.py` kiểm tra Fast-Draft không bị chặn bởi hiện trạng, `CUM_TOI_DA = 2`, System Prompt < 1.500 tokens, tích hợp Customer Insight và công cụ nguyên tử.
+
 ### SRS-5.1zzzzzzz390 · Hoàn thiện bộ công cụ Function Calling cho luồng Ký Gửi (Agent Bán) theo chuẩn MOSO: Định giá sơ bộ AVM, Tra cứu pháp lý & sổ hồng, Tính phí môi giới minh bạch (06/11/2026)
 - **Ca gốc**: Sau khi chuẩn hóa các công cụ tìm kiếm và tư vấn mua chuẩn Function Calling theo mô hình MOSO (`SRS-5.1zzzzzzz389`), tiếp tục hoàn thiện nhánh Ký Gửi nhà đất phía người bán / người rao (`agent_ban.py` và `agent_gop.py`). Người bán khi nhắn tin ký gửi Zalo thường có 3 nhu cầu hỏi cấp thiết: (1) "Khu này giá thị trường bao nhiêu?", "Giá tôi rao cao hay thấp?" (định giá tham khảo); (2) "Sổ này chưa hoàn công có bán được không?", "Sổ đang thế chấp ngân hàng sang tên thế nào?" (tư vấn pháp lý sổ hồng); (3) "Ký gửi có mất phí trước không?", "Phí hoa hồng bên em tính sao?" (chính sách phí môi giới) `[nguồn: chủ dự án 06/11/2026: "bên aond còn nhập kí gửi nữa"]`.
 - **Lớp lỗi**:

@@ -52,13 +52,12 @@ def test_id_thu_chat_bang_model_thu_khach_that_khong(monkeypatch):
     assert model_chat_thu() is None
 
 
-def test_model_chat_khach_that_mot_nguon_o_cai_vps(monkeypatch):
-    """SRS-5.1zzzzzzz235 (chủ dự án 28/10: "để sonnet 5.5 đi, khi nào cần thì thôi đổi lại"): model chat của lõi ghi vào .env bởi cai-vps.sh
-    từ MỘT dòng MODEL_CHAT; ID thử mặc định chat cùng model khách thật."""
-    import pathlib
-    s = (pathlib.Path(__file__).parents[1] / "bot/bridge-zca/cai-vps.sh").read_text(encoding="utf-8")
-    # SRS-5.1zzzzzzz308: chủ dự án 30/10 đổi sang Haiku ("dùng haiku hết luôn cũng dc") — vẫn MỘT dòng, tên model Claude.
+def test_model_chat_khach_that_mot_nguon(monkeypatch):
+    """SRS-5.1zzzzzzz235 (chủ dự án 28/10: "để sonnet 5.5 đi, khi nào cần thì thôi đổi lại"): model chat của lõi từ MỘT dòng
+    AIOI_CHAT_MODEL ở `bot/cau-hinh-loi.env` (SRS-5.1zzzzzzz401, trước ở cai-vps.sh); ID thử mặc định chat cùng model khách thật."""
     import re
-    assert re.search(r'^\s*MODEL_CHAT="claude-[a-z0-9-]+"$', s, re.M) and "AIOI_CHAT_MODEL=%s" in s
+    from tests.cau_hinh_vps import doc_tep
+    # SRS-5.1zzzzzzz308: chủ dự án 30/10 đổi sang Haiku ("dùng haiku hết luôn cũng dc") — vẫn MỘT dòng, tên model Claude.
+    assert re.fullmatch(r"claude-[a-z0-9-]+", doc_tep()["AIOI_CHAT_MODEL"])
     monkeypatch.delenv("AIOI_CHAT_MODEL_THU", raising=False)
     assert model_chat_thu() is None

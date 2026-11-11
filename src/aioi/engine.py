@@ -400,7 +400,7 @@ def _nhieu_cau_hoi(loi: str) -> bool:
 
 
 def _model_luot_de() -> str | None:
-    """Model viết lời cho LƯỢT DỄ (SRS-5.1zzzzzzz311, kế hoạch bước 4): env `AIOI_MODEL_LUOT_DE` (một nguồn `cai-vps.sh` dòng MODEL_LUOT_DE);
+    """Model viết lời cho LƯỢT DỄ (SRS-5.1zzzzzzz311, kế hoạch bước 4): env `AIOI_MODEL_LUOT_DE` (một nguồn `bot/cau-hinh-loi.env`);
     trống / "tat" → lượt dễ dùng model chat như mọi lượt."""
     v = os.environ.get("AIOI_MODEL_LUOT_DE", "").strip()
     return None if v.lower() in ("", "tat") else v

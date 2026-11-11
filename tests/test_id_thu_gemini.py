@@ -54,10 +54,9 @@ def test_engine_dat_nguon_gemini_chi_cho_id_thu(monkeypatch):
     assert NGUON_LUOT.get() is None                                       # trả lại sau lượt
 
 
-def test_cai_vps_dat_id_thu_gemini():
-    from pathlib import Path
-    s = (Path(__file__).resolve().parent.parent / "bot/bridge-zca/cai-vps.sh").read_text()
-    assert re.search(r'^\s*MODEL_CHAT_THU="(gemini|tat|claude-[a-z0-9-]+)"$', s, re.M) and "AIOI_CHAT_MODEL_THU=%s" in s   # SRS-243: đổi được
+def test_cau_hinh_dat_id_thu_gemini():
+    from tests.cau_hinh_vps import doc_tep
+    assert re.fullmatch(r"gemini|tat|claude-[a-z0-9-]+", doc_tep()["AIOI_CHAT_MODEL_THU"])   # SRS-243: đổi được
 
 
 def test_luot_chi_gemini_khong_ghi_so_loi_du_phong():

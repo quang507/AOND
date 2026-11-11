@@ -39,7 +39,7 @@ class Settings:
         đặt TƯỜNG MINH `AIOI_LLM_PROVIDER=mock` (test / dev)."""
         if self.provider == "claude" and not self.anthropic_api_key:
             raise RuntimeError("Thiếu ANTHROPIC_API_KEY cho AIOI_LLM_PROVIDER=claude — lõi không chạy bằng mock. Đặt khoá trong .env "
-                               "(cai-vps.sh), hoặc AIOI_LLM_PROVIDER=mock khi test / dev.")
+                               "(C:\\aond\\aond_core\\.env trên máy 146), hoặc AIOI_LLM_PROVIDER=mock khi test / dev.")
         return self.provider
 
 

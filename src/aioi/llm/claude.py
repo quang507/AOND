@@ -94,7 +94,7 @@ _GUI_KHACH: dict[str, Any] = {
 
 def ep_cong_cu_gui_khach() -> bool:
     """SRS-5.1zzzzzzz246 (chủ dự án 28/10/2026: "bạn thử tắt công cụ cố định xem"): env `AIOI_CONG_CU_GUI_KHACH=tat` → lượt trả lời khách là
-    chữ thường như bản anh Luận, không qua công cụ hai ô `gui_khach` (SRS-76). Một nguồn ở `bot/bridge-zca/cai-vps.sh` dòng CONG_CU_GUI_KHACH."""
+    chữ thường như bản anh Luận, không qua công cụ hai ô `gui_khach` (SRS-76). Một nguồn ở `bot/cau-hinh-loi.env` dòng AIOI_CONG_CU_GUI_KHACH."""
     return os.environ.get("AIOI_CONG_CU_GUI_KHACH", "").strip().lower() != "tat"
 
 
