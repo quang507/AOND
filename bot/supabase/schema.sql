@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-08 14:25 (giờ VN)
+-- Sinh lúc: 2026-11-11 12:32 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -2038,6 +2038,8 @@ declare
   v_cnt integer; v_ntfy bigint;
   v_ntfy_truoc bigint; v_ma_truoc integer; v_co_dau_vet boolean;
   v_da_gui boolean := false;
+  v_van text[] := '{}';
+  rr record;
 begin
   select last_id into v_from from bot_health where who = 'pg_net';
   if v_from is null then
@@ -2064,20 +2066,51 @@ begin
   v_co_hang := found;
 
   if v_hour between 7 and 22 then
+    -- (1) Số ký gửi — giữ nguyên hành vi cũ: chưa từng điểm danh cũng báo.
     if not v_co_hang then
       v_chua_bao_gio := true;
       v_dead := true;
+      v_van := array_append(v_van, 'bridge số ký gửi CHƯA TỪNG điểm danh');
       insert into bot_errors (source, detail)
       select 'bridge', 'bridge-zca CHƯA TỪNG điểm danh lần nào — chưa chạy, hoặc chạy mà không ghi được bot_health.'
       where not exists (select 1 from bot_errors
                         where source = 'bridge' and at > now() - interval '1 hour');
     elsif v_beat < now() - interval '15 minutes' then
       v_dead := true;
+      v_van := array_append(v_van, format('bridge số ký gửi im từ %s',
+                                          to_char(v_beat at time zone 'Asia/Ho_Chi_Minh', 'DD/MM HH24:MI')));
       insert into bot_errors (source, detail)
       select 'bridge', format('bridge-zca im từ %s (VN)',
                               to_char(v_beat at time zone 'Asia/Ho_Chi_Minh', 'DD/MM HH24:MI'))
       where not exists (select 1 from bot_errors
                         where source = 'bridge' and at > now() - interval '1 hour');
+    end if;
+
+    -- (2) SRS-5.1zzzzzzz402: số tư vấn và lõi (nhịp 'aond-core' lõi đóng mỗi phút). Chỉ báo khi ĐÃ từng có nhịp — chưa từng = chưa
+    -- triển khai bản lõi có nhịp, không báo nhầm.
+    for rr in select h.who, h.at from bot_health h
+              where h.who in ('bridge-zca-tu-van', 'aond-core') and h.at < now() - interval '15 minutes'
+              order by h.who loop
+      v_van := array_append(v_van, format('%s im từ %s',
+                 case rr.who when 'aond-core' then 'lõi AOND Core (cổng 8000)' else 'bridge số tư vấn' end,
+                 to_char(rr.at at time zone 'Asia/Ho_Chi_Minh', 'DD/MM HH24:MI')));
+    end loop;
+
+    -- (3) SRS-5.1zzzzzzz402: acc Zalo văng phiên — bridge vẫn gõ nhịp khi chờ quét QR nên (1)(2) không thấy.
+    for rr in select d.id, d.trang_thai, d.cap_nhat from bridge_dang_nhap d
+              where d.trang_thai in ('cho_quet', 'het_han', 'tu_choi') and d.cap_nhat < now() - interval '10 minutes'
+              order by d.id loop
+      v_van := array_append(v_van, format('Zalo số %s cần quét lại QR (%s từ %s) — mở /admin',
+                 case rr.id when 2 then 'tư vấn' else 'ký gửi' end, rr.trang_thai,
+                 to_char(rr.cap_nhat at time zone 'Asia/Ho_Chi_Minh', 'DD/MM HH24:MI')));
+    end loop;
+
+    if coalesce(array_length(v_van, 1), 0) > 0 then
+      v_dead := true;
+      insert into bot_errors (source, detail)
+      select 'coi 146', left(array_to_string(v_van, ' · '), 500)
+      where not exists (select 1 from bot_errors
+                        where source = 'coi 146' and at > now() - interval '1 hour');
     end if;
   end if;
 
@@ -2101,7 +2134,8 @@ begin
     end if;
   end if;
 
-  -- QUY TẮC: CHỈ báo động khi bot trên VPS đang tắt (v_dead = true)
+  -- Báo động khi có sự cố (v_dead): bridge / lõi im, hoặc Zalo cần quét lại QR. Tin 🚨 đi đường bridge số ký gửi (số đó chết thì tin
+  -- nằm chờ); ntfy chỉ đi khi app_config.ntfy_topic có giá trị.
   if v_dead
      and not exists (select 1 from reminders
                      where kind = 'escalation' and note like '🚨%'
@@ -2110,17 +2144,13 @@ begin
      where kind = 'escalation' and status = 'pending' and note like '🚨%';
     insert into reminders (kind, due_at, note)
     values ('escalation', now(),
-      format('🚨 CẢNH BÁO: Bot trên VPS (bridge-zca) đang tắt hoặc im từ %s. Cần kiểm tra VPS!',
-             case when v_chua_bao_gio then 'chưa từng điểm danh'
-                  else to_char(v_beat at time zone 'Asia/Ho_Chi_Minh', 'DD/MM HH24:MI') end));
+      '🚨 CẢNH BÁO máy 146: ' || array_to_string(v_van, ' · ') || '. Kiểm tra task Windows trên máy 146 (ssh nuc).');
   end if;
 
   if v_dead and not v_da_gui then
     v_ntfy := public.canh_bao_ngoai(
-      '🚨 [BOT VPS TẮT] Mất kết nối bridge Zalo',
-      format('Bot trên VPS đang im tiếng từ %s. Vui lòng kiểm tra dịch vụ nhadat-bridge trên VPS.',
-             case when v_chua_bao_gio then 'chưa từng điểm danh'
-                  else to_char(v_beat at time zone 'Asia/Ho_Chi_Minh', 'DD/MM HH24:MI') end),
+      '🚨 [BOT 146] Sự cố bot Zalo',
+      'Máy 146: ' || array_to_string(v_van, ' · ') || '. Kiểm tra task Windows AOND trên máy 146.',
       5, false);
     insert into bot_health (who, at, last_id) values ('ntfy', now(), coalesce(v_ntfy, 0))
     on conflict (who) do update set at = now(), last_id = excluded.last_id;
@@ -2134,7 +2164,8 @@ begin
   return jsonb_build_object('loi_moi', v_new, 'bridge_im', v_dead,
                             'bridge_chua_bao_gio', v_chua_bao_gio,
                             'quet_toi', v_to, 'ntfy', v_ntfy,
-                            'lan_truoc_da_gui', v_da_gui);
+                            'lan_truoc_da_gui', v_da_gui,
+                            'su_co', to_jsonb(v_van));
 end $function$
 ;
 
