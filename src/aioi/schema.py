@@ -154,8 +154,8 @@ CORE_FIELDS: dict[PropertyGroup, list[str]] = {
         "ban_cong_view",      # Hướng ban công & tầm nhìn (view thoáng/nội khu)
         "noi_that",           # Tình trạng nội thất (full, cơ bản, nhà thô)
         "phi_quan_ly",        # Phí quản lý dịch vụ / gửi xe
-        "phap_ly_so_hong",    # Sổ hồng riêng hay HĐMB (SRS-5.1zzzzzzz260: pháp lý là ô cơ bản trước bản nháp)
-        "hien_trang_su_dung", # Đang ở, trống hay có khách thuê (SRS-5.1zzzzzzz260: hiện trạng là ô cơ bản trước bản nháp)
+        "phap_ly_so_hong",    # Sổ hồng riêng hay HĐMB (pháp lý: một trong bốn nhóm chính trước bản nháp, SRS-5.1zzzzzzz418)
+        "hien_trang_su_dung", # Đang ở, trống hay có khách thuê (SRS-5.1zzzzzzz418: không chặn bản nháp, như bản anh Luận)
     ],
     PropertyGroup.PROJECT: [
         "chu_dau_tu_phan_khu", # Chủ đầu tư & Phân khu
@@ -167,7 +167,7 @@ CORE_FIELDS: dict[PropertyGroup, list[str]] = {
         "kich_thuoc",         # Kích thước (ngang x dài)
         "tho_cu",             # Diện tích thổ cư
         "lo_gioi_duong",      # Lộ giới đường trước đất (18/10: ô bắt buộc của đất nền — phải bóc được)
-        "phap_ly_so_do",      # Sổ đỏ riêng (SRS-5.1zzzzzzz260: pháp lý là ô cơ bản trước bản nháp)
+        "phap_ly_so_do",      # Sổ đỏ riêng (pháp lý: một trong bốn nhóm chính trước bản nháp, SRS-5.1zzzzzzz418)
         "quy_hoach",          # Quy hoạch
         "chi_tieu_xay_dung",  # Chỉ tiêu xây dựng
         "yeu_to_ha_tang",     # Hạ tầng (vướng cột điện / hố ga)
@@ -357,14 +357,12 @@ FACETS: list[tuple[str, str, list[str]]] = [
 FACET_LABEL: dict[str, str] = {fid: label for fid, label, _ in FACETS}
 _FACET_OF: dict[str, str] = {k: fid for fid, _, keys in FACETS for k in keys}
 _KEYS_FACET: dict[str, list[str]] = {fid: keys for fid, _, keys in FACETS}
-# Nhóm ô cơ bản phải có trước bản nháp (SRS-5.1zzzzzzz260, chủ dự án 28/10: "giá, địa chỉ hoặc khu vực, quy mô, pháp lý và hiện trạng là
-# đủ"). Giá + vị trí nằm ở sàn `minimal_missing`. Quy mô = kích thước đất HOẶC quy mô xây dựng (một ô là đủ). Thay 4 facet chính
-# "≥ 3/4" của SRS-5.1zzzzzzz202. Nhóm chỉ tính khi loại BĐS có ô mong đợi trong nhóm (đất không hỏi hiện trạng); tin cho thuê bỏ pháp lý.
-NHOM_SOAN: tuple[tuple[str, tuple[str, ...]], ...] = (
-    ("quy_mo", tuple(_KEYS_FACET["dat"] + _KEYS_FACET["cong_trinh"])),
-    ("phap_ly", tuple(_KEYS_FACET["phap_ly"])),
-    ("hien_trang", ("tinh_trang_ban_giao", "hien_trang_su_dung")),
-)
+# Bốn nhóm chính xét trước bản nháp — theo bản anh Luận (SRS-5.1zzzzzzz418, chủ dự án 11/11: "theo anh Luận đi"; thay SRS-5.1zzzzzzz260
+# quy mô · pháp lý · hiện trạng bắt buộc đủ): vị thế · kích thước đất · quy mô xây dựng · pháp lý, thiếu tối đa MỘT nhóm là soạn
+# (`SOAN_THIEU_TOI_DA`). Giá + vị trí nằm ở sàn `minimal_missing`. Hiện trạng (đang ở / trống / cho thuê) không chặn bản nháp — nằm nhóm
+# giá & thương mại như bản anh Luận. Nhóm chỉ tính khi loại BĐS có ô mong đợi trong nhóm; tin cho thuê bỏ pháp lý.
+NHOM_SOAN: tuple[tuple[str, tuple[str, ...]], ...] = tuple((fid, tuple(_KEYS_FACET[fid])) for fid in ("vi_the", "dat", "cong_trinh", "phap_ly"))
+SOAN_THIEU_TOI_DA = 1
 _NHOM_OF: dict[str, str] = {k: nid for nid, keys in NHOM_SOAN for k in keys}
 
 
@@ -469,10 +467,11 @@ class Property:
         return ra
 
     def summary_ready(self) -> bool:
-        """Đủ để SOẠN bài rao (SRS-5.1zzzzzzz260, chủ dự án 28/10): `can_publish` (loại hình + vị trí hoặc khu vực + giá) VÀ không còn nhóm
-        cơ bản trống (quy mô · pháp lý · hiện trạng, `NHOM_SOAN`; ô khách lờ 2 lần thì để sau). Chưa đủ thì bot hỏi tiếp, mỗi nhóm một câu. Khách bảo đăng sớm thì chỉ cần sàn tối thiểu (`thieu_toi_thieu`). Phường / diện tích là điều kiện lên WEB
+        """Đủ để SOẠN bài rao (SRS-5.1zzzzzzz418, theo bản anh Luận): `can_publish` (loại hình + vị trí hoặc khu vực + giá) VÀ trong bốn nhóm
+        chính (vị thế · đất · công trình · pháp lý, `NHOM_SOAN`) trống tối đa `SOAN_THIEU_TOI_DA` nhóm (ô khách lờ 2 lần thì để sau). Chưa đủ
+        thì bot hỏi tiếp, mỗi nhóm một câu. Khách bảo đăng sớm thì chỉ cần sàn tối thiểu (`thieu_toi_thieu`). Phường / diện tích là điều kiện lên WEB
         (trigger DB), không phải điều kiện soạn bản nháp: thiếu thì bot hỏi sau lượt duyệt (`khoi_trang_thai_web`)."""
-        return self.can_publish() and not self.facet_trong()
+        return self.can_publish() and len(self.facet_trong()) <= SOAN_THIEU_TOI_DA
 
     def thieu_toi_thieu(self) -> list[str]:
         """Ô phải có trước MỌI bản nháp — chính là `minimal_missing` (khách bảo đăng sớm thì chỉ chờ các ô này)."""

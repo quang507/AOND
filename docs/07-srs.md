@@ -945,3 +945,11 @@ Kịch bản production 11/11 (12 kịch bản, máy 146). Chủ dự án: "sử
   thì nói chưa có lịch nào.
 - Không phải lỗi: hai căn một tin (DB 146 có 2 tin riêng đúng), "hồ bơi tràn" (dữ liệu dự án The Sun Avenue), hỏi "biết phí chưa" sau đăng
   (SRS-81), hq_hem_xe_hoi (bộ chấm bắt chữ "xe hơi" khi bot tả căn có thật).
+
+### SRS-5.1zzzzzzz418 · Cổng bản nháp theo bản anh Luận (11/11/2026)
+Chủ dự án 11/11 (hỏi vì sao bot hỏi hiện trạng, so với anh Luận): "theo anh Luận đi". Bản anh Luận (`schema.summary_ready`): đủ sàn (loại
+hình + vị trí + giá) và trong bốn nhóm vị thế · kích thước đất · quy mô xây dựng · pháp lý trống tối đa một nhóm; ô bàn giao nằm nhóm giá &
+thương mại nên không bao giờ chặn. Thay SRS-5.1zzzzzzz260 (quy mô · pháp lý · hiện trạng bắt buộc đủ).
+- `NHOM_SOAN` = bốn nhóm chính; `summary_ready` = `can_publish` và `len(facet_trong()) <= SOAN_THIEU_TOI_DA` (1).
+- Giữ của bên mình: nhóm chỉ tính khi loại BĐS có ô mong đợi trong nhóm, tin cho thuê bỏ pháp lý, ô khách lờ 2 lần thì để sau.
+- Ca kịch bản production "hẻm Dương Bá Trạc 4x12, 2 tầng, sổ hồng riêng, 5 tỷ": trước hỏi hiện trạng, nay ra bản nháp ngay.
