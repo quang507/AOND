@@ -4700,6 +4700,13 @@ class Engine:
                 conv.y_luot["_phuong_vua_tra"] = ung_vien[0]
                 web["thieu"] = [o for o in (web.get("thieu") or []) if o != "phuong"]
                 return web
+            # SRS-5.1zzzzzzz411 (ca test 11/11: "Trần Bình Trọng, quận 5" không số nhà → báo admin ngay): đường đi qua nhiều phường mà khách
+            # chưa cho số nhà thì hỏi số nhà MỘT lần (không nhắc chữ phường); có số nhà rồi `_phuong_tu_dia_chi` tra lại. Vẫn không ra → báo admin.
+            co_so = getattr(self._dia_danh, "co_so_nha", None)
+            if co_so and not co_so(f.get("dia_chi")) and not f.get("_da_hoi_so_nha"):
+                f["_da_hoi_so_nha"] = "1"
+                web["hoi_so_nha"] = True
+                return web
             web["phuong_bao_admin"] = True
             if not f.get("_phuong_bao_admin") and not conv.y_luot.get("can_nguoi_that"):
                 f["_phuong_bao_admin"] = "1"

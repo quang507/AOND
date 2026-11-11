@@ -29,7 +29,7 @@ from .mua import KhoNguoiMua
 from .revenue import SALE_FEE_RATE
 from .sdt import che_so_ca_nhan
 from .prompts import FIELD_LABELS
-from .schema import HOUSE_TYPES, O_NOI_BO, TYPE_TO_GROUP, Property, _calc_area_from_dimension
+from .schema import HOUSE_TYPES, O_NOI_BO, TYPE_TO_GROUP, Property, dien_tich_tu_kich_thuoc, so_met
 
 # Số câu chuẩn tối đa đưa vào prompt (SRS-5.1zzzzzzz180). Mỗi dòng ≈ 300–900 ký tự; khối nằm trong phần cache nên 16 dòng chỉ là
 # vài nghìn token ĐỌC CACHE mỗi lượt. Tăng nữa thì đo `cache_read_tokens` ở bot_usage_model trước.
@@ -84,7 +84,8 @@ COT_THONG_SO = ("frontage_m", "length_m", "rear_width_m", "legal_area_m2", "buil
 _O_KHONG_PHAI_THONG_SO = {"uu_the", "dia_chi", "duong", "phuong", "quan", "gan_nga_tu", "du_an", "ma_so_can", "unit_type", "gia",
                           "loai_hinh", "phap_ly", "hinh_anh", "ly_do_ban", "trang_thai", "phi_gui_xe", "yeu_cau_xe_hoi",
                           # SRS-5.1zzzzzzz116: chuyện thanh toán / thuế phí / hợp đồng thuê, không phải thông số căn
-                          "thue_phi", "thanh_toan", "hd_thue_con", "thu_nhap_thue", "co_hdt"}
+                          "thue_phi", "thanh_toan", "hd_thue_con", "thu_nhap_thue", "co_hdt",
+                          "dai_m", "hau_m"}   # SRS-5.1zzzzzzz409: số AI bóc, ghi thẳng cột ở `_thong_so`
 # Nhãn ô là chữ CỦA MÌNH, không phải lời khách — mà `boc_thong_so` dò chữ khoá trên cả chuỗi "nhãn: giá trị". Soát 20/10/2026
 # (SRS-5.1zzzzzzz85: gọi boc_thong_so("<nhãn>: x") cho mọi nhãn FIELD_LABELS) — 10/74 nhãn tự bật một cột dù giá trị vô nghĩa: tin đất
 # "giá chỉ áp dụng trong tháng 10" lên web thành "thương lượng"; "vị trí mặt tiền hay hẻm: hẻm 3m" → mặt tiền; "căn thường hay căn
@@ -220,16 +221,13 @@ def so_m2(fields: dict[str, str], thue: bool = False) -> float | None:
     đất (SRS-5.1zzzzzzz73). Tin CHO THUÊ: diện tích SỬ DỤNG (sàn) trước — người thuê tìm theo chỗ ở được, và tiêu đề tin thuê ghi số
     đó (chat tester 20/10: tiêu đề 35m², web 18m² đất 4 × 4,5; SRS-5.1zzzzzzz91, [giả định BA])."""
     for k in (("dien_tich_nha", "dien_tich", "dien_tich_dat") if thue else ("dien_tich_dat", "dien_tich")):
-        tinh = _calc_area_from_dimension(str(fields.get(k) or ""))
-        if tinh:
-            return float(tinh[:-2])
         m = re.search(r"\d+(?:[.,]\d+)?", str(fields.get(k) or ""))
         if m:
             v = float(m.group(0).replace(",", "."))
             if v > 0:
                 return v
-    tinh = _calc_area_from_dimension(str(fields.get("kich_thuoc") or ""))
-    return float(tinh[:-2]) if tinh else None
+    uoc = dien_tich_tu_kich_thuoc(fields)   # SRS-5.1zzzzzzz409: từ số AI bóc (ngang / dài / hậu), không dò chuỗi
+    return float(uoc.removeprefix("khoảng ")[:-2]) if uoc else None
 
 
 def o_tu_cot(row: dict, loai: str | None) -> dict[str, str]:
@@ -593,7 +591,9 @@ class SupabaseConversationStore(KhoNguoiMua):
             self._thong_so_nho[khoa] = {c: kq[c] for c in COT_THONG_SO if isinstance(kq, dict) and kq.get(c) is not None}
         # `alley_width_m` là độ rộng ĐƯỜNG VÀO — hẻm, hoặc con đường với nhà mặt tiền (web in "Đường vào: Mặt tiền đường · đường
         # rộng 20 m"). Bản SRS-5.1zzzzzzz94 bỏ cột này với nhà mặt tiền là đọc sai nghĩa cột — gỡ ở SRS-5.1zzzzzzz95.
-        return {**cot_tu_o(fields), **self._thong_so_nho[khoa]}
+        # SRS-5.1zzzzzzz409: số kích thước AI đã bóc thắng bộ đọc chữ của DB.
+        so_do = {c: so_met(fields.get(o)) for c, o in (("frontage_m", "mat_tien"), ("length_m", "dai_m"), ("rear_width_m", "hau_m"))}
+        return {**cot_tu_o(fields), **self._thong_so_nho[khoa], **{c: v for c, v in so_do.items() if v}}
 
     def _patch(self, endpoint: str, data: dict) -> None:
         self._request("PATCH", endpoint, data=data, prefer="return=minimal")

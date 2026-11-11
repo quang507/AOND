@@ -27,8 +27,10 @@ def test_mot_con_so_mo_ho_khong_tu_thanh_dien_tich_dat():
 
 def test_kich_thuoc_van_tinh_ra_dien_tich_dat():
     p = Property(loai_hinh="nha_pho", fields=dict(_DU))
-    p.update({"dien_tich": "4x15"})
-    assert p.fields.get("dien_tich_dat") == "60m2" and "dien_tich" not in p.fields   # "4x15" là kích thước, không mơ hồ
+    p.update({"mat_tien": "4", "dai_m": "15"})   # SRS-409: AI bóc số ngang / dài, code chỉ nhân
+    assert p.fields.get("dien_tich_dat") == "khoảng 60m2" and "dien_tich" not in p.fields
+    p.update({"hau_m": "6"})                     # bổ sung nở hậu → tính lại hình thang
+    assert p.fields.get("dien_tich_dat") == "khoảng 75m2"
 
 
 def test_khong_hoi_lai_con_so_da_ro_la_dat():

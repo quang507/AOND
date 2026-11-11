@@ -53,7 +53,9 @@ FIELD_LABELS: dict[str, str] = {
     "tinh_trang_ban_giao": "hiện trạng nhà: chủ đang ở, để trống giao ngay hay đang có người thuê (chỉ ý này — tiền thuê ghi ô thu_nhap_thue, thời hạn hợp đồng ghi ô hd_thue_con)",
     "phap_ly_hoan_cong": "pháp lý, hoàn công (sổ hồng)",
     # Nhà đất & Đất
-    "kich_thuoc": "kích thước (ngang x dài)",
+    "kich_thuoc": "kích thước (ngang x dài) như khách nói, kèm nở hậu / tóp hậu nếu có — số đo thì ghi THÊM vào mat_tien / dai_m / hau_m",
+    "dai_m": "chiều DÀI / chiều SÂU của lô, CHỈ SỐ mét ('sâu 15', 'dài 15m', '6x15' → '15')",
+    "hau_m": "bề ngang PHÍA SAU (bề hậu) THẬT, CHỈ SỐ mét — chỉ khi khách nói nở hậu / tóp hậu. Tự tính theo nghĩa: 'ngang 6 nở hậu 9' → '9'; 'ngang 6 nở hậu 3' (nở thêm 3m) → '9'; 'tóp hậu còn 4' → '4'",
     "chi_tieu_xay_dung": "chỉ tiêu xây dựng",
     "quy_hoach": "quy hoạch, lộ giới, tranh chấp",
     "yeu_to_ha_tang": "yếu tố hạ tầng (cột điện, hố ga)",
@@ -513,6 +515,10 @@ def _dong_dien_tich(fields: dict) -> str:
     chỉ in nguyên kích thước (và nở hậu nếu có). Code quyết theo ô tin, không đoán."""
     co = [f"{nhan} {fields[k]}" for k, nhan in (("dien_tich_dat", "đất"), ("dien_tich", "diện tích"), ("dien_tich_nha", "sàn"))
           if isinstance(fields.get(k), str) and fields[k].strip()]
+    dt_uoc = fields.get("dien_tich_dat") or fields.get("dien_tich")
+    if dt_uoc and dt_uoc == fields.get("_dt_tu_kich_thuoc"):   # SRS-5.1zzzzzzz409: code tính từ số ngang / dài / hậu khách đã nói
+        return (f"- Diện tích: {dt_uoc} — hệ thống TÍNH từ kích thước khách nói (khách chưa nói số m²): in kèm chữ \"khoảng\", "
+                "KHÔNG hỏi lại khách diện tích.\n")
     if co:
         return f"- Diện tích (khách nói): {'; '.join(co)} — chỉ in đúng các số này.\n"
     kt = " ".join(x for x in (str(fields.get("kich_thuoc") or "").strip(),
@@ -908,28 +914,16 @@ LEAN_SYSTEM_PROMPT = """Bạn là trợ lý AI Ơi Nhà Đất — một chuyên
 4. Linh hoạt đổi vai theo nhịp khách:
    - Khi khách chuyển từ ký gửi sang tìm mua (hoặc ngược lại), lập tức hòa nhịp và chăm sóc nhu cầu mới mượt mà, không ngắt quãng trải nghiệm hay bỏ sót ngữ cảnh.
 
-# TỪ ĐIỂN TIẾNG LÓNG BĐS SÀI GÒN
-- Tiền & Giá: "tỏi" = tỷ; "củ" = triệu; "xị" = trăm nghìn; "5t5" = 5,5 tỷ; "TL" / "bớt lộc" = giá thương lượng nhẹ; "giá net" = giá thu về; "ngộp" / "cắt lỗ" = cần bán gấp; "cây/lượng" = vàng SJC.
-- Địa chỉ & Hẻm: Dấu gạch chéo "/" là số nhà trong hẻm (vd: "100/9" là nhà số 100 xuyệc 9, không phải diện tích hay kích thước). "HXT" = hẻm xe tải, "HXH" = hẻm xe hơi.
-- Pháp lý & Diện tích: "SHR" = sổ hồng riêng; "DTCN" = diện tích công nhận; "hoàn công" = đã hoàn công trên sổ.
+""" + "\n\n" + GIONG_VUI + f"""
 
-# CÔNG CỤ (FUNCTION CALLING)
-Cần số liệu hay dữ kiện thì gọi công cụ, rồi chỉ nói điều kết quả công cụ ghi; công cụ báo "không có số" thì nói thật là chưa có.
-- Người rao / ký gửi: `ro_hang`, `bo_nho_du_an`, `gia_da_gui` (đọc lại căn và giá khách đã gửi) · `dinh_gia_tham_khao` (dải giá tham khảo theo quận × loại hình) · `kiem_tra_phap_ly_so` (sổ, hoàn công, thế chấp, vi bằng, thừa kế) · `tinh_phi_moi_gioi` (chỉ khi khách hỏi mức phí) · `goi_y_dam_phan`.
-- Người mua / thuê: `tim_can`, `xem_can`, `so_sanh_can`, `tra_du_an`, `du_an_trong_khu`, `so_sanh_du_an` · `tinh_thue_phi`, `tinh_vay_tra_gop` · việc GHI thật: `hen_xem`, `hoi_chu_nha` (khách hỏi điều căn chưa có thì gửi chủ nhà luôn, không hỏi lại khách có muốn không), `luu_so_dien_thoai` (đúng số khách gõ).
-- Cả hai: `tra_cuu_phong_thuy`, `tham_dinh_quy_hoach` (hướng dẫn chung, chưa tra bản đồ của căn).
+# LUẬT CỐ ĐỊNH
+- Đáp đúng điều khách vừa nói, rồi làm {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
+- {LUAT_MOT_CAU_HOI}. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ câu xác nhận mà {NHAN_VIEC_LUOT} giao.
+- Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo.
+{TIN_HE_THONG}
 
-# QUY TRÌNH KÝ GỬI & BẢN NHÁP
-1. Hỏi theo thứ tự hệ thống gợi ý ở cuối lượt: loại hình → vị trí / khu vực → giá → quy mô (diện tích hoặc kết cấu) → pháp lý → hiện trạng.
-2. Đủ các nhóm đó thì soạn bản nháp theo BỐ CỤC TIN RAO bên dưới để khách duyệt; khách bảo "đăng luôn" thì soạn với những gì đã có. Chi tiết phụ (nội thất, hướng…) hỏi sau bản nháp.
-
-# BỐ CỤC TIN RAO CHỢ BĐS CHUẨN MỰC (AD_FORMAT)
-Bản nháp gồm 4 khối rõ ràng, ngăn nhau bằng một dòng trống, dùng 2–3 icon đắt giá:
-
-1. TIÊU ĐỀ (15–25 từ): Viết như câu nói thường, mở bằng lời gọi người mua kiểu rao chợ dồn ngay điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm). Tiêu đề luôn có giá rõ ràng.
-2. MÔ TẢ (70–150 từ): Giọng rao chợ trực tiếp, nồng nhiệt, hối hả, có nhịp và cảm xúc như đang mời trực tiếp đám đông người mua. Gọi "anh chị" tại 2–3 đỉnh cảm xúc (quyền lợi nhận được và cơ hội hiếm). Viết rõ chữ, kèm đơn vị (m², mét, tỷ). Tuyệt đối bám sát dữ liệu thật, không bịa tiện ích quanh nhà.
-3. 4–5 GẠCH ĐẦU DÒNG ĐẮT GIÁ: Mỗi dòng một thông số cốt lõi (vd: "132m²", "Ngang 5.3m dài 25m", "Sổ hồng riêng chính chủ", "19 tỷ (thương lượng)"). Không gắn nhãn thừa như "Diện tích:", "Giá:".
-4. CÂU MỜI CHỐT (CTA): 1–2 câu thôi thúc người đọc nhắn tin Zalo ngay kẻo lỡ cơ hội, mang tính đối thoại trực tiếp để khách bấm vào là kết nối liền."""
+""" + SLANG_NOTES + """
+"""
 
 
 def lean_system_prompt_cho_luot(
@@ -1193,6 +1187,9 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
         hoi = FIELD_LABELS[thieu[0]]
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): còn thiếu {nhan}. {cam}"
         viec = f"nói chỉ cần thêm {nhan} là tin lên web, rồi hỏi ĐÚNG 1 câu về {hoi}."
+    elif thieu_phuong and web.get("hoi_so_nha"):   # SRS-5.1zzzzzzz411
+        ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): cần số nhà để định vị căn trên bản đồ. {cam}"
+        viec = "hỏi ĐÚNG 1 câu số nhà của căn (để định vị đúng trên bản đồ) — KHÔNG hỏi phường, KHÔNG nói chữ \"phường\"."
     elif thieu_phuong:
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): bên em đang hoàn tất thông tin vị trí, người phụ trách đã được báo. {cam}"
         viec = "báo ngắn bên em đang hoàn tất để đưa tin lên; còn lại đáp điều khách vừa nói như thường."
@@ -1804,6 +1801,7 @@ def property_field_props() -> dict[str, Any]:
         + list(RENTAL_FIELDS)
         + sorted(O_SAU_DANG)
         + list(O_COC)
+        + ["dai_m", "hau_m"]   # SRS-5.1zzzzzzz409: số kích thước (ngang = mat_tien) cho code tính diện tích
     )
     all_fields = list(dict.fromkeys(all_fields))
     properties: dict[str, Any] = {

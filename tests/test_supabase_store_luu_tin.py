@@ -96,7 +96,8 @@ def test_can_ho_lay_phuong_theo_du_an():
 
 def test_so_m2_dat_truoc_va_tinh_ngang_x_dai():
     # Bắn thử 19/10 (SRS-5.1zzzzzzz73): dien_tich_dat "4,5x11" ra 4,5 m²; dien_tich = sàn 170 thành diện tích đất.
-    assert so_m2({"dien_tich_dat": "4,5x11", "dien_tich": "170m2"}) == 49.5
+    assert so_m2({"mat_tien": "4,5", "dai_m": "11", "dien_tich": "170m2"}) == 170.0   # SRS-409: số kích thước chỉ là dự phòng cuối
+    assert so_m2({"mat_tien": "4,5", "dai_m": "11"}) == 49.5
     assert so_m2({"dien_tich": "60m2", "dien_tich_dat": "49,5m2"}) == 49.5
 
 

@@ -13,14 +13,11 @@ from aioi.dinh_gia import tinh_dinh_gia_tham_khao, kiem_tra_phap_ly_so_tool, tin
 
 
 def test_lean_system_prompt_tokens_under_1500():
-    """System Prompt tinh gọn phải dưới 1.500 tokens (~5.000 ký tự)."""
-    assert hasattr(P, "LEAN_SYSTEM_PROMPT")
+    """SRS-5.1zzzzzzz410 (chủ dự án 11/11: trả giọng nhân vật + từ điển tiếng lóng đầy đủ cho prompt ngắn): bỏ trần 1.500 token; prompt ngắn
+    phải có GIỌNG, LUẬT CỐ ĐỊNH, tin hệ thống, tiếng lóng đầy đủ — và KHÔNG mang danh sách công cụ / bố cục tin rao (không thuộc lượt hỏi ô)."""
     lean_prompt = P.LEAN_SYSTEM_PROMPT
-    assert len(lean_prompt) < 5000, f"Prompt quá dài: {len(lean_prompt)} chars"
-    approx_tokens = len(lean_prompt.split()) * 1.3
-    assert approx_tokens < 1500, f"Tokens quá cao: ~{approx_tokens}"
-    # Đảm bảo giữ nguyên các phần cốt lõi của anh Luận
-    assert "AD_FORMAT" in lean_prompt or "BỐ CỤC TIN RAO" in lean_prompt
+    assert P.GIONG_VUI in lean_prompt and P.SLANG_NOTES in lean_prompt and P.TIN_HE_THONG in lean_prompt and "LUẬT CỐ ĐỊNH" in lean_prompt
+    assert "BỐ CỤC TIN RAO" not in lean_prompt and "FUNCTION CALLING" not in lean_prompt
     assert "tỏi" in lean_prompt and "củ" in lean_prompt
     assert "Truth-grounded" in lean_prompt or "Trung thực tuyệt đối" in lean_prompt
 

@@ -114,7 +114,7 @@ Chi tiết (ghi ô tin, dự án, địa chỉ, bản nháp, giọng, phí, phí
 
 ### 6.4 DB, migration · 6.5 Web
 
-Chi tiết ở `.claude/luat-dang-ap.md` §6.4 / §6.5 — **đọc trước khi đụng DB / migration / web**. Gốc: schema đổi phải qua file `bot/supabase/migrations/` + PR, áp TRƯỚC khi gộp; `schema.sql` chỉ sinh lại (ô `commit_schema = commit`), không sửa tay; view mới `revoke` trước khi `grant`.
+Chi tiết ở `.claude/luat-dang-ap.md` §6.4 / §6.5 — **đọc trước khi đụng DB / migration / web**. Gốc: schema đổi phải qua file `bot/supabase/migrations/`, chủ dự án đồng ý rồi mới áp; `schema.sql` chỉ sinh lại (ô `commit_schema = commit`), không sửa tay; view mới `revoke` trước khi `grant`.
 
 ## 6b. Nguồn thiết kế
 
@@ -128,30 +128,32 @@ Phiên cloud có hook `SessionStart` (`.claude/hooks/session-start.sh`) cài s�
 ### 7.1 Kiểm tra khoanh vùng thông minh (Smart Scoping — chống tràn ngữ cảnh)
 *Quyết định chủ dự án 06/11/2026 (SRS-5.1zzzzzzz387): TUYỆT ĐỐI KHÔNG chạy kiểm tra máy móc toàn bộ trước mọi commit nhỏ làm tràn bộ nhớ token và làm chậm phiên.*
 - **Commit nháp / lưu tiến độ (WIP):** Commit tự do không cần test.
-- **Sửa tài liệu (`docs/`):** CHỈ chạy `bun run truyvet` (1–2 giây) trước khi mở PR / push. Không build web, không test bot hay pytest.
+- **Sửa tài liệu (`docs/`):** CHỈ chạy `bun run truyvet` (1–2 giây) trước khi push. Không build web, không test bot hay pytest.
 - **Sửa web / UI (`app/`, `components/`):** CHỈ chạy `bun run kieu` (type-check nhanh) khi hoàn tất việc sửa web.
-- **Sửa lõi Python (`src/aioi/`):** Chỉ chạy file test liên quan (ví dụ `pytest tests/test_xxx.py`). Chỉ chạy `bun run test:py` trước khi mở PR.
-- **Kiểm tra toàn bộ (`bun run kiem`):** CHỈ chạy một lần duy nhất trước khi tạo PR hoặc chuẩn bị gộp (Merge). Hãy để GitHub Actions (CI Cổng 2) làm hàng rào tự động cuối cùng.
+- **Sửa lõi Python (`src/aioi/`):** Chỉ chạy file test liên quan (ví dụ `pytest tests/test_xxx.py`). Không bắt buộc chạy `bun run test:py`.
+- **Kiểm tra toàn bộ (`bun run kiem`):** Không bắt buộc — chạy khi tự thấy cần (chủ dự án 11/11: không chờ test xanh đỏ).
 
 ```bash
-bun run test:py    # pytest lõi Python — chỉ chạy trước khi mở PR đụng src/aioi
-bun run kiem       # kiểm tra toàn bộ — CHỈ chạy một lần trước khi tạo PR hoặc chuẩn bị merge
+bun run test:py    # pytest lõi Python — khi cần
+bun run kiem       # kiểm tra toàn bộ — khi cần
 bun run truyvet    # scripts/soat-truy-vet.sh: ID gãy, FR thiếu truy vết, PII trong docs, khoá service_role, raw.githubusercontent
 bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa kiểm được", không phải "đạt"
 ```
 
-- CI: `.github/workflows/kiem.yml` TỰ chạy khi mở PR / đẩy thêm commit vào nhánh có PR — không dispatch tay (SRS-297).
+- CI `kiem.yml` / `cham.yml` vẫn còn trên Actions nhưng KHÔNG phải cổng chặn — không chờ, không cần xanh (chủ dự án 11/11).
 - `cham.yml`: bộ chấm offline chạy trên Actions khi PR đổi `src/aioi/**` / `tests/kich_ban/**`, so với `diem_nen.json` của main (cần secret `CLAUDE_CODE_OAUTH_TOKEN`; thiếu thì báo chưa kiểm được, không đỏ) — SRS-377.
 - Test chạy công tắc production (`tests/conftest.py` đọc `bot/cau-hinh-loi.env`); bài kiểm nhánh cũ phải gắn `@pytest.mark.nhanh_cu(AIOI_…="tat")`, bài lộ lỗi production thì `xfail(strict=True)` kèm mã audit — đừng `monkeypatch` về `tat` để cho xanh (SRS-316).
-- Gộp vào `main` có đổi `src/aioi/` → `bash scripts/sau-gop.sh` đưa lõi lên 146 (lõi khởi động lại ~1 phút). Không còn workflow tự cài (`tu-cai-vps.yml` đã gỡ 08/11). Đổi `bot/bridge-zca/` thì cập nhật bridge trên 146 bằng tay.
+- Đổi `src/aioi/` trên `main` → `bash scripts/trien-khai-146.sh` đưa lõi lên 146 (lõi khởi động lại ~1 phút). Không còn workflow tự cài (`tu-cai-vps.yml` đã gỡ 08/11). Đổi `bot/bridge-zca/` thì cập nhật bridge trên 146 bằng tay.
 
-**Vòng giao việc của agent** (SRS-265 / 297 — MỘT PR cho mỗi bước / việc lớn; sửa docs, đổi cấu hình, mục SRS đi CHUNG PR của việc chính, không mở PR riêng — chủ dự án 30/10):
-1. Trước khi sửa: đọc mục SRS liên quan (`grep -n "<từ khoá>" docs/07*.md`) + mục tương ứng của `.claude/luat-dang-ap.md`. **Một phiên giữ `src/aioi/` mỗi lúc** (SRS-379): còn PR mở đụng `src/aioi/` của phiên khác thì không sửa `src/aioi/` (kể cả RPC lõi gọi) cho tới khi PR đó gộp / đóng — xem danh sách PR mở trước khi sửa.
-2. Sửa → kiểm tra khoanh vùng theo phạm vi thay đổi (Smart Scoping ở §7.1, không chạy test toàn bộ máy móc) → commit, push → PR draft.
-3. Có migration: chạy thử trên DB thật trong giao dịch huỷ, rồi áp TRƯỚC khi gộp (`apply-migration.yml` ô `migration_file`, kèm `commit_schema = commit`).
-4. `bash scripts/cho-workflow.sh kiem.yml <nhánh>` → xanh thì bỏ draft, gộp squash → `bash scripts/sau-gop.sh` (đồng bộ nhánh, đổi lõi thì đưa lên 146).
-5. Hành vi bot đổi (lời, bóc tách, prompt, luật soát) → chỉ cần `bun run cham` (≥ 2 lần, so điểm với bản trước, SRS-304; `--giong` thêm điểm giọng). Bắn thử production (`ban-thu-*`, tốn tiền thật) CHỈ khi đổi phần bộ chấm offline không với tới: ghi DB, Zalo / bridge, công cụ ghi thật, cài VPS. Báo kết quả thật, chưa chạy thì nói chưa. Chat tay: `bun run chat:cli`.
-6. Docs: mỗi thay đổi MỘT mục SRS ở docs/07 (quyết định chủ dự án ghi cùng commit). docs/08 chỉ khi đổi FR / tài liệu tầng trên. Luật mới → một dòng ở `.claude/luat-dang-ap.md`; CLAUDE.md chỉ đổi khi đổi quy trình / ranh giới.
+**Vòng giao việc của agent** (chủ dự án 11/11/2026: "giờ tôi bảo bạn sửa gì là bạn sửa luôn không có cl hay test xanh đỏ gì hết"; "xóa cái luật cl pr" — thay SRS-265 / 297 / 379):
+1. `git pull origin main` trước khi sửa (nhiều phiên song song). Đọc mục SRS liên quan (`grep -n "<từ khoá>" docs/07*.md`).
+2. Sửa → commit THẲNG `main` → push. KHÔNG mở PR, KHÔNG chờ CI / test xanh đỏ. Test chỉ chạy khi chính mình cần để biết code chạy được.
+3. **Sửa MỘT lần là xong cả ba nơi** (chủ dự án 11/11: "sửa 1 lần là từ code repo db và máy 146 đều dc sửa luôn"): code trên `main`, DB, máy 146 — trong cùng lượt, không hỏi lại.
+   - Đổi `src/aioi/` → `bash scripts/trien-khai-146.sh` (lõi khởi động lại ~1 phút, có sao lưu `C:\aond\backup\src_*`).
+   - Đổi `bot/bridge-zca/` → chép tay lên 146 rồi khởi động lại hai task bridge.
+   - Đổi công tắc env → sửa cả `bot/cau-hinh-loi.env` lẫn `C:\aond\aond_core\.env` trên 146.
+4. Đổi DB → file `bot/supabase/migrations/`, chạy thử trong giao dịch huỷ, rồi ÁP LUÔN cùng lượt và commit file cùng lúc.
+5. Docs: mỗi thay đổi MỘT mục SRS ở docs/07, đi chung commit. Luật bí mật (mục 5) giữ nguyên.
 - **Bắn thử production** (ô `giu_du_lieu = giu` giữ hội thoại cho CRM, chủ dự án tự xoá — SRS-245; ID thử chạy model theo `MODEL_CHAT_THU` — SRS-243; chủ dự án 28/10: ưu tiên test offline, bắn production thì bắn chậm `NGHI_GIUA_LUOT`; tự dọn): chạy TỪ MÁY CÁ NHÂN ssh được vào 146 (tài khoản admin `nguye`; mặc định `nguye@192.168.1.146`, ngoài mạng `MAY_146=nguye@100.85.245.112`), không chạy trên Actions — `TOKEN=<Supabase access token> bash bot/tests/ban-thu-<tên>.sh` với tên `ban` / `mua` / `srd` / `ai` / `vm` / `khach-ao` / `5-khach` / `kb` / `dc` / `xa` / `sau` / `nhieu-can` / `dap-y` / `kiem` (`ban-thu-luan` chưa chạy được trên 146); `bot/tests/lib/may146.sh` mở đường hầm + kèm khoá nội bộ (SRS-405). Ô Actions còn lại: nạp dữ liệu `nap-duong` / `nap-tin-mau` / `nap-luat` (script nạp dự án nguồn ngoài đã lưu ở `scripts/archive/`, không chạy lại — SRS-401); đo tìm nhà `do-tim-nha`. Script ở `bot/tests/ban-thu-*.sh`.
 - Người và máy dùng chung script trong `package.json` — đừng gõ lệnh rời.
 
@@ -165,5 +167,5 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 
 | Agent | Việc | Khi nào |
 |---|---|---|
-| `soat-truy-vet` | Soát ID gãy, truy vết thiếu, số đếm lệch, PII | Trước khi mở PR / push đụng docs/ (không chạy từng commit nhỏ) |
+| `soat-truy-vet` | Soát ID gãy, truy vết thiếu, số đếm lệch, PII | Khi đụng docs/ (không chạy từng commit nhỏ) |
 | `reviewer` | Review diff/PR theo checklist BA, chỉ báo finding | Khi review PR |

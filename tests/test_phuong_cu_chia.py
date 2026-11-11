@@ -96,7 +96,8 @@ def test_cong_web_khach_khong_chon_thi_ghi_tam_ca_hai_phuong():
     eng, _ = _eng({"operations": []})
     eng._dia_danh = _tra()
     c = eng.conversation("ph2")
-    c.prop.fields.update({"duong": "Hoàng Hoa Thám", "phuong": "phường 6", "quan": "Bình Thạnh", "dia_chi": "Hoàng Hoa Thám, phường 6, Bình Thạnh"})
+    c.prop.fields.update({"duong": "Hoàng Hoa Thám", "phuong": "phường 6", "quan": "Bình Thạnh", "dia_chi": "Hoàng Hoa Thám, phường 6, Bình Thạnh",
+                          "_da_hoi_so_nha": "1"})   # SRS-411: đã hỏi số nhà một lần
     eng._convstore = type("K", (), {"trang_thai_tin": lambda self, conv: {"len_web": False, "thieu": ["phuong"]}, "save": lambda self, conv: None,
                                     "load": lambda self, k: None})()
     c.y_luot = {}

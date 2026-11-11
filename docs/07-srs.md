@@ -788,6 +788,18 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz411 · Thiếu phường mà chưa có số nhà: hỏi số nhà MỘT lần rồi mới báo admin (11/11/2026)
+- **Ca gốc** (test 11/11): "Trần Bình Trọng, quận 5" không số nhà → đường qua nhiều phường → báo admin ngay. `[nguồn: chủ dự án 11/11/2026: "sửa hết đi để t test lại"]`
+- **Sửa**: `Engine._trang_thai_web` — `DiaDanh.co_so_nha` (cùng khuôn `phuong_theo_so_nha`) chưa có số → `web.hoi_so_nha`, `_da_hoi_so_nha`; `khoi_trang_thai_web` hỏi đúng 1 câu số nhà, không nói chữ phường. Có số nhà → `_phuong_tu_dia_chi` tra lại; vẫn không ra → báo admin như SRS-359.
+
+### SRS-5.1zzzzzzz410 · Prompt ngắn có lại giọng nhân vật, từ điển tiếng lóng đầy đủ, luật cố định, tin hệ thống (11/11/2026)
+- **Ca gốc**: SRS-408 dùng `LEAN_SYSTEM_PROMPT` → mất GIONG_VUI, SLANG_NOTES đầy đủ (nở hậu, HXH, MTKD, SHC, vi bằng…), luật "không hỏi lại điều khách đã nói", TIN_HE_THONG (thoại / sticker / cảm xúc). `[nguồn: chủ dự án 11/11/2026: "từ điển tiếng lóng đầy đủ, giọng nhân vật"; "sửa hết đi"]`
+- **Sửa**: `LEAN_SYSTEM_PROMPT` = phần thấu hiểu khách + GIONG_VUI + LUẬT CỐ ĐỊNH + TIN_HE_THONG + SLANG_NOTES. Bỏ danh sách công cụ (công cụ tự mang schema), quy trình ký gửi (thứ tự do code quyết ở VIỆC LƯỢT NÀY), bố cục tin rao (lượt hỏi ô không soạn tin). Cỡ phiếu lượt: 7.134 ký tự (phiếu cũ 6.414; bản 408 4.515).
+
+### SRS-5.1zzzzzzz409 · AI bóc SỐ kích thước, code chỉ tính diện tích — bỏ regex dò chuỗi (11/11/2026)
+- **Ca gốc** (test 11/11): "ngang 6 sâu 15 nở hậu 3" → ô `kich_thuoc` chữ tự do, regex `_calc_area_from_dimension` không biết "sâu", không biết nở hậu → không ra m² → tin không lên web, bot hỏi lại diện tích. `[nguồn: chủ dự án 11/11/2026: "tao tưởng là AI bóc tách chứ sâu là chữ dài chứ đâu phải regex"]`
+- **Sửa**: ô bóc tách mới `dai_m`, `hau_m` (bề hậu thật, AI tự tính nở / tóp hậu) + `mat_tien` làm bề ngang. `schema.dien_tich_tu_kich_thuoc`: ngang × dài, có hậu thì (ngang + hậu)/2 × dài, luôn "khoảng"; ô do code tính đánh dấu `_dt_tu_kich_thuoc`, tính lại khi khách bổ sung. `listings.frontage_m / length_m / rear_width_m` ghi thẳng số AI bóc. Xoá `_calc_area_from_dimension`. Thay luật "KHÔNG tự nhân" của SRS-363.
+
 ### SRS-5.1zzzzzzz408 · Lượt hỏi ô người bán dùng LEAN_SYSTEM_PROMPT (11/11/2026)
 - **Ca gốc**: `LEAN_SYSTEM_PROMPT` (SRS-391, đã sửa "MỘT ý" ở SRS-407) chỉ test dùng; SRS-403 nối nó vào lượt viết lời nhưng #311 (SRS-404) hoàn tác cả gói. `[nguồn: chủ dự án 11/11/2026: "dùng prompt ngắn kia"]`
 - **Sửa**: khôi phục `prompts.lean_system_prompt_cho_luot` và nhánh chọn trong `Engine` (lượt hỏi ô, `not is_listing_post`): `AIOI_PROMPT_GON=bat` → prompt gọn, khác → `build_phieu_luot`. Bật ở `bot/cau-hinh-loi.env` và `.env` lõi trên 146. KHÔNG khôi phục lối tắt tin chào (`la_tin_chao_hoi_thuan_tuy`) của SRS-403.

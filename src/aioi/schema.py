@@ -45,25 +45,25 @@ def _merge_dia_chi(old: str, new: str) -> str:
     return new
 
 
-def _calc_area_from_dimension(dim: str) -> str | None:
-    """Calculate area m2 from dimension string like '6x20', 'ngang 6m dài 20m'."""
-    if not dim:
+def so_met(v: Any) -> float | None:
+    """Số mét của một ô AI đã bóc ra SỐ ("6", "4.5", "4,5", "6m") — chuẩn hoá dấu phẩy / đơn vị, không đọc chữ khách."""
+    try:
+        x = float(str(v).strip().lower().removesuffix("m").strip().replace(",", "."))
+    except (TypeError, ValueError):
         return None
-    m = re.search(r"(\d+(?:[.,]\d+)?)\s*m?\s*[x*X]\s*(\d+(?:[.,]\d+)?)", dim)
-    if not m:
-        m = re.search(r"(?:ngang|rộng)\s*(\d+(?:[.,]\d+)?)\s*m?.*?dài\s*(\d+(?:[.,]\d+)?)", dim, re.IGNORECASE)
-    if not m:
-        m = re.search(r"dài\s*(\d+(?:[.,]\d+)?)\s*m?.*?(?:ngang|rộng)\s*(\d+(?:[.,]\d+)?)", dim, re.IGNORECASE)
-    if m:
-        try:
-            w = float(m.group(1).replace(",", "."))
-            l = float(m.group(2).replace(",", "."))
-            area = round(w * l, 2)
-            if area > 0:
-                return f"{int(area) if area.is_integer() else area}m2"
-        except Exception:
-            pass
-    return None
+    return x if 0 < x < 10000 else None
+
+
+def dien_tich_tu_kich_thuoc(fields: dict[str, Any]) -> str | None:
+    """SRS-5.1zzzzzzz409 (chủ dự án 11/11/2026: "tao tưởng là AI bóc tách chứ sâu là chữ dài chứ đâu phải regex"): AI đọc NGHĨA lời khách và ghi
+    SỐ vào `mat_tien` (bề ngang trước), `dai_m` (dài / sâu), `hau_m` (bề hậu thật, đã tính nở / tóp hậu). Code chỉ tính: chữ nhật ngang × dài,
+    có bề hậu khác ngang thì hình thang (ngang + hậu) / 2 × dài. Luôn "khoảng" — số trên sổ mới là chuẩn. Thay `_calc_area_from_dimension`
+    (regex dò chuỗi kích thước, không biết chữ "sâu", không biết nở hậu)."""
+    w, l, h = so_met(fields.get("mat_tien")), so_met(fields.get("dai_m")), so_met(fields.get("hau_m"))
+    if not w or not l:
+        return None
+    a = round((w + h) / 2 * l, 1) if h and h != w else round(w * l, 1)
+    return f"khoảng {int(a) if float(a).is_integer() else a}m2"
 
 
 import uuid
@@ -691,26 +691,17 @@ class Property:
         # 19/10/2026 (SRS-5.1zzzzzzz55): bỏ khối đoán loai_hinh bằng từ khoá ("nhà / lầu / hẻm" → nhà phố, tên thương hiệu → chung
         # cư…). Loại BĐS do lượt AI bóc tách đọc (ô loai_hinh); chưa rõ thì bot hỏi.
 
-        # 2. Tự động tính diện tích từ kích thước (vd 4x15 -> 60m2) và đồng bộ diện tích
-        dim_str = self.fields.get("kich_thuoc") or ""
-        raw_dt = self.fields.get("dien_tich") or ""
-        if not dim_str and re.search(r"\d+\s*[x*X]\s*\d+", raw_dt):
-            dim_str = raw_dt
-            self.fields["kich_thuoc"] = dim_str
-            if "kich_thuoc" not in newly:
-                newly.append("kich_thuoc")
-
-        if dim_str:
-            area_calc = _calc_area_from_dimension(dim_str)
-            if area_calc:
-                if self.loai_hinh in HOUSE_TYPES:
-                    if not self.fields.get("dien_tich_dat"):
-                        self.fields["dien_tich_dat"] = area_calc
-                        newly.append("dien_tich_dat")
-                else:
-                    if not self.fields.get("dien_tich") or re.search(r"\d+\s*[x*X]\s*\d+", self.fields.get("dien_tich", "")):
-                        self.fields["dien_tich"] = area_calc
-                        newly.append("dien_tich")
+        # 2. Diện tích từ SỐ kích thước AI đã bóc (SRS-5.1zzzzzzz409). Ô diện tích khách tự nói thì giữ; ô do code ước trước đó (đánh dấu
+        # `_dt_tu_kich_thuoc`) thì tính lại khi khách bổ sung dài / nở hậu.
+        dt_uoc = dien_tich_tu_kich_thuoc(self.fields)
+        if dt_uoc:
+            o_dt = "dien_tich_dat" if self.loai_hinh in HOUSE_TYPES else "dien_tich"
+            cu = self.fields.get(o_dt)
+            if not cu or (cu == self.fields.get("_dt_tu_kich_thuoc") and cu != dt_uoc):
+                self.fields[o_dt] = dt_uoc
+                self.fields["_dt_tu_kich_thuoc"] = dt_uoc
+                if o_dt not in newly:
+                    newly.append(o_dt)
 
         # Nhà có đất riêng: KHÔNG đồng bộ dien_tich ↔ dien_tich_dat (SRS-5.1zzzzzzz52, theo bản anh Luận). Một con số khách
         # chưa nói là đất hay nhà nằm yên ở dien_tich; build_chat_system hỏi lại "80m2 đó là đất hay nhà". Riêng chuỗi

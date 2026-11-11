@@ -435,6 +435,11 @@ class TraDiaDanh:
             log.warning("phường theo hẻm: %d phường", len(self._nho_hem[khoa]))
         return self._nho_hem[khoa]
 
+    @staticmethod
+    def co_so_nha(dia_chi: str | None) -> bool:
+        """Địa chỉ AI bóc đã có số nhà ở đầu chưa — cùng khuôn `phuong_theo_so_nha` dùng để tra (SRS-5.1zzzzzzz411)."""
+        return bool(_SO_NHA_DAU.match(dia_chi or ""))
+
     def phuong_theo_so_nha(self, dia_chi: str | None, ten_duong: str | None, quan: str | None = None) -> str | None:
         """Phường mới của nhà khi bản đồ OSM có ĐÚNG số nhà đó (SRS-5.1zzzzzzz236, chủ dự án 28/10: "đưa địa chỉ cụ thể hoặc hẻm cụ thể thì nó
         search phường trước bằng nominatim, nếu search không được mới hỏi"). Đo 28/10 trên 20 địa chỉ: toà nhà / dự án ra đúng số 4/10, nhà

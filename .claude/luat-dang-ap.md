@@ -130,7 +130,7 @@ Bản đồ "file gốc (đã xoá) → chưng cất ở đâu":
 
 ### 6.4 DB, migration, cổng soát
 
-- **Thay đổi schema bắt buộc đi qua một file trong `bot/supabase/migrations/`**, và mở PR cho file đó — áp migration xong mà chưa có PR thì việc chưa xong (vết OPEN-46: 41–52 migration áp thẳng không file, nội dung mất).
+- **Thay đổi schema bắt buộc đi qua một file trong `bot/supabase/migrations/`**, commit cùng lúc áp — áp migration mà không có file trong repo thì việc chưa xong (vết OPEN-46: 41–52 migration áp thẳng không file, nội dung mất).
 - **`bot/supabase/schema.sql` là bản dựng lại từ số không**, do `xuat_schema()` sinh — cổng đỏ vì schema.sql thì SINH LẠI, đừng sửa tay: `node scripts/sinh-schema.mjs` (đọc service_role từ `scripts/.env`), hoặc dispatch `apply-migration` trên nhánh PR với ô `commit_schema = commit` (commit do bot đẩy không kích CI — push thêm một commit thật). Lệnh curl tương đương:
 
 ```bash

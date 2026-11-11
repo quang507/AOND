@@ -75,6 +75,10 @@ def test_cong_web_mot_ung_vien_thi_ghi_luon_khong_ra_thi_bao_admin():
     c2 = eng.conversation("thu-359d")
     c2.prop.fields.update({"duong": "Bình Long", "quan": "Quận Bình Tân"})
     c2.y_luot = {}
+    web = eng._trang_thai_web(c2)                                           # SRS-411: chưa có số nhà → hỏi số nhà MỘT lần, chưa báo admin
+    assert web.get("hoi_so_nha") and "can_nguoi_that" not in c2.y_luot
+    assert "số nhà" in khoi_trang_thai_web(web)[0] and "phường" not in khoi_trang_thai_web(web)[0].split("KHÔNG hỏi phường")[0].split("TUYỆT ĐỐI")[0].lower()
+    c2.y_luot = {}
     web = eng._trang_thai_web(c2)                                           # ba phường ứng viên → không chọn bừa, báo người phụ trách
     assert "phuong" not in c2.prop.fields and web["phuong_bao_admin"] and "nhờ admin tra" in c2.y_luot["can_nguoi_that"]
     duyet = khoi_trang_thai_web(web)[0]                                     # ca thật (a): lượt duyệt không hỏi phường
