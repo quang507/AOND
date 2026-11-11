@@ -78,6 +78,7 @@ from .prompts import (
     build_buyer_chat_system,
     khoi_tin_tra_loi,
     build_phieu_luot,
+    lean_system_prompt_cho_luot,
     SOAT_O_HOI_SYSTEM,
     soat_o_hoi_schema,
     build_column_map_system,
@@ -3178,7 +3179,10 @@ class Engine:
                     if mo_ho:
                         f_tin.pop("_dt_mo_ho_da_hoi", None)
                 viec_o = _hoi("hoi_o", viec_txt, "", _hoan_hoi_o)   # khi bị gỡ: việc của khối thắng (`viec_theo_khoi`, điền sau khi chọn)
-            system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua, viec=viec_o)
+            if os.getenv("AIOI_PROMPT_GON", "").strip().lower() == "bat":   # SRS-5.1zzzzzzz408: prompt gọn (chủ dự án 11/11)
+                system = lean_system_prompt_cho_luot(conv.assistant.name, conv.prop, next_field, project_block, viec=viec_o)
+            else:
+                system = build_phieu_luot(conv.assistant.name, conv.prop, next_field, project_block, hoi_lai=hoi_lai, o_bo_qua=o_bo_qua, viec=viec_o)
             system += khoi_xin_dang(toi_thieu, conv.prop)   # lượt hỏi ô: KHÔNG có khối ĐIỂM TIN (chủ dự án 02/11, SRS-5.1zzzzzzz336)
         elif not conv.listing_proposed:
             conv.listing_proposed = True
