@@ -788,6 +788,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz408 · Lượt hỏi ô người bán dùng LEAN_SYSTEM_PROMPT (11/11/2026)
+- **Ca gốc**: `LEAN_SYSTEM_PROMPT` (SRS-391, đã sửa "MỘT ý" ở SRS-407) chỉ test dùng; SRS-403 nối nó vào lượt viết lời nhưng #311 (SRS-404) hoàn tác cả gói. `[nguồn: chủ dự án 11/11/2026: "dùng prompt ngắn kia"]`
+- **Sửa**: khôi phục `prompts.lean_system_prompt_cho_luot` và nhánh chọn trong `Engine` (lượt hỏi ô, `not is_listing_post`): `AIOI_PROMPT_GON=bat` → prompt gọn, khác → `build_phieu_luot`. Bật ở `bot/cau-hinh-loi.env` và `.env` lõi trên 146. KHÔNG khôi phục lối tắt tin chào (`la_tin_chao_hoi_thuan_tuy`) của SRS-403.
+- **Đánh đổi đã biết**: lượt hỏi ô mất khối TIN_HE_THONG / SLANG_NOTES đầy đủ / giọng nhân vật của phiếu lượt — các bài canh luật cũ (SRS-404) có thể đỏ; theo quyết định chủ dự án, không hoàn tác vì lý do đó. Tắt: đổi `AIOI_PROMPT_GON=tat` trên 146 rồi khởi động lại "AOND Core".
+- **Kiểm**: không chờ CI (chủ dự án 11/11). Đưa lên 146 bằng `trien-khai-146.sh`.
+
 ### SRS-5.1zzzzzzz407 · Mỗi lượt bot chỉ hỏi MỘT ý (CUM_TOI_DA 2 → 1) (11/11/2026)
 - **Ca gốc**: SRS-391 nâng `schema.CUM_TOI_DA` lên 2 (gộp hai ô cùng cụm vào một câu hỏi), trái luật đang áp "tối đa MỘT câu hỏi mỗi lượt" (CLAUDE.md §6.2). `[nguồn: chủ dự án 11/11/2026: "sửa mỗi lượt chỉ hỏi 1 ý thôi"; "giờ tôi bảo bạn sửa gì là bạn sửa luôn không có cl hay test xanh đỏ gì hết"]`
 - **Sửa**: `CUM_TOI_DA = 1`; câu "tối đa 1–2 ý" trong `LEAN_SYSTEM_PROMPT` đổi thành MỘT ý; `test_toi_uu_ky_gui_391` theo giá trị mới.
