@@ -788,6 +788,14 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz413 · Rổ hàng Ny'ah Phú Định 50 căn có giá + khôi phục 243 tin thử (11/11/2026)
+- **Ca gốc**: danh mục Ny'ah (đọc ảnh 20/10) thiếu lô 25, 26, sai mẫu nhà, không giá; 243 tin rao mẫu mất sau nút "Xoá hết khách + rổ hàng" lúc 13:33. `[nguồn: chủ dự án 11/11/2026: "căn 25 26 nữa, thêm vào đi … 2 trăm mấy … đâu hết rồi"]`
+- **Sửa** (`20261111b_nyah_ro_hang_va_khoi_phuc_tin.sql`): 50 căn dựng lại từ bảng chuẩn 50 lô (9 lô còn trống 01, 02, 03, 23, 24, 25, 26, 42, 50 có giá, đất thực, bán cặp); khôi phục sellers / listings / listing_noi_bo của lần xoá 12 (không khôi phục hội thoại cũ).
+
+### SRS-5.1zzzzzzz412 · Gộp dự án trùng tên trong kho `projects` (11/11/2026)
+- **Ca gốc**: bot hỏi khách chọn giữa "HaDo Centrosa Garden" và "Hà Đô Centrosa Garden" — cùng một dự án, hai dòng. `[nguồn: chủ dự án 11/11/2026: "còn dự án nào gần trùng ko, làm chuẩn luôn, gộp hết đi"]`
+- **Sửa** (`20261111a_gop_du_an_trung.sql`): gộp cùng khoá tên (bỏ dấu, tiền tố loại, ký tự lạ) + cùng quận + cùng nhóm (căn hộ / khu dân cư), thêm cặp soát tay theo vector nhúng; dòng giữ = nhiều tin → nhiều kiến thức → dữ liệu dày; tên đẹp nhất, sửa mã HTML. 2.924 → 2.839. Cố ý không gộp: giai đoạn 1/2/3, khác quận, chung cư với KDC cùng tên.
+
 ### SRS-5.1zzzzzzz411 · Thiếu phường mà chưa có số nhà: hỏi số nhà MỘT lần rồi mới báo admin (11/11/2026)
 - **Ca gốc** (test 11/11): "Trần Bình Trọng, quận 5" không số nhà → đường qua nhiều phường → báo admin ngay. `[nguồn: chủ dự án 11/11/2026: "sửa hết đi để t test lại"]`
 - **Sửa**: `Engine._trang_thai_web` — `DiaDanh.co_so_nha` (cùng khuôn `phuong_theo_so_nha`) chưa có số → `web.hoi_so_nha`, `_da_hoi_so_nha`; `khoi_trang_thai_web` hỏi đúng 1 câu số nhà, không nói chữ phường. Có số nhà → `_phuong_tu_dia_chi` tra lại; vẫn không ra → báo admin như SRS-359.
