@@ -794,7 +794,7 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
 
 ### SRS-5.1zzzzzzz412 · Gộp dự án trùng tên trong kho `projects` (11/11/2026)
 - **Ca gốc**: bot hỏi khách chọn giữa "HaDo Centrosa Garden" và "Hà Đô Centrosa Garden" — cùng một dự án, hai dòng. `[nguồn: chủ dự án 11/11/2026: "còn dự án nào gần trùng ko, làm chuẩn luôn, gộp hết đi"]`
-- **Sửa** (`20261111a_gop_du_an_trung.sql`): gộp cùng khoá tên (bỏ dấu, tiền tố loại, ký tự lạ) + cùng quận + cùng nhóm (căn hộ / khu dân cư), thêm cặp soát tay theo vector nhúng; dòng giữ = nhiều tin → nhiều kiến thức → dữ liệu dày; tên đẹp nhất, sửa mã HTML. 2.924 → 2.839. Cố ý không gộp: giai đoạn 1/2/3, khác quận, chung cư với KDC cùng tên.
+- **Sửa** (`20261111a_gop_du_an_trung.sql`): gộp cùng khoá tên (bỏ dấu, tiền tố loại, ký tự lạ) + cùng quận + cùng nhóm (căn hộ / khu dân cư), thêm cặp soát tay theo vector nhúng; dòng giữ = nhiều tin → nhiều kiến thức → dữ liệu dày; tên đẹp nhất, sửa mã HTML. 2.924 → 2.839. Vòng 3 (`20261111c`, chủ dự án: "gộp hết"): gộp nốt giai đoạn 1/2/3, chung cư + KDC cùng tên, cùng dự án khác quận → 2.819.
 
 ### SRS-5.1zzzzzzz411 · Thiếu phường mà chưa có số nhà: hỏi số nhà MỘT lần rồi mới báo admin (11/11/2026)
 - **Ca gốc** (test 11/11): "Trần Bình Trọng, quận 5" không số nhà → đường qua nhiều phường → báo admin ngay. `[nguồn: chủ dự án 11/11/2026: "sửa hết đi để t test lại"]`
