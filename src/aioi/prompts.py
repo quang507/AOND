@@ -2554,6 +2554,38 @@ def operations_schema() -> dict[str, Any]:
     }
 
 
+# ── Đọc nhanh tin khách khi CHƯA rõ vai (SRS-5.1zzzzzzz406) ─────────────────────────────────────────────────────────────
+# Tin đầu "em ơi" từng tốn ~$0.11: lượt lập thao tác đầy đủ (OPERATIONS_SYSTEM ~28,6 nghìn chữ + operations_schema ~27 nghìn chữ, ghi
+# cache lần đầu) chạy cả khi tin chưa có gì để ghi. Lượt đọc nhanh này (vài trăm chữ) do AI QUYẾT theo nghĩa tin có cần đọc đầy đủ
+# không, kèm vai (user_intent), lời xã giao, xưng hô — các ô lấy NGUYÊN định nghĩa của form đầy đủ (một nguồn). AI không chắc → đọc đầy đủ.
+DOC_NHANH_SYSTEM = """Bạn đọc tin Zalo của một khách vừa nhắn AI Ơi Nhà Đất (môi giới nhà đất), lúc CHƯA rõ khách muốn gửi bán / cho thuê hay
+tìm mua / thuê. Việc chính: quyết định tin này có cần đọc kỹ bằng lượt bóc tách đầy đủ không — đọc theo NGHĨA cả câu, không dò từ khoá.
+
+can_doc_day_du = false CHỈ KHI tin của khách chỉ gồm lời chào / gọi, xưng hô, cảm ơn / đồng ý ngắn, hoặc ý chung muốn bán / cho thuê /
+mua / thuê mà CHƯA kèm dữ kiện nào.
+can_doc_day_du = true khi tin có BẤT KỲ điều gì khác: dữ kiện căn (loại nhà, địa chỉ, khu vực, giá, diện tích, kích thước, pháp lý, hiện
+trạng…), nhu cầu mua / thuê cụ thể (khu vực, tầm giá, loại nhà), câu hỏi (phí, pháp lý, dự án, việc khác), xin gặp người thật, xin đăng
+tin, trả lời câu bot vừa hỏi, mã căn, đường link, ảnh / tệp — hoặc khi không chắc.
+
+Kèm vai (user_intent), lời xã giao (loi_xa_giao) và xưng hô (xung_ho) theo đúng mô tả từng ô; ô nào cần cụm trích thì chép NGUYÊN VĂN từ
+tin khách. Không có thì bỏ trống."""
+
+_O_DOC_NHANH = ("user_intent", "loi_xa_giao", "loi_xa_giao_trich_dan", "xung_ho", "xung_ho_trich_dan")
+
+
+def doc_nhanh_schema() -> dict[str, Any]:
+    """Khuôn lượt đọc nhanh: cờ `can_doc_day_du` + các ô hội thoại lấy nguyên từ `operations_schema()` (không định nghĩa lại)."""
+    day_du = operations_schema()["properties"]
+    return {
+        "type": "object",
+        "properties": {
+            "can_doc_day_du": {"type": "boolean", "description": "true khi tin cần lượt bóc tách đầy đủ (xem luật); không chắc → true."},
+            **{k: day_du[k] for k in _O_DOC_NHANH},
+        },
+        "required": ["can_doc_day_du", "user_intent"],
+    }
+
+
 # ── Ảnh / tài liệu là kiến thức CHUNG của dự án hay ảnh của MỘT căn (19/10/2026, SRS-5.1zzzzzzz55) ──────────────────
 # Thay bộ dò từ khoá _looks_like_reference_doc ("phân lô", "sơ đồ", "mặt bằng"… trên bản đọc ảnh): đọc theo nghĩa bản đọc.
 TAI_LIEU_CHUNG_SYSTEM = """Dưới đây là BẢN ĐỌC (mô tả) một hoặc vài ảnh / tài liệu người rao vừa gửi. Cho biết đây có phải TÀI LIỆU

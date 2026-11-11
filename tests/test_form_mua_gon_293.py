@@ -15,7 +15,7 @@ class AiGhiForm(AiGia):
 
     def __init__(self, ke_hoach, cac_ke_hoach=None):
         super().__init__(ke_hoach)
-        self.form, self.cac, self.vong_gop = [], list(cac_ke_hoach or []), 0
+        self.form, self.cac, self.vong_gop, self.doc_nhanh = [], list(cac_ke_hoach or []), 0, 0
 
     def converse(self, system, messages, tools, max_tokens=1024):
         if "ghi_nhu_cau" in {t["name"] for t in tools}:
@@ -25,6 +25,9 @@ class AiGhiForm(AiGia):
 
     def extract(self, system, messages, json_schema):
         p = json_schema.get("properties") or {}
+        if "can_doc_day_du" in p:   # lượt đọc nhanh khi chưa rõ vai (SRS-5.1zzzzzzz406): AI trả "cần đọc đầy đủ" → form như cũ
+            self.doc_nhanh += 1
+            return {"can_doc_day_du": True, "user_intent": "unknown"}
         if "user_intent" in p:
             self.form.append((system, set(p)))
             return dict(self.cac.pop(0) if self.cac else self.ke_hoach)

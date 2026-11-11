@@ -68,6 +68,8 @@ from .prompts import (
     MO_DAU_GHI_NHAN_RE,
     nhan_o,
     EXTRACTION_SYSTEM,
+    DOC_NHANH_SYSTEM,
+    doc_nhanh_schema,
     OPERATIONS_SYSTEM,
     OPERATIONS_SYSTEM_BAN,
     OPERATIONS_SYSTEM_MUA,
@@ -4915,6 +4917,34 @@ class Engine:
     def _plan_and_apply(self, conv: Conversation) -> tuple[list[str], list[tuple]]:
         return self._ap_dung_ke_hoach(conv, self._lap_ke_hoach(conv))
 
+    def _doc_nhanh_chua_ro_vai(self, conv: Conversation, src: list[Message]) -> dict | None:
+        """SRS-5.1zzzzzzz406 (chủ dự án 11/11: "tin đầu chưa rõ khách bán hay mua thì không chạy bản bóc tách 56 nghìn chữ, nhưng vẫn để AI
+        xác định vai"): một lượt AI ngắn (`DOC_NHANH_SYSTEM`) đọc tin theo nghĩa. Chỉ khi AI trả RÕ `can_doc_day_du = false` mới dựng kế
+        hoạch rỗng (vai, lời xã giao, xưng hô do AI đọc — cụm trích vẫn qua cổng kiểm như form đầy đủ); thiếu cờ, lỗi, có ảnh → None
+        (đọc bằng form đầy đủ như cũ). Lượt viết lời KHÔNG đổi (phiếu lượt, giọng giữ nguyên). Đã có ô tin / bản nháp / thao tác chờ xác
+        nhận / tin khách bấm "Trả lời" / tin rao thật → không đọc nhanh: những lượt đó luôn cần form đầy đủ (duyệt, xoá, sửa ô…)."""
+        if (conv.prop.fields or conv.listing_proposed or conv.pending_destructive or conv.tin_tra_loi
+                or any(not self._is_stub_listing(li) for li in conv.listings)):
+            return None
+        if any(m.role == "user" and m.content.startswith(DAU_TA_ANH_CHUP) for m in src):
+            return None
+        cuoi_bot = next((i for i in range(len(src) - 1, -1, -1) if src[i].role == "assistant"), -1)
+        khach = [m.content for m in src[cuoi_bot + 1:] if m.role == "user" and m.content]
+        if not khach:
+            return None
+        tin = (f"Tin bot vừa nhắn: {src[cuoi_bot].content}\n\n" if cuoi_bot >= 0 else "") + "Tin khách:\n" + "\n".join(khach)
+        try:
+            r = self._provider.extract(DOC_NHANH_SYSTEM, [Message("user", tin)], doc_nhanh_schema())
+        except Exception as e:  # noqa: BLE001 — lượt phụ hỏng thì đọc bằng form đầy đủ, không chặn lượt
+            log.warning("Đọc nhanh hỏng (%s) — đọc bằng form đầy đủ", type(e).__name__)
+            return None
+        if not isinstance(r, dict) or r.get("can_doc_day_du") is not False:
+            return None
+        plan: dict = {"operations": [], "user_intent": r.get("user_intent") or "unknown"}
+        plan.update({k: r[k] for k in ("loi_xa_giao", "loi_xa_giao_trich_dan", "xung_ho", "xung_ho_trich_dan") if r.get(k)})
+        log.warning("Đọc nhanh: tin chưa có gì để ghi — bỏ lượt form đầy đủ (ý: %s)", plan["user_intent"])
+        return plan
+
     def _lap_ke_hoach(self, conv: Conversation, gop: bool = False) -> dict:
         """Lượt AI lập thao tác: đọc tin khách theo nghĩa, ghi các thuộc tính hội thoại (vai, ý mua / bán, duyệt, hỏi về,
         xưng hô, y_luot) và TRẢ kế hoạch — chưa đụng rổ hàng (`_ap_dung_ke_hoach`). `gop`: lượt chat thường (`_handle`) — người bán đi vòng
@@ -4977,6 +5007,10 @@ class Engine:
             # chỗ"): khách mua cũng MỘT vòng agent — bước 1 ở đây (ô nhu cầu / việc căn / ý khách qua công cụ ghi), bước 2 ở chỗ viết lời mua.
             with _do(conv, "lap_thao_tac"):
                 plan = agent_gop.mo_mua(self, conv, system.split(RANH_GIOI_CACHE, 1)[1])
+        elif gop:
+            # SRS-5.1zzzzzzz406: vai CHƯA rõ (thường là tin đầu) — AI đọc nhanh trước; tin chưa có gì để ghi thì khỏi lượt form đầy đủ.
+            with _do(conv, "lap_thao_tac"):
+                plan = self._doc_nhanh_chua_ro_vai(conv, src)
         if plan is None:
             with _do(conv, "lap_thao_tac"):
                 plan = self._provider.extract(system, src, operations_schema_mua() if gon else operations_schema_ban() if ban_gon else operations_schema())

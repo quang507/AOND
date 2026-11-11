@@ -788,6 +788,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz406 · Tin đầu chưa rõ vai: một lượt AI ngắn đọc tin, chưa có gì để ghi thì bỏ form lập thao tác đầy đủ (~56 nghìn chữ) (11/11/2026)
+- **Ca gốc**: tin đầu "em ơi" tốn $0.1103 (Sonnet 5.5): ~$0.10 là ghi cache lượt lập thao tác chạy form đầy đủ (`OPERATIONS_SYSTEM` 28,6 nghìn chữ + `operations_schema()` 27,3 nghìn chữ) dù tin chưa có gì để ghi; sổ `bot_usage_model` 11/11: ghi cache ≈ 76 % tiền. `[nguồn: chủ dự án 11/11/2026: "tin đầu chưa rõ khách bán hay mua thì không chạy bản bóc tách 56 nghìn chữ, nhưng vẫn để AI xác định vai và giữ nguyên phiếu lượt cùng giọng … KHÔNG CẦN chạy bộ chấm kịch bản (chỉ cần bun run kiem và pytest xanh 100%)"]`
+- **Lớp lỗi**: lượt lập thao tác chạy vô điều kiện, cỡ prompt không theo việc của tin. SRS-403 (hoàn tác, SRS-404) vá bằng regex chào hỏi + bỏ luôn lượt định vai. Cùng lớp CÒN: cache 5 phút hết hạn giữa hai tin khách chậm (ghi lại mỗi lượt); token suy nghĩ mặc định của Sonnet 5.5 ở lượt viết lời; lượt soát ô hỏi phụ (`_khai_o_hoi`).
+- **Sửa** (đường thật duy nhất, không công tắc): vai CHƯA rõ (không qua vòng agent bán / mua) → `Engine._doc_nhanh_chua_ro_vai` gọi `DOC_NHANH_SYSTEM` + `doc_nhanh_schema()` (cờ `can_doc_day_du` + 5 ô `user_intent` / xã giao / xưng hô lấy NGUYÊN mô tả của form đầy đủ, kèm tin bot vừa nhắn). AI trả RÕ `false` → kế hoạch rỗng mang vai AI đọc; thiếu cờ / lỗi / có ảnh / đã có ô tin, bản nháp, thao tác chờ, tin "Trả lời", tin rao thật → form đầy đủ như cũ. Lượt viết lời không đổi. Không thêm regex.
+- **Kiểm**: `tests/test_doc_nhanh_406.py` (7 bài; system lượt viết lời GIỐNG HỆT đường form đầy đủ trả cùng kế hoạch; đỏ 4/7 khi gỡ lời gọi — đã thử); `test_form_mua_gon_293` đồ giả trả "cần đọc đầy đủ"; `bun run test:py` 1525 đạt. Không chạy bộ chấm (chủ dự án). Sau gộp: `scripts/sau-gop.sh` đưa lên 146.
+
 ### SRS-5.1zzzzzzz405 · 14 script bắn thử production chạy từ máy cá nhân qua ssh vào máy 146 (thay VPS); gỡ các ô bắn thử khỏi Actions (11/11/2026)
 - **Ca gốc**: bỏ VPS 06–08/11 mà `bot/tests/ban-thu-*.sh` + `doc-log-loi.sh` vẫn đọc Vault `VPS_HOST` rồi `sshpass root@VPS` → mọi ô bắn thử chết; GitHub Actions không với tới 146 (lõi chỉ nghe 127.0.0.1, máy sau Tailscale), và mọi đường gọi lõi phải kèm `x-noi-bo-key` (SRS-400). `[nguồn: chủ dự án 11/11/2026: chọn "chạy ssh máy 146 từ máy tôi" thay vì cho Actions vào Tailscale; Host `nuc` → 192.168.1.146, tài khoản admin `nguye`]`
 - **Lớp lỗi**: đổi hạ tầng mà công cụ kiểm vẫn trỏ máy cũ, không bài nào canh. Chỗ khác cùng lớp: lệnh dọn `/reset` của `ban-thu-khach-ao` thiếu khoá nội bộ từ SRS-400 (sửa); `ban-thu-luan` dựng dịch vụ systemd (Linux) cho bản anh Luận — CÒN, script thoát 2 "chưa kiểm được" tới khi có dịch vụ Windows riêng.
@@ -879,18 +885,3 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
      - `src/aioi/projects.py`: `dong_nguon_phu` đọc từ `specs` phẳng và `thong_tin`.
      - `src/aioi/du_an_so_sanh.py`: `_lay_quy_mo` và `_lay_tien_ich` ưu tiên đọc từ `thong_tin.thuoc_tinh` và `amenities` đã chuẩn hoá.
 - **Kiểm**: `tests/test_hop_nhat_du_an_396.py` (4/4 tests đạt), `tests/test_nguon_phu_rever.py` (4/4 tests đạt), `scripts/soat-truy-vet.sh` SẠCH.
-
-### SRS-5.1zzzzzzz395 · Tối ưu hóa các luồng hội thoại AOND theo trải nghiệm PropTech của MOSO: Gợi ý dải giá khi thiếu tiêu chí, No-Results fallback thông minh và Bảo mật cam kết khi xin ảnh (06/11/2026)
-- **Ca gốc**: Rà soát các luồng hội thoại sẵn có của AOND phát hiện 3 điểm nghẽn trải nghiệm: (1) Khách mua mới nói khu vực (hoặc chỉ nói ngân sách) thì bot từ chối tìm căn và hỏi cộc lốc ngược lại khách; (2) Khi không có căn nào khớp 100% tiêu chí thì bot báo cụt 'không có căn nào' khiến hội thoại đi vào ngõ cụt; (3) Lời xin ảnh và sổ hồng ở luồng bán chưa nêu cam kết bảo mật khiến chủ nhà e ngại [nguồn: chủ dự án 06/11/2026: "cái này có giống bên moso không Ok làm đi"].
-- **Lớp lỗi**:
-  1. `agent_mua.chay_cong_cu`: hàm `tim_can` khi thiếu 1 trong 2 tiêu chí (khu_vuc hoặc ngan_sach) chỉ trả về một câu nhắc thiếu khô cứng, không khai thác bảng benchmark giá và danh mục dự án để tư vấn chủ động như MOSO.
-  2. Khi `kho.can_phu_hop` trả về rỗng (0 kết quả), bot dừng lại thay vì đưa ra nhận định mặt bằng giá thực tế và đề xuất phương án thay thế lân cận.
-  3. `prompts.NATURAL_QUESTIONS["hinh_anh"]` chỉ dặn xin ảnh để chấm điểm cao, thiếu lời cam kết bảo mật tuyệt đối che số nhà/số sổ.
-- **Sửa**:
-  1. Nâng cấp `agent_mua.chay_cong_cu["tim_can"]`:
-     - Khi có khu vực mà chưa có ngân sách: Tự động tra cứu dải giá thị trường theo phân vùng (`_BANG_GIA_BENCHMARK`) và dự án tiêu biểu (`kho.du_an_theo_khu`) để gợi ý khoảng giá căn hộ/nhà phố trước khi hỏi ngân sách.
-     - Khi có ngân sách mà chưa có khu vực: Khẳng định tiềm năng ngân sách và gợi ý các khu vực sôi động tại TP.HCM phù hợp tầm tiền.
-     - Khi không có căn khớp (0 kết quả): Hướng dẫn model giải thích thực tế mặt bằng giá tại khu vực đó và đề xuất các phương án thay thế khả thi (mở rộng quận lân cận hoặc loại hình/diện tích tương đương).
-  2. Cập nhật `agent_ban.HUONG_DAN`: bổ sung chỉ dẫn gọi công cụ phong thủy, quy hoạch, đàm phán trong vòng agent bán.
-  3. Sửa `prompts.NATURAL_QUESTIONS["hinh_anh"]`: Bổ sung cam kết bảo mật 100%, tự động che số nhà và số sổ khi đăng web.
-- **Kiểm**: `tests/test_toi_uu_luong_395.py` (5/5 tests đạt 100%), kiểm tra hồi quy toàn diện đạt 100%, `scripts/soat-truy-vet.sh` SẠCH.
