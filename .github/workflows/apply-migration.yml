@@ -14,7 +14,7 @@ on:
         required: false
         default: ''
       dung_lai:
-        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-duong | nap-giao-lo | ban-thu-mua | ban-thu-ban | ban-thu-srd | ban-thu-kb | ban-thu-dc | ban-thu-sau | ban-thu-xa | ban-thu-nhieu-can | ban-thu-dap-y | ban-thu-luan | doc-log-loi | ban-thu-vm | ban-thu-5-khach | ban-thu-khach-ao | do-tim-nha | nap-tin-mau | nap-luat | ban-thu-ai | ban-thu-kiem. Trống = áp migration_file như thường"
+        description: "DỰNG LẠI DB trên project rỗng (08/10/2026, scripts/dung-lai-db.mjs): kiem | cau-truc | bu | du-lieu | xac-minh | nap-duong | nap-giao-lo | do-tim-nha | nap-tin-mau | nap-luat. Trống = áp migration_file như thường"
         required: false
         default: ''
       commit_schema:
@@ -85,99 +85,12 @@ jobs:
       # SRS-5.1zzzzzzz401: bỏ VPS (06–08/11/2026) — ô cai-vps (cài bridge + lõi qua SSH) và go-trang-thu đã gỡ; lõi / bridge chạy trên
       # máy 146, đưa lõi lên bằng scripts/trien-khai-146.sh. Script VPS cũ lưu ở bot/bridge-zca/archive/.
 
-      # 19/10/2026 (SRS-5.1zzzzzzz71): bắn thử luồng người mua trên lõi Python production bằng ID thử, tự dọn (bot/tests/ban-thu-mua.sh).
-      - name: Bắn thử luồng người mua (ban-thu-mua)
-        if: ${{ inputs.dung_lai == 'ban-thu-mua' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-mua.sh
-
-      # SRS-5.1zzzzzzz73: bắn thử luồng người bán (ô tin ghi đủ, không ghi ô chủ nhà không nói), ID thử, tự dọn.
-      - name: Bắn thử luồng người bán (ban-thu-ban)
-        if: ${{ inputs.dung_lai == 'ban-thu-ban' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-ban.sh
-
-      # SRS-5.1zzzzzzz225: kịch bản mẫu SRD của anh Luận (req + chat examples.docx) — luồng 30 câu + nhóm 1 / 2.4 / 5. ID thử, tự dọn.
-      - name: Bắn thử kịch bản mẫu SRD anh Luận (ban-thu-srd)
-        if: ${{ inputs.dung_lai == 'ban-thu-srd' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-srd.sh
-
-      # SRS-5.1zzzzzzz142: ca một tin nhắn hai căn chạy riêng (ban-thu-ban 22/10 trượt vì chờ lưu nền quá ngắn), in thời gian thật tới lúc đủ 2 tin.
-      - name: Bắn thử ca một tin nhắn hai căn (ban-thu-nhieu-can)
-        if: ${{ inputs.dung_lai == 'ban-thu-nhieu-can' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-nhieu-can.sh
-
-      # SRS-5.1zzzzzzz193: cuộc chat kiểu ảnh chủ dự án 26/10 (nhà phố Hoàng Hoa Thám, sau bản nháp khách nói "hiện có HĐT 35 triệu") — in từng bong bóng, số từ / dấu hỏi mỗi lượt, số lượt tới bản nháp để người đọc chấm độ tự nhiên.
-      - name: Bắn thử bot đáp vào ý nghĩa điều khách nói (ban-thu-dap-y)
-        if: ${{ inputs.dung_lai == 'ban-thu-dap-y' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-dap-y.sh
-
-      # SRS-5.1zzzzzzz212: 5 khách giả 5 tính cách (2 bán ở số ký gửi, 3 mua ở số tư vấn) chat với lõi — in lời bot, gắn nhãn câu hỏi CÓ/KHÔNG · DẪN DẮT · MỞ để người chấm.
-      - name: Bắn thử 5 khách tính cách khác nhau (ban-thu-5-khach)
-        if: ${{ inputs.dung_lai == 'ban-thu-5-khach' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-5-khach.sh
-
-      # SRS-5.1zzzzzzz213: 5 khách ẢO có cảm xúc do model đóng vai (Haiku) chat với lõi production qua đường hầm ssh, giám khảo chấm (Sonnet, rơi về Haiku) — tiền thật, tự dọn.
-      - name: Bắn thử 5 khách ảo có cảm xúc (ban-thu-khach-ao)
-        if: ${{ inputs.dung_lai == 'ban-thu-khach-ao' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-khach-ao.sh
-
-      # SRS-5.1zzzzzzz199: chạy bản anh Luận (luan8560/aond main) thành dịch vụ riêng cổng 8001 trên VPS, bắn cùng kịch bản vào bản đó và lõi mình để so cạnh.
-      - name: Bắn thử bản anh Luận so cạnh lõi mình (ban-thu-luan)
-        if: ${{ inputs.dung_lai == 'ban-thu-luan' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-luan.sh
-
-      # SRS-5.1zzzzzzz195: CHỈ ĐỌC nhật ký lõi trên VPS trong khoảng giờ UTC ở ô migration_file ("từ|đến") — truy lượt nào làm mất / bỏ ô tin.
-      - name: Đọc nhật ký lõi (doc-log-loi)
-        if: ${{ inputs.dung_lai == 'doc-log-loi' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-          KHOANG: ${{ inputs.migration_file }}
-        run: bash bot/tests/doc-log-loi.sh
-
-      # SRS-5.1zzzzzzz153: khách VỪA BÁN VỪA MUA hẹn xem nhà bằng nhiều tin ngắn — lịch hẹn + việc báo người phụ trách + số điện thoại phải vào DB.
-      # SRS-5.1zzzzzzz268: bắn thử các việc đã có code + test offline mà chưa kiểm production (số tầng, căn / mã không có, kho xưởng, ảnh chủ nhà
-      # đúng căn, sticker .png, lời chào số tư vấn).
-      - name: Bắn thử các việc chưa kiểm production (ban-thu-kiem)
-        if: ${{ inputs.dung_lai == 'ban-thu-kiem' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-          GIU_DU_LIEU: ${{ inputs.giu_du_lieu }}
-        run: bash bot/tests/ban-thu-kiem.sh
-
-      - name: Bắn thử khách vừa bán vừa mua hẹn xem nhà (ban-thu-vm)
-        if: ${{ inputs.dung_lai == 'ban-thu-vm' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-vm.sh
-
       # SRS-5.1zzzzzzz144, 167, 168: nạp rổ tin mẫu seed_thu (SEED0001..0228) bằng SQL, không gọi AI chat; vector do cron nhung-tick nhúng dần. Ảnh mẫu vẽ đã gỡ (SRS-5.1zzzzzzz280).
       - name: Nạp rổ tin mẫu (nap-tin-mau)
         if: ${{ inputs.dung_lai == 'nap-tin-mau' }}
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
         run: node bot/tests/tim-nha/nap-tin-mau.mjs
-
-      # 28/10/2026: bắn thử 11 mục do AI đọc theo nghĩa (162 169 171 175 176 178 179 181 184 185 191) trên model thật — bot/tests/ban-thu-ai.sh.
-      - name: Bắn thử 11 mục AI đọc theo nghĩa (ban-thu-ai)
-        if: ${{ inputs.dung_lai == 'ban-thu-ai' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-ai.sh
 
       # SRS-5.1zzzzzzz231: nạp kho điều luật nguyên văn (bot/supabase/luat/) bằng SQL, không gọi AI; vector do cron nhung-luat-tick nhúng dần.
       - name: Nạp kho điều luật (nap-luat)
@@ -193,37 +106,12 @@ jobs:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
         run: node bot/tests/tim-nha/do-tim-nha.mjs
 
-      # SRS-5.1zzzzzzz86: 3 kịch bản tester 20/10 (nhà phân lô mặt ngõ Hà Nội, nhà phố dự án, căn hộ dự án) + chi phí / thời gian.
-      - name: Bắn thử 3 kịch bản tester (ban-thu-kb)
-        if: ${{ inputs.dung_lai == 'ban-thu-kb' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-kb.sh
-
-      # SRS-5.1zzzzzzz115: địa chỉ có số hẻm của đường đi qua nhiều phường — bot gợi ý đúng phường kho hẻm.
-      - name: Bắn thử địa chỉ có số hẻm (ban-thu-dc)
-        if: ${{ inputs.dung_lai == 'ban-thu-dc' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-dc.sh
-
-      # SRS-5.1zzzzzzz116: bộ câu môi giới — hỏi thêm sau khi tin lên web, ô riêng của chủ, số khách thật, 7 câu khách mua.
-      - name: Bắn thử bộ câu môi giới (ban-thu-sau)
-        if: ${{ inputs.dung_lai == 'ban-thu-sau' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-sau.sh
-
-      # SRS-5.1zzzzzzz126: đất ở xã — địa chỉ xã + tỉnh là đủ, không hỏi quận / huyện.
-      - name: Bắn thử đất ở xã (ban-thu-xa)
-        if: ${{ inputs.dung_lai == 'ban-thu-xa' }}
-        env:
-          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
-        run: bash bot/tests/ban-thu-xa.sh
+      # SRS-5.1zzzzzzz405: ô ban-thu-* và doc-log-loi gỡ — lõi ở máy 146 (sau Tailscale, chỉ nghe 127.0.0.1) nên Actions không với tới.
+      # Chạy từ máy cá nhân có `ssh nuc`: TOKEN=… bash bot/tests/ban-thu-<tên>.sh (bot/tests/lib/may146.sh mở đường hầm + kèm khoá nội bộ).
 
       # 08/10/2026: project production cũ bị xoá nhầm — dựng lại từng bước trên project mới rỗng.
       - name: Dựng lại DB (dung_lai)
-        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'nap-giao-lo' && inputs.dung_lai != 'nap-ranh-gioi' && inputs.dung_lai != 'ban-thu-mua' && inputs.dung_lai != 'ban-thu-ban' && inputs.dung_lai != 'ban-thu-srd' && inputs.dung_lai != 'ban-thu-dap-y' && inputs.dung_lai != 'ban-thu-luan' && inputs.dung_lai != 'doc-log-loi' && inputs.dung_lai != 'ban-thu-kb' && inputs.dung_lai != 'ban-thu-dc' && inputs.dung_lai != 'ban-thu-sau' && inputs.dung_lai != 'ban-thu-xa' && inputs.dung_lai != 'ban-thu-nhieu-can' && inputs.dung_lai != 'ban-thu-vm' && inputs.dung_lai != 'ban-thu-5-khach' && inputs.dung_lai != 'ban-thu-khach-ao' && inputs.dung_lai != 'do-tim-nha' && inputs.dung_lai != 'nap-tin-mau' && inputs.dung_lai != 'nap-luat' && inputs.dung_lai != 'ban-thu-ai' && inputs.dung_lai != 'ban-thu-kiem' }}
+        if: ${{ inputs.dung_lai != '' && inputs.dung_lai != 'nap-duong' && inputs.dung_lai != 'nap-giao-lo' && inputs.dung_lai != 'nap-ranh-gioi' && inputs.dung_lai != 'do-tim-nha' && inputs.dung_lai != 'nap-tin-mau' && inputs.dung_lai != 'nap-luat' }}
         env:
           TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN || vars.SUPABASE_ACCESS_TOKEN }}
           BUOC: ${{ inputs.dung_lai }}

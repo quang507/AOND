@@ -74,8 +74,8 @@ chủ dự án phát hiện thì phải bóc ngược năm tầng.
    ├─ Lõi Python (src/aioi/) → ca pytest trong tests/ (bun run test:py, CI job `bot`)
    ├─ Web / edge function / script / SQL → bot/tests/*.mjs (thêm vào `test:bot`)
    │                                       hoặc bot/tests/sql/ (`test:sql`)
-   ├─ Cần model thật → ô bắn thử production qua apply-migration.yml `dung_lai`
-   │                   (`ban-thu-*`, `ban-thu-khach-ao`; đọc log bằng `doc-log-loi`) —
+   ├─ Cần model thật → script bắn thử production chạy từ máy có `ssh nuc`
+   │                   (`bot/tests/ban-thu-*.sh`; đọc log bằng `doc-log-loi.sh`, SRS-405) —
    │                   tiền thật, ID thử `la_id_thu`, tự dọn (docs/10 §10.7.0)
    └─ Chưa → viết ca chạy tay vào docs/10 §10.7, kèm LỆNH DÁN VÀO CHẠY ĐƯỢC
              (không phải mô tả), kỳ vọng, và cách dọn dữ liệu thử
@@ -95,7 +95,7 @@ chủ dự án phát hiện thì phải bóc ngược năm tầng.
    thêm từ vào regex — đưa sang AI đọc nghĩa, code kiểm trích dẫn.
 
 8. Pytest xanh với model giả chỉ kiểm giả định của người sửa. Sửa hành vi model
-   thì bắn lại ô `ban-thu-*` liên quan sau khi cài lõi (`cai-vps`) rồi mới ghi
+   thì bắn lại script `ban-thu-*` liên quan sau khi đưa lõi lên 146 (`trien-khai-146.sh`) rồi mới ghi
    "xong".
 ```
 
@@ -125,7 +125,7 @@ của người đẩy commit**. Nay chia lại cho sòng phẳng.
 | Lõi Python — pytest `tests/` (TS-PY-01); `test:bot` (code TypeScript còn sống); `test:sql` (trigger thật trên Postgres tạm) | máy | CI job `bot` | ⚠️ |
 | Xuất rổ hàng không hụt im lặng (TS-ROHANG; TS-MASTERDB gỡ 19/10/2026) | máy | CI job `rohang` | ⚠️ |
 | Kiểu ba edge function, luật tiền TS ↔ SQL, danh sách migration, trạng thái DB | máy | CI job `kieubot`, `doichieutien`, `migration`, `soatdb` | ⚠️ |
-| Lời bot với model THẬT (TS-PROD-01…04) | máy bắn, người đọc log | `apply-migration.yml` ô `dung_lai` = `ban-thu-*`, `doc-log-loi` | không, tay |
+| Lời bot với model THẬT (TS-PROD-01…04) | máy bắn, người đọc log | `bot/tests/ban-thu-*.sh`, `doc-log-loi.sh` chạy từ máy có `ssh nuc` (SRS-405) | không, tay |
 | ID gãy, truy vết thiếu, số đếm README, PII, khoá service_role | máy | CI job `truyvet` | ⚠️ |
 | RLS / GRANT — tập không phá huỷ (TS-SEC-AUTO) | máy | CI job `baomat` | ⚠️ |
 | RLS / GRANT — ma trận 5 vai (TS-SEC3) | người, SQL Editor | `bot/tests/vai-tro.sql` | có, tay |
@@ -222,8 +222,8 @@ Không bật ✅ *Include administrators* thì chủ repo vẫn tự bỏ qua đ
 dự án, nhưng phải là lựa chọn có ý thức, không phải mặc định quên bật.
 
 **Cổng 3 — trước / sau triển khai** (người):
-- **Lõi Python**: cài bằng `apply-migration.yml` ô `dung_lai` = `cai-vps` (đưa `src/aioi` lên VPS, khởi động lại
-  `aond-core.service`; báo trước người đang chat thử). Xong thì bắn ô `ban-thu-*` liên quan và đọc `doc-log-loi`.
+- **Lõi Python**: đưa lên máy 146 bằng `bash scripts/sau-gop.sh` / `scripts/trien-khai-146.sh` (chép `src`, khởi động lại task
+  "AOND Core"; báo trước người đang chat thử — SRS-401). Xong thì chạy script `ban-thu-*` liên quan và `doc-log-loi.sh` (SRS-405).
 - **Migration**: áp qua `apply-migration.yml`; áp xong mà chưa mở PR cho file của nó thì việc chưa xong (CLAUDE.md §6).
 - **Edge function còn lại** (`escalation-feed`, `geocode-listings`, `media-cleanup`): workflow `deploy-bot.yml`
   (chạy tay, runner tự build và đẩy, bytes không qua tay ai). Bản cũ "bundle → kéo ngược → so từng byte" là của `chat-reply` đã gỡ.
@@ -254,7 +254,7 @@ qua** (`docs/10 §10.8`).
 | Trigger / hàm SQL trên Postgres tạm | `bun run test:sql` | không (cần Postgres; CI job `bot`) |
 | Kiểu ba edge function | `bun run kieu:bot` | có |
 | Chỉ tự kiểm rổ hàng | `bun run test:rohang` | có |
-| Bắn thử lõi production bằng model thật (tiền thật) | workflow `apply-migration.yml`, ô `dung_lai` = `ban-thu-*` / `doc-log-loi` / `do-tim-nha` | không |
+| Bắn thử lõi production bằng model thật (tiền thật) | `TOKEN=… bash bot/tests/ban-thu-<tên>.sh` / `doc-log-loi.sh` từ máy có `ssh nuc`; đo tìm nhà: ô `do-tim-nha` | không |
 | Chỉ soát tài liệu | `bun run truyvet` | có |
 | Hồi quy RLS trên DB thật (cần Internet) | `bun run test:sec` | **không** — cần mạng, để `kiem` không đỏ oan trên máy offline |
 | Ma trận quyền 5 vai (cần quyền SQL) | dán `bot/tests/vai-tro.sql` vào SQL Editor | không |
