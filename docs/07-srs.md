@@ -937,6 +937,8 @@ Kịch bản production 11/11 (12 kịch bản, máy 146). Chủ dự án: "sử
   Chạy lại production: vẫn trượt — lượt đó giao cho agent gộp MUA đọc, prompt của nó dựng sẵn vai tư vấn tìm mua nên dòng dữ kiện số không
   thắng. Gốc thật: người đọc lượt chọn theo vai cũ. Nay `_vai_tren_so_nay`: vai đặt ở số KHÁC số đang nhắn thì form gọn / agent của vai đó
   không đọc lượt này (`_form_mua_gon`, `_form_ban_gon`) — người đọc trung lập đọc, vai quyết theo ý tin + số.
+  Lần chạy thứ hai: vai đúng (chào ký gửi) nhưng bot tự nói "phần tìm mua em không tư vấn sâu được" — lời viết không biết việc ở số kia còn
+  nguyên. Nay `khoi_doi_so` (lượt đầu sau đổi số) nói việc ở số kia giữ nguyên, bên em vẫn theo tiếp ở số đó.
 - **m_hen_xem_cho_so**: khách chưa chọn căn, để số → bot nói "người phụ trách sẽ gọi xác nhận lịch xem cuối tuần". Gốc: kết quả
   `luu_so_dien_thoai` không nói gì về lịch, và đường bóc tách (`_viec_mua`) ghi cứng "gọi xác nhận lịch / tư vấn" — hai nơi tả cùng một việc.
   Nay một nguồn `agent_mua.ket_qua_luu_sdt(lich)` cho cả hai: có lịch đang chờ (trong kho hoặc vừa hẹn lượt này) thì nêu căn + giờ, không có

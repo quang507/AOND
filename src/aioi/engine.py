@@ -28,7 +28,7 @@ from uuid import uuid4
 from . import gamification as g
 from . import phap_ly
 from .prompts import _dien_tich_mo_ho, khoi_nhan_vat, viec_phieu, viec_theo_khoi
-from .prompts import NHAN_VIEC_LUOT, khoi_so_dang_nhan, prompt_gon_bat
+from .prompts import NHAN_VIEC_LUOT, khoi_doi_so, khoi_so_dang_nhan, prompt_gon_bat
 from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, SU_THAT_CAN, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
@@ -3067,6 +3067,7 @@ class Engine:
             if conv.so_nhan == SO_TU_VAN and (conv.y_luot.get("_doi_so") or not any(t.role == "assistant" for t in conv.history)):
                 # SRS-5.1zzzzzzz210: lượt đầu ở số tư vấn — chào theo câu mẫu chỉ hỏi chuyện tìm mua / thuê (số ký gửi giữ lời chào hai lựa chọn).
                 system += khoi_chao_tu_van(conv.assistant.name, cau_mau.cau("chao_tu_van", goi_toi_khach(customer_pronoun)[0], ten=conv.assistant.name))
+            system += khoi_doi_so(self._viec_so_kia(conv))   # SRS-5.1zzzzzzz417
             uu_tien = (khoi_can_nguoi(conv) or khoi_phap_ly(conv, self._can_dang_noi(conv, can))   # SRS-5.1zzzzzzz178: một khối ưu tiên
                        or khoi_hoi_ve_mua(conv.hoi_ve_luot))   # SRS-5.1zzzzzzz212: phí / uy tín / định giá cũng có khối ở phía mua
             system += ((uu_tien + KHOI_MOT_UU_TIEN) if uu_tien else "") + khoi_xung_ho(customer_pronoun, conv.assistant.name, _xung_ho_doan(conv))   # một nguồn xưng hô cả hai phía (SRS-5.1zzzzzzz86)
@@ -3306,6 +3307,7 @@ class Engine:
         if (not is_listing_post and (conv.y_luot.get("_doi_so") or not any(t.role == "assistant" for t in conv.history))
                 and (not conv.prop.fields_khach() or conv.y_luot.get("tha_tim") == "chao")):
             system += khoi_chao_lan_dau(conv.assistant.name, cau_mau.cau("chao_lan_dau", goi_toi_khach(customer_pronoun)[0], ten=conv.assistant.name))
+        system += khoi_doi_so(self._viec_so_kia(conv))   # SRS-5.1zzzzzzz417
         system = self._ghep_cau_chuan(system + khoi_xung_ho(customer_pronoun, conv.assistant.name, _xung_ho_doan(conv)), conv) + self._khoi_danh_gia(conv)
         system += khoi_mo_dau_vua_dung(conv)   # SRS-5.1zzzzzzz301
         if xin_sao:
@@ -5723,6 +5725,16 @@ class Engine:
                         "căn nào (loại + đường) để khách thấy đúng căn")
         conv.y_luot["lich_cho"] = self._lich_cho(kho, bid)
         return viec, can[:4]
+
+    def _viec_so_kia(self, conv: Conversation) -> str | None:
+        """SRS-5.1zzzzzzz417: lượt đầu sau khi khách đổi số Zalo (`_doi_so`) — việc khách đang có ở số kia (còn nguyên), None nếu không có."""
+        if not conv.y_luot.get("_doi_so"):
+            return None
+        if conv.role == "seller" and conv.buyer_lead is not None:
+            return "tìm mua / thuê"
+        if conv.role == "buyer" and (conv.prop.fields_khach() or any(not self._is_stub_listing(li) for li in conv.listings)):
+            return "gửi bán / cho thuê"
+        return None
 
     @staticmethod
     def _lich_cho(kho, bid) -> list[dict]:

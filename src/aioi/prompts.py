@@ -673,6 +673,15 @@ QUY TẮC PHẢN HỒI:
 """
 
 
+def khoi_doi_so(viec_so_khac: str | None) -> str:
+    """SRS-5.1zzzzzzz417: lượt đầu sau khi khách đổi số Zalo — việc ở số kia vẫn còn nguyên (chạy lại production: thiếu dữ kiện này bot tự nói
+    "phần tìm mua em không tư vấn sâu được")."""
+    if not viec_so_khac:
+        return ""
+    return (f"Chuyện {viec_so_khac} khách nói ở số kia vẫn giữ nguyên và bên em vẫn theo tiếp ở số đó; lượt này chỉ là việc của số đang nhắn — "
+            "khách hỏi tới chuyện kia thì nói vậy.\n")
+
+
 def khoi_chao_lan_dau(assistant_name: str, mau: str) -> str:
     """Lượt ĐẦU ở số KÝ GỬI: khách chỉ chào thì AI chào lại theo mẫu ở `cau_mau.chao_lan_dau` (CRM sửa được) rồi hỏi căn gửi bán / cho
     thuê — thay danh sách từ khoá hello / hi / 👋 (SRS-5.1zzzzzzz125). 28/10 (SRS-5.1zzzzzzz251, chủ dự án: "1 số chuyên gửi bán 1 số chuyên
