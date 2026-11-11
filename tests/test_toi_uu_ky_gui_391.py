@@ -36,7 +36,7 @@ def test_khoi_nhan_vat_co_customer_insight():
 
 def test_cum_toi_da_bang_hai():
     """Chủ dự án duyệt: mỗi lượt hỏi tối đa 2 ý (CUM_TOI_DA = 2)."""
-    assert CUM_TOI_DA == 2
+    assert CUM_TOI_DA == 1   # SRS-5.1zzzzzzz407: chủ dự án 11/11 "mỗi lượt chỉ hỏi 1 ý"
     p = Property(loai_hinh="nha_pho", fields={"dia_chi": "110 Âu Cơ", "duong": "Âu Cơ", "gia": "16 tỷ"})
     thieu = p.missing_fields()
     # Khi thiếu cả diện tích đất và diện tích nhà (cùng cụm quy mô), cụm hỏi tối đa 2 ý

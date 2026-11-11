@@ -87,6 +87,26 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
   5. Đưa công tắc `AIOI_PROMPT_GON=bat` vào `bot/cau-hinh-loi.env` và `C:\aond\aond_core\.env` trên máy 146 để kích hoạt `LEAN_SYSTEM_PROMPT` chạy thật ở production.
 - **Kiểm**: `tests/test_fast_path_va_lean_prompt_403.py` (đạt 4/4 ca: nhận diện câu chào, fast-path bỏ qua extract, prompt <1.500 tokens bảo tồn tên trợ lý có dấu chấm, công tắc kích hoạt thành công); soát migration 406/406; soát truy vết SẠCH. Bắn thử "em ơi" lên máy 146 phản hồi 200 OK với Th•ái.
 
+### SRS-5.1zzzzzzz396 · Hợp nhất toàn bộ dữ liệu từ các nguồn (Mogi, Rever, MOSO) thành 1 chuẩn dữ liệu AOND duy nhất; xóa nhãn nguồn và làm sạch specs (06/11/2026)
+- **Ca gốc**: Sau khi làm giàu kho dự án từ Mogi, Rever và MOSO, kho `projects` (hơn 2.900 dự án) bị phân mảnh cấu trúc: dữ liệu nằm rải rác trong `specs.moso`, `specs.rever`, `specs.gia_dong`, mang nhãn nguồn riêng lẻ (`source = 'moso'`, `source = 'rever'`, `source = 'mogi'`), chứa URL trỏ ra ngoài (`source_url`) và lời thoại bot còn chữ "theo nguồn" [nguồn: chủ dự án 06/11/2026: "gộp chung nguồn dữ liệu từ các nguồn vào thành 1 rồi xóa nguồn đi cho thành 1 loại giống nhau"].
+- **Lớp lỗi**:
+  1. Phân mảnh schema: Cùng một thông tin (chủ đầu tư, trạng thái, số căn, khoảng giá, tiện ích) nhưng dự án thì nằm ở cột gốc, dự án nằm trong `specs.moso`, dự án nằm trong `specs.rever`.
+  2. Lộ nguồn ngoài: Cột `source` và `source_url` chứa nhãn và link dẫn ra ngoài (moso.vn, rever.vn, mogi.vn), vi phạm nguyên tắc SSOT độc quyền nội bộ của AOND.
+  3. Lời thoại bot `du_an_mua.py` và `du_an_so_sanh.py` còn truy vấn `specs.get("moso")`, `specs.get("rever")` và in dòng `- Giá (theo nguồn): ...`.
+- **Sửa**:
+  1. Tạo kịch bản hợp nhất dữ liệu `scripts/hop-nhat-nguon-du-an.mjs`:
+     - Điền khuyết các cột gốc: `developer`, `status_text`, `price_min`, `price_max` (làm tròn số nguyên bigint).
+     - Gộp khử trùng toàn bộ tiện ích từ `amenities` + `rever.tien_ich` + `moso.amenities`.
+     - Chuẩn hóa `thong_tin.thuoc_tinh`: Hỗ trợ vay 70%, Vốn tự có 30%, Tổng số căn, Số block, Số tầng, MĐXD, Đơn giá TB/m², Giá rao bán/thuê thị trường.
+     - Làm sạch phẳng `specs`: Xóa bỏ hoàn toàn các object con `moso` và `rever`, chỉ lưu các trường kỹ thuật phẳng (`don_gia_tb_m2`, `tong_so_can`, `tong_dien_tich`, `dien_tich_tu_m2`, `dien_tich_den_m2`, `nam_khoi_cong`, `nam_hoan_thanh`, `ban_giao`).
+     - Thống nhất nguồn: `source = 'aond'`, xóa toàn bộ link ngoài `source_url = null`.
+  2. Cập nhật `scripts/thu-du-an-moso.mjs`: Lưu trực tiếp vào schema phẳng và `thong_tin`, đặt `source = 'aond'`, không tạo lồng `specs.moso`.
+  3. Cập nhật mã nguồn Python:
+     - `src/aioi/du_an_mua.py`: Bỏ chữ "(theo nguồn)", đọc trực tiếp `sp.get('don_gia_tb_m2')` và `sp.get('tong_so_can')`.
+     - `src/aioi/projects.py`: `dong_nguon_phu` đọc từ `specs` phẳng và `thong_tin`.
+     - `src/aioi/du_an_so_sanh.py`: `_lay_quy_mo` và `_lay_tien_ich` ưu tiên đọc từ `thong_tin.thuoc_tinh` và `amenities` đã chuẩn hoá.
+- **Kiểm**: `tests/test_hop_nhat_du_an_396.py` (4/4 tests đạt), `tests/test_nguon_phu_rever.py` (4/4 tests đạt), `scripts/soat-truy-vet.sh` SẠCH.
+
 ### SRS-5.1zzzzzzz395 · Tối ưu hóa các luồng hội thoại AOND theo trải nghiệm PropTech của MOSO: Gợi ý dải giá khi thiếu tiêu chí, No-Results fallback thông minh và Bảo mật cam kết khi xin ảnh (06/11/2026)
 - **Ca gốc**: Rà soát các luồng hội thoại sẵn có của AOND phát hiện 3 điểm nghẽn trải nghiệm: (1) Khách mua mới nói khu vực (hoặc chỉ nói ngân sách) thì bot từ chối tìm căn và hỏi cộc lốc ngược lại khách; (2) Khi không có căn nào khớp 100% tiêu chí thì bot báo cụt 'không có căn nào' khiến hội thoại đi vào ngõ cụt; (3) Lời xin ảnh và sổ hồng ở luồng bán chưa nêu cam kết bảo mật khiến chủ nhà e ngại [nguồn: chủ dự án 06/11/2026: "cái này có giống bên moso không Ok làm đi"].
 - **Lớp lỗi**:
