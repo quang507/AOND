@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # trien-khai-146.sh — đưa src/ (lõi aioi) lên máy 146 và khởi động lại "AOND Core" (SRS-5.1zzzzzzz397).
 # Từ 06/11/2026 bỏ VPS (chủ dự án 08/11: "không dùng vps nữa chuyển sang máy"); lõi chạy ở 146, C:\aond\aond_core
-# (KHÔNG phải git, chép file), Task Scheduler. Thay cho tu-cai-vps.yml / cai-vps (đã gỡ). Cần `ssh nuc` thông (Tailscale).
+# (KHÔNG phải git, chép file), Task Scheduler. Thay cho tu-cai-vps.yml / cai-vps (đã gỡ). Cần SSH thông tới máy 146 (LAN: nguye@192.168.1.146, Tailscale: nguye@100.85.245.112).
 #   bash scripts/trien-khai-146.sh            # từ gốc repo, sau khi main đã có commit cần đưa lên
 # Không động tới .env lõi trên 146 (khoá, model đặt ở đó) và bridge Zalo (C:\aond\bridge-zca) — đổi bridge thì làm tay.
 set -euo pipefail
-MAY="${MAY_146:-nuc}"
+MAY="${MAY_146:-nguye@192.168.1.146}"
 cd "$(git rev-parse --show-toplevel)"
 if [ -n "$(git status --porcelain -- src)" ]; then echo "src/ còn thay đổi chưa commit — commit trước" >&2; exit 1; fi
 TAM=$(mktemp -d)

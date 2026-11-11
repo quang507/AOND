@@ -1,7 +1,7 @@
-# siet-acl-146.ps1 — siết ACL thư mục bot AOND (C:\aond) trên máy 146 (SRS-5.1zzzzzzz399, audit N2 08/11/2026).
+﻿# siet-acl-146.ps1 — siết ACL thư mục bot AOND (C:\aond) trên máy 146 (SRS-5.1zzzzzzz399, audit N2 08/11/2026).
 # Thư mục tạo thẳng dưới C:\ thừa hưởng "Authenticated Users: Modify" → user thường sửa .cmd/.py chạy dưới SYSTEM, đọc .env + cookie Zalo.
 # CHỈ C:\aond — thư mục bot khác trên 146 không thuộc repo này, không đụng (chủ dự án 08/11: "bot khác kệ nó").
-# Chạy (quyền admin, ví dụ ssh nuc): chép file sang rồi  powershell -ExecutionPolicy Bypass -File siet-acl-146.ps1
+# Chạy (quyền admin, ví dụ ssh nguye@192.168.1.146): chép file sang rồi  powershell -ExecutionPolicy Bypass -File siet-acl-146.ps1
 # Khôi phục ACL cũ: icacls C:\ /restore C:\ProgramData\acl-backup-20261108\aond.acl
 $ErrorActionPreference = 'Stop'
 $BK = 'C:\ProgramData\acl-backup-20261108'
