@@ -3270,7 +3270,7 @@ class Engine:
                     sau_cu = conv.prop.fields.get("_sau_da_hoi")
                     xin_anh = cum_sau[0] in CUM_XIN_ANH
                     conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi | {f"sau:{cum_sau[0] if xin_anh else cum_sau[1][0]}"}))
-                    system += _hoi("hoi_sau_dang", khoi_xin_them_anh(so_anh, cum_sau[0] == "anh_lan_2") if xin_anh
+                    system += _hoi("hoi_sau_dang", khoi_xin_them_anh(so_anh, cum_sau[0] == "anh_lan_2", conv.prop) if xin_anh
                                    else khoi_hoi_sau_dang(cum_sau[1][:1], conv.prop),
                                    hoan=lambda cu=sau_cu: _dat_co(conv.prop.fields, "_sau_da_hoi", cu))
                     log.warning("Hỏi sau đăng: cụm %s", cum_sau[0])

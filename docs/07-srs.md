@@ -969,3 +969,13 @@ Chủ dự án 11/11 (tin #56F988C9 lên web chỉ 2 ảnh, bot còn nói "ảnh
   chữ `hinh_anh`.
 - `prompts.khoi_xin_them_anh` (rút gọn cùng ngày, chủ dự án "hỏi ngắn hơn"): xin MỘT góc quan trọng nhất còn thiếu bằng MỘT câu ngắn, căn đang cho thuê / kinh doanh thì ảnh mặt bằng đang kinh
   doanh cũng là ảnh của căn; lần hai chỉ một câu, không thúc ép.
+
+### SRS-5.1zzzzzzz421 · Xin ảnh theo nhánh, hỏi khéo; chủ im 10 phút sau đăng thì nhắc xin ảnh (11/11/2026)
+Chủ dự án 11/11: "quy định 10 phút hỏi thêm, ưu tiên ảnh để thêm điểm cho tin" và "không phải cái nào cũng hỏi mặt tiền, hỏi xin thêm ảnh
+tùy nhánh, và hỏi khéo vào".
+- `prompts.GOC_ANH_THEO_NHOM` + `goc_anh_goi_y(prop)`: góc ảnh theo nhánh (nhà mặt tiền / nhà hẻm / nhà chung / phòng trọ–CHDV / căn hộ / đất
+  / dự án / kho xưởng / mặt bằng), đọc ô phân loại `_duong_vao`, loại hình; căn đang cho thuê thì ảnh mặt bằng đang hoạt động cũng tính.
+- `LUAT_XIN_ANH_KHEO`: nối chuyện vừa nói hoặc khen thật một điểm, xin MỘT góc hợp căn, nửa câu lợi ích, một câu ngắn. Dùng ở khối xin ảnh
+  trong lượt (`khoi_xin_them_anh(..., prop)`) và tin nhắc (`build_xin_anh_nhac_system`).
+- `followup`: tin đã báo đăng mà dưới mức ảnh tin đẹp → nhắc sau `SAU_DANG_NHAC_GIAY` (600 giây) thay vì 5 phút; model viết tin theo góc hợp
+  căn và 6 lượt gần nhất, hụt thì câu mẫu `xin_anh_sau_dang`. Tối đa hai lần, chung mốc `sau:anh` / `sau:anh_lan_2` với lượt hỏi sau đăng.

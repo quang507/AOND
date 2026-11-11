@@ -743,17 +743,73 @@ def khoi_hoi_sau_dang(keys: list[str], prop: Property | None = None) -> str:
             "xem, chìa khoá) chỉ để bên em nắm, không đưa lên tin.\n")
 
 
-def khoi_xin_them_anh(so_anh: int, lan_hai: bool = False) -> str:
-    """Xin thêm ảnh thật sau khi tin lên web (SRS-5.1zzzzzzz420) — engine quyết khi nào (số ảnh đã lưu dưới mức tin đẹp), model đặt câu."""
+# Góc ảnh làm nổi thế mạnh theo NHÁNH loại BĐS (SRS-5.1zzzzzzz421, chủ dự án 11/11: "không phải cái nào cũng hỏi mặt tiền, hỏi xin thêm ảnh tùy
+# nhánh, và hỏi khéo vào"). Tri thức để model chọn MỘT góc hợp căn — không phải câu đọc nguyên văn. Thứ tự = góc nên xin trước.
+GOC_ANH_THEO_NHOM: dict[str, str] = {
+    "nha_mat_tien": "mặt tiền nhà nhìn từ bên kia đường (thấy đủ số tầng, bề ngang); đoạn đường trước nhà; tầng trệt nhìn từ cửa vào",
+    "nha_hem": "con hẻm trước nhà (thấy hẻm rộng, xe vào được); mặt tiền nhà; phòng khách; bếp",
+    "nha": "mặt tiền nhà; phòng khách; bếp; phòng ngủ; WC; sân thượng / ban công",
+    "phong_tro": "một phòng mẫu; WC trong phòng; lối đi chung; chỗ để xe",
+    PropertyGroup.CONDO.value: "phòng khách; view nhìn từ ban công / cửa sổ; bếp; phòng ngủ; sảnh hoặc hồ bơi / tiện ích toà",
+    PropertyGroup.LAND.value: "toàn cảnh lô đất; đường trước đất (thấy đường rộng); cọc mốc / ranh đất; xung quanh lô",
+    PropertyGroup.PROJECT.value: "toàn cảnh lô / căn trong dự án; đường nội khu trước căn; tiện ích dự án gần căn",
+    PropertyGroup.INDUSTRIAL.value: "toàn cảnh kho xưởng; cổng và đường xe tải / container vào; bên trong (nền, chiều cao, kết cấu mái)",
+    PropertyGroup.COMMERCIAL.value: "mặt tiền mặt bằng nhìn từ đường; bên trong mặt bằng; vỉa hè / chỗ để xe trước cửa",
+}
+
+
+def goc_anh_goi_y(prop: "Property | None") -> str:
+    """Góc ảnh nên xin cho căn này — đọc ô phân loại AI đã ghi (`_duong_vao`, loại hình, nhóm), không dò chữ khách."""
+    if prop is None:
+        return GOC_ANH_THEO_NHOM["nha"]
+    f = prop.fields
+    nhom = prop.group
+    if nhom is PropertyGroup.RESIDENTIAL:
+        if prop.loai_hinh in ("phong_tro", "chdv"):
+            goc = GOC_ANH_THEO_NHOM["phong_tro"]
+        elif f.get("_duong_vao") == "mat_tien":
+            goc = GOC_ANH_THEO_NHOM["nha_mat_tien"]
+        elif f.get("_duong_vao") in ("hem", "hem_xe_hoi"):
+            goc = GOC_ANH_THEO_NHOM["nha_hem"]
+        else:
+            goc = GOC_ANH_THEO_NHOM["nha"]
+    else:
+        goc = GOC_ANH_THEO_NHOM.get(nhom.value, GOC_ANH_THEO_NHOM["nha"])
+    if f.get("co_hdt") == "co" or f.get("thu_nhap_thue") or f.get("hd_thue_con"):
+        goc += " (căn đang cho thuê / kinh doanh: ảnh mặt bằng đang hoạt động bên trong cũng là ảnh của căn)"
+    return goc
+
+
+LUAT_XIN_ANH_KHEO = ("Hỏi KHÉO: nối vào chuyện vừa nói hoặc khen thật một điểm của căn / tấm ảnh khách đã gửi (chỉ điều có thật), rồi xin MỘT góc "
+                     "hợp nhất với căn này và thế mạnh của nó, kèm nửa câu lợi ích cho chủ (khách mua hỏi nhiều hơn / tin lên điểm). Đúng MỘT câu "
+                     "ngắn, giọng nhờ vả nhẹ, không liệt kê nhiều góc, không giải thích dài, không thúc ép, không nói ảnh đã đủ.")
+
+
+def khoi_xin_them_anh(so_anh: int, lan_hai: bool = False, prop: "Property | None" = None) -> str:
+    """Xin thêm ảnh thật sau khi tin lên web (SRS-5.1zzzzzzz420/421) — engine quyết khi nào (số ảnh đã lưu dưới mức tin đẹp), model đặt câu
+    theo góc hợp nhánh căn (`goc_anh_goi_y`)."""
     co = f"tin đang có {so_anh} ảnh thật" if so_anh else "tin chưa có ảnh thật nào"
     if lan_hai:
         return ("\n\n=== NHẮC XIN ẢNH LẦN CUỐI (tin đã lên web, " + co + "): ===\n"
-                "Việc lượt này: sau lời đáp, xuống một dòng trống rồi nhắc nhẹ MỘT câu ngắn xin thêm ảnh khi tiện (vd \"Anh tiện thì chụp thêm em "
-                "vài tấm nữa nha.\"). Không kể góc chụp, không thúc ép.\n")
+                "Việc lượt này: sau lời đáp, xuống một dòng trống rồi nhắc nhẹ MỘT câu ngắn xin thêm ảnh khi tiện. Không kể góc chụp, không "
+                "thúc ép.\n")
     return ("\n\n=== XIN THÊM ẢNH LƯỢT NÀY (tin đã lên web, " + co + "; tin đẹp cần 5–6 ảnh): ===\n"
-            "Việc lượt này: sau lời đáp, xuống một dòng trống rồi xin MỘT góc ảnh quan trọng nhất còn thiếu, đúng MỘT câu ngắn (vd nhà mặt tiền "
-            "chưa có ảnh mặt tiền: \"Thiếu mỗi tấm mặt tiền thôi anh — anh chụp giúp em từ bên kia đường nha.\"). Không liệt kê nhiều góc, không "
-            "giải thích dài, không nói ảnh đã đủ. Căn đang cho thuê / kinh doanh thì ảnh mặt bằng đang kinh doanh cũng là ảnh của căn.\n")
+            f"Góc hợp với căn này (chọn MỘT, góc chưa có trong ảnh khách đã gửi): {goc_anh_goi_y(prop)}.\n"
+            "Việc lượt này: sau lời đáp, xuống một dòng trống rồi xin ảnh. " + LUAT_XIN_ANH_KHEO + "\n")
+
+
+def build_xin_anh_nhac_system(ten: str, prop: "Property", so_anh: int, lan_hai: bool, goi: str, toi: str) -> str:
+    """System cho TIN NHẮC xin ảnh khi chủ im SAU_DANG_NHAC_GIAY sau khi tin lên web (SRS-5.1zzzzzzz421) — model viết đúng một tin."""
+    co = f"tin đang có {so_anh} ảnh thật" if so_anh else "tin chưa có ảnh thật nào"
+    khach = prop.fields_khach()
+    du_kien = "; ".join(f"{k}: {v}" for k, v in list(khach.items())[:14])
+    viec = ("Đây là lần nhắc xin ảnh THỨ HAI (lần cuối): một câu thật nhẹ, khi nào tiện thì gửi, không kể góc chụp."
+            if lan_hai else f"Góc hợp với căn này (chọn MỘT, chưa có trong ảnh khách đã gửi): {goc_anh_goi_y(prop)}. " + LUAT_XIN_ANH_KHEO)
+    return (f"Bạn là {ten}, trợ lý của sàn nhà đất, đang chăm sóc chủ nhà sau khi tin rao của họ ĐÃ LÊN WEB. Chủ nhà im khoảng 10 phút. "
+            f"Viết ĐÚNG MỘT tin Zalo ngắn gửi chủ nhà để xin thêm ảnh thật của căn — {co}, tin đẹp cần 5–6 ảnh.\n"
+            f"Gọi khách là \"{goi}\", tự xưng \"{toi}\". Không chào lại từ đầu, không nhắc lại bản tin, không hỏi chuyện khác, không dùng chữ \"máy\".\n"
+            f"Căn: loại {prop.loai_hinh or 'chưa rõ'}{' (cho thuê)' if prop.is_rental else ''}. Dữ kiện khách đã nói: {du_kien or 'chưa có'}.\n"
+            f"{viec}\nChỉ trả về nguyên văn tin gửi khách.")
 
 
 def khoi_hoi_coc(o: str, prop: Property | None = None) -> str:

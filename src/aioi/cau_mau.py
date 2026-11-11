@@ -109,6 +109,10 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                      "Tin nhắc sau 5 phút khi không còn câu chờ và căn chưa có ảnh", "SRS-5.1zzzzzzz73"),
     "nhac_xin_anh_em": ("Khi nào tiện {goi} chụp gửi {toi} vài tấm ảnh thực tế nhé, để tin đăng nổi bật và hút khách hơn nè.",
                         "Như trên, khi khách xưng \"em\" / \"cháu\" ({goi} = em / cháu, {toi} = anh / chị / cô / chú theo tên trợ lý)", "SRS-5.1zzzzzzz73 · 214"),
+    # --- Xin ảnh sau khi tin lên web (SRS-5.1zzzzzzz421) — DỰ PHÒNG khi lượt model viết tin nhắc hụt ---
+    "xin_anh_sau_dang": ("{Goi} tiện thì chụp thêm giúp {toi} vài tấm ảnh thực tế của căn nha, tin nhiều ảnh khách hỏi nhiều hơn hẳn.",
+                         "Tin nhắc 10 phút sau khi tin đã lên web mà chưa đủ ảnh — chỉ dùng khi model viết tin nhắc hụt (bình thường model viết "
+                         "theo góc hợp nhánh căn)", "SRS-5.1zzzzzzz421"),
     # --- Báo khách mua khi có căn mới vừa nhu cầu (SRS-5.1zzzzzzz150) ---
     "bao_can_moi": ("{Goi} ơi, {toi} đang có căn này hợp với nhu cầu của {goi} nè, {goi} xem qua nha.\n\n{Mo_ta}. {vi_sao}\n\n"
                     "Xem hình và chi tiết ở đây ạ: {link}\n\n{Goi} có muốn {toi} sắp lịch xem thử không ạ?",

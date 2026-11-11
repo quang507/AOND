@@ -32,7 +32,7 @@ from .dia_danh import TraDiaDanh
 from .giao_lo import dia_ban_tu_nga_tu
 from .han_muc import HanMuc
 from .engine import Engine, SqliteConversationStore, cho_duyet_ban_nhap
-from .followup import followup_manager
+from .followup import SAU_DANG_NHAC_GIAY, con_xin_anh_sau_dang, followup_manager
 from .llm import build_provider
 from .projects import SqliteProjectStore, SupabaseProjectStore
 from .kho_anh import SupabaseMediaStore
@@ -866,12 +866,15 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
 
     # Cancel previous follow-up timer for this user and schedule a new 5-minute inactivity follow-up
     followup_manager.cancel_followup(payload.external_user_id)
-    if r.role == "seller" and r.completeness < 1.0:
+    # SRS-5.1zzzzzzz421: tin đã lên web mà còn ảnh để xin → nhắc sau SAU_DANG_NHAC_GIAY (10 phút), xin ảnh trước.
+    xin_anh = r.role == "seller" and con_xin_anh_sau_dang(_engine.conversation(payload.external_user_id), _engine._max_photos)
+    if r.role == "seller" and (r.completeness < 1.0 or xin_anh):
         followup_manager.schedule_followup(
             user_key=payload.external_user_id,
             engine=_engine,
             user_name=zalo_name,
             role=r.role,
+            delay_seconds=SAU_DANG_NHAC_GIAY if xin_anh else None,
         )
 
     photos = anh_gui_kem(payload.external_user_id, r.role, payload.text)
