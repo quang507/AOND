@@ -788,6 +788,11 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz407 · Mỗi lượt bot chỉ hỏi MỘT ý (CUM_TOI_DA 2 → 1) (11/11/2026)
+- **Ca gốc**: SRS-391 nâng `schema.CUM_TOI_DA` lên 2 (gộp hai ô cùng cụm vào một câu hỏi), trái luật đang áp "tối đa MỘT câu hỏi mỗi lượt" (CLAUDE.md §6.2). `[nguồn: chủ dự án 11/11/2026: "sửa mỗi lượt chỉ hỏi 1 ý thôi"; "giờ tôi bảo bạn sửa gì là bạn sửa luôn không có cl hay test xanh đỏ gì hết"]`
+- **Sửa**: `CUM_TOI_DA = 1`; câu "tối đa 1–2 ý" trong `LEAN_SYSTEM_PROMPT` đổi thành MỘT ý; `test_toi_uu_ky_gui_391` theo giá trị mới.
+- **Kiểm**: theo quyết định chủ dự án — không chạy test, không chờ CI; gộp thẳng. Cần đưa lõi lên 146 (`trien-khai-146.sh`).
+
 ### SRS-5.1zzzzzzz406 · Tin đầu chưa rõ vai: một lượt AI ngắn đọc tin, chưa có gì để ghi thì bỏ form lập thao tác đầy đủ (~56 nghìn chữ) (11/11/2026)
 - **Ca gốc**: tin đầu "em ơi" tốn $0.1103 (Sonnet 5.5): ~$0.10 là ghi cache lượt lập thao tác chạy form đầy đủ (`OPERATIONS_SYSTEM` 28,6 nghìn chữ + `operations_schema()` 27,3 nghìn chữ) dù tin chưa có gì để ghi; sổ `bot_usage_model` 11/11: ghi cache ≈ 76 % tiền. `[nguồn: chủ dự án 11/11/2026: "tin đầu chưa rõ khách bán hay mua thì không chạy bản bóc tách 56 nghìn chữ, nhưng vẫn để AI xác định vai và giữ nguyên phiếu lượt cùng giọng … KHÔNG CẦN chạy bộ chấm kịch bản (chỉ cần bun run kiem và pytest xanh 100%)"]`
 - **Lớp lỗi**: lượt lập thao tác chạy vô điều kiện, cỡ prompt không theo việc của tin. SRS-403 (hoàn tác, SRS-404) vá bằng regex chào hỏi + bỏ luôn lượt định vai. Cùng lớp CÒN: cache 5 phút hết hạn giữa hai tin khách chậm (ghi lại mỗi lượt); token suy nghĩ mặc định của Sonnet 5.5 ở lượt viết lời; lượt soát ô hỏi phụ (`_khai_o_hoi`).
@@ -865,23 +870,3 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
 - **Bỏ VPS khỏi quy trình**: gỡ `tu-cai-vps.yml` (mọi push main từ 06/11 đỏ vì gọi `cai-vps` vào VPS đã gỡ). Thêm `scripts/trien-khai-146.sh`; `sau-gop.sh` gọi nó khi đổi lõi.
 - **Đã áp** migration `20261108a` (08/11): 1.111 dự án được gỡ, còn 0 dự án mang dòng vay, 2.924 dự án giữ nguyên `thuoc_tinh`.
 - **Kiểm**: pytest 1503/1503; `test:bot` đạt trừ `giam-egress` (hỏng đường dẫn Windows, cả bản gốc); thêm ca cho từng lỗi trên.
-
-### SRS-5.1zzzzzzz396 · Hợp nhất toàn bộ dữ liệu từ các nguồn (Mogi, Rever, MOSO) thành 1 chuẩn dữ liệu AOND duy nhất; xóa nhãn nguồn và làm sạch specs (06/11/2026)
-- **Ca gốc**: Sau khi làm giàu kho dự án từ Mogi, Rever và MOSO, kho `projects` (hơn 2.900 dự án) bị phân mảnh cấu trúc: dữ liệu nằm rải rác trong `specs.moso`, `specs.rever`, `specs.gia_dong`, mang nhãn nguồn riêng lẻ (`source = 'moso'`, `source = 'rever'`, `source = 'mogi'`), chứa URL trỏ ra ngoài (`source_url`) và lời thoại bot còn chữ "theo nguồn" [nguồn: chủ dự án 06/11/2026: "gộp chung nguồn dữ liệu từ các nguồn vào thành 1 rồi xóa nguồn đi cho thành 1 loại giống nhau"].
-- **Lớp lỗi**:
-  1. Phân mảnh schema: Cùng một thông tin (chủ đầu tư, trạng thái, số căn, khoảng giá, tiện ích) nhưng dự án thì nằm ở cột gốc, dự án nằm trong `specs.moso`, dự án nằm trong `specs.rever`.
-  2. Lộ nguồn ngoài: Cột `source` và `source_url` chứa nhãn và link dẫn ra ngoài (moso.vn, rever.vn, mogi.vn), vi phạm nguyên tắc SSOT độc quyền nội bộ của AOND.
-  3. Lời thoại bot `du_an_mua.py` và `du_an_so_sanh.py` còn truy vấn `specs.get("moso")`, `specs.get("rever")` và in dòng `- Giá (theo nguồn): ...`.
-- **Sửa**:
-  1. Tạo kịch bản hợp nhất dữ liệu `scripts/hop-nhat-nguon-du-an.mjs`:
-     - Điền khuyết các cột gốc: `developer`, `status_text`, `price_min`, `price_max` (làm tròn số nguyên bigint).
-     - Gộp khử trùng toàn bộ tiện ích từ `amenities` + `rever.tien_ich` + `moso.amenities`.
-     - Chuẩn hóa `thong_tin.thuoc_tinh`: Hỗ trợ vay 70%, Vốn tự có 30%, Tổng số căn, Số block, Số tầng, MĐXD, Đơn giá TB/m², Giá rao bán/thuê thị trường.
-     - Làm sạch phẳng `specs`: Xóa bỏ hoàn toàn các object con `moso` và `rever`, chỉ lưu các trường kỹ thuật phẳng (`don_gia_tb_m2`, `tong_so_can`, `tong_dien_tich`, `dien_tich_tu_m2`, `dien_tich_den_m2`, `nam_khoi_cong`, `nam_hoan_thanh`, `ban_giao`).
-     - Thống nhất nguồn: `source = 'aond'`, xóa toàn bộ link ngoài `source_url = null`.
-  2. Cập nhật `scripts/thu-du-an-moso.mjs`: Lưu trực tiếp vào schema phẳng và `thong_tin`, đặt `source = 'aond'`, không tạo lồng `specs.moso`.
-  3. Cập nhật mã nguồn Python:
-     - `src/aioi/du_an_mua.py`: Bỏ chữ "(theo nguồn)", đọc trực tiếp `sp.get('don_gia_tb_m2')` và `sp.get('tong_so_can')`.
-     - `src/aioi/projects.py`: `dong_nguon_phu` đọc từ `specs` phẳng và `thong_tin`.
-     - `src/aioi/du_an_so_sanh.py`: `_lay_quy_mo` và `_lay_tien_ich` ưu tiên đọc từ `thong_tin.thuoc_tinh` và `amenities` đã chuẩn hoá.
-- **Kiểm**: `tests/test_hop_nhat_du_an_396.py` (4/4 tests đạt), `tests/test_nguon_phu_rever.py` (4/4 tests đạt), `scripts/soat-truy-vet.sh` SẠCH.

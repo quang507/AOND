@@ -285,7 +285,8 @@ CUM_HOI: list[tuple[str, ...]] = [
 ]
 # 22/10/2026 (SRS-5.1zzzzzzz136); 06/11/2026 (SRS-5.1zzzzzzz391, chủ dự án: "mỗi lượt hỏi tối đa 2 ý thôi"):
 # nâng số ô cùng cụm được hỏi gộp mỗi lượt lên tối đa 2 ý để hội thoại tự nhiên, không tra khảo máy móc.
-CUM_TOI_DA = 2
+# 11/11/2026 (SRS-5.1zzzzzzz407, chủ dự án: "sửa mỗi lượt chỉ hỏi 1 ý thôi"): về lại MỘT ý mỗi lượt.
+CUM_TOI_DA = 1
 
 # Đất nền / thổ cư phải có tên đường + lộ giới hoặc thổ cư mới soạn tin; đất nông nghiệp thường ở xã, không có tên đường —
 # không chặn theo tên đường để khỏi kẹt câu hỏi.
