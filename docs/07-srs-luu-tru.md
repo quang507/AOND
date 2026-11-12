@@ -73,6 +73,45 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz439 · Soát giao diện bằng skill impeccable (audit + polish) trang chủ, feed, trang tag, trang chi tiết căn (12/11/2026)
+Chủ dự án 12/11 "chạy đi nhưng đừng để impeccable sửa chồng mấy cái kia quá" — giữ nguyên màu / font King, góc 14px, nút Zalo xanh,
+feed, nút "Hỏi", luật không eyebrow. Bộ dò tự động của impeccable: 0 lỗi; soát bằng mắt khổ 1280px và 375px ra 9 lỗi thật, sửa hết:
+- Tương phản: chữ phụ `--color-mute` #687686 → #5d6a7a (trên nền #f6f7f9 từ 4,3:1 lên trên 4,5:1); nhãn đỏ trên dải thông số tối
+  → `brand-soft`; mã tin trắng mờ 40% ở đầu trang chi tiết → `line-strong`; dòng chú thích ảnh `mute/80` → `mute`.
+- Vùng bấm: nút Tin đã lưu / Tài khoản trên thanh đầu trang 36px → 44px, nút Chat Zalo cao tối thiểu 44px.
+- Trang chi tiết: dải thông số chia 3 cột cứng nên căn có 2 thông số lệch một bên, trên điện thoại xếp dọc → căn giữa, 2 cột trên điện
+  thoại; dòng địa chỉ trên điện thoại đẩy "· #mã" ra mép phải → chữ chảy liền; ảnh nhỏ có nền chờ khi đang tải.
+- "Bề ngang mặt tiền: 7" → "7 m" (lộ giới, chiều cao trần cũng vậy) khi lõi chỉ lưu con số.
+- Trang tag: "Xem cả N tin trong kho -" → "→". Bôi đen chữ và con trỏ gõ theo màu King.
+
+### SRS-5.1zzzzzzz438 · Thông tin pháp lý ghi được và lấy lại được: câu đáp ngắn vào đúng ô, admin thấy mọi ô riêng, bot phía mua đọc pháp lý công khai (12/11/2026)
+Chủ dự án 12/11 hỏi "db đã đủ chỗ để ghi và lấy thông tin chưa" rồi "sửa cả ba". Chỗ GHI đã đủ (loại giấy `legal_status` → `loai_phap_ly`,
+hoàn công `has_completion`, chi tiết công khai trong `boc_tach`, ô riêng của chủ trong `listing_noi_bo`); đường vào / ra hở ba chỗ:
+- **Câu đáp ngắn:** bắn thử SRS-435, bot hỏi "3 anh em đã đồng ý ký bán chưa", khách "ok" — ô `dong_y_ban` trống; có ghi thì cổng bằng chứng
+  (`_gia_tri_ghi`) thay giá trị bằng nguyên cụm "ok", đọc lại không biết đáp câu gì. Nay AI đọc ô lời bot lượt trước THẬT SỰ hỏi (`bot_vua_hoi`,
+  đã có từ SRS-212) được giữ cho lượt (`y_luot["_bot_vua_hoi"]`): ô nằm trong đó và cụm khách đáp có trong lời khách → giữ giá trị AI đọc theo
+  nghĩa câu đáp cùng câu hỏi ("đã đồng ý ký bán"). Prompt bóc tách thêm một câu khẳng định cho trường hợp này (≈ 60 token).
+- **Trang admin:** `SuaTinModal` viết cứng 4 ô riêng (người đứng tên, lý do bán, giờ xem, chìa khoá); 7 ô lõi ghi thêm — tiền cọc, ngày cọc,
+  hạn công chứng, đồng ý ký bán, sổ gốc, dự kiến ra sổ, dự kiến hoàn công — nằm trong DB mà không ai thấy. Nay lõi ghi kèm `du_lieu._nhan`
+  (ô → tên ngắn từ `FIELD_LABELS`), trang admin hiện đúng các ô có trong đó — bỏ danh sách thứ hai. Migration `20261112h` nạp `_nhan` cho dòng
+  lưu trước bản này. Tên ngắn = phần nhãn trước " (" (`prompts.nhan_o_ngan`, gộp `_nhan_o_hoi` ở engine và `_nhan_o_soat` ở prompts); nhãn
+  `dong_y_ban`, `so_goc`, `du_kien_ra_so` viết lại cho phần đó đúng nghĩa; thêm nhãn cho `phap_ly`, `nam_so` (trước không có, hiện thành mã ô).
+- **Bot phía mua:** chỉ đọc nhãn `legal_status` — khách hỏi "đất thuê tới năm nào" thì bot không có dữ kiện dù tin ghi "tới 2058". Nay
+  `mua.COT_CAN` đọc thêm `has_completion` và các ô pháp lý công khai (nhóm "phap_ly" của `schema.FACETS` trừ ô riêng — cùng thông tin trang tin
+  hiển thị); `mua.phap_ly_can` ghép nhãn + hoàn công + các ô đó cho dòng căn (`dong_can`) và công cụ so sánh căn. Ô riêng của chủ vẫn chỉ admin
+  đọc.
+
+### SRS-5.1zzzzzzz437 · Gỡ dấu hiệu "AI slop" ở trang chủ, feed điện thoại, trang Mua bán, Dự án (12/11/2026)
+Chủ dự án 12/11 gửi danh sách "20 AI Design Slop Indicators", hỏi web có dính không, rồi "Sửa luôn". Trang chủ máy tính dính ~10/20.
+- Bỏ: 5 nhãn chữ in hoa trên tiêu đề khối (eyebrow), dấu chấm cuối tiêu đề ("Nhắn một câu là xong."), đánh số "1. 2. 3." in hoa ở
+  vòng hỏi chủ nhà, 4 khung chat giả (3 thẻ lời hứa + khối riêng tư), thẻ lồng thẻ có viền, quầng sáng mờ / vệt đỏ loang ở hero và
+  khối người bán, chữ nghiêng, chip viên thuốc (tag nổi bật thành dòng link "Tìm nhanh: …"; feed thành danh sách link có mũi tên).
+- Gộp khối "Bảo vệ quyền riêng tư" vào lời hứa "Không thu số điện thoại" (hai khối nói cùng một ý). Chữ phụ trên nền tối dùng màu
+  `line-strong` thay cho trắng mờ 55–80%.
+- Lưới "Phường 1…15" (phường cũ Quận 5, trước sáp nhập 2025) → danh sách 22 khu dẫn tới trang tag.
+- Lớp `.eyebrow` (cả web, cả trang quản trị) thôi in hoa + giãn chữ. Bỏ nhãn đầu trang /mua-ban ("🏠 KHO TIN…") và /du-an; tiêu đề
+  /du-an thôi viết hoa từng chữ.
+
 ### SRS-5.1zzzzzzz436 · Giới thiệu khu trên 100 trang tag + khối khu trang chủ bằng số thật (12/11/2026)
 Chủ dự án 12/11 "Giới thiệu khu trước" (để SEO tốt hơn: trang tag mỏng chữ, ba câu văn mẫu lặp y hệt trên cả 100 trang).
 - `lib/khu.ts`: lời giới thiệu viết tay cho 22 quận huyện + Sài Gòn + Long An — vị trí, trục đường, loại nhà phổ biến; không ghi giá,

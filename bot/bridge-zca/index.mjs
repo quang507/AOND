@@ -906,4 +906,19 @@ try {
   console.error('Failed to start sendServer:', e);
 }
 
-api.listener.start();
+// SRS-5.1zzzzzzz449 (12/11/2026): KẾT NỐI NGHE ĐÓNG THÌ PHẢI BIẾT. Bản trước chỉ gọi `start()` trần, không nghe `closed`: Zalo đóng websocket (mạng
+// chớp, Zalo xoay máy chủ, acc mở Zalo Web nơi khác — mã 3000) là tiến trình vẫn sống, `/send` vẫn gửi được, còi vẫn thấy bridge "chạy",
+// nhưng KHÔNG NHẬN TIN NÀO NỮA. Đã gặp thật: từ 21:36 tối 11/11 tới 17:33 chiều 12/11 không tin khách nào vào, chủ dự án nhắn "chào em"
+// không ai đáp. Nay: zca-js tự nối lại với các mã nó cho thử lại (`retryOnClose`); hết lượt thử / mã không thử lại → ghi lỗi rồi thoát,
+// vòng `svc_nhadat_bridge*.cmd` trên máy 146 dựng lại sau 10 giây, đăng nhập lại bằng session đã lưu (session chết thì vào luồng QR như cũ).
+api.listener.on("disconnected", (code, reason) => {
+  console.log(`Kết nối nghe Zalo rớt (mã ${code}${reason ? `, ${reason}` : ""}) — ${new Date().toISOString()}`);
+});
+api.listener.on("closed", async (code, reason) => {
+  if (dangThoat) return;
+  dangThoat = true;
+  console.log(`Kết nối nghe Zalo đóng hẳn (mã ${code}${reason ? `, ${reason}` : ""}) — thoát để chạy lại bằng session đã lưu. ${new Date().toISOString()}`);
+  await Promise.race([ghiLoi("listener zalo", `kết nối nghe đóng (mã ${code}) — bridge tự khởi động lại`), new Promise((r) => setTimeout(r, 5000))]);
+  process.exit(1);
+});
+api.listener.start({ retryOnClose: true });
