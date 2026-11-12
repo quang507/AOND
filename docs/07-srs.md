@@ -854,7 +854,7 @@ web" và "Thay trang chủ trên điện thoại".
   quyết định 19/10 (đổi sang 14px ở SRS-5.1zzzzzzz434). Nút Zalo giữ xanh Zalo.
 - **Feed điện thoại** (`components/FeedDoc.tsx`, chỉ dưới `md`): khung cao bằng màn hình trừ thanh trên, `scroll-snap` dọc, mỗi màn một
   căn: ảnh bìa bản gốc phủ kín, giá, diện tích · tầng · phòng ngủ · lối vào, đường / phường, cột nút phải: Lưu (tim, `FavButton`), Hỏi
-  #mã (Zalo `zaloLink("#mã")`), Chia sẻ (`navigator.share`, không có thì chép link), Xem chi tiết. Màn đầu là ô tìm bằng câu nói + tag;
+  (nhãn chỉ "Hỏi" từ 12/11 theo chủ dự án, mã căn vẫn gửi kèm qua Zalo `zaloLink("#mã")`), Chia sẻ (`navigator.share`, không có thì chép link), Xem chi tiết. Màn đầu là ô tìm bằng câu nói + tag;
   màn cuối dẫn sang /mua-ban, /cho-thue. 30 tin mới nhất đang lên kệ, căn có ảnh trước. Widget Zalo nổi ẩn ở trang chủ điện thoại.
 - Máy tính: trang chủ giữ nguyên, chỉ đổi màu / font.
 

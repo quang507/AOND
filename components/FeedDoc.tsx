@@ -75,7 +75,7 @@ function ManCan({ l, anh, thu, tong }: { l: CardRow; anh?: string; thu: number; 
           <span className="feed-tron feed-tron--zalo">
             <IconZalo className="h-6 w-6" />
           </span>
-          Hỏi #{code}
+          Hỏi
         </a>
         <NutChiaSe url={`${SITE_URL}${href}`} title={`${ten} — ${formatPrice(l.price_vnd, l.price_raw)}`} />
         <Link href={href} className="feed-nut" aria-label="Xem chi tiết">
