@@ -55,13 +55,14 @@ type Form = {
 const sang = (v: unknown) => (v == null ? "" : String(v));
 
 // Thông tin RIÊNG của chủ nhà (SRS-5.1zzzzzzz116, bảng `listing_noi_bo`, chỉ admin đọc): bot hỏi sau khi tin lên web, không lên web,
-// không vào bản tin. Khoá khớp `O_NOI_BO` trong src/aioi/schema.py.
-const O_NOI_BO: ReadonlyArray<readonly [string, string]> = [
-  ["dung_ten_so", "Người đứng tên sổ"],
-  ["ly_do_ban", "Lý do bán / mức gấp"],
-  ["gio_xem", "Giờ tiện dẫn khách xem"],
-  ["chia_khoa", "Liên hệ khi dẫn khách / chìa khoá"],
-];
+// không vào bản tin. SRS-5.1zzzzzzz438: lõi ghi kèm `_nhan` (ô → tên, từ FIELD_LABELS) — trang này hiện đúng các ô lõi đã ghi, không giữ danh
+// sách riêng (bản trước viết cứng 4 ô; cọc, đồng ý ký bán, sổ gốc, ngày ra sổ / hoàn công nằm trong DB mà không hiện).
+type NoiBo = { _nhan?: Record<string, string> } & Record<string, unknown>;
+const oNoiBo = (d: NoiBo | null): Array<[string, string, string]> =>
+  Object.entries(d?._nhan ?? {}).flatMap(([k, ten]) => {
+    const v = d?.[k];
+    return typeof v === "string" && v.trim() ? [[k, ten.charAt(0).toUpperCase() + ten.slice(1), v] as [string, string, string]] : [];
+  });
 const tuTin = (d: TinSua): Form => ({
   deal: d.deal || "ban", status: d.status || "cho_thong_tin", property_type: d.property_type || "chua_ro",
   price_raw: sang(d.price_raw), area_m2: sang(d.area_m2), frontage_m: sang(d.frontage_m), length_m: sang(d.length_m),
@@ -113,7 +114,7 @@ export default function SuaTinModal({
   const [chanXoa, setChanXoa] = useState<string | null>(null);
   // Lỗi hiện TRONG modal: <dialog> showModal() nằm ở top layer, thông báo nổi của trang bị che.
   const [loiTrong, setLoiTrong] = useState<string | null>(null);
-  const [noiBo, setNoiBo] = useState<Record<string, string> | null>(null);
+  const [noiBo, setNoiBo] = useState<NoiBo | null>(null);
   // OPEN-31 (chủ dự án 28/10/2026, SRS-5.1zzzzzzz241): admin đã đối chiếu sổ / giấy tờ → nguồn `admin_xac_minh`, bậc cao nhất.
   const [doiChieu, setDoiChieu] = useState(false);
   const dangRao = tin.status === "dang_ban";
@@ -128,7 +129,7 @@ export default function SuaTinModal({
   useEffect(() => {
     let huy = false;
     supabase.from("listing_noi_bo").select("du_lieu").eq("listing_id", tin.id).maybeSingle().then(({ data, error }) => {
-      if (!huy) setNoiBo(error ? null : ((data?.du_lieu as Record<string, string> | undefined) ?? {}));
+      if (!huy) setNoiBo(error ? null : ((data?.du_lieu as NoiBo | undefined) ?? {}));
     });
     return () => { huy = true; };
   }, [tin.id]);
@@ -352,12 +353,12 @@ export default function SuaTinModal({
           <textarea id={id("mota")} rows={4} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={o} />
         </div>
 
-        {noiBo && O_NOI_BO.some(([k]) => noiBo[k]) && (
+        {oNoiBo(noiBo).length > 0 && (
           <div className="rounded-md border border-line bg-slate-50 p-3">
             <p className="text-sm font-bold">Thông tin riêng của chủ <span className="font-normal text-slate-600">(không lên web)</span></p>
             <dl className="mt-1 grid gap-x-3 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
-              {O_NOI_BO.filter(([k]) => noiBo[k]).map(([k, nhanO]) => (
-                <div key={k} className="contents"><dt className="text-slate-600">{nhanO}</dt><dd>{noiBo[k]}</dd></div>
+              {oNoiBo(noiBo).map(([k, nhanO, giaTri]) => (
+                <div key={k} className="contents"><dt className="text-slate-600">{nhanO}</dt><dd>{giaTri}</dd></div>
               ))}
             </dl>
           </div>

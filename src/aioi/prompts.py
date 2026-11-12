@@ -67,16 +67,18 @@ FIELD_LABELS: dict[str, str] = {
     "lo_gioi_duong": "độ rộng / lộ giới của CON ĐƯỜNG trước nhà, đất (m — không phải bề ngang căn)",
     "phap_ly_so_do": "sổ đỏ riêng chính chủ",
     "the_chap": "tình trạng thế chấp ngân hàng",
+    "phap_ly": "giấy tờ (khách tả: sổ, hợp đồng, vi bằng, đất thuê…)",
+    "nam_so": "năm cấp sổ",
     "thuong_luong": "khả năng thương lượng, bớt lộc",
     "ly_do_ban": "lý do cần bán / bán gấp hay thong thả (riêng của chủ)",
     # SRS-5.1zzzzzzz116: hỏi sau khi tin lên web (schema.CUM_SAU_DANG). Ô riêng (schema.O_NOI_BO) không lên web / bản tin.
     "dung_ten_so": "người đứng tên sổ (chính chủ / vợ chồng / đồng sở hữu) (riêng của chủ)",
-    "dong_y_ban": "những người đứng tên sổ (các đồng sở hữu, hoặc chủ cũ còn đứng tên khi mua bằng ủy quyền) đã đồng ý, sẵn sàng ký bán chưa (riêng của chủ)",
-    "so_goc": "đất gốc (sổ mẹ) của căn giấy tay đã có sổ chưa (riêng của chủ)",
+    "dong_y_ban": "người đứng tên sổ đã đồng ý ký bán chưa (các đồng sở hữu, hoặc chủ cũ còn đứng tên khi mua bằng ủy quyền) (riêng của chủ)",
+    "so_goc": "đất gốc của căn giấy tay đã có sổ chưa (sổ mẹ) (riêng của chủ)",
     "du_kien_hoan_cong": "chủ dự kiến khi nào hoàn công xong (riêng của chủ)",
     "phu_hop_kinh_doanh": "căn / đoạn đường hợp buôn bán gì theo lời chủ (vd cafe, nhà hàng, spa, văn phòng kèm showroom; căn đang cho thuê thì khách thuê đang làm gì)",
     "cho_dau_xe": "chỗ khách đậu xe (trước nhà, vỉa hè rộng, bãi xe gần) theo lời chủ",
-    "du_kien_ra_so": "dự kiến khi nào có sổ / sang tên xong — chủ đầu tư hẹn ra sổ, hoặc hồ sơ đang làm (riêng của chủ)",
+    "du_kien_ra_so": "dự kiến khi nào có sổ / sang tên xong (chủ đầu tư hẹn ra sổ, hoặc hồ sơ đang làm) (riêng của chủ)",
     "thue_phi": "thuế phí sang tên bên nào chịu, giá đã gồm thuế phí chưa",
     "thanh_toan": "cách nhận tiền (một lần / chia đợt) và có cho người mua vay ngân hàng không",
     "gio_xem": "khung giờ tiện dẫn khách xem nhà (riêng của chủ)",
@@ -751,6 +753,11 @@ O_NGOAI_CAN_HO: dict[str, tuple[str, str]] = {
     "ma_so_can": ("mã căn / số lô hoặc số nhà trong dự án",
                   "Hỏi mã căn (số lô) hoặc số nhà của căn trong dự án — KHÔNG hỏi tầng, tòa (chỉ căn hộ chung cư mới có)"),
 }
+
+
+def nhan_o_ngan(o: str) -> str:
+    """Tên ngắn của ô = phần nhãn FIELD_LABELS trước " (" — dùng khi kể ô cho khách, ghi thông số, và nhãn ô riêng trang admin đọc (`_nhan`)."""
+    return "tên đường" if o == "duong" else FIELD_LABELS.get(o, o.replace("_", " ")).split(" (")[0]
 
 
 def nhan_o(o: str, prop: Property | None = None) -> str:
@@ -2222,7 +2229,9 @@ op hủy; để operations RỖNG. Thà bỏ sót còn hơn ẩn nhầm.
 BÓC TÁCH KHÔNG THIẾU: điều khách TỰ NÓI mà không khớp ô nào (gần trường / chợ, nhà mới sơn, tặng nội thất, khu an ninh, hẻm thông,
 2 mặt tiền…) → đưa vào mảng "uu_the" trong fields, mỗi ý một cụm ngắn CHÉP NGUYÊN VĂN lời khách; vẫn tuyệt đối KHÔNG bịa.
 CHỈ GHI ĐIỀU KHÁCH NÓI: mỗi ô trong "fields" phải kèm "bang_chung" = nguyên văn cụm trong lời KHÁCH. Câu BOT hỏi hay gợi ý
-("có để giá thương lượng nhẹ không ạ?") KHÔNG phải lời khách: khách chưa trả lời đúng ý đó thì không ghi ô đó. Không tự suy
+("có để giá thương lượng nhẹ không ạ?") KHÔNG phải lời khách: khách chưa trả lời đúng ý đó thì không ghi ô đó. Khách ĐÁP câu bot vừa hỏi — kể cả đáp ngắn "ok", "rồi", "chưa" —
+là lời khách: ghi ô đó (có trong bot_vua_hoi), giá trị = nghĩa câu đáp đọc cùng câu hỏi ("3 anh em đồng ý ký bán chưa ạ?" — "ok" → dong_y_ban
+"đã đồng ý ký bán"), bang_chung = cụm khách đáp. Không tự suy
 (nhà "mới xây", "nội thất đẹp"…) khi khách không nói. Ô thiếu bằng chứng bị hệ thống bỏ.
 MỖI CỤM KHÁCH NÓI VÀO ĐÚNG MỘT Ô theo nghĩa (bắn thử: "7 tầng" vào cả ô số phòng ngủ, "phí quản lý" vào cả ô
 giá điện nước) — không chép một cụm sang ô khác nghĩa.
@@ -2871,12 +2880,8 @@ _O_CHI_PHIA_MUA = frozenset({"khu_vuc", "loai_bds", "muc_dich", "ngan_sach", "nh
                              "yeu_cau_xe_hoi"})
 
 
-def _nhan_o_soat(o: str) -> str:
-    return "tên đường" if o == "duong" else FIELD_LABELS.get(o, o).split(" (")[0]
-
-
 SOAT_O_HOI_SYSTEM += "\n\nDANH SÁCH Ô:\n" + "\n".join(
-    f"- {o}: {_nhan_o_soat(o)}" for o in [*[k for k in FIELD_LABELS if k not in _O_CHI_PHIA_MUA], *sorted(O_HE_THONG_TRA - set(FIELD_LABELS))])
+    f"- {o}: {nhan_o_ngan(o)}" for o in [*[k for k in FIELD_LABELS if k not in _O_CHI_PHIA_MUA], *sorted(O_HE_THONG_TRA - set(FIELD_LABELS))])
 
 
 def soat_o_hoi_schema() -> dict:

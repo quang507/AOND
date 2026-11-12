@@ -13,8 +13,7 @@ import time
 from typing import Any
 
 from . import du_an_mua
-from .mua import co_tieu_chi, dong_can, tim_sdt
-from .schema import nhan_phap_ly
+from .mua import co_tieu_chi, dong_can, phap_ly_can, tim_sdt
 
 log = logging.getLogger(__name__)
 
@@ -425,7 +424,7 @@ def chay_cong_cu(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -
                 gia_text = c.get("price_text") or (f"{gia / 1_000_000_000:.2f} tỷ" if gia else "Đang cập nhật")
                 dt = c.get("legal_area_m2") or c.get("usable_area_m2") or 0
                 don_gia = round(gia / dt / 1_000_000, 1) if gia and dt else 0
-                phap_ly = nhan_phap_ly(c.get("legal_status")) or "Đang cập nhật"
+                phap_ly = phap_ly_can(c) or "Đang cập nhật"
                 dong.append(f"- Căn #{c.get('code')}: Giá {gia_text} | Đơn giá đất ~{don_gia} tr/m² | Diện tích {dt}m² | {c.get('street') or ''}, {c.get('ward') or ''} | Pháp lý: {phap_ly}")
             return "\n".join(dong)
         if ten == "tinh_thue_phi":

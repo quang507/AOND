@@ -28,7 +28,7 @@ from .kho_anh import BUCKET_CONG_KHAI, BUCKET_RIENG, la_uuid
 from .mua import KhoNguoiMua
 from .revenue import SALE_FEE_RATE
 from .sdt import che_so_ca_nhan
-from .prompts import FIELD_LABELS
+from .prompts import FIELD_LABELS, nhan_o_ngan
 from .schema import HOUSE_TYPES, LOAI_PHAP_LY, O_NOI_BO, TYPE_TO_GROUP, Property, dien_tich_tu_kich_thuoc, so_met
 
 # Số câu chuẩn tối đa đưa vào prompt (SRS-5.1zzzzzzz180). Mỗi dòng ≈ 300–900 ký tự; khối nằm trong phần cache nên 16 dòng chỉ là
@@ -587,7 +587,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         for k, v in fields.items():
             if k in _O_KHONG_PHAI_THONG_SO or str(k).startswith("_") or not isinstance(v, (str, int, float)) or not str(v).strip():
                 continue
-            nhan = NHAN_TRUNG_TINH[k] if k in NHAN_TRUNG_TINH else FIELD_LABELS.get(k, k.replace("_", " ")).split(" (")[0]
+            nhan = NHAN_TRUNG_TINH[k] if k in NHAN_TRUNG_TINH else nhan_o_ngan(k)
             # Ô tính bằng MÉT mà AI ghi số trần ("20") → thêm "m" (SRS-5.1zzzzzzz100: bắn thử 21/10 "lộ giới đường: 20" — bộ đọc DB
             # chỉ nhận "20m", cột độ rộng đường vào bỏ trống). Đơn vị theo định nghĩa ô, không đoán.
             if k in _O_MET and re.fullmatch(r"\d+(?:[.,]\d+)?", str(v).strip()):
@@ -927,6 +927,11 @@ class SupabaseConversationStore(KhoNguoiMua):
         tin vẫn lưu, ô vẫn còn trong phiên (SQLite trên VPS giữ bản đầy đủ). `tin_goc` tính lại từ lịch sử mỗi lần nên ghi đè cả cột `du_lieu`
         là an toàn; nó đã che SĐT và có trần riêng (không bị cắt 500 chữ như ô riêng)."""
         du_lieu: dict[str, Any] = {k: che_so_ca_nhan(str(v), thay="[số]")[:500] for k, v in rieng.items()}
+        # SRS-5.1zzzzzzz438: nhãn ô đi cùng dữ liệu (`_nhan`, từ FIELD_LABELS) — trang admin hiện đúng các ô lõi đã ghi, không giữ danh sách riêng
+        # (bản trước admin viết cứng 4 ô, 7 ô lõi ghi thêm — cọc, đồng ý ký bán, sổ gốc, ngày ra sổ / hoàn công — nằm trong DB mà không ai thấy).
+        nhan = {k: nhan_o_ngan(k) for k in du_lieu if not k.startswith("_") and k in FIELD_LABELS}
+        if nhan:
+            du_lieu["_nhan"] = nhan
         if tin_goc:
             du_lieu["tin_goc"] = tin_goc
         try:
@@ -945,7 +950,7 @@ class SupabaseConversationStore(KhoNguoiMua):
         except Exception as e:  # noqa: BLE001
             log.warning("đọc listing_noi_bo lỗi: %s", e)
             return {}
-        return {str(d.get("listing_id")): {k: v for k, v in (d.get("du_lieu") or {}).items() if k in O_NOI_BO} for d in dong}
+        return {str(d.get("listing_id")): {k: v for k, v in (d.get("du_lieu") or {}).items() if k in O_NOI_BO} for d in dong}   # bỏ `_nhan`, `tin_goc`
 
     def ghi_xin_danh_gia(self, user_key: str, role: str = "seller", ten: str | None = None) -> bool:
         """Ghi lúc xin chấm sao. Dòng đã có (ID thử bắn lại) thì làm mới: điểm cũ xoá, giờ xin mới."""

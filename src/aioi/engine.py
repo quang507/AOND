@@ -27,7 +27,7 @@ from uuid import uuid4
 
 from . import gamification as g
 from . import phap_ly
-from .prompts import _dien_tich_mo_ho, khoi_nhan_vat, viec_phieu, viec_theo_khoi
+from .prompts import _dien_tich_mo_ho, khoi_nhan_vat, nhan_o_ngan, viec_phieu, viec_theo_khoi
 from .prompts import NHAN_VIEC_LUOT, khoi_doi_so, khoi_so_dang_nhan, prompt_gon_bat
 from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, SU_THAT_CAN, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
@@ -1751,10 +1751,6 @@ _O_DIEN_TICH = frozenset({"dien_tich", "dien_tich_dat", "dien_tich_nha"})   # h�
 _NHOM_O: dict[str, frozenset[str]] = {k: frozenset(keys) for _, _, keys in FACETS for k in keys}
 
 
-def _nhan_o_hoi(o: str) -> str:
-    return "tên đường" if o == "duong" else FIELD_LABELS.get(o, o).split(" (")[0]
-
-
 def _o_duoc_hoi(conv: "Conversation") -> set[str]:
     """Ô hệ thống chọn cho lượt: cụm ô vừa chọn hỏi, ô của việc `viec_luot`, ô của khối hỏi còn lại."""
     v = conv.y_luot.get("_viec") or {}
@@ -1802,14 +1798,14 @@ def _hoi_sai_o(eng, conv: "Conversation", reply: str) -> list[tuple[str, str, st
         if x.get("khach_vua_hoi") is True and _trich_dan_khop(x.get("trich_khach"), conv.loi_khach_luot):
             continue
         if o in O_HE_THONG_TRA:
-            out.append((o, trich, f'hỏi khách {_nhan_o_hoi(o)} ("{trich}") — ô này hệ thống tự xác định, không hỏi khách'))
+            out.append((o, trich, f'hỏi khách {nhan_o_ngan(o)} ("{trich}") — ô này hệ thống tự xác định, không hỏi khách'))
         elif o not in FIELD_LABELS or o in cho:
             continue
         elif f.get(o):
-            out.append((o, trich, f'hỏi lại {_nhan_o_hoi(o)} ("{trich}") — khách đã cho thông tin này'))
+            out.append((o, trich, f'hỏi lại {nhan_o_ngan(o)} ("{trich}") — khách đã cho thông tin này'))
         elif v.get("ten") == "hoi_o" and o not in cung_nhom:
-            chon = ", ".join(_nhan_o_hoi(c) for c in sorted(cho)) or "không ô nào"
-            out.append((o, trich, f'hỏi {_nhan_o_hoi(o)} ("{trich}") — lượt này hệ thống chọn hỏi {chon}'))
+            chon = ", ".join(nhan_o_ngan(c) for c in sorted(cho)) or "không ô nào"
+            out.append((o, trich, f'hỏi {nhan_o_ngan(o)} ("{trich}") — lượt này hệ thống chọn hỏi {chon}'))
     return out
 
 
@@ -5339,6 +5335,8 @@ class Engine:
 
         # Xin xem bản vẽ / hỏi dự án / tả dự án / xác nhận xoá (SRS-5.1zzzzzzz55): nhận khi cụm trích có trong tin vừa nhắn.
         conv.y_luot = {}
+        if isinstance(bvh, list):   # SRS-5.1zzzzzzz438: ô lời bot lượt trước thật sự hỏi — câu khách đáp là giá trị của ô đó (`_gia_tri_ghi`)
+            conv.y_luot["_bot_vua_hoi"] = [o for o in bvh if isinstance(o, str) and o in FIELD_LABELS]
         if doi_so:
             conv.y_luot["_doi_so"] = True   # SRS-5.1zzzzzzz331: lượt đầu của vai này trên số đang nhắn — chào theo số
         if plan.get("_chua_ro_can"):   # SRS-5.1zzzzzzz310: agent bóc từ chối đổi trạng thái vì lời khách chưa chỉ ra căn nào
@@ -5970,6 +5968,10 @@ class Engine:
         # thiếu cụm thì kiểm chính giá trị ô — vẫn phải nằm trong lời KHÁCH, nên câu bot tự hỏi không lọt.
         co_bc = any(_trich_dan_khop(x, loi) or (k in _O_SO_DO and _so_khop(x, v, loi)) for x in (bc, v))
         if co_bc and (k in _O_GHEP or _trich_dan_khop(v, loi) or _gia_tri_chong_do(k, v, loi)):
+            return v
+        if co_bc and bc and _trich_dan_khop(bc, loi) and k in (conv.y_luot.get("_bot_vua_hoi") or ()):
+            # SRS-5.1zzzzzzz438: khách ĐÁP câu bot vừa hỏi ô này ("3 anh em đồng ý ký bán chưa?" — "ok"): giá trị là nghĩa câu đáp đọc cùng câu
+            # hỏi (AI đọc), cụm khách đáp là bằng chứng. Bắn thử 12/11: ghi nguyên cụm thì ô thành "ok", đọc lại không biết đáp câu gì.
             return v
         if co_bc and bc and _trich_dan_khop(bc, loi) and (k not in _O_SO_DO or _so_khop(bc, bc, loi)):
             log.warning("Ô %s: giá trị AI có ý khách không nói — ghi nguyên cụm khách", k)   # không in giá trị (dữ liệu khách)

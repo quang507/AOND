@@ -769,6 +769,7 @@ khi đẩy — bảng là danh sách để chạy lại khi cần. SRS-1 … 244
 | SRS-432 | LQC: hỏi sau đăng chạy nền, trần câu hỏi sau đăng, cột pháp lý theo AI, đọc sổ ở mọi đường gửi ảnh | FR-144, FR-185 | `test_hoi_sau_dang.py` |
 | SRS-433 | 100 tag SEO theo quận / huyện Sài Gòn + Long An | FR-12, FR-17 | TS-SEO-01 (`bun run build`: `/[tag]` đủ 100) |
 | SRS-435 | Loại giấy tờ một nguồn (9 loại, cột theo mã AI đọc, câu hỏi theo sau theo loại giấy); tra xã không nhầm tên trùng TP.HCM | FR-144, FR-185 | `test_loai_phap_ly_435.py` |
+| SRS-438 | Pháp lý ghi được và lấy lại được: câu đáp ngắn vào đúng ô, admin thấy mọi ô riêng (`_nhan`), bot phía mua đọc pháp lý công khai | FR-144, FR-185 | `test_phap_ly_ghi_doc_438.py` |
 
 ## 10.8 Nghiệm thu theo từng tài liệu (04/09/2026)
 

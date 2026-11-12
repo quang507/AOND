@@ -788,6 +788,23 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz438 · Thông tin pháp lý ghi được và lấy lại được: câu đáp ngắn vào đúng ô, admin thấy mọi ô riêng, bot phía mua đọc pháp lý công khai (12/11/2026)
+Chủ dự án 12/11 hỏi "db đã đủ chỗ để ghi và lấy thông tin chưa" rồi "sửa cả ba". Chỗ GHI đã đủ (loại giấy `legal_status` → `loai_phap_ly`,
+hoàn công `has_completion`, chi tiết công khai trong `boc_tach`, ô riêng của chủ trong `listing_noi_bo`); đường vào / ra hở ba chỗ:
+- **Câu đáp ngắn:** bắn thử SRS-435, bot hỏi "3 anh em đã đồng ý ký bán chưa", khách "ok" — ô `dong_y_ban` trống; có ghi thì cổng bằng chứng
+  (`_gia_tri_ghi`) thay giá trị bằng nguyên cụm "ok", đọc lại không biết đáp câu gì. Nay AI đọc ô lời bot lượt trước THẬT SỰ hỏi (`bot_vua_hoi`,
+  đã có từ SRS-212) được giữ cho lượt (`y_luot["_bot_vua_hoi"]`): ô nằm trong đó và cụm khách đáp có trong lời khách → giữ giá trị AI đọc theo
+  nghĩa câu đáp cùng câu hỏi ("đã đồng ý ký bán"). Prompt bóc tách thêm một câu khẳng định cho trường hợp này (≈ 60 token).
+- **Trang admin:** `SuaTinModal` viết cứng 4 ô riêng (người đứng tên, lý do bán, giờ xem, chìa khoá); 7 ô lõi ghi thêm — tiền cọc, ngày cọc,
+  hạn công chứng, đồng ý ký bán, sổ gốc, dự kiến ra sổ, dự kiến hoàn công — nằm trong DB mà không ai thấy. Nay lõi ghi kèm `du_lieu._nhan`
+  (ô → tên ngắn từ `FIELD_LABELS`), trang admin hiện đúng các ô có trong đó — bỏ danh sách thứ hai. Migration `20261112h` nạp `_nhan` cho dòng
+  lưu trước bản này. Tên ngắn = phần nhãn trước " (" (`prompts.nhan_o_ngan`, gộp `_nhan_o_hoi` ở engine và `_nhan_o_soat` ở prompts); nhãn
+  `dong_y_ban`, `so_goc`, `du_kien_ra_so` viết lại cho phần đó đúng nghĩa; thêm nhãn cho `phap_ly`, `nam_so` (trước không có, hiện thành mã ô).
+- **Bot phía mua:** chỉ đọc nhãn `legal_status` — khách hỏi "đất thuê tới năm nào" thì bot không có dữ kiện dù tin ghi "tới 2058". Nay
+  `mua.COT_CAN` đọc thêm `has_completion` và các ô pháp lý công khai (nhóm "phap_ly" của `schema.FACETS` trừ ô riêng — cùng thông tin trang tin
+  hiển thị); `mua.phap_ly_can` ghép nhãn + hoàn công + các ô đó cho dòng căn (`dong_can`) và công cụ so sánh căn. Ô riêng của chủ vẫn chỉ admin
+  đọc.
+
 ### SRS-5.1zzzzzzz437 · Gỡ dấu hiệu "AI slop" ở trang chủ, feed điện thoại, trang Mua bán, Dự án (12/11/2026)
 Chủ dự án 12/11 gửi danh sách "20 AI Design Slop Indicators", hỏi web có dính không, rồi "Sửa luôn". Trang chủ máy tính dính ~10/20.
 - Bỏ: 5 nhãn chữ in hoa trên tiêu đề khối (eyebrow), dấu chấm cuối tiêu đề ("Nhắn một câu là xong."), đánh số "1. 2. 3." in hoa ở
@@ -918,51 +935,3 @@ Chủ dự án 12/11 quyết câu 4.5 của đặc tả LQC: "Được, nói nh�
   câu "chưa có số liệu"), công cụ định giá (`dinh_gia_tham_khao` — có mức lệch theo kho thì bỏ đối chiếu bảng cứng).
 - ~~**Lưới `_BINH_LUAN_GIA`** nới cho lượt có `conv.y_luot["_nhan_xet_gia"]`~~ — **SRS-431 gỡ hẳn lưới lời chat.** Bản tin vẫn cấm mọi
   nhận xét giá. Phía mua giữ luật cấm trong prompt.
-
-### SRS-5.1zzzzzzz428 · LQC mảng So sánh cạnh tranh: căn cùng loại đang rao gần, đơn giá từ kho, không bịa giao dịch (12/11/2026)
-Chủ dự án 12/11 "Làm mảng So sánh" (đặc tả `docs/lqc-listing-quality-controller.md` mục 4).
-- **RPC `can_dang_rao_gan(listing, bán kính 3 km, 3 căn)`** (migration `20261112b`, chỉ service_role): căn cùng loại + cùng giao dịch
-  đang rao trong bán kính (cùng lối vào mặt tiền / hẻm xếp trước, rồi gần nhất), dải đơn giá (số căn, min, max, trung vị), căn đã cọc / chốt gần
-  đó trong 180 ngày. Không trả số nhà, người bán, mô tả. Loại tin của chính người bán.
-- ~~**Tin thử loại trừ:**~~ (**SRS-431: tin thử tính như tin thật**, chủ dự án 12/11) 12/11 kho đang hiển thị 244 tin thì 242 là `seed_thu` — gửi chủ nhà thật như "căn đang bán gần" là bịa. Chỉ ID thử
-  (`_la_id_thu`) mới thấy tin thử. Hiện với khách thật công cụ trả rỗng cho tới khi có tin thật quanh căn.
-- **4.1 · 4.2 — cụm sau đăng `so_sanh`** (`module so_sanh`, sau cụm lợi thế, trước cụm giá): đủ ≥ 2 căn → bot gửi chủ 2–3 dòng "#mã · đường,
-  phường · lối vào · tầng · m² · giá rao (≈ đơn giá) · cách khoảng … — link", một lần. Chưa đủ căn → sang cụm kế, mỗi ngày tra lại một lần
-  (`_ss_tra`), không ghi "đã hỏi".
-- **Luật lời** (chờ chủ dự án quyết 4.5): chỉ đưa dữ kiện — không nói giá chủ cao / thấp / hợp lý, không khuyên tăng / giảm, căn khác lối vào
-  hay diện tích không so thẳng đơn giá.
-- **4.3 · 4.4:** chỉ có dòng giao dịch khi kho có tin `da_coc` / `da_chot` gần đó (hiện 0); không có thì khối cấm nói "đã bán / đã cọc" căn nào.
-  Giá nêu là "giá rao lúc đó" — kho chưa có cột giá chốt.
-- **4.5 — công cụ định giá phía bán:** đủ ≥ 3 căn đang rao gần → thêm dòng dải đơn giá thật từ kho, ưu tiên hơn bảng ước lượng theo vùng.
-- 4.6 (báo cáo giá khu vực) chưa làm.
-
-### SRS-5.1zzzzzzz427 · LQC mảng Khai thác lợi thế: hỏi buôn bán gì hợp, chỗ đậu xe, nêu tiện ích thật (12/11/2026)
-Chủ dự án 12/11 "làm tiếp mảng Khai thác lợi thế" (đặc tả `docs/lqc-listing-quality-controller.md` mục 3.1–3.7).
-- **Cụm hỏi sau đăng `loi_the`** (`schema.CUM_SAU_DANG`, sau pháp lý / hợp đồng thuê, trước giá): ô `phu_hop_kinh_doanh` (chủ nói đoạn đường hợp
-  buôn bán gì; căn đang cho thuê thì khách thuê làm gì) rồi `cho_dau_xe`. Mỗi ô một lần, mỗi lượt một câu như các cụm khác. Ô công khai (lên tin),
-  xếp facet "Vị thế".
-- Chỉ hỏi căn **buôn bán được** (`Property.kinh_doanh_duoc`): mặt bằng / shophouse, hoặc nhà mặt tiền đường (`_duong_vao` = mat_tien, AI đọc theo
-  nghĩa). Tin cho thuê cũng được hỏi cụm này (trước đây tin cho thuê chỉ hỏi dẫn khách xem).
-- **Tiện ích thật (3.6 · 3.7):** lượt hỏi `phu_hop_kinh_doanh` đọc `listings.tien_ich_gan` (tên + mét từ Overpass) → khối hỏi kèm tối đa 4 tiện
-  ích gần nhất ("Co.opmart Phan Văn Trị khoảng 150 m"); bot được mở câu bằng MỘT tiện ích, luôn nói "khoảng", cấm nêu tiện ích ngoài danh sách.
-- **3.2:** góc ảnh gợi ý cho nhà mặt tiền / mặt bằng thêm "dãy phố hai bên (thấy buôn bán xung quanh)" — Image LQC và tin xin ảnh dùng chung.
-- Chưa làm: hỏi đào sâu theo câu trả lời (3.4 "văn phòng kèm showroom hay chỉ office?", 3.5 "spa cao cấp?") — mỗi ô hỏi một lần, model tự nối ý
-  nếu chủ trả lời chung chung trong cùng lượt.
-
-### SRS-5.1zzzzzzz426 · LQC mảng Pháp lý: hỏi rõ câu mơ hồ, đối chiếu sổ với tin, hỏi tiến độ giấy tờ (12/11/2026)
-Chủ dự án 12/11 "Làm theo lịch này" (đặc tả `docs/lqc-listing-quality-controller.md` mục 2.1–2.5, lịch hỏi đã duyệt).
-- **Trạng thái giấy tờ** (AI đọc theo nghĩa, `prompts.SU_THAT_CAN`): `phap_ly_trang_thai` thêm `hdmb` (căn hộ / đất dự án chờ chủ đầu tư ra sổ)
-  và `mo_ho` (chỉ nói chung chung "pháp lý chuẩn", "không phải lo", cả cuộc trò chuyện chưa nói loại giấy); khoá mới `hoan_cong`
-  (`da_hoan_cong` / `chua_hoan_cong`). Đã `co_so` thì câu chung chung sau không hạ xuống `mo_ho`.
-- **2.1 — lúc nhận tin:** `mo_ho` → xoá câu mơ hồ khỏi ô pháp lý và không cho ghi lại (`Property.update`), ô pháp lý coi như chưa có
-  (`Property._has`) → lượt sau hỏi lại loại giấy (SRS-432: khối `hoi_phap_ly` hỏi ngay lượt kế — luồng hỏi ô không chắc tới trước bản
-  nháp vì SRS-418 cho thiếu một nhóm). Lọt qua bản nháp thì hỏi sau đăng (mã câu `loai_giay`).
-- **2.2 — sau đăng, sau cụm xin ảnh:** khách đã nói có sổ mà chưa gửi ảnh sổ → mã câu `anh_so` (`Property.hoi_phap_ly_sau_dang`, đi qua
-  `cum_sau_dang`, mỗi câu một lần). Lời hứa: "ảnh sổ chỉ để em kiểm, không đăng" — chưa có bước che thông tin trên ảnh.
-- **Lượt đọc ảnh sổ:** sổ hồng / sổ đỏ → `_phap_ly_trang_thai = co_so`, cờ `_da_doc_so`; HĐMB → `hdmb`. Schema đọc sổ thêm `nha_tren_so`.
-- **2.3 — lúc đọc sổ:** sổ không ghi nhà mà tin là nhà (nhà phố / biệt thự / cấp 4 / toà nhà / CHDV / khách sạn) → câu hỏi của lượt là "nhà
-  mình đã hoàn công chưa", và **không đổi loại hình theo sổ** (trước đây sổ chỉ có đất biến nhà phố thành đất).
-- **2.4 / 2.5 — ngay lượt chủ nói:** `chua_hoan_cong` → hỏi dự kiến hoàn công; căn hộ / đất dự án `hdmb` / chưa có / đang làm → hỏi chủ đầu tư
-  hẹn ra sổ. Khối `hoi_phap_ly` (`viec_luot`: sau hỏi tên dự án, trước hỏi ô / hỏi sau đăng; không ở lượt trình nháp), mỗi ô một lần
-  (`_pl_da_hoi`). Ô `du_kien_hoan_cong`, `du_kien_ra_so` là ô RIÊNG (`O_NOI_BO`), không lên web.
-- Bản tin: `hdmb` không được ghi sổ hồng / sổ đỏ; `chua_hoan_cong` không được ghi hoàn công.

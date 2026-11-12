@@ -22,7 +22,8 @@ import time
 import urllib.parse
 from typing import Any
 
-from .schema import nhan_phap_ly
+from .prompts import nhan_o_ngan
+from .schema import FACETS, O_NOI_BO, nhan_phap_ly
 from .xung_ho import goi_toi as _goi_toi
 from . import cau_mau
 from .sdt import GIONG_SDT, SDT_DOC
@@ -35,9 +36,12 @@ from .web import SITE_URL  # noqa: E402 — một nguồn với phía bán (SRS-
 
 # Trạng thái tin còn hiện cho khách (cùng bộ với `lib/supabase.ts` TRANG_THAI_HIEN).
 TRANG_THAI_HIEN = ("dang_ban", "dang_quan_tam", "da_coc")
+# Ô pháp lý CÔNG KHAI chủ đã nói (nhóm "phap_ly" của schema.FACETS trừ ô riêng của chủ) — cùng thông tin trang tin hiển thị (SRS-5.1zzzzzzz438).
+O_PHAP_LY_CONG_KHAI: tuple[str, ...] = tuple(k for fid, _, keys in FACETS if fid == "phap_ly" for k in keys if k not in O_NOI_BO)
 # Cột căn đưa cho model khi tư vấn khách mua — KHÔNG có số nhà (`location_raw`), mô tả gốc (có thể chứa SĐT) hay người bán.
-COT_CAN = ("id,code,property_type,deal,street,ward,district,area_m2,price_raw,price_vnd,bedrooms,floors,floors_text,legal_status,"
-           "direction,access_type,alley_width_m,status,project_id,unit_type:boc_tach->>unit_type")   # project_id + mẫu nhà: kế thừa (SRS-283)
+COT_CAN = ("id,code,property_type,deal,street,ward,district,area_m2,price_raw,price_vnd,bedrooms,floors,floors_text,legal_status,has_completion,"
+           + "".join(f"{k}:boc_tach->>{k}," for k in O_PHAP_LY_CONG_KHAI)
+           + "direction,access_type,alley_width_m,status,project_id,unit_type:boc_tach->>unit_type")   # project_id + mẫu nhà: kế thừa (SRS-283)
 _LOAI_MUA_SANG_DB = {"nha_pho": "nha_pho", "nha_cap_4": "nha_cap4", "biet_thu": "biet_thu", "chung_cu": "chung_cu",
                      "can_ho": "chung_cu", "condo": "chung_cu", "dat": "dat", "dat_tho_cu": "dat", "dat_nen": "dat",
                      "phong_tro": "phong_tro", "mat_bang": "mat_bang", "toa_nha": "toa_nha", "chdv": "toa_nha",
@@ -906,6 +910,16 @@ def gia_moi_m2(c: dict) -> str | None:
     return f"≈ {chu} triệu/m²"
 
 
+def phap_ly_can(c: dict) -> str:
+    """Pháp lý một căn cho bot phía mua (SRS-5.1zzzzzzz438): nhãn loại giấy (`LOAI_PHAP_LY`), hoàn công, rồi các ô pháp lý công khai chủ đã nói
+    (thời hạn đất thuê, thế chấp, quy hoạch…). Bản trước chỉ có nhãn — khách hỏi "đất thuê tới năm nào" thì bot không có dữ kiện dù DB có."""
+    phan = [nhan_phap_ly(c.get("legal_status")) or ""]
+    if c.get("has_completion") is not None:
+        phan.append("đã hoàn công" if c["has_completion"] else "chưa hoàn công")
+    phan += [f"{nhan_o_ngan(k)}: {c[k]}" for k in O_PHAP_LY_CONG_KHAI if isinstance(c.get(k), str) and c[k].strip()]
+    return "; ".join(p for p in phan if p)
+
+
 def dong_can(c: dict) -> str:
     """Một căn thành một dòng cho model: mã, loại, đường / phường / quận (không số nhà), diện tích, giá, phòng ngủ, kết cấu."""
     vi_tri = ", ".join(str(c[k]) for k in ("street", "ward", "district") if c.get(k))
@@ -923,8 +937,9 @@ def dong_can(c: dict) -> str:
         phan.append(f"{c['bedrooms']} phòng ngủ")
     if c.get("floors_text"):
         phan.append(str(c["floors_text"]))
-    if c.get("legal_status"):
-        phan.append(f"pháp lý {nhan_phap_ly(c['legal_status'])}")
+    pl = phap_ly_can(c)
+    if pl:
+        phan.append(f"pháp lý {pl}")
     if c.get("direction"):
         phan.append(f"hướng {c['direction']}")
     # SRS-5.1zzzzzzz335: đường vào (mặt tiền / hẻm) và tiện ích CÓ THẬT quanh căn — model suy luận từ đây ("trong hẻm nên thường yên tĩnh"),
