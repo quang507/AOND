@@ -366,16 +366,36 @@ class SupabaseConversationStore(KhoNguoiMua):
         # không bao giờ có phường, bot hỏi phường mãi dù kho đã biết.
         d = self._du_an(fields)
         if not phuong and d:
-            for khoa in (("ward", "district"), ("location_raw", "ward", "district")):
-                chu2 = ", ".join(str(d[k]) for k in khoa if d.get(k))
-                if not chu2:
-                    continue
-                p2, q2 = self._chuan_dia_ban(chu2)
-                quan = quan or q2
-                if p2:
-                    phuong = p2
-                    break
+            phuong, q2 = self._phuong_cua_du_an(d)
+            quan = quan or q2
         return phuong, quan, nguon
+
+    def _phuong_cua_du_an(self, d: dict[str, Any]) -> tuple[str | None, str | None]:
+        """(phường mới, quận) của một dự án trong kho — MỘT chỗ cho `_dia_ban` và `phuong_theo_du_an`. Toạ độ dự án TRƯỚC: RPC `phuong_tai_diem`
+        trả phường MỚI chứa điểm ({N}, bắn thử 12/11: căn hộ Vinhomes Grand Park — kho ghi phường cũ "Long Thạnh Mỹ, Quận 9" trước sáp nhập,
+        tra chữ không ra phường nào, tin kẹt "chưa lên web", bot đòi số nhà của căn hộ; toạ độ dự án ra đúng "Phường Long Bình"). Dự án chưa có
+        toạ độ (≈ 7 % kho) mới đọc chữ cột phường / địa chỉ dự án như trước (SRS-5.1zzzzzzz87)."""
+        if d.get("lat") is not None and d.get("lng") is not None:
+            try:
+                ra = self._nho_tra("phuong_tai_diem", f"{d['lat']},{d['lng']}", lambda: self._request(
+                    "POST", "rpc/phuong_tai_diem", data={"p_lat": float(d["lat"]), "p_lng": float(d["lng"])}))
+                ten = ra if isinstance(ra, str) else (ra[0] if isinstance(ra, list) and ra else None)
+                if isinstance(ten, str) and ten.strip():
+                    p, q = self._chuan_dia_ban(ten.strip())
+                    if p:
+                        return p, q
+            except Exception as e:  # noqa: BLE001 — tra toạ độ hỏng thì đọc chữ địa chỉ dự án
+                log.warning("phường theo toạ độ dự án lỗi: %s", type(e).__name__)
+        quan = None
+        for khoa in (("ward", "district"), ("location_raw", "ward", "district")):
+            chu = ", ".join(str(d[k]) for k in khoa if d.get(k))
+            if not chu:
+                continue
+            p, q = self._chuan_dia_ban(chu)
+            quan = quan or q
+            if p:
+                return p, quan
+        return None, quan
 
     def _phuong_chia_da_chon(self, chu: str, fields: dict[str, Any], quan_cu: str | None) -> str | None:
         """Phường cũ đánh số ("phường 6") bị chia về nhiều phường mới → `chuan_dia_ban` trả `mo_ho` và KHÔNG ghi phường (SRS-5.1zzzzzzz191, chat anh
@@ -397,15 +417,7 @@ class SupabaseConversationStore(KhoNguoiMua):
     def phuong_theo_du_an(self, fields: dict[str, Any]) -> str | None:
         """Phường (tên chuẩn) của dự án khách nói, khi tên khớp rõ một dự án trong kho — cùng đường với `_dia_ban` (SRS-5.1zzzzzzz93)."""
         d = self._du_an(fields)
-        if not d:
-            return None
-        for khoa in (("ward", "district"), ("location_raw", "ward", "district")):
-            chu = ", ".join(str(d[k]) for k in khoa if d.get(k))
-            if chu:
-                p, _ = self._chuan_dia_ban(chu)
-                if p:
-                    return p
-        return None
+        return self._phuong_cua_du_an(d)[0] if d else None
 
     def cau_chuan_mau(self) -> list[dict[str, Any]]:
         """Câu chuẩn người chấm đã sửa / đã chấm (bảng `cau_chuan`, SRS-5.1zzzzzzz88) làm ví dụ trong prompt. SRS-5.1zzzzzzz180: lấy tới
@@ -444,7 +456,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             return None
         if self._du_an_nho.get(ten) is None:
             try:
-                da = self._request("POST", "rpc/match_projects?select=id,name,location_raw,ward,district", data={"p_text": ten})
+                da = self._request("POST", "rpc/match_projects?select=id,name,location_raw,ward,district,lat,lng", data={"p_text": ten})
             except Exception as e:  # noqa: BLE001 — không gắn dự án lượt này, lượt sau thử lại
                 log.warning("match_projects lỗi: %s", e)
                 return None

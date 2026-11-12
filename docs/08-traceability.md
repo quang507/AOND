@@ -537,6 +537,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-185, FR-165 | — | — | SRS-5.1zzzzzzz440 | TS-SRS (`test_xung_ho_goi_y_440.py`) |
 | FR-185, FR-144 | — | — | SRS-5.1zzzzzzz441 | TS-SRS (`test_lqc_441.py`) |
 | FR-195 | UF-04 | — | SRS-5.1zzzzzzz445 | TS-SRS (`test_chua_chac_445.py`) |
+| FR-162 | — | — | SRS-5.1zzzzzzz446 | TS-SRS (`test_phuong_du_an_446.py`) |
 
 ## 8.4 Rủi ro → biện pháp
 

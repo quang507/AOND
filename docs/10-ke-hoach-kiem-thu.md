@@ -773,6 +773,7 @@ khi đẩy — bảng là danh sách để chạy lại khi cần. SRS-1 … 244
 | SRS-440 | Gợi ý xưng hô theo hồ sơ Zalo giữ qua khởi động lại — tin chủ động gọi đúng cách chat đang gọi | FR-185, FR-165 | `test_xung_ho_goi_y_440.py` |
 | SRS-441 | LQC: so sánh tra lại khi tin chưa có toạ độ; câu đáp dài vào đúng ô bot vừa hỏi | FR-185, FR-144 | `test_lqc_441.py` |
 | SRS-445 | Thông tin dự án một người báo vẫn dùng kèm nhãn chưa chắc chắn (bot + web); bản vẽ phân lô → rổ lô dự án | FR-195 | `test_chua_chac_445.py` |
+| SRS-446 | Căn trong dự án lấy phường theo toạ độ dự án (phường mới sau sáp nhập); chỉ hỏi số nhà khi có tên đường | FR-162 | `test_phuong_du_an_446.py` |
 
 ## 10.8 Nghiệm thu theo từng tài liệu (04/09/2026)
 

@@ -4858,8 +4858,10 @@ class Engine:
                 return web
             # SRS-5.1zzzzzzz411 (ca test 11/11: "Trần Bình Trọng, quận 5" không số nhà → báo admin ngay): đường đi qua nhiều phường mà khách
             # chưa cho số nhà thì hỏi số nhà MỘT lần (không nhắc chữ phường); có số nhà rồi `_phuong_tu_dia_chi` tra lại. Vẫn không ra → báo admin.
+            # Số nhà chỉ định vị được khi có tên đường (SRS-5.1zzzzzzz446: căn hộ trong dự án không có đường — bản trước vẫn hỏi số nhà, chủ căn hộ
+            # không có gì để đáp, tin kẹt). Không có đường thì sang báo người phụ trách.
             co_so = getattr(self._dia_danh, "co_so_nha", None)
-            if co_so and not co_so(f.get("dia_chi")) and not f.get("_da_hoi_so_nha"):
+            if f.get("duong") and co_so and not co_so(f.get("dia_chi")) and not f.get("_da_hoi_so_nha"):
                 f["_da_hoi_so_nha"] = "1"
                 web["hoi_so_nha"] = True
                 return web

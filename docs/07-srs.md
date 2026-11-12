@@ -788,6 +788,17 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz446 · Căn trong dự án lấy phường theo toạ độ dự án; chỉ hỏi số nhà khi có tên đường (12/11/2026)
+Bắn thử 12/11 (`thu-lqc-1711da`): căn hộ Vinhomes Grand Park tòa S5.02, đủ ô, chủ duyệt "đăng đi em" → bot "Anh cho em xin số nhà của căn để em
+định vị đúng trên bản đồ. Tin chưa lên web"; tin kẹt `cho_thong_tin`, LQC sau đăng không chạy. Chủ dự án: "sửa luôn, sửa từ gốc".
+- **Gốc:** tin lên web cần phường (`trang_thai_tin`). Căn hộ chỉ nói tên dự án → phường lấy theo dự án trong kho (SRS-5.1zzzzzzz41 / 86 / 87)
+  bằng cách đọc CHỮ cột phường / địa chỉ dự án. Kho dự án ghi phường cũ trước sáp nhập 07/2025 ("Long Thạnh Mỹ, Quận 9") → `chuan_dia_ban` không
+  ra phường mới nào → thiếu phường. Engine (`_trang_thai_web`) không tra được phường từ đường (căn hộ không có đường) nên rơi vào nhánh hỏi số nhà
+  SRS-5.1zzzzzzz411 — nhánh viết cho nhà phố có đường đi qua nhiều phường.
+- **Sửa:** `_phuong_cua_du_an` (một chỗ cho `_dia_ban` và `phuong_theo_du_an`): dự án có toạ độ (2.631 / 2.819) → RPC `phuong_tai_diem` ra phường
+  MỚI chứa điểm (Vinhomes Grand Park → Phường Long Bình); chưa có toạ độ mới đọc chữ như cũ. `match_projects` lấy thêm `lat`, `lng`.
+- Nhánh hỏi số nhà chỉ khi căn có tên đường (`duong`); không có đường mà vẫn thiếu phường → báo người phụ trách như SRS-5.1zzzzzzz359.
+
 ### SRS-5.1zzzzzzz445 · Thông tin dự án một người báo vẫn dùng, gắn "chưa chắc chắn"; bản vẽ phân lô → rổ lô dự án (12/11/2026)
 Chủ dự án 12/11: "xóa các dữ liệu rổ hàng, mặt bằng các thứ của ny'ah phú định đi, t muốn là t đưa bản vẽ xong nó sẽ lưu lại dữ liệu dự án,
 dự án có 50 lô, trước đó báo có đủ người duyệt mới lên nhưng mà giờ thì có thêm kiểu 1 người nói nó vẫn nhận nhưng mà là thông tin không chắc
@@ -908,14 +919,3 @@ Chủ dự án 12/11 gửi danh sách "20 AI Design Slop Indicators", hỏi web 
 - Lưới "Phường 1…15" (phường cũ Quận 5, trước sáp nhập 2025) → danh sách 22 khu dẫn tới trang tag.
 - Lớp `.eyebrow` (cả web, cả trang quản trị) thôi in hoa + giãn chữ. Bỏ nhãn đầu trang /mua-ban ("🏠 KHO TIN…") và /du-an; tiêu đề
   /du-an thôi viết hoa từng chữ.
-
-### SRS-5.1zzzzzzz436 · Giới thiệu khu trên 100 trang tag + khối khu trang chủ bằng số thật (12/11/2026)
-Chủ dự án 12/11 "Giới thiệu khu trước" (để SEO tốt hơn: trang tag mỏng chữ, ba câu văn mẫu lặp y hệt trên cả 100 trang).
-- `lib/khu.ts`: lời giới thiệu viết tay cho 22 quận huyện + Sài Gòn + Long An — vị trí, trục đường, loại nhà phổ biến; không ghi giá,
-  không hứa tăng giá. Số liệu khu tính từ tin đang lên kệ (cache 1 giờ): số tin cả khu, giá mỗi m² ở giữa (trung vị) của nhà phố / cấp 4 /
-  biệt thự (cho thuê: tiền thuê ở giữa), % mặt tiền + hẻm xe hơi, 3 phường (khu gộp: 3 quận) nhiều tin nhất. Dưới 3 tin không tính giá.
-  Trang ghi rõ đó là giá rao trên AI Ơi Nhà Đất, không phải giá giao dịch.
-- `app/[tag]/page.tsx`: khối "Khu …" ở đầu trang; đoạn mô tả cũ rút còn câu số tin + khoảng giá của tag + một câu mời hỏi Zalo.
-- Trang chủ (máy tính): khối "Bản đồ Radar thị trường" (`RadarMarketBlock`, đã xoá) ghi số viết cứng không có thật ("340+ căn" Quận 7,
-  "140+ lô" Bến Lức — cả kho ~240 tin, Bến Lức 0 tin) → `components/KhuTrangChu.tsx`: 6 khu nhiều tin bán nhất, số đếm từ kho, bấm vào
-  là trang tag của khu. Bỏ chấm nhấp nháy, quầng sáng mờ, nhãn chữ in hoa, dải "100% Không Spam" lặp ba thẻ đầu trang.

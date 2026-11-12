@@ -73,6 +73,17 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz436 · Giới thiệu khu trên 100 trang tag + khối khu trang chủ bằng số thật (12/11/2026)
+Chủ dự án 12/11 "Giới thiệu khu trước" (để SEO tốt hơn: trang tag mỏng chữ, ba câu văn mẫu lặp y hệt trên cả 100 trang).
+- `lib/khu.ts`: lời giới thiệu viết tay cho 22 quận huyện + Sài Gòn + Long An — vị trí, trục đường, loại nhà phổ biến; không ghi giá,
+  không hứa tăng giá. Số liệu khu tính từ tin đang lên kệ (cache 1 giờ): số tin cả khu, giá mỗi m² ở giữa (trung vị) của nhà phố / cấp 4 /
+  biệt thự (cho thuê: tiền thuê ở giữa), % mặt tiền + hẻm xe hơi, 3 phường (khu gộp: 3 quận) nhiều tin nhất. Dưới 3 tin không tính giá.
+  Trang ghi rõ đó là giá rao trên AI Ơi Nhà Đất, không phải giá giao dịch.
+- `app/[tag]/page.tsx`: khối "Khu …" ở đầu trang; đoạn mô tả cũ rút còn câu số tin + khoảng giá của tag + một câu mời hỏi Zalo.
+- Trang chủ (máy tính): khối "Bản đồ Radar thị trường" (`RadarMarketBlock`, đã xoá) ghi số viết cứng không có thật ("340+ căn" Quận 7,
+  "140+ lô" Bến Lức — cả kho ~240 tin, Bến Lức 0 tin) → `components/KhuTrangChu.tsx`: 6 khu nhiều tin bán nhất, số đếm từ kho, bấm vào
+  là trang tag của khu. Bỏ chấm nhấp nháy, quầng sáng mờ, nhãn chữ in hoa, dải "100% Không Spam" lặp ba thẻ đầu trang.
+
 ### SRS-5.1zzzzzzz435 · Loại giấy tờ một nguồn: 9 loại, cột theo mã AI đọc, câu hỏi theo sau theo loại giấy; tra xã không nhầm tên trùng TP.HCM (12/11/2026)
 Chủ dự án 12/11 "sửa hết từ gốc, đừng có sửa kiểu phủ định, đừng có sửa kiểu chắp vá", sau lượt bắn thử production 9 loại pháp lý cùng ngày:
 sổ chung 3 anh em thừa kế rao thành "đã có sổ"; đất thuê nhà nước trả tiền hằng năm lên cột "Có sổ"; mua bằng hợp đồng ủy quyền không có mã,
