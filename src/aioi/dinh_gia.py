@@ -230,6 +230,15 @@ def dinh_gia_tham_khao_tool(engine: Any, conv: Any, project: Any, vao: dict[str,
         g_max_str = tien(kq["gia_max"])
         dong_gia_tong = f"- Khoảng giá ước tính ({kq['dien_tich']:g} m²): {g_min_str} – {g_max_str}\n"
 
+    # SRS-5.1zzzzzzz428 (4.5): đủ căn cùng loại đang rao gần tin của khách → dải đơn giá thật từ kho, ưu tiên hơn bảng ước lượng.
+    dong_gan = ""
+    li = getattr(conv, "active", None) if conv else None
+    if engine is not None and li is not None:
+        from . import so_sanh
+        from .engine import _la_id_thu
+        dong_gan = so_sanh.dong_don_gia_gan(so_sanh.can_gan(getattr(engine, "_convstore", None), getattr(li, "listing_id", None),
+                                                            gom_thu=_la_id_thu(getattr(conv, "user_key", None))))
+
     dong_so_sanh = ""
     if gia_chu > 0 and kq.get("gia_min") and kq.get("gia_max"):
         g_chu_str = tien(gia_chu)
@@ -246,6 +255,7 @@ def dinh_gia_tham_khao_tool(engine: Any, conv: Any, project: Any, vao: dict[str,
         f"- Loại hình: {loai_vn}\n"
         f"- Đơn giá rao tham khảo: {kq['don_gia_min']} – {kq['don_gia_max']} triệu/m²\n"
         f"{dong_gia_tong}"
+        f"{dong_gan}"
         f"{dong_so_sanh}"
         "- LƯU Ý KHI TRẢ LỜI: Nêu số liệu khách quan để khách tham khảo, khẳng định quyền quyết định giá bán hoàn toàn thuộc về khách; "
         "bên em luôn hỗ trợ rao đúng mức giá khách mong muốn."

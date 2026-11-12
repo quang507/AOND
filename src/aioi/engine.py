@@ -51,6 +51,7 @@ from .fetch import (
 from .llm import LLMProvider, Message
 from .llm.base import CHI_GEMINI, MODEL_CHAT_LUOT, NGUON_LUOT, RANH_GIOI_CACHE, model_chat_thu
 from .web import SITE_HOST
+from . import so_sanh
 from . import bulk
 from . import inventory as inv
 from .viec_luot import TrangThaiLuot, Viec, viec_luot
@@ -3312,6 +3313,16 @@ class Engine:
             if sau_dang and not xin_sao and not conv.y_luot.get("danh_gia"):
                 so_anh = _image_count(conv.active.media or [])
                 cum_sau = conv.prop.cum_sau_dang(da_hoi, so_anh=so_anh, anh_du=min(ANH_TIN_DEP, self._max_photos))
+                kq_ss = None
+                if cum_sau and cum_sau[0] == "so_sanh":   # SRS-5.1zzzzzzz428: tra căn gần; chưa đủ thì sang cụm kế, mỗi ngày tra lại một lần
+                    hom_nay = time.strftime("%Y-%m-%d")
+                    if conv.prop.fields.get("_ss_tra") != hom_nay:
+                        kq_ss = so_sanh.can_gan(self._convstore, conv.active.listing_id, gom_thu=_la_id_thu(conv.user_key))
+                        if not so_sanh.du_de_gui(kq_ss):
+                            conv.prop.fields["_ss_tra"] = hom_nay
+                            kq_ss = None
+                    if kq_ss is None:
+                        cum_sau = conv.prop.cum_sau_dang(da_hoi | {"sau:so_sanh"}, so_anh=so_anh, anh_du=min(ANH_TIN_DEP, self._max_photos))
                 if cum_sau:
                     # SRS-5.1zzzzzzz178: mỗi lượt MỘT ô (không hỏi gộp cụm) — ghi "sau:<ô>" để lượt sau tới ô kế của cùng cụm.
                     # Cụm xin ảnh (SRS-5.1zzzzzzz420) ghi theo mã cụm: hai lần xin cùng một ô ảnh.
@@ -3320,6 +3331,7 @@ class Engine:
                     conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi | {f"sau:{cum_sau[0] if xin_anh else cum_sau[1][0]}"}))
                     ti = self._tien_ich_that(conv.active) if cum_sau[1][:1] == ["phu_hop_kinh_doanh"] else None   # SRS-5.1zzzzzzz427
                     system += _hoi("hoi_sau_dang", khoi_xin_them_anh(so_anh, cum_sau[0] == "anh_lan_2", conv.prop) if xin_anh
+                                   else so_sanh.khoi_gui_so_sanh(kq_ss) if kq_ss is not None
                                    else khoi_hoi_sau_dang(cum_sau[1][:1], conv.prop, ti),
                                    hoan=lambda cu=sau_cu: _dat_co(conv.prop.fields, "_sau_da_hoi", cu))
                     log.warning("Hỏi sau đăng: cụm %s", cum_sau[0])

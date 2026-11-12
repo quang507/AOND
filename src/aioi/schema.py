@@ -589,6 +589,10 @@ class Property:
                 return "phap_ly", [o]
         mong = set(self.expected_fields())
         for ma, cum in CUM_SAU_DANG:
+            # SRS-5.1zzzzzzz428 (LQC mảng So sánh): gửi chủ căn cùng loại đang rao gần — sau lợi thế, trước cụm giá. Engine tra kho
+            # (`so_sanh.can_gan`); chưa đủ căn thì bỏ qua lượt này, không ghi "đã hỏi" (kho có tin thật sau này thì gửi).
+            if ma == "gia" and "sau:so_sanh" not in da_hoi:
+                return "so_sanh", ["so_sanh"]
             if ma in da_hoi or (self.is_rental and ma not in ("xem_nha", "loi_the")):   # mặt bằng cho thuê cần lợi thế nhất
                 continue
             if ma == "loi_the" and not self.kinh_doanh_duoc():

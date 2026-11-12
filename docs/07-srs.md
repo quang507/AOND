@@ -1017,6 +1017,23 @@ Chủ dự án 12/11: "Có, dùng điểm QC" + "nhưng đừng khó quá, lỡ 
   hỏi khéo chủ MỘT câu tấm đó có phải ảnh căn mình không (tả bằng nội dung, không nói ảnh sai / bị trừ điểm), ưu tiên trước xin góc.
 - Khối ĐIỂM TIN không đưa con số chất lượng ảnh cho model; chỉ gợi "ảnh <góc QC thấy thiếu> sẽ làm tin đẹp hơn, điểm cao hơn".
 
+### SRS-5.1zzzzzzz428 · LQC mảng So sánh cạnh tranh: căn cùng loại đang rao gần, đơn giá từ kho, không bịa giao dịch (12/11/2026)
+Chủ dự án 12/11 "Làm mảng So sánh" (đặc tả `docs/lqc-listing-quality-controller.md` mục 4).
+- **RPC `can_dang_rao_gan(listing, bán kính 3 km, 3 căn, gom_thu)`** (migration `20261112b`, chỉ service_role): căn cùng loại + cùng giao dịch
+  đang rao trong bán kính (cùng lối vào mặt tiền / hẻm xếp trước, rồi gần nhất), dải đơn giá (số căn, min, max, trung vị), căn đã cọc / chốt gần
+  đó trong 180 ngày. Không trả số nhà, người bán, mô tả. Loại tin của chính người bán.
+- **Tin thử loại trừ:** 12/11 kho đang hiển thị 244 tin thì 242 là `seed_thu` — gửi chủ nhà thật như "căn đang bán gần" là bịa. Chỉ ID thử
+  (`_la_id_thu`) mới thấy tin thử. Hiện với khách thật công cụ trả rỗng cho tới khi có tin thật quanh căn.
+- **4.1 · 4.2 — cụm sau đăng `so_sanh`** (`module so_sanh`, sau cụm lợi thế, trước cụm giá): đủ ≥ 2 căn → bot gửi chủ 2–3 dòng "#mã · đường,
+  phường · lối vào · tầng · m² · giá rao (≈ đơn giá) · cách khoảng … — link", một lần. Chưa đủ căn → sang cụm kế, mỗi ngày tra lại một lần
+  (`_ss_tra`), không ghi "đã hỏi".
+- **Luật lời** (chờ chủ dự án quyết 4.5): chỉ đưa dữ kiện — không nói giá chủ cao / thấp / hợp lý, không khuyên tăng / giảm, căn khác lối vào
+  hay diện tích không so thẳng đơn giá.
+- **4.3 · 4.4:** chỉ có dòng giao dịch khi kho có tin `da_coc` / `da_chot` gần đó (hiện 0); không có thì khối cấm nói "đã bán / đã cọc" căn nào.
+  Giá nêu là "giá rao lúc đó" — kho chưa có cột giá chốt.
+- **4.5 — công cụ định giá phía bán:** đủ ≥ 3 căn đang rao gần → thêm dòng dải đơn giá thật từ kho, ưu tiên hơn bảng ước lượng theo vùng.
+- 4.6 (báo cáo giá khu vực) chưa làm.
+
 ### SRS-5.1zzzzzzz427 · LQC mảng Khai thác lợi thế: hỏi buôn bán gì hợp, chỗ đậu xe, nêu tiện ích thật (12/11/2026)
 Chủ dự án 12/11 "làm tiếp mảng Khai thác lợi thế" (đặc tả `docs/lqc-listing-quality-controller.md` mục 3.1–3.7).
 - **Cụm hỏi sau đăng `loi_the`** (`schema.CUM_SAU_DANG`, sau pháp lý / hợp đồng thuê, trước giá): ô `phu_hop_kinh_doanh` (chủ nói đoạn đường hợp
