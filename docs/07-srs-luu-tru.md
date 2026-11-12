@@ -73,6 +73,23 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz423 · Điểm tin tính cả ảnh, đọc ảnh theo cuộc chat, khung giờ 8–21 (12/11/2026)
+Chủ dự án 12/11: "tin mấy điểm, đã được mấy điểm, còn mấy điểm nữa sao bot không nhắn khi ra tin"; "ảnh như nào thì chấm điểm như nào,
+ảnh không liên quan thì chấm sao"; "tới 9h tối lun cũng dc".
+- **Điểm tin có phần ảnh.** Trước: điểm = 50% độ đủ ô + 50% độ kịp thời, ảnh không tính — chat anh Luận 11/11 lúc ra tin bot báo "100/100" khi
+  tin có 2 ảnh. Nay độ đủ của tin = 70% ô + 30% ảnh (`do_du_tin`, `TRONG_SO_ANH`), đủ `ANH_TIN_DEP` (6) tấm là trọn phần ảnh. Một nguồn cho
+  khối ĐIỂM TIN, `TurnResult.property_score` (bridge, dòng debug) và phiếu hạng. Trường `completeness` của bridge giữ nghĩa cũ (độ đủ ô).
+- **Ảnh nào được tính:** ảnh đã lưu vào tin, trừ ảnh Image LQC chấm `chac_chan` không phải căn (`so_anh_tinh_diem`). Ảnh lúc gửi bị AI chấm
+  không phải ảnh thật của căn (ảnh mạng, phối cảnh, có logo bên khác — OPEN-53) vốn không được lưu nên không có điểm. Mặt bằng đang kinh
+  doanh chụp thật (quán, cửa hàng) là ảnh thật (căn có thể đang cho thuê).
+- **Khối ĐIỂM TIN** mang sẵn "gửi thêm N ảnh thật thì tin lên M/100" (code tính); lượt ra tin PHẢI nói tin được bao nhiêu điểm, thiếu gì để
+  lên bao nhiêu; chưa đủ điểm thì không nói ảnh đã đủ.
+- **Đọc ảnh lúc chủ gửi** (`build_media_read_instruction` + `khoi_doc_anh_theo_chat`): lần đọc nay thấy tin em vừa nhắn (đúng góc vừa xin
+  thì khen, cảm ơn) và việc căn đang cho thuê (`dang_cho_thue`: ảnh quán bên trong là mặt bằng của căn); ảnh đường phố có căn phía trước là
+  ảnh mặt tiền; không nói góc còn thiếu. Chat anh Luận 11/11: gửi mặt tiền, bot đáp "chưa thấy bên trong nhà"; gửi ảnh quán, bot đáp "chưa
+  giống căn".
+- **Khung giờ tin tự động 8–21 giờ** (`GIO_KET_THUC = 21`, trước là 20) — chung cho tin nhắc, xin ảnh, Image LQC, báo căn mới, giữ kết nối.
+
 ### SRS-5.1zzzzzzz422 · Image LQC (Listing Quality Controller) — QC ảnh tin rao, vòng nền trên máy 146 (11/11/2026)
 Chủ dự án 11/11: "một con loop như quality controller về hình ảnh của các tin rao, xem các hình đang có có giống nội dung rao đăng không, và
 có phù hợp với điểm mạnh của BĐS đang rao không". Chọn: vòng nền trên 146; ghi kết quả + tự nhắn chủ xin góc thiếu.

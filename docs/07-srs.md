@@ -788,6 +788,18 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz433 · 100 tag SEO theo quận / huyện Sài Gòn + Long An (12/11/2026)
+Chủ dự án 12/11 "Làm 100 tag" (yêu cầu `nhadat.cc website.docx` §Tag: 100 keyword BĐS hot nhất, mỗi keyword một URL).
+- Bản cũ: 64 tag, toàn Quận 5 theo PHƯỜNG CŨ (trước sáp nhập 2025), trong khi kho tin rải khắp thành phố.
+- Bản mới (`lib/tags.ts`, mảng `DS`): ĐÚNG 100 tag. 9 tag toàn Sài Gòn / Long An · bán nhà 19 quận huyện HCM + Bến Lức, Cần Giuộc ·
+  hẻm xe hơi 12 quận · mặt tiền 10 · dưới 5 tỉ 8 quận ven · căn hộ 8 · đất 5 huyện HCM + 3 huyện Long An · cho thuê nhà 10 · căn hộ 4 ·
+  mặt bằng 6 · phòng trọ 4. Chọn theo quận có tin trong kho và tổ hợp phổ biến từng khu. TOP-100 keyword gốc (OPEN-06) vẫn chưa có —
+  có file thì thay mảng `DS`.
+- Lọc khu bằng `district IN (biến thể tên)`, không ilike. /mua-ban `?quan=Quận 1` cũng sửa sang so khớp đúng (trước khớp cả Quận 10–12).
+- URL tag cũ `…-quan-5` không còn → chuyển hẳn (308) về `ban-nha-quan-5` / `cho-thue-nha-quan-5`, không 404.
+- Ô tìm bằng câu nói: câu khớp đúng một tag (loại + hẻm xe hơi / mặt tiền / dưới 5 tỉ + quận) thì đưa thẳng tới trang tag quận đó.
+- Tag nổi bật (trang chủ, feed điện thoại) đổi sang tag toàn Sài Gòn / Long An.
+
 ### SRS-5.1zzzzzzz432 · LQC: hỏi sau đăng chạy nền, trần câu hỏi sau đăng, cột pháp lý theo AI, đọc sổ ở mọi đường gửi ảnh (12/11/2026)
 Chủ dự án 12/11 "Làm tiếp 4–7" (4 lỗ hổng logic trong bản soát SRS cùng ngày).
 - **Lỗ hổng 4 — mảng 2–4 chỉ chạy khi chủ nhắn:** vòng nền `hoi_sau_dang` (server `_vong_hoi_sau_dang`, 600 giây, tắt `HOI_SAU_DANG=tat`):
@@ -809,18 +821,6 @@ Chủ dự án 12/11 "Làm tiếp 4–7" (4 lỗ hổng logic trong bản soát 
 - Docs: nhật ký giữ 10 mục mới nhất (432 → 423), mục 422 → 397 chuyển sang `07-srs-luu-tru.md`; khung giờ 8–20 → 8–21 (SRS-423) ở các
   mục còn ghi cũ; Image LQC đọc `listing_media` (SRS-425) thay vì quét thư mục; đặc tả LQC đánh dấu câu 1, 2 đã làm, câu 4 dùng mặc định.
 
-### SRS-5.1zzzzzzz433 · 100 tag SEO theo quận / huyện Sài Gòn + Long An (12/11/2026)
-Chủ dự án 12/11 "Làm 100 tag" (yêu cầu `nhadat.cc website.docx` §Tag: 100 keyword BĐS hot nhất, mỗi keyword một URL).
-- Bản cũ: 64 tag, toàn Quận 5 theo PHƯỜNG CŨ (trước sáp nhập 2025), trong khi kho tin rải khắp thành phố.
-- Bản mới (`lib/tags.ts`, mảng `DS`): ĐÚNG 100 tag. 9 tag toàn Sài Gòn / Long An · bán nhà 19 quận huyện HCM + Bến Lức, Cần Giuộc ·
-  hẻm xe hơi 12 quận · mặt tiền 10 · dưới 5 tỉ 8 quận ven · căn hộ 8 · đất 5 huyện HCM + 3 huyện Long An · cho thuê nhà 10 · căn hộ 4 ·
-  mặt bằng 6 · phòng trọ 4. Chọn theo quận có tin trong kho và tổ hợp phổ biến từng khu. TOP-100 keyword gốc (OPEN-06) vẫn chưa có —
-  có file thì thay mảng `DS`.
-- Lọc khu bằng `district IN (biến thể tên)`, không ilike. /mua-ban `?quan=Quận 1` cũng sửa sang so khớp đúng (trước khớp cả Quận 10–12).
-- URL tag cũ `…-quan-5` không còn → chuyển hẳn (308) về `ban-nha-quan-5` / `cho-thue-nha-quan-5`, không 404.
-- Ô tìm bằng câu nói: câu khớp đúng một tag (loại + hẻm xe hơi / mặt tiền / dưới 5 tỉ + quận) thì đưa thẳng tới trang tag quận đó.
-- Tag nổi bật (trang chủ, feed điện thoại) đổi sang tag toàn Sài Gòn / Long An.
-
 ### SRS-5.1zzzzzzz431 · Sửa 3 mâu thuẫn SRS: gỡ lưới nhận xét giá lời chat · tin thử tính như tin thật · một nguồn cho đường vào (12/11/2026)
 Chủ dự án 12/11, sau bản soát mâu thuẫn SRS: "vậy xóa lưới chặn và bắt bot viết lại đi, Tin thử được coi là thật, sửa 3 mâu thuẫn trước đi".
 - **Gỡ lưới nhận xét giá ở lời CHAT** (thay phần lời chat của SRS-132, SRS-353 và đoạn "lưới nới" của SRS-429): bỏ `_BINH_LUAN_GIA`,
@@ -841,7 +841,7 @@ Chủ dự án 12/11, sau bản soát mâu thuẫn SRS: "vậy xóa lưới ch�
 ### SRS-5.1zzzzzzz430 · Web theo theme King + trang chủ điện thoại là feed vuốt dọc kiểu TikTok (12/11/2026)
 Chủ dự án 12/11: "lấy king theme kia để áp vào web, muốn lướt trang web kiểu cuộn cuộn như tiktok"; chọn "Mở và chép file theme vào
 web" và "Thay trang chủ trên điện thoại".
-- **Theme King** (RedKings, ThemeForest 9.5.5, `ThemeForest/themeforest-…-king-wordpress-theme.zip` trong thư mục anh Luận): King là theme
+- **Theme King** (RedKings, ThemeForest 9.5.5, gói theme trong thư mục ThemeForest của anh Luận): King là theme
   WordPress PHP, 225KB CSS toàn class bài viết / story, không có class nhà đất — chép nguyên file vào Next.js sẽ đè reset của Tailwind.
   Chép phần dùng được: bảng màu (đỏ #e60023, đen #13151d, nền #f6f7f9, viền #e8ebed, chữ phụ #687686 — đếm trong CSS), font Nunito (ghim
   `app/fonts/`, OFL), kiểu khối story (lớp phủ tối dưới ảnh, nút tròn trắng có bóng, nhãn đỏ) vào `app/king.css`. Góc bo giữ 2px theo
@@ -933,20 +933,3 @@ Chủ dự án 12/11: "Có, dùng điểm QC" + "nhưng đừng khó quá, lỡ 
 - Bỏ luật SRS-423 trừ ảnh QC chấm "chắc chắn không phải căn" khỏi số ảnh tính điểm: mọi ảnh đã lưu đều được tính. Thay vào đó Image LQC
   hỏi khéo chủ MỘT câu tấm đó có phải ảnh căn mình không (tả bằng nội dung, không nói ảnh sai / bị trừ điểm), ưu tiên trước xin góc.
 - Khối ĐIỂM TIN không đưa con số chất lượng ảnh cho model; chỉ gợi "ảnh <góc QC thấy thiếu> sẽ làm tin đẹp hơn, điểm cao hơn".
-
-### SRS-5.1zzzzzzz423 · Điểm tin tính cả ảnh, đọc ảnh theo cuộc chat, khung giờ 8–21 (12/11/2026)
-Chủ dự án 12/11: "tin mấy điểm, đã được mấy điểm, còn mấy điểm nữa sao bot không nhắn khi ra tin"; "ảnh như nào thì chấm điểm như nào,
-ảnh không liên quan thì chấm sao"; "tới 9h tối lun cũng dc".
-- **Điểm tin có phần ảnh.** Trước: điểm = 50% độ đủ ô + 50% độ kịp thời, ảnh không tính — chat anh Luận 11/11 lúc ra tin bot báo "100/100" khi
-  tin có 2 ảnh. Nay độ đủ của tin = 70% ô + 30% ảnh (`do_du_tin`, `TRONG_SO_ANH`), đủ `ANH_TIN_DEP` (6) tấm là trọn phần ảnh. Một nguồn cho
-  khối ĐIỂM TIN, `TurnResult.property_score` (bridge, dòng debug) và phiếu hạng. Trường `completeness` của bridge giữ nghĩa cũ (độ đủ ô).
-- **Ảnh nào được tính:** ảnh đã lưu vào tin, trừ ảnh Image LQC chấm `chac_chan` không phải căn (`so_anh_tinh_diem`). Ảnh lúc gửi bị AI chấm
-  không phải ảnh thật của căn (ảnh mạng, phối cảnh, có logo bên khác — OPEN-53) vốn không được lưu nên không có điểm. Mặt bằng đang kinh
-  doanh chụp thật (quán, cửa hàng) là ảnh thật (căn có thể đang cho thuê).
-- **Khối ĐIỂM TIN** mang sẵn "gửi thêm N ảnh thật thì tin lên M/100" (code tính); lượt ra tin PHẢI nói tin được bao nhiêu điểm, thiếu gì để
-  lên bao nhiêu; chưa đủ điểm thì không nói ảnh đã đủ.
-- **Đọc ảnh lúc chủ gửi** (`build_media_read_instruction` + `khoi_doc_anh_theo_chat`): lần đọc nay thấy tin em vừa nhắn (đúng góc vừa xin
-  thì khen, cảm ơn) và việc căn đang cho thuê (`dang_cho_thue`: ảnh quán bên trong là mặt bằng của căn); ảnh đường phố có căn phía trước là
-  ảnh mặt tiền; không nói góc còn thiếu. Chat anh Luận 11/11: gửi mặt tiền, bot đáp "chưa thấy bên trong nhà"; gửi ảnh quán, bot đáp "chưa
-  giống căn".
-- **Khung giờ tin tự động 8–21 giờ** (`GIO_KET_THUC = 21`, trước là 20) — chung cho tin nhắc, xin ảnh, Image LQC, báo căn mới, giữ kết nối.

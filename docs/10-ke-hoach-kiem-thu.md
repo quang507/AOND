@@ -102,7 +102,7 @@ thì "máy xanh, máy tao đỏ" và không ai biết bên nào đúng.
 
 | Bộ | ID | Lệnh | Job CI | Kiểm cái gì |
 |---|---|---|---|---|
-| `tests/` (203 file pytest, 01/11/2026) | **TS-PY-01** | `bun run test:py` (= `python -m pytest -q tests`; cài trước `pip install -e ".[dev]" httpx` như CI) | `bot`, bước "Lõi Python — pytest" | Lõi Python: phiên chat, định tuyến bán / mua, bóc tách có bằng chứng, câu mẫu, phí, xưng hô, lưới soát lời bot, gợi căn, báo căn mới, gửi nhắc, lệnh Zalo, pháp lý. Model giả: chỉ kiểm code nhận đúng KHI model trả đúng, không kiểm model hiểu đúng |
+| `tests/` (249 file pytest, 12/11/2026) | **TS-PY-01** | `bun run test:py` (= `python -m pytest -q tests`; cài trước `pip install -e ".[dev]" httpx` như CI) | `bot`, bước "Lõi Python — pytest" | Lõi Python: phiên chat, định tuyến bán / mua, bóc tách có bằng chứng, câu mẫu, phí, xưng hô, lưới soát lời bot, gợi căn, báo căn mới, gửi nhắc, lệnh Zalo, pháp lý. Model giả: chỉ kiểm code nhận đúng KHI model trả đúng, không kiểm model hiểu đúng |
 | các file `bot/tests/*.mjs` liệt kê trong script `test:bot` | TS-RANHGIOI, TS-NHAC, TS-LUAT-03, TS-NHAN-01, TS-SEC-AUTO (tự kiểm) | `bun run test:bot` | `bot` | Code TypeScript còn sống: web (`lib/`), ba edge function, `_shared/` còn lại, bridge, script nạp mẫu / đo tìm nhà (tự kiểm offline) |
 | `bot/tests/sql/*.sql` | **TS-SQL-01**, TS-STREET-DA-01 | `bun run test:sql` | `bot` | Trigger / hàm SQL chạy thật trên Postgres tạm. Thoát 2 = máy không có Postgres = chưa kiểm được |
 | `scripts/xuat-ro-hang.tu-kiem.mjs` | TS-ROHANG | `bun run test:rohang` | `rohang` | Bản xuất rổ hàng không ghi vào repo, không nuốt dòng thiếu |
@@ -543,7 +543,7 @@ Dựng theo IA §4.4 sau nghiệm thu 04/09 (OPEN-44). 01–04 chạy trong sand
 | TS-SEO-02 | `bun -e 'import {TAG_DEFS} from "./lib/tags.ts"; …'` | slug không dấu, chữ thường, gạch nối, `ty` không `tỉ`, duy nhất; keyword hiển thị giữ "tỉ" | ✅ 04/09 (64 slug duy nhất) |
 | TS-SEO-03 | `relatedTags(t)` | 6–8 tag, không chứa chính nó, ưu tiên cùng giao dịch + loại + khu | ✅ 04/09 |
 | TS-SEO-04 | `/ban-nha-hem-xe-hoi-quan-5` trên `next start` | H1 = keyword, mô tả 80–120 từ, lưới lọc `access_type in (mat_tien, hem_xe_tai, hem_xe_hoi)`, 8 tag liên quan; `/abc-xyz` → 404 | ⏭ sandbox không tới Supabase (lưới rỗng → hộp Zalo, đúng luật) |
-| TS-SEO-05 | `curl -s https://nhadat-cc.vercel.app/sitemap.xml \| grep -c '<loc>'` | ≥ 8 tĩnh + 64 tag + số tin lên kệ (~165) | ⏭ chờ deploy |
+| TS-SEO-05 | `curl -s https://nhadat-cc.vercel.app/sitemap.xml \| grep -c '<loc>'` | ≥ 8 tĩnh + 100 tag (SRS-5.1zzzzzzz433) + số tin lên kệ | ⏭ chờ deploy |
 | TS-SEO-06 | trang tin: `application/ld+json` + canonical + OG | một `RealEstateListing`, `identifier` = mã, `offers.price` = `price_vnd`, `address` chỉ tới phường (FR-104); canonical = URL tin; OG = ảnh thật nếu có | ⏭ chờ deploy; kiểm tĩnh `jsonLd()` không dùng `location_raw` |
 
 ### TS-ADM2 — admin buyer side (FR-71/74/75/76/77/78/80)
@@ -619,6 +619,155 @@ Luồng WEB (FR-01/02/03/04/08/09/10, FR-70/73 web, FR-96, FR-99 web, FR-100, FR
 ### TS-KYGUI — nhận ký gửi như môi giới giỏi (FR-176/177/178, 07/09/2026) [deprecated 28/10/2026]
 
 > Bộ test đã ngừng — thân mục (lệnh, ca, kết quả cũ) ở `docs/10-ke-hoach-kiem-thu-luu-tru.md`, cùng mã.
+
+### TS-SRS — truy vết SRS → ca kiểm, SRS-207 … 433 (12/11/2026)
+
+Từ 30/09/2026 tính năng / sửa lỗi ghi thẳng ở `07-srs.md` (không cấp FR), nên bảng này nối mỗi mục SRS với ca pytest đang có
+trong `tests/` (đều chạy trong **TS-PY-01**). "Chưa có ca riêng" = mục chỉ đổi docs / hạ tầng / prompt, hoặc ca nằm trong bộ chấm
+kịch bản **TS-CHAM-01** / bắn thử **TS-PROD-01**. Luật hiện hành (11/11/2026): sửa thẳng main, không bắt buộc chạy test trước
+khi đẩy — bảng là danh sách để chạy lại khi cần. SRS-1 … 244 xem `08-traceability.md` §8.3.
+
+| SRS | Nội dung | FR | Ca kiểm |
+|---|---|---|---|
+| SRS-207 | Giọng phía bán lấy nguyên bản anh Luận, gỡ luật giọng chồng chất | FR-176, FR-178 | `test_giong_anh_luan.py` |
+| SRS-208 | Năm lỗi bắn thử trên giọng anh Luận: câu ghi nhận, hỏi giá lặp, bịa chi tiết, tên khối, hỏi lại khó hiểu | FR-177, FR-178 | `test_loi_ban_thu_26_10.py` |
+| SRS-245 | Khách xưng "chú" mà bot gọi "anh": giới tính Zalo vào prompt như lời khách tự xưng; bắn thử giữ được dữ liệu cho CRM | FR-178 | `test_xung_ho_doan_28_10.py` |
+| SRS-246 | Thử tắt công cụ cố định `gui_khach`: lời trả khách là chữ thường như bản anh Luận | FR-177 | `test_loi_gui_khach.py` |
+| SRS-247 | "ok em đăng đi" không thành duyệt vì AI đọc trễ một lượt; tắt preview Vercel cho nhánh `claude/*` | FR-177 | `test_duyet_tre_28_10.py` |
+| SRS-248 | Giọng bớt cứng: bỏ khuôn "X thì <lợi ích>", được cảm thán, ngắn như anh Luận; Vercel không dựng lại web khi chỉ đổi bot | FR-176, FR-178 | `test_giong_bot_cung_28_10.py`, `test_khen_lap_27_10.py` |
+| SRS-251 | Hai số chuyên việc: câu chào số ký gửi chỉ hỏi gửi bán / cho thuê | FR-177 | `test_cau_mau.py`, `test_ngung_bao_va_khong_hop.py` |
+| SRS-297 | B1 gọn quy trình: CI tự chạy, tự cài VPS sau gộp, một lệnh sau gộp, CLAUDE.md tách luật chi tiết | — | — (chưa có ca riêng) |
+| SRS-298 | B2 bước 1: lớp soát lời — luật giọng / lặp thôi gọi lại model, tối đa một lần gọi lại | FR-176 | `test_soat_gon_298.py` |
+| SRS-299 | Claude hết tiền: Gemini dự phòng chỉ đỡ một lượt vì model mặc định quá giờ — đổi danh sách model, một nguồn ở cai-vps.sh | FR-194 | `test_gemini_du_phong_299.py` |
+| SRS-300 | Test lời bot bằng quota gói Claude Code (`claude -p`), không tốn tiền API | — | `test_claude_cli_300.py` |
+| SRS-301 | Chỉnh prompt để Haiku khen cụ thể như Sonnet, mở đầu không lặp, không chào lại giữa chừng | FR-178 | `test_giong_khen_301.py` |
+| SRS-302 | Bot tự hiểu từ dữ kiện đã có, không hỏi lại; "em rao lại xem" ra bản tin; đếm từ tiêu đề đúng số thập phân | FR-177 | `test_khong_hoi_lai_302.py` |
+| SRS-303 | Ngưỡng gọi lại vì tiêu đề dài 30 từ (prompt vẫn 15–25); form bóc tách gọn cho người bán | FR-177, FR-172 | `test_form_ban_gon_303.py`, `test_sua_ban_tin_theo_y_27_10.py` |
+| SRS-304 | Bộ kịch bản chấm tự động offline; chat tay bằng quota CLI; bật soát gọn cho mọi khách | — | `test_cham_kich_ban_304.py` |
+| SRS-305 | Nhật ký SRS cũ sang tệp lưu trữ; lỗi từng gặp thành kịch bản chấm, không thành luật prompt | — | — (chưa có ca riêng) |
+| SRS-306 | Gỡ lưới soát theo số đo: "em gửi ảnh" chỉ soi phần chat; bộ chấm ghi lưới nào kích | FR-177 | `test_soat_anh_ban_tin_306.py` |
+| SRS-307 | B2 bước 2: agent phía bán tự tra rổ hàng / bộ nhớ dự án / giá đã gửi; rổ nhiều căn chưa rõ căn nào thì hỏi lại | FR-177, FR-214 | `test_agent_ban_307.py` |
+| SRS-308 | Agent phía bán cho mọi khách; hai căn một tin giữ đúng ô; dự phòng không mù dữ liệu | FR-177, FR-214, FR-194 | `test_agent_ban_307.py`, `test_du_phong.py`, `test_hai_can_mot_tin_308.py` |
+| SRS-309 | Kế hoạch bước 1–2: bộ chấm 40 kịch bản + giám khảo giọng; phiếu lượt ngắn cho lượt thu thập người bán | FR-177 | `test_phieu_luot_309.py` |
+| SRS-310 | Kế hoạch bước 3: agent bóc tách bằng công cụ ghi (giữ thử); cổng đổi trạng thái rổ nhiều căn cho mọi khách | FR-208, FR-214 | — (chưa có ca riêng) |
+| SRS-311 | Kế hoạch bước 4: lượt dễ của người bán viết bằng model rẻ; luật soát chưa gỡ | FR-177 | `test_model_luot_de_311.py` |
+| SRS-312 | Gỡ 4 lưới soát chưa từng kích; nhà phố có diện tích đất rồi thì số m² thứ hai là sàn; sửa phép chấm "huyện" | FR-172 | — (chưa có ca riêng) |
+| SRS-313 | Bộ chấm chạy như khách thật (công tắc + model đọc từ cai-vps.sh); đo cỡ prompt; giám khảo chỉ lượt lộ luật; điểm nền | — | `test_cham_nhu_khach.py` |
+| SRS-314 | Bước 2A/2B: 8 kịch bản mới + giám khảo "hỏi lại"; `viec_luot` chọn MỘT việc mỗi lượt phía bán (chỉ ghi, chưa đổi lời) | FR-177 | `test_kich_ban_2a_314.py`, `test_viec_luot_314.py` |
+| SRS-315 | Quyết định chủ dự án 31/10–01/11; câu báo phí viết lại, gọi đúng xưng hô; ẩn danh + dọn docs lệch code | FR-140, FR-160 | `test_cau_mau.py`, `test_viec_luot_314.py` |
+| SRS-316 | Audit Đợt 0: test chạy công tắc production; model bóc tách một nguồn ở cai-vps.sh; điểm nền dựng lại | — | `test_cau_hinh_nhu_production_316.py` |
+| SRS-317 | Audit Đợt 1: một mẫu SĐT cho mọi chỗ che / nhận; SQL `che_sdt` bắt cả số có dấu cách; CCCD che lại ở tin gốc / tin nội bộ | FR-105 | `test_sdt_317.py` |
+| SRS-318 | Audit Đợt 2: luật rơi khi đổi đường — chính sách phí ở lượt thu thập, một bảng luật soát, nhãn việc lượt chung, ảnh sổ qua phiếu lượt | FR-160 | `test_luat_roi_doi_duong_318.py` |
+| SRS-319 | Audit Đợt 8: gỡ đường cũ 6 công tắc, xoá prompt cũ `build_chat_system`; phiếu lượt mang tin hệ thống, tiếng lóng, hỏi diện tích đất / nhà | — | `test_go_cong_tac_319.py` |
+| SRS-320 | Audit Đợt 3: bỏ đoán ý khách bằng từ khoá — AI đọc nghĩa vai / pháp lý / đường vào / tiện ích / tình trạng; một lưới bản tin | FR-208, FR-172 | `test_khang_dinh_320.py` |
+| SRS-321 | Audit Đợt 6: code chết và một nguồn — bỏ dấu một hàm, một cửa tin báo admin chặn ID thử, không rơi về mock, không hỏi lại sổ | FR-140 | `test_dot6_321.py` |
+| SRS-322 | Cổng bí mật edge function: bỏ vé qua bằng Bearer service_role | — | — (chưa có ca riêng) |
+| SRS-323 | Dọn code TypeScript / script tàn dư thời trước lõi Python; nhánh tin soạn sẵn của escalation-feed; bảng phường cũ bản code | — | — (chưa có ca riêng) |
+| SRS-324 | Làm giàu kho dự án từ rever.vn (crawl theo luật mogi), một kho `projects`; bot đọc `specs.rever` | FR-195, FR-196 | `test_nguon_phu_rever.py` |
+| SRS-325 | Chủ căn hộ hỏi giá cao không: nêu giá rao bán thị trường của dự án (thay một phần SRS-116) | FR-99, FR-196 | `test_dinh_gia_rao_325.py` |
+| SRS-326 | Gỡ bảng `media` cũ, view `public_media` / `ro_hang_ban`, hàm `kd_ten` / `tim_nghia_san_sang` | FR-165 | — (chưa có ca riêng) |
+| SRS-327 | Dựng lại `so.ro_hang` từ số không; gắn lại `security_invoker` mà 20261102a làm rơi | FR-175 | — (chưa có ca riêng) |
+| SRS-328 | Audit Đợt 4: một quyết định một nơi — MỘT câu hỏi mỗi lượt, duyệt bản nháp một hàm, vai một nguồn, phía mua hết lệnh ngược, lượt bản nháp một lần gọi lại; Q4 / Q5 | FR-177 | `test_dot4_328.py` |
+| SRS-330 | Lịch hẹn / câu hỏi của ID thử không nhắn admin, không bắn cảnh báo ngoài | FR-140 | — (chưa có ca riêng) |
+| SRS-331 | Vai theo SỐ khách đang nhắn ở lượt mơ hồ: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi không còn bị hỏi khu vực tìm mua | FR-157 | `test_vai_theo_so_331.py` |
+| SRS-332 | `/ds/[token]` thôi là route ƒ; giữ ƒ có chủ ý cho trang đọc `searchParams` | — | — (chưa có ca riêng) |
+| SRS-333 | Gỡ `/api/listing/parse` + `parseListing` (bóc câu rao bằng luật ở web, không còn nơi gọi) | FR-172 | — (chưa có ca riêng) |
+| SRS-334 | /du-an thiếu tab Bà Rịa – Vũng Tàu; vùng nhận tin một nguồn phía web | FR-174 | `test_vung_mot_nguon_334.py` |
+| SRS-335 | Phía mua: câu hỏi mở tuỳ chọn thay cây hỏi cố định; 2–3 căn mỗi lượt mở bằng tầm giá; dòng căn có đường vào + tiện ích thật | — | `test_mua_cau_mo_335.py` |
+| SRS-336 | Audit Đợt 5: ca đỏ khách ảo 02/11 — bản nháp gọi đúng khách lớn tuổi, bản tin không bình luận giá (AI đọc nghĩa), Q8 bỏ câu mẫu khỏi `AD_FORMAT` | FR-177, FR-178 | `test_khach_ao_02_11_342.py` |
+| SRS-338 | Audit Đợt 7: docs khớp code — soát lại, sửa phần còn lệch, `truyvet` soát tên ở §2 | FR-140, FR-173, FR-174 | — (chưa có ca riêng) |
+| SRS-340 | Ca hồi quy hai lỗi production 02/11 (vai theo số Zalo, hỏi hẻm xe hơi khi đã đủ tiêu chí) — kiểm độc lập | FR-157 | `test_hoi_quy_02_11_340.py` |
+| SRS-341 | Thang chấm giọng không trừ điểm giọng rao chợ chủ dự án đã chốt; chấm lại giám khảo trên cùng bản ghi | — | — (chưa có ca riêng) |
+| SRS-342 | Ca đỏ từ khách ảo và lượt chấm 02/11; sửa hai phép chấm tự sai; bộ chấm nhận rổ hàng | — | — (chưa có ca riêng) |
+| SRS-343 | Người bán nhiều căn báo "căn đó bán rồi": AI bóc tách bỏ sót thao tác thì bot không tự chọn căn / chúc mừng; khối hỏi lại không lộ chữ "rổ" | FR-184, FR-214 | `test_hai_can_da_ban_343.py` |
+| SRS-344 | `cat_truoc_mo_dau` sửa lời xưng hô ĐÚNG thành sai | FR-178 | — (chưa có ca riêng) |
+| SRS-345 | Điểm của TIN khác hạng của NGƯỜI RAO: thang chấm thôi tính "78/100" là lộ luật; kịch bản đảo sang kiểm đúng chữ | FR-183 | — (chưa có ca riêng) |
+| SRS-346 | Điểm tin chỉ được nhắc LÚC RA TIN hoặc khi khách tự hỏi; "nhắc điểm sai lúc" là loại lỗi riêng | FR-183 | — (chưa có ca riêng) |
+| SRS-347 | Bịa tiện ích bằng "nằm sát / đối diện / kề" lọt cả hai phép chấm | FR-208 | — (chưa có ca riêng) |
+| SRS-348 | Thang chấm thiếu dòng "Không có → []" của lo_luat (nhất quán rubric, KHÔNG phải nguyên nhân số lộ luật) | — | — (chưa có ca riêng) |
+| SRS-349 | Khối ĐIỂM TIN tự gắn số /100 vào HẠNG của người rao: bot nói "anh đang hạng Vàng (94/100)" trên production | FR-155, FR-183 | — (chưa có ca riêng) |
+| SRS-350 | Ba phép chấm bắt oan (gọi khách "mình", số bịa, hỏi lại căn nào); lượt gọi lại duy nhất bị tiêu vào phép bắt oan | FR-176 | `test_goi_lai_mot_lan_350.py` |
+| SRS-351 | Cổng web đỏ oan vì `next/font/google`: ghim font Plus Jakarta Sans trong repo, dựng không cần mạng | — | — (chưa có ca riêng) |
+| SRS-352 | Lượt gọi lại duy nhất nhận bản viết lại mà không soát lại: "4 tầng", "72m²" ra tới khách | FR-172 | `test_goi_lai_mot_lan_350.py` |
+| SRS-353 | Lời chat nhận xét giá / thị trường: AI đọc nghĩa, code kiểm cụm trích; từ khoá chỉ đỡ khi AI không chạy | FR-177 | — (lưới lời chat gỡ ở SRS-431, ca `test_binh_gia_chat_353.py` gỡ theo) |
+| SRS-354 | Tin kể căn bị đọc nhầm là xin bản vẽ: lượt cắt sớm, mất giá và loại nhà | FR-177 | `test_ke_can_khong_phai_xin_ban_ve_354.py` |
+| SRS-355 | Khách hỏi phí lần hai: bot đọc lại nguyên bài chính sách lượt trước | FR-160 | `test_phi_hoi_lan_hai_355.py` |
+| SRS-356 | Câu mẫu nói chữ "rổ" / "rổ hàng" với khách — lưới `tu_noi_bo` không với tới câu mẫu | FR-178 | `test_cau_mau_khong_tu_noi_bo_356.py` |
+| SRS-357 | Khách ảo: "(trong 8–20 giờ)" thành mốc hẹn bịa; phép `ka_hua_suong` neo chữ nên 4/5 câu lọt | FR-133 | `test_khung_gio_8_20_357.py` |
+| SRS-358 | Dữ kiện "nhắn khách khi có căn mới (trong 8–20 giờ)" đọc thành "8–20 tiếng nữa" | FR-133 | `test_khung_gio_ro_don_vi_358.py` |
+| SRS-359 | Bot không hỏi khách phường: hệ thống tự xác định, không ra thì báo người phụ trách | FR-174 | `test_phuong_he_thong_tu_tra_359.py` |
+| SRS-360 | Ranh giới phường mới để gắn toạ độ vào phường: bảng `ranh_gioi_phuong` + RPC `phuong_tai_diem` — CHƯA có dữ liệu đa giác | FR-174 | `test_phuong_he_thong_tu_tra_359.py` |
+| SRS-361 | `tim_nha` ưu tiên uy tín người rao: cùng mức khớp thì hạng cao trước | FR-155 | — (chưa có ca riêng) |
+| SRS-362 | Gợi ý tên đường lấy từ tên huyện / quận khác ("Ngô Bệ (Tân Bình)" cho khách ở Nhà Bè) | FR-212 | `test_goi_y_duong_trong_khu_362.py` |
+| SRS-363 | Bản tin tự nhân ngang × dài ra m² khi đất nở hậu ("đất 90m²" khách không nói) | FR-172 | `test_dien_tich_no_hau_363.py` |
+| SRS-364 | Bot trả lời từng lượt khách chỉ thả cảm xúc | FR-131 | `test_cam_xuc_khong_tra_loi_364.py` |
+| SRS-365 | Sổ lỗi 409 khi ghi `messages` (34 lần): lời bot của lượt trùng tin mất khỏi CRM | FR-162 | `test_tin_trung_msg_id_365.py` |
+| SRS-366 | Bot hỏi lại tên đường ("ý anh là đường X?", "Mã Lò hay Mã Lộ?") thay vì tự áp tên chuẩn | FR-212 | `test_ap_ten_duong_366.py` |
+| SRS-367 | Lời bot hỏi ô hệ thống không chọn ("…đường nào, phường nào…" 3/201 lượt) — soát đầu ra theo ô được chọn | FR-174 | `test_khong_hoi_phuong_moi_luot_367.py` |
+| SRS-368 | Làm gọn prompt bước 1: khuôn bản tin chỉ khi cần, bỏ mã SRS / ngày trong chữ gửi model, danh sách ô soát vào system | — | `test_gon_prompt_368.py` |
+| SRS-370 | Làm gọn DB: bỏ vector hẻm / đường số và hai index HNSW gần như không dùng | — | — (chưa có ca riêng) |
+| SRS-371 | Một vòng agent Sonnet cho lượt người bán: ghi bằng công cụ qua cổng code rồi viết lời cùng cuộc hội thoại | FR-177, FR-208 | `test_agent_gop_371.py` |
+| SRS-372 | Nguồn sự thật là `main`: không soát PR đóng / nhánh cũ | — | — (chưa có ca riêng) |
+| SRS-373 | Lượt có bản tin 📋 gửi Zalo dính câu chat mở đầu và câu hỏi chốt thành một tin | FR-177 | `test_tach_ban_tin_373.py` |
+| SRS-374 | Tách tin bản nháp lần 2 (dòng mở 📋, điểm tin), tin chat xuống một dòng; CRM Rổ hàng trống vì còn đọc bảng `media` đã gỡ | FR-177, FR-175 | `test_tach_ban_tin_373.py` |
+| SRS-375 | Một khối giọng vui chung hai phía; phía mua lặp câu mời hẹn / đọc lại địa chỉ, hứa suông vay, báo "chưa có căn" khi khách đổi nhu cầu | FR-178 | — (chưa có ca riêng) |
+| SRS-376 | Review prompt: phía mua giục hẹn mỗi lượt và dặn ngược số căn; "em báo lại khách ngay"; prompt phí 9.455 ký tự ngoài cache | FR-178, FR-160 | — (chưa có ca riêng) |
+| SRS-377 | Bộ chấm offline `cham` chạy trên GitHub Actions cho PR đổi lõi bot | — | — (chưa có ca riêng) |
+| SRS-379 | Mỗi luật một chỗ trong prompt ghép; một phiên giữ `src/aioi/` mỗi lúc | — | `test_mot_cho_379.py` |
+| SRS-380 | Lượt người mua vào cùng vòng agent gộp với người bán: ghi bằng công cụ qua cổng code rồi viết lời cùng cuộc hội thoại | FR-208 | `test_agent_gop_mua_380.py` |
+| SRS-381 | Khối nhân vật "thấu hiểu, chăm sóc khách" đứng đầu mọi prompt bot nói với khách | FR-178 | `test_nhan_vat_381.py` |
+| SRS-382 | Gỡ regex đoán ý khách: kiểm kê toàn lõi — loại D đã về 0, gỡ regex chết, cổng chặn regex mới | FR-208 | `test_kiem_ke_regex_382.py` |
+| SRS-383 | Web chuyển sang project Vercel mới `aond.vercel.app` (team cũ bị tạm dừng) | — | — (chưa có ca riêng) |
+| SRS-384 | Web có hai số Zalo: nút người bán trỏ số ký gửi, còn lại số tư vấn mua | — | — (chưa có ca riêng) |
+| SRS-385 | Ba lịch nhúng vector chạy 2.160 lượt / ngày (≈ 24 phút CPU) khi không còn gì để nhúng; 409 dự án băm lại mãi | — | — (chưa có ca riêng) |
+| SRS-386 | Bot báo "em ghi rồi" gần như mọi lượt; câu phí "chưa thành thì … không tốn đồng nào" thiếu chữ | FR-177, FR-160 | — (chưa có ca riêng) |
+| SRS-387 | Bỏ kiểm tra máy móc trước mọi commit nhỏ, chuyển sang kiểm tra khoanh vùng (Smart Scoping) tránh tràn bộ nhớ token | — | — (chưa có ca riêng) |
+| SRS-388 | Tích hợp công cụ tính thuế phí, trả góp ngân hàng, vá hứng Lead SĐT và phân loại bán nhanh cho Chatbot Zalo | FR-105 | — (chưa có ca riêng) |
+| SRS-389 | Nâng cấp kiến trúc Function Calling chuẩn nguyên tử theo mô hình MOSO: bổ sung so sánh căn, tính thuế phí, tính trả góp, lưu SĐT | FR-99 | `test_agent_mua_tools_389.py` |
+| SRS-390 | Hoàn thiện bộ công cụ Function Calling cho luồng Ký Gửi (Agent Bán) theo chuẩn MOSO: Định giá sơ bộ AVM, Tra cứu pháp lý & sổ hồng, Tính phí môi giới minh bạch | FR-99, FR-177 | `test_agent_ban_tools_390.py` |
+| SRS-391 | Tái cấu trúc toàn diện Prompt và Quy trình Ký gửi: Thu gọn System Prompt <1.500 tokens, tích hợp Customer Insight, chuyển luật sang Công cụ nguyên tử, Cắt bỏ Negative Constraints, Fast-Draft 50 điểm và CUM_TOI_DA = 2 | FR-177 | `test_toi_uu_ky_gui_391.py` |
+| SRS-392 | Thống nhất đơn model Sonnet cho toàn bộ chu trình, loại bỏ gọi chéo Haiku bóc tách và hoàn thiện 1 vòng chuẩn MOSO | — | `test_cau_hinh_nhu_production_316.py` |
+| SRS-393 | Tinh gọn bộ câu hỏi rẽ nhánh theo loại hình BĐS: ưu tiên câu hỏi trực quan dễ thấy, đưa câu hỏi kỹ thuật sâu (tải trọng sàn, kVA trạm biến áp, chỉ tiêu xây dựng) xuống nhóm thứ cấp | FR-186 | `test_branching.py`, `test_schema.py`, `test_toi_uu_ky_gui_391.py`, `test_toi_uu_loai_hinh_393.py` |
+| SRS-394 | Tích hợp 5 Tinh hoa PropTech của MOSO vào AOND Chatbot Zalo: Phong thủy Bát Trạch, So sánh đối đầu dự án, Thẩm định quy hoạch lộ giới, Gợi ý đàm phán giá và Tiêu chí an cư gia đình | FR-196 | `test_tinh_hoa_moso_394.py` |
+| SRS-395 | Tối ưu hóa các luồng hội thoại AOND theo trải nghiệm PropTech của MOSO: Gợi ý dải giá khi thiếu tiêu chí, No-Results fallback thông minh và Bảo mật cam kết khi xin ảnh | — | `test_toi_uu_luong_395.py` |
+| SRS-396 | Hợp nhất toàn bộ dữ liệu từ các nguồn (Mogi, Rever, MOSO) thành 1 chuẩn dữ liệu AOND duy nhất; xóa nhãn nguồn và làm sạch specs | FR-195, FR-196 | `test_hop_nhat_du_an_396.py`, `test_nguon_phu_rever.py` |
+| SRS-397 | Soát và sửa đợt MOSO 06/11 (SRS-388…396): số sai, cam kết không có thật, luật bản nháp bị bỏ | FR-177 | — (chưa có ca riêng) |
+| SRS-398 | Cổng quyền hàm admin dùng `current_user` — mọi tài khoản đăng nhập web gọi được hàm xoá hết | — | `test_cong_admin_khong_dung_current_user.py` |
+| SRS-399 | Máy 146: user Windows thường sửa được mã chạy dưới SYSTEM và đọc được `.env` | — | — (chưa có ca riêng) |
+| SRS-400 | Lõi và bridge không xác thực — tiến trình nào trên máy 146 cũng đọc rổ hàng, xoá khách, nhắn Zalo từ số clone | — | `test_khoa_noi_bo.py` |
+| SRS-401 | Dọn mã: xoá dump MOSO + script sinh migration một lần, lưu trữ script nạp nguồn ngoài và tàn dư VPS; công tắc lõi sang `bot/cau-hinh-loi.env` | — | `test_cham_nhu_khach.py` |
+| SRS-402 | Còi máy 146: lõi chết, bridge số tư vấn chết, Zalo văng phiên chờ quét QR đều không ai báo | — | `test_coi_may_146_402.py` |
+| SRS-403 | [deprecated — hoàn tác bởi SRS-5.1zzzzzzz404] Fast-Path bỏ qua bóc tách tin chào hỏi và đưa LEAN_SYSTEM_PROMPT chạy thật | FR-177 | — (chưa có ca riêng) |
+| SRS-404 | Hoàn tác SRS-403 (lối tắt tin chào + prompt gọn chạy thật): 7 bài canh luật đỏ trên bản đã lên máy 146 | FR-177 | — (chưa có ca riêng) |
+| SRS-405 | 14 script bắn thử production chạy từ máy cá nhân qua ssh vào máy 146 (thay VPS); gỡ các ô bắn thử khỏi Actions | — | — (chưa có ca riêng) |
+| SRS-406 | Tin đầu chưa rõ vai: một lượt AI ngắn đọc tin, chưa có gì để ghi thì bỏ form lập thao tác đầy đủ (~56 nghìn chữ) | FR-157 | `test_doc_nhanh_406.py` |
+| SRS-407 | Mỗi lượt bot chỉ hỏi MỘT ý (CUM_TOI_DA 2 → 1) | FR-177 | `test_toi_uu_ky_gui_391.py` |
+| SRS-408 | Lượt hỏi ô người bán dùng LEAN_SYSTEM_PROMPT | FR-177 | — (chưa có ca riêng) |
+| SRS-409 | AI bóc SỐ kích thước, code chỉ tính diện tích — bỏ regex dò chuỗi | FR-172, FR-208 | `test_cho_thue_nguyen_can.py`, `test_hai_dien_tich.py` |
+| SRS-410 | Prompt ngắn có lại giọng nhân vật, từ điển tiếng lóng đầy đủ, luật cố định, tin hệ thống | FR-178 | — (chưa có ca riêng) |
+| SRS-411 | Thiếu phường mà chưa có số nhà: hỏi số nhà MỘT lần rồi mới báo admin | FR-174 | `test_phuong_cu_chia.py`, `test_phuong_he_thong_tu_tra_359.py` |
+| SRS-412 | Gộp dự án trùng tên trong kho `projects` | FR-195 | — (chưa có ca riêng) |
+| SRS-413 | Rổ hàng Ny'ah Phú Định 50 căn có giá + khôi phục 243 tin thử | FR-175 | — (chưa có ca riêng) |
+| SRS-414 | Prompt lượt hỏi phía bán viết lại theo nguyên tắc, bỏ luật vá | FR-177 | `test_toi_uu_ky_gui_391.py` |
+| SRS-415 | Prompt gọn: hiểu nỗi lo chủ nhà, hỏi như trò chuyện | FR-177 | — (chưa có ca riêng) |
+| SRS-416 | Bảng tài chính phía mua ra công cụ | — | `test_sdt_hen_xem_tai_chinh.py` |
+| SRS-417 | Lượt đọc ý biết số Zalo khách đang nhắn; lưu SĐT nói đúng lịch | FR-157 | `test_hoi_quy_02_11_340.py` |
+| SRS-418 | Cổng bản nháp theo bản anh Luận | FR-177 | — (chưa có ca riêng) |
+| SRS-419 | Tin debug "$$$$$" theo khuôn anh Luận | — | `test_dong_trich_xuat_mot_cau_hoi.py` |
+| SRS-420 | Xin thêm ảnh sau khi đăng tin | FR-144, FR-185 | `test_hoi_sau_dang.py` |
+| SRS-421 | Xin ảnh theo nhánh, hỏi khéo; chủ im 10 phút sau đăng thì nhắc xin ảnh | FR-144, FR-185 | `test_hoi_sau_dang.py` |
+| SRS-422 | Image LQC (Listing Quality Controller) — QC ảnh tin rao, vòng nền trên máy 146 | FR-185, FR-165 | — (chưa có ca riêng) |
+| SRS-423 | Điểm tin tính cả ảnh, đọc ảnh theo cuộc chat, khung giờ 8–21 | FR-183, FR-185 | — (chưa có ca riêng) |
+| SRS-424 | Phần ảnh của điểm tin dùng điểm Image LQC — nhẹ tay, hỏi lại thay vì trừ điểm | FR-183, FR-185 | — (chưa có ca riêng) |
+| SRS-425 | LQC mảng Ảnh: nhãn từng ảnh, ảnh đẹp nhất làm bìa, xin ẩn ảnh xấu | FR-185, FR-165 | — (chưa có ca riêng) |
+| SRS-426 | LQC mảng Pháp lý: hỏi rõ câu mơ hồ, đối chiếu sổ với tin, hỏi tiến độ giấy tờ | FR-144, FR-185 | — (chưa có ca riêng) |
+| SRS-427 | LQC mảng Khai thác lợi thế: hỏi buôn bán gì hợp, chỗ đậu xe, nêu tiện ích thật | FR-144 | — (chưa có ca riêng) |
+| SRS-428 | LQC mảng So sánh cạnh tranh: căn cùng loại đang rao gần, đơn giá từ kho, không bịa giao dịch | FR-99, FR-144 | — (chưa có ca riêng) |
+| SRS-429 | Bot phía bán nhận xét NHẸ giá chủ so với căn đang rao gần | FR-99 | — (chưa có ca riêng) |
+| SRS-430 | Web theo theme King + trang chủ điện thoại là feed vuốt dọc kiểu TikTok | — | — (chưa có ca riêng) |
+| SRS-431 | Sửa 3 mâu thuẫn SRS: gỡ lưới nhận xét giá lời chat · tin thử tính như tin thật · một nguồn cho đường vào | FR-99, FR-172 | `test_binh_luan_gia_kich_thuoc.py`, `test_khach_ao_02_11_342.py`, `tests/kich_ban/cham.py` (thước đo, không chặn) |
+| SRS-432 | LQC: hỏi sau đăng chạy nền, trần câu hỏi sau đăng, cột pháp lý theo AI, đọc sổ ở mọi đường gửi ảnh | FR-144, FR-185 | `test_hoi_sau_dang.py` |
+| SRS-433 | 100 tag SEO theo quận / huyện Sài Gòn + Long An | FR-12, FR-17 | TS-SEO-01 (`bun run build`: `/[tag]` đủ 100) |
 
 ## 10.8 Nghiệm thu theo từng tài liệu (04/09/2026)
 

@@ -58,7 +58,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-07, FR-08 | UF-01 | WF-02 | SRS-4.5 | AC-01, TS-WEB2-W03 |
 | FR-09 | UF-01 | WF-02 | SRS-4.5 | AC-12, TS-WEB2-S01 |
 | FR-10, FR-11 | UF-02 | WF-03 | SRS-3.1 | AC-01, TS-WEB2-W05 |
-| FR-12 | UF-01 | WF-04 | — | TS-SEO-01 |
+| FR-12 | UF-01 | WF-04 | SRS-5.1zzzzzzz433 | TS-SEO-01 |
 | FR-13, FR-14 | UF-03 | WF-01, WF-02 | SRS-4.7 | AC-01 |
 | FR-15 | UF-02 | WF-03, WF-04 | — | — |
 | FR-16 | UF-01 | — | SRS-3.3 | — |
@@ -393,6 +393,145 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | — | — | — | SRS-5.1zzzzzzz242 | — |
 | — | — | — | SRS-5.1zzzzzzz243 | — |
 | — | — | — | SRS-5.1zzzzzzz244 | — |
+| FR-176, FR-178 | — | — | SRS-5.1zzzzzzz207 | — |
+| FR-177, FR-178 | — | — | SRS-5.1zzzzzzz208 | — |
+| FR-178 | — | — | SRS-5.1zzzzzzz245 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz246 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz247 | — |
+| FR-176, FR-178 | — | — | SRS-5.1zzzzzzz248 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz251 | — |
+| — | — | — | SRS-5.1zzzzzzz297 | — |
+| FR-176 | — | — | SRS-5.1zzzzzzz298 | — |
+| FR-194 | — | — | SRS-5.1zzzzzzz299 | — |
+| — | — | — | SRS-5.1zzzzzzz300 | — |
+| FR-178 | — | — | SRS-5.1zzzzzzz301 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz302 | — |
+| FR-177, FR-172 | — | — | SRS-5.1zzzzzzz303 | — |
+| — | — | — | SRS-5.1zzzzzzz304 | — |
+| — | — | — | SRS-5.1zzzzzzz305 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz306 | — |
+| FR-177, FR-214 | — | — | SRS-5.1zzzzzzz307 | — |
+| FR-177, FR-214, FR-194 | — | — | SRS-5.1zzzzzzz308 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz309 | — |
+| FR-208, FR-214 | — | — | SRS-5.1zzzzzzz310 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz311 | — |
+| FR-172 | — | — | SRS-5.1zzzzzzz312 | — |
+| — | — | — | SRS-5.1zzzzzzz313 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz314 | — |
+| FR-140, FR-160 | — | — | SRS-5.1zzzzzzz315 | TS-CHAM-01 |
+| — | — | — | SRS-5.1zzzzzzz316 | — |
+| FR-105 | — | — | SRS-5.1zzzzzzz317 | — |
+| FR-160 | — | — | SRS-5.1zzzzzzz318 | — |
+| — | — | — | SRS-5.1zzzzzzz319 | — |
+| FR-208, FR-172 | — | — | SRS-5.1zzzzzzz320 | — |
+| FR-140 | — | — | SRS-5.1zzzzzzz321 | — |
+| — | — | — | SRS-5.1zzzzzzz322 | — |
+| — | — | — | SRS-5.1zzzzzzz323 | — |
+| FR-195, FR-196 | — | — | SRS-5.1zzzzzzz324 | — |
+| FR-99, FR-196 | — | — | SRS-5.1zzzzzzz325 | — |
+| FR-165 | — | — | SRS-5.1zzzzzzz326 | — |
+| FR-175 | — | — | SRS-5.1zzzzzzz327 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz328 | — |
+| FR-140 | — | — | SRS-5.1zzzzzzz330 | — |
+| FR-157 | — | — | SRS-5.1zzzzzzz331 | — |
+| — | — | — | SRS-5.1zzzzzzz332 | — |
+| FR-172 | — | — | SRS-5.1zzzzzzz333 | TS-WEB2-S09 |
+| FR-174 | — | — | SRS-5.1zzzzzzz334 | — |
+| — | — | — | SRS-5.1zzzzzzz335 | — |
+| FR-177, FR-178 | — | — | SRS-5.1zzzzzzz336 | — |
+| FR-140, FR-173, FR-174 | — | — | SRS-5.1zzzzzzz338 | TS-SEC3-04 |
+| FR-157 | — | — | SRS-5.1zzzzzzz340 | — |
+| — | — | — | SRS-5.1zzzzzzz341 | — |
+| — | — | — | SRS-5.1zzzzzzz342 | — |
+| FR-184, FR-214 | — | — | SRS-5.1zzzzzzz343 | — |
+| FR-178 | — | — | SRS-5.1zzzzzzz344 | — |
+| FR-183 | — | — | SRS-5.1zzzzzzz345 | — |
+| FR-183 | — | — | SRS-5.1zzzzzzz346 | — |
+| FR-208 | — | — | SRS-5.1zzzzzzz347 | — |
+| — | — | — | SRS-5.1zzzzzzz348 | — |
+| FR-155, FR-183 | — | — | SRS-5.1zzzzzzz349 | — |
+| FR-176 | — | — | SRS-5.1zzzzzzz350 | — |
+| — | — | — | SRS-5.1zzzzzzz351 | — |
+| FR-172 | — | — | SRS-5.1zzzzzzz352 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz353 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz354 | — |
+| FR-160 | — | — | SRS-5.1zzzzzzz355 | — |
+| FR-178 | — | — | SRS-5.1zzzzzzz356 | — |
+| FR-133 | — | — | SRS-5.1zzzzzzz357 | — |
+| FR-133 | — | — | SRS-5.1zzzzzzz358 | — |
+| FR-174 | — | — | SRS-5.1zzzzzzz359 | — |
+| FR-174 | — | — | SRS-5.1zzzzzzz360 | — |
+| FR-155 | — | — | SRS-5.1zzzzzzz361 | — |
+| FR-212 | — | — | SRS-5.1zzzzzzz362 | — |
+| FR-172 | — | — | SRS-5.1zzzzzzz363 | — |
+| FR-131 | — | — | SRS-5.1zzzzzzz364 | — |
+| FR-162 | — | — | SRS-5.1zzzzzzz365 | — |
+| FR-212 | — | — | SRS-5.1zzzzzzz366 | — |
+| FR-174 | — | — | SRS-5.1zzzzzzz367 | — |
+| — | — | — | SRS-5.1zzzzzzz368 | — |
+| — | — | — | SRS-5.1zzzzzzz370 | — |
+| FR-177, FR-208 | — | — | SRS-5.1zzzzzzz371 | — |
+| — | — | — | SRS-5.1zzzzzzz372 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz373 | — |
+| FR-177, FR-175 | — | — | SRS-5.1zzzzzzz374 | — |
+| FR-178 | — | — | SRS-5.1zzzzzzz375 | — |
+| FR-178, FR-160 | — | — | SRS-5.1zzzzzzz376 | — |
+| — | — | — | SRS-5.1zzzzzzz377 | — |
+| — | — | — | SRS-5.1zzzzzzz379 | — |
+| FR-208 | — | — | SRS-5.1zzzzzzz380 | — |
+| FR-178 | — | — | SRS-5.1zzzzzzz381 | — |
+| FR-208 | — | — | SRS-5.1zzzzzzz382 | — |
+| — | — | — | SRS-5.1zzzzzzz383 | — |
+| — | — | — | SRS-5.1zzzzzzz384 | — |
+| — | — | — | SRS-5.1zzzzzzz385 | — |
+| FR-177, FR-160 | — | — | SRS-5.1zzzzzzz386 | — |
+| — | — | — | SRS-5.1zzzzzzz387 | — |
+| FR-105 | — | — | SRS-5.1zzzzzzz388 | — |
+| FR-99 | — | — | SRS-5.1zzzzzzz389 | — |
+| FR-99, FR-177 | — | — | SRS-5.1zzzzzzz390 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz391 | — |
+| — | — | — | SRS-5.1zzzzzzz392 | — |
+| FR-186 | — | — | SRS-5.1zzzzzzz393 | — |
+| FR-196 | — | — | SRS-5.1zzzzzzz394 | — |
+| — | — | — | SRS-5.1zzzzzzz395 | — |
+| FR-195, FR-196 | — | — | SRS-5.1zzzzzzz396 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz397 | — |
+| — | — | — | SRS-5.1zzzzzzz398 | TS-SEC3 |
+| — | — | — | SRS-5.1zzzzzzz399 | — |
+| — | — | — | SRS-5.1zzzzzzz400 | — |
+| — | — | — | SRS-5.1zzzzzzz401 | — |
+| — | — | — | SRS-5.1zzzzzzz402 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz403 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz404 | — |
+| — | — | — | SRS-5.1zzzzzzz405 | — |
+| FR-157 | — | — | SRS-5.1zzzzzzz406 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz407 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz408 | — |
+| FR-172, FR-208 | — | — | SRS-5.1zzzzzzz409 | — |
+| FR-178 | — | — | SRS-5.1zzzzzzz410 | — |
+| FR-174 | — | — | SRS-5.1zzzzzzz411 | — |
+| FR-195 | — | — | SRS-5.1zzzzzzz412 | — |
+| FR-175 | — | — | SRS-5.1zzzzzzz413 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz414 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz415 | — |
+| — | — | — | SRS-5.1zzzzzzz416 | — |
+| FR-157 | — | — | SRS-5.1zzzzzzz417 | — |
+| FR-177 | — | — | SRS-5.1zzzzzzz418 | — |
+| — | — | — | SRS-5.1zzzzzzz419 | — |
+| FR-144, FR-185 | — | — | SRS-5.1zzzzzzz420 | — |
+| FR-144, FR-185 | — | — | SRS-5.1zzzzzzz421 | — |
+| FR-185, FR-165 | — | — | SRS-5.1zzzzzzz422 | — |
+| FR-183, FR-185 | — | — | SRS-5.1zzzzzzz423 | — |
+| FR-183, FR-185 | — | — | SRS-5.1zzzzzzz424 | — |
+| FR-185, FR-165 | — | — | SRS-5.1zzzzzzz425 | — |
+| FR-144, FR-185 | — | — | SRS-5.1zzzzzzz426 | — |
+| FR-144 | — | — | SRS-5.1zzzzzzz427 | — |
+| FR-99, FR-144 | — | — | SRS-5.1zzzzzzz428 | — |
+| FR-99 | — | — | SRS-5.1zzzzzzz429 | — |
+| — | — | — | SRS-5.1zzzzzzz430 | — |
+| FR-99, FR-172 | — | — | SRS-5.1zzzzzzz431 | — |
+| FR-144, FR-185 | — | — | SRS-5.1zzzzzzz432 | — |
+| FR-12, FR-17 | — | — | SRS-5.1zzzzzzz433 | — |
 
 ## 8.4 Rủi ro → biện pháp
 
@@ -418,7 +557,7 @@ Chỉ liệt NFR **đã có hiện thực trong code**; NFR còn là mục tiêu
 | NFR-16 (free-tier trước) | Supabase Free + Vercel Hobby; quyết định giữ nguyên 27/08 (OPEN-25) | **Không còn sao lưu** (chủ dự án bỏ 11/09/2026, OPEN-25). Ràng buộc cũ "chạy `sao-luu.mjs` định kỳ" đã gỡ cùng `phuc-hoi.mjs`, `soat-phuc-hoi.mjs`, `xuat-onedrive.mjs`, TS-SAOLUU, TS-PHUCHOI, CI job `saoluu`/`phuchoi` và `docs/12`. Supabase gói Free không tự sao lưu — mất dữ liệu là không lấy lại được. Còn lại `bot/supabase/schema.sql` (chỉ DDL, sinh từ `xuat_schema()`) để dựng lại một DB rỗng |
 | NFR-17 (trang tin phải trong cache) | `generateStaticParams()` ở `app/nha-dat/[code]/page.tsx`; `unstable_cache` bọc truy vấn trong `components/ListingBrowse.tsx` và `lib/photos.ts`; SRS-3.13 | TS-CACHE-01…05 |
 | NFR-18 (xanh phải là xanh thật) | `bot_health_tick()` quét `net._http_response` → `bot_errors`; `log_loi()` + `ghiLoi()` cho lỗi trả-200; SRS-3.12 | TS-HEALTH-01…06, TS-LOG-01…06 |
-| NFR-09 (SEO) | `app/sitemap.ts`, `app/robots.ts`, `metadataBase`/canonical/OpenGraph ở `app/layout.tsx` + trang tin + `app/[tag]`, JSON-LD `RealEstateListing` ở `app/nha-dat/[code]/page.tsx`, `lib/tags.ts` (64 tag — chờ TOP-100 OPEN-06) | TS-SEO-01…06 |
+| NFR-09 (SEO) | `app/sitemap.ts`, `app/robots.ts`, `metadataBase`/canonical/OpenGraph ở `app/layout.tsx` + trang tin + `app/[tag]`, JSON-LD `RealEstateListing` ở `app/nha-dat/[code]/page.tsx`, `lib/tags.ts` (100 tag theo quận / huyện Sài Gòn + Long An, SRS-5.1zzzzzzz433; TOP-100 keyword gốc OPEN-06 vẫn chưa có) | TS-SEO-01…06 |
 
 ---
 

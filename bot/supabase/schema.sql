@@ -317,7 +317,8 @@ create table if not exists public.listing_media (
   nguon text not null default 'kho'::text,
   mo_ta text,
   ocr jsonb,
-  variants jsonb not null default '{}'::jsonb
+  variants jsonb not null default '{}'::jsonb,
+  an_khoi_web boolean not null default false
 );
 
 create table if not exists public.listing_noi_bo (
@@ -3634,15 +3635,55 @@ CREATE OR REPLACE FUNCTION public.listing_media_chon_bia(p_listing_id uuid)
 AS $function$
 declare v_id uuid;
 begin
-  if exists (select 1 from listing_media where listing_id = p_listing_id and is_cover) then
+  if coalesce(current_setting('aond.doi_bia', true), '') = '1' then
     return;
   end if;
+  if exists (select 1 from listing_media where listing_id = p_listing_id and is_cover and not an_khoi_web) then
+    return;
+  end if;
+  perform set_config('aond.doi_bia', '1', true);
+  update listing_media set is_cover = false where listing_id = p_listing_id and is_cover;
   select id into v_id from listing_media
-   where listing_id = p_listing_id and bucket = 'listing-public'
+   where listing_id = p_listing_id and bucket = 'listing-public' and not an_khoi_web
    order by sort_order, created_at, id limit 1;
   if v_id is not null then
     update listing_media set is_cover = true where id = v_id;
   end if;
+  perform set_config('aond.doi_bia', '', true);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.dat_anh_bia(p_listing_id uuid, p_storage_path text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare v_id uuid;
+begin
+  select id into v_id from listing_media
+   where listing_id = p_listing_id and storage_path = p_storage_path and bucket = 'listing-public' and not an_khoi_web;
+  if v_id is null then
+    return false;
+  end if;
+  perform set_config('aond.doi_bia', '1', true);
+  update listing_media set is_cover = false where listing_id = p_listing_id and is_cover and id <> v_id;
+  update listing_media set is_cover = true where id = v_id and not is_cover;
+  perform set_config('aond.doi_bia', '', true);
+  return true;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.an_anh_tin(p_listing_id uuid, p_storage_path text, p_an boolean DEFAULT true)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  update listing_media set an_khoi_web = p_an
+   where listing_id = p_listing_id and storage_path = p_storage_path and an_khoi_web is distinct from p_an;
+  return found;
 end $function$
 ;
 
@@ -6671,7 +6712,7 @@ create or replace view public.listing_photos_v with (security_invoker=true) as
     (((url_kho_anh() || '/'::text) || m.bucket) || '/'::text) || COALESCE(NULLIF(m.variants ->> '480'::text, ''::text), m.storage_path) AS url_480
    FROM listing_media m
      JOIN listings l ON l.id = m.listing_id
-  WHERE m.bucket = 'listing-public'::text AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text]));
+  WHERE m.bucket = 'listing-public'::text AND NOT m.an_khoi_web AND (l.status = ANY (ARRAY['dang_ban'::text, 'dang_quan_tam'::text, 'da_coc'::text, 'da_chot'::text]));
 
 create or replace view public.seller_ranks with (security_invoker=true) as
  SELECT s.id,
@@ -6803,7 +6844,7 @@ CREATE TRIGGER trg_route_info_request BEFORE INSERT ON public.info_requests FOR 
 drop trigger if exists trg_pe_interests on public.interests;
 CREATE TRIGGER trg_pe_interests AFTER INSERT ON public.interests FOR EACH ROW EXECUTE FUNCTION trg_property_event();
 drop trigger if exists trg_listing_media_bia on public.listing_media;
-CREATE TRIGGER trg_listing_media_bia AFTER INSERT OR DELETE OR UPDATE OF is_cover, bucket, sort_order ON public.listing_media FOR EACH ROW EXECUTE FUNCTION listing_media_giu_bia();
+CREATE TRIGGER trg_listing_media_bia AFTER INSERT OR DELETE OR UPDATE OF is_cover, bucket, sort_order, an_khoi_web ON public.listing_media FOR EACH ROW EXECUTE FUNCTION listing_media_giu_bia();
 drop trigger if exists trg_listing_media_don_file on public.listing_media;
 CREATE TRIGGER trg_listing_media_don_file AFTER DELETE OR UPDATE OF bucket, storage_path ON public.listing_media FOR EACH ROW EXECUTE FUNCTION listing_media_xep_hang_don();
 drop trigger if exists trg_pe_listing_views on public.listing_views;
@@ -7384,6 +7425,10 @@ grant execute on function public.listing_du_dang_tin(p_price_vnd bigint, p_area_
 grant execute on function public.listing_du_dang_tin(p_price_vnd bigint, p_area_m2 numeric, p_ward text) to service_role;
 revoke all on function public.listing_media_chon_bia(p_listing_id uuid) from public, anon, authenticated;
 grant execute on function public.listing_media_chon_bia(p_listing_id uuid) to service_role;
+revoke all on function public.dat_anh_bia(uuid, text) from public, anon, authenticated;
+grant execute on function public.dat_anh_bia(uuid, text) to service_role;
+revoke all on function public.an_anh_tin(uuid, text, boolean) from public, anon, authenticated;
+grant execute on function public.an_anh_tin(uuid, text, boolean) to service_role;
 revoke all on function public.listing_media_giu_bia() from public, anon, authenticated;
 grant execute on function public.listing_media_giu_bia() to service_role;
 revoke all on function public.listing_media_xep_hang_don() from public, anon, authenticated;
