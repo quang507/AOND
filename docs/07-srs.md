@@ -788,6 +788,18 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz441 · LQC: so sánh không bị bỏ qua khi tin mới chưa có toạ độ; câu đáp dài vào đúng ô bot vừa hỏi (12/11/2026)
+Chủ dự án 12/11 "Bắn thử luôn" — bắn chuỗi sau đăng trên production (`thu-lqc-1623`: nhà mặt tiền Phan Văn Trị, sổ hồng riêng, đang cho thuê,
+chưa ảnh). Ảnh (xin góc mặt tiền, xin ảnh sổ "chỉ để kiểm, không đăng"), pháp lý (đứng tên, thế chấp, quy hoạch), tiền thuê, đậu xe, thương
+lượng, lý do bán, thuế phí đều ra đúng thứ tự, mỗi lượt một câu, gọi "anh", giọng nói miệng. Hai lỗi:
+- **So sánh bị bỏ qua:** cụm so sánh tra căn gần (`so_sanh.can_gan`) ngay sau đăng — tin mới chưa có toạ độ (cron `geocode-tick` 10 phút /
+  lần), RPC trả `cua_chu` rỗng, `du_de_gui` sai, `_ss_tra` khoá cả ngày nên lượt đó và các lượt sau trong ngày đi thẳng sang cụm giá. Tra lại
+  sau khi có toạ độ: 3 căn cùng loại trong 3 km. Nay chỉ hẹn mai khi tin đã có toạ độ mà kho chưa đủ căn; chưa có toạ độ thì lượt sau tra lại.
+- **Câu đáp dài bị bỏ:** bot hỏi chỗ đậu xe, chủ đáp "trước nhà vỉa hè rộng, đậu được 3 4 xe máy, ô tô thì đậu tạm" — lưới SRS-5.1zzzzzzz218
+  (giá trị ô bằng nguyên cả tin khách ≥ 10 từ = AI chép câu) bỏ ô `cho_dau_xe`, mốc "đã hỏi" vẫn ghi nên không hỏi lại, mất dữ liệu. Nay ô
+  nằm trong câu bot vừa hỏi (`y_luot["_bot_vua_hoi"]`, AI đọc — cùng nguồn SRS-5.1zzzzzzz438) thì cả tin khách là câu đáp, lưới không áp.
+- Ghi nhận, chưa sửa: chủ không đáp câu thuế phí (đáp câu khác, rồi "ok") — bot hỏi lại thuế phí ba lượt liền.
+
 ### SRS-5.1zzzzzzz440 · Tin chủ động gọi đúng cách chat đang gọi chủ; lời khen xin ảnh giọng nói miệng (12/11/2026)
 Chủ dự án 12/11 (chat anh Luận): tin Image LQC 08:34 "Mặt tiền ngang 7m của anh/chị nhìn rất thích, anh/chị chụp giúp em…" — cả chat gọi "anh",
 tin nền đổi sang "anh/chị"; câu khen văn viết, "sửa văn phong kiểu mặt tiền vậy là ngon luôn anh".
@@ -915,20 +927,3 @@ Chủ dự án 12/11 "Làm tiếp 4–7" (4 lỗ hổng logic trong bản soát 
   đăng hỏi lần nữa (`sau:loai_giay`).
 - Docs: nhật ký giữ 10 mục mới nhất (432 → 423), mục 422 → 397 chuyển sang `07-srs-luu-tru.md`; khung giờ 8–20 → 8–21 (SRS-423) ở các
   mục còn ghi cũ; Image LQC đọc `listing_media` (SRS-425) thay vì quét thư mục; đặc tả LQC đánh dấu câu 1, 2 đã làm, câu 4 dùng mặc định.
-
-### SRS-5.1zzzzzzz431 · Sửa 3 mâu thuẫn SRS: gỡ lưới nhận xét giá lời chat · tin thử tính như tin thật · một nguồn cho đường vào (12/11/2026)
-Chủ dự án 12/11, sau bản soát mâu thuẫn SRS: "vậy xóa lưới chặn và bắt bot viết lại đi, Tin thử được coi là thật, sửa 3 mâu thuẫn trước đi".
-- **Gỡ lưới nhận xét giá ở lời CHAT** (thay phần lời chat của SRS-132, SRS-353 và đoạn "lưới nới" của SRS-429): bỏ `_BINH_LUAN_GIA`,
-  `_binh_luan_gia`, lọc thô `_LOC_THO_GIA` / `_can_doc_gia`, `_DOAN_THI_TRUONG`, prompt `SOAT_BINH_GIA_CHAT_SYSTEM` và cờ `_nhan_xet_gia`.
-  Lời chat không còn bị bắt viết lại vì nhắc giá. Luật nằm ở prompt: phía bán nhận xét nhẹ khi có khối NHẬN XÉT GIÁ do code chấm
-  (SRS-429), không có thì không tự đoán (`LEAN_SYSTEM_PROMPT` mục SỰ THẬT); phía mua giữ luật cấm trong prompt (`mua_co_dinh`,
-  `khoi_hoi_ve_mua`). **Giữ** soát BẢN TIN (SRS-336, điều phối 02/11): tin rao công khai vẫn không khen / chê giá. Bộ chấm kịch bản
-  (`tests/kich_ban/cham.py`) giữ regex riêng `_BINH_GIA_DO` làm thước đo, không chặn.
-- **Tin thử tính như tin thật** (thay mục "Tin thử loại trừ" của SRS-428): migration `20261112d` bỏ bộ lọc `source = 'seed_thu'` và tham số
-  `p_gom_thu` của `can_dang_rao_gan`; code bỏ `gom_thu` / `_la_id_thu` ở `so_sanh.can_gan`, cụm sau đăng, lượt hỏi giá, công cụ định giá.
-  Cùng cách web đang hiện tin cho người mua (SRS-413). Sau bản này tin thật quanh khu thấy 3 / 10 / 18 căn để so.
-- **Một nguồn cho đường vào:** chat đọc ô `_duong_vao` (AI đọc nghĩa), còn cột `listings.access_type` do `boc_thong_so` dò chữ — hai bên
-  lệch (56F988C9: `_duong_vao = mat_tien`, cột trống → so sánh "cùng lối vào" và câu hỏi lợi thế nói khác nhau). Nay
-  `supabase_store.loi_vao_tu_o` ghi cột theo `_duong_vao`; bộ đọc chữ chỉ góp độ chi tiết AI không phân (hẻm xe tải / xe máy) khi cùng phía
-  mặt tiền / hẻm; AI chưa rõ thì giữ cột bộ đọc chữ. Migration chép bù cho tin bot đã ghi (1 tin: 56F988C9 → mat_tien). Trigger
-  `listings_boc_thong_so` vốn bỏ qua tin có `_thong_so_ai`, nên không ghi đè.

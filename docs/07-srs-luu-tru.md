@@ -73,6 +73,23 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz431 · Sửa 3 mâu thuẫn SRS: gỡ lưới nhận xét giá lời chat · tin thử tính như tin thật · một nguồn cho đường vào (12/11/2026)
+Chủ dự án 12/11, sau bản soát mâu thuẫn SRS: "vậy xóa lưới chặn và bắt bot viết lại đi, Tin thử được coi là thật, sửa 3 mâu thuẫn trước đi".
+- **Gỡ lưới nhận xét giá ở lời CHAT** (thay phần lời chat của SRS-132, SRS-353 và đoạn "lưới nới" của SRS-429): bỏ `_BINH_LUAN_GIA`,
+  `_binh_luan_gia`, lọc thô `_LOC_THO_GIA` / `_can_doc_gia`, `_DOAN_THI_TRUONG`, prompt `SOAT_BINH_GIA_CHAT_SYSTEM` và cờ `_nhan_xet_gia`.
+  Lời chat không còn bị bắt viết lại vì nhắc giá. Luật nằm ở prompt: phía bán nhận xét nhẹ khi có khối NHẬN XÉT GIÁ do code chấm
+  (SRS-429), không có thì không tự đoán (`LEAN_SYSTEM_PROMPT` mục SỰ THẬT); phía mua giữ luật cấm trong prompt (`mua_co_dinh`,
+  `khoi_hoi_ve_mua`). **Giữ** soát BẢN TIN (SRS-336, điều phối 02/11): tin rao công khai vẫn không khen / chê giá. Bộ chấm kịch bản
+  (`tests/kich_ban/cham.py`) giữ regex riêng `_BINH_GIA_DO` làm thước đo, không chặn.
+- **Tin thử tính như tin thật** (thay mục "Tin thử loại trừ" của SRS-428): migration `20261112d` bỏ bộ lọc `source = 'seed_thu'` và tham số
+  `p_gom_thu` của `can_dang_rao_gan`; code bỏ `gom_thu` / `_la_id_thu` ở `so_sanh.can_gan`, cụm sau đăng, lượt hỏi giá, công cụ định giá.
+  Cùng cách web đang hiện tin cho người mua (SRS-413). Sau bản này tin thật quanh khu thấy 3 / 10 / 18 căn để so.
+- **Một nguồn cho đường vào:** chat đọc ô `_duong_vao` (AI đọc nghĩa), còn cột `listings.access_type` do `boc_thong_so` dò chữ — hai bên
+  lệch (56F988C9: `_duong_vao = mat_tien`, cột trống → so sánh "cùng lối vào" và câu hỏi lợi thế nói khác nhau). Nay
+  `supabase_store.loi_vao_tu_o` ghi cột theo `_duong_vao`; bộ đọc chữ chỉ góp độ chi tiết AI không phân (hẻm xe tải / xe máy) khi cùng phía
+  mặt tiền / hẻm; AI chưa rõ thì giữ cột bộ đọc chữ. Migration chép bù cho tin bot đã ghi (1 tin: 56F988C9 → mat_tien). Trigger
+  `listings_boc_thong_so` vốn bỏ qua tin có `_thong_so_ai`, nên không ghi đè.
+
 ### SRS-5.1zzzzzzz430 · Web theo theme King + trang chủ điện thoại là feed vuốt dọc kiểu TikTok (12/11/2026)
 Chủ dự án 12/11: "lấy king theme kia để áp vào web, muốn lướt trang web kiểu cuộn cuộn như tiktok"; chọn "Mở và chép file theme vào
 web" và "Thay trang chủ trên điện thoại".

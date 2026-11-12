@@ -557,14 +557,16 @@ def _tu(s: str | None) -> set[str]:
 GIA_TRI_NGUYEN_CAU_TU = 10   # giá trị ô dài từng này từ mà bằng ĐÚNG cả tin khách = AI chép nguyên câu, không trích cụm
 
 
-def _gia_tri_la_cau(k: str, v: str, tin_khach: str) -> str | None:
+def _gia_tri_la_cau(k: str, v: str, tin_khach: str, dap_cau_hoi: bool = False) -> str | None:
     """Giá trị ô là CÂU chứ không phải dữ liệu (SRS-5.1zzzzzzz218, chat anh Luận 26/10): câu hỏi ("?") hay nguyên cả tin khách dài (câu nhờ
-    bot làm việc, câu kể lan man) bị chép vào ô. Chỉ so HÌNH THỨC — không đọc ý; ô ghép địa chỉ (`_O_GHEP`) được dài. Trả lý do, hoặc None."""
+    bot làm việc, câu kể lan man) bị chép vào ô. Chỉ so HÌNH THỨC — không đọc ý; ô ghép địa chỉ (`_O_GHEP`) được dài. Trả lý do, hoặc None.
+    `dap_cau_hoi`: ô nằm trong câu bot vừa hỏi (`y_luot["_bot_vua_hoi"]`, AI đọc) — cả tin khách là câu ĐÁP, chính nó là dữ liệu ô
+    (SRS-5.1zzzzzzz441, bắn thử LQC 12/11: "trước nhà vỉa hè rộng, đậu được 3 4 xe máy, ô tô thì đậu tạm" đáp câu chỗ đậu xe bị bỏ)."""
     v = (v or "").strip()
     if v.endswith("?"):
         return "giá trị ô là câu hỏi, không phải dữ liệu căn"
     gon = lambda x: re.sub(r"\s+", " ", re.sub(r"[^\w\s/]", " ", bo_dau(x or "").lower())).strip()
-    if k not in _O_GHEP and len(v.split()) >= GIA_TRI_NGUYEN_CAU_TU and gon(v) == gon(tin_khach):
+    if k not in _O_GHEP and not dap_cau_hoi and len(v.split()) >= GIA_TRI_NGUYEN_CAU_TU and gon(v) == gon(tin_khach):
         return "giá trị ô là nguyên cả câu khách nhắn — AI phải trích cụm dữ liệu, câu nhờ / dặn không phải ô tin"
     return None
 
@@ -4332,7 +4334,10 @@ class Engine:
             if li.prop.fields.get("_ss_tra") != hom_nay:
                 kq_ss = so_sanh.can_gan(self._convstore, li.listing_id)
                 if not so_sanh.du_de_gui(kq_ss):
-                    li.prop.fields["_ss_tra"] = hom_nay
+                    # SRS-5.1zzzzzzz441: chỉ hẹn mai khi tin ĐÃ có toạ độ (`cua_chu`) mà kho chưa đủ căn gần. Tin mới đăng chưa có toạ độ
+                    # (cron `geocode-tick` 10 phút / lần) → lượt sau tra lại; bắn thử 12/11 bản trước khoá cả ngày nên bỏ qua cụm so sánh.
+                    if kq_ss.get("cua_chu"):
+                        li.prop.fields["_ss_tra"] = hom_nay
                     kq_ss = None
             if kq_ss is None:
                 cum = li.prop.cum_sau_dang(da_hoi | {"sau:so_sanh"}, so_anh=so_anh, anh_du=anh_du)
@@ -5964,7 +5969,8 @@ class Engine:
         if any(li.prop.fields.get(k) == v for li in conv.listings):
             return v
         loi = conv.loi_khach_luot
-        hinh_thuc = _gia_tri_la_cau(k, v, next((t.content for t in reversed(conv.history) if t.role == "user"), ""))
+        hinh_thuc = _gia_tri_la_cau(k, v, next((t.content for t in reversed(conv.history) if t.role == "user"), ""),
+                                    k in (conv.y_luot.get("_bot_vua_hoi") or ()))
         if hinh_thuc:   # SRS-5.1zzzzzzz218: "Em cho dùm anh 2-3 cái hình tượng trong bản tin đi" từng thành ô hinh_anh
             log.warning("Bỏ ô %s: %s", k, hinh_thuc)
             conv.bo_luot.append((k, v, bang_chung.get(k) if isinstance(bang_chung.get(k), str) else None, hinh_thuc))

@@ -771,6 +771,7 @@ khi đẩy — bảng là danh sách để chạy lại khi cần. SRS-1 … 244
 | SRS-435 | Loại giấy tờ một nguồn (9 loại, cột theo mã AI đọc, câu hỏi theo sau theo loại giấy); tra xã không nhầm tên trùng TP.HCM | FR-144, FR-185 | `test_loai_phap_ly_435.py` |
 | SRS-438 | Pháp lý ghi được và lấy lại được: câu đáp ngắn vào đúng ô, admin thấy mọi ô riêng (`_nhan`), bot phía mua đọc pháp lý công khai | FR-144, FR-185 | `test_phap_ly_ghi_doc_438.py` |
 | SRS-440 | Gợi ý xưng hô theo hồ sơ Zalo giữ qua khởi động lại — tin chủ động gọi đúng cách chat đang gọi | FR-185, FR-165 | `test_xung_ho_goi_y_440.py` |
+| SRS-441 | LQC: so sánh tra lại khi tin chưa có toạ độ; câu đáp dài vào đúng ô bot vừa hỏi | FR-185, FR-144 | `test_lqc_441.py` |
 
 ## 10.8 Nghiệm thu theo từng tài liệu (04/09/2026)
 
