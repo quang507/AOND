@@ -815,6 +815,14 @@ tin nền đổi sang "anh/chị"; câu khen văn viết, "sửa văn phong ki�
   là ngon luôn."), rồi một câu xin góc; trước ép "đúng MỘT câu" nên lời khen, lời xin và lợi ích dồn thành một câu dài văn viết. ≈ +25 token.
 - Tin 08:34 còn xin "kèm biển số nhà" — đã chặn ở 3bcd3b3 (08:35, sau tin đó một phút).
 
+### SRS-5.1zzzzzzz444 · Bản đồ trang căn hiện được với tên phường mới (12/11/2026)
+Thấy lúc soát SRS-442, chủ dự án 12/11 "Sửa luôn". `WardMap` chỉ vẽ khi `ward` có trong `WARD_CENTROIDS` — bảng "Phường 1…15" Quận 5 cũ —
+nên tin ghi tên phường mới (Phú Định, Bình Thạnh, Tân Mỹ…, gần như cả kho) không có bản đồ trên trang căn.
+- `lib/tam-phuong-moi.ts`: 163 tâm phường / xã mới chép từ bảng `wards` (bảng không mở cho anon); đầu file có câu SQL để chép lại.
+- `lib/geo.ts` thêm `tamPhuong()` (phường mới trước, bảng cũ sau); `wardPoint` dùng chung nên ghim rơi về tâm phường ở các bản đồ khác
+  cũng nhận tên mới. Vẫn giữ nguyên tắc FR-104: chấm là tâm phường + lệch định trước theo mã tin, không phải vị trí căn nhà.
+- Phường mới rộng hơn nhiều → bản đồ lùi ra mức 14 (bảng cũ giữ 15).
+
 ### SRS-5.1zzzzzzz443 · Cẩm nang, trang "nhà gần địa danh", máy tính thuê hay mua, chân trang đúng của aond (12/11/2026)
 Chủ dự án 12/11 "lấy mấy cái này thì lấy lun" (ba thứ đáng lấy từ NhaDat-Radar). Lấy ý tưởng và khung, KHÔNG chép chữ: nhadatradar.com
 đang chạy, hai web cùng chủ đăng cùng một bài thì Google coi là trùng nội dung.
@@ -842,7 +850,7 @@ Chủ dự án 12/11 hỏi "bản đồ các kiểu lấy dc ko" (repo NhaDat-Ra
   một ngón cuộn được trang. Máy tính giữ nguyên; trang /ban-do chiếm cả màn hình nên không bật.
 - **Tải khi sắp hiện:** `MapView` chỉ nạp maplibre (~800 kB) khi khung cách màn hình 400px (IntersectionObserver). Khung bản đồ `hidden`
   trên điện thoại không bao giờ giao cắt → không tải luôn.
-- Thấy lúc soát, CHƯA sửa: bản đồ trang căn (`WardMap`) chỉ hiện khi `ward` có trong `WARD_CENTROIDS` — bảng này chỉ có "Phường 1…15" cũ,
+- Thấy lúc soát, đã sửa ở SRS-444: bản đồ trang căn (`WardMap`) chỉ hiện khi `ward` có trong `WARD_CENTROIDS` — bảng này chỉ có "Phường 1…15" cũ,
   nên với tên phường mới sau sáp nhập (gần như mọi tin) trang căn không có bản đồ.
 
 ### SRS-5.1zzzzzzz439 · Soát giao diện bằng skill impeccable (audit + polish) trang chủ, feed, trang tag, trang chi tiết căn (12/11/2026)

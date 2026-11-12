@@ -1,6 +1,8 @@
 // Toạ độ TÂM PHƯỜNG Quận 5 (xấp xỉ, địa giới cũ — INS-12) + jitter định trước
 // theo mã tin. Cố ý KHÔNG dùng toạ độ chính xác: buyer chỉ được thấy khu vực
 // mức phường cho tới khi hẹn xem nhà (FR-104). Bản đồ phải ghi rõ điều này.
+import { TAM_PHUONG_MOI } from "@/lib/tam-phuong-moi";
+
 export const WARD_CENTROIDS: Record<string, [number, number]> = {
   "Phường 1": [10.7592, 106.6825],
   "Phường 2": [10.7565, 106.6805],
@@ -31,9 +33,18 @@ export function hashSeed(seed: string): number {
   return h;
 }
 
+/** Tâm phường: tên phường MỚI sau sáp nhập 2025 (lib/tam-phuong-moi, từ bảng `wards`) trước, rồi "Phường 1…15" cũ.
+ *  SRS-5.1zzzzzzz444: trước chỉ có bảng cũ nên gần như mọi tin (ghi tên phường mới) không có bản đồ trên trang căn. */
+export function tamPhuong(ward: string | null | undefined): { c: [number, number]; moi: boolean } | null {
+  const w = ward?.trim();
+  if (!w) return null;
+  if (TAM_PHUONG_MOI[w]) return { c: TAM_PHUONG_MOI[w], moi: true };
+  return WARD_CENTROIDS[w] ? { c: WARD_CENTROIDS[w], moi: false } : null;
+}
+
 // Jitter ±~150m định trước theo mã tin — cùng tin luôn cùng chấm, không lộ số nhà
 export function wardPoint(ward: string | null, seed: string): [number, number] | null {
-  const c = ward ? WARD_CENTROIDS[ward] : null;
+  const c = tamPhuong(ward)?.c;
   if (!c) return null;
   const h = hashSeed(seed);
   const dx = ((h % 1000) / 1000 - 0.5) * 0.0028;
