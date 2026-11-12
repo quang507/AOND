@@ -1,6 +1,6 @@
 # LQC — Listing Quality Controller: bot hỏi gì, khi nào, đã chạy tới đâu
 
-Cập nhật 13/11/2026, đối chiếu code `main` @ 1fe9c89 và dữ liệu Supabase cùng ngày. Nguồn: đặc tả anh Luận (4 mảng, 22 câu mẫu).
+Cập nhật 13/11/2026 (lần 2), đối chiếu code `main` @ 4ebda18 và dữ liệu Supabase cùng ngày. Nguồn: đặc tả anh Luận (4 mảng, 22 câu mẫu).
 
 LQC là "người chăm tin" sau khi tin lên web. Nó xem tin còn thiếu gì để bán được, rồi hỏi chủ nhà **từng câu một, ngắn, khéo** — như một
 quản lý rảo qua các chat. Bot không đọc thuộc lòng 22 câu mẫu: mỗi lần nhắn, AI tự viết câu theo đúng việc cần hỏi và theo chuyện đang nói.
@@ -78,6 +78,7 @@ Câu tới chủ bằng hai đường: chủ đang nhắn thì bot đáp xong h�
 | 1.2 | Ảnh có nêu bật thế mạnh không: mặt tiền kinh doanh → ảnh dãy phố; pháp lý đủ → ảnh sổ | ✅ | Căn mặt tiền kinh doanh: QC coi "mặt tiền thấy trọn căn", "xung quanh" là góc thiếu quan trọng nhất. Ảnh sổ xin ở hàng Pháp lý (chỉ để kiểm, không đăng). SRS-425 · 426 |
 | 1.3 | "Tấm mặt tiền nắng đẹp quá, còn tấm nào nữa không?" | ✅ | QC chọn tấm đẹp nhất + lý do, khen rồi xin thêm cùng kiểu; tấm đẹp nhất thành **ảnh bìa**. SRS-425 |
 | 1.4 | "Hình này hơi xấu, em xoá nha anh?" | ✅ | QC đánh dấu ảnh mờ / tối / nghiêng / trùng → hỏi "em ẩn tấm này nha". **Chủ đồng ý mới ẩn**, không xoá file, muốn hiện lại lúc nào cũng được. SRS-425 |
+| 1.5 | *(thêm, học từ Moso)* Ảnh dính logo / số điện thoại của sàn khác | 🟡 | Vòng nền 5 phút một lượt: AI tìm chữ in đè (logo, web, số điện thoại), xoá, đóng dấu logo AOND góc dưới phải. Bản gốc giữ ở kho riêng. Ảnh giấy tờ để nguyên. Đã chạy trên máy 146 từ 13/11; vết xoá còn hơi nhoè ở ảnh nhỏ. SRS-454 |
 
 ### Số 2 — Pháp lý
 
@@ -103,18 +104,18 @@ Câu tới chủ bằng hai đường: chủ đang nhắn thì bot đáp xong h�
 | # | Câu mẫu | | Bot làm gì |
 |---|---|---|---|
 | 4.1 · 4.2 | "Em gửi mấy căn đang bán gần đó để anh đừng bán rẻ" · "Căn gần anh 150 tr/m² mà nhà cũ" | ✅ | Gửi chủ 2–3 căn cùng loại đang rao trong 3 km, kèm đơn giá / m² và link. Dưới 2 căn thì không gửi. SRS-428 |
-| 4.3 · 4.4 | "Tháng trước em có căn bán tới 12 tỷ" · "Em mới cọc hôm qua căn 7 tỷ" | 🟡 | Code đã đọc được căn đã cọc / chốt gần đó (180 ngày) — nhưng hiện **0 giao dịch** được ghi, nên bot **không nói** những câu này (nói là bịa). Admin chuyển tin sang "đã cọc / đã chốt" kèm giá thì bot tự dẫn được. SRS-428 |
+| 4.3 · 4.4 | "Tháng trước em có căn bán tới 12 tỷ" · "Em mới cọc hôm qua căn 7 tỷ" | 🟡 | Code đã đọc được căn đã cọc / chốt gần đó (180 ngày). Hiện **0 giao dịch** nên bot chưa nói câu này. Từ 13/11 **không cần admin nhập tay**: chủ báo "đã cọc" / "bán rồi" là bot tự hỏi **giá chốt** (một lần, chỉ để bên em nắm) và ghi vào giao dịch, cạnh giá rao. SRS-428 · 456 |
 | 4.5 | "Em đoán khu này 120 tr/m², anh rao 140 cũng hợp lý" | ✅ | Nhận xét **nhẹ** giá rao của chủ so với trung vị các căn **cùng lối vào** (mặt tiền với mặt tiền, hẻm với hẻm) đang rao gần, ±10 % là ngang. Cần ≥ 3 căn cùng lối vào, chưa đủ thì không nhận xét. Không đưa giá mới, không giục tăng / giảm. SRS-428 · 429 |
-| 4.6 | "Em có báo cáo giá khu vực, làm miễn phí cho anh" | ❌ | Chưa làm. Cần dữ liệu giao dịch thật (4.3) trước. |
+| 4.6 | "Em có báo cáo giá khu vực, làm miễn phí cho anh" | ✅ | Trang `nhadat.cc/bao-cao-gia/<mã tin>`: dải đơn giá / m² các căn cùng loại đang rao trong 3 km, theo mặt tiền / hẻm, vị trí giá của căn, căn gần nhất. **Tính từ giá rao** (chủ dự án 13/11: "tạm để test"), trang ghi rõ. Bot mời chủ xem kèm tin so sánh khi có ≥ 3 căn. SRS-455 |
 
 ---
 
 ## 5. Còn thiếu để LQC phát huy
 
 1. **Nhiều chủ nhà đăng qua Zalo hơn** — LQC chỉ chăm được tin có Zalo chủ nhà (hiện 2 / 244).
-2. **Ghi giao dịch thật** — admin chuyển tin "đã cọc / đã chốt" kèm giá thì mở được 4.3 · 4.4 và về sau 4.6.
+2. **Giao dịch thật đầu tiên** — bot đã tự hỏi giá chốt (SRS-456); có vài giao dịch thì bot dẫn được 4.3 · 4.4, và báo cáo 4.6 thêm được
+   phần giá chốt.
 3. **Che thông tin trên ảnh sổ** — nếu muốn bot được hứa "em xoá thông tin rồi mới gửi" (2.2).
-4. **Báo cáo giá khu vực** (4.6).
 
 ## 6. Quyết định đã chốt (chủ dự án 12/11)
 
