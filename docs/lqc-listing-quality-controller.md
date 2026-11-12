@@ -1,6 +1,6 @@
 # LQC — Listing Quality Controller: đặc tả 4 mảng, đã có / cần thêm / cần sửa
 
-Ngày 12/11/2026. Nguồn: đặc tả anh Luận gửi chủ dự án (4 mảng, 22 câu mẫu). Đối chiếu với code `main` @ 1a9a594 và Supabase cùng ngày.
+Ngày 12/11/2026 · cập nhật: mảng Ảnh 1.1, 1.3, 1.4 đã làm (SRS-425). Nguồn: đặc tả anh Luận gửi chủ dự án (4 mảng, 22 câu mẫu). Đối chiếu với code `main` @ 1a9a594 và Supabase cùng ngày.
 
 LQC là "người chăm tin" sau khi tin lên web: xem tin còn thiếu gì để bán được, rồi hỏi chủ nhà **từng câu một, ngắn, khéo**. Image LQC
 (SRS-422 → 424) là mảng đầu tiên đã chạy trên máy 146; tài liệu này mở nó ra thành 4 mảng.
@@ -29,10 +29,10 @@ Ký hiệu: **✅ có sẵn** · **🟡 có một phần** · **❌ chưa có**.
 
 | # | Câu mẫu | Trạng thái | Đã có | Cần thêm / sửa |
 |---|---|---|---|---|
-| 1.1 | "Có hình phòng ngủ rồi mà chưa có phòng tắm" · "mặt tiền có 1 góc, không đủ cả nhà" · "thiếu cái bếp. Bếp đẹp không anh?" | 🟡 | Image LQC chấm lại mỗi khi bộ ảnh đổi, ra **một** `goc_can_xin`; gợi góc theo loại căn (`GOC_ANH_THEO_NHOM`); tin xin ảnh 10 phút sau đăng (SRS-421). Đã bắt được "mặt tiền chưa thấy trọn 6 tầng" ở tin anh Luận. | **Gắn nhãn từng ảnh** (mặt tiền · phòng khách · phòng ngủ · WC · bếp · sân thượng · xung quanh · giấy tờ) và lưu lại → danh sách *đã có / còn thiếu* theo loại căn. Câu hỏi nói được "có phòng ngủ rồi, còn thiếu WC". Câu mở kiểu "bếp đẹp không anh?" để chủ tự khoe. |
+| 1.1 ✅ (SRS-425) | "Có hình phòng ngủ rồi mà chưa có phòng tắm" · "mặt tiền có 1 góc, không đủ cả nhà" · "thiếu cái bếp. Bếp đẹp không anh?" | 🟡 | Image LQC chấm lại mỗi khi bộ ảnh đổi, ra **một** `goc_can_xin`; gợi góc theo loại căn (`GOC_ANH_THEO_NHOM`); tin xin ảnh 10 phút sau đăng (SRS-421). Đã bắt được "mặt tiền chưa thấy trọn 6 tầng" ở tin anh Luận. | **Gắn nhãn từng ảnh** (mặt tiền · phòng khách · phòng ngủ · WC · bếp · sân thượng · xung quanh · giấy tờ) và lưu lại → danh sách *đã có / còn thiếu* theo loại căn. Câu hỏi nói được "có phòng ngủ rồi, còn thiếu WC". Câu mở kiểu "bếp đẹp không anh?" để chủ tự khoe. |
 | 1.2 | Ảnh có nêu bật thế mạnh không: mặt tiền kinh doanh → có ảnh dãy phố sầm uất? pháp lý đầy đủ → có ảnh sổ? | 🟡 | QC đã trả `the_manh_da_co_anh` / `the_manh_chua_co_anh`. | Thế mạnh "kinh doanh" → xin **ảnh xung quanh / dãy phố** (nối Số 3). Thế mạnh "pháp lý" → xin **ảnh sổ** (nối Số 2; ảnh sổ cất riêng, không lên web). |
-| 1.3 | "Tấm mặt tiền nắng đẹp quá, còn tấm nào nữa không?" · "Tấm nội thất lên đèn đẹp ghê" | ❌ | Lúc chủ gửi, bot đã được dặn khen tấm vừa gửi (SRS-423). Cột `listing_media.is_cover` có sẵn. | QC chọn **`anh_dep_nhat` + lý do** (nắng, lên đèn, góc rộng) → tin khen và xin thêm cùng kiểu. Đặt tấm đẹp nhất làm **ảnh bìa** (`is_cover`). |
-| 1.4 | "Hình này hơi xấu, em xoá nha anh?" | ❌ | Ảnh xấu không làm điểm về 0 (SRS-424, hệ số ≥ 0,75). | QC đánh dấu ảnh **mờ / tối / nghiêng / trùng** → hỏi chủ "em ẩn tấm này nha". **Chủ đồng ý mới ẩn**, không xoá file. `listing_media` **chưa có cột ẩn** → thêm cột (vd `an_khoi_web`) và cho view `listing_photos_v` lọc ra. |
+| 1.3 ✅ (SRS-425) | "Tấm mặt tiền nắng đẹp quá, còn tấm nào nữa không?" · "Tấm nội thất lên đèn đẹp ghê" | ❌ | Lúc chủ gửi, bot đã được dặn khen tấm vừa gửi (SRS-423). Cột `listing_media.is_cover` có sẵn. | QC chọn **`anh_dep_nhat` + lý do** (nắng, lên đèn, góc rộng) → tin khen và xin thêm cùng kiểu. Đặt tấm đẹp nhất làm **ảnh bìa** (`is_cover`). |
+| 1.4 ✅ (SRS-425) | "Hình này hơi xấu, em xoá nha anh?" | ❌ | Ảnh xấu không làm điểm về 0 (SRS-424, hệ số ≥ 0,75). | QC đánh dấu ảnh **mờ / tối / nghiêng / trùng** → hỏi chủ "em ẩn tấm này nha". **Chủ đồng ý mới ẩn**, không xoá file. `listing_media` **chưa có cột ẩn** → thêm cột (vd `an_khoi_web`) và cho view `listing_photos_v` lọc ra. |
 
 ## Số 2 — Pháp lý
 

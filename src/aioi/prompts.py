@@ -2324,7 +2324,7 @@ QUY TẮC:
 - GIÁ TRỊ Ô LÀ CỤM DỮ LIỆU, KHÔNG PHẢI CẢ CÂU KHÁCH: ghi "đang cho thuê, bàn giao ngay được" — KHÔNG ghi nguyên câu "Người ta thuê 1 năm
   nhưng mà anh có thể bàn giao tức thì mà em". Câu khách NHỜ / YÊU CẦU bot làm gì ("cho dùm anh 2-3 cái hình", "em rao lại xem") KHÔNG
   BAO GIỜ là giá trị ô (hinh_anh, mo_ta…) — để xin_dang / yeu_cau_viet hoặc bỏ. Ô mà câu khách hỏi ("?") không phải dữ liệu → bỏ.
-- XÁC NHẬN XOÁ: chỉ khi tin NGAY TRƯỚC của bot hỏi xác nhận ẩn / bỏ / chỉ giữ căn: xac_nhan_xoa = "dong_y" (khách đồng ý làm) hoặc
+- XÁC NHẬN XOÁ: chỉ khi tin NGAY TRƯỚC của bot hỏi xác nhận ẩn / bỏ / chỉ giữ căn, hoặc xin ẩn một tấm ảnh khỏi tin: xac_nhan_xoa = "dong_y" (khách đồng ý làm) hoặc
   "tu_choi" (khách không muốn, giữ nguyên), kèm xac_nhan_trich_dan = NGUYÊN VĂN cụm đó. Nói chuyện khác → bỏ trống.
 - ĐỊA CHỈ ĐẦY ĐỦ: fields.dia_chi luôn là địa chỉ ĐẦY ĐỦ của căn sau khi GHÉP phần khách vừa nói (số nhà, hẻm, phường, quận) vào
   phần ĐANG GHI (khối "ĐỊA CHỈ ĐANG GHI" bên dưới, nếu có) và SỬA theo lời đính chính mới nhất — không trả một mảnh rời.

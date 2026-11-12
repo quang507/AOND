@@ -1016,3 +1016,17 @@ Chủ dự án 12/11: "Có, dùng điểm QC" + "nhưng đừng khó quá, lỡ 
 - Bỏ luật SRS-423 trừ ảnh QC chấm "chắc chắn không phải căn" khỏi số ảnh tính điểm: mọi ảnh đã lưu đều được tính. Thay vào đó Image LQC
   hỏi khéo chủ MỘT câu tấm đó có phải ảnh căn mình không (tả bằng nội dung, không nói ảnh sai / bị trừ điểm), ưu tiên trước xin góc.
 - Khối ĐIỂM TIN không đưa con số chất lượng ảnh cho model; chỉ gợi "ảnh <góc QC thấy thiếu> sẽ làm tin đẹp hơn, điểm cao hơn".
+
+### SRS-5.1zzzzzzz425 · LQC mảng Ảnh: nhãn từng ảnh, ảnh đẹp nhất làm bìa, xin ẩn ảnh xấu (12/11/2026)
+Chủ dự án 12/11 "Làm mảng Ảnh" (đặc tả `docs/lqc-listing-quality-controller.md` mục 1.1 · 1.3 · 1.4).
+- Image LQC đọc bộ ảnh từ `listing_media` (bucket công khai, chưa ẩn) thay vì liệt kê thư mục storage; ảnh gửi model theo thứ tự, model gọi ảnh
+  bằng số thứ tự → code ánh xạ về đường dẫn.
+- Schema QC thêm: `nhan_anh` (mỗi ảnh: góc theo `GOC_ANH`, tả ngắn, `xau` chỉ khi rõ ràng kém), `goc_da_co`, `goc_con_thieu` (theo loại căn),
+  `anh_dep_nhat`.
+- **Ảnh bìa:** tấm đẹp nhất (không phải giấy tờ / ảnh nghi / ảnh xấu) → RPC `dat_anh_bia`. Tin anh Luận trước đó lấy tấm cầu thang có biển quán.
+- **Tin nhắn chủ — một việc mỗi tin** (`chon_viec`): ảnh nghi không phải căn → hỏi lại; ảnh xấu (tin còn ảnh khác) → xin ẩn; thiếu góc → nói đã
+  có góc nào, xin góc thiếu, mở đầu bằng lời khen tấm đẹp; đủ góc mà chưa đủ 6 ảnh → khen tấm đẹp, xin thêm cùng kiểu.
+- **Ẩn ảnh:** tin xin ẩn đặt `pending_destructive` op `an_anh`; chủ đồng ý (lượt lập thao tác `xac_nhan_xoa`, luật nay gồm "xin ẩn một tấm ảnh")
+  → RPC `an_anh_tin` (cột mới `listing_media.an_khoi_web`, view `listing_photos_v` lọc ra, không xoá file, bìa bị ẩn thì chọn lại), ảnh trong căn
+  đánh dấu `an` → không tính điểm; câu mẫu `da_an_anh` / `giu_anh` / `an_anh_hut`. Migration `20261112a_lqc_an_anh_doi_bia`.
+- Trần tin QC vẫn 2 tin / căn (chờ chủ dự án quyết trần chung cho 4 mảng).

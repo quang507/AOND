@@ -85,6 +85,12 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                   "được bất cứ lúc nào nha). ✅", "Khách đồng ý ẩn bớt / chỉ giữ vài căn. {n} = số căn còn rao", "Hỏi trước khi ẩn"),
     "da_cap_nhat_ro": ("Em đã cập nhật các tin rồi ạ.", "Khách đồng ý, việc khác ngoài ẩn", "Hỏi trước khi ẩn"),
     "giu_nguyen_ro": ("Em giữ nguyên các tin, không xóa gì đâu ạ 👍", "Khách không đồng ý ẩn", "Hỏi trước khi ẩn"),
+    "da_an_anh": ("Em ẩn tấm đó khỏi tin rồi nha, có tấm khác chụp góc đó thì anh/chị gửi em thay nhé.",
+                  "Chủ đồng ý ẩn tấm ảnh Image LQC xin ẩn (SRS-5.1zzzzzzz425)", "Hỏi trước khi ẩn"),
+    "giu_anh": ("Vậy em giữ nguyên tấm đó nha anh/chị.", "Chủ không muốn ẩn tấm ảnh Image LQC xin ẩn (SRS-5.1zzzzzzz425)",
+                "Hỏi trước khi ẩn"),
+    "an_anh_hut": ("Em chưa ẩn được tấm đó, em nhờ người phụ trách xử lý giúp nha.",
+                   "Chủ đồng ý ẩn ảnh nhưng ẩn hụt (lỗi kho) — SRS-5.1zzzzzzz425", "Hỏi trước khi ẩn"),
     "file_qua_lon": ("File to quá ạ (>20MB), xin lỗi em chưa xử lý được 😔. Em đã báo admin rồi ạ — {goi} không cần làm gì thêm đâu. "
                      "Admin của em sẽ vào chat này đọc file / link rồi xử lý sau nhé!",
                      "Khách gửi file / ảnh quá 20 MB — đã báo admin", "Nhận tệp"),

@@ -186,7 +186,7 @@ log = logging.getLogger(__name__)
 
 def _image_count(media: list[dict[str, str]]) -> int:
     """How many of a listing's stored media are photos (not PDFs/docs)."""
-    return sum(1 for r in media if not (r.get("filename") or "").lower().endswith(".pdf"))
+    return sum(1 for r in media if not (r.get("filename") or "").lower().endswith(".pdf") and not r.get("an"))   # "an": chủ đồng ý ẩn (SRS-425)
 
 
 TRONG_SO_ANH = 0.3   # SRS-5.1zzzzzzz423 (chủ dự án 12/11): ảnh thật chiếm 30% độ đủ của tin — bản trước chỉ đếm ô, đủ ô là 100/100 dù 0 ảnh
@@ -2944,9 +2944,10 @@ class Engine:
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
                 return self._build_result(conv, reply, captured=[], now=now)
+            chi_an_anh = all(op.get("op") == "an_anh" for op in conv.pending_destructive)
             conv.pending_destructive = []  # not a clear yes → keep the basket intact
             if conv.y_luot.get("xac_nhan_xoa") == "tu_choi":
-                reply = self._cau_khach(conv, "giu_nguyen_ro")
+                reply = self._cau_khach(conv, "giu_anh" if chi_an_anh else "giu_nguyen_ro")
                 conv.history.append(Turn("assistant", reply, now))
                 conv.last_ai_at = now
                 return self._build_result(conv, reply, captured=[], now=now)
@@ -6081,6 +6082,21 @@ class Engine:
         def _data(exclude_code: bool = False) -> dict[str, str]:
             return self._loc_o_tin(conv, {k: v for k, v in fields.items() if not (exclude_code and k == "ma_so_can")}, bang_chung)
 
+        if kind == "an_anh":   # SRS-5.1zzzzzzz425: chủ đồng ý ẩn tấm ảnh LQC xin — ẩn trên web (không xoá file), ảnh ẩn không tính điểm
+            ok = False
+            req = getattr(self._convstore, "_request", None)
+            if req is not None:
+                try:
+                    ok = req("POST", "rpc/an_anh_tin", {"p_listing_id": op.get("listing_uuid"), "p_storage_path": op.get("path")}) is True
+                except Exception as e:  # noqa: BLE001
+                    log.warning("an_anh_tin lỗi: %s", type(e).__name__)
+            ten = str(op.get("path") or "").rsplit("/", 1)[-1]
+            for li in conv.listings:
+                for r in li.media or []:
+                    if ok and ten and (r.get("filename") == ten or str(r.get("path") or "").endswith(ten)):
+                        r["an"] = "1"
+            receipts.append(("an_anh", ok))
+            return
         # "xóa/bỏ/chỉ giữ" NEVER delete — they move listings to 'không rao' (hidden, kept).
         if kind == "clear":
             n = self._unlist_listings(conv, keep=[], drop=[], clear=True)
@@ -6198,6 +6214,8 @@ class Engine:
         words can never disagree with the deed. These ops NEVER delete: they move listings to
         'không rao' (hidden, kept). Non-destructive ops return None → normal persona reply."""
         kinds = {r[0] for r in receipts}
+        if "an_anh" in kinds:   # SRS-5.1zzzzzzz425
+            return self._cau_khach(conv, "da_an_anh" if all(r[1] for r in receipts if r[0] == "an_anh") else "an_anh_hut")
         if "confirm_destructive" in kinds:  # ask BEFORE changing anything
             what = next((r[1] for r in receipts if r[0] == "confirm_destructive"), "đổi trạng thái rao")
             return self._cau_khach(conv, "xac_nhan_an", viec=what)   # câu mẫu sửa ở CRM (SRS-5.1zzzzzzz110)

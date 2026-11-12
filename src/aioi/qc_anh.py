@@ -36,12 +36,16 @@ IM_TOI_THIEU_GIAY = int(os.environ.get("SAU_DANG_NHAC_GIAY", "600"))
 QC_ANH_SO = os.environ.get("QC_ANH_SO", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "qc_anh.json"))
 DUOI_ANH = (".jpg", ".jpeg", ".png", ".webp")
 
+GOC_ANH = ("mặt tiền", "đường trước nhà", "xung quanh", "phòng khách", "phòng ngủ", "phòng tắm", "bếp", "sân thượng / ban công",
+           "cầu thang", "mặt bằng kinh doanh", "view", "giấy tờ", "khác")   # nhãn góc của từng ảnh (SRS-5.1zzzzzzz425)
+
 SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "khop_noi_dung": {"type": "boolean", "description": "Bộ ảnh nhìn chung đúng là căn trong tin (loại hình, hiện trạng, quy mô)."},
         "anh_khong_khop": {"type": "array", "items": {"type": "object", "properties": {
-            "tep": {"type": "string"}, "ly_do": {"type": "string"}, "chac_chan": {"type": "boolean"}},
+            "tep": {"type": "string", "description": "Số thứ tự ảnh (1 = tấm đầu tiên)."}, "ly_do": {"type": "string"},
+            "chac_chan": {"type": "boolean"}},
             "required": ["tep", "ly_do", "chac_chan"]},
             "description": "Ảnh có dấu hiệu KHÔNG phải căn này (ảnh mạng, căn khác, loại hình khác). Ảnh quán / cửa hàng bên trong căn đang "
                            "cho thuê kinh doanh KHÔNG tính là không khớp."},
@@ -49,9 +53,28 @@ SCHEMA: dict[str, Any] = {
         "the_manh_chua_co_anh": {"type": "array", "items": {"type": "string"}, "description": "Thế mạnh trong tin chưa có ảnh nào thể hiện."},
         "goc_can_xin": {"type": "string", "description": "MỘT góc ảnh nên xin chủ nhất để làm nổi thế mạnh chưa có ảnh; rỗng nếu bộ ảnh đã đủ. KHÔNG xin số nhà / biển số nhà (web không hiện số nhà)."},
         "diem": {"type": "integer", "description": "0–100: bộ ảnh lột tả căn và thế mạnh của nó tới đâu."},
+        # SRS-5.1zzzzzzz425 — LQC mảng Ảnh (đặc tả anh Luận 12/11, docs/lqc-listing-quality-controller.md mục 1.1 · 1.3 · 1.4)
+        "nhan_anh": {"type": "array", "description": "MỖI ảnh một dòng, theo thứ tự ảnh gửi kèm.", "items": {"type": "object", "properties": {
+            "so": {"type": "integer", "description": "Số thứ tự ảnh (1 = tấm đầu tiên)."},
+            "goc": {"type": "string", "enum": list(GOC_ANH)},
+            "mo_ta": {"type": "string", "description": "Tả ngắn tấm ảnh bằng nội dung để nhắc với chủ, vd \"tấm chụp cầu thang có biển quán\"."},
+            "xau": {"type": "boolean", "description": "true CHỈ khi ảnh rõ ràng kém: mờ nhoè, tối không thấy gì, nghiêng lệch nặng, gần như trùng "
+                                                       "y hệt một tấm khác. Hơi kém thì false."},
+            "ly_do_xau": {"type": "string", "description": "Kém ở đâu, nói nhẹ: \"hơi tối\", \"hơi mờ\", \"trùng tấm khác\". Rỗng nếu xau=false."}},
+            "required": ["so", "goc", "mo_ta", "xau"]}},
+        "goc_da_co": {"type": "array", "items": {"type": "string"}, "description": "Các góc bộ ảnh đã có (tên góc như trong nhan_anh)."},
+        "goc_con_thieu": {"type": "array", "items": {"type": "string"},
+                          "description": "Góc quan trọng với LOẠI căn này mà bộ ảnh chưa có, quan trọng nhất trước (vd nhà ở: phòng tắm, bếp; "
+                                         "mặt tiền kinh doanh: mặt tiền thấy trọn căn, xung quanh). Rỗng nếu đủ."},
+        "anh_dep_nhat": {"type": "object", "properties": {
+            "so": {"type": "integer", "description": "Số thứ tự tấm đẹp nhất, đủ làm ảnh bìa: thấy rõ căn, sáng, góc rộng. 0 nếu không tấm nào đủ."},
+            "ly_do": {"type": "string", "description": "Đẹp ở đâu, vd \"nắng đẹp, thấy trọn mặt tiền\", \"nội thất lên đèn ấm\"."}},
+            "required": ["so", "ly_do"],
+            "description": "Không chọn ảnh giấy tờ, ảnh nghi không phải căn, ảnh xấu."},
         "nhan_xet": {"type": "string", "description": "Một câu nhận xét cho admin."},
     },
-    "required": ["khop_noi_dung", "anh_khong_khop", "the_manh_da_co_anh", "the_manh_chua_co_anh", "goc_can_xin", "diem", "nhan_xet"],
+    "required": ["khop_noi_dung", "anh_khong_khop", "the_manh_da_co_anh", "the_manh_chua_co_anh", "goc_can_xin", "diem", "nhan_xet",
+                 "nhan_anh", "goc_con_thieu", "anh_dep_nhat"],
 }
 
 
@@ -68,17 +91,14 @@ def _goi_storage(kho: Any, duong: str, data: dict | None = None) -> Any:
 
 
 def thu_muc_anh(kho: Any) -> dict[str, list[str]]:
-    """{id tin: [tên tệp ảnh]} trong bucket ảnh công khai."""
+    """{id tin: [đường dẫn ảnh đang hiện]} — đọc `listing_media` (bucket công khai, chưa ẩn). SRS-5.1zzzzzzz425: ảnh chủ đã đồng ý ẩn không
+    vào bộ ảnh nữa (bộ đổi → chấm lại); bản đầu liệt kê thư mục storage nên ảnh ẩn vẫn bị chấm và hỏi lại."""
     ra: dict[str, list[str]] = {}
-    for tm in _goi_storage(kho, f"object/list/{BUCKET}", {"prefix": "", "limit": 1000}) or []:
-        ten = tm.get("name")
-        if not ten or tm.get("id"):   # thư mục không có id
-            continue
-        tep = [t["name"] for t in (_goi_storage(kho, f"object/list/{BUCKET}", {"prefix": ten + "/", "limit": 100}) or [])
-               if str(t.get("name", "")).lower().endswith(DUOI_ANH)]
-        if tep:
-            ra[ten] = sorted(tep)
-    return ra
+    for r in kho._get("listing_media?bucket=eq.listing-public&an_khoi_web=is.false&select=listing_id,storage_path&limit=5000"):
+        duong = str(r.get("storage_path") or "")
+        if duong.lower().endswith(DUOI_ANH):
+            ra.setdefault(str(r["listing_id"]), []).append(duong)
+    return {k: sorted(v) for k, v in ra.items()}
 
 
 def bam(tep: list[str]) -> str:
@@ -119,12 +139,14 @@ def huong_dan_qc(tin: dict) -> str:
             + "Chấm: (1) ảnh có đúng căn này không — căn đang cho thuê / kinh doanh thì ảnh quán, cửa hàng bên trong là ảnh của căn; chỉ ghi "
             "không khớp khi có dấu hiệu rõ (căn khác loại, ảnh mạng, phối cảnh, khác hẳn mô tả), chac_chan=true chỉ khi gần như chắc chắn; "
             "(2) thế mạnh nào trong tin đã / chưa có ảnh thể hiện; (3) MỘT góc nên xin chủ nhất. Chỉ dựa vào điều thấy trong ảnh và tin, "
-            "không đoán thêm.")
+            "không đoán thêm.\n"
+            "Ảnh gửi kèm theo THỨ TỰ, gọi ảnh bằng số thứ tự (1 là tấm đầu). Thêm: (4) gắn nhãn TỪNG ảnh (góc, tả ngắn, có xấu rõ ràng không); "
+            "(5) góc còn thiếu theo loại căn, quan trọng nhất trước; (6) tấm đẹp nhất làm ảnh bìa. Nhẹ tay: chỉ gọi là xấu khi rõ ràng kém.")
 
 
 def cham(engine: Any, kho: Any, tin: dict, tep: list[str]) -> dict | None:
     """Model vision chấm bộ ảnh của một tin; lỗi → None (lượt sau thử lại)."""
-    goc = f"{_goc_storage(kho)}/storage/v1/object/public/{BUCKET}/{tin['id']}/"
+    goc = f"{_goc_storage(kho)}/storage/v1/object/public/{BUCKET}/"   # `tep` là đường dẫn đầy đủ trong bucket (SRS-425)
     items: list[tuple[bytes, str]] = []
     for t in tep[:TOI_DA_ANH_MOT_LAN]:
         try:
@@ -178,6 +200,8 @@ def chay_mot_luot(engine: Any, gui: Callable[[str, str], bool], xung_ho_cua: Cal
         if kq is None:
             continue
         kq["so_anh"] = len(tep)
+        kq["_duong"] = tep[:TOI_DA_ANH_MOT_LAN]   # số thứ tự ảnh model thấy → đường dẫn
+        dat_bia(kho, lid, kq)
         da_nhan = _ghi_va_nhan(engine, tin, kq, bay_gio, gui, xung_ho_cua, ghi_lich_su)
         so[lid] = {"bam": bam(tep), "luc": time.time(), "ma": tin.get("code"), "ket_qua": kq, "da_nhan": da_nhan}
         log.warning("Image LQC #%s: %s/100, khớp=%s, xin: %s%s", tin.get("code"), kq.get("diem"), kq.get("khop_noi_dung"),
@@ -185,6 +209,18 @@ def chay_mot_luot(engine: Any, gui: Callable[[str, str], bool], xung_ho_cua: Cal
         ra.append({"ma": tin.get("code"), "diem": kq.get("diem"), "da_nhan": da_nhan})
     _ghi_so(so)
     return ra
+
+
+def dat_bia(kho: Any, lid: str, kq: dict) -> bool:
+    """Tấm đẹp nhất QC chọn làm ảnh bìa (`dat_anh_bia`, SRS-5.1zzzzzzz425). Bìa cũ là tấm đầu tiên được lưu, kể cả tấm biển quán."""
+    dep = anh_dep_nhat(kq)
+    if dep is None:
+        return False
+    try:
+        return kho._request("POST", "rpc/dat_anh_bia", {"p_listing_id": lid, "p_storage_path": dep["duong"]}) is True
+    except Exception as e:  # noqa: BLE001
+        log.warning("qc_anh: đặt bìa hụt (%s)", type(e).__name__)
+        return False
 
 
 def _ghi_va_nhan(engine: Any, tin: dict, kq: dict, bay_gio: datetime, gui: Callable[[str, str], bool],
@@ -205,17 +241,22 @@ def _ghi_va_nhan(engine: Any, tin: dict, kq: dict, bay_gio: datetime, gui: Calla
             return False
         f = li.prop.fields
         f["_qc_anh"] = json.dumps({k: kq.get(k) for k in ("diem", "khop_noi_dung", "goc_can_xin", "the_manh_chua_co_anh", "anh_khong_khop",
-                                                           "nhan_xet", "so_anh")}, ensure_ascii=False)
+                                                           "nhan_xet", "so_anh", "goc_da_co", "goc_con_thieu", "anh_dep_nhat")},
+                                  ensure_ascii=False)
         so_lan = int(f.get("_qc_da_nhan") or 0)
         im = not conv.history or time.time() - conv.history[-1].at >= IM_TOI_THIEU_GIAY
         from .followup import cau_hoi_cuoi_cua_bot
         if cau_hoi_cuoi_cua_bot(conv):   # 12/11 (chat anh Luận): "Sổ đứng tên ai?" chưa đáp, QC chồng thêm tin xin ảnh
             im = False
-        if ((kq.get("goc_can_xin") or _anh_nghi(kq)) and so_lan < TOI_DA_NHAN_MOI_CAN and im and trong_khung_gio(bay_gio)
+        viec = chon_viec(kq)
+        if (viec and so_lan < TOI_DA_NHAN_MOI_CAN and im and trong_khung_gio(bay_gio)
                 and getattr(conv, "nhuong_san_den", 0) <= time.time()):
             from .engine import _detect_customer_pronoun
             goi, toi = goi_toi(_detect_customer_pronoun(conv, ""), getattr(conv.assistant, "name", None))
-            chu = viet_tin_nhan(engine, conv, li, kq, goi, toi)
+            chu = viet_tin_nhan(engine, conv, li, kq, goi, toi, viec)
+            if chu and viec["loai"] == "xau":   # chủ trả lời "ừ / ok" → lượt chat ẩn ảnh (engine `an_anh`), "thôi" → giữ nguyên
+                conv.pending_destructive = [{"op": "an_anh", "listing_uuid": str(tin["id"]), "path": viec["anh"]["duong"],
+                                             "mo_ta": viec["anh"].get("mo_ta") or ""}]
             if chu:
                 f["_qc_da_nhan"] = str(so_lan + 1)
                 da = {x for x in (f.get("_sau_da_hoi") or "").split(",") if x}
@@ -238,26 +279,89 @@ def _ghi_va_nhan(engine: Any, tin: dict, kq: dict, bay_gio: datetime, gui: Calla
     return True
 
 
+def _anh_so(kq: dict, so: Any) -> dict | None:
+    """Dòng nhãn + đường dẫn của ảnh số `so` (1 = tấm đầu) trong lượt chấm."""
+    try:
+        i = int(so)
+    except (TypeError, ValueError):
+        return None
+    duong = kq.get("_duong") or []
+    if not 1 <= i <= len(duong):
+        return None
+    nhan = next((a for a in (kq.get("nhan_anh") or []) if isinstance(a, dict) and a.get("so") == i), {})
+    return {**nhan, "so": i, "duong": duong[i - 1]}
+
+
+def anh_dep_nhat(kq: dict) -> dict | None:
+    """Tấm đẹp nhất QC chọn (không phải tấm nghi không phải căn, không phải tấm xấu)."""
+    d = kq.get("anh_dep_nhat") or {}
+    a = _anh_so(kq, d.get("so"))
+    if a is None or a.get("xau") or a.get("goc") == "giấy tờ" or str(a["so"]) in {str(x.get("tep")) for x in _anh_nghi(kq)}:
+        return None
+    return {**a, "ly_do": d.get("ly_do") or ""}
+
+
+def chon_viec(kq: dict) -> dict | None:
+    """MỘT việc cho tin nhắn QC, theo thứ tự (SRS-5.1zzzzzzz425): ảnh nghi không phải căn → hỏi lại; ảnh xấu → xin ẩn (tin còn ảnh khác);
+    thiếu góc → nói đã có gì, xin góc thiếu (mở đầu bằng lời khen tấm đẹp nếu có); bộ ảnh chưa đủ mà có tấm đẹp → xin thêm cùng kiểu."""
+    nghi = _anh_nghi(kq)
+    if nghi:
+        return {"loai": "nghi", "anh": nghi[0]}
+    so_anh = int(kq.get("so_anh") or 0)
+    if so_anh > 1:
+        for a in kq.get("nhan_anh") or []:
+            x = _anh_so(kq, a.get("so")) if isinstance(a, dict) and a.get("xau") is True else None
+            if x:
+                return {"loai": "xau", "anh": x}
+    dep = anh_dep_nhat(kq)
+    thieu = [g for g in (kq.get("goc_con_thieu") or []) if isinstance(g, str) and g.strip()]
+    goc = thieu[0] if thieu else (kq.get("goc_can_xin") or "")
+    if goc:
+        return {"loai": "thieu", "goc": goc, "da_co": [g for g in (kq.get("goc_da_co") or []) if isinstance(g, str)], "dep": dep}
+    from .schema import ANH_TIN_DEP
+    if dep and so_anh < ANH_TIN_DEP:
+        return {"loai": "them_kieu", "dep": dep}
+    return None
+
+
 def _anh_nghi(kq: dict) -> list[dict]:
     """Ảnh QC chấm gần như chắc chắn không phải căn — hỏi lại chủ, không trừ điểm (SRS-5.1zzzzzzz424)."""
     return [a for a in (kq.get("anh_khong_khop") or []) if isinstance(a, dict) and a.get("chac_chan") is True]
 
 
-def viet_tin_nhan(engine: Any, conv: Any, li: Any, kq: dict, goi: str, toi: str) -> str:
-    """Model viết MỘT câu khéo: có ảnh nghi không phải căn thì hỏi lại tấm đó trước, không thì xin đúng góc QC thấy thiếu; hụt → ""."""
+def viet_tin_nhan(engine: Any, conv: Any, li: Any, kq: dict, goi: str, toi: str, viec: dict | None = None) -> str:
+    """Model viết MỘT tin khéo cho đúng MỘT việc `chon_viec` chọn; hụt → "" (SRS-422 → 425)."""
     from .llm import Message
     from .prompts import LUAT_XIN_ANH_KHEO
+    viec = viec or chon_viec(kq)
+    if not viec:
+        return ""
     gan = "\n".join(f"{'Khách' if t.role == 'user' else 'Em'}: {(t.content or '')[:300]}" for t in conv.history[-6:])
-    nghi = _anh_nghi(kq)
+    loai = viec["loai"]
+    if loai == "nghi":
+        viec_txt = (f"Có ảnh trông chưa giống căn: {viec['anh'].get('ly_do')}. HỎI KHÉO tấm đó có phải ảnh căn mình không (tả tấm ảnh bằng "
+                    "nội dung, không nói số thứ tự / tên tệp, không nói ảnh sai / bị loại / bị trừ điểm).")
+    elif loai == "xau":
+        a = viec["anh"]
+        viec_txt = (f"Tấm {a.get('mo_ta') or 'ảnh'} {a.get('ly_do_xau') or 'chưa được đẹp'}. Hỏi khéo chủ cho em ẨN tấm đó khỏi tin cho tin đẹp "
+                    "hơn — chỉ ẩn, không xoá, muốn hiện lại lúc nào cũng được. Nói nhẹ (\"hơi tối\", \"hơi mờ\"), không dùng chữ \"xấu\". "
+                    "Tin kết thúc bằng câu hỏi xin phép.")
+    elif loai == "thieu":
+        dep = viec.get("dep")
+        viec_txt = ((f"Mở đầu bằng MỘT lời khen ngắn tấm {dep.get('mo_ta')} ({dep.get('ly_do')}). " if dep else "")
+                    + (f"Bộ ảnh đã có: {', '.join(viec['da_co'])}. " if viec.get("da_co") else "")
+                    + f"Còn thiếu: {viec['goc']}. Nói ngắn đã có góc nào rồi (nếu có), rồi xin góc còn thiếu; có thể hỏi mở để chủ tự khoe "
+                    "(vd \"bếp nhà mình đẹp không anh?\").")
+    else:
+        dep = viec["dep"]
+        viec_txt = (f"Tấm {dep.get('mo_ta')} đẹp ({dep.get('ly_do')}). Khen ngắn tấm đó rồi hỏi chủ còn tấm nào kiểu vậy nữa không, "
+                    "để em gửi khách xem.")
     he = (f"Bạn là {getattr(conv.assistant, 'name', 'em')}, trợ lý sàn nhà đất, đang chăm sóc chủ nhà có tin rao ĐÃ LÊN WEB "
-          f"({kq.get('so_anh')} ảnh). Bộ phận QC ảnh vừa xem tin: thế mạnh chưa có ảnh — {', '.join(kq.get('the_manh_chua_co_anh') or []) or 'không'}; "
-          f"góc nên xin — {kq.get('goc_can_xin')}.\n"
-          + (f"CÓ ẢNH TRÔNG CHƯA GIỐNG CĂN: {nghi[0].get('ly_do')}. Việc của tin này là HỎI KHÉO tấm đó có phải ảnh căn mình không (tả tấm ảnh "
-             "bằng nội dung, không nói tên tệp, không nói ảnh sai / bị loại / bị trừ điểm) — KHÔNG xin góc khác trong tin này.\n" if nghi else "")
-          + f"Viết ĐÚNG MỘT tin Zalo gửi chủ nhà{'' if nghi else ' xin góc đó'}. Gọi khách là \"{goi}\", tự xưng \"{toi}\". Không chào lại, không nhắc chuyện QC / "
+          f"({kq.get('so_anh')} ảnh). Bộ phận QC ảnh vừa xem bộ ảnh.\nVIỆC CỦA TIN NÀY: {viec_txt}\n"
+          f"Viết ĐÚNG MỘT tin Zalo gửi chủ nhà. Gọi khách là \"{goi}\", tự xưng \"{toi}\". Không chào lại, không nhắc chuyện QC / "
           f"chấm điểm, không hỏi chuyện khác, không dùng chữ \"máy\". {LUAT_XIN_ANH_KHEO}\nChỉ trả về nguyên văn tin gửi khách.")
     try:
-        tin = engine._provider.reply(he, [Message("user", f"Mấy lượt vừa nói:\n{gan or '(chưa có)'}\n\nViết tin xin ảnh.")],
+        tin = engine._provider.reply(he, [Message("user", f"Mấy lượt vừa nói:\n{gan or '(chưa có)'}\n\nViết tin.")],
                                      max_tokens=200).strip()
     except Exception as e:  # noqa: BLE001
         log.warning("qc_anh: viết tin hụt (%s)", type(e).__name__)
