@@ -73,6 +73,32 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz430 · Web theo theme King + trang chủ điện thoại là feed vuốt dọc kiểu TikTok (12/11/2026)
+Chủ dự án 12/11: "lấy king theme kia để áp vào web, muốn lướt trang web kiểu cuộn cuộn như tiktok"; chọn "Mở và chép file theme vào
+web" và "Thay trang chủ trên điện thoại".
+- **Theme King** (RedKings, ThemeForest 9.5.5, gói theme trong thư mục ThemeForest của anh Luận): King là theme
+  WordPress PHP, 225KB CSS toàn class bài viết / story, không có class nhà đất — chép nguyên file vào Next.js sẽ đè reset của Tailwind.
+  Chép phần dùng được: bảng màu (đỏ #e60023, đen #13151d, nền #f6f7f9, viền #e8ebed, chữ phụ #687686 — đếm trong CSS), font Nunito (ghim
+  `app/fonts/`, OFL), kiểu khối story (lớp phủ tối dưới ảnh, nút tròn trắng có bóng, nhãn đỏ) vào `app/king.css`. Góc bo lúc này giữ 2px theo
+  quyết định 19/10 (đổi sang 14px ở SRS-5.1zzzzzzz434). Nút Zalo giữ xanh Zalo.
+- **Feed điện thoại** (`components/FeedDoc.tsx`, chỉ dưới `md`): khung cao bằng màn hình trừ thanh trên, `scroll-snap` dọc, mỗi màn một
+  căn: ảnh bìa bản gốc phủ kín, giá, diện tích · tầng · phòng ngủ · lối vào, đường / phường, cột nút phải: Lưu (tim, `FavButton`), Hỏi
+  (nhãn chỉ "Hỏi" từ 12/11 theo chủ dự án, mã căn vẫn gửi kèm qua Zalo `zaloLink("#mã")`), Chia sẻ (`navigator.share`, không có thì chép link), Xem chi tiết. Màn đầu là ô tìm bằng câu nói + tag;
+  màn cuối dẫn sang /mua-ban, /cho-thue. 30 tin mới nhất đang lên kệ, căn có ảnh trước. Widget Zalo nổi ẩn ở trang chủ điện thoại.
+- Máy tính: trang chủ giữ nguyên, chỉ đổi màu / font.
+
+### SRS-5.1zzzzzzz429 · Bot phía bán nhận xét NHẸ giá chủ so với căn đang rao gần (12/11/2026)
+Chủ dự án 12/11 quyết câu 4.5 của đặc tả LQC: "Được, nói nhẹ".
+- RPC `can_dang_rao_gan` (migration `20261112c`) trả thêm `cua_chu` (giá, đơn giá, lối vào của chính tin) và trung vị đơn giá các căn CÙNG lối
+  vào (mặt tiền / hẻm).
+- **Code chấm, model nói** (`so_sanh.muc_lech`): cần ≥ 3 căn cùng lối vào đang rao gần; lệch dưới 10 % → "sát mặt bằng rao quanh khu", trên →
+  "nhỉnh hơn / mềm hơn khoảng N %". Chưa đủ căn cùng kiểu → không nhận xét (vd tin 56F988C9 mặt tiền, quanh đó toàn hẻm).
+- Lời: MỘT câu, luôn nói là so với giá RAO, chỉ để tham khảo, chủ quyết giá; không đưa giá mới, không khuyên tăng / giảm, không đoán dễ / khó bán.
+- Dùng ở: lượt gửi so sánh sau đăng (`so_sanh`), lượt chủ hỏi "giá tôi cao hay thấp" (`hoi_ve` = dinh_gia, có căn gần thì trả lời bằng kho thay
+  câu "chưa có số liệu"), công cụ định giá (`dinh_gia_tham_khao` — có mức lệch theo kho thì bỏ đối chiếu bảng cứng).
+- ~~**Lưới `_BINH_LUAN_GIA`** nới cho lượt có `conv.y_luot["_nhan_xet_gia"]`~~ — **SRS-431 gỡ hẳn lưới lời chat.** Bản tin vẫn cấm mọi
+  nhận xét giá. Phía mua giữ luật cấm trong prompt.
+
 ### SRS-5.1zzzzzzz428 · LQC mảng So sánh cạnh tranh: căn cùng loại đang rao gần, đơn giá từ kho, không bịa giao dịch (12/11/2026)
 Chủ dự án 12/11 "Làm mảng So sánh" (đặc tả `docs/lqc-listing-quality-controller.md` mục 4).
 - **RPC `can_dang_rao_gan(listing, bán kính 3 km, 3 căn)`** (migration `20261112b`, chỉ service_role): căn cùng loại + cùng giao dịch

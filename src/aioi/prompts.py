@@ -844,8 +844,9 @@ def goc_anh_goi_y(prop: "Property | None") -> str:
     return goc
 
 
-LUAT_XIN_ANH_KHEO = ("Hỏi KHÉO: nối vào chuyện vừa nói hoặc khen thật một điểm của căn / tấm ảnh khách đã gửi (chỉ điều có thật), rồi xin MỘT góc "
-                     "hợp nhất với căn này và thế mạnh của nó, kèm nửa câu lợi ích cho chủ (khách mua hỏi nhiều hơn / tin lên điểm). Đúng MỘT câu "
+LUAT_XIN_ANH_KHEO = ("Hỏi KHÉO, giọng nói miệng như nhắn Zalo với người quen: nối vào chuyện vừa nói hoặc khen thật một điểm của căn / tấm ảnh "
+                     "khách đã gửi bằng một câu ngắn tự nhiên, kiểu \"Mặt tiền 7m vậy là ngon luôn.\" (chỉ điều có thật); rồi một câu xin MỘT góc "
+                     "hợp nhất với căn này và thế mạnh của nó, kèm nửa câu lợi ích cho chủ (khách mua hỏi nhiều hơn / tin lên điểm). Tối đa hai câu "
                      "ngắn, giọng nhờ vả nhẹ, không liệt kê nhiều góc, không giải thích dài, không thúc ép, không nói ảnh đã đủ. KHÔNG xin chụp số nhà / "
                      "biển số nhà (web không hiện số nhà). Chủ vừa gửi ảnh góc đó thì khen tấm vừa gửi trước, chỉ xin thêm khi thật cần.")
 

@@ -788,6 +788,18 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz440 · Tin chủ động gọi đúng cách chat đang gọi chủ; lời khen xin ảnh giọng nói miệng (12/11/2026)
+Chủ dự án 12/11 (chat anh Luận): tin Image LQC 08:34 "Mặt tiền ngang 7m của anh/chị nhìn rất thích, anh/chị chụp giúp em…" — cả chat gọi "anh",
+tin nền đổi sang "anh/chị"; câu khen văn viết, "sửa văn phong kiểu mặt tiền vậy là ngon luôn anh".
+- **Xưng hô:** anh Luận chưa tự xưng nên cách gọi đi từ gợi ý theo giới tính hồ sơ Zalo (`xung_ho_goi_y`, SRS-5.1zzzzzzz163). Gợi ý đó chỉ
+  nằm trong bộ nhớ, đặt lại mỗi tin khách nhắn — lõi khởi động lại (triển khai 146) thì mất, tin chủ động của vòng nền (Image LQC, hỏi sau
+  đăng, tin nhắc) chạy lúc chủ chưa nhắn lại rơi về "anh/chị". Bản sửa SRS-422 (3bcd3b3) đã cho tin QC đọc xưng hô theo chat nhưng vẫn
+  hở chỗ này. Nay gợi ý lưu SQLite (cột `xung_ho_goi_y`), nạp lại cùng `xung_ho` — mọi đường đọc xưng hô (`_detect_customer_pronoun`) thấy
+  như lượt chat.
+- **Giọng xin ảnh:** `LUAT_XIN_ANH_KHEO` (dùng chung tin QC ảnh và cụm xin ảnh trong chat) — khen một câu ngắn giọng nói miệng ("Mặt tiền 7m vậy
+  là ngon luôn."), rồi một câu xin góc; trước ép "đúng MỘT câu" nên lời khen, lời xin và lợi ích dồn thành một câu dài văn viết. ≈ +25 token.
+- Tin 08:34 còn xin "kèm biển số nhà" — đã chặn ở 3bcd3b3 (08:35, sau tin đó một phút).
+
 ### SRS-5.1zzzzzzz439 · Soát giao diện bằng skill impeccable (audit + polish) trang chủ, feed, trang tag, trang chi tiết căn (12/11/2026)
 Chủ dự án 12/11 "chạy đi nhưng đừng để impeccable sửa chồng mấy cái kia quá" — giữ nguyên màu / font King, góc 14px, nút Zalo xanh,
 feed, nút "Hỏi", luật không eyebrow. Bộ dò tự động của impeccable: 0 lỗi; soát bằng mắt khổ 1280px và 375px ra 9 lỗi thật, sửa hết:
@@ -920,29 +932,3 @@ Chủ dự án 12/11, sau bản soát mâu thuẫn SRS: "vậy xóa lưới ch�
   `supabase_store.loi_vao_tu_o` ghi cột theo `_duong_vao`; bộ đọc chữ chỉ góp độ chi tiết AI không phân (hẻm xe tải / xe máy) khi cùng phía
   mặt tiền / hẻm; AI chưa rõ thì giữ cột bộ đọc chữ. Migration chép bù cho tin bot đã ghi (1 tin: 56F988C9 → mat_tien). Trigger
   `listings_boc_thong_so` vốn bỏ qua tin có `_thong_so_ai`, nên không ghi đè.
-
-### SRS-5.1zzzzzzz430 · Web theo theme King + trang chủ điện thoại là feed vuốt dọc kiểu TikTok (12/11/2026)
-Chủ dự án 12/11: "lấy king theme kia để áp vào web, muốn lướt trang web kiểu cuộn cuộn như tiktok"; chọn "Mở và chép file theme vào
-web" và "Thay trang chủ trên điện thoại".
-- **Theme King** (RedKings, ThemeForest 9.5.5, gói theme trong thư mục ThemeForest của anh Luận): King là theme
-  WordPress PHP, 225KB CSS toàn class bài viết / story, không có class nhà đất — chép nguyên file vào Next.js sẽ đè reset của Tailwind.
-  Chép phần dùng được: bảng màu (đỏ #e60023, đen #13151d, nền #f6f7f9, viền #e8ebed, chữ phụ #687686 — đếm trong CSS), font Nunito (ghim
-  `app/fonts/`, OFL), kiểu khối story (lớp phủ tối dưới ảnh, nút tròn trắng có bóng, nhãn đỏ) vào `app/king.css`. Góc bo lúc này giữ 2px theo
-  quyết định 19/10 (đổi sang 14px ở SRS-5.1zzzzzzz434). Nút Zalo giữ xanh Zalo.
-- **Feed điện thoại** (`components/FeedDoc.tsx`, chỉ dưới `md`): khung cao bằng màn hình trừ thanh trên, `scroll-snap` dọc, mỗi màn một
-  căn: ảnh bìa bản gốc phủ kín, giá, diện tích · tầng · phòng ngủ · lối vào, đường / phường, cột nút phải: Lưu (tim, `FavButton`), Hỏi
-  (nhãn chỉ "Hỏi" từ 12/11 theo chủ dự án, mã căn vẫn gửi kèm qua Zalo `zaloLink("#mã")`), Chia sẻ (`navigator.share`, không có thì chép link), Xem chi tiết. Màn đầu là ô tìm bằng câu nói + tag;
-  màn cuối dẫn sang /mua-ban, /cho-thue. 30 tin mới nhất đang lên kệ, căn có ảnh trước. Widget Zalo nổi ẩn ở trang chủ điện thoại.
-- Máy tính: trang chủ giữ nguyên, chỉ đổi màu / font.
-
-### SRS-5.1zzzzzzz429 · Bot phía bán nhận xét NHẸ giá chủ so với căn đang rao gần (12/11/2026)
-Chủ dự án 12/11 quyết câu 4.5 của đặc tả LQC: "Được, nói nhẹ".
-- RPC `can_dang_rao_gan` (migration `20261112c`) trả thêm `cua_chu` (giá, đơn giá, lối vào của chính tin) và trung vị đơn giá các căn CÙNG lối
-  vào (mặt tiền / hẻm).
-- **Code chấm, model nói** (`so_sanh.muc_lech`): cần ≥ 3 căn cùng lối vào đang rao gần; lệch dưới 10 % → "sát mặt bằng rao quanh khu", trên →
-  "nhỉnh hơn / mềm hơn khoảng N %". Chưa đủ căn cùng kiểu → không nhận xét (vd tin 56F988C9 mặt tiền, quanh đó toàn hẻm).
-- Lời: MỘT câu, luôn nói là so với giá RAO, chỉ để tham khảo, chủ quyết giá; không đưa giá mới, không khuyên tăng / giảm, không đoán dễ / khó bán.
-- Dùng ở: lượt gửi so sánh sau đăng (`so_sanh`), lượt chủ hỏi "giá tôi cao hay thấp" (`hoi_ve` = dinh_gia, có căn gần thì trả lời bằng kho thay
-  câu "chưa có số liệu"), công cụ định giá (`dinh_gia_tham_khao` — có mức lệch theo kho thì bỏ đối chiếu bảng cứng).
-- ~~**Lưới `_BINH_LUAN_GIA`** nới cho lượt có `conv.y_luot["_nhan_xet_gia"]`~~ — **SRS-431 gỡ hẳn lưới lời chat.** Bản tin vẫn cấm mọi
-  nhận xét giá. Phía mua giữ luật cấm trong prompt.

@@ -673,8 +673,9 @@ class Conversation:
     # "chu_co_bac", giữ qua các lượt) — lượt AI lập thao tác đọc theo nghĩa, code kiểm trích dẫn (SRS-5.1zzzzzzz54).
     hoi_ve_luot: str | None = None
     xung_ho: str | None = None
-    # Transient (SRS-5.1zzzzzzz163): gợi ý xưng hô từ giới tính trên hồ sơ Zalo ("anh" nam / "chi" nữ), bridge gửi kèm mỗi tin. Chỉ dùng
-    # khi khách CHƯA tự xưng (`xung_ho` trống) — lời khách tự nói luôn thắng; không lưu DB.
+    # SRS-5.1zzzzzzz163: gợi ý xưng hô từ giới tính trên hồ sơ Zalo ("anh" nam / "chi" nữ), bridge gửi kèm mỗi tin. Chỉ dùng khi khách CHƯA
+    # tự xưng (`xung_ho` trống) — lời khách tự nói luôn thắng. Lưu SQLite (SRS-5.1zzzzzzz440): tin chủ động của vòng nền (Image LQC, hỏi sau
+    # đăng, nhắc) chạy khi khách không nhắn — bản trước chỉ giữ trong bộ nhớ, lõi khởi động lại là mất, tin nền gọi chủ "anh/chị".
     xung_ho_goi_y: str | None = None
     # Cột cũ của chế độ test (SRS-5.1zzzzzzz130) — từ SRS-5.1zzzzzzz195 (26/10/2026) KHÔNG còn đường nào bật; để nguyên cột / trường để khỏi đổi lược đồ.
     che_do_test: bool = False
@@ -1028,6 +1029,7 @@ class SqliteConversationStore(ConversationStore):
             ("conversations", "so_nhan", "''"),   # SRS-5.1zzzzzzz210: khách nhắn số ký gửi ("") hay số tư vấn
             ("conversations", "so_vai", "''"),   # SRS-5.1zzzzzzz331: vai đặt trên số nào ('' = chưa biết)
             ("conversations", "nhuong_san_den", "''"),   # SRS-5.1zzzzzzz216: người thật đang nói tới lúc nào (epoch giây)
+            ("conversations", "xung_ho_goi_y", "''"),   # SRS-5.1zzzzzzz440: gợi ý xưng hô theo hồ sơ Zalo, giữ qua khởi động lại
         ):
             try:  # migrate older tables that predate this column
                 self._conn.execute(
@@ -1042,14 +1044,15 @@ class SqliteConversationStore(ConversationStore):
         active_lead_id = conv.buyer_lead.lead_id if conv.buyer_lead else ""
         self._conn.execute(
             "INSERT INTO conversations(user_key, user_type, last_ai_at, active_listing_id, "
-            "history_json, price_book_json, role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan, nhuong_san_den, so_vai) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+            "history_json, price_book_json, role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan, nhuong_san_den, so_vai, "
+            "xung_ho_goi_y) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
             "ON CONFLICT(user_key) DO UPDATE SET "
             "user_type=excluded.user_type, last_ai_at=excluded.last_ai_at, "
             "active_listing_id=excluded.active_listing_id, history_json=excluded.history_json, "
             "price_book_json=excluded.price_book_json, role=excluded.role, "
             "active_lead_id=excluded.active_lead_id, xung_ho=excluded.xung_ho, che_do_test=excluded.che_do_test, "
-            "so_luot_thong_tin=excluded.so_luot_thong_tin, so_nhan=excluded.so_nhan, nhuong_san_den=excluded.nhuong_san_den, so_vai=excluded.so_vai",
+            "so_luot_thong_tin=excluded.so_luot_thong_tin, so_nhan=excluded.so_nhan, nhuong_san_den=excluded.nhuong_san_den, so_vai=excluded.so_vai, "
+            "xung_ho_goi_y=excluded.xung_ho_goi_y",
             (
                 conv.user_key,
                 conv.user_type.value,
@@ -1065,6 +1068,7 @@ class SqliteConversationStore(ConversationStore):
                 conv.so_nhan or "",
                 str(conv.nhuong_san_den or 0) if conv.nhuong_san_den else "",
                 conv.so_vai or "",
+                conv.xung_ho_goi_y or "",
             ),
         )
         for bl in ([conv.buyer_lead] if conv.buyer_lead is not None else []) + list(conv.nhu_cau_khac):
@@ -1133,7 +1137,8 @@ class SqliteConversationStore(ConversationStore):
     def load(self, user_key: str) -> Conversation | None:
         row = self._conn.execute(
             "SELECT user_type, last_ai_at, active_listing_id, history_json, price_book_json, "
-            "role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan, nhuong_san_den, so_vai FROM conversations WHERE user_key=?",
+            "role, active_lead_id, xung_ho, che_do_test, so_luot_thong_tin, so_nhan, nhuong_san_den, so_vai, xung_ho_goi_y "
+            "FROM conversations WHERE user_key=?",
             (user_key,),
         ).fetchone()
         if row is None:
@@ -1212,6 +1217,7 @@ class SqliteConversationStore(ConversationStore):
             so_nhan=(row[10] or "") if len(row) > 10 else "",
             nhuong_san_den=float(row[11]) if len(row) > 11 and row[11] else 0.0,
             so_vai=(row[12] or None) if len(row) > 12 else None,
+            xung_ho_goi_y=(row[13] or None) if len(row) > 13 else None,
         )
 
     def reset(self, user_key: str) -> None:
