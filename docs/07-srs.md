@@ -788,6 +788,17 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz437 · Gỡ dấu hiệu "AI slop" ở trang chủ, feed điện thoại, trang Mua bán, Dự án (12/11/2026)
+Chủ dự án 12/11 gửi danh sách "20 AI Design Slop Indicators", hỏi web có dính không, rồi "Sửa luôn". Trang chủ máy tính dính ~10/20.
+- Bỏ: 5 nhãn chữ in hoa trên tiêu đề khối (eyebrow), dấu chấm cuối tiêu đề ("Nhắn một câu là xong."), đánh số "1. 2. 3." in hoa ở
+  vòng hỏi chủ nhà, 4 khung chat giả (3 thẻ lời hứa + khối riêng tư), thẻ lồng thẻ có viền, quầng sáng mờ / vệt đỏ loang ở hero và
+  khối người bán, chữ nghiêng, chip viên thuốc (tag nổi bật thành dòng link "Tìm nhanh: …"; feed thành danh sách link có mũi tên).
+- Gộp khối "Bảo vệ quyền riêng tư" vào lời hứa "Không thu số điện thoại" (hai khối nói cùng một ý). Chữ phụ trên nền tối dùng màu
+  `line-strong` thay cho trắng mờ 55–80%.
+- Lưới "Phường 1…15" (phường cũ Quận 5, trước sáp nhập 2025) → danh sách 22 khu dẫn tới trang tag.
+- Lớp `.eyebrow` (cả web, cả trang quản trị) thôi in hoa + giãn chữ. Bỏ nhãn đầu trang /mua-ban ("🏠 KHO TIN…") và /du-an; tiêu đề
+  /du-an thôi viết hoa từng chữ.
+
 ### SRS-5.1zzzzzzz436 · Giới thiệu khu trên 100 trang tag + khối khu trang chủ bằng số thật (12/11/2026)
 Chủ dự án 12/11 "Giới thiệu khu trước" (để SEO tốt hơn: trang tag mỏng chữ, ba câu văn mẫu lặp y hệt trên cả 100 trang).
 - `lib/khu.ts`: lời giới thiệu viết tay cho 22 quận huyện + Sài Gòn + Long An — vị trí, trục đường, loại nhà phổ biến; không ghi giá,

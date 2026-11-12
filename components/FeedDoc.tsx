@@ -99,11 +99,11 @@ export default function FeedDoc({ tin, anh }: { tin: CardRow[]; anh: Record<stri
           <img src="/img/house1.jpg" alt="" fetchPriority="high" decoding="async" className="feed-anh opacity-40" />
           <div className="feed-phu" />
           <div className="relative z-[2] flex h-full flex-col justify-center px-5 pb-16">
-            <span className="feed-nhan self-start">Môi giới thường trực · Sài Gòn & Long An</span>
-            <p className="feed-chu mt-4 text-[32px] font-black leading-[1.12] [text-wrap:balance]">
+            {/* SRS-5.1zzzzzzz437: bỏ nhãn đỏ trên tiêu đề, dấu chấm cuối tiêu đề, chip viên thuốc (dấu hiệu "AI slop") */}
+            <p className="feed-chu text-[32px] font-black leading-[1.12] [text-wrap:balance]">
               Tìm nhà Sài Gòn, Long An?
               <br />
-              <span className="text-brand-soft">Nhắn một câu là xong.</span>
+              <span className="text-brand-soft">Nhắn một câu là xong</span>
             </p>
             <form action="/api/search" method="get" role="search" className="mt-6 flex items-center gap-2 rounded-md bg-white p-1.5 pl-3 text-navy shadow-lg">
               <input type="hidden" name="go" value="1" />
@@ -119,11 +119,15 @@ export default function FeedDoc({ tin, anh }: { tin: CardRow[]; anh: Record<stri
               />
               <button type="submit" className="nut nut-chinh nut-nho">Tìm</button>
             </form>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <ul className="mt-5 space-y-2.5">
               {FEATURED_TAGS.slice(0, 4).map((t) => (
-                <Link key={t.slug} href={`/${t.slug}`} className="feed-chip">{t.keyword}</Link>
+                <li key={t.slug}>
+                  <Link href={`/${t.slug}`} className="feed-chu text-[15px] font-bold text-white">
+                    {t.keyword} <span aria-hidden className="text-brand-soft">→</span>
+                  </Link>
+                </li>
               ))}
-            </div>
+            </ul>
             <a href={zaloLink("feed_dau")} target="_blank" rel="noopener" className="nut mt-5 self-start bg-zalo text-white">
               <IconZalo className="h-5 w-5" /> Hỏi qua Zalo
             </a>

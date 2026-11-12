@@ -86,11 +86,8 @@ export default async function DuAnPage({
       {/* Page Header */}
       <div className="bg-navy text-white py-10 px-4">
         <div className="mx-auto max-w-6xl">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-brand-light/15 text-[#60A5FA] text-xs font-bold tracking-wide uppercase mb-3">
-            <span>Kho dữ án bất động sản</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
-            Dự án Bất động sản TP.HCM & Vùng Phụ Cận
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold">
+            Dự án bất động sản TP.HCM và vùng lân cận
           </h1>
           <p className="mt-2 text-white/75 text-sm sm:text-base max-w-2xl leading-relaxed">
             Tra cứu thông tin {totalCount} dự án tại TP.HCM, Bình Dương, Đồng Nai, Long An, Tây Ninh.

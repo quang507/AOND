@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { IconAsk, IconChart, IconCalc, IconClock, IconSearch, IconShield } from "@/components/icons";
 import { zaloLink } from "@/lib/format";
-import { WARDS } from "@/lib/geo";
-import { FEATURED_TAGS } from "@/lib/tags";
+import { FEATURED_TAGS, KHU_LE, tagChinhCuaKhu } from "@/lib/tags";
 import KhuTrangChu from "@/components/KhuTrangChu";
 import FeedDoc from "@/components/FeedDoc";
 import { CARD_COLS, supabase, type ListingCard as CardRow, TRANG_THAI_HIEN } from "@/lib/supabase";
@@ -10,65 +9,34 @@ import { coverFullByCode } from "@/lib/photos";
 
 export const revalidate = 10800; // 3 giờ
 
-type Bong = { ai: "khach" | "em"; noi: string };
+// SRS-5.1zzzzzzz437 (chủ dự án 12/11/2026 "Sửa luôn" — gỡ dấu hiệu "AI slop" theo danh sách 20 dấu hiệu):
+// bỏ nhãn chữ in hoa trên mỗi tiêu đề, dấu chấm cuối tiêu đề, đánh số "1. 2. 3.", khung chat giả trong từng thẻ, thẻ lồng thẻ có
+// viền, quầng sáng mờ / vệt đỏ loang, chữ nghiêng, chip viên thuốc. Gộp khối "Bảo vệ quyền riêng tư" vào lời hứa đầu tiên (hai khối
+// nói cùng một ý). Lưới "Phường 1…15" (phường CŨ Quận 5, trước sáp nhập 2025) thay bằng danh sách 22 khu dẫn tới trang tag.
 
-const LOI_HUA: Array<{ Icon: (p: { className?: string }) => React.ReactElement; t: string; d: string; chat: Bong[] }> = [
+const LOI_HUA: Array<{ Icon: (p: { className?: string }) => React.ReactElement; t: string; d: string }> = [
   {
     Icon: IconShield,
     t: "Không thu số điện thoại",
-    d: "Để lại số trên trang nhà đất là ăn 40 cuộc gọi trong 3 ngày. Chỉ khi hẹn xem nhà mới cần liên hệ, và luôn có đường từ chối.",
-    chat: [
-      { ai: "khach", noi: "Em cần số của chị không?" },
-      { ai: "em", noi: "Dạ không chị. Mình nhắn Zalo là đủ, lúc hẹn xem nhà mới tính." },
-      { ai: "khach", noi: "Vậy đỡ bị gọi làm phiền." },
-    ],
+    d: "Để lại số trên trang nhà đất là ăn 40 cuộc gọi trong 3 ngày. Ở đây chỉ nhắn Zalo, khi hẹn xem nhà mới cần liên hệ. Nhắn “dừng” là tụi em im, không hỏi lý do.",
   },
   {
     Icon: IconClock,
     t: "Trực 24/7, nhớ nhu cầu",
-    d: "Chat hôm nay, ba tháng sau quay lại vẫn tiếp đúng chỗ cũ, không hỏi lại từ đầu.",
-    chat: [
-      { ai: "khach", noi: "Hồi tháng 5 anh có hỏi nhà Quận 8 dưới 8 tỉ đó em." },
-      { ai: "em", noi: "Dạ em nhớ, hẻm xe hơi 3 phòng ngủ. Tháng này có 2 căn mới, em gửi anh liền." },
-      { ai: "khach", noi: "Ok gửi anh xem." },
-    ],
+    d: "Chat hôm nay, ba tháng sau quay lại vẫn tiếp đúng chỗ cũ: khu nào, tầm giá nào, cần hẻm xe hơi hay không. Không hỏi lại từ đầu.",
   },
   {
     Icon: IconAsk,
     t: "Thiếu gì thì đi hỏi giùm",
-    d: "Chưa rõ pháp lý, hẻm rộng bao nhiêu - tụi em hỏi chủ nhà rồi báo lại anh chị.",
-    chat: [
-      { ai: "khach", noi: "Căn #35148 hẻm mấy mét, xe hơi vô được không?" },
-      { ai: "em", noi: "Tin chưa ghi, em hỏi chủ nhà rồi báo chị trong hôm nay nha." },
-      { ai: "em", noi: "Chủ nhà xác nhận hẻm 5m, xe 7 chỗ quay đầu được chị." },
-    ],
+    d: "Tin chưa ghi pháp lý, hẻm rộng bao nhiêu? Tụi em hỏi chủ nhà rồi báo lại. Điều chưa xác minh thì nói là chưa xác minh, không đoán thay chủ nhà.",
   },
 ];
 
 const VONG_HOI = [
   { ai: "Anh chị hỏi tụi em", noi: "“Sổ riêng chưa? Có lộ giới không?”", chu: "Hỏi bằng Zalo, câu nào cũng được." },
-  { ai: "Tụi em hỏi người bán", noi: "Chuyển đúng câu đó tới chủ nhà / môi giới, có hạn trả lời.", chu: "Chủ nhà không thấy Zalo của anh chị." },
+  { ai: "Tụi em hỏi người bán", noi: "Chuyển đúng câu đó tới chủ nhà hoặc môi giới, có hạn trả lời.", chu: "Chủ nhà không thấy Zalo của anh chị." },
   { ai: "Báo lại anh chị", noi: "Có câu trả lời là báo ngay, ghi vào tin để người sau khỏi hỏi lại.", chu: "Chưa có thì nói thẳng là chưa có." },
 ];
-
-function HoiThoai({ chat, toi }: { chat: Bong[]; toi?: boolean }) {
-  return (
-    <div className={`mt-4 flex flex-col gap-2 rounded-lg p-3 text-sm leading-relaxed ${toi ? "bg-white/10" : "bg-[#F0F4F8]"}`} aria-label="Minh hoạ hội thoại">
-      {chat.map((b, i) => (
-        <p
-          key={i}
-          className={`max-w-[88%] rounded-lg px-3.5 py-2 text-xs sm:text-sm ${
-            b.ai === "khach"
-              ? `self-end rounded-br-xs ${toi ? "bg-brand text-white font-medium" : "bg-[#DDF2FD] text-navy font-medium border border-[#C6E7FD] shadow-xs"}`
-              : `self-start rounded-bl-xs ${toi ? "bg-white/15 text-white" : "bg-white text-navy font-medium border border-slate-200/80 shadow-xs"}`
-          }`}
-        >
-          {b.noi}
-        </p>
-      ))}
-    </div>
-  );
-}
 
 // SRS-5.1zzzzzzz430: feed điện thoại lấy 60 tin mới nhất đang lên kệ, căn có ảnh lên trước, giữ 30.
 const SO_TIN_FEED = 30;
@@ -89,49 +57,41 @@ async function tinFeed(): Promise<{ tin: CardRow[]; anh: Record<string, string> 
 
 export default async function Home() {
   const { tin, anh } = await tinFeed();
+  const khuLink = KHU_LE.map((k) => ({ k, tag: tagChinhCuaKhu(k) })).filter((x) => x.tag);
   return (
     <>
       {/* ĐIỆN THOẠI: feed vuốt dọc kiểu TikTok (chủ dự án 12/11/2026 "Thay trang chủ trên điện thoại") */}
       <FeedDoc tin={tin} anh={anh} />
 
-      {/* MÁY TÍNH: trang chủ giữ nguyên */}
+      {/* MÁY TÍNH */}
       <div className="hidden md:block">
-      {/* 1. HERO DARK NAVY (#0B192C) */}
-      <section className="relative bg-navy text-white pb-12 pt-4">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand/20 blur-3xl" />
-        </div>
-        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pt-10 md:grid-cols-[1.15fr_.85fr] md:pt-14">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 text-brand-soft text-xs font-bold tracking-wide uppercase mb-3">
-              <span>Môi giới thường trực · Sài Gòn & Long An</span>
+        {/* 1. Hero */}
+        <section className="bg-navy pb-12 pt-4 text-white">
+          <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 pt-14 md:grid-cols-[1.15fr_.85fr]">
+            <div>
+              <h1 className="text-5xl font-extrabold leading-[1.12] [text-wrap:balance]">
+                Tìm nhà Sài Gòn, Long An?
+                <br />
+                <span className="text-brand-soft">Nhắn một câu là xong</span>
+              </h1>
+              <p className="mt-5 max-w-md text-base leading-7 text-line-strong">
+                Tụi em không hỏi số điện thoại, không spam. Trợ lý trực 24/7 trên Zalo, hỏi kiểu gì cũng hiểu: “nhà gần Lotte Mart
+                Quận 7”, “hẻm xe hơi dưới 10 tỉ”.
+              </p>
+              <p className="mt-6 max-w-lg text-sm leading-7 text-line-strong">
+                Tìm nhanh:{" "}
+                {FEATURED_TAGS.slice(0, 5).map((t, i) => (
+                  <span key={t.slug}>
+                    {i > 0 && <span aria-hidden> · </span>}
+                    <Link href={`/${t.slug}`} className="font-semibold text-white underline-offset-4 hover:text-brand-soft hover:underline">
+                      {t.keyword}
+                    </Link>
+                  </span>
+                ))}
+              </p>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold leading-[1.12] [text-wrap:balance] md:text-5xl text-white">
-              Tìm nhà Sài Gòn, Long An?
-              <br />
-              <span className="text-brand-soft">Nhắn một câu là xong.</span>
-            </h1>
-            <p className="mt-4 max-w-md leading-7 text-white/75 text-sm sm:text-base">
-              Tụi em không hỏi số điện thoại, không spam. Trợ lý trực 24/7 trên
-              Zalo, hỏi kiểu gì cũng hiểu: “nhà gần Lotte Mart Quận 7”, “hẻm xe hơi
-              dưới 10 tỉ”.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-2 text-xs">
-              {FEATURED_TAGS.slice(0, 5).map((t) => (
-                <Link
-                  key={t.slug}
-                  href={`/${t.slug}`}
-                  className="rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-white/85 transition hover:border-brand hover:bg-brand hover:text-white"
-                >
-                  {t.keyword}
-                </Link>
-              ))}
-            </div>
-          </div>
 
-          {/* Ảnh minh hoạ Hero */}
-          <div className="relative hidden md:block">
-            <div className="overflow-hidden rounded-lg border border-white/10 shadow-xl">
+            <div className="overflow-hidden rounded-lg">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/img/house1.jpg"
@@ -142,196 +102,120 @@ export default async function Home() {
               />
             </div>
           </div>
-        </div>
 
-        {/* Thanh tìm kiếm DẠNG CHAT tích hợp tự nhiên trong Hero */}
-        <div className="relative mx-auto mt-8 max-w-6xl px-4">
-          <form
-            action="/api/search"
-            method="get"
-            role="search"
-            className="flex flex-col gap-2.5 rounded-lg bg-white p-2.5 sm:p-2 sm:pl-4 text-navy shadow-md border border-slate-200 sm:flex-row sm:items-center sm:gap-3"
-          >
-            <input type="hidden" name="go" value="1" />
-            <IconSearch className="hidden h-5 w-5 shrink-0 text-brand sm:block" />
-            <input
-              name="q"
-              type="search"
-              maxLength={300}
-              autoComplete="off"
-              placeholder="tìm mua nhà phố HXH Quận 8, căn hộ Nhà Bè, biệt thự Bình Chánh, đất Bến Lức..."
-              aria-label="Nhắn một câu mô tả căn anh chị đang tìm"
-              className="min-w-0 flex-1 bg-transparent px-1 py-2 leading-6 text-navy outline-none placeholder:text-mute font-medium text-sm sm:text-base"
-            />
-            <button
-              type="submit"
-              className="nut nut-chinh px-6 py-2 rounded-md font-bold text-sm min-h-[44px]"
-            >
-              Tìm ngay
-            </button>
-            <a
-              href={zaloLink("hero")}
-              className="nut nut-phu px-5 py-2 rounded-md font-bold text-sm min-h-[44px]"
-            >
-              Hỏi qua Zalo
-            </a>
-          </form>
-        </div>
-      </section>
-
-      {/* 2. KHỐI 3 LỜI HỨA CỐT LÕI (NỀN SÁNG) */}
-      <section className="mx-auto grid max-w-6xl gap-5 px-4 py-12 md:grid-cols-3">
-        {LOI_HUA.map(({ Icon, t, d, chat }) => (
-          <div key={t} className="flex flex-col rounded-lg bg-white p-5 sm:p-6 border border-slate-200 shadow-xs hover:shadow-md transition">
-            <span className="grid h-11 w-11 place-items-center rounded-md bg-brand/10 text-brand">
-              <Icon className="h-5 w-5" />
-            </span>
-            <h2 className="mt-4 text-base sm:text-lg font-extrabold text-navy">{t}</h2>
-            <p className="mt-1.5 text-xs sm:text-sm leading-6 text-mute">{d}</p>
-            <HoiThoai chat={chat} />
+          {/* Ô tìm bằng câu nói */}
+          <div className="mx-auto mt-8 max-w-6xl px-4">
+            <form action="/api/search" method="get" role="search" className="flex items-center gap-3 rounded-lg bg-white p-2 pl-4 text-navy">
+              <input type="hidden" name="go" value="1" />
+              <IconSearch className="h-5 w-5 shrink-0 text-brand" />
+              <input
+                name="q"
+                type="search"
+                maxLength={300}
+                autoComplete="off"
+                placeholder="tìm mua nhà phố HXH Quận 8, căn hộ Nhà Bè, biệt thự Bình Chánh, đất Bến Lức..."
+                aria-label="Nhắn một câu mô tả căn anh chị đang tìm"
+                className="min-w-0 flex-1 bg-transparent px-1 py-2 text-base font-medium leading-6 text-navy outline-none placeholder:text-mute"
+              />
+              <button type="submit" className="nut nut-chinh min-h-[44px] px-6 text-sm">
+                Tìm ngay
+              </button>
+              <a href={zaloLink("hero")} className="nut nut-phu min-h-[44px] px-5 text-sm">
+                Hỏi qua Zalo
+              </a>
+            </form>
           </div>
-        ))}
-      </section>
+        </section>
 
-      {/* 4. VÒNG HỎI 3 BƯỚC ĐI HỎI GIÙM CHỦ NHÀ */}
-      <section className="mx-auto max-w-6xl px-4 py-8">
-        <div className="rounded-lg bg-white p-6 border border-line shadow-xs md:p-8">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-brand/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
-            <span>Hỏi bất kỳ, có tức thì</span>
-          </div>
-          <h2 className="text-2xl font-extrabold text-navy [text-wrap:balance] md:text-3xl">
-            Câu nào tụi em chưa biết, tụi em đi hỏi chủ nhà rồi báo lại
-          </h2>
-          <ol className="mt-6 grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch">
-            {VONG_HOI.map((b, i) => (
-              <li key={b.ai} className="contents">
-                <div className="rounded-lg border border-line bg-cream/60 p-5">
-                  <p className="eyebrow text-mute">{i + 1}. {b.ai}</p>
-                  <p className="mt-2 font-bold leading-6 text-navy text-sm md:text-base">{b.noi}</p>
-                  <p className="mt-1 text-xs text-mute">{b.chu}</p>
-                </div>
-                {i < VONG_HOI.length - 1 && (
-                  <span aria-hidden className="hidden self-center text-2xl text-brand md:block font-bold">→</span>
-                )}
-              </li>
-            ))}
-          </ol>
-          <p className="mt-4 text-xs text-mute italic">
-            * Điều chưa xác minh tụi em nói là chưa xác minh - tuyệt đối không đoán thay chủ nhà.
-          </p>
-        </div>
-      </section>
-
-      {/* 5. KHU NHIỀU TIN — số đếm thật từ kho (SRS-5.1zzzzzzz436, thay khối Radar số bịa) */}
-      <KhuTrangChu />
-
-      {/* 6. CAM KẾT RIÊNG TƯ ZALO */}
-      <section className="mx-auto max-w-6xl px-4 py-12">
-        <div className="grid gap-6 rounded-lg bg-navy p-6 text-white md:grid-cols-[1.1fr_.9fr] md:p-8 shadow-lg border border-white/10">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-2">
-              <span>Bảo vệ quyền riêng tư</span>
+        {/* 2. Ba lời hứa — chữ thường, không thẻ, không khung chat giả */}
+        <section className="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-3">
+          {LOI_HUA.map(({ Icon, t, d }) => (
+            <div key={t}>
+              <Icon className="h-6 w-6 text-brand" />
+              <h2 className="mt-3 text-lg font-extrabold text-navy">{t}</h2>
+              <p className="mt-2 text-sm leading-6 text-mute">{d}</p>
             </div>
-            <h2 className="mt-1.5 text-2xl font-extrabold [text-wrap:balance] md:text-3xl text-white">
-              Kết nối bằng Zalo là đủ. Muốn dừng thì dừng.
+          ))}
+        </section>
+
+        {/* 3. Đi hỏi giùm chủ nhà */}
+        <section className="mx-auto max-w-6xl px-4 pb-16">
+          <div className="rounded-lg bg-white p-8">
+            <h2 className="text-3xl font-extrabold text-navy [text-wrap:balance]">
+              Câu nào tụi em chưa biết, tụi em đi hỏi chủ nhà rồi báo lại
             </h2>
-            <ul className="mt-6 space-y-3 text-white/85 text-sm">
-              {[
-                "Không cần tiết lộ số điện thoại - chỉ khi hẹn xem nhà mới cần, và có đường từ chối.",
-                "Chỉ liên hệ bằng Zalo, đúng kênh anh chị đã chọn. Không gọi làm phiền, không spam SMS.",
-                "Ngắt kết nối bất cứ lúc nào: chặn OA hoặc nhắn “dừng” là tụi em im ngay - không hỏi lý do.",
-              ].map((x) => (
-                <li key={x} className="flex gap-3 leading-6">
-                  <span className="mt-0.5 shrink-0 text-amber-400 font-bold">✓</span>
-                  <span>{x}</span>
+            <ol className="mt-8 grid gap-6 md:grid-cols-[1fr_auto_1fr_auto_1fr]">
+              {VONG_HOI.map((b, i) => (
+                <li key={b.ai} className="contents">
+                  <div>
+                    <p className="text-sm font-bold text-brand">{b.ai}</p>
+                    <p className="mt-2 font-bold leading-6 text-navy">{b.noi}</p>
+                    <p className="mt-1 text-sm text-mute">{b.chu}</p>
+                  </div>
+                  {i < VONG_HOI.length - 1 && (
+                    <span aria-hidden className="self-center text-2xl font-bold text-line-strong">
+                      →
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* 4. Khu nhiều tin — số đếm thật từ kho (SRS-5.1zzzzzzz436) */}
+        <KhuTrangChu />
+
+        {/* 5. Công cụ + chọn khu */}
+        <section className="mx-auto grid max-w-6xl gap-10 px-4 py-16 lg:grid-cols-[1fr_1.4fr]">
+          <div className="grid content-start gap-8">
+            {[
+              { href: "/tinh-lai-vay", Icon: IconCalc, t: "Tính lãi vay mua nhà", d: "Mỗi tháng trả bao nhiêu, xem trước dòng tiền rồi hãy quyết." },
+              { href: "/thong-ke", Icon: IconChart, t: "Giá theo phường", d: "Phường nào đang rao đắt nhất, tính từ tin thật trong kho." },
+            ].map(({ href, Icon, t, d }) => (
+              <Link key={href} href={href} className="group flex gap-4">
+                <Icon className="mt-0.5 h-6 w-6 shrink-0 text-brand" />
+                <span>
+                  <span className="block font-extrabold text-navy group-hover:text-brand">{t}</span>
+                  <span className="mt-1 block text-sm leading-6 text-mute">{d}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+          <div>
+            <h2 className="text-lg font-extrabold text-navy">Chọn khu anh chị đang nhắm</h2>
+            <ul className="mt-4 grid grid-cols-3 gap-x-6 gap-y-2 text-sm">
+              {khuLink.map(({ k, tag }) => (
+                <li key={k.slug}>
+                  <Link href={`/${tag!.slug}`} className="text-navy hover:text-brand hover:underline">
+                    {k.label}
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
-          <div className="self-center">
-            <HoiThoai
-              toi
-              chat={[
-                { ai: "khach", noi: "Cho anh số của em để anh gọi cho tiện?" },
-                { ai: "em", noi: "Dạ mình nhắn ở đây là đủ anh - tụi em không xin số, cũng không gọi làm phiền." },
-                { ai: "khach", noi: "Vậy lúc nào không cần nữa thì sao?" },
-                { ai: "em", noi: "Anh nhắn “dừng” là em im liền, khỏi giải thích ạ." },
-              ]}
-            />
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* 7. CÔNG CỤ TÀI CHÍNH & CHỌN THEO PHƯỜNG */}
-      <section className="mx-auto grid max-w-6xl gap-5 px-4 pb-12 lg:grid-cols-2">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {[
-            { href: "/tinh-lai-vay", Icon: IconCalc, t: "Tính lãi vay mua nhà", d: "Mỗi tháng trả bao nhiêu, xem trước dòng tiền rồi hãy quyết." },
-            { href: "/thong-ke", Icon: IconChart, t: "Giá theo phường", d: "Phường nào đang rao đắt nhất, tính từ tin thật trong kho." },
-          ].map(({ href, Icon, t, d }) => (
-            <Link
-              key={href}
-              href={href}
-              className="group rounded-xl bg-white p-5 border border-line shadow-[0_2px_14px_rgba(13,37,61,0.06)] transition hover:-translate-y-1 hover:shadow-md hover:border-brand/40"
-            >
-              <span className="grid h-11 w-11 place-items-center rounded-lg bg-brand/10 text-brand">
-                <Icon className="h-6 w-6" />
-              </span>
-              <p className="mt-4 font-extrabold text-navy group-hover:text-brand transition-colors">{t}</p>
-              <p className="mt-1 text-xs leading-5 text-mute">{d}</p>
-            </Link>
-          ))}
-        </div>
-        <div className="rounded-xl bg-white p-6 border border-line shadow-[0_2px_14px_rgba(13,37,61,0.06)]">
-          <p className="eyebrow text-brand">Theo phường & khu vực</p>
-          <h2 className="mt-1.5 text-lg font-extrabold text-navy">Chọn khu vực anh chị đang nhắm</h2>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {WARDS.map((w) => (
-              <Link
-                key={w}
-                href={`/mua-ban?phuong=${encodeURIComponent(w)}`}
-                className="rounded-md border border-line px-3 py-1.5 text-xs text-slate-700 transition hover:border-brand hover:text-brand bg-slate-50"
-              >
-                {w}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 8. CTA DÀNH CHO NGƯỜI BÁN */}
-      <section className="mx-auto max-w-6xl px-4 pb-16">
-        <div className="relative overflow-hidden rounded-lg bg-navy px-6 py-10 text-white md:px-10 border border-white/10 shadow-lg">
-          <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-brand/25 blur-3xl" />
-          <div className="relative max-w-xl">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 text-brand text-xs font-bold tracking-wide uppercase mb-3">
-              <span>Dành cho người bán & môi giới</span>
-            </div>
-            <h2 className="mt-2 text-2xl font-extrabold [text-wrap:balance] md:text-3xl text-white">
-              Rao bán? Một câu là xong.
-            </h2>
-            <p className="mt-3 leading-7 text-white/75 text-sm md:text-base">
-              “Bán nhà HXH xe tải quay đầu, gần Cao Lỗ Quận 8, 9 tỉ bớt
-              lộc” - nhắn vậy là đủ. Tụi em viết lại tin, trả lời khách, chỉ liên
-              hệ anh chị khi thật sự cần.
-            </p>
-            <div className="mt-7 flex flex-wrap items-center gap-4">
-              <Link
-                href="/raoban"
-                className="nut nut-chinh px-6 py-3 rounded-md font-bold shadow-md"
-              >
-                Rao bán ngay - Miễn phí
-              </Link>
-              <a
-                href={zaloLink("seller_cta")}
-                className="px-6 py-3 rounded-md border border-white/20 bg-white/10 text-white font-bold text-sm hover:bg-white/20 transition"
-              >
-                Gửi tin qua Zalo
-              </a>
+        {/* 6. Người bán */}
+        <section className="mx-auto max-w-6xl px-4 pb-16">
+          <div className="rounded-lg bg-navy px-10 py-10 text-white">
+            <div className="max-w-xl">
+              <h2 className="text-3xl font-extrabold [text-wrap:balance]">Rao bán? Một câu là xong</h2>
+              <p className="mt-3 leading-7 text-line-strong">
+                “Bán nhà HXH xe tải quay đầu, gần Cao Lỗ Quận 8, 9 tỉ bớt lộc”, nhắn vậy là đủ. Tụi em viết lại tin, trả lời khách, chỉ
+                liên hệ anh chị khi thật sự cần.
+              </p>
+              <div className="mt-7 flex flex-wrap items-center gap-4">
+                <Link href="/raoban" className="nut nut-chinh px-6">
+                  Rao bán miễn phí
+                </Link>
+                <a href={zaloLink("seller_cta")} target="_blank" rel="noopener" className="nut bg-zalo px-6 text-white hover:opacity-90">
+                  Gửi tin qua Zalo
+                </a>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
       </div>
     </>
   );

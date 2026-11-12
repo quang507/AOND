@@ -675,6 +675,8 @@ Thao tác huỷ hoại hàng loạt không đặt cạnh việc hằng ngày (kh
 CRM. Thẻ `rounded-lg`. Danh sách cần duyệt là DÒNG (một dòng thông tin, nút bên phải), không phải thẻ cao. Không trang nào được
 tràn ngang ở 390px.
 
+**Tránh dấu hiệu "AI slop" (12/11/2026, SRS-5.1zzzzzzz437)** [nguồn: chủ dự án 12/11/2026 — danh sách 20 dấu hiệu, "Sửa luôn"]: không đặt nhãn chữ in hoa nhỏ trên tiêu đề khối, không chấm câu cuối tiêu đề, không đánh số "1. 2. 3." cho các bước, không vẽ khung chat giả làm minh hoạ, không lồng thẻ có viền trong thẻ, không quầng sáng / gradient trang trí, không chữ nghiêng, không chip viên thuốc cho link thường. Chữ phụ trên nền tối dùng `text-line-strong`, không dùng trắng mờ.
+
 **Góc bo (12/11/2026)** [nguồn: chủ dự án 12/11/2026 — "Đổi góc bo sang 14px như King"; thay quyết định 2px ngày 19/10]: mọi góc bo trên web và CRM là **14px** như theme King (riêng `rounded-xs` 4px), đặt ở MỘT chỗ — thang `--radius-*` trong `app/globals.css` (đè cả `rounded`, `-md`, `-lg`, `-xl`, `-2xl` của Tailwind). Không viết `rounded-[Npx]` hay `border-radius` tay. `rounded-full` chỉ cho hình tròn thật (avatar, chấm trạng thái, thanh tiến độ), không cho nút.
 
 ## 6.10 Accessibility

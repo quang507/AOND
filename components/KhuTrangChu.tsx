@@ -23,7 +23,7 @@ export default async function KhuTrangChu() {
         <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
             <h2 className="text-2xl font-extrabold [text-wrap:balance] md:text-4xl">Nhà đang bán theo khu</h2>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/75">
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-line-strong">
               Số tin đếm thẳng từ kho, cập nhật mỗi giờ. Bấm vào một khu để xem giá rao ở giữa, phường nhiều tin và từng căn.
             </p>
           </div>
@@ -39,12 +39,12 @@ export default async function KhuTrangChu() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {khu.map(({ k, n, tag }) => (
-            <Link key={k.slug} href={`/${tag!.slug}`} className="group rounded-lg bg-white/5 p-5 transition hover:bg-white/10">
+            <Link key={k.slug} href={`/${tag!.slug}`} className="group rounded-lg bg-navy-soft p-5">
               <div className="flex items-baseline justify-between gap-3">
                 <h3 className="text-lg font-extrabold group-hover:text-brand-soft">{k.label.replace(/, Long An$/, "")}</h3>
-                <span className="shrink-0 text-sm font-bold text-white/80">{n} tin</span>
+                <span className="shrink-0 text-sm font-bold text-line-strong">{n} tin</span>
               </div>
-              {GIOI_THIEU[k.slug] && <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-white/70">{GIOI_THIEU[k.slug]}</p>}
+              {GIOI_THIEU[k.slug] && <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-line-strong">{GIOI_THIEU[k.slug]}</p>}
             </Link>
           ))}
         </div>

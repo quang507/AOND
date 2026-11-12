@@ -131,17 +131,6 @@
 .feed-tron--zalo { background: var(--color-zalo); color: #fff; }
 .feed-tron--do { background: var(--color-brand); color: #fff; }
 
-/* Chip tag trên nền tối. */
-.feed-chip {
-  display: inline-block;
-  padding: 7px 12px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  background: rgb(255 255 255 / 0.1);
-  border: 1px solid rgb(255 255 255 / 0.22);
-  border-radius: var(--radius-king);
-}
 
 .feed-goi-y { animation: feed-nhun 1.6s ease-in-out infinite; }
 @keyframes feed-nhun {

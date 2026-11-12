@@ -83,8 +83,10 @@ body {
    CHỈ dùng làm nhãn cho một CON SỐ hay một ô dữ liệu. KHÔNG dùng làm tiêu đề
    khối: trang /admin từng có 18 khối mở đầu bằng đúng nhãn này, và hệ quả là
    không khối nào nổi lên trước khối nào. Tiêu đề thì dùng h2/h3 thật. */
+/* SRS-5.1zzzzzzz437 (12/11/2026): bỏ chữ in hoa + giãn chữ — "ALL CAPS subtitles" là một trong 20 dấu hiệu "AI slop" chủ dự
+   án gửi. Giữ tên lớp để khỏi sửa từng chỗ dùng; giờ là nhãn chữ thường, đậm vừa. */
 .eyebrow {
-  @apply text-xs font-bold uppercase tracking-[0.14em];
+  @apply text-sm font-semibold;
 }
 
 /* ── NÚT ─────────────────────────────────────────────────────────────────────

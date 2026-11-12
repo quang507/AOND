@@ -310,10 +310,6 @@ export default async function ListingBrowse({
       {/* Hero Header */}
       <div className="bg-navy pb-16 pt-10 text-white">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-white/10 text-[#60A5FA] text-xs font-bold tracking-wide uppercase mb-2">
-            <span>🏠</span>
-            <span>Kho tin · Sài Gòn & Long An</span>
-          </div>
           <h1 className="mt-1 text-2xl font-extrabold md:text-3xl">
             {title} {sp.phuong ? `- ${sp.phuong}` : sp.quan ? `- ${sachIlike(sp.quan)}` : "Sài Gòn & Long An"}
           </h1>
