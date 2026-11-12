@@ -133,6 +133,15 @@ export function zaloLink(context?: string): string {
 // private một cái là raw trả 404 và ảnh vỡ sạch. Đường dẫn tương đối cắt hẳn
 // ràng buộc đó, lại nhanh hơn (cùng origin, qua CDN của Vercel).
 const IMG_BASE = "/img";
+/** SRS-5.1zzzzzzz448: ngày đăng tin "dd/mm/yyyy" theo giờ Việt Nam. Ghi ngày tuyệt đối, không "3 ngày trước": thẻ tin dựng sẵn
+ *  ở máy chủ và giữ trong bộ đệm vài giờ — chữ tương đối sẽ cũ đi và lệch với lúc trình duyệt dựng lại (lỗi hydration). */
+export function ngayDang(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
+}
+
 export function placeholderImg(_seed?: string): string {
   return `${IMG_BASE}/chua-co-anh.svg`;
 }

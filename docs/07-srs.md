@@ -788,6 +788,15 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz448 · Thẻ tin ghi ngày đăng thật, bỏ nhãn "✓ Xác thực" (12/11/2026)
+
+Thấy lúc làm SRS-447, chủ dự án 12/11 "ừ, gán đi". `ListingCard` ghi cứng "Đăng hôm nay" ở mọi thẻ và gắn "✓ Xác thực" lên ảnh mọi
+tin; kho không có cột xác minh nào ở mức tin (khối "Đã xác minh với chủ nhà" trên trang căn là lời chủ nhà kể, không phải đã kiểm).
+- Bỏ nhãn "✓ Xác thực" trên ảnh thẻ.
+- Ngày đăng đọc `created_at`, hàm `ngayDang()` (lib/format.ts) ghi "dd/mm/yyyy" theo giờ Việt Nam. Ngày tuyệt đối, không "3 ngày
+  trước": thẻ dựng sẵn và nằm trong bộ đệm vài giờ, chữ tương đối sẽ cũ và lệch khi trình duyệt dựng lại.
+- Không thêm nhãn "Đã cọc": giữ quyết định SRS-63 (tin đã cọc hiện như đang bán, không nhãn).
+
 ### SRS-5.1zzzzzzz447 · Ba hiệu ứng của theme King: ảnh hiện dần, thẻ nhấc khi rê chuột, tự tải thêm tin khi cuộn (12/11/2026)
 
 Chủ dự án 12/11/2026 "lấy hết đi", sau khi soát theme King: King có ảnh hiện dần (`.king-lazy`), cuộn vô tận (jquery-ias),

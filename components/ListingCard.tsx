@@ -1,7 +1,7 @@
 import Link from "next/link";
 import FavButton from "@/components/FavButton";
 import type { ListingCard as CardRow } from "@/lib/supabase";
-import { formatArea, formatPrice, placeholderImg } from "@/lib/format";
+import { formatArea, formatPrice, ngayDang, placeholderImg } from "@/lib/format";
 import { IconPin } from "@/components/icons";
 
 export default function ListingCard({
@@ -46,10 +46,6 @@ export default function ListingCard({
             {listing.deal === "cho_thue" ? "Cho thuê" : "Bán"}
           </span>
         )}
-        {/* Verified Badge on Photo */}
-        <span className="absolute top-2 right-2 rounded bg-emerald-600/90 text-white text-[10px] font-bold px-1.5 py-0.5 backdrop-blur-xs shadow-xs">
-          ✓ Xác thực
-        </span>
       </Link>
 
       {/* Body */}
@@ -82,7 +78,9 @@ export default function ListingCard({
 
         {/* Footer */}
         <div className="mt-auto pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
-          <span>Đăng hôm nay</span>
+          {/* SRS-5.1zzzzzzz448: trước đây mọi thẻ ghi cứng "Đăng hôm nay" và gắn nhãn "✓ Xác thực" lên ảnh — cả hai sai với khách
+              (kho không có cột xác minh nào ở mức tin). Giờ ghi ngày đăng thật, bỏ nhãn xác thực. */}
+          <span>{ngayDang(listing.created_at) ? `Đăng ${ngayDang(listing.created_at)}` : ""}</span>
           <FavButton code={code} variant="square" />
         </div>
       </div>
