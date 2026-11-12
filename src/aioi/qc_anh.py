@@ -32,7 +32,7 @@ TOI_DA_MOT_LUOT = 10
 TOI_DA_ANH_MOT_LAN = 8
 TOI_DA_NHAN_MOI_CAN = 2
 IM_TOI_THIEU_GIAY = int(os.environ.get("SAU_DANG_NHAC_GIAY", "600"))
-# Sổ cạnh lõi (C:ondond_core\qc_anh.json trên 146) — task chạy dưới SYSTEM không có thư mục làm việc cố định.
+# Sổ cạnh lõi (aond_core/qc_anh.json trên 146) — task chạy dưới SYSTEM không có thư mục làm việc cố định.
 QC_ANH_SO = os.environ.get("QC_ANH_SO", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "qc_anh.json"))
 DUOI_ANH = (".jpg", ".jpeg", ".png", ".webp")
 
