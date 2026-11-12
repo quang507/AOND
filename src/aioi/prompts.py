@@ -203,7 +203,8 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "phu_hop_kinh_doanh": ("Hỏi chủ đoạn đường này buôn bán gì thì hợp (chủ rành khu hơn em), để em giới thiệu đúng khách thuê / mua kinh doanh; "
                            "căn đang cho thuê thì hỏi khách thuê đang làm gì. Hỏi mở, không gợi sẵn danh sách ngành"),
     "cho_dau_xe": "Hỏi khách tới căn đậu xe có tiện không (trước nhà, vỉa hè, bãi gần) — khách thuê kinh doanh hay hỏi ý này",
-    "thue_phi": "Hỏi thuế phí sang tên bên nào chịu (bên bán, bên mua hay chia đôi) — giá đã gồm thuế phí chưa",
+    # SRS-5.1zzzzzzz450: một câu (luật một câu hỏi) — bản trước gộp hai câu "bên nào chịu… và giá đã gồm thuế phí chưa".
+    "thue_phi": "Hỏi gọn MỘT câu: giá này đã bao thuế phí sang tên chưa (bao = bên bán lo; chưa thì để khách nói bên nào chịu)",
     "thanh_toan": "Hỏi muốn nhận tiền một lần hay chia đợt, có đồng ý để người mua vay ngân hàng không",
     "gio_xem": "Hỏi khung giờ nào tiện để bên em dẫn khách tới xem nhà",
     "chia_khoa": "Hỏi lúc dẫn khách xem thì bên em liên hệ ai (chủ nhà hay người nhà) và ai giữ chìa khoá — KHÔNG xin số điện thoại",
@@ -490,6 +491,12 @@ GIONG_VUI = """GIỌNG (bắt buộc, chung cho khách gửi bán và khách tì
 NHAN_VIEC_LUOT = "VIỆC LƯỢT NÀY"
 # Một nguồn cho luật một câu hỏi ở phiếu lượt người bán và prompt mua (SRS-5.1zzzzzzz379) — mỗi prompt ghép chỉ ghi MỘT lần.
 LUAT_MOT_CAU_HOI = "Tối đa MỘT câu hỏi mỗi lượt"
+# SRS-5.1zzzzzzz450 (bắn thử 12/11: bot hỏi "thuế phí bên nào chịu", chủ đáp "ok" → bot hỏi lại nguyên câu; bot hỏi "giữ cứng hay thương lượng",
+# chủ đáp "ok" → bot nói "giá em cứ giữ 14 tỷ"). Bóc tách đúng (không ghi ô nào) nhưng lời đáp không có luật cho lượt khách đáp chung
+# một câu hỏi lựa chọn. Một nguồn cho ba prompt phía bán: prompt gọn, phiếu cũ, prompt sau bản tin.
+LUAT_DAP_CHUA_CHON = ("KHÁCH ĐÁP CHƯA CHỌN: câu em vừa hỏi là câu chọn (giữ cứng hay thương lượng, bên nào chịu thuế phí…) mà khách chỉ "
+                      "đáp chung kiểu \"ok\", \"ừ\", \"được\" — nghĩa là khách chưa chọn. Em nhận nhẹ một câu rồi sang việc lượt này; ý "
+                      "đó để trống, có dịp (khách mua hỏi tới) mới nhắc lại. Phương án nào khách tự nói ra mới là ý của khách.")
 # Sự thật của căn do AI đọc theo nghĩa (SRS-5.1zzzzzzz320) — (khoá, giá trị, mô tả cho schema). Engine ghi vào ô nội bộ "_<khoá>" khi cụm trích
 # có trong lời khách; lưới bản tin (`engine._khang_dinh_khong_co_du_lieu`) chỉ đối chiếu các ô này + vai, không đọc lời khách.
 SU_THAT_CAN: tuple[tuple[str, tuple[str, ...], str], ...] = (
@@ -611,6 +618,7 @@ def phieu_co_dinh(assistant_name: str) -> str:
 
 LUẬT CỐ ĐỊNH:
 - Đáp đúng điều khách vừa nói, rồi làm {NHAN_VIEC_LUOT}. Viết trọn câu, không bỏ lửng.
+- {LUAT_DAP_CHUA_CHON}
 - {LUAT_MOT_CAU_HOI}. Điều khách đã nói thì không hỏi lại; tự hiểu từ dữ kiện đã có, không hỏi để xác nhận nghĩa — trừ câu xác nhận mà {NHAN_VIEC_LUOT} giao.
 - Chỉ dùng điều khách nói và dữ liệu bên dưới; không bịa chi tiết (giá thị trường, hứa bán: theo khối GIỌNG).
 - Không nói tin đã đăng / đang hiển thị trừ khi có khối trạng thái hệ thống báo. Lượt này không có bản tin kèm theo.
@@ -1101,6 +1109,7 @@ SỰ THẬT:
   trạng thái khi hệ thống đã đổi.
 - Bên em liên lạc với khách qua chính Zalo này. Khách chưa nhắc căn khác thì em không gợi rao thêm.
 - Có khối việc riêng (ƯU TIÊN, HỎI THÊM…) thì khối đó là việc lượt này; cách nhắn vẫn như trên.
+- {LUAT_DAP_CHUA_CHON}
 
 {TIN_HE_THONG}
 
@@ -1469,9 +1478,11 @@ def build_fee_followup_system(
 DANH SÁCH GIÁ TRỊ (dùng để thuyết phục, chỉ nêu thứ có thật):
 {FEE_VALUE_POINTS}
 
+{LUAT_DAP_CHUA_CHON}
+
 {khoi_viet}{RANH_GIOI_CACHE}{project_block}
 NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem bản tin rao và hỏi họ muốn sửa chỗ nào hay đăng luôn. Hãy đọc phản hồi MỚI NHẤT của khách:{khong_dong_y}
-- NẾU khách ĐỒNG Ý / DUYỆT / BẢO ĐĂNG TIN (vd: "đăng đi", "lên bài đi", "lên tin đi", "đăng tin đi", "ok em", "được rồi", "chuẩn rồi em", "không cần sửa gì", hoặc thả tim/like):
+- NẾU khách ĐỒNG Ý / DUYỆT / BẢO ĐĂNG TIN — lời đáp cho câu em hỏi duyệt / sửa bản tin (vd: "đăng đi", "lên bài đi", "lên tin đi", "đăng tin đi", "ok em", "được rồi", "chuẩn rồi em", "không cần sửa gì", hoặc thả tim/like; "ok" đáp một câu hỏi khác thì theo KHÁCH ĐÁP CHƯA CHỌN):
 {xac_nhan}{hoi_phi}{hoi_sau}
 - NẾU khách HỎI LINK BÀI ĐĂNG HOẶC HỎI TRÊN WEB ĐĂNG NHƯ THẾ NÀO (vd: "đang đăng web như thế nào", "xem tin ở đâu", "cho xin link web", "link đâu"):
 {hoi_link}

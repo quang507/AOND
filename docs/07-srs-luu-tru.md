@@ -73,6 +73,18 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz440 · Tin chủ động gọi đúng cách chat đang gọi chủ; lời khen xin ảnh giọng nói miệng (12/11/2026)
+Chủ dự án 12/11 (chat anh Luận): tin Image LQC 08:34 "Mặt tiền ngang 7m của anh/chị nhìn rất thích, anh/chị chụp giúp em…" — cả chat gọi "anh",
+tin nền đổi sang "anh/chị"; câu khen văn viết, "sửa văn phong kiểu mặt tiền vậy là ngon luôn anh".
+- **Xưng hô:** anh Luận chưa tự xưng nên cách gọi đi từ gợi ý theo giới tính hồ sơ Zalo (`xung_ho_goi_y`, SRS-5.1zzzzzzz163). Gợi ý đó chỉ
+  nằm trong bộ nhớ, đặt lại mỗi tin khách nhắn — lõi khởi động lại (triển khai 146) thì mất, tin chủ động của vòng nền (Image LQC, hỏi sau
+  đăng, tin nhắc) chạy lúc chủ chưa nhắn lại rơi về "anh/chị". Bản sửa SRS-422 (3bcd3b3) đã cho tin QC đọc xưng hô theo chat nhưng vẫn
+  hở chỗ này. Nay gợi ý lưu SQLite (cột `xung_ho_goi_y`), nạp lại cùng `xung_ho` — mọi đường đọc xưng hô (`_detect_customer_pronoun`) thấy
+  như lượt chat.
+- **Giọng xin ảnh:** `LUAT_XIN_ANH_KHEO` (dùng chung tin QC ảnh và cụm xin ảnh trong chat) — khen một câu ngắn giọng nói miệng ("Mặt tiền 7m vậy
+  là ngon luôn."), rồi một câu xin góc; trước ép "đúng MỘT câu" nên lời khen, lời xin và lợi ích dồn thành một câu dài văn viết. ≈ +25 token.
+- Tin 08:34 còn xin "kèm biển số nhà" — đã chặn ở 3bcd3b3 (08:35, sau tin đó một phút).
+
 ### SRS-5.1zzzzzzz439 · Soát giao diện bằng skill impeccable (audit + polish) trang chủ, feed, trang tag, trang chi tiết căn (12/11/2026)
 Chủ dự án 12/11 "chạy đi nhưng đừng để impeccable sửa chồng mấy cái kia quá" — giữ nguyên màu / font King, góc 14px, nút Zalo xanh,
 feed, nút "Hỏi", luật không eyebrow. Bộ dò tự động của impeccable: 0 lỗi; soát bằng mắt khổ 1280px và 375px ra 9 lỗi thật, sửa hết:

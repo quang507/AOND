@@ -788,6 +788,19 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz450 · Khách đáp "ok" cho câu hỏi lựa chọn: không hỏi lại, không đoán (12/11/2026)
+Bắn thử 12/11 (`thu-lqc-1711`, `thu-lqc-1711b`), chủ dự án hỏi "vì sao nói Ok thì bot hỏi lại":
+- `thu-lqc-1711`: bot hỏi "thuế phí sang tên bên nào chịu, bên bán, bên mua hay chia đôi, và giá 19 tỷ đã gồm thuế phí chưa" — chủ "ok" → bot
+  hỏi lại nguyên câu ("em hỏi lại cho rõ nghen").
+- `thu-lqc-1711b`: bot hỏi "giữ cứng hay còn thương lượng" — chủ "ok" → bot nói "giá em cứ giữ 14 tỷ như trên tin" (ô `thuong_luong` vẫn trống).
+- **Gốc:** bóc tách đúng — "ok" không chọn phương án nào nên không ghi ô (luật đáp ngắn chỉ áp cho câu có / không). Lời đáp thì không có luật
+  cho lượt khách đáp chung một câu hỏi LỰA CHỌN: model tự xử, lúc hỏi lại, lúc đoán. Prompt sau bản tin (`build_fee_followup_system`) còn lấy
+  "ok em" làm ví dụ của nhánh "khách đồng ý đăng" bất kể câu bot vừa hỏi là gì. Câu hỏi thuế phí gộp hai câu (trái luật một câu hỏi).
+- **Sửa (prompt, một nguồn):** `LUAT_DAP_CHUA_CHON` — khách đáp chung ("ok", "ừ", "được") câu chọn = chưa chọn; nhận nhẹ, sang việc lượt này, ý
+  đó để trống; chỉ phương án khách tự nói mới là ý khách. Đi vào prompt gọn (`LEAN_SYSTEM_PROMPT`), phiếu cũ (`phieu_co_dinh`) và prompt sau bản tin
+  (phần cố định, trước ranh giới cache). Nhánh đồng ý đăng của prompt sau bản tin ghi rõ là lời đáp cho câu hỏi duyệt / sửa bản tin. `thue_phi`
+  hỏi một câu: giá đã bao thuế phí sang tên chưa.
+
 ### SRS-5.1zzzzzzz449 · Bridge tự dựng lại khi kết nối nghe Zalo đóng (12/11/2026)
 Chủ dự án 12/11 17:33 nhắn "/quit" rồi "chào em" vào Zalo "AI Ơi Nhà Đất" — không có trả lời: "sao bot ko rep".
 - **Gốc:** `bot/bridge-zca/index.mjs` gọi `api.listener.start()` trần, không nghe sự kiện `closed` / `disconnected` của zca-js. Zalo đóng
@@ -911,15 +924,3 @@ lượng, lý do bán, thuế phí đều ra đúng thứ tự, mỗi lượt m�
   "đã nhắn" rồi mới gửi qua bridge — bridge hụt thì câu bị tính là đã hỏi mà chủ không nhận, không bao giờ hỏi lại. Nay gửi ngay dưới khoá
   lượt của khách, gửi được mới ghi mốc.
 - Ghi nhận, chưa sửa: chủ không đáp câu thuế phí (đáp câu khác, rồi "ok") — bot hỏi lại thuế phí ba lượt liền.
-
-### SRS-5.1zzzzzzz440 · Tin chủ động gọi đúng cách chat đang gọi chủ; lời khen xin ảnh giọng nói miệng (12/11/2026)
-Chủ dự án 12/11 (chat anh Luận): tin Image LQC 08:34 "Mặt tiền ngang 7m của anh/chị nhìn rất thích, anh/chị chụp giúp em…" — cả chat gọi "anh",
-tin nền đổi sang "anh/chị"; câu khen văn viết, "sửa văn phong kiểu mặt tiền vậy là ngon luôn anh".
-- **Xưng hô:** anh Luận chưa tự xưng nên cách gọi đi từ gợi ý theo giới tính hồ sơ Zalo (`xung_ho_goi_y`, SRS-5.1zzzzzzz163). Gợi ý đó chỉ
-  nằm trong bộ nhớ, đặt lại mỗi tin khách nhắn — lõi khởi động lại (triển khai 146) thì mất, tin chủ động của vòng nền (Image LQC, hỏi sau
-  đăng, tin nhắc) chạy lúc chủ chưa nhắn lại rơi về "anh/chị". Bản sửa SRS-422 (3bcd3b3) đã cho tin QC đọc xưng hô theo chat nhưng vẫn
-  hở chỗ này. Nay gợi ý lưu SQLite (cột `xung_ho_goi_y`), nạp lại cùng `xung_ho` — mọi đường đọc xưng hô (`_detect_customer_pronoun`) thấy
-  như lượt chat.
-- **Giọng xin ảnh:** `LUAT_XIN_ANH_KHEO` (dùng chung tin QC ảnh và cụm xin ảnh trong chat) — khen một câu ngắn giọng nói miệng ("Mặt tiền 7m vậy
-  là ngon luôn."), rồi một câu xin góc; trước ép "đúng MỘT câu" nên lời khen, lời xin và lợi ích dồn thành một câu dài văn viết. ≈ +25 token.
-- Tin 08:34 còn xin "kèm biển số nhà" — đã chặn ở 3bcd3b3 (08:35, sau tin đó một phút).

@@ -775,6 +775,7 @@ khi đẩy — bảng là danh sách để chạy lại khi cần. SRS-1 … 244
 | SRS-445 | Thông tin dự án một người báo vẫn dùng kèm nhãn chưa chắc chắn (bot + web); bản vẽ phân lô → rổ lô dự án | FR-195 | `test_chua_chac_445.py` |
 | SRS-446 | Căn trong dự án lấy phường theo toạ độ dự án (phường mới sau sáp nhập); chỉ hỏi số nhà khi có tên đường | FR-162 | `test_phuong_du_an_446.py` |
 | SRS-449 | Bridge tự dựng lại khi kết nối nghe Zalo đóng (không còn chạy "điếc": gửi được mà không nhận) | FR-203 | nhắn thật vào Zalo bot sau khi bridge khởi động lại |
+| SRS-450 | Khách đáp "ok" cho câu hỏi lựa chọn: bot không hỏi lại, không đoán phương án; câu thuế phí một câu | FR-144 | `test_dap_chua_chon_450.py` + bắn thử `lqc_thu.py` |
 
 ## 10.8 Nghiệm thu theo từng tài liệu (04/09/2026)
 
