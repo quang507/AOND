@@ -203,3 +203,20 @@ export const FEATURED_TAGS = [
   "cho-thue-nha-sai-gon",
   "cho-thue-mat-bang-sai-gon",
 ].map((s) => BY_SLUG.get(s)).filter(Boolean) as TagDef[];
+
+// SRS-5.1zzzzzzz436: danh sách khu cho khối "giới thiệu khu" (trang tag) và khối khu trang chủ — cùng bộ tên / biến thể
+// `district` với tag, để số tin ở hai nơi luôn khớp số tin của trang tag.
+export type KhuInfo = { slug: string; label: string; districts: string[]; tinh: "sg" | "la" };
+const khuLe = (k: Khu, tinh: "sg" | "la"): KhuInfo => ({ slug: k.slug, label: k.label, districts: k.districts ?? [], tinh });
+/** 19 quận huyện Sài Gòn + 3 huyện Long An có trang tag riêng. */
+export const KHU_LE: KhuInfo[] = [...Object.values(HCM).map((k) => khuLe(k, "sg")), ...Object.values(LA).map((k) => khuLe(k, "la"))];
+const KHU_GOP: KhuInfo[] = [khuLe(SG, "sg"), khuLe(LONG_AN, "la")];
+
+export function khuBySlug(slug: string): KhuInfo | undefined {
+  return [...KHU_LE, ...KHU_GOP].find((k) => k.slug === slug);
+}
+
+/** Trang tag "bán nhà" của khu nếu có, không thì tag bán đầu tiên của khu (Đức Hòa chỉ có "bán đất"). */
+export function tagChinhCuaKhu(k: KhuInfo): TagDef | undefined {
+  return BY_SLUG.get(`ban-nha-${k.slug}`) ?? TAG_DEFS.find((t) => t.parts.area === k.slug && t.parts.deal === "ban");
+}

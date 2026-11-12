@@ -3,7 +3,7 @@ import { IconAsk, IconChart, IconCalc, IconClock, IconSearch, IconShield } from 
 import { zaloLink } from "@/lib/format";
 import { WARDS } from "@/lib/geo";
 import { FEATURED_TAGS } from "@/lib/tags";
-import RadarMarketBlock from "@/components/RadarMarketBlock";
+import KhuTrangChu from "@/components/KhuTrangChu";
 import FeedDoc from "@/components/FeedDoc";
 import { CARD_COLS, supabase, type ListingCard as CardRow, TRANG_THAI_HIEN } from "@/lib/supabase";
 import { coverFullByCode } from "@/lib/photos";
@@ -222,8 +222,8 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 5. KHỐI RADAR ĐỘ PHỦ THỊ TRƯỜNG BĐS (NỀN DARK NAVY TƯƠNG PHẢN) */}
-      <RadarMarketBlock />
+      {/* 5. KHU NHIỀU TIN — số đếm thật từ kho (SRS-5.1zzzzzzz436, thay khối Radar số bịa) */}
+      <KhuTrangChu />
 
       {/* 6. CAM KẾT RIÊNG TƯ ZALO */}
       <section className="mx-auto max-w-6xl px-4 py-12">

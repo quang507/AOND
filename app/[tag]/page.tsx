@@ -5,7 +5,8 @@ import ListingCard from "@/components/ListingCard";
 import { coverByCode } from "@/lib/photos";
 import { CARD_COLS, supabase, type ListingCard as CardRow, TRANG_THAI_HIEN } from "@/lib/supabase";
 import { formatPrice, zaloLink } from "@/lib/format";
-import { relatedTags, tagBySlug, tagCuChuyen, type TagDef } from "@/lib/tags";
+import { GIOI_THIEU, soLieuKhu, trieu, type SoLieuKhu } from "@/lib/khu";
+import { khuBySlug, relatedTags, tagBySlug, tagCuChuyen, type KhuInfo, type TagDef } from "@/lib/tags";
 
 // FR-12 / IA §4.4 — trang tag SEO. Slug lạ → 404 (`notFound()` trong Page: chỉ slug có trong TAG_DEFS mới render).
 // 03/10/2026 (giảm egress Supabase, SRS-5.1zl): KHÔNG dựng sẵn lúc build nữa — mỗi lượt build (CI mỗi lần đẩy + Vercel preview
@@ -60,10 +61,46 @@ function moTa(t: TagDef, rows: CardRow[], total: number): string {
   const dau = total
     ? `${kw}: đang có ${total} tin rao trên AI Ơi Nhà Đất, cập nhật từ chủ nhà và môi giới trong khu. ${khoang}${dtTxt}.`
     : `${kw}: hiện chưa có tin nào đang lên kệ đúng tiêu chí này, nhưng kho tin đổi mỗi ngày.`;
+  // SRS-5.1zzzzzzz436: bỏ ba câu văn mẫu lặp y hệt trên cả 100 trang (Google coi là trùng nội dung); phần riêng của từng
+  // trang giờ là khối giới thiệu khu bên dưới.
+  return `${dau} Hỏi căn nào thì nhắn mã tin qua Zalo, không cần để lại số điện thoại.`;
+}
+
+// SRS-5.1zzzzzzz436: khối giới thiệu khu — lời viết tay (lib/khu.ts) + số liệu tính từ kho. Không viền, không nhãn chữ in hoa.
+function GioiThieuKhu({ khu, so, thue }: { khu: KhuInfo; so: SoLieuKhu; thue: boolean }) {
+  const gop = khu.slug === "sai-gon" || khu.slug === "long-an";
+  const ten = khu.label.replace(/, Long An$/, "");
+  const muc: { nhan: string; gt: string }[] = [{ nhan: thue ? "Tin cho thuê cả khu" : "Tin bán cả khu", gt: String(so.tong) }];
+  if (so.gia) muc.push({ nhan: thue ? "Tiền thuê / tháng" : "Giá mỗi m²", gt: trieu(so.gia) });
+  if (so.xeHoi !== null) muc.push({ nhan: "Mặt tiền, hẻm xe hơi", gt: `${so.xeHoi}%` });
   return (
-    `${dau} Mỗi tin ghi rõ đường vào (mặt tiền, hẻm xe hơi hay hẻm xe máy), kết cấu, pháp lý và số phòng theo lời chủ nhà xác nhận, không đoán. ` +
-    `Muốn biết thêm căn nào, anh chị nhắn mã tin qua Zalo: trợ lý riêng của AI Ơi Nhà Đất trực 24/7, hỏi lại chủ nhà giúp và hẹn xem tận nơi, ` +
-    `không cần để lại số điện thoại. Người mua hoàn toàn miễn phí; bên bán chỉ trả phí khi giao dịch thành công.`
+    <section>
+      <h2 className="text-xl font-extrabold md:text-2xl">{gop ? ten : `Khu ${ten}`}</h2>
+      {GIOI_THIEU[khu.slug] && <p className="mt-2 max-w-3xl leading-7 text-navy">{GIOI_THIEU[khu.slug]}</p>}
+      {so.tong > 0 && (
+        <dl className="mt-5 grid grid-cols-2 gap-x-8 gap-y-4 sm:flex sm:flex-wrap">
+          {muc.map((m) => (
+            <div key={m.nhan}>
+              <dt className="text-sm text-mute">{m.nhan}</dt>
+              <dd className="text-2xl font-extrabold text-navy">{m.gt}</dd>
+            </div>
+          ))}
+          {so.nhieuTin.length > 0 && (
+            <div className="col-span-2 sm:col-span-1">
+              <dt className="text-sm text-mute">{gop ? "Quận huyện nhiều tin" : "Phường nhiều tin"}</dt>
+              <dd className="mt-1 font-bold text-navy">{so.nhieuTin.map((x) => `${x.ten} (${x.n})`).join(", ")}</dd>
+            </div>
+          )}
+        </dl>
+      )}
+      <p className="mt-4 text-sm text-mute">
+        {so.tong === 0
+          ? "Khu này chưa có tin đang rao trên AI Ơi Nhà Đất."
+          : so.gia
+            ? `Tính từ ${so.tong} tin đang rao trên AI Ơi Nhà Đất. ${thue ? "Tiền thuê" : `Giá mỗi m²`} là mức ở giữa của ${so.soMauGia} ${thue ? "tin" : "căn nhà phố, cấp 4, biệt thự"}: nửa số căn rao cao hơn, nửa thấp hơn. Đây là giá rao, không phải giá đã giao dịch.`
+            : `Mới có ${so.tong} tin đang rao, chưa đủ để tính giá.`}
+      </p>
+    </section>
   );
 }
 
@@ -92,6 +129,8 @@ export default async function Page({ params }: { params: Promise<{ tag: string }
   }
 
   const { rows, total } = await layTinTag(t);
+  const khu = khuBySlug(t.parts.area);
+  const so = khu ? await soLieuKhu(khu, t.filter.deal) : null;
   const covers = await coverByCode(rows.map((l) => l.code));
   const lienQuan = relatedTags(t, 8);
   const goc = t.filter.deal === "cho_thue" ? "/cho-thue" : "/mua-ban";
@@ -113,7 +152,8 @@ export default async function Page({ params }: { params: Promise<{ tag: string }
 
       <div className="mx-auto max-w-6xl px-4 pb-12">
         <div className="-mt-10 rounded-king bg-white p-5 shadow-[0_18px_40px_rgba(13,37,61,0.14)]">
-          <p className="leading-7 text-navy/80">{moTa(t, rows, total)}</p>
+          {khu && so && <GioiThieuKhu khu={khu} so={so} thue={t.filter.deal === "cho_thue"} />}
+          <p className={`leading-7 text-navy ${khu && so ? "mt-5 border-t border-line pt-5" : ""}`}>{moTa(t, rows, total)}</p>
         </div>
 
         {rows.length > 0 ? (
