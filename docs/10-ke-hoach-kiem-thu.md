@@ -778,6 +778,7 @@ khi đẩy — bảng là danh sách để chạy lại khi cần. SRS-1 … 244
 | SRS-453 | Bridge cắt kết nối nghe chết lặng (không pong quá 3 phút) rồi nối lại | FR-203 | log "Zalo trả pong" sau khởi động + nhắn thật vào Zalo bot |
 | SRS-455 | Báo cáo giá rao quanh căn (LQC 4.6): RPC + trang `/bao-cao-gia/<mã>` + bot mời xem kèm tin so sánh | FR-185 | `test_bao_cao_gia_455.py` |
 | SRS-450 | Khách đáp "ok" cho câu hỏi lựa chọn: bot không hỏi lại, không đoán phương án; câu thuế phí một câu | FR-144 | `test_dap_chua_chon_450.py` + bắn thử `lqc_thu.py` |
+| SRS-454 | Ảnh tin: xoá logo / watermark / số điện thoại in đè (model vision + OpenCV inpaint), đóng dấu AOND, gốc giữ ở bucket riêng | FR-185, FR-165 | `test_xoa_logo_454.py` + xem ảnh trên web sau một lượt `xoa_logo` |
 
 ## 10.8 Nghiệm thu theo từng tài liệu (04/09/2026)
 

@@ -12,6 +12,8 @@ dependencies = [
     "pillow>=10",
     "openpyxl>=3.1",
     "httpx>=0.27",        # voice.py tải ghi âm — trước chỉ có nhờ anthropic kéo theo
+    "numpy>=1.24",        # xoa_logo.py (SRS-5.1zzzzzzz454) — thiếu thì chỉ đóng dấu, không xoá logo
+    "opencv-python-headless>=4.8",
 ]
 
 [project.optional-dependencies]
@@ -25,6 +27,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+aioi = ["tai_nguyen/*.png"]   # logo đóng dấu ảnh (xoa_logo.py)
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

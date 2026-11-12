@@ -800,6 +800,19 @@ test vậy đi" (Moso có mục "Báo cáo thị trường BĐS" tính từ tin 
 - **Bot:** `so_sanh.dong_bao_cao` — tin gửi so sánh sau đăng (cụm `so_sanh`) và lượt chủ hỏi giá thị trường kèm MỘT câu mời xem trang
   báo cáo khi có ≥ 3 căn cùng loại đang rao gần (`web.link_bao_cao_gia`). Không thêm câu hỏi, không tính vào trần 10 câu sau đăng.
 
+### SRS-5.1zzzzzzz454 · Ảnh tin: xoá logo / watermark in đè, đóng dấu AOND, giữ gốc ở bucket riêng (13/11/2026)
+Ảnh chủ / môi giới gửi qua Zalo hay có logo sàn, số điện thoại, website, tên công ty khác in đè; moso.vn có công cụ "Xoá logo watermark".
+- **Vòng nền mới** `server._vong_xoa_logo` (5 phút / lượt, `XOA_LOGO_CHU_KY_GIAY`; tắt `XOA_LOGO=tat`), logic ở `src/aioi/xoa_logo.py`: mỗi lượt
+  tối đa 10 ảnh `listing_media` bucket `listing-public`, chưa ẩn, `variants.xoa_logo` chưa có, mới nhất trước. Không chặn lượt chat.
+- **Tìm vùng:** model vision của lõi (`engine._provider.extract_media`, cùng đường với `qc_anh`) trả JSON khung 0–1 của lớp chữ / logo IN ĐÈ
+  (chữ có thật trong cảnh giữ nguyên) + `la_giay_to`. Model / JSON hỏng → không vùng nào. Khung phủ > 35 % ảnh bị bỏ (inpaint sẽ phá ảnh).
+- **Xoá:** `cv2.inpaint` TELEA trên mặt nạ NÉT CHỮ trong khung (top-hat + black-hat, nửa ngưỡng Otsu, nới vài px); tách nét hỏng → vá cả khung.
+  Thiếu numpy / cv2 → bỏ bước xoá. **Đóng dấu:** `tai_nguyen/logo-aond.png` (dựng từ `public/img/logo.svg` bằng sharp, chữ viền trắng) góc dưới
+  phải, rộng 16 % cạnh ngắn, mờ 70 %. Ảnh giấy tờ: giữ nguyên, đánh dấu `xoa_logo: ""`.
+- **Lưu:** gốc chép sang `listing-private/<uuid>/goc/<tên>` TRƯỚC, xong mới ghi đè bản xử lý lên đúng khoá cũ ở `listing-public` (bìa, băm bộ
+  ảnh của QC giữ nguyên) + sinh lại bản nhỏ 480; `variants.xoa_logo` = khoá ảnh gốc. Ảnh hụt 3 lượt → đánh dấu bỏ qua. Hạn chế: xoá dòng
+  `listing_media` thì trigger dọn không với tới bản gốc ở bucket riêng; CDN có thể còn giữ bản cũ tới 1 giờ.
+
 ### SRS-5.1zzzzzzz453 · Bridge tự cắt kết nối nghe Zalo "chết lặng" rồi nối lại (13/11/2026)
 Sau SRS-5.1zzzzzzz449 (bridge khởi động lại 19:43 12/11), tới 1 giờ sáng 13/11 bridge không nhận tin nào; chủ dự án: "bridge zalo ko thấy nó nhắn
 lại dc". Trên máy 146 cả hai bridge vẫn giữ TCP "Established" tới Zalo từ 19:43, log không có dòng "rớt" / "đóng".
@@ -899,20 +912,3 @@ Bắn thử 12/11 (`thu-lqc-1711da`): căn hộ Vinhomes Grand Park tòa S5.02, 
 - **Sửa:** `_phuong_cua_du_an` (một chỗ cho `_dia_ban` và `phuong_theo_du_an`): dự án có toạ độ (2.631 / 2.819) → RPC `phuong_tai_diem` ra phường
   MỚI chứa điểm (Vinhomes Grand Park → Phường Long Bình); chưa có toạ độ mới đọc chữ như cũ. `match_projects` lấy thêm `lat`, `lng`.
 - Nhánh hỏi số nhà chỉ khi căn có tên đường (`duong`); không có đường mà vẫn thiếu phường → báo người phụ trách như SRS-5.1zzzzzzz359.
-
-### SRS-5.1zzzzzzz445 · Thông tin dự án một người báo vẫn dùng, gắn "chưa chắc chắn"; bản vẽ phân lô → rổ lô dự án (12/11/2026)
-Chủ dự án 12/11: "xóa các dữ liệu rổ hàng, mặt bằng các thứ của ny'ah phú định đi, t muốn là t đưa bản vẽ xong nó sẽ lưu lại dữ liệu dự án,
-dự án có 50 lô, trước đó báo có đủ người duyệt mới lên nhưng mà giờ thì có thêm kiểu 1 người nói nó vẫn nhận nhưng mà là thông tin không chắc
-chắn"; phạm vi xoá: "chỉ xoá rổ hàng + bảng giá"; thông tin chưa chắc: "bot nói kèm chữ chưa chắc, trang web hiện lên luôn để t test".
-- **Dữ liệu (DB, 12/11):** `du_an_kien_thuc` khoá `ny ah phú định` — rổ 50 căn (`units`), bảng giá độc quyền + giá từng căn (`rieng`) và mục
-  "Rổ hàng T10.2026" trong tài liệu tổng hợp đã xoá; mẫu nhà, tiện ích, phiếu, các mục tài liệu khác giữ. Bản cũ chép vào `luu_tru.ban_ghi`
-  lần xoá 13 trước khi xoá (khôi phục được). Không ghi dữ liệu giá vào repo công khai.
-- **Chưa chắc chắn:** luật chốt SRS-5.1zzzzzzz249 giữ nguyên (đủ điểm theo hạng Đồng / Bạc / Vàng hoặc admin ghi → chắc chắn, vào kho chung).
-  Thêm: giá trị dẫn đầu CHƯA chốt vẫn được dùng, kèm nhãn — một nguồn `projects.chua_chac` / `nhan_chua_chac`, đi qua `_fact_lines` (dữ kiện dự
-  án, mẫu nhà), `Unit.known` (lô), `dong_ke_thua` (căn kế thừa), `projects.thong_tin.chua_chac` (web + phía mua `du_an_mua.dong_du_an`). Tài liệu
-  một người bán gửi (`nguoi_gui` không phải phiếu chắc chắn) không còn bị giấu: `Project.docs_cho` trả mọi tài liệu, khối tài liệu (phía bán
-  `build_project_docs_block`, phía mua `tra_du_an`) gắn nhãn. Lời công cụ ghi nhớ cho người không phải admin đổi theo (`_ket_qua_phieu`).
-- **Web:** trang dự án hiện các ô `thong_tin.chua_chac` kèm nhãn "chưa xác minh" (`app/du-an/[slug]/page.tsx`, ISR 1 giờ).
-- **Bản vẽ → rổ lô:** tài liệu dự án vừa chép (`_ingest_doc_bytes`: PDF, ảnh bản vẽ / phân lô đọc ra là tài liệu chung) đi thêm một lượt AI đọc
-  danh sách lô (`DANH_SACH_LO_SYSTEM`, `_hoc_lo_tu_tai_lieu`) → `Project.upsert_unit` từng lô, thuộc tính là phiếu của người gửi (admin → chắc
-  chắn; người khác → chưa chắc chắn). Không ghi giá (giá là của từng người rao). Tài liệu không có danh sách lô thì không đổi gì.

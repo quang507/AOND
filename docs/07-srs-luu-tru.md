@@ -73,6 +73,23 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz445 · Thông tin dự án một người báo vẫn dùng, gắn "chưa chắc chắn"; bản vẽ phân lô → rổ lô dự án (12/11/2026)
+Chủ dự án 12/11: "xóa các dữ liệu rổ hàng, mặt bằng các thứ của ny'ah phú định đi, t muốn là t đưa bản vẽ xong nó sẽ lưu lại dữ liệu dự án,
+dự án có 50 lô, trước đó báo có đủ người duyệt mới lên nhưng mà giờ thì có thêm kiểu 1 người nói nó vẫn nhận nhưng mà là thông tin không chắc
+chắn"; phạm vi xoá: "chỉ xoá rổ hàng + bảng giá"; thông tin chưa chắc: "bot nói kèm chữ chưa chắc, trang web hiện lên luôn để t test".
+- **Dữ liệu (DB, 12/11):** `du_an_kien_thuc` khoá `ny ah phú định` — rổ 50 căn (`units`), bảng giá độc quyền + giá từng căn (`rieng`) và mục
+  "Rổ hàng T10.2026" trong tài liệu tổng hợp đã xoá; mẫu nhà, tiện ích, phiếu, các mục tài liệu khác giữ. Bản cũ chép vào `luu_tru.ban_ghi`
+  lần xoá 13 trước khi xoá (khôi phục được). Không ghi dữ liệu giá vào repo công khai.
+- **Chưa chắc chắn:** luật chốt SRS-5.1zzzzzzz249 giữ nguyên (đủ điểm theo hạng Đồng / Bạc / Vàng hoặc admin ghi → chắc chắn, vào kho chung).
+  Thêm: giá trị dẫn đầu CHƯA chốt vẫn được dùng, kèm nhãn — một nguồn `projects.chua_chac` / `nhan_chua_chac`, đi qua `_fact_lines` (dữ kiện dự
+  án, mẫu nhà), `Unit.known` (lô), `dong_ke_thua` (căn kế thừa), `projects.thong_tin.chua_chac` (web + phía mua `du_an_mua.dong_du_an`). Tài liệu
+  một người bán gửi (`nguoi_gui` không phải phiếu chắc chắn) không còn bị giấu: `Project.docs_cho` trả mọi tài liệu, khối tài liệu (phía bán
+  `build_project_docs_block`, phía mua `tra_du_an`) gắn nhãn. Lời công cụ ghi nhớ cho người không phải admin đổi theo (`_ket_qua_phieu`).
+- **Web:** trang dự án hiện các ô `thong_tin.chua_chac` kèm nhãn "chưa xác minh" (`app/du-an/[slug]/page.tsx`, ISR 1 giờ).
+- **Bản vẽ → rổ lô:** tài liệu dự án vừa chép (`_ingest_doc_bytes`: PDF, ảnh bản vẽ / phân lô đọc ra là tài liệu chung) đi thêm một lượt AI đọc
+  danh sách lô (`DANH_SACH_LO_SYSTEM`, `_hoc_lo_tu_tai_lieu`) → `Project.upsert_unit` từng lô, thuộc tính là phiếu của người gửi (admin → chắc
+  chắn; người khác → chưa chắc chắn). Không ghi giá (giá là của từng người rao). Tài liệu không có danh sách lô thì không đổi gì.
+
 ### SRS-5.1zzzzzzz444 · Bản đồ trang căn hiện được với tên phường mới (12/11/2026)
 Thấy lúc soát SRS-442, chủ dự án 12/11 "Sửa luôn". `WardMap` chỉ vẽ khi `ward` có trong `WARD_CENTROIDS` — bảng "Phường 1…15" Quận 5 cũ —
 nên tin ghi tên phường mới (Phú Định, Bình Thạnh, Tân Mỹ…, gần như cả kho) không có bản đồ trên trang căn.

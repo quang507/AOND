@@ -552,6 +552,27 @@ def _vong_qc_anh() -> None:
 if os.environ.get("QC_ANH", "bat") != "tat" and _settings.supabase_service_role_key:
     threading.Thread(target=_vong_qc_anh, daemon=True, name="image-lqc").start()
 
+XOA_LOGO_CHU_KY_GIAY = int(os.environ.get("XOA_LOGO_CHU_KY_GIAY", "300"))
+
+
+def _vong_xoa_logo() -> None:
+    """SRS-5.1zzzzzzz454 — ảnh công khai mới: xoá logo / watermark / số điện thoại in đè, đóng dấu AOND, gốc giữ ở bucket riêng (logic ở
+    `xoa_logo`). Chạy nền, không chặn lượt chat. Tắt: XOA_LOGO=tat."""
+    from . import xoa_logo
+    time.sleep(120)
+    while True:
+        try:
+            ra = xoa_logo.chay_mot_luot(_engine)
+            if ra:
+                log.warning("Xoá logo: %d ảnh (%s)", len(ra), ", ".join(ra))
+        except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
+            _so_loi.ghi_loi("xoa logo", f"{type(e).__name__}: {e}"[:200])
+        time.sleep(XOA_LOGO_CHU_KY_GIAY)
+
+
+if os.environ.get("XOA_LOGO", "bat") != "tat" and _settings.supabase_service_role_key:
+    threading.Thread(target=_vong_xoa_logo, daemon=True, name="xoa-logo").start()
+
 HOI_SAU_DANG_CHU_KY_GIAY = int(os.environ.get("HOI_SAU_DANG_CHU_KY_GIAY", "600"))
 
 
