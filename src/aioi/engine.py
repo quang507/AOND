@@ -1365,6 +1365,9 @@ _BINH_LUAN_GIA = re.compile(
     r"(?:hợp lý|vừa tầm)(?:(?!,\s)[^.!?;\n]){0,25}?(?:mức giá|giá))", re.I)   # cửa sổ dừng ở ", " (vế khác), "9,2 tỷ" vẫn qua
 
 
+_DOAN_THI_TRUONG = re.compile(r"(thanh khoản|đắt khách|dễ bán|khó bán|bán nhanh|đắc địa|người mua tìm nhiều|nhiều người (?:hỏi|tìm|quan tâm))", re.I)
+
+
 _SO_DON_VI_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*(m²|m2|mét vuông|triệu\s*/\s*m[²2]|tỷ|tỉ|triệu|phòng ngủ|pn\b|tầng|lầu|mét\b|m\b)", re.I)
 _SO_RE = re.compile(r"\d+(?:[.,]\d+)?")
 
@@ -1957,6 +1960,10 @@ def _soat_binh_luan_gia(eng, conv, reply, nc) -> list[str]:
     # Lời chat (SRS-5.1zzzzzzz353): AI đọc nghĩa khi lọc thô trúng; AI không chạy được thì lưới từ khoá cũ đỡ (SRS-5.1zzzzzzz132).
     if not _can_doc_gia(reply):
         return []
+    if conv.y_luot.get("_nhan_xet_gia"):   # SRS-5.1zzzzzzz429: lượt có mức lệch hệ thống tính — được nhận xét nhẹ, vẫn cấm đoán thị trường
+        m = _DOAN_THI_TRUONG.search(reply or "")
+        return ([f"Lời vừa viết đoán thị trường (\"{m.group(0)}\") — chỉ được nói giá rao của chủ so với căn đang rao gần như khối NHẬN XÉT "
+                 "GIÁ, không đoán dễ bán / khó bán / thanh khoản."] if m else [])
     cum = _binh_gia_trong_tin(eng, conv, reply, ban_tin=False)
     if cum is None:
         bl = _binh_luan_gia(reply)
@@ -3323,6 +3330,8 @@ class Engine:
                             kq_ss = None
                     if kq_ss is None:
                         cum_sau = conv.prop.cum_sau_dang(da_hoi | {"sau:so_sanh"}, so_anh=so_anh, anh_du=min(ANH_TIN_DEP, self._max_photos))
+                if kq_ss is not None and so_sanh.muc_lech(kq_ss):   # SRS-5.1zzzzzzz429: lượt này được nhận xét giá nhẹ
+                    conv.y_luot["_nhan_xet_gia"] = so_sanh.muc_lech(kq_ss)["muc"]
                 if cum_sau:
                     # SRS-5.1zzzzzzz178: mỗi lượt MỘT ô (không hỏi gộp cụm) — ghi "sau:<ô>" để lượt sau tới ô kế của cùng cụm.
                     # Cụm xin ảnh (SRS-5.1zzzzzzz420) ghi theo mã cụm: hai lần xin cùng một ô ảnh.
@@ -3447,6 +3456,13 @@ class Engine:
                            "Trả lời đúng điều khách hỏi bằng số ở khối ĐIỂM TIN ngay dưới, không hứa lên Top.\n" + self._khoi_diem_tin(conv, now))
         elif conv.hoi_ve_luot == "dinh_gia":   # SRS-5.1zzzzzzz325: dự án có giá rao gộp thì nêu khoảng đó, không có thì lời cũ
             hoi_ve_khoi = khoi_dinh_gia((project.goc or {}).get("giá rao bán thị trường") if project is not None else None)
+            # SRS-5.1zzzzzzz429: có căn cùng loại đang rao gần (tin thật; ID thử thấy cả tin thử) → trả lời bằng kho + nhận xét nhẹ.
+            kq_gia = so_sanh.can_gan(self._convstore, getattr(conv.active, "listing_id", None), gom_thu=_la_id_thu(conv.user_key))
+            k_gia = so_sanh.khoi_tra_loi_gia(kq_gia)
+            if k_gia:
+                hoi_ve_khoi = k_gia
+                if so_sanh.muc_lech(kq_gia):
+                    conv.y_luot["_nhan_xet_gia"] = so_sanh.muc_lech(kq_gia)["muc"]
         # SRS-5.1zzzzzzz178: MỘT khối ưu tiên mỗi lượt, theo thứ tự cần người > pháp lý > ngoài việc > hỏi về (phí / uy tín / link / tình hình /
         # định giá); có khối ưu tiên thì không ép khen theo lượt, không hỏi ô kế. Không có thì mới tới khối khen theo lượt.
         uu_tien = ""

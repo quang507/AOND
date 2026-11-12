@@ -3,8 +3,11 @@
 Nguồn DUY NHẤT là RPC `can_dang_rao_gan` (migration 20261112b): căn cùng loại + cùng giao dịch đang rao trong bán kính, căn đã cọc / chốt gần
 đó (180 ngày), dải đơn giá các căn đang rao. Không trả số nhà / người bán / mô tả. Tin thử (`seed_thu`) chỉ tính cho ID thử.
 
-Luật lời (chủ dự án chưa quyết 4.5 — bot phía bán được nhận xét giá tới đâu): chỉ đưa DỮ KIỆN, không nói giá chủ cao / thấp / nên tăng / nên
-giảm. Không có dòng giao dịch thật thì không có câu "tháng trước em bán…", "hôm qua em cọc…" (4.3 · 4.4)."""
+Luật lời (SRS-5.1zzzzzzz429, chủ dự án quyết 4.5 ngày 12/11: "Được, nói nhẹ"): CODE chấm mức lệch giữa đơn giá rao của chủ và trung vị các
+căn CÙNG lối vào (mặt tiền / hẻm) đang rao gần (`muc_lech`, ≥ 3 căn, ±10 % là ngang); model chỉ nói nhẹ MỘT câu đúng mức đó, luôn là giá
+RAO, không đưa con số giá mới, không giục tăng / giảm. Chưa đủ căn cùng kiểu thì không nhận xét. Lưới `_BINH_LUAN_GIA` nới cho lượt có mức
+lệch (`conv.y_luot["_nhan_xet_gia"]`), vẫn chặn đoán thị trường (thanh khoản, dễ bán…). Không có dòng giao dịch thật thì không có câu
+"tháng trước em bán…", "hôm qua em cọc…" (4.3 · 4.4)."""
 from __future__ import annotations
 
 import logging
@@ -18,7 +21,8 @@ log = logging.getLogger(__name__)
 BAN_KINH_M = 3000
 TOI_DA_CAN = 3
 TOI_THIEU_CAN = 2          # dưới số này không gửi chủ danh sách so sánh (một căn chưa nói lên gì)
-TOI_THIEU_DON_GIA = 3      # dải đơn giá từ tin gần thay bảng ước lượng cứng khi đủ mẫu (4.5)
+TOI_THIEU_DON_GIA = 3      # dải đơn giá từ tin gần thay bảng ước lượng cứng khi đủ mẫu (4.5); cũng là số căn cùng lối vào tối thiểu để nhận xét
+NGUONG_NGANG = 0.10       # lệch trung vị dưới 10 % → "ngang mặt bằng"
 LOI_VAO = {"mat_tien": "mặt tiền", "hem_xe_hoi": "hẻm xe hơi", "hem_xe_may": "hẻm xe máy", "hem": "hẻm"}
 
 
@@ -62,6 +66,33 @@ def dong_can(c: dict, giao_dich: bool = False) -> str:
     return " · ".join(x for x in phan if x) + f" — {link_tin(c.get('code'))}"
 
 
+def muc_lech(kq: dict) -> dict | None:
+    """Mức lệch giá chủ so với trung vị đơn giá căn CÙNG lối vào đang rao gần (code chấm, model chỉ nói). None = không nhận xét được."""
+    chu = kq.get("cua_chu") or {}
+    dg = kq.get("don_gia") or {}
+    g, tv, n = chu.get("price_per_m2_vnd"), dg.get("trung_vi_cung_loi_vao"), int(dg.get("n_cung_loi_vao") or 0)
+    if not g or not tv or n < TOI_THIEU_DON_GIA:
+        return None
+    lech = float(g) / float(tv) - 1
+    muc = "ngang" if abs(lech) < NGUONG_NGANG else "nhinh" if lech > 0 else "mem"
+    return {"muc": muc, "pt": round(abs(lech) * 100), "chu": round(float(g) / 1e6), "tv": round(float(tv) / 1e6), "n": n,
+            "loi_vao": LOI_VAO.get(chu.get("access_type") or "", "")}
+
+
+def dong_nhan_xet(m: dict | None) -> str:
+    """Dòng dặn model nhận xét nhẹ theo mức code chấm; None → dặn KHÔNG nhận xét."""
+    if m is None:
+        return ("NHẬN XÉT GIÁ: chưa đủ căn cùng kiểu (cùng mặt tiền / hẻm) quanh đây để so — KHÔNG nói giá chủ cao / thấp / hợp lý, chỉ đưa dữ "
+                "kiện để tham khảo.\n")
+    cau = {"ngang": "giá mình đang sát mặt bằng rao quanh khu",
+           "nhinh": f"giá mình đang nhỉnh hơn mặt bằng rao quanh khu khoảng {m['pt']}%",
+           "mem": f"giá mình đang mềm hơn mặt bằng rao quanh khu khoảng {m['pt']}%"}[m["muc"]]
+    return (f"NHẬN XÉT GIÁ (hệ thống tính — được nói NHẸ, đúng MỘT câu): đơn giá rao của chủ khoảng {m['chu']} triệu/m², trung vị {m['n']} "
+            f"căn cùng loại{(' ' + m['loi_vao']) if m['loi_vao'] else ''} đang rao quanh đây khoảng {m['tv']} triệu/m² → ý: \"{cau}\". "
+            "Nói đây là so với giá RAO (chưa phải giá bán thật), chỉ để anh/chị tham khảo, giá vẫn do anh/chị quyết; KHÔNG đưa con số giá "
+            "mới, KHÔNG khuyên tăng / giảm, KHÔNG đoán dễ bán / khó bán. Luật \"không nhận xét giá\" chung được nới riêng cho câu này.\n")
+
+
 def du_de_gui(kq: dict) -> bool:
     return len(kq.get("dang_rao") or []) >= TOI_THIEU_CAN
 
@@ -74,10 +105,21 @@ def khoi_gui_so_sanh(kq: dict) -> str:
             "Việc lượt này: sau lời đáp, xuống một dòng trống rồi nói em gửi anh/chị tham khảo vài căn cùng loại đang rao quanh khu, chép NGUYÊN "
             f"các dòng dưới (giữ link):\n{dong}\n"
             + (f"Căn gần đó đã có giao dịch (chỉ được nói đúng như dòng này):\n{gd}\n" if gd else "")
-            + "LUẬT: chỉ đưa dữ kiện. KHÔNG nói giá chủ cao / thấp / hợp lý, KHÔNG khuyên tăng / giảm giá, KHÔNG nói căn nào đẹp hơn. Căn khác lối vào "
-            "(mặt tiền / hẻm) hay khác diện tích thì không so thẳng đơn giá. "
+            + dong_nhan_xet(muc_lech(kq))
+            + "KHÔNG nói căn nào đẹp hơn. Căn khác lối vào (mặt tiền / hẻm) hay khác diện tích thì không so thẳng đơn giá từng căn. "
             + ("KHÔNG nói đã bán / đã cọc căn nào. " if not gd else "")
             + "Không cần câu hỏi; có thể kết bằng \"anh/chị muốn em tìm thêm căn nào thì nhắn em\".\n")
+
+
+def khoi_tra_loi_gia(kq: dict) -> str:
+    """Chủ nhà hỏi "giá tôi cao hay thấp" (`hoi_ve` = dinh_gia): có căn cùng loại đang rao gần thì trả lời bằng dữ kiện kho + nhận xét nhẹ."""
+    if not (kq.get("dang_rao") or []):
+        return ""
+    dong = "\n".join(f"- {dong_can(c)}" for c in kq.get("dang_rao") or [])
+    return ("\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI GIÁ THỊ TRƯỜNG / GIÁ CAO HAY THẤP: ===\n"
+            f"Dữ kiện hệ thống — căn cùng loại đang RAO gần căn của chủ (giá rao, chưa phải giá giao dịch):\n{dong}\n"
+            + dong_don_gia_gan(kq) + dong_nhan_xet(muc_lech(kq))
+            + "Việc lượt này: trả lời câu chủ hỏi bằng các dữ kiện trên (có thể gửi 1–2 dòng kèm link), tin vẫn rao theo giá chủ muốn.\n")
 
 
 def dong_don_gia_gan(kq: dict) -> str:

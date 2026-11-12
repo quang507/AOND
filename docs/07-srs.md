@@ -1017,6 +1017,18 @@ Chủ dự án 12/11: "Có, dùng điểm QC" + "nhưng đừng khó quá, lỡ 
   hỏi khéo chủ MỘT câu tấm đó có phải ảnh căn mình không (tả bằng nội dung, không nói ảnh sai / bị trừ điểm), ưu tiên trước xin góc.
 - Khối ĐIỂM TIN không đưa con số chất lượng ảnh cho model; chỉ gợi "ảnh <góc QC thấy thiếu> sẽ làm tin đẹp hơn, điểm cao hơn".
 
+### SRS-5.1zzzzzzz429 · Bot phía bán nhận xét NHẸ giá chủ so với căn đang rao gần (12/11/2026)
+Chủ dự án 12/11 quyết câu 4.5 của đặc tả LQC: "Được, nói nhẹ".
+- RPC `can_dang_rao_gan` (migration `20261112c`) trả thêm `cua_chu` (giá, đơn giá, lối vào của chính tin) và trung vị đơn giá các căn CÙNG lối
+  vào (mặt tiền / hẻm).
+- **Code chấm, model nói** (`so_sanh.muc_lech`): cần ≥ 3 căn cùng lối vào đang rao gần; lệch dưới 10 % → "sát mặt bằng rao quanh khu", trên →
+  "nhỉnh hơn / mềm hơn khoảng N %". Chưa đủ căn cùng kiểu → không nhận xét (vd tin 56F988C9 mặt tiền, quanh đó toàn hẻm).
+- Lời: MỘT câu, luôn nói là so với giá RAO, chỉ để tham khảo, chủ quyết giá; không đưa giá mới, không khuyên tăng / giảm, không đoán dễ / khó bán.
+- Dùng ở: lượt gửi so sánh sau đăng (`so_sanh`), lượt chủ hỏi "giá tôi cao hay thấp" (`hoi_ve` = dinh_gia, có căn gần thì trả lời bằng kho thay
+  câu "chưa có số liệu"), công cụ định giá (`dinh_gia_tham_khao` — có mức lệch theo kho thì bỏ đối chiếu bảng cứng).
+- **Lưới `_BINH_LUAN_GIA`** nới cho lượt có `conv.y_luot["_nhan_xet_gia"]`: chỉ chặn đoán thị trường (thanh khoản, đắt khách, dễ / khó bán…).
+  Bản tin vẫn cấm mọi nhận xét giá. Phía mua giữ nguyên luật cấm.
+
 ### SRS-5.1zzzzzzz428 · LQC mảng So sánh cạnh tranh: căn cùng loại đang rao gần, đơn giá từ kho, không bịa giao dịch (12/11/2026)
 Chủ dự án 12/11 "Làm mảng So sánh" (đặc tả `docs/lqc-listing-quality-controller.md` mục 4).
 - **RPC `can_dang_rao_gan(listing, bán kính 3 km, 3 căn, gom_thu)`** (migration `20261112b`, chỉ service_role): căn cùng loại + cùng giao dịch

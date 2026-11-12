@@ -59,7 +59,7 @@ Ký hiệu: **✅ có sẵn** · **🟡 có một phần** · **❌ chưa có**.
 |---|---|---|---|---|
 | 4.1 · 4.2 ✅ (SRS-428) | "Cho em vị trí, em gửi mấy căn đang bán gần đó để anh đừng bán rẻ" · "Căn gần anh 150 tr/m² mà nhà cũ" | 🟡 | 244 tin đang bán, đều có toạ độ. | Công cụ **căn đang rao gần**: cùng loại, trong bán kính, kèm đơn giá/m² → gửi chủ 2–3 căn (link). Chỉ dùng tin đang hiển thị. |
 | 4.3 · 4.4 ✅ luật không bịa (SRS-428) | "Tháng trước em có căn bán tới 12 tỷ" · "Em mới cọc hôm qua căn 7 tỷ" | ❌ | Trạng thái `da_coc` / `da_chot` có trong hệ thống, nhưng **0 giao dịch** được ghi. | Bot **không được nói** những câu này khi không có giao dịch thật — đó là bịa. Cần admin ghi giá chốt vào tin `da_coc` / `da_chot`; bot chỉ dẫn dòng có thật. |
-| 4.5 🟡 đơn giá từ kho (SRS-428), chờ quyết lời nhận xét | "Em đoán khu này 120 tr/m², anh rao 140 cũng hợp lý" | 🟡 | `dinh_gia_tham_khao` (SRS-390): bảng đơn giá **ước lượng cứng** theo vùng × loại, luôn nói "tham khảo". Phía mua đang **cấm** nhận xét giá cao / thấp. | Thay bảng cứng bằng đơn giá từ tin đang rao gần (4.1) khi đủ mẫu. Phía bán được nhận xét giá tới đâu: **cần chủ dự án quyết**. |
+| 4.5 ✅ đơn giá từ kho + nhận xét nhẹ (SRS-428 · 429) | "Em đoán khu này 120 tr/m², anh rao 140 cũng hợp lý" | 🟡 | `dinh_gia_tham_khao` (SRS-390): bảng đơn giá **ước lượng cứng** theo vùng × loại, luôn nói "tham khảo". Phía mua đang **cấm** nhận xét giá cao / thấp. | Thay bảng cứng bằng đơn giá từ tin đang rao gần (4.1) khi đủ mẫu. Phía bán được nhận xét giá tới đâu: **cần chủ dự án quyết**. |
 | 4.6 | "Em có báo cáo giá khu vực, làm miễn phí cho anh" | ❌ | — | Trang / PDF tổng hợp từ 4.1 + 4.5. Làm sau, vì phụ thuộc dữ liệu. |
 
 ---
@@ -75,5 +75,5 @@ Ký hiệu: **✅ có sẵn** · **🟡 có một phần** · **❌ chưa có**.
 
 1. **Ảnh sổ (2.2):** chỉ nói "không đăng, chỉ nội bộ kiểm" hay xây bước che thông tin trên ảnh?
 2. **Ảnh xấu (1.4):** chủ đồng ý từng tấm mới ẩn, hay QC tự ẩn rồi báo chủ?
-3. **Giá (4.5):** phía bán, bot được nói giá chủ rao cao / thấp so với khu không, mức nào?
+3. ~~**Giá (4.5):** phía bán, bot được nói giá chủ rao cao / thấp so với khu không, mức nào?~~ — **Đã quyết 12/11: được, nói nhẹ** (SRS-429).
 4. **Trần tin nhắn:** LQC 4 mảng chung tối đa bao nhiêu tin / căn / tuần? (Image LQC hiện 2 tin / căn.)

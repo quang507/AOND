@@ -232,15 +232,20 @@ def dinh_gia_tham_khao_tool(engine: Any, conv: Any, project: Any, vao: dict[str,
 
     # SRS-5.1zzzzzzz428 (4.5): đủ căn cùng loại đang rao gần tin của khách → dải đơn giá thật từ kho, ưu tiên hơn bảng ước lượng.
     dong_gan = ""
+    muc = None
     li = getattr(conv, "active", None) if conv else None
     if engine is not None and li is not None:
         from . import so_sanh
         from .engine import _la_id_thu
-        dong_gan = so_sanh.dong_don_gia_gan(so_sanh.can_gan(getattr(engine, "_convstore", None), getattr(li, "listing_id", None),
-                                                            gom_thu=_la_id_thu(getattr(conv, "user_key", None))))
+        kq_gan = so_sanh.can_gan(getattr(engine, "_convstore", None), getattr(li, "listing_id", None),
+                                 gom_thu=_la_id_thu(getattr(conv, "user_key", None)))
+        muc = so_sanh.muc_lech(kq_gan)
+        dong_gan = so_sanh.dong_don_gia_gan(kq_gan) + (so_sanh.dong_nhan_xet(muc) if muc else "")
+        if muc and isinstance(getattr(conv, "y_luot", None), dict):   # SRS-5.1zzzzzzz429: lưới bình luận giá nới cho lượt này
+            conv.y_luot["_nhan_xet_gia"] = muc["muc"]
 
     dong_so_sanh = ""
-    if gia_chu > 0 and kq.get("gia_min") and kq.get("gia_max"):
+    if gia_chu > 0 and kq.get("gia_min") and kq.get("gia_max") and not muc:   # kho có mức lệch thì không đối chiếu bảng cứng
         g_chu_str = tien(gia_chu)
         if gia_chu < kq["gia_min"]:
             dong_so_sanh = f"- Đối chiếu: giá khách {g_chu_str} thấp hơn dải tham khảo.\n"
@@ -257,8 +262,9 @@ def dinh_gia_tham_khao_tool(engine: Any, conv: Any, project: Any, vao: dict[str,
         f"{dong_gia_tong}"
         f"{dong_gan}"
         f"{dong_so_sanh}"
-        "- LƯU Ý KHI TRẢ LỜI: Nêu số liệu khách quan để khách tham khảo, khẳng định quyền quyết định giá bán hoàn toàn thuộc về khách; "
-        "bên em luôn hỗ trợ rao đúng mức giá khách mong muốn."
+        "- LƯU Ý KHI TRẢ LỜI: Nêu số liệu khách quan để khách tham khảo; dòng đối chiếu / nhận xét (nếu có) chỉ nói NHẸ một câu (chủ dự án "
+        "12/11, SRS-5.1zzzzzzz429), không đưa con số giá mới, không đoán dễ bán; khẳng định quyền quyết định giá bán hoàn toàn thuộc về "
+        "khách; bên em luôn hỗ trợ rao đúng mức giá khách mong muốn."
     )
 
 
