@@ -541,6 +541,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-203 | — | — | SRS-5.1zzzzzzz449 | TS-PROD (nhắn thật vào Zalo bot) |
 | FR-203 | — | — | SRS-5.1zzzzzzz453 | TS-PROD (log "Zalo trả pong" + nhắn thật vào Zalo bot) |
 | FR-185 | — | — | SRS-5.1zzzzzzz455 | TS-SRS (`test_bao_cao_gia_455.py`) + mở `/bao-cao-gia/<mã>` |
+| FR-185 | — | — | SRS-5.1zzzzzzz456 | TS-SRS (`test_gia_chot_456.py`) |
 | FR-144 | — | — | SRS-5.1zzzzzzz450 | TS-SRS (`test_dap_chua_chon_450.py`) |
 | FR-185, FR-165 | — | — | SRS-5.1zzzzzzz454 | TS-SRS (`test_xoa_logo_454.py`) + TS-PROD (log "xoa_logo: … đã đóng dấu") |
 

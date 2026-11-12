@@ -140,7 +140,7 @@ from .prompts import (
 )
 from .imaging import downscale_image
 from .revenue import SellerRole
-from .schema import ANH_TIN_DEP, CAU_MO_MUA, CUM_XIN_ANH, FACETS, HOUSE_TYPES, KHOA_PHAP_LY, loai_phap_ly, O_COC, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
+from .schema import ANH_TIN_DEP, CAU_MO_MUA, CUM_XIN_ANH, FACETS, HOUSE_TYPES, KHOA_PHAP_LY, loai_phap_ly, O_COC, O_GIA_CHOT, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .prompts import Y_MO_DAU
 from .dia_danh import TraDiaDanh, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
@@ -3302,16 +3302,19 @@ class Engine:
             if o_hoan and len_web and conv.prop.fields.get("_phi_da_hoi") == "1" and conv.duyet_luot is None:
                 da_hoi.add(f"hoan:{o_hoan}")
                 conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi))
-            # SRS-5.1zzzzzzz295: căn đã cọc → hỏi tiền cọc / ngày cọc / hạn công chứng (mỗi lượt một ô, mỗi ô một lần), thay cụm hỏi sau đăng.
+            # SRS-5.1zzzzzzz295: căn đã cọc → hỏi giá chốt / tiền cọc / ngày cọc / hạn công chứng (mỗi lượt một ô, mỗi ô một lần), thay cụm hỏi
+            # sau đăng. SRS-5.1zzzzzzz456: căn đã bán / đã cho thuê (tin đã rời web) → chỉ hỏi giá chốt — dữ liệu giá thật cho LQC 4.3/4.4.
             o_coc = None
-            if (len_web and conv.active.status == "đã cọc" and conv.duyet_luot is None and conv.hoi_ve_luot is None
+            tt = conv.active.status
+            o_giao_dich = O_COC if (len_web and tt == "đã cọc") else ((O_GIA_CHOT,) if tt in ("đã bán", "đã cho thuê") else ())
+            if (o_giao_dich and conv.duyet_luot is None and conv.hoi_ve_luot is None
                     and set(captured) <= (O_SAU_DANG | set(O_COC))):
                 coc_da_hoi = {x for x in (conv.prop.fields.get("_coc_da_hoi") or "").split(",") if x}
-                o_coc = next((k for k in O_COC if not conv.prop.fields.get(k) and k not in coc_da_hoi), None)
+                o_coc = next((k for k in o_giao_dich if not conv.prop.fields.get(k) and k not in coc_da_hoi), None)
                 if o_coc:
                     coc_cu = conv.prop.fields.get("_coc_da_hoi")
                     conv.prop.fields["_coc_da_hoi"] = ",".join(sorted(coc_da_hoi | {o_coc}))
-                    system += _hoi("hoi_coc", khoi_hoi_coc(o_coc, conv.prop), hoan=lambda cu=coc_cu: _dat_co(conv.prop.fields, "_coc_da_hoi", cu))
+                    system += _hoi("hoi_coc", khoi_hoi_coc(o_coc, conv.prop, tt), hoan=lambda cu=coc_cu: _dat_co(conv.prop.fields, "_coc_da_hoi", cu))
             sau_dang = (len_web and conv.prop.fields.get("_phi_da_hoi") == "1" and conv.duyet_luot is None
                         and conv.hoi_ve_luot is None and set(captured) <= O_SAU_DANG and not o_hoan and not o_coc)
             # Xin chấm sao (SRS-5.1zzzzzzz104, chủ dự án 21/10): lượt đầu hết việc; mỗi khách một lần (kho quyết).

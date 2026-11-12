@@ -1157,8 +1157,11 @@ class SupabaseConversationStore(KhoNguoiMua):
                     if ma:
                         listing_payload["status"] = ma
                     self._patch(f"listings?id=eq.{lid}", listing_payload)
+                    gia_chot = (li.prop.fields.get("gia_chot") or "").strip()   # SRS-5.1zzzzzzz456: giá chốt chủ báo trong chat
                     if ma == "da_chot":   # chốt kèo → dòng deals (SRS-5.1zzzzzzz70); báo khách quan tâm do trigger DB lo
-                        self.ghi_deal(lid, SALE_FEE_RATE.get(getattr(conv, "vai_phi", None) or getattr(conv, "user_type", None)))
+                        self.ghi_deal(lid, SALE_FEE_RATE.get(getattr(conv, "vai_phi", None) or getattr(conv, "user_type", None)), gia_chot)
+                    elif gia_chot and existing[0].get("status") == "da_chot":
+                        self.cap_nhat_gia_chot(lid, gia_chot)
                 elif ngoai_vung:
                     continue
                 else:

@@ -840,10 +840,11 @@ class KhoNguoiMua:
         return rows[0].get("question") or ""
 
     # --- Chốt kèo ------------------------------------------------------------------------------------------------
-    def ghi_deal(self, listing_id: str, ti_le_phi: float | None) -> None:
+    def ghi_deal(self, listing_id: str, ti_le_phi: float | None, gia_chot: str | None = None) -> None:
         """Tin vừa chuyển `da_chot` → một dòng `deals`. Chỉ gọi lúc ĐỔI trạng thái sang `da_chot` (`ma_trang_thai` trả None khi không đổi), nên
         một lần chốt một dòng. SRS-5.1zzzzzzz285: bỏ khoá duy nhất (listing_id, buyer_id) nulls not distinct — căn cho thuê chốt lại năm sau
-        (khách ngoài hệ thống, buyer_id rỗng) trước đây không ghi được giao dịch thứ hai."""
+        (khách ngoài hệ thống, buyer_id rỗng) trước đây không ghi được giao dịch thứ hai. `price_vnd` = giá RAO lúc chốt; SRS-5.1zzzzzzz456: chủ
+        đã báo giá chốt (ô riêng `gia_chot`, hỏi từ lúc đã cọc) thì ghi luôn `gia_chot_vnd` (đổi bằng `parse_vnd` — luật tiền một nguồn)."""
         try:
             tin = self._get(f"listings?id=eq.{listing_id}&select=price_vnd")
             from datetime import datetime, timezone
@@ -852,9 +853,29 @@ class KhoNguoiMua:
                 dong["price_vnd"] = tin[0]["price_vnd"]
             if ti_le_phi is not None:
                 dong["fee_pct"] = round(ti_le_phi * 100, 3)
+            chot = self._ngan_sach_vnd(gia_chot or "")
+            if chot:
+                dong["gia_chot_vnd"] = chot
             self._request("POST", "deals", data=dong, prefer="return=minimal")
+            if chot:
+                self.__dict__.setdefault("_gia_chot_da_ghi", {})[listing_id] = chot
         except Exception as e:  # noqa: BLE001
             log.warning("ghi_deal lỗi: %s", e)
+
+    def cap_nhat_gia_chot(self, listing_id: str, gia_chot: str) -> None:
+        """SRS-5.1zzzzzzz456: chủ báo giá chốt SAU lượt đổi sang `da_chot` (bot hỏi ở lượt kế) → điền `gia_chot_vnd` cho dòng `deals` mới nhất
+        của căn. Nhớ theo căn để mỗi lượt lưu không gọi lại khi giá không đổi."""
+        chot = self._ngan_sach_vnd(gia_chot)
+        nho = self.__dict__.setdefault("_gia_chot_da_ghi", {})
+        if not chot or nho.get(listing_id) == chot:
+            return
+        try:
+            dong = self._get(f"deals?listing_id=eq.{listing_id}&select=id,gia_chot_vnd&order=closed_at.desc&limit=1")
+            if dong and dong[0].get("gia_chot_vnd") != chot:
+                self._request("PATCH", f"deals?id=eq.{dong[0]['id']}", data={"gia_chot_vnd": chot}, prefer="return=minimal")
+            nho[listing_id] = chot
+        except Exception as e:  # noqa: BLE001
+            log.warning("cap_nhat_gia_chot lỗi: %s", e)
 
 
 # --- Khối đưa cho model ---------------------------------------------------------------------------------------------

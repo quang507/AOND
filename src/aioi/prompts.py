@@ -83,6 +83,8 @@ FIELD_LABELS: dict[str, str] = {
     "thanh_toan": "cách nhận tiền (một lần / chia đợt) và có cho người mua vay ngân hàng không",
     "gio_xem": "khung giờ tiện dẫn khách xem nhà (riêng của chủ)",
     "chia_khoa": "khi dẫn khách xem thì liên hệ ai, ai giữ chìa khoá (riêng của chủ)",
+    # SRS-5.1zzzzzzz456: giá chốt thật khi căn đã cọc / đã bán / đã cho thuê (riêng của chủ) — khác giá rao (`gia`)
+    "gia_chot": "giá chốt thật hai bên thoả thuận khi căn đã cọc / đã bán / đã cho thuê (bán: tổng giá; thuê: giá mỗi tháng) — giá rao trên tin vẫn ở ô gia; ghi số khách nói, vd 4,8 tỷ",
     # SRS-5.1zzzzzzz295: chỉ khi căn ĐÃ CỌC (riêng của chủ, không lên tin)
     "tien_coc": "số tiền khách mua đã đặt cọc cho căn (chỉ khi căn đã cọc; ghi số khách nói, vd 200 triệu)",
     "ngay_coc": "ngày khách mua đặt cọc (chỉ khi căn đã cọc; ghi như khách nói)",
@@ -208,6 +210,7 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "thanh_toan": "Hỏi muốn nhận tiền một lần hay chia đợt, có đồng ý để người mua vay ngân hàng không",
     "gio_xem": "Hỏi khung giờ nào tiện để bên em dẫn khách tới xem nhà",
     "chia_khoa": "Hỏi lúc dẫn khách xem thì bên em liên hệ ai (chủ nhà hay người nhà) và ai giữ chìa khoá — KHÔNG xin số điện thoại",
+    "gia_chot": "Hỏi giá chốt cuối cùng hai bên thoả thuận là bao nhiêu (bán: tổng giá; thuê: mỗi tháng) — để bên em nắm giá thật khu vực, tư vấn chủ khác sát hơn",
     "tien_coc": "Hỏi khách mua đặt cọc bao nhiêu",
     "ngay_coc": "Hỏi khách cọc ngày nào",
     "han_cong_chung": "Hỏi hai bên hẹn ra công chứng ngày nào",
@@ -909,8 +912,13 @@ def khoi_hoi_phap_ly(o: str, prop: Property | None = None) -> str:
             + (" Chỉ để bên em nắm, không đưa lên tin.\n" if o in O_NOI_BO else "\n"))
 
 
-def khoi_hoi_coc(o: str, prop: Property | None = None) -> str:
-    """Căn đã cọc (SRS-5.1zzzzzzz295): hỏi MỘT ô cọc / công chứng — engine chọn ô (`schema.O_COC`), model đặt câu."""
+def khoi_hoi_coc(o: str, prop: Property | None = None, trang_thai: str = "đã cọc") -> str:
+    """Căn đã cọc (SRS-5.1zzzzzzz295): hỏi MỘT ô giá chốt / cọc / công chứng — engine chọn ô (`schema.O_COC`), model đặt câu. Căn đã bán /
+    đã cho thuê (SRS-5.1zzzzzzz456): chỉ hỏi giá chốt."""
+    if trang_thai != "đã cọc":
+        return ("\n\n=== HỎI THÊM LƯỢT NÀY (căn ĐÃ BÁN / ĐÃ CHO THUÊ — để bên em nắm giá thật khu vực): ===\n"
+                f"Khách vừa báo xong giao dịch thì chúc mừng. Việc lượt này: sau lời đáp, xuống một dòng trống rồi hỏi: {cau_hoi_o(o, prop)}. "
+                "Giá chốt chỉ để bên em nắm, không đưa lên tin.\n")
     return ("\n\n=== HỎI THÊM LƯỢT NÀY (căn ĐÃ CỌC — để bên em theo sát tới lúc công chứng): ===\n"
             f"Khách vừa báo cọc thì chúc mừng. Việc lượt này: sau lời đáp, xuống một dòng trống rồi hỏi: {cau_hoi_o(o, prop)}. Thông tin cọc "
             "chỉ để bên em nắm, không đưa lên tin.\n")

@@ -73,6 +73,17 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz446 · Căn trong dự án lấy phường theo toạ độ dự án; chỉ hỏi số nhà khi có tên đường (12/11/2026)
+Bắn thử 12/11 (`thu-lqc-1711da`): căn hộ Vinhomes Grand Park tòa S5.02, đủ ô, chủ duyệt "đăng đi em" → bot "Anh cho em xin số nhà của căn để em
+định vị đúng trên bản đồ. Tin chưa lên web"; tin kẹt `cho_thong_tin`, LQC sau đăng không chạy. Chủ dự án: "sửa luôn, sửa từ gốc".
+- **Gốc:** tin lên web cần phường (`trang_thai_tin`). Căn hộ chỉ nói tên dự án → phường lấy theo dự án trong kho (SRS-5.1zzzzzzz41 / 86 / 87)
+  bằng cách đọc CHỮ cột phường / địa chỉ dự án. Kho dự án ghi phường cũ trước sáp nhập 07/2025 ("Long Thạnh Mỹ, Quận 9") → `chuan_dia_ban` không
+  ra phường mới nào → thiếu phường. Engine (`_trang_thai_web`) không tra được phường từ đường (căn hộ không có đường) nên rơi vào nhánh hỏi số nhà
+  SRS-5.1zzzzzzz411 — nhánh viết cho nhà phố có đường đi qua nhiều phường.
+- **Sửa:** `_phuong_cua_du_an` (một chỗ cho `_dia_ban` và `phuong_theo_du_an`): dự án có toạ độ (2.631 / 2.819) → RPC `phuong_tai_diem` ra phường
+  MỚI chứa điểm (Vinhomes Grand Park → Phường Long Bình); chưa có toạ độ mới đọc chữ như cũ. `match_projects` lấy thêm `lat`, `lng`.
+- Nhánh hỏi số nhà chỉ khi căn có tên đường (`duong`); không có đường mà vẫn thiếu phường → báo người phụ trách như SRS-5.1zzzzzzz359.
+
 ### SRS-5.1zzzzzzz445 · Thông tin dự án một người báo vẫn dùng, gắn "chưa chắc chắn"; bản vẽ phân lô → rổ lô dự án (12/11/2026)
 Chủ dự án 12/11: "xóa các dữ liệu rổ hàng, mặt bằng các thứ của ny'ah phú định đi, t muốn là t đưa bản vẽ xong nó sẽ lưu lại dữ liệu dự án,
 dự án có 50 lô, trước đó báo có đủ người duyệt mới lên nhưng mà giờ thì có thêm kiểu 1 người nói nó vẫn nhận nhưng mà là thông tin không chắc

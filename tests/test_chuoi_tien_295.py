@@ -40,11 +40,11 @@ def test_can_da_coc_hoi_lan_luot_tien_coc_ngay_coc_cong_chung():
     eng, conv, seen = _eng_coc()
     conv.active.status = "đã cọc"
     eng.handle("chu-295", "ok em")
-    assert any("căn ĐÃ CỌC" in s and "đặt cọc bao nhiêu" in s for s in seen)
+    assert any("căn ĐÃ CỌC" in s and "giá chốt cuối cùng" in s for s in seen)   # SRS-5.1zzzzzzz456: giá chốt hỏi trước
     seen.clear()
     eng.handle("chu-295", "ok em")
-    assert any("căn ĐÃ CỌC" in s and "cọc ngày nào" in s for s in seen)
-    assert conv.prop.fields["_coc_da_hoi"] == "ngay_coc,tien_coc"
+    assert any("căn ĐÃ CỌC" in s and "đặt cọc bao nhiêu" in s for s in seen)
+    assert conv.prop.fields["_coc_da_hoi"] == "gia_chot,tien_coc"
 
 
 def test_can_chua_coc_khong_hoi_coc():

@@ -383,7 +383,10 @@ CUM_XIN_ANH = ("anh", "anh_lan_2")
 # ai giữ chìa khoá, giờ xem là chuyện nhà người ta.
 # SRS-5.1zzzzzzz295 (chủ dự án 29/10/2026, bước 3 chuỗi tiền: "bot được hỏi" cọc / công chứng): tin chuyển "đã cọc" thì hỏi số tiền cọc, ngày
 # cọc, hạn công chứng — mỗi lượt một ô, mỗi ô một lần (`_coc_da_hoi`). Chuyện giao dịch giữa hai bên → ô RIÊNG, không lên web.
-O_COC: tuple[str, ...] = ("tien_coc", "ngay_coc", "han_cong_chung")
+# SRS-5.1zzzzzzz456 (LQC 4.3/4.4, chủ dự án 13/11 "tự sửa lun đi"): giá chốt thật do CHỦ báo trong chat, không chờ admin nhập — hỏi đầu tiên
+# khi căn đã cọc, và là ô DUY NHẤT hỏi khi căn đã bán / đã cho thuê (tin không còn trên web nhưng chủ vẫn nhắn). Giá rao vẫn ở `gia`.
+O_GIA_CHOT = "gia_chot"
+O_COC: tuple[str, ...] = (O_GIA_CHOT, "tien_coc", "ngay_coc", "han_cong_chung")
 # `_qc_anh` / `_qc_da_nhan` (SRS-5.1zzzzzzz422): kết quả QC ảnh và số tin QC đã nhắn — việc nội bộ, cùng chỗ chỉ admin đọc.
 # SRS-5.1zzzzzzz426 / 435 (LQC mảng Pháp lý): chủ nói tiến độ giấy tờ / ai ký bán — hỏi MỘT lần ngay sau khi chủ nói loại giấy
 # (`LoaiPhapLy.hoi_tiep`). Lời chủ chưa kiểm được → ô RIÊNG, không lên web.

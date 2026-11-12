@@ -788,6 +788,15 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz456 · Bot hỏi giá chốt khi chủ báo đã cọc / đã bán (13/11/2026)
+LQC 4.3/4.4 cần giá giao dịch thật. Chủ dự án 13/11: không chờ admin nhập tay, "tự sửa lun đi".
+- **Ô riêng `gia_chot`** (`schema.O_GIA_CHOT`, nằm trong `O_COC` → `O_NOI_BO`, lưu `listing_noi_bo`, không lên web / bản tin). Giá rao vẫn ở `gia`.
+- **Hỏi:** căn đã cọc → hỏi `gia_chot` trước rồi tới tiền cọc / ngày cọc / hạn công chứng như SRS-5.1zzzzzzz295. Căn đã bán / đã cho thuê
+  (tin đã rời web, `len_web` sai) → chỉ hỏi `gia_chot`. Mỗi lượt một ô, mỗi ô một lần (`_coc_da_hoi`). `khoi_hoi_coc(o, prop, trang_thai)`.
+- **Ghi:** migration `20261113b` thêm `deals.gia_chot_vnd`. `ghi_deal` ghi luôn nếu chủ đã báo giá chốt từ lúc cọc; báo sau lượt chốt thì
+  `cap_nhat_gia_chot` điền vào dòng `deals` mới nhất. Đổi chữ ra đồng bằng `parse_vnd` (luật tiền một nguồn). `price_vnd` giữ nghĩa giá rao.
+- Token: thêm một dòng mô tả ô trong schema bóc tách (~45 token mỗi lượt bóc); khối hỏi chỉ vào prompt ở lượt hỏi.
+
 ### SRS-5.1zzzzzzz455 · Báo cáo giá rao quanh căn — LQC 4.6 (13/11/2026)
 Đặc tả anh Luận 4.6: "Em có báo cáo giá bán nhà khu vực anh, em làm miễn phí cho anh". Chủ dự án 13/11: "dựa trên giá rao cũng dc, tạm để
 test vậy đi" (Moso có mục "Báo cáo thị trường BĐS" tính từ tin đăng trên Moso).
@@ -901,14 +910,3 @@ hiệu ứng rê chuột; aond chưa lấy cái nào. King KHÔNG có kiểu kh�
   không cố định: nối trang 1–4 ra 5 thẻ trùng trên 96 (đo trên máy), nghĩa là cũng sót 5 tin. Sau sửa: 8 trang /mua-ban = 182 tin,
   182 mã khác nhau. Khoá cache `listing-browse-v3` → `v4`.
 - Máy giảm chuyển động (`prefers-reduced-motion`): tắt hiện dần, tắt trượt thẻ, vòng chờ quay chậm.
-
-### SRS-5.1zzzzzzz446 · Căn trong dự án lấy phường theo toạ độ dự án; chỉ hỏi số nhà khi có tên đường (12/11/2026)
-Bắn thử 12/11 (`thu-lqc-1711da`): căn hộ Vinhomes Grand Park tòa S5.02, đủ ô, chủ duyệt "đăng đi em" → bot "Anh cho em xin số nhà của căn để em
-định vị đúng trên bản đồ. Tin chưa lên web"; tin kẹt `cho_thong_tin`, LQC sau đăng không chạy. Chủ dự án: "sửa luôn, sửa từ gốc".
-- **Gốc:** tin lên web cần phường (`trang_thai_tin`). Căn hộ chỉ nói tên dự án → phường lấy theo dự án trong kho (SRS-5.1zzzzzzz41 / 86 / 87)
-  bằng cách đọc CHỮ cột phường / địa chỉ dự án. Kho dự án ghi phường cũ trước sáp nhập 07/2025 ("Long Thạnh Mỹ, Quận 9") → `chuan_dia_ban` không
-  ra phường mới nào → thiếu phường. Engine (`_trang_thai_web`) không tra được phường từ đường (căn hộ không có đường) nên rơi vào nhánh hỏi số nhà
-  SRS-5.1zzzzzzz411 — nhánh viết cho nhà phố có đường đi qua nhiều phường.
-- **Sửa:** `_phuong_cua_du_an` (một chỗ cho `_dia_ban` và `phuong_theo_du_an`): dự án có toạ độ (2.631 / 2.819) → RPC `phuong_tai_diem` ra phường
-  MỚI chứa điểm (Vinhomes Grand Park → Phường Long Bình); chưa có toạ độ mới đọc chữ như cũ. `match_projects` lấy thêm `lat`, `lng`.
-- Nhánh hỏi số nhà chỉ khi căn có tên đường (`duong`); không có đường mà vẫn thiếu phường → báo người phụ trách như SRS-5.1zzzzzzz359.
