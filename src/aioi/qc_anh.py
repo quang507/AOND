@@ -32,7 +32,8 @@ TOI_DA_MOT_LUOT = 10
 TOI_DA_ANH_MOT_LAN = 8
 TOI_DA_NHAN_MOI_CAN = 2
 IM_TOI_THIEU_GIAY = int(os.environ.get("SAU_DANG_NHAC_GIAY", "600"))
-QC_ANH_SO = os.environ.get("QC_ANH_SO", "qc_anh.json")
+# Sổ cạnh lõi (C:ondond_core\qc_anh.json trên 146) — task chạy dưới SYSTEM không có thư mục làm việc cố định.
+QC_ANH_SO = os.environ.get("QC_ANH_SO", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "qc_anh.json"))
 DUOI_ANH = (".jpg", ".jpeg", ".png", ".webp")
 
 SCHEMA: dict[str, Any] = {
@@ -163,7 +164,8 @@ def chay_mot_luot(engine: Any, gui: Callable[[str, str], bool], xung_ho_cua: Cal
     ids = ",".join(i for i, _ in can_cham)
     tin_theo_id = {str(r["id"]): r for r in kho._get(
         f"listings?id=in.({ids})&status=in.(dang_ban,dang_quan_tam)"
-        "&select=id,code,deal,property_type,street,ward,district,description,boc_tach,sellers(zalo_user_id,name)")}
+        "&select=id,code,deal,property_type,street,ward,district,description,boc_tach,"
+        "sellers!listings_seller_id_fkey(zalo_user_id,name)")}   # hai khoá ngoại listings↔sellers: chỉ rõ, không thì PostgREST trả 300
     ra: list[dict] = []
     for lid, tep in can_cham:
         tin = tin_theo_id.get(lid)
