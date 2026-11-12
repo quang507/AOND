@@ -69,6 +69,8 @@ FIELD_LABELS: dict[str, str] = {
     # SRS-5.1zzzzzzz116: hỏi sau khi tin lên web (schema.CUM_SAU_DANG). Ô riêng (schema.O_NOI_BO) không lên web / bản tin.
     "dung_ten_so": "người đứng tên sổ (chính chủ / vợ chồng / đồng sở hữu) và mọi người đứng tên đồng ý bán chưa (riêng của chủ)",
     "du_kien_hoan_cong": "chủ dự kiến khi nào hoàn công xong (riêng của chủ)",
+    "phu_hop_kinh_doanh": "căn / đoạn đường hợp buôn bán gì theo lời chủ (vd cafe, nhà hàng, spa, văn phòng kèm showroom; căn đang cho thuê thì khách thuê đang làm gì)",
+    "cho_dau_xe": "chỗ khách đậu xe (trước nhà, vỉa hè rộng, bãi xe gần) theo lời chủ",
     "du_kien_ra_so": "chủ đầu tư hẹn khi nào ra sổ (riêng của chủ)",
     "thue_phi": "thuế phí sang tên bên nào chịu, giá đã gồm thuế phí chưa",
     "thanh_toan": "cách nhận tiền (một lần / chia đợt) và có cho người mua vay ngân hàng không",
@@ -188,6 +190,10 @@ NATURAL_QUESTIONS: dict[str, str] = {
                "KHÔNG đăng lên tin, số nhà không hiện trên web. Một câu, không ép"),
     "du_kien_hoan_cong": "Hỏi NGẮN một câu: dự kiến khi nào hoàn công xong ạ (không nói chưa hoàn công là xấu)",
     "du_kien_ra_so": "Hỏi NGẮN một câu: chủ đầu tư hẹn khi nào ra sổ ạ",
+    # SRS-5.1zzzzzzz427 (LQC mảng Khai thác lợi thế)
+    "phu_hop_kinh_doanh": ("Hỏi chủ đoạn đường này buôn bán gì thì hợp (chủ rành khu hơn em), để em giới thiệu đúng khách thuê / mua kinh doanh; "
+                           "căn đang cho thuê thì hỏi khách thuê đang làm gì. Hỏi mở, không gợi sẵn danh sách ngành"),
+    "cho_dau_xe": "Hỏi khách tới căn đậu xe có tiện không (trước nhà, vỉa hè, bãi gần) — khách thuê kinh doanh hay hỏi ý này",
     "thue_phi": "Hỏi thuế phí sang tên bên nào chịu (bên bán, bên mua hay chia đôi) — giá đã gồm thuế phí chưa",
     "thanh_toan": "Hỏi muốn nhận tiền một lần hay chia đợt, có đồng ý để người mua vay ngân hàng không",
     "gio_xem": "Hỏi khung giờ nào tiện để bên em dẫn khách tới xem nhà",
@@ -754,20 +760,36 @@ def cau_hoi_o(o: str, prop: Property | None = None) -> str:
     return NATURAL_QUESTIONS.get(o, f"hỏi thêm {nhan_o(o, prop)}")
 
 
-def khoi_hoi_sau_dang(keys: list[str], prop: Property | None = None) -> str:
-    """Khối hỏi thêm MỘT cụm sau khi tin đã lên web (SRS-5.1zzzzzzz116) — engine chọn cụm (`Property.cum_sau_dang`), model đặt câu."""
+def dong_tien_ich_that(ds: Any) -> str:
+    """Tiện ích THẬT quanh căn từ `listings.tien_ich_gan` (Overpass, `geocode-listings`: tên + mét đường chim bay), gần nhất trước, tối đa 4."""
+    ok = sorted((x for x in (ds or []) if isinstance(x, dict) and str(x.get("ten") or "").strip() and isinstance(x.get("m"), (int, float))),
+                key=lambda x: x["m"])
+
+    def kc(m: float) -> str:
+        return f"khoảng {max(50, round(m / 50) * 50)} m" if m < 1000 else f"khoảng {m / 1000:.1f} km".replace(".", ",")
+    return "; ".join(f"{str(x['ten']).strip()} {kc(x['m'])}" for x in ok[:4])
+
+
+def khoi_hoi_sau_dang(keys: list[str], prop: Property | None = None, tien_ich: Any = None) -> str:
+    """Khối hỏi thêm MỘT cụm sau khi tin đã lên web (SRS-5.1zzzzzzz116) — engine chọn cụm (`Property.cum_sau_dang`), model đặt câu.
+    `tien_ich` (SRS-5.1zzzzzzz427): tiện ích thật quanh căn khi hỏi lợi thế kinh doanh — bot mở câu bằng dữ kiện thật, không bịa."""
     if not keys:
         return ""
     y = "; ".join(cau_hoi_o(k, prop) for k in keys)
+    ti = dong_tien_ich_that(tien_ich) if "phu_hop_kinh_doanh" in keys else ""
     return ("\n\n=== HỎI THÊM LƯỢT NÀY (tin đã lên web — để tư vấn khách mua cho sát): ===\n"
             f"Việc lượt này: sau lời đáp, xuống một dòng trống (đoạn riêng) rồi hỏi về: {y}. Thông tin riêng (người đứng tên, lý do bán, giờ "
-            "xem, chìa khoá) chỉ để bên em nắm, không đưa lên tin.\n")
+            "xem, chìa khoá) chỉ để bên em nắm, không đưa lên tin.\n"
+            + (f"Dữ kiện THẬT quanh căn (hệ thống tra bản đồ, khoảng cách đường chim bay): {ti}. Có thể mở câu hỏi bằng MỘT tiện ích có ích "
+               "cho buôn bán (vd \"nhà mình cách Co.opmart khoảng 150 m\"), luôn nói \"khoảng\"; KHÔNG nêu tiện ích nào ngoài danh sách này.\n"
+               if ti else ""))
 
 
 # Góc ảnh làm nổi thế mạnh theo NHÁNH loại BĐS (SRS-5.1zzzzzzz421, chủ dự án 11/11: "không phải cái nào cũng hỏi mặt tiền, hỏi xin thêm ảnh tùy
 # nhánh, và hỏi khéo vào"). Tri thức để model chọn MỘT góc hợp căn — không phải câu đọc nguyên văn. Thứ tự = góc nên xin trước.
 GOC_ANH_THEO_NHOM: dict[str, str] = {
-    "nha_mat_tien": "mặt tiền nhà nhìn từ bên kia đường (thấy đủ số tầng, bề ngang); đoạn đường trước nhà; tầng trệt nhìn từ cửa vào",
+    "nha_mat_tien": ("mặt tiền nhà nhìn từ bên kia đường (thấy đủ số tầng, bề ngang); đoạn đường trước nhà; dãy phố hai bên (thấy buôn bán "
+                     "xung quanh); tầng trệt nhìn từ cửa vào"),
     "nha_hem": "con hẻm trước nhà (thấy hẻm rộng, xe vào được); mặt tiền nhà; phòng khách; bếp",
     "nha": "mặt tiền nhà; phòng khách; bếp; phòng ngủ; WC; sân thượng / ban công",
     "phong_tro": "một phòng mẫu; WC trong phòng; lối đi chung; chỗ để xe",
@@ -775,7 +797,8 @@ GOC_ANH_THEO_NHOM: dict[str, str] = {
     PropertyGroup.LAND.value: "toàn cảnh lô đất; đường trước đất (thấy đường rộng); cọc mốc / ranh đất; xung quanh lô",
     PropertyGroup.PROJECT.value: "toàn cảnh lô / căn trong dự án; đường nội khu trước căn; tiện ích dự án gần căn",
     PropertyGroup.INDUSTRIAL.value: "toàn cảnh kho xưởng; cổng và đường xe tải / container vào; bên trong (nền, chiều cao, kết cấu mái)",
-    PropertyGroup.COMMERCIAL.value: "mặt tiền mặt bằng nhìn từ đường; bên trong mặt bằng; vỉa hè / chỗ để xe trước cửa",
+    PropertyGroup.COMMERCIAL.value: ("mặt tiền mặt bằng nhìn từ đường; bên trong mặt bằng; vỉa hè / chỗ để xe trước cửa; dãy cửa hàng hai bên "
+                                     "(thấy buôn bán xung quanh)"),
 }
 
 

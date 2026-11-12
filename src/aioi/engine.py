@@ -3318,8 +3318,9 @@ class Engine:
                     sau_cu = conv.prop.fields.get("_sau_da_hoi")
                     xin_anh = cum_sau[0] in CUM_XIN_ANH
                     conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi | {f"sau:{cum_sau[0] if xin_anh else cum_sau[1][0]}"}))
+                    ti = self._tien_ich_that(conv.active) if cum_sau[1][:1] == ["phu_hop_kinh_doanh"] else None   # SRS-5.1zzzzzzz427
                     system += _hoi("hoi_sau_dang", khoi_xin_them_anh(so_anh, cum_sau[0] == "anh_lan_2", conv.prop) if xin_anh
-                                   else khoi_hoi_sau_dang(cum_sau[1][:1], conv.prop),
+                                   else khoi_hoi_sau_dang(cum_sau[1][:1], conv.prop, ti),
                                    hoan=lambda cu=sau_cu: _dat_co(conv.prop.fields, "_sau_da_hoi", cu))
                     log.warning("Hỏi sau đăng: cụm %s", cum_sau[0])
 
@@ -4340,6 +4341,18 @@ class Engine:
         """Câu mẫu gửi THẲNG khách, đổi "anh/chị" + "em" theo cách khách xưng (SRS-5.1zzzzzzz254, chủ dự án 28/10: câu viết cứng "anh/chị",
         "Em" sai khi khách xưng em). Chỉ cho câu mà "anh/chị" là cách gọi KHÁCH (không dùng cho câu nói về "anh/chị phụ trách")."""
         return _xung_ho_cau(cau_mau.cau(khoa, **bien), *self._goi_toi(conv))
+
+    def _tien_ich_that(self, li: "Listing | None") -> list:
+        """Tiện ích thật quanh tin (`listings.tien_ich_gan`, tên + mét — SRS-5.1zzzzzzz427). Hụt / chưa geocode → [] (khối hỏi bỏ dòng dữ kiện)."""
+        kho = self._convstore
+        if li is None or not getattr(kho, "is_configured", False) or not getattr(li, "listing_id", None):
+            return []
+        try:
+            r = kho._get(f"listings?id=eq.{li.listing_id}&select=tien_ich_gan")
+        except Exception as e:  # noqa: BLE001
+            log.warning("Tiện ích thật: tra hụt (%s)", type(e).__name__)
+            return []
+        return (r[0].get("tien_ich_gan") or []) if r and isinstance(r[0], dict) else []
 
     @staticmethod
     def _cau_em_vua_nhan(conv: Conversation) -> str:

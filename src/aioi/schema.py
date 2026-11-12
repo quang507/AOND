@@ -312,6 +312,8 @@ PHAP_LY_CU_TOI_DA = 5
 CUM_SAU_DANG: list[tuple[str, tuple[str, ...]]] = [
     ("phap_ly", ("dung_ten_so", "the_chap", "quy_hoach")),
     ("hdt", ("thu_nhap_thue",)),   # SRS-5.1zzzzzzz197: chỉ khi AI đọc nhà đang có hợp đồng thuê (`co_hdt` = "co"), xem cum_sau_dang
+    # SRS-5.1zzzzzzz427 (LQC mảng Khai thác lợi thế): chỉ căn buôn bán được (`Property.kinh_doanh_duoc`) — chủ rành đoạn đường hơn bot.
+    ("loi_the", ("phu_hop_kinh_doanh", "cho_dau_xe")),
     ("gia", ("thuong_luong", "ly_do_ban")),
     ("thue_phi", ("thue_phi", "thanh_toan")),
     ("xem_nha", ("gio_xem", "chia_khoa")),
@@ -354,7 +356,7 @@ RENTAL_FIELDS: list[str] = [
 FACETS: list[tuple[str, str, list[str]]] = [
     ("vi_tri",     "Vị trí",           ["dia_chi", "du_an", "ma_so_can", "duong", "phuong", "quan", "xa", "tinh", "gan_nga_tu", "tang_toa"]),
     ("vi_the",     "Vị thế",           ["lo_gioi_hem", "huong", "view", "ban_cong_view", "vi_the", "goc", "can_goc", "mat_tien_duong", "lo_gioi_duong",
-                                        "vi_he_xe", "loi_di", "diem_noi_bat"]),
+                                        "vi_he_xe", "loi_di", "diem_noi_bat", "phu_hop_kinh_doanh", "cho_dau_xe"]),
     ("dat",        "Kích thước đất",   ["dien_tich", "dien_tich_dat", "kich_thuoc", "mat_tien", "no_hau", "tho_cu"]),
     ("cong_trinh", "Quy mô xây dựng",  ["ket_cau", "dien_tich_nha", "so_tang", "so_phong_ngu", "so_phong", "so_phong_thue", "noi_that", "thang_may",
                                         "tien_ich_phong"]),
@@ -587,7 +589,9 @@ class Property:
                 return "phap_ly", [o]
         mong = set(self.expected_fields())
         for ma, cum in CUM_SAU_DANG:
-            if ma in da_hoi or (self.is_rental and ma != "xem_nha"):
+            if ma in da_hoi or (self.is_rental and ma not in ("xem_nha", "loi_the")):   # mặt bằng cho thuê cần lợi thế nhất
+                continue
+            if ma == "loi_the" and not self.kinh_doanh_duoc():
                 continue
             if ma == "chi_tiet" and self.group is not PropertyGroup.RESIDENTIAL:
                 continue
@@ -599,6 +603,11 @@ class Property:
         if thieu_anh and "sau:anh_lan_2" not in da_hoi:
             return "anh_lan_2", ["hinh_anh"]
         return None
+
+    def kinh_doanh_duoc(self) -> bool:
+        """Căn buôn bán được để hỏi lợi thế (SRS-5.1zzzzzzz427): mặt bằng / shophouse, hoặc nhà mặt tiền đường (`_duong_vao` AI đọc theo nghĩa)."""
+        return (self.group is PropertyGroup.COMMERCIAL or self.loai_hinh == "shophouse_du_an"
+                or (self.group is PropertyGroup.RESIDENTIAL and self.fields.get("_duong_vao") == "mat_tien"))
 
     def hoi_phap_ly_sau_dang(self) -> list[str]:
         """Câu pháp lý hỏi SAU khi tin lên web (SRS-5.1zzzzzzz426, LQC mảng Pháp lý), mỗi câu một lần qua `cum_sau_dang`:

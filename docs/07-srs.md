@@ -1017,6 +1017,19 @@ Chủ dự án 12/11: "Có, dùng điểm QC" + "nhưng đừng khó quá, lỡ 
   hỏi khéo chủ MỘT câu tấm đó có phải ảnh căn mình không (tả bằng nội dung, không nói ảnh sai / bị trừ điểm), ưu tiên trước xin góc.
 - Khối ĐIỂM TIN không đưa con số chất lượng ảnh cho model; chỉ gợi "ảnh <góc QC thấy thiếu> sẽ làm tin đẹp hơn, điểm cao hơn".
 
+### SRS-5.1zzzzzzz427 · LQC mảng Khai thác lợi thế: hỏi buôn bán gì hợp, chỗ đậu xe, nêu tiện ích thật (12/11/2026)
+Chủ dự án 12/11 "làm tiếp mảng Khai thác lợi thế" (đặc tả `docs/lqc-listing-quality-controller.md` mục 3.1–3.7).
+- **Cụm hỏi sau đăng `loi_the`** (`schema.CUM_SAU_DANG`, sau pháp lý / hợp đồng thuê, trước giá): ô `phu_hop_kinh_doanh` (chủ nói đoạn đường hợp
+  buôn bán gì; căn đang cho thuê thì khách thuê làm gì) rồi `cho_dau_xe`. Mỗi ô một lần, mỗi lượt một câu như các cụm khác. Ô công khai (lên tin),
+  xếp facet "Vị thế".
+- Chỉ hỏi căn **buôn bán được** (`Property.kinh_doanh_duoc`): mặt bằng / shophouse, hoặc nhà mặt tiền đường (`_duong_vao` = mat_tien, AI đọc theo
+  nghĩa). Tin cho thuê cũng được hỏi cụm này (trước đây tin cho thuê chỉ hỏi dẫn khách xem).
+- **Tiện ích thật (3.6 · 3.7):** lượt hỏi `phu_hop_kinh_doanh` đọc `listings.tien_ich_gan` (tên + mét từ Overpass) → khối hỏi kèm tối đa 4 tiện
+  ích gần nhất ("Co.opmart Phan Văn Trị khoảng 150 m"); bot được mở câu bằng MỘT tiện ích, luôn nói "khoảng", cấm nêu tiện ích ngoài danh sách.
+- **3.2:** góc ảnh gợi ý cho nhà mặt tiền / mặt bằng thêm "dãy phố hai bên (thấy buôn bán xung quanh)" — Image LQC và tin xin ảnh dùng chung.
+- Chưa làm: hỏi đào sâu theo câu trả lời (3.4 "văn phòng kèm showroom hay chỉ office?", 3.5 "spa cao cấp?") — mỗi ô hỏi một lần, model tự nối ý
+  nếu chủ trả lời chung chung trong cùng lượt.
+
 ### SRS-5.1zzzzzzz426 · LQC mảng Pháp lý: hỏi rõ câu mơ hồ, đối chiếu sổ với tin, hỏi tiến độ giấy tờ (12/11/2026)
 Chủ dự án 12/11 "Làm theo lịch này" (đặc tả `docs/lqc-listing-quality-controller.md` mục 2.1–2.5, lịch hỏi đã duyệt).
 - **Trạng thái giấy tờ** (AI đọc theo nghĩa, `prompts.SU_THAT_CAN`): `phap_ly_trang_thai` thêm `hdmb` (căn hộ / đất dự án chờ chủ đầu tư ra sổ)

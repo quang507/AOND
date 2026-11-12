@@ -48,10 +48,10 @@ Ký hiệu: **✅ có sẵn** · **🟡 có một phần** · **❌ chưa có**.
 
 | # | Câu mẫu | Trạng thái | Đã có | Cần thêm / sửa |
 |---|---|---|---|---|
-| 3.1 · 3.4 · 3.5 | "Đoạn này buôn bán gì thì được?" · "Văn phòng kèm showroom hay chỉ office?" · "Spa cao cấp hả anh?" | 🟡 | Bot tự nhận xét chung ("dễ mở quán, showroom"). Căn đang cho thuê: ngành của khách thuê là bằng chứng (tin anh Luận: quán UME, Bud's Cafe). | Ô mới `phu_hop_kinh_doanh` — **hỏi chủ**, vì chủ biết đoạn đường hơn bot. Dùng cho mô tả tin và để khớp khách thuê / mua kinh doanh. |
-| 3.2 | "Có hình xung quanh cho em xin nhé" | 🟡 | = 1.2 | Đi qua Image LQC (góc "xung quanh"). |
-| 3.3 | "Khách để xe thuận tiện không anh?" | ❌ | — | Ô mới `cho_dau_xe` (trước nhà / vỉa hè / bãi gần). |
-| 3.6 · 3.7 | "Có AEON cách anh 1 km, làm nhà hàng được không?" · "Bên cạnh là trường gì?" | 🟡 | `listings.tien_ich_gan` từ Overpass (5 loại: trường học, bệnh viện, chợ, siêu thị, công viên) — **241/245 tin đã có**. Hiện chỉ bot phía mua dùng. | Đưa tiện ích gần vào lượt hỏi **phía bán**: bot nêu tiện ích **thật** từ dữ liệu ("cách siêu thị X khoảng 1 km") rồi hỏi chủ khai thác được gì. Còn lỗi Overpass 406 đang mở. Muốn nói "AEON" đúng tên thì cần lưu tên tiện ích, không chỉ loại. |
+| 3.1 ✅ (SRS-427) · 3.4 · 3.5 | "Đoạn này buôn bán gì thì được?" · "Văn phòng kèm showroom hay chỉ office?" · "Spa cao cấp hả anh?" | 🟡 | Bot tự nhận xét chung ("dễ mở quán, showroom"). Căn đang cho thuê: ngành của khách thuê là bằng chứng (tin anh Luận: quán UME, Bud's Cafe). | Ô mới `phu_hop_kinh_doanh` — **hỏi chủ**, vì chủ biết đoạn đường hơn bot. Dùng cho mô tả tin và để khớp khách thuê / mua kinh doanh. |
+| 3.2 ✅ (SRS-427) | "Có hình xung quanh cho em xin nhé" | 🟡 | = 1.2 | Đi qua Image LQC (góc "xung quanh"). |
+| 3.3 ✅ (SRS-427) | "Khách để xe thuận tiện không anh?" | ❌ | — | Ô mới `cho_dau_xe` (trước nhà / vỉa hè / bãi gần). |
+| 3.6 · 3.7 ✅ (SRS-427) | "Có AEON cách anh 1 km, làm nhà hàng được không?" · "Bên cạnh là trường gì?" | 🟡 | `listings.tien_ich_gan` từ Overpass (5 loại: trường học, bệnh viện, chợ, siêu thị, công viên) — **241/245 tin đã có**. Hiện chỉ bot phía mua dùng. | Đưa tiện ích gần vào lượt hỏi **phía bán**: bot nêu tiện ích **thật** từ dữ liệu ("cách siêu thị X khoảng 1 km") rồi hỏi chủ khai thác được gì. Còn lỗi Overpass 406 đang mở. Muốn nói "AEON" đúng tên thì cần lưu tên tiện ích, không chỉ loại. |
 
 ## Số 4 — So sánh cạnh tranh
 
