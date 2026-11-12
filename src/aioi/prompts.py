@@ -866,7 +866,7 @@ def khoi_dinh_gia(gia_rao: str | None) -> str:
 
 
 def khoi_diem_tin(diem_tin: float, hang: str, thieu: list[str], so_anh: int, prop: Property | None = None,
-                  anh_du: int = 6, diem_du_anh: float | None = None) -> str:
+                  anh_du: int = 6, diem_du_anh: float | None = None, chat_luong_anh: int | None = None, goc_qc: str = "") -> str:
     """Khối ĐIỂM TIN đưa cho model phía bán (SRS-5.1zzzzzzz216, chủ dự án 27/10: "3 làm đi"): `BUSINESS_CONTEXT` bảo bot nói về điểm uy
     tín / hạng mà trước đó không khối nào mang số thật, nên model chỉ có thể bịa. Số do `gamification` tính (cùng nguồn `TurnResult`),
     ô còn thiếu = `Property.missing_fields()` theo nhãn `nhan_o`. Đặt SAU `RANH_GIOI_CACHE` (đổi mỗi lượt). Chữ dặn không chứa chữ số.
@@ -879,9 +879,12 @@ def khoi_diem_tin(diem_tin: float, hang: str, thieu: list[str], so_anh: int, pro
     con_anh = max(anh_du - so_anh, 0)
     if con_anh and diem_du_anh is not None and diem_du_anh > diem_tin:
         cach.append(f"gửi thêm {con_anh} ảnh thật của căn thì tin lên {diem_du_anh:.0f}/100")
+    if goc_qc and chat_luong_anh is not None and chat_luong_anh < 100:   # SRS-5.1zzzzzzz424: điểm chất lượng ảnh lên khi có góc QC thấy thiếu
+        cach.append(f"ảnh {goc_qc} sẽ làm tin đẹp hơn, điểm cao hơn")
+    cl = ""   # điểm chất lượng QC KHÔNG đưa cho model — chủ dự án 12/11 "đừng khó quá": chỉ gợi góc ảnh, không nói ảnh được mấy điểm
     return (
         "\n\n=== ĐIỂM TIN (hệ thống tính, số THẬT — chỉ nói số ở đây, không tự đặt số khác) ===\n"
-        f"ĐIỂM TIN (của căn): {diem_tin:.0f}/100. Ảnh đã nhận: {so_anh}/{anh_du} tấm.\n"
+        f"ĐIỂM TIN (của căn): {diem_tin:.0f}/100. Ảnh đã nhận: {so_anh}/{anh_du} tấm.{cl}\n"
         f"HẠNG NGƯỜI RAO: {hang}.\n"
         f"Để tăng điểm tin: {'; '.join(cach) if cach else 'tin đã đủ điểm'}.\n"
         "Khối này chỉ có ở lượt ra tin (bản nháp / báo tin đã lên) hoặc khi khách hỏi điểm — PHẢI nói một câu ngắn: tin đang được bao nhiêu "

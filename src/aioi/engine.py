@@ -192,23 +192,42 @@ def _image_count(media: list[dict[str, str]]) -> int:
 TRONG_SO_ANH = 0.3   # SRS-5.1zzzzzzz423 (chủ dự án 12/11): ảnh thật chiếm 30% độ đủ của tin — bản trước chỉ đếm ô, đủ ô là 100/100 dù 0 ảnh
 
 
-def so_anh_tinh_diem(li: "Listing") -> int:
-    """Ảnh được tính điểm = ảnh đã lưu vào tin, trừ ảnh Image LQC chấm CHẮC CHẮN không phải căn (SRS-5.1zzzzzzz423). Ảnh lúc gửi đã bị
-    AI chấm không phải ảnh thật của căn thì không được lưu (OPEN-53) nên vốn không vào đây."""
-    so = _image_count(li.media or [])
+def qc_anh_cua(li: "Listing") -> dict:
+    """Kết quả Image LQC lần gần nhất của tin (`_qc_anh`, SRS-422) — rỗng khi chưa chấm."""
     try:
         qc = json.loads(li.prop.fields.get("_qc_anh") or "{}")
     except ValueError:
-        return so
-    sai = sum(1 for a in (qc.get("anh_khong_khop") or []) if isinstance(a, dict) and a.get("chac_chan") is True)
-    return max(so - sai, 0)
+        return {}
+    return qc if isinstance(qc, dict) else {}
+
+
+def so_anh_tinh_diem(li: "Listing") -> int:
+    """Ảnh được tính điểm = MỌI ảnh đã lưu vào tin. Ảnh Image LQC nghi không phải căn KHÔNG bị trừ — QC hỏi lại chủ một câu khéo (chủ dự
+    án 12/11: "đừng khó quá, lỡ người thật người ta khó chịu, hỏi thêm thông tin ảnh chứ ko phải 0 điểm"). Ảnh lúc gửi bị AI chấm là ảnh
+    mạng / phối cảnh / logo bên khác thì không được lưu (OPEN-53, không lên web) nên không vào đây."""
+    return _image_count(li.media or [])
+
+
+def chat_luong_anh(li: "Listing") -> float | None:
+    """Điểm Image LQC cho bộ ảnh (0–1: lột tả căn và thế mạnh tới đâu) — None khi chưa chấm (SRS-5.1zzzzzzz424)."""
+    d = qc_anh_cua(li).get("diem")
+    return max(0.0, min(float(d), 100.0)) / 100 if isinstance(d, (int, float)) and not isinstance(d, bool) else None
+
+
+SAN_CHAT_LUONG = 0.75   # SRS-5.1zzzzzzz424: điểm QC chỉ chỉnh nhẹ — bộ ảnh QC chấm 0 vẫn giữ 3/4 phần ảnh theo số lượng
 
 
 def do_du_tin(li: "Listing", anh_du: int, so_anh: int | None = None) -> float:
-    """Độ đủ của MỘT tin = 70% ô + 30% ảnh (đủ `anh_du` tấm là trọn phần ảnh). Một nguồn cho điểm tin ở chat, bridge, phiếu hạng."""
+    """Độ đủ của MỘT tin = 70% ô + 30% ảnh. Một nguồn cho điểm tin ở chat, bridge, phiếu hạng.
+    Phần ảnh (SRS-5.1zzzzzzz424, chủ dự án 12/11 "Có, dùng điểm QC" + "đừng khó quá"): theo SỐ LƯỢNG (đủ `anh_du` tấm là trọn), nhân hệ số
+    chất lượng từ điểm Image LQC trong khoảng 0,75–1 — tối đa mất một phần tư phần ảnh (khoảng 4 / 100 điểm tin), không bao giờ về 0.
+    Tin chưa được QC chấm thì chỉ theo số lượng; QC chấm lại mỗi khi bộ ảnh đổi."""
     if so_anh is None:
         so_anh = so_anh_tinh_diem(li)
-    return (1 - TRONG_SO_ANH) * li.prop.completeness() + TRONG_SO_ANH * min(so_anh / max(anh_du, 1), 1.0)
+    so_luong = min(so_anh / max(anh_du, 1), 1.0)
+    cl = chat_luong_anh(li)
+    phan_anh = so_luong if cl is None else so_luong * (SAN_CHAT_LUONG + (1 - SAN_CHAT_LUONG) * cl)
+    return (1 - TRONG_SO_ANH) * li.prop.completeness() + TRONG_SO_ANH * phan_anh
 
 # 19/10/2026 (SRS-5.1zzzzzzz55): các bộ dò từ khoá _looks_descriptive / _wants_project_facts / _wants_media /
 # _looks_like_reference_doc / _affirms / _denies đã gỡ — lượt AI lập thao tác đọc theo nghĩa (xin_xem_ban_ve, cau_hoi_du_an,
@@ -3540,8 +3559,11 @@ class Engine:
         diem_du_anh = g.property_score(do_du_tin(conv.active, anh_du, anh_du), timeliness)   # cùng tin, đủ ảnh thì được bao nhiêu
         tat_ca = [g.property_score(do_du_tin(li, anh_du), timeliness) for li in conv.listings] or [diem]
         diem_nguoi = g.user_score(tat_ca, num_listings=len(conv.listings))
+        qc = qc_anh_cua(conv.active)
+        cl = chat_luong_anh(conv.active)
         return khoi_diem_tin(diem, g.tier_for(diem_nguoi).value, conv.prop.missing_fields(), so_anh, conv.prop,
-                             anh_du=anh_du, diem_du_anh=diem_du_anh)   # hạng: chỉ tên (SRS-349)
+                             anh_du=anh_du, diem_du_anh=diem_du_anh,
+                             chat_luong_anh=None if cl is None else round(cl * 100), goc_qc=str(qc.get("goc_can_xin") or ""))   # hạng: chỉ tên (SRS-349)
 
     def _anh_du(self) -> int:
         """Số ảnh để phần ảnh của điểm tin đạt trọn — cùng mốc với cụm xin ảnh sau đăng (SRS-420/421)."""

@@ -1008,3 +1008,11 @@ Chủ dự án 12/11: "tin mấy điểm, đã được mấy điểm, còn mấ
   ảnh mặt tiền; không nói góc còn thiếu. Chat anh Luận 11/11: gửi mặt tiền, bot đáp "chưa thấy bên trong nhà"; gửi ảnh quán, bot đáp "chưa
   giống căn".
 - **Khung giờ tin tự động 8–21 giờ** (`GIO_KET_THUC = 21`, trước là 20) — chung cho tin nhắc, xin ảnh, Image LQC, báo căn mới, giữ kết nối.
+
+### SRS-5.1zzzzzzz424 · Phần ảnh của điểm tin dùng điểm Image LQC — nhẹ tay, hỏi lại thay vì trừ điểm (12/11/2026)
+Chủ dự án 12/11: "Có, dùng điểm QC" + "nhưng đừng khó quá, lỡ người thật người ta khó chịu, hỏi thêm thông tin ảnh chứ ko phải 0 điểm".
+- Phần ảnh (30% độ đủ của tin) = số lượng (đủ 6 tấm là trọn) × hệ số chất lượng 0,75–1 theo điểm Image LQC (`SAN_CHAT_LUONG`). Bộ ảnh QC
+  chấm thấp nhất cũng chỉ mất một phần tư phần ảnh (khoảng 4/100 điểm tin), không bao giờ về 0. Tin chưa được QC chấm thì chỉ theo số lượng.
+- Bỏ luật SRS-423 trừ ảnh QC chấm "chắc chắn không phải căn" khỏi số ảnh tính điểm: mọi ảnh đã lưu đều được tính. Thay vào đó Image LQC
+  hỏi khéo chủ MỘT câu tấm đó có phải ảnh căn mình không (tả bằng nội dung, không nói ảnh sai / bị trừ điểm), ưu tiên trước xin góc.
+- Khối ĐIỂM TIN không đưa con số chất lượng ảnh cho model; chỉ gợi "ảnh <góc QC thấy thiếu> sẽ làm tin đẹp hơn, điểm cao hơn".

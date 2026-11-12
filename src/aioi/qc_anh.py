@@ -211,7 +211,7 @@ def _ghi_va_nhan(engine: Any, tin: dict, kq: dict, bay_gio: datetime, gui: Calla
         from .followup import cau_hoi_cuoi_cua_bot
         if cau_hoi_cuoi_cua_bot(conv):   # 12/11 (chat anh Luận): "Sổ đứng tên ai?" chưa đáp, QC chồng thêm tin xin ảnh
             im = False
-        if (kq.get("goc_can_xin") and so_lan < TOI_DA_NHAN_MOI_CAN and im and trong_khung_gio(bay_gio)
+        if ((kq.get("goc_can_xin") or _anh_nghi(kq)) and so_lan < TOI_DA_NHAN_MOI_CAN and im and trong_khung_gio(bay_gio)
                 and getattr(conv, "nhuong_san_den", 0) <= time.time()):
             from .engine import _detect_customer_pronoun
             goi, toi = goi_toi(_detect_customer_pronoun(conv, ""), getattr(conv.assistant, "name", None))
@@ -238,15 +238,23 @@ def _ghi_va_nhan(engine: Any, tin: dict, kq: dict, bay_gio: datetime, gui: Calla
     return True
 
 
+def _anh_nghi(kq: dict) -> list[dict]:
+    """Ảnh QC chấm gần như chắc chắn không phải căn — hỏi lại chủ, không trừ điểm (SRS-5.1zzzzzzz424)."""
+    return [a for a in (kq.get("anh_khong_khop") or []) if isinstance(a, dict) and a.get("chac_chan") is True]
+
+
 def viet_tin_nhan(engine: Any, conv: Any, li: Any, kq: dict, goi: str, toi: str) -> str:
-    """Model viết MỘT câu khéo xin đúng góc QC thấy thiếu; hụt → ""."""
+    """Model viết MỘT câu khéo: có ảnh nghi không phải căn thì hỏi lại tấm đó trước, không thì xin đúng góc QC thấy thiếu; hụt → ""."""
     from .llm import Message
     from .prompts import LUAT_XIN_ANH_KHEO
     gan = "\n".join(f"{'Khách' if t.role == 'user' else 'Em'}: {(t.content or '')[:300]}" for t in conv.history[-6:])
+    nghi = _anh_nghi(kq)
     he = (f"Bạn là {getattr(conv.assistant, 'name', 'em')}, trợ lý sàn nhà đất, đang chăm sóc chủ nhà có tin rao ĐÃ LÊN WEB "
           f"({kq.get('so_anh')} ảnh). Bộ phận QC ảnh vừa xem tin: thế mạnh chưa có ảnh — {', '.join(kq.get('the_manh_chua_co_anh') or []) or 'không'}; "
           f"góc nên xin — {kq.get('goc_can_xin')}.\n"
-          f"Viết ĐÚNG MỘT tin Zalo gửi chủ nhà xin góc đó. Gọi khách là \"{goi}\", tự xưng \"{toi}\". Không chào lại, không nhắc chuyện QC / "
+          + (f"CÓ ẢNH TRÔNG CHƯA GIỐNG CĂN: {nghi[0].get('ly_do')}. Việc của tin này là HỎI KHÉO tấm đó có phải ảnh căn mình không (tả tấm ảnh "
+             "bằng nội dung, không nói tên tệp, không nói ảnh sai / bị loại / bị trừ điểm) — KHÔNG xin góc khác trong tin này.\n" if nghi else "")
+          + f"Viết ĐÚNG MỘT tin Zalo gửi chủ nhà{'' if nghi else ' xin góc đó'}. Gọi khách là \"{goi}\", tự xưng \"{toi}\". Không chào lại, không nhắc chuyện QC / "
           f"chấm điểm, không hỏi chuyện khác, không dùng chữ \"máy\". {LUAT_XIN_ANH_KHEO}\nChỉ trả về nguyên văn tin gửi khách.")
     try:
         tin = engine._provider.reply(he, [Message("user", f"Mấy lượt vừa nói:\n{gan or '(chưa có)'}\n\nViết tin xin ảnh.")],
