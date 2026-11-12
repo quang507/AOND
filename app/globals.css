@@ -37,11 +37,16 @@
   /* 12/11/2026 (SRS-5.1zzzzzzz434, chủ dự án: "Đổi góc bo sang 14px như King"): góc bo 14px như King (245 / ~400 chỗ
      border-radius trong style.css của King là 14px). Thay quyết định 2px ngày 19/10 (SRS-5.1zzzzzzz72). Đè cả thang mặc
      định của Tailwind nên rounded / -sm / -md / -lg / -xl / -2xl… đều ra 14px; riêng -xs 4px cho chi tiết rất nhỏ.
-     Hình tròn thật (avatar, chấm, thanh tiến độ) vẫn rounded-full. Muốn đổi góc cả web thì đổi ở đây, không sửa từng lớp. */
+     Hình tròn thật (avatar, chấm, thanh tiến độ) vẫn rounded-full. Muốn đổi góc cả web thì đổi ở đây, không sửa từng lớp.
+     SRS-5.1zzzzzzz452 (chủ dự án 12/11: "14px ko phải cố định"): góc bo THEO CỠ, như King (King cũng không bo 14px mọi thứ).
+     14px trên chip cao 30px là gần nửa chiều cao → thành viên thuốc. Nay:
+       rounded-lg trở lên, rounded-king, rounded-shot = 14px — thẻ, khung, ảnh, khối lớn;
+       rounded-md = 8px — nút, ô nhập, chip lọc (62 chỗ, gần như toàn điều khiển cỡ 30–44px);
+       rounded / rounded-sm = 6px — nhãn nhỏ trên ảnh, mã tin; rounded-xs = 4px. */
   --radius-xs: 4px;
-  --radius-sm: 14px;
-  --radius: 14px;
-  --radius-md: 14px;
+  --radius-sm: 6px;
+  --radius: 6px;
+  --radius-md: 8px;
   --radius-lg: 14px;
   --radius-xl: 14px;
   --radius-2xl: 14px;
@@ -99,7 +104,7 @@ body {
    (không phải lúc nào cũng bóng — đó mới là chỗ trông giả). Nút PHỤ có nền hơi
    ngả kem và viền đậm hơn viền khung một nấc, để mắt biết nó bấm được. */
 .nut {
-  /* Không còn viên thuốc (10/09): nút bo 6px, cùng nhịp với thẻ và ô nhập. */
+  /* Không còn viên thuốc (10/09). Nút bo rounded-md = 8px từ SRS-5.1zzzzzzz452 (góc bo theo cỡ, xem nhóm --radius-*). */
   @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-md
          text-sm font-bold leading-none transition-all duration-150
          focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/45 focus-visible:ring-offset-2

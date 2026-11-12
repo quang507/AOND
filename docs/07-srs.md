@@ -788,6 +788,16 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz452 · Góc bo theo cỡ: khối lớn 14px, nút/ô nhập/chip 8px, nhãn nhỏ 6px (12/11/2026)
+
+Chủ dự án 12/11/2026 "Sửa luôn" (chip lọc trông như viên thuốc) rồi "14px ko phải cố định". SRS-434 đè cả thang `--radius-*` của
+Tailwind về 14px, nên chip lọc cao 30px bo 14px — gần nửa chiều cao, thành viên thuốc, trái luật "không chip viên thuốc".
+Nay góc bo theo cỡ (đổi ở nhóm `--radius-*` trong app/globals.css, không sửa từng lớp):
+- `rounded-lg` trở lên, `rounded-king`, `rounded-shot` = 14px: thẻ, khung, ảnh, khối lớn (giữ như SRS-434).
+- `rounded-md` = 8px: nút (`.nut`), ô nhập, chip lọc — 62 chỗ trên web, gần như toàn điều khiển cao 30–44px.
+- `rounded` / `rounded-sm` = 6px: nhãn nhỏ trên ảnh ("Bán"), mã tin. `rounded-xs` giữ 4px.
+Đo trên /mua-ban sau sửa: chip 8px, ô tìm 8px, thẻ 14px, nhãn "Bán" 6px.
+
 ### SRS-5.1zzzzzzz451 · Thẻ tin theo màu và góc bo King, tiêu đề có loại nhà, bỏ số đếm lặp, gắn lại hotline (12/11/2026)
 
 Chủ dự án 12/11/2026 "hotline 0346 689 460 của tm để đi, lấy đi sửa cả 4".
