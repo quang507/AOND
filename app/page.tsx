@@ -4,6 +4,9 @@ import { zaloLink } from "@/lib/format";
 import { WARDS } from "@/lib/geo";
 import { FEATURED_TAGS } from "@/lib/tags";
 import RadarMarketBlock from "@/components/RadarMarketBlock";
+import FeedDoc from "@/components/FeedDoc";
+import { CARD_COLS, supabase, type ListingCard as CardRow, TRANG_THAI_HIEN } from "@/lib/supabase";
+import { coverFullByCode } from "@/lib/photos";
 
 export const revalidate = 10800; // 3 giờ
 
@@ -67,9 +70,32 @@ function HoiThoai({ chat, toi }: { chat: Bong[]; toi?: boolean }) {
   );
 }
 
+// SRS-5.1zzzzzzz430: feed điện thoại lấy 60 tin mới nhất đang lên kệ, căn có ảnh lên trước, giữ 30.
+const SO_TIN_FEED = 30;
+
+async function tinFeed(): Promise<{ tin: CardRow[]; anh: Record<string, string> }> {
+  const { data } = await supabase
+    .from("listings")
+    .select(CARD_COLS)
+    .in("status", TRANG_THAI_HIEN)
+    .order("created_at", { ascending: false })
+    .limit(60);
+  const rows = (data ?? []) as CardRow[];
+  const anh = await coverFullByCode(rows.map((r) => r.code));
+  const coAnh = rows.filter((r) => r.code && anh[r.code]);
+  const khongAnh = rows.filter((r) => !(r.code && anh[r.code]));
+  return { tin: [...coAnh, ...khongAnh].slice(0, SO_TIN_FEED), anh };
+}
+
 export default async function Home() {
+  const { tin, anh } = await tinFeed();
   return (
     <>
+      {/* ĐIỆN THOẠI: feed vuốt dọc kiểu TikTok (chủ dự án 12/11/2026 "Thay trang chủ trên điện thoại") */}
+      <FeedDoc tin={tin} anh={anh} />
+
+      {/* MÁY TÍNH: trang chủ giữ nguyên */}
+      <div className="hidden md:block">
       {/* 1. HERO DARK NAVY (#0B192C) */}
       <section className="relative bg-navy text-white pb-12 pt-4">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -77,13 +103,13 @@ export default async function Home() {
         </div>
         <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pt-10 md:grid-cols-[1.15fr_.85fr] md:pt-14">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 text-[#60A5FA] text-xs font-bold tracking-wide uppercase mb-3">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 text-brand-soft text-xs font-bold tracking-wide uppercase mb-3">
               <span>Môi giới thường trực · Sài Gòn & Long An</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold leading-[1.12] [text-wrap:balance] md:text-5xl text-white">
               Tìm nhà Sài Gòn, Long An?
               <br />
-              <span className="text-[#60A5FA]">Nhắn một câu là xong.</span>
+              <span className="text-brand-soft">Nhắn một câu là xong.</span>
             </h1>
             <p className="mt-4 max-w-md leading-7 text-white/75 text-sm sm:text-base">
               Tụi em không hỏi số điện thoại, không spam. Trợ lý trực 24/7 trên
@@ -306,6 +332,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
+      </div>
     </>
   );
 }

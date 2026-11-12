@@ -68,8 +68,8 @@ export default function BrowseWithMap({
           onClick={() => setShowMap(!showMap)}
           className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-bold shadow-sm transition shrink-0 ${
             showMap
-              ? "bg-[#0052CC] text-white hover:bg-[#0043A8]"
-              : "bg-[#0068FF] text-white hover:bg-[#0052CC]"
+              ? "bg-brand-dark text-white hover:bg-[#0043A8]"
+              : "bg-brand text-white hover:bg-brand-dark"
           }`}
         >
           {showMap ? (
@@ -121,7 +121,7 @@ export default function BrowseWithMap({
               <button
                 type="button"
                 onClick={() => setShowMap(false)}
-                className="absolute top-3 right-3 z-[1000] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#0068FF] text-white text-xs font-bold shadow-md hover:bg-[#0052CC] transition backdrop-blur-sm"
+                className="absolute top-3 right-3 z-[1000] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-brand text-white text-xs font-bold shadow-md hover:bg-brand-dark transition backdrop-blur-sm"
               >
                 <span>✕</span>
                 <span>Đóng bản đồ</span>

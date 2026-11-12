@@ -54,7 +54,7 @@ export default function Header() {
               hai cùng xanh nên trang có ba nút Zalo tranh nhau. */}
           <a
             href={zaloLink("header")}
-            className="nut nut-chinh nut-nho"
+            className="nut nut-nho bg-zalo text-white hover:opacity-90"
           >
             Chat Zalo
           </a>

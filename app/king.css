@@ -1,0 +1,154 @@
+/* KING — phần chép từ theme King (RedKings, ThemeForest, bản 9.5.5, `king/style.css`) cho feed vuốt dọc trên điện thoại
+   (SRS-5.1zzzzzzz430, chủ dự án 12/11/2026). Mỗi khối ghi rõ class gốc của King mà nó chép.
+   Bảng màu / font King nằm ở globals.css (@theme); file này chỉ có feed. */
+
+/* Khung feed: cao bằng màn hình trừ thanh trên (Header h-16), cuộn dọc dính từng màn như TikTok.
+   overscroll contain: tới màn cuối không kéo cả trang theo. */
+.feed {
+  height: calc(100svh - 4rem);
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
+  background: #13151d;
+  scrollbar-width: none;
+}
+.feed::-webkit-scrollbar { display: none; }
+
+.feed-o {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: always; /* vuốt mạnh cũng chỉ qua một căn */
+  color: #fff;
+  background: #13151d;
+}
+
+.feed-anh {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Lớp phủ tối: King `.content-story .entry-image:after` (trong suốt tới ~69% rồi đen 0.6), kéo dài lên và thêm dải tối trên cùng
+   để chữ trắng đọc được trên ảnh sáng. */
+.feed-phu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.38) 0%, rgba(0, 0, 0, 0) 20%, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.78) 100%);
+}
+
+.feed-tren {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Nhãn đỏ: King `.story-add .controls-item.sactive` (nền #e60023 chữ trắng). */
+.feed-nhan {
+  background: var(--color-brand);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius-king);
+}
+
+.feed-dem {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgb(255 255 255 / 0.85);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+}
+
+.feed-duoi {
+  position: absolute;
+  left: 16px;
+  right: 84px;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 2;
+}
+
+/* Chữ trên ảnh: King `.king-stories-owl .editorschoice-post-title` (text-shadow 1px 2px 2px đen 20%). */
+.feed-gia {
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-shadow: 1px 2px 2px rgb(0 0 0 / 0.2), 0 1px 12px rgb(0 0 0 / 0.35);
+}
+.feed-chu {
+  text-shadow: 1px 2px 2px rgb(0 0 0 / 0.25);
+}
+
+.feed-ray {
+  position: absolute;
+  right: 12px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.feed-nut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+/* Nút tròn trắng: King `.king-highlight` (tròn trắng, chữ #13151d) + bóng của King `.story-nav button`. */
+.feed-tron {
+  width: 48px;
+  height: 48px;
+  border-radius: 100%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: #13151d;
+  box-shadow: 0 4px 9px 0 rgb(43 43 49 / 10%), 0 7px 14px 0 rgb(43 43 49 / 13%);
+  transition: transform 0.15s ease;
+}
+.feed-nut:active .feed-tron { transform: scale(0.92); }
+.feed-tron--zalo { background: var(--color-zalo); color: #fff; }
+.feed-tron--do { background: var(--color-brand); color: #fff; }
+
+/* Chip tag trên nền tối. */
+.feed-chip {
+  display: inline-block;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: rgb(255 255 255 / 0.1);
+  border: 1px solid rgb(255 255 255 / 0.22);
+  border-radius: var(--radius-king);
+}
+
+.feed-goi-y { animation: feed-nhun 1.6s ease-in-out infinite; }
+@keyframes feed-nhun {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .feed-goi-y { animation: none; }
+  .feed-tron { transition: none; }
+}

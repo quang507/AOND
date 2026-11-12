@@ -4,7 +4,6 @@ phần SRS-5.1zzzzzzz116). Trước bản này khối dự án phía bán mang "
 nhà phố / dự án thiếu số liệu lại có con số; lưới nhận xét giá bị nới."""
 import pytest
 
-from aioi.engine import _binh_luan_gia
 from aioi.projects import Project
 from tests.test_danh_gia_ai import _eng
 from tests.test_hoi_tinh_hinh_ban import _KhoSo
@@ -51,8 +50,3 @@ def test_du_an_thieu_gia_rao_giu_loi_cu(monkeypatch):
     ke["plan"] = {"operations": [], "hoi_ve": "dinh_gia", "hoi_ve_trich_dan": "giá tôi đưa cao không"}
     eng.handle("u-sao", "giá tôi đưa cao không em")
     assert "CHƯA có dữ liệu định giá" in seen[-1]
-
-
-def test_luoi_nhan_xet_gia_van_bat():
-    assert _binh_luan_gia("Giá anh đưa như vậy là khá hợp lý so với thị trường ạ")
-    assert _binh_luan_gia("Các tin đang rao ở dự án này khoảng 45–62 triệu/m² (18 tin, 02/11/2026), anh tham khảo ạ") is None

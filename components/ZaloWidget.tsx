@@ -11,13 +11,15 @@ export default function ZaloWidget() {
   if (pathname?.startsWith("/nha-dat/")) return null;
   // Khung CRM /admin/* là chỗ làm việc của admin, không mời chat Zalo (09/09/2026).
   if (pathname?.startsWith("/admin")) return null;
+  // SRS-5.1zzzzzzz430: trang chủ trên điện thoại là feed vuốt dọc, mỗi căn đã có nút "Hỏi #mã" — widget nổi sẽ đè lên giá.
+  const anDienThoai = pathname === "/" ? "hidden md:flex" : "flex";
   return (
     <a
       href={zaloLink(`widget:${pathname ?? "/"}`)}
       target="_blank"
       rel="noopener"
       aria-label="Chat Zalo với AI Ơi Nhà Đất"
-      className="fixed bottom-4 left-4 z-50 flex items-center gap-2 rounded-md bg-zalo py-2.5 pl-3 pr-4 font-bold text-white shadow-lg shadow-zalo/30 transition hover:opacity-90 active:scale-[0.97]"
+      className={`fixed bottom-4 left-4 z-50 ${anDienThoai} items-center gap-2 rounded-md bg-zalo py-2.5 pl-3 pr-4 font-bold text-white shadow-lg shadow-zalo/30 transition hover:opacity-90 active:scale-[0.97]`}
     >
       {/* logo chat bubble tối giản, không kéo thư viện icon */}
       <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden>

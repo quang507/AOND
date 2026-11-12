@@ -43,6 +43,30 @@ async function _coverByCode(
   return cover;
 }
 
+/** Ảnh bìa bản GỐC cho feed vuốt dọc trên điện thoại (SRS-5.1zzzzzzz430) — ảnh phủ kín màn hình, bản 480px bị mờ. */
+export const coverFullByCode = unstable_cache(
+  _coverFullByCode,
+  ["listing-covers-full"],
+  { revalidate: TTL, tags: ["listing-photos"] },
+);
+
+async function _coverFullByCode(
+  codes: (string | null | undefined)[],
+): Promise<Record<string, string>> {
+  const list = [...new Set(codes.filter(Boolean) as string[])];
+  if (!list.length) return {};
+  const { data } = await supabase
+    .from("listing_photos_v")
+    .select("code, url")
+    .in("code", list)
+    .eq("is_cover", true);
+  const cover: Record<string, string> = {};
+  for (const r of data ?? []) {
+    if (!cover[r.code as string]) cover[r.code as string] = r.url as string;
+  }
+  return cover;
+}
+
 /** Toàn bộ ảnh của một tin, xếp theo sort_order — dùng cho trang chi tiết. */
 export const photosOfCode = unstable_cache(
   _photosOfCode,

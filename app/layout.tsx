@@ -6,30 +6,30 @@ import ChiNgoaiAdmin from "@/components/ChiNgoaiAdmin";
 import ZaloWidget from "@/components/ZaloWidget";
 import { SITE_URL } from "@/lib/format";
 import "./globals.css";
+import "./king.css";
 
-// 02/11/2026 (SRS-5.1zzzzzzz351): font ghim trong repo (`app/fonts/`, OFL, bản variable 200–800 của fontsource 5.3.0) thay
-// `next/font/google` — bản cũ tải metadata font từ Google mỗi lượt dựng, runner CI lúc lấy được lúc không ("Cannot read properties
-// of null (reading '1')" ở loader.js), cổng web đỏ oan. next/font/local không khai unicode-range theo từng file, nên mỗi subset là
-// một lần gọi (unicode-range lấy nguyên từ fontsource) và `--font-jakarta` (globals.css) ghép ba họ: trình duyệt chọn họ theo từng
-// ký tự. Chỉ họ CUỐI giữ font dự phòng đã chỉnh cỡ — để ở họ đầu thì chữ tiếng Việt rơi vào font dự phòng trước khi tới họ vietnamese.
-const jakartaLatin = localFont({
-  src: "./fonts/plus-jakarta-sans-latin-wght-normal.woff2",
-  weight: "200 800",
-  variable: "--font-jakarta-latin",
+// Font Nunito — font của theme King (SRS-5.1zzzzzzz430, 12/11/2026). Ghim trong repo (`app/fonts/`, OFL, bản variable của
+// @fontsource-variable/nunito 5.1.0) theo đúng cách SRS-5.1zzzzzzz351 ghim Plus Jakarta Sans: next/font/google tải metadata từ Google
+// mỗi lượt dựng, CI lúc lấy được lúc không. Mỗi subset một lần gọi (unicode-range lấy nguyên từ fontsource), `--font-king`
+// (globals.css) ghép ba họ. Chỉ họ CUỐI giữ font dự phòng đã chỉnh cỡ — để ở họ đầu thì chữ tiếng Việt rơi vào font dự phòng trước.
+const nunitoLatin = localFont({
+  src: "./fonts/nunito-latin-wght-normal.woff2",
+  weight: "200 1000",
+  variable: "--font-nunito-latin",
   adjustFontFallback: false,
   declarations: [{ prop: "unicode-range", value: "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD" }],
 });
-const jakartaViet = localFont({
-  src: "./fonts/plus-jakarta-sans-vietnamese-wght-normal.woff2",
-  weight: "200 800",
-  variable: "--font-jakarta-viet",
+const nunitoViet = localFont({
+  src: "./fonts/nunito-vietnamese-wght-normal.woff2",
+  weight: "200 1000",
+  variable: "--font-nunito-viet",
   adjustFontFallback: false,
   declarations: [{ prop: "unicode-range", value: "U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB" }],
 });
-const jakartaLatinExt = localFont({
-  src: "./fonts/plus-jakarta-sans-latin-ext-wght-normal.woff2",
-  weight: "200 800",
-  variable: "--font-jakarta-latin-ext",
+const nunitoLatinExt = localFont({
+  src: "./fonts/nunito-latin-ext-wght-normal.woff2",
+  weight: "200 1000",
+  variable: "--font-nunito-latin-ext",
   preload: false,
   declarations: [{ prop: "unicode-range", value: "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF" }],
 });
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" className={`${jakartaLatin.variable} ${jakartaViet.variable} ${jakartaLatinExt.variable}`}>
+    <html lang="vi" className={`${nunitoLatin.variable} ${nunitoViet.variable} ${nunitoLatinExt.variable}`}>
       <body className="font-sans antialiased">
         <Header />
         <main className="min-h-screen">{children}</main>

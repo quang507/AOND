@@ -1017,6 +1017,20 @@ Chủ dự án 12/11: "Có, dùng điểm QC" + "nhưng đừng khó quá, lỡ 
   hỏi khéo chủ MỘT câu tấm đó có phải ảnh căn mình không (tả bằng nội dung, không nói ảnh sai / bị trừ điểm), ưu tiên trước xin góc.
 - Khối ĐIỂM TIN không đưa con số chất lượng ảnh cho model; chỉ gợi "ảnh <góc QC thấy thiếu> sẽ làm tin đẹp hơn, điểm cao hơn".
 
+### SRS-5.1zzzzzzz430 · Web theo theme King + trang chủ điện thoại là feed vuốt dọc kiểu TikTok (12/11/2026)
+Chủ dự án 12/11: "lấy king theme kia để áp vào web, muốn lướt trang web kiểu cuộn cuộn như tiktok"; chọn "Mở và chép file theme vào
+web" và "Thay trang chủ trên điện thoại".
+- **Theme King** (RedKings, ThemeForest 9.5.5, `ThemeForest/themeforest-…-king-wordpress-theme.zip` trong thư mục anh Luận): King là theme
+  WordPress PHP, 225KB CSS toàn class bài viết / story, không có class nhà đất — chép nguyên file vào Next.js sẽ đè reset của Tailwind.
+  Chép phần dùng được: bảng màu (đỏ #e60023, đen #13151d, nền #f6f7f9, viền #e8ebed, chữ phụ #687686 — đếm trong CSS), font Nunito (ghim
+  `app/fonts/`, OFL), kiểu khối story (lớp phủ tối dưới ảnh, nút tròn trắng có bóng, nhãn đỏ) vào `app/king.css`. Góc bo giữ 2px theo
+  quyết định 19/10. Nút Zalo giữ xanh Zalo.
+- **Feed điện thoại** (`components/FeedDoc.tsx`, chỉ dưới `md`): khung cao bằng màn hình trừ thanh trên, `scroll-snap` dọc, mỗi màn một
+  căn: ảnh bìa bản gốc phủ kín, giá, diện tích · tầng · phòng ngủ · lối vào, đường / phường, cột nút phải: Lưu (tim, `FavButton`), Hỏi
+  #mã (Zalo `zaloLink("#mã")`), Chia sẻ (`navigator.share`, không có thì chép link), Xem chi tiết. Màn đầu là ô tìm bằng câu nói + tag;
+  màn cuối dẫn sang /mua-ban, /cho-thue. 30 tin mới nhất đang lên kệ, căn có ảnh trước. Widget Zalo nổi ẩn ở trang chủ điện thoại.
+- Máy tính: trang chủ giữ nguyên, chỉ đổi màu / font.
+
 ### SRS-5.1zzzzzzz429 · Bot phía bán nhận xét NHẸ giá chủ so với căn đang rao gần (12/11/2026)
 Chủ dự án 12/11 quyết câu 4.5 của đặc tả LQC: "Được, nói nhẹ".
 - RPC `can_dang_rao_gan` (migration `20261112c`) trả thêm `cua_chu` (giá, đơn giá, lối vào của chính tin) và trung vị đơn giá các căn CÙNG lối

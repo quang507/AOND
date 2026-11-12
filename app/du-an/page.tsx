@@ -84,9 +84,9 @@ export default async function DuAnPage({
   return (
     <div className="min-h-screen bg-slate-50/70 pb-16">
       {/* Page Header */}
-      <div className="bg-[#0B192C] text-white py-10 px-4">
+      <div className="bg-navy text-white py-10 px-4">
         <div className="mx-auto max-w-6xl">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#DDF2FD]/15 text-[#60A5FA] text-xs font-bold tracking-wide uppercase mb-3">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-brand-light/15 text-[#60A5FA] text-xs font-bold tracking-wide uppercase mb-3">
             <span>Kho dữ án bất động sản</span>
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
@@ -107,12 +107,12 @@ export default async function DuAnPage({
                 type="search"
                 defaultValue={q}
                 placeholder="Tìm tên dự án, chủ đầu tư (VD: Masteri, Mizuki, Sunrise...)"
-                className="w-full pl-10 pr-4 py-2.5 rounded-md bg-white text-[#0B192C] text-sm font-medium outline-none placeholder:text-slate-400 shadow-xs"
+                className="w-full pl-10 pr-4 py-2.5 rounded-md bg-white text-navy text-sm font-medium outline-none placeholder:text-slate-400 shadow-xs"
               />
             </div>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-md bg-[#0068FF] text-white text-sm font-bold shadow-xs transition hover:bg-blue-600 shrink-0"
+              className="px-6 py-2.5 rounded-md bg-brand text-white text-sm font-bold shadow-xs transition hover:bg-brand-dark shrink-0"
             >
               Tìm kiếm
             </button>
@@ -136,8 +136,8 @@ export default async function DuAnPage({
                 href={href}
                 className={`whitespace-nowrap px-3.5 py-1.5 rounded-md text-xs font-bold transition-all border flex items-center gap-1.5 ${
                   active
-                    ? "bg-[#0068FF] text-white border-[#0068FF] shadow-xs"
-                    : "bg-white text-slate-600 border-slate-200 hover:border-[#0068FF] hover:text-[#0068FF]"
+                    ? "bg-brand text-white border-brand shadow-xs"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-brand hover:text-brand"
                 }`}
               >
                 <span>{tab.label}</span>
@@ -155,7 +155,7 @@ export default async function DuAnPage({
           <div className="lg:col-span-3">
             <div className="mb-4 flex items-center justify-between text-xs text-slate-500 font-medium">
               <span>
-                Tìm thấy <strong className="text-[#0B192C] font-bold">{totalCount}</strong> dự án
+                Tìm thấy <strong className="text-navy font-bold">{totalCount}</strong> dự án
                 {tinh !== "all" ? ` tại ${tinh}` : ""}
                 {q ? ` khớp từ khoá "${q}"` : ""}
               </span>
@@ -198,7 +198,7 @@ export default async function DuAnPage({
                           {/* Title */}
                           <Link
                             href={`/du-an/${p.slug}`}
-                            className="font-bold text-[#0B192C] text-base leading-snug hover:text-[#0068FF] transition-colors line-clamp-1"
+                            className="font-bold text-navy text-base leading-snug hover:text-brand transition-colors line-clamp-1"
                             title={p.name}
                           >
                             {p.name}
@@ -237,7 +237,7 @@ export default async function DuAnPage({
                         <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {p.status_text && (
-                              <span className="px-2 py-0.5 rounded bg-[#DDF2FD] text-[#0068FF] text-[11px] font-semibold">
+                              <span className="px-2 py-0.5 rounded bg-brand-light text-brand text-[11px] font-semibold">
                                 {p.status_text}
                               </span>
                             )}
@@ -250,7 +250,7 @@ export default async function DuAnPage({
                             <FavButton code={p.slug} variant="square" />
                             <Link
                               href={`/du-an/${p.slug}`}
-                              className="px-3.5 py-1.5 rounded-md bg-[#0068FF] text-white text-xs font-bold hover:bg-blue-600 transition"
+                              className="px-3.5 py-1.5 rounded-md bg-brand text-white text-xs font-bold hover:bg-brand-dark transition"
                             >
                               Xem chi tiết
                             </Link>
@@ -264,13 +264,13 @@ export default async function DuAnPage({
             ) : (
               <div className="rounded-md border border-line bg-white p-12 text-center text-slate-500 shadow-sm">
                 <p className="text-4xl mb-3">🔍</p>
-                <p className="font-bold text-[#0B192C] text-lg">Không tìm thấy dự án phù hợp</p>
+                <p className="font-bold text-navy text-lg">Không tìm thấy dự án phù hợp</p>
                 <p className="mt-1 text-sm text-slate-500">
                   Vui lòng thử tìm kiếm với từ khoá khác hoặc chọn lại khu vực.
                 </p>
                 <Link
                   href="/du-an"
-                  className="mt-5 inline-block px-5 py-2.5 rounded-md bg-[#0068FF] text-white text-xs font-bold shadow"
+                  className="mt-5 inline-block px-5 py-2.5 rounded-md bg-brand text-white text-xs font-bold shadow"
                 >
                   Xem tất cả dự án
                 </Link>
@@ -283,20 +283,20 @@ export default async function DuAnPage({
                 {trang > 1 && (
                   <Link
                     href={`/du-an?trang=${trang - 1}${tinh !== "all" ? `&tinh=${encodeURIComponent(tinh)}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-                    className="px-4 py-2 rounded-md border border-slate-200 bg-white text-xs font-bold text-[#0B192C] hover:border-[#0068FF] hover:text-[#0068FF] transition"
+                    className="px-4 py-2 rounded-md border border-slate-200 bg-white text-xs font-bold text-navy hover:border-brand hover:text-brand transition"
                   >
                     ← Trang trước
                   </Link>
                 )}
 
-                <div className="flex items-center gap-1 text-xs font-bold text-[#0B192C] px-3.5 py-2 bg-white rounded-md border border-slate-200">
+                <div className="flex items-center gap-1 text-xs font-bold text-navy px-3.5 py-2 bg-white rounded-md border border-slate-200">
                   <span>Trang {trang} / {totalPages}</span>
                 </div>
 
                 {trang < totalPages && (
                   <Link
                     href={`/du-an?trang=${trang + 1}${tinh !== "all" ? `&tinh=${encodeURIComponent(tinh)}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-                    className="px-4 py-2 rounded-md border border-slate-200 bg-white text-xs font-bold text-[#0B192C] hover:border-[#0068FF] hover:text-[#0068FF] transition"
+                    className="px-4 py-2 rounded-md border border-slate-200 bg-white text-xs font-bold text-navy hover:border-brand hover:text-brand transition"
                   >
                     Trang sau →
                   </Link>
@@ -308,7 +308,7 @@ export default async function DuAnPage({
           {/* Right Sidebar: Regional List matching Mogi UI */}
           <aside className="space-y-6">
             <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs">
-              <h2 className="text-sm font-extrabold uppercase tracking-wider text-[#0B192C] border-b border-slate-100 pb-3">
+              <h2 className="text-sm font-extrabold uppercase tracking-wider text-navy border-b border-slate-100 pb-3">
                 Dự án BĐS theo khu vực
               </h2>
               <ul className="mt-3 divide-y divide-slate-100 text-sm">
@@ -320,12 +320,12 @@ export default async function DuAnPage({
                       <Link
                         href={tab.id === "all" ? "/du-an" : `/du-an?tinh=${encodeURIComponent(tab.id)}`}
                         className={`flex items-center justify-between py-2.5 transition-colors ${
-                          isCur ? "font-bold text-[#0068FF]" : "text-slate-700 hover:text-[#0068FF]"
+                          isCur ? "font-bold text-brand" : "text-slate-700 hover:text-brand"
                         }`}
                       >
                         <span>{tab.label}</span>
                         <span className={`text-xs px-2 py-0.5 rounded ${
-                          isCur ? "bg-[#DDF2FD] text-[#0068FF] font-bold" : "bg-slate-100 text-slate-500 font-medium"
+                          isCur ? "bg-brand-light text-brand font-bold" : "bg-slate-100 text-slate-500 font-medium"
                         }`}>
                           {count}
                         </span>
@@ -337,11 +337,11 @@ export default async function DuAnPage({
             </div>
 
             {/* Quick Zalo Consultation CTA */}
-            <div className="bg-[#DDF2FD]/70 rounded-lg border border-[#0068FF]/20 p-5 shadow-xs">
-              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-white text-[#0068FF] text-[11px] font-bold uppercase mb-2">
+            <div className="bg-brand-light/70 rounded-lg border border-brand/20 p-5 shadow-xs">
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-white text-brand text-[11px] font-bold uppercase mb-2">
                 Hỗ trợ 24/7
               </div>
-              <h3 className="font-bold text-[#0B192C] text-sm">
+              <h3 className="font-bold text-navy text-sm">
                 Cần tư vấn chọn căn & pháp lý dự án?
               </h3>
               <p className="mt-1 text-xs text-slate-600 leading-relaxed">
@@ -351,7 +351,7 @@ export default async function DuAnPage({
                 href={zaloLink("Tư vấn dự án bất động sản")}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-4 flex items-center justify-center min-h-[44px] w-full text-center py-2.5 px-4 rounded-md bg-[#0068FF] text-white text-xs font-bold shadow-xs hover:bg-blue-600 transition"
+                className="mt-4 flex items-center justify-center min-h-[44px] w-full text-center py-2.5 px-4 rounded-md bg-brand text-white text-xs font-bold shadow-xs hover:bg-brand-dark transition"
               >
                 Nhắn Zalo tư vấn ngay
               </a>
