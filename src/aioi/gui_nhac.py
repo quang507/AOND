@@ -11,7 +11,7 @@ Trigger DB đẻ bốn loại nhắc mà từ 18/10 (gỡ edge function `nudge`,
 
 Chủ dự án 27/10: "sửa 1 … lõi python tự gửi". Câu chữ là câu mẫu (`cau_mau`: bao_tra_loi_chu_nha / bao_lich_da_chot / bao_can_da_ban /
 hoi_cam_nhan_sau_xem) code điền từ cột THẬT (`info_requests.answer`, `viewings.time_text`, `listings.code`), không gọi model. Ba loại tự
-động chỉ đi trong khung 8–20 giờ (cùng `bao_can_moi`); tin admin gửi ngay. Gửi hụt: đếm `attempts`, hẹn `next_retry_at`, quá
+động chỉ đi trong khung 8–21 giờ (cùng `bao_can_moi`); tin admin gửi ngay. Gửi hụt: đếm `attempts`, hẹn `next_retry_at`, quá
 `ATTEMPTS_TOI_DA` thì `dead` kèm `last_error`. KHÔNG ghi `noi_dung_gui` khi còn pending — escalation-feed cũng kéo dòng có cột đó
 (nhánh `soanSan`), ghi sớm là hai bên cùng gửi."""
 from __future__ import annotations
@@ -30,7 +30,7 @@ from .xung_ho import goi_toi
 log = logging.getLogger(__name__)
 
 KIND_LOI = ("followup", "sold", "feedback", "admin_reply", "len_web")
-KIND_TU_DONG = ("followup", "sold", "feedback", "len_web")   # chỉ 8–20 giờ; `admin_reply` là người thật nói, gửi ngay
+KIND_TU_DONG = ("followup", "sold", "feedback", "len_web")   # chỉ 8–21 giờ; `admin_reply` là người thật nói, gửi ngay
 # SRS-5.1zzzzzzz254: `len_web` — chủ nhà đã duyệt tin mà lúc đó tin chưa hiển thị; lõi chờ tới khi tin `dang_ban` rồi nhắn chủ nhà kèm link.
 CHO_LEN_WEB_PHUT = 10
 CHO_LEN_WEB_TOI_DA = timedelta(days=7)

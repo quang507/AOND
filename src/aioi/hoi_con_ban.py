@@ -3,7 +3,7 @@
 Chống hàng ảo: tin đang hiển thị (`dang_ban` / `dang_quan_tam`) mà mốc xác nhận gần nhất (`listings.xac_nhan_con_ban_at`, chưa có thì
 `chu_duyet_at` / `created_at`) cũ hơn 20 ngày → MỘT tin hỏi chủ nhà, gộp mọi căn tới hạn của cùng người bán (tối đa `TOI_DA_CAN_MOT_TIN`).
 Ai cần hỏi: rpc `tin_can_hoi_con_ban` (migration 20261029g) — bỏ rổ mẫu, ID thử, hội thoại người thật đang giữ, căn đã hỏi trong 20 ngày.
-Câu mẫu cố định `hoi_con_ban`, không gọi model. Chỉ 8–20 giờ (cùng `bao_can_moi`). Giữ chỗ trước, gửi sau (khuôn `giu_ket_noi`): mỗi căn một
+Câu mẫu cố định `hoi_con_ban`, không gọi model. Chỉ 8–21 giờ (cùng `bao_can_moi`). Giữ chỗ trước, gửi sau (khuôn `giu_ket_noi`): mỗi căn một
 dòng `reminders` kind `con_ban` pending → gửi → `sent`; bridge hụt → `cancelled` (lượt sau hỏi lại).
 Chủ đáp "còn" → lượt đọc ý ghi `con_ban` → `SupabaseConversationStore.xac_nhan_con_ban`; chủ báo bán / cọc / dừng → đường đổi trạng thái có sẵn.
 Chủ không đáp: 20 ngày sau hỏi lại; CHƯA tự ẩn tin (chưa có quyết định của chủ dự án)."""

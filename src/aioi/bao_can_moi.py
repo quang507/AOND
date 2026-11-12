@@ -1,9 +1,9 @@
 """Báo khách mua khi có căn mới vừa nhu cầu (SRS-5.1zzzzzzz150, chủ dự án 23/10/2026: "lúc người ta tìm mua có cơ chế nhắc khi có căn mới
-vừa tiêu chí ko, nhắn thẳng vào zalo" → "có… khung giờ 8–20 giờ… căn vượt ngân sách một chút báo luôn").
+vừa tiêu chí ko, nhắn thẳng vào zalo" → "có… khung giờ 8–21 giờ… căn vượt ngân sách một chút báo luôn").
 
 Lõi quét định kỳ (`server._vong_bao_can_moi`), KHÔNG qua trigger DB cũ `bao_tin_moi_khop` (đọc ô `area` / `budget` mà lõi Python không ghi — luôn
 trượt — và tin nó đẻ ra không ai gửi vì edge function `nudge` đã gỡ). Mỗi lượt:
-  1. chỉ chạy trong khung 8–20 giờ (giờ Việt Nam); ngoài khung thì để lượt sau, KHÔNG xếp hàng gửi sáng hôm sau (căn có thể đã bán);
+  1. chỉ chạy trong khung 8–21 giờ (giờ Việt Nam); ngoài khung thì để lượt sau, KHÔNG xếp hàng gửi sáng hôm sau (căn có thể đã bán);
   2. tin vừa lên kệ: `status = dang_ban`, tạo trong 7 ngày, cập nhật trong 36 giờ;
   3. khách: có hội thoại mua nhắn trong 30 ngày, không đang chờ người (`needs_human` / `human_hold`), có khu vực hoặc ngân sách, chưa bảo
      "đừng báo nữa" (`buyers.bao_can_moi`, SRS-5.1zzzzzzz175);
@@ -30,7 +30,7 @@ from .mua import SITE_URL, _LOAI_MUA_SANG_DB, _TEN_LOAI, _can_xe_hoi, _q, bo_can
 log = logging.getLogger(__name__)
 
 GIO_BAT_DAU = 8        # giờ Việt Nam (UTC+7, không đổi giờ mùa hè)
-GIO_KET_THUC = 20
+GIO_KET_THUC = 21       # chủ dự án 12/11 (SRS-5.1zzzzzzz423): "tới 9h tối lun cũng dc" — trước là 20
 TIN_MOI_TAO_NGAY = 7
 TIN_MOI_CAP_NHAT_GIO = 36
 KHACH_NHAN_TRONG_NGAY = 30

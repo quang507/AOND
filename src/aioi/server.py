@@ -468,7 +468,7 @@ if _settings.supabase_service_role_key:
 
 
 def _vong_bao_can_moi() -> None:
-    """SRS-5.1zzzzzzz150: quét định kỳ báo khách mua có căn mới vừa nhu cầu (khung 8–20 giờ nằm trong `bao_can_moi`). Tắt: BAO_CAN_MOI=tat."""
+    """SRS-5.1zzzzzzz150: quét định kỳ báo khách mua có căn mới vừa nhu cầu (khung 8–21 giờ nằm trong `bao_can_moi`). Tắt: BAO_CAN_MOI=tat."""
     from . import bao_can_moi
     time.sleep(90)   # để lõi khởi động xong, bridge nối lại
     while True:
@@ -490,7 +490,7 @@ GIU_KET_NOI_CHU_KY_GIAY = int(os.environ.get("GIU_KET_NOI_CHU_KY_GIAY", "1800"))
 
 
 def _vong_giu_ket_noi() -> None:
-    """SRS-5.1zzzzzzz238: khách im 6–7 ngày → MỘT tin nhờ nhắn lại một chữ (logic ở `giu_ket_noi`, khung 8–20 giờ). Tắt: GIU_KET_NOI=tat."""
+    """SRS-5.1zzzzzzz238: khách im 6–7 ngày → MỘT tin nhờ nhắn lại một chữ (logic ở `giu_ket_noi`, khung 8–21 giờ). Tắt: GIU_KET_NOI=tat."""
     from . import giu_ket_noi
     time.sleep(120)   # lõi khởi động xong, bridge nối lại
     while True:
@@ -512,7 +512,7 @@ HOI_CON_BAN_CHU_KY_GIAY = int(os.environ.get("HOI_CON_BAN_CHU_KY_GIAY", "1800"))
 
 
 def _vong_hoi_con_ban() -> None:
-    """SRS-5.1zzzzzzz295: tin rao quá 20 ngày chưa xác nhận → hỏi chủ nhà căn còn bán không (logic ở `hoi_con_ban`, khung 8–20 giờ).
+    """SRS-5.1zzzzzzz295: tin rao quá 20 ngày chưa xác nhận → hỏi chủ nhà căn còn bán không (logic ở `hoi_con_ban`, khung 8–21 giờ).
     Tắt: HOI_CON_BAN=tat."""
     from . import hoi_con_ban
     time.sleep(180)   # lõi khởi động xong, bridge nối lại
@@ -536,7 +536,7 @@ QC_ANH_CHU_KY_GIAY = int(os.environ.get("QC_ANH_CHU_KY_GIAY", "1800"))
 
 def _vong_qc_anh() -> None:
     """SRS-5.1zzzzzzz422 — Image LQC (Listing Quality Controller): bộ ảnh đổi thì chấm (khớp nội dung, thế mạnh đã / chưa có ảnh), ghi `_qc_anh`, nhắn chủ xin góc
-    thiếu trong 8–20 giờ (logic ở `qc_anh`). Tắt: QC_ANH=tat."""
+    thiếu trong 8–21 giờ (logic ở `qc_anh`). Tắt: QC_ANH=tat."""
     from . import qc_anh
     time.sleep(240)
     while True:

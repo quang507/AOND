@@ -188,6 +188,28 @@ def _image_count(media: list[dict[str, str]]) -> int:
     """How many of a listing's stored media are photos (not PDFs/docs)."""
     return sum(1 for r in media if not (r.get("filename") or "").lower().endswith(".pdf"))
 
+
+TRONG_SO_ANH = 0.3   # SRS-5.1zzzzzzz423 (chủ dự án 12/11): ảnh thật chiếm 30% độ đủ của tin — bản trước chỉ đếm ô, đủ ô là 100/100 dù 0 ảnh
+
+
+def so_anh_tinh_diem(li: "Listing") -> int:
+    """Ảnh được tính điểm = ảnh đã lưu vào tin, trừ ảnh Image LQC chấm CHẮC CHẮN không phải căn (SRS-5.1zzzzzzz423). Ảnh lúc gửi đã bị
+    AI chấm không phải ảnh thật của căn thì không được lưu (OPEN-53) nên vốn không vào đây."""
+    so = _image_count(li.media or [])
+    try:
+        qc = json.loads(li.prop.fields.get("_qc_anh") or "{}")
+    except ValueError:
+        return so
+    sai = sum(1 for a in (qc.get("anh_khong_khop") or []) if isinstance(a, dict) and a.get("chac_chan") is True)
+    return max(so - sai, 0)
+
+
+def do_du_tin(li: "Listing", anh_du: int, so_anh: int | None = None) -> float:
+    """Độ đủ của MỘT tin = 70% ô + 30% ảnh (đủ `anh_du` tấm là trọn phần ảnh). Một nguồn cho điểm tin ở chat, bridge, phiếu hạng."""
+    if so_anh is None:
+        so_anh = so_anh_tinh_diem(li)
+    return (1 - TRONG_SO_ANH) * li.prop.completeness() + TRONG_SO_ANH * min(so_anh / max(anh_du, 1), 1.0)
+
 # 19/10/2026 (SRS-5.1zzzzzzz55): các bộ dò từ khoá _looks_descriptive / _wants_project_facts / _wants_media /
 # _looks_like_reference_doc / _affirms / _denies đã gỡ — lượt AI lập thao tác đọc theo nghĩa (xin_xem_ban_ve, cau_hoi_du_an,
 # mo_ta_du_an, xac_nhan_xoa, kèm trích dẫn) và _la_tai_lieu_chung đọc bản đọc ảnh.
@@ -2088,7 +2110,7 @@ class Engine:
         if not can:
             return ma_phieu(user_key, "dong")
         t = self._timeliness(conv, time.time())
-        diem = g.user_score([g.property_score(li.prop.completeness(), t) for li in can], num_listings=len(can))
+        diem = g.user_score([g.property_score(do_du_tin(li, self._anh_du()), t) for li in can], num_listings=len(can))
         return ma_phieu(user_key, {g.Tier.VANG: "vang", g.Tier.BAC: "bac"}.get(g.tier_for(diem), "dong"))
 
     def register_project(
@@ -3512,14 +3534,18 @@ class Engine:
         """Khối ĐIỂM TIN cho model (SRS-5.1zzzzzzz216): cùng số `gamification` mà `TurnResult` trả bridge — một nguồn, không tính lại
         kiểu khác. Ô còn thiếu theo `missing_fields()`, ảnh theo `Listing.media` (ảnh khách đã gửi qua chat)."""
         timeliness = self._timeliness(conv, now)
-        diem = g.property_score(conv.prop.completeness(), timeliness)
-        tat_ca = [g.property_score(li.prop.completeness(), timeliness) for li in conv.listings] or [diem]
+        anh_du = self._anh_du()
+        so_anh = so_anh_tinh_diem(conv.active)   # ảnh tính điểm (trừ ảnh QC chấm chắc chắn không phải căn)
+        diem = g.property_score(do_du_tin(conv.active, anh_du, so_anh), timeliness)   # SRS-5.1zzzzzzz423: điểm có phần ảnh
+        diem_du_anh = g.property_score(do_du_tin(conv.active, anh_du, anh_du), timeliness)   # cùng tin, đủ ảnh thì được bao nhiêu
+        tat_ca = [g.property_score(do_du_tin(li, anh_du), timeliness) for li in conv.listings] or [diem]
         diem_nguoi = g.user_score(tat_ca, num_listings=len(conv.listings))
-        try:
-            so_anh = _image_count(conv.active.media or [])   # một nguồn đếm ảnh với cụm xin ảnh sau đăng (SRS-420)
-        except Exception:  # noqa: BLE001 — chưa có căn nào
-            so_anh = 0
-        return khoi_diem_tin(diem, g.tier_for(diem_nguoi).value, conv.prop.missing_fields(), so_anh, conv.prop)   # hạng: chỉ tên (SRS-349)
+        return khoi_diem_tin(diem, g.tier_for(diem_nguoi).value, conv.prop.missing_fields(), so_anh, conv.prop,
+                             anh_du=anh_du, diem_du_anh=diem_du_anh)   # hạng: chỉ tên (SRS-349)
+
+    def _anh_du(self) -> int:
+        """Số ảnh để phần ảnh của điểm tin đạt trọn — cùng mốc với cụm xin ảnh sau đăng (SRS-420/421)."""
+        return min(ANH_TIN_DEP, self._max_photos or ANH_TIN_DEP)
 
     def _ghep_cau_chuan(self, system: str, conv: "Conversation | None" = None) -> str:
         """Ghép khối câu chuẩn vào system TRƯỚC `RANH_GIOI_CACHE` (SRS-5.1zzzzzzz180): khối giống nhau cho mọi khách và chỉ đổi khi người
@@ -4226,6 +4252,7 @@ class Engine:
                 pending_question=self._pending_seller_question(conv),
                 prop=active_prop,
                 next_field=next_f,
+                cau_em_vua_nhan=self._cau_em_vua_nhan(conv),   # SRS-5.1zzzzzzz423
             ) + khoi_xung_ho(_detect_customer_pronoun(conv), conv.assistant.name, _xung_ho_doan(conv))   # SRS-5.1zzzzzzz253
             description = self._provider.describe_media(
                 [(m.data, m.media_type) for m in fetched], instruction
@@ -4259,6 +4286,14 @@ class Engine:
         """Câu mẫu gửi THẲNG khách, đổi "anh/chị" + "em" theo cách khách xưng (SRS-5.1zzzzzzz254, chủ dự án 28/10: câu viết cứng "anh/chị",
         "Em" sai khi khách xưng em). Chỉ cho câu mà "anh/chị" là cách gọi KHÁCH (không dùng cho câu nói về "anh/chị phụ trách")."""
         return _xung_ho_cau(cau_mau.cau(khoa, **bien), *self._goi_toi(conv))
+
+    @staticmethod
+    def _cau_em_vua_nhan(conv: Conversation) -> str:
+        """Tin cuối của bot (tin nhắc / xin ảnh / câu hỏi) — cho lần đọc ảnh biết em vừa xin gì (SRS-5.1zzzzzzz423)."""
+        for t in reversed(conv.history):
+            if t.role == "assistant":
+                return (t.content or "").strip()
+        return ""
 
     @staticmethod
     def _pending_seller_question(conv: Conversation) -> str:
@@ -4536,6 +4571,7 @@ class Engine:
                 pending_question=self._pending_seller_question(conv),
                 prop=active_prop,
                 next_field=next_f,
+                cau_em_vua_nhan=self._cau_em_vua_nhan(conv),   # SRS-5.1zzzzzzz423
             ) + khoi_xung_ho(_detect_customer_pronoun(conv), conv.assistant.name, _xung_ho_doan(conv))   # SRS-5.1zzzzzzz253
             description = self._provider.describe_media(
                 [(m.data, m.media_type) for m in fetched], instruction
@@ -4844,11 +4880,11 @@ class Engine:
             with _do(conv, "ghi_kho"):
                 (luu_nen or self._convstore.save)(conv)
         timeliness = self._timeliness(conv, now)
-        completeness = conv.prop.completeness()  # the active listing
-        prop_score = g.property_score(completeness, timeliness)
+        completeness = conv.prop.completeness()  # the active listing (độ đủ ô — trường `completeness` của bridge giữ nghĩa cũ)
+        prop_score = g.property_score(do_du_tin(conv.active, self._anh_du()), timeliness)   # SRS-5.1zzzzzzz423: điểm tin có phần ảnh
         # User score aggregates across the WHOLE basket (SRD §IV: avg of property scores ×
         # scale bonus) — more listings → scale bonus, the point of growing the rổ hàng.
-        all_scores = [g.property_score(li.prop.completeness(), timeliness) for li in conv.listings]
+        all_scores = [g.property_score(do_du_tin(li, self._anh_du()), timeliness) for li in conv.listings]
         u_score = g.user_score(all_scores, num_listings=len(conv.listings))
         missing = conv.prop.missing_fields()
         next_f = (
@@ -5617,7 +5653,7 @@ class Engine:
         if bid and mua.get("ngung_bao") in ("tat", "bat") and kho.ngung_bao_can(bid, mua["ngung_bao"] == "tat"):
             viec.append("khách KHÔNG muốn nhận tin tự động báo căn mới: hệ thống ĐÃ TẮT — nói ngắn là em không gửi tin báo căn nữa, khách cần "
                         "thì nhắn em bất cứ lúc nào; KHÔNG hỏi lý do, KHÔNG nài" if mua["ngung_bao"] == "tat" else
-                        "khách xin được báo khi có căn mới: hệ thống ĐÃ BẬT — nói ngắn có căn hợp nhu cầu em nhắn liền (trong giờ 8–20h)")
+                        "khách xin được báo khi có căn mới: hệ thống ĐÃ BẬT — nói ngắn có căn hợp nhu cầu em nhắn liền (trong giờ 8–21h)")
         # SRS-5.1zzzzzzz175: khách chê căn → ghi `interests` khong_hop + lý do nguyên văn; không gợi / không báo lại căn đó.
         khong_hop = mua.get("khong_hop") is True
         if khong_hop:

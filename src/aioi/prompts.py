@@ -776,7 +776,7 @@ def goc_anh_goi_y(prop: "Property | None") -> str:
             goc = GOC_ANH_THEO_NHOM["nha"]
     else:
         goc = GOC_ANH_THEO_NHOM.get(nhom.value, GOC_ANH_THEO_NHOM["nha"])
-    if f.get("co_hdt") == "co" or f.get("thu_nhap_thue") or f.get("hd_thue_con"):
+    if dang_cho_thue(prop):
         goc += " (căn đang cho thuê / kinh doanh: ảnh mặt bằng đang hoạt động bên trong cũng là ảnh của căn)"
     try:   # SRS-5.1zzzzzzz422: QC ảnh đã xem bộ ảnh thật của căn → góc nó thấy thiếu đi trước gợi ý chung
         qc = json.loads(f.get("_qc_anh") or "{}")
@@ -865,21 +865,28 @@ def khoi_dinh_gia(gia_rao: str | None) -> str:
     )
 
 
-def khoi_diem_tin(diem_tin: float, hang: str, thieu: list[str], so_anh: int, prop: Property | None = None) -> str:
+def khoi_diem_tin(diem_tin: float, hang: str, thieu: list[str], so_anh: int, prop: Property | None = None,
+                  anh_du: int = 6, diem_du_anh: float | None = None) -> str:
     """Khối ĐIỂM TIN đưa cho model phía bán (SRS-5.1zzzzzzz216, chủ dự án 27/10: "3 làm đi"): `BUSINESS_CONTEXT` bảo bot nói về điểm uy
     tín / hạng mà trước đó không khối nào mang số thật, nên model chỉ có thể bịa. Số do `gamification` tính (cùng nguồn `TurnResult`),
     ô còn thiếu = `Property.missing_fields()` theo nhãn `nhan_o`. Đặt SAU `RANH_GIOI_CACHE` (đổi mỗi lượt). Chữ dặn không chứa chữ số.
     SRS-5.1zzzzzzz349 (chấm main 02/11, lộ luật 11/59: "anh đang hạng Vàng (94/100)"): hạng NGƯỜI RAO chỉ có TÊN, không số — bản trước in
     "hạng Vàng (94/100)" cạnh "Tin này: 78/100", hai con số cùng dạng nên model ghép lẫn. Số /100 duy nhất trong khối là điểm của TIN."""
+    # SRS-5.1zzzzzzz423 (chủ dự án 12/11: "tin mấy điểm, đã được mấy điểm, còn mấy điểm nữa sao bot không nhắn khi ra tin"): điểm có phần
+    # ảnh, khối mang sẵn "thêm N ảnh thì lên M/100" do code tính — model chỉ đọc lại, không tự cộng.
     nhan = [nhan_o(o, prop).split(" (")[0] for o in (thieu or [])[:5]]
-    cach = ", ".join(nhan) if nhan else "tin đã đủ ô — chỉ còn chủ nhà chụp gửi ảnh thật nếu chưa có"
+    cach = [", ".join(nhan)] if nhan else []
+    con_anh = max(anh_du - so_anh, 0)
+    if con_anh and diem_du_anh is not None and diem_du_anh > diem_tin:
+        cach.append(f"gửi thêm {con_anh} ảnh thật của căn thì tin lên {diem_du_anh:.0f}/100")
     return (
         "\n\n=== ĐIỂM TIN (hệ thống tính, số THẬT — chỉ nói số ở đây, không tự đặt số khác) ===\n"
-        f"ĐIỂM TIN (của căn): {diem_tin:.0f}/100. Ảnh đã nhận: {so_anh} tấm.\n"
+        f"ĐIỂM TIN (của căn): {diem_tin:.0f}/100. Ảnh đã nhận: {so_anh}/{anh_du} tấm.\n"
         f"HẠNG NGƯỜI RAO: {hang}.\n"
-        f"Để tăng điểm tin: {cach}.\n"
-        "Khối này chỉ có ở lượt ra tin (bản nháp / báo tin đã lên) hoặc khi khách hỏi điểm — nói gọn điểm tin, hạng người rao và cách tăng điểm, "
-        "không hứa lên Top.\n"
+        f"Để tăng điểm tin: {'; '.join(cach) if cach else 'tin đã đủ điểm'}.\n"
+        "Khối này chỉ có ở lượt ra tin (bản nháp / báo tin đã lên) hoặc khi khách hỏi điểm — PHẢI nói một câu ngắn: tin đang được bao nhiêu "
+        "điểm và còn thiếu gì để lên bao nhiêu (đúng số trong khối), rồi hạng người rao; không hứa lên Top. Tin chưa đủ điểm thì KHÔNG nói "
+        "ảnh đã đủ.\n"
         "Gọi đúng chữ: điểm …/100 là điểm của TIN / CĂN; Đồng / Bạc / Vàng là hạng của NGƯỜI RAO, chỉ nói bằng TÊN hạng, "
         "KHÔNG kèm con số nào, không đặt chung một câu với điểm tin.\n"
     )
@@ -1411,11 +1418,33 @@ DỮ LIỆU BĐS:
 {describe_captured(prop)}"""
 
 
+def dang_cho_thue(prop: Property | None) -> bool:
+    """Căn chủ đã khai đang có người thuê / đang kinh doanh (một nguồn cho đọc ảnh, gợi góc ảnh, QC ảnh)."""
+    f = prop.fields if prop else {}
+    return bool(f.get("co_hdt") == "co" or f.get("thu_nhap_thue") or f.get("hd_thue_con"))
+
+
+def khoi_doc_anh_theo_chat(prop: Property | None, cau_em_vua_nhan: str | None) -> str:
+    """SRS-5.1zzzzzzz423 (chat anh Luận 11/11): lần đọc ảnh chỉ thấy ảnh + ô tin, không thấy cuộc chat — em vừa xin ảnh mặt tiền, chủ gửi
+    mặt tiền, lời đọc vẫn "chưa thấy bên trong nhà"; căn đang cho thuê làm quán, ảnh quán bị nói "chưa giống căn". Lời đọc gửi thẳng khách,
+    nên lần đọc phải có đủ hai điều đó."""
+    k = ""
+    if cau_em_vua_nhan and cau_em_vua_nhan.strip():
+        k += (f'\nTIN EM VỪA NHẮN KHÁCH (ngay trước ảnh): "{cau_em_vua_nhan.strip()[:300]}"\n'
+              "=> Em vừa xin góc ảnh nào mà ảnh này đúng góc đó thì khen ngắn tấm vừa gửi và cảm ơn, không xin lại.\n")
+    if dang_cho_thue(prop):
+        k += ("\nCĂN NÀY ĐANG CHO THUÊ / KINH DOANH (chủ đã khai): ảnh quán, nhà hàng, cửa hàng, quầy bar, văn phòng bên trong là mặt bằng "
+              "của chính căn — nhận là ảnh của căn, KHÔNG nói \"chưa giống căn\" / \"không phải căn\".\n")
+    return k + ("\nẢNH THỰC TẾ: nói ngắn ảnh chụp góc nào (mặt tiền, đường trước nhà, bên trong…). Ảnh đường phố có căn nhà phía trước là ảnh "
+                "MẶT TIỀN. KHÔNG nói góc còn thiếu (\"chưa thấy bên trong nhà\"…) — xin góc thiếu là việc của lượt khác.\n")
+
+
 def build_media_read_instruction(
     assistant_name: str,
     pending_question: str | None = None,
     prop: Property | None = None,
     next_field: str | None = None,
+    cau_em_vua_nhan: str | None = None,
 ) -> str:
     """Instruction for the vision/OCR read of a seller-sent photo or PDF (§II honesty). The chat
     reply must be SHORT (a one-line gist) — the FULL faithful content is stored separately to a
@@ -1455,7 +1484,7 @@ Thông tin căn này đã rất đầy đủ. Sau MỘT câu ngắn về ảnh t
 
     return f"""{khoi_nhan_vat(assistant_name, "khách", kem_giong=False)}Khách vừa gửi một ẢNH hoặc TÀI LIỆU BĐS.
 Chỉ nói NGẮN MỘT câu điều NHÌN THẤY RÕ trong ảnh/tài liệu. TUYỆT ĐỐI KHÔNG liệt kê, KHÔNG thêm chi tiết khách chưa nói, KHÔNG khen vật liệu / thiết bị (ban công kính, đèn downlight, cổng sắt…), KHÔNG nhắc lại thông tin đã có.
-{ctx}{known_block}{next_guide}
+{ctx}{known_block}{khoi_doc_anh_theo_chat(prop, cau_em_vua_nhan)}{next_guide}
 QUY TẮC BẮT BUỘC:
 - Xưng hô theo khối QUY TẮC XƯNG HÔ ở cuối. Không mở đầu bằng "Dạ", không khen nịnh giả tạo.
 - TUYỆT ĐỐI KHÔNG HỎI LẠI: Nếu trong mục "DỮ LIỆU ĐÃ BIẾT" đã có diện tích, kết cấu, địa chỉ hay giá, CẤM KHÔNG ĐƯỢC xin lại diện tích, giá bán hay mã căn!
@@ -1542,7 +1571,8 @@ Nếu ảnh bị mờ hoặc KHÔNG PHẢI giấy tờ pháp lý BĐS (vd ảnh 
 # OPEN-53 (chủ dự án 28/10/2026, phương án 3): AI chấm ảnh có phải ảnh thật của căn TRƯỚC khi lưu (tính điểm) và hiện web — đi chung lượt đọc
 # ảnh sẵn có (nhận sổ / gom nhóm), không thêm lần gọi model.
 MO_TA_KHONG_PHAI_ANH_CAN = ("true nếu là ẢNH nhưng KHÔNG phải ảnh chụp thật của căn đang rao: ảnh mạng / ảnh quảng cáo có chữ, logo, watermark của bên khác, "
-                "phối cảnh 3D / ảnh minh hoạ, ảnh không liên quan nhà đất. Ảnh nhà, phòng, hẻm, đường trước nhà, view chụp thật → false; giấy tờ, "
+                "phối cảnh 3D / ảnh minh hoạ, ảnh không liên quan nhà đất. Ảnh nhà, phòng, hẻm, đường trước nhà, view chụp thật, mặt bằng đang kinh "
+                "doanh chụp thật (quán, cửa hàng — căn có thể đang cho thuê) → false; giấy tờ, "
                 "bảng dữ liệu → false. Phân vân thì false (OPEN-53).")
 
 

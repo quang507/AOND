@@ -8,7 +8,7 @@ quán bên trong vẫn là ảnh căn), thế mạnh nào đã có ảnh / chưa
 - sổ cục bộ `QC_ANH_SO` (JSON cạnh lõi) theo id tin — không chấm lại bộ ảnh cũ;
 - ô riêng `_qc_anh` của căn trong lõi (schema.O_NOI_BO → bảng `listing_noi_bo`, chỉ admin) — khối xin ảnh trong lượt chat và tin nhắc 10 phút
   đọc `goc_can_xin` từ đây (`prompts.goc_anh_goi_y`);
-- nhắn chủ (8–20 giờ, chat im từ 10 phút, mỗi bộ ảnh tối đa một tin, mỗi căn tối đa `TOI_DA_NHAN_MOI_CAN` tin QC): model viết MỘT câu khéo
+- nhắn chủ (8–21 giờ, chat im từ 10 phút, mỗi bộ ảnh tối đa một tin, mỗi căn tối đa `TOI_DA_NHAN_MOI_CAN` tin QC): model viết MỘT câu khéo
   xin đúng góc thiếu. Ghi mốc `sau:anh` để tin nhắc 10 phút không xin lại lần đầu.
 Không gọi model khi bộ ảnh không đổi; mỗi lượt tối đa `TOI_DA_MOT_LUOT` tin."""
 from __future__ import annotations
@@ -115,7 +115,7 @@ def huong_dan_qc(tin: dict) -> str:
             f"Dữ kiện chủ nhà nói: {khach}\n"
             f"Góc ảnh thường làm nổi loại căn này: {goc_anh_goi_y(p)}\n"
             + ("CĂN NÀY ĐANG CÓ HỢP ĐỒNG THUÊ: ảnh quán / nhà hàng / cửa hàng / văn phòng bên trong là ảnh của căn — KHÔNG ghi vào anh_khong_khop.\n"
-               if (boc.get("co_hdt") == "co" or boc.get("thu_nhap_thue") or boc.get("hd_thue_con")) else "")
+               if (boc.get("co_hdt") == "co" or boc.get("thu_nhap_thue") or boc.get("hd_thue_con")) else "")   # cùng điều kiện prompts.dang_cho_thue
             + "Chấm: (1) ảnh có đúng căn này không — căn đang cho thuê / kinh doanh thì ảnh quán, cửa hàng bên trong là ảnh của căn; chỉ ghi "
             "không khớp khi có dấu hiệu rõ (căn khác loại, ảnh mạng, phối cảnh, khác hẳn mô tả), chac_chan=true chỉ khi gần như chắc chắn; "
             "(2) thế mạnh nào trong tin đã / chưa có ảnh thể hiện; (3) MỘT góc nên xin chủ nhất. Chỉ dựa vào điều thấy trong ảnh và tin, "

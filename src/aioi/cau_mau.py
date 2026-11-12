@@ -116,7 +116,7 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
     # --- Báo khách mua khi có căn mới vừa nhu cầu (SRS-5.1zzzzzzz150) ---
     "bao_can_moi": ("{Goi} ơi, {toi} đang có căn này hợp với nhu cầu của {goi} nè, {goi} xem qua nha.\n\n{Mo_ta}. {vi_sao}\n\n"
                     "Xem hình và chi tiết ở đây ạ: {link}\n\n{Goi} có muốn {toi} sắp lịch xem thử không ạ?",
-                    "Tin chủ động báo khách mua có căn mới vừa nhu cầu (8–20 giờ, tối đa 1 tin / khách / 24 giờ). MỖI ĐOẠN cách nhau một dòng trống là "
+                    "Tin chủ động báo khách mua có căn mới vừa nhu cầu (8–21 giờ, tối đa 1 tin / khách / 24 giờ). MỖI ĐOẠN cách nhau một dòng trống là "
                     "MỘT tin Zalo (ảnh căn gửi ngay sau đoạn có {link}). {toi} = bot tự xưng (em / anh / chị / cô / chú), {Mo_ta} (hoặc {mo_ta}, chữ thường) = loại, đường, phường, quận, diện tích, "
                     "giá, phòng ngủ, {vi_sao} = vì sao hợp (khu, loại, ngân sách, xe hơi — code ghép từ dữ liệu), {link} = link căn",
                     "SRS-5.1zzzzzzz150 / 159 · chủ dự án 23/10"),
@@ -173,7 +173,7 @@ MAC_DINH: dict[str, tuple[str, str, str]] = {
                         "Người bán im 6 ngày — giữ kết nối Zalo trước mốc 7 ngày (FR-63). {toi} = bot tự xưng", "SRS-5.1zzzzzzz238"),
     "hoi_con_ban": ("{Goi} ơi, {toi} hỏi thăm chút: {can} của {goi} hiện {con} không ạ? Còn thì {goi} nhắn {toi} một chữ \"còn\" là được, "
                     "bán / cọc rồi thì báo {toi} cập nhật tin cho đúng nha.",
-                    "Tin rao quá 20 ngày chưa xác nhận — hỏi chủ nhà căn còn bán / còn cho thuê (lõi gửi, 8–20 giờ). {can} = các căn, "
+                    "Tin rao quá 20 ngày chưa xác nhận — hỏi chủ nhà căn còn bán / còn cho thuê (lõi gửi, 8–21 giờ). {can} = các căn, "
                     "{con} = \"còn bán\" / \"còn cho thuê\"", "SRS-5.1zzzzzzz295"),
     # --- Luồng dự án: câu trước đây viết cứng "anh/chị" / "Em" trong engine (SRS-5.1zzzzzzz250, chủ dự án 28/10 mục 11) ---
     "du_an_hoi_mau_nha": ("‘{ten}’ nghe giống MẪU NHÀ trong dự án “{du_an}” — đây là mẫu nhà của “{du_an}”, hay là một dự án riêng ạ? {Toi} "

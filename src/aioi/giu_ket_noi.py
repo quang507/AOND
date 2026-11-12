@@ -6,7 +6,7 @@ nhất. Câu là câu mẫu cố định (`cau_mau`: giu_ket_noi_mua / giu_ket_n
 
 Ai cần nhắn: rpc `khach_can_giu_ket_noi` (migration 20261028c) — hội thoại có tin khách cuối nằm trong 6–7 ngày, chưa có tin giữ kết nối
 (`reminders` kind `reengage`, note bắt đầu `giu_ket_noi`, trạng thái pending / sent) sau tin khách đó, không phải ID thử, người thật không
-đang giữ khách, khách mua chưa tắt báo. Chỉ gửi 8–20 giờ Việt Nam (cùng `bao_can_moi`). Giữ chỗ trước, gửi sau: chèn dòng pending → gửi →
+đang giữ khách, khách mua chưa tắt báo. Chỉ gửi 8–21 giờ Việt Nam (cùng `bao_can_moi`). Giữ chỗ trước, gửi sau: chèn dòng pending → gửi →
 `sent`; bridge hụt → `cancelled` (lượt sau còn trong cửa sổ 7 ngày thì thử lại).
 Luật 7 ngày là của Zalo OA (INS-03); với Zalo cá nhân qua zca-js CHƯA kiểm Zalo có ngắt kết nối như vậy không — chủ dự án vẫn yêu cầu gửi."""
 from __future__ import annotations
