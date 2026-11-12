@@ -10,9 +10,9 @@ Kiến trúc chung: `docs/07-srs.md` §2. Không sinh ID.
 Nguyên tắc xuyên suốt: **AI đọc ý theo nghĩa, code kiểm trích dẫn.** Ô tin chỉ ghi điều KHÁCH nói (SRS-5.1zzzzzzz73);
 lời bot lệch luật hình thức thì gọi lại model một lần, không tự sửa chữ (`_soat_hinh_thuc`).
 
-Sơ đồ vẽ đường DUY NHẤT đang chạy (cập nhật 02/11/2026 `[nguồn: cai-vps.sh, engine.py, SRS-5.1zzzzzzz319]`): sáu công tắc `FORM_BAN_GON` / `FORM_MUA_GON`, `PHIEU_LUOT`, `AGENT_BAN` / `AGENT_MUA`, `SOAT_GON` đã gỡ hẳn cùng đường cũ (`build_chat_system`) —
+Sơ đồ vẽ đường DUY NHẤT đang chạy (cập nhật 02/11/2026 `[nguồn: engine.py, SRS-5.1zzzzzzz319]`): sáu công tắc `FORM_BAN_GON` / `FORM_MUA_GON`, `PHIEU_LUOT`, `AGENT_BAN` / `AGENT_MUA`, `SOAT_GON` đã gỡ hẳn cùng đường cũ (`build_chat_system`) —
 form gọn, phiếu lượt, agent và soát gọn là đường duy nhất. Từ 03/11/2026 người bán đã rõ vai đi MỘT vòng agent gộp (`agent_gop.py`, SRS-5.1zzzzzzz371;
-`AGENT_BOC` / `AGENT_GOP` gỡ); người mua đã rõ vai đi cùng vòng đó (`agent_gop.mo_mua` / `viet_mua`, SRS-5.1zzzzzzz380). Công tắc còn lại đổi được ở `cai-vps.sh`: `MODEL_LUOT_DE` = tat.
+`AGENT_BOC` / `AGENT_GOP` gỡ); người mua đã rõ vai đi cùng vòng đó (`agent_gop.mo_mua` / `viet_mua`, SRS-5.1zzzzzzz380). Công tắc còn lại ở `bot/cau-hinh-loi.env` (chạy thật: `.env` lõi trên máy 146): `AIOI_MODEL_LUOT_DE` = tat.
 
 ## 13.1 Toàn cảnh: từ bridge tới lời trả về
 

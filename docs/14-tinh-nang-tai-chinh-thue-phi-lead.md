@@ -221,7 +221,8 @@ ightarrow$ Sonnet viết lời) | **1 lần duy nhất** (Sonnet vừa tự đi�
 | **Hiện tượng debug header** | Hiện cả 2 dòng `claude-haiku` và `claude-sonnet` | **Chỉ còn 1 dòng thuần nhất `claude-sonnet-5-5`** |
 | **Xử lý câu chào hỏi ("chào em")** | Rơi về form Haiku 24k ký tự vô ích | **Xử lý trực tiếp trên Sonnet với kế hoạch rỗng, không gọi Haiku** |
 
-#### B. Chi tiết Kỹ thuật Cấu hình VPS & Mã nguồn
+#### B. Chi tiết Kỹ thuật Cấu hình lõi & Mã nguồn
+*(Ghi chú 12/11/2026: VPS và `cai-vps.sh` bỏ 06–08/11; model nay ghi ở `bot/cau-hinh-loi.env`, chạy thật đặt trong `C:\aond\aond_core\.env` trên máy 146. Phần dưới giữ nguyên như lúc viết.)*
 1. **Đồng bộ hóa `cai-vps.sh`**:
    - Gán `MODEL_BOC="claude-sonnet-5-5"` đồng bộ tuyệt đối với `MODEL_CHAT="claude-sonnet-5-5"`.
    - File `.env` tại `/opt/aond_core/.env` khi cập nhật sẽ có `AIOI_EXTRACT_MODEL=claude-sonnet-5-5`.

@@ -73,7 +73,7 @@ AOND mượn cho cả hai phía (`06 §6.8`).
 | Xếp hạng | NMG ≥10 tin, chốt ≥5% | Đồng/Bạc/Vàng người rao | Hạng người rao theo điểm (ẩn trên web) + **điểm người rao 0–100**; khối "ĐIỂM TIN" đưa điểm thật cho model | FR-155, FR-183, OPEN-26, SRS-5.1zzzzzzz216 |
 | Phí | CCRB 1% · NMG 0.5% · thuê ¾ tháng | Giống | Giống; con số một nguồn `prompts.muc_phi` | BR-05, AOND §V, SRS-5.1zzzzzzz227 |
 | Địa bàn | Quận 5 | Quận 5 rồi mở | **Sài Gòn (phường mới) + Long An**, trọng tâm bán; vùng nhận tin nới 20/10 (§0.1) | BR-01, OPEN-27, FR-174, SRS-5.1zzzzzzz86 |
-| Hạ tầng | Vendor, Slack, Logstash | Gemini → local, SharePoint | Lõi Python trên VPS (`aond-core.service`); Supabase Free (DB, Storage, 3 edge function phụ); web Next.js trên Vercel; `/admin` | SRS-5.1zzzzzzz31, SRS-5.1zzzzzzz56 |
+| Hạ tầng | Vendor, Slack, Logstash | Gemini → local, SharePoint | Lõi Python trên máy 146 "NguyetTu" (Windows, Task Scheduler `AOND Core`; VPS bỏ 06/11/2026); Supabase Free (DB, Storage, 3 edge function phụ); web Next.js trên Vercel; `/admin` | SRS-5.1zzzzzzz31, SRS-5.1zzzzzzz56 |
 | Model | — | Gemini → local | Chat: Claude Sonnet 5.5; bóc tách: Claude Haiku; Claude hỏng → Gemini → Groq; vector Gemini | SRS-5.1zzzzzzz235, SRS-5.1zzzzzzz117, OPEN-41 |
 | Vận hành | 1.5 CTV | CTV dẫn khách | **Admin** nhận mọi việc người thật phía mua (câu hỏi quá hạn, lịch xem) và tự báo người dẫn khách. *CTV bỏ 28/10/2026* | SRS-5.1zzzzzzz165, SRS-5.1zzzzzzz172; FR-136/137/173 *[deprecated 28/10/2026 — bỏ CTV]* |
 
@@ -112,7 +112,7 @@ AOND mượn cho cả hai phía (`06 §6.8`).
 |---|---|---|
 | Tầm nhìn | Môi giới thường trực đứng sau mọi môi giới; hội thoại bắt đầu thì không kết thúc | OKRs eo2024; demo2Vitalify |
 | Phân khúc | Trước: người rao ở cụm Q5 cũ, rồi Sài Gòn (phường mới) + Long An (P3 chính chủ, P4 NMG 10–30 căn). Sau: người mua ở (P1), đầu tư (P2). Bán trước vì không hàng thì chat rỗng | 02 §2.2, RSK-04, FR-174 |
-| Chi phí | Không phí đăng, không phí mua, thu khi chốt. Build ≤418tr; vận hành Free-tier + VPS + tiền model + 20tr/tháng | NFR-14/16, §1.3–1.4 |
+| Chi phí | Không phí đăng, không phí mua, thu khi chốt. Build ≤418tr; vận hành Free-tier + máy 146 (máy văn phòng) + tiền model + 20tr/tháng | NFR-14/16, §1.3–1.4 |
 | Giá trị | Người rao: "rao một lần là xong". Người mua: được trả lời thật, không lộ số (thay cho 40 cuộc gọi/3 ngày) | INS-04/06/09 |
 | KHÔNG làm | App · form nhiều trường · phí đăng · hỏi SĐT (trừ lúc chốt lịch xem) · marketplace tự phục vụ · đa ngôn ngữ · Messenger/Telegram · khẳng định pháp lý · đội CTV (bỏ 28/10/2026) | 02 §2.3, DH-02 |
 | Chỉ số | §0.5 | — |
@@ -148,7 +148,7 @@ số, và là mắt xích cả hai tài liệu gốc đặt ở trung tâm.
 
 ## 0.6 Lộ trình
 
-**Hiện trạng 28/10/2026.** Đã dựng: lõi Python trên VPS (`aond-core`) là bộ não
+**Hiện trạng 28/10/2026.** Đã dựng: lõi Python (`aond-core`; từ 06/11/2026 chạy trên máy 146 thay VPS) là bộ não
 duy nhất; hai số Zalo qua bridge (ký gửi, tư vấn); web Next.js + bản đồ
 MapLibre; tìm nhà `tim_nha` + vector; báo căn mới; kho pháp lý + điều luật
 nguyên văn; tra kho dự án phía mua; khách chấm sao AI; câu chuẩn / câu mẫu ở
@@ -297,7 +297,7 @@ thật thì ghi *[giả định]*. Cập nhật 28/10/2026: bỏ CTV, kênh hai 
 | **Khách hàng đầu tiên** | NMG đang rao 10+ căn cùng một cụm phường, hay bị khách hỏi lại cùng một câu; chính chủ Quận 5 cũ đã có sẵn Zalo, ngại đăng sàn. Người mua: đang xem 3–5 căn cùng khu, ghét bị gọi, chấp nhận chat với bot nếu được trả lời thật *[giả định — chưa phỏng vấn]* | FR-155, INS-04, `01 §1.7` |
 | **Chỉ số chính** | Sao Bắc Đẩu: **lịch xem nhà chốt / tuần** (`viewings.status='confirmed'`). Đầu vào: I1 tin đủ thông tin lên sàn / tuần · I2 hội thoại mua đủ khu + ngân sách · **I3 câu khách hỏi được trả lời đúng hạn — chủ nhà hoặc admin (OMTM)** · I4 kết nối Zalo sống sau 30 ngày · I5 NMG hoạt động. **21/09/2026: tất cả bằng 0** | §0.5, SRS-5.1zzzzzzz170 |
 | **Kênh** | Vào (người mua): SEO 100 tag + trang tin (BR-08), traffic mua từ batdongsan (20tr/tháng theo kế hoạch 2024), widget Zalo trên trang tin (FR-145), số Zalo tư vấn người mua. Ra (người bán): mạng NMG, admin đăng tin hộ (FR-156), số Zalo ký gửi. **Kênh chat duy nhất là Zalo cá nhân qua bridge, hai số; không có OA** | BR-08, BR-09, FR-145, FR-156, RSK-02, SRS-5.1zzzzzzz210 |
-| **Cơ cấu chi phí** | Cố định gần 0: Supabase Free, Vercel Free, một VPS chạy lõi Python + hai bridge *(chi phí VPS chưa ghi trong docs)*, không sao lưu (OPEN-25). Biến đổi: token model theo lượt chat (chat Sonnet 5.5 đắt hơn Haiku — SRS-5.1zzzzzzz235; đồng hồ tiền FR-171), traffic 20tr/tháng nếu bật. *Lịch sử: CTV 0,5% mỗi giao dịch + 1,5 CTV × 7tr/tháng theo kế hoạch 2024 — bỏ cùng CTV 28/10/2026.* Kế hoạch 2024 tổng 800tr/6 tháng (390tr build thuê vendor) — **đã không đi theo**: code tự làm trong repo từ 24/08/2026 | `01 §1.4`, NFR-14/16, FR-171 |
+| **Cơ cấu chi phí** | Cố định gần 0: Supabase Free, Vercel Free, máy 146 "NguyetTu" ở văn phòng chạy lõi Python + hai bridge (VPS bỏ 06/11/2026, SRS-5.1zzzzzzz401), không sao lưu (OPEN-25). Biến đổi: token model theo lượt chat (chat Sonnet 5.5 đắt hơn Haiku — SRS-5.1zzzzzzz235; đồng hồ tiền FR-171), traffic 20tr/tháng nếu bật. *Lịch sử: CTV 0,5% mỗi giao dịch + 1,5 CTV × 7tr/tháng theo kế hoạch 2024 — bỏ cùng CTV 28/10/2026.* Kế hoạch 2024 tổng 800tr/6 tháng (390tr build thuê vendor) — **đã không đi theo**: code tự làm trong repo từ 24/08/2026 | `01 §1.4`, NFR-14/16, FR-171 |
 | **Nguồn thu** | 100% từ phía bán, chỉ thu khi chốt: CCRB **1%** giá trị giao dịch, NMG **0,5%**, cho thuê **3/4 tháng tiền thuê**. Người mua 0đ. *Phần 0,5% trước chia CTV: CTV bỏ 28/10/2026, chưa chốt phần này về đâu.* OKR 2024 "1 giao dịch / 2 ngày, TB 10 tỷ" ≈ 6,7 tỷ / 6 tháng — BA đã cảnh báo cần chuyển đổi ~5% từ chat (OPEN-01). **21/09/2026: doanh thu 0, giao dịch 0** | `01 §1.3`, BR-04, BR-05, OPEN-01 |
 
 Ô yếu nhất theo thứ tự: **Khách hàng đầu tiên** (chưa gặp ai thật) → **Kênh** (một kênh, mượn

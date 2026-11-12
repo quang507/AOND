@@ -39,12 +39,12 @@ nhiều biến thể; cột "Biến thể trong tài liệu gốc" để tra ng�
 
 | Từ chuẩn | Nghĩa |
 |---|---|
-| **Zalo cá nhân qua bridge** | Kênh chat duy nhất với cả B và S: tài khoản Zalo cá nhân (clone) chạy qua bridge `zca-js` trên VPS (`bot/bridge-zca/`). Hai số (SRS-5.1zzzzzzz210): **số ký gửi** và **số tư vấn người mua**. |
+| **Zalo cá nhân qua bridge** | Kênh chat duy nhất với cả B và S: tài khoản Zalo cá nhân (clone) chạy qua bridge `zca-js` trên máy 146 (`bot/bridge-zca/`, chạy ở `C:\aond\bridge-zca`). Hai số (SRS-5.1zzzzzzz210): **số ký gửi** và **số tư vấn người mua**. |
 | **Zalo OA** *[không dùng]* | Official Account trên Zalo. Tài liệu 2024 coi là kênh chính; hệ thống hiện KHÔNG có OA (nút bấm trong tin vì thế chưa có). Giữ dòng để đọc tài liệu cũ. |
 | **Số ký gửi** | Số Zalo hiện tại (bridge `nhadat-bridge`): nhận tin rao của người bán; nhắn nhầm việc mua vẫn trả lời; tin nội bộ và nhắc người bán đi từ số này (SRS-5.1zzzzzzz210). |
 | **Số tư vấn** | Số Zalo thứ hai (`nhadat-bridge-tu-van.service`, `SO_NHAN=tu_van`): tư vấn người mua; lượt mơ hồ ở số này vào vai mua (SRS-5.1zzzzzzz210). |
-| **Bridge** | Tiến trình Node trên VPS giữ phiên Zalo cá nhân: nhận tin khách, gọi lõi `http://127.0.0.1:8000/chat-reply`, gửi lời bot + ảnh (`/send`), thả tim, kéo việc từ `escalation-feed`. Mỗi số một bridge. |
-| **Lõi** (aond-core) | Bộ não duy nhất của bot từ 18/10/2026: Python `src/aioi/`, chạy trên VPS bằng `aond-core.service` cổng 8000 (SRS-5.1zzzzzzz31). Mọi logic chat, prompt, bóc tách, phí, phiên đều ở đây. Edge function TS `chat-reply` đã gỡ. |
+| **Bridge** | Tiến trình Node trên máy 146 (Task Scheduler `AOND Zalo Bridge` cổng 5005, `AOND Zalo Bridge Tu Van` cổng 5006) giữ phiên Zalo cá nhân: nhận tin khách, gọi lõi `http://127.0.0.1:8000/chat-reply`, gửi lời bot + ảnh (`/send`), thả tim, kéo việc từ `escalation-feed`. Mỗi số một bridge. |
+| **Lõi** (aond-core) | Bộ não duy nhất của bot từ 18/10/2026: Python `src/aioi/`, chạy trên máy 146 "NguyetTu" (Windows) bằng Task Scheduler `AOND Core`, mã ở `C:\aond\aond_core`, cổng 8000 (SRS-5.1zzzzzzz31; VPS bỏ 06/11/2026, SRS-5.1zzzzzzz401). Đưa mã lên: `scripts/trien-khai-146.sh`. Mọi logic chat, prompt, bóc tách, phí, phiên đều ở đây. Edge function TS `chat-reply` đã gỡ. |
 | **Câu mẫu** (câu mẫu cố định) | Câu bot nói NGUYÊN VĂN (lời chào, duyệt tin, báo phí, tin nhắc…): một nguồn `src/aioi/cau_mau.py` (`MAC_DINH`), chủ dự án sửa đè ở `/admin/cau-chuan` (bảng `cau_mau`) (SRS-5.1zzzzzzz106). |
 | **Câu chuẩn** | Câu bot cũ được chủ dự án / tester chấm điểm và sửa tay ở `/admin/cau-chuan` (bảng `cau_chuan`); lõi đưa tối đa 16 dòng làm ví dụ cho model (SRS-5.1zzzzzzz88, SRS-5.1zzzzzzz180). Khác câu mẫu: câu chuẩn là ví dụ giọng, không nói nguyên văn. |
 | **LQC** (Listing Quality Controller) | Phần bot chăm tin SAU khi lên web: xem tin còn thiếu gì để bán được rồi hỏi chủ nhà từng câu một, theo thứ tự ảnh → pháp lý → lợi thế → so sánh → giá. Hai vòng nền: **Image LQC** (`qc_anh.py`, chấm bộ ảnh mỗi khi đổi) và **hỏi sau đăng** (`hoi_sau_dang.py`, chủ im thì bot tự nhắn); 8–21 giờ, tối đa 10 câu / căn. Chi tiết `docs/lqc-listing-quality-controller.md`. |

@@ -25,7 +25,7 @@ mở rộng mà không lệch khỏi yêu cầu ở `02-requirements.md`.
 | Mã | Phân hệ | Đường thật |
 |---|---|---|
 | `WEB` | Website công khai | Next.js ở root repo: `/`, `/[tag]`, `/mua-ban`, `/cho-thue`, `/nha-dat/[code]`, `/du-an`, `/du-an/[slug]`, `/ban-do`, `/moi-gioi`, `/thong-ke`, `/ds/[token]`, `/raoban`, `/tai-khoan`, `/yeu-thich`, `/tinh-lai-vay` |
-| `BOT` | Bộ não hội thoại (B và S) | Lõi Python `src/aioi/` trên VPS (`aond-core.service`, cổng 8000), endpoint `POST /chat-reply`; một lõi cho cả người mua lẫn người bán, vai theo ý định từng lượt (SRS-5.1zzzzzzz153) |
+| `BOT` | Bộ não hội thoại (B và S) | Lõi Python `src/aioi/` trên máy 146 "NguyetTu" (Windows, Task Scheduler `AOND Core`, `C:\aond\aond_core`, cổng 8000), endpoint `POST /chat-reply`; một lõi cho cả người mua lẫn người bán, vai theo ý định từng lượt (SRS-5.1zzzzzzz153) |
 | `KENH` | Kênh Zalo | Bridge `zca-js` 2.2.0 (`bot/bridge-zca/index.mjs`) trên tài khoản Zalo cá nhân (clone), HAI tiến trình: số ký gửi (`nhadat-bridge.service`) và số tư vấn người mua (`nhadat-bridge-tu-van.service`, `SO_NHAN=tu_van`) (SRS-5.1zzzzzzz210). Zalo OA không dùng |
 | `SEL` | Phía người bán | Cùng lõi, nhánh bán; `/quan-ly` + `/dang-nhap` cho NMG trên web |
 | `ADM` | Admin | `/admin`, `/admin/tin-nhan`, `/admin/cau-chuan`, `/admin/danh-gia`, `/admin/dang-tin`, `/admin/ro-hang`; việc nội bộ (câu khách hỏi, lịch xem, cần người thật) đi thẳng admin qua `reminders` → `escalation-feed` → bridge; cảnh báo ntfy |
@@ -37,22 +37,22 @@ chỉ tra bảng `admins`. Còn lại duy nhất giá trị enum `msg_sender = '
 
 ### 1.3 Tài liệu tham chiếu
 `docs/00`…`docs/06`, `docs/09-open-issues.md`, `docs/10-ke-hoach-kiem-thu.md`, `docs/13-so-do-nhan-va-boc-tach.md` (sơ đồ một lượt chat),
-`bot/bridge-zca/VPS.md` (vận hành VPS), `CLAUDE.md` §6 (luật đang áp, mỗi dòng kèm `SRS-…`).
+`scripts/trien-khai-146.sh` (đưa lõi lên máy 146; VPS bỏ 06/11/2026, `bot/bridge-zca/archive/` chỉ còn lưu trữ), `CLAUDE.md` §6 (luật đang áp, mỗi dòng kèm `SRS-…`).
 
 ---
 
 ## 2. Kiến trúc tổng thể
 
-`[nguồn: src/aioi/server.py, src/aioi/engine.py, bot/bridge-zca/index.mjs, bot/bridge-zca/cai-vps.sh, bot/supabase/functions/, bot/supabase/schema.sql, 28/10/2026]`
+`[nguồn: src/aioi/server.py, src/aioi/engine.py, bot/bridge-zca/index.mjs, scripts/trien-khai-146.sh, bot/supabase/functions/, bot/supabase/schema.sql, 28/10/2026; máy chạy cập nhật 12/11/2026]`
 
 ```mermaid
 flowchart TB
     ZK["Zalo app khách<br/>(người mua / người bán)"]
     ZA["Zalo app admin"]
     W["Web Next.js 15 · Vercel<br/>aioinhadat.vercel.app"]
-    subgraph VPS["VPS"]
-        BR1["bridge zca-js · số ký gửi<br/>nhadat-bridge · /send 5005"]
-        BR2["bridge zca-js · số tư vấn<br/>nhadat-bridge-tu-van · /send 5006"]
+    subgraph M146["Máy 146 NguyetTu · Windows · Task Scheduler"]
+        BR1["bridge zca-js · số ký gửi<br/>AOND Zalo Bridge · /send 5005"]
+        BR2["bridge zca-js · số tư vấn<br/>AOND Zalo Bridge Tu Van · /send 5006"]
         CORE["Lõi Python aond-core<br/>FastAPI 127.0.0.1:8000<br/>POST /chat-reply · GET /health<br/>vòng nền: gui_nhac 60 s · bao_can_moi 10 phút"]
         SQL[("SQLite aioi.db<br/>kho phụ của lõi")]
     end
@@ -63,7 +63,7 @@ flowchart TB
         ST[("Storage<br/>listing-public · listing-private")]
         VA["Vault"]
     end
-    CL["Claude<br/>chat: Sonnet 5.5 · bóc tách: Haiku"]
+    CL["Claude<br/>chat + bóc tách: Sonnet 5.5"]
     DP["Dự phòng khi Claude hỏng<br/>Gemini → Groq"]
     EMB["Gemini embedding 768 chiều"]
     WH["Groq Whisper<br/>(tin thoại)"]
@@ -109,16 +109,16 @@ Ba điều hay hiểu nhầm:
 
 ### SRS-2.1 — Tech stack
 
-`[nguồn: package.json, src/aioi/config.py, src/aioi/llm/, bot/bridge-zca/cai-vps.sh, bot/supabase/schema.sql; soát 28/10/2026]`
+`[nguồn: package.json, src/aioi/config.py, src/aioi/llm/, bot/cau-hinh-loi.env, scripts/trien-khai-146.sh, bot/supabase/schema.sql; soát 28/10/2026, máy chạy 12/11/2026]`
 
 | Lớp | Công nghệ |
 |---|---|
-| Lõi hội thoại | Python, FastAPI (`src/aioi/server.py`), chạy `aond-core.service` tại `/opt/aond_core`, cổng 8000 (chỉ 127.0.0.1). Cài và khởi động lại bằng workflow `apply-migration.yml` ô `dung_lai = cai-vps` (`bot/bridge-zca/cai-vps.sh`) |
+| Lõi hội thoại | Python, FastAPI (`src/aioi/server.py`), chạy trên máy 146 "NguyetTu" (Windows) bằng Task Scheduler `AOND Core` (SYSTEM), mã ở `C:\aond\aond_core` (không phải git, chép file), venv `C:\aond\venv`, cổng 8000 (chỉ 127.0.0.1; vào máy qua Tailscale). Đưa mã lên và khởi động lại bằng `scripts/trien-khai-146.sh` (SRS-5.1zzzzzzz397); VPS và ô `cai-vps` gỡ 06–08/11/2026 (SRS-5.1zzzzzzz401) |
 | Module lõi chính | `engine.py` (phiên chat, định tuyến bán / mua) · `prompts.py` (mọi prompt, `GIONG_VUI`, `AD_FORMAT`, `muc_phi`, `VUNG_NHAN_TIN`) · `schema.py` (`CORE_FIELDS`, `CORE_THEO_LOAI`, `FACETS`, `O_NOI_BO`) · `mua.py` (phía người mua) · `supabase_store.py` (kho Supabase) · `dia_danh.py` · `phap_ly.py` · `cau_mau.py` · `xung_ho.py` · `bao_can_moi.py` · `gui_nhac.py` · `lenh_zalo.py` · `anh_can.py` · `kho_anh.py` · `web.py` · `llm/` |
-| Kho trạng thái | Supabase là nguồn chính (`SupabaseConversationStore`); SQLite `aioi.db` trên VPS là kho dự phòng khi thiếu khoá Supabase (`SqliteConversationStore`) |
+| Kho trạng thái | Supabase là nguồn chính (`SupabaseConversationStore`); SQLite `aioi.db` trên máy 146 là kho dự phòng khi thiếu khoá Supabase (`SqliteConversationStore`) |
 | Kênh chat | Zalo cá nhân qua bridge `zca-js` 2.2.0 (ghim, SRS-5.1zzzzzzz177), tài khoản clone (quyết định chủ dự án 20/10/2026). Hai số: ký gửi và tư vấn (SRS-5.1zzzzzzz210). Bridge thả tim (`addReaction`), gửi ảnh qua `guiAnhQuaUrl` |
-| AI chat | Claude **Sonnet 5.5** cho lượt trả lời khách thật (`MODEL_CHAT` trong `cai-vps.sh` → `AIOI_CHAT_MODEL`, SRS-5.1zzzzzzz235); ID thử theo `AIOI_CHAT_MODEL_THU` (SRS-5.1zzzzzzz234) |
-| AI bóc tách | Claude Haiku (`AIOI_EXTRACT_MODEL`, mặc định `claude-haiku-4-5`): lượt lập thao tác, đọc ảnh |
+| AI chat | Claude **Sonnet 5.5** cho lượt trả lời khách thật (`AIOI_CHAT_MODEL`: một nguồn ở `bot/cau-hinh-loi.env`, chạy thật đặt trong `.env` lõi trên máy 146 — SRS-5.1zzzzzzz235 / 401); ID thử theo `AIOI_CHAT_MODEL_THU` (SRS-5.1zzzzzzz234) |
+| AI bóc tách | Claude Sonnet 5.5 (`AIOI_EXTRACT_MODEL`, đồng bộ model chat — SRS-5.1zzzzzzz316 / 392; trống thì lấy model chat): lượt lập thao tác, đọc ảnh |
 | Dự phòng | `llm/du_phong.py`: Claude hỏng thì Gemini rồi Groq; mỗi lần gọi ≤ 15 s, cả vòng ≤ 40 s (SRS-5.1zzzzzzz117, SRS-5.1zzzzzzz133) |
 | Prompt caching | Cắt chuỗi system ở `RANH_GIOI_CACHE` (`llm/base.py`); chỉ phần trước dấu có điểm cache (SRS-5.1zzzzzzz166, SRS-5.1zzzzzzz213) |
 | Tìm theo nghĩa | Gemini `gemini-embedding-001`, 768 chiều. Câu khách nhúng lúc chat (`dia_danh.py`); dữ liệu nhúng bằng lịch `nhung-tick`, `nhung-dia-danh-tick`, `nhung-luat-tick`. RPC: `tim_nha` (vector `listings.nhung`), `tim_dia_danh_theo_nghia`, `tim_dieu_luat` |
@@ -126,14 +126,14 @@ Ba điều hay hiểu nhầm:
 | DB | Supabase Postgres, RLS trên mọi bảng, trigger + RPC `security definer`, `pgvector`. Lõi đọc / ghi bằng `service_role` qua REST |
 | Serverless | 3 Edge Functions (Deno): `escalation-feed`, `geocode-listings`, `media-cleanup` (`§4`); `_shared/` còn `claude.ts`, `gate.ts`, `geocode.ts`, `tin_nhac.ts`, `extraction/` (`luat-tien.ts`, `luat-lien-he.ts`, `nhan.ts`, `ds-phuong.ts`, `tien-ich.ts`) |
 | Lịch / HTTP nội bộ | `pg_cron` + `pg_net` (`net.http_post`). Lịch nhắc tên trong repo: `nhung-tick`, `nhung-dia-danh-tick`, `nhung-luat-tick`, `geocode-tick`, `info-request-sla-tick` (chạy `info_request_sla_tick`), `bot-health-tick`, `media-cleanup-tick`, `don-du-lieu-thu`. Danh sách đủ ở SRS-5.3 |
-| Bí mật | `.env` lõi trên VPS (khoá Claude, Gemini `GEMINI_API_KEY`…`_4` lấy từ Vault qua `cai-vps`, Groq, service_role); Vault giữ `BRIDGE_SECRET` và khoá cho hàm DB, đọc qua `get_secret()` chỉ `service_role` |
+| Bí mật | `.env` lõi trên máy 146 (`C:\aond\aond_core\.env`: khoá Claude, Gemini `GEMINI_API_KEY`…`_4`, Groq, service_role, khoá nội bộ `AIOI_NOI_BO_KEY` SRS-5.1zzzzzzz400; đặt tay, `trien-khai-146.sh` không động tới; quyền tệp siết bằng `scripts/siet-acl-146.ps1`, SRS-5.1zzzzzzz399); Vault giữ `BRIDGE_SECRET` và khoá cho hàm DB, đọc qua `get_secret()` chỉ `service_role` |
 | Kho file | Supabase Storage (SRS-5.1zzzzzzz56): `listing-public/<uuid tin>/` (ảnh căn, công khai), `listing-private` (sổ đỏ, giấy tờ, PDF, tệp dự án; signed URL). SharePoint / OneDrive đã bỏ |
 | Web | Next.js 15 (App Router) + TypeScript + Tailwind 4, Bun, deploy Vercel từ root repo. Link bot gửi lấy từ `src/aioi/web.py` (`AIOI_SITE_URL`, mặc định `https://aioinhadat.vercel.app`) |
 | Auth | Supabase Auth: Google OAuth + magic link email (NMG, admin, tài khoản B tự nguyện); không Zalo SSO |
 | Bản đồ | MapLibre `maplibre-gl` 6.13.0 + nền OpenFreeMap, nạp qua `napMapLibre()` (`lib/ban-do.ts`), gom cụm `lib/cum-ghim.ts` (SRS-5.1zzzzzzz206, SRS-5.1zzzzzzz217). Toạ độ tin: từ điển `duong` trước, rồi Nominatim qua rpc `tra_nominatim`; tiện ích quanh tin qua rpc `tra_overpass` (SRS-5.1zzzzzzz152, SRS-5.1zzzzzzz224) |
 | Cảnh báo | ntfy.sh (`canh_bao_ngoai`), `bot_health_tick` đọc `net._http_response` (NFR-18) |
-| Quan trắc | `bot_errors` / `bot_health` / `bot_usage` / `bot_usage_model` + `/admin`; log lõi trên VPS chỉ ra journal từ mức `warning` (SRS-5.1zzzzzzz233); đọc bằng ô `doc-log-loi` |
-| Kiểm thử | `bun run test:py` (pytest `tests/`, lõi Python) + `bun run kiem` (tsc, `kieu:bot`, build, `test:bot`, `test:rohang`, `truyvet`); bắn thử production bằng ID thử qua ô `ban-thu-*` của `apply-migration.yml` (`docs/10`) |
+| Quan trắc | `bot_errors` / `bot_health` / `bot_usage` / `bot_usage_model` + `/admin`; log lõi ghi tệp trong `C:\aond\logs` trên máy 146, đọc bằng `bot/tests/doc-log-loi.sh` qua ssh (TS-PROD-03, SRS-5.1zzzzzzz405); còi máy 146 báo lõi / bridge chết, Zalo văng phiên (SRS-5.1zzzzzzz402) |
+| Kiểm thử | `bun run test:py` (pytest `tests/`, lõi Python) + `bun run kiem` (tsc, `kieu:bot`, build, `test:bot`, `test:rohang`, `truyvet`); bắn thử production bằng ID thử qua `bot/tests/ban-thu-*.sh`, chạy từ máy cá nhân ssh vào máy 146 (SRS-5.1zzzzzzz405, `docs/10`) |
 
 ### SRS-2.2 — Đường giao tiếp S↔B
 
@@ -627,7 +627,7 @@ Fact ngoài bảng nhưng có nghĩa (FR-177 e): `bo_sung` (câu lệch không n
 ## 4. Đặc tả giao diện lập trình
 
 `[nguồn: src/aioi/server.py, bot/bridge-zca/index.mjs, src/aioi/followup.py, bot/supabase/functions/*, src/aioi/*.py, app/api/*; soát 28/10/2026]`
-Giao diện thật có bốn lớp: **HTTP của lõi** (chỉ 127.0.0.1 trên VPS), **HTTP của bridge** (chỉ 127.0.0.1), **3 Edge Functions**
+Giao diện thật có bốn lớp: **HTTP của lõi** (chỉ 127.0.0.1 trên máy 146; mọi route trừ `/health` đòi khoá nội bộ `x-noi-bo-key`, SRS-5.1zzzzzzz400), **HTTP của bridge** (chỉ 127.0.0.1), **3 Edge Functions**
 (`POST {SUPABASE_URL}/functions/v1/<name>`, cổng SRS-3.9 (7)) và **RPC / REST Supabase** lõi gọi bằng `service_role`. Cộng hai route Next.
 Không có REST `/api/*` giữa các "side".
 
@@ -636,9 +636,9 @@ Không có REST `/api/*` giữa các "side".
 | Endpoint | Vào | Ra / việc | Ai gọi |
 |---|---|---|---|
 | `POST /chat-reply` | `ZaloBridgePayload`: `external_user_id`, `text`, `image_urls` / `image_url`, `file_url` / `file_name`, `sticker_url` / `sticker_text`, `gioi_tinh`, `so_nhan`, `msg_id`, `sender_name`, `human_note`, `mark_sent` | `ZaloBridgeResponse`: `replies[]`, `nhip_go[]`, `photos[]`, `tha_tim`, `assistant_name`, `captured`, `next_field`, điểm, `thoi_gian_ms`. Một lượt chat (`docs/13`). `human_note` = admin gõ tay → ghi lịch sử, bot nhường sân; `mark_sent` trả rỗng | bridge (hai số) |
-| `GET /health` | — | `status`, `provider`, `chat_model`, `stt`, `drive`, `dia_danh` | `cai-vps.sh` sau khởi động lại |
-| `POST /message` | `IncomingMessage` | lượt chat không qua bridge (không gom tin, không ảnh) | ô bắn thử `ban-thu-luan` (`bot/tests/ban-thu-luan.sh`, gọi một lõi thử ở cổng 8001), `tests/test_server.py` |
-| `POST /trigger-followup/{user_key}`, `POST /reset/{user_key}`, `POST /reset-all` | — | bắn nhắc 5 phút / xoá phiên một khách / xoá mọi phiên | vận hành tay trên VPS |
+| `GET /health` | — | `status`, `provider`, `chat_model`, `stt`, `drive`, `dia_danh` | `trien-khai-146.sh` sau khởi động lại |
+| `POST /message` | `IncomingMessage` | lượt chat không qua bridge (không gom tin, không ảnh) | script bắn thử `ban-thu-luan` (`bot/tests/ban-thu-luan.sh`, gọi một lõi thử ở cổng 8001 — chưa chạy được trên máy 146), `tests/test_server.py` |
+| `POST /trigger-followup/{user_key}`, `POST /reset/{user_key}`, `POST /reset-all` | — | bắn nhắc 5 phút / xoá phiên một khách / xoá mọi phiên | vận hành tay trên máy 146 (kèm khoá nội bộ) |
 
 Vòng nền trong cùng tiến trình: `_vong_gui_nhac` (60 s, `gui_nhac.py`, tắt `GUI_NHAC=tat`) và `_vong_bao_can_moi` (10 phút,
 `bao_can_moi.py`, tắt `BAO_CAN_MOI=tat`).
@@ -696,7 +696,7 @@ RPC thay cho HTTP: `tao_danh_sach(p_listing_codes text[], p_title, p_buyer_id) �
 Trang `app/ds/[token]` đặt `<meta robots noindex, nofollow>`; `robots.txt` chặn `/ds/`; hết hạn → trang báo + hộp Zalo.
 
 ### SRS-4.4 · Nhận tin Zalo (FR-162)
-Một cửa vào: bridge `bot/bridge-zca/index.mjs` (zca-js 2.2.0, tài khoản clone, chạy trên VPS) gọi `POST http://127.0.0.1:8000/chat-reply`
+Một cửa vào: bridge `bot/bridge-zca/index.mjs` (zca-js 2.2.0, tài khoản clone, chạy trên máy 146 ở `C:\aond\bridge-zca`, Task Scheduler `AOND Zalo Bridge` / `AOND Zalo Bridge Tu Van`) gọi `POST http://127.0.0.1:8000/chat-reply`
 (`CHAT_REPLY_URL`), mỗi tin kèm `msg_id`, `so_nhan`. Lõi gom các tin chờ của cùng khách thành một lượt (`_xep_cho`, `_lay_cho`) và
 giữ một lượt một lúc mỗi khách (`Engine.khoa_luot`). Bridge gửi `replies[]` theo `nhip_go[]`, rồi ảnh `photos[]`, rồi thả tim nếu `tha_tim`.
 Lượt hỏng: lõi trả câu mẫu `giu_cho` và tự thử lại nền.

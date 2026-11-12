@@ -13,7 +13,7 @@ Phải lưu **MỌI** chi tiết BĐS người rao cung cấp (toàn bộ listin
 
 > *Trạng thái (06/2026, cũ):* listing lưu bền qua `SqliteConversationStore` dạng blob theo conversation; chỉ mục tìm-kiếm-chéo cho bên mua chưa build.
 >
-> *Hiện trạng 28/10/2026:* tin lưu ở Supabase qua `src/aioi/supabase_store.py` (bảng `listings`, ô tin ở `listings.boc_tach`); SQLite trên VPS chỉ còn giữ phiên chat. **Tìm căn cho bên mua ĐÃ có**: hàm DB `tim_nha` (lọc cứng bán / thuê / loại / giá, điểm mềm khu vực / diện tích / phòng ngủ / xe hơi / tiện ích, cộng điểm vector `listings.nhung`), gọi qua `src/aioi/mua.py` `can_phu_hop` (SRS-5.1zzzzzzz138 / 179).
+> *Hiện trạng 28/10/2026:* tin lưu ở Supabase qua `src/aioi/supabase_store.py` (bảng `listings`, ô tin ở `listings.boc_tach`); SQLite của lõi (nay trên máy 146) chỉ còn giữ phiên chat. **Tìm căn cho bên mua ĐÃ có**: hàm DB `tim_nha` (lọc cứng bán / thuê / loại / giá, điểm mềm khu vực / diện tích / phòng ngủ / xe hơi / tiện ích, cộng điểm vector `listings.nhung`), gọi qua `src/aioi/mua.py` `can_phu_hop` (SRS-5.1zzzzzzz138 / 179).
 
 ## Hai tầng lưu trữ (thiết kế 06/2026 — đã thay)
 
