@@ -14,13 +14,9 @@ import { khuBySlug, relatedTags, tagBySlug, tagCuChuyen, type KhuInfo, type TagD
 // 03/10/2026 (giảm egress Supabase, SRS-5.1zl): KHÔNG dựng sẵn lúc build nữa — mỗi lượt build (CI mỗi lần đẩy + Vercel preview
 // + production) từng dựng 64 trang × (tin + ảnh bìa). `generateStaticParams` trả [] → trang vẫn ISR, dựng khi có người xem.
 //
-// SỐ 3600 DƯỚI ĐÂY KHÔNG PHẢI TTL THẬT — soát build 05/09/2026: bảng route báo
-// `5m`. Next 15 hạ revalidate của cả segment xuống MIN của nó và mọi
-// `unstable_cache` chạy trong lúc render, mà `coverByCode` (lib/photos.ts) đặt
-// TTL 300. Nên trang này làm mới mỗi 5 phút, không phải mỗi giờ.
-// Giữ 3600 thay vì sửa thành 300: đổi số là đổi ý định, còn hành vi thì không
-// đổi (min vẫn là 300). Muốn thật sự nới lên 1 giờ thì phải nới TTL trong
-// lib/photos.ts — và đó là quyết định về độ tươi của ẢNH, không phải của tag.
+// Next 15 hạ revalidate của cả segment xuống MIN của nó và mọi `unstable_cache` chạy lúc render. Soát build 05/09/2026 thấy `5m`
+// vì `coverByCode` (lib/photos.ts) khi đó đặt TTL 300; từ 03/10/2026 (SRS-5.1zl) TTL ảnh là 10800 và `layTinTag` 3600, nên trang
+// này làm mới đúng mỗi giờ (soát lại 12/11/2026, SRS-5.1zzzzzzz451).
 export const revalidate = 3600;
 export const dynamicParams = true;
 

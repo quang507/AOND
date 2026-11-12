@@ -1,6 +1,7 @@
 // SRS-5.1zzzzzzz443: chân trang viết lại. Bản cũ (từ lúc gộp repo 17/10) là chân trang của NhaDat-Radar: ghi tên "NhaDat Radar",
 // "Dữ liệu tổng hợp từ các nguồn công khai", một số hotline không rõ của ai, và 12 link tới trang aond không có (/search, /projects,
 // /tin-tuc, /dinh-gia, /huong-dan, /agents, /gioi-thieu, /lien-he…) → 404. Giờ chỉ link trang có thật; liên hệ qua Zalo như cả web.
+// SRS-5.1zzzzzzz451: hotline 0346 689 460 là số của team (chủ dự án xác nhận 12/11/2026) → gắn lại, dưới nút Zalo.
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import { zaloLink } from "@/lib/format";
@@ -46,6 +47,12 @@ export default function Footer() {
           <a href={zaloLink("footer")} target="_blank" rel="noopener" className="nut nut-nho mt-4 bg-zalo text-white hover:opacity-90">
             Nhắn Zalo
           </a>
+          <p className="mt-3 text-mute">
+            Hotline{" "}
+            <a href="tel:0346689460" className="font-semibold text-navy tabular-nums hover:text-brand">
+              0346 689 460
+            </a>
+          </p>
         </div>
         {COT.map((c) => (
           <div key={c.tieuDe}>

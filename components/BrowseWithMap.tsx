@@ -58,7 +58,7 @@ export default function BrowseWithMap({
   return (
     <div className="mx-auto w-full px-4 pb-12 transition-all duration-300">
       {/* Top Search & Actions bar */}
-      <div className="-mt-10 mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-lg bg-white p-3.5 shadow-[0_12px_32px_rgba(13,37,61,0.12)] border border-slate-100">
+      <div className="-mt-10 mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-king bg-white p-3.5 shadow-[0_12px_32px_rgba(13,37,61,0.12)] border border-line">
         <form
           action={basePath}
           method="get"
@@ -70,12 +70,12 @@ export default function BrowseWithMap({
               type="search"
               defaultValue={q}
               placeholder="Nhập địa điểm, tên đường, khu vực..."
-              className="w-full rounded-md border border-slate-200 px-3.5 py-2 text-sm font-medium text-navy placeholder:text-slate-400 outline-none focus:border-brand"
+              className="w-full rounded-md border border-line px-3.5 py-2 text-sm font-medium text-navy placeholder:text-mute outline-none focus:border-brand"
             />
           </div>
           <button
             type="submit"
-            className="rounded-md bg-[#DC2626] px-5 py-2 text-sm font-bold text-white shadow-sm hover:bg-[#B91C1C] transition"
+            className="rounded-md bg-brand px-5 py-2 text-sm font-bold text-white shadow-sm hover:bg-brand-dark transition"
           >
             Tìm kiếm
           </button>
@@ -87,7 +87,7 @@ export default function BrowseWithMap({
           onClick={() => setShowMap(!showMap)}
           className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-bold shadow-sm transition shrink-0 ${
             showMap
-              ? "bg-brand-dark text-white hover:bg-[#0043A8]"
+              ? "bg-brand-dark text-white hover:bg-brand"
               : "bg-brand text-white hover:bg-brand-dark"
           }`}
         >
@@ -119,10 +119,6 @@ export default function BrowseWithMap({
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* Left Column: Listings in 2-column grid */}
           <div className="w-full lg:w-[55%] xl:w-[57%] flex flex-col">
-            <div className="mb-3 text-xs text-slate-500 font-medium">
-              Hiển thị <strong className="text-navy">{tatCa.length}</strong> / {total} bất động sản
-            </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {tatCa.map((l, i) => (
                 <ListingCard key={l.id} listing={l} photo={l.code ? anh[l.code] : null} moi={i >= soDau} />
@@ -135,7 +131,7 @@ export default function BrowseWithMap({
 
           {/* Right Column: Sticky Interactive Map with Close Button (matching Image 2) */}
           <div className="hidden lg:block lg:w-[45%] xl:w-[43%] sticky top-20">
-            <div className="relative h-[calc(100vh-120px)] w-full overflow-hidden rounded-lg border border-slate-200/90 shadow-md bg-slate-100">
+            <div className="relative h-[calc(100vh-120px)] w-full overflow-hidden rounded-king border border-line shadow-md bg-line">
               {/* Floating Close Button on Map */}
               <button
                 type="button"
@@ -153,10 +149,6 @@ export default function BrowseWithMap({
       ) : (
         /* Full width 4-column grid */
         <div>
-          <div className="mb-3 text-xs text-slate-500 font-medium">
-            Hiển thị <strong className="text-navy">{tatCa.length}</strong> / {total} bất động sản
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
             {tatCa.map((l, i) => (
               <ListingCard key={l.id} listing={l} photo={l.code ? anh[l.code] : null} moi={i >= soDau} />

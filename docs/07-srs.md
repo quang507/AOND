@@ -788,6 +788,19 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz451 · Thẻ tin theo màu và góc bo King, tiêu đề có loại nhà, bỏ số đếm lặp, gắn lại hotline (12/11/2026)
+
+Chủ dự án 12/11/2026 "hotline 0346 689 460 của tm để đi, lấy đi sửa cả 4".
+- **Thẻ tin + thanh tìm trên /mua-ban, /cho-thue** về đúng bộ đã chốt: giá và nút "Tìm kiếm" từ đỏ `#DC2626` sang `brand` (#e60023);
+  thẻ, thanh tìm, khung bản đồ bo `rounded-king` (14px) thay 8px; màu xám Tailwind (`slate-*`) sang `navy` / `mute` / `line`. Nút
+  "Đóng bản đồ" khi rê từ xanh dương `#0043A8` sang đỏ `brand`.
+- **Bỏ dòng "Hiển thị 24 / 182"** đầu lưới: cùng số với đầu trang và dòng "Đang xem … tin" cuối lưới (SRS-447).
+- **Tiêu đề thẻ có loại nhà**: "Nhà phố Quang Trung" thay "Quang Trung" (`TYPE_LABEL`, cắt phần sau " / " — "Toà nhà / CHDV" →
+  "Toà nhà"). Chưa rõ loại thì giữ như cũ.
+- **Hotline 0346 689 460** là số của team → gắn lại ở chân trang, dưới nút Zalo, bấm gọi được (`tel:`). Gỡ ở SRS-443 vì chưa rõ của ai.
+- Soát lại: trang tag KHÔNG làm mới mỗi 5 phút như ghi chú cũ trong app/[tag]/page.tsx nói — TTL ảnh bìa đã là 3 giờ từ SRS-5.1zl,
+  trang làm mới mỗi giờ. Chỉ sửa ghi chú, không đổi số.
+
 ### SRS-5.1zzzzzzz450 · Khách đáp "ok" cho câu hỏi lựa chọn: không hỏi lại, không đoán (12/11/2026)
 Bắn thử 12/11 (`thu-lqc-1711`, `thu-lqc-1711b`), chủ dự án hỏi "vì sao nói Ok thì bot hỏi lại":
 - `thu-lqc-1711`: bot hỏi "thuế phí sang tên bên nào chịu, bên bán, bên mua hay chia đôi, và giá 19 tỷ đã gồm thuế phí chưa" — chủ "ok" → bot
