@@ -2,25 +2,9 @@
 rồi" — bình luận giá; (2) khách gõ "5x10", AI nhét cả vào ô trang thiết bị và cổng bằng chứng nhận. Hai lưới cùng lớp chống bịa / ghi đúng ô,
 đặt đúng hàm chủ (`_soat_hinh_thuc`, `_mot_cum_mot_o`). Đỏ khi nhận xét giá không bị gọi lại, khi nhắc lại con số khách đưa bị bắt oan, hay khi
 giá trị dạng kích thước còn vào ô ngoài kích thước / diện tích."""
-from aioi.engine import Engine, _binh_luan_gia, _la_kich_thuoc
+from aioi.engine import Engine, _la_kich_thuoc
 from tests.test_doc_y_khach import _eng
 from tests.test_khen_100 import _SpyHangDoi
-
-
-def test_nhan_dien_binh_luan_gia():
-    assert _binh_luan_gia("Mức giá 9,2 tỷ cho căn nhà 6 tầng trung tâm này quá hợp lý rồi anh/chị nhỉ!")
-    assert _binh_luan_gia("Khu này đắt khách lắm anh.") and _binh_luan_gia("Giá 16 tỷ vậy là vừa tầm.") and _binh_luan_gia("Nhà này dễ bán lắm.")
-    for ok in ("Em đã để sẵn giá 9,2 tỷ trong bản tin ở trên rồi anh.", "Giờ xem nhà vậy hợp lý rồi ạ, em sắp lịch nhé.",
-               "Giá 9,2 tỷ em ghi vào tin rồi, nhà hướng Đông tốt lắm anh."):
-        assert _binh_luan_gia(ok) is None, ok
-
-
-def test_binh_luan_gia_bi_goi_lai_mot_lan():
-    spy = _SpyHangDoi(["Mức giá 9,2 tỷ cho căn nhà này quá hợp lý rồi anh nhỉ! Nhà mình mấy lầu vậy anh?"])
-    eng = Engine(spy)
-    r = eng.handle("bg1", "bán nhà quận 10 giá 9.2")
-    assert _binh_luan_gia(r.reply) is None
-    assert any("VIẾT LẠI LƯỢT NÀY" in s and "nhận xét giá" in s for s in spy.systems)
 
 
 def test_la_kich_thuoc():

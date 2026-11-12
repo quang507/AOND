@@ -904,7 +904,8 @@ KHOI_DINH_GIA = (
 def khoi_dinh_gia(gia_rao: str | None) -> str:
     """Khối định giá phía bán (SRS-5.1zzzzzzz325, chủ dự án 02/11/2026: chủ căn hộ hỏi "giá tôi đưa cao không" thì "nêu giá rao bán thị
     trường X–Y triệu/m²"; thay một phần SRS-5.1zzzzzzz116). Dự án có giá rao gộp (`projects.dong_nguon_phu`) → nêu khoảng đó kèm số tin + ngày
-    lấy, nói rõ là giá RAO; KHÔNG phán giá chủ cao / thấp (lưới `_BINH_LUAN_GIA` giữ). Không có số liệu → lời cũ `KHOI_DINH_GIA`."""
+    lấy, nói rõ là giá RAO; tự chủ so. Có căn cùng loại đang rao gần thì `so_sanh.khoi_tra_loi_gia` thay khối này (nhận xét nhẹ do code
+    chấm, SRS-5.1zzzzzzz429). Không có số liệu → lời cũ `KHOI_DINH_GIA`."""
     if not (gia_rao or "").strip():
         return KHOI_DINH_GIA
     return (
@@ -1063,8 +1064,8 @@ HỎI NHƯ TRÒ CHUYỆN (đủ thông tin mà khách không thấy bị hỏi c
 - Còn thiếu gì để soạn tin là việc em tự nắm — khách không hỏi thì không kể.
 
 SỰ THẬT:
-- Chỉ nói điều khách đã kể và dữ liệu bên dưới (căn, dự án, khối hệ thống). Không thêm chi tiết; không đoán hay nhận xét giá (cao, thấp,
-  hợp lý); chỉ hứa điều hệ thống thật sự làm — không hạn bán, không giờ giấc, không gọi điện. Chưa chắc thì nói "hình như" rồi hỏi lại.
+- Chỉ nói điều khách đã kể và dữ liệu bên dưới (căn, dự án, khối hệ thống). Không thêm chi tiết; không tự đoán giá (cao, thấp, hợp lý)
+  — chỉ nhận xét nhẹ khi có khối NHẬN XÉT GIÁ của hệ thống; chỉ hứa điều hệ thống thật sự làm — không hạn bán, không giờ giấc, không gọi điện. Chưa chắc thì nói "hình như" rồi hỏi lại.
 - Điều hệ thống chưa làm thì em chưa nói là đã làm: tin chỉ là đã đăng / đang hiển thị khi khối trạng thái báo vậy, căn chỉ là đã đổi
   trạng thái khi hệ thống đã đổi.
 - Bên em liên lạc với khách qua chính Zalo này. Khách chưa nhắc căn khác thì em không gợi rao thêm.
@@ -2828,8 +2829,6 @@ KHÔNG tính: con số giá, chữ "giá rao" / "giá chủ đưa", câu báo ch
 thì mảng rỗng."""
 
 
-# SRS-5.1zzzzzzz353: cùng lượt AI đó cho LỜI CHAT (bản trước: lưới từ khoá `_BINH_LUAN_GIA`, đổi chữ là lọt). Lời chat cấm cả khẳng định thị trường
-# (SRS-5.1zzzzzzz132: dễ bán, đắt khách…) — khác bản tin, nơi ý chung về khu là quyết định chủ dự án "kệ" (§6.3).
 # SRS-5.1zzzzzzz367 (chủ dự án 02/11: "phải sửa từ gốc chứ"): đầu ra model không bị soát theo ô hệ thống chọn — AI đọc lời bot SẮP GỬI, khai
 # các ô mà lời đó hỏi (cùng khoá ô tin như `bot_vua_hoi`) kèm cụm nguyên văn; code kiểm cụm có trong lời rồi so với ô được phép
 # (`engine._soat_hoi_dung_o`). Không dặn model "đừng hỏi ô X" — chặn ở đầu ra, một chỗ.
@@ -2860,13 +2859,6 @@ def soat_o_hoi_schema() -> dict:
     return {"type": "object", "properties": {"cau_hoi": {"type": "array", "items": {"type": "object", "properties": {
         "o": {"type": "string"}, "trich": {"type": "string"}, "khach_vua_hoi": {"type": "boolean"}, "trich_khach": {"type": "string"}},
         "required": ["o", "trich"]}}}, "required": ["cau_hoi"]}
-
-
-SOAT_BINH_GIA_CHAT_SYSTEM = """Dưới đây là một tin nhắn trợ lý môi giới vừa viết cho khách. Tìm các câu / cụm trợ lý tự NHẬN XÉT MỨC GIÁ hay THỊ TRƯỜNG:
-khen hay chê giá (rẻ, hợp lý, mềm, dễ chịu, đáng tiền, hời, vừa tầm, cao / thấp so với khu), hứa người mua chắc được bớt, hoặc đoán thị trường
-(dễ bán, đắt khách, thanh khoản tốt, nhiều người tìm / hỏi). KHÔNG tính: nhắc lại con số khách đưa ("em ghi giá 9 tỷ"), câu hỏi, giá rao của
-các tin trong dự án có nêu số tin / thời điểm (dữ kiện hệ thống), báo chủ cho thương lượng, khen điểm KHÁC của căn. Trả JSON: `cum` = các cụm
-CHÉP NGUYÊN VĂN từ tin nhắn (đúng từng chữ), không có thì mảng rỗng."""
 
 
 def soat_binh_gia_schema() -> dict[str, Any]:

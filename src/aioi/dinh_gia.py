@@ -236,13 +236,9 @@ def dinh_gia_tham_khao_tool(engine: Any, conv: Any, project: Any, vao: dict[str,
     li = getattr(conv, "active", None) if conv else None
     if engine is not None and li is not None:
         from . import so_sanh
-        from .engine import _la_id_thu
-        kq_gan = so_sanh.can_gan(getattr(engine, "_convstore", None), getattr(li, "listing_id", None),
-                                 gom_thu=_la_id_thu(getattr(conv, "user_key", None)))
+        kq_gan = so_sanh.can_gan(getattr(engine, "_convstore", None), getattr(li, "listing_id", None))
         muc = so_sanh.muc_lech(kq_gan)
         dong_gan = so_sanh.dong_don_gia_gan(kq_gan) + (so_sanh.dong_nhan_xet(muc) if muc else "")
-        if muc and isinstance(getattr(conv, "y_luot", None), dict):   # SRS-5.1zzzzzzz429: lưới bình luận giá nới cho lượt này
-            conv.y_luot["_nhan_xet_gia"] = muc["muc"]
 
     dong_so_sanh = ""
     if gia_chu > 0 and kq.get("gia_min") and kq.get("gia_max") and not muc:   # kho có mức lệch thì không đối chiếu bảng cứng

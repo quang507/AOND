@@ -56,12 +56,6 @@ Anh/chị muốn sửa chỗ nào, hay em đăng luôn ạ?"""
 BAN_TIN_BINH_GIA_MOI = BAN_TIN_BINH_GIA.replace("giá còn mềm mỏng thế này", "tầm giá này là dễ chịu lắm rồi")
 
 
-def test_luoi_binh_luan_gia_bat_duoc_cum_da_gap():
-    """Lưới nhận dạng `_BINH_LUAN_GIA` BẮT ĐƯỢC cụm đã gặp ("giá còn mềm mỏng") — chỗ nhận dạng không phải là lỗi duy nhất."""
-    from aioi.engine import _BINH_LUAN_GIA
-    assert _BINH_LUAN_GIA.search(BAN_TIN_BINH_GIA)
-
-
 class _AiSoatGia:
     """Model bóc tách giả cho lưới bình luận giá bản tin (SRS-5.1zzzzzzz336): trả `cum` cho sẵn, ghi lại đoạn được đưa đọc."""
 

@@ -1017,6 +1017,23 @@ Chủ dự án 12/11: "Có, dùng điểm QC" + "nhưng đừng khó quá, lỡ 
   hỏi khéo chủ MỘT câu tấm đó có phải ảnh căn mình không (tả bằng nội dung, không nói ảnh sai / bị trừ điểm), ưu tiên trước xin góc.
 - Khối ĐIỂM TIN không đưa con số chất lượng ảnh cho model; chỉ gợi "ảnh <góc QC thấy thiếu> sẽ làm tin đẹp hơn, điểm cao hơn".
 
+### SRS-5.1zzzzzzz431 · Sửa 3 mâu thuẫn SRS: gỡ lưới nhận xét giá lời chat · tin thử tính như tin thật · một nguồn cho đường vào (12/11/2026)
+Chủ dự án 12/11, sau bản soát mâu thuẫn SRS: "vậy xóa lưới chặn và bắt bot viết lại đi, Tin thử được coi là thật, sửa 3 mâu thuẫn trước đi".
+- **Gỡ lưới nhận xét giá ở lời CHAT** (thay phần lời chat của SRS-132, SRS-353 và đoạn "lưới nới" của SRS-429): bỏ `_BINH_LUAN_GIA`,
+  `_binh_luan_gia`, lọc thô `_LOC_THO_GIA` / `_can_doc_gia`, `_DOAN_THI_TRUONG`, prompt `SOAT_BINH_GIA_CHAT_SYSTEM` và cờ `_nhan_xet_gia`.
+  Lời chat không còn bị bắt viết lại vì nhắc giá. Luật nằm ở prompt: phía bán nhận xét nhẹ khi có khối NHẬN XÉT GIÁ do code chấm
+  (SRS-429), không có thì không tự đoán (`LEAN_SYSTEM_PROMPT` mục SỰ THẬT); phía mua giữ luật cấm trong prompt (`mua_co_dinh`,
+  `khoi_hoi_ve_mua`). **Giữ** soát BẢN TIN (SRS-336, điều phối 02/11): tin rao công khai vẫn không khen / chê giá. Bộ chấm kịch bản
+  (`tests/kich_ban/cham.py`) giữ regex riêng `_BINH_GIA_DO` làm thước đo, không chặn.
+- **Tin thử tính như tin thật** (thay mục "Tin thử loại trừ" của SRS-428): migration `20261112d` bỏ bộ lọc `source = 'seed_thu'` và tham số
+  `p_gom_thu` của `can_dang_rao_gan`; code bỏ `gom_thu` / `_la_id_thu` ở `so_sanh.can_gan`, cụm sau đăng, lượt hỏi giá, công cụ định giá.
+  Cùng cách web đang hiện tin cho người mua (SRS-413). Sau bản này tin thật quanh khu thấy 3 / 10 / 18 căn để so.
+- **Một nguồn cho đường vào:** chat đọc ô `_duong_vao` (AI đọc nghĩa), còn cột `listings.access_type` do `boc_thong_so` dò chữ — hai bên
+  lệch (56F988C9: `_duong_vao = mat_tien`, cột trống → so sánh "cùng lối vào" và câu hỏi lợi thế nói khác nhau). Nay
+  `supabase_store.loi_vao_tu_o` ghi cột theo `_duong_vao`; bộ đọc chữ chỉ góp độ chi tiết AI không phân (hẻm xe tải / xe máy) khi cùng phía
+  mặt tiền / hẻm; AI chưa rõ thì giữ cột bộ đọc chữ. Migration chép bù cho tin bot đã ghi (1 tin: 56F988C9 → mat_tien). Trigger
+  `listings_boc_thong_so` vốn bỏ qua tin có `_thong_so_ai`, nên không ghi đè.
+
 ### SRS-5.1zzzzzzz430 · Web theo theme King + trang chủ điện thoại là feed vuốt dọc kiểu TikTok (12/11/2026)
 Chủ dự án 12/11: "lấy king theme kia để áp vào web, muốn lướt trang web kiểu cuộn cuộn như tiktok"; chọn "Mở và chép file theme vào
 web" và "Thay trang chủ trên điện thoại".
@@ -1040,15 +1057,15 @@ Chủ dự án 12/11 quyết câu 4.5 của đặc tả LQC: "Được, nói nh�
 - Lời: MỘT câu, luôn nói là so với giá RAO, chỉ để tham khảo, chủ quyết giá; không đưa giá mới, không khuyên tăng / giảm, không đoán dễ / khó bán.
 - Dùng ở: lượt gửi so sánh sau đăng (`so_sanh`), lượt chủ hỏi "giá tôi cao hay thấp" (`hoi_ve` = dinh_gia, có căn gần thì trả lời bằng kho thay
   câu "chưa có số liệu"), công cụ định giá (`dinh_gia_tham_khao` — có mức lệch theo kho thì bỏ đối chiếu bảng cứng).
-- **Lưới `_BINH_LUAN_GIA`** nới cho lượt có `conv.y_luot["_nhan_xet_gia"]`: chỉ chặn đoán thị trường (thanh khoản, đắt khách, dễ / khó bán…).
-  Bản tin vẫn cấm mọi nhận xét giá. Phía mua giữ nguyên luật cấm.
+- ~~**Lưới `_BINH_LUAN_GIA`** nới cho lượt có `conv.y_luot["_nhan_xet_gia"]`~~ — **SRS-431 gỡ hẳn lưới lời chat.** Bản tin vẫn cấm mọi
+  nhận xét giá. Phía mua giữ luật cấm trong prompt.
 
 ### SRS-5.1zzzzzzz428 · LQC mảng So sánh cạnh tranh: căn cùng loại đang rao gần, đơn giá từ kho, không bịa giao dịch (12/11/2026)
 Chủ dự án 12/11 "Làm mảng So sánh" (đặc tả `docs/lqc-listing-quality-controller.md` mục 4).
-- **RPC `can_dang_rao_gan(listing, bán kính 3 km, 3 căn, gom_thu)`** (migration `20261112b`, chỉ service_role): căn cùng loại + cùng giao dịch
+- **RPC `can_dang_rao_gan(listing, bán kính 3 km, 3 căn)`** (migration `20261112b`, chỉ service_role): căn cùng loại + cùng giao dịch
   đang rao trong bán kính (cùng lối vào mặt tiền / hẻm xếp trước, rồi gần nhất), dải đơn giá (số căn, min, max, trung vị), căn đã cọc / chốt gần
   đó trong 180 ngày. Không trả số nhà, người bán, mô tả. Loại tin của chính người bán.
-- **Tin thử loại trừ:** 12/11 kho đang hiển thị 244 tin thì 242 là `seed_thu` — gửi chủ nhà thật như "căn đang bán gần" là bịa. Chỉ ID thử
+- ~~**Tin thử loại trừ:**~~ (**SRS-431: tin thử tính như tin thật**, chủ dự án 12/11) 12/11 kho đang hiển thị 244 tin thì 242 là `seed_thu` — gửi chủ nhà thật như "căn đang bán gần" là bịa. Chỉ ID thử
   (`_la_id_thu`) mới thấy tin thử. Hiện với khách thật công cụ trả rỗng cho tới khi có tin thật quanh căn.
 - **4.1 · 4.2 — cụm sau đăng `so_sanh`** (`module so_sanh`, sau cụm lợi thế, trước cụm giá): đủ ≥ 2 căn → bot gửi chủ 2–3 dòng "#mã · đường,
   phường · lối vào · tầng · m² · giá rao (≈ đơn giá) · cách khoảng … — link", một lần. Chưa đủ căn → sang cụm kế, mỗi ngày tra lại một lần

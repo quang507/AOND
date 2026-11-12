@@ -1,12 +1,13 @@
 """LQC mảng So sánh cạnh tranh (SRS-5.1zzzzzzz428, chủ dự án 12/11/2026 "Làm mảng So sánh"; đặc tả `docs/lqc-listing-quality-controller.md` mục 4).
 
 Nguồn DUY NHẤT là RPC `can_dang_rao_gan` (migration 20261112b): căn cùng loại + cùng giao dịch đang rao trong bán kính, căn đã cọc / chốt gần
-đó (180 ngày), dải đơn giá các căn đang rao. Không trả số nhà / người bán / mô tả. Tin thử (`seed_thu`) chỉ tính cho ID thử.
+đó (180 ngày), dải đơn giá các căn đang rao. Không trả số nhà / người bán / mô tả. Mọi tin trong kho tính như nhau, kể cả tin `seed_thu`
+(SRS-5.1zzzzzzz431, chủ dự án 12/11: "Tin thử được coi là thật").
 
 Luật lời (SRS-5.1zzzzzzz429, chủ dự án quyết 4.5 ngày 12/11: "Được, nói nhẹ"): CODE chấm mức lệch giữa đơn giá rao của chủ và trung vị các
 căn CÙNG lối vào (mặt tiền / hẻm) đang rao gần (`muc_lech`, ≥ 3 căn, ±10 % là ngang); model chỉ nói nhẹ MỘT câu đúng mức đó, luôn là giá
-RAO, không đưa con số giá mới, không giục tăng / giảm. Chưa đủ căn cùng kiểu thì không nhận xét. Lưới `_BINH_LUAN_GIA` nới cho lượt có mức
-lệch (`conv.y_luot["_nhan_xet_gia"]`), vẫn chặn đoán thị trường (thanh khoản, dễ bán…). Không có dòng giao dịch thật thì không có câu
+RAO, không đưa con số giá mới, không giục tăng / giảm. Chưa đủ căn cùng kiểu thì không nhận xét. Lời chat không có lưới ép viết lại
+(SRS-5.1zzzzzzz431) — luật nằm ở khối dặn. Không có dòng giao dịch thật thì không có câu
 "tháng trước em bán…", "hôm qua em cọc…" (4.3 · 4.4)."""
 from __future__ import annotations
 
@@ -26,14 +27,14 @@ NGUONG_NGANG = 0.10       # lệch trung vị dưới 10 % → "ngang mặt bằ
 LOI_VAO = {"mat_tien": "mặt tiền", "hem_xe_hoi": "hẻm xe hơi", "hem_xe_may": "hẻm xe máy", "hem": "hẻm"}
 
 
-def can_gan(kho: Any, listing_id: str | None, gom_thu: bool = False) -> dict:
+def can_gan(kho: Any, listing_id: str | None) -> dict:
     """Kết quả `can_dang_rao_gan` cho tin; hụt / chưa có toạ độ → rỗng."""
     rong = {"dang_rao": [], "da_giao_dich": [], "don_gia": {"n": 0}}
     if not listing_id or not getattr(kho, "is_configured", False):
         return rong
     try:
         kq = kho._request("POST", "rpc/can_dang_rao_gan", {"p_listing_id": str(listing_id), "p_ban_kinh_m": BAN_KINH_M,
-                                                           "p_toi_da": TOI_DA_CAN, "p_gom_thu": bool(gom_thu)})
+                                                           "p_toi_da": TOI_DA_CAN})
     except Exception as e:  # noqa: BLE001
         log.warning("so_sanh: tra căn gần hụt (%s)", type(e).__name__)
         return rong
@@ -90,7 +91,7 @@ def dong_nhan_xet(m: dict | None) -> str:
     return (f"NHẬN XÉT GIÁ (hệ thống tính — được nói NHẸ, đúng MỘT câu): đơn giá rao của chủ khoảng {m['chu']} triệu/m², trung vị {m['n']} "
             f"căn cùng loại{(' ' + m['loi_vao']) if m['loi_vao'] else ''} đang rao quanh đây khoảng {m['tv']} triệu/m² → ý: \"{cau}\". "
             "Nói đây là so với giá RAO (chưa phải giá bán thật), chỉ để anh/chị tham khảo, giá vẫn do anh/chị quyết; KHÔNG đưa con số giá "
-            "mới, KHÔNG khuyên tăng / giảm, KHÔNG đoán dễ bán / khó bán. Luật \"không nhận xét giá\" chung được nới riêng cho câu này.\n")
+            "mới, KHÔNG khuyên tăng / giảm, KHÔNG đoán dễ bán / khó bán.\n")
 
 
 def du_de_gui(kq: dict) -> bool:

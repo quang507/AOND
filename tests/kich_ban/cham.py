@@ -8,6 +8,13 @@ import unicodedata
 from typing import Any
 
 
+# Thước đo cho bộ chấm (SRS-5.1zzzzzzz431: lõi đã gỡ lưới `_BINH_LUAN_GIA` ở lời chat) — chỉ đếm, không chặn.
+_BINH_GIA_DO = re.compile(
+    r"(thanh khoản|đắt khách|dễ bán|đắc địa|người mua tìm nhiều|nhiều người (?:hỏi|tìm|quan tâm)|"
+    r"(?:mức giá|giá)(?:(?!,\s)[^.!?;\n]){0,50}?(?:hợp lý|vừa tầm|cạnh tranh|mềm|quá tốt|rất tốt|tốt lắm|tốt rồi|quá rẻ|rẻ lắm)|"
+    r"(?:hợp lý|vừa tầm)(?:(?!,\s)[^.!?;\n]){0,25}?(?:mức giá|giá))", re.I)
+
+
 def bo_dau(s: object) -> str:
     t = unicodedata.normalize("NFD", str(s or "")).replace("đ", "d").replace("Đ", "D")
     return "".join(c for c in t if unicodedata.category(c) != "Mn").lower()
@@ -81,9 +88,9 @@ def cham(kb: dict[str, Any], kq: dict[str, Any]) -> list[tuple[str, bool, str]]:
 def loi_pham(bot: str, truoc_do: str = "") -> dict[str, Any]:
     """Các luật trên một lời bot (lõi đã soát xong): luật cứng + hai luật giọng mà chế độ soát gọn (SRS-298) chỉ ghi log — câu ghi nhận và mở
     đầu giống lời bot lượt trước. Không có 📋 mà quá một dấu hỏi = hỏi nhiều ý một lượt."""
-    from aioi.engine import _BINH_LUAN_GIA, _cung_mo_dau, _mo_dau_da, _mo_dau_ghi_nhan
+    from aioi.engine import _cung_mo_dau, _mo_dau_da, _mo_dau_ghi_nhan
     from aioi.xung_ho import goi_khach_la_minh
     truoc = (bot or "").split("📋", 1)[0]
-    return {"da": _mo_dau_da(bot), "minh": goi_khach_la_minh(bot or ""), "binh_gia": bool(_BINH_LUAN_GIA.search(bot or "")),
+    return {"da": _mo_dau_da(bot), "minh": goi_khach_la_minh(bot or ""), "binh_gia": bool(_BINH_GIA_DO.search(bot or "")),
             "nhieu_hoi": "📋" not in (bot or "") and truoc.count("?") > 1, "ghi_nhan": _mo_dau_ghi_nhan(bot or ""),
             "lap_mo_dau": bool(truoc_do) and _cung_mo_dau(bot or "", truoc_do)}

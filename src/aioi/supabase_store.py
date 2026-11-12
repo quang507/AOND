@@ -180,6 +180,20 @@ DB_SANG_TRANG_THAI = {"da_chot": "đã bán", "da_coc": "đã cọc", "an": "kh�
 _DB_DANG_HIEN = ("dang_ban", "dang_quan_tam", "da_coc")
 
 
+def loi_vao_tu_o(fields: dict[str, Any], tu_chu: str | None) -> dict[str, Any]:
+    """Cột `access_type` theo ô `_duong_vao` AI đọc nghĩa (SRS-5.1zzzzzzz431: một nguồn — trước bản này chat đọc `_duong_vao`, còn cột do
+    `boc_thong_so` dò chữ, hai bên lệch thì so sánh "cùng lối vào" và câu hỏi lợi thế nói hai điều khác nhau). Bộ đọc chữ chỉ được góp
+    độ chi tiết AI không phân (hẻm xe tải / xe máy) khi CÙNG phía mặt tiền / hẻm. AI chưa rõ → giữ cột bộ đọc chữ."""
+    dv = fields.get("_duong_vao")
+    if dv == "mat_tien":
+        return {"access_type": "mat_tien"}
+    if dv == "hem_xe_hoi":
+        return {"access_type": "hem_xe_tai" if tu_chu == "hem_xe_tai" else "hem_xe_hoi"}
+    if dv == "hem":
+        return {"access_type": tu_chu if tu_chu in ("hem_xe_tai", "hem_xe_hoi", "hem_xe_may") else "hem"}
+    return {}
+
+
 def cot_tu_o(fields: dict[str, Any]) -> dict[str, Any]:
     """Cột thông số đọc THẲNG từ ô AI đã bóc khi giá trị có khuôn rõ (SRS-5.1zzzzzzz285): `nam_xay` → `year_built` (năm 4 chữ số), `dien_tich_nha`
     → `built_area_m2` (cả ô là MỘT con số m²). Soát DB 29/10: tin có `nam_xay: 2015`, `dien_tich_nha: 150` mà hai cột trống — bộ đọc chữ
@@ -578,14 +592,14 @@ class SupabaseConversationStore(KhoNguoiMua):
             dong.append(f"{nhan}: {v}" if nhan else str(v))
         chu = "; ".join(dong)
         if not chu:
-            return {}
+            return loi_vao_tu_o(fields, None)
         khoa = (loai or "", chu)
         if khoa not in self._thong_so_nho:
             try:
                 kq = self._request("POST", "rpc/boc_thong_so", data={"p_text": chu, "p_type": loai})
             except Exception as e:  # noqa: BLE001 — thông số là phần thêm, tin vẫn lưu
                 log.warning("boc_thong_so (thông số) lỗi: %s", e)
-                return {}
+                return loi_vao_tu_o(fields, None)
             if len(self._thong_so_nho) > 2000:
                 self._thong_so_nho.clear()
             self._thong_so_nho[khoa] = {c: kq[c] for c in COT_THONG_SO if isinstance(kq, dict) and kq.get(c) is not None}
@@ -593,7 +607,8 @@ class SupabaseConversationStore(KhoNguoiMua):
         # rộng 20 m"). Bản SRS-5.1zzzzzzz94 bỏ cột này với nhà mặt tiền là đọc sai nghĩa cột — gỡ ở SRS-5.1zzzzzzz95.
         # SRS-5.1zzzzzzz409: số kích thước AI đã bóc thắng bộ đọc chữ của DB.
         so_do = {c: so_met(fields.get(o)) for c, o in (("frontage_m", "mat_tien"), ("length_m", "dai_m"), ("rear_width_m", "hau_m"))}
-        return {**cot_tu_o(fields), **self._thong_so_nho[khoa], **{c: v for c, v in so_do.items() if v}}
+        ra = {**cot_tu_o(fields), **self._thong_so_nho[khoa], **{c: v for c, v in so_do.items() if v}}
+        return {**ra, **loi_vao_tu_o(fields, ra.get("access_type"))}
 
     def _patch(self, endpoint: str, data: dict) -> None:
         self._request("PATCH", endpoint, data=data, prefer="return=minimal")

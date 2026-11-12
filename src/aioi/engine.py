@@ -105,7 +105,6 @@ from .prompts import (
     TAI_LIEU_CHUNG_SYSTEM,
     tai_lieu_chung_schema,
     SOAT_BINH_GIA_SYSTEM,
-    SOAT_BINH_GIA_CHAT_SYSTEM,
     soat_binh_gia_schema,
     build_greeting,
     khoi_chao_lan_dau,
@@ -1356,18 +1355,6 @@ def _dong_tieu_de(reply: str) -> str:
     return tren or next((d for d in dong[1:] if d.strip()), "")
 
 
-# SRS-5.1zzzzzzz132 (bắn thử 22/10: "Mức giá 9,2 tỷ cho căn nhà 6 tầng trung tâm này quá hợp lý rồi anh/chị nhỉ!"): lời bot nhận xét giá /
-# thị trường dù prompt cấm — kiểm HÌNH THỨC lời của chính bot (không đoán ý khách), cùng lớp lưới chống bịa đang có. Nhắc lại con số khách
-# đưa ("Em đã để sẵn giá 9,2 tỷ trong bản tin") không khớp — chỉ bắt cụm ĐÁNH GIÁ.
-_BINH_LUAN_GIA = re.compile(
-    r"(thanh khoản|đắt khách|dễ bán|đắc địa|người mua tìm nhiều|nhiều người (?:hỏi|tìm|quan tâm)|"
-    r"(?:mức giá|giá)(?:(?!,\s)[^.!?;\n]){0,50}?(?:hợp lý|vừa tầm|cạnh tranh|mềm|quá tốt|rất tốt|tốt lắm|tốt rồi|quá rẻ|rẻ lắm)|"
-    r"(?:hợp lý|vừa tầm)(?:(?!,\s)[^.!?;\n]){0,25}?(?:mức giá|giá))", re.I)   # cửa sổ dừng ở ", " (vế khác), "9,2 tỷ" vẫn qua
-
-
-_DOAN_THI_TRUONG = re.compile(r"(thanh khoản|đắt khách|dễ bán|khó bán|bán nhanh|đắc địa|người mua tìm nhiều|nhiều người (?:hỏi|tìm|quan tâm))", re.I)
-
-
 _SO_DON_VI_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*(m²|m2|mét vuông|triệu\s*/\s*m[²2]|tỷ|tỉ|triệu|phòng ngủ|pn\b|tầng|lầu|mét\b|m\b)", re.I)
 _SO_RE = re.compile(r"\d+(?:[.,]\d+)?")
 
@@ -1428,12 +1415,6 @@ def _so_khong_co_trong_can(reply: str, can: list[dict] | None, conv: "Conversati
         if k >= 0:
             nguon += " " + system[k:k + rong]
     return _so_la_so_voi_nguon(reply, nguon)
-
-
-def _binh_luan_gia(reply: str) -> str | None:
-    """Cụm nhận xét giá / thị trường trong lời bot, hoặc None."""
-    m = _BINH_LUAN_GIA.search(reply or "")
-    return m.group(0).strip() if m else None
 
 
 # Giá trị DẠNG KÍCH THƯỚC chỉ thuộc ô kích thước / diện tích (SRS-5.1zzzzzzz132; bắn thử 22/10: khách gõ "5x10", AI nhét cả vào
@@ -1921,15 +1902,13 @@ def _gon(x: str) -> str:
     return re.sub(r"\s+", " ", x or "").strip().lower()
 
 
-def _binh_gia_trong_tin(eng, conv, reply: str, ban_tin: bool = True) -> list[str] | None:
-    """SRS-5.1zzzzzzz336 / 353: cụm NHẬN XÉT MỨC GIÁ (lời chat: cả thị trường) trong lời bot — AI (model bóc tách) đọc nghĩa, code chỉ nhận cụm
-    có NGUYÊN VĂN trong lời (gộp khoảng trắng, vì tin xuống dòng giữa cụm). None = AI không chạy được (lỗi gọi, hay trả thiếu `cum`) — chỗ gọi
-    tự quyết lưới đỡ."""
-    tin = reply.split("📋", 1)[1] if ban_tin and "📋" in reply else reply
+def _binh_gia_trong_tin(eng, conv, reply: str) -> list[str] | None:
+    """SRS-5.1zzzzzzz336: cụm NHẬN XÉT MỨC GIÁ trong BẢN TIN — AI (model bóc tách) đọc nghĩa, code chỉ nhận cụm có NGUYÊN VĂN trong tin
+    (gộp khoảng trắng, vì tin xuống dòng giữa cụm). None = AI không chạy được."""
+    tin = reply.split("📋", 1)[1] if "📋" in reply else reply
     try:
         with _do(conv, "soat_binh_gia"):
-            data = eng._provider.extract(SOAT_BINH_GIA_SYSTEM if ban_tin else SOAT_BINH_GIA_CHAT_SYSTEM, [Message("user", tin[:4000])],
-                                         soat_binh_gia_schema())
+            data = eng._provider.extract(SOAT_BINH_GIA_SYSTEM, [Message("user", tin[:4000])], soat_binh_gia_schema())
     except Exception as e:   # noqa: BLE001 — soát là lưới phụ, model hỏng thì lượt vẫn đi
         log.warning("Soát bình luận giá lỗi: %s", type(e).__name__)
         return None
@@ -1940,36 +1919,15 @@ def _binh_gia_trong_tin(eng, conv, reply: str, ban_tin: bool = True) -> list[str
     return [c.strip() for c in cum if isinstance(c, str) and c.strip() and _gon(c) in goc]
 
 
-# SRS-5.1zzzzzzz353: LỌC THÔ trên lời CỦA BOT (không đọc lời khách) để khỏi gọi AI mỗi lượt chat — chỉ câu KHẲNG ĐỊNH (không phải câu hỏi) có nhắc
-# số tiền / giá / thị trường mới đưa AI đọc nghĩa. Lọc thô quyết "có cần đọc không", AI quyết "có phải nhận xét không".
-_LOC_THO_GIA = re.compile(r"(\d+(?:[.,]\d+)?\s*(?:tỷ|tỉ|triệu)|(?<![\wÀ-ỹ])giá(?![\wÀ-ỹ])|thị trường|thanh khoản|dễ bán|bớt|hời|"
-                          r"(?<![\wÀ-ỹ])rẻ(?![\wÀ-ỹ])|(?<![\wÀ-ỹ])đắt(?![\wÀ-ỹ]))", re.I)
-
-
-def _can_doc_gia(reply: str) -> bool:
-    cau = [c for c in re.split(r"(?<=[.!?…])\s+|\n+", reply or "") if c.strip() and not c.strip().endswith("?")]
-    return any(_LOC_THO_GIA.search(c) for c in cau) or _BINH_LUAN_GIA.search(reply or "") is not None
-
-
 def _soat_binh_luan_gia(eng, conv, reply, nc) -> list[str]:
-    if _la_ban_tin(reply):   # bản tin: AI đọc nghĩa (điều phối 02/11: tin cũng không bình luận giá — SRS-5.1zzzzzzz336)
-        cum = _binh_gia_trong_tin(eng, conv, reply) or []
-        return ([f"Bản tin vừa viết nhận xét mức giá (" + ", ".join(f"\"{c}\"" for c in cum) + ") — em không có dữ liệu thị trường, "
-                 "bỏ hẳn các câu đó khỏi bản tin: chỉ nêu đúng con số giá chủ đưa (và chủ cho thương lượng nếu chủ đã nói), không khen / chê "
-                 "giá, không hứa người mua được bớt."] if cum else [])
-    # Lời chat (SRS-5.1zzzzzzz353): AI đọc nghĩa khi lọc thô trúng; AI không chạy được thì lưới từ khoá cũ đỡ (SRS-5.1zzzzzzz132).
-    if not _can_doc_gia(reply):
+    """Chỉ soát BẢN TIN (điều phối 02/11, SRS-5.1zzzzzzz336: tin rao công khai không khen / chê giá). Lời CHAT không còn lưới ép viết lại
+    (SRS-5.1zzzzzzz431, chủ dự án 12/11 "xóa lưới chặn và bắt bot viết lại đi") — bot phía bán nói nhẹ theo khối NHẬN XÉT GIÁ hệ thống tính
+    (SRS-5.1zzzzzzz429); không có khối đó thì prompt dặn không tự đoán."""
+    if not _la_ban_tin(reply):
         return []
-    if conv.y_luot.get("_nhan_xet_gia"):   # SRS-5.1zzzzzzz429: lượt có mức lệch hệ thống tính — được nhận xét nhẹ, vẫn cấm đoán thị trường
-        m = _DOAN_THI_TRUONG.search(reply or "")
-        return ([f"Lời vừa viết đoán thị trường (\"{m.group(0)}\") — chỉ được nói giá rao của chủ so với căn đang rao gần như khối NHẬN XÉT "
-                 "GIÁ, không đoán dễ bán / khó bán / thanh khoản."] if m else [])
-    cum = _binh_gia_trong_tin(eng, conv, reply, ban_tin=False)
-    if cum is None:
-        bl = _binh_luan_gia(reply)
-        cum = [bl] if bl else []
-    return ([f"Lời vừa viết nhận xét giá / thị trường (" + ", ".join(f"\"{c}\"" for c in cum) + ") — em không có dữ liệu thị trường, CẤM "
-             "bình luận giá hợp lý / đắt khách / dễ bán. Nhắc lại con số khách đưa thì được, không đánh giá; khen điểm khác của căn."]
+    cum = _binh_gia_trong_tin(eng, conv, reply) or []
+    return ([f"Bản tin vừa viết nhận xét mức giá (" + ", ".join(f"\"{c}\"" for c in cum) + ") — bỏ hẳn các câu đó khỏi bản tin: chỉ nêu "
+             "đúng con số giá chủ đưa (và chủ cho thương lượng nếu chủ đã nói), không khen / chê giá, không hứa người mua được bớt."]
             if cum else [])
 
 
@@ -3324,14 +3282,12 @@ class Engine:
                 if cum_sau and cum_sau[0] == "so_sanh":   # SRS-5.1zzzzzzz428: tra căn gần; chưa đủ thì sang cụm kế, mỗi ngày tra lại một lần
                     hom_nay = time.strftime("%Y-%m-%d")
                     if conv.prop.fields.get("_ss_tra") != hom_nay:
-                        kq_ss = so_sanh.can_gan(self._convstore, conv.active.listing_id, gom_thu=_la_id_thu(conv.user_key))
+                        kq_ss = so_sanh.can_gan(self._convstore, conv.active.listing_id)
                         if not so_sanh.du_de_gui(kq_ss):
                             conv.prop.fields["_ss_tra"] = hom_nay
                             kq_ss = None
                     if kq_ss is None:
                         cum_sau = conv.prop.cum_sau_dang(da_hoi | {"sau:so_sanh"}, so_anh=so_anh, anh_du=min(ANH_TIN_DEP, self._max_photos))
-                if kq_ss is not None and so_sanh.muc_lech(kq_ss):   # SRS-5.1zzzzzzz429: lượt này được nhận xét giá nhẹ
-                    conv.y_luot["_nhan_xet_gia"] = so_sanh.muc_lech(kq_ss)["muc"]
                 if cum_sau:
                     # SRS-5.1zzzzzzz178: mỗi lượt MỘT ô (không hỏi gộp cụm) — ghi "sau:<ô>" để lượt sau tới ô kế của cùng cụm.
                     # Cụm xin ảnh (SRS-5.1zzzzzzz420) ghi theo mã cụm: hai lần xin cùng một ô ảnh.
@@ -3456,13 +3412,11 @@ class Engine:
                            "Trả lời đúng điều khách hỏi bằng số ở khối ĐIỂM TIN ngay dưới, không hứa lên Top.\n" + self._khoi_diem_tin(conv, now))
         elif conv.hoi_ve_luot == "dinh_gia":   # SRS-5.1zzzzzzz325: dự án có giá rao gộp thì nêu khoảng đó, không có thì lời cũ
             hoi_ve_khoi = khoi_dinh_gia((project.goc or {}).get("giá rao bán thị trường") if project is not None else None)
-            # SRS-5.1zzzzzzz429: có căn cùng loại đang rao gần (tin thật; ID thử thấy cả tin thử) → trả lời bằng kho + nhận xét nhẹ.
-            kq_gia = so_sanh.can_gan(self._convstore, getattr(conv.active, "listing_id", None), gom_thu=_la_id_thu(conv.user_key))
+            # SRS-5.1zzzzzzz429: có căn cùng loại đang rao gần → trả lời bằng kho + nhận xét nhẹ (SRS-5.1zzzzzzz431: mọi tin trong kho tính).
+            kq_gia = so_sanh.can_gan(self._convstore, getattr(conv.active, "listing_id", None))
             k_gia = so_sanh.khoi_tra_loi_gia(kq_gia)
             if k_gia:
                 hoi_ve_khoi = k_gia
-                if so_sanh.muc_lech(kq_gia):
-                    conv.y_luot["_nhan_xet_gia"] = so_sanh.muc_lech(kq_gia)["muc"]
         # SRS-5.1zzzzzzz178: MỘT khối ưu tiên mỗi lượt, theo thứ tự cần người > pháp lý > ngoài việc > hỏi về (phí / uy tín / link / tình hình /
         # định giá); có khối ưu tiên thì không ép khen theo lượt, không hỏi ô kế. Không có thì mới tới khối khen theo lượt.
         uu_tien = ""
