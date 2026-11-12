@@ -83,8 +83,9 @@ def viet_tin(engine: Any, conv: Any, li: Any, khoi: str, goi: str, toi: str) -> 
     return tin
 
 
-def _nhac_mot(engine: Any, uk: str, lid: str, bay_gio: datetime) -> tuple[str, str] | None:
-    """Chọn cụm + viết tin + ghi mốc dưới khoá lượt của khách. (tin, mã cụm) hoặc None."""
+def _nhac_mot(engine: Any, uk: str, lid: str, bay_gio: datetime, gui: Callable[[str, str], bool]) -> tuple[str, str] | None:
+    """Chọn cụm + viết tin + GỬI + ghi mốc dưới khoá lượt của khách. (tin, mã cụm) hoặc None. Gửi trước, ghi mốc sau (SRS-5.1zzzzzzz441):
+    bridge hụt thì câu chưa tới chủ nên không tính "đã hỏi" — bản trước ghi mốc rồi mới gửi, bridge hụt là mất câu hỏi luôn."""
     from .engine import _detect_customer_pronoun
     from .qc_anh import _conv_co_san
     with engine.khoa_luot(uk):
@@ -110,6 +111,12 @@ def _nhac_mot(engine: Any, uk: str, lid: str, bay_gio: datetime) -> tuple[str, s
         goi, toi = goi_toi(_detect_customer_pronoun(conv, ""), getattr(conv.assistant, "name", None))
         tin = viet_tin(engine, conv, li, khoi, goi, toi)
         if not tin:
+            return None
+        try:
+            if not gui(uk, tin):
+                return None
+        except Exception as e:  # noqa: BLE001
+            log.warning("hoi_sau_dang: bridge hụt (%s)", type(e).__name__)
             return None
         f["_sau_da_hoi"] = ",".join(sorted(da_hoi | {moc}))
         hom_nay = _ngay_vn(bay_gio)
@@ -143,19 +150,13 @@ def chay_mot_luot(engine: Any, gui: Callable[[str, str], bool],
             continue
         da_xet.add(uk)
         try:
-            kq = _nhac_mot(engine, uk, str(r["id"]).replace("-", ""), bay_gio)
+            kq = _nhac_mot(engine, uk, str(r["id"]).replace("-", ""), bay_gio, gui)
         except Exception as e:  # noqa: BLE001
             log.warning("hoi_sau_dang: xét #%s hụt (%s)", r.get("code"), type(e).__name__)
             continue
         if not kq:
             continue
         tin, cum = kq
-        try:
-            if not gui(uk, tin):
-                continue
-        except Exception as e:  # noqa: BLE001
-            log.warning("hoi_sau_dang: bridge hụt (%s)", type(e).__name__)
-            continue
         if ghi_lich_su:
             try:
                 ghi_lich_su(uk, tin, "seller", seller.get("name"), "bot")

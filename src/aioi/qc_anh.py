@@ -254,6 +254,13 @@ def _ghi_va_nhan(engine: Any, tin: dict, kq: dict, bay_gio: datetime, gui: Calla
             from .engine import _detect_customer_pronoun
             goi, toi = goi_toi(_detect_customer_pronoun(conv, ""), getattr(conv.assistant, "name", None))
             chu = viet_tin_nhan(engine, conv, li, kq, goi, toi, viec)
+            if chu:   # gửi trước, ghi mốc sau (SRS-5.1zzzzzzz441): bridge hụt thì tin chưa tới chủ — không tính lượt nhắn, không chờ "ừ" ẩn ảnh
+                try:
+                    if not gui(uk, chu):
+                        chu = ""
+                except Exception as e:  # noqa: BLE001
+                    log.warning("qc_anh: bridge hụt (%s)", type(e).__name__)
+                    chu = ""
             if chu and viec["loai"] == "xau":   # chủ trả lời "ừ / ok" → lượt chat ẩn ảnh (engine `an_anh`), "thôi" → giữ nguyên
                 conv.pending_destructive = [{"op": "an_anh", "listing_uuid": str(tin["id"]), "path": viec["anh"]["duong"],
                                              "mo_ta": viec["anh"].get("mo_ta") or ""}]
@@ -264,12 +271,6 @@ def _ghi_va_nhan(engine: Any, tin: dict, kq: dict, bay_gio: datetime, gui: Calla
         if engine._convstore is not None:
             engine._convstore.save(conv)
     if not chu:
-        return False
-    try:
-        if not gui(uk, chu):
-            return False
-    except Exception as e:  # noqa: BLE001
-        log.warning("qc_anh: bridge hụt (%s)", type(e).__name__)
         return False
     if ghi_lich_su:
         try:

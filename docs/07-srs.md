@@ -798,6 +798,9 @@ lượng, lý do bán, thuế phí đều ra đúng thứ tự, mỗi lượt m�
 - **Câu đáp dài bị bỏ:** bot hỏi chỗ đậu xe, chủ đáp "trước nhà vỉa hè rộng, đậu được 3 4 xe máy, ô tô thì đậu tạm" — lưới SRS-5.1zzzzzzz218
   (giá trị ô bằng nguyên cả tin khách ≥ 10 từ = AI chép câu) bỏ ô `cho_dau_xe`, mốc "đã hỏi" vẫn ghi nên không hỏi lại, mất dữ liệu. Nay ô
   nằm trong câu bot vừa hỏi (`y_luot["_bot_vua_hoi"]`, AI đọc — cùng nguồn SRS-5.1zzzzzzz438) thì cả tin khách là câu đáp, lưới không áp.
+- **Gửi trước, ghi mốc sau:** vòng nền hỏi sau đăng (`hoi_sau_dang._nhac_mot`) và Image LQC (`qc_anh._ghi_va_nhan`) ghi mốc "đã hỏi" /
+  "đã nhắn" rồi mới gửi qua bridge — bridge hụt thì câu bị tính là đã hỏi mà chủ không nhận, không bao giờ hỏi lại. Nay gửi ngay dưới khoá
+  lượt của khách, gửi được mới ghi mốc.
 - Ghi nhận, chưa sửa: chủ không đáp câu thuế phí (đáp câu khác, rồi "ok") — bot hỏi lại thuế phí ba lượt liền.
 
 ### SRS-5.1zzzzzzz440 · Tin chủ động gọi đúng cách chat đang gọi chủ; lời khen xin ảnh giọng nói miệng (12/11/2026)
