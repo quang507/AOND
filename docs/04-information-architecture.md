@@ -44,7 +44,7 @@ flowchart TD
 |---|---|---|---|---|---|
 | IA-01 | `/` | Giới thiệu + ô search chat + hộp mời kết nối | ✅ | FR-01…06, FR-13 | ✅ đã dựng |
 | IA-02 | `/tim-kiem` → thật `/api/search?go=1` → 302 `/{tag}` hoặc `/mua-ban?q=` / `/cho-thue?q=` | Kết quả tìm ngôn ngữ tự nhiên | ❌ `noindex` khi có `q` | FR-08, FR-09 | ⛔ thay bằng redirect |
-| IA-03 | `/{tag}` | Trang tag SEO tĩnh (`lib/tags.ts`, 64 tag) | ✅ | FR-12 | ✅ đã dựng; TOP-100 thật chờ OPEN-06 |
+| IA-03 | `/{tag}` | Trang tag SEO tĩnh (`lib/tags.ts`, 100 tag theo quận — SRS-5.1zzzzzzz433) | ✅ | FR-12 | ✅ đã dựng; TOP-100 thật chờ OPEN-06 |
 | IA-04 | `/bds/{slug}-{id}` → thật `/nha-dat/{code}` | Chi tiết một BĐS, JSON-LD | ✅ | FR-10, FR-11 | ✅ đã dựng |
 | IA-05 | `/gioi-thieu` | Cách hoạt động, cam kết riêng tư, biểu phí | ✅ | FR-04 | ❌ chưa dựng (nội dung nằm trên `/`) |
 | IA-06 | `/rieng-tu` | Chính sách dữ liệu, quyền ngắt kết nối | ✅ | NFR-08 | ❌ chưa dựng |

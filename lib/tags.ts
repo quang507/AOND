@@ -1,16 +1,18 @@
 // FR-12 / IA §4.4 — trang tag SEO. Một keyword ↔ một URL duy nhất, slug
 // `{giao-dịch}-{loại-hình}-{thuộc-tính}-{khu-vực}`, không dấu, "tỉ" → "ty".
 //
-// Bộ TOP-100 keyword gốc (`ndCC-TOP-KW-2014-01.xlsm`) chưa có trong repo
-// (OPEN-06), nên bảng dưới đây SINH từ taxonomy đang có (giao dịch × loại × thuộc
-// tính × phường Quận 5 cũ) — đủ để dựng khung trang tag đúng đặc tả; khi có file
-// keyword thật chỉ cần thêm dòng vào `TAG_DEFS`, không đổi cấu trúc. Địa bàn
-// mới (FR-174) chờ bảng `wards` (OPEN-27 nửa sau) rồi mới mở tag theo khu mới.
+// 12/11/2026 (SRS-5.1zzzzzzz433, chủ dự án "Làm 100 tag"): ĐÚNG 100 tag, phủ Sài Gòn + Long An theo tên quận / huyện người ta
+// vẫn gõ trên Google ("bán nhà quận 8", "bán nhà bình thạnh"). Bản cũ là 64 tag toàn Quận 5 theo PHƯỜNG CŨ (trước sáp nhập 2025)
+// trong khi kho tin rải khắp thành phố. Bộ TOP-100 keyword gốc (`ndCC-TOP-KW-2014-01.xlsm`, OPEN-06) vẫn chưa có — danh sách dưới
+// đây chọn theo (1) quận có tin trong kho, (2) tổ hợp loại × thuộc tính phổ biến của từng khu (mặt bằng cho thuê ở quận trung tâm,
+// đất ở ngoại thành / Long An, căn hộ ở Quận 7 / Thủ Đức / Bình Thạnh). Có file keyword thật thì thay mảng `DS`.
+//
+// Lọc khu bằng `district IN (...)` — KHÔNG ilike: "%Quận 1%" khớp cả Quận 10, 11, 12.
+// Tag cũ theo phường Q5 → trang chuyển hẳn (308) về tag quận (`tagCuChuyen`, app/[tag]/page.tsx).
 //
 // Bộ lọc của mỗi tag là TẬP CON của bộ lọc /mua-ban (ListingBrowse) — cùng cột,
 // cùng luật "chỉ tin đang lên kệ có giá" — để hai đường không bao giờ cho hai
 // kết quả khác nhau cho cùng một câu hỏi.
-import { WARDS } from "@/lib/geo";
 
 const TY = 1_000_000_000;
 
@@ -21,7 +23,8 @@ export type TagFilter = {
   priceMax?: number;
   bedroomsMin?: number;
   legal?: string[];
-  ward?: string;
+  /** Giá trị cột `district` (mọi biến thể chữ đã gặp); không có = không lọc khu. */
+  districts?: string[];
 };
 
 export type TagDef = {
@@ -29,47 +32,102 @@ export type TagDef = {
   /** H1 — keyword hiển thị (giữ "tỉ", có dấu). */
   keyword: string;
   filter: TagFilter;
+  /** Tham số `quan` cho link "Xem cả … tin" sang /mua-ban, /cho-thue (một quận); không có = không lọc. */
+  quan?: string;
   /** Thành phần để tính tag liên quan (IA-P4: link chéo 6–8 tag). */
   parts: { deal: string; type: string; attr: string; area: string };
 };
 
-type Piece = { slug: string; label: string };
+type Khu = { slug: string; label: string; districts?: string[]; quan?: string };
 
-const DEAL: Record<"ban" | "cho_thue", Piece> = {
-  ban: { slug: "ban", label: "Bán" },
-  cho_thue: { slug: "cho-thue", label: "Cho thuê" },
+const quan = (ten: string): string[] => (/^\d+$/.test(ten) ? [`Quận ${ten}`] : [`Quận ${ten}`, ten]);
+const huyen = (ten: string): string[] => [`Huyện ${ten}`, ten];
+
+const HCM: Record<string, Khu> = {
+  q1: { slug: "quan-1", label: "Quận 1", districts: quan("1"), quan: "Quận 1" },
+  q3: { slug: "quan-3", label: "Quận 3", districts: quan("3"), quan: "Quận 3" },
+  q5: { slug: "quan-5", label: "Quận 5", districts: quan("5"), quan: "Quận 5" },
+  q6: { slug: "quan-6", label: "Quận 6", districts: quan("6"), quan: "Quận 6" },
+  q7: { slug: "quan-7", label: "Quận 7", districts: quan("7"), quan: "Quận 7" },
+  q8: { slug: "quan-8", label: "Quận 8", districts: quan("8"), quan: "Quận 8" },
+  q10: { slug: "quan-10", label: "Quận 10", districts: quan("10"), quan: "Quận 10" },
+  q11: { slug: "quan-11", label: "Quận 11", districts: quan("11"), quan: "Quận 11" },
+  q12: { slug: "quan-12", label: "Quận 12", districts: quan("12"), quan: "Quận 12" },
+  bth: { slug: "binh-thanh", label: "Bình Thạnh", districts: quan("Bình Thạnh"), quan: "Bình Thạnh" },
+  pn: { slug: "phu-nhuan", label: "Phú Nhuận", districts: quan("Phú Nhuận"), quan: "Phú Nhuận" },
+  gv: { slug: "go-vap", label: "Gò Vấp", districts: quan("Gò Vấp"), quan: "Gò Vấp" },
+  tb: { slug: "tan-binh", label: "Tân Bình", districts: quan("Tân Bình"), quan: "Tân Bình" },
+  tp: { slug: "tan-phu", label: "Tân Phú", districts: quan("Tân Phú"), quan: "Tân Phú" },
+  bt: { slug: "binh-tan", label: "Bình Tân", districts: quan("Bình Tân"), quan: "Bình Tân" },
+  td: {
+    slug: "thu-duc", label: "Thủ Đức",
+    districts: ["Thành phố Thủ Đức", "TP. Thủ Đức", "TP Thủ Đức", "Quận Thủ Đức", "Thủ Đức", "Quận 2", "Quận 9"], quan: "Thủ Đức",
+  },
+  bc: { slug: "binh-chanh", label: "Bình Chánh", districts: huyen("Bình Chánh"), quan: "Bình Chánh" },
+  hm: { slug: "hoc-mon", label: "Hóc Môn", districts: huyen("Hóc Môn"), quan: "Hóc Môn" },
+  nb: { slug: "nha-be", label: "Nhà Bè", districts: huyen("Nhà Bè"), quan: "Nhà Bè" },
 };
 
-const TYPE: Array<Piece & { types?: string[]; deals: Array<"ban" | "cho_thue"> }> = [
-  { slug: "nha", label: "nhà", types: ["nha_pho", "nha_cap4", "biet_thu"], deals: ["ban", "cho_thue"] },
-  { slug: "can-ho", label: "căn hộ", types: ["chung_cu"], deals: ["ban", "cho_thue"] },
-  { slug: "dat", label: "đất", types: ["dat", "dat_nong_nghiep", "dat_kinh_doanh"], deals: ["ban"] },
-  { slug: "mat-bang", label: "mặt bằng", types: ["mat_bang"], deals: ["cho_thue"] },
-  { slug: "phong-tro", label: "phòng trọ", types: ["phong_tro"], deals: ["cho_thue"] },
-  // 20260909i: loại mới theo chat Gemini 21/06.
-  { slug: "toa-nha", label: "toà nhà", types: ["toa_nha"], deals: ["ban", "cho_thue"] },
-  { slug: "kho-xuong", label: "kho xưởng", types: ["kho_xuong"], deals: ["ban", "cho_thue"] },
+const KHAC_HCM = [...quan("4"), ...huyen("Củ Chi"), ...huyen("Cần Giờ")];
+
+const LA: Record<string, Khu> = {
+  bl: { slug: "ben-luc", label: "Bến Lức, Long An", districts: huyen("Bến Lức"), quan: "Bến Lức" },
+  dh: { slug: "duc-hoa", label: "Đức Hòa, Long An", districts: huyen("Đức Hòa"), quan: "Đức Hòa" },
+  cg: { slug: "can-giuoc", label: "Cần Giuộc, Long An", districts: huyen("Cần Giuộc"), quan: "Cần Giuộc" },
+};
+const LA_CON = [...huyen("Cần Đước"), ...huyen("Thủ Thừa"), ...huyen("Đức Huệ"), ...huyen("Tân Trụ"), "Thành phố Tân An", "Tân An"];
+
+const SG: Khu = { slug: "sai-gon", label: "Sài Gòn", districts: [...Object.values(HCM).flatMap((k) => k.districts ?? []), ...KHAC_HCM] };
+const LONG_AN: Khu = { slug: "long-an", label: "Long An", districts: [...Object.values(LA).flatMap((k) => k.districts ?? []), ...LA_CON] };
+
+type Loai = { slug: string; label: string; types: string[] };
+const NHA: Loai = { slug: "nha", label: "nhà", types: ["nha_pho", "nha_cap4", "biet_thu"] };
+const CAN_HO: Loai = { slug: "can-ho", label: "căn hộ", types: ["chung_cu"] };
+const DAT: Loai = { slug: "dat", label: "đất", types: ["dat", "dat_nong_nghiep", "dat_kinh_doanh"] };
+const MAT_BANG: Loai = { slug: "mat-bang", label: "mặt bằng", types: ["mat_bang"] };
+const PHONG_TRO: Loai = { slug: "phong-tro", label: "phòng trọ", types: ["phong_tro"] };
+
+type ThuocTinh = { slug: string; label: string; f: Partial<TagFilter> };
+const RONG: ThuocTinh = { slug: "", label: "", f: {} };
+const HXH: ThuocTinh = { slug: "hem-xe-hoi", label: "hẻm xe hơi", f: { access: ["mat_tien", "hem_xe_tai", "hem_xe_hoi"] } };
+const MT: ThuocTinh = { slug: "mat-tien", label: "mặt tiền", f: { access: ["mat_tien"] } };
+const DUOI_5: ThuocTinh = { slug: "duoi-5-ty", label: "dưới 5 tỉ", f: { priceMax: 5 * TY } };
+
+const h = HCM;
+/** [giao dịch, loại, thuộc tính, các khu] — tổng ĐÚNG 100 tag. */
+const DS: Array<["ban" | "cho_thue", Loai, ThuocTinh, Khu[]]> = [
+  // Toàn thành phố / toàn tỉnh (9)
+  ["ban", NHA, RONG, [SG, LONG_AN]],
+  ["ban", NHA, HXH, [SG]],
+  ["ban", NHA, MT, [SG]],
+  ["ban", NHA, DUOI_5, [SG]],
+  ["ban", CAN_HO, RONG, [SG]],
+  ["ban", DAT, RONG, [LONG_AN]],
+  ["cho_thue", NHA, RONG, [SG]],
+  ["cho_thue", MAT_BANG, RONG, [SG]],
+  // Bán nhà theo quận / huyện (19 + 2 Long An)
+  ["ban", NHA, RONG, [h.q1, h.q3, h.q5, h.q6, h.q7, h.q8, h.q10, h.q11, h.q12, h.bth, h.pn, h.gv, h.tb, h.tp, h.bt, h.td, h.bc, h.hm, h.nb, LA.bl, LA.cg]],
+  // Bán nhà hẻm xe hơi (12)
+  ["ban", NHA, HXH, [h.q3, h.q5, h.q6, h.q8, h.q10, h.q11, h.bth, h.pn, h.gv, h.tb, h.tp, h.bt]],
+  // Bán nhà mặt tiền (10)
+  ["ban", NHA, MT, [h.q1, h.q3, h.q5, h.q6, h.q10, h.q11, h.bth, h.tb, h.tp, h.gv]],
+  // Bán nhà dưới 5 tỉ — quận ven / ngoại thành (8)
+  ["ban", NHA, DUOI_5, [h.q8, h.q12, h.gv, h.tp, h.bt, h.bc, h.hm, h.nb]],
+  // Bán căn hộ (8)
+  ["ban", CAN_HO, RONG, [h.q6, h.q7, h.q8, h.bth, h.td, h.bt, h.tp, h.nb]],
+  // Bán đất (5 + 3 Long An)
+  ["ban", DAT, RONG, [h.q12, h.td, h.bc, h.hm, h.nb, LA.bl, LA.dh, LA.cg]],
+  // Cho thuê nhà (10)
+  ["cho_thue", NHA, RONG, [h.q1, h.q3, h.q5, h.q6, h.q7, h.q8, h.q10, h.bth, h.pn, h.tb]],
+  // Cho thuê căn hộ (4)
+  ["cho_thue", CAN_HO, RONG, [h.q1, h.q7, h.bth, h.td]],
+  // Cho thuê mặt bằng (6)
+  ["cho_thue", MAT_BANG, RONG, [h.q1, h.q3, h.q5, h.q10, h.tb, h.bth]],
+  // Cho thuê phòng trọ (4)
+  ["cho_thue", PHONG_TRO, RONG, [h.q10, h.bth, h.tb, h.gv]],
 ];
 
-// Thuộc tính: chỉ ghép với loại "nhà" (là nhóm có đủ dữ liệu thông số FR-172).
-const ATTR: Array<Piece & { f: Partial<TagFilter>; deals: Array<"ban" | "cho_thue"> }> = [
-  { slug: "", label: "", f: {}, deals: ["ban", "cho_thue"] },
-  { slug: "hem-xe-hoi", label: "hẻm xe hơi", f: { access: ["mat_tien", "hem_xe_tai", "hem_xe_hoi"] }, deals: ["ban", "cho_thue"] },
-  { slug: "mat-tien", label: "mặt tiền", f: { access: ["mat_tien"] }, deals: ["ban", "cho_thue"] },
-  { slug: "duoi-3-ty", label: "dưới 3 tỉ", f: { priceMax: 3 * TY }, deals: ["ban"] },
-  { slug: "duoi-5-ty", label: "dưới 5 tỉ", f: { priceMax: 5 * TY }, deals: ["ban"] },
-  { slug: "duoi-8-ty", label: "dưới 8 tỉ", f: { priceMax: 8 * TY }, deals: ["ban"] },
-  { slug: "2-phong-ngu", label: "2 phòng ngủ", f: { bedroomsMin: 2 }, deals: ["ban", "cho_thue"] },
-  { slug: "3-phong-ngu", label: "3 phòng ngủ", f: { bedroomsMin: 3 }, deals: ["ban", "cho_thue"] },
-  { slug: "so-hong-rieng", label: "sổ hồng riêng", f: { legal: ["so_hong_rieng"] }, deals: ["ban"] },
-];
-
-const AREA_Q5: Piece = { slug: "quan-5", label: "Quận 5" };
-
-function wardPiece(w: string): Piece {
-  const n = w.replace(/\D/g, "");
-  return { slug: `phuong-${n}-quan-5`, label: `${w}, Quận 5` };
-}
+const DEAL = { ban: { slug: "ban", label: "bán" }, cho_thue: { slug: "cho-thue", label: "cho thuê" } } as const;
 
 function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -77,34 +135,15 @@ function cap(s: string): string {
 
 function build(): TagDef[] {
   const out: TagDef[] = [];
-  const push = (deal: "ban" | "cho_thue", t: (typeof TYPE)[number], a: (typeof ATTR)[number], area: Piece, ward?: string) => {
-    const slug = [DEAL[deal].slug, t.slug, a.slug, area.slug].filter(Boolean).join("-");
-    const keyword = cap([DEAL[deal].label.toLowerCase(), t.label, a.label, area.label].filter(Boolean).join(" "));
-    out.push({
-      slug,
-      keyword,
-      filter: { deal, types: t.types, ward, ...a.f },
-      parts: { deal: DEAL[deal].slug, type: t.slug, attr: a.slug, area: area.slug },
-    });
-  };
-  for (const deal of ["ban", "cho_thue"] as const) {
-    for (const t of TYPE) {
-      if (!t.deals.includes(deal)) continue;
-      // Cấp quận: mọi thuộc tính cho "nhà", chỉ thuộc tính rỗng cho loại khác.
-      for (const a of ATTR) {
-        if (!a.deals.includes(deal)) continue;
-        if (t.slug !== "nha" && a.slug !== "") continue;
-        push(deal, t, a, AREA_Q5);
-      }
-    }
-    // Cấp phường: "nhà" + rỗng và "nhà" + hẻm xe hơi (hai câu người ta gõ nhiều nhất).
-    const nha = TYPE[0];
-    for (const w of WARDS) {
-      for (const a of ATTR.filter((x) => x.slug === "" || x.slug === "hem-xe-hoi")) {
-        if (!a.deals.includes(deal)) continue;
-        if (deal === "cho_thue" && a.slug !== "") continue;
-        push(deal, nha, a, wardPiece(w), w);
-      }
+  for (const [deal, loai, tt, khus] of DS) {
+    for (const k of khus) {
+      out.push({
+        slug: [DEAL[deal].slug, loai.slug, tt.slug, k.slug].filter(Boolean).join("-"),
+        keyword: cap([DEAL[deal].label, loai.label, tt.label, k.label].filter(Boolean).join(" ")),
+        filter: { deal, types: loai.types, districts: k.districts, ...tt.f },
+        quan: k.quan,
+        parts: { deal: DEAL[deal].slug, type: loai.slug, attr: tt.slug, area: k.slug },
+      });
     }
   }
   return out;
@@ -115,6 +154,24 @@ const BY_SLUG = new Map(TAG_DEFS.map((t) => [t.slug, t]));
 
 export function tagBySlug(slug: string): TagDef | undefined {
   return BY_SLUG.get(slug);
+}
+
+/** Tag cũ (trước 12/11/2026: 64 tag Quận 5 theo phường cũ, thuộc tính 2–3 phòng ngủ, toà nhà, kho xưởng…) → slug tag còn sống. */
+export function tagCuChuyen(slug: string): string | null {
+  const m = /^(ban|cho-thue)-(.+)-quan-5$/.exec(slug);
+  if (!m) return null;
+  const dich = `${m[1]}-nha-quan-5`;
+  return BY_SLUG.has(dich) ? dich : null;
+}
+
+/** Khu-slug của một quận / huyện bộ đọc câu tìm nhận ra ("Quận 8", "Bình Thạnh", "Huyện Bình Chánh") — dùng ghép URL tag. */
+export function slugKhu(district?: string): string | null {
+  if (!district) return SG.slug;
+  const loi = district.replace(/^(Quận|Huyện|Thành phố|TP\.?)\s+/i, "").trim().toLowerCase();
+  for (const k of [...Object.values(HCM), ...Object.values(LA)]) {
+    if ((k.quan ?? "").replace(/^Quận\s+/, "").toLowerCase() === loi) return k.slug;
+  }
+  return null;
 }
 
 /** 6–8 tag liên quan: chung nhiều thành phần nhất, ưu tiên khác đúng một thành phần. */
@@ -136,13 +193,13 @@ export function relatedTags(t: TagDef, n = 8): TagDef[] {
     .map((x) => x.o);
 }
 
-/** Tag nổi bật cho trang chủ / chân trang (thay chip đẩy sang Zalo, IA-P4). */
+/** Tag nổi bật cho trang chủ / feed điện thoại (thay chip đẩy sang Zalo, IA-P4). */
 export const FEATURED_TAGS = [
-  "ban-nha-quan-5",
-  "ban-nha-hem-xe-hoi-quan-5",
-  "ban-nha-mat-tien-quan-5",
-  "ban-can-ho-quan-5",
-  "ban-nha-duoi-5-ty-quan-5",
-  "cho-thue-nha-quan-5",
-  "cho-thue-mat-bang-quan-5",
+  "ban-nha-hem-xe-hoi-sai-gon",
+  "ban-nha-duoi-5-ty-sai-gon",
+  "ban-nha-mat-tien-sai-gon",
+  "ban-can-ho-sai-gon",
+  "ban-dat-long-an",
+  "cho-thue-nha-sai-gon",
+  "cho-thue-mat-bang-sai-gon",
 ].map((s) => BY_SLUG.get(s)).filter(Boolean) as TagDef[];

@@ -86,7 +86,8 @@ const layTin = unstable_cache(
       .neq("price_raw", "");
 
     if (t.phuong) q = q.eq("ward", t.phuong);
-    if (t.quan) q = q.ilike("district", `%${t.quan}%`);
+    // SRS-5.1zzzzzzz433: quận số lọc đúng tên — ilike "%Quận 1%" khớp cả Quận 10, 11, 12.
+    if (t.quan) q = /^Quận \d+$/i.test(t.quan.trim()) ? q.eq("district", t.quan.trim()) : q.ilike("district", `%${t.quan}%`);
     if (t.duong) q = q.ilike("street", `%${t.duong}%`);
     if (t.moc) q = q.ilike("location_raw", `%${t.moc}%`);
     if (t.loai && t.loai.length > 0) q = q.in("property_type", t.loai);

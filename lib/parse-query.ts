@@ -12,7 +12,7 @@
 // Kết quả là TẬP CON của bộ lọc /mua-ban (ListingBrowse): cùng cột, cùng luật
 // "chỉ tin đang lên kệ". Giá không ép vào ô chip cố định (duoi-5/5-8/…) mà đi
 // thành `gmin`/`gmax` (VND) — "8 tỉ" là 6,8–9,2 tỉ, không phải "5–8 tỷ".
-import { tagBySlug } from "@/lib/tags";
+import { slugKhu, tagBySlug } from "@/lib/tags";
 import { TIEN_KD } from "@/bot/supabase/functions/_shared/extraction/luat-tien";
 import { ganNhan, tenNhan } from "@/bot/supabase/functions/_shared/extraction/nhan";
 
@@ -303,7 +303,6 @@ export function parseQuery(qRaw: string): ParsedQuery {
   // URL: trang tag nếu tổ hợp khớp ĐÚNG một tag (không còn tiêu chí thừa).
   let url = "";
   if (!empty && loaiTag) {
-    const dungQ5 = !f.district || f.district === "Quận 5";
     const thua = !!(f.street || f.landmark || f.areaMin || f.areaMax || f.priceMin || f.priceApprox || f.tags?.length);
     let attr = "";
     let attrDung = true;
@@ -312,15 +311,13 @@ export function parseQuery(qRaw: string): ParsedQuery {
     else if (f.access === "hem") attrDung = false;
     if (f.priceMax && !f.priceMin && !f.priceApprox) {
       const ty = f.priceMax / TY;
-      if (attr === "" && [3, 5, 8].includes(ty)) attr = `duoi-${ty}-ty`;
+      if (attr === "" && ty === 5) attr = "duoi-5-ty";
       else attrDung = false;
     }
-    if (f.bedrooms) {
-      if (attr === "" && [2, 3].includes(f.bedrooms)) attr = `${f.bedrooms}-phong-ngu`;
-      else attrDung = false;
-    }
-    if (dungQ5 && !thua && attrDung) {
-      const area = f.ward ? `phuong-${f.ward.replace(/\D/g, "")}-quan-5` : "quan-5";
+    if (f.bedrooms) attrDung = false; // SRS-5.1zzzzzzz433: bộ 100 tag không còn tag theo số phòng ngủ
+    // SRS-5.1zzzzzzz433: tag theo quận / huyện (100 tag); không có quận = tag "Sài Gòn". Có phường thì không còn tag nào khớp đúng.
+    const area = f.ward ? null : slugKhu(f.district);
+    if (area && !thua && attrDung) {
       const slug = [thue ? "cho-thue" : "ban", loaiTag, attr, area].filter(Boolean).join("-");
       if (tagBySlug(slug)) url = `/${slug}`;
     }
@@ -328,7 +325,7 @@ export function parseQuery(qRaw: string): ParsedQuery {
   if (!url) {
     const p = new URLSearchParams();
     if (f.ward) p.set("phuong", f.ward);
-    if (f.district && f.district !== "Quận 5") p.set("quan", f.district);
+    if (f.district) p.set("quan", f.district);
     if (f.priceMin) p.set("gmin", String(f.priceMin));
     if (f.priceMax) p.set("gmax", String(f.priceMax));
     if (f.areaMin) p.set("dtmin", String(f.areaMin));

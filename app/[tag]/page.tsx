@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import ListingCard from "@/components/ListingCard";
 import { coverByCode } from "@/lib/photos";
 import { CARD_COLS, supabase, type ListingCard as CardRow, TRANG_THAI_HIEN } from "@/lib/supabase";
 import { formatPrice, zaloLink } from "@/lib/format";
-import { TAG_DEFS, relatedTags, tagBySlug, type TagDef } from "@/lib/tags";
+import { relatedTags, tagBySlug, tagCuChuyen, type TagDef } from "@/lib/tags";
 
 // FR-12 / IA §4.4 — trang tag SEO. Slug lạ → 404 (`notFound()` trong Page: chỉ slug có trong TAG_DEFS mới render).
 // 03/10/2026 (giảm egress Supabase, SRS-5.1zl): KHÔNG dựng sẵn lúc build nữa — mỗi lượt build (CI mỗi lần đẩy + Vercel preview
-// + production) từng dựng 23 trang × (tin + ảnh bìa). `generateStaticParams` trả [] → trang vẫn ISR, dựng khi có người xem.
+// + production) từng dựng 64 trang × (tin + ảnh bìa). `generateStaticParams` trả [] → trang vẫn ISR, dựng khi có người xem.
 //
 // SỐ 3600 DƯỚI ĐÂY KHÔNG PHẢI TTL THẬT — soát build 05/09/2026: bảng route báo
 // `5m`. Next 15 hạ revalidate của cả segment xuống MIN của nó và mọi
@@ -41,7 +41,7 @@ async function layTinTag(t: TagDef) {
   if (t.filter.priceMax) q = q.lt("price_vnd", t.filter.priceMax);
   if (t.filter.bedroomsMin) q = q.gte("bedrooms", t.filter.bedroomsMin);
   if (t.filter.legal?.length) q = q.in("legal_status", t.filter.legal);
-  if (t.filter.ward) q = q.eq("ward", t.filter.ward);
+  if (t.filter.districts?.length) q = q.in("district", t.filter.districts); // SRS-5.1zzzzzzz433: IN, không ilike ("Quận 1" ≠ Quận 10)
   const { data, count } = await q.order("created_at", { ascending: false }).limit(MAX);
   return { rows: (data ?? []) as CardRow[], total: count ?? 0 };
 }
@@ -84,7 +84,12 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
 export default async function Page({ params }: { params: Promise<{ tag: string }> }) {
   const { tag } = await params;
   const t = tagBySlug(tag);
-  if (!t) notFound();
+  if (!t) {
+    // SRS-5.1zzzzzzz433: 64 tag Quận 5 cũ (phường cũ, 2–3 phòng ngủ…) đã thay bằng 100 tag theo quận — URL cũ chuyển hẳn, không 404.
+    const dich = tagCuChuyen(tag);
+    if (dich) permanentRedirect(`/${dich}`);
+    notFound();
+  }
 
   const { rows, total } = await layTinTag(t);
   const covers = await coverByCode(rows.map((l) => l.code));
@@ -135,7 +140,7 @@ export default async function Page({ params }: { params: Promise<{ tag: string }
 
         {total > rows.length && (
           <p className="mt-6 text-center">
-            <Link href={t.filter.ward ? `${goc}?phuong=${encodeURIComponent(t.filter.ward)}` : goc} className="font-semibold text-brand hover:underline">
+            <Link href={t.quan ? `${goc}?quan=${encodeURIComponent(t.quan)}` : goc} className="font-semibold text-brand hover:underline">
               Xem cả {total} tin trong kho -
             </Link>
           </p>

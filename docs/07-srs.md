@@ -809,6 +809,18 @@ Chủ dự án 12/11 "Làm tiếp 4–7" (4 lỗ hổng logic trong bản soát 
 - Docs: nhật ký giữ 10 mục mới nhất (432 → 423), mục 422 → 397 chuyển sang `07-srs-luu-tru.md`; khung giờ 8–20 → 8–21 (SRS-423) ở các
   mục còn ghi cũ; Image LQC đọc `listing_media` (SRS-425) thay vì quét thư mục; đặc tả LQC đánh dấu câu 1, 2 đã làm, câu 4 dùng mặc định.
 
+### SRS-5.1zzzzzzz433 · 100 tag SEO theo quận / huyện Sài Gòn + Long An (12/11/2026)
+Chủ dự án 12/11 "Làm 100 tag" (yêu cầu `nhadat.cc website.docx` §Tag: 100 keyword BĐS hot nhất, mỗi keyword một URL).
+- Bản cũ: 64 tag, toàn Quận 5 theo PHƯỜNG CŨ (trước sáp nhập 2025), trong khi kho tin rải khắp thành phố.
+- Bản mới (`lib/tags.ts`, mảng `DS`): ĐÚNG 100 tag. 9 tag toàn Sài Gòn / Long An · bán nhà 19 quận huyện HCM + Bến Lức, Cần Giuộc ·
+  hẻm xe hơi 12 quận · mặt tiền 10 · dưới 5 tỉ 8 quận ven · căn hộ 8 · đất 5 huyện HCM + 3 huyện Long An · cho thuê nhà 10 · căn hộ 4 ·
+  mặt bằng 6 · phòng trọ 4. Chọn theo quận có tin trong kho và tổ hợp phổ biến từng khu. TOP-100 keyword gốc (OPEN-06) vẫn chưa có —
+  có file thì thay mảng `DS`.
+- Lọc khu bằng `district IN (biến thể tên)`, không ilike. /mua-ban `?quan=Quận 1` cũng sửa sang so khớp đúng (trước khớp cả Quận 10–12).
+- URL tag cũ `…-quan-5` không còn → chuyển hẳn (308) về `ban-nha-quan-5` / `cho-thue-nha-quan-5`, không 404.
+- Ô tìm bằng câu nói: câu khớp đúng một tag (loại + hẻm xe hơi / mặt tiền / dưới 5 tỉ + quận) thì đưa thẳng tới trang tag quận đó.
+- Tag nổi bật (trang chủ, feed điện thoại) đổi sang tag toàn Sài Gòn / Long An.
+
 ### SRS-5.1zzzzzzz431 · Sửa 3 mâu thuẫn SRS: gỡ lưới nhận xét giá lời chat · tin thử tính như tin thật · một nguồn cho đường vào (12/11/2026)
 Chủ dự án 12/11, sau bản soát mâu thuẫn SRS: "vậy xóa lưới chặn và bắt bot viết lại đi, Tin thử được coi là thật, sửa 3 mâu thuẫn trước đi".
 - **Gỡ lưới nhận xét giá ở lời CHAT** (thay phần lời chat của SRS-132, SRS-353 và đoạn "lưới nới" của SRS-429): bỏ `_BINH_LUAN_GIA`,
