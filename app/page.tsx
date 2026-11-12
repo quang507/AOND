@@ -172,6 +172,9 @@ export default async function Home() {
             {[
               { href: "/tinh-lai-vay", Icon: IconCalc, t: "Tính lãi vay mua nhà", d: "Mỗi tháng trả bao nhiêu, xem trước dòng tiền rồi hãy quyết." },
               { href: "/thong-ke", Icon: IconChart, t: "Giá theo phường", d: "Phường nào đang rao đắt nhất, tính từ tin thật trong kho." },
+              { href: "/thue-hay-mua", Icon: IconCalc, t: "Thuê hay mua", d: "Cùng số tiền mỗi tháng, sau mười năm đường nào dư hơn." },
+              { href: "/cam-nang", Icon: IconShield, t: "Cẩm nang mua bán nhà", d: "Kiểm tra pháp lý trước khi cọc, mua nhà hẻm, thuế phí sang tên." },
+              { href: "/gan", Icon: IconSearch, t: "Nhà gần địa danh", d: "Nhà đang bán quanh bệnh viện, chợ, trường, trung tâm thương mại." },
             ].map(({ href, Icon, t, d }) => (
               <Link key={href} href={href} className="group flex gap-4">
                 <Icon className="mt-0.5 h-6 w-6 shrink-0 text-brand" />

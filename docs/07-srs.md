@@ -815,6 +815,23 @@ tin nền đổi sang "anh/chị"; câu khen văn viết, "sửa văn phong ki�
   là ngon luôn."), rồi một câu xin góc; trước ép "đúng MỘT câu" nên lời khen, lời xin và lợi ích dồn thành một câu dài văn viết. ≈ +25 token.
 - Tin 08:34 còn xin "kèm biển số nhà" — đã chặn ở 3bcd3b3 (08:35, sau tin đó một phút).
 
+### SRS-5.1zzzzzzz443 · Cẩm nang, trang "nhà gần địa danh", máy tính thuê hay mua, chân trang đúng của aond (12/11/2026)
+Chủ dự án 12/11 "lấy mấy cái này thì lấy lun" (ba thứ đáng lấy từ NhaDat-Radar). Lấy ý tưởng và khung, KHÔNG chép chữ: nhadatradar.com
+đang chạy, hai web cùng chủ đăng cùng một bài thì Google coi là trùng nội dung.
+- **/cam-nang** (`lib/cam-nang.ts`): 6 bài viết mới cho người mua ở Sài Gòn: kiểm tra pháp lý trước khi cọc, mua nhà hẻm, sổ chung và vi
+  bằng, công chứng sang tên, thuế phí, nhận ra tin ảo và trả giá. Con số theo luật ghi văn bản gốc (BLDS 2015 Điều 328, NĐ 08/2020,
+  TT 111/2013, NĐ 10/2022) kèm câu nhắc hỏi lại nơi làm thủ tục vì luật đang sửa (thuế TNCN). Không có số lãi suất, giá thị trường.
+  Mỗi mục có link sang trang khu / công cụ. Dữ liệu cấu trúc `Article`, dựng sẵn lúc build (không đọc DB).
+- **/gan, /gan/[slug]** (`lib/moc.ts`): "Nhà bán gần <địa danh>" cho 36 bệnh viện, chợ, công viên, trung tâm thương mại, đại học; toạ độ
+  chép từ bảng `tien_ich` (OSM) vì bảng đó chỉ admin đọc. Tin bán trong bán kính 2 km, gần trước, ghi "cách khoảng" (toạ độ tin là cấp
+  đường). Lời dẫn sinh từ số tin thật (số căn, phường nhiều tin, khoảng giá). Dưới 3 tin: noindex, không vào sitemap. Không dựng sẵn lúc
+  build (giữ egress thấp như trang tag).
+- **/thue-hay-mua**: cùng số tiền mỗi tháng, so tài sản ròng sau N năm của mua trả góp và đi thuê + gửi tiết kiệm phần chênh; mốc năm mua
+  bắt đầu lợi hơn. Mọi số điền sẵn ghi là giả định; ghi rõ những gì không tính (phí công chứng, thuế, sửa chữa).
+- **Chân trang** viết lại: bản cũ từ lúc gộp repo 17/10 là chân trang của NhaDat-Radar (tên "NhaDat Radar", "dữ liệu tổng hợp từ nguồn
+  công khai", một số hotline không rõ của ai, 12 link 404). Giờ: logo AI Ơi Nhà Đất, nút Zalo, chỉ link trang có thật.
+- Trang chủ (máy tính) thêm ba công cụ vào cột công cụ; sitemap thêm các trang mới.
+
 ### SRS-5.1zzzzzzz442 · Bản đồ: vệ tinh có tên đường, nút tiếng Việt, hai ngón trên điện thoại, tải khi sắp hiện (12/11/2026)
 Chủ dự án 12/11 hỏi "bản đồ các kiểu lấy dc ko" (repo NhaDat-Radar, cùng nền MapLibre + OpenFreeMap) rồi chốt "Lấy 4 cái":
 - **Vệ tinh có chữ:** trước là ảnh Esri trần, không biết đang nhìn đâu (Radar ghi nhận đúng phản hồi này từ người dùng 19/8). Giờ nạp
