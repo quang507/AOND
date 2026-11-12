@@ -540,6 +540,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-162 | — | — | SRS-5.1zzzzzzz446 | TS-SRS (`test_phuong_du_an_446.py`) |
 | FR-203 | — | — | SRS-5.1zzzzzzz449 | TS-PROD (nhắn thật vào Zalo bot) |
 | FR-203 | — | — | SRS-5.1zzzzzzz453 | TS-PROD (log "Zalo trả pong" + nhắn thật vào Zalo bot) |
+| FR-185 | — | — | SRS-5.1zzzzzzz455 | TS-SRS (`test_bao_cao_gia_455.py`) + mở `/bao-cao-gia/<mã>` |
 | FR-144 | — | — | SRS-5.1zzzzzzz450 | TS-SRS (`test_dap_chua_chon_450.py`) |
 
 ## 8.4 Rủi ro → biện pháp

@@ -15,7 +15,7 @@ import logging
 from typing import Any
 
 from .phap_ly import tien
-from .web import link_tin
+from .web import link_bao_cao_gia, link_tin
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +38,22 @@ def can_gan(kho: Any, listing_id: str | None) -> dict:
     except Exception as e:  # noqa: BLE001
         log.warning("so_sanh: tra căn gần hụt (%s)", type(e).__name__)
         return rong
-    return kq if isinstance(kq, dict) else rong
+    if not isinstance(kq, dict):
+        return rong
+    kq["ma_tin"] = str(listing_id)[:8].upper()   # mã tin = 8 ký tự đầu UUID (web.link_tin) — cho link báo cáo giá (SRS-5.1zzzzzzz455)
+    return kq
+
+
+def dong_bao_cao(kq: dict) -> str:
+    """LQC 4.6 (đặc tả anh Luận, SRS-5.1zzzzzzz455): đủ căn cùng loại đang rao để có dải đơn giá thì mời chủ xem trang báo cáo giá rao quanh
+    căn (miễn phí, tính từ giá rao — chủ dự án 13/11 "dựa trên giá rao cũng dc"). Chưa đủ mẫu → "" (trang cũng chỉ báo chưa đủ)."""
+    dg = kq.get("don_gia") or {}
+    link = link_bao_cao_gia(kq.get("ma_tin"))
+    if not link or int(dg.get("n") or 0) < TOI_THIEU_DON_GIA:
+        return ""
+    return ("BÁO CÁO GIÁ: hệ thống đã làm sẵn trang báo cáo giá rao quanh căn của chủ (miễn phí): dải giá mỗi m² các căn cùng loại đang rao "
+            f"trong {BAN_KINH_M // 1000} km, theo mặt tiền / hẻm, căn gần nhất. Thêm MỘT câu mời chủ xem, kèm nguyên link: {link} — nói rõ là "
+            "tính từ giá rao.\n")
 
 
 def _kc(m: Any) -> str:
@@ -107,6 +122,7 @@ def khoi_gui_so_sanh(kq: dict) -> str:
             f"các dòng dưới (giữ link):\n{dong}\n"
             + (f"Căn gần đó đã có giao dịch (chỉ được nói đúng như dòng này):\n{gd}\n" if gd else "")
             + dong_nhan_xet(muc_lech(kq))
+            + dong_bao_cao(kq)
             + "KHÔNG nói căn nào đẹp hơn. Căn khác lối vào (mặt tiền / hẻm) hay khác diện tích thì không so thẳng đơn giá từng căn. "
             + ("KHÔNG nói đã bán / đã cọc căn nào. " if not gd else "")
             + "Không cần câu hỏi; có thể kết bằng \"anh/chị muốn em tìm thêm căn nào thì nhắn em\".\n")
@@ -119,7 +135,7 @@ def khoi_tra_loi_gia(kq: dict) -> str:
     dong = "\n".join(f"- {dong_can(c)}" for c in kq.get("dang_rao") or [])
     return ("\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI GIÁ THỊ TRƯỜNG / GIÁ CAO HAY THẤP: ===\n"
             f"Dữ kiện hệ thống — căn cùng loại đang RAO gần căn của chủ (giá rao, chưa phải giá giao dịch):\n{dong}\n"
-            + dong_don_gia_gan(kq) + dong_nhan_xet(muc_lech(kq))
+            + dong_don_gia_gan(kq) + dong_nhan_xet(muc_lech(kq)) + dong_bao_cao(kq)
             + "Việc lượt này: trả lời câu chủ hỏi bằng các dữ kiện trên (có thể gửi 1–2 dòng kèm link), tin vẫn rao theo giá chủ muốn.\n")
 
 

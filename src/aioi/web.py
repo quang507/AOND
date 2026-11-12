@@ -16,3 +16,8 @@ SITE_HOST = urlparse(SITE_URL).netloc or SITE_URL
 def link_tin(ma: str | None) -> str:
     """Link trang chi tiết một tin theo mã (8 ký tự đầu UUID, viết hoa); không có mã → trang chủ."""
     return f"{SITE_URL}/nha-dat/{ma}" if ma else SITE_URL
+
+
+def link_bao_cao_gia(ma: str | None) -> str:
+    """Trang báo cáo giá rao quanh một căn (SRS-5.1zzzzzzz455, LQC 4.6); không có mã → ""."""
+    return f"{SITE_URL}/bao-cao-gia/{ma}" if ma else ""

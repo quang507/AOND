@@ -788,6 +788,18 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz455 · Báo cáo giá rao quanh căn — LQC 4.6 (13/11/2026)
+Đặc tả anh Luận 4.6: "Em có báo cáo giá bán nhà khu vực anh, em làm miễn phí cho anh". Chủ dự án 13/11: "dựa trên giá rao cũng dc, tạm để
+test vậy đi" (Moso có mục "Báo cáo thị trường BĐS" tính từ tin đăng trên Moso).
+- **DB:** RPC `bao_cao_gia_quanh(p_code, p_ban_kinh_m = 3000)` (migration `20261113a`) — căn cùng giao dịch + cùng loại trong bán kính, chỉ tin
+  đang hiện: số căn, đơn giá rao min / p25 / trung vị / p75 / max, theo lối vào, vị trí giá của căn (CHỈ so cùng lối vào, ≥ 3 căn — như
+  `muc_lech` SRS-5.1zzzzzzz429), 12 căn gần nhất, căn gần đó đã cọc / chốt 180 ngày (giá RAO lúc đó; giá chốt bảng `deals` không lên trang
+  công khai). Không trả số nhà / người bán / mô tả. Khoá công khai gọi được.
+- **Web:** `app/bao-cao-gia/[code]/page.tsx` — số liệu chính, dải đơn giá (nửa giữa, mức ở giữa, chấm căn của chủ), bảng theo lối vào, danh
+  sách căn gần, ghi rõ "đây là giá rao, chưa phải giá giao dịch". ISR 1 giờ, không cho Google lập chỉ mục (trang theo từng căn).
+- **Bot:** `so_sanh.dong_bao_cao` — tin gửi so sánh sau đăng (cụm `so_sanh`) và lượt chủ hỏi giá thị trường kèm MỘT câu mời xem trang
+  báo cáo khi có ≥ 3 căn cùng loại đang rao gần (`web.link_bao_cao_gia`). Không thêm câu hỏi, không tính vào trần 10 câu sau đăng.
+
 ### SRS-5.1zzzzzzz453 · Bridge tự cắt kết nối nghe Zalo "chết lặng" rồi nối lại (13/11/2026)
 Sau SRS-5.1zzzzzzz449 (bridge khởi động lại 19:43 12/11), tới 1 giờ sáng 13/11 bridge không nhận tin nào; chủ dự án: "bridge zalo ko thấy nó nhắn
 lại dc". Trên máy 146 cả hai bridge vẫn giữ TCP "Established" tới Zalo từ 19:43, log không có dòng "rớt" / "đóng".
@@ -904,11 +916,3 @@ chắn"; phạm vi xoá: "chỉ xoá rổ hàng + bảng giá"; thông tin chưa
 - **Bản vẽ → rổ lô:** tài liệu dự án vừa chép (`_ingest_doc_bytes`: PDF, ảnh bản vẽ / phân lô đọc ra là tài liệu chung) đi thêm một lượt AI đọc
   danh sách lô (`DANH_SACH_LO_SYSTEM`, `_hoc_lo_tu_tai_lieu`) → `Project.upsert_unit` từng lô, thuộc tính là phiếu của người gửi (admin → chắc
   chắn; người khác → chưa chắc chắn). Không ghi giá (giá là của từng người rao). Tài liệu không có danh sách lô thì không đổi gì.
-
-### SRS-5.1zzzzzzz444 · Bản đồ trang căn hiện được với tên phường mới (12/11/2026)
-Thấy lúc soát SRS-442, chủ dự án 12/11 "Sửa luôn". `WardMap` chỉ vẽ khi `ward` có trong `WARD_CENTROIDS` — bảng "Phường 1…15" Quận 5 cũ —
-nên tin ghi tên phường mới (Phú Định, Bình Thạnh, Tân Mỹ…, gần như cả kho) không có bản đồ trên trang căn.
-- `lib/tam-phuong-moi.ts`: 163 tâm phường / xã mới chép từ bảng `wards` (bảng không mở cho anon); đầu file có câu SQL để chép lại.
-- `lib/geo.ts` thêm `tamPhuong()` (phường mới trước, bảng cũ sau); `wardPoint` dùng chung nên ghim rơi về tâm phường ở các bản đồ khác
-  cũng nhận tên mới. Vẫn giữ nguyên tắc FR-104: chấm là tâm phường + lệch định trước theo mã tin, không phải vị trí căn nhà.
-- Phường mới rộng hơn nhiều → bản đồ lùi ra mức 14 (bảng cũ giữ 15).

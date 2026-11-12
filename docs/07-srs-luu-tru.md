@@ -73,6 +73,14 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz444 · Bản đồ trang căn hiện được với tên phường mới (12/11/2026)
+Thấy lúc soát SRS-442, chủ dự án 12/11 "Sửa luôn". `WardMap` chỉ vẽ khi `ward` có trong `WARD_CENTROIDS` — bảng "Phường 1…15" Quận 5 cũ —
+nên tin ghi tên phường mới (Phú Định, Bình Thạnh, Tân Mỹ…, gần như cả kho) không có bản đồ trên trang căn.
+- `lib/tam-phuong-moi.ts`: 163 tâm phường / xã mới chép từ bảng `wards` (bảng không mở cho anon); đầu file có câu SQL để chép lại.
+- `lib/geo.ts` thêm `tamPhuong()` (phường mới trước, bảng cũ sau); `wardPoint` dùng chung nên ghim rơi về tâm phường ở các bản đồ khác
+  cũng nhận tên mới. Vẫn giữ nguyên tắc FR-104: chấm là tâm phường + lệch định trước theo mã tin, không phải vị trí căn nhà.
+- Phường mới rộng hơn nhiều → bản đồ lùi ra mức 14 (bảng cũ giữ 15).
+
 ### SRS-5.1zzzzzzz443 · Cẩm nang, trang "nhà gần địa danh", máy tính thuê hay mua, chân trang đúng của aond (12/11/2026)
 Chủ dự án 12/11 "lấy mấy cái này thì lấy lun" (ba thứ đáng lấy từ NhaDat-Radar). Lấy ý tưởng và khung, KHÔNG chép chữ: nhadatradar.com
 đang chạy, hai web cùng chủ đăng cùng một bài thì Google coi là trùng nội dung.
