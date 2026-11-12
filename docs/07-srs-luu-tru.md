@@ -73,6 +73,150 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz422 · Image LQC (Listing Quality Controller) — QC ảnh tin rao, vòng nền trên máy 146 (11/11/2026)
+Chủ dự án 11/11: "một con loop như quality controller về hình ảnh của các tin rao, xem các hình đang có có giống nội dung rao đăng không, và
+có phù hợp với điểm mạnh của BĐS đang rao không". Chọn: vòng nền trên 146; ghi kết quả + tự nhắn chủ xin góc thiếu.
+- `qc_anh.py` + vòng `_vong_qc_anh` (server, `QC_ANH_CHU_KY_GIAY` 1800 giây, tắt `QC_ANH=tat`): quét `listing-public/<id tin>/` (SRS-425: nay đọc `listing_media`), bộ ảnh ĐỔI
+  (băm tên tệp, sổ `QC_ANH_SO` = `qc_anh.json`) thì model vision chấm một lần theo `SCHEMA`: khớp nội dung, ảnh không khớp (ảnh quán bên
+  trong căn đang cho thuê không tính), thế mạnh đã / chưa có ảnh, `goc_can_xin`, điểm 0–100, nhận xét. Tối đa 10 tin / lượt, 8 ảnh / tin.
+- Kết quả vào ô riêng `_qc_anh` (thêm vào `schema.O_NOI_BO` → `listing_noi_bo`, chỉ admin); `prompts.goc_anh_goi_y` đặt góc QC thấy thiếu
+  lên trước, nên khối xin ảnh trong lượt và tin nhắc 10 phút xin đúng góc đó.
+- Nhắn chủ: còn `goc_can_xin`, 8–20 giờ (nay 8–21, SRS-423), chat im từ 10 phút, không đang nhường sân, mỗi căn tối đa 2 tin QC (`_qc_da_nhan`), mỗi bộ ảnh một
+  lần; model viết một câu khéo (`LUAT_XIN_ANH_KHEO`). Ghi mốc `sau:anh`.
+
+### SRS-5.1zzzzzzz421 · Xin ảnh theo nhánh, hỏi khéo; chủ im 10 phút sau đăng thì nhắc xin ảnh (11/11/2026)
+Chủ dự án 11/11: "quy định 10 phút hỏi thêm, ưu tiên ảnh để thêm điểm cho tin" và "không phải cái nào cũng hỏi mặt tiền, hỏi xin thêm ảnh
+tùy nhánh, và hỏi khéo vào".
+- `prompts.GOC_ANH_THEO_NHOM` + `goc_anh_goi_y(prop)`: góc ảnh theo nhánh (nhà mặt tiền / nhà hẻm / nhà chung / phòng trọ–CHDV / căn hộ / đất
+  / dự án / kho xưởng / mặt bằng), đọc ô phân loại `_duong_vao`, loại hình; căn đang cho thuê thì ảnh mặt bằng đang hoạt động cũng tính.
+- `LUAT_XIN_ANH_KHEO`: nối chuyện vừa nói hoặc khen thật một điểm, xin MỘT góc hợp căn, nửa câu lợi ích, một câu ngắn. Dùng ở khối xin ảnh
+  trong lượt (`khoi_xin_them_anh(..., prop)`) và tin nhắc (`build_xin_anh_nhac_system`).
+- `followup`: tin đã báo đăng mà dưới mức ảnh tin đẹp → nhắc sau `SAU_DANG_NHAC_GIAY` (600 giây) thay vì 5 phút; model viết tin theo góc hợp
+  căn và 6 lượt gần nhất, hụt thì câu mẫu `xin_anh_sau_dang`. Tối đa hai lần, chung mốc `sau:anh` / `sau:anh_lan_2` với lượt hỏi sau đăng.
+- Đủ ảnh (tới mức tin đẹp) thì thôi xin. Tin nhắc tự động chỉ đi 8–20 giờ, nay 8–21 giờ (SRS-423) (`bao_can_moi.trong_khung_gio`); gọi tay `/trigger-followup` không chặn.
+
+### SRS-5.1zzzzzzz420 · Xin thêm ảnh sau khi đăng tin (11/11/2026)
+Chủ dự án 11/11 (tin #56F988C9 lên web chỉ 2 ảnh, bot còn nói "ảnh gắn vào đủ"): "cố xin thêm hình ảnh thêm 1 tí nữa sau khi đăng tin".
+- `schema.ANH_TIN_DEP` = 6; `Property.cum_sau_dang(da_hoi, so_anh, anh_du)`: số ảnh thật đã lưu dưới mức này thì cụm `anh` đi ĐẦU chuỗi hỏi
+  sau đăng; hết các cụm mà vẫn thiếu thì `anh_lan_2` nhắc nhẹ một lần ở CUỐI. Ghi `sau:anh` / `sau:anh_lan_2` trong `_sau_da_hoi`.
+- Đếm ảnh một nguồn `engine._image_count(conv.active.media)` (cả khối ĐIỂM TIN), mức trần theo `min(ANH_TIN_DEP, max_photos)`; không đọc ô
+  chữ `hinh_anh`.
+- `prompts.khoi_xin_them_anh` (rút gọn cùng ngày, chủ dự án "hỏi ngắn hơn"): xin MỘT góc quan trọng nhất còn thiếu bằng MỘT câu ngắn, căn đang cho thuê / kinh doanh thì ảnh mặt bằng đang kinh
+  doanh cũng là ảnh của căn; lần hai chỉ một câu, không thúc ép.
+
+### SRS-5.1zzzzzzz419 · Tin debug "$$$$$" theo khuôn anh Luận (11/11/2026)
+Chủ dự án 11/11 (dán tin `nhà "Nhà đang để trống" → "khong"`): "đoạn tin nhắn debug làm cho giống bên anh Luận hơn". Bản anh Luận (cli.py) in
+`[đã trích xuất: …]` rồi `[điểm BĐS | uy tín | hạng | hoàn chỉnh]`. Bản cũ bên mình in nhãn cắt ở "(" nên ra nhãn cụt ("nhà") và cặp cụm khách →
+giá trị khó đọc.
+- `che_do_test.chu_thich`: mỗi dòng một ngoặc vuông — `[đã trích xuất: khoá=giá trị đã lưu, …]` · `[bỏ: …]` (nếu có) · `[điểm BĐS | uy tín |
+  hạng | hoàn chỉnh | soạn nháp: đủ ✓ / chưa — trống <nhóm> | hỏi tiếp: <ô>]` · `[tốn $…]`. Điểm lấy cùng số TurnResult (engine truyền `diem`).
+
+### SRS-5.1zzzzzzz418 · Cổng bản nháp theo bản anh Luận (11/11/2026)
+Chủ dự án 11/11 (hỏi vì sao bot hỏi hiện trạng, so với anh Luận): "theo anh Luận đi". Bản anh Luận (`schema.summary_ready`): đủ sàn (loại
+hình + vị trí + giá) và trong bốn nhóm vị thế · kích thước đất · quy mô xây dựng · pháp lý trống tối đa một nhóm; ô bàn giao nằm nhóm giá &
+thương mại nên không bao giờ chặn. Thay SRS-5.1zzzzzzz260 (quy mô · pháp lý · hiện trạng bắt buộc đủ).
+- `NHOM_SOAN` = bốn nhóm chính; `summary_ready` = `can_publish` và `len(facet_trong()) <= SOAN_THIEU_TOI_DA` (1).
+- Giữ của bên mình: nhóm chỉ tính khi loại BĐS có ô mong đợi trong nhóm, tin cho thuê bỏ pháp lý, ô khách lờ 2 lần thì để sau.
+- Ca kịch bản production "hẻm Dương Bá Trạc 4x12, 2 tầng, sổ hồng riêng, 5 tỷ": trước hỏi hiện trạng, nay ra bản nháp ngay.
+
+### SRS-5.1zzzzzzz417 · Lượt đọc ý biết số Zalo khách đang nhắn; lưu SĐT nói đúng lịch (11/11/2026)
+Kịch bản production 11/11 (12 kịch bản, máy 146). Chủ dự án: "sửa vào prompt cho AI nó biết chứ không phải regex, sửa từ gốc".
+- **hq_hai_so**: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi → bot vẫn tiếp chuyện tìm mua. Gốc: lượt đọc ý không có dữ kiện số đang
+  nhắn, lịch sử toàn chuyện mua nên AI đọc lời chào thành "buy"; nhánh đổi vai theo số (SRS-331) chỉ chạy khi ý định "unknown" nên không
+  chạy. Nay `khoi_so_dang_nhan` đưa vào dữ liệu lượt đọc ý (agent gộp mua / bán, form đầy đủ): số đang nhắn; đổi số thì thêm việc các tin
+  trước thuộc số kia và ý định là ý của tin này (chào / xã giao → "unknown").
+  Chạy lại production: vẫn trượt — lượt đó giao cho agent gộp MUA đọc, prompt của nó dựng sẵn vai tư vấn tìm mua nên dòng dữ kiện số không
+  thắng. Gốc thật: người đọc lượt chọn theo vai cũ. Nay `_vai_tren_so_nay`: vai đặt ở số KHÁC số đang nhắn thì form gọn / agent của vai đó
+  không đọc lượt này (`_form_mua_gon`, `_form_ban_gon`) — người đọc trung lập đọc, vai quyết theo ý tin + số.
+  Lần chạy thứ hai: vai đúng (chào ký gửi) nhưng bot tự nói "phần tìm mua em không tư vấn sâu được" — lời viết không biết việc ở số kia còn
+  nguyên. Nay `khoi_doi_so` (lượt đầu sau đổi số) nói việc ở số kia giữ nguyên, bên em vẫn theo tiếp ở số đó.
+- **m_hen_xem_cho_so**: khách chưa chọn căn, để số → bot nói "người phụ trách sẽ gọi xác nhận lịch xem cuối tuần". Gốc: kết quả
+  `luu_so_dien_thoai` không nói gì về lịch, và đường bóc tách (`_viec_mua`) ghi cứng "gọi xác nhận lịch / tư vấn" — hai nơi tả cùng một việc.
+  Nay một nguồn `agent_mua.ket_qua_luu_sdt(lich)` cho cả hai: có lịch đang chờ (trong kho hoặc vừa hẹn lượt này) thì nêu căn + giờ, không có
+  thì nói chưa có lịch nào.
+- Không phải lỗi: hai căn một tin (DB 146 có 2 tin riêng đúng), "hồ bơi tràn" (dữ liệu dự án The Sun Avenue), hỏi "biết phí chưa" sau đăng
+  (SRS-81), hq_hem_xe_hoi (bộ chấm bắt chữ "xe hơi" khi bot tả căn có thật).
+
+### SRS-5.1zzzzzzz416 · Bảng tài chính phía mua ra công cụ (11/11/2026)
+Chủ dự án 11/11 (dán lại nguyên tắc SRS-391): "Prompt chỉ giữ nhiệm vụ tư duy và hành văn. Mọi dữ liệu tra cứu, tính toán phức tạp phải tách
+ra thành các Công cụ nguyên tử". Soát lại: phí (`tinh_phi_moi_gioi`), dải giá (`dinh_gia_tham_khao`), pháp lý sổ, phong thuỷ, quy hoạch, thuế
+phí, vay đã là công cụ; lượt chào chưa có dữ kiện đã đi đường đọc nhanh (SRS-406, log 146 xác nhận). Bảng còn nằm cứng là `khoi_tai_chinh`
+trong phần cố định prompt mua.
+- `mua_co_dinh` bỏ `khoi_tai_chinh()` (7.155 → 5.898 ký tự); dòng luật đổi thành "gọi `tinh_vay_tra_gop`, chỉ nói số trong kết quả".
+- `tinh_vay_tra_gop` không có giá vẫn trả số tham khảo (lãi suất, sinh lời, tỷ lệ vay, vốn tự có); có giá / mã căn thì kèm bảng trả góp.
+- Lưới soát số phía mua (`_soat_so_can_mua`) coi kết quả công cụ đã tra lượt này (`y_luot["_ket_qua_tra"]`) là nguồn hợp lệ.
+
+### SRS-5.1zzzzzzz415 · Prompt gọn: hiểu nỗi lo chủ nhà, hỏi như trò chuyện (11/11/2026)
+Chủ dự án 11/11: "chỉ thêm insight, làm sao để đủ thông tin mà không hỏi nhiều cảm giác hỏi cung khiến người ta khó chịu là dc"; "không phải
+báo khách cần gì để ra bản nháp chỉ tự bot ngầm hiểu thôi".
+- `LEAN_SYSTEM_PROMPT` thêm HIỂU CHỦ NHÀ (lo ép giá / bán hớ, nhà trống lâu, ngại thủ tục) — nỗi lo nào lộ ra trong lời khách thì đáp bằng
+  việc bên em làm thật (rao theo giá chủ, đưa tin tới khách đang tìm, có khách hỏi báo ngay, phí chỉ thu khi thành công); không gán nỗi lo.
+- Thêm HỎI NHƯ TRÒ CHUYỆN: câu hỏi là sự tò mò về căn, nối từ điều khách vừa kể; hỏi mở cho khách kể nhiều ý một lúc; còn thiếu gì để soạn
+  tin là việc bot tự nắm, khách không hỏi thì không kể. 2.925 → 3.8xx ký tự, không chữ "CẤM / TUYỆT ĐỐI".
+- Không đổi: cổng bản nháp (SRS-260), một câu hỏi mỗi lượt. Phía mua đã có insight ở `khoi_nhan_vat`.
+
+### SRS-5.1zzzzzzz414 · Prompt lượt hỏi phía bán viết lại theo nguyên tắc, bỏ luật vá (11/11/2026)
+Chủ dự án 11/11: "phiếu cũ có mấy cái ko sửa từ gốc mà có mấy cái sửa vá như tuyệt đối không các thứ", "còn mấy cái luật linh tinh nữa".
+- `LEAN_SYSTEM_PROMPT` (công tắc `AIOI_PROMPT_GON=bat`) viết lại thành năm phần nói thuận: NHÂN VẬT · CÁCH EM NHẮN · SỰ THẬT · tin hệ thống ·
+  HIỂU TIẾNG NGHỀ. 7.243 → 2.925 ký tự. Bỏ các luật đếm / danh sách chữ cấm sinh từ từng ca; gốc chung ("nói như người thật, không lặp khuôn
+  của chính mình", "điều hệ thống chưa làm thì chưa nói là đã làm", "chỉ hứa điều hệ thống thật sự làm") ghi MỘT lần ở phần cố định.
+- Các khối tình huống engine nối thêm (xin đăng, mặt tiền, chào lượt đầu, hỏi sau đăng, hỏi cọc, tình hình bán, định giá, cần người, ngoài
+  việc, phí, link, nhiều căn, chưa rõ căn, tách bán / thuê, dự án gợi ý, trùng tên, địa danh, trạng thái web, sắp xin sao, tin hiện ngoài
+  chat, `viec_phieu`) chỉ còn SỰ KIỆN hệ thống + VIỆC lượt này; bỏ "KHÔNG / TUYỆT ĐỐI / DUY NHẤT / MỘT câu / không nài / không hứa giờ…"
+  lặp lại phần cố định. Khối thay việc hỏi ô thì nói rõ "thay VIỆC LƯỢT NÀY".
+- Bước ghi của vòng agent gộp (`agent_gop._he_ghi`) dùng cùng phần cố định với bước viết (`prompts.co_dinh_ban`) — trước đó bước ghi luôn
+  dùng phiếu cũ dù đã bật prompt gọn, hai bước một lượt chạy hai bộ luật. Công tắc đọc ở một chỗ (`prompts.prompt_gon_bat`).
+- Tắt công tắc thì về phiếu cũ (`phieu_co_dinh`); khối tình huống dùng chung cả hai đường.
+
+### SRS-5.1zzzzzzz413 · Rổ hàng Ny'ah Phú Định 50 căn có giá + khôi phục 243 tin thử (11/11/2026)
+- **Ca gốc**: danh mục Ny'ah (đọc ảnh 20/10) thiếu lô 25, 26, sai mẫu nhà, không giá; 243 tin rao mẫu mất sau nút "Xoá hết khách + rổ hàng" lúc 13:33. `[nguồn: chủ dự án 11/11/2026: "căn 25 26 nữa, thêm vào đi … 2 trăm mấy … đâu hết rồi"]`
+- **Sửa** (`20261111b_nyah_ro_hang_va_khoi_phuc_tin.sql`): 50 căn dựng lại từ bảng chuẩn 50 lô (9 lô còn trống 01, 02, 03, 23, 24, 25, 26, 42, 50 có giá, đất thực, bán cặp); khôi phục sellers / listings / listing_noi_bo của lần xoá 12 (không khôi phục hội thoại cũ).
+
+### SRS-5.1zzzzzzz412 · Gộp dự án trùng tên trong kho `projects` (11/11/2026)
+- **Ca gốc**: bot hỏi khách chọn giữa "HaDo Centrosa Garden" và "Hà Đô Centrosa Garden" — cùng một dự án, hai dòng. `[nguồn: chủ dự án 11/11/2026: "còn dự án nào gần trùng ko, làm chuẩn luôn, gộp hết đi"]`
+- **Sửa** (`20261111a_gop_du_an_trung.sql`): gộp cùng khoá tên (bỏ dấu, tiền tố loại, ký tự lạ) + cùng quận + cùng nhóm (căn hộ / khu dân cư), thêm cặp soát tay theo vector nhúng; dòng giữ = nhiều tin → nhiều kiến thức → dữ liệu dày; tên đẹp nhất, sửa mã HTML. 2.924 → 2.839. Vòng 3 (`20261111c`, chủ dự án: "gộp hết"): gộp nốt giai đoạn 1/2/3, chung cư + KDC cùng tên, cùng dự án khác quận → 2.819.
+
+### SRS-5.1zzzzzzz411 · Thiếu phường mà chưa có số nhà: hỏi số nhà MỘT lần rồi mới báo admin (11/11/2026)
+- **Ca gốc** (test 11/11): "Trần Bình Trọng, quận 5" không số nhà → đường qua nhiều phường → báo admin ngay. `[nguồn: chủ dự án 11/11/2026: "sửa hết đi để t test lại"]`
+- **Sửa**: `Engine._trang_thai_web` — `DiaDanh.co_so_nha` (cùng khuôn `phuong_theo_so_nha`) chưa có số → `web.hoi_so_nha`, `_da_hoi_so_nha`; `khoi_trang_thai_web` hỏi đúng 1 câu số nhà, không nói chữ phường. Có số nhà → `_phuong_tu_dia_chi` tra lại; vẫn không ra → báo admin như SRS-359.
+
+### SRS-5.1zzzzzzz410 · Prompt ngắn có lại giọng nhân vật, từ điển tiếng lóng đầy đủ, luật cố định, tin hệ thống (11/11/2026)
+- **Ca gốc**: SRS-408 dùng `LEAN_SYSTEM_PROMPT` → mất GIONG_VUI, SLANG_NOTES đầy đủ (nở hậu, HXH, MTKD, SHC, vi bằng…), luật "không hỏi lại điều khách đã nói", TIN_HE_THONG (thoại / sticker / cảm xúc). `[nguồn: chủ dự án 11/11/2026: "từ điển tiếng lóng đầy đủ, giọng nhân vật"; "sửa hết đi"]`
+- **Sửa**: `LEAN_SYSTEM_PROMPT` = phần thấu hiểu khách + GIONG_VUI + LUẬT CỐ ĐỊNH + TIN_HE_THONG + SLANG_NOTES. Bỏ danh sách công cụ (công cụ tự mang schema), quy trình ký gửi (thứ tự do code quyết ở VIỆC LƯỢT NÀY), bố cục tin rao (lượt hỏi ô không soạn tin). Cỡ phiếu lượt: 7.134 ký tự (phiếu cũ 6.414; bản 408 4.515).
+
+### SRS-5.1zzzzzzz409 · AI bóc SỐ kích thước, code chỉ tính diện tích — bỏ regex dò chuỗi (11/11/2026)
+- **Ca gốc** (test 11/11): "ngang 6 sâu 15 nở hậu 3" → ô `kich_thuoc` chữ tự do, regex `_calc_area_from_dimension` không biết "sâu", không biết nở hậu → không ra m² → tin không lên web, bot hỏi lại diện tích. `[nguồn: chủ dự án 11/11/2026: "tao tưởng là AI bóc tách chứ sâu là chữ dài chứ đâu phải regex"]`
+- **Sửa**: ô bóc tách mới `dai_m`, `hau_m` (bề hậu thật, AI tự tính nở / tóp hậu) + `mat_tien` làm bề ngang. `schema.dien_tich_tu_kich_thuoc`: ngang × dài, có hậu thì (ngang + hậu)/2 × dài, luôn "khoảng"; ô do code tính đánh dấu `_dt_tu_kich_thuoc`, tính lại khi khách bổ sung. `listings.frontage_m / length_m / rear_width_m` ghi thẳng số AI bóc. Xoá `_calc_area_from_dimension`. Thay luật "KHÔNG tự nhân" của SRS-363.
+
+### SRS-5.1zzzzzzz408 · Lượt hỏi ô người bán dùng LEAN_SYSTEM_PROMPT (11/11/2026)
+- **Ca gốc**: `LEAN_SYSTEM_PROMPT` (SRS-391, đã sửa "MỘT ý" ở SRS-407) chỉ test dùng; SRS-403 nối nó vào lượt viết lời nhưng #311 (SRS-404) hoàn tác cả gói. `[nguồn: chủ dự án 11/11/2026: "dùng prompt ngắn kia"]`
+- **Sửa**: khôi phục `prompts.lean_system_prompt_cho_luot` và nhánh chọn trong `Engine` (lượt hỏi ô, `not is_listing_post`): `AIOI_PROMPT_GON=bat` → prompt gọn, khác → `build_phieu_luot`. Bật ở `bot/cau-hinh-loi.env` và `.env` lõi trên 146. KHÔNG khôi phục lối tắt tin chào (`la_tin_chao_hoi_thuan_tuy`) của SRS-403.
+- **Đánh đổi đã biết**: lượt hỏi ô mất khối TIN_HE_THONG / SLANG_NOTES đầy đủ / giọng nhân vật của phiếu lượt — các bài canh luật cũ (SRS-404) có thể đỏ; theo quyết định chủ dự án, không hoàn tác vì lý do đó. Tắt: đổi `AIOI_PROMPT_GON=tat` trên 146 rồi khởi động lại "AOND Core".
+- **Kiểm**: không chờ CI (chủ dự án 11/11). Đưa lên 146 bằng `trien-khai-146.sh`.
+
+### SRS-5.1zzzzzzz407 · Mỗi lượt bot chỉ hỏi MỘT ý (CUM_TOI_DA 2 → 1) (11/11/2026)
+- **Ca gốc**: SRS-391 nâng `schema.CUM_TOI_DA` lên 2 (gộp hai ô cùng cụm vào một câu hỏi), trái luật đang áp "tối đa MỘT câu hỏi mỗi lượt" (CLAUDE.md §6.2). `[nguồn: chủ dự án 11/11/2026: "sửa mỗi lượt chỉ hỏi 1 ý thôi"; "giờ tôi bảo bạn sửa gì là bạn sửa luôn không có cl hay test xanh đỏ gì hết"]`
+- **Sửa**: `CUM_TOI_DA = 1`; câu "tối đa 1–2 ý" trong `LEAN_SYSTEM_PROMPT` đổi thành MỘT ý; `test_toi_uu_ky_gui_391` theo giá trị mới.
+- **Kiểm**: theo quyết định chủ dự án — không chạy test, không chờ CI; gộp thẳng. Cần đưa lõi lên 146 (`trien-khai-146.sh`).
+
+### SRS-5.1zzzzzzz406 · Tin đầu chưa rõ vai: một lượt AI ngắn đọc tin, chưa có gì để ghi thì bỏ form lập thao tác đầy đủ (~56 nghìn chữ) (11/11/2026)
+- **Ca gốc**: tin đầu "em ơi" tốn $0.1103 (Sonnet 5.5): ~$0.10 là ghi cache lượt lập thao tác chạy form đầy đủ (`OPERATIONS_SYSTEM` 28,6 nghìn chữ + `operations_schema()` 27,3 nghìn chữ) dù tin chưa có gì để ghi; sổ `bot_usage_model` 11/11: ghi cache ≈ 76 % tiền. `[nguồn: chủ dự án 11/11/2026: "tin đầu chưa rõ khách bán hay mua thì không chạy bản bóc tách 56 nghìn chữ, nhưng vẫn để AI xác định vai và giữ nguyên phiếu lượt cùng giọng … KHÔNG CẦN chạy bộ chấm kịch bản (chỉ cần bun run kiem và pytest xanh 100%)"]`
+- **Lớp lỗi**: lượt lập thao tác chạy vô điều kiện, cỡ prompt không theo việc của tin. SRS-403 (hoàn tác, SRS-404) vá bằng regex chào hỏi + bỏ luôn lượt định vai. Cùng lớp CÒN: cache 5 phút hết hạn giữa hai tin khách chậm (ghi lại mỗi lượt); token suy nghĩ mặc định của Sonnet 5.5 ở lượt viết lời; lượt soát ô hỏi phụ (`_khai_o_hoi`).
+- **Sửa** (đường thật duy nhất, không công tắc): vai CHƯA rõ (không qua vòng agent bán / mua) → `Engine._doc_nhanh_chua_ro_vai` gọi `DOC_NHANH_SYSTEM` + `doc_nhanh_schema()` (cờ `can_doc_day_du` + 5 ô `user_intent` / xã giao / xưng hô lấy NGUYÊN mô tả của form đầy đủ, kèm tin bot vừa nhắn). AI trả RÕ `false` → kế hoạch rỗng mang vai AI đọc; thiếu cờ / lỗi / có ảnh / đã có ô tin, bản nháp, thao tác chờ, tin "Trả lời", tin rao thật → form đầy đủ như cũ. Lượt viết lời không đổi. Không thêm regex.
+- **Kiểm**: `tests/test_doc_nhanh_406.py` (7 bài; system lượt viết lời GIỐNG HỆT đường form đầy đủ trả cùng kế hoạch; đỏ 4/7 khi gỡ lời gọi — đã thử); `test_form_mua_gon_293` đồ giả trả "cần đọc đầy đủ"; `bun run test:py` 1525 đạt. Không chạy bộ chấm (chủ dự án). Sau gộp: `scripts/sau-gop.sh` đưa lên 146.
+
+### SRS-5.1zzzzzzz405 · 14 script bắn thử production chạy từ máy cá nhân qua ssh vào máy 146 (thay VPS); gỡ các ô bắn thử khỏi Actions (11/11/2026)
+- **Ca gốc**: bỏ VPS 06–08/11 mà `bot/tests/ban-thu-*.sh` + `doc-log-loi.sh` vẫn đọc Vault `VPS_HOST` rồi `sshpass root@VPS` → mọi ô bắn thử chết; GitHub Actions không với tới 146 (lõi chỉ nghe 127.0.0.1, máy sau Tailscale), và mọi đường gọi lõi phải kèm `x-noi-bo-key` (SRS-400). `[nguồn: chủ dự án 11/11/2026: chọn "chạy ssh máy 146 từ máy tôi" thay vì cho Actions vào Tailscale; Host `nuc` → 192.168.1.146, tài khoản admin `nguye`]`
+- **Lớp lỗi**: đổi hạ tầng mà công cụ kiểm vẫn trỏ máy cũ, không bài nào canh. Chỗ khác cùng lớp: lệnh dọn `/reset` của `ban-thu-khach-ao` thiếu khoá nội bộ từ SRS-400 (sửa); `ban-thu-luan` dựng dịch vụ systemd (Linux) cho bản anh Luận — CÒN, script thoát 2 "chưa kiểm được" tới khi có dịch vụ Windows riêng.
+- **Sửa**: `bot/tests/lib/may146.sh` dùng chung: đọc khoá nội bộ qua `ssh "$MAY_146"` (mặc định `nguye@192.168.1.146` như `trien-khai-146.sh` — máy `nuc` cũ đã bỏ, chủ dự án 11/11; ngoài mạng `MAY_146=nguye@100.85.245.112`), mở đường hầm `127.0.0.1:$CONG_146 → 8000`, giữ giao diện `vps "…"` cũ (`curl …:8000` chạy tại máy cá nhân, tự kèm khoá; `journalctl …|` → nhật ký 146 trong `C:\aond\logs` từ lúc bắt đầu; lệnh Linux khác → mã 2). 14 script thay khối VPS bằng một dòng nạp; `doc-log-loi` đọc N dòng cuối (log 146 không có giờ nên không lọc theo khoảng giờ). Gỡ 16 ô `ban-thu-*` / `doc-log-loi` khỏi `apply-migration.yml`. Cần `TOKEN` (Management API) ở máy chạy.
+- **Kiểm**: `bot/tests/may146.tu-kiem.sh` (trong `test:bot`, ssh / curl giả) 9/9 — đỏ khi bỏ phần kèm khoá (M146-04/05 hỏng, đã thử); `bash -n` 16 script. CHƯA chạy trên 146 thật từ phiên cloud (không ssh được) — lần chạy đầu ở máy chủ dự án.
+
+### SRS-5.1zzzzzzz404 · Hoàn tác SRS-403 (lối tắt tin chào + prompt gọn chạy thật): 7 bài canh luật đỏ trên bản đã lên máy 146 (11/11/2026)
+- **Ca gốc**: `99026e5` (SRS-403) đẩy thẳng lên `main` không qua PR / CI rồi triển khai lên 146; chạy `pytest` trên `main` → 7 đỏ / 1515 đạt: lượt người bán mất `TIN_HE_THONG` + `SLANG_NOTES` (`test_go_cong_tac_319`), khối giọng + đầu bước 2 vòng gộp (`test_agent_gop_371`), "ĐIỂM TIN" (`test_kich_ban_srd_aond`), câu chặn hứa gửi bản tin (`test_khong_hoi_lai_302`); "chào em" ở số ký gửi không còn câu chào ký gửi (`test_vai_theo_so_331`, `test_hoi_quy_02_11_340` — lối tắt bỏ qua lượt AI định vai); thêm 4 regex đoán ý trong `chu.py` (`test_kiem_ke_regex_382`, CLAUDE.md §4.8); prompt gọn ghi "tối đa 1–2 ý" trái luật một câu hỏi. `[nguồn: chủ dự án 11/11/2026: "Đồng ý" hoàn tác]`
+- **Lớp lỗi**: đổi hành vi bot đẩy thẳng `main` → không CI, không bộ chấm; prompt gọn THAY phiếu lượt thay vì rút gọn nó nên mọi luật chỉ sống trong phiếu rơi theo. Cùng lớp: `AIOI_PROMPT_GON=bat` còn trong `.env` lõi trên 146 (code không còn đọc — gỡ tay cho khớp `bot/cau-hinh-loi.env`).
+- **Sửa**: `git revert 99026e5` (code, test, cấu hình, docs); nguyên văn SRS-403 giữ ở `07-srs-luu-tru.md` nhãn `[deprecated]`. Phần tiết kiệm (lượt chào không chạy bóc tách lớn) làm lại sau trong PR có test, giữ vai / giọng / luật phiếu lượt.
+- **Kiểm**: `bun run test:py` trên bản hoàn tác hết đỏ (1518 đạt); sau khi gộp phải chạy lại `scripts/trien-khai-146.sh`.
+
 ### SRS-5.1zzzzzzz403 · [deprecated — hoàn tác bởi SRS-5.1zzzzzzz404] Fast-Path bỏ qua bóc tách tin chào hỏi và đưa LEAN_SYSTEM_PROMPT chạy thật (11/11/2026)
 - **Ca gốc**: Đối soát ảnh nhật ký thực tế (`media_1794374178641_f7b4f6b2.jpg`): một lượt nhắn mở đầu đơn giản "em ơi" tốn tới $0.1103 chủ yếu do ghi Cache (gần 40.000 tokens ghi cache) vì lượt lập thao tác (bóc tách) gửi `OPERATIONS_SYSTEM` (28.6k chữ) + `operations_schema` (41.8k chữ) = hơn 70.000 ký tự dù khách chưa hề cung cấp thông tin căn nhà nào; đồng thời `LEAN_SYSTEM_PROMPT` (<1.500 tokens của SRS-391) trước đây chỉ là chuỗi tĩnh trong test chưa được kích hoạt chạy thật `[nguồn: chủ dự án 11/11/2026: "làm sao để prompt gọn chạy đi, ngáo à, làm xong ko cho chạy thử kiểu gì", "làm cả 2 đi", "nó chạy trên cloud không vào cài trên ssh dc thì phải mày làm đi"]`.
 - **Lớp lỗi**:
@@ -86,6 +230,66 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
   4. Bổ sung `lean_system_prompt_cho_luot(...)` trong `src/aioi/prompts.py`, bảo tồn tên trợ lý có dấu chấm giữa (`Th•ái`, `M•ai`), tích hợp Customer Insight và AD_FORMAT.
   5. Đưa công tắc `AIOI_PROMPT_GON=bat` vào `bot/cau-hinh-loi.env` và `C:\aond\aond_core\.env` trên máy 146 để kích hoạt `LEAN_SYSTEM_PROMPT` chạy thật ở production.
 - **Kiểm**: `tests/test_fast_path_va_lean_prompt_403.py` (đạt 4/4 ca: nhận diện câu chào, fast-path bỏ qua extract, prompt <1.500 tokens bảo tồn tên trợ lý có dấu chấm, công tắc kích hoạt thành công); soát migration 406/406; soát truy vết SẠCH. Bắn thử "em ơi" lên máy 146 phản hồi 200 OK với Th•ái.
+
+### SRS-5.1zzzzzzz402 · Còi máy 146: lõi chết, bridge số tư vấn chết, Zalo văng phiên chờ quét QR đều không ai báo (11/11/2026)
+- **Ca gốc**: soát đề xuất "watchdog" 11/11 trên DB thật: `bot_health_tick` (cron 15 phút) chỉ canh nhịp `bridge-zca`; nhịp `bridge-zca-tu-van` có ghi mà không ai đọc; lõi chết thì bridge vẫn gõ nhịp đều (`model_chinh` chỉ có khi có lượt gọi Claude); bridge chờ quét QR cũng vẫn gõ nhịp; lời báo còn ghi "VPS / nhadat-bridge". Thêm: `app_config.ntfy_topic` trống → `canh_bao_ngoai` không gửi đâu cả, kênh báo duy nhất là tin 🚨 đi qua chính bridge số ký gửi. `[nguồn: chủ dự án 11/11/2026, "cải thiện mấy cái này" — mục 4 Watchdog]`
+- **Lớp lỗi**: nhịp tim đo "tiến trình gõ cửa" chứ không đo "dịch vụ phục vụ được"; thêm thành phần (số tư vấn, lõi tách khỏi bridge) mà không thêm vào còi. Cùng lớp CÒN: bridge số ký gửi chết thì tin 🚨 nằm chờ và không có kênh ngoài cho tới khi chủ dự án đặt `ntfy_topic`; còi chỉ chạy 7–22 giờ (giữ như cũ).
+- **Sửa**: lõi đóng nhịp `aond-core` mỗi 60 s (`server._vong_nhip_loi`, `SoToken.beat`); migration `20261111a`: `bot_health_tick` gom vào MỘT tin 🚨 (tiết chế 1 giờ như cũ): số ký gửi (giữ hành vi cũ), số tư vấn / lõi im > 15 phút (chỉ khi đã từng có nhịp — chưa triển khai thì không báo nhầm), `bridge_dang_nhap` ở `cho_quet` / `het_han` / `tu_choi` > 10 phút; bỏ chữ "VPS".
+- **Kiểm**: `tests/test_coi_may_146_402.py` (đỏ khi lõi thôi đóng nhịp, migration bỏ một ca, lời báo còn "VPS"); chạy thử trên DB thật trong giao dịch huỷ — giả lập lõi im 20 phút + số tư vấn chờ QR 12 phút → `su_co` đủ 2 dòng, tin 🚨 đúng chữ; sau đó DB không đổi. Đã áp lên DB 11/11/2026 (apply-migration run 688, chủ dự án: "áp đi"); hàm trên DB có `su_co`, không còn chữ "VPS".
+
+### SRS-5.1zzzzzzz401 · Dọn mã: xoá dump MOSO + script sinh migration một lần, lưu trữ script nạp nguồn ngoài và tàn dư VPS; công tắc lõi sang `bot/cau-hinh-loi.env` (11/11/2026)
+- **Ca gốc**: repo còn `scripts/moso_projects_hcm.json` (794 KB, đã nạp + hợp nhất, SRS-396), `sinh-xa-dong-nai.py` / `sinh-xa-tay-ninh.py` (sinh xong `20261022a/b`), 5 script nạp mogi / rever / MOSO chạy được qua ô `nap-du-an*` (chạy lại là ghi đè nguồn ngoài lên chuẩn `aond`), và `cai-vps.sh` / ô `cai-vps` / `go-trang-thu` SSH vào VPS đã bỏ — nhưng test vẫn đọc công tắc production từ `cai-vps.sh`. `[nguồn: chủ dự án 11/11/2026, yêu cầu dọn mã ba giai đoạn]`
+- **Lớp lỗi**: đổi hạ tầng / đổi nguồn dữ liệu mà công cụ cũ vẫn gọi được và vẫn là "một nguồn" của test. Cùng lớp đã sửa: hai unit systemd `nhadat-bridge*.service` (cùng vào `bot/bridge-zca/archive/`), ô `nap-du-an` / `nap-du-an-rever` / `nap-du-an-moso`, 2 bài kiểm "cai-vps đưa khoá Vault vào .env" + 8 ca AMN canh cai-vps (gỡ cùng chức năng), README còn IP VPS. Cùng lớp CÒN: 14 script `bot/tests/ban-thu-*.sh` / `doc-log-loi.sh` vẫn SSH bằng `VPS_HOST` (ô bắn thử production chết tới khi chuyển sang 146). Giai đoạn 3: soát tĩnh (AST, đóng bao từ mọi chỗ import trong `src/` `tests/` `scripts/`) — `prompts.py` không có tên nào chết, không xoá gì; riêng `LEAN_SYSTEM_PROMPT` (SRS-391) chỉ test dùng, không đường production nào ghép vào prompt — giữ theo yêu cầu, ghi để biết.
+- **Sửa** (Quyết định BA, uỷ quyền): xoá 3 tệp; `git mv` 5 script vào `scripts/archive/` (+ README; script đọc `.env` cạnh mình nên lỡ chạy cũng không có khoá), bài kiểm hàm thuần rever / moso trỏ đường mới; `cai-vps.sh`, `VPS.md`, 2 unit → `bot/bridge-zca/archive/`; công tắc + model một nguồn ở `bot/cau-hinh-loi.env` (`KHOA=giatri`, cùng tên biến `.env` lõi), `tests/cau_hinh_vps.py` đọc tệp này; chú thích trong `src/aioi/` chỉ đổi chữ, không đổi hành vi.
+- **Kiểm**: `cong_tac_vps(nhu="thu")` trước / sau giống hệt 7 biến; `test_cham_nhu_khach.py` dựng tệp `.env` mẫu (đỏ khi bộ đọc còn đòi dòng `printf` của cai-vps); `bun bot/tests/aond-mot-nguon.mjs`, `bun run kiem`, `soat-truy-vet.sh`, `soat-migration.mjs` (405 / 405, 144 hàm).
+
+### SRS-5.1zzzzzzz400 · Lõi và bridge không xác thực — tiến trình nào trên máy 146 cũng đọc rổ hàng, xoá khách, nhắn Zalo từ số clone (08/11/2026)
+- **Ca gốc**: audit bảo mật 08/11 (N3 + C5). Lõi `127.0.0.1:8000` nhận `/chat-reply` (Zalo ID bất kỳ + `/state` lộ nhu cầu; ID admin + `#MÃ` giả lệnh), `/reset/{id}` xoá khách trên Supabase thật, `/docs` mở; bridge `/send` nhắn tuỳ ý tới mọi uid, body vô hạn. Bridge còn gửi `BRIDGE_SECRET` tới lõi (ai chiếm cổng 8000 lúc khởi động lại là có khoá escalation-feed). `[nguồn: chủ dự án 08/11/2026: "Vá N3 tiếp"]`
+- **Lớp lỗi**: coi "chỉ nghe 127.0.0.1" là ranh giới tin cậy trên máy dùng chung. Chỗ khác cùng lớp: mọi đường của lõi (`/message`, `/reset-all`, `/trigger-followup`) và cả hai cổng `/send` (5005, 5006) — sửa hết.
+- **Sửa**: khoá chung `AIOI_NOI_BO_KEY` (header `x-noi-bo-key`, so hằng thời gian) ở `.env` lõi + `.env` bridge. Lõi (`khoa_noi_bo.py`, middleware): mọi đường trừ `/health` đòi khoá, thiếu khoá trên máy → 503 (không mở trần); tắt `/docs` `/openapi.json`; lõi gửi `/send` kèm khoá. Bridge: `/send` đòi khoá + chỉ `application/json` + trần 64 KB; gọi lõi chỉ kèm khoá nội bộ, `BRIDGE_SECRET` chỉ đi escalation-feed. Script `bot/tests/ban-thu-*.sh` thời VPS (curl thẳng lõi) phải thêm header khi chuyển sang 146.
+- **Kiểm**: `tests/test_khoa_noi_bo.py` — 5 đường không khoá → 401, sai khoá → 401, thiếu khoá trên máy → 503, `/health` mở, `/docs` 404, `_gui_bridge` kèm khoá, mã bridge có kiểm khoá / 413 / 415. Trên 146: request không khoá → 401, chat qua bridge vẫn chạy.
+
+### SRS-5.1zzzzzzz399 · Máy 146: user Windows thường sửa được mã chạy dưới SYSTEM và đọc được `.env` (08/11/2026)
+- **Ca gốc**: audit bảo mật 08/11 (N2). `C:\aond` (cả `.env`, `zalo-session*.json`, `src`, `svc_*.cmd`, `venv`) thừa hưởng ACL gốc `C:\`: `Authenticated Users: Modify`, `Users: Read`; ba task AOND chạy dưới SYSTEM, máy có tài khoản thường đang bật. `[nguồn: chủ dự án 08/11/2026: "Vá N2 tiếp"]`
+- **Lớp lỗi**: thư mục dịch vụ tạo thẳng dưới `C:\` không ai siết quyền. Các bot khác trên 146 (`C:\gatemonitor`, `C:\goi-bot`…) cùng lớp nhưng không thuộc repo này: bản đầu siết cả 9 thư mục, chủ dự án chốt chỉ sửa AOND ("bot khác kệ nó bạn cần sửa ở bot AOND thôi") → trả nguyên ACL cũ cho 8 thư mục kia cùng ngày từ bản sao lưu.
+- **Sửa**: `scripts/siet-acl-146.ps1` (sao lưu ACL vào `C:\ProgramData\acl-backup-20261108`, tắt thừa kế): `C:\aond` chỉ SYSTEM + Administrators. `trien-khai-146.sh` chép bằng `robocopy` không `/SEC` nên file mới thừa hưởng quyền đã siết. Lõi chạy `C:\aond\venv`.
+- **Kiểm**: `icacls` Authenticated Users = 0 ở `C:\aond` (cả `.env`, cookie Zalo, `svc_aond_core.cmd`); 8 thư mục bot khác trở lại `Authenticated Users:(I)(M)` như trước; dịch vụ Running, `/health` OK.
+
+### SRS-5.1zzzzzzz398 · Cổng quyền hàm admin dùng `current_user` — mọi tài khoản đăng nhập web gọi được hàm xoá hết (08/11/2026)
+- **Ca gốc**: audit bảo mật 08/11 (N1). Tài khoản `authenticated` không phải admin gọi `admin_cap_nhat_khach` trên DB thật → `{"ok": true}`; cùng lỗi ở `admin_xoa_het_khach_va_ro_hang`, `admin_khoi_phuc_lan_xoa`, `don_du_lieu_thu`, `admin_gan_bds_quan_tam`, `admin_xoa_bds_quan_tam`, `log_loi` (trần 200 dòng/giờ của anon vô hiệu). `[nguồn: chủ dự án 08/11/2026: "Vá N1 ngay"]`
+- **Lớp lỗi**: trong hàm SECURITY DEFINER, `current_user` là chủ hàm (`postgres`) nên vế `current_user in ('postgres', …)` luôn đúng. TS-SEC3 kiểm bằng `set role` (vẫn phiên `postgres`) nên không bắt được. Chỗ khác cùng lớp: soát mọi hàm SECURITY DEFINER trong `public` — 8 hàm, sửa cả 8 (`xuat_schema` không cấp cho `authenticated` nên chưa hở).
+- **Sửa** (migration `20261108b`): 5 hàm `admin_*` chỉ còn `la_admin()` hoặc `service_role`; `don_du_lieu_thu`, `log_loi`, `xuat_schema` đổi sang `session_user` (vai đăng nhập: PostgREST = `authenticator`, pg_cron / mgmt-api = `postgres` / `supabase_admin`, đo `pg_stat_activity`); thu EXECUTE `don_du_lieu_thu` của `authenticated` (web không gọi).
+- **Kiểm**: chạy thử trên DB thật trong giao dịch huỷ: người thường bị chặn cả 6 hàm, admin thật và `service_role` qua, `xuat_schema` từ mgmt-api qua. `tests/test_cong_admin_khong_dung_current_user.py` đỏ khi `schema.sql` còn hàm SECURITY DEFINER dùng `current_user`.
+
+### SRS-5.1zzzzzzz397 · Soát và sửa đợt MOSO 06/11 (SRS-388…396): số sai, cam kết không có thật, luật bản nháp bị bỏ (08/11/2026)
+- **Ca gốc**: Đợt 06/11 đẩy thẳng main 14 commit. Hậu quả: 10 test đỏ, CI đỏ. Nhiều công cụ mới trả số sai hoặc bịa dữ kiện. `[nguồn: chủ dự án 08/11/2026: "có định giá, đọc kĩ code đi", "không đi qua PR, sửa lỗi của nó xem, dùng bản prompt gọn để bắn thử 1 đoạn"]`
+- **Giữ**: định giá tham khảo, `CUM_TOI_DA = 2` (chủ dự án duyệt 06/11), prompt gọn + Customer Insight, bộ công cụ nguyên tử.
+- **Sửa — luồng hỏi & prompt**:
+  - Gỡ Fast-Draft. Luật bản nháp SRS-260 (giá · vị trí · quy mô · pháp lý · hiện trạng) vẫn đứng, vì trích dẫn 06/11 không duyệt việc bỏ nó. Fast-Draft còn làm mất lượt hỏi lại diện tích mơ hồ và mặt tiền.
+  - Trả lại câu "hỏi chủ nhà NGAY, KHÔNG hỏi lại khách" mà bản 06/11 lỡ xoá.
+  - `luu_so_dien_thoai` kiểm `tim_sdt`, và số phải có trong lời khách.
+  - `tim_can` không có kết quả thì không dặn model "nêu mặt bằng giá" (không có dữ liệu thì model bịa).
+  - Câu xin ảnh không hứa "che số nhà" trên ảnh.
+  - Prompt gọn chỉ nhắc công cụ có thật. Bỏ "Fast-Draft ~50 điểm".
+  - `du_an_theo_khu` mã hoá tham số `province`.
+- **Sửa — công cụ tính toán**:
+  - Quái số lấy hai số cuối năm sinh. Bản 06/11 ra 1988 nam = Khôn; đúng là Chấn.
+  - Phí công chứng một nguồn `phap_ly.phi_cong_chung`. Bản 06/11 sai bậc > 10 tỷ.
+  - `tai_chinh` kẹp tỷ lệ vay (70 → 0,7) và bỏ chữ "cao nhất". Công cụ trả số liệu, không trả câu "Dạ…" viết sẵn.
+- **Sửa — định giá & đàm phán**:
+  - Phân vùng khớp nguyên từ (Q1 ≠ Q12), thêm Q4/5/6/11. Vùng lạ hoặc loại hình không có trong bảng → "không có số", không đoán nội thành.
+  - Loại hình đọc `prop.loai_hinh`. Bỏ hệ số mặt bằng nhân hai lần.
+  - Phí môi giới lấy theo `SALE_FEE_RATE`. Bỏ "3 Thật / lên Top / che SĐT / công chứng trọn gói".
+  - Đàm phán có nhánh người bán, nhận đúng slug; bỏ "đòn bẩy ép giá" chủ nhà.
+- **Sửa — dự án**:
+  - So sánh dự án dùng `du_an_mua.dong_du_an`. Bản cũ đọc giá tổng thành triệu/m² và tự điền "CĐT uy tín", "Đã bàn giao".
+  - Quy hoạch nói rõ CHƯA tra bản đồ.
+  - Script nạp dự án chỉ ghi dòng vay khi nguồn có tỷ lệ.
+  - Tỷ lệ vay 70% là bịa: `crawl_moso_projects.py` gắn cứng `bank_support = true, max_loan_ratio = 70` cho mọi dự án (API moso không có trường vay). Đã bỏ ở crawler, bỏ dòng "vay tối đa ~70%" và lọc "hỗ trợ vay" trong khối dự án phía mua. Migration `20261108a_bo_vay_70_mac_dinh.sql` gỡ cặp "Tối đa 70%" / "30%" khỏi `thuoc_tinh` của 1.111 dự án.
+- **Không khôi phục**: xoá nguồn (`source`, `source_url`, `specs.moso`) và gộp dự án của SRS-396 là quyết định của chủ dự án. `[nguồn: chủ dự án 08/11/2026: "tôi báo xóa nguồn và gộp chung đó"]`
+- **Bỏ VPS khỏi quy trình**: gỡ `tu-cai-vps.yml` (mọi push main từ 06/11 đỏ vì gọi `cai-vps` vào VPS đã gỡ). Thêm `scripts/trien-khai-146.sh`; `sau-gop.sh` gọi nó khi đổi lõi.
+- **Đã áp** migration `20261108a` (08/11): 1.111 dự án được gỡ, còn 0 dự án mang dòng vay, 2.924 dự án giữ nguyên `thuoc_tinh`.
+- **Kiểm**: pytest 1503/1503; `test:bot` đạt trừ `giam-egress` (hỏng đường dẫn Windows, cả bản gốc); thêm ca cho từng lỗi trên.
 
 ### SRS-5.1zzzzzzz396 · Hợp nhất toàn bộ dữ liệu từ các nguồn (Mogi, Rever, MOSO) thành 1 chuẩn dữ liệu AOND duy nhất; xóa nhãn nguồn và làm sạch specs (06/11/2026)
 - **Ca gốc**: Sau khi làm giàu kho dự án từ Mogi, Rever và MOSO, kho `projects` (hơn 2.900 dự án) bị phân mảnh cấu trúc: dữ liệu nằm rải rác trong `specs.moso`, `specs.rever`, `specs.gia_dong`, mang nhãn nguồn riêng lẻ (`source = 'moso'`, `source = 'rever'`, `source = 'mogi'`), chứa URL trỏ ra ngoài (`source_url`) và lời thoại bot còn chữ "theo nguồn" [nguồn: chủ dự án 06/11/2026: "gộp chung nguồn dữ liệu từ các nguồn vào thành 1 rồi xóa nguồn đi cho thành 1 loại giống nhau"].

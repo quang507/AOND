@@ -453,6 +453,16 @@ def _model_luot_de() -> str | None:
     return None if v.lower() in ("", "tat") else v
 
 
+def ghi_trang_thai_so(f: dict, loai_gt: object) -> None:
+    """Ảnh sổ là bằng chứng trực tiếp về giấy tờ (SRS-5.1zzzzzzz426): sổ hồng / sổ đỏ → `co_so` + cờ `_da_doc_so` (câu xin ảnh sổ sau đăng
+    không hỏi lại); HĐMB → `hdmb` (không hạ `co_so`). Một chỗ cho ảnh sổ gửi lẻ và ảnh sổ trong lô ảnh (SRS-5.1zzzzzzz432)."""
+    if loai_gt in ("so_hong", "so_do"):
+        f["_phap_ly_trang_thai"] = "co_so"
+        f["_da_doc_so"] = "1"
+    elif loai_gt == "hdmb" and f.get("_phap_ly_trang_thai") != "co_so":
+        f["_phap_ly_trang_thai"] = "hdmb"
+
+
 def _la_id_thu(user_key: str | None) -> bool:
     """ID thử của các ô bắn thử — chỉ để log thêm chi tiết (lời khách thật không vào log)."""
     return str(user_key or "").startswith(_TIEN_TO_ID_THU)
@@ -3276,29 +3286,14 @@ class Engine:
             # Hỏi thêm sau khi tin lên web (SRS-5.1zzzzzzz116): từ lượt SAU lượt xin sao (giữ đúng lúc xin sao chủ dự án chốt), lượt khách
             # chấm sao thì chỉ cảm ơn; mỗi lượt MỘT cụm, mỗi cụm MỘT lần (`_sau_da_hoi`, lưu cùng tin).
             if sau_dang and not xin_sao and not conv.y_luot.get("danh_gia"):
-                so_anh = _image_count(conv.active.media or [])
-                cum_sau = conv.prop.cum_sau_dang(da_hoi, so_anh=so_anh, anh_du=min(ANH_TIN_DEP, self._max_photos))
-                kq_ss = None
-                if cum_sau and cum_sau[0] == "so_sanh":   # SRS-5.1zzzzzzz428: tra căn gần; chưa đủ thì sang cụm kế, mỗi ngày tra lại một lần
-                    hom_nay = time.strftime("%Y-%m-%d")
-                    if conv.prop.fields.get("_ss_tra") != hom_nay:
-                        kq_ss = so_sanh.can_gan(self._convstore, conv.active.listing_id)
-                        if not so_sanh.du_de_gui(kq_ss):
-                            conv.prop.fields["_ss_tra"] = hom_nay
-                            kq_ss = None
-                    if kq_ss is None:
-                        cum_sau = conv.prop.cum_sau_dang(da_hoi | {"sau:so_sanh"}, so_anh=so_anh, anh_du=min(ANH_TIN_DEP, self._max_photos))
+                cum_sau, kq_ss = self.cum_sau_ke(conv.active, da_hoi)
                 if cum_sau:
                     # SRS-5.1zzzzzzz178: mỗi lượt MỘT ô (không hỏi gộp cụm) — ghi "sau:<ô>" để lượt sau tới ô kế của cùng cụm.
                     # Cụm xin ảnh (SRS-5.1zzzzzzz420) ghi theo mã cụm: hai lần xin cùng một ô ảnh.
                     sau_cu = conv.prop.fields.get("_sau_da_hoi")
-                    xin_anh = cum_sau[0] in CUM_XIN_ANH
-                    conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi | {f"sau:{cum_sau[0] if xin_anh else cum_sau[1][0]}"}))
-                    ti = self._tien_ich_that(conv.active) if cum_sau[1][:1] == ["phu_hop_kinh_doanh"] else None   # SRS-5.1zzzzzzz427
-                    system += _hoi("hoi_sau_dang", khoi_xin_them_anh(so_anh, cum_sau[0] == "anh_lan_2", conv.prop) if xin_anh
-                                   else so_sanh.khoi_gui_so_sanh(kq_ss) if kq_ss is not None
-                                   else khoi_hoi_sau_dang(cum_sau[1][:1], conv.prop, ti),
-                                   hoan=lambda cu=sau_cu: _dat_co(conv.prop.fields, "_sau_da_hoi", cu))
+                    khoi_sau, moc_sau = self.khoi_cum_sau(conv.active, cum_sau, kq_ss)
+                    conv.prop.fields["_sau_da_hoi"] = ",".join(sorted(da_hoi | {moc_sau}))
+                    system += _hoi("hoi_sau_dang", khoi_sau, hoan=lambda cu=sau_cu: _dat_co(conv.prop.fields, "_sau_da_hoi", cu))
                     log.warning("Hỏi sau đăng: cụm %s", cum_sau[0])
 
         # SRS-5.1zzzzzzz426 (LQC mảng Pháp lý 2.4 / 2.5): chủ vừa nói chưa hoàn công / căn dự án chỉ có HĐMB → hỏi tiến độ MỘT lần ngay lượt
@@ -4201,11 +4196,7 @@ class Engine:
                 # và KHÔNG đổi loại hình theo sổ (sổ chỉ có đất không biến nhà phố thành đất).
                 f_so = conv.active.prop.fields
                 loai_gt = deed_data.get("loai_giay_to")
-                if loai_gt in ("so_hong", "so_do"):
-                    f_so["_phap_ly_trang_thai"] = "co_so"
-                    f_so["_da_doc_so"] = "1"
-                elif loai_gt == "hdmb" and f_so.get("_phap_ly_trang_thai") != "co_so":
-                    f_so["_phap_ly_trang_thai"] = "hdmb"
+                ghi_trang_thai_so(f_so, loai_gt)
                 so_thieu_nha = (loai_gt in ("so_hong", "so_do") and deed_data.get("nha_tren_so") == "khong"
                                 and conv.active.prop.loai_hinh in (HOUSE_TYPES | {"toa_nha", "chdv", "khach_san"}))
                 if so_thieu_nha:
@@ -4323,6 +4314,35 @@ class Engine:
         """Câu mẫu gửi THẲNG khách, đổi "anh/chị" + "em" theo cách khách xưng (SRS-5.1zzzzzzz254, chủ dự án 28/10: câu viết cứng "anh/chị",
         "Em" sai khi khách xưng em). Chỉ cho câu mà "anh/chị" là cách gọi KHÁCH (không dùng cho câu nói về "anh/chị phụ trách")."""
         return _xung_ho_cau(cau_mau.cau(khoa, **bien), *self._goi_toi(conv))
+
+    def cum_sau_ke(self, li: "Listing", da_hoi: set[str]) -> tuple[tuple[str, list[str]] | None, dict | None]:
+        """Cụm hỏi kế sau đăng của căn `li` + kết quả tra căn gần khi cụm là so sánh (SRS-5.1zzzzzzz428). Dùng chung cho lượt chat và vòng
+        nền hỏi sau đăng (SRS-5.1zzzzzzz432). Cụm so sánh chưa đủ căn → sang cụm kế, mỗi ngày tra lại một lần (`_ss_tra`)."""
+        so_anh = _image_count(li.media or [])
+        anh_du = min(ANH_TIN_DEP, self._max_photos)
+        cum = li.prop.cum_sau_dang(da_hoi, so_anh=so_anh, anh_du=anh_du)
+        kq_ss = None
+        if cum and cum[0] == "so_sanh":
+            hom_nay = time.strftime("%Y-%m-%d")
+            if li.prop.fields.get("_ss_tra") != hom_nay:
+                kq_ss = so_sanh.can_gan(self._convstore, li.listing_id)
+                if not so_sanh.du_de_gui(kq_ss):
+                    li.prop.fields["_ss_tra"] = hom_nay
+                    kq_ss = None
+            if kq_ss is None:
+                cum = li.prop.cum_sau_dang(da_hoi | {"sau:so_sanh"}, so_anh=so_anh, anh_du=anh_du)
+        return cum, kq_ss
+
+    def khoi_cum_sau(self, li: "Listing", cum: tuple[str, list[str]], kq_ss: dict | None) -> tuple[str, str]:
+        """(khối dặn model, mốc ghi vào `_sau_da_hoi`) cho cụm sau đăng — cụm ảnh ghi theo mã cụm, cụm khác theo ô đầu."""
+        xin_anh = cum[0] in CUM_XIN_ANH
+        moc = f"sau:{cum[0] if xin_anh else cum[1][0]}"
+        if xin_anh:
+            return khoi_xin_them_anh(_image_count(li.media or []), cum[0] == "anh_lan_2", li.prop), moc
+        if kq_ss is not None:
+            return so_sanh.khoi_gui_so_sanh(kq_ss), moc
+        ti = self._tien_ich_that(li) if cum[1][:1] == ["phu_hop_kinh_doanh"] else None   # SRS-5.1zzzzzzz427
+        return khoi_hoi_sau_dang(cum[1][:1], li.prop, ti), moc
 
     def _tien_ich_that(self, li: "Listing | None") -> list:
         """Tiện ích thật quanh tin (`listings.tien_ich_gan`, tên + mét — SRS-5.1zzzzzzz427). Hụt / chưa geocode → [] (khối hỏi bỏ dòng dữ kiện)."""
@@ -4693,6 +4713,8 @@ class Engine:
                 idx = g.get("chi_so_can_da_co")
                 target = (conv.listings[idx - 1] if isinstance(idx, int) and 1 <= idx <= len(conv.listings)
                           else conv.active)
+                if giay_to:   # SRS-5.1zzzzzzz432: ảnh sổ trong lô ảnh cũng ghi trạng thái giấy tờ (trước khi ghi ô từ mô tả)
+                    ghi_trang_thai_so(target.prop.fields, g.get("loai_giay_to"))
                 if giay_to or data_only:   # ảnh chụp thật: lời AI TẢ ảnh không phải lời khách → không sinh ô tin (SRS-5.1zzzzzzz73)
                     captured += self._apply_text_to_listing(target, mo_ta)
                 refs, capped = self._upload_media(
@@ -4704,6 +4726,8 @@ class Engine:
             else:  # "can_moi"
                 target = conv.active if not used_active and self._listing_empty(conv.active) else conv.new_listing()
                 used_active = True
+                if giay_to:   # SRS-5.1zzzzzzz432
+                    ghi_trang_thai_so(target.prop.fields, g.get("loai_giay_to"))
                 if giay_to or data_only:   # ảnh chụp thật: lời AI TẢ ảnh không phải lời khách → không sinh ô tin (SRS-5.1zzzzzzz73)
                     captured += self._apply_text_to_listing(target, mo_ta)
                 refs, capped = self._upload_media(

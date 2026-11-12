@@ -180,6 +180,31 @@ DB_SANG_TRANG_THAI = {"da_chot": "đã bán", "da_coc": "đã cọc", "an": "kh�
 _DB_DANG_HIEN = ("dang_ban", "dang_quan_tam", "da_coc")
 
 
+def ma_phap_ly_theo_ai(fields: dict[str, Any], ma_chu: str | None) -> str | None:
+    """Mã `legal_status` theo trạng thái giấy tờ AI đọc (`_phap_ly_trang_thai`, SRS-5.1zzzzzzz432 lỗ hổng 6) — trước bản này cột chỉ lấy từ
+    chữ khách qua `boc_thong_so`, nên ảnh sổ đã đọc (co_so) hay HĐMB không lên cột, còn câu mơ hồ vẫn có thể ra mã. Chữ khách chỉ góp độ
+    chi tiết sổ riêng / sổ chung khi AI đã thấy có sổ; mơ hồ → không ghi."""
+    tt = fields.get("_phap_ly_trang_thai")
+    if tt == "co_so":
+        return ma_chu if ma_chu in ("so_hong_rieng", "so_hong_chung", "so_hong") else "so_hong"
+    if tt == "hdmb":
+        return "hdmb"
+    if tt == "mo_ho":
+        return None
+    return ma_chu
+
+
+def hoan_cong_theo_ai(fields: dict[str, Any]) -> bool | None:
+    """Cột `has_completion` theo AI (SRS-5.1zzzzzzz432): `_hoan_cong` đọc theo nghĩa; sổ đọc ra không có nhà (`_so_chua_co_nha`) là chưa hoàn
+    công. Không rõ → None (giữ cột bộ đọc chữ)."""
+    hc = fields.get("_hoan_cong")
+    if hc == "da_hoan_cong":
+        return True
+    if hc == "chua_hoan_cong" or fields.get("_so_chua_co_nha"):
+        return False
+    return None
+
+
 def loi_vao_tu_o(fields: dict[str, Any], tu_chu: str | None) -> dict[str, Any]:
     """Cột `access_type` theo ô `_duong_vao` AI đọc nghĩa (SRS-5.1zzzzzzz431: một nguồn — trước bản này chat đọc `_duong_vao`, còn cột do
     `boc_thong_so` dò chữ, hai bên lệch thì so sánh "cùng lối vào" và câu hỏi lợi thế nói hai điều khác nhau). Bộ đọc chữ chỉ được góp
@@ -1092,9 +1117,12 @@ class SupabaseConversationStore(KhoNguoiMua):
                 if quan:
                     listing_payload["district"] = quan
                 listing_payload.update(self._thong_so(fields, ma_loai_db(li.prop.loai_hinh)))
-                ma_pl = next((m for m in (self._ma_phap_ly(c) for c in li.prop.phap_ly_da_noi()) if m), None)
+                ma_pl = ma_phap_ly_theo_ai(fields, next((m for m in (self._ma_phap_ly(c) for c in li.prop.phap_ly_da_noi()) if m), None))
                 if ma_pl:
                     listing_payload["legal_status"] = ma_pl
+                hc = hoan_cong_theo_ai(fields)
+                if hc is not None:
+                    listing_payload["has_completion"] = hc
                 dt = so_m2(fields, li.prop.is_rental)
                 if dt is not None:
                     listing_payload["area_m2"] = dt

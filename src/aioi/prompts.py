@@ -863,11 +863,25 @@ def build_xin_anh_nhac_system(ten: str, prop: "Property", so_anh: int, lan_hai: 
             f"{viec}\nChỉ trả về nguyên văn tin gửi khách.")
 
 
+def build_hoi_sau_dang_nhac_system(ten: str, prop: "Property", khoi: str, goi: str, toi: str) -> str:
+    """System cho TIN NHẮN CHỦ ĐỘNG hỏi sau đăng (SRS-5.1zzzzzzz432, vòng nền `hoi_sau_dang`) — chủ không nhắn, model viết đúng một tin làm
+    việc của khối engine chọn (cùng khối lượt chat dùng: xin ảnh / pháp lý / lợi thế / so sánh / giá …)."""
+    du_kien = "; ".join(f"{k}: {v}" for k, v in list(prop.fields_khach().items())[:14])
+    return (f"Bạn là {ten}, trợ lý của sàn nhà đất, đang chăm sóc chủ nhà sau khi tin rao của họ ĐÃ LÊN WEB. Chủ nhà đang không nhắn. "
+            "Viết ĐÚNG MỘT tin Zalo ngắn gửi chủ nhà làm đúng việc ở khối dưới. Không có lời khách để đáp: bỏ phần \"sau lời đáp, xuống "
+            "một dòng\", vào thẳng việc bằng một câu nối nhẹ (vd nhờ thêm chút thông tin để tư vấn khách mua cho sát).\n"
+            f"Gọi khách là \"{goi}\", tự xưng \"{toi}\". Không chào lại từ đầu, không nhắc lại bản tin, tối đa MỘT câu hỏi, không "
+            "thúc ép, không dùng chữ \"máy\".\n"
+            f"Căn: loại {prop.loai_hinh or 'chưa rõ'}{' (cho thuê)' if prop.is_rental else ''}. Dữ kiện khách đã nói: {du_kien or 'chưa có'}.\n"
+            f"{khoi}\nChỉ trả về nguyên văn tin gửi khách.")
+
+
 def khoi_hoi_phap_ly(o: str, prop: Property | None = None) -> str:
     """Tiến độ giấy tờ (SRS-5.1zzzzzzz426): hỏi MỘT lần ngay sau khi chủ nói chưa hoàn công / chỉ có HĐMB — engine chọn ô
     (`Property.o_phap_ly_hoi_ngay`), model đặt câu."""
     return ("\n\n=== HỎI THÊM LƯỢT NÀY (giấy tờ — để bên em tư vấn khách mua cho đúng): ===\n"
-            f"Việc lượt này: đáp ngắn ý khách vừa nói, rồi hỏi: {cau_hoi_o(o, prop)}. Chỉ để bên em nắm, không đưa lên tin.\n")
+            f"Việc lượt này: đáp ngắn ý khách vừa nói, rồi hỏi: {cau_hoi_o(o, prop)}."
+            + ("\n" if o == "loai_giay" else " Chỉ để bên em nắm, không đưa lên tin.\n"))
 
 
 def khoi_hoi_coc(o: str, prop: Property | None = None) -> str:
@@ -1802,6 +1816,12 @@ def media_group_schema() -> dict[str, Any]:
                             "type": "boolean",
                             "description": "true nếu nhóm là SỔ ĐỎ / SỔ HỒNG / GIẤY TỜ pháp lý / hợp đồng / CCCD — "
                             "có thông tin chủ nhà, cất RIÊNG, không bao giờ đăng web. false cho ảnh nhà thật.",
+                        },
+                        "loai_giay_to": {   # SRS-5.1zzzzzzz432: ảnh sổ gửi chung lô với ảnh nhà cũng ghi trạng thái giấy tờ
+                            "type": "string",
+                            "enum": ["so_hong", "so_do", "hdmb", "khac"],
+                            "description": "Chỉ khi giay_to = true: nhóm là sổ hồng (so_hong), sổ đỏ (so_do), hợp đồng mua bán căn hộ / đất "
+                            "dự án (hdmb), hay giấy khác — CCCD, bản vẽ, hợp đồng thuê… (khac).",
                         },
                         "khong_phai_anh_can": {"type": "boolean", "description": MO_TA_KHONG_PHAI_ANH_CAN},
                         "chi_luu_du_lieu": {

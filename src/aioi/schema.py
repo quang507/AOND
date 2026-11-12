@@ -7,6 +7,7 @@ so all fields are optional and start empty.
 """
 from __future__ import annotations
 
+import os
 import re
 from .chu import bo_dau
 from dataclasses import dataclass, field
@@ -326,6 +327,10 @@ O_SAU_DANG: frozenset[str] = frozenset(k for _, cum in CUM_SAU_DANG for k in cum
 # ANH_TIN_DEP ảnh thật thì cụm XIN ẢNH đi ĐẦU chuỗi hỏi sau đăng, rồi nhắc nhẹ thêm MỘT lần ở CUỐI chuỗi nếu vẫn thiếu. Đếm số ảnh thật
 # đã lưu của căn (engine truyền vào), không đọc ô chữ `hinh_anh` (khách nói "ảnh trong nhà" không có nghĩa là ảnh đã vào tin).
 ANH_TIN_DEP = 6
+# SRS-5.1zzzzzzz432 (lỗ hổng 5): trần CHUNG số câu hỏi / tin xin sau khi tin lên web cho mỗi căn — đếm mốc `sau:*` (lượt chat, tin nhắc 10
+# phút, vòng nền hỏi sau đăng) cộng tin Image LQC đã nhắn (`_qc_da_nhan`). Chạm trần thì thôi hỏi; cụm xếp theo ưu tiên (ảnh → pháp lý →
+# hợp đồng thuê → lợi thế → so sánh → giá …) nên phần bị cắt là phần ít quan trọng. Chủ dự án chưa chốt số — mặc định 10, đổi bằng env.
+TRAN_CAU_SAU_DANG = int(os.environ.get("TRAN_CAU_SAU_DANG", "10"))
 CUM_XIN_ANH = ("anh", "anh_lan_2")
 
 # Ô RIÊNG của chủ nhà (SRS-5.1zzzzzzz116): không ghi vào `listings.boc_tach` (đọc công khai qua API cho tin đang bán), không vào bản tin
@@ -581,6 +586,8 @@ class Property:
         chưa có. Tin cho thuê chỉ hỏi dẫn khách xem; chi tiết nhà chỉ cho nhà có đất riêng / toà nhà (căn hộ, đất đã có bộ riêng).
         `so_anh` = số ảnh thật đã lưu của căn (None = không biết → không xin ảnh): dưới `anh_du` thì xin ảnh trước mọi cụm ("anh"), hết
         cụm mà vẫn thiếu thì nhắc lần hai ("anh_lan_2") — SRS-5.1zzzzzzz420."""
+        if self.so_cau_sau_dang(da_hoi) >= TRAN_CAU_SAU_DANG:   # SRS-5.1zzzzzzz432
+            return None
         thieu_anh = so_anh is not None and so_anh < anh_du
         if thieu_anh and "sau:anh" not in da_hoi:
             return "anh", ["hinh_anh"]
@@ -608,6 +615,14 @@ class Property:
             return "anh_lan_2", ["hinh_anh"]
         return None
 
+    def so_cau_sau_dang(self, da_hoi: set[str] | frozenset[str]) -> int:
+        """Số câu hỏi / tin xin đã gửi sau đăng cho căn này (SRS-5.1zzzzzzz432): mốc `sau:*` + tin Image LQC."""
+        try:
+            qc = int(self.fields.get("_qc_da_nhan") or 0)
+        except ValueError:
+            qc = 0
+        return sum(1 for x in da_hoi if x.startswith("sau:")) + qc
+
     def kinh_doanh_duoc(self) -> bool:
         """Căn buôn bán được để hỏi lợi thế (SRS-5.1zzzzzzz427): mặt bằng / shophouse, hoặc nhà mặt tiền đường (`_duong_vao` AI đọc theo nghĩa)."""
         return (self.group is PropertyGroup.COMMERCIAL or self.loai_hinh == "shophouse_du_an"
@@ -624,7 +639,9 @@ class Property:
         ra = []
         if tt == "mo_ho" or (not tt and not any(self.fields.get(k) for k in KHOA_PHAP_LY)):
             ra.append("loai_giay")
-        if tt == "co_so" and not self.fields.get("_da_doc_so"):
+        # SRS-5.1zzzzzzz432 (lỗ hổng 7): sổ đọc trước 12/11 không có cờ `_da_doc_so` — số thửa / số tờ chỉ có từ lượt đọc ảnh sổ, coi như đã đọc.
+        da_doc = self.fields.get("_da_doc_so") or self.fields.get("so_thua") or self.fields.get("so_to")
+        if tt == "co_so" and not da_doc:
             ra.append("anh_so")
         return ra
 
@@ -633,6 +650,10 @@ class Property:
         chỉ có HĐMB, sổ chưa có / đang làm → chủ đầu tư hẹn ra sổ (2.5). Trạng thái do AI đọc theo nghĩa (`_hoan_cong`, `_phap_ly_trang_thai`)."""
         f = self.fields
         da = set((f.get("_pl_da_hoi") or "").split(","))
+        # SRS-5.1zzzzzzz432 (lỗ hổng 7): câu pháp lý mơ hồ (2.1) → hỏi lại loại giấy NGAY lượt kế, một lần. Trước bản này chỉ "ô pháp lý coi như
+        # chưa có" — mà cổng bản nháp SRS-418 cho thiếu một nhóm, nên câu hỏi lại không chắc đến trước bản nháp.
+        if not self.is_rental and f.get("_phap_ly_trang_thai") == "mo_ho" and "loai_giay" not in da:
+            return "loai_giay"
         if f.get("_hoan_cong") == "chua_hoan_cong" and not f.get("du_kien_hoan_cong") and "du_kien_hoan_cong" not in da:
             return "du_kien_hoan_cong"
         du_an = self.group in (PropertyGroup.CONDO, PropertyGroup.PROJECT) or bool(f.get("du_an"))

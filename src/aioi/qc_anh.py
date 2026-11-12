@@ -2,7 +2,7 @@
 đang có có giống nội dung rao đăng không, và có phù hợp với điểm mạnh của BĐS đang rao không"; chọn: chạy nền trên máy 146, ghi kết quả +
 tự nhắn chủ xin góc thiếu).
 
-Mỗi lượt (`QC_ANH_CHU_KY_GIAY`, server): quét thư mục ảnh công khai `listing-public/<id tin>/` của tin đang hiện; bộ ảnh ĐỔI (băm tên tệp) thì
+Mỗi lượt (`QC_ANH_CHU_KY_GIAY`, server): đọc bộ ảnh công khai chưa ẩn của tin đang hiện từ `listing_media` (SRS-5.1zzzzzzz425); bộ ảnh ĐỔI (băm tên tệp) thì
 model vision chấm MỘT lần: ảnh có đúng căn trong tin không (đối chiếu loại hình, mô tả, hiện trạng — căn đang cho thuê kinh doanh thì ảnh
 quán bên trong vẫn là ảnh căn), thế mạnh nào đã có ảnh / chưa có ảnh, góc nên xin nhất. Kết quả:
 - sổ cục bộ `QC_ANH_SO` (JSON cạnh lõi) theo id tin — không chấm lại bộ ảnh cũ;

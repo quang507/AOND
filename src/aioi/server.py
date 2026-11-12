@@ -552,6 +552,27 @@ def _vong_qc_anh() -> None:
 if os.environ.get("QC_ANH", "bat") != "tat" and _settings.supabase_service_role_key:
     threading.Thread(target=_vong_qc_anh, daemon=True, name="image-lqc").start()
 
+HOI_SAU_DANG_CHU_KY_GIAY = int(os.environ.get("HOI_SAU_DANG_CHU_KY_GIAY", "600"))
+
+
+def _vong_hoi_sau_dang() -> None:
+    """SRS-5.1zzzzzzz432 — LQC hỏi sau đăng chạy nền: chủ không nhắn thì bot vẫn hỏi tiếp cụm sau đăng (ảnh · pháp lý · lợi thế · so sánh …),
+    8–21 giờ, có trần (logic ở `hoi_sau_dang`). Tắt: HOI_SAU_DANG=tat."""
+    from . import hoi_sau_dang
+    time.sleep(300)
+    while True:
+        try:
+            ra = hoi_sau_dang.chay_mot_luot(_engine, _gui_nhac_mot, _ghi_lich_su_nhac)
+            if ra:
+                log.warning("Hỏi sau đăng (nền): đã nhắn %d chủ nhà", len(ra))
+        except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
+            _so_loi.ghi_loi("hoi sau dang", f"{type(e).__name__}: {e}"[:200])
+        time.sleep(HOI_SAU_DANG_CHU_KY_GIAY)
+
+
+if os.environ.get("HOI_SAU_DANG", "bat") != "tat" and _settings.supabase_service_role_key:
+    threading.Thread(target=_vong_hoi_sau_dang, daemon=True, name="hoi-sau-dang").start()
+
 
 _CAU_DAN_THUA = re.compile(r"(?is)(?:^|(?<=\n))\s*Còn\s+(?:một|1)\s+điểm\s+em\s+cần\s+nắm\s+thêm\s*[:：]\s*")
 
