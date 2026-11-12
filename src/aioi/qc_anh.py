@@ -47,7 +47,7 @@ SCHEMA: dict[str, Any] = {
                            "cho thuê kinh doanh KHÔNG tính là không khớp."},
         "the_manh_da_co_anh": {"type": "array", "items": {"type": "string"}, "description": "Thế mạnh trong tin đã có ảnh thể hiện."},
         "the_manh_chua_co_anh": {"type": "array", "items": {"type": "string"}, "description": "Thế mạnh trong tin chưa có ảnh nào thể hiện."},
-        "goc_can_xin": {"type": "string", "description": "MỘT góc ảnh nên xin chủ nhất để làm nổi thế mạnh chưa có ảnh; rỗng nếu bộ ảnh đã đủ."},
+        "goc_can_xin": {"type": "string", "description": "MỘT góc ảnh nên xin chủ nhất để làm nổi thế mạnh chưa có ảnh; rỗng nếu bộ ảnh đã đủ. KHÔNG xin số nhà / biển số nhà (web không hiện số nhà)."},
         "diem": {"type": "integer", "description": "0–100: bộ ảnh lột tả căn và thế mạnh của nó tới đâu."},
         "nhan_xet": {"type": "string", "description": "Một câu nhận xét cho admin."},
     },
@@ -114,7 +114,9 @@ def huong_dan_qc(tin: dict) -> str:
             f"Mô tả tin: {(tin.get('description') or '')[:1500]}\n"
             f"Dữ kiện chủ nhà nói: {khach}\n"
             f"Góc ảnh thường làm nổi loại căn này: {goc_anh_goi_y(p)}\n"
-            "Chấm: (1) ảnh có đúng căn này không — căn đang cho thuê / kinh doanh thì ảnh quán, cửa hàng bên trong là ảnh của căn; chỉ ghi "
+            + ("CĂN NÀY ĐANG CÓ HỢP ĐỒNG THUÊ: ảnh quán / nhà hàng / cửa hàng / văn phòng bên trong là ảnh của căn — KHÔNG ghi vào anh_khong_khop.\n"
+               if (boc.get("co_hdt") == "co" or boc.get("thu_nhap_thue") or boc.get("hd_thue_con")) else "")
+            + "Chấm: (1) ảnh có đúng căn này không — căn đang cho thuê / kinh doanh thì ảnh quán, cửa hàng bên trong là ảnh của căn; chỉ ghi "
             "không khớp khi có dấu hiệu rõ (căn khác loại, ảnh mạng, phối cảnh, khác hẳn mô tả), chac_chan=true chỉ khi gần như chắc chắn; "
             "(2) thế mạnh nào trong tin đã / chưa có ảnh thể hiện; (3) MỘT góc nên xin chủ nhất. Chỉ dựa vào điều thấy trong ảnh và tin, "
             "không đoán thêm.")
@@ -206,11 +208,13 @@ def _ghi_va_nhan(engine: Any, tin: dict, kq: dict, bay_gio: datetime, gui: Calla
                                                            "nhan_xet", "so_anh")}, ensure_ascii=False)
         so_lan = int(f.get("_qc_da_nhan") or 0)
         im = not conv.history or time.time() - conv.history[-1].at >= IM_TOI_THIEU_GIAY
+        from .followup import cau_hoi_cuoi_cua_bot
+        if cau_hoi_cuoi_cua_bot(conv):   # 12/11 (chat anh Luận): "Sổ đứng tên ai?" chưa đáp, QC chồng thêm tin xin ảnh
+            im = False
         if (kq.get("goc_can_xin") and so_lan < TOI_DA_NHAN_MOI_CAN and im and trong_khung_gio(bay_gio)
                 and getattr(conv, "nhuong_san_den", 0) <= time.time()):
-            xh = xung_ho_cua(uk) if xung_ho_cua else "unknown"
-            xh, ten_tro_ly = (xh if isinstance(xh, tuple) else (xh, None))
-            goi, toi = goi_toi(xh, ten_tro_ly or getattr(conv.assistant, "name", None))
+            from .engine import _detect_customer_pronoun
+            goi, toi = goi_toi(_detect_customer_pronoun(conv, ""), getattr(conv.assistant, "name", None))
             chu = viet_tin_nhan(engine, conv, li, kq, goi, toi)
             if chu:
                 f["_qc_da_nhan"] = str(so_lan + 1)
