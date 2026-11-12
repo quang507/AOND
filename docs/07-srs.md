@@ -806,7 +806,8 @@ cột trống; sổ đang làm của nhà phố không có câu hỏi theo sau; 
   đồng ý ký bán chưa (ô riêng mới `dong_y_ban`); HĐMB / sổ đang làm / chưa có → dự kiến khi nào có sổ (`du_kien_ra_so`, bỏ điều kiện căn dự
   án); đất thuê → thời hạn thuê; giấy tay → đất gốc có sổ chưa (ô riêng mới `so_goc`); có sổ chưa rõ riêng / chung → sổ đứng tên ai; nói
   chung chung → hỏi lại loại giấy; chưa hoàn công → dự kiến hoàn công. Ô đã hỏi ở đây thì cụm hỏi sau đăng không hỏi lại. Xin ảnh sổ chỉ
-  khi loại giấy có sổ.
+  khi loại giấy có sổ. Lượt khách duyệt bản nháp giữ việc đăng tin + câu phí (`viec_luot`: duyệt xếp trên câu giấy tờ) — bắn thử lại sau
+  deploy, ca "pháp lý chuẩn" duyệt bằng "ok": hai câu hỏi cùng lượt, model giữ câu phí, cờ đã ghi nên câu loại giấy không bao giờ được hỏi.
 - **Bản tin:** khối SỰ THẬT ghi dòng giấy tờ của đúng loại ("sổ chung, nhiều người cùng đứng tên", "đất thuê của Nhà nước"…) và dòng hoàn
   công, thay các dòng cấm "KHÔNG ghi sổ hồng / sổ đỏ" theo từng mã.
 - **Long Bình:** `TraDiaDanh.xa` chỉ có kho `xa_tinh_khac` (Tây Ninh / Đồng Nai) nên "phường Long Bình" ra đúng một đơn vị — của Đồng Nai.

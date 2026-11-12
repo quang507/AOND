@@ -69,7 +69,11 @@ def _chon(t: TrangThaiLuot, k: set[str]) -> Viec:
         return Viec("hoi_can_nao")
     if "hoi_trung_ten" in k:
         return Viec("hoi_trung_ten")
-    if "hoi_phap_ly" in k and t.pha != "trinh_nhap":   # SRS-5.1zzzzzzz426: hỏi tiến độ giấy tờ ngay lượt chủ vừa nói
+    if t.pha == "sau_nhap" and t.duyet == "dong_y" and not t.yeu_cau_viet:
+        # Lượt duyệt bản nháp: việc là đăng tin, câu hỏi của lượt là câu phí đi kèm (SRS-5.1zzzzzzz81 / 103). SRS-5.1zzzzzzz435 (bắn thử 12/11):
+        # câu giấy tờ xếp trên lượt này thì lượt mang hai câu hỏi, model giữ câu phí, cờ "đã hỏi" vẫn ghi — câu giấy tờ mất hẳn.
+        return Viec("dang_tin")
+    if "hoi_phap_ly" in k and t.pha != "trinh_nhap":   # SRS-5.1zzzzzzz426: hỏi giấy tờ ở lượt kế khi chủ vừa nói (lượt duyệt đã xét ở trên)
         return Viec("hoi_phap_ly")
     if "tin_dang_hien_ngoai_chat" in k:   # tin tạo ngoài chat đang hiển thị: không phải câu hỏi — câu hỏi sau đăng (cọc, hỏi thêm, sao) vẫn được hỏi
         for khoi in ("hoi_coc", "hoi_sau_dang", "xin_sao"):

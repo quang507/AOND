@@ -6,6 +6,7 @@ from aioi.dia_danh import tra_xa
 from aioi.prompts import SU_THAT_CAN, khoi_su_that_can
 from aioi.schema import LOAI_PHAP_LY, MA_PHAP_LY_AI, Property
 from aioi.supabase_store import ma_phap_ly, o_tu_cot
+from aioi.viec_luot import TrangThaiLuot, viec_luot
 
 
 def _can(tt, **them):
@@ -55,6 +56,13 @@ def test_ban_tin_viet_dung_loai_giay():
 def test_xin_anh_so_chi_khi_co_so():
     assert "anh_so" in _can("so_hong_chung").hoi_phap_ly_sau_dang()
     assert "anh_so" not in _can("dat_thue").hoi_phap_ly_sau_dang()
+
+
+def test_luot_duyet_dang_tin_cau_giay_to_de_luot_sau():
+    # bắn thử 12/11 ca "pháp lý chuẩn": lượt "ok" duyệt nháp mang cả câu phí lẫn câu giấy tờ → model giữ câu phí, câu giấy tờ mất
+    v = viec_luot(TrangThaiLuot(pha="sau_nhap", khoi=("hoi_phap_ly",), duyet="dong_y", da_co_nhap=True))
+    assert v.ten == "dang_tin" and "hoi_phap_ly" in v.bo
+    assert viec_luot(TrangThaiLuot(pha="sau_nhap", khoi=("hoi_phap_ly", "xin_sao"), da_co_nhap=True)).ten == "hoi_phap_ly"
 
 
 def test_ten_trung_phuong_tphcm_khong_nhan_la_tinh_khac():
