@@ -93,6 +93,7 @@ from .prompts import (
     khoi_bao_phi,
     muc_phi,
     khoi_hoi_coc,
+    khoi_hoi_phap_ly,
     khoi_hoi_sau_dang,
     khoi_xin_them_anh,
     khoi_tinh_hinh_ban,
@@ -137,7 +138,7 @@ from .prompts import (
 )
 from .imaging import downscale_image
 from .revenue import SellerRole
-from .schema import ANH_TIN_DEP, CAU_MO_MUA, CUM_XIN_ANH, FACETS, O_COC, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
+from .schema import ANH_TIN_DEP, CAU_MO_MUA, CUM_XIN_ANH, FACETS, HOUSE_TYPES, KHOA_PHAP_LY, O_COC, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .prompts import Y_MO_DAU
 from .dia_danh import TraDiaDanh, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
@@ -1276,7 +1277,12 @@ def _ghi_su_that_can(conv: "Conversation", plan: dict, loi_khach: list[str]) -> 
     for khoa, gia_tri, _ in SU_THAT_CAN:
         v = plan.get(khoa)
         if v in gia_tri and v != "chua_ro" and _vai_co_bang_chung(plan.get(f"{khoa}_trich_dan"), loi_khach):
+            if khoa == "phap_ly_trang_thai" and v == "mo_ho" and conv.prop.fields.get(f"_{khoa}") == "co_so":
+                continue   # đã có sổ (khách nói / ảnh sổ) thì câu chung chung sau không hạ xuống mơ hồ
             conv.prop.fields[f"_{khoa}"] = v
+            if khoa == "phap_ly_trang_thai" and v == "mo_ho":   # SRS-5.1zzzzzzz426 (2.1): câu mơ hồ không nằm trong ô pháp lý
+                for k in KHOA_PHAP_LY:
+                    conv.prop.fields.pop(k, None)
     ds = plan.get("tien_ich_gan")
     if isinstance(ds, list) and _vai_co_bang_chung(plan.get("tien_ich_gan_trich_dan"), loi_khach):
         conv.prop.fields["_tien_ich_gan"] = ",".join(m for m in TIEN_ICH_GAN if m in ds)
@@ -3317,6 +3323,14 @@ class Engine:
                                    hoan=lambda cu=sau_cu: _dat_co(conv.prop.fields, "_sau_da_hoi", cu))
                     log.warning("Hỏi sau đăng: cụm %s", cum_sau[0])
 
+        # SRS-5.1zzzzzzz426 (LQC mảng Pháp lý 2.4 / 2.5): chủ vừa nói chưa hoàn công / căn dự án chỉ có HĐMB → hỏi tiến độ MỘT lần ngay lượt
+        # này (`_pl_da_hoi`); `viec_luot` gỡ khối thì trả cờ, lượt sau hỏi.
+        o_pl = None if trinh_nhap else conv.prop.o_phap_ly_hoi_ngay()
+        if o_pl:
+            pl_cu = conv.prop.fields.get("_pl_da_hoi")
+            conv.prop.fields["_pl_da_hoi"] = ",".join(sorted({x for x in (pl_cu or "").split(",") if x} | {o_pl}))
+            system += _hoi("hoi_phap_ly", khoi_hoi_phap_ly(o_pl, conv.prop), hoan=lambda cu=pl_cu: _dat_co(conv.prop.fields, "_pl_da_hoi", cu))
+
         # Tra địa danh (SRS-5.1zzzzzzz60): dữ kiện xã / phường mới — không còn câu hỏi xác nhận tên đường (SRS-5.1zzzzzzz366: hệ thống tự áp tên).
         with _do(conv, "dia_danh"):
             system += khoi_dia_danh(self._dia_danh, conv.prop.fields, None if is_listing_post else next_field)
@@ -4199,7 +4213,21 @@ class Engine:
                 return self.handle(user_key, f"{caption.strip()}\n{chu}" if caption and caption.strip() else chu, now)
             if deed_data.get("la_giay_to_bds"):
                 update_fields: dict[str, str] = {}
-                if deed_data.get("loai_hinh") and deed_data["loai_hinh"] != "chua_ro":
+                # SRS-5.1zzzzzzz426: ảnh sổ là bằng chứng trực tiếp → trạng thái giấy tờ (trước khi ghi ô, để câu mơ hồ cũ không chặn ô từ sổ);
+                # cờ `_da_doc_so` để câu xin ảnh sổ sau đăng (2.2) không hỏi lại. Sổ không ghi nhà mà tin là nhà → hỏi hoàn công (2.3),
+                # và KHÔNG đổi loại hình theo sổ (sổ chỉ có đất không biến nhà phố thành đất).
+                f_so = conv.active.prop.fields
+                loai_gt = deed_data.get("loai_giay_to")
+                if loai_gt in ("so_hong", "so_do"):
+                    f_so["_phap_ly_trang_thai"] = "co_so"
+                    f_so["_da_doc_so"] = "1"
+                elif loai_gt == "hdmb" and f_so.get("_phap_ly_trang_thai") != "co_so":
+                    f_so["_phap_ly_trang_thai"] = "hdmb"
+                so_thieu_nha = (loai_gt in ("so_hong", "so_do") and deed_data.get("nha_tren_so") == "khong"
+                                and conv.active.prop.loai_hinh in (HOUSE_TYPES | {"toa_nha", "chdv", "khach_san"}))
+                if so_thieu_nha:
+                    f_so["_so_chua_co_nha"] = "1"
+                if deed_data.get("loai_hinh") and deed_data["loai_hinh"] != "chua_ro" and not so_thieu_nha:
                     update_fields["loai_hinh"] = deed_data["loai_hinh"]
                 for f_name in (
                     "dia_chi", "dien_tich_dat", "dien_tich_nha", "dien_tich",
@@ -4251,6 +4279,9 @@ class Engine:
                 # tắc PHIEU_LUOT), trong đó "khen điểm mạnh trước" đá nhau với "KHÔNG khen sổ / pháp lý". Giữ: không khen sổ / pháp lý.
                 hoi_y = (f'hỏi đúng MỘT ý: "{nhan_o(next_field, conv.active.prop)}" (khách thấy dòng nào sai sẽ tự nói)' if next_field
                          else "hỏi các dòng trên đã đúng chưa")
+                if so_thieu_nha and not f_so.get("_hoan_cong"):   # SRS-5.1zzzzzzz426 (2.3)
+                    hoi_y = ("hỏi đúng MỘT ý, nhẹ nhàng: trang sổ em xem chưa thấy ghi phần nhà trên đất — nhà mình đã hoàn công (cập nhật nhà "
+                             "vào sổ) chưa ạ. Không nói sổ thiếu, sai hay có vấn đề")
                 viec_anh = ("khách vừa gửi ảnh sổ / giấy tờ. Hệ thống đã đọc ảnh và GỬI KHÁCH các dòng sau, ngay trước lời em:\n"
                             f"{detail_lines or '(chưa đọc được dòng nào)'}\nViết 1–2 câu tiếp theo với MỘT câu hỏi cả lượt: {hoi_y}. Lượt này KHÔNG khen "
                             "sổ / pháp lý (kể cả theo khối GIỌNG), KHÔNG nói sổ \"chuẩn\", \"đầy đủ\" — em mới đọc ảnh, chưa kiểm sổ. Không lặp lại các dòng trên.")

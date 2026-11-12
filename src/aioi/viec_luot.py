@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 # Khối mà engine ghép vào prompt kèm lời dặn HỎI khách (mỗi khối tự nhận là câu hỏi của lượt). Hai khối trở lên cùng bật = lệch.
 KHOI_HOI = frozenset({"hoi_trung_ten", "chua_ro_can", "tach_ban_thue", "hoi_du_an", "mat_tien", "hoi_coc", "hoi_sau_dang",
-                      "xin_sao", "hoi_o"})
+                      "xin_sao", "hoi_o", "hoi_phap_ly"})
 
 
 @dataclass(frozen=True)
@@ -46,7 +46,7 @@ def viec_luot(t: TrangThaiLuot) -> Viec:
 # Khối mà một việc dùng lại (không tính là lệch): việc "hoi_o" của ô giá khi vừa tách bán / thuê là chính khối tach_ban_thue.
 _KHOI_CUA = {"hoi_du_an": {"hoi_du_an"}, "xac_nhan_mat_tien": {"mat_tien"}, "hoi_can_nao": {"chua_ro_can"},
              "hoi_trung_ten": {"hoi_trung_ten"}, "hoi_coc": {"hoi_coc"}, "hoi_sau_dang": {"hoi_sau_dang"}, "xin_sao": {"xin_sao"},
-             "hoi_gia_tin_moi": {"tach_ban_thue"}}
+             "hoi_gia_tin_moi": {"tach_ban_thue"}, "hoi_phap_ly": {"hoi_phap_ly"}}
 
 
 def _chon(t: TrangThaiLuot, k: set[str]) -> Viec:
@@ -69,6 +69,8 @@ def _chon(t: TrangThaiLuot, k: set[str]) -> Viec:
         return Viec("hoi_can_nao")
     if "hoi_trung_ten" in k:
         return Viec("hoi_trung_ten")
+    if "hoi_phap_ly" in k and t.pha != "trinh_nhap":   # SRS-5.1zzzzzzz426: hỏi tiến độ giấy tờ ngay lượt chủ vừa nói
+        return Viec("hoi_phap_ly")
     if "tin_dang_hien_ngoai_chat" in k:   # tin tạo ngoài chat đang hiển thị: không phải câu hỏi — câu hỏi sau đăng (cọc, hỏi thêm, sao) vẫn được hỏi
         for khoi in ("hoi_coc", "hoi_sau_dang", "xin_sao"):
             if khoi in k:

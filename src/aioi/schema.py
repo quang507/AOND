@@ -333,7 +333,10 @@ CUM_XIN_ANH = ("anh", "anh_lan_2")
 # cọc, hạn công chứng — mỗi lượt một ô, mỗi ô một lần (`_coc_da_hoi`). Chuyện giao dịch giữa hai bên → ô RIÊNG, không lên web.
 O_COC: tuple[str, ...] = ("tien_coc", "ngay_coc", "han_cong_chung")
 # `_qc_anh` / `_qc_da_nhan` (SRS-5.1zzzzzzz422): kết quả QC ảnh và số tin QC đã nhắn — việc nội bộ, cùng chỗ chỉ admin đọc.
-O_NOI_BO: frozenset[str] = frozenset({"dung_ten_so", "ly_do_ban", "gio_xem", "chia_khoa", *O_COC, "_qc_anh", "_qc_da_nhan"})
+# SRS-5.1zzzzzzz426 (LQC mảng Pháp lý): tiến độ giấy tờ chủ nói — hỏi MỘT lần ngay sau khi chủ nói chưa hoàn công / chỉ có HĐMB. Lời hứa
+# chưa kiểm được → ô RIÊNG, không lên web.
+O_PHAP_LY_NOI_BO: tuple[str, ...] = ("du_kien_hoan_cong", "du_kien_ra_so")
+O_NOI_BO: frozenset[str] = frozenset({"dung_ten_so", "ly_do_ban", "gio_xem", "chia_khoa", *O_COC, *O_PHAP_LY_NOI_BO, "_qc_anh", "_qc_da_nhan"})
 
 # Thông số cho thuê (áp dụng chung khi là tin cho thuê) — SRD §III.
 RENTAL_FIELDS: list[str] = [
@@ -579,6 +582,9 @@ class Property:
         thieu_anh = so_anh is not None and so_anh < anh_du
         if thieu_anh and "sau:anh" not in da_hoi:
             return "anh", ["hinh_anh"]
+        for o in self.hoi_phap_ly_sau_dang():   # SRS-5.1zzzzzzz426: pháp lý ngay sau cụm ảnh
+            if f"sau:{o}" not in da_hoi:
+                return "phap_ly", [o]
         mong = set(self.expected_fields())
         for ma, cum in CUM_SAU_DANG:
             if ma in da_hoi or (self.is_rental and ma != "xem_nha"):
@@ -594,6 +600,34 @@ class Property:
             return "anh_lan_2", ["hinh_anh"]
         return None
 
+    def hoi_phap_ly_sau_dang(self) -> list[str]:
+        """Câu pháp lý hỏi SAU khi tin lên web (SRS-5.1zzzzzzz426, LQC mảng Pháp lý), mỗi câu một lần qua `cum_sau_dang`:
+        - `loai_giay` (2.1): khách mới nói chung chung (mo_ho) hoặc chưa nói gì về giấy tờ mà trước bản nháp chưa hỏi được;
+        - `anh_so` (2.2): khách đã nói có sổ mà chưa gửi ảnh sổ — ảnh sổ chỉ để kiểm, vào kho riêng, không lên web.
+        Không phải ô tin (không vào `O_SAU_DANG`, AI không ghi được), chỉ là mã câu hỏi."""
+        if self.is_rental:
+            return []
+        tt = self.fields.get("_phap_ly_trang_thai")
+        ra = []
+        if tt == "mo_ho" or (not tt and not any(self.fields.get(k) for k in KHOA_PHAP_LY)):
+            ra.append("loai_giay")
+        if tt == "co_so" and not self.fields.get("_da_doc_so"):
+            ra.append("anh_so")
+        return ra
+
+    def o_phap_ly_hoi_ngay(self) -> str | None:
+        """Ô tiến độ giấy tờ hỏi MỘT lần ngay sau khi chủ nói (SRS-5.1zzzzzzz426): chưa hoàn công → dự kiến hoàn công (2.4); căn hộ / đất dự án
+        chỉ có HĐMB, sổ chưa có / đang làm → chủ đầu tư hẹn ra sổ (2.5). Trạng thái do AI đọc theo nghĩa (`_hoan_cong`, `_phap_ly_trang_thai`)."""
+        f = self.fields
+        da = set((f.get("_pl_da_hoi") or "").split(","))
+        if f.get("_hoan_cong") == "chua_hoan_cong" and not f.get("du_kien_hoan_cong") and "du_kien_hoan_cong" not in da:
+            return "du_kien_hoan_cong"
+        du_an = self.group in (PropertyGroup.CONDO, PropertyGroup.PROJECT) or bool(f.get("du_an"))
+        if (du_an and f.get("_phap_ly_trang_thai") in ("hdmb", "chua_co", "dang_lam") and not f.get("du_kien_ra_so")
+                and "du_kien_ra_so" not in da):
+            return "du_kien_ra_so"
+        return None
+
     def completeness(self) -> float:
         """Fraction of expected fields that are filled, in [0, 1]."""
         expected = self.expected_fields()
@@ -603,6 +637,10 @@ class Property:
         return filled / len(expected)
 
     def _has(self, name: str) -> bool:
+        # SRS-5.1zzzzzzz426 (2.1): khách mới nói chung chung ("pháp lý chuẩn", "không phải lo") — AI đọc `_phap_ly_trang_thai` = mo_ho → ô pháp
+        # lý coi như CHƯA có, lượt sau hỏi lại loại giấy (không nhận câu mơ hồ thay cho sổ hồng / sổ đỏ).
+        if name in KHOA_PHAP_LY and self.fields.get("_phap_ly_trang_thai") == "mo_ho":
+            return False
         if name == "loai_hinh":
             return self.loai_hinh is not None
         if name == "ma_so_can":
@@ -671,6 +709,8 @@ class Property:
                 v = _merge_dia_chi(self.fields.get("dia_chi", ""), v)
             if k == "uu_the":                   # ưu thế khác CỘNG DỒN, không đè
                 v = _merge_uu_the(self.fields.get("uu_the", ""), v)
+            if k in KHOA_PHAP_LY and self.fields.get("_phap_ly_trang_thai") == "mo_ho":   # SRS-426 (2.1): không ghi câu mơ hồ vào ô pháp lý
+                continue
             if k in KHOA_PHAP_LY and self.fields.get(k) and self.fields[k] != v:
                 self._nho_phap_ly_cu(self.fields[k])
             if self.fields.get(k) != v:

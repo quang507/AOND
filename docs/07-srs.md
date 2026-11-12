@@ -1017,6 +1017,23 @@ Chủ dự án 12/11: "Có, dùng điểm QC" + "nhưng đừng khó quá, lỡ 
   hỏi khéo chủ MỘT câu tấm đó có phải ảnh căn mình không (tả bằng nội dung, không nói ảnh sai / bị trừ điểm), ưu tiên trước xin góc.
 - Khối ĐIỂM TIN không đưa con số chất lượng ảnh cho model; chỉ gợi "ảnh <góc QC thấy thiếu> sẽ làm tin đẹp hơn, điểm cao hơn".
 
+### SRS-5.1zzzzzzz426 · LQC mảng Pháp lý: hỏi rõ câu mơ hồ, đối chiếu sổ với tin, hỏi tiến độ giấy tờ (12/11/2026)
+Chủ dự án 12/11 "Làm theo lịch này" (đặc tả `docs/lqc-listing-quality-controller.md` mục 2.1–2.5, lịch hỏi đã duyệt).
+- **Trạng thái giấy tờ** (AI đọc theo nghĩa, `prompts.SU_THAT_CAN`): `phap_ly_trang_thai` thêm `hdmb` (căn hộ / đất dự án chờ chủ đầu tư ra sổ)
+  và `mo_ho` (chỉ nói chung chung "pháp lý chuẩn", "không phải lo", cả cuộc trò chuyện chưa nói loại giấy); khoá mới `hoan_cong`
+  (`da_hoan_cong` / `chua_hoan_cong`). Đã `co_so` thì câu chung chung sau không hạ xuống `mo_ho`.
+- **2.1 — lúc nhận tin:** `mo_ho` → xoá câu mơ hồ khỏi ô pháp lý và không cho ghi lại (`Property.update`), ô pháp lý coi như chưa có
+  (`Property._has`) → lượt sau hỏi lại loại giấy theo luồng hỏi ô. Lọt qua bản nháp thì hỏi sau đăng (mã câu `loai_giay`).
+- **2.2 — sau đăng, sau cụm xin ảnh:** khách đã nói có sổ mà chưa gửi ảnh sổ → mã câu `anh_so` (`Property.hoi_phap_ly_sau_dang`, đi qua
+  `cum_sau_dang`, mỗi câu một lần). Lời hứa: "ảnh sổ chỉ để em kiểm, không đăng" — chưa có bước che thông tin trên ảnh.
+- **Lượt đọc ảnh sổ:** sổ hồng / sổ đỏ → `_phap_ly_trang_thai = co_so`, cờ `_da_doc_so`; HĐMB → `hdmb`. Schema đọc sổ thêm `nha_tren_so`.
+- **2.3 — lúc đọc sổ:** sổ không ghi nhà mà tin là nhà (nhà phố / biệt thự / cấp 4 / toà nhà / CHDV / khách sạn) → câu hỏi của lượt là "nhà
+  mình đã hoàn công chưa", và **không đổi loại hình theo sổ** (trước đây sổ chỉ có đất biến nhà phố thành đất).
+- **2.4 / 2.5 — ngay lượt chủ nói:** `chua_hoan_cong` → hỏi dự kiến hoàn công; căn hộ / đất dự án `hdmb` / chưa có / đang làm → hỏi chủ đầu tư
+  hẹn ra sổ. Khối `hoi_phap_ly` (`viec_luot`: sau hỏi tên dự án, trước hỏi ô / hỏi sau đăng; không ở lượt trình nháp), mỗi ô một lần
+  (`_pl_da_hoi`). Ô `du_kien_hoan_cong`, `du_kien_ra_so` là ô RIÊNG (`O_NOI_BO`), không lên web.
+- Bản tin: `hdmb` không được ghi sổ hồng / sổ đỏ; `chua_hoan_cong` không được ghi hoàn công.
+
 ### SRS-5.1zzzzzzz425 · LQC mảng Ảnh: nhãn từng ảnh, ảnh đẹp nhất làm bìa, xin ẩn ảnh xấu (12/11/2026)
 Chủ dự án 12/11 "Làm mảng Ảnh" (đặc tả `docs/lqc-listing-quality-controller.md` mục 1.1 · 1.3 · 1.4).
 - Image LQC đọc bộ ảnh từ `listing_media` (bucket công khai, chưa ẩn) thay vì liệt kê thư mục storage; ảnh gửi model theo thứ tự, model gọi ảnh

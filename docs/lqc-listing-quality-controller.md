@@ -38,11 +38,11 @@ Ký hiệu: **✅ có sẵn** · **🟡 có một phần** · **❌ chưa có**.
 
 | # | Câu mẫu | Trạng thái | Đã có | Cần thêm / sửa |
 |---|---|---|---|---|
-| 2.1 | "Anh nói pháp lý an tâm, ý là có sổ hồng rồi hả anh?" | 🟡 | Ô `phap_ly`, `phap_ly_hoan_cong`; cột `legal_status`, `has_completion`. | **Sửa:** chat anh Luận nói "không phải lo gì cả" → `legal_status` rỗng và bot không hỏi lại. Câu mơ hồ **không ghi ô** mà hỏi xác nhận một câu: sổ hồng riêng / sổ chung / HĐMB / giấy tay. |
-| 2.2 | "Anh có hình chụp cho em xin. Em xoá thông tin rồi mới gửi công ty" | 🟡 | AI đọc sổ (số thửa, tờ, diện tích, mục đích, sơ đồ), luật không đọc tên chủ / CCCD; ảnh giấy tờ cất riêng, không lên web. | **Sửa câu hứa:** hệ thống **chưa che** thông tin trên ảnh, nên bot chưa được hứa "em xoá thông tin". Chọn một: (a) nói thật "ảnh sổ chỉ để nội bộ kiểm, không đăng" — làm được ngay; (b) xây bước làm mờ tên / số CCCD trên ảnh rồi mới được hứa. |
-| 2.3 | "Em thấy sổ mà không thấy nhà, anh chưa hoàn công ạ?" | 🟡 | Đọc sổ có `loai_giay_to`, `loai_hinh`, `so_thua`… | Thêm ô đọc **"tài sản gắn liền với đất"** (nhà đã ghi trên sổ chưa). Lệch với tin (sổ không có nhà, tin ghi "nhà 6 tầng") → hỏi hoàn công. |
-| 2.4 | "Hoàn công có dễ không? Còn bao lâu nữa?" | ❌ | — | Ô mới `hoan_cong_tien_do` (đang làm / dự kiến bao lâu / vướng gì). Đề xuất để **nội bộ** (`O_NOI_BO`); tin công khai chỉ ghi "đang hoàn công". |
-| 2.5 | "Chủ đầu tư hứa khi nào có sổ?" | ❌ | Kho 1.643 dự án — chưa có ô tiến độ sổ theo căn. | Ô mới `du_kien_co_so` cho căn hộ / đất dự án, hỏi khi pháp lý là HĐMB. |
+| 2.1 ✅ (SRS-426) | "Anh nói pháp lý an tâm, ý là có sổ hồng rồi hả anh?" | 🟡 | Ô `phap_ly`, `phap_ly_hoan_cong`; cột `legal_status`, `has_completion`. | **Sửa:** chat anh Luận nói "không phải lo gì cả" → `legal_status` rỗng và bot không hỏi lại. Câu mơ hồ **không ghi ô** mà hỏi xác nhận một câu: sổ hồng riêng / sổ chung / HĐMB / giấy tay. |
+| 2.2 ✅ (SRS-426, phương án a) | "Anh có hình chụp cho em xin. Em xoá thông tin rồi mới gửi công ty" | 🟡 | AI đọc sổ (số thửa, tờ, diện tích, mục đích, sơ đồ), luật không đọc tên chủ / CCCD; ảnh giấy tờ cất riêng, không lên web. | **Sửa câu hứa:** hệ thống **chưa che** thông tin trên ảnh, nên bot chưa được hứa "em xoá thông tin". Chọn một: (a) nói thật "ảnh sổ chỉ để nội bộ kiểm, không đăng" — làm được ngay; (b) xây bước làm mờ tên / số CCCD trên ảnh rồi mới được hứa. |
+| 2.3 ✅ (SRS-426) | "Em thấy sổ mà không thấy nhà, anh chưa hoàn công ạ?" | 🟡 | Đọc sổ có `loai_giay_to`, `loai_hinh`, `so_thua`… | Thêm ô đọc **"tài sản gắn liền với đất"** (nhà đã ghi trên sổ chưa). Lệch với tin (sổ không có nhà, tin ghi "nhà 6 tầng") → hỏi hoàn công. |
+| 2.4 ✅ (SRS-426, ô `du_kien_hoan_cong`) | "Hoàn công có dễ không? Còn bao lâu nữa?" | ❌ | — | Ô mới `hoan_cong_tien_do` (đang làm / dự kiến bao lâu / vướng gì). Đề xuất để **nội bộ** (`O_NOI_BO`); tin công khai chỉ ghi "đang hoàn công". |
+| 2.5 ✅ (SRS-426, ô `du_kien_ra_so`) | "Chủ đầu tư hứa khi nào có sổ?" | ❌ | Kho 1.643 dự án — chưa có ô tiến độ sổ theo căn. | Ô mới `du_kien_co_so` cho căn hộ / đất dự án, hỏi khi pháp lý là HĐMB. |
 
 ## Số 3 — Khai thác lợi thế
 
