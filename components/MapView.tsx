@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { Map as BanDo } from "maplibre-gl";
 import NutNenBanDo from "@/components/NutNenBanDo";
-import { kieuNen, maTin, napMapLibre, SG_TAM, type NenBanDo } from "@/lib/ban-do";
+import { datNen, kieuNen, maTin, napMapLibre, SG_TAM, tuyChonChung, type NenBanDo } from "@/lib/ban-do";
 import { cumGhim } from "@/lib/cum-ghim";
 import type { MapRow } from "@/lib/supabase";
 import { wardPoint } from "@/lib/geo";
@@ -30,7 +30,7 @@ export default function MapView({
   useEffect(() => {
     let huy = false;
     let map: BanDo | null = null;
-    (async () => {
+    const dung = async () => {
       const ml = await napMapLibre();
       if (huy || !ref.current) return;
       map = new ml.Map({
@@ -38,13 +38,30 @@ export default function MapView({
         style: kieuNen("sang"),
         center: center ? [center[1], center[0]] : SG_TAM,
         zoom,
-        attributionControl: { compact: true },
+        ...tuyChonChung(true),
       });
       map.addControl(new ml.NavigationControl({ showCompass: false }), "top-left");
       setTv({ ml, map });
-    })();
+    };
+    // SRS-5.1zzzzzzz442: chỉ tải maplibre (~800 kB) khi khung sắp lên màn. Trang căn: bản đồ nằm dưới phần mô tả. Trang tag trên
+    // điện thoại: khung bản đồ `hidden` (chỉ hiện từ lg) → không bao giờ giao cắt → không tải luôn.
+    const el = ref.current;
+    let nhin: IntersectionObserver | null = null;
+    if (el && "IntersectionObserver" in window) {
+      nhin = new IntersectionObserver(
+        (ds) => {
+          if (ds.some((d) => d.isIntersecting)) {
+            nhin?.disconnect();
+            dung();
+          }
+        },
+        { rootMargin: "400px" },
+      );
+      nhin.observe(el);
+    } else dung();
     return () => {
       huy = true;
+      nhin?.disconnect();
       map?.remove();
     };
     // Tạo bản đồ MỘT lần; tâm / zoom ban đầu không đổi theo prop.
@@ -53,7 +70,7 @@ export default function MapView({
   useEffect(() => {
     if (!tv || nenDung.current === nen) return;
     nenDung.current = nen;
-    tv.map.setStyle(kieuNen(nen));
+    datNen(tv.map, nen);
   }, [tv, nen]);
 
   useEffect(() => {

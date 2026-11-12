@@ -10,7 +10,7 @@ import type { FeatureCollection } from "geojson";
 import type { GeoJSONSource, Map as BanDo, MapLayerMouseEvent } from "maplibre-gl";
 import ListingCard from "@/components/ListingCard";
 import NutNenBanDo from "@/components/NutNenBanDo";
-import { esc, kieuNen, napMapLibre, SG_TAM, type NenBanDo } from "@/lib/ban-do";
+import { datNen, esc, kieuNen, napMapLibre, SG_TAM, tuyChonChung, type NenBanDo } from "@/lib/ban-do";
 import { cumGhim, ghimMoc, TEN_LOAI_MOC, type Moc } from "@/lib/cum-ghim";
 import { supabase, type MapRow } from "@/lib/supabase";
 
@@ -125,7 +125,7 @@ export default function BanDoKhung() {
         style: kieuNen("sang"),
         center: SG_TAM,
         zoom: 12,
-        attributionControl: { compact: true },
+        ...tuyChonChung(false),
         ...(khung ? { bounds: khung } : {}),
       });
       map.addControl(new ml.NavigationControl({ showCompass: false }), "top-left");
@@ -216,7 +216,7 @@ export default function BanDoKhung() {
   useEffect(() => {
     if (!tv || nenDung.current === nen) return;
     nenDung.current = nen;
-    tv.map.setStyle(kieuNen(nen));
+    datNen(tv.map, nen);
   }, [tv, nen]);
 
   // Vẽ kết quả: căn = ghim giá HTML gom cụm "N căn" (SRS-5.1zzzzzzz217), dự án / đường = cập nhật nguồn GeoJSON.

@@ -1,7 +1,7 @@
 // Phần dùng chung của bản đồ web (SRS-5.1zzzzzzz206, chủ dự án 26/10/2026: "Đổi sang MapLibre + OpenFreeMap").
 // Nền vector OpenFreeMap (dữ liệu OpenStreetMap, không khoá, không tính tiền theo lượt), ảnh vệ tinh Esri World Imagery.
 // Chỉ hàm thuần + dựng phần tử DOM lúc gọi — không import maplibre-gl ở đây (component tự import động, tránh đụng `window` khi SSR).
-import type { StyleSpecification } from "maplibre-gl";
+import type { Map as BanDo, StyleSpecification } from "maplibre-gl";
 import { formatPrice } from "@/lib/format";
 import type { MapRow } from "@/lib/supabase";
 
@@ -15,25 +15,61 @@ export const NEN_BAN_DO: { id: NenBanDo; ten: string }[] = [
 const OFM = "https://tiles.openfreemap.org";
 
 // Esri World Imagery: điều khoản dùng miễn phí cho web công khai CHƯA kiểm (SRS-206 mục 4) — đổi nguồn thì đổi ở đây.
-const VE_TINH: StyleSpecification = {
-  version: 8,
-  glyphs: `${OFM}/fonts/{fontstack}/{range}.pbf`,
-  sources: {
-    ve_tinh: {
-      type: "raster",
-      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-      tileSize: 256,
-      maxzoom: 19,
-      attribution: "Ảnh vệ tinh © Esri, Maxar, Earthstar Geographics",
-    },
-  },
-  layers: [{ id: "ve_tinh", type: "raster", source: "ve_tinh" }],
+const NGUON_VE_TINH = {
+  type: "raster" as const,
+  tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+  tileSize: 256,
+  maxzoom: 19,
+  attribution: "Ảnh vệ tinh © Esri, Maxar, Earthstar Geographics",
 };
 
-export function kieuNen(nen: NenBanDo): string | StyleSpecification {
-  if (nen === "toi") return `${OFM}/styles/dark`;
-  if (nen === "ve_tinh") return VE_TINH;
-  return `${OFM}/styles/liberty`;
+// SRS-5.1zzzzzzz442 (chủ dự án 12/11/2026 "Lấy 4 cái" từ bản đồ NhaDat-Radar): vệ tinh KHÔNG còn là ảnh trần. Radar ghi nhận người
+// dùng nhìn ảnh vệ tinh không có tên đường thì không biết mình đang ở đâu → nạp kiểu "liberty" rồi chèn ảnh ngay DƯỚI lớp chữ đầu
+// tiên: ảnh che nền + nét đường, tên đường / tên khu vẫn nằm trên.
+function chenVeTinh(_cu: StyleSpecification | undefined, moi: StyleSpecification): StyleSpecification {
+  const layers = [...moi.layers];
+  const i = layers.findIndex((l) => l.type === "symbol");
+  layers.splice(i < 0 ? layers.length : i, 0, { id: "ve_tinh", type: "raster", source: "ve_tinh" });
+  return { ...moi, sources: { ...moi.sources, ve_tinh: NGUON_VE_TINH }, layers };
+}
+
+/** Kiểu nền lúc DỰNG bản đồ (luôn bắt đầu bằng "Bản đồ"). Đổi nền sau đó dùng `datNen`. */
+export function kieuNen(nen: NenBanDo): string {
+  return nen === "toi" ? `${OFM}/styles/dark` : `${OFM}/styles/liberty`;
+}
+
+/** Đổi nền. Vệ tinh = liberty + ảnh Esri chèn dưới lớp chữ. Lớp riêng của trang (dự án, đường) vẫn dựng lại ở "style.load". */
+export function datNen(map: BanDo, nen: NenBanDo) {
+  map.setStyle(kieuNen(nen), nen === "ve_tinh" ? { transformStyle: chenVeTinh, diff: false } : { diff: false });
+}
+
+// Chữ trên nút / hướng dẫn mặc định của MapLibre đang là tiếng Anh ("Zoom in") → tiếng Việt (SRS-5.1zzzzzzz442).
+const TIENG_VIET: Record<string, string> = {
+  "NavigationControl.ZoomIn": "Phóng to",
+  "NavigationControl.ZoomOut": "Thu nhỏ",
+  "NavigationControl.ResetBearing": "Xoay về hướng bắc",
+  "FullscreenControl.Enter": "Xem toàn màn hình",
+  "FullscreenControl.Exit": "Thoát toàn màn hình",
+  "AttributionControl.ToggleAttribution": "Nguồn bản đồ",
+  "AttributionControl.MapFeedback": "Góp ý bản đồ",
+  "GeolocateControl.FindMyLocation": "Tìm vị trí của tôi",
+  "GeolocateControl.LocationNotAvailable": "Không lấy được vị trí",
+  "Popup.Close": "Đóng",
+  "Marker.Title": "Ghim",
+  "CooperativeGesturesHandler.WindowsHelpText": "Giữ Ctrl và cuộn chuột để phóng to bản đồ",
+  "CooperativeGesturesHandler.MacHelpText": "Giữ ⌘ và cuộn chuột để phóng to bản đồ",
+  "CooperativeGesturesHandler.MobileHelpText": "Dùng hai ngón tay để kéo bản đồ",
+};
+
+/** Tuỳ chọn chung khi `new Map`. `nhung`: bản đồ NHÚNG giữa trang (trang tag, trang căn) — trên màn cảm ứng vuốt một ngón phải cuộn
+ *  được trang, hai ngón mới kéo bản đồ. Máy tính để nguyên (đưa chuột vào cuộn là phóng to, không bắt giữ Ctrl). Trang /ban-do chiếm
+ *  cả màn hình nên không bật. */
+export function tuyChonChung(nhung: boolean) {
+  return {
+    locale: TIENG_VIET,
+    attributionControl: { compact: true },
+    cooperativeGestures: nhung && typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches,
+  };
 }
 
 /** Tâm Sài Gòn, thứ tự MapLibre [lng, lat]. */

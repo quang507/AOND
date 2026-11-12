@@ -815,6 +815,19 @@ tin nền đổi sang "anh/chị"; câu khen văn viết, "sửa văn phong ki�
   là ngon luôn."), rồi một câu xin góc; trước ép "đúng MỘT câu" nên lời khen, lời xin và lợi ích dồn thành một câu dài văn viết. ≈ +25 token.
 - Tin 08:34 còn xin "kèm biển số nhà" — đã chặn ở 3bcd3b3 (08:35, sau tin đó một phút).
 
+### SRS-5.1zzzzzzz442 · Bản đồ: vệ tinh có tên đường, nút tiếng Việt, hai ngón trên điện thoại, tải khi sắp hiện (12/11/2026)
+Chủ dự án 12/11 hỏi "bản đồ các kiểu lấy dc ko" (repo NhaDat-Radar, cùng nền MapLibre + OpenFreeMap) rồi chốt "Lấy 4 cái":
+- **Vệ tinh có chữ:** trước là ảnh Esri trần, không biết đang nhìn đâu (Radar ghi nhận đúng phản hồi này từ người dùng 19/8). Giờ nạp
+  kiểu `liberty` rồi chèn ảnh ngay dưới lớp chữ đầu tiên (`transformStyle`) — tên đường, tên quận vẫn nằm trên ảnh. `lib/ban-do.ts`
+  thêm `datNen()`; trang /ban-do và bản đồ nhúng đều đổi nền qua hàm này (`diff: false`, lớp dự án / đường vẫn dựng lại ở `style.load`).
+- **Tiếng Việt:** chữ nút / hướng dẫn mặc định của MapLibre ("Zoom in", "Toggle attribution", hướng dẫn hai ngón) → bảng `TIENG_VIET`.
+- **Hai ngón trên màn cảm ứng** (`cooperativeGestures` khi `pointer: coarse`) cho bản đồ NHÚNG giữa trang (mua bán, trang căn): vuốt
+  một ngón cuộn được trang. Máy tính giữ nguyên; trang /ban-do chiếm cả màn hình nên không bật.
+- **Tải khi sắp hiện:** `MapView` chỉ nạp maplibre (~800 kB) khi khung cách màn hình 400px (IntersectionObserver). Khung bản đồ `hidden`
+  trên điện thoại không bao giờ giao cắt → không tải luôn.
+- Thấy lúc soát, CHƯA sửa: bản đồ trang căn (`WardMap`) chỉ hiện khi `ward` có trong `WARD_CENTROIDS` — bảng này chỉ có "Phường 1…15" cũ,
+  nên với tên phường mới sau sáp nhập (gần như mọi tin) trang căn không có bản đồ.
+
 ### SRS-5.1zzzzzzz439 · Soát giao diện bằng skill impeccable (audit + polish) trang chủ, feed, trang tag, trang chi tiết căn (12/11/2026)
 Chủ dự án 12/11 "chạy đi nhưng đừng để impeccable sửa chồng mấy cái kia quá" — giữ nguyên màu / font King, góc 14px, nút Zalo xanh,
 feed, nút "Hỏi", luật không eyebrow. Bộ dò tự động của impeccable: 0 lỗi; soát bằng mắt khổ 1280px và 375px ra 9 lỗi thật, sửa hết:
