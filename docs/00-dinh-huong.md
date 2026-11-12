@@ -100,7 +100,7 @@ AOND mượn cho cả hai phía (`06 §6.8`).
 | §IV | Thưởng quy mô; quyền lợi Đồng/Bạc/Vàng | ✅ | SRS-5.1zzf (OPEN-26 chốt 05/10); hạng giữ (SRS-5.1zzzzzzz214) |
 | §V | Phí; NMG ≥10 tin, chốt 5% | ✅ | BR-05, FR-125, FR-155; `prompts.muc_phi` |
 | §V | Hệ thống điều phối CTV | ❌ | *[deprecated 28/10/2026 — bỏ CTV, chủ dự án]*. Từng làm ở FR-136/173; bỏ dần 23–25/10 (SRS-5.1zzzzzzz165, 170, 172, 173), bỏ hẳn 28/10 |
-| §VI | Quét im >5 ngày; hỏi 1–2 căn/ngày | ⏳ | Drip TS (`seller_drip_tick`, `ask-seller`) gỡ 18/10 (SRS-5.1zzzzzzz31). Lõi có nhắc 5 phút (`followup.py`) và hỏi sau đăng mỗi lượt một ô; quét im >5 ngày chưa có lại |
+| §VI | Quét im >5 ngày; hỏi 1–2 căn/ngày | 🔶 | Drip TS gỡ 18/10 (SRS-5.1zzzzzzz31). Thay bằng **LQC** (12/11/2026): vòng nền hỏi sau đăng quét 10 phút / lượt, chủ im thì bot tự hỏi câu kế, ≤ 3 tin / căn / ngày, ≤ 10 câu / căn, chủ bỏ qua 2 tin liền thì thôi (SRS-5.1zzzzzzz432); Image LQC chấm ảnh, xin góc thiếu (SRS-5.1zzzzzzz422 → 425) — `docs/lqc-listing-quality-controller.md`. Chỉ chăm tin có Zalo chủ nhà. Hỏi còn bán không là vòng khác: tin quá 20 ngày chưa xác nhận (`hoi_con_ban`, SRS-5.1zzzzzzz295) |
 | §VII | Gemini → máy local | 🔶 | Claude là đường chính, Gemini → Groq dự phòng (SRS-5.1zzzzzzz117); vector Gemini; không chạy local — OPEN-41 |
 | §VII | SharePoint 5 lớp | ❌ | Supabase Storage (FR-165, SRS-5.1zzzzzzz56) |
 | §VII | Live Chat Monitor: nhãn + nút cướp quyền | 🔶 | Admin gửi tin từ `/admin/tin-nhan`; lời admin vào hội thoại thì bot im 30 phút (SRS-5.1zzzzzzz216); màn hình nhãn ⏳ |

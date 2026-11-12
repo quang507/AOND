@@ -85,7 +85,7 @@ flowchart TD
   S1 --> S2{"summary_ready()<br/>hoặc đã trình bản nháp<br/>hoặc khách bảo đăng đủ sàn?"}
   S2 -->|chưa| C1["build_phieu_luot — phiếu lượt ngắn: GIONG_VUI + dữ liệu căn + VIỆC LƯỢT NÀY<br/>+ khoi_xin_dang + _khoi_diem_tin"]
   S2 -->|"đủ, chưa trình"| C2["build_listing_proposal_system<br/>bản tin 📋 theo AD_FORMAT"]
-  S2 -->|"đã trình"| C3["build_fee_followup_system<br/>duyệt · phí · trạng thái web<br/>+ khoi_hoi_sau_dang (mỗi lượt một ô)"]
+  S2 -->|"đã trình"| C3["build_fee_followup_system<br/>duyệt · phí · trạng thái web<br/>+ cụm sau đăng Engine.cum_sau_ke (mỗi lượt một câu:<br/>ảnh → pháp lý → lợi thế → so sánh → giá …)"]
   C1 & C2 & C3 --> K["khối ghép thêm:<br/>khoi_dia_danh · _khoi_hoi_du_an · khoi_hoi_mat_tien · khoi_chao_lan_dau<br/>khoi_xung_ho · _ghep_cau_chuan (trước RANH_GIOI_CACHE)<br/>MỘT khối ưu tiên: khoi_can_nguoi > khoi_phap_ly > khoi_ngoai_viec > hỏi về > hỏi trùng tên<br/>dữ liệu rổ / dự án / giá: agent_ban.goi_y → công cụ tra (AGENT_BAN tắt: _basket_block · _project_memory_block · _seller_price_block)"]
   K --> V["viec_luot (SRS-5.1zzzzzzz314): chọn MỘT việc từ các khối đã ghép,<br/>ghi y_luot._viec / _khoi để bộ chấm đo — chưa đổi lời"]
 ```
@@ -112,3 +112,4 @@ qua `Engine._loc_nhu_cau` (cụm trích nằm nguyên trong lời khách) rồi 
 
 Sau lượt, ảnh căn bot vừa dán link đi kèm qua `anh_can_gui_kem` (§13.1). Tin chủ động cho khách (nhắc, báo căn mới) không đi
 đường này: lõi gửi qua `POST /send` của bridge (`gui_nhac.py`, `bao_can_moi.py`, `followup.py`), xem `docs/07-srs.md` §2.
+Tin chủ động cho người bán SAU khi tin lên web (LQC) cũng gửi qua `/send`: vòng `hoi_sau_dang` dùng chung `Engine.cum_sau_ke` / `khoi_cum_sau` với lượt chat (§13.3, nhánh "đã trình"), vòng `qc_anh` chấm bộ ảnh — xem `docs/lqc-listing-quality-controller.md`.

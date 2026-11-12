@@ -249,7 +249,7 @@ không thêm ma sát cho CCRB (INS-05).
 
 ## UF-10 — S rao tin ngay trong Zalo (F1)
 **Actor** CCRB / NMG · **FR** FR-109, FR-111, FR-106, FR-144, FR-150, FR-157, FR-176, FR-177, FR-178 · *(FR-97 bản cũ deprecated)* [nguồn: artifact "Cầu Nối BĐS" v2, 08/2026; kịch bản Gemini của sếp 07/09/2026; SRD AOND §I–II]
-✅ đã dựng: lõi Python nhánh bán (`src/aioi/engine.py`, `schema.py`, `prompts.py`); ảnh về bucket `listing-public` (`kho_anh.py`, FR-165). Tin nhắc 5 phút khi người bán im: `src/aioi/followup.py`.
+✅ đã dựng: lõi Python nhánh bán (`src/aioi/engine.py`, `schema.py`, `prompts.py`); ảnh về bucket `listing-public` (`kho_anh.py`, FR-165). Tin nhắc 5 phút khi người bán im: `src/aioi/followup.py`. Sau khi tin lên web: **LQC** hỏi tiếp từng câu (ảnh → pháp lý → lợi thế → so sánh → giá), cả lúc chủ im — `docs/lqc-listing-quality-controller.md`.
 
 > **Hiện trạng khác sơ đồ dưới (28/10/2026):** cổng ra bản nháp là `Property.minimal_missing()` (loại hình + vị trí + giá) và
 > `summary_ready` (còn ≤ 1 facet chính trống) — SRS-5.1zzzzzzz200 / 202, không còn ngưỡng điểm 70. Bản tin 📋 do model
