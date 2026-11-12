@@ -17,7 +17,10 @@ Ký hiệu: **✅ đã chạy** · **🟡 có một phần** · **❌ chưa có*
 - Tin #56F988C9 đã nhận: xin ảnh (2 lần), "sổ đứng tên ai", 1 tin Image LQC xin ảnh mặt tiền thấy trọn 6 tầng. Chủ chưa đáp hai tin cuối,
   nên vòng nền **đang chờ đúng luật** (mục 3). Câu kế tiếp trong hàng: hỏi loại giấy tờ → đoạn đường hợp kinh doanh gì / chỗ đậu xe → gửi
   2–3 căn đang rao gần để so.
-- Đã thấy bot nói thật với chủ: **mảng Ảnh**. Pháp lý, Lợi thế, So sánh đã có code và đã bắn thử, nhưng chưa có chủ nhà thật nào đi tới lượt đó.
+- Đã thấy bot nói thật với chủ: **mảng Ảnh**. Pháp lý, Lợi thế, So sánh chưa có chủ nhà thật nào đi tới lượt đó, nhưng **bắn thử production 12/11**
+  (chủ thử nhà mặt tiền, đáp ngắn từng câu) ra đủ chuỗi: xin ảnh mặt tiền → ảnh sổ ("chỉ để kiểm, không đăng") → đứng tên → thế chấp → quy
+  hoạch → "cách Bệnh viện Đa khoa Gò Vấp khoảng 250 m, đoạn này buôn bán gì thì hợp?" → đậu xe → gửi 3 căn mặt tiền gần kèm đơn giá / link →
+  thương lượng → bán gấp hay thong thả. Hai lỗi lượt đầu (so sánh bị bỏ khi tin chưa có toạ độ; câu đáp đậu xe bị bỏ) đã sửa — SRS-441.
 
 ## 2. Khi nào bot hỏi
 
