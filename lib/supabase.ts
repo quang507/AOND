@@ -67,7 +67,8 @@ export type Listing = {
   floor: number | null;
   bathrooms: number | null;
   direction: string | null;
-  legal_status: "so_hong_rieng" | "so_hong_chung" | "so_hong" | "hdmb" | "giay_tay" | null;
+  legal_status: string | null;   // mã loại giấy — khoá ngoại bảng `loai_phap_ly` (SRS-5.1zzzzzzz435), nhãn đọc qua quan hệ dưới
+  loai_phap_ly?: { nhan: string } | null;
   has_completion: boolean | null;
   planning_status: string | null;
   has_elevator: boolean | null;

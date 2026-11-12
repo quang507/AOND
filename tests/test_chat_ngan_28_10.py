@@ -54,7 +54,7 @@ def test_ban_nhap_bia_phap_ly_va_chinh_chu_bi_bat():
     c = _conv("chị cần bán nhà", "Chị bán nhà ở 125 Bình Long, Bình Hưng Hòa A, Bình Tân, 70m2, giá 3 tỷ", "diện tích sàn")
     assert _khang_dinh_khong_co_du_lieu(BAN_NHAP, c) == ["chính chủ", "mặt tiền", "sổ hồng"]
     c2 = _conv("Nhà chính chủ, sổ hồng riêng, mặt tiền 125 Bình Long giá 3 tỷ")     # sự thật AI đọc + vai chủ nhà → không bắt
-    c2.prop.fields.update(_phap_ly_trang_thai="co_so", _duong_vao="mat_tien")
+    c2.prop.fields.update(_phap_ly_trang_thai="so_hong_rieng", _duong_vao="mat_tien")
     c2.user_type = SellerRole.CHU_NHA
     assert _khang_dinh_khong_co_du_lieu(BAN_NHAP, c2) == []
     assert _khang_dinh_khong_co_du_lieu("Nhà có sổ hồng, giá 3 tỷ.", c) == []    # không phải bản tin 📋 → không soát

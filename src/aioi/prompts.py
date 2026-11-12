@@ -18,6 +18,9 @@ from . import phap_ly
 from .llm.base import RANH_GIOI_CACHE
 from .web import SITE_HOST, SITE_URL, link_tin
 from .schema import (
+    LOAI_PHAP_LY,
+    MA_PHAP_LY_AI,
+    loai_phap_ly,
     CORE_FIELDS,
     CORE_THEO_LOAI,
     HOUSE_AREA_FIELDS,
@@ -67,11 +70,13 @@ FIELD_LABELS: dict[str, str] = {
     "thuong_luong": "khả năng thương lượng, bớt lộc",
     "ly_do_ban": "lý do cần bán / bán gấp hay thong thả (riêng của chủ)",
     # SRS-5.1zzzzzzz116: hỏi sau khi tin lên web (schema.CUM_SAU_DANG). Ô riêng (schema.O_NOI_BO) không lên web / bản tin.
-    "dung_ten_so": "người đứng tên sổ (chính chủ / vợ chồng / đồng sở hữu) và mọi người đứng tên đồng ý bán chưa (riêng của chủ)",
+    "dung_ten_so": "người đứng tên sổ (chính chủ / vợ chồng / đồng sở hữu) (riêng của chủ)",
+    "dong_y_ban": "những người đứng tên sổ (các đồng sở hữu, hoặc chủ cũ còn đứng tên khi mua bằng ủy quyền) đã đồng ý, sẵn sàng ký bán chưa (riêng của chủ)",
+    "so_goc": "đất gốc (sổ mẹ) của căn giấy tay đã có sổ chưa (riêng của chủ)",
     "du_kien_hoan_cong": "chủ dự kiến khi nào hoàn công xong (riêng của chủ)",
     "phu_hop_kinh_doanh": "căn / đoạn đường hợp buôn bán gì theo lời chủ (vd cafe, nhà hàng, spa, văn phòng kèm showroom; căn đang cho thuê thì khách thuê đang làm gì)",
     "cho_dau_xe": "chỗ khách đậu xe (trước nhà, vỉa hè rộng, bãi xe gần) theo lời chủ",
-    "du_kien_ra_so": "chủ đầu tư hẹn khi nào ra sổ (riêng của chủ)",
+    "du_kien_ra_so": "dự kiến khi nào có sổ / sang tên xong — chủ đầu tư hẹn ra sổ, hoặc hồ sơ đang làm (riêng của chủ)",
     "thue_phi": "thuế phí sang tên bên nào chịu, giá đã gồm thuế phí chưa",
     "thanh_toan": "cách nhận tiền (một lần / chia đợt) và có cho người mua vay ngân hàng không",
     "gio_xem": "khung giờ tiện dẫn khách xem nhà (riêng của chủ)",
@@ -189,7 +194,9 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "anh_so": ("Xin khách chụp giúp trang sổ có thông tin thửa đất / nhà để em đối chiếu tin cho chính xác; nói rõ ảnh sổ chỉ để em kiểm, "
                "KHÔNG đăng lên tin, số nhà không hiện trên web. Một câu, không ép"),
     "du_kien_hoan_cong": "Hỏi NGẮN một câu: dự kiến khi nào hoàn công xong ạ (không nói chưa hoàn công là xấu)",
-    "du_kien_ra_so": "Hỏi NGẮN một câu: chủ đầu tư hẹn khi nào ra sổ ạ",
+    "du_kien_ra_so": "Hỏi NGẮN một câu: dự kiến khi nào có sổ ạ (căn dự án thì hỏi chủ đầu tư hẹn khi nào ra sổ)",
+    "dong_y_ban": "Hỏi NGẮN một câu: những người cùng đứng tên trên sổ đã đồng ý ký bán chưa ạ (mua bằng ủy quyền thì hỏi chủ đứng tên sổ sẵn sàng ký cho khách chưa)",
+    "so_goc": "Hỏi NGẮN một câu: đất gốc (sổ mẹ) đã có sổ chưa ạ",
     # SRS-5.1zzzzzzz427 (LQC mảng Khai thác lợi thế)
     "phu_hop_kinh_doanh": ("Hỏi chủ đoạn đường này buôn bán gì thì hợp (chủ rành khu hơn em), để em giới thiệu đúng khách thuê / mua kinh doanh; "
                            "căn đang cho thuê thì hỏi khách thuê đang làm gì. Hỏi mở, không gợi sẵn danh sách ngành"),
@@ -482,12 +489,12 @@ LUAT_MOT_CAU_HOI = "Tối đa MỘT câu hỏi mỗi lượt"
 # Sự thật của căn do AI đọc theo nghĩa (SRS-5.1zzzzzzz320) — (khoá, giá trị, mô tả cho schema). Engine ghi vào ô nội bộ "_<khoá>" khi cụm trích
 # có trong lời khách; lưới bản tin (`engine._khang_dinh_khong_co_du_lieu`) chỉ đối chiếu các ô này + vai, không đọc lời khách.
 SU_THAT_CAN: tuple[tuple[str, tuple[str, ...], str], ...] = (
-    # SRS-5.1zzzzzzz426: thêm hdmb (căn hộ / đất dự án chờ chủ đầu tư ra sổ) và mo_ho (nói chung chung, chưa nói loại giấy) — mo_ho thì ô
-    # pháp lý coi như chưa có, câu mơ hồ không ghi vào ô (schema.Property._has / update).
-    ("phap_ly_trang_thai", ("co_so", "hdmb", "chua_co", "dang_lam", "giay_tay", "mo_ho", "chua_ro"),
-     "Giấy tờ căn theo NGHĨA lời khách: co_so = đã có sổ hồng / sổ đỏ; hdmb = chỉ có hợp đồng mua bán (căn hộ / đất dự án chờ chủ "
-     "đầu tư ra sổ); chua_co; dang_lam (sổ đang làm); giay_tay; mo_ho = khách chỉ nói chung chung (\"pháp lý chuẩn\", \"không phải "
-     "lo gì\", \"giấy tờ đầy đủ\") mà CẢ cuộc trò chuyện chưa nói loại giấy nào; chua_ro."),
+    # SRS-5.1zzzzzzz435: mã và mô tả lấy từ `schema.LOAI_PHAP_LY` — một nguồn với cột `legal_status`, bản tin và câu hỏi theo sau.
+    ("phap_ly_trang_thai", MA_PHAP_LY_AI,
+     "Loại giấy tờ của căn theo NGHĨA cả cuộc trò chuyện, đúng MỘT mã: "
+     + "; ".join(f"{ma} = {l.mo_ta}" for ma, l in LOAI_PHAP_LY.items())
+     + "; mo_ho = khách chỉ nói chung chung (\"pháp lý chuẩn\", \"không phải lo gì\", \"giấy tờ đầy đủ\") mà chưa nói loại giấy nào; "
+       "chua_ro."),
     ("hoan_cong", ("da_hoan_cong", "chua_hoan_cong", "chua_ro"),
      "Nhà trên đất đã hoàn công (nhà đã được ghi vào sổ) chưa, theo nghĩa lời khách: da_hoan_cong; chua_hoan_cong (\"chưa hoàn công\", "
      "\"sổ chưa có nhà\", \"đang làm hoàn công\"); chua_ro. Chỉ nhà có đất riêng."),
@@ -515,19 +522,19 @@ def _dien_tich_mo_ho(prop: Property, next_field: str | None) -> str | None:
     return None if _so(mo_ho) in (_so(prop.fields.get("dien_tich_dat")), _so(prop.fields.get("dien_tich_nha"))) else mo_ho
 
 
+_HOAN_CONG_BAN_TIN = {"da_hoan_cong": "đã hoàn công", "chua_hoan_cong": "nhà chưa hoàn công"}
+
+
 def khoi_su_that_can(fields: dict, chu_nha: bool) -> str:
     """Dữ kiện cho lượt viết BẢN TIN (SRS-5.1zzzzzzz320): điều nào đã được khách xác nhận (AI đọc theo nghĩa) thì được khẳng định, còn lại thì
     KHÔNG — cùng nguồn với lưới `engine._khang_dinh_khong_co_du_lieu`, để model khỏi viết rồi bị gọi lại."""
-    pl = {"co_so": "đã có sổ — được ghi loại sổ khách nói", "hdmb": "chỉ có HĐMB, CHƯA có sổ", "chua_co": "CHƯA có sổ",
-          "dang_lam": "sổ ĐANG LÀM", "giay_tay": "giấy tay"}
     dv = {"mat_tien": "mặt tiền đường", "hem": "trong hẻm (KHÔNG ghi hẻm xe hơi / HXH)", "hem_xe_hoi": "hẻm xe hơi"}
     ti = [x for x in str(fields.get("_tien_ich_gan") or "").split(",") if x]
     nhan_ti = {"cho": "chợ", "truong_hoc": "trường học", "benh_vien": "bệnh viện", "sieu_thi": "siêu thị", "cong_vien": "công viên", "ttm": "TTTM"}
     return ("\nSỰ THẬT ĐÃ XÁC NHẬN (bản tin chỉ khẳng định điều có ở đây; chưa rõ thì KHÔNG viết, không đoán):\n"
             f"- Vai: {'chủ nhà — được ghi Chính chủ' if chu_nha else 'chưa xác nhận là chủ nhà — KHÔNG ghi Chính chủ'}\n"
-            f"- Giấy tờ: {pl.get(fields.get('_phap_ly_trang_thai'), 'chưa rõ — KHÔNG ghi sổ hồng / sổ đỏ / sổ riêng / pháp lý rõ ràng')}"
-            + (" — KHÔNG ghi sổ hồng / sổ đỏ / hoàn công" if fields.get("_phap_ly_trang_thai") in ("hdmb", "chua_co", "dang_lam", "giay_tay") else "")
-            + (" — nhà CHƯA hoàn công: KHÔNG ghi hoàn công / hoàn công đầy đủ" if fields.get("_hoan_cong") == "chua_hoan_cong" else "") + "\n"
+            f"- Giấy tờ: {f'{pl.ban_tin} — viết đúng loại giấy này' if (pl := loai_phap_ly(fields)) else 'chưa rõ — bản tin không nói về giấy tờ'}\n"
+            f"- Hoàn công: {_HOAN_CONG_BAN_TIN.get(fields.get('_hoan_cong'), 'chưa rõ — bản tin không nói về hoàn công')}\n"
             f"- Đường vào: {dv.get(fields.get('_duong_vao'), 'chưa rõ — KHÔNG ghi mặt tiền / hẻm / HXH')}\n"
             f"- Tiện ích gần: {', '.join(nhan_ti[x] for x in ti if x in nhan_ti) or 'chưa có — KHÔNG ghi gần chợ / trường / bệnh viện / siêu thị / công viên'}\n"
             f"- Tình trạng nhà: {'mới xây' if fields.get('_tinh_trang_nha') == 'moi_xay' else 'KHÔNG ghi nhà mới / mới xây / giữ gìn / sạch sẽ'}\n"
@@ -877,11 +884,11 @@ def build_hoi_sau_dang_nhac_system(ten: str, prop: "Property", khoi: str, goi: s
 
 
 def khoi_hoi_phap_ly(o: str, prop: Property | None = None) -> str:
-    """Tiến độ giấy tờ (SRS-5.1zzzzzzz426): hỏi MỘT lần ngay sau khi chủ nói chưa hoàn công / chỉ có HĐMB — engine chọn ô
-    (`Property.o_phap_ly_hoi_ngay`), model đặt câu."""
+    """Câu theo sau khi chủ nói giấy tờ (SRS-5.1zzzzzzz426 / 435): hỏi MỘT lần — engine chọn ô theo loại giấy (`Property.o_phap_ly_hoi_ngay`),
+    model đặt câu. Ô riêng của chủ thì nói rõ chỉ để bên em nắm."""
     return ("\n\n=== HỎI THÊM LƯỢT NÀY (giấy tờ — để bên em tư vấn khách mua cho đúng): ===\n"
             f"Việc lượt này: đáp ngắn ý khách vừa nói, rồi hỏi: {cau_hoi_o(o, prop)}."
-            + ("\n" if o == "loai_giay" else " Chỉ để bên em nắm, không đưa lên tin.\n"))
+            + (" Chỉ để bên em nắm, không đưa lên tin.\n" if o in O_NOI_BO else "\n"))
 
 
 def khoi_hoi_coc(o: str, prop: Property | None = None) -> str:
@@ -2231,11 +2238,8 @@ SỰ THẬT CỦA CĂN (đọc theo NGHĨA cả câu, hiểu phủ định "khô
 trạng thái HIỆN TẠI theo cả cuộc trò chuyện về căn đang nói, mỗi khoá kèm "<khoá>_trich_dan" = nguyên văn cụm khách nói. Khách chưa nói
 hoặc chưa chắc → bỏ trống (bản tin sẽ KHÔNG khẳng định điều đó). "không phải chính chủ" / "nhà chị gái em, em đăng giùm" KHÔNG là chu_nha
 (người nhà → seller_role "nguoi_nha_nho_ban").
-- "phap_ly_trang_thai": co_so (đã có sổ hồng / sổ đỏ) · hdmb (chỉ có hợp đồng mua bán, chờ chủ đầu tư ra sổ) · chua_co · dang_lam (sổ
-  đang làm) · giay_tay · mo_ho (chỉ nói chung chung "pháp lý chuẩn", "không phải lo", cả cuộc trò chuyện chưa nói loại giấy) · chua_ro.
-  mo_ho thì KHÔNG ghi câu đó vào ô phap_ly / phap_ly_hoan_cong.
-- "hoan_cong": nhà trên đất da_hoan_cong · chua_hoan_cong · chua_ro. Chủ nói ngày dự kiến hoàn công → ô du_kien_hoan_cong; chủ đầu tư hẹn
-  ngày ra sổ → ô du_kien_ra_so.
+- "phap_ly_trang_thai": loại giấy tờ — đúng một mã theo mô tả của khoá này trong schema. Ngày dự kiến có sổ → ô du_kien_ra_so.
+- "hoan_cong": nhà trên đất da_hoan_cong · chua_hoan_cong · chua_ro. Chủ nói ngày dự kiến hoàn công → ô du_kien_hoan_cong.
 - "duong_vao": mat_tien · hem · hem_xe_hoi · chua_ro ("không phải mặt tiền, hẻm 3m" → hem).
 - "tien_ich_gan": danh sách CHỈ tiện ích khách khẳng định CÓ GẦN: cho, truong_hoc, benh_vien, sieu_thi, cong_vien, ttm ("xa chợ" → không có cho).
 - "tinh_trang_nha": moi_xay · dang_o · cu · chua_ro.

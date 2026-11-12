@@ -102,7 +102,7 @@ def test_xa_cho_thi_gan_cho_bi_bat():
 def test_chu_nha_noi_du_thi_khong_bat_nham():
     cau = "tôi chủ nhà, sổ hồng riêng, mặt tiền, gần chợ Bến Thành, gần trường học, nhà mới xây"
     _, ai, vl = _luot(cau, {"seller_role": "chu_nha", "seller_role_trich_dan": "tôi chủ nhà",
-                            "phap_ly_trang_thai": "co_so", "phap_ly_trang_thai_trich_dan": "sổ hồng riêng",
+                            "phap_ly_trang_thai": "so_hong_rieng", "phap_ly_trang_thai_trich_dan": "sổ hồng riêng",
                             "duong_vao": "mat_tien", "duong_vao_trich_dan": "mặt tiền",
                             "tien_ich_gan": ["cho", "truong_hoc"], "tien_ich_gan_trich_dan": "gần chợ Bến Thành, gần trường học",
                             "tinh_trang_nha": "moi_xay", "tinh_trang_nha_trich_dan": "nhà mới xây"})
@@ -110,7 +110,7 @@ def test_chu_nha_noi_du_thi_khong_bat_nham():
 
 
 def test_cum_trich_khong_co_trong_loi_khach_thi_khong_nhan():
-    _, _, vl = _luot("nhà ở Lê Lai em", {"phap_ly_trang_thai": "co_so", "phap_ly_trang_thai_trich_dan": "sổ hồng riêng",
+    _, _, vl = _luot("nhà ở Lê Lai em", {"phap_ly_trang_thai": "so_hong_rieng", "phap_ly_trang_thai_trich_dan": "sổ hồng riêng",
                                           "seller_role": "chu_nha", "seller_role_trich_dan": "chính chủ"})
     assert {"sổ hồng", "chính chủ"} <= _bat(vl)
 

@@ -80,13 +80,6 @@ export const ACCESS_LABEL: Record<string, string> = {
   hem_xe_may: "Hẻm xe máy",
   hem: "Trong hẻm",
 };
-export const LEGAL_LABEL: Record<string, string> = {
-  so_hong_rieng: "Sổ hồng riêng",
-  so_hong_chung: "Sổ hồng chung",
-  so_hong: "Sổ hồng / sổ đỏ",
-  hdmb: "Hợp đồng mua bán",
-  giay_tay: "Giấy tay / vi bằng",
-};
 export const FURNISH_LABEL: Record<string, string> = {
   full: "Đầy đủ",
   co_ban: "Cơ bản",

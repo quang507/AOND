@@ -138,7 +138,7 @@ from .prompts import (
 )
 from .imaging import downscale_image
 from .revenue import SellerRole
-from .schema import ANH_TIN_DEP, CAU_MO_MUA, CUM_XIN_ANH, FACETS, HOUSE_TYPES, KHOA_PHAP_LY, O_COC, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
+from .schema import ANH_TIN_DEP, CAU_MO_MUA, CUM_XIN_ANH, FACETS, HOUSE_TYPES, KHOA_PHAP_LY, loai_phap_ly, O_COC, O_HE_THONG_TRA, O_NOI_BO, O_SAU_DANG, O_TU_VAN_MUA, Property, BuyerLead, PropertyGroup, _so_nguyen
 from .prompts import Y_MO_DAU
 from .dia_danh import TraDiaDanh, bo_dau, khoi_dia_danh, phuong_kho_hem, ten_tran
 from .xung_ho import goi_khach_la_minh, goi_toi as goi_toi_khach, tre as _xung_tre
@@ -454,12 +454,15 @@ def _model_luot_de() -> str | None:
 
 
 def ghi_trang_thai_so(f: dict, loai_gt: object) -> None:
-    """Ảnh sổ là bằng chứng trực tiếp về giấy tờ (SRS-5.1zzzzzzz426): sổ hồng / sổ đỏ → `co_so` + cờ `_da_doc_so` (câu xin ảnh sổ sau đăng
-    không hỏi lại); HĐMB → `hdmb` (không hạ `co_so`). Một chỗ cho ảnh sổ gửi lẻ và ảnh sổ trong lô ảnh (SRS-5.1zzzzzzz432)."""
+    """Ảnh sổ là bằng chứng trực tiếp về giấy tờ (SRS-5.1zzzzzzz426): sổ hồng / sổ đỏ → có sổ + cờ `_da_doc_so` (câu xin ảnh sổ sau đăng
+    không hỏi lại) — đã biết sổ riêng / sổ chung thì giữ (SRS-435); HĐMB → `hdmb` khi chưa biết có sổ. Một chỗ cho ảnh sổ gửi lẻ và ảnh sổ
+    trong lô ảnh (SRS-5.1zzzzzzz432)."""
+    loai = loai_phap_ly(f)
     if loai_gt in ("so_hong", "so_do"):
-        f["_phap_ly_trang_thai"] = "co_so"
+        if loai is None or not loai.la_so:
+            f["_phap_ly_trang_thai"] = "so_hong"
         f["_da_doc_so"] = "1"
-    elif loai_gt == "hdmb" and f.get("_phap_ly_trang_thai") != "co_so":
+    elif loai_gt == "hdmb" and (loai is None or not loai.la_so):
         f["_phap_ly_trang_thai"] = "hdmb"
 
 
@@ -1287,8 +1290,8 @@ def _ghi_su_that_can(conv: "Conversation", plan: dict, loi_khach: list[str]) -> 
     for khoa, gia_tri, _ in SU_THAT_CAN:
         v = plan.get(khoa)
         if v in gia_tri and v != "chua_ro" and _vai_co_bang_chung(plan.get(f"{khoa}_trich_dan"), loi_khach):
-            if khoa == "phap_ly_trang_thai" and v == "mo_ho" and conv.prop.fields.get(f"_{khoa}") == "co_so":
-                continue   # đã có sổ (khách nói / ảnh sổ) thì câu chung chung sau không hạ xuống mơ hồ
+            if khoa == "phap_ly_trang_thai" and v == "mo_ho" and loai_phap_ly(conv.prop.fields) is not None:
+                continue   # đã biết loại giấy (khách nói / ảnh sổ) thì câu chung chung sau không hạ xuống mơ hồ
             conv.prop.fields[f"_{khoa}"] = v
             if khoa == "phap_ly_trang_thai" and v == "mo_ho":   # SRS-5.1zzzzzzz426 (2.1): câu mơ hồ không nằm trong ô pháp lý
                 for k in KHOA_PHAP_LY:
@@ -1330,7 +1333,7 @@ def _khang_dinh_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
             ra.extend(m.group(0) for m in (rx.finditer(phan) if hasattr(rx, "finditer") else re.finditer(rx, phan, re.I)))
 
     them(_KD_CHINH_CHU, getattr(conv, "vai_phi", None) == SellerRole.CHU_NHA)   # vai một nguồn với phí (Đợt 4, AU-03): người rao ≥ N tin bán tính như MG
-    them(_KD_PHAP_LY, f.get("_phap_ly_trang_thai") == "co_so")
+    them(_KD_PHAP_LY, bool((loai := loai_phap_ly(f)) and loai.la_so))
     them(_KD_HEM_XE_HOI, duong == "hem_xe_hoi")
     them(_KD_HEM, duong in ("hem", "hem_xe_hoi") or so_hem)
     them(_KD_MAT_TIEN, duong == "mat_tien")
@@ -3296,8 +3299,8 @@ class Engine:
                     system += _hoi("hoi_sau_dang", khoi_sau, hoan=lambda cu=sau_cu: _dat_co(conv.prop.fields, "_sau_da_hoi", cu))
                     log.warning("Hỏi sau đăng: cụm %s", cum_sau[0])
 
-        # SRS-5.1zzzzzzz426 (LQC mảng Pháp lý 2.4 / 2.5): chủ vừa nói chưa hoàn công / căn dự án chỉ có HĐMB → hỏi tiến độ MỘT lần ngay lượt
-        # này (`_pl_da_hoi`); `viec_luot` gỡ khối thì trả cờ, lượt sau hỏi.
+        # SRS-5.1zzzzzzz426 / 435 (LQC mảng Pháp lý): chủ vừa nói loại giấy / chưa hoàn công → hỏi câu theo sau MỘT lần ngay lượt này
+        # (`_pl_da_hoi`, câu do `LOAI_PHAP_LY` quyết); `viec_luot` gỡ khối thì trả cờ, lượt sau hỏi.
         o_pl = None if trinh_nhap else conv.prop.o_phap_ly_hoi_ngay()
         if o_pl:
             pl_cu = conv.prop.fields.get("_pl_da_hoi")

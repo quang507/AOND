@@ -142,6 +142,7 @@ def chon_phuong_da_goi_ten(ung_vien: list[str], *chu: str | None) -> str | None:
 LOAI_XA_GO = {"xa": "xa", "phuong": "phuong", "p": "phuong", "thi tran": "thi tran", "tt": "thi tran"}
 # Tỉnh CŨ (cột `xa_tinh_khac.tinh_cu`) nằm NGOÀI vùng nhận tin dù nay thuộc tỉnh trong vùng (chủ dự án 20/10: "Bình Phước cũ — bỏ"; prompts.VUNG_NHAN_TIN).
 TINH_CU_NGOAI_VUNG = frozenset({"Bình Phước"})
+TPHCM = "TP.HCM"   # dòng bảng `wards` (phường / xã mới của TP.HCM) trong kho tra xã — xem `tra_xa`
 
 
 def _loai_khach_go(ten: str) -> str | None:
@@ -158,7 +159,10 @@ def tra_xa(kho: list[dict], ten: str | None) -> dict | None:
     """Xã / phường MỚI của tỉnh Tây Ninh (hợp nhất Long An, NQ 1682/NQ-UBTVQH15) hoặc Đồng Nai (hợp nhất Bình Phước, NQ 1662/NQ-UBTVQH15; bảng
     `xa_tinh_khac`, 01/07/2025) của chữ khách gõ.
     {"ten_day_du", "loai", "tinh", "tinh_cu", "ngoai_vung": bool, "tu_ten_cu": bool, "don_vi_cu": [tên cũ]} hoặc None. `ngoai_vung` = đơn vị thuộc
-    tỉnh CŨ ngoài vùng nhận tin (Bình Phước). Chỉ nhận khi ra ĐÚNG MỘT đơn vị mới (cùng tên ở hai tỉnh — vd "xã Tân Hưng" — thì không đoán):
+    tỉnh CŨ ngoài vùng nhận tin (Bình Phước). Kho gồm cả phường / xã mới của TP.HCM (bảng `wards`) để tên trùng giữa TP.HCM và tỉnh khác được
+    thấy là trùng (SRS-5.1zzzzzzz435, bắn thử 12/11: "Vinhomes Grand Park phường Long Bình" rao thành "Phường Long Bình, Đồng Nai" vì kho chỉ có
+    Tây Ninh / Đồng Nai); đơn vị TP.HCM do đường tra phường riêng lo, ở đây không trả. Chỉ nhận khi ra ĐÚNG MỘT đơn vị mới (cùng tên ở hai tỉnh — vd
+    "xã Tân Hưng", "phường Long Bình" — thì không đoán):
       · khách PHẢI gõ kèm chữ loại (xã / phường / thị trấn) — "Long An" trần là tên tỉnh, còn "Phường Long An" là một phường mới;
       · tên khớp tên một đơn vị MỚI (bỏ dấu, bỏ chữ loại) VÀ cùng loại khách gõ;
       · không khớp tên mới thì khớp tên một đơn vị CŨ gộp vào, cùng chữ loại của đơn vị cũ.
@@ -176,7 +180,7 @@ def tra_xa(kho: list[dict], ten: str | None) -> dict | None:
     moi = [x for x in kho if _loi_xa(x.get("ten", "")) == go]
     if loai_go in ("xa", "phuong"):
         moi = [x for x in moi if x.get("loai") == loai_go]      # "xã Long An" không phải "Phường Long An"
-    if len(moi) == 1:
+    if len(moi) == 1 and moi[0].get("tinh") != TPHCM:
         return ra(moi[0], False)
     if moi:
         return None
@@ -199,7 +203,7 @@ class TraDiaDanh:
         self._nhap_nhang: dict[tuple, list[str]] = {}   # (tên, quận) → ≥ 2 tên kho cùng gần nhất (SRS-5.1zzzzzzz271), kèm quận cũ
         self._nho_chia: dict[tuple, list[str]] = {}   # (số phường cũ, quận) → các phường mới nó bị chia về (≥ 2) hoặc []
         self._nho_so_nha: dict[tuple, str | None] = {}   # (số nhà, đường, quận) → phường bản đồ ra đúng số nhà, hoặc None
-        self._kho_xa: tuple[float, list[dict]] | None = None   # (lúc đọc, các dòng xa_tinh_khac)
+        self._kho_xa: tuple[float, list[dict]] | None = None   # (lúc đọc, các dòng xa_tinh_khac + phường / xã mới TP.HCM)
 
     @classmethod
     def tu_cau_hinh(cls, url: str, key: str | None, khoa_gemini: list[str] | tuple[str, ...] = ()) -> "TraDiaDanh | None":
@@ -336,14 +340,16 @@ class TraDiaDanh:
         return self._nho_chia[khoa]
 
     def xa(self, ten: str | None) -> dict | None:
-        """Xã / phường mới của tỉnh Tây Ninh (hợp nhất Long An) hoặc Đồng Nai (hợp nhất Bình Phước) theo chữ khách gõ — xem `tra_xa`. Bảng 191 dòng,
-        nhớ 10 phút; lỗi → None."""
+        """Xã / phường mới của tỉnh Tây Ninh (hợp nhất Long An) hoặc Đồng Nai (hợp nhất Bình Phước) theo chữ khách gõ — xem `tra_xa`. Kho = bảng
+        `xa_tinh_khac` + tên phường / xã mới TP.HCM (`wards`), nhớ 10 phút; lỗi → None."""
         if self._doc is None or not (ten or "").strip():
             return None
         hom_nay = time.time()
         if self._kho_xa is None or hom_nay - self._kho_xa[0] > 600:
             try:
-                dong = self._doc("xa_tinh_khac", {"select": "ten_day_du,ten,loai,tinh,tinh_cu,don_vi_cu", "limit": "500"})
+                dong = self._doc("xa_tinh_khac", {"select": "ten_day_du,ten,loai,tinh,tinh_cu,don_vi_cu", "limit": "500"}) + [
+                    {"ten_day_du": w.get("ten_day_du") or w.get("ten"), "ten": w.get("ten"), "loai": w.get("loai"), "tinh": TPHCM}
+                    for w in self._doc("wards", {"select": "ten,ten_day_du,loai", "limit": "1000"})]
             except Exception as e:  # noqa: BLE001 — tra địa danh là phần thêm
                 log.warning("đọc xa_tinh_khac lỗi: %s", e)
                 dong = self._kho_xa[1] if self._kho_xa else []

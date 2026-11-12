@@ -64,4 +64,4 @@ def test_save_dien_cot_thong_so_tu_o_da_boc():
     assert goi_ts[0]["p_type"] == "nha_pho"
     tin = [d for m, e, d in st.goi if m == "POST" and e == "listings"][0]
     assert (tin["frontage_m"], tin["length_m"], tin["floors"], tin["bedrooms"]) == (4, 15, 3, 4)
-    assert "rent_income_vnd" not in tin and "legal_status" not in tin   # pháp lý đi `_ma_phap_ly`, tiền thuê không từ đây
+    assert "rent_income_vnd" not in tin and "legal_status" not in tin   # pháp lý đi `ma_phap_ly` (mã AI đọc), tiền thuê không từ đây

@@ -301,10 +301,55 @@ LAND_GATED_TYPES: set[str] = {"dat", "dat_tho_cu"}
 # hỏi TRƯỚC bản nháp như bản anh Luận (gộp cụm: hẻm cùng địa chỉ / phường, hiện trạng cùng giá / pháp lý). Tập để trống, giữ tên để
 # chỗ nào cần lại thì thêm vào đây.
 HOI_SAU_KHI_RA_TIN: set[str] = set()
-# Ô pháp lý: khách nói sổ rồi nói hoàn công vào cùng một ô thì câu sau ĐÈ câu trước (ban-thu-ban 26/10, Cao Lỗ: "sổ riêng" mất, cột
-# `legal_status` rỗng). Ý cũ cất ở `_phap_ly_cu` (mới nhất trước) để cột mã pháp lý vẫn đọc được; khách SỬA ý cũ thì mã của câu mới thắng.
+# Ô pháp lý: chữ khách nói về giấy tờ (vào bản tin). Loại giấy để tính toán là mã AI đọc — `LOAI_PHAP_LY` dưới đây.
 KHOA_PHAP_LY = ("phap_ly", "phap_ly_hoan_cong", "phap_ly_so_hong", "phap_ly_so_do")
-PHAP_LY_CU_TOI_DA = 5
+
+
+@dataclass(frozen=True)
+class LoaiPhapLy:
+    mo_ta: str            # AI đọc theo nghĩa lời khách ra mã này khi…
+    nhan: str             # nhãn hiện trên web / nói với khách mua (bảng DB `loai_phap_ly.nhan`)
+    ban_tin: str          # bản tin rao viết về giấy tờ đúng như vậy
+    la_so: bool           # đã có sổ hồng / sổ đỏ (bộ lọc "Có sổ", xin ảnh sổ để kiểm)
+    hoi_tiep: str | None  # ô hỏi MỘT lần ngay lượt kế để tư vấn khách mua cho đúng
+
+
+# Loại giấy tờ của căn — MỘT nguồn (SRS-5.1zzzzzzz435, chủ dự án 12/11/2026 "sửa hết từ gốc"; bắn thử production cùng ngày: sổ chung thừa kế
+# rao thành "đã có sổ", đất thuê nhà nước lên cột "Có sổ", hợp đồng ủy quyền không có mã, sổ đang làm của nhà phố không có câu hỏi theo sau).
+# AI đọc lời khách ra đúng MỘT mã (ô nội bộ `_phap_ly_trang_thai`); mã trùng mã cột `listings.legal_status` (khoá ngoại tới bảng
+# `loai_phap_ly`, migration 20261112g nạp từ bảng này) nên cột ghi thẳng mã AI đọc. Bản tin, câu hỏi theo sau, xin ảnh sổ, nhãn phía mua đều
+# đọc ở đây. Thêm loại giấy: thêm một dòng ở đây và một dòng vào bảng `loai_phap_ly`.
+LOAI_PHAP_LY: dict[str, LoaiPhapLy] = {
+    "so_hong_rieng": LoaiPhapLy("đã có sổ hồng / sổ đỏ RIÊNG — một người hoặc hai vợ chồng đứng tên", "Sổ hồng riêng", "sổ hồng riêng",
+                                True, None),
+    "so_hong_chung": LoaiPhapLy("sổ CHUNG — nhiều người cùng đứng tên: đồng sở hữu, anh em thừa kế chưa chia, sổ chung chưa tách thửa",
+                                "Sổ hồng chung", "sổ chung, nhiều người cùng đứng tên", True, "dong_y_ban"),
+    "so_hong": LoaiPhapLy("đã có sổ hồng / sổ đỏ, khách chưa nói sổ riêng hay sổ chung", "Có sổ", "đã có sổ", True, "dung_ten_so"),
+    "hdmb": LoaiPhapLy("hợp đồng mua bán với chủ đầu tư, đang chờ ra sổ", "Hợp đồng mua bán", "hợp đồng mua bán với chủ đầu tư, chờ ra sổ",
+                       False, "du_kien_ra_so"),
+    "dat_thue": LoaiPhapLy("đất THUÊ của Nhà nước, trả tiền thuê hằng năm hoặc một lần (có giấy chứng nhận vẫn là đất thuê)", "Đất thuê",
+                           "đất thuê của Nhà nước", False, "thoi_han_su_dung"),
+    "uy_quyen": LoaiPhapLy("mua bằng hợp đồng ủy quyền, sổ còn đứng tên chủ cũ", "Hợp đồng ủy quyền",
+                           "mua bằng hợp đồng ủy quyền, sổ còn tên chủ cũ", False, "dong_y_ban"),
+    "giay_tay": LoaiPhapLy("giấy tay / vi bằng", "Giấy tay / vi bằng", "giấy tay / vi bằng", False, "so_goc"),
+    "dang_lam": LoaiPhapLy("sổ đang làm: đang chờ cấp sổ, chờ sang tên hoặc chờ tách thửa", "Sổ đang làm", "sổ đang làm", False,
+                           "du_kien_ra_so"),
+    "chua_co": LoaiPhapLy("chưa có giấy tờ chủ quyền", "Chưa có sổ", "chưa có sổ", False, "du_kien_ra_so"),
+}
+# Hai mã chỉ AI dùng, không lên cột: mo_ho = khách nói chung chung ("pháp lý chuẩn", "giấy tờ đầy đủ") mà cả cuộc trò chuyện chưa nói loại
+# giấy nào → hỏi lại loại giấy; chua_ro.
+MA_PHAP_LY_AI: tuple[str, ...] = (*LOAI_PHAP_LY, "mo_ho", "chua_ro")
+
+
+def loai_phap_ly(fields: dict) -> LoaiPhapLy | None:
+    """Loại giấy tờ AI đã đọc của căn (None = chưa đọc / mơ hồ / chưa rõ)."""
+    return LOAI_PHAP_LY.get(fields.get("_phap_ly_trang_thai") or "")
+
+
+def nhan_phap_ly(ma: str | None) -> str | None:
+    """Nhãn của mã `legal_status` (cột DB cùng bộ mã) — nói với khách mua, hiện trên web."""
+    return LOAI_PHAP_LY[ma].nhan if ma in LOAI_PHAP_LY else ma
+
 
 # 21/10/2026 (SRS-5.1zzzzzzz116; chủ dự án gửi bộ câu môi giới hỏi chủ nhà — pháp lý, giá, dẫn khách xem, chi tiết nhà): hỏi SAU khi tin
 # đã lên web và đã nói chuyện phí, mỗi lượt MỘT cụm, mỗi cụm hỏi MỘT lần (khách lờ thì thôi). Không thuộc `expected_fields` — không
@@ -340,9 +385,9 @@ CUM_XIN_ANH = ("anh", "anh_lan_2")
 # cọc, hạn công chứng — mỗi lượt một ô, mỗi ô một lần (`_coc_da_hoi`). Chuyện giao dịch giữa hai bên → ô RIÊNG, không lên web.
 O_COC: tuple[str, ...] = ("tien_coc", "ngay_coc", "han_cong_chung")
 # `_qc_anh` / `_qc_da_nhan` (SRS-5.1zzzzzzz422): kết quả QC ảnh và số tin QC đã nhắn — việc nội bộ, cùng chỗ chỉ admin đọc.
-# SRS-5.1zzzzzzz426 (LQC mảng Pháp lý): tiến độ giấy tờ chủ nói — hỏi MỘT lần ngay sau khi chủ nói chưa hoàn công / chỉ có HĐMB. Lời hứa
-# chưa kiểm được → ô RIÊNG, không lên web.
-O_PHAP_LY_NOI_BO: tuple[str, ...] = ("du_kien_hoan_cong", "du_kien_ra_so")
+# SRS-5.1zzzzzzz426 / 435 (LQC mảng Pháp lý): chủ nói tiến độ giấy tờ / ai ký bán — hỏi MỘT lần ngay sau khi chủ nói loại giấy
+# (`LoaiPhapLy.hoi_tiep`). Lời chủ chưa kiểm được → ô RIÊNG, không lên web.
+O_PHAP_LY_NOI_BO: tuple[str, ...] = ("du_kien_hoan_cong", "du_kien_ra_so", "dong_y_ban", "so_goc")
 O_NOI_BO: frozenset[str] = frozenset({"dung_ten_so", "ly_do_ban", "gio_xem", "chia_khoa", *O_COC, *O_PHAP_LY_NOI_BO, "_qc_anh", "_qc_da_nhan"})
 
 # Thông số cho thuê (áp dụng chung khi là tin cho thuê) — SRD §III.
@@ -608,7 +653,8 @@ class Property:
                 continue
             if ma == "hdt" and self.fields.get("co_hdt") != "co":   # ô phân loại AI đọc theo nghĩa, không dò chữ khách (SRS-5.1zzzzzzz197)
                 continue
-            con = [k for k in cum if k not in mong and not self._has(k) and f"sau:{k}" not in da_hoi]   # SRS-178: mỗi lượt một ô
+            pl_da = set((self.fields.get("_pl_da_hoi") or "").split(","))   # ô đã hỏi ngay sau khi chủ nói giấy tờ (SRS-435) — không hỏi lại
+            con = [k for k in cum if k not in mong and not self._has(k) and f"sau:{k}" not in da_hoi and k not in pl_da]   # SRS-178: mỗi lượt một ô
             if con:
                 return ma, con
         if thieu_anh and "sau:anh_lan_2" not in da_hoi:
@@ -635,32 +681,30 @@ class Property:
         Không phải ô tin (không vào `O_SAU_DANG`, AI không ghi được), chỉ là mã câu hỏi."""
         if self.is_rental:
             return []
-        tt = self.fields.get("_phap_ly_trang_thai")
+        loai = loai_phap_ly(self.fields)
         ra = []
-        if tt == "mo_ho" or (not tt and not any(self.fields.get(k) for k in KHOA_PHAP_LY)):
+        if loai is None:   # chưa nói / nói chung chung / chưa rõ loại giấy (SRS-435: loại giấy là mã AI đọc, một nguồn)
             ra.append("loai_giay")
         # SRS-5.1zzzzzzz432 (lỗ hổng 7): sổ đọc trước 12/11 không có cờ `_da_doc_so` — số thửa / số tờ chỉ có từ lượt đọc ảnh sổ, coi như đã đọc.
         da_doc = self.fields.get("_da_doc_so") or self.fields.get("so_thua") or self.fields.get("so_to")
-        if tt == "co_so" and not da_doc:
+        if loai is not None and loai.la_so and not da_doc:
             ra.append("anh_so")
         return ra
 
     def o_phap_ly_hoi_ngay(self) -> str | None:
-        """Ô tiến độ giấy tờ hỏi MỘT lần ngay sau khi chủ nói (SRS-5.1zzzzzzz426): chưa hoàn công → dự kiến hoàn công (2.4); căn hộ / đất dự án
-        chỉ có HĐMB, sổ chưa có / đang làm → chủ đầu tư hẹn ra sổ (2.5). Trạng thái do AI đọc theo nghĩa (`_hoan_cong`, `_phap_ly_trang_thai`)."""
+        """Ô hỏi MỘT lần ngay sau khi chủ nói giấy tờ (SRS-5.1zzzzzzz426 / 435): loại giấy AI đọc quyết câu hỏi theo sau
+        (`LoaiPhapLy.hoi_tiep` — sổ chung / ủy quyền → người đứng tên đồng ý ký bán chưa; HĐMB / sổ đang làm / chưa có → khi nào có sổ; đất
+        thuê → thời hạn thuê; giấy tay → đất gốc có sổ chưa; có sổ mà chưa rõ riêng / chung → sổ đứng tên ai); nói chung chung → hỏi lại loại
+        giấy; nhà chưa hoàn công → dự kiến hoàn công. Ô đã có thì thôi."""
+        if self.is_rental:
+            return None
         f = self.fields
         da = set((f.get("_pl_da_hoi") or "").split(","))
-        # SRS-5.1zzzzzzz432 (lỗ hổng 7): câu pháp lý mơ hồ (2.1) → hỏi lại loại giấy NGAY lượt kế, một lần. Trước bản này chỉ "ô pháp lý coi như
-        # chưa có" — mà cổng bản nháp SRS-418 cho thiếu một nhóm, nên câu hỏi lại không chắc đến trước bản nháp.
-        if not self.is_rental and f.get("_phap_ly_trang_thai") == "mo_ho" and "loai_giay" not in da:
-            return "loai_giay"
-        if f.get("_hoan_cong") == "chua_hoan_cong" and not f.get("du_kien_hoan_cong") and "du_kien_hoan_cong" not in da:
-            return "du_kien_hoan_cong"
-        du_an = self.group in (PropertyGroup.CONDO, PropertyGroup.PROJECT) or bool(f.get("du_an"))
-        if (du_an and f.get("_phap_ly_trang_thai") in ("hdmb", "chua_co", "dang_lam") and not f.get("du_kien_ra_so")
-                and "du_kien_ra_so" not in da):
-            return "du_kien_ra_so"
-        return None
+        loai = loai_phap_ly(f)
+        can = ["loai_giay"] if f.get("_phap_ly_trang_thai") == "mo_ho" else ([loai.hoi_tiep] if loai and loai.hoi_tiep else [])
+        if f.get("_hoan_cong") == "chua_hoan_cong":
+            can.append("du_kien_hoan_cong")
+        return next((o for o in can if o not in da and (o == "loai_giay" or not self._has(o))), None)
 
     def completeness(self) -> float:
         """Fraction of expected fields that are filled, in [0, 1]."""
@@ -671,10 +715,13 @@ class Property:
         return filled / len(expected)
 
     def _has(self, name: str) -> bool:
-        # SRS-5.1zzzzzzz426 (2.1): khách mới nói chung chung ("pháp lý chuẩn", "không phải lo") — AI đọc `_phap_ly_trang_thai` = mo_ho → ô pháp
-        # lý coi như CHƯA có, lượt sau hỏi lại loại giấy (không nhận câu mơ hồ thay cho sổ hồng / sổ đỏ).
-        if name in KHOA_PHAP_LY and self.fields.get("_phap_ly_trang_thai") == "mo_ho":
-            return False
+        # Ô pháp lý theo loại giấy AI đọc (SRS-5.1zzzzzzz426 / 435): nói chung chung (mo_ho) → coi như CHƯA có, hỏi lại loại giấy; đã đọc ra
+        # một loại giấy → đã có (khỏi hỏi lại "có sổ đỏ chưa" khi khách nói đất thuê / giấy tay). Chưa đọc → theo chữ khách ở các ô.
+        if name in KHOA_PHAP_LY and name != "phap_ly_hoan_cong":
+            if self.fields.get("_phap_ly_trang_thai") == "mo_ho":
+                return False
+            if loai_phap_ly(self.fields) is not None:
+                return True
         if name == "loai_hinh":
             return self.loai_hinh is not None
         if name == "ma_so_can":
@@ -685,8 +732,11 @@ class Property:
             return bool(self.fields.get("tinh_trang_ban_giao") or self.fields.get("hien_trang_su_dung"))
         if name == "thoi_gian_ban_giao" and "tinh_trang_ban_giao" in self.core_fields():   # SRS-5.1zzzzzzz218: gộp vào hiện trạng
             return bool(self.fields.get("tinh_trang_ban_giao") or self.fields.get("thoi_gian_ban_giao"))
-        if name == "phap_ly_hoan_cong":   # khách đã nói sổ (ô phap_ly) thì không hỏi riêng hoàn công (SRS-5.1zzzzzzz76)
-            return bool(self.fields.get("phap_ly_hoan_cong") or self.fields.get("phap_ly"))
+        if name == "phap_ly_hoan_cong":   # khách đã nói sổ (ô phap_ly) / AI đã đọc hoàn công thì không hỏi riêng hoàn công (SRS-5.1zzzzzzz76)
+            if self.fields.get("_phap_ly_trang_thai") == "mo_ho":
+                return False
+            return bool(self.fields.get("phap_ly_hoan_cong") or self.fields.get("phap_ly")
+                        or self.fields.get("_hoan_cong") in ("da_hoan_cong", "chua_hoan_cong"))
         if name in ("phap_ly_so_do", "phap_ly_so_hong"):   # SRS-5.1zzzzzzz321: khách đã nói giấy tờ (ô phap_ly: "thuê đất trả tiền hàng năm") thì
             return bool(self.fields.get(name) or self.fields.get("phap_ly"))   # không hỏi lại "có sổ đỏ chưa" (cham xa_phuoc_ly, Đợt 8 và Đợt 3)
         if name == "dien_tich":   # BĐS một diện tích (chung cư / đất / công nghiệp)
@@ -701,20 +751,6 @@ class Property:
         if missing:
             return missing[0]
         return None
-
-    def _nho_phap_ly_cu(self, cu: str) -> None:
-        """Cất ý pháp lý cũ sắp bị ô mới ghi đè (mới nhất đứng đầu, không trùng, tối đa `PHAP_LY_CU_TOI_DA`)."""
-        ds = [x for x in (self.fields.get("_phap_ly_cu") or "").split(" | ") if x and x != cu]
-        self.fields["_phap_ly_cu"] = " | ".join(([cu] + ds)[:PHAP_LY_CU_TOI_DA])
-
-    def phap_ly_da_noi(self) -> list[str]:
-        """Mọi chữ pháp lý khách đã nói về căn này, MỚI NHẤT TRƯỚC: các ô pháp lý hiện có rồi ý cũ đã bị ô mới đè. Cột `legal_status` lấy
-        mã đầu tiên đọc được trong danh sách này."""
-        ra: list[str] = []
-        for v in [self.fields.get(k) for k in KHOA_PHAP_LY] + (self.fields.get("_phap_ly_cu") or "").split(" | "):
-            if v and v not in ra:
-                ra.append(v)
-        return ra
 
     def update(self, captured: dict[str, str]) -> list[str]:
         """Merge newly extracted fields; return the names that were newly set."""
@@ -745,8 +781,6 @@ class Property:
                 v = _merge_uu_the(self.fields.get("uu_the", ""), v)
             if k in KHOA_PHAP_LY and self.fields.get("_phap_ly_trang_thai") == "mo_ho":   # SRS-426 (2.1): không ghi câu mơ hồ vào ô pháp lý
                 continue
-            if k in KHOA_PHAP_LY and self.fields.get(k) and self.fields[k] != v:
-                self._nho_phap_ly_cu(self.fields[k])
             if self.fields.get(k) != v:
                 self.fields[k] = v
                 newly.append(k)

@@ -532,6 +532,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-99, FR-172 | — | — | SRS-5.1zzzzzzz431 | — |
 | FR-144, FR-185 | — | — | SRS-5.1zzzzzzz432 | — |
 | FR-12, FR-17 | — | — | SRS-5.1zzzzzzz433 | — |
+| FR-144, FR-185 | — | — | SRS-5.1zzzzzzz435 | TS-SRS (`test_loai_phap_ly_435.py`) |
 
 ## 8.4 Rủi ro → biện pháp
 

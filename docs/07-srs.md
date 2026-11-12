@@ -788,6 +788,32 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz435 · Loại giấy tờ một nguồn: 9 loại, cột theo mã AI đọc, câu hỏi theo sau theo loại giấy; tra xã không nhầm tên trùng TP.HCM (12/11/2026)
+Chủ dự án 12/11 "sửa hết từ gốc, đừng có sửa kiểu phủ định, đừng có sửa kiểu chắp vá", sau lượt bắn thử production 9 loại pháp lý cùng ngày:
+sổ chung 3 anh em thừa kế rao thành "đã có sổ"; đất thuê nhà nước trả tiền hằng năm lên cột "Có sổ"; mua bằng hợp đồng ủy quyền không có mã,
+cột trống; sổ đang làm của nhà phố không có câu hỏi theo sau; "Vinhomes Grand Park phường Long Bình" rao thành "Phường Long Bình, Đồng Nai".
+- **Gốc pháp lý:** loại giấy nằm ở bốn chỗ không cùng bộ mã — AI đọc 7 mã thô (`co_so` không phân riêng / chung, không có đất thuê / ủy quyền),
+  cột `legal_status` 5 mã CHECK lấy bằng regex `boc_thong_so` trên chữ khách (`_ma_phap_ly`, `ma_phap_ly_theo_ai`, `_phap_ly_cu`), nhãn viết
+  tay ở `van_ban_nhung` và `lib/format.ts`, câu hỏi theo sau rải ở `o_phap_ly_hoi_ngay` (HĐMB chỉ hỏi khi là căn dự án).
+- **Một nguồn:** `schema.LOAI_PHAP_LY` — 9 loại: `so_hong_rieng` · `so_hong_chung` · `so_hong` (có sổ, chưa rõ riêng / chung) · `hdmb` ·
+  `dat_thue` · `uy_quyen` · `giay_tay` · `dang_lam` · `chua_co`; AI thêm `mo_ho` · `chua_ro`. Mỗi loại: mô tả cho AI, nhãn, dòng bản tin,
+  có sổ hay không, ô hỏi tiếp. Enum + mô tả trong schema AI sinh từ bảng (prompt chỉ còn một dòng trỏ về schema).
+- **Cột = mã AI đọc:** mã AI trùng mã cột; `supabase_store.ma_phap_ly` ghi thẳng, bỏ bộ đọc chữ và `_phap_ly_cu`. Migration `20261112g`: bảng
+  `loai_phap_ly` (mã, nhãn, có sổ, thứ tự; đọc công khai) nạp từ `LOAI_PHAP_LY`, `listings.legal_status` thành khoá ngoại tới bảng (bỏ CHECK 5
+  mã), `van_ban_nhung` đọc nhãn từ bảng, chép 2 tin mang mã cũ `co_so`. Trang tin đọc nhãn qua quan hệ `loai_phap_ly(nhan)` (bỏ `LEGAL_LABEL`);
+  phía mua (`mua.dong_can`, công cụ so sánh) nói nhãn thay cho mã thô. Tin tạo ngoài chat: `o_tu_cot` đưa cột vào ô loại giấy.
+- **Câu hỏi theo sau theo loại giấy** (`LoaiPhapLy.hoi_tiep`, hỏi MỘT lần ngay lượt kế, `_pl_da_hoi`): sổ chung / ủy quyền → người đứng tên
+  đồng ý ký bán chưa (ô riêng mới `dong_y_ban`); HĐMB / sổ đang làm / chưa có → dự kiến khi nào có sổ (`du_kien_ra_so`, bỏ điều kiện căn dự
+  án); đất thuê → thời hạn thuê; giấy tay → đất gốc có sổ chưa (ô riêng mới `so_goc`); có sổ chưa rõ riêng / chung → sổ đứng tên ai; nói
+  chung chung → hỏi lại loại giấy; chưa hoàn công → dự kiến hoàn công. Ô đã hỏi ở đây thì cụm hỏi sau đăng không hỏi lại. Xin ảnh sổ chỉ
+  khi loại giấy có sổ.
+- **Bản tin:** khối SỰ THẬT ghi dòng giấy tờ của đúng loại ("sổ chung, nhiều người cùng đứng tên", "đất thuê của Nhà nước"…) và dòng hoàn
+  công, thay các dòng cấm "KHÔNG ghi sổ hồng / sổ đỏ" theo từng mã.
+- **Long Bình:** `TraDiaDanh.xa` chỉ có kho `xa_tinh_khac` (Tây Ninh / Đồng Nai) nên "phường Long Bình" ra đúng một đơn vị — của Đồng Nai.
+  Kho nay gồm cả phường / xã mới TP.HCM (`wards`): tên trùng giữa hai tỉnh thì không nhận, đơn vị TP.HCM để đường tra phường riêng lo.
+- Không đổi: xưng hô khi khách tự xưng "em" (bot xưng anh / chị theo tên trợ lý — quyết định SRS-5.1zzzzzzz214); "xã Tân Thạnh Đông" lưu
+  thành Phú Hòa Đông là đúng (sáp nhập 2025).
+
 ### SRS-5.1zzzzzzz434 · Góc bo 14px theo King (12/11/2026)
 Chủ dự án 12/11 "Đổi góc bo sang 14px như King" — thay quyết định 2px ngày 19/10 (SRS-5.1zzzzzzz72).
 - Thang `--radius-*` trong `app/globals.css` (đè `rounded` / `-sm` / `-md` / `-lg` / `-xl` / `-2xl`… của Tailwind, cùng `king`, `shot`,
@@ -917,25 +943,3 @@ Chủ dự án 12/11 "Làm theo lịch này" (đặc tả `docs/lqc-listing-qual
   hẹn ra sổ. Khối `hoi_phap_ly` (`viec_luot`: sau hỏi tên dự án, trước hỏi ô / hỏi sau đăng; không ở lượt trình nháp), mỗi ô một lần
   (`_pl_da_hoi`). Ô `du_kien_hoan_cong`, `du_kien_ra_so` là ô RIÊNG (`O_NOI_BO`), không lên web.
 - Bản tin: `hdmb` không được ghi sổ hồng / sổ đỏ; `chua_hoan_cong` không được ghi hoàn công.
-
-### SRS-5.1zzzzzzz425 · LQC mảng Ảnh: nhãn từng ảnh, ảnh đẹp nhất làm bìa, xin ẩn ảnh xấu (12/11/2026)
-Chủ dự án 12/11 "Làm mảng Ảnh" (đặc tả `docs/lqc-listing-quality-controller.md` mục 1.1 · 1.3 · 1.4).
-- Image LQC đọc bộ ảnh từ `listing_media` (bucket công khai, chưa ẩn) thay vì liệt kê thư mục storage; ảnh gửi model theo thứ tự, model gọi ảnh
-  bằng số thứ tự → code ánh xạ về đường dẫn.
-- Schema QC thêm: `nhan_anh` (mỗi ảnh: góc theo `GOC_ANH`, tả ngắn, `xau` chỉ khi rõ ràng kém), `goc_da_co`, `goc_con_thieu` (theo loại căn),
-  `anh_dep_nhat`.
-- **Ảnh bìa:** tấm đẹp nhất (không phải giấy tờ / ảnh nghi / ảnh xấu) → RPC `dat_anh_bia`. Tin anh Luận trước đó lấy tấm cầu thang có biển quán.
-- **Tin nhắn chủ — một việc mỗi tin** (`chon_viec`): ảnh nghi không phải căn → hỏi lại; ảnh xấu (tin còn ảnh khác) → xin ẩn; thiếu góc → nói đã
-  có góc nào, xin góc thiếu, mở đầu bằng lời khen tấm đẹp; đủ góc mà chưa đủ 6 ảnh → khen tấm đẹp, xin thêm cùng kiểu.
-- **Ẩn ảnh:** tin xin ẩn đặt `pending_destructive` op `an_anh`; chủ đồng ý (lượt lập thao tác `xac_nhan_xoa`, luật nay gồm "xin ẩn một tấm ảnh")
-  → RPC `an_anh_tin` (cột mới `listing_media.an_khoi_web`, view `listing_photos_v` lọc ra, không xoá file, bìa bị ẩn thì chọn lại), ảnh trong căn
-  đánh dấu `an` → không tính điểm; câu mẫu `da_an_anh` / `giu_anh` / `an_anh_hut`. Migration `20261112a_lqc_an_anh_doi_bia`.
-- Trần tin QC vẫn 2 tin / căn; trần chung 4 mảng: SRS-432 (10 câu / căn, tính cả tin QC).
-
-### SRS-5.1zzzzzzz424 · Phần ảnh của điểm tin dùng điểm Image LQC — nhẹ tay, hỏi lại thay vì trừ điểm (12/11/2026)
-Chủ dự án 12/11: "Có, dùng điểm QC" + "nhưng đừng khó quá, lỡ người thật người ta khó chịu, hỏi thêm thông tin ảnh chứ ko phải 0 điểm".
-- Phần ảnh (30% độ đủ của tin) = số lượng (đủ 6 tấm là trọn) × hệ số chất lượng 0,75–1 theo điểm Image LQC (`SAN_CHAT_LUONG`). Bộ ảnh QC
-  chấm thấp nhất cũng chỉ mất một phần tư phần ảnh (khoảng 4/100 điểm tin), không bao giờ về 0. Tin chưa được QC chấm thì chỉ theo số lượng.
-- Bỏ luật SRS-423 trừ ảnh QC chấm "chắc chắn không phải căn" khỏi số ảnh tính điểm: mọi ảnh đã lưu đều được tính. Thay vào đó Image LQC
-  hỏi khéo chủ MỘT câu tấm đó có phải ảnh căn mình không (tả bằng nội dung, không nói ảnh sai / bị trừ điểm), ưu tiên trước xin góc.
-- Khối ĐIỂM TIN không đưa con số chất lượng ảnh cho model; chỉ gợi "ảnh <góc QC thấy thiếu> sẽ làm tin đẹp hơn, điểm cao hơn".

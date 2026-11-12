@@ -71,7 +71,7 @@ LUONG_30 = [
      "1 trệt 2 lầu 4 phòng ngủ là rộng rãi cho cả nhà rồi anh! Nhà có sổ chưa anh, đất bao nhiêu mét vuông?"),
     ("Sổ hồng riêng, đất 50m2 em.",
      _ghi({"phap_ly": "Sổ hồng riêng", "dien_tich_dat": "50m2"}, {"phap_ly": "Sổ hồng riêng", "dien_tich_dat": "đất 50m2"},
-          phap_ly_trang_thai="co_so", phap_ly_trang_thai_trich_dan="Sổ hồng riêng"),
+          phap_ly_trang_thai="so_hong_rieng", phap_ly_trang_thai_trich_dan="Sổ hồng riêng"),
      "Sổ hồng riêng thì khách mua yên tâm hẳn anh ơi! Anh muốn bán giá bao nhiêu?"),
     ("Giá bán 10 tỷ nha em. Có thương lượng.",
      _ghi({"gia": "10 tỷ", "thuong_luong": "Có thương lượng"}, {"gia": "10 tỷ", "thuong_luong": "Có thương lượng"}),

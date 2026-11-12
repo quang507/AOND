@@ -22,6 +22,7 @@ import time
 import urllib.parse
 from typing import Any
 
+from .schema import nhan_phap_ly
 from .xung_ho import goi_toi as _goi_toi
 from . import cau_mau
 from .sdt import GIONG_SDT, SDT_DOC
@@ -923,7 +924,7 @@ def dong_can(c: dict) -> str:
     if c.get("floors_text"):
         phan.append(str(c["floors_text"]))
     if c.get("legal_status"):
-        phan.append(f"pháp lý {c['legal_status']}")
+        phan.append(f"pháp lý {nhan_phap_ly(c['legal_status'])}")
     if c.get("direction"):
         phan.append(f"hướng {c['direction']}")
     # SRS-5.1zzzzzzz335: đường vào (mặt tiền / hẻm) và tiện ích CÓ THẬT quanh căn — model suy luận từ đây ("trong hẻm nên thường yên tĩnh"),

@@ -333,6 +333,30 @@ create table if not exists public.listing_views (
   viewed_at timestamp with time zone not null default now()
 );
 
+-- Loại giấy tờ (SRS-5.1zzzzzzz435): một nguồn mã + nhãn cho `listings.legal_status`, nạp từ lõi schema.LOAI_PHAP_LY.
+create table if not exists public.loai_phap_ly (
+  ma text primary key,
+  nhan text not null,
+  la_so boolean not null,
+  thu_tu integer not null
+);
+alter table public.loai_phap_ly enable row level security;
+drop policy if exists loai_phap_ly_doc on public.loai_phap_ly;
+create policy loai_phap_ly_doc on public.loai_phap_ly for select to anon, authenticated using (true);
+grant select on public.loai_phap_ly to anon, authenticated;
+
+insert into public.loai_phap_ly (ma, nhan, la_so, thu_tu) values
+  ('so_hong_rieng', 'Sổ hồng riêng', true, 1),
+  ('so_hong_chung', 'Sổ hồng chung', true, 2),
+  ('so_hong', 'Có sổ', true, 3),
+  ('hdmb', 'Hợp đồng mua bán', false, 4),
+  ('dat_thue', 'Đất thuê', false, 5),
+  ('uy_quyen', 'Hợp đồng ủy quyền', false, 6),
+  ('giay_tay', 'Giấy tay / vi bằng', false, 7),
+  ('dang_lam', 'Sổ đang làm', false, 8),
+  ('chua_co', 'Chưa có sổ', false, 9)
+on conflict (ma) do update set nhan = excluded.nhan, la_so = excluded.la_so, thu_tu = excluded.thu_tu;
+
 create table if not exists public.listings (
   id uuid not null default gen_random_uuid(),
   code text not null,
@@ -861,7 +885,7 @@ do $d$ begin
   alter table public.listings add constraint listings_furnishing_check CHECK ((furnishing = ANY (ARRAY['full'::text, 'co_ban'::text, 'khong'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.listings add constraint listings_legal_status_check CHECK ((legal_status = ANY (ARRAY['so_hong_rieng'::text, 'so_hong_chung'::text, 'so_hong'::text, 'hdmb'::text, 'giay_tay'::text])));
+  alter table public.listings add constraint listings_legal_status_fkey FOREIGN KEY (legal_status) REFERENCES public.loai_phap_ly(ma);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listings add constraint listings_pkey PRIMARY KEY (id);
@@ -6103,9 +6127,8 @@ AS $function$
       when 'mat_tien' then 'Mặt tiền đường' when 'hem_xe_tai' then 'Hẻm xe tải'
       when 'hem_xe_hoi' then 'Hẻm xe hơi' when 'hem_xe_may' then 'Hẻm xe máy' when 'hem' then 'Trong hẻm' end ||
       case when l.alley_width_m is not null then ' rộng ' || trim_scale(l.alley_width_m) || ' m' else '' end,
-    case l.legal_status
-      when 'so_hong_rieng' then 'Sổ hồng riêng' when 'so_hong_chung' then 'Sổ hồng chung' when 'so_hong' then 'Có sổ'
-      when 'hdmb' then 'Hợp đồng mua bán' when 'giay_tay' then 'Giấy tay' end ||
+    -- 20261112g (SRS-5.1zzzzzzz435): nhãn loại giấy đọc bảng `loai_phap_ly` (một nguồn với lõi `schema.LOAI_PHAP_LY`).
+    (select t.nhan from public.loai_phap_ly t where t.ma = l.legal_status) ||
       case when l.has_completion then ', đã hoàn công' else '' end,
     case when l.direction is not null then 'Hướng ' || l.direction end,
     case when l.floor is not null then 'Tầng ' || l.floor end,

@@ -10,7 +10,7 @@ import WardMap from "@/components/WardMap";
 import { CARD_COLS, supabase, type Listing, type ListingCard as CardRow, type MapRow, TRANG_THAI_HIEN } from "@/lib/supabase";
 import { coverByCode, photosOfCode } from "@/lib/photos";
 import { IconArea, IconBed, IconHouse, IconPin } from "@/components/icons";
-import { ACCESS_LABEL, formatArea, formatDims, formatPrice, formatPricePerM2, FURNISH_LABEL, LEGAL_LABEL, placeholderImg, PLANNING_LABEL, sanitizeDescription, SITE_URL, TYPE_LABEL, zaloLink, oTheoLoai } from "@/lib/format";
+import { ACCESS_LABEL, formatArea, formatDims, formatPrice, formatPricePerM2, FURNISH_LABEL, placeholderImg, PLANNING_LABEL, sanitizeDescription, SITE_URL, TYPE_LABEL, zaloLink, oTheoLoai } from "@/lib/format";
 import { dongXacMinh } from "@/lib/thong-tin-xac-minh";
 
 export const revalidate = 3600; // SRS-5.1zl (03/10/2026): 5 phút → 1 giờ, giảm egress Supabase
@@ -44,7 +44,7 @@ const DETAIL_COLS =
   "created_at, lat, lng, bedrooms, street, access_type, alley_width_m, distance_to_street_m, frontage_m, length_m, " +
   "rear_width_m, legal_area_m2, built_area_m2, floors, floors_text, floor, bathrooms, direction, legal_status, has_completion, " +
   "planning_status, has_elevator, car_in_house, corner_lot, furnishing, year_built, negotiable, rent_income_vnd, " +
-  "price_per_m2_vnd, project_id, unit_code, nhan, cung_can_id";
+  "price_per_m2_vnd, project_id, unit_code, nhan, cung_can_id, loai_phap_ly(nhan)";   // nhãn loại giấy: bảng loai_phap_ly (SRS-435)
 
 
 const getListing = cache(async (code: string): Promise<Listing | null> => {
@@ -241,7 +241,7 @@ export default async function Page({
     ? `${ACCESS_LABEL[listing.access_type] ?? listing.access_type}${listing.alley_width_m ? ` · ${listing.access_type === "mat_tien" ? "đường" : "hẻm"} rộng ${n(listing.alley_width_m)} m` : ""}${listing.distance_to_street_m ? ` · cách mặt tiền ${n(listing.distance_to_street_m)} m` : ""}`
     : null);
   push("Pháp lý", listing.legal_status
-    ? `${LEGAL_LABEL[listing.legal_status] ?? listing.legal_status}${listing.has_completion === true ? " · đã hoàn công" : listing.has_completion === false ? " · chưa hoàn công" : ""}`
+    ? `${listing.loai_phap_ly?.nhan ?? listing.legal_status}${listing.has_completion === true ? " · đã hoàn công" : listing.has_completion === false ? " · chưa hoàn công" : ""}`
     : listing.has_completion === true ? "Đã hoàn công" : null);
   push("Quy hoạch", listing.planning_status ? PLANNING_LABEL[listing.planning_status] ?? listing.planning_status : null);
   push("Hướng", listing.direction);

@@ -29,7 +29,7 @@ from .mua import KhoNguoiMua
 from .revenue import SALE_FEE_RATE
 from .sdt import che_so_ca_nhan
 from .prompts import FIELD_LABELS
-from .schema import HOUSE_TYPES, O_NOI_BO, TYPE_TO_GROUP, Property, dien_tich_tu_kich_thuoc, so_met
+from .schema import HOUSE_TYPES, LOAI_PHAP_LY, O_NOI_BO, TYPE_TO_GROUP, Property, dien_tich_tu_kich_thuoc, so_met
 
 # Số câu chuẩn tối đa đưa vào prompt (SRS-5.1zzzzzzz180). Mỗi dòng ≈ 300–900 ký tự; khối nằm trong phần cache nên 16 dòng chỉ là
 # vài nghìn token ĐỌC CACHE mỗi lượt. Tăng nữa thì đo `cache_read_tokens` ở bot_usage_model trước.
@@ -70,12 +70,10 @@ def vai_tu_seller_type(raw: Any) -> "SellerRole":
 # 18/10/2026 (SRS-5.1zzzzzzz37): `save` từng đọc `li.prop.dien_tich` / `li.prop.gia` — `Property` không có hai thuộc tính đó
 # (giá trị nằm trong `prop.fields`), nên MỌI lượt có tin văng AttributeError và tin người bán không bao giờ vào bảng `listings`.
 # Giá gửi CHUỖI GỐC vào `price_raw`: trigger `listings_set_price_vnd` tính `price_vnd` bằng `parse_vnd` (luật tiền một nguồn,
-# không đổi tiền ở Python). `legal_status` chỉ nhận mã (`so_hong_rieng`…): chữ khách gõ đổi qua `boc_thong_so` của DB. `status`
+# không đổi tiền ở Python). `legal_status` = mã loại giấy AI đọc (`schema.LOAI_PHAP_LY`, khoá ngoại bảng `loai_phap_ly`). `status`
 # chỉ đặt lúc TẠO tin (`cho_thong_tin`; trigger `listings_quyet_dinh_dang_tin` tự lên `dang_ban` khi đủ) — `dang_rao` cũ không
 # có trong CHECK, và ghi đè mỗi lượt sẽ xoá trạng thái admin đặt trên CRM (`an`, `da_chot`).
-MA_PHAP_LY = {"so_hong_rieng", "so_hong_chung", "so_hong", "hdmb", "giay_tay"}
-
-# Cột thông số `listings` lấy từ `boc_thong_so` (cùng bộ cột `ap_thong_so` của DB nhận), trừ legal_status (đi `_ma_phap_ly`) và
+# Cột thông số `listings` lấy từ `boc_thong_so` (cùng bộ cột `ap_thong_so` của DB nhận), trừ legal_status (mã AI đọc, `ma_phap_ly`) và
 # rent_income_vnd (chỉ tin bán, đọc tiền là việc của parse_vnd).
 COT_THONG_SO = ("frontage_m", "length_m", "rear_width_m", "legal_area_m2", "built_area_m2", "alley_width_m",
                 "distance_to_street_m", "floors", "floors_text", "floor", "bedrooms", "bathrooms", "year_built",
@@ -180,18 +178,11 @@ DB_SANG_TRANG_THAI = {"da_chot": "đã bán", "da_coc": "đã cọc", "an": "kh�
 _DB_DANG_HIEN = ("dang_ban", "dang_quan_tam", "da_coc")
 
 
-def ma_phap_ly_theo_ai(fields: dict[str, Any], ma_chu: str | None) -> str | None:
-    """Mã `legal_status` theo trạng thái giấy tờ AI đọc (`_phap_ly_trang_thai`, SRS-5.1zzzzzzz432 lỗ hổng 6) — trước bản này cột chỉ lấy từ
-    chữ khách qua `boc_thong_so`, nên ảnh sổ đã đọc (co_so) hay HĐMB không lên cột, còn câu mơ hồ vẫn có thể ra mã. Chữ khách chỉ góp độ
-    chi tiết sổ riêng / sổ chung khi AI đã thấy có sổ; mơ hồ → không ghi."""
+def ma_phap_ly(fields: dict[str, Any]) -> str | None:
+    """Mã `legal_status` = loại giấy AI đọc (`_phap_ly_trang_thai`, SRS-5.1zzzzzzz435): mã AI trùng mã cột, không còn bộ đọc chữ đoán mã.
+    Chưa đọc / mơ hồ / chưa rõ → None (không ghi)."""
     tt = fields.get("_phap_ly_trang_thai")
-    if tt == "co_so":
-        return ma_chu if ma_chu in ("so_hong_rieng", "so_hong_chung", "so_hong") else "so_hong"
-    if tt == "hdmb":
-        return "hdmb"
-    if tt == "mo_ho":
-        return None
-    return ma_chu
+    return tt if tt in LOAI_PHAP_LY else None
 
 
 def hoan_cong_theo_ai(fields: dict[str, Any]) -> bool | None:
@@ -284,6 +275,8 @@ def o_tu_cot(row: dict, loai: str | None) -> dict[str, str]:
                                           ("gia", "price_raw"), ("so_phong_ngu", "bedrooms"), ("so_tang", "floors_text"))}
     if loai not in HOUSE_TYPES and chu(row.get("area_m2")):
         ra["dien_tich"] = f"{chu(row.get('area_m2'))} m²"
+    if row.get("legal_status") in LOAI_PHAP_LY:   # SRS-435: cột và ô loại giấy là một mã — tin tạo ngoài chat cũng có loại giấy
+        ra["_phap_ly_trang_thai"] = row["legal_status"]
     return {k: v for k, v in ra.items() if v}
 
 
@@ -585,26 +578,11 @@ class SupabaseConversationStore(KhoNguoiMua):
         dong = kq[0] if isinstance(kq, list) and kq else {}
         return dong.get("phuong"), dong.get("quan_cu")
 
-    def _ma_phap_ly(self, chu: str | None) -> str | None:
-        """Chữ pháp lý khách gõ → mã cột `legal_status` (qua `boc_thong_so` của DB); không nhận ra → None (không ghi)."""
-        chu = str(chu or "").strip()
-        if not chu:
-            return None
-        if chu in MA_PHAP_LY:
-            return chu
-        try:
-            kq = self._nho_tra("boc_thong_so", chu, lambda: self._request("POST", "rpc/boc_thong_so", data={"p_text": chu}))
-        except Exception as e:
-            log.warning("boc_thong_so lỗi: %s", e)
-            return None
-        ma = kq.get("legal_status") if isinstance(kq, dict) else None
-        return ma if ma in MA_PHAP_LY else None
-
     def _thong_so(self, fields: dict[str, Any], loai: str | None) -> dict[str, Any]:
         """Cột thông số (ngang · dài · tầng · phòng ngủ · WC · đường vào · hướng · nội thất …) đọc từ các ô AI đã bóc, qua cùng bộ đọc
         `boc_thong_so` của DB (SRS-5.1zzzzzzz65). Trước bản này chỉ `listing_facts` (bot TypeScript, đã gỡ) điền các cột đó → tin
         từ lõi Python lên web không có bảng thông số. Ô địa chỉ / giá / dự án không đưa vào (số nhà, "hẻm 123" không phải thông số);
-        pháp lý đi đường riêng `_ma_phap_ly`. Nhớ theo chữ đã gửi để không gọi lại mỗi lượt."""
+        pháp lý đi đường riêng `ma_phap_ly` (mã AI đọc). Nhớ theo chữ đã gửi để không gọi lại mỗi lượt."""
         dong = []
         for k, v in fields.items():
             if k in _O_KHONG_PHAI_THONG_SO or str(k).startswith("_") or not isinstance(v, (str, int, float)) or not str(v).strip():
@@ -1117,7 +1095,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 if quan:
                     listing_payload["district"] = quan
                 listing_payload.update(self._thong_so(fields, ma_loai_db(li.prop.loai_hinh)))
-                ma_pl = ma_phap_ly_theo_ai(fields, next((m for m in (self._ma_phap_ly(c) for c in li.prop.phap_ly_da_noi()) if m), None))
+                ma_pl = ma_phap_ly(fields)
                 if ma_pl:
                     listing_payload["legal_status"] = ma_pl
                 hc = hoan_cong_theo_ai(fields)

@@ -32,7 +32,7 @@ CHOT = "Anh xem bản tin này đã ưng chưa ạ, còn chỗ nào cần chỉn
 def _prop() -> Property:
     p = Property(loai_hinh="nha_pho")
     p.fields.update({"duong": "Hoàng Hoa Thám", "quan": "Bình Thạnh", "gia": "12,5 tỷ", "dien_tich_dat": "34,5m2", "kich_thuoc": "5x8",
-                     "so_tang": "3", "mat_tien": "5m", "_duong_vao": "mat_tien", "_phap_ly_trang_thai": "co_so", "phap_ly_hoan_cong": "sổ hồng hoàn công", "thuong_luong": "thương lượng nhẹ"})
+                     "so_tang": "3", "mat_tien": "5m", "_duong_vao": "mat_tien", "_phap_ly_trang_thai": "so_hong_rieng", "phap_ly_hoan_cong": "sổ hồng hoàn công", "thuong_luong": "thương lượng nhẹ"})
     return p
 
 
