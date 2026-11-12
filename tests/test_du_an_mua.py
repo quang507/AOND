@@ -63,7 +63,7 @@ def test_tra_du_an_ro_gan_nhieu_khong_va_loi():
     assert KhoDuAn([NYAH]).tra_du_an("Nyah Phú Định")["khop"] == "ro"
     kq = KhoDuAn([NYAH]).tra_du_an("Phú Định")
     assert kq["khop"] == "gan" and kq["du_an"]["name"] == "Ny'ah Phú Định" and "⚠ Tiến độ" in kq["kien_thuc"]
-    assert "CHƯA DUYỆT" not in kq["kien_thuc"]            # SRS-249: tài liệu một người bán gửi chưa duyệt không ra phía mua
+    assert "chưa chắc chắn" in kq["kien_thuc"]            # SRS-445: tài liệu một người bán gửi vẫn ra phía mua, kèm nhãn
     kq2 = KhoDuAn([NYAH, {**NYAH, "id": "p2", "name": "Phú Định Garden"}]).tra_du_an("Phú Định")
     assert kq2["khop"] == "nhieu" and kq2["ung_vien"] == ["Ny'ah Phú Định", "Phú Định Garden"] and "du_an" not in kq2
     assert KhoDuAn([]).tra_du_an("Zzz City")["khop"] == "khong" and KhoDuAn([]).tra_du_an("ab")["khop"] == "khong"

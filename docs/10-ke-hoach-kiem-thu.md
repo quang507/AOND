@@ -772,6 +772,7 @@ khi đẩy — bảng là danh sách để chạy lại khi cần. SRS-1 … 244
 | SRS-438 | Pháp lý ghi được và lấy lại được: câu đáp ngắn vào đúng ô, admin thấy mọi ô riêng (`_nhan`), bot phía mua đọc pháp lý công khai | FR-144, FR-185 | `test_phap_ly_ghi_doc_438.py` |
 | SRS-440 | Gợi ý xưng hô theo hồ sơ Zalo giữ qua khởi động lại — tin chủ động gọi đúng cách chat đang gọi | FR-185, FR-165 | `test_xung_ho_goi_y_440.py` |
 | SRS-441 | LQC: so sánh tra lại khi tin chưa có toạ độ; câu đáp dài vào đúng ô bot vừa hỏi | FR-185, FR-144 | `test_lqc_441.py` |
+| SRS-445 | Thông tin dự án một người báo vẫn dùng kèm nhãn chưa chắc chắn (bot + web); bản vẽ phân lô → rổ lô dự án | FR-195 | `test_chua_chac_445.py` |
 
 ## 10.8 Nghiệm thu theo từng tài liệu (04/09/2026)
 

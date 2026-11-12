@@ -85,6 +85,10 @@ def dong_du_an(p: dict[str, Any]) -> list[str]:
     for k, v in (tt.get("thuoc_tinh") or {}).items():
         if _chu(k) and _chu(v):
             d.append(f"- {_chu(k)[:60]}: {_chu(v)[:200]}")
+    # Một người báo, chưa đủ người xác nhận (SRS-5.1zzzzzzz445): vẫn nói được, luôn kèm "chưa xác minh".
+    for k, v in (tt.get("chua_chac") or {}).items():
+        if _chu(k) and _chu(v):
+            d.append(f'- {_chu(k)[:60]}: {_chu(v)[:200]} (chưa chắc chắn — nói kèm "em chưa xác minh")')
     return d
 
 

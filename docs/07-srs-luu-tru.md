@@ -73,6 +73,72 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz435 · Loại giấy tờ một nguồn: 9 loại, cột theo mã AI đọc, câu hỏi theo sau theo loại giấy; tra xã không nhầm tên trùng TP.HCM (12/11/2026)
+Chủ dự án 12/11 "sửa hết từ gốc, đừng có sửa kiểu phủ định, đừng có sửa kiểu chắp vá", sau lượt bắn thử production 9 loại pháp lý cùng ngày:
+sổ chung 3 anh em thừa kế rao thành "đã có sổ"; đất thuê nhà nước trả tiền hằng năm lên cột "Có sổ"; mua bằng hợp đồng ủy quyền không có mã,
+cột trống; sổ đang làm của nhà phố không có câu hỏi theo sau; "Vinhomes Grand Park phường Long Bình" rao thành "Phường Long Bình, Đồng Nai".
+- **Gốc pháp lý:** loại giấy nằm ở bốn chỗ không cùng bộ mã — AI đọc 7 mã thô (`co_so` không phân riêng / chung, không có đất thuê / ủy quyền),
+  cột `legal_status` 5 mã CHECK lấy bằng regex `boc_thong_so` trên chữ khách (`_ma_phap_ly`, `ma_phap_ly_theo_ai`, `_phap_ly_cu`), nhãn viết
+  tay ở `van_ban_nhung` và `lib/format.ts`, câu hỏi theo sau rải ở `o_phap_ly_hoi_ngay` (HĐMB chỉ hỏi khi là căn dự án).
+- **Một nguồn:** `schema.LOAI_PHAP_LY` — 9 loại: `so_hong_rieng` · `so_hong_chung` · `so_hong` (có sổ, chưa rõ riêng / chung) · `hdmb` ·
+  `dat_thue` · `uy_quyen` · `giay_tay` · `dang_lam` · `chua_co`; AI thêm `mo_ho` · `chua_ro`. Mỗi loại: mô tả cho AI, nhãn, dòng bản tin,
+  có sổ hay không, ô hỏi tiếp. Enum + mô tả trong schema AI sinh từ bảng (prompt chỉ còn một dòng trỏ về schema).
+- **Cột = mã AI đọc:** mã AI trùng mã cột; `supabase_store.ma_phap_ly` ghi thẳng, bỏ bộ đọc chữ và `_phap_ly_cu`. Migration `20261112g`: bảng
+  `loai_phap_ly` (mã, nhãn, có sổ, thứ tự; đọc công khai) nạp từ `LOAI_PHAP_LY`, `listings.legal_status` thành khoá ngoại tới bảng (bỏ CHECK 5
+  mã), `van_ban_nhung` đọc nhãn từ bảng, chép 2 tin mang mã cũ `co_so`. Trang tin đọc nhãn qua quan hệ `loai_phap_ly(nhan)` (bỏ `LEGAL_LABEL`);
+  phía mua (`mua.dong_can`, công cụ so sánh) nói nhãn thay cho mã thô. Tin tạo ngoài chat: `o_tu_cot` đưa cột vào ô loại giấy.
+- **Câu hỏi theo sau theo loại giấy** (`LoaiPhapLy.hoi_tiep`, hỏi MỘT lần ngay lượt kế, `_pl_da_hoi`): sổ chung / ủy quyền → người đứng tên
+  đồng ý ký bán chưa (ô riêng mới `dong_y_ban`); HĐMB / sổ đang làm / chưa có → dự kiến khi nào có sổ (`du_kien_ra_so`, bỏ điều kiện căn dự
+  án); đất thuê → thời hạn thuê; giấy tay → đất gốc có sổ chưa (ô riêng mới `so_goc`); có sổ chưa rõ riêng / chung → sổ đứng tên ai; nói
+  chung chung → hỏi lại loại giấy; chưa hoàn công → dự kiến hoàn công. Ô đã hỏi ở đây thì cụm hỏi sau đăng không hỏi lại. Xin ảnh sổ chỉ
+  khi loại giấy có sổ. Lượt khách duyệt bản nháp giữ việc đăng tin + câu phí (`viec_luot`: duyệt xếp trên câu giấy tờ) — bắn thử lại sau
+  deploy, ca "pháp lý chuẩn" duyệt bằng "ok": hai câu hỏi cùng lượt, model giữ câu phí, cờ đã ghi nên câu loại giấy không bao giờ được hỏi.
+- **Bản tin:** khối SỰ THẬT ghi dòng giấy tờ của đúng loại ("sổ chung, nhiều người cùng đứng tên", "đất thuê của Nhà nước"…) và dòng hoàn
+  công, thay các dòng cấm "KHÔNG ghi sổ hồng / sổ đỏ" theo từng mã.
+- **Long Bình:** `TraDiaDanh.xa` chỉ có kho `xa_tinh_khac` (Tây Ninh / Đồng Nai) nên "phường Long Bình" ra đúng một đơn vị — của Đồng Nai.
+  Kho nay gồm cả phường / xã mới TP.HCM (`wards`): tên trùng giữa hai tỉnh thì không nhận, đơn vị TP.HCM để đường tra phường riêng lo.
+- Không đổi: xưng hô khi khách tự xưng "em" (bot xưng anh / chị theo tên trợ lý — quyết định SRS-5.1zzzzzzz214); "xã Tân Thạnh Đông" lưu
+  thành Phú Hòa Đông là đúng (sáp nhập 2025).
+
+### SRS-5.1zzzzzzz434 · Góc bo 14px theo King (12/11/2026)
+Chủ dự án 12/11 "Đổi góc bo sang 14px như King" — thay quyết định 2px ngày 19/10 (SRS-5.1zzzzzzz72).
+- Thang `--radius-*` trong `app/globals.css` (đè `rounded` / `-sm` / `-md` / `-lg` / `-xl` / `-2xl`… của Tailwind, cùng `king`, `shot`,
+  `zen-*`) = 14px; riêng `-xs` 4px. 14px là giá trị King dùng nhiều nhất (245 chỗ `border-radius` trong style.css).
+- Ba chỗ viết tay còn lại cũng 14px: ghim giá bản đồ, khung popup bản đồ, nút trong popup. `rounded-full` (avatar, chấm, nút viên thuốc) giữ.
+
+### SRS-5.1zzzzzzz433 · 100 tag SEO theo quận / huyện Sài Gòn + Long An (12/11/2026)
+Chủ dự án 12/11 "Làm 100 tag" (yêu cầu `nhadat.cc website.docx` §Tag: 100 keyword BĐS hot nhất, mỗi keyword một URL).
+- Bản cũ: 64 tag, toàn Quận 5 theo PHƯỜNG CŨ (trước sáp nhập 2025), trong khi kho tin rải khắp thành phố.
+- Bản mới (`lib/tags.ts`, mảng `DS`): ĐÚNG 100 tag. 9 tag toàn Sài Gòn / Long An · bán nhà 19 quận huyện HCM + Bến Lức, Cần Giuộc ·
+  hẻm xe hơi 12 quận · mặt tiền 10 · dưới 5 tỉ 8 quận ven · căn hộ 8 · đất 5 huyện HCM + 3 huyện Long An · cho thuê nhà 10 · căn hộ 4 ·
+  mặt bằng 6 · phòng trọ 4. Chọn theo quận có tin trong kho và tổ hợp phổ biến từng khu. TOP-100 keyword gốc (OPEN-06) vẫn chưa có —
+  có file thì thay mảng `DS`.
+- Lọc khu bằng `district IN (biến thể tên)`, không ilike. /mua-ban `?quan=Quận 1` cũng sửa sang so khớp đúng (trước khớp cả Quận 10–12).
+- URL tag cũ `…-quan-5` không còn → chuyển hẳn (308) về `ban-nha-quan-5` / `cho-thue-nha-quan-5`, không 404.
+- Ô tìm bằng câu nói: câu khớp đúng một tag (loại + hẻm xe hơi / mặt tiền / dưới 5 tỉ + quận) thì đưa thẳng tới trang tag quận đó.
+- Tag nổi bật (trang chủ, feed điện thoại) đổi sang tag toàn Sài Gòn / Long An.
+
+### SRS-5.1zzzzzzz432 · LQC: hỏi sau đăng chạy nền, trần câu hỏi sau đăng, cột pháp lý theo AI, đọc sổ ở mọi đường gửi ảnh (12/11/2026)
+Chủ dự án 12/11 "Làm tiếp 4–7" (4 lỗ hổng logic trong bản soát SRS cùng ngày).
+- **Lỗ hổng 4 — mảng 2–4 chỉ chạy khi chủ nhắn:** vòng nền `hoi_sau_dang` (server `_vong_hoi_sau_dang`, 600 giây, tắt `HOI_SAU_DANG=tat`):
+  tin đang hiện đã báo đăng → engine chọn cụm kế (`Engine.cum_sau_ke` / `khoi_cum_sau`, tách từ lượt chat — cùng thứ tự, cùng mốc `sau:*`)
+  → model viết MỘT tin. Điều kiện: 8–21 giờ, chat im ≥ 10 phút, không nhường sân, chủ không đang khai căn khác; lời cuối của bot còn câu hỏi
+  chưa đáp → chờ 24 giờ; đã có tin chủ động chủ chưa đáp (nhắc ảnh, QC ảnh, tin này) → chờ 24 giờ, tối đa 2 tin liền; mỗi căn ≤ 3 tin nền
+  / ngày (`_sau_nhac_ngay`). Model hụt hoặc viết hơn một câu hỏi → không gửi.
+- **Lỗ hổng 5 — không có trần chung:** `schema.TRAN_CAU_SAU_DANG` = **10** câu / căn (env), đếm mốc `sau:*` + tin Image LQC (`_qc_da_nhan`);
+  chạm trần thì `cum_sau_dang` trả None cho cả lượt chat lẫn vòng nền. Cụm xếp theo ưu tiên nên phần bị cắt là phần ít quan trọng. **Chủ dự án
+  chốt 12/11: "Giữ 10"** (câu 4 đặc tả LQC).
+- **Lỗ hổng 6 — trạng thái pháp lý AI không lên cột:** `supabase_store.ma_phap_ly_theo_ai` — `co_so` → `legal_status` sổ hồng (giữ
+  riêng / chung nếu chữ khách nói), `hdmb` → `hdmb`, `mo_ho` → không ghi; `hoan_cong_theo_ai` → `has_completion` (`_hoan_cong`, sổ không có
+  nhà là chưa hoàn công). Migration `20261112e` chép bù (1FBB8897: có sổ mà cột trống → `so_hong`).
+- **Lỗ hổng 7 — đọc sổ:** (a) sổ đọc trước 12/11 không có `_da_doc_so` → câu xin ảnh sổ bỏ qua khi tin có số thửa / số tờ (chỉ lượt đọc sổ
+  mới ra); kho 12/11 không có tin nào cần chép bù. (b) Ảnh sổ gửi CHUNG lô ảnh trước đây không ghi trạng thái → schema nhóm ảnh thêm
+  `loai_giay_to`, cả hai đường dùng chung `engine.ghi_trang_thai_so`. (c) SRS-426 hứa "lượt sau hỏi lại loại giấy" mà cổng bản nháp SRS-418
+  cho thiếu một nhóm → `o_phap_ly_hoi_ngay` trả `loai_giay` khi `mo_ho`: hỏi ngay lượt kế (khối `hoi_phap_ly`), một lần; còn mơ hồ thì sau
+  đăng hỏi lần nữa (`sau:loai_giay`).
+- Docs: nhật ký giữ 10 mục mới nhất (432 → 423), mục 422 → 397 chuyển sang `07-srs-luu-tru.md`; khung giờ 8–20 → 8–21 (SRS-423) ở các
+  mục còn ghi cũ; Image LQC đọc `listing_media` (SRS-425) thay vì quét thư mục; đặc tả LQC đánh dấu câu 1, 2 đã làm, câu 4 dùng mặc định.
+
 ### SRS-5.1zzzzzzz431 · Sửa 3 mâu thuẫn SRS: gỡ lưới nhận xét giá lời chat · tin thử tính như tin thật · một nguồn cho đường vào (12/11/2026)
 Chủ dự án 12/11, sau bản soát mâu thuẫn SRS: "vậy xóa lưới chặn và bắt bot viết lại đi, Tin thử được coi là thật, sửa 3 mâu thuẫn trước đi".
 - **Gỡ lưới nhận xét giá ở lời CHAT** (thay phần lời chat của SRS-132, SRS-353 và đoạn "lưới nới" của SRS-429): bỏ `_BINH_LUAN_GIA`,

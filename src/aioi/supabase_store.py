@@ -530,12 +530,14 @@ class SupabaseConversationStore(KhoNguoiMua):
             return kq
         else:
             return kq
-        try:   # tài liệu dự án ĐÃ DUYỆT (admin gửi / tài liệu cũ) nối theo project_id — mới nhất, không nhớ: chủ dự án sửa là bot thấy ngay.
-            # Tài liệu một người bán gửi chưa duyệt không ra phía mua (SRS-5.1zzzzzzz249, cùng luật `Project.docs_cho`).
+        try:   # tài liệu dự án nối theo project_id — mới nhất, không nhớ: chủ dự án sửa là bot thấy ngay. Tài liệu một người bán gửi
+            # (chưa admin xác nhận) cũng ra phía mua, gắn nhãn chưa chắc chắn (SRS-5.1zzzzzzz445; trước bị giấu tới khi duyệt, SRS-249).
             dong = self._get(f"du_an_kien_thuc?project_id=eq.{urllib.parse.quote(str(kq['du_an'].get('id') or ''))}&select=du_lieu&limit=1")
             docs = ((dong[0].get("du_lieu") or {}).get("docs") if dong else None) or []
-            kq["kien_thuc"] = "\n\n".join(str(d.get("markdown") or "").strip() for d in docs if isinstance(d, dict) and d.get("markdown")
-                                           and (not d.get("nguoi_gui") or str(d["nguoi_gui"]).startswith("chac_chan:")))
+            kq["kien_thuc"] = "\n\n".join(
+                ("" if not d.get("nguoi_gui") or str(d["nguoi_gui"]).startswith("chac_chan:")
+                 else '(Tài liệu chưa chắc chắn — một người gửi, nói kèm "em chưa xác minh")\n') + str(d.get("markdown") or "").strip()
+                for d in docs if isinstance(d, dict) and d.get("markdown"))
         except Exception as e:  # noqa: BLE001 — còn dữ kiện `projects`, thiếu phần kiến thức
             log.warning("tra_du_an kiến thức lỗi: %s", e)
         return kq

@@ -421,7 +421,7 @@ def build_project_block(
         dong = "\n".join(f"- {x}" for x in cho[:6])
         parts.append(
             f'\nCƠ HỘI XÁC MINH: dự án "{project.name}" có điều người bán khác đã nói nhưng CHƯA đủ người xác nhận '
-            f"(chưa phải dữ liệu dự án, đừng nói như sự thật):\n{dong}\nKhách này cũng bán trong "
+            f'(thông tin chưa chắc chắn — nói tới thì kèm "em chưa xác minh"):\n{dong}\nKhách này cũng bán trong '
             "dự án nên có thể biết. CHỈ ở lượt KHÔNG có câu hỏi thông tin nào khác thì hỏi NHẸ đúng 1 điểm (đừng nhắc người khác đã nói) "
             "— lượt đã có câu hỏi thì bỏ qua, một câu hỏi cả lượt. Nếu khách trả lời rõ thì cảm ơn.\n"
         )
@@ -443,8 +443,10 @@ def build_project_docs_block(project_name: str, docs: list[dict[str, str]]) -> s
     ]
     for d in docs:
         md = (d.get("markdown") or "").strip()
-        if md:
-            parts.append(f'\n[{d.get("title", "tài liệu")}]\n{md}')
+        if md:   # tài liệu một người bán gửi, chưa admin xác nhận: vẫn dùng, kèm nhãn (SRS-5.1zzzzzzz445)
+            nhan = ("" if not d.get("nguoi_gui") or str(d["nguoi_gui"]).startswith("chac_chan:")
+                    else ' — chưa chắc chắn: một người gửi, nói kèm "em chưa xác minh"')
+            parts.append(f'\n[{d.get("title", "tài liệu")}{nhan}]\n{md}')
     return "\n".join(parts) + "\n"
 
 
@@ -2840,6 +2842,27 @@ def doc_nhanh_schema() -> dict[str, Any]:
 TAI_LIEU_CHUNG_SYSTEM = """Dưới đây là BẢN ĐỌC (mô tả) một hoặc vài ảnh / tài liệu người rao vừa gửi. Cho biết đây có phải TÀI LIỆU
 CHUNG của dự án (bản đồ phân lô, mặt bằng tổng thể / tầng, sơ đồ, quy hoạch, quy cách bàn giao, phụ lục, tiện ích, phối cảnh,
 brochure) — thứ mọi căn trong dự án dùng chung — hay là ẢNH CỦA MỘT CĂN cụ thể (phòng, mặt tiền, giấy tờ của căn). Trả về JSON."""
+
+
+# SRS-5.1zzzzzzz445: bản vẽ phân lô / mặt bằng / bảng lô gửi vào kho dự án → rổ lô của dự án (`Project.units`), không chỉ một tệp .md để đọc lại.
+DANH_SACH_LO_SYSTEM = """Dưới đây là bản chép một tài liệu dự án (bản vẽ phân lô, mặt bằng, bảng lô / rổ hàng…). Liệt kê MỌI lô / căn có mã
+riêng trong tài liệu, mỗi lô kèm thuộc tính đọc được đúng như tài liệu ghi (mẫu nhà, diện tích đất, diện tích sàn, mặt tiền, chiều sâu, hướng,
+vị trí, số tầng, tình trạng…). Khoá thuộc tính viết thường, không dấu, nối gạch dưới (vd mau_nha, dien_tich_dat, mat_tien, huong, vi_tri,
+so_tang, tinh_trang). Không ghi giá — giá là của từng người rao. Tài liệu không có danh sách lô thì trả mảng rỗng. Trả về JSON."""
+
+
+def danh_sach_lo_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            "lo": {"type": "array", "items": {
+                "type": "object",
+                "properties": {"ma_so_can": {"type": "string", "description": "mã lô / căn đúng như tài liệu ghi"},
+                               "thuoc_tinh": {"type": "object", "additionalProperties": {"type": "string"}}},
+                "required": ["ma_so_can", "thuoc_tinh"]}},
+        },
+        "required": ["lo"],
+    }
 
 
 def tai_lieu_chung_schema() -> dict[str, Any]:

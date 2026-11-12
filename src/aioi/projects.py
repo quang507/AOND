@@ -115,6 +115,28 @@ def merge_facts(
             current[key] = _leading(tally)
 
 
+# Thông tin CHƯA CHẮC CHẮN (SRS-5.1zzzzzzz445, chủ dự án 12/11/2026: "trước đó báo có đủ người duyệt mới lên nhưng mà giờ thì có thêm kiểu 1 người nói nó
+# vẫn nhận nhưng mà là thông tin không chắc chắn"): giá trị dẫn đầu chưa chốt vẫn ĐƯỢC DÙNG — bot nói kèm "chưa xác minh", web hiện kèm
+# nhãn — nhưng KHÔNG vào `current` (kho chung đã chốt). Chốt vẫn như cũ: đủ điểm theo hạng hoặc admin ghi.
+NHAN_CHUA_CHAC = "chưa chắc chắn"
+
+
+def chua_chac(votes: dict[str, Tally], current: dict[str, str]) -> dict[str, tuple[str, int]]:
+    """{khoá: (giá trị dẫn đầu, số người báo)} của các ô CHƯA chốt mà giá trị dẫn đầu khác kho chung."""
+    ra: dict[str, tuple[str, int]] = {}
+    for key, tally in votes.items():
+        if not tally or _is_settled(tally):
+            continue
+        lead = _leading(tally)
+        if current.get(key) != lead:
+            ra[key] = (lead, len(tally[lead]))
+    return ra
+
+
+def nhan_chua_chac(n: int) -> str:
+    return f'({NHAN_CHUA_CHAC} — mới {n} người báo, nói kèm "em chưa xác minh")'
+
+
 def pending_lines(votes: dict[str, Tally], current: dict[str, str]) -> list[str]:
     """Dữ kiện đang CHỜ đủ phiếu (chưa vào kho chung): chưa được nói như sự thật — chỉ để bot có dịp hỏi người khác xác minh."""
     ra = []
@@ -135,9 +157,10 @@ def _contested(votes: dict[str, Tally]) -> list[str]:
 
 
 def _fact_lines(values: dict[str, str], votes: dict[str, Tally]) -> list[str]:
-    """Dòng dữ kiện ĐÃ VÀO kho chung (nguồn mogi / đã chốt / chắc chắn). Lời đang chờ phiếu ở `pending_lines`, không trộn vào đây
-    (SRS-249: trước bản này một người nói là thành "dữ liệu dự án đã xác thực" cho người sau)."""
-    return [f"{key}: {value}" for key, value in values.items() if value]
+    """Dòng dữ kiện: kho chung (nguồn mogi / đã chốt / chắc chắn) như sự thật, rồi giá trị CHƯA chốt kèm nhãn chưa chắc chắn (SRS-5.1zzzzzzz445) —
+    một người nói vẫn dùng được, không bao giờ thành "dữ liệu đã xác thực" (SRS-249)."""
+    return ([f"{key}: {value}" for key, value in values.items() if value]
+            + [f"{key}: {v} {nhan_chua_chac(n)}" for key, (v, n) in chua_chac(votes, values).items()])
 
 
 @dataclass
@@ -182,7 +205,10 @@ class Unit:
         merge_facts(self.attrs, self.votes, {k: v for k, v in new.items() if k != "ma_so_can"}, voter)
 
     def known(self) -> dict[str, str]:
-        return {"ma_so_can": self.ma_so_can, **{k: v for k, v in self.attrs.items() if v}}
+        ra = {"ma_so_can": self.ma_so_can, **{k: v for k, v in self.attrs.items() if v}}
+        for k, (v, n) in chua_chac(self.votes, self.attrs).items():   # SRS-5.1zzzzzzz445: một người báo vẫn dùng, kèm nhãn
+            ra[k if k not in ra else f"{k} (người khác báo)"] = f"{v} {nhan_chua_chac(n)}"
+        return ra
 
 
 @dataclass
@@ -208,11 +234,9 @@ class Project:
     rieng: dict = field(default_factory=dict)
 
     def docs_cho(self, voter: str | None = None) -> list[dict[str, str]]:
-        """Tài liệu ĐÃ VÀO kho chung (admin / chủ dự án gửi, hoặc tài liệu cũ không ghi người gửi) + tài liệu của chính `voter`. Tài liệu một
-        người bán gửi chưa ai duyệt thì người khác không thấy (SRS-249: học từ chat phải chờ duyệt mới lên kho chung)."""
-        ai = _nguoi(voter) if voter else None
-        return [d for d in self.docs
-                if not d.get("nguoi_gui") or str(d["nguoi_gui"]).startswith(CHAC_CHAN) or (ai and _nguoi(d["nguoi_gui"]) == ai)]
+        """Mọi tài liệu dự án (SRS-5.1zzzzzzz445): tài liệu một người bán gửi (`nguoi_gui` không phải phiếu chắc chắn) cũng dùng, khối tài liệu gắn nhãn
+        chưa chắc chắn (`build_project_docs_block`). Trước bản này người khác không thấy tới khi duyệt (SRS-249). `voter` giữ cho chỗ gọi cũ."""
+        return list(self.docs)
 
     def find_unit(self, ma_so_can: str | None) -> Unit | None:
         key = normalize_project_name(ma_so_can or "")
@@ -365,7 +389,7 @@ _KHOA_TRUOC = ("chủ đầu tư", "loại hình", "quy mô", "pháp lý", "bàn
 
 def dong_ke_thua(project: Project, ten_mau: str | None = None, can: dict | None = None, toi_da_tien_ich: int = 6, toi_da: int = 700) -> str:
     """Phần CHUNG mà một căn trong dự án kế thừa (SRS-5.1zzzzzzz283; khuôn anh Luận `docs/data-model.md` "Kế thừa 3 tầng"): dữ kiện dự án ĐÃ CHỐT
-    (`attributes` chỉ giữ giá trị đã chốt; phiếu chờ không vào) + thông số mẫu nhà của căn; thuộc tính căn đã có thì căn thắng, không lặp giá trị
+    (`attributes` chỉ giữ giá trị đã chốt) + giá trị một người báo kèm nhãn chưa chắc chắn (SRS-5.1zzzzzzz445) + thông số mẫu nhà của căn; thuộc tính căn đã có thì căn thắng, không lặp giá trị
     chung. Giá không bao giờ ở đây (giá là của riêng người rao). Bỏ link ngoài (bot chỉ dán link web mình — `web.py`); tối đa `toi_da` ký tự
     (dòng căn đi vào prompt mỗi lượt) — cắt ở ranh giới ý."""
     can = can or {}
@@ -381,6 +405,8 @@ def dong_ke_thua(project: Project, ten_mau: str | None = None, can: dict | None 
     if ti:
         phan.append("tiện ích dự án: " + ", ".join(ti))
     phan += [f"{k} {v}" for k, v in tt.items()]
+    phan += [f"{k} {v} {nhan_chua_chac(n)}" for k, (v, n) in chua_chac(project.votes, project.attributes).items()
+             if not co(k) and "http" not in v and k not in ("website", "link")]
     dau = f"thuộc dự án {project.name}"
     if not phan:
         return dau
@@ -693,9 +719,13 @@ class SupabaseProjectStore(ProjectStore):
         bay_gio = datetime.now(timezone.utc).isoformat()
         hoc = project_to_dict(project, chi_phan_hoc=bool(project.id))
         if project.id:
-            # Dữ kiện ĐÃ CHỐT (phiếu đủ / admin) lên kho chung `projects.thong_tin` — web và phía mua đọc ngay; phần chờ ở lại kho kiến thức.
-            self._rpc("PATCH", f"projects?id=eq.{_q(project.id)}", {"thong_tin": {
-                "thuoc_tinh": hoc.pop("attributes"), "tien_ich": hoc.pop("amenities")}})
+            # Dữ kiện ĐÃ CHỐT (phiếu đủ / admin) lên kho chung `projects.thong_tin` — web và phía mua đọc ngay. Giá trị một người báo
+            # lên ô `chua_chac` (SRS-5.1zzzzzzz445): web hiện kèm nhãn "chưa xác minh", phía mua nói kèm; phiếu vẫn ở kho kiến thức.
+            tt = {"thuoc_tinh": hoc.pop("attributes"), "tien_ich": hoc.pop("amenities")}
+            cc = {k: v for k, (v, _n) in chua_chac(project.votes, project.attributes).items()}
+            if cc:
+                tt["chua_chac"] = cc
+            self._rpc("PATCH", f"projects?id=eq.{_q(project.id)}", {"thong_tin": tt})
         self._rpc("POST", "du_an_kien_thuc?on_conflict=khoa", {
             "khoa": normalize_project_name(project.name), "ten": project.name, "project_id": project.id or None,
             "du_lieu": hoc, "cap_nhat": bay_gio})

@@ -104,6 +104,8 @@ from .prompts import (
     khoi_trang_thai_web,
     TAI_LIEU_CHUNG_SYSTEM,
     tai_lieu_chung_schema,
+    DANH_SACH_LO_SYSTEM,
+    danh_sach_lo_schema,
     SOAT_BINH_GIA_SYSTEM,
     soat_binh_gia_schema,
     build_greeting,
@@ -2326,7 +2328,31 @@ class Engine:
             [(data, media_type)], build_transcribe_instruction(assistant_name, kind),
             max_tokens=8192,  # full multi-page transcription needs headroom (don't truncate)
         ).strip()
-        return self._save_project_doc(project_name, kind, title or kind, markdown, nguoi_gui=nguoi_gui)
+        doc = self._save_project_doc(project_name, kind, title or kind, markdown, nguoi_gui=nguoi_gui)
+        self._hoc_lo_tu_tai_lieu(project_name, markdown, nguoi_gui)
+        return doc
+
+    def _hoc_lo_tu_tai_lieu(self, project_name: str, markdown: str, nguoi_gui: str = "") -> int:
+        """Bản vẽ phân lô / mặt bằng / bảng lô vừa chép → rổ lô của dự án (SRS-5.1zzzzzzz445, chủ dự án 12/11/2026: "t đưa bản vẽ xong nó sẽ
+        lưu lại dữ liệu dự án, dự án có 50 lô"). AI đọc bản chép, kê mọi lô có mã + thuộc tính; mỗi thuộc tính là phiếu của người gửi (admin →
+        chắc chắn; người khác → chưa chắc chắn, vẫn dùng kèm nhãn). Không có danh sách lô → không làm gì. Trả số lô đã ghi."""
+        if not (markdown or "").strip():
+            return 0
+        try:
+            r = self._provider.extract(DANH_SACH_LO_SYSTEM, [Message("user", markdown[:30000])], danh_sach_lo_schema())
+        except Exception as e:  # noqa: BLE001 — tài liệu .md vẫn lưu; rổ lô là phần thêm
+            log.warning("hoc_lo: đọc danh sách lô lỗi (%s)", type(e).__name__)
+            return 0
+        lo = [x for x in (r.get("lo") or []) if isinstance(x, dict) and str(x.get("ma_so_can") or "").strip()]
+        project = self._projects.get(self._canonical_du_an(project_name)) if lo else None
+        if project is None:
+            return 0
+        voter = self._ma_phieu(nguoi_gui) if nguoi_gui else "?"
+        for x in lo:
+            tt = x.get("thuoc_tinh") if isinstance(x.get("thuoc_tinh"), dict) else {}
+            project.upsert_unit(str(x["ma_so_can"]).strip(), {str(k): str(v).strip() for k, v in tt.items() if str(v).strip()}, voter=voter)
+        self._projects.save(project)
+        return len(lo)
 
     def _save_project_doc(self, project_name: str, kind: str, title: str, markdown: str, nguoi_gui: str = "") -> dict[str, str]:
         """Store a grounded Markdown doc on a project: upload the .md to the kho tệp `<dự án>/_Chung` (bucket riêng, best-effort) and append it to `Project.docs` (persisted), so the bot can re-read it
@@ -3765,8 +3791,8 @@ class Engine:
         """Lời công cụ ghi nhớ trả model: admin → đã vào kho chung; người khác → mới là một phiếu, chưa nói như sự thật (SRS-249)."""
         if self._ma_phieu(conv.user_key).startswith("chac_chan:"):
             return f"Đã lưu thẳng vào kiến thức chung dự án (admin, nguồn: {nguon})."
-        return (f"Đã ghi nhận một phiếu (nguồn: {nguon}) — chờ đủ người xác nhận mới vào kiến thức chung; đừng nói với khách là "
-                "đã cập nhật dữ liệu dự án.")
+        return (f"Đã ghi (nguồn: {nguon}) — thông tin CHƯA CHẮC CHẮN (mới một người báo; đủ người xác nhận hoặc admin xác nhận thì "
+                "thành chắc chắn). Người khác hỏi tới thì bot nói kèm \"em chưa xác minh\" (SRS-5.1zzzzzzz445).")
 
     def _exec_tool(self, conv: Conversation, project: Project, call) -> str:
         """Run ONE tool the model asked for, against the REAL store/basket, and return a short

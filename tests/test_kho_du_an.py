@@ -76,7 +76,8 @@ def test_luu_chi_ghi_phan_hoc_them_khong_chep_lai_du_lieu_mogi():
     assert hoc["project_id"] == "p-1"
     assert "attributes" not in hoc["du_lieu"]                                         # chủ đầu tư… không có bản thứ hai
     assert "amenities" not in hoc["du_lieu"] and hoc["du_lieu"]["unit_types"] == []                  # tiện ích, mẫu mogi ở `projects`
-    assert db.du_an["p-1"]["thong_tin"] == {"thuoc_tinh": {"cổng": "Nguyễn Xiển"}, "tien_ich": []}    # chỉ dữ kiện đã chốt
+    assert db.du_an["p-1"]["thong_tin"] == {"thuoc_tinh": {"cổng": "Nguyễn Xiển"}, "tien_ich": [],     # đã chốt
+                                             "chua_chac": {"an ninh": "bảo vệ 24/7"}}                  # SRS-445: một phiếu Đồng, kèm nhãn
     q = kho.get("vinhomes grand park")
     assert q.attributes["cổng"] == "Nguyễn Xiển" and "an ninh" not in q.attributes
     assert any("an ninh" in x for x in q.pending()) and q.docs[0]["title"] == "PL"

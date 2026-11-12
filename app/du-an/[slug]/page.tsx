@@ -54,13 +54,18 @@ const getProject = cache(async (slug: string): Promise<DuAn | null> => {
 
 // SRS-5.1zzzzzzz283: `projects.thong_tin` = dữ kiện ĐÃ CHỐT (phiếu đủ / admin ghi thẳng, SRS-249) — lõi bot đọc nó đè cột mogi cùng nghĩa;
 // trang dự án đọc y như vậy để web và bot nói cùng một điều. Bỏ link ngoài (web không dẫn khách ra trang khác).
-function thongTin(v: unknown): { thuocTinh: [string, string][]; tienIch: string[] } {
+// SRS-5.1zzzzzzz445: `thong_tin.chua_chac` = điều mới một người báo, chưa đủ người xác nhận — hiện kèm nhãn "chưa xác minh".
+function thongTin(v: unknown): { thuocTinh: [string, string][]; tienIch: string[]; chuaChac: [string, string][] } {
   const o = v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
   const tt = o.thuoc_tinh && typeof o.thuoc_tinh === "object" && !Array.isArray(o.thuoc_tinh) ? (o.thuoc_tinh as Record<string, unknown>) : {};
   const thuocTinh = Object.entries(tt)
     .filter(([k, x]) => typeof x === "string" && x.trim() && !/https?:\/\//i.test(x) && !["website", "link"].includes(k.trim().toLowerCase()))
     .map(([k, x]): [string, string] => [k.charAt(0).toUpperCase() + k.slice(1), (x as string).trim()]);
-  return { thuocTinh, tienIch: chuoi(o.tien_ich).filter((t) => !/https?:\/\//i.test(t)) };
+  const cc = o.chua_chac && typeof o.chua_chac === "object" && !Array.isArray(o.chua_chac) ? (o.chua_chac as Record<string, unknown>) : {};
+  const chuaChac = Object.entries(cc)
+    .filter(([k, x]) => typeof x === "string" && x.trim() && !/https?:\/\//i.test(x) && !["website", "link"].includes(k.trim().toLowerCase()))
+    .map(([k, x]): [string, string] => [k.charAt(0).toUpperCase() + k.slice(1), (x as string).trim()]);
+  return { thuocTinh, tienIch: chuoi(o.tien_ich).filter((t) => !/https?:\/\//i.test(t)), chuaChac };
 }
 
 function viTri(p: DuAn): string {
@@ -245,6 +250,15 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                       <dd className="text-right font-semibold">{v}</dd>
                     </div>
                   ))}
+                {tt.chuaChac.map(([k, v]) => (
+                  <div key={`cc-${k}`} className="flex justify-between gap-4 border-b border-line py-2.5 text-sm">
+                    <dt className="shrink-0 text-mute">{k}</dt>
+                    <dd className="text-right font-semibold">
+                      {v}
+                      <span className="ml-2 whitespace-nowrap rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">chưa xác minh</span>
+                    </dd>
+                  </div>
+                ))}
               </dl>
               {p.description && (
                 <>
