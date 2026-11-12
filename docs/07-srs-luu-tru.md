@@ -73,6 +73,51 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz443 · Cẩm nang, trang "nhà gần địa danh", máy tính thuê hay mua, chân trang đúng của aond (12/11/2026)
+Chủ dự án 12/11 "lấy mấy cái này thì lấy lun" (ba thứ đáng lấy từ NhaDat-Radar). Lấy ý tưởng và khung, KHÔNG chép chữ: nhadatradar.com
+đang chạy, hai web cùng chủ đăng cùng một bài thì Google coi là trùng nội dung.
+- **/cam-nang** (`lib/cam-nang.ts`): 6 bài viết mới cho người mua ở Sài Gòn: kiểm tra pháp lý trước khi cọc, mua nhà hẻm, sổ chung và vi
+  bằng, công chứng sang tên, thuế phí, nhận ra tin ảo và trả giá. Con số theo luật ghi văn bản gốc (BLDS 2015 Điều 328, NĐ 08/2020,
+  TT 111/2013, NĐ 10/2022) kèm câu nhắc hỏi lại nơi làm thủ tục vì luật đang sửa (thuế TNCN). Không có số lãi suất, giá thị trường.
+  Mỗi mục có link sang trang khu / công cụ. Dữ liệu cấu trúc `Article`, dựng sẵn lúc build (không đọc DB).
+- **/gan, /gan/[slug]** (`lib/moc.ts`): "Nhà bán gần <địa danh>" cho 36 bệnh viện, chợ, công viên, trung tâm thương mại, đại học; toạ độ
+  chép từ bảng `tien_ich` (OSM) vì bảng đó chỉ admin đọc. Tin bán trong bán kính 2 km, gần trước, ghi "cách khoảng" (toạ độ tin là cấp
+  đường). Lời dẫn sinh từ số tin thật (số căn, phường nhiều tin, khoảng giá). Dưới 3 tin: noindex, không vào sitemap. Không dựng sẵn lúc
+  build (giữ egress thấp như trang tag).
+- **/thue-hay-mua**: cùng số tiền mỗi tháng, so tài sản ròng sau N năm của mua trả góp và đi thuê + gửi tiết kiệm phần chênh; mốc năm mua
+  bắt đầu lợi hơn. Mọi số điền sẵn ghi là giả định; ghi rõ những gì không tính (phí công chứng, thuế, sửa chữa).
+- **Chân trang** viết lại: bản cũ từ lúc gộp repo 17/10 là chân trang của NhaDat-Radar (tên "NhaDat Radar", "dữ liệu tổng hợp từ nguồn
+  công khai", một số hotline không rõ của ai, 12 link 404). Giờ: logo AI Ơi Nhà Đất, nút Zalo, chỉ link trang có thật.
+- Trang chủ (máy tính) thêm ba công cụ vào cột công cụ; sitemap thêm các trang mới.
+
+### SRS-5.1zzzzzzz442 · Bản đồ: vệ tinh có tên đường, nút tiếng Việt, hai ngón trên điện thoại, tải khi sắp hiện (12/11/2026)
+Chủ dự án 12/11 hỏi "bản đồ các kiểu lấy dc ko" (repo NhaDat-Radar, cùng nền MapLibre + OpenFreeMap) rồi chốt "Lấy 4 cái":
+- **Vệ tinh có chữ:** trước là ảnh Esri trần, không biết đang nhìn đâu (Radar ghi nhận đúng phản hồi này từ người dùng 19/8). Giờ nạp
+  kiểu `liberty` rồi chèn ảnh ngay dưới lớp chữ đầu tiên (`transformStyle`) — tên đường, tên quận vẫn nằm trên ảnh. `lib/ban-do.ts`
+  thêm `datNen()`; trang /ban-do và bản đồ nhúng đều đổi nền qua hàm này (`diff: false`, lớp dự án / đường vẫn dựng lại ở `style.load`).
+- **Tiếng Việt:** chữ nút / hướng dẫn mặc định của MapLibre ("Zoom in", "Toggle attribution", hướng dẫn hai ngón) → bảng `TIENG_VIET`.
+- **Hai ngón trên màn cảm ứng** (`cooperativeGestures` khi `pointer: coarse`) cho bản đồ NHÚNG giữa trang (mua bán, trang căn): vuốt
+  một ngón cuộn được trang. Máy tính giữ nguyên; trang /ban-do chiếm cả màn hình nên không bật.
+- **Tải khi sắp hiện:** `MapView` chỉ nạp maplibre (~800 kB) khi khung cách màn hình 400px (IntersectionObserver). Khung bản đồ `hidden`
+  trên điện thoại không bao giờ giao cắt → không tải luôn.
+- Thấy lúc soát, đã sửa ở SRS-444: bản đồ trang căn (`WardMap`) chỉ hiện khi `ward` có trong `WARD_CENTROIDS` — bảng này chỉ có "Phường 1…15" cũ,
+  nên với tên phường mới sau sáp nhập (gần như mọi tin) trang căn không có bản đồ.
+
+### SRS-5.1zzzzzzz441 · LQC: so sánh không bị bỏ qua khi tin mới chưa có toạ độ; câu đáp dài vào đúng ô bot vừa hỏi (12/11/2026)
+Chủ dự án 12/11 "Bắn thử luôn" — bắn chuỗi sau đăng trên production (`thu-lqc-1623`: nhà mặt tiền Phan Văn Trị, sổ hồng riêng, đang cho thuê,
+chưa ảnh). Ảnh (xin góc mặt tiền, xin ảnh sổ "chỉ để kiểm, không đăng"), pháp lý (đứng tên, thế chấp, quy hoạch), tiền thuê, đậu xe, thương
+lượng, lý do bán, thuế phí đều ra đúng thứ tự, mỗi lượt một câu, gọi "anh", giọng nói miệng. Hai lỗi:
+- **So sánh bị bỏ qua:** cụm so sánh tra căn gần (`so_sanh.can_gan`) ngay sau đăng — tin mới chưa có toạ độ (cron `geocode-tick` 10 phút /
+  lần), RPC trả `cua_chu` rỗng, `du_de_gui` sai, `_ss_tra` khoá cả ngày nên lượt đó và các lượt sau trong ngày đi thẳng sang cụm giá. Tra lại
+  sau khi có toạ độ: 3 căn cùng loại trong 3 km. Nay chỉ hẹn mai khi tin đã có toạ độ mà kho chưa đủ căn; chưa có toạ độ thì lượt sau tra lại.
+- **Câu đáp dài bị bỏ:** bot hỏi chỗ đậu xe, chủ đáp "trước nhà vỉa hè rộng, đậu được 3 4 xe máy, ô tô thì đậu tạm" — lưới SRS-5.1zzzzzzz218
+  (giá trị ô bằng nguyên cả tin khách ≥ 10 từ = AI chép câu) bỏ ô `cho_dau_xe`, mốc "đã hỏi" vẫn ghi nên không hỏi lại, mất dữ liệu. Nay ô
+  nằm trong câu bot vừa hỏi (`y_luot["_bot_vua_hoi"]`, AI đọc — cùng nguồn SRS-5.1zzzzzzz438) thì cả tin khách là câu đáp, lưới không áp.
+- **Gửi trước, ghi mốc sau:** vòng nền hỏi sau đăng (`hoi_sau_dang._nhac_mot`) và Image LQC (`qc_anh._ghi_va_nhan`) ghi mốc "đã hỏi" /
+  "đã nhắn" rồi mới gửi qua bridge — bridge hụt thì câu bị tính là đã hỏi mà chủ không nhận, không bao giờ hỏi lại. Nay gửi ngay dưới khoá
+  lượt của khách, gửi được mới ghi mốc.
+- Ghi nhận, chưa sửa: chủ không đáp câu thuế phí (đáp câu khác, rồi "ok") — bot hỏi lại thuế phí ba lượt liền.
+
 ### SRS-5.1zzzzzzz440 · Tin chủ động gọi đúng cách chat đang gọi chủ; lời khen xin ảnh giọng nói miệng (12/11/2026)
 Chủ dự án 12/11 (chat anh Luận): tin Image LQC 08:34 "Mặt tiền ngang 7m của anh/chị nhìn rất thích, anh/chị chụp giúp em…" — cả chat gọi "anh",
 tin nền đổi sang "anh/chị"; câu khen văn viết, "sửa văn phong kiểu mặt tiền vậy là ngon luôn anh".

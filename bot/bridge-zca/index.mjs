@@ -921,4 +921,43 @@ api.listener.on("closed", async (code, reason) => {
   await Promise.race([ghiLoi("listener zalo", `kết nối nghe đóng (mã ${code}) — bridge tự khởi động lại`), new Promise((r) => setTimeout(r, 5000))]);
   process.exit(1);
 });
+// SRS-5.1zzzzzzz453 (13/11/2026): KẾT NỐI CHẾT LẶNG. Sau SRS-449 bridge khởi động lại 19:43 12/11, TCP tới Zalo vẫn "Established" mà tới 1 giờ sáng
+// 13/11 không nhận tin nào — chủ dự án nhắn không thấy đáp. Socket không đóng nên `closed` không bao giờ bắn; zca-js gửi ping của nó nhưng không
+// đo đáp. Nay: mỗi phút gửi ping tầng websocket (RFC 6455, máy chủ buộc trả pong); quá CAM_NGHE_MS không có khung nào về (pong hay tin) thì
+// cắt socket → đi đúng đường đóng ở trên (zca-js nối lại / thoát để vòng .cmd dựng lại). Chỉ canh khi Zalo đã từng trả pong trong tiến trình
+// này — máy chủ không đáp ping thì không cắt (khỏi vòng nối lại vô tận). Mỗi giờ ghi một dòng số khung đã nhận để soi log.
+const NHIP_NGHE_MS = 60_000;
+const CAM_NGHE_MS = Number(process.env.BRIDGE_CAM_NGHE_MS || 180_000);
+let khungCuoi = Date.now();
+let soKhungGio = 0;
+let daCoPong = false;
+api.listener.on("connected", () => {
+  khungCuoi = Date.now();
+  console.log(`Kết nối nghe Zalo mở — ${new Date().toISOString()}`);
+  const ws = api.listener.ws;
+  if (!ws || typeof ws.on !== "function") return;
+  ws.on("pong", () => {
+    khungCuoi = Date.now();
+    if (!daCoPong) console.log("Zalo trả pong — bật canh kết nối chết lặng.");
+    daCoPong = true;
+  });
+  ws.on("message", () => { khungCuoi = Date.now(); soKhungGio++; });
+});
+setInterval(() => {
+  const ws = api.listener.ws;
+  if (!ws || ws.readyState !== 1 || dangThoat) return;
+  const im = Date.now() - khungCuoi;
+  if (daCoPong && im > CAM_NGHE_MS) {
+    console.log(`Kết nối nghe Zalo im ${Math.round(im / 1000)} giây, không trả pong — cắt để nối lại. ${new Date().toISOString()}`);
+    khungCuoi = Date.now();
+    ghiLoi("listener zalo", `kết nối nghe chết lặng ${Math.round(im / 1000)} giây — cắt để nối lại`).catch(() => {});
+    ws.terminate();
+    return;
+  }
+  try { ws.ping(); } catch (e) { console.log(`Ping Zalo lỗi: ${errDetail(e)}`); }
+}, NHIP_NGHE_MS);
+setInterval(() => {
+  console.log(`Nghe Zalo: ${soKhungGio} khung trong 60 phút qua — ${new Date().toISOString()}`);
+  soKhungGio = 0;
+}, 3_600_000);
 api.listener.start({ retryOnClose: true });
