@@ -1,81 +1,114 @@
-# LQC — Listing Quality Controller: đặc tả 4 mảng, đã có / cần thêm / cần sửa
+# LQC — Listing Quality Controller: bot hỏi gì, khi nào, đã chạy tới đâu
 
-Ngày 12/11/2026 · cập nhật: mảng Ảnh 1.1, 1.3, 1.4 đã làm (SRS-425). Nguồn: đặc tả anh Luận gửi chủ dự án (4 mảng, 22 câu mẫu). Đối chiếu với code `main` @ 1a9a594 và Supabase cùng ngày.
+Cập nhật 12/11/2026, đối chiếu code `main` @ 6d6f827 và dữ liệu Supabase cùng ngày. Nguồn: đặc tả anh Luận (4 mảng, 22 câu mẫu).
 
-LQC là "người chăm tin" sau khi tin lên web: xem tin còn thiếu gì để bán được, rồi hỏi chủ nhà **từng câu một, ngắn, khéo**. Image LQC
-(SRS-422 → 424) là mảng đầu tiên đã chạy trên máy 146; tài liệu này mở nó ra thành 4 mảng.
+LQC là "người chăm tin" sau khi tin lên web. Nó xem tin còn thiếu gì để bán được, rồi hỏi chủ nhà **từng câu một, ngắn, khéo** — như một
+quản lý rảo qua các chat. Bot không đọc thuộc lòng 22 câu mẫu: mỗi lần nhắn, AI tự viết câu theo đúng việc cần hỏi và theo chuyện đang nói.
 
-Ký hiệu: **✅ có sẵn** · **🟡 có một phần** · **❌ chưa có**.
+Ký hiệu: **✅ đã chạy** · **🟡 có một phần** · **❌ chưa có**.
 
 ---
 
-## Luật chung (đã chốt, áp cho cả 4 mảng)
+## 1. Tình hình thật hôm nay
 
-| Luật | Nguồn |
+- Hai vòng nền đang bật trên máy 146 (không có biến tắt nào trong `.env`): **Image LQC** 30 phút một lượt, **Hỏi sau đăng** 10 phút một lượt.
+- LQC chỉ nhắn được chủ nhà **đăng tin qua chat Zalo với bot**. Hiện có **1 / 244** tin như vậy (#56F988C9). 243 tin còn lại nhập từ nguồn
+  khác, không có Zalo chủ nhà nên LQC chưa với tới.
+- Tin #56F988C9 đã nhận: xin ảnh (2 lần), "sổ đứng tên ai", 1 tin Image LQC xin ảnh mặt tiền thấy trọn 6 tầng. Chủ chưa đáp hai tin cuối,
+  nên vòng nền **đang chờ đúng luật** (mục 3). Câu kế tiếp trong hàng: hỏi loại giấy tờ → đoạn đường hợp kinh doanh gì / chỗ đậu xe → gửi
+  2–3 căn đang rao gần để so.
+- Đã thấy bot nói thật với chủ: **mảng Ảnh**. Pháp lý, Lợi thế, So sánh đã có code và đã bắn thử, nhưng chưa có chủ nhà thật nào đi tới lượt đó.
+
+## 2. Khi nào bot hỏi
+
+**Lúc chủ đang khai tin (trước khi đăng)** — chỉ một loại câu: chủ vừa nói loại giấy thì lượt kế bot hỏi **một** câu theo đúng loại đó
+(sổ chung / ủy quyền → người đứng tên đồng ý ký bán chưa; HĐMB / sổ đang làm / chưa có sổ → khi nào có sổ; đất thuê → thuê tới năm nào;
+giấy tay → đất gốc có sổ chưa; nói chung chung kiểu "pháp lý an tâm" → hỏi lại cụ thể là giấy gì; chưa hoàn công → dự kiến khi nào xong).
+Câu đã hỏi ở đây thì sau khi đăng không hỏi lại.
+
+**Sau khi tin lên web** — một hàng câu hỏi theo thứ tự, mỗi lần một câu:
+
+1. **Ảnh** — tin chưa đủ 6 ảnh thì xin trước. Tin xin ảnh đầu tiên đi **10 phút sau khi báo đăng**.
+2. **Pháp lý** — hỏi lại loại giấy nếu còn mơ hồ; xin ảnh sổ nếu chủ nói có sổ mà chưa gửi; rồi người đứng tên, thế chấp, quy hoạch.
+3. **Hợp đồng thuê** — chỉ khi nhà đang có người thuê: tiền thuê mỗi tháng.
+4. **Lợi thế** — chỉ căn buôn bán được (mặt bằng, shophouse, nhà mặt tiền): hợp kinh doanh gì, chỗ đậu xe.
+5. **So sánh** — gửi 2–3 căn cùng loại đang rao gần; kho chưa đủ căn thì bỏ qua, mỗi ngày tra lại.
+6. Giá (có thương lượng không, lý do bán) · thuế phí · giờ xem nhà, chìa khoá · chi tiết nhà (hướng, năm xây, nội thất).
+7. Hết hàng mà vẫn thiếu ảnh → nhắc xin ảnh **một lần cuối**.
+
+Câu tới chủ bằng hai đường: chủ đang nhắn thì bot đáp xong hỏi câu kế ngay trong lượt đó; chủ im thì vòng nền tự nhắn.
+**Image LQC** chạy riêng: mỗi khi bộ ảnh của tin đổi thì chấm lại, rồi nhắn xin góc thiếu / khen tấm đẹp / xin ẩn tấm kém (tối đa 2 tin mỗi căn).
+
+## 3. Khi nào bot KHÔNG nhắn
+
+| Luật | Giá trị |
 |---|---|
-| Mỗi tin nhắn hỏi **MỘT** điều, một câu ngắn, giọng nhờ vả | chủ dự án 11/11, `LUAT_XIN_ANH_KHEO` |
-| Tin tự động chỉ gửi **8–21 giờ** | SRS-423 (`GIO_KET_THUC = 21`) |
-| Không chen khi bot còn câu hỏi chưa được đáp, chat phải im ≥ 10 phút | SRS-422 (`cau_hoi_cuoi_cua_bot`, `IM_TOI_THIEU_GIAY`) |
-| Thiếu / nghi thì **hỏi lại**, không trừ điểm, không chê | chủ dự án 12/11, SRS-424 |
-| AI đọc theo nghĩa, code không dò từ khoá | `chan-ly-di-tu-goc` |
-| **Không bịa**: chỉ nói số, giao dịch, tiện ích có thật trong dữ liệu | CLAUDE.md repo, SRS-390/394 |
-| Hiện Image LQC nhắn tối đa **2 tin / căn** (`TOI_DA_NHAN_MOI_CAN`) | SRS-422 — trần chung 4 mảng: SRS-432 (10 câu / căn, chủ dự án chốt 12/11) |
-
-**Thứ tự ưu tiên khi nhiều mảng cùng muốn hỏi:** ảnh → pháp lý → lợi thế → so sánh giá. Một hàng đợi chung, không phải 4 vòng nhắn riêng.
-
----
-
-## Số 1 — Ảnh
-
-| # | Câu mẫu | Trạng thái | Đã có | Cần thêm / sửa |
-|---|---|---|---|---|
-| 1.1 ✅ (SRS-425) | "Có hình phòng ngủ rồi mà chưa có phòng tắm" · "mặt tiền có 1 góc, không đủ cả nhà" · "thiếu cái bếp. Bếp đẹp không anh?" | 🟡 | Image LQC chấm lại mỗi khi bộ ảnh đổi, ra **một** `goc_can_xin`; gợi góc theo loại căn (`GOC_ANH_THEO_NHOM`); tin xin ảnh 10 phút sau đăng (SRS-421). Đã bắt được "mặt tiền chưa thấy trọn 6 tầng" ở tin anh Luận. | **Gắn nhãn từng ảnh** (mặt tiền · phòng khách · phòng ngủ · WC · bếp · sân thượng · xung quanh · giấy tờ) và lưu lại → danh sách *đã có / còn thiếu* theo loại căn. Câu hỏi nói được "có phòng ngủ rồi, còn thiếu WC". Câu mở kiểu "bếp đẹp không anh?" để chủ tự khoe. |
-| 1.2 | Ảnh có nêu bật thế mạnh không: mặt tiền kinh doanh → có ảnh dãy phố sầm uất? pháp lý đầy đủ → có ảnh sổ? | 🟡 | QC đã trả `the_manh_da_co_anh` / `the_manh_chua_co_anh`. | Thế mạnh "kinh doanh" → xin **ảnh xung quanh / dãy phố** (nối Số 3). Thế mạnh "pháp lý" → xin **ảnh sổ** (nối Số 2; ảnh sổ cất riêng, không lên web). |
-| 1.3 ✅ (SRS-425) | "Tấm mặt tiền nắng đẹp quá, còn tấm nào nữa không?" · "Tấm nội thất lên đèn đẹp ghê" | ❌ | Lúc chủ gửi, bot đã được dặn khen tấm vừa gửi (SRS-423). Cột `listing_media.is_cover` có sẵn. | QC chọn **`anh_dep_nhat` + lý do** (nắng, lên đèn, góc rộng) → tin khen và xin thêm cùng kiểu. Đặt tấm đẹp nhất làm **ảnh bìa** (`is_cover`). |
-| 1.4 ✅ (SRS-425) | "Hình này hơi xấu, em xoá nha anh?" | ❌ | Ảnh xấu không làm điểm về 0 (SRS-424, hệ số ≥ 0,75). | QC đánh dấu ảnh **mờ / tối / nghiêng / trùng** → hỏi chủ "em ẩn tấm này nha". **Chủ đồng ý mới ẩn**, không xoá file. `listing_media` **chưa có cột ẩn** → thêm cột (vd `an_khoi_web`) và cho view `listing_photos_v` lọc ra. |
-
-## Số 2 — Pháp lý
-
-| # | Câu mẫu | Trạng thái | Đã có | Cần thêm / sửa |
-|---|---|---|---|---|
-| 2.1 ✅ (SRS-426) | "Anh nói pháp lý an tâm, ý là có sổ hồng rồi hả anh?" | 🟡 | Ô `phap_ly`, `phap_ly_hoan_cong`; cột `legal_status`, `has_completion`. | **Sửa:** chat anh Luận nói "không phải lo gì cả" → `legal_status` rỗng và bot không hỏi lại. Câu mơ hồ **không ghi ô** mà hỏi xác nhận một câu: sổ hồng riêng / sổ chung / HĐMB / giấy tay. |
-| 2.2 ✅ (SRS-426, phương án a) | "Anh có hình chụp cho em xin. Em xoá thông tin rồi mới gửi công ty" | 🟡 | AI đọc sổ (số thửa, tờ, diện tích, mục đích, sơ đồ), luật không đọc tên chủ / CCCD; ảnh giấy tờ cất riêng, không lên web. | **Sửa câu hứa:** hệ thống **chưa che** thông tin trên ảnh, nên bot chưa được hứa "em xoá thông tin". Chọn một: (a) nói thật "ảnh sổ chỉ để nội bộ kiểm, không đăng" — làm được ngay; (b) xây bước làm mờ tên / số CCCD trên ảnh rồi mới được hứa. |
-| 2.3 ✅ (SRS-426) | "Em thấy sổ mà không thấy nhà, anh chưa hoàn công ạ?" | 🟡 | Đọc sổ có `loai_giay_to`, `loai_hinh`, `so_thua`… | Thêm ô đọc **"tài sản gắn liền với đất"** (nhà đã ghi trên sổ chưa). Lệch với tin (sổ không có nhà, tin ghi "nhà 6 tầng") → hỏi hoàn công. |
-| 2.4 ✅ (SRS-426, ô `du_kien_hoan_cong`) | "Hoàn công có dễ không? Còn bao lâu nữa?" | ❌ | — | Ô mới `hoan_cong_tien_do` (đang làm / dự kiến bao lâu / vướng gì). Đề xuất để **nội bộ** (`O_NOI_BO`); tin công khai chỉ ghi "đang hoàn công". |
-| 2.5 ✅ (SRS-426, ô `du_kien_ra_so`) | "Chủ đầu tư hứa khi nào có sổ?" | ❌ | Kho 1.643 dự án — chưa có ô tiến độ sổ theo căn. | Ô mới `du_kien_co_so` cho căn hộ / đất dự án, hỏi khi pháp lý là HĐMB. |
-
-## Số 3 — Khai thác lợi thế
-
-| # | Câu mẫu | Trạng thái | Đã có | Cần thêm / sửa |
-|---|---|---|---|---|
-| 3.1 ✅ (SRS-427) · 3.4 · 3.5 | "Đoạn này buôn bán gì thì được?" · "Văn phòng kèm showroom hay chỉ office?" · "Spa cao cấp hả anh?" | 🟡 | Bot tự nhận xét chung ("dễ mở quán, showroom"). Căn đang cho thuê: ngành của khách thuê là bằng chứng (tin anh Luận: quán UME, Bud's Cafe). | Ô mới `phu_hop_kinh_doanh` — **hỏi chủ**, vì chủ biết đoạn đường hơn bot. Dùng cho mô tả tin và để khớp khách thuê / mua kinh doanh. |
-| 3.2 ✅ (SRS-427) | "Có hình xung quanh cho em xin nhé" | 🟡 | = 1.2 | Đi qua Image LQC (góc "xung quanh"). |
-| 3.3 ✅ (SRS-427) | "Khách để xe thuận tiện không anh?" | ❌ | — | Ô mới `cho_dau_xe` (trước nhà / vỉa hè / bãi gần). |
-| 3.6 · 3.7 ✅ (SRS-427) | "Có AEON cách anh 1 km, làm nhà hàng được không?" · "Bên cạnh là trường gì?" | 🟡 | `listings.tien_ich_gan` từ Overpass (5 loại: trường học, bệnh viện, chợ, siêu thị, công viên) — **241/245 tin đã có**. Hiện chỉ bot phía mua dùng. | Đưa tiện ích gần vào lượt hỏi **phía bán**: bot nêu tiện ích **thật** từ dữ liệu ("cách siêu thị X khoảng 1 km") rồi hỏi chủ khai thác được gì. Còn lỗi Overpass 406 đang mở. Muốn nói "AEON" đúng tên thì cần lưu tên tiện ích, không chỉ loại. |
-
-## Số 4 — So sánh cạnh tranh
-
-| # | Câu mẫu | Trạng thái | Đã có | Cần thêm / sửa |
-|---|---|---|---|---|
-| 4.1 · 4.2 ✅ (SRS-428) | "Cho em vị trí, em gửi mấy căn đang bán gần đó để anh đừng bán rẻ" · "Căn gần anh 150 tr/m² mà nhà cũ" | 🟡 | 244 tin đang bán, đều có toạ độ. | Công cụ **căn đang rao gần**: cùng loại, trong bán kính, kèm đơn giá/m² → gửi chủ 2–3 căn (link). Chỉ dùng tin đang hiển thị. |
-| 4.3 · 4.4 ✅ luật không bịa (SRS-428) | "Tháng trước em có căn bán tới 12 tỷ" · "Em mới cọc hôm qua căn 7 tỷ" | ❌ | Trạng thái `da_coc` / `da_chot` có trong hệ thống, nhưng **0 giao dịch** được ghi. | Bot **không được nói** những câu này khi không có giao dịch thật — đó là bịa. Cần admin ghi giá chốt vào tin `da_coc` / `da_chot`; bot chỉ dẫn dòng có thật. |
-| 4.5 ✅ đơn giá từ kho + nhận xét nhẹ (SRS-428 · 429 · 431 tin thử tính như thật) | "Em đoán khu này 120 tr/m², anh rao 140 cũng hợp lý" | 🟡 | `dinh_gia_tham_khao` (SRS-390): bảng đơn giá **ước lượng cứng** theo vùng × loại, luôn nói "tham khảo". Phía mua đang **cấm** nhận xét giá cao / thấp. | Thay bảng cứng bằng đơn giá từ tin đang rao gần (4.1) khi đủ mẫu. Phía bán được nhận xét giá tới đâu: **cần chủ dự án quyết**. |
-| 4.6 | "Em có báo cáo giá khu vực, làm miễn phí cho anh" | ❌ | — | Trang / PDF tổng hợp từ 4.1 + 4.5. Làm sau, vì phụ thuộc dữ liệu. |
+| Khung giờ | chỉ 8–21 giờ |
+| Chủ đang nhắn | chat phải im ≥ 10 phút |
+| Người thật (admin) đang tiếp chủ | không chen |
+| Chủ đang khai dở một căn khác | không hỏi chuyện căn cũ |
+| Câu hỏi trước chưa được đáp | chờ 24 giờ; chủ bỏ qua **2 tin liền** thì thôi hẳn |
+| Mỗi căn / ngày | tối đa 3 tin chủ động |
+| Mỗi căn / tổng sau đăng | tối đa **10 câu** (tính cả tin Image LQC) — chạm trần thì phần cuối hàng (giá, xem nhà, chi tiết) bị cắt |
+| Mỗi tin | đúng MỘT câu hỏi; AI viết ra hơn một câu hỏi hay quá dài thì không gửi |
+| Xưng hô | gọi chủ đúng như chat đang gọi (giữ cả khi máy khởi động lại — SRS-440) |
+| Giọng | nói miệng như nhắn Zalo người quen ("Mặt tiền 7m vậy là ngon luôn."), nhờ vả nhẹ, không thúc ép |
+| Không bịa | chỉ nói số, căn, tiện ích, giao dịch có thật trong dữ liệu |
 
 ---
 
-## Đề xuất thứ tự làm
+## 4. Từng câu mẫu của anh Luận
 
-1. **Ảnh (1.1 · 1.3 · 1.4):** mở rộng Image LQC đang chạy — nhãn từng ảnh, ảnh đẹp nhất + ảnh bìa, xin ẩn ảnh xấu. Ít rủi ro, thấy ngay trên web.
-2. **Pháp lý (2.1 · 2.3 · sửa câu hứa 2.2):** hỏi rõ câu mơ hồ, đối chiếu sổ với tin.
-3. **Lợi thế (3.1 · 3.3 · 3.6):** ô kinh doanh / đậu xe, đưa tiện ích thật vào phía bán.
-4. **So sánh (4.1 trước, 4.3–4.6 sau):** cần dữ liệu thật; làm công cụ "căn gần" trước, giao dịch thật khi admin bắt đầu ghi giá chốt.
+### Số 1 — Ảnh
 
-## Câu hỏi cần chủ dự án quyết
+| # | Câu mẫu | | Bot làm gì |
+|---|---|---|---|
+| 1.1 | "Có phòng ngủ rồi mà chưa có phòng tắm" · "thiếu cái bếp, bếp đẹp không anh?" | ✅ | QC gắn nhãn từng ảnh (mặt tiền, phòng khách, phòng ngủ, WC, bếp, sân thượng, xung quanh, giấy tờ…), biết đã có / còn thiếu góc nào theo loại căn, nói "có X rồi, còn thiếu Y", có thể hỏi mở để chủ tự khoe. SRS-425 |
+| 1.2 | Ảnh có nêu bật thế mạnh không: mặt tiền kinh doanh → ảnh dãy phố; pháp lý đủ → ảnh sổ | ✅ | Căn mặt tiền kinh doanh: QC coi "mặt tiền thấy trọn căn", "xung quanh" là góc thiếu quan trọng nhất. Ảnh sổ xin ở hàng Pháp lý (chỉ để kiểm, không đăng). SRS-425 · 426 |
+| 1.3 | "Tấm mặt tiền nắng đẹp quá, còn tấm nào nữa không?" | ✅ | QC chọn tấm đẹp nhất + lý do, khen rồi xin thêm cùng kiểu; tấm đẹp nhất thành **ảnh bìa**. SRS-425 |
+| 1.4 | "Hình này hơi xấu, em xoá nha anh?" | ✅ | QC đánh dấu ảnh mờ / tối / nghiêng / trùng → hỏi "em ẩn tấm này nha". **Chủ đồng ý mới ẩn**, không xoá file, muốn hiện lại lúc nào cũng được. SRS-425 |
 
-1. ~~**Ảnh sổ (2.2):** chỉ nói "không đăng, chỉ nội bộ kiểm" hay xây bước che thông tin trên ảnh?~~ — **Đã làm theo hướng thứ nhất**
-   (SRS-426: ảnh sổ vào kho riêng, lời hứa "chỉ để em kiểm, không đăng"); chưa có bước che thông tin.
-2. ~~**Ảnh xấu (1.4):** chủ đồng ý từng tấm mới ẩn, hay QC tự ẩn rồi báo chủ?~~ — **Đã làm: chủ đồng ý từng tấm mới ẩn** (SRS-425).
-3. ~~**Giá (4.5):** phía bán, bot được nói giá chủ rao cao / thấp so với khu không, mức nào?~~ — **Đã quyết 12/11: được, nói nhẹ** (SRS-429).
-4. ~~**Trần tin nhắn:** LQC 4 mảng chung tối đa bao nhiêu tin / căn / tuần?~~ — **Đã quyết 12/11: "Giữ 10"** (SRS-432): 10 câu hỏi sau
-   đăng / căn (tính cả 2 tin Image LQC), tin chủ động ≤ 3 / căn / ngày, chủ không đáp 2 tin liền thì thôi.
+### Số 2 — Pháp lý
+
+| # | Câu mẫu | | Bot làm gì |
+|---|---|---|---|
+| 2.1 | "Anh nói pháp lý an tâm, ý là có sổ hồng rồi hả anh?" | ✅ | Câu mơ hồ không ghi thành "có sổ"; bot hỏi lại cụ thể (sổ riêng / sổ chung / HĐMB / giấy tay…). 9 loại giấy một nguồn. SRS-426 · 435 |
+| 2.2 | "Anh có hình chụp cho em xin. Em xoá thông tin rồi mới gửi công ty" | 🟡 | Xin ảnh sổ, AI đọc số thửa / tờ / diện tích, không đọc tên chủ / CCCD; ảnh vào kho riêng, không lên web. Lời hứa là **"chỉ để em kiểm, không đăng"** — hệ thống chưa tự che thông tin trên ảnh nên bot không hứa "em xoá thông tin". SRS-426 |
+| 2.3 | "Em thấy sổ mà không thấy nhà, anh chưa hoàn công ạ?" | ✅ | Đọc sổ có mục "tài sản gắn liền với đất"; sổ không ghi nhà mà tin là nhà → hỏi hoàn công. SRS-426 |
+| 2.4 | "Hoàn công có dễ không? Còn bao lâu nữa?" | ✅ | Ô riêng `du_kien_hoan_cong` (chỉ admin thấy; tin công khai chỉ ghi chưa / đã hoàn công). SRS-426 |
+| 2.5 | "Chủ đầu tư hứa khi nào có sổ?" | ✅ | Ô riêng `du_kien_ra_so`, hỏi khi giấy là HĐMB / sổ đang làm / chưa có sổ. SRS-426 · 435 |
+
+### Số 3 — Khai thác lợi thế
+
+| # | Câu mẫu | | Bot làm gì |
+|---|---|---|---|
+| 3.1 · 3.4 · 3.5 | "Đoạn này buôn bán gì thì được?" · "Văn phòng kèm showroom hay chỉ office?" · "Spa cao cấp hả anh?" | ✅ | Hỏi chủ (chủ rành đoạn đường hơn bot), ghi ô `phu_hop_kinh_doanh` để viết tin và khớp khách thuê / mua kinh doanh. Chỉ hỏi căn buôn bán được. SRS-427 |
+| 3.2 | "Có hình xung quanh cho em xin nhé" | ✅ | Qua Image LQC (góc "xung quanh"). |
+| 3.3 | "Khách để xe thuận tiện không anh?" | ✅ | Ô `cho_dau_xe`, cùng lượt lợi thế. SRS-427 |
+| 3.6 · 3.7 | "Có AEON cách anh 1 km, làm nhà hàng được không?" · "Bên cạnh là trường gì?" | ✅ | Bot nêu tiện ích **thật** quanh căn (tên + khoảng cách, từ bản đồ) rồi hỏi chủ khai thác được gì. Không có dữ liệu thì không nêu. SRS-427 |
+
+### Số 4 — So sánh cạnh tranh
+
+| # | Câu mẫu | | Bot làm gì |
+|---|---|---|---|
+| 4.1 · 4.2 | "Em gửi mấy căn đang bán gần đó để anh đừng bán rẻ" · "Căn gần anh 150 tr/m² mà nhà cũ" | ✅ | Gửi chủ 2–3 căn cùng loại đang rao trong 3 km, kèm đơn giá / m² và link. Dưới 2 căn thì không gửi. SRS-428 |
+| 4.3 · 4.4 | "Tháng trước em có căn bán tới 12 tỷ" · "Em mới cọc hôm qua căn 7 tỷ" | 🟡 | Code đã đọc được căn đã cọc / chốt gần đó (180 ngày) — nhưng hiện **0 giao dịch** được ghi, nên bot **không nói** những câu này (nói là bịa). Admin chuyển tin sang "đã cọc / đã chốt" kèm giá thì bot tự dẫn được. SRS-428 |
+| 4.5 | "Em đoán khu này 120 tr/m², anh rao 140 cũng hợp lý" | ✅ | Nhận xét **nhẹ** giá rao của chủ so với trung vị các căn **cùng lối vào** (mặt tiền với mặt tiền, hẻm với hẻm) đang rao gần, ±10 % là ngang. Cần ≥ 3 căn cùng lối vào, chưa đủ thì không nhận xét. Không đưa giá mới, không giục tăng / giảm. SRS-428 · 429 |
+| 4.6 | "Em có báo cáo giá khu vực, làm miễn phí cho anh" | ❌ | Chưa làm. Cần dữ liệu giao dịch thật (4.3) trước. |
+
+---
+
+## 5. Còn thiếu để LQC phát huy
+
+1. **Nhiều chủ nhà đăng qua Zalo hơn** — LQC chỉ chăm được tin có Zalo chủ nhà (hiện 1 / 244).
+2. **Ghi giao dịch thật** — admin chuyển tin "đã cọc / đã chốt" kèm giá thì mở được 4.3 · 4.4 và về sau 4.6.
+3. **Che thông tin trên ảnh sổ** — nếu muốn bot được hứa "em xoá thông tin rồi mới gửi" (2.2).
+4. **Báo cáo giá khu vực** (4.6).
+
+## 6. Quyết định đã chốt (chủ dự án 12/11)
+
+- Ảnh sổ: chỉ nói "để em kiểm, không đăng"; chưa che thông tin trên ảnh.
+- Ảnh kém: chủ đồng ý từng tấm mới ẩn.
+- Giá: phía bán được nhận xét giá chủ rao, nói nhẹ.
+- Trần tin: "Giữ 10" — 10 câu sau đăng / căn, ≤ 3 tin chủ động / căn / ngày, chủ bỏ qua 2 tin liền thì thôi.
+- Thứ tự khi nhiều mảng cùng muốn hỏi: ảnh → pháp lý → lợi thế → so sánh → giá; một hàng chung, không phải 4 vòng nhắn riêng.
