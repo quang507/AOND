@@ -29,7 +29,7 @@
   --color-cream: #f6f7f9;
   --color-line: #e8ebed;
   --color-line-strong: #c8d1d8;
-  --color-mute: #687686;
+  --color-mute: #5d6a7a; /* SRS-5.1zzzzzzz439: King #687686 sẫm thêm một nấc — trên nền #f6f7f9 chỉ đạt 4,3:1, dưới mức AA 4,5:1 */
   --color-surface: #ffffff;
   --color-surface-subtle: #f6f7f9;
   --color-surface-tint: #ffe5ea;
@@ -165,6 +165,15 @@ textarea {
 *::-webkit-scrollbar-thumb:hover {
   background: var(--color-mute);
   background-clip: padding-box;
+}
+
+/* SRS-5.1zzzzzzz439: bôi đen chữ và con trỏ gõ theo màu King, không để mặc định xanh của trình duyệt. */
+::selection {
+  background: var(--color-brand-light);
+  color: var(--color-navy);
+}
+input, textarea {
+  caret-color: var(--color-brand);
 }
 
 /* Gạch chân link rời khỏi chữ một chút, không cắt qua phần đuôi chữ — tiếng

@@ -788,6 +788,17 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz439 · Soát giao diện bằng skill impeccable (audit + polish) trang chủ, feed, trang tag, trang chi tiết căn (12/11/2026)
+Chủ dự án 12/11 "chạy đi nhưng đừng để impeccable sửa chồng mấy cái kia quá" — giữ nguyên màu / font King, góc 14px, nút Zalo xanh,
+feed, nút "Hỏi", luật không eyebrow. Bộ dò tự động của impeccable: 0 lỗi; soát bằng mắt khổ 1280px và 375px ra 9 lỗi thật, sửa hết:
+- Tương phản: chữ phụ `--color-mute` #687686 → #5d6a7a (trên nền #f6f7f9 từ 4,3:1 lên trên 4,5:1); nhãn đỏ trên dải thông số tối
+  → `brand-soft`; mã tin trắng mờ 40% ở đầu trang chi tiết → `line-strong`; dòng chú thích ảnh `mute/80` → `mute`.
+- Vùng bấm: nút Tin đã lưu / Tài khoản trên thanh đầu trang 36px → 44px, nút Chat Zalo cao tối thiểu 44px.
+- Trang chi tiết: dải thông số chia 3 cột cứng nên căn có 2 thông số lệch một bên, trên điện thoại xếp dọc → căn giữa, 2 cột trên điện
+  thoại; dòng địa chỉ trên điện thoại đẩy "· #mã" ra mép phải → chữ chảy liền; ảnh nhỏ có nền chờ khi đang tải.
+- "Bề ngang mặt tiền: 7" → "7 m" (lộ giới, chiều cao trần cũng vậy) khi lõi chỉ lưu con số.
+- Trang tag: "Xem cả N tin trong kho -" → "→". Bôi đen chữ và con trỏ gõ theo màu King.
+
 ### SRS-5.1zzzzzzz438 · Thông tin pháp lý ghi được và lấy lại được: câu đáp ngắn vào đúng ô, admin thấy mọi ô riêng, bot phía mua đọc pháp lý công khai (12/11/2026)
 Chủ dự án 12/11 hỏi "db đã đủ chỗ để ghi và lấy thông tin chưa" rồi "sửa cả ba". Chỗ GHI đã đủ (loại giấy `legal_status` → `loai_phap_ly`,
 hoàn công `has_completion`, chi tiết công khai trong `boc_tach`, ô riêng của chủ trong `listing_noi_bo`); đường vào / ra hở ba chỗ:

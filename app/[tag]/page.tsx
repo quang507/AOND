@@ -181,7 +181,7 @@ export default async function Page({ params }: { params: Promise<{ tag: string }
         {total > rows.length && (
           <p className="mt-6 text-center">
             <Link href={t.quan ? `${goc}?quan=${encodeURIComponent(t.quan)}` : goc} className="font-semibold text-brand hover:underline">
-              Xem cả {total} tin trong kho -
+              Xem cả {total} tin trong kho →
             </Link>
           </p>
         )}

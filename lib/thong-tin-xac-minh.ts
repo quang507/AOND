@@ -54,13 +54,18 @@ export const O_XAC_MINH: ReadonlyArray<readonly [string, string]> = [
   ["hd_thue_con", "Hợp đồng thuê hiện tại"],
 ];
 
+// SRS-5.1zzzzzzz439: ô đo bằng mét mà lõi chỉ lưu con số ("7") thì web in kèm đơn vị — "Bề ngang mặt tiền: 7" khó hiểu.
+const DON_VI: Record<string, string> = { mat_tien: "m", lo_gioi_duong: "m", chieu_cao_tran: "m" };
+
 export function dongXacMinh(boc: unknown): Array<{ nhan: string; giaTri: string }> {
   if (!boc || typeof boc !== "object") return [];
   const o = boc as Record<string, unknown>;
   const ra: Array<{ nhan: string; giaTri: string }> = [];
   for (const [k, nhan] of O_XAC_MINH) {
     const v = o[k];
-    if ((typeof v === "string" && v.trim()) || typeof v === "number") ra.push({ nhan, giaTri: String(v).trim() });
+    if (!((typeof v === "string" && v.trim()) || typeof v === "number")) continue;
+    const s = String(v).trim();
+    ra.push({ nhan, giaTri: DON_VI[k] && /^\d+([.,]\d+)?$/.test(s) ? `${s} ${DON_VI[k]}` : s });
   }
   return ra;
 }

@@ -276,9 +276,11 @@ export default async function Page({
             </Link>
           </nav>
           <h1 className="mt-2.5 text-3xl font-extrabold [text-wrap:balance] md:text-4xl">{title}</h1>
-          <p className="mt-2 flex items-center gap-1.5 text-white/70">
-            <IconPin className="h-4 w-4 text-brand" />
-            {loc} <span className="text-white/40">· #{listing.code}</span>
+          <p className="mt-2 flex items-start gap-1.5 text-white/70">
+            <IconPin className="mt-1 h-4 w-4 shrink-0 text-brand" />
+            <span>
+              {loc} <span className="whitespace-nowrap text-line-strong">· #{listing.code}</span>
+            </span>
           </p>
         </div>
       </div>
@@ -308,11 +310,11 @@ export default async function Page({
           {/* Khối thông số NỔI đè chân ảnh - chữ ký của Veedoo (docs/01) */}
           {stats.length > 0 && (
             <div className="mx-auto -mt-10 w-[92%] rounded-king bg-navy px-6 py-6 text-white shadow-[0_18px_40px_rgba(13,37,61,0.28)] md:-mt-14 md:w-[86%] md:px-10 md:py-8">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+              <div className="flex flex-wrap justify-center gap-x-8 gap-y-6 md:gap-x-14">
                 {stats.map(({ Icon, label, value }) => (
-                  <div key={label} className="text-center">
+                  <div key={label} className="min-w-[6.5rem] text-center">
                     <Icon className="mx-auto h-6 w-6 text-white" />
-                    <p className="eyebrow mt-2.5 text-brand">{label}</p>
+                    <p className="eyebrow mt-2.5 text-brand-soft">{label}</p>
                     <p className="mt-1 text-2xl font-extrabold">{value}</p>
                   </div>
                 ))}
@@ -331,12 +333,12 @@ export default async function Page({
                 alt={loc}
                 loading="lazy"
                 decoding="async"
-                className="aspect-[4/3] w-full rounded-shot object-cover"
+                className="aspect-[4/3] w-full rounded-shot bg-line object-cover"
               />
             ))}
           </div>
         )}
-        <p className="mt-3 text-xs text-mute/80">
+        <p className="mt-3 text-xs text-mute">
           {photos.length
             ? `${photos.length} ảnh thật của căn này. Cần thêm góc nào, nhắn Zalo tụi em gửi liền.`
             : `Ảnh thật của căn này gửi qua Zalo - nhắn “cho em xem hình #${listing.code}”.`}

@@ -35,14 +35,14 @@ export default function Header() {
           <Link
             href="/yeu-thich"
             aria-label="Tin đã lưu"
-            className="grid h-9 w-9 place-items-center rounded-full border border-line text-navy transition hover:border-brand hover:text-brand"
+            className="grid h-11 w-11 place-items-center rounded-full border border-line text-navy transition hover:border-brand hover:text-brand"
           >
             <IconHeart className="h-4.5 w-4.5" />
           </Link>
           <Link
             href="/tai-khoan"
             aria-label="Tài khoản"
-            className="grid h-9 w-9 place-items-center rounded-full border border-line text-navy transition hover:border-brand hover:text-brand"
+            className="grid h-11 w-11 place-items-center rounded-full border border-line text-navy transition hover:border-brand hover:text-brand"
           >
             <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" aria-hidden>
               <circle cx="12" cy="8" r="3.5" />
@@ -54,7 +54,7 @@ export default function Header() {
               hai cùng xanh nên trang có ba nút Zalo tranh nhau. */}
           <a
             href={zaloLink("header")}
-            className="nut nut-nho bg-zalo text-white hover:opacity-90"
+            className="nut nut-nho min-h-11 bg-zalo text-white hover:opacity-90"
           >
             Chat Zalo
           </a>
