@@ -788,6 +788,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz434 · Góc bo 14px theo King (12/11/2026)
+Chủ dự án 12/11 "Đổi góc bo sang 14px như King" — thay quyết định 2px ngày 19/10 (SRS-5.1zzzzzzz72).
+- Thang `--radius-*` trong `app/globals.css` (đè `rounded` / `-sm` / `-md` / `-lg` / `-xl` / `-2xl`… của Tailwind, cùng `king`, `shot`,
+  `zen-*`) = 14px; riêng `-xs` 4px. 14px là giá trị King dùng nhiều nhất (245 chỗ `border-radius` trong style.css).
+- Ba chỗ viết tay còn lại cũng 14px: ghim giá bản đồ, khung popup bản đồ, nút trong popup. `rounded-full` (avatar, chấm, nút viên thuốc) giữ.
+
 ### SRS-5.1zzzzzzz433 · 100 tag SEO theo quận / huyện Sài Gòn + Long An (12/11/2026)
 Chủ dự án 12/11 "Làm 100 tag" (yêu cầu `nhadat.cc website.docx` §Tag: 100 keyword BĐS hot nhất, mỗi keyword một URL).
 - Bản cũ: 64 tag, toàn Quận 5 theo PHƯỜNG CŨ (trước sáp nhập 2025), trong khi kho tin rải khắp thành phố.
@@ -844,8 +850,8 @@ web" và "Thay trang chủ trên điện thoại".
 - **Theme King** (RedKings, ThemeForest 9.5.5, gói theme trong thư mục ThemeForest của anh Luận): King là theme
   WordPress PHP, 225KB CSS toàn class bài viết / story, không có class nhà đất — chép nguyên file vào Next.js sẽ đè reset của Tailwind.
   Chép phần dùng được: bảng màu (đỏ #e60023, đen #13151d, nền #f6f7f9, viền #e8ebed, chữ phụ #687686 — đếm trong CSS), font Nunito (ghim
-  `app/fonts/`, OFL), kiểu khối story (lớp phủ tối dưới ảnh, nút tròn trắng có bóng, nhãn đỏ) vào `app/king.css`. Góc bo giữ 2px theo
-  quyết định 19/10. Nút Zalo giữ xanh Zalo.
+  `app/fonts/`, OFL), kiểu khối story (lớp phủ tối dưới ảnh, nút tròn trắng có bóng, nhãn đỏ) vào `app/king.css`. Góc bo lúc này giữ 2px theo
+  quyết định 19/10 (đổi sang 14px ở SRS-5.1zzzzzzz434). Nút Zalo giữ xanh Zalo.
 - **Feed điện thoại** (`components/FeedDoc.tsx`, chỉ dưới `md`): khung cao bằng màn hình trừ thanh trên, `scroll-snap` dọc, mỗi màn một
   căn: ảnh bìa bản gốc phủ kín, giá, diện tích · tầng · phòng ngủ · lối vào, đường / phường, cột nút phải: Lưu (tim, `FavButton`), Hỏi
   #mã (Zalo `zaloLink("#mã")`), Chia sẻ (`navigator.share`, không có thì chép link), Xem chi tiết. Màn đầu là ô tìm bằng câu nói + tag;

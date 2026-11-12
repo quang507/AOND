@@ -675,7 +675,7 @@ Thao tác huỷ hoại hàng loạt không đặt cạnh việc hằng ngày (kh
 CRM. Thẻ `rounded-lg`. Danh sách cần duyệt là DÒNG (một dòng thông tin, nút bên phải), không phải thẻ cao. Không trang nào được
 tràn ngang ở 390px.
 
-**Góc bo (19/10/2026)** [nguồn: chủ dự án 19/10/2026 — "mấy cái corner trên web đổi sang còn 2px hết cho sang"]: mọi góc bo trên web và CRM là **2px**, đặt ở MỘT chỗ — thang `--radius-*` trong `app/globals.css` (đè cả `rounded`, `-md`, `-lg`, `-xl`, `-2xl` của Tailwind). Không viết `rounded-[Npx]` hay `border-radius` tay. `rounded-full` chỉ cho hình tròn thật (avatar, chấm trạng thái, thanh tiến độ), không cho nút.
+**Góc bo (12/11/2026)** [nguồn: chủ dự án 12/11/2026 — "Đổi góc bo sang 14px như King"; thay quyết định 2px ngày 19/10]: mọi góc bo trên web và CRM là **14px** như theme King (riêng `rounded-xs` 4px), đặt ở MỘT chỗ — thang `--radius-*` trong `app/globals.css` (đè cả `rounded`, `-md`, `-lg`, `-xl`, `-2xl` của Tailwind). Không viết `rounded-[Npx]` hay `border-radius` tay. `rounded-full` chỉ cho hình tròn thật (avatar, chấm trạng thái, thanh tiến độ), không cho nút.
 
 ## 6.10 Accessibility
 

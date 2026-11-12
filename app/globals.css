@@ -5,7 +5,7 @@
      đỏ King        #e60023   (91 lần — nút, tab đang chọn, hover)
      đen King       #13151d   (chữ chính, nền tối)
      nền trang      #f6f7f9   (xám rất nhạt) · viền #e8ebed · chữ phụ #687686
-   Font King là Nunito. Góc bo của King là 14px nhưng GIỮ 2px theo quyết định 19/10 (SRS-5.1zzzzzzz72) — muốn bo kiểu King thì đổi
+   Font King là Nunito. Góc bo theo King 14px (SRS-5.1zzzzzzz434, 12/11/2026 — thay quyết định 2px 19/10 SRS-5.1zzzzzzz72); đổi ở
    nhóm --radius-* bên dưới. Nút / bong bóng Zalo vẫn xanh Zalo (--color-zalo), không theo đỏ King.
    Lịch sử: King tới 26/08 → Veedoo 26/08–12/11 → King lại từ 12/11. Phần King riêng cho feed điện thoại nằm ở `app/king.css`. */
 
@@ -34,28 +34,29 @@
   --color-surface-subtle: #f6f7f9;
   --color-surface-tint: #ffe5ea;
 
-  /* 19/10/2026 (SRS-5.1zzzzzzz72, chủ dự án: "mấy cái corner trên web đổi sang còn 2px hết cho sang"): MỌI góc bo 2px —
-     đè luôn thang mặc định của Tailwind nên rounded / -sm / -md / -lg / -xl / -2xl / -3xl đều ra 2px. Chỉ hình tròn thật
-     (avatar, chấm trạng thái, thanh tiến độ) còn rounded-full. Muốn đổi góc cả web thì đổi ở đây, không sửa từng lớp. */
-  --radius-xs: 2px;
-  --radius-sm: 2px;
-  --radius: 2px;
-  --radius-md: 2px;
-  --radius-lg: 2px;
-  --radius-xl: 2px;
-  --radius-2xl: 2px;
-  --radius-3xl: 2px;
-  --radius-4xl: 2px;
+  /* 12/11/2026 (SRS-5.1zzzzzzz434, chủ dự án: "Đổi góc bo sang 14px như King"): góc bo 14px như King (245 / ~400 chỗ
+     border-radius trong style.css của King là 14px). Thay quyết định 2px ngày 19/10 (SRS-5.1zzzzzzz72). Đè cả thang mặc
+     định của Tailwind nên rounded / -sm / -md / -lg / -xl / -2xl… đều ra 14px; riêng -xs 4px cho chi tiết rất nhỏ.
+     Hình tròn thật (avatar, chấm, thanh tiến độ) vẫn rounded-full. Muốn đổi góc cả web thì đổi ở đây, không sửa từng lớp. */
+  --radius-xs: 4px;
+  --radius-sm: 14px;
+  --radius: 14px;
+  --radius-md: 14px;
+  --radius-lg: 14px;
+  --radius-xl: 14px;
+  --radius-2xl: 14px;
+  --radius-3xl: 14px;
+  --radius-4xl: 14px;
 
-  --radius-king: 2px;
-  --radius-shot: 2px;
+  --radius-king: 14px;
+  --radius-shot: 14px;
 
-  --radius-zen-xs: 2px;
-  --radius-zen-sm: 2px;
-  --radius-zen-md: 2px;
-  --radius-zen-lg: 2px;
-  --radius-zen-xl: 2px;
-  --radius-zen-2xl: 2px;
+  --radius-zen-xs: 14px;
+  --radius-zen-sm: 14px;
+  --radius-zen-md: 14px;
+  --radius-zen-lg: 14px;
+  --radius-zen-xl: 14px;
+  --radius-zen-2xl: 14px;
 
   --shadow-zen-1: 0 1px 2px 0 rgba(15, 23, 42, 0.04), 0 1px 3px 0 rgba(15, 23, 42, 0.03);
   --shadow-zen-2: 0 2px 4px -1px rgba(15, 23, 42, 0.06), 0 4px 6px -1px rgba(15, 23, 42, 0.05);
@@ -212,7 +213,7 @@ details > summary:hover::before {
   background: #0b192c;
   color: #fff;
   border: 1.5px solid var(--color-brand);
-  border-radius: 2px;
+  border-radius: 14px;
   padding: 3px 8px;
   font: 700 11px/1.2 var(--font-king), system-ui, sans-serif;
   white-space: nowrap;
@@ -272,7 +273,7 @@ details > summary:hover::before {
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
 }
 .maplibregl-popup-content {
-  border-radius: 2px;
+  border-radius: 14px;
   padding: 10px 12px;
   box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.12);
   font-family: var(--font-king), system-ui, sans-serif;
@@ -289,7 +290,7 @@ details > summary:hover::before {
   display: inline-block;
   margin-top: 8px;
   padding: 4px 10px;
-  border-radius: 2px;
+  border-radius: 14px;
   background: var(--color-brand);
   color: #fff;
   font-size: 11px;
