@@ -1,6 +1,6 @@
 # LQC — Listing Quality Controller: bot hỏi gì, khi nào, đã chạy tới đâu
 
-Cập nhật 12/11/2026, đối chiếu code `main` @ 6d6f827 và dữ liệu Supabase cùng ngày. Nguồn: đặc tả anh Luận (4 mảng, 22 câu mẫu).
+Cập nhật 13/11/2026, đối chiếu code `main` @ 1fe9c89 và dữ liệu Supabase cùng ngày. Nguồn: đặc tả anh Luận (4 mảng, 22 câu mẫu).
 
 LQC là "người chăm tin" sau khi tin lên web. Nó xem tin còn thiếu gì để bán được, rồi hỏi chủ nhà **từng câu một, ngắn, khéo** — như một
 quản lý rảo qua các chat. Bot không đọc thuộc lòng 22 câu mẫu: mỗi lần nhắn, AI tự viết câu theo đúng việc cần hỏi và theo chuyện đang nói.
@@ -12,15 +12,22 @@ Ký hiệu: **✅ đã chạy** · **🟡 có một phần** · **❌ chưa có*
 ## 1. Tình hình thật hôm nay
 
 - Hai vòng nền đang bật trên máy 146 (không có biến tắt nào trong `.env`): **Image LQC** 30 phút một lượt, **Hỏi sau đăng** 10 phút một lượt.
-- LQC chỉ nhắn được chủ nhà **đăng tin qua chat Zalo với bot**. Hiện có **1 / 244** tin như vậy (#56F988C9). 243 tin còn lại nhập từ nguồn
-  khác, không có Zalo chủ nhà nên LQC chưa với tới.
-- Tin #56F988C9 đã nhận: xin ảnh (2 lần), "sổ đứng tên ai", 1 tin Image LQC xin ảnh mặt tiền thấy trọn 6 tầng. Chủ chưa đáp hai tin cuối,
-  nên vòng nền **đang chờ đúng luật** (mục 3). Câu kế tiếp trong hàng: hỏi loại giấy tờ → đoạn đường hợp kinh doanh gì / chỗ đậu xe → gửi
-  2–3 căn đang rao gần để so.
+- LQC chỉ nhắn được chủ nhà **đăng tin qua chat Zalo với bot**. Hiện có **2 / 244** tin như vậy (#56F988C9, #1FBB8897). 242 tin còn lại
+  nhập từ nguồn khác, không có Zalo chủ nhà nên LQC chưa với tới.
+- Tin #56F988C9 đã nhận: xin ảnh (2 lần), "sổ đứng tên ai" (21:36 tối 11/11), 1 tin Image LQC xin ảnh mặt tiền thấy trọn 6 tầng (8:34 sáng
+  12/11). Chủ chưa đáp hai tin cuối, nên vòng nền **đang chờ đúng luật** (mục 3): chờ 24 giờ rồi hỏi câu kế, chưa tới mức "thôi hẳn". Câu kế
+  tiếp trong hàng: hỏi loại giấy tờ → đoạn đường hợp kinh doanh gì / chỗ đậu xe → gửi 2–3 căn đang rao gần để so.
+- **Bridge Zalo bị "điếc" từ 21:36 tối 11/11 tới 19:43 tối 12/11**: bot vẫn gửi được nhưng không nhận được tin nào. Kết nối nghe của Zalo đóng
+  mà bridge không biết. Câu "sổ đứng tên ai" đi ra đúng lúc bắt đầu điếc, nên **chủ có đáp trong khoảng đó thì bot không nhận được**. Đã sửa:
+  kết nối nghe đóng thì bridge tự đăng nhập lại bằng phiên đã lưu (SRS-449).
 - Đã thấy bot nói thật với chủ: **mảng Ảnh**. Pháp lý, Lợi thế, So sánh chưa có chủ nhà thật nào đi tới lượt đó, nhưng **bắn thử production 12/11**
   (chủ thử nhà mặt tiền, đáp ngắn từng câu) ra đủ chuỗi: xin ảnh mặt tiền → ảnh sổ ("chỉ để kiểm, không đăng") → đứng tên → thế chấp → quy
   hoạch → "cách Bệnh viện Đa khoa Gò Vấp khoảng 250 m, đoạn này buôn bán gì thì hợp?" → đậu xe → gửi 3 căn mặt tiền gần kèm đơn giá / link →
   thương lượng → bán gấp hay thong thả. Hai lỗi lượt đầu (so sánh bị bỏ khi tin chưa có toạ độ; câu đáp đậu xe bị bỏ) đã sửa — SRS-441.
+- Bắn thử thêm tối 12/11 ra hai lỗi, đã sửa:
+  - **Căn hộ trong dự án không lên web** (bot đòi số nhà của căn hộ) → không tới được LQC. Giờ phường lấy theo toạ độ dự án — SRS-446.
+  - **Chủ đáp "ok" cho câu hỏi chọn** ("giữ cứng hay thương lượng", "thuế phí bên nào chịu") → bot hỏi lại hoặc tự đoán. Giờ bot để ý đó
+    trống, nhận nhẹ rồi sang câu kế ("Phần giá để khi nào có khách hỏi, em hỏi lại anh sau.") — SRS-450.
 
 ## 2. Khi nào bot hỏi
 
@@ -54,6 +61,7 @@ Câu tới chủ bằng hai đường: chủ đang nhắn thì bot đáp xong h�
 | Mỗi căn / ngày | tối đa 3 tin chủ động |
 | Mỗi căn / tổng sau đăng | tối đa **10 câu** (tính cả tin Image LQC) — chạm trần thì phần cuối hàng (giá, xem nhà, chi tiết) bị cắt |
 | Mỗi tin | đúng MỘT câu hỏi; AI viết ra hơn một câu hỏi hay quá dài thì không gửi |
+| Chủ đáp chung ("ok", "ừ", "được") cho câu hỏi chọn | coi là chưa chọn: không hỏi lại, không đoán, để trống tới khi có khách hỏi (SRS-450) |
 | Xưng hô | gọi chủ đúng như chat đang gọi (giữ cả khi máy khởi động lại — SRS-440) |
 | Giọng | nói miệng như nhắn Zalo người quen ("Mặt tiền 7m vậy là ngon luôn."), nhờ vả nhẹ, không thúc ép |
 | Không bịa | chỉ nói số, căn, tiện ích, giao dịch có thật trong dữ liệu |
@@ -103,7 +111,7 @@ Câu tới chủ bằng hai đường: chủ đang nhắn thì bot đáp xong h�
 
 ## 5. Còn thiếu để LQC phát huy
 
-1. **Nhiều chủ nhà đăng qua Zalo hơn** — LQC chỉ chăm được tin có Zalo chủ nhà (hiện 1 / 244).
+1. **Nhiều chủ nhà đăng qua Zalo hơn** — LQC chỉ chăm được tin có Zalo chủ nhà (hiện 2 / 244).
 2. **Ghi giao dịch thật** — admin chuyển tin "đã cọc / đã chốt" kèm giá thì mở được 4.3 · 4.4 và về sau 4.6.
 3. **Che thông tin trên ảnh sổ** — nếu muốn bot được hứa "em xoá thông tin rồi mới gửi" (2.2).
 4. **Báo cáo giá khu vực** (4.6).
