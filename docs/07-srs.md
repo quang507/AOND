@@ -788,6 +788,28 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz447 · Ba hiệu ứng của theme King: ảnh hiện dần, thẻ nhấc khi rê chuột, tự tải thêm tin khi cuộn (12/11/2026)
+
+Chủ dự án 12/11/2026 "lấy hết đi", sau khi soát theme King: King có ảnh hiện dần (`.king-lazy`), cuộn vô tận (jquery-ias),
+hiệu ứng rê chuột; aond chưa lấy cái nào. King KHÔNG có kiểu khối trượt vào khi cuộn (AOS/WOW) nên aond cũng không thêm.
+
+- **Ảnh hiện dần** — lớp `.anh-dan` (app/globals.css): ảnh mờ tới khi tải xong rồi hiện trong 0,5 giây. Cờ `data-da-tai` do một
+  script nhỏ trong `<head>` (app/layout.tsx) gắn, nghe sự kiện load/error ở pha bắt của document nên không chờ React và không kẹt
+  với ảnh đã có trong bộ nhớ đệm. Chỉ ẩn trong `@media (scripting: enabled)`: tắt JS thì ảnh hiện thường. Dùng cho ảnh thẻ tin,
+  ảnh feed từ căn thứ 3, ảnh nhỏ trang căn và trang dự án. KHÔNG dùng cho ảnh lớn đầu trang (ảnh mờ không được tính LCP).
+- **Thẻ nhấc khi rê** — `ListingCard`: `motion-safe:hover:-translate-y-0.5` (2px, chỉ máy có chuột), phóng ảnh khi rê thêm
+  `motion-safe:`.
+- **Tự tải thêm** — `/mua-ban`, `/cho-thue` và trang tag. API mới `GET /api/tin?deal=…&<bộ lọc>&trang=N` hoặc `?tag=<slug>&trang=N`
+  trả `{tin, anh, tongTrang}`, CDN giữ 10 phút. Đọc bộ lọc + truy vấn tách ra `lib/duyet-tin.ts` (từ ListingBrowse) và
+  `lib/tin-tag.ts` (từ app/[tag]/page.tsx) để trang và API dùng chung một hàm, một khoá cache. Hook `useTaiThem`
+  (components/TaiThem.tsx): tới cách cuối danh sách 600px thì tự lấy trang kế, **tự động tối đa 3 lần** rồi phải bấm "Xem thêm
+  tin" (để còn chạm được chân trang). Thẻ nối thêm trượt lên 8px (`.the-vao`). Chưa chạy JS thì vẫn là link "Trang sau" / "Xem cả
+  N tin trong kho" như cũ.
+- **Sửa kèm:** truy vấn danh sách và tag thêm khoá phụ `order("id")`. Tin mẫu cùng `created_at` khiến thứ tự giữa hai lượt gọi
+  không cố định: nối trang 1–4 ra 5 thẻ trùng trên 96 (đo trên máy), nghĩa là cũng sót 5 tin. Sau sửa: 8 trang /mua-ban = 182 tin,
+  182 mã khác nhau. Khoá cache `listing-browse-v3` → `v4`.
+- Máy giảm chuyển động (`prefers-reduced-motion`): tắt hiện dần, tắt trượt thẻ, vòng chờ quay chậm.
+
 ### SRS-5.1zzzzzzz446 · Căn trong dự án lấy phường theo toạ độ dự án; chỉ hỏi số nhà khi có tên đường (12/11/2026)
 Bắn thử 12/11 (`thu-lqc-1711da`): căn hộ Vinhomes Grand Park tòa S5.02, đủ ô, chủ duyệt "đăng đi em" → bot "Anh cho em xin số nhà của căn để em
 định vị đúng trên bản đồ. Tin chưa lên web"; tin kẹt `cho_thong_tin`, LQC sau đăng không chạy. Chủ dự án: "sửa luôn, sửa từ gốc".

@@ -209,7 +209,42 @@ details > summary:hover::before {
   border-color: var(--color-brand);
 }
 
+/* SRS-5.1zzzzzzz447 — ba hiệu ứng lấy từ theme King, làm nhẹ hơn bản gốc:
+   · .anh-dan: ảnh mờ tới khi tải xong rồi hiện dần (King: .king-lazy, 0.6s). Cờ data-da-tai do script nhỏ trong <head>
+     (app/layout.tsx) gắn. Chỉ ẩn khi trình duyệt có chạy script — tắt JS thì ảnh hiện bình thường, không kẹt mờ.
+     Không dùng cho ảnh lớn đầu trang (fetchPriority high): ảnh mờ không được tính LCP, làm chậm điểm tốc độ.
+   · .the-vao: thẻ tin nối thêm khi cuộn trượt lên 8px và hiện dần.
+   · .vong-cho: vòng xoay trên nút "Đang tải". */
+@media (scripting: enabled) {
+  .anh-dan:not([data-da-tai]) {
+    opacity: 0;
+  }
+}
+.anh-dan {
+  transition: opacity 0.5s ease, transform 0.3s ease;
+}
+.the-vao {
+  animation: the-vao 0.45s cubic-bezier(0.2, 1, 0.22, 1) both;
+}
+@keyframes the-vao {
+  from { opacity: 0; transform: translateY(8px); }
+}
+.vong-cho {
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: vong-cho 0.7s linear infinite;
+}
+@keyframes vong-cho {
+  to { transform: rotate(360deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .anh-dan { transition: none; }
+  .the-vao { animation: none; }
+  .vong-cho { animation-duration: 1.6s; }
   html {
     scroll-behavior: auto;
   }

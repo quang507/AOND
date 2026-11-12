@@ -182,7 +182,8 @@ export default async function DuAnPage({
                             alt={p.name}
                             loading="lazy"
                             decoding="async"
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            suppressHydrationWarning
+                            className="anh-dan w-full h-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
                           />
                         ) : (
                           <span className="grid h-full w-full place-items-center text-xs text-slate-400">Chưa có ảnh</span>

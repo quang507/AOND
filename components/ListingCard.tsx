@@ -8,10 +8,13 @@ export default function ListingCard({
   listing,
   featured,
   photo,
+  moi,
 }: {
   listing: CardRow;
   featured?: boolean;
   photo?: string | null;
+  /** SRS-5.1zzzzzzz447: thẻ vừa nối thêm khi cuộn — hiện lên nhẹ thay vì bật ra. */
+  moi?: boolean;
 }) {
   const code = listing.code ?? listing.id.slice(0, 8);
   const title =
@@ -23,7 +26,9 @@ export default function ListingCard({
   const areaStr = formatArea(listing.area_m2);
 
   return (
-    <div className="group flex flex-col rounded-lg bg-white border border-slate-200 overflow-hidden shadow-xs hover:shadow-md hover:border-slate-300 transition-all duration-200">
+    // SRS-5.1zzzzzzz447: rê chuột thì thẻ nhấc lên 2px (hover: của Tailwind 4 chỉ chạy trên máy có chuột, motion-safe: bỏ khi máy
+    // bật giảm chuyển động) — giống thẻ bài của theme King, nhưng nhẹ hơn: thẻ tin nằm dày 4 cột, nhấc mạnh thì cả lưới nhảy.
+    <div className={`group flex flex-col rounded-lg bg-white border border-slate-200 overflow-hidden shadow-xs hover:shadow-md hover:border-slate-300 transition-all duration-200 motion-safe:hover:-translate-y-0.5${moi ? " the-vao" : ""}`}>
       {/* Thumbnail */}
       <Link href={`/nha-dat/${encodeURIComponent(code)}`} className="relative aspect-[16/10] overflow-hidden bg-slate-100 block">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -32,7 +37,8 @@ export default function ListingCard({
           alt={title}
           loading="lazy"
           decoding="async"
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          suppressHydrationWarning
+          className="anh-dan w-full h-full object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
         />
         {/* Deal Tag */}
         {listing.deal && (

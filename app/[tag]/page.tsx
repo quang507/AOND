@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import ListingCard from "@/components/ListingCard";
+import TagTaiThem from "@/components/TagTaiThem";
 import { coverByCode } from "@/lib/photos";
-import { CARD_COLS, supabase, type ListingCard as CardRow, TRANG_THAI_HIEN } from "@/lib/supabase";
+import type { ListingCard as CardRow } from "@/lib/supabase";
+import { layTinTag, MOI_TRANG_TAG } from "@/lib/tin-tag";
 import { formatPrice, zaloLink } from "@/lib/format";
 import { GIOI_THIEU, soLieuKhu, trieu, type SoLieuKhu } from "@/lib/khu";
 import { khuBySlug, relatedTags, tagBySlug, tagCuChuyen, type KhuInfo, type TagDef } from "@/lib/tags";
@@ -24,27 +26,6 @@ export const dynamicParams = true;
 
 export function generateStaticParams() {
   return [];
-}
-
-const MAX = 24;
-
-async function layTinTag(t: TagDef) {
-  let q = supabase
-    .from("listings")
-    .select(CARD_COLS, { count: "exact" })
-    .eq("deal", t.filter.deal)
-    .in("status", TRANG_THAI_HIEN) // FR-139: chỉ tin đang lên kệ
-    .not("price_raw", "is", null)
-    .neq("price_raw", "")
-    .gt("price_vnd", 0);
-  if (t.filter.types?.length) q = q.in("property_type", t.filter.types);
-  if (t.filter.access?.length) q = q.in("access_type", t.filter.access);
-  if (t.filter.priceMax) q = q.lt("price_vnd", t.filter.priceMax);
-  if (t.filter.bedroomsMin) q = q.gte("bedrooms", t.filter.bedroomsMin);
-  if (t.filter.legal?.length) q = q.in("legal_status", t.filter.legal);
-  if (t.filter.districts?.length) q = q.in("district", t.filter.districts); // SRS-5.1zzzzzzz433: IN, không ilike ("Quận 1" ≠ Quận 10)
-  const { data, count } = await q.order("created_at", { ascending: false }).limit(MAX);
-  return { rows: (data ?? []) as CardRow[], total: count ?? 0 };
 }
 
 // Đoạn mô tả 80–120 từ (IA §4.4) — sinh từ keyword + số liệu kho, không bịa
@@ -128,7 +109,7 @@ export default async function Page({ params }: { params: Promise<{ tag: string }
     notFound();
   }
 
-  const { rows, total } = await layTinTag(t);
+  const { rows, total } = await layTinTag(t.slug);
   const khu = khuBySlug(t.parts.area);
   const so = khu ? await soLieuKhu(khu, t.filter.deal) : null;
   const covers = await coverByCode(rows.map((l) => l.code));
@@ -157,11 +138,28 @@ export default async function Page({ params }: { params: Promise<{ tag: string }
         </div>
 
         {rows.length > 0 ? (
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {rows.map((l) => (
-              <ListingCard key={l.id} listing={l} photo={l.code ? covers[l.code] : undefined} />
-            ))}
-          </div>
+          <>
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {rows.map((l) => (
+                <ListingCard key={l.id} listing={l} photo={l.code ? covers[l.code] : undefined} />
+              ))}
+            </div>
+            {/* SRS-5.1zzzzzzz447: cuộn tới cuối thì nối thêm tin (24 tin đầu vẫn server dựng). Chưa chạy JS thì còn link sang kho. */}
+            <TagTaiThem
+              slug={t.slug}
+              dau={rows}
+              tongTrang={Math.ceil(total / MOI_TRANG_TAG)}
+              tongTin={total}
+              luoi="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+              hetJs={
+                <p className="text-center">
+                  <Link href={t.quan ? `${goc}?quan=${encodeURIComponent(t.quan)}` : goc} className="font-semibold text-brand hover:underline">
+                    Xem cả {total} tin trong kho →
+                  </Link>
+                </p>
+              }
+            />
+          </>
         ) : (
           // Trang tag rỗng KHÔNG 404 (IA-P1: không bao giờ là ngõ cụt)
           <div className="mt-8 rounded-king border border-line bg-cream p-8 text-center">
@@ -178,13 +176,6 @@ export default async function Page({ params }: { params: Promise<{ tag: string }
           </div>
         )}
 
-        {total > rows.length && (
-          <p className="mt-6 text-center">
-            <Link href={t.quan ? `${goc}?quan=${encodeURIComponent(t.quan)}` : goc} className="font-semibold text-brand hover:underline">
-              Xem cả {total} tin trong kho →
-            </Link>
-          </p>
-        )}
 
         {/* IA-P4: link chéo 6–8 tag liên quan */}
         <section className="mt-12">

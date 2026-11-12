@@ -47,7 +47,8 @@ function ManCan({ l, anh, thu, tong }: { l: CardRow; anh?: string; thu: number; 
         alt={ten}
         loading={thu <= 2 ? "eager" : "lazy"}
         decoding="async"
-        className="feed-anh"
+        suppressHydrationWarning
+        className={thu <= 2 ? "feed-anh" : "feed-anh anh-dan"}
       />
       <div className="feed-phu" />
 

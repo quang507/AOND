@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import ListingCard from "@/components/ListingCard";
 import MapView from "@/components/MapView";
+import { NutTaiThem, useTaiThem } from "@/components/TaiThem";
 import type { ListingCard as CardRow, MapRow } from "@/lib/supabase";
 
 export default function BrowseWithMap({
@@ -13,6 +14,11 @@ export default function BrowseWithMap({
   filterSection,
   paginationSection,
   q,
+  api,
+  trang,
+  tongTrang,
+  dauUrl,
+  truoc,
 }: {
   listings: CardRow[];
   covers: Record<string, string>;
@@ -21,19 +27,32 @@ export default function BrowseWithMap({
   filterSection: React.ReactNode;
   paginationSection: React.ReactNode;
   q?: string;
+  /** SRS-5.1zzzzzzz447: nguồn trang kế cho cuộn vô tận (/api/tin?deal=…&bộ lọc), trang đang đứng, tổng số trang. */
+  api: string;
+  trang: number;
+  tongTrang: number;
+  dauUrl?: string;
+  /** Số tin của các trang trước trang đang đứng (vào thẳng ?trang=3 thì đã qua 48 tin). */
+  truoc: number;
 }) {
   const [showMap, setShowMap] = useState(false);
+  const t = useTaiThem(api, trang, tongTrang, listings);
+  const tatCa = useMemo(() => [...listings, ...t.them], [listings, t.them]);
+  const anh = useMemo(() => ({ ...covers, ...t.anh }), [covers, t.anh]);
+  const soDau = listings.length;
+  const cuoiDanhSach =
+    t.coJs && tongTrang > 1 ? <NutTaiThem t={t} dangXem={truoc + tatCa.length} tongTin={total} dauUrl={dauUrl} /> : paginationSection;
 
   // Map rows from listings
   // useMemo: MapView dựng lại ghim + canh khung mỗi khi mảng đổi danh tính (SRS-5.1zzzzzzz206).
   const mapRows: MapRow[] = useMemo(
     () =>
-      listings.map((l) => ({
+      tatCa.map((l) => ({
         ...l,
         lat: (l as unknown as { lat?: number }).lat ?? null,
         lng: (l as unknown as { lng?: number }).lng ?? null,
       })),
-    [listings],
+    [tatCa],
   );
 
   return (
@@ -101,17 +120,17 @@ export default function BrowseWithMap({
           {/* Left Column: Listings in 2-column grid */}
           <div className="w-full lg:w-[55%] xl:w-[57%] flex flex-col">
             <div className="mb-3 text-xs text-slate-500 font-medium">
-              Hiển thị <strong className="text-navy">{listings.length}</strong> / {total} bất động sản
+              Hiển thị <strong className="text-navy">{tatCa.length}</strong> / {total} bất động sản
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {listings.map((l) => (
-                <ListingCard key={l.id} listing={l} photo={l.code ? covers[l.code] : null} />
+              {tatCa.map((l, i) => (
+                <ListingCard key={l.id} listing={l} photo={l.code ? anh[l.code] : null} moi={i >= soDau} />
               ))}
             </div>
 
             {/* Pagination */}
-            <div className="mt-8">{paginationSection}</div>
+            <div className="mt-8">{cuoiDanhSach}</div>
           </div>
 
           {/* Right Column: Sticky Interactive Map with Close Button (matching Image 2) */}
@@ -135,17 +154,17 @@ export default function BrowseWithMap({
         /* Full width 4-column grid */
         <div>
           <div className="mb-3 text-xs text-slate-500 font-medium">
-            Hiển thị <strong className="text-navy">{listings.length}</strong> / {total} bất động sản
+            Hiển thị <strong className="text-navy">{tatCa.length}</strong> / {total} bất động sản
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
-            {listings.map((l) => (
-              <ListingCard key={l.id} listing={l} photo={l.code ? covers[l.code] : null} />
+            {tatCa.map((l, i) => (
+              <ListingCard key={l.id} listing={l} photo={l.code ? anh[l.code] : null} moi={i >= soDau} />
             ))}
           </div>
 
           {/* Pagination */}
-          <div className="mt-8">{paginationSection}</div>
+          <div className="mt-8">{cuoiDanhSach}</div>
         </div>
       )}
     </div>

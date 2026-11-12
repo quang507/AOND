@@ -56,6 +56,17 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi" className={`${nunitoLatin.variable} ${nunitoViet.variable} ${nunitoLatinExt.variable}`}>
+      <head>
+        {/* SRS-5.1zzzzzzz447: ảnh .anh-dan hiện dần khi tải xong (kiểu theme King). Nghe sự kiện load ở pha bắt của document,
+            chạy trước khi trình duyệt đọc tới thẻ <img> nào — không chờ React, ảnh đã có trong bộ nhớ đệm cũng không bị kẹt mờ.
+            Lỗi tải cũng gắn cờ để khung không trống trơn. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'function f(e){var t=e.target;if(t&&t.classList&&t.classList.contains("anh-dan"))t.setAttribute("data-da-tai","")}document.addEventListener("load",f,true);document.addEventListener("error",f,true);',
+          }}
+        />
+      </head>
       <body className="font-sans antialiased">
         <Header />
         <main className="min-h-screen">{children}</main>

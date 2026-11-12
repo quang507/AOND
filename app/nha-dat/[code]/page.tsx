@@ -333,7 +333,8 @@ export default async function Page({
                 alt={loc}
                 loading="lazy"
                 decoding="async"
-                className="aspect-[4/3] w-full rounded-shot bg-line object-cover"
+                suppressHydrationWarning
+                className="anh-dan aspect-[4/3] w-full rounded-shot bg-line object-cover"
               />
             ))}
           </div>

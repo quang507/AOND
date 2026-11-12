@@ -213,8 +213,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {anh.slice(0, 8).map((u, i) => (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img key={u} src={u} alt={`${p.name} ${i + 1}`} loading={i ? "lazy" : "eager"} decoding="async"
-                className={`w-full rounded-shot object-cover ${i === 0 ? "col-span-2 row-span-2 aspect-[4/3]" : "aspect-[4/3]"}`} />
+              <img key={u} src={u} alt={`${p.name} ${i + 1}`} loading={i ? "lazy" : "eager"} decoding="async" suppressHydrationWarning
+                className={`w-full rounded-shot object-cover ${i ? "anh-dan " : ""}${i === 0 ? "col-span-2 row-span-2 aspect-[4/3]" : "aspect-[4/3]"}`} />
             ))}
           </div>
         ) : (
