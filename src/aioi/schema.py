@@ -329,7 +329,7 @@ O_SAU_DANG: frozenset[str] = frozenset(k for _, cum in CUM_SAU_DANG for k in cum
 ANH_TIN_DEP = 6
 # SRS-5.1zzzzzzz432 (lỗ hổng 5): trần CHUNG số câu hỏi / tin xin sau khi tin lên web cho mỗi căn — đếm mốc `sau:*` (lượt chat, tin nhắc 10
 # phút, vòng nền hỏi sau đăng) cộng tin Image LQC đã nhắn (`_qc_da_nhan`). Chạm trần thì thôi hỏi; cụm xếp theo ưu tiên (ảnh → pháp lý →
-# hợp đồng thuê → lợi thế → so sánh → giá …) nên phần bị cắt là phần ít quan trọng. Chủ dự án chưa chốt số — mặc định 10, đổi bằng env.
+# hợp đồng thuê → lợi thế → so sánh → giá …) nên phần bị cắt là phần ít quan trọng. Chủ dự án chốt 12/11/2026: "Giữ 10".
 TRAN_CAU_SAU_DANG = int(os.environ.get("TRAN_CAU_SAU_DANG", "10"))
 CUM_XIN_ANH = ("anh", "anh_lan_2")
 

@@ -796,8 +796,8 @@ Chủ dự án 12/11 "Làm tiếp 4–7" (4 lỗ hổng logic trong bản soát 
   chưa đáp → chờ 24 giờ; đã có tin chủ động chủ chưa đáp (nhắc ảnh, QC ảnh, tin này) → chờ 24 giờ, tối đa 2 tin liền; mỗi căn ≤ 3 tin nền
   / ngày (`_sau_nhac_ngay`). Model hụt hoặc viết hơn một câu hỏi → không gửi.
 - **Lỗ hổng 5 — không có trần chung:** `schema.TRAN_CAU_SAU_DANG` = **10** câu / căn (env), đếm mốc `sau:*` + tin Image LQC (`_qc_da_nhan`);
-  chạm trần thì `cum_sau_dang` trả None cho cả lượt chat lẫn vòng nền. Cụm xếp theo ưu tiên nên phần bị cắt là phần ít quan trọng. **Số 10
-  là mặc định, chủ dự án chưa chốt** (câu 4 đặc tả LQC).
+  chạm trần thì `cum_sau_dang` trả None cho cả lượt chat lẫn vòng nền. Cụm xếp theo ưu tiên nên phần bị cắt là phần ít quan trọng. **Chủ dự án
+  chốt 12/11: "Giữ 10"** (câu 4 đặc tả LQC).
 - **Lỗ hổng 6 — trạng thái pháp lý AI không lên cột:** `supabase_store.ma_phap_ly_theo_ai` — `co_so` → `legal_status` sổ hồng (giữ
   riêng / chung nếu chữ khách nói), `hdmb` → `hdmb`, `mo_ho` → không ghi; `hoan_cong_theo_ai` → `has_completion` (`_hoan_cong`, sổ không có
   nhà là chưa hoàn công). Migration `20261112e` chép bù (1FBB8897: có sổ mà cột trống → `so_hong`).

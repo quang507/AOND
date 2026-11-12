@@ -19,7 +19,7 @@ Ký hiệu: **✅ có sẵn** · **🟡 có một phần** · **❌ chưa có**.
 | Thiếu / nghi thì **hỏi lại**, không trừ điểm, không chê | chủ dự án 12/11, SRS-424 |
 | AI đọc theo nghĩa, code không dò từ khoá | `chan-ly-di-tu-goc` |
 | **Không bịa**: chỉ nói số, giao dịch, tiện ích có thật trong dữ liệu | CLAUDE.md repo, SRS-390/394 |
-| Hiện Image LQC nhắn tối đa **2 tin / căn** (`TOI_DA_NHAN_MOI_CAN`) | SRS-422 — trần chung 4 mảng: SRS-432 (10 câu / căn, mặc định) |
+| Hiện Image LQC nhắn tối đa **2 tin / căn** (`TOI_DA_NHAN_MOI_CAN`) | SRS-422 — trần chung 4 mảng: SRS-432 (10 câu / căn, chủ dự án chốt 12/11) |
 
 **Thứ tự ưu tiên khi nhiều mảng cùng muốn hỏi:** ảnh → pháp lý → lợi thế → so sánh giá. Một hàng đợi chung, không phải 4 vòng nhắn riêng.
 
@@ -77,5 +77,5 @@ Ký hiệu: **✅ có sẵn** · **🟡 có một phần** · **❌ chưa có**.
    (SRS-426: ảnh sổ vào kho riêng, lời hứa "chỉ để em kiểm, không đăng"); chưa có bước che thông tin.
 2. ~~**Ảnh xấu (1.4):** chủ đồng ý từng tấm mới ẩn, hay QC tự ẩn rồi báo chủ?~~ — **Đã làm: chủ đồng ý từng tấm mới ẩn** (SRS-425).
 3. ~~**Giá (4.5):** phía bán, bot được nói giá chủ rao cao / thấp so với khu không, mức nào?~~ — **Đã quyết 12/11: được, nói nhẹ** (SRS-429).
-4. **Trần tin nhắn:** LQC 4 mảng chung tối đa bao nhiêu tin / căn / tuần? — **Đang dùng mặc định** (SRS-432): 10 câu hỏi sau đăng / căn
-   (tính cả 2 tin Image LQC), tin chủ động ≤ 3 / căn / ngày, chủ không đáp 2 tin liền thì thôi. Chủ dự án chốt số khác thì đổi env.
+4. ~~**Trần tin nhắn:** LQC 4 mảng chung tối đa bao nhiêu tin / căn / tuần?~~ — **Đã quyết 12/11: "Giữ 10"** (SRS-432): 10 câu hỏi sau
+   đăng / căn (tính cả 2 tin Image LQC), tin chủ động ≤ 3 / căn / ngày, chủ không đáp 2 tin liền thì thôi.
