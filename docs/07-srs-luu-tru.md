@@ -73,6 +73,19 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz468 · Tính cách bot tách theo vai: nhận thông tin tin rao / tư vấn bán hàng — bỏ danh sách nỗi lo kể sẵn (13/11/2026)
+Chủ dự án 13/11: bot "kiểu tưởng người ta sợ nó rao không đúng giá"; log cùng ngày có câu bot tự trấn an "Tin vẫn rao đúng 8,8 tỉ chị muốn".
+Gốc: khối Nhân vật (SRS-5.1zzzzzzz381) liệt kê sẵn "nỗi lo bán hớ, thủ tục phức tạp, áp lực tài chính, lo lắng pháp lý", và đoạn HIỂU CHỦ NHÀ
+của prompt gọn phía bán dạy "Chủ nhà hay lo bị ép giá, bán hớ… đáp bằng tin rao theo giá chủ muốn" — model gán nỗi lo cho khách dù khách không nói.
+- **Hai tính cách, chữ của chủ dự án** (`khoi_nhan_vat` chọn theo `voi_ai`): phía bán = "bot NHẬN THÔNG TIN TIN RAO" + hai ý chung (đáp điều
+  khách quan tâm trước rồi mới tới việc cần hỏi; khách bận / do dự thì nói nhẹ, để khách tự quyết nhịp) + `HIEU_CHU_NHA`; phía mua = "bot TƯ VẤN
+  BÁN HÀNG" + hai ý chung + `HIEU_KHACH_MUA` (việc bên em làm thật: gợi căn khớp kèm link, hỏi chủ điều chưa có, báo căn mới). Lời không rõ vai
+  (đọc tài liệu dự án, đọc ảnh) chỉ có hai ý chung.
+- **Prompt gọn phía bán** (`LEAN_SYSTEM_PROMPT`, đang bật): đoạn HIỂU CHỦ NHÀ thay bằng `HIEU_CHU_NHA` (một nguồn với khối trên); dòng nhân vật thêm
+  "bot NHẬN THÔNG TIN TIN RAO". Câu "tin vẫn rao theo giá chủ muốn" chỉ còn ở khối định giá — khối chỉ bật khi chủ tự hỏi giá.
+- **Token** (đếm bằng `count_tokens`, claude-sonnet-5-5): phiếu bán 4.194 → 4.100 (−94) · prompt gọn bán 2.565 → 2.493 (−72) · phần cố định
+  mua 3.575 → 3.475 (−100) · khối nhân vật lời không rõ vai 441 → 184 (−257). Test `test_nhan_vat_381.py`, `test_toi_uu_ky_gui_391.py` sửa theo (chưa chạy).
+
 ### SRS-5.1zzzzzzz467 · Bridge chỉ dò sống khi im 30 phút — hết vòng tự cắt 12 phút (13/11/2026)
 Chủ dự án 13/11 "sao zalo bridge bây giờ lâu lâu nó tắt". Log hai số: sau SRS-5.1zzzzzzz459 bridge tự cắt rồi nối lại **đúng 12 phút một
 lần** dù tin vẫn về. Máy chủ Zalo chỉ đáp lệnh 510 trong khoảng ~10 phút đầu của mỗi kết nối (theo tuổi kết nối; dò lúc 3 giây và 5 phút được đáp,

@@ -33,22 +33,25 @@ Sau đợt khảo sát và phân tích toàn diện kho tính năng của đối
    - Từ trên 1 tỷ đến 3 tỷ: 1.000.000 đ + 0,06% phần vượt 1 tỷ
    - Từ trên 3 tỷ đến 5 tỷ: 2.200.000 đ + 0,05% phần vượt 3 tỷ
    - Từ trên 5 tỷ đến 10 tỷ: 3.200.000 đ + 0,04% phần vượt 5 tỷ
-   - Từ trên 10 tỷ đến 100 tỷ: 5.200.000 đ + 0,02% phần vượt 10 tỷ
-   - Trên 100 tỷ: 23.200.000 đ + 0,01% phần vượt 100 tỷ (tối đa 70.000.000 đ/trường hợp)
-4. **Lệ phí thẩm định hồ sơ & cấp đổi đăng bộ**: Tỉnh/thành quy định (ước tính 1.500.000 – 2.500.000 đ).
+   - Từ trên 10 tỷ đến 100 tỷ: 5.200.000 đ + 0,03% phần vượt 10 tỷ
+   - Trên 100 tỷ: 32.200.000 đ + 0,02% phần vượt 100 tỷ (tối đa 70.000.000 đ/trường hợp)
+   - *(Hai bậc trên 10 tỷ sửa 08/11/2026 theo code — bản 06/11 ghi 0,02% và 23.200.000 đ + 0,01% là sai; một nguồn `phap_ly._BIEU_CONG_CHUNG` / `phap_ly.phi_cong_chung`.)*
+4. **Lệ phí thẩm định hồ sơ & cấp đổi đăng bộ**: Tỉnh/thành quy định (ước tính 1.500.000 – 2.500.000 đ; code lấy 2.000.000 đ, `thue_phi.LE_PHI_DANG_BO_THAM_KHAO`).
 
 #### B. Thiết kế hàm
 ```python
-def tinh_phi_cong_chung(gia_vnd: int) -> int:
-    """Tính phí công chứng hợp đồng mua bán theo Thông tư 257/2016/TT-BTC."""
+# phap_ly.py — một nguồn số (TY_LE_TNCN, TY_LE_TRUOC_BA, biểu công chứng); sửa 08/11/2026
+def phi_cong_chung(gia: float) -> int:
+    """Phí công chứng hợp đồng mua bán theo biểu TT 257/2016 (tham khảo)."""
     ...
 
-def tinh_thue_phi_chuyen_nhuong(gia_vnd: int, can_duy_nhat: bool = False) -> dict:
+# thue_phi.py
+def tinh_thue_phi_chuyen_nhuong(gia_vnd: int, can_duy_nhat: bool = False) -> dict[str, int]:
     """Trả về chi tiết từng khoản thuế, phí và tổng chi phí của bên bán / bên mua."""
     ...
 
-def dinh_dang_thue_phi_chat(gia_vnd: int, ket_qua: dict) -> str:
-    """Định dạng bong bóng chat Zalo trực quan, rõ ràng."""
+def dinh_dang_thue_phi_chat(gia_vnd: int, can_duy_nhat: bool = False) -> str:
+    """Kết quả công cụ `tinh_thue_phi` — SỐ LIỆU để model viết lời, không phải câu gửi khách viết sẵn."""
     ...
 ```
 
@@ -77,8 +80,8 @@ def tinh_vay_tra_gop(
     """Tính toán chi tiết khoản vay trả góp theo dư nợ giảm dần."""
     ...
 
-def dinh_dang_vay_chat(gia_vnd: int, ket_qua: dict) -> str:
-    """Trả về định dạng tin nhắn tư vấn gói vay mua nhà rõ ràng cho khách Zalo."""
+def dinh_dang_vay_chat(gia_vnd: int, ty_le_vay: float = 0.7, so_nam: int = 20, lai_suat_nam: float = 7.5) -> str:
+    """Kết quả công cụ `tinh_vay_tra_gop` — SỐ LIỆU để model viết lời (lãi là số tượng trưng), không phải câu gửi khách viết sẵn."""
     ...
 ```
 
@@ -90,6 +93,8 @@ def dinh_dang_vay_chat(gia_vnd: int, ket_qua: dict) -> str:
 Người mua và nhà đầu tư trên Zalo thường có nhu cầu "săn hàng ngộp", "cần bán gấp", "cắt lỗ". Hệ thống cần phát hiện ý định này để gợi ý các căn nhà có chủ gấp bán.
 
 #### B. Cơ chế
+> **Hiện trạng 13/11/2026 (đối chiếu code):** CHƯA có trong lõi — `src/aioi/mua.py` và công cụ `agent_mua.tim_can` không có tham số `ban_gap`, không lọc theo từ khoá gấp bán. Prompt chỉ dạy model hiểu "ngộp / kẹt tiền / cắt lỗ = cần bán gấp" (`prompts.py`). Phần dưới là thiết kế, chưa phải hành vi đang chạy.
+
 1. **Nhận diện ý định (Intent detection)**:
    - Các từ khóa: `ngộp`, `bán gấp`, `cắt lỗ`, `hạ giá sâu`, `cần tiền bán gấp`, `bán nhanh`.
 2. **Truy vấn Database**:
@@ -127,14 +132,14 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 * Bot gọi công cụ nguyên tử `dinh_gia_tham_khao` (AVM):
   - Tra cứu giá thị trường theo tên dự án (nếu có) hoặc theo khu vực (quận/huyện, phường, đường) và loại hình.
   - Tổng hợp đơn giá m² đất/nhà phổ biến đang rao trong cùng khu vực.
-  - Phản hồi dải giá tham khảo: $\pm 10\%$ quanh đơn giá phổ biến, kèm diện tích quy đổi.
+  - Phản hồi dải giá tham khảo, kèm diện tích quy đổi. *Hiện trạng code (`dinh_gia.tinh_dinh_gia_tham_khao`, sửa 08/11/2026): dải đơn giá lấy từ bảng số cứng `_BANG_GIA_BENCHMARK` theo VÙNG (quận / huyện / tỉnh) × loại hình, nhân diện tích — không tính ±10% quanh giá đang rao; dự án có sẵn "giá rao bán thị trường" thì trả dòng đó; không nhận ra vùng / loại hình thì trả "không có số".*
   - Khẳng định nguyên tắc tôn trọng quyền quyết định giá của chủ nhà, không tự ý phán xét giá đắt/rẻ.
 
 ---
 
 ### 2.6 Module 6: Chuẩn hóa AEO / AI Search (`public/llms.txt`)
 
-* Xây dựng file `public/llms.txt` và `public/llms-full.txt` trên web repo Next.js.
+* Xây dựng file `public/llms.txt` và `public/llms-full.txt` trên web repo Next.js. *(13/11/2026: repo chỉ có `public/llms.txt`; `llms-full.txt` chưa có.)*
 * Cung cấp ngữ cảnh máy học cho ChatGPT Search, Claude, Gemini Search tự động trích dẫn dữ liệu 1.388 dự án của AOND và dẫn link về Zalo OA.
 
 ---
@@ -172,7 +177,7 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 #### B. Chi tiết 3 Công cụ Nguyên tử cho Người Bán
 1. **`dinh_gia_tham_khao` (Automated Valuation Model - AVM)**:
    - Tra cứu khoảng đơn giá m² đất/nhà tham khảo theo khu vực (quận/huyện, phường, đường) hoặc theo dự án.
-   - Tính toán dải giá tham khảo gợi ý $\pm 10\%$ quanh mức giá phổ biến của thị trường.
+   - Tính dải giá tham khảo = dải đơn giá của bảng `_BANG_GIA_BENCHMARK` (vùng × loại hình) nhân diện tích (bản 06/11 ghi "±10% quanh mức giá phổ biến" — code không tính vậy).
    - Tôn trọng quyền định giá của chủ nhà, giải thích khách quan số liệu thị trường đang rao.
 2. **`kiem_tra_phap_ly_so` (Tra cứu Pháp lý & Sổ hồng)**:
    - Giải đáp các vướng mắc pháp lý phổ biến của chủ nhà trước khi ký gửi: nhà chưa hoàn công, sổ đang thế chấp vay ngân hàng, mua bán vi bằng thừa phát lại, đồng sở hữu / thừa kế, quy hoạch lộ giới.
@@ -189,7 +194,7 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 #### A. Đối sánh Kiến trúc Trước & Sau Tái Cấu Trúc
 | Tiêu chí | Hệ thống Cũ (Anh Luận / Tuần tự) | Hệ thống Mới Tinh Gọn (SRS-5.1zzzzzzz391) |
 |---|---|---|
-| **Dung lượng System Prompt** | ~7.100 tokens (>24.500 ký tự), phân mảnh 6 file | **~1.150 tokens (4.136 ký tự)**, tập trung, chuẩn hoá |
+| **Dung lượng System Prompt** | ~7.100 tokens (>24.500 ký tự), phân mảnh 6 file | **~1.150 tokens (4.136 ký tự)**, tập trung, chuẩn hoá (số lúc viết 06/11; đo 13/11/2026: prompt gọn bán 2.554 token — SRS-5.1zzzzzzz471) |
 | **Cơ chế xử lý** | 2 vòng tuần tự cứng (Haiku bóc form → Sonnet viết lời) | **Function Calling nguyên tử**: LLM tự động gọi tool khi cần |
 | **Chi phí token / lượt** | $0.09 – $0.13 / lượt (Sonnet nuốt tới 13.1k tokens) | **~$0.015 / lượt** (giảm ~85% chi phí token vào) |
 | **Ràng buộc luật & cấm đoán** | 40+ câu "CẤM..." tiêu cực rải rác | **Nguyên tắc hành động tích cực (Positive Directives)** |
@@ -237,7 +242,7 @@ ightarrow$ Sonnet viết lời) | **1 lần duy nhất** (Sonnet vừa tự đi�
 
 ## 3. Kế hoạch Kiểm thử & Truy vết
 
-1. **Unit Test Python (`tests/`)**:
+1. **Unit Test Python (`tests/`)** — *bộ pytest `tests/` đã gỡ 13/11/2026 (SRS-5.1zzzzzzz469); năm file dưới không còn trong repo, giữ làm lịch sử. Kiểm nay = parse cú pháp + thử thật trên máy 146*:
    - `test_thue_phi_tai_chinh.py`: Kiểm tra tính phí công chứng tại các mốc 40 triệu đến 600 tỷ; kiểm tra tính thuế TNCN 2% và lệ phí trước bạ 0.5%; kiểm tra công thức trả góp ngân hàng dư nợ giảm dần.
    - `test_sdt_hen_xem_tai_chinh.py`: Kiểm tra trường hợp khách gửi SĐT khi **chưa có lịch hẹn xem**, xác nhận SĐT vẫn được lưu vào `buyers` và có thông báo gửi Admin.
    - `test_agent_mua_tools_389.py`: Kiểm tra toàn bộ 4 công cụ nguyên tử Function Calling (`so_sanh_can`, `tinh_thue_phi`, `tinh_vay_tra_gop`, `luu_so_dien_thoai`) thực thi trực tiếp qua `chay_cong_cu`.

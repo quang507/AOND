@@ -62,8 +62,8 @@ Bảng NFR-01…18 với cách đo nằm ở `docs/07 §6` (nguồn sự thật)
 
 ## 10.5 Môi trường & công cụ (free-tier)
 
-- Unit: Vitest · E2E web: Playwright · A11y: axe-core · Perf: Lighthouse CI · bot: pytest `tests/` cho lõi Python (model giả) + ô bắn thử production TS-PROD (§10.7.0). Bộ `bot/tests/e2e` cũ gỡ 18/10/2026.
-- CI: GitHub Actions free, `.github/workflows/kiem.yml` (soát 28/10/2026) — 9 job, từ 11/11/2026 chỉ chạy tay (`workflow_dispatch`), không tự chạy khi push / PR, KHÔNG chặn (commit thẳng `main`, không PR — CLAUDE.md §7, SRS-5.1zzzzzzz464): `web` (tsc + `next build`), `bot` (`test:bot` + pytest lõi Python + `test:sql` trên Postgres tạm), `baomat` (TS-SEC-AUTO, DB thật), `truyvet`, `rohang` (TS-ROHANG), `migration` (TS-MIG), `soatdb` (TS-DB), `kieubot` (TS-KIEU), `doichieutien` (TS-LUAT-01). Vercel không dựng preview cho nhánh `claude/**` (SRS-247) và bỏ qua bản dựng `main` khi lần đẩy không đổi file web (SRS-248). **Chưa vào CI:** TS-SEC bài phá huỷ, TS-SEC3 (cần quyền SQL), TS-LIVE (cần bridge), ô bắn thử TS-PROD (tiền thật, chạy tay), Lighthouse/axe/k6 — xem `docs/11 §11.4`.
+- Unit: Vitest · E2E web: Playwright · A11y: axe-core · Perf: Lighthouse CI · bot: bộ chấm kịch bản TS-CHAM-01 + script bắn thử production TS-PROD (§10.7.0); bộ pytest `tests/` cho lõi Python gỡ 13/11/2026 (SRS-5.1zzzzzzz469). Bộ `bot/tests/e2e` cũ gỡ 18/10/2026.
+- CI: GitHub Actions free, `.github/workflows/kiem.yml` (soát 13/11/2026) — 10 job, từ 11/11/2026 chỉ chạy tay (`workflow_dispatch`), không tự chạy khi push / PR, KHÔNG chặn (commit thẳng `main`, không PR — CLAUDE.md §7, SRS-5.1zzzzzzz464): `web` (tsc + `next build`), `bot` (`test:bot` + `test:sql` trên Postgres tạm), `baomat` (TS-SEC-AUTO, DB thật), `truyvet`, `rohang` (TS-ROHANG), `migration` (TS-MIG), `soatdb` (TS-DB), `kieubot` (TS-KIEU), `doichieutien` (TS-LUAT-01), `doichieusdt` (luật SĐT Python ↔ SQL ↔ TS, SRS-5.1zzzzzzz317). Vercel không dựng preview cho nhánh `claude/**` (SRS-247) và bỏ qua bản dựng `main` khi lần đẩy không đổi file web (SRS-248). **Chưa vào CI:** TS-SEC bài phá huỷ, TS-SEC3 (cần quyền SQL), TS-LIVE (cần bridge), ô bắn thử TS-PROD (tiền thật, chạy tay), Lighthouse/axe/k6 — xem `docs/11 §11.4`.
 - DB: `nhadat-cc` là môi trường chính, **không** chạy test phá hoại; ca ghi bọc `do … raise exception` để cuộn lại. Zalo: bridge zca-js trên tài khoản Zalo clone, ID thử theo `la_id_thu` (OA không dùng — OPEN-09).
 - Bí mật chỉ trong biến môi trường / Vault; khoá đã dán vào chat phải rotate.
 
@@ -110,9 +110,10 @@ thì "máy xanh, máy tao đỏ" và không ai biết bên nào đúng.
 | `tsc` + `next build` | TS-CACHE, TS-SEO | `bun run kieu`, `bun run build` | `web` | Kiểu dữ liệu web; trang tin còn `●` trong bảng route |
 | `deno check` ba edge function | TS-KIEU-01 | `bun run kieu:bot` | `kieubot` | `escalation-feed`, `geocode-listings`, `media-cleanup` không lỗi kiểu |
 | luật tiền TS ↔ SQL | TS-LUAT-01 | `bun run doi-chieu:tien` | `doichieutien` | `docTien` và `parse_vnd` ra cùng số trên mọi ca |
+| luật SĐT Python ↔ SQL ↔ TS (`bot/tests/doi-chieu-sdt.py`, bảng ca `bot/tests/luat/sdt.json`) | — | `bun run doi-chieu:sdt` | `doichieusdt` | `src/aioi/sdt.py`, SQL `che_sdt` và TS `thayLienHe` cùng trả lời một bảng ca (SRS-5.1zzzzzzz317; cần Postgres) |
 
-`bun run kiem` = `kieu` + `kieu:bot` + `build` + `test:bot` + `test:rohang` + `truyvet`. **`test:py` KHÔNG nằm trong `kiem`**
-— sửa `src/aioi/` thì chạy thêm `bun run test:py` tay; CI chạy nó ở job `bot`.
+`bun run kiem` = `kieu` + `kieu:bot` + `build` + `test:bot` + `test:rohang` + `truyvet`. Script `test:py` đã gỡ cùng bộ pytest
+(13/11/2026, SRS-5.1zzzzzzz469) — sửa `src/aioi/` thì kiểm cú pháp + thử thật trên 146 (CLAUDE.md §7.1).
 
 **Cần môi trường thật — không chạy được trong sandbox:**
 
@@ -120,18 +121,18 @@ thì "máy xanh, máy tao đỏ" và không ai biết bên nào đúng.
 |---|---|---|---|---|
 | `bot/tests/ts-sec-anon.mjs` | TS-SEC-AUTO | **Internet tới `*.supabase.co`** + DB production đang chạy. KHÔNG cần secret: bắn bằng khoá publishable công khai | `bun run test:sec` — CI job `baomat`, **cố ý không nằm trong `kiem`** | Thoát 0 = đạt · 1 = có cửa mở · **2 = CHƯA KIỂM ĐƯỢC** (proxy chặn, DB ngủ). Thoát 2 KHÔNG phải "đạt" |
 | `scripts/soat-migration.mjs`, `scripts/soat-db.mjs` | TS-MIG-01/02, TS-DB-01 | Internet + khoá công khai | `bun run soat:migration`, `bun run soat:db` — CI job `migration`, `soatdb` | Đỏ khi repo ↔ DB lệch hoặc có phát hiện mới ngoài bản nền |
-| `scripts/cham-kich-ban.py` + `tests/kich_ban/ban.json` (51 kịch bản người bán, có chat thật chị N.) | **TS-CHAM-01** | **`claude` CLI đã đăng nhập** (quota gói Claude Code, không tốn tiền API); ~50 phút / lần | `bun run cham --giong` (mặc định chạy như khách thật theo công tắc `bot/cau-hinh-loi.env`, SRS-401); `--cham-lai <bản ghi>` chấm lại không gọi model | So với `tests/kich_ban/diem_nen.json`: phép tất định, giọng, lộ luật, hỏi lại, lượt ghép nhiều khối hỏi. Đổi lời / prompt / luật soát phải chạy ≥ 2 lần mỗi bên (SRS-5.1zzzzzzz304 / 313 / 314) |
+| `scripts/cham-kich-ban.py` + `tests/kich_ban/ban.json` (59 kịch bản người bán, có chat thật chị N.) | **TS-CHAM-01** | **`claude` CLI đã đăng nhập** (quota gói Claude Code, không tốn tiền API); ~50 phút / lần | `bun run cham --giong` (mặc định chạy như khách thật theo công tắc `bot/cau-hinh-loi.env`, SRS-401); `--cham-lai <bản ghi>` chấm lại không gọi model | So với `tests/kich_ban/diem_nen.json`: phép tất định, giọng, lộ luật, hỏi lại, lượt ghép nhiều khối hỏi. Đổi lời / prompt / luật soát phải chạy ≥ 2 lần mỗi bên (SRS-5.1zzzzzzz304 / 313 / 314) |
 | `bot/tests/vai-tro.sql` | **TS-SEC3** | **Quyền SQL trên DB thật.** CI chỉ có khoá công khai | Dashboard → SQL Editor → dán cả file → Run; hoặc MCP `execute_sql` | Kết bằng `raise exception 'KQ: …'` nên mọi dòng chèn TỰ CUỘN LẠI. Mọi mục phải `OK`; một chữ `HONG` là một cửa mở |
 
 **Bắn thử production — tiền thật, chạy tay TỪ MÁY CÁ NHÂN ssh được vào 146 (`nguye@192.168.1.146`, SRS-5.1zzzzzzz405):** `TOKEN=… bash bot/tests/<tên>.sh`
 (đầu file ghi kịch bản và SRS gốc), chat với lõi trên máy 146 qua đường hầm ssh (`bot/tests/lib/may146.sh`, kèm khoá nội bộ) bằng ID thử
 (`la_id_thu`) rồi tự dọn. Không vào CI, không còn ô trên Actions (Actions không với tới 146). Chạy sau mỗi lần đưa lõi lên 146
-(`trien-khai-146.sh` khởi động lại lõi — báo trước người đang chat thử). Pytest xanh với model giả KHÔNG chứng minh
-model thật làm đúng; lỗi thấy ở đây thì viết ca pytest tái hiện trước khi sửa.
+(`trien-khai-146.sh` khởi động lại lõi — báo trước người đang chat thử). Bộ pytest model giả đã gỡ 13/11/2026
+(SRS-5.1zzzzzzz469) — bắn thử ở đây là cách kiểm model thật làm đúng.
 
 | Script (`bot/tests/…sh`) / ô | ID | Kiểm cái gì |
 |---|---|---|
-| `ban-thu-ban`, `ban-thu-mua`, `ban-thu-vm`, `ban-thu-srd`, `ban-thu-ai`, `ban-thu-kb`, `ban-thu-dc`, `ban-thu-xa`, `ban-thu-sau`, `ban-thu-nhieu-can`, `ban-thu-dap-y`, `ban-thu-5-khach` | **TS-PROD-01** | Kịch bản viết sẵn trên lõi production: luồng bán, mua, vừa bán vừa mua, kịch bản SRD anh Luận, các mục AI đọc theo nghĩa, địa chỉ số hẻm, đất ở xã, bộ câu môi giới, một tin hai căn, đáp ý khách, 5 tính cách khách |
+| `ban-thu-ban`, `ban-thu-mua`, `ban-thu-vm`, `ban-thu-srd`, `ban-thu-ai`, `ban-thu-kb`, `ban-thu-dc`, `ban-thu-xa`, `ban-thu-sau`, `ban-thu-nhieu-can`, `ban-thu-dap-y`, `ban-thu-5-khach`, `ban-thu-kiem` | **TS-PROD-01** | Kịch bản viết sẵn trên lõi production: luồng bán, mua, vừa bán vừa mua, kịch bản SRD anh Luận, các mục AI đọc theo nghĩa, địa chỉ số hẻm, đất ở xã, bộ câu môi giới, một tin hai căn, đáp ý khách, 5 tính cách khách, các việc có code nhưng chưa kiểm thật (SRS-5.1zzzzzzz268) |
 | `ban-thu-khach-ao` | **TS-PROD-02** | 5 khách ảo có cảm xúc do model đóng vai (`bot/tests/khach-ao.py`), giám khảo chấm và trích lỗi kèm đoán nguồn. Là gợi ý để người đọc, không phải phép đạt / trượt |
 | `doc-log-loi` | **TS-PROD-03** | CHỈ ĐỌC nhật ký lõi trên máy 146 (N dòng cuối tệp mới nhất trong `C:\aond\logs`; log không có giờ nên không lọc theo khoảng giờ): lượt nào ghi / bỏ ô nào, dòng `💲` tiền từng lần gọi. Không in lời khách |
 | `do-tim-nha` (ô Actions) | **TS-PROD-04** | Đo chất lượng `tim_nha` trên rổ mẫu `seed_thu` (4 chế độ). Đáp án `cau-hoi.json` soạn cho 30 tin cũ — **chưa dùng được** (SRS-5.1zzzzzzz167) |

@@ -117,5 +117,5 @@ AI ghi cả điều lời chủ **chắc chắn kéo theo** (nhà trong hẻm c�
 - Ảnh sổ: chỉ nói "để em kiểm, không đăng"; chưa che thông tin trên ảnh.
 - Ảnh kém: chủ đồng ý từng tấm mới ẩn.
 - Giá: phía bán được nhận xét giá chủ rao, nói nhẹ.
-- Trần tin: "Giữ 10" — 10 câu sau đăng / căn, ≤ 3 tin chủ động / căn / ngày, chủ bỏ qua 2 tin liền thì thôi.
+- Trần tin: "Giữ 10" — 10 câu sau đăng / căn, ≤ 3 tin chủ động / người bán / ngày (mọi loại, mọi căn — SRS-475), chủ bỏ qua 2 tin liền thì thôi.
 - Thứ tự khi nhiều mảng cùng muốn hỏi: ảnh → pháp lý → lợi thế → so sánh → giá; một hàng chung, không phải 4 vòng nhắn riêng.

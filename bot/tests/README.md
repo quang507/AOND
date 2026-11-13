@@ -10,7 +10,7 @@ Các bộ cũ (`e2e/run.mjs`, `webhook.mjs`, `giong/`, `do-boc/`, `mo-phong/`, `
 Đừng gõ lệnh rời. Người và CI dùng chung script trong `package.json`.
 
 ```bash
-bun run kiem       # cổng trước mọi commit: kieu (tsc) → kieu:bot (deno) → build → test:bot → test:rohang → truyvet
+bun run kiem       # kiểm tra toàn bộ, khi cần (không bắt buộc — CLAUDE.md §7.1): kieu (tsc) → kieu:bot (deno) → build → test:bot → test:rohang → truyvet
 bun run test:sql   # trigger / hàm SQL thật trên Postgres tạm (bot/tests/sql/chay.sh)
 bun run test:sec   # TS-SEC thật, DB thật — KHÔNG nằm trong `kiem`, cần Internet
 ```

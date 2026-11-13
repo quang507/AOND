@@ -7,7 +7,7 @@ OPEN-43/45). URL trong tiêu đề là URL đặc tả; URL thật ghi ở dòng
 ---
 
 ## WF-01 — Trang chủ `/`  → IA-01, FR-01…06, FR-13
-✅ đã dựng: `app/page.tsx` (ô chat search, hộp mời Zalo, 4 khối lời hứa, BĐS mới, CTA người bán).
+✅ đã dựng: `app/page.tsx` (ô chat search, nút "Hỏi qua Zalo", 3 khối lời hứa — SRS-5.1zzzzzzz437, feed tin mới trên điện thoại `components/FeedDoc.tsx`, CTA người bán).
 
 ```
 ┌──────────────────────────────────────────┐
@@ -68,7 +68,7 @@ Hero **không** có form dropdown — một ô, một dòng (INS-07). Hộp mờ
 ---
 
 ## WF-02 — Kết quả tìm kiếm `/tim-kiem` → IA-02, FR-07, FR-08
-⛔ thay bằng `/mua-ban?q=` · `/cho-thue?q=` (`components/ListingBrowse.tsx`: lọc giá/diện tích/sắp xếp FR-123, hộp Zalo đầu lưới). Chip bỏ từng tiêu chí, nút Xem thêm, nới tiêu chí khi 0 kết quả: chưa dựng.
+⛔ thay bằng `/mua-ban?q=` · `/cho-thue?q=` (`components/ListingBrowse.tsx`: lọc giá/diện tích/sắp xếp FR-123, nút "Nhờ tìm qua Zalo" ở ô rỗng, nút "Xem thêm tin" `components/TaiThem.tsx` — SRS-5.1zzzzzzz447). Chip bỏ từng tiêu chí của câu tìm, nới tiêu chí khi 0 kết quả: chưa dựng.
 
 ```
 ┌──────────────────────────────────────────┐
@@ -117,7 +117,7 @@ Card đúng 4 dòng: **mô tả rút gọn · Vị trí · DT · Giá** [nguồn
 ---
 
 ## WF-03 — Chi tiết BĐS `/bds/{slug}-{id}` → IA-04, FR-10, FR-11
-🟡 một phần: `/nha-dat/[code]` có gallery, bảng thông số, cue mã, JSON-LD, banner "đã giao dịch"; chip câu hỏi gợi sẵn (UI-C06), khối BĐS tương tự, "cập nhật lần cuối": chưa dựng.
+🟡 một phần: `/nha-dat/[code]` có gallery, bảng thông số, cue mã, JSON-LD, banner "đã giao dịch", khối gợi ý "Cùng khu <phường>"; chip câu hỏi gợi sẵn (UI-C06), "cập nhật lần cuối": chưa dựng.
 
 ```
 ┌──────────────────────────────────────────┐
@@ -460,7 +460,7 @@ Không hiển thị tên/Zalo ID của B trên trang.
 |---|---|---|---|---|
 | WF-02 | skeleton 3 card | nới tiêu chí + giải thích | giữ truy vấn, nút thử lại | quá nhiều KQ → gợi ý thu hẹp |
 | WF-03 | skeleton | — | 404 → tag lân cận | listing đã bán → banner + căn tương tự |
-| WF-04 | SSG | hộp Zalo cỡ lớn | — | không bao giờ 404 |
+| WF-04 | ISR | hộp Zalo cỡ lớn | — | không bao giờ 404 |
 | WF-05..07 | "đang gõ…" | — | timeout → xin lỗi + escalate | quá 30 phút → cuộc trò chuyện mới (FR-72) |
 | WF-09 | đang phân tích câu rao | bóc tách thất bại → form thủ công | — | trường thiếu = nhắc, không chặn |
 | WF-12 | — | "chưa có câu hỏi nào" | — | quá SLA tô đỏ |

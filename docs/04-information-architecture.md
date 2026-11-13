@@ -61,9 +61,9 @@ flowchart TD
 | IA-10 | `/raoban/quan-ly` → thật `/quan-ly` | Tin của tôi + ô một câu rao + upload ảnh (`UploadAnh`) + câu hỏi chờ trả lời | ❌ | FR-98 | 🟡 tin của tôi có; câu hỏi chờ trả lời chưa |
 | IA-11 | `/ds/{token}` | Danh sách riêng cho một B (`noindex, nofollow`, robots chặn) | ❌ | FR-100 | ✅ trang có; bot chưa tự tạo (UF-12) |
 | IA-12 | `/admin` (?tab=todo·crm·stats·ops), `/admin/tin-nhan` (ô admin gửi tin, SRS-5.1zzzzzzz216), `/admin/ro-hang` (+`/json`), `/admin/dang-tin`, `/admin/cau-chuan` (câu chuẩn + câu mẫu cố định, SRS-5.1zzzzzzz88 / 106), `/admin/danh-gia` (khách chấm sao AI, SRS-5.1zzzzzzz104); `/admin/mau-cau`, `/admin/prompt` gỡ 18/10/2026 (SRS-5.1zzzzzzz46) | Khung CRM (09/09/2026, bố cục theo ZaloCRM): thanh navy với tab theo phân hệ, ô tìm, chuông việc, avatar; Header/Footer công khai ẩn dưới `/admin` | ❌ | FR-70…81, FR-127, FR-152, FR-175, FR-180 | ✅ đã dựng |
-| IA-13 | `/du-an/{slug}` | Trang dự án + giỏ hàng (tin `project_id`), SSG | ✅ | FR-117, FR-113 | ✅ đã dựng |
+| IA-13 | `/du-an/{slug}` | Trang dự án + giỏ hàng (tin `project_id`), ISR (dựng khi có người xem, làm mới mỗi giờ) | ✅ | FR-117, FR-113 | ✅ đã dựng |
 | IA-14 | `/api/search` (`/api/listing/parse` (gỡ 02/11/2026, SRS-5.1zzzzzzz333 — bóc câu rao do lõi Python làm bằng AI)) | Route handler JSON, không phải trang | ❌ robots chặn `/api/` | FR-09 | ✅ đã dựng |
-| IA-15 | `/mua-ban`, `/cho-thue` | Lưới listing theo giao dịch, lọc bằng searchParams (`unstable_cache`) | ✅ (❌ khi có `q`) | FR-07, FR-08 | ✅ đã dựng |
+| IA-15 | `/mua-ban`, `/cho-thue` | Lưới listing theo giao dịch, lọc bằng searchParams (`unstable_cache`) | ✅ (❌ khi có `q` hoặc tham số lọc) | FR-07, FR-08 | ✅ đã dựng |
 | IA-16 | `/ban-do` | Bản đồ tin có `lat/lng` (MapLibre + OpenFreeMap, tìm theo khung, gom cụm — SRS-5.1zzzzzzz206 / 217) | ✅ | FR-122 | ✅ đã dựng |
 | IA-17 | `/thong-ke` | Giá theo phường/loại tính tại chỗ từ tin đang có | ✅ | FR-120 | ✅ đã dựng |
 | IA-18 | `/tinh-lai-vay` | Công cụ tính khoản vay | ✅ | FR-119 | ✅ đã dựng |
@@ -99,10 +99,10 @@ Công thức slug: `{giao-dịch}-{loại-hình}-{thuộc-tính}-{khu-vực}`
 **Bốn quy tắc**
 1. Slug không dấu, chữ thường, gạch nối; `tỉ` → `ty` trong URL, hiển thị vẫn "tỉ".
 2. Một keyword ↔ một URL; biến thể → `canonical` về URL chính.
-3. Trang tag SSG: H1 = keyword, mô tả 80–120 từ, listing khớp, link chéo 6–8 tag
+3. Trang tag ISR (không dựng sẵn lúc build, làm mới mỗi giờ): H1 = keyword, mô tả 80–120 từ, listing khớp, link chéo 6–8 tag
    liên quan (IA-P4).
 4. Tag rỗng **không 404** — hộp mời kết nối Zalo + tag lân cận (IA-P1); slug lạ
-   ngoài danh sách thì 404 (`dynamicParams=false`).
+   ngoài danh sách thì 404 (`notFound()` trong `app/[tag]/page.tsx`; `dynamicParams = true`).
 
 **Structured data**: mỗi listing phát `schema.org/RealEstateListing` (`name`,
 `description`, `price`, `floorSize`, `numberOfRooms`, `address`, `image`,
@@ -130,23 +130,23 @@ erDiagram
     PROJECT ||--o{ PROPERTY : "căn thuộc dự án (null với hàng lẻ)"
 ```
 
-Bảng thật (`listings`, `listing_facts`, `listing_media`, `property_events`,
+Bảng thật (`listings`, `listing_media`, `property_events`,
 `info_requests`, `viewings`, `buyers`, `conversations`, `messages`, `interests`,
-`projects`, `sellers`, `ratings`, `deals`) — cột chi tiết ở `07-srs.md §3`.
+`projects`, `sellers`, `deals`) — cột chi tiết ở `07-srs.md §3`.
 
 ### PROPERTY — nhóm trường
 
 | Nhóm | Trường | Ghi chú |
 |---|---|---|
 | Định danh | `id` (UUID bất biến), `code` (mã hiển thị `#35148`), `slug` | IA-P3 |
-| Giao dịch · loại | `deal_type` ∈ {bán, cho thuê}; `property_type` ∈ {nhà phố, chung cư, đất, MT, biệt thự, phòng trọ, mặt bằng} | |
+| Giao dịch · loại | `deal` ∈ {bán, cho thuê}; `property_type` ∈ {nhà phố, chung cư, đất, MT, biệt thự, phòng trọ, mặt bằng} | |
 | Vị trí | `street`, `alley`, `ward`, `district`, `city`, `lat/lng`, `landmarks[]` | landmarks phục vụ INS-07 |
 | Tiếp cận | `access_type` ∈ {MT, HXH, HXT, hẻm xe máy}, `alley_width_m`, `distance_to_street_m` | Tiêu chí lọc số 1 |
-| Quy mô | `land_area_m2`, `legal_area_m2`, `built_area_m2`, `frontage_m`, `length_m`, `floors`, `bedrooms`, `bathrooms` | FR-172 |
+| Quy mô | `area_m2`, `legal_area_m2`, `built_area_m2`, `frontage_m`, `length_m`, `floors`, `bedrooms`, `bathrooms` | FR-172 |
 | Giá | `price_vnd`, `price_per_m2_vnd`, `price_unit`, `negotiable` | |
 | Pháp lý | `legal_status`, `has_completion`, `planning_status` | Luôn cần S xác minh (RSK-03) |
 | Nội dung | `raw_pitch` (câu rao gốc), `variants[]` (AI sinh — FR-93, chưa dựng) | FR-91 |
-| Trạng thái | `status` ∈ {cho_thong_tin, dang_ban, dang_quan_tam, da_chot, an}, `last_confirmed_at` | FR-139, RSK-06 |
+| Trạng thái | `status` ∈ {cho_thong_tin, dang_ban, dang_quan_tam, da_coc, da_chot, an}, `xac_nhan_con_ban_at` | FR-139, RSK-06 |
 | Xếp hạng | `hot_score` = số sự kiện 2 tháng gần nhất | FR-73 |
 | Dự án | `project_id` (null = hàng lẻ), `unit_code`, `floor`, `direction`, `unit_status` ∈ {còn bán, giữ chỗ, đã cọc, đã bán} | FR-113, INS-10 |
 
@@ -188,7 +188,7 @@ Bộ chiều mà cả web search lẫn bot phải hiểu (FR-09, FR-22, FR-23):
 | Trang | Vị trí | Nội dung mang theo |
 |---|---|---|
 | `/` | Dưới ô search, sticky bar mobile | Truy vấn vừa gõ |
-| `/mua-ban?q=` · `/cho-thue?q=` | Đầu lưới, ngay dưới dải tiêu đề, và ở ô rỗng | Câu gốc (`ref=search:<câu>` — FR-14, phía bot chưa đọc) |
+| `/mua-ban?q=` · `/cho-thue?q=` | Ở ô rỗng (0 kết quả), nút "Nhờ tìm qua Zalo" | `ref=rong:/mua-ban` (không mang câu gốc — FR-14 chưa dựng ở trang này) |
 | `/{tag}` | Sau card thứ 3 và cuối trang | Tiêu chí suy từ tag |
 | `/nha-dat/{code}` | Cạnh bảng thông số + cuối trang | **Mã BĐS** + tiêu chí phiên |
 | `/ds/{token}` | Đầu trang | ID danh sách |

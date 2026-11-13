@@ -16,7 +16,7 @@ Dự án này là kho lưu trữ **DUY NHẤT VÀ CHÍNH THỨC** của toàn b�
 | `app/`, `components/`, `lib/` | **Web CRM Admin** | Next.js 15, Tailwind 4, React | Web công khai + bảng điều khiển CRM (`aond.vercel.app/admin` — project Vercel mới từ 05/11/2026, SRS-5.1zzzzzzz383) quản lý tin nhắn khách, rổ hàng BĐS theo thời gian thực. Deploy tự động qua Vercel. |
 | `docs/` | **Bộ tài liệu BA** | Markdown | Nguồn sự thật: yêu cầu, luồng, đặc tả `docs/07-srs.md`, truy vết `docs/08`. |
 | `tests/kich_ban/` | **Bộ chấm kịch bản** | Python | Hội thoại tạo sẵn + điểm nền cho `scripts/cham-kich-ban.py` / `cham.yml`. Bộ pytest gỡ 13/11/2026 (SRS-5.1zzzzzzz469). |
-| `scripts/` | **Công cụ quản trị DB** | Node.js / Python | Script nạp đường sá, rà soát di trú, xuất rổ hàng, đồng bộ prompt. |
+| `scripts/` | **Công cụ quản trị DB** | Node.js / Python | Script nạp đường sá, rà soát di trú, xuất rổ hàng, triển khai lõi lên máy 146. |
 
 ---
 

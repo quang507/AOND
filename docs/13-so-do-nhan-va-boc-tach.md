@@ -55,7 +55,7 @@ flowchart TD
   URL -->|có| HL["Engine.handle_link"]
   URL -->|không| MA{"lenh_tra_loi '#35;mã: …'<br/>và la_nhan_vien?"}
   MA -->|có| TM["tra_loi_theo_ma<br/>(admin trả lời câu khách mua hỏi)"] --> BRS
-  MA -->|không| KH["_lap_ke_hoach — lượt AI đọc ý<br/>chưa rõ vai: form OPERATIONS_SYSTEM<br/>người bán đã rõ vai: bước 1 vòng agent gộp (agent_gop.mo — công cụ ghi / đọc / tra_luat_o)<br/>người mua đã rõ vai: bước 1 cùng vòng (agent_gop.mo_mua — ghi_nhu_cau qua cổng trích, viec_can, ghi_y_khach; ra ý bán → đọc lại form đầy đủ)<br/>vòng lỗi: form OPERATIONS_SYSTEM_BAN / _MUA (AIOI_EXTRACT_MODEL = Sonnet 5.5) dự phòng<br/>ra: operations + vai + ý mua / bán + duyệt + hỏi về + y_luot"]
+  MA -->|không| KH["_lap_ke_hoach — lượt AI đọc ý<br/>chưa rõ vai: đọc nhanh _doc_nhanh_chua_ro_vai (SRS-5.1zzzzzzz406); cần đọc đủ thì form OPERATIONS_SYSTEM<br/>người bán đã rõ vai: bước 1 vòng agent gộp (agent_gop.mo — công cụ ghi / đọc / tra_luat_o)<br/>người mua đã rõ vai: bước 1 cùng vòng (agent_gop.mo_mua — ghi_nhu_cau qua cổng trích, viec_can, ghi_y_khach; ra ý bán → đọc lại form đầy đủ)<br/>vòng lỗi: form OPERATIONS_SYSTEM_BAN / _MUA (AIOI_EXTRACT_MODEL = Sonnet 5.5) dự phòng<br/>ra: operations + vai + ý mua / bán + duyệt + hỏi về + y_luot"]
   KH --> VAI["định tuyến vai theo user_intent của lượt<br/>buy → buyer · sell → seller · mơ hồ: giữ vai / số tư vấn → buyer"]
   VAI --> TLK["tra_loi_cau_hoi<br/>(chủ nhà vừa trả lời câu khách mua hỏi)"]
   TLK --> DX{"đang chờ xác nhận ẩn tin?<br/>pending_destructive"}
@@ -88,7 +88,7 @@ flowchart TD
   S2 -->|chưa| C1["AIOI_PROMPT_GON=bat (đang bật): lean_system_prompt_cho_luot — LEAN_SYSTEM_PROMPT + dữ liệu căn + VIỆC LƯỢT NÀY<br/>tắt: build_phieu_luot — phiếu lượt GIONG_VUI + dữ liệu căn + VIỆC LƯỢT NÀY<br/>+ khoi_xin_dang (không khối điểm tin, SRS-5.1zzzzzzz336)"]
   S2 -->|"đủ, chưa trình"| C2["build_listing_proposal_system<br/>bản tin 📋 theo AD_FORMAT"]
   S2 -->|"đã trình"| C3["build_fee_followup_system<br/>duyệt · phí · trạng thái web<br/>+ cụm sau đăng Engine.cum_sau_ke (mỗi lượt một câu:<br/>ảnh → pháp lý → lợi thế → so sánh → giá …)"]
-  C1 & C2 & C3 --> K["khối ghép thêm:<br/>khoi_dia_danh · _khoi_hoi_du_an · khoi_hoi_mat_tien · khoi_chao_lan_dau<br/>khoi_xung_ho · _ghep_cau_chuan (trước RANH_GIOI_CACHE)<br/>MỘT khối ưu tiên: khoi_can_nguoi > khoi_phap_ly > khoi_ngoai_viec > hỏi về > hỏi trùng tên<br/>dữ liệu rổ / dự án / giá: agent_ban.goi_y → công cụ tra (AGENT_BAN tắt: _basket_block · _project_memory_block · _seller_price_block)"]
+  C1 & C2 & C3 --> K["khối ghép thêm:<br/>khoi_dia_danh · _khoi_hoi_du_an · khoi_hoi_mat_tien · khoi_chao_lan_dau<br/>khoi_xung_ho · _ghep_cau_chuan (trước RANH_GIOI_CACHE)<br/>MỘT khối ưu tiên: khoi_can_nguoi > khoi_phap_ly > khoi_ngoai_viec > hỏi về > hỏi trùng tên<br/>dữ liệu rổ / dự án / giá: agent_ban.goi_y → công cụ tra (thân công cụ: _basket_block · _project_memory_block · _seller_price_block)"]
   K --> V["viec_luot (SRS-5.1zzzzzzz314): chọn MỘT việc từ các khối đã ghép,<br/>ghi y_luot._viec / _khoi để bộ chấm đo — chưa đổi lời"]
 ```
 

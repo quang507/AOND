@@ -30,7 +30,7 @@ dev làm cho nó đúng.** Ba việc, ba lượt, theo thứ tự đó.
 1. Nó đến từ đâu?
    ├─ Tài liệu gốc      → trích [nguồn: <file> §<mục>]
    ├─ Insight mới       → thêm INS-xx vào docs/01 TRƯỚC
-   ├─ Vận hành/sự cố    → ghi bối cảnh vào docs/09 hoặc bot/README
+   ├─ Vận hành/sự cố    → ghi bối cảnh vào docs/09 hoặc mục SRS ở docs/07
    ├─ Việc trong tầm    → kỹ thuật / UX / câu chữ / ngưỡng: soát code + docs, tự chọn phương án tốt nhất,
    │                      làm, ghi mục SRS "Quyết định (BA, uỷ quyền)" (CLAUDE.md §4 mục 2). Không dừng chờ.
    └─ Việc của chủ dự án → tiền / phí, pháp lý, thương hiệu, dữ liệu khách thật, đảo quyết định đã chốt:
@@ -94,13 +94,13 @@ tận code, và lúc chủ dự án phát hiện thì phải bóc ngược năm 
 6. Hỏng → mở lại cho dev. Bug tìm thấy sau release phải có ca tái hiện TRƯỚC
    khi sửa — suite chỉ phình, không teo.
 
-7. Sửa lỗi bot / web: mục SRS ở docs/07 trả lời BA CÂU GỐC (CLAUDE.md §6, từ
+7. Sửa lỗi bot / web: mục SRS ở docs/07 trả lời BA CÂU GỐC (CLAUDE.md §4 mục 8, từ
    01/10/2026): (1) lớp lỗi — cơ chế nào cho lỗi lọt; (2) chỗ khác cùng lớp đã
    soát, cái nào sửa, cái nào còn; (3) bài kiểm ĐỎ khi tắt bản sửa, kèm ít nhất
    một cách nói MỚI chưa từng bắn. Lỗi "máy đoán ý bằng từ khoá" không vá bằng
    thêm từ vào regex — đưa sang AI đọc nghĩa, code kiểm trích dẫn.
 
-8. Pytest xanh với model giả chỉ kiểm giả định của người sửa. Sửa hành vi model
+8. Bài kiểm với model giả (bộ pytest cũ, gỡ 13/11/2026) chỉ kiểm giả định của người sửa. Sửa hành vi model
    thì bắn lại script `ban-thu-*` liên quan sau khi đưa lõi lên 146 (`trien-khai-146.sh`) rồi mới ghi
    "xong".
 ```
@@ -130,7 +130,7 @@ của người đẩy commit**. Nay chia lại cho sòng phẳng.
 | Web dựng được, trang tin còn trong cache (NFR-17) | máy dựng, người soi bảng route | CI job `web` | ⚠️ / không |
 | `test:bot` (code TypeScript còn sống); `test:sql` (trigger thật trên Postgres tạm) | máy | CI job `bot` | ⚠️ |
 | Xuất rổ hàng không hụt im lặng (TS-ROHANG; TS-MASTERDB gỡ 19/10/2026) | máy | CI job `rohang` | ⚠️ |
-| Kiểu ba edge function, luật tiền TS ↔ SQL, danh sách migration, trạng thái DB | máy | CI job `kieubot`, `doichieutien`, `migration`, `soatdb` | ⚠️ |
+| Kiểu ba edge function, luật tiền TS ↔ SQL, danh sách migration, trạng thái DB | máy | CI job `kieubot`, `doichieutien`, `doichieusdt` (luật SĐT), `migration`, `soatdb` | ⚠️ |
 | Lời bot với model THẬT (TS-PROD-01…04) | máy bắn, người đọc log | `bot/tests/ban-thu-*.sh`, `doc-log-loi.sh` chạy từ máy ssh được vào 146 (SRS-405) | không, tay |
 | ID gãy, truy vết thiếu, số đếm README, PII, khoá service_role | máy | CI job `truyvet` | ⚠️ |
 | RLS / GRANT — tập không phá huỷ (TS-SEC-AUTO) | máy | CI job `baomat` | ⚠️ |
@@ -193,7 +193,7 @@ bun run kiem     # kiểm tra toàn bộ — khi cần
 
 Đụng migration RLS/GRANT thì chạy thêm TS-SEC bằng tay.
 
-**Cổng 2 — CI trên GitHub Actions** (máy, chỉ tham khảo): `.github/workflows/kiem.yml` (9 job) và `cham.yml` (bộ
+**Cổng 2 — CI trên GitHub Actions** (máy, chỉ tham khảo): `.github/workflows/kiem.yml` (10 job) và `cham.yml` (bộ
 chấm offline, SRS-5.1zzzzzzz377) từ 11/11/2026 chỉ chạy tay (`workflow_dispatch`), KHÔNG tự chạy khi push, KHÔNG
 chặn, không ai chờ xanh. Chạy khi muốn một lượt soát toàn bộ trên máy sạch; đỏ thì đọc và tự quyết sửa, không phải
 điều kiện để push. `main` cố ý không bật bảo vệ nhánh (*Require a pull request*… sẽ chặn đúng vòng commit thẳng
@@ -207,7 +207,7 @@ chặn, không ai chờ xanh. Chạy khi muốn một lượt soát toàn bộ t
 | `Tài liệu — truy vết ID` | `truyvet` | ID gãy, số đếm lệch, PII hoặc khoá lọt vào file |
 | `Bảo mật — hồi quy RLS trên DB thật` | `baomat` | Vai `anon` với tới thứ nó không được với. Supabase Free ngủ khi không ai đụng → `test:sec` thoát 2 ("chưa kiểm được", không phải "đạt") |
 
-(Còn `migration`, `soatdb`, `kieubot`, `doichieutien` — soát 28/10/2026. Lịch sử: 06/09/2026 từng đề xuất bật branch
+(Còn `migration`, `soatdb`, `kieubot`, `doichieutien`, `doichieusdt` — soát 13/11/2026. Lịch sử: 06/09/2026 từng đề xuất bật branch
 protection với năm check trên làm cổng chặn merge; bỏ hẳn từ 11/11/2026.)
 
 **Cổng 3 — triển khai cùng lượt** (người / agent, bắt buộc — CLAUDE.md §7 bước 3–4: "sửa 1 lần là từ code repo db và

@@ -18,7 +18,7 @@ flowchart TD
     W -->|UF-01 search| L[Kết quả listing]
     L -->|UF-02| D[Chi tiết BĐS]
     D -->|UF-03 hộp mời kết nối| Z[Zalo cá nhân]
-    W -->|UF-09| SM["Mini-site /raoban"]
+    W -->|UF-09| SM["Landing /raoban"]
     Z -->|UF-04| NEED[Khai thác nhu cầu]
     NEED --> REC[Gợi ý 3 căn]
     REC -->|UF-05| ASK[Hỏi bổ sung thông tin]
@@ -162,7 +162,7 @@ B trung thực.
 
 ## UF-06 — Đặt lịch xem nhà
 **Actor** B, admin · **FR** FR-50…FR-57
-🟡 một phần: chốt lịch + xin SĐT MỘT lần khi khách chốt lịch (`src/aioi/mua.py`, `ghi_sdt_hen_xem`, SRS-5.1zzzzzzz148); trigger `viewings_bao_ctv_va_email` giao thẳng admin (SRS-5.1zzzzzzz165); admin trả lời `#mã: ok giờ` → lõi báo khách (`gui_nhac.py`, SRS-5.1zzzzzzz216); nhắc trước giờ kèm bản đồ (FR-54/55) mất khi gỡ `nudge` 18/10; email `[VIEWING]` đi `email_admin()` → ntfy (cần `NTFY_TOKEN`); mở khoá danh tính hai bên (FR-104) chưa dựng.
+🟡 một phần: chốt lịch + xin SĐT MỘT lần khi khách chốt lịch (`src/aioi/mua.py`, `ghi_sdt_hen_xem`, SRS-5.1zzzzzzz148); trigger `trg_viewings_bao_admin_va_email` (hàm `viewings_bao_admin_va_email`) giao thẳng admin (SRS-5.1zzzzzzz165); admin trả lời `#mã: ok giờ` → lõi báo khách (`gui_nhac.py`, SRS-5.1zzzzzzz216); nhắc trước giờ kèm bản đồ (FR-54/55) mất khi gỡ `nudge` 18/10; email `[VIEWING]` đi `email_admin()` → ntfy (cần `NTFY_TOKEN`); mở khoá danh tính hai bên (FR-104) chưa dựng.
 
 1. B đề nghị xem, hoặc bot đề nghị sau ≥3 câu hỏi về một căn.
 2. Bot xác nhận đúng căn, hỏi khung giờ.
@@ -194,7 +194,7 @@ dẫn được (RSK-05) → đề xuất giờ khác, không huỷ im lặng.
 
 ## UF-08 — Tái kích hoạt & chống mất kết nối Zalo
 **Actor** hệ thống → B · **FR** FR-60…FR-64 · **Rủi ro** RSK-01
-🟡 một phần: báo căn mới khớp nhu cầu do lõi tự quét mỗi 10 phút (`src/aioi/bao_can_moi.py`, SRS-5.1zzzzzzz150 / 188; khách tắt được, SRS-5.1zzzzzzz175). Hỏi thăm khi im 5 ngày và tin chống xoá ngày +6 từng ở `nudge` v25 — gỡ 18/10/2026, chưa dựng lại trong lõi. Kênh nay là Zalo cá nhân nên luật 7 ngày của OA (INS-03) chưa kiểm còn áp không.
+🟡 một phần: báo căn mới khớp nhu cầu do lõi tự quét mỗi 10 phút (`src/aioi/bao_can_moi.py`, SRS-5.1zzzzzzz150 / 188; khách tắt được, SRS-5.1zzzzzzz175). Tin chống xoá kết nối đã dựng lại trong lõi: khách im 6–7 ngày thì gửi một câu mẫu, 8–21 giờ (`src/aioi/giu_ket_noi.py`, SRS-5.1zzzzzzz238). Hỏi thăm khi im 5 ngày (FR-60) từng ở `nudge` v25 — gỡ 18/10/2026, chưa dựng lại trong lõi. Kênh nay là Zalo cá nhân nên luật 7 ngày của OA (INS-03) chưa kiểm còn áp không.
 
 ```mermaid
 flowchart TD
@@ -295,7 +295,7 @@ flowchart TD
    năm xây **không hỏi**, chỉ ghi khi S tự kể. Bộ câu hỏi theo loại nằm ở
    `src/aioi/schema.py` (`CORE_FIELDS`, `CORE_THEO_LOAI`, SRS-5.1zzzzzzz68), không ở prompt;
    bảng `required_facts` gỡ 19/10/2026.
-3. **Mỗi tin khoảng 30 từ**: KHÔNG mở bằng "Dạ"; khen ngắn đúng điểm
+3. **Mỗi tin khoảng 20 từ** (SRS-5.1zzzzzzz471; trước là ~30 từ): KHÔNG mở bằng "Dạ"; khen ngắn đúng điểm
    mạnh khách vừa nói, rồi hỏi đúng **một** thông tin (FR-177 b, FR-178 b).
    Giọng theo khối `GIONG_VUI` trong `src/aioi/prompts.py` (SRS-5.1zzzzzzz219).
 4. **Hỏi một đường, trả lời một nẻo thì VẪN GHI** (FR-177 e): nhận ra S đang nói
@@ -353,7 +353,7 @@ Body chứa field của danh sách tương ứng, kèm mô tả BĐS nếu có. 
 
 ## UF-13 — Vòng đời listing & báo sold cho người đang chờ
 **Actor** hệ thống, admin, S, B · **FR** FR-139, FR-108, FR-164, FR-103 · *(FR-106, FR-107 bản cũ deprecated)* [nguồn: artifact "Cầu Nối BĐS" v2, 08/2026]
-🟡 một phần: 5 trạng thái + trigger `trg_zz_listings_dang_tin`; `da_chot` → kind `sold` cho khách trong `interests`, lõi gửi qua `src/aioi/gui_nhac.py` (SRS-5.1zzzzzzz216). Lịch `stale-listing-tick` (tin im 30 ngày → hỏi chủ "còn bán không", FR-103) gỡ 18/10/2026, chưa dựng lại trong lõi. TTL xác nhận 7 ngày nay chỉ còn áp cho căn trong dự án (FR-116).
+🟡 một phần: 6 trạng thái (`cho_thong_tin`, `dang_ban`, `dang_quan_tam`, `da_coc`, `da_chot`, `an`) + trigger `trg_zz_listings_dang_tin`; `da_chot` → kind `sold` cho khách trong `interests`, lõi gửi qua `src/aioi/gui_nhac.py` (SRS-5.1zzzzzzz216). Lịch `stale-listing-tick` (tin im 30 ngày → hỏi chủ "còn bán không", FR-103) gỡ 18/10/2026; nay lõi hỏi chủ nhà khi tin quá 20 ngày chưa xác nhận (`src/aioi/hoi_con_ban.py`, 8–21 giờ, SRS-5.1zzzzzzz295). TTL xác nhận 7 ngày nay chỉ còn áp cho căn trong dự án (FR-116).
 
 ```mermaid
 stateDiagram-v2
@@ -381,6 +381,6 @@ stateDiagram-v2
 
 Các luồng dưới đây chưa có UF riêng; đặc tả và cách kiểm nằm ở mục SRS trong `docs/07` (CLAUDE.md §4: không bắt buộc cấp ID mới).
 
-- **Báo căn mới cho khách mua**: lõi quét mỗi 10 phút, 8–20 giờ, tối đa 1 tin / khách / 24 giờ, 1 căn / tin, kèm ảnh; khách tắt được (`src/aioi/bao_can_moi.py`, SRS-5.1zzzzzzz150 / 151 / 175 / 188).
+- **Báo căn mới cho khách mua**: lõi quét mỗi 10 phút, 8–21 giờ (SRS-5.1zzzzzzz423; trước là 8–20), tối đa 1 tin / khách / 24 giờ, 1 căn / tin, kèm ảnh; khách tắt được (`src/aioi/bao_can_moi.py`, SRS-5.1zzzzzzz150 / 151 / 175 / 188).
 - **Hai số Zalo**: số ký gửi và số tư vấn người mua (`SO_NHAN=tu_van`) cùng một lõi; tin chủ động đi đúng số khách đang nhắn (SRS-5.1zzzzzzz210).
 - **Lệnh gõ tay `/quit`**: khách gõ `/quit` thì xoá sạch phiên của người gõ, bot im lặng; `/state` `/listings` `/whoami` trả tin debug (`src/aioi/lenh_zalo.py`, SRS-5.1zzzzzzz211).

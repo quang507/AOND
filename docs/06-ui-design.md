@@ -29,7 +29,7 @@ Veedoo cam + navy 26/08–12/11 → King lại từ 12/11). Token riêng, không
 | `--color-brand-dark` | `#b8001c` | Hover CTA |
 | `--color-brand-light` | `#ffe5ea` | Nền khối nhấn nhẹ |
 | `--color-brand-soft` | `#ff5470` | Chữ đỏ trên nền tối |
-| `--color-navy` | `#13151d` | Chữ chính, nền tối (footer) |
+| `--color-navy` | `#13151d` | Chữ chính, nền tối (hero, khối người bán) |
 | `--color-navy-soft` | `#232830` | Nền tối phụ |
 | `--color-mute` | `#5d6a7a` | Chữ phụ, nhãn (đạt AA trên `#f6f7f9`, SRS-5.1zzzzzzz439) |
 | `--color-line` / `--color-line-strong` | `#e8ebed` / `#c8d1d8` | Viền, đường chia |
@@ -63,8 +63,8 @@ Việt. Font thật đang dùng: `--font-sans` trong `globals.css` (OPEN-45 đó
 
 - Thang 4px: `4 · 8 · 12 · 16 · 24 · 32 · 48 · 64`.
 - Bo góc theo cỡ (SRS-5.1zzzzzzz452, thang `--radius-*` trong `app/globals.css`): khối lớn — thẻ, khung, ảnh (`rounded-lg` trở lên, `rounded-king`, `rounded-shot`) `14px`; nút, ô nhập, chip lọc (`rounded-md`) `8px`; nhãn nhỏ, mã tin (`rounded` / `-sm`) `6px`; `rounded-xs` `4px`. `rounded-full` chỉ cho hình tròn thật.
-- Bóng: `shadow-1 = 0 1px 2px rgba(14,27,51,.06)` (card), `shadow-2 = 0 8px 24px rgba(14,27,51,.10)` (hộp mời, modal).
-- Nội dung tối đa `1200px`; lưới desktop 12 cột, gutter 24px.
+- Bóng: thang `--shadow-zen-1` … `--shadow-zen-4` trong `app/globals.css` (`shadow-1` / `shadow-2` của bản thiết kế cũ không có trong code).
+- Nội dung tối đa `1152px` (`max-w-6xl`); lưới desktop 12 cột, gutter 24px.
 
 ## 6.5 Thư viện component
 
@@ -98,7 +98,7 @@ Nền `--color-brand-light`, chữ `--color-navy`, mã font mono, chạm = copy 
 ### UI-C05 · SpecTable
 Hai cột nhãn/giá trị. Trường chưa xác minh: nhãn `Chờ xác minh` màu `--warn` + nút
 `[Hỏi giúp em]` → tạo InfoRequest (UI-P5, FR-40). Thông số đọc từ cột FR-172
-(`_shared/thong_so.ts` ở bot, `lib/format.ts` ở web).
+(`lib/format.ts` ở web; `_shared/thong_so.ts` phía bot không còn trong repo).
 
 ### UI-C06 · QuickQuestionChips
 Chip từ bộ câu hỏi chuẩn hoá (FR-46): *Còn bán không? · Xem sổ đỏ · Ảnh hẻm · Mở
@@ -674,7 +674,7 @@ Sau khi gộp: `bun run prompt --day` (khoá `tone_rules`, `seller_fewshot`).
 
 **Cấm dấu hiệu AI trên web** (song song với "Cấm dấu hiệu AI trong tin nhắn" §6.8): dấu gạch dài "—" (dùng "-" hoặc dấu chấm, chủ dự án 09/09); mũi tên "→ ↗ ←" trong nút và nhãn (dùng chữ: "Quay lại", "Xem bảng", "thành"); emoji làm icon; nút/ô nhập bo tròn hoàn toàn (`rounded-full`) trừ avatar và chấm trạng thái; `shadow-*` trên thẻ và nút (chỉ modal/menu nổi được `shadow-lg`); gradient; `animate-pulse`; chữ `font-extrabold` khắp nơi; nhãn kiểu "Admin Console", "✨"; mô tả sáo. Kiểm bằng `bun run truyvet`? — chưa; soát tay bằng lệnh đếm emoji trong `app/` + `components/` (0 là đạt, trừ `✓`/`✗` dạng chữ).
 
-**Nút bắt buộc có ở đúng chỗ (soát 09/09, khung đổi 19/10):** thanh trên: Đăng tin, chuông, tìm; cột trái: đăng xuất có chữ · Tin nhắn: Làm mới, Đã xử lý (khi cần người thật), Xoá khách, Sửa thành câu chuẩn ở mỗi câu bot · Rổ hàng: Sửa, Xoá tin, Tải CSV, JSON, Đăng tin · Mẫu câu: Sửa, Xoá, Mở chat, Tải JSONL · Bàn làm việc: bốn ô số liệu (ba ô là link tới Khách hàng / Rổ hàng / Vận hành, "Cần xử lý" là số).
+**Nút bắt buộc có ở đúng chỗ (soát 09/09, khung đổi 19/10):** thanh trên: Đăng tin, chuông, tìm; cột trái: đăng xuất có chữ · Tin nhắn: Làm mới, Đã xử lý (khi cần người thật), Xoá khách, Sửa thành câu chuẩn ở mỗi câu bot · Rổ hàng: Sửa, Xoá tin, Tải CSV, JSON, Đăng tin · Mẫu câu (trang `/admin/mau-cau` đã gỡ 18/10/2026, SRS-5.1zzzzzzz46): Sửa, Xoá, Mở chat, Tải JSONL · Bàn làm việc: bốn ô số liệu (ba ô là link tới Khách hàng / Rổ hàng / Vận hành, "Cần xử lý" là số).
 
 **Khung CRM (19/10/2026, SRS-5.1zzzzzzz72)** [nguồn: chủ dự án 19/10/2026 — "sửa lại nguyên cái layout crm đi chứ thấy hơi rối"]:
 điều hướng có MỘT chỗ — cột trái chia nhóm theo việc (Hằng ngày · Rổ hàng · Hệ thống), dưới 1024px thành một hàng cuộn ngang.
