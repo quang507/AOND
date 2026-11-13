@@ -795,6 +795,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz473 · Thưởng quy mô chỉ từ hạng Bạc; bot báo hạng theo DB (13/11/2026)
+Bắn thử SRS-466 trên production 13/11 lộ hai lệch: người bán 5 căn 47 điểm (Đồng), rao căn thứ 6 lên 61 (Bạc) vì hệ số quy mô 1,36 — trần 5 căn gần như không chạm; và bot báo "Hạng người rao hiện là Vàng" (số `gamification` trong cuộc chat, độ kịp thời 1,0 lúc mới chat) trong khi DB tính Đồng. Soát khuôn anh Luận (`luan8560/AOND`): `perks_for(DONG)` khai `max_listings=5`, `scale_bonus_active=False` nhưng không code nào dùng. SRD §IV.3: Bạc "kích hoạt Thưởng quy mô". Chủ dự án: "Sửa theo SRD".
+- **DB (`20261113f`):** `diem_nguoi_ban` nhân hệ số quy mô chỉ khi điểm gốc ≥ 50. Lúc áp: 4 người bán thật, 0 người đổi hạng.
+- **Lõi:** `gamification.user_score` cùng luật. Hạng bot nói (khối ĐIỂM TIN, `TurnResult.tier`, phiếu dự án `_ma_phieu`) đọc `SupabaseConversationStore.hang_nguoi_ban` → `rpc/diem_nguoi_ban`, nhớ 30 giây, chưa có người bán = Đồng; lỗi / kho không DB → số `gamification`. Prompt không đổi độ dài.
+- Thông tin dự án do một người đưa vào vẫn nhận, vẫn dùng, kèm nhãn chưa chắc chắn — cần kiểm chứng (SRS-445, chủ dự án nhắc lại 13/11); hạng chỉ đổi trọng số phiếu.
+
 ### SRS-5.1zzzzzzz471 · Lời bot ngắn khoảng 20 từ, thu thông tin như trò chuyện — câu mẫu gói nhiều ý thành một ý (13/11/2026)
 Sếp 13/11: bot nhận tin rao trả lời ngắn hơn, tập trung thu thông tin nhưng "đừng có hỏi cung". Đo 53 lời bot gửi chủ nhà 11–13/11: trung vị 37 từ,
 18 lời trên 40 từ (luật cũ khoảng 30 từ, bản anh Luận 28/10). Lời 13/11 hỏi một "câu" mà ba ý: mặt tiền hay hẻm, rộng mấy mét, xe hơi vào tận cửa không.
@@ -881,10 +887,3 @@ Ca gốc: chủ dự án 13/11 nhờ soát docs, PR, open issue có chỗ nào m
 Lớp lỗi: sửa code / SRS mà không quét các tầng docs và file luật (CLAUDE.md, luat-dang-ap, .clinerules) cùng lúc; `truyvet` chỉ soát ID, số đếm, tên hàm, không soát nghĩa.
 Sửa: (1) SĐT người mua theo SRS-388 — chỉ chủ động xin lúc chốt lịch, khách tự để lại thì lưu `buyers.phone` + báo admin (BR-06, NFR-07, FR-53, 07 §3); (2) migration chạy thử trong giao dịch huỷ rồi áp luôn (CLAUDE.md §6.4 theo §7); (3) FR-90/100/119–122/124–126 khôi phục ✅ vì trang còn chạy trong `app/`. Kèm: domain `aond.vercel.app`, bóc tách Sonnet 5.5, `AIOI_PROMPT_GON` vào bảng công tắc, token King / Nunito / góc bo 14·8·6 ở 06, route mới ở 04, 2–3 căn mỗi lượt, `CUM_TOI_DA = 1` và 4 nhóm soạn ở docs/14 + luat-dang-ap, quy trình 10 / 11 / .clinerules theo commit thẳng main, tàn dư CTV / VPS / OPEN đã đóng; `schema.sql` bổ sung `deals.gia_chot_vnd`, `bao_cao_gia_quanh`, `can_dang_rao_gan` lấy nguyên từ DB (md5 khớp).
 Kiểm: `bun run truyvet` sạch; đối chiếu DB — 0 hàm, 0 cột lệch `schema.sql` sau khi vá. Còn lại: không có.
-
-### SRS-5.1zzzzzzz463 · Bridge: video và danh thiếp Zalo không còn đi nhánh ảnh (13/11/2026)
-Rà các loại tin Zalo theo yêu cầu chủ dự án 13/11. Video (`chat.video.msg`) và danh thiếp (`chat.recommended`, action `recommened.user`) mang `href`
-nên rơi vào nhánh ảnh / thẻ link: lõi tải .mp4 như ảnh (hỏng "loại tệp không hỗ trợ") hoặc nhận link ảnh đại diện.
-- Video → chữ "[Khách gửi một video — hệ thống chưa xem được video, chỉ đọc được ảnh và chữ]" (+ tiêu đề nếu có): bot nói thật, xin ảnh.
-- Danh thiếp → "[Khách gửi danh thiếp Zalo: <tên> — số <sđt nếu Zalo kèm>]".
-- Còn lại chưa đọc: thu hồi tin (bot không biết khách đã thu hồi), tin nhóm (bỏ có chủ đích).

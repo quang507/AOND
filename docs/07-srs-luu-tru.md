@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz463 · Bridge: video và danh thiếp Zalo không còn đi nhánh ảnh (13/11/2026)
+Rà các loại tin Zalo theo yêu cầu chủ dự án 13/11. Video (`chat.video.msg`) và danh thiếp (`chat.recommended`, action `recommened.user`) mang `href`
+nên rơi vào nhánh ảnh / thẻ link: lõi tải .mp4 như ảnh (hỏng "loại tệp không hỗ trợ") hoặc nhận link ảnh đại diện.
+- Video → chữ "[Khách gửi một video — hệ thống chưa xem được video, chỉ đọc được ảnh và chữ]" (+ tiêu đề nếu có): bot nói thật, xin ảnh.
+- Danh thiếp → "[Khách gửi danh thiếp Zalo: <tên> — số <sđt nếu Zalo kèm>]".
+- Còn lại chưa đọc: thu hồi tin (bot không biết khách đã thu hồi), tin nhóm (bỏ có chủ đích).
+
 ### SRS-5.1zzzzzzz462 · Sticker "ok / gật / like" là đồng ý, như thả tim (13/11/2026)
 Chủ dự án 13/11: "sticker con mèo đưa kèm chữ ok mà bot ko đọc dc". Bot đọc đúng nghĩa ("Con mèo giơ chân lên kèm chữ OK") nhưng luật SRS-22 (từ
 lúc zca-js chưa cho nghĩa sticker) coi mọi sticker là trung tính — trong khi thả 👍 lên tin lại là đồng ý.

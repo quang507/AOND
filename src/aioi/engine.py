@@ -2143,7 +2143,22 @@ class Engine:
             return ma_phieu(user_key, "dong")
         t = self._timeliness(conv, time.time())
         diem = g.user_score([g.property_score(do_du_tin(li, self._anh_du()), t) for li in can], num_listings=len(can))
-        return ma_phieu(user_key, {g.Tier.VANG: "vang", g.Tier.BAC: "bac"}.get(g.tier_for(diem), "dong"))
+        hang = self._hang(user_key, diem)   # SRS-5.1zzzzzzz473: hạng theo DB, một nguồn với nhãn "cần kiểm chứng thêm"
+        return ma_phieu(user_key, {"Vàng": "vang", "Bạc": "bac"}.get(hang, "dong"))
+
+    def _hang(self, user_key: str, diem_du_phong: float, moi: bool = False) -> str:
+        """Hạng người rao (Đồng / Bạc / Vàng) — đọc DB (`hang_nguoi_ban`, SRS-5.1zzzzzzz473): cùng nguồn với trigger gắn nhãn
+        "thông tin cần kiểm chứng thêm" (SRS-5.1zzzzzzz466). Trước đây bot nói hạng theo số `gamification` trong cuộc chat (độ kịp thời
+        1,0 lúc mới chat → người mới rao một căn đã "Vàng") trong khi DB tính Đồng. Kho không có DB / lỗi → số `gamification`."""
+        doc = getattr(self._convstore, "hang_nguoi_ban", None)
+        if doc is not None:
+            try:
+                h = doc(user_key, moi=moi)
+                if h:
+                    return h
+            except Exception as e:  # noqa: BLE001
+                log.warning("hang lỗi: %s", e)
+        return g.tier_for(diem_du_phong).value
 
     def register_project(
         self,
@@ -3618,7 +3633,7 @@ class Engine:
         diem_nguoi = g.user_score(tat_ca, num_listings=len(conv.listings))
         qc = qc_anh_cua(conv.active)
         cl = chat_luong_anh(conv.active)
-        return khoi_diem_tin(diem, g.tier_for(diem_nguoi).value, conv.prop.missing_fields(), so_anh, conv.prop,
+        return khoi_diem_tin(diem, self._hang(conv.user_key, diem_nguoi), conv.prop.missing_fields(), so_anh, conv.prop,
                              anh_du=anh_du, diem_du_anh=diem_du_anh,
                              chat_luong_anh=None if cl is None else round(cl * 100), goc_qc=str(qc.get("goc_can_xin") or ""))   # hạng: chỉ tên (SRS-349)
 
@@ -5072,6 +5087,7 @@ class Engine:
         # scale bonus) — more listings → scale bonus, the point of growing the rổ hàng.
         all_scores = [g.property_score(do_du_tin(li, self._anh_du()), timeliness) for li in conv.listings]
         u_score = g.user_score(all_scores, num_listings=len(conv.listings))
+        hang = self._hang(conv.user_key, u_score, moi=True) if conv.role != "buyer" else g.tier_for(u_score).value
         missing = conv.prop.missing_fields()
         next_f = (
             conv.buyer_lead.next_question_field()
@@ -5088,7 +5104,7 @@ class Engine:
             completeness=completeness,
             property_score=prop_score,
             user_score=u_score,
-            tier=g.tier_for(u_score).value,
+            tier=hang,
             role=conv.role,
             lead=conv.buyer_lead,
             can_nguoi_that=conv.y_luot.get("can_nguoi_that") if isinstance(conv.y_luot.get("can_nguoi_that"), str) else None,
@@ -5098,7 +5114,7 @@ class Engine:
             xin_anh=list(conv.y_luot.get("xin_anh") or []),
             ban_ve=list(conv.y_luot.get("ban_ve") or []),
             chu_thich=che_do_test.chu_thich(conv, captured, next_f, so_token.tong_luot(),
-                                           {"property_score": prop_score, "user_score": u_score, "tier": g.tier_for(u_score).value,
+                                           {"property_score": prop_score, "user_score": u_score, "tier": hang,
                                             "completeness": completeness}) if che_do_test.bat() else "",
         )
 

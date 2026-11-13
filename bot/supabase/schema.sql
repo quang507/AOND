@@ -2860,15 +2860,17 @@ begin
   if coalesce(v_n, 0) = 0 then
     return jsonb_build_object('diem', 0, 'diem_tb', 0, 'so_tin', 0, 'he_so', 1, 'diem_phan_hoi', null, 'so_luot_phan_hoi', 0);
   end if;
-  if v_type = 'nmg' then
-    v_he_so := 1 + 0.06 * least(v_n, 10)
-                 + 0.04 * greatest(least(v_n, 30) - 10, 0)
-                 + 0.015 * greatest(v_n - 30, 0);
-  end if;
   v_ph := public.diem_phan_hoi(p_seller_id);
   -- SRS-5.1zzx: dưới 5 lượt chủ động thì chưa đủ để kết luận "kịp thời" → chưa tính (null), dùng 100% hoàn chỉnh.
   v_ph_diem := case when coalesce((v_ph->>'so_luot')::int, 0) >= 5 then (v_ph->>'diem')::int end;
   v_goc := case when v_ph_diem is null then v_tb else 0.5 * v_tb + 0.5 * v_ph_diem end;
+  -- SRS-5.1zzzzzzz473 (SRD §IV.3: Bạc "kích hoạt Thưởng quy mô"): điểm gốc từ 50 (đã Bạc) mới nhân hệ số — hạng Đồng
+  -- không thoát Đồng bằng cách rao thêm căn.
+  if v_type = 'nmg' and v_goc >= 50 then
+    v_he_so := 1 + 0.06 * least(v_n, 10)
+                 + 0.04 * greatest(least(v_n, 30) - 10, 0)
+                 + 0.015 * greatest(v_n - 30, 0);
+  end if;
   v_diem := least(100, round(v_goc * v_he_so))::int;
   return jsonb_build_object('diem', v_diem, 'diem_tb', round(v_tb, 1), 'so_tin', v_n, 'he_so', round(v_he_so, 3),
                             'diem_phan_hoi', v_ph_diem, 'so_luot_phan_hoi', coalesce((v_ph->>'so_luot')::int, 0));

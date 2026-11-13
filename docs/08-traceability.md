@@ -134,7 +134,7 @@ Cập nhật **cùng commit** khi đổi FR / BR / UF / WF ở tầng trên (quy
 | FR-152 | UF-09 | — | — | TS-HEALTH, TS-LOG |
 | FR-153 | UF-05, UF-09 | — | — | TS-SPECS-01 |
 | FR-154 | UF-04, UF-05 | WF-03, WF-05 | — | TS-GIA-01 |
-| FR-155 | UF-09, UF-10 | — | SRS-5.1zzzzzzz466 | TS-HANG-01, TS-HANG-04 |
+| FR-155 | UF-09, UF-10 | — | SRS-5.1zzzzzzz466, SRS-5.1zzzzzzz473 | TS-HANG-01, TS-HANG-04, TS-HANG-05 |
 | FR-156 | UF-09, UF-13 | — | — | TS-DANGTIN-01 |
 | FR-157 | UF-05, UF-09, UF-10 | — | — | TS-NEO-01 |
 | FR-158 | UF-05, UF-09 | — | — | TS-MA-01 |
@@ -550,6 +550,7 @@ Cập nhật **cùng commit** khi đổi FR / BR / UF / WF ở tầng trên (quy
 | FR-185 | — | — | SRS-5.1zzzzzzz455 | TS-SRS (`test_bao_cao_gia_455.py`) + mở `/bao-cao-gia/<mã>` |
 | FR-185 | — | — | SRS-5.1zzzzzzz456 | TS-SRS (`test_gia_chot_456.py`) |
 | FR-155 | — | — | SRS-5.1zzzzzzz466 | TS-HANG-04 + mở trang tin / thẻ tin có `can_kiem_chung` |
+| FR-155 | — | — | SRS-5.1zzzzzzz473 | TS-HANG-05 + bắn thử người bán `thu-` rao căn thứ 6 trên production |
 | FR-144 | — | — | SRS-5.1zzzzzzz450 | TS-SRS (`test_dap_chua_chon_450.py`) |
 | FR-185, FR-165 | — | — | SRS-5.1zzzzzzz454 | TS-SRS (`test_xoa_logo_454.py`) + TS-PROD (log "xoa_logo: … đã đóng dấu") |
 

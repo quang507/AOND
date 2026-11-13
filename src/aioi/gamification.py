@@ -63,7 +63,8 @@ def scale_bonus_multiplier(num_listings: int) -> float:
 
 
 def user_score(property_scores: list[float], num_listings: int | None = None) -> float:
-    """Điểm Uy tín Người rao = mean(điểm BĐS) × hệ số thưởng quy mô.
+    """Điểm Uy tín Người rao = mean(điểm BĐS) × hệ số thưởng quy mô — hệ số chỉ khi điểm gốc ≥ 50 (SRD §IV.3: Bạc "kích hoạt Thưởng
+    quy mô", SRS-5.1zzzzzzz473). Cùng luật với `diem_nguoi_ban` trên DB; hạng bot nói với khách lấy từ DB (`hang_nguoi_ban`), đây là dự phòng.
 
     `num_listings` defaults to the number of scored properties.
     """
@@ -71,7 +72,7 @@ def user_score(property_scores: list[float], num_listings: int | None = None) ->
         return 0.0
     n = num_listings if num_listings is not None else len(property_scores)
     base = sum(property_scores) / len(property_scores)
-    score = base * scale_bonus_multiplier(n)
+    score = base * scale_bonus_multiplier(n) if base >= 50 else base
     return round(min(score, 100.0), 1)  # uy tín capped at 100
 
 

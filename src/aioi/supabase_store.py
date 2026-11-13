@@ -833,7 +833,7 @@ class SupabaseConversationStore(KhoNguoiMua):
             # `nguoi_gui` = "human" khi câu là của admin (gõ tay trên acc clone / ô gửi ở /admin/tin-nhan) — CRM tô màu riêng (SRS-216).
             dong = {"conversation_id": conv_id, "sender": nguoi_gui if nguoi_gui in ("bot", "human") else "bot",
                     "body": bot_reply, "created_at": now_iso}
-            if ghi_chu:   # tin phụ $$$$$ của lượt — chỉ CRM hiện, bot không đọc lại (SRS-5.1zzzzzzz472)
+            if ghi_chu:   # tin phụ $$$$$ của lượt — chỉ CRM hiện, bot không đọc lại (SRS-5.1zzzzzzz473)
                 dong["ghi_chu_test"] = ghi_chu
             self._post("messages", dong, prefer="return=minimal")
         self._patch(f"conversations?id=eq.{conv_id}", {"last_message_at": now_iso})
@@ -1248,6 +1248,36 @@ class SupabaseConversationStore(KhoNguoiMua):
 
     # Cột → ô bot hỏi: đúng ba điều kiện của `listing_du_dang_tin` (giá · diện tích · phường).
     _COT_DANG_TIN = (("phuong", "ward"), ("dien_tich", "area_m2"), ("gia", "price_vnd"))
+
+    _TEN_HANG = {"vang": "Vàng", "bac": "Bạc", "dong": "Đồng"}
+
+    def hang_nguoi_ban(self, user_key: str, moi: bool = False) -> str | None:
+        """Hạng người rao theo DB (`diem_nguoi_ban` → `hang_theo_diem`) — MỘT nguồn với trigger gắn nhãn "cần kiểm chứng thêm"
+        (SRS-5.1zzzzzzz466 / 472). Chưa có dòng người bán → "Đồng" (0 căn). Không tạo người bán. Nhớ 30 giây (`moi` = đọc lại);
+        lỗi → None (engine dùng số `gamification`)."""
+        if not self.is_configured or not user_key:
+            return None
+        nho = self.__dict__.setdefault("_hang_nho", {})
+        if not moi and user_key in nho and time.time() - nho[user_key][0] < 30:
+            return nho[user_key][1]
+        try:
+            sid = self._seller_cache.get(user_key)
+            if not sid:
+                r = self._get(f"sellers?zalo_user_id=eq.{urllib.parse.quote(user_key)}&select=id&limit=1")
+                sid = r[0]["id"] if r else None
+            hang = "Đồng"
+            if sid:
+                d = self._request("POST", "rpc/diem_nguoi_ban", data={"p_seller_id": sid}) or {}
+                diem = d.get("diem") if isinstance(d, dict) else None
+                if isinstance(diem, (int, float)):
+                    hang = "Vàng" if diem >= 80 else "Bạc" if diem >= 50 else "Đồng"
+        except Exception as e:  # noqa: BLE001
+            log.warning("hang_nguoi_ban lỗi: %s", e)
+            return None
+        if len(nho) > 500:
+            nho.clear()
+        nho[user_key] = (time.time(), hang)
+        return hang
 
     def trang_thai_tin(self, conv: Conversation) -> dict | None:
         """Tin đang nói có ĐANG HIỂN THỊ trên web không — đọc `status` thật (trigger `listings_quyet_dinh_dang_tin` quyết),
