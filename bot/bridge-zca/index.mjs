@@ -557,11 +557,9 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId, 
   bufferTin.set(tid, hienTai);
 }
 
-// SRS-5.1zzzzzzz459: tên hàm để đường bù tin lỡ (`old_messages`) đi CHUNG đường với tin đến trực tiếp.
 async function xuLyTin(message) {
   try {
     if (message.type !== ThreadType.User) return; // chỉ chat 1-1, bỏ qua nhóm
-    ghiDaThay(message.data?.msgId);
 
     // FR-141: tin ĐI RA từ acc clone mà không phải bot vừa gửi = admin đang
     // gõ tay → báo bộ não ghi log + nhường sân 30 phút, đừng trả lời chen ngang.
@@ -964,24 +962,15 @@ setInterval(() => {
   soKhungGio = 0;
 }, 3_600_000);
 // SRS-5.1zzzzzzz459 (13/11/2026): bridge điếc LẦN HAI dù canh pong SRS-453 đang chạy — 02:11 → 12:21 không một khung tin nào, chủ dự án nhắn
-// "em ơi" 12:20 không thấy đáp. Zalo vẫn trả pong tầng websocket (socket sống) nhưng thôi đẩy tin xuống kết nối đó, nên canh pong không cắt.
-// Đo thẳng ở nguồn: mỗi DO_SONG_MS hỏi Zalo các tin 1-1 gần nhất ngay trên socket (`requestOldMessages`, lệnh 510). Socket nghe còn sống thì
-// Zalo trả `old_messages`; quá CHO_DAP_MS không trả → cắt socket để zca-js nối lại. Mỗi lần nhận `old_messages` (định kỳ, và 3 giây sau mỗi
-// lần nối) thì BÙ tin lỡ: tin của khách mới hơn tin cuối của mình trong cùng cuộc chat (bot / admin chưa đáp), trong 6 giờ, chưa xử lý ở
-// tiến trình này → đưa vào đúng đường xử lý tin thường. Lõi chặn trùng theo msg_id lưu vĩnh viễn, phát lại tin đã đáp chỉ thành "bỏ bản trùng".
+// "em ơi" 12:20 không thấy đáp. Pong tầng websocket vẫn về (có thể chỉ từ lớp trung gian), nên canh pong không cắt. Đo thẳng ở nguồn: mỗi
+// DO_SONG_MS gửi lệnh ứng dụng `requestOldMessages` (510) trên chính socket nghe — chỉ máy chủ Zalo thật trả `old_messages`; quá CHO_DAP_MS
+// không trả → cắt socket để zca-js nối lại. Tin khách nhắn lúc socket điếc thì MẤT: 510 trả tin đồng bộ cũ (đo 13/11: mới nhất 02/11), zca-js
+// không có API đọc lịch sử chat 1-1 — nên chỉ rút ngắn khoảng điếc (≤ ~5,5 phút), không bù được.
 const DO_SONG_MS = Number(process.env.BRIDGE_DO_SONG_MS || 300_000);
 const CHO_DAP_MS = 90_000;
-const BU_TOI_DA_MS = 6 * 3_600_000;
-const daThay = new Set();
-function ghiDaThay(id) {
-  if (!id) return;
-  daThay.add(String(id));
-  if (daThay.size > 3000) daThay.delete(daThay.values().next().value);
-}
-const idMinh = () => { try { return typeof api.getOwnId === "function" ? String(api.getOwnId()) : ""; } catch { return ""; } };
 let choDoSong = 0;
-let daBaoDoSong = false;
 let lanDoCuoi = 0;
+let daBaoDoSong = false;
 function doSong(lyDo) {
   const ws = api.listener.ws;
   if (!ws || ws.readyState !== 1 || dangThoat || typeof api.listener.requestOldMessages !== "function") return;
@@ -989,34 +978,13 @@ function doSong(lyDo) {
   if (!choDoSong) choDoSong = Date.now();
   try { api.listener.requestOldMessages(ThreadType.User, null); } catch (e) { console.log(`Dò sống Zalo lỗi (${lyDo}): ${errDetail(e)}`); }
 }
-api.listener.on("old_messages", async (msgs, loai) => {
+api.listener.on("old_messages", (msgs, loai) => {
   if (loai !== ThreadType.User) return;
   choDoSong = 0;
   khungCuoi = Date.now();
-  try {
-    const minh = idMinh();
-    // Tin cũ có thể ghi uidFrom = id thật của acc (không phải "0") → tự tính "của mình" và cuộc chat, đừng tin `isSelf` / `threadId` của model.
-    const ds = (Array.isArray(msgs) ? msgs : []).map((m) => {
-      const d = m?.data ?? {};
-      const laMinh = Boolean(m?.isSelf) || (minh && String(d.uidFrom) === minh);
-      return { m, laMinh, tid: String(laMinh ? d.idTo : d.uidFrom), ts: Number(d.ts) || 0, id: d.msgId ? String(d.msgId) : "" };
-    });
-    const cuoiMinh = new Map();
-    for (const x of ds) if (x.laMinh && x.ts > (cuoiMinh.get(x.tid) || 0)) cuoiMinh.set(x.tid, x.ts);
-    const bu = ds.filter((x) => !x.laMinh && x.id && !daThay.has(x.id) && x.tid && x.tid !== minh
-      && x.ts > Date.now() - BU_TOI_DA_MS && x.ts > (cuoiMinh.get(x.tid) || 0)).sort((a, b) => a.ts - b.ts);
-    if (!daBaoDoSong) {   // lần đáp đầu sau mỗi lần nối: một dòng để soi (định kỳ thì im, trừ khi có tin phải bù)
-      daBaoDoSong = true;
-      const moiNhat = ds.reduce((m, x) => Math.max(m, x.ts), 0);
-      console.log(`Dò sống: Zalo đáp ${ds.length} tin gần nhất (mới nhất ${moiNhat ? new Date(moiNhat).toISOString() : "—"}), cần bù ${bu.length}.`);
-    }
-    for (const x of bu) {
-      console.log(`↺ [${x.tid}] bù tin lỡ ${x.id} (${new Date(x.ts).toISOString()})`);
-      x.m.threadId = x.tid;
-      await xuLyTin(x.m);
-    }
-  } catch (e) {
-    await ghiLoi("bu tin lo", errDetail(e));
+  if (!daBaoDoSong) {   // lần đáp đầu sau mỗi lần nối: một dòng để soi log; định kỳ thì im
+    daBaoDoSong = true;
+    console.log(`Dò sống: máy chủ Zalo đáp lệnh 510 (${Array.isArray(msgs) ? msgs.length : 0} tin) — bật canh mỗi ${Math.round(DO_SONG_MS / 60000)} phút.`);
   }
 });
 api.listener.on("connected", () => { daBaoDoSong = false; setTimeout(() => doSong("vừa nối"), 3000); });

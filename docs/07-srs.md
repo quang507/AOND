@@ -788,14 +788,13 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
-### SRS-5.1zzzzzzz459 · Bridge dò sống bằng lệnh hỏi tin gần nhất, bù tin lỡ (13/11/2026)
-Bridge điếc lần hai dù SRS-5.1zzzzzzz453 đang chạy: 02:11 → 12:21 không một khung tin, chủ dự án nhắn "em ơi" lúc 12:20 không thấy đáp. Zalo vẫn
-trả pong tầng websocket nên canh pong không cắt — socket sống nhưng Zalo thôi đẩy tin xuống.
-- **Dò sống:** mỗi 5 phút (`BRIDGE_DO_SONG_MS`) gửi `requestOldMessages` (lệnh 510) trên chính socket nghe; quá 90 giây không có `old_messages`
-  → cắt socket, zca-js nối lại. 3 giây sau mỗi lần nối cũng dò.
-- **Bù tin lỡ:** mỗi lần nhận `old_messages`, tin của khách mới hơn tin cuối của mình trong cùng cuộc chat (chưa ai đáp), trong 6 giờ, chưa xử lý
-  ở tiến trình này → vào đúng đường xử lý tin thường (`xuLyTin`). Lõi chặn trùng theo msg_id lưu vĩnh viễn nên phát lại tin đã đáp là vô hại.
-- Tin chậm tối đa ~5,5 phút khi Zalo thôi đẩy tin, thay vì mất hẳn. Canh pong SRS-453 giữ nguyên.
+### SRS-5.1zzzzzzz459 · Bridge dò sống bằng lệnh ứng dụng 510, không đáp thì nối lại (13/11/2026)
+Bridge điếc lần hai dù SRS-5.1zzzzzzz453 đang chạy: 02:11 → 12:21 không một khung tin, chủ dự án nhắn "em ơi" lúc 12:20 không thấy đáp. Pong tầng
+websocket vẫn về nên canh pong không cắt.
+- **Dò sống:** mỗi 5 phút (`BRIDGE_DO_SONG_MS`) và 3 giây sau mỗi lần nối, gửi `requestOldMessages` (lệnh 510) trên chính socket nghe — chỉ
+  máy chủ Zalo thật trả `old_messages`; quá 90 giây không trả → cắt socket, zca-js nối lại. Lần đáp đầu sau mỗi lần nối ghi một dòng log.
+- **Giới hạn:** tin khách nhắn lúc socket điếc vẫn mất. Đo 13/11: lệnh 510 trả tin đồng bộ cũ (mới nhất 02/11), zca-js 2.2.0 không có API đọc
+  lịch sử chat 1-1 → chỉ rút khoảng điếc xuống ≤ ~5,5 phút, không bù được. Canh pong SRS-453 giữ nguyên. Hàm xử lý tin đổi tên `xuLyTin`.
 
 ### SRS-5.1zzzzzzz458 · Khối "0 kết quả" lên trên bộ lọc (13/11/2026)
 
