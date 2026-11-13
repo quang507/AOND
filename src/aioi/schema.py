@@ -808,8 +808,9 @@ class Property:
         # SRS-5.1zzzzzzz157 (chủ dự án 23/10: nhà chỉ nói tên đường thì khỏi hỏi "mặt tiền hay hẻm") — SRS-5.1zzzzzzz320 (chủ dự án 02/11: không
         # dùng từ khoá trên lời khách để quyết ý): bản trước TỰ GHI "Mặt tiền" khi địa chỉ thiếu chữ hẻm / ngõ — "HXH Lê Lai", "hẽm" (gõ sai) đều
         # thành mặt tiền trên tin công khai. Nay không ghi sự thật nào; ô đường vào để SAU bản nháp (vẫn khỏi hỏi trước), AI đọc theo nghĩa nếu khách nói.
-        if (not self.fields.get("lo_gioi_hem") and self.fields.get("duong") and "lo_gioi_hem" in self.core_fields()
-                and "/" not in (self.fields.get("dia_chi") or "")):
+        # SRS-5.1zzzzzzz470 (chị Nga 13/11 "chị nhắn rồi mà"): nhà trong dự án (ô du_an) cũng vậy — vị trí theo dự án, đường nội khu.
+        if (not self.fields.get("lo_gioi_hem") and (self.fields.get("duong") or self.fields.get("du_an"))
+                and "lo_gioi_hem" in self.core_fields() and "/" not in (self.fields.get("dia_chi") or "")):
             self.hoan.add("lo_gioi_hem")
 
         # 19/10/2026 (SRS-5.1zzzzzzz55): bỏ khối đoán loai_hinh bằng từ khoá ("nhà / lầu / hẻm" → nhà phố, tên thương hiệu → chung

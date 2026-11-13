@@ -958,8 +958,8 @@ KHOI_MOT_UU_TIEN = f"(Khối ƯU TIÊN LƯỢT NÀY ở trên thay cho {NHAN_VIE
 
 KHOI_DINH_GIA = (
     "\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI GIÁ THỊ TRƯỜNG / GIÁ CAO HAY THẤP: ===\n"
-    "Bên em chưa có dữ liệu định giá cho căn này. Việc lượt này: nói thật bên em chưa có số liệu để định giá, tin vẫn rao theo giá chủ "
-    "muốn; chủ muốn tham khảo thì xem các tin cùng khu đang rao trên web bên em.\n"
+    "Việc lượt này: gọi công cụ dinh_gia_tham_khao (quận, phường, đường hoặc dự án, loại hình, diện tích của căn) rồi trả lời bằng số tra "
+    "được, nói rõ là giá rao tham khảo. Tra không ra số thì nói thật bên em chưa có số liệu khu này.\n"
 )
 
 
@@ -974,7 +974,7 @@ def khoi_dinh_gia(gia_rao: str | None) -> str:
         "\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI GIÁ THỊ TRƯỜNG / GIÁ CAO HAY THẤP: ===\n"
         f"Dữ kiện hệ thống (nguồn nội bộ) — giá các tin đang RAO bán của dự án này: {gia_rao.strip()}. Đây là giá rao, không phải giá "
         "giao dịch chốt.\nViệc lượt này: nêu đúng khoảng giá/m² này kèm số tin và thời điểm lấy, nói rõ là giá rao; để chủ tự so với giá "
-        "của mình — tin vẫn rao theo giá chủ muốn.\n"
+        "của mình.\n"
     )
 
 

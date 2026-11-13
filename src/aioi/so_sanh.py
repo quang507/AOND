@@ -136,7 +136,7 @@ def khoi_tra_loi_gia(kq: dict) -> str:
     return ("\n\n=== ƯU TIÊN LƯỢT NÀY — CHỦ NHÀ HỎI GIÁ THỊ TRƯỜNG / GIÁ CAO HAY THẤP: ===\n"
             f"Dữ kiện hệ thống — căn cùng loại đang RAO gần căn của chủ (giá rao, chưa phải giá giao dịch):\n{dong}\n"
             + dong_don_gia_gan(kq) + dong_nhan_xet(muc_lech(kq)) + dong_bao_cao(kq)
-            + "Việc lượt này: trả lời câu chủ hỏi bằng các dữ kiện trên (có thể gửi 1–2 dòng kèm link), tin vẫn rao theo giá chủ muốn.\n")
+            + "Việc lượt này: trả lời câu chủ hỏi bằng các dữ kiện trên (có thể gửi 1–2 dòng kèm link).\n")
 
 
 def dong_don_gia_gan(kq: dict) -> str:

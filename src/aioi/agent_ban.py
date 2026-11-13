@@ -167,6 +167,8 @@ def _khoi(engine: Any, conv: Any, project: Any, ten: str, vao: dict[str, Any] | 
 def goi_y(engine: Any, conv: Any, project: Any) -> str:
     """MỘT dòng cho model biết lượt này có dữ liệu gì để tra (không có gì thì rỗng — model khỏi gọi công cụ thừa)."""
     co = [ten for ten in ("ro_hang", "bo_nho_du_an", "gia_da_gui") if _khoi(engine, conv, project, ten).strip()]
+    if getattr(conv, "hoi_ve_luot", None) == "dinh_gia":   # SRS-5.1zzzzzzz470: chủ hỏi giá → khối định giá giao cho công cụ tra
+        co.append("dinh_gia_tham_khao")
     return ("\nDỮ LIỆU CÓ THỂ TRA lượt này: " + ", ".join(co) + " (gọi công cụ cùng tên khi cần).\n") if co else ""
 
 

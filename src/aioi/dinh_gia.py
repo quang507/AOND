@@ -204,14 +204,14 @@ def dinh_gia_tham_khao_tool(engine: Any, conv: Any, project: Any, vao: dict[str,
 
     if kq.get("nguon") == "khong_co":
         return (f"=== ĐỊNH GIÁ THAM KHẢO: KHÔNG CÓ SỐ ({kq['ly_do']}) ===\n"
-                "- Không nêu con số nào. Nói thật là bảng tham khảo chưa có số cho khu / loại này; giá rao do khách quyết.\n")
+                "- Không nêu con số nào. Nói thật là bảng tham khảo chưa có số cho khu / loại này.\n")
 
     if kq.get("nguon") == "du_an":
         return (
             f"=== KẾT QUẢ ĐỊNH GIÁ THỊ TRƯỜNG DỰ ÁN ({kq.get('du_an')}) ===\n"
             f"- Mức giá rao bán thị trường hiện tại: {kq.get('mo_ta_gia')}\n"
             "- Nói rõ với khách: Đây là khoảng giá các căn trong dự án đang rao bán trên thị trường để khách tham khảo; "
-            "không phán xét giá khách đưa ra cao hay thấp, tin vẫn rao theo đúng mức giá khách mong muốn."
+            "để khách tự so với giá của mình."
         )
 
     dia_diem = ", ".join(x for x in (duong, phuong, khu_vuc) if x)
@@ -259,8 +259,7 @@ def dinh_gia_tham_khao_tool(engine: Any, conv: Any, project: Any, vao: dict[str,
         f"{dong_gan}"
         f"{dong_so_sanh}"
         "- LƯU Ý KHI TRẢ LỜI: Nêu số liệu khách quan để khách tham khảo; dòng đối chiếu / nhận xét (nếu có) chỉ nói NHẸ một câu (chủ dự án "
-        "12/11, SRS-5.1zzzzzzz429), không đưa con số giá mới, không đoán dễ bán; khẳng định quyền quyết định giá bán hoàn toàn thuộc về "
-        "khách; bên em luôn hỗ trợ rao đúng mức giá khách mong muốn."
+        "12/11, SRS-5.1zzzzzzz429), không đưa con số giá mới, không đoán dễ bán."
     )
 
 

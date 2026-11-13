@@ -73,6 +73,16 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz460 · Bot đọc link trang web khách gửi (13/11/2026)
+Chủ dự án 13/11: "họ gửi link đó làm sao tổng hợp lại dc thì dc, sau người ta có thể gửi thêm link data dự án nữa". Thử trên lõi 146 trước khi sửa:
+link dán dạng chữ thì bot chỉ đoán theo chữ trong đường dẫn; thẻ link Zalo thì bridge coi là ẢNH → "em chưa mở được link, gửi ảnh giúp em".
+- **Bridge:** thẻ link (msgType `chat.recommended` / action `recommened.link`) gửi lõi dạng chữ: tiêu đề + mô tả + link, không còn là ảnh.
+- **Lõi:** link trang web (không phải ảnh / PDF / Drive / Sheets — những link đó vẫn qua `handle_link`) → `Engine._doc_link_web` tải trang
+  (chống SSRF như cũ, xưng trình duyệt, tối đa 3 MB / 12 giây), AI tóm trung thực (`KHOI_DOC_LINK_WEB`: loại trang + tối đa 12 dòng dữ kiện,
+  bỏ liên hệ người đăng), gắn vào tin khách — bóc tách và trả lời lượt này đọc như khách tự kể. Trang dự án + cuộc chat đã biết dự án → lưu
+  tri thức chung của dự án. Mở không được → dòng nói thật, bot dựa tiêu đề thẻ / nhờ khách chụp hoặc dán nội dung. Link hệ thống / Zalo bỏ qua.
+- Token: chỉ lượt có link — một lần gọi tóm (trang ≤ 15.000 ký tự vào, ≤ 700 token ra) + bản tóm vào lịch sử chat.
+
 ### SRS-5.1zzzzzzz459 · Bridge dò sống bằng lệnh ứng dụng 510, không đáp thì nối lại (13/11/2026)
 Bridge điếc lần hai dù SRS-5.1zzzzzzz453 đang chạy: 02:11 → 12:21 không một khung tin, chủ dự án nhắn "em ơi" lúc 12:20 không thấy đáp. Pong tầng
 websocket vẫn về nên canh pong không cắt.
