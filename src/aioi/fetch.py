@@ -46,7 +46,6 @@ def sniff_media_type(data: bytes) -> str | None:
     return None
 
 DEFAULT_MAX_BYTES = 20 * 1024 * 1024  # 20 MB — per-file cap (never read a file partially)
-DEFAULT_BATCH_BUDGET = 20 * 1024 * 1024  # 20 MB — total across several files in one go
 DEFAULT_TIMEOUT = 20.0
 
 

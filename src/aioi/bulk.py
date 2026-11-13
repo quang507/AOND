@@ -80,11 +80,6 @@ def rows_from_mapping(text: str, header_to_slug: dict[str, str]) -> list[dict[st
     return rows
 
 
-def parse_csv(text: str) -> list[dict[str, str]]:
-    """Parse CSV into rows of {field_slug: value} using deterministic column mapping."""
-    return rows_from_mapping(text, auto_header_map(csv_headers(text)))
-
-
 def sniff_kind(data: bytes, media_type: str, url: str) -> str | None:
     """Guess a fetched file's kind: "xlsx", "csv", or None (not a spreadsheet — e.g. image/PDF).
     So a pasted link can auto-route without the seller typing a command."""

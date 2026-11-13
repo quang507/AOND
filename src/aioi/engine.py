@@ -2534,14 +2534,6 @@ class Engine:
         if self._convstore is not None:
             self._convstore.save(conv)  # reconciles the DB (deletes the dropped duplicate rows)
 
-    def start_new_listing(self, user_key: str) -> Listing:
-        """Seller starts another property — add a fresh active listing to their basket."""
-        conv = self.conversation(user_key)
-        listing = conv.new_listing()
-        if self._convstore is not None:
-            self._convstore.save(conv)
-        return listing
-
     @staticmethod
     def _listing_by_code(conv: Conversation, code: str | None, du_an: str | None = None) -> Listing | None:
         """An existing basket listing with this mã số căn (normalized-equal). Within ONE
@@ -2790,16 +2782,6 @@ class Engine:
         if data[:2] == b"PK":  # .xlsx is a zip
             return bulk.xlsx_to_csv(data)
         return data.decode("utf-8-sig", "replace")  # CSV / text
-
-    def switch_listing(self, user_key: str, index: int) -> Listing | None:
-        """Make listing #index (1-based) active — the seller picked which căn they mean."""
-        conv = self.conversation(user_key)
-        if not (1 <= index <= len(conv.listings)):
-            return None
-        conv.active_listing_id = conv.listings[index - 1].listing_id
-        if self._convstore is not None:
-            self._convstore.save(conv)
-        return conv.active
 
     def set_status(self, user_key: str, status: str) -> Listing:
         """Update the ACTIVE listing's status (đã bán / dừng bán / đã cho thuê...)."""
@@ -4102,11 +4084,6 @@ class Engine:
             except Exception as e:  # noqa: BLE001
                 log.warning("doc link web: lưu tri thức dự án hụt (%s)", type(e).__name__)
         return f"\n[Khách gửi link trang {host} — nội dung trang hệ thống đã đọc (tóm tắt trung thực):\n{tom}]"
-
-    def handle_media(self, user_key: str, url: str, now: float | None = None,
-                     caption: str | None = None) -> TurnResult:
-        """Seller sent a link to a photo or PDF — read it and confirm. See handle_media_batch."""
-        return self.handle_media_batch(user_key, [url], now, caption)
 
     @staticmethod
     def _looks_like_html(data: bytes, media_type: str | None) -> bool:

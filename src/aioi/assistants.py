@@ -17,8 +17,7 @@ ASSISTANT_NAMES: list[str] = [
     "Ph•ái", "L•ài", "Ho•ài",
 ]
 
-# Tên mặc định đại diện cho nhánh Người bán và Người mua
-SELLER_ASSISTANT = "Th•ái"   # phụ trách Người bán (tiếp nhận, làm giàu dữ liệu)
+# Tên mặc định đại diện cho nhánh Người mua
 BUYER_ASSISTANT = "M•ai"     # phụ trách Người mua (lọc khách, hẹn lịch)
 
 

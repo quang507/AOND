@@ -26,7 +26,6 @@ CUNG_TEN = {
 
 # 1, 3, 4, 9 là Đông Tứ Mệnh; 2, 6, 7, 8 là Tây Tứ Mệnh
 DONG_TU_MENH = {1, 3, 4, 9}
-TAY_TU_MENH = {2, 6, 7, 8}
 
 # Bát Cung kết hợp 8 hướng tạo thành 8 sao (Bát Trạch Cát Hung)
 # 4 Hướng tốt: Sinh Khí (Tài lộc, thăng tiến), Thiên Y (Sức khỏe, may mắn), Diên Niên (Gia đạo, hòa thuận), Phục Vị (Bình an, học vấn)

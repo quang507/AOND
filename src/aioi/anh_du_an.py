@@ -1,7 +1,7 @@
 """Ảnh dự án cho khách hỏi mua (18/10/2026, docs/07 SRS-5.1zzzzzzz36).
 
 Chủ dự án: "người hỏi mua thì bot tự gửi ảnh". Khách nhắc TÊN một dự án trong kho → trả ≤ 5 đường dẫn ảnh
-(`projects.images`, ảnh thư viện mogi do `scripts/archive/thu-du-an.mjs` từng nạp) để bridge Zalo gửi kèm (`photos`, FR-143).
+(`projects.images`, ảnh thư viện mogi do `thu-du-an.mjs` từng nạp — script đã xoá 13/11/2026, lấy lại ở lịch sử git) để bridge Zalo gửi kèm (`photos`, FR-143).
 
 Khớp tên bằng `match_projects(p_text)` trên Supabase — luật khớp tên dự án đang dùng ở web, không phải vector: gửi ảnh nhầm
 dự án tệ hơn không gửi, còn vector "gần nghĩa" thì luôn trả về một dự án nào đó. Vector dự án (đã có tên trong văn bản nhúng)

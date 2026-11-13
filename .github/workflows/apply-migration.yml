@@ -55,7 +55,7 @@ jobs:
 
       # 08/10/2026: nạp dữ liệu tham chiếu cần service_role (kho dự án, từ điển tên đường). Khoá lấy qua Management API
       # bằng chính token này lúc chạy, che trong log, chỉ ghi vào scripts/.env TRÊN MÁY RUNNER (gitignore, không commit).
-      # SRS-5.1zzzzzzz401: ô nap-du-an / nap-du-an-rever / nap-du-an-moso gỡ — script nạp nguồn ngoài lưu ở scripts/archive/ (không chạy lại,
+      # SRS-5.1zzzzzzz401: ô nap-du-an / nap-du-an-rever / nap-du-an-moso gỡ — script nạp nguồn ngoài (đã xoá 13/11/2026, lấy lại ở lịch sử git) (không chạy lại,
       # kho dự án một chuẩn `aond`, SRS-5.1zzzzzzz396).
       - name: Nạp dữ liệu (nap-duong / nap-giao-lo / nap-ranh-gioi)
         if: ${{ inputs.dung_lai == 'nap-duong' || inputs.dung_lai == 'nap-giao-lo' || inputs.dung_lai == 'nap-ranh-gioi' }}
@@ -83,7 +83,7 @@ jobs:
           exit $rc
 
       # SRS-5.1zzzzzzz401: bỏ VPS (06–08/11/2026) — ô cai-vps (cài bridge + lõi qua SSH) và go-trang-thu đã gỡ; lõi / bridge chạy trên
-      # máy 146, đưa lõi lên bằng scripts/trien-khai-146.sh. Script VPS cũ lưu ở bot/bridge-zca/archive/.
+      # máy 146, đưa lõi lên bằng scripts/trien-khai-146.sh. Script VPS cũ đã xoá 13/11/2026, lấy lại ở lịch sử git.
 
       # SRS-5.1zzzzzzz144, 167, 168: nạp rổ tin mẫu seed_thu (SEED0001..0228) bằng SQL, không gọi AI chat; vector do cron nhung-tick nhúng dần. Ảnh mẫu vẽ đã gỡ (SRS-5.1zzzzzzz280).
       - name: Nạp rổ tin mẫu (nap-tin-mau)

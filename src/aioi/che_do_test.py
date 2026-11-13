@@ -89,11 +89,6 @@ def _nhan(k: str) -> str:
     return _cat(FIELD_LABELS.get(k, k).split("(")[0].strip() or k, 40)
 
 
-def _giong(a: object, b: object) -> bool:
-    gon = lambda x: " ".join(str(x or "").lower().split())  # noqa: E731
-    return gon(a) == gon(b)
-
-
 def _o_vua_ghi(conv: "Conversation", captured: list[str]) -> list[str]:
     """Ô lượt này ghi, dạng `khoá=giá trị đã lưu` như bản anh Luận (SRS-5.1zzzzzzz419 — bản cũ in nhãn cắt ở "(" nên ra "nhà … → khong").
     Người mua: ô phiếu nhu cầu."""

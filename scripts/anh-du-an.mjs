@@ -1,7 +1,7 @@
 // anh-du-an.mjs — lấy ẢNH dự án từ trang chi tiết mogi.vn (docs/07 SRS-5.1zzzzzzz36).
 //
 // Chủ dự án 18/10/2026: "cứ lấy ảnh đi 4 5 ảnh trong 1 dự án … để người hỏi mua thì bot tự gửi ảnh". Đổi quyết định cũ của
-// `thu-du-an.mjs` (nay ở `scripts/archive/`, không chép ảnh). Chỉ giữ ĐƯỜNG DẪN ảnh trên CDN mogi (`cloud.mogi.vn/project/…`), không tải về kho: 5 ảnh ×
+// `thu-du-an.mjs` (đã xoá 13/11/2026, lấy lại ở lịch sử git; không chép ảnh). Chỉ giữ ĐƯỜNG DẪN ảnh trên CDN mogi (`cloud.mogi.vn/project/…`), không tải về kho: 5 ảnh ×
 // ~2.400 dự án ≈ 650 MB, gần chạm trần Storage gói Free. Đổi lại, ảnh vỡ nếu mogi gỡ — trang web và bot bỏ qua ảnh tải hỏng.
 //
 // Chỉ đọc khối thư viện `<div class="media-item"><img src|data-src=…>` (ảnh của CHÍNH dự án); ảnh dự án liên quan, logo, huy

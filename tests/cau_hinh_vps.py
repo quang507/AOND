@@ -1,8 +1,7 @@
 """Cấu hình lõi production đọc từ `bot/cau-hinh-loi.env` — nguồn cho bộ chấm
 (`scripts/cham-kich-ban.py`; bộ pytest dùng chung đã gỡ 13/11/2026, SRS-5.1zzzzzzz469), SRS-5.1zzzzzzz313 / 316.
 
-SRS-5.1zzzzzzz401: bỏ VPS — trước đây đọc dòng `printf 'AIOI_…'` + dòng gán `BIEN="…"` trong `bot/bridge-zca/cai-vps.sh` (nay ở
-`bot/bridge-zca/archive/`). Tệp mới là `KHOA=giatri` thuần, cùng tên biến với `.env` lõi trên máy 146."""
+SRS-5.1zzzzzzz401: bỏ VPS — trước đây đọc dòng `printf 'AIOI_…'` + dòng gán `BIEN="…"` trong `bot/bridge-zca/cai-vps.sh` (đã xoá 13/11/2026, lấy lại ở lịch sử git). Tệp mới là `KHOA=giatri` thuần, cùng tên biến với `.env` lõi trên máy 146."""
 from __future__ import annotations
 
 import os

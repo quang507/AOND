@@ -289,14 +289,6 @@ class Project:
             return None
         return next(u for u in self.unit_types if normalize_project_name(u.name) == key)
 
-    def upsert_unit_type(self, unit_type: UnitType) -> None:
-        for i, existing in enumerate(self.unit_types):
-            if normalize_project_name(existing.name) == normalize_project_name(unit_type.name):
-                self.unit_types[i] = unit_type  # update in place
-                return
-        self.unit_types.append(unit_type)
-
-
 def normalize_project_name(name: str) -> str:
     """Case/space/punctuation-insensitive key for matching project & unit-type names.
     Drops punctuation so "Fusion (Gen 5)" matches "Fusion Gen 5"."""

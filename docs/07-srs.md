@@ -37,7 +37,7 @@ chỉ tra bảng `admins`. Còn lại duy nhất giá trị enum `msg_sender = '
 
 ### 1.3 Tài liệu tham chiếu
 `docs/00`…`docs/06`, `docs/09-open-issues.md`, `docs/10-ke-hoach-kiem-thu.md`, `docs/13-so-do-nhan-va-boc-tach.md` (sơ đồ một lượt chat),
-`scripts/trien-khai-146.sh` (đưa lõi lên máy 146; VPS bỏ 06/11/2026, `bot/bridge-zca/archive/` chỉ còn lưu trữ), `CLAUDE.md` §6 (luật đang áp, mỗi dòng kèm `SRS-…`).
+`scripts/trien-khai-146.sh` (đưa lõi lên máy 146; VPS bỏ 06/11/2026, script VPS cũ đã xoá 13/11/2026, lấy lại ở lịch sử git), `CLAUDE.md` §6 (luật đang áp, mỗi dòng kèm `SRS-…`).
 
 ---
 
@@ -795,6 +795,21 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz477 · Dọn mã và tệp không còn dùng; nạp lại rổ hàng Ny'ah Phú Định (13/11/2026)
+Chủ dự án 13/11: "trong code có mấy cái mới cũ khác nhau có cái nào ko dùng nữa ko, có cái nào docs ghi dư ko cần thiết ko" → rà cả repo, chủ dự án
+duyệt "Dọn nhóm A" (nhóm chắc chắn không còn ai gọi). Cùng ngày: "nạp lại dữ liệu ny'ah phú định vào đi".
+- **Xoá tệp:** `scripts/archive/` (5 script nạp nguồn mogi / rever / moso đã ngừng từ SRS-401) cùng hai bộ thử của chúng
+  `bot/tests/thu-du-an-moso.mjs`, `thu-du-an-rever.mjs` (gỡ khỏi `test:bot`); `bot/bridge-zca/archive/` (4 tệp cấu hình VPS); `design-system/`
+  (`MASTER.md` 17/10 ghi bo góc 8/12px — nguồn đúng là `docs/06-ui-design.md` §6.4; gỡ tên thư mục khỏi `vercel.json`). Cần thì lấy lại ở lịch sử git.
+- **Xoá hàm không ai gọi** (bộ pytest gọi chúng đã gỡ ở SRS-469): `Engine.handle_media`, `start_new_listing`, `switch_listing`;
+  `supabase_store._hoi_thoai_mua`; `qc_anh._goi_storage`; `projects.upsert_unit_type`; `bulk.parse_csv`; `che_do_test._giong`.
+  **Hằng không ai đọc:** `SELLER_ASSISTANT`, `MO_DAU_NHAP`, `CAU_GIU_CHO`, `TAY_TU_MENH`, `DEFAULT_BATCH_BUDGET`. Không đổi hành vi, không đổi prompt.
+- **Giữ nguyên (chưa quyết):** các đường dự phòng và nhánh sau công tắc (`agent_ban.chay`, `agent_mua.chay`, form JSON, `build_phieu_luot`,
+  công cụ `gui_khach`, model lượt dễ) — gỡ là mất đường lùi, chờ chủ dự án.
+- **Ny'ah Phú Định:** `du_an_kien_thuc` khoá `ny ah phú định` nạp lại từ `luu_tru` lần 13 (lần xoá rổ hàng + bảng giá 12/11): 50 căn, giá 9 lô còn
+  trống (ô riêng `rieng.gia_can`), mục "Rổ hàng T10.2026" trong tài liệu. Các phần khác của dòng không đổi từ lần xoá nên chép nguyên bản lưu.
+- **`thu-cli`:** schema ô tin dài hơn trần dòng lệnh Windows (WinError 206) → `llm/claude_cli.py` ghi schema vào tệp system, đọc JSON từ kết quả.
+
 ### SRS-5.1zzzzzzz476 · LQC nghe chủ: lời hẹn, đang bận, không có, thôi hỏi; gara → hẻm xe hơi (13/11/2026)
 Chủ dự án 13/11: "khách hẹn giờ chiều chị gửi ảnh thì chiều nó hỏi lại"; thiết kế LQC đợt 1 (làm sau đợt 2 — SRS-475). Trước đây chủ đáp "chiều
 chị gửi" thì câu xin ảnh coi như đã hỏi, 10 phút sau vòng nền nhảy sang câu pháp lý, ảnh chỉ được nhắc lại ở cuối hàng.
@@ -898,15 +913,3 @@ của prompt gọn phía bán dạy "Chủ nhà hay lo bị ép giá, bán hớ�
   "bot NHẬN THÔNG TIN TIN RAO". Câu "tin vẫn rao theo giá chủ muốn" chỉ còn ở khối định giá — khối chỉ bật khi chủ tự hỏi giá.
 - **Token** (đếm bằng `count_tokens`, claude-sonnet-5-5): phiếu bán 4.194 → 4.100 (−94) · prompt gọn bán 2.565 → 2.493 (−72) · phần cố định
   mua 3.575 → 3.475 (−100) · khối nhân vật lời không rõ vai 441 → 184 (−257). Test `test_nhan_vat_381.py`, `test_toi_uu_ky_gui_391.py` sửa theo (chưa chạy).
-
-### SRS-5.1zzzzzzz467 · Bridge chỉ dò sống khi im 30 phút — hết vòng tự cắt 12 phút (13/11/2026)
-Chủ dự án 13/11 "sao zalo bridge bây giờ lâu lâu nó tắt". Log hai số: sau SRS-5.1zzzzzzz459 bridge tự cắt rồi nối lại **đúng 12 phút một
-lần** dù tin vẫn về. Máy chủ Zalo chỉ đáp lệnh 510 trong khoảng ~10 phút đầu của mỗi kết nối (theo tuổi kết nối; dò lúc 3 giây và 5 phút được đáp,
-lúc 10 phút thì không) → bridge tưởng điếc, cắt; mỗi lần nối lại mất ~13 giây, tin rơi vào khoảng đó thì mất.
-- **Dò khi im:** ghi `khungTinCuoi` mỗi khi có khung dữ liệu từ máy chủ (không tính pong). Có khung về là kết nối sống, không dò.
-  Chỉ dò khi quá `BRIDGE_DO_SONG_MS` (mặc định đổi 5 → **30 phút**) không có khung nào và không có lần dò nào; không đáp trong 90 giây
-  thì cắt như cũ. Lần dò 3 giây sau mỗi lần nối giữ nguyên.
-- **Đo sau triển khai:** bản đầu ngưỡng 10 phút — số ký gửi (tin về đều) 25 phút không cắt lần nào; số tư vấn (vắng tin) vẫn cắt đúng
-  12 phút vì lần dò lúc 10 phút đã quá cửa sổ Zalo còn đáp. Sau mốc ~10 phút không phân biệt được "im mà sống" với "điếc" → ngưỡng 30 phút.
-- **Kỳ vọng:** đang có tin → không bao giờ cắt. Im hẳn → dò ở ~30 phút, Zalo không đáp → nối lại sau ~31,5 phút im (số vắng nối lại
-  ~32 phút một lần thay 12). Khoảng điếc tối đa ~32 phút thay ~5,5 phút — đổi lấy việc không cắt giữa lúc khách đang nhắn.

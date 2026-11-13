@@ -769,26 +769,6 @@ class SupabaseConversationStore(KhoNguoiMua):
         except Exception as e:  # noqa: BLE001
             log.warning("log_loi lỗi: %s", e)
 
-    def _hoi_thoai_mua(self, user_key: str, ten: str | None = None) -> str | None:
-        """Hội thoại MUA của khách (`conversations.buyer_id`, tạo nếu chưa có) — SRS-5.1zzzzzzz83: trước đây mọi lượt chat ghi vào
-        hội thoại BÁN (tạo luôn dòng `sellers` cho người chỉ đi mua), tab Tin nhắn của người mua thiếu lịch sử."""
-        bid = self.khach_mua(user_key, ten)
-        if not bid:
-            return None
-        khoa = f"mua:{bid}"
-        if khoa in self._conv_cache:
-            return self._conv_cache[khoa]
-        rows = self._get(f"conversations?buyer_id=eq.{bid}&select=id&limit=1")
-        if rows:
-            self._conv_cache[khoa] = rows[0]["id"]
-            return rows[0]["id"]
-        tao = self._post("conversations", {"buyer_id": bid, "channel": "zalo_personal_test",
-                                           "started_at": datetime.now(timezone.utc).isoformat()})
-        if tao:
-            self._conv_cache[khoa] = tao[0]["id"]
-            return tao[0]["id"]
-        return None
-
     def ghi_luot_chat(self, user_key: str, incoming_text: str, bot_reply: str, zalo_msg_id: str | None = None,
                       role: str = "seller", user_name: str | None = None, nhan_luc: str | None = None, nguoi_gui: str = "bot",
                       ghi_chu: str = "") -> None:

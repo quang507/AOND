@@ -73,6 +73,18 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz467 · Bridge chỉ dò sống khi im 30 phút — hết vòng tự cắt 12 phút (13/11/2026)
+Chủ dự án 13/11 "sao zalo bridge bây giờ lâu lâu nó tắt". Log hai số: sau SRS-5.1zzzzzzz459 bridge tự cắt rồi nối lại **đúng 12 phút một
+lần** dù tin vẫn về. Máy chủ Zalo chỉ đáp lệnh 510 trong khoảng ~10 phút đầu của mỗi kết nối (theo tuổi kết nối; dò lúc 3 giây và 5 phút được đáp,
+lúc 10 phút thì không) → bridge tưởng điếc, cắt; mỗi lần nối lại mất ~13 giây, tin rơi vào khoảng đó thì mất.
+- **Dò khi im:** ghi `khungTinCuoi` mỗi khi có khung dữ liệu từ máy chủ (không tính pong). Có khung về là kết nối sống, không dò.
+  Chỉ dò khi quá `BRIDGE_DO_SONG_MS` (mặc định đổi 5 → **30 phút**) không có khung nào và không có lần dò nào; không đáp trong 90 giây
+  thì cắt như cũ. Lần dò 3 giây sau mỗi lần nối giữ nguyên.
+- **Đo sau triển khai:** bản đầu ngưỡng 10 phút — số ký gửi (tin về đều) 25 phút không cắt lần nào; số tư vấn (vắng tin) vẫn cắt đúng
+  12 phút vì lần dò lúc 10 phút đã quá cửa sổ Zalo còn đáp. Sau mốc ~10 phút không phân biệt được "im mà sống" với "điếc" → ngưỡng 30 phút.
+- **Kỳ vọng:** đang có tin → không bao giờ cắt. Im hẳn → dò ở ~30 phút, Zalo không đáp → nối lại sau ~31,5 phút im (số vắng nối lại
+  ~32 phút một lần thay 12). Khoảng điếc tối đa ~32 phút thay ~5,5 phút — đổi lấy việc không cắt giữa lúc khách đang nhắn.
+
 ### SRS-5.1zzzzzzz466 · Hạng Đồng quá 5 căn: vẫn lên web, gắn nhãn "thông tin cần kiểm chứng thêm" (13/11/2026)
 Chủ dự án 13/11 chốt luật Đồng tối đa 5 căn (SRD §IV.3) "vẫn chạy" (SRS-465 thấy nó ngừng từ 18/10). Bản đầu (migration `20261113c`) giữ căn thứ 6 ở `cho_thong_tin`; chủ dự án sửa: "không phải là chờ thông tin mà là có thông tin, đem ra dùng nhưng nói rõ là thông tin cần kiểm chứng thêm" — cùng cách thông tin dự án một người gửi (SRS-445).
 - **DB (`20261113d`):** cột `listings.can_kiem_chung` (bỏ `ly_do_chua_dang`). Mỗi lần lõi (service_role) ghi một căn đang hiện, `listings_quyet_dinh_dang_tin` đếm căn đang hiện không mang nhãn của người rao: ≥ 5 và hạng `dong` → gắn, ngược lại bỏ. Lên Bạc / gỡ bớt căn → lượt ghi kế bỏ nhãn. Admin ghi không đổi nhãn; tính hạng lỗi thì giữ nguyên. `tim_nha` trả thêm khoá `can_kiem_chung`.

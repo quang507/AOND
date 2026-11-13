@@ -3,7 +3,7 @@
 // đọc thẳng các file chạy trên máy (workflow, script .sh, hướng dẫn VPS) và đỏ khi còn URL repo cũ. Kèm: CRM /admin/tin-nhan nghe
 // Realtime (bản cũ chỉ tải khi bấm "Làm mới").
 // SRS-5.1zzzzzzz401: bỏ VPS — các ca AMN-02/03/06/07/08/10/11/12 canh cai-vps.sh và ô workflow cai-vps gỡ cùng script (lưu ở
-// bot/bridge-zca/archive/); AMN-01 nay soát script triển khai máy 146.
+// đã xoá 13/11/2026, lấy lại ở lịch sử git); AMN-01 nay soát script triển khai máy 146.
 import { readFileSync, readdirSync } from "node:fs";
 
 const goc = new URL("../../", import.meta.url);

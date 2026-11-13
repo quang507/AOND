@@ -1260,10 +1260,6 @@ def khoi_xin_dang(thieu: list[str], prop: Property | None = None) -> str:
             f"ý này là em lên bản nháp liền, rồi hỏi đúng ý đó (theo dòng \"{NHAN_VIEC_LUOT}\").\n")
 
 
-# Dòng mở đầu cố định của bản nháp tin rao. Model hay viết thêm câu dẫn TRƯỚC dòng này ("Em ghi nhận đủ thông tin rồi ạ. Em sẽ rao như
-# vầy nhé anh:") → khách đọc hai câu dẫn; `cat_truoc_mo_dau` bỏ phần trước (SRS-5.1zzzzzzz76).
-# Câu đang dùng ở `cau_mau` (chủ dự án sửa ở CRM, SRS-5.1zzzzzzz110); hằng này là câu MẶC ĐỊNH.
-MO_DAU_NHAP = (cau_mau._dien(cau_mau.MAC_DINH["mo_dau_nhap_em"][0], "em", toi="anh"), cau_mau._dien(cau_mau.MAC_DINH["mo_dau_nhap"][0], "anh chị"))
 _GOI_KHACH = {"anh": "anh", "chi": "chị"}
 
 

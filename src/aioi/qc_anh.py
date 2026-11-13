@@ -80,14 +80,6 @@ def _goc_storage(kho: Any) -> str:
     return str(getattr(kho, "url", "")).removesuffix("/rest/v1")
 
 
-def _goi_storage(kho: Any, duong: str, data: dict | None = None) -> Any:
-    req = urllib.request.Request(f"{_goc_storage(kho)}/storage/v1/{duong}", method="POST" if data is not None else "GET",
-                                 data=json.dumps(data).encode() if data is not None else None,
-                                 headers={"apikey": kho.key, "Authorization": f"Bearer {kho.key}", "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return json.loads(r.read().decode() or "null")
-
-
 def thu_muc_anh(kho: Any) -> dict[str, list[str]]:
     """{id tin: [đường dẫn ảnh đang hiện]} — đọc `listing_media` (bucket công khai, chưa ẩn). SRS-5.1zzzzzzz425: ảnh chủ đã đồng ý ẩn không
     vào bộ ảnh nữa (bộ đổi → chấm lại); bản đầu liệt kê thư mục storage nên ảnh ẩn vẫn bị chấm và hỏi lại."""
