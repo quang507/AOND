@@ -56,7 +56,7 @@ def chu_can(dong: list[dict]) -> tuple[str, str]:
 
 def chay_mot_luot(kho: Any, gui: Callable[[str, str], bool], xung_ho_cua: Callable[[str], Any] | None = None,
                   ghi_lich_su: Callable[[str, str, str, str | None, str], None] | None = None,
-                  bay_gio: datetime | None = None) -> list[dict]:
+                  bay_gio: datetime | None = None, lqc_chan: Callable[[str, str], str | None] | None = None) -> list[dict]:
     """Một lượt quét. `gui(zalo_id, chữ)` → True khi bridge nhận. Trả danh sách người bán đã hỏi."""
     bay_gio = bay_gio or datetime.now(timezone.utc)
     if not getattr(kho, "is_configured", False) or not trong_khung_gio(bay_gio):
@@ -69,6 +69,8 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str], bool], xung_ho_cua: Callab
     for sid, dong in nhom.items():
         dong = dong[:TOI_DA_CAN_MOT_TIN]
         zalo = dong[0]["zalo_user_id"]
+        if lqc_chan and lqc_chan(zalo, "con_ban"):   # SRS-5.1zzzzzzz475: luật chung LQC (trần ngày, im lặng, nhường sân)
+            continue
         xh = xung_ho_cua(zalo) if xung_ho_cua else "unknown"
         xh, ten_tro_ly = (xh if isinstance(xh, tuple) else (xh, None))
         goi, toi = goi_toi(xh, ten_tro_ly)

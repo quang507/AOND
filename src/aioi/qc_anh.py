@@ -22,7 +22,6 @@ import urllib.request
 from datetime import datetime, timezone
 from typing import Any, Callable
 
-from .bao_can_moi import trong_khung_gio
 from .xung_ho import goi_toi
 
 log = logging.getLogger(__name__)
@@ -31,7 +30,6 @@ BUCKET = "listing-public"
 TOI_DA_MOT_LUOT = 10
 TOI_DA_ANH_MOT_LAN = 8
 TOI_DA_NHAN_MOI_CAN = 2
-IM_TOI_THIEU_GIAY = int(os.environ.get("SAU_DANG_NHAC_GIAY", "600"))
 # Sổ cạnh lõi (aond_core/qc_anh.json trên 146) — task chạy dưới SYSTEM không có thư mục làm việc cố định.
 QC_ANH_SO = os.environ.get("QC_ANH_SO", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "qc_anh.json"))
 DUOI_ANH = (".jpg", ".jpeg", ".png", ".webp")
@@ -244,13 +242,11 @@ def _ghi_va_nhan(engine: Any, tin: dict, kq: dict, bay_gio: datetime, gui: Calla
                                                            "nhan_xet", "so_anh", "goc_da_co", "goc_con_thieu", "anh_dep_nhat")},
                                   ensure_ascii=False)
         so_lan = int(f.get("_qc_da_nhan") or 0)
-        im = not conv.history or time.time() - conv.history[-1].at >= IM_TOI_THIEU_GIAY
-        from .followup import cau_hoi_cuoi_cua_bot
-        if cau_hoi_cuoi_cua_bot(conv):   # 12/11 (chat anh Luận): "Sổ đứng tên ai?" chưa đáp, QC chồng thêm tin xin ảnh
-            im = False
         viec = chon_viec(kq)
-        if (viec and so_lan < TOI_DA_NHAN_MOI_CAN and im and trong_khung_gio(bay_gio)
-                and getattr(conv, "nhuong_san_den", 0) <= time.time()):
+        # SRS-5.1zzzzzzz475: luật chung LQC (khung giờ, im 10 phút, nhường sân, 3 tin chủ động / người bán / ngày, câu hỏi chưa đáp — 12/11
+        # chat anh Luận: "Sổ đứng tên ai?" chưa đáp, QC chồng thêm tin xin ảnh).
+        from .lqc import ly_do_khong_nhan
+        if viec and so_lan < TOI_DA_NHAN_MOI_CAN and not ly_do_khong_nhan(conv, bay_gio, "hoi", engine._convstore, uk):
             from .engine import _detect_customer_pronoun
             goi, toi = goi_toi(_detect_customer_pronoun(conv, ""), getattr(conv.assistant, "name", None))
             chu = viet_tin_nhan(engine, conv, li, kq, goi, toi, viec)

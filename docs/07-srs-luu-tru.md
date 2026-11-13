@@ -73,6 +73,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz464 · Soát mâu thuẫn toàn bộ docs, sửa docs theo code (13/11/2026)
+Ca gốc: chủ dự án 13/11 nhờ soát docs, PR, open issue có chỗ nào mâu thuẫn; 0 PR / 0 issue mở, docs lệch code ở ~60 chỗ. Chốt (chủ dự án, chat): "sửa hết đi, 3 điểm đầu theo code".
+Lớp lỗi: sửa code / SRS mà không quét các tầng docs và file luật (CLAUDE.md, luat-dang-ap, .clinerules) cùng lúc; `truyvet` chỉ soát ID, số đếm, tên hàm, không soát nghĩa.
+Sửa: (1) SĐT người mua theo SRS-388 — chỉ chủ động xin lúc chốt lịch, khách tự để lại thì lưu `buyers.phone` + báo admin (BR-06, NFR-07, FR-53, 07 §3); (2) migration chạy thử trong giao dịch huỷ rồi áp luôn (CLAUDE.md §6.4 theo §7); (3) FR-90/100/119–122/124–126 khôi phục ✅ vì trang còn chạy trong `app/`. Kèm: domain `aond.vercel.app`, bóc tách Sonnet 5.5, `AIOI_PROMPT_GON` vào bảng công tắc, token King / Nunito / góc bo 14·8·6 ở 06, route mới ở 04, 2–3 căn mỗi lượt, `CUM_TOI_DA = 1` và 4 nhóm soạn ở docs/14 + luat-dang-ap, quy trình 10 / 11 / .clinerules theo commit thẳng main, tàn dư CTV / VPS / OPEN đã đóng; `schema.sql` bổ sung `deals.gia_chot_vnd`, `bao_cao_gia_quanh`, `can_dang_rao_gan` lấy nguyên từ DB (md5 khớp).
+Kiểm: `bun run truyvet` sạch; đối chiếu DB — 0 hàm, 0 cột lệch `schema.sql` sau khi vá. Còn lại: không có.
+
 ### SRS-5.1zzzzzzz463 · Bridge: video và danh thiếp Zalo không còn đi nhánh ảnh (13/11/2026)
 Rà các loại tin Zalo theo yêu cầu chủ dự án 13/11. Video (`chat.video.msg`) và danh thiếp (`chat.recommended`, action `recommened.user`) mang `href`
 nên rơi vào nhánh ảnh / thẻ link: lõi tải .mp4 như ảnh (hỏng "loại tệp không hỗ trợ") hoặc nhận link ảnh đại diện.

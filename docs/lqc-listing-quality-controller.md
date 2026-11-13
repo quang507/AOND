@@ -1,6 +1,6 @@
 # LQC — Listing Quality Controller: bot hỏi gì, khi nào, đã chạy tới đâu
 
-Cập nhật 13/11/2026 (lần 2), đối chiếu code `main` @ 4ebda18 và dữ liệu Supabase cùng ngày. Nguồn: đặc tả anh Luận (4 mảng, 22 câu mẫu).
+Cập nhật 13/11/2026 (lần 3, SRS-475 điều phối chung), đối chiếu code `main` @ 4ebda18 và dữ liệu Supabase cùng ngày. Nguồn: đặc tả anh Luận (4 mảng, 22 câu mẫu).
 
 LQC là "người chăm tin" sau khi tin lên web. Nó xem tin còn thiếu gì để bán được, rồi hỏi chủ nhà **từng câu một, ngắn, khéo** — như một
 quản lý rảo qua các chat. Bot không đọc thuộc lòng 22 câu mẫu: mỗi lần nhắn, AI tự viết câu theo đúng việc cần hỏi và theo chuyện đang nói.
@@ -25,6 +25,10 @@ Câu đã hỏi ở đây thì sau khi đăng không hỏi lại.
 7. Hết hàng mà vẫn thiếu ảnh → nhắc xin ảnh **một lần cuối**.
 
 Câu tới chủ bằng hai đường: chủ đang nhắn thì bot đáp xong hỏi câu kế ngay trong lượt đó; chủ im thì vòng nền tự nhắn.
+
+**LQC điều phối mọi tin chủ động tới chủ nhà** (SRS-475, `src/aioi/lqc.py`): tin xin ảnh 10 phút, hàng câu hỏi sau đăng, Image LQC,
+hỏi còn bán, giữ kết nối đều hỏi chung MỘT bộ luật ở mục 3 trước khi gửi — trước đây mỗi vòng giữ luật riêng, trần ngày chỉ đếm tin
+của hàng câu hỏi nên một chủ có thể nhận tin của nhiều vòng trong cùng buổi.
 **Image LQC** chạy riêng: mỗi khi bộ ảnh của tin đổi thì chấm lại, rồi nhắn xin góc thiếu / khen tấm đẹp / xin ẩn tấm kém (tối đa 2 tin mỗi căn).
 
 ## 3. Khi nào bot KHÔNG nhắn
@@ -33,10 +37,10 @@ Câu tới chủ bằng hai đường: chủ đang nhắn thì bot đáp xong h�
 |---|---|
 | Khung giờ | chỉ 8–21 giờ |
 | Chủ đang nhắn | chat phải im ≥ 10 phút |
-| Người thật (admin) đang tiếp chủ | không chen |
+| Người thật (admin) đang tiếp chủ | không chen (cờ nhường sân + nút "giữ" trên CRM) |
 | Chủ đang khai dở một căn khác | không hỏi chuyện căn cũ |
-| Câu hỏi trước chưa được đáp | chờ 24 giờ; chủ bỏ qua **2 tin liền** thì thôi hẳn |
-| Mỗi căn / ngày | tối đa 3 tin chủ động |
+| Câu hỏi trước chưa được đáp | chờ 24 giờ; chủ bỏ qua **2 tin liền** thì thôi hẳn (hỏi còn bán / giữ kết nối có nhịp riêng 20 / 6 ngày, không theo luật này) |
+| Mỗi **người bán** / ngày | tối đa 3 tin chủ động, tính **mọi loại tin và mọi căn** của người đó, đếm từ lịch sử chat (SRS-475) |
 | Mỗi căn / tổng sau đăng | tối đa **10 câu** (tính cả tin Image LQC) — chạm trần thì phần cuối hàng (giá, xem nhà, chi tiết) bị cắt |
 | Mỗi tin | đúng MỘT câu hỏi; AI viết ra hơn một câu hỏi hay quá dài thì không gửi |
 | Chủ đáp chung ("ok", "ừ", "được") cho câu hỏi chọn | coi là chưa chọn: không hỏi lại, không đoán, để trống tới khi có khách hỏi (SRS-450) |

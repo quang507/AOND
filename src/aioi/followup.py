@@ -206,6 +206,14 @@ class FollowUpManager:
             if moc_anh is None and prop.fields.get("_da_bao_dang") == "1":
                 log.info("Follow-up for %s: tin đã lên web, không còn ảnh để xin. Skipping.", user_key)
                 return
+            # SRS-5.1zzzzzzz475: tin xin ảnh sau đăng là tin chủ động của LQC — theo luật chung (3 tin / người bán / ngày, câu hỏi chưa đáp,
+            # nút "giữ"…); hẹn giờ đã bảo đảm chat im nên không xét lại im lặng.
+            if moc_anh is not None and hen is not None:
+                from .lqc import ly_do_khong_nhan
+                ly_do = ly_do_khong_nhan(conv, datetime.now(timezone.utc), "hoi", engine._convstore, user_key, im_giay=0)
+                if ly_do:
+                    log.info("Follow-up for %s: LQC chặn tin xin ảnh (%s). Skipping.", user_key, ly_do)
+                    return
             completeness = prop.completeness()
             if moc_anh is None and completeness >= 1.0:
                 log.info("User %s listing is 100%% complete. Skipping follow-up.", user_key)

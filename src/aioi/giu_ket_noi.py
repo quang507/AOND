@@ -41,7 +41,7 @@ def can_nhan(kho: Any) -> list[dict]:
 
 def chay_mot_luot(kho: Any, gui: Callable[[str, str], bool], xung_ho_cua: Callable[[str], Any] | None = None,
                   ghi_lich_su: Callable[[str, str, str, str | None, str], None] | None = None,
-                  bay_gio: datetime | None = None) -> list[dict]:
+                  bay_gio: datetime | None = None, lqc_chan: Callable[[str, str], str | None] | None = None) -> list[dict]:
     """Một lượt quét. `gui(zalo_id, chữ)` → True khi bridge nhận. Trả danh sách khách đã nhắn."""
     bay_gio = bay_gio or datetime.now(timezone.utc)
     if not getattr(kho, "is_configured", False) or not trong_khung_gio(bay_gio):
@@ -50,6 +50,8 @@ def chay_mot_luot(kho: Any, gui: Callable[[str, str], bool], xung_ho_cua: Callab
     for r in can_nhan(kho):
         zalo, vai = r.get("zalo_user_id"), ("seller" if r.get("vai") == "seller" else "buyer")
         if not zalo:
+            continue
+        if vai == "seller" and lqc_chan and lqc_chan(zalo, "giu_ket_noi"):   # SRS-5.1zzzzzzz475: luật chung LQC (trần ngày, im lặng, nhường sân)
             continue
         xh = xung_ho_cua(zalo) if xung_ho_cua else "unknown"
         xh, ten_tro_ly = (xh if isinstance(xh, tuple) else (xh, None))

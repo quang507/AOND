@@ -418,6 +418,16 @@ def _gui_nhac_mot(zalo_id: str, text: str) -> bool:
     return True
 
 
+def _lqc_chan(zalo_id: str, loai: str) -> str | None:
+    """Lý do LQC chặn tin chủ động tới người bán này (SRS-5.1zzzzzzz475), None = được gửi. Đọc hụt → không chặn (như trước khi có LQC)."""
+    from . import lqc
+    try:
+        return lqc.ly_do_theo_ma(_engine, zalo_id, loai)
+    except Exception as e:  # noqa: BLE001
+        log.warning("LQC: xét %s hụt (%s)", loai, type(e).__name__)
+        return None
+
+
 def _ghi_lich_su_nhac(zalo_id: str, text: str, vai: str, ten: str | None, sender: str) -> None:
     """Tin nhắc đã đi: vào lịch sử lõi + CRM như tin báo căn mới; tin admin soạn (`admin_reply`) còn đặt mốc nhường sân."""
     if sender == "human":
@@ -497,7 +507,7 @@ def _vong_giu_ket_noi() -> None:
         try:
             kho = _engine._convstore
             if getattr(kho, "is_configured", False):
-                ra = giu_ket_noi.chay_mot_luot(kho, _gui_nhac_mot, _xung_ho_khach, _ghi_lich_su_nhac)
+                ra = giu_ket_noi.chay_mot_luot(kho, _gui_nhac_mot, _xung_ho_khach, _ghi_lich_su_nhac, lqc_chan=_lqc_chan)
                 if ra:
                     log.warning("Giữ kết nối: đã nhắn %d khách", len(ra))
         except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
@@ -520,7 +530,7 @@ def _vong_hoi_con_ban() -> None:
         try:
             kho = _engine._convstore
             if getattr(kho, "is_configured", False):
-                ra = hoi_con_ban.chay_mot_luot(kho, _gui_nhac_mot, _xung_ho_khach, _ghi_lich_su_nhac)
+                ra = hoi_con_ban.chay_mot_luot(kho, _gui_nhac_mot, _xung_ho_khach, _ghi_lich_su_nhac, lqc_chan=_lqc_chan)
                 if ra:
                     log.warning("Hỏi còn bán: đã hỏi %d người bán", len(ra))
         except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
