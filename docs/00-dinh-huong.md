@@ -89,8 +89,8 @@ AOND mượn cho cả hai phía (`06 §6.8`).
 | §I | Tích lũy ngầm nhiều phiên | ✅ | FR-129/144/153/172; phiên nạp lại sau khi lõi khởi động lại (SRS-5.1zzzzzzz147) |
 | §I | 200–300 người/ngày, 6–9k tin, phủ 90% Q5 | 🔶 | NFR-05; Free-tier chưa đo (NFR-16) |
 | §II | Kho tên •ai (m•ai, t•ai…) | 🔶 | SRD 20 phụ âm; code 13 tên (`assistants.ASSISTANT_NAMES`). Mỗi khách một tên, gán theo Zalo ID, giữ suốt (FR-181). 13 tên có chấm giữa: Th•ái, M•ai, H•ải, L•ai, Kh•ải, T•ài, Đ•ại, Đ•ài, Nh•ài, Gi•ai, Ph•ái, L•ài, Ho•ài (SRS-5.1zzzzzzz183) |
-| §II | Quy tắc 30 từ | ✅ | Khuôn chat phía bán theo bản AOND (SRS-5.1zzzzzzz207); lời bot khoảng 20 từ ở `GIONG_VUI` và prompt gọn bán (SRS-5.1zzzzzzz471, 13/11/2026 — trước là ~30 từ); "ngắn vừa vừa" (SRS-5.1zzzzzzz97) |
-| §II | Khen trước, hỏi 1/lần; "hình như là" | ✅ | Khen điểm mạnh trước rồi hỏi 1 ý (SRS-5.1zzzzzzz207); giọng một khối `GIONG_VUI` (SRS-5.1zzzzzzz219); không mở "Dạ", không gọi khách là "mình". *`TONE_RULES` TS là lịch sử* |
+| §II | Quy tắc 30 từ | ✅ | Khuôn chat phía bán theo bản AOND (SRS-5.1zzzzzzz207); độ dài theo ý khách, lượt hỏi thông tin 20–30 từ ở `GIONG` (SRS-5.1zzzzzzz480, 13/11/2026 — trước là "khoảng 20 từ", SRS-5.1zzzzzzz471); "ngắn vừa vừa" (SRS-5.1zzzzzzz97) |
+| §II | Khen trước, hỏi 1/lần; "hình như là" | ✅ | Khen điểm mạnh trước rồi hỏi 1 ý (SRS-5.1zzzzzzz207); giọng một khối `GIONG` chung hai phía (SRS-5.1zzzzzzz480); không mở "Dạ", không gọi khách là "mình". *`TONE_RULES` TS là lịch sử* |
 | §II | Giọng mẫu: transcript 30 câu người bán | 🔶 | Ví dụ lấy từ câu chuẩn chủ dự án / tester sửa ở `/admin/cau-chuan` (SRS-5.1zzzzzzz88, SRS-5.1zzzzzzz180) + câu mẫu cố định (SRS-5.1zzzzzzz106). *`SELLER_FEWSHOT`, `bot_prompts` đã gỡ 18/10* |
 | §II | Nút bấm nhanh trong tin (`[Vẫn đang bán]`…) | ⏳ | Bridge gửi chữ + ảnh, không gửi nút; nút cần Zalo OA, chưa có |
 | §III | Nhóm 1 nhà ở | ✅ | FR-172; bộ câu hỏi một nguồn `src/aioi/schema.py` (SRS-5.1zzzzzzz68) |
@@ -224,7 +224,7 @@ tầng → phòng → pháp lý → ảnh → lịch khảo sát; khen ngắn kh
 thật; đủ thì gửi bản nháp tin (FR-177, thay thứ tự FR-176 f). Cùng ngày, 13 mục OPEN
 của hướng nhadat.cc 2024 đóng vì không còn hợp AOND (`09` bảng "đã chốt / đã đóng").
 *Cập nhật 26/10/2026: cổng soạn bản tin = loại hình + vị trí + giá, ô khác hỏi sau
-(SRS-5.1zzzzzzz200, SRS-5.1zzzzzzz202); giọng theo khuôn AOND + `GIONG_VUI`
+(SRS-5.1zzzzzzz200, SRS-5.1zzzzzzz202); giọng theo khuôn AOND + `GIONG`
 (SRS-5.1zzzzzzz207, SRS-5.1zzzzzzz219). `TONE_RULES` TS là lịch sử.*
 
 **Đã chốt 07/09/2026 tối: giọng bot xây từ AOND lên, không đọc mã tin** (FR-178,

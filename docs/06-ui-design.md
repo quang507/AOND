@@ -146,7 +146,7 @@ Nút `Xuất Excel` (NFR-11) ❌ chưa dựng. Code: `app/admin/page.tsx`.
 
 Chưng cất từ 24 hội thoại mẫu `chats w B.docx` + persona aioinhadat + `AOND req +
 chat examples.docx`. **Nguồn sự thật hiện nay (28/10/2026) là lõi Python:
-`src/aioi/prompts.py`** — giọng phía bán là MỘT khối `GIONG_VUI` (SRS-5.1zzzzzzz219),
+`src/aioi/prompts.py`** — giọng cả hai phía là MỘT khối `GIONG` (SRS-5.1zzzzzzz480, 13/11/2026 — thay `GIONG_VUI` của SRS-5.1zzzzzzz219),
 ~~`build_chat_system`~~ (đã xoá, SRS-5.1zzzzzzz319) → phiếu lượt `build_phieu_luot` / `phieu_co_dinh` theo khuôn anh Luận `luan8560/AOND` (SRS-5.1zzzzzzz207, 309); lượt hỏi ô người bán nay dùng prompt gọn `LEAN_SYSTEM_PROMPT` (`AIOI_PROMPT_GON=bat`, SRS-5.1zzzzzzz408 / 414), bố cục tin
 rao `AD_FORMAT`, mức phí `muc_phi`. Câu bot nói nguyên văn ở `src/aioi/cau_mau.py`
 (chủ dự án sửa ở `/admin/cau-chuan`, SRS-5.1zzzzzzz106); câu chuẩn làm ví dụ ở bảng
@@ -157,9 +157,10 @@ rao `AD_FORMAT`, mức phí `muc_phi`. Câu bot nói nguyên văn ở `src/aioi/
 > - **KHÔNG mở đầu bằng "Dạ"** (CLAUDE.md §6; `engine._bo_da_dau` bỏ chữ đó khi model viết lại vẫn mở "Dạ", SRS-5.1zzzzzzz230).
 > - **Không gọi khách là "mình"**; "mình" nghĩa chúng ta ("hay mình đăng luôn") thì được (`xung_ho.goi_khach_la_minh`, SRS-5.1zzzzzzz171 / 226 / 230).
 > - **Xưng hô theo `src/aioi/xung_ho.py`** (`goi_toi`): khách xưng "em" → bot xưng anh / chị theo tên trợ lý; khách xưng "cháu" / "con" → bot xưng cô / chú; khách xưng chú / cô / bác → bot xưng "cháu" (SRS-5.1zzzzzzz214 / 234).
-> - **Câu ghi nhận ("Em ghi nhận…", "Em đã cập nhật…") tối đa MỘT lần mỗi cuộc chat** (dặn ở `GIONG_VUI`, SRS-5.1zzzzzzz229; lưới code `engine._co_cau_ghi_nhan` đã gỡ, SRS-5.1zzzzzzz312).
-> - **Lượt hỏi thông tin NGẮN, khoảng 20 từ; tối đa MỘT câu hỏi mỗi lượt** (`GIONG_VUI`, `prompts.LUAT_MOT_CAU_HOI`, lưới `engine._nhieu_cau_hoi`; SRS-5.1zzzzzzz252 / 471).
-> - Gọi khách nhiều nhất một lần mỗi lượt; mỗi lượt một vẻ; khen = MỘT lợi ích cụ thể suy từ điều khách nói, không bình giá, không bịa (`GIONG_VUI`).
+> - **Câu ghi nhận ("Em ghi nhận…", "Em đã cập nhật…") báo MỘT lần bằng lời thường** (dặn ở `GIONG`, SRS-5.1zzzzzzz229 / 480; lưới code `engine._co_cau_ghi_nhan` đã gỡ, SRS-5.1zzzzzzz312).
+> - **Độ dài theo ý khách: lượt hỏi thông tin một hai câu, khoảng 20–30 từ; lượt khách hỏi tư vấn / phí / pháp lý hay lộ cảm xúc thì đủ ý trong vài câu; tối đa MỘT câu hỏi mỗi lượt** (`GIONG`, `prompts.LUAT_MOT_CAU_HOI`, lưới `engine._nhieu_cau_hoi`; SRS-5.1zzzzzzz252 / 480 — trước là "khoảng 20 từ", SRS-5.1zzzzzzz471).
+> - **Nhận cảm xúc của khách trước khi vào việc; khách muốn dừng thì chào nhẹ, không níu; hỏi "người hay máy" thì nói thật là trợ lý AI** (`GIONG`, SRS-5.1zzzzzzz480).
+> - Gọi khách nhiều nhất một lần mỗi lượt; mỗi lượt một vẻ; khen khi có điểm mạnh thật, không ép cảm thán, không bình giá, không bịa (`GIONG`, SRS-5.1zzzzzzz480).
 > - Phía mua: ~~mỗi lượt MỘT căn (SRS-5.1zzzzzzz160)~~ → rổ có ≥ 2 căn hợp thì 2–3 căn một lượt (SRS-5.1zzzzzzz335 / 340, chủ dự án 02/11: bản một căn "chat chán quá"); mời đi xem tối đa một lần trong vài lượt (`GIONG_VUI`, SRS-5.1zzzzzzz375 / 376); ~~hỏi nhu cầu tối đa hai câu (SRS-5.1zzzzzzz154)~~ → hỏi ba ý cốt lõi (khu vực, ngân sách, loại BĐS), đủ thì gợi căn trước, câu hỏi thêm là MỘT câu mở tuỳ chọn (`prompts.mua_co_dinh` / `build_buyer_chat_system`, SRS-5.1zzzzzzz335).
 >
 > Các tiểu mục ghi ngày 09/2026–10/2026 có trích `TONE_RULES`, `HUMAN_CHAT_RULES`, `SELLER_FEWSHOT`, `CAU_HOI_MAU`,
@@ -408,8 +409,8 @@ tháng tiền thuê" (BR-05); vai chưa rõ thì nêu cả hai mức hoặc hỏ
   MỘT thông tin; khen NGẮN **lâu lâu một câu**, chỉ khi khách VỪA nói một điểm mạnh thật bằng chữ (nở hậu, hẻm xe hơi tới cửa,
   sổ riêng…), nhắc đúng điều khách nói. Không câu nào cũng khen; không gắn khách mua ("khách chuộng", "dễ bán", "bán nhanh");
   số trơn (hẻm 4m, 4x16) không phải điểm mạnh để khen. Khen câu nào cũng có tạo cảm giác hỏi cung thảo mai, máy móc.
-  → **bản `GIONG_VUI` đang chạy (SRS-5.1zzzzzzz248 / 471)**: "khen thoải mái, thật lòng và CỤ THỂ" — khách vừa đưa một điểm mạnh thì mở bằng một tiếng cảm thán (mỗi lần một tiếng khác), khen đúng điểm đó và nó được việc gì cho căn này; đổi kiểu khen giữa các lượt (cảm thán + vài chữ · một lợi ích gọn nửa câu · vào thẳng việc); điều bình thường thì đáp thẳng, không khen gượng; không thêm chi tiết khách chưa nói, không nêu số / so giá thị trường, không hứa bán được.
-- **Tin thu thập ngắn, 1–3 câu** (trước là ~30 từ, nới ở FR-215; nay khoảng 20 từ — `GIONG_VUI` / `LEAN_SYSTEM_PROMPT`, SRS-5.1zzzzzzz471); chỉ khi S yêu cầu "xem lại tin/đăng đầy đủ" mới soạn dài.
+  → ~~bản `GIONG_VUI` (SRS-5.1zzzzzzz248 / 471)~~ **nay `GIONG` (SRS-5.1zzzzzzz480): khen khi có điều đáng khen thật, điều bình thường đáp thẳng, không cần cảm thán**; bản cũ: "khen thoải mái, thật lòng và CỤ THỂ" — khách vừa đưa một điểm mạnh thì mở bằng một tiếng cảm thán (mỗi lần một tiếng khác), khen đúng điểm đó và nó được việc gì cho căn này; đổi kiểu khen giữa các lượt (cảm thán + vài chữ · một lợi ích gọn nửa câu · vào thẳng việc); điều bình thường thì đáp thẳng, không khen gượng; không thêm chi tiết khách chưa nói, không nêu số / so giá thị trường, không hứa bán được.
+- **Tin thu thập ngắn, 1–3 câu** (trước là ~30 từ, nới ở FR-215; nay 20–30 từ, lượt tư vấn dài hơn — `GIONG`, SRS-5.1zzzzzzz480); chỉ khi S yêu cầu "xem lại tin/đăng đầy đủ" mới soạn dài.
 - **Lý do vì-khách**: *"khách mua đang hỏi…"*, *"để em nhấn mạnh vào bài giới thiệu…"*.
 - **Diện tích mơ hồ**: hỏi lại dựa trên con số đã cho ("50m2 đó là đất hay sàn ạ?").
 - **Trung thực với ảnh**: không suy diễn từ ảnh; đoán thì *"hình như là…"* + xác nhận (RSK-03).

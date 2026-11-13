@@ -801,6 +801,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz480 · Bỏ "giọng vui": một khối `GIONG` tự nhiên chung bot bán và bot mua (13/11/2026)
+Chủ dự án 13/11, sau khi so với bot MOSO (chat thử 35 lượt): "không cần giọng vui nữa mà sửa luôn cho bot zalo bán, bot zalo mua… nới được… bên AOND anh Luận cái nào lấy được thì lấy, không được thì bỏ". Lớp lỗi: giọng định bằng luật đếm / cấm vá chồng nhiều đợt (14 gạch, có cặp tự kéo nhau, ép cảm thán, 20 từ) và lượt hỏi ô phía bán chạy một bộ luật nhắn riêng → một cuộc chat hai giọng.
+- **Sửa (`prompts.py`):** `GIONG_VUI` → `GIONG`, viết thuận kèm lý do: nhận cảm xúc khách trước khi vào việc, đáp trọn câu khách hỏi, độ dài theo ý khách (lượt hỏi ô 20–30 từ, lượt tư vấn / phí / pháp lý / đang lo thì vài câu), khen khi có điểm mạnh thật — không ép cảm thán, khách muốn dừng thì không níu, hỏi "người hay máy" thì nhận là trợ lý AI; kèm 5 lượt `<vi_du>` cảm xúc / ngoài lề (không chứa câu hỏi ô tin, SRS-196). `LEAN_SYSTEM_PROMPT` ghép chung `GIONG`. Phía mua: bỏ câu cấm hẳn nói thị trường → nhận định chung + dữ liệu của lượt / công cụ, số chỉ lấy từ đó, không giục mua, không hứa sinh lời. Thang chấm giọng `scripts/cham-kich-ban.py` đổi theo.
+- **Lấy từ bản anh Luận:** độ dài "tự cân nhắc theo ý khách, không luật cứng", khen điểm mạnh thật rồi hỏi một ý, "hình như" khi đoán, xong việc chốt nhẹ không nài. **Bỏ:** "Dạ em hiểu ạ", CTV, "Top Quận 5", kênh Buyers, gọi cứng "anh/chị", chữ "TUYỆT ĐỐI". **Giữ quyết định cũ:** không "Dạ", không gọi "mình" / "bạn", tối đa một câu hỏi, câu mẫu `cau_mau` chưa đụng.
+- **Kiểm:** parse cú pháp + ghép thử ba prompt (gọn bán, phiếu bán, mua) đều có đúng một khối `GIONG` trước `RANH_GIOI_CACHE`. CHƯA thử với model và CHƯA đưa lên 146 (phiên cloud không tới được máy 146, không có khoá model) — chạy `bash scripts/trien-khai-146.sh` rồi `bun run cham --giong` / chat thử.
+
 ### SRS-5.1zzzzzzz479 · Soát nốt docs so với code — đợt 2 (13/11/2026)
 Chủ dự án 13/11 sau SRS-478: "kiếm hết giúp t" → kiểm nốt phần đợt 1 chưa kiểm. Lớp lỗi như SRS-478.
 - **Sửa (chỉ docs):** docs/02 trạng thái FR (FR-28 ❌→🟡, FR-103 🟡→✅, FR-80 / 166 / 202 ✅→🟡) và NFR-09; docs/08 (tham chiếu job / cột / bảng đã gỡ, 13 tên `test_*.py`, AC / SRS-8 không còn định nghĩa); docs/07 §3–§4 theo `schema.sql` (cột, CHECK, index, policy, cổng `gate.ts`, `diem_tin` 8 tiêu chí, hàng hàm đã gỡ gắn `[đã gỡ]`, payload lõi); docs/06 §6.8–6.11 theo `GIONG_VUI` / `xung_ho` / `cau_mau` và chuỗi thật trên web, mục thời bot TS gắn `[LỊCH SỬ bot TS]`; docs/05 WF-06 / 07 / 12 / 13; docs/10 ca TS sống (TS-SEC3, TS-SEC-AUTO, TS-HEALTH, TS-SEC2… ca chết đánh `[deprecated 13/11/2026]`); docs/01, 03, 04, 09, 14; mô tả hai agent `.claude/agents/`.
@@ -884,21 +890,6 @@ Sếp 13/11: bot nhận tin rao trả lời ngắn hơn, tập trung thu thông 
 - **Câu mẫu một ý** (`NATURAL_QUESTIONS`): `ket_cau` (bỏ WC — khách chưa kể thì để sau), `lo_gioi_hem` (bỏ "xe hơi vào tận cửa"), `lo_gioi_duong`
   (bỏ "ô tô / xe tải vào tận nơi"), `thanh_toan` (bỏ "đồng ý cho người mua vay ngân hàng").
 - **Token** (`count_tokens`, claude-sonnet-5-5): prompt gọn bán 2.493 → 2.554 (+61) · phiếu bán 4.100 → 4.148 (+48) · phần cố định mua 3.475 → 3.523 (+48).
-
-### SRS-5.1zzzzzzz470 · Nhà trong dự án khỏi hỏi mặt tiền / hẻm; hỏi giá thì tra bằng công cụ; bỏ hẳn câu "rao đúng giá chủ muốn" (13/11/2026)
-Hội thoại một chủ nhà 13/11 (nhà phố trong dự án Ny'ah Phú Định, Q8): khách nhắn đủ tên dự án, kích thước, giá, kết cấu, garage — bot vẫn hỏi
-"mặt tiền đường hay trong hẻm", khách đáp "chị nhắn rồi mà"; khách hỏi giá khu thì bot nói "chưa có số liệu", 3 phút sau lại đưa dải 80–122 tr/m²;
-ba lần nói "tin vẫn rao đúng 8,8 tỉ chị muốn". Bridge không điếc — mọi tin đều được trả lời.
-- **Mặt tiền / hẻm** (`schema.py`): ô `lo_gioi_hem` để SAU bản nháp khi đã có ô `du_an` (vị trí theo dự án, đường nội khu) — như nhà đã nói tên
-  đường (SRS-5.1zzzzzzz157). Trước đây chỉ ô `duong` mới hoãn.
-- **"Chưa có số liệu"**: tin tạo 13:47, toạ độ (mức phường) có lúc 13:50 → lượt 13:48 `so_sanh.can_gan` rỗng → khối `KHOI_DINH_GIA` khẳng định
-  "bên em chưa có dữ liệu". Nay khối này bảo model gọi công cụ `dinh_gia_tham_khao` (tra theo quận / phường / dự án, không cần toạ độ tin), tra
-  không ra mới nói chưa có; `agent_ban.goi_y` luôn mở vòng công cụ ở lượt `hoi_ve = dinh_gia`.
-- **Bỏ câu trấn an giá** (tiếp SRS-5.1zzzzzzz468): "tin vẫn rao theo giá chủ muốn" / "rao đúng mức giá khách mong muốn" / "giá rao do khách quyết"
-  gỡ khỏi `khoi_dinh_gia`, `so_sanh.khoi_tra_loi_gia`, `dinh_gia_tham_khao_tool`; đợt 2 cùng ngày (sếp chê) gỡ nốt "giá vẫn do anh/chị quyết" ở dòng
-  nhận xét giá và đổi câu mẫu hỏi giá "mức giá bán mong muốn thu về" (model hay nối "để em lên tin đúng giá đó") thành "giá chủ muốn bán, gọn một câu".
-- **Còn hở:** dự án Ny'ah Phú Định trong `projects` chưa có lat/lng (có `location_raw`) nên tin trong dự án chỉ lấy được toạ độ mức phường, và
-  chờ vài phút. Token: chỉ đổi khối có điều kiện (lượt hỏi giá), phần cố định không đổi.
 
 ### SRS-5.1zzzzzzz472 · Tin phụ `$$$$$` hiện luôn trên CRM /admin/tin-nhan (13/11/2026)
 Chủ dự án 13/11: "tin debug $$$$$ trên crm để cho thấy luôn đi". Tin phụ chế độ test (SRS-5.1zzzzzzz252 / 419: đã trích xuất · bỏ · điểm / soạn

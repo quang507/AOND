@@ -3429,7 +3429,7 @@ class Engine:
             hoi_ve_khoi = (
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ PHÍ / CHÍNH SÁCH GỬI BÁN: ===\n"
                 # SRS-5.1zzzzzzz318 (chủ dự án 01/11: ĐỦ 4 ý chính sách, giọng theo khuôn anh Luận — bản đầu đọc cả khối như điều khoản, giám khảo
-                # chấm 2/5). Phiếu lượt không có BUSINESS_CONTEXT nên dữ kiện chính sách đi kèm khối này. Giọng do GIONG_VUI, không dặn thêm ở đây.
+                # chấm 2/5). Phiếu lượt không có BUSINESS_CONTEXT nên dữ kiện chính sách đi kèm khối này. Giọng do GIONG, không dặn thêm ở đây.
                 "Việc lượt này: đáp điều khách vừa hỏi, rồi nói lướt các ý còn lại của CHÍNH SÁCH GỬI BÁN dưới (phí cố định không bớt, chỉ thu khi "
                 "thành công; có hợp đồng môi giới bằng văn bản; không độc quyền; môi giới gửi hàng không chia hoa hồng nào khác, dù khách là chủ "
                 "nhà) — gói trong một câu nói chuyện, nối bằng \"còn\" / \"và\". "

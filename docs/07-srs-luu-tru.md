@@ -73,6 +73,21 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz470 · Nhà trong dự án khỏi hỏi mặt tiền / hẻm; hỏi giá thì tra bằng công cụ; bỏ hẳn câu "rao đúng giá chủ muốn" (13/11/2026)
+Hội thoại một chủ nhà 13/11 (nhà phố trong dự án Ny'ah Phú Định, Q8): khách nhắn đủ tên dự án, kích thước, giá, kết cấu, garage — bot vẫn hỏi
+"mặt tiền đường hay trong hẻm", khách đáp "chị nhắn rồi mà"; khách hỏi giá khu thì bot nói "chưa có số liệu", 3 phút sau lại đưa dải 80–122 tr/m²;
+ba lần nói "tin vẫn rao đúng 8,8 tỉ chị muốn". Bridge không điếc — mọi tin đều được trả lời.
+- **Mặt tiền / hẻm** (`schema.py`): ô `lo_gioi_hem` để SAU bản nháp khi đã có ô `du_an` (vị trí theo dự án, đường nội khu) — như nhà đã nói tên
+  đường (SRS-5.1zzzzzzz157). Trước đây chỉ ô `duong` mới hoãn.
+- **"Chưa có số liệu"**: tin tạo 13:47, toạ độ (mức phường) có lúc 13:50 → lượt 13:48 `so_sanh.can_gan` rỗng → khối `KHOI_DINH_GIA` khẳng định
+  "bên em chưa có dữ liệu". Nay khối này bảo model gọi công cụ `dinh_gia_tham_khao` (tra theo quận / phường / dự án, không cần toạ độ tin), tra
+  không ra mới nói chưa có; `agent_ban.goi_y` luôn mở vòng công cụ ở lượt `hoi_ve = dinh_gia`.
+- **Bỏ câu trấn an giá** (tiếp SRS-5.1zzzzzzz468): "tin vẫn rao theo giá chủ muốn" / "rao đúng mức giá khách mong muốn" / "giá rao do khách quyết"
+  gỡ khỏi `khoi_dinh_gia`, `so_sanh.khoi_tra_loi_gia`, `dinh_gia_tham_khao_tool`; đợt 2 cùng ngày (sếp chê) gỡ nốt "giá vẫn do anh/chị quyết" ở dòng
+  nhận xét giá và đổi câu mẫu hỏi giá "mức giá bán mong muốn thu về" (model hay nối "để em lên tin đúng giá đó") thành "giá chủ muốn bán, gọn một câu".
+- **Còn hở:** dự án Ny'ah Phú Định trong `projects` chưa có lat/lng (có `location_raw`) nên tin trong dự án chỉ lấy được toạ độ mức phường, và
+  chờ vài phút. Token: chỉ đổi khối có điều kiện (lượt hỏi giá), phần cố định không đổi.
+
 ### SRS-5.1zzzzzzz469 · Gỡ bộ pytest `tests/` — không còn dùng (13/11/2026)
 Chủ dự án 13/11 thấy `tests/` 264 file ("sao nhiều test dữ trời") rồi chốt "ko dùng thì gỡ mẹ đi". Từ 11/11 luật là sửa thẳng, không chạy test;
 mỗi lần sửa vẫn sinh thêm một file `test_<số SRS>.py` không ai chạy (192 file thêm từ 10/2026), nên bộ này chỉ phình và lệch code.

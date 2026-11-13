@@ -99,7 +99,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 
 Chi tiết (ghi ô tin, dự án, địa chỉ, bản nháp, giọng, phí, phía mua, gửi chủ động, cache) ở `.claude/luat-dang-ap.md` §6.2 — **đọc trước khi sửa `src/aioi/`**. Năm luật hay sai nhất:
 - Ô tin chỉ ghi điều KHÁCH nói (bằng chứng nằm nguyên trong lời khách, `Engine._loc_o_tin`, SRS-73); việc bot tự giao làm theo ý AI đọc, không so nguyên văn (SRS-281).
-- Một nguồn: phí `revenue.py` / `prompts.muc_phi` (đừng gõ tay "1%"), giọng `prompts.GIONG_VUI`, xưng hô `xung_ho.py`, câu mẫu `cau_mau.MAC_DINH` (+ migration `*_cau_mau_*`).
+- Một nguồn: phí `revenue.py` / `prompts.muc_phi` (đừng gõ tay "1%"), giọng `prompts.GIONG`, xưng hô `xung_ho.py`, câu mẫu `cau_mau.MAC_DINH` (+ migration `*_cau_mau_*`).
 - Tối đa MỘT câu hỏi mỗi lượt; mỗi lượt MỘT khối "ƯU TIÊN LƯỢT NÀY"; không mở đầu "Dạ", không gọi khách "mình".
 - Đổi hành vi theo ý khách: đưa quyết định cho AI (đọc theo nghĩa), KHÔNG thêm từ khoá vào regex.
 - Khối cố định trong prompt đặt TRƯỚC `RANH_GIOI_CACHE`, dữ liệu đổi mỗi lượt đặt sau.

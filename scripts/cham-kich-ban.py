@@ -137,8 +137,9 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
 
 
 TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất động sản (xưng em) nhắn Zalo với người gửi bán / cho thuê, thang 1–5. 5 = tự nhiên "
-                  "như môi giới trẻ nhắn người quen, khen CỤ THỂ đúng điều khách vừa nói, mỗi lượt mở khác nhau, không lặp câu, không thuyết giảng; "
-                  "3 = đúng việc nhưng hơi khuôn; 1 = máy móc, khen chung chung, lặp mở đầu / lặp câu. CHỈ chấm giọng, không chấm đúng sai nghiệp "
+                  "như môi giới có nghề nhắn người quen: đáp đúng điều khách vừa nói, nhận cảm xúc của khách khi có, độ dài hợp tình huống, mỗi lượt "
+                  "mở khác nhau, không lặp câu, không thuyết giảng; 3 = đúng việc nhưng hơi khuôn; 1 = máy móc, khen / cảm thán gượng, lờ "
+                  "cảm xúc hay câu hỏi của khách, lặp mở đầu / lặp câu. CHỈ chấm giọng, không chấm đúng sai nghiệp "
                   "vụ hay ô tin. Lý do một câu ngắn, nêu lượt tệ nhất nếu có."
                   # SRS-5.1zzzzzzz318 (10 kịch bản mua + bán 01/11: m_thue_chung_cu bị chấm 2/5 "xưng hô lẫn lộn" vì bot xưng "chị", gọi khách
                   # "em" — đúng luật SRS-5.1zzzzzzz214): giám khảo chỉ biết "trợ lý xưng em" nên trừ điểm cách xưng chủ dự án đã chốt.
