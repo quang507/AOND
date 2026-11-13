@@ -192,9 +192,9 @@ def _cong_cu_ghi(schema: dict[str, Any]) -> list[dict[str, Any]]:
     y = {k: copy.deepcopy(v) for k, v in p.items() if k != "operations"}
     return [
         {"name": "ghi_o", "description": "Ghi / sửa ô tin của MỘT căn (căn đang khai nếu target trống).",
-         "input_schema": {"type": "object", "properties": lay("target", "fields", "bang_chung"), "required": ["fields", "bang_chung"]}},
+         "input_schema": {"type": "object", "properties": lay("target", "fields", "bang_chung", "is_rental"), "required": ["fields", "bang_chung"]}},
         {"name": "them_can", "description": "Mở căn MỚI khác căn đang khai (cần can_khac_trich), kèm ô của căn đó.",
-         "input_schema": {"type": "object", "properties": lay("targets", "fields", "bang_chung", "can_khac_trich"),
+         "input_schema": {"type": "object", "properties": lay("targets", "fields", "bang_chung", "can_khac_trich", "is_rental"),
                           "required": ["can_khac_trich"]}},
         {"name": "doi_trang_thai", "description": "Đổi trạng thái giao dịch của một căn (đã bán, đã cọc, ngưng rao, rao lại…).",
          "input_schema": {"type": "object", "properties": lay("target", "status", "trich_dan_can"),
@@ -222,7 +222,7 @@ def _chay_ghi(engine: Any, conv: Any, ten: str, vao: dict[str, Any], plan: dict[
             return f"{SUA}: KHÔNG mở căn mới — can_khac_trich không nằm nguyên trong lời khách. Ô của căn đang khai thì dùng ghi_o."
         sai = [k for k, v in fields.items() if isinstance(v, str) and v.strip() and k != "uu_the"
                and not _trich_dan_khop(bc.get(k), loi_khach)]
-        op = {"op": "update" if ten == "ghi_o" else "add", **{k: v for k, v in vao.items() if k in ("target", "targets", "can_khac_trich")},
+        op = {"op": "update" if ten == "ghi_o" else "add", **{k: v for k, v in vao.items() if k in ("target", "targets", "can_khac_trich", "is_rental")},
               "fields": fields, "bang_chung": bc}
         plan["operations"].append(op)
         nhan = [k for k in fields if k not in sai]

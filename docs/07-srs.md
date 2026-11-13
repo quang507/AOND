@@ -801,10 +801,17 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz485 · Cho thuê là ô của từng căn; tin rao nhiều căn khác chi tiết thì mỗi căn một thao tác (14/11/2026)
+Thử 100 tin Mogi (SRS-484) còn lỗi: tin "Cho thuê 4 lô đất Đặng Thùy Trâm" ra 4 căn nhưng chỉ căn đầu là tin cho thuê, ba căn sau thành tin bán. Lớp lỗi: `is_rental` là khoá cả lượt của kế hoạch, engine chỉ đặt cho căn đang mở. Chạy lại còn lộ lỗi thứ hai: cùng tin đó, model lúc tách 4 căn, lúc dồn cả 4 lô vào ô của một căn ("Lô 1: 15tr, Lô 2: 25tr…"). Lý do: luật chỉ dạy tách nhiều căn cùng mẫu (`targets`), chưa dạy tách nhiều căn có chi tiết riêng.
+- **Cho thuê theo căn:** `is_rental` chuyển từ gốc `operations_schema` vào từng thao tác; công cụ `ghi_o` / `them_can` mang theo khoá này. `Engine._apply_operation` đặt cờ cho đúng căn của thao tác update / add, kể cả căn mở bằng `_fan_out_units`. Đã bỏ dòng đặt `conv.prop.is_rental` theo kế hoạch.
+- **Tách căn (`OPERATIONS_SYSTEM`, mục "add"):** một tin khai nhiều căn, mỗi căn chi tiết riêng → căn đầu dùng "update", mỗi căn sau dùng "add" (cụm gọi căn, vd "Lô 2", làm `can_khac_trich`). Ô riêng của căn nào ghi vào thao tác của căn đó; ô chung (đường, loại hình, cho thuê) ghi ở mọi căn.
+- **Token:** `OPERATIONS_SYSTEM` 18.722 → 18.969 (+247). Công cụ ghi 24.602 → 24.747 (+145, vì khoá cho thuê nằm ở cả `ghi_o` lẫn `them_can`). `operations_schema` không đổi.
+- **Kiểm trên 146:** tin 4 lô cho thuê chạy 3 lần, cả 3 lần đều ra 4 căn đúng kích thước, đúng giá, đều là tin cho thuê. Trước khi thêm luật tách: 1 trên 3 lần. Hai tin còn lại trong bộ thử (4 lô bán cùng giá, biệt thự) không đổi.
+
 ### SRS-5.1zzzzzzz484 · Đường vào và tình trạng nhà theo điều AI đọc (bỏ luật từ khoá); hai giá cho một ô thì chưa chắc (13/11/2026)
 Thử 100 tin Mogi (SRS-474) lộ lỗi gốc: "200 đường 3/2" thành "Nhà hẻm" (schema tự ghi hẻm khi địa chỉ có dấu `/`), "nhà mới đẹp" bị ghi `moi_xay` (8/18 tin), tiêu đề "4,5 tỷ" khác thân bài "4,65 tỷ" vẫn chọn một số.
 - **Sửa:** gỡ luật từ khoá ở `schema.py`; `SU_THAT_CAN.duong_vao` dặn số nhà có xẹt kiểu "47/24" là hẻm, khác tên đường "3/2", "30/4"; engine ghi ô `lo_gioi_hem` theo mã AI đọc (`NHAN_DUONG_VAO`), một nguồn cho mặt tiền / hẻm. `tinh_trang_nha` thêm mã `moi` (khách nói nhà mới, mới sửa); bản tin ghi "nhà mới", không ghi "mới xây"; lưới khẳng định cho "nhà mới" khi mã là `moi` / `moi_xay`. Nguyên tắc chung: hai con số khác nhau cho cùng một ô thì chưa chắc số nào.
-- **Kiểm:** chạy lại 3 tin lệch trên 146, không hỏng tin cũ; kịch bản "nhà mới sửa lại năm ngoái" hết bị lưới chặn oan. **Còn:** tin rao nhiều căn chỉ căn đầu nhận "cho thuê" (`is_rental` chỉ đặt cho căn đang mở), chưa sửa.
+- **Kiểm:** chạy lại 3 tin lệch trên 146, không hỏng tin cũ; kịch bản "nhà mới sửa lại năm ngoái" hết bị lưới chặn oan. Lỗi tin rao nhiều căn chỉ căn đầu nhận "cho thuê": sửa ở SRS-485.
 
 ### SRS-5.1zzzzzzz483 · Lượt bản tin nhanh hơn: bước viết không nghĩ thêm, lưới soát chạy song song, khuôn bản tin khớp lưới (13/11/2026)
 Chủ dự án 13/11: "tăng tốc lượt bản tin". Đo trên 146 (`AIOI_EFFORT=medium`): lượt bản tin qua lưới ngay ~10 s, bị lưới bắt viết lại 26–30 s (model viết cả bản tin lần hai), xảy ra khoảng một nửa số lượt. Lớp lỗi: khuôn `AD_FORMAT` dặn ngược lưới — tiêu đề dồn 5 ý trong 25 từ (lưới chặn quá 30 từ), giọng "hối hả, FOMO" mà không nói tin không bình giá (lưới `binh_luan_gia` chặn), câu mời chốt ghi "Zalo cho mình" (lưới `goi_minh` chặn).
@@ -874,15 +881,3 @@ chị gửi" thì câu xin ảnh coi như đã hỏi, 10 phút sau vòng nền n
   sửa theo.
 - **Token:** schema công cụ ghi thêm 10 khoá (~1.900 ký tự) + dòng giờ (~80 ký tự) → ước +700–800 token mỗi lượt người bán (chưa đo bằng công cụ đếm).
 
-### SRS-5.1zzzzzzz475 · LQC điều phối chung mọi tin chủ động tới người bán (13/11/2026)
-Chủ dự án 13/11 duyệt thiết kế LQC 5 đợt, chọn làm "đợt 2 trước" (điều phối chung) rồi tới đợt 1 (lời hẹn, tạm dừng…); "điều phối chung vẫn
-là tên LQC, đó là tên của sếp đặt". Trước đây năm vòng tự nhắn chủ nhà — tin xin ảnh 10 phút (`followup`), hàng câu hỏi sau đăng
-(`hoi_sau_dang`), Image LQC (`qc_anh`), hỏi còn bán (`hoi_con_ban`), giữ kết nối (`giu_ket_noi`) — mỗi vòng giữ luật riêng; trần "3 tin / ngày"
-là của từng căn và chỉ đếm hàng câu hỏi, nên một chủ có thể nhận tin xin ảnh, tin QC ảnh rồi câu pháp lý trong cùng buổi.
-- **`src/aioi/lqc.py` — `ly_do_khong_nhan`:** khung 8–21 giờ, chat im 10 phút, nhường sân + nút "giữ" trên CRM, **tối đa 3 tin chủ động mỗi
-  người bán mỗi ngày** (mọi loại, mọi căn — đếm thẳng từ lịch sử chat: lời bot cách lượt trước ≥ 4 phút là tin chủ động), chờ chủ đáp 24 giờ,
-  bỏ qua 2 tin liền thì thôi. Hỏi còn bán / giữ kết nối có nhịp riêng nên bỏ qua luật chờ đáp, vẫn theo các luật còn lại.
-- **Gắn vào:** `hoi_sau_dang` (thay luật riêng + trần căn / ngày; người bán có nhiều căn mà căn đầu không còn gì hỏi thì xét căn kế), `qc_anh`,
-  tin xin ảnh sau đăng của `followup`, `hoi_con_ban`, `giu_ket_noi` (phía người bán; server truyền `_lqc_chan`). Tin nhắc khai tiếp trước
-  khi đăng vẫn như cũ nhưng được đếm vào trần.
-- **Chưa gồm:** tin chuyển câu khách mua hỏi cho chủ (đi đường `escalation-feed` của bridge, không qua lõi) — đợt sau đưa vào chung hàng.

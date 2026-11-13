@@ -2300,7 +2300,9 @@ Các loại "op":
   chỉ (vd "căn 41 giảm còn 2.8 tỷ"), đặt "target" = mã/địa chỉ đó. Dữ liệu để trong "fields".
 - "add": THÊM (những) căn MỚI vào rổ. 1 căn: "fields" chứa thông tin, "target" = mã số căn nếu
   có. NHIỀU căn cùng mẫu/dự án trong 1 tin (vd "2 căn 42 và 41 cùng mẫu Fusion"): đặt "targets"
-  = ["42","41"] và thông tin CHUNG trong "fields". CHỈ dùng "add" khi rõ ràng là căn KHÁC căn
+  = ["42","41"] và thông tin CHUNG trong "fields". MỘT tin khai nhiều căn, mỗi căn chi tiết RIÊNG (vd "Lô 1: 6x24m giá 15tr - Lô 2:
+  12x24m giá 25tr"): mỗi căn một thao tác — "update" cho căn đầu, "add" cho từng căn sau (cụm khách gọi căn đó, vd "Lô 2", làm
+  "can_khac_trich"); ô của căn nào nằm trong thao tác của căn đó, ô chung (đường, loại hình, cho thuê) ghi ở mọi căn. CHỈ dùng "add" khi rõ ràng là căn KHÁC căn
   đang khai (vd "còn một căn nữa", "qua căn khác", địa chỉ hoàn toàn khác). Khách BỔ SUNG / LÀM RÕ địa chỉ của căn đang
   khai (thêm quận, tỉnh / thành, phường, số nhà cho cùng con đường — vd vừa nói "đường Nguyễn Chí Thanh" rồi "nhà ở quận Đống
   Đa, Hà Nội") là "update" căn đó, KHÔNG "add", dù địa danh khác điều em đoán.
@@ -2345,7 +2347,7 @@ ghi nguyên cụm bang_chung thay cho giá trị.
 
 Ngoài "operations", nếu khách TỰ NÓI RA vai thì đặt "seller_role"
 (chu_nha/luot_song/moi_gioi/san/chu_dau_tu/nguoi_nha_nho_ban) kèm "seller_role_trich_dan" = nguyên văn cụm khách gọi tên vai ("a là môi giới", "nhà chính chủ",
-"bên sàn em"); cách nói việc ("a cần đăng tin", "nhà em", "chú có căn nhà") KHÔNG phải vai — bỏ trống (phí báo theo vai, đoán sai là báo sai tiền); nếu là tin cho thuê đặt "is_rental"=true ("đang cho thuê X/tháng" khi rao BÁN là hiện trạng, không phải tin cho thuê).
+"bên sàn em"); cách nói việc ("a cần đăng tin", "nhà em", "chú có căn nhà") KHÔNG phải vai — bỏ trống (phí báo theo vai, đoán sai là báo sai tiền). Căn khách muốn CHO THUÊ: đặt "is_rental"=true trong chính thao tác update / add của căn đó — tin rao nhiều căn cho thuê thì mỗi căn một cờ ("đang cho thuê X/tháng" khi rao BÁN là hiện trạng, không phải tin cho thuê).
 
 SỰ THẬT CỦA CĂN (đọc theo NGHĨA cả câu, hiểu phủ định "không phải", "chưa", "đang làm", "xa", "cách"):
 trạng thái HIỆN TẠI theo cả cuộc trò chuyện về căn đang nói, mỗi khoá kèm "<khoá>_trich_dan" = nguyên văn cụm khách nói. Khách chưa nói
@@ -2658,7 +2660,7 @@ def inventory_scope_schema() -> dict[str, Any]:
 def operations_schema() -> dict[str, Any]:
     """Schema for the operation-plan the model returns: an ordered list of basket operations,
     each self-describing (op kind + target(s) + a `fields` data payload), plus the sticky
-    conversation attributes (seller_role, is_rental)."""
+    conversation attributes (seller_role…). is_rental đi theo từng thao tác update / add (SRS-5.1zzzzzzz485)."""
     op = {
         "type": "object",
         "properties": {
@@ -2707,6 +2709,9 @@ def operations_schema() -> dict[str, Any]:
                 "khong_rao=ngưng rao (ẩn, vẫn giữ); thoi_dang_ky=rút tin; da_coc=khách đã đặt cọc "
                 "(chưa sang tên); da_ban/da_cho_thue=đã xong.",
             },
+            # SRS-5.1zzzzzzz485 (thử 100 tin Mogi: tin rao 4 căn cho thuê chỉ căn đầu nhận cho thuê): cho thuê là sự thật của TỪNG căn — đi cùng
+            # thao tác update / add của căn đó, không phải khoá cả lượt (trước chỉ đặt cho căn đang mở).
+            "is_rental": {"type": "boolean", "description": MO_TA_CHO_THUE},
             "trich_dan_can": {
                 "type": "string",
                 "description": "CHỈ cho set_status khi rổ có từ 2 căn: NGUYÊN VĂN cụm trong lời KHÁCH chỉ ra căn bị đổi (địa chỉ, tên "
@@ -2727,7 +2732,6 @@ def operations_schema() -> dict[str, Any]:
             },
             "seller_role_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách tự nói vai (bắt buộc khi có seller_role); "
                                       "\"a cần đăng tin\", \"nhà em\" KHÔNG phải vai → bỏ trống cả hai."},
-            "is_rental": {"type": "boolean", "description": MO_TA_CHO_THUE},
             # SRS-5.1zzzzzzz320 (chủ dự án 02/11: không dùng từ khoá trên lời khách để quyết ý): sự thật của căn do AI đọc theo NGHĨA, code chỉ
             # kiểm cụm trích; lưới bản tin đối chiếu các giá trị này, chua_ro / trống thì bản tin không được khẳng định.
             **{k: {"type": "string", "enum": list(v), "description": d} for k, v, d in SU_THAT_CAN},

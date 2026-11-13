@@ -73,6 +73,19 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz475 · LQC điều phối chung mọi tin chủ động tới người bán (13/11/2026)
+Chủ dự án 13/11 duyệt thiết kế LQC 5 đợt, chọn làm "đợt 2 trước" (điều phối chung) rồi tới đợt 1 (lời hẹn, tạm dừng…); "điều phối chung vẫn
+là tên LQC, đó là tên của sếp đặt". Trước đây năm vòng tự nhắn chủ nhà — tin xin ảnh 10 phút (`followup`), hàng câu hỏi sau đăng
+(`hoi_sau_dang`), Image LQC (`qc_anh`), hỏi còn bán (`hoi_con_ban`), giữ kết nối (`giu_ket_noi`) — mỗi vòng giữ luật riêng; trần "3 tin / ngày"
+là của từng căn và chỉ đếm hàng câu hỏi, nên một chủ có thể nhận tin xin ảnh, tin QC ảnh rồi câu pháp lý trong cùng buổi.
+- **`src/aioi/lqc.py` — `ly_do_khong_nhan`:** khung 8–21 giờ, chat im 10 phút, nhường sân + nút "giữ" trên CRM, **tối đa 3 tin chủ động mỗi
+  người bán mỗi ngày** (mọi loại, mọi căn — đếm thẳng từ lịch sử chat: lời bot cách lượt trước ≥ 4 phút là tin chủ động), chờ chủ đáp 24 giờ,
+  bỏ qua 2 tin liền thì thôi. Hỏi còn bán / giữ kết nối có nhịp riêng nên bỏ qua luật chờ đáp, vẫn theo các luật còn lại.
+- **Gắn vào:** `hoi_sau_dang` (thay luật riêng + trần căn / ngày; người bán có nhiều căn mà căn đầu không còn gì hỏi thì xét căn kế), `qc_anh`,
+  tin xin ảnh sau đăng của `followup`, `hoi_con_ban`, `giu_ket_noi` (phía người bán; server truyền `_lqc_chan`). Tin nhắc khai tiếp trước
+  khi đăng vẫn như cũ nhưng được đếm vào trần.
+- **Chưa gồm:** tin chuyển câu khách mua hỏi cho chủ (đi đường `escalation-feed` của bridge, không qua lõi) — đợt sau đưa vào chung hàng.
+
 ### SRS-5.1zzzzzzz474 · Dataset thử lấy từ Mogi trong phạm vi AOND (13/11/2026)
 Chủ dự án 13/11 xoá hết dữ liệu thử ("XÓA RỒI") rồi yêu cầu "lấy thông tin và 1000 căn từ mogi về để có dataset còn test tính năng", "trong phạm vi
 của AOND cần thôi". Bảng `listings` trống thì so giá quanh, báo cáo giá, gợi ý cho người mua đều không có gì để chạy.

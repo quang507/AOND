@@ -5354,8 +5354,6 @@ class Engine:
         if conv.role != "buyer":
             from .lqc import ghi_tu_ke_hoach
             ghi_tu_ke_hoach(conv, plan, gan_khach, time.time())   # SRS-5.1zzzzzzz476: hẹn / bận / không có / thôi hỏi
-        if plan.get("is_rental"):
-            conv.prop.is_rental = True
 
         intent = plan.get("user_intent")
         has_seller_context = (
@@ -6281,6 +6279,13 @@ class Engine:
         def _data(exclude_code: bool = False) -> dict[str, str]:
             return self._loc_o_tin(conv, {k: v for k, v in fields.items() if not (exclude_code and k == "ma_so_can")}, bang_chung)
 
+        thue = op.get("is_rental") is True and kind in ("update", "add")   # SRS-5.1zzzzzzz485: cho thuê là ô của căn trong thao tác này
+
+        def _ghi(li, data: dict[str, str]) -> set[str]:
+            if thue:
+                li.prop.is_rental = True
+            return li.prop.update(data)
+
         if kind == "an_anh":   # SRS-5.1zzzzzzz425: chủ đồng ý ẩn tấm ảnh LQC xin — ẩn trên web (không xoá file), ảnh ẩn không tính điểm
             ok = False
             req = getattr(self._convstore, "_request", None)
@@ -6318,13 +6323,13 @@ class Engine:
             # (an existing code UPDATES, never duplicates). A single add starts a fresh listing
             # (filling the empty starter first) so its fields don't bleed onto the previous căn.
             if len(targets) >= 2:
-                changed.update(self._fan_out_units(conv, _data(exclude_code=True), targets))
+                changed.update(self._fan_out_units(conv, _data(exclude_code=True), targets, thue))
             elif self._listing_empty(conv.active):
                 # First căn / empty starter — no previous căn to bleed from; use the plan fields.
                 data = _data()
                 if targets:
                     data["ma_so_can"] = targets[0]
-                changed.update(conv.active.prop.update(data))
+                changed.update(_ghi(conv.active, data))
             elif not changed and not self._co_cum_can_khac(conv, op.get("can_khac_trich")):
                 # SRS-5.1zzzzzzz308 (bắn thử ban-thu-nhieu-can 30/10: "anh có 2 căn: căn 1 … căn 2 …" → kế hoạch [update căn 1, add căn 2] mà add
                 # thiếu cụm trích → căn 2 đè lên căn 1, DB một tin): thao tác trước TRONG CÙNG lượt đã ghi căn đang khai thì "add" sau đó là căn
@@ -6333,7 +6338,7 @@ class Engine:
                 # tác trả "add" → căn mới rỗng, bản nháp không ra, bot hỏi lại vị trí. "add" mở căn mới phải kèm cụm khách nói căn KHÁC
                 # (AI đọc nghĩa, code chỉ kiểm cụm nằm trong lời khách); không có thì đó là thông tin của căn đang khai.
                 log.warning("Thao tác add không kèm cụm khách nói căn khác — ghi vào căn đang khai")
-                changed.update(conv.active.prop.update(_data()))
+                changed.update(_ghi(conv.active, _data()))
                 return
             else:
                 # A genuinely NEW căn alongside existing ones: open a fresh listing pointed at
@@ -6347,7 +6352,7 @@ class Engine:
                 data = _data() if fields else self._loc_o_tin(conv, self._extract_fields(conv))   # cùng cổng bằng chứng (SRS-5.1zzzzzzz86)
                 if targets:
                     data["ma_so_can"] = targets[0]
-                changed.update(li.prop.update(data))
+                changed.update(_ghi(li, data))
             receipts.append(("add", targets))
             return
         if kind == "set_status":
@@ -6384,14 +6389,14 @@ class Engine:
             listings = self._resolve_targets(conv, targets)
             if listings:
                 for li in listings:
-                    changed.update(li.prop.update(_data(exclude_code=True)))
+                    changed.update(_ghi(li, _data(exclude_code=True)))
                 conv.active_listing_id = listings[-1].listing_id
             else:
                 data = _data()
                 data.setdefault("ma_so_can", targets[0])
-                changed.update(conv.active.prop.update(data))
+                changed.update(_ghi(conv.active, data))
         else:
-            changed.update(conv.active.prop.update(_data()))
+            changed.update(_ghi(conv.active, _data()))
 
     @staticmethod
     def _basket_size(conv: Conversation) -> int:
@@ -6424,7 +6429,7 @@ class Engine:
             return self._cau_khach(conv, "da_an_bot", n=self._rao_count(conv))
         return None
 
-    def _fan_out_units(self, conv: Conversation, shared: dict[str, str], codes: list[str]) -> list[str]:
+    def _fan_out_units(self, conv: Conversation, shared: dict[str, str], codes: list[str], thue: bool = False) -> list[str]:
         """One listing per unit code, all sharing `shared` (du_an, unit_type, giá...). A code
         that ALREADY exists in the basket UPDATES that căn (one seller can't list the same căn
         twice); a new code fills the empty starter first, then a fresh listing. New units point
@@ -6434,11 +6439,12 @@ class Engine:
         du_an = shared.get("du_an")
         for code in codes:
             existing = self._listing_by_code(conv, code, du_an)
-            if existing is not None:
-                names.update(existing.prop.update({**shared, "ma_so_can": code}))
-                continue
-            target = conv.active if self._listing_empty(conv.active) else conv.new_listing()
-            target.history_start = start
+            target = existing
+            if target is None:
+                target = conv.active if self._listing_empty(conv.active) else conv.new_listing()
+                target.history_start = start
+            if thue:
+                target.prop.is_rental = True
             names.update(target.prop.update({**shared, "ma_so_can": code}))
         return sorted(names)
 
