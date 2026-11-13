@@ -121,7 +121,7 @@ const mucII = [
   b("Không đọc mã tin", "Gọi căn bằng địa chỉ hay đặc điểm (\"căn hẻm Trần Bình Trọng của anh\"); mã tin chỉ ở web và admin (FR-178)."),
   b("Không hỏi số điện thoại", "ngoài bước chốt lịch xem nhà, và khi đó kèm lý do (\"để cộng tác viên gọi xác nhận trước ~30 phút\") và đường từ chối (\"không tiện để số thì hẹn qua Zalo cũng được ạ\")."),
   b("Lùi lại đúng lúc", "Khách bận, bực, hứa gửi sau: nói ngắn, không hỏi thêm trong tin đó; câu hỏi treo lại cho vòng hỏi bù. AI đọc cảm xúc (bực, nghi ngờ, muốn dừng) → báo admin, ngừng hỏi."),
-  b("Câu mẫu: hai bản, DB đè code", "Bản trong git là `src/aioi/cau_mau.py` (MAC_DINH); bản sửa tay là bảng cau_mau — chủ dự án sửa ở /admin/cau-chuan, lõi đọc lại trong 60 giây, không cần cài lại. Giọng một nguồn `prompts.GIONG_VUI`; lượt thu thập viết từ phiếu lượt ngắn."),
+  b("Câu mẫu: hai bản, DB đè code", "Bản trong git là `src/aioi/cau_mau.py` (MAC_DINH); bản sửa tay là bảng cau_mau — chủ dự án sửa ở /admin/cau-chuan, lõi đọc lại trong 60 giây, không cần cài lại. Giọng một nguồn `prompts.GIONG`; lượt thu thập viết từ phiếu lượt ngắn."),
   b("Bong bóng 🤖 (báo lại đã lưu)", "Công tắc app_config.bao_lai_da_luu: tat · thay_doi · day_du · admin (chỉ ghi messages cho /admin, không gửi khách)."),
 ];
 
