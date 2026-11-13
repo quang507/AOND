@@ -557,9 +557,11 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId, 
   bufferTin.set(tid, hienTai);
 }
 
-api.listener.on("message", async (message) => {
+// SRS-5.1zzzzzzz459: tên hàm để đường bù tin lỡ (`old_messages`) đi CHUNG đường với tin đến trực tiếp.
+async function xuLyTin(message) {
   try {
     if (message.type !== ThreadType.User) return; // chỉ chat 1-1, bỏ qua nhóm
+    ghiDaThay(message.data?.msgId);
 
     // FR-141: tin ĐI RA từ acc clone mà không phải bot vừa gửi = admin đang
     // gõ tay → báo bộ não ghi log + nhường sân 30 phút, đừng trả lời chen ngang.
@@ -661,7 +663,8 @@ api.listener.on("message", async (message) => {
     if (laPhienChet(e)) return await phienChet(errDetail(e));
     await ghiLoi("xử lý tin", errDetail(e));
   }
-});
+}
+api.listener.on("message", xuLyTin);
 
 // FR-142: khách thả cảm xúc (tim/like) lên tin nhắn — cũng là tín hiệu đồng ý.
 // zca-js bản cũ không có event này thì try/catch bỏ qua, không sao.
@@ -960,4 +963,68 @@ setInterval(() => {
   console.log(`Nghe Zalo: ${soKhungGio} khung trong 60 phút qua — ${new Date().toISOString()}`);
   soKhungGio = 0;
 }, 3_600_000);
+// SRS-5.1zzzzzzz459 (13/11/2026): bridge điếc LẦN HAI dù canh pong SRS-453 đang chạy — 02:11 → 12:21 không một khung tin nào, chủ dự án nhắn
+// "em ơi" 12:20 không thấy đáp. Zalo vẫn trả pong tầng websocket (socket sống) nhưng thôi đẩy tin xuống kết nối đó, nên canh pong không cắt.
+// Đo thẳng ở nguồn: mỗi DO_SONG_MS hỏi Zalo các tin 1-1 gần nhất ngay trên socket (`requestOldMessages`, lệnh 510). Socket nghe còn sống thì
+// Zalo trả `old_messages`; quá CHO_DAP_MS không trả → cắt socket để zca-js nối lại. Mỗi lần nhận `old_messages` (định kỳ, và 3 giây sau mỗi
+// lần nối) thì BÙ tin lỡ: tin của khách mới hơn tin cuối của mình trong cùng cuộc chat (bot / admin chưa đáp), trong 6 giờ, chưa xử lý ở
+// tiến trình này → đưa vào đúng đường xử lý tin thường. Lõi chặn trùng theo msg_id lưu vĩnh viễn, phát lại tin đã đáp chỉ thành "bỏ bản trùng".
+const DO_SONG_MS = Number(process.env.BRIDGE_DO_SONG_MS || 300_000);
+const CHO_DAP_MS = 90_000;
+const BU_TOI_DA_MS = 6 * 3_600_000;
+const daThay = new Set();
+function ghiDaThay(id) {
+  if (!id) return;
+  daThay.add(String(id));
+  if (daThay.size > 3000) daThay.delete(daThay.values().next().value);
+}
+const idMinh = () => { try { return typeof api.getOwnId === "function" ? String(api.getOwnId()) : ""; } catch { return ""; } };
+let choDoSong = 0;
+let lanDoCuoi = 0;
+function doSong(lyDo) {
+  const ws = api.listener.ws;
+  if (!ws || ws.readyState !== 1 || dangThoat || typeof api.listener.requestOldMessages !== "function") return;
+  lanDoCuoi = Date.now();
+  if (!choDoSong) choDoSong = Date.now();
+  try { api.listener.requestOldMessages(ThreadType.User, null); } catch (e) { console.log(`Dò sống Zalo lỗi (${lyDo}): ${errDetail(e)}`); }
+}
+api.listener.on("old_messages", async (msgs, loai) => {
+  if (loai !== ThreadType.User) return;
+  choDoSong = 0;
+  khungCuoi = Date.now();
+  try {
+    const minh = idMinh();
+    // Tin cũ có thể ghi uidFrom = id thật của acc (không phải "0") → tự tính "của mình" và cuộc chat, đừng tin `isSelf` / `threadId` của model.
+    const ds = (Array.isArray(msgs) ? msgs : []).map((m) => {
+      const d = m?.data ?? {};
+      const laMinh = Boolean(m?.isSelf) || (minh && String(d.uidFrom) === minh);
+      return { m, laMinh, tid: String(laMinh ? d.idTo : d.uidFrom), ts: Number(d.ts) || 0, id: d.msgId ? String(d.msgId) : "" };
+    });
+    const cuoiMinh = new Map();
+    for (const x of ds) if (x.laMinh && x.ts > (cuoiMinh.get(x.tid) || 0)) cuoiMinh.set(x.tid, x.ts);
+    const bu = ds.filter((x) => !x.laMinh && x.id && !daThay.has(x.id) && x.tid && x.tid !== minh
+      && x.ts > Date.now() - BU_TOI_DA_MS && x.ts > (cuoiMinh.get(x.tid) || 0)).sort((a, b) => a.ts - b.ts);
+    for (const x of bu) {
+      console.log(`↺ [${x.tid}] bù tin lỡ ${x.id} (${new Date(x.ts).toISOString()})`);
+      x.m.threadId = x.tid;
+      await xuLyTin(x.m);
+    }
+  } catch (e) {
+    await ghiLoi("bu tin lo", errDetail(e));
+  }
+});
+api.listener.on("connected", () => { setTimeout(() => doSong("vừa nối"), 3000); });
+setInterval(() => {
+  const ws = api.listener.ws;
+  if (!ws || ws.readyState !== 1 || dangThoat) return;
+  if (choDoSong && Date.now() - choDoSong > CHO_DAP_MS) {
+    console.log(`Zalo không đáp lệnh dò sống ${Math.round((Date.now() - choDoSong) / 1000)} giây — cắt kết nối nghe để nối lại.`);
+    choDoSong = 0;
+    ghiLoi("listener zalo", "không đáp lệnh dò sống (510) — tự cắt để nối lại").catch(() => {});
+    ws.terminate();
+    return;
+  }
+  if (Date.now() - lanDoCuoi > DO_SONG_MS) doSong("định kỳ");
+}, 30_000);
+
 api.listener.start({ retryOnClose: true });

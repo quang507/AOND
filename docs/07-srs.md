@@ -788,6 +788,15 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz459 · Bridge dò sống bằng lệnh hỏi tin gần nhất, bù tin lỡ (13/11/2026)
+Bridge điếc lần hai dù SRS-5.1zzzzzzz453 đang chạy: 02:11 → 12:21 không một khung tin, chủ dự án nhắn "em ơi" lúc 12:20 không thấy đáp. Zalo vẫn
+trả pong tầng websocket nên canh pong không cắt — socket sống nhưng Zalo thôi đẩy tin xuống.
+- **Dò sống:** mỗi 5 phút (`BRIDGE_DO_SONG_MS`) gửi `requestOldMessages` (lệnh 510) trên chính socket nghe; quá 90 giây không có `old_messages`
+  → cắt socket, zca-js nối lại. 3 giây sau mỗi lần nối cũng dò.
+- **Bù tin lỡ:** mỗi lần nhận `old_messages`, tin của khách mới hơn tin cuối của mình trong cùng cuộc chat (chưa ai đáp), trong 6 giờ, chưa xử lý
+  ở tiến trình này → vào đúng đường xử lý tin thường (`xuLyTin`). Lõi chặn trùng theo msg_id lưu vĩnh viễn nên phát lại tin đã đáp là vô hại.
+- Tin chậm tối đa ~5,5 phút khi Zalo thôi đẩy tin, thay vì mất hẳn. Canh pong SRS-453 giữ nguyên.
+
 ### SRS-5.1zzzzzzz458 · Khối "0 kết quả" lên trên bộ lọc (13/11/2026)
 
 Chủ dự án 13/11/2026 "sửa luôn khối 0 kết quả lên trên bộ lọc". Sau SRS-457 khối "Chưa có căn nào khớp đủ các điều kiện này" nằm chỗ
@@ -899,46 +908,3 @@ Bắn thử 12/11 (`thu-lqc-1711`, `thu-lqc-1711b`), chủ dự án hỏi "vì s
   đó để trống; chỉ phương án khách tự nói mới là ý khách. Đi vào prompt gọn (`LEAN_SYSTEM_PROMPT`), phiếu cũ (`phieu_co_dinh`) và prompt sau bản tin
   (phần cố định, trước ranh giới cache). Nhánh đồng ý đăng của prompt sau bản tin ghi rõ là lời đáp cho câu hỏi duyệt / sửa bản tin. `thue_phi`
   hỏi một câu: giá đã bao thuế phí sang tên chưa.
-
-### SRS-5.1zzzzzzz449 · Bridge tự dựng lại khi kết nối nghe Zalo đóng (12/11/2026)
-Chủ dự án 12/11 17:33 nhắn "/quit" rồi "chào em" vào Zalo "AI Ơi Nhà Đất" — không có trả lời: "sao bot ko rep".
-- **Gốc:** `bot/bridge-zca/index.mjs` gọi `api.listener.start()` trần, không nghe sự kiện `closed` / `disconnected` của zca-js. Zalo đóng
-  websocket (mạng chớp, đổi máy chủ, acc mở Zalo Web nơi khác — mã 3000) → tiến trình node vẫn sống, `/send` vẫn gửi (tin chủ động, bắn thử
-  vẫn chạy), task Task Scheduler vẫn `Running`, nhưng không còn nhận tin. DB: tin khách thật cuối cùng 21:36 ngày 11/11; cả ngày 12/11 chỉ có
-  tin của các ID bắn thử (đi `/chat-reply`, không qua listener). Hai bridge (5005, 5006) chạy liền từ 05:52 ngày 11/11.
-- **Sửa:** `listener.start({ retryOnClose: true })` — zca-js tự nối lại với mã nó cho thử lại; `disconnected` ghi một dòng kèm giờ;
-  `closed` (hết lượt thử / mã không thử lại) → `ghiLoi` (sổ lỗi /admin, chờ tối đa 5 giây) rồi `process.exit(1)`. Vòng
-  `svc_nhadat_bridge*.cmd` trên máy 146 chạy lại node sau 10 giây, đăng nhập bằng session đã lưu; session chết thì vào luồng QR (FR-203) như cũ.
-- Bridge không đi qua `scripts/trien-khai-146.sh` (chỉ chép `src/` lõi): chép tay `index.mjs` sang `C:ondridge-zca` rồi dừng hai tiến
-  trình node của bridge, vòng `.cmd` tự dựng lại.
-
-### SRS-5.1zzzzzzz448 · Thẻ tin ghi ngày đăng thật, bỏ nhãn "✓ Xác thực" (12/11/2026)
-
-Thấy lúc làm SRS-447, chủ dự án 12/11 "ừ, gán đi". `ListingCard` ghi cứng "Đăng hôm nay" ở mọi thẻ và gắn "✓ Xác thực" lên ảnh mọi
-tin; kho không có cột xác minh nào ở mức tin (khối "Đã xác minh với chủ nhà" trên trang căn là lời chủ nhà kể, không phải đã kiểm).
-- Bỏ nhãn "✓ Xác thực" trên ảnh thẻ.
-- Ngày đăng đọc `created_at`, hàm `ngayDang()` (lib/format.ts) ghi "dd/mm/yyyy" theo giờ Việt Nam. Ngày tuyệt đối, không "3 ngày
-  trước": thẻ dựng sẵn và nằm trong bộ đệm vài giờ, chữ tương đối sẽ cũ và lệch khi trình duyệt dựng lại.
-- Không thêm nhãn "Đã cọc": giữ quyết định SRS-63 (tin đã cọc hiện như đang bán, không nhãn).
-
-### SRS-5.1zzzzzzz447 · Ba hiệu ứng của theme King: ảnh hiện dần, thẻ nhấc khi rê chuột, tự tải thêm tin khi cuộn (12/11/2026)
-
-Chủ dự án 12/11/2026 "lấy hết đi", sau khi soát theme King: King có ảnh hiện dần (`.king-lazy`), cuộn vô tận (jquery-ias),
-hiệu ứng rê chuột; aond chưa lấy cái nào. King KHÔNG có kiểu khối trượt vào khi cuộn (AOS/WOW) nên aond cũng không thêm.
-
-- **Ảnh hiện dần** — lớp `.anh-dan` (app/globals.css): ảnh mờ tới khi tải xong rồi hiện trong 0,5 giây. Cờ `data-da-tai` do một
-  script nhỏ trong `<head>` (app/layout.tsx) gắn, nghe sự kiện load/error ở pha bắt của document nên không chờ React và không kẹt
-  với ảnh đã có trong bộ nhớ đệm. Chỉ ẩn trong `@media (scripting: enabled)`: tắt JS thì ảnh hiện thường. Dùng cho ảnh thẻ tin,
-  ảnh feed từ căn thứ 3, ảnh nhỏ trang căn và trang dự án. KHÔNG dùng cho ảnh lớn đầu trang (ảnh mờ không được tính LCP).
-- **Thẻ nhấc khi rê** — `ListingCard`: `motion-safe:hover:-translate-y-0.5` (2px, chỉ máy có chuột), phóng ảnh khi rê thêm
-  `motion-safe:`.
-- **Tự tải thêm** — `/mua-ban`, `/cho-thue` và trang tag. API mới `GET /api/tin?deal=…&<bộ lọc>&trang=N` hoặc `?tag=<slug>&trang=N`
-  trả `{tin, anh, tongTrang}`, CDN giữ 10 phút. Đọc bộ lọc + truy vấn tách ra `lib/duyet-tin.ts` (từ ListingBrowse) và
-  `lib/tin-tag.ts` (từ app/[tag]/page.tsx) để trang và API dùng chung một hàm, một khoá cache. Hook `useTaiThem`
-  (components/TaiThem.tsx): tới cách cuối danh sách 600px thì tự lấy trang kế, **tự động tối đa 3 lần** rồi phải bấm "Xem thêm
-  tin" (để còn chạm được chân trang). Thẻ nối thêm trượt lên 8px (`.the-vao`). Chưa chạy JS thì vẫn là link "Trang sau" / "Xem cả
-  N tin trong kho" như cũ.
-- **Sửa kèm:** truy vấn danh sách và tag thêm khoá phụ `order("id")`. Tin mẫu cùng `created_at` khiến thứ tự giữa hai lượt gọi
-  không cố định: nối trang 1–4 ra 5 thẻ trùng trên 96 (đo trên máy), nghĩa là cũng sót 5 tin. Sau sửa: 8 trang /mua-ban = 182 tin,
-  182 mã khác nhau. Khoá cache `listing-browse-v3` → `v4`.
-- Máy giảm chuyển động (`prefers-reduced-motion`): tắt hiện dần, tắt trượt thẻ, vòng chờ quay chậm.

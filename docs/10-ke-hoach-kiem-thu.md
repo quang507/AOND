@@ -776,6 +776,7 @@ khi đẩy — bảng là danh sách để chạy lại khi cần. SRS-1 … 244
 | SRS-446 | Căn trong dự án lấy phường theo toạ độ dự án (phường mới sau sáp nhập); chỉ hỏi số nhà khi có tên đường | FR-162 | `test_phuong_du_an_446.py` |
 | SRS-449 | Bridge tự dựng lại khi kết nối nghe Zalo đóng (không còn chạy "điếc": gửi được mà không nhận) | FR-203 | nhắn thật vào Zalo bot sau khi bridge khởi động lại |
 | SRS-453 | Bridge cắt kết nối nghe chết lặng (không pong quá 3 phút) rồi nối lại | FR-203 | log "Zalo trả pong" sau khởi động + nhắn thật vào Zalo bot |
+| SRS-459 | Bridge dò sống bằng lệnh 510 mỗi 5 phút, không đáp thì nối lại; bù tin khách chưa được đáp | FR-203 | log "bù tin lỡ" sau khởi động + nhắn thật vào Zalo bot |
 | SRS-455 | Báo cáo giá rao quanh căn (LQC 4.6): RPC + trang `/bao-cao-gia/<mã>` + bot mời xem kèm tin so sánh | FR-185 | `test_bao_cao_gia_455.py` |
 | SRS-456 | Căn đã cọc / đã bán: bot hỏi giá chốt một lần, ghi `deals.gia_chot_vnd` | FR-185 | `test_gia_chot_456.py` |
 | SRS-450 | Khách đáp "ok" cho câu hỏi lựa chọn: bot không hỏi lại, không đoán phương án; câu thuế phí một câu | FR-144 | `test_dap_chua_chon_450.py` + bắn thử `lqc_thu.py` |
