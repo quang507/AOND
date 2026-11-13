@@ -801,6 +801,13 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz487 · Câu trước bản tin cập nhật nói về căn, không nói việc sửa tin; bỏ chỗ còn kéo khen (14/11/2026)
+Sau SRS-486 vẫn còn: câu trước "📋 Bản tin cập nhật" hay nói "em thêm vào tin / em sửa lại tin cho anh", bot vẫn khen sổ hồng, số phòng. Còn hai chỗ kéo về phía đáp và khen: `HIEU_CHU_NHA` / `HIEU_KHACH_MUA` dặn "khách hỏi hay **nói** điều gì thì em đáp đúng điều đó", câu mở prompt gọn phía bán dặn "trân trọng tài sản của mình".
+- **Sửa:** `HIEU_CHU_NHA` / `HIEU_KHACH_MUA` đổi thành "khách hỏi hay **lo** điều gì". Prompt gọn bỏ "trân trọng tài sản". Khối sau bản tin: câu trước 📋 nói về căn hay về điều khách hỏi, không nói việc em làm với tin (dòng 📋 và bản tin cập nhật đã cho khách thấy). `GIONG` thêm lý do không khen điều căn nào cũng có ("nghe như đọc kịch bản").
+- **Token:** `GIONG` 2.041 → 2.076, prompt gọn 4.323 → 4.345, phiếu cũ 4.466 → 4.501.
+- **Đo (6 cuộc chat thử × 5 lượt, medium; SRS-483 → 486 → 487):** câu "ghi nhận" 8 → 6 → 1, khen bịa về khu 6 → 1 → 1, khen điều bình thường 3 → 2 → 0. Không câu nào trước bản tin cập nhật còn nói "thêm / sửa tin".
+- **Còn, chưa sửa:** khách đáp "ok em" sau bản tin, khi câu bot hỏi ngay trước là "sổ đứng tên ai", thì bot ít khi đăng: code đang chạy 0/4, code mới 1/4 (riêng kịch bản Sunrise City). Bot coi "ok" là chưa trả lời câu sổ và hỏi lại. Không do SRS-486 / 487 gây ra.
+
 ### SRS-5.1zzzzzzz486 · Giọng lượt hỏi: hỏi thẳng ý kế, không báo đã ghi, không khen bằng điều không có dữ liệu; bản tin mời một lần (14/11/2026)
 Chủ dự án 14/11 hỏi bỏ giọng vui rồi giọng đã tự nhiên chưa, và nhắc thêm "mấy cái câu em ghi nhận nữa". Đọc 6 cuộc chat thử (SRS-483, medium) thì gần như lượt nào cũng một khuôn: đọc lại lời khách, khen chung chung, rồi hỏi "… vậy anh?". Bot còn khen bằng điều không có dữ liệu ("Gò Vấp là khu nhiều người tìm mua"), và chen "em ghi nhận / em ghi rồi / em thêm vào tin" vào giữa hay cuối câu (lưới SRS-131 chỉ bắt câu mở). Bản tin gọi hai lần (tiêu đề và mô tả), có câu "Ê, anh chị…", "Alo alo cô bác…".
 - **Gốc:** ba prompt lượt người bán (phiếu cũ, prompt gọn, câu hỏi pháp lý theo sau) đều dặn "đáp điều khách vừa nói, rồi làm việc lượt này", nên lượt khách chỉ đưa thông tin bot cũng phải "đáp" gì đó. Câu trước dòng 📋 của bản tin cập nhật được dặn "đồng tình, cảm thán… nói sẽ sửa gì".
@@ -859,19 +866,4 @@ Chủ dự án 13/11: "soát lại toàn bộ docs xem chỗ nào lệch code th
 - **Sửa (chỉ docs, không đổi code / luật):** docs/00, 02, 03, 04, 05, 06, 07 (phần đặc tả), 10, 11, 13, 14, LQC, hai README, `CLAUDE.md`, `.claude/luat-dang-ap.md` — bộ pytest đã gỡ, cổng soạn bản tin `NHOM_SOAN`, gợi 2–3 căn, lời ~20 từ, trần LQC theo người bán, khung 8–21 giờ, 6 trạng thái tin (`da_coc`), `listings` 66 cột, lịch cron và `revalidate` thật, ISR trang tag / dự án, 100 tag, tên cột / hàm / trigger / biến env đã đổi, biểu phí công chứng docs/14 theo `phap_ly.phi_cong_chung`.
 - **Còn lệch, chưa sửa:** FR-159 (lượt mơ hồ nay theo số Zalo, không mặc định người mua); `public/llms.txt` ghi "Zalo OA" / "nhadat.co"; bảng RPC §3.12 / §3.14 và bảng PROPERTY docs/04 §4.5 còn hàng lịch sử; chú thích cũ trong vài script.
 - **Kiểm:** từng chỗ đối chiếu `file:dòng` trong code; `bun run truyvet` sạch.
-
-### SRS-5.1zzzzzzz477 · Dọn mã và tệp không còn dùng; nạp lại rổ hàng Ny'ah Phú Định (13/11/2026)
-Chủ dự án 13/11: "trong code có mấy cái mới cũ khác nhau có cái nào ko dùng nữa ko, có cái nào docs ghi dư ko cần thiết ko" → rà cả repo, chủ dự án
-duyệt "Dọn nhóm A" (nhóm chắc chắn không còn ai gọi). Cùng ngày: "nạp lại dữ liệu ny'ah phú định vào đi".
-- **Xoá tệp:** `scripts/archive/` (5 script nạp nguồn mogi / rever / moso đã ngừng từ SRS-401) cùng hai bộ thử của chúng
-  `bot/tests/thu-du-an-moso.mjs`, `thu-du-an-rever.mjs` (gỡ khỏi `test:bot`); `bot/bridge-zca/archive/` (4 tệp cấu hình VPS); `design-system/`
-  (`MASTER.md` 17/10 ghi bo góc 8/12px — nguồn đúng là `docs/06-ui-design.md` §6.4; gỡ tên thư mục khỏi `vercel.json`). Cần thì lấy lại ở lịch sử git.
-- **Xoá hàm không ai gọi** (bộ pytest gọi chúng đã gỡ ở SRS-469): `Engine.handle_media`, `start_new_listing`, `switch_listing`;
-  `supabase_store._hoi_thoai_mua`; `qc_anh._goi_storage`; `projects.upsert_unit_type`; `bulk.parse_csv`; `che_do_test._giong`.
-  **Hằng không ai đọc:** `SELLER_ASSISTANT`, `MO_DAU_NHAP`, `CAU_GIU_CHO`, `TAY_TU_MENH`, `DEFAULT_BATCH_BUDGET`. Không đổi hành vi, không đổi prompt.
-- **Giữ nguyên (chưa quyết):** các đường dự phòng và nhánh sau công tắc (`agent_ban.chay`, `agent_mua.chay`, form JSON, `build_phieu_luot`,
-  công cụ `gui_khach`, model lượt dễ) — gỡ là mất đường lùi, chờ chủ dự án.
-- **Ny'ah Phú Định:** `du_an_kien_thuc` khoá `ny ah phú định` nạp lại từ `luu_tru` lần 13 (lần xoá rổ hàng + bảng giá 12/11): 50 căn, giá 9 lô còn
-  trống (ô riêng `rieng.gia_can`), mục "Rổ hàng T10.2026" trong tài liệu. Các phần khác của dòng không đổi từ lần xoá nên chép nguyên bản lưu.
-- **`thu-cli`:** schema ô tin dài hơn trần dòng lệnh Windows (WinError 206) → `llm/claude_cli.py` ghi schema vào tệp system, đọc JSON từ kết quả.
 

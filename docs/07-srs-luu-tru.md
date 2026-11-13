@@ -73,6 +73,21 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz477 · Dọn mã và tệp không còn dùng; nạp lại rổ hàng Ny'ah Phú Định (13/11/2026)
+Chủ dự án 13/11: "trong code có mấy cái mới cũ khác nhau có cái nào ko dùng nữa ko, có cái nào docs ghi dư ko cần thiết ko" → rà cả repo, chủ dự án
+duyệt "Dọn nhóm A" (nhóm chắc chắn không còn ai gọi). Cùng ngày: "nạp lại dữ liệu ny'ah phú định vào đi".
+- **Xoá tệp:** `scripts/archive/` (5 script nạp nguồn mogi / rever / moso đã ngừng từ SRS-401) cùng hai bộ thử của chúng
+  `bot/tests/thu-du-an-moso.mjs`, `thu-du-an-rever.mjs` (gỡ khỏi `test:bot`); `bot/bridge-zca/archive/` (4 tệp cấu hình VPS); `design-system/`
+  (`MASTER.md` 17/10 ghi bo góc 8/12px — nguồn đúng là `docs/06-ui-design.md` §6.4; gỡ tên thư mục khỏi `vercel.json`). Cần thì lấy lại ở lịch sử git.
+- **Xoá hàm không ai gọi** (bộ pytest gọi chúng đã gỡ ở SRS-469): `Engine.handle_media`, `start_new_listing`, `switch_listing`;
+  `supabase_store._hoi_thoai_mua`; `qc_anh._goi_storage`; `projects.upsert_unit_type`; `bulk.parse_csv`; `che_do_test._giong`.
+  **Hằng không ai đọc:** `SELLER_ASSISTANT`, `MO_DAU_NHAP`, `CAU_GIU_CHO`, `TAY_TU_MENH`, `DEFAULT_BATCH_BUDGET`. Không đổi hành vi, không đổi prompt.
+- **Giữ nguyên (chưa quyết):** các đường dự phòng và nhánh sau công tắc (`agent_ban.chay`, `agent_mua.chay`, form JSON, `build_phieu_luot`,
+  công cụ `gui_khach`, model lượt dễ) — gỡ là mất đường lùi, chờ chủ dự án.
+- **Ny'ah Phú Định:** `du_an_kien_thuc` khoá `ny ah phú định` nạp lại từ `luu_tru` lần 13 (lần xoá rổ hàng + bảng giá 12/11): 50 căn, giá 9 lô còn
+  trống (ô riêng `rieng.gia_can`), mục "Rổ hàng T10.2026" trong tài liệu. Các phần khác của dòng không đổi từ lần xoá nên chép nguyên bản lưu.
+- **`thu-cli`:** schema ô tin dài hơn trần dòng lệnh Windows (WinError 206) → `llm/claude_cli.py` ghi schema vào tệp system, đọc JSON từ kết quả.
+
 ### SRS-5.1zzzzzzz476 · LQC nghe chủ: lời hẹn, đang bận, không có, thôi hỏi; gara → hẻm xe hơi (13/11/2026)
 Chủ dự án 13/11: "khách hẹn giờ chiều chị gửi ảnh thì chiều nó hỏi lại"; thiết kế LQC đợt 1 (làm sau đợt 2 — SRS-475). Trước đây chủ đáp "chiều
 chị gửi" thì câu xin ảnh coi như đã hỏi, 10 phút sau vòng nền nhảy sang câu pháp lý, ảnh chỉ được nhắc lại ở cuối hàng.
