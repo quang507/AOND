@@ -73,6 +73,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz466 · Hạng Đồng quá 5 căn: vẫn lên web, gắn nhãn "thông tin cần kiểm chứng thêm" (13/11/2026)
+Chủ dự án 13/11 chốt luật Đồng tối đa 5 căn (SRD §IV.3) "vẫn chạy" (SRS-465 thấy nó ngừng từ 18/10). Bản đầu (migration `20261113c`) giữ căn thứ 6 ở `cho_thong_tin`; chủ dự án sửa: "không phải là chờ thông tin mà là có thông tin, đem ra dùng nhưng nói rõ là thông tin cần kiểm chứng thêm" — cùng cách thông tin dự án một người gửi (SRS-445).
+- **DB (`20261113d`):** cột `listings.can_kiem_chung` (bỏ `ly_do_chua_dang`). Mỗi lần lõi (service_role) ghi một căn đang hiện, `listings_quyet_dinh_dang_tin` đếm căn đang hiện không mang nhãn của người rao: ≥ 5 và hạng `dong` → gắn, ngược lại bỏ. Lên Bạc / gỡ bớt căn → lượt ghi kế bỏ nhãn. Admin ghi không đổi nhãn; tính hạng lỗi thì giữ nguyên. `tim_nha` trả thêm khoá `can_kiem_chung`.
+- **Bot:** phía mua `dong_can` ghi "THÔNG TIN CẦN KIỂM CHỨNG THÊM (nói rõ với khách)"; phía bán `khoi_trang_thai_web` thêm một dòng báo chủ nhà tin hiện kèm nhãn, lên Bạc (≥ 50 điểm) là bỏ. Prompt +~250 ký tự chỉ khi căn mang nhãn, lượt thường +0.
+- **Web:** nhãn vàng "Thông tin cần kiểm chứng thêm" dưới tiêu đề trang tin và trên thẻ tin. Thử rollback trên DB thật 13/11: 7 căn → cả 7 lên web, căn 6–7 mang nhãn; chốt căn 1 rồi ghi lại căn 6 → bỏ nhãn; `tim_nha` có khoá.
+
 ### SRS-5.1zzzzzzz465 · Đối chiếu SRD 23/06 với code: docs/00 §0.3 sửa 6 dòng (13/11/2026)
 Chủ dự án 13/11 gửi lại SRD gốc (`req__chat_examples.docx`, 23/06/2026) nhờ soát code / docs có khác không. Sau SRS-464 (docs khớp code), bảng
 §0.3 còn 6 dòng lệch code: Live Chat Monitor ghi ⏳ nhưng nhãn + nút "Giữ khách" đã chạy; **Đồng tối đa 5 căn ghi ✅ nhưng không chạy** (trần ở

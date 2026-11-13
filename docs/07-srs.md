@@ -824,6 +824,18 @@ là của từng căn và chỉ đếm hàng câu hỏi, nên một chủ có th
   khi đăng vẫn như cũ nhưng được đếm vào trần.
 - **Chưa gồm:** tin chuyển câu khách mua hỏi cho chủ (đi đường `escalation-feed` của bridge, không qua lõi) — đợt sau đưa vào chung hàng.
 
+### SRS-5.1zzzzzzz474 · Dataset thử lấy từ Mogi trong phạm vi AOND (13/11/2026)
+Chủ dự án 13/11 xoá hết dữ liệu thử ("XÓA RỒI") rồi yêu cầu "lấy thông tin và 1000 căn từ mogi về để có dataset còn test tính năng", "trong phạm vi
+của AOND cần thôi". Bảng `listings` trống thì so giá quanh, báo cáo giá, gợi ý cho người mua đều không có gì để chạy.
+- **Lấy:** `scripts/lay-mogi.py` — các danh mục Mogi TP.HCM (nhà hẻm, mặt tiền, căn hộ, đất, biệt thự, thuê căn hộ /
+  nhà / phòng trọ / mặt bằng), mỗi lần gọi cách ≥ 1,2 giây, chỉ trang robots.txt cho phép. Chỉ lấy ô AOND dùng (loại, giá, diện tích, phòng, tầng,
+  đường vào, pháp lý, địa chỉ, toạ độ); không lấy ảnh, tên, số điện thoại người đăng.
+- **Nạp:** `scripts/nap-mogi.py` gọi hàm DB `nap_tin_mogi(jsonb)` (chỉ service_role; migration `20261113g`). Phường theo toạ độ `phuong_tai_diem` —
+  ngoài 168 phường thì bỏ. Toạ độ Mogi là ghim gần đúng → `toa_do_muc = 'phuong'`. Lời mô tả công khai sinh từ các ô đã bóc; lời người đăng gốc
+  (đã che số điện thoại) + link nằm ở `listing_noi_bo` (nội bộ). Chạy lại không nhân đôi (`legacy_code = 'mogi:<mã>'`).
+- **Kết quả:** 962 / 963 tin `source = 'mogi_thu'`, người bán thử `thu-mogi`; trigger tự đưa lên `dang_ban` nên hiện cả trên web công khai. Mẻ 20 tin (vai authenticator có `statement_timeout` 8 giây); số phòng ngoài 1–60 (toà "100 phòng") bỏ trống theo `listings_bedrooms_check`.
+  Xoá cả bộ: `delete from listings where source = 'mogi_thu'` rồi xoá seller `thu-mogi`.
+
 ### SRS-5.1zzzzzzz473 · Thưởng quy mô chỉ từ hạng Bạc; bot báo hạng theo DB (13/11/2026)
 Bắn thử SRS-466 trên production 13/11 lộ hai lệch: người bán 5 căn 47 điểm (Đồng), rao căn thứ 6 lên 61 (Bạc) vì hệ số quy mô 1,36 — trần 5 căn gần như không chạm; và bot báo "Hạng người rao hiện là Vàng" (số `gamification` trong cuộc chat, độ kịp thời 1,0 lúc mới chat) trong khi DB tính Đồng. Soát khuôn anh Luận (`luan8560/AOND`): `perks_for(DONG)` khai `max_listings=5`, `scale_bonus_active=False` nhưng không code nào dùng. SRD §IV.3: Bạc "kích hoạt Thưởng quy mô". Chủ dự án: "Sửa theo SRD".
 - **DB (`20261113f`):** `diem_nguoi_ban` nhân hệ số quy mô chỉ khi điểm gốc ≥ 50. Lúc áp: 4 người bán thật, 0 người đổi hạng.
@@ -898,9 +910,3 @@ lúc 10 phút thì không) → bridge tưởng điếc, cắt; mỗi lần nối
   12 phút vì lần dò lúc 10 phút đã quá cửa sổ Zalo còn đáp. Sau mốc ~10 phút không phân biệt được "im mà sống" với "điếc" → ngưỡng 30 phút.
 - **Kỳ vọng:** đang có tin → không bao giờ cắt. Im hẳn → dò ở ~30 phút, Zalo không đáp → nối lại sau ~31,5 phút im (số vắng nối lại
   ~32 phút một lần thay 12). Khoảng điếc tối đa ~32 phút thay ~5,5 phút — đổi lấy việc không cắt giữa lúc khách đang nhắn.
-
-### SRS-5.1zzzzzzz466 · Hạng Đồng quá 5 căn: vẫn lên web, gắn nhãn "thông tin cần kiểm chứng thêm" (13/11/2026)
-Chủ dự án 13/11 chốt luật Đồng tối đa 5 căn (SRD §IV.3) "vẫn chạy" (SRS-465 thấy nó ngừng từ 18/10). Bản đầu (migration `20261113c`) giữ căn thứ 6 ở `cho_thong_tin`; chủ dự án sửa: "không phải là chờ thông tin mà là có thông tin, đem ra dùng nhưng nói rõ là thông tin cần kiểm chứng thêm" — cùng cách thông tin dự án một người gửi (SRS-445).
-- **DB (`20261113d`):** cột `listings.can_kiem_chung` (bỏ `ly_do_chua_dang`). Mỗi lần lõi (service_role) ghi một căn đang hiện, `listings_quyet_dinh_dang_tin` đếm căn đang hiện không mang nhãn của người rao: ≥ 5 và hạng `dong` → gắn, ngược lại bỏ. Lên Bạc / gỡ bớt căn → lượt ghi kế bỏ nhãn. Admin ghi không đổi nhãn; tính hạng lỗi thì giữ nguyên. `tim_nha` trả thêm khoá `can_kiem_chung`.
-- **Bot:** phía mua `dong_can` ghi "THÔNG TIN CẦN KIỂM CHỨNG THÊM (nói rõ với khách)"; phía bán `khoi_trang_thai_web` thêm một dòng báo chủ nhà tin hiện kèm nhãn, lên Bạc (≥ 50 điểm) là bỏ. Prompt +~250 ký tự chỉ khi căn mang nhãn, lượt thường +0.
-- **Web:** nhãn vàng "Thông tin cần kiểm chứng thêm" dưới tiêu đề trang tin và trên thẻ tin. Thử rollback trên DB thật 13/11: 7 căn → cả 7 lên web, căn 6–7 mang nhãn; chốt căn 1 rồi ghi lại căn 6 → bỏ nhãn; `tim_nha` có khoá.
