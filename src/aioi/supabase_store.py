@@ -1246,7 +1246,7 @@ class SupabaseConversationStore(KhoNguoiMua):
 
     def trang_thai_tin(self, conv: Conversation) -> dict | None:
         """Tin đang nói có ĐANG HIỂN THỊ trên web không — đọc `status` thật (trigger `listings_quyet_dinh_dang_tin` quyết),
-        không suy từ điểm đủ của lõi (SRS-5.1zzzzzzz44). {"len_web", "thieu": [ô], "cho_duyet"}; lỗi / chưa có dòng → None."""
+        không suy từ điểm đủ của lõi (SRS-5.1zzzzzzz44). {"len_web", "thieu": [ô], "cho_duyet", "tran_hang_dong"}; lỗi / chưa có dòng → None."""
         if not self.is_configured:
             return None
         try:
@@ -1255,7 +1255,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 return None
             code = _ma_tin(conv.active)
             rows = self._get(f"listings?seller_id=eq.{sid}&code=eq.{code}"
-                             "&select=status,ward,area_m2,price_vnd,can_chu_duyet,chu_duyet_at")
+                             "&select=status,ward,area_m2,price_vnd,can_chu_duyet,chu_duyet_at,ly_do_chua_dang")
         except Exception as e:  # noqa: BLE001 — không biết thì bot nói trung tính, không bịa "đã đăng"
             log.warning("trang_thai_tin lỗi: %s", e)
             return None
@@ -1266,7 +1266,9 @@ class SupabaseConversationStore(KhoNguoiMua):
         # SRS-5.1zzzzzzz259: "đang hiển thị" = cùng bộ trạng thái web hiện (`_DB_DANG_HIEN`), không chỉ `dang_ban` — tin khách mua vừa quan tâm
         # (`dang_quan_tam`) bị coi là chưa lên web, bot hỏi chủ nhà duyệt lại tin đang bán.
         return {"len_web": r.get("status") in _DB_DANG_HIEN, "thieu": thieu, "ma": code,   # mã → link trang tin (SRS-5.1zzzzzzz220)
-                "cho_duyet": not thieu and bool(r.get("can_chu_duyet")) and not r.get("chu_duyet_at")}
+                "cho_duyet": not thieu and bool(r.get("can_chu_duyet")) and not r.get("chu_duyet_at"),
+                # SRS-5.1zzzzzzz466: trigger giữ tin vì người rao hạng Đồng đã có 5 căn đang hiện (SRD §IV.3)
+                "tran_hang_dong": r.get("status") not in _DB_DANG_HIEN and r.get("ly_do_chua_dang") == "tran_hang_dong"}
 
     def hen_bao_len_web(self, conv: Conversation) -> bool:
         """Tin chủ nhà đã duyệt mà chưa hiển thị (hệ thống / admin đang hoàn tất) → một nhắc `len_web`: `gui_nhac` chờ tới khi tin `dang_ban`

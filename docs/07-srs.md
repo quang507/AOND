@@ -805,6 +805,12 @@ lần** dù tin vẫn về. Máy chủ Zalo chỉ đáp lệnh 510 cho hai lần
 - **Kỳ vọng:** đang có tin → không bao giờ cắt. Im hẳn → dò ở ~10 phút (đáp), ~20 phút (không đáp) → nối lại sau ~21,5 phút im; giờ đêm
   không khách thì nối lại vô hại. Khoảng điếc tối đa ~21,5 phút thay ~5,5 phút — đổi lấy việc không cắt giữa lúc khách đang nhắn.
 
+### SRS-5.1zzzzzzz466 · Trần hạng Đồng 5 căn chạy lại, ở trigger lên kệ (13/11/2026)
+Chủ dự án 13/11 chốt luật Đồng tối đa 5 căn (SRD §IV.3) "vẫn chạy" — SRS-465 thấy nó đã ngừng từ 18/10. Thông tin dự án do một người gửi vẫn nhận, ghi "chưa chắc chắn" (SRS-445), không qua trần.
+- **DB:** cột `listings.ly_do_chua_dang`; `listings_quyet_dinh_dang_tin` (vai service_role) gặp tin sắp lên kệ mà người rao đã có ≥ 5 căn hiện (`dang_ban` / `dang_quan_tam` / `da_coc`) và hạng `dong` → giữ ở `cho_thong_tin`, ghi `tran_hang_dong`. Tin đang hiện không bị gỡ; tính hạng lỗi thì cho qua; admin đăng hộ không bị trần.
+- **Lõi:** `trang_thai_tin` trả cờ `tran_hang_dong`; engine không hẹn nhắc `len_web`; `khoi_trang_thai_web` bảo bot nói thật: hạng Đồng tối đa 5 căn, căn này đã lưu đủ, lên Bạc (≥ 50 điểm) là lên web. Prompt +~130 ký tự chỉ ở lượt bị trần, lượt thường +0.
+- **Giới hạn:** lên Bạc hay gỡ bớt căn thì tin bị giữ chỉ lên ở lượt ghi kế (khách nhắn tiếp về căn đó). Thử rollback 13/11: 7 căn → 5 lên, 2 giữ; gỡ một căn → căn 6 lên; vai `authenticated` không bị trần.
+
 ### SRS-5.1zzzzzzz465 · Đối chiếu SRD 23/06 với code: docs/00 §0.3 sửa 6 dòng (13/11/2026)
 Chủ dự án 13/11 gửi lại SRD gốc (`req__chat_examples.docx`, 23/06/2026) nhờ soát code / docs có khác không. Sau SRS-464 (docs khớp code), bảng
 §0.3 còn 6 dòng lệch code: Live Chat Monitor ghi ⏳ nhưng nhãn + nút "Giữ khách" đã chạy; **Đồng tối đa 5 căn ghi ✅ nhưng không chạy** (trần ở
@@ -866,28 +872,3 @@ Chủ dự án 13/11/2026 "sửa luôn khối 0 kết quả lên trên bộ lọ
 lưới tin, tức dưới bảng bộ lọc — trên điện thoại bảng lọc dài hơn một màn nên khách thấy trang như trống. Nay khi 0 kết quả, khối báo
 (kèm lời mời "gần <địa danh>" nếu có) hiện ngay dưới ô tìm, trên bộ lọc, ở mọi khổ màn hình; bộ lọc nằm ngay dưới để bỏ bớt điều kiện.
 Đã xem ở 375px: khối báo và hai nút Bỏ hết bộ lọc / Nhờ tìm qua Zalo nằm trọn màn đầu.
-
-### SRS-5.1zzzzzzz457 · Sửa 5 lỗi P1 của đợt đánh giá UX 13/11: menu điện thoại, trang 0 kết quả, tin đã gỡ, bong bóng Zalo, trang căn trên điện thoại (13/11/2026)
-
-Chủ dự án 13/11/2026 "Sửa cả 5 P1" sau đợt đánh giá Heuristic (Nielsen 23/40) + Cognitive Walkthrough + PURE.
-1. **Điện thoại không có đường tới Rao bán, Bản đồ, công cụ.** Nav ẩn dưới `lg` mà không có gì thay. Header thêm nút Menu (`lg:hidden`,
-   `aria-expanded`, đóng khi đổi trang / Escape / bấm link): đủ 7 mục nav + Công cụ (Nhà gần địa danh, Thuê hay mua, Tính lãi vay,
-   Cẩm nang) + Tài khoản + Chat Zalo. Dưới `sm` header chỉ còn tim + Menu (Tài khoản, Chat Zalo vào trong menu). Thẻ cuối feed trang
-   chủ thêm "Có nhà muốn bán? Rao ở đây". Lưu ý: `.nut` nằm ngoài `@layer` nên thắng tiện ích `hidden` — phải dùng `!hidden`.
-2. **Trang 0 kết quả trống trơn; "nhà gần bệnh viện Chợ Rẫy" ra 0 căn trong khi /gan/benh-vien-cho-ray có căn.** `timMoc()` (lib/moc.ts)
-   nhận "gần <địa danh>" (bỏ dấu, bỏ "bệnh viện/chợ/công viên/đại học" đầu tên, bỏ "mall/plaza") → /api/search `go=1` chuyển thẳng sang
-   /gan/<slug> (chỉ khi mua). /mua-ban có câu "gần X" thì hiện lời mời sang trang bán kính; parse-query bỏ nhãn `gan_*` chung khi đã có
-   mốc cụ thể. Lưới rỗng thay bằng khối "Chưa có căn nào khớp đủ các điều kiện này" + Xem nhà gần X / Bỏ câu tìm / Bỏ hết bộ lọc /
-   Nhờ tìm qua Zalo. Hero thêm "Bỏ câu tìm".
-3. **Tin đã xoá vẫn nằm trên danh sách tới 3 giờ, bấm vào 404** (đánh giá gặp 3/5 thẻ đầu /mua-ban). Không chỗ nào gọi
-   `revalidateTag`. Thêm POST /api/tin-da-go {code}: tự kiểm DB, tin còn hiện thì thôi; đã gỡ thật thì `revalidateTag("listings")` +
-   `revalidatePath` trang chủ, trang tag, /gan/[slug], trang căn; tối đa một lần / 60 giây. Gọi từ: trang not-found mới của
-   /nha-dat/[code] ("Căn này đã bán hoặc đã gỡ khỏi kệ", link Mua bán / Cho thuê / Nhờ tìm căn tương tự) và admin SuaTinModal sau
-   lưu / xoá. `tinGanMoc` thêm tag `listings`.
-4. **Bong bóng "Chat Zalo" che nút chính /raoban và mở đường người mua.** Ẩn bong bóng trên /raoban (trang có nút Zalo người bán
-   riêng); trên /moi-gioi bong bóng dùng ngữ cảnh `nmg-apply` (đường người bán). Dòng bản quyền footer có lề ngang và chừa đáy
-   `pb-20` trên điện thoại cho bong bóng; "Rao bán miễn phí" → "Rao bán nhà" (/raoban thu phí 1% / 0,5%).
-5. **Trang căn trên điện thoại: giá và nút hỏi nằm quá sâu, nút Zalo đỏ, sang Zalo mất mã căn.** Giá lên dải tiêu đề navy
-   (`lg:hidden`, `text-brand-soft`). Thanh dính đáy `ThanhHoiCan` (`lg:hidden`, cuối nội dung nên dừng trước footer): giá + mã + Lưu +
-   "Hỏi qua Zalo". Nút khối Hỏi (máy tính) đổi sang xanh Zalo. Bấm nút Zalo nào cũng chép sẵn "Hỏi căn #<mã>" vào bộ nhớ tạm, mở Zalo
-   tab mới, báo "đã chép, dán vào Zalo" (zalo.me không điền sẵn tin được). Chữ ghi chú `text-mute/80` (3,6:1) → `text-mute`.
