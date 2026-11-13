@@ -42,7 +42,7 @@ AI đọc theo nghĩa lời chủ ở mỗi lượt chat (không bắt từ kho�
 | Không có: "nhà đang cho thuê không vào chụp được", "sổ ngân hàng giữ" | Thôi xin ảnh nhà / ảnh sổ (hàng câu hỏi và Image LQC); Image LQC vẫn được xin ẩn ảnh kém |
 | Phiền: "hỏi gì hỏi hoài", "thôi em, vậy đủ rồi" | Thôi hẳn câu hỏi; vẫn còn hỏi còn bán (20 ngày) và giữ kết nối |
 
-Nhà trong hẻm mà chủ nói có gara / đậu xe hơi trong nhà → AI ghi đường vào là **hẻm xe hơi**.
+AI ghi cả điều lời chủ **chắc chắn kéo theo** (nhà trong hẻm có gara ô tô → hẻm xe hơi; "1 trệt 2 lầu" → 3 tầng), điều chỉ có thể đúng thì để trống.
 
 ## 3. Khi nào bot KHÔNG nhắn
 

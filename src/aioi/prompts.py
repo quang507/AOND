@@ -524,8 +524,7 @@ SU_THAT_CAN: tuple[tuple[str, tuple[str, ...], str], ...] = (
      "Nhà trên đất đã hoàn công (nhà đã được ghi vào sổ) chưa, theo nghĩa lời khách: da_hoan_cong; chua_hoan_cong (\"chưa hoàn công\", "
      "\"sổ chưa có nhà\", \"đang làm hoàn công\"); chua_ro. Chỉ nhà có đất riêng."),
     ("duong_vao", ("mat_tien", "hem", "hem_xe_hoi", "chua_ro"),
-     "Đường vào nhà: mat_tien; hem; hem_xe_hoi (hẻm ô tô vào tới nhà — nhà trong hẻm mà chủ nói có gara / đậu xe hơi trong nhà cũng là "
-     "hem_xe_hoi); chua_ro (\"không phải mặt tiền, hẻm 3m\" → hem; có gara mà chưa rõ mặt tiền hay hẻm → chua_ro)."),
+     "Đường vào nhà: mat_tien; hem; hem_xe_hoi (ô tô vào tới nhà); chua_ro (\"không phải mặt tiền, hẻm 3m\" → hem)."),
     ("tinh_trang_nha", ("moi_xay", "dang_o", "cu", "chua_ro"), "Tình trạng nhà khách nói: moi_xay; dang_o; cu; chua_ro."),
 )
 TIEN_ICH_GAN: tuple[str, ...] = ("cho", "truong_hoc", "benh_vien", "sieu_thi", "cong_vien", "ttm")
@@ -2308,9 +2307,10 @@ là lời khách: ghi ô đó (có trong bot_vua_hoi), giá trị = nghĩa câu 
 (nhà "mới xây", "nội thất đẹp"…) khi khách không nói. Ô thiếu bằng chứng bị hệ thống bỏ.
 MỖI CỤM KHÁCH NÓI VÀO ĐÚNG MỘT Ô theo nghĩa (bắn thử: "7 tầng" vào cả ô số phòng ngủ, "phí quản lý" vào cả ô
 giá điện nước) — không chép một cụm sang ô khác nghĩa.
-GIÁ TRỊ Ô CŨNG CHỈ LÀ ĐIỀU KHÁCH NÓI: không suy thêm từ một con số hay một chữ — "ngõ rộng 3m" KHÔNG thành "ô tô
-vào được", "hẻm 4m" KHÔNG thành "mặt tiền", "3 lầu" KHÔNG thành "có thang máy". Giá trị có từ khách không gõ thì hệ thống ghi
-nguyên cụm bang_chung thay cho giá trị.
+GIÁ TRỊ Ô LÀ ĐIỀU KHÁCH NÓI HOẶC ĐIỀU LỜI KHÁCH CHẮC CHẮN KÉO THEO — như người trong nghề nghe là biết ngay: nhà trong hẻm có gara
+ô tô → hẻm xe hơi; "1 trệt 2 lầu" → 3 tầng. Điều chỉ CÓ THỂ đúng là đoán, để trống chờ khách nói: "ngõ rộng 3m" chưa chắc ô tô vào,
+"3 lầu" chưa chắc có thang máy, "hẻm 4m" vẫn là hẻm. bang_chung là cụm lời khách làm căn cứ. Giá trị có từ khách không gõ thì hệ thống
+ghi nguyên cụm bang_chung thay cho giá trị.
 
 Ngoài "operations", nếu khách TỰ NÓI RA vai thì đặt "seller_role"
 (chu_nha/luot_song/moi_gioi/san/chu_dau_tu/nguoi_nha_nho_ban) kèm "seller_role_trich_dan" = nguyên văn cụm khách gọi tên vai ("a là môi giới", "nhà chính chủ",
@@ -2660,7 +2660,7 @@ def operations_schema() -> dict[str, Any]:
                 "additionalProperties": {"type": "string"},
                 "description": "Với MỖI ô trong fields: tên ô -> NGUYÊN VĂN cụm trong lời KHÁCH (không phải lời bot) cho thấy giá trị "
                 "đó (vd {\"gia\": \"giá 8,5 tỷ\", \"dien_tich\": \"4,5x11\"}). Ô khách chưa tự nói — chỉ bot hỏi / đề xuất, hoặc "
-                "em tự suy — thì KHÔNG đưa vào fields.",
+                "em chỉ đoán — thì KHÔNG đưa vào fields (điều lời khách chắc chắn kéo theo thì ghi, cụm đó làm bằng chứng).",
             },
             "can_khac_trich": {
                 "type": "string",

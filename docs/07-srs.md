@@ -805,7 +805,10 @@ chị gửi" thì câu xin ảnh coi như đã hỏi, 10 phút sau vòng nền n
   nối vẫn đi). Vòng `hoi_sau_dang` xét căn có hẹn trước (kể cả căn chưa đăng): quá giờ hẹn thì nhắc MỘT câu đúng lời hẹn (`khoi_nhac_hen`),
   hẹn lần hai mà lỡ / trễ quá 12 giờ thì bỏ; ảnh về sau lúc hẹn → huỷ hẹn. Không có ảnh → hàng câu hỏi và Image LQC thôi xin ảnh. Tin nhắc tự
   động trước khi đăng (`followup`) cũng im khi chủ bận / đang chờ giờ hẹn / đã bảo thôi.
-- **Gara:** mô tả `duong_vao` — nhà trong hẻm mà chủ nói có gara / đậu xe hơi trong nhà là `hem_xe_hoi`.
+- **Suy luận chắc chắn (đợt 2 cùng ngày, chủ dự án: "AI ko tự suy luận dc mà phải hướng dẫn à"):** bỏ câu riêng cho gara; thay luật "GIÁ TRỊ Ô
+  CŨNG CHỈ LÀ ĐIỀU KHÁCH NÓI" (cấm mọi suy luận) bằng nguyên tắc chung: ghi điều khách nói HOẶC điều lời khách chắc chắn kéo theo (gara trong
+  nhà ở hẻm → hẻm xe hơi; "1 trệt 2 lầu" → 3 tầng); điều chỉ có thể đúng là đoán, để trống ("ngõ 3m" chưa chắc ô tô vào). Mô tả `bang_chung`
+  sửa theo.
 - **Token:** schema công cụ ghi thêm 10 khoá (~1.900 ký tự) + dòng giờ (~80 ký tự) → ước +700–800 token mỗi lượt người bán (chưa đo bằng công cụ đếm).
 
 ### SRS-5.1zzzzzzz475 · LQC điều phối chung mọi tin chủ động tới người bán (13/11/2026)
