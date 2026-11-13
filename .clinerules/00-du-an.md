@@ -21,7 +21,7 @@ File này chỉ nhắc các luật bất di bất dịch:
    điều chưa xác minh không?
 7. Ngôn ngữ docs: tiếng Việt; tên bảng/trường/API: tiếng Anh snake_case.
 8. Commit THẲNG `main` rồi push — không mở PR, không chờ CI / test xanh đỏ (CLAUDE.md §7, chủ dự án 11/11/2026; SRS-5.1zzzzzzz464).
-   Test khoanh vùng theo §7.1: sửa docs chỉ `bun run truyvet` trước push; sửa web `bun run kieu`; sửa lõi chỉ file pytest liên quan.
+   Test khoanh vùng theo §7.1: sửa docs chỉ `bun run truyvet` trước push; sửa web `bun run kieu`; sửa lõi kiểm cú pháp (bộ pytest gỡ 13/11/2026).
 9. Sửa lỗi bot/web (từ 01/10/2026): ghi trong docs/07 ba mục — **lớp lỗi** (cơ chế gốc cho lỗi lọt, không phải câu khách cụ
    thể), **chỗ khác cùng lớp** đã soát, **bài kiểm đỏ khi tắt bản sửa** (kèm một cách nói mới). Lỗi "máy đoán ý bằng từ
    khoá" thì không thêm từ vào regex — đưa sang AI đọc theo nghĩa, từ khoá làm lưới đỡ (CLAUDE.md §4 mục 8, mẫu SRS-5.1q).

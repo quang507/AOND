@@ -17,7 +17,7 @@ thì gần như luôn nghiệm thu đạt.
 |---|---|---|
 | **BA** | `docs/00`–`09` | Yêu cầu này đến từ đâu, nó mâu thuẫn gì không, ai kiểm được nó? |
 | **Dev** | `src/aioi/` (lõi Python), `app/`, `bot/`, `lib/`, migration | Code có đúng FR / mục SRS không, có `catch` nào chưa nối sổ không? |
-| **Tester** | `docs/10`, `tests/` (pytest), `bot/tests/`, `scripts/soat-truy-vet.sh` | Có bằng chứng nào cho câu "đã xong" ngoài lời kể không? |
+| **Tester** | `docs/10`, `bot/tests/`, `tests/kich_ban/` (bộ chấm), `scripts/soat-truy-vet.sh` | Có bằng chứng nào cho câu "đã xong" ngoài lời kể không? |
 
 Luật một dòng: **BA viết điều phải đúng, tester viết cách chứng minh nó đúng,
 dev làm cho nó đúng.** Ba việc, ba lượt, theo thứ tự đó.
@@ -77,7 +77,7 @@ tận code, và lúc chủ dự án phát hiện thì phải bóc ngược năm 
    TS-RET / TS-ADM / TS-SEL / TS-BROKER / TS-PROJECT)
 
 3. Kiểm được bằng MÁY không?
-   ├─ Lõi Python (src/aioi/) → ca pytest trong tests/ (chạy file liên quan; bun run test:py khi cần)
+   ├─ Lõi Python (src/aioi/) → kiểm cú pháp + thử thật trên 146 (bộ pytest gỡ 13/11/2026, SRS-5.1zzzzzzz469)
    ├─ Web / edge function / script / SQL → bot/tests/*.mjs (thêm vào `test:bot`)
    │                                       hoặc bot/tests/sql/ (`test:sql`)
    ├─ Cần model thật → script bắn thử production chạy từ máy ssh được vào 146
@@ -128,7 +128,7 @@ của người đẩy commit**. Nay chia lại cho sòng phẳng.
 |---|---|---|---|
 | Kiểu dữ liệu TypeScript | máy | CI job `web` | ⚠️ xem dưới |
 | Web dựng được, trang tin còn trong cache (NFR-17) | máy dựng, người soi bảng route | CI job `web` | ⚠️ / không |
-| Lõi Python — pytest `tests/` (TS-PY-01); `test:bot` (code TypeScript còn sống); `test:sql` (trigger thật trên Postgres tạm) | máy | CI job `bot` | ⚠️ |
+| `test:bot` (code TypeScript còn sống); `test:sql` (trigger thật trên Postgres tạm) | máy | CI job `bot` | ⚠️ |
 | Xuất rổ hàng không hụt im lặng (TS-ROHANG; TS-MASTERDB gỡ 19/10/2026) | máy | CI job `rohang` | ⚠️ |
 | Kiểu ba edge function, luật tiền TS ↔ SQL, danh sách migration, trạng thái DB | máy | CI job `kieubot`, `doichieutien`, `migration`, `soatdb` | ⚠️ |
 | Lời bot với model THẬT (TS-PROD-01…04) | máy bắn, người đọc log | `bot/tests/ban-thu-*.sh`, `doc-log-loi.sh` chạy từ máy ssh được vào 146 (SRS-405) | không, tay |
@@ -183,12 +183,11 @@ SRS-5.1zzzzzzz464): sửa → commit THẲNG `main` → push, không PR, không 
 - Commit nháp / lưu tiến độ (WIP): commit tự do không cần test.
 - Đụng `docs/`: chỉ chạy `bun run truyvet` (1–2 giây) trước khi push.
 - Đụng web (`app/`, `components/`): chỉ chạy `bun run kieu` khi hoàn tất phần web.
-- Đụng lõi Python (`src/aioi/`): chỉ chạy file test liên quan (`pytest tests/test_xxx.py`); `bun run test:py` không bắt buộc.
+- Đụng lõi Python (`src/aioi/`): kiểm cú pháp (`ast.parse`); không còn pytest (gỡ 13/11/2026).
 - Toàn bộ `bun run kiem`: không bắt buộc — chạy khi tự thấy cần (chủ dự án 11/11: không chờ test xanh đỏ).
 
 ```bash
 bun run truyvet  # soát tài liệu nhanh (1-2s) trước khi push đụng docs/
-bun run test:py  # pytest lõi Python — khi cần
 bun run kiem     # kiểm tra toàn bộ — khi cần
 ```
 
@@ -203,7 +202,7 @@ chặn, không ai chờ xanh. Chạy khi muốn một lượt soát toàn bộ t
 | Tên check | Job | Đỏ nghĩa là gì |
 |---|---|---|
 | `Web — kiểu dữ liệu + dựng` | `web` | TypeScript hoặc `next build` hỏng |
-| `Bot — e2e hội thoại` | `bot` | pytest lõi Python, `test:bot` hoặc `test:sql` đỏ (tên giữ chữ "e2e" cũ) |
+| `Bot — e2e hội thoại` | `bot` | `test:bot` hoặc `test:sql` đỏ (tên giữ chữ "e2e" cũ) |
 | `Rổ hàng + masterDB — tự kiểm trên máy chủ giả` | `rohang` | Bản xuất rổ hàng ghi vào repo / nuốt dòng thiếu (phần masterDB gỡ 19/10/2026, tên giữ nguyên) |
 | `Tài liệu — truy vết ID` | `truyvet` | ID gãy, số đếm lệch, PII hoặc khoá lọt vào file |
 | `Bảo mật — hồi quy RLS trên DB thật` | `baomat` | Vai `anon` với tới thứ nó không được với. Supabase Free ngủ khi không ai đụng → `test:sec` thoát 2 ("chưa kiểm được", không phải "đạt") |
@@ -252,7 +251,7 @@ qua** (`docs/10 §10.8`).
 | Kiểm tra toàn bộ (không bắt buộc, khi cần) | `bun run kiem` | — |
 | Chỉ kiểu dữ liệu | `bun run kieu` | có |
 | Chỉ dựng web | `bun run build` | có |
-| Lõi Python (pytest `tests/`) | `bun run test:py` (hoặc chỉ file liên quan) | **không** — chạy khi cần lúc sửa `src/aioi/`; CI (chạy tay) có ở job `bot` |
+| Lõi Python | kiểm cú pháp `ast.parse` + thử thật trên 146 | **không** — bộ pytest `tests/` gỡ 13/11/2026 (SRS-5.1zzzzzzz469) |
 | Code TypeScript còn sống (web, edge function, script) | `bun run test:bot` | có |
 | Trigger / hàm SQL trên Postgres tạm | `bun run test:sql` | không (cần Postgres; CI job `bot`) |
 | Kiểu ba edge function | `bun run kieu:bot` | có |

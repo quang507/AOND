@@ -47,15 +47,7 @@ jobs:
       # protection bằng tay và người ta sẽ quên.
       - name: test:bot + ranh giới bóc tách ⟂ AI
         run: bun run test:bot
-      # 18/10/2026: bộ não là lõi Python src/aioi (lõi TypeScript chat-reply đã gỡ). Chung job `bot` để danh sách required
-      # status checks giữ nguyên tên (xem ghi chú trên).
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Lõi Python — pytest
-        run: |
-          python -m pip install -q -e ".[dev]" httpx
-          python -m pytest -q tests
+      # 13/11/2026 (SRS-5.1zzzzzzz469): gỡ bộ pytest tests/ — chủ dự án "ko dùng thì gỡ" (từ 11/11 không chạy test nữa).
       # 02/10/2026 (SRS-5.1v): trigger / hàm SQL chạy THẬT trên Postgres tạm (mock e2e không mô phỏng regex DB). Thoát 2 =
       # máy không có Postgres = chưa kiểm được → đỏ.
       - name: Trigger SQL thật trên Postgres tạm (thông số AI quyết không bị regex đè)

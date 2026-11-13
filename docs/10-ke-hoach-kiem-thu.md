@@ -102,7 +102,7 @@ thì "máy xanh, máy tao đỏ" và không ai biết bên nào đúng.
 
 | Bộ | ID | Lệnh | Job CI | Kiểm cái gì |
 |---|---|---|---|---|
-| `tests/` (249 file pytest, 12/11/2026) | **TS-PY-01** | `bun run test:py` (= `python -m pytest -q tests`; cài trước `pip install -e ".[dev]" httpx` như CI) | `bot`, bước "Lõi Python — pytest" | Lõi Python: phiên chat, định tuyến bán / mua, bóc tách có bằng chứng, câu mẫu, phí, xưng hô, lưới soát lời bot, gợi căn, báo căn mới, gửi nhắc, lệnh Zalo, pháp lý. Model giả: chỉ kiểm code nhận đúng KHI model trả đúng, không kiểm model hiểu đúng |
+| ~~`tests/` (pytest)~~ | **TS-PY-01** [deprecated 13/11/2026] | — | — | Bộ pytest lõi Python **gỡ 13/11/2026** (SRS-5.1zzzzzzz469, chủ dự án "ko dùng thì gỡ"; từ 11/11 không chạy nữa). Lõi kiểm bằng cú pháp + bắn thử TS-PROD-01 / tin Zalo thật |
 | các file `bot/tests/*.mjs` liệt kê trong script `test:bot` | TS-RANHGIOI, TS-NHAC, TS-LUAT-03, TS-NHAN-01, TS-SEC-AUTO (tự kiểm) | `bun run test:bot` | `bot` | Code TypeScript còn sống: web (`lib/`), ba edge function, `_shared/` còn lại, bridge, script nạp mẫu / đo tìm nhà (tự kiểm offline) |
 | `bot/tests/sql/*.sql` | **TS-SQL-01**, TS-STREET-DA-01 | `bun run test:sql` | `bot` | Trigger / hàm SQL chạy thật trên Postgres tạm. Thoát 2 = máy không có Postgres = chưa kiểm được |
 | `scripts/xuat-ro-hang.tu-kiem.mjs` | TS-ROHANG | `bun run test:rohang` | `rohang` | Bản xuất rổ hàng không ghi vào repo, không nuốt dòng thiếu |
@@ -621,7 +621,9 @@ Luồng WEB (FR-01/02/03/04/08/09/10, FR-70/73 web, FR-96, FR-99 web, FR-100, FR
 
 > Bộ test đã ngừng — thân mục (lệnh, ca, kết quả cũ) ở `docs/10-ke-hoach-kiem-thu-luu-tru.md`, cùng mã.
 
-### TS-SRS — truy vết SRS → ca kiểm, SRS-207 … 433 (12/11/2026)
+### TS-SRS — truy vết SRS → ca kiểm, SRS-207 … 433 (12/11/2026) [deprecated 13/11/2026]
+
+> **13/11/2026 (SRS-5.1zzzzzzz469):** các file `test_*.py` nêu trong bảng dưới đã gỡ cùng bộ pytest; tên file giữ làm lịch sử (xem lại bằng `git show d20c658:tests/<tên>`). Mục SRS mới không cấp ca pytest.
 
 Từ 30/09/2026 tính năng / sửa lỗi ghi thẳng ở `07-srs.md` (không cấp FR), nên bảng này nối mỗi mục SRS với ca pytest đang có
 trong `tests/` (đều chạy trong **TS-PY-01**). "Chưa có ca riêng" = mục chỉ đổi docs / hạ tầng / prompt, hoặc ca nằm trong bộ chấm
@@ -717,7 +719,6 @@ khi đẩy — bảng là danh sách để chạy lại khi cần. SRS-1 … 244
 | SRS-379 | Mỗi luật một chỗ trong prompt ghép; một phiên giữ `src/aioi/` mỗi lúc | — | `test_mot_cho_379.py` |
 | SRS-380 | Lượt người mua vào cùng vòng agent gộp với người bán: ghi bằng công cụ qua cổng code rồi viết lời cùng cuộc hội thoại | FR-208 | `test_agent_gop_mua_380.py` |
 | SRS-381 | Khối nhân vật "thấu hiểu, chăm sóc khách" đứng đầu mọi prompt bot nói với khách | FR-178 | `test_nhan_vat_381.py` |
-| SRS-468 | Tính cách theo vai (nhận thông tin tin rao / tư vấn bán hàng), không liệt kê sẵn nỗi lo khách | FR-178 | `test_toi_uu_ky_gui_391.py` |
 | SRS-382 | Gỡ regex đoán ý khách: kiểm kê toàn lõi — loại D đã về 0, gỡ regex chết, cổng chặn regex mới | FR-208 | `test_kiem_ke_regex_382.py` |
 | SRS-383 | Web chuyển sang project Vercel mới `aond.vercel.app` (team cũ bị tạm dừng) | — | — (chưa có ca riêng) |
 | SRS-384 | Web có hai số Zalo: nút người bán trỏ số ký gửi, còn lại số tư vấn mua | — | — (chưa có ca riêng) |

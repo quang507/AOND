@@ -16,11 +16,6 @@ dependencies = [
     "opencv-python-headless>=4.8",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-]
-
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
@@ -31,6 +26,3 @@ where = ["src"]
 [tool.setuptools.package-data]
 aioi = ["tai_nguyen/*.png"]   # logo đóng dấu ảnh (xoa_logo.py)
 
-[tool.pytest.ini_options]
-pythonpath = ["src"]
-testpaths = ["tests"]

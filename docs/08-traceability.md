@@ -480,7 +480,7 @@ Cập nhật **cùng commit** khi đổi FR / BR / UF / WF ở tầng trên (quy
 | — | — | — | SRS-5.1zzzzzzz379 | — |
 | FR-208 | — | — | SRS-5.1zzzzzzz380 | — |
 | FR-178 | — | — | SRS-5.1zzzzzzz381 | — |
-| FR-178 | — | — | SRS-5.1zzzzzzz468 | TS-SRS (`test_toi_uu_ky_gui_391.py`, `test_nhan_vat_381.py`) |
+| FR-178 | — | — | SRS-5.1zzzzzzz468 | TS-PROD (tin Zalo thật phía bán / mua) |
 | FR-208 | — | — | SRS-5.1zzzzzzz382 | — |
 | — | — | — | SRS-5.1zzzzzzz383 | — |
 | — | — | — | SRS-5.1zzzzzzz384 | — |

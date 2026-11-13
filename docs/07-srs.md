@@ -795,6 +795,16 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz469 · Gỡ bộ pytest `tests/` — không còn dùng (13/11/2026)
+Chủ dự án 13/11 thấy `tests/` 264 file ("sao nhiều test dữ trời") rồi chốt "ko dùng thì gỡ mẹ đi". Từ 11/11 luật là sửa thẳng, không chạy test;
+mỗi lần sửa vẫn sinh thêm một file `test_<số SRS>.py` không ai chạy (192 file thêm từ 10/2026), nên bộ này chỉ phình và lệch code.
+- **Gỡ:** 261 file `tests/test_*.py` + `tests/conftest.py` + `tests/gia.py` (đồ giả chỉ test dùng); script `test:py`, bước pytest ở `kiem.yml`,
+  `[tool.pytest.ini_options]` và nhóm `dev` (pytest) ở `pyproject.toml`.
+- **Giữ:** `tests/kich_ban/` + `tests/cau_hinh_vps.py` (bộ chấm kịch bản `scripts/cham-kich-ban.py` / `cham.yml` còn gọi); cả `bot/tests/` (script bắn
+  thử, SQL, đọc log, nạp dữ liệu — công cụ vận hành, không phải pytest).
+- **Kiểm từ nay:** parse cú pháp (`ast.parse` / `node --check`), đưa lên 146, thử bằng tin Zalo thật / `bot/tests/ban-thu-*.sh`. README, CLAUDE.md,
+  docs/10 (TS-PY-01, TS-SRS deprecated), docs/11 sửa theo; tên file test cũ trong bảng TS-SRS / 08 giữ làm lịch sử.
+
 ### SRS-5.1zzzzzzz468 · Tính cách bot tách theo vai: nhận thông tin tin rao / tư vấn bán hàng — bỏ danh sách nỗi lo kể sẵn (13/11/2026)
 Chủ dự án 13/11: bot "kiểu tưởng người ta sợ nó rao không đúng giá"; log cùng ngày có câu bot tự trấn an "Tin vẫn rao đúng 8,8 tỉ chị muốn".
 Gốc: khối Nhân vật (SRS-5.1zzzzzzz381) liệt kê sẵn "nỗi lo bán hớ, thủ tục phức tạp, áp lực tài chính, lo lắng pháp lý", và đoạn HIỂU CHỦ NHÀ
@@ -872,11 +882,3 @@ link dán dạng chữ thì bot chỉ đoán theo chữ trong đường dẫn; t
   bỏ liên hệ người đăng), gắn vào tin khách — bóc tách và trả lời lượt này đọc như khách tự kể. Trang dự án + cuộc chat đã biết dự án → lưu
   tri thức chung của dự án. Mở không được → dòng nói thật, bot dựa tiêu đề thẻ / nhờ khách chụp hoặc dán nội dung. Link hệ thống / Zalo bỏ qua.
 - Token: chỉ lượt có link — một lần gọi tóm (trang ≤ 15.000 ký tự vào, ≤ 700 token ra) + bản tóm vào lịch sử chat.
-
-### SRS-5.1zzzzzzz459 · Bridge dò sống bằng lệnh ứng dụng 510, không đáp thì nối lại (13/11/2026)
-Bridge điếc lần hai dù SRS-5.1zzzzzzz453 đang chạy: 02:11 → 12:21 không một khung tin, chủ dự án nhắn "em ơi" lúc 12:20 không thấy đáp. Pong tầng
-websocket vẫn về nên canh pong không cắt.
-- **Dò sống:** mỗi 5 phút (`BRIDGE_DO_SONG_MS`) và 3 giây sau mỗi lần nối, gửi `requestOldMessages` (lệnh 510) trên chính socket nghe — chỉ
-  máy chủ Zalo thật trả `old_messages`; quá 90 giây không trả → cắt socket, zca-js nối lại. Lần đáp đầu sau mỗi lần nối ghi một dòng log.
-- **Giới hạn:** tin khách nhắn lúc socket điếc vẫn mất. Đo 13/11: lệnh 510 trả tin đồng bộ cũ (mới nhất 02/11), zca-js 2.2.0 không có API đọc
-  lịch sử chat 1-1 → chỉ rút khoảng điếc xuống ≤ ~5,5 phút, không bù được. Canh pong SRS-453 giữ nguyên. Hàm xử lý tin đổi tên `xuLyTin`.

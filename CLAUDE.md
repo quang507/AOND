@@ -73,7 +73,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
 
 ### 6.1 Kiến trúc hiện tại
 
-- **Bộ não duy nhất: lõi Python `src/aioi/`** (từ 18/10/2026; chủ dự án: "dồn 100% vào lõi Python, tránh hai con AI sửa chéo"). Logic nghiệp vụ, prompt (`prompts.py`), bóc tách, xưng hô (`xung_ho.py`), phí, phiên chat (`engine.py`), câu hỏi theo loại BĐS (`schema.py`: `CORE_FIELDS`, `CORE_THEO_LOAI`, `FACETS`), phía mua (`mua.py`), kho Supabase (`supabase_store.py`), tra địa danh (`dia_danh.py`), pháp lý (`phap_ly.py`), câu mẫu (`cau_mau.py`). Test: `tests/` (pytest), chạy `bun run test:py`.
+- **Bộ não duy nhất: lõi Python `src/aioi/`** (từ 18/10/2026; chủ dự án: "dồn 100% vào lõi Python, tránh hai con AI sửa chéo"). Logic nghiệp vụ, prompt (`prompts.py`), bóc tách, xưng hô (`xung_ho.py`), phí, phiên chat (`engine.py`), câu hỏi theo loại BĐS (`schema.py`: `CORE_FIELDS`, `CORE_THEO_LOAI`, `FACETS`), phía mua (`mua.py`), kho Supabase (`supabase_store.py`), tra địa danh (`dia_danh.py`), pháp lý (`phap_ly.py`), câu mẫu (`cau_mau.py`). Không còn bộ pytest (gỡ 13/11/2026, SRS-5.1zzzzzzz469 — chủ dự án "ko dùng thì gỡ"); kiểm = parse cú pháp + thử thật trên 146.
 - **Máy 146** (từ 06/11/2026 bỏ VPS — chủ dự án 08/11: "không dùng vps nữa chuyển sang máy"; ô `cai-vps` / `go-trang-thu` gỡ khỏi `apply-migration.yml`, script VPS cũ ở `bot/bridge-zca/archive/` — SRS-401): lõi `C:\aond\aond_core` (không phải git), task "AOND Core" cổng 8000, bridge `C:\aond\bridge-zca` (task "AOND Zalo Bridge" ký gửi :5005, "AOND Zalo Bridge Tu Van" :5006). Truy cập máy 146: LAN dùng `ssh nguye@192.168.1.146` (hoặc alias `146`), ngoài mạng dùng Tailscale `ssh nguye@100.85.245.112` (máy cũ `nuc` đã bỏ). Đưa lõi lên: `bash scripts/trien-khai-146.sh` (sao lưu `src` cũ, chép, khởi động lại, chờ `/health` — **báo trước người đang chat thử**). `zca-js` ghim `2.2.0`; nâng thì đọc CHANGELOG trước. **Quyền thư mục**: `C:\aond` chỉ cho SYSTEM + Administrators (user thường không đọc / sửa được) — `scripts/siet-acl-146.ps1`, SRS-399. Thư mục bot khác trên 146 không thuộc repo này: không đụng.
 - **Model và công tắc** — giá trị chuẩn ở `bot/cau-hinh-loi.env` (`KHOA=giatri`, cùng tên biến với `.env` lõi; test + bộ chấm đọc file này, SRS-401), nhưng `.env` lõi trên 146 không tự cập nhật: đổi dòng đó thì sửa cả `C:\aond\aond_core\.env` rồi khởi động lại lõi.
 
@@ -131,11 +131,10 @@ Phiên cloud có hook `SessionStart` (`.claude/hooks/session-start.sh`) cài s�
 - **Commit nháp / lưu tiến độ (WIP):** Commit tự do không cần test.
 - **Sửa tài liệu (`docs/`):** nếu kiểm thì CHỈ chạy `bun run truyvet` (1–2 giây) trước khi push. Không build web, không test bot hay pytest.
 - **Sửa web / UI (`app/`, `components/`):** CHỈ chạy `bun run kieu` (type-check nhanh) khi hoàn tất việc sửa web.
-- **Sửa lõi Python (`src/aioi/`):** Chỉ chạy file test liên quan (ví dụ `pytest tests/test_xxx.py`). Không bắt buộc chạy `bun run test:py`.
+- **Sửa lõi Python (`src/aioi/`):** kiểm cú pháp (`ast.parse`), đưa lên 146, thử bằng tin thật khi cần. Không viết file pytest mới (bộ pytest đã gỡ 13/11/2026).
 - **Kiểm tra toàn bộ (`bun run kiem`):** Không bắt buộc — chạy khi tự thấy cần (chủ dự án 11/11: không chờ test xanh đỏ).
 
 ```bash
-bun run test:py    # pytest lõi Python — khi cần
 bun run kiem       # kiểm tra toàn bộ — khi cần
 bun run truyvet    # scripts/soat-truy-vet.sh: ID gãy, FR thiếu truy vết, PII trong docs, khoá service_role, raw.githubusercontent
 bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa kiểm được", không phải "đạt"
@@ -143,7 +142,6 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 
 - CI `kiem.yml` / `cham.yml` vẫn còn trên Actions nhưng KHÔNG phải cổng chặn — không chờ, không cần xanh (chủ dự án 11/11).
 - `cham.yml`: bộ chấm offline chạy trên Actions khi PR đổi `src/aioi/**` / `tests/kich_ban/**`, so với `diem_nen.json` của main (cần secret `CLAUDE_CODE_OAUTH_TOKEN`; thiếu thì báo chưa kiểm được, không đỏ) — SRS-377.
-- Test chạy công tắc production (`tests/conftest.py` đọc `bot/cau-hinh-loi.env`); bài kiểm nhánh cũ phải gắn `@pytest.mark.nhanh_cu(AIOI_…="tat")`, bài lộ lỗi production thì `xfail(strict=True)` kèm mã audit — đừng `monkeypatch` về `tat` để cho xanh (SRS-316).
 - Đổi `src/aioi/` trên `main` → `bash scripts/trien-khai-146.sh` đưa lõi lên 146 (lõi khởi động lại ~1 phút). Không còn workflow tự cài (`tu-cai-vps.yml` đã gỡ 08/11). Đổi `bot/bridge-zca/` thì cập nhật bridge trên 146 bằng tay.
 
 **Vòng giao việc của agent** (chủ dự án 11/11/2026: "giờ tôi bảo bạn sửa gì là bạn sửa luôn không có cl hay test xanh đỏ gì hết"; "xóa cái luật cl pr" — thay SRS-265 / 297 / 379):

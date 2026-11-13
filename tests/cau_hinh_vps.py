@@ -1,5 +1,5 @@
-"""Cấu hình lõi production đọc từ `bot/cau-hinh-loi.env` — MỘT nguồn cho test (`tests/conftest.py`) và bộ chấm
-(`scripts/cham-kich-ban.py`), SRS-5.1zzzzzzz313 / 316.
+"""Cấu hình lõi production đọc từ `bot/cau-hinh-loi.env` — nguồn cho bộ chấm
+(`scripts/cham-kich-ban.py`; bộ pytest dùng chung đã gỡ 13/11/2026, SRS-5.1zzzzzzz469), SRS-5.1zzzzzzz313 / 316.
 
 SRS-5.1zzzzzzz401: bỏ VPS — trước đây đọc dòng `printf 'AIOI_…'` + dòng gán `BIEN="…"` trong `bot/bridge-zca/cai-vps.sh` (nay ở
 `bot/bridge-zca/archive/`). Tệp mới là `KHOA=giatri` thuần, cùng tên biến với `.env` lõi trên máy 146."""
