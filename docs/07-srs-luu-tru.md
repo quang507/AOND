@@ -73,6 +73,17 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz461 · Mở lại cuộc chat ở số ký gửi: lời chào không bị hiểu là khách mua (13/11/2026)
+Chủ dự án 13/11: "chat chào em mà nó nhầm sang mua… nhắn đúng con Ai Ơi Nhà Đất". Tài khoản từng thử vai mua TRÊN CHÍNH số ký gửi → `so_vai` trùng số,
+SRS-331/417 không chạy; agent mua đọc "em ơi" (01:14 → 12:20) thành tìm mua.
+- `Conversation.phien_moi` (tạm): tin cách tin khách trước ≥ `PHIEN_MOI_GIAY` (6 tiếng). Vai mua + phiên mới + số ký gửi (`_mua_cu_mo_lai`) →
+  lượt này người đọc trung lập đọc ý (không form / agent mua), khối số đang nhắn thêm một câu "mở lại cuộc chat, chào hỏi là unknown"; đọc nhanh bỏ
+  "tin bot vừa nhắn" (tin đó của lần chat trước — thử 13/11: tin giới thiệu căn 7 tiếng trước + "em ơi" → ra "buy").
+- Lượt mơ hồ đó → vai theo số ký gửi (`seller` nếu có việc bán, không thì `unknown`); nhu cầu mua giữ nguyên, khách nói tìm mua thì về vai mua. Lượt viết
+  lời chào theo số ký gửi như đổi số (`khoi_chao_lan_dau` + `khoi_doi_so(mo_lai=True)`: chuyện tìm mua lần trước vẫn giữ).
+- Token: chỉ lượt mở lại — +≈150 token (khối số + khối mở lại); lượt đọc trung lập thay agent mua. Thử trên 146 (giờ giả): "em ơi" 7 tiếng
+  sau → "Hôm nay anh nhắn để gửi bán hay cho thuê một căn nhà, hay vẫn đang tìm mua nhà phố Quận 7 như lần trước ạ?"
+
 ### SRS-5.1zzzzzzz460 · Bot đọc link trang web khách gửi (13/11/2026)
 Chủ dự án 13/11: "họ gửi link đó làm sao tổng hợp lại dc thì dc, sau người ta có thể gửi thêm link data dự án nữa". Thử trên lõi 146 trước khi sửa:
 link dán dạng chữ thì bot chỉ đoán theo chữ trong đường dẫn; thẻ link Zalo thì bridge coi là ẢNH → "em chưa mở được link, gửi ảnh giúp em".
