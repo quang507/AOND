@@ -100,8 +100,12 @@ Người mua và nhà đầu tư trên Zalo thường có nhu cầu "săn hàng 
 
 ### 2.4 Module 4: Vá lỗi Bảo toàn Lead Số điện thoại (`src/aioi/mua.py`)
 
-#### A. Lỗi nghiêm trọng phát hiện
-Ở dòng 694–695 file `src/aioi/mua.py`:
+> **Đã sửa (SRS-5.1zzzzzzz388; soát lại 13/11/2026, SRS-5.1zzzzzzz464).** `mua.ghi_sdt_hen_xem` nay: có lịch chờ chưa có số → ghi `viewings.phone`
+> + báo admin; không có lịch chờ → ghi `buyers.phone` + xếp tin báo admin (`_xep_tin_admin`, "Khách để lại SĐT … khi đang chat, gọi tư vấn hỗ trợ").
+> Bot vẫn chỉ CHỦ ĐỘNG xin số một lần lúc chốt lịch xem (SRS-5.1zzzzzzz148). Mục A dưới là hiện trạng TRƯỚC khi sửa.
+
+#### A. Lỗi nghiêm trọng phát hiện (lịch sử, trước SRS-5.1zzzzzzz388)
+Ở dòng 694–695 file `src/aioi/mua.py` (bản cũ):
 ```python
 def ghi_sdt_hen_xem(self, buyer_id: str, sdt: str) -> bool:
     # "Không có lịch chờ → không ghi gì: số khách gõ ngoài ngữ cảnh hẹn xem không được lưu."
@@ -111,7 +115,7 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 #### B. Giải pháp khắc phục
 1. Tách hoặc mở rộng logic lưu SĐT:
    - Nếu có lịch hẹn chờ (`viewings`): Cập nhật vào lịch hẹn xem như cũ.
-   - Nếu **không có lịch hẹn chờ**: Cập nhật trực tiếp số điện thoại vào bảng `buyers` (cột `phone`), đồng thời bắn bản ghi sự kiện `crm_events` hoặc `reminders` cho Admin:
+   - Nếu **không có lịch hẹn chờ**: Cập nhật trực tiếp số điện thoại vào bảng `buyers` (cột `phone`), đồng thời xếp tin báo Admin qua `reminders` (`_xep_tin_admin`; không có bảng `crm_events`):
      `"Khách để lại SĐT {sdt} khi đang nhắn tin, cần chuyên viên liên hệ tư vấn ngay"`.
 2. Đảm bảo **100% số điện thoại khách để lại đều được bảo toàn** và chuyển tới Admin.
 
@@ -158,10 +162,10 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 #### A. Đối sánh Quy trình Ký Gửi / Đăng Tin: MOSO vs AOND
 | Tiêu chí | MOSO (`/dang-tin`, `post_listing`) | AOND Zalo Chatbot (`agent_ban.py`, `agent_gop.py`) |
 |---|---|---|
-| **Kênh tiếp nhận** | Biểu mẫu Web/App, nhập liệu tĩnh | Hội thoại Zalo OA 1:1, tự nhiên, nhận ảnh sổ hồng & bảng tính |
+| **Kênh tiếp nhận** | Biểu mẫu Web/App, nhập liệu tĩnh | Hội thoại Zalo cá nhân 1:1 (bridge `zca-js`, Zalo OA không dùng), tự nhiên, nhận ảnh sổ hồng & bảng tính |
 | **Tốc độ ra tin** | "AI tạo tin chỉ 30 giây" | AI soạn tin tức thì chuẩn khuôn mẫu `AD_FORMAT` (4 phần đắt giá) |
-| **Bảo mật người bán** | "Ẩn số nhà" trên tin công khai | Ẩn số nhà chính xác, che SĐT chủ nhà khỏi web công khai (chống môi giới ngoài quấy rầy) |
-| **Chuẩn mực xác thực** | Tiêu chuẩn "3 THẬT" (Thông tin thật, Giá thật, Hình ảnh thật) | Xác thực "3 Thật", cổng bằng chứng trích dẫn, sổ hồng riêng |
+| **Bảo mật người bán** | "Ẩn số nhà" trên tin công khai | Ẩn số nhà trên web công khai (FR-104) |
+| **Chuẩn mực xác thực** | Tiêu chuẩn "3 THẬT" (Thông tin thật, Giá thật, Hình ảnh thật) | Cổng bằng chứng trích dẫn (ô tin chỉ ghi điều khách nói, SRS-5.1zzzzzzz73); không có chương trình "3 Thật" |
 | **Chính sách phí** | 8 MP (8.000đ)/30 ngày, 5 MP xác thực | **CHỈ THU KHI THÀNH CÔNG** (1% bán, 0.75 tháng thuê) — 0 đồng trước |
 | **Công cụ tương tác (Tool)** | Không có đàm thoại định giá | `dinh_gia_tham_khao` (AVM), `kiem_tra_phap_ly_so`, `tinh_phi_moi_gioi` |
 
@@ -174,8 +178,8 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
    - Giải đáp các vướng mắc pháp lý phổ biến của chủ nhà trước khi ký gửi: nhà chưa hoàn công, sổ đang thế chấp vay ngân hàng, mua bán vi bằng thừa phát lại, đồng sở hữu / thừa kế, quy hoạch lộ giới.
    - Dẫn chiếu điều luật chính xác từ Luật Đất đai 2024 và Luật Công chứng 2024 dựa trên kho chuẩn `src/aioi/phap_ly.py` (`MAC_DINH`).
 3. **`tinh_phi_moi_gioi` (Minh bạch Phí Ký Gửi)**:
-   - Tính toán minh bạch số tiền hoa hồng môi giới dự kiến theo giá trị BĐS (1% bán cho chủ nhà, 0.5% cho môi giới liên kết, 0.75 tháng tiền thuê).
-   - Cam kết 4 điểm vàng: 0 đồng chi phí trước, bảo vệ thông tin ẩn số nhà & che SĐT, đạt chuẩn 3 Thật tối ưu hiển thị Top, hỗ trợ thủ tục pháp lý công chứng trọn gói.
+   - Tính toán minh bạch số tiền hoa hồng môi giới dự kiến theo giá trị BĐS — tỷ lệ một nguồn `revenue.SALE_FEE_RATE` / `RENTAL_FEE_MONTHS` theo vai người rao (chủ nhà 1%, môi giới 0.5%, 0.75 tháng tiền thuê; chủ đầu tư không báo số).
+   - Chỉ nêu hai cam kết hệ thống có thật: 0 đồng trước (chỉ thu khi giao dịch thành công) và ẩn số nhà trên web (FR-104). Bản 06/11 hứa thêm "3 Thật", "lên Top", "hỗ trợ công chứng trọn gói", "che SĐT" — đã gỡ 08/11 (`src/aioi/dinh_gia.py`), hệ thống không có cam kết đó.
 
 ---
 
@@ -190,8 +194,8 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 | **Chi phí token / lượt** | $0.09 – $0.13 / lượt (Sonnet nuốt tới 13.1k tokens) | **~$0.015 / lượt** (giảm ~85% chi phí token vào) |
 | **Ràng buộc luật & cấm đoán** | 40+ câu "CẤM..." tiêu cực rải rác | **Nguyên tắc hành động tích cực (Positive Directives)** |
 | **Phân vai & Tác phong** | Hỏi máy móc theo thứ tự ô trống | **Thấu hiểu tâm lý & Chăm sóc khách hàng (Customer Insight)** |
-| **Nhịp độ đặt câu hỏi** | 1 ô đơn lẻ kéo dài hoặc dồn dập | **Tối đa 2 ý mỗi lượt hỏi (`CUM_TOI_DA = 2`)** |
-| **Ngưỡng ra tin nháp** | Chặn cứng đòi đủ 10 tiêu chí (hiện trạng, nội thất) | **Fast-Draft tại ~50 điểm** (4 trụ cột: Loại, Vị trí, DT, Giá) |
+| **Nhịp độ đặt câu hỏi** | 1 ô đơn lẻ kéo dài hoặc dồn dập | **MỘT ý mỗi lượt (`CUM_TOI_DA = 1`, SRS-5.1zzzzzzz407 — bản 391 từng nâng lên 2)** |
+| **Ngưỡng ra tin nháp** | Chặn cứng đòi đủ 10 tiêu chí (hiện trạng, nội thất) | **Sàn rao (loại · vị trí · giá) + bốn nhóm `NHOM_SOAN` (vị thế · kích thước đất · quy mô xây dựng · pháp lý) trống tối đa MỘT nhóm** (SRS-5.1zzzzzzz418; "Fast-Draft ~50 điểm" của bản 391 đã gỡ 08/11) |
 
 #### B. Chi tiết 4 Cải tiến Trọng điểm
 1. **Thu gọn System Prompt <1.500 tokens**:
@@ -203,9 +207,9 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
    - Thấu hiểu nỗi lo của chủ nhà (sợ bán hớ, sợ bị ép giá, nhà để trống sốt ruột, ngại thủ tục pháp lý).
    - Thấu hiểu áp lực của người mua (sợ dính quy hoạch, lo lắng pháp lý tranh chấp, gánh nặng lãi suất vay ngân hàng).
    - Tự động đổi vai mượt mà khi khách chuyển từ ký gửi sang hỏi mua căn hộ/nhà phố.
-4. **Fast-Draft tại 50 điểm & Giới hạn tối đa 2 ý/lượt (`CUM_TOI_DA = 2`)**:
-   - Gỡ bỏ `hien_trang` khỏi danh sách chặn bản nháp. Ngay khi có đủ 4 trụ cột vàng (Loại hình, Địa chỉ/Khu vực, Diện tích, Giá), bot xuất xưởng ngay bản nháp tin rao chợ để khách xem và chốt sửa.
-   - Giới hạn mỗi lượt trao đổi chỉ hỏi tối đa 1–2 ý quan trọng nhất để khách không bị ngợp.
+4. **Ngưỡng ra bản nháp & MỘT ý mỗi lượt (hiện hành theo `src/aioi/schema.py`)**:
+   - Hiện trạng (đang ở / trống / cho thuê) không chặn bản nháp. Bot soạn bản nháp khi đủ sàn rao (loại hình + vị trí + giá, `minimal_missing`) và bốn nhóm `NHOM_SOAN` — vị thế · kích thước đất · quy mô xây dựng · pháp lý — trống tối đa MỘT nhóm (`SOAN_THIEU_TOI_DA = 1`; nhóm chỉ tính khi loại BĐS có ô mong đợi, tin cho thuê bỏ pháp lý — SRS-5.1zzzzzzz418, theo bản anh Luận). "Fast-Draft ~50 điểm / 4 trụ cột" của bản 391 đã gỡ 08/11.
+   - Mỗi lượt chỉ hỏi MỘT ý (`CUM_TOI_DA = 1`, SRS-5.1zzzzzzz407, chủ dự án 11/11 "mỗi lượt chỉ hỏi 1 ý").
 
 ---
 
@@ -237,6 +241,6 @@ ightarrow$ Sonnet viết lời) | **1 lần duy nhất** (Sonnet vừa tự đi�
    - `test_thue_phi_tai_chinh.py`: Kiểm tra tính phí công chứng tại các mốc 40 triệu đến 600 tỷ; kiểm tra tính thuế TNCN 2% và lệ phí trước bạ 0.5%; kiểm tra công thức trả góp ngân hàng dư nợ giảm dần.
    - `test_sdt_hen_xem_tai_chinh.py`: Kiểm tra trường hợp khách gửi SĐT khi **chưa có lịch hẹn xem**, xác nhận SĐT vẫn được lưu vào `buyers` và có thông báo gửi Admin.
    - `test_agent_mua_tools_389.py`: Kiểm tra toàn bộ 4 công cụ nguyên tử Function Calling (`so_sanh_can`, `tinh_thue_phi`, `tinh_vay_tra_gop`, `luu_so_dien_thoai`) thực thi trực tiếp qua `chay_cong_cu`.
-   - `test_toi_uu_ky_gui_391.py`: Kiểm tra Fast-Draft tại 50 điểm không bị chặn bởi hiện trạng, CUM_TOI_DA = 2, System Prompt < 1.500 tokens, tích hợp Customer Insight và Function Calling.
+   - `test_toi_uu_ky_gui_391.py`: Kiểm tra bản nháp không bị chặn bởi hiện trạng, `CUM_TOI_DA = 1` (SRS-5.1zzzzzzz407), `LEAN_SYSTEM_PROMPT` < 1.500 tokens, tích hợp Customer Insight và Function Calling (Fast-Draft đã gỡ 08/11).
    - `test_agent_ban_tools_390.py`: Kiểm tra toàn bộ 3 công cụ nguyên tử Ký Gửi phía Người Bán (`dinh_gia_tham_khao`, `kiem_tra_phap_ly_so`, `tinh_phi_moi_gioi`).
 2. **Soát truy vết**: Chạy `scripts/soat-truy-vet.sh` đảm bảo không gãy liên kết ID nào.

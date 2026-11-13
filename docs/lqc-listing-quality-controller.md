@@ -106,7 +106,7 @@ Câu tới chủ bằng hai đường: chủ đang nhắn thì bot đáp xong h�
 | 4.1 · 4.2 | "Em gửi mấy căn đang bán gần đó để anh đừng bán rẻ" · "Căn gần anh 150 tr/m² mà nhà cũ" | ✅ | Gửi chủ 2–3 căn cùng loại đang rao trong 3 km, kèm đơn giá / m² và link. Dưới 2 căn thì không gửi. SRS-428 |
 | 4.3 · 4.4 | "Tháng trước em có căn bán tới 12 tỷ" · "Em mới cọc hôm qua căn 7 tỷ" | 🟡 | Code đã đọc được căn đã cọc / chốt gần đó (180 ngày). Hiện **0 giao dịch** nên bot chưa nói câu này. Từ 13/11 **không cần admin nhập tay**: chủ báo "đã cọc" / "bán rồi" là bot tự hỏi **giá chốt** (một lần, chỉ để bên em nắm) và ghi vào giao dịch, cạnh giá rao. SRS-428 · 456 |
 | 4.5 | "Em đoán khu này 120 tr/m², anh rao 140 cũng hợp lý" | ✅ | Nhận xét **nhẹ** giá rao của chủ so với trung vị các căn **cùng lối vào** (mặt tiền với mặt tiền, hẻm với hẻm) đang rao gần, ±10 % là ngang. Cần ≥ 3 căn cùng lối vào, chưa đủ thì không nhận xét. Không đưa giá mới, không giục tăng / giảm. SRS-428 · 429 |
-| 4.6 | "Em có báo cáo giá khu vực, làm miễn phí cho anh" | ✅ | Trang `nhadat.cc/bao-cao-gia/<mã tin>`: dải đơn giá / m² các căn cùng loại đang rao trong 3 km, theo mặt tiền / hẻm, vị trí giá của căn, căn gần nhất. **Tính từ giá rao** (chủ dự án 13/11: "tạm để test"), trang ghi rõ. Bot mời chủ xem kèm tin so sánh khi có ≥ 3 căn. SRS-455 |
+| 4.6 | "Em có báo cáo giá khu vực, làm miễn phí cho anh" | ✅ | Trang `/bao-cao-gia/<mã tin>` (link do `web.link_bao_cao_gia` sinh theo `AIOI_SITE_URL`, mặc định `aond.vercel.app`; `nhadat.cc` chưa trỏ về web): dải đơn giá / m² các căn cùng loại đang rao trong 3 km, theo mặt tiền / hẻm, vị trí giá của căn, căn gần nhất. **Tính từ giá rao** (chủ dự án 13/11: "tạm để test"), trang ghi rõ. Bot mời chủ xem kèm tin so sánh khi có ≥ 3 căn. SRS-455 |
 
 ---
 

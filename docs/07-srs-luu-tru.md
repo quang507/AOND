@@ -73,6 +73,19 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz454 · Ảnh tin: xoá logo / watermark in đè, đóng dấu AOND, giữ gốc ở bucket riêng (13/11/2026)
+Ảnh chủ / môi giới gửi qua Zalo hay có logo sàn, số điện thoại, website, tên công ty khác in đè; moso.vn có công cụ "Xoá logo watermark".
+- **Vòng nền mới** `server._vong_xoa_logo` (5 phút / lượt, `XOA_LOGO_CHU_KY_GIAY`; tắt `XOA_LOGO=tat`), logic ở `src/aioi/xoa_logo.py`: mỗi lượt
+  tối đa 10 ảnh `listing_media` bucket `listing-public`, chưa ẩn, `variants.xoa_logo` chưa có, mới nhất trước. Không chặn lượt chat.
+- **Tìm vùng:** model vision của lõi (`engine._provider.extract_media`, cùng đường với `qc_anh`) trả JSON khung 0–1 của lớp chữ / logo IN ĐÈ
+  (chữ có thật trong cảnh giữ nguyên) + `la_giay_to`. Model / JSON hỏng → không vùng nào. Khung phủ > 35 % ảnh bị bỏ (inpaint sẽ phá ảnh).
+- **Xoá:** `cv2.inpaint` TELEA trên mặt nạ NÉT CHỮ trong khung (top-hat + black-hat, nửa ngưỡng Otsu, nới vài px); tách nét hỏng → vá cả khung.
+  Thiếu numpy / cv2 → bỏ bước xoá. **Đóng dấu:** `tai_nguyen/logo-aond.png` (dựng từ `public/img/logo.svg` bằng sharp, chữ viền trắng) góc dưới
+  phải, rộng 16 % cạnh ngắn, mờ 70 %. Ảnh giấy tờ: giữ nguyên, đánh dấu `xoa_logo: ""`.
+- **Lưu:** gốc chép sang `listing-private/<uuid>/goc/<tên>` TRƯỚC, xong mới ghi đè bản xử lý lên đúng khoá cũ ở `listing-public` (bìa, băm bộ
+  ảnh của QC giữ nguyên) + sinh lại bản nhỏ 480; `variants.xoa_logo` = khoá ảnh gốc. Ảnh hụt 3 lượt → đánh dấu bỏ qua. Hạn chế: xoá dòng
+  `listing_media` thì trigger dọn không với tới bản gốc ở bucket riêng; CDN có thể còn giữ bản cũ tới 1 giờ.
+
 ### SRS-5.1zzzzzzz453 · Bridge tự cắt kết nối nghe Zalo "chết lặng" rồi nối lại (13/11/2026)
 Sau SRS-5.1zzzzzzz449 (bridge khởi động lại 19:43 12/11), tới 1 giờ sáng 13/11 bridge không nhận tin nào; chủ dự án: "bridge zalo ko thấy nó nhắn
 lại dc". Trên máy 146 cả hai bridge vẫn giữ TCP "Established" tới Zalo từ 19:43, log không có dòng "rớt" / "đóng".
@@ -128,7 +141,7 @@ Chủ dự án 12/11 17:33 nhắn "/quit" rồi "chào em" vào Zalo "AI Ơi Nh�
 - **Sửa:** `listener.start({ retryOnClose: true })` — zca-js tự nối lại với mã nó cho thử lại; `disconnected` ghi một dòng kèm giờ;
   `closed` (hết lượt thử / mã không thử lại) → `ghiLoi` (sổ lỗi /admin, chờ tối đa 5 giây) rồi `process.exit(1)`. Vòng
   `svc_nhadat_bridge*.cmd` trên máy 146 chạy lại node sau 10 giây, đăng nhập bằng session đã lưu; session chết thì vào luồng QR (FR-203) như cũ.
-- Bridge không đi qua `scripts/trien-khai-146.sh` (chỉ chép `src/` lõi): chép tay `index.mjs` sang `C:ondridge-zca` rồi dừng hai tiến
+- Bridge không đi qua `scripts/trien-khai-146.sh` (chỉ chép `src/` lõi): chép tay `index.mjs` sang `C:\aond\bridge-zca` rồi dừng hai tiến
   trình node của bridge, vòng `.cmd` tự dựng lại.
 
 ### SRS-5.1zzzzzzz448 · Thẻ tin ghi ngày đăng thật, bỏ nhãn "✓ Xác thực" (12/11/2026)

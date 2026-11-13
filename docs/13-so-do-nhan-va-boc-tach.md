@@ -12,7 +12,9 @@ lời bot lệch luật hình thức thì gọi lại model một lần, không 
 
 Sơ đồ vẽ đường DUY NHẤT đang chạy (cập nhật 02/11/2026 `[nguồn: engine.py, SRS-5.1zzzzzzz319]`): sáu công tắc `FORM_BAN_GON` / `FORM_MUA_GON`, `PHIEU_LUOT`, `AGENT_BAN` / `AGENT_MUA`, `SOAT_GON` đã gỡ hẳn cùng đường cũ (`build_chat_system`) —
 form gọn, phiếu lượt, agent và soát gọn là đường duy nhất. Từ 03/11/2026 người bán đã rõ vai đi MỘT vòng agent gộp (`agent_gop.py`, SRS-5.1zzzzzzz371;
-`AGENT_BOC` / `AGENT_GOP` gỡ); người mua đã rõ vai đi cùng vòng đó (`agent_gop.mo_mua` / `viet_mua`, SRS-5.1zzzzzzz380). Công tắc còn lại ở `bot/cau-hinh-loi.env` (chạy thật: `.env` lõi trên máy 146): `AIOI_MODEL_LUOT_DE` = tat.
+`AGENT_BOC` / `AGENT_GOP` gỡ); người mua đã rõ vai đi cùng vòng đó (`agent_gop.mo_mua` / `viet_mua`, SRS-5.1zzzzzzz380). Công tắc còn lại ở `bot/cau-hinh-loi.env` (chạy thật: `.env` lõi trên máy 146): `AIOI_MODEL_LUOT_DE` = tat; `AIOI_PROMPT_GON` = bat — lượt hỏi ô
+người bán viết lời bằng `prompts.lean_system_prompt_cho_luot` (`LEAN_SYSTEM_PROMPT`) và bước ghi của vòng gộp dùng `prompts.co_dinh_ban` (cũng là
+`LEAN_SYSTEM_PROMPT`); tắt thì về phiếu lượt `build_phieu_luot` / `phieu_co_dinh` (SRS-5.1zzzzzzz408 / 414). Model chat và bóc tách đều Sonnet 5.5 (SRS-5.1zzzzzzz392).
 
 ## 13.1 Toàn cảnh: từ bridge tới lời trả về
 
@@ -53,7 +55,7 @@ flowchart TD
   URL -->|có| HL["Engine.handle_link"]
   URL -->|không| MA{"lenh_tra_loi '#35;mã: …'<br/>và la_nhan_vien?"}
   MA -->|có| TM["tra_loi_theo_ma<br/>(admin trả lời câu khách mua hỏi)"] --> BRS
-  MA -->|không| KH["_lap_ke_hoach — lượt AI đọc ý<br/>chưa rõ vai: form OPERATIONS_SYSTEM<br/>người bán đã rõ vai: bước 1 vòng agent gộp (agent_gop.mo — công cụ ghi / đọc / tra_luat_o)<br/>người mua đã rõ vai: bước 1 cùng vòng (agent_gop.mo_mua — ghi_nhu_cau qua cổng trích, viec_can, ghi_y_khach; ra ý bán → đọc lại form đầy đủ)<br/>vòng lỗi: form OPERATIONS_SYSTEM_BAN / _MUA (Haiku) dự phòng<br/>ra: operations + vai + ý mua / bán + duyệt + hỏi về + y_luot"]
+  MA -->|không| KH["_lap_ke_hoach — lượt AI đọc ý<br/>chưa rõ vai: form OPERATIONS_SYSTEM<br/>người bán đã rõ vai: bước 1 vòng agent gộp (agent_gop.mo — công cụ ghi / đọc / tra_luat_o)<br/>người mua đã rõ vai: bước 1 cùng vòng (agent_gop.mo_mua — ghi_nhu_cau qua cổng trích, viec_can, ghi_y_khach; ra ý bán → đọc lại form đầy đủ)<br/>vòng lỗi: form OPERATIONS_SYSTEM_BAN / _MUA (AIOI_EXTRACT_MODEL = Sonnet 5.5) dự phòng<br/>ra: operations + vai + ý mua / bán + duyệt + hỏi về + y_luot"]
   KH --> VAI["định tuyến vai theo user_intent của lượt<br/>buy → buyer · sell → seller · mơ hồ: giữ vai / số tư vấn → buyer"]
   VAI --> TLK["tra_loi_cau_hoi<br/>(chủ nhà vừa trả lời câu khách mua hỏi)"]
   TLK --> DX{"đang chờ xác nhận ẩn tin?<br/>pending_destructive"}
@@ -83,7 +85,7 @@ flowchart TD
 flowchart TD
   S0["_o_hoi_ke(missing_fields)<br/>ô khách lờ 2 lần để sau"] --> S1["cum_hoi · xin_dang → thieu_toi_thieu"]
   S1 --> S2{"summary_ready()<br/>hoặc đã trình bản nháp<br/>hoặc khách bảo đăng đủ sàn?"}
-  S2 -->|chưa| C1["build_phieu_luot — phiếu lượt ngắn: GIONG_VUI + dữ liệu căn + VIỆC LƯỢT NÀY<br/>+ khoi_xin_dang + _khoi_diem_tin"]
+  S2 -->|chưa| C1["AIOI_PROMPT_GON=bat (đang bật): lean_system_prompt_cho_luot — LEAN_SYSTEM_PROMPT + dữ liệu căn + VIỆC LƯỢT NÀY<br/>tắt: build_phieu_luot — phiếu lượt GIONG_VUI + dữ liệu căn + VIỆC LƯỢT NÀY<br/>+ khoi_xin_dang (không khối điểm tin, SRS-5.1zzzzzzz336)"]
   S2 -->|"đủ, chưa trình"| C2["build_listing_proposal_system<br/>bản tin 📋 theo AD_FORMAT"]
   S2 -->|"đã trình"| C3["build_fee_followup_system<br/>duyệt · phí · trạng thái web<br/>+ cụm sau đăng Engine.cum_sau_ke (mỗi lượt một câu:<br/>ảnh → pháp lý → lợi thế → so sánh → giá …)"]
   C1 & C2 & C3 --> K["khối ghép thêm:<br/>khoi_dia_danh · _khoi_hoi_du_an · khoi_hoi_mat_tien · khoi_chao_lan_dau<br/>khoi_xung_ho · _ghep_cau_chuan (trước RANH_GIOI_CACHE)<br/>MỘT khối ưu tiên: khoi_can_nguoi > khoi_phap_ly > khoi_ngoai_viec > hỏi về > hỏi trùng tên<br/>dữ liệu rổ / dự án / giá: agent_ban.goi_y → công cụ tra (AGENT_BAN tắt: _basket_block · _project_memory_block · _seller_price_block)"]

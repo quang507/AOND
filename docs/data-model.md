@@ -44,7 +44,7 @@ Khi lưu/sửa: ghi file gốc vào SharePoint **và** cập nhật chỉ mục.
 ## Giai đoạn dự án + phân loại vai người rao (kiến thức ngành 2026-06-24, CHƯA build)
 Hai trục mới cần thêm vào model:
 - **Giai đoạn dự án** (thuộc tính Project, kế thừa xuống listing; từng căn có thể lệch): hoàn thiện pháp lý → mở bán → thi công → bàn giao nhà → **bàn giao sổ** → sinh sống ổn định. Giai đoạn quyết định: (a) pháp lý có gì — **sổ hồng chỉ từ "bàn giao sổ" trở đi; trước đó chỉ có HĐMB**; (b) sơ cấp (mở bán, từ chủ đầu tư) vs thứ cấp (bán lại); (c) bot nên hỏi gì.
-- **Vai người rao — giàu hơn nhị phân CCRB/NMG (§V).** Năm vai thực tế, gom theo "sở hữu cái mình bán" vs "bán hộ": **chủ đầu tư** (sở hữu rổ hàng dự án, bán sơ cấp; CA PHÍ ĐẶC BIỆT — CĐT thường trả hoa hồng cho sàn/môi giới, không trả AOND 1%), **sàn giao dịch** (phân phối F1 cho CĐT — bán hộ, quy mô), **nhân viên môi giới** (NMG, bán hộ), **nhà đầu tư lướt sóng** (sở hữu HĐMB, bán thứ cấp qua sang nhượng HĐMB / bán chênh; bên sở hữu, ≈CCRB?), **chủ nhà** (sở hữu, thứ cấp, =CCRB). Vậy 1%/0.5% của §V là đơn giản hóa; map = bên sở hữu (chủ nhà, lướt sóng, [CĐT đặc biệt]) vs bên môi giới (sàn, môi giới). **MỞ: phí theo từng vai — CĐT/sàn nhiều khả năng có cơ chế riêng, lướt sóng 1%? — chờ user chốt trước khi build.**
+- **Vai người rao — giàu hơn nhị phân CCRB/NMG (§V).** Năm vai thực tế, gom theo "sở hữu cái mình bán" vs "bán hộ": **chủ đầu tư** (sở hữu rổ hàng dự án, bán sơ cấp; CA PHÍ ĐẶC BIỆT — CĐT thường trả hoa hồng cho sàn/môi giới, không trả AOND 1%), **sàn giao dịch** (phân phối F1 cho CĐT — bán hộ, quy mô), **nhân viên môi giới** (NMG, bán hộ), **nhà đầu tư lướt sóng** (sở hữu HĐMB, bán thứ cấp qua sang nhượng HĐMB / bán chênh; bên sở hữu, ≈CCRB?), **chủ nhà** (sở hữu, thứ cấp, =CCRB). Vậy 1%/0.5% của §V là đơn giản hóa; map = bên sở hữu (chủ nhà, lướt sóng, [CĐT đặc biệt]) vs bên môi giới (sàn, môi giới). **Đã chốt theo code (`revenue.SALE_FEE_RATE`, soát 13/11/2026, SRS-5.1zzzzzzz464): chủ nhà 1%, lướt sóng 1%, môi giới 0.5%, sàn 0.5%; chủ đầu tư là ca đặc biệt — không có tỷ lệ, bot không báo số mà báo admin; cho thuê 0.75 tháng tiền thuê (`RENTAL_FEE_MONTHS`) cho mọi vai không đặc biệt. Mức phí trong lời bot qua `prompts.muc_phi(vai, thuê)` (`.claude/luat-dang-ap.md`).**
 
 Hệ quả hành vi: bot phải hỏi đúng theo giai đoạn+vai — lướt sóng trước bàn giao → hỏi HĐMB / sang nhượng / mức chênh, KHÔNG hỏi sổ hồng; chủ nhà ở "ổn định" → hỏi sổ hồng; chủ đầu tư "mở bán" → hỏi theo UnitType/mẫu nhà, không hỏi "đang ở hay trống". Không đòi sổ hồng ở giai đoạn chưa thể có sổ. Mở rộng `user_type` (`revenue.py`) và business model §V.
 
@@ -73,19 +73,19 @@ Folder lồng tốt ở đây (con người đọc được, **ổn định** �
 
 ## Link ngoài người rao gửi (nhánh bán)
 Luồng **fetch → show → confirm → snapshot** phía người rao (mẫu trung thực/xác nhận §II, tái dùng pipeline vision/OCR):
-- Fetch link, mô tả/trích (ảnh → vision Opus 4.8; PDF → OCR; trang → text), nói với người rao "Em thấy [X], đúng không?", và chỉ **khi xác nhận** mới thành dữ liệu. Nguyên tắc trung thực: "hình như" khi đoán, không khẳng định.
+- Fetch link, mô tả/trích (ảnh → vision `AIOI_VISION_MODEL`, mặc định `claude-opus-4-8` ở `config.py`; PDF → OCR; trang → text), nói với người rao "Em thấy [X], đúng không?", và chỉ **khi xác nhận** mới thành dữ liệu. Nguyên tắc trung thực: "hình như" khi đoán, không khẳng định.
 - **Lưu snapshot nếu kích thước hợp lý** (cap cứng; stream + abort khi vượt) vào folder BĐS (`Khác/` hoặc `Pháp lý/`) kèm `{original_url, fetched_at, checksum, kind, status}`. Vượt cap → chỉ lưu tham chiếu.
 - **Rào chắn (phần rủi ro — fetch URL người dùng):** chống SSRF (chỉ http/https, phân giải DNS và chặn IP nội bộ, re-check redirect, fetch từ worker sandbox/giới-hạn-egress), timeout + allowlist content-type + cap kích thước; thất bại lịch sự với link cần đăng nhập/JS/video. "Đáng tin" = người rao xác nhận + đối soát, không phải điểm tin tự động.
 
 ## Tìm kiếm phía người mua — bám chặt DB
 
-> Hiện trạng 28/10/2026: nguyên tắc dưới vẫn đúng, nhưng công cụ là hàm DB `tim_nha` gọi từ code (`mua.can_phu_hop`, cửa duy nhất `engine._can_goi_y`, SRS-5.1zzzzzzz175), không phải tool `search_listings` cho model — `search_listings` là thiết kế 06/2026, chưa từng dựng. Link web lấy từ `src/aioi/web.py` (`AIOI_SITE_URL`, mặc định `aioinhadat.vercel.app`; `aioinhadat.com` chưa trỏ về web, SRS-5.1zzzzzzz220).
+> Hiện trạng 28/10/2026: nguyên tắc dưới vẫn đúng, nhưng công cụ là hàm DB `tim_nha` gọi từ code (`mua.can_phu_hop`, cửa duy nhất `engine._can_goi_y`, SRS-5.1zzzzzzz175), không phải tool `search_listings` cho model — `search_listings` là thiết kế 06/2026, chưa từng dựng. Link web lấy từ `src/aioi/web.py` (`AIOI_SITE_URL`, mặc định `aond.vercel.app` — project Vercel mới từ 05/11/2026, SRS-5.1zzzzzzz383; `aioinhadat.com` / `nhadat.cc` chưa trỏ về web, SRS-5.1zzzzzzz220).
 Khi người mua tìm (nhánh mua), AOND chỉ giới thiệu BĐS hợp từ DB của mình — không lướt Internet, không bịa:
 1. Model **không có tool web** (`ClaudeProvider` hiện không có — giữ vậy).
 2. **Tìm bằng code xác định** (SQL/lọc theo quận/loại hình/giá/diện tích/phòng/hướng), tùy chọn + **xếp hạng ngữ nghĩa** (embeddings) — không phải model. Phễu 5.000 → lọc SQL → ~50 → xếp hạng → top ~10–20 → chỉ nhúm đó vào prompt. Model không bao giờ đọc cả DB.
 3. Prompt: chỉ giới thiệu trong danh sách; không có thì nói "chưa có căn phù hợp" và nới tiêu chí; không kiến thức ngoài, không bịa.
 4. **Khóa mạnh nhất:** model trả **ID** (qua tool `search_listings` chỉ trả từ DB); **app render sự thật** (giá/địa chỉ/ảnh) từ DB theo ID và **kiểm mỗi ID nằm trong tập ứng viên**. Mọi con số khách thấy đều từ DB; model chỉ khớp + diễn đạt.
-- **Chỉ link first-party:** nhánh mua **không bao giờ** gửi link ngoài cho người mua — chỉ link của AOND (trang aioinhadat.com, media tự host). Tham chiếu ngoài đã lưu chỉ dùng nội bộ.
+- **Chỉ link first-party:** nhánh mua **không bao giờ** gửi link ngoài cho người mua — chỉ link của AOND (trang web theo `web.SITE_URL` — hiện `aond.vercel.app`, `aioinhadat.com` chưa trỏ về web; media tự host). Tham chiếu ngoài đã lưu chỉ dùng nội bộ.
 
 ## Tìm kiếm ngữ nghĩa (thiết kế 06/2026)
 
