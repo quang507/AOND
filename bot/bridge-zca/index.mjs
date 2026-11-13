@@ -989,7 +989,10 @@ setInterval(() => {
 // một lần cả hai số: Zalo đáp 510 hai lần đầu mỗi kết nối, lần ba im dù tin khách vẫn về (12:39 nối lại xong có ngay "Mình cần tìm nhà phú
 // nhuận"). Mỗi lần nối ~13 giây, tin rơi đúng lúc đó mất. Nay chỉ dò khi socket IM: không khung dữ liệu nào về trong DO_SONG_MS (tin về đều
 // đã là bằng chứng sống) — đang có khách thì không bao giờ cắt; im lâu (đêm) thì vẫn dò, Zalo không đáp thì cắt để nối lại như cũ.
-const DO_SONG_MS = Number(process.env.BRIDGE_DO_SONG_MS || 600_000);
+// Đo lại sau triển khai 13/11: số tư vấn (vắng tin) vẫn cắt đúng 12 phút với ngưỡng 10 phút — Zalo chỉ đáp 510 trong khoảng ~10 phút ĐẦU mỗi
+// kết nối (theo tuổi kết nối, không theo số lần dò), quá đó thì không đáp dù socket sống. Không phân biệt được "im mà sống" với "điếc" sau
+// mốc đó, nên ngưỡng nâng lên 30 phút: số vắng nối lại ~32 phút một lần thay vì 12, khoảng điếc tối đa ~32 phút.
+const DO_SONG_MS = Number(process.env.BRIDGE_DO_SONG_MS || 1_800_000);
 const CHO_DAP_MS = 90_000;
 let choDoSong = 0;
 let lanDoCuoi = 0;

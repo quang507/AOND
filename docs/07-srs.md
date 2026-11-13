@@ -795,15 +795,17 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
-### SRS-5.1zzzzzzz467 · Bridge chỉ dò sống khi im 10 phút — hết vòng tự cắt 12 phút (13/11/2026)
+### SRS-5.1zzzzzzz467 · Bridge chỉ dò sống khi im 30 phút — hết vòng tự cắt 12 phút (13/11/2026)
 Chủ dự án 13/11 "sao zalo bridge bây giờ lâu lâu nó tắt". Log hai số: sau SRS-5.1zzzzzzz459 bridge tự cắt rồi nối lại **đúng 12 phút một
-lần** dù tin vẫn về. Máy chủ Zalo chỉ đáp lệnh 510 cho hai lần dò đầu của mỗi kết nối (3 giây và 5 phút), lần thứ ba im → bridge tưởng
-điếc, cắt; mỗi lần nối lại mất ~13 giây, tin rơi vào khoảng đó thì mất.
+lần** dù tin vẫn về. Máy chủ Zalo chỉ đáp lệnh 510 trong khoảng ~10 phút đầu của mỗi kết nối (theo tuổi kết nối; dò lúc 3 giây và 5 phút được đáp,
+lúc 10 phút thì không) → bridge tưởng điếc, cắt; mỗi lần nối lại mất ~13 giây, tin rơi vào khoảng đó thì mất.
 - **Dò khi im:** ghi `khungTinCuoi` mỗi khi có khung dữ liệu từ máy chủ (không tính pong). Có khung về là kết nối sống, không dò.
-  Chỉ dò khi quá `BRIDGE_DO_SONG_MS` (mặc định đổi 5 → **10 phút**) không có khung nào và không có lần dò nào; không đáp trong 90 giây
+  Chỉ dò khi quá `BRIDGE_DO_SONG_MS` (mặc định đổi 5 → **30 phút**) không có khung nào và không có lần dò nào; không đáp trong 90 giây
   thì cắt như cũ. Lần dò 3 giây sau mỗi lần nối giữ nguyên.
-- **Kỳ vọng:** đang có tin → không bao giờ cắt. Im hẳn → dò ở ~10 phút (đáp), ~20 phút (không đáp) → nối lại sau ~21,5 phút im; giờ đêm
-  không khách thì nối lại vô hại. Khoảng điếc tối đa ~21,5 phút thay ~5,5 phút — đổi lấy việc không cắt giữa lúc khách đang nhắn.
+- **Đo sau triển khai:** bản đầu ngưỡng 10 phút — số ký gửi (tin về đều) 25 phút không cắt lần nào; số tư vấn (vắng tin) vẫn cắt đúng
+  12 phút vì lần dò lúc 10 phút đã quá cửa sổ Zalo còn đáp. Sau mốc ~10 phút không phân biệt được "im mà sống" với "điếc" → ngưỡng 30 phút.
+- **Kỳ vọng:** đang có tin → không bao giờ cắt. Im hẳn → dò ở ~30 phút, Zalo không đáp → nối lại sau ~31,5 phút im (số vắng nối lại
+  ~32 phút một lần thay 12). Khoảng điếc tối đa ~32 phút thay ~5,5 phút — đổi lấy việc không cắt giữa lúc khách đang nhắn.
 
 ### SRS-5.1zzzzzzz466 · Trần hạng Đồng 5 căn chạy lại, ở trigger lên kệ (13/11/2026)
 Chủ dự án 13/11 chốt luật Đồng tối đa 5 căn (SRD §IV.3) "vẫn chạy" — SRS-465 thấy nó đã ngừng từ 18/10. Thông tin dự án do một người gửi vẫn nhận, ghi "chưa chắc chắn" (SRS-445), không qua trần.
