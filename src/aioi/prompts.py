@@ -174,7 +174,7 @@ NATURAL_QUESTIONS: dict[str, str] = {
     "dien_tich_dat": "Hỏi diện tích đất công nhận trên sổ (ngang x dài khoảng bao nhiêu mét)",
     # SRS-5.1zzzzzzz76: bản cũ "…hoặc số tầng/lầu" — khách đã nói số tầng thì model coi ô này xong, tự hỏi chuyện khác (thương lượng).
     "dien_tich_nha": "Hỏi tổng diện tích sàn xây dựng khoảng bao nhiêu m² (số tầng đã biết vẫn phải hỏi m² sàn)",
-    "gia": "Hỏi mức giá bán mong muốn thu về",
+    "gia": "Hỏi giá chủ muốn bán, gọn một câu",
     "ket_cau": "Hỏi nhà mình xây mấy lầu / mấy tầng, có mấy phòng ngủ, mấy WC",
     "lo_gioi_hem": ("Hỏi nhà mình ở mặt tiền đường hay trong hẻm, và đường (hoặc hẻm) trước nhà rộng khoảng mấy mét; hẻm thì "
                     "xe hơi vào tận cửa được không"),

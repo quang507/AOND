@@ -105,7 +105,7 @@ def dong_nhan_xet(m: dict | None) -> str:
            "mem": f"giá mình đang mềm hơn mặt bằng rao quanh khu khoảng {m['pt']}%"}[m["muc"]]
     return (f"NHẬN XÉT GIÁ (hệ thống tính — được nói NHẸ, đúng MỘT câu): đơn giá rao của chủ khoảng {m['chu']} triệu/m², trung vị {m['n']} "
             f"căn cùng loại{(' ' + m['loi_vao']) if m['loi_vao'] else ''} đang rao quanh đây khoảng {m['tv']} triệu/m² → ý: \"{cau}\". "
-            "Nói đây là so với giá RAO (chưa phải giá bán thật), chỉ để anh/chị tham khảo, giá vẫn do anh/chị quyết; KHÔNG đưa con số giá "
+            "Nói đây là so với giá RAO (chưa phải giá bán thật), chỉ để anh/chị tham khảo; KHÔNG đưa con số giá "
             "mới, KHÔNG khuyên tăng / giảm, KHÔNG đoán dễ bán / khó bán.\n")
 
 

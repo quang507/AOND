@@ -805,7 +805,8 @@ ba lần nói "tin vẫn rao đúng 8,8 tỉ chị muốn". Bridge không điế
   "bên em chưa có dữ liệu". Nay khối này bảo model gọi công cụ `dinh_gia_tham_khao` (tra theo quận / phường / dự án, không cần toạ độ tin), tra
   không ra mới nói chưa có; `agent_ban.goi_y` luôn mở vòng công cụ ở lượt `hoi_ve = dinh_gia`.
 - **Bỏ câu trấn an giá** (tiếp SRS-5.1zzzzzzz468): "tin vẫn rao theo giá chủ muốn" / "rao đúng mức giá khách mong muốn" / "giá rao do khách quyết"
-  gỡ khỏi `khoi_dinh_gia`, `so_sanh.khoi_tra_loi_gia`, `dinh_gia_tham_khao_tool`. Dòng nhận xét giá (SRS-5.1zzzzzzz429) giữ nguyên.
+  gỡ khỏi `khoi_dinh_gia`, `so_sanh.khoi_tra_loi_gia`, `dinh_gia_tham_khao_tool`; đợt 2 cùng ngày (sếp chê) gỡ nốt "giá vẫn do anh/chị quyết" ở dòng
+  nhận xét giá và đổi câu mẫu hỏi giá "mức giá bán mong muốn thu về" (model hay nối "để em lên tin đúng giá đó") thành "giá chủ muốn bán, gọn một câu".
 - **Còn hở:** dự án Ny'ah Phú Định trong `projects` chưa có lat/lng (có `location_raw`) nên tin trong dự án chỉ lấy được toạ độ mức phường, và
   chờ vài phút. Token: chỉ đổi khối có điều kiện (lượt hỏi giá), phần cố định không đổi.
 
