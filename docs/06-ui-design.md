@@ -1,6 +1,6 @@
 # 06 — UI Design
 
-Hệ thống thiết kế cho web nhadat.cc và cho **giọng nói** của bot Zalo — tone giọng
+Hệ thống thiết kế cho web Aioinhadat (aond.vercel.app) và cho **giọng nói** của bot Zalo — tone giọng
 chat là một phần của UI, không phải phụ lục.
 
 ## 6.1 Nguyên tắc thị giác
@@ -18,51 +18,51 @@ chat là một phần của UI, không phải phụ lục.
 
 > **Nguồn sự thật hiện là `app/globals.css`** (`--color-brand`, `--color-brand-dark`,
 > `--color-navy`, `--color-navy-soft`, `--color-cream`, `--color-line`, `--color-mute`,
-> `--color-zalo`, `--radius-king`, `--radius-shot`). Bảng dưới là **bản thiết kế**,
-> lệch với code (`app/globals.css` là token thật); `design/tokens.json` đã xoá 08/09/2026 — OPEN-45 đóng 10/09: code làm gốc.
+> `--color-zalo`, `--radius-king`, `--radius-shot`). Bảng dưới chép từ code; `design/tokens.json` đã xoá 08/09/2026 — OPEN-45 đóng 10/09: code làm gốc.
 
-Kế thừa cấu trúc theme tham chiếu Veedoo (cam nhấn + navy đậm), token riêng, không
-dùng asset theme (NFR-15, OPEN-07).
+Skin theo theme tham chiếu **King** (đỏ King + đen King, chủ dự án 12/11/2026, SRS-5.1zzzzzzz430; lịch sử: King tới 26/08 →
+Veedoo cam + navy 26/08–12/11 → King lại từ 12/11). Token riêng, không dùng asset theme (NFR-15, OPEN-07).
 
-| Token | Hex | Dùng cho |
+| Token (`app/globals.css`) | Hex | Dùng cho |
 |---|---|---|
-| `--brand-600` | `#E2571E` | CTA chính, giá tiền, badge hot |
-| `--brand-500` | `#F2691F` | Hover CTA |
-| `--brand-50` | `#FFF3EC` | Nền khối nhấn nhẹ |
-| `--ink-900` | `#0E1B33` | Nền footer, header trang chi tiết, chữ tiêu đề |
-| `--ink-700` | `#243651` | Chữ thân bài |
-| `--ink-400` | `#6B7C93` | Chữ phụ, nhãn |
-| `--line` | `#E3E8EF` | Viền, đường chia |
-| `--surface` | `#FFFFFF` | Nền card |
-| `--canvas` | `#F6F8FB` | Nền trang |
-| `--zalo` | `#0068FF` | **Chỉ** dùng cho nút/biểu tượng Zalo |
-| `--ok` | `#12805C` | Còn rao, đã xác minh |
-| `--warn` | `#B45309` | Chờ xác minh, quá SLA |
-| `--danger` | `#B42318` | Đã bán, lỗi, phản ứng tiêu cực |
+| `--color-brand` | `#e60023` | CTA chính, giá tiền, tab đang chọn |
+| `--color-brand-dark` | `#b8001c` | Hover CTA |
+| `--color-brand-light` | `#ffe5ea` | Nền khối nhấn nhẹ |
+| `--color-brand-soft` | `#ff5470` | Chữ đỏ trên nền tối |
+| `--color-navy` | `#13151d` | Chữ chính, nền tối (footer) |
+| `--color-navy-soft` | `#232830` | Nền tối phụ |
+| `--color-mute` | `#5d6a7a` | Chữ phụ, nhãn (đạt AA trên `#f6f7f9`, SRS-5.1zzzzzzz439) |
+| `--color-line` / `--color-line-strong` | `#e8ebed` / `#c8d1d8` | Viền, đường chia |
+| `--color-surface` | `#ffffff` | Nền card |
+| `--color-cream` / `--color-surface-subtle` | `#f6f7f9` | Nền trang |
+| `--color-zalo` | `#0068ff` | **Chỉ** dùng cho nút/biểu tượng Zalo (không theo đỏ King) |
+| `--color-teal` | `#0f766e` | Còn rao, đã xác minh |
 
-**Quy tắc màu**: `--zalo` chỉ thuộc về Zalo (UI-P1); giá tiền luôn `--brand-600`
-đậm; tương phản ≥ 4.5:1 — `--brand-600` trên trắng đạt 4.6:1 nên chỉ dùng cho chữ
-≥ 16px semibold hoặc trên nền `--brand-50`.
+**Quy tắc màu**: `--color-zalo` chỉ thuộc về Zalo (UI-P1); giá tiền luôn `--color-brand`
+đậm; tương phản ≥ 4.5:1; trên nền tối dùng `--color-brand-soft` (`#e60023` trên `#13151d` không đủ tương phản).
+Màu trạng thái `--warn` (chờ xác minh, quá SLA) và `--danger` (đã bán, lỗi) nhắc ở §6.5 chưa có token riêng trong code — dùng
+thang Tailwind tại chỗ (`amber-*`, `red-*`).
 
 ## 6.3 Kiểu chữ
 
 | Vai trò | Font | Cỡ (mobile → desktop) | Weight |
 |---|---|---|---|
-| H1 | Be Vietnam Pro | 28 → 40px | 700 |
-| H2 | Be Vietnam Pro | 22 → 30px | 700 |
-| H3 / tiêu đề card | Be Vietnam Pro | 17 → 19px | 600 |
-| Thân bài | Inter | 16px / 1.6 | 400 |
-| Nhãn, chú thích | Inter | 13px | 500 |
-| **Giá** | Be Vietnam Pro | 20 → 24px | 700 |
-| Mã BĐS `#35148` | JetBrains Mono | 14px | 500 |
+| H1 | Nunito | 28 → 40px | 700 |
+| H2 | Nunito | 22 → 30px | 700 |
+| H3 / tiêu đề card | Nunito | 17 → 19px | 600 |
+| Thân bài | Nunito | 16px / 1.6 | 400 |
+| Nhãn, chú thích | Nunito | 13px | 500 |
+| **Giá** | Nunito | 20 → 24px | 700 |
+| Mã BĐS `#35148` (chỉ admin) | `font-mono` mặc định Tailwind | 14px | 500 |
 
-Be Vietnam Pro phủ đủ dấu tiếng Việt và giữ chiều cao dòng ổn định với dấu chồng
-(ế, ỗ, ự). Font thật đang dùng: `--font-sans` trong `globals.css` (OPEN-45 đóng 10/09: code làm gốc).
+Một họ chữ duy nhất: **Nunito** (font của theme King, SRS-5.1zzzzzzz430) — ghim trong repo `app/fonts/` (OFL, ba subset latin /
+vietnamese / latin-ext, khai ở `app/layout.tsx`, ghép thành `--font-king` → `--font-sans` trong `globals.css`), phủ đủ dấu tiếng
+Việt. Font thật đang dùng: `--font-sans` trong `globals.css` (OPEN-45 đóng 10/09: code làm gốc).
 
 ## 6.4 Spacing, bo góc, đổ bóng
 
 - Thang 4px: `4 · 8 · 12 · 16 · 24 · 32 · 48 · 64`.
-- Bo góc: card `12px`, nút `10px`, ảnh `8px`, chip `999px`.
+- Bo góc theo cỡ (SRS-5.1zzzzzzz452, thang `--radius-*` trong `app/globals.css`): khối lớn — thẻ, khung, ảnh (`rounded-lg` trở lên, `rounded-king`, `rounded-shot`) `14px`; nút, ô nhập, chip lọc (`rounded-md`) `8px`; nhãn nhỏ, mã tin (`rounded` / `-sm`) `6px`; `rounded-xs` `4px`. `rounded-full` chỉ cho hình tròn thật.
 - Bóng: `shadow-1 = 0 1px 2px rgba(14,27,51,.06)` (card), `shadow-2 = 0 8px 24px rgba(14,27,51,.10)` (hộp mời, modal).
 - Nội dung tối đa `1200px`; lưới desktop 12 cột, gutter 24px.
 
@@ -72,25 +72,27 @@ Be Vietnam Pro phủ đủ dấu tiếng Việt và giữ chiều cao dòng ổn
 ```
 ▢ ảnh 4:3 (lazy)   [badge "Hot" nếu hot_score cao]  [#35148 góc phải]
 Mô tả rút gọn — 2 dòng, ellipsis
-📍 Vị trí   ↔ DT   💰 Giá (brand-600, đậm)
+📍 Vị trí   ↔ DT   💰 Giá (brand, đậm)
 ```
 Đúng 4 dòng theo đặc tả gốc. "Đã bán" phủ overlay `--danger` 60% thay vì gỡ card.
 Code: `components/ListingCard.tsx`.
 
 ### UI-C02 · ChatSearchBar
-Ô đơn cao 56px, icon 🔍 trái, nút `[→]` phải `--brand-600`. Placeholder xoay vòng 3
+Ô đơn cao 56px, icon 🔍 trái, nút `[→]` phải `--color-brand`. Placeholder xoay vòng 3
 ví dụ thật (FR-02). Sticky sau khi cuộn 200px trên trang danh sách/tag.
 
 ### UI-C03 · ZaloConnectBox
-Nền `--ink-900`, chữ trắng, nút `--zalo`, icon Zalo. Luôn chứa lời hứa:
+Nền `--color-navy`, chữ trắng, nút `--color-zalo`, icon Zalo. Luôn chứa lời hứa:
 > *"Mời anh/chị kết nối ngay với tụi em để tụi em cùng tìm kiếm, và khi có sẽ thông báo tức thì."*
 
-Ba biến thể: `inline` · `sticky-mobile` · `detail` (kèm mã BĐS). Code: `components/ZaloWidget.tsx`.
+Ba biến thể: `inline` · `sticky-mobile` · `detail` (kèm mã BĐS). ❌ Hộp và câu hứa trên chưa dựng: code hiện chỉ có nút
+"Chat Zalo" nổi góc trái dưới (`components/ZaloWidget.tsx`, ẩn ở `/nha-dat/…`, `/admin`, `/raoban`), nút "Chat Zalo" trên Header
+và "Nhắn Zalo" ở Footer.
 
 ### UI-C04 · CueBadge
 > `💬 Khi Zalo nhớ hỏi #35148`
 
-Nền `--brand-50`, chữ `--ink-900`, mã font mono, chạm = copy mã. Cầu nối web↔chat
+Nền `--color-brand-light`, chữ `--color-navy`, mã font mono, chạm = copy mã. Cầu nối web↔chat
 (IA-P3), hiện ở **mọi** nơi có mã BĐS.
 
 ### UI-C05 · SpecTable
@@ -104,7 +106,7 @@ quán được không? · Có vướng quy hoạch? · Hoàn công chưa?* Chạ
 soạn sẵn. ❌ chưa dựng trên web.
 
 ### UI-C07 · ChatBubble (Zalo)
-- Bot: nền `--canvas`, căn trái; người dùng: nền `--zalo`, chữ trắng, căn phải.
+- Bot: nền `--color-cream`, căn trái; người dùng: nền `--color-zalo`, chữ trắng, căn phải.
 - Card listing trong chat: `#mã · vị trí · giá · diện tích`, mỗi căn một dòng.
 - **Tối đa 3 căn/tin** (FR-24) — ràng buộc, không phải khuyến nghị.
 - Trạng thái chờ S: *"Trong khi chờ, anh/chị có câu hỏi gì khác về căn này không ạ?"* (FR-45).
@@ -125,9 +127,9 @@ Nút `Xuất Excel` (NFR-11) ❌ chưa dựng. Code: `app/admin/page.tsx`.
 
 | Trạng thái | Xử lý |
 |---|---|
-| Hover nút | `--brand-500`, không dịch chuyển layout |
-| Focus | Viền `2px --zalo`, offset 2px — không `outline:none` |
-| Disabled | Opacity 45%, `cursor: not-allowed`, tooltip lý do |
+| Hover nút | Nút chính `bg-brand-dark` (+ bóng đỏ nhẹ chỉ khi rê); không dịch chuyển layout |
+| Focus | `outline: 2px solid var(--color-brand)`, offset 2px (`:focus-visible` trong `globals.css`); nút dùng `ring-brand/45` có offset — không `outline:none` trơn |
+| Disabled | Opacity 55%, `cursor: not-allowed`, tooltip lý do |
 | Loading | Skeleton theo hình dạng card, không spinner toàn trang |
 | Rỗng | Luôn kèm hành động kế tiếp + ZaloConnectBox (IA-P1) |
 
@@ -135,7 +137,7 @@ Nút `Xuất Excel` (NFR-11) ❌ chưa dựng. Code: `app/admin/page.tsx`.
 
 - Tỉ lệ: card 4:3, hero chi tiết 16:9, thumbnail vuông.
 - Ảnh thật chụp điện thoại, sáng không đều (`hình samples/`): luôn `object-fit: cover`,
-  nền `--canvas` khi chưa tải, bố cục không dựa vào ảnh đẹp.
+  nền `--color-cream` khi chưa tải, bố cục không dựa vào ảnh đẹp.
 - Thứ tự ưu tiên: mặt tiền → phòng khách → hẻm → sân thượng → sổ (che thông tin cá nhân).
 - **Ảnh sổ đỏ không bao giờ công khai trên web** — bucket `listing-private`, chỉ gửi
   trong chat qua signed URL (NFR-06).
@@ -179,7 +181,7 @@ Danh tính: mỗi khách **một trợ lý tên riêng** từ kho **13 tên có 
 Đ•ài, Nh•ài, Gi•ai, Ph•ái, L•ài, Ho•ài (`src/aioi/assistants.py` `ASSISTANT_NAMES`, SRS-5.1zzzzzzz183, 25/10/2026; FR-181. Trước đó kho
 20 tên SRS-5.1zzzzzzz9, kho •ai 09/09, một tên Thái), chia theo băm Zalo ID (đổi kho thì khách đang chat có thể đổi tên),
 chuyên viên tư vấn của **AI Ơi Nhà Đất** — dịch vụ môi giới BĐS tại Sài Gòn (TP.HCM)
-và Long An, khởi điểm khu Quận 5 cũ (web aioinhadat.vercel.app). Prompt viết "{ten}",
+và Long An, khởi điểm khu Quận 5 cũ (web aond.vercel.app, `src/aioi/web.py`, SRS-5.1zzzzzzz383). Prompt viết "{ten}",
 hệ thống điền. Khách hỏi "em là ai": *"Em là M•ai bên AI Ơi Nhà Đất ạ"* — một câu
 rồi quay lại việc của khách, không thuyết minh dài, không đổi tên giữa chừng
 (OPEN-39/OPEN-08). Khách hỏi **thẳng "người hay máy / có phải bot không"**: nói thật là
@@ -213,7 +215,7 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 
 | Tình huống | Câu chuẩn |
 |---|---|
-| Chào lần đầu (bản chạy 28/10/2026) | Câu mẫu `chao_lan_dau` (số ký gửi) / `chao_tu_van` (số tư vấn) ở `src/aioi/cau_mau.py`: *"Chào {goi} ạ! Em là {ten}, trợ lý bất động sản của AI Ơi Nhà Đất. 🏡✨ {Goi} đang cần gửi bán, cho thuê nhà, hay đang tìm mua ạ?"* (SRS-5.1zzzzzzz174 / 210 / 212). Bản cũ (LỊCH SỬ): *"Dạ em chào anh/chị, em là {ten} bên AI Ơi Nhà Đất ạ. Anh/chị cần rao bán bất động sản đúng không ạ?"* (`LOI_CHAO`, FR-159/161/181; 07/10/2026 chủ dự án đổi "giao bán" → "rao bán"; {ten} = tên riêng của khách; 23/09/2026 bỏ câu "anh Thu phụ trách khu vực Sài Gòn…" — FR-218 a; 27/09 chỉ hỏi "cần rao bán…" (gật trơn = người bán); 06/10 từng thêm vế mời gửi ảnh / không form theo AOND rồi chủ dự án bác cùng ngày: "chào ngắn như đợt trước" — SRS-5.1zzs) |
+| Chào lần đầu (bản chạy 28/10/2026) | Hai câu mẫu ở `src/aioi/cau_mau.py`. Số ký gửi `chao_lan_dau`: *"Chào {goi} ạ! Em là {ten}, trợ lý ký gửi nhà đất của AI Ơi Nhà Đất. 🏡✨ {Goi} đang có căn nào muốn gửi bán hay cho thuê ạ?"* (SRS-5.1zzzzzzz251). Số tư vấn `chao_tu_van`: *"Chào {goi}! Em là {ten} bên AI Ơi Nhà Đất nè 🏡 {Goi} đang tìm mua hay thuê, khu nào, tầm giá bao nhiêu để em lọc căn hợp liền ạ?"* (SRS-5.1zzzzzzz210 / 212 / 261). Bản cũ (LỊCH SỬ): *"Dạ em chào anh/chị, em là {ten} bên AI Ơi Nhà Đất ạ. Anh/chị cần rao bán bất động sản đúng không ạ?"* (`LOI_CHAO`, FR-159/161/181; 07/10/2026 chủ dự án đổi "giao bán" → "rao bán"; {ten} = tên riêng của khách; 23/09/2026 bỏ câu "anh Thu phụ trách khu vực Sài Gòn…" — FR-218 a; 27/09 chỉ hỏi "cần rao bán…" (gật trơn = người bán); 06/10 từng thêm vế mời gửi ảnh / không form theo AOND rồi chủ dự án bác cùng ngày: "chào ngắn như đợt trước" — SRS-5.1zzs) |
 | Gặp lại | *"Em chào anh Hưng. Anh vẫn tìm nhà ở Quận 5, dưới 10 tỉ, hẻm xe hơi hả anh? Có gì mới không anh?"* |
 | Gửi danh sách | ~~*"Em hiện có 24 mục. Anh xem thử vài mục hot nhất nha"*~~ → mỗi căn kèm link, không nói mã / "rổ" (SRS-5.1zzzzzzz145 / 160); rổ ≥ 2 căn hợp thì 2–3 căn một lượt (SRS-5.1zzzzzzz335 / 340) |
 | Hỏi mục đích | *"Chị mua để ở hay kinh doanh ạ?"* |
@@ -248,14 +250,14 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
   "Nhà anh ở đâu vậy, ở Hồ Chí Minh đúng không?" — kèm phỏng đoán để khách gật hay sửa, không nêu lý do; từ lần
   hai hỏi thẳng dưới 12 từ (11/09/2026: khuôn 25 từ từng lặp 22/52 câu).
 - **Khen khi có gì đáng khen, không khen mọi câu.** Lý do "khách hay hỏi" tối
-  đa một lần mỗi ba tin. Tin trước mở bằng "Dạ" thì tin này không.
+  đa một lần mỗi ba tin. Không mở đầu bằng "Dạ" (Bảy quy tắc, 1).
 - **Khen chỉ dành cho căn của người bán; người mua thì không khen tiêu chí** (09/10/2026, SRS-5.1zzzza) [nguồn: bắn
   production 09/10/2026 — người mua "cần mua nhà quận 5 tầm 7 tỷ, hẻm xe hơi" → bot "Hẻm xe hơi tới cửa là khách
   chuộng lắm, vị trí tốt lắm"]: điều người mua nói là tiêu chí tìm, chưa phải một căn; nhận xét chỉ về căn có trong
   kho, đúng dòng của căn đó. `TONE_RULES` tách hai vế bán / mua.
 - **Không đọc mã tin cho khách, kể cả người rao nhiều căn** (FR-178 a, 07/09 tối —
   thay FR-157 c/FR-176 c): neo căn bằng địa chỉ ("căn Trần Bình Trọng của anh"),
-  hết địa chỉ thì phường. Mã chỉ ở web, CTV, admin.
+  hết địa chỉ thì phường. Mã chỉ ở web và admin (CTV đã bỏ 28/10/2026).
 - **Phí không nói lúc gán nhãn.** Câu báo nhãn chỉ một dòng ("Em ghi nhận
   anh/chị là chính chủ nha, nếu là môi giới thì nhắn em một tiếng"). Phí nói
   khi được hỏi, và một câu lúc tin lên web.
@@ -340,7 +342,7 @@ tháng tiền thuê" (BR-05); vai chưa rõ thì nêu cả hai mức hoặc hỏ
   Code: `cachGoiKhach()` là chỗ duy nhất điền cách gọi khi hồ sơ trống (SRS-5.1zza); lưới đỡ
   `botXungEm` (`van-tra-loi.ts`) là MỘT luật mệnh đề: "mình" mở mệnh đề + động từ việc của bot,
   mệnh đề không có "em" → đổi "em"; thay cho danh sách ba mẫu câu (SRS-5.1zz).
-- Trả lời đúng ý khách **trước**; câu hỏi nằm cuối tin (gộp 2–3 ý được).
+- Trả lời đúng ý khách **trước**; câu hỏi nằm cuối tin, **tối đa MỘT câu hỏi mỗi lượt** (CLAUDE.md §6.2; SRS-5.1zzzzzzz407 / 450 — bỏ "gộp 2–3 ý được").
 - Không hỏi lại điều đã có trong hồ sơ (`buyers.preferences`); gặp lại thì nhắc
   đúng nhu cầu cũ.
 - Chưa đủ khu vực + khoảng giá thì **chưa gợi ý căn**, hỏi ngay hai thứ đó (gộp một
@@ -430,7 +432,7 @@ chi tiết phía trên trong §6.8 là bản đầy đủ trước 15/09, giữ 
 | `TONE_RULES` | 2.978 → 2.002 ký tự | Cách gọi khách chi tiết (hệ thống chèn "CÁCH GỌI KHÁCH" từ `sellers.xung_ho` / `buyers.preferences.xung_ho`, `batXungHo`/`tuXungTuCau` bắt lời dặn và tự xưng); "không nhận là người / không chối là máy" (van `chanNhanLaNguoi`); câu cấm dài liệt kê từng cụm sáo (gộp còn một dòng) | Bản sắc + tên trợ lý theo khách (FR-181); dưới 30 từ, chào một lần, "Dạ" đúng chỗ; khen phải THẬT và gắn khách mua; không đọc tên trường; gọi căn bằng địa chỉ, không mã tin (chưa có van lọc mã ở phía bán); trung thực, không bịa, không nhận xét giá, không khen điều khách không nói (ba lỗi thật 12–15/09); không xin SĐT ngoài lịch xem |
 | `SELLER_SCRIPT_RULES` | 5.081 → 1.641 ký tự (19 → 11 gạch) | **Thứ tự hỏi theo loại BĐS** (2 gạch, 2.300 ký tự): `required_facts.priority` + `chonCauKe` chọn câu kế, câu lệnh đã ghim "CÂU HỎI CUỐI TIN BẮT BUỘC là …"; "hỏi đúng MỘT thứ" (van `motCauHoi`); "bán rồi / rút tin" (`laNgungRao`, không gọi model); "bận / hỏi vợ" (`laHoanLai`, không gọi model); "hệ thống tự ghi thông số" (viết lại thành một câu mở đầu); "gọi căn bằng địa chỉ" (đã ở TONE); "chốt bán chưa" (hiếm, hệ thống hỏi bù); "kết thúc xin chấm điểm" (tiền định `xinDiem`) | Câu kế nối chi tiết vừa nghe; hiểu căn nhà trước khi nói; lý do "kiểm tra giá khu vực" chỉ lần đầu + **không nêu số giá thị trường khi không có bảng giá** (lỗi 15/09); tiện ích dự án chỉ từ khối DỰ ÁN; diện tích mơ hồ hỏi trên chính con số; ảnh: cảm ơn/chờ; phí chỉ khi hỏi; lý do "vì khách" dùng thưa; môi giới nhiều căn; xuống dòng |
 | `SELLER_FEWSHOT` | 3.640 → 1.756 ký tự (23 + 8 → 11 + 5 ví dụ) | Ví dụ trùng dạng (đúc 5 tầng / 6 phòng / hoàn công / tối gửi ảnh / khảo sát 9h / hẻm 123 / 1 trệt 2 lầu / ảnh sổ / kêu chị / thương lượng / hỏi vợ / bận): 12 ví dụ dạy cùng một nhịp "khen thật + hỏi một thứ", hoặc thuộc nhánh tiền định (bận, hỏi vợ, kêu chị) | 11 ví dụ mỗi ví dụ một tình huống khác nhau (xin địa chỉ, dự án, đất, giá, hẻm, nở hậu, pháp lý → ảnh, ngang 5, phí, sửa giá, chưa biết xưng hô); 5 ví dụ SAI đúng 5 lỗi thật |
-| `HUMAN_CHAT_RULES` (mua) | 5.547 → 3.241 ký tự (25 → 14 gạch) | "để ở hay đầu tư" (van `boHoiMucDich`); "không mã tin / không markdown" (đã ở TONE); tách nhỏ 25 gạch thành 14 gạch gộp theo việc; lược câu mẫu dài | Xưng hô; trả lời ý khách trước, gộp 2–3 ý được (phía mua cố ý KHÔNG một-câu-hỏi); ngừng dò hồ sơ khi đủ khu vực + giá; tin cụt là chỉnh sửa; kho trống không hứa (van `chanHuaCoHang` chỉ chặn vài mẫu); kiến thức ≤ 3 câu; địa danh không đoán quận; 2 bong bóng; lịch xem + SĐT có lý do và đường từ chối (`viewing`); hình (`send_photos`/`ask_owner`); giá ok không; căn tương tự / dự án; `need_human` / `voice_request`; bận; chấm sao |
+| `HUMAN_CHAT_RULES` (mua) | 5.547 → 3.241 ký tự (25 → 14 gạch) | "để ở hay đầu tư" (van `boHoiMucDich`); "không mã tin / không markdown" (đã ở TONE); tách nhỏ 25 gạch thành 14 gạch gộp theo việc; lược câu mẫu dài | Xưng hô; trả lời ý khách trước, gộp 2–3 ý được (phía mua cố ý KHÔNG một-câu-hỏi — LỊCH SỬ 15/09; nay tối đa MỘT câu hỏi mỗi lượt cả hai phía, SRS-5.1zzzzzzz407 / 450); ngừng dò hồ sơ khi đủ khu vực + giá; tin cụt là chỉnh sửa; kho trống không hứa (van `chanHuaCoHang` chỉ chặn vài mẫu); kiến thức ≤ 3 câu; địa danh không đoán quận; 2 bong bóng; lịch xem + SĐT có lý do và đường từ chối (`viewing`); hình (`send_photos`/`ask_owner`); giá ok không; căn tương tự / dự án; `need_human` / `voice_request`; bận; chấm sao |
 | `BUYER_FEWSHOT` | 3.654 → 3.309 ký tự (23 → 20 ví dụ) | 3 ví dụ trùng ý (SĐT sau lịch, "3h chiều mai", "gần chợ hơn") | Còn lại là ví dụ ĐẦU RA CÓ CẤU TRÚC (viewing, send_photos, agreed_deal, promise) — cắt là đổi hành vi bóc tách, không phải giọng |
 | `SLANG_NOTES` | 4.555 → 4.395 ký tự | "Luật dùng từ điển" 3 gạch → 1 dòng | Toàn bộ từ điển: đây là để HIỂU khách, không làm bot nói dài |
 | `FEE_RULES`, `AGREE_RULES`, `CAU_HOI_MAU`, `CAU_TIEN_DINH` | giữ nguyên | — | Luật phí là số liệu; câu mẫu/tiền định do code chọn, không vào system prompt phía model |
@@ -569,7 +571,7 @@ Sau khi gộp: `bun run prompt --day` (khoá `cau_hoi_mau`, `cau_tien_dinh`, `se
 |---|---|---|
 | `CAU_TIEN_DINH.dang_luon_thieu_phuong` (mới) | "Dạ tin chỉ còn thiếu phường là lên kệ được {ac}. Phường có ghi trên sổ hồng (dòng địa chỉ thửa đất) hoặc hoá đơn điện nước đó {ac}, {ac} xem giúp em rồi nhắn em, có là em đăng luôn không hỏi lại." — dùng cho cả gật bản nháp lẫn "đăng đi" khi không tra được phường | `dang_luon_goi_y_phuong` khi tra được phường từ tên đường (trừ khi khách đã nói không biết phường) |
 | Câu hỏi vai khi hỏi phí lần nữa (code, `cauHoiVaiPhi`) | "Cho em hỏi {ac} là chính chủ hay môi giới để em báo mức phí cho mình khi rao bán thành công nhé." sau câu phí chưa theo vai (SRS-5.1zzzzzp: câu đó nay nêu cả hai mức) (SRS-5.1zzzzzn: lời chủ dự án 13/10/2026; lượt chăm sóc sau lên kệ hỏi ngay lần đầu) | câu phí theo vai `cauPhi(vaiPhi(…))` |
-| Câu báo phí lúc tin lên kệ (code, `cauBaoPhi`, 13/10/2026 SRS-5.1zzzzzq) | "Em xin phép báo phí bên em nhé, chỉ thu khi giao dịch thành công là 1% giá chốt ạ." (môi giới 0,5%; chưa rõ vai nêu cả hai mức; thuê 3/4 tháng) | chủ dự án 13/10/2026 |
+| Câu báo phí lúc tin lên kệ (code, `cauBaoPhi`, 13/10/2026 SRS-5.1zzzzzq) | "Em xin phép báo phí bên em nhé, chỉ thu khi giao dịch thành công là 1% giá chốt ạ." (môi giới 0,5%; chưa rõ vai nêu cả hai mức; thuê 0.75 tháng tiền thuê — `prompts.muc_phi`) | chủ dự án 13/10/2026 |
 | `CAU_HOI_MAU.phap_ly` (13/10/2026 SRS-5.1zzzzzr) | "Pháp lý nhà mình như thế nào {ac} ạ?" — không liệt kê sổ riêng / chung; "có kê khai thuế hằng năm", vi bằng, phép xây, hoàn công đều vào ô pháp lý | câu đứng tên / thế chấp riêng |
 | `CAU_HOI_MAU.hien_trang_su_dung` | "Nhà hiện mình đang ở hay để trống {ac} ạ?" — bỏ "đang cho thuê" vì khách chưa nói | nhánh có khách thuê hỏi sau khi khách nói |
 | `CAU_HOI_MAU.danh_gia` | "{Ac} chấm giúp em điểm trải nghiệm rao đăng vừa rồi nha, bên em dùng để đánh giá nhân viên ạ. {Ac} cho em mấy điểm trên 10 ạ?" | điểm lưu `ghi_danh_gia` |
@@ -637,13 +639,19 @@ Sau khi gộp: `bun run prompt --day` (khoá `tone_rules`, `seller_fewshot`).
 | Vị trí | Copy |
 |---|---|
 | Placeholder search | *"tìm mua nhà phố HXH 8 tỉ ở Q8"* |
-| Nút CTA Zalo | *"Bắt đầu kết nối"* (không "Đăng ký", "Liên hệ") |
+| Nút CTA Zalo | *"Chat Zalo"* (widget, Header) / *"Nhắn Zalo"* (Footer) — không "Đăng ký", "Liên hệ"; bản thiết kế cũ *"Bắt đầu kết nối"* chưa dựng |
 | Nhãn cue | *"Khi Zalo nhớ hỏi #35148"* |
 | 0 kết quả | *"Chưa có căn nào khớp đúng. Em nới giá lên 9.6 tỉ thì có 41 căn:"* |
 | Chờ xác minh | *"Thông tin do người bán cung cấp — hỏi tụi em để xác minh lại."* |
 | CTA người bán | *"Miễn phí đăng tin. Chỉ thu phí khi bán được: chính chủ 1% · môi giới 0.5%"* |
 | Khối riêng tư | *"Để lại số ĐT trên trang BĐS khác nghĩa là 40 cuộc gọi trong 3 ngày. Ở đây: không một cuộc nào."* |
 | Lời hứa với người bán | *"Bên em rao cho đến khi gặp người mua phù hợp nhất — anh/chị chỉ cần nhắn một lần."* |
+
+## 6.10 Accessibility
+
+- Tương phản chữ ≥ 4.5:1, chữ lớn ≥ 3:1; vùng chạm ≥ 44×44px (persona P3, 61 tuổi).
+- Mọi ảnh listing có `alt` sinh từ mô tả rút gọn; điều hướng bàn phím đầy đủ.
+- Không dùng riêng màu để truyền trạng thái: "Đã bán" phải có chữ.
 
 ## 6.11 Khu quản trị theo chuẩn NN/g — cấm dấu hiệu AI trên web (09/09/2026)
 
@@ -677,13 +685,7 @@ tràn ngang ở 390px.
 
 **Tránh dấu hiệu "AI slop" (12/11/2026, SRS-5.1zzzzzzz437)** [nguồn: chủ dự án 12/11/2026 — danh sách 20 dấu hiệu, "Sửa luôn"]: không đặt nhãn chữ in hoa nhỏ trên tiêu đề khối, không chấm câu cuối tiêu đề, không đánh số "1. 2. 3." cho các bước, không vẽ khung chat giả làm minh hoạ, không lồng thẻ có viền trong thẻ, không quầng sáng / gradient trang trí, không chữ nghiêng, không chip viên thuốc cho link thường. Chữ phụ trên nền tối dùng `text-line-strong`, không dùng trắng mờ.
 
-**Góc bo (12/11/2026)** [nguồn: chủ dự án 12/11/2026 — "Đổi góc bo sang 14px như King"; thay quyết định 2px ngày 19/10]: mọi góc bo trên web và CRM là **14px** như theme King (riêng `rounded-xs` 4px), đặt ở MỘT chỗ — thang `--radius-*` trong `app/globals.css` (đè cả `rounded`, `-md`, `-lg`, `-xl`, `-2xl` của Tailwind). Không viết `rounded-[Npx]` hay `border-radius` tay. `rounded-full` chỉ cho hình tròn thật (avatar, chấm trạng thái, thanh tiến độ), không cho nút.
-
-## 6.10 Accessibility
-
-- Tương phản chữ ≥ 4.5:1, chữ lớn ≥ 3:1; vùng chạm ≥ 44×44px (persona P3, 61 tuổi).
-- Mọi ảnh listing có `alt` sinh từ mô tả rút gọn; điều hướng bàn phím đầy đủ.
-- Không dùng riêng màu để truyền trạng thái: "Đã bán" phải có chữ.
+**Góc bo (12/11/2026)** [nguồn: chủ dự án 12/11/2026 — "Đổi góc bo sang 14px như King" (SRS-5.1zzzzzzz434), rồi cùng ngày "14px ko phải cố định" (SRS-5.1zzzzzzz452); thay quyết định 2px ngày 19/10]: góc bo **theo cỡ** như theme King — khối lớn (thẻ, khung, ảnh: `rounded-lg` trở lên, `rounded-king`, `rounded-shot`) **14px**; nút, ô nhập, chip lọc (`rounded-md`) **8px**; nhãn nhỏ trên ảnh, mã tin (`rounded` / `rounded-sm`) **6px**; `rounded-xs` 4px. Đặt ở MỘT chỗ — thang `--radius-*` trong `app/globals.css`. Không viết `rounded-[Npx]` hay `border-radius` tay. `rounded-full` chỉ cho hình tròn thật (avatar, chấm trạng thái, thanh tiến độ), không cho nút.
 
 ## 6.12 Bộ NÚT dùng chung (10/09/2026)
 
@@ -694,14 +696,14 @@ Ba dấu hiệu làm một cái nút trông như máy sinh ra, và cách sửa t
 | Dấu hiệu | Sửa |
 |---|---|
 | Mỗi nút một cỡ — chữ, padding, chiều cao đều lệch nhau | Chiều cao CHUNG: web `min-height: 44px` (chạm được bằng ngón tay, WCAG 2.5.5), khu quản trị `min-h-9` cho vùng dữ liệu dày |
-| Bấm không thấy gì xảy ra | `active:translate-y-px` trên mọi nút; nút chính thêm bóng cam rất nhẹ CHỈ khi rê, bỏ bóng khi nhấn |
-| Nút phụ trông như cái thẻ | Viền đậm hơn viền khung một nấc (`border-mute/35`), nền trắng đục, rê thì viền và chữ chuyển sang cam |
+| Bấm không thấy gì xảy ra | `active:translate-y-px` trên mọi nút; nút chính thêm bóng đỏ rất nhẹ CHỈ khi rê, bỏ bóng khi nhấn |
+| Nút phụ trông như cái thẻ | Viền đậm hơn viền khung một nấc (`border-mute/35`), nền trắng đục, rê thì viền và chữ chuyển sang đỏ brand |
 
 Web dùng bốn lớp trong `app/globals.css`: `.nut` (nền chung), `.nut-chinh`, `.nut-phu`, `.nut-nhe`, thêm `.nut-nho` khi cần cỡ nhỏ. Khu `/admin` giữ `components/ui.tsx` với góc bo nhỏ hơn nhưng CÙNG ngôn ngữ trạng thái. Vòng focus dùng `ring-brand/45` có offset, không dùng outline mặc định của trình duyệt.
 
 Nút chính **không bao giờ** có bóng ở trạng thái nghỉ — bóng thường trực là thứ khiến trang trông như bản mẫu dựng sẵn.
 
-## 6.11 Quan hệ với theme tham chiếu
+## 6.13 Quan hệ với theme tham chiếu
 
 | Kế thừa từ Veedoo | Loại bỏ |
 |---|---|
@@ -709,5 +711,5 @@ Nút chính **không bao giờ** có bóng ở trạng thái nghỉ — bóng th
 | Thanh search dính đầu trang | Bộ lọc dropdown Keyword/Type/Location (trái INS-07) |
 | Khối thông số nổi trên hero chi tiết | Khối "Floor Plans", "Signature Features" |
 | Cấu trúc footer 4 cột | Form đăng ký email (trái NFR-07 — kênh là Zalo) |
-| Cặp màu cam nhấn / navy đậm | Toàn bộ asset, icon, font của theme (NFR-15) |
+| Cặp màu cam nhấn / navy đậm (LỊCH SỬ 26/08–12/11; từ 12/11 skin King đỏ `#e60023` / đen `#13151d` / nền `#f6f7f9`, font Nunito — SRS-5.1zzzzzzz430) | Toàn bộ asset, icon, font của theme (NFR-15) |
 | — | Khối bình luận/review công khai trên trang BĐS |

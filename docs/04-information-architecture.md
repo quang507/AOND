@@ -11,22 +11,28 @@
 | IA-P5 | Khu vực S (`/raoban`) tách hẳn khu vực B — hai tâm trí khác nhau | S's side.docx |
 | IA-P6 | Không có trang "tài khoản người mua" — B sống trên Zalo, không trên web | NFR-07 |
 
-## 4.2 Sitemap (route thật trong `app/`, soát lại 28/10/2026)
+## 4.2 Sitemap (route thật trong `app/`, soát lại 13/11/2026 — SRS-5.1zzzzzzz464)
 
 ```mermaid
 flowchart TD
     H["/ trang chủ"] --> API["/api/search?go=1 → 302"]
     API --> MB["/mua-ban · /cho-thue (?q= → noindex)"]
-    API --> T["/{tag} — 64 trang tag SSG"]
+    API --> T["/{tag} — 100 trang tag theo quận / huyện"]
     H --> T
     H --> BD["/ban-do"]
     H --> TK["/thong-ke"]
     H --> LV["/tinh-lai-vay"]
     H --> MG["/moi-gioi"]
-    H --> RB["/raoban — rao một câu + upload ảnh"]
+    H --> RB["/raoban — landing: nhắn câu rao qua Zalo"]
+    H --> DAL["/du-an — danh sách dự án"]
+    H --> GN["/gan → /gan/{slug} — nhà bán gần địa danh"]
+    H --> CN["/cam-nang → /cam-nang/{slug}"]
+    H --> THM["/thue-hay-mua"]
+    BCG["/bao-cao-gia/{code} — báo cáo giá rao quanh căn, noindex (bot gửi link)"] --> DT
+    GN --> DT
     MB --> DT["/nha-dat/{code}"]
     T --> DT
-    DA["/du-an/{slug}"] --> DT
+    DAL --> DA["/du-an/{slug}"] --> DT
     DT --> ZL["Zalo cá nhân, hai số (ngoài site)"]
     H --> ZL
     DS["/ds/{token} — danh sách riêng, noindex"] --> DT
@@ -36,6 +42,7 @@ flowchart TD
     DN --> AD["/admin"] --> ADT["/admin/dang-tin"]
     AD --> ADX["/admin/tin-nhan · /admin/ro-hang (+/json) · /admin/cau-chuan · /admin/danh-gia"]
     SM["/sitemap.xml · /robots.txt"]
+    APIT["/api/tin (trang kế, tự tải khi cuộn) · /api/tin-da-go"]
 ```
 
 ## 4.3 Bảng trang
@@ -48,10 +55,10 @@ flowchart TD
 | IA-04 | `/bds/{slug}-{id}` → thật `/nha-dat/{code}` | Chi tiết một BĐS, JSON-LD | ✅ | FR-10, FR-11 | ✅ đã dựng |
 | IA-05 | `/gioi-thieu` | Cách hoạt động, cam kết riêng tư, biểu phí | ✅ | FR-04 | ❌ chưa dựng (nội dung nằm trên `/`) |
 | IA-06 | `/rieng-tu` | Chính sách dữ liệu, quyền ngắt kết nối | ✅ | NFR-08 | ❌ chưa dựng |
-| IA-07 | `/raoban` | Landing người bán + ô một câu rao + ảnh | ✅ | FR-90, FR-91, FR-96 | ✅ đã dựng (gộp IA-08/09) |
-| IA-08 | `/raoban/dang-tin` | Ô nhập một câu rao | ❌ | FR-91 | ⛔ gộp vào `/raoban` |
-| IA-09 | `/raoban/xac-nhan` | Bản bóc tách để S sửa + upload ảnh | ❌ | FR-94, FR-96 | ⛔ gộp vào `/raoban` |
-| IA-10 | `/raoban/quan-ly` → thật `/quan-ly` | Tin của tôi + câu hỏi chờ trả lời | ❌ | FR-98 | 🟡 tin của tôi có; câu hỏi chờ trả lời chưa |
+| IA-07 | `/raoban` | Landing người bán: ba bước + nút "Nhắn câu rao qua Zalo ngay" (không form trên trang); ô một câu rao + upload ảnh nằm ở `/quan-ly` (đã đăng nhập) | ✅ | FR-90, FR-91, FR-96 | ✅ đã dựng (gộp IA-08/09) |
+| IA-08 | `/raoban/dang-tin` | Ô nhập một câu rao | ❌ | FR-91 | ⛔ gộp — ô câu rao ở `/quan-ly` |
+| IA-09 | `/raoban/xac-nhan` | Bản bóc tách để S sửa + upload ảnh | ❌ | FR-94, FR-96 | ⛔ gộp — upload ảnh ở `/quan-ly` |
+| IA-10 | `/raoban/quan-ly` → thật `/quan-ly` | Tin của tôi + ô một câu rao + upload ảnh (`UploadAnh`) + câu hỏi chờ trả lời | ❌ | FR-98 | 🟡 tin của tôi có; câu hỏi chờ trả lời chưa |
 | IA-11 | `/ds/{token}` | Danh sách riêng cho một B (`noindex, nofollow`, robots chặn) | ❌ | FR-100 | ✅ trang có; bot chưa tự tạo (UF-12) |
 | IA-12 | `/admin` (?tab=todo·crm·stats·ops), `/admin/tin-nhan` (ô admin gửi tin, SRS-5.1zzzzzzz216), `/admin/ro-hang` (+`/json`), `/admin/dang-tin`, `/admin/cau-chuan` (câu chuẩn + câu mẫu cố định, SRS-5.1zzzzzzz88 / 106), `/admin/danh-gia` (khách chấm sao AI, SRS-5.1zzzzzzz104); `/admin/mau-cau`, `/admin/prompt` gỡ 18/10/2026 (SRS-5.1zzzzzzz46) | Khung CRM (09/09/2026, bố cục theo ZaloCRM): thanh navy với tab theo phân hệ, ô tìm, chuông việc, avatar; Header/Footer công khai ẩn dưới `/admin` | ❌ | FR-70…81, FR-127, FR-152, FR-175, FR-180 | ✅ đã dựng |
 | IA-13 | `/du-an/{slug}` | Trang dự án + giỏ hàng (tin `project_id`), SSG | ✅ | FR-117, FR-113 | ✅ đã dựng |
@@ -64,6 +71,12 @@ flowchart TD
 | IA-20 | `/yeu-thich` | Tin đã tim (localStorage) | ❌ | FR-121 | ✅ đã dựng |
 | IA-21 | `/dang-nhap`, `/tai-khoan` | Google OAuth / magic link (không Zalo SSO) | ❌ | FR-124, FR-126 | ✅ đã dựng |
 | IA-22 | `/sitemap.xml`, `/robots.txt` | `app/sitemap.ts`, `app/robots.ts` | — | NFR-09 | ✅ đã dựng |
+| — | `/du-an` | Danh sách dự án (vào `/du-an/{slug}`), có trên Header / Footer | ✅ | FR-113 | ✅ đã dựng |
+| — | `/gan`, `/gan/{slug}` | "Nhà bán gần <địa danh>" — 36 mốc, tin bán trong bán kính 2 km (`lib/moc.ts`) | ✅ (❌ khi dưới 3 tin) | — | ✅ đã dựng (SRS-5.1zzzzzzz443) |
+| — | `/cam-nang`, `/cam-nang/{slug}` | 6 bài cẩm nang mua nhà, `Article` JSON-LD, dựng lúc build (`lib/cam-nang.ts`) | ✅ | — | ✅ đã dựng (SRS-5.1zzzzzzz443) |
+| — | `/thue-hay-mua` | Máy tính thuê hay mua (số mặc định là giả định) | ✅ | — | ✅ đã dựng (SRS-5.1zzzzzzz443) |
+| — | `/bao-cao-gia/{code}` | Báo cáo giá rao quanh một căn (bán kính 3 km, RPC `bao_cao_gia_quanh`); bot gửi link kèm tin so sánh | ❌ `noindex` | — | ✅ đã dựng (SRS-5.1zzzzzzz455) |
+| — | `/api/tin` · `/api/tin-da-go` | Route JSON: trang kế của danh sách / trang tag cho "Xem thêm" và tự tải khi cuộn (SRS-5.1zzzzzzz447); tin đã gỡ thì xoá bộ đệm danh sách (SRS-5.1zzzzzzz457) | ❌ robots chặn `/api/` | — | ✅ đã dựng |
 
 > Trang tìm kiếm không index để tránh trang mỏng cạnh tranh với trang tag — tag mới
 > là tài sản SEO (IA-P2).
@@ -71,8 +84,8 @@ flowchart TD
 ## 4.4 Chiến lược URL & SEO
 
 **Nguồn tag**: TOP-100 keyword BĐS trên Google, file `ndCC-TOP-KW-2014-01.xlsm`
-[nguồn: nhadat.cc website.docx §Tag] — chưa có trong repo → OPEN-06; hiện 64 tag
-sinh từ taxonomy §4.6.
+[nguồn: nhadat.cc website.docx §Tag] — chưa có trong repo → OPEN-06; hiện đúng 100 tag
+theo quận / huyện Sài Gòn + Long An (`lib/tags.ts`, SRS-5.1zzzzzzz433), sinh từ taxonomy §4.6.
 
 Công thức slug: `{giao-dịch}-{loại-hình}-{thuộc-tính}-{khu-vực}`
 
@@ -165,9 +178,9 @@ Bộ chiều mà cả web search lẫn bot phải hiểu (FR-09, FR-22, FR-23):
 
 ## 4.7 Điều hướng
 
-- **Header (khu B)**: Logo · Mua bán · Cho thuê · Bản đồ · Thống kê · `[Rao bán]` · `[Zalo — nút nhấn mạnh]`.
-- **Footer**: 4 cột — Về nhadat.cc · Tag phổ biến · Khu vực · Cam kết riêng tư; khối "Cần bán hay cho thuê?" dẫn `/raoban`.
-- **Khu S**: `/raoban` (đăng tin) · `/quan-ly` (tin của tôi) · `/tai-khoan`.
+- **Header (khu B, `components/Header.tsx`)**: Logo "AI Ơi Nhà Đất" · Mua bán · Cho thuê · Dự án · Bản đồ · Giá theo phường · Môi giới · Rao bán · nút tim (`/yeu-thich`) · nút tài khoản · `[Chat Zalo — nút xanh Zalo]`. Dưới `lg` thanh nav thành nút Menu, thêm nhóm "Công cụ": Nhà gần địa danh · Thuê hay mua · Tính lãi vay · Cẩm nang (SRS-5.1zzzzzzz457).
+- **Footer (`components/Footer.tsx`, SRS-5.1zzzzzzz443 / 451)**: cột logo + một câu giới thiệu + nút "Nhắn Zalo" + hotline của team; ba cột link — Tìm nhà (Nhà đất bán · cho thuê · Dự án · Bản đồ · Nhà gần địa danh) · Công cụ, cẩm nang (Giá theo phường · Tính lãi vay · Thuê hay mua · Cẩm nang) · Người bán (Rao bán nhà · Môi giới). Chỉ link trang có thật.
+- **Khu S**: `/raoban` (landing, nhắn câu rao qua Zalo) · `/quan-ly` (tin của tôi, ô câu rao + upload ảnh) · `/tai-khoan`.
 - **Breadcrumb** (SEO + IA-P4): `Trang chủ › Bán nhà Quận 5 › Hẻm xe hơi › #35148`.
 
 ## 4.8 Đặt "Hộp mời kết nối Zalo"
@@ -182,3 +195,7 @@ Bộ chiều mà cả web search lẫn bot phải hiểu (FR-09, FR-22, FR-23):
 
 Nội dung chuẩn [nguồn: nhadat.cc website.docx §Hộp mời kết nối]:
 > *"Mời anh/chị kết nối ngay với tụi em để tụi em cùng tìm kiếm, và khi có sẽ thông báo tức thì."* `[Zalo] Bắt đầu kết nối`
+
+❌ Câu hứa và nút "Bắt đầu kết nối" **chưa dựng** (soát 13/11/2026): code hiện chỉ có nút "Chat Zalo" nổi góc trái dưới
+(`components/ZaloWidget.tsx`; ẩn ở `/nha-dat/…` vì trang đó có nút Zalo theo căn, ẩn ở `/admin` và `/raoban`, ẩn trên điện thoại ở
+trang chủ), nút "Chat Zalo" trên Header và "Nhắn Zalo" ở Footer.

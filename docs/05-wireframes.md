@@ -11,8 +11,9 @@ OPEN-43/45). URL trong tiêu đề là URL đặc tả; URL thật ghi ở dòng
 
 ```
 ┌──────────────────────────────────────────┐
-│ nhadat.cc   Mua bán  Thuê  Giới thiệu    │
-│                    [Rao bán] [● Zalo]    │
+│ AI Ơi Nhà Đất  Mua bán · Cho thuê · Dự án│
+│ Bản đồ · Giá theo phường · Môi giới ·    │
+│ Rao bán          [♡] [TK] [Chat Zalo]    │
 ├──────────────────────────────────────────┤
 │                                          │
 │   Tìm nhà như đang trò chuyện            │
@@ -53,9 +54,10 @@ OPEN-43/45). URL trong tiêu đề là URL đặc tả; URL thật ghi ở dòng
 │ BĐS MỚI NHẤT                             │
 │ ▢ card  ▢ card  ▢ card  ···               │
 ├──────────────────────────────────────────┤
-│ BÁN HAY CHO THUÊ VỚI NHADAT.CC? [Xem]    │   ← FR-06
+│ BÁN HAY CHO THUÊ VỚI AI ƠI NHÀ ĐẤT? [Xem]│   ← FR-06
 ├──────────────────────────────────────────┤
-│ FOOTER: 4 cột tag/khu vực/về/riêng tư    │
+│ FOOTER: logo + Nhắn Zalo · Tìm nhà ·     │
+│   Công cụ, cẩm nang · Người bán          │
 └──────────────────────────────────────────┘
    mobile: sticky bottom bar [● Chat Zalo]
 ```
@@ -191,37 +193,37 @@ Tag rỗng → giữ bố cục, thay lưới bằng hộp mời kết nối c�
 ---
 
 ## WF-05 — Chat Zalo: khai thác nhu cầu → UF-04
-✅ đã dựng: lõi Python nhánh mua (`src/aioi/engine.py`, `mua.py`); lời chào là câu mẫu `chao_tu_van` / `chao_lan_dau` (`src/aioi/cau_mau.py`), tên trợ lý theo khách, có chấm giữa (13 tên, SRS-5.1zzzzzzz183); gợi căn khi có khu vực và ngân sách (SRS-5.1zzzzzzz214), mỗi lượt MỘT căn, bốn đoạn = bốn tin Zalo: mở lời · thông số + vì sao hợp · link · một câu hỏi ngắn (SRS-5.1zzzzzzz145 / 160). Khung dưới chỉ minh hoạ, chữ thật do model viết.
+✅ đã dựng: lõi Python nhánh mua (`src/aioi/engine.py`, `mua.py`); lời chào là câu mẫu `chao_tu_van` / `chao_lan_dau` (`src/aioi/cau_mau.py`), tên trợ lý theo khách, có chấm giữa (13 tên, SRS-5.1zzzzzzz183); gợi căn khi có khu vực và ngân sách (SRS-5.1zzzzzzz214); có ≥ 2 căn hợp thì 2–3 căn một lượt (SRS-5.1zzzzzzz335 / 340 — thay khuôn một căn bốn đoạn của SRS-5.1zzzzzzz145 / 160). Khung dưới chỉ minh hoạ, chữ thật do model viết.
 
 ```
 ┌─ Zalo cá nhân · số tư vấn người mua ─────┐
 │                                          │
 │ ┌────────────────────────────────────┐   │
-│ │ Chào anh ạ! Em là M•ai, trợ lý bất │   │
-│ │ động sản của AI Ơi Nhà Đất. 🏡✨     │   │
-│ │ Anh đang tìm căn như thế nào, kể em│   │
-│ │ nghe với ạ?                        │   │
+│ │ Chào anh! Em là M•ai bên AI Ơi Nhà │   │
+│ │ Đất nè 🏡 Anh đang tìm mua hay      │   │
+│ │ thuê, khu nào, tầm giá bao nhiêu   │   │
+│ │ để em lọc căn hợp liền ạ?          │   │
 │ └────────────────────────────────────┘   │
 │         ┌──────────────────────────┐     │
 │         │ Nhà phố Quận 5, tầm 9 tỷ │     │
 │         └──────────────────────────┘     │
 │ ┌────────────────────────────────────┐   │
-│ │ Quận 5 tầm 9 tỷ thì có căn hợp nè! │   │
-│ └────────────────────────────────────┘   │
-│ ┌────────────────────────────────────┐   │
-│ │ Nhà phố HXH Trần Bình Trọng, 4     │   │
-│ │ tầng, 9,8 tỷ, hơi vượt ngân sách.  │   │
-│ └────────────────────────────────────┘   │
-│ ┌────────────────────────────────────┐   │
+│ │ Quận 5 tầm 9 tỷ em có 2 căn, từ    │   │
+│ │ 8,5 đến 9,8 tỷ nè anh.             │   │
+│ │ Căn hẻm xe hơi Trần Bình Trọng, 4  │   │
+│ │ tầng, 9,8 tỷ, hơi vượt chút.       │   │
+│ │ <AIOI_SITE_URL>/nha-dat/<mã>       │   │
+│ │ Căn mặt tiền Nguyễn Trãi 3 tầng,   │   │
+│ │ 8,5 tỷ, sát chợ.                   │   │
 │ │ <AIOI_SITE_URL>/nha-dat/<mã>       │   │
 │ └────────────────────────────────────┘   │
 │ ┌────────────────────────────────────┐   │
-│ │ Anh muốn đi xem căn này không ạ?   │   │
+│ │ Anh muốn đi xem căn nào không ạ?   │   │
 │ └────────────────────────────────────┘   │
 └──────────────────────────────────────────┘
 ```
 
-**Bất biến**: một căn mỗi lượt, khách đòi thêm mới đưa căn kế (SRS-5.1zzzzzzz160; thay "tối đa 3 card" của FR-24); không mở bằng "Dạ"; không nói mã tin / chữ "rổ" (SRS-5.1zzzzzzz145).
+**Bất biến**: có từ 2 căn hợp trở lên thì giới thiệu 2–3 căn trong MỘT lượt, mở bằng tầm giá chung, mỗi căn một câu + link; chỉ 1 căn thì nói căn đó (`src/aioi/mua.py`, SRS-5.1zzzzzzz335 / 340 — thay "một căn mỗi lượt" của SRS-5.1zzzzzzz160); trần 3 căn/tin của FR-24 giữ; không mở bằng "Dạ"; không nói mã tin / chữ "rổ" (SRS-5.1zzzzzzz145, FR-178).
 
 ---
 
@@ -238,7 +240,7 @@ Tag rỗng → giữ bố cục, thay lưới bằng hộp mời kết nối c�
 │ │ Trong khi chờ, chị có câu hỏi nào  │   │  ← FR-45 giữ nhịp
 │ │ khác không ạ?                      │   │
 │ └────────────────────────────────────┘   │
-│ ┌ ⏳ Đang hỏi chủ nhà · #35148 ──────┐   │  ← trạng thái hiển thị
+│ ┌ ⏳ Đang hỏi chủ nhà ───────────────┐   │  ← trạng thái hiển thị (không mã — FR-178)
 │ ┌────────────────────────────────────┐   │
 │ │ Chào chị Dương. Em có sổ đỏ rồi nè │   │
 │ │ chị. Em gửi chị nhé?               │   │
@@ -255,7 +257,7 @@ Tag rỗng → giữ bố cục, thay lưới bằng hộp mời kết nối c�
 
 ```
 │ ┌────────────────────────────────────┐   │
-│ │ Chị xem căn MS30148 Trần Bình Trọng│   │  ← xác nhận đúng căn
+│ │ Chị xem căn Trần Bình Trọng        │   │  ← xác nhận đúng căn bằng địa chỉ, không mã (FR-178)
 │ │ Phường 4 Quận 5 giá 12 tỉ phải     │   │
 │ │ không chị? Lúc nào thuận tiện ạ?   │   │
 │ └────────────────────────────────────┘   │
@@ -270,7 +272,7 @@ Tag rỗng → giữ bố cục, thay lưới bằng hộp mời kết nối c�
 │ └────────────────────────────────────┘   │
 │ ┌────────────────────────────────────┐   │
 │ │ Em ghi nhận lịch xem nhà:          │   │
-│ │ #30148 — Trần Bình Trọng, P4 Q5    │   │
+│ │ Căn Trần Bình Trọng, Phường 4      │   │
 │ │ 9h sáng Thứ 3 ngày 12/10           │   │
 │ │ 📍 maps.app.goo.gl/…               │   │
 │ │ Em gọi chị trước 30 phút nhé.      │   │
@@ -284,7 +286,7 @@ Tag rỗng → giữ bố cục, thay lưới bằng hộp mời kết nối c�
 
 ```
 ┌──────────────────────────────────────────┐
-│ nhadat.cc · Rao bán      [Zalo: Cô Bảy]  │
+│ AI Ơi Nhà Đất · Rao bán  [Zalo: Cô Bảy]  │
 ├──────────────────────────────────────────┤
 │ Anh/chị cứ rao như bình thường.          │
 │ Tụi em lo phần còn lại.                  │

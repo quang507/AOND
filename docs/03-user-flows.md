@@ -14,7 +14,7 @@ chính, nhánh lỗi, và **một dòng trạng thái dựng** (đối chiếu c
 
 ```mermaid
 flowchart TD
-    G[Google / quảng cáo] --> W[Website nhadat.cc]
+    G[Google / quảng cáo] --> W[Website Aioinhadat · aond.vercel.app]
     W -->|UF-01 search| L[Kết quả listing]
     L -->|UF-02| D[Chi tiết BĐS]
     D -->|UF-03 hộp mời kết nối| Z[Zalo cá nhân]
@@ -89,35 +89,34 @@ sequenceDiagram
 
 ## UF-04 — Chat lần đầu & khai thác nhu cầu
 **Actor** B · **FR** FR-20, FR-22, FR-23, FR-24, FR-25, FR-26
-✅ đã dựng: lõi Python nhánh mua (`src/aioi/engine.py` + `mua.py`, `schema.BuyerLead`) — tìm căn qua hàm DB `tim_nha` (SRS-5.1zzzzzzz138), chỉ gợi căn khi có khu vực VÀ ngân sách (SRS-5.1zzzzzzz214), mỗi lượt một căn (SRS-5.1zzzzzzz160), hỏi nhu cầu tối đa `MAX_CAU_HOI_MUA = 2` câu (SRS-5.1zzzzzzz154).
+✅ đã dựng: lõi Python nhánh mua (`src/aioi/engine.py` + `mua.py`, `schema.BuyerLead`) — tìm căn qua hàm DB `tim_nha` (SRS-5.1zzzzzzz138), chỉ gợi căn khi có khu vực VÀ ngân sách (SRS-5.1zzzzzzz214), có ≥ 2 căn hợp thì 2–3 căn một lượt, mỗi căn một câu + link (SRS-5.1zzzzzzz335 / 340, thay "mỗi lượt một căn" của SRS-5.1zzzzzzz160), hỏi nhu cầu tối đa `MAX_CAU_HOI_MUA = 2` câu (SRS-5.1zzzzzzz154).
 
 ```mermaid
 flowchart TD
     A[B nhắn tin đầu tiên] --> B{Có ngữ cảnh từ web?}
     B -->|Có| C[Xác nhận lại tiêu chí]
-    B -->|Không| D["Chào + xin tên để xưng hô"]
-    D --> E["Anh/chị tìm nhà ở đâu ạ?"]
+    B -->|Không| D["Chào (câu mẫu chao_tu_van, số tư vấn)"]
+    D --> E["Hỏi mở: tìm mua hay thuê, khu nào, tầm giá"]
     C --> F[Thu đủ: khu vực + giá]
     E --> F
     F --> G{Đủ tiêu chí tối thiểu?}
-    G -->|Chưa| H[Hỏi thêm 1 tiêu chí mỗi lượt]
+    G -->|Chưa| H[Hỏi thứ còn thiếu — MỘT câu hỏi mỗi lượt]
     H --> F
-    G -->|Rồi| I["Gửi 3 căn hot nhất"]
+    G -->|Rồi| I["Gửi 2–3 căn hợp nhất, mỗi căn một câu + link"]
     I --> J{B phản hồi?}
-    J -->|Xem thêm| K[Gửi 3 căn tiếp]
+    J -->|Xem thêm| K[Gửi 2–3 căn tiếp]
     J -->|Hỏi 1 căn| UF05
     J -->|Xin ảnh| L[Gửi vài ảnh, hỏi xem thêm không]
     J -->|Im lặng| UF08
     K --> J
     L --> J
-    I --> M["Hỏi: mua ở hay đầu tư?"]
-    M --> N{Đầu tư/kinh doanh?}
-    N -->|Kinh doanh| O["Hỏi loại hình: văn phòng/quán/showroom"]
-    N -->|Để ở| P[Hỏi số PN, trường học gần]
+    I --> M["Đủ khu vực + tầm giá: NGỪNG dò hồ sơ — mục đích, loại nhà, PN… chỉ nhặt khi B tự kể"]
+    J -->|Chê căn| N["Hỏi đúng MỘT câu: chưa hợp chỗ nào"]
+    N --> F
 ```
 
 **Tiêu chí tối thiểu**: khu vực (≥ cấp quận) **và** khoảng giá. Tối đa 3 listing/tin
-(FR-24); hỏi gọn, không thành bảng hỏi (`06 §6.8`).
+(FR-24); hỏi gọn, không thành bảng hỏi, đủ khu vực + tầm giá thì ngừng dò (`06 §6.8`, "Nhịp nhắn giống người").
 
 ---
 
@@ -187,7 +186,7 @@ dẫn được (RSK-05) → đề xuất giờ khác, không huỷ im lặng.
 
 1. *"Chị ưng căn này không ạ?"* — không ưng → hỏi chưa phù hợp chỗ nào.
 2. Câu trả lời (*"mặt tiền trên 4m thôi"*) ghi thành tiêu chí mới, áp cho mọi gợi ý sau.
-3. Xin đánh giá 5 sao → chấm cho NMG (FR-102). Quay lại UF-04 với tiêu chí đã tinh chỉnh.
+3. Xin khách chấm 1–5 sao cho AI, MỘT lần (câu mẫu `xin_cham_sao`, SRS-5.1zzzzzzz104; "chấm cho NMG — FR-102" là bản cũ, LỊCH SỬ). Quay lại UF-04 với tiêu chí đã tinh chỉnh.
 
 Đây là cơ chế học sở thích chính [nguồn: OKRs eo2024.pptx slide 5].
 
@@ -213,8 +212,8 @@ flowchart TD
 
 Góc follow-up xoay vòng, không lặp cùng mẫu hai lần liên tiếp: căn cuối đã xem
 (FR-61) · căn khác cùng khu/tầm giá (FR-62) · căn mới nhận (FR-64) · hỏi thẳng
-*"Chị đã tìm mua được nhà chưa ạ?"*. Mọi tin chủ động kết bằng **một câu hỏi** —
-mục tiêu là B *nhắn lại*, chỉ gửi trong 8h–21h VN (FR-133).
+*"Chị đã tìm mua được nhà chưa ạ?"*. Tin chủ động thường kết bằng **một câu hỏi** —
+mục tiêu là B *nhắn lại* — nhưng khoảng 1/3 số tin kết bằng câu khẳng định rồi chờ (`06 §6.8`, Bảy quy tắc, 3); chỉ gửi trong 8h–21h VN (FR-133).
 
 ---
 
@@ -224,7 +223,7 @@ mục tiêu là B *nhắn lại*, chỉ gửi trong 8h–21h VN (FR-133).
 
 ```mermaid
 flowchart TD
-    A["Vào nhadat-cc.vercel.app/raoban"] --> B[Đăng nhập]
+    A["Vào aond.vercel.app/raoban → /quan-ly"] --> B[Đăng nhập]
     B --> C["Gõ MỘT câu rao thông thường"]
     C --> D[AI bóc tách trường]
     D --> E["Hiển thị bản đã bóc tách: Vị trí / Đường / Quy mô / Giá"]
@@ -300,18 +299,20 @@ flowchart TD
    mạnh khách vừa nói, rồi hỏi đúng **một** thông tin (FR-177 b, FR-178 b).
    Giọng theo khối `GIONG_VUI` trong `src/aioi/prompts.py` (SRS-5.1zzzzzzz219).
 4. **Hỏi một đường, trả lời một nẻo thì VẪN GHI** (FR-177 e): nhận ra S đang nói
-   fact nào thì ghi vào đúng fact đó; không nhận ra thì ghi nguyên văn vào
-   `bo_sung`. Câu hỏi gốc vẫn treo, bot hỏi lại bằng lời khác. Chỉ ừ/ok, dặn xưng
+   fact nào thì ghi vào đúng fact đó; không nhận ra thì không ghi bừa — ô tự do
+   `uu_the` chỉ giữ cụm nằm nguyên trong lời khách (SRS-5.1zzzzzzz205; ô `bo_sung` là đường
+   TypeScript đã gỡ 18/10/2026 — LỊCH SỬ, OPEN-57 đóng). Câu hỏi gốc vẫn treo, bot hỏi lại bằng lời khác. Chỉ ừ/ok, dặn xưng
    hô, hỏi ngược là không ghi (FR-176).
 5. Ảnh Zalo là URL tạm → tải về, lưu kho, ghi `listing_media` (FR-111/165).
 6. **Đủ thông tin → gửi bản nháp tin** (FR-177 c): tiêu đề · vị trí · thông số ·
    kết cấu · pháp lý · tiềm năng · giá · lời gọi hành động, kèm **điểm đầy đủ
-   0–100** (7 tiêu chí, FR-177 d) và câu "như vậy được chưa?" — chỉ khi đủ 70 điểm;
-   50–69 điểm thì bản nháp "soạn trước" không xin duyệt, nói còn thiếu gì (SRS-5.1zzzzzzz26). Bản nháp là chữ
+   0–100** (7 tiêu chí, FR-177 d) và câu "như vậy được chưa?". Bản nháp ra khi đủ loại hình + vị trí + giá
+   (SRS-5.1zzzzzzz200 / 202); điểm tin chỉ còn đưa cho model (`prompts.khoi_diem_tin`) — cổng 70 điểm / "soạn trước"
+   50–69 điểm (SRS-5.1zzzzzzz26) là LỊCH SỬ, OPEN-50 đóng 28/10/2026. Bản nháp là chữ
    **tiền định**, không do model soạn — số liệu phải đúng từng chữ với cột.
 7. **S gật → tin lên kệ** (`chu_duyet_at`, rồi `dang_ban`). S sửa → ghi fact rồi
    gửi lại bản nháp. Điều kiện lên kệ của tin tạo từ chat: đủ giá + diện tích +
-   phường **và** điểm ≥ 70 **và** S đã gật *[ngưỡng 70 là giả định BA — OPEN-50]*.
+   phường **và** S đã gật (trigger `listings_quyet_dinh_dang_tin`; ngưỡng điểm ≥ 70 cũ đã bỏ — OPEN-50 đóng 28/10/2026).
    Tin nhập Excel/admin (`can_chu_duyet = false`) giữ luật cũ (FR-139/144).
 8. Vòng đời sau đó theo UF-13. Mã công khai: OPEN-17.
 
@@ -334,7 +335,7 @@ Mỗi lần đăng là một listing riêng (FR-104). `/raoban` (UF-09) là kên
 | B có phản ứng tiêu cực | `[UPSET] <Zalo ID>` | FR-77 |
 
 Body chứa field của danh sách tương ứng, kèm mô tả BĐS nếu có. Định nghĩa "phản
-ứng tiêu cực": `07-srs.md §5.4`.
+ứng tiêu cực" từng nằm ở `nudge` (`07-srs.md` SRS-5.4, [deprecated] — gỡ 18/10/2026; LỊCH SỬ).
 
 ---
 
@@ -343,7 +344,7 @@ Body chứa field của danh sách tương ứng, kèm mô tả BĐS nếu có. 
 🟡 một phần: trang `/ds/[token]` đã có (`20260904g`, `noindex`, robots chặn `/ds/`); bot chưa tự tạo danh sách và gửi link.
 
 1. B Side tạo danh sách `{User ID, [BĐS ID…]}` khi cần chào nhiều hơn 3 căn (FR-24).
-2. Sinh URL `nhadat-cc.vercel.app/ds/<token>`; bot gửi link kèm câu hỏi xin phép.
+2. Sinh URL `aond.vercel.app/ds/<token>` (gốc theo `AIOI_SITE_URL`, `src/aioi/web.py`); bot gửi link kèm câu hỏi xin phép.
 3. B mở → trang listing lọc sẵn, mỗi card có cue mã để hỏi lại trên Zalo.
 
 **Riêng tư**: token không đoán được, `noindex`, không lộ thông tin B trên trang.

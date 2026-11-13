@@ -4,7 +4,7 @@
 > `chats w B.docx`, `S's side.docx`, `dự kiến vốn 6 tháng đầu.xlsx`.
 > Mọi số liệu thị trường ngoài các file này là **giả định BA** và được đánh dấu rõ.
 > Ảnh theme tham chiếu (`Vedoo pages/`) đã xoá khỏi repo; phần chưng cất nằm ở
-> `06-ui-design.md §6.11`.
+> `06-ui-design.md §6.13`.
 
 ## 1.1 Bối cảnh & định vị
 
@@ -49,7 +49,7 @@ hàng**: bắt buộc có tái kích hoạt chủ động, và phải khiến B 
 Nỗi đau lớn nhất của người tìm nhà là bị hàng chục môi giới gọi sau khi để lại số —
 *"40 cuộc gọi trong 3 ngày"* [nguồn: trao đổi chủ dự án, 22/08/2026]. nhadat.cc chọn
 **không thu số điện thoại** làm lời hứa thương hiệu. Ngoại lệ duy nhất: đặt lịch xem
-nhà, chat mẫu vẫn hỏi SĐT [nguồn: chats w B.docx §Hẹn xem nhà] — OPEN-05.
+nhà, chat mẫu vẫn hỏi SĐT [nguồn: chats w B.docx §Hẹn xem nhà] — OPEN-05 (đã chốt 07/09/2026: chỉ chủ động xin số lúc chốt lịch xem; khách tự để lại số lúc khác thì bot lưu và báo admin gọi tư vấn — SRS-5.1zzzzzzz388) [nguồn: SRS-5.1zzzzzzz464].
 
 ### INS-05 — Người bán không muốn điền form
 S chỉ gõ **một câu rao thông thường**: *"Bán nhà HXH xe tải quay đầu, gần ngã tư
@@ -155,13 +155,13 @@ Chân dung từ 24 hội thoại mẫu `chats w B.docx`:
 - Hành vi: xem 3 căn → xin thêm → xin ảnh → hỏi 1 căn cụ thể → im lặng.
 
 ### Bên bán (S)
-- **CCRB**: rao 1–2 căn, ngại form, phản hồi chậm, cần CTV dẫn khách.
+- **CCRB**: rao 1–2 căn, ngại form, phản hồi chậm, cần CTV dẫn khách *[lịch sử 2024 — CTV bỏ 28/10/2026]*.
 - **NMG**: rao nhiều căn, chịu tiêu chuẩn [nguồn: biz model.docx §NMG]: tối thiểu
   **10 BĐS** đang rao; tỉ lệ thành công **≥ 5%** (MA 6 tháng); chấm dứt khi bị
   chấm **≤ 3/5 sao** ở bất kỳ tương tác nào.
 
 ### Nội bộ
-- **CTV** (1.5 FTE 6 tháng đầu): dẫn xem nhà, quản lý NMG, hưởng 0.5%.
+- **CTV** (1.5 FTE 6 tháng đầu): dẫn xem nhà, quản lý NMG, hưởng 0.5% *[lịch sử 2024 — CTV bỏ 28/10/2026]*.
 - **Admin buyer side**: xử lý escalation (`admin.buyerside@nhadat.cc` theo tài liệu
   gốc; nay qua `/admin` + Zalo/ntfy).
 
@@ -170,7 +170,7 @@ Chân dung từ 24 hội thoại mẫu `chats w B.docx`:
 | Bên | Phí | Ghi chú |
 |---|---|---|
 | B (mua/thuê) | **0đ** | Lời hứa thương hiệu |
-| CCRB | **1%** giá trị BĐS | 0.5% trả CTV, 0.5% giữ lại |
+| CCRB | **1%** giá trị BĐS | 0.5% trả CTV, 0.5% giữ lại *[lịch sử 2024 — CTV bỏ 28/10/2026; nay cả 1% về công ty, OPEN-66]* |
 | NMG | **0.5%** giá trị BĐS | NMG tự dẫn khách |
 | Cho thuê | **3/4 tháng tiền thuê** | Quy đổi từ mức 1% |
 
@@ -245,7 +245,7 @@ trao đổi chủ dự án, 24/08/2026]. Tái dựng từ nguồn thứ cấp �
 | Né | Đăng tin nhiều bước + duyệt tay | Rao một câu qua Zalo, AI viết lại (INS-05, FR-109) |
 
 Ba công cụ B-side của họ là ứng viên giai đoạn sau dạng **trả lời trong chat** thay vì
-widget — OPEN-19. Tham chiếu giao diện: theme **Veedoo** (`06 §6.11`); theme thương
+widget — OPEN-19. Tham chiếu giao diện: theme **Veedoo** (`06 §6.13`; skin hiện là King, SRS-430); theme thương
 mại `ThemeForest/` đã loại khỏi repo, chỉ tham chiếu bố cục (OPEN-07).
 
 ### 1.5c Đối chiếu MÔ HÌNH DỮ LIỆU với ba sàn: họ lưu gì, mình còn thiếu gì (02/09/2026)
@@ -283,8 +283,8 @@ giá theo tháng, báo tin sai. Thứ tự đề xuất, mỗi việc một migr
 6. `pois` Quận 5 + khoảng cách mỗi tin (INS-07).
 7. Nhãn "đã xác minh với chủ nhà ngày X" + `rental_yield_pct`.
 
-Chờ chủ dự án: OPEN-36 (KYC người bán), OPEN-37 (quy hoạch/ngập), OPEN-38
-(thumbnail/watermark). Không đề xuất: ví/gói tin, SĐT khách trong lead (INS-04), CRM
+Đã chốt / đóng: OPEN-36 (KYC người bán — chốt 02/09), OPEN-37 (quy hoạch/ngập — đóng 07/09), OPEN-38
+(thumbnail/watermark — chốt 28/10: bản nhỏ 480px) [nguồn: SRS-5.1zzzzzzz464]. Không đề xuất: ví/gói tin, SĐT khách trong lead (INS-04), CRM
 chia sẻ giữa môi giới (OPEN-16).
 
 ## 1.6 Rủi ro đã nhận diện
@@ -295,7 +295,7 @@ chia sẻ giữa môi giới (OPEN-16).
 | RSK-02 | Phụ thuộc một nền tảng đóng (Zalo) | Cao | Trừu tượng hoá tầng messaging; roadmap Messenger, Telegram [nguồn: biz model.docx §Tài khoản chat cá nhân] |
 | RSK-03 | AI trả lời sai về pháp lý / quy hoạch | Cao | Không bao giờ khẳng định; chuyển thành câu hỏi cho S (INS-06) |
 | RSK-04 | Không đủ nguồn hàng → chat rỗng | Cao | OKR 2 (20 NMG) là điều kiện tiên quyết của OKR 3 |
-| RSK-05 | 1.5 CTV không tải nổi lịch xem | Trung bình | Hàng đợi + ưu tiên theo giá trị BĐS và độ nóng |
+| RSK-05 | 1.5 CTV không tải nổi lịch xem *[lịch sử 2024 — CTV bỏ 28/10/2026; lịch xem nay đi thẳng admin]* | Trung bình | Hàng đợi + ưu tiên theo giá trị BĐS và độ nóng |
 | RSK-06 | Tin ảo / đã bán còn hiển thị | Trung bình | Hỏi "còn bán không" định kỳ (FR-103); hiển thị "cập nhật lần cuối" |
 | RSK-07 | Lộ dữ liệu cá nhân (sổ đỏ, CCCD) qua chat | Cao | Ảnh sổ lưu bucket riêng, URL ký hạn ngắn |
 

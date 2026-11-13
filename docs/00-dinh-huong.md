@@ -1,6 +1,6 @@
 # 00 — Định hướng (BRD hợp nhất Aioinhadat × nhadat.cc)
 
-Phiên bản: **v1.5** · Ngày: **28/10/2026** · Trạng thái: **tên, địa bàn đã chốt; kiến trúc = lõi Python `src/aioi/`; CTV bỏ hẳn 28/10/2026 — mọi việc người thật phía mua về chủ nhà (nếu có trên hệ thống) hoặc admin; §0.8 đã chốt hết (cập nhật 02/11/2026)**
+Phiên bản: **v1.6** · Ngày: **13/11/2026** · Trạng thái: **tên, địa bàn đã chốt; kiến trúc = lõi Python `src/aioi/`; CTV bỏ hẳn 28/10/2026 — mọi việc người thật phía mua về chủ nhà (nếu có trên hệ thống) hoặc admin; §0.8 đã chốt hết (cập nhật 02/11/2026)**
 
 **Nhật ký phiên bản**
 
@@ -8,6 +8,7 @@ Phiên bản: **v1.5** · Ngày: **28/10/2026** · Trạng thái: **tên, địa
 |---|---|---|
 | v1.4 | 07/09/2026 | Thêm OPEN-48; OPEN-49 chốt theo kịch bản Gemini → FR-177; dọn 13 OPEN hướng 2024 |
 | v1.5 | 28/10/2026 | (1) **Bỏ CTV** [nguồn: chủ dự án 28/10/2026, chat — bỏ CTV]: vòng nối DH-01, bất biến, I3 (§0.5), lộ trình DH-06, giả định §0.7, Lean Canvas §0.10 viết lại sang chủ nhà → admin. (2) **Kiến trúc**: một lõi Python `src/aioi/` thay `chat-reply` TS (SRS-5.1zzzzzzz31). (3) **Kênh**: Zalo cá nhân qua bridge, hai số (ký gửi, tư vấn — SRS-5.1zzzzzzz210); không có Zalo OA. (4) **Trợ lý**: 13 tên có chấm giữa (SRS-5.1zzzzzzz183), thay "một bot tên Thái" và kho 20 tên. (5) **Model**: chat Claude Sonnet 5.5, bóc tách Haiku, dự phòng Gemini → Groq (SRS-5.1zzzzzzz235, SRS-5.1zzzzzzz117). (6) Nhắc khách do lõi gửi (`gui_nhac.py`, SRS-5.1zzzzzzz216), thay `nudge`. (7) §0.3 cập nhật theo code hiện tại; đánh dấu phần đã gỡ là lịch sử |
+| v1.6 | 13/11/2026 | Dọn docs khớp code [nguồn: chủ dự án 13/11/2026, chat — "sửa hết đi, 3 điểm đầu theo code"; SRS-5.1zzzzzzz464]: (1) SĐT người mua — bot chỉ chủ động xin lúc chốt lịch xem, khách tự để lại thì lưu + báo admin (SRS-5.1zzzzzzz388); (2) các trang web `/raoban` (landing), `/ds`, `/tinh-lai-vay`, `/thong-ke`, `/yeu-thich`, `/ban-do`, `/dang-nhap`, `/tai-khoan`, `/quan-ly`, `/moi-gioi` vẫn chạy → FR khôi phục ✅; (3) link web `aond.vercel.app` (SRS-5.1zzzzzzz383); (4) bóc tách Sonnet 5.5 (SRS-5.1zzzzzzz392); (5) phần 0,5% trước chia CTV: cả 1% về công ty (OPEN-66) |
 
 > Bộ `docs/` viết từ tài liệu nhadat.cc 2024; từ 25/08/2026 code chạy theo SRD
 > "AI Ơi Nhà Đất" (AOND, `AOND req + chat examples.docx`) ở ngày càng nhiều chỗ;
@@ -50,7 +51,7 @@ lại). *Trước 28/10/2026 người đứng giữa là CTV; nay bỏ* [nguồn
 | # | Bất biến | Neo |
 |---|---|---|
 | 1 | Mọi trang web là phễu về Zalo; không kéo hội thoại ra khỏi Zalo | IA-P1, INS-01 |
-| 2 | Không hỏi SĐT người mua ngoài bước chốt lịch xem (xin MỘT lần, số chỉ tới admin) | NFR-07, FR-53, INS-04, SRS-5.1zzzzzzz148 |
+| 2 | Không hỏi SĐT người mua ngoài bước chốt lịch xem (xin MỘT lần, số chỉ tới admin); khách TỰ để lại số lúc khác thì lưu và báo admin gọi tư vấn (SRS-5.1zzzzzzz388) | NFR-07, FR-53, INS-04, SRS-5.1zzzzzzz148, SRS-5.1zzzzzzz388 |
 | 3 | Không khẳng định pháp lý / quy hoạch / còn-hết khi chưa xác minh — chuyển thành câu hỏi; câu pháp lý chỉ trả lời từ kho soạn sẵn, luôn nói "tham khảo" | RSK-03, FR-40, AOND §II, SRS-5.1zzzzzzz176 |
 | 4 | Bot là trung gian toàn phần: lưu hết chủ chia sẻ, khách hỏi mới khai, liên hệ chỉ mở lúc chốt lịch xem; việc cần người thật đi chủ nhà hoặc admin, không qua bên thứ ba | INS-11, FR-104, OPEN-36, SRS-5.1zzzzzzz170 |
 
@@ -64,7 +65,7 @@ AOND mượn cho cả hai phía (`06 §6.8`).
 
 | Khía cạnh | nhadat.cc (2024) | AOND SRD (06/2026) | Hôm nay (28/10/2026) | Neo |
 |---|---|---|---|---|
-| Tên | nhadat.cc, "Thái" | aioinhadat.com, gia đình •ai | **Aioinhadat**, viết cho khách **AI Ơi Nhà Đất**; trợ lý **mỗi khách một tên**, 13 tên có chấm giữa (SRS-5.1zzzzzzz183). *Lịch sử: một tên Thái 03–09/09 → kho •ai 09/09–14/10 → 20 tên người thật 14–25/10.* Link web bot gửi lấy từ `AIOI_SITE_URL` (mặc định `aioinhadat.vercel.app`) | OPEN-08, OPEN-39, FR-181 |
+| Tên | nhadat.cc, "Thái" | aioinhadat.com, gia đình •ai | **Aioinhadat**, viết cho khách **AI Ơi Nhà Đất**; trợ lý **mỗi khách một tên**, 13 tên có chấm giữa (SRS-5.1zzzzzzz183). *Lịch sử: một tên Thái 03–09/09 → kho •ai 09/09–14/10 → 20 tên người thật 14–25/10.* Link web bot gửi lấy từ `AIOI_SITE_URL` (mặc định `aond.vercel.app` từ 05/11/2026, SRS-5.1zzzzzzz383) | OPEN-08, OPEN-39, FR-181 |
 | Trọng tâm | Khách chat Zalo; web SEO | Người rao gửi hàng tự nhiên | Cả hai, **một lõi Python**, vai theo ý định từng lượt; một Zalo = một khách = một hội thoại | SRS-5.1zzzzzzz31, SRS-5.1zzzzzzz149, SRS-5.1zzzzzzz153 |
 | Kênh | Zalo OA (dự kiến) | Zalo | **Zalo cá nhân qua bridge zca-js**, hai số: **ký gửi** và **tư vấn người mua**; không có Zalo OA | SRS-5.1zzzzzzz210, RSK-02 |
 | Nhận tin rao | `/raoban` + câu rao | Text/thoại/ảnh, không form | Câu rao trong Zalo sinh mã tin; ảnh, file, link nhận được; tin thoại giải mã thành chữ | FR-158, SRS-5.1zzzzzzz20 |
@@ -74,7 +75,7 @@ AOND mượn cho cả hai phía (`06 §6.8`).
 | Phí | CCRB 1% · NMG 0.5% · thuê ¾ tháng | Giống | Giống; con số một nguồn `prompts.muc_phi` | BR-05, AOND §V, SRS-5.1zzzzzzz227 |
 | Địa bàn | Quận 5 | Quận 5 rồi mở | **Sài Gòn (phường mới) + Long An**, trọng tâm bán; vùng nhận tin nới 20/10 (§0.1) | BR-01, OPEN-27, FR-174, SRS-5.1zzzzzzz86 |
 | Hạ tầng | Vendor, Slack, Logstash | Gemini → local, SharePoint | Lõi Python trên máy 146 "NguyetTu" (Windows, Task Scheduler `AOND Core`; VPS bỏ 06/11/2026); Supabase Free (DB, Storage, 3 edge function phụ); web Next.js trên Vercel; `/admin` | SRS-5.1zzzzzzz31, SRS-5.1zzzzzzz56 |
-| Model | — | Gemini → local | Chat: Claude Sonnet 5.5; bóc tách: Claude Haiku; Claude hỏng → Gemini → Groq; vector Gemini | SRS-5.1zzzzzzz235, SRS-5.1zzzzzzz117, OPEN-41 |
+| Model | — | Gemini → local | Chat: Claude Sonnet 5.5; bóc tách: Claude Sonnet 5.5 (SRS-5.1zzzzzzz392; trước là Haiku); Claude hỏng → Gemini → Groq; vector Gemini | SRS-5.1zzzzzzz392, SRS-5.1zzzzzzz235, SRS-5.1zzzzzzz117, OPEN-41 |
 | Vận hành | 1.5 CTV | CTV dẫn khách | **Admin** nhận mọi việc người thật phía mua (câu hỏi quá hạn, lịch xem) và tự báo người dẫn khách. *CTV bỏ 28/10/2026* | SRS-5.1zzzzzzz165, SRS-5.1zzzzzzz172; FR-136/137/173 *[deprecated 28/10/2026 — bỏ CTV]* |
 
 ## 0.3 SRD AOND: nhận / sửa / chưa / không
@@ -148,7 +149,7 @@ số, và là mắt xích cả hai tài liệu gốc đặt ở trung tâm.
 
 ## 0.6 Lộ trình
 
-**Hiện trạng 28/10/2026.** Đã dựng: lõi Python (`aond-core`; từ 06/11/2026 chạy trên máy 146 thay VPS) là bộ não
+**Hiện trạng 28/10/2026 (cập nhật tới 13/11/2026).** Đã dựng: lõi Python (`aond-core`; từ 06/11/2026 chạy trên máy 146 thay VPS) là bộ não
 duy nhất; hai số Zalo qua bridge (ký gửi, tư vấn); web Next.js + bản đồ
 MapLibre; tìm nhà `tim_nha` + vector; báo căn mới; kho pháp lý + điều luật
 nguyên văn; tra kho dự án phía mua; khách chấm sao AI; câu chuẩn / câu mẫu ở
@@ -184,7 +185,7 @@ Ngoài 90 ngày: Messenger/Telegram, app, công nghiệp, đổi domain.
 | 4 | **Free-tier chịu tới giao dịch đầu** (NFR-16) | Mất dữ liệu; Vercel đình chỉ | Một sự cố | Không còn — chủ dự án bỏ sao lưu 11/09/2026, chấp nhận mất dữ liệu là không lấy lại được |
 | 5 | **Mở Sài Gòn + Long An không loãng kho** (FR-174 vs INS-08) | >50% phường/huyện mở có <5 tin sau 60 ngày | — | Mở cụm phường kề Q5 cũ trước; Long An theo một huyện có nguồn hàng thật |
 
-Đứng vững: không thu SĐT ngoài lúc chốt lịch xem; phí chỉ khi chốt. Đã đổi:
+Đứng vững: không chủ động xin SĐT ngoài lúc chốt lịch xem; phí chỉ khi chốt. Đã đổi:
 một tên bot Thái → mỗi khách một tên (FR-181, 09/09; 13 tên có chấm giữa từ
 25/10); vòng CTV → chủ nhà / admin (28/10). Chưa đánh giá được: "rao một câu"
 với người rao thật ở quy mô; OKR "1 giao dịch/2 ngày" (OPEN-01); nhu cầu nhóm
@@ -206,9 +207,9 @@ buộc giữ kết nối từ ngày 6) và **dựng hết phần tài liệu có
 |---|---|---|
 | OPEN-27 nửa sau | ✅ chốt 15/09/2026 (DB lưu tên phường mới, `wards`), 20/10/2026 (vùng nhận tin 6 tỉnh); 02/11/2026: "tên phường mới, tên phường cũ được tự động chuyển thành phường mới bằng cách gắn lên bản đồ để biết chứ không hỏi khách" [nguồn: chủ dự án 02/11/2026, chat] | — |
 | OPEN-40 | ✅ chốt 09/09/2026 tối — làm cả bốn loại (`toa_nha`, `dat_nong_nghiep`, `dat_kinh_doanh`, `kho_xuong`); bộ câu hỏi nay ở `src/aioi/schema.py` (SRS-5.1zzzzzzz68) | — |
-| OPEN-41 | ✅ chốt 28/10/2026 (a): Claude đường chính (chat Sonnet 5.5, bóc tách Haiku), Gemini → Groq dự phòng (SRS-5.1zzzzzzz117, SRS-5.1zzzzzzz235) | — |
+| OPEN-41 | ✅ chốt 28/10/2026 (a): Claude đường chính (chat Sonnet 5.5, bóc tách Haiku — nay cũng Sonnet 5.5, SRS-5.1zzzzzzz392), Gemini → Groq dự phòng (SRS-5.1zzzzzzz117, SRS-5.1zzzzzzz235) | — |
 | OPEN-42 | *[mất đối tượng 28/10/2026 — bỏ CTV]* Hạn trả lời và mốc hạng CTV | Đóng ở `09` |
-| **OPEN-48** | ✅ **ĐÃ CHỐT 08/09/2026**: Bỏ toàn bộ nhóm tính năng thừa kế 2024 (mini-site rao web, tài khoản, trang phụ SEO cũ). Chuẩn hóa 100% tài liệu theo Aioinhadat 2026 | Đã chốt theo lệnh sếp và chủ dự án |
+| **OPEN-48** | ✅ **ĐÃ CHỐT 08/09/2026**: Bỏ toàn bộ nhóm tính năng thừa kế 2024 (mini-site rao web, tài khoản, trang phụ SEO cũ). Chuẩn hóa 100% tài liệu theo Aioinhadat 2026. 13/11/2026: các trang web còn chạy trong `app/` (`/raoban` landing, `/ds`, `/tinh-lai-vay`, `/thong-ke`, `/yeu-thich`, `/ban-do`, `/dang-nhap`, `/tai-khoan`, `/quan-ly`, `/moi-gioi`) giữ theo code, FR khôi phục ✅ (SRS-5.1zzzzzzz464) | Đã chốt theo lệnh sếp và chủ dự án |
 | OPEN-65 | Hạn admin trả lời câu khách hỏi | ✅ Chốt 28/10/2026: 5 giờ (SRS-5.1zzzzzzz238); ngưỡng dừng I3 vẫn *[giả định BA]* |
 | OPEN-67 | Đo I4 / I5 | ✅ Chốt 28/10/2026 (a): đo từ `messages` (SRS-5.1zzzzzzz240) |
 
@@ -298,7 +299,7 @@ thật thì ghi *[giả định]*. Cập nhật 28/10/2026: bỏ CTV, kênh hai 
 | **Chỉ số chính** | Sao Bắc Đẩu: **lịch xem nhà chốt / tuần** (`viewings.status='confirmed'`). Đầu vào: I1 tin đủ thông tin lên sàn / tuần · I2 hội thoại mua đủ khu + ngân sách · **I3 câu khách hỏi được trả lời đúng hạn — chủ nhà hoặc admin (OMTM)** · I4 kết nối Zalo sống sau 30 ngày · I5 NMG hoạt động. **21/09/2026: tất cả bằng 0** | §0.5, SRS-5.1zzzzzzz170 |
 | **Kênh** | Vào (người mua): SEO 100 tag + trang tin (BR-08), traffic mua từ batdongsan (20tr/tháng theo kế hoạch 2024), widget Zalo trên trang tin (FR-145), số Zalo tư vấn người mua. Ra (người bán): mạng NMG, admin đăng tin hộ (FR-156), số Zalo ký gửi. **Kênh chat duy nhất là Zalo cá nhân qua bridge, hai số; không có OA** | BR-08, BR-09, FR-145, FR-156, RSK-02, SRS-5.1zzzzzzz210 |
 | **Cơ cấu chi phí** | Cố định gần 0: Supabase Free, Vercel Free, máy 146 "NguyetTu" ở văn phòng chạy lõi Python + hai bridge (VPS bỏ 06/11/2026, SRS-5.1zzzzzzz401), không sao lưu (OPEN-25). Biến đổi: token model theo lượt chat (chat Sonnet 5.5 đắt hơn Haiku — SRS-5.1zzzzzzz235; đồng hồ tiền FR-171), traffic 20tr/tháng nếu bật. *Lịch sử: CTV 0,5% mỗi giao dịch + 1,5 CTV × 7tr/tháng theo kế hoạch 2024 — bỏ cùng CTV 28/10/2026.* Kế hoạch 2024 tổng 800tr/6 tháng (390tr build thuê vendor) — **đã không đi theo**: code tự làm trong repo từ 24/08/2026 | `01 §1.4`, NFR-14/16, FR-171 |
-| **Nguồn thu** | 100% từ phía bán, chỉ thu khi chốt: CCRB **1%** giá trị giao dịch, NMG **0,5%**, cho thuê **3/4 tháng tiền thuê**. Người mua 0đ. *Phần 0,5% trước chia CTV: CTV bỏ 28/10/2026, chưa chốt phần này về đâu.* OKR 2024 "1 giao dịch / 2 ngày, TB 10 tỷ" ≈ 6,7 tỷ / 6 tháng — BA đã cảnh báo cần chuyển đổi ~5% từ chat (OPEN-01). **21/09/2026: doanh thu 0, giao dịch 0** | `01 §1.3`, BR-04, BR-05, OPEN-01 |
+| **Nguồn thu** | 100% từ phía bán, chỉ thu khi chốt: CCRB **1%** giá trị giao dịch, NMG **0,5%**, cho thuê **3/4 tháng tiền thuê**. Người mua 0đ. *Phần 0,5% trước chia CTV: CTV bỏ 28/10/2026; đã chốt OPEN-66 — cả 1% về công ty, không chia.* OKR 2024 "1 giao dịch / 2 ngày, TB 10 tỷ" ≈ 6,7 tỷ / 6 tháng — BA đã cảnh báo cần chuyển đổi ~5% từ chat (OPEN-01). **21/09/2026: doanh thu 0, giao dịch 0** | `01 §1.3`, BR-04, BR-05, OPEN-01 |
 
 Ô yếu nhất theo thứ tự: **Khách hàng đầu tiên** (chưa gặp ai thật) → **Kênh** (một kênh, mượn
 tài khoản cá nhân) → **Lợi thế khó sao chép** (đang là lời hứa, chưa là tài sản). Ba ô này

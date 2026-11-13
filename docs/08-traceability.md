@@ -1,8 +1,8 @@
 # 08 — Traceability Matrix
 
-Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` (quy ước 4, `CLAUDE.md`).
+Cập nhật **cùng commit** khi đổi FR / BR / UF / WF ở tầng trên (quy ước 4, `CLAUDE.md` §4.4). Mục SRS sửa lỗi / cải tiến không cần dòng ở đây (SRS-5.1zzzzzzz297).
 
-## 8.0 Định hướng → tầng dưới (`00-dinh-huong.md` v1.5, 28/10/2026)
+## 8.0 Định hướng → tầng dưới (`00-dinh-huong.md` v1.6, 13/11/2026)
 
 | DH | Nội dung | Neo ở tầng dưới |
 |---|---|---|
@@ -11,7 +11,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | DH-03 | Mặt bán lấy AOND làm chuẩn | FR-129, FR-144, FR-153, FR-155, FR-172, `06 §6.8` kịch bản người bán; bảng §0.3 (00) liệt kê từng mục AOND §I–§VII ↔ FR |
 | DH-04 | Mặt mua và web lấy nhadat.cc làm chuẩn | FR-01…FR-65, UF-01…UF-08, IA-P1…P5 |
 | DH-05 | Sao Bắc Đẩu: lịch xem nhà chốt mỗi tuần (`viewings.status = 'confirmed'`, admin chốt bằng `#mã: ok giờ`); đầu vào I1–I5; I3 = câu khách hỏi được trả lời đúng hạn — chủ nhà hoặc admin | FR-57 / SRS-5.3 (viewing), SRS-5.1zzzzzzz173, FR-139 (`dang_ban`), UF-04, FR-173 / SRS-5.1zzzzzzz170 (`sla_due_at`) / FR-140 c, BR-07 / FR-63 / SRS-5.1zzzzzzz150 / SRS-5.1zzzzzzz216, FR-155 / view `nmg_hoat_dong` (`20260904e`) |
-| DH-06 | Lộ trình 90 ngày: chốt hướng → đo I3 (chủ nhà trả lời trong 12 giờ, phần admin phải đỡ) → mở địa bàn (FR-174 đợt 1 xong, đợt 2 chờ) → 7 hạng mục dữ liệu → phần AOND còn thiếu → vận hành | OPEN-21/26/28/40/41, OPEN-27 nửa sau (OPEN-42 mất đối tượng khi bỏ CTV); SRS-5.1zzzzzzz170; FR-174; `01 §1.5c`; FR-135/141; NFR-16 / OPEN-25 |
+| DH-06 | Lộ trình 90 ngày: chốt hướng → đo I3 (chủ nhà trả lời trong 12 giờ, phần admin phải đỡ) → mở địa bàn (FR-174 đợt 1 xong, đợt 2 xong — bảng `wards` 168 phường, migration `20260915a`) → 7 hạng mục dữ liệu → phần AOND còn thiếu → vận hành | OPEN-21/26/28/40/41, OPEN-27 nửa sau (OPEN-42 mất đối tượng khi bỏ CTV); SRS-5.1zzzzzzz170; FR-174; `01 §1.5c`; FR-135/141; NFR-16 / OPEN-25 |
 | DH-07 | Cho tới khi §0.8 chốt, đi theo khuyến nghị BA và ghi `[giả định BA]` | OPEN-40, OPEN-41, OPEN-42, OPEN-27 nửa sau |
 | DH-08 | Đánh giá 21/09/2026 theo khung Design Thinking: năm cột có gì / thiếu gì, khả năng thành công, ba việc kế tiếp (đo trên DB thật, không từ code) | `00 §0.9`; INS-02/03/04/06/11/12, `01 §1.2`/§1.5/§1.7, §0.5–§0.7, RSK-02/RSK-04, FR-145, FR-173, FR-208, FR-212, `10 §10.8`, TS-DUONG/TS-BLDL/TS-HOIBU |
 | DH-09 | Lean Canvas 12 ô (21/09/2026): vấn đề, giải pháp hiện có, giải pháp, giá trị độc nhất, khái niệm, lợi thế khó sao chép, phân khúc, khách đầu tiên, chỉ số, kênh, chi phí, nguồn thu — cùng nội dung §0.4, lệch thì §0.4 thắng | `00 §0.10`; INS-01/02/04/05/06/09/11/13, `01 §1.2`–§1.5/§1.7, `02 §2.2`, BR-02/04/05/08/09, FR-57/103/104/144/145/155/156/171/173/174/177/208, RSK-02/06, NFR-14/16, OPEN-01/25, §0.5, §0.9 |
@@ -20,12 +20,12 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 
 | BR | Mục tiêu | FR liên quan |
 |---|---|---|
-| BR-01 | Phủ 90% nguồn hàng Q5 | FR-90…FR-97, FR-101 |
-| BR-02 | 20 NMG | FR-101, FR-137 (FR-102 deprecated) |
+| BR-01 | Phủ 90% nguồn hàng Q5 | FR-90…FR-93, FR-96, FR-101 (FR-94, FR-95, FR-97 [deprecated]) |
+| BR-02 | 20 NMG | FR-101, FR-155 (FR-102, FR-137 [deprecated]) |
 | BR-03 | 10 chat/ngày, ≥30 tin | FR-13, FR-14, FR-20…FR-32, FR-71 |
 | BR-04 | 1 giao dịch/2 ngày | FR-50…FR-57, FR-99 |
-| BR-05 | Thu phí bên bán | FR-101, FR-137 (FR-102 deprecated) |
-| BR-06 | Miễn phí, không thu số ĐT | FR-04, FR-53, NFR-07 |
+| BR-05 | Thu phí bên bán | FR-101, FR-112, FR-160 (FR-102, FR-137 [deprecated]) |
+| BR-06 | Miễn phí, không chủ động xin số ĐT (chỉ lúc chốt lịch xem; khách tự để lại thì lưu + báo admin — SRS-5.1zzzzzzz388) | FR-04, FR-53, NFR-07 |
 | BR-07 | Giữ kết nối 3–4 năm | FR-60…FR-65, FR-64 |
 | BR-08 | SEO 100 keyword | FR-12, FR-15, FR-17, NFR-09 |
 | BR-09 | Web → Zalo kèm ngữ cảnh | FR-13, FR-14, FR-30 |
@@ -82,14 +82,14 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-79 | UF-06, UF-11 | WF-14 | SRS-5.5 | AC-10, TS-V48-79 |
 | FR-80 | — | WF-12 | — | AC-09, TS-ADM2-12 |
 | FR-81 | UF-11 | — | SRS-5.5 | AC-10, TS-GIUCHAN |
-| FR-90…FR-96 | UF-09 | WF-08, WF-09 | SRS-4.6 [deprecated], lõi Python `src/aioi/` (FR-92) | AC-07, TS-WEB2-P01 |
+| FR-90…FR-96 (FR-94, FR-95 [deprecated]; FR-90 = landing `/raoban`, khôi phục 13/11/2026 theo code, SRS-5.1zzzzzzz464) | UF-09 | WF-08, WF-09 | SRS-4.6 [deprecated], lõi Python `src/aioi/` (FR-92) | AC-07, TS-WEB2-P01 |
 | FR-98 | UF-05 | WF-10 | SRS-4.2 | AC-03 |
 | FR-99 | UF-04 | WF-05 | SRS-5.1 | TS-V48-99, TS-WEB2 |
-| FR-100 | UF-12 | WF-11 | SRS-4.3, SRS-3.8b | AC-11, TS-WEB2-P06 |
+| FR-100 (`/ds/{token}`, khôi phục 13/11/2026 theo code, SRS-5.1zzzzzzz464) | UF-12 | WF-11 | SRS-4.3, SRS-3.8b | AC-11, TS-WEB2-P06 |
 | FR-101, FR-102 | UF-09 | WF-09 | SRS-3.4 | — |
 | FR-103 | UF-09 | — | SRS-5.3, SRS-3.12 | TS-GIUCHAN-03 |
 | FR-104, FR-105 | UF-06, UF-12 | — | SRS-3.8, SRS-5.1 | TS-SEC-10, TS-V48-105 |
-| FR-106, FR-107, FR-108 | UF-13 | — | — | TS-V48-108, TS-GIUCHAN-01 |
+| FR-106 [deprecated], FR-107 [deprecated], FR-108 | UF-13 | — | — | TS-V48-108, TS-GIUCHAN-01 |
 | FR-109, FR-111 | UF-10 | — | SRS-3.8 | — |
 | FR-110 | UF-05 | WF-06 | — | TS-GIUCHAN-01 |
 | FR-112 | UF-07 | — | SRS-3.8 | — |
@@ -98,14 +98,14 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-115, FR-116 | UF-05 | — | SRS-3.10, SRS-5.1 | AC-13, TS-V48-116 |
 | FR-117 | — | — | SRS-3.10 | TS-WEB2-W10 |
 | FR-118 | — | — | SRS-3 | — |
-| FR-119 | — | — | — | — |
-| FR-120 | — | — | — | — |
-| FR-121 | — | — | — | — |
-| FR-122 | — | — | SRS-3.8, SRS-5.1zzzzzzz206 | — |
+| FR-119 (`/tinh-lai-vay`, khôi phục 13/11/2026 theo code, SRS-5.1zzzzzzz464) | — | — | — | — |
+| FR-120 (`/thong-ke`, khôi phục 13/11/2026 theo code, SRS-5.1zzzzzzz464) | — | — | — | — |
+| FR-121 (`/yeu-thich`, khôi phục 13/11/2026 theo code, SRS-5.1zzzzzzz464) | — | — | — | — |
+| FR-122 (`/ban-do`, khôi phục 13/11/2026 theo code, SRS-5.1zzzzzzz464) | — | — | SRS-3.8, SRS-5.1zzzzzzz206 | — |
 | FR-123 | UF-01 | WF-03 | — | — |
-| FR-124 | UF-09 | — | — | — |
-| FR-125 | — | — | — | TS-SEC-08 |
-| FR-126 | UF-08 | — | — | — |
+| FR-124 (`/dang-nhap`, `/quan-ly`, khôi phục 13/11/2026 theo code, SRS-5.1zzzzzzz464) | UF-09 | — | — | — |
+| FR-125 (`/moi-gioi`, khôi phục 13/11/2026 theo code, SRS-5.1zzzzzzz464) | — | — | — | TS-SEC-08 |
+| FR-126 (`/tai-khoan`, khôi phục 13/11/2026 theo code, SRS-5.1zzzzzzz464) | UF-08 | — | — | — |
 | FR-127 | UF-11 | WF-12 | — | — |
 | FR-128 | UF-01 | WF-03 | — | — |
 | FR-129 | UF-05, UF-09 | — | — | — |
@@ -234,7 +234,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-212, FR-177 | UF-10 | — | SRS-5.1zzzzzzz43 | — |
 | FR-104, FR-177 | UF-10 | — | SRS-5.1zzzzzzz44 | — |
 | FR-104, FR-117 | UF-01 | — | SRS-5.1zzzzzzz45 | — |
-| FR-180 | — | — | SRS-5.1zzzzzzz46 | — |
+| FR-180 [deprecated 18/10/2026] | — | — | SRS-5.1zzzzzzz46 | — |
 | FR-177 | UF-10 | — | SRS-5.1zzzzzzz47 | — |
 | FR-212 | — | — | SRS-5.1zzzzzzz48 | — |
 | FR-192 | — | — | SRS-5.1zzzzzzz49 | — |
@@ -278,7 +278,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-173 | UF-04, UF-10 | — | SRS-5.1zzzzzzz184, SRS-5.1zzzzzzz185, SRS-5.1zzzzzzz186, SRS-5.1zzzzzzz187, SRS-5.1zzzzzzz188, SRS-5.1zzzzzzz189, SRS-5.1zzzzzzz190, SRS-5.1zzzzzzz191, SRS-5.1zzzzzzz192, SRS-5.1zzzzzzz193, SRS-5.1zzzzzzz194, SRS-5.1zzzzzzz195, SRS-5.1zzzzzzz196, SRS-5.1zzzzzzz197, SRS-5.1zzzzzzz198, SRS-5.1zzzzzzz199, SRS-5.1zzzzzzz200, SRS-5.1zzzzzzz201, SRS-5.1zzzzzzz202, SRS-5.1zzzzzzz203, SRS-5.1zzzzzzz204, SRS-5.1zzzzzzz205, SRS-203 | — |
 | FR-178 | UF-04, UF-10 | — | SRS-5.1zzzzm, SRS-5.1zzzzo, SRS-5.1zzzzp, SRS-5.1zzzzq, SRS-5.1zzzzr, SRS-5.1zzzzt, SRS-5.1zzzzu, SRS-5.1zzzzv, SRS-5.1zzzzw, SRS-5.1zzzzx, SRS-5.1zzzzy, SRS-5.1zzzzz, SRS-5.1zzzzzb, SRS-5.1zzzzzc, SRS-5.1zzzzzd, SRS-5.1zzzzze, SRS-5.1zzzzzf, SRS-5.1zzzzzg, SRS-5.1zzzzzh, SRS-5.1zzzzzi, SRS-5.1zzzzzl, SRS-5.1zzzzzm, SRS-5.1zzzzzn, SRS-5.1zzzzzo, SRS-5.1zzzzzp | TS-GIONG-08, TS-MO-PHONG-01, TS-PHAT-LAI-01, TS-BAN-NHAP-02, TS-HIEN-TRANG-01, TS-PHI-KE-01 |
 | FR-179 [deprecated 28/10/2026] | UF-10 | — | — | — |
-| FR-180 | UF-10, UF-04 | — | — | — |
+| FR-180 [deprecated 18/10/2026] | UF-10, UF-04 | — | — | — |
 | FR-181 | UF-04, UF-10 | — | — | — |
 | FR-182 | — | — | — | — |
 | FR-183 | UF-10 | — | — | — |
@@ -288,7 +288,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-188 | UF-10, UF-04 | — | — | — |
 | FR-189 | UF-10, UF-04 | — | — | — |
 | FR-190 [deprecated 28/10/2026] | UF-11 | — | — | — |
-| FR-191 | UF-10 | — | — | — |
+| FR-191 | UF-10 | — | SRS-5.1zzzzzzz238 (`giu_ket_noi.py`) | — |
 | FR-192 | UF-11 | WF-13 | — | TS-QUOTA-04 |
 | FR-193 | UF-04 | — | — | — |
 | FR-194 | UF-04 | — | SRS-5.1zzzzo | — |
@@ -298,7 +298,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-195 | UF-04 | WF-13 | — | — |
 | FR-196 | UF-06 | — | — | — |
 | FR-197 | UF-11 | WF-13 | — | — |
-| FR-198 | UF-04 | — | — | — |
+| FR-198 | UF-04 | — | SRS-5.1zzzzzzz392 | — |
 | FR-199 | UF-04 | — | — | — |
 | FR-200 [deprecated 28/10/2026] | UF-11 | WF-13 | — | — |
 | FR-201 | UF-11 | WF-13 | — | — |
@@ -350,7 +350,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-243 | UF-05 | — | SRS-5.1zzzzzq, SRS-5.1zzzzzs | TS-HOILAI-11 |
 | FR-244 | UF-05 | — | — | TS-HOILAI-12 |
 | FR-245 | UF-05 | — | — | TS-DULIEU-01 |
-| FR-246 | UF-04, UF-05 | — | — | TS-BANTHU-01, TS-BANTHU-02 |
+| FR-246 | UF-04, UF-05 | — | SRS-5.1zzzzzzz405 | TS-BANTHU-01, TS-BANTHU-02 |
 | FR-247 | UF-04, UF-05 | — | — | TS-BANTHU-03 |
 | FR-248 | UF-04, UF-05 | — | — | TS-BANTHU-04 |
 | FR-249 | UF-04 | — | — | TS-BANTHU-05 |
@@ -358,7 +358,7 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-209 | UF-02, UF-04 | — | SRS-5.1zzzzl | TS-PHUONG-01 |
 | FR-208 | UF-02, UF-05 | — | — | — |
 | FR-187 | UF-10 | — | — | — |
-| FR-97 | — | — | — | — |
+| FR-97 [deprecated] | — | — | — | — |
 | — | — | — | SRS-5.1zzzzzzz211 | — |
 | — | — | — | SRS-5.1zzzzzzz212 | — |
 | — | — | — | SRS-5.1zzzzzzz213 | — |
@@ -568,8 +568,8 @@ Chỉ liệt NFR **đã có hiện thực trong code**; NFR còn là mục tiêu
 
 | NFR | Hiện thực ở | Nghiệm thu |
 |---|---|---|
-| NFR-01 (bot trả lời < 3 s p95) | Số vòng DB đo bằng e2e (FR-171); view `bot_do_tre` p50/p95 7 ngày (`20260904f`) | TS-TOIUU; thẻ `/admin` |
-| NFR-04 (tin nhắn không mất khi một bên offline) | FR-166: `inbound_events` + `inbound_ledger` + `inbound-sweep` mỗi phút + `lan_thu_ke()` | TS-JOB, TS-IDEM2 |
+| NFR-01 (bot trả lời < 3 s p95) | Thời gian từng lượt trả trong `thoi_gian_ms` của `/chat-reply` (lõi Python); view `bot_do_tre` không còn trong `schema.sql` từ 28/10/2026, e2e đếm vòng DB (FR-171) gỡ cùng `chat-reply` TS | — (TS-TOIUU đã ngừng 28/10/2026) |
+| NFR-04 (tin nhắn không mất khi một bên offline) — 🟡 | Bridge thử lại khi lõi nghẽn (kết nối bị từ chối thử tới ~1 phút, `msg_id` chống trùng); tin chủ động qua hàng `escalation-feed`, hụt thì hẹn thử lại (SRS-5.1zzzzzzz276). `inbound_events` / `inbound_ledger` / `inbound-sweep` (FR-166) đã gỡ 18/10/2026 (SRS-5.1zzzzzzz46) | — (TS-JOB, TS-IDEM2 đã ngừng 28/10/2026) |
 | NFR-06 (giấy tờ không lộ) | bucket `listing-private` + CHECK giấy tờ phải bucket riêng + RLS lọc anon (FR-165/167); admin xem qua `createSignedUrl` 15' (`20260904g`) | TS-KHO-20…25, TS-WEB2 |
 | NFR-16 (free-tier trước) | Supabase Free + Vercel Hobby; quyết định giữ nguyên 27/08 (OPEN-25) | **Không còn sao lưu** (chủ dự án bỏ 11/09/2026, OPEN-25). Ràng buộc cũ "chạy `sao-luu.mjs` định kỳ" đã gỡ cùng `phuc-hoi.mjs`, `soat-phuc-hoi.mjs`, `xuat-onedrive.mjs`, TS-SAOLUU, TS-PHUCHOI, CI job `saoluu`/`phuchoi` và `docs/12`. Supabase gói Free không tự sao lưu — mất dữ liệu là không lấy lại được. Còn lại `bot/supabase/schema.sql` (chỉ DDL, sinh từ `xuat_schema()`) để dựng lại một DB rỗng |
 | NFR-17 (trang tin phải trong cache) | `generateStaticParams()` ở `app/nha-dat/[code]/page.tsx`; `unstable_cache` bọc truy vấn trong `components/ListingBrowse.tsx` và `lib/photos.ts`; SRS-3.13 | TS-CACHE-01…05 |
@@ -582,8 +582,8 @@ Chỉ liệt NFR **đã có hiện thực trong code**; NFR còn là mục tiêu
 
 | FR | Thiếu gì | Theo dõi ở |
 |---|---|---|
-| FR-99 (định giá so sánh) | Thuật toán, nguồn dữ liệu giá thị trường | `OPEN-10` |
+| FR-99 (định giá so sánh) | Thuật toán, nguồn dữ liệu giá thị trường | `OPEN-10` (đã đóng 07/09/2026) |
 | FR-102 (chấm điểm NMG) [deprecated → FR-137] | Ngưỡng cảnh báo khi NMG dưới chuẩn (OPEN-12). Phần trùng lặp đã xử lý: `rate-ctv` + `ratings` xoá 27/08/2026 | `OPEN-12` |
-| FR-28 (tiện ích quanh BĐS) | Nguồn dữ liệu POI (Google Places? tự nhập?) | `OPEN-13` |
-| FR-16 (fingerprint) | Thư viện, chính sách lưu trữ, cơ chế từ chối | `OPEN-14` |
+| FR-28 (tiện ích quanh BĐS) | Nguồn dữ liệu POI (Google Places? tự nhập?) | `OPEN-13` (đã đóng 07/09/2026) |
+| FR-16 (fingerprint) | Thư viện, chính sách lưu trữ, cơ chế từ chối | `OPEN-14` (đã đóng 07/09/2026) |
 | FR-118 (`ward_mapping`) | Nguồn dữ liệu máy-đọc-được danh mục phường cũ↔mới (NQ 202/2025/QH15), schema bảng trong SRS | — |
