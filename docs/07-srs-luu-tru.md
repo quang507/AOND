@@ -73,6 +73,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz478 · Soát toàn bộ docs so với code, sửa docs theo code (13/11/2026)
+Chủ dự án 13/11: "soát lại toàn bộ docs xem chỗ nào lệch code thì sửa". Lớp lỗi: sửa code chỉ ghi mục nhật ký, phần đặc tả và tầng trên không ai dò lại.
+- **Sửa (chỉ docs, không đổi code / luật):** docs/00, 02, 03, 04, 05, 06, 07 (phần đặc tả), 10, 11, 13, 14, LQC, hai README, `CLAUDE.md`, `.claude/luat-dang-ap.md` — bộ pytest đã gỡ, cổng soạn bản tin `NHOM_SOAN`, gợi 2–3 căn, lời ~20 từ, trần LQC theo người bán, khung 8–21 giờ, 6 trạng thái tin (`da_coc`), `listings` 66 cột, lịch cron và `revalidate` thật, ISR trang tag / dự án, 100 tag, tên cột / hàm / trigger / biến env đã đổi, biểu phí công chứng docs/14 theo `phap_ly.phi_cong_chung`.
+- **Còn lệch, chưa sửa:** FR-159 (lượt mơ hồ nay theo số Zalo, không mặc định người mua); `public/llms.txt` ghi "Zalo OA" / "nhadat.co"; bảng RPC §3.12 / §3.14 và bảng PROPERTY docs/04 §4.5 còn hàng lịch sử; chú thích cũ trong vài script.
+- **Kiểm:** từng chỗ đối chiếu `file:dòng` trong code; `bun run truyvet` sạch.
+
 ### SRS-5.1zzzzzzz477 · Dọn mã và tệp không còn dùng; nạp lại rổ hàng Ny'ah Phú Định (13/11/2026)
 Chủ dự án 13/11: "trong code có mấy cái mới cũ khác nhau có cái nào ko dùng nữa ko, có cái nào docs ghi dư ko cần thiết ko" → rà cả repo, chủ dự án
 duyệt "Dọn nhóm A" (nhóm chắc chắn không còn ai gọi). Cùng ngày: "nạp lại dữ liệu ny'ah phú định vào đi".

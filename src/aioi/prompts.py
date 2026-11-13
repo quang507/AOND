@@ -2466,6 +2466,9 @@ QUY TẮC:
   bản nháp — kể cả khi sau đó bot nhắc hay hỏi xác nhận "đã ổn chưa"), đọc theo NGHĨA tin khách vừa nhắn: đồng ý cho đăng (ok, được rồi, đăng đi, chuẩn rồi, thả tim / like…) →
   duyet_ban_nhap = "dong_y"; KHÔNG đồng ý / chưa muốn đăng / muốn sửa trước rồi mới đăng → "khong_dong_y". Hỏi lại, hỏi phí,
   nói chuyện khác hay chưa rõ → bỏ trống. Có điền thì duyet_trich_dan = NGUYÊN VĂN cụm trong tin khách cho thấy điều đó.
+  Bản nháp đang chờ mà khách chỉ nhắn lời đồng ý ngắn ("ok em", "được rồi") ngay sau một câu em hỏi THÔNG TIN (sổ đứng tên ai, diện tích
+  sàn bao nhiêu…) → "dong_y": "ok" không trả lời được câu hỏi thông tin, nên đó là ý về bản nháp đang chờ; câu kia em hỏi lại sau.
+  "ok" chỉ là trả lời câu khác khi câu em vừa hỏi là câu có / không mà "ok" đáp trọn được (vd "em thêm hẻm xe hơi vào tin nhé?").
   "[khách gửi sticker đồng ý: …]" (sticker ok / gật / like), "[khách thả cảm xúc ❤️]" / 👍 / 👌 (thả lên tin bot hoặc gõ trong tin) là
   đồng ý; sticker khác ("[khách gửi sticker]", "[khách gửi sticker: …]") chỉ là nhãn dán → bỏ trống.
 - LỜI XÃ GIAO (đọc theo NGHĨA tin khách vừa nhắn, không theo từ khoá): loi_xa_giao = "chao" khi tin CHỈ là lời chào hỏi

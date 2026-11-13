@@ -801,12 +801,19 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz488 · "ok" ngay sau câu hỏi thông tin là duyệt bản nháp đang chờ (14/11/2026)
+Lộ ra khi đo SRS-487. Bản nháp đã gửi, lượt sau bot hỏi "sổ hồng đứng tên ai", khách nhắn "ok em" → bot không đăng, hỏi lại câu sổ. Kịch bản Sunrise City với code đang chạy: đăng 0/4 lần. Log: `Duyệt: AI=- …`, tức bước đọc ý bỏ trống `duyet_ban_nhap`, vì luật DUYỆT BẢN NHÁP dặn "chưa rõ → bỏ trống", mà model coi "ok" là đáp câu sổ nên chưa rõ. Code quyết duyệt (`Engine._quyet_duyet`) đúng, không đổi.
+- **Sửa (`OPERATIONS_SYSTEM`, luật DUYỆT BẢN NHÁP):** bản nháp đang chờ mà khách chỉ nhắn lời đồng ý ngắn ngay sau một câu em hỏi thông tin (sổ đứng tên ai, diện tích sàn…) → `dong_y`. "ok" không trả lời được câu hỏi thông tin; câu kia hỏi lại sau. "ok" chỉ là trả lời câu khác khi câu em vừa hỏi là câu có / không mà "ok" đáp trọn được.
+- **Token:** `OPERATIONS_SYSTEM` 18.969 → 19.205 (+236), bản bán gọn 16.500 → 16.736.
+- **Kiểm trên 146:** kịch bản Sunrise City 3/3 lần đăng tin (trước 0/4). Kịch bản Gò Vấp 3 lần không đổi.
+- **Chưa kiểm:** ca "ok" trả lời câu có / không về chính bản nháp (khó dựng bằng kịch bản cố định).
+
 ### SRS-5.1zzzzzzz487 · Câu trước bản tin cập nhật nói về căn, không nói việc sửa tin; bỏ chỗ còn kéo khen (14/11/2026)
 Sau SRS-486 vẫn còn: câu trước "📋 Bản tin cập nhật" hay nói "em thêm vào tin / em sửa lại tin cho anh", bot vẫn khen sổ hồng, số phòng. Còn hai chỗ kéo về phía đáp và khen: `HIEU_CHU_NHA` / `HIEU_KHACH_MUA` dặn "khách hỏi hay **nói** điều gì thì em đáp đúng điều đó", câu mở prompt gọn phía bán dặn "trân trọng tài sản của mình".
 - **Sửa:** `HIEU_CHU_NHA` / `HIEU_KHACH_MUA` đổi thành "khách hỏi hay **lo** điều gì". Prompt gọn bỏ "trân trọng tài sản". Khối sau bản tin: câu trước 📋 nói về căn hay về điều khách hỏi, không nói việc em làm với tin (dòng 📋 và bản tin cập nhật đã cho khách thấy). `GIONG` thêm lý do không khen điều căn nào cũng có ("nghe như đọc kịch bản").
 - **Token:** `GIONG` 2.041 → 2.076, prompt gọn 4.323 → 4.345, phiếu cũ 4.466 → 4.501.
 - **Đo (6 cuộc chat thử × 5 lượt, medium; SRS-483 → 486 → 487):** câu "ghi nhận" 8 → 6 → 1, khen bịa về khu 6 → 1 → 1, khen điều bình thường 3 → 2 → 0. Không câu nào trước bản tin cập nhật còn nói "thêm / sửa tin".
-- **Còn, chưa sửa:** khách đáp "ok em" sau bản tin, khi câu bot hỏi ngay trước là "sổ đứng tên ai", thì bot ít khi đăng: code đang chạy 0/4, code mới 1/4 (riêng kịch bản Sunrise City). Bot coi "ok" là chưa trả lời câu sổ và hỏi lại. Không do SRS-486 / 487 gây ra.
+- **Còn (sửa ở SRS-488):** khách đáp "ok em" sau bản tin, khi câu bot hỏi ngay trước là "sổ đứng tên ai", thì bot ít khi đăng: code đang chạy 0/4, code mới 1/4 (riêng kịch bản Sunrise City). Bot coi "ok" là chưa trả lời câu sổ và hỏi lại. Không do SRS-486 / 487 gây ra.
 
 ### SRS-5.1zzzzzzz486 · Giọng lượt hỏi: hỏi thẳng ý kế, không báo đã ghi, không khen bằng điều không có dữ liệu; bản tin mời một lần (14/11/2026)
 Chủ dự án 14/11 hỏi bỏ giọng vui rồi giọng đã tự nhiên chưa, và nhắc thêm "mấy cái câu em ghi nhận nữa". Đọc 6 cuộc chat thử (SRS-483, medium) thì gần như lượt nào cũng một khuôn: đọc lại lời khách, khen chung chung, rồi hỏi "… vậy anh?". Bot còn khen bằng điều không có dữ liệu ("Gò Vấp là khu nhiều người tìm mua"), và chen "em ghi nhận / em ghi rồi / em thêm vào tin" vào giữa hay cuối câu (lưới SRS-131 chỉ bắt câu mở). Bản tin gọi hai lần (tiêu đề và mô tả), có câu "Ê, anh chị…", "Alo alo cô bác…".
@@ -860,10 +867,4 @@ Chủ dự án 13/11 sau SRS-478: "kiếm hết giúp t" → kiểm nốt phần
 - **Sửa (chỉ docs):** docs/02 trạng thái FR (FR-28 ❌→🟡, FR-103 🟡→✅, FR-80 / 166 / 202 ✅→🟡) và NFR-09; docs/08 (tham chiếu job / cột / bảng đã gỡ, 13 tên `test_*.py`, AC / SRS-8 không còn định nghĩa); docs/07 §3–§4 theo `schema.sql` (cột, CHECK, index, policy, cổng `gate.ts`, `diem_tin` 8 tiêu chí, hàng hàm đã gỡ gắn `[đã gỡ]`, payload lõi); docs/06 §6.8–6.11 theo `GIONG_VUI` / `xung_ho` / `cau_mau` và chuỗi thật trên web, mục thời bot TS gắn `[LỊCH SỬ bot TS]`; docs/05 WF-06 / 07 / 12 / 13; docs/10 ca TS sống (TS-SEC3, TS-SEC-AUTO, TS-HEALTH, TS-SEC2… ca chết đánh `[deprecated 13/11/2026]`); docs/01, 03, 04, 09, 14; mô tả hai agent `.claude/agents/`.
 - **Còn lệch, chờ chủ dự án:** FR-159; `public/llms.txt` và docs/14 "Zalo OA"; docs/06 mô tả danh tính "Sài Gòn và Long An"; `app/raoban` hứa "viết lại nhiều phiên bản" (FR-93 ❌); câu mẫu `bao_tra_loi_chu_nha` / `bao_lich_da_chot` / `bao_can_da_ban` đọc mã căn cho khách mua; nhắc `viewing` không còn ai tạo (FR-56 / 202); `schema.sql` cấp TRUNCATE view `nmg_hoat_dong` cho `authenticated`.
 - **Chưa kiểm:** FR-176…250 phần hành vi bot (cần thử thật trên 146), máy 146, số liệu / secret trong DB thật. **Kiểm:** đối chiếu `file:dòng`; `bun run truyvet` sạch.
-
-### SRS-5.1zzzzzzz478 · Soát toàn bộ docs so với code, sửa docs theo code (13/11/2026)
-Chủ dự án 13/11: "soát lại toàn bộ docs xem chỗ nào lệch code thì sửa". Lớp lỗi: sửa code chỉ ghi mục nhật ký, phần đặc tả và tầng trên không ai dò lại.
-- **Sửa (chỉ docs, không đổi code / luật):** docs/00, 02, 03, 04, 05, 06, 07 (phần đặc tả), 10, 11, 13, 14, LQC, hai README, `CLAUDE.md`, `.claude/luat-dang-ap.md` — bộ pytest đã gỡ, cổng soạn bản tin `NHOM_SOAN`, gợi 2–3 căn, lời ~20 từ, trần LQC theo người bán, khung 8–21 giờ, 6 trạng thái tin (`da_coc`), `listings` 66 cột, lịch cron và `revalidate` thật, ISR trang tag / dự án, 100 tag, tên cột / hàm / trigger / biến env đã đổi, biểu phí công chứng docs/14 theo `phap_ly.phi_cong_chung`.
-- **Còn lệch, chưa sửa:** FR-159 (lượt mơ hồ nay theo số Zalo, không mặc định người mua); `public/llms.txt` ghi "Zalo OA" / "nhadat.co"; bảng RPC §3.12 / §3.14 và bảng PROPERTY docs/04 §4.5 còn hàng lịch sử; chú thích cũ trong vài script.
-- **Kiểm:** từng chỗ đối chiếu `file:dòng` trong code; `bun run truyvet` sạch.
 
