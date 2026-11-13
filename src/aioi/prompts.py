@@ -722,9 +722,12 @@ QUY TẮC PHẢN HỒI:
 """
 
 
-def khoi_doi_so(viec_so_khac: str | None) -> str:
+def khoi_doi_so(viec_so_khac: str | None, mo_lai: bool = False) -> str:
     """SRS-5.1zzzzzzz417: lượt đầu sau khi khách đổi số Zalo — việc ở số kia vẫn còn nguyên (chạy lại production: thiếu dữ kiện này bot tự nói
     "phần tìm mua em không tư vấn sâu được")."""
+    if mo_lai:   # SRS-5.1zzzzzzz461
+        return ("Chuyện tìm mua ở lần chat trước vẫn giữ nguyên; lượt này khách mở lại cuộc chat ở số ký gửi sau nhiều giờ — chào theo số này, "
+                "khách hỏi tới chuyện tìm mua thì tiếp chuyện đó.\n")
     if not viec_so_khac:
         return ""
     return (f"Chuyện {viec_so_khac} khách nói ở số kia vẫn giữ nguyên và bên em vẫn theo tiếp ở số đó; lượt này chỉ là việc của số đang nhắn — "

@@ -3401,10 +3401,11 @@ class Engine:
 
         # SRS-5.1zzzzzzz301: khối chào chỉ khi khách CHƯA đưa thông tin nào (ô tin trống) hoặc lượt đọc ý thấy khách chỉ chào — thử bằng quota CLI
         # 30/10, Haiku đọc nhầm "nếu khách chỉ chào" và tự giới thiệu kiểu máy dù khách đã nói nhu cầu ngay tin đầu.
-        if (not is_listing_post and (conv.y_luot.get("_doi_so") or not any(t.role == "assistant" for t in conv.history))
+        mo_lai = bool(conv.y_luot.get("_mo_lai"))   # SRS-5.1zzzzzzz461: khách mở lại cuộc chat ở số ký gửi, chuyện trước là tìm mua
+        if (not is_listing_post and (conv.y_luot.get("_doi_so") or mo_lai or not any(t.role == "assistant" for t in conv.history))
                 and (not conv.prop.fields_khach() or conv.y_luot.get("tha_tim") == "chao")):
             system += khoi_chao_lan_dau(conv.assistant.name, cau_mau.cau("chao_lan_dau", goi_toi_khach(customer_pronoun)[0], ten=conv.assistant.name))
-        system += khoi_doi_so(self._viec_so_kia(conv))   # SRS-5.1zzzzzzz417
+        system += khoi_doi_so(self._viec_so_kia(conv), mo_lai=mo_lai)   # SRS-5.1zzzzzzz417
         system = self._ghep_cau_chuan(system + khoi_xung_ho(customer_pronoun, conv.assistant.name, _xung_ho_doan(conv)), conv) + self._khoi_danh_gia(conv)
         system += khoi_mo_dau_vua_dung(conv)   # SRS-5.1zzzzzzz301
         if xin_sao:
@@ -5383,6 +5384,7 @@ class Engine:
             # SRS-5.1zzzzzzz461: lượt mơ hồ (lời chào) mở lại cuộc chat ở số ký gửi → việc của số đang nhắn, như đổi số (SRS-331). Nhu cầu mua
             # giữ nguyên; khách nói tìm mua thì nhánh "buy" ở trên đã đưa về vai mua.
             conv.role = "seller" if has_seller_context else "unknown"
+            conv.y_luot["_mo_lai"] = True   # lượt viết lời chào theo số ký gửi, như đổi số
         elif conv.role == "buyer" and conv.buyer_lead is not None:
             pass   # lượt mơ hồ ("ok", "xem được không") của người đang nói chuyện mua: ở lại nhánh mua
         elif has_seller_context:
