@@ -451,7 +451,8 @@ create table if not exists public.messages (
   body text not null,
   zalo_msg_id text,
   created_at timestamp with time zone not null default now(),
-  seq bigint generated always as identity
+  seq bigint generated always as identity,
+  ghi_chu_test text
 );
 
 create table if not exists public.nhung_viec (

@@ -18,7 +18,7 @@ type HoiThoai = {
   sellers: { name: string | null; zalo_user_id: string | null } | null;
   buyers: { name: string | null; zalo_user_id: string | null } | null;
 };
-type Tin = { id: string; sender: string; body: string; seq: number; created_at: string };
+type Tin = { id: string; sender: string; body: string; seq: number; created_at: string; ghi_chu_test?: string | null };
 // SRD §VII Live Chat Monitor (05/10/2026, SRS-5.1zzg): nhãn tự động mỗi hội thoại, DB tính (view `hoi_thoai_nhan`).
 type NhanHT = { conversation_id: string; nhan: "NEED_HUMAN" | "WAITING_HINT" | "AI_HANDLING"; ly_do: string | null };
 const MAU_NHAN: Record<NhanHT["nhan"], string> = {
@@ -123,7 +123,7 @@ export default function Page() {
   const moHoiThoai = async (h: HoiThoai) => {
     setChon(h);
     const { data, error } = await supabase.from("messages")
-      .select("id, sender, body, seq, created_at").eq("conversation_id", h.id).order("seq").limit(500);
+      .select("id, sender, body, seq, created_at, ghi_chu_test").eq("conversation_id", h.id).order("seq").limit(500);
     if (error) setLoi(error.message);
     setTin((data ?? []) as Tin[]);
   };
@@ -307,6 +307,10 @@ export default function Page() {
                         <span className="font-bold">{AI_VI[t.sender] ?? t.sender}</span><span className="tabular-nums">{luc(t.created_at)}</span>
                       </div>
                       <div className="mt-0.5 whitespace-pre-wrap break-words text-sm">{t.body}</div>
+                      {/* SRS-5.1zzzzzzz472: tin phụ $$$$$ của lượt (đã trích xuất · điểm · hỏi tiếp · tốn $) — chỉ admin thấy */}
+                      {t.ghi_chu_test && (
+                        <pre className="mt-1.5 whitespace-pre-wrap break-words rounded-md bg-white/10 px-2 py-1 font-mono text-[11px] leading-snug text-amber-200">{t.ghi_chu_test}</pre>
+                      )}
                       {bot && (
                         <button type="button" onClick={() => chamCau(t)} className="mt-1 text-[11px] font-semibold text-white/70 underline-offset-2 hover:text-white hover:underline" title="Đưa câu này (kèm ngữ cảnh) vào trang Câu chuẩn để chấm điểm, sửa tay">
                           Chấm / sửa câu này

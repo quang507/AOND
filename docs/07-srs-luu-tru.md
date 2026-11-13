@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz462 · Sticker "ok / gật / like" là đồng ý, như thả tim (13/11/2026)
+Chủ dự án 13/11: "sticker con mèo đưa kèm chữ ok mà bot ko đọc dc". Bot đọc đúng nghĩa ("Con mèo giơ chân lên kèm chữ OK") nhưng luật SRS-22 (từ
+lúc zca-js chưa cho nghĩa sticker) coi mọi sticker là trung tính — trong khi thả 👍 lên tin lại là đồng ý.
+- `sticker.ra_van_ban`: `y_nghia = dong_y` → "[khách gửi sticker đồng ý: <mô tả>]"; `la_sticker` trả False cho dạng này → `_quyet_duyet` đọc
+  được, duyệt bản nháp bằng sticker OK như thả tim. Sticker vui / buồn / giận / khác vẫn trung tính, chào vẫn thành "hello".
+- Prompt duyệt bản nháp + `TIN_HE_THONG`: sticker đồng ý cùng hàng với thả tim / like. Token: +≈15 token mỗi lượt có khối này.
+
 ### SRS-5.1zzzzzzz461 · Mở lại cuộc chat ở số ký gửi: lời chào không bị hiểu là khách mua (13/11/2026)
 Chủ dự án 13/11: "chat chào em mà nó nhầm sang mua… nhắn đúng con Ai Ơi Nhà Đất". Tài khoản từng thử vai mua TRÊN CHÍNH số ký gửi → `so_vai` trùng số,
 SRS-331/417 không chạy; agent mua đọc "em ơi" (01:14 → 12:20) thành tìm mua.

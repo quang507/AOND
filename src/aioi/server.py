@@ -900,7 +900,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         bubbles = [c.replace("**", "") for c in chunk_reply(cleaned_reply)]
     nhip_go = [int(typing_delay(c) * 1000) for c in bubbles]
     # SRS-5.1zzzzzzz252: tin phụ "$$$$$ Đã trích xuất" (công tắc AIOI_DONG_TRICH_XUAT) gửi TRƯỚC lời bot (SRS-136: người cầm máy thấy ngay đâu là
-    # debug) — chỉ nằm trong `replies`, không vào `reply`, lịch sử hội thoại hay CRM.
+    # debug) — nằm trong `replies`, không vào `reply` hay lịch sử hội thoại; CRM lưu ở cột riêng `messages.ghi_chu_test` (SRS-5.1zzzzzzz472).
     if getattr(r, "chu_thich", ""):
         bubbles.insert(0, r.chu_thich)
         nhip_go.insert(0, 0)
@@ -918,6 +918,7 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         role=r.role,
         user_name=zalo_name,
         nhan_luc=nhan_luc,
+        ghi_chu=getattr(r, "chu_thich", "") or "",
     )
 
     # Khách xin gặp người thật (lượt AI đọc, đã kiểm trích dẫn) → bật cờ + nhắn admin, chạy nền (SRS-5.1zzzzzzz82).

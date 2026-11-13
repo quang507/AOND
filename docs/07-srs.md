@@ -820,6 +820,15 @@ ba lần nói "tin vẫn rao đúng 8,8 tỉ chị muốn". Bridge không điế
 - **Còn hở:** dự án Ny'ah Phú Định trong `projects` chưa có lat/lng (có `location_raw`) nên tin trong dự án chỉ lấy được toạ độ mức phường, và
   chờ vài phút. Token: chỉ đổi khối có điều kiện (lượt hỏi giá), phần cố định không đổi.
 
+### SRS-5.1zzzzzzz472 · Tin phụ `$$$$$` hiện luôn trên CRM /admin/tin-nhan (13/11/2026)
+Chủ dự án 13/11: "tin debug $$$$$ trên crm để cho thấy luôn đi". Tin phụ chế độ test (SRS-5.1zzzzzzz252 / 419: đã trích xuất · bỏ · điểm / soạn
+nháp / hỏi tiếp · tốn $) trước đây chỉ gửi Zalo, không vào CRM — soi lỗi trên CRM phải mở điện thoại đối chiếu.
+- **DB:** cột `messages.ghi_chu_test` (migration `20261113e`), đọc theo RLS sẵn có của `messages` (chỉ admin).
+- **Lõi:** `sync_to_supabase_async(..., ghi_chu=r.chu_thich)` → `ghi_luot_chat` ghi kèm dòng lời bot của lượt. Lịch sử hội thoại bot đọc lại chỉ
+  lấy `body`, nên tin phụ không lọt vào ngữ cảnh model.
+- **CRM:** dưới mỗi lời bot có tin phụ thì hiện khối chữ đơn cách màu hổ phách. Tin cũ trước 13/11 15:2x không có (trước đây không lưu).
+- Công tắc vẫn là `AIOI_DONG_TRICH_XUAT` (`bot/cau-hinh-loi.env`): tắt thì không gửi Zalo, không lưu CRM.
+
 ### SRS-5.1zzzzzzz469 · Gỡ bộ pytest `tests/` — không còn dùng (13/11/2026)
 Chủ dự án 13/11 thấy `tests/` 264 file ("sao nhiều test dữ trời") rồi chốt "ko dùng thì gỡ mẹ đi". Từ 11/11 luật là sửa thẳng, không chạy test;
 mỗi lần sửa vẫn sinh thêm một file `test_<số SRS>.py` không ai chạy (192 file thêm từ 10/2026), nên bộ này chỉ phình và lệch code.
@@ -879,10 +888,3 @@ nên rơi vào nhánh ảnh / thẻ link: lõi tải .mp4 như ảnh (hỏng "lo
 - Video → chữ "[Khách gửi một video — hệ thống chưa xem được video, chỉ đọc được ảnh và chữ]" (+ tiêu đề nếu có): bot nói thật, xin ảnh.
 - Danh thiếp → "[Khách gửi danh thiếp Zalo: <tên> — số <sđt nếu Zalo kèm>]".
 - Còn lại chưa đọc: thu hồi tin (bot không biết khách đã thu hồi), tin nhóm (bỏ có chủ đích).
-
-### SRS-5.1zzzzzzz462 · Sticker "ok / gật / like" là đồng ý, như thả tim (13/11/2026)
-Chủ dự án 13/11: "sticker con mèo đưa kèm chữ ok mà bot ko đọc dc". Bot đọc đúng nghĩa ("Con mèo giơ chân lên kèm chữ OK") nhưng luật SRS-22 (từ
-lúc zca-js chưa cho nghĩa sticker) coi mọi sticker là trung tính — trong khi thả 👍 lên tin lại là đồng ý.
-- `sticker.ra_van_ban`: `y_nghia = dong_y` → "[khách gửi sticker đồng ý: <mô tả>]"; `la_sticker` trả False cho dạng này → `_quyet_duyet` đọc
-  được, duyệt bản nháp bằng sticker OK như thả tim. Sticker vui / buồn / giận / khác vẫn trung tính, chào vẫn thành "hello".
-- Prompt duyệt bản nháp + `TIN_HE_THONG`: sticker đồng ý cùng hàng với thả tim / like. Token: +≈15 token mỗi lượt có khối này.

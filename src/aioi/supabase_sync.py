@@ -29,12 +29,13 @@ def _kho_ghi():
 
 
 def _sync_worker(external_user_id: str, incoming_text: str, bot_reply: str, zalo_msg_id: str | None = None,
-                 role: str = "seller", user_name: str | None = None, nhan_luc: str | None = None, nguoi_gui: str = "bot") -> None:
+                 role: str = "seller", user_name: str | None = None, nhan_luc: str | None = None, nguoi_gui: str = "bot",
+                 ghi_chu: str = "") -> None:
     kho = _kho_ghi()
     if kho is None:
         return
     try:
-        kho.ghi_luot_chat(external_user_id, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc, nguoi_gui)
+        kho.ghi_luot_chat(external_user_id, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc, nguoi_gui, ghi_chu)
     except Exception as e:  # noqa: BLE001
         # SRS-5.1zzzzzzz84: lỗi ghi tin trước đây chỉ ở journal — CRM mất tin khách thật suốt một ngày mà sổ lỗi không có dòng nào.
         log.warning("Supabase sync failed (non-blocking): %s", e)
@@ -53,13 +54,15 @@ def sync_to_supabase_async(
     user_name: str | None = None,
     nhan_luc: str | None = None,
     nguoi_gui: str = "bot",
+    ghi_chu: str = "",
 ) -> None:
     """Non-blocking asynchronous sync of conversation turn to Supabase CRM. `nhan_luc` = giờ lõi nhận tin khách (ISO). `nguoi_gui` = ai
-    nói câu `bot_reply`: "bot", hoặc "human" khi admin gõ tay / gửi từ /admin/tin-nhan (SRS-5.1zzzzzzz216)."""
+    nói câu `bot_reply`: "bot", hoặc "human" khi admin gõ tay / gửi từ /admin/tin-nhan (SRS-5.1zzzzzzz216). `ghi_chu` = tin phụ $$$$$
+    của lượt, lưu kèm dòng lời bot để CRM hiện (SRS-5.1zzzzzzz472)."""
     if not external_user_id:
         return
     threading.Thread(
         target=_sync_worker,
-        args=(external_user_id, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc, nguoi_gui),
+        args=(external_user_id, incoming_text, bot_reply, zalo_msg_id, role, user_name, nhan_luc, nguoi_gui, ghi_chu),
         daemon=True,
     ).start()
