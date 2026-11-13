@@ -4052,13 +4052,18 @@ class Engine:
         trang = self._html_to_text(data)[:15000]
         if len(trang) < 200:
             return chua_mo
-        try:
-            tom = self._provider.chat(KHOI_DOC_LINK_WEB, [Message("user", f"Link: {url}\n\n{trang}")], max_tokens=700).strip()
-        except Exception as e:  # noqa: BLE001 — model hụt thì lượt vẫn chạy, chỉ là chưa đọc được trang
-            log.warning("doc link web: model hụt (%s)", type(e).__name__)
-            return chua_mo
+        tom = ""
+        for lan in (1, 2):   # thử 13/11: lượt đầu model trả chuỗi rỗng, lượt sau cùng trang thì đọc tốt — thử lại một lần
+            try:
+                tom = (self._provider.chat(KHOI_DOC_LINK_WEB, [Message("user", f"Link: {url}\n\n{trang}")], max_tokens=900) or "").strip()
+            except Exception as e:  # noqa: BLE001 — model hụt thì lượt vẫn chạy, chỉ là chưa đọc được trang
+                log.warning("doc link web: model hụt lần %d (%s)", lan, type(e).__name__)
+            if tom:
+                break
+            log.warning("doc link web: %s — model trả rỗng lần %d", host, lan)
         if not tom:
             return chua_mo
+        log.warning("doc link web: đã đọc %s (%d ký tự trang → %d ký tự tóm)", host, len(trang), len(tom))
         loai = re.match(r"\s*LOẠI:\s*(\w+)", tom)
         du_an = conv.prop.fields.get("du_an")
         if loai and loai.group(1).lower() == "du_an" and du_an:
