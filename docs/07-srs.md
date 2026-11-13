@@ -801,6 +801,16 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz486 · Giọng lượt hỏi: hỏi thẳng ý kế, không báo đã ghi, không khen bằng điều không có dữ liệu; bản tin mời một lần (14/11/2026)
+Chủ dự án 14/11 hỏi bỏ giọng vui rồi giọng đã tự nhiên chưa, và nhắc thêm "mấy cái câu em ghi nhận nữa". Đọc 6 cuộc chat thử (SRS-483, medium) thì gần như lượt nào cũng một khuôn: đọc lại lời khách, khen chung chung, rồi hỏi "… vậy anh?". Bot còn khen bằng điều không có dữ liệu ("Gò Vấp là khu nhiều người tìm mua"), và chen "em ghi nhận / em ghi rồi / em thêm vào tin" vào giữa hay cuối câu (lưới SRS-131 chỉ bắt câu mở). Bản tin gọi hai lần (tiêu đề và mô tả), có câu "Ê, anh chị…", "Alo alo cô bác…".
+- **Gốc:** ba prompt lượt người bán (phiếu cũ, prompt gọn, câu hỏi pháp lý theo sau) đều dặn "đáp điều khách vừa nói, rồi làm việc lượt này", nên lượt khách chỉ đưa thông tin bot cũng phải "đáp" gì đó. Câu trước dòng 📋 của bản tin cập nhật được dặn "đồng tình, cảm thán… nói sẽ sửa gì".
+- **Sửa (`GIONG`):** đoạn mới tả lượt khách đưa thông tin: đi thẳng sang ý kế, không đọc lại lời khách, không báo đã ghi (ghi là việc của hệ thống). Chỉ điểm thật sự hiếm mới được nửa câu nói lợi gì; điều căn nào cũng có thì không nhận xét. Nhận định về khu hay về người mua chỉ nói khi có dữ liệu. Việc phải báo khách chỉ còn những việc khách không tự thấy (chuyển câu hỏi cho chủ nhà, ghi lịch xem).
+- **Sửa (các prompt lượt):** "khách vừa hỏi hay lộ cảm xúc thì đáp điều đó trước; khách chỉ đưa thông tin thì làm thẳng việc lượt này" ở phiếu cũ, prompt gọn và `HUONG_DAN_VIET`. Câu hỏi pháp lý theo sau chỉ còn "hỏi tiếp". Câu trước 📋 chỉ có khi khách hỏi, lộ cảm xúc hoặc vừa thêm điểm hiếm; không thì mở thẳng bằng 📋. Lưới lặp câu dẫn cũng nói theo cách này.
+- **Bản tin (`AD_FORMAT`):** tiêu đề đi thẳng vào vị trí · diện tích · giá. Lời mời để dành cho câu mở của mô tả, chỉ một lần, lịch sự như người bán nói với khách lạ ghé xem nhà. Bỏ "hối hả, lầy một chút". Phần này khác bản anh Luận (SRS-207), chủ dự án đồng ý ở cuộc chat 14/11.
+- **Không đổi:** câu mẫu "Em xin phép đăng tin ạ!" và câu hỏi phí (chủ dự án và tester đã chốt, sửa ở trang Câu chuẩn).
+- **Token:** `GIONG` 1.747 → 2.041. Prompt gọn phía bán (đang bật) 3.987 → 4.323, phiếu cũ 4.131 → 4.466. `AD_FORMAT` +9, `HUONG_DAN_VIET` +33. Toàn bộ nằm trong phần cache.
+- **Đo (6 cuộc chat thử × 5 lượt, medium):** khen bịa về khu 6 → 0–1, câu "ghi nhận" 8 → 5–6, lượt hỏi thẳng 2 → 4. Bản tin chỉ còn một câu mời. **Còn:** câu trước bản tin cập nhật vẫn hay nói "em thêm vào tin / em sửa lại tin"; còn khen sổ hồng, số phòng (điều căn nào cũng có).
+
 ### SRS-5.1zzzzzzz485 · Cho thuê là ô của từng căn; tin rao nhiều căn khác chi tiết thì mỗi căn một thao tác (14/11/2026)
 Thử 100 tin Mogi (SRS-484) còn lỗi: tin "Cho thuê 4 lô đất Đặng Thùy Trâm" ra 4 căn nhưng chỉ căn đầu là tin cho thuê, ba căn sau thành tin bán. Lớp lỗi: `is_rental` là khoá cả lượt của kế hoạch, engine chỉ đặt cho căn đang mở. Chạy lại còn lộ lỗi thứ hai: cùng tin đó, model lúc tách 4 căn, lúc dồn cả 4 lô vào ô của một căn ("Lô 1: 15tr, Lô 2: 25tr…"). Lý do: luật chỉ dạy tách nhiều căn cùng mẫu (`targets`), chưa dạy tách nhiều căn có chi tiết riêng.
 - **Cho thuê theo căn:** `is_rental` chuyển từ gốc `operations_schema` vào từng thao tác; công cụ `ghi_o` / `them_can` mang theo khoá này. `Engine._apply_operation` đặt cờ cho đúng căn của thao tác update / add, kể cả căn mở bằng `_fan_out_units`. Đã bỏ dòng đặt `conv.prop.is_rental` theo kế hoạch.
@@ -864,20 +874,4 @@ duyệt "Dọn nhóm A" (nhóm chắc chắn không còn ai gọi). Cùng ngày:
 - **Ny'ah Phú Định:** `du_an_kien_thuc` khoá `ny ah phú định` nạp lại từ `luu_tru` lần 13 (lần xoá rổ hàng + bảng giá 12/11): 50 căn, giá 9 lô còn
   trống (ô riêng `rieng.gia_can`), mục "Rổ hàng T10.2026" trong tài liệu. Các phần khác của dòng không đổi từ lần xoá nên chép nguyên bản lưu.
 - **`thu-cli`:** schema ô tin dài hơn trần dòng lệnh Windows (WinError 206) → `llm/claude_cli.py` ghi schema vào tệp system, đọc JSON từ kết quả.
-
-### SRS-5.1zzzzzzz476 · LQC nghe chủ: lời hẹn, đang bận, không có, thôi hỏi; gara → hẻm xe hơi (13/11/2026)
-Chủ dự án 13/11: "khách hẹn giờ chiều chị gửi ảnh thì chiều nó hỏi lại"; thiết kế LQC đợt 1 (làm sau đợt 2 — SRS-475). Trước đây chủ đáp "chiều
-chị gửi" thì câu xin ảnh coi như đã hỏi, 10 phút sau vòng nền nhảy sang câu pháp lý, ảnh chỉ được nhắc lại ở cuối hàng.
-- **AI đọc (ghi_y_khach / form):** `hen_lai_luc` + `hen_lai_viec` (giờ VN, AI quy từ dòng "Bây giờ" mới thêm vào dữ liệu lượt), `hen_xong`,
-  `tam_dung_den`, `khong_co` (anh / anh_so), `ngung_cham` — mỗi ô kèm cụm trích, `lqc.ghi_tu_ke_hoach` kiểm cụm rồi ghi `_hen_*`,
-  `_tam_dung_den`, `_khong_co`, `_ngung_cham` vào căn.
-- **LQC (`lqc.chu_dang_hen`):** bận → im tới lúc rảnh; hẹn còn treo → im tới giờ hẹn + 30 phút; thôi hỏi → không hỏi nữa (hỏi còn bán / giữ kết
-  nối vẫn đi). Vòng `hoi_sau_dang` xét căn có hẹn trước (kể cả căn chưa đăng): quá giờ hẹn thì nhắc MỘT câu đúng lời hẹn (`khoi_nhac_hen`),
-  hẹn lần hai mà lỡ / trễ quá 12 giờ thì bỏ; ảnh về sau lúc hẹn → huỷ hẹn. Không có ảnh → hàng câu hỏi và Image LQC thôi xin ảnh. Tin nhắc tự
-  động trước khi đăng (`followup`) cũng im khi chủ bận / đang chờ giờ hẹn / đã bảo thôi.
-- **Suy luận chắc chắn (đợt 2 cùng ngày, chủ dự án: "AI ko tự suy luận dc mà phải hướng dẫn à"):** bỏ câu riêng cho gara; thay luật "GIÁ TRỊ Ô
-  CŨNG CHỈ LÀ ĐIỀU KHÁCH NÓI" (cấm mọi suy luận) bằng nguyên tắc chung: ghi điều khách nói HOẶC điều lời khách chắc chắn kéo theo (gara trong
-  nhà ở hẻm → hẻm xe hơi; "1 trệt 2 lầu" → 3 tầng); điều chỉ có thể đúng là đoán, để trống ("ngõ 3m" chưa chắc ô tô vào). Mô tả `bang_chung`
-  sửa theo.
-- **Token:** schema công cụ ghi thêm 10 khoá (~1.900 ký tự) + dòng giờ (~80 ký tự) → ước +700–800 token mỗi lượt người bán (chưa đo bằng công cụ đếm).
 

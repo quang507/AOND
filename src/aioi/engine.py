@@ -1907,8 +1907,8 @@ def _soat_lap(eng, conv, reply, nc) -> list[str]:
         chat_nay, chat_truoc = _phan_chat_quanh_ban_tin(reply), _phan_chat_quanh_ban_tin(truoc)
         if chat_nay and chat_truoc:
             if _cung_mo_dau(chat_nay, chat_truoc):
-                out.append("Câu dẫn trước bản tin mở bằng cùng mấy chữ với lượt trước — lượt này MỘT câu ngắn đáp đúng điều khách vừa nói "
-                           "(theo khối GIỌNG), không mở bằng câu báo cáo.")
+                out.append("Câu dẫn trước bản tin mở bằng cùng mấy chữ với lượt trước — lượt này đổi câu dẫn, hoặc bỏ hẳn và vào thẳng dòng 📋 "
+                           "(theo khối GIỌNG).")
             lap = _cau_lap_luot_truoc(chat_nay, chat_truoc)
             if lap:
                 out.append(f"Câu \"{lap[:60]}\" quanh bản tin lặp gần nguyên văn lượt trước — câu dẫn và câu hỏi chốt mỗi lượt một cách "

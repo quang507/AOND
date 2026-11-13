@@ -73,6 +73,22 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz476 · LQC nghe chủ: lời hẹn, đang bận, không có, thôi hỏi; gara → hẻm xe hơi (13/11/2026)
+Chủ dự án 13/11: "khách hẹn giờ chiều chị gửi ảnh thì chiều nó hỏi lại"; thiết kế LQC đợt 1 (làm sau đợt 2 — SRS-475). Trước đây chủ đáp "chiều
+chị gửi" thì câu xin ảnh coi như đã hỏi, 10 phút sau vòng nền nhảy sang câu pháp lý, ảnh chỉ được nhắc lại ở cuối hàng.
+- **AI đọc (ghi_y_khach / form):** `hen_lai_luc` + `hen_lai_viec` (giờ VN, AI quy từ dòng "Bây giờ" mới thêm vào dữ liệu lượt), `hen_xong`,
+  `tam_dung_den`, `khong_co` (anh / anh_so), `ngung_cham` — mỗi ô kèm cụm trích, `lqc.ghi_tu_ke_hoach` kiểm cụm rồi ghi `_hen_*`,
+  `_tam_dung_den`, `_khong_co`, `_ngung_cham` vào căn.
+- **LQC (`lqc.chu_dang_hen`):** bận → im tới lúc rảnh; hẹn còn treo → im tới giờ hẹn + 30 phút; thôi hỏi → không hỏi nữa (hỏi còn bán / giữ kết
+  nối vẫn đi). Vòng `hoi_sau_dang` xét căn có hẹn trước (kể cả căn chưa đăng): quá giờ hẹn thì nhắc MỘT câu đúng lời hẹn (`khoi_nhac_hen`),
+  hẹn lần hai mà lỡ / trễ quá 12 giờ thì bỏ; ảnh về sau lúc hẹn → huỷ hẹn. Không có ảnh → hàng câu hỏi và Image LQC thôi xin ảnh. Tin nhắc tự
+  động trước khi đăng (`followup`) cũng im khi chủ bận / đang chờ giờ hẹn / đã bảo thôi.
+- **Suy luận chắc chắn (đợt 2 cùng ngày, chủ dự án: "AI ko tự suy luận dc mà phải hướng dẫn à"):** bỏ câu riêng cho gara; thay luật "GIÁ TRỊ Ô
+  CŨNG CHỈ LÀ ĐIỀU KHÁCH NÓI" (cấm mọi suy luận) bằng nguyên tắc chung: ghi điều khách nói HOẶC điều lời khách chắc chắn kéo theo (gara trong
+  nhà ở hẻm → hẻm xe hơi; "1 trệt 2 lầu" → 3 tầng); điều chỉ có thể đúng là đoán, để trống ("ngõ 3m" chưa chắc ô tô vào). Mô tả `bang_chung`
+  sửa theo.
+- **Token:** schema công cụ ghi thêm 10 khoá (~1.900 ký tự) + dòng giờ (~80 ký tự) → ước +700–800 token mỗi lượt người bán (chưa đo bằng công cụ đếm).
+
 ### SRS-5.1zzzzzzz475 · LQC điều phối chung mọi tin chủ động tới người bán (13/11/2026)
 Chủ dự án 13/11 duyệt thiết kế LQC 5 đợt, chọn làm "đợt 2 trước" (điều phối chung) rồi tới đợt 1 (lời hẹn, tạm dừng…); "điều phối chung vẫn
 là tên LQC, đó là tên của sếp đặt". Trước đây năm vòng tự nhắn chủ nhà — tin xin ảnh 10 phút (`followup`), hàng câu hỏi sau đăng

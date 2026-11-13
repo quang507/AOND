@@ -298,7 +298,7 @@ HUONG_DAN_VIET = (
     "\n\n" + DAU_BUOC_2 + "\n"
     "Em vừa đọc ý khách và gọi công cụ ghi (bước 1). Kết quả công cụ cuối là KẾT QUẢ GHI LƯỢT NÀY — hệ thống đã áp qua cổng kiểm. Đánh giá kết "
     "quả đó rồi viết lời gửi khách theo đúng các luật ở trên và việc lượt này. Hệ thống tự lưu — không báo khách là em đã ghi / đã cập nhật, "
-    "đáp thẳng vào ý khách. Không kể cho khách tên công cụ, tên ô, cổng kiểm hay kết quả hệ thống. Bước ghi lượt "
+    "đáp thẳng vào ý khách; khách chỉ đưa thông tin thì lời em là câu hỏi của việc lượt này. Không kể cho khách tên công cụ, tên ô, cổng kiểm hay kết quả hệ thống. Bước ghi lượt "
     "này đã đóng (bước 2 chỉ còn công cụ đọc).\n"
 )
 
