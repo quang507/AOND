@@ -5361,7 +5361,7 @@ class Engine:
             # khách gõ là một căn đang hiện trên hệ thống (khách chưa có việc bán nào) → khách đang hỏi căn để mua / thuê.
             intent = "buy"
         so_luot = SO_TU_VAN if conv.so_nhan == SO_TU_VAN else "ky_gui"
-        doi_so = False
+        doi_so = mo_lai = False
         if intent == "buy" and not (has_seller_context and dang_giua_viec_ban):
             conv.so_vai = so_luot
             conv.role = "buyer"
@@ -5384,7 +5384,7 @@ class Engine:
             # SRS-5.1zzzzzzz461: lượt mơ hồ (lời chào) mở lại cuộc chat ở số ký gửi → việc của số đang nhắn, như đổi số (SRS-331). Nhu cầu mua
             # giữ nguyên; khách nói tìm mua thì nhánh "buy" ở trên đã đưa về vai mua.
             conv.role = "seller" if has_seller_context else "unknown"
-            conv.y_luot["_mo_lai"] = True   # lượt viết lời chào theo số ký gửi, như đổi số
+            mo_lai = True   # lượt viết lời chào theo số ký gửi, như đổi số
         elif conv.role == "buyer" and conv.buyer_lead is not None:
             pass   # lượt mơ hồ ("ok", "xem được không") của người đang nói chuyện mua: ở lại nhánh mua
         elif has_seller_context:
@@ -5462,6 +5462,8 @@ class Engine:
             conv.y_luot["_bot_vua_hoi"] = [o for o in bvh if isinstance(o, str) and o in FIELD_LABELS]
         if doi_so:
             conv.y_luot["_doi_so"] = True   # SRS-5.1zzzzzzz331: lượt đầu của vai này trên số đang nhắn — chào theo số
+        if mo_lai:
+            conv.y_luot["_mo_lai"] = True   # SRS-5.1zzzzzzz461: khách mở lại cuộc chat ở số ký gửi — chào theo số, giữ chuyện tìm mua
         if plan.get("_chua_ro_can"):   # SRS-5.1zzzzzzz310: agent bóc từ chối đổi trạng thái vì lời khách chưa chỉ ra căn nào
             conv.y_luot["chua_ro_can"] = list(plan["_chua_ro_can"])
         if la_ngoai_viec:
