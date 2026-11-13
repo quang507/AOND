@@ -549,7 +549,7 @@ Cập nhật **cùng commit** khi đổi FR / BR / UF / WF ở tầng trên (quy
 | FR-203 | — | — | SRS-5.1zzzzzzz467 | TS-PROD (log 30 phút có tin không còn dòng "cắt socket" + nhắn thật vào Zalo bot) |
 | FR-185 | — | — | SRS-5.1zzzzzzz455 | TS-SRS (`test_bao_cao_gia_455.py`) + mở `/bao-cao-gia/<mã>` |
 | FR-185 | — | — | SRS-5.1zzzzzzz456 | TS-SRS (`test_gia_chot_456.py`) |
-| FR-155 | — | — | SRS-5.1zzzzzzz466 | TS-HANG-04 + TS-SRS (`test_tran_hang_dong_466.py`) |
+| FR-155 | — | — | SRS-5.1zzzzzzz466 | TS-HANG-04 + mở trang tin / thẻ tin có `can_kiem_chung` |
 | FR-144 | — | — | SRS-5.1zzzzzzz450 | TS-SRS (`test_dap_chua_chon_450.py`) |
 | FR-185, FR-165 | — | — | SRS-5.1zzzzzzz454 | TS-SRS (`test_xoa_logo_454.py`) + TS-PROD (log "xoa_logo: … đã đóng dấu") |
 

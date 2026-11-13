@@ -39,7 +39,7 @@ TRANG_THAI_HIEN = ("dang_ban", "dang_quan_tam", "da_coc")
 # Ô pháp lý CÔNG KHAI chủ đã nói (nhóm "phap_ly" của schema.FACETS trừ ô riêng của chủ) — cùng thông tin trang tin hiển thị (SRS-5.1zzzzzzz438).
 O_PHAP_LY_CONG_KHAI: tuple[str, ...] = tuple(k for fid, _, keys in FACETS if fid == "phap_ly" for k in keys if k not in O_NOI_BO)
 # Cột căn đưa cho model khi tư vấn khách mua — KHÔNG có số nhà (`location_raw`), mô tả gốc (có thể chứa SĐT) hay người bán.
-COT_CAN = ("id,code,property_type,deal,street,ward,district,area_m2,price_raw,price_vnd,bedrooms,floors,floors_text,legal_status,has_completion,"
+COT_CAN = ("id,code,can_kiem_chung,property_type,deal,street,ward,district,area_m2,price_raw,price_vnd,bedrooms,floors,floors_text,legal_status,has_completion,"
            + "".join(f"{k}:boc_tach->>{k}," for k in O_PHAP_LY_CONG_KHAI)
            + "direction,access_type,alley_width_m,status,project_id,unit_type:boc_tach->>unit_type")   # project_id + mẫu nhà: kế thừa (SRS-283)
 _LOAI_MUA_SANG_DB = {"nha_pho": "nha_pho", "nha_cap_4": "nha_cap4", "biet_thu": "biet_thu", "chung_cu": "chung_cu",
@@ -954,6 +954,8 @@ def dong_can(c: dict) -> str:
         phan.append(gm2)
     if c.get("chinh_chu") is True:
         phan.append("chính chủ rao")
+    if c.get("can_kiem_chung"):   # SRS-5.1zzzzzzz466: người rao hạng Đồng, căn thứ 6 trở đi — vẫn giới thiệu, nói rõ
+        phan.append("THÔNG TIN CẦN KIỂM CHỨNG THÊM (nói rõ với khách khi giới thiệu căn này)")
     if c.get("bedrooms"):
         phan.append(f"{c['bedrooms']} phòng ngủ")
     if c.get("floors_text"):

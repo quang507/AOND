@@ -429,7 +429,7 @@ END) stored,
   nhung_luc timestamp with time zone,
   cung_can_id uuid,
   xac_nhan_con_ban_at timestamp with time zone,
-  ly_do_chua_dang text
+  can_kiem_chung boolean not null default false
 );
 
 create table if not exists public.media_cleanup_queue (
@@ -4068,29 +4068,26 @@ begin
     v_du := new.chu_duyet_at is not null;
   end if;
   if v_du and new.status = 'cho_thong_tin' then
-    -- SRS-5.1zzzzzzz466: trần hạng Đồng — 5 căn đang hiện
-    if new.seller_id is not null and coalesce(auth.role(), '') = 'service_role' then
-      begin
-        select count(*) into v_dang_hien
-          from listings l
-         where l.seller_id = new.seller_id and l.id <> new.id
-           and l.status in ('dang_ban', 'dang_quan_tam', 'da_coc');
-        if v_dang_hien >= 5
-           and public.hang_theo_diem((public.diem_nguoi_ban(new.seller_id)->>'diem')::int) = 'dong' then
-          new.ly_do_chua_dang := 'tran_hang_dong';
-          return new;
-        end if;
-      exception when others then
-        null;   -- tính hạng hỏng thì cho qua, không chặn ghi tin
-      end;
-    end if;
     new.status := 'dang_ban';
-    new.ly_do_chua_dang := null;
   elsif not v_du and new.status = 'dang_ban' then
     new.status := 'cho_thong_tin';
   end if;
-  if new.status <> 'cho_thong_tin' then
-    new.ly_do_chua_dang := null;
+  -- SRS-5.1zzzzzzz466: hạng Đồng hiển thị bình thường tối đa 5 căn; căn thứ 6 trở đi vẫn lên kệ, gắn nhãn "cần kiểm chứng thêm"
+  if new.seller_id is not null and coalesce(auth.role(), '') = 'service_role'
+     and new.status in ('dang_ban', 'dang_quan_tam', 'da_coc') then
+    begin
+      select count(*) into v_dang_hien
+        from listings l
+       where l.seller_id = new.seller_id and l.id <> new.id and not l.can_kiem_chung
+         and l.status in ('dang_ban', 'dang_quan_tam', 'da_coc');
+      if v_dang_hien < 5 then
+        new.can_kiem_chung := false;
+      else
+        new.can_kiem_chung := public.hang_theo_diem((public.diem_nguoi_ban(new.seller_id)->>'diem')::int) = 'dong';
+      end if;
+    exception when others then
+      null;   -- tính hạng hỏng thì giữ nhãn như cũ, không chặn ghi tin
+    end;
   end if;
   return new;
 end $function$
@@ -5907,7 +5904,7 @@ AS $function$
            'id', c.id, 'code', c.code, 'property_type', c.property_type, 'deal', c.deal, 'street', c.street, 'ward', c.ward,
            'district', c.district, 'area_m2', c.area_m2, 'price_raw', c.price_raw, 'price_vnd', c.price_vnd, 'bedrooms', c.bedrooms,
            'floors', c.floors, 'floors_text', c.floors_text, 'legal_status', c.legal_status, 'direction', c.direction,
-           'access_type', c.access_type, 'alley_width_m', c.alley_width_m, 'status', c.status, 'tien_ich_gan', c.tien_ich_gan,
+           'access_type', c.access_type, 'alley_width_m', c.alley_width_m, 'status', c.status, 'tien_ich_gan', c.tien_ich_gan, 'can_kiem_chung', c.can_kiem_chung,
            'chinh_chu', (select s.seller_type = 'ccrb' from public.sellers s where s.id = c.seller_id)) as can,
          (c.d_khu + c.d_dt + c.d_pn + c.d_tang + c.d_xe + c.d_vec + c.d_ti)::numeric as diem,
          nullif(concat_ws('; ',

@@ -1373,6 +1373,17 @@ _WEB = SITE_URL
 
 
 def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]:
+    """Lời trạng thái tin trên web; tin hiển thị kèm nhãn "cần kiểm chứng thêm" (SRS-5.1zzzzzzz466) thì thêm một dòng báo chủ nhà."""
+    duyet, link = _khoi_trang_thai_web(web, thue)
+    if web and web.get("len_web") and web.get("can_kiem_chung"):
+        kc = ("\n  • Tin hiển thị kèm nhãn \"thông tin cần kiểm chứng thêm\": hạng Đồng hiển thị bình thường tối đa 5 căn, căn này "
+              "từ căn thứ 6. Báo khách điều đó; lên hạng Bạc (từ 50 điểm, bằng cách bổ sung thông tin và ảnh cho các căn đang rao) "
+              "là bỏ nhãn.")
+        duyet, link = duyet + kc, link + kc
+    return duyet, link
+
+
+def _khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]:
     """(lời khi khách DUYỆT tin, lời khi khách HỎI LINK) theo trạng thái THẬT của tin trên DB — một chỗ duy nhất quyết câu
     "đã đăng / đang hiển thị" của nhánh người bán (SRS-5.1zzzzzzz44). Trước đó prompt luôn bảo "xác nhận đã đăng lên web" kể cả
     khi trigger DB giữ tin ở `cho_thong_tin` (thiếu phường chuẩn / giá / diện tích) → khách tin đã đăng mà web không có."""
@@ -1423,12 +1434,6 @@ def khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str]
         # Tin từ chat chỉ lên web khi khách đồng ý bản nháp (`can_chu_duyet`, SRS-5.1zzzzzzz47).
         ly_do = f"TIN CHƯA LÊN WEB: đang chờ khách duyệt bản tin (hệ thống đã kiểm). {cam}"
         viec = "hỏi khách đã ưng bản tin chưa; khách ưng thì em đăng (tự đặt câu, đừng lặp cách nói lượt trước)."
-    elif web.get("tran_hang_dong"):
-        # SRS-5.1zzzzzzz466 (SRD §IV.3, chủ dự án 13/11 "vẫn chạy"): hạng Đồng hiển thị tối đa 5 căn cùng lúc — tin đủ thông tin, đã lưu.
-        ly_do = ("TIN CHƯA LÊN WEB (hệ thống đã kiểm): khách đang hạng Đồng, đã có đủ 5 căn hiển thị — mức tối đa của hạng Đồng. "
-                 "Thông tin căn này em đã lưu đủ.")
-        viec = ("báo hạng Đồng rao tối đa 5 căn, căn này em đã lưu đủ thông tin; lên hạng Bạc (từ 50 điểm, bằng cách bổ sung "
-                "thông tin và ảnh cho các căn đang rao) là căn này được lên web.")
     elif web.get("len_web") is False:
         ly_do = f"TIN CHƯA HIỂN THỊ trên web (hệ thống đã kiểm). {cam}"
         viec = ("báo bên em đang hoàn tất để đưa tin lên, tin hiển thị em nhắn ngay kèm link." if web.get("hen_bao_len_web")

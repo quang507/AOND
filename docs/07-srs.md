@@ -830,11 +830,11 @@ lúc 10 phút thì không) → bridge tưởng điếc, cắt; mỗi lần nối
 - **Kỳ vọng:** đang có tin → không bao giờ cắt. Im hẳn → dò ở ~30 phút, Zalo không đáp → nối lại sau ~31,5 phút im (số vắng nối lại
   ~32 phút một lần thay 12). Khoảng điếc tối đa ~32 phút thay ~5,5 phút — đổi lấy việc không cắt giữa lúc khách đang nhắn.
 
-### SRS-5.1zzzzzzz466 · Trần hạng Đồng 5 căn chạy lại, ở trigger lên kệ (13/11/2026)
-Chủ dự án 13/11 chốt luật Đồng tối đa 5 căn (SRD §IV.3) "vẫn chạy" — SRS-465 thấy nó đã ngừng từ 18/10. Thông tin dự án do một người gửi vẫn nhận, ghi "chưa chắc chắn" (SRS-445), không qua trần.
-- **DB:** cột `listings.ly_do_chua_dang`; `listings_quyet_dinh_dang_tin` (vai service_role) gặp tin sắp lên kệ mà người rao đã có ≥ 5 căn hiện (`dang_ban` / `dang_quan_tam` / `da_coc`) và hạng `dong` → giữ ở `cho_thong_tin`, ghi `tran_hang_dong`. Tin đang hiện không bị gỡ; tính hạng lỗi thì cho qua; admin đăng hộ không bị trần.
-- **Lõi:** `trang_thai_tin` trả cờ `tran_hang_dong`; engine không hẹn nhắc `len_web`; `khoi_trang_thai_web` bảo bot nói thật: hạng Đồng tối đa 5 căn, căn này đã lưu đủ, lên Bạc (≥ 50 điểm) là lên web. Prompt +~130 ký tự chỉ ở lượt bị trần, lượt thường +0.
-- **Giới hạn:** lên Bạc hay gỡ bớt căn thì tin bị giữ chỉ lên ở lượt ghi kế (khách nhắn tiếp về căn đó). Thử rollback 13/11: 7 căn → 5 lên, 2 giữ; gỡ một căn → căn 6 lên; vai `authenticated` không bị trần.
+### SRS-5.1zzzzzzz466 · Hạng Đồng quá 5 căn: vẫn lên web, gắn nhãn "thông tin cần kiểm chứng thêm" (13/11/2026)
+Chủ dự án 13/11 chốt luật Đồng tối đa 5 căn (SRD §IV.3) "vẫn chạy" (SRS-465 thấy nó ngừng từ 18/10). Bản đầu (migration `20261113c`) giữ căn thứ 6 ở `cho_thong_tin`; chủ dự án sửa: "không phải là chờ thông tin mà là có thông tin, đem ra dùng nhưng nói rõ là thông tin cần kiểm chứng thêm" — cùng cách thông tin dự án một người gửi (SRS-445).
+- **DB (`20261113d`):** cột `listings.can_kiem_chung` (bỏ `ly_do_chua_dang`). Mỗi lần lõi (service_role) ghi một căn đang hiện, `listings_quyet_dinh_dang_tin` đếm căn đang hiện không mang nhãn của người rao: ≥ 5 và hạng `dong` → gắn, ngược lại bỏ. Lên Bạc / gỡ bớt căn → lượt ghi kế bỏ nhãn. Admin ghi không đổi nhãn; tính hạng lỗi thì giữ nguyên. `tim_nha` trả thêm khoá `can_kiem_chung`.
+- **Bot:** phía mua `dong_can` ghi "THÔNG TIN CẦN KIỂM CHỨNG THÊM (nói rõ với khách)"; phía bán `khoi_trang_thai_web` thêm một dòng báo chủ nhà tin hiện kèm nhãn, lên Bạc (≥ 50 điểm) là bỏ. Prompt +~250 ký tự chỉ khi căn mang nhãn, lượt thường +0.
+- **Web:** nhãn vàng "Thông tin cần kiểm chứng thêm" dưới tiêu đề trang tin và trên thẻ tin. Thử rollback trên DB thật 13/11: 7 căn → cả 7 lên web, căn 6–7 mang nhãn; chốt căn 1 rồi ghi lại căn 6 → bỏ nhãn; `tim_nha` có khoá.
 
 ### SRS-5.1zzzzzzz465 · Đối chiếu SRD 23/06 với code: docs/00 §0.3 sửa 6 dòng (13/11/2026)
 Chủ dự án 13/11 gửi lại SRD gốc (`req__chat_examples.docx`, 23/06/2026) nhờ soát code / docs có khác không. Sau SRS-464 (docs khớp code), bảng

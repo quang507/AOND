@@ -45,7 +45,7 @@ const DETAIL_COLS =
   "created_at, lat, lng, bedrooms, street, access_type, alley_width_m, distance_to_street_m, frontage_m, length_m, " +
   "rear_width_m, legal_area_m2, built_area_m2, floors, floors_text, floor, bathrooms, direction, legal_status, has_completion, " +
   "planning_status, has_elevator, car_in_house, corner_lot, furnishing, year_built, negotiable, rent_income_vnd, " +
-  "price_per_m2_vnd, project_id, unit_code, nhan, cung_can_id, loai_phap_ly(nhan)";   // nhãn loại giấy: bảng loai_phap_ly (SRS-435)
+  "price_per_m2_vnd, project_id, unit_code, nhan, cung_can_id, can_kiem_chung, loai_phap_ly(nhan)";   // nhãn loại giấy: bảng loai_phap_ly (SRS-435)
 
 
 const getListing = cache(async (code: string): Promise<Listing | null> => {
@@ -277,6 +277,12 @@ export default async function Page({
             </Link>
           </nav>
           <h1 className="mt-2.5 text-3xl font-extrabold [text-wrap:balance] md:text-4xl">{title}</h1>
+          {listing.can_kiem_chung && (
+            // SRS-5.1zzzzzzz466: căn thứ 6 trở đi của người rao hạng Đồng — vẫn hiện, nói rõ
+            <p className="mt-2 inline-block rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+              Thông tin cần kiểm chứng thêm
+            </p>
+          )}
           <p className="mt-2 flex items-start gap-1.5 text-white/70">
             <IconPin className="mt-1 h-4 w-4 shrink-0 text-brand" />
             <span>

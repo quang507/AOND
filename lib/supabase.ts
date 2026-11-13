@@ -20,7 +20,7 @@ export const TRANG_THAI_HIEN = ["dang_ban", "dang_quan_tam", "da_coc"];
 // FR-172: thẻ tin thêm ba cột thông số nhẹ (đường vào, số tầng, WC) — đúng thứ
 // khách Quận 5 nhìn đầu tiên ("HXH hay MT? mấy tầng?"), không kéo mô tả.
 export const CARD_COLS =
-  "id, code, deal, district, ward, street, location_raw, area_m2, price_vnd, price_raw, property_type, bedrooms, bathrooms, floors, access_type, status, created_at";
+  "id, code, deal, district, ward, street, location_raw, area_m2, price_vnd, price_raw, property_type, bedrooms, bathrooms, floors, access_type, status, created_at, can_kiem_chung";
 /** Bản đồ: thẻ + toạ độ, vẫn không kéo mô tả. */
 export const MAP_COLS = `${CARD_COLS}, lat, lng`;
 export type MapRow = ListingCard & Pick<Listing, "lat" | "lng">;
@@ -29,7 +29,7 @@ export type ListingCard = Pick<
   Listing,
   | "id" | "code" | "deal" | "district" | "ward" | "street" | "location_raw" | "area_m2"
   | "price_vnd" | "price_raw" | "property_type" | "bedrooms" | "bathrooms" | "floors"
-  | "access_type" | "status" | "created_at"
+  | "access_type" | "status" | "created_at" | "can_kiem_chung"
 >;
 
 /** FR-172: đường vào — giá trị trong DB (CHECK ở migration 20260902e). */
@@ -47,6 +47,8 @@ export type Listing = {
   price_raw: string | null;
   description: string | null;
   status: string;
+  /** SRS-5.1zzzzzzz466: căn thứ 6 trở đi của người rao hạng Đồng — hiện nhãn "Thông tin cần kiểm chứng thêm". */
+  can_kiem_chung?: boolean | null;
   property_type: string | null;
   created_at: string;
   lat: number | null;

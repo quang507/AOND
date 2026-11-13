@@ -3297,9 +3297,7 @@ class Engine:
                 web_tin["da_bao_dang"] = True   # SRS-5.1zzzzzzz220: đã báo đăng tin ở lượt trước — không "xin phép đăng tin" lại mỗi lần "ok"
             # SRS-5.1zzzzzzz254: khách đã duyệt mà tin chưa hiển thị (hệ thống / admin đang hoàn tất — không phải thiếu ô khách bổ sung được)
             # → hẹn nhắc `len_web`; có hẹn thật thì bot mới được nói "tin hiển thị em nhắn".
-            # SRS-5.1zzzzzzz466: tin bị trần hạng Đồng giữ thì hệ thống không tự đưa lên — không hẹn nhắn "tin hiển thị"
             if (web_tin is not None and web_tin.get("len_web") is False and not web_tin.get("cho_duyet")
-                    and not web_tin.get("tran_hang_dong")
                     and (not web_tin.get("thieu") or web_tin.get("phuong_bao_admin"))):
                 hen = getattr(self._convstore, "hen_bao_len_web", None)
                 web_tin["hen_bao_len_web"] = bool(hen is not None and hen(conv))

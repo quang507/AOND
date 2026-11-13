@@ -58,6 +58,11 @@ export default function ListingCard({
         >
           {title}
         </Link>
+        {listing.can_kiem_chung && (   /* SRS-5.1zzzzzzz466 */
+          <span className="mt-1 self-start rounded-md bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
+            Thông tin cần kiểm chứng thêm
+          </span>
+        )}
 
         {/* Price & Area */}
         <div className="mt-2 flex items-baseline gap-2 text-sm">

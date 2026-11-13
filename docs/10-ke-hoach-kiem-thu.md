@@ -316,7 +316,7 @@ SQL editor, test hồi quy mỗi lần sửa `parse_vnd`: `select s, parse_vnd(s
 | TS-HANG-01 | `select * from seller_ranks` | mỗi người bán một dòng; NMG 17–22 tin, 0 chốt → **bac** | ✅ 04/09 (3/3 Bạc) |
 | TS-HANG-02 | cùng view, vai `anon` | không có cột `phone`/`zalo_user_id` (FR-104); từ `20260904b` view invoker → anon **0 dòng** là đúng ý (hạng ẩn khỏi web, chỉ `/admin` đọc) | ✅ 04/09 |
 | TS-HANG-03 | đặt tay một tin `da_chot` cho NMG ≥10 tin, đọc lại (nhớ trả lại) | nhảy **vang** | ✅ 04/09 |
-| TS-HANG-04 | Trần Đồng (SRS-5.1zzzzzzz466): trong transaction rồi rollback, vai service_role, người bán `thu-*` mới, chèn 7 tin đủ giá · diện tích · phường | 5 tin `dang_ban`, tin 6–7 `cho_thong_tin` + `ly_do_chua_dang = tran_hang_dong`; đổi một tin sang `da_chot` rồi ghi lại tin 6 → `dang_ban`; vai `authenticated` ghi tin 7 → `dang_ban` | ✅ 13/11 (rollback, DB thật) |
+| TS-HANG-04 | Hạng Đồng quá 5 căn (SRS-5.1zzzzzzz466): trong transaction rồi rollback, vai service_role, người bán `thu-*` mới, chèn 7 tin đủ giá · diện tích · phường | cả 7 tin `dang_ban`; tin 6–7 `can_kiem_chung = true`; đổi tin 1 sang `da_chot` rồi ghi lại tin 6 → bỏ nhãn; vai `authenticated` ghi tin 7 → nhãn giữ nguyên; `tim_nha` trả khoá `can_kiem_chung` | ✅ 13/11 (rollback, DB thật) |
 
 ### TS-DANGTIN — admin tự đăng tin (FR-156)
 RPC `admin_dang_tin` + trang `/admin/dang-tin`. Dọn: xoá tin `BDS-Q5-####` vừa tạo, `info_requests` của nó, người bán thử; kiểm lại `listings` = 173, `sellers` = 3.
