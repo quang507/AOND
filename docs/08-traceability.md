@@ -545,6 +545,7 @@ Cập nhật **cùng commit** khi đổi FR / BR / UF / WF ở tầng trên (quy
 | FR-157 | — | — | SRS-5.1zzzzzzz461 | TS-SRS (`test_vai_sticker_461_463.py`) + "em ơi" sau 6 tiếng ở số ký gửi |
 | FR-142 | — | — | SRS-5.1zzzzzzz462 | TS-SRS (`test_vai_sticker_461_463.py`) + gửi sticker OK lúc chờ duyệt |
 | FR-134 | — | — | SRS-5.1zzzzzzz463 | node --check + gửi video / danh thiếp thật |
+| FR-203 | — | — | SRS-5.1zzzzzzz467 | TS-PROD (log 30 phút có tin không còn dòng "cắt socket" + nhắn thật vào Zalo bot) |
 | FR-185 | — | — | SRS-5.1zzzzzzz455 | TS-SRS (`test_bao_cao_gia_455.py`) + mở `/bao-cao-gia/<mã>` |
 | FR-185 | — | — | SRS-5.1zzzzzzz456 | TS-SRS (`test_gia_chot_456.py`) |
 | FR-144 | — | — | SRS-5.1zzzzzzz450 | TS-SRS (`test_dap_chua_chon_450.py`) |

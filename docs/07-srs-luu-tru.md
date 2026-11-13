@@ -73,6 +73,15 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz456 · Bot hỏi giá chốt khi chủ báo đã cọc / đã bán (13/11/2026)
+LQC 4.3/4.4 cần giá giao dịch thật. Chủ dự án 13/11: không chờ admin nhập tay, "tự sửa lun đi".
+- **Ô riêng `gia_chot`** (`schema.O_GIA_CHOT`, nằm trong `O_COC` → `O_NOI_BO`, lưu `listing_noi_bo`, không lên web / bản tin). Giá rao vẫn ở `gia`.
+- **Hỏi:** căn đã cọc → hỏi `gia_chot` trước rồi tới tiền cọc / ngày cọc / hạn công chứng như SRS-5.1zzzzzzz295. Căn đã bán / đã cho thuê
+  (tin đã rời web, `len_web` sai) → chỉ hỏi `gia_chot`. Mỗi lượt một ô, mỗi ô một lần (`_coc_da_hoi`). `khoi_hoi_coc(o, prop, trang_thai)`.
+- **Ghi:** migration `20261113b` thêm `deals.gia_chot_vnd`. `ghi_deal` ghi luôn nếu chủ đã báo giá chốt từ lúc cọc; báo sau lượt chốt thì
+  `cap_nhat_gia_chot` điền vào dòng `deals` mới nhất. Đổi chữ ra đồng bằng `parse_vnd` (luật tiền một nguồn). `price_vnd` giữ nghĩa giá rao.
+- Token: thêm một dòng mô tả ô trong schema bóc tách (~45 token mỗi lượt bóc); khối hỏi chỉ vào prompt ở lượt hỏi.
+
 ### SRS-5.1zzzzzzz455 · Báo cáo giá rao quanh căn — LQC 4.6 (13/11/2026)
 Đặc tả anh Luận 4.6: "Em có báo cáo giá bán nhà khu vực anh, em làm miễn phí cho anh". Chủ dự án 13/11: "dựa trên giá rao cũng dc, tạm để
 test vậy đi" (Moso có mục "Báo cáo thị trường BĐS" tính từ tin đăng trên Moso).

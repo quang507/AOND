@@ -795,6 +795,16 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz467 · Bridge chỉ dò sống khi im 10 phút — hết vòng tự cắt 12 phút (13/11/2026)
+Chủ dự án 13/11 "sao zalo bridge bây giờ lâu lâu nó tắt". Log hai số: sau SRS-5.1zzzzzzz459 bridge tự cắt rồi nối lại **đúng 12 phút một
+lần** dù tin vẫn về. Máy chủ Zalo chỉ đáp lệnh 510 cho hai lần dò đầu của mỗi kết nối (3 giây và 5 phút), lần thứ ba im → bridge tưởng
+điếc, cắt; mỗi lần nối lại mất ~13 giây, tin rơi vào khoảng đó thì mất.
+- **Dò khi im:** ghi `khungTinCuoi` mỗi khi có khung dữ liệu từ máy chủ (không tính pong). Có khung về là kết nối sống, không dò.
+  Chỉ dò khi quá `BRIDGE_DO_SONG_MS` (mặc định đổi 5 → **10 phút**) không có khung nào và không có lần dò nào; không đáp trong 90 giây
+  thì cắt như cũ. Lần dò 3 giây sau mỗi lần nối giữ nguyên.
+- **Kỳ vọng:** đang có tin → không bao giờ cắt. Im hẳn → dò ở ~10 phút (đáp), ~20 phút (không đáp) → nối lại sau ~21,5 phút im; giờ đêm
+  không khách thì nối lại vô hại. Khoảng điếc tối đa ~21,5 phút thay ~5,5 phút — đổi lấy việc không cắt giữa lúc khách đang nhắn.
+
 ### SRS-5.1zzzzzzz465 · Đối chiếu SRD 23/06 với code: docs/00 §0.3 sửa 6 dòng (13/11/2026)
 Chủ dự án 13/11 gửi lại SRD gốc (`req__chat_examples.docx`, 23/06/2026) nhờ soát code / docs có khác không. Sau SRS-464 (docs khớp code), bảng
 §0.3 còn 6 dòng lệch code: Live Chat Monitor ghi ⏳ nhưng nhãn + nút "Giữ khách" đã chạy; **Đồng tối đa 5 căn ghi ✅ nhưng không chạy** (trần ở
@@ -881,12 +891,3 @@ Chủ dự án 13/11/2026 "Sửa cả 5 P1" sau đợt đánh giá Heuristic (Ni
    (`lg:hidden`, `text-brand-soft`). Thanh dính đáy `ThanhHoiCan` (`lg:hidden`, cuối nội dung nên dừng trước footer): giá + mã + Lưu +
    "Hỏi qua Zalo". Nút khối Hỏi (máy tính) đổi sang xanh Zalo. Bấm nút Zalo nào cũng chép sẵn "Hỏi căn #<mã>" vào bộ nhớ tạm, mở Zalo
    tab mới, báo "đã chép, dán vào Zalo" (zalo.me không điền sẵn tin được). Chữ ghi chú `text-mute/80` (3,6:1) → `text-mute`.
-
-### SRS-5.1zzzzzzz456 · Bot hỏi giá chốt khi chủ báo đã cọc / đã bán (13/11/2026)
-LQC 4.3/4.4 cần giá giao dịch thật. Chủ dự án 13/11: không chờ admin nhập tay, "tự sửa lun đi".
-- **Ô riêng `gia_chot`** (`schema.O_GIA_CHOT`, nằm trong `O_COC` → `O_NOI_BO`, lưu `listing_noi_bo`, không lên web / bản tin). Giá rao vẫn ở `gia`.
-- **Hỏi:** căn đã cọc → hỏi `gia_chot` trước rồi tới tiền cọc / ngày cọc / hạn công chứng như SRS-5.1zzzzzzz295. Căn đã bán / đã cho thuê
-  (tin đã rời web, `len_web` sai) → chỉ hỏi `gia_chot`. Mỗi lượt một ô, mỗi ô một lần (`_coc_da_hoi`). `khoi_hoi_coc(o, prop, trang_thai)`.
-- **Ghi:** migration `20261113b` thêm `deals.gia_chot_vnd`. `ghi_deal` ghi luôn nếu chủ đã báo giá chốt từ lúc cọc; báo sau lượt chốt thì
-  `cap_nhat_gia_chot` điền vào dòng `deals` mới nhất. Đổi chữ ra đồng bằng `parse_vnd` (luật tiền một nguồn). `price_vnd` giữ nghĩa giá rao.
-- Token: thêm một dòng mô tả ô trong schema bóc tách (~45 token mỗi lượt bóc); khối hỏi chỉ vào prompt ở lượt hỏi.

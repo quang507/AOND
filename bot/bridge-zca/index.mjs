@@ -948,10 +948,11 @@ api.listener.on("closed", async (code, reason) => {
 const NHIP_NGHE_MS = 60_000;
 const CAM_NGHE_MS = Number(process.env.BRIDGE_CAM_NGHE_MS || 180_000);
 let khungCuoi = Date.now();
+let khungTinCuoi = Date.now();   // SRS-5.1zzzzzzz467: khung dữ liệu cuối từ máy chủ (không tính pong) — có khung về là kết nối sống
 let soKhungGio = 0;
 let daCoPong = false;
 api.listener.on("connected", () => {
-  khungCuoi = Date.now();
+  khungCuoi = khungTinCuoi = Date.now();
   console.log(`Kết nối nghe Zalo mở — ${new Date().toISOString()}`);
   const ws = api.listener.ws;
   if (!ws || typeof ws.on !== "function") return;
@@ -960,7 +961,7 @@ api.listener.on("connected", () => {
     if (!daCoPong) console.log("Zalo trả pong — bật canh kết nối chết lặng.");
     daCoPong = true;
   });
-  ws.on("message", () => { khungCuoi = Date.now(); soKhungGio++; });
+  ws.on("message", () => { khungCuoi = khungTinCuoi = Date.now(); soKhungGio++; });
 });
 setInterval(() => {
   const ws = api.listener.ws;
@@ -983,8 +984,12 @@ setInterval(() => {
 // "em ơi" 12:20 không thấy đáp. Pong tầng websocket vẫn về (có thể chỉ từ lớp trung gian), nên canh pong không cắt. Đo thẳng ở nguồn: mỗi
 // DO_SONG_MS gửi lệnh ứng dụng `requestOldMessages` (510) trên chính socket nghe — chỉ máy chủ Zalo thật trả `old_messages`; quá CHO_DAP_MS
 // không trả → cắt socket để zca-js nối lại. Tin khách nhắn lúc socket điếc thì MẤT: 510 trả tin đồng bộ cũ (đo 13/11: mới nhất 02/11), zca-js
-// không có API đọc lịch sử chat 1-1 — nên chỉ rút ngắn khoảng điếc (≤ ~5,5 phút), không bù được.
-const DO_SONG_MS = Number(process.env.BRIDGE_DO_SONG_MS || 300_000);
+// không có API đọc lịch sử chat 1-1 — nên chỉ rút ngắn khoảng điếc, không bù được.
+// SRS-5.1zzzzzzz467 (chủ dự án 13/11: "sao zalo bridge bây giờ lâu lâu nó tắt"): bản đầu dò đều 5 phút một lần → log 13/11 cắt-nối ĐÚNG 12 phút
+// một lần cả hai số: Zalo đáp 510 hai lần đầu mỗi kết nối, lần ba im dù tin khách vẫn về (12:39 nối lại xong có ngay "Mình cần tìm nhà phú
+// nhuận"). Mỗi lần nối ~13 giây, tin rơi đúng lúc đó mất. Nay chỉ dò khi socket IM: không khung dữ liệu nào về trong DO_SONG_MS (tin về đều
+// đã là bằng chứng sống) — đang có khách thì không bao giờ cắt; im lâu (đêm) thì vẫn dò, Zalo không đáp thì cắt để nối lại như cũ.
+const DO_SONG_MS = Number(process.env.BRIDGE_DO_SONG_MS || 600_000);
 const CHO_DAP_MS = 90_000;
 let choDoSong = 0;
 let lanDoCuoi = 0;
@@ -1002,7 +1007,7 @@ api.listener.on("old_messages", (msgs, loai) => {
   khungCuoi = Date.now();
   if (!daBaoDoSong) {   // lần đáp đầu sau mỗi lần nối: một dòng để soi log; định kỳ thì im
     daBaoDoSong = true;
-    console.log(`Dò sống: máy chủ Zalo đáp lệnh 510 (${Array.isArray(msgs) ? msgs.length : 0} tin) — bật canh mỗi ${Math.round(DO_SONG_MS / 60000)} phút.`);
+    console.log(`Dò sống: máy chủ Zalo đáp lệnh 510 (${Array.isArray(msgs) ? msgs.length : 0} tin) — dò lại khi im ${Math.round(DO_SONG_MS / 60000)} phút.`);
   }
 });
 api.listener.on("connected", () => { daBaoDoSong = false; setTimeout(() => doSong("vừa nối"), 3000); });
@@ -1016,7 +1021,7 @@ setInterval(() => {
     ws.terminate();
     return;
   }
-  if (Date.now() - lanDoCuoi > DO_SONG_MS) doSong("định kỳ");
+  if (!choDoSong && Date.now() - Math.max(lanDoCuoi, khungTinCuoi) > DO_SONG_MS) doSong("im lâu");
 }, 30_000);
 
 api.listener.start({ retryOnClose: true });
