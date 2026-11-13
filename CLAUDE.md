@@ -86,7 +86,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
   | `AIOI_CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246. Ngoại lệ quy ước: code đọc `!= "tat"`, trống = BẬT |
   | `AIOI_PROMPT_GON` | `bat` | lượt hỏi ô người bán dùng `LEAN_SYSTEM_PROMPT` thay phiếu `build_phieu_luot` (tắt = về phiếu cũ) — SRS-408 / 414 |
   | `AIOI_DONG_TRICH_XUAT` | `bat` | tin phụ "$$$$$ Đã trích xuất" sau mỗi lượt, MỌI cuộc chat (giai đoạn test; chạy thật đổi `tat`) — SRS-252 |
-  | `AIOI_EFFORT` | `low` | mức suy nghĩ của model cho lượt gọi chữ (low / medium / high; trống = mặc định model) — SRS-482 |
+  | `AIOI_EFFORT` | `medium` | mức suy nghĩ của model cho lượt gọi chữ (low / medium / high; trống = mặc định model) — SRS-482 |
   | `GEMINI_MODEL` | `gemini-3.5-flash,gemini-3.1-flash-lite` | Gemini dự phòng khi Claude hỏng — SRS-299 |
 
   `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đã gỡ hẳn (đường mới là duy nhất, SRS-319): `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON` / `FORM_BAN_GON`, `AGENT_MUA` / `AGENT_BAN`; SRS-371: `AGENT_BOC` / `AGENT_GOP` — lượt người bán và người mua (vai đã rõ) là MỘT vòng agent Sonnet (`agent_gop.py`, SRS-371 / 380), form bóc tách (model `AIOI_EXTRACT_MODEL`) chỉ dự phòng. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini
