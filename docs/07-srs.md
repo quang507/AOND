@@ -795,6 +795,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz465 · Đối chiếu SRD 23/06 với code: docs/00 §0.3 sửa 6 dòng (13/11/2026)
+Chủ dự án 13/11 gửi lại SRD gốc (`req__chat_examples.docx`, 23/06/2026) nhờ soát code / docs có khác không. Sau SRS-464 (docs khớp code), bảng
+§0.3 còn 6 dòng lệch code: Live Chat Monitor ghi ⏳ nhưng nhãn + nút "Giữ khách" đã chạy; **Đồng tối đa 5 căn ghi ✅ nhưng không chạy** (trần ở
+`chat-reply` TS gỡ 18/10, `con_duoc_rao` không còn trên DB); NMG 10 căn / chốt 5% / < 3 sao chỉ là lời khích lệ; kho tên 13 thay 20; điểm tin mới
+không mượn điểm người rao; giữ kết nối 6–7 ngày (SRD > 5). Chỉ sửa docs; trần Đồng chờ chủ dự án chốt làm lại hay bỏ.
+
 ### SRS-5.1zzzzzzz464 · Soát mâu thuẫn toàn bộ docs, sửa docs theo code (13/11/2026)
 Ca gốc: chủ dự án 13/11 nhờ soát docs, PR, open issue có chỗ nào mâu thuẫn; 0 PR / 0 issue mở, docs lệch code ở ~60 chỗ. Chốt (chủ dự án, chat): "sửa hết đi, 3 điểm đầu theo code".
 Lớp lỗi: sửa code / SRS mà không quét các tầng docs và file luật (CLAUDE.md, luat-dang-ap, .clinerules) cùng lúc; `truyvet` chỉ soát ID, số đếm, tên hàm, không soát nghĩa.
@@ -884,15 +890,3 @@ LQC 4.3/4.4 cần giá giao dịch thật. Chủ dự án 13/11: không chờ ad
 - **Ghi:** migration `20261113b` thêm `deals.gia_chot_vnd`. `ghi_deal` ghi luôn nếu chủ đã báo giá chốt từ lúc cọc; báo sau lượt chốt thì
   `cap_nhat_gia_chot` điền vào dòng `deals` mới nhất. Đổi chữ ra đồng bằng `parse_vnd` (luật tiền một nguồn). `price_vnd` giữ nghĩa giá rao.
 - Token: thêm một dòng mô tả ô trong schema bóc tách (~45 token mỗi lượt bóc); khối hỏi chỉ vào prompt ở lượt hỏi.
-
-### SRS-5.1zzzzzzz455 · Báo cáo giá rao quanh căn — LQC 4.6 (13/11/2026)
-Đặc tả anh Luận 4.6: "Em có báo cáo giá bán nhà khu vực anh, em làm miễn phí cho anh". Chủ dự án 13/11: "dựa trên giá rao cũng dc, tạm để
-test vậy đi" (Moso có mục "Báo cáo thị trường BĐS" tính từ tin đăng trên Moso).
-- **DB:** RPC `bao_cao_gia_quanh(p_code, p_ban_kinh_m = 3000)` (migration `20261113a`) — căn cùng giao dịch + cùng loại trong bán kính, chỉ tin
-  đang hiện: số căn, đơn giá rao min / p25 / trung vị / p75 / max, theo lối vào, vị trí giá của căn (CHỈ so cùng lối vào, ≥ 3 căn — như
-  `muc_lech` SRS-5.1zzzzzzz429), 12 căn gần nhất, căn gần đó đã cọc / chốt 180 ngày (giá RAO lúc đó; giá chốt bảng `deals` không lên trang
-  công khai). Không trả số nhà / người bán / mô tả. Khoá công khai gọi được.
-- **Web:** `app/bao-cao-gia/[code]/page.tsx` — số liệu chính, dải đơn giá (nửa giữa, mức ở giữa, chấm căn của chủ), bảng theo lối vào, danh
-  sách căn gần, ghi rõ "đây là giá rao, chưa phải giá giao dịch". ISR 1 giờ, không cho Google lập chỉ mục (trang theo từng căn).
-- **Bot:** `so_sanh.dong_bao_cao` — tin gửi so sánh sau đăng (cụm `so_sanh`) và lượt chủ hỏi giá thị trường kèm MỘT câu mời xem trang
-  báo cáo khi có ≥ 3 căn cùng loại đang rao gần (`web.link_bao_cao_gia`). Không thêm câu hỏi, không tính vào trần 10 câu sau đăng.

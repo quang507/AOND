@@ -73,6 +73,18 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz455 · Báo cáo giá rao quanh căn — LQC 4.6 (13/11/2026)
+Đặc tả anh Luận 4.6: "Em có báo cáo giá bán nhà khu vực anh, em làm miễn phí cho anh". Chủ dự án 13/11: "dựa trên giá rao cũng dc, tạm để
+test vậy đi" (Moso có mục "Báo cáo thị trường BĐS" tính từ tin đăng trên Moso).
+- **DB:** RPC `bao_cao_gia_quanh(p_code, p_ban_kinh_m = 3000)` (migration `20261113a`) — căn cùng giao dịch + cùng loại trong bán kính, chỉ tin
+  đang hiện: số căn, đơn giá rao min / p25 / trung vị / p75 / max, theo lối vào, vị trí giá của căn (CHỈ so cùng lối vào, ≥ 3 căn — như
+  `muc_lech` SRS-5.1zzzzzzz429), 12 căn gần nhất, căn gần đó đã cọc / chốt 180 ngày (giá RAO lúc đó; giá chốt bảng `deals` không lên trang
+  công khai). Không trả số nhà / người bán / mô tả. Khoá công khai gọi được.
+- **Web:** `app/bao-cao-gia/[code]/page.tsx` — số liệu chính, dải đơn giá (nửa giữa, mức ở giữa, chấm căn của chủ), bảng theo lối vào, danh
+  sách căn gần, ghi rõ "đây là giá rao, chưa phải giá giao dịch". ISR 1 giờ, không cho Google lập chỉ mục (trang theo từng căn).
+- **Bot:** `so_sanh.dong_bao_cao` — tin gửi so sánh sau đăng (cụm `so_sanh`) và lượt chủ hỏi giá thị trường kèm MỘT câu mời xem trang
+  báo cáo khi có ≥ 3 căn cùng loại đang rao gần (`web.link_bao_cao_gia`). Không thêm câu hỏi, không tính vào trần 10 câu sau đăng.
+
 ### SRS-5.1zzzzzzz454 · Ảnh tin: xoá logo / watermark in đè, đóng dấu AOND, giữ gốc ở bucket riêng (13/11/2026)
 Ảnh chủ / môi giới gửi qua Zalo hay có logo sàn, số điện thoại, website, tên công ty khác in đè; moso.vn có công cụ "Xoá logo watermark".
 - **Vòng nền mới** `server._vong_xoa_logo` (5 phút / lượt, `XOA_LOGO_CHU_KY_GIAY`; tắt `XOA_LOGO=tat`), logic ở `src/aioi/xoa_logo.py`: mỗi lượt

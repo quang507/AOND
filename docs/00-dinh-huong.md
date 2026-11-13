@@ -63,7 +63,7 @@ AOND mượn cho cả hai phía (`06 §6.8`).
 
 ## 0.2 Hai nguồn gốc, một sản phẩm
 
-| Khía cạnh | nhadat.cc (2024) | AOND SRD (06/2026) | Hôm nay (28/10/2026) | Neo |
+| Khía cạnh | nhadat.cc (2024) | AOND SRD (06/2026) | Hôm nay (soát lại 13/11/2026) | Neo |
 |---|---|---|---|---|
 | Tên | nhadat.cc, "Thái" | aioinhadat.com, gia đình •ai | **Aioinhadat**, viết cho khách **AI Ơi Nhà Đất**; trợ lý **mỗi khách một tên**, 13 tên có chấm giữa (SRS-5.1zzzzzzz183). *Lịch sử: một tên Thái 03–09/09 → kho •ai 09/09–14/10 → 20 tên người thật 14–25/10.* Link web bot gửi lấy từ `AIOI_SITE_URL` (mặc định `aond.vercel.app` từ 05/11/2026, SRS-5.1zzzzzzz383) | OPEN-08, OPEN-39, FR-181 |
 | Trọng tâm | Khách chat Zalo; web SEO | Người rao gửi hàng tự nhiên | Cả hai, **một lõi Python**, vai theo ý định từng lượt; một Zalo = một khách = một hội thoại | SRS-5.1zzzzzzz31, SRS-5.1zzzzzzz149, SRS-5.1zzzzzzz153 |
@@ -88,7 +88,7 @@ AOND mượn cho cả hai phía (`06 §6.8`).
 | §I | Thoại | ✅ | Tin thoại Zalo giải mã thành chữ rồi chạy như tin chữ (SRS-5.1zzzzzzz20, `voice.py`) |
 | §I | Tích lũy ngầm nhiều phiên | ✅ | FR-129/144/153/172; phiên nạp lại sau khi lõi khởi động lại (SRS-5.1zzzzzzz147) |
 | §I | 200–300 người/ngày, 6–9k tin, phủ 90% Q5 | 🔶 | NFR-05; Free-tier chưa đo (NFR-16) |
-| §II | Kho tên •ai (m•ai, t•ai…) | ✅ | Mỗi khách một tên, gán theo Zalo ID, giữ suốt (FR-181). 13 tên có chấm giữa: Th•ái, M•ai, H•ải, L•ai, Kh•ải, T•ài, Đ•ại, Đ•ài, Nh•ài, Gi•ai, Ph•ái, L•ài, Ho•ài (SRS-5.1zzzzzzz183) |
+| §II | Kho tên •ai (m•ai, t•ai…) | 🔶 | SRD 20 phụ âm; code 13 tên (`assistants.ASSISTANT_NAMES`). Mỗi khách một tên, gán theo Zalo ID, giữ suốt (FR-181). 13 tên có chấm giữa: Th•ái, M•ai, H•ải, L•ai, Kh•ải, T•ài, Đ•ại, Đ•ài, Nh•ài, Gi•ai, Ph•ái, L•ài, Ho•ài (SRS-5.1zzzzzzz183) |
 | §II | Quy tắc 30 từ | ✅ | Khuôn chat phía bán ~30 từ theo bản AOND (SRS-5.1zzzzzzz207); "ngắn vừa vừa" (SRS-5.1zzzzzzz97) |
 | §II | Khen trước, hỏi 1/lần; "hình như là" | ✅ | Khen điểm mạnh trước rồi hỏi 1 ý (SRS-5.1zzzzzzz207); giọng một khối `GIONG_VUI` (SRS-5.1zzzzzzz219); không mở "Dạ", không gọi khách là "mình". *`TONE_RULES` TS là lịch sử* |
 | §II | Giọng mẫu: transcript 30 câu người bán | 🔶 | Ví dụ lấy từ câu chuẩn chủ dự án / tester sửa ở `/admin/cau-chuan` (SRS-5.1zzzzzzz88, SRS-5.1zzzzzzz180) + câu mẫu cố định (SRS-5.1zzzzzzz106). *`SELLER_FEWSHOT`, `bot_prompts` đã gỡ 18/10* |
@@ -98,13 +98,18 @@ AOND mượn cho cả hai phía (`06 §6.8`).
 | §III | Nhóm 3 công nghiệp | ✅ | FR-186 mở rộng (OPEN-40 chốt 09/09): `kho_xuong`, `toa_nha`, `dat_kinh_doanh`, `dat_nong_nghiep` |
 | §IV | Điểm uy tín 50% hoàn chỉnh + 50% kịp thời | 🔶 | FR-183; `gamification.py`; hạng theo điểm (SRS-5.1zzf) |
 | §IV | Điểm **từng tin** (khác điểm người rao) | ✅ | FR-177 d; khối "ĐIỂM TIN" cho model (SRS-5.1zzzzzzz216). Cổng soạn bản tin nay là loại hình + vị trí + giá (SRS-5.1zzzzzzz200, SRS-5.1zzzzzzz202), không theo ngưỡng điểm — OPEN-50 |
-| §IV | Thưởng quy mô; quyền lợi Đồng/Bạc/Vàng | ✅ | SRS-5.1zzf (OPEN-26 chốt 05/10); hạng giữ (SRS-5.1zzzzzzz214) |
-| §V | Phí; NMG ≥10 tin, chốt 5% | ✅ | BR-05, FR-125, FR-155; `prompts.muc_phi` |
+| §IV | Điểm tin mới đăng = điểm uy tín hiện tại của người rao | 🔶 | Code chấm tin mới theo độ đủ + ảnh + kịp thời như mọi tin (`gamification.property_score`), không mượn điểm người rao |
+| §IV | Thưởng quy mô | ✅ | `gamification.scale_bonus_multiplier`: +6% / +4% / +1,5% mỗi căn cho ≤10 / 11–30 / >30 căn (giữa khoảng SRD) |
+| §IV.3 | Vàng ưu tiên khách nét | ✅ | `tim_nha` cùng mức khớp thì căn người rao hạng cao lên trước (SRS-5.1zzzzzzz361) |
+| §IV.3 | CCRB Vàng → rổ tới ≤ 20 NMG lõi | ✅ | Trigger `trg_listings_day_ro_ccrb` → `day_ro_ccrb_toi_nmg` ghi `reminders`, bridge gửi (SRS-5.1zzf) |
+| §IV.3 | Đồng tối đa 5 căn | ⏳ | **Đang không chạy** (soát 13/11/2026, SRS-5.1zzzzzzz465): trần nằm ở `chat-reply` TS, gỡ 18/10 (SRS-5.1zzzzzzz31); hàm `con_duoc_rao` không còn trên DB; lõi Python không kiểm. Làm lại hay bỏ — chờ chủ dự án |
+| §V | Phí CCRB 1% · NMG 0,5% · thuê ¾ tháng | ✅ | BR-05, FR-125; một nguồn `prompts.muc_phi` (`SALE_FEE_RATE`, `RENTAL_FEE_MONTHS`) |
+| §V | NMG tối thiểu 10 căn, chốt 5% / 6 tháng, < 3 sao thì ngưng | 🔶 | Chỉ lời bot khích lệ đăng ≥ 10 căn (`BUSINESS_CONTEXT`); chưa có code đếm tỉ lệ chốt hay ngưng hợp tác. `danh_gia_ai.sao` là khách chấm bot, không phải chấm NMG |
 | §V | Hệ thống điều phối CTV | ❌ | *[deprecated 28/10/2026 — bỏ CTV, chủ dự án]*. Từng làm ở FR-136/173; bỏ dần 23–25/10 (SRS-5.1zzzzzzz165, 170, 172, 173), bỏ hẳn 28/10 |
-| §VI | Quét im >5 ngày; hỏi 1–2 căn/ngày | 🔶 | Drip TS gỡ 18/10 (SRS-5.1zzzzzzz31). Thay bằng **LQC** (12/11/2026): vòng nền hỏi sau đăng quét 10 phút / lượt, chủ im thì bot tự hỏi câu kế, ≤ 3 tin / căn / ngày, ≤ 10 câu / căn, chủ bỏ qua 2 tin liền thì thôi (SRS-5.1zzzzzzz432); Image LQC chấm ảnh, xin góc thiếu (SRS-5.1zzzzzzz422 → 425) — `docs/lqc-listing-quality-controller.md`. Chỉ chăm tin có Zalo chủ nhà. Hỏi còn bán không là vòng khác: tin quá 20 ngày chưa xác nhận (`hoi_con_ban`, SRS-5.1zzzzzzz295) |
+| §VI | Quét im >5 ngày; hỏi 1–2 căn/ngày | 🔶 | Giữ kết nối Zalo: khách im 6–7 ngày thì lõi gửi một câu mẫu (`giu_ket_noi.py`, rpc `khach_can_giu_ket_noi`, SRS-5.1zzzzzzz238) — SRD ghi > 5 ngày. Drip TS gỡ 18/10 (SRS-5.1zzzzzzz31). Nuôi tin thay bằng **LQC** (12/11/2026): vòng nền hỏi sau đăng quét 10 phút / lượt, chủ im thì bot tự hỏi câu kế, ≤ 3 tin / căn / ngày, ≤ 10 câu / căn, chủ bỏ qua 2 tin liền thì thôi (SRS-5.1zzzzzzz432); Image LQC chấm ảnh, xin góc thiếu (SRS-5.1zzzzzzz422 → 425) — `docs/lqc-listing-quality-controller.md`. Chỉ chăm tin có Zalo chủ nhà. Hỏi còn bán không là vòng khác: tin quá 20 ngày chưa xác nhận (`hoi_con_ban`, SRS-5.1zzzzzzz295) |
 | §VII | Gemini → máy local | 🔶 | Claude là đường chính, Gemini → Groq dự phòng (SRS-5.1zzzzzzz117); vector Gemini; không chạy local — OPEN-41 |
 | §VII | SharePoint 5 lớp | ❌ | Supabase Storage (FR-165, SRS-5.1zzzzzzz56) |
-| §VII | Live Chat Monitor: nhãn + nút cướp quyền | 🔶 | Admin gửi tin từ `/admin/tin-nhan`; lời admin vào hội thoại thì bot im 30 phút (SRS-5.1zzzzzzz216); màn hình nhãn ⏳ |
+| §VII | Live Chat Monitor: nhãn + nút cướp quyền | ✅ | `/admin/tin-nhan` hiện nhãn từng hội thoại từ view `hoi_thoai_nhan` (NEED_HUMAN / WAITING_HINT / AI_HANDLING, đọc bằng chữ Việt: "Bot đang lo"…, SRS-5.1zzg); nút "Giữ khách" = cướp quyền; admin gửi tin từ đó, lời admin vào hội thoại thì bot im 30 phút (SRS-5.1zzzzzzz216) |
 | §VII | Bot-to-bot hỏi chủ, báo lại khách | 🔶 | Bot hỏi chủ nhà nếu có trên hệ thống, quá hạn hoặc không có thì admin (SRS-5.1zzzzzzz170); lõi báo lại khách (SRS-5.1zzzzzzz216) |
 
 ## 0.4 Canvas chiến lược
