@@ -73,6 +73,16 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz471 · Lời bot ngắn khoảng 20 từ, thu thông tin như trò chuyện — câu mẫu gói nhiều ý thành một ý (13/11/2026)
+Sếp 13/11: bot nhận tin rao trả lời ngắn hơn, tập trung thu thông tin nhưng "đừng có hỏi cung". Đo 53 lời bot gửi chủ nhà 11–13/11: trung vị 37 từ,
+18 lời trên 40 từ (luật cũ khoảng 30 từ, bản anh Luận 28/10). Lời 13/11 hỏi một "câu" mà ba ý: mặt tiền hay hẻm, rộng mấy mét, xe hơi vào tận cửa không.
+- **Độ dài:** khoảng 20 từ ở `GIONG_VUI` (phiếu bán + prompt mua) và prompt gọn bán (`LEAN_SYSTEM_PROMPT`, đang bật). Các luật giọng của sếp
+  (cảm thán, khen cụ thể, đổi kiểu khen, nét riêng, từ miền Nam) giữ nguyên.
+- **Không hỏi cung:** hỏi đúng một ý bằng câu ngắn như nói chuyện; khách đang hỏi thì lượt đó trả lời cho trọn, ý cần hỏi để lượt sau.
+- **Câu mẫu một ý** (`NATURAL_QUESTIONS`): `ket_cau` (bỏ WC — khách chưa kể thì để sau), `lo_gioi_hem` (bỏ "xe hơi vào tận cửa"), `lo_gioi_duong`
+  (bỏ "ô tô / xe tải vào tận nơi"), `thanh_toan` (bỏ "đồng ý cho người mua vay ngân hàng").
+- **Token** (`count_tokens`, claude-sonnet-5-5): prompt gọn bán 2.493 → 2.554 (+61) · phiếu bán 4.100 → 4.148 (+48) · phần cố định mua 3.475 → 3.523 (+48).
+
 ### SRS-5.1zzzzzzz470 · Nhà trong dự án khỏi hỏi mặt tiền / hẻm; hỏi giá thì tra bằng công cụ; bỏ hẳn câu "rao đúng giá chủ muốn" (13/11/2026)
 Hội thoại một chủ nhà 13/11 (nhà phố trong dự án Ny'ah Phú Định, Q8): khách nhắn đủ tên dự án, kích thước, giá, kết cấu, garage — bot vẫn hỏi
 "mặt tiền đường hay trong hẻm", khách đáp "chị nhắn rồi mà"; khách hỏi giá khu thì bot nói "chưa có số liệu", 3 phút sau lại đưa dải 80–122 tr/m²;

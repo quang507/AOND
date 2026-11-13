@@ -801,6 +801,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz481 · Câu mẫu cố định viết lại cho khớp giọng `GIONG`; nạp lại bảng `cau_mau` đang rỗng (13/11/2026)
+Chủ dự án 13/11 sau SRS-480: "sửa luôn câu mẫu cau_mau cho khớp giọng mới… vẫn quan trọng là lấy thông tin cho db". Lớp lỗi: câu mẫu gửi nguyên văn, không qua prompt nên không theo khối giọng — còn `**` (Zalo không hiện), chữ HOA nhấn, mặt cười, "ạ" chồng, câu báo cáo "Em đã cập nhật", "anh/chị" viết cứng.
+- **Sửa (`cau_mau.MAC_DINH`):** 18 câu — hai câu chào số ký gửi (câu chào đầu mời khách kể luôn địa chỉ và giá để có ô cho DB), sáu câu ẩn / giữ tin, hai câu ẩn ảnh (`{goi}` thay "anh/chị"), năm câu nhận tệp, bản vẽ, căn đã chốt, hai câu đọc trang web. Câu đã chốt giữ nguyên: duyệt tin, hỏi phí, báo phí, chấm sao, xác nhận lịch, bản nháp, chào số tư vấn, các tin chủ động.
+- **DB:** soát trước khi sửa thấy bảng `cau_mau` RỖNG (0 dòng; trang /admin/cau-chuan không có câu nào để sửa, lõi đang chạy câu trong code) → migration `20261113h_cau_mau_khop_giong` nạp lại đủ 60 khoá từ `MAC_DINH`, dòng đã sửa tay (nếu có) giữ nguyên.
+- **Còn:** ba câu báo khách mua (`bao_tra_loi_chu_nha`, `bao_lich_da_chot`, `bao_can_da_ban`) vẫn đọc mã căn `{ma}` — đổi sang tên đường phải sửa chỗ gọi, chưa làm. **Kiểm:** điền thử 60 câu × 3 cách xưng, không lỗi chỗ giữ chữ, không gọi "mình"; chạy thử trong giao dịch huỷ. Chưa đưa lõi lên 146.
+
 ### SRS-5.1zzzzzzz480 · Bỏ "giọng vui": một khối `GIONG` tự nhiên chung bot bán và bot mua (13/11/2026)
 Chủ dự án 13/11, sau khi so với bot MOSO (chat thử 35 lượt): "không cần giọng vui nữa mà sửa luôn cho bot zalo bán, bot zalo mua… nới được… bên AOND anh Luận cái nào lấy được thì lấy, không được thì bỏ". Lớp lỗi: giọng định bằng luật đếm / cấm vá chồng nhiều đợt (14 gạch, có cặp tự kéo nhau, ép cảm thán, 20 từ) và lượt hỏi ô phía bán chạy một bộ luật nhắn riêng → một cuộc chat hai giọng.
 - **Sửa (`prompts.py`):** `GIONG_VUI` → `GIONG`, viết thuận kèm lý do: nhận cảm xúc khách trước khi vào việc, đáp trọn câu khách hỏi, độ dài theo ý khách (lượt hỏi ô 20–30 từ, lượt tư vấn / phí / pháp lý / đang lo thì vài câu), khen khi có điểm mạnh thật — không ép cảm thán, khách muốn dừng thì không níu, hỏi "người hay máy" thì nhận là trợ lý AI; kèm 5 lượt `<vi_du>` cảm xúc / ngoài lề (không chứa câu hỏi ô tin, SRS-196). `LEAN_SYSTEM_PROMPT` ghép chung `GIONG`. Phía mua: bỏ câu cấm hẳn nói thị trường → nhận định chung + dữ liệu của lượt / công cụ, số chỉ lấy từ đó, không giục mua, không hứa sinh lời. Thang chấm giọng `scripts/cham-kich-ban.py` đổi theo.
@@ -880,16 +886,6 @@ Bắn thử SRS-466 trên production 13/11 lộ hai lệch: người bán 5 căn
 - **DB (`20261113f`):** `diem_nguoi_ban` nhân hệ số quy mô chỉ khi điểm gốc ≥ 50. Lúc áp: 4 người bán thật, 0 người đổi hạng.
 - **Lõi:** `gamification.user_score` cùng luật. Hạng bot nói (khối ĐIỂM TIN, `TurnResult.tier`, phiếu dự án `_ma_phieu`) đọc `SupabaseConversationStore.hang_nguoi_ban` → `rpc/diem_nguoi_ban`, nhớ 30 giây, chưa có người bán = Đồng; lỗi / kho không DB → số `gamification`. Prompt không đổi độ dài.
 - Thông tin dự án do một người đưa vào vẫn nhận, vẫn dùng, kèm nhãn chưa chắc chắn — cần kiểm chứng (SRS-445, chủ dự án nhắc lại 13/11); hạng chỉ đổi trọng số phiếu.
-
-### SRS-5.1zzzzzzz471 · Lời bot ngắn khoảng 20 từ, thu thông tin như trò chuyện — câu mẫu gói nhiều ý thành một ý (13/11/2026)
-Sếp 13/11: bot nhận tin rao trả lời ngắn hơn, tập trung thu thông tin nhưng "đừng có hỏi cung". Đo 53 lời bot gửi chủ nhà 11–13/11: trung vị 37 từ,
-18 lời trên 40 từ (luật cũ khoảng 30 từ, bản anh Luận 28/10). Lời 13/11 hỏi một "câu" mà ba ý: mặt tiền hay hẻm, rộng mấy mét, xe hơi vào tận cửa không.
-- **Độ dài:** khoảng 20 từ ở `GIONG_VUI` (phiếu bán + prompt mua) và prompt gọn bán (`LEAN_SYSTEM_PROMPT`, đang bật). Các luật giọng của sếp
-  (cảm thán, khen cụ thể, đổi kiểu khen, nét riêng, từ miền Nam) giữ nguyên.
-- **Không hỏi cung:** hỏi đúng một ý bằng câu ngắn như nói chuyện; khách đang hỏi thì lượt đó trả lời cho trọn, ý cần hỏi để lượt sau.
-- **Câu mẫu một ý** (`NATURAL_QUESTIONS`): `ket_cau` (bỏ WC — khách chưa kể thì để sau), `lo_gioi_hem` (bỏ "xe hơi vào tận cửa"), `lo_gioi_duong`
-  (bỏ "ô tô / xe tải vào tận nơi"), `thanh_toan` (bỏ "đồng ý cho người mua vay ngân hàng").
-- **Token** (`count_tokens`, claude-sonnet-5-5): prompt gọn bán 2.493 → 2.554 (+61) · phiếu bán 4.100 → 4.148 (+48) · phần cố định mua 3.475 → 3.523 (+48).
 
 ### SRS-5.1zzzzzzz472 · Tin phụ `$$$$$` hiện luôn trên CRM /admin/tin-nhan (13/11/2026)
 Chủ dự án 13/11: "tin debug $$$$$ trên crm để cho thấy luôn đi". Tin phụ chế độ test (SRS-5.1zzzzzzz252 / 419: đã trích xuất · bỏ · điểm / soạn
