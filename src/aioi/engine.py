@@ -5177,7 +5177,10 @@ class Engine:
         khach = [m.content for m in src[cuoi_bot + 1:] if m.role == "user" and m.content]
         if not khach:
             return None
-        tin = (f"Tin bot vừa nhắn: {src[cuoi_bot].content}\n\n" if cuoi_bot >= 0 else "") + "Tin khách:\n" + "\n".join(khach)
+        # SRS-5.1zzzzzzz461: khách mở lại cuộc chat sau quãng nghỉ dài — tin bot cuối là của lần chat trước, không phải "vừa nhắn"
+        # (thử 13/11: tin giới thiệu căn mua 7 tiếng trước kèm "em ơi" → đọc nhanh ra "buy").
+        vua = cuoi_bot >= 0 and not conv.phien_moi
+        tin = (f"Tin bot vừa nhắn: {src[cuoi_bot].content}\n\n" if vua else "") + "Tin khách:\n" + "\n".join(khach)
         try:
             r = self._provider.extract(DOC_NHANH_SYSTEM, [Message("user", tin)], doc_nhanh_schema())
         except Exception as e:  # noqa: BLE001 — lượt phụ hỏng thì đọc bằng form đầy đủ, không chặn lượt

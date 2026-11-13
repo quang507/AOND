@@ -806,7 +806,8 @@ lúc zca-js chưa cho nghĩa sticker) coi mọi sticker là trung tính — tron
 Chủ dự án 13/11: "chat chào em mà nó nhầm sang mua… nhắn đúng con Ai Ơi Nhà Đất". Tài khoản từng thử vai mua TRÊN CHÍNH số ký gửi → `so_vai` trùng số,
 SRS-331/417 không chạy; agent mua đọc "em ơi" (01:14 → 12:20) thành tìm mua.
 - `Conversation.phien_moi` (tạm): tin cách tin khách trước ≥ `PHIEN_MOI_GIAY` (6 tiếng). Vai mua + phiên mới + số ký gửi (`_mua_cu_mo_lai`) →
-  lượt này người đọc trung lập đọc ý (không form / agent mua), khối số đang nhắn thêm một câu "mở lại cuộc chat, chào hỏi là unknown".
+  lượt này người đọc trung lập đọc ý (không form / agent mua), khối số đang nhắn thêm một câu "mở lại cuộc chat, chào hỏi là unknown"; đọc nhanh bỏ
+  "tin bot vừa nhắn" (tin đó của lần chat trước — thử 13/11: tin giới thiệu căn 7 tiếng trước + "em ơi" → ra "buy").
 - Lượt mơ hồ đó → vai theo số ký gửi (`seller` nếu có việc bán, không thì `unknown`); nhu cầu mua giữ nguyên, khách nói tìm mua thì về vai mua.
 - Token: chỉ lượt mở lại — +≈80 token khối số; lượt đọc trung lập thay agent mua.
 
