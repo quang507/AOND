@@ -542,6 +542,9 @@ Cập nhật **cùng commit** với bất kỳ thay đổi nào ở `01`…`07` 
 | FR-203 | — | — | SRS-5.1zzzzzzz453 | TS-PROD (log "Zalo trả pong" + nhắn thật vào Zalo bot) |
 | FR-203 | — | — | SRS-5.1zzzzzzz459 | TS-PROD (log "Dò sống: máy chủ Zalo đáp" + nhắn thật vào Zalo bot) |
 | FR-134 | — | — | SRS-5.1zzzzzzz460 | TS-SRS (`test_doc_link_460.py`) + nhắn link thật |
+| FR-157 | — | — | SRS-5.1zzzzzzz461 | TS-SRS (`test_vai_sticker_461_463.py`) + "em ơi" sau 6 tiếng ở số ký gửi |
+| FR-142 | — | — | SRS-5.1zzzzzzz462 | TS-SRS (`test_vai_sticker_461_463.py`) + gửi sticker OK lúc chờ duyệt |
+| FR-134 | — | — | SRS-5.1zzzzzzz463 | node --check + gửi video / danh thiếp thật |
 | FR-185 | — | — | SRS-5.1zzzzzzz455 | TS-SRS (`test_bao_cao_gia_455.py`) + mở `/bao-cao-gia/<mã>` |
 | FR-185 | — | — | SRS-5.1zzzzzzz456 | TS-SRS (`test_gia_chot_456.py`) |
 | FR-144 | — | — | SRS-5.1zzzzzzz450 | TS-SRS (`test_dap_chua_chon_450.py`) |

@@ -778,6 +778,9 @@ khi đẩy — bảng là danh sách để chạy lại khi cần. SRS-1 … 244
 | SRS-453 | Bridge cắt kết nối nghe chết lặng (không pong quá 3 phút) rồi nối lại | FR-203 | log "Zalo trả pong" sau khởi động + nhắn thật vào Zalo bot |
 | SRS-459 | Bridge dò sống bằng lệnh 510 mỗi 5 phút, không đáp thì nối lại | FR-203 | log "Dò sống: máy chủ Zalo đáp" sau khởi động + nhắn thật vào Zalo bot |
 | SRS-460 | Khách gửi link trang web / thẻ link Zalo: lõi đọc trang, tóm vào tin khách; mở không được thì nói thật | FR-134 | `test_doc_link_460.py` |
+| SRS-461 | Vai mua cũ, khách chào lại ở số ký gửi sau ≥ 6 tiếng: đọc trung lập, không hỏi khu vực tìm mua | FR-157 | `test_vai_sticker_461_463.py` |
+| SRS-462 | Sticker ok / gật / like lúc chờ duyệt bản nháp = đồng ý; sticker khác trung tính | FR-142 | `test_vai_sticker_461_463.py` |
+| SRS-463 | Video → báo chưa xem được video; danh thiếp → tên + số dạng chữ | FR-134 | thử tay trên Zalo |
 | SRS-455 | Báo cáo giá rao quanh căn (LQC 4.6): RPC + trang `/bao-cao-gia/<mã>` + bot mời xem kèm tin so sánh | FR-185 | `test_bao_cao_gia_455.py` |
 | SRS-456 | Căn đã cọc / đã bán: bot hỏi giá chốt một lần, ghi `deals.gia_chot_vnd` | FR-185 | `test_gia_chot_456.py` |
 | SRS-450 | Khách đáp "ok" cho câu hỏi lựa chọn: bot không hỏi lại, không đoán phương án; câu thuế phí một câu | FR-144 | `test_dap_chua_chon_450.py` + bắn thử `lqc_thu.py` |

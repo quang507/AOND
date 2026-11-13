@@ -788,6 +788,28 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz463 · Bridge: video và danh thiếp Zalo không còn đi nhánh ảnh (13/11/2026)
+Rà các loại tin Zalo theo yêu cầu chủ dự án 13/11. Video (`chat.video.msg`) và danh thiếp (`chat.recommended`, action `recommened.user`) mang `href`
+nên rơi vào nhánh ảnh / thẻ link: lõi tải .mp4 như ảnh (hỏng "loại tệp không hỗ trợ") hoặc nhận link ảnh đại diện.
+- Video → chữ "[Khách gửi một video — hệ thống chưa xem được video, chỉ đọc được ảnh và chữ]" (+ tiêu đề nếu có): bot nói thật, xin ảnh.
+- Danh thiếp → "[Khách gửi danh thiếp Zalo: <tên> — số <sđt nếu Zalo kèm>]".
+- Còn lại chưa đọc: thu hồi tin (bot không biết khách đã thu hồi), tin nhóm (bỏ có chủ đích).
+
+### SRS-5.1zzzzzzz462 · Sticker "ok / gật / like" là đồng ý, như thả tim (13/11/2026)
+Chủ dự án 13/11: "sticker con mèo đưa kèm chữ ok mà bot ko đọc dc". Bot đọc đúng nghĩa ("Con mèo giơ chân lên kèm chữ OK") nhưng luật SRS-22 (từ
+lúc zca-js chưa cho nghĩa sticker) coi mọi sticker là trung tính — trong khi thả 👍 lên tin lại là đồng ý.
+- `sticker.ra_van_ban`: `y_nghia = dong_y` → "[khách gửi sticker đồng ý: <mô tả>]"; `la_sticker` trả False cho dạng này → `_quyet_duyet` đọc
+  được, duyệt bản nháp bằng sticker OK như thả tim. Sticker vui / buồn / giận / khác vẫn trung tính, chào vẫn thành "hello".
+- Prompt duyệt bản nháp + `TIN_HE_THONG`: sticker đồng ý cùng hàng với thả tim / like. Token: +≈15 token mỗi lượt có khối này.
+
+### SRS-5.1zzzzzzz461 · Mở lại cuộc chat ở số ký gửi: lời chào không bị hiểu là khách mua (13/11/2026)
+Chủ dự án 13/11: "chat chào em mà nó nhầm sang mua… nhắn đúng con Ai Ơi Nhà Đất". Tài khoản từng thử vai mua TRÊN CHÍNH số ký gửi → `so_vai` trùng số,
+SRS-331/417 không chạy; agent mua đọc "em ơi" (01:14 → 12:20) thành tìm mua.
+- `Conversation.phien_moi` (tạm): tin cách tin khách trước ≥ `PHIEN_MOI_GIAY` (6 tiếng). Vai mua + phiên mới + số ký gửi (`_mua_cu_mo_lai`) →
+  lượt này người đọc trung lập đọc ý (không form / agent mua), khối số đang nhắn thêm một câu "mở lại cuộc chat, chào hỏi là unknown".
+- Lượt mơ hồ đó → vai theo số ký gửi (`seller` nếu có việc bán, không thì `unknown`); nhu cầu mua giữ nguyên, khách nói tìm mua thì về vai mua.
+- Token: chỉ lượt mở lại — +≈80 token khối số; lượt đọc trung lập thay agent mua.
+
 ### SRS-5.1zzzzzzz460 · Bot đọc link trang web khách gửi (13/11/2026)
 Chủ dự án 13/11: "họ gửi link đó làm sao tổng hợp lại dc thì dc, sau người ta có thể gửi thêm link data dự án nữa". Thử trên lõi 146 trước khi sửa:
 link dán dạng chữ thì bot chỉ đoán theo chữ trong đường dẫn; thẻ link Zalo thì bridge coi là ẢNH → "em chưa mở được link, gửi ảnh giúp em".
@@ -871,36 +893,3 @@ test vậy đi" (Moso có mục "Báo cáo thị trường BĐS" tính từ tin 
 - **Lưu:** gốc chép sang `listing-private/<uuid>/goc/<tên>` TRƯỚC, xong mới ghi đè bản xử lý lên đúng khoá cũ ở `listing-public` (bìa, băm bộ
   ảnh của QC giữ nguyên) + sinh lại bản nhỏ 480; `variants.xoa_logo` = khoá ảnh gốc. Ảnh hụt 3 lượt → đánh dấu bỏ qua. Hạn chế: xoá dòng
   `listing_media` thì trigger dọn không với tới bản gốc ở bucket riêng; CDN có thể còn giữ bản cũ tới 1 giờ.
-
-### SRS-5.1zzzzzzz453 · Bridge tự cắt kết nối nghe Zalo "chết lặng" rồi nối lại (13/11/2026)
-Sau SRS-5.1zzzzzzz449 (bridge khởi động lại 19:43 12/11), tới 1 giờ sáng 13/11 bridge không nhận tin nào; chủ dự án: "bridge zalo ko thấy nó nhắn
-lại dc". Trên máy 146 cả hai bridge vẫn giữ TCP "Established" tới Zalo từ 19:43, log không có dòng "rớt" / "đóng".
-- **Gốc:** SRS-449 chỉ bắt được socket ĐÓNG. Socket chết lặng (mạng máy 146 chớp — cùng lúc lõi gọi Supabase bị quá giờ 19:49–20:04 —, phía Zalo
-  bỏ phiên mà không gửi khung đóng) thì không có sự kiện nào; zca-js gửi ping ứng dụng nhưng không đo đáp.
-- **Sửa (`bot/bridge-zca/index.mjs`):** mỗi phút gửi ping tầng websocket (máy chủ buộc trả pong theo RFC 6455); quá 3 phút không có khung nào về
-  (pong hay tin) thì `terminate()` socket → đi đường đóng của SRS-449 (zca-js nối lại, hoặc thoát để vòng `.cmd` dựng lại bằng session đã lưu).
-  Chỉ canh sau khi Zalo đã trả pong ít nhất một lần trong tiến trình (máy chủ không đáp ping thì không cắt, tránh vòng nối lại). Log thêm "Kết nối
-  nghe Zalo mở" và mỗi giờ một dòng số khung đã nhận.
-
-### SRS-5.1zzzzzzz452 · Góc bo theo cỡ: khối lớn 14px, nút/ô nhập/chip 8px, nhãn nhỏ 6px (12/11/2026)
-
-Chủ dự án 12/11/2026 "Sửa luôn" (chip lọc trông như viên thuốc) rồi "14px ko phải cố định". SRS-434 đè cả thang `--radius-*` của
-Tailwind về 14px, nên chip lọc cao 30px bo 14px — gần nửa chiều cao, thành viên thuốc, trái luật "không chip viên thuốc".
-Nay góc bo theo cỡ (đổi ở nhóm `--radius-*` trong app/globals.css, không sửa từng lớp):
-- `rounded-lg` trở lên, `rounded-king`, `rounded-shot` = 14px: thẻ, khung, ảnh, khối lớn (giữ như SRS-434).
-- `rounded-md` = 8px: nút (`.nut`), ô nhập, chip lọc — 62 chỗ trên web, gần như toàn điều khiển cao 30–44px.
-- `rounded` / `rounded-sm` = 6px: nhãn nhỏ trên ảnh ("Bán"), mã tin. `rounded-xs` giữ 4px.
-Đo trên /mua-ban sau sửa: chip 8px, ô tìm 8px, thẻ 14px, nhãn "Bán" 6px.
-
-### SRS-5.1zzzzzzz451 · Thẻ tin theo màu và góc bo King, tiêu đề có loại nhà, bỏ số đếm lặp, gắn lại hotline (12/11/2026)
-
-Chủ dự án 12/11/2026 "hotline 0346 689 460 của tm để đi, lấy đi sửa cả 4".
-- **Thẻ tin + thanh tìm trên /mua-ban, /cho-thue** về đúng bộ đã chốt: giá và nút "Tìm kiếm" từ đỏ `#DC2626` sang `brand` (#e60023);
-  thẻ, thanh tìm, khung bản đồ bo `rounded-king` (14px) thay 8px; màu xám Tailwind (`slate-*`) sang `navy` / `mute` / `line`. Nút
-  "Đóng bản đồ" khi rê từ xanh dương `#0043A8` sang đỏ `brand`.
-- **Bỏ dòng "Hiển thị 24 / 182"** đầu lưới: cùng số với đầu trang và dòng "Đang xem … tin" cuối lưới (SRS-447).
-- **Tiêu đề thẻ có loại nhà**: "Nhà phố Quang Trung" thay "Quang Trung" (`TYPE_LABEL`, cắt phần sau " / " — "Toà nhà / CHDV" →
-  "Toà nhà"). Chưa rõ loại thì giữ như cũ.
-- **Hotline 0346 689 460** là số của team → gắn lại ở chân trang, dưới nút Zalo, bấm gọi được (`tel:`). Gỡ ở SRS-443 vì chưa rõ của ai.
-- Soát lại: trang tag KHÔNG làm mới mỗi 5 phút như ghi chú cũ trong app/[tag]/page.tsx nói — TTL ảnh bìa đã là 3 giờ từ SRS-5.1zl,
-  trang làm mới mỗi giờ. Chỉ sửa ghi chú, không đổi số.

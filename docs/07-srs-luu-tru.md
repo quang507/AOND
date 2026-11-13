@@ -73,6 +73,39 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz453 · Bridge tự cắt kết nối nghe Zalo "chết lặng" rồi nối lại (13/11/2026)
+Sau SRS-5.1zzzzzzz449 (bridge khởi động lại 19:43 12/11), tới 1 giờ sáng 13/11 bridge không nhận tin nào; chủ dự án: "bridge zalo ko thấy nó nhắn
+lại dc". Trên máy 146 cả hai bridge vẫn giữ TCP "Established" tới Zalo từ 19:43, log không có dòng "rớt" / "đóng".
+- **Gốc:** SRS-449 chỉ bắt được socket ĐÓNG. Socket chết lặng (mạng máy 146 chớp — cùng lúc lõi gọi Supabase bị quá giờ 19:49–20:04 —, phía Zalo
+  bỏ phiên mà không gửi khung đóng) thì không có sự kiện nào; zca-js gửi ping ứng dụng nhưng không đo đáp.
+- **Sửa (`bot/bridge-zca/index.mjs`):** mỗi phút gửi ping tầng websocket (máy chủ buộc trả pong theo RFC 6455); quá 3 phút không có khung nào về
+  (pong hay tin) thì `terminate()` socket → đi đường đóng của SRS-449 (zca-js nối lại, hoặc thoát để vòng `.cmd` dựng lại bằng session đã lưu).
+  Chỉ canh sau khi Zalo đã trả pong ít nhất một lần trong tiến trình (máy chủ không đáp ping thì không cắt, tránh vòng nối lại). Log thêm "Kết nối
+  nghe Zalo mở" và mỗi giờ một dòng số khung đã nhận.
+
+### SRS-5.1zzzzzzz452 · Góc bo theo cỡ: khối lớn 14px, nút/ô nhập/chip 8px, nhãn nhỏ 6px (12/11/2026)
+
+Chủ dự án 12/11/2026 "Sửa luôn" (chip lọc trông như viên thuốc) rồi "14px ko phải cố định". SRS-434 đè cả thang `--radius-*` của
+Tailwind về 14px, nên chip lọc cao 30px bo 14px — gần nửa chiều cao, thành viên thuốc, trái luật "không chip viên thuốc".
+Nay góc bo theo cỡ (đổi ở nhóm `--radius-*` trong app/globals.css, không sửa từng lớp):
+- `rounded-lg` trở lên, `rounded-king`, `rounded-shot` = 14px: thẻ, khung, ảnh, khối lớn (giữ như SRS-434).
+- `rounded-md` = 8px: nút (`.nut`), ô nhập, chip lọc — 62 chỗ trên web, gần như toàn điều khiển cao 30–44px.
+- `rounded` / `rounded-sm` = 6px: nhãn nhỏ trên ảnh ("Bán"), mã tin. `rounded-xs` giữ 4px.
+Đo trên /mua-ban sau sửa: chip 8px, ô tìm 8px, thẻ 14px, nhãn "Bán" 6px.
+
+### SRS-5.1zzzzzzz451 · Thẻ tin theo màu và góc bo King, tiêu đề có loại nhà, bỏ số đếm lặp, gắn lại hotline (12/11/2026)
+
+Chủ dự án 12/11/2026 "hotline 0346 689 460 của tm để đi, lấy đi sửa cả 4".
+- **Thẻ tin + thanh tìm trên /mua-ban, /cho-thue** về đúng bộ đã chốt: giá và nút "Tìm kiếm" từ đỏ `#DC2626` sang `brand` (#e60023);
+  thẻ, thanh tìm, khung bản đồ bo `rounded-king` (14px) thay 8px; màu xám Tailwind (`slate-*`) sang `navy` / `mute` / `line`. Nút
+  "Đóng bản đồ" khi rê từ xanh dương `#0043A8` sang đỏ `brand`.
+- **Bỏ dòng "Hiển thị 24 / 182"** đầu lưới: cùng số với đầu trang và dòng "Đang xem … tin" cuối lưới (SRS-447).
+- **Tiêu đề thẻ có loại nhà**: "Nhà phố Quang Trung" thay "Quang Trung" (`TYPE_LABEL`, cắt phần sau " / " — "Toà nhà / CHDV" →
+  "Toà nhà"). Chưa rõ loại thì giữ như cũ.
+- **Hotline 0346 689 460** là số của team → gắn lại ở chân trang, dưới nút Zalo, bấm gọi được (`tel:`). Gỡ ở SRS-443 vì chưa rõ của ai.
+- Soát lại: trang tag KHÔNG làm mới mỗi 5 phút như ghi chú cũ trong app/[tag]/page.tsx nói — TTL ảnh bìa đã là 3 giờ từ SRS-5.1zl,
+  trang làm mới mỗi giờ. Chỉ sửa ghi chú, không đổi số.
+
 ### SRS-5.1zzzzzzz450 · Khách đáp "ok" cho câu hỏi lựa chọn: không hỏi lại, không đoán (12/11/2026)
 Bắn thử 12/11 (`thu-lqc-1711`, `thu-lqc-1711b`), chủ dự án hỏi "vì sao nói Ok thì bot hỏi lại":
 - `thu-lqc-1711`: bot hỏi "thuế phí sang tên bên nào chịu, bên bán, bên mua hay chia đôi, và giá 19 tỷ đã gồm thuế phí chưa" — chủ "ok" → bot

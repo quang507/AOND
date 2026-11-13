@@ -5,9 +5,11 @@ tiếp câu đang dở, không biết khách đang CHÀO ("hello này nó biết
 (zca-js `getStickersDetail`) gửi kèm link ảnh sticker + nhãn chữ của Zalo; ở đây một lượt đọc ảnh rẻ (Gemini trước, Claude sau cùng) trả
 `y_nghia` (một trong vài loại) + mô tả ngắn. Code chỉ NỐI chữ: AI đọc nghĩa, không có luật từ khoá nào đoán sticker.
 
-Sticker KHÔNG BAO GIỜ là đồng ý / ghi vào tin (SRS-5.1zzzzzzz22): dù AI đọc ra "đồng ý", chữ đưa vào hội thoại vẫn mang dấu
-"[khách gửi sticker", engine nhận dấu đó bằng `la_sticker` (tiền tố, không so nguyên chuỗi). Chỉ `chao` đổi thành lời chào "hello" — đi
-đường lời chào như khách gõ "hello" (từ 22/10 lời chào KHÔNG còn xoá phiên; lệnh làm mới là "$$$$$", SRS-5.1zzzzzzz123).
+Sticker không ghi gì vào tin. Sticker AI đọc ra `dong_y` (ok, gật, like, tim) là ĐỒNG Ý như thả tim / like lên tin (SRS-5.1zzzzzzz462, chủ
+dự án 13/11: "sticker con mèo đưa kèm chữ ok mà bot ko đọc dc" — luật cũ SRS-22 coi mọi sticker là trung tính vì zca-js chưa cho nghĩa; nay
+đã đọc được nghĩa): chữ đưa vào hội thoại là "[khách gửi sticker đồng ý: …]", `la_sticker` trả False cho dạng này nên duyệt bản nháp đọc
+được. Sticker khác mang dấu "[khách gửi sticker" (tiền tố) → trung tính. `chao` đổi thành lời chào "hello" — đi đường lời chào như khách gõ
+"hello" (từ 22/10 lời chào KHÔNG còn xoá phiên; lệnh làm mới là "$$$$$", SRS-5.1zzzzzzz123).
 """
 from __future__ import annotations
 
@@ -22,6 +24,7 @@ log = logging.getLogger(__name__)
 STICKER_TRUNG_TINH = "[khách gửi sticker]"      # bridge gán khi chưa đọc được nghĩa (zca-js không cho sắc thái)
 DAU_STICKER = "[khách gửi sticker"              # mọi dạng chữ về sticker đều mở bằng tiền tố này
 CHAO_NHU_GO = "hello"                           # sticker chào → như khách gõ lời chào
+DAU_STICKER_DONG_Y = "[khách gửi sticker đồng ý"  # SRS-5.1zzzzzzz462: sticker ok / gật / like — đồng ý như thả tim
 
 Y_NGHIA = ("chao", "cam_on", "tam_biet", "dong_y", "vui", "buon_gian", "khac")
 
@@ -41,8 +44,10 @@ _HUONG_DAN = ("Đây là một STICKER (nhãn dán) khách gửi trong chat Zalo
 
 
 def la_sticker(chu: str) -> bool:
-    """Lời khách là dấu sticker của bridge / của bước đọc này (cả "[khách gửi sticker]" lẫn "[khách gửi sticker: …]")."""
-    return (chu or "").strip().startswith(DAU_STICKER)
+    """Lời khách là sticker TRUNG TÍNH của bridge / của bước đọc này ("[khách gửi sticker]", "[khách gửi sticker: …]"). Sticker đồng ý
+    ("[khách gửi sticker đồng ý: …]", SRS-5.1zzzzzzz462) không tính — nó là lời đồng ý."""
+    chu = (chu or "").strip()
+    return chu.startswith(DAU_STICKER) and not chu.startswith(DAU_STICKER_DONG_Y)
 
 
 def _sach(mo_ta: str) -> str:
@@ -58,6 +63,8 @@ def ra_van_ban(kq: dict[str, Any] | None) -> str:
         return CHAO_NHU_GO
     if y not in Y_NGHIA or not mo_ta:
         return STICKER_TRUNG_TINH
+    if y == "dong_y":
+        return f"{DAU_STICKER_DONG_Y}: {mo_ta}]"
     return f"{DAU_STICKER}: {mo_ta}]"
 
 

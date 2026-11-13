@@ -616,6 +616,19 @@ async function xuLyTin(message) {
         // zca-js: file chia sẻ cũng mang `href` + `title` — trước đây bị coi là ảnh, phân loại hỏng rồi rơi thành URL tạm.
         tep = { url: text.href, ten: String(text.title ?? text.fileName ?? "").slice(0, 200) || undefined };
         text = "";
+      } else if (/video/i.test(msgType)) {
+        // SRS-5.1zzzzzzz463 (rà loại tin 13/11): video (chat.video.msg) mang `href` nên trước đây rơi vào nhánh ảnh — lõi tải file .mp4
+        // như ảnh, hỏng "loại tệp không hỗ trợ". Lõi chưa xem được video: báo đúng điều đó bằng chữ để bot trả lời thật và xin ảnh.
+        const tieuDe = typeof text.title === "string" ? text.title.trim() : "";
+        text = "[Khách gửi một video — hệ thống chưa xem được video, chỉ đọc được ảnh và chữ]" + (tieuDe ? "\n" + tieuDe : "");
+      } else if (/recommen?ed\.user/i.test(String(text.action ?? ""))) {
+        // SRS-5.1zzzzzzz463: danh thiếp Zalo (chat.recommended, action recommened.user) — trước đây đi nhánh thẻ link: lõi nhận link ảnh
+        // đại diện. Gửi tên + số (nếu Zalo kèm) dạng chữ.
+        let p = {};
+        try { p = typeof text.params === "string" ? JSON.parse(text.params) : (text.params ?? {}); } catch { p = {}; }
+        const ten = typeof text.title === "string" && text.title.trim() ? text.title.trim() : "không rõ tên";
+        const sdt = String(p?.phone ?? p?.phoneNumber ?? "").trim();
+        text = `[Khách gửi danh thiếp Zalo: ${ten}${sdt ? " — số " + sdt : ""}]`;
       } else if (text.href && (/recommend|link/i.test(msgType) || /link/i.test(String(text.action ?? "")))) {
         // SRS-5.1zzzzzzz460: thẻ link Zalo tự tạo khi khách dán link (msgType chat.recommended, action recommened.link) — trước đây
         // rơi vào nhánh ảnh dưới: lõi tải trang HTML như ảnh rồi trả "em chưa mở được link". Gửi dạng chữ: tiêu đề + mô tả + link,

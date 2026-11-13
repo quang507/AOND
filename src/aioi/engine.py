@@ -161,6 +161,8 @@ O_GIA_RIENG_LOAI_GD = frozenset({"gia", "thuong_luong", "thue_phi", "thanh_toan"
                                   "chinh_sach_thanh_toan", "phi_chuyen_nhuong", "dong_tien_thue", "muc_coc", "truot_gia"})
 # SRS-5.1zzzzzzz210: giá trị `Conversation.so_nhan` của số Zalo tư vấn người mua (bridge gửi `so_nhan`); "" = số ký gửi.
 SO_TU_VAN = "tu_van"
+# SRS-5.1zzzzzzz461: tin khách cách tin khách trước từ chừng này trở lên = mở lại cuộc chat (ca thật 13/11: 01:14 → 12:20 "em ơi").
+PHIEN_MOI_GIAY = 6 * 3600
 
 # Extracted trạng-thái intent → the stored Listing.status value.
 STATUS_MAP = {"da_ban": "đã bán", "dung_ban": "dừng bán", "da_cho_thue": "đã cho thuê",
@@ -491,10 +493,17 @@ def _vai_tren_so_nay(conv: "Conversation") -> bool:
     return conv.so_vai is None or conv.so_vai == (SO_TU_VAN if conv.so_nhan == SO_TU_VAN else "ky_gui")
 
 
+def _mua_cu_mo_lai(conv: "Conversation") -> bool:
+    """SRS-5.1zzzzzzz461 (chủ dự án 13/11: "chat chào em mà nó nhầm sang mua… nhắn đúng con Ai Ơi Nhà Đất"): vai mua đặt từ cuộc chat trước, khách
+    mở lại cuộc chat ở số KÝ GỬI sau quãng nghỉ dài — lượt này do người đọc trung lập đọc ý (như đổi số, SRS-417), không giao agent mua."""
+    return conv.role == "buyer" and conv.phien_moi and conv.so_nhan != SO_TU_VAN
+
+
 def _form_mua_gon(conv: "Conversation") -> bool:
     """Lượt lập thao tác của khách MUA dùng form gọn (SRS-5.1zzzzzzz293): prompt + schema chỉ phần phía mua, bỏ phần thao tác rổ hàng người bán
-    (≈ một nửa chữ, schema 36 → 16 khoá). Mọi khách mua (công tắc FORM_MUA_GON gỡ ở Đợt 8, SRS-5.1zzzzzzz319) — trên số đặt vai (SRS-417)."""
-    return conv.role == "buyer" and _vai_tren_so_nay(conv)
+    (≈ một nửa chữ, schema 36 → 16 khoá). Mọi khách mua (công tắc FORM_MUA_GON gỡ ở Đợt 8, SRS-5.1zzzzzzz319) — trên số đặt vai (SRS-417),
+    trừ lượt mở lại cuộc chat ở số ký gửi (SRS-461)."""
+    return conv.role == "buyer" and _vai_tren_so_nay(conv) and not _mua_cu_mo_lai(conv)
 
 
 def _form_ban_gon(conv: "Conversation") -> bool:
@@ -728,6 +737,8 @@ class Conversation:
     loi_khach_luot: str = ""
     # Transient (SRS-5.1zzzzzzz86): ms từng khâu của lượt đang chạy (lập thao tác / trả lời / ghi kho) — server trả kèm để đo chỗ chậm.
     do_luot: dict = field(default_factory=dict)
+    # Transient (SRS-5.1zzzzzzz461): tin này cách tin khách trước ≥ PHIEN_MOI_GIAY — khách mở lại cuộc chat.
+    phien_moi: bool = False
     # Transient (SRS-5.1zzzzzzz74): ô bot hỏi ở lượt trả lời gần nhất — khách chưa trả lời thì lượt sau hỏi ý khác trước.
     o_vua_hoi: str | None = None
     # Transient (SRS-5.1zzzzzzz80): số lần khách lờ từng ô (bot hỏi, lượt sau ô vẫn trống) — đủ 2 thì để sau bản nháp.
@@ -2953,6 +2964,8 @@ class Engine:
             conv.last_ai_at = now
             return self._build_result(conv, reply, captured=[], now=now)
 
+        truoc = next((t.at for t in reversed(conv.history) if t.role == "user"), None)
+        conv.phien_moi = truoc is not None and now - truoc >= PHIEN_MOI_GIAY   # SRS-5.1zzzzzzz461
         conv.history.append(Turn("user", text, now))
 
         # Lượt AI đọc tin khách MỘT lần, trước mọi nhánh (SRS-5.1zzzzzzz55): xác nhận xoá, câu hỏi dự án, xin bản vẽ đều đọc từ
@@ -5209,7 +5222,8 @@ class Engine:
         so_luot = SO_TU_VAN if conv.so_nhan == SO_TU_VAN else "ky_gui"
         doi = conv.so_vai is not None and conv.so_vai != so_luot and conv.role in ("buyer", "seller")
         system += khoi_so_dang_nhan(so_luot == SO_TU_VAN,   # SRS-5.1zzzzzzz417: số đang nhắn là dữ kiện của lượt đọc ý
-                                    ("tìm mua / thuê" if conv.role == "buyer" else "gửi bán / cho thuê") if doi else None)
+                                    ("tìm mua / thuê" if conv.role == "buyer" else "gửi bán / cho thuê") if doi else None,
+                                    mo_lai=_mua_cu_mo_lai(conv))   # SRS-5.1zzzzzzz461
         if conv.listing_proposed:
             # Duyệt bản nháp đọc theo TRẠNG THÁI, không theo vị trí tin (SRS-5.1zzzzzzz87): chat chị N. 20/10 — bot tự hỏi "xác nhận
             # giúp em bản tin đã ổn" thì tin ngay trước không còn là bản nháp, "ổn" / "ok" bị bỏ trống, bot hỏi lại mãi.
@@ -5362,6 +5376,10 @@ class Engine:
             if conv.role == "buyer" and conv.buyer_lead is None:
                 conv.buyer_lead = BuyerLead(user_key=conv.user_key)
             conv.so_vai, doi_so = so_luot, True
+        elif _mua_cu_mo_lai(conv):
+            # SRS-5.1zzzzzzz461: lượt mơ hồ (lời chào) mở lại cuộc chat ở số ký gửi → việc của số đang nhắn, như đổi số (SRS-331). Nhu cầu mua
+            # giữ nguyên; khách nói tìm mua thì nhánh "buy" ở trên đã đưa về vai mua.
+            conv.role = "seller" if has_seller_context else "unknown"
         elif conv.role == "buyer" and conv.buyer_lead is not None:
             pass   # lượt mơ hồ ("ok", "xem được không") của người đang nói chuyện mua: ở lại nhánh mua
         elif has_seller_context:

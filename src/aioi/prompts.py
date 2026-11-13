@@ -519,8 +519,8 @@ SU_THAT_CAN: tuple[tuple[str, tuple[str, ...], str], ...] = (
 TIEN_ICH_GAN: tuple[str, ...] = ("cho", "truong_hoc", "benh_vien", "sieu_thi", "cong_vien", "ttm")
 # Tin hệ thống server chèn vào lời khách (`server.py`: tin thoại, sticker, cảm xúc) — model phải hiểu đúng (AU-13, chuyển từ prompt cũ, SRS-5.1zzzzzzz319).
 TIN_HE_THONG = ('- Tin hệ thống trong ngoặc vuông: "[Tin nhắn thoại của khách]: …" — trả lời như khách gõ chữ; "[Khách gửi tin nhắn thoại nhưng …]" — '
-                'chưa nghe được, xin khách nói lại hoặc nhắn chữ; "[khách gửi sticker…]" — đáp ngắn thân thiện, không coi là đồng ý; "[khách thả cảm '
-                'xúc …]" — tim / like là ưng.')
+                'chưa nghe được, xin khách nói lại hoặc nhắn chữ; "[khách gửi sticker đồng ý: …]" — khách ưng, như thả tim / like; sticker khác "[khách gửi '
+                'sticker…]" — đáp ngắn thân thiện; "[khách thả cảm xúc …]" — tim / like là ưng.')
 
 
 def _dien_tich_mo_ho(prop: Property, next_field: str | None) -> str | None:
@@ -2378,8 +2378,8 @@ QUY TẮC:
   bản nháp — kể cả khi sau đó bot nhắc hay hỏi xác nhận "đã ổn chưa"), đọc theo NGHĨA tin khách vừa nhắn: đồng ý cho đăng (ok, được rồi, đăng đi, chuẩn rồi, thả tim / like…) →
   duyet_ban_nhap = "dong_y"; KHÔNG đồng ý / chưa muốn đăng / muốn sửa trước rồi mới đăng → "khong_dong_y". Hỏi lại, hỏi phí,
   nói chuyện khác hay chưa rõ → bỏ trống. Có điền thì duyet_trich_dan = NGUYÊN VĂN cụm trong tin khách cho thấy điều đó.
-  "[khách gửi sticker]" / "[khách gửi sticker: …]" là nhãn dán → KHÔNG phải đồng ý, bỏ trống. "[khách thả cảm xúc ❤️]" / 👍 / 👌 (thả
-  lên tin bot hoặc gõ trong tin) là đồng ý.
+  "[khách gửi sticker đồng ý: …]" (sticker ok / gật / like), "[khách thả cảm xúc ❤️]" / 👍 / 👌 (thả lên tin bot hoặc gõ trong tin) là
+  đồng ý; sticker khác ("[khách gửi sticker]", "[khách gửi sticker: …]") chỉ là nhãn dán → bỏ trống.
 - LỜI XÃ GIAO (đọc theo NGHĨA tin khách vừa nhắn, không theo từ khoá): loi_xa_giao = "chao" khi tin CHỈ là lời chào hỏi
   (hello, hi, chào em, xin chào…) chưa nói nhu cầu nhà đất; "dong_y" khi tin CHỈ là lời đáp ngắn đồng ý / cảm ơn (ok, vâng, ừ, được rồi,
   cảm ơn…) KHÔNG kèm thông tin hay câu hỏi mới. Còn lại bỏ trống. Có điền thì loi_xa_giao_trich_dan = NGUYÊN VĂN cụm đó trong tin khách.
@@ -2996,7 +2996,7 @@ def khoi_cau_chuan(rows: list[dict] | None) -> str:
             + "\n".join(khoi) + "\n")
 
 
-def khoi_so_dang_nhan(tu_van: bool, viec_so_khac: str | None) -> str:
+def khoi_so_dang_nhan(tu_van: bool, viec_so_khac: str | None, mo_lai: bool = False) -> str:
     """SRS-5.1zzzzzzz417 (kịch bản production 11/11 hq_hai_so: tìm mua ở số tư vấn rồi "chào em" ở số ký gửi → bot vẫn tiếp chuyện tìm mua): lượt
     đọc ý không hề biết khách đang nhắn số nào, nên với lịch sử toàn chuyện mua nó đọc lời chào thành "buy" và code đổi vai theo số (SRS-331)
     không chạy. Nay số đang nhắn là SỰ THẬT trong dữ liệu lượt; đổi số thì kèm việc các tin trước thuộc số kia."""
@@ -3006,6 +3006,9 @@ def khoi_so_dang_nhan(tu_van: bool, viec_so_khac: str | None) -> str:
         dong += (f"Chuyện {viec_so_khac} ở các tin trước là khách nói ở số {'ký gửi' if tu_van else 'tư vấn'}; tin này khách nhắn sang số này. "
                  "Ý định (user_intent) là ý của TIN NÀY: tin chỉ chào hỏi / xã giao, không nói gì về mua, bán hay một căn, là \"unknown\" — "
                  "hệ thống theo việc của số đang nhắn.\n")
+    elif mo_lai:   # SRS-5.1zzzzzzz461: khách mở lại cuộc chat sau quãng nghỉ dài, chuyện trước là tìm mua
+        dong += ("Tin này khách nhắn sau hơn 6 tiếng im lặng, mở lại cuộc chat; chuyện tìm mua ở các tin trước là của lần chat trước. Ý định "
+                 "(user_intent) là ý của TIN NÀY: tin chỉ chào hỏi / xã giao là \"unknown\" — hệ thống theo việc của số đang nhắn.\n")
     return dong
 
 
