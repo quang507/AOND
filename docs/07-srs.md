@@ -810,7 +810,8 @@ SRS-331/417 không chạy; agent mua đọc "em ơi" (01:14 → 12:20) thành t�
   "tin bot vừa nhắn" (tin đó của lần chat trước — thử 13/11: tin giới thiệu căn 7 tiếng trước + "em ơi" → ra "buy").
 - Lượt mơ hồ đó → vai theo số ký gửi (`seller` nếu có việc bán, không thì `unknown`); nhu cầu mua giữ nguyên, khách nói tìm mua thì về vai mua. Lượt viết
   lời chào theo số ký gửi như đổi số (`khoi_chao_lan_dau` + `khoi_doi_so(mo_lai=True)`: chuyện tìm mua lần trước vẫn giữ).
-- Token: chỉ lượt mở lại — +≈80 token khối số; lượt đọc trung lập thay agent mua.
+- Token: chỉ lượt mở lại — +≈150 token (khối số + khối mở lại); lượt đọc trung lập thay agent mua. Thử trên 146 (giờ giả): "em ơi" 7 tiếng
+  sau → "Hôm nay anh nhắn để gửi bán hay cho thuê một căn nhà, hay vẫn đang tìm mua nhà phố Quận 7 như lần trước ạ?"
 
 ### SRS-5.1zzzzzzz460 · Bot đọc link trang web khách gửi (13/11/2026)
 Chủ dự án 13/11: "họ gửi link đó làm sao tổng hợp lại dc thì dc, sau người ta có thể gửi thêm link data dự án nữa". Thử trên lõi 146 trước khi sửa:
