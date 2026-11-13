@@ -524,7 +524,8 @@ SU_THAT_CAN: tuple[tuple[str, tuple[str, ...], str], ...] = (
      "Nhà trên đất đã hoàn công (nhà đã được ghi vào sổ) chưa, theo nghĩa lời khách: da_hoan_cong; chua_hoan_cong (\"chưa hoàn công\", "
      "\"sổ chưa có nhà\", \"đang làm hoàn công\"); chua_ro. Chỉ nhà có đất riêng."),
     ("duong_vao", ("mat_tien", "hem", "hem_xe_hoi", "chua_ro"),
-     "Đường vào nhà: mat_tien; hem; hem_xe_hoi; chua_ro (\"không phải mặt tiền, hẻm 3m\" → hem)."),
+     "Đường vào nhà: mat_tien; hem; hem_xe_hoi (hẻm ô tô vào tới nhà — nhà trong hẻm mà chủ nói có gara / đậu xe hơi trong nhà cũng là "
+     "hem_xe_hoi); chua_ro (\"không phải mặt tiền, hẻm 3m\" → hem; có gara mà chưa rõ mặt tiền hay hẻm → chua_ro)."),
     ("tinh_trang_nha", ("moi_xay", "dang_o", "cu", "chua_ro"), "Tình trạng nhà khách nói: moi_xay; dang_o; cu; chua_ro."),
 )
 TIEN_ICH_GAN: tuple[str, ...] = ("cho", "truong_hoc", "benh_vien", "sieu_thi", "cong_vien", "ttm")
@@ -903,6 +904,33 @@ def build_xin_anh_nhac_system(ten: str, prop: "Property", so_anh: int, lan_hai: 
             f"Gọi khách là \"{goi}\", tự xưng \"{toi}\". Không chào lại từ đầu, không nhắc lại bản tin, không hỏi chuyện khác, không dùng chữ \"máy\".\n"
             f"Căn: loại {prop.loai_hinh or 'chưa rõ'}{' (cho thuê)' if prop.is_rental else ''}. Dữ kiện khách đã nói: {du_kien or 'chưa có'}.\n"
             f"{viec}\nChỉ trả về nguyên văn tin gửi khách.")
+
+
+_THU = ("thứ Hai", "thứ Ba", "thứ Tư", "thứ Năm", "thứ Sáu", "thứ Bảy", "Chủ nhật")
+
+
+def gio_vn(ts: float) -> str:
+    """"16:00 thứ Sáu 13/11" — giờ Việt Nam của mốc epoch."""
+    from datetime import datetime, timedelta, timezone
+    d = datetime.fromtimestamp(ts, timezone.utc) + timedelta(hours=7)
+    return f"{d:%H:%M} {_THU[d.weekday()]} {d:%d/%m}"
+
+
+def khoi_bay_gio(ts: float, hen_viec: str | None = None, hen_luc: float | None = None) -> str:
+    """Dòng giờ hiện tại (AI quy "chiều nay", "mai" ra giờ) + lời hẹn chủ còn treo — SRS-5.1zzzzzzz476."""
+    from datetime import datetime, timedelta, timezone
+    nam = (datetime.fromtimestamp(ts, timezone.utc) + timedelta(hours=7)).year
+    dong = f"\nBây giờ (giờ Việt Nam): {gio_vn(ts)}/{nam}.\n"
+    if hen_viec and hen_luc:
+        dong += f"Chủ đang hẹn: {hen_viec}, khoảng {gio_vn(hen_luc)}.\n"
+    return dong
+
+
+def khoi_nhac_hen(viec: str, luc: float) -> str:
+    """Khối tin nhắc đúng lời chủ đã hẹn (SRS-5.1zzzzzzz476) — vòng nền LQC gửi khi quá giờ hẹn mà việc chưa xong."""
+    return ("\n=== VIỆC LƯỢT NÀY: NHẮC LỜI HẸN ===\n"
+            f"Chủ đã hẹn: {viec}, khoảng {gio_vn(luc)}; giờ đã qua mà bên em chưa nhận. Viết MỘT câu ngắn (khoảng 15 từ) nhắc nhẹ đúng lời hẹn "
+            "đó, thân như nhắn người quen, chỉ nói về việc đó (vd \"Chị ơi chiều rồi nè, chị rảnh chụp giúp em mấy tấm nhà nha\").\n")
 
 
 def build_hoi_sau_dang_nhac_system(ten: str, prop: "Property", khoi: str, goi: str, toi: str) -> str:
@@ -2677,6 +2705,25 @@ def operations_schema() -> dict[str, Any]:
             **{f"{k}_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách nói (bắt buộc khi có " + k + ")."}
                for k in [x[0] for x in SU_THAT_CAN] + ["tien_ich_gan"]},
             # SRS-5.1zzzzzzz241 (OPEN-59 a): một căn vừa bán vừa cho thuê → hai tin chung căn.
+            # SRS-5.1zzzzzzz476 (LQC đợt 1, chủ dự án 13/11: "khách hẹn chiều chị gửi ảnh thì chiều nó hỏi lại"): trạng thái của CHỦ với việc
+            # bot hỏi han — AI đọc theo nghĩa, code kiểm cụm trích; LQC (`lqc.py`) dựa vào đây để im, chờ giờ hẹn, thôi xin thứ chủ không có.
+            "hen_lai_luc": {"type": "string", "description": "Chủ HẸN làm / gửi / trả lời một việc vào lúc sau (\"chiều chị gửi ảnh\", \"mai ra "
+                            "phường hỏi rồi báo em\", \"để chị hỏi chồng đã\"): thời điểm hẹn dạng \"YYYY-MM-DD HH:MM\" giờ Việt Nam, tính từ dòng "
+                            "\"Bây giờ\". Chủ không nói giờ thì ước như người nghe: chiều → 16:00, tối → 19:30, mai → 9:30 hôm sau, hỏi người nhà → "
+                            "19:30 (đã tối thì 9:30 hôm sau). Không hẹn thì bỏ trống."},
+            "hen_lai_viec": {"type": "string", "description": "Việc chủ hẹn, vài chữ (\"gửi ảnh nhà\", \"hỏi phường về quy hoạch\")."},
+            "hen_lai_trich_dan": {"type": "string", "description": "Nguyên văn cụm chủ hẹn (bắt buộc khi có hen_lai_luc)."},
+            "hen_xong": {"type": "boolean", "description": "true khi chủ vừa làm / gửi / trả lời đúng việc ở dòng \"Chủ đang hẹn\"."},
+            "tam_dung_den": {"type": "string", "description": "Chủ đang bận, xin nói chuyện sau mà không hẹn việc cụ thể (\"đang chạy xe\", \"bận "
+                             "quá, tối nói\"): lúc chủ rảnh lại, dạng \"YYYY-MM-DD HH:MM\" giờ Việt Nam (không nói giờ thì ước như hen_lai_luc)."},
+            "tam_dung_trich_dan": {"type": "string", "description": "Nguyên văn cụm chủ báo bận (bắt buộc khi có tam_dung_den)."},
+            "khong_co": {"type": "array", "items": {"type": "string", "enum": ["anh", "anh_so"]},
+                         "description": "Thứ chủ nói KHÔNG có hoặc không gửi được, kèm lý do bất kỳ (\"nhà đang cho thuê không vào chụp được\", "
+                         "\"sổ ngân hàng giữ\"): anh = ảnh nhà; anh_so = ảnh sổ. Chủ hẹn gửi sau là hen_lai_luc, không phải khong_co."},
+            "khong_co_trich_dan": {"type": "string", "description": "Nguyên văn cụm chủ nói không có (bắt buộc khi có khong_co)."},
+            "ngung_cham": {"type": "boolean", "description": "true khi chủ tỏ ra phiền vì bị hỏi nhiều hoặc bảo thôi đừng hỏi nữa (\"hỏi gì hỏi "
+                           "hoài\", \"thôi em, vậy đủ rồi\")."},
+            "ngung_cham_trich_dan": {"type": "string", "description": "Nguyên văn cụm chủ nói (bắt buộc khi có ngung_cham)."},
             "ca_ban_ca_thue": {"type": "boolean", "description": "true CHỈ KHI khách nói CÙNG căn đang nói muốn VỪA bán VỪA cho thuê (\"bán "
                                "hay cho thuê đều được\", \"ai thuê cũng cho, mua cũng bán\"). \"Đang cho thuê 30 triệu\" khi rao bán là hiện trạng → bỏ trống."},
             "ca_ban_ca_thue_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách nói vừa bán vừa cho thuê (bắt buộc khi có ca_ban_ca_thue)."},

@@ -21,6 +21,7 @@ from .xung_ho import goi_toi
 log = logging.getLogger(__name__)
 
 TOI_DA_MOT_LUOT = 5
+HEN_QUA_HAN_GIAY = 12 * 3600   # SRS-5.1zzzzzzz476: lời hẹn quá giờ lâu hơn (ngoài khung giờ, chủ bận…) thì bỏ, không nhắc trễ
 DAI_TOI_DA = 500
 
 
@@ -47,6 +48,42 @@ def viet_tin(engine: Any, conv: Any, li: Any, khoi: str, goi: str, toi: str) -> 
     return tin
 
 
+def _nhac_hen(engine: Any, conv: Any, uk: str, bay_gio: datetime, gui: Callable[[str, str], bool]) -> tuple[str, str] | tuple[()] | None:
+    """Lời hẹn của chủ đã quá giờ (SRS-5.1zzzzzzz476): nhắc MỘT câu đúng lời hẹn rồi xoá hẹn. Gọi trong khoá lượt.
+    None = không có hẹn tới hạn (đi tiếp hàng câu hỏi); () = có hẹn tới hạn nhưng lượt này không gửi (chờ / đã bỏ); (tin, "nhac_hen") = đã gửi."""
+    from .engine import _detect_customer_pronoun
+    from .lqc import LAN_HEN_TOI_DA, SAU_HEN_GIAY, hen_dang_treo, ly_do_khong_nhan, xoa_hen
+    from .prompts import khoi_nhac_hen
+    h = hen_dang_treo(conv)
+    if h is None:
+        return None
+    fh = h.prop.fields
+    luc, ts = float(fh["_hen_luc"]), bay_gio.timestamp()
+    if ts < luc + SAU_HEN_GIAY:
+        return None
+    if int(fh.get("_hen_lan") or 1) >= LAN_HEN_TOI_DA or ts > luc + HEN_QUA_HAN_GIAY:
+        xoa_hen(h)   # hẹn lần hai mà lỡ thì thôi; nhắc trễ quá nửa ngày thì câu "chiều rồi nè" sai giờ — bỏ, hàng câu hỏi đi tiếp sau
+        if engine._convstore is not None:
+            engine._convstore.save(conv)
+        return ()
+    if ly_do_khong_nhan(conv, bay_gio, "nhac_hen", engine._convstore, uk):
+        return ()
+    goi, toi = goi_toi(_detect_customer_pronoun(conv, ""), getattr(conv.assistant, "name", None))
+    tin = viet_tin(engine, conv, h, khoi_nhac_hen(fh.get("_hen_viec") or "việc đã hẹn", luc), goi, toi)
+    if not tin:
+        return ()
+    try:
+        if not gui(uk, tin):
+            return ()
+    except Exception as e:  # noqa: BLE001
+        log.warning("hoi_sau_dang: bridge hụt (%s)", type(e).__name__)
+        return ()
+    xoa_hen(h)
+    if engine._convstore is not None:
+        engine._convstore.save(conv)
+    return tin, "nhac_hen"
+
+
 def _nhac_mot(engine: Any, uk: str, lid: str, bay_gio: datetime, gui: Callable[[str, str], bool]) -> tuple[str, str] | None:
     """Chọn cụm + viết tin + GỬI + ghi mốc dưới khoá lượt của khách. (tin, mã cụm) hoặc None. Gửi trước, ghi mốc sau (SRS-5.1zzzzzzz441):
     bridge hụt thì câu chưa tới chủ nên không tính "đã hỏi" — bản trước ghi mốc rồi mới gửi, bridge hụt là mất câu hỏi luôn."""
@@ -59,6 +96,9 @@ def _nhac_mot(engine: Any, uk: str, lid: str, bay_gio: datetime, gui: Callable[[
         li = next((x for x in conv.listings if str(x.listing_id).replace("-", "") == lid), None)
         if li is None:
             return None
+        nhac = _nhac_hen(engine, conv, uk, bay_gio, gui)   # SRS-5.1zzzzzzz476: lời hẹn tới giờ đi trước hàng câu hỏi
+        if nhac is not None:
+            return nhac or None
         f = li.prop.fields
         if f.get("_da_bao_dang") != "1" or f.get("_phi_da_hoi") != "1" or f.get("_ngoai_vung"):
             return None
@@ -98,8 +138,10 @@ def chay_mot_luot(engine: Any, gui: Callable[[str, str], bool],
     bay_gio = bay_gio or datetime.now(timezone.utc)
     if not trong_khung_gio(bay_gio):
         return []
-    rows = kho._get("listings?status=in.(dang_ban,dang_quan_tam)&boc_tach->>_da_bao_dang=eq.1"
-                    "&select=id,code,sellers!listings_seller_id_fkey(zalo_user_id,name)&order=updated_at.desc&limit=200")
+    chon = "&select=id,code,sellers!listings_seller_id_fkey(zalo_user_id,name)&order=updated_at.desc&limit=200"
+    # Căn có lời hẹn của chủ (SRS-5.1zzzzzzz476) xét trước — kể cả căn chưa đăng (chủ hẹn gửi ảnh lúc đang khai).
+    rows = (kho._get("listings?boc_tach->>_hen_luc=not.is.null" + chon) or []) + (
+        kho._get("listings?status=in.(dang_ban,dang_quan_tam)&boc_tach->>_da_bao_dang=eq.1" + chon) or [])
     ra: list[dict] = []
     da_xet: set[str] = set()
     for r in rows or []:

@@ -73,6 +73,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz465 · Đối chiếu SRD 23/06 với code: docs/00 §0.3 sửa 6 dòng (13/11/2026)
+Chủ dự án 13/11 gửi lại SRD gốc (`req__chat_examples.docx`, 23/06/2026) nhờ soát code / docs có khác không. Sau SRS-464 (docs khớp code), bảng
+§0.3 còn 6 dòng lệch code: Live Chat Monitor ghi ⏳ nhưng nhãn + nút "Giữ khách" đã chạy; **Đồng tối đa 5 căn ghi ✅ nhưng không chạy** (trần ở
+`chat-reply` TS gỡ 18/10, `con_duoc_rao` không còn trên DB); NMG 10 căn / chốt 5% / < 3 sao chỉ là lời khích lệ; kho tên 13 thay 20; điểm tin mới
+không mượn điểm người rao; giữ kết nối 6–7 ngày (SRD > 5). Chỉ sửa docs; trần Đồng chờ chủ dự án chốt làm lại hay bỏ.
+
 ### SRS-5.1zzzzzzz464 · Soát mâu thuẫn toàn bộ docs, sửa docs theo code (13/11/2026)
 Ca gốc: chủ dự án 13/11 nhờ soát docs, PR, open issue có chỗ nào mâu thuẫn; 0 PR / 0 issue mở, docs lệch code ở ~60 chỗ. Chốt (chủ dự án, chat): "sửa hết đi, 3 điểm đầu theo code".
 Lớp lỗi: sửa code / SRS mà không quét các tầng docs và file luật (CLAUDE.md, luat-dang-ap, .clinerules) cùng lúc; `truyvet` chỉ soát ID, số đếm, tên hàm, không soát nghĩa.

@@ -5265,6 +5265,12 @@ class Engine:
             with _do(conv, "kho_doc"):
                 conv.cau_hoi_cho = kho.cau_hoi_cho_nguoi_ban(conv.user_key)
             system += khoi_cau_hoi_cho(conv.cau_hoi_cho)
+        if conv.role != "buyer":
+            # SRS-5.1zzzzzzz476 (LQC đợt 1): giờ hiện tại để AI quy "chiều nay", "mai" ra giờ hẹn; lời hẹn còn treo để AI biết chủ đã làm xong chưa.
+            from .lqc import hen_dang_treo
+            from .prompts import khoi_bay_gio
+            h = hen_dang_treo(conv)
+            system += khoi_bay_gio(time.time(), h.prop.fields.get("_hen_viec") if h else None, float(h.prop.fields["_hen_luc"]) if h else None)
         conv.loi_khach_luot = " ".join(m.content for m in src if m.role == "user" and not m.content.startswith(DAU_TA_ANH_CHUP))
         plan = None
         if gop and ban_gon:
@@ -5352,6 +5358,9 @@ class Engine:
             # về UNKNOWN như khách chưa nói vai (câu phí nêu cả hai mức), không tự gán mức mới.
             conv.user_type = SellerRole.UNKNOWN
         _ghi_su_that_can(conv, plan, gan_khach)
+        if conv.role != "buyer":
+            from .lqc import ghi_tu_ke_hoach
+            ghi_tu_ke_hoach(conv, plan, gan_khach, time.time())   # SRS-5.1zzzzzzz476: hẹn / bận / không có / thôi hỏi
         if plan.get("is_rental"):
             conv.prop.is_rental = True
 

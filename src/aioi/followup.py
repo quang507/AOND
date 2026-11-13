@@ -175,6 +175,13 @@ class FollowUpManager:
             if hen is not None and not trong_khung_gio(datetime.now(timezone.utc)):
                 log.info("Follow-up for %s: ngoài khung 8–21 giờ. Skipping.", user_key)
                 return
+            # SRS-5.1zzzzzzz476 (LQC đợt 1): chủ đang bận / đang chờ tới giờ hẹn / đã bảo thôi hỏi → tin nhắc tự động không đi (cả lúc đang khai).
+            if hen is not None and conv.role != "buyer":
+                from .lqc import chu_dang_hen
+                ly_do = chu_dang_hen(conv, time.time())
+                if ly_do:
+                    log.info("Follow-up for %s: %s. Skipping.", user_key, ly_do)
+                    return
 
             # SRS-5.1zzzzzzz153: tin nhắc này là của NGƯỜI BÁN (hỏi ô thiếu / xin ảnh). Khách đang nói chuyện ở vai mua (hẹn xem nhà) mà vẫn
             # có rổ bán dở thì KHÔNG nhắc — chị N. 23/10 đang chốt lịch xem nhà nhận "chụp gửi em vài tấm ảnh thực tế".

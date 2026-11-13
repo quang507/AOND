@@ -243,6 +243,8 @@ def _ghi_va_nhan(engine: Any, tin: dict, kq: dict, bay_gio: datetime, gui: Calla
                                   ensure_ascii=False)
         so_lan = int(f.get("_qc_da_nhan") or 0)
         viec = chon_viec(kq)
+        if viec and viec["loai"] in ("thieu", "them_kieu") and "anh" in (f.get("_khong_co") or "").split(","):
+            viec = None   # SRS-5.1zzzzzzz476: chủ đã nói không chụp thêm được — thôi xin ảnh (vẫn hỏi ẩn ảnh kém / ảnh nghi)
         # SRS-5.1zzzzzzz475: luật chung LQC (khung giờ, im 10 phút, nhường sân, 3 tin chủ động / người bán / ngày, câu hỏi chưa đáp — 12/11
         # chat anh Luận: "Sổ đứng tên ai?" chưa đáp, QC chồng thêm tin xin ảnh).
         from .lqc import ly_do_khong_nhan

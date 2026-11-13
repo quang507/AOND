@@ -795,6 +795,19 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz476 · LQC nghe chủ: lời hẹn, đang bận, không có, thôi hỏi; gara → hẻm xe hơi (13/11/2026)
+Chủ dự án 13/11: "khách hẹn giờ chiều chị gửi ảnh thì chiều nó hỏi lại"; thiết kế LQC đợt 1 (làm sau đợt 2 — SRS-475). Trước đây chủ đáp "chiều
+chị gửi" thì câu xin ảnh coi như đã hỏi, 10 phút sau vòng nền nhảy sang câu pháp lý, ảnh chỉ được nhắc lại ở cuối hàng.
+- **AI đọc (ghi_y_khach / form):** `hen_lai_luc` + `hen_lai_viec` (giờ VN, AI quy từ dòng "Bây giờ" mới thêm vào dữ liệu lượt), `hen_xong`,
+  `tam_dung_den`, `khong_co` (anh / anh_so), `ngung_cham` — mỗi ô kèm cụm trích, `lqc.ghi_tu_ke_hoach` kiểm cụm rồi ghi `_hen_*`,
+  `_tam_dung_den`, `_khong_co`, `_ngung_cham` vào căn.
+- **LQC (`lqc.chu_dang_hen`):** bận → im tới lúc rảnh; hẹn còn treo → im tới giờ hẹn + 30 phút; thôi hỏi → không hỏi nữa (hỏi còn bán / giữ kết
+  nối vẫn đi). Vòng `hoi_sau_dang` xét căn có hẹn trước (kể cả căn chưa đăng): quá giờ hẹn thì nhắc MỘT câu đúng lời hẹn (`khoi_nhac_hen`),
+  hẹn lần hai mà lỡ / trễ quá 12 giờ thì bỏ; ảnh về sau lúc hẹn → huỷ hẹn. Không có ảnh → hàng câu hỏi và Image LQC thôi xin ảnh. Tin nhắc tự
+  động trước khi đăng (`followup`) cũng im khi chủ bận / đang chờ giờ hẹn / đã bảo thôi.
+- **Gara:** mô tả `duong_vao` — nhà trong hẻm mà chủ nói có gara / đậu xe hơi trong nhà là `hem_xe_hoi`.
+- **Token:** schema công cụ ghi thêm 10 khoá (~1.900 ký tự) + dòng giờ (~80 ký tự) → ước +700–800 token mỗi lượt người bán (chưa đo bằng công cụ đếm).
+
 ### SRS-5.1zzzzzzz475 · LQC điều phối chung mọi tin chủ động tới người bán (13/11/2026)
 Chủ dự án 13/11 duyệt thiết kế LQC 5 đợt, chọn làm "đợt 2 trước" (điều phối chung) rồi tới đợt 1 (lời hẹn, tạm dừng…); "điều phối chung vẫn
 là tên LQC, đó là tên của sếp đặt". Trước đây năm vòng tự nhắn chủ nhà — tin xin ảnh 10 phút (`followup`), hàng câu hỏi sau đăng
@@ -888,9 +901,3 @@ Chủ dự án 13/11 chốt luật Đồng tối đa 5 căn (SRD §IV.3) "vẫn 
 - **DB (`20261113d`):** cột `listings.can_kiem_chung` (bỏ `ly_do_chua_dang`). Mỗi lần lõi (service_role) ghi một căn đang hiện, `listings_quyet_dinh_dang_tin` đếm căn đang hiện không mang nhãn của người rao: ≥ 5 và hạng `dong` → gắn, ngược lại bỏ. Lên Bạc / gỡ bớt căn → lượt ghi kế bỏ nhãn. Admin ghi không đổi nhãn; tính hạng lỗi thì giữ nguyên. `tim_nha` trả thêm khoá `can_kiem_chung`.
 - **Bot:** phía mua `dong_can` ghi "THÔNG TIN CẦN KIỂM CHỨNG THÊM (nói rõ với khách)"; phía bán `khoi_trang_thai_web` thêm một dòng báo chủ nhà tin hiện kèm nhãn, lên Bạc (≥ 50 điểm) là bỏ. Prompt +~250 ký tự chỉ khi căn mang nhãn, lượt thường +0.
 - **Web:** nhãn vàng "Thông tin cần kiểm chứng thêm" dưới tiêu đề trang tin và trên thẻ tin. Thử rollback trên DB thật 13/11: 7 căn → cả 7 lên web, căn 6–7 mang nhãn; chốt căn 1 rồi ghi lại căn 6 → bỏ nhãn; `tim_nha` có khoá.
-
-### SRS-5.1zzzzzzz465 · Đối chiếu SRD 23/06 với code: docs/00 §0.3 sửa 6 dòng (13/11/2026)
-Chủ dự án 13/11 gửi lại SRD gốc (`req__chat_examples.docx`, 23/06/2026) nhờ soát code / docs có khác không. Sau SRS-464 (docs khớp code), bảng
-§0.3 còn 6 dòng lệch code: Live Chat Monitor ghi ⏳ nhưng nhãn + nút "Giữ khách" đã chạy; **Đồng tối đa 5 căn ghi ✅ nhưng không chạy** (trần ở
-`chat-reply` TS gỡ 18/10, `con_duoc_rao` không còn trên DB); NMG 10 căn / chốt 5% / < 3 sao chỉ là lời khích lệ; kho tên 13 thay 20; điểm tin mới
-không mượn điểm người rao; giữ kết nối 6–7 ngày (SRD > 5). Chỉ sửa docs; trần Đồng chờ chủ dự án chốt làm lại hay bỏ.

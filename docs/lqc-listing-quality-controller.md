@@ -31,6 +31,19 @@ hỏi còn bán, giữ kết nối đều hỏi chung MỘT bộ luật ở mụ
 của hàng câu hỏi nên một chủ có thể nhận tin của nhiều vòng trong cùng buổi.
 **Image LQC** chạy riêng: mỗi khi bộ ảnh của tin đổi thì chấm lại, rồi nhắn xin góc thiếu / khen tấm đẹp / xin ẩn tấm kém (tối đa 2 tin mỗi căn).
 
+## 2b. LQC nghe chủ (SRS-476)
+
+AI đọc theo nghĩa lời chủ ở mỗi lượt chat (không bắt từ khoá), code kiểm cụm trích rồi ghi trạng thái vào căn:
+
+| Chủ nói | LQC làm |
+|---|---|
+| Hẹn: "chiều chị gửi ảnh", "mai ra phường hỏi rồi báo", "để chị hỏi chồng" | Ghi việc + giờ hẹn (không nói giờ thì ước: chiều 16:00, tối 19:30, mai 9:30). Tới giờ hẹn thì im; quá 30 phút mà chưa xong thì nhắc **một câu đúng lời hẹn** rồi thôi. Ảnh về trước giờ hẹn → huỷ hẹn. Hẹn lần hai mà lỡ → không nhắc. Quá giờ hẹn hơn 12 tiếng (ngoài khung giờ…) → bỏ, không nhắc trễ |
+| Bận: "đang chạy xe", "bận, tối nói" | Im mọi tin chủ động tới lúc chủ rảnh; chủ nhắn lại là hết bận |
+| Không có: "nhà đang cho thuê không vào chụp được", "sổ ngân hàng giữ" | Thôi xin ảnh nhà / ảnh sổ (hàng câu hỏi và Image LQC); Image LQC vẫn được xin ẩn ảnh kém |
+| Phiền: "hỏi gì hỏi hoài", "thôi em, vậy đủ rồi" | Thôi hẳn câu hỏi; vẫn còn hỏi còn bán (20 ngày) và giữ kết nối |
+
+Nhà trong hẻm mà chủ nói có gara / đậu xe hơi trong nhà → AI ghi đường vào là **hẻm xe hơi**.
+
 ## 3. Khi nào bot KHÔNG nhắn
 
 | Luật | Giá trị |
