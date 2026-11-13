@@ -73,6 +73,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz479 · Soát nốt docs so với code — đợt 2 (13/11/2026)
+Chủ dự án 13/11 sau SRS-478: "kiếm hết giúp t" → kiểm nốt phần đợt 1 chưa kiểm. Lớp lỗi như SRS-478.
+- **Sửa (chỉ docs):** docs/02 trạng thái FR (FR-28 ❌→🟡, FR-103 🟡→✅, FR-80 / 166 / 202 ✅→🟡) và NFR-09; docs/08 (tham chiếu job / cột / bảng đã gỡ, 13 tên `test_*.py`, AC / SRS-8 không còn định nghĩa); docs/07 §3–§4 theo `schema.sql` (cột, CHECK, index, policy, cổng `gate.ts`, `diem_tin` 8 tiêu chí, hàng hàm đã gỡ gắn `[đã gỡ]`, payload lõi); docs/06 §6.8–6.11 theo `GIONG_VUI` / `xung_ho` / `cau_mau` và chuỗi thật trên web, mục thời bot TS gắn `[LỊCH SỬ bot TS]`; docs/05 WF-06 / 07 / 12 / 13; docs/10 ca TS sống (TS-SEC3, TS-SEC-AUTO, TS-HEALTH, TS-SEC2… ca chết đánh `[deprecated 13/11/2026]`); docs/01, 03, 04, 09, 14; mô tả hai agent `.claude/agents/`.
+- **Còn lệch, chờ chủ dự án:** FR-159; `public/llms.txt` và docs/14 "Zalo OA"; docs/06 mô tả danh tính "Sài Gòn và Long An"; `app/raoban` hứa "viết lại nhiều phiên bản" (FR-93 ❌); câu mẫu `bao_tra_loi_chu_nha` / `bao_lich_da_chot` / `bao_can_da_ban` đọc mã căn cho khách mua; nhắc `viewing` không còn ai tạo (FR-56 / 202); `schema.sql` cấp TRUNCATE view `nmg_hoat_dong` cho `authenticated`.
+- **Chưa kiểm:** FR-176…250 phần hành vi bot (cần thử thật trên 146), máy 146, số liệu / secret trong DB thật. **Kiểm:** đối chiếu `file:dòng`; `bun run truyvet` sạch.
+
 ### SRS-5.1zzzzzzz478 · Soát toàn bộ docs so với code, sửa docs theo code (13/11/2026)
 Chủ dự án 13/11: "soát lại toàn bộ docs xem chỗ nào lệch code thì sửa". Lớp lỗi: sửa code chỉ ghi mục nhật ký, phần đặc tả và tầng trên không ai dò lại.
 - **Sửa (chỉ docs, không đổi code / luật):** docs/00, 02, 03, 04, 05, 06, 07 (phần đặc tả), 10, 11, 13, 14, LQC, hai README, `CLAUDE.md`, `.claude/luat-dang-ap.md` — bộ pytest đã gỡ, cổng soạn bản tin `NHOM_SOAN`, gợi 2–3 căn, lời ~20 từ, trần LQC theo người bán, khung 8–21 giờ, 6 trạng thái tin (`da_coc`), `listings` 66 cột, lịch cron và `revalidate` thật, ISR trang tag / dự án, 100 tag, tên cột / hàm / trigger / biến env đã đổi, biểu phí công chứng docs/14 theo `phap_ly.phi_cong_chung`.
