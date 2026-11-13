@@ -273,6 +273,12 @@ export function parseQuery(qRaw: string): ParsedQuery {
   // Mốc ("gần chợ X")
   m = MOC_RE.exec(t);
   if (m) { const s = bocCum(t, q, m, m[4].length); if (s) { f.landmark = s; c.landmark = 0.7; } }
+  // SRS-5.1zzzzzzz457: có mốc cụ thể thì bỏ nhãn chung "gần …" — tiêu đề từng ra "gần bệnh viện gần bệnh viện Chợ Rẫy", và lọc
+  // thêm nhãn gan_benh_vien chồng lên mốc chỉ làm hụt tin (tin gần Chợ Rẫy chưa chắc có nhãn đó).
+  if (f.landmark && f.tags?.length) {
+    f.tags = f.tags.filter((k) => !k.startsWith("gan_"));
+    if (!f.tags.length) { delete f.tags; delete c.tags; }
+  }
 
   // "Bóc được" = có ít nhất một tín hiệu MẠNH. Chỉ mỗi loại BĐS ("nhà", "đất")
   // thì chưa đủ để tự tin dựng bộ lọc — "cho em hỏi giá nhà ở đây" phải đi

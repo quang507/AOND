@@ -2,6 +2,8 @@ import Link from "next/link";
 import { coverByCode } from "@/lib/photos";
 import { DT, docThamSo, GIA, layTin, PAGE_SIZE, PL, PN, sachIlike, TANG, VAO, XEP } from "@/lib/duyet-tin";
 import BrowseWithMap from "@/components/BrowseWithMap";
+import { timMoc } from "@/lib/moc";
+import { zaloLink } from "@/lib/format";
 
 export default async function ListingBrowse({
   deal,
@@ -118,6 +120,45 @@ export default async function ListingBrowse({
     </div>
   ) : null;
 
+  // SRS-5.1zzzzzzz457: câu có "gần <địa danh>" → mời sang trang bán kính 2 km (đếm theo khoảng cách thật, không theo chữ trong tin).
+  const moc = deal === "ban" ? timMoc(q) : undefined;
+  const coLoc = Object.keys(sp).some((k) => k !== "trang" && k !== "xep");
+  const goiY = moc ? (
+    <Link href={`/gan/${moc.slug}`} className="mb-4 flex items-center justify-between gap-3 rounded-king border border-brand/30 bg-brand-light px-4 py-3 text-sm font-semibold text-navy hover:border-brand">
+      <span>Xem mọi căn đang bán trong bán kính 2 km quanh {moc.ten}</span>
+      <span aria-hidden className="text-brand">→</span>
+    </Link>
+  ) : null;
+  // Trang 0 kết quả từng trống trơn (đánh giá 13/11: tiêu chí "giúp thoát lỗi" 1/4) — giờ nói rõ và cho ba lối ra.
+  const rong = (
+    <div className="rounded-king border border-line bg-white px-6 py-10 text-center">
+      <h2 className="text-lg font-extrabold [text-wrap:balance]">Chưa có căn nào khớp đủ các điều kiện này</h2>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-mute">
+        Thử bỏ bớt một điều kiện. Hoặc nhắn Zalo câu anh chị cần, có căn mới khớp là tụi em báo, không cần để lại số điện thoại.
+      </p>
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        {moc && (
+          <Link href={`/gan/${moc.slug}`} className="nut nut-chinh">
+            Xem nhà gần {moc.ten}
+          </Link>
+        )}
+        {q && (
+          <Link href={withParam({ q: undefined, trang: undefined })} className="nut nut-phu">
+            Bỏ câu tìm “{q.length > 30 ? `${q.slice(0, 30)}…` : q}”
+          </Link>
+        )}
+        {coLoc && (
+          <Link href={basePath} className="nut nut-phu">
+            Bỏ hết bộ lọc
+          </Link>
+        )}
+        <a href={zaloLink(`rong:${basePath}`)} target="_blank" rel="noopener" className="nut bg-zalo text-white hover:opacity-90">
+          Nhờ tìm qua Zalo
+        </a>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {/* Hero Header */}
@@ -130,11 +171,15 @@ export default async function ListingBrowse({
             <p className="mt-2 text-white/80 text-sm">
               Tìm thấy <strong className="text-white">{total}</strong> tin theo yêu cầu:{" "}
               <span className="font-semibold text-white">{dienGiai.title}</span>
-              <span className="text-white/50"> · anh chị hỏi “{q}”</span>
+              <span className="text-white/50"> · anh chị hỏi “{q}”</span>{" "}
+              {/* SRS-5.1zzzzzzz457: quận / loại nhà do câu tìm tự gán không có chip để gỡ — gỡ cả câu ở đây. */}
+              <Link href={withParam({ q: undefined, trang: undefined })} className="whitespace-nowrap font-semibold text-white underline underline-offset-2 hover:text-brand-soft">
+                Bỏ câu tìm
+              </Link>
             </p>
           ) : (
             <p className="mt-2 text-white/70 text-sm">
-              {total} bất động sản · Giá thật, xác minh trực tiếp qua Zalo
+              {total} bất động sản · Giá rao, hỏi kỹ từng căn qua Zalo
             </p>
           )}
         </div>
@@ -149,6 +194,8 @@ export default async function ListingBrowse({
         filterSection={filterSection}
         paginationSection={paginationSection}
         q={q}
+        goiY={goiY}
+        rong={rong}
         api={`/api/tin?${new URLSearchParams({ deal, ...Object.fromEntries(Object.entries(sp).filter(([k, v]) => k !== "trang" && typeof v === "string" && v !== "")) }).toString()}`}
         trang={page}
         tongTrang={totalPages}

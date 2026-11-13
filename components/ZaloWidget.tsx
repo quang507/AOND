@@ -11,11 +11,15 @@ export default function ZaloWidget() {
   if (pathname?.startsWith("/nha-dat/")) return null;
   // Khung CRM /admin/* là chỗ làm việc của admin, không mời chat Zalo (09/09/2026).
   if (pathname?.startsWith("/admin")) return null;
+  // SRS-5.1zzzzzzz457: /raoban có nút Zalo người bán ngay trong trang; bong bóng (đường người MUA) đè lên nút chính trên điện thoại.
+  if (pathname?.startsWith("/raoban")) return null;
+  // Trang tuyển môi giới: bong bóng mở đường người bán / đối tác, như nút trong trang.
+  const nguCanh = pathname?.startsWith("/moi-gioi") ? "nmg-apply" : `widget:${pathname ?? "/"}`;
   // SRS-5.1zzzzzzz430: trang chủ trên điện thoại là feed vuốt dọc, mỗi căn đã có nút "Hỏi #mã" — widget nổi sẽ đè lên giá.
   const anDienThoai = pathname === "/" ? "hidden md:flex" : "flex";
   return (
     <a
-      href={zaloLink(`widget:${pathname ?? "/"}`)}
+      href={zaloLink(nguCanh)}
       target="_blank"
       rel="noopener"
       aria-label="Chat Zalo với AI Ơi Nhà Đất"

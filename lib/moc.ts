@@ -63,6 +63,28 @@ export const TOI_THIEU_MOC = 3;
 
 export const mocBySlug = (slug: string) => MOC.find((m) => m.slug === slug);
 
+// SRS-5.1zzzzzzz457: câu tìm "nhà gần bệnh viện Chợ Rẫy" từng lọc /mua-ban bằng `location_raw ilike` + nhãn "gần bệnh viện" → 0 căn,
+// trong khi /gan/benh-vien-cho-ray có 27 căn trong 2 km. Câu có chữ "gần" + tên một địa danh trong MOC thì đi thẳng trang /gan.
+const boDau = (s: string) =>
+  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const LOAI_DAU = /^(benh vien|cho|cong vien|truong dai hoc|dai hoc)\s+/;
+function bienThe(m: Moc): string[] {
+  const t = boDau(m.ten.replace(/\(.*?\)/g, ""));
+  const s = new Set([t, t.replace(/\b(mall|plaza)\b/g, "").replace(/\s+/g, " ").trim()]);
+  const loi = t.replace(LOAI_DAU, ""); // "cho ray", "ben thanh", "bach khoa" — chỉ nhận khi còn ≥ 2 chữ
+  if (loi !== t && loi.split(" ").length >= 2) s.add(loi);
+  return [...s];
+}
+/** Địa danh trong câu tìm, chỉ khi câu có chữ "gần" ("nhà phường Bến Thành" là tên phường, không phải gần chợ). Khớp dài nhất thắng. */
+export function timMoc(cau: string | undefined): Moc | undefined {
+  if (!cau) return undefined;
+  const t = ` ${boDau(cau)} `;
+  if (!t.includes(" gan ")) return undefined;
+  let tot: { m: Moc; dai: number } | undefined;
+  for (const m of MOC) for (const v of bienThe(m)) if (t.includes(` ${v} `) && (!tot || v.length > tot.dai)) tot = { m, dai: v.length };
+  return tot?.m;
+}
+
 export function khoangCachKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371, r = Math.PI / 180;
   const dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
@@ -96,5 +118,5 @@ export const tinGanMoc = unstable_cache(
       .sort((a, b) => a.km - b.km);
   },
   ["tin-gan-moc-v1"],
-  { revalidate: 3600 },
+  { revalidate: 3600, tags: ["listings"] }, // SRS-5.1zzzzzzz457: /api/tin-da-go xoá theo tag
 );

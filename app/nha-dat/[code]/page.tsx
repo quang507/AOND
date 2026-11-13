@@ -6,11 +6,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ListingCard from "@/components/ListingCard";
 import TrackView from "@/components/TrackView";
+import { NutHoiCan, ThanhHoiCan } from "@/components/NutHoiCan";
 import WardMap from "@/components/WardMap";
 import { CARD_COLS, supabase, type Listing, type ListingCard as CardRow, type MapRow, TRANG_THAI_HIEN } from "@/lib/supabase";
 import { coverByCode, photosOfCode } from "@/lib/photos";
 import { IconArea, IconBed, IconHouse, IconPin } from "@/components/icons";
-import { ACCESS_LABEL, formatArea, formatDims, formatPrice, formatPricePerM2, FURNISH_LABEL, placeholderImg, PLANNING_LABEL, sanitizeDescription, SITE_URL, TYPE_LABEL, zaloLink, oTheoLoai } from "@/lib/format";
+import { ACCESS_LABEL, formatArea, formatDims, formatPrice, formatPricePerM2, FURNISH_LABEL, placeholderImg, PLANNING_LABEL, sanitizeDescription, SITE_URL, TYPE_LABEL, oTheoLoai } from "@/lib/format";
 import { dongXacMinh } from "@/lib/thong-tin-xac-minh";
 
 export const revalidate = 3600; // SRS-5.1zl (03/10/2026): 5 phút → 1 giờ, giảm egress Supabase
@@ -282,6 +283,8 @@ export default async function Page({
               {loc} <span className="whitespace-nowrap text-line-strong">· #{listing.code}</span>
             </span>
           </p>
+          {/* SRS-5.1zzzzzzz457: trên điện thoại khối giá nằm dưới ảnh và tiêu đề dài — giá phải thấy ngay màn đầu */}
+          <p className="mt-3 text-2xl font-extrabold text-brand-soft tabular-nums lg:hidden">{formatPrice(listing.price_vnd, listing.price_raw)}</p>
         </div>
       </div>
 
@@ -402,7 +405,7 @@ export default async function Page({
                       </div>
                     ))}
                   </dl>
-                  <p className="mt-2 text-xs text-mute/80">
+                  <p className="mt-2 text-xs text-mute">
                     Thông số đọc từ tin rao, chưa xác minh với chủ nhà - hỏi qua Zalo là tụi em đi hỏi giùm.
                   </p>
                 </>
@@ -481,15 +484,8 @@ export default async function Page({
               Còn không? Hẻm rộng bao nhiêu? Sổ sách sao? - nhắn Zalo, tụi em trả
               lời ngay, chưa rõ thì đi hỏi chủ nhà giùm anh chị.
             </p>
-            <a
-              href={zaloLink(`#${listing.code}`)}
-              className="mt-5 block rounded-md bg-brand py-3.5 text-center font-bold text-white transition hover:bg-brand-dark active:scale-[0.98]"
-            >
-              Chat Zalo về căn này
-            </a>
-            <p className="mt-3 text-center text-xs text-mute/80">
-              Miễn phí · không cần để lại số điện thoại
-            </p>
+            {/* SRS-5.1zzzzzzz457: nút Zalo xanh Zalo (trước đỏ thương hiệu, lẫn với nút chính khác); bấm thì chép sẵn mã căn */}
+            {listing.code && <NutHoiCan code={listing.code} />}
             {listing.price_vnd && listing.price_vnd > 0 && (
               <Link
                 href={`/tinh-lai-vay?price=${listing.price_vnd}`}
@@ -513,6 +509,7 @@ export default async function Page({
           </section>
         )}
       </div>
+      {listing.code && <ThanhHoiCan code={listing.code} gia={formatPrice(listing.price_vnd, listing.price_raw)} />}
     </>
   );
 }

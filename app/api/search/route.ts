@@ -10,6 +10,7 @@
 // bằng chip lọc trên trang kết quả + hộp Zalo; ghi ở docs/07.
 import { NextResponse, type NextRequest } from "next/server";
 import { parseQuery } from "@/lib/parse-query";
+import { timMoc } from "@/lib/moc";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,9 @@ export async function GET(req: NextRequest) {
     // Câu rỗng thì về kho tin; câu không bóc được vẫn sang /mua-ban?q= để trang
     // kết quả mời Zalo (FR-13) — không bao giờ là ngõ cụt (IA-P1).
     const r = parseQuery(q);
-    const url = new URL(q ? r.url : "/mua-ban", req.nextUrl.origin);
+    // SRS-5.1zzzzzzz457: "gần <địa danh>" (mua) → trang nhà bán trong bán kính quanh địa danh đó.
+    const moc = r.filters.deal !== "cho_thue" ? timMoc(q) : undefined;
+    const url = new URL(moc ? `/gan/${moc.slug}` : q ? r.url : "/mua-ban", req.nextUrl.origin);
     return NextResponse.redirect(url, 302);
   }
   return traLoi(q);

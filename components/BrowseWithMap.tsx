@@ -14,6 +14,8 @@ export default function BrowseWithMap({
   filterSection,
   paginationSection,
   q,
+  goiY,
+  rong,
   api,
   trang,
   tongTrang,
@@ -27,6 +29,9 @@ export default function BrowseWithMap({
   filterSection: React.ReactNode;
   paginationSection: React.ReactNode;
   q?: string;
+  /** SRS-5.1zzzzzzz457: lời mời đầu lưới (vd. "gần <địa danh>" → /gan) và khối thay lưới khi 0 kết quả. */
+  goiY?: React.ReactNode;
+  rong?: React.ReactNode;
   /** SRS-5.1zzzzzzz447: nguồn trang kế cho cuộn vô tận (/api/tin?deal=…&bộ lọc), trang đang đứng, tổng số trang. */
   api: string;
   trang: number;
@@ -119,11 +124,14 @@ export default function BrowseWithMap({
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* Left Column: Listings in 2-column grid */}
           <div className="w-full lg:w-[55%] xl:w-[57%] flex flex-col">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {tatCa.map((l, i) => (
-                <ListingCard key={l.id} listing={l} photo={l.code ? anh[l.code] : null} moi={i >= soDau} />
-              ))}
-            </div>
+            {goiY}
+            {tatCa.length === 0 && rong ? rong : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {tatCa.map((l, i) => (
+                  <ListingCard key={l.id} listing={l} photo={l.code ? anh[l.code] : null} moi={i >= soDau} />
+                ))}
+              </div>
+            )}
 
             {/* Pagination */}
             <div className="mt-8">{cuoiDanhSach}</div>
@@ -149,11 +157,14 @@ export default function BrowseWithMap({
       ) : (
         /* Full width 4-column grid */
         <div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
-            {tatCa.map((l, i) => (
-              <ListingCard key={l.id} listing={l} photo={l.code ? anh[l.code] : null} moi={i >= soDau} />
-            ))}
-          </div>
+          {goiY}
+          {tatCa.length === 0 && rong ? rong : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+              {tatCa.map((l, i) => (
+                <ListingCard key={l.id} listing={l} photo={l.code ? anh[l.code] : null} moi={i >= soDau} />
+              ))}
+            </div>
+          )}
 
           {/* Pagination */}
           <div className="mt-8">{cuoiDanhSach}</div>

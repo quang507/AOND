@@ -154,6 +154,8 @@ export default function FeedDoc({ tin, anh }: { tin: CardRow[]; anh: Record<stri
             <a href={zaloLink("feed_cuoi")} target="_blank" rel="noopener" className="nut w-full bg-zalo text-white">
               <IconZalo className="h-5 w-5" /> Nhờ tìm qua Zalo
             </a>
+            {/* SRS-5.1zzzzzzz457: người bán lướt tới cuối feed cũng có đường rao */}
+            <Link href="/raoban" className="mt-1 text-sm font-bold text-white/85 underline underline-offset-4 hover:text-white">Có nhà muốn bán? Rao ở đây</Link>
           </div>
         </div>
       </div>

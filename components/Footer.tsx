@@ -29,7 +29,7 @@ const COT: { tieuDe: string; link: [string, string][] }[] = [
   {
     tieuDe: "Người bán",
     link: [
-      ["/raoban", "Rao bán miễn phí"],
+      ["/raoban", "Rao bán nhà"],
       ["/moi-gioi", "Môi giới"],
     ],
   },
@@ -69,7 +69,8 @@ export default function Footer() {
           </div>
         ))}
       </div>
-      <div className="border-t border-line py-5 text-center text-xs text-mute">
+      {/* SRS-5.1zzzzzzz457: có lề ngang; chừa đáy cho bong bóng Zalo nổi trên điện thoại */}
+      <div className="border-t border-line px-4 pb-20 pt-5 text-center text-xs text-mute md:pb-5">
         © {new Date().getFullYear()} AI Ơi Nhà Đất. Tin rao ghi theo lời chủ nhà và môi giới; điều chưa xác minh có ghi rõ.
       </div>
     </footer>

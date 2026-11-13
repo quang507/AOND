@@ -15,6 +15,10 @@ import { formatPrice, oTheoLoai, TYPE_LABEL } from "@/lib/format";
 import { docTien } from "@/bot/supabase/functions/_shared/extraction/luat-tien";
 import { choKhachDuyet, thieuDeDang } from "@/lib/trang-thai-tin";
 
+// SRS-5.1zzzzzzz457: tin vừa gỡ / xoá thì báo web bỏ thẻ khỏi danh sách đang đệm (route tự kiểm DB, tin còn hiện thì bỏ qua).
+const baoWebGo = (code: string) =>
+  void fetch("/api/tin-da-go", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ code }) }).catch(() => {});
+
 export type TinSua = {
   id: string;
   code: string | null;
@@ -194,6 +198,7 @@ export default function SuaTinModal({
     // Trạng thái báo lại là trạng thái DB trả về (trigger có thể đổi), không phải cái vừa gửi.
     const that = (data as { price_vnd?: number | null; status?: string } | null) ?? {};
     onDaLuu(tin.id, { ...updates, status: that.status ?? status, price_vnd: that.price_vnd ?? null } as Partial<TinSua>);
+    if (tin.code) baoWebGo(tin.code);
     if (hanhDong === "rao" && that.status !== "dang_ban") {
       baoTin(`Đã lưu #${tin.code} nhưng CHƯA lên web (hệ thống để "${TRANG_THAI_TIN[that.status ?? ""] ?? that.status}").`, true);
     } else {
@@ -225,6 +230,7 @@ export default function SuaTinModal({
       return;
     }
     onDaXoa(tin.id);
+    if (tin.code) baoWebGo(tin.code);
     baoTin(`Đã xoá vĩnh viễn #${tin.code}.`);
     onDong();
   };
