@@ -73,6 +73,24 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz474 · Dataset thử lấy từ Mogi trong phạm vi AOND (13/11/2026)
+Chủ dự án 13/11 xoá hết dữ liệu thử ("XÓA RỒI") rồi yêu cầu "lấy thông tin và 1000 căn từ mogi về để có dataset còn test tính năng", "trong phạm vi
+của AOND cần thôi". Bảng `listings` trống thì so giá quanh, báo cáo giá, gợi ý cho người mua đều không có gì để chạy.
+- **Lấy:** `scripts/lay-mogi.py` — các danh mục Mogi TP.HCM (nhà hẻm, mặt tiền, căn hộ, đất, biệt thự, thuê căn hộ /
+  nhà / phòng trọ / mặt bằng), mỗi lần gọi cách ≥ 1,2 giây, chỉ trang robots.txt cho phép. Chỉ lấy ô AOND dùng (loại, giá, diện tích, phòng, tầng,
+  đường vào, pháp lý, địa chỉ, toạ độ); không lấy ảnh, tên, số điện thoại người đăng.
+- **Nạp:** `scripts/nap-mogi.py` gọi hàm DB `nap_tin_mogi(jsonb)` (chỉ service_role; migration `20261113g`). Phường theo toạ độ `phuong_tai_diem` —
+  ngoài 168 phường thì bỏ. Toạ độ Mogi là ghim gần đúng → `toa_do_muc = 'phuong'`. Lời mô tả công khai sinh từ các ô đã bóc; lời người đăng gốc
+  (đã che số điện thoại) + link nằm ở `listing_noi_bo` (nội bộ). Chạy lại không nhân đôi (`legacy_code = 'mogi:<mã>'`).
+- **Kết quả:** 962 / 963 tin `source = 'mogi_thu'`, người bán thử `thu-mogi`; trigger tự đưa lên `dang_ban` nên hiện cả trên web công khai. Mẻ 20 tin (vai authenticator có `statement_timeout` 8 giây); số phòng ngoài 1–60 (toà "100 phòng") bỏ trống theo `listings_bedrooms_check`.
+  Xoá cả bộ: `delete from listings where source = 'mogi_thu'` rồi xoá seller `thu-mogi`.
+
+### SRS-5.1zzzzzzz473 · Thưởng quy mô chỉ từ hạng Bạc; bot báo hạng theo DB (13/11/2026)
+Bắn thử SRS-466 trên production 13/11 lộ hai lệch: người bán 5 căn 47 điểm (Đồng), rao căn thứ 6 lên 61 (Bạc) vì hệ số quy mô 1,36 — trần 5 căn gần như không chạm; và bot báo "Hạng người rao hiện là Vàng" (số `gamification` trong cuộc chat, độ kịp thời 1,0 lúc mới chat) trong khi DB tính Đồng. Soát khuôn anh Luận (`luan8560/AOND`): `perks_for(DONG)` khai `max_listings=5`, `scale_bonus_active=False` nhưng không code nào dùng. SRD §IV.3: Bạc "kích hoạt Thưởng quy mô". Chủ dự án: "Sửa theo SRD".
+- **DB (`20261113f`):** `diem_nguoi_ban` nhân hệ số quy mô chỉ khi điểm gốc ≥ 50. Lúc áp: 4 người bán thật, 0 người đổi hạng.
+- **Lõi:** `gamification.user_score` cùng luật. Hạng bot nói (khối ĐIỂM TIN, `TurnResult.tier`, phiếu dự án `_ma_phieu`) đọc `SupabaseConversationStore.hang_nguoi_ban` → `rpc/diem_nguoi_ban`, nhớ 30 giây, chưa có người bán = Đồng; lỗi / kho không DB → số `gamification`. Prompt không đổi độ dài.
+- Thông tin dự án do một người đưa vào vẫn nhận, vẫn dùng, kèm nhãn chưa chắc chắn — cần kiểm chứng (SRS-445, chủ dự án nhắc lại 13/11); hạng chỉ đổi trọng số phiếu.
+
 ### SRS-5.1zzzzzzz472 · Tin phụ `$$$$$` hiện luôn trên CRM /admin/tin-nhan (13/11/2026)
 Chủ dự án 13/11: "tin debug $$$$$ trên crm để cho thấy luôn đi". Tin phụ chế độ test (SRS-5.1zzzzzzz252 / 419: đã trích xuất · bỏ · điểm / soạn
 nháp / hỏi tiếp · tốn $) trước đây chỉ gửi Zalo, không vào CRM — soi lỗi trên CRM phải mở điện thoại đối chiếu.

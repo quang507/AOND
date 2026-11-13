@@ -36,6 +36,10 @@ MODEL_CHAT_LUOT: contextvars.ContextVar[str | None] = contextvars.ContextVar("mo
 # của ID thử (bóc tách, trả lời, đọc ảnh) đi THẲNG Gemini qua `DuPhongProvider`, không chạm Claude; Gemini hỏng thì lượt đó hỏng (không rơi về
 # Claude — bắn thử không được tốn tiền Claude). Khách thật không đổi.
 NGUON_LUOT: contextvars.ContextVar[str | None] = contextvars.ContextVar("nguon_luot", default=None)
+
+# SRS-5.1zzzzzzz483 (chủ dự án 13/11/2026: "tăng tốc lượt bản tin"): bước VIẾT lời người bán (agent_gop.viet) không nghĩ thêm — bước đọc / ghi
+# đã nghĩ và áp xong; đo 13/11 bước viết bản tin ra 1.249 token cho lời 673 token (gần nửa là nghĩ). Provider Claude đọc cờ này.
+KHONG_NGHI_LUOT: contextvars.ContextVar[bool] = contextvars.ContextVar("khong_nghi_luot", default=False)
 CHI_GEMINI = "gemini"
 
 

@@ -801,11 +801,23 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz484 · Đường vào và tình trạng nhà theo điều AI đọc (bỏ luật từ khoá); hai giá cho một ô thì chưa chắc (13/11/2026)
+Thử 100 tin Mogi (SRS-474) lộ lỗi gốc: "200 đường 3/2" thành "Nhà hẻm" (schema tự ghi hẻm khi địa chỉ có dấu `/`), "nhà mới đẹp" bị ghi `moi_xay` (8/18 tin), tiêu đề "4,5 tỷ" khác thân bài "4,65 tỷ" vẫn chọn một số.
+- **Sửa:** gỡ luật từ khoá ở `schema.py`; `SU_THAT_CAN.duong_vao` dặn số nhà có xẹt kiểu "47/24" là hẻm, khác tên đường "3/2", "30/4"; engine ghi ô `lo_gioi_hem` theo mã AI đọc (`NHAN_DUONG_VAO`), một nguồn cho mặt tiền / hẻm. `tinh_trang_nha` thêm mã `moi` (khách nói nhà mới, mới sửa); bản tin ghi "nhà mới", không ghi "mới xây"; lưới khẳng định cho "nhà mới" khi mã là `moi` / `moi_xay`. Nguyên tắc chung: hai con số khác nhau cho cùng một ô thì chưa chắc số nào.
+- **Kiểm:** chạy lại 3 tin lệch trên 146, không hỏng tin cũ; kịch bản "nhà mới sửa lại năm ngoái" hết bị lưới chặn oan. **Còn:** tin rao nhiều căn chỉ căn đầu nhận "cho thuê" (`is_rental` chỉ đặt cho căn đang mở), chưa sửa.
+
+### SRS-5.1zzzzzzz483 · Lượt bản tin nhanh hơn: bước viết không nghĩ thêm, lưới soát chạy song song, khuôn bản tin khớp lưới (13/11/2026)
+Chủ dự án 13/11: "tăng tốc lượt bản tin". Đo trên 146 (`AIOI_EFFORT=medium`): lượt bản tin qua lưới ngay ~10 s, bị lưới bắt viết lại 26–30 s (model viết cả bản tin lần hai), xảy ra khoảng một nửa số lượt. Lớp lỗi: khuôn `AD_FORMAT` dặn ngược lưới — tiêu đề dồn 5 ý trong 25 từ (lưới chặn quá 30 từ), giọng "hối hả, FOMO" mà không nói tin không bình giá (lưới `binh_luan_gia` chặn), câu mời chốt ghi "Zalo cho mình" (lưới `goi_minh` chặn).
+- **Khuôn (`AD_FORMAT`, +167 token, 3.375 → 3.542):** tiêu đề = lời gọi ngắn 3–6 từ + vị trí · diện tích · giá, còn chỗ thêm một điểm mạnh; khối GIÁ TRONG TIN: nêu đúng con số chủ đưa, chủ cho bớt thì ghi "thương lượng", câu FOMO / mời chốt nói về căn, không nói về giá; "Zalo cho em".
+- **Bước viết (`agent_gop.viet`):** cờ `KHONG_NGHI_LUOT` → `thinking: between_tools` (Sonnet 5.5) — bước 1 đã đọc / ghi / áp; đo bản tin đầu ra 1.249 token cho lời 673 token, nay ≈ bằng lời. Model khác hay API từ chối thì tự gửi lại không kèm. Phía mua giữ nghĩ (tra kho ở bước này).
+- **Lưới soát:** `_chay_luat_soat` chạy song song các luật `LUAT_SOAT` (hai luật hỏi model trước nối đuôi ~3,5 s).
+- **Đo (12 lượt bản tin, 6 cuộc giả, medium):** viết lại 2/12 (trước ≈ 1/2); lượt bản tin không viết lại 9–12,6 s. Còn sót: "rồi mình nói chuyện", khen giá trong câu FOMO.
+
 ### SRS-5.1zzzzzzz482 · Trả lời nhanh hơn: gom tin theo hình thức, bỏ nghỉ giữa bong bóng, công tắc `AIOI_EFFORT` (13/11/2026)
 Chủ dự án 13/11: "đừng để nó chờ nó chậm nữa, rep càng nhanh càng tốt, gộp thì gộp kiểu thông minh hơn". Lớp lỗi: ba chỗ chờ cố định không phụ thuộc tin — bridge chờ 2,5 s trước MỌI tin, lõi nghỉ "đang gõ" 0,3–2 s giữa các bong bóng, model chạy mức suy nghĩ mặc định (`high`).
 - **Bridge (`bot/bridge-zca/index.mjs` `choGom`):** thời gian gom theo hình thức tin vừa tới — trọn ý (kết bằng dấu câu hoặc ≥ 8 từ) 0,5 s; mảnh ngắn 1,2 s; ảnh / tệp 1,8 s; trần 4 s tính từ tin đầu. Gom hụt thì lõi vẫn gộp tin tới lúc đang soạn (SRS-91 / 279).
 - **Lõi:** `server.py` nghỉ giữa bong bóng cố định 300 ms (`NHIP_GIUA_BONG_MS`); `llm/claude.py` `muc_no_luc` đọc `AIOI_EFFORT` (low / medium / high, trống = như cũ) gửi `output_config.effort` cho lượt gọi chữ, API từ chối thì tự gửi lại không kèm và nhớ model. `bot/cau-hinh-loi.env`: `AIOI_EFFORT=medium` (ban đầu đặt `low`; chủ dự án 13/11 chốt "để mức medium thôi").
-- **Kiểm:** cú pháp bridge + lõi, thử hàm `choGom` 6 ca. **Đã áp 13/11 23:09:** lõi `4938f51` lên 146 (kèm SRS-480 / 481), `AIOI_EFFORT=low` vào `.env` lõi, `index.mjs` lên `C:ondridge-zca` (bản cũ trùng khớp bản trước 482; sao lưu `C:ondackupridge_index_20261113_231127.mjs`), hai task bridge đăng nhập lại bằng phiên cũ. **Đo trên 146** (cuộc rao bán giả 5 lượt, không Supabase, chỉ thời gian lõi): mặc định `high` 102,8 s (≈ 20,6 s/lượt) → `low` 52,9 s (5,1 · 5,2 · 6,6 · 11,7 · 24,3 s); lời và ô tin vẫn đúng. Lượt chậm còn lại là lượt viết lại cả bản tin (~1.700 token ra) — effort không bớt được phần viết. Chưa chấm lại giọng bằng `bun run cham`. **Sau đó chủ dự án chốt "để mức medium thôi":** `bot/cau-hinh-loi.env` đã đổi `medium`; `.env` lõi trên 146 CÒN `low` — sửa dòng đó rồi khởi động lại lõi (chưa đo `medium`).
+- **Kiểm:** cú pháp bridge + lõi, thử hàm `choGom` 6 ca. **Đã áp 13/11 23:09:** lõi `4938f51` lên 146 (kèm SRS-480 / 481), `AIOI_EFFORT=low` vào `.env` lõi, `index.mjs` lên `C:\aond\bridge-zca` (bản cũ trùng khớp bản trước 482; sao lưu `C:\aond\backup\bridge_index_20261113_231127.mjs`), hai task bridge đăng nhập lại bằng phiên cũ. **Đo trên 146** (cuộc rao bán giả 5 lượt, không Supabase, chỉ thời gian lõi): mặc định `high` 102,8 s (≈ 20,6 s/lượt) → `low` 52,9 s (5,1 · 5,2 · 6,6 · 11,7 · 24,3 s); lời và ô tin vẫn đúng. Lượt chậm còn lại là lượt viết lại cả bản tin (~1.700 token ra) — effort không bớt được phần viết. Chưa chấm lại giọng bằng `bun run cham`. **Sau đó chủ dự án chốt "để mức medium thôi":** `bot/cau-hinh-loi.env` đã đổi `medium`; `.env` lõi trên 146 CÒN `low` — sửa dòng đó rồi khởi động lại lõi (chưa đo `medium`).
 
 ### SRS-5.1zzzzzzz481 · Câu mẫu cố định viết lại cho khớp giọng `GIONG`; nạp lại bảng `cau_mau` đang rỗng (13/11/2026)
 Chủ dự án 13/11 sau SRS-480: "sửa luôn câu mẫu cau_mau cho khớp giọng mới… vẫn quan trọng là lấy thông tin cho db". Lớp lỗi: câu mẫu gửi nguyên văn, không qua prompt nên không theo khối giọng — còn `**` (Zalo không hiện), chữ HOA nhấn, mặt cười, "ạ" chồng, câu báo cáo "Em đã cập nhật", "anh/chị" viết cứng.
@@ -874,21 +886,3 @@ là của từng căn và chỉ đếm hàng câu hỏi, nên một chủ có th
   tin xin ảnh sau đăng của `followup`, `hoi_con_ban`, `giu_ket_noi` (phía người bán; server truyền `_lqc_chan`). Tin nhắc khai tiếp trước
   khi đăng vẫn như cũ nhưng được đếm vào trần.
 - **Chưa gồm:** tin chuyển câu khách mua hỏi cho chủ (đi đường `escalation-feed` của bridge, không qua lõi) — đợt sau đưa vào chung hàng.
-
-### SRS-5.1zzzzzzz474 · Dataset thử lấy từ Mogi trong phạm vi AOND (13/11/2026)
-Chủ dự án 13/11 xoá hết dữ liệu thử ("XÓA RỒI") rồi yêu cầu "lấy thông tin và 1000 căn từ mogi về để có dataset còn test tính năng", "trong phạm vi
-của AOND cần thôi". Bảng `listings` trống thì so giá quanh, báo cáo giá, gợi ý cho người mua đều không có gì để chạy.
-- **Lấy:** `scripts/lay-mogi.py` — các danh mục Mogi TP.HCM (nhà hẻm, mặt tiền, căn hộ, đất, biệt thự, thuê căn hộ /
-  nhà / phòng trọ / mặt bằng), mỗi lần gọi cách ≥ 1,2 giây, chỉ trang robots.txt cho phép. Chỉ lấy ô AOND dùng (loại, giá, diện tích, phòng, tầng,
-  đường vào, pháp lý, địa chỉ, toạ độ); không lấy ảnh, tên, số điện thoại người đăng.
-- **Nạp:** `scripts/nap-mogi.py` gọi hàm DB `nap_tin_mogi(jsonb)` (chỉ service_role; migration `20261113g`). Phường theo toạ độ `phuong_tai_diem` —
-  ngoài 168 phường thì bỏ. Toạ độ Mogi là ghim gần đúng → `toa_do_muc = 'phuong'`. Lời mô tả công khai sinh từ các ô đã bóc; lời người đăng gốc
-  (đã che số điện thoại) + link nằm ở `listing_noi_bo` (nội bộ). Chạy lại không nhân đôi (`legacy_code = 'mogi:<mã>'`).
-- **Kết quả:** 962 / 963 tin `source = 'mogi_thu'`, người bán thử `thu-mogi`; trigger tự đưa lên `dang_ban` nên hiện cả trên web công khai. Mẻ 20 tin (vai authenticator có `statement_timeout` 8 giây); số phòng ngoài 1–60 (toà "100 phòng") bỏ trống theo `listings_bedrooms_check`.
-  Xoá cả bộ: `delete from listings where source = 'mogi_thu'` rồi xoá seller `thu-mogi`.
-
-### SRS-5.1zzzzzzz473 · Thưởng quy mô chỉ từ hạng Bạc; bot báo hạng theo DB (13/11/2026)
-Bắn thử SRS-466 trên production 13/11 lộ hai lệch: người bán 5 căn 47 điểm (Đồng), rao căn thứ 6 lên 61 (Bạc) vì hệ số quy mô 1,36 — trần 5 căn gần như không chạm; và bot báo "Hạng người rao hiện là Vàng" (số `gamification` trong cuộc chat, độ kịp thời 1,0 lúc mới chat) trong khi DB tính Đồng. Soát khuôn anh Luận (`luan8560/AOND`): `perks_for(DONG)` khai `max_listings=5`, `scale_bonus_active=False` nhưng không code nào dùng. SRD §IV.3: Bạc "kích hoạt Thưởng quy mô". Chủ dự án: "Sửa theo SRD".
-- **DB (`20261113f`):** `diem_nguoi_ban` nhân hệ số quy mô chỉ khi điểm gốc ≥ 50. Lúc áp: 4 người bán thật, 0 người đổi hạng.
-- **Lõi:** `gamification.user_score` cùng luật. Hạng bot nói (khối ĐIỂM TIN, `TurnResult.tier`, phiếu dự án `_ma_phieu`) đọc `SupabaseConversationStore.hang_nguoi_ban` → `rpc/diem_nguoi_ban`, nhớ 30 giây, chưa có người bán = Đồng; lỗi / kho không DB → số `gamification`. Prompt không đổi độ dài.
-- Thông tin dự án do một người đưa vào vẫn nhận, vẫn dùng, kèm nhãn chưa chắc chắn — cần kiểm chứng (SRS-445, chủ dự án nhắc lại 13/11); hạng chỉ đổi trọng số phiếu.

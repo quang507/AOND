@@ -546,9 +546,16 @@ SU_THAT_CAN: tuple[tuple[str, tuple[str, ...], str], ...] = (
      "Nhà trên đất đã hoàn công (nhà đã được ghi vào sổ) chưa, theo nghĩa lời khách: da_hoan_cong; chua_hoan_cong (\"chưa hoàn công\", "
      "\"sổ chưa có nhà\", \"đang làm hoàn công\"); chua_ro. Chỉ nhà có đất riêng."),
     ("duong_vao", ("mat_tien", "hem", "hem_xe_hoi", "chua_ro"),
-     "Đường vào nhà: mat_tien; hem; hem_xe_hoi (ô tô vào tới nhà); chua_ro (\"không phải mặt tiền, hẻm 3m\" → hem)."),
-    ("tinh_trang_nha", ("moi_xay", "dang_o", "cu", "chua_ro"), "Tình trạng nhà khách nói: moi_xay; dang_o; cu; chua_ro."),
+     "Đường vào nhà: mat_tien; hem (kể cả khi khách chỉ cho số nhà có xẹt kiểu \"47/24\" — khác tên đường \"3/2\", \"30/4\"); "
+     "hem_xe_hoi (ô tô vào tới nhà); chua_ro (\"không phải mặt tiền, hẻm 3m\" → hem)."),
+    # SRS-5.1zzzzzzz484: tách `moi` khỏi `moi_xay` — "nhà mới đẹp" từng bị xếp moi_xay vì không có mã nào khác, bản tin thành "mới xây".
+    ("tinh_trang_nha", ("moi_xay", "moi", "dang_o", "cu", "chua_ro"),
+     "Tình trạng nhà khách nói: moi_xay (khách nói mới xây / vừa xây xong); moi (khách nói nhà mới, mới đẹp, mới sửa mà không nói mới xây); "
+     "dang_o; cu; chua_ro."),
 )
+_TINH_TRANG_BAN_TIN = {"moi_xay": "mới xây", "moi": "nhà mới (khách nói vậy — KHÔNG ghi mới xây)"}
+# Ô tin `lo_gioi_hem` ghi theo `duong_vao` AI đọc khi khách không tả gì thêm (SRS-5.1zzzzzzz484 — một nguồn cho mặt tiền / hẻm).
+NHAN_DUONG_VAO = {"mat_tien": "Mặt tiền đường", "hem": "Nhà hẻm", "hem_xe_hoi": "Hẻm xe hơi"}
 TIEN_ICH_GAN: tuple[str, ...] = ("cho", "truong_hoc", "benh_vien", "sieu_thi", "cong_vien", "ttm")
 # Tin hệ thống server chèn vào lời khách (`server.py`: tin thoại, sticker, cảm xúc) — model phải hiểu đúng (AU-13, chuyển từ prompt cũ, SRS-5.1zzzzzzz319).
 TIN_HE_THONG = ('- Tin hệ thống trong ngoặc vuông: "[Tin nhắn thoại của khách]: …" — trả lời như khách gõ chữ; "[Khách gửi tin nhắn thoại nhưng …]" — '
@@ -584,7 +591,7 @@ def khoi_su_that_can(fields: dict, chu_nha: bool) -> str:
             f"- Hoàn công: {_HOAN_CONG_BAN_TIN.get(fields.get('_hoan_cong'), 'chưa rõ — bản tin không nói về hoàn công')}\n"
             f"- Đường vào: {dv.get(fields.get('_duong_vao'), 'chưa rõ — KHÔNG ghi mặt tiền / hẻm / HXH')}\n"
             f"- Tiện ích gần: {', '.join(nhan_ti[x] for x in ti if x in nhan_ti) or 'chưa có — KHÔNG ghi gần chợ / trường / bệnh viện / siêu thị / công viên'}\n"
-            f"- Tình trạng nhà: {'mới xây' if fields.get('_tinh_trang_nha') == 'moi_xay' else 'KHÔNG ghi nhà mới / mới xây / giữ gìn / sạch sẽ'}\n"
+            f"- Tình trạng nhà: {_TINH_TRANG_BAN_TIN.get(fields.get('_tinh_trang_nha'), 'KHÔNG ghi nhà mới / mới xây / giữ gìn / sạch sẽ')}\n"
             + _dong_dien_tich(fields))
 
 
@@ -1117,7 +1124,7 @@ def describe_captured(prop: Property) -> str:
 # Khuôn tin rao = NGUYÊN VĂN bản anh Luận (`luan8560/AOND` 207a145) — SRS-5.1zzzzzzz207, chủ dự án 26/10: "lấy 100% của bên aond".
 # Chỉ nối thêm đoạn chống bịa của mình ở cuối (dữ liệu căn là nguồn duy nhất; bóc tách / sự thật giữ của mình).
 AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU MỘT DÒNG TRỐNG giữa các khối):
-1) TIÊU ĐỀ: **15–25 từ**, viết như câu nói thường (chỉ hoa chữ đầu câu và tên riêng — KHÔNG viết HOA cả cụm / cả dòng), MỞ bằng một lời gọi người mua theo kiểu rao chợ (tự chọn chữ, mỗi tin một kiểu) rồi dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm). CẤM mở bằng "Trời ơi".
+1) TIÊU ĐỀ: **15–25 từ**, viết như câu nói thường (chỉ hoa chữ đầu câu và tên riêng — KHÔNG viết HOA cả cụm / cả dòng), MỞ bằng một lời gọi người mua NGẮN kiểu rao chợ (3–6 từ, tự chọn chữ, mỗi tin một kiểu) rồi vị trí · diện tích · giá; còn chỗ thì thêm MỘT điểm mạnh nhất, ý khác để mô tả kể. CẤM mở bằng "Trời ơi".
 
 2) MÔ TẢ: MỘT đoạn **70–150 từ**, giọng RAO CHỢ — nói chuyện TRỰC TIẾP với đám đông người mua như đang mời ngay tại chỗ: mời gọi, nồng nhiệt, hối hả, lầy một chút, KHÔNG phải văn báo chí chỉn chu. Mở màn bằng lời gọi đám đông người mua (tự chọn chữ). Kể đủ vị trí & kết nối, công năng, điểm nổi bật, pháp lý — bằng lời đời thường, có nhịp, có cảm xúc. KHÔNG liệt kê khô khan, KHÔNG gạch đầu dòng ở đoạn này. Chỉ hối/khan hiếm khi ĐÚNG sự thật (chủ thật sự cần bán gấp, căn thật sự hiếm) — KHÔNG bịa độ gấp. CẤM dùng "trời ơi".
    ĐẶT "ANH CHỊ" CÓ CHỦ ĐÍCH (quan trọng): KHÔNG rải đều mỗi câu. Chỉ gọi "anh chị" ở các ĐỈNH CẢM XÚC để người đọc tự đặt mình vào — (a) ĐỈNH QUYỀN LỢI: khi khoe cái lợi lớn họ sẽ được; (b) ĐỈNH MẤT CƠ HỘI: dồn vào CÂU MỜI CHỐT cuối bài (mục 4). Cộng câu gọi mời mở màn là đủ ~3 lần, không hơn.
@@ -1128,13 +1135,15 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU M
    - CHỈ thêm chữ phân biệt khi KHÔNG tự rõ: "132m² đất · 120m² xây dựng", "mặt tiền 12m", "6 tầng có thang máy".
    - Mỗi gạch đầu dòng ngắn gọn, không trùng ý nhau.
 
-4) CÂU MỜI CHỐT (CTA — bắt buộc): MỘT–HAI câu cuối KÊU GỌI người đọc NHẮN TIN / liên hệ Zalo cho mình NGAY, gắn liền với nỗi sợ hụt mất (FOMO) để thúc hành động — mệnh lệnh trực tiếp, KHÔNG phải câu hỏi lấy lệ. Có thể kèm sẽ gửi thêm hình / hẹn đi coi. Viết như MỞ LỜI ĐỐI THOẠI để khách bấm vào là chat tiếp được liền.
+4) CÂU MỜI CHỐT (CTA — bắt buộc): MỘT–HAI câu cuối KÊU GỌI người đọc NHẮN TIN / liên hệ Zalo cho em NGAY, gắn liền với nỗi sợ hụt mất (FOMO) để thúc hành động — mệnh lệnh trực tiếp, KHÔNG phải câu hỏi lấy lệ. Có thể kèm sẽ gửi thêm hình / hẹn đi coi. Viết như MỞ LỜI ĐỐI THOẠI để khách bấm vào là chat tiếp được liền.
 
 ĐA DẠNG — MỖI TIN MỘT VẺ (bắt buộc): khuôn này cố ý KHÔNG đưa câu mẫu nào (câu mẫu hoàn chỉnh bị chép y nguyên qua nhiều tin). Mỗi lần soạn phải TỰ diễn đạt: đổi câu mở màn, đổi cách khoe quyền lợi, đổi móc câu FOMO, đổi câu mời Zalo, đổi nhịp — sao cho không có hai tin nào trùng từng chữ. Giữ NGUYÊN TẮC (giọng chợ, cấu trúc, sự thật), nhưng LỜI phải tươi mới mỗi lần.
 
 GIỌNG & XƯNG HÔ (bắt buộc): đây là TIN RAO CÔNG KHAI cho NHIỀU người mua đọc — KHÔNG phải tin nhắn nói riêng với người bán. Nói với CẢ ĐÁM ĐÔNG ("anh chị", "cô bác") — TUYỆT ĐỐI KHÔNG xưng hô 1 người kiểu nói riêng với chủ nhà ("anh ơi", "anh thấy đó", "em gửi anh", "cơ hội này không nhiều anh ơi").
 
 ICON/EMOJI (bắt buộc): MẶC ĐỊNH cả bản rao chỉ dùng **2–3 icon** tổng cộng, đặt chỗ đắt nhất (thường 1 ở tiêu đề); KHÔNG đặt icon ở đầu mỗi gạch đầu dòng, KHÔNG rải icon mỗi dòng — lạm dụng icon trông rẻ tiền. NGOẠI LỆ: chủ nhà XIN thêm / bớt icon (khối YÊU CẦU CỦA CHỦ NHÀ VỀ CÁCH VIẾT) thì làm ĐÚNG ý chủ nhà — chủ nhà xin "2-3 icon" là thêm đúng chừng đó vào tin, tối đa 6 icon cả bản, và nói rõ đã thêm; KHÔNG trả lời "tin đang dùng icon ở tiêu đề" thay cho việc sửa. Khi có dùng icon, LUÔN cách chữ đúng MỘT khoảng trắng (vd "🏡 Nhà mặt tiền" — KHÔNG viết dính "🏡Nhà" hay "Nhà🏡mặt tiền").
+
+GIÁ TRONG TIN: nêu đúng con số chủ đưa (chủ cho bớt thì ghi "thương lượng"); khen / chê giá, so giá với khu, gợi ý dễ bớt là việc tư vấn riêng với chủ nhà, không vào tin — câu hối hả, FOMO, mời chốt nói về căn (vị trí, công năng, điểm hiếm), không nói về giá.
 
 ĐỊNH DẠNG KHOẢNG CÁCH (bắt buộc): MỘT dòng trống NGĂN giữa các khối (tiêu đề / mô tả / gạch đầu dòng / câu mời chốt). Trong khối gạch đầu dòng thì KHÔNG chèn dòng trống giữa các gạch.
 
@@ -2330,7 +2339,8 @@ MỖI CỤM KHÁCH NÓI VÀO ĐÚNG MỘT Ô theo nghĩa (bắn thử: "7 tầng
 giá điện nước) — không chép một cụm sang ô khác nghĩa.
 GIÁ TRỊ Ô LÀ ĐIỀU KHÁCH NÓI HOẶC ĐIỀU LỜI KHÁCH CHẮC CHẮN KÉO THEO — như người trong nghề nghe là biết ngay: nhà trong hẻm có gara
 ô tô → hẻm xe hơi; "1 trệt 2 lầu" → 3 tầng. Điều chỉ CÓ THỂ đúng là đoán, để trống chờ khách nói: "ngõ rộng 3m" chưa chắc ô tô vào,
-"3 lầu" chưa chắc có thang máy, "hẻm 4m" vẫn là hẻm. bang_chung là cụm lời khách làm căn cứ. Giá trị có từ khách không gõ thì hệ thống
+"3 lầu" chưa chắc có thang máy, "hẻm 4m" vẫn là hẻm; lời khách cho HAI con số khác nhau cho cùng một ô của cùng một căn (tiêu đề
+"4,5 tỷ", thân bài "4,65 tỷ") thì chưa chắc số nào. bang_chung là cụm lời khách làm căn cứ. Giá trị có từ khách không gõ thì hệ thống
 ghi nguyên cụm bang_chung thay cho giá trị.
 
 Ngoài "operations", nếu khách TỰ NÓI RA vai thì đặt "seller_role"
@@ -2343,9 +2353,9 @@ hoặc chưa chắc → bỏ trống (bản tin sẽ KHÔNG khẳng định đi�
 (người nhà → seller_role "nguoi_nha_nho_ban").
 - "phap_ly_trang_thai": loại giấy tờ — đúng một mã theo mô tả của khoá này trong schema. Ngày dự kiến có sổ → ô du_kien_ra_so.
 - "hoan_cong": nhà trên đất da_hoan_cong · chua_hoan_cong · chua_ro. Chủ nói ngày dự kiến hoàn công → ô du_kien_hoan_cong.
-- "duong_vao": mat_tien · hem · hem_xe_hoi · chua_ro ("không phải mặt tiền, hẻm 3m" → hem).
+- "duong_vao": mat_tien · hem · hem_xe_hoi · chua_ro — nghĩa từng mã ở mô tả của khoá này trong schema.
 - "tien_ich_gan": danh sách CHỈ tiện ích khách khẳng định CÓ GẦN: cho, truong_hoc, benh_vien, sieu_thi, cong_vien, ttm ("xa chợ" → không có cho).
-- "tinh_trang_nha": moi_xay · dang_o · cu · chua_ro.
+- "tinh_trang_nha": moi_xay · moi · dang_o · cu · chua_ro — nghĩa từng mã ở mô tả của khoá này trong schema.
 
 PHÂN BIỆT Ý ĐỊNH KHÁCH ("user_intent") BẰNG TOÀN BỘ NGỮ CẢNH (Semantic Understanding):
 - "sell": Người bán / cho thuê gửi thông tin BĐS của họ, HOẶC người bán hỏi thăm tình hình bán/thị trường (vd: "giá này có khách mua không em?", "có ai hỏi mua chưa?", "bên mua có trả giá không?"). Việc nhắc tới chữ "mua" trong câu hỏi VẪN LÀ "sell"!

@@ -7,6 +7,7 @@ conversation (persisted to Supabase via SupabaseConversationStore).
 """
 from __future__ import annotations
 
+import contextvars
 import difflib
 import hashlib
 import html as _html
@@ -17,6 +18,7 @@ import os
 import sqlite3
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 import unicodedata
 from urllib.parse import urlparse
 from abc import ABC, abstractmethod
@@ -29,7 +31,7 @@ from . import gamification as g
 from . import phap_ly
 from .prompts import _dien_tich_mo_ho, khoi_nhan_vat, nhan_o_ngan, viec_phieu, viec_theo_khoi
 from .prompts import NHAN_VIEC_LUOT, khoi_doi_so, khoi_so_dang_nhan, prompt_gon_bat
-from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, SU_THAT_CAN, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
+from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, NHAN_DUONG_VAO, SU_THAT_CAN, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
 from .sdt import che_giay_to, che_sdt
@@ -1325,6 +1327,10 @@ def _ghi_su_that_can(conv: "Conversation", plan: dict, loi_khach: list[str]) -> 
             if khoa == "phap_ly_trang_thai" and v == "mo_ho" and loai_phap_ly(conv.prop.fields) is not None:
                 continue   # đã biết loại giấy (khách nói / ảnh sổ) thì câu chung chung sau không hạ xuống mơ hồ
             conv.prop.fields[f"_{khoa}"] = v
+            if khoa == "duong_vao" and not conv.prop.fields.get("lo_gioi_hem"):
+                # SRS-5.1zzzzzzz484: ô tin đường vào theo ĐÚNG điều AI đọc (một nguồn) — thay luật từ khoá "địa chỉ có dấu /" của schema.
+                conv.prop.fields["lo_gioi_hem"] = NHAN_DUONG_VAO[v]
+                conv.prop.hoan.discard("lo_gioi_hem")
             if khoa == "phap_ly_trang_thai" and v == "mo_ho":   # SRS-5.1zzzzzzz426 (2.1): câu mơ hồ không nằm trong ô pháp lý
                 for k in KHOA_PHAP_LY:
                     conv.prop.fields.pop(k, None)
@@ -1342,10 +1348,10 @@ _KD_HEM = re.compile(r"(?i)(?<![\wÀ-ỹ])(hẻm|ngõ|kiệt)(?![\wÀ-ỹ])")
 _KD_MAT_TIEN = re.compile(r"(?i)(?<![\wÀ-ỹ])(mặt tiền|mt)(?![\wÀ-ỹ])(?!\s*(?:ngang\b|rộng\b|\d))")
 _KD_TIEN_ICH = {"cho": r"gần chợ|chợ búa", "truong_hoc": r"trường học|gần trường", "benh_vien": r"bệnh viện", "sieu_thi": r"siêu thị",
                 "cong_vien": r"công viên", "ttm": r"trung tâm thương mại|\bttm\b"}
-_KD_MOI_XAY = re.compile(r"(?i)(nhà mới|mới xây|xây mới)")
+_KD_MOI_XAY = re.compile(r"(?i)(mới xây|xây mới)")
+_KD_NHA_MOI = re.compile(r"(?i)(nhà mới)")   # SRS-5.1zzzzzzz484: khách nói "nhà mới" (mã `moi`) thì bản tin ghi được nhà mới, không ghi mới xây
 # Tả khu / sự kiện / tình trạng không có loại dữ kiện nào để khách xác nhận (SRS-208 / 213) — bản tin không được viết.
 _KD_KHONG_CO_NGUON = re.compile(r"(?i)(giữ gìn|sạch sẽ|sầm uất|nhiều người hỏi|nhiều người quan tâm|khách hỏi nhiều|nhiều khách hỏi|đông dân cư)")
-_DIA_CHI_HEM = re.compile(r"\b\d+[a-zA-Z]*/[\da-zA-Z/]+")   # số nhà "12/3" là nhà trong hẻm — đọc định dạng địa chỉ, không đoán ý
 
 
 def _khang_dinh_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
@@ -1357,7 +1363,6 @@ def _khang_dinh_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
     f = conv.prop.fields
     tien_ich = set(str(f.get("_tien_ich_gan") or "").split(","))
     duong = f.get("_duong_vao")
-    so_hem = any(_DIA_CHI_HEM.search(str(f.get(k) or "")) for k in ("dia_chi", "so_nha"))
     ra: list[str] = []
 
     def them(rx, duoc: bool):
@@ -1367,11 +1372,12 @@ def _khang_dinh_khong_co_du_lieu(reply: str, conv: "Conversation") -> list[str]:
     them(_KD_CHINH_CHU, getattr(conv, "vai_phi", None) == SellerRole.CHU_NHA)   # vai một nguồn với phí (Đợt 4, AU-03): người rao ≥ N tin bán tính như MG
     them(_KD_PHAP_LY, bool((loai := loai_phap_ly(f)) and loai.la_so))
     them(_KD_HEM_XE_HOI, duong == "hem_xe_hoi")
-    them(_KD_HEM, duong in ("hem", "hem_xe_hoi") or so_hem)
+    them(_KD_HEM, duong in ("hem", "hem_xe_hoi"))
     them(_KD_MAT_TIEN, duong == "mat_tien")
     for ma, rx in _KD_TIEN_ICH.items():
         them(re.compile(rf"(?i)({rx})"), ma in tien_ich)
     them(_KD_MOI_XAY, f.get("_tinh_trang_nha") == "moi_xay")
+    them(_KD_NHA_MOI, f.get("_tinh_trang_nha") in ("moi_xay", "moi"))
     them(_KD_KHONG_CO_NGUON, False)
     gap: dict[str, str] = {}
     for x in ra:
@@ -2035,6 +2041,16 @@ LUAT_SOAT: tuple[tuple[str, str, Callable[..., list[str]]], ...] = (
 # SRS-5.1zzzzzzz352: luật giữ SỰ THẬT / TIỀN / RIÊNG TƯ — khi phải chọn giữa bản đầu và bản viết lại (cả hai còn lệch), lệch nhóm này nặng hơn lệch
 # hình thức (gọi "mình", hai câu hỏi, tên khối…). Ca `cao_lo`: bản đầu chỉ lệch `goi_minh` (bắt oan), bản viết lại thêm "4 tầng" bịa.
 LUAT_SU_THAT = frozenset({"lo_rieng", "khang_dinh", "phi_vai", "tin_dang_hien", "binh_luan_gia", "so_can_mua", "so_trong_tin"})
+
+
+def _chay_luat_soat(eng, conv, reply: str, nc: dict, bo_mem: bool = False) -> list[tuple[str, str, str]]:
+    """(tên luật, nhóm, lý do) theo đúng thứ tự `LUAT_SOAT`. SRS-5.1zzzzzzz483 (chủ dự án 13/11: "tăng tốc lượt bản tin"): các luật độc lập,
+    chỉ đọc lời — chạy SONG SONG; luật hỏi model (soát ô hỏi, soát bình luận giá) trước đây nối đuôi nhau ~3,5 s ở lượt bản tin. Mỗi luật một bản
+    sao context (model của lượt, nguồn lượt) chép ở luồng gọi."""
+    luat = [l for l in LUAT_SOAT if not (bo_mem and l[1] == "mem")]
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        viec = [ex.submit(contextvars.copy_context().run, kiem, eng, conv, reply, nc) for _, _, kiem in luat]
+        return [(ten, nhom, x) for (ten, nhom, _), v in zip(luat, viec) for x in v.result()]
 
 
 def _nang_nhe(lech: list[tuple[str, str]]) -> tuple[int, int]:
@@ -3677,11 +3693,11 @@ class Engine:
             reply = _bo_da_dau(reply)   # "Dạ" mở đầu: code bỏ chữ, không gọi lại model
         nc = {"system": system, "can_mua": can_mua}
         lech: list[tuple[str, str]] = []
-        for ten, nhom, kiem in LUAT_SOAT:   # SRS-5.1zzzzzzz318 (AU-06): MỘT bảng luật
+        for ten, nhom, x in _chay_luat_soat(self, conv, reply, nc):   # SRS-5.1zzzzzzz318 (AU-06): MỘT bảng luật; 483: chạy song song
             if nhom == "mem":
-                mem.extend(kiem(self, conv, reply, nc))
+                mem.append(x)
             else:
-                lech.extend((ten, x) for x in kiem(self, conv, reply, nc))
+                lech.append((ten, x))
         lech = [("cong_ban_nhap", x) for x in (them or [])] + lech   # lý do code thấy trước (cổng bản nháp) — tính như lệch hình thức
         ly_do = [x for _, x in lech]
         if mem:
@@ -3700,7 +3716,7 @@ class Engine:
                 # SRS-5.1zzzzzzz352: SOÁT LẠI bản viết lại (code, không gọi lại model lần hai). Bản trước nhận bản mới không soát, nên mọi luật
                 # `ly_do` chỉ giữ được bản ĐẦU — `cao_lo` lọt "4 tầng", `ka_lo_trinh_tu` lọt "72m²". Còn lệch thì giữ bản ít lệch SỰ THẬT hơn
                 # (rồi tới ít lệch hình thức); hoà thì giữ bản viết lại (đã sửa đúng điều được dặn).
-                lech_lai = [(ten, x) for ten, nhom, kiem in LUAT_SOAT if nhom != "mem" for x in kiem(self, conv, lai, nc)]
+                lech_lai = [(ten, x) for ten, _, x in _chay_luat_soat(self, conv, lai, nc, bo_mem=True)]
                 if _nang_nhe(lech_lai) <= _nang_nhe(lech):
                     reply = lai
                 if lech_lai:

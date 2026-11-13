@@ -15,7 +15,7 @@ from ..config import Settings
 from ..imaging import downscale_image
 from ..so_token import SoToken
 from ..chu import bo_dau
-from .base import MODEL_CHAT_LUOT, LLMProvider, Message, ToolCall, ToolTurn, tach_on_dinh
+from .base import KHONG_NGHI_LUOT, MODEL_CHAT_LUOT, LLMProvider, Message, ToolCall, ToolTurn, tach_on_dinh
 
 log = logging.getLogger(__name__)
 
@@ -127,6 +127,7 @@ class ClaudeProvider(LLMProvider):
         # Sonnet 5.5 28/10, mọi lượt chat 400) → nhớ model đó, các lượt sau gửi tool_choice auto.
         self._khong_ep_tool: set[str] = set()
         self._khong_effort: set[str] = set()   # model API từ chối `output_config.effort` → nhớ, các lượt sau không gửi (SRS-5.1zzzzzzz482)
+        self._khong_tat_nghi: set[str] = set()   # model API từ chối `thinking: between_tools` → nhớ, các lượt sau không gửi (SRS-5.1zzzzzzz483)
 
     def _tao(self, nhan: str, **kw: Any) -> Any:
         """messages.create + báo sổ lỗi khi API từ chối (hết số dư, quá tải…) rồi ném lên như cũ (SRS-5.1zzzzzzz56).
@@ -141,9 +142,19 @@ class ClaudeProvider(LLMProvider):
                          and kw.get("model") != self._vision_model and kw.get("model") not in self._khong_effort)
         if co_effort:
             kw = {**kw, "extra_body": {"output_config": {"effort": muc}}}
+        # SRS-5.1zzzzzzz483: bước viết lời người bán (`KHONG_NGHI_LUOT`) → `between_tools` = không nghĩ trước khi viết. Chỉ Sonnet 5.5 nhận giá trị
+        # này (model khác 400); đi cùng effort tối đa `high` — `muc_no_luc` chỉ cho low / medium / high.
+        tat_nghi = bool(KHONG_NGHI_LUOT.get() and "thinking" not in kw and str(kw.get("model") or "").startswith("claude-sonnet-5-5")
+                        and kw.get("model") not in self._khong_tat_nghi)
+        if tat_nghi:
+            kw = {**kw, "thinking": {"type": "between_tools"}}
         try:
             return self._client.messages.create(**kw)
         except Exception as e:
+            if tat_nghi and "thinking" in str(e):
+                self._khong_tat_nghi.add(str(kw.get("model")))
+                log.warning("Model %s không nhận thinking between_tools — gửi lại không kèm", kw.get("model"))
+                return self._tao(nhan, **{k: v for k, v in kw.items() if k != "thinking"})
             if co_effort and ("effort" in str(e) or "output_config" in str(e)):
                 self._khong_effort.add(str(kw.get("model")))
                 log.warning("Model %s không nhận output_config.effort — gửi lại không kèm", kw.get("model"))

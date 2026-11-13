@@ -561,7 +561,12 @@ def viet(engine: Any, conv: Any, project: Any, system: str, captured: list[str],
             return engine._exec_tool(conv, project, c)
         return "Không rõ công cụ."
 
-    ra = _vong_viet(engine, he, tin, tools, chay, st["bat_dau"], max_tokens, "Agent gộp", bo_ket=("tra_luat_o",))
+    from .llm.base import KHONG_NGHI_LUOT
+    co = KHONG_NGHI_LUOT.set(True)   # SRS-5.1zzzzzzz483: bước viết không nghĩ thêm — bước 1 đã đọc, ghi, áp xong; phía mua giữ nghĩ (tra kho ở bước này)
+    try:
+        ra = _vong_viet(engine, he, tin, tools, chay, st["bat_dau"], max_tokens, "Agent gộp", bo_ket=("tra_luat_o",))
+    finally:
+        KHONG_NGHI_LUOT.reset(co)
     if ra is None:
         them = "".join(agent_ban._khoi(engine, conv, project, t) for t in ("ro_hang", "bo_nho_du_an", "gia_da_gui"))
         log.warning("Agent gộp: dự phòng không gọi công cụ — viết lại với đủ khối dữ liệu")
