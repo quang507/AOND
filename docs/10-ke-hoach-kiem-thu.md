@@ -63,7 +63,7 @@ Bảng NFR-01…18 với cách đo nằm ở `docs/07 §6` (nguồn sự thật)
 ## 10.5 Môi trường & công cụ (free-tier)
 
 - Unit: Vitest · E2E web: Playwright · A11y: axe-core · Perf: Lighthouse CI · bot: pytest `tests/` cho lõi Python (model giả) + ô bắn thử production TS-PROD (§10.7.0). Bộ `bot/tests/e2e` cũ gỡ 18/10/2026.
-- CI: GitHub Actions free, `.github/workflows/kiem.yml` (soát 28/10/2026) — mỗi PR chạy 9 job: `web` (tsc + `next build`), `bot` (`test:bot` + pytest lõi Python + `test:sql` trên Postgres tạm), `baomat` (TS-SEC-AUTO, DB thật), `truyvet`, `rohang` (TS-ROHANG), `migration` (TS-MIG), `soatdb` (TS-DB), `kieubot` (TS-KIEU), `doichieutien` (TS-LUAT-01). Vercel preview mỗi PR. **Chưa vào CI:** TS-SEC bài phá huỷ, TS-SEC3 (cần quyền SQL), TS-LIVE (cần bridge), ô bắn thử TS-PROD (tiền thật, chạy tay), Lighthouse/axe/k6 — xem `docs/11 §11.4`.
+- CI: GitHub Actions free, `.github/workflows/kiem.yml` (soát 28/10/2026) — 9 job, từ 11/11/2026 chỉ chạy tay (`workflow_dispatch`), không tự chạy khi push / PR, KHÔNG chặn (commit thẳng `main`, không PR — CLAUDE.md §7, SRS-5.1zzzzzzz464): `web` (tsc + `next build`), `bot` (`test:bot` + pytest lõi Python + `test:sql` trên Postgres tạm), `baomat` (TS-SEC-AUTO, DB thật), `truyvet`, `rohang` (TS-ROHANG), `migration` (TS-MIG), `soatdb` (TS-DB), `kieubot` (TS-KIEU), `doichieutien` (TS-LUAT-01). Vercel không dựng preview cho nhánh `claude/**` (SRS-247) và bỏ qua bản dựng `main` khi lần đẩy không đổi file web (SRS-248). **Chưa vào CI:** TS-SEC bài phá huỷ, TS-SEC3 (cần quyền SQL), TS-LIVE (cần bridge), ô bắn thử TS-PROD (tiền thật, chạy tay), Lighthouse/axe/k6 — xem `docs/11 §11.4`.
 - DB: `nhadat-cc` là môi trường chính, **không** chạy test phá hoại; ca ghi bọc `do … raise exception` để cuộn lại. Zalo: bridge zca-js trên tài khoản Zalo clone, ID thử theo `la_id_thu` (OA không dùng — OPEN-09).
 - Bí mật chỉ trong biến môi trường / Vault; khoá đã dán vào chat phải rotate.
 
@@ -98,7 +98,7 @@ Bảng này là danh sách ĐỦ. Một bộ test không có tên ở đây là 
 chạy. Đừng gõ lệnh rời: người và CI dùng chung script trong `package.json`, không
 thì "máy xanh, máy tao đỏ" và không ai biết bên nào đúng.
 
-**Chạy máy, offline — CI chạy mỗi PR (`.github/workflows/kiem.yml`):**
+**Chạy máy, offline — người / agent chạy khoanh vùng theo phạm vi (CLAUDE.md §7.1); CI `.github/workflows/kiem.yml` có cùng bộ, chạy tay, chỉ tham khảo:**
 
 | Bộ | ID | Lệnh | Job CI | Kiểm cái gì |
 |---|---|---|---|---|
@@ -174,8 +174,8 @@ không thể gọi model được, còn `regexProfileFallback()` thì nằm ngay
 `chat-reply/index.ts` cách chỗ gọi model hơn hai nghìn dòng — không có gì ngăn
 lượt sửa sau nối hai thứ lại. Nối vào là mỗi tin khách một lượt đốt tiền model,
 kể cả câu regex bóc được. `bot/tests/ranh-gioi.mjs` là kiểm TĨNH (đọc chữ, không
-mạng, không DB), nằm trong `test:bot` nên chạy ở CI mỗi PR mà **không thêm tên
-check mới** — danh sách 5 required status checks ở `docs/11 §11.5` giữ nguyên.
+mạng, không DB), nằm trong `test:bot` nên chạy cùng `bun run test:bot` (và CI job `bot`, chạy tay) mà **không thêm tên
+check mới**.
 Mỗi luật có ca ÂM lẫn ca DƯƠNG: luật hỏng thì ca âm lọt và bài thoát khác 0, chứ
 "0 vi phạm" một mình chỉ chứng minh regex sai. Chứng minh bắt được vi phạm THẬT:
 chèn `import Anthropic` vào `_shared/thong_so.ts` → thoát 1, gỡ ra → thoát 0.
@@ -211,7 +211,7 @@ SQL Editor, `set role anon` rồi thử phá — anon key là key công khai, re
 | TS-SEC-09 | `proacl` của `get_secret` trong `pg_proc` | chỉ `postgres` + `service_role` | ✅ 04/09 |
 | TS-SEC-10 | mở `/nha-dat/<mã>` của tin có fact chứa SĐT | SĐT → `[liên hệ qua Zalo nhadat.cc]` ở cả `description` lẫn `answer` (FR-104) | ⏭ cần bản deploy |
 
-### TS-SEC-AUTO — hồi quy RLS chạy MÁY, mỗi PR (`bun run test:sec`)
+### TS-SEC-AUTO — hồi quy RLS chạy MÁY (`bun run test:sec`; CI job `baomat`, chạy tay)
 Tập không phá huỷ của TS-SEC, bắn khoá **công khai** `sb_publishable_…` vào DB thật qua PostgREST. Bổ sung cho TS-SEC chạy tay chứ không thay: bài `delete from reminders` vẫn ở trên vì nếu RLS hỏng thật thì nó xoá dữ liệu thật. Mã thoát: 0 đạt · 1 hỏng · **2 = không tới được DB (chưa kiểm được, KHÔNG phải đạt)**.
 | ID | Bài | Kỳ vọng | Kết quả mới nhất |
 |---|---|---|---|
@@ -226,7 +226,7 @@ Tập không phá huỷ của TS-SEC, bắn khoá **công khai** `sb_publishable
 | TS-SEC-AUTO-08 | **tự kiểm bộ trên** bằng PostgREST giả, 5 cảnh (khoẻ / RLS thủng / proxy chặn / siết quá tay / không có NMG) | thoát đúng 0 / 1 / 2 / 1 / 0 | ✅ 05/09 (4/4, chạy offline) · 15/09 5/5 |
 
 ### TS-LIVE — thông tuyến thật qua Zalo (chạy khi bật bridge)
-Điều kiện: `node bot/bridge-zca/index.mjs` chạy, không còn `pumpEscalations: fetch failed`. Chạy trên project thật nên sau mỗi vòng xoá `listings` `CCRB-*`, `sellers`/`ctvs` test, `reminders` liên quan.
+Điều kiện: `node bot/bridge-zca/index.mjs` chạy, không còn `pumpEscalations: fetch failed`. Chạy trên project thật nên sau mỗi vòng xoá `listings` `CCRB-*`, `sellers` test, `reminders` liên quan.
 | ID | Bài | Kỳ vọng | Kết quả mới nhất |
 |---|---|---|---|
 | TS-LIVE-01 | `curl` POST `/functions/v1/escalation-feed` với anon key | 200 — không 200 thì các bài dưới vô nghĩa | ⏭ bridge im từ 27/08 |

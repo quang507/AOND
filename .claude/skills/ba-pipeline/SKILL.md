@@ -19,8 +19,10 @@ soát tính nhất quán của bộ tài liệu.
    sự thật là `docs/` + hai file `Kịch bản … (Gemini …).md` ở gốc. Trích dẫn `[nguồn: file §mục]`
    cũ giữ nguyên làm dấu vết; cần đọc lại thì `git show 459008d^:"<tên file>"`.
 2. **Mọi khẳng định phải có nguồn**: `[nguồn: <file> §<mục>]` hoặc `[giả định BA]`.
-3. **Không tự chốt điều mơ hồ** — tạo `OPEN-xx` trong `docs/09-open-issues.md` với
-   phương án + khuyến nghị.
+3. **Tự quyết việc trong tầm, chỉ hỏi việc của chủ dự án** (CLAUDE.md §4 mục 2): kỹ thuật / UX / câu chữ / ngưỡng →
+   soát code + docs, tự chọn, làm, ghi mục SRS "Quyết định (BA, uỷ quyền)". Chỉ hỏi — một câu — khi đụng tiền / phí,
+   pháp lý, thương hiệu, dữ liệu khách thật, hoặc đảo quyết định đã chốt. Mâu thuẫn tài liệu không tự giải được →
+   `OPEN-xx` trong `docs/09-open-issues.md` với phương án + khuyến nghị.
 4. **ID bất biến.** Không đánh số lại; mục bỏ đi thì đánh dấu `[deprecated]`.
 5. **Sửa tầng trên → cập nhật `docs/08-traceability.md` cùng commit.**
 6. Ngôn ngữ: tiếng Việt; tên bảng/trường/API bằng tiếng Anh `snake_case`.
@@ -32,11 +34,14 @@ soát tính nhất quán của bộ tài liệu.
 1. Nó đến từ đâu?
    ├── Tài liệu gốc  → trích dẫn nguồn
    ├── Insight mới   → thêm INS-xx vào 01-research.md trước
-   └── Ý muốn tự phát → dừng, hỏi chủ dự án hoặc ghi OPEN-xx
+   ├── Việc trong tầm → tự quyết, ghi SRS "Quyết định (BA, uỷ quyền)"
+   └── Tiền/phí, pháp lý, thương hiệu, dữ liệu khách thật, đảo quyết định đã chốt
+                     → hỏi chủ dự án một câu rồi dừng (mâu thuẫn tài liệu → OPEN-xx)
 
 2. Cấp FR-xxx tiếp theo trong 02-requirements.md (M/S/C + nguồn)
    — TỪ 30/09/2026 KHÔNG BẮT BUỘC cho sửa lỗi / cải tiến: ghi thẳng mục SRS ở docs/07
-     (ca gốc, nguyên nhân, chỗ sửa, cách kiểm), cùng commit với code. Xem docs/11 §11.2.
+     (ca gốc · lớp lỗi · sửa · kiểm, ~5 dòng), cùng commit với code. docs/07 chỉ giữ 10 mục
+     mới nhất — thêm mục thì chuyển mục cũ nhất sang docs/07-srs-luu-tru.md. Xem docs/11 §11.2.
 
 3. Đi hết chuỗi — bỏ mắt xích nào là tài liệu vỡ:
    FR → UF (03) → WF (05) → SRS (07) → AC (07 §7)
@@ -45,12 +50,13 @@ soát tính nhất quán của bộ tài liệu.
 
 4. Thêm dòng vào 08-traceability.md §8.3
 
-5. Tự kiểm (checklist dưới)
+5. Tự kiểm (checklist dưới), rồi commit THẲNG main và push — không mở PR, không chờ CI
+   (CLAUDE.md §7)
 ```
 
 ## Checklist tự kiểm trước khi commit
 
-- [ ] Khi chuẩn bị mở PR / push đụng `docs/`: chạy `bun run truyvet` xanh (soát ID gãy, truy vết, PII). Không cần chạy `bun run kiem` nếu chỉ sửa tài liệu.
+- [ ] Trước khi push đụng `docs/`: chạy `bun run truyvet` sạch (soát ID gãy, truy vết, PII) — một lần, không sau từng commit nhỏ (CLAUDE.md §7.1). Không cần `bun run kiem` nếu chỉ sửa tài liệu.
 - [ ] Mọi `FR-` mới đều xuất hiện trong `08-traceability.md`.
 - [ ] Mọi `UF-`, `WF-`, `SRS-`, `AC-` được tham chiếu đều **tồn tại thật**.
 - [ ] Không có ID trùng, không có ID bị nhảy cóc mà không giải thích.

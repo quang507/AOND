@@ -31,7 +31,10 @@ dev làm cho nó đúng.** Ba việc, ba lượt, theo thứ tự đó.
    ├─ Tài liệu gốc      → trích [nguồn: <file> §<mục>]
    ├─ Insight mới       → thêm INS-xx vào docs/01 TRƯỚC
    ├─ Vận hành/sự cố    → ghi bối cảnh vào docs/09 hoặc bot/README
-   └─ Ý muốn tự phát    → DỪNG. Ghi OPEN-xx (2 phương án + khuyến nghị), hỏi chủ dự án.
+   ├─ Việc trong tầm    → kỹ thuật / UX / câu chữ / ngưỡng: soát code + docs, tự chọn phương án tốt nhất,
+   │                      làm, ghi mục SRS "Quyết định (BA, uỷ quyền)" (CLAUDE.md §4 mục 2). Không dừng chờ.
+   └─ Việc của chủ dự án → tiền / phí, pháp lý, thương hiệu, dữ liệu khách thật, đảo quyết định đã chốt:
+                          DỪNG, hỏi MỘT câu. Mâu thuẫn tài liệu không tự giải được → OPEN-xx (2 phương án + khuyến nghị).
 
 2. Ba câu hỏi chặn — sai một câu là bỏ, không phải "sửa cho hợp":
    ├─ Nó đẩy người dùng VỀ Zalo hay KÉO họ ra? (IA-P1 — kéo ra là sai hướng)
@@ -50,16 +53,19 @@ dev làm cho nó đúng.** Ba việc, ba lượt, theo thứ tự đó.
 
 6. Chuyển mũ: báo tester có FR mới (bước 11.3).
 
-7. bash scripts/soat-truy-vet.sh  → chạy trước khi mở PR / push đụng docs/ (không bắt buộc sau từng commit nhỏ).
+7. bun run truyvet  → chạy một lần trước khi push đụng docs/ (không chạy sau từng commit nhỏ, CLAUDE.md §7.1).
+   Commit THẲNG main rồi push — không mở PR, không chờ CI (CLAUDE.md §7, SRS-5.1zzzzzzz464).
 ```
 
 **Vì sao bước 5 phải cùng commit:** một FR không có dòng truy vết là một FR
-không ai biết phải kiểm bằng bài nào. Nó vẫn được code, vẫn được merge, và chỉ
+không ai biết phải kiểm bằng bài nào. Nó vẫn được code, vẫn được đẩy lên `main`, và chỉ
 lộ ra khi khách gặp lỗi. `scripts/soat-truy-vet.sh` chặn đúng chỗ này.
 
-**Vì sao bước 1 có nhánh "DỪNG":** hai tài liệu gốc mâu thuẫn nhau thì BA không
-có thẩm quyền chốt. Chốt bừa thì cái sai đi xuống tận SRS rồi tận code, và lúc
-chủ dự án phát hiện thì phải bóc ngược năm tầng.
+**Vì sao bước 1 chỉ "DỪNG" ở việc của chủ dự án:** chủ dự án uỷ quyền 28–29/10/2026
+("bạn quyết thêm đi … làm luôn", SRS-5.1zzzzzzz266) — việc trong tầm mà cũng hỏi thì
+chỉ làm chậm. Nhưng tiền, pháp lý, thương hiệu, dữ liệu khách thật hay một quyết
+định đã chốt thì BA không có thẩm quyền: chốt bừa thì cái sai đi xuống tận SRS rồi
+tận code, và lúc chủ dự án phát hiện thì phải bóc ngược năm tầng.
 
 ## 11.3 Vòng tester — từ FR tới bằng chứng
 
@@ -71,7 +77,7 @@ chủ dự án phát hiện thì phải bóc ngược năm tầng.
    TS-RET / TS-ADM / TS-SEL / TS-BROKER / TS-PROJECT)
 
 3. Kiểm được bằng MÁY không?
-   ├─ Lõi Python (src/aioi/) → ca pytest trong tests/ (bun run test:py, CI job `bot`)
+   ├─ Lõi Python (src/aioi/) → ca pytest trong tests/ (chạy file liên quan; bun run test:py khi cần)
    ├─ Web / edge function / script / SQL → bot/tests/*.mjs (thêm vào `test:bot`)
    │                                       hoặc bot/tests/sql/ (`test:sql`)
    ├─ Cần model thật → script bắn thử production chạy từ máy ssh được vào 146
@@ -118,7 +124,7 @@ chủ dự án phát hiện thì phải bóc ngược năm tầng.
 Trước 04/09/2026 repo không có CI: mọi câu "tsc sạch, e2e xanh" đều là **lời kể
 của người đẩy commit**. Nay chia lại cho sòng phẳng.
 
-| Tầng | Ai kiểm | Ở đâu | Chặn merge? |
+| Tầng | Ai kiểm | Ở đâu | Chặn? |
 |---|---|---|---|
 | Kiểu dữ liệu TypeScript | máy | CI job `web` | ⚠️ xem dưới |
 | Web dựng được, trang tin còn trong cache (NFR-17) | máy dựng, người soi bảng route | CI job `web` | ⚠️ / không |
@@ -135,12 +141,11 @@ của người đẩy commit**. Nay chia lại cho sòng phẳng.
 | Tone giọng, a11y, Lighthouse, tải | người | `docs/10 §10.3–10.4` | chưa |
 | Lint | **không có** — repo chưa cài eslint/biome/prettier | — | không |
 
-**⚠️ CI CHẠY KHÔNG CÓ NGHĨA LÀ CHẶN ĐƯỢC MERGE.** Soát 06/09/2026 qua API
-GitHub: nhánh `main` trả `"protected": false`. Nghĩa là sáu job kia có đỏ rực
-thì nút *Merge* vẫn bấm được, và ai cũng push thẳng vào `main` được, không qua
-PR nào. Bảng này trước đây ghi "có" ở năm dòng đầu — đó là **lời kể**, đúng thứ
-CI sinh ra để thay thế. Muốn chữ "có" thành thật thì phải bật bảo vệ nhánh, xem
-§11.5 Cổng 2.
+**⚠️ = CI chỉ để tham khảo, KHÔNG chặn.** Từ 11/11/2026 (chủ dự án: "xóa cái luật cl pr", "sao cứ sửa là m
+chạy") `kiem.yml` / `cham.yml` không tự chạy khi push / PR nữa — chỉ chạy tay (`workflow_dispatch`); không ai chờ
+nó xanh. Agent và người commit THẲNG `main`, không mở PR (CLAUDE.md §7, SRS-5.1zzzzzzz464), nên `main` cố ý không
+bật bảo vệ nhánh. Bằng chứng "đã chạy" là lệnh khoanh vùng người sửa tự chạy (§11.5 Cổng 1) và bắn thử / log
+trên máy 146 (Cổng 3), không phải dấu xanh CI.
 
 **Về lint:** repo không có eslint, biome, prettier hay oxlint — không trong
 `devDependencies`, không có file cấu hình nào. `next lint` đòi eslint cài sẵn
@@ -169,72 +174,70 @@ trả JSON có `message`), có bài dò đường chạy trước, và có mã t
 
 ## 11.5 Ba cổng
 
-**Cổng 1 — trước khi Push / Mở PR** (người & agent, kiểm tra khoanh vùng theo phạm vi):
+Từ 11/11/2026 (chủ dự án: "giờ tôi bảo bạn sửa gì là bạn sửa luôn không có cl hay test xanh đỏ gì hết"; CLAUDE.md §7,
+SRS-5.1zzzzzzz464): sửa → commit THẲNG `main` → push, không PR, không chờ CI. Ba cổng giữ để biết ai kiểm gì:
+**Cổng 1 và Cổng 3 bắt buộc** (người / agent tự kiểm, cùng lượt); **Cổng 2 (CI) chỉ tham khảo**, không chặn.
+
+**Cổng 1 — trước khi push** (người & agent, bắt buộc, kiểm tra khoanh vùng theo phạm vi — CLAUDE.md §7.1):
 *Từ 06/11/2026 (SRS-5.1zzzzzzz387): Không chạy kiểm tra máy móc toàn bộ trước MỌI commit nhỏ làm tràn bộ nhớ token và chậm phiên. Phân bổ hợp lý theo phạm vi:*
 - Commit nháp / lưu tiến độ (WIP): commit tự do không cần test.
-- Đụng `docs/`: chỉ chạy `bun run truyvet` (1–2 giây) trước khi mở PR / push.
-- Đụng web (`app/`, `components/`): chỉ chạy `bun run kieu` hoặc `bun run build` khi hoàn tất phần web.
-- Đụng lõi Python (`src/aioi/`): chỉ chạy file test liên quan; chạy `bun run test:py` trước khi mở PR.
-- Toàn bộ `bun run kiem`: chỉ chạy 1 lần trước khi tạo PR hoặc chuẩn bị gộp, hoặc để CI Cổng 2 trên GitHub Actions kiểm tra tự động.
+- Đụng `docs/`: chỉ chạy `bun run truyvet` (1–2 giây) trước khi push.
+- Đụng web (`app/`, `components/`): chỉ chạy `bun run kieu` khi hoàn tất phần web.
+- Đụng lõi Python (`src/aioi/`): chỉ chạy file test liên quan (`pytest tests/test_xxx.py`); `bun run test:py` không bắt buộc.
+- Toàn bộ `bun run kiem`: không bắt buộc — chạy khi tự thấy cần (chủ dự án 11/11: không chờ test xanh đỏ).
 
 ```bash
 bun run truyvet  # soát tài liệu nhanh (1-2s) trước khi push đụng docs/
-bun run test:py  # pytest lõi Python — chỉ chạy trước khi mở PR đụng src/aioi
-bun run kiem     # kiểm tra toàn bộ — CHỈ chạy 1 lần trước khi mở PR / merge
+bun run test:py  # pytest lõi Python — khi cần
+bun run kiem     # kiểm tra toàn bộ — khi cần
 ```
 
 Đụng migration RLS/GRANT thì chạy thêm TS-SEC bằng tay.
 
-**Cổng 2 — trước merge** (máy, GitHub Actions `.github/workflows/kiem.yml`):
-các job của `kiem.yml` phải xanh (năm job dưới là danh sách required check đã đề xuất; soát 28/10/2026 CI có thêm `migration`, `soatdb`, `kieubot`, `doichieutien`). Đỏ là không
-merge — không "merge rồi sửa sau".
+**Cổng 2 — CI trên GitHub Actions** (máy, chỉ tham khảo): `.github/workflows/kiem.yml` (9 job) và `cham.yml` (bộ
+chấm offline, SRS-5.1zzzzzzz377) từ 11/11/2026 chỉ chạy tay (`workflow_dispatch`), KHÔNG tự chạy khi push, KHÔNG
+chặn, không ai chờ xanh. Chạy khi muốn một lượt soát toàn bộ trên máy sạch; đỏ thì đọc và tự quyết sửa, không phải
+điều kiện để push. `main` cố ý không bật bảo vệ nhánh (*Require a pull request*… sẽ chặn đúng vòng commit thẳng
+`main` mà chủ dự án chọn). Tên job còn để tra:
 
-Nhưng tính tới 06/09/2026 câu trên mới là **kỷ luật, chưa phải hàng rào**:
-`main` chưa bật bảo vệ nhánh, nên GitHub không ngăn ai merge PR đỏ hay push
-thẳng. Cổng 2 chỉ có thật khi chủ dự án bật, ở
-**Settings → Branches → Add branch protection rule** cho `main`:
+| Tên check | Job | Đỏ nghĩa là gì |
+|---|---|---|
+| `Web — kiểu dữ liệu + dựng` | `web` | TypeScript hoặc `next build` hỏng |
+| `Bot — e2e hội thoại` | `bot` | pytest lõi Python, `test:bot` hoặc `test:sql` đỏ (tên giữ chữ "e2e" cũ) |
+| `Rổ hàng + masterDB — tự kiểm trên máy chủ giả` | `rohang` | Bản xuất rổ hàng ghi vào repo / nuốt dòng thiếu (phần masterDB gỡ 19/10/2026, tên giữ nguyên) |
+| `Tài liệu — truy vết ID` | `truyvet` | ID gãy, số đếm lệch, PII hoặc khoá lọt vào file |
+| `Bảo mật — hồi quy RLS trên DB thật` | `baomat` | Vai `anon` với tới thứ nó không được với. Supabase Free ngủ khi không ai đụng → `test:sec` thoát 2 ("chưa kiểm được", không phải "đạt") |
 
-- ✅ *Require a pull request before merging* — chặn push thẳng vào `main`.
-- ✅ *Require status checks to pass before merging* + ✅ *Require branches to be
-  up to date*, rồi chọn đúng năm tên check này (chép nguyên văn, kể cả dấu gạch
-  dài và dấu tiếng Việt — GitHub so khớp theo TÊN, sai một ký tự là điều kiện
-  không bao giờ thoả và PR kẹt vĩnh viễn):
+(Còn `migration`, `soatdb`, `kieubot`, `doichieutien` — soát 28/10/2026. Lịch sử: 06/09/2026 từng đề xuất bật branch
+protection với năm check trên làm cổng chặn merge; bỏ hẳn từ 11/11/2026.)
 
-  | Tên check | Job | Đỏ nghĩa là gì |
-  |---|---|---|
-  | `Web — kiểu dữ liệu + dựng` | `web` | TypeScript hoặc `next build` hỏng |
-  | `Bot — e2e hội thoại` | `bot` | pytest lõi Python, `test:bot` hoặc `test:sql` đỏ (tên check giữ chữ "e2e" cũ để không phải sửa branch protection) |
-  | `Rổ hàng + masterDB — tự kiểm trên máy chủ giả` | `rohang` | Bản xuất rổ hàng ghi vào repo / nuốt dòng thiếu (phần masterDB gỡ 19/10/2026, tên check giữ nguyên) |
-  | `Tài liệu — truy vết ID` | `truyvet` | ID gãy, số đếm lệch, PII hoặc khoá lọt vào file |
-  | `Bảo mật — hồi quy RLS trên DB thật` | `baomat` | Vai `anon` với tới thứ nó không được với |
-
-  (11/09/2026: bỏ `Sao lưu — tự kiểm trên PostgREST giả` và `Phục hồi — diễn
-  tập trên Postgres thật` cùng sao lưu. Nếu đã chọn hai tên đó trong branch
-  protection thì gỡ ra, không thì PR kẹt.)
-
-**Đánh đổi phải biết trước khi bật `baomat`:** job đó cần đường ra Internet tới
-`*.supabase.co` và DB đang chạy. Supabase bậc Free **ngủ khi không ai đụng** —
-lúc đó `test:sec` thoát 2 ("chưa kiểm được"), job đỏ, và mọi PR kẹt cho tới khi
-đánh thức DB. Đó là hành vi ĐÚNG (không kiểm được thì không được merge), nhưng
-nó sẽ chặn thật, nên đừng ngạc nhiên rồi đi tắt nó lúc đang vội.
-
-Không bật ✅ *Include administrators* thì chủ repo vẫn tự bỏ qua được — tuỳ chủ
-dự án, nhưng phải là lựa chọn có ý thức, không phải mặc định quên bật.
-
-**Cổng 3 — trước / sau triển khai** (người):
-- **Lõi Python**: đưa lên máy 146 bằng `bash scripts/sau-gop.sh` / `scripts/trien-khai-146.sh` (chép `src`, khởi động lại task
-  "AOND Core"; báo trước người đang chat thử — SRS-401). Xong thì chạy script `ban-thu-*` liên quan và `doc-log-loi.sh` (SRS-405).
-- **Migration**: áp qua `apply-migration.yml`; áp xong mà chưa mở PR cho file của nó thì việc chưa xong (CLAUDE.md §6).
+**Cổng 3 — triển khai cùng lượt** (người / agent, bắt buộc — CLAUDE.md §7 bước 3–4: "sửa 1 lần là từ code repo db và
+máy 146 đều dc sửa luôn"):
+- **Lõi Python**: đổi `src/aioi/` → `bash scripts/trien-khai-146.sh` (sao lưu `src` cũ vào `C:\aond\backup\src_*`, chép,
+  khởi động lại task "AOND Core", chờ `/health`; báo trước người đang chat thử — SRS-401). Sửa hành vi model thì chạy script
+  `ban-thu-*` liên quan và `doc-log-loi.sh` (SRS-405).
+- **Bridge**: đổi `bot/bridge-zca/` → chép tay lên `C:\aond\bridge-zca` trên 146 rồi khởi động lại hai task bridge.
+- **Công tắc env**: sửa cả `bot/cau-hinh-loi.env` lẫn `C:\aond\aond_core\.env` trên 146, rồi khởi động lại lõi.
+- **Migration**: file trong `bot/supabase/migrations/`, chạy thử trong giao dịch huỷ (`begin … rollback`), rồi ÁP LUÔN cùng
+  lượt và commit file cùng lúc (CLAUDE.md §7 bước 4). Đụng RLS/GRANT thì chạy TS-SEC.
 - **Edge function còn lại** (`escalation-feed`, `geocode-listings`, `media-cleanup`): workflow `deploy-bot.yml`
   (chạy tay, runner tự build và đẩy, bytes không qua tay ai). Bản cũ "bundle → kéo ngược → so từng byte" là của `chat-reply` đã gỡ.
 
 ## 11.6 Định nghĩa XONG
 
-Một FR chỉ được ghi ✅ trong `docs/02` khi đủ **cả bốn**:
+**Một thay đổi (sửa lỗi / cải tiến)** là XONG khi, trong cùng lượt (CLAUDE.md §7 vòng giao việc):
+
+1. Code đã commit THẲNG `main` và push (không PR, không chờ CI).
+2. DB và máy 146 đã theo: migration đã áp (nếu có), lõi / bridge / `.env` trên 146 đã cập nhật (Cổng 3).
+3. Có MỘT mục SRS ở `docs/07` đi chung commit (ca gốc · lớp lỗi · sửa · kiểm; sửa lỗi thì trả lời ba câu của
+   CLAUDE.md §4 mục 8).
+4. Cổng 1 đã chạy theo phạm vi (§11.5). CI (Cổng 2) không phải điều kiện.
+
+**Một FR** chỉ được ghi ✅ trong `docs/02` khi đủ **cả bốn**:
 
 1. Có dòng trong ma trận `docs/08`.
 2. Có ít nhất một ca `TS-` trong `docs/10` — và ca đó đã chạy, có ngày.
-3. Ba cổng ở §11.5 đã qua.
+3. Cổng 1 và Cổng 3 ở §11.5 đã qua.
 4. Có bằng chứng từ hệ thống thật, không chỉ từ test: dòng trong DB, log, ảnh
    màn hình, hoặc số ở `/admin`.
 
@@ -246,10 +249,10 @@ qua** (`docs/10 §10.8`).
 
 | Việc | Lệnh | Có trong `kiem`? |
 |---|---|---|
-| Toàn bộ cổng 1 | `bun run kiem` | — |
+| Kiểm tra toàn bộ (không bắt buộc, khi cần) | `bun run kiem` | — |
 | Chỉ kiểu dữ liệu | `bun run kieu` | có |
 | Chỉ dựng web | `bun run build` | có |
-| Lõi Python (pytest `tests/`) | `bun run test:py` | **không** — chạy thêm khi sửa `src/aioi/`; CI chạy ở job `bot` |
+| Lõi Python (pytest `tests/`) | `bun run test:py` (hoặc chỉ file liên quan) | **không** — chạy khi cần lúc sửa `src/aioi/`; CI (chạy tay) có ở job `bot` |
 | Code TypeScript còn sống (web, edge function, script) | `bun run test:bot` | có |
 | Trigger / hàm SQL trên Postgres tạm | `bun run test:sql` | không (cần Postgres; CI job `bot`) |
 | Kiểu ba edge function | `bun run kieu:bot` | có |
@@ -259,9 +262,9 @@ qua** (`docs/10 §10.8`).
 | Hồi quy RLS trên DB thật (cần Internet) | `bun run test:sec` | **không** — cần mạng, để `kiem` không đỏ oan trên máy offline |
 | Ma trận quyền 5 vai (cần quyền SQL) | dán `bot/tests/vai-tro.sql` vào SQL Editor | không |
 | Soát trôi migration DB ↔ repo (cần khoá) | `node scripts/soat-migration.mjs` | không |
-| Sinh lại ảnh chụp schema (cần khoá) | gọi RPC `xuat_schema()` — lệnh ở `CLAUDE.md §6` | không |
+| Sinh lại ảnh chụp schema (cần khoá `SUPABASE_SERVICE_ROLE_KEY` trong `scripts/.env`) | `node scripts/sinh-schema.mjs` (gọi RPC `xuat_schema()`) | không |
 | Soát tài liệu chi tiết hơn (agent) | gọi agent `soat-truy-vet` |
 | Review diff đụng `docs/` | gọi agent `reviewer` |
 
-Cùng một lệnh cho người và cho CI (`package.json` là nguồn duy nhất) — không thì
+Cùng một lệnh cho người và cho CI chạy tay (`package.json` là nguồn duy nhất) — không thì
 "máy xanh, máy tao đỏ" và không ai biết bên nào đúng.

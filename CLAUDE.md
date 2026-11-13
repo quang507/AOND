@@ -57,7 +57,7 @@ Tài liệu gốc 2024 không còn trong repo (OPEN-48). Nguồn sự thật: b�
 8. **Mỗi lần sửa lỗi trả lời ba câu** trong mục docs/07 đó (01/10/2026): (1) *lớp lỗi* — cơ chế nào cho lỗi lọt; (2) *chỗ khác cùng lớp* — đã soát, sửa / còn; (3) *bài kiểm đỏ khi tắt bản sửa*, kèm ít nhất một cách nói mới. Lỗi kiểu "máy đoán ý bằng từ khoá" thì KHÔNG thêm từ vào regex — đưa quyết định sang AI (đọc theo nghĩa, code kiểm cụm trích), từ khoá chỉ là lưới đỡ.
 9. Thêm ghi chú vào file này chỉ khi đó là LUẬT ĐANG ÁP mà phiên sau dễ làm sai; một dòng, kèm mã SRS. Chi tiết để ở docs/07.
 10. **Mục SRS ngắn**: tối đa ~5 dòng (ca gốc · lớp lỗi · sửa · kiểm). `docs/07-srs.md` chỉ giữ 10 mục mới nhất — thêm mục mới thì chuyển mục cũ nhất sang `docs/07-srs-luu-tru.md`.
-11. **Nguồn sự thật là nhánh `main`** (chủ dự án 03/11/2026, SRS-372): PR đã đóng và nhánh cũ KHÔNG soát, không audit, không gộp lại, không trích làm căn cứ — trừ khi chủ dự án nêu đúng số PR. Gộp xong thì xoá nhánh (GitHub tự xoá: Settings → "Automatically delete head branches").
+11. **Nguồn sự thật là nhánh `main`** (chủ dự án 03/11/2026, SRS-372): PR đã đóng và nhánh cũ KHÔNG soát, không audit, không gộp lại, không trích làm căn cứ — trừ khi chủ dự án nêu đúng số PR.
 
 ## 5. Ranh giới bảo mật — TUYỆT ĐỐI
 
@@ -84,15 +84,16 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
   | `AIOI_CHAT_MODEL_THU` | `claude-sonnet-5-5` | model của ID thử (`ban-thu-*`); `gemini` = gọi thẳng Gemini — SRS-239 / 243 |
   | `AIOI_MODEL_LUOT_DE` | `tat` | model viết lời cho lượt dễ của người bán (thu thập, không tra dữ liệu, không việc khác) — SRS-311 |
   | `AIOI_CONG_CU_GUI_KHACH` | `tat` | `bat` = ép công cụ `gui_khach` — SRS-246. Ngoại lệ quy ước: code đọc `!= "tat"`, trống = BẬT |
+  | `AIOI_PROMPT_GON` | `bat` | lượt hỏi ô người bán dùng `LEAN_SYSTEM_PROMPT` thay phiếu `build_phieu_luot` (tắt = về phiếu cũ) — SRS-408 / 414 |
   | `AIOI_DONG_TRICH_XUAT` | `bat` | tin phụ "$$$$$ Đã trích xuất" sau mỗi lượt, MỌI cuộc chat (giai đoạn test; chạy thật đổi `tat`) — SRS-252 |
   | `GEMINI_MODEL` | `gemini-3.5-flash,gemini-3.1-flash-lite` | Gemini dự phòng khi Claude hỏng — SRS-299 |
 
-  `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đã gỡ hẳn (đường mới là duy nhất, SRS-319): `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON` / `FORM_BAN_GON`, `AGENT_MUA` / `AGENT_BAN`; SRS-371: `AGENT_BOC` / `AGENT_GOP` — lượt người bán và người mua (vai đã rõ) là MỘT vòng agent Sonnet (`agent_gop.py`, SRS-371 / 380), form Haiku chỉ dự phòng. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini
+  `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đã gỡ hẳn (đường mới là duy nhất, SRS-319): `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON` / `FORM_BAN_GON`, `AGENT_MUA` / `AGENT_BAN`; SRS-371: `AGENT_BOC` / `AGENT_GOP` — lượt người bán và người mua (vai đã rõ) là MỘT vòng agent Sonnet (`agent_gop.py`, SRS-371 / 380), form bóc tách (model `AIOI_EXTRACT_MODEL`) chỉ dự phòng. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini
   rồi Groq (`llm/du_phong.py`): mỗi lần ≤ 15 s, cả vòng ≤ 40 s, bridge chờ 90 s — đừng nới.
 - **Supabase** project `rqxmmqmctpklqcmbfxuj` (Tokyo, gói Free — không tự sao lưu, chủ dự án chấp nhận). Edge function còn lại: `escalation-feed` (bridge kéo việc / báo sống / QR), `geocode-listings`, `media-cleanup`; `_shared/` còn cho ba hàm đó và web (`claude.ts`, `gate.ts`, `geocode.ts`, `tin_nhac.ts`, `extraction/`: `luat-tien.ts`, `luat-lien-he.ts`, `nhan.ts`, `ds-phuong.ts`, `tien-ich.ts`).
 - **Web**: Vercel không dựng preview cho nhánh `claude/**` (`vercel.json` `git.deploymentEnabled`, SRS-247) và bỏ qua bản dựng `main` khi lần đẩy không đổi file web (`ignoreCommand`, SRS-248 — thêm thư mục web mới thì thêm vào danh sách đó). Next.js 15 + TS + Tailwind 4 ở root (`app/`, `components/`, `lib/`, `public/`), Bun (`bun.lock`), Vercel. Đọc Supabase bằng publishable key qua RLS; mô tả listing luôn qua `sanitizeDescription()`.
 - **Kho tệp = Supabase Storage**: ảnh căn `listing-public/<uuid tin>/` (web đọc `listing_media` + `listing_photos_v`); sổ đỏ / giấy tờ / tệp dự án `listing-private` (`kho_anh.py`). `masterdb-raw` cố ý không có policy (chỉ `service_role`) — đừng trỏ web vào. `listing-photos` đã khoá.
-- **Logging lõi**: lõi không cấu hình `logging` nên `log.info` KHÔNG ra journal — log để truy lỗi phải là `warning` (SRS-233). Đọc log (tệp trong `C:\aond\logs` trên 146): `bash bot/tests/doc-log-loi.sh [số dòng]` từ máy ssh được vào 146 (SRS-405).
+- **Logging lõi**: lõi không cấu hình `logging` nên `log.info` KHÔNG ra tệp log — log để truy lỗi phải là `warning` (SRS-233). Đọc log (tệp trong `C:\aond\logs` trên 146): `bash bot/tests/doc-log-loi.sh [số dòng]` từ máy ssh được vào 146 (SRS-405).
 
 ### 6.2 Luật đang áp — lõi bot
 
@@ -114,7 +115,7 @@ Chi tiết (ghi ô tin, dự án, địa chỉ, bản nháp, giọng, phí, phí
 
 ### 6.4 DB, migration · 6.5 Web
 
-Chi tiết ở `.claude/luat-dang-ap.md` §6.4 / §6.5 — **đọc trước khi đụng DB / migration / web**. Gốc: schema đổi phải qua file `bot/supabase/migrations/`, chủ dự án đồng ý rồi mới áp; `schema.sql` chỉ sinh lại (ô `commit_schema = commit`), không sửa tay; view mới `revoke` trước khi `grant`.
+Chi tiết ở `.claude/luat-dang-ap.md` §6.4 / §6.5 — **đọc trước khi đụng DB / migration / web**. Gốc: schema đổi phải qua file `bot/supabase/migrations/`, chạy thử trong giao dịch huỷ rồi áp luôn cùng lượt (§7 bước 4, SRS-464); `schema.sql` sinh lại bằng `node scripts/sinh-schema.mjs` (máy có khoá) — không có khoá thì dán `pg_get_functiondef` / DDL lấy từ DB, không viết tay theo trí nhớ; view mới `revoke` trước khi `grant`.
 
 ## 6b. Nguồn thiết kế
 
@@ -128,7 +129,7 @@ Phiên cloud có hook `SessionStart` (`.claude/hooks/session-start.sh`) cài s�
 ### 7.1 Kiểm tra khoanh vùng thông minh (Smart Scoping — chống tràn ngữ cảnh)
 *Quyết định chủ dự án 06/11/2026 (SRS-5.1zzzzzzz387): TUYỆT ĐỐI KHÔNG chạy kiểm tra máy móc toàn bộ trước mọi commit nhỏ làm tràn bộ nhớ token và làm chậm phiên.*
 - **Commit nháp / lưu tiến độ (WIP):** Commit tự do không cần test.
-- **Sửa tài liệu (`docs/`):** CHỈ chạy `bun run truyvet` (1–2 giây) trước khi push. Không build web, không test bot hay pytest.
+- **Sửa tài liệu (`docs/`):** nếu kiểm thì CHỈ chạy `bun run truyvet` (1–2 giây) trước khi push. Không build web, không test bot hay pytest.
 - **Sửa web / UI (`app/`, `components/`):** CHỈ chạy `bun run kieu` (type-check nhanh) khi hoàn tất việc sửa web.
 - **Sửa lõi Python (`src/aioi/`):** Chỉ chạy file test liên quan (ví dụ `pytest tests/test_xxx.py`). Không bắt buộc chạy `bun run test:py`.
 - **Kiểm tra toàn bộ (`bun run kiem`):** Không bắt buộc — chạy khi tự thấy cần (chủ dự án 11/11: không chờ test xanh đỏ).
@@ -168,4 +169,4 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
 | Agent | Việc | Khi nào |
 |---|---|---|
 | `soat-truy-vet` | Soát ID gãy, truy vết thiếu, số đếm lệch, PII | Khi đụng docs/ (không chạy từng commit nhỏ) |
-| `reviewer` | Review diff/PR theo checklist BA, chỉ báo finding | Khi review PR |
+| `reviewer` | Review diff theo checklist BA, chỉ báo finding | Khi được yêu cầu review |

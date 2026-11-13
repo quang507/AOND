@@ -1,4 +1,4 @@
-# Workflow: Review một PR/diff đụng docs/
+# Workflow: Review một diff / commit đụng docs/ (không còn PR — CLAUDE.md §7)
 
 1. Đọc diff. Với TỪNG thay đổi, kiểm theo thứ tự:
    - Khẳng định mới có nguồn không? (`[nguồn: …]` / `[giả định BA]` / OPEN-xx)

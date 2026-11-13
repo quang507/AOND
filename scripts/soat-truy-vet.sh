@@ -176,7 +176,7 @@ fi
 # Bỏ cùng sao lưu 11/09/2026: soát bảng migration ↔ BANG (sao-luu.mjs) và hàm migration ↔ schema.sql.
 
 # ── schema.sql có theo kịp migration không? ─────────────────────────────────
-# 11/09/2026: sao lưu đã bỏ, nên KHÔNG còn script sinh lại schema.sql — càng
+# 11/09/2026: sao lưu đã bỏ; schema.sql sinh lại bằng scripts/sinh-schema.mjs (cần khoá) — càng
 # phải giữ phép soát này, vì schema.sql là bản duy nhất để dựng lại từ số không.
 # (Phép soát bảng ↔ BANG của sao-luu.mjs thì bỏ cùng sao lưu.) Bắt 08/09/2026:
 # `20260907h` merge mà schema.sql không có `diem_tin` — repo tụt sau DB.
@@ -195,8 +195,8 @@ for f in $ham_mig; do
 done
 if [[ -n "$thieu_ham" ]]; then
   canh "Hàm có trong migration nhưng KHÔNG có trong schema.sql: $thieu_ham"
-  printf '   → thêm tay định nghĩa vào bot/supabase/schema.sql: chạy trên DB pg_get_functiondef(<hàm>::regprocedure) rồi dán vào (kèm trigger nếu có).\n'
-  printf '   → không còn script sinh lại schema.sql (sao lưu đã bỏ 11/09/2026).
+  printf '   → sinh lại bot/supabase/schema.sql: node scripts/sinh-schema.mjs (gọi xuat_schema(), cần SUPABASE_SERVICE_ROLE_KEY trong scripts/.env — chạy trên máy có khoá, không trong CI).\n'
+  printf '   → không có khoá: thêm tay định nghĩa, chạy trên DB pg_get_functiondef(<hàm>::regprocedure) rồi dán vào (kèm trigger nếu có).
 '
 else
   printf '[32m✓[0m schema.sql có đủ hàm mà migration sinh ra

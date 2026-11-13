@@ -3,7 +3,8 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-11 12:32 (giờ VN)
+-- Sinh lúc: 2026-11-11 12:32 (giờ VN); 13/11/2026 bổ sung deals.gia_chot_vnd, bao_cao_gia_quanh, can_dang_rao_gan
+-- lấy nguyên từ DB (pg_get_functiondef, md5 khớp DB) — SRS-5.1zzzzzzz464.
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -204,7 +205,8 @@ create table if not exists public.deals (
   price_vnd bigint,
   fee_pct numeric,
   closed_at timestamp with time zone,
-  created_at timestamp with time zone not null default now()
+  created_at timestamp with time zone not null default now(),
+  gia_chot_vnd bigint
 );
 
 create table if not exists public.dieu_luat (
@@ -1632,6 +1634,61 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.bao_cao_gia_quanh(p_code text, p_ban_kinh_m integer DEFAULT 3000)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  with g as (
+    select id, code, deal, property_type, lat::float8 as lat, lng::float8 as lng, access_type, price_vnd, price_per_m2_vnd, area_m2,
+           street, ward, district, floors
+      from listings
+     where code = upper(p_code) and status in ('dang_ban', 'dang_quan_tam', 'da_coc') and lat is not null and lng is not null
+     limit 1
+  ), ung as (
+    select l.code, l.street, l.ward, l.area_m2, l.price_vnd, l.price_per_m2_vnd, l.access_type, l.floors, l.status, l.updated_at,
+           round(khoang_cach_m(g.lat, g.lng, l.lat::float8, l.lng::float8))::int as m
+      from listings l, g
+     where l.id <> g.id and l.deal = g.deal and l.property_type = g.property_type
+       and l.lat is not null and l.lng is not null and l.price_per_m2_vnd is not null
+       and khoang_cach_m(g.lat, g.lng, l.lat::float8, l.lng::float8) <= greatest(500, least(p_ban_kinh_m, 10000))
+  ), rao as (
+    select * from ung where status in ('dang_ban', 'dang_quan_tam')
+  )
+  select case when not exists (select 1 from g) then null else jsonb_build_object(
+    'can', (select jsonb_build_object('code', code, 'deal', deal, 'property_type', property_type, 'access_type', access_type,
+                                      'price_vnd', price_vnd, 'price_per_m2_vnd', price_per_m2_vnd, 'area_m2', area_m2,
+                                      'street', street, 'ward', ward, 'district', district, 'floors', floors) from g),
+    'ban_kinh_m', greatest(500, least(p_ban_kinh_m, 10000)),
+    'cap_nhat', now(),
+    'tong', (select jsonb_build_object('n', count(*), 'min', min(price_per_m2_vnd), 'max', max(price_per_m2_vnd),
+                                       'p25', round(percentile_cont(0.25) within group (order by price_per_m2_vnd)),
+                                       'p50', round(percentile_cont(0.5) within group (order by price_per_m2_vnd)),
+                                       'p75', round(percentile_cont(0.75) within group (order by price_per_m2_vnd)),
+                                       'gia_min', min(price_vnd), 'gia_max', max(price_vnd))
+               from rao),
+    'theo_loi_vao', coalesce((select jsonb_agg(x order by (x->>'n')::int desc)
+                                from (select jsonb_build_object('access_type', access_type, 'n', count(*),
+                                                                'p50', round(percentile_cont(0.5) within group (order by price_per_m2_vnd)),
+                                                                'min', min(price_per_m2_vnd), 'max', max(price_per_m2_vnd)) as x
+                                        from rao group by access_type) s), '[]'::jsonb),
+    -- Vị trí giá chỉ so với căn CÙNG lối vào (mặt tiền với mặt tiền, hẻm với hẻm — như muc_lech SRS-429), cần ≥ 3 căn; chưa đủ → null.
+    'vi_tri', (select case when count(*) < 3 or (select price_per_m2_vnd from g) is null then null
+                           else round(100.0 * count(*) filter (where r.price_per_m2_vnd < (select price_per_m2_vnd from g)) / count(*)) end
+                 from rao r where r.access_type is not distinct from (select access_type from g)),
+    'n_cung_loi_vao', (select count(*) from rao r where r.access_type is not distinct from (select access_type from g)),
+    'dang_rao', coalesce((select jsonb_agg(to_jsonb(x) order by x.m)
+                            from (select code, street, ward, area_m2, price_vnd, price_per_m2_vnd, access_type, floors, m
+                                    from rao order by m limit 12) x), '[]'::jsonb),
+    'da_giao_dich', coalesce((select jsonb_agg(to_jsonb(x) order by x.m)
+                                from (select code, street, ward, area_m2, price_vnd, price_per_m2_vnd, access_type, floors, status, m
+                                        from ung where status in ('da_coc', 'da_chot') and updated_at > now() - interval '180 days'
+                                       order by m limit 10) x), '[]'::jsonb)
+  ) end
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.bat_het_tien_api()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2321,6 +2378,44 @@ begin
             l.last_interest_at desc nulls last, l.created_at desc
    limit greatest(1, least(coalesce(p_limit, 3), 5));
 end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.can_dang_rao_gan(p_listing_id uuid, p_ban_kinh_m integer DEFAULT 3000, p_toi_da integer DEFAULT 3)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  with g as (
+    select id, deal, property_type, seller_id, lat::float8 as lat, lng::float8 as lng, access_type, price_vnd, price_per_m2_vnd, area_m2
+      from listings where id = p_listing_id and lat is not null and lng is not null
+  ), ung as (
+    select l.code, l.street, l.ward, l.area_m2, l.price_vnd, l.price_per_m2_vnd, l.access_type, l.floors, l.status, l.updated_at,
+           round(khoang_cach_m(g.lat, g.lng, l.lat::float8, l.lng::float8))::int as m,
+           (l.access_type is not distinct from g.access_type) as cung_loi_vao
+      from listings l, g
+     where l.id <> g.id and l.deal = g.deal and l.property_type = g.property_type
+       and (g.seller_id is null or l.seller_id is distinct from g.seller_id)
+       and l.lat is not null and l.lng is not null and l.price_per_m2_vnd is not null
+       and khoang_cach_m(g.lat, g.lng, l.lat::float8, l.lng::float8) <= p_ban_kinh_m
+  )
+  select jsonb_build_object(
+    'cua_chu', (select jsonb_build_object('price_vnd', price_vnd, 'price_per_m2_vnd', price_per_m2_vnd, 'area_m2', area_m2,
+                                          'access_type', access_type) from g),
+    'dang_rao', coalesce((select jsonb_agg(to_jsonb(x) - 'updated_at' - 'cung_loi_vao' - 'status')
+                            from (select * from ung where status in ('dang_ban', 'dang_quan_tam')
+                                   order by cung_loi_vao desc, m limit p_toi_da) x), '[]'::jsonb),
+    'don_gia', (select jsonb_build_object('n', count(*), 'min', min(price_per_m2_vnd), 'max', max(price_per_m2_vnd),
+                                          'trung_vi', round(percentile_cont(0.5) within group (order by price_per_m2_vnd)),
+                                          'n_cung_loi_vao', count(*) filter (where cung_loi_vao),
+                                          'trung_vi_cung_loi_vao', round(percentile_cont(0.5) within group (order by price_per_m2_vnd)
+                                                                         filter (where cung_loi_vao)))
+                  from ung where status in ('dang_ban', 'dang_quan_tam')),
+    'da_giao_dich', coalesce((select jsonb_agg(to_jsonb(x) - 'updated_at' - 'cung_loi_vao')
+                                from (select * from ung where status in ('da_coc', 'da_chot') and updated_at > now() - interval '180 days'
+                                       order by m limit p_toi_da) x), '[]'::jsonb)
+  )
+$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.canh_bao_ngoai(p_title text, p_text text, p_priority integer DEFAULT 4, p_email boolean DEFAULT false)
@@ -7263,12 +7358,18 @@ grant execute on function public.admin_xoa_het_khach_va_ro_hang(p_xac_nhan text)
 revoke all on function public.admin_xoa_khach(p_zalo text) from public, anon, authenticated;
 grant execute on function public.admin_xoa_khach(p_zalo text) to authenticated;
 grant execute on function public.admin_xoa_khach(p_zalo text) to service_role;
+revoke all on function public.an_anh_tin(uuid, text, boolean) from public, anon, authenticated;
+grant execute on function public.an_anh_tin(uuid, text, boolean) to service_role;
 revoke all on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) from public, anon, authenticated;
 grant execute on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) to anon;
 grant execute on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) to authenticated;
 grant execute on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) to service_role;
 revoke all on function public.bao_can_da_chot(p_listing_id uuid) from public, anon, authenticated;
 grant execute on function public.bao_can_da_chot(p_listing_id uuid) to service_role;
+revoke all on function public.bao_cao_gia_quanh(p_code text, p_ban_kinh_m integer) from public, anon, authenticated;
+grant execute on function public.bao_cao_gia_quanh(p_code text, p_ban_kinh_m integer) to anon;
+grant execute on function public.bao_cao_gia_quanh(p_code text, p_ban_kinh_m integer) to authenticated;
+grant execute on function public.bao_cao_gia_quanh(p_code text, p_ban_kinh_m integer) to service_role;
 revoke all on function public.bat_het_tien_api() from public, anon, authenticated;
 grant execute on function public.bat_het_tien_api() to service_role;
 revoke all on function public.beat(p_who text) from public, anon, authenticated;
@@ -7299,6 +7400,8 @@ revoke all on function public.bump_user_quota(p_uid text, p_gio_limit integer, p
 grant execute on function public.bump_user_quota(p_uid text, p_gio_limit integer, p_ngay_limit integer) to service_role;
 revoke all on function public.can_cung_khu(p_buyer_id uuid, p_listing_id uuid, p_limit integer) from public, anon, authenticated;
 grant execute on function public.can_cung_khu(p_buyer_id uuid, p_listing_id uuid, p_limit integer) to service_role;
+revoke all on function public.can_dang_rao_gan(p_listing_id uuid, p_ban_kinh_m integer, p_toi_da integer) from public, anon, authenticated;
+grant execute on function public.can_dang_rao_gan(p_listing_id uuid, p_ban_kinh_m integer, p_toi_da integer) to service_role;
 revoke all on function public.canh_bao_ngoai(p_title text, p_text text, p_priority integer, p_email boolean) from public, anon, authenticated;
 grant execute on function public.canh_bao_ngoai(p_title text, p_text text, p_priority integer, p_email boolean) to service_role;
 revoke all on function public.cau_chuan_cap_nhat_luc() from public, anon, authenticated;
@@ -7345,6 +7448,8 @@ revoke all on function public.cung_quan_cu(a text, b text) from public, anon, au
 grant execute on function public.cung_quan_cu(a text, b text) to anon;
 grant execute on function public.cung_quan_cu(a text, b text) to authenticated;
 grant execute on function public.cung_quan_cu(a text, b text) to service_role;
+revoke all on function public.dat_anh_bia(uuid, text) from public, anon, authenticated;
+grant execute on function public.dat_anh_bia(uuid, text) to service_role;
 revoke all on function public.day_ro_ccrb_toi_nmg(p_listing_id uuid) from public, anon, authenticated;
 grant execute on function public.day_ro_ccrb_toi_nmg(p_listing_id uuid) to service_role;
 revoke all on function public.deals_chan_xoa_da_chot() from public, anon, authenticated;
@@ -7448,10 +7553,6 @@ grant execute on function public.listing_du_dang_tin(p_price_vnd bigint, p_area_
 grant execute on function public.listing_du_dang_tin(p_price_vnd bigint, p_area_m2 numeric, p_ward text) to service_role;
 revoke all on function public.listing_media_chon_bia(p_listing_id uuid) from public, anon, authenticated;
 grant execute on function public.listing_media_chon_bia(p_listing_id uuid) to service_role;
-revoke all on function public.dat_anh_bia(uuid, text) from public, anon, authenticated;
-grant execute on function public.dat_anh_bia(uuid, text) to service_role;
-revoke all on function public.an_anh_tin(uuid, text, boolean) from public, anon, authenticated;
-grant execute on function public.an_anh_tin(uuid, text, boolean) to service_role;
 revoke all on function public.listing_media_giu_bia() from public, anon, authenticated;
 grant execute on function public.listing_media_giu_bia() to service_role;
 revoke all on function public.listing_media_xep_hang_don() from public, anon, authenticated;

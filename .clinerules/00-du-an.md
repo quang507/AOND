@@ -20,11 +20,14 @@ File này chỉ nhắc các luật bất di bất dịch:
    (b) có phá lời hứa không-thu-số-ĐT không? (c) có khiến hệ thống khẳng định
    điều chưa xác minh không?
 7. Ngôn ngữ docs: tiếng Việt; tên bảng/trường/API: tiếng Anh snake_case.
-8. Commit lên branch làm việc hiện tại, không push thẳng main.
+8. Commit THẲNG `main` rồi push — không mở PR, không chờ CI / test xanh đỏ (CLAUDE.md §7, chủ dự án 11/11/2026; SRS-5.1zzzzzzz464).
+   Test khoanh vùng theo §7.1: sửa docs chỉ `bun run truyvet` trước push; sửa web `bun run kieu`; sửa lõi chỉ file pytest liên quan.
 9. Sửa lỗi bot/web (từ 01/10/2026): ghi trong docs/07 ba mục — **lớp lỗi** (cơ chế gốc cho lỗi lọt, không phải câu khách cụ
    thể), **chỗ khác cùng lớp** đã soát, **bài kiểm đỏ khi tắt bản sửa** (kèm một cách nói mới). Lỗi "máy đoán ý bằng từ
-   khoá" thì không thêm từ vào regex — đưa sang AI đọc theo nghĩa, từ khoá làm lưới đỡ (CLAUDE.md §6, mẫu SRS-5.1q).
-10. Trước khi sửa: đọc mục SRS liên quan ở docs/07 và code đang có; quyết định chủ dự án nói trong chat ghi ngay vào docs/07 cùng commit
-    (chat bị nén thì quên, docs thì không). Vòng giao việc đầy đủ (PR, CI, migration, cài VPS): CLAUDE.md §7 (SRS-5.1zzzzzzz265).
+   khoá" thì không thêm từ vào regex — đưa sang AI đọc theo nghĩa, từ khoá làm lưới đỡ (CLAUDE.md §4 mục 8, mẫu SRS-5.1q).
+10. Trước khi sửa: `git pull origin main` (nhiều phiên song song), đọc mục SRS liên quan ở docs/07 và code đang có; quyết định chủ dự án nói trong chat ghi ngay vào docs/07 cùng commit
+    (chat bị nén thì quên, docs thì không). Vòng giao việc đầy đủ: CLAUDE.md §7 — sửa một lần là xong cả code trên `main`, DB (migration chạy thử trong
+    giao dịch huỷ rồi áp luôn, commit file cùng lúc) và máy 146 (`bash scripts/trien-khai-146.sh`; VPS bỏ, SRS-5.1zzzzzzz401).
+    SRS-5.1zzzzzzz265 (PR + CI) đã bị thay 11/11/2026.
 11. Tự quyết việc kỹ thuật / UX / câu chữ (soát code + docs trước, ghi SRS "Quyết định (BA, uỷ quyền)"); chỉ hỏi chủ dự án — một câu — khi đụng
     tiền / phí, pháp lý, thương hiệu, dữ liệu khách thật, hoặc đảo quyết định đã chốt (CLAUDE.md §4 mục 2, SRS-5.1zzzzzzz266).
