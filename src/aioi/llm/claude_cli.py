@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -39,14 +40,18 @@ def _ghi_chep(messages: list[Message]) -> str:
 
 def _chay_cli(model: str, system: str, loi_nhan: str, schema: dict[str, Any] | None) -> dict[str, Any]:
     """Một lần `claude -p` trong thư mục trống (không nạp CLAUDE.md / cấu hình dự án), không công cụ, không MCP, không lưu phiên."""
+    so_txt = json.dumps(schema, ensure_ascii=False) if schema is not None else ""
+    trong_tep = len(so_txt) > 20000   # Windows trần dòng lệnh 32.767 ký tự (WinError 206) — schema ô tin dài hơn → ghi vào tệp system, đọc JSON từ result
     with tempfile.TemporaryDirectory(prefix="aioi-cli-") as thu_muc:
         f = os.path.join(thu_muc, "system.txt")
         with open(f, "w", encoding="utf-8") as h:
-            h.write(system)
+            h.write(system + (f"\n\nTRẢ LỜI DUY NHẤT MỘT ĐỐI TƯỢNG JSON (không ```, không chữ nào khác) đúng JSON Schema sau:\n{so_txt}" if trong_tep else ""))
         # Windows: npm cài `claude.cmd` — subprocess không tự thêm đuôi, phải tìm đường dẫn đủ (SRS-5.1zzzzzzz304).
         lenh = [shutil.which("claude") or "claude", "-p", "--model", model, "--output-format", "json", "--system-prompt-file", f,
                 "--tools", "", "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence"]
-        if schema is not None:
+        if trong_tep:
+            lenh += ["--max-turns", "1"]
+        elif schema is not None:
             lenh += ["--json-schema", json.dumps(schema, ensure_ascii=False), "--max-turns", "3"]
         else:
             lenh += ["--max-turns", "1"]
@@ -56,6 +61,12 @@ def _chay_cli(model: str, system: str, loi_nhan: str, schema: dict[str, Any] | N
     j = json.loads(kq.stdout)
     if j.get("is_error"):
         raise RuntimeError(f"claude -p báo lỗi: {str(j.get('result'))[:300]}")
+    if trong_tep and not isinstance(j.get("structured_output"), dict):
+        m = re.search(r"\{.*\}", str(j.get("result") or ""), re.S)
+        try:
+            j["structured_output"] = json.loads(m.group(0)) if m else None
+        except ValueError:
+            pass
     return j
 
 
