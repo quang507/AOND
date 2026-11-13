@@ -795,6 +795,19 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz468 · Tính cách bot tách theo vai: nhận thông tin tin rao / tư vấn bán hàng — bỏ danh sách nỗi lo kể sẵn (13/11/2026)
+Chủ dự án 13/11: bot "kiểu tưởng người ta sợ nó rao không đúng giá"; log cùng ngày có câu bot tự trấn an "Tin vẫn rao đúng 8,8 tỉ chị muốn".
+Gốc: khối Nhân vật (SRS-5.1zzzzzzz381) liệt kê sẵn "nỗi lo bán hớ, thủ tục phức tạp, áp lực tài chính, lo lắng pháp lý", và đoạn HIỂU CHỦ NHÀ
+của prompt gọn phía bán dạy "Chủ nhà hay lo bị ép giá, bán hớ… đáp bằng tin rao theo giá chủ muốn" — model gán nỗi lo cho khách dù khách không nói.
+- **Hai tính cách, chữ của chủ dự án** (`khoi_nhan_vat` chọn theo `voi_ai`): phía bán = "bot NHẬN THÔNG TIN TIN RAO" + hai ý chung (đáp điều
+  khách quan tâm trước rồi mới tới việc cần hỏi; khách bận / do dự thì nói nhẹ, để khách tự quyết nhịp) + `HIEU_CHU_NHA`; phía mua = "bot TƯ VẤN
+  BÁN HÀNG" + hai ý chung + `HIEU_KHACH_MUA` (việc bên em làm thật: gợi căn khớp kèm link, hỏi chủ điều chưa có, báo căn mới). Lời không rõ vai
+  (đọc tài liệu dự án, đọc ảnh) chỉ có hai ý chung.
+- **Prompt gọn phía bán** (`LEAN_SYSTEM_PROMPT`, đang bật): đoạn HIỂU CHỦ NHÀ thay bằng `HIEU_CHU_NHA` (một nguồn với khối trên); dòng nhân vật thêm
+  "bot NHẬN THÔNG TIN TIN RAO". Câu "tin vẫn rao theo giá chủ muốn" chỉ còn ở khối định giá — khối chỉ bật khi chủ tự hỏi giá.
+- **Token** (đếm bằng `count_tokens`, claude-sonnet-5-5): phiếu bán 4.194 → 4.100 (−94) · prompt gọn bán 2.565 → 2.493 (−72) · phần cố định
+  mua 3.575 → 3.475 (−100) · khối nhân vật lời không rõ vai 441 → 184 (−257). Test `test_nhan_vat_381.py`, `test_toi_uu_ky_gui_391.py` sửa theo (chưa chạy).
+
 ### SRS-5.1zzzzzzz467 · Bridge chỉ dò sống khi im 30 phút — hết vòng tự cắt 12 phút (13/11/2026)
 Chủ dự án 13/11 "sao zalo bridge bây giờ lâu lâu nó tắt". Log hai số: sau SRS-5.1zzzzzzz459 bridge tự cắt rồi nối lại **đúng 12 phút một
 lần** dù tin vẫn về. Máy chủ Zalo chỉ đáp lệnh 510 trong khoảng ~10 phút đầu của mỗi kết nối (theo tuổi kết nối; dò lúc 3 giây và 5 phút được đáp,
@@ -867,10 +880,3 @@ websocket vẫn về nên canh pong không cắt.
   máy chủ Zalo thật trả `old_messages`; quá 90 giây không trả → cắt socket, zca-js nối lại. Lần đáp đầu sau mỗi lần nối ghi một dòng log.
 - **Giới hạn:** tin khách nhắn lúc socket điếc vẫn mất. Đo 13/11: lệnh 510 trả tin đồng bộ cũ (mới nhất 02/11), zca-js 2.2.0 không có API đọc
   lịch sử chat 1-1 → chỉ rút khoảng điếc xuống ≤ ~5,5 phút, không bù được. Canh pong SRS-453 giữ nguyên. Hàm xử lý tin đổi tên `xuLyTin`.
-
-### SRS-5.1zzzzzzz458 · Khối "0 kết quả" lên trên bộ lọc (13/11/2026)
-
-Chủ dự án 13/11/2026 "sửa luôn khối 0 kết quả lên trên bộ lọc". Sau SRS-457 khối "Chưa có căn nào khớp đủ các điều kiện này" nằm chỗ
-lưới tin, tức dưới bảng bộ lọc — trên điện thoại bảng lọc dài hơn một màn nên khách thấy trang như trống. Nay khi 0 kết quả, khối báo
-(kèm lời mời "gần <địa danh>" nếu có) hiện ngay dưới ô tìm, trên bộ lọc, ở mọi khổ màn hình; bộ lọc nằm ngay dưới để bỏ bớt điều kiện.
-Đã xem ở 375px: khối báo và hai nút Bỏ hết bộ lọc / Nhờ tìm qua Zalo nằm trọn màn đầu.

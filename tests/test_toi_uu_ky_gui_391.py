@@ -21,13 +21,14 @@ def test_lean_system_prompt_tokens_under_1500():
     assert "tỏi" in lean_prompt and "củ" in lean_prompt
 
 
-def test_khoi_nhan_vat_co_customer_insight():
-    """Khối nhân vật tích hợp insight thấu hiểu và chăm sóc khách hàng."""
-    s = P.khoi_nhan_vat("AI Ơi Nhà Đất", "người gửi bán nhà")
-    assert "THẤU HIỂU và CHĂM SÓC" in s
-    assert "Customer Insight" in s
-    assert "tôn trọng tài sản lớn" in s
-    assert "áp lực tài chính" in s
+def test_khoi_nhan_vat_theo_vai():
+    """SRS-5.1zzzzzzz468: bot nhận thông tin tin rao (bán) / bot tư vấn bán hàng (mua); không liệt kê sẵn nỗi lo."""
+    ban = P.khoi_nhan_vat("AI Ơi Nhà Đất", "người gửi bán nhà")
+    mua = P.khoi_nhan_vat("AI Ơi Nhà Đất", "khách tìm mua / thuê nhà")
+    assert "NHẬN THÔNG TIN TIN RAO" in ban and P.HIEU_CHU_NHA in ban and "HIỂU KHÁCH MUA" not in ban
+    assert "TƯ VẤN BÁN HÀNG" in mua and P.HIEU_KHACH_MUA in mua and "HIỂU CHỦ NHÀ" not in mua
+    for s in (ban, mua):
+        assert "bán hớ" not in s and "áp lực tài chính" not in s and "giá chủ muốn" not in s
 
 
 def test_cum_toi_da_bang_hai():

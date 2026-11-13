@@ -19,9 +19,10 @@ _P = Property(loai_hinh="nha_pho", fields={"gia": "3 tỷ", "dia_chi": "12 Lê L
 ])
 def test_luot_chat_mo_bang_nhan_vat_roi_toi_giong(ten, s):
     s = s()
-    assert s.startswith("NHÂN VẬT:") and s.count("NHÂN VẬT:") == 1 and "THẤU HIỂU và CHĂM SÓC" in s
-    assert s.count(P.GIONG_VUI) == 1 and s.index("THẤU HIỂU") < s.index(P.GIONG_VUI) < s.index(RANH_GIOI_CACHE)
-    assert "không đoán thêm chi tiết khách chưa kể" in s   # thấu hiểu không thành bịa (luật GIỌNG / phía mua)
+    assert s.startswith("NHÂN VẬT:") and s.count("NHÂN VẬT:") == 1 and "Tính cách:" in s
+    assert s.count(P.GIONG_VUI) == 1 and s.index("Tính cách:") < s.index(P.GIONG_VUI) < s.index(RANH_GIOI_CACHE)
+    # SRS-5.1zzzzzzz468: tính cách theo vai, không liệt kê sẵn nỗi lo của khách
+    assert ("TƯ VẤN BÁN HÀNG" in s) == (ten == "mua") and "bán hớ" not in s and "áp lực tài chính" not in s
 
 
 def test_prompt_ngan_cung_mo_bang_nhan_vat_khong_kem_giong():

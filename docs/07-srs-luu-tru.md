@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz458 · Khối "0 kết quả" lên trên bộ lọc (13/11/2026)
+
+Chủ dự án 13/11/2026 "sửa luôn khối 0 kết quả lên trên bộ lọc". Sau SRS-457 khối "Chưa có căn nào khớp đủ các điều kiện này" nằm chỗ
+lưới tin, tức dưới bảng bộ lọc — trên điện thoại bảng lọc dài hơn một màn nên khách thấy trang như trống. Nay khi 0 kết quả, khối báo
+(kèm lời mời "gần <địa danh>" nếu có) hiện ngay dưới ô tìm, trên bộ lọc, ở mọi khổ màn hình; bộ lọc nằm ngay dưới để bỏ bớt điều kiện.
+Đã xem ở 375px: khối báo và hai nút Bỏ hết bộ lọc / Nhờ tìm qua Zalo nằm trọn màn đầu.
+
 ### SRS-5.1zzzzzzz457 · Sửa 5 lỗi P1 của đợt đánh giá UX 13/11: menu điện thoại, trang 0 kết quả, tin đã gỡ, bong bóng Zalo, trang căn trên điện thoại (13/11/2026)
 
 Chủ dự án 13/11/2026 "Sửa cả 5 P1" sau đợt đánh giá Heuristic (Nielsen 23/40) + Cognitive Walkthrough + PURE.

@@ -717,6 +717,7 @@ khi đẩy — bảng là danh sách để chạy lại khi cần. SRS-1 … 244
 | SRS-379 | Mỗi luật một chỗ trong prompt ghép; một phiên giữ `src/aioi/` mỗi lúc | — | `test_mot_cho_379.py` |
 | SRS-380 | Lượt người mua vào cùng vòng agent gộp với người bán: ghi bằng công cụ qua cổng code rồi viết lời cùng cuộc hội thoại | FR-208 | `test_agent_gop_mua_380.py` |
 | SRS-381 | Khối nhân vật "thấu hiểu, chăm sóc khách" đứng đầu mọi prompt bot nói với khách | FR-178 | `test_nhan_vat_381.py` |
+| SRS-468 | Tính cách theo vai (nhận thông tin tin rao / tư vấn bán hàng), không liệt kê sẵn nỗi lo khách | FR-178 | `test_toi_uu_ky_gui_391.py` |
 | SRS-382 | Gỡ regex đoán ý khách: kiểm kê toàn lõi — loại D đã về 0, gỡ regex chết, cổng chặn regex mới | FR-208 | `test_kiem_ke_regex_382.py` |
 | SRS-383 | Web chuyển sang project Vercel mới `aond.vercel.app` (team cũ bị tạm dừng) | — | — (chưa có ca riêng) |
 | SRS-384 | Web có hai số Zalo: nút người bán trỏ số ký gửi, còn lại số tư vấn mua | — | — (chưa có ca riêng) |

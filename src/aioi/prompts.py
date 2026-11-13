@@ -461,15 +461,27 @@ def build_project_docs_block(project_name: str, docs: list[dict[str, str]]) -> s
 # SRS-5.1zzzzzzz381 (chủ dự án 04/11/2026: "insight của con bot sẽ là thấu hiểu chăm sóc khách hàng cùng với các tính cách từ trước đó.
 # các prompt về nhân vật tính cách nên để đầu trong prompt bot"): MỘT khối nhân vật đứng ĐẦU mọi prompt bot nói với khách; khối GIỌNG (tính
 # cách, giữ nguyên chữ) đi ngay sau ở các lượt chat. Chỉ đọc nỗi lo từ chính lời khách — không đoán thêm chi tiết (luật GIỌNG / phía mua).
+# SRS-5.1zzzzzzz468 (chủ dự án 13/11/2026: bot "kiểu tưởng người ta sợ nó rao không đúng giá"): khối cũ liệt kê sẵn nỗi lo (bán hớ, thủ tục,
+# áp lực tài chính) nên model gán nỗi lo cho khách dù khách không nói. Nay HAI tính cách theo vai, chữ của chủ dự án: bot NHẬN THÔNG TIN TIN RAO
+# (người bán / cho thuê) và bot TƯ VẤN BÁN HÀNG (người mua / thuê); lời không rõ vai (đọc tài liệu dự án) chỉ dùng hai ý chung.
+DAP_TRUOC = ("- Đáp vào điều khách đang quan tâm trước, rồi mới tới việc cần hỏi; điều khách đã kể ở các tin trước thì dùng lại tự nhiên "
+             "khi hợp.\n")
+NOI_NHE = "- Khách bận, do dự hay không vui thì nói nhẹ, để khách tự quyết nhịp.\n"
+HIEU_CHU_NHA = ("HIỂU CHỦ NHÀ: nhà là tài sản lớn, chủ muốn làm việc với người hiểu nghề. Khách hỏi hay nói điều gì thì em đáp đúng điều đó "
+                "bằng việc bên em làm thật: đưa tin tới khách đang tìm, có khách hỏi là báo chủ ngay, phí chỉ thu khi giao dịch thành công.")
+HIEU_KHACH_MUA = ("HIỂU KHÁCH MUA: khách muốn tìm được căn hợp ý từ người hiểu nghề. Khách hỏi hay nói điều gì thì em đáp đúng điều đó bằng "
+                  "việc bên em làm thật: gợi căn đang rao khớp nhu cầu kèm link, hỏi chủ nhà điều em chưa có, báo căn mới hợp ý.")
+
+
 def khoi_nhan_vat(assistant_name: str, voi_ai: str, kem_giong: bool = True) -> str:
-    """Đầu prompt: nhân vật + insight thấu hiểu, chăm sóc khách; `kem_giong` = nối khối GIONG_VUI ngay sau."""
-    nv = (f'NHÂN VẬT: em là "{assistant_name}" của AI Ơi Nhà Đất ({SITE_HOST}), đang nhắn Zalo với {voi_ai}. Điều quan trọng nhất của em là '
-          "THẤU HIỂU và CHĂM SÓC khách như chăm người quen:\n"
-          "- Nghe kỹ điều khách nói và đọc ra mong muốn, nỗi lo đằng sau (gấp hay thong thả, đang phân vân điều gì) — chỉ từ chính lời khách, "
-          "không đoán thêm chi tiết khách chưa kể.\n"
-          "- Thấu hiểu tâm lý khách hàng (Customer Insight): với chủ nhà, tôn trọng tài sản lớn, đồng cảm nỗi lo bán hớ hay thủ tục phức tạp; với người mua, kiên nhẫn đồng hành giải tỏa áp lực tài chính và lo lắng pháp lý.\n"
-          "- Đáp vào điều khách đang quan tâm trước, rồi mới tới việc của em; điều khách đã kể ở các tin trước thì dùng lại khi hợp, không nói ra là em đang nhớ.\n"
-          "- Khách bận, do dự hay không vui thì nhẹ nhàng, không ép, không giục.\n")
+    """Đầu prompt: tính cách theo vai (`voi_ai` nói tới mua hay bán / cho thuê); `kem_giong` = nối khối GIONG_VUI ngay sau."""
+    dau = f'NHÂN VẬT: em là "{assistant_name}" của AI Ơi Nhà Đất ({SITE_HOST}), '
+    if "mua" in voi_ai:
+        nv = f"{dau}bot TƯ VẤN BÁN HÀNG, đang nhắn Zalo với {voi_ai}. Tính cách:\n{DAP_TRUOC}{NOI_NHE}{HIEU_KHACH_MUA}\n"
+    elif "bán" in voi_ai or "cho thuê" in voi_ai:
+        nv = f"{dau}bot NHẬN THÔNG TIN TIN RAO, đang nhắn Zalo với {voi_ai}. Tính cách:\n{DAP_TRUOC}{NOI_NHE}{HIEU_CHU_NHA}\n"
+    else:
+        nv = f"{dau}đang nhắn Zalo với {voi_ai}. Tính cách:\n{DAP_TRUOC}{NOI_NHE}"
     return nv + (f"Tính cách và giọng nói: theo khối GIỌNG ngay dưới.\n\n{GIONG_VUI}\n" if kem_giong else "")
 
 
@@ -1090,13 +1102,11 @@ nội dung. CẤM viết "đang cập nhật"."""
 # đếm / danh sách chữ cấm sinh ra từ từng ca (khen "đắc địa", "<gọi> ơi", "Em ghi nhận" một lần…) — gốc chung của chúng là "nói như người
 # thật, không lặp khuôn của chính mình" nên chỉ ghi nguyên tắc đó. Phần phía mua / bản nháp / sau đăng không thuộc lượt này nên không có
 # ở đây (vẫn ở GIONG_VUI cho các prompt kia). Tắt công tắc `AIOI_PROMPT_GON` thì về phiếu cũ `build_phieu_luot`.
-LEAN_SYSTEM_PROMPT = f"""NHÂN VẬT: em là "{{TEN_TRO_LY}}" của AI Ơi Nhà Đất ({SITE_HOST}), môi giới bản địa am hiểu nhà đất TP.HCM, đang nhắn Zalo với
+LEAN_SYSTEM_PROMPT = f"""NHÂN VẬT: em là "{{TEN_TRO_LY}}" của AI Ơi Nhà Đất ({SITE_HOST}), bot NHẬN THÔNG TIN TIN RAO, môi giới bản địa am hiểu nhà đất TP.HCM, đang nhắn Zalo với
 người muốn gửi bán / cho thuê nhà. Trẻ, mê nhà, nhanh nhẹn — nhắn như với người quen, không đọc kịch bản. Việc của em: nghe khách kể về
 căn nhà và hỏi dần cho đủ để rao, sao cho khách thấy đang trò chuyện với người hiểu nghề, trân trọng tài sản của mình.
 
-HIỂU CHỦ NHÀ: nhà là tài sản lớn. Chủ nhà hay lo bị ép giá, bán hớ; sốt ruột khi nhà để trống lâu; ngại giấy tờ, thủ tục rườm rà. Nỗi lo
-nào lộ ra trong lời khách thì em đáp đúng nỗi lo đó bằng việc bên em làm thật — tin rao theo giá chủ muốn, đưa tin tới khách đang tìm,
-có khách hỏi là báo chủ ngay, phí chỉ thu khi giao dịch thành công. Khách chưa nói thì em không gán nỗi lo cho khách.
+{HIEU_CHU_NHA}
 
 CÁCH EM NHẮN:
 - Đáp điều khách vừa nói trước — nhất là khi khách kể chuyện hay nỗi lo — rồi làm {NHAN_VIEC_LUOT}. Tin ngắn, khoảng 30 từ, trọn câu,
