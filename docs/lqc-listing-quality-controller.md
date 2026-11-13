@@ -7,28 +7,6 @@ quản lý rảo qua các chat. Bot không đọc thuộc lòng 22 câu mẫu: m
 
 Ký hiệu: **✅ đã chạy** · **🟡 có một phần** · **❌ chưa có**.
 
----
-
-## 1. Tình hình thật hôm nay
-
-- Hai vòng nền đang bật trên máy 146 (không có biến tắt nào trong `.env`): **Image LQC** 30 phút một lượt, **Hỏi sau đăng** 10 phút một lượt.
-- LQC chỉ nhắn được chủ nhà **đăng tin qua chat Zalo với bot**. Hiện có **2 / 244** tin như vậy (#56F988C9, #1FBB8897). 242 tin còn lại
-  nhập từ nguồn khác, không có Zalo chủ nhà nên LQC chưa với tới.
-- Tin #56F988C9 đã nhận: xin ảnh (2 lần), "sổ đứng tên ai" (21:36 tối 11/11), 1 tin Image LQC xin ảnh mặt tiền thấy trọn 6 tầng (8:34 sáng
-  12/11). Chủ chưa đáp hai tin cuối, nên vòng nền **đang chờ đúng luật** (mục 3): chờ 24 giờ rồi hỏi câu kế, chưa tới mức "thôi hẳn". Câu kế
-  tiếp trong hàng: hỏi loại giấy tờ → đoạn đường hợp kinh doanh gì / chỗ đậu xe → gửi 2–3 căn đang rao gần để so.
-- **Bridge Zalo bị "điếc" từ 21:36 tối 11/11 tới 19:43 tối 12/11**: bot vẫn gửi được nhưng không nhận được tin nào. Kết nối nghe của Zalo đóng
-  mà bridge không biết. Câu "sổ đứng tên ai" đi ra đúng lúc bắt đầu điếc, nên **chủ có đáp trong khoảng đó thì bot không nhận được**. Đã sửa:
-  kết nối nghe đóng thì bridge tự đăng nhập lại bằng phiên đã lưu (SRS-449).
-- Đã thấy bot nói thật với chủ: **mảng Ảnh**. Pháp lý, Lợi thế, So sánh chưa có chủ nhà thật nào đi tới lượt đó, nhưng **bắn thử production 12/11**
-  (chủ thử nhà mặt tiền, đáp ngắn từng câu) ra đủ chuỗi: xin ảnh mặt tiền → ảnh sổ ("chỉ để kiểm, không đăng") → đứng tên → thế chấp → quy
-  hoạch → "cách Bệnh viện Đa khoa Gò Vấp khoảng 250 m, đoạn này buôn bán gì thì hợp?" → đậu xe → gửi 3 căn mặt tiền gần kèm đơn giá / link →
-  thương lượng → bán gấp hay thong thả. Hai lỗi lượt đầu (so sánh bị bỏ khi tin chưa có toạ độ; câu đáp đậu xe bị bỏ) đã sửa — SRS-441.
-- Bắn thử thêm tối 12/11 ra hai lỗi, đã sửa:
-  - **Căn hộ trong dự án không lên web** (bot đòi số nhà của căn hộ) → không tới được LQC. Giờ phường lấy theo toạ độ dự án — SRS-446.
-  - **Chủ đáp "ok" cho câu hỏi chọn** ("giữ cứng hay thương lượng", "thuế phí bên nào chịu") → bot hỏi lại hoặc tự đoán. Giờ bot để ý đó
-    trống, nhận nhẹ rồi sang câu kế ("Phần giá để khi nào có khách hỏi, em hỏi lại anh sau.") — SRS-450.
-
 ## 2. Khi nào bot hỏi
 
 **Lúc chủ đang khai tin (trước khi đăng)** — chỉ một loại câu: chủ vừa nói loại giấy thì lượt kế bot hỏi **một** câu theo đúng loại đó
