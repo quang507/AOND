@@ -616,6 +616,11 @@ async function xuLyTin(message) {
         // zca-js: file chia sẻ cũng mang `href` + `title` — trước đây bị coi là ảnh, phân loại hỏng rồi rơi thành URL tạm.
         tep = { url: text.href, ten: String(text.title ?? text.fileName ?? "").slice(0, 200) || undefined };
         text = "";
+      } else if (text.href && (/recommend|link/i.test(msgType) || /link/i.test(String(text.action ?? "")))) {
+        // SRS-5.1zzzzzzz460: thẻ link Zalo tự tạo khi khách dán link (msgType chat.recommended, action recommened.link) — trước đây
+        // rơi vào nhánh ảnh dưới: lõi tải trang HTML như ảnh rồi trả "em chưa mở được link". Gửi dạng chữ: tiêu đề + mô tả + link,
+        // lõi tự đọc trang (`Engine._doc_link_web`); trang chặn máy đọc thì vẫn còn tiêu đề / mô tả thẻ.
+        text = [text.title, text.description, text.href].map((x) => (typeof x === "string" ? x.trim() : "")).filter(Boolean).join("\n");
       } else if (text.href) { // FR-134: ảnh có href
         imageUrl = text.href;
         text = text.title ?? "";

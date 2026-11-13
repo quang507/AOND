@@ -169,14 +169,18 @@ def assert_public_url(url: str) -> None:
             raise FetchError(f"Địa chỉ nội bộ bị chặn ({ip}).")
 
 
-def fetch_raw(url: str, *, max_bytes: int = 10 * 1024 * 1024, timeout: float = DEFAULT_TIMEOUT
-              ) -> tuple[bytes, str]:
+# SRS-5.1zzzzzzz460: trang rao / trang dự án trả 403 cho chuỗi "AOND/1.0" — đọc link trang web khách gửi thì xưng như trình duyệt.
+TRINH_DUYET = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36")
+
+
+def fetch_raw(url: str, *, max_bytes: int = 10 * 1024 * 1024, timeout: float = DEFAULT_TIMEOUT,
+              user_agent: str = "AOND/1.0") -> tuple[bytes, str]:
     """Fetch ANY file's bytes + content-type with the same SSRF/redirect/size guards as
-    fetch_media but WITHOUT the image/PDF allowlist — for data files (CSV/Excel/Sheets)."""
+    fetch_media but WITHOUT the image/PDF allowlist — for data files (CSV/Excel/Sheets) and web pages."""
     url = normalize_media_url(url)
     assert_public_url(url)
     opener = urllib.request.build_opener(_ValidatingRedirect)
-    req = urllib.request.Request(url, headers={"User-Agent": "AOND/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": user_agent, "Accept-Language": "vi-VN,vi;q=0.9"})
     try:
         with opener.open(req, timeout=timeout) as resp:
             media_type = (resp.headers.get_content_type() or "").lower()

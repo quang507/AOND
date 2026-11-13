@@ -43,6 +43,7 @@ from .assistants import Assistant, assign_assistant
 from .drive import extract_drive_id
 from .fetch import (
     FetchedMedia,
+    TRINH_DUYET,
     FetchError,
     fetch_media,
     fetch_raw,
@@ -185,6 +186,16 @@ MAX_PHOTOS_PER_LISTING = 20
 MAX_SEND_BYTES = 20 * 1024 * 1024  # 20 MB
 
 log = logging.getLogger(__name__)
+
+# SRS-5.1zzzzzzz460: tóm trang web khách gửi trong chat — dòng đầu cho engine biết loại trang (lưu tri thức dự án khi là trang dự án).
+KHOI_DOC_LINK_WEB = (
+    "Bạn đọc nội dung một trang web khách gửi vào chat nhà đất. Dòng đầu ghi đúng một trong ba: \"LOẠI: tin_rao\" (trang rao một / vài căn), "
+    "\"LOẠI: du_an\" (trang giới thiệu dự án), \"LOẠI: khac\". Sau đó ghi gọn tối đa 12 gạch đầu dòng, chỉ những điều trang thật sự viết:\n"
+    "- tin rao: loại nhà, địa chỉ / khu vực, giá, diện tích, ngang × dài, số tầng, phòng ngủ / WC, hướng, pháp lý, đường / hẻm, điểm nổi bật;\n"
+    "- dự án: tên dự án, chủ đầu tư, vị trí, quy mô, loại sản phẩm, tiện ích, pháp lý, tiến độ, giá công bố;\n"
+    "- trang khác: một câu trang nói về gì.\n"
+    "Phần liên hệ người đăng (tên, số điện thoại, Zalo) bỏ qua. Số liệu giữ đúng như trang ghi."
+)
 
 
 def _image_count(media: list[dict[str, str]]) -> int:
@@ -2925,6 +2936,9 @@ class Engine:
             if is_media:
                 caption = clean_text.replace(cand_url, "").strip() or None
                 return self.handle_link(user_key, cand_url, now=now, caption=caption)
+            # SRS-5.1zzzzzzz460: link trang web (tin rao nơi khác, trang dự án…) — đọc trang, gắn bản tóm tắt vào tin khách để lượt này
+            # (bóc tách + trả lời) và các lượt sau đọc được như khách tự kể. Lời khách giữ nguyên ở `clean_text` cho các nhánh lệnh.
+            text = text + self._doc_link_web(conv, cand_url)
 
         # Admin trả lời câu khách mua hỏi bằng lệnh "#mã: câu trả lời" (SRS-5.1zzzzzzz70) — cú pháp hệ thống tự đặt
         # trong tin nhắc (`notify_info_request_escalation`), không phải đoán ý khách; chỉ nhận từ Zalo ID của admin (CTV bỏ 28/10/2026).
@@ -4015,6 +4029,45 @@ class Engine:
 
         # Not a spreadsheet / web page → photo/PDF/folder: the vision-read path.
         return self.handle_media_batch(user_key, [url], now, caption)
+
+    def _doc_link_web(self, conv: Conversation, url: str) -> str:
+        """SRS-5.1zzzzzzz460 (chủ dự án 13/11: "họ gửi link đó làm sao tổng hợp lại dc… sau người ta có thể gửi thêm link data dự án"): tải
+        trang khách gửi, AI tóm TRUNG THỰC dữ kiện BĐS trong trang, trả về một dòng gắn vào tin khách. Trang dự án và cuộc chat đã biết dự án
+        → lưu vào tri thức chung của dự án (`_save_project_doc`, như `_ingest_web_link`). Mở không được → dòng nói thật để bot nhờ khách chụp
+        / dán nội dung. Link của chính hệ thống / Zalo → "" (đã có đường riêng)."""
+        p = urlparse(url)
+        host = (p.hostname or "").lower()
+        rieng = (SITE_HOST.split(":")[0].lower(), "aond.vercel.app", "nhadat.cc", "zalo.me", "zadn.vn", "zdn.vn")
+        if not host or any(host == h or host.endswith("." + h) for h in rieng if h):
+            return ""
+        chua_mo = (f"\n[Khách gửi link trang {host} — hệ thống chưa mở được trang (trang chặn máy đọc, cần đăng nhập, hoặc lỗi mạng). Dựa vào "
+                   "lời khách và tiêu đề / mô tả thẻ link nếu có; cần thêm thì nhờ khách chụp màn hình hoặc dán nội dung.]")
+        try:
+            data, media_type = fetch_raw(url, max_bytes=3 * 1024 * 1024, timeout=12, user_agent=TRINH_DUYET)
+        except FetchError as e:
+            log.warning("doc link web: hụt %s (%s)", host, type(e).__name__)
+            return chua_mo
+        if not self._looks_like_html(data, media_type):
+            return ""
+        trang = self._html_to_text(data)[:15000]
+        if len(trang) < 200:
+            return chua_mo
+        try:
+            tom = self._provider.chat(KHOI_DOC_LINK_WEB, [Message("user", f"Link: {url}\n\n{trang}")], max_tokens=700).strip()
+        except Exception as e:  # noqa: BLE001 — model hụt thì lượt vẫn chạy, chỉ là chưa đọc được trang
+            log.warning("doc link web: model hụt (%s)", type(e).__name__)
+            return chua_mo
+        if not tom:
+            return chua_mo
+        loai = re.match(r"\s*LOẠI:\s*(\w+)", tom)
+        du_an = conv.prop.fields.get("du_an")
+        if loai and loai.group(1).lower() == "du_an" and du_an:
+            try:
+                self._save_project_doc(du_an, kind="tham khảo web", title=f"tham khảo web — {host}",
+                                       markdown=f"# Tham khảo web — {du_an}\n\n*(Nguồn: {url})*\n\n{tom}", nguoi_gui=conv.user_key)
+            except Exception as e:  # noqa: BLE001
+                log.warning("doc link web: lưu tri thức dự án hụt (%s)", type(e).__name__)
+        return f"\n[Khách gửi link trang {host} — nội dung trang hệ thống đã đọc (tóm tắt trung thực):\n{tom}]"
 
     def handle_media(self, user_key: str, url: str, now: float | None = None,
                      caption: str | None = None) -> TurnResult:

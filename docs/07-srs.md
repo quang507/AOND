@@ -788,6 +788,16 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz460 · Bot đọc link trang web khách gửi (13/11/2026)
+Chủ dự án 13/11: "họ gửi link đó làm sao tổng hợp lại dc thì dc, sau người ta có thể gửi thêm link data dự án nữa". Thử trên lõi 146 trước khi sửa:
+link dán dạng chữ thì bot chỉ đoán theo chữ trong đường dẫn; thẻ link Zalo thì bridge coi là ẢNH → "em chưa mở được link, gửi ảnh giúp em".
+- **Bridge:** thẻ link (msgType `chat.recommended` / action `recommened.link`) gửi lõi dạng chữ: tiêu đề + mô tả + link, không còn là ảnh.
+- **Lõi:** link trang web (không phải ảnh / PDF / Drive / Sheets — những link đó vẫn qua `handle_link`) → `Engine._doc_link_web` tải trang
+  (chống SSRF như cũ, xưng trình duyệt, tối đa 3 MB / 12 giây), AI tóm trung thực (`KHOI_DOC_LINK_WEB`: loại trang + tối đa 12 dòng dữ kiện,
+  bỏ liên hệ người đăng), gắn vào tin khách — bóc tách và trả lời lượt này đọc như khách tự kể. Trang dự án + cuộc chat đã biết dự án → lưu
+  tri thức chung của dự án. Mở không được → dòng nói thật, bot dựa tiêu đề thẻ / nhờ khách chụp hoặc dán nội dung. Link hệ thống / Zalo bỏ qua.
+- Token: chỉ lượt có link — một lần gọi tóm (trang ≤ 15.000 ký tự vào, ≤ 700 token ra) + bản tóm vào lịch sử chat.
+
 ### SRS-5.1zzzzzzz459 · Bridge dò sống bằng lệnh ứng dụng 510, không đáp thì nối lại (13/11/2026)
 Bridge điếc lần hai dù SRS-5.1zzzzzzz453 đang chạy: 02:11 → 12:21 không một khung tin, chủ dự án nhắn "em ơi" lúc 12:20 không thấy đáp. Pong tầng
 websocket vẫn về nên canh pong không cắt.
@@ -894,16 +904,3 @@ Chủ dự án 12/11/2026 "hotline 0346 689 460 của tm để đi, lấy đi s�
 - **Hotline 0346 689 460** là số của team → gắn lại ở chân trang, dưới nút Zalo, bấm gọi được (`tel:`). Gỡ ở SRS-443 vì chưa rõ của ai.
 - Soát lại: trang tag KHÔNG làm mới mỗi 5 phút như ghi chú cũ trong app/[tag]/page.tsx nói — TTL ảnh bìa đã là 3 giờ từ SRS-5.1zl,
   trang làm mới mỗi giờ. Chỉ sửa ghi chú, không đổi số.
-
-### SRS-5.1zzzzzzz450 · Khách đáp "ok" cho câu hỏi lựa chọn: không hỏi lại, không đoán (12/11/2026)
-Bắn thử 12/11 (`thu-lqc-1711`, `thu-lqc-1711b`), chủ dự án hỏi "vì sao nói Ok thì bot hỏi lại":
-- `thu-lqc-1711`: bot hỏi "thuế phí sang tên bên nào chịu, bên bán, bên mua hay chia đôi, và giá 19 tỷ đã gồm thuế phí chưa" — chủ "ok" → bot
-  hỏi lại nguyên câu ("em hỏi lại cho rõ nghen").
-- `thu-lqc-1711b`: bot hỏi "giữ cứng hay còn thương lượng" — chủ "ok" → bot nói "giá em cứ giữ 14 tỷ như trên tin" (ô `thuong_luong` vẫn trống).
-- **Gốc:** bóc tách đúng — "ok" không chọn phương án nào nên không ghi ô (luật đáp ngắn chỉ áp cho câu có / không). Lời đáp thì không có luật
-  cho lượt khách đáp chung một câu hỏi LỰA CHỌN: model tự xử, lúc hỏi lại, lúc đoán. Prompt sau bản tin (`build_fee_followup_system`) còn lấy
-  "ok em" làm ví dụ của nhánh "khách đồng ý đăng" bất kể câu bot vừa hỏi là gì. Câu hỏi thuế phí gộp hai câu (trái luật một câu hỏi).
-- **Sửa (prompt, một nguồn):** `LUAT_DAP_CHUA_CHON` — khách đáp chung ("ok", "ừ", "được") câu chọn = chưa chọn; nhận nhẹ, sang việc lượt này, ý
-  đó để trống; chỉ phương án khách tự nói mới là ý khách. Đi vào prompt gọn (`LEAN_SYSTEM_PROMPT`), phiếu cũ (`phieu_co_dinh`) và prompt sau bản tin
-  (phần cố định, trước ranh giới cache). Nhánh đồng ý đăng của prompt sau bản tin ghi rõ là lời đáp cho câu hỏi duyệt / sửa bản tin. `thue_phi`
-  hỏi một câu: giá đã bao thuế phí sang tên chưa.

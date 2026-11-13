@@ -73,6 +73,19 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz450 · Khách đáp "ok" cho câu hỏi lựa chọn: không hỏi lại, không đoán (12/11/2026)
+Bắn thử 12/11 (`thu-lqc-1711`, `thu-lqc-1711b`), chủ dự án hỏi "vì sao nói Ok thì bot hỏi lại":
+- `thu-lqc-1711`: bot hỏi "thuế phí sang tên bên nào chịu, bên bán, bên mua hay chia đôi, và giá 19 tỷ đã gồm thuế phí chưa" — chủ "ok" → bot
+  hỏi lại nguyên câu ("em hỏi lại cho rõ nghen").
+- `thu-lqc-1711b`: bot hỏi "giữ cứng hay còn thương lượng" — chủ "ok" → bot nói "giá em cứ giữ 14 tỷ như trên tin" (ô `thuong_luong` vẫn trống).
+- **Gốc:** bóc tách đúng — "ok" không chọn phương án nào nên không ghi ô (luật đáp ngắn chỉ áp cho câu có / không). Lời đáp thì không có luật
+  cho lượt khách đáp chung một câu hỏi LỰA CHỌN: model tự xử, lúc hỏi lại, lúc đoán. Prompt sau bản tin (`build_fee_followup_system`) còn lấy
+  "ok em" làm ví dụ của nhánh "khách đồng ý đăng" bất kể câu bot vừa hỏi là gì. Câu hỏi thuế phí gộp hai câu (trái luật một câu hỏi).
+- **Sửa (prompt, một nguồn):** `LUAT_DAP_CHUA_CHON` — khách đáp chung ("ok", "ừ", "được") câu chọn = chưa chọn; nhận nhẹ, sang việc lượt này, ý
+  đó để trống; chỉ phương án khách tự nói mới là ý khách. Đi vào prompt gọn (`LEAN_SYSTEM_PROMPT`), phiếu cũ (`phieu_co_dinh`) và prompt sau bản tin
+  (phần cố định, trước ranh giới cache). Nhánh đồng ý đăng của prompt sau bản tin ghi rõ là lời đáp cho câu hỏi duyệt / sửa bản tin. `thue_phi`
+  hỏi một câu: giá đã bao thuế phí sang tên chưa.
+
 ### SRS-5.1zzzzzzz449 · Bridge tự dựng lại khi kết nối nghe Zalo đóng (12/11/2026)
 Chủ dự án 12/11 17:33 nhắn "/quit" rồi "chào em" vào Zalo "AI Ơi Nhà Đất" — không có trả lời: "sao bot ko rep".
 - **Gốc:** `bot/bridge-zca/index.mjs` gọi `api.listener.start()` trần, không nghe sự kiện `closed` / `disconnected` của zca-js. Zalo đóng
