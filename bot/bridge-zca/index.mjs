@@ -980,6 +980,7 @@ function ghiDaThay(id) {
 }
 const idMinh = () => { try { return typeof api.getOwnId === "function" ? String(api.getOwnId()) : ""; } catch { return ""; } };
 let choDoSong = 0;
+let daBaoDoSong = false;
 let lanDoCuoi = 0;
 function doSong(lyDo) {
   const ws = api.listener.ws;
@@ -1004,6 +1005,11 @@ api.listener.on("old_messages", async (msgs, loai) => {
     for (const x of ds) if (x.laMinh && x.ts > (cuoiMinh.get(x.tid) || 0)) cuoiMinh.set(x.tid, x.ts);
     const bu = ds.filter((x) => !x.laMinh && x.id && !daThay.has(x.id) && x.tid && x.tid !== minh
       && x.ts > Date.now() - BU_TOI_DA_MS && x.ts > (cuoiMinh.get(x.tid) || 0)).sort((a, b) => a.ts - b.ts);
+    if (!daBaoDoSong) {   // lần đáp đầu sau mỗi lần nối: một dòng để soi (định kỳ thì im, trừ khi có tin phải bù)
+      daBaoDoSong = true;
+      const moiNhat = ds.reduce((m, x) => Math.max(m, x.ts), 0);
+      console.log(`Dò sống: Zalo đáp ${ds.length} tin gần nhất (mới nhất ${moiNhat ? new Date(moiNhat).toISOString() : "—"}), cần bù ${bu.length}.`);
+    }
     for (const x of bu) {
       console.log(`↺ [${x.tid}] bù tin lỡ ${x.id} (${new Date(x.ts).toISOString()})`);
       x.m.threadId = x.tid;
@@ -1013,7 +1019,7 @@ api.listener.on("old_messages", async (msgs, loai) => {
     await ghiLoi("bu tin lo", errDetail(e));
   }
 });
-api.listener.on("connected", () => { setTimeout(() => doSong("vừa nối"), 3000); });
+api.listener.on("connected", () => { daBaoDoSong = false; setTimeout(() => doSong("vừa nối"), 3000); });
 setInterval(() => {
   const ws = api.listener.ws;
   if (!ws || ws.readyState !== 1 || dangThoat) return;
