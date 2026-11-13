@@ -45,6 +45,7 @@ export default function BrowseWithMap({
   const tatCa = useMemo(() => [...listings, ...t.them], [listings, t.them]);
   const anh = useMemo(() => ({ ...covers, ...t.anh }), [covers, t.anh]);
   const soDau = listings.length;
+  const rongTrang = tatCa.length === 0 && !!rong;
   const cuoiDanhSach =
     t.coJs && tongTrang > 1 ? <NutTaiThem t={t} dangXem={truoc + tatCa.length} tongTin={total} dauUrl={dauUrl} /> : paginationSection;
 
@@ -116,6 +117,15 @@ export default function BrowseWithMap({
         </button>
       </div>
 
+      {/* SRS-5.1zzzzzzz458: 0 kết quả thì báo NGAY dưới ô tìm — trên điện thoại bảng bộ lọc dài cả màn, khối báo nằm dưới nó là
+          khách tưởng trang trống. Bộ lọc ngay bên dưới để bỏ bớt điều kiện. */}
+      {rongTrang && (
+        <div className="mb-6">
+          {goiY}
+          {rong}
+        </div>
+      )}
+
       {/* Filter Chips Bar */}
       <div className="mb-6">{filterSection}</div>
 
@@ -124,8 +134,8 @@ export default function BrowseWithMap({
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* Left Column: Listings in 2-column grid */}
           <div className="w-full lg:w-[55%] xl:w-[57%] flex flex-col">
-            {goiY}
-            {tatCa.length === 0 && rong ? rong : (
+            {!rongTrang && goiY}
+            {rongTrang ? null : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {tatCa.map((l, i) => (
                   <ListingCard key={l.id} listing={l} photo={l.code ? anh[l.code] : null} moi={i >= soDau} />
@@ -157,8 +167,8 @@ export default function BrowseWithMap({
       ) : (
         /* Full width 4-column grid */
         <div>
-          {goiY}
-          {tatCa.length === 0 && rong ? rong : (
+          {!rongTrang && goiY}
+          {rongTrang ? null : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
               {tatCa.map((l, i) => (
                 <ListingCard key={l.id} listing={l} photo={l.code ? anh[l.code] : null} moi={i >= soDau} />
