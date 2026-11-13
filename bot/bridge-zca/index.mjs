@@ -514,9 +514,23 @@ async function handleIncoming(threadId, text, imageUrls, msgId, tep, sticker, cl
 
 
 // --- BỘ ĐỆM GOM TIN NHẮN GIẬT CỤC (Debounce Buffer) ---
-// Khách gõ nhiều tin ngắn liên tiếp: chờ 2.5s gom thành 1 tin trọn vẹn trước khi chuyển AI xử lý.
+// Khách gõ nhiều tin ngắn liên tiếp: gom thành 1 tin trọn vẹn trước khi chuyển AI xử lý.
+// SRS-5.1zzzzzzz482 (chủ dự án 13/11/2026: "đừng để nó chờ nó chậm nữa, rep càng nhanh càng tốt, gộp thì gộp kiểu thông minh hơn"): trước đây
+// MỌI tin chờ cố định 2,5 s. Nay thời gian chờ theo HÌNH THỨC tin vừa tới (không đoán ý bằng từ khoá): tin trông đã trọn ý (kết bằng dấu câu
+// hoặc dài từ 8 từ) đi gần như ngay; mảnh ngắn chờ thêm chút vì khách hay gõ tiếp; ảnh / tệp chờ lâu hơn vì album về từng tấm. Có trần tính
+// từ tin đầu để khách gõ liên tục cũng không bị treo. Gom hụt không sao: lõi vẫn gộp tin tới lúc đang soạn (SRS-5.1zzzzzzz91 / 279).
 const bufferTin = new Map();
-const DEBOUNCE_MS = 2500;
+const GOM_TRON_Y_MS = 500;
+const GOM_DANG_DO_MS = 1200;
+const GOM_ANH_TEP_MS = 1800;
+const GOM_TOI_DA_MS = 4000;
+
+function choGom(text, coAnhTep, batDau) {
+  const t = String(text || "").trim();
+  const soTu = t.split(/\s+/).filter(Boolean).length;
+  const cho = coAnhTep ? GOM_ANH_TEP_MS : /[?.!…]$/.test(t) || soTu >= 8 ? GOM_TRON_Y_MS : GOM_DANG_DO_MS;
+  return Math.max(0, Math.min(cho, GOM_TOI_DA_MS - (Date.now() - batDau)));
+}
 
 function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId, quote) {
   const tid = String(threadId);
@@ -529,6 +543,7 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId, 
     lastMsgId: null,
     lastCliMsgId: null,
     quote: null,
+    batDau: Date.now(),
   };
   if (text) hienTai.texts.push(text.trim());
   if (imageUrl && !hienTai.imageUrls.includes(imageUrl)) {
@@ -552,7 +567,7 @@ function queueIncoming(threadId, text, imageUrl, msgId, tep, sticker, cliMsgId, 
       if (laPhienChet(e)) return await phienChet(errDetail(e));
       await ghiLoi("xử lý tin gom", errDetail(e));
     }
-  }, DEBOUNCE_MS);
+  }, choGom(text, Boolean(imageUrl || tep || sticker?.url), hienTai.batDau));
 
   bufferTin.set(tid, hienTai);
 }

@@ -73,6 +73,15 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz472 · Tin phụ `$$$$$` hiện luôn trên CRM /admin/tin-nhan (13/11/2026)
+Chủ dự án 13/11: "tin debug $$$$$ trên crm để cho thấy luôn đi". Tin phụ chế độ test (SRS-5.1zzzzzzz252 / 419: đã trích xuất · bỏ · điểm / soạn
+nháp / hỏi tiếp · tốn $) trước đây chỉ gửi Zalo, không vào CRM — soi lỗi trên CRM phải mở điện thoại đối chiếu.
+- **DB:** cột `messages.ghi_chu_test` (migration `20261113e`), đọc theo RLS sẵn có của `messages` (chỉ admin).
+- **Lõi:** `sync_to_supabase_async(..., ghi_chu=r.chu_thich)` → `ghi_luot_chat` ghi kèm dòng lời bot của lượt. Lịch sử hội thoại bot đọc lại chỉ
+  lấy `body`, nên tin phụ không lọt vào ngữ cảnh model.
+- **CRM:** dưới mỗi lời bot có tin phụ thì hiện khối chữ đơn cách màu hổ phách. Tin cũ trước 13/11 15:2x không có (trước đây không lưu).
+- Công tắc vẫn là `AIOI_DONG_TRICH_XUAT` (`bot/cau-hinh-loi.env`): tắt thì không gửi Zalo, không lưu CRM.
+
 ### SRS-5.1zzzzzzz471 · Lời bot ngắn khoảng 20 từ, thu thông tin như trò chuyện — câu mẫu gói nhiều ý thành một ý (13/11/2026)
 Sếp 13/11: bot nhận tin rao trả lời ngắn hơn, tập trung thu thông tin nhưng "đừng có hỏi cung". Đo 53 lời bot gửi chủ nhà 11–13/11: trung vị 37 từ,
 18 lời trên 40 từ (luật cũ khoảng 30 từ, bản anh Luận 28/10). Lời 13/11 hỏi một "câu" mà ba ý: mặt tiền hay hẻm, rộng mấy mét, xe hơi vào tận cửa không.

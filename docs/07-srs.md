@@ -801,6 +801,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz482 · Trả lời nhanh hơn: gom tin theo hình thức, bỏ nghỉ giữa bong bóng, công tắc `AIOI_EFFORT` (13/11/2026)
+Chủ dự án 13/11: "đừng để nó chờ nó chậm nữa, rep càng nhanh càng tốt, gộp thì gộp kiểu thông minh hơn". Lớp lỗi: ba chỗ chờ cố định không phụ thuộc tin — bridge chờ 2,5 s trước MỌI tin, lõi nghỉ "đang gõ" 0,3–2 s giữa các bong bóng, model chạy mức suy nghĩ mặc định (`high`).
+- **Bridge (`bot/bridge-zca/index.mjs` `choGom`):** thời gian gom theo hình thức tin vừa tới — trọn ý (kết bằng dấu câu hoặc ≥ 8 từ) 0,5 s; mảnh ngắn 1,2 s; ảnh / tệp 1,8 s; trần 4 s tính từ tin đầu. Gom hụt thì lõi vẫn gộp tin tới lúc đang soạn (SRS-91 / 279).
+- **Lõi:** `server.py` nghỉ giữa bong bóng cố định 300 ms (`NHIP_GIUA_BONG_MS`); `llm/claude.py` `muc_no_luc` đọc `AIOI_EFFORT` (low / medium / high, trống = như cũ) gửi `output_config.effort` cho lượt gọi chữ, API từ chối thì tự gửi lại không kèm và nhớ model. `bot/cau-hinh-loi.env`: `AIOI_EFFORT=low`.
+- **Kiểm:** cú pháp bridge + lõi, thử hàm `choGom` 6 ca. CHƯA đo thời gian thật, CHƯA thử `effort` với API (phiên cloud không có khoá, không tới 146). Áp: chép `index.mjs` lên 146 + khởi động lại hai task bridge; `trien-khai-146.sh`; thêm `AIOI_EFFORT=low` vào `.env` lõi rồi đo `thời gian lượt (ms)` trong log và chấm lại giọng (`low` có thể làm lời kém hơn — kém thì thử `medium`).
+
 ### SRS-5.1zzzzzzz481 · Câu mẫu cố định viết lại cho khớp giọng `GIONG`; nạp lại bảng `cau_mau` đang rỗng (13/11/2026)
 Chủ dự án 13/11 sau SRS-480: "sửa luôn câu mẫu cau_mau cho khớp giọng mới… vẫn quan trọng là lấy thông tin cho db". Lớp lỗi: câu mẫu gửi nguyên văn, không qua prompt nên không theo khối giọng — còn `**` (Zalo không hiện), chữ HOA nhấn, mặt cười, "ạ" chồng, câu báo cáo "Em đã cập nhật", "anh/chị" viết cứng.
 - **Sửa (`cau_mau.MAC_DINH`):** 18 câu — hai câu chào số ký gửi (câu chào đầu mời khách kể luôn địa chỉ và giá để có ô cho DB), sáu câu ẩn / giữ tin, hai câu ẩn ảnh (`{goi}` thay "anh/chị"), năm câu nhận tệp, bản vẽ, căn đã chốt, hai câu đọc trang web. Câu đã chốt giữ nguyên: duyệt tin, hỏi phí, báo phí, chấm sao, xác nhận lịch, bản nháp, chào số tư vấn, các tin chủ động.
@@ -886,12 +892,3 @@ Bắn thử SRS-466 trên production 13/11 lộ hai lệch: người bán 5 căn
 - **DB (`20261113f`):** `diem_nguoi_ban` nhân hệ số quy mô chỉ khi điểm gốc ≥ 50. Lúc áp: 4 người bán thật, 0 người đổi hạng.
 - **Lõi:** `gamification.user_score` cùng luật. Hạng bot nói (khối ĐIỂM TIN, `TurnResult.tier`, phiếu dự án `_ma_phieu`) đọc `SupabaseConversationStore.hang_nguoi_ban` → `rpc/diem_nguoi_ban`, nhớ 30 giây, chưa có người bán = Đồng; lỗi / kho không DB → số `gamification`. Prompt không đổi độ dài.
 - Thông tin dự án do một người đưa vào vẫn nhận, vẫn dùng, kèm nhãn chưa chắc chắn — cần kiểm chứng (SRS-445, chủ dự án nhắc lại 13/11); hạng chỉ đổi trọng số phiếu.
-
-### SRS-5.1zzzzzzz472 · Tin phụ `$$$$$` hiện luôn trên CRM /admin/tin-nhan (13/11/2026)
-Chủ dự án 13/11: "tin debug $$$$$ trên crm để cho thấy luôn đi". Tin phụ chế độ test (SRS-5.1zzzzzzz252 / 419: đã trích xuất · bỏ · điểm / soạn
-nháp / hỏi tiếp · tốn $) trước đây chỉ gửi Zalo, không vào CRM — soi lỗi trên CRM phải mở điện thoại đối chiếu.
-- **DB:** cột `messages.ghi_chu_test` (migration `20261113e`), đọc theo RLS sẵn có của `messages` (chỉ admin).
-- **Lõi:** `sync_to_supabase_async(..., ghi_chu=r.chu_thich)` → `ghi_luot_chat` ghi kèm dòng lời bot của lượt. Lịch sử hội thoại bot đọc lại chỉ
-  lấy `body`, nên tin phụ không lọt vào ngữ cảnh model.
-- **CRM:** dưới mỗi lời bot có tin phụ thì hiện khối chữ đơn cách màu hổ phách. Tin cũ trước 13/11 15:2x không có (trước đây không lưu).
-- Công tắc vẫn là `AIOI_DONG_TRICH_XUAT` (`bot/cau-hinh-loi.env`): tắt thì không gửi Zalo, không lưu CRM.

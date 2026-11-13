@@ -98,6 +98,14 @@ def ep_cong_cu_gui_khach() -> bool:
     return os.environ.get("AIOI_CONG_CU_GUI_KHACH", "").strip().lower() != "tat"
 
 
+def muc_no_luc() -> str:
+    """SRS-5.1zzzzzzz482 (chủ dự án 13/11/2026: "rep càng nhanh càng tốt"): env `AIOI_EFFORT` = low | medium | high → gửi
+    `output_config.effort` cho mọi lượt gọi chữ (model chat / bóc tách). Sonnet 5.5 mặc định `high`; tài liệu Anthropic khuyên lượt chat
+    bắt đầu ở `low`. Trống / giá trị khác = không gửi (như trước). Một nguồn ở `bot/cau-hinh-loi.env`."""
+    v = os.environ.get("AIOI_EFFORT", "").strip().lower()
+    return v if v in ("low", "medium", "high") else ""
+
+
 class ClaudeProvider(LLMProvider):
     def __init__(self, settings: Settings):
         import anthropic  # imported lazily so offline/mock runs need no SDK
@@ -118,6 +126,7 @@ class ClaudeProvider(LLMProvider):
         # SRS-5.1zzzzzzz244: model API từ chối tool_choice ép một công cụ ("tool_choice: type tool and any are not supported" — bắn thử
         # Sonnet 5.5 28/10, mọi lượt chat 400) → nhớ model đó, các lượt sau gửi tool_choice auto.
         self._khong_ep_tool: set[str] = set()
+        self._khong_effort: set[str] = set()   # model API từ chối `output_config.effort` → nhớ, các lượt sau không gửi (SRS-5.1zzzzzzz482)
 
     def _tao(self, nhan: str, **kw: Any) -> Any:
         """messages.create + báo sổ lỗi khi API từ chối (hết số dư, quá tải…) rồi ném lên như cũ (SRS-5.1zzzzzzz56).
@@ -126,9 +135,19 @@ class ClaudeProvider(LLMProvider):
         if ep and kw.get("model") in self._khong_ep_tool:
             kw = {**kw, "tool_choice": {"type": "auto"}}
             ep = False
+        # `extra_body` thay cho tham số `output_config`: SDK cũ trên máy chạy (pyproject cho phép anthropic>=0.49) chưa có tham số đó.
+        muc = muc_no_luc()
+        co_effort = bool(muc and "extra_body" not in kw and str(kw.get("model") or "").startswith("claude-")
+                         and kw.get("model") != self._vision_model and kw.get("model") not in self._khong_effort)
+        if co_effort:
+            kw = {**kw, "extra_body": {"output_config": {"effort": muc}}}
         try:
             return self._client.messages.create(**kw)
         except Exception as e:
+            if co_effort and ("effort" in str(e) or "output_config" in str(e)):
+                self._khong_effort.add(str(kw.get("model")))
+                log.warning("Model %s không nhận output_config.effort — gửi lại không kèm", kw.get("model"))
+                return self._tao(nhan, **{k: v for k, v in kw.items() if k != "extra_body"})
             if ep and "tool_choice" in str(e) and "not supported" in str(e):
                 self._khong_ep_tool.add(str(kw.get("model")))
                 log.warning("Model %s không nhận tool_choice ép công cụ — chuyển sang auto", kw.get("model"))

@@ -25,7 +25,7 @@ from . import phap_ly
 from .anh_du_an import anh_gui_kem
 from .anh_can import anh_can_gui_kem
 from .config import load_settings
-from .delivery import chunk_reply, tach_tin_ban_tin, typing_delay
+from .delivery import chunk_reply, tach_tin_ban_tin
 from .sticker import STICKER_TRUNG_TINH, doc_sticker
 from .drive import khoa_drive, make_folder_namer, make_resolver
 from .dia_danh import TraDiaDanh
@@ -662,7 +662,7 @@ def _ghi_danh_gia_nen(user_key: str, xin: bool, danh_gia: tuple[int, str] | None
     threading.Thread(target=chay, daemon=True).start()
 
 
-# Tin chữ xếp hàng chờ lượt của từng khách (SRS-5.1zzzzzzz91). Bridge đã gom tin gõ liền trong 2,5 s, nhưng khách nhắn tiếp LÚC BOT
+# Tin chữ xếp hàng chờ lượt của từng khách (SRS-5.1zzzzzzz91). Bridge đã gom tin gõ liền (0,5–1,8 s theo hình thức tin, SRS-5.1zzzzzzz482), nhưng khách nhắn tiếp LÚC BOT
 # CÒN SOẠN thì mỗi tin chờ khoá lượt rồi chạy thành một lượt riêng — chat tester 20/10: 3 tin trong 18 giây → 3 bản tin trong 20 giây.
 # Nay lượt nào giữ khoá thì gom MỌI tin chữ đang chờ của khách đó vào một lượt; tin đã được gom thì không chạy lượt nữa.
 _cho_khoa = threading.Lock()
@@ -670,6 +670,7 @@ _cho_tin: dict[str, list[tuple[int, str]]] = {}
 _cho_so = 0
 
 
+NHIP_GIUA_BONG_MS = 300   # SRS-5.1zzzzzzz482
 LUOT_CHAM_MS = 10_000   # SRS-5.1zzzzzzz279: lượt ≥ 10 s ghi journal kèm thời gian từng khâu
 
 
@@ -903,7 +904,9 @@ def chat_reply(payload: ZaloBridgePayload) -> ZaloBridgeResponse:
         bubbles = tach_tin_ban_tin(cleaned_reply) or [cleaned_reply]
     else:
         bubbles = [c.replace("**", "") for c in chunk_reply(cleaned_reply)]
-    nhip_go = [int(typing_delay(c) * 1000) for c in bubbles]
+    # SRS-5.1zzzzzzz482 (chủ dự án 13/11: "rep càng nhanh càng tốt"): bỏ nghỉ "đang gõ" theo độ dài (0,3–2 s mỗi bong bóng) — giữa các bong
+    # bóng chỉ chừa NHIP_GIUA_BONG_MS cho Zalo giao đúng thứ tự (quyết định 25/08 ở bridge).
+    nhip_go = [NHIP_GIUA_BONG_MS for _ in bubbles]
     # SRS-5.1zzzzzzz252: tin phụ "$$$$$ Đã trích xuất" (công tắc AIOI_DONG_TRICH_XUAT) gửi TRƯỚC lời bot (SRS-136: người cầm máy thấy ngay đâu là
     # debug) — nằm trong `replies`, không vào `reply` hay lịch sử hội thoại; CRM lưu ở cột riêng `messages.ghi_chu_test` (SRS-5.1zzzzzzz472).
     if getattr(r, "chu_thich", ""):
