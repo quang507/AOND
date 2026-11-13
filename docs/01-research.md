@@ -272,6 +272,8 @@ project mình"*. Ba sàn đọc qua fixture HTML, crawler mở, quy chế và sn
 | **Ảnh** | CDN crop nhiều cỡ | ảnh + video | crop + watermark, 3–24 ảnh, 360° | `listing_media` file gốc | Thiếu thumbnail/watermark — OPEN-38 |
 | **Công cụ tài chính** | tính vay | tỉ suất trên từng tin | lãi suất trang dự án | `/tinh-lai-vay` (FR-119) | Thêm `rental_yield_pct` |
 
+> **Ghi chú (soát 13/11/2026):** bảng trên là ảnh chụp 02/09/2026. Nay tin có 6 trạng thái (`cho_thong_tin`, `dang_ban`, `dang_quan_tam`, `da_coc`, `da_chot`, `an` — CHECK `listings_status_check`), và các cột `last_confirmed_at` / `specs_source` / `hot_score` không có trong `bot/supabase/schema.sql` (mốc xác nhận còn bán nay là `listings.xac_nhan_con_ban_at`).
+
 **Kết luận.** Về *tin rao* đã ngang hoặc hơn; về *khách* hơn hẳn vì chat-first.
 Khoảng trống thật là **lớp "chuyện gì đã xảy ra với tin theo thời gian"** — lượt xem,
 giá theo tháng, báo tin sai. Thứ tự đề xuất, mỗi việc một migration nhỏ:

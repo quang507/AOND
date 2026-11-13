@@ -1,6 +1,6 @@
 ---
 name: soat-truy-vet
-description: Soát tính nhất quán bộ docs/ của nhadat.cc — ID gãy, truy vết thiếu, số đếm lệch README, rò rỉ PII. Dùng trước mọi commit đụng docs/, hoặc khi được yêu cầu "soát", "kiểm tra truy vết", "check docs".
+description: Soát tính nhất quán bộ docs/ của nhadat.cc — ID gãy, truy vết thiếu, số đếm lệch README, rò rỉ PII. Dùng khi đụng docs/ (một lần trước khi push, không chạy từng commit nhỏ — CLAUDE.md §7.1 / §9), hoặc khi được yêu cầu "soát", "kiểm tra truy vết", "check docs".
 tools: Bash, Read, Grep, Glob
 ---
 

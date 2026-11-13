@@ -294,15 +294,15 @@ Bản đồ ánh xạ đầy đủ 67 cột (nghĩa, khách nói ví dụ, ghi t
 `docs/anh-xa-du-lieu-listings.xlsx` (ảnh chụp 18/09/2026 từ `information_schema` + trigger + `required_facts` + 10 tin bắn thật; đổi schema thì phải làm lại — đã lệch: `required_facts` gỡ 19/10).
 
 - CHECK `status ∈ {cho_thong_tin, dang_ban, dang_quan_tam, da_coc, da_chot, an}` (FR-139; `da_coc` có trong `schema.sql` 28/10); `access_type ∈ {mat_tien, hem_xe_tai, hem_xe_hoi, hem_xe_may, hem}`;
-  `legal_status ∈ {so_hong_rieng, so_hong_chung, so_hong, hdmb, giay_tay}`; `furnishing ∈ {full, co_ban, khong}`; `bedrooms 1..20`;
-  `*_source ∈ {suy_doan, chu_xac_nhan, admin}`; `specs_source ∈ {boc_mo_ta, admin, chu_xac_nhan}` (FR-164/172).
+  `legal_status` không còn CHECK — khoá ngoại `listings_legal_status_fkey` → `loai_phap_ly(ma)` (`20261112g`, SRS-5.1zzzzzzz435); `furnishing ∈ {full, co_ban, khong}`; `bedrooms 1..60`;
+  `*_source ∈ {suy_doan, chu_xac_nhan, admin, admin_xac_minh}`; `toa_do_muc ∈ {duong, phuong, quan, du_an, tay}`; CHECK `specs_source` đã mất cùng cột (FR-164/172).
 - Trigger BEFORE (theo tên, `schema.sql` 28/10): `trg_listings_chuan_hoa_cot` · `trg_listings_fill_property_type` (FR-150) · `trg_listings_price_vnd` (FR-154) ·
   `trg_y_listings_boc_thong_so` (FR-172) · `trg_z_listings_normalize_status` · `trg_zy_listings_chan_so` · `trg_zz_listings_dang_tin` (lên kệ, FR-144) ·
   `trg_listings_zz_doi_ma` · `trg_listings_zz_fill_code` · `trg_listings_zz_toa_do`.
   AFTER: `trg_listings_bao_can_da_chot` (FR-108), `trg_listings_day_ro_ccrb`, `trg_pe_listings` (FR-70).
   Đã gỡ: `listing_insert_drip` (FR-129, `20261018i`), `bao_tin_moi_khop` (FR-64, `20261025h`).
-- Index lọc: `(deal, price_vnd)`, `(deal, status, access_type)`, `(deal, status, floors)`, `(district, status)`; unique partial `(project_id, unit_code)`.
-- Policy: `anon_read_listings` chỉ `dang_ban | dang_quan_tam | da_chot`; `listings_own_read/insert` (NMG tin của mình); `listings_admin_read/update`.
+- Index lọc: `(deal, price_vnd)`, `(deal, status, access_type)`, `(deal, status, floors)`, `(district, status)`; index partial `(project_id, unit_code)` (không unique).
+- Policy: `anon_read_listings` chỉ `dang_ban | dang_quan_tam | da_coc | da_chot`; `listings_own_read/insert` (NMG tin của mình); `listings_admin_read/update/delete`.
 - Luật: `area_m2` là diện tích chính (chung cư = tim tường), `legal_area_m2` là công nhận — hai cột khác nhau; `description` giữ nguyên văn
   câu rao, không trigger nào sửa (FR-91/153). [LỊCH SỬ] Luật bậc nguồn cho fact (`chu_xac_nhan` > `admin` > `suy_doan`, FR-163 a,
   FR-164 a) chạy trên `listing_facts` + `bac_nguon()`, cả hai đã gỡ; nay ô tin chỉ ghi điều khách nói qua cổng bằng chứng của lõi (SRS-5.1zzzzzzz73).
@@ -312,21 +312,21 @@ Bản đồ ánh xạ đầy đủ 67 cột (nghĩa, khách nói ví dụ, ghi t
 ```text
 id:bigserial  listing_id:uuid!→listings cascade  event_type:text!  buyer_id:uuid→buyers set null  at:timestamptz!=now()  meta:jsonb
 ```
-- CHECK `event_type ∈ {view, asked, interest, photos, viewing, deal, match_sent, status}`; index `(listing_id, at desc)`, `(at desc)`; policy `property_events_admin_read`.
+- CHECK `event_type ∈ {view, asked, interest, photos, viewing, deal, match_sent, status, doi_gia}`; index `(listing_id, at desc)`, `(at desc)`; policy `property_events_admin_read`.
 - Chỉ trigger `trg_property_event()` ghi (`ghi_su_kien_bds`, không bao giờ ném): `listing_views` → `view`, `info_requests` `buyer_ask` → `asked`,
-  `interests` → `interest`, `viewings` → `viewing`, `deals` → `deal`, `reminders` match sent → `match_sent`, `listings` đổi `status` → `status`. `photos` chưa có nguồn sinh.
+  `interests` → `interest`, `viewings` → `viewing`, `deals` → `deal`, `reminders` match sent → `match_sent`, `listings` đổi `status` → `status`, đổi `price_vnd` (đã có giá trước đó) → `doi_gia` (`20261029e`). `photos` chưa có nguồn sinh.
 - `hot_score` (FR-73) = view `bds_hot` tính lúc đọc (số sự kiện 60 ngày), không có cột/job.
 
 ### SRS-3.3 · `buyers`
 
 ```text
 id:uuid!  zalo_user_id:text unique  auth_user_id:uuid unique→auth.users  name:text  phone:text
-preferences:jsonb='{}'  last_contact_at:timestamptz  notes:text  created_at:timestamptz!
+preferences:jsonb='{}'  last_contact_at:timestamptz  notes:text  bao_can_moi:bool!=true  created_at:timestamptz!
 ```
 - `preferences` = hồ sơ nhu cầu tích luỹ, nay do lõi ghi (`mua.py`, `BuyerLead`); `merge_buyer_prefs()` đã gỡ. Cờ tắt báo căn mới:
   `buyers.bao_can_moi` (SRS-5.1zzzzzzz175).
 - `phone`: bot chỉ chủ động xin số MỘT lần, lúc khách chốt lịch xem (SRS-5.1zzzzzzz148, NFR-07); khách tự để lại số lúc khác (không có lịch
-  chờ) thì lõi vẫn lưu `buyers.phone` và xếp tin báo admin (`mua.ghi_sdt_hen_xem`, SRS-5.1zzzzzzz388). `/admin` không SELECT cột này. Policy `buyers_self_read/insert/update`, `buyers_admin_read`.
+  chờ) thì lõi vẫn lưu `buyers.phone` và xếp tin báo admin (`mua.ghi_sdt_hen_xem`, SRS-5.1zzzzzzz388). `/admin` không SELECT cột này. Policy `buyers_self_read/insert/update`, `buyers_admin_read/update`.
 - Không có `connection_status`/`fingerprint_ids`: vết giữ chân ở `reminders.kind = reengage` (FR-63); fingerprint không dựng (OPEN-14).
 
 ### SRS-3.4 · `sellers`
@@ -334,6 +334,8 @@ preferences:jsonb='{}'  last_contact_at:timestamptz  notes:text  created_at:time
 ```text
 id:uuid!  zalo_user_id:text unique  auth_user_id:uuid unique→auth.users  phone:text unique  phone_proxy:text  name:text
 seller_type:seller_type!=unknown  rating_sum:int!=0  rating_count:int!=0  active_listing_id:uuid→listings set null  created_at:timestamptz!
+seller_type_source:text!=suy_doan ∈ {suy_doan, tu_nhan, admin} (trigger trg_sellers_nguon_nhan → sellers_nguon_nhan)
+xung_ho:text ∈ {anh, chị, chú, cô, bác, ông, bà, dì, cậu, mợ, thím, dượng}  ten_tro_ly:text  gioi_tinh:text ∈ {nam, nu}  nhom_tuoi:text ∈ {tre, lon_tuoi}
 ```
 - `seller_type` quyết định phí (CCRB 1 %, NMG 0,5 %, FR-101). Hồ sơ mở từ chat do lõi tạo (`supabase_store._get_or_create_seller`);
   `mo_ho_so_nguoi_ban` đã gỡ. Vai chỉ nhận khi cụm trích GỌI TÊN vai (`_vai_co_bang_chung`, SRS-5.1zzzzzzz213). Khách chỉ ở vai mua
@@ -347,7 +349,7 @@ seller_type:seller_type!=unknown  rating_sum:int!=0  rating_count:int!=0  active
 ```text
 conversations  id:uuid!  buyer_id:uuid→buyers  seller_id:uuid→sellers  channel:text!=zalo_oa  started_at:timestamptz!
                last_message_at:timestamptz  needs_human:bool!=false  needs_human_at,human_touch_at,human_escalated_at:timestamptz
-messages       id:uuid!  conversation_id:uuid!→conversations  sender:msg_sender!  body:text!  zalo_msg_id:text unique  seq:bigint! unique  created_at:timestamptz!
+messages       id:uuid!  conversation_id:uuid!→conversations  sender:msg_sender!  body:text!  zalo_msg_id:text unique  seq:bigint! unique  created_at:timestamptz!  ghi_chu_test:text
 ```
 - CHECK `conversations_co_vai_check` (`buyer_id` HOẶC `seller_id`, được cả hai — SRS-5.1zzzzzzz149; bản cũ là XOR `conversations_mot_vai`);
   unique partial `(buyer_id)`, `(seller_id)` — **một hội thoại/khách, không bao giờ đóng** (FR-131). Lõi ghi / đọc qua
@@ -361,7 +363,7 @@ messages       id:uuid!  conversation_id:uuid!→conversations  sender:msg_sende
 
 ```text
 id:uuid!  listing_id:uuid!→listings cascade  buyer_id:uuid→buyers  question:text!  answer:text  status:request_status!=pending
-source:text!=seller_flow  assignee:text  sla_due_at,sla_missed_at,reminded_at,answered_at:timestamptz  created_at:timestamptz!
+source:text!=seller_flow  assignee:text  sla_due_at,sla_missed_at,chu_nha_qua_han_at,reminded_at,answered_at:timestamptz  created_at:timestamptz!
 ```
 - CHECK `assignee ∈ {seller, admin}` (`route_info_request`, SRS-5.1zzzzzzz238).
   `source ∈ {seller_flow, buyer_ask}` (theo code); index partial `(sla_due_at) where pending and sla_missed_at is null`.
@@ -388,6 +390,7 @@ status:text!=proposed  buyer_rating:int  note:text  source:text=bot  created_at:
 
 ```text
 interests      buyer_id:uuid!→buyers cascade  listing_id:uuid!→listings cascade  created_at:timestamptz!   (PK cặp)
+               trang_thai:text!=quan_tam ∈ {quan_tam, khong_hop}  ly_do:text
 listing_facts  [ĐÃ GỠ 19/10/2026, SRS-5.1zzzzzzz66 — ô tin một nguồn listings.boc_tach]
 deals          id:uuid!  listing_id:uuid!→listings  buyer_id:uuid→buyers  price_vnd:bigint  gia_chot_vnd:bigint  fee_pct:numeric  closed_at  created_at
                (khoá duy nhất (listing_id, buyer_id) đã bỏ — 20261029e, SRS-5.1zzzzzzz285: một dòng mỗi lần chốt)
@@ -415,7 +418,8 @@ curated_lists        id:uuid!  token:text! unique =24 hex  buyer_id:uuid→buyer
                      expires_at:=now()+30 ngày                                    -- FR-100; RLS, không policy; đọc/tạo qua RPC (SRS-4.3)
 listing_media        id:uuid!  listing_id:uuid!→listings cascade  bucket:text!  storage_path:text!  media_type:text!  mime_type:text!
                      sort_order:int!=0  is_cover:bool!=false  created_at         -- FR-165
-                     CHECK bucket ∈ {listing-public, listing-private}; media_type ∈ {mat_tien, trong_nha, hem, so_do, giay_to, khac};
+                     nguon:text!=kho  mo_ta:text  ocr:jsonb  variants:jsonb!='{}'  an_khoi_web:bool!=false
+                     CHECK bucket ∈ {listing-public, listing-private}; media_type ∈ {mat_tien, trong_nha, phong_ngu, bep, wc, san_thuong, view, hem, so_do, giay_to, khac};
                      so_do/giay_to ⇒ bucket riêng; is_cover ⇒ bucket công khai; storage_path bắt đầu '<listing_id>/'; unique (bucket, storage_path);
                      unique partial một bìa/tin; trigger listing_media_giu_bia, listing_media_xep_hang_don (→ media_cleanup_queue)
 media_cleanup_queue  id:uuid!  bucket,storage_path:text!  trang_thai:text!=cho ∈ {cho, dang_lam, xong, loi, chet}  attempts:int!=0  last_error
@@ -424,8 +428,8 @@ inbound_events       [ĐÃ GỠ 18/10/2026, 20261018i] -- FR-162
 inbound_ledger       [ĐÃ GỠ 18/10/2026, 20261018i] -- FR-162, FR-166
 reminders            id:uuid!  kind:text! ∈ {promise, reengage, viewing, followup, escalation, report, match, feedback, sold, rating, admin_reply, len_web, con_ban}
                      buyer_id  seller_id  listing_id  viewing_id (FK cascade)  due_at:timestamptz!  note:text
-                     status:text!=pending ∈ {pending, sent, cancelled, dead}  sent_at  locked_at  locked_by  attempts:int!=0  next_retry_at  last_error
-                     unique partial: (buyer_id, listing_id) match; (buyer_id, listing_id) sold; (viewing_id) feedback; (buyer_id) reengage pending
+                     status:text!=pending ∈ {pending, sent, cancelled, dead}  sent_at  locked_at  locked_by  attempts:int!=0  next_retry_at  last_error  noi_dung_gui:text
+                     unique partial: (buyer_id, listing_id) match; (buyer_id, listing_id) sold; (viewing_id) feedback; (viewing_id) viewing pending; (buyer_id) reengage pending
                      -- FR-32/60…64/108/110/133/166 f; policy reminders_admin_read/update
                      -- 28/10: lõi gửi followup / sold / feedback / admin_reply / len_web (gui_nhac.py, SRS-5.1zzzzzzz216); escalation / report đi escalation-feed;
                      --        match là sổ báo căn mới của lõi (bao_can_moi.py, SRS-5.1zzzzzzz150)
@@ -441,12 +445,12 @@ cau_mau / cau_chuan  câu bot nói nguyên văn (đè `cau_mau.MAC_DINH`) / câu
 wards                ten:text! PK (tên MỚI không tiền tố, khoá tra Nominatim)  loai! ∈ {phuong, xa, dac_khu}  ten_day_du!  quan_cu! ("Quận 9" — chuỗi bocQuan/mã tin)
                      don_vi_2025:text[]!  tinh_cu! ∈ {TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu}  don_vi_cu  lat,lng:numeric(9,6)  ma_hanh_chinh  nguon!  ghi_chu  created_at
                      -- FR-209 / FR-174 đợt 2 (20260915a): 168 dòng, nguồn NQ 1685 + Wikipedia; RLS bật, revoke anon/authenticated, chỉ service_role; xuat_schema() KHÔNG xuất dữ liệu → dựng lại chạy thêm migration
-                     nhung:vector(768)  nhung_md5  nhung_luc   -- 20260930a: vector nghĩa (Gemini) của van_ban_dia_danh('wards', ten); cron nhung-dia-danh-tick
+                     nhung:halfvec(768)  nhung_md5  nhung_luc   -- 20260930a: vector nghĩa (Gemini) của van_ban_dia_danh('wards', ten); cron nhung-dia-danh-tick
 duong                id:uuid PK  ten:text! (có dấu, không tiền tố "Đường")  ten_khong_dau:text (generated: bo_dau(ten), index)  tinh! ∈ {TP.HCM, Tây Ninh, Đồng Nai} (tỉnh MỚI)
                      tinh_cu ∈ {TP.HCM, Bình Dương, Bà Rịa – Vũng Tàu}  phuong:text!='' (wards.ten_day_du)  quan_cu  nguon!  created_at; unique (ten, tinh, phuong)
                      -- FR-212 (20260921b): từ điển tên đường từ OSM/Overpass theo phường mới; RPC tim_duong(ten, quan, toi_da) khớp đúng/gần (fuzzystrmatch); chỉ service_role; dữ liệu nạp bằng scripts/nap-duong.mjs
-                     loai ∈ {duong, so, hem}  so_hem ('137', '137/28')  duong_me  lat,lng (tâm OSM)  nhung:vector(768) (không nhúng hẻm)  nhung_md5  nhung_luc   -- 20260930a: giữ đường số + hẻm có toạ độ (nap-duong.mjs out center)
-phuong_cu            id PK  ten! ('Phường 12', 'Phường Thảo Điền')  loai ∈ {phuong, xa, thi_tran}  quan_cu!  phuong_moi!→wards.ten  toan_bo!  lat,lng (tâm phường mới)  nhung  -- 20260930a: 487 dòng tách từ wards.don_vi_cu; unique (ten, quan_cu, phuong_moi)
+                     loai ∈ {duong, so, hem}  so_hem ('137', '137/28')  duong_me  lat,lng (tâm OSM)  nhung:halfvec(768) (không nhúng hẻm)  nhung_md5  nhung_luc   -- 20260930a: giữ đường số + hẻm có toạ độ (nap-duong.mjs out center)
+phuong_cu            id PK  ten! ('Phường 12', 'Phường Thảo Điền')  loai ∈ {phuong, xa, thi_tran}  quan_cu!  phuong_moi!→wards.ten  toan_bo!  lat,lng (tâm phường mới)  nhung  nguon  -- 20260930a: 487 dòng tách từ wards.don_vi_cu; unique (ten, quan_cu, phuong_moi)
 quan_cu              ten PK ('Quận Gò Vấp')  lat,lng (trung bình tâm phường mới)  so_phuong_moi  nhung  -- 20260930a: quận / huyện / TP cũ trước 07/2025
 media                [ĐÃ GỠ, 20261102a] -- bảng cũ đường OneDrive
 ```
@@ -459,20 +463,20 @@ media                [ĐÃ GỠ, 20261102a] -- bảng cũ đường OneDrive
 
 1. Vai `anon` chỉ SELECT; `authenticated` ghi có policy gác (`buyers`, `sellers`, `listings` nháp, `listing_views`, `listing_media` tin của mình); không ai có TRUNCATE (FR-167).
 2. Bảng chỉ cho bot (`conversations`, `messages`, `info_requests`, `viewings`, `deals`, `interests`, `listing_noi_bo`,
-   `curated_lists`, `media_cleanup_queue`, `app_config`; bản 04/09 còn `ctv_daily_reports`, `bot_prompts`, `required_facts`, `inbound_*`,
+   `curated_lists`, `media_cleanup_queue`, `app_config`; riêng `interests` còn `interests_admin_insert/delete` cho CRM; bản 04/09 còn `ctv_daily_reports`, `bot_prompts`, `required_facts`, `inbound_*`,
    `ratings_log` — đã gỡ) bật RLS, chỉ policy đọc cho admin hoặc không policy — anon 0 dòng; cảnh báo `rls_enabled_no_policy` là kỳ vọng.
 3. Hàm là nội bộ trừ khi chứng minh ngược lại: EXECUTE mặc định chỉ `service_role`/`postgres`; ngoại lệ cố ý là hàm thuần `immutable` (`bo_dau`, `boc_thong_so`,
    `khu_khop`, `seller_rank`, `chuan_hoa_*`…; `bac_nguon` đã gỡ), `log_loi` (web Next chạy bằng publishable key), `doc_danh_sach` (anon), `bao_cao_gia_quanh` (anon + authenticated, trang `/bao-cao-gia/[code]`, `20261113a`, SRS-5.1zzzzzzz455), và cho `authenticated`:
    `admin_dang_tin`, `tao_danh_sach`, `la_admin`, `tin_cua_toi`, `thu_muc_dau_uuid`, `parse_vnd`, `guess_property_type`. Mọi hàm ghim `search_path`.
-4. View công khai phải là **SECURITY DEFINER tự chứa** (`agents_public`, `listing_photos_v`), chỉ lộ cột không định danh, chỉ tin đã lên kệ; view không dùng cho anon
+4. View công khai phải là **SECURITY DEFINER tự chứa** (`agents_public`; `listing_photos_v` nay `security_invoker`, anon đọc qua policy `listing_media_doc_cong_khai` — `20261112f`), chỉ lộ cột không định danh, chỉ tin đã lên kệ; view không dùng cho anon
    để `security_invoker` và revoke (`public_listings`, `media_mo_coi_*`; `public_media`, `listing_missing_facts`, `job_suc_khoe` không còn trong `schema.sql`).
    View admin (`nmg_hoat_dong`, `bds_hot`, `hoi_thoai_*`, `khach_can_nguoi_that`; `bot_do_tre` không còn trong `schema.sql` 28/10) gác `auth.role() = 'service_role'` hoặc email trong `admins` (FR-167 c).
 5. Vault không chạm anon: `get_secret()` chỉ `postgres`/`service_role`.
 6. Storage: `listing-private` không có route public; đọc duy nhất bằng signed URL 900 s do admin ký ở `/admin` (`storage_admin_private_all`, NFR-06). Bucket công khai:
    `storage_admin_public_all`; người bán chỉ INSERT/DELETE đường dẫn có thư mục đầu = UUID tin của mình (`tin_cua_toi(thu_muc_dau_uuid(name))`, FR-96).
    `listing_media` công khai chỉ đọc được khi TIN đã lên kệ (`listing_media_doc_cong_khai`, FR-167 c).
-7. Cổng edge function (`_shared/gate.ts`): 3 function còn lại (`escalation-feed`, `geocode-listings`, `media-cleanup`) qua nếu `Authorization` là service key hoặc header `x-bridge-secret` khớp `BRIDGE_SECRET`; chưa đặt secret thì
-   fail-open nhưng ghi `bot_errors` nguồn `<function> CONG MO`; bí mật đọc qua `secretOf()` (env trước, Vault sau). Mọi hàm SQL gọi `net.http_post` tới function
+7. Cổng edge function (`_shared/gate.ts`): 3 function còn lại (`escalation-feed`, `geocode-listings`, `media-cleanup`) chỉ qua khi header `x-bridge-secret` khớp `BRIDGE_SECRET` (vé Bearer `service_role` đã bỏ 02/11/2026); đọc hụt hoặc chưa đặt secret thì
+   chặn 503 + ghi `bot_errors` nguồn `<function> CONG DONG` (fail-closed, SEC-02), chỉ mở khi bật tay env `GATE_MO_KHI_CHUA_CO_BI_MAT=1` (ghi `<function> CONG MO`); bí mật đọc qua `docBiMat()` (env trước, Vault sau). Mọi hàm SQL gọi `net.http_post` tới function
    phải mang `x-bridge-secret`, trừ `canh_bao_ngoai` (FR-151 b, FR-167 b).
 8. [deprecated 28/10/2026] `zalo-webhook` đã gỡ (SRS-5.1zzzzzzz46); không còn cửa Zalo OA. Lõi `aond-core` chỉ nghe 127.0.0.1, bridge gọi
    trong cùng máy; `/send` của bridge cũng chỉ nghe 127.0.0.1.
@@ -485,8 +489,9 @@ Hồi quy: TS-SEC-01…10, TS-SEC2 (`docs/10`) sau mọi migration đụng RLS/G
 id:uuid!  name:text!  slug:text unique  developer  district  ward  province  location_raw  lat,lng:numeric  legal_status  amenities:jsonb
 floor_plans:jsonb  images:jsonb  specs:jsonb  unit_types:jsonb  description  price_min,price_max:bigint  priority:int!=100  is_partner:bool!=false
 handover_date:date  handover:text  status_text  source  source_url  created_at  updated_at
+geocode_at:timestamptz  nhung:halfvec(768)  nhung_md5  nhung_luc  thong_tin:jsonb!='{}'
 ```
-- `listings.project_id/unit_code/floor/direction/unit_status` nối căn với dự án; unique partial `(project_id, unit_code)`. Policy `anon_read_projects` (true); `match_projects(text)` tìm dự án khách nhắc.
+- `listings.project_id/unit_code/floor/direction/unit_status` nối căn với dự án; index partial `(project_id, unit_code)` (không unique). Policy `anon_read_projects` (true); `match_projects(text)` tìm dự án khách nhắc.
 - Luật thừa hưởng (FR-115/116): câu tầng dự án trả từ `projects`, không sinh `info_requests`; "căn X còn không" đọc `unit_status`; `last_confirmed_at` > 7 ngày hoặc null → "để em xác nhận lại chủ".
   Soát 28/10/2026: `listings.unit_status` và `listings.last_confirmed_at` không còn trong `schema.sql` (SRS-5.1zzzzzzz140). Kiến thức dự án lõi học
   được nằm ở `du_an_kien_thuc`; phía mua tra qua `supabase_store.tra_du_an` (SRS-5.1zzzzzzz184).
@@ -495,7 +500,7 @@ handover_date:date  handover:text  status_text  source  source_url  created_at  
 
 - `sellers.auth_user_id`, `buyers.auth_user_id` nối Supabase Auth (Google OAuth + magic link). CCRB không cần tài khoản.
 - `admins(email)`: mọi policy `*_admin_read/update` kiểm `exists (select 1 from admins where email = auth.jwt()->>'email')`. Thêm admin = insert email.
-  Các bảng buyer side (`info_requests`, `viewings`, `buyers`, `conversations`, `messages`) chỉ mở SELECT cho admin; ghi thuộc lõi / trigger / RPC admin.
+  Các bảng buyer side (`info_requests`, `viewings`, `buyers`, `conversations`, `messages`) chỉ mở SELECT cho admin (riêng `buyers` thêm `buyers_admin_update`); ghi thuộc lõi / trigger / RPC admin.
 - `agents_public` (definer, tự chứa): `id, name, seller_type, rating_sum, rating_count, listing_count, closed_count, rank` — không bao giờ `phone`/`zalo_user_id` (FR-125).
 - `listing_views` (own-only) là nền "tin đã xem"; `TrackView` chỉ chạy khi có phiên đăng nhập.
 - View admin: `hoi_thoai_thong_ke` (30 ngày theo ngày VN, FR-71), `khach_can_nguoi_that` (FR-77), `hoi_thoai_phien` (FR-72), `bds_hot` (FR-73); `bot_do_tre` (NFR-01) không còn trong `schema.sql` 28/10, thời gian lượt nay đo ở `thoi_gian_ms` của `/chat-reply`. `/admin` đọc bằng JWT admin, có CSV.
@@ -509,7 +514,7 @@ bot_usage_model  day:date! model:text! PK(day,model)  calls:int!=0  in_tokens,ou
 bot_errors  id:bigserial  at:timestamptz!  source:text!  status_code:int  detail:text; index (at desc), (source, at desc)      -- FR-152
 bot_health  who:text! PK  at:timestamptz!  last_id:bigint!=0                                                                    -- FR-152
 ```
-Cả ba: RLS, policy `*_admin_read`, ghi chỉ `service_role`. `bot_errors` là sổ duy nhất còn lại khi log function (1 ngày, bậc Free) trôi — mọi `catch` phải nối `ghiLoi()`/`log_loi()` (FR-152 d).
+Cả bốn: RLS, policy `*_admin_read`, ghi chỉ `service_role`. `bot_errors` là sổ duy nhất còn lại khi log function (1 ngày, bậc Free) trôi — mọi `catch` phải nối `ghiLoi()`/`log_loi()` (FR-152 d).
 
 > **Soát 28/10/2026** (đối chiếu `bot/supabase/schema.sql`): các hàm sau trong bảng dưới **không còn** — dòng nhắc chúng là LỊCH SỬ:
 > `ensure_buyer_conversation`, `ensure_seller_conversation`, `mo_ho_so_nguoi_ban`, `nguoi_noi_bo`, `merge_buyer_prefs`, `ghi_fact_listing`,
@@ -536,28 +541,28 @@ Cả ba: RLS, policy `*_admin_read`, ghi chỉ `service_role`. `bot_errors` là 
 | `email_admin(loai, uid, body, listing)` / `canh_bao_ngoai(title, text, priority, p_email)` | Ghép `[LOẠI] <uid>` → ntfy; `admin_email` rỗng → không gửi (FR-81) / `net.http_post` tới ntfy.sh, không qua bridge (FR-152 e) | SR |
 | `info_request_sla_tick` | Chủ nhà quá 12 giờ → admin hạn 5 giờ; admin quá hạn → nhắc lại + email (FR-173). Hỏi chủ căn còn bán do lõi gửi (`hoi_con_ban.py`, 20 ngày, SRS-5.1zzzzzzz295); `info_request_timeout_tick`, `stale_listing_tick`, `seller_drip_tick` / `ask_seller_drip` đã gỡ | SR (cron) |
 | `media_cleanup_tick` | Gọi `media-cleanup` chỉ khi có việc (FR-166 d, FR-171 c); `nudge_tick`, `ctv_report_tick`, `inbound_sweep_tick` đã gỡ | SR (cron) |
-| `bot_health_tick` / `beat(who)` / `bo_dem_nhac_treo(gio)` | Quét `net._http_response` không 2xx → `bot_errors`, nhịp tim bridge, gộp báo 1 tin/giờ, dọn sổ 30 ngày (FR-152, NFR-18) / nhịp tim / đếm nhắc treo | SR |
+| `bot_health_tick` / `beat(who)` / ~~`bo_dem_nhac_treo(gio)`~~ [đã gỡ] | Quét `net._http_response` không 2xx → `bot_errors`, nhịp tim bridge, gộp báo 1 tin/giờ, dọn sổ 30 ngày (FR-152, NFR-18) / nhịp tim / đếm nhắc treo | SR |
 | `log_loi(source, detail, code)` / `bat_het_tien_api()` | Cửa ghi lỗi, van 20 dòng/nguồn/giờ, 200/giờ (FR-171 b) / dấu hiệu hết tiền AI → `HET TIEN API`, ghi thẳng, hãm 6 h (FR-168) | anon / trig |
 | `bump_model_quota(limit)` / `cong_token(..., p_model)` | Trần lượt gọi model/ngày; cộng số chữ vào `bot_usage` (theo ngày) và `bot_usage_model` (theo ngày × model, SRS-5.1zv) (FR-151 a, FR-169) | SR |
-| `claim_inbound` / `bao_hong_inbound` / `viec_inbound_bo_roi` / `ghi_su_kien_inbound` | Sổ idempotency tin đến: giành job atomic, 8 lần → `dead`, tìm việc bỏ rơi 24 h (FR-162, FR-166) | SR |
-| `nhan_viec_nhac` / `bao_hong_nhac` / `nha_viec_nhac(id, worker)` | Hàng đợi nhắc: thuê 5' `skip locked`; hỏng → lùi dần, 5 lần `dead`; chưa thử → trả lại nguyên vẹn (FR-166 f) | SR |
-| `nhan_viec_don_media` / `chon_viec_don_chet` / `lan_thu_ke(attempts)` | Hàng đợi dọn file `attempts < 6`; khoảng chờ nhân đôi, trần 1 h, nhiễu ±20 % (FR-165 e, FR-166) | SR |
-| `boc_thong_so(text, type)` / `boc_ten_duong` / `ap_thong_so(listing, j, bac, de)` / `listings_boc_thong_so` | Bóc thông số (trên `bo_dau`) → cột theo luật bậc (FR-172) | thuần / thuần / SR / trig |
-| `listing_facts_sync_cols` / `listings_fill_code` / `next_listing_code` | Fact → cột (SRS-3.14) / cấp mã tin chỉ trong trigger (FR-158, FR-167) | trig / trig / SR |
-| `listings_set_price_vnd` / `parse_vnd` / `chuan_hoa_gia_raw` / `chuan_hoa_lai_gia` | Giá chữ → số (FR-154) | trig / auth / thuần / SR |
-| `listings_fill_property_type` / `guess_property_type` / `guess_property_type_answer` | Loại BĐS từ mô tả; không đoán ra thì `chua_ro` (FR-150) | trig / auth / SR |
-| `listings_quyet_dinh_dang_tin` / `listing_du_dang_tin` / `listings_try_publish` / `listings_autopublish` | Tự lên kệ khi đủ giá + m2 + phường (FR-144); tin từ chat (`can_chu_duyet`) còn cần `diem_tin ≥ 70` + `chu_duyet_at` (FR-177 d) | trig / thuần / SR |
-| `diem_tin` / `seller_hoi_bu_tick` / `seller_drip_tick` / `ghi_boc_tach` / `trg_fact_vao_boc_tach` / `trg_vi_tri_vao_cot` | FR-177 f–h (`20260909a`): điểm 8 mục (ảnh 4/7/10 theo số tấm), hỏi bù 5 phút sau khi gật rồi nhịp 30 phút tới khi hết câu hoặc `listings.chu_noi_du_at`; `listings.boc_tach` jsonb gom mọi thứ bóc được (bỏ null); `listings.gap`; fact `vi_tri` → `location_raw` | SR / cron / trig |
-| `mau_cau` / `ngu_canh_tin` / `mau_cau_fewshot` / `so.mau_cau` | FR-180 (`20260909c`): mẫu câu chuẩn anh/sếp sửa tay từ câu bot thật; bot dán 12 mẫu mới nhất/phía vào system prompt; xuất JSONL để fine-tune (`scripts/xuat-mau-cau.mjs`, `train/`) | bảng / SR / view |
-| `diem_tin(listings)` / `diem_tin(uuid)` | Điểm đầy đủ tin 0–100, 7 tiêu chí 15/20/15/10/10/20/10, tiền định từ cột + fact → `{diem, chi_tiet, thieu[], co_anh}` (FR-177 d) | SR |
-| `admin_xoa_khach(zalo)` / `admin_xoa_het_khach_va_ro_hang('XOA HET')` / `don_du_lieu_thu()` | Xoá một khách (`/admin/tin-nhan`) / XOÁ HÀNG LOẠT khách + rổ hàng để test lại, đòi đúng chữ, dấu `bot_health(xoa_het)` (FR-210, nút tab CRM) / dọn người thử 21:00 (FR-197) | auth (`la_admin()` trong thân) |
+| ~~`claim_inbound` / `bao_hong_inbound` / `viec_inbound_bo_roi` / `ghi_su_kien_inbound`~~ [đã gỡ cả bốn, `20261018j`] | Sổ idempotency tin đến: giành job atomic, 8 lần → `dead`, tìm việc bỏ rơi 24 h (FR-162, FR-166) | SR |
+| ~~`nhan_viec_nhac` / `bao_hong_nhac` / `nha_viec_nhac(id, worker)`~~ [đã gỡ cả ba — lõi gửi nhắc, `gui_nhac.py`] | Hàng đợi nhắc: thuê 5' `skip locked`; hỏng → lùi dần, 5 lần `dead`; chưa thử → trả lại nguyên vẹn (FR-166 f) | SR |
+| `nhan_viec_don_media` / `chon_viec_don_chet` / ~~`lan_thu_ke(attempts)`~~ [đã gỡ] | Hàng đợi dọn file `attempts < 6`, đủ 6 lần → `chet`; [đã gỡ] khoảng chờ nhân đôi, trần 1 h, nhiễu ±20 % của `lan_thu_ke` (FR-165 e, FR-166) | SR |
+| `boc_thong_so(text, type)` / `boc_ten_duong` / ~~`ap_thong_so(listing, j, bac, de)`~~ [đã gỡ] / `listings_boc_thong_so` | Bóc thông số (trên `bo_dau`) → cột (FR-172); luật bậc của `ap_thong_so` đã gỡ | thuần / thuần / SR / trig |
+| ~~`listing_facts_sync_cols`~~ [đã gỡ] / `listings_fill_code` / `next_listing_code` | Fact → cột (SRS-3.14) / cấp mã tin chỉ trong trigger (FR-158, FR-167) | trig / trig / SR |
+| `listings_set_price_vnd` / `parse_vnd` / `chuan_hoa_gia_raw` / ~~`chuan_hoa_lai_gia`~~ [đã gỡ] | Giá chữ → số (FR-154) | trig / auth / thuần / SR |
+| `listings_fill_property_type` / `guess_property_type` / ~~`guess_property_type_answer`~~ [đã gỡ] | Loại BĐS từ mô tả; không đoán ra thì `chua_ro` (FR-150) | trig / auth / SR |
+| `listings_quyet_dinh_dang_tin` / `listing_du_dang_tin` / ~~`listings_try_publish` / `listings_autopublish`~~ [đã gỡ] | Tự lên kệ khi đủ giá + m2 + phường (FR-144); tin từ chat (`can_chu_duyet`) còn cần `chu_duyet_at` (FR-177 d; ngưỡng `diem_tin ≥ 70` không còn trong hàm); hạng Đồng từ căn thứ 6 đang hiện gắn `can_kiem_chung` (SRS-5.1zzzzzzz466) | trig / thuần / SR |
+| `diem_tin` / ~~`seller_hoi_bu_tick` / `seller_drip_tick` / `ghi_boc_tach` / `trg_fact_vao_boc_tach` / `trg_vi_tri_vao_cot`~~ [đã gỡ năm hàm sau (`20261018j`, `20261019f`) và cột `listings.chu_noi_du_at` (`20261022g`)] | FR-177 f–h (`20260909a`): điểm 8 mục (ảnh 4/7/10 theo số tấm), hỏi bù 5 phút sau khi gật rồi nhịp 30 phút tới khi hết câu hoặc `listings.chu_noi_du_at`; `listings.boc_tach` jsonb gom mọi thứ bóc được (bỏ null); `listings.gap`; fact `vi_tri` → `location_raw` | SR / cron / trig |
+| ~~`mau_cau` / `ngu_canh_tin` / `mau_cau_fewshot` / `so.mau_cau`~~ [đã gỡ cả hàng, kể cả `scripts/xuat-mau-cau.mjs`, `train/`; nay `cau_mau` / `cau_chuan`] | FR-180 (`20260909c`): mẫu câu chuẩn anh/sếp sửa tay từ câu bot thật; bot dán 12 mẫu mới nhất/phía vào system prompt; xuất JSONL để fine-tune (`scripts/xuat-mau-cau.mjs`, `train/`) | bảng / SR / view |
+| `diem_tin(listings)` / `diem_tin(uuid)` | Điểm đầy đủ tin 0–100, 8 tiêu chí 15/20/15/10/10/10/10/10 (vị trí · diện tích · kết cấu · pháp lý · giá · tiềm năng · gọi hành động · ảnh), tiền định từ cột + `boc_tach` → `{diem, chi_tiet, thieu[], co_anh, so_anh}` (FR-177 d) | SR |
+| `admin_xoa_khach(zalo)` / `admin_xoa_het_khach_va_ro_hang('XOA HET')` / `don_du_lieu_thu()` | Xoá một khách (`/admin/tin-nhan`) / XOÁ HÀNG LOẠT khách + rổ hàng để test lại, đòi đúng chữ, dấu `bot_health(xoa_het)` (FR-210, nút tab CRM) / dọn người thử 21:00 (FR-197) | auth (`la_admin()` trong thân); `don_du_lieu_thu` SR (cron) |
 | `admin_dang_tin(jsonb)` / `tao_danh_sach` / `doc_danh_sach(token)` | Cửa đăng tin admin (FR-156/174) / danh sách riêng (FR-100) | auth / auth / anon |
 | `la_admin` / `tin_cua_toi(listing)` / `thu_muc_dau_uuid(name)` / `get_secret` / `cau_hinh(key)` | Gác policy storage + `listing_media` (FR-96) / Vault / `app_config` | auth / SR |
 | `seller_rank` / `bo_dau` / `chuan_hoa_phuong` / `match_projects` | Hàm thuần dùng chung | thuần (`match_projects` SR) |
 | `tim_duong(ten, quan, toi_da)` | FR-212 (`20260921b`): tra từ điển `duong` — khớp đúng + khớp gần (Levenshtein ≤ toi_da trên chữ bỏ dấu, `fuzzystrmatch`), mỗi tên một dòng gom phường/quận/tỉnh, ưu tiên quận trùng | SR |
-| `tim_dia_danh_theo_nghia(vec, loai[], lat, lng, n)` / `tim_phuong_theo_nghia(vec, n)` | `20260930a`: địa danh (phường mới / cũ, quận cũ, đường, đường số, dự án) gần NGHĨA nhất với vector câu khách, trừ điểm theo khoảng cách tới điểm neo (1 km = −0,01, tối đa −0,2). Kết quả là ỨNG VIÊN (SRS-5.1a) | SR |
-| `dia_danh_gan(lat, lng, bán kính, loai[], n)` / `duong_gan_duong(ten, phuong, bán kính, n)` / `phuong_giao_hai_duong(d1, d2, bán kính)` / `tim_hem(cap_hem[], duong_me, phuong)` / `khoang_cach_m(...)` | `20260930a`: VỊ TRÍ — địa danh quanh một điểm; đường nào gần đường nào; phường có cả hai con đường gần nhau; hẻm theo số (hẻm nhỏ nhất trước) + đường mẹ; haversine (không PostGIS). `tim_duong` bỏ hàng hẻm khỏi khớp tên | SR / thuần |
-| `nhung_dia_danh_tick()` / `van_ban_dia_danh(bang, khoa)` | `20260930a`: cron `nhung-dia-danh-tick` (nay 15 phút một lượt, `20261105a`) nhúng quận cũ → phường mới → phường cũ → đường (không hẻm) SAU hàng chờ tin rao + dự án, chung công tắc `tim_theo_nghia` và mốc tạm dừng Gemini | cron / SR |
+| `tim_dia_danh_theo_nghia(vec, loai[], lat, lng, n)` / ~~`tim_phuong_theo_nghia(vec, n)`~~ [đã gỡ] | `20260930a`: địa danh (phường mới / cũ, quận cũ, đường, đường số, dự án) gần NGHĨA nhất với vector câu khách, trừ điểm theo khoảng cách tới điểm neo (1 km = −0,01, tối đa −0,2). Kết quả là ỨNG VIÊN (SRS-5.1a) | SR |
+| ~~`dia_danh_gan(lat, lng, bán kính, loai[], n)` / `duong_gan_duong(ten, phuong, bán kính, n)` / `phuong_giao_hai_duong(d1, d2, bán kính)` / `tim_hem(cap_hem[], duong_me, phuong)`~~ [đã gỡ bốn hàm] / `khoang_cach_m(...)` | `20260930a`: VỊ TRÍ — địa danh quanh một điểm; đường nào gần đường nào; phường có cả hai con đường gần nhau; hẻm theo số (hẻm nhỏ nhất trước) + đường mẹ; haversine (không PostGIS). `tim_duong` bỏ hàng hẻm khỏi khớp tên | SR / auth (`khoang_cach_m`) |
+| `nhung_dia_danh_tick()` / `van_ban_dia_danh(bang, khoa)` | `20260930a`: cron `nhung-dia-danh-tick` (nay 15 phút một lượt, `20261105a`) nhúng quận cũ → phường mới → phường cũ → tên đường (không hẻm, không đường số — `20261103c`) SAU hàng chờ tin rao + dự án, chung công tắc `tim_theo_nghia` và mốc tạm dừng Gemini | cron / SR |
 | view `nmg_hoat_dong`, `seller_ranks`, `media_mo_coi_db/storage` | NMG hoạt động (I5); hạng người rao (FR-155); file mồ côi (FR-165) | admin/SR; `seller_ranks` invoker; còn lại SR |
 
 [LỊCH SỬ] Cửa `mark_sent` của `chat-reply` TS ghi `inbound_ledger.sent_bubbles/sent_at` (FR-162). Lõi Python vẫn nhận trường `mark_sent`
@@ -575,7 +580,7 @@ nhưng chỉ trả rỗng; `inbound_ledger` đã gỡ.
 | Bí mật | `/admin`, `/quan-ly` | động (`ƒ`) có chủ ý |
 
 - Luật: trang tin phải là `●`/`○` trong bảng route sau `bun run build`; thấy `ƒ` là hỏng (TS-CACHE).
-- Trong một lần dựng: `getListing` bọc `React.cache`; danh sách đọc `CARD_COLS`, bản đồ `MAP_COLS`, không `select("*")`; `/admin` gom truy vấn vào một `Promise.all`.
+- Trong một lần dựng: `getListing` bọc `React.cache`; thẻ tin đọc `CARD_COLS` (`lib/supabase.ts`: trang chủ, `/[tag]` qua `lib/tin-tag.ts`, `/du-an/[slug]`, tin liên quan ở `/nha-dat/[code]`, `/yeu-thich`, `/tai-khoan`); danh sách `/mua-ban`, `/cho-thue` (`lib/duyet-tin.ts`) và tin quanh mốc (`lib/moc.ts`) đọc `MAP_COLS` = `CARD_COLS` + `lat, lng` cho nút "Xem bản đồ" (SRS-5.1zzzzzzz206); `/ban-do` không đọc bảng mà gọi RPC `ban_do_khung`; không `select("*")` trên `listings`; `/admin` gom truy vấn vào một `Promise.all`.
 
 ### SRS-3.14 · Bộ câu hỏi theo loại, bậc nguồn, hạng người rao, cửa đăng tin admin — FR-153…FR-156, FR-164, FR-172
 
@@ -586,12 +591,12 @@ nhưng chỉ trả rỗng; `inbound_ledger` đã gỡ.
 > khi tin lên web theo `CUM_SAU_DANG`, ô riêng chủ nhà `O_NOI_BO` → bảng `listing_noi_bo`. Ô tin ghi vào `listings.boc_tach`.
 > Còn đúng: `boc_tach_nhom` / `jsonb_bo_rong` / view `boc_tach_v`, hạng người rao (`seller_rank`, `seller_ranks`), cửa `admin_dang_tin`.
 
-Đặc tính riêng theo loại không nằm ở cột riêng mà ở cặp `required_facts × listing_facts`:
+[LỊCH SỬ — `required_facts`, `listing_facts`, `listing_missing_facts` đã gỡ] Đặc tính riêng theo loại không nằm ở cột riêng mà ở cặp `required_facts × listing_facts`:
 `listing_missing_facts = required_facts ⋈ property_type − listing_facts − {fact_key mà cột tương ứng đã có}` (FR-172 d; ánh xạ `ket_cau↔floors`,
 `do_rong_hem/do_rong_duong↔alley_width_m|mat_tien`, `phap_ly↔legal_status`, `huong↔direction`, `so_phong_ngu↔bedrooms`, `tang↔floor`, `dien_tich*↔area_m2`,
 `nam_xay↔year_built`, `noi_that↔furnishing`, `mat_tien↔frontage_m`, `quy_hoach↔planning_status`). Đổi `property_type` = đổi bộ câu hỏi ở lượt kế, không migration.
 
-| Loại | Bộ câu hỏi (`required_facts`, theo `nhom` rồi priority — FR-177 a, `20260907h`; thứ tự TRONG nhóm cơ bản do `chonCauKe()` bám câu chủ nhà vừa nói) |
+| Loại | [LỊCH SỬ — bảng đã gỡ `20261019g`] Bộ câu hỏi (`required_facts`, theo `nhom` rồi priority — FR-177 a, `20260907h`; thứ tự TRONG nhóm cơ bản do `chonCauKe()` bám câu chủ nhà vừa nói) |
 |---|---|
 | `nha_pho` | cơ bản: phuong, dien_tich_dat, gia · chuyên môn: do_rong_hem, ket_cau, so_phong_ngu, phap_ly, hinh_anh · phụ (không hỏi): huong, quy_hoach, nam_xay |
 | `nha_cap4` | cơ bản: phuong, dien_tich_dat, gia · chuyên môn: dien_tich_dat→do_rong_hem, phap_ly, hien_trang, so_phong_ngu, hinh_anh · phụ: quy_hoach |
@@ -611,15 +616,15 @@ JSON chia nhóm của một tin (FR-187, `20260909i`): `boc_tach_nhom(listings) 
 
 Fact ngoài bảng nhưng có nghĩa (FR-177 e): `bo_sung` (câu lệch không nhận ra fact nào — ghi nguyên văn, `boc_thong_so` vẫn quét), `tiem_nang` (tiềm năng sử dụng, chỉ khi chủ tự kể), `duyet_tin` (lượt gật bản nháp; câu chờ cùng tên trong `info_requests`).
 
-- Trigger `listing_facts_sync_cols` đổ fact vào cột (fact giữ nguyên văn, chuẩn hoá chỉ trên đường vào cột): `so_phong_ngu → bedrooms` (1…20);
+- [LỊCH SỬ — đã gỡ, kể cả `guess_property_type_answer`, `ap_thong_so`] Trigger `listing_facts_sync_cols` đổ fact vào cột (fact giữ nguyên văn, chuẩn hoá chỉ trên đường vào cột): `so_phong_ngu → bedrooms` (1…20);
   `dien_tich/dien_tich_dat → area_m2` (5…5000), `dien_tich_tim_tuong → area_m2` **chỉ** `chung_cu` (FR-163); `tang → floor` (0…80); `huong → direction`;
   `gia → price_raw + price_source` (`parse_vnd` 1e8…1e12, thuê dải riêng; `price_vnd` do trigger dẫn xuất); `phuong → ward + ward_source` (`chuan_hoa_phuong`);
   `loai_bds → property_type + property_type_source` (`guess_property_type_answer`, không đọc ra thì không ghi); khoá khác → cụm cột FR-172 qua `boc_thong_so()` → `ap_thong_so()`.
-- Luật bậc `bac_nguon()`: `chu_xac_nhan` (3) > `admin` (2) > `suy_doan`/`boc_mo_ta` (1); ghi khi bậc fact ≥ bậc cột, cùng bậc thì mới nhất thắng.
+- [LỊCH SỬ — đã gỡ] Luật bậc `bac_nguon()`: `chu_xac_nhan` (3) > `admin` (2) > `suy_doan`/`boc_mo_ta` (1); ghi khi bậc fact ≥ bậc cột, cùng bậc thì mới nhất thắng.
   Mô tả đổi mà `specs_source` còn `boc_mo_ta` thì bóc lại; không bao giờ đè lời chủ nhà/admin.
-- Hạng người rao (FR-155): `seller_rank()` + view `seller_ranks` (`id, name, seller_type, active_count, closed_count, total_count, rank`) tính lúc đọc, không lưu cột.
+- Hạng người rao (FR-155): view `seller_ranks` (`id, name, seller_type, active_count, closed_count, total_count, rank`, thêm `diem_nguoi_rao, diem_hoan_chinh, diem_phan_hoi, so_luot_phan_hoi, dat_chuan_nmg, ten_tro_ly`) tính lúc đọc, không lưu cột; `rank` = `hang_theo_diem(diem_nguoi_ban())`, còn `seller_rank()` chỉ view `agents_public` dùng.
 - Cửa đăng tin admin (FR-156/174): `admin_dang_tin(jsonb) → {id, code, price_vnd, seller_id}` — kiểm `admins` (42501 nếu không), tìm/tạo `sellers`,
-  `lock table listings in share row exclusive mode`, mã kế tiếp, insert (trigger giá/loại tự chạy); `district` từ form, mặc định "Quận 5".
+  insert với `code` null (trigger `listings_fill_code` → `next_listing_code` cấp mã, khoá advisory — không `lock table`; trigger giá/loại tự chạy); `district` từ form, hàm không tự mặc định (ô form `/admin/dang-tin` điền sẵn "Quận 5").
   Là RPC chứ không policy INSERT để admin gọi được hàm mà không đọc được bảng `sellers` (SĐT thật).
 
 ---
@@ -636,7 +641,7 @@ Không có REST `/api/*` giữa các "side".
 
 | Endpoint | Vào | Ra / việc | Ai gọi |
 |---|---|---|---|
-| `POST /chat-reply` | `ZaloBridgePayload`: `external_user_id`, `text`, `image_urls` / `image_url`, `file_url` / `file_name`, `sticker_url` / `sticker_text`, `gioi_tinh`, `so_nhan`, `msg_id`, `sender_name`, `human_note`, `mark_sent` | `ZaloBridgeResponse`: `replies[]`, `nhip_go[]`, `photos[]`, `tha_tim`, `assistant_name`, `captured`, `next_field`, điểm, `thoi_gian_ms`. Một lượt chat (`docs/13`). `human_note` = admin gõ tay → ghi lịch sử, bot nhường sân; `mark_sent` trả rỗng | bridge (hai số) |
+| `POST /chat-reply` | `ZaloBridgePayload`: `external_user_id`, `text`, `image_urls` / `image_url`, `file_url` / `file_name`, `sticker_url` / `sticker_text`, `quote_text` (tin khách bấm "Trả lời", SRS-5.1zzzzzzz270), `gioi_tinh`, `so_nhan`, `msg_id`, `sender_name` / `user_name`, `human_note`, `su_kien` (`reaction` = thả cảm xúc, SRS-5.1zzzzzzz364), `mark_sent`; `channel`, `sent_bubbles`, `done` có khai nhưng lõi không đọc | `ZaloBridgeResponse`: `reply`, `replies[]`, `nhip_go[]`, `photos[]`, `tha_tim`, `assistant_name`, `captured`, `next_field`, điểm, `thoi_gian_ms`. Một lượt chat (`docs/13`). `human_note` = admin gõ tay → ghi lịch sử, bot nhường sân; `mark_sent` trả rỗng | bridge (hai số) |
 | `GET /health` | — | `status`, `provider`, `chat_model`, `stt`, `drive`, `dia_danh` | `trien-khai-146.sh` sau khởi động lại |
 | `POST /message` | `IncomingMessage` | lượt chat không qua bridge (không gom tin, không ảnh) | script bắn thử `ban-thu-luan` (`bot/tests/ban-thu-luan.sh`, gọi một lõi thử ở cổng 8001 — chưa chạy được trên máy 146) |
 | `POST /trigger-followup/{user_key}`, `POST /reset/{user_key}`, `POST /reset-all` | — | bắn nhắc 5 phút / xoá phiên một khách / xoá mọi phiên | vận hành tay trên máy 146 (kèm khoá nội bộ) |
@@ -658,7 +663,7 @@ SRS-5.1zzzzzzz454), `_vong_hoi_sau_dang` (10 phút, `hoi_sau_dang.py`, SRS-5.1zz
 
 | Function | Vào | Việc | Ai gọi hợp lệ |
 |---|---|---|---|
-| `escalation-feed` | `{action: pull \| ack \| log \| qr, so_nhan}` | `pull`: trả việc `reminders(kind ∈ escalation, report)` kèm `text` soạn sẵn + đích, cờ `noi_bo`; số tư vấn nhận hàng rỗng. `ack`: đánh dấu đã gửi. `log`: ghi `bot_errors` hộ bridge. `qr`: trạng thái đăng nhập + ảnh QR vào `bridge_dang_nhap`. Mỗi lượt gõ cửa là nhịp tim bridge | bridge, header `x-bridge-secret` |
+| `escalation-feed` | `{action: pull \| ack \| hut \| log \| qr, so_nhan}` | `pull`: trả việc `reminders(kind ∈ escalation, report)` kèm `text` soạn sẵn + đích, cờ `noi_bo`; số tư vấn nhận hàng rỗng. `ack`: đánh dấu đã gửi. `hut`: bridge gửi hụt → đếm lần, hẹn thử lại, 5 lần thì `dead` (SRS-5.1zzzzzzz276). `log`: ghi `bot_errors` hộ bridge. `qr`: trạng thái đăng nhập + ảnh QR vào `bridge_dang_nhap`. Mỗi lượt gõ cửa là nhịp tim bridge | bridge, header `x-bridge-secret` |
 | `geocode-listings` | `{}` | điền `lat/lng` (từ điển `duong` trước, rồi rpc `tra_nominatim`; mức đường, bỏ số nhà); tiện ích OSM trong 3 km qua rpc `tra_overpass` vào `tien_ich` + `listings.tien_ich_gan`; geocode dần `projects` | cron `geocode-tick` 10 phút, chỉ khi `tin_can_geocode` / `du_an_can_geocode` có việc |
 | `media-cleanup` | `{}` | xoá file trong `media_cleanup_queue` qua Storage API | cron `media-cleanup-tick` |
 
@@ -796,6 +801,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz479 · Soát nốt docs so với code — đợt 2 (13/11/2026)
+Chủ dự án 13/11 sau SRS-478: "kiếm hết giúp t" → kiểm nốt phần đợt 1 chưa kiểm. Lớp lỗi như SRS-478.
+- **Sửa (chỉ docs):** docs/02 trạng thái FR (FR-28 ❌→🟡, FR-103 🟡→✅, FR-80 / 166 / 202 ✅→🟡) và NFR-09; docs/08 (tham chiếu job / cột / bảng đã gỡ, 13 tên `test_*.py`, AC / SRS-8 không còn định nghĩa); docs/07 §3–§4 theo `schema.sql` (cột, CHECK, index, policy, cổng `gate.ts`, `diem_tin` 8 tiêu chí, hàng hàm đã gỡ gắn `[đã gỡ]`, payload lõi); docs/06 §6.8–6.11 theo `GIONG_VUI` / `xung_ho` / `cau_mau` và chuỗi thật trên web, mục thời bot TS gắn `[LỊCH SỬ bot TS]`; docs/05 WF-06 / 07 / 12 / 13; docs/10 ca TS sống (TS-SEC3, TS-SEC-AUTO, TS-HEALTH, TS-SEC2… ca chết đánh `[deprecated 13/11/2026]`); docs/01, 03, 04, 09, 14; mô tả hai agent `.claude/agents/`.
+- **Còn lệch, chờ chủ dự án:** FR-159; `public/llms.txt` và docs/14 "Zalo OA"; docs/06 mô tả danh tính "Sài Gòn và Long An"; `app/raoban` hứa "viết lại nhiều phiên bản" (FR-93 ❌); câu mẫu `bao_tra_loi_chu_nha` / `bao_lich_da_chot` / `bao_can_da_ban` đọc mã căn cho khách mua; nhắc `viewing` không còn ai tạo (FR-56 / 202); `schema.sql` cấp TRUNCATE view `nmg_hoat_dong` cho `authenticated`.
+- **Chưa kiểm:** FR-176…250 phần hành vi bot (cần thử thật trên 146), máy 146, số liệu / secret trong DB thật. **Kiểm:** đối chiếu `file:dòng`; `bun run truyvet` sạch.
+
 ### SRS-5.1zzzzzzz478 · Soát toàn bộ docs so với code, sửa docs theo code (13/11/2026)
 Chủ dự án 13/11: "soát lại toàn bộ docs xem chỗ nào lệch code thì sửa". Lớp lỗi: sửa code chỉ ghi mục nhật ký, phần đặc tả và tầng trên không ai dò lại.
 - **Sửa (chỉ docs, không đổi code / luật):** docs/00, 02, 03, 04, 05, 06, 07 (phần đặc tả), 10, 11, 13, 14, LQC, hai README, `CLAUDE.md`, `.claude/luat-dang-ap.md` — bộ pytest đã gỡ, cổng soạn bản tin `NHOM_SOAN`, gợi 2–3 căn, lời ~20 từ, trần LQC theo người bán, khung 8–21 giờ, 6 trạng thái tin (`da_coc`), `listings` 66 cột, lịch cron và `revalidate` thật, ISR trang tag / dự án, 100 tag, tên cột / hàm / trigger / biến env đã đổi, biểu phí công chứng docs/14 theo `phap_ly.phi_cong_chung`.
@@ -897,13 +908,3 @@ nháp / hỏi tiếp · tốn $) trước đây chỉ gửi Zalo, không vào CR
   lấy `body`, nên tin phụ không lọt vào ngữ cảnh model.
 - **CRM:** dưới mỗi lời bot có tin phụ thì hiện khối chữ đơn cách màu hổ phách. Tin cũ trước 13/11 15:2x không có (trước đây không lưu).
 - Công tắc vẫn là `AIOI_DONG_TRICH_XUAT` (`bot/cau-hinh-loi.env`): tắt thì không gửi Zalo, không lưu CRM.
-
-### SRS-5.1zzzzzzz469 · Gỡ bộ pytest `tests/` — không còn dùng (13/11/2026)
-Chủ dự án 13/11 thấy `tests/` 264 file ("sao nhiều test dữ trời") rồi chốt "ko dùng thì gỡ mẹ đi". Từ 11/11 luật là sửa thẳng, không chạy test;
-mỗi lần sửa vẫn sinh thêm một file `test_<số SRS>.py` không ai chạy (192 file thêm từ 10/2026), nên bộ này chỉ phình và lệch code.
-- **Gỡ:** 261 file `tests/test_*.py` + `tests/conftest.py` + `tests/gia.py` (đồ giả chỉ test dùng); script `test:py`, bước pytest ở `kiem.yml`,
-  `[tool.pytest.ini_options]` và nhóm `dev` (pytest) ở `pyproject.toml`.
-- **Giữ:** `tests/kich_ban/` + `tests/cau_hinh_vps.py` (bộ chấm kịch bản `scripts/cham-kich-ban.py` / `cham.yml` còn gọi); cả `bot/tests/` (script bắn
-  thử, SQL, đọc log, nạp dữ liệu — công cụ vận hành, không phải pytest).
-- **Kiểm từ nay:** parse cú pháp (`ast.parse` / `node --check`), đưa lên 146, thử bằng tin Zalo thật / `bot/tests/ban-thu-*.sh`. README, CLAUDE.md,
-  docs/10 (TS-PY-01, TS-SRS deprecated), docs/11 sửa theo; tên file test cũ trong bảng TS-SRS / 08 giữ làm lịch sử.

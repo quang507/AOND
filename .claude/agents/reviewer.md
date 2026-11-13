@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Review diff/PR đụng docs/ của nhadat.cc theo checklist BA — nguồn trích dẫn, mâu thuẫn tầng, bất biến sản phẩm. Dùng khi được yêu cầu "review", "đọc PR", "check diff".
+description: Review diff đụng docs/ của nhadat.cc theo checklist BA — nguồn trích dẫn, mâu thuẫn tầng, bất biến sản phẩm. Dùng khi được yêu cầu "review", "đọc diff", "check diff".
 tools: Bash, Read, Grep, Glob
 ---
 

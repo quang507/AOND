@@ -147,7 +147,7 @@ Nút `Xuất Excel` (NFR-11) ❌ chưa dựng. Code: `app/admin/page.tsx`.
 Chưng cất từ 24 hội thoại mẫu `chats w B.docx` + persona aioinhadat + `AOND req +
 chat examples.docx`. **Nguồn sự thật hiện nay (28/10/2026) là lõi Python:
 `src/aioi/prompts.py`** — giọng phía bán là MỘT khối `GIONG_VUI` (SRS-5.1zzzzzzz219),
-~~`build_chat_system`~~ (đã xoá, SRS-5.1zzzzzzz319) → phiếu lượt `build_phieu_luot` / `phieu_co_dinh` theo khuôn anh Luận `luan8560/AOND` (SRS-5.1zzzzzzz207, 309), bố cục tin
+~~`build_chat_system`~~ (đã xoá, SRS-5.1zzzzzzz319) → phiếu lượt `build_phieu_luot` / `phieu_co_dinh` theo khuôn anh Luận `luan8560/AOND` (SRS-5.1zzzzzzz207, 309); lượt hỏi ô người bán nay dùng prompt gọn `LEAN_SYSTEM_PROMPT` (`AIOI_PROMPT_GON=bat`, SRS-5.1zzzzzzz408 / 414), bố cục tin
 rao `AD_FORMAT`, mức phí `muc_phi`. Câu bot nói nguyên văn ở `src/aioi/cau_mau.py`
 (chủ dự án sửa ở `/admin/cau-chuan`, SRS-5.1zzzzzzz106); câu chuẩn làm ví dụ ở bảng
 `cau_chuan` (SRS-5.1zzzzzzz88). `prompts.ts` và bảng `bot_prompts` đã gỡ 18/10/2026
@@ -157,9 +157,10 @@ rao `AD_FORMAT`, mức phí `muc_phi`. Câu bot nói nguyên văn ở `src/aioi/
 > - **KHÔNG mở đầu bằng "Dạ"** (CLAUDE.md §6; `engine._bo_da_dau` bỏ chữ đó khi model viết lại vẫn mở "Dạ", SRS-5.1zzzzzzz230).
 > - **Không gọi khách là "mình"**; "mình" nghĩa chúng ta ("hay mình đăng luôn") thì được (`xung_ho.goi_khach_la_minh`, SRS-5.1zzzzzzz171 / 226 / 230).
 > - **Xưng hô theo `src/aioi/xung_ho.py`** (`goi_toi`): khách xưng "em" → bot xưng anh / chị theo tên trợ lý; khách xưng "cháu" / "con" → bot xưng cô / chú; khách xưng chú / cô / bác → bot xưng "cháu" (SRS-5.1zzzzzzz214 / 234).
-> - **Câu ghi nhận ("Em ghi nhận…", "Em đã cập nhật…") tối đa MỘT lần mỗi cuộc chat** (`engine._co_cau_ghi_nhan`, SRS-5.1zzzzzzz229).
+> - **Câu ghi nhận ("Em ghi nhận…", "Em đã cập nhật…") tối đa MỘT lần mỗi cuộc chat** (dặn ở `GIONG_VUI`, SRS-5.1zzzzzzz229; lưới code `engine._co_cau_ghi_nhan` đã gỡ, SRS-5.1zzzzzzz312).
+> - **Lượt hỏi thông tin NGẮN, khoảng 20 từ; tối đa MỘT câu hỏi mỗi lượt** (`GIONG_VUI`, `prompts.LUAT_MOT_CAU_HOI`, lưới `engine._nhieu_cau_hoi`; SRS-5.1zzzzzzz252 / 471).
 > - Gọi khách nhiều nhất một lần mỗi lượt; mỗi lượt một vẻ; khen = MỘT lợi ích cụ thể suy từ điều khách nói, không bình giá, không bịa (`GIONG_VUI`).
-> - Phía mua: ~~mỗi lượt MỘT căn (SRS-5.1zzzzzzz160)~~ → rổ có ≥ 2 căn hợp thì 2–3 căn một lượt (SRS-5.1zzzzzzz335 / 340, chủ dự án 02/11: bản một căn "chat chán quá"); mời đi xem tối đa một lần trong vài lượt (`GIONG_VUI`, SRS-5.1zzzzzzz375 / 376); hỏi nhu cầu tối đa hai câu (SRS-5.1zzzzzzz154).
+> - Phía mua: ~~mỗi lượt MỘT căn (SRS-5.1zzzzzzz160)~~ → rổ có ≥ 2 căn hợp thì 2–3 căn một lượt (SRS-5.1zzzzzzz335 / 340, chủ dự án 02/11: bản một căn "chat chán quá"); mời đi xem tối đa một lần trong vài lượt (`GIONG_VUI`, SRS-5.1zzzzzzz375 / 376); ~~hỏi nhu cầu tối đa hai câu (SRS-5.1zzzzzzz154)~~ → hỏi ba ý cốt lõi (khu vực, ngân sách, loại BĐS), đủ thì gợi căn trước, câu hỏi thêm là MỘT câu mở tuỳ chọn (`prompts.mua_co_dinh` / `build_buyer_chat_system`, SRS-5.1zzzzzzz335).
 >
 > Các tiểu mục ghi ngày 09/2026–10/2026 có trích `TONE_RULES`, `HUMAN_CHAT_RULES`, `SELLER_FEWSHOT`, `CAU_HOI_MAU`,
 > van `*.ts`, `bun run prompt` mô tả bot TypeScript cũ (gỡ 18/10/2026) — **LỊCH SỬ**, giữ làm dấu vết quyết định.
@@ -173,7 +174,7 @@ rao `AD_FORMAT`, mức phí `muc_phi`. Câu bot nói nguyên văn ở `src/aioi/
 | Khách tự xưng "em" | **anh / chị** theo tên trợ lý (`xung_ho.TEN_NU` / `TEN_NAM`, [giả định BA]) | **em** |
 | Khách tự xưng "cháu" / "con" | **cô / chú** theo tên trợ lý | **cháu** |
 | Khách tự xưng chú / cô / bác | **cháu** | đúng chữ khách xưng (SRS-5.1zzzzzzz234) |
-| Chưa biết giới tính | em | **anh chị** hoặc bỏ đại từ ("Nhà ở đường nào vậy ạ?"); KHÔNG gọi khách là "mình"; khách tự xưng ("anh bận", "e ơi a…", "chị Lan đây em") thì gọi theo. Không viết "anh/chị" gạch chéo trong tin (11/09/2026, lượt bắn 42 ca: 34/52 câu bot viết "anh/chị") |
+| Chưa biết giới tính | em | **anh/chị** (`xung_ho.goi_toi`, `engine._CAM_GOI_MINH`: "chưa rõ thì anh/chị") hoặc bỏ đại từ ("Nhà ở đường nào vậy ạ?"); KHÔNG gọi khách là "mình"; khách tự xưng ("anh bận", "e ơi a…", "chị Lan đây em") thì gọi theo, cả lượt không còn chữ "anh/chị" (`engine._khoi_xung_ho_rieng`). ~~Không viết "anh/chị" gạch chéo trong tin~~ (luật bot TS 11/09/2026, lượt bắn 42 ca: 34/52 câu bot viết "anh/chị" — LỊCH SỬ) |
 
 Một nguồn: `src/aioi/xung_ho.py` (SRS-5.1zzzzzzz214). Bot KHÔNG xưng "mình" với ai.
 
@@ -195,9 +196,10 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 1. **KHÔNG mở đầu bằng "Dạ"** (luật chủ dự án, CLAUDE.md §6; thay ý gốc "mở đầu bằng Dạ"
    của `chats w B.docx`). Mở bằng cảm xúc thật với điều khách vừa nói, hoặc vào thẳng
    nội dung (`GIONG_VUI`).
-2. **Hỏi gọn, không thành bảng hỏi**: người MUA được hỏi nhu cầu tối đa hai câu
-   (SRS-5.1zzzzzzz154), câu hỏi mở. Người BÁN cần bổ sung
-   thông tin: mỗi tin hỏi **đúng một** thông tin (kịch bản người bán).
+2. **Hỏi gọn, không thành bảng hỏi**: người MUA được hỏi ba ý cốt lõi (khu vực, ngân sách,
+   loại BĐS), đủ thì gợi căn trước, câu thêm là một câu hỏi mở tuỳ chọn (`prompts.mua_co_dinh`,
+   SRS-5.1zzzzzzz335; thay "tối đa hai câu" của SRS-5.1zzzzzzz154). Người BÁN cần bổ sung
+   thông tin: mỗi tin hỏi **đúng một** thông tin (kịch bản người bán). Cả hai phía tối đa MỘT câu hỏi mỗi lượt.
 3. **Tin chủ động thường kết bằng câu hỏi** — mục tiêu là khách *nhắn lại* (RSK-01)
    — nhưng khoảng **1/3 số tin** kết bằng câu khẳng định rồi chờ; câu gợi ý xã
    giao khoảng 3 tin mới dùng một lần.
@@ -205,7 +207,8 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
    > *"Cho tới 15h ngày 17/9 thì còn. Nhưng để em hỏi lại anh nhé."*
 5. **Xin lỗi ngắn, sửa ngay**, không giải thích dài. Hiểu nhầm hay ghi nhầm ý khách ("không phải vậy", "ý anh là…", "hiểu sai rồi") thì xin lỗi một câu ngắn ("Em xin lỗi, em hiểu nhầm ạ") rồi sửa (FR-218 b; bỏ "Dạ" theo luật hiện hành).
 6. **Không từ hệ thống, không câu sáo**: cấm "Hệ thống ghi nhận", "Quý khách",
-   "Vui lòng", "theo nguồn", "dựa trên dữ liệu", "Tuyệt vời!", "Chắc chắn rồi!",
+   "Vui lòng", "theo nguồn", "dựa trên dữ liệu", ~~"Tuyệt vời!"~~ (nay `GIONG_VUI` cho mở bằng một tiếng
+   cảm thán — "Wow", "Tuyệt vời", "Ồ hay quá"… — khi khách vừa đưa điểm mạnh, SRS-5.1zzzzzzz248), "Chắc chắn rồi!",
    "Rất vui được hỗ trợ". Câu ghi nhận ("Em ghi nhận…") tối đa một lần mỗi cuộc chat
    (SRS-5.1zzzzzzz229); không gọi khách là "mình". Không nhận xét
    giá chủ nhà đưa ra ("mức hợp lý", "dễ làm việc") khi họ không hỏi (11/09/2026).
@@ -216,23 +219,23 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 | Tình huống | Câu chuẩn |
 |---|---|
 | Chào lần đầu (bản chạy 28/10/2026) | Hai câu mẫu ở `src/aioi/cau_mau.py`. Số ký gửi `chao_lan_dau`: *"Chào {goi} ạ! Em là {ten}, trợ lý ký gửi nhà đất của AI Ơi Nhà Đất. 🏡✨ {Goi} đang có căn nào muốn gửi bán hay cho thuê ạ?"* (SRS-5.1zzzzzzz251). Số tư vấn `chao_tu_van`: *"Chào {goi}! Em là {ten} bên AI Ơi Nhà Đất nè 🏡 {Goi} đang tìm mua hay thuê, khu nào, tầm giá bao nhiêu để em lọc căn hợp liền ạ?"* (SRS-5.1zzzzzzz210 / 212 / 261). Bản cũ (LỊCH SỬ): *"Dạ em chào anh/chị, em là {ten} bên AI Ơi Nhà Đất ạ. Anh/chị cần rao bán bất động sản đúng không ạ?"* (`LOI_CHAO`, FR-159/161/181; 07/10/2026 chủ dự án đổi "giao bán" → "rao bán"; {ten} = tên riêng của khách; 23/09/2026 bỏ câu "anh Thu phụ trách khu vực Sài Gòn…" — FR-218 a; 27/09 chỉ hỏi "cần rao bán…" (gật trơn = người bán); 06/10 từng thêm vế mời gửi ảnh / không form theo AOND rồi chủ dự án bác cùng ngày: "chào ngắn như đợt trước" — SRS-5.1zzs) |
-| Gặp lại | *"Em chào anh Hưng. Anh vẫn tìm nhà ở Quận 5, dưới 10 tỉ, hẻm xe hơi hả anh? Có gì mới không anh?"* |
+| Gặp lại | *"Em chào anh Hưng. Anh vẫn tìm nhà ở Quận 5, dưới 10 tỉ, hẻm xe hơi hả anh?"* ~~*"Có gì mới không anh?"*~~ (tối đa một câu hỏi mỗi lượt, `prompts.LUAT_MOT_CAU_HOI`) |
 | Gửi danh sách | ~~*"Em hiện có 24 mục. Anh xem thử vài mục hot nhất nha"*~~ → mỗi căn kèm link, không nói mã / "rổ" (SRS-5.1zzzzzzz145 / 160); rổ ≥ 2 căn hợp thì 2–3 căn một lượt (SRS-5.1zzzzzzz335 / 340) |
 | Hỏi mục đích | *"Chị mua để ở hay kinh doanh ạ?"* |
 | Chờ hỏi S | *"Chị chờ giùm một chút. Trong khi chờ, chị có câu hỏi gì khác về căn này không ạ?"* |
 | Có câu trả lời | *"Em đã hỏi chủ nhà. Có chuyển chị ngay."* |
-| Xác nhận lịch xem | *"Em ghi nhận lịch xem căn Trần Bình Trọng, P4 lúc 9h sáng Thứ 3 12/10. Em thu xếp rồi báo lại chị nha."* (FR-178: không mã) |
+| Xác nhận lịch xem | *"Em ghi nhận lịch xem căn Trần Bình Trọng, P4 lúc 9h sáng Thứ 3 12/10. Em thu xếp rồi báo lại chị nha."* (FR-178: không mã). Câu mẫu thật ở `cau_mau.py`: hỏi xác nhận MỘT lần `xac_nhan_lich` — *"{Goi} xác nhận giúp {toi}, {gio} {goi} đến xem căn {can} đúng không ạ?"*; admin chốt thì `bao_lich_da_chot` (SRS-5.1zzzzzzz158 / 216) |
 | Nhắc trước buổi xem | *"Chào chị! Em là {ten}, có hẹn với chị xem nhà lúc 9h sáng nay. Bản đồ: [maps]. Hẹn gặp chị."* |
 | Khách không ưng | *"Căn nhà này có gì chưa phù hợp ạ? Chị chia sẻ với em đi. Để em tìm căn khác cho phù hợp với chị nha."* |
-| Follow-up | *"Chị đã tìm mua được nhà chưa ạ? Em tiếp tục tìm cho chị nha?"* |
-| Chống xoá Zalo | *"Chào anh! Nhờ anh nhắn cho em 1 tin, nếu không Zalo sẽ xóa kết nối. Em tiếp tục tìm nhà dưới 7 tỉ ở Quận 5 cho anh nhé?"* (tin này đi qua `nudge`, gỡ 18/10/2026; chưa dựng lại) |
+| Follow-up | *"Chị đã tìm mua được nhà chưa ạ, hay em tiếp tục tìm cho chị nha?"* (gộp thành một câu hỏi — tối đa một câu hỏi mỗi lượt) |
+| Chống xoá Zalo | Câu mẫu `giu_ket_noi_mua` / `giu_ket_noi_ban` (`src/aioi/cau_mau.py`, lõi gửi qua `giu_ket_noi.py` khi khách im 6 ngày, SRS-5.1zzzzzzz238): *"{Goi} ơi, {toi} vẫn đang để mắt tìm căn hợp ý cho {goi}. Nhờ {goi} nhắn lại {toi} một chữ thôi, kẻo Zalo tự ngắt kết nối thì {toi} không nhắn được nữa ạ 🙏"*. Bản cũ (LỊCH SỬ, đi qua `nudge` gỡ 18/10/2026): *"Chào anh! Nhờ anh nhắn cho em 1 tin, nếu không Zalo sẽ xóa kết nối. Em tiếp tục tìm nhà dưới 7 tỉ ở Quận 5 cho anh nhé?"* |
 | Xin đánh giá | Hỏi cảm nhận 4 giờ sau buổi xem, khách chấm sao ngay trong chat (FR-56/65) — không gửi link |
 | Người lạ tự nhận có BĐS | Mở hồ sơ bán ngay trong Zalo, nói thẳng nhãn + mức phí (FR-159) — ⛔ bản cũ "mời chị đến trang web rao bán" đã bỏ |
 
 ### Ví dụ mẫu gom từ lời chủ dự án (21/09/2026) [LỊCH SỬ]
 [nguồn: chủ dự án 21/09/2026 — "cóp nhặt lại các ý t sửa rồi cho vào"; tra `bot_prompts` không có vết sửa sau 17/09, `mau_cau` có 2 dòng 10/09, nên gom từ chỗ đã ghi]. `SELLER_FEWSHOT` (code + `bot_prompts.seller_fewshot`) thêm 9 ví dụ đúng + 2 ví dụ sai, mỗi dòng một nguồn: (1) mẫu câu 10/09 #2 — rao từ "chị" thì chào lại rồi mời thêm thông tin; (2) 10/09 00:20 — khách đưa nhiều thông tin một lần, bot ghi đủ rồi hỏi nhỏ nhẹ MỘT thứ; (3) 18/09 — không câu nào cũng khen; (4) 21/09 — gõ không dấu thì bot ghi lại có dấu; (5) 21/09 TS-AIBOC-07 — "bớt 50 triệu" là mức giảm, hỏi lại giá rao; (6) 21/09 — lời hứa "coi lại sổ rồi báo" thì chờ, không hỏi dồn; (7) 09/09 "anh có Thu ở khu vực Sài Gòn" + 21/09 model nói bừa "Dạ có" — điều không nắm thì hỏi anh Thu rồi báo lại; (8) mẫu câu 10/09 #1 — xong việc chào ấm, hẹn khi có khách hỏi. Ví dụ sai thêm: "Dạ có, bên em hỗ trợ ký hợp đồng phân phối", "Tuyệt vời, cảm ơn anh đã giảm 50 triệu!".
 
-### Nhánh người bán — câu sau bám câu trước (FR-176, 07/09/2026)
+### Nhánh người bán — câu sau bám câu trước (FR-176, 07/09/2026) [LỊCH SỬ bot TS]
 [nguồn: sếp qua chủ dự án 07/09/2026 — "con AI nhắn không tự nhiên"; log lượt rao #BDS-Q5-0174]
 
 - **Mọi lượt model của nhánh người bán đọc 8 tin gần nhất** và cách gọi chủ nhà
@@ -273,7 +276,7 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
   "ngang 5" thì hỏi dài bao nhiêu; nghe "hẻm 5m" thì hỏi hẻm thông không, quay
   đầu xe được không. Gọi căn bằng địa chỉ, không đọc mã tin.
 
-### Văn phong Aioinhadat (FR-178, 07/09/2026 — xây prompt từ SRD Aioinhadat lên)
+### Văn phong Aioinhadat (FR-178, 07/09/2026 — xây prompt từ SRD Aioinhadat lên) [LỊCH SỬ bot TS]
 [nguồn: quyết định chủ dự án 25/08/2026 — "copy văn phong aioinhadat nhưng bỏ dấu hiệu AI"; 07/09 tối — "chat tự nhiên như con Aioinhadat, build prompt từ bên đó lên"]
 - ~~**Mỗi tin dưới 30 từ** (SRD §II "quy tắc 30 từ")~~ → **tin ngắn như nhắn Zalo, thường
   1–3 câu** (FR-215, chủ dự án 23/09/2026: bỏ luật cứng); ~~khen điểm mạnh THẬT gắn với khách
@@ -299,14 +302,14 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 
 ### Cấm dấu hiệu AI trong tin nhắn
 - ❌ Gạch dài "—" / "–": ngắt ý bằng dấu phẩy hoặc tách câu.
-- ❌ Markdown: in đậm, gạch đầu dòng, đánh số (Zalo không render; trừ mẫu liệt kê
-  căn "#mã · vị trí · giá · diện tích", mỗi căn một dòng).
+- ❌ Markdown: in đậm, gạch đầu dòng, đánh số (Zalo không render; ~~trừ mẫu liệt kê
+  căn "#mã · vị trí · giá · diện tích", mỗi căn một dòng~~ — nay mỗi căn một câu + link, không nói mã tin, SRS-5.1zzzzzzz145 / 335).
 - ❌ Câu sáo AI (xem quy tắc 6).
 
 ### Bố cục bài rao (`AD_FORMAT`, `src/aioi/prompts.py`)
 Chuẩn khi model viết bài rao (khuôn anh Luận, SRS-5.1zzzzzzz201 / 207; đọc nguyên văn ở `AD_FORMAT`):
-1. **Tiêu đề 15–25 từ**, mở bằng câu gọi mời ("Anh chị ơi,"), dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm), phải có GIÁ.
-   `AD_FORMAT` (nguyên bản anh Luận, SRS-5.1zzzzzzz207) ghi "viết hoa gây chú ý"; luật cũ "không HOA toàn bộ / không `**`" (SRS-5.1zzzzzzz192) đã bị SRS-207 thay. Chủ dự án chốt 28/10/2026 (sửa lại cùng ngày, kèm ảnh mẫu bản tin Cao Lỗ): tiêu đề viết THƯỜNG như câu nói, chỉ hoa chữ đầu câu và tên riêng — "không cần viết hoa để như này"; `AD_FORMAT` đổi, lưới `_viet_hoa_ca_cum` (SRS-5.1zzzzzzz241) [nguồn: chủ dự án 28/10/2026, chat].
+1. **Tiêu đề 15–25 từ**, mở bằng một lời gọi người mua kiểu rao chợ (model tự chọn chữ, mỗi tin một kiểu; cấm "Trời ơi" — `AD_FORMAT` không đưa câu mẫu), dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm), phải có GIÁ.
+   `AD_FORMAT` (nguyên bản anh Luận, SRS-5.1zzzzzzz207) ghi "viết hoa gây chú ý"; luật cũ "không HOA toàn bộ / không `**`" (SRS-5.1zzzzzzz192) đã bị SRS-207 thay. Chủ dự án chốt 28/10/2026 (sửa lại cùng ngày, kèm ảnh mẫu bản tin Cao Lỗ): tiêu đề viết THƯỜNG như câu nói, chỉ hoa chữ đầu câu và tên riêng — "không cần viết hoa để như này"; `AD_FORMAT` đổi (SRS-5.1zzzzzzz241; lưới code `_viet_hoa_ca_cum` đã gỡ, SRS-5.1zzzzzzz312 — luật chỉ còn ở prompt) [nguồn: chủ dự án 28/10/2026, chat].
 2. **Mô tả**: MỘT đoạn 70–150 từ giọng rao chợ, nói với đám đông người mua ("anh chị", "cô bác", không "bạn"); không gạch đầu dòng.
 3. **4–5 gạch đầu dòng**, mỗi dòng một ý đắt nhất; không ghi nhãn khi dữ liệu tự rõ ("132m²", không "Diện tích: 132m²").
 4. **Câu mời chốt** nhắn Zalo, FOMO chỉ là lời thúc chung, không bịa sự kiện.
@@ -324,7 +327,7 @@ tháng tiền thuê" (BR-05); vai chưa rõ thì nêu cả hai mức hoặc hỏ
 (`engine._phi_lech_vai`, SRS-5.1zzzzzzz227); CHỦ ĐẦU TƯ dự án phí thoả thuận riêng — không tự báo số,
 "để em kết nối bộ phận hợp tác dự án"; không bịa mức phí, ưu đãi, cam kết nào khác.
 
-### Nhịp nhắn giống người (FR-130 — `HUMAN_CHAT_RULES`)
+### Nhịp nhắn giống người (FR-130 — `HUMAN_CHAT_RULES`) [LỊCH SỬ bot TS — câu ví dụ mở "dạ" / gọi "mình" bên dưới là lời bản cũ, luật hiện hành ở khung đầu §6.8]
 - **Siết 14/09/2026** [nguồn: bắn 16 hội thoại người mua trên production, chủ dự án
   "bắn thêm rồi siết câu dặn đi"]: em luôn tự xưng "em", công ty là "bên em", "mình"
   chỉ để gọi khách (bot từng viết "chúng mình có nhiều") · kho trống/chưa lọc thì
@@ -405,7 +408,8 @@ tháng tiền thuê" (BR-05); vai chưa rõ thì nêu cả hai mức hoặc hỏ
   MỘT thông tin; khen NGẮN **lâu lâu một câu**, chỉ khi khách VỪA nói một điểm mạnh thật bằng chữ (nở hậu, hẻm xe hơi tới cửa,
   sổ riêng…), nhắc đúng điều khách nói. Không câu nào cũng khen; không gắn khách mua ("khách chuộng", "dễ bán", "bán nhanh");
   số trơn (hẻm 4m, 4x16) không phải điểm mạnh để khen. Khen câu nào cũng có tạo cảm giác hỏi cung thảo mai, máy móc.
-- **Tin thu thập ngắn, 1–3 câu** (trước là ~30 từ, nới ở FR-215); chỉ khi S yêu cầu "xem lại tin/đăng đầy đủ" mới soạn dài.
+  → **bản `GIONG_VUI` đang chạy (SRS-5.1zzzzzzz248 / 471)**: "khen thoải mái, thật lòng và CỤ THỂ" — khách vừa đưa một điểm mạnh thì mở bằng một tiếng cảm thán (mỗi lần một tiếng khác), khen đúng điểm đó và nó được việc gì cho căn này; đổi kiểu khen giữa các lượt (cảm thán + vài chữ · một lợi ích gọn nửa câu · vào thẳng việc); điều bình thường thì đáp thẳng, không khen gượng; không thêm chi tiết khách chưa nói, không nêu số / so giá thị trường, không hứa bán được.
+- **Tin thu thập ngắn, 1–3 câu** (trước là ~30 từ, nới ở FR-215; nay khoảng 20 từ — `GIONG_VUI` / `LEAN_SYSTEM_PROMPT`, SRS-5.1zzzzzzz471); chỉ khi S yêu cầu "xem lại tin/đăng đầy đủ" mới soạn dài.
 - **Lý do vì-khách**: *"khách mua đang hỏi…"*, *"để em nhấn mạnh vào bài giới thiệu…"*.
 - **Diện tích mơ hồ**: hỏi lại dựa trên con số đã cho ("50m2 đó là đất hay sàn ạ?").
 - **Trung thực với ảnh**: không suy diễn từ ảnh; đoán thì *"hình như là…"* + xác nhận (RSK-03).
@@ -417,15 +421,15 @@ tháng tiền thuê" (BR-05); vai chưa rõ thì nêu cả hai mức hoặc hỏ
 
 Khác AOND: không mặt cười gõ tay; khung "Luật giọng đang áp" đầu §6.8 là luật gốc khi các bản vênh nhau.
 
-### Bản rút gọn 15/09/2026 — bảng bỏ/giữ (FR-178)
+### Bản rút gọn 15/09/2026 — bảng bỏ/giữ (FR-178) [LỊCH SỬ bot TS]
 
 [nguồn: chủ dự án 15/09/2026 — "làm bản rút gọn prompt đi, kèm bảng bỏ/giữ, chủ yếu là để bot có thể giữ cho nói chuyện tự nhiên hơn"]
 
 Nguyên tắc: luật nào **code đã canh** (van sau lời model, luật tiền định chạy trước
 model, hoặc hệ thống tự nói không gọi model) thì bỏ khỏi prompt — model vi phạm cũng
 bị chặn; luật sinh từ lỗi thật mà **chưa có lưới code** thì giữ, viết ngắn lại. Các mục
-chi tiết phía trên trong §6.8 là bản đầy đủ trước 15/09, giữ làm lịch sử; **bản chạy là
-`prompts.ts` (đã đồng bộ `bot_prompts`)**.
+chi tiết phía trên trong §6.8 là bản đầy đủ trước 15/09, giữ làm lịch sử; **bản chạy lúc đó là
+`prompts.ts` (đã đồng bộ `bot_prompts`)** — cả hai đã gỡ 18/10/2026 (SRS-5.1zzzzzzz46), nay là `src/aioi/prompts.py`.
 
 | Khối | Trước → sau | Bỏ (vì sao) | Giữ (vì sao) |
 |---|---|---|---|
@@ -443,11 +447,11 @@ Kết quả: system prompt phía bán (`TONE + SELLER_SCRIPT + SELLER_FEWSHOT + 
 từ điển lóng và ví dụ đầu ra có cấu trúc). Đã đẩy `bot_prompts` cùng lúc (6 khoá, md5
 khớp code). Đo "tự nhiên hơn" bằng người đọc: chạy lại TS-NGUOI (docs/10).
 
-### Văn phong AOND 05/10/2026 — bảng bỏ/giữ (SRS-5.1zzi)
+### Văn phong AOND 05/10/2026 — bảng bỏ/giữ (SRS-5.1zzi) [LỊCH SỬ bot TS]
 
 [nguồn: chủ dự án 05/10/2026 — "bớt luật viết máy mà phụ thuộc AI hơn như này đi ha, sếp tao muốn văn phong như nó"; demo AOND `prompts.py`: "MẶC ĐỊNH … NGẮN, khoảng 30 từ — khen vài từ rồi hỏi đúng 1 thông tin", "KHÔNG bắt khách điền form", "Xưng em, gọi anh/chị", "Em sẽ rao như vầy nhé… Anh thấy hấp dẫn chưa ạ?", "mà anh có biết phí môi giới của tụi em chưa ạ?"]
 
-Nguyên tắc: **model tự đặt câu, hệ thống chỉ đưa Ý** (dòng `CẦN HỎI`); luật nào là lưới an toàn (bịa, liên hệ, ghi đúng ô, lời hứa) thì giữ trong code; luật nào là giọng thì ở prompt, viết bằng câu chỉ cách làm thay cho danh sách cấm. Bản chạy là `prompts.ts` (đẩy `bot_prompts` cùng commit).
+Nguyên tắc: **model tự đặt câu, hệ thống chỉ đưa Ý** (dòng `CẦN HỎI`); luật nào là lưới an toàn (bịa, liên hệ, ghi đúng ô, lời hứa) thì giữ trong code; luật nào là giọng thì ở prompt, viết bằng câu chỉ cách làm thay cho danh sách cấm. Bản chạy lúc đó là `prompts.ts` (đẩy `bot_prompts` cùng commit) — đã gỡ 18/10/2026 (SRS-5.1zzzzzzz46).
 
 | Khối | Bỏ / đổi | Giữ (vì sao) |
 |---|---|---|
@@ -460,7 +464,7 @@ Nguyên tắc: **model tự đặt câu, hệ thống chỉ đưa Ý** (dòng `C
 | `CAU_TIEN_DINH` | `nhap_tieu_de` "Em sẽ rao như vầy nhé", `nhap_hoi_duyet` "thấy hấp dẫn chưa ạ?", thêm `dang_xong_phi` | Thân bản nháp máy dựng (09/09: như tin rao thật, không bịa); điểm, trạng thái là số máy điền |
 | Van sửa văn | `boCauNoiHeThong`, `boCauTroNguocDauBong` theo `luat_loi_bot` (gọn = tắt) | Van chống bịa, lời hứa, xưng hô, một câu hỏi: luôn chạy |
 
-### Van sửa lời theo công tắc — 06/10/2026 (SRS-5.1zzn)
+### Van sửa lời theo công tắc — 06/10/2026 (SRS-5.1zzn) [LỊCH SỬ bot TS]
 
 [nguồn: chủ dự án 06/10/2026 — "xem lại luật sửa giọng… nên sửa giống AOND ko" → "Làm bước 1 và 2 đi"]. Demo AOND không có lớp sửa văn nào sau lời model. Hệ thống giữ nguyên tắc đó cho GIỌNG, giữ lưới cho AN TOÀN:
 
@@ -476,7 +480,7 @@ Mọi van đổi lời đều vào sổ `van_kich` (trước / sau); view `van_k
 
 Có, chỉ bằng prompt (`prompts.py` — nay `GIONG_VUI` + `build_phieu_luot`; `build_chat_system` đã xoá, SRS-5.1zzzzzzz319): ~30 từ, khen điểm mạnh THẬT trước rồi hỏi đúng 1 thông tin, xưng "em" gọi "anh/chị", trung thực (chỉ dùng điều khách nói + kiến thức dự án đã có, đoán thì "hình như là"), viết trọn vẹn không bỏ lửng; bản nháp mở "Em sẽ rao như vầy nhé:" kết "Anh thấy hấp dẫn chưa ạ?", chưa nhắc phí. `engine.py` không có van sửa văn. nhadat.cc đã chép các ý đó vào `TONE_RULES` / `SELLER_SCRIPT_RULES` (05/10) và tắt van sửa văn (06/10). Lời model còn lệch ("không rush", đọc lại "giá 10 tỷ có thương lượng") → sửa PROMPT (thêm ví dụ SAI / ĐÚNG, cấm chen tiếng Anh), không thêm van. Bốn lỗi khác của lượt bắn thử 06/10 là lỗi CƠ CHẾ (ô chờ không có câu hỏi, cổng nhiều căn, "khách hỏi" không bằng chứng, trạng thái tin không đối chiếu DB) — bảng ở `docs/07 SRS-5.1zzo`.
 
-### Lễ phép hơn mà vẫn ngắn — 08/10/2026 (SRS-5.1zzzk)
+### Lễ phép hơn mà vẫn ngắn — 08/10/2026 (SRS-5.1zzzk) [LỊCH SỬ bot TS — nay không mở "Dạ"]
 
 [nguồn: chủ dự án 08/10/2026 — "nên cho con bot lịch sự hơn tí nhưng vẫn cần ngắn"]
 
@@ -489,7 +493,7 @@ Có, chỉ bằng prompt (`prompts.py` — nay `GIONG_VUI` + `build_phieu_luot`;
 - Câu mẫu hỏi (`CAU_HOI_MAU`) kết "{ac} ạ?"; câu địa chỉ lần đầu: "Dạ nhà {ac} ở đâu vậy, ở Hồ Chí Minh đúng không ạ?" (giữ ý câu chủ dự án chọn 06/10, thêm phép lịch sự).
 - Bỏ ví dụ mẫu "Hẻm Trần Bình Trọng khu đó bán được lắm anh" — nó dạy đúng điều `TONE_RULES` cấm (đánh giá thị trường khu vực); nay nằm ở ví dụ SAI.
 
-### Lễ phép mà nhanh nhẹn, chỉ ghi nhận điều VỪA ghi — 09/10/2026 (SRS-5.1zzzzm)
+### Lễ phép mà nhanh nhẹn, chỉ ghi nhận điều VỪA ghi — 09/10/2026 (SRS-5.1zzzzm) [LỊCH SỬ bot TS]
 
 [nguồn: chủ dự án 09/10/2026, test Zalo thật — "tao muốn nó lễ phép nhưng nhanh nhẹn tí, trả lời thông minh tí chứ rep chán quá"]
 
@@ -506,7 +510,7 @@ Bản 08/10 dạy câu ĐÚNG "Dạ em ghi rồi ạ. Nhà mình mấy tầng v�
 
 Sau khi gộp: `bun run prompt --day` (bản DB `bot_prompts` đè bản code — `tone_rules`, `seller_script_rules`, `seller_fewshot`, `cau_hoi_mau`).
 
-### Bong bóng 🤖 kiểu AOND "[đã trích xuất]" — 09/10/2026 (SRS-5.1zzzzn)
+### Bong bóng 🤖 kiểu AOND "[đã trích xuất]" — 09/10/2026 (SRS-5.1zzzzn) [LỊCH SỬ bot TS — nay là tin phụ "$$$$$ Đã trích xuất" theo công tắc `AIOI_DONG_TRICH_XUAT`, SRS-5.1zzzzzzz252]
 
 [nguồn: chủ dự án 09/10/2026 — đổi `bao_lai_da_luu` từ `admin` sang `thay_doi` cho người thử đọc trên Zalo; "ghi như con AOND á. Đã trích xuất “data nguyên mẫu”, làm chuẩn “data làm chuẩn”"]
 
@@ -526,7 +530,7 @@ Demo AOND in "[đã trích xuất]" cho người vận hành (bảng 05/10 ở t
 - Không trích được gì: `🤖 Không trích xuất được gì từ tin này.`; ảnh: `🤖 Đã trích xuất từ ảnh: mặt tiền`; trả lời câu bot vừa hỏi: `🤖 Trả lời câu em vừa hỏi ("…"): đã trích xuất "đúng rồi em" → làm chuẩn "cần rao bán, …".`
 - Không đụng: bóc tách của demo (bảng 05/10), vị trí bong bóng (đầu, đứng riêng), công tắc.
 
-### Câu hỏi bên lề, phí theo vai, một câu một ý — 09/10/2026 (SRS-5.1zzzzo)
+### Câu hỏi bên lề, phí theo vai, một câu một ý — 09/10/2026 (SRS-5.1zzzzo) [LỊCH SỬ bot TS]
 
 [nguồn: bắn production 09/10/2026 — hỏi phí lúc treo câu sổ → "mấy phòng ngủ"; "anh là chính chủ" → "Vâng ạ. Sổ và hẻm được không ạ?"]
 
@@ -538,7 +542,7 @@ Demo AOND in "[đã trích xuất]" cho người vận hành (bảng 05/10 ở t
 
 Sau khi gộp: `bun run prompt --day` (khoá `fee_rules`, `seller_fewshot`).
 
-### Con số trơn không phải điểm mạnh để khen — 11/10/2026 (SRS-5.1zzzzx)
+### Con số trơn không phải điểm mạnh để khen — 11/10/2026 (SRS-5.1zzzzx) [LỊCH SỬ bot TS]
 
 [nguồn: lượt khách mô phỏng đầu tiên 11/10/2026: "hem 4m" → "hẻm 4m ô tô vào tới nhà tiện lắm"; "4x16" → "4x16 là diện tích vừa phải"; "hẻm 2m5" → "Hẻm hẹp thì đi lại cần cẩn thận"]
 
@@ -550,7 +554,7 @@ Sau khi gộp: `bun run prompt --day` (khoá `fee_rules`, `seller_fewshot`).
 
 Sau khi gộp: `bun run prompt --day` (khoá `tone_rules`, `seller_fewshot`).
 
-### Câu nhắc duyệt, câu dẫn phí, hỏi nghĩa từ — 11/10/2026 (SRS-5.1zzzzy)
+### Câu nhắc duyệt, câu dẫn phí, hỏi nghĩa từ — 11/10/2026 (SRS-5.1zzzzy) [LỊCH SỬ bot TS]
 
 [nguồn: lượt khách mô phỏng thứ hai 11/10/2026: "Anh chị cho em xin thêm chủ nhà duyệt bản nháp tin nha?"; "Em cho chào căn nhà của bác ngay ạ"; "Em ghi giá 3.2 tỷ rồi ạ"; bác hỏi "cái chữ 'pháp lý' là sao" → "Dạ tin ghi pháp lý sổ hồng riêng ạ"]
 
@@ -563,7 +567,7 @@ Sau khi gộp: `bun run prompt --day` (khoá `tone_rules`, `seller_fewshot`).
 
 Sau khi gộp: `bun run prompt --day` (khoá `cau_hoi_mau`, `cau_tien_dinh`, `seller_fewshot`).
 
-### Khách không biết phường, hỏi vai khi hỏi phí lần nữa — 11/10/2026 (SRS-5.1zzzzz)
+### Khách không biết phường, hỏi vai khi hỏi phí lần nữa — 11/10/2026 (SRS-5.1zzzzz) [LỊCH SỬ bot TS]
 
 [nguồn: lượt khách mô phỏng thứ ba 11/10/2026: "Tin còn thiếu một chút để đủ điều kiện đăng, em hỏi thêm chị vài thông tin nữa nha" (không nêu thiếu gì); phường hỏi bốn lần sau "chị không biết phường nào"; "Phí mức bao nhiêu tuỳ chị là chính chủ hay môi giới, em sẽ báo rõ khi chị quyết định rao ạ"; "Dạ em ghi độ rộng hẻm trước nhà, đường vào (mặt tiền hay hẻm) rồi ạ"]
 
@@ -608,7 +612,7 @@ Sau khi gộp: `bun run prompt --day` (khoá `cau_hoi_mau`, `cau_tien_dinh`, `se
 
 Sau khi gộp: `bun run prompt --day` (khoá `cau_tien_dinh`, `fee_rules`).
 
-### Ba nguồn sự thật của lời bot — 11/10/2026 (SRS-5.1zzzzzb)
+### Ba nguồn sự thật của lời bot — 11/10/2026 (SRS-5.1zzzzzb) [LỊCH SỬ bot TS]
 
 [nguồn: lượt khách mô phỏng thứ tư 11/10/2026: "Hẻm Quang Trung ở phường Thạnh Lộc bác ơi. Vậy nhà bác ở phường Thạnh Lộc đúng không bác?" (phường bịa, sai quận); "anh chị định để giá 3 tỷ 2 là chuẩn rồi ạ"]
 
@@ -620,7 +624,7 @@ Sau khi gộp: `bun run prompt --day` (khoá `cau_tien_dinh`, `fee_rules`).
 
 Sau khi gộp: `bun run prompt --day` (khoá `tone_rules`).
 
-### Không gắn thêm điều khách không nói — 11/10/2026 (SRS-5.1zzzzzc)
+### Không gắn thêm điều khách không nói — 11/10/2026 (SRS-5.1zzzzzc) [LỊCH SỬ bot TS]
 
 [nguồn: lượt khách mô phỏng thứ năm 11/10/2026: "Dạ sổ riêng, giấy tờ gọn lắm anh chị", "quận 5 cũ bên em hay có khách tìm", "thuế chuyển nhượng … là của người mua và người bán", "tối em gọi lại nha"; câu phí lặp nguyên văn ba lượt]
 
@@ -638,14 +642,14 @@ Sau khi gộp: `bun run prompt --day` (khoá `tone_rules`, `seller_fewshot`).
 
 | Vị trí | Copy |
 |---|---|
-| Placeholder search | *"tìm mua nhà phố HXH 8 tỉ ở Q8"* |
+| Placeholder search | *"tìm mua nhà phố HXH Quận 8, căn hộ Nhà Bè, biệt thự Bình Chánh, đất Bến Lức..."* (`app/page.tsx`; bản thiết kế cũ *"tìm mua nhà phố HXH 8 tỉ ở Q8"*) |
 | Nút CTA Zalo | *"Chat Zalo"* (widget, Header) / *"Nhắn Zalo"* (Footer) — không "Đăng ký", "Liên hệ"; bản thiết kế cũ *"Bắt đầu kết nối"* chưa dựng |
-| Nhãn cue | *"Khi Zalo nhớ hỏi #35148"* |
-| 0 kết quả | *"Chưa có căn nào khớp đúng. Em nới giá lên 9.6 tỉ thì có 41 căn:"* |
-| Chờ xác minh | *"Thông tin do người bán cung cấp — hỏi tụi em để xác minh lại."* |
+| Nhãn cue | Nút *"Chat Zalo về căn này"* chép sẵn *"Hỏi căn #<mã>"* rồi báo *"Đã chép "Hỏi căn #<mã>", dán vào Zalo là tụi em biết căn nào"* (`components/NutHoiCan.tsx`); bản thiết kế cũ *"Khi Zalo nhớ hỏi #35148"* chưa dựng |
+| 0 kết quả | *"Chưa có căn nào khớp đủ các điều kiện này"* + *"Thử bỏ bớt một điều kiện. Hoặc nhắn Zalo câu anh chị cần, có căn mới khớp là tụi em báo, không cần để lại số điện thoại."* (`components/ListingBrowse.tsx`); bản thiết kế cũ tự nới giá *"Em nới giá lên 9.6 tỉ thì có 41 căn"* chưa dựng |
+| Chờ xác minh | *"Thông số đọc từ tin rao, chưa xác minh với chủ nhà - hỏi qua Zalo là tụi em đi hỏi giùm."* (`app/nha-dat/[code]/page.tsx`) |
 | CTA người bán | *"Miễn phí đăng tin. Chỉ thu phí khi bán được: chính chủ 1% · môi giới 0.5%"* |
-| Khối riêng tư | *"Để lại số ĐT trên trang BĐS khác nghĩa là 40 cuộc gọi trong 3 ngày. Ở đây: không một cuộc nào."* |
-| Lời hứa với người bán | *"Bên em rao cho đến khi gặp người mua phù hợp nhất — anh/chị chỉ cần nhắn một lần."* |
+| Khối riêng tư | *"Để lại số trên trang nhà đất là ăn 40 cuộc gọi trong 3 ngày. Ở đây chỉ nhắn Zalo, khi hẹn xem nhà mới cần liên hệ. Nhắn “dừng” là tụi em im, không hỏi lý do."* (`app/page.tsx`) |
+| Lời hứa với người bán | *"Rao tới khi gặp đúng người mua"* — *"Khách hỏi gì tụi em trả lời; chỉ nhắn anh chị khi thật sự cần xác minh hoặc chốt lịch xem. Không spam."* (`app/raoban/page.tsx`, bước 3) |
 
 ## 6.10 Accessibility
 
@@ -665,16 +669,16 @@ Sau khi gộp: `bun run prompt --day` (khoá `tone_rules`, `seller_fewshot`).
 | 2 | Khớp thế giới thật | Chữ người dùng Việt, không đọc tên cột (`boc_tach` → "JSON bóc tách") |
 | 3 | Người dùng kiểm soát | Mọi form có Huỷ; xoá có hộp xác nhận nêu hậu quả và "không hoàn tác" |
 | 4 | Nhất quán | Một bộ nút (`components/ui.tsx`: primary/secondary/danger/ghost), một bộ icon SVG (`icons.tsx`), tab = URL |
-| 5 | Ngăn lỗi | Xoá khách/tin phải confirm; JSON prompt hỏng thì dùng bản mã, không câm |
+| 5 | Ngăn lỗi | Xoá khách/tin phải confirm; câu mẫu sửa hỏng thì bot dùng câu mặc định trong code, không câm (`cau_mau.cau`; bản cũ: JSON prompt `bot_prompts` hỏng thì dùng bản mã) |
 | 6 | Nhận ra hơn nhớ | Icon luôn kèm chữ trên màn rộng; breadcrumb; đường dẫn hiện tại sáng |
 | 7 | Linh hoạt | Ô tìm chung trên thanh; lọc bằng chip; phím tab đi được |
 | 8 | Tối giản | Không emoji, không pill tròn cho nút/ô nhập, không đổ bóng, không gradient, không nhấp nháy |
 | 9 | Lỗi có cách sửa | Hộp lỗi nói "Lỗi: …" kèm nút đóng; không toast biến mất tự động |
-| 10 | Trợ giúp | Tooltip (`title`) trên nút đặc biệt; trang mẫu câu có câu dẫn cách dùng |
+| 10 | Trợ giúp | Tooltip (`title`) trên nút đặc biệt; trang Câu chuẩn (`/admin/cau-chuan`, thay trang mẫu câu đã gỡ) có câu dẫn cách dùng |
 
 **Cấm dấu hiệu AI trên web** (song song với "Cấm dấu hiệu AI trong tin nhắn" §6.8): dấu gạch dài "—" (dùng "-" hoặc dấu chấm, chủ dự án 09/09); mũi tên "→ ↗ ←" trong nút và nhãn (dùng chữ: "Quay lại", "Xem bảng", "thành"); emoji làm icon; nút/ô nhập bo tròn hoàn toàn (`rounded-full`) trừ avatar và chấm trạng thái; `shadow-*` trên thẻ và nút (chỉ modal/menu nổi được `shadow-lg`); gradient; `animate-pulse`; chữ `font-extrabold` khắp nơi; nhãn kiểu "Admin Console", "✨"; mô tả sáo. Kiểm bằng `bun run truyvet`? — chưa; soát tay bằng lệnh đếm emoji trong `app/` + `components/` (0 là đạt, trừ `✓`/`✗` dạng chữ).
 
-**Nút bắt buộc có ở đúng chỗ (soát 09/09, khung đổi 19/10):** thanh trên: Đăng tin, chuông, tìm; cột trái: đăng xuất có chữ · Tin nhắn: Làm mới, Đã xử lý (khi cần người thật), Xoá khách, Sửa thành câu chuẩn ở mỗi câu bot · Rổ hàng: Sửa, Xoá tin, Tải CSV, JSON, Đăng tin · Mẫu câu (trang `/admin/mau-cau` đã gỡ 18/10/2026, SRS-5.1zzzzzzz46): Sửa, Xoá, Mở chat, Tải JSONL · Bàn làm việc: bốn ô số liệu (ba ô là link tới Khách hàng / Rổ hàng / Vận hành, "Cần xử lý" là số).
+**Nút bắt buộc có ở đúng chỗ (soát 09/09, khung đổi 19/10):** thanh trên: Đăng tin, chuông, tìm; cột trái: đăng xuất có chữ · Tin nhắn: Làm mới, Đã xử lý (khi cần người thật), Giữ khách / Trả bot, Xoá khách, "Chấm / sửa câu này" ở mỗi câu bot (đưa sang `/admin/cau-chuan`, SRS-5.1zzzzzzz88; nút cũ "Sửa thành câu chuẩn" gỡ 18/10/2026, SRS-5.1zzzzzzz46) · Rổ hàng: Sửa (xoá tin là "Xoá vĩnh viễn…" trong màn Sửa), Tải CSV, JSON, Đăng tin mới · Mẫu câu (trang `/admin/mau-cau` đã gỡ 18/10/2026, SRS-5.1zzzzzzz46): Sửa, Xoá, Mở chat, Tải JSONL · Bàn làm việc: bốn ô số liệu (ba ô là link tới Khách hàng / Rổ hàng / Vận hành, "Cần xử lý" là số).
 
 **Khung CRM (19/10/2026, SRS-5.1zzzzzzz72)** [nguồn: chủ dự án 19/10/2026 — "sửa lại nguyên cái layout crm đi chứ thấy hơi rối"]:
 điều hướng có MỘT chỗ — cột trái chia nhóm theo việc (Hằng ngày · Rổ hàng · Hệ thống), dưới 1024px thành một hàng cuộn ngang.

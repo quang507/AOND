@@ -99,7 +99,7 @@ Facebook Messenger / Telegram · Đa ngôn ngữ · Cổng NMG tự phục vụ 
 | FR-25 | ⛔ [deprecated 28/10/2026 — bot không đọc mã tin cho khách, đưa link web `web.link_tin` (SRS-5.1zzzzzzz145 / 220)] **Định dạng listing trong chat** | M | chats w B.docx |
 | FR-26 | ✅ **Khai thác nhu cầu sâu.** | M | chats w B.docx §Lấy thêm nhu cầu |
 | FR-27 | ✅ **Gửi ảnh theo yêu cầu.** | M | chats w B.docx §Khi chỉ gửi 1 số hình |
-| FR-28 | ❌ **Tiện ích quanh BĐS.** | S | chats w B.docx §Khi trả lời về tiện ích |
+| FR-28 | 🟡 **Tiện ích quanh BĐS.** Nay: `geocode-listings` nạp tiện ích OSM (bệnh viện, trường, chợ, siêu thị, công viên) vào bảng `tien_ich` + `listings.tien_ich_gan`; lõi đưa tên + số mét của tiện ích ≤ 1 km vào dòng căn (`src/aioi/mua.py`, SRS-5.1zzzzzzz179 / 335). Chưa: căn chưa có toạ độ thì bot nói "chưa rõ". | S | chats w B.docx §Khi trả lời về tiện ích |
 | FR-29 | ✅ **Vào từ quảng cáo với một mã BĐS.** | M | chats w B.docx §Hỏi đáp từ quảng cáo |
 | FR-30 | 🟡 **Nhận ngữ cảnh tìm kiếm từ website.** | M | website.docx; FR-14 |
 | FR-31 | 🟡 **Gợi ý căn tương tự.** | S | chats w B.docx |
@@ -128,7 +128,7 @@ Facebook Messenger / Telegram · Đa ngôn ngữ · Cổng NMG tự phục vụ 
 | FR-53 | ✅ **Xin số điện thoại chỉ tại bước này** (bot chỉ CHỦ ĐỘNG xin ở đây; khách tự để lại số lúc khác thì lưu + báo admin — SRS-5.1zzzzzzz388) | M | chats w B.docx; xung đột INS-04 → OPEN-05 (đã chốt 07/09/2026) |
 | FR-54 | ❌ **Gửi link Google Maps ghim vị trí.** | M | chats w B.docx |
 | FR-55 | ❌ **Nhắc trước giờ hẹn.** | M | chats w B.docx §Nhắc trước khi xem |
-| FR-56 | 🟡 **Hỏi cảm nhận sau khi xem.** | M | chats w B.docx §Không chịu xem nhà |
+| FR-56 | 🟡 **Hỏi cảm nhận sau khi xem.** Nay: trigger `reminders_hen_hoi_cam_nhan` chỉ đẻ nhắc `feedback` khi một nhắc `viewing` được gửi, mà nhắc `viewing` không còn ai tạo (FR-55) — câu hỏi cảm nhận chưa tới khách `[nguồn: bot/supabase/schema.sql]`. | M | chats w B.docx §Không chịu xem nhà |
 | FR-57 | 🟡 **Yêu cầu xem nhà sinh sự kiện + email `[VIEWING]` cho admin.** | M | chats w B.docx §Hẹn xem nhà (backend) |
 
 ### E. Giữ chân & tái kích hoạt (RET)
@@ -156,7 +156,7 @@ Facebook Messenger / Telegram · Đa ngôn ngữ · Cổng NMG tự phục vụ 
 | FR-77 | 🟡 **Danh sách phản ứng tiêu cực** | M | chats w B.docx §Phản ứng tiêu cực |
 | FR-78 | ✅ **Danh sách hẹn xem nhà** | M | chats w B.docx §Hẹn xem nhà |
 | FR-79 | 🟡 **Danh sách yêu cầu voice chat.** | M | chats w B.docx §Khách hàng muốn voice chat |
-| FR-80 | ✅ **Mọi danh sách admin phân trang 20 mục/trang.** | M | chats w B.docx |
+| FR-80 | 🟡 **Mọi danh sách admin phân trang 20 mục/trang.** Nay: `usePhanTrang` (20 mục) áp cho tin chờ duyệt, khách hàng, khách cần người thật, thống kê hội thoại; thẻ "Câu khách hỏi" và "Lịch xem nhà" chỉ hiện 10 dòng đầu, chưa lật trang (`app/admin/page.tsx`). | M | chats w B.docx |
 | FR-81 | 🟡 **Email cho admin ở mọi mục FR-76…79.** | M | chats w B.docx §Email notification |
 
 ### G. Mini-site & luồng người bán (SEL)
@@ -176,7 +176,7 @@ Facebook Messenger / Telegram · Đa ngôn ngữ · Cổng NMG tự phục vụ 
 | FR-100 | ✅ [khôi phục 13/11/2026 theo code (SRS-5.1zzzzzzz464)] **Danh sách riêng cho một khách `/ds/{token}`** (`noindex`, RPC `doc_danh_sach`); bot chưa tự tạo. | S | chốt 08/09/2026 OPEN-48; khôi phục theo code — chủ dự án 13/11/2026 (chat), SRS-5.1zzzzzzz464 |
 | FR-101 | ✅ **Phân loại S là CCRB hay NMG để áp đúng mức phí.** | M | biz model.docx |
 | FR-102 | ⛔ [deprecated → FR-137] **Theo dõi chuẩn NMG.** | S | biz model.docx §NMG; chủ dự án chốt 27/08/2026 |
-| FR-103 | 🟡 **Lời hứa "rao một lần là xong".** | M | trao đổi chủ dự án 22/08/2026; INS-09 |
+| FR-103 | ✅ **Lời hứa "rao một lần là xong".** Nay lõi hỏi lại chủ nhà "còn bán không" khi tin 20 ngày chưa xác nhận (`src/aioi/hoi_con_ban.py`, `listings.xac_nhan_con_ban_at`, SRS-5.1zzzzzzz295). | M | trao đổi chủ dự án 22/08/2026; INS-09 |
 
 ### H. Trung gian ẩn danh & vòng đời listing (BROKER)
 
@@ -206,7 +206,7 @@ Phạm vi MVP: **đặt nền dữ liệu**, chưa làm UI giỏ hàng riêng.
 | FR-115 | ✅ **Trả lời câu hỏi tầng dự án từ dữ liệu chung** | M | INS-10 |
 | FR-116 | 🟡 **"Căn X của dự án Y còn không?"** | M | INS-10; Cầu Nối §F2 |
 | FR-117 | 🟡 **Trang dự án `/du-an/{slug}` + màn quản lý giỏ hàng** | S | OPEN-15 (b) |
-| FR-118 | 🟡 **Địa giới hành chính hai tên.** | M | INS-12; quyết định chủ dự án 24/08/2026 |
+| FR-118 | 🟡 **Địa giới hành chính hai tên.** Nay ánh xạ phường cũ ↔ mới nằm ở bảng `wards` (`quan_cu`, `don_vi_cu`, `don_vi_2025` — `20260915a`) + `phuong_cu` / `quan_cu`, lõi tra qua `src/aioi/dia_danh.py`; không dựng bảng tên `ward_mapping`. | M | INS-12; quyết định chủ dự án 24/08/2026 |
 | FR-119 | ✅ [khôi phục 13/11/2026 theo code (SRS-5.1zzzzzzz464)] **Máy tính lãi vay `/tinh-lai-vay`** (trả góp đều, nhận `?price=` từ trang tin). | S | OPEN-19; chốt 08/09/2026 OPEN-48; khôi phục theo code — chủ dự án 13/11/2026 (chat), SRS-5.1zzzzzzz464 |
 | FR-120 | ✅ [khôi phục 13/11/2026 theo code (SRS-5.1zzzzzzz464)] **Trang `/thong-ke`** — giá theo phường tính tại chỗ từ kho tin. | S | chốt 08/09/2026 OPEN-48; khôi phục theo code — chủ dự án 13/11/2026 (chat), SRS-5.1zzzzzzz464 |
 | FR-121 | ✅ [khôi phục 13/11/2026 theo code (SRS-5.1zzzzzzz464)] **Lưu tin yêu thích trên web `/yeu-thich`** (localStorage, không cần tài khoản). | S | chốt 08/09/2026 OPEN-48; khôi phục theo code — chủ dự án 13/11/2026 (chat), SRS-5.1zzzzzzz464 |
@@ -254,7 +254,7 @@ Phạm vi MVP: **đặt nền dữ liệu**, chưa làm UI giỏ hàng riêng.
 | FR-163 | ✅ **Toàn vẹn dữ liệu ở tầng DB.** | M | yêu cầu chủ dự án 28/08/2026 |
 | FR-164 | ✅ **Đường ống dữ liệu tin rao — một nhà chức trách cho mỗi chặng.** | M | yêu cầu chủ dự án 28/08/2026 |
 | FR-165 | ✅ **Kho ảnh neo vào ID bất biến, có bảng media thật.** | M | yêu cầu chủ dự án 29/08/2026 |
-| FR-166 | ✅ **Việc chạy nền tin cậy.** | M | yêu cầu chủ dự án 29/08/2026 |
+| FR-166 | 🟡 **Việc chạy nền tin cậy.** Nay: đường cứu quét tin bỏ rơi mỗi phút (`inbound-sweep`) đã gỡ 18/10/2026 (SRS-5.1zzzzzzz46, xem NFR-04); còn lõi thử lại lượt hỏng ở luồng nền (`server._thu_lai_nen`) và nhắc hụt 5 lần thì `dead` (`gui_nhac.ATTEMPTS_TOI_DA`). | M | yêu cầu chủ dự án 29/08/2026 |
 | FR-167 | ✅ **Soát bảo mật theo VAI THẬT.** | M | yêu cầu chủ dự án 29/08/2026 |
 | FR-168 | ✅ **Chuông báo hết tiền tài khoản AI.** | M | yêu cầu chủ dự án 01/09/2026 |
 | FR-169 | ✅ **Đo tiền bộ não theo CHỮ.** | M | yêu cầu chủ dự án 01/09/2026 |
@@ -266,7 +266,7 @@ Phạm vi MVP: **đặt nền dữ liệu**, chưa làm UI giỏ hàng riêng.
 | FR-175 | ✅ **Rổ hàng đọc như Excel, không cần vào Supabase.** | M | phản hồi sếp qua chủ dự án 07/09/2026; chủ dự án 09/09/2026 |
 | FR-176 | ✅ **Giọng người bán tự nhiên — câu sau bám câu trước, câu lệch thì hỏi lại.** | M | sếp qua chủ dự án 07/09/2026; log bridge 15:36–15:40; Gemini share "AI Ơi Nhà Đất" (d) 17/09/2026 (Zalo thật 16:42): câu rao mang ĐỊA CHỈ ở đường khác căn đang hỏi ("cô có căn nhà hẻm 4m Trần Hưng Đạo…" khi đang hỏi phường căn hẻm 4m Nguyễn Trãi) là căn KHÁC → mở tin mới, không ghi vào tin cũ; vị trí ghi từ câu dài chỉ lấy mệnh đề địa chỉ. 💾 báo cả HỒ SƠ vừa lưu: lượt mở hồ sơ có `Zalo: "…xxxx"` (che, 4 ký tự cuối), lượt ghi cách gọi có `cách gọi: "cô"`. Câu hỏi phường ngắn, nhắc địa chỉ đã có: "Hẻm 4m Trần Hưng Đạo đó phường mấy cô nhỉ?"; model chép nguyên văn câu hỏi kế, không thêm lý do. |
 | FR-177 | ✅ **Nhận ký gửi như môi giới giỏi: hỏi một thứ, khích lệ một câu, chốt bằng bản nháp tin có điểm.** | M | sếp qua chủ dự án 07/09/2026; chủ dự án 09/09/2026; Gemini "Kịch bản huấn luyện môi giới BĐS" |
-| FR-178 | ✅ **Giọng bot xây từ Aioinhadat lên, không đọc mã tin cho khách, có few-shot người bán.** | M | chủ dự án 07/09/2026; AOND SRD; Gemini |
+| FR-178 | ✅ **Giọng bot xây từ Aioinhadat lên, không đọc mã tin cho khách, có few-shot người bán.** Nay `SELLER_FEWSHOT` / `bot_prompts` đã gỡ 18/10/2026; ví dụ giọng lấy từ câu chuẩn sửa ở `/admin/cau-chuan` (`prompts.khoi_cau_chuan`, SRS-5.1zzzzzzz88) + câu mẫu cố định `cau_mau` (SRS-5.1zzzzzzz106). | M | chủ dự án 07/09/2026; AOND SRD; Gemini |
 | FR-179 | ⛔ [deprecated 28/10/2026 — lệnh "hello" xoá dữ liệu bỏ 22/10, `$$$$$` gỡ 26/10 (SRS-5.1zzzzzzz195); xoá phiên nay bằng lệnh gõ tay `/quit` (`src/aioi/lenh_zalo.py`, SRS-5.1zzzzzzz211)] **Chế độ test: nhắn "hello" là xoá sạch dữ liệu của số Zalo đó, tiếp đón như khách mới.** | C | chủ dự án 09/09/2026 |
 | FR-180 | [deprecated 18/10/2026 — SRS-5.1zzzzzzz46: lõi Python không đọc `mau_cau`; trang /admin/mau-cau, nút "Sửa thành câu chuẩn" và bảng đã gỡ, 2 dòng mẫu chép sang `luu_tru.ts_mau_cau_20261018`] **Mẫu câu chuẩn — tài sản huấn luyện giọng bot.** | M | chủ dự án 09/09/2026 |
 | FR-181 | ✅ **Mỗi khách một tên trợ lý riêng, giữ suốt; không còn một tên Thái.** | M | chủ dự án 09/09/2026 chiều (đối chiếu chat Gemini "AI Ơi Nhà Đất" 21–27/06/2026, chốt từng dòng OPEN-55) |
@@ -289,7 +289,7 @@ Phạm vi MVP: **đặt nền dữ liệu**, chưa làm UI giỏ hàng riêng.
 | FR-199 | ✅ **Lưới VÉT bằng model: câu có mùi dự án mà tầng tiền định không nhặt được gì thì cho model bóc, kết quả vào hàng chờ duyệt.** | M | chủ dự án 10/09/2026 |
 | FR-200 | ⛔ [deprecated 28/10/2026 — trang `/admin/prompt` và bảng `bot_prompts` gỡ 18/10/2026, SRS-5.1zzzzzzz31 / 46; prompt chỉ ở `src/aioi/prompts.py`, câu mẫu sửa ở `/admin/cau-chuan`] **Sửa prompt bot ngay trong CRM (`/admin/prompt`), và màn hình nói rõ sửa xong thì đồng bộ tới đâu.** | S | chủ dự án 10/09/2026 |
 | FR-201 | ✅ **Rao tin chỉ đi qua màn SỬA: nút “Duyệt & rao tin” nằm trong đó, dropdown ngoài bảng không rao được nữa.** | S | chủ dự án 10/09/2026 |
-| FR-202 | ✅ **Lời nhắc chủ động đi Zalo clone khi chưa có OA — tới đúng Zalo ID người nhận, và chủ nhà cũng được nhắc trước buổi xem.** | S | chủ dự án 11/09/2026 |
+| FR-202 | 🟡 **Lời nhắc chủ động đi Zalo clone khi chưa có OA — tới đúng Zalo ID người nhận, và chủ nhà cũng được nhắc trước buổi xem.** Nay: tin chủ động đi Zalo clone qua lõi (`gui_nhac.py`, SRS-5.1zzzzzzz216) và `escalation-feed`; nhắc `viewing` trước buổi xem không còn ai tạo / gửi (`gui_nhac.KIND_LOI` không gồm `viewing`, xem FR-55) nên phần nhắc chủ nhà trước buổi xem chưa có. | S | chủ dự án 11/09/2026 |
 | FR-203 | ✅ **Đăng nhập lại acc Zalo clone bằng mã QR hiện ngay trên `/admin`; bridge tự nhận ra phiên chết.** | S | chủ dự án 11/09/2026 |
 | FR-204 | ✅ **Tìm nhà gần nơi khách muốn (bệnh viện, trường, chợ, siêu thị, công viên, dự án, địa danh) — bot hiểu NGHĨA câu, còn mốc và khoảng cách do SQL tính.** | M | chủ dự án 11/09/2026 |
 | FR-205 | ✅ **Phân vai mua/bán bằng AI khi luật cứng không kết luận được — AI đề xuất, code kiểm rồi mới dùng.** | S | chủ dự án 11/09/2026 |
@@ -334,7 +334,7 @@ Phạm vi MVP: **đặt nền dữ liệu**, chưa làm UI giỏ hàng riêng.
 | FR-244 | ✅ **Tám lỗi phía người bán từ 10 kịch bản mới L1–L10 (29/09) chạy qua bot giả lập — ghi nguyên nhân từng lỗi.** | M | chủ dự án 29/09/2026 |
 | FR-245 | ✅ **Tách dữ liệu THỬ khỏi dữ liệu THẬT, kho lưu trước khi xoá hàng loạt, máy soi dữ liệu tin hằng ngày.** | M | chủ dự án 29/09/2026 |
 | FR-246 | ✅ **Bắn thử bot trên production, không cần Supabase MCP; đổi model chính khi chủ dự án yêu cầu.** Nay chạy từ máy cá nhân ssh vào máy 146 (`bot/tests/ban-thu-*.sh`), không chạy trên GitHub Actions (SRS-5.1zzzzzzz405). | S | chủ dự án 29/09/2026 |
-| FR-247 | ✅ **Bốn lỗi từ 6 kịch bản bắn thật trên production 30/09 (workflow `ban-thu.yml`, ID thử `lx-`) — ghi nguyên nhân từng lỗi.** | S | chủ dự án 30/09/2026 |
+| FR-247 | ✅ **Bốn lỗi từ 6 kịch bản bắn thật trên production 30/09 (workflow `ban-thu.yml`, ID thử `lx-`) — ghi nguyên nhân từng lỗi.** Workflow `ban-thu.yml` đã gỡ; nay bắn thử bằng `bot/tests/ban-thu-*.sh` (FR-246). | S | chủ dự án 30/09/2026 |
 | FR-248 | ✅ **Các lỗi còn lại sau khi bắn lại 6 kịch bản trên chat-reply v274 (30/09) — ghi nguyên nhân từng lỗi.** | S | chủ dự án 30/09/2026 |
 | FR-249 | ✅ **Hai câu hứa suông của nhánh mua lộ ra khi bắn lại trên chat-reply v275 (30/09) — ghi nguyên nhân.** | S | chủ dự án 30/09/2026 |
 | FR-250 | ✅ **Bắn thật chat-reply v277 (30/09) khi AI bóc tách chết (Gemini 503) — bốn lỗi, ghi nguyên nhân.** | S | chủ dự án 30/09/2026 |
@@ -358,7 +358,7 @@ Từ 30/09/2026 sửa lỗi / tính năng mới không bắt buộc cấp FR (CL
 | NFR-06 | Bảo mật | ✅ Ảnh sổ đỏ/giấy tờ lưu bucket riêng, admin xem bằng link ký hạn 15 phút; đường dẫn riêng không bao giờ ra trang công khai. Hiện thực: bucket `listing-private` + thẻ giấy tờ ở `/admin`. | RSK-07 |
 | NFR-07 | Riêng tư | ✅ Bot chỉ CHỦ ĐỘNG xin số ĐT của B một lần lúc chốt lịch xem; khách TỰ để lại số lúc khác thì bot lưu `buyers.phone` và báo admin gọi tư vấn (công cụ `luu_so_dien_thoai`, `mua.ghi_sdt_hen_xem`, SRS-5.1zzzzzzz388); cho phép ngắt kết nối bất cứ lúc nào. Hiện thực: câu cam kết trên web; SĐT không vào sổ lỗi (`che_sdt`) [nguồn: SRS-5.1zzzzzzz464]. | BR-06, FR-04 |
 | NFR-08 | Riêng tư | ❌ Fingerprint chỉ dùng cá nhân hoá kết quả, có thông báo và cơ chế từ chối. Chưa: đi cùng FR-16 (OPEN-14). | FR-16 |
-| NFR-09 | SEO | 🟡 100 URL tag render server-side, có canonical, sitemap, structured data. Hiện thực: 100 tag SSG theo quận / huyện Sài Gòn + Long An + JSON-LD (FR-12/17, SRS-5.1zzzzzzz433). Chưa: bộ TOP-100 keyword gốc (OPEN-06) — có file thì thay mảng `DS` của `lib/tags.ts`. | BR-08 |
+| NFR-09 | SEO | 🟡 100 URL tag render server-side, có canonical, sitemap, structured data. Hiện thực: 100 tag theo quận / huyện Sài Gòn + Long An, ISR 1 giờ dựng khi có người xem (`generateStaticParams` trả `[]`, `app/[tag]/page.tsx`) + JSON-LD (FR-12/17, SRS-5.1zzzzzzz433). Chưa: bộ TOP-100 keyword gốc (OPEN-06) — có file thì thay mảng `DS` của `lib/tags.ts`. | BR-08 |
 | NFR-10 | i18n | ✅ Toàn bộ giao diện và nội dung chat: tiếng Việt, xưng hô anh/chị/em. | chats w B.docx |
 | NFR-11 | Vận hành | 🟡 Mọi dữ liệu thống kê phải **kết nối được từ Excel** — không cần dashboard đẹp. Hiện thực: view + CSV ở `/admin`, đọc thẳng qua Table Editor. Chưa: xuất Excel phía server. | chats w B.docx §Thống kê |
 | NFR-12 | Khả chuyển | 🟡 Tầng messaging trừu tượng hoá để thêm Messenger/Telegram mà không sửa lõi. Hiện thực: bộ não là lõi Python `src/aioi/` tách khỏi kênh, bridge gọi một cửa `/chat-reply` (cổng 8000). Chưa: chưa có adapter kênh thứ ba. | RSK-02 |

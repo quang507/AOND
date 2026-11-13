@@ -36,21 +36,23 @@ Cập nhật **cùng commit** khi đổi FR / BR / UF / WF ở tầng trên (quy
 |---|---|---|
 | INS-01 | Chat là sản phẩm | FR-13, IA-P1, UI-P1, WF-01 |
 | INS-02 | Chu kỳ mua 3–4 năm | FR-60…FR-65, UF-08 |
-| INS-03 | Zalo xoá sau 7 ngày | FR-63, SRS-5.3 `zalo_keepalive`, AC-06 |
+| INS-03 | Zalo xoá sau 7 ngày | FR-63, SRS-5.3 (lõi `giu_ket_noi.py`, SRS-5.1zzzzzzz238; job `zalo_keepalive` đã gỡ), AC-06 |
 | INS-04 | Riêng tư là khác biệt | FR-04, FR-121, NFR-07, WF-07, AC-04 |
 | INS-05 | S không điền form | FR-91, UI-C08, WF-08, AC-07 |
 | INS-06 | Thiếu thông tin là tính năng | FR-40…FR-47, UF-05, SRS-3.6, AC-03 |
 | INS-07 | Ngôn ngữ nói ≠ bộ lọc | FR-02, FR-09, FR-22, FR-23, SRS-4.5, AC-12 |
-| INS-08 | Sâu một quận trước | BR-01, SRS-8 (thứ tự P1 trước P2) |
-| INS-09 | "Rao một lần là xong", không spam S | FR-103, §6.9 (06), SRS-5.3 `stale_listing_check` |
+| INS-08 | Sâu một quận trước | BR-01, SRS-8 (thứ tự P1 trước P2) [deprecated — `07-srs.md` không còn mục SRS-8] |
+| INS-09 | "Rao một lần là xong", không spam S | FR-103, §6.9 (06), SRS-5.3 (lõi `hoi_con_ban.py`, SRS-5.1zzzzzzz295; job `stale_listing_check` đã gỡ) |
 | INS-10 | Hàng dự án: dữ liệu hai tầng, tồn kho theo căn | FR-113…FR-117 (OPEN-15 chốt phương án b, 24/08) |
 | INS-11 | Trung gian toàn phần: lưu hết, khai khi khách hỏi; liên hệ mở lúc chốt lịch xem (chỉnh 02/09/2026, OPEN-36) | FR-104…FR-112, UF-10, UF-13, SRS-3.8 |
-| INS-12 | Sau sáp nhập 2025, địa giới cũ vẫn là ngôn ngữ thị trường | FR-118 (`ward_mapping`), Taxonomy §4.6 (04), FR-12 (trang tag) — quyết định chủ dự án 24/08/2026 |
-| INS-13 | Bộ trường tin rao "chuẩn sàn" là mẫu số chung (mogi/radanhadat) | FR-172, SRS-3.1, SRS-3.14; khoảng trống còn lại: `streets`/`ward_mapping` (FR-118), POI (FR-28, OPEN-13), snapshot giá (FR-99/120, OPEN-10) |
+| INS-12 | Sau sáp nhập 2025, địa giới cũ vẫn là ngôn ngữ thị trường | FR-118 (bảng `wards` + `phuong_cu`), Taxonomy §4.6 (04), FR-12 (trang tag) — quyết định chủ dự án 24/08/2026 |
+| INS-13 | Bộ trường tin rao "chuẩn sàn" là mẫu số chung (mogi/radanhadat) | FR-172, SRS-3.1, SRS-3.14; đã lấp: từ điển đường `duong` (FR-212), `wards` / `phuong_cu` (FR-118), tiện ích OSM `tien_ich` (FR-28); khoảng trống còn lại: snapshot giá (FR-99/120, OPEN-10) |
 
 ## 8.3 FR → UF → WF → SRS → AC
 
 > Bảng chỉ giữ MÃ (UF / WF / SRS / AC / TS) của từng ô. Ghi chú hiện thực và lịch sử đầy đủ ở `docs/08-traceability-luu-tru.md` (30/10/2026, chủ dự án: "ba file BA lớn dọn đi").
+
+> AC-01…13 từng nằm ở `07 §7`; `docs/07-srs.md` hiện không còn mục đó nên mã AC trong bảng chỉ là dấu vết [deprecated]. Ca `TS-SRS (test_*.py)` thuộc bộ pytest đã gỡ 13/11/2026 (SRS-5.1zzzzzzz469).
 
 | FR | User Flow | Wireframe | SRS | Acceptance |
 |---|---|---|---|---|
@@ -97,7 +99,7 @@ Cập nhật **cùng commit** khi đổi FR / BR / UF / WF ở tầng trên (quy
 | FR-114 | UF-09, UF-10 | WF-09 | SRS-3.10, SRS-5.1zzzzzq | AC-13, TS-V48-114 |
 | FR-115, FR-116 | UF-05 | — | SRS-3.10, SRS-5.1 | AC-13, TS-V48-116 |
 | FR-117 | — | — | SRS-3.10 | TS-WEB2-W10 |
-| FR-118 | — | — | SRS-3 | — |
+| FR-118 | — | — | SRS-3.8b | — |
 | FR-119 (`/tinh-lai-vay`, khôi phục 13/11/2026 theo code, SRS-5.1zzzzzzz464) | — | — | — | — |
 | FR-120 (`/thong-ke`, khôi phục 13/11/2026 theo code, SRS-5.1zzzzzzz464) | — | — | — | — |
 | FR-121 (`/yeu-thich`, khôi phục 13/11/2026 theo code, SRS-5.1zzzzzzz464) | — | — | — | — |
@@ -533,42 +535,42 @@ Cập nhật **cùng commit** khi đổi FR / BR / UF / WF ở tầng trên (quy
 | FR-99, FR-172 | — | — | SRS-5.1zzzzzzz431 | — |
 | FR-144, FR-185 | — | — | SRS-5.1zzzzzzz432 | — |
 | FR-12, FR-17 | — | — | SRS-5.1zzzzzzz433 | — |
-| FR-144, FR-185 | — | — | SRS-5.1zzzzzzz435 | TS-SRS (`test_loai_phap_ly_435.py`) |
-| FR-144, FR-185 | — | — | SRS-5.1zzzzzzz438 | TS-SRS (`test_phap_ly_ghi_doc_438.py`) |
-| FR-185, FR-165 | — | — | SRS-5.1zzzzzzz440 | TS-SRS (`test_xung_ho_goi_y_440.py`) |
-| FR-185, FR-144 | — | — | SRS-5.1zzzzzzz441 | TS-SRS (`test_lqc_441.py`) |
-| FR-195 | UF-04 | — | SRS-5.1zzzzzzz445 | TS-SRS (`test_chua_chac_445.py`) |
-| FR-162 | — | — | SRS-5.1zzzzzzz446 | TS-SRS (`test_phuong_du_an_446.py`) |
+| FR-144, FR-185 | — | — | SRS-5.1zzzzzzz435 | TS-SRS (`test_loai_phap_ly_435.py` (đã gỡ)) |
+| FR-144, FR-185 | — | — | SRS-5.1zzzzzzz438 | TS-SRS (`test_phap_ly_ghi_doc_438.py` (đã gỡ)) |
+| FR-185, FR-165 | — | — | SRS-5.1zzzzzzz440 | TS-SRS (`test_xung_ho_goi_y_440.py` (đã gỡ)) |
+| FR-185, FR-144 | — | — | SRS-5.1zzzzzzz441 | TS-SRS (`test_lqc_441.py` (đã gỡ)) |
+| FR-195 | UF-04 | — | SRS-5.1zzzzzzz445 | TS-SRS (`test_chua_chac_445.py` (đã gỡ)) |
+| FR-162 | — | — | SRS-5.1zzzzzzz446 | TS-SRS (`test_phuong_du_an_446.py` (đã gỡ)) |
 | FR-203 | — | — | SRS-5.1zzzzzzz449 | TS-PROD (nhắn thật vào Zalo bot) |
 | FR-203 | — | — | SRS-5.1zzzzzzz453 | TS-PROD (log "Zalo trả pong" + nhắn thật vào Zalo bot) |
 | FR-203 | — | — | SRS-5.1zzzzzzz459 | TS-PROD (log "Dò sống: máy chủ Zalo đáp" + nhắn thật vào Zalo bot) |
-| FR-134 | — | — | SRS-5.1zzzzzzz460 | TS-SRS (`test_doc_link_460.py`) + nhắn link thật |
-| FR-157 | — | — | SRS-5.1zzzzzzz461 | TS-SRS (`test_vai_sticker_461_463.py`) + "em ơi" sau 6 tiếng ở số ký gửi |
-| FR-142 | — | — | SRS-5.1zzzzzzz462 | TS-SRS (`test_vai_sticker_461_463.py`) + gửi sticker OK lúc chờ duyệt |
+| FR-134 | — | — | SRS-5.1zzzzzzz460 | TS-SRS (`test_doc_link_460.py` (đã gỡ)) + nhắn link thật |
+| FR-157 | — | — | SRS-5.1zzzzzzz461 | TS-SRS (`test_vai_sticker_461_463.py` (đã gỡ)) + "em ơi" sau 6 tiếng ở số ký gửi |
+| FR-142 | — | — | SRS-5.1zzzzzzz462 | TS-SRS (`test_vai_sticker_461_463.py` (đã gỡ)) + gửi sticker OK lúc chờ duyệt |
 | FR-134 | — | — | SRS-5.1zzzzzzz463 | node --check + gửi video / danh thiếp thật |
 | FR-203 | — | — | SRS-5.1zzzzzzz467 | TS-PROD (log 30 phút có tin không còn dòng "cắt socket" + nhắn thật vào Zalo bot) |
-| FR-185 | — | — | SRS-5.1zzzzzzz455 | TS-SRS (`test_bao_cao_gia_455.py`) + mở `/bao-cao-gia/<mã>` |
-| FR-185 | — | — | SRS-5.1zzzzzzz456 | TS-SRS (`test_gia_chot_456.py`) |
+| FR-185 | — | — | SRS-5.1zzzzzzz455 | TS-SRS (`test_bao_cao_gia_455.py` (đã gỡ)) + mở `/bao-cao-gia/<mã>` |
+| FR-185 | — | — | SRS-5.1zzzzzzz456 | TS-SRS (`test_gia_chot_456.py` (đã gỡ)) |
 | FR-155 | — | — | SRS-5.1zzzzzzz466 | TS-HANG-04 + mở trang tin / thẻ tin có `can_kiem_chung` |
 | FR-155 | — | — | SRS-5.1zzzzzzz473 | TS-HANG-05 + bắn thử người bán `thu-` rao căn thứ 6 trên production |
-| FR-144 | — | — | SRS-5.1zzzzzzz450 | TS-SRS (`test_dap_chua_chon_450.py`) |
-| FR-185, FR-165 | — | — | SRS-5.1zzzzzzz454 | TS-SRS (`test_xoa_logo_454.py`) + TS-PROD (log "xoa_logo: … đã đóng dấu") |
+| FR-144 | — | — | SRS-5.1zzzzzzz450 | TS-SRS (`test_dap_chua_chon_450.py` (đã gỡ)) |
+| FR-185, FR-165 | — | — | SRS-5.1zzzzzzz454 | TS-SRS (`test_xoa_logo_454.py` (đã gỡ)) + TS-PROD (log "xoa_logo: … đã đóng dấu") |
 
 ## 8.4 Rủi ro → biện pháp
 
 | RSK | Biện pháp trong đặc tả |
 |---|---|
-| RSK-01 | FR-63, SRS-5.3 `zalo_keepalive`, UF-08, AC-06 |
+| RSK-01 | FR-63, SRS-5.3 (lõi `giu_ket_noi.py`, SRS-5.1zzzzzzz238), UF-08, AC-06 |
 | RSK-02 | NFR-12, SRS-2.1 (tầng messaging tách rời) |
 | RSK-03 | FR-40, UI-C05, SRS-5.1 bất biến I3, §6.8 quy tắc 4 |
-| RSK-04 | Thứ tự phát hành SRS-8 (P1 trước P2) |
+| RSK-04 | Thứ tự phát hành SRS-8 (P1 trước P2) [deprecated — `07-srs.md` không còn mục SRS-8] |
 | RSK-05 | UF-06 nhánh lỗi, SRS-5.2 xếp hạng |
-| RSK-06 | `last_verified_at`, SRS-5.3 `stale_listing_check`, WF-03 |
+| RSK-06 | `listings.xac_nhan_con_ban_at`, SRS-5.3 (lõi `hoi_con_ban.py` hỏi lại mỗi 20 ngày, SRS-5.1zzzzzzz295), WF-03 |
 | RSK-07 | NFR-06, SRS-3.9, §6.7 |
 
 ## 8.6 NFR → hiện thực → cách nghiệm thu
 
-Chỉ liệt NFR **đã có hiện thực trong code**; NFR còn là mục tiêu nằm ở `07 §6`.
+Chỉ liệt NFR **đã có hiện thực trong code**; NFR còn là mục tiêu nằm ở `02 §2.5`.
 
 | NFR | Hiện thực ở | Nghiệm thu |
 |---|---|---|
@@ -576,7 +578,7 @@ Chỉ liệt NFR **đã có hiện thực trong code**; NFR còn là mục tiêu
 | NFR-04 (tin nhắn không mất khi một bên offline) — 🟡 | Bridge thử lại khi lõi nghẽn (kết nối bị từ chối thử tới ~1 phút, `msg_id` chống trùng); tin chủ động qua hàng `escalation-feed`, hụt thì hẹn thử lại (SRS-5.1zzzzzzz276). `inbound_events` / `inbound_ledger` / `inbound-sweep` (FR-166) đã gỡ 18/10/2026 (SRS-5.1zzzzzzz46) | — (TS-JOB, TS-IDEM2 đã ngừng 28/10/2026) |
 | NFR-06 (giấy tờ không lộ) | bucket `listing-private` + CHECK giấy tờ phải bucket riêng + RLS lọc anon (FR-165/167); admin xem qua `createSignedUrl` 15' (`20260904g`) | TS-KHO-20…25, TS-WEB2 |
 | NFR-16 (free-tier trước) | Supabase Free + Vercel Hobby; quyết định giữ nguyên 27/08 (OPEN-25) | **Không còn sao lưu** (chủ dự án bỏ 11/09/2026, OPEN-25). Ràng buộc cũ "chạy `sao-luu.mjs` định kỳ" đã gỡ cùng `phuc-hoi.mjs`, `soat-phuc-hoi.mjs`, `xuat-onedrive.mjs`, TS-SAOLUU, TS-PHUCHOI, CI job `saoluu`/`phuchoi` và `docs/12`. Supabase gói Free không tự sao lưu — mất dữ liệu là không lấy lại được. Còn lại `bot/supabase/schema.sql` (chỉ DDL, sinh từ `xuat_schema()`) để dựng lại một DB rỗng |
-| NFR-17 (trang tin phải trong cache) | `generateStaticParams()` ở `app/nha-dat/[code]/page.tsx`; `unstable_cache` bọc truy vấn trong `components/ListingBrowse.tsx` và `lib/photos.ts`; SRS-3.13 | TS-CACHE-01…05 |
+| NFR-17 (trang tin phải trong cache) | `generateStaticParams()` ở `app/nha-dat/[code]/page.tsx`; `unstable_cache` bọc truy vấn ở `lib/duyet-tin.ts` (`layTin`, `components/ListingBrowse.tsx` gọi) và `lib/photos.ts`; SRS-3.13 | TS-CACHE-01…05 |
 | NFR-18 (xanh phải là xanh thật) | `bot_health_tick()` quét `net._http_response` → `bot_errors`; `log_loi()` + `ghiLoi()` cho lỗi trả-200; SRS-3.12 | TS-HEALTH-01…06, TS-LOG-01…06 |
 | NFR-09 (SEO) | `app/sitemap.ts`, `app/robots.ts`, `metadataBase`/canonical/OpenGraph ở `app/layout.tsx` + trang tin + `app/[tag]`, JSON-LD `RealEstateListing` ở `app/nha-dat/[code]/page.tsx`, `lib/tags.ts` (100 tag theo quận / huyện Sài Gòn + Long An, SRS-5.1zzzzzzz433; TOP-100 keyword gốc OPEN-06 vẫn chưa có) | TS-SEO-01…06 |
 
@@ -586,8 +588,8 @@ Chỉ liệt NFR **đã có hiện thực trong code**; NFR còn là mục tiêu
 
 | FR | Thiếu gì | Theo dõi ở |
 |---|---|---|
-| FR-99 (định giá so sánh) | Thuật toán, nguồn dữ liệu giá thị trường | `OPEN-10` (đã đóng 07/09/2026) |
+| FR-99 (định giá so sánh) | Nguồn dữ liệu giá thị trường ngoài — nay so giá RAO trong kho (rpc `bao_cao_gia_quanh`, `/bao-cao-gia/{mã}`, SRS-5.1zzzzzzz455) và bảng tham khảo cứng `dinh_gia._BANG_GIA_BENCHMARK` (SRS-5.1zzzzzzz390) | `OPEN-10` (đã đóng 07/09/2026) |
 | FR-102 (chấm điểm NMG) [deprecated → FR-137] | Ngưỡng cảnh báo khi NMG dưới chuẩn (OPEN-12). Phần trùng lặp đã xử lý: `rate-ctv` + `ratings` xoá 27/08/2026 | `OPEN-12` |
-| FR-28 (tiện ích quanh BĐS) | Nguồn dữ liệu POI (Google Places? tự nhập?) | `OPEN-13` (đã đóng 07/09/2026) |
+| FR-28 (tiện ích quanh BĐS) | Đã có nguồn: OSM qua `geocode-listings` → bảng `tien_ich` + `listings.tien_ich_gan`; còn thiếu với căn chưa có toạ độ | `OPEN-13` (đã đóng 07/09/2026) |
 | FR-16 (fingerprint) | Thư viện, chính sách lưu trữ, cơ chế từ chối | `OPEN-14` (đã đóng 07/09/2026) |
-| FR-118 (`ward_mapping`) | Nguồn dữ liệu máy-đọc-được danh mục phường cũ↔mới (NQ 202/2025/QH15), schema bảng trong SRS | — |
+| FR-118 (`ward_mapping`) | Đã có: bảng `wards` (`20260915a`) + `phuong_cu` (`20260930a`), schema ở SRS-3.8b; không dựng bảng tên `ward_mapping` | — |

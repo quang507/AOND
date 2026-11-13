@@ -228,7 +228,7 @@ Tag rỗng → giữ bố cục, thay lưới bằng hộp mời kết nối c�
 ---
 
 ## WF-06 — Chat Zalo: hỏi bổ sung thông tin → UF-05
-✅ đã dựng: lõi ghi `info_requests` (`src/aioi/mua.py`), câu giữ nhịp "Trong khi chờ…" (FR-45); chủ nhà / admin trả lời → lõi báo lại khách (kind `followup`, `src/aioi/gui_nhac.py`, SRS-5.1zzzzzzz216).
+✅ đã dựng: lõi ghi `info_requests` (`src/aioi/mua.py` `ghi_hoi_chu_nha`); bot báo khách MỘT lần là đã chuyển câu hỏi cho chủ nhà, không hứa giờ (`src/aioi/engine.py`, việc lượt phía mua) — câu giữ nhịp "Trong khi chờ…" (FR-45) trong khung là ý định, lõi không có câu cố định này; chủ nhà / admin trả lời → lõi báo lại khách (kind `followup`, `src/aioi/gui_nhac.py`, SRS-5.1zzzzzzz216) bằng câu mẫu `bao_tra_loi_chu_nha` (`src/aioi/cau_mau.py`: "Chủ nhà căn {ma} vừa trả lời câu {goi} hỏi “…”: … {Goi} còn muốn hỏi thêm gì về căn này không ạ?"), thêm ảnh thì `bao_them_anh` kèm link trang tin (SRS-5.1zzzzzzz254). Dòng "⏳ Đang hỏi chủ nhà" và bong bóng trả lời trong khung chỉ minh hoạ.
 
 ```
 │                    ┌──────────────────┐  │
@@ -253,7 +253,7 @@ Tag rỗng → giữ bố cục, thay lưới bằng hộp mời kết nối c�
 ---
 
 ## WF-07 — Chat Zalo: đặt lịch xem nhà → UF-06
-🟡 một phần: lõi Python chốt lịch + xin SĐT MỘT lần khi khách chốt lịch (`src/aioi/mua.py`, SRS-5.1zzzzzzz148), lịch giao thẳng admin (SRS-5.1zzzzzzz165), lịch đã chốt báo khách qua `src/aioi/gui_nhac.py` (SRS-5.1zzzzzzz216). Nhắc trước giờ kèm link bản đồ (FR-54/55) từng ở `nudge`, gỡ 18/10/2026, chưa dựng lại. Bot không mở lượt bằng "Em ghi nhận…" lặp lại (câu ghi nhận tối đa một lần mỗi cuộc chat, SRS-5.1zzzzzzz229).
+🟡 một phần: lõi Python chốt lịch + xin SĐT MỘT lần khi khách chốt lịch (`src/aioi/mua.py`, SRS-5.1zzzzzzz148), lịch giao thẳng admin (SRS-5.1zzzzzzz165), lịch đã chốt báo khách qua `src/aioi/gui_nhac.py` (SRS-5.1zzzzzzz216; câu mẫu `bao_lich_da_chot`). Khách nói đủ ngày giờ thì bot hỏi xác nhận MỘT lần bằng câu mẫu `xac_nhan_lich` ("{Goi} xác nhận giúp {toi}, {gio} {goi} đến xem căn {can} đúng không ạ?", SRS-5.1zzzzzzz158); ghi lịch xong bot báo "chờ xác nhận với chủ nhà rồi báo lại" và xin số bằng một câu ngắn "để người phụ trách gọi xác nhận lịch", khách không muốn thì thôi (`src/aioi/engine.py`). Zalo cá nhân không có nút bấm — hai nút [Gửi số] [Chỉ liên hệ Zalo] trong khung là ý định, khách trả lời bằng chữ. Nhắc trước giờ kèm link bản đồ và lời hẹn "gọi trước 30 phút" (FR-54/55) từng ở `nudge`, gỡ 18/10/2026, chưa dựng lại. Bot không mở lượt bằng "Em ghi nhận…" lặp lại (câu ghi nhận tối đa một lần mỗi cuộc chat, SRS-5.1zzzzzzz229).
 
 ```
 │ ┌────────────────────────────────────┐   │
@@ -392,7 +392,7 @@ Không hiển thị tên/Zalo ID của B trên trang.
 ---
 
 ## WF-12 — Admin: câu hỏi chờ S trả lời `/admin/cau-hoi` → FR-76, FR-80
-✅ đã dựng: thẻ "Câu khách hỏi" trên `/admin` (`20260904c`), quá SLA tô đỏ; câu không có chủ nhà giao thẳng admin (SRS-5.1zzzzzzz170).
+✅ đã dựng: thẻ "Câu khách hỏi" trên `/admin` (`20260904c`; route riêng `/admin/cau-hoi` không có trong `app/`) — mỗi dòng: mã tin · trạng thái · câu hỏi · câu trả lời (↳), 10 câu mới nhất, không phân trang, không cột B ID; quá SLA hiện nhãn đếm "N quá hạn" trên đầu thẻ (`app/admin/page.tsx`); câu không có chủ nhà giao thẳng admin (SRS-5.1zzzzzzz170). Khung dưới là ý định ban đầu.
 
 ```
 ┌──────────────────────────────────────────┐
@@ -409,12 +409,12 @@ Không hiển thị tên/Zalo ID của B trên trang.
 │                        ‹ 1 2 3 4 5 ›     │
 └──────────────────────────────────────────┘
 ```
-`B ID` clickable → lịch sử hội thoại (FR-75).
+`B ID` clickable → lịch sử hội thoại (FR-75) — chưa dựng trên thẻ này; đọc hội thoại ở `/admin/tin-nhan`.
 
 ---
 
 ## WF-13 — Admin: tìm kiếm B `/admin/hoi-thoai` → FR-74
-[deprecated 28/10/2026 — route `/admin/hoi-thoai` không có trong `app/`] Tìm và đọc hội thoại nay ở `/admin/tin-nhan` (màn chat 3 cột: lọc · hội thoại · tin nhắn); thẻ "Thống kê hội thoại · 30 ngày" trên `/admin`. Khung dưới giữ làm lịch sử.
+[deprecated 28/10/2026 — route `/admin/hoi-thoai` không có trong `app/`] Tìm và đọc hội thoại nay ở `/admin/tin-nhan` (từ 19/10/2026 hai cột: danh sách hội thoại có bộ lọc ở đầu · tin nhắn, SRS-5.1zzzzzzz72; trước đó 3 cột); thẻ "Thống kê hội thoại · 30 ngày" trên `/admin`. Khung dưới giữ làm lịch sử.
 
 ```
 ┌──────────────────────────────────────────┐
@@ -463,4 +463,4 @@ Không hiển thị tên/Zalo ID của B trên trang.
 | WF-04 | ISR | hộp Zalo cỡ lớn | — | không bao giờ 404 |
 | WF-05..07 | "đang gõ…" | — | timeout → xin lỗi + escalate | quá 30 phút → cuộc trò chuyện mới (FR-72) |
 | WF-09 | đang phân tích câu rao | bóc tách thất bại → form thủ công | — | trường thiếu = nhắc, không chặn |
-| WF-12 | — | "chưa có câu hỏi nào" | — | quá SLA tô đỏ |
+| WF-12 | — | "Chưa có câu hỏi nào." | — | quá SLA: nhãn "N quá hạn" |

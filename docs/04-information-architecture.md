@@ -150,6 +150,8 @@ Bảng thật (`listings`, `listing_media`, `property_events`,
 | Xếp hạng | `hot_score` = số sự kiện 2 tháng gần nhất | FR-73 |
 | Dự án | `project_id` (null = hàng lẻ), `unit_code`, `floor`, `direction`, `unit_status` ∈ {còn bán, giữ chỗ, đã cọc, đã bán} | FR-113, INS-10 |
 
+> **Ghi chú (soát 13/11/2026 theo `bot/supabase/schema.sql`):** các trường `slug`, `alley`, `city`, `landmarks[]`, `price_unit`, `raw_pitch`, `variants[]`, `hot_score`, `unit_status` là mô hình khái niệm 2024, chưa có cột trong `listings`. Bảng `property_events` ghi cột `event_type` với giá trị thật theo CHECK: `view` · `asked` · `interest` · `photos` · `viewing` · `deal` · `match_sent` · `status` · `doi_gia` — năm tên `CREATED`… bên dưới là tên khái niệm của tài liệu gốc.
+
 **PROJECT** (FR-113): `name`, `slug`, `developer`, vị trí, `legal_status`, `amenities`,
 `floor_plans`, `handover_date` — dùng chung cho mọi căn; câu tầng dự án trả lời từ
 đây (FR-115). Không dùng chung dữ liệu giữa hai dự án.

@@ -16,23 +16,23 @@ quyết định câu vào → trường ra, bắt buộc chạy lại trước k
 | Suite | Phạm vi | Trọng tâm | Ca chạy được (§10.7) |
 |---|---|---|---|
 | TS-WEB | FR-01…17 | search parse đúng taxonomy §4.6 · trang tag không 404 · deep-link Zalo mang ngữ cảnh (AC-01) | TS-WEB2, TS-SEO, TS-CACHE |
-| TS-BOT | FR-20…32 | 4 bất biến I1–I4 (SRS-5.1) chặn release: ≤3 listing/tin · kết thúc bằng câu hỏi · không khẳng định điều chưa xác minh · không hỏi SĐT sai chỗ | TS-PY-01, TS-PROD-01…03 (28/10/2026; TS-CHATREPLY, TS-E2E, TS-V48, TS-VAI deprecated) |
-| TS-ASK | FR-40…47, FR-110 | hỏi kho trước, hỏi S sau · idempotency · timeout 24h/48h · AC-03 | TS-PY-01, TS-HOICHU-02 (TS-CTV, TS-IDEM, TS-IDEM2 deprecated 28/10/2026) |
-| TS-VIEW | FR-50…57 | từ chối cho SĐT vẫn đặt được lịch (AC-04) · email [VIEWING] | TS-MATCH-06, TS-GIUCHAN-01 |
-| TS-RET | FR-60…65 | mốc 5 ngày / ≥6 ngày giữ kết nối · nội dung xoay vòng không lặp (AC-06) | TS-GIUCHAN, TS-V48 |
+| TS-BOT | FR-20…32 | 4 bất biến I1–I4 (SRS-5.1) chặn release: ≤3 listing/tin · kết thúc bằng câu hỏi · không khẳng định điều chưa xác minh · không hỏi SĐT sai chỗ | TS-PROD-01…03, TS-CHAM-01 (28/10/2026; TS-CHATREPLY, TS-E2E, TS-V48, TS-VAI deprecated; TS-PY-01 đã ngừng 13/11/2026, xem §10.7.0) |
+| TS-ASK | FR-40…47, FR-110 | hỏi kho trước, hỏi S sau · idempotency · timeout 24h/48h · AC-03 | TS-HOICHU-02 (TS-CTV, TS-IDEM, TS-IDEM2 deprecated 28/10/2026; TS-PY-01 đã ngừng 13/11/2026, xem §10.7.0) |
+| TS-VIEW | FR-50…57 | từ chối cho SĐT vẫn đặt được lịch (AC-04) · email [VIEWING] | TS-MATCH-06, TS-GIUCHAN-01 (cả hai đã ngừng 28/10/2026, xem §10.7.0; còn bắn thử TS-PROD-01) |
+| TS-RET | FR-60…65 | mốc 5 ngày / ≥6 ngày giữ kết nối · nội dung xoay vòng không lặp (AC-06) | TS-GIUCHAN, TS-V48 (cả hai đã ngừng 28/10/2026, xem §10.7.0) |
 | TS-ADM | FR-70…81 | 20 mục/trang · 4 loại email đúng subject/body (AC-09/10) | TS-ADM2, TS-DANGTIN |
-| TS-SEL | FR-90…103, FR-109 | bóc ≥4 trường (AC-07) · rao từng bước trong Zalo · không spam S | TS-PY-01, TS-PROD-01, TS-THONGSO (DB), TS-SQL-01 (TS-KD, TS-NEO, TS-OUNG deprecated 28/10/2026) |
-| TS-BROKER | FR-104…112 | ẩn danh hai chiều (lọc SĐT/Zalo/địa chỉ trong relay) · vòng đời listing · sold → báo interests | TS-SEC-10, TS-V48, TS-GIUCHAN |
-| TS-PROJECT | FR-113…117 | AC-13: căn theo unit_status · câu tầng dự án không sinh info_request · unique (project_id, unit_code) | TS-V48 |
+| TS-SEL | FR-90…103, FR-109 | bóc ≥4 trường (AC-07) · rao từng bước trong Zalo · không spam S | TS-PROD-01, TS-THONGSO (DB), TS-SQL-01 (TS-KD, TS-NEO, TS-OUNG deprecated 28/10/2026; TS-PY-01 đã ngừng 13/11/2026, xem §10.7.0) |
+| TS-BROKER | FR-104…112 | ẩn danh hai chiều (lọc SĐT/Zalo/địa chỉ trong relay) · vòng đời listing · sold → báo interests | TS-SEC-10 (TS-V48, TS-GIUCHAN đã ngừng 28/10/2026, xem §10.7.0) |
+| TS-PROJECT | FR-113…117 | AC-13: căn theo unit_status · câu tầng dự án không sinh info_request · unique (project_id, unit_code) | TS-V48 (đã ngừng 28/10/2026, xem §10.7.0) |
 
 ## 10.2 Kiểm thử kỹ thuật
 
 | Mục | Kiểm gì | Tham chiếu | Ca chạy được |
 |---|---|---|---|
-| API contract | schema SRS-4.x; request_id trùng → trả kết quả cũ, không nhân đôi; mã 404/409 | FR-41/43 | TS-WEB2 (S), TS-IDEM |
+| API contract | schema SRS-4.x; request_id trùng → trả kết quả cũ, không nhân đôi; mã 404/409 | FR-41/43 | TS-WEB2 (S); TS-IDEM (đã ngừng 28/10/2026, xem §10.7.0) |
 | Database | RLS: anon chỉ đọc tin lên kệ + media công khai của tin đó; unique/enum/CHECK; trigger toàn vẹn | SRS-3.9, FR-113/116/163/167 | TS-SEC, TS-SEC2, TS-TOANVEN |
 | Webhook Zalo | [deprecated 28/10/2026] `zalo-webhook` gỡ 18/10/2026; kênh là bridge zca-js gọi lõi `127.0.0.1:8000` (OPEN-33, OPEN-34 đóng) | SRS-4.4 | — |
-| Hàng đợi | worker sập / hết lượt thử → 0 tin mất (dựng cảnh sập bằng tay, không giết được instance Edge Function) | NFR-04, FR-166 | TS-JOB |
+| Hàng đợi | worker sập / hết lượt thử → 0 tin mất (dựng cảnh sập bằng tay, không giết được instance Edge Function) | NFR-04, FR-166 | TS-JOB (đã ngừng 28/10/2026, xem §10.7.0) |
 | Kho file | signed URL ≤15 phút; bucket riêng không đọc thẳng; adapter đổi backend không đụng bot | NFR-06, FR-111/165 | TS-KHO, TS-WEB2 (P) |
 | Migration | chạy được trên project trống + có dữ liệu; không phá dữ liệu cũ | — | TS-SEC sau mỗi migration |
 | Còi báo lỗi | lỗi HTTP lẫn lỗi trả 200 đều vào sổ | FR-152, FR-168 | TS-HEALTH, TS-LOG, TS-CHUONG |
@@ -42,11 +42,11 @@ quyết định câu vào → trường ra, bắt buộc chạy lại trước k
 | Bài | Kiểm gì | Công cụ |
 |---|---|---|
 | Đối chiếu thiết kế | từng màn so với `06` (canvas/Figma và `design/tokens.json` đã xoá 08/09/2026); token thật là `app/globals.css` — sai token là lỗi, không phải "gần đúng" | soi tay |
-| Responsive | 375/768/1440px; bảng rộng cuộn trong container, body không cuộn ngang; sticky CTA Zalo mobile | Playwright |
+| Responsive | 375/768/1440px; bảng rộng cuộn trong container, body không cuộn ngang; sticky CTA Zalo mobile | Playwright (chưa dựng) |
 | Tone giọng chat | 7 quy tắc + mục Cấm (`docs/06 §6.8`) trên 50 hội thoại: đếm câu hỏi/lượt, tin kết thúc "?", từ cấm | script đếm trên log |
-| Accessibility | tương phản ≥4.5:1, vùng chạm ≥44px, focus ring, alt ảnh | axe-core + duyệt tay (persona P3) |
-| Trạng thái | ma trận loading/rỗng/lỗi cuối `docs/05`, mỗi ô một test; "0 kết quả" nói rõ đã nới gì | Playwright |
-| Hiệu năng cảm nhận | Lighthouse mobile ≥ 90, LCP < 2,5s/4G (NFR-02) | Lighthouse CI |
+| Accessibility | tương phản ≥4.5:1, vùng chạm ≥44px, focus ring, alt ảnh | axe-core (chưa dựng) + duyệt tay (persona P3) |
+| Trạng thái | ma trận loading/rỗng/lỗi cuối `docs/05`, mỗi ô một test; "0 kết quả" nói rõ đã nới gì | Playwright (chưa dựng) |
+| Hiệu năng cảm nhận | Lighthouse mobile ≥ 90, LCP < 2,5s/4G (NFR-02) | Lighthouse CI (chưa dựng) |
 
 ## 10.4 Kiểm thử phi chức năng
 
@@ -54,7 +54,7 @@ Bảng NFR-01…18 với cách đo nằm ở `docs/07 §6` (nguồn sự thật)
 
 | Bài | Nội dung | Công cụ |
 |---|---|---|
-| Tải | 50 tin đồng thời p95 < 3s (NFR-01); seed 5.000 listing + 300 hội thoại không suy giảm (NFR-05) | k6/script |
+| Tải | 50 tin đồng thời p95 < 3s (NFR-01); seed 5.000 listing + 300 hội thoại không suy giảm (NFR-05) | k6/script (chưa dựng) |
 | Bảo mật | pen-test 3 hướng: prompt-injection dụ bot lộ SĐT (FR-104); đoán URL `/ds/token` + signed URL; RLS bypass qua PostgREST | tay + TS-SEC2 |
 | Riêng tư | 100 hội thoại: 0 lần hỏi SĐT ngoài viewing (NFR-07); dữ liệu B không rời hệ thống | rà log |
 | SEO | 100 URL tag index, 0 lỗi structured data (NFR-09) | Search Console |
@@ -62,7 +62,7 @@ Bảng NFR-01…18 với cách đo nằm ở `docs/07 §6` (nguồn sự thật)
 
 ## 10.5 Môi trường & công cụ (free-tier)
 
-- Unit: Vitest · E2E web: Playwright · A11y: axe-core · Perf: Lighthouse CI · bot: bộ chấm kịch bản TS-CHAM-01 + script bắn thử production TS-PROD (§10.7.0); bộ pytest `tests/` cho lõi Python gỡ 13/11/2026 (SRS-5.1zzzzzzz469). Bộ `bot/tests/e2e` cũ gỡ 18/10/2026.
+- Unit: Vitest · E2E web: Playwright · A11y: axe-core · Perf: Lighthouse CI (bốn công cụ này chưa dựng trong repo) · bot: bộ chấm kịch bản TS-CHAM-01 + script bắn thử production TS-PROD (§10.7.0); bộ pytest `tests/` cho lõi Python gỡ 13/11/2026 (SRS-5.1zzzzzzz469). Bộ `bot/tests/e2e` cũ gỡ 18/10/2026.
 - CI: GitHub Actions free, `.github/workflows/kiem.yml` (soát 13/11/2026) — 10 job, từ 11/11/2026 chỉ chạy tay (`workflow_dispatch`), không tự chạy khi push / PR, KHÔNG chặn (commit thẳng `main`, không PR — CLAUDE.md §7, SRS-5.1zzzzzzz464): `web` (tsc + `next build`), `bot` (`test:bot` + `test:sql` trên Postgres tạm), `baomat` (TS-SEC-AUTO, DB thật), `truyvet`, `rohang` (TS-ROHANG), `migration` (TS-MIG), `soatdb` (TS-DB), `kieubot` (TS-KIEU), `doichieutien` (TS-LUAT-01), `doichieusdt` (luật SĐT Python ↔ SQL ↔ TS, SRS-5.1zzzzzzz317). Vercel không dựng preview cho nhánh `claude/**` (SRS-247) và bỏ qua bản dựng `main` khi lần đẩy không đổi file web (SRS-248). **Chưa vào CI:** TS-SEC bài phá huỷ, TS-SEC3 (cần quyền SQL), TS-LIVE (cần bridge), ô bắn thử TS-PROD (tiền thật, chạy tay), Lighthouse/axe/k6 — xem `docs/11 §11.4`.
 - DB: `nhadat-cc` là môi trường chính, **không** chạy test phá hoại; ca ghi bọc `do … raise exception` để cuộn lại. Zalo: bridge zca-js trên tài khoản Zalo clone, ID thử theo `la_id_thu` (OA không dùng — OPEN-09).
 - Bí mật chỉ trong biến môi trường / Vault; khoá đã dán vào chat phải rotate.
@@ -72,7 +72,7 @@ Bảng NFR-01…18 với cách đo nằm ở `docs/07 §6` (nguồn sự thật)
 | Phase | Suite bắt buộc xanh để thoát phase |
 |---|---|
 | P0 Nền | TS-SEL, Migration, Database, Bí mật |
-| P1 Nguồn hàng | TS-WEB, UI/UX, SEO, Lighthouse |
+| P1 Nguồn hàng | TS-WEB, UI/UX, SEO, Lighthouse (chưa dựng) |
 | P2 Chat | TS-BOT (I1–I4 chặn), TS-ASK, TS-PROJECT, Webhook, Tone giọng |
 | P3 Giao dịch | TS-VIEW, TS-ADM, TS-BROKER, pen-test ẩn danh |
 | P4 Giữ chân | TS-RET, Tải, Riêng tư, Chi phí |
@@ -146,6 +146,8 @@ TS-RENT, TS-CHATREPLY, TS-V48, TS-DIABAN, TS-MATCH, TS-GIUCHAN, TS-CTV, TS-MASTE
 còn sống nêu ở đầu khối, TS-SAOLUU (11/09). Lý do ghi ngay dưới tiêu đề từng mục.
 
 ### TS-SEC3 — ma trận quyền theo VAI DB (5 vai × 41 khẳng định)
+> **13/11/2026 (soát theo `bot/tests/vai-tro.sql`):** file nay kiểm 7 bảng kín — `inbound_ledger` / `inbound_events` gỡ cùng bot TypeScript (`20261018i`), `giu_luot_gui` gỡ (`20261018j`); tổng 34 khẳng định, vẫn 8 đối chứng dương. Con số 41 và cột kết quả là lần chạy 06/09.
+
 `ts-sec-anon.mjs` chỉ bắn được vai `anon` vì nó đi qua PostgREST bằng khoá công
 khai. Bốn vai còn lại — `authenticated` người lạ, người dùng có hồ sơ, admin,
 `service_role` — là nửa quan trọng hơn: RLS của repo này phân quyền chủ yếu bằng
@@ -155,21 +157,21 @@ khai. Bốn vai còn lại — `authenticated` người lạ, người dùng có
 thì "0 dòng" có thể chỉ là "bảng rỗng".
 | ID | Bài | Kỳ vọng | Kết quả mới nhất |
 |---|---|---|---|
-| TS-SEC3-01 | `anon` đọc 9 bảng kín (`buyers`, `sellers`, `messages`, `conversations`, `inbound_ledger`, `inbound_events`, `media_cleanup_queue`, `admins`, `chat_quota`) | 0 dòng hoặc thiếu grant | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
-| TS-SEC3-02 | `anon` đọc tin CHƯA đăng; ghi `listings`; gọi `bump_user_quota` / `giu_luot_gui` / `xuat_schema` | chặn cả 5 | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
-| TS-SEC3-03 | người lạ ĐÃ ĐĂNG NHẬP đọc 9 bảng kín | 0 dòng hoặc thiếu grant | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
+| TS-SEC3-01 | `anon` đọc 7 bảng kín (`buyers`, `sellers`, `messages`, `conversations`, `media_cleanup_queue`, `admins`, `chat_quota`) | 0 dòng hoặc thiếu grant | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
+| TS-SEC3-02 | `anon` đọc tin CHƯA đăng; ghi `listings`; gọi `bump_user_quota` / `xuat_schema` | chặn cả 4 | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
+| TS-SEC3-03 | người lạ ĐÃ ĐĂNG NHẬP đọc 7 bảng kín | 0 dòng hoặc thiếu grant | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
 | TS-SEC3-04 | người lạ đọc 4 view cấp cho `authenticated` (`khach_can_nguoi_that`, `hoi_thoai_phien`, `bds_hot`, `nmg_hoat_dong`; `ctv_ranks` gỡ cùng CTV, SRS-5.1zzzzzzz238) | 0 dòng — chủ sở hữu view là `postgres` (BYPASSRLS) nên hàng rào DUY NHẤT là mệnh đề WHERE bên trong view, phải kiểm từng cái chứ không suy ra từ RLS | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
 | TS-SEC3-05 | người lạ đọc tin chưa đăng; gọi `admin_dang_tin` / `tao_danh_sach` | chặn cả 3 | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
 | TS-SEC3-06 | **[dc]** admin đọc `buyers`, `messages`, view `khach_can_nguoi_that`, tin chưa đăng | THẤY được — chứng minh mọi số 0 ở trên là "RLS chặn", không phải "bảng rỗng" | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
-| TS-SEC3-07 | admin đọc `inbound_ledger` | KHÔNG thấy (sổ nội bộ của bot, admin không có việc gì ở đó) | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
-| TS-SEC3-08 | **[dc]** `service_role` đọc `inbound_ledger`, `messages`, gọi `giu_luot_gui` | làm được — bot phải chạy được việc của nó | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
+| TS-SEC3-07 | admin đọc `media_cleanup_queue` | KHÔNG thấy (hàng đợi nội bộ, admin không có việc gì ở đó) | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
+| TS-SEC3-08 | **[dc]** `service_role` đọc `media_cleanup_queue`, `messages`, gọi `la_id_thu` | làm được — bot phải chạy được việc của nó | ✅ 06/09 (chạy lại qua MCP: 41/41 OK, 0 HONG; xác minh sau đó 0 dòng VAITRO còn lại) |
 
 ### TS-SAOLUU — [deprecated 11/09/2026]
 
 > Bộ test đã ngừng — thân mục (lệnh, ca, kết quả cũ) ở `docs/10-ke-hoach-kiem-thu-luu-tru.md`, cùng mã.
 
 ### TS-RANHGIOI — bóc tách ⟂ AI (SRS-3.0, FR-171)
-> **28/10/2026:** `chat-reply` đã gỡ; `ranh-gioi.mjs` vẫn chạy trong `test:bot` trên phần TypeScript còn lại (`_shared/`, ba edge function).
+> **28/10/2026:** `chat-reply` đã gỡ; `ranh-gioi.mjs` vẫn chạy trong `test:bot` trên phần TypeScript còn lại (`_shared/`, ba edge function). `_shared/thong_so.ts` nêu dưới cũng đã gỡ — luật bóc tách nay soát `_shared/extraction/`, luật AI soát `_shared/claude.ts`.
 Hôm nay ranh giới này đúng nhưng đúng do MAY: `boc_thong_so()` nằm trong SQL nên
 không thể gọi model được, còn `regexProfileFallback()` thì nằm ngay trong
 `chat-reply/index.ts` cách chỗ gọi model hơn hai nghìn dòng — không có gì ngăn
@@ -204,11 +206,11 @@ SQL Editor, `set role anon` rồi thử phá — anon key là key công khai, re
 | TS-SEC-01 | anon `select count(*) from reminders` | `0` | ✅ 04/09 |
 | TS-SEC-02 | anon `delete from reminders` | lỗi quyền | ✅ 04/09 |
 | TS-SEC-03 | anon đọc `public_listings` | lỗi quyền — view không lọc trạng thái, hở là lộ tin nháp | ✅ 04/09 |
-| TS-SEC-04 | anon gọi `seller_drip_tick()`, `ctv_report_tick()` | lỗi quyền | ✅ 04/09 |
-| TS-SEC-05 | anon `insert listings` · `update bot_prompts` | lỗi quyền cả hai | ✅ 04/09 |
-| TS-SEC-06 | anon đếm sellers/ctvs/messages/conversations/viewings/deals | `0` hết | ✅ 04/09 |
+| TS-SEC-04 [deprecated 13/11/2026 — hai hàm gỡ `20261018j`; RPC nội bộ còn sống kiểm ở TS-SEC-AUTO-03] | anon gọi `seller_drip_tick()`, `ctv_report_tick()` | lỗi quyền | ✅ 04/09 |
+| TS-SEC-05 | anon `insert listings` · `update bot_prompts` (bảng `bot_prompts` gỡ `20261018i` — chỉ còn bài `insert listings`) | lỗi quyền cả hai | ✅ 04/09 |
+| TS-SEC-06 | anon đếm sellers/ctvs/messages/conversations/viewings/deals (`ctvs` gỡ `20261028d`) | `0` hết | ✅ 04/09 |
 | TS-SEC-07 | anon `count(*) from listings` | = `dang_ban + dang_quan_tam + da_chot`, nhỏ hơn tổng — tin `cho_thong_tin` khuất | ✅ 04/09 |
-| TS-SEC-08 | anon đọc `listings`, `agents_public`, `listing_photos_v`, `projects`, `listing_facts` | ra dữ liệu bình thường; `agents_public` = số NMG trong `sellers` | ✅ 04/09 (vá 20260904b, anon 3/3) |
+| TS-SEC-08 | anon đọc `listings`, `agents_public`, `listing_photos_v`, `projects`, `listing_facts` (`listing_facts` gỡ `20261019f`) | ra dữ liệu bình thường; `agents_public` = số NMG trong `sellers` | ✅ 04/09 (vá 20260904b, anon 3/3) |
 | TS-SEC-09 | `proacl` của `get_secret` trong `pg_proc` | chỉ `postgres` + `service_role` | ✅ 04/09 |
 | TS-SEC-10 | mở `/nha-dat/<mã>` của tin có fact chứa SĐT | SĐT → `[liên hệ qua Zalo nhadat.cc]` ở cả `description` lẫn `answer` (FR-104) | ⏭ cần bản deploy |
 
@@ -217,12 +219,12 @@ Tập không phá huỷ của TS-SEC, bắn khoá **công khai** `sb_publishable
 | ID | Bài | Kỳ vọng | Kết quả mới nhất |
 |---|---|---|---|
 | TS-SEC-AUTO-00 | dò đường: anon đọc `listings` | ra ≥1 dòng, không thì thoát 2 và bỏ chấm điểm | ⏭ CI (sandbox không có đường ra supabase.co) |
-| TS-SEC-AUTO-01 | anon đọc 14 bảng nội bộ (`reminders`, `sellers`, `messages`, `curated_lists`, `property_events`…) | PostgREST từ chối, hoặc 0 dòng | ⏭ CI |
+| TS-SEC-AUTO-01 | anon đọc 11 bảng nội bộ (`reminders`, `sellers`, `messages`, `curated_lists`, `property_events`…) | PostgREST từ chối, hoặc 0 dòng | ⏭ CI |
 | TS-SEC-AUTO-02 | anon đọc `public_listings` | bị từ chối — view không lọc trạng thái | ⏭ CI |
-| TS-SEC-AUTO-03 | anon gọi 6 RPC nội bộ (`get_secret`, `seller_drip_tick`, `ctv_report_tick`, `xuat_schema`, `liet_ke_bang`, `liet_ke_migration`) | bị từ chối cả 6 | ⏭ CI |
-| TS-SEC-AUTO-04 | anon `insert listings` · `update bot_prompts` | bị từ chối; nếu lọt thì tự dọn và báo P0 | ⏭ CI |
+| TS-SEC-AUTO-03 | anon gọi 6 RPC nội bộ (`get_secret`, `bot_health_tick`, `soat_du_lieu_tick`, `xuat_schema`, `liet_ke_migration`, `quota_tieu_hao`) | bị từ chối cả 6 | ⏭ CI |
+| TS-SEC-AUTO-04 | anon `insert listings` (bài `update bot_prompts` bỏ cùng bảng, `20261018i`) | bị từ chối; nếu lọt thì tự dọn và báo P0 | ⏭ CI |
 | TS-SEC-AUTO-05 | anon đọc `agents_public`, đối chiếu `rpc/so_nmg_cong_khai` (20260915c, chỉ trả số NMG) | ra ≥1 NMG; rỗng mà số NMG = 0 là đúng cảnh (sau xoá hàng loạt 15/09); rỗng mà số NMG > 0 mới là lỗi làm `/moi-gioi` trắng 27/08→04/09 | ✅ 15/09: CI đỏ 6 lượt (run 302–314) vì DB hết NMG sau FR-210 mà bài kiểm không có tín hiệu độc lập → thêm hàm đếm, tự kiểm thêm cảnh `khong-nmg` (5/5) |
-| TS-SEC-AUTO-06 | anon đọc `projects`, `listing_facts`, `listing_photos_v` | HTTP 200 — bắt lỗi siết quá tay | ⏭ CI |
+| TS-SEC-AUTO-06 | anon đọc `projects`, `listing_photos_v` (`listing_facts` gỡ `20261019f`) | HTTP 200 — bắt lỗi siết quá tay | ⏭ CI |
 | TS-SEC-AUTO-07 | anon lọc `status=cho_thong_tin` | 0 dòng — tin nháp không lọt ra ngoài | ⏭ CI |
 | TS-SEC-AUTO-08 | **tự kiểm bộ trên** bằng PostgREST giả, 5 cảnh (khoẻ / RLS thủng / proxy chặn / siết quá tay / không có NMG) | thoát đúng 0 / 1 / 2 / 1 / 0 | ✅ 05/09 (4/4, chạy offline) · 15/09 5/5 |
 
@@ -268,17 +270,19 @@ Tập không phá huỷ của TS-SEC, bắn khoá **công khai** `sb_publishable
 | TS-CACHE-05 | `/mua-ban?gia=duoi-5` hai lần trong 5 phút, đếm query ở Supabase Logs | lần hai không sinh query `listings` mới (Data Cache của `layTin`) | ⏭ |
 
 ### TS-HEALTH — còi báo lỗi có kêu không (FR-152)
+> **13/11/2026:** tin 🩺 mỗi giờ đã thôi từ `20260908e`; `bot_health_tick()` nay chỉ đẻ tin 🚨 khi bridge / lõi máy 146 im (`20261111a`) — ca 03, 08 và TS-LOG-06 là lịch sử.
+
 SQL trên DB thật. Dọn: `delete from bot_errors; delete from reminders where note like '🩺%'`, đẩy `bot_health.last_id` của `pg_net` lên `max(id)` của `net._http_response`.
 | ID | Bài | Kỳ vọng | Kết quả mới nhất |
 |---|---|---|---|
 | TS-HEALTH-01 | `net.http_post` tới `/functions/v1/khong-he-ton-tai`, chờ 15s, `bot_health_tick()` | trả `loi_moi = 1` | ⏭ 04/09 |
 | TS-HEALTH-02 | `select * from bot_errors order by id desc limit 1` | dòng `source='pg_net'`, `status_code=404` | ✅ 04/09 |
-| TS-HEALTH-03 | `select note from reminders where note like '🩺%'` | đúng MỘT tin dù tick nhiều lần trong giờ | ✅ 04/09 |
+| TS-HEALTH-03 [deprecated 13/11/2026 — tin 🩺 thôi từ `20260908e`] | `select note from reminders where note like '🩺%'` | đúng MỘT tin dù tick nhiều lần trong giờ | ✅ 04/09 |
 | TS-HEALTH-04 | `cron.job_run_details` của chính lần chạy hỏng ở 01 | vẫn `succeeded` — lý do FR-152 tồn tại, đừng tin cột này | ✅ 04/09 |
 | TS-HEALTH-05 | gọi `escalation-feed` kèm `x-bridge-secret` đúng | `bot_health` có `who='bridge-zca'`, `at` vừa xong | ⏭ |
 | TS-HEALTH-06 | xoá dòng `bridge-zca` khỏi `bot_health` rồi tick | **KỲ VỌNG CŨ SAI, đã đổi 06/09:** trước ghi `bridge_im = false` ("chưa từng có nhịp thì không báo") — đó chính là lỗ. Bridge chưa từng chạy là lúc ĐÁNG báo nhất, mà nhánh canh lại không chạy: "không có" bị lẫn với "bình thường", cùng hình lỗi SEC-02. Nay (`20260906a`) trong 7–22h VN phải ra `bridge_im = true`, `bridge_chua_bao_gio = true`, và một dòng `bot_errors` nói thẳng "CHƯA TỪNG điểm danh" | ⏭ cần dựng cảnh |
 | TS-HEALTH-07 | bridge im > 15 phút trong 7–22h VN, tick hai lần cùng giờ (`20260904a`) | lần 1 `ntfy = <id>`, `net._http_response` 200 từ ntfy.sh, `bot_health` có `who='ntfy'`; lần 2 `ntfy = null` (1 tin/giờ) | ✅ 04/09 (id 2102/2103 → 200) |
-| TS-HEALTH-08 | tồn 🩺 cũ + báo cáo CTV `pending` từ 27/08, chạy tick | 🩺 cũ → `cancelled`, chỉ còn mới nhất; báo cáo CTV quá 36h → `cancelled` | ✅ 04/09 (huỷ 117 + 7, còn 1) |
+| TS-HEALTH-08 [deprecated 13/11/2026 — tin 🩺 thôi từ `20260908e`, CTV bỏ 28/10/2026] | tồn 🩺 cũ + báo cáo CTV `pending` từ 27/08, chạy tick | 🩺 cũ → `cancelled`, chỉ còn mới nhất; báo cáo CTV quá 36h → `cancelled` | ✅ 04/09 (huỷ 117 + 7, còn 1) |
 | TS-HEALTH-09 | **còi có tự nhận là đã kêu không** (`20260906a`): đối chiếu `bot_health(who='ntfy').last_id` với `net._http_response` cùng id | id đó phải là một lượt gửi **2xx**. Không phải 2xx mà còi vẫn im = còi câm | ❌→✅ 06/09 — bắt tại trận: dấu `ntfy` lúc `00:00:00.054` trỏ req **2221**, mà req 2221 là `status_code NULL`, `Timeout of 5000 ms` lúc `00:00:00.212`. Còi đóng dấu "đã gửi" trước khi pg_net kịp nói nó hụt, rồi im một giờ |
 | TS-HEALTH-10 | chạy `bot_health_tick()` sau khi áp `20260906a`, trong lúc lượt báo trước đang hụt | `lan_truoc_da_gui = false`, sinh dòng `bot_errors` nguồn `coi ntfy`, và BẮN LẠI | ✅ 06/09 — `{"ntfy":2222,"lan_truoc_da_gui":false}`; `coi ntfy: lượt báo trước (pg_net req 2221) KHÔNG tới nơi` |
 | TS-HEALTH-11 | lượt bắn lại đó có tới ntfy.sh thật không | `net._http_response` của id mới phải `200` | ✅ 06/09 — req **2222 → 200**, thân `{"id":"g55xO8pg8zLp",…}` từ ntfy.sh |
@@ -292,9 +296,9 @@ Loại lỗi này TRẢ 200 nên TS-HEALTH không bắt được. Không phủ l
 | TS-LOG-01 | lặp 25 lượt `log_loi('thu-van','x',null)` | đúng **20** dòng — van theo nguồn | ✅ 04/09 |
 | TS-LOG-02 | 600 lượt với 30 `p_source` khác nhau, `set local role anon` | tổng bảng dừng ở **200** — van tổng chặn kẻ đổi nguồn | ✅ 04/09 |
 | TS-LOG-03 | `escalation-feed` `{"action":"log","source":"x","detail":"y"}` + `x-bridge-secret` | 200 `{"ok":true}`; `bot_errors` có `source='bridge x'` | ⏭ cần HTTP |
-| TS-LOG-04 | tin kèm `image_url` host không tồn tại (đừng phá `ANTHROPIC_API_KEY` — làm chết bot thật) | HTTP 200, khách vẫn có trả lời; `bot_errors` `source='chat-reply model'` kèm lỗi API | ✅ 27/08 (`400 Unable to download`) · ⏭ 04/09 |
+| TS-LOG-04 [deprecated 13/11/2026 — `chat-reply` gỡ 18/10/2026] | tin kèm `image_url` host không tồn tại (đừng phá `ANTHROPIC_API_KEY` — làm chết bot thật) | HTTP 200, khách vẫn có trả lời; `bot_errors` `source='chat-reply model'` kèm lỗi API | ✅ 27/08 (`400 Unable to download`) · ⏭ 04/09 |
 | TS-LOG-05 | route web ném lỗi có chủ ý trên bản deploy | `bot_errors` `source='web app'` kèm đường dẫn; khách thấy `app/error.tsx` | ⏭ cần deploy |
-| TS-LOG-06 | `bot_health_tick()` sau TS-LOG-04 | có reminder 🩺 — còi đếm cả lỗi ứng dụng | ✅ 04/09 |
+| TS-LOG-06 [deprecated 13/11/2026 — tin 🩺 thôi từ `20260908e`] | `bot_health_tick()` sau TS-LOG-04 | có reminder 🩺 — còi đếm cả lỗi ứng dụng | ✅ 04/09 |
 
 ### TS-GIA — bóc giá tiếng lóng ra số (FR-154)
 SQL editor, test hồi quy mỗi lần sửa `parse_vnd`: `select s, parse_vnd(s) from unnest(array['5 tỏi rưỡi','5 tỏi','5 tỷ rưỡi','5,5 tỷ','5 tỷ 5','3 tỷ 200','800 triệu','12 củ','15tr/th','900tr','1 trệt 2 lầu','5t5','2 tỉ 8','giá 6ty2 TL','7 tỏi 3','nhà 4x15 giá 8 tỏi','25 củ/tháng','5 cây vàng','5 tỏi 500 triệu','tỷ lệ chốt 5%','giá 5 tỷ 50m2','đất 100m2 giá 4ty','2 tý','thuê 8 củ rưỡi','5 tỷ 120m2','1 tỷ 050']) s;`
@@ -339,7 +343,7 @@ RPC `admin_dang_tin` + trang `/admin/dang-tin`. Dọn: xoá tin `BDS-Q5-####` v�
 Người bán thử **không** có câu hỏi chờ (có thì tin nhắn bị coi là câu trả lời). Test cổng rao **phải gõ có dấu** — gõ không dấu trượt ở `\b(bán|rao)\b` là pass giả (OPEN-29). Không phủ: người lạ chưa có dòng `sellers` nhắn câu rao vẫn rơi nhánh mua (chủ dự án để sau, 27/08).
 | ID | Bài | Kỳ vọng | Kết quả mới nhất |
 |---|---|---|---|
-| TS-MA-01 | `insert into listings (code, …) values (null, …)` rồi `rollback` | `trg_listings_fill_code` điền mã nối dãy, không lỗi NOT NULL | ✅ 04/09 |
+| TS-MA-01 | `insert into listings (code, …) values (null, …)` rồi `rollback` | `trg_listings_zz_fill_code` điền mã nối dãy, không lỗi NOT NULL | ✅ 04/09 |
 | TS-MA-02 | câu rao trần: `anh muốn bán căn nhà` | sinh tin `cho_thong_tin` + mã `BDS-Q5-####`; trigger đoán `nha_pho` từ chính câu rao, câu đầu hỏi `dien_tich_dat` | ✅ 27/08 (v35) |
 | TS-MA-03 | `nhà mình bán chưa em` | **không** sinh tin — câu hỏi tình trạng, không phải câu rao | ✅ 27/08 |
 | TS-MA-04 | `bán nhà hẻm xe hơi phường 8, 4x16, 8.5 tỷ` | sinh tin; `price_raw = "8.5 tỷ"`, `ward = "Phường 8"` | chưa chạy |
@@ -358,7 +362,7 @@ Người bán thử **không** có câu hỏi chờ (có thì tin nhắn bị co
 > Bộ test đã ngừng — thân mục (lệnh, ca, kết quả cũ) ở `docs/10-ke-hoach-kiem-thu-luu-tru.md`, cùng mã.
 
 ### TS-TOANVEN — toàn vẹn dữ liệu tầng DB (FR-163)
-> **28/10/2026:** ca 01–03 ghi fact qua `listing_facts` (gỡ 19/10/2026) → deprecated; 04–09 kiểm trigger / ràng buộc DB còn sống.
+> **28/10/2026:** ca 01–03 ghi fact qua `listing_facts` (gỡ 19/10/2026) → deprecated; 04–08 kiểm trigger / ràng buộc DB còn sống.
 Một khối DO trên DB thật, bắt exception cho ca "phải bị chặn", ghi bảng tạm rồi đọc (RAISE NOTICE không về qua MCP). EXPLAIN `messages` theo `conversation_id order by seq desc` phải là `Index Scan using messages_conv_seq_idx`.
 | ID | Bài | Kỳ vọng | Kết quả mới nhất |
 |---|---|---|---|
@@ -376,7 +380,7 @@ Một khối DO trên DB thật, bắt exception cho ca "phải bị chặn", gh
 | 07a | conversation có cả buyer lẫn seller | CHECK một-vai chặn | ✅ 04/09 |
 | 07b | seller thứ hai hội thoại | unique chặn | ✅ 04/09 |
 | 08 | reminder `cancelled` bị UPDATE thành `sent` | revert êm: vẫn `cancelled`, `sent_at` trống | ✅ 04/09 |
-| 09 | ledger `completed` bị hạ xuống `failed` | raise | ✅ 04/09 |
+| 09 [deprecated 13/11/2026 — bảng `inbound_ledger` gỡ `20261018i`] | ledger `completed` bị hạ xuống `failed` | raise | ✅ 04/09 |
 
 ### TS-OUNG — đường ống dữ liệu tin rao (FR-164) [deprecated 28/10/2026]
 
@@ -391,7 +395,7 @@ DB trong DO block cuộn lại; HTTP qua `pg_net`. Chưa kết luận: anon LI�
 | TS-KHO-03 | upload trùng (bucket, path) | UNIQUE chặn | ✅ 04/09 |
 | TS-KHO-04 | `so_do` vào bucket công khai | CHECK chặn | ✅ 04/09 |
 | TS-KHO-05 | sort_order NGƯỢC thứ tự tên file | ra `10,2,1` (xếp theo tên sẽ ra `1,10,2`) | ✅ 04/09 |
-| TS-KHO-06 | ảnh bìa | tấm `sort_order` nhỏ nhất — tiền đề chèn theo `sort_order` tăng dần (như `up-anh.mjs`); `listing_media_chon_bia()` cố ý không đè bìa admin chọn tay | ✅ 04/09 (ghi tiền đề) |
+| TS-KHO-06 | ảnh bìa | tấm `sort_order` nhỏ nhất — tiền đề chèn theo `sort_order` tăng dần (như `up-anh.mjs` — script đã xoá khỏi repo); `listing_media_chon_bia()` cố ý không đè bìa admin chọn tay | ✅ 04/09 (ghi tiền đề) |
 | TS-KHO-07 | đổi mã tin | 3/3 ảnh còn nguyên, view đổi theo mã mới | ✅ 04/09 |
 | TS-KHO-08 | replace (đổi storage_path) | đường dẫn cũ vào hàng đợi dọn | ✅ 04/09 |
 | TS-KHO-09 | xoá ảnh đang là bìa | vào hàng đợi + tấm kế lên bìa | ✅ 04/09 |
@@ -417,6 +421,8 @@ DB trong DO block cuộn lại; HTTP qua `pg_net`. Chưa kết luận: anon LI�
 > Bộ test đã ngừng — thân mục (lệnh, ca, kết quả cũ) ở `docs/10-ke-hoach-kiem-thu-luu-tru.md`, cùng mã.
 
 ### TS-SEC2 — soát bảo mật theo VAI THẬT (FR-167)
+> **13/11/2026:** các ca dẫn thứ đã gỡ là lịch sử: edge function `nudge` / `ask-seller` / `ctv-report` / `chat-reply` / `inbound-sweep` (gỡ 18/10/2026) → H1–H6 deprecated, H8 chỉ còn `escalation-feed` / `media-cleanup`; hàm drip (`20261018j`) → 64–66 deprecated; trong 01…22 và 42…56 các bảng / hàm `ctvs`, `bot_prompts`, `inbound_ledger`, `job_suc_khoe`, fact (`listing_facts`), `ghi_fact_listing`, `merge_buyer_prefs`, `claim_inbound`, `nhan_viec_nhac` không còn trong `schema.sql`. Ma trận vai đang sống: TS-SEC3.
+
 Không đọc policy rồi suy, mà `set local role anon`/`authenticated` kèm `request.jwt.claims` rồi thử đọc/ghi/gọi RPC; edge function gọi HTTP bằng publishable key. Chấm theo SỐ DÒNG (UPDATE bị RLS chặn không ném lỗi) và ép đánh giá hàm bằng `execute … into` (`count(*)` bỏ qua hàm). Kho file: `storage.objects`/`buckets` bật RLS 0 policy — 16 ca ghi/leo thư mục/đổi bucket đều chặn (29/08); liệt kê bucket rỗng `200 []` chưa kết luận được.
 | ID | Bài | Kỳ vọng | Kết quả mới nhất |
 |---|---|---|---|
@@ -425,19 +431,19 @@ Không đọc policy rồi suy, mà `set local role anon`/`authenticated` kèm `
 | TS-SEC2-42…56 | người lạ gọi RPC: get_secret, cau_hinh, next_listing_code, listings_fill_code, info_request_set_active_listing, ghi_fact_listing, merge_buyer_prefs, claim_inbound, nhan_viec_nhac, bump_model_quota, beat, các `*_tick` | 15/15 chặn | ✅ 04/09 |
 | TS-SEC2-57…59 | chéo người bán: B đọc hồ sơ A, tin nháp A, cướp tin A (đổi `seller_id`) | 3/3 chặn | ✅ 04/09 |
 | TS-SEC2-60…61 | không vỡ nghiệp vụ: anon đọc tin đã lên kệ + ảnh | 2/2 đạt | ✅ 04/09 |
-| TS-SEC2-H1 | `nudge` không kèm khoá | 403 (trước vá: 200 + lộ lời nhắc) | ✅ 29/08 · ⏭ 04/09 |
-| TS-SEC2-H2 | `nudge` + publishable key | 403 (trước: 200) | ✅ 29/08 · ⏭ |
-| TS-SEC2-H3 | `nudge` + `x-bridge-secret` đúng (đường cron) | 200 | ✅ 29/08 · ⏭ |
-| TS-SEC2-H4 | `nudge` + bridge secret sai | 403 | ✅ 29/08 · ⏭ |
-| TS-SEC2-H5 | `ask-seller` + publishable key | 403 (trước: 400 — đã qua cổng); bằng bridge secret vẫn qua | ✅ 29/08 · ⏭ |
-| TS-SEC2-H6 | `ctv-report` + publishable key | 403 (trước: chạy tới model) | ✅ 29/08 · ⏭ |
+| TS-SEC2-H1 [deprecated 13/11/2026] | `nudge` không kèm khoá | 403 (trước vá: 200 + lộ lời nhắc) | ✅ 29/08 · ⏭ 04/09 |
+| TS-SEC2-H2 [deprecated 13/11/2026] | `nudge` + publishable key | 403 (trước: 200) | ✅ 29/08 · ⏭ |
+| TS-SEC2-H3 [deprecated 13/11/2026] | `nudge` + `x-bridge-secret` đúng (đường cron) | 200 | ✅ 29/08 · ⏭ |
+| TS-SEC2-H4 [deprecated 13/11/2026] | `nudge` + bridge secret sai | 403 | ✅ 29/08 · ⏭ |
+| TS-SEC2-H5 [deprecated 13/11/2026] | `ask-seller` + publishable key | 403 (trước: 400 — đã qua cổng); bằng bridge secret vẫn qua | ✅ 29/08 · ⏭ |
+| TS-SEC2-H6 [deprecated 13/11/2026] | `ctv-report` + publishable key | 403 (trước: chạy tới model) | ✅ 29/08 · ⏭ |
 | TS-SEC2-H7 | `geocode-listings` + publishable key | 403 (trước: 200, ghi lat/lng) | ✅ 29/08 · ⏭ |
 | TS-SEC2-H8 | `chat-reply`/`escalation-feed`/`media-cleanup`/`inbound-sweep` + publishable key | 403/401/403/403 (vốn kín) | ✅ 29/08 · ⏭ |
 | TS-SEC2-62 | mọi hàm SQL có `net.http_post` đều mang `x-bridge-secret` — trừ `canh_bao_ngoai` (ntfy, FR-152 e), loại trừ tường minh trong câu `pg_get_functiondef` | danh sách thiếu rỗng | ✅ 04/09 (6 hàm: 5 + 1 loại trừ; sửa câu) |
 | TS-SEC2-63 | không hàm nào còn nhúng cứng anon JWT đời cũ (`eyJhbGciOi…`) | rỗng | ✅ 04/09 |
-| TS-SEC2-64 | `authenticated` gọi `ask_seller_drip()` | chặn | ✅ 04/09 |
-| TS-SEC2-65 | `anon` gọi `ask_seller_drip()` | chặn | ✅ 04/09 |
-| TS-SEC2-66 | `seller_drip_tick` + `trg_listing_drip` vẫn SECURITY DEFINER | 2/2 — siết `ask_seller_drip` không gãy đường vận hành (hồi quy drip vá `20260829e`) | ✅ 04/09 |
+| TS-SEC2-64 [deprecated 13/11/2026] | `authenticated` gọi `ask_seller_drip()` | chặn | ✅ 04/09 |
+| TS-SEC2-65 [deprecated 13/11/2026] | `anon` gọi `ask_seller_drip()` | chặn | ✅ 04/09 |
+| TS-SEC2-66 [deprecated 13/11/2026] | `seller_drip_tick` + `trg_listing_drip` vẫn SECURITY DEFINER | 2/2 — siết `ask_seller_drip` không gãy đường vận hành (hồi quy drip vá `20260829e`) | ✅ 04/09 |
 
 ### TS-HQ — hồi quy sau soát thù địch + hai lượt review diff (29/08/2026) [deprecated 28/10/2026]
 
@@ -518,7 +524,7 @@ DB thật trong một giao dịch rồi rollback. Từ 03/09 FR-173 đổi đư�
 > Bộ test đã ngừng — thân mục (lệnh, ca, kết quả cũ) ở `docs/10-ke-hoach-kiem-thu-luu-tru.md`, cùng mã.
 
 ### TS-THONGSO — tin rao có cấu trúc: bóc từ mô tả, cột đã có thì không hỏi (FR-172)
-> **28/10/2026:** ca e2e (11, 12) và phần CTV của 15 chạy trên bot TypeScript đã gỡ → deprecated; ca DB `boc_thong_so()` còn.
+> **28/10/2026:** ca e2e (11, 12) và phần CTV của 15 chạy trên bot TypeScript đã gỡ → deprecated; ca DB `boc_thong_so()` còn. **13/11/2026:** view `listing_missing_facts` và hàm `ap_thong_so` gỡ cùng `listing_facts` (`20261019f`) → ca 09, 13, 15 deprecated.
 DB thật qua MCP sau `20260902e` + `20260902f`, trên 173 tin (164 có mô tả). Ca 01–08 là số đo bao phủ (chốt chống hồi quy khi sửa regex — giảm là phải giải thích), 09–15 là hành vi. Giới hạn biết mà chưa vá: "306m² (4,2mx22m)" là tổng sàn (6 tin `dt_lech` > 35%); "cách mặt tiền 40m" đi cùng "nhà mặt tiền" trong cùng bài; chung cư gán nhầm `nha_pho` thì "tầng 25" ra null (dải 1–30 chặn), không ra sai.
 | ID | Bài | Kỳ vọng | Kết quả mới nhất |
 |---|---|---|---|
@@ -546,7 +552,7 @@ Dựng theo IA §4.4 sau nghiệm thu 04/09 (OPEN-44). 01–04 chạy trong sand
 | TS-SEO-02 | `bun -e 'import {TAG_DEFS} from "./lib/tags.ts"; …'` | slug không dấu, chữ thường, gạch nối, `ty` không `tỉ`, duy nhất; keyword hiển thị giữ "tỉ" | ✅ 04/09 (64 slug duy nhất) |
 | TS-SEO-03 | `relatedTags(t)` | 6–8 tag, không chứa chính nó, ưu tiên cùng giao dịch + loại + khu | ✅ 04/09 |
 | TS-SEO-04 | `/ban-nha-hem-xe-hoi-quan-5` trên `next start` | H1 = keyword, mô tả 80–120 từ, lưới lọc `access_type in (mat_tien, hem_xe_tai, hem_xe_hoi)`, 8 tag liên quan; `/abc-xyz` → 404 | ⏭ sandbox không tới Supabase (lưới rỗng → hộp Zalo, đúng luật) |
-| TS-SEO-05 | `curl -s https://nhadat-cc.vercel.app/sitemap.xml \| grep -c '<loc>'` | ≥ 8 tĩnh + 100 tag (SRS-5.1zzzzzzz433) + số tin lên kệ | ⏭ chờ deploy |
+| TS-SEO-05 | `curl -s https://aond.vercel.app/sitemap.xml \| grep -c '<loc>'` | ≥ 8 tĩnh + 100 tag (SRS-5.1zzzzzzz433) + số tin lên kệ | ⏭ chờ deploy |
 | TS-SEO-06 | trang tin: `application/ld+json` + canonical + OG | một `RealEstateListing`, `identifier` = mã, `offers.price` = `price_vnd`, `address` chỉ tới phường (FR-104); canonical = URL tin; OG = ảnh thật nếu có | ⏭ chờ deploy; kiểm tĩnh `jsonLd()` không dùng `location_raw` |
 
 ### TS-ADM2 — admin buyer side (FR-71/74/75/76/77/78/80)

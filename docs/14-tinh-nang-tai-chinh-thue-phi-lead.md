@@ -158,6 +158,12 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
   7. `luu_so_dien_thoai` (tương đương `request_contact`): Tiếp nhận SĐT của khách để lưu hồ sơ và báo chuyên viên liên hệ ngay.
   8. `hen_xem`: Ghi lịch hẹn xem nhà trực tiếp.
   9. `hoi_chu_nha`: Gửi câu hỏi chuyên sâu cho chủ nhà/admin.
+  10. `so_sanh_du_an`: So sánh 2 dự án (chủ đầu tư, phân khúc giá m², quy mô, tiện ích, pháp lý bàn giao).
+  11. `tra_cuu_phong_thuy`: Tra phong thủy Bát Trạch theo năm sinh gia chủ, đánh giá hướng nhà đang xem.
+  12. `tham_dinh_quy_hoach`: Thẩm định quy hoạch và lộ giới đường / hẻm theo địa chỉ.
+  13. `goi_y_dam_phan`: Gợi ý khoảng giá đàm phán 3 mức theo loại hình và khu vực.
+  14. `bo_loc_gia_dinh`: Bộ tiêu chuẩn chọn nhà cho gia đình đa thế hệ.
+  - Bước ghi của vòng gộp (`cong_cu_ghi()`, không nằm trong `CONG_CU`): `ghi_nhu_cau`, `viec_can`, `ghi_y_khach`. (Danh sách soát theo code 13/11/2026.)
 - LLM tự quyết định khi nào cần gọi tool trong vòng lặp hội thoại `converse`, hỗ trợ multi-turn reasoning và câu chat phức tạp tự nhiên.
 
 ---

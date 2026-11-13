@@ -151,7 +151,7 @@ sequenceDiagram
   nhắc admin ngay (SRS-5.1zzzzzzz170). Admin trả lời theo mẫu `#mã tin: câu trả lời`.
   Bước CTV (giao CTV ít việc nhất, quá 120' tụt hạng) đã bỏ. Câu nhỏ giọt nuôi tin vẫn đi S.
 - **Hàng dự án** (INS-10, FR-115/116): câu tầng dự án trả lời từ dữ liệu chung,
-  không info_request; câu tầng căn đọc `unit_status`, chỉ hỏi S khi quá hạn xác nhận (FR-116).
+  không info_request; câu tầng căn đọc `unit_status` (thiết kế — `listings` chưa có cột này), chỉ hỏi S khi quá hạn xác nhận (FR-116).
 - **Quy tắc vàng (RSK-03)**: pháp lý, quy hoạch, "còn bán không" — không bao giờ
   khẳng định: *"Cho tới 15h ngày 17/9 thì còn. Nhưng để em hỏi lại anh nhé."*
 
@@ -369,7 +369,7 @@ stateDiagram-v2
 ```
 
 1. Trạng thái gắn vào **từng BĐS**; S báo "bán rồi" ở bất kỳ đâu đều được nhận diện.
-2. `last_confirmed_at` điều khiển TTL: quá hạn bot hỏi S *"Căn [mã] còn bán không?"*
+2. `xac_nhan_con_ban_at` (tên thiết kế cũ `last_confirmed_at`, không có trong schema) điều khiển TTL: quá hạn bot hỏi S *"Căn [mã] còn bán không?"*
    trước khi giới thiệu B mới — không hỏi lặp mỗi lần có khách.
 3. Sang `da_chot`: quét `interests`, báo mọi B đang chờ kèm căn thay thế (FR-108).
 4. `an` không xoá listing — chỉ ẩn khỏi matching tới khi S xác nhận lại.

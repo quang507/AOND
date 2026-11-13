@@ -73,6 +73,16 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz469 · Gỡ bộ pytest `tests/` — không còn dùng (13/11/2026)
+Chủ dự án 13/11 thấy `tests/` 264 file ("sao nhiều test dữ trời") rồi chốt "ko dùng thì gỡ mẹ đi". Từ 11/11 luật là sửa thẳng, không chạy test;
+mỗi lần sửa vẫn sinh thêm một file `test_<số SRS>.py` không ai chạy (192 file thêm từ 10/2026), nên bộ này chỉ phình và lệch code.
+- **Gỡ:** 261 file `tests/test_*.py` + `tests/conftest.py` + `tests/gia.py` (đồ giả chỉ test dùng); script `test:py`, bước pytest ở `kiem.yml`,
+  `[tool.pytest.ini_options]` và nhóm `dev` (pytest) ở `pyproject.toml`.
+- **Giữ:** `tests/kich_ban/` + `tests/cau_hinh_vps.py` (bộ chấm kịch bản `scripts/cham-kich-ban.py` / `cham.yml` còn gọi); cả `bot/tests/` (script bắn
+  thử, SQL, đọc log, nạp dữ liệu — công cụ vận hành, không phải pytest).
+- **Kiểm từ nay:** parse cú pháp (`ast.parse` / `node --check`), đưa lên 146, thử bằng tin Zalo thật / `bot/tests/ban-thu-*.sh`. README, CLAUDE.md,
+  docs/10 (TS-PY-01, TS-SRS deprecated), docs/11 sửa theo; tên file test cũ trong bảng TS-SRS / 08 giữ làm lịch sử.
+
 ### SRS-5.1zzzzzzz468 · Tính cách bot tách theo vai: nhận thông tin tin rao / tư vấn bán hàng — bỏ danh sách nỗi lo kể sẵn (13/11/2026)
 Chủ dự án 13/11: bot "kiểu tưởng người ta sợ nó rao không đúng giá"; log cùng ngày có câu bot tự trấn an "Tin vẫn rao đúng 8,8 tỉ chị muốn".
 Gốc: khối Nhân vật (SRS-5.1zzzzzzz381) liệt kê sẵn "nỗi lo bán hớ, thủ tục phức tạp, áp lực tài chính, lo lắng pháp lý", và đoạn HIỂU CHỦ NHÀ
