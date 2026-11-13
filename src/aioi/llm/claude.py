@@ -14,7 +14,6 @@ from typing import Any
 from ..config import Settings
 from ..imaging import downscale_image
 from ..so_token import SoToken
-from ..chu import bo_dau
 from .base import KHONG_NGHI_LUOT, MODEL_CHAT_LUOT, LLMProvider, Message, ToolCall, ToolTurn, tach_on_dinh
 
 log = logging.getLogger(__name__)
@@ -65,37 +64,6 @@ def chuan_theo_schema(v: Any, schema: dict[str, Any]) -> Any:
     if t == "array" and isinstance(v, list):
         return [chuan_theo_schema(x, schema.get("items") or {}) for x in v]
     return v
-
-
-_GUI_KHACH: dict[str, Any] = {
-    "name": "gui_khach",
-    "description": "Gửi lời trả lời cho khách qua Zalo. Mọi lượt trả lời khách đều đi qua công cụ này.",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "tu_soat": {
-                "type": "string",
-                "description": "Ghi chú NỘI BỘ, KHÔNG gửi khách: soát nhanh lời sắp gửi theo luật (đúng một ý hỏi, không khen bịa, "
-                               "xưng hô đúng, không hỏi lại điều khách đã nói; chữ ĐẦU TIÊN của lời là việc em vừa làm, không phải từ đệm; "
-                               "mở bằng MỘT lời khen ngắn gắn với điều khách vừa nói — KHÔNG câu ghi nhận, KHÔNG kể lại con số / chi tiết khách vừa nói). Sai thì sửa ngay trong "
-                               "loi_gui_khach. Ngắn.",
-            },
-            "loi_gui_khach": {
-                "type": "string",
-                "description": "NGUYÊN VĂN lời gửi khách, bản cuối đã theo mọi luật. Chỉ lời nói với khách — không ghi chú, không nói "
-                               "về luật hay về việc sửa lời. Câu đầu mở bằng nội dung — việc em vừa làm, gọn, lễ phép, không tua lại lời "
-                               "khách (vd \"Em sửa giá còn 24 tỷ cho chị rồi.\" hoặc một lời khen ngắn về điều khách vừa nói — KHÔNG \"Em ghi nhận / Em lưu rồi\"); không mở đầu giống hệt lượt trước.",
-            },
-        },
-        "required": ["tu_soat", "loi_gui_khach"],
-    },
-}
-
-
-def ep_cong_cu_gui_khach() -> bool:
-    """SRS-5.1zzzzzzz246 (chủ dự án 28/10/2026: "bạn thử tắt công cụ cố định xem"): env `AIOI_CONG_CU_GUI_KHACH=tat` → lượt trả lời khách là
-    chữ thường như bản anh Luận, không qua công cụ hai ô `gui_khach` (SRS-76). Một nguồn ở `bot/cau-hinh-loi.env` dòng AIOI_CONG_CU_GUI_KHACH."""
-    return os.environ.get("AIOI_CONG_CU_GUI_KHACH", "").strip().lower() != "tat"
 
 
 def muc_no_luc() -> str:
@@ -200,33 +168,21 @@ class ClaudeProvider(LLMProvider):
         return "".join(b.text for b in resp.content if b.type == "text").strip()
 
     def reply(self, system: str, messages: list[Message], max_tokens: int = 256) -> str:
-        # 19/10/2026 (SRS-5.1zzzzzzz76): lời trả lời là chữ tự do thì model không có chỗ tự soát luật — khách từng nhận "Wait, the
-        # system prohibits…" và "Lưu ý: vi phạm quy tắc một câu hỏi. Sửa lại: …". Nay model PHẢI gọi công cụ hai ô: ghi chú tự soát
-        # (không gửi) rồi lời gửi khách; chỉ ô sau tới khách. Không lọc chữ ở đầu ra.
-        # Bắn thử 19/10: một lượt ra rỗng → khách nhận câu dự phòng "kết nối mạng vừa gián đoạn". Ô lời gửi khách trống thì gọi lại một
-        # lần và ghi sổ lỗi (chỉ lý do + tên ô, không nội dung).
-        cong_cu = ({"tools": [_GUI_KHACH], "tool_choice": {"type": "tool", "name": _GUI_KHACH["name"]}}
-                   if ep_cong_cu_gui_khach() else {})   # SRS-5.1zzzzzzz246: tắt thì gọi chữ thường
+        # Lời trả khách là chữ thường (SRS-5.1zzzzzzz246). Công cụ hai ô `gui_khach` (SRS-5.1zzzzzzz76) và công tắc
+        # `AIOI_CONG_CU_GUI_KHACH` đã gỡ 14/11/2026 (SRS-5.1zzzzzzz490) — công tắc nằm ở "tat" từ 28/10, mô tả công cụ còn dặn mở bằng lời khen.
+        # Lời rỗng thì gọi lại một lần và ghi sổ lỗi (chỉ lý do, không nội dung).
         for lan in range(2):
             resp = self._tao("chat",
                 model=MODEL_CHAT_LUOT.get() or self._chat_model,
                 max_tokens=max_tokens + 300,
                 system=self._sys(system),
                 messages=[{"role": m.role, "content": m.content} for m in messages],
-                **cong_cu,
             )
             self._so.ghi("chat", MODEL_CHAT_LUOT.get() or self._chat_model, resp)
-            o = next((dict(b.input or {}) for b in resp.content if b.type == "tool_use"), {})
-            # Bắn thử 20/10: Haiku gõ tên ô có dấu ("loi_gui_khách") → lời rỗng, tốn một lượt gọi lại. Nhận tên ô theo chữ bỏ dấu.
-            loi = str(next((v for k, v in o.items() if bo_dau(k) == "loi_gui_khach"), "") or "").strip()
-            if not loi and not o:   # SRS-5.1zzzzzzz244: tool_choice auto, model trả chữ thường không gọi công cụ → lấy chữ đó
-                loi = "".join(b.text for b in resp.content if b.type == "text").strip()
-                if cong_cu:
-                    log.warning("Lời gửi khách: chữ thường, model không gọi gui_khach")   # SRS-5.1zzzzzzz245: đếm đường nào được dùng (không in lời)
+            loi = "".join(b.text for b in resp.content if b.type == "text").strip()
             if loi:
                 return loi
-            self._so.ghi_loi("claude chat", f"lời gửi khách rỗng (lần {lan + 1}): stop={getattr(resp, 'stop_reason', '?')}, "
-                                            f"ô={sorted(o)}")
+            self._so.ghi_loi("claude chat", f"lời gửi khách rỗng (lần {lan + 1}): stop={getattr(resp, 'stop_reason', '?')}")
         return ""
 
     def extract(

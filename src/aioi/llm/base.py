@@ -27,7 +27,7 @@ def bo_ranh_gioi(system: str) -> str:
 
 
 # SRS-5.1zzzzzzz234 (chủ dự án 28/10/2026: "thử Sonnet cho tài khoản thử đi"; ảnh bot anh Luận chat bằng sonnet-4-6): model CHAT của MỘT lượt
-# đè model mặc định. Engine đặt cho ID thử (`la_id_thu`) rồi trả lại sau lượt; khách thật vẫn `AIOI_CHAT_MODEL` (Haiku). Bóc tách / đọc ảnh
+# đè model mặc định. Engine đặt cho ID thử (`la_id_thu`) rồi trả lại sau lượt; khách thật vẫn `AIOI_CHAT_MODEL` (hiện Sonnet 5.5, cùng model với ID thử). Bóc tách / đọc ảnh
 # không đổi. Đặt env `AIOI_CHAT_MODEL_THU=tat` để tắt.
 MODEL_CHAT_LUOT: contextvars.ContextVar[str | None] = contextvars.ContextVar("model_chat_luot", default=None)
 

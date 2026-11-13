@@ -48,7 +48,7 @@ DOC = tuple(c["name"] for c in agent_ban.CONG_CU)
 # ---------------------------------------------------------------------------------------------------------------------------------------------
 # Luật ghi: cắt OPERATIONS_SYSTEM_BAN thành khối, mỗi khối về ĐÚNG MỘT chỗ — system (luật chung mọi lượt), mô tả một công cụ ghi, hay
 # tra_luat_o(khoá). Không khối nào bị bỏ ngoài dòng "Trả về JSON đúng schema." (đường công cụ không trả JSON) và từ điển tiếng lóng (đã có
-# NGUYÊN trong phần cố định của phiếu lượt). `tests/test_agent_gop_371.py` kiểm: mọi khối có chỗ, mọi dấu trong bảng còn khớp form.
+# NGUYÊN trong phần cố định của phiếu lượt). (Test `test_agent_gop_371` đã gỡ 13/11/2026 cùng bộ pytest — thêm khối thì tự soát mọi khối có chỗ, mọi dấu còn khớp form.)
 # ---------------------------------------------------------------------------------------------------------------------------------------------
 
 HE = "he"           # system bước 1

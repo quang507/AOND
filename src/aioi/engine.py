@@ -676,9 +676,6 @@ class Conversation:
     # Transient (not persisted): the structural basket ops applied on the latest turn, so the
     # reply layer can confirm exactly what happened. Reset each turn by _plan_and_apply.
     last_receipts: list[tuple] = field(default_factory=list)
-    # Things handed off to a human admin (e.g. an oversize media send we won't process) — a
-    # Live-Chat-Monitor / Takeover (SRD §VI) reads these to know a chat needs attention.
-    admin_escalations: list[dict] = field(default_factory=list)
     # The SELLER'S OWN price reference (from a price list they sent) — keyed by normalized mã lô.
     # PRIVATE to this seller; NOT shared, NOT auto-listed. Used to attach their price when they
     # explicitly rao a căn. (Sending a price list ≠ rao bán — the rổ is populated only on intent.)
@@ -703,10 +700,8 @@ class Conversation:
     # tự xưng (`xung_ho` trống) — lời khách tự nói luôn thắng. Lưu SQLite (SRS-5.1zzzzzzz440): tin chủ động của vòng nền (Image LQC, hỏi sau
     # đăng, nhắc) chạy khi khách không nhắn — bản trước chỉ giữ trong bộ nhớ, lõi khởi động lại là mất, tin nền gọi chủ "anh/chị".
     xung_ho_goi_y: str | None = None
-    # Cột cũ của chế độ test (SRS-5.1zzzzzzz130) — từ SRS-5.1zzzzzzz195 (26/10/2026) KHÔNG còn đường nào bật; để nguyên cột / trường để khỏi đổi lược đồ.
-    che_do_test: bool = False
-    # Persisted (SRS-5.1zzzzzzz131 bản 2): số lượt khách đã CHO THÔNG TIN (lượt ghi được ô) — 3 lượt đầu bắt buộc mở bằng lời khen; "$$$$$" về 0.
-    so_luot_thong_tin: int = 0
+    # SRS-5.1zzzzzzz490: gỡ trường `che_do_test` (SRS-195: không còn đường bật) và `so_luot_thong_tin` (khối "3 lượt đầu khen" gỡ ở SRS-207) —
+    # không ai đọc. Hai cột SQLite cùng tên giữ lại để khỏi đổi lược đồ; `save` ghi giá trị rỗng.
     # Persisted (SRS-5.1zzzzzzz210, chủ dự án 26/10/2026: "1 số điện thoại nhận đầu vào kí gửi 1 số điện thoại nhận đầu ra tư vấn người mua"):
     # khách nhắn tới số Zalo NÀO — "" = số ký gửi (số cũ), SO_TU_VAN = số tư vấn người mua. Chỉ quyết vai MẶC ĐỊNH của lượt mơ hồ và số gửi tin
     # chủ động cho khách; khách nhắn nhầm số vẫn được trả lời đúng việc (`user_intent` của lượt thắng).
@@ -721,10 +716,7 @@ class Conversation:
     nhuong_san_den: float = 0.0
     # Transient (SRS-5.1zzzzzzz177): số lượt khách hỏi việc NGOÀI nhà đất khi chưa tỏ ý bán / mua — lần 2 đề nghị nối người.
     so_luot_ngoai_viec: int = 0
-    # Transient (SRS-5.1zzzzzzz130): ô tin của căn đang nói TRƯỚC khi áp thao tác lượt này, và cụm khách nói làm bằng chứng cho ô vừa ghi —
-    # chỉ để tin phụ chế độ test nói "mới" hay "đổi từ …", kèm câu khách trích.
-    truoc_luot: dict = field(default_factory=dict)
-    truoc_id: str = ""
+    # Transient (SRS-5.1zzzzzzz130): cụm khách nói làm bằng chứng cho ô vừa ghi (tin phụ trích xuất kèm câu khách trích).
     bc_luot: dict = field(default_factory=dict)
     bo_luot: list = field(default_factory=list)        # (ô, lý do) ô AI đề xuất mà code bỏ — tin phụ chế độ test nói "vì sao không nhớ"
     # Transient: điều lượt AI đọc được ở tin vừa nhắn, đã kiểm trích dẫn (SRS-5.1zzzzzzz55): "xin_xem_ban_ve", "cau_hoi_du_an",
@@ -979,7 +971,6 @@ class TurnResult:
     property_score: float      # 0..100
     user_score: float          # 0..100
     tier: str
-    escalated: bool = False    # True when this turn was handed to a human admin (oversize media)
     can_nguoi_that: str | None = None   # cụm khách xin gặp người thật (đã kiểm trích dẫn) → server báo admin (SRS-5.1zzzzzzz82)
     # Thả tim lên tin khách vừa nhắn (SRS-5.1zzzzzzz163): lời chào, đồng ý duyệt tin, "ok", hoặc tin vừa cho địa chỉ → bridge gọi addReaction.
     tha_tim: bool = False
@@ -1053,7 +1044,7 @@ class SqliteConversationStore(ConversationStore):
             ("conversations", "active_lead_id", "''"),
             ("conversations", "xung_ho", "''"),   # SRS-5.1zzzzzzz76: khách tự xưng gì, giữ qua khởi động lại
             ("conversations", "che_do_test", "''"),   # cột cũ chế độ test (SRS-195: không còn bật)
-            ("conversations", "so_luot_thong_tin", "'0'"),   # SRS-5.1zzzzzzz131 bản 2: lượt thông tin thứ mấy (3 lượt đầu khen 100%)
+            ("conversations", "so_luot_thong_tin", "'0'"),   # cột cũ (SRS-131), trường đã gỡ ở SRS-490
             ("conversations", "so_nhan", "''"),   # SRS-5.1zzzzzzz210: khách nhắn số ký gửi ("") hay số tư vấn
             ("conversations", "so_vai", "''"),   # SRS-5.1zzzzzzz331: vai đặt trên số nào ('' = chưa biết)
             ("conversations", "nhuong_san_den", "''"),   # SRS-5.1zzzzzzz216: người thật đang nói tới lúc nào (epoch giây)
@@ -1091,8 +1082,8 @@ class SqliteConversationStore(ConversationStore):
                 conv.role,
                 active_lead_id,
                 conv.xung_ho or "",
-                "1" if conv.che_do_test else "",
-                str(int(conv.so_luot_thong_tin or 0)),
+                "",    # cột cũ che_do_test (SRS-490)
+                "0",   # cột cũ so_luot_thong_tin (SRS-490)
                 conv.so_nhan or "",
                 str(conv.nhuong_san_den or 0) if conv.nhuong_san_den else "",
                 conv.so_vai or "",
@@ -1240,8 +1231,6 @@ class SqliteConversationStore(ConversationStore):
             buyer_lead=lead,
             nhu_cau_khac=khac,
             xung_ho=row[7] or None,
-            che_do_test=bool(row[8]),
-            so_luot_thong_tin=int(row[9] or 0) if len(row) > 9 else 0,
             so_nhan=(row[10] or "") if len(row) > 10 else "",
             nhuong_san_den=float(row[11]) if len(row) > 11 and row[11] else 0.0,
             so_vai=(row[12] or None) if len(row) > 12 else None,
@@ -1598,8 +1587,8 @@ def _goi_khach_la_minh(reply: str, pronoun: str) -> bool:
 
 def _mo_dau_ghi_nhan(reply: str) -> bool:
     """Câu đầu của lời bot là câu ghi nhận ("Em ghi nhận…", "Em đã ghi rồi…", "Em lưu vào tin rồi…", "Em nắm rồi…") — kiểm HÌNH THỨC lời
-    của chính bot, không đoán ý khách (SRS-5.1zzzzzzz118). Từ 22/10 (SRS-5.1zzzzzzz131, chủ dự án bỏ hẳn kiểu ghi nhận) MỌI lượt mở như vậy
-    đều gọi lại model; "Em sửa giá còn…" (nói con số vừa sửa) không phải ghi nhận."""
+    của chính bot, không đoán ý khách (SRS-5.1zzzzzzz118). Nay chỉ bộ chấm kịch bản đếm (`tests/kich_ban/cham.py`) và bộ lọc ví dụ câu chuẩn
+    dùng — lưới gọi lại model theo câu mở đã gỡ khỏi `LUAT_SOAT`; luật nằm ở `GIONG` (SRS-486). "Em sửa giá còn…" không phải ghi nhận."""
     # SRS-5.1zzzzzzz208 (bắn thử 26/10: "Em ghi nhận rồi ạ…", "Em ghi thêm diện tích sàn…", "Em lưu phường 9…", "Em lên thông tin địa chỉ…"):
     # thêm "ghi thêm", "lưu …", "lên thông tin" cùng lớp câu ghi nhận.
     # SRS-5.1zzzzzzz214 (chat 27/10: "Em đã ghi giá 6,2 tỷ cho anh rồi ạ" lọt vì luật chỉ liệt kê "ghi nhận / ghi rồi / ghi lại…"): mọi câu mở
@@ -1699,7 +1688,7 @@ def _phi_lech_vai(loi: str, role: SellerRole, thue: bool) -> str | None:
 
 def _bo_markdown(reply: str) -> str:
     """Bỏ in đậm markdown (Zalo không hiển thị). Không sửa lời bot theo từ khoá ("Dạ", "anh/chị") — SRS-5.1zzzzzzz55. Ghi chú nội bộ
-    của model không còn lọt vào lời bot: lượt trả lời đi qua công cụ hai ô (`ClaudeProvider.reply`, SRS-5.1zzzzzzz76)."""
+    của model lọt vào lời bot thì sửa ở prompt (công cụ hai ô `gui_khach` của SRS-5.1zzzzzzz76 đã gỡ, SRS-490)."""
     return re.sub(r"\*\*([^*]+)\*\*", r"\1", reply.strip())
 
 
@@ -1711,7 +1700,7 @@ def _bo_markdown(reply: str) -> str:
 
 def _soat_tieu_de(eng, conv, reply, nc) -> list[str]:
     thieu_td = _tieu_de_thieu(reply, conv.prop)
-    return ["Bản tin vừa viết có TIÊU ĐỀ thiếu " + ", ".join(thieu_td) + "; tiêu đề 20–25 từ khi dữ liệu đủ, đủ vị trí · diện tích · giá."] if thieu_td else []
+    return ["Bản tin vừa viết có TIÊU ĐỀ thiếu " + ", ".join(thieu_td) + "; tiêu đề 15–25 từ khi dữ liệu đủ, đủ vị trí · diện tích · giá."] if thieu_td else []
 
 
 def _soat_lo_rieng(eng, conv, reply, nc) -> list[str]:
@@ -3048,10 +3037,8 @@ class Engine:
         if agent_project and factual_q:
             captured = []
         else:
-            conv.truoc_luot, conv.truoc_id, conv.bc_luot, conv.bo_luot = dict(conv.prop.fields_khach()), conv.active_listing_id, {}, []
+            conv.bc_luot, conv.bo_luot = {}, []
             captured, conv.last_receipts = self._ap_dung_ke_hoach(conv, ke_hoach)
-            if captured:   # lượt khách CHO THÔNG TIN (SRS-5.1zzzzzzz131 bản 2): 3 lượt đầu bắt buộc mở bằng lời khen
-                conv.so_luot_thong_tin = int(conv.so_luot_thong_tin or 0) + 1
             if conv.y_luot.get("yeu_cau_viet"):   # SRS-5.1zzzzzzz218: lời dặn cách viết theo căn (khoá `_`, không vào ô tin / bản tin)
                 self._nho_yeu_cau_viet(conv.prop, conv.y_luot["yeu_cau_viet"])
             if conv.y_luot.get("ngoai_vung"):   # khoá nội bộ `_` — theo căn qua lưu / nạp lại, không vào ô tin (fields_khach)
@@ -3490,7 +3477,7 @@ class Engine:
             if k_gia:
                 hoi_ve_khoi = k_gia
         # SRS-5.1zzzzzzz178: MỘT khối ưu tiên mỗi lượt, theo thứ tự cần người > pháp lý > ngoài việc > hỏi về (phí / uy tín / link / tình hình /
-        # định giá); có khối ưu tiên thì không ép khen theo lượt, không hỏi ô kế. Không có thì mới tới khối khen theo lượt.
+        # định giá); có khối ưu tiên thì không hỏi ô kế. Không có thì mới tới việc lượt thường (hỏi ô kế, giọng theo `GIONG`).
         uu_tien = ""
         for ten_ut, lay in (("can_nguoi", lambda: khoi_can_nguoi(conv)), ("phap_ly", lambda: khoi_phap_ly(conv, self._can_cua_chu(conv))),
                             ("ngoai_viec", lambda: khoi_ngoai_viec(conv)), ("hoi_ve", lambda: hoi_ve_khoi),
@@ -3499,7 +3486,7 @@ class Engine:
             uu_tien = lay()
             if uu_tien:
                 break
-        # SRS-5.1zzzzzzz207: bỏ khối khen theo lượt — giọng theo bản anh Luận ("khen ngợi điểm mạnh trước" nằm sẵn trong prompt).
+        # SRS-5.1zzzzzzz207: bỏ khối khen theo lượt; giọng nay chỉ ở khối `GIONG` (SRS-480 / 486).
         if uu_tien and ten_ut == "hoi_trung_ten":   # khối hỏi: gỡ (khách bảo đăng / căn nào thắng) thì giữ câu hỏi cho lượt sau
             system += _hoi(ten_ut, uu_tien + KHOI_MOT_UU_TIEN, hoan=lambda cu=note_cu: setattr(conv, "pending_name_note", cu))
         elif uu_tien:
@@ -4155,24 +4142,20 @@ class Engine:
         return self._build_result(conv, reply, captured=[], now=now)
 
     def _escalate_oversize(self, conv: Conversation, urls: list[str], now: float) -> TurnResult:
-        """The send exceeded MAX_SEND_BYTES — don't process it, hand it to a human admin. We
-        record the escalation (a Live-Chat-Monitor picks it up) and tell the seller not to
-        worry: an admin will open this chat and handle their file/link."""
-        conv.admin_escalations.append(
-            {"reason": "media_over_size", "limit_bytes": MAX_SEND_BYTES,
-             "urls": list(urls), "at": now})
+        """The send exceeded MAX_SEND_BYTES — don't process it, hand it to a human admin (đường "khách cần người thật", xem dưới) and
+        tell the seller not to worry: an admin will open this chat and handle their file/link."""
         log.warning("Oversize media send (>%d bytes) escalated to admin for %s: %s",
                     MAX_SEND_BYTES, conv.user_key, urls)
         reply = self._cau_khach(conv, "file_qua_lon")
         conv.history.append(Turn("user", f"[Khách gửi file/link >20MB: {', '.join(urls)}]", now))
         conv.history.append(Turn("assistant", reply, now))
         conv.last_ai_at = now
-        # SRS-5.1zzzzzzz216 (chủ dự án 27/10: "5 làm đi"): câu mẫu `file_qua_lon` nói "Em đã báo admin rồi" nhưng `admin_escalations`
-        # chỉ nằm trong bộ nhớ, không ai đọc. Nay đi cùng đường "khách cần người thật" (server → `bao_can_nguoi` → tin 🙋 cho admin qua
+        # SRS-5.1zzzzzzz216 (chủ dự án 27/10: "5 làm đi"): câu mẫu `file_qua_lon` nói "Em đã báo admin rồi" nhưng danh sách
+        # `admin_escalations` cũ chỉ nằm trong bộ nhớ, không ai đọc (gỡ ở SRS-490). Nay đi cùng đường "khách cần người thật" (server → `bao_can_nguoi` → tin 🙋 cho admin qua
         # escalation-feed) — một chủ cho mọi tin "nhờ admin vào chat".
         conv.y_luot = {"can_nguoi_that": f"gửi file quá {MAX_SEND_BYTES // (1024 * 1024)} MB, nhờ admin vào chat đọc giúp: "
                                          + ", ".join(urls)[:160]}
-        return replace(self._build_result(conv, reply, captured=[], now=now), escalated=True)
+        return self._build_result(conv, reply, captured=[], now=now)
 
     def handle_media_batch(
         self, user_key: str, urls: list[str], now: float | None = None,
@@ -4365,8 +4348,7 @@ class Engine:
                 seller_turn = f"[Khách gửi ảnh giấy tờ BĐS: {names}]" + (f" kèm tin nhắn: “{caption.strip()}”" if caption and caption.strip() else "")
                 # SRS-5.1zzzzzzz82: câu sau danh sách đọc từ sổ do model viết (cùng khung hỏi theo cụm + xưng hô), không viết cứng —
                 # bản cũ ghép NATURAL_QUESTIONS (lời dặn cho model) vào lời gửi khách, luôn khen "pháp lý sổ chuẩn chỉnh", gọi "anh".
-                # SRS-5.1zzzzzzz318 (AU-11): lượt ảnh sổ đi qua PHIẾU LƯỢT với việc riêng — trước đây luôn dùng build_chat_system (không theo công
-                # tắc PHIEU_LUOT), trong đó "khen điểm mạnh trước" đá nhau với "KHÔNG khen sổ / pháp lý". Giữ: không khen sổ / pháp lý.
+                # SRS-5.1zzzzzzz318 (AU-11): lượt ảnh sổ đi qua PHIẾU LƯỢT với việc riêng (bản build_chat_system cũ đã xoá). Giữ: không khen sổ / pháp lý.
                 hoi_y = (f'hỏi đúng MỘT ý: "{nhan_o(next_field, conv.active.prop)}" (khách thấy dòng nào sai sẽ tự nói)' if next_field
                          else "hỏi các dòng trên đã đúng chưa")
                 if so_thieu_nha and not f_so.get("_hoan_cong"):   # SRS-5.1zzzzzzz426 (2.3)

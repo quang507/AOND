@@ -1,7 +1,7 @@
 """Chat TAY với bot người bán trên máy mình bằng quota gói Claude Code (`claude -p`) — không tốn tiền API, không đụng Supabase / Zalo
 (SRS-5.1zzzzzzz304). Cần: Python ≥ 3.10, `pip install -e .` trong thư mục repo, và Claude Code đã đăng nhập (lệnh `claude` chạy được).
 
-  python scripts/chat-cli.py                         # viết lời Sonnet 5.5, bóc tách Haiku 5.5
+  python scripts/chat-cli.py                         # viết lời và bóc tách đều Sonnet 5.5 (như production)
   python scripts/chat-cli.py --chat claude-haiku-5-5 # viết lời Haiku để so
   python scripts/chat-cli.py --luu chat.db           # giữ cuộc chat giữa các lần chạy (mặc định DB tạm, thoát là mất)
 
@@ -26,7 +26,7 @@ if hasattr(sys.stdout, "reconfigure"):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--chat", default="claude-sonnet-5-5", help="model viết lời")
-    ap.add_argument("--boc", default="claude-haiku-5-5", help="model bóc tách")
+    ap.add_argument("--boc", default="claude-sonnet-5-5", help="model bóc tách (production: bot/cau-hinh-loi.env)")
     ap.add_argument("--luu", default="", help="tệp SQLite giữ cuộc chat (mặc định tạm)")
     a = ap.parse_args()
     os.environ.update({"AIOI_LLM_PROVIDER": "claude_cli", "AIOI_CHAT_MODEL": a.chat, "AIOI_EXTRACT_MODEL": a.boc})

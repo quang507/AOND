@@ -31,7 +31,7 @@ from .sdt import GIONG_SDT, SDT_DOC
 log = logging.getLogger("aioi.mua")
 
 # Link trang chi tiết căn đưa cho khách (SRS-5.1zzzzzzz145). `nhadat.cc` chưa trỏ về web (mọi đường dẫn 404, kiểm 23/10/2026) nên dùng cùng mặc định
-# với `lib/format.ts` SITE_URL; đổi tên miền thì đặt biến môi trường AIOI_SITE_URL trên VPS, không sửa chữ ở chỗ khác.
+# với `lib/format.ts` SITE_URL; đổi tên miền thì đặt biến môi trường AIOI_SITE_URL trong .env lõi máy 146, không sửa chữ ở chỗ khác.
 from .web import SITE_URL  # noqa: E402 — một nguồn với phía bán (SRS-5.1zzzzzzz220)
 
 # Trạng thái tin còn hiện cho khách (cùng bộ với `lib/supabase.ts` TRANG_THAI_HIEN).
@@ -1023,7 +1023,7 @@ def co_tieu_chi(lead: Any) -> bool:
 def khoi_can_cho_khach(can: list[dict], chua_co_tieu_chi: bool = False) -> str:
     """Khối căn đưa cho model phía mua. SRS-5.1zzzzzzz145 (chủ dự án 23/10: "sợ sếp chửi", "sếp thích trả lời như người"): bản trước dạy model
     "luôn kèm mã #" và đặt tên khối "RỔ" — model đọc mã tin, nói "trong rổ", liệt kê bằng dấu "·"; và viết "em" giữa lời xưng "cháu".
-    SRS-5.1zzzzzzz146 (cùng ngày: "gửi luôn căn gợi ý rồi sau mới hỏi thêm"): thứ tự tin là khen → căn → MỘT câu hỏi ngắn."""
+    SRS-5.1zzzzzzz146 (cùng ngày: "gửi luôn căn gợi ý rồi sau mới hỏi thêm"): thứ tự tin là căn → MỘT câu hỏi ngắn (giọng theo `GIONG`)."""
     if not can and chua_co_tieu_chi:
         return ("\nCĂN ĐANG RAO: khách chưa nêu đủ khu vực và ngân sách nên chưa tìm căn. Lượt này CHƯA giới thiệu căn nào và KHÔNG nói \"chưa có "
                 "căn\"; chỉ hỏi đúng câu thông tin ở trên, thật ngắn (xưng hô y như các lượt trước).\n")

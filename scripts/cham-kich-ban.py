@@ -1,7 +1,7 @@
 """Chạy bộ kịch bản người bán trên lõi thật rồi chấm tự động (SRS-5.1zzzzzzz304). Mặc định gọi model bằng `claude -p` (quota gói Claude Code —
 không tốn tiền API, SRS-300); DB tạm, không đụng Supabase / Zalo. Đây là thước đo trước khi gỡ / thêm luật: so điểm bản mới với bản cũ.
 
-  python scripts/cham-kich-ban.py --ra /tmp/sonnet.json                                  # viết lời Sonnet 5.5, bóc tách Haiku 5.5
+  python scripts/cham-kich-ban.py --ra /tmp/sonnet.json                                  # model theo bot/cau-hinh-loi.env (hiện Sonnet 5.5 cả hai)
   python scripts/cham-kich-ban.py --chat claude-haiku-5-5 --ra /tmp/haiku.json --so-voi /tmp/sonnet.json
   python scripts/cham-kich-ban.py --chi hht,dat --song-song 2                            # vài kịch bản
   python scripts/cham-kich-ban.py --giong                                               # thêm điểm giọng do model chấm (tốn quota)
@@ -29,7 +29,7 @@ GOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 sys.path[:0] = [os.path.join(GOC, "src"), GOC]
 DIEM_NEN = os.path.join(GOC, "tests", "kich_ban", "diem_nen.json")
 
-from tests.cau_hinh_vps import cong_tac_vps  # noqa: E402 — một nguồn với tests/conftest.py (SRS-5.1zzzzzzz316)
+from tests.kich_ban.cau_hinh_loi import cong_tac_loi  # noqa: E402 — đọc bot/cau-hinh-loi.env, cùng biến với .env lõi máy 146
 
 
 def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
@@ -72,7 +72,7 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
             # SRS-5.1zzzzzzz371: chữ = system + schema JSON (lần bóc tách form) — vòng công cụ CLI đã ghép mô tả công cụ vào system; hai đường so ngang nhau
             chu = len(s) + (len(json.dumps(schema, ensure_ascii=False)) if schema is not None else 0)
             dem["prompt"].append([dang[0], model, chu, s.count("\n=== ") + s.startswith("=== ")])
-            if "=== VIẾT LẠI LƯỢT NÀY ===" in s or "LƯỢT TRƯỚC CỦA EM CHƯA ĐẠT" in s:
+            if "=== VIẾT LẠI LƯỢT NÀY ===" in s:
                 dem["goi_lai"] += 1
             return j
         p._goi = _goi
@@ -132,7 +132,7 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
         nhu_cau = [x for x in [conv.buyer_lead, *conv.nhu_cau_khac] if x is not None]
         mua = {k: v for x in nhu_cau for k, v in vars(x).items() if isinstance(v, str) and v and k not in ("lead_id", "user_key", "stage", "notes")}
         return {"id": kb["id"], "luot": luot, "o": o, "vai": conv.role, "mua": mua, "so_nhu_cau": len(nhu_cau),
-                "loai": conv.prop.loai_hinh, "cho_thue": conv.prop.is_rental,
+                "loai": conv.prop.loai_hinh, "cho_thue": any(li.prop.is_rental for li in conv.listings),
                 "so_can": len(conv.listings), "trang_thai": conv.active.status, "xin_nguoi": xin_nguoi, "giay": round(time.monotonic() - bat_dau, 1), **dem}
 
 
@@ -155,12 +155,12 @@ TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất đ�
                   # SRS-5.1zzzzzzz341 (điều phối 02/11/2026, theo CLAUDE.md §6.3 "giọng rao chợ GIỮ"): hai lượt chấm 02/11 có 6/10 cuộc bị
                   # giọng 2 với lý do "giọng quảng cáo khuôn, giục ép" — tức giám khảo đang trừ chính điều chủ dự án đã chốt, nên trần điểm
                   # giọng bị rubric kẹp chứ không phải bot kém. Vẫn trừ khi câu giục DỰNG RA sự thật không có.
-                  "\n\nGIỌNG TIN RAO (chủ dự án quyết, đúng luật — KHÔNG trừ điểm): BẢN TIN RAO (đoạn sau 📋) viết giọng rao chợ: gọi mời "
-                  "(\"Bà con ơi\", \"Anh chị cô bác ơi\"), chữ dân dã, emoji, gạch đầu dòng thông số, và MỘT câu chốt giục xem sớm "
+                  "\n\nGIỌNG TIN RAO (chủ dự án quyết, đúng luật — KHÔNG trừ điểm): BẢN TIN RAO (đoạn sau 📋) viết giọng rao chợ: MỘT câu mời người tìm nhà mở đầu mô tả, "
+                  "chữ đời thường, emoji, gạch đầu dòng thông số, và MỘT câu chốt giục xem sớm "
                   "(\"chần chừ là người khác chốt trước\", \"ai nhanh tay người đó có phần\"). KHÔNG trừ điểm vì bản tin có giọng đó, có câu "
                   "chốt giục, hay vì nó khác giọng lời chat. CHỈ trừ khi: (a) câu giục DỰNG RA sự thật không có — \"đã có người đặt cọc\", "
                   "\"còn một căn duy nhất\", \"chủ sắp tăng giá\" khi không có dữ kiện nào như vậy; (b) bản tin lặp cùng một ý / cùng một con "
-                  "số ba lần trở lên; (c) LỜI CHAT (đoạn ngoài bản tin) cũng rao chợ hay cũng giục. Giọng rao chợ trong bản tin tự nó không "
+                  "số ba lần trở lên, hay gọi mời quá một lần; (c) LỜI CHAT (đoạn ngoài bản tin) cũng rao chợ hay cũng giục. Giọng rao chợ trong bản tin tự nó không "
                   "phải lỗi.")
 
 
@@ -270,7 +270,7 @@ def main() -> int:
     bo = json.load(open(a.bo, encoding="utf-8"))["kich_ban"]
     if a.chi:
         bo = [k for k in bo if k["id"] in set(a.chi.split(","))]
-    env = cong_tac_vps(nhu=a.nhu)
+    env = cong_tac_loi(nhu=a.nhu)
     if a.khong_cau_mau:
         env["CHAM_KHONG_CAU_MAU"] = "1"
     a.chat = a.chat or env.get("AIOI_CHAT_MODEL", "")

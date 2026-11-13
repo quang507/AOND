@@ -211,7 +211,7 @@ Khi khách gửi SĐT trong câu nói thông thường (ví dụ: *"Tư vấn ch
 #### B. Chi tiết 4 Cải tiến Trọng điểm
 1. **Thu gọn System Prompt <1.500 tokens**:
    - Chuyển các luật tra cứu cồng kềnh (bảng giá đất, luật sổ hồng, công thức hoa hồng, danh mục dự án & lãi vay) sang các Công cụ nguyên tử (Tools) độc lập.
-   - Giữ nguyên 100% tinh hoa bản sắc chợ BĐS Sài Gòn của anh Luận (`luan8560/AOND`): Cấu trúc 4 phần `AD_FORMAT` (Tiêu đề rao chợ 15–25 từ; Mô tả 70–150 từ có nhịp cảm xúc; 4–5 gạch đầu dòng đắt giá; CTA thúc Zalo FOMO); từ điển tiếng lóng BĐS Sài Gòn (*tỏi, củ, xuyệc hẻm "/", giá net, ngộp, SHR, DTCN*); nguyên tắc trung thực tuyệt đối.
+   - Giữ nguyên 100% tinh hoa bản sắc chợ BĐS Sài Gòn của anh Luận (`luan8560/AOND`): Cấu trúc 4 phần `AD_FORMAT` (Tiêu đề rao chợ 15–25 từ; Mô tả 70–150 từ có nhịp cảm xúc; 4–5 gạch đầu dòng đắt giá; CTA thúc Zalo FOMO); từ điển tiếng lóng BĐS Sài Gòn (*tỏi, củ, xuyệc hẻm "/", giá net, ngộp, SHR, DTCN*); nguyên tắc trung thực tuyệt đối. *(Ghi chú 14/11/2026: tiêu đề và lời mời đã khác bản anh Luận từ SRS-5.1zzzzzzz486.)*
 2. **Cắt bỏ các luật cấm tiêu cực (Negative Constraints)**:
    - Thay thế các câu cấm đoán tiêu cực gây gò bó mô hình ("CẤM...", "TUYỆT ĐỐI KHÔNG...") bằng các chỉ thị hành động tích cực: tập trung lắng nghe, trả lời trọng tâm, giải thích chân thành, đồng hành cùng khách.
 3. **Phân vai Thấu hiểu & Chăm sóc khách hàng (Customer Insight & Empathy)**:

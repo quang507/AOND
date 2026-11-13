@@ -298,9 +298,8 @@ LAND_GATED_TYPES: set[str] = {"dat", "dat_tho_cu"}
 # 19/10/2026 (SRS-5.1zzzzzzz76; chủ dự án: "nó hỏi nhiều quá chán chết được"): thêm hiện trạng đang ở / cho thuê — không đổi nội
 # dung tin rao, người mua hỏi lúc hẹn xem; trước đó nó vẫn tính vào % nên nhà phố phải trả lời 7–8 câu mới thấy bản nháp.
 # 20/10/2026 (SRS-5.1zzzzzzz81; chủ dự án: "Hẻm / mặt tiền và hiện trạng… theo anh Luận"): bỏ hai quyết định trên — hai ô này lại
-# hỏi TRƯỚC bản nháp như bản anh Luận (gộp cụm: hẻm cùng địa chỉ / phường, hiện trạng cùng giá / pháp lý). Tập để trống, giữ tên để
-# chỗ nào cần lại thì thêm vào đây.
-HOI_SAU_KHI_RA_TIN: set[str] = set()
+# hỏi TRƯỚC bản nháp như bản anh Luận (gộp cụm: hẻm cùng địa chỉ / phường, hiện trạng cùng giá / pháp lý). Tập rỗng `HOI_SAU_KHI_RA_TIN`
+# gỡ ở SRS-5.1zzzzzzz490 (lấy lại ở lịch sử git nếu cần).
 # Ô pháp lý: chữ khách nói về giấy tờ (vào bản tin). Loại giấy để tính toán là mã AI đọc — `LOAI_PHAP_LY` dưới đây.
 KHOA_PHAP_LY = ("phap_ly", "phap_ly_hoan_cong", "phap_ly_so_hong", "phap_ly_so_do")
 
@@ -591,7 +590,7 @@ class Property:
         ra = [x for x in expected if x in identity and (not self._has(x) or x in chan)]
         ra += [x for x in chan if x not in expected]
         ra += [x for x in expected if x not in identity and (not self._has(x) or x in chan)]
-        ra = [x for x in ra if x not in HOI_SAU_KHI_RA_TIN and x not in self.hoan and x not in O_HE_THONG_TRA]
+        ra = [x for x in ra if x not in self.hoan and x not in O_HE_THONG_TRA]
         # Sàn tối thiểu hỏi TRƯỚC (loại hình → vị trí → giá); rồi MỖI facet chính còn trống MỘT ô (ô đứng đầu của facet theo thứ tự hỏi);
         # rồi phường và các ô còn lại (SRS-5.1zzzzzzz200 / 202).
         san = self.minimal_missing()   # SRS-5.1zzzzzzz260: chỉ ô sàn còn thiếu đứng đầu (có khu vực thì địa chỉ cụ thể hỏi sau)

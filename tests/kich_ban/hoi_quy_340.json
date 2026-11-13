@@ -1,5 +1,5 @@
 {
- "_mo_ta": "Kịch bản HỒI QUY hai lỗi production 02/11/2026 (SRS-5.1zzzzzzz340, phiên kiểm độc lập). Chạy: python scripts/cham-kich-ban.py --bo tests/kich_ban/hoi_quy_340.json --giong. Khoá kiểm như ban.json, thêm `so` = số Zalo khách nhắn mỗi lượt (\"tu_van\" / \"\" = ký gửi). Bộ này ĐỎ cho tới khi lõi sửa — không gộp vào điểm nền của ban.json. Phần \"đưa 2–3 căn\" chưa kiểm được ở đây vì bộ chấm offline không có rổ hàng (xem tests/test_hoi_quy_02_11_340.py).",
+ "_mo_ta": "Kịch bản HỒI QUY hai lỗi production 02/11/2026 (SRS-5.1zzzzzzz340, phiên kiểm độc lập). Chạy: python scripts/cham-kich-ban.py --bo tests/kich_ban/hoi_quy_340.json --giong. Khoá kiểm như ban.json, thêm `so` = số Zalo khách nhắn mỗi lượt (\"tu_van\" / \"\" = ký gửi). Bộ này ĐỎ cho tới khi lõi sửa — không gộp vào điểm nền của ban.json. Phần \"đưa 2–3 căn\" chưa kiểm được ở đây vì bộ chấm offline không có rổ hàng.",
  "kich_ban": [
   {
    "id": "hq_hai_so",

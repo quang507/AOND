@@ -2,7 +2,7 @@
 
 Trước đây có 6 bản regex, mỗi bản bắt một kiểu. Lưới che sổ đỏ chỉ bắt 10 số liền, nên "0900 000 123" lọt qua. Bản che tin gốc
 `\\d[\\d .-]{7,}\\d` thì che cả giá "12.500.000.000". Nay mọi chỗ dựng từ các mảnh dưới đây. SQL `public.che_sdt` chép NGUYÊN chuỗi
-`MAU_SDT` (bài `test_sdt_317` so chuỗi trong migration), và `bun run doi-chieu:sdt` chạy cả hai bản trên `bot/tests/luat/sdt.json`.
+`MAU_SDT` (đổi mẫu thì sửa cả migration — bài so `test_sdt_317` và bộ `bot/tests/luat/sdt.*` đã gỡ).
 
 Viết sao cho Python `re` và Postgres ARE hiểu như nhau: dùng `[0-9]` thay `\\d` (vì `\\d` của Python bắt cả chữ số Unicode), dùng dấu ngăn
 `[ .-]` thay `\\s`, và không có cờ."""

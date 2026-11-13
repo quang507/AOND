@@ -86,7 +86,7 @@ const trangBia = [
     ["Định vị", "Môi giới thường trực đứng sau mọi môi giới khác: listing chỉ là mồi, giao dịch xảy ra trong cuộc trò chuyện, và cuộc trò chuyện không bao giờ kết thúc"],
     ["Phạm vi địa bàn", "Sài Gòn (TP.HCM theo phường mới sau 01/07/2025) + Long An; trọng tâm là bán; cụm khởi điểm Quận 5 cũ"],
     ["Quy mô mục tiêu", "Theo SRD gốc: 200–300 người dùng/ngày, 6.000–9.000 tin nhắn/ngày (NFR-05: chưa đo trên lưu lượng thật; hạ tầng đang ở bậc Free)"],
-    ["Kênh", "Zalo (bridge tài khoản cá nhân trên VPS; Zalo OA webhook đã viết, chờ OA duyệt) · Website SEO · /admin"],
+    ["Kênh", "Zalo (bridge tài khoản cá nhân trên máy 146; Zalo OA webhook đã viết, chờ OA duyệt) · Website SEO · /admin"],
     ["Trạng thái", "Đã dựng và chạy thật: web, kho tin, bot hai mặt (bán + mua), hỏi-đáp qua chủ nhà / admin, điểm & hạng, keep-alive, nhận file / bảng giá / CSV, sổ lỗi + còi. Chưa có vòng người thật đủ để đo (docs/00 §0.9)"],
   ], [2340, 7020]),
   new Paragraph({ spacing: { after: 240 } }),
@@ -182,7 +182,7 @@ const mucVI = [
 
 const mucVII = [
   h1("VII. KIẾN TRÚC HỆ THỐNG & LUỒNG DỮ LIỆU"),
-  b("Hạ tầng", "Supabase (Postgres + RLS trên mọi bảng + pgvector · Edge Functions Deno còn 3: escalation-feed, geocode-listings, media-cleanup · Storage 4 bucket: listing-public, listing-private, masterdb-raw, listing-photos đã khoá · Vault giữ khoá API · pg_cron + pg_net cho lịch). Web Next.js 15 + Tailwind 4 trên Vercel, đọc DB bằng khoá công khai qua RLS, mô tả tin luôn qua bộ lọc SĐT. Bộ não là lõi Python `src/aioi/` trên VPS (aond-core); bridge zca-js (tài khoản Zalo clone) gọi lõi. Tất cả ở bậc Free; không sao lưu (OPEN-25, chủ dự án chấp nhận 11/09/2026)."),
+  b("Hạ tầng", "Supabase (Postgres + RLS trên mọi bảng + pgvector · Edge Functions Deno còn 3: escalation-feed, geocode-listings, media-cleanup · Storage 4 bucket: listing-public, listing-private, masterdb-raw, listing-photos đã khoá · Vault giữ khoá API · pg_cron + pg_net cho lịch). Web Next.js 15 + Tailwind 4 trên Vercel, đọc DB bằng khoá công khai qua RLS, mô tả tin luôn qua bộ lọc SĐT. Bộ não là lõi Python `src/aioi/` trên máy 146 (dịch vụ aond-core); bridge zca-js (tài khoản Zalo clone) gọi lõi. Tất cả ở bậc Free; không sao lưu (OPEN-25, chủ dự án chấp nhận 11/09/2026)."),
   b("AI", "Claude (Anthropic) cho bóc tách chính có trích dẫn, lượt có ảnh / PDF và trợ lý có công cụ nhánh mua; chuỗi dự phòng Groq → Gemini đổi bằng secret, không cần deploy; Gemini embedding 768 chiều cho tìm theo nghĩa. Ranh giới bóc tách ⟂ AI có máy canh: mã tiền định không gọi SDK, tầng AI không ghi bảng nghiệp vụ."),
   b("Dữ liệu", "Các nhóm bảng [RỔ HÀNG] [NGƯỜI & HỘI THOẠI] [BOT & HÀNG ĐỢI] [HỆ THỐNG] cùng các view đọc cho người và admin; chú thích bảng nằm TRONG DB (comment on). Hai hàng đợi bằng bảng (reminders, media_cleanup_queue) với hợp đồng thuê và thư chết — tin không mất khi một bên offline (NFR-04). Schema `so` cho người đọc như Excel (so.ro_hang, so.nguoi_ban, so.hoi_thoai). Dữ liệu thử và thật tách bằng la_id_thu()."),
   b("Luồng người bán", "Tin Zalo → bridge → lõi Python nhận vai → lượt AI đọc ý (form gọn) → kiểm bằng chứng → ghi ô theo bậc nguồn → code chọn việc của lượt → model viết từ phiếu lượt → van an toàn (che liên hệ, chặn bịa, một câu hỏi, xưng hô) → gửi. Đủ dữ liệu → bản nháp → gật → lên kệ → dẫn phí → keep-alive / hỏi bù."),

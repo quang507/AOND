@@ -157,11 +157,11 @@ rao `AD_FORMAT`, mức phí `muc_phi`. Câu bot nói nguyên văn ở `src/aioi/
 > - **KHÔNG mở đầu bằng "Dạ"** (CLAUDE.md §6; `engine._bo_da_dau` bỏ chữ đó khi model viết lại vẫn mở "Dạ", SRS-5.1zzzzzzz230).
 > - **Không gọi khách là "mình"**; "mình" nghĩa chúng ta ("hay mình đăng luôn") thì được (`xung_ho.goi_khach_la_minh`, SRS-5.1zzzzzzz171 / 226 / 230).
 > - **Xưng hô theo `src/aioi/xung_ho.py`** (`goi_toi`): khách xưng "em" → bot xưng anh / chị theo tên trợ lý; khách xưng "cháu" / "con" → bot xưng cô / chú; khách xưng chú / cô / bác → bot xưng "cháu" (SRS-5.1zzzzzzz214 / 234).
-> - **Câu ghi nhận ("Em ghi nhận…", "Em đã cập nhật…") báo MỘT lần bằng lời thường** (dặn ở `GIONG`, SRS-5.1zzzzzzz229 / 480; lưới code `engine._co_cau_ghi_nhan` đã gỡ, SRS-5.1zzzzzzz312).
+> - **Khách đưa thông tin thì hỏi thẳng ý kế, KHÔNG báo đã ghi / đã nhận / đã thêm vào tin, câu hỏi không kèm lý do kiểu "để em ghi vào tin"**; chỉ báo việc khách không tự thấy (chuyển câu hỏi cho chủ nhà, ghi lịch xem) (`GIONG`, SRS-5.1zzzzzzz486 / 489; trước là "báo một lần", SRS-5.1zzzzzzz229; lưới code `engine._co_cau_ghi_nhan` đã gỡ, SRS-5.1zzzzzzz312).
 > - **Độ dài theo ý khách: lượt hỏi thông tin một hai câu, khoảng 20–30 từ; lượt khách hỏi tư vấn / phí / pháp lý hay lộ cảm xúc thì đủ ý trong vài câu; tối đa MỘT câu hỏi mỗi lượt** (`GIONG`, `prompts.LUAT_MOT_CAU_HOI`, lưới `engine._nhieu_cau_hoi`; SRS-5.1zzzzzzz252 / 480 — trước là "khoảng 20 từ", SRS-5.1zzzzzzz471).
 > - **Nhận cảm xúc của khách trước khi vào việc; khách muốn dừng thì chào nhẹ, không níu; hỏi "người hay máy" thì nói thật là trợ lý AI** (`GIONG`, SRS-5.1zzzzzzz480).
-> - Gọi khách nhiều nhất một lần mỗi lượt; mỗi lượt một vẻ; khen khi có điểm mạnh thật, không ép cảm thán, không bình giá, không bịa (`GIONG`, SRS-5.1zzzzzzz480).
-> - Phía mua: ~~mỗi lượt MỘT căn (SRS-5.1zzzzzzz160)~~ → rổ có ≥ 2 căn hợp thì 2–3 căn một lượt (SRS-5.1zzzzzzz335 / 340, chủ dự án 02/11: bản một căn "chat chán quá"); mời đi xem tối đa một lần trong vài lượt (`GIONG_VUI`, SRS-5.1zzzzzzz375 / 376); ~~hỏi nhu cầu tối đa hai câu (SRS-5.1zzzzzzz154)~~ → hỏi ba ý cốt lõi (khu vực, ngân sách, loại BĐS), đủ thì gợi căn trước, câu hỏi thêm là MỘT câu mở tuỳ chọn (`prompts.mua_co_dinh` / `build_buyer_chat_system`, SRS-5.1zzzzzzz335).
+> - Gọi khách khi thấy tự nhiên; mỗi lượt một vẻ; điều căn nào cũng có (sổ hồng, số phòng, diện tích, nội thất) thì không nhận xét, chỉ điểm thật sự hiếm mới được nửa câu; không cảm thán, không bình giá; nhận định về khu / người mua / "em rành khu này" chỉ khi có dữ liệu (`GIONG`, SRS-5.1zzzzzzz480 / 486 / 489).
+> - Phía mua: ~~mỗi lượt MỘT căn (SRS-5.1zzzzzzz160)~~ → rổ có ≥ 2 căn hợp thì 2–3 căn một lượt (SRS-5.1zzzzzzz335 / 340, chủ dự án 02/11: bản một căn "chat chán quá"); mời đi xem tối đa một lần trong vài lượt (`GIONG`, SRS-5.1zzzzzzz375 / 376 / 480); ~~hỏi nhu cầu tối đa hai câu (SRS-5.1zzzzzzz154)~~ → hỏi ba ý cốt lõi (khu vực, ngân sách, loại BĐS), đủ thì gợi căn trước, câu hỏi thêm là MỘT câu mở tuỳ chọn (`prompts.mua_co_dinh` / `build_buyer_chat_system`, SRS-5.1zzzzzzz335).
 >
 > Các tiểu mục ghi ngày 09/2026–10/2026 có trích `TONE_RULES`, `HUMAN_CHAT_RULES`, `SELLER_FEWSHOT`, `CAU_HOI_MAU`,
 > van `*.ts`, `bun run prompt` mô tả bot TypeScript cũ (gỡ 18/10/2026) — **LỊCH SỬ**, giữ làm dấu vết quyết định.
@@ -195,8 +195,8 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 ### Bảy quy tắc
 (Gom theo 7 ý gốc của `chats w B.docx`; chỗ vênh luật hiện hành đã sửa 28/10/2026.)
 1. **KHÔNG mở đầu bằng "Dạ"** (luật chủ dự án, CLAUDE.md §6; thay ý gốc "mở đầu bằng Dạ"
-   của `chats w B.docx`). Mở bằng cảm xúc thật với điều khách vừa nói, hoặc vào thẳng
-   nội dung (`GIONG_VUI`).
+   của `chats w B.docx`). Khách hỏi hay lộ cảm xúc thì đáp điều đó trước; khách chỉ đưa
+   thông tin thì vào thẳng câu hỏi kế (`GIONG`, SRS-5.1zzzzzzz486).
 2. **Hỏi gọn, không thành bảng hỏi**: người MUA được hỏi ba ý cốt lõi (khu vực, ngân sách,
    loại BĐS), đủ thì gợi căn trước, câu thêm là một câu hỏi mở tuỳ chọn (`prompts.mua_co_dinh`,
    SRS-5.1zzzzzzz335; thay "tối đa hai câu" của SRS-5.1zzzzzzz154). Người BÁN cần bổ sung
@@ -208,10 +208,10 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
    > *"Cho tới 15h ngày 17/9 thì còn. Nhưng để em hỏi lại anh nhé."*
 5. **Xin lỗi ngắn, sửa ngay**, không giải thích dài. Hiểu nhầm hay ghi nhầm ý khách ("không phải vậy", "ý anh là…", "hiểu sai rồi") thì xin lỗi một câu ngắn ("Em xin lỗi, em hiểu nhầm ạ") rồi sửa (FR-218 b; bỏ "Dạ" theo luật hiện hành).
 6. **Không từ hệ thống, không câu sáo**: cấm "Hệ thống ghi nhận", "Quý khách",
-   "Vui lòng", "theo nguồn", "dựa trên dữ liệu", ~~"Tuyệt vời!"~~ (nay `GIONG_VUI` cho mở bằng một tiếng
-   cảm thán — "Wow", "Tuyệt vời", "Ồ hay quá"… — khi khách vừa đưa điểm mạnh, SRS-5.1zzzzzzz248), "Chắc chắn rồi!",
-   "Rất vui được hỗ trợ". Câu ghi nhận ("Em ghi nhận…") tối đa một lần mỗi cuộc chat
-   (SRS-5.1zzzzzzz229); không gọi khách là "mình". Không nhận xét
+   "Vui lòng", "theo nguồn", "dựa trên dữ liệu", "Tuyệt vời!" (`GIONG` không cảm thán, SRS-5.1zzzzzzz480; bản
+   `GIONG_VUI` cho mở bằng cảm thán ở SRS-5.1zzzzzzz248 đã gỡ), "Chắc chắn rồi!",
+   "Rất vui được hỗ trợ". Không báo đã ghi ("Em ghi nhận…", xem mục giọng ở trên, SRS-5.1zzzzzzz486);
+   không gọi khách là "mình". Không nhận xét
    giá chủ nhà đưa ra ("mức hợp lý", "dễ làm việc") khi họ không hỏi (11/09/2026).
 7. **Không bao giờ hỏi số điện thoại** ngoài bước đặt lịch xem nhà (NFR-07); ở bước đó xin MỘT lần (SRS-5.1zzzzzzz148).
 
@@ -308,8 +308,8 @@ thêm van code `chanNhanLaNguoi` — `bot/supabase/functions/_shared/extraction/
 - ❌ Câu sáo AI (xem quy tắc 6).
 
 ### Bố cục bài rao (`AD_FORMAT`, `src/aioi/prompts.py`)
-Chuẩn khi model viết bài rao (khuôn anh Luận, SRS-5.1zzzzzzz201 / 207; đọc nguyên văn ở `AD_FORMAT`):
-1. **Tiêu đề 15–25 từ**, mở bằng một lời gọi người mua kiểu rao chợ (model tự chọn chữ, mỗi tin một kiểu; cấm "Trời ơi" — `AD_FORMAT` không đưa câu mẫu), dồn điểm mạnh nhất (vị trí · diện tích · kết cấu · giá · điểm hiếm), phải có GIÁ.
+Chuẩn khi model viết bài rao (gốc khuôn anh Luận SRS-5.1zzzzzzz201 / 207; từ SRS-5.1zzzzzzz486 khác bản anh Luận ở tiêu đề và lời mời, chủ dự án đồng ý 14/11/2026; đọc nguyên văn ở `AD_FORMAT`):
+1. **Tiêu đề 15–25 từ**, đi thẳng vào vị trí · diện tích · giá, còn chỗ thì thêm MỘT điểm mạnh nhất; phải có GIÁ; cấm "Trời ơi". Lời mời người mua chỉ một lần trong cả tin, ở câu mở của mô tả, lịch sự như người bán nói với khách lạ ghé xem nhà (SRS-5.1zzzzzzz486).
    `AD_FORMAT` (nguyên bản anh Luận, SRS-5.1zzzzzzz207) ghi "viết hoa gây chú ý"; luật cũ "không HOA toàn bộ / không `**`" (SRS-5.1zzzzzzz192) đã bị SRS-207 thay. Chủ dự án chốt 28/10/2026 (sửa lại cùng ngày, kèm ảnh mẫu bản tin Cao Lỗ): tiêu đề viết THƯỜNG như câu nói, chỉ hoa chữ đầu câu và tên riêng — "không cần viết hoa để như này"; `AD_FORMAT` đổi (SRS-5.1zzzzzzz241; lưới code `_viet_hoa_ca_cum` đã gỡ, SRS-5.1zzzzzzz312 — luật chỉ còn ở prompt) [nguồn: chủ dự án 28/10/2026, chat].
 2. **Mô tả**: MỘT đoạn 70–150 từ giọng rao chợ, nói với đám đông người mua ("anh chị", "cô bác", không "bạn"); không gạch đầu dòng.
 3. **4–5 gạch đầu dòng**, mỗi dòng một ý đắt nhất; không ghi nhãn khi dữ liệu tự rõ ("132m²", không "Diện tích: 132m²").
@@ -411,7 +411,7 @@ tháng tiền thuê" (BR-05); vai chưa rõ thì nêu cả hai mức hoặc hỏ
   số trơn (hẻm 4m, 4x16) không phải điểm mạnh để khen. Khen câu nào cũng có tạo cảm giác hỏi cung thảo mai, máy móc.
   → ~~bản `GIONG_VUI` (SRS-5.1zzzzzzz248 / 471)~~ **nay `GIONG` (SRS-5.1zzzzzzz480): khen khi có điều đáng khen thật, điều bình thường đáp thẳng, không cần cảm thán**; bản cũ: "khen thoải mái, thật lòng và CỤ THỂ" — khách vừa đưa một điểm mạnh thì mở bằng một tiếng cảm thán (mỗi lần một tiếng khác), khen đúng điểm đó và nó được việc gì cho căn này; đổi kiểu khen giữa các lượt (cảm thán + vài chữ · một lợi ích gọn nửa câu · vào thẳng việc); điều bình thường thì đáp thẳng, không khen gượng; không thêm chi tiết khách chưa nói, không nêu số / so giá thị trường, không hứa bán được.
 - **Tin thu thập ngắn, 1–3 câu** (trước là ~30 từ, nới ở FR-215; nay 20–30 từ, lượt tư vấn dài hơn — `GIONG`, SRS-5.1zzzzzzz480); chỉ khi S yêu cầu "xem lại tin/đăng đầy đủ" mới soạn dài.
-- **Lý do vì-khách**: *"khách mua đang hỏi…"*, *"để em nhấn mạnh vào bài giới thiệu…"*.
+- ~~**Lý do vì-khách**: *"khách mua đang hỏi…"*, *"để em nhấn mạnh vào bài giới thiệu…"*~~ — bỏ: câu hỏi không kèm lý do kiểu "để em ghi vào tin" (SRS-5.1zzzzzzz489).
 - **Diện tích mơ hồ**: hỏi lại dựa trên con số đã cho ("50m2 đó là đất hay sàn ạ?").
 - **Trung thực với ảnh**: không suy diễn từ ảnh; đoán thì *"hình như là…"* + xác nhận (RSK-03).
 - **"Nhà mình đã chốt bán chưa ạ?"** chỉ hỏi khi dữ liệu đã đầy đủ (keep-alive INS-03).
@@ -479,7 +479,7 @@ Mọi van đổi lời đều vào sổ `van_kich` (trước / sau); view `van_k
 
 ### Giọng demo AOND có quy định không? — 06/10/2026 (SRS-5.1zzo)
 
-Có, chỉ bằng prompt (`prompts.py` — nay `GIONG_VUI` + `build_phieu_luot`; `build_chat_system` đã xoá, SRS-5.1zzzzzzz319): ~30 từ, khen điểm mạnh THẬT trước rồi hỏi đúng 1 thông tin, xưng "em" gọi "anh/chị", trung thực (chỉ dùng điều khách nói + kiến thức dự án đã có, đoán thì "hình như là"), viết trọn vẹn không bỏ lửng; bản nháp mở "Em sẽ rao như vầy nhé:" kết "Anh thấy hấp dẫn chưa ạ?", chưa nhắc phí. `engine.py` không có van sửa văn. nhadat.cc đã chép các ý đó vào `TONE_RULES` / `SELLER_SCRIPT_RULES` (05/10) và tắt van sửa văn (06/10). Lời model còn lệch ("không rush", đọc lại "giá 10 tỷ có thương lượng") → sửa PROMPT (thêm ví dụ SAI / ĐÚNG, cấm chen tiếng Anh), không thêm van. Bốn lỗi khác của lượt bắn thử 06/10 là lỗi CƠ CHẾ (ô chờ không có câu hỏi, cổng nhiều căn, "khách hỏi" không bằng chứng, trạng thái tin không đối chiếu DB) — bảng ở `docs/07 SRS-5.1zzo`.
+Có, chỉ bằng prompt (`prompts.py` — nay `GIONG` + `build_phieu_luot`; `build_chat_system` đã xoá, SRS-5.1zzzzzzz319): ~30 từ, khen điểm mạnh THẬT trước rồi hỏi đúng 1 thông tin, xưng "em" gọi "anh/chị", trung thực (chỉ dùng điều khách nói + kiến thức dự án đã có, đoán thì "hình như là"), viết trọn vẹn không bỏ lửng; bản nháp mở "Em sẽ rao như vầy nhé:" kết "Anh thấy hấp dẫn chưa ạ?", chưa nhắc phí. `engine.py` không có van sửa văn. nhadat.cc đã chép các ý đó vào `TONE_RULES` / `SELLER_SCRIPT_RULES` (05/10) và tắt van sửa văn (06/10). Lời model còn lệch ("không rush", đọc lại "giá 10 tỷ có thương lượng") → sửa PROMPT (thêm ví dụ SAI / ĐÚNG, cấm chen tiếng Anh), không thêm van. Bốn lỗi khác của lượt bắn thử 06/10 là lỗi CƠ CHẾ (ô chờ không có câu hỏi, cổng nhiều căn, "khách hỏi" không bằng chứng, trạng thái tin không đối chiếu DB) — bảng ở `docs/07 SRS-5.1zzo`.
 
 ### Lễ phép hơn mà vẫn ngắn — 08/10/2026 (SRS-5.1zzzk) [LỊCH SỬ bot TS — nay không mở "Dạ"]
 

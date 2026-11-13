@@ -751,8 +751,8 @@ Không có bảng token/TTL, không nối fingerprint (OPEN-14); lõi chưa đ�
 5. Dựng prompt: lượt hỏi ô phía bán = prompt gọn `lean_system_prompt_cho_luot` (`LEAN_SYSTEM_PROMPT`, khi `AIOI_PROMPT_GON=bat` — đang bật,
    SRS-408 / 414; tắt thì phiếu lượt `build_phieu_luot`) / bản nháp / sau bản nháp, hoặc prompt mua; khối cố định trước RANH_GIOI_CACHE.
 6. Model viết lời (MODEL_CHAT; hỏng → Gemini → Groq, `llm/du_phong.py`). Người bán đi vòng gộp: bước 2 CÙNG cuộc hội thoại công cụ, kết quả
-   công cụ ghi = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt), `agent_gop.viet`. Người mua: vòng công cụ `agent_mua.chay`
-   (tra `tim_can` / `xem_can` / `tra_du_an` / `du_an_trong_khu`; ghi `hen_xem` / `hoi_chu_nha` khi bóc tách sót, SRS-290 / 292).
+   công cụ ghi = báo cáo sau khi áp (đã ghi / bỏ vì sao / ô thiếu / việc lượt), `agent_gop.viet`. Người mua đã rõ vai: `agent_gop.viet_mua` cùng vòng (SRS-380);
+   lượt đầu / vòng lỗi mới dự phòng `agent_mua.chay` (tra `tim_can` / `xem_can` / `tra_du_an` / `du_an_trong_khu`; ghi `hen_xem` / `hoi_chu_nha` khi bóc tách sót, SRS-290 / 292).
 7. Soát đầu ra `_soat_hinh_thuc` theo bảng `LUAT_SOAT` (gồm `hoi_dung_o`, SRS-367): lệch → gọi lại tối đa một lần.
 8. Lưu Supabase (tin, hội thoại, messages) rồi trả lời bridge.
 ```
@@ -800,6 +800,17 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 ---
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
+
+### SRS-5.1zzzzzzz490 · Soát luật, bộ chấm, code và docs: gỡ phần dư, đồng bộ theo giọng mới (14/11/2026)
+Chủ dự án 14/11: "kiểm tra các luật các test các thứ có gì dư ra ko, đồng bộ docs". Ba lượt soát song song (code lõi, bộ chấm và CI, docs và tệp luật), từng mục kiểm lại với code trước khi sửa.
+- **Gỡ code không ai đọc:** trường `Conversation.che_do_test`, `so_luot_thong_tin` (khối "3 lượt đầu khen" gỡ từ SRS-207), `truoc_luot` / `truoc_id`, `admin_escalations`; `TurnResult.escalated`; `contested_keys` / `_contested` (`projects.py`); tập rỗng `HOI_SAU_KHI_RA_TIN`. Hai cột SQLite cũ giữ lại để khỏi đổi lược đồ, `save` ghi giá trị rỗng.
+- **Gỡ công cụ `gui_khach` và công tắc `AIOI_CONG_CU_GUI_KHACH`:** công tắc nằm ở `tat` từ 28/10 (SRS-246), mô tả công cụ còn dặn "mở bằng một lời khen". `ClaudeProvider.reply` chỉ còn đường chữ thường, lời rỗng thì gọi lại một lần. Dòng biến trong `.env` máy 146 để nguyên, không còn ai đọc.
+- **Prompt còn kéo về giọng cũ:** `DAP_TRUOC` (khối nhân vật) nay "khách hỏi hay lộ cảm xúc thì đáp điều đó trước; khách chỉ đưa thông tin thì đi thẳng sang việc cần hỏi"; câu việc khi tin chưa lên web bỏ "đáp điều khách vừa nói như thường"; lượt đọc ảnh bỏ "khen". Lưới tiêu đề nói 15–25 từ cho khớp `AD_FORMAT`. **Token:** +~10 mỗi prompt có khối nhân vật.
+- **Bộ chấm và CI:** `tests/cau_hinh_vps.py` → `tests/kich_ban/cau_hinh_loi.py` (`cong_tac_loi`), bỏ hàm `cong_tac()` không ai gọi. `cham-kich-ban.py`: bỏ nhánh đếm câu không còn trong code, ô cho thuê kiểm mọi căn (SRS-485), tiêu chí giọng tin rao theo SRS-486 (một câu mời). `cham.yml` cài `-e .` (extra `[dev]` không còn). `chat-cli.py` mặc định bóc tách Sonnet như production.
+- **Gỡ script:** `scripts/thu-cli.py` (trùng `chat-cli.py` / `cham-kich-ban.py --chi`), `scripts/hop-nhat-nguon-du-an.mjs` (chạy một lần, xoá nguồn dự án là quyết định 08/11). Lấy lại ở lịch sử git.
+- **Docs và luật:** docs/00, 03, 06, 13, 14 bỏ "khen trước", "báo ghi nhận một lần", `GIONG_VUI`, tiêu đề "lời gọi rao chợ"; `.claude/luat-dang-ap.md` thêm luật SRS-485 / 486 / 487 / 488 / 489, bỏ tên test đã gỡ, sửa dòng "`bun run cham` bắt buộc trước khi đẩy" cho khớp quyết định 06/11 và 11/11. Chú thích trỏ tới test / VPS đã gỡ trong `src/aioi` sửa chữ. `bot/cau-hinh-loi.env` ghi đúng cỡ prompt gọn (≈4,3k token).
+- **Không gỡ, ghi lại:** lưới code trùng luật prompt (`_soat_da`, `_soat_mot_cau_hoi`, `_soat_goi_minh`, `_soat_ten_khoi`, `_soat_binh_luan_gia`…) là lưới đỡ có chủ đích. Công tắc `AIOI_MODEL_LUOT_DE` (đang tắt) và nhánh `AIOI_PROMPT_GON=tat` (phiếu cũ còn dùng ở lượt ảnh sổ) giữ. `llm/mock.py` (đoán ý bằng từ khoá, chỉ chạy khi đặt tay) và `scripts/dao-sau-du-an.mjs` chờ chủ dự án. `diem_nen.json` còn là điểm của 51 kịch bản / bóc tách Haiku; dựng lại tốn quota.
+- **Kiểm:** parse cú pháp, pyflakes không thêm lỗi mới, lưu / nạp hội thoại SQLite thử một lượt, `bun run truyvet` sạch.
 
 ### SRS-5.1zzzzzzz489 · Câu hỏi không kèm "để em ghi vào tin"; không tự nhận rành khu (14/11/2026)
 Hai câu lượt đầu còn sót sau SRS-487: "giá bao nhiêu để em ghi vào tin?" và "Gò Vấp thì em nắm khá rõ khu này".
@@ -860,10 +871,4 @@ Chủ dự án 13/11 sau SRS-480: "sửa luôn câu mẫu cau_mau cho khớp gi�
 - **Sửa (`cau_mau.MAC_DINH`):** 18 câu — hai câu chào số ký gửi (câu chào đầu mời khách kể luôn địa chỉ và giá để có ô cho DB), sáu câu ẩn / giữ tin, hai câu ẩn ảnh (`{goi}` thay "anh/chị"), năm câu nhận tệp, bản vẽ, căn đã chốt, hai câu đọc trang web. Câu đã chốt giữ nguyên: duyệt tin, hỏi phí, báo phí, chấm sao, xác nhận lịch, bản nháp, chào số tư vấn, các tin chủ động.
 - **DB:** soát trước khi sửa thấy bảng `cau_mau` RỖNG (0 dòng; trang /admin/cau-chuan không có câu nào để sửa, lõi đang chạy câu trong code) → migration `20261113h_cau_mau_khop_giong` nạp lại đủ 60 khoá từ `MAC_DINH`, dòng đã sửa tay (nếu có) giữ nguyên.
 - **Còn:** ba câu báo khách mua (`bao_tra_loi_chu_nha`, `bao_lich_da_chot`, `bao_can_da_ban`) vẫn đọc mã căn `{ma}` — đổi sang tên đường phải sửa chỗ gọi, chưa làm. **Kiểm:** điền thử 60 câu × 3 cách xưng, không lỗi chỗ giữ chữ, không gọi "mình"; chạy thử trong giao dịch huỷ. Chưa đưa lõi lên 146.
-
-### SRS-5.1zzzzzzz480 · Bỏ "giọng vui": một khối `GIONG` tự nhiên chung bot bán và bot mua (13/11/2026)
-Chủ dự án 13/11, sau khi so với bot MOSO (chat thử 35 lượt): "không cần giọng vui nữa mà sửa luôn cho bot zalo bán, bot zalo mua… nới được… bên AOND anh Luận cái nào lấy được thì lấy, không được thì bỏ". Lớp lỗi: giọng định bằng luật đếm / cấm vá chồng nhiều đợt (14 gạch, có cặp tự kéo nhau, ép cảm thán, 20 từ) và lượt hỏi ô phía bán chạy một bộ luật nhắn riêng → một cuộc chat hai giọng.
-- **Sửa (`prompts.py`):** `GIONG_VUI` → `GIONG`, viết thuận kèm lý do: nhận cảm xúc khách trước khi vào việc, đáp trọn câu khách hỏi, độ dài theo ý khách (lượt hỏi ô 20–30 từ, lượt tư vấn / phí / pháp lý / đang lo thì vài câu), khen khi có điểm mạnh thật — không ép cảm thán, khách muốn dừng thì không níu, hỏi "người hay máy" thì nhận là trợ lý AI; kèm 5 lượt `<vi_du>` cảm xúc / ngoài lề (không chứa câu hỏi ô tin, SRS-196). `LEAN_SYSTEM_PROMPT` ghép chung `GIONG`. Phía mua: bỏ câu cấm hẳn nói thị trường → nhận định chung + dữ liệu của lượt / công cụ, số chỉ lấy từ đó, không giục mua, không hứa sinh lời. Thang chấm giọng `scripts/cham-kich-ban.py` đổi theo.
-- **Lấy từ bản anh Luận:** độ dài "tự cân nhắc theo ý khách, không luật cứng", khen điểm mạnh thật rồi hỏi một ý, "hình như" khi đoán, xong việc chốt nhẹ không nài. **Bỏ:** "Dạ em hiểu ạ", CTV, "Top Quận 5", kênh Buyers, gọi cứng "anh/chị", chữ "TUYỆT ĐỐI". **Giữ quyết định cũ:** không "Dạ", không gọi "mình" / "bạn", tối đa một câu hỏi, câu mẫu `cau_mau` chưa đụng.
-- **Kiểm:** parse cú pháp + ghép thử ba prompt (gọn bán, phiếu bán, mua) đều có đúng một khối `GIONG` trước `RANH_GIOI_CACHE`. CHƯA thử với model và CHƯA đưa lên 146 (phiên cloud không tới được máy 146, không có khoá model) — chạy `bash scripts/trien-khai-146.sh` rồi `bun run cham --giong` / chat thử.
 

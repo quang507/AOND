@@ -10,8 +10,8 @@ import re
 
 from .assistants import ASSISTANT_NAMES
 
-# Giới tính theo tên trợ lý — [giả định BA] theo cách tên thường được đặt; chủ dự án đổi thì sửa hai tập này (test đòi mọi tên trong
-# `ASSISTANT_NAMES` phải nằm ở đúng một tập).
+# Giới tính theo tên trợ lý — [giả định BA] theo cách tên thường được đặt; chủ dự án đổi thì sửa hai tập này. `gioi_tinh` chỉ đọc
+# `TEN_NU` (tên khác coi là nam); `TEN_NAM` giữ để thấy đủ danh sách — mọi tên trong `ASSISTANT_NAMES` nằm ở đúng một tập.
 TEN_NU: frozenset[str] = frozenset({"M•ai", "Đ•ài", "Nh•ài", "L•ài", "Ho•ài"})
 TEN_NAM: frozenset[str] = frozenset({"Th•ái", "H•ải", "L•ai", "Kh•ải", "T•ài", "Đ•ại", "Gi•ai", "Ph•ái"})
 

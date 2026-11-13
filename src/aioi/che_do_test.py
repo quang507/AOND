@@ -26,8 +26,8 @@ def bat() -> bool:
     return os.environ.get("AIOI_DONG_TRICH_XUAT", "").strip().lower() == "bat"
 
 
-# Bảng giá MỘT NGUỒN là lib/gia-model.ts (đô / 1 triệu chữ-máy). Chép lại ở đây vì VPS chỉ có src/aioi; tests/test_che_do_test.py so từng dòng
-# với file đó và đỏ khi lệch. Khớp theo tiền tố ID model, cụ thể trước. (tiền tố, vào, ra, đọc-cache-nếu-khác-0,1×)
+# Bảng giá MỘT NGUỒN là lib/gia-model.ts (đô / 1 triệu chữ-máy). Chép lại ở đây vì lõi trên máy 146 chỉ chạy src/aioi; test so từng dòng
+# đã gỡ cùng bộ pytest 13/11/2026 — đổi giá thì sửa cả hai nơi. Khớp theo tiền tố ID model, cụ thể trước. (tiền tố, vào, ra, đọc-cache-nếu-khác-0,1×)
 BANG_GIA: tuple[tuple[str, float, float, float | None], ...] = (
     (r"claude-haiku-5-5", 0.1, 0.5, None),
     (r"claude-haiku-4-5", 1, 5, None),

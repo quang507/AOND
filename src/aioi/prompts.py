@@ -463,8 +463,8 @@ def build_project_docs_block(project_name: str, docs: list[dict[str, str]]) -> s
 # SRS-5.1zzzzzzz468 (chủ dự án 13/11/2026: bot "kiểu tưởng người ta sợ nó rao không đúng giá"): khối cũ liệt kê sẵn nỗi lo (bán hớ, thủ tục,
 # áp lực tài chính) nên model gán nỗi lo cho khách dù khách không nói. Nay HAI tính cách theo vai, chữ của chủ dự án: bot NHẬN THÔNG TIN TIN RAO
 # (người bán / cho thuê) và bot TƯ VẤN BÁN HÀNG (người mua / thuê); lời không rõ vai (đọc tài liệu dự án) chỉ dùng hai ý chung.
-DAP_TRUOC = ("- Đáp vào điều khách đang quan tâm trước, rồi mới tới việc cần hỏi; điều khách đã kể ở các tin trước thì dùng lại tự nhiên "
-             "khi hợp.\n")
+DAP_TRUOC = ("- Khách hỏi hay lộ cảm xúc thì đáp điều đó trước; khách chỉ đưa thông tin thì đi thẳng sang việc cần hỏi. Điều khách "
+             "đã kể ở các tin trước thì dùng lại tự nhiên khi hợp.\n")
 NOI_NHE = "- Khách bận, do dự hay không vui thì nói nhẹ, để khách tự quyết nhịp.\n"
 HIEU_CHU_NHA = ("HIỂU CHỦ NHÀ: nhà là tài sản lớn, chủ muốn làm việc với người hiểu nghề. Khách hỏi hay lo điều gì thì em đáp đúng điều đó "
                 "bằng việc bên em làm thật: đưa tin tới khách đang tìm, có khách hỏi là báo chủ ngay, phí chỉ thu khi giao dịch thành công.")
@@ -1124,7 +1124,8 @@ def describe_captured(prop: Property) -> str:
 
 # Bố cục tin rao MỘT NGUỒN (anh Luận 802b957 + 0b31235, 17–19/10/2026; SRS-5.1zzzzzzz64): bản nháp, bản sửa sau khi xem nháp, và lượt
 # chat khi khách xin "xem / đăng tin đầy đủ" cùng đọc khối này — sửa luật tin rao là sửa ở đây.
-# Khuôn tin rao = NGUYÊN VĂN bản anh Luận (`luan8560/AOND` 207a145) — SRS-5.1zzzzzzz207, chủ dự án 26/10: "lấy 100% của bên aond".
+# Khuôn tin rao gốc từ bản anh Luận (`luan8560/AOND` 207a145, SRS-5.1zzzzzzz207); từ SRS-5.1zzzzzzz486 tiêu đề đi thẳng vào số liệu
+# và lời mời chỉ một lần ở câu mở mô tả (chủ dự án đồng ý 14/11/2026).
 # Chỉ nối thêm đoạn chống bịa của mình ở cuối (dữ liệu căn là nguồn duy nhất; bóc tách / sự thật giữ của mình).
 AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU MỘT DÒNG TRỐNG giữa các khối):
 1) TIÊU ĐỀ: **15–25 từ**, viết như câu nói thường (chỉ hoa chữ đầu câu và tên riêng — KHÔNG viết HOA cả cụm / cả dòng), đi thẳng vào vị trí · diện tích · giá; còn chỗ thì thêm MỘT điểm mạnh nhất, ý khác để mô tả kể. Lời mời người mua để dành cho câu mở của mô tả (một lần trong cả tin). CẤM mở bằng "Trời ơi".
@@ -1485,7 +1486,7 @@ def _khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str
         viec = "hỏi số nhà của căn để định vị đúng trên bản đồ."
     elif thieu_phuong:
         ly_do = f"TIN CHƯA LÊN WEB (hệ thống đã kiểm): bên em đang hoàn tất thông tin vị trí, người phụ trách đã được báo. {cam}"
-        viec = "báo ngắn bên em đang hoàn tất để đưa tin lên; còn lại đáp điều khách vừa nói như thường."
+        viec = "báo ngắn bên em đang hoàn tất để đưa tin lên; khách có hỏi gì thì đáp điều đó."
     elif web.get("chua_ban_nhap"):
         ly_do = f"TIN CHƯA LÊN WEB: chưa đủ thông tin để soạn tin. {cam}"
         viec = "nói em cần thêm vài thông tin để soạn tin đăng, rồi hỏi tiếp đúng câu đang cần hỏi."
@@ -1661,7 +1662,7 @@ DỮ LIỆU ĐÃ BIẾT VỀ CĂN NÀY (ĐÃ THU THẬP TỪ TRƯỚC - TUYỆT 
         label = nhan_o(next_field, prop)
         natural = cau_hoi_o(next_field, prop)
         next_guide = f"""
-MỤC TIÊU HỎI TIẾP THEO: Sau MỘT câu ngắn khen / nhận xét điều thấy trong ảnh, hãy hỏi tiếp thông tin: "{label}".
+MỤC TIÊU HỎI TIẾP THEO: Sau MỘT câu ngắn nói điều thấy trong ảnh, hãy hỏi tiếp thông tin: "{label}".
 Gợi ý câu hỏi: {natural}.
 (Lưu ý: Nếu trong ảnh đã thể hiện rõ thông tin này thì coi như đã có, không hỏi lại; nếu chưa có thì hỏi đúng 1 câu này.)
 """
@@ -2554,7 +2555,7 @@ OPERATIONS_SYSTEM = OPERATIONS_SYSTEM.replace("{DANH_MUC_PHAP_LY}", phap_ly.danh
 # Chủ dự án 29/10: "Hay là bớt prompt dài đi, cấu trúc form json ngắn hơn ổn hơn k". Đo: lượt mua gửi Haiku cả prompt điều phối 27 nghìn chữ
 # (đa phần thao tác rổ hàng phía BÁN) + schema 24 nghìn chữ / 36 khoá / 163 ô — trong khi lượt mua chỉ dùng khoảng 16 khoá. Bắn thử 29/10 Haiku
 # 2/4 lần bỏ trống cả việc hẹn xem + câu hỏi chủ nhà của một câu rõ ràng. Form gọn = CÙNG chữ các đoạn phía mua / dùng chung, cắt từ prompt gốc
-# theo mốc (một nguồn: sửa prompt gốc là form gọn đổi theo); mốc mất thì `tests/test_form_mua_gon_293.py` đỏ.
+# theo mốc (một nguồn: sửa prompt gốc là form gọn đổi theo); mốc mất thì cắt hỏng (test `test_form_mua_gon_293` đã gỡ 13/11 — đổi mốc thì tự soát).
 _KHUNG_FORM_MUA = """Bạn là bộ ĐỌC Ý tin nhắn của KHÁCH TÌM MUA / THUÊ nhà đất cho AI Ơi Nhà Đất.
 Đọc TIN NHẮN MỚI NHẤT của khách theo NGHĨA (các tin trước chỉ là NGỮ CẢNH để hiểu "căn đó", "giờ đó") và điền form JSON: ý định
 (user_intent), nhu cầu (buyer_lead), việc khách muốn làm với căn (mua), và các ô dùng chung bên dưới. Ô nào tin không nói thì BỎ TRỐNG.

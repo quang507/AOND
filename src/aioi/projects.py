@@ -150,12 +150,6 @@ def pending_lines(votes: dict[str, Tally], current: dict[str, str]) -> list[str]
     return ra
 
 
-def _contested(votes: dict[str, Tally]) -> list[str]:
-    """Keys with a claim still WAITING for votes (not settled) — worth verifying with the next seller of the project (SRS-249: một người
-    nói cũng là chờ, không chỉ khi hai người nói khác nhau)."""
-    return [k for k, tally in votes.items() if tally and not _is_settled(tally)]
-
-
 def _fact_lines(values: dict[str, str], votes: dict[str, Tally]) -> list[str]:
     """Dòng dữ kiện: kho chung (nguồn mogi / đã chốt / chắc chắn) như sự thật, rồi giá trị CHƯA chốt kèm nhãn chưa chắc chắn (SRS-5.1zzzzzzz445) —
     một người nói vẫn dùng được, không bao giờ thành "dữ liệu đã xác thực" (SRS-249)."""
@@ -180,9 +174,6 @@ class UnitType:
 
     def pending(self) -> list[str]:
         return pending_lines(self.votes, self.specs)
-
-    def contested_keys(self) -> list[str]:
-        return _contested(self.votes)
 
 
 @dataclass
@@ -274,10 +265,6 @@ class Project:
     def pending(self) -> list[str]:
         """Lời người bán nói về dự án còn CHỜ đủ phiếu — chỉ phía bán thấy, để hỏi xác minh; không nói như sự thật."""
         return pending_lines(self.votes, self.attributes)
-
-    def contested_keys(self) -> list[str]:
-        """Attributes still waiting for votes — the bot should find a chance to verify these."""
-        return _contested(self.votes)
 
     def find_unit_type(self, name: str | None) -> UnitType | None:
         if not name:

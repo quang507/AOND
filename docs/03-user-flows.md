@@ -295,9 +295,9 @@ flowchart TD
    năm xây **không hỏi**, chỉ ghi khi S tự kể. Bộ câu hỏi theo loại nằm ở
    `src/aioi/schema.py` (`CORE_FIELDS`, `CORE_THEO_LOAI`, SRS-5.1zzzzzzz68), không ở prompt;
    bảng `required_facts` gỡ 19/10/2026.
-3. **Mỗi tin khoảng 20 từ** (SRS-5.1zzzzzzz471; trước là ~30 từ): KHÔNG mở bằng "Dạ"; khen ngắn đúng điểm
-   mạnh khách vừa nói, rồi hỏi đúng **một** thông tin (FR-177 b, FR-178 b).
-   Giọng theo khối `GIONG_VUI` trong `src/aioi/prompts.py` (SRS-5.1zzzzzzz219).
+3. **Lượt hỏi 20–30 từ**: KHÔNG mở bằng "Dạ"; hỏi thẳng **một** thông tin kế tiếp, không đọc lại lời khách,
+   không báo đã ghi; chỉ điểm thật sự hiếm mới được nửa câu nói lợi gì (FR-177 b, FR-178 b).
+   Giọng theo khối `GIONG` trong `src/aioi/prompts.py` (SRS-5.1zzzzzzz480 / 486 / 489).
 4. **Hỏi một đường, trả lời một nẻo thì VẪN GHI** (FR-177 e): nhận ra S đang nói
    fact nào thì ghi vào đúng fact đó; không nhận ra thì không ghi bừa — ô tự do
    `uu_the` chỉ giữ cụm nằm nguyên trong lời khách (SRS-5.1zzzzzzz205; ô `bo_sung` là đường

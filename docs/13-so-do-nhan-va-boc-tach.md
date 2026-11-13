@@ -85,7 +85,7 @@ flowchart TD
 flowchart TD
   S0["_o_hoi_ke(missing_fields)<br/>ô khách lờ 2 lần để sau"] --> S1["cum_hoi · xin_dang → thieu_toi_thieu"]
   S1 --> S2{"summary_ready()<br/>hoặc đã trình bản nháp<br/>hoặc khách bảo đăng đủ sàn?"}
-  S2 -->|chưa| C1["AIOI_PROMPT_GON=bat (đang bật): lean_system_prompt_cho_luot — LEAN_SYSTEM_PROMPT + dữ liệu căn + VIỆC LƯỢT NÀY<br/>tắt: build_phieu_luot — phiếu lượt GIONG_VUI + dữ liệu căn + VIỆC LƯỢT NÀY<br/>+ khoi_xin_dang (không khối điểm tin, SRS-5.1zzzzzzz336)"]
+  S2 -->|chưa| C1["AIOI_PROMPT_GON=bat (đang bật): lean_system_prompt_cho_luot — LEAN_SYSTEM_PROMPT + dữ liệu căn + VIỆC LƯỢT NÀY<br/>tắt: build_phieu_luot — phiếu lượt (giọng GIONG) + dữ liệu căn + VIỆC LƯỢT NÀY<br/>+ khoi_xin_dang (không khối điểm tin, SRS-5.1zzzzzzz336)"]
   S2 -->|"đủ, chưa trình"| C2["build_listing_proposal_system<br/>bản tin 📋 theo AD_FORMAT"]
   S2 -->|"đã trình"| C3["build_fee_followup_system<br/>duyệt · phí · trạng thái web<br/>+ cụm sau đăng Engine.cum_sau_ke (mỗi lượt một câu:<br/>ảnh → pháp lý → lợi thế → so sánh → giá …)"]
   C1 & C2 & C3 --> K["khối ghép thêm:<br/>khoi_dia_danh · _khoi_hoi_du_an · khoi_hoi_mat_tien · khoi_chao_lan_dau<br/>khoi_xung_ho · _ghep_cau_chuan (trước RANH_GIOI_CACHE)<br/>MỘT khối ưu tiên: khoi_can_nguoi > khoi_phap_ly > khoi_ngoai_viec > hỏi về > hỏi trùng tên<br/>dữ liệu rổ / dự án / giá: agent_ban.goi_y → công cụ tra (thân công cụ: _basket_block · _project_memory_block · _seller_price_block)"]

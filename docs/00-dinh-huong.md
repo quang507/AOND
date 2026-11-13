@@ -28,7 +28,7 @@ Hai mặt [nguồn: chốt 03/09/2026, OPEN-39]:
 
 | Mặt | Chạy theo | Cốt lõi | Neo |
 |---|---|---|---|
-| **Bán** | AOND §I–§VI | Rao một câu + ảnh, không form; khen điểm mạnh rồi hỏi 1 ý; đủ loại hình + vị trí + giá và bốn nhóm ô cơ bản (vị thế · kích thước đất · quy mô xây dựng · pháp lý) trống tối đa một nhóm là soạn bản tin 📋 (SRS-5.1zzzzzzz418), ô còn lại hỏi sau; người rao có hạng | FR-129, FR-144, FR-172, SRS-5.1zzzzzzz200, SRS-5.1zzzzzzz207, SRS-5.1zzzzzzz418 |
+| **Bán** | AOND §I–§VI | Rao một câu + ảnh, không form; hỏi thẳng 1 ý, điểm hiếm mới khen nửa câu (`GIONG`, SRS-5.1zzzzzzz486); đủ loại hình + vị trí + giá và bốn nhóm ô cơ bản (vị thế · kích thước đất · quy mô xây dựng · pháp lý) trống tối đa một nhóm là soạn bản tin 📋 (SRS-5.1zzzzzzz418), ô còn lại hỏi sau; người rao có hạng | FR-129, FR-144, FR-172, SRS-5.1zzzzzzz200, SRS-5.1zzzzzzz207, SRS-5.1zzzzzzz418 |
 | **Mua** | nhadat.cc 2024, nay đặc tả ở `07` | Web là phễu SEO đẩy về Zalo; khách chỉ để SĐT lúc chốt lịch xem; mỗi lượt gợi 2–3 căn kèm link (SRS-5.1zzzzzzz335, thay "một căn" của SRS-5.1zzzzzzz160); không khẳng định điều chưa xác minh; báo căn mới vừa nhu cầu; kết nối sống 3–4 năm | INS-01…04, FR-01…65, SRS-5.1zzzzzzz148, SRS-5.1zzzzzzz150, SRS-5.1zzzzzzz335 |
 | **Vòng nối** | Cả hai (INS-06 = AOND §VII) | Khách hỏi → bot không biết → hỏi **chủ nhà** nếu có trên hệ thống (hạn 12 giờ) → quá hạn hoặc không có chủ nhà thì **admin** → câu trả lời vào tin → lõi báo lại khách | SRS-5.1zzzzzzz170, SRS-5.1zzzzzzz216; FR-173 *[deprecated 28/10/2026 — phần CTV]* |
 
@@ -90,7 +90,7 @@ AOND mượn cho cả hai phía (`06 §6.8`).
 | §I | 200–300 người/ngày, 6–9k tin, phủ 90% Q5 | 🔶 | NFR-05; Free-tier chưa đo (NFR-16) |
 | §II | Kho tên •ai (m•ai, t•ai…) | 🔶 | SRD 20 phụ âm; code 13 tên (`assistants.ASSISTANT_NAMES`). Mỗi khách một tên, gán theo Zalo ID, giữ suốt (FR-181). 13 tên có chấm giữa: Th•ái, M•ai, H•ải, L•ai, Kh•ải, T•ài, Đ•ại, Đ•ài, Nh•ài, Gi•ai, Ph•ái, L•ài, Ho•ài (SRS-5.1zzzzzzz183) |
 | §II | Quy tắc 30 từ | ✅ | Khuôn chat phía bán theo bản AOND (SRS-5.1zzzzzzz207); độ dài theo ý khách, lượt hỏi thông tin 20–30 từ ở `GIONG` (SRS-5.1zzzzzzz480, 13/11/2026 — trước là "khoảng 20 từ", SRS-5.1zzzzzzz471); "ngắn vừa vừa" (SRS-5.1zzzzzzz97) |
-| §II | Khen trước, hỏi 1/lần; "hình như là" | ✅ | Khen điểm mạnh trước rồi hỏi 1 ý (SRS-5.1zzzzzzz207); giọng một khối `GIONG` chung hai phía (SRS-5.1zzzzzzz480); không mở "Dạ", không gọi khách là "mình". *`TONE_RULES` TS là lịch sử* |
+| §II | Khen trước, hỏi 1/lần; "hình như là" | ✅ | Hỏi thẳng 1 ý, không báo đã ghi; điểm hiếm mới khen nửa câu (SRS-5.1zzzzzzz486, thay "khen trước" của SRS-5.1zzzzzzz207); giọng một khối `GIONG` chung hai phía (SRS-5.1zzzzzzz480); không mở "Dạ", không gọi khách là "mình". *`TONE_RULES` TS là lịch sử* |
 | §II | Giọng mẫu: transcript 30 câu người bán | 🔶 | Ví dụ lấy từ câu chuẩn chủ dự án / tester sửa ở `/admin/cau-chuan` (SRS-5.1zzzzzzz88, SRS-5.1zzzzzzz180) + câu mẫu cố định (SRS-5.1zzzzzzz106). *`SELLER_FEWSHOT`, `bot_prompts` đã gỡ 18/10* |
 | §II | Nút bấm nhanh trong tin (`[Vẫn đang bán]`…) | ⏳ | Bridge gửi chữ + ảnh, không gửi nút; nút cần Zalo OA, chưa có |
 | §III | Nhóm 1 nhà ở | ✅ | FR-172; bộ câu hỏi một nguồn `src/aioi/schema.py` (SRS-5.1zzzzzzz68) |

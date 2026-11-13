@@ -111,7 +111,7 @@ def folder_name(url: str, client: DriveClient) -> str | None:
 
 def khoa_drive(api_key: str | None, supabase_url: str | None, service_key: str | None, doc=None) -> str | None:
     """Khoá Drive API: biến môi trường `GOOGLE_API_KEY` trước; không có thì đọc Vault Supabase (`GOOGLE_DRIVE_API_KEY`, đặt
-    sẵn từ thời bot TypeScript) qua rpc get_secret bằng service_role — khỏi phải chép khoá lên VPS (SRS-5.1zzzzzzz47).
+    sẵn từ thời bot TypeScript) qua rpc get_secret bằng service_role — khỏi phải chép khoá lên máy chạy lõi (SRS-5.1zzzzzzz47).
     Lỗi / không có → None (link thư mục Drive thì bot nhờ gửi từng file). `doc` để test thay lời gọi mạng."""
     if api_key:
         return api_key

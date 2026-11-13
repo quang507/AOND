@@ -923,7 +923,7 @@ class SupabaseConversationStore(KhoNguoiMua):
 
     def _ghi_noi_bo(self, lid: str, rieng: dict[str, Any], tin_goc: str = "") -> None:
         """Ô riêng của chủ + tin nhắn gốc → `listing_noi_bo` (SRS-5.1zzzzzzz116, 142). Không lưu SĐT (che như `ghi_danh_gia`). Lỗi chỉ ghi log —
-        tin vẫn lưu, ô vẫn còn trong phiên (SQLite trên VPS giữ bản đầy đủ). `tin_goc` tính lại từ lịch sử mỗi lần nên ghi đè cả cột `du_lieu`
+        tin vẫn lưu, ô vẫn còn trong phiên (SQLite trên máy 146 giữ bản đầy đủ). `tin_goc` tính lại từ lịch sử mỗi lần nên ghi đè cả cột `du_lieu`
         là an toàn; nó đã che SĐT và có trần riêng (không bị cắt 500 chữ như ô riêng)."""
         du_lieu: dict[str, Any] = {k: che_so_ca_nhan(str(v), thay="[số]")[:500] for k, v in rieng.items()}
         # SRS-5.1zzzzzzz438: nhãn ô đi cùng dữ liệu (`_nhan`, từ FIELD_LABELS) — trang admin hiện đúng các ô lõi đã ghi, không giữ danh sách riêng
@@ -1073,7 +1073,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                     "street": fields.get("duong"),
                     # OPEN-59 (SRS-5.1zzzzzzz241): tin cùng căn ở loại giao dịch kia — liên kết mềm, không khoá ngoại.
                     **({"cung_can_id": str(uuid.UUID(fields["_cung_can"]))} if la_uuid(str(fields.get("_cung_can") or "")) else {}),
-                    # Ô khách lờ 2 lần (để sau bản nháp) đi kèm tin dưới khoá nội bộ `_hoan` — lõi khởi động lại (mỗi lần cài VPS)
+                    # Ô khách lờ 2 lần (để sau bản nháp) đi kèm tin dưới khoá nội bộ `_hoan` — lõi khởi động lại (mỗi lần khởi động lại lõi)
                     # không quên rồi hỏi lại từ đầu (SRS-5.1zzzzzzz90). Khoá `_` không ra khách (`fields_khach`, `_thong_so`).
                     # `_thong_so_ai` (SRS-5.1zzzzzzz94): thông số / loại BĐS do lõi AI quyết — hai trigger đoán bằng regex trên mô tả
                     # (`listings_boc_thong_so`, `listings_fill_property_type`, 20261002a) đứng ngoài. Bắn thử KB5 21/10: mô tả bản nháp
@@ -1166,7 +1166,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                     if li.listing_id == getattr(conv, "active_listing_id", None):
                         lid_dang_noi = lid
 
-            # 3. Căn đang nói tới → sellers.active_listing_id, để khởi động lại (mỗi lần cài VPS) không quay về căn đầu tiên.
+            # 3. Căn đang nói tới → sellers.active_listing_id, để khởi động lại (mỗi lần khởi động lại lõi) không quay về căn đầu tiên.
             if lid_dang_noi and self._active_da_ghi.get(seller_id) != lid_dang_noi:
                 self._patch(f"sellers?id=eq.{seller_id}", {"active_listing_id": lid_dang_noi})
                 self._active_da_ghi[seller_id] = lid_dang_noi
@@ -1385,8 +1385,6 @@ class SupabaseConversationStore(KhoNguoiMua):
             conv.last_ai_at = cu.last_ai_at
             conv.xung_ho = cu.xung_ho
             conv.xung_ho_goi_y = cu.xung_ho_goi_y   # SRS-5.1zzzzzzz440: gợi ý theo hồ sơ Zalo — chỉ SQLite
-            conv.che_do_test = cu.che_do_test
-            conv.so_luot_thong_tin = cu.so_luot_thong_tin
             conv.so_nhan = cu.so_nhan   # SRS-5.1zzzzzzz210: số Zalo khách nhắn tới — Supabase không có cột này
             conv.so_vai = cu.so_vai   # vai đặt trên số nào (SRS-5.1zzzzzzz331) — chỉ SQLite
             conv.nhuong_san_den = cu.nhuong_san_den   # SRS-5.1zzzzzzz216: người thật đang nói tới lúc nào — chỉ SQLite
@@ -1438,7 +1436,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 if bid:
                     self._conv_cache[f"mua:{bid}"] = conv_id
 
-            # Bản SQLite trên VPS giữ thứ Supabase không có cột (bảng giá riêng, mốc lịch sử, ảnh đã cất, đã trình bản nháp…) —
+            # Bản SQLite trên máy 146 giữ thứ Supabase không có cột (bảng giá riêng, mốc lịch sử, ảnh đã cất, đã trình bản nháp…) —
             # Supabase vẫn là nguồn cho tin và hội thoại, SQLite chỉ bù phần thiếu (SRS-5.1zzzzzzz63).
             cu = None
             if self.fallback:
@@ -1479,7 +1477,7 @@ class SupabaseConversationStore(KhoNguoiMua):
                 li = Listing(
                     listing_id=lid_engine,
                     prop=prop,
-                    # Đã trình bản nháp chưa: bản SQLite trên VPS nhớ đúng; không có thì suy từ DB (khách đã duyệt, hoặc tin đã đủ ý —
+                    # Đã trình bản nháp chưa: bản SQLite trên máy 146 nhớ đúng; không có thì suy từ DB (khách đã duyệt, hoặc tin đã đủ ý —
                     # bản nháp đi ngay lượt đủ ý). Trước đây so với "dang_rao" (không có trên DB) nên luôn sai → trình lại bản nháp.
                     # SRS-5.1zzzzzzz257: tin ĐÃ hiển thị / đang giao dịch (tạo ngoài chat, chưa có bản SQLite) cũng coi là đã trình — chủ nhà trả
                     # lời câu khách mua xong không bị gửi lại "📋 Em sẽ rao như vầy" cho tin đang bán.
@@ -1521,8 +1519,6 @@ class SupabaseConversationStore(KhoNguoiMua):
                 conv.last_ai_at = cu.last_ai_at
                 conv.xung_ho = cu.xung_ho   # khách tự xưng gì (SRS-5.1zzzzzzz76) — Supabase không có cột này
                 conv.xung_ho_goi_y = cu.xung_ho_goi_y   # gợi ý theo hồ sơ Zalo (SRS-5.1zzzzzzz440) — chỉ SQLite
-                conv.che_do_test = cu.che_do_test   # chế độ test $$$$$ (SRS-5.1zzzzzzz130) — Supabase không có cột này
-                conv.so_luot_thong_tin = cu.so_luot_thong_tin   # lượt thông tin thứ mấy (SRS-5.1zzzzzzz131 bản 2)
                 conv.so_nhan = cu.so_nhan   # số Zalo khách nhắn tới (SRS-5.1zzzzzzz210) — Supabase không có cột này
                 conv.so_vai = cu.so_vai   # vai đặt trên số nào (SRS-5.1zzzzzzz331) — chỉ SQLite
                 conv.nhuong_san_den = cu.nhuong_san_den   # người thật đang nói tới lúc nào (SRS-5.1zzzzzzz216) — chỉ SQLite
