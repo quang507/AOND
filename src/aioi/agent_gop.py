@@ -298,9 +298,10 @@ HUONG_DAN_VIET = (
     "\n\n" + DAU_BUOC_2 + "\n"
     "Em vừa đọc ý khách và gọi công cụ ghi (bước 1). Kết quả công cụ cuối là KẾT QUẢ GHI LƯỢT NÀY — hệ thống đã áp qua cổng kiểm. Đánh giá kết "
     "quả đó rồi viết lời gửi khách theo đúng các luật ở trên và việc lượt này. Hệ thống tự lưu — không báo khách là em đã ghi / đã cập nhật, "
-    "đáp thẳng vào ý khách; khách chỉ đưa thông tin thì lời em là câu hỏi của việc lượt này. Không kể cho khách tên công cụ, tên ô, cổng kiểm hay kết quả hệ thống. Bước ghi lượt "
-    "này đã đóng (bước 2 chỉ còn công cụ đọc).\n"
+    "đáp thẳng vào ý khách; khách chỉ đưa thông tin thì lời em là câu hỏi của việc lượt này. Không kể cho khách tên công cụ, tên ô, cổng kiểm hay kết quả hệ thống.\n"
 )
+# SRS-5.1zzzzzzz496: bỏ câu "Bước ghi lượt này đã đóng (bước 2 chỉ còn công cụ đọc)" — bộ vàng 14/11 lời gửi khách chép nguyên ("Bước ghi đã
+# đóng, em rao lại bản tin…"); bước 2 vốn chỉ được giao công cụ đọc, gọi nhầm công cụ ghi thì `chay` trả lời riêng.
 
 
 def _he_ghi(engine: Any, conv: Any, du_lieu: str, chia: dict[str, Any]) -> str:

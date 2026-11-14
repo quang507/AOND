@@ -1,5 +1,5 @@
 {
- "_mo_ta": "Bộ VÀNG đo độ tự nhiên của lời bot (SRS-5.1zzzzzzz493, chủ dự án 14/11). 15 kịch bản cố định, mỗi kịch bản một kiểu khách khó: đủ luồng dài, khách cộc / nhắn cụt, bán gấp + tiếng lóng, hỏi phí giữa chừng, xin bớt phí, nghi lừa đảo, hai căn, không chính chủ, lộ cảm xúc, đáp \"ok\", cho thuê, người mua, vừa bán vừa mua, đổi ý giữa chừng, khách đang bận. Chạy trước và sau mỗi lần sửa prompt: python scripts/cham-kich-ban.py --bo tests/kich_ban/vang.json --barem --ra kq.json, rồi scripts/bang-diem.py. `lay` mượn kịch bản từ bộ khác theo id (một nguồn, không chép). Hội thoại tạo sẵn, không có dữ liệu khách thật (repo công khai). Đổi bộ này thì điểm cũ không còn so được — thêm kịch bản thì ghi ngày vào SRS.",
+ "_mo_ta": "Bộ VÀNG đo độ tự nhiên của lời bot (SRS-5.1zzzzzzz493, chủ dự án 14/11). 16 kịch bản cố định, mỗi kịch bản một kiểu khách khó: đủ luồng dài, khách cộc / nhắn cụt, bán gấp + tiếng lóng, hỏi phí giữa chừng, xin bớt phí, nghi lừa đảo, hai căn, không chính chủ, lộ cảm xúc, đáp \"ok\", cho thuê, người mua, vừa bán vừa mua, đổi ý giữa chừng, khách đang bận, khách gọi bot là \"em\" và nói \"nhà\" trống không (chat thật 14/11, SRS-496). Chạy trước và sau mỗi lần sửa prompt: python scripts/cham-kich-ban.py --bo tests/kich_ban/vang.json --barem --ra kq.json, rồi scripts/bang-diem.py. `lay` mượn kịch bản từ bộ khác theo id (một nguồn, không chép). Hội thoại tạo sẵn, không có dữ liệu khách thật (repo công khai). Đổi bộ này thì điểm cũ không còn so được — thêm kịch bản thì ghi ngày vào SRS.",
  "lay": {
   "ban.json": ["hht", "tin_cut", "aeon_tan_phu", "srd_phi", "xin_bot_phi", "uy_tin", "hai_can_hoi_gia", "khong_phai_chinh_chu", "xa_cho", "ngan_cho_thue", "cho_thue"],
   "mua_ban_10.json": ["m_tim_nha_pho", "v_vua_ban_vua_mua"]
@@ -26,6 +26,12 @@
     "ừ"
    ],
    "kiem": {"o": {"gia": "14", "duong": "Lũy Bán Bích"}}
+  },
+  {
+   "id": "vang_goi_em",
+   "mo_ta": "Chat thật 14/11 20:13 (SRS-496): khách GỌI bot là \"em\" — bot vẫn xưng em, không thành chị / em; \"anh có nhà\" + \"HXH 123 TBT\" là nhà phố — không hỏi loại nhà lại; khách hỏi vặn thì đáp rồi hỏi ý kế, không hỏi lại điều đã rõ",
+   "cau": ["chào em, anh muốn gửi bán", "Em hỏi hình hả", "Anh có nhà", "Ở Trần Bình Trọng nha", "HXH 123 TBT", "60", "Có chung cư ở TBT không?"],
+   "kiem": {"loai": "nha_pho", "o": {"duong": "Trần Bình Trọng"}}
   }
  ]
 }

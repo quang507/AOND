@@ -949,6 +949,14 @@ def build_xin_anh_nhac_system(ten: str, prop: "Property", so_anh: int, lan_hai: 
             f"{viec}\nChỉ trả về nguyên văn tin gửi khách.")
 
 
+def build_nhac_hoi_lai_system(ten: str, goi: str, toi: str) -> str:
+    """System cho TIN NHẮC khi khách im 5 phút sau câu hỏi của bot (SRS-5.1zzzzzzz496). Câu mẫu "… hỏi lại chút nha: {câu cũ}" chép nguyên câu
+    vừa hỏi, dính cả chữ nối giữa lời ("Mà trước hết, căn … là nhà phố…?") — model viết lại ý câu hỏi thành một tin tự đứng được."""
+    return (f"Bạn là {ten}, trợ lý ký gửi nhà đất trên Zalo. Khách im khoảng 5 phút sau câu hỏi cuối của em. Viết ĐÚNG MỘT tin Zalo ngắn hỏi "
+            f"lại đúng ý câu hỏi đó bằng lời mới, tự nhiên, đọc riêng vẫn hiểu — một câu hỏi, không chào lại, không thêm ý khác, không xin lỗi.\n"
+            f"Gọi khách là \"{goi}\", tự xưng \"{toi}\". Chỉ trả về nguyên văn tin gửi khách.")
+
+
 _THU = ("thứ Hai", "thứ Ba", "thứ Tư", "thứ Năm", "thứ Sáu", "thứ Bảy", "Chủ nhật")
 
 
@@ -2181,9 +2189,9 @@ def property_field_props() -> dict[str, Any]:
     properties["loai_hinh"] = {
         "type": "string",
         "description": "Loại hình BĐS (slug khớp CRM): nha_pho, nha_cap_4, chung_cu, dat, biet_thu, "
-        "phong_tro, mat_bang, toa_nha, chdv, dat_nong_nghiep, dat_kinh_doanh, kho_xuong, khach_san, du_an. Điền khi lời khách cho biết loại "
-        "(\"nhà phố\", \"căn hộ\", \"đất\", \"nhà hẻm 3 tầng\", \"1 trệt 2 lầu\"); khách mới nói chung \"bán nhà\" / \"căn nhà\" thì "
-        "loại còn để hỏi — bỏ trống.",
+        "phong_tro, mat_bang, toa_nha, chdv, dat_nong_nghiep, dat_kinh_doanh, kho_xuong, khach_san, du_an. Đọc như người Sài Gòn nghe: "
+        "\"nhà\" của riêng khách (\"anh có nhà\", \"bán nhà\", nhà có số nhà, trong hẻm hay mặt tiền đường) là nha_pho; căn hộ / "
+        "chung cư / tên toà là chung_cu; đất / lô / nền là dat. Khách mới nói \"bán căn\" hay chưa nói gì về căn thì bỏ trống.",
     }
     properties["ma_so_can"] = {
         "type": "string",
@@ -2829,7 +2837,8 @@ def operations_schema() -> dict[str, Any]:
                 "enum": ["em", "anh", "chi", "chau", "chu_co_bac"],
                 "description": "Khách TỰ XƯNG là gì (em / anh / chị / cháu-con / chú-cô-bác-dì; gõ tắt e / a / c cũng tính). Khách tự xưng "
                                "cháu / con → chau; khách GỌI bot là con / cháu → chu_co_bac; \"chú bán nhà…\" / \"cô có căn…\" (chữ chú / cô / bác làm "
-                               "chủ ngữ) → chu_co_bac. Chưa thấy thì bỏ trống.",
+                               "chủ ngữ) → chu_co_bac. Chữ \"em\" khách dùng để GỌI bot (\"em hỏi hình hả\", \"em ơi\", \"em là ai\", \"em nghĩ sao\") là "
+                               "khách xưng hàng trên với bot — chưa biết anh hay chị thì bỏ trống, KHÔNG phải em. Chưa thấy thì bỏ trống.",
             },
             "xung_ho_trich_dan": {"type": "string", "description": "Nguyên văn cụm chứa chữ khách tự xưng / gọi bot (bắt buộc khi có xung_ho)."},
             "bot_vua_hoi": {"type": "array", "items": {"type": "string"},

@@ -84,13 +84,28 @@ def cau_xin_anh_sau_dang(engine, conv, listing, moc: str, pronoun: str, ten: str
     return cau_mau.cau("xin_anh_sau_dang", goi, toi=toi)
 
 
-def cau_nhac(conv, listing, pronoun: str, ten: str | None = None) -> str:
+def _nhac_hoi_lai_model(engine, conv, goi: str, toi: str, ten: str | None) -> str:
+    """SRS-5.1zzzzzzz496: model viết lại ý câu hỏi đang chờ từ mấy lượt vừa nói; hụt / quá dài / không phải câu hỏi → "" (dùng câu mẫu)."""
+    from .llm import Message
+    from .prompts import build_nhac_hoi_lai_system
+    try:
+        gan = "\n".join(f"{'Khách' if t.role == 'user' else 'Em'}: {(t.content or '')[:300]}" for t in conv.history[-6:])
+        tin = engine._provider.reply(build_nhac_hoi_lai_system(ten or "em", goi, toi),
+                                     [Message("user", f"Mấy lượt vừa nói:\n{gan}\n\nViết tin nhắc.")], max_tokens=150).strip()
+        return tin if tin and len(tin) <= 300 and "?" in tin else ""
+    except Exception as e:  # noqa: BLE001
+        log.warning("Tin nhắc hỏi lại: model hụt (%s) — dùng câu mẫu", type(e).__name__)
+        return ""
+
+
+def cau_nhac(conv, listing, pronoun: str, ten: str | None = None, engine=None) -> str:
     """Tin nhắc khi khách im (SRS-5.1zzzzzzz73): hỏi lại câu đang chờ; không còn câu chờ thì xin ảnh khi căn chưa có ảnh. `ten` = tên trợ lý
-    (bot xưng anh / chị / cô / chú khi khách xưng em / cháu — SRS-5.1zzzzzzz214)."""
+    (bot xưng anh / chị / cô / chú khi khách xưng em / cháu — SRS-5.1zzzzzzz214). Có `engine` thì model viết lại câu hỏi (SRS-5.1zzzzzzz496)."""
     goi, toi = goi_toi(pronoun, ten)
     hoi = cau_hoi_cuoi_cua_bot(conv)
-    if hoi:   # câu mẫu sửa ở CRM (SRS-5.1zzzzzzz110)
-        return cau_mau.cau("nhac_hoi_lai", goi, toi=toi, hoi=hoi)
+    if hoi:   # câu mẫu (sửa ở CRM, SRS-5.1zzzzzzz110) chỉ còn là dự phòng
+        return (_nhac_hoi_lai_model(engine, conv, goi, toi, ten) if engine is not None else "") \
+            or cau_mau.cau("nhac_hoi_lai", goi, toi=toi, hoi=hoi)
     if not _image_count(listing.media):
         return cau_mau.cau("nhac_xin_anh_em", goi, toi=toi) if tre(pronoun) else cau_mau.cau("nhac_xin_anh", goi)
     return ""
@@ -257,7 +272,7 @@ class FollowUpManager:
                 # 19/10/2026 (SRS-5.1zzzzzzz73): nhắc lại ĐÚNG câu bot vừa hỏi. Bản trước lấy câu mẫu cố định theo ô thiếu đầu
                 # tiên; ô nào không có câu mẫu (vd diện tích sàn) rơi vào "chụp gửi em vài tấm ảnh" — chủ nhà vừa gửi 6 ảnh vẫn
                 # bị xin ảnh. Không còn câu nào đang chờ trả lời thì chỉ xin ảnh khi căn CHƯA có ảnh; có rồi thì không nhắc.
-                follow_up_msg = cau_nhac(conv, listing, customer_pronoun, ten)
+                follow_up_msg = cau_nhac(conv, listing, customer_pronoun, ten, engine)
                 if not follow_up_msg:
                     log.info("Follow-up for %s: không có câu đang chờ, căn đã có ảnh. Skipping.", user_key)
                     return
