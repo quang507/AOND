@@ -34,12 +34,12 @@ class Settings:
 
     @property
     def effective_provider(self) -> str:
-        """Provider thật sẽ chạy. SRS-5.1zzzzzzz321 (audit Đợt 6): bản trước thiếu `ANTHROPIC_API_KEY` thì lặng lẽ chạy `MockProvider` (đoán ý
-        bằng từ khoá) — ở production lõi vẫn "chạy" và trả lời khách bằng mock. Nay thiếu khoá thì báo lỗi, lõi không khởi động; mock chỉ khi
-        đặt TƯỜNG MINH `AIOI_LLM_PROVIDER=mock` (test / dev)."""
+        """Provider thật sẽ chạy. SRS-5.1zzzzzzz321 (audit Đợt 6): bản trước thiếu `ANTHROPIC_API_KEY` thì lặng lẽ chạy bản mock (đoán ý
+        bằng từ khoá). Nay thiếu khoá thì báo lỗi, lõi không khởi động. Bản mock gỡ hẳn ở SRS-5.1zzzzzzz490; test trên máy mình dùng
+        `AIOI_LLM_PROVIDER=claude_cli`."""
         if self.provider == "claude" and not self.anthropic_api_key:
-            raise RuntimeError("Thiếu ANTHROPIC_API_KEY cho AIOI_LLM_PROVIDER=claude — lõi không chạy bằng mock. Đặt khoá trong .env "
-                               "(C:\\aond\\aond_core\\.env trên máy 146), hoặc AIOI_LLM_PROVIDER=mock khi test / dev.")
+            raise RuntimeError("Thiếu ANTHROPIC_API_KEY cho AIOI_LLM_PROVIDER=claude — lõi không khởi động. Đặt khoá trong .env "
+                               "(C:\\aond\\aond_core\\.env trên máy 146), hoặc AIOI_LLM_PROVIDER=claude_cli khi test trên máy mình.")
         return self.provider
 
 

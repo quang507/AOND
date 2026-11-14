@@ -1,7 +1,6 @@
 """Local REPL to chat with the assistant family. Run: python cli.py
 
-Works offline (mock provider) with no API key; set ANTHROPIC_API_KEY in .env for real
-Claude replies. Type /quit to exit, /state to dump captured data + scores.
+Needs ANTHROPIC_API_KEY in .env, or AIOI_LLM_PROVIDER=claude_cli to run through `claude -p` (Claude Code quota). Type /quit to exit, /state to dump captured data + scores.
 """
 from __future__ import annotations
 
@@ -160,7 +159,7 @@ def main() -> None:
             msg = str(e)
             if "credit balance is too low" in msg:
                 print("   [⚠️ Hết credit Anthropic API. Nạp credit, hoặc chạy chế độ offline: "
-                      "PowerShell → $env:AIOI_LLM_PROVIDER=\"mock\"; python cli.py]\n")
+                      "PowerShell → $env:AIOI_LLM_PROVIDER=\"claude_cli\"; python cli.py]\n")
             else:
                 print(f"   [⚠️ Lỗi khi xử lý tin nhắn — bỏ qua lượt này: {type(e).__name__}: {msg[:200]}]\n")
             continue

@@ -283,7 +283,7 @@ Phạm vi MVP: **đặt nền dữ liệu**, chưa làm UI giỏ hàng riêng.
 | FR-193 | ✅ **Đọc được chữ THIẾU DẤU và viết tắt lẫn trong câu có dấu; không tự khẳng định quận; chào lại khi khách chào.** | M | chủ dự án 10/09/2026 ~10:45 (ảnh chụp Zalo OA) |
 | FR-194 | ✅ **Đường dự phòng khi model chính hỏng / hết số dư: chuỗi Claude → Gemini → Groq (`llm/du_phong.py`) thay vì rơi về câu mẫu.** | S | chủ dự án 10/09/2026 ~11:10 · 15/09/2026 · 23/09/2026 |
 | FR-195 | ✅ **Lượm thông tin DỰ ÁN từ chat, có cửa duyệt.** | S | chủ dự án 10/09/2026 |
-| FR-196 | ✅ **Số về dự án lấy từ KHO, không lấy từ trí nhớ model; model đào lại hồ sơ dự án thành bảng.** | S | chủ dự án 10/09/2026 |
+| FR-196 | ✅ **Số về dự án lấy từ KHO, không lấy từ trí nhớ model; model đào lại hồ sơ dự án thành bảng.** Công cụ đào (`scripts/dao-sau-du-an.mjs`) gỡ 14/11/2026 (SRS-5.1zzzzzzz490); bảng đã đào giữ trong kho. | S | chủ dự án 10/09/2026 |
 | FR-197 | ✅ **Dọn dữ liệu KIỂM THỬ lúc 21 giờ mỗi tối; màn hình nói đúng trạng thái model; chuông đếm theo LOẠI lỗi.** | S | chủ dự án 10/09/2026 |
 | FR-198 | ✅ **Model chính hạ xuống Haiku 4.5, đổi được bằng secret mà không cần deploy; tham số riêng của họ Claude 5 phải lọc theo model.** Nay chat và bóc tách đều Sonnet 5.5 (SRS-5.1zzzzzzz392), đổi bằng `bot/cau-hinh-loi.env` + `.env` lõi trên máy 146. | S | chủ dự án 10/09/2026 |
 | FR-199 | ✅ **Lưới VÉT bằng model: câu có mùi dự án mà tầng tiền định không nhặt được gì thì cho model bóc, kết quả vào hàng chờ duyệt.** | M | chủ dự án 10/09/2026 |

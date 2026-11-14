@@ -1,4 +1,5 @@
-"""LLM provider abstraction — Claude (chạy thật) / mock (test offline). Bản Gemini đã gỡ 19/10/2026: hỏng cấu hình, không dùng."""
+"""LLM provider abstraction — Claude (chạy thật) / claude_cli (test trên máy mình bằng `claude -p`). Bản Gemini riêng gỡ 19/10/2026;
+bản mock đoán ý bằng từ khoá gỡ 14/11/2026 (SRS-5.1zzzzzzz490, chủ dự án: "gỡ cả hai")."""
 from __future__ import annotations
 
 from ..config import Settings
@@ -23,10 +24,6 @@ def build_provider(settings: Settings) -> LLMProvider:
         from .claude_cli import ClaudeCliProvider
 
         return ClaudeCliProvider(settings)
-    if provider == "mock":
-        from .mock import MockProvider
-
-        return MockProvider(settings)
     raise ValueError(f"Unknown LLM provider: {provider!r}")
 
 
