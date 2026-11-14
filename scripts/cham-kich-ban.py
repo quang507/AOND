@@ -8,6 +8,8 @@ không tốn tiền API, SRS-300); DB tạm, không đụng Supabase / Zalo. Đ�
   AIOI_MODEL_LUOT_DE=claude-haiku-5-5 python scripts/cham-kich-ban.py ...               # đè một công tắc bằng biến môi trường
   python scripts/cham-kich-ban.py --nhu thu                                             # chạy như ID thử (công tắc "thu" = bật)
   python scripts/cham-kich-ban.py --giong --nen                                         # ghi điểm nền vào tests/kich_ban/diem_nen.json
+  python scripts/cham-kich-ban.py --bo tests/kich_ban/vang.json --barem --ra kq.json     # bộ vàng 15 kịch bản + barem từng lượt (SRS-493)
+  python scripts/bang-diem.py kq.json [kq-truoc.json] --ra bang-diem.html                # trang bảng điểm cho chủ dự án
 
 Công tắc lõi và model đọc từ `bot/cau-hinh-loi.env` (một nguồn với test; SRS-5.1zzzzzzz401). Mặc định chạy NHƯ KHÁCH THẬT: công tắc "thu" coi là tắt, vì ID
 chấm là ID thử. Không có --so-voi thì so với `tests/kich_ban/diem_nen.json` nếu có.
@@ -91,7 +93,7 @@ def _chay_mot(kb: dict, chat: str, boc: str, env: dict[str, str]) -> dict:
         _boc_viec("converse", lambda a, k: "loi" if "BƯỚC 2 — ĐÁNH GIÁ KẾT QUẢ" in str(k.get("system") or (a[0] if a else "")) else
                   "boc" if any(t.get("name") in ("ghi_o", "ghi_nhu_cau") for t in (k.get("tools") or (a[2] if len(a) > 2 else []))) else "loi")
     luot, xin_nguoi, bat_dau = [], False, time.monotonic()
-    with tempfile.TemporaryDirectory(prefix="cham-") as d:
+    with tempfile.TemporaryDirectory(prefix="cham-", ignore_cleanup_errors=True) as d:   # Windows: SQLite tạm còn mở lúc dọn
         kho = SqliteConversationStore(os.path.join(d, "kb.db"))
         # SRS-5.1zzzzzzz342 (kiểm độc lập): kịch bản khai `ro_hang` = danh sách căn kho trả cho khách MUA. Kho của bộ chấm là SQLite
         # tạm, không có `can_phu_hop`, nên trước bản này mọi kịch bản phía mua đều chạy với rổ TRỐNG — không chấm được lời bot kể
@@ -140,7 +142,10 @@ TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất đ�
                   "như môi giới có nghề nhắn người quen: đáp đúng điều khách vừa nói, nhận cảm xúc của khách khi có, độ dài hợp tình huống, mỗi lượt "
                   "mở khác nhau, không lặp câu, không thuyết giảng; 3 = đúng việc nhưng hơi khuôn; 1 = máy móc, khen / cảm thán gượng, lờ "
                   "cảm xúc hay câu hỏi của khách, lặp mở đầu / lặp câu. CHỈ chấm giọng, không chấm đúng sai nghiệp "
-                  "vụ hay ô tin. Lý do một câu ngắn, nêu lượt tệ nhất nếu có."
+                  "vụ hay ô tin. Lý do một câu ngắn, nêu lượt tệ nhất nếu có.")
+
+# Ngoại lệ chủ dự án đã chốt — dùng chung cho giám khảo giọng (thang 1–5) và barem từng lượt (SRS-5.1zzzzzzz493).
+NGOAI_LE_CHAM = (
                   # SRS-5.1zzzzzzz318 (10 kịch bản mua + bán 01/11: m_thue_chung_cu bị chấm 2/5 "xưng hô lẫn lộn" vì bot xưng "chị", gọi khách
                   # "em" — đúng luật SRS-5.1zzzzzzz214): giám khảo chỉ biết "trợ lý xưng em" nên trừ điểm cách xưng chủ dự án đã chốt.
                   "\n\nXƯNG HÔ (chủ dự án quyết, đúng luật — KHÔNG trừ điểm): khách tự xưng \"em\" thì trợ lý xưng \"anh\" / \"chị\" (theo tên trợ "
@@ -161,7 +166,126 @@ TIEU_CHI_GIONG = ("Em là giám khảo. Chấm GIỌNG lời trợ lý bất đ�
                   "chốt giục, hay vì nó khác giọng lời chat. CHỈ trừ khi: (a) câu giục DỰNG RA sự thật không có — \"đã có người đặt cọc\", "
                   "\"còn một căn duy nhất\", \"chủ sắp tăng giá\" khi không có dữ kiện nào như vậy; (b) bản tin lặp cùng một ý / cùng một con "
                   "số ba lần trở lên, hay gọi mời quá một lần; (c) LỜI CHAT (đoạn ngoài bản tin) cũng rao chợ hay cũng giục. Giọng rao chợ trong bản tin tự nó không "
-                  "phải lỗi.")
+                  "phải lỗi."
+                  # SRS-5.1zzzzzzz493: lượt chạy thử barem 14/11 trừ điểm hai câu cố định (cau_mau duyet_tin / hoi_phi) chủ dự án giữ nguyên chữ.
+                  "\n\nCÂU CỐ ĐỊNH (chủ dự án quyết, đúng luật — KHÔNG trừ điểm): lúc đăng tin em nói đúng câu \"Em xin phép đăng tin ạ!\", "
+                  "rồi mời khách vào trang web của AI Ơi Nhà Đất theo dõi tin và hỏi khách đã biết phí môi giới bên em chưa — câu hỏi phí "
+                  "sau khi đăng là bước bắt buộc, địa chỉ web là thật. Chỉ chấm phần còn lại của lượt."
+                  # SRS-5.1zzzzzzz493: lượt đo nền 14/11 giám khảo chấm "bịa" câu bảo mật số điện thoại (có thật trong khối uy tín của lõi)
+                  # và "lộ luật" lượt báo điểm tin 81/100 — giám khảo không thấy dữ liệu em được giao nên phải nói trước.
+                  "\n\nDỮ KIỆN THẬT CỦA NỀN TẢNG (KHÔNG tính là bịa): tên trợ lý viết có dấu chấm giữa (\"T•ài\", \"M•ai\"…); AI Ơi Nhà Đất "
+                  "là nền tảng công nghệ kết nối người bán / cho thuê với người mua / thuê thật; không chia sẻ thông tin cá nhân và số điện "
+                  "thoại của khách cho bên thứ ba; chỉ thu phí khi giao dịch thành công; có hợp đồng môi giới bằng văn bản; không độc quyền. "
+                  "Lúc ra bản tin hay báo tin đã lên, em báo ĐIỂM của tin (x/100) và HẠNG người rao (Đồng / Bạc / Vàng) là đúng luật — "
+                  "không tính lộ luật, không trừ điểm.")
+TIEU_CHI_GIONG += NGOAI_LE_CHAM
+
+# SRS-5.1zzzzzzz493 (chủ dự án 14/11: "làm gì để lời bot tự nhiên nhất, kiểm soát nó, có barem gì để nhận xét"): barem v1 chấm TỪNG LƯỢT,
+# sáu tiêu chí 0–2 (tổng 12) + lỗi nặng (cả lượt 0) + bản tin 5 mục. Phần đếm được do code chốt (`tinh_barem`): "Dạ", số bịa, câu ghi nhận,
+# lặp mở đầu, nhiều câu hỏi, nhãn trong bản tin — giám khảo chỉ chấm phần cần hiểu nghĩa.
+TIEU_CHI_BAREM = ("Em là giám khảo. Chấm TỪNG LƯỢT trả lời của trợ lý bất động sản (xưng em) nhắn Zalo với khách gửi bán / cho thuê hay "
+                  "tìm mua / thuê, theo sáu tiêu chí, mỗi tiêu chí 0, 1 hoặc 2 điểm. Sáu tiêu chí chỉ chấm LỜI CHAT (đoạn trước 📋); bản tin "
+                  "rao có phần chấm riêng. Chấm như một người môi giới lâu năm đọc tin nhắn của đồng nghiệp: câu này khách có thấy được "
+                  "nghe, được giúp, có thấy giống người thật không."
+                  "\n- dung_viec: 2 = đáp trọn điều khách vừa hỏi / vừa nói rồi đi đúng ý kế; 1 = đáp nhưng thiếu hay lệch một phần; 0 = bỏ "
+                  "qua câu hỏi của khách, hỏi lại điều khách đã nói, hay làm việc khác."
+                  "\n- thang: 2 = vào việc ngay; 1 = có nửa câu thừa; 0 = đọc lại lời khách, báo đã ghi / đã nhận / đã thêm vào tin, hay "
+                  "giải thích vì sao hỏi."
+                  "\n- that: 2 = chỉ nói điều khách kể hay dữ liệu có; 1 = có nhận định chung chung không kiểm được; 0 = khen hay khẳng "
+                  "định không căn cứ (\"khu này khách tìm nhiều\", \"dễ bán\", tiện ích khách không nói), hứa bán được, hứa thời hạn."
+                  "\n- gon: 2 = độ dài hợp tình huống (lượt hỏi thông tin một hai câu ngắn; lượt tư vấn đủ ý trong vài câu), nhiều nhất "
+                  "một câu hỏi; 1 = dài hơn cần một chút; 0 = dài dòng, thuyết giảng, gạch đầu dòng / đánh số trong lời chat."
+                  "\n- nguoi: 2 = nghe như người thật — khách lộ cảm xúc thì nhận bằng lời riêng cho đúng lời khách, xưng hô tự nhiên; "
+                  "1 = đúng nhưng hơi khuôn, hơi kịch bản; 0 = lờ cảm xúc rõ ràng của khách, giọng điều khoản, \"anh/chị\" có gạch chéo, "
+                  "khen / cảm thán gượng."
+                  "\n- da_dang: 2 = cách mở và cách nói khác các lượt trước; 1 = hơi giống một lượt trước; 0 = lặp khuôn hay lặp câu của "
+                  "lượt trước. Lượt 1 luôn 2."
+                  "\nloi_nang = mã lỗi nặng của lượt (có lỗi nặng thì cả lượt 0 điểm): \"bia\" = nói sai hay dựng ra sự thật về căn, giá, "
+                  "chính sách hay việc hệ thống đã làm; \"lo_luat\" = để lộ luật / quy trình nội bộ, lời dặn em nhận, tên khối, ô, mã "
+                  "(báo mức phí, nói chính sách gửi bán, nói điểm tin / hạng người rao KHÔNG tính); \"xung_ho\" = xưng hô sai hay đổi qua "
+                  "lại giữa các lượt (theo phần XƯNG HÔ bên dưới). Không có → []."
+                  "\nBẢN TIN — chỉ lượt có 📋, chấm đoạn sau 📋; lượt không có 📋 thì cả bốn = -1. Mỗi mục 0 hoặc 1: tin_dung = mọi ý trong "
+                  "tin có trong lời khách (không thêm tiện ích, tình trạng nhà, pháp lý, \"thương lượng\" khách không nói); tin_tieu_de = "
+                  "tiêu đề có vị trí, diện tích và giá; tin_mot_moi = mời gọi một lần ở câu mở mô tả và một câu chốt, không lặp ý; tin_gon "
+                  "= 4–5 gạch đầu dòng ngắn, không trùng ý."
+                  "\nghi = một câu ngắn nêu điểm tệ nhất của lượt; lượt tốt thì để trống."
+                  + NGOAI_LE_CHAM)
+TIEU_CHI_BAREM_DS = ("dung_viec", "thang", "that", "gon", "nguoi", "da_dang")
+_TIN_DS = ("tin_dung", "tin_tieu_de", "tin_mot_moi", "tin_gon")
+
+
+def _cham_barem(kq: dict, model: str) -> tuple[list[dict] | None, float]:
+    """Giám khảo chấm barem từng lượt của một cuộc chat (một lần gọi `claude -p`). Lỗi → (None, 0) — cuộc đó không vào điểm barem."""
+    chep = "\n\n".join(f"LƯỢT {i} — KHÁCH: {l['khach']}\nEM: {l['bot']}" for i, l in enumerate(kq["luot"], 1))
+    so = {"type": "integer", "minimum": 0, "maximum": 2}
+    tin = {"type": "integer", "minimum": -1, "maximum": 1}
+    mot = {"type": "object", "properties": {"so": {"type": "integer"}, **{k: so for k in TIEU_CHI_BAREM_DS},
+                                            "loi_nang": {"type": "array", "items": {"type": "string", "enum": ["bia", "lo_luat", "xung_ho"]}},
+                                            **{k: tin for k in _TIN_DS}, "ghi": {"type": "string"}},
+           "required": ["so", *TIEU_CHI_BAREM_DS, "loi_nang", *_TIN_DS, "ghi"]}
+    schema = {"type": "object", "properties": {"luot": {"type": "array", "items": mot}}, "required": ["luot"]}
+    try:
+        j = _giam_khao(model, TIEU_CHI_BAREM, chep, schema)
+    except Exception as e:  # noqa: BLE001
+        print(f"giám khảo barem lỗi ({kq['id']}): {type(e).__name__}: {str(e)[:200]}", file=sys.stderr)
+        return None, 0.0
+    return list((j.get("structured_output") or {}).get("luot") or []), float(j.get("total_cost_usd") or 0)
+
+
+def tinh_barem(luot: list[dict], cham: list[dict]) -> list[dict]:
+    """Điểm barem từng lượt: điểm giám khảo, rồi code chốt phần đếm được (cùng nguồn luật với `tests/kich_ban/cham.loi_pham`). Lượt giám
+    khảo bỏ sót thì `diem` = None, không vào trung bình."""
+    theo_so = {int(x.get("so") or 0): x for x in cham}
+    ra = []
+    for i, l in enumerate(luot, 1):
+        x = theo_so.get(i)
+        if x is None:
+            ra.append({"so": i, "diem": None})
+            continue
+        tc = {k: max(0, min(2, int(x.get(k) or 0))) for k in TIEU_CHI_BAREM_DS}
+        nang = {str(c) for c in x.get("loi_nang") or []}
+        nang |= {"da"} if l.get("da") else set()
+        nang |= {"bia"} if l.get("so_bia") else set()
+        nang |= {"loi_he_thong"} if str(l.get("bot") or "").startswith("[LỖI") else set()
+        if l.get("ghi_nhan"):
+            tc["thang"] = 0
+        if l.get("lap_mo_dau"):
+            tc["da_dang"] = 0
+        if l.get("nhieu_hoi"):
+            tc["gon"] = min(tc["gon"], 1)
+        if l.get("binh_gia"):
+            tc["that"] = min(tc["that"], 1)
+        tin = None
+        if "📋" in str(l.get("bot") or ""):
+            tin = sum(1 for k in _TIN_DS if x.get(k) == 1) + (0 if l.get("nhan_tin") else 1)
+        ra.append({"so": i, **tc, "loi_nang": sorted(nang), "diem": 0 if nang else sum(tc.values()), "tin": tin,
+                   "ghi": str(x.get("ghi") or "")[:200]})
+    return ra
+
+
+def tong_barem(kqs: list[dict]) -> dict:
+    """Bảng điểm barem cả lượt chạy: điểm trung bình /12, phần trăm lượt đạt (không lỗi nặng, không tiêu chí nào 0), lỗi nặng theo mã,
+    trung bình từng tiêu chí, bản tin /5."""
+    from collections import Counter
+    ds = [x for kq in kqs for x in (kq.get("barem") or []) if x.get("diem") is not None]
+    if not ds:
+        return {}
+    tin = [x["tin"] for x in ds if x.get("tin") is not None]
+    return {"so_luot": len(ds), "diem_tb": round(statistics.mean(x["diem"] for x in ds), 2),
+            "luot_dat": round(100 * sum(1 for x in ds if not x["loi_nang"] and min(x[k] for k in TIEU_CHI_BAREM_DS) > 0) / len(ds), 1),
+            "loi_nang": dict(Counter(c for x in ds for c in x["loi_nang"])),
+            "tieu_chi": {k: round(statistics.mean(x[k] for x in ds), 2) for k in TIEU_CHI_BAREM_DS},
+            "tin_tb": round(statistics.mean(tin), 2) if tin else None, "so_tin": len(tin)}
+
+
+def doc_bo(duong: str) -> list[dict]:
+    """Đọc bộ kịch bản. Bộ có khoá `lay` ({tệp cùng thư mục: [id…]}) mượn kịch bản từ bộ khác — một nguồn, không chép (bộ vàng SRS-493)."""
+    d = json.load(open(duong, encoding="utf-8"))
+    ra = []
+    for tep, ids in (d.get("lay") or {}).items():
+        goc = {k["id"]: k for k in json.load(open(os.path.join(os.path.dirname(duong), tep), encoding="utf-8"))["kich_ban"]}
+        ra += [goc[i] for i in ids]
+    return ra + list(d.get("kich_ban") or [])
 
 
 TIEU_CHI_LO_LUAT = ("\n\nViệc thứ hai, tách khỏi điểm giọng: lo_luat = số thứ tự các lượt EM để lộ cách hệ thống làm việc bên trong — kể lại "
@@ -202,10 +326,30 @@ TIEU_CHI_LO_LUAT = ("\n\nViệc thứ hai, tách khỏi điểm giọng: lo_luat
                     "(\"căn nào\", \"hay nhà mặt tiền … hay nhà hẻm …\") — thì KHÔNG tính. Không có → [].")
 
 
+def _giam_khao(model: str, system: str, chep: str, schema: dict) -> dict:
+    """Một lần gọi giám khảo, trả {structured_output, total_cost_usd}. Mặc định `claude -p` (quota gói); lõi chạy bằng API
+    (`AIOI_LLM_PROVIDER=claude`, vd đo trên máy 146) thì giám khảo cũng gọi API, ép một công cụ mang kết quả (SRS-5.1zzzzzzz493)."""
+    if os.environ.get("AIOI_LLM_PROVIDER", "claude_cli") == "claude_cli":
+        from aioi.llm.claude_cli import _chay_cli
+        return _chay_cli(model, system, chep, schema)
+    import anthropic
+    kw = {"model": model, "max_tokens": 16000, "system": system, "messages": [{"role": "user", "content": chep}],
+          "tools": [{"name": "ket_qua", "description": "Ghi kết quả chấm.", "input_schema": schema}],
+          "tool_choice": {"type": "tool", "name": "ket_qua"}}
+    kh = anthropic.Anthropic(timeout=300.0, max_retries=2)
+    try:
+        r = kh.messages.create(**kw)
+    except anthropic.BadRequestError as e:   # model không nhận ép công cụ (SRS-244) → auto
+        if "tool_choice" not in str(e):
+            raise
+        r = kh.messages.create(**{**kw, "tool_choice": {"type": "auto"}})
+    o = next((dict(b.input) for b in r.content if b.type == "tool_use"), {})
+    return {"structured_output": o, "total_cost_usd": 0.0, "token": [r.usage.input_tokens, r.usage.output_tokens]}
+
+
 def _cham_giong(kq: dict, model: str) -> tuple[int, str, list[int], list[int], list[int], list[int], list[int], list[int],
                                                 list[int], float]:
     """Giám khảo model chấm giọng cả cuộc chat và chỉ lượt lộ luật cho khách (kế hoạch bước 1: phép chấm tất định + phần đọc nghĩa do model chấm)."""
-    from aioi.llm.claude_cli import _chay_cli
     chep = "\n\n".join(f"LƯỢT {i} — KHÁCH: {l['khach']}\nEM: {l['bot']}" for i, l in enumerate(kq["luot"], 1))
     schema = {"type": "object", "properties": {"diem": {"type": "integer", "minimum": 1, "maximum": 5}, "ly_do": {"type": "string"},
                                                "lo_luat": {"type": "array", "items": {"type": "integer"}},
@@ -217,7 +361,7 @@ def _cham_giong(kq: dict, model: str) -> tuple[int, str, list[int], list[int], l
                                                "hua_suong": {"type": "array", "items": {"type": "integer"}}},
               "required": ["diem", "ly_do", "lo_luat", "hoi_lai", "da_doi", "diem_sai_luc", "goi_minh", "tu_chon_can", "hua_suong"]}
     try:
-        j = _chay_cli(model, TIEU_CHI_GIONG + TIEU_CHI_LO_LUAT, chep, schema)
+        j = _giam_khao(model, TIEU_CHI_GIONG + TIEU_CHI_LO_LUAT, chep, schema)
     except Exception as e:  # noqa: BLE001
         return 0, f"giám khảo lỗi: {type(e).__name__}", [], [], [], [], [], [], [], 0.0
     o = j.get("structured_output") or {}
@@ -264,10 +408,12 @@ def main() -> int:
     ap.add_argument("--so-voi", default="", help="JSON kết quả lần trước để so")
     ap.add_argument("--khong-cau-mau", action="store_true", help="tắt câu mẫu cố định (cau_mau.cau trả rỗng) trong lượt chạy thử — xem lõi chạy ra sao")
     ap.add_argument("--giong", nargs="?", const="claude-sonnet-5-5", default="", help="thêm phép chấm giọng do model chấm (mặc định Sonnet 5.5)")
+    ap.add_argument("--barem", nargs="?", const="claude-sonnet-5-5", default="",
+                    help="chấm barem từng lượt (6 tiêu chí × 0–2 + lỗi nặng + bản tin /5; SRS-493). Bộ vàng: --bo tests/kich_ban/vang.json")
     a = ap.parse_args()
     from tests.kich_ban.cham import cham
 
-    bo = json.load(open(a.bo, encoding="utf-8"))["kich_ban"]
+    bo = doc_bo(a.bo)
     if a.chi:
         bo = [k for k in bo if k["id"] in set(a.chi.split(","))]
     env = cong_tac_loi(nhu=a.nhu)
@@ -278,7 +424,7 @@ def main() -> int:
         a.boc = os.environ.get("AIOI_EXTRACT_MODEL") or env.get("AIOI_EXTRACT_MODEL", "")
     giong = {}
     if a.cham_lai:   # chấm lại bản ghi đã lưu (--ra) bằng phép chấm hiện tại — không gọi model; điểm giám khảo giữ như lúc chạy
-        cu_kq = {r["id"]: r for r in json.load(open(a.cham_lai, encoding="utf-8"))["ket_qua"]}
+        cu_kq = {r["id"]: r for r in json.load(open(a.cham_lai, encoding="utf-8"))["ket_qua"]}   # barem cũ giữ nguyên trừ khi có --barem
         bo = [k for k in bo if k["id"] in cu_kq]
         kqs = [cu_kq[k["id"]] for k in bo]
         if not a.giong:   # SRS-5.1zzzzzzz341: có --giong thì CHẤM LẠI giám khảo trên chính bản ghi này (A/B rubric: cùng hội thoại,
@@ -295,6 +441,12 @@ def main() -> int:
         from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=a.song_song) as ex:
             giong = dict(zip([k["id"] for k in bo], ex.map(lambda kq: _cham_giong(kq, a.giong), kqs)))
+    if a.barem:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=a.song_song) as ex:
+            for kq, (cham_luot, usd) in zip(kqs, ex.map(lambda kq: _cham_barem(kq, a.barem), kqs)):
+                kq["barem"] = tinh_barem(kq["luot"], cham_luot) if cham_luot is not None else None
+                kq["usd"] += usd
     so_voi = a.so_voi or (DIEM_NEN if os.path.exists(DIEM_NEN) and not a.nen else "")
     cu = {r["id"]: r for r in json.load(open(so_voi, encoding="utf-8"))["ket_qua"]} if so_voi else {}
     tong = {"dat": 0, "phep": 0, "goi": 0, "goi_lai": 0, "usd": 0.0}
@@ -326,7 +478,9 @@ def main() -> int:
         dat = sum(1 for _, ok, _ in diem if ok)
         so = f"  (trước {cu[kb['id']]['dat']}/{len(cu[kb['id']]['diem'])})" if kb["id"] in cu else ""
         kq["dat"] = dat
-        print(f"{kb['id']:12} {dat:2}/{len(diem):<2} gọi {kq['goi']:3} · gọi lại {kq['goi_lai']} · {kq['giay']:6.1f}s · ${kq['usd']:.4f}{so}")
+        bm = [x["diem"] for x in kq.get("barem") or [] if x.get("diem") is not None]
+        bm = f" · barem {statistics.mean(bm):4.1f}/12" if bm else ""
+        print(f"{kb['id']:12} {dat:2}/{len(diem):<2} gọi {kq['goi']:3} · gọi lại {kq['goi_lai']} · {kq['giay']:6.1f}s · ${kq['usd']:.4f}{bm}{so}")
         for ten, ok, ghi in diem:
             if not ok:
                 print(f"    ✗ {ten}  {ghi}")
@@ -350,11 +504,19 @@ def main() -> int:
     if giong:
         print(f"  giọng trung bình {statistics.mean(g[0] for g in giong.values()):.2f} · lộ luật {sum(1 for g in giong.values() if g[2])}/{len(giong)} cuộc"
               f" · hỏi lại {sum(1 for g in giong.values() if g[3])}/{len(giong)} cuộc")
+    tb = tong_barem(kqs) if a.barem else {}
+    if tb:
+        from aioi.prompts import GIONG, LEAN_SYSTEM_PROMPT
+        print(f"\n== BAREM ({tb['so_luot']} lượt, giám khảo {a.barem}): trung bình {tb['diem_tb']}/12 · lượt đạt {tb['luot_dat']}%"
+              f" · lỗi nặng {sum(tb['loi_nang'].values())} {tb['loi_nang'] or ''}"
+              + (f" · bản tin {tb['tin_tb']}/5 ({tb['so_tin']} tin)" if tb["tin_tb"] is not None else ""))
+        print("   " + " · ".join(f"{k} {v}" for k, v in tb["tieu_chi"].items()) + f"   (GIONG {len(GIONG)} chữ · LEAN {len(LEAN_SYSTEM_PROMPT)} chữ)")
     lech = lech_khoi(kqs)
     print(f"\n== Lượt có hơn một khối hỏi (engine ghép) so với việc viec_luot chọn: {len(lech)} / {sum(len(k['luot']) for k in kqs)} lượt")
     for x in lech[:15]:
         print(f"  {x}")
-    meta = {"chat": a.chat, "boc": a.boc, "nhu": a.nhu, "cong_tac": env, "tong": tong, "prompt": pr, "moi_luot": ml, "lech_khoi": len(lech)}
+    meta = {"chat": a.chat, "boc": a.boc, "nhu": a.nhu, "cong_tac": env, "tong": tong, "prompt": pr, "moi_luot": ml, "lech_khoi": len(lech),
+            "barem": tb, "giam_khao": a.barem, "bo": os.path.basename(a.bo), "luc": time.strftime("%Y-%m-%d %H:%M")}
     if a.ra:
         json.dump({**meta, "ket_qua": kqs}, open(a.ra, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     if a.nen:   # bản gọn để so ở PR sau: điểm từng phép, không chép lời

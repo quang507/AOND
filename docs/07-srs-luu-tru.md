@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz483 · Lượt bản tin nhanh hơn: bước viết không nghĩ thêm, lưới soát chạy song song, khuôn bản tin khớp lưới (13/11/2026)
+Chủ dự án 13/11: "tăng tốc lượt bản tin". Đo trên 146 (`AIOI_EFFORT=medium`): lượt bản tin qua lưới ngay ~10 s, bị lưới bắt viết lại 26–30 s (model viết cả bản tin lần hai), xảy ra khoảng một nửa số lượt. Lớp lỗi: khuôn `AD_FORMAT` dặn ngược lưới — tiêu đề dồn 5 ý trong 25 từ (lưới chặn quá 30 từ), giọng "hối hả, FOMO" mà không nói tin không bình giá (lưới `binh_luan_gia` chặn), câu mời chốt ghi "Zalo cho mình" (lưới `goi_minh` chặn).
+- **Khuôn (`AD_FORMAT`, +167 token, 3.375 → 3.542):** tiêu đề = lời gọi ngắn 3–6 từ + vị trí · diện tích · giá, còn chỗ thêm một điểm mạnh; khối GIÁ TRONG TIN: nêu đúng con số chủ đưa, chủ cho bớt thì ghi "thương lượng", câu FOMO / mời chốt nói về căn, không nói về giá; "Zalo cho em".
+- **Bước viết (`agent_gop.viet`):** cờ `KHONG_NGHI_LUOT` → `thinking: between_tools` (Sonnet 5.5) — bước 1 đã đọc / ghi / áp; đo bản tin đầu ra 1.249 token cho lời 673 token, nay ≈ bằng lời. Model khác hay API từ chối thì tự gửi lại không kèm. Phía mua giữ nghĩ (tra kho ở bước này).
+- **Lưới soát:** `_chay_luat_soat` chạy song song các luật `LUAT_SOAT` (hai luật hỏi model trước nối đuôi ~3,5 s).
+- **Đo (12 lượt bản tin, 6 cuộc giả, medium):** viết lại 2/12 (trước ≈ 1/2); lượt bản tin không viết lại 9–12,6 s. Còn sót: "rồi mình nói chuyện", khen giá trong câu FOMO.
+
 ### SRS-5.1zzzzzzz482 · Trả lời nhanh hơn: gom tin theo hình thức, bỏ nghỉ giữa bong bóng, công tắc `AIOI_EFFORT` (13/11/2026)
 Chủ dự án 13/11: "đừng để nó chờ nó chậm nữa, rep càng nhanh càng tốt, gộp thì gộp kiểu thông minh hơn". Lớp lỗi: ba chỗ chờ cố định không phụ thuộc tin — bridge chờ 2,5 s trước MỌI tin, lõi nghỉ "đang gõ" 0,3–2 s giữa các bong bóng, model chạy mức suy nghĩ mặc định (`high`).
 - **Bridge (`bot/bridge-zca/index.mjs` `choGom`):** thời gian gom theo hình thức tin vừa tới — trọn ý (kết bằng dấu câu hoặc ≥ 8 từ) 0,5 s; mảnh ngắn 1,2 s; ảnh / tệp 1,8 s; trần 4 s tính từ tin đầu. Gom hụt thì lõi vẫn gộp tin tới lúc đang soạn (SRS-91 / 279).

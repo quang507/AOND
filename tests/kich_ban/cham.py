@@ -15,6 +15,10 @@ _BINH_GIA_DO = re.compile(
     r"(?:hợp lý|vừa tầm)(?:(?!,\s)[^.!?;\n]){0,25}?(?:mức giá|giá))", re.I)
 
 
+# SRS-5.1zzzzzzz493: nhãn đầu dòng trong bản tin ("Giá: 19 tỷ", "💰 Diện tích: 80m²") — AD_FORMAT dặn ghi thẳng con số. Barem đếm, không chặn.
+_NHAN_TIN = re.compile(r"(?m)^[ \t]*(?:[-•*·][ \t]*)?(?:\S{1,3}[ \t]+)?(?:Giá(?: bán| thuê)?|Diện tích|Pháp lý|Vị trí|Địa chỉ|Kết cấu|Hướng)[ \t]*:")
+
+
 def bo_dau(s: object) -> str:
     t = unicodedata.normalize("NFD", str(s or "")).replace("đ", "d").replace("Đ", "D")
     return "".join(c for c in t if unicodedata.category(c) != "Mn").lower()
@@ -93,4 +97,5 @@ def loi_pham(bot: str, truoc_do: str = "") -> dict[str, Any]:
     truoc = (bot or "").split("📋", 1)[0]
     return {"da": _mo_dau_da(bot), "minh": goi_khach_la_minh(bot or ""), "binh_gia": bool(_BINH_GIA_DO.search(bot or "")),
             "nhieu_hoi": "📋" not in (bot or "") and truoc.count("?") > 1, "ghi_nhan": _mo_dau_ghi_nhan(bot or ""),
-            "lap_mo_dau": bool(truoc_do) and _cung_mo_dau(bot or "", truoc_do)}
+            "lap_mo_dau": bool(truoc_do) and _cung_mo_dau(bot or "", truoc_do),
+            "nhan_tin": "📋" in (bot or "") and bool(_NHAN_TIN.search((bot or "").split("📋", 1)[1]))}

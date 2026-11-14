@@ -1,0 +1,31 @@
+{
+ "_mo_ta": "Bộ VÀNG đo độ tự nhiên của lời bot (SRS-5.1zzzzzzz493, chủ dự án 14/11). 15 kịch bản cố định, mỗi kịch bản một kiểu khách khó: đủ luồng dài, khách cộc / nhắn cụt, bán gấp + tiếng lóng, hỏi phí giữa chừng, xin bớt phí, nghi lừa đảo, hai căn, không chính chủ, lộ cảm xúc, đáp \"ok\", cho thuê, người mua, vừa bán vừa mua, đổi ý giữa chừng, khách đang bận. Chạy trước và sau mỗi lần sửa prompt: python scripts/cham-kich-ban.py --bo tests/kich_ban/vang.json --barem --ra kq.json, rồi scripts/bang-diem.py. `lay` mượn kịch bản từ bộ khác theo id (một nguồn, không chép). Hội thoại tạo sẵn, không có dữ liệu khách thật (repo công khai). Đổi bộ này thì điểm cũ không còn so được — thêm kịch bản thì ghi ngày vào SRS.",
+ "lay": {
+  "ban.json": ["hht", "tin_cut", "aeon_tan_phu", "srd_phi", "xin_bot_phi", "uy_tin", "hai_can_hoi_gia", "khong_phai_chinh_chu", "xa_cho", "ngan_cho_thue", "cho_thue"],
+  "mua_ban_10.json": ["m_tim_nha_pho", "v_vua_ban_vua_mua"]
+ },
+ "kich_ban": [
+  {
+   "id": "vang_doi_y",
+   "mo_ta": "Khách đang bán thì đổi sang cho thuê, lộ cảm xúc (nhà ba mẹ để lại) — bot nhận cảm xúc, theo ý mới, không níu chuyện bán",
+   "cau": [
+    "chị tính bán căn nhà hẻm đường Lê Quang Định Bình Thạnh, 4x15, 3 tầng, sổ hồng riêng",
+    "giá chị muốn 7 tỷ",
+    "mà thôi nghĩ lại thị trường giờ chậm quá, chị cho thuê trước được không em, 18 triệu một tháng",
+    "ừ chị cũng rối lắm, nhà ba mẹ để lại nên chưa nỡ bán",
+    "ok em đăng cho thuê giúp chị"
+   ],
+   "kiem": {"cho_thue": true, "o": {"gia": "18"}}
+  },
+  {
+   "id": "vang_ban_ron",
+   "mo_ta": "Khách đang chạy xe, gửi một tin dài đủ gần hết ô rồi chỉ đáp cụt — bot hỏi gọn đúng ý còn thiếu, không đọc lại, không dài dòng",
+   "cau": [
+    "anh bán nhà mặt tiền đường Lũy Bán Bích Tân Phú, ngang 5 dài 20, 1 trệt 2 lầu, sổ hồng riêng hoàn công đủ, nhà đang cho thuê, giá 14 tỷ, anh đang chạy xe em làm nhanh giùm",
+    "phường Tân Thành",
+    "ừ"
+   ],
+   "kiem": {"o": {"gia": "14", "duong": "Lũy Bán Bích"}}
+  }
+ ]
+}

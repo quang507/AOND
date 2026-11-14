@@ -28,3 +28,6 @@ node_modules/
 tsconfig.tsbuildinfo
 next-env.d.ts
 .claude/worktrees/
+
+# Bản ghi đo bộ vàng (lời bot đầy đủ) — scripts/do-vang-146.sh, SRS-5.1zzzzzzz493
+ket-qua/
