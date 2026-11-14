@@ -31,6 +31,7 @@ HUONG_DAN = (
     "- ro_hang: khách đang có nhiều căn và báo một việc lên 'một căn' (đã bán, đổi giá, có khách…) hoặc nói chưa rõ căn nào. Lời khách "
     "không chỉ ra được căn nào → HỎI LẠI căn nào (nêu địa chỉ các căn để khách chọn), KHÔNG tự nhận là căn nào, KHÔNG nói đã đổi trạng thái.\n"
     "- bo_nho_du_an: khách hỏi / nhắc về dự án, mẫu nhà, phân lô, bảng giá dự án.\n"
+    "- tra_du_an / du_an_trong_khu: khách hỏi về một dự án khác, hoặc một quận / phường / con đường có dự án / chung cư nào.\n"
     "- gia_da_gui: khách hỏi lại giá căn của họ đã gửi (bảng giá, các căn khách đã gửi). Nói với khách KHÔNG dùng chữ \"rổ\".\n"
     "- dinh_gia_tham_khao: khách hỏi giá thị trường khu này bao nhiêu, giá họ đưa ra cao hay thấp, hoặc nhờ định giá căn nhà/căn hộ/đất nền gửi bán.\n"
     "- kiem_tra_phap_ly_so: khách hỏi về sổ đỏ/sổ hồng, nhà chưa hoàn công, nhà đang thế chấp ngân hàng, mua bán vi bằng, giấy tờ công chứng cần chuẩn bị.\n"
@@ -49,6 +50,10 @@ CONG_CU: list[dict[str, Any]] = [
      "input_schema": {"type": "object", "properties": {}}},
     {"name": "gia_da_gui", "description": "Giá các căn khách (người rao) đã gửi — từ bảng giá và các căn khách đã gửi.",
      "input_schema": {"type": "object", "properties": {}}},
+    {"name": "tra_du_an", "description": "Thông tin một dự án trong kho chung theo tên (chủ đầu tư, pháp lý, tiện ích, mẫu nhà).",
+     "input_schema": {"type": "object", "properties": {"ten": {"type": "string"}}, "required": ["ten"]}},
+    {"name": "du_an_trong_khu", "description": "Các dự án trong kho chung ở một quận / phường / con đường (ghi tên đầy đủ, có dấu).",
+     "input_schema": {"type": "object", "properties": {"khu": {"type": "string"}}, "required": ["khu"]}},
     {"name": "dinh_gia_tham_khao",
      "description": "Định giá sơ bộ / tra cứu giá thị trường tham khảo (AVM) theo khu vực (quận/huyện/tỉnh, phường, đường hoặc dự án), loại hình BĐS và diện tích. Trả về đơn giá m² đất/nhà tham khảo và dải giá gợi ý ±10% để chủ nhà cân đối khi ký gửi bán/cho thuê. Gọi khi khách hỏi giá thị trường khu này bao nhiêu, giá họ đưa cao hay thấp, hoặc nhờ định giá.",
      "input_schema": {
@@ -129,6 +134,20 @@ def _khoi(engine: Any, conv: Any, project: Any, ten: str, vao: dict[str, Any] | 
         return engine._project_memory_block(project, conv)
     if ten == "gia_da_gui":
         return engine._seller_price_block(conv)
+    if ten in ("tra_du_an", "du_an_trong_khu"):   # SRS-5.1zzzzzzz497: cùng kho, cùng hàm khối với bên mua
+        from . import du_an_mua
+        kho = getattr(engine, "_convstore", None)
+        chu = str(vao.get("ten") or vao.get("khu") or "").strip()
+        if not chu:
+            return "Thiếu tên dự án / khu."
+        if ten == "du_an_trong_khu":
+            if getattr(kho, "du_an_theo_khu", None) is None:
+                return "Chưa tra được kho dự án."
+            return du_an_mua.khoi_du_an_khu({"khu": chu, "ds": kho.du_an_theo_khu(chu)}, ben="ban")
+        if getattr(kho, "tra_du_an", None) is None:
+            return "Chưa tra được kho dự án."
+        nghia = getattr(getattr(engine, "_dia_danh", None), "du_an_theo_nghia", None)
+        return du_an_mua.khoi_du_an(kho.tra_du_an(chu, theo_nghia=nghia) if nghia else kho.tra_du_an(chu), ben="ban")
     if ten == "dinh_gia_tham_khao":
         from .dinh_gia import dinh_gia_tham_khao_tool
         return dinh_gia_tham_khao_tool(engine, conv, project, vao)

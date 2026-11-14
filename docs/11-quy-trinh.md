@@ -142,7 +142,7 @@ của người đẩy commit**. Nay chia lại cho sòng phẳng.
 | Lint | **không có** — repo chưa cài eslint/biome/prettier | — | không |
 
 **⚠️ = CI chỉ để tham khảo, KHÔNG chặn.** Từ 11/11/2026 (chủ dự án: "xóa cái luật cl pr", "sao cứ sửa là m
-chạy") `kiem.yml` / `cham.yml` không tự chạy khi push / PR nữa — chỉ chạy tay (`workflow_dispatch`); không ai chờ
+chạy") `kiem.yml` không tự chạy khi push / PR nữa — chỉ chạy tay (`workflow_dispatch`); không ai chờ
 nó xanh. Agent và người commit THẲNG `main`, không mở PR (CLAUDE.md §7, SRS-5.1zzzzzzz464), nên `main` cố ý không
 bật bảo vệ nhánh. Bằng chứng "đã chạy" là lệnh khoanh vùng người sửa tự chạy (§11.5 Cổng 1) và bắn thử / log
 trên máy 146 (Cổng 3), không phải dấu xanh CI.
@@ -193,8 +193,8 @@ bun run kiem     # kiểm tra toàn bộ — khi cần
 
 Đụng migration RLS/GRANT thì chạy thêm TS-SEC bằng tay.
 
-**Cổng 2 — CI trên GitHub Actions** (máy, chỉ tham khảo): `.github/workflows/kiem.yml` (10 job) và `cham.yml` (bộ
-chấm offline, SRS-5.1zzzzzzz377) từ 11/11/2026 chỉ chạy tay (`workflow_dispatch`), KHÔNG tự chạy khi push, KHÔNG
+**Cổng 2 — CI trên GitHub Actions** (máy, chỉ tham khảo): `.github/workflows/kiem.yml` (10 job; `cham.yml` bộ chấm
+offline gỡ 14/11/2026, SRS-5.1zzzzzzz497) từ 11/11/2026 chỉ chạy tay (`workflow_dispatch`), KHÔNG tự chạy khi push, KHÔNG
 chặn, không ai chờ xanh. Chạy khi muốn một lượt soát toàn bộ trên máy sạch; đỏ thì đọc và tự quyết sửa, không phải
 điều kiện để push. `main` cố ý không bật bảo vệ nhánh (*Require a pull request*… sẽ chặn đúng vòng commit thẳng
 `main` mà chủ dự án chọn). Tên job còn để tra:

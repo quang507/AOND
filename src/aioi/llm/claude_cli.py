@@ -2,7 +2,7 @@
 (SRS-5.1zzzzzzz300, chủ dự án 30/10/2026: "cài claude code dùng quota của bên mình đi").
 
 KHÔNG dùng cho bot phục vụ khách thật (máy 146): quota gói Claude Code dành cho người dùng tự làm việc; bot trả lời khách là sản phẩm → API key.
-Bật bằng `AIOI_LLM_PROVIDER=claude_cli` khi chạy `scripts/chat-cli.py` / `scripts/cham-kich-ban.py` trên máy mình.
+Bật bằng `AIOI_LLM_PROVIDER=claude_cli` khi chạy `scripts/chat-cli.py` trên máy mình.
 
 Khác đường API (kết quả không đại diện hoàn toàn): lịch sử chat gửi thành MỘT bản ghi chép trong lời nhắn (CLI không nhận lượt assistant);
 công cụ của vòng agent được GIẢ LẬP bằng đầu ra JSON (`converse`: mỗi vòng model trả {goi, loi}, SRS-5.1zzzzzzz307); không đọc ảnh; mỗi lần gọi CLI khởi động vài giây; không có dấu cache

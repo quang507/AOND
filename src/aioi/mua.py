@@ -335,7 +335,9 @@ class KhoNguoiMua:
 
     def du_an_theo_khu(self, khu: str, toi_da: int = 8) -> list[dict]:
         """Khách mua hỏi "quận X có dự án gì" (SRS-5.1zzzzzzz250, chủ dự án 28/10: "có địa chỉ hết rồi mà"): dự án trong kho chung `projects`
-        có quận / phường khớp TRỌN tên khu (regex chặn số dính liền — "Quận 1" không ra Quận 10, 11, 12), ưu tiên trước, kèm số căn đang hiện."""
+        có quận / phường khớp TRỌN tên khu (regex chặn số dính liền — "Quận 1" không ra Quận 10, 11, 12), ưu tiên trước, kèm số căn đang hiện.
+        SRS-5.1zzzzzzz497: khu cũng có thể là TÊN ĐƯỜNG — khớp cả địa chỉ dự án (`location_raw`), cho cả bên mua lẫn bên bán ("đường X có chung cư
+        nào"); đo 14/11: thêm địa chỉ không làm rộng kết quả tra theo quận (Quận 1: 87 = 87, Quận 5: 28 = 28)."""
         k = re.sub(r"\s+", " ", re.sub(r'[*%,()&"\\]', " ", khu or "")).strip()
         if not (self.is_configured and len(k) >= 2):
             return []
@@ -348,7 +350,7 @@ class KhoNguoiMua:
             if la_tp:
                 ds = self._get(f"projects?province=ilike.{_q('*Hồ Chí Minh*')}&select={cot}&order=priority.asc.nullslast,name.asc&limit={toi_da}")
             else:
-                ds = self._get(f'projects?or=(district.imatch."{mau}",ward.imatch."{mau}")&select={cot}'
+                ds = self._get(f'projects?or=(district.imatch."{mau}",ward.imatch."{mau}",location_raw.imatch."{mau}")&select={cot}'
                                f"&order=priority.asc.nullslast,name.asc&limit={toi_da}")
             if not ds:
                 return []

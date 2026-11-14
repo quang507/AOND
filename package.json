@@ -20,7 +20,6 @@
     "kiem": "bun run kieu && bun run kieu:bot && bun run build && bun run test:bot && bun run test:rohang && bun run truyvet",
     "test:ranhgioi": "node bot/tests/ranh-gioi.mjs",
     "srd": "node scripts/sinh-srd-docx.mjs",
-    "cham": "python scripts/cham-kich-ban.py",
     "chat:cli": "python scripts/chat-cli.py"
   },
   "dependencies": {

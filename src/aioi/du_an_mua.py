@@ -92,17 +92,23 @@ def dong_du_an(p: dict[str, Any]) -> list[str]:
     return d
 
 
-def khoi_du_an(kq: dict[str, Any] | None) -> str:
-    """Khối cho lời đáp phía mua khi khách hỏi thông tin dự án. `kq` = kết quả `tra_du_an` (None / rỗng → không có khối)."""
+def _ai(ben: str) -> tuple[str, str]:
+    """(người hỏi, câu hỏi bị thay) theo bên: mua = khách tìm nhà; ban = chủ nhà / người rao đang khai căn (SRS-5.1zzzzzzz497)."""
+    return ("chủ nhà bên gửi bán", "câu hỏi lượt này") if ben == "ban" else ("khách MUA", "câu hỏi nhu cầu lượt này")
+
+
+def khoi_du_an(kq: dict[str, Any] | None, ben: str = "mua") -> str:
+    """Khối khi khách hỏi thông tin một dự án. `kq` = kết quả `tra_du_an` (None / rỗng → không có khối); `ben` = "mua" / "ban"."""
     if not isinstance(kq, dict) or not kq.get("ten_khach"):
         return ""
     ten = kq["ten_khach"]
-    dau = f'\n\n=== {TIEU_DE} (khách MUA vừa hỏi thông tin dự án "{ten}"; hệ thống tra kho, KHÔNG phải khách nói) ===\n'
+    ai, cau_hoi = _ai(ben)
+    dau = f'\n\n=== {TIEU_DE} ({ai} vừa hỏi thông tin dự án "{ten}"; hệ thống tra kho, KHÔNG phải khách nói) ===\n'
     khop = kq.get("khop")
     if khop == "nhieu":
         ds = "; ".join(str(x) for x in (kq.get("ung_vien") or [])[:4])
-        return dau + (f"Kho có nhiều dự án gần tên này: {ds}. Hỏi khách MỘT câu ngắn là dự án nào — câu này THAY câu hỏi nhu "
-                      "cầu lượt này; CHƯA kể thông tin dự án nào, KHÔNG đoán.\n")
+        return dau + (f"Kho có nhiều dự án gần tên này: {ds}. Hỏi khách MỘT câu ngắn là dự án nào — câu này THAY {cau_hoi}; "
+                      "CHƯA kể thông tin dự án nào, KHÔNG đoán.\n")
     if khop in ("khong", "loi") or not isinstance(kq.get("du_an"), dict):
         return dau + ("Kho CHƯA có dự án tên này" + (" (tra kho đang lỗi)" if khop == "loi" else "") + ". Nói thật NGẮN là em chưa có thông tin "
                       "dự án đó trong hệ thống, đề nghị khách cho tên đầy đủ hoặc khu vực; KHÔNG kể gì về dự án từ trí nhớ, KHÔNG "
@@ -123,12 +129,16 @@ def khoi_du_an(kq: dict[str, Any] | None) -> str:
     return out
 
 
-def khoi_du_an_khu(kq: dict[str, Any] | None) -> str:
-    """Khách hỏi "khu X có dự án gì" (SRS-5.1zzzzzzz250): danh sách dự án kho chung có ở khu đó + số căn đang rao. Chỉ tên trong kho."""
+def khoi_du_an_khu(kq: dict[str, Any] | None, ben: str = "mua") -> str:
+    """Khách hỏi "khu / đường X có dự án gì" (SRS-5.1zzzzzzz250, 497): danh sách dự án kho chung ở đó + số căn đang rao. Chỉ tên trong kho."""
     if not isinstance(kq, dict) or not kq.get("khu"):
         return ""
-    dau = f'\n\n=== {TIEU_DE} — KHU "{_chu(kq["khu"])}" (khách MUA hỏi khu này có dự án nào; hệ thống tra kho, KHÔNG phải khách nói) ===\n'
+    ai, cau_hoi = _ai(ben)
+    dau = f'\n\n=== {TIEU_DE} — "{_chu(kq["khu"])}" ({ai} hỏi khu / đường này có dự án nào; hệ thống tra kho, KHÔNG phải khách nói) ===\n'
     ds = [d for d in (kq.get("ds") or []) if isinstance(d, dict) and _chu(d.get("name"))]
+    if not ds and ben == "ban":
+        return dau + ("Kho CHƯA có dự án nào ghi ở khu / đường này (hoặc tra lỗi). Nói thật ngắn là hệ thống chưa ghi dự án nào ở đó — KHÔNG "
+                      "kể dự án từ trí nhớ, KHÔNG kết luận ngoài thực tế không có; rồi giữ câu hỏi lượt này.\n")
     if not ds:
         return dau + ("Kho CHƯA có dự án nào ghi ở khu này (hoặc tra lỗi). Nói thật ngắn là hiện chưa thấy dự án đang mở bán ở khu vực này trên hệ thống; "
                       "hỏi khách có muốn mở rộng tìm thử ở khu vực lân cận hoặc toàn thành phố không, kèm hỏi ngân sách dự kiến; "
@@ -145,6 +155,9 @@ def khoi_du_an_khu(kq: dict[str, Any] | None) -> str:
         phu = f" ({', '.join(thong_tin)})" if thong_tin else ""
         so_can = f" — đang có {d['so_can']} căn rao" if d.get("so_can") else ""
         dong.append(f"- {_chu(d['name'])}{so_can}{phu}")
+    if ben == "ban":
+        return dau + "\n".join(dong) + ("\nCÁCH NÓI: kể vài tên trong danh sách này (kho có thể còn dự án khác ở đó — đừng nói \"chỉ có\"); căn "
+                                        "của chủ nằm trong một dự án ở đây thì hỏi đúng tên dự án đó (THAY câu hỏi lượt này). KHÔNG thêm dự án ngoài danh sách.\n")
     return dau + "\n".join(dong) + ("\nCÁCH NÓI: kể vài tên trong danh sách này (kho có thể còn dự án khác ở khu đó — đừng nói \"chỉ có\"); dự án có "
                                     "căn đang rao thì gợi khách xem căn; hỏi MỘT câu khách quan tâm dự án nào hoặc muốn lọc riêng dự án còn mở bán / theo tầm giá (THAY câu hỏi nhu cầu lượt này). KHÔNG thêm dự án ngoài danh sách.\n")
 

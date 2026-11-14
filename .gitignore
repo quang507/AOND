@@ -29,5 +29,5 @@ tsconfig.tsbuildinfo
 next-env.d.ts
 .claude/worktrees/
 
-# Bản ghi đo bộ vàng (lời bot đầy đủ) — scripts/do-vang-146.sh, SRS-5.1zzzzzzz493
+# Bản ghi đo cũ (lời bot đầy đủ; bộ vàng gỡ 14/11/2026) — giữ chặn để không lỡ đẩy lên repo công khai
 ket-qua/

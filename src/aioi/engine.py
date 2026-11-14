@@ -1587,7 +1587,7 @@ def _goi_khach_la_minh(reply: str, pronoun: str) -> bool:
 
 def _mo_dau_ghi_nhan(reply: str) -> bool:
     """Câu đầu của lời bot là câu ghi nhận ("Em ghi nhận…", "Em đã ghi rồi…", "Em lưu vào tin rồi…", "Em nắm rồi…") — kiểm HÌNH THỨC lời
-    của chính bot, không đoán ý khách (SRS-5.1zzzzzzz118). Nay chỉ bộ chấm kịch bản đếm (`tests/kich_ban/cham.py`) và bộ lọc ví dụ câu chuẩn
+    của chính bot, không đoán ý khách (SRS-5.1zzzzzzz118). Nay chỉ bộ lọc ví dụ câu chuẩn
     dùng — lưới gọi lại model theo câu mở đã gỡ khỏi `LUAT_SOAT`; luật nằm ở `GIONG` (SRS-486). "Em sửa giá còn…" không phải ghi nhận."""
     # SRS-5.1zzzzzzz208 (bắn thử 26/10: "Em ghi nhận rồi ạ…", "Em ghi thêm diện tích sàn…", "Em lưu phường 9…", "Em lên thông tin địa chỉ…"):
     # thêm "ghi thêm", "lưu …", "lên thông tin" cùng lớp câu ghi nhận.

@@ -1606,7 +1606,9 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
     và sửa luôn, KHÔNG hỏi lại nghĩa, KHÔNG bắt khách kiểm số lệch.
   • TRƯỚC dấu 📋, nếu có, là lời nói với khách: khách vừa hỏi hay lộ cảm xúc thì MỘT câu ngắn đáp điều đó; điều khách thêm là điểm hiếm
     thì nửa câu điểm đó lợi gì cho căn; còn lại mở thẳng bằng dòng 📋. Câu đó nói về căn hay về điều khách hỏi, không nói việc em làm với
-    tin (thêm, sửa, đưa lên đầu tin) — dòng 📋 và bản tin cập nhật đã cho khách thấy việc đó. KHÔNG nhắc phí.
+    tin (thêm, sửa, bỏ, gộp, đưa lên đầu tin) — câu đó viết TRƯỚC bản tin nên kể việc sửa là hứa điều bản tin có thể không làm đúng; dòng 📋 và
+    bản tin cập nhật đã cho khách thấy việc đó. Khách nói bản tin trước có chỗ mà bản tin trước không có (vd "nhắc hai lần" khi chỉ nhắc một
+    lần) thì nói thật ngắn bản trước đang ra sao, không nhận "anh nói đúng". KHÔNG nhắc phí.
   • RAO LẠI BẢN TIN ĐÃ SỬA (xuống dòng, dòng RIÊNG "📋 Bản tin cập nhật:" — giữ dấu 📋) theo ĐÚNG bố cục tin rao (khối KHI RAO LẠI BẢN TIN ĐÃ SỬA ở trên) — sửa ĐÚNG chỗ khách nói trên bản tin trước;
     chỗ khách không nhắc giữ nguyên DỮ LIỆU và Ý nhưng câu chữ được làm tươi (đổi vài cách nói, sửa lỗi chính tả), KHÔNG chép lại y nguyên
     cả đoạn; KHÔNG soạn lại từ đầu theo ý mình, KHÔNG đem điều khách vừa đính chính lên tiêu đề nếu khách không bảo.

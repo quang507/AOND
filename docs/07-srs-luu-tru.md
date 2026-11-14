@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz487 · Câu trước bản tin cập nhật nói về căn, không nói việc sửa tin; bỏ chỗ còn kéo khen (14/11/2026)
+Sau SRS-486 vẫn còn: câu trước "📋 Bản tin cập nhật" hay nói "em thêm vào tin / em sửa lại tin cho anh", bot vẫn khen sổ hồng, số phòng. Còn hai chỗ kéo về phía đáp và khen: `HIEU_CHU_NHA` / `HIEU_KHACH_MUA` dặn "khách hỏi hay **nói** điều gì thì em đáp đúng điều đó", câu mở prompt gọn phía bán dặn "trân trọng tài sản của mình".
+- **Sửa:** `HIEU_CHU_NHA` / `HIEU_KHACH_MUA` đổi thành "khách hỏi hay **lo** điều gì". Prompt gọn bỏ "trân trọng tài sản". Khối sau bản tin: câu trước 📋 nói về căn hay về điều khách hỏi, không nói việc em làm với tin (dòng 📋 và bản tin cập nhật đã cho khách thấy). `GIONG` thêm lý do không khen điều căn nào cũng có ("nghe như đọc kịch bản").
+- **Token:** `GIONG` 2.041 → 2.076, prompt gọn 4.323 → 4.345, phiếu cũ 4.466 → 4.501.
+- **Đo (6 cuộc chat thử × 5 lượt, medium; SRS-483 → 486 → 487):** câu "ghi nhận" 8 → 6 → 1, khen bịa về khu 6 → 1 → 1, khen điều bình thường 3 → 2 → 0. Không câu nào trước bản tin cập nhật còn nói "thêm / sửa tin".
+- **Còn (sửa ở SRS-488):** khách đáp "ok em" sau bản tin, khi câu bot hỏi ngay trước là "sổ đứng tên ai", thì bot ít khi đăng: code đang chạy 0/4, code mới 1/4 (riêng kịch bản Sunrise City). Bot coi "ok" là chưa trả lời câu sổ và hỏi lại. Không do SRS-486 / 487 gây ra.
+
 ### SRS-5.1zzzzzzz486 · Giọng lượt hỏi: hỏi thẳng ý kế, không báo đã ghi, không khen bằng điều không có dữ liệu; bản tin mời một lần (14/11/2026)
 Chủ dự án 14/11 hỏi bỏ giọng vui rồi giọng đã tự nhiên chưa, và nhắc thêm "mấy cái câu em ghi nhận nữa". Đọc 6 cuộc chat thử (SRS-483, medium) thì gần như lượt nào cũng một khuôn: đọc lại lời khách, khen chung chung, rồi hỏi "… vậy anh?". Bot còn khen bằng điều không có dữ liệu ("Gò Vấp là khu nhiều người tìm mua"), và chen "em ghi nhận / em ghi rồi / em thêm vào tin" vào giữa hay cuối câu (lưới SRS-131 chỉ bắt câu mở). Bản tin gọi hai lần (tiêu đề và mô tả), có câu "Ê, anh chị…", "Alo alo cô bác…".
 - **Gốc:** ba prompt lượt người bán (phiếu cũ, prompt gọn, câu hỏi pháp lý theo sau) đều dặn "đáp điều khách vừa nói, rồi làm việc lượt này", nên lượt khách chỉ đưa thông tin bot cũng phải "đáp" gì đó. Câu trước dòng 📋 của bản tin cập nhật được dặn "đồng tình, cảm thán… nói sẽ sửa gì".

@@ -27,7 +27,7 @@ HUONG_DAN_DOC = (
     "- tim_can: khách đổi / thêm tiêu chí (khu, giá, loại, phòng ngủ, diện tích) mà khối CĂN ĐANG RAO chưa theo kịp, hoặc khách muốn xem lựa chọn khác.\n"
     "- xem_can: khách hỏi chi tiết một căn (theo mã trong link đã gửi) mà dòng căn ở dưới chưa có.\n"
     "- so_sanh_can: khách muốn so sánh 2 hay nhiều căn với nhau về giá, đơn giá m² đất, diện tích, đường vào.\n"
-    "- tra_du_an / du_an_trong_khu: khách hỏi về một dự án, hoặc khu nào có dự án gì, mà khối dự án ở dưới chưa có.\n"
+    "- tra_du_an / du_an_trong_khu: khách hỏi về một dự án, hoặc quận / phường / con đường nào có dự án / chung cư gì, mà khối dự án ở dưới chưa có.\n"
     "- tinh_thue_phi: khách hỏi thuế phí chuyển nhượng, sang tên, bên nào chịu khoản nào, phí công chứng bao nhiêu.\n"
     "- tinh_vay_tra_gop: khách hỏi lãi suất, sinh lời cho thuê, vay được bao nhiêu, vốn tự có, mỗi tháng trả góp bao nhiêu.\n"
     "Tra tối đa 2 lần. Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có. Số căn giới thiệu mỗi lượt theo luật ở trên (rổ có ≥ 2 căn hợp thì 2–3 căn).\n"
@@ -155,7 +155,7 @@ CONG_CU: list[dict[str, Any]] = [
     },
     {
         "name": "du_an_trong_khu",
-        "description": "Các dự án trong kho ở một quận / phường, kèm số căn đang rao.",
+        "description": "Các dự án trong kho ở một quận / phường / con đường (ghi tên đầy đủ, có dấu), kèm số căn đang rao.",
         "input_schema": {"type": "object", "properties": {"khu": {"type": "string"}}, "required": ["khu"]},
     },
     {
