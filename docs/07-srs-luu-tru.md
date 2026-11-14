@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz485 · Cho thuê là ô của từng căn; tin rao nhiều căn khác chi tiết thì mỗi căn một thao tác (14/11/2026)
+Thử 100 tin Mogi (SRS-484) còn lỗi: tin "Cho thuê 4 lô đất Đặng Thùy Trâm" ra 4 căn nhưng chỉ căn đầu là tin cho thuê, ba căn sau thành tin bán. Lớp lỗi: `is_rental` là khoá cả lượt của kế hoạch, engine chỉ đặt cho căn đang mở. Chạy lại còn lộ lỗi thứ hai: cùng tin đó, model lúc tách 4 căn, lúc dồn cả 4 lô vào ô của một căn ("Lô 1: 15tr, Lô 2: 25tr…"). Lý do: luật chỉ dạy tách nhiều căn cùng mẫu (`targets`), chưa dạy tách nhiều căn có chi tiết riêng.
+- **Cho thuê theo căn:** `is_rental` chuyển từ gốc `operations_schema` vào từng thao tác; công cụ `ghi_o` / `them_can` mang theo khoá này. `Engine._apply_operation` đặt cờ cho đúng căn của thao tác update / add, kể cả căn mở bằng `_fan_out_units`. Đã bỏ dòng đặt `conv.prop.is_rental` theo kế hoạch.
+- **Tách căn (`OPERATIONS_SYSTEM`, mục "add"):** một tin khai nhiều căn, mỗi căn chi tiết riêng → căn đầu dùng "update", mỗi căn sau dùng "add" (cụm gọi căn, vd "Lô 2", làm `can_khac_trich`). Ô riêng của căn nào ghi vào thao tác của căn đó; ô chung (đường, loại hình, cho thuê) ghi ở mọi căn.
+- **Token:** `OPERATIONS_SYSTEM` 18.722 → 18.969 (+247). Công cụ ghi 24.602 → 24.747 (+145, vì khoá cho thuê nằm ở cả `ghi_o` lẫn `them_can`). `operations_schema` không đổi.
+- **Kiểm trên 146:** tin 4 lô cho thuê chạy 3 lần, cả 3 lần đều ra 4 căn đúng kích thước, đúng giá, đều là tin cho thuê. Trước khi thêm luật tách: 1 trên 3 lần. Hai tin còn lại trong bộ thử (4 lô bán cùng giá, biệt thự) không đổi.
+
 ### SRS-5.1zzzzzzz484 · Đường vào và tình trạng nhà theo điều AI đọc (bỏ luật từ khoá); hai giá cho một ô thì chưa chắc (13/11/2026)
 Thử 100 tin Mogi (SRS-474) lộ lỗi gốc: "200 đường 3/2" thành "Nhà hẻm" (schema tự ghi hẻm khi địa chỉ có dấu `/`), "nhà mới đẹp" bị ghi `moi_xay` (8/18 tin), tiêu đề "4,5 tỷ" khác thân bài "4,65 tỷ" vẫn chọn một số.
 - **Sửa:** gỡ luật từ khoá ở `schema.py`; `SU_THAT_CAN.duong_vao` dặn số nhà có xẹt kiểu "47/24" là hẻm, khác tên đường "3/2", "30/4"; engine ghi ô `lo_gioi_hem` theo mã AI đọc (`NHAN_DUONG_VAO`), một nguồn cho mặt tiền / hẻm. `tinh_trang_nha` thêm mã `moi` (khách nói nhà mới, mới sửa); bản tin ghi "nhà mới", không ghi "mới xây"; lưới khẳng định cho "nhà mới" khi mã là `moi` / `moi_xay`. Nguyên tắc chung: hai con số khác nhau cho cùng một ô thì chưa chắc số nào.

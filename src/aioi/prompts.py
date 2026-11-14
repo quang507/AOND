@@ -1157,7 +1157,7 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU M
 
 GIỌNG & XƯNG HÔ (bắt buộc): đây là TIN RAO CÔNG KHAI cho NHIỀU người mua đọc — KHÔNG phải tin nhắn nói riêng với người bán. Nói với CẢ ĐÁM ĐÔNG ("anh chị", "cô bác") — TUYỆT ĐỐI KHÔNG xưng hô 1 người kiểu nói riêng với chủ nhà ("anh ơi", "anh thấy đó", "em gửi anh", "cơ hội này không nhiều anh ơi").
 
-ICON/EMOJI (bắt buộc): MẶC ĐỊNH cả bản rao chỉ dùng **2–3 icon** tổng cộng, đặt chỗ đắt nhất (thường 1 ở tiêu đề); KHÔNG đặt icon ở đầu mỗi gạch đầu dòng, KHÔNG rải icon mỗi dòng — lạm dụng icon trông rẻ tiền. NGOẠI LỆ: chủ nhà XIN thêm / bớt icon (khối YÊU CẦU CỦA CHỦ NHÀ VỀ CÁCH VIẾT) thì làm ĐÚNG ý chủ nhà — chủ nhà xin "2-3 icon" là thêm đúng chừng đó vào tin, tối đa 6 icon cả bản, và nói rõ đã thêm; KHÔNG trả lời "tin đang dùng icon ở tiêu đề" thay cho việc sửa. Khi có dùng icon, LUÔN cách chữ đúng MỘT khoảng trắng (vd "🏡 Nhà mặt tiền" — KHÔNG viết dính "🏡Nhà" hay "Nhà🏡mặt tiền").
+ICON/EMOJI (bắt buộc): MẶC ĐỊNH cả bản rao chỉ dùng **2–3 icon** tổng cộng, đặt chỗ đắt nhất (thường 1 ở tiêu đề); KHÔNG đặt icon ở đầu mỗi gạch đầu dòng, KHÔNG rải icon mỗi dòng — lạm dụng icon trông rẻ tiền. NGOẠI LỆ: chủ nhà XIN thêm / bớt icon (khối YÊU CẦU CỦA CHỦ NHÀ VỀ CÁCH VIẾT) thì làm ĐÚNG ý chủ nhà — chủ nhà xin "2-3 icon" là thêm đúng chừng đó vào tin, tối đa 6 icon cả bản; bản tin cập nhật tự cho chủ nhà thấy icon mới, lời trước 📋 chỉ cần một câu nhận lời ngắn; KHÔNG trả lời "tin đang dùng icon ở tiêu đề" thay cho việc sửa. Khi có dùng icon, LUÔN cách chữ đúng MỘT khoảng trắng (vd "🏡 Nhà mặt tiền" — KHÔNG viết dính "🏡Nhà" hay "Nhà🏡mặt tiền").
 
 GIÁ TRONG TIN: nêu đúng con số chủ đưa. Chữ "thương lượng" (hay lời mời trả giá, "có thể trao đổi thêm") chỉ viết khi dữ liệu căn có ô thương lượng ghi chủ cho bớt; ô đó trống thì giá là đúng con số, không kèm chữ nào; khen / chê giá, so giá với khu, gợi ý dễ bớt là việc tư vấn riêng với chủ nhà, không vào tin — câu hối hả, FOMO, mời chốt nói về căn (vị trí, công năng, điểm hiếm), không nói về giá.
 
@@ -2181,7 +2181,9 @@ def property_field_props() -> dict[str, Any]:
     properties["loai_hinh"] = {
         "type": "string",
         "description": "Loại hình BĐS (slug khớp CRM): nha_pho, nha_cap_4, chung_cu, dat, biet_thu, "
-        "phong_tro, mat_bang, toa_nha, chdv, dat_nong_nghiep, dat_kinh_doanh, kho_xuong, khach_san, du_an",
+        "phong_tro, mat_bang, toa_nha, chdv, dat_nong_nghiep, dat_kinh_doanh, kho_xuong, khach_san, du_an. Điền khi lời khách cho biết loại "
+        "(\"nhà phố\", \"căn hộ\", \"đất\", \"nhà hẻm 3 tầng\", \"1 trệt 2 lầu\"); khách mới nói chung \"bán nhà\" / \"căn nhà\" thì "
+        "loại còn để hỏi — bỏ trống.",
     }
     properties["ma_so_can"] = {
         "type": "string",
@@ -2207,7 +2209,8 @@ def property_field_props() -> dict[str, Any]:
     }
     properties["quan"] = {
         "type": "string",
-        "description": "Quận/huyện/thành phố (cũ) khách nêu ('Quận 5', 'Bình Thạnh', 'Thủ Đức').",
+        "description": "Quận/huyện/thành phố (cũ) nơi CĂN nằm, khách nêu ('Quận 5', 'Bình Thạnh', 'Thủ Đức'). Tên quận nằm trong tên một "
+        "nơi gần căn ('gần Aeon Mall Tân Phú', 'cạnh chợ Bình Tây') là tên nơi đó, chưa phải quận của căn — chưa nêu thì bỏ trống.",
     }
     properties["gan_nga_tu"] = {
         "type": "string",
