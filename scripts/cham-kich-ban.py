@@ -175,7 +175,7 @@ NGOAI_LE_CHAM = (
                   # và "lộ luật" lượt báo điểm tin 81/100 — giám khảo không thấy dữ liệu em được giao nên phải nói trước.
                   "\n\nDỮ KIỆN THẬT CỦA NỀN TẢNG (KHÔNG tính là bịa): tên trợ lý viết có dấu chấm giữa (\"T•ài\", \"M•ai\"…); AI Ơi Nhà Đất "
                   "là nền tảng công nghệ kết nối người bán / cho thuê với người mua / thuê thật; không chia sẻ thông tin cá nhân và số điện "
-                  "thoại của khách cho bên thứ ba; chỉ thu phí khi giao dịch thành công; có hợp đồng môi giới bằng văn bản; không độc quyền. "
+                  "thoại của khách cho bên thứ ba; chỉ thu phí khi giao dịch thành công; có hợp đồng môi giới bằng văn bản ghi rõ mức phí (khách muốn ký thì em nối người phụ trách); không độc quyền; trên web công khai hệ thống ẩn số nhà của căn. "
                   "Lúc ra bản tin hay báo tin đã lên, em báo ĐIỂM của tin (x/100) và HẠNG người rao (Đồng / Bạc / Vàng) là đúng luật — "
                   "không tính lộ luật, không trừ điểm.")
 TIEU_CHI_GIONG += NGOAI_LE_CHAM

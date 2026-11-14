@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz484 · Đường vào và tình trạng nhà theo điều AI đọc (bỏ luật từ khoá); hai giá cho một ô thì chưa chắc (13/11/2026)
+Thử 100 tin Mogi (SRS-474) lộ lỗi gốc: "200 đường 3/2" thành "Nhà hẻm" (schema tự ghi hẻm khi địa chỉ có dấu `/`), "nhà mới đẹp" bị ghi `moi_xay` (8/18 tin), tiêu đề "4,5 tỷ" khác thân bài "4,65 tỷ" vẫn chọn một số.
+- **Sửa:** gỡ luật từ khoá ở `schema.py`; `SU_THAT_CAN.duong_vao` dặn số nhà có xẹt kiểu "47/24" là hẻm, khác tên đường "3/2", "30/4"; engine ghi ô `lo_gioi_hem` theo mã AI đọc (`NHAN_DUONG_VAO`), một nguồn cho mặt tiền / hẻm. `tinh_trang_nha` thêm mã `moi` (khách nói nhà mới, mới sửa); bản tin ghi "nhà mới", không ghi "mới xây"; lưới khẳng định cho "nhà mới" khi mã là `moi` / `moi_xay`. Nguyên tắc chung: hai con số khác nhau cho cùng một ô thì chưa chắc số nào.
+- **Kiểm:** chạy lại 3 tin lệch trên 146, không hỏng tin cũ; kịch bản "nhà mới sửa lại năm ngoái" hết bị lưới chặn oan. Lỗi tin rao nhiều căn chỉ căn đầu nhận "cho thuê": sửa ở SRS-485.
+
 ### SRS-5.1zzzzzzz483 · Lượt bản tin nhanh hơn: bước viết không nghĩ thêm, lưới soát chạy song song, khuôn bản tin khớp lưới (13/11/2026)
 Chủ dự án 13/11: "tăng tốc lượt bản tin". Đo trên 146 (`AIOI_EFFORT=medium`): lượt bản tin qua lưới ngay ~10 s, bị lưới bắt viết lại 26–30 s (model viết cả bản tin lần hai), xảy ra khoảng một nửa số lượt. Lớp lỗi: khuôn `AD_FORMAT` dặn ngược lưới — tiêu đề dồn 5 ý trong 25 từ (lưới chặn quá 30 từ), giọng "hối hả, FOMO" mà không nói tin không bình giá (lưới `binh_luan_gia` chặn), câu mời chốt ghi "Zalo cho mình" (lưới `goi_minh` chặn).
 - **Khuôn (`AD_FORMAT`, +167 token, 3.375 → 3.542):** tiêu đề = lời gọi ngắn 3–6 từ + vị trí · diện tích · giá, còn chỗ thêm một điểm mạnh; khối GIÁ TRONG TIN: nêu đúng con số chủ đưa, chủ cho bớt thì ghi "thương lượng", câu FOMO / mời chốt nói về căn, không nói về giá; "Zalo cho em".

@@ -3390,10 +3390,12 @@ class Engine:
                        "nói em đã báo khách rồi, rồi mới tiếp chuyện tin rao.\n")
 
         # Bề ngang căn hay độ rộng đường (SRS-5.1zzzzzzz96, chủ dự án 21/10: "có cho hỏi"): lượt này vừa ghi ô bề ngang mà chưa có
-        # hai chiều lô để đối chiếu (`_mot_cum_mot_o` không kiểm được) → hỏi lại MỘT lần cho chắc. Khách nói rõ "ngang" thì model không hỏi.
+        # hai chiều lô để đối chiếu (`_mot_cum_mot_o` không kiểm được) → hỏi lại MỘT lần cho chắc. Bóc tách đọc là ngang căn (`_so_ngang`,
+        # SRS-5.1zzzzzzz493) thì không hỏi — bước viết không còn tự quyết.
         # Q4 (a): một lần mỗi căn; bị gỡ (việc khác thắng) thì trả cờ và đánh dấu `_mt_cho_hoi` — lượt sau hỏi dù khách không nhắc lại mặt tiền.
         f_mt = conv.prop.fields
-        if ("mat_tien" in captured or f_mt.get("_mt_cho_hoi")) and f_mt.get("mat_tien") and not _hai_chieu_lo(f_mt) and not f_mt.get("_mt_da_hoi"):
+        if ("mat_tien" in captured or f_mt.get("_mt_cho_hoi")) and f_mt.get("mat_tien") and not _hai_chieu_lo(f_mt) and not f_mt.get("_mt_da_hoi") \
+                and f_mt.get("_so_ngang") != "ngang_can":
             f_mt["_mt_da_hoi"] = "1"
             f_mt.pop("_mt_cho_hoi", None)
             system += _hoi("mat_tien", khoi_hoi_mat_tien(f_mt.get("mat_tien", "")),
