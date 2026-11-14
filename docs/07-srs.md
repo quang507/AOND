@@ -801,6 +801,13 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz491 · Bản tin chỉ ghi "thương lượng" khi chủ nhà cho bớt (14/11/2026)
+Chạy thử 6 cuộc chat sau SRS-490 (chủ dự án: "chạy vài cuộc chat thử trên 146 xem bot ổn ko"): cả 2 tin căn hộ Sunrise City ghi "4,6 tỷ (thương lượng)", một tin còn viết "có thể trao đổi thêm khi xem căn", dù khách chỉ nói "giá 4,6 tỷ" và ô `thuong_luong` trống. Gốc: ví dụ gạch đầu dòng trong `AD_FORMAT` là "19 tỷ (thương lượng)", model chép.
+- **Sửa (`AD_FORMAT`):** ví dụ chỉ còn "19 tỷ". Mục GIÁ TRONG TIN: chữ "thương lượng" hay lời mời trả giá chỉ viết khi ô thương lượng ghi chủ cho bớt; ô trống thì giá là đúng con số.
+- **Token:** `AD_FORMAT` +~40.
+- **Kiểm trên 146 (code mới, 5 cuộc chat):** Sunrise City 3/3 không còn "thương lượng" (trước 2/2 có), vẫn đăng khi khách "ok em". Gò Vấp ("có bớt chút đỉnh") và Phú Nhuận ("có thương lượng") vẫn ghi đúng ý chủ.
+- **Còn:** 1/3 tin Sunrise City ghi nhãn "Giá 4,6 tỷ" ở gạch đầu dòng (khuôn dặn không ghi nhãn). Lượt chat còn 1–2 câu báo đã ghi / nhận xét khu không dữ liệu trên 30 lượt (chủ dự án chọn để vậy).
+
 ### SRS-5.1zzzzzzz490 · Soát luật, bộ chấm, code và docs: gỡ phần dư, đồng bộ theo giọng mới (14/11/2026)
 Chủ dự án 14/11: "kiểm tra các luật các test các thứ có gì dư ra ko, đồng bộ docs". Ba lượt soát song song (code lõi, bộ chấm và CI, docs và tệp luật), từng mục kiểm lại với code trước khi sửa.
 - **Gỡ code không ai đọc:** trường `Conversation.che_do_test`, `so_luot_thong_tin` (khối "3 lượt đầu khen" gỡ từ SRS-207), `truoc_luot` / `truoc_id`, `admin_escalations`; `TurnResult.escalated`; `contested_keys` / `_contested` (`projects.py`); tập rỗng `HOI_SAU_KHI_RA_TIN`. Hai cột SQLite cũ giữ lại để khỏi đổi lược đồ, `save` ghi giá trị rỗng.
@@ -865,10 +872,3 @@ Chủ dự án 13/11: "đừng để nó chờ nó chậm nữa, rep càng nhanh
 - **Bridge (`bot/bridge-zca/index.mjs` `choGom`):** thời gian gom theo hình thức tin vừa tới — trọn ý (kết bằng dấu câu hoặc ≥ 8 từ) 0,5 s; mảnh ngắn 1,2 s; ảnh / tệp 1,8 s; trần 4 s tính từ tin đầu. Gom hụt thì lõi vẫn gộp tin tới lúc đang soạn (SRS-91 / 279).
 - **Lõi:** `server.py` nghỉ giữa bong bóng cố định 300 ms (`NHIP_GIUA_BONG_MS`); `llm/claude.py` `muc_no_luc` đọc `AIOI_EFFORT` (low / medium / high, trống = như cũ) gửi `output_config.effort` cho lượt gọi chữ, API từ chối thì tự gửi lại không kèm và nhớ model. `bot/cau-hinh-loi.env`: `AIOI_EFFORT=medium` (ban đầu đặt `low`; chủ dự án 13/11 chốt "để mức medium thôi").
 - **Kiểm:** cú pháp bridge + lõi, thử hàm `choGom` 6 ca. **Đã áp 13/11 23:09:** lõi `4938f51` lên 146 (kèm SRS-480 / 481), `AIOI_EFFORT=low` vào `.env` lõi, `index.mjs` lên `C:\aond\bridge-zca` (bản cũ trùng khớp bản trước 482; sao lưu `C:\aond\backup\bridge_index_20261113_231127.mjs`), hai task bridge đăng nhập lại bằng phiên cũ. **Đo trên 146** (cuộc rao bán giả 5 lượt, không Supabase, chỉ thời gian lõi): mặc định `high` 102,8 s (≈ 20,6 s/lượt) → `low` 52,9 s (5,1 · 5,2 · 6,6 · 11,7 · 24,3 s); lời và ô tin vẫn đúng. Lượt chậm còn lại là lượt viết lại cả bản tin (~1.700 token ra) — effort không bớt được phần viết. Chưa chấm lại giọng bằng `bun run cham`. **Sau đó chủ dự án chốt "để mức medium thôi":** `bot/cau-hinh-loi.env` đã đổi `medium`; `.env` lõi trên 146 đổi `medium` lúc 23:43 cùng lần đưa SRS-483 lên; số đo `medium` ở SRS-483.
-
-### SRS-5.1zzzzzzz481 · Câu mẫu cố định viết lại cho khớp giọng `GIONG`; nạp lại bảng `cau_mau` đang rỗng (13/11/2026)
-Chủ dự án 13/11 sau SRS-480: "sửa luôn câu mẫu cau_mau cho khớp giọng mới… vẫn quan trọng là lấy thông tin cho db". Lớp lỗi: câu mẫu gửi nguyên văn, không qua prompt nên không theo khối giọng — còn `**` (Zalo không hiện), chữ HOA nhấn, mặt cười, "ạ" chồng, câu báo cáo "Em đã cập nhật", "anh/chị" viết cứng.
-- **Sửa (`cau_mau.MAC_DINH`):** 18 câu — hai câu chào số ký gửi (câu chào đầu mời khách kể luôn địa chỉ và giá để có ô cho DB), sáu câu ẩn / giữ tin, hai câu ẩn ảnh (`{goi}` thay "anh/chị"), năm câu nhận tệp, bản vẽ, căn đã chốt, hai câu đọc trang web. Câu đã chốt giữ nguyên: duyệt tin, hỏi phí, báo phí, chấm sao, xác nhận lịch, bản nháp, chào số tư vấn, các tin chủ động.
-- **DB:** soát trước khi sửa thấy bảng `cau_mau` RỖNG (0 dòng; trang /admin/cau-chuan không có câu nào để sửa, lõi đang chạy câu trong code) → migration `20261113h_cau_mau_khop_giong` nạp lại đủ 60 khoá từ `MAC_DINH`, dòng đã sửa tay (nếu có) giữ nguyên.
-- **Còn:** ba câu báo khách mua (`bao_tra_loi_chu_nha`, `bao_lich_da_chot`, `bao_can_da_ban`) vẫn đọc mã căn `{ma}` — đổi sang tên đường phải sửa chỗ gọi, chưa làm. **Kiểm:** điền thử 60 câu × 3 cách xưng, không lỗi chỗ giữ chữ, không gọi "mình"; chạy thử trong giao dịch huỷ. Chưa đưa lõi lên 146.
-

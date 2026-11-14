@@ -1127,6 +1127,8 @@ def describe_captured(prop: Property) -> str:
 # Khuôn tin rao gốc từ bản anh Luận (`luan8560/AOND` 207a145, SRS-5.1zzzzzzz207); từ SRS-5.1zzzzzzz486 tiêu đề đi thẳng vào số liệu
 # và lời mời chỉ một lần ở câu mở mô tả (chủ dự án đồng ý 14/11/2026).
 # Chỉ nối thêm đoạn chống bịa của mình ở cuối (dữ liệu căn là nguồn duy nhất; bóc tách / sự thật giữ của mình).
+# SRS-5.1zzzzzzz491 (chạy thử 14/11): ví dụ gạch đầu dòng "19 tỷ (thương lượng)" bị chép — 2/2 tin Sunrise City ghi "(thương lượng)" khi chủ
+# chưa nói bớt giá. Ví dụ chỉ còn con số; chữ thương lượng theo ô `thuong_luong`.
 AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU MỘT DÒNG TRỐNG giữa các khối):
 1) TIÊU ĐỀ: **15–25 từ**, viết như câu nói thường (chỉ hoa chữ đầu câu và tên riêng — KHÔNG viết HOA cả cụm / cả dòng), đi thẳng vào vị trí · diện tích · giá; còn chỗ thì thêm MỘT điểm mạnh nhất, ý khác để mô tả kể. Lời mời người mua để dành cho câu mở của mô tả (một lần trong cả tin). CẤM mở bằng "Trời ơi".
 
@@ -1135,7 +1137,7 @@ AD_FORMAT = """BỐ CỤC TIN RAO (bắt buộc, đúng thứ tự, CÁCH NHAU M
    CÂU PHẢI RÕ: đủ DẤU CÂU và nhịp, đọc lọt tai; VIẾT RÕ, không viết tắt cụt ("mặt tiền đường"/"ngang 5.3m" — KHÔNG "MT"; "phòng ngủ" — KHÔNG "PN"); KHÔNG lặp từ/ý sát nhau (tránh "MT ... MT"); LUÔN kèm đơn vị ("12.5 tỷ", "5.3m", "35m²").
 
 3) **4–5 GẠCH ĐẦU DÒNG** (mỗi dòng 1 ý đắt giá nhất — vd mặt tiền/kết cấu/pháp lý/giá).
-   - KHÔNG ghi nhãn/tiêu đề nếu dữ liệu đã TỰ RÕ: ghi "132m²" — KHÔNG ghi "Diện tích: 132m²"; ghi "19 tỷ (thương lượng)" — KHÔNG ghi "Giá: 19 tỷ"; ghi "sổ hồng chính chủ" — KHÔNG ghi "Pháp lý: ...".
+   - KHÔNG ghi nhãn/tiêu đề nếu dữ liệu đã TỰ RÕ: ghi "132m²" — KHÔNG ghi "Diện tích: 132m²"; ghi "19 tỷ" — KHÔNG ghi "Giá: 19 tỷ"; ghi "sổ hồng chính chủ" — KHÔNG ghi "Pháp lý: ...".
    - CHỈ thêm chữ phân biệt khi KHÔNG tự rõ: "132m² đất · 120m² xây dựng", "mặt tiền 12m", "6 tầng có thang máy".
    - Mỗi gạch đầu dòng ngắn gọn, không trùng ý nhau.
 
@@ -1147,7 +1149,7 @@ GIỌNG & XƯNG HÔ (bắt buộc): đây là TIN RAO CÔNG KHAI cho NHIỀU ng�
 
 ICON/EMOJI (bắt buộc): MẶC ĐỊNH cả bản rao chỉ dùng **2–3 icon** tổng cộng, đặt chỗ đắt nhất (thường 1 ở tiêu đề); KHÔNG đặt icon ở đầu mỗi gạch đầu dòng, KHÔNG rải icon mỗi dòng — lạm dụng icon trông rẻ tiền. NGOẠI LỆ: chủ nhà XIN thêm / bớt icon (khối YÊU CẦU CỦA CHỦ NHÀ VỀ CÁCH VIẾT) thì làm ĐÚNG ý chủ nhà — chủ nhà xin "2-3 icon" là thêm đúng chừng đó vào tin, tối đa 6 icon cả bản, và nói rõ đã thêm; KHÔNG trả lời "tin đang dùng icon ở tiêu đề" thay cho việc sửa. Khi có dùng icon, LUÔN cách chữ đúng MỘT khoảng trắng (vd "🏡 Nhà mặt tiền" — KHÔNG viết dính "🏡Nhà" hay "Nhà🏡mặt tiền").
 
-GIÁ TRONG TIN: nêu đúng con số chủ đưa (chủ cho bớt thì ghi "thương lượng"); khen / chê giá, so giá với khu, gợi ý dễ bớt là việc tư vấn riêng với chủ nhà, không vào tin — câu hối hả, FOMO, mời chốt nói về căn (vị trí, công năng, điểm hiếm), không nói về giá.
+GIÁ TRONG TIN: nêu đúng con số chủ đưa. Chữ "thương lượng" (hay lời mời trả giá, "có thể trao đổi thêm") chỉ viết khi dữ liệu căn có ô thương lượng ghi chủ cho bớt; ô đó trống thì giá là đúng con số, không kèm chữ nào; khen / chê giá, so giá với khu, gợi ý dễ bớt là việc tư vấn riêng với chủ nhà, không vào tin — câu hối hả, FOMO, mời chốt nói về căn (vị trí, công năng, điểm hiếm), không nói về giá.
 
 ĐỊNH DẠNG KHOẢNG CÁCH (bắt buộc): MỘT dòng trống NGĂN giữa các khối (tiêu đề / mô tả / gạch đầu dòng / câu mời chốt). Trong khối gạch đầu dòng thì KHÔNG chèn dòng trống giữa các gạch.
 
