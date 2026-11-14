@@ -35,10 +35,12 @@ for (const p of trang) {
   kiem(`G-01 ${p.slice(goc.length)}: generateStaticParams không hỏi DB`, !hoiDb, "dựng sẵn mọi dòng mỗi lượt build — trả [] (vẫn ● / ISR)");
 }
 
-// G-04: thân generateStaticParams chỉ `return [];` — với trang có đọc DB (chính trang hoặc tệp `@/lib/…` nó nhập có chữ `supabase`).
-// Trang thuần nội dung trong code (vd /cam-nang/[slug], `dynamicParams = false`) liệt kê slug là đúng: không hỏi DB, trả [] thì 404 (SRS-5.1zzzzzzz492).
-const docDb = (s) => /supabase/.test(s) || [...s.matchAll(/from "@\/lib\/([\w-]+)"/g)].some(([, t]) =>
-  ["ts", "tsx"].some((d) => { try { return /supabase/.test(readFileSync(join(goc, "lib", `${t}.${d}`), "utf8")); } catch { return false; } }));
+// G-04: thân generateStaticParams chỉ `return [];` — với trang có đọc DB (chính trang hoặc tệp `@/lib/…` nó nhập dùng client Supabase:
+// nhập `@/lib/supabase`, `createClient(`, `.rpc(`, `.from("`). Trang thuần nội dung trong code (vd /cam-nang/[slug], `dynamicParams = false`)
+// liệt kê slug là đúng: không hỏi DB, trả [] thì 404 (SRS-5.1zzzzzzz492).
+const HOI_DB = /from "@\/lib\/supabase"|createClient\(|\.rpc\(|\.from\("/;
+const docDb = (s) => HOI_DB.test(s) || [...s.matchAll(/from "@\/lib\/([\w-]+)"/g)].some(([, t]) =>
+  ["ts", "tsx"].some((d) => { try { return HOI_DB.test(readFileSync(join(goc, "lib", `${t}.${d}`), "utf8")); } catch { return false; } }));
 for (const p of trang) {
   const s = readFileSync(p, "utf8");
   const m = s.match(/export (?:async )?function generateStaticParams\([^)]*\)[^{]*\{([\s\S]*?)\n\}/);
