@@ -801,6 +801,13 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz492 · Cổng `kiem.yml` xanh lại sau ba ngày chỉ chạy tay (14/11/2026)
+Chủ dự án 14/11 hỏi còn kiểm xanh đỏ / truy vết không. Từ 11/11 (`fd65151`) `kiem.yml` chỉ chạy tay; chạy lại 14/11: 8 job xanh, 2 đỏ, đều là việc của các đợt 11–13/11, không dính lõi bot.
+- **Migration:** 8 file (20261111a–c, 20261113c–g) đã chạy bằng SQL thẳng nên sổ `supabase_migrations` thiếu dòng — đối chiếu DB thì thay đổi đều đã có (cột `can_kiem_chung`, `ghi_chu_test`, hàm `nap_tin_mogi`; cột `ly_do_chua_dang` đúng là đã bỏ ở 20261113d). Ghi bù 8 dòng sổ. `schema.sql` sinh lại bằng `xuat_schema()` (thiếu `nap_tin_mogi`).
+- **Hạt giống dựng lại:** bước `du-lieu` của `dung-lai-db.mjs` nạp thêm `loai_phap_ly` (bảng tham chiếu, 20261112g); hai bảng tạm `_nhom` / `_n` của lượt gộp dự án vào danh sách miễn.
+- **G-04 (`giam-egress.mjs`) báo nhầm:** `/cam-nang/[slug]` thuần nội dung trong code, `dynamicParams = false` — trả [] thì mọi bài 404. G-04 nay chỉ áp cho trang có đọc DB (trang hoặc tệp `@/lib/…` nó nhập có chữ `supabase`).
+- **Còn:** `kiem.yml` vẫn chỉ chạy tay (quyết định 11/11); `giam-egress.mjs` không chạy được trên Windows (đường dẫn `URL.pathname`), chỉ chạy ở CI.
+
 ### SRS-5.1zzzzzzz491 · Bản tin chỉ ghi "thương lượng" khi chủ nhà cho bớt (14/11/2026)
 Chạy thử 6 cuộc chat sau SRS-490 (chủ dự án: "chạy vài cuộc chat thử trên 146 xem bot ổn ko"): cả 2 tin căn hộ Sunrise City ghi "4,6 tỷ (thương lượng)", một tin còn viết "có thể trao đổi thêm khi xem căn", dù khách chỉ nói "giá 4,6 tỷ" và ô `thuong_luong` trống. Gốc: ví dụ gạch đầu dòng trong `AD_FORMAT` là "19 tỷ (thương lượng)", model chép.
 - **Sửa (`AD_FORMAT`):** ví dụ chỉ còn "19 tỷ". Mục GIÁ TRONG TIN: chữ "thương lượng" hay lời mời trả giá chỉ viết khi ô thương lượng ghi chủ cho bớt; ô trống thì giá là đúng con số.
@@ -866,9 +873,3 @@ Chủ dự án 13/11: "tăng tốc lượt bản tin". Đo trên 146 (`AIOI_EFFO
 - **Bước viết (`agent_gop.viet`):** cờ `KHONG_NGHI_LUOT` → `thinking: between_tools` (Sonnet 5.5) — bước 1 đã đọc / ghi / áp; đo bản tin đầu ra 1.249 token cho lời 673 token, nay ≈ bằng lời. Model khác hay API từ chối thì tự gửi lại không kèm. Phía mua giữ nghĩ (tra kho ở bước này).
 - **Lưới soát:** `_chay_luat_soat` chạy song song các luật `LUAT_SOAT` (hai luật hỏi model trước nối đuôi ~3,5 s).
 - **Đo (12 lượt bản tin, 6 cuộc giả, medium):** viết lại 2/12 (trước ≈ 1/2); lượt bản tin không viết lại 9–12,6 s. Còn sót: "rồi mình nói chuyện", khen giá trong câu FOMO.
-
-### SRS-5.1zzzzzzz482 · Trả lời nhanh hơn: gom tin theo hình thức, bỏ nghỉ giữa bong bóng, công tắc `AIOI_EFFORT` (13/11/2026)
-Chủ dự án 13/11: "đừng để nó chờ nó chậm nữa, rep càng nhanh càng tốt, gộp thì gộp kiểu thông minh hơn". Lớp lỗi: ba chỗ chờ cố định không phụ thuộc tin — bridge chờ 2,5 s trước MỌI tin, lõi nghỉ "đang gõ" 0,3–2 s giữa các bong bóng, model chạy mức suy nghĩ mặc định (`high`).
-- **Bridge (`bot/bridge-zca/index.mjs` `choGom`):** thời gian gom theo hình thức tin vừa tới — trọn ý (kết bằng dấu câu hoặc ≥ 8 từ) 0,5 s; mảnh ngắn 1,2 s; ảnh / tệp 1,8 s; trần 4 s tính từ tin đầu. Gom hụt thì lõi vẫn gộp tin tới lúc đang soạn (SRS-91 / 279).
-- **Lõi:** `server.py` nghỉ giữa bong bóng cố định 300 ms (`NHIP_GIUA_BONG_MS`); `llm/claude.py` `muc_no_luc` đọc `AIOI_EFFORT` (low / medium / high, trống = như cũ) gửi `output_config.effort` cho lượt gọi chữ, API từ chối thì tự gửi lại không kèm và nhớ model. `bot/cau-hinh-loi.env`: `AIOI_EFFORT=medium` (ban đầu đặt `low`; chủ dự án 13/11 chốt "để mức medium thôi").
-- **Kiểm:** cú pháp bridge + lõi, thử hàm `choGom` 6 ca. **Đã áp 13/11 23:09:** lõi `4938f51` lên 146 (kèm SRS-480 / 481), `AIOI_EFFORT=low` vào `.env` lõi, `index.mjs` lên `C:\aond\bridge-zca` (bản cũ trùng khớp bản trước 482; sao lưu `C:\aond\backup\bridge_index_20261113_231127.mjs`), hai task bridge đăng nhập lại bằng phiên cũ. **Đo trên 146** (cuộc rao bán giả 5 lượt, không Supabase, chỉ thời gian lõi): mặc định `high` 102,8 s (≈ 20,6 s/lượt) → `low` 52,9 s (5,1 · 5,2 · 6,6 · 11,7 · 24,3 s); lời và ô tin vẫn đúng. Lượt chậm còn lại là lượt viết lại cả bản tin (~1.700 token ra) — effort không bớt được phần viết. Chưa chấm lại giọng bằng `bun run cham`. **Sau đó chủ dự án chốt "để mức medium thôi":** `bot/cau-hinh-loi.env` đã đổi `medium`; `.env` lõi trên 146 đổi `medium` lúc 23:43 cùng lần đưa SRS-483 lên; số đo `medium` ở SRS-483.

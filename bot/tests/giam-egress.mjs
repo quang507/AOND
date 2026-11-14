@@ -35,11 +35,14 @@ for (const p of trang) {
   kiem(`G-01 ${p.slice(goc.length)}: generateStaticParams không hỏi DB`, !hoiDb, "dựng sẵn mọi dòng mỗi lượt build — trả [] (vẫn ● / ISR)");
 }
 
-// G-04: thân generateStaticParams chỉ `return [];`.
+// G-04: thân generateStaticParams chỉ `return [];` — với trang có đọc DB (chính trang hoặc tệp `@/lib/…` nó nhập có chữ `supabase`).
+// Trang thuần nội dung trong code (vd /cam-nang/[slug], `dynamicParams = false`) liệt kê slug là đúng: không hỏi DB, trả [] thì 404 (SRS-5.1zzzzzzz492).
+const docDb = (s) => /supabase/.test(s) || [...s.matchAll(/from "@\/lib\/([\w-]+)"/g)].some(([, t]) =>
+  ["ts", "tsx"].some((d) => { try { return /supabase/.test(readFileSync(join(goc, "lib", `${t}.${d}`), "utf8")); } catch { return false; } }));
 for (const p of trang) {
   const s = readFileSync(p, "utf8");
   const m = s.match(/export (?:async )?function generateStaticParams\([^)]*\)[^{]*\{([\s\S]*?)\n\}/);
-  if (!m) continue;
+  if (!m || !docDb(s)) continue;
   kiem(`G-04 ${p.slice(goc.length)}: generateStaticParams trả []`, /^\s*return \[\];\s*$/.test(m[1]), m[1].trim().slice(0, 80));
 }
 // G-07: không `force-dynamic` ở trang công khai (route động dùng generateStaticParams trả [] + revalidate).
