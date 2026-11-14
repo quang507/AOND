@@ -3,8 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-11 12:32 (giờ VN); 13/11/2026 bổ sung deals.gia_chot_vnd, bao_cao_gia_quanh, can_dang_rao_gan
--- lấy nguyên từ DB (pg_get_functiondef, md5 khớp DB) — SRS-5.1zzzzzzz464.
+-- Sinh lúc: 2026-11-14 12:36 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -335,30 +334,6 @@ create table if not exists public.listing_views (
   viewed_at timestamp with time zone not null default now()
 );
 
--- Loại giấy tờ (SRS-5.1zzzzzzz435): một nguồn mã + nhãn cho `listings.legal_status`, nạp từ lõi schema.LOAI_PHAP_LY.
-create table if not exists public.loai_phap_ly (
-  ma text primary key,
-  nhan text not null,
-  la_so boolean not null,
-  thu_tu integer not null
-);
-alter table public.loai_phap_ly enable row level security;
-drop policy if exists loai_phap_ly_doc on public.loai_phap_ly;
-create policy loai_phap_ly_doc on public.loai_phap_ly for select to anon, authenticated using (true);
-grant select on public.loai_phap_ly to anon, authenticated;
-
-insert into public.loai_phap_ly (ma, nhan, la_so, thu_tu) values
-  ('so_hong_rieng', 'Sổ hồng riêng', true, 1),
-  ('so_hong_chung', 'Sổ hồng chung', true, 2),
-  ('so_hong', 'Có sổ', true, 3),
-  ('hdmb', 'Hợp đồng mua bán', false, 4),
-  ('dat_thue', 'Đất thuê', false, 5),
-  ('uy_quyen', 'Hợp đồng ủy quyền', false, 6),
-  ('giay_tay', 'Giấy tay / vi bằng', false, 7),
-  ('dang_lam', 'Sổ đang làm', false, 8),
-  ('chua_co', 'Chưa có sổ', false, 9)
-on conflict (ma) do update set nhan = excluded.nhan, la_so = excluded.la_so, thu_tu = excluded.thu_tu;
-
 create table if not exists public.listings (
   id uuid not null default gen_random_uuid(),
   code text not null,
@@ -430,6 +405,13 @@ END) stored,
   cung_can_id uuid,
   xac_nhan_con_ban_at timestamp with time zone,
   can_kiem_chung boolean not null default false
+);
+
+create table if not exists public.loai_phap_ly (
+  ma text not null,
+  nhan text not null,
+  la_so boolean not null,
+  thu_tu integer not null
 );
 
 create table if not exists public.media_cleanup_queue (
@@ -889,9 +871,6 @@ do $d$ begin
   alter table public.listings add constraint listings_furnishing_check CHECK ((furnishing = ANY (ARRAY['full'::text, 'co_ban'::text, 'khong'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
-  alter table public.listings add constraint listings_legal_status_fkey FOREIGN KEY (legal_status) REFERENCES public.loai_phap_ly(ma);
-exception when duplicate_object then null; end $d$;
-do $d$ begin
   alter table public.listings add constraint listings_pkey PRIMARY KEY (id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -908,6 +887,9 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listings add constraint listings_ward_source_check CHECK ((ward_source = ANY (ARRAY['suy_doan'::text, 'chu_xac_nhan'::text, 'admin'::text, 'admin_xac_minh'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.loai_phap_ly add constraint loai_phap_ly_pkey PRIMARY KEY (ma);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.media_cleanup_queue add constraint media_cleanup_queue_pkey PRIMARY KEY (id);
@@ -1102,6 +1084,9 @@ do $d$ begin
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listing_views add constraint listing_views_listing_id_fkey FOREIGN KEY (listing_id) REFERENCES listings(id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.listings add constraint listings_legal_status_fkey FOREIGN KEY (legal_status) REFERENCES loai_phap_ly(ma);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.listings add constraint listings_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id);
@@ -1554,6 +1539,19 @@ begin
     raise exception 'chỉ admin được xoá khách' using errcode = '42501';
   end if;
   return public.xoa_nguoi_theo_zalo(p_zalo);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.an_anh_tin(p_listing_id uuid, p_storage_path text, p_an boolean DEFAULT true)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  update listing_media set an_khoi_web = p_an
+   where listing_id = p_listing_id and storage_path = p_storage_path and an_khoi_web is distinct from p_an;
+  return found;
 end $function$
 ;
 
@@ -2776,6 +2774,27 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.dat_anh_bia(p_listing_id uuid, p_storage_path text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare v_id uuid;
+begin
+  select id into v_id from listing_media
+   where listing_id = p_listing_id and storage_path = p_storage_path and bucket = 'listing-public' and not an_khoi_web;
+  if v_id is null then
+    return false;
+  end if;
+  perform set_config('aond.doi_bia', '1', true);
+  update listing_media set is_cover = false where listing_id = p_listing_id and is_cover and id <> v_id;
+  update listing_media set is_cover = true where id = v_id and not is_cover;
+  perform set_config('aond.doi_bia', '', true);
+  return true;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.day_ro_ccrb_toi_nmg(p_listing_id uuid)
  RETURNS integer
  LANGUAGE plpgsql
@@ -3776,40 +3795,6 @@ begin
 end $function$
 ;
 
-CREATE OR REPLACE FUNCTION public.dat_anh_bia(p_listing_id uuid, p_storage_path text)
- RETURNS boolean
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
-AS $function$
-declare v_id uuid;
-begin
-  select id into v_id from listing_media
-   where listing_id = p_listing_id and storage_path = p_storage_path and bucket = 'listing-public' and not an_khoi_web;
-  if v_id is null then
-    return false;
-  end if;
-  perform set_config('aond.doi_bia', '1', true);
-  update listing_media set is_cover = false where listing_id = p_listing_id and is_cover and id <> v_id;
-  update listing_media set is_cover = true where id = v_id and not is_cover;
-  perform set_config('aond.doi_bia', '', true);
-  return true;
-end $function$
-;
-
-CREATE OR REPLACE FUNCTION public.an_anh_tin(p_listing_id uuid, p_storage_path text, p_an boolean DEFAULT true)
- RETURNS boolean
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
-AS $function$
-begin
-  update listing_media set an_khoi_web = p_an
-   where listing_id = p_listing_id and storage_path = p_storage_path and an_khoi_web is distinct from p_an;
-  return found;
-end $function$
-;
-
 CREATE OR REPLACE FUNCTION public.listing_media_giu_bia()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -4311,6 +4296,47 @@ begin
      set last_message_at = greatest(coalesce(last_message_at, '-infinity'::timestamptz), new.created_at)
    where id = new.conversation_id;
   return null;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.nap_tin_mogi(ds jsonb)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare ban uuid; n integer;
+begin
+  insert into sellers (name, zalo_user_id, seller_type_source)
+  select 'Dữ liệu thử Mogi', 'thu-mogi', 'admin' where not exists (select 1 from sellers where zalo_user_id = 'thu-mogi');
+  select id into ban from sellers where zalo_user_id = 'thu-mogi';
+  with v as (
+    select e->>'legacy' legacy, e->>'deal' deal, e->>'ptype' ptype, e->>'district' district, e->>'street' street,
+           (e->>'area')::numeric area, e->>'price_raw' price_raw, e->>'descr' descr, (e->>'beds')::int beds, (e->>'baths')::int baths,
+           (e->>'floors')::int floors, e->>'access' access, (e->>'alley')::numeric alley, e->>'legal' legal,
+           (e->>'lat')::numeric lat, (e->>'lng')::numeric lng, e->>'tin_goc' tin_goc, e->>'url' url, e->>'dia_chi_goc' dia_chi_goc
+      from jsonb_array_elements(ds) e
+  ), p as (
+    select v.*, public.phuong_tai_diem(v.lat, v.lng) as ward from v
+     where not exists (select 1 from listings x where x.legacy_code = v.legacy)
+  ), l as (
+    insert into listings (seller_id, deal, district, ward, street, location_raw, area_m2, price_raw, description, source, status, property_type,
+                          property_type_source, price_source, ward_source, bedrooms, bathrooms, floors, access_type, alley_width_m, legal_status,
+                          lat, lng, toa_do_muc, geocode_at, legacy_code, boc_tach)
+    select ban, p.deal::listing_deal, p.district, p.ward, p.street, concat_ws(', ', p.street, p.ward, p.district), p.area, p.price_raw, p.descr,
+           'mogi_thu', 'cho_thong_tin', p.ptype::property_type, 'chu_xac_nhan', 'chu_xac_nhan', 'suy_doan', p.beds, p.baths, p.floors,
+           p.access, p.alley, p.legal, p.lat, p.lng, 'phuong', now(), p.legacy,
+           jsonb_build_object('duong', p.street, 'phuong', p.ward, 'quan', p.district, 'gia', p.price_raw, '_thong_so_ai', true)
+      from p where p.ward is not null
+    returning id, legacy_code
+  ), nb as (
+    insert into listing_noi_bo (listing_id, du_lieu)
+    select l.id, jsonb_build_object('tin_goc', v.tin_goc, 'nguon', 'mogi', 'url', v.url, 'dia_chi_goc', v.dia_chi_goc)
+      from l join v on v.legacy = l.legacy_code
+    returning 1
+  )
+  select count(*) into n from nb;
+  return n;
 end $function$
 ;
 
@@ -7063,6 +7089,7 @@ alter table public.listing_media enable row level security;
 alter table public.listing_noi_bo enable row level security;
 alter table public.listing_views enable row level security;
 alter table public.listings enable row level security;
+alter table public.loai_phap_ly enable row level security;
 alter table public.media_cleanup_queue enable row level security;
 alter table public.messages enable row level security;
 alter table public.nhung_viec enable row level security;
@@ -7195,6 +7222,8 @@ drop policy if exists listings_own_read on public.listings;
 create policy listings_own_read on public.listings as permissive for SELECT to authenticated using ((seller_id IN ( SELECT sellers.id
    FROM sellers
   WHERE (sellers.auth_user_id = ( SELECT auth.uid() AS uid)))));
+drop policy if exists loai_phap_ly_doc on public.loai_phap_ly;
+create policy loai_phap_ly_doc on public.loai_phap_ly as permissive for SELECT to anon, authenticated using (true);
 drop policy if exists messages_admin_read on public.messages;
 create policy messages_admin_read on public.messages as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
@@ -7275,6 +7304,9 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.li
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listing_photos_v to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listing_views to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.listings to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.loai_phap_ly to anon;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.loai_phap_ly to authenticated;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.loai_phap_ly to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.media_cleanup_queue to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.media_mo_coi_db to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.media_mo_coi_storage to service_role;
@@ -7381,8 +7413,8 @@ grant execute on function public.admin_xoa_het_khach_va_ro_hang(p_xac_nhan text)
 revoke all on function public.admin_xoa_khach(p_zalo text) from public, anon, authenticated;
 grant execute on function public.admin_xoa_khach(p_zalo text) to authenticated;
 grant execute on function public.admin_xoa_khach(p_zalo text) to service_role;
-revoke all on function public.an_anh_tin(uuid, text, boolean) from public, anon, authenticated;
-grant execute on function public.an_anh_tin(uuid, text, boolean) to service_role;
+revoke all on function public.an_anh_tin(p_listing_id uuid, p_storage_path text, p_an boolean) from public, anon, authenticated;
+grant execute on function public.an_anh_tin(p_listing_id uuid, p_storage_path text, p_an boolean) to service_role;
 revoke all on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) from public, anon, authenticated;
 grant execute on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) to anon;
 grant execute on function public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[]) to authenticated;
@@ -7471,8 +7503,8 @@ revoke all on function public.cung_quan_cu(a text, b text) from public, anon, au
 grant execute on function public.cung_quan_cu(a text, b text) to anon;
 grant execute on function public.cung_quan_cu(a text, b text) to authenticated;
 grant execute on function public.cung_quan_cu(a text, b text) to service_role;
-revoke all on function public.dat_anh_bia(uuid, text) from public, anon, authenticated;
-grant execute on function public.dat_anh_bia(uuid, text) to service_role;
+revoke all on function public.dat_anh_bia(p_listing_id uuid, p_storage_path text) from public, anon, authenticated;
+grant execute on function public.dat_anh_bia(p_listing_id uuid, p_storage_path text) to service_role;
 revoke all on function public.day_ro_ccrb_toi_nmg(p_listing_id uuid) from public, anon, authenticated;
 grant execute on function public.day_ro_ccrb_toi_nmg(p_listing_id uuid) to service_role;
 revoke all on function public.deals_chan_xoa_da_chot() from public, anon, authenticated;
@@ -7620,6 +7652,8 @@ revoke all on function public.media_cleanup_tick() from public, anon, authentica
 grant execute on function public.media_cleanup_tick() to service_role;
 revoke all on function public.messages_bump_last_message() from public, anon, authenticated;
 grant execute on function public.messages_bump_last_message() to service_role;
+revoke all on function public.nap_tin_mogi(ds jsonb) from public, anon, authenticated;
+grant execute on function public.nap_tin_mogi(ds jsonb) to service_role;
 revoke all on function public.next_listing_code() from public, anon, authenticated;
 grant execute on function public.next_listing_code() to service_role;
 revoke all on function public.next_listing_code(p_property_type text, p_district text, p_province text) from public, anon, authenticated;
@@ -7776,48 +7810,3 @@ select cron.schedule('nhung-dia-danh-tick', '7-59/15 * * * *', 'select public.nh
 select cron.schedule('nhung-luat-tick', '12-59/15 * * * *', 'select public.nhung_luat_tick()');
 select cron.schedule('nhung-tick', '*/5 * * * *', 'select public.nhung_tick()');
 select cron.schedule('soat-du-lieu-tick', '5 1 * * *', 'select public.soat_du_lieu_tick()');
-
-
--- ── 20261113g_nap_tin_mogi.sql (SRS-5.1zzzzzzz474) ──
--- SRS-5.1zzzzzzz474 (13/11/2026): nạp dataset thử Mogi — scripts/lay-mogi.py lấy tin, scripts/nap-mogi.py gọi hàm này qua REST (service_role).
--- Mỗi phần tử ds: legacy, deal, ptype, district, street, area, price_raw, descr, beds, baths, floors, access, alley, legal, lat, lng, tin_goc, url, dia_chi_goc.
--- Phường lấy theo toạ độ (phuong_tai_diem) — ngoài 168 phường TP.HCM mới thì bỏ; legacy_code đã có thì bỏ (chạy lại không nhân đôi).
--- Tin vào cho_thong_tin, trigger listings_quyet_dinh_dang_tin tự đưa lên dang_ban khi đủ giá + diện tích + phường.
--- Lời người đăng gốc chỉ ở listing_noi_bo (nội bộ). Xoá cả bộ: delete from listings where source = 'mogi_thu'; rồi xoá seller zalo_user_id = 'thu-mogi'.
-create or replace function public.nap_tin_mogi(ds jsonb) returns integer
-language plpgsql security definer set search_path = public as $$
-declare ban uuid; n integer;
-begin
-  insert into sellers (name, zalo_user_id, seller_type_source)
-  select 'Dữ liệu thử Mogi', 'thu-mogi', 'admin' where not exists (select 1 from sellers where zalo_user_id = 'thu-mogi');
-  select id into ban from sellers where zalo_user_id = 'thu-mogi';
-  with v as (
-    select e->>'legacy' legacy, e->>'deal' deal, e->>'ptype' ptype, e->>'district' district, e->>'street' street,
-           (e->>'area')::numeric area, e->>'price_raw' price_raw, e->>'descr' descr, (e->>'beds')::int beds, (e->>'baths')::int baths,
-           (e->>'floors')::int floors, e->>'access' access, (e->>'alley')::numeric alley, e->>'legal' legal,
-           (e->>'lat')::numeric lat, (e->>'lng')::numeric lng, e->>'tin_goc' tin_goc, e->>'url' url, e->>'dia_chi_goc' dia_chi_goc
-      from jsonb_array_elements(ds) e
-  ), p as (
-    select v.*, public.phuong_tai_diem(v.lat, v.lng) as ward from v
-     where not exists (select 1 from listings x where x.legacy_code = v.legacy)
-  ), l as (
-    insert into listings (seller_id, deal, district, ward, street, location_raw, area_m2, price_raw, description, source, status, property_type,
-                          property_type_source, price_source, ward_source, bedrooms, bathrooms, floors, access_type, alley_width_m, legal_status,
-                          lat, lng, toa_do_muc, geocode_at, legacy_code, boc_tach)
-    select ban, p.deal::listing_deal, p.district, p.ward, p.street, concat_ws(', ', p.street, p.ward, p.district), p.area, p.price_raw, p.descr,
-           'mogi_thu', 'cho_thong_tin', p.ptype::property_type, 'chu_xac_nhan', 'chu_xac_nhan', 'suy_doan', p.beds, p.baths, p.floors,
-           p.access, p.alley, p.legal, p.lat, p.lng, 'phuong', now(), p.legacy,
-           jsonb_build_object('duong', p.street, 'phuong', p.ward, 'quan', p.district, 'gia', p.price_raw, '_thong_so_ai', true)
-      from p where p.ward is not null
-    returning id, legacy_code
-  ), nb as (
-    insert into listing_noi_bo (listing_id, du_lieu)
-    select l.id, jsonb_build_object('tin_goc', v.tin_goc, 'nguon', 'mogi', 'url', v.url, 'dia_chi_goc', v.dia_chi_goc)
-      from l join v on v.legacy = l.legacy_code
-    returning 1
-  )
-  select count(*) into n from nb;
-  return n;
-end $$;
-revoke all on function public.nap_tin_mogi(jsonb) from public, anon, authenticated;
-grant execute on function public.nap_tin_mogi(jsonb) to service_role;

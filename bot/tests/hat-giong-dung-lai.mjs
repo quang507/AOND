@@ -30,6 +30,8 @@ const MIEN = {
   duong: "nạp bằng bước nap-duong",
   required_facts: "bảng gỡ 20261019g (bộ câu hỏi nay ở src/aioi/schema.py) — insert chỉ còn trong migration lịch sử",
   luu_tru: "kho lưu bản cũ trước khi xoá (vd app_config_ts_20261019, 20261019d) — không phải dữ liệu tham chiếu",
+  _nhom: "bảng tạm `on commit drop` của lượt gộp dự án trùng (20261111a) — không phải bảng thật",
+  _n: "bảng tạm `on commit drop` của lượt gộp nốt dự án (20261111c) — không phải bảng thật",
 };
 
 const dl = readFileSync(join(GOC, "scripts", "dung-lai-db.mjs"), "utf8");
