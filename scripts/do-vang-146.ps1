@@ -3,6 +3,7 @@
 # Khoa API doc tu .env loi, khong in; Supabase de trong (kho SQLite tam, khong dung DB that / Zalo).
 param([string]$Nhan = "thu", [string]$Chi = "", [string]$Thu = "vang", [string]$ChamLai = "")
 if (Test-Path C:\aond\.env) { "CO C:\aond\.env - dung lai (loi se doc nham)"; exit 1 }
+if ($Thu -notmatch '^vang[a-z0-9_]*$') { "Thu phai la vang... (vd vang, vang2) - khong xoa thu muc khac"; exit 1 }   # 14/11: xoa nham ca C:\aond\tmp
 $thu = "C:\aond\tmp\$Thu"   # thu muc rieng cho moi luot chay song song
 if (Test-Path $thu) { Remove-Item -Recurse -Force $thu }
 New-Item -ItemType Directory $thu | Out-Null
