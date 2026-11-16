@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz507 · Bước ghi: mô tả công cụ chỉ đủ cho ô thường gặp, ô hiếm tra khi cần (16/11/2026)
+Chủ dự án 16/11: "xem rút tiếp được không" — khai báo công cụ bước ghi là phần to nhất còn lại của lượt (28.805 chữ).
+- **`ghi_o.fields`:** ô thường gặp / dễ lẫn (`agent_gop.O_THUONG`: địa chỉ, loại hình, diện tích, giá, pháp lý, kết cấu, hẻm, hợp đồng thuê…) giữ mô tả nguyên; 45 ô hiếm (dự án, kho xưởng, thương mại, phòng trọ, đất nông nghiệp, ô riêng của chủ) chỉ ghi tên khoá — tên đã nói nghĩa, mô tả đủ qua `tra_luat_o`, lượt hệ thống hỏi ô nào thì luật ô đó vẫn nạp sẵn như cũ.
+- **`ghi_y_khach`:** khoá có luật riêng, mô tả > 200 chữ hoặc `_trich_dan` > 90 chữ chỉ giữ câu đầu, kết bằng "…"; `tra_luat_o` trả mô tả nguyên của MỌI khoá. Giữ nguyên các khoá mà mã enum không tự nói đủ (`so_ngang`, `user_intent`, `hoi_ngoai_viec`, `con_ban`, `hen_lai_luc`, `tam_dung_den`). `them_can` không chép lại mô tả `bang_chung` / `is_rental`; `bo_can.op` có mô tả riêng ba giá trị.
+- **Luật form:** gạch "remove / keep_only / clear CHỈ khi…" bỏ — khối ⚠️ của `bo_can` đã nói; ý "nhắc mã căn" gộp vào gạch CÂU HỎI. Bỏ lời kể ca cũ ở luật phòng trọ.
+- **Cỡ prompt (ký tự):** khai báo công cụ bước ghi 28.805 → 25.401; lượt hỏi thông tin 65.781 → 62.325; trình bản tin 84.557 → 81.205; duyệt 67.925 → 64.573. Kiểm: import lõi, `do-prompt.py` 3/3, truyvet sạch. Chưa chạy thật với Claude (Anthropic hết số dư) — rủi ro là model ít gọi `tra_luat_o` cho ô hiếm; có tiền thì nhắn thử một căn kho xưởng / phòng trọ.
+
 ### SRS-5.1zzzzzzz506 · Rút gọn GIỌNG và prompt gọn, bước ghi bỏ khối giọng, gỡ /reset-all (16/11/2026)
 Chủ dự án 16/11: "tính cách bot và các thứ kia không làm gọn hơn được à" — làm đợt 2–3 của kế hoạch rút gọn, không chờ hỏi thêm.
 - **`GIONG` 3.728 → 3.112 chữ, `LEAN_SYSTEM_PROMPT` 7.392 → 6.078:** giữ đủ các ý (nghe khách trước, độ dài theo ý, một ý mỗi lượt, không báo đã ghi, khen điểm hiếm, nói thật, ví dụ cảm xúc); bỏ câu nói hai lần giữa GIỌNG và ba khối CÁCH EM NHẮN / HỎI NHƯ TRÒ CHUYỆN / SỰ THẬT (gộp thành một khối LƯỢT HỎI THÔNG TIN chỉ còn ý riêng). Từ điển tiếng nghề tách thành `TIENG_NGHE` (một bản).

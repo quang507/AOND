@@ -158,6 +158,7 @@ class DuPhongProvider(LLMProvider):
             for model in n.models:
                 if time.time() < self._nghi_model.get((n.ten, model), 0.0):
                     continue   # model này vừa quá hạn — nghỉ, khỏi tốn thêm một lần chờ
+                lan_qua_han = 0
                 for khoa in n.khoa:
                     if time.time() - bat_dau > (NGAN_SACH_CHINH_GIAY if bo_claude else NGAN_SACH_GIAY):
                         log.warning("Dự phòng (%s): quá ngân sách thời gian — dừng, không thử tiếp", viec)
@@ -172,6 +173,9 @@ class DuPhongProvider(LLMProvider):
                         if not nen_doi_sang(e) and not isinstance(e, (ValueError, LoiNguon, urllib.error.URLError, OSError)):
                             raise
                         if _qua_han(e):
+                            lan_qua_han += 1
+                            if bo_claude and lan_qua_han < 2:
+                                continue   # Gemini là đường chính (SRS-5.1zzzzzzz517): quá hạn một lần thì thử khoá kế, chưa cho model nghỉ
                             self._nghi_model[(n.ten, model)] = time.time() + (NGHI_MODEL_CHINH_GIAY if bo_claude else NGHI_MODEL_GIAY)
                             break   # model này chậm → khoá khác cũng chậm như vậy; sang model / nguồn kế
         raise loi_chinh or loi or RuntimeError("không còn đường gọi model")

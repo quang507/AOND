@@ -801,6 +801,12 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz517 · Gemini chỉ dùng flash-lite; quá hạn thì thử khoá kế trước khi cho model nghỉ (16/11/2026)
+Chủ dự án: "sau chọn flash-lite thôi" (`gemini-3.5-flash` hết hạn mức ngày sau khoảng 45 lượt, SRS-516).
+- **Cấu hình 146:** `GEMINI_MODEL=gemini-3.1-flash-lite` trong `.env` lõi (sao lưu `C:ondackup\env_20261116_201836`). Mặc định trong code không đổi.
+- **`llm/du_phong.py`:** còn một model thì một lần quá hạn làm cả đường nghỉ 60 s (lượt kiểm sau khi đổi trả câu giữ chỗ). Khi công tắc chỉ-Gemini bật, quá hạn lần đầu thì thử khoá kế, lần hai mới cho model nghỉ.
+- **Còn lại:** flash-lite có lượt không gọi công cụ, tự nêu giá / nhận định (SRS-516); khoá Groq vẫn 403.
+
 ### SRS-5.1zzzzzzz516 · Bốn chỗ sai lộ ra khi bắn thử trên Gemini (16/11/2026)
 Chủ dự án: "Sửa luôn". Bản ghi: `Ban-thu-FDA-BOA_16-11-2026.md` (ngoài repo).
 - **Thuê đã qua thành "đang cho thuê":** `_mot_cum_mot_o` bỏ `thu_nhap_thue` khi căn chưa có `co_hdt = co` (cùng lượt hoặc đã ghi); mô tả ô dặn ghi kèm `co_hdt`, nhà hết cho thuê thì không ghi.
@@ -860,10 +866,3 @@ Mục 3.4 kế hoạch rút gọn: trong một lời nhắc lượt phí, "chỉ
 - **Một nguồn mỗi ý:** bốn ý chính sách chỉ ở `CHINH_SACH_PHI`; mức theo vai ở `BUSINESS_CONTEXT` / dòng VAI NGƯỜI RAO (`_fee_hint`, nay chỉ vai + mức); câu khách nghe ở câu mẫu `bao_phi` (không đổi chữ). Lời nhắc "0.75 tháng = ba phần tư của MỘT tháng" chuyển vào `khoi_bao_phi`, chỉ đi kèm khi cho thuê.
 - **Khối ƯU TIÊN hỏi phí (`engine`)** không liệt kê lại bốn ý và con số — trỏ tới chính sách / câu mẫu ngay dưới; vẫn giữ ý "không chia hoa hồng, dù khách là chủ nhà" và "hỏi ý khác thì không đọc lại câu báo phí". Lượt sau bản tin: bỏ gạch "nhấn mạnh chỉ thu khi thành công" (gộp vào gạch lợi ích) và gạch "giữ đúng mức phí" (chính sách đã nói cố định, không bớt; BỐI CẢNH đã cấm bịa ưu đãi).
 - **Cỡ (ký tự):** lượt hỏi phí sau bản tin 64.729 → 64.433, duyệt 64.573 → 64.277, trình bản tin 81.205 → 81.081; khối hỏi phí lúc đang thu thập bớt ≈ 600. Kiểm: import lõi, `do-prompt.py` 3/3, truyvet sạch. Chưa chạy thật với Claude (Anthropic hết số dư).
-
-### SRS-5.1zzzzzzz507 · Bước ghi: mô tả công cụ chỉ đủ cho ô thường gặp, ô hiếm tra khi cần (16/11/2026)
-Chủ dự án 16/11: "xem rút tiếp được không" — khai báo công cụ bước ghi là phần to nhất còn lại của lượt (28.805 chữ).
-- **`ghi_o.fields`:** ô thường gặp / dễ lẫn (`agent_gop.O_THUONG`: địa chỉ, loại hình, diện tích, giá, pháp lý, kết cấu, hẻm, hợp đồng thuê…) giữ mô tả nguyên; 45 ô hiếm (dự án, kho xưởng, thương mại, phòng trọ, đất nông nghiệp, ô riêng của chủ) chỉ ghi tên khoá — tên đã nói nghĩa, mô tả đủ qua `tra_luat_o`, lượt hệ thống hỏi ô nào thì luật ô đó vẫn nạp sẵn như cũ.
-- **`ghi_y_khach`:** khoá có luật riêng, mô tả > 200 chữ hoặc `_trich_dan` > 90 chữ chỉ giữ câu đầu, kết bằng "…"; `tra_luat_o` trả mô tả nguyên của MỌI khoá. Giữ nguyên các khoá mà mã enum không tự nói đủ (`so_ngang`, `user_intent`, `hoi_ngoai_viec`, `con_ban`, `hen_lai_luc`, `tam_dung_den`). `them_can` không chép lại mô tả `bang_chung` / `is_rental`; `bo_can.op` có mô tả riêng ba giá trị.
-- **Luật form:** gạch "remove / keep_only / clear CHỈ khi…" bỏ — khối ⚠️ của `bo_can` đã nói; ý "nhắc mã căn" gộp vào gạch CÂU HỎI. Bỏ lời kể ca cũ ở luật phòng trọ.
-- **Cỡ prompt (ký tự):** khai báo công cụ bước ghi 28.805 → 25.401; lượt hỏi thông tin 65.781 → 62.325; trình bản tin 84.557 → 81.205; duyệt 67.925 → 64.573. Kiểm: import lõi, `do-prompt.py` 3/3, truyvet sạch. Chưa chạy thật với Claude (Anthropic hết số dư) — rủi ro là model ít gọi `tra_luat_o` cho ô hiếm; có tiền thì nhắn thử một căn kho xưởng / phòng trọ.
