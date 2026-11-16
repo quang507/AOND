@@ -979,26 +979,37 @@ def khoi_xin_them_anh(so_anh: int, lan_hai: bool = False, prop: "Property | None
             "Việc lượt này: sau lời đáp, xuống một dòng trống rồi xin ảnh. " + LUAT_XIN_ANH_KHEO + "\n")
 
 
+def build_tin_chu_dong_system(ten: str, goi: str, toi: str, viec: str, prop: "Property | None" = None, hoan_canh: str = "") -> str:
+    """FDA viết MỌI tin chủ động gửi chủ nhà (SRS-5.1zzzzzzz509, chủ dự án 16/11: "LQC giờ gọi là BOA, con bot hôm rày gọi là FDA, tất cả
+    đều chat với cùng 1 tên"). BOA (LQC: `lqc.py`, `hoi_sau_dang.py`, `qc_anh.py`, `followup.py`) chọn việc và giờ nhắn; lời gửi khách viết
+    ở đây với CÙNG nhân vật + GIỌNG của lượt chat — khách chỉ thấy một "em". Trước đây bốn vòng nền mỗi vòng một prompt riêng, không có
+    GIỌNG, hai prompt tự giới thiệu "trợ lý sàn nhà đất"."""
+    can = ""
+    if prop is not None:
+        du_kien = "; ".join(f"{k}: {v}" for k, v in list(prop.fields_khach().items())[:14])
+        can = (f"Căn: loại {prop.loai_hinh or 'chưa rõ'}{' (cho thuê)' if prop.is_rental else ''}. "
+               f"Dữ kiện khách đã nói: {du_kien or 'chưa có'}.\n")
+    return (khoi_nhan_vat(ten, "người gửi bán / cho thuê nhà")
+            + f"\nTIN CHỦ ĐỘNG: chủ nhà đang không nhắn{hoan_canh}. Em viết ĐÚNG MỘT tin Zalo ngắn làm đúng việc dưới, nối từ chuyện vừa "
+            "nói như người quen nhắn tiếp — không chào lại, không giới thiệu lại mình, không nhắc lại bản tin, tối đa MỘT câu hỏi, không thúc "
+            f"ép, không dùng chữ \"máy\". Gọi khách \"{goi}\", tự xưng \"{toi}\".\n"
+            + can + f"VIỆC: {viec}\nChỉ trả về nguyên văn tin gửi khách.")
+
+
 def build_xin_anh_nhac_system(ten: str, prop: "Property", so_anh: int, lan_hai: bool, goi: str, toi: str) -> str:
-    """System cho TIN NHẮC xin ảnh khi chủ im SAU_DANG_NHAC_GIAY sau khi tin lên web (SRS-5.1zzzzzzz421) — model viết đúng một tin."""
+    """Tin nhắc xin ảnh khi chủ im SAU_DANG_NHAC_GIAY sau khi tin lên web (SRS-5.1zzzzzzz421) — FDA viết (`build_tin_chu_dong_system`)."""
     co = f"tin đang có {so_anh} ảnh thật" if so_anh else "tin chưa có ảnh thật nào"
-    khach = prop.fields_khach()
-    du_kien = "; ".join(f"{k}: {v}" for k, v in list(khach.items())[:14])
     viec = ("Đây là lần nhắc xin ảnh THỨ HAI (lần cuối): một câu thật nhẹ, khi nào tiện thì gửi, không kể góc chụp."
             if lan_hai else f"Góc hợp với căn này (chọn MỘT, chưa có trong ảnh khách đã gửi): {goc_anh_goi_y(prop)}. " + LUAT_XIN_ANH_KHEO)
-    return (f"Bạn là {ten}, trợ lý của sàn nhà đất, đang chăm sóc chủ nhà sau khi tin rao của họ ĐÃ LÊN WEB. Chủ nhà im khoảng 10 phút. "
-            f"Viết ĐÚNG MỘT tin Zalo ngắn gửi chủ nhà để xin thêm ảnh thật của căn — {co}, tin đẹp cần 5–6 ảnh.\n"
-            f"Gọi khách là \"{goi}\", tự xưng \"{toi}\". Không chào lại từ đầu, không nhắc lại bản tin, không hỏi chuyện khác, không dùng chữ \"máy\".\n"
-            f"Căn: loại {prop.loai_hinh or 'chưa rõ'}{' (cho thuê)' if prop.is_rental else ''}. Dữ kiện khách đã nói: {du_kien or 'chưa có'}.\n"
-            f"{viec}\nChỉ trả về nguyên văn tin gửi khách.")
+    return build_tin_chu_dong_system(ten, goi, toi, f"xin thêm ảnh thật của căn — {co}, tin đẹp cần 5–6 ảnh. {viec}", prop,
+                                     " (tin đã lên web, chủ im khoảng 10 phút)")
 
 
 def build_nhac_hoi_lai_system(ten: str, goi: str, toi: str) -> str:
-    """System cho TIN NHẮC khi khách im 5 phút sau câu hỏi của bot (SRS-5.1zzzzzzz496). Câu mẫu "… hỏi lại chút nha: {câu cũ}" chép nguyên câu
-    vừa hỏi, dính cả chữ nối giữa lời ("Mà trước hết, căn … là nhà phố…?") — model viết lại ý câu hỏi thành một tin tự đứng được."""
-    return (f"Bạn là {ten}, trợ lý ký gửi nhà đất trên Zalo. Khách im khoảng 5 phút sau câu hỏi cuối của em. Viết ĐÚNG MỘT tin Zalo ngắn hỏi "
-            f"lại đúng ý câu hỏi đó bằng lời mới, tự nhiên, đọc riêng vẫn hiểu — một câu hỏi, không chào lại, không thêm ý khác, không xin lỗi.\n"
-            f"Gọi khách là \"{goi}\", tự xưng \"{toi}\". Chỉ trả về nguyên văn tin gửi khách.")
+    """Tin nhắc khi khách im 5 phút sau câu hỏi của bot (SRS-5.1zzzzzzz496). Câu mẫu "… hỏi lại chút nha: {câu cũ}" chép nguyên câu vừa hỏi,
+    dính cả chữ nối giữa lời — FDA viết lại ý câu hỏi thành một tin tự đứng được."""
+    return build_tin_chu_dong_system(ten, goi, toi, "hỏi lại đúng ý câu hỏi cuối của em bằng lời mới, đọc riêng vẫn hiểu — một câu hỏi, "
+                                     "không thêm ý khác, không xin lỗi.", None, " (im khoảng 5 phút sau câu hỏi cuối của em)")
 
 
 _THU = ("thứ Hai", "thứ Ba", "thứ Tư", "thứ Năm", "thứ Sáu", "thứ Bảy", "Chủ nhật")
@@ -1029,16 +1040,11 @@ def khoi_nhac_hen(viec: str, luc: float) -> str:
 
 
 def build_hoi_sau_dang_nhac_system(ten: str, prop: "Property", khoi: str, goi: str, toi: str) -> str:
-    """System cho TIN NHẮN CHỦ ĐỘNG hỏi sau đăng (SRS-5.1zzzzzzz432, vòng nền `hoi_sau_dang`) — chủ không nhắn, model viết đúng một tin làm
-    việc của khối engine chọn (cùng khối lượt chat dùng: xin ảnh / pháp lý / lợi thế / so sánh / giá …)."""
-    du_kien = "; ".join(f"{k}: {v}" for k, v in list(prop.fields_khach().items())[:14])
-    return (f"Bạn là {ten}, trợ lý của sàn nhà đất, đang chăm sóc chủ nhà sau khi tin rao của họ ĐÃ LÊN WEB. Chủ nhà đang không nhắn. "
-            "Viết ĐÚNG MỘT tin Zalo ngắn gửi chủ nhà làm đúng việc ở khối dưới. Không có lời khách để đáp: bỏ phần \"sau lời đáp, xuống "
-            "một dòng\", vào thẳng việc bằng một câu nối nhẹ (vd nhờ thêm chút thông tin để tư vấn khách mua cho sát).\n"
-            f"Gọi khách là \"{goi}\", tự xưng \"{toi}\". Không chào lại từ đầu, không nhắc lại bản tin, tối đa MỘT câu hỏi, không "
-            "thúc ép, không dùng chữ \"máy\".\n"
-            f"Căn: loại {prop.loai_hinh or 'chưa rõ'}{' (cho thuê)' if prop.is_rental else ''}. Dữ kiện khách đã nói: {du_kien or 'chưa có'}.\n"
-            f"{khoi}\nChỉ trả về nguyên văn tin gửi khách.")
+    """Tin chủ động hỏi sau đăng (SRS-5.1zzzzzzz432, vòng nền `hoi_sau_dang`) — BOA chọn khối (xin ảnh / pháp lý / lợi thế / so sánh / giá …,
+    cùng khối lượt chat dùng), FDA viết (`build_tin_chu_dong_system`)."""
+    return build_tin_chu_dong_system(ten, goi, toi, "không có lời khách để đáp: bỏ phần \"sau lời đáp, xuống một dòng\", vào thẳng việc ở "
+                                     "khối dưới bằng một câu nối nhẹ (vd nhờ thêm chút thông tin để tư vấn khách mua cho sát).\n" + khoi,
+                                     prop, " (tin đã lên web)")
 
 
 def khoi_hoi_phap_ly(o: str, prop: Property | None = None) -> str:

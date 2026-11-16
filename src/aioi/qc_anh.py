@@ -323,7 +323,7 @@ def _anh_nghi(kq: dict) -> list[dict]:
 def viet_tin_nhan(engine: Any, conv: Any, li: Any, kq: dict, goi: str, toi: str, viec: dict | None = None) -> str:
     """Model viết MỘT tin khéo cho đúng MỘT việc `chon_viec` chọn; hụt → "" (SRS-422 → 425)."""
     from .llm import Message
-    from .prompts import LUAT_XIN_ANH_KHEO
+    from .prompts import LUAT_XIN_ANH_KHEO, build_tin_chu_dong_system
     viec = viec or chon_viec(kq)
     if not viec:
         return ""
@@ -347,10 +347,10 @@ def viet_tin_nhan(engine: Any, conv: Any, li: Any, kq: dict, goi: str, toi: str,
         dep = viec["dep"]
         viec_txt = (f"Tấm {dep.get('mo_ta')} đẹp ({dep.get('ly_do')}). Khen ngắn tấm đó rồi hỏi chủ còn tấm nào kiểu vậy nữa không, "
                     "để em gửi khách xem.")
-    he = (f"Bạn là {getattr(conv.assistant, 'name', 'em')}, trợ lý sàn nhà đất, đang chăm sóc chủ nhà có tin rao ĐÃ LÊN WEB "
-          f"({kq.get('so_anh')} ảnh). Bộ phận QC ảnh vừa xem bộ ảnh.\nVIỆC CỦA TIN NÀY: {viec_txt}\n"
-          f"Viết ĐÚNG MỘT tin Zalo gửi chủ nhà. Gọi khách là \"{goi}\", tự xưng \"{toi}\". Không chào lại, không nhắc chuyện QC / "
-          f"chấm điểm, không hỏi chuyện khác, không dùng chữ \"máy\". {LUAT_XIN_ANH_KHEO}\nChỉ trả về nguyên văn tin gửi khách.")
+    # SRS-5.1zzzzzzz509: BOA (Image LQC) chọn việc, FDA viết bằng cùng nhân vật + GIỌNG lượt chat.
+    he = build_tin_chu_dong_system(getattr(conv.assistant, "name", None) or "em", goi, toi,
+                                   f"{viec_txt} Không nhắc chuyện xem / chấm ảnh, không hỏi chuyện khác. {LUAT_XIN_ANH_KHEO}",
+                                   getattr(li, "prop", None), f" (tin đã lên web, {kq.get('so_anh')} ảnh; bên em vừa xem lại bộ ảnh)")
     try:
         tin = engine._provider.reply(he, [Message("user", f"Mấy lượt vừa nói:\n{gan or '(chưa có)'}\n\nViết tin.")],
                                      max_tokens=200).strip()
