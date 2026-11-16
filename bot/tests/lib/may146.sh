@@ -12,7 +12,7 @@ export MAY_146
 # PowerShell trên 146 qua -EncodedCommand (UTF-16LE base64) — tránh lớp trích dẫn của cmd.exe (shell mặc định của OpenSSH Windows).
 ps146() {
   ssh -o ConnectTimeout=20 -o LogLevel=ERROR "$MAY_146" \
-    "powershell -NoProfile -NonInteractive -EncodedCommand $(printf '%s' "[Console]::OutputEncoding=[Text.Encoding]::UTF8; $1" | iconv -f utf-8 -t utf-16le | base64 -w0)"
+    "powershell -NoProfile -NonInteractive -EncodedCommand $(printf '%s' "$ProgressPreference='SilentlyContinue'; [Console]::OutputEncoding=[Text.Encoding]::UTF8; $1" | iconv -f utf-8 -t utf-16le | base64 -w0)"
 }
 
 _PS_TEP_LOG='$f = Get-ChildItem C:\aond\logs -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1'
