@@ -21,15 +21,9 @@ on:
         description: Sau khi áp, COMMIT bot/supabase/schema.sql vừa xuất lên đúng nhánh đang chạy (phiên không có service_role không tải được artifact). Gõ đúng chữ "commit".
         required: false
         default: ''
-      giu_du_lieu:
-        description: "Bắn thử (ban-thu-*) xong GIỮ hội thoại / tin của ID thử để đọc trên CRM /admin/tin-nhan (xoá sau bằng nút xoá khách trên CRM). Gõ đúng chữ \"giu\". Trống = tự dọn như cũ"
-        required: false
-        default: ''
 
 env:
   PROJECT_REF: rqxmmqmctpklqcmbfxuj
-  # SRS-5.1zzzzzzz245 (chủ dự án 28/10: "trả lại lên trên chỗ CRM để tui đọc lát tui xóa cho"): các script ban-thu-* bỏ bước dọn khi = "giu".
-  GIU_DU_LIEU: ${{ inputs.giu_du_lieu }}
   # Khoá publishable (công khai, như lib/supabase.ts) — dung-lai-db.mjs ghi vào app_config.publishable_key.
   PUBLISHABLE_KEY: sb_publishable_f4wNO8jQcCDWn1QmNZQ7-g_BXDtYM3Y
 
@@ -107,7 +101,7 @@ jobs:
         run: node bot/tests/tim-nha/do-tim-nha.mjs
 
       # SRS-5.1zzzzzzz405: ô ban-thu-* và doc-log-loi gỡ — lõi ở máy 146 (sau Tailscale, chỉ nghe 127.0.0.1) nên Actions không với tới.
-      # Script ban-thu-* gỡ hẳn 16/11/2026 (SRS-5.1zzzzzzz498, tốn tiền API); đọc log lõi bằng bot/tests/doc-log-loi.sh (lib/may146.sh mở đường hầm).
+      # Script ban-thu-* gỡ hẳn 16/11/2026 (SRS-5.1zzzzzzz498, tốn tiền API); đọc log lõi bằng bot/tests/doc-log-loi.sh (lib/may146.sh: ssh vào 146, chỉ đọc).
 
       # 08/10/2026: project production cũ bị xoá nhầm — dựng lại từng bước trên project mới rỗng.
       - name: Dựng lại DB (dung_lai)

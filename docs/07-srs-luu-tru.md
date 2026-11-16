@@ -73,6 +73,15 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz495 · Quận là nơi căn nằm, loại nhà chỉ khi khách nói rõ, icon không đếm trong lời chat (14/11/2026)
+Chủ dự án 14/11 ("Sửa tiếp 3 lỗi" còn lại sau SRS-494, bắt ở bộ vàng):
+- **Quận của căn (aeon_tan_phu):** khách nói "nhà gần TTTM Aeon Mall Tân Phú", sau đó "P. Bình Hưng Hoà A" → bản tin ghi "Bình Hưng Hoà A, Tân Phú" (phường đó thuộc Bình Tân cũ), ba lượt liền. Gốc: mô tả ô `quan` của bóc tách chỉ là "quận khách nêu", nên tên quận trong tên một nơi gần căn thành quận của căn. Nay: quận nơi CĂN nằm; tên quận trong tên nơi gần căn ("gần Aeon Mall Tân Phú", "cạnh chợ Bình Tây") chưa phải quận của căn.
+- **Loại nhà (tin_cut):** khách "bán nhà" rồi "quận 10" → "Nhà phố ở Quận 10 vậy…". Gốc: mô tả ô `loai_hinh` chỉ liệt kê mã. Nay: điền khi lời khách cho biết loại ("nhà phố", "căn hộ", "đất", "nhà hẻm 3 tầng", "1 trệt 2 lầu"); "bán nhà" / "căn nhà" chung chung thì để hỏi.
+- **Icon (hht lượt 9):** "Em thêm 3 hình tượng rồi anh, giờ cả bản tin có 4 cái" khi tin có 3. Gốc: khối ICON của `AD_FORMAT` dặn "nói rõ đã thêm" (ngược khối sửa tin: câu trước 📋 không kể việc em làm với tin) → model tự đếm và đếm sai. Nay: bản tin cập nhật tự cho chủ nhà thấy icon mới, lời trước 📋 một câu nhận lời ngắn.
+- **Token:** `AD_FORMAT` +42 (3.741 → 3.783); schema bóc tách +219 (7.543 → 7.762). `GIONG` / `LEAN_SYSTEM_PROMPT` không đổi (3.728 / 7.392 chữ).
+- **Đo (bộ vàng, 2 lần):** 8,91 / 9,07 (TB 8,99), lượt đạt 73,1% cả hai, lỗi nặng 2 / 0, bản tin 3,16 / 2,96 — so SRS-494 9,06 / 76,9% / lỗi nặng 2 và 4, nền 8,93 / 67,2%. Ba lỗi trên không còn ở cả hai lần (quận trống thay vì Tân Phú, không gán nhà phố; hht lượt 9 có một lần còn nói "thêm đúng 3", không bị chấm bịa).
+- **Còn:** lớp "báo đã sửa tin mà tin không đổi đúng như lời" (hht lượt 10 "em gộp lại nói một chỗ" khi bản trước chỉ nhắc một lần; xa_cho "em thêm ý đó vào tin" khi tin không có) — lời chat kể việc sửa tin dù khối sửa tin bảo không kể.
+
 ### SRS-5.1zzzzzzz494 · Lời bot không còn kể suy nghĩ nội bộ ra cho khách; bản tin không tự suy tính chất căn từ con số (14/11/2026)
 Chủ dự án 14/11 ("Sửa luôn" sau điểm nền SRS-493): hai lỗi giọng nặng nhất của bộ vàng. (1) Lời chat lộ lập luận nội bộ — "Khách đã nói rõ là bề ngang, nên sang ý kế tiếp." (hht lượt 3, mọi lần chạy), "Khách đang bổ sung phường nên đây là chỉnh sửa, em rao lại bản tin có thêm phường." (lượt sửa bản tin). (2) Bản tin thêm ý khách không nói ("vuông vức dễ bố trí", "căn hiếm", "đường lớn").
 - **Gốc lỗi (1):** từ SRS-483 bước viết không nghĩ trước (`thinking: between_tools`, cho nhanh). Gặp lời dặn có điều kiện "khách nói kiểu đó thì…, đã rõ thì…" hay danh sách "NẾU… NẾU…", model không còn chỗ nghĩ nên viết luôn việc tự xếp trường hợp vào tin nhắn. Thêm một câu chung vào `GIONG` ("mọi chữ em viết là tin gửi khách") không chặn được (đo 2 lần vẫn lộ) nên đã gỡ; bật lại nghĩ thì hết lộ ở lượt sửa tin nhưng hht vẫn lộ, chậm thêm ~0,5 s / lượt — không dùng.

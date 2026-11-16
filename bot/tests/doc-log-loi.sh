@@ -8,7 +8,6 @@
 # theo khoảng giờ như journalctl trước đây — đọc N dòng cuối của tệp mới nhất rồi lọc.
 set -euo pipefail
 
-CHI_DOC_LOG_146=1
 . "$(dirname "$0")/lib/may146.sh"
 
 SO_DONG="${1:-3000}"

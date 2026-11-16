@@ -17,7 +17,7 @@ thì gần như luôn nghiệm thu đạt.
 |---|---|---|
 | **BA** | `docs/00`–`09` | Yêu cầu này đến từ đâu, nó mâu thuẫn gì không, ai kiểm được nó? |
 | **Dev** | `src/aioi/` (lõi Python), `app/`, `bot/`, `lib/`, migration | Code có đúng FR / mục SRS không, có `catch` nào chưa nối sổ không? |
-| **Tester** | `docs/10`, `bot/tests/`, `tests/kich_ban/` (bộ chấm), `scripts/soat-truy-vet.sh` | Có bằng chứng nào cho câu "đã xong" ngoài lời kể không? |
+| **Tester** | `docs/10`, `bot/tests/`, `scripts/do-prompt.py` (đo prompt, không gọi model), `scripts/soat-truy-vet.sh` | Có bằng chứng nào cho câu "đã xong" ngoài lời kể không? |
 
 Luật một dòng: **BA viết điều phải đúng, tester viết cách chứng minh nó đúng,
 dev làm cho nó đúng.** Ba việc, ba lượt, theo thứ tự đó.
@@ -80,9 +80,8 @@ tận code, và lúc chủ dự án phát hiện thì phải bóc ngược năm 
    ├─ Lõi Python (src/aioi/) → kiểm cú pháp + thử thật trên 146 (bộ pytest gỡ 13/11/2026, SRS-5.1zzzzzzz469)
    ├─ Web / edge function / script / SQL → bot/tests/*.mjs (thêm vào `test:bot`)
    │                                       hoặc bot/tests/sql/ (`test:sql`)
-   ├─ Cần model thật → script bắn thử production chạy từ máy ssh được vào 146
-   │                   (tin Zalo thật; đọc log bằng `doc-log-loi.sh`, SRS-405; `ban-thu-*` gỡ 16/11) —
-   │                   tiền thật, ID thử `la_id_thu`, tự dọn (docs/10 §10.7.0)
+   ├─ Cần model thật → tin Zalo thật bằng ID thử (`la_id_thu`), đọc log bằng `doc-log-loi.sh`
+   │                   từ máy ssh được vào 146 (SRS-405). Bắn thử / bộ chấm đã gỡ 14–16/11 (tốn tiền API)
    └─ Chưa → viết ca chạy tay vào docs/10 §10.7, kèm LỆNH DÁN VÀO CHẠY ĐƯỢC
              (không phải mô tả), kỳ vọng, và cách dọn dữ liệu thử
 
@@ -144,7 +143,7 @@ của người đẩy commit**. Nay chia lại cho sòng phẳng.
 **⚠️ = CI chỉ để tham khảo, KHÔNG chặn.** Từ 11/11/2026 (chủ dự án: "xóa cái luật cl pr", "sao cứ sửa là m
 chạy") `kiem.yml` không tự chạy khi push / PR nữa — chỉ chạy tay (`workflow_dispatch`); không ai chờ
 nó xanh. Agent và người commit THẲNG `main`, không mở PR (CLAUDE.md §7, SRS-5.1zzzzzzz464), nên `main` cố ý không
-bật bảo vệ nhánh. Bằng chứng "đã chạy" là lệnh khoanh vùng người sửa tự chạy (§11.5 Cổng 1) và bắn thử / log
+bật bảo vệ nhánh. Bằng chứng "đã chạy" là lệnh khoanh vùng người sửa tự chạy (§11.5 Cổng 1) và tin Zalo thật / log
 trên máy 146 (Cổng 3), không phải dấu xanh CI.
 
 **Về lint:** repo không có eslint, biome, prettier hay oxlint — không trong
@@ -256,7 +255,7 @@ qua** (`docs/10 §10.8`).
 | Trigger / hàm SQL trên Postgres tạm | `bun run test:sql` | không (cần Postgres; CI job `bot`) |
 | Kiểu ba edge function | `bun run kieu:bot` | có |
 | Chỉ tự kiểm rổ hàng | `bun run test:rohang` | có |
-| Bắn thử lõi production bằng model thật (tiền thật) | tin Zalo thật / `doc-log-loi.sh` từ máy ssh được vào 146 (`ban-thu-*` gỡ 16/11); đo tìm nhà: ô `do-tim-nha` | không |
+| Thử lõi production bằng model thật (tiền thật) | tin Zalo thật / `doc-log-loi.sh` từ máy ssh được vào 146 (`ban-thu-*` gỡ 16/11); đo tìm nhà: ô `do-tim-nha` | không |
 | Chỉ soát tài liệu | `bun run truyvet` | có |
 | Hồi quy RLS trên DB thật (cần Internet) | `bun run test:sec` | **không** — cần mạng, để `kiem` không đỏ oan trên máy offline |
 | Ma trận quyền 5 vai (cần quyền SQL) | dán `bot/tests/vai-tro.sql` vào SQL Editor | không |

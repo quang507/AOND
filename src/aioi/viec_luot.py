@@ -2,7 +2,7 @@
 
 Hàm thuần: đọc ảnh chụp trạng thái lượt (`TrangThaiLuot`, engine dựng) và trả về đúng một `Viec`. Thứ tự ưu tiên CHỈ đặt ở đây.
 Từ Đợt 4 (SRS-5.1zzzzzzz328) engine DÙNG kết quả: khối hỏi nằm trong `bo` bị gỡ khỏi prompt (và cờ "đã hỏi" của nó trả lại), nên mỗi
-lượt chỉ còn MỘT câu hỏi. `conv.y_luot["_viec"]` / `["_khoi"]` (khối còn lại sau khi gỡ) vẫn ghi cho bộ chấm.
+lượt chỉ còn MỘT câu hỏi. `conv.y_luot["_viec"]` / `["_khoi"]` (khối còn lại sau khi gỡ) ghi lại để `engine._o_duoc_hoi` biết ô nào được hỏi.
 """
 from __future__ import annotations
 

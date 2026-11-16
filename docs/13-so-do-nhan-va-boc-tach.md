@@ -12,7 +12,7 @@ lời bot lệch luật hình thức thì gọi lại model một lần, không 
 
 Sơ đồ vẽ đường DUY NHẤT đang chạy (cập nhật 02/11/2026 `[nguồn: engine.py, SRS-5.1zzzzzzz319]`): sáu công tắc `FORM_BAN_GON` / `FORM_MUA_GON`, `PHIEU_LUOT`, `AGENT_BAN` / `AGENT_MUA`, `SOAT_GON` đã gỡ hẳn cùng đường cũ (`build_chat_system`) —
 form gọn, phiếu lượt, agent và soát gọn là đường duy nhất. Từ 03/11/2026 người bán đã rõ vai đi MỘT vòng agent gộp (`agent_gop.py`, SRS-5.1zzzzzzz371;
-`AGENT_BOC` / `AGENT_GOP` gỡ); người mua đã rõ vai đi cùng vòng đó (`agent_gop.mo_mua` / `viet_mua`, SRS-5.1zzzzzzz380). Công tắc còn lại ở `bot/cau-hinh-loi.env` (chạy thật: `.env` lõi trên máy 146): `AIOI_MODEL_LUOT_DE` = tat; `AIOI_PROMPT_GON` = bat — lượt hỏi ô
+`AGENT_BOC` / `AGENT_GOP` gỡ); người mua đã rõ vai đi cùng vòng đó (`agent_gop.mo_mua` / `viet_mua`, SRS-5.1zzzzzzz380). Công tắc còn lại ở `bot/cau-hinh-loi.env` (chạy thật: `.env` lõi trên máy 146): `AIOI_PROMPT_GON` = bat — lượt hỏi ô
 người bán viết lời bằng `prompts.lean_system_prompt_cho_luot` (`LEAN_SYSTEM_PROMPT`) và bước ghi của vòng gộp dùng `prompts.co_dinh_ban` (cũng là
 `LEAN_SYSTEM_PROMPT`); tắt thì về phiếu lượt `build_phieu_luot` / `phieu_co_dinh` (SRS-5.1zzzzzzz408 / 414). Model chat và bóc tách đều Sonnet 5.5 (SRS-5.1zzzzzzz392).
 
@@ -89,7 +89,7 @@ flowchart TD
   S2 -->|"đủ, chưa trình"| C2["build_listing_proposal_system<br/>bản tin 📋 theo AD_FORMAT"]
   S2 -->|"đã trình"| C3["build_fee_followup_system<br/>duyệt · phí · trạng thái web<br/>+ cụm sau đăng Engine.cum_sau_ke (mỗi lượt một câu:<br/>ảnh → pháp lý → lợi thế → so sánh → giá …)"]
   C1 & C2 & C3 --> K["khối ghép thêm:<br/>khoi_dia_danh · _khoi_hoi_du_an · khoi_hoi_mat_tien · khoi_chao_lan_dau<br/>khoi_xung_ho · _ghep_cau_chuan (trước RANH_GIOI_CACHE)<br/>MỘT khối ưu tiên: khoi_can_nguoi > khoi_phap_ly > khoi_ngoai_viec > hỏi về > hỏi trùng tên<br/>dữ liệu rổ / dự án / giá: agent_ban.goi_y → công cụ tra (thân công cụ: _basket_block · _project_memory_block · _seller_price_block)"]
-  K --> V["viec_luot (SRS-5.1zzzzzzz314): chọn MỘT việc từ các khối đã ghép,<br/>ghi y_luot._viec / _khoi để bộ chấm đo — chưa đổi lời"]
+  K --> V["viec_luot (SRS-5.1zzzzzzz314): chọn MỘT việc từ các khối đã ghép,<br/>gỡ khối hỏi thừa, ghi y_luot._viec / _khoi"]
 ```
 
 ## 13.4 Nhánh mua

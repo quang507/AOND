@@ -25,7 +25,6 @@ lại cả lượt bằng form đầy đủ (đường bán) như form gọn; v�
 from __future__ import annotations
 
 import copy
-import json
 import logging
 import time
 from typing import Any
@@ -39,10 +38,14 @@ MAX_VONG_LOI = 3    # bước 2: tra thêm (nếu cần) → lời
 HAN_GIAY = 30.0     # cả hai bước; trần lõi 40 s, bridge chờ 90 s — không nới
 TRAN_KET_QUA = 6000
 SUA = "Sẽ BỎ"      # dấu trong kết quả công cụ: model cần sửa cụm trích (mở thêm một vòng)
-DAU_BUOC_2 = "=== BƯỚC 2 — ĐÁNH GIÁ KẾT QUẢ RỒI VIẾT LỜI GỬI KHÁCH ==="   # bộ chấm nhận lần gọi viết lời bằng dấu này
+DAU_BUOC_2 = "=== BƯỚC 2 — ĐÁNH GIÁ KẾT QUẢ RỒI VIẾT LỜI GỬI KHÁCH ==="   # scripts/do-prompt.py nhận lần gọi viết lời bằng dấu này
 
 GHI = ("ghi_o", "them_can", "doi_trang_thai", "bo_can", "ghi_y_khach")
 DOC = tuple(c["name"] for c in agent_ban.CONG_CU)
+# SRS-5.1zzzzzzz505: bước 1 (ghi) chỉ cần đọc DỮ LIỆU của khách để ghi đúng căn — rổ hàng, bộ nhớ dự án, giá đã gửi. Tám công cụ tư vấn (định
+# giá, pháp lý, phí, phong thuỷ, quy hoạch, đàm phán, tra dự án theo tên / khu) là việc của bước viết lời, vốn đã có đủ ở `cong_cu_viet`;
+# để ở cả hai bước là gửi ≈ 4.700 chữ khai báo công cụ thừa mỗi lượt.
+DOC_BUOC_1 = ("ro_hang", "bo_nho_du_an", "gia_da_gui")
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -257,7 +260,7 @@ def _tra_cong_cu(chia: dict[str, Any]) -> dict[str, Any]:
 
 
 def cong_cu(schema: dict[str, Any], chia: dict[str, Any]) -> list[dict[str, Any]]:
-    """Công cụ bước 1 (ghi + đọc + tra cứu). Ghi: cắt từ schema form; ô tin là MỘT danh sách khoá kèm mô tả nguyên (chỉ ở ghi_o); khoá ý
+    """Công cụ bước 1 (ghi + đọc dữ liệu của khách `DOC_BUOC_1` + tra cứu luật). Ghi: cắt từ schema form; ô tin là MỘT danh sách khoá kèm mô tả nguyên (chỉ ở ghi_o); khoá ý
     khách có luật riêng chỉ giữ câu đầu của mô tả — mô tả NGUYÊN + luật đủ trả qua tra_luat_o, không viết hai lần mỗi lượt."""
     tools = _cong_cu_ghi(schema)
     o_tin = schema["properties"]["operations"]["items"]["properties"]["fields"].get("properties") or {}
@@ -275,7 +278,7 @@ def cong_cu(schema: dict[str, Any], chia: dict[str, Any]) -> list[dict[str, Any]
         cc = chia["cc"].get(t["name"])
         if cc:
             t["description"] += "\n" + "\n".join(k.strip("\n") for k in cc)
-    return tools + [_tra_cong_cu(chia)] + copy.deepcopy(agent_ban.CONG_CU)
+    return tools + [_tra_cong_cu(chia)] + [copy.deepcopy(c) for c in agent_ban.CONG_CU if c["name"] in DOC_BUOC_1]
 
 
 def cong_cu_viet(chia: dict[str, Any]) -> list[dict[str, Any]]:
@@ -614,25 +617,3 @@ def viet_mua(engine: Any, conv: Any, system: str, next_field: str | None, viec: 
         loi = engine._provider.reply(system + them, conv.messages(), max_tokens=max_tokens).strip()
     log.warning("Agent gộp mua bước 2: công_cụ=%s căn_tra=%d giây=%.1f", ",".join(da_goi) or "-", len(gom), time.monotonic() - st["bat_dau"])
     return loi, gom
-
-
-def bang_luat_md() -> str:
-    """Bảng "luật → nằm ở đâu" (markdown) cho mô tả PR / docs — sinh từ chính BANG_LUAT, không viết tay."""
-    dong = ["| Khối luật (đầu khối trong OPERATIONS_SYSTEM_BAN) | Nằm ở đâu |", "|---|---|"]
-    from .prompts import OPERATIONS_SYSTEM_BAN, SLANG_NOTES
-    dong.append("| TỪ ĐIỂN + KIẾN THỨC NGHỀ (`SLANG_NOTES`) | system cả hai bước — phần cố định phía bán (`co_dinh_ban`) |")
-    for k in _khoi(OPERATIONS_SYSTEM_BAN.replace(SLANG_NOTES, "")):
-        if not k.strip():
-            continue
-        noi = _noi_den(k)
-        dau = k.strip("\n").split("\n", 1)[0][:70].replace("|", "/")
-        noi_txt = {"he": "system bước 1 (luật ghi chung)", "bo": "bỏ — đường công cụ không trả JSON"}.get(noi) or (
-            f"mô tả công cụ `{noi[3:]}`" if noi.startswith("cc:") else "`tra_luat_o`: " + ", ".join(f"`{x}`" for x in noi[4:].split(",")))
-        dong.append(f"| {dau} | {noi_txt} |")
-    dong.append("| Mô tả từng ô / khoá trong schema | ô tin: nhãn ngắn trong `ghi_o` + mô tả NGUYÊN qua `tra_luat_o`; khoá ý khách: NGUYÊN trong `ghi_y_khach` |")
-    return "\n".join(dong)
-
-
-if __name__ == "__main__":   # python -m aioi.agent_gop → in bảng luật (mô tả PR)
-    print(bang_luat_md())
-    print(json.dumps({k: len(v) for k, v in chia_luat()["tra"].items()}, ensure_ascii=False))

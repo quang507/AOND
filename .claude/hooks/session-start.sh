@@ -23,7 +23,7 @@ fi
 
 cd "$CLAUDE_PROJECT_DIR"
 
-# Lõi Python src/aioi — cùng lệnh với job CI `py` trong .github/workflows/kiem.yml
+# Lõi Python src/aioi — cài để import được (pytest gỡ 13/11/2026; đo prompt: python scripts/do-prompt.py)
 python3 -m pip install -q -e . httpx
 
 # Web Next.js + script bot (bun.lock)

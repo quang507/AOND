@@ -42,9 +42,7 @@ jobs:
       #
       # `test:bot` kéo theo cả `ranh-gioi.mjs` — kiểm tĩnh ranh giới bóc tách ⟂
       # AI (mã tiền định không được chạm model/DB; tầng AI không được ghi bảng
-      # nghiệp vụ). Để chung job cố ý: danh sách required status checks ở
-      # docs/11 §11.5 giữ nguyên 5 tên, thêm check mới là phải sửa branch
-      # protection bằng tay và người ta sẽ quên.
+      # nghiệp vụ). CI chỉ tham khảo, không chặn (chủ dự án 11/11: commit thẳng main).
       - name: test:bot + ranh giới bóc tách ⟂ AI
         run: bun run test:bot
       # 13/11/2026 (SRS-5.1zzzzzzz469): gỡ bộ pytest tests/ — chủ dự án "ko dùng thì gỡ" (từ 11/11 không chạy test nữa).

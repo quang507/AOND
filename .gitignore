@@ -29,5 +29,5 @@ tsconfig.tsbuildinfo
 next-env.d.ts
 .claude/worktrees/
 
-# Bản ghi đo cũ (lời bot đầy đủ; bộ vàng gỡ 14/11/2026) — giữ chặn để không lỡ đẩy lên repo công khai
+# Đầu ra scripts/xuat-prompts.py / do-prompt.py --luu (prompt đầy đủ) — giữ chặn để không lỡ đẩy lên repo công khai
 ket-qua/

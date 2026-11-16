@@ -70,7 +70,6 @@ from .projects import (
     normalize_project_name,
 )
 from .prompts import (
-    MO_DAU_GHI_NHAN_RE,
     nhan_o,
     EXTRACTION_SYSTEM,
     DOC_NHANH_SYSTEM,
@@ -101,7 +100,6 @@ from .prompts import (
     khoi_hoi_sau_dang,
     khoi_xin_them_anh,
     khoi_tinh_hinh_ban,
-    KHOI_DINH_GIA,
     khoi_dinh_gia,
     khoi_hoi_ve_mua,
     khoi_trang_thai_web,
@@ -259,7 +257,7 @@ def _ten_tep_that(ten: str | None) -> bool:
     return bool(ten) and str(ten).strip().lower() not in ("undefined", "null", "none", "nan", "unknown", "file", "image")
 
 
-from .sticker import STICKER_TRUNG_TINH, la_sticker  # noqa: E402,F401  (một nguồn ở sticker.py, SRS-5.1zzzzzzz122)
+from .sticker import la_sticker  # noqa: E402  (một nguồn ở sticker.py, SRS-5.1zzzzzzz122)
 from .sticker import Y_NGHIA as STICKER_Y_NGHIA, ra_van_ban as ra_van_ban_sticker  # noqa: E402  (SRS-5.1zzzzzzz255)
 
 # Max tool-calling steps in one agent turn (a safety cap so the loop can't run away).
@@ -465,11 +463,6 @@ def _nhieu_cau_hoi(loi: str) -> bool:
     return len(re.findall(r"\?+", chat)) > 1
 
 
-def _model_luot_de() -> str | None:
-    """Model viết lời cho LƯỢT DỄ (SRS-5.1zzzzzzz311, kế hoạch bước 4): env `AIOI_MODEL_LUOT_DE` (một nguồn `bot/cau-hinh-loi.env`);
-    trống / "tat" → lượt dễ dùng model chat như mọi lượt."""
-    v = os.environ.get("AIOI_MODEL_LUOT_DE", "").strip()
-    return None if v.lower() in ("", "tat") else v
 
 
 def ghi_trang_thai_so(f: dict, loai_gt: object) -> None:
@@ -1587,16 +1580,6 @@ def _goi_khach_la_minh(reply: str, pronoun: str) -> bool:
     return goi_khach_la_minh(reply)
 
 
-def _mo_dau_ghi_nhan(reply: str) -> bool:
-    """Câu đầu của lời bot là câu ghi nhận ("Em ghi nhận…", "Em đã ghi rồi…", "Em lưu vào tin rồi…", "Em nắm rồi…") — kiểm HÌNH THỨC lời
-    của chính bot, không đoán ý khách (SRS-5.1zzzzzzz118). Nay chỉ bộ lọc ví dụ câu chuẩn
-    dùng — lưới gọi lại model theo câu mở đã gỡ khỏi `LUAT_SOAT`; luật nằm ở `GIONG` (SRS-486). "Em sửa giá còn…" không phải ghi nhận."""
-    # SRS-5.1zzzzzzz208 (bắn thử 26/10: "Em ghi nhận rồi ạ…", "Em ghi thêm diện tích sàn…", "Em lưu phường 9…", "Em lên thông tin địa chỉ…"):
-    # thêm "ghi thêm", "lưu …", "lên thông tin" cùng lớp câu ghi nhận.
-    # SRS-5.1zzzzzzz214 (chat 27/10: "Em đã ghi giá 6,2 tỷ cho anh rồi ạ" lọt vì luật chỉ liệt kê "ghi nhận / ghi rồi / ghi lại…"): mọi câu mở
-    # "<bot> (đã) ghi …" là ghi nhận, chủ ngữ theo mọi cách bot xưng (em / anh / chị / cô / chú / cháu / mình); "Em cập nhật thêm cọc…" / "Em sửa
-    # giá còn…" (nói ý vừa sửa) vẫn không tính (SRS-208).
-    return MO_DAU_GHI_NHAN_RE.match(reply or "") is not None   # một nguồn với bộ lọc ví dụ câu chuẩn (SRS-5.1zzzzzzz215)
 
 
 
@@ -1925,9 +1908,7 @@ def _soat_don_vi(eng, conv, reply, nc) -> list[str]:
              "không kèm m² (vd \"5x20m\")."] if _tieu_de_sai_don_vi(reply) else [])
 
 
-def _la_ban_tin(reply: str) -> bool:
-    """Bản tin rao: dấu 📋 có thể chưa được chèn (code thêm sau), nên nhận theo bố cục (gạch đầu dòng / ---) hoặc dòng mở "sẽ rao như vầy"."""
-    return "📋" in reply or _is_formatted_post(reply) or _MO_DAU_RE.search(reply) is not None
+_la_ban_tin = _la_ban_nhap   # cùng một phép nhận bản tin (📋 / dòng mở / bố cục) — SRS-5.1zzzzzzz505 gộp hai hàm trùng thân
 
 
 def _ke_hoach_ghi_o(plan: dict | None) -> bool:
@@ -2790,13 +2771,6 @@ class Engine:
             return bulk.xlsx_to_csv(data)
         return data.decode("utf-8-sig", "replace")  # CSV / text
 
-    def set_status(self, user_key: str, status: str) -> Listing:
-        """Update the ACTIVE listing's status (đã bán / dừng bán / đã cho thuê...)."""
-        conv = self.conversation(user_key)
-        conv.active.status = status
-        if self._convstore is not None:
-            self._convstore.save(conv)
-        return conv.active
 
     def _basket_block(self, conv: Conversation) -> str:
         """Make the bot aware of the WHOLE basket so it can disambiguate ("căn nào?")
@@ -3247,8 +3221,7 @@ class Engine:
         is_listing_post = conv.prop.summary_ready() or conv.listing_proposed or (xin_dang and not toi_thieu)
         trinh_nhap = False
         xin_sao = False
-        luot_de = False   # SRS-5.1zzzzzzz311: lượt thu thập bằng phiếu lượt — ứng viên model rẻ (xét thêm điều kiện ở chỗ gọi model)
-        khoi: list[str] = []   # SRS-5.1zzzzzzz314: tên khối hỏi / dữ kiện engine ghép lượt này — bộ chấm so với `viec_luot`
+        khoi: list[str] = []   # SRS-5.1zzzzzzz314: tên khối hỏi / dữ kiện engine ghép lượt này — `_ghi_viec` gỡ khối thừa theo `viec_luot`
         # Đợt 4 (SRS-5.1zzzzzzz328, AU-09): khối HỎI ghép bằng dấu chỗ; `viec_luot` chọn MỘT việc rồi khối thừa bị gỡ (thay bằng phần dữ kiện của nó,
         # nếu có) và cờ "đã hỏi" của nó trả lại — câu hỏi đó để lượt sau. Bản trước ≥ 7 khối cùng tự nhận là "câu hỏi DUY NHẤT".
         hoi: dict[str, tuple[str, str, Callable[[], None] | None]] = {}
@@ -3260,7 +3233,6 @@ class Engine:
         if not is_listing_post:
             hoi_lai = bool(next_field and conv.lo.get(next_field, 0) >= 1)   # SRS-5.1zzzzzzz200: đừng nhắn trùng câu cũ
             o_bo_qua = o_truoc if o_truoc in thieu else None
-            luot_de = True   # SRS-5.1zzzzzzz309 / 319: phiếu lượt là đường duy nhất của lượt thu thập (prompt cũ đã xoá ở Đợt 8)
             viec_o = None
             if next_field:
                 f_tin = conv.prop.fields
@@ -3533,11 +3505,6 @@ class Engine:
         # listing (no project inventory) uses the single chat call, unchanged.
         # Length is model-decided from the prompt (short while chatting, full ad when complete) —
         # NOT clamped by a token cap (Vietnamese is token-dense; a tight cap hard-cuts mid-word).
-        # SRS-5.1zzzzzzz311 (kế hoạch bước 4): lượt DỄ — thu thập bằng phiếu lượt, không tra dữ liệu, không kho dự án, lượt không có việc gì
-        # khác (y_luot chỉ còn khoá nội bộ `_`), không khối hỏi về → model rẻ (cả lần soát gọi lại của lượt). Lượt còn lại giữ model chat.
-        m_de = _model_luot_de() if (luot_de and not dung_agent_ban and conv.vong_gop is None and not (project is not None and project.units)
-                                    and conv.hoi_ve_luot is None and all(k.startswith("_") for k in conv.y_luot)) else None
-        dau_de = MODEL_CHAT_LUOT.set(m_de) if m_de else None
         viec = self._ghi_viec(conv, lambda: TrangThaiLuot(
             pha="thu_thap" if not is_listing_post else "trinh_nhap" if trinh_nhap else "sau_nhap", next_field=None if is_listing_post else next_field,
             khoi=tuple(khoi), hoi_ve=conv.hoi_ve_luot, muon_dang=bool(conv.y_luot.get("xin_dang")), thieu_toi_thieu=bool(toi_thieu),
@@ -3551,35 +3518,31 @@ class Engine:
             if ten in bo and hoan is not None:
                 hoan()
         xin_sao = xin_sao and "xin_sao" not in bo
-        try:
-            with _do(conv, "tra_loi"):
-                if conv.vong_gop is not None:   # SRS-5.1zzzzzzz371: bước 2 của vòng agent gộp — cùng cuộc hội thoại công cụ với bước ghi
-                    reply, da_tra = agent_gop.viet(self, conv, project, system, captured, REPLY_MAX_TOKENS)
-                    system += da_tra
-                elif dung_agent_ban:
-                    reply, da_tra = agent_ban.chay(self, conv, project, system, REPLY_MAX_TOKENS)
-                    system += da_tra   # lần soát / gọi lại của lượt viết với đúng dữ liệu model vừa tra
-                elif project is not None and project.units:
-                    reply = self._agent_reply(conv, project, system, now)
-                else:
-                    reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
+        with _do(conv, "tra_loi"):
+            if conv.vong_gop is not None:   # SRS-5.1zzzzzzz371: bước 2 của vòng agent gộp — cùng cuộc hội thoại công cụ với bước ghi
+                reply, da_tra = agent_gop.viet(self, conv, project, system, captured, REPLY_MAX_TOKENS)
+                system += da_tra
+            elif dung_agent_ban:
+                reply, da_tra = agent_ban.chay(self, conv, project, system, REPLY_MAX_TOKENS)
+                system += da_tra   # lần soát / gọi lại của lượt viết với đúng dữ liệu model vừa tra
+            elif project is not None and project.units:
+                reply = self._agent_reply(conv, project, system, now)
+            else:
+                reply = self._provider.reply(system, conv.messages(), max_tokens=REPLY_MAX_TOKENS).strip()
 
-            if not reply:   # SRS-5.1zzzzzzz82: không gửi "kết nối mạng gián đoạn, nhắn lại giúp em" — server giữ chỗ rồi tự thử lại
-                raise LoiTraLoi("lời gửi khách rỗng")
+        if not reply:   # SRS-5.1zzzzzzz82: không gửi "kết nối mạng gián đoạn, nhắn lại giúp em" — server giữ chỗ rồi tự thử lại
+            raise LoiTraLoi("lời gửi khách rỗng")
 
-            # SRS-5.1zzzzzzz204: lượt trình bản nháp mà model đáp như chat thường (ban-thu-ban 26/10 Âu Cơ: tám lượt không có bản tin vì
-            # `listing_proposed` đã bật), hoặc bản tin thiếu câu mời nhắn Zalo (khối 4 của AD_FORMAT). AU-14 (Đợt 4, SRS-5.1zzzzzzz328): lý do này
-            # đi CHUNG vòng soát hình thức — cả lượt tối đa MỘT lần gọi lại (bản trước: soát → cổng bản nháp → soát = tới 3 lần, sát trần 90 s
-            # của bridge). Lần gọi lại không ra bản tin thì không đè bản tin đã có.
-            goc = _bo_markdown(reply)
-            ly_nhap = _ly_do_trinh_nhap(goc) if trinh_nhap else []
-            if ly_nhap:
-                log.warning("Lượt trình bản nháp: %s — vào vòng soát chung (một lần gọi lại)", ly_nhap[0][:40])
-            reply = self._soat_hinh_thuc(conv, system, goc, them=ly_nhap,
-                                         nhan=(lambda lai: _la_ban_nhap(lai) or not _la_ban_nhap(goc)) if trinh_nhap else None)
-        finally:
-            if dau_de is not None:
-                MODEL_CHAT_LUOT.reset(dau_de)
+        # SRS-5.1zzzzzzz204: lượt trình bản nháp mà model đáp như chat thường (ban-thu-ban 26/10 Âu Cơ: tám lượt không có bản tin vì
+        # `listing_proposed` đã bật), hoặc bản tin thiếu câu mời nhắn Zalo (khối 4 của AD_FORMAT). AU-14 (Đợt 4, SRS-5.1zzzzzzz328): lý do này
+        # đi CHUNG vòng soát hình thức — cả lượt tối đa MỘT lần gọi lại (bản trước: soát → cổng bản nháp → soát = tới 3 lần, sát trần 90 s
+        # của bridge). Lần gọi lại không ra bản tin thì không đè bản tin đã có.
+        goc = _bo_markdown(reply)
+        ly_nhap = _ly_do_trinh_nhap(goc) if trinh_nhap else []
+        if ly_nhap:
+            log.warning("Lượt trình bản nháp: %s — vào vòng soát chung (một lần gọi lại)", ly_nhap[0][:40])
+        reply = self._soat_hinh_thuc(conv, system, goc, them=ly_nhap,
+                                     nhan=(lambda lai: _la_ban_nhap(lai) or not _la_ban_nhap(goc)) if trinh_nhap else None)
         if trinh_nhap and not _la_ban_nhap(reply):
             conv.listing_proposed = False   # bản tin vẫn không ra: lượt sau trình lại, không nói phí khi khách chưa thấy bản tin
         if trinh_nhap:
@@ -3755,8 +3718,8 @@ class Engine:
 
     @staticmethod
     def _ghi_viec(conv: Conversation, dung: Callable[[], TrangThaiLuot], khoi: list[str]) -> Viec | None:
-        """Việc `viec_luot` chọn cho lượt (SRS-5.1zzzzzzz314; từ Đợt 4 engine gỡ các khối hỏi trong `bo`, SRS-5.1zzzzzzz328). Ghi cho bộ chấm
-        `_viec` và `_khoi` = khối CÒN LẠI. Lỗi (dựng trạng thái hay chọn việc) chỉ ghi log, trả None — lượt vẫn trả lời (SRS-5.1zzzzzzz315)."""
+        """Việc `viec_luot` chọn cho lượt (SRS-5.1zzzzzzz314; từ Đợt 4 engine gỡ các khối hỏi trong `bo`, SRS-5.1zzzzzzz328). Ghi `_viec` và
+        `_khoi` = khối CÒN LẠI (`_o_duoc_hoi` đọc lại). Lỗi (dựng trạng thái hay chọn việc) chỉ ghi log, trả None — lượt vẫn trả lời (SRS-5.1zzzzzzz315)."""
         try:
             v = viec_luot(dung())
             conv.y_luot["_khoi"] = [k for k in khoi if k not in v.bo]
@@ -6353,8 +6316,8 @@ class Engine:
         if kind == "set_status":
             chua_ro = self._chua_ro_can(conv, op)
             if chua_ro:
-                # SRS-5.1zzzzzzz310: rổ từ 2 căn mà cụm khách không chỉ ra đúng một căn → KHÔNG đổi (bộ chấm hai_can_da_ban: "căn đó bán rồi" →
-                # form đánh dấu căn đang nói là đã bán); lời trả lời hỏi lại căn nào.
+                # SRS-5.1zzzzzzz310: rổ từ 2 căn mà cụm khách không chỉ ra đúng một căn → KHÔNG đổi ("căn đó bán rồi" khi rổ ≥ 2 căn →
+                # không đoán căn); lời trả lời hỏi lại căn nào.
                 log.warning("Không đổi trạng thái: lời khách chưa chỉ ra căn nào trong rổ %d căn", len(chua_ro))
                 conv.y_luot["chua_ro_can"] = chua_ro
                 return

@@ -82,13 +82,12 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
   | `AIOI_CHAT_MODEL` | `claude-sonnet-5-5` | model viết lời khách thật — SRS-235 / 308 |
   | `AIOI_EXTRACT_MODEL` | `claude-sonnet-5-5` | model bóc tách; đồng bộ cùng model chat — SRS-392 |
   | `AIOI_CHAT_MODEL_THU` | `claude-sonnet-5-5` | model của ID thử; `gemini` = gọi thẳng Gemini — SRS-239 / 243 |
-  | `AIOI_MODEL_LUOT_DE` | `tat` | model viết lời cho lượt dễ của người bán (thu thập, không tra dữ liệu, không việc khác) — SRS-311 |
   | `AIOI_PROMPT_GON` | `bat` | lượt hỏi ô người bán dùng `LEAN_SYSTEM_PROMPT` thay phiếu `build_phieu_luot` (tắt = về phiếu cũ) — SRS-408 / 414 |
   | `AIOI_DONG_TRICH_XUAT` | `bat` | tin phụ "$$$$$ Đã trích xuất" sau mỗi lượt, MỌI cuộc chat (giai đoạn test; chạy thật đổi `tat`) — SRS-252 |
   | `AIOI_EFFORT` | `medium` | mức suy nghĩ của model cho lượt gọi chữ (low / medium / high; trống = mặc định model) — SRS-482 |
   | `GEMINI_MODEL` | `gemini-3.5-flash,gemini-3.1-flash-lite` | Gemini dự phòng khi Claude hỏng — SRS-299 |
 
-  `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đã gỡ hẳn (đường mới là duy nhất, SRS-319): `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON` / `FORM_BAN_GON`, `AGENT_MUA` / `AGENT_BAN`; SRS-371: `AGENT_BOC` / `AGENT_GOP`; SRS-490: `AIOI_CONG_CU_GUI_KHACH` (công cụ `gui_khach`) — lượt người bán và người mua (vai đã rõ) là MỘT vòng agent Sonnet (`agent_gop.py`, SRS-371 / 380), form bóc tách (model `AIOI_EXTRACT_MODEL`) chỉ dự phòng. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini
+  `thu` = chỉ ID thử, `bat` = mọi khách, khác = tắt. Đã gỡ hẳn (đường mới là duy nhất, SRS-319): `PHIEU_LUOT`, `SOAT_GON`, `FORM_MUA_GON` / `FORM_BAN_GON`, `AGENT_MUA` / `AGENT_BAN`; SRS-371: `AGENT_BOC` / `AGENT_GOP`; SRS-490: `AIOI_CONG_CU_GUI_KHACH` (công cụ `gui_khach`); SRS-505: `AIOI_MODEL_LUOT_DE` — lượt người bán và người mua (vai đã rõ) là MỘT vòng agent Sonnet (`agent_gop.py`, SRS-371 / 380), form bóc tách (model `AIOI_EXTRACT_MODEL`) chỉ dự phòng. Đường gọi model chat mới đọc `MODEL_CHAT_LUOT.get() or self._chat_model`. Claude hỏng → Gemini
   rồi Groq (`llm/du_phong.py`): mỗi lần ≤ 15 s, cả vòng ≤ 40 s, bridge chờ 90 s — đừng nới.
 - **Supabase** project `rqxmmqmctpklqcmbfxuj` (Tokyo, gói Free — không tự sao lưu, chủ dự án chấp nhận). Edge function còn lại: `escalation-feed` (bridge kéo việc / báo sống / QR), `geocode-listings`, `media-cleanup`; `_shared/` còn cho ba hàm đó và web (`claude.ts`, `gate.ts`, `geocode.ts`, `tin_nhac.ts`, `extraction/`: `luat-tien.ts`, `luat-lien-he.ts`, `nhan.ts`, `ds-phuong.ts`, `tien-ich.ts`).
 - **Web**: Vercel không dựng preview cho nhánh `claude/**` (`vercel.json` `git.deploymentEnabled`, SRS-247) và bỏ qua bản dựng `main` khi lần đẩy không đổi file web (`ignoreCommand`, SRS-248 — thêm thư mục web mới thì thêm vào danh sách đó). Next.js 15 + TS + Tailwind 4 ở root (`app/`, `components/`, `lib/`, `public/`), Bun (`bun.lock`), Vercel. Đọc Supabase bằng publishable key qua RLS; mô tả listing luôn qua `sanitizeDescription()`.
@@ -121,7 +120,7 @@ Chi tiết ở `.claude/luat-dang-ap.md` §6.4 / §6.5 — **đọc trước khi
 
 `design/` và Figma đã xoá 08/09/2026 (OPEN-45 đóng). Nguồn thiết kế: `docs/06-ui-design.md` và code (`app/globals.css` là token thật). Không dựng lại Figma trừ khi chủ dự án yêu cầu.
 
-## 7. Cổng kiểm & bắn thử
+## 7. Cổng kiểm & triển khai
 
 Quy trình đầy đủ: `docs/11-quy-trinh.md`. Bản rút gọn cho agent: `.claude/skills/ba-pipeline/SKILL.md`.
 Phiên cloud có hook `SessionStart` (`.claude/hooks/session-start.sh`) cài sẵn phụ thuộc Python + Bun.
@@ -129,7 +128,7 @@ Phiên cloud có hook `SessionStart` (`.claude/hooks/session-start.sh`) cài s�
 ### 7.1 Kiểm tra khoanh vùng thông minh (Smart Scoping — chống tràn ngữ cảnh)
 *Quyết định chủ dự án 06/11/2026 (SRS-5.1zzzzzzz387): TUYỆT ĐỐI KHÔNG chạy kiểm tra máy móc toàn bộ trước mọi commit nhỏ làm tràn bộ nhớ token và làm chậm phiên.*
 - **Commit nháp / lưu tiến độ (WIP):** Commit tự do không cần test.
-- **Sửa tài liệu (`docs/`):** nếu kiểm thì CHỈ chạy `bun run truyvet` (1–2 giây) trước khi push. Không build web, không test bot hay pytest.
+- **Sửa tài liệu (`docs/`):** nếu kiểm thì CHỈ chạy `bun run truyvet` (1–2 giây) trước khi push. Không build web, không test bot.
 - **Sửa web / UI (`app/`, `components/`):** CHỈ chạy `bun run kieu` (type-check nhanh) khi hoàn tất việc sửa web.
 - **Sửa lõi Python (`src/aioi/`):** kiểm cú pháp (`ast.parse`), đưa lên 146, thử bằng tin thật khi cần. Không viết file pytest mới (bộ pytest đã gỡ 13/11/2026).
 - **Kiểm tra toàn bộ (`bun run kiem`):** Không bắt buộc — chạy khi tự thấy cần (chủ dự án 11/11: không chờ test xanh đỏ).
@@ -152,7 +151,7 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
    - Đổi công tắc env → sửa cả `bot/cau-hinh-loi.env` lẫn `C:\aond\aond_core\.env` trên 146.
 4. Đổi DB → file `bot/supabase/migrations/`, chạy thử trong giao dịch huỷ, rồi ÁP LUÔN cùng lượt và commit file cùng lúc.
 5. Docs: mỗi thay đổi MỘT mục SRS ở docs/07, đi chung commit. Luật bí mật (mục 5) giữ nguyên.
-- **Bắn thử production / bộ chấm / giám khảo: đã gỡ** (14–16/11/2026, SRS-497 / 498 — tốn tiền API). Thử lời bot bằng tin Zalo thật hoặc đọc chat thật trong DB; đọc log lõi bằng `bot/tests/doc-log-loi.sh` (`bot/tests/lib/may146.sh` mở đường hầm). Ô Actions còn lại: nạp dữ liệu `nap-duong` / `nap-giao-lo` / `nap-ranh-gioi` / `nap-tin-mau` / `nap-luat`; đo tìm nhà `do-tim-nha`.
+- **Bắn thử production / bộ chấm / giám khảo: đã gỡ** (14–16/11/2026, SRS-497 / 498 — tốn tiền API). Thử lời bot bằng tin Zalo thật hoặc đọc chat thật trong DB; đọc log lõi bằng `bot/tests/doc-log-loi.sh` (`bot/tests/lib/may146.sh`: ssh vào 146, chỉ đọc). Ô Actions còn lại: nạp dữ liệu `nap-duong` / `nap-giao-lo` / `nap-ranh-gioi` / `nap-tin-mau` / `nap-luat`; đo tìm nhà `do-tim-nha`.
 - Người và máy dùng chung script trong `package.json` — đừng gõ lệnh rời.
 
 **Skill PM mượn ngoài** (`phuryn/pm-skills`, MIT; khai ở `.claude/settings.json`, không ghim commit): chỉ làm khung trình bày, kết quả đổi sang tiếng Việt và gắn ID tay. Đã dùng: `/product-strategy` (`docs/00 §0.4`), `/north-star-metric` (`§0.5`), `/strategy-red-team` (`§0.7`), `/intended-vs-implemented`, `/test-scenarios`, `/job-stories`.

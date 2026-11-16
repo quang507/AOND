@@ -260,13 +260,6 @@ IDENTITY_FIELDS: list[str] = [
 HOUSE_TYPES: set[str] = {"nha_pho", "biet_thu", "nha_cap_4"}
 HOUSE_AREA_FIELDS: list[str] = ["dien_tich_dat", "dien_tich_nha"]
 
-# A listing is "khá đầy đủ" (ready to draft an ad) at this fraction of expected fields,
-# on top of having every identity field AND the per-type required fields (`blocking_fields`).
-# 18/10/2026 (SRS-5.1zzzzzzz38): 0.55 → 0.70 — bản nháp ra ngay lượt đầu khi mới có "Quận 5".
-# 20/10/2026 (SRS-5.1zzzzzzz79; chủ dự án: "nên ra bản nháp khi nào học theo anh Luận"): 0.75 tính trên MỌI ô mong đợi — đúng bản anh
-# Luận (`summary_ready`: đủ ô nhận diện + completeness ≥ 0.75); giữ ô bắt buộc riêng của mình (tên đường, phường — DB cần mới đăng).
-SUMMARY_READY_COMPLETENESS: float = 0.75
-
 # SRS-5.1zzzzzzz359 / 366 / 367 (chủ dự án 02/11): ô HỆ THỐNG tự xác định, không bao giờ là câu hỏi cho khách — NGUỒN DUY NHẤT: vòng chọn
 # câu hỏi (`missing_fields`) lọc theo đây, lưới soát lời bot (`engine._soat_hoi_dung_o`) chặn đầu ra theo đây, bước áp tên kho
 # (`Engine._chuan_dia_danh`) chỉ chạy cho ô có ở đây. Phường: cũ → mới, toạ độ trên bản đồ, kho đường / hẻm. Đường: tên khách đã nói, hệ
