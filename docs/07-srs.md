@@ -808,6 +808,8 @@ Chủ dự án: "Sửa luôn". Bản ghi: `Ban-thu-FDA-BOA_16-11-2026.md` (ngoà
 - **"TBT" đọc thành Tân Bình:** kiến thức nghề nói rõ viết tắt chữ đầu là tên đường, không phải quận.
 - **Bot nói "Hệ thống đã cập nhật … vào bản tin":** lời nhắc lượt sửa tin từng mở bằng "HỆ THỐNG ĐÃ ĐỌC … (đã ghi vào…)", model chép lại; nay là "KHÁCH VỪA ĐỔI / THÊM THÔNG TIN CĂN".
 - **Cỡ:** lượt hỏi thông tin 58.021 → 58.219 ký tự. `do-prompt.py` 3/3.
+- **Bắn lại:** thuê đã qua, giá 6.x và câu "hệ thống đã cập nhật" hết; "TBT" đúng khi cuộc chat đang nói Quận 5, vẫn thành Tân Bình khi đang nói căn ở Tân Bình.
+- **Hạn mức Gemini miễn phí:** sau khoảng 45 lượt bắn thử trong ngày, `gemini-3.5-flash` trả 429 (hạn mức số lượt gọi mỗi ngày) trên cả 5 khoá, gần 19 giờ sau mới có lại; trong lúc đó bot chạy `gemini-3.1-flash-lite` — bản này có lượt không gọi công cụ và tự nêu giá / nhận định không có trong dữ liệu.
 
 ### SRS-5.1zzzzzzz515 · Tin phụ `$$$$$` ghi rõ FDA hay BOA (16/11/2026)
 Chủ dự án: "tin $$$$ giờ chia ra con FDA hay BOA làm thì viết ra nhé". Chỉ khi công tắc `AIOI_DONG_TRICH_XUAT` bật.
