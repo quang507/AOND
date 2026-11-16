@@ -191,6 +191,7 @@ CONG_CU: list[dict[str, Any]] = [
             "properties": {
                 "dia_chi": {"type": "string", "description": "Địa chỉ hoặc tên đường cần tra cứu quy hoạch"},
                 "quan_huyen": {"type": "string", "description": "Quận/huyện (VD: 'Quận 7', 'Bình Thạnh', 'Thủ Đức')"},
+                "nho_tra_giup": {"type": "boolean", "description": "true CHỈ KHI khách NHỜ bên em tra giúp quy hoạch của chính căn / thửa đất đó (\"em tra giúp anh\", \"kiểm tra giùm\"); khách chỉ hỏi kiến thức chung hay hỏi cách tra thì bỏ trống"},
             },
             "required": ["dia_chi"],
         },
@@ -496,7 +497,8 @@ def chay_cong_cu(engine: Any, conv: Any, ten: str, inp: dict, gom: list[dict]) -
             if not dc:
                 return "Cần cung cấp địa chỉ hoặc tên đường để thẩm định quy hoạch."
             qh = _chu(inp.get("quan_huyen"))
-            return quy_hoach.tra_cuu_quy_hoach_lo_gioi(dc, quan_huyen=qh)
+            da_bao = bool(inp.get("nho_tra_giup")) and quy_hoach.nho_admin_tra(conv, dc, qh)   # SRS-5.1zzzzzzz503
+            return quy_hoach.tra_cuu_quy_hoach_lo_gioi(dc, quan_huyen=qh, da_bao_admin=da_bao)
         if ten == "goi_y_dam_phan":
             from . import dam_phan
             gia_vnd = int(inp.get("gia_vnd") or 0)

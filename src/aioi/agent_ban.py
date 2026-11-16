@@ -106,7 +106,8 @@ CONG_CU: list[dict[str, Any]] = [
          "type": "object",
          "properties": {
              "dia_chi": {"type": "string", "description": "Địa chỉ căn nhà"},
-             "quan_huyen": {"type": "string", "description": "Quận/huyện"}
+             "quan_huyen": {"type": "string", "description": "Quận/huyện"},
+             "nho_tra_giup": {"type": "boolean", "description": "true CHỈ KHI khách NHỜ bên em tra giúp quy hoạch của chính căn / thửa đất đó (\"em tra giúp anh\", \"kiểm tra giùm\"); khách chỉ hỏi kiến thức chung hay hỏi cách tra thì bỏ trống"}
          },
          "required": ["dia_chi"]
      }},
@@ -171,7 +172,8 @@ def _khoi(engine: Any, conv: Any, project: Any, ten: str, vao: dict[str, Any] | 
         if not dc:
             return "Cần cung cấp địa chỉ hoặc tên đường để thẩm định quy hoạch."
         qh = str(vao.get("quan_huyen") or "")
-        return quy_hoach.tra_cuu_quy_hoach_lo_gioi(dc, quan_huyen=qh)
+        da_bao = bool(vao.get("nho_tra_giup")) and quy_hoach.nho_admin_tra(conv, dc, qh)   # SRS-5.1zzzzzzz503
+        return quy_hoach.tra_cuu_quy_hoach_lo_gioi(dc, quan_huyen=qh, da_bao_admin=da_bao)
     if ten == "goi_y_dam_phan":
         from . import dam_phan
         gia_vnd = int(vao.get("gia_vnd") or 0)

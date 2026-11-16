@@ -19,7 +19,24 @@ def _vi_tri(dia_chi: str) -> str:
     return "khong_ro"
 
 
-def tra_cuu_quy_hoach_lo_gioi(dia_chi: str, quan_huyen: str = "", loai_quy_hoach: str = "tat_ca") -> str:
+CONG_QUY_HOACH = "https://thongtinquyhoach.hochiminhcity.gov.vn"   # cổng của Sở Quy hoạch – Kiến trúc TP.HCM (mở kiểm 16/11/2026: tra theo
+# toạ độ VN2000, số thửa + số tờ theo phường, tên đường). Không có API công khai — bot chỉ đưa link, không tự tra.
+
+
+def nho_admin_tra(conv, dia_chi: str, quan_huyen: str = "") -> bool:
+    """SRS-5.1zzzzzzz503 (chủ dự án 16/11: "bot đưa link cổng thành phố và chuyển admin khi chủ nhờ"): khách NHỜ tra giúp → xếp tin báo admin
+    cùng lượt (đường `can_nguoi_that` + `bao_admin_he_thong` như lúc hệ thống nhờ admin điền phường). Lượt đã có việc báo admin khác thì thôi
+    (một lượt một tin báo). Trả True khi đã xếp."""
+    y = getattr(conv, "y_luot", None)
+    if not isinstance(y, dict) or y.get("can_nguoi_that"):
+        return False
+    noi = ", ".join(x for x in (dia_chi.strip(), quan_huyen.strip()) if x)
+    y["bao_admin_he_thong"] = True
+    y["can_nguoi_that"] = ("Khách nhờ tra QUY HOẠCH giúp — admin tra trên " + CONG_QUY_HOACH + " (cần số tờ, số thửa trên sổ) rồi nhắn khách: " + noi)
+    return True
+
+
+def tra_cuu_quy_hoach_lo_gioi(dia_chi: str, quan_huyen: str = "", loai_quy_hoach: str = "tat_ca", da_bao_admin: bool = False) -> str:
     """Kết quả công cụ `tham_dinh_quy_hoach`: kiến thức chung + cách tra, không kết luận về địa chỉ cụ thể."""
     vt = _vi_tri(dia_chi or "")
     noi = ", ".join(x for x in (dia_chi.strip(), quan_huyen.strip()) if x) or "chưa rõ địa chỉ"
@@ -36,7 +53,11 @@ def tra_cuu_quy_hoach_lo_gioi(dia_chi: str, quan_huyen: str = "", loai_quy_hoach
     dong += [
         "- Ba trường hợp chức năng đất hay gặp (quy hoạch phân khu 1/2000): đất ở hiện hữu (xin phép, hoàn công, sang tên bình thường) · "
         "đất ở xây mới / hỗn hợp (có thể chỉ được cấp phép có thời hạn) · đất công viên, giao thông dự phóng (quy hoạch treo, rủi ro cao).",
-        "- Cách tự tra: cổng / ứng dụng 'Thông tin quy hoạch TP.HCM' của Sở Quy hoạch – Kiến trúc, nhập số tờ, số thửa trên sổ.",
+        f"- Cách tự tra: cổng 'Thông tin quy hoạch TP.HCM' của Sở Quy hoạch – Kiến trúc: {CONG_QUY_HOACH} — chọn tra theo số thửa (phường, số "
+        "tờ, số thửa ghi trên sổ) hoặc tên đường; có cả ứng dụng điện thoại cùng tên. Gửi khách NGUYÊN link này; kết quả tra online chỉ để tham khảo.",
+        ("- HỆ THỐNG ĐÃ CHUYỂN người phụ trách tra giúp căn này: nói em đã nhờ người phụ trách tra và có kết quả sẽ nhắn qua Zalo này (không hẹn "
+         "giờ); xin thêm số tờ, số thửa trên sổ nếu khách chưa đưa." if da_bao_admin else
+         "- Khách muốn bên em tra giúp thì gọi lại công cụ này với nho_tra_giup = true (hệ thống chuyển người phụ trách); chưa gọi thì KHÔNG nói đã chuyển."),
         "- Trước khi cọc lớn: xin 'văn bản cung cấp thông tin quy hoạch' tại UBND quận / huyện (bộ phận một cửa) bằng bản sao sổ.",
     ]
     return "\n".join(dong) + "\n"
