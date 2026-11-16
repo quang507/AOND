@@ -26,20 +26,10 @@ TRAN_KET_QUA = 6000
 
 HUONG_DAN = (
     "\n\n=== CÔNG CỤ TRA DỮ LIỆU CỦA KHÁCH (chỉ ĐỌC) ===\n"
-    "Dữ liệu dưới đây KHÔNG nằm sẵn trong lời nhắc — dòng \"DỮ LIỆU CÓ THỂ TRA\" ở cuối cho biết lượt này có gì. Tự quyết có cần tra không: "
-    "lượt chỉ hỏi / khen một ô tin thì KHÔNG tra.\n"
-    "- ro_hang: khách đang có nhiều căn và báo một việc lên 'một căn' (đã bán, đổi giá, có khách…) hoặc nói chưa rõ căn nào. Lời khách "
-    "không chỉ ra được căn nào → HỎI LẠI căn nào (nêu địa chỉ các căn để khách chọn), KHÔNG tự nhận là căn nào, KHÔNG nói đã đổi trạng thái.\n"
-    "- bo_nho_du_an: khách hỏi / nhắc về dự án, mẫu nhà, phân lô, bảng giá dự án.\n"
-    "- tra_du_an / du_an_trong_khu: khách hỏi về một dự án khác, hoặc một quận / phường / con đường có dự án / chung cư nào.\n"
-    "- gia_da_gui: khách hỏi lại giá căn của họ đã gửi (bảng giá, các căn khách đã gửi). Nói với khách KHÔNG dùng chữ \"rổ\".\n"
-    "- dinh_gia_tham_khao: khách hỏi giá thị trường khu này bao nhiêu, giá họ đưa ra cao hay thấp, hoặc nhờ định giá căn nhà/căn hộ/đất nền gửi bán.\n"
-    "- kiem_tra_phap_ly_so: khách hỏi về sổ đỏ/sổ hồng, nhà chưa hoàn công, nhà đang thế chấp ngân hàng, mua bán vi bằng, giấy tờ công chứng cần chuẩn bị.\n"
-    "- tinh_phi_moi_gioi: khách hỏi phí dịch vụ, hoa hồng môi giới, ký gửi có mất tiền không, hoặc chính sách thu phí.\n"
-    "- tra_cuu_phong_thuy: khách hỏi phong thủy hướng nhà, năm sinh hợp hướng nào, hoặc cách hóa giải hướng khi khách chê.\n"
-    "- tham_dinh_quy_hoach: khách hỏi quy hoạch lộ giới hẻm/đường, đất có dính quy hoạch treo, khoảng lùi xây dựng.\n"
-    "- goi_y_dam_phan: khách hỏi nên bớt cho khách mua bao nhiêu, bí quyết giữ giá tài sản khi thương lượng.\n"
-    "Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có, không đoán. Lời gửi khách viết ở lượt cuối, sau khi tra xong; không "
+    "Dữ liệu tra KHÔNG nằm sẵn trong lời nhắc — dòng \"DỮ LIỆU CÓ THỂ TRA\" ở cuối cho biết lượt này có gì; mô tả từng công cụ nói khi nào "
+    "gọi. Lượt chỉ hỏi một ô tin thì KHÔNG tra. ro_hang: lời khách không chỉ ra được căn nào → HỎI LẠI căn nào (nêu địa chỉ các căn), "
+    "KHÔNG tự nhận căn, KHÔNG nói đã đổi trạng thái. Nói với khách KHÔNG dùng chữ \"rổ\".\n"
+    "Chỉ nói điều kết quả tra ghi; tra không ra thì nói thật là chưa có, không đoán. Lời gửi khách viết sau khi tra xong; không "
     "viết 'để em tra / em kiểm tra'.\n"
 )
 
@@ -85,7 +75,7 @@ CONG_CU: list[dict[str, Any]] = [
          "type": "object",
          "properties": {
              "gia_vnd": {"type": "number", "description": "Giá bán mong muốn (VND) hoặc tiền thuê mỗi tháng (VND)"},
-             "vai_nguoi_gui": {"type": "string", "enum": ["chu_nha", "moi_gioi"], "description": "chu_nha (chủ nhà: 1% bán, 0.75 tháng thuê) hoặc moi_gioi (môi giới/sàn: 0.5% bán, 0.75 tháng thuê)"},
+             "vai_nguoi_gui": {"type": "string", "enum": ["chu_nha", "moi_gioi"], "description": "chu_nha (chủ nhà) hoặc moi_gioi (môi giới / sàn) — mức phí theo vai do công cụ tính"},
              "loai_giao_dich": {"type": "string", "enum": ["ban", "thue"], "description": "ban (bán) hoặc thue (cho thuê)"}
          }
      }},

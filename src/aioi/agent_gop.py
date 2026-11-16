@@ -300,8 +300,7 @@ HUONG_DAN_GHI = (
 HUONG_DAN_VIET = (
     "\n\n" + DAU_BUOC_2 + "\n"
     "Em vừa đọc ý khách và gọi công cụ ghi (bước 1). Kết quả công cụ cuối là KẾT QUẢ GHI LƯỢT NÀY — hệ thống đã áp qua cổng kiểm. Đánh giá kết "
-    "quả đó rồi viết lời gửi khách theo đúng các luật ở trên và việc lượt này. Hệ thống tự lưu — không báo khách là em đã ghi / đã cập nhật, "
-    "đáp thẳng vào ý khách; khách chỉ đưa thông tin thì lời em là câu hỏi của việc lượt này. Không kể cho khách tên công cụ, tên ô, cổng kiểm hay kết quả hệ thống.\n"
+    "quả đó rồi viết lời gửi khách theo các luật ở trên và việc lượt này. Không kể cho khách tên công cụ, tên ô, cổng kiểm hay kết quả hệ thống.\n"
 )
 # SRS-5.1zzzzzzz496: bỏ câu "Bước ghi lượt này đã đóng (bước 2 chỉ còn công cụ đọc)" — bộ vàng 14/11 lời gửi khách chép nguyên ("Bước ghi đã
 # đóng, em rao lại bản tin…"); bước 2 vốn chỉ được giao công cụ đọc, gọi nhầm công cụ ghi thì `chay` trả lời riêng.
@@ -537,7 +536,7 @@ def bao_cao(engine: Any, conv: Any, system: str, captured: list[str]) -> str:
     viec = (system.rsplit(dau, 1)[1].strip().split("\n\n", 1)[0] if dau in system
             else "theo các khối ưu tiên / dữ kiện hệ thống trong lời nhắc.")
     # Việc lượt đứng ĐẦU báo cáo; ô thiếu chỉ là dữ kiện (không phải việc để hỏi) — một câu hỏi mỗi lượt do engine chọn (`viec_luot`).
-    dong.insert(1, f"- {dau} {viec} (lượt này CHỈ làm đúng việc này — câu hỏi duy nhất nếu có là câu việc này giao)")
+    dong.insert(1, f"- {dau} {viec} (lượt này CHỈ làm đúng việc này)")
     thieu = [_nhan(o, conv.prop) for o in conv.prop.missing_fields()]
     if thieu:
         dong.append("- Ô còn trống (dữ kiện; hệ thống tự hỏi dần ở các lượt sau — lượt này KHÔNG hỏi ô nào ngoài việc trên): " + "; ".join(thieu))

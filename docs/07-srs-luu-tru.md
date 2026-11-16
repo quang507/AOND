@@ -73,6 +73,17 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz496 · "Nhà" là nhà phố, "em" khách gọi bot không phải khách xưng em, tin nhắc tự viết lại câu hỏi (14/11/2026)
+Chủ dự án 14/11 ("sửa từ gốc") sau một lượt test thật lúc 20:13 trên Zalo (người test nội bộ, không SĐT):
+- **Hỏi loại nhà ba lần:** khách nói "anh có nhà", rồi số nhà trong hẻm xe hơi → bot vẫn hỏi "nhà phố, căn hộ hay đất nền" ba lượt. Gốc: chính SRS-495 dặn "bán nhà" chung chung thì để hỏi — người Sài Gòn nói "nhà" của riêng mình là nhà phố. Nay mô tả ô `loai_hinh`: "nhà" của riêng khách (có số nhà, trong hẻm hay mặt tiền) là nha_pho; căn hộ / chung cư / tên toà là chung_cu; đất / lô / nền là dat; chỉ "bán căn" hay chưa nói gì mới bỏ trống. Bài học: người dùng thật thắng giám khảo — bộ vàng không bắt được lỗi do chính bản sửa trước gây ra.
+- **Xưng hô:** khách gọi bot "em hỏi hình hả" → bóc tách ghi khách xưng em, bot đổi giọng. Nay mô tả ô `xung_ho`: chữ "em" khách dùng để GỌI bot là khách xưng hàng trên — chưa biết anh hay chị thì bỏ trống.
+- **Tin nhắc sau 5 phút:** câu mẫu "… hỏi lại chút nha: {câu cũ}" chép nguyên câu vừa hỏi, dính cả chữ nối "Mà trước hết, …". Nay `followup._nhac_hoi_lai_model` cho model viết lại ý câu hỏi đang chờ từ 6 lượt gần nhất (`prompts.build_nhac_hoi_lai_system`, ≤ 150 token); hụt, quá 300 chữ hay không có dấu hỏi thì dùng câu mẫu cũ (CRM vẫn sửa được).
+- **Lộ chữ nội bộ:** `HUONG_DAN_VIET` có câu "Bước ghi lượt này đã đóng (bước 2 chỉ còn công cụ đọc)" — bộ vàng thấy lời gửi khách chép nguyên "Bước ghi đã đóng, …". Bỏ câu đó: bước 2 vốn chỉ được giao công cụ đọc.
+- **Bộ vàng** thêm kịch bản 16 `vang_goi_em` dựng lại cuộc test (kiểm loại nha_pho, đường Trần Bình Trọng).
+- **Token:** schema bóc tách +34 (`loai_hinh`) +113 (`xung_ho`); `HUONG_DAN_VIET` −35. `GIONG` / `LEAN_SYSTEM_PROMPT` không đổi (3.728 / 7.392 chữ). Tin nhắc thêm một lần gọi model nhỏ mỗi lần khách im sau câu hỏi.
+- **Đo (bộ vàng, 2 lần):** 15 kịch bản cũ 9,28 / 9,09 (TB 9,18), lượt đạt 79,1% / 74,6%, lỗi nặng 0 / 1 — so SRS-495 8,99 / 73,1%, SRS-494 9,06 / 76,9%, nền 8,93 / 67,2%. Cả 16 kịch bản: 9,22 / 8,91, lượt đạt 81,1% / 74,3%, bản tin 3,6 / 3,26. `vang_goi_em` ra nha_pho cả hai lần, không hỏi lại loại nhà; không lần nào lộ chữ nội bộ.
+- **Còn:** lớp "báo đã sửa tin mà tin không đổi đúng như lời" (hht lượt 10 lần 2 bị chấm bịa); `vang_goi_em` lượt 2 lần 2 thiếu "Dạ" và nói "khỏi bận tâm câu đó" trái với câu hỏi loại nhà vừa giải thích. Bên bán chưa có công cụ tra dự án theo đường (khách hỏi "TBT có chung cư không" thì bot không tra được).
+
 ### SRS-5.1zzzzzzz495 · Quận là nơi căn nằm, loại nhà chỉ khi khách nói rõ, icon không đếm trong lời chat (14/11/2026)
 Chủ dự án 14/11 ("Sửa tiếp 3 lỗi" còn lại sau SRS-494, bắt ở bộ vàng):
 - **Quận của căn (aeon_tan_phu):** khách nói "nhà gần TTTM Aeon Mall Tân Phú", sau đó "P. Bình Hưng Hoà A" → bản tin ghi "Bình Hưng Hoà A, Tân Phú" (phường đó thuộc Bình Tân cũ), ba lượt liền. Gốc: mô tả ô `quan` của bóc tách chỉ là "quận khách nêu", nên tên quận trong tên một nơi gần căn thành quận của căn. Nay: quận nơi CĂN nằm; tên quận trong tên nơi gần căn ("gần Aeon Mall Tân Phú", "cạnh chợ Bình Tây") chưa phải quận của căn.

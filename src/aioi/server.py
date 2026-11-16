@@ -121,7 +121,7 @@ _DUONG_MO = frozenset({"/health"})
 @app.middleware("http")
 async def _gac_khoa_noi_bo(request: Request, call_next):
     """SRS-5.1zzzzzzz400 (audit N3): mọi đường trừ /health cần header `x-noi-bo-key` khớp `AIOI_NOI_BO_KEY` — /chat-reply, /message,
-    /reset/{id}, /reset-all, /trigger-followup. Tiến trình khác trên máy 146 không còn đọc rổ hàng, giả lệnh admin hay xoá khách."""
+    /reset/{id}, /trigger-followup (SRS-5.1zzzzzzz506 gỡ /reset-all — đọc `_conn` SQLite, lỗi với kho Supabase; xoá hàng loạt là nút XOA HET ở /admin). Tiến trình khác trên máy 146 không còn đọc rổ hàng, giả lệnh admin hay xoá khách."""
     if request.url.path in _DUONG_MO:
         return await call_next(request)
     ma = khoa_noi_bo.kiem(request.headers.get(khoa_noi_bo.TEN_HEADER))
@@ -984,9 +984,4 @@ def reset_user(user_key: str):
     _engine.reset(user_key)
     return {"ok": True, "message": f"Reset conversation and listing for {user_key}"}
 
-
-@app.post("/reset-all")
-def reset_all():
-    _engine.reset_all()
-    return {"ok": True, "message": "All conversations and listings reset"}
 

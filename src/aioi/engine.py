@@ -835,7 +835,7 @@ def _khoi_xung_ho_doan(p: str, ten: str | None = None) -> str:
         f"Khách CHƯA được ghi nhận tự xưng; hồ sơ Zalo cho ĐOÁN là '{goi}' — tạm gọi '{goi}', xưng 'em'. ĐỌC LẠI các tin của khách ở trên: "
         "khách đã TỰ XƯNG thì gọi đúng chữ khách xưng, bỏ chữ đoán — xưng chú / cô / bác / dì (\"chú bán nhà…\") thì gọi đúng chữ đó, "
         f"bot xưng 'cháu'; xưng cháu / con thì gọi 'cháu'; xưng em thì gọi 'em', bot xưng '{em_toi}'. Câu mẫu ở trên viết 'anh/chị' thì "
-        "đổi theo cách gọi đó. CẤM lặp từ 'DẠ' ở đầu câu.\n"
+        "đổi theo cách gọi đó.\n"
     )
 
 
@@ -846,19 +846,15 @@ def _khoi_xung_ho_rieng(p: str, ten: str | None = None) -> str:
         toi = goi_toi_khach("em", ten)[1]
         return (
             "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC LƯỢT NÀY (KHÁCH TỰ XƯNG LÀ 'EM'): ===\n"
-            "Khách tự xưng là 'em' (vd: 'nhà em...', 'em gửi...', 'em có...', 'em bán...').\n"
-            "1. TUYỆT ĐỐI CẤM DÙNG TỪ 'DẠ' HOẶC 'DẠ VÂNG' Ở BẤT KỲ ĐÂU! Không dạ thưa với người xưng em.\n"
-            "2. TUYỆT ĐỐI CẤM gọi khách là 'anh' hay 'chị'. Hãy gọi khách là 'em'.\n"
-            f"3. Bản thân xưng là '{toi}', gọi khách là 'em'. "
-            f"KHÔNG xưng 'mình', KHÔNG xưng 'em'. Cả lượt KHÔNG có chữ 'anh/chị' gọi khách — kể cả khi câu mẫu / gợi ý câu hỏi ở trên viết "
-            "'anh/chị', đổi thành 'em'.\n"
+            f"Khách tự xưng 'em' ('nhà em...', 'em bán...'). Gọi khách 'em', bản thân xưng '{toi}' (không xưng 'mình' / 'em'); không dạ thưa "
+            "ở bất kỳ đâu. Cả lượt KHÔNG có chữ 'anh/chị' gọi khách — câu mẫu / gợi ý ở trên viết 'anh/chị' thì đổi thành 'em'.\n"
         )
     elif p == "chau":
         toi = goi_toi_khach("chau", ten)[1]
         return (
             "\n\n=== QUY TẮC XƯNG HÔ BẮT BUỘC LƯỢT NÀY (KHÁCH TỰ XƯNG LÀ 'CHÁU' / 'CON'): ===\n"
             f"Khách tự xưng là 'cháu' / 'con' (vd: 'cháu muốn bán nhà', 'con có căn…'). Gọi khách là 'cháu', bản thân xưng '{toi}'. KHÔNG xưng "
-            "'em' / 'mình', KHÔNG 'Dạ'. Cả lượt KHÔNG có chữ 'anh/chị' gọi khách — câu mẫu / gợi ý ở trên viết 'anh/chị' thì đổi thành 'cháu'.\n"
+            "'em' / 'mình'. Cả lượt KHÔNG có chữ 'anh/chị' gọi khách — câu mẫu / gợi ý ở trên viết 'anh/chị' thì đổi thành 'cháu'.\n"
         )
     elif p == "chi":
         return (
@@ -877,7 +873,7 @@ def _khoi_xung_ho_rieng(p: str, ten: str | None = None) -> str:
         return (
             "\n\n=== QUY TẮC XƯNG HÔ LƯỢT NÀY: ===\n"
             f"Khách tự xưng '{lon}'. Gọi khách là '{lon}', bản thân lễ phép xưng 'cháu'. KHÔNG 'anh' / 'chị' / 'anh/chị' — câu mẫu ở trên viết "
-            f"'anh/chị' thì đổi thành '{lon}'. KHÔNG 'Dạ'.\n"
+            f"'anh/chị' thì đổi thành '{lon}'.\n"
         )
     elif p == "elder":
         return (
@@ -2473,15 +2469,6 @@ class Engine:
         self._conversations.pop(user_key, None)
         if self._convstore is not None:
             self._convstore.reset(user_key)
-
-    def reset_all(self) -> None:
-        """Reset all conversations, listings, and leads across all users."""
-        self._conversations.clear()
-        if self._convstore is not None:
-            self._convstore._conn.execute("DELETE FROM listings")
-            self._convstore._conn.execute("DELETE FROM buyer_leads")
-            self._convstore._conn.execute("DELETE FROM conversations")
-            self._convstore._conn.commit()
 
     def _dedup_basket(self, conv: Conversation) -> None:
         """Collapse listings that share a (dự án, mã số căn) — a seller can't list the same
