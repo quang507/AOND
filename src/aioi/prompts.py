@@ -6,6 +6,7 @@ images, friendly local tone, and the assistant's assigned persona.
 from __future__ import annotations
 
 import json
+import functools
 import re
 from typing import Any
 
@@ -297,6 +298,14 @@ SLANG_NOTES = """TỪ ĐIỂN TIẾNG LÓNG BĐS (hiểu đúng, không hỏi l�
   • Giá nghe vô lý so với loại nhà và khu (bán nhà phố nội thành vài trăm triệu, cho thuê nhà ở hàng tỷ một tháng) thường là nhầm bán với thuê hoặc nhầm đơn vị — hỏi lại một câu trước khi ghi.
   • Tên khu dân gian (quận cũ): Bàu Cát, K300, Bảy Hiền, Lăng Cha Cả, Bà Quẹo = Tân Bình; cư xá Bắc Hải = Quận 10; cư xá Đô Thành, Bàn Cờ = Quận 3; cư xá Lữ Gia, Bình Thới = Quận 11; Phan Xích Long = Phú Nhuận; Bà Chiểu, Hàng Xanh, Thị Nghè, Văn Thánh, Thanh Đa, Miếu Nổi = Bình Thạnh; Đa Kao, Tân Định, Cầu Ông Lãnh = Quận 1; Xóm Chiếu = Quận 4; Xóm Củi = Quận 8; Phú Lâm, Bình Phú = Quận 6; Tên Lửa, An Lạc = Bình Tân; Cityland, Hạnh Thông Tây = Gò Vấp; Phú Mỹ Hưng, Him Lam (Tân Hưng), Kiều Đàm = Quận 7; Thảo Điền, An Phú, Sala = Quận 2 cũ (Thủ Đức); Vạn Phúc, Bình Triệu = Thủ Đức; Trung Sơn = Bình Chánh; Ngã tư Ga, An Sương = Quận 12."""
 
+# SRS-5.1zzzzzzz504: `SLANG_NOTES` = từ điển tiếng lóng + KIẾN THỨC NGHỀ (SRS-499 / 500). Đường chính của người bán (prompt gọn + vòng agent gộp)
+# KHÔNG nhận `SLANG_NOTES` — `agent_gop.chia_luat` bỏ nó khỏi luật ghi vì "phiếu lượt đã có", mà prompt gọn dùng khối "HIỂU TIẾNG NGHỀ" riêng —
+# nên kiến thức nghề thêm ở SRS-499 / 500 chỉ tới model ở lượt đầu chưa rõ vai. Tách hai tên trên CÙNG một chuỗi: `TU_LONG` (đã có bản gọn
+# trong `LEAN_SYSTEM_PROMPT`) và `KIEN_THUC_NGHE` — khối này đi kèm phần cố định của prompt gọn ở cả bước ghi lẫn bước viết (`_lean_co_dinh`).
+_I_KIEN_THUC = SLANG_NOTES.index("- KIẾN THỨC NGHỀ")
+TU_LONG = SLANG_NOTES[:_I_KIEN_THUC].rstrip("\n")
+KIEN_THUC_NGHE = SLANG_NOTES[_I_KIEN_THUC:]
+
 # Một nguồn cho ô is_rental ở lượt bóc tách lẫn lượt lập thao tác (SRS-5.1zzzzzzz107, bắn thử 207 KB2: "giá 27 tỷ… đang cho thuê 50
 # triệu/tháng" thành tin CHO THUÊ — mô tả cũ chỉ "Có phải tin cho thuê không"). Hiện trạng có người thuê không phải ý muốn cho thuê.
 MO_TA_CHO_THUE = ("true CHỈ KHI khách muốn CHO THUÊ căn này (rao cho thuê, giá thuê theo tháng). Khách rao BÁN (giá bán, vd \"27 tỷ\") "
@@ -481,6 +490,28 @@ HIEU_CHU_NHA = ("HIỂU CHỦ NHÀ: nhà là tài sản lớn, chủ muốn làm
                 "bằng việc bên em làm thật: đưa tin tới khách đang tìm, có khách hỏi là báo chủ ngay, phí chỉ thu khi giao dịch thành công.")
 HIEU_KHACH_MUA = ("HIỂU KHÁCH MUA: khách muốn tìm được căn hợp ý từ người hiểu nghề. Khách hỏi hay lo điều gì thì em đáp đúng điều đó bằng "
                   "việc bên em làm thật: gợi căn đang rao khớp nhu cầu kèm link, hỏi chủ nhà điều em chưa có, báo căn mới hợp ý.")
+
+
+def ten_xuong_duoi(system: str, ten: str) -> str:
+    """SRS-5.1zzzzzzz504: đưa TÊN trợ lý từ phần cố định xuống ngay sau `RANH_GIOI_CACHE`. Có 13 tên (`assistants.ASSISTANT_NAMES`, chọn theo
+    khách) và tên từng đứng ở câu đầu của mọi prompt, nên phần cố định — thứ được cache — tách thành 13 bản; số 12/11: mỗi lần gọi GHI cache
+    trung bình 2.649 token, khoản tiền lớn nhất. Prompt không có ranh giới hoặc không mở bằng tên thì giữ nguyên."""
+    dau = f'em là "{ten}" của AI Ơi Nhà Đất'
+    if RANH_GIOI_CACHE not in system:
+        return system
+    on, _, dong = system.partition(RANH_GIOI_CACHE)
+    if dau not in on:
+        return system
+    return (on.replace(dau, 'em là trợ lý (tên ở dòng "TÊN EM" bên dưới) của AI Ơi Nhà Đất', 1) + RANH_GIOI_CACHE
+            + f'TÊN EM: "{ten}"\n' + dong)
+
+
+def _ten_sau(ham):
+    """Bọc một hàm dựng prompt có tham số đầu là tên trợ lý: kết quả đi qua `ten_xuong_duoi`."""
+    @functools.wraps(ham)
+    def boc(assistant_name, *a, **k):
+        return ten_xuong_duoi(ham(assistant_name, *a, **k), assistant_name)
+    return boc
 
 
 def khoi_nhan_vat(assistant_name: str, voi_ai: str, kem_giong: bool = True) -> str:
@@ -679,7 +710,8 @@ def viec_phieu(prop: Property, next_field: str | None, hoi_lai: bool = False, o_
 
 def phieu_co_dinh(assistant_name: str) -> str:
     """Phần CỐ ĐỊNH của phiếu lượt (trước `RANH_GIOI_CACHE`): định danh + giọng + luật cố định + tiếng lóng — nguyên vẹn, một nguồn cho
-    `build_phieu_luot` và bước ghi của vòng agent gộp (`agent_gop`, SRS-5.1zzzzzzz371) để hai lần gọi chung tiền tố cache."""
+    `build_phieu_luot` và bước ghi của vòng agent gộp (`agent_gop`, SRS-5.1zzzzzzz371). Hai bước KHÔNG chung cache (bộ công cụ khác nhau và công
+    cụ đứng trước system trong tiền tố cache, SRS-5.1zzzzzzz504) — chung chữ để luật một nguồn, không phải để tiết kiệm."""
     return f"""{khoi_nhan_vat(assistant_name, "người gửi bán / cho thuê nhà")}
 
 LUẬT CỐ ĐỊNH:
@@ -694,6 +726,7 @@ LUẬT CỐ ĐỊNH:
 """
 
 
+@_ten_sau
 def build_phieu_luot(
     assistant_name: str,
     prop: Property,
@@ -731,6 +764,7 @@ Y_MO_DAU: dict[str, tuple[str, ...]] = {
 }
 
 
+@_ten_sau
 def build_buyer_chat_system(
     assistant_name: str,
     lead: BuyerLead,
@@ -1248,11 +1282,18 @@ def prompt_gon_bat() -> bool:
     return os.getenv("AIOI_PROMPT_GON", "").strip().lower() == "bat"
 
 
+def _lean_co_dinh(assistant_name: str) -> str:
+    """Phần cố định của prompt gọn: `LEAN_SYSTEM_PROMPT` + khối KIẾN THỨC NGHỀ (SRS-5.1zzzzzzz504) — MỘT chỗ cho bước ghi (`co_dinh_ban`) lẫn
+    bước viết (`lean_system_prompt_cho_luot`). Kiến thức nghề là khối riêng đi kèm, không tính vào trần 8.000 chữ của `LEAN_SYSTEM_PROMPT`."""
+    return LEAN_SYSTEM_PROMPT.replace("{TEN_TRO_LY}", assistant_name, 1) + "\n" + KIEN_THUC_NGHE + "\n"
+
+
 def co_dinh_ban(assistant_name: str) -> str:
     """Phần cố định phía bán (trước `RANH_GIOI_CACHE`) theo công tắc: prompt gọn hoặc phiếu cũ (SRS-5.1zzzzzzz414)."""
-    return LEAN_SYSTEM_PROMPT.replace("{TEN_TRO_LY}", assistant_name, 1) if prompt_gon_bat() else phieu_co_dinh(assistant_name)
+    return _lean_co_dinh(assistant_name) if prompt_gon_bat() else phieu_co_dinh(assistant_name)
 
 
+@_ten_sau
 def lean_system_prompt_cho_luot(
     assistant_name: str,
     prop: Property,
@@ -1264,7 +1305,7 @@ def lean_system_prompt_cho_luot(
     Phần cố định (trước `RANH_GIOI_CACHE`) được cache; sau ranh giới chỉ có dự án, dữ liệu căn và việc lượt này."""
     viec = viec or viec_phieu(prop, next_field)
     return (
-        f"{LEAN_SYSTEM_PROMPT.replace('{TEN_TRO_LY}', assistant_name, 1)}\n{RANH_GIOI_CACHE}{project_block}\n"
+        f"{_lean_co_dinh(assistant_name)}{RANH_GIOI_CACHE}{project_block}\n"
         f"DỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):\n{describe_captured(prop)}\n\n"
         f"{NHAN_VIEC_LUOT}: {viec}"
     )
@@ -1441,6 +1482,7 @@ def khoi_yeu_cau_viet(prop: Property | None, moi: list[str] | None = None) -> st
             f"thì nói MỘT lần).{vua}\n")
 
 
+@_ten_sau
 def build_listing_proposal_system(
     assistant_name: str,
     prop: Property,
@@ -1576,6 +1618,7 @@ def _khoi_trang_thai_web(web: dict | None, thue: bool = False) -> tuple[str, str
             f"  • {ly_do}\n  • Nói thật tình trạng: {viec} Có thể gửi {_WEB} để khách xem các tin khác.")
 
 
+@_ten_sau
 def build_fee_followup_system(
     assistant_name: str,
     prop: Property,
@@ -2818,10 +2861,10 @@ def operations_schema() -> dict[str, Any]:
             "seller_role": {
                 "type": "string",
                 "enum": ["chu_nha", "luot_song", "moi_gioi", "san", "chu_dau_tu", "nguoi_nha_nho_ban"],
-                "description": "Vai trò người rao khi lời khách CHO BIẾT vai, đọc theo nghĩa như người trong nghề: khách gọi tên vai (\"a là môi giới\", "
-                "\"nhà chính chủ\", \"bên sàn\") hoặc cách nói chỉ vai đó mới dùng (\"ae hợp tác\", \"hàng độc quyền bên em\", \"chủ gửi em bán\" → "
-                "moi_gioi; \"nhà em, hoa hồng 1% cho môi giới\" → chu_nha). \"tôi không phải chính chủ\" KHÔNG là chu_nha; người nhà đăng giùm → "
-                "nguoi_nha_nho_ban. Bỏ trống nếu chưa chắc.",
+                "description": "Vai người rao, đọc theo NGHĨA: khách gọi tên vai hoặc nói kiểu chỉ vai đó dùng (\"ae hợp tác\", \"chủ gửi em bán\" → "
+                "moi_gioi; chủ trả hoa hồng → chu_nha). Gọi tên vai: \"a là môi giới\", \"nhà chính chủ\", \"bên sàn\"; cách nói của vai: "
+                "\"hàng độc quyền bên em\", \"khách của em\" → moi_gioi; \"nhà em, hoa hồng 1% cho môi giới\" → chu_nha. \"tôi không phải chính chủ\" "
+                "KHÔNG là chu_nha; người nhà đăng giùm → nguoi_nha_nho_ban. Bỏ trống nếu chưa chắc.",
             },
             "seller_role_trich_dan": {"type": "string", "description": "Nguyên văn cụm lời khách làm căn cứ cho vai (bắt buộc khi có seller_role); "
                                       "\"a cần đăng tin\", \"nhà em\" KHÔNG phải vai → bỏ trống cả hai."},

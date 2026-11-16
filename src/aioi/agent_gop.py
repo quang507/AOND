@@ -3,8 +3,8 @@ và trả lời lại khách. quá trình thu thập diễn ra song song với v
 
 Mỗi lượt người bán là MỘT cuộc hội thoại công cụ với model chat (Sonnet), theo khung "Suy nghĩ → Chọn công cụ → Thực thi → Đánh giá":
 
-- Bước 1 (`mo`, trong `Engine._lap_ke_hoach`): system = phần cố định của phiếu lượt (định danh + giọng + luật cố định, NGUYÊN VẸN — một nguồn
-  `prompts.phieu_co_dinh`) + luật ghi chung + dữ liệu của lượt. Model gọi công cụ GHI (`ghi_o`, `them_can`, `doi_trang_thai`, `bo_can`,
+- Bước 1 (`mo`, trong `Engine._lap_ke_hoach`): system = phần cố định phía bán (`prompts.co_dinh_ban`: prompt gọn + kiến thức nghề khi
+  `AIOI_PROMPT_GON=bat`, phiếu lượt cũ khi tắt) + luật ghi chung + dữ liệu của lượt. Model gọi công cụ GHI (`ghi_o`, `them_can`, `doi_trang_thai`, `bo_can`,
   `ghi_y_khach` — thân `_chay_ghi`, cổng trích + cổng rổ nhiều căn `Engine._chua_ro_can`), công cụ ĐỌC (rổ hàng / bộ nhớ dự án / giá đã gửi — thân
   là hàm khối của engine qua `agent_ban._khoi`) và công cụ TRA CỨU luật `tra_luat_o(o)` (RAG: luật ghi từng ô cắt NGUYÊN từ
   `OPERATIONS_SYSTEM_BAN` + mô tả schema, không nhồi cả 45.000 chữ vào mọi lượt).
@@ -47,8 +47,8 @@ DOC = tuple(c["name"] for c in agent_ban.CONG_CU)
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------
 # Luật ghi: cắt OPERATIONS_SYSTEM_BAN thành khối, mỗi khối về ĐÚNG MỘT chỗ — system (luật chung mọi lượt), mô tả một công cụ ghi, hay
-# tra_luat_o(khoá). Không khối nào bị bỏ ngoài dòng "Trả về JSON đúng schema." (đường công cụ không trả JSON) và từ điển tiếng lóng (đã có
-# NGUYÊN trong phần cố định của phiếu lượt). (Test `test_agent_gop_371` đã gỡ 13/11/2026 cùng bộ pytest — thêm khối thì tự soát mọi khối có chỗ, mọi dấu còn khớp form.)
+# tra_luat_o(khoá). Không khối nào bị bỏ ngoài dòng "Trả về JSON đúng schema." (đường công cụ không trả JSON) và từ điển tiếng lóng `SLANG_NOTES` (phần cố định
+# đã mang: phiếu lượt có nguyên khối; prompt gọn có bản rút "HIỂU TIẾNG NGHỀ" + khối `KIEN_THUC_NGHE` đi kèm — `prompts._lean_co_dinh`, SRS-504). (Test `test_agent_gop_371` đã gỡ 13/11/2026 cùng bộ pytest — thêm khối thì tự soát mọi khối có chỗ, mọi dấu còn khớp form.)
 # ---------------------------------------------------------------------------------------------------------------------------------------------
 
 HE = "he"           # system bước 1
@@ -66,7 +66,7 @@ BANG_LUAT: list[tuple[str, str]] = [
     ('- "clear":', "cc:bo_can"),
     ("⚠️ QUAN TRỌNG — AOND KHÔNG BAO GIỜ XÓA DỮ LIỆU", "cc:bo_can"),
     ("BÓC TÁCH KHÔNG THIẾU", HE),
-    ('Ngoài "operations", nếu khách TỰ NÓI RA vai', "tra:seller_role,seller_role_trich_dan"),
+    ('Ngoài "operations", lời khách CHO BIẾT vai', "tra:seller_role,seller_role_trich_dan"),   # dấu = câu đầu khối trong OPERATIONS_SYSTEM; đổi câu đó thì đổi ở đây (`scripts/do-prompt.py` soát)
     ("SỰ THẬT CỦA CĂN", "tra:phap_ly_trang_thai,duong_vao,tien_ich_gan,tinh_trang_nha,hoan_cong"),
     ('- "phap_ly_trang_thai":', "tra:phap_ly_trang_thai"),
     ('- "duong_vao":', "tra:duong_vao"),
@@ -147,7 +147,7 @@ def chia_luat(form: str | None = None) -> dict[str, Any]:
     from .prompts import OPERATIONS_SYSTEM_BAN, SLANG_NOTES
     form = OPERATIONS_SYSTEM_BAN if form is None else form
     ra: dict[str, Any] = {"he": [], "cc": {}, "tra": {}, "bo": []}
-    if SLANG_NOTES in form:   # từ điển tiếng lóng: NGUYÊN văn đã có trong phần cố định của phiếu lượt — không lặp
+    if SLANG_NOTES in form:   # từ điển + kiến thức nghề: phần cố định (`co_dinh_ban`) đã mang — không lặp (SRS-504)
         form = form.replace(SLANG_NOTES, "")
         ra["bo"].append(SLANG_NOTES)
     for k in _khoi(form):
@@ -306,11 +306,12 @@ HUONG_DAN_VIET = (
 
 def _he_ghi(engine: Any, conv: Any, du_lieu: str, chia: dict[str, Any]) -> str:
     from .llm.base import RANH_GIOI_CACHE
-    from .prompts import co_dinh_ban, describe_captured
+    from .prompts import co_dinh_ban, describe_captured, ten_xuong_duoi
     nap = luat_nap_san(conv, chia)
     nap_txt = ("\n=== LUẬT Ô NẠP SẴN (trạng thái hội thoại) ===\n" + "\n\n".join(nap) + "\n") if nap else ""
-    return (co_dinh_ban(conv.assistant.name) + HUONG_DAN_GHI + "\n\n".join(k.strip("\n") for k in chia["he"]) + "\n"
-            + RANH_GIOI_CACHE + du_lieu + nap_txt + "\nDỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):\n" + describe_captured(conv.prop) + "\n")
+    he = (co_dinh_ban(conv.assistant.name) + HUONG_DAN_GHI + "\n\n".join(k.strip("\n") for k in chia["he"]) + "\n"
+          + RANH_GIOI_CACHE + du_lieu + nap_txt + "\nDỮ LIỆU CĂN ĐÃ GHI (hệ thống, từ lời khách):\n" + describe_captured(conv.prop) + "\n")
+    return ten_xuong_duoi(he, conv.assistant.name)   # SRS-5.1zzzzzzz504: tên trợ lý không nằm trong phần được cache
 
 
 def luat_nap_san(conv: Any, chia: dict[str, Any]) -> list[str]:
@@ -483,8 +484,9 @@ def mo_mua(engine: Any, conv: Any, du_lieu: str) -> dict[str, Any] | None:
     ô nhu cầu qua cổng trích `Engine._loc_nhu_cau`). Trả kế hoạch cùng dạng form mua (engine áp như mọi lượt) và cất cuộc hội thoại vào
     `conv.vong_mua`; None → engine đọc bằng form JSON (Haiku)."""
     from .llm.base import RANH_GIOI_CACHE
-    from .prompts import luat_doc_y_mua, mua_co_dinh
-    he = mua_co_dinh(conv.assistant.name) + agent_mua.HUONG_DAN_GHI + luat_doc_y_mua() + "\n" + RANH_GIOI_CACHE + du_lieu
+    from .prompts import luat_doc_y_mua, mua_co_dinh, ten_xuong_duoi
+    he = ten_xuong_duoi(mua_co_dinh(conv.assistant.name) + agent_mua.HUONG_DAN_GHI + luat_doc_y_mua() + "\n" + RANH_GIOI_CACHE + du_lieu,
+                        conv.assistant.name)
     tin: list[dict] = [{"role": m.role, "content": m.content} for m in conv.messages()]
     plan: dict[str, Any] = {"operations": []}
     st: dict[str, Any] = {"nhan": [], "bo": {}}
@@ -618,7 +620,7 @@ def bang_luat_md() -> str:
     """Bảng "luật → nằm ở đâu" (markdown) cho mô tả PR / docs — sinh từ chính BANG_LUAT, không viết tay."""
     dong = ["| Khối luật (đầu khối trong OPERATIONS_SYSTEM_BAN) | Nằm ở đâu |", "|---|---|"]
     from .prompts import OPERATIONS_SYSTEM_BAN, SLANG_NOTES
-    dong.append("| TỪ ĐIỂN TIẾNG LÓNG BĐS (`SLANG_NOTES`, nguyên khối) | system cả hai bước — phần cố định của phiếu lượt (`phieu_co_dinh`) |")
+    dong.append("| TỪ ĐIỂN + KIẾN THỨC NGHỀ (`SLANG_NOTES`) | system cả hai bước — phần cố định phía bán (`co_dinh_ban`) |")
     for k in _khoi(OPERATIONS_SYSTEM_BAN.replace(SLANG_NOTES, "")):
         if not k.strip():
             continue
