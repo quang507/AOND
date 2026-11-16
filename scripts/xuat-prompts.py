@@ -101,12 +101,22 @@ def main() -> None:
     them("### 10b. Phía mua — hướng dẫn (`agent_mua.HUONG_DAN_DOC`)\n" + khoi(agent_mua.HUONG_DAN_DOC))
     them("Danh sách công cụ phía mua (chỉ đọc):\n" + cong_cu(agent_mua.CONG_CU_DOC))
     them("### 10c. Lời dặn bước viết (`agent_gop.HUONG_DAN_VIET`)\n" + khoi(agent_gop.HUONG_DAN_VIET))
+    them("### 10d. Bước 1 ghi — lời dặn + công cụ (`agent_gop.HUONG_DAN_GHI`, `agent_gop.cong_cu`)\nÔ thường có mô tả trong công cụ; ô hiếm "
+         "chỉ tên khoá, model gọi `tra_luat_o` khi cần (SRS-5.1zzzzzzz507).\n" + khoi(agent_gop.HUONG_DAN_GHI))
+    them(thu(lambda: "\n\n".join(f"[{c['name']}]\n{c.get('description', '')}" for c in agent_gop.cong_cu(agent_gop._schema(), agent_gop.chia_luat()))))
     them("---\n\n## 11. FIELD_LABELS — nhãn tiếng Việt của từng ô\n`FIELD_LABELS`\n\n" + "\n".join(f"- `{k}` → {v}" for k, v in P.FIELD_LABELS.items()) + "\n")
     them("---\n\n## 12. PHÍA MUA — đọc ý khách tìm mua / thuê\n`OPERATIONS_SYSTEM_MUA` (bước đọc ý). Lời đáp phía mua dùng NHÂN VẬT 3b + GIỌNG 3c + công cụ 10b.\n")
     them(khoi(P.OPERATIONS_SYSTEM_MUA))
     them("---\n\n## 13. CÂU MẪU CỐ ĐỊNH (mặc định trong code — bản sửa ở CRM `/admin/mau-cau` ghi đè)\n`cau_mau.MAC_DINH` · "
          "`{goi}` = cách gọi khách, `{ten}` = tên trợ lý, `{toi}` = bot tự xưng.\n\n"
          + "\n".join(f"- `{k}` → {str(v[0] if isinstance(v, (tuple, list)) else v).replace(chr(10), ' ⏎ ')}" for k, v in cau_mau.MAC_DINH.items()) + "\n")
+    giong = "_↑ chèn khối GIỌNG (mục 3c)_"
+    them("---\n\n## 14. TIN CHỦ ĐỘNG — BOA chọn việc, FDA viết (SRS-5.1zzzzzzz509)\n`build_tin_chu_dong_system`: cùng NHÂN VẬT + GIỌNG lượt chat, "
+         "chỉ VIỆC đổi theo vòng nền. Giữ kết nối / hỏi còn bán vẫn câu mẫu (mục 13).\n")
+    them("### 14a. Nhắc khi khách im 5 phút (`build_nhac_hoi_lai_system`)\n" + thu(lambda: P.build_nhac_hoi_lai_system(TEN, "anh", "em").replace(P.GIONG, giong)))
+    them("### 14b. Xin ảnh sau đăng, lần 1 (`build_xin_anh_nhac_system`)\n" + thu(lambda: P.build_xin_anh_nhac_system(TEN, p, 2, False, "anh", "em").replace(P.GIONG, giong)))
+    them("### 14c. Hỏi sau đăng (`build_hoi_sau_dang_nhac_system`)\n" + thu(lambda: P.build_hoi_sau_dang_nhac_system(
+        TEN, p, "[khối việc BOA chọn: xin ảnh / pháp lý / lợi thế / so sánh / giá — cùng khối lượt chat dùng]", "anh", "em").replace(P.GIONG, giong)))
     chu = "\n".join(d)
     io.open(ra, "w", encoding="utf-8", newline="\n").write(chu)
     print(f"da xuat {ra}: {len(chu)} ky tu, {chu.count(chr(10)) + 1} dong")
