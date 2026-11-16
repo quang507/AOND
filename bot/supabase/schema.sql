@@ -1469,7 +1469,6 @@ declare
   v jsonb := '{}'::jsonb;
   n int;
   v_lan bigint;
-  t text;
 begin
   if not (public.la_admin()
           or coalesce(auth.jwt() ->> 'role', '') = 'service_role') then
@@ -1479,29 +1478,47 @@ begin
     raise exception 'phải gõ đúng chữ XOA HET để xác nhận' using errcode = '22023';
   end if;
 
-  -- 20260929b (FR-245, chủ dự án 29/09: "xóa data để test thì data thật cũng nên để sang 1 chỗ" → chọn "chép sang kho lưu
-  -- rồi mới xóa"): CHÉP mọi dòng sắp xoá sang `luu_tru.ban_ghi` (một lần xoá = một `lan`) TRƯỚC khi xoá, cùng giao dịch —
-  -- chép hỏng thì không xoá gì. Khôi phục: `admin_khoi_phuc_lan_xoa(lan)`. Kho lưu nằm CÙNG DB: đỡ được bấm nút xoá,
-  -- không đỡ được mất cả DB (không có sao lưu ngoài — OPEN-25).
+  -- Tin sinh từ chat thì xoá; tin đã nạp (kiến thức chung) và người bán sở hữu chúng thì giữ.
+  create temp table if not exists _tin_xoa on commit drop as
+    select id from listings where not public.la_tin_da_nap(source);
+  create temp table if not exists _nguoi_xoa on commit drop as
+    select s.id from sellers s
+     where not exists (select 1 from listings l where l.seller_id = s.id and public.la_tin_da_nap(l.source));
+
+  -- Chép sang kho lưu TRƯỚC khi xoá, cùng giao dịch (một lần xoá = một `lan`); chép hỏng thì không xoá gì.
   insert into luu_tru.lan_xoa (ai) values (coalesce(auth.uid()::text, session_user)) returning lan into v_lan;
-  foreach t in array array['sellers', 'buyers', 'listings', 'conversations', 'messages', 'info_requests', 'listing_media', 'listing_views', 'property_events', 'interests',
-                           'viewings', 'deals', 'curated_lists', 'chat_quota', 'listing_noi_bo'] loop
-    execute format('insert into luu_tru.ban_ghi (lan, bang, du_lieu) select $1, %L, to_jsonb(x) from public.%I x', t, t)
-      using v_lan;
-  end loop;
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'sellers', to_jsonb(x) from sellers x where x.id in (select id from _nguoi_xoa);
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'buyers', to_jsonb(x) from buyers x;
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'listings', to_jsonb(x) from listings x where x.id in (select id from _tin_xoa);
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'listing_noi_bo', to_jsonb(x) from listing_noi_bo x where x.listing_id in (select id from _tin_xoa);
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'listing_media', to_jsonb(x) from listing_media x where x.listing_id in (select id from _tin_xoa);
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'listing_views', to_jsonb(x) from listing_views x where x.listing_id in (select id from _tin_xoa);
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu)
+    select v_lan, 'property_events', to_jsonb(x) from property_events x
+     where x.listing_id in (select id from _tin_xoa) or x.buyer_id is not null;
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'conversations', to_jsonb(x) from conversations x;
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'messages', to_jsonb(x) from messages x;
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'info_requests', to_jsonb(x) from info_requests x;
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'interests', to_jsonb(x) from interests x;
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'viewings', to_jsonb(x) from viewings x;
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'deals', to_jsonb(x) from deals x;
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'curated_lists', to_jsonb(x) from curated_lists x;
+  insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'chat_quota', to_jsonb(x) from chat_quota x;
   insert into luu_tru.ban_ghi (lan, bang, du_lieu)
   select v_lan, 'reminders', to_jsonb(r) from reminders r
    where r.buyer_id is not null or r.seller_id is not null or r.listing_id is not null or r.viewing_id is not null
       or r.kind in ('promise', 'reengage', 'viewing', 'followup', 'match', 'feedback', 'sold', 'rating');
   v := v || jsonb_build_object('luu_tru_lan', v_lan);
 
-  -- `where true` ở mọi câu xoá: role `authenticator` nạp `safeupdate`, câu DELETE không WHERE
-  -- bị chặn khi hàm được gọi qua PostgREST (22/09/2026, nút /admin từng đổ lỗi này).
+  -- `where true` ở các câu xoá cả bảng: role `authenticator` nạp `safeupdate`, DELETE không WHERE bị chặn khi gọi qua PostgREST (22/09/2026).
   delete from messages where true;               get diagnostics n = row_count; v := v || jsonb_build_object('messages', n);
   delete from info_requests where true;          get diagnostics n = row_count; v := v || jsonb_build_object('info_requests', n);
-  delete from listing_media where true;          get diagnostics n = row_count; v := v || jsonb_build_object('listing_media', n);
-  delete from listing_views where true;          get diagnostics n = row_count; v := v || jsonb_build_object('listing_views', n);
-  delete from property_events where true;        get diagnostics n = row_count; v := v || jsonb_build_object('property_events', n);
+  delete from listing_media where listing_id in (select id from _tin_xoa);
+                                                 get diagnostics n = row_count; v := v || jsonb_build_object('listing_media', n);
+  delete from listing_views where listing_id in (select id from _tin_xoa);
+                                                 get diagnostics n = row_count; v := v || jsonb_build_object('listing_views', n);
+  delete from property_events where listing_id in (select id from _tin_xoa) or buyer_id is not null;
+                                                 get diagnostics n = row_count; v := v || jsonb_build_object('property_events', n);
   delete from interests where true;              get diagnostics n = row_count; v := v || jsonb_build_object('interests', n);
   delete from reminders
    where buyer_id is not null or seller_id is not null or listing_id is not null or viewing_id is not null
@@ -1510,92 +1527,25 @@ begin
   delete from viewings where true;               get diagnostics n = row_count; v := v || jsonb_build_object('viewings', n);
   delete from deals where true;                  get diagnostics n = row_count; v := v || jsonb_build_object('deals', n);
   delete from curated_lists where true;          get diagnostics n = row_count; v := v || jsonb_build_object('curated_lists', n);
-  update sellers set active_listing_id = null where active_listing_id is not null;
-  delete from listings where true;               get diagnostics n = row_count; v := v || jsonb_build_object('listings', n);
+  update sellers set active_listing_id = null where id in (select id from _nguoi_xoa) and active_listing_id is not null;
+  delete from listings where id in (select id from _tin_xoa);
+                                                 get diagnostics n = row_count; v := v || jsonb_build_object('listings', n);
   delete from conversations where true;          get diagnostics n = row_count; v := v || jsonb_build_object('conversations', n);
   delete from chat_quota where true;             get diagnostics n = row_count; v := v || jsonb_build_object('chat_quota', n);
   delete from buyers where true;                 get diagnostics n = row_count; v := v || jsonb_build_object('buyers', n);
-  delete from sellers where true;                get diagnostics n = row_count; v := v || jsonb_build_object('sellers', n);
+  delete from sellers where id in (select id from _nguoi_xoa);
+                                                 get diagnostics n = row_count; v := v || jsonb_build_object('sellers', n);
+  v := v || jsonb_build_object('tin_da_nap_giu', (select count(*) from listings));
 
   insert into bot_health (who, at) values ('xoa_het', now())
     on conflict (who) do update set at = excluded.at;
   insert into app_config (key, value, ghi_chu) values ('xoa_het_lan_cuoi',
           format('%s: %s', to_char(now() at time zone 'Asia/Ho_Chi_Minh', 'YYYY-MM-DD HH24:MI'), v::text),
-          'FR-210: lần xoá hàng loạt khách + rổ hàng gần nhất (nút ở /admin, tab CRM).')
+          'FR-210: lần xoá dữ liệu người nhắn gần nhất (nút ở /admin, tab CRM); tin đã nạp được giữ — SRS-501.')
     on conflict (key) do update set value = excluded.value, ghi_chu = excluded.ghi_chu;
   update luu_tru.lan_xoa set so_dong = v where lan = v_lan;
   return v;
 end $function$
-;
-
-CREATE OR REPLACE FUNCTION public.admin_xoa_khach(p_zalo text)
- RETURNS jsonb
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
-AS $function$
-begin
-  if not public.la_admin() then
-    raise exception 'chỉ admin được xoá khách' using errcode = '42501';
-  end if;
-  return public.xoa_nguoi_theo_zalo(p_zalo);
-end $function$
-;
-
-CREATE OR REPLACE FUNCTION public.an_anh_tin(p_listing_id uuid, p_storage_path text, p_an boolean DEFAULT true)
- RETURNS boolean
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
-AS $function$
-begin
-  update listing_media set an_khoi_web = p_an
-   where listing_id = p_listing_id and storage_path = p_storage_path and an_khoi_web is distinct from p_an;
-  return found;
-end $function$
-;
-
-CREATE OR REPLACE FUNCTION public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[] DEFAULT ARRAY['can'::text])
- RETURNS jsonb
- LANGUAGE sql
- STABLE SECURITY DEFINER
- SET search_path TO 'public', 'pg_temp'
-AS $function$
-  select jsonb_build_object(
-    'can', case when 'can' = any(p_lop) then coalesce((
-      select jsonb_agg(to_jsonb(t)) from (
-        -- đúng CARD_COLS + lat, lng (lib/supabase.ts) — đủ cho ListingCard, không kéo mô tả
-        select l.id, l.code, l.deal, l.district, l.ward, l.street, l.location_raw, l.area_m2, l.price_vnd, l.price_raw, l.property_type,
-               l.bedrooms, l.bathrooms, l.floors, l.access_type, l.status, l.created_at, l.lat, l.lng
-          from public.listings l
-         where l.status in ('dang_ban', 'dang_quan_tam', 'da_coc')
-           and l.lat between least(p_nam, p_bac) and greatest(p_nam, p_bac)
-           and l.lng between least(p_tay, p_dong) and greatest(p_tay, p_dong)
-         order by l.created_at desc
-         limit 300) t), '[]'::jsonb) else '[]'::jsonb end,
-    'du_an', case when 'du_an' = any(p_lop) then coalesce((
-      select jsonb_agg(to_jsonb(t)) from (
-        select p.slug, p.name, p.developer, p.district, p.status_text, p.lat::double precision as lat, p.lng::double precision as lng
-          from public.projects p
-         where p.lat is not null and p.lng is not null
-           and p.lat between least(p_nam, p_bac) and greatest(p_nam, p_bac)
-           and p.lng between least(p_tay, p_dong) and greatest(p_tay, p_dong)
-         order by hashtext(coalesce(p.slug, p.name))   -- khung rộng quá 300: rải đều, không dồn tên A–C (thứ tự cố định)
-         limit 300) t), '[]'::jsonb) else '[]'::jsonb end,
-    -- Lớp đường CHỈ khi khung nhỏ (≤ 0,08° mỗi chiều ≈ zoom 15): khung cả TP.HCM quét hết bảng `duong` (dòng nặng vì cột vector) mất ~5 s
-    -- (đo 26/10), khung 0,02° × 0,03° đi chỉ mục `duong_lat_lng` ~36 ms. Chặn ở đây vì hàm mở cho anon — web cũng chỉ xin lớp này từ zoom 15.
-    'duong', case when 'duong' = any(p_lop)
-                   and greatest(p_nam, p_bac) - least(p_nam, p_bac) <= 0.08
-                   and greatest(p_tay, p_dong) - least(p_tay, p_dong) <= 0.08 then coalesce((
-      select jsonb_agg(to_jsonb(t)) from (
-        select d.ten, d.loai, d.phuong, d.quan_cu, d.lat, d.lng
-          from public.duong d
-         where d.loai in ('duong', 'so')
-           and d.lat between least(p_nam, p_bac) and greatest(p_nam, p_bac)
-           and d.lng between least(p_tay, p_dong) and greatest(p_tay, p_dong)
-         order by hashtext(d.ten || coalesce(d.phuong, ''))
-         limit 300) t), '[]'::jsonb) else '[]'::jsonb end);
-$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.bao_can_da_chot(p_listing_id uuid)
@@ -3195,16 +3145,17 @@ begin
     raise exception 'don_du_lieu_thu: chi admin' using errcode = '42501';
   end if;
   -- 20260929a (FR-245): ID thử đọc từ MỘT chỗ (`la_id_thu`).
-  -- 20261025f (SRS-5.1zzzzzzz179): người bán giữ rổ mẫu `seed_thu` KHÔNG phải dữ liệu thử để dọn — bỏ khỏi `_nguoi_thu`, tin mẫu bỏ khỏi `_tin_thu`.
+  -- 20261116a (SRS-5.1zzzzzzz501): người bán sở hữu TIN ĐÃ NẠP (`la_tin_da_nap`: seed_thu, mogi_thu, import_excel…) không phải dữ liệu thử để dọn —
+  -- bản 20261025f chỉ chừa `seed_thu`, nên người bán `thu-mogi` (ID bắt đầu `thu-`) bị dọn cùng 962 tin Mogi.
   create temp table if not exists _nguoi_thu on commit drop as
     select s.id from sellers s
      where public.la_id_thu(s.zalo_user_id)
-       and not exists (select 1 from listings l where l.seller_id = s.id and l.source = 'seed_thu');
+       and not exists (select 1 from listings l where l.seller_id = s.id and public.la_tin_da_nap(l.source));
   create temp table if not exists _khach_thu on commit drop as
     select id from buyers
      where public.la_id_thu(zalo_user_id);
   create temp table if not exists _tin_thu on commit drop as
-    select id from listings where seller_id in (select id from _nguoi_thu) and coalesce(source, '') <> 'seed_thu';
+    select id from listings where seller_id in (select id from _nguoi_thu) and not public.la_tin_da_nap(source);
   create temp table if not exists _conv_thu on commit drop as
     select id from conversations
      where seller_id in (select id from _nguoi_thu) or buyer_id in (select id from _khach_thu);
@@ -3243,23 +3194,6 @@ begin
   return jsonb_build_object('tin', v_tin, 'tin_nhan', v_tin_nhan,
                             'nguoi_ban', v_nguoi, 'khach', v_khach);
 end $function$
-;
-
-CREATE OR REPLACE FUNCTION public.du_an_can_geocode(p_limit integer DEFAULT 30)
- RETURNS TABLE(id uuid, name text, location_raw text, ward text, district text)
- LANGUAGE sql
- STABLE
- SET search_path TO 'public'
-AS $function$
-  select p.id, p.name, p.location_raw, p.ward, p.district
-  from projects p
-  where p.lat is null
-    and (p.geocode_at is null or p.geocode_at < now() - interval '7 days')
-  order by exists (select 1 from listings l where l.project_id = p.id) desc,
-           p.is_partner desc nulls last,
-           p.geocode_at nulls first
-  limit greatest(1, least(coalesce(p_limit, 30), 200))
-$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.du_an_co_phap_ly(p_project_id uuid)
@@ -3731,6 +3665,29 @@ CREATE OR REPLACE FUNCTION public.la_id_thu(p text)
 AS $function$
   select coalesce(p ~ '^(thu-|b15-|hoi-|z-|e2e-|b-|lx-|do-)', false)
 $function$
+;
+
+CREATE OR REPLACE FUNCTION public.la_tin_da_nap(p_source text)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO 'pg_catalog'
+AS $function$ select coalesce(p_source, 'import_excel') <> 'chat_zalo' $function$
+;
+
+CREATE OR REPLACE FUNCTION public.chan_xoa_tin_da_nap()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+begin
+  if public.la_tin_da_nap(old.source)
+     and coalesce(current_setting('aond.cho_phep_xoa_tin_da_nap', true), '') <> 'XOA TIN DA NAP' then
+    raise exception 'tin đã nạp (%) được giữ làm kiến thức listing chung, không xoá — muốn xoá thì nhắn Claude', old.code
+      using errcode = '42501';
+  end if;
+  return old;
+end $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.liet_ke_migration()
@@ -7027,6 +6984,7 @@ CREATE TRIGGER trg_listings_fill_property_type BEFORE INSERT OR UPDATE OF descri
 drop trigger if exists trg_listings_price_vnd on public.listings;
 CREATE TRIGGER trg_listings_price_vnd BEFORE INSERT OR UPDATE ON public.listings FOR EACH ROW EXECUTE FUNCTION listings_set_price_vnd();
 drop trigger if exists trg_listings_zz_doi_ma on public.listings;
+CREATE TRIGGER trg_listings_giu_tin_da_nap BEFORE DELETE ON public.listings FOR EACH ROW EXECUTE FUNCTION chan_xoa_tin_da_nap();
 CREATE TRIGGER trg_listings_zz_doi_ma BEFORE UPDATE OF district, property_type ON public.listings FOR EACH ROW EXECUTE FUNCTION listings_doi_ma_theo_quan_loai();
 drop trigger if exists trg_listings_zz_fill_code on public.listings;
 CREATE TRIGGER trg_listings_zz_fill_code BEFORE INSERT ON public.listings FOR EACH ROW EXECUTE FUNCTION listings_fill_code();

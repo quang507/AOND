@@ -370,8 +370,8 @@ function BanLamViec() {
   // đúng chữ đó, nên gọi nhầm từ code cũng không xoá được. Không hoàn tác được (OPEN-25).
   const xoaHetKhachVaRoHang = async () => {
     const go = prompt(
-      "XOÁ HÀNG LOẠT: mọi khách mua, người bán, tin rao, ảnh, hội thoại, câu hỏi, lịch hẹn, giao dịch.\n" +
-      "GIỮ: kho dự án, phường, admin, cấu hình, prompt, mẫu câu chuẩn, sổ lỗi.\n" +
+      "XOÁ DỮ LIỆU NGƯỜI NHẮN: khách mua, người bán đang chat, hội thoại, tin nhắn, tin rao sinh từ chat, câu hỏi, lịch hẹn, giao dịch.\n" +
+      "GIỮ NGUYÊN: TIN ĐÃ NẠP (tin mẫu, tin Mogi, tin nhập) — là kiến thức listing chung của dự án, không xoá; kho dự án, phường, admin, cấu hình, prompt, mẫu câu chuẩn, sổ lỗi.\n" +
       "Trước khi xoá, mọi dòng được CHÉP vào kho lưu (luu_tru) — khôi phục được bằng nút \"Khôi phục lần xoá\".\n\nGõ đúng chữ XOA HET để xoá:",
     );
     if (go === null) return;
@@ -380,8 +380,9 @@ function BanLamViec() {
     if (error) { alert(`Không xoá được: ${error.message}`); return; }
     const d = (data ?? {}) as Record<string, number>;
     alert(
-      `Đã xoá: ${d.sellers ?? 0} người bán · ${d.buyers ?? 0} khách mua · ${d.listings ?? 0} tin · ` +
+      `Đã xoá: ${d.sellers ?? 0} người bán · ${d.buyers ?? 0} khách mua · ${d.listings ?? 0} tin từ chat · ` +
       `${d.messages ?? 0} tin nhắn · ${d.conversations ?? 0} hội thoại · ${d.reminders ?? 0} việc nhắc.\n` +
+      `Tin đã nạp còn giữ: ${d.tin_da_nap_giu ?? "?"}.\n` +
       `Đã chép vào kho lưu: lần số ${d.luu_tru_lan ?? "?"} (khôi phục được).`,
     );
     await load();
@@ -1943,7 +1944,7 @@ function BanLamViec() {
           <div className="rounded-lg border border-red-200 bg-white p-6">
             <h2 className="text-lg font-bold tracking-tight text-navy">Dữ liệu thử</h2>
             <p className="mt-0.5 text-xs text-mute">
-              Xoá mọi khách, người bán và tin rao để test lại từ đầu. Dữ liệu được chép vào kho lưu trước khi xoá và khôi phục được theo số lần xoá.
+              Xoá dữ liệu người nhắn (khách, người bán đang chat, hội thoại, tin sinh từ chat) để test lại. Tin đã nạp (mẫu, Mogi, nhập) được giữ làm kiến thức chung, không xoá. Dữ liệu xoá được chép vào kho lưu và khôi phục được theo số lần xoá.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <button

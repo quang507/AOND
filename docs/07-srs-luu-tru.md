@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz491 · Bản tin chỉ ghi "thương lượng" khi chủ nhà cho bớt (14/11/2026)
+Chạy thử 6 cuộc chat sau SRS-490 (chủ dự án: "chạy vài cuộc chat thử trên 146 xem bot ổn ko"): cả 2 tin căn hộ Sunrise City ghi "4,6 tỷ (thương lượng)", một tin còn viết "có thể trao đổi thêm khi xem căn", dù khách chỉ nói "giá 4,6 tỷ" và ô `thuong_luong` trống. Gốc: ví dụ gạch đầu dòng trong `AD_FORMAT` là "19 tỷ (thương lượng)", model chép.
+- **Sửa (`AD_FORMAT`):** ví dụ chỉ còn "19 tỷ". Mục GIÁ TRONG TIN: chữ "thương lượng" hay lời mời trả giá chỉ viết khi ô thương lượng ghi chủ cho bớt; ô trống thì giá là đúng con số.
+- **Token:** `AD_FORMAT` +~40.
+- **Kiểm trên 146 (code mới, 5 cuộc chat):** Sunrise City 3/3 không còn "thương lượng" (trước 2/2 có), vẫn đăng khi khách "ok em". Gò Vấp ("có bớt chút đỉnh") và Phú Nhuận ("có thương lượng") vẫn ghi đúng ý chủ.
+- **Còn:** 1/3 tin Sunrise City ghi nhãn "Giá 4,6 tỷ" ở gạch đầu dòng (khuôn dặn không ghi nhãn). Lượt chat còn 1–2 câu báo đã ghi / nhận xét khu không dữ liệu trên 30 lượt (chủ dự án chọn để vậy).
+
 ### SRS-5.1zzzzzzz490 · Soát luật, bộ chấm, code và docs: gỡ phần dư, đồng bộ theo giọng mới (14/11/2026)
 Chủ dự án 14/11: "kiểm tra các luật các test các thứ có gì dư ra ko, đồng bộ docs". Ba lượt soát song song (code lõi, bộ chấm và CI, docs và tệp luật), từng mục kiểm lại với code trước khi sửa.
 - **Gỡ code không ai đọc:** trường `Conversation.che_do_test`, `so_luot_thong_tin` (khối "3 lượt đầu khen" gỡ từ SRS-207), `truoc_luot` / `truoc_id`, `admin_escalations`; `TurnResult.escalated`; `contested_keys` / `_contested` (`projects.py`); tập rỗng `HOI_SAU_KHI_RA_TIN`. Hai cột SQLite cũ giữ lại để khỏi đổi lược đồ, `save` ghi giá trị rỗng.
