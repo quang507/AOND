@@ -87,7 +87,6 @@ BANG_LUAT: list[tuple[str, str]] = [
     ("- Người rao chỉ khai thông tin bình thường", HE),
     ("- DUYỆT BẢN TIN / ĐỒNG Ý ĐĂNG TIN", HE),
     ("- CÂU HỎI hoặc YÊU CẦU XEM", HE),
-    ("- remove / keep_only / clear CHỈ khi", "cc:bo_can"),
     ("- Diện tích: nhà phố/biệt thự", "tra:dien_tich,dien_tich_dat,dien_tich_nha"),
     ("ĐỌC DẤU HIỆU NHƯ MÔI GIỚI LÂU NĂM", "tra:loai_hinh,dien_tich,dien_tich_dat,dien_tich_nha,mat_tien,lo_gioi_duong"),
     ("- Loại hình (loai_hinh)", "tra:loai_hinh"),
@@ -191,7 +190,8 @@ def _cong_cu_ghi(schema: dict[str, Any]) -> list[dict[str, Any]]:
     p = schema["properties"]
     op = p["operations"]["items"]["properties"]
     lay = lambda *ks: {k: copy.deepcopy(op[k]) for k in ks if k in op}
-    bo = {"op": {"type": "string", "enum": ["remove", "keep_only", "clear"], "description": op["op"]["description"]}, **lay("targets")}
+    bo = {"op": {"type": "string", "enum": ["remove", "keep_only", "clear"],
+                 "description": "remove = bỏ vài căn; keep_only = chỉ giữ vài căn; clear = ngưng rao cả rổ."}, **lay("targets")}
     y = {k: copy.deepcopy(v) for k, v in p.items() if k != "operations"}
     return [
         {"name": "ghi_o", "description": "Ghi / sửa ô tin của MỘT căn (căn đang khai nếu target trống).",
@@ -247,14 +247,30 @@ def _chay_ghi(engine: Any, conv: Any, ten: str, vao: dict[str, Any], plan: dict[
 
 
 def _cau_dau(mo_ta: str, tran: int = 160) -> str:
+    """Câu đầu của mô tả (≤ `tran` chữ); có cắt thì kết bằng "…" — mô tả NGUYÊN trả qua tra_luat_o."""
     cau = mo_ta.split(". ", 1)[0]
-    return (cau if len(cau) <= tran else cau[:tran].rsplit(" ", 1)[0] + "…") + " (luật đủ: tra_luat_o)"
+    if len(cau) > tran:
+        return cau[:tran].rsplit(" ", 1)[0] + "…"
+    return cau + ("…" if len(cau) < len(mo_ta.rstrip(". ")) else "")
+
+
+# SRS-5.1zzzzzzz506: ô tin thường gặp / dễ lẫn giữ mô tả nguyên trong ghi_o; ô hiếm (dự án, kho xưởng, thương mại, phòng trọ, đất nông
+# nghiệp, ô riêng của chủ…) chỉ ghi tên khoá — tên đã nói nghĩa, mô tả đủ qua tra_luat_o; lượt hệ thống hỏi ô nào thì luật ô đó nạp sẵn.
+O_THUONG = frozenset({
+    "dia_chi", "dien_tich", "gia", "dien_tich_dat", "dien_tich_nha", "ket_cau", "lo_gioi_hem", "tinh_trang_ban_giao", "phap_ly_hoan_cong",
+    "so_phong_ngu", "tang_toa", "ban_cong_view", "noi_that", "phi_quan_ly", "phap_ly_so_hong", "hien_trang_su_dung", "kich_thuoc", "tho_cu",
+    "lo_gioi_duong", "phap_ly_so_do", "quy_hoach", "mat_tien", "dai_m", "hau_m", "phap_ly", "the_chap", "thuong_luong", "thue_phi", "huong",
+    "nam_xay", "co_hdt", "thu_nhap_thue", "hd_thue_con", "thoi_han_hd", "muc_coc", "gia_chot", "tien_coc", "uu_the", "hinh_anh",
+    "loai_hinh", "ma_so_can", "du_an", "duong", "phuong", "quan", "gan_nga_tu", "unit_type",
+})
+# Khoá ý khách giữ mô tả nguyên dù dài: nghĩa nằm ở mô tả, mã enum không tự nói đủ (SRS-493 so_ngang).
+Y_GIU_NGUYEN = frozenset({"so_ngang", "user_intent", "hoi_ngoai_viec", "con_ban", "hen_lai_luc", "tam_dung_den"})   # giờ hẹn → nhắc lại
 
 
 def _tra_cong_cu(chia: dict[str, Any]) -> dict[str, Any]:
     return {"name": "tra_luat_o",
             "description": "TRA CỨU luật ghi của MỘT ô tin / khoá (nguyên văn luật hệ thống). Gọi trước khi ghi ô / khoá mà luật chưa có "
-                           "trong lời nhắc. Khoá có luật riêng: " + ", ".join(sorted(chia["tra"])) + ".",
+                           "trong lời nhắc, hoặc khoá có mô tả rút (\"…\") / ô hiếm. Khoá có luật riêng: " + ", ".join(sorted(chia["tra"])) + ".",
             "input_schema": {"type": "object", "properties": {"o": {"type": "string", "description": "tên khoá, vd dien_tich_dat, duyet_ban_nhap"}},
                              "required": ["o"]}}
 
@@ -264,17 +280,27 @@ def cong_cu(schema: dict[str, Any], chia: dict[str, Any]) -> list[dict[str, Any]
     khách có luật riêng chỉ giữ câu đầu của mô tả — mô tả NGUYÊN + luật đủ trả qua tra_luat_o, không viết hai lần mỗi lượt."""
     tools = _cong_cu_ghi(schema)
     o_tin = schema["properties"]["operations"]["items"]["properties"]["fields"].get("properties") or {}
-    ds_o = "; ".join(f"{k}: {v.get('description') or k}" for k, v in o_tin.items())   # mô tả ô NGUYÊN (một bản — luật dài của form qua tra_luat_o)
+    ds_o = "; ".join(f"{k}: {v.get('description') or k}" for k, v in o_tin.items() if k in O_THUONG).rstrip(". ")
+    hiem = ", ".join(k for k in o_tin if k not in O_THUONG)
     for t in tools:
         props = t["input_schema"]["properties"]
         if "fields" in props:
             props["fields"] = {"type": "object", "description": (
                 "Ô tin → giá trị (chuỗi; riêng uu_the là mảng cụm nguyên văn). Chỉ dùng các khoá — " + ds_o
-                + ". Luật chi tiết của một ô: gọi tra_luat_o.") if t["name"] == "ghi_o" else "Ô tin → giá trị, cùng bộ khoá như ghi_o."}
+                + ". Ô hiếm (tên khoá tự nói nghĩa, mô tả đủ: tra_luat_o): " + hiem + ".") if t["name"] == "ghi_o"
+                else "Ô tin → giá trị, cùng bộ khoá như ghi_o."}
+        if t["name"] == "them_can":   # bang_chung / is_rental cùng nghĩa ghi_o — không chép mô tả hai lần
+            for k in ("bang_chung", "is_rental"):
+                if k in props:
+                    props[k] = {**{x: y for x, y in props[k].items() if x != "description"}, "description": "Như ở ghi_o."}
         if t["name"] == "ghi_y_khach":
+            t["description"] += " Mô tả khoá kết bằng \"…\" là bản rút — mô tả đủ và luật riêng: tra_luat_o(khoá)."
             for k, v in props.items():
-                if k in chia["tra"] and v.get("description"):
-                    v["description"] = _cau_dau(str(v["description"]))
+                mo = str(v.get("description") or "")
+                if not mo or k in Y_GIU_NGUYEN:
+                    continue
+                if k in chia["tra"] or len(mo) > 200 or (k.endswith("_trich_dan") and len(mo) > 90):
+                    v["description"] = _cau_dau(mo, 90 if k.endswith("_trich_dan") else 160)
         cc = chia["cc"].get(t["name"])
         if cc:
             t["description"] += "\n" + "\n".join(k.strip("\n") for k in cc)

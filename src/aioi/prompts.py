@@ -2184,8 +2184,7 @@ cho các loại này.
   các quận nội thành cũ của TP.HCM (Quận 1–12, Phú Nhuận, Bình Thạnh, Tân Bình, Tân Phú, Gò Vấp, Bình Tân, Thủ Đức…) → nha_pho.
   "căn hộ", "chung cư", "block / tầng X căn Y", tên toà chung cư → chung_cu. "lô đất", "đất nền", "đất thổ cư", "đất trống" → dat.
   Cho thuê NGUYÊN CĂN ("nhà nguyên căn", "nhà trọ nguyên căn", "thuê nguyên căn" — cả căn nhà có trệt / lầu / phòng ngủ) → nha_pho;
-  phong_tro chỉ khi cho thuê TỪNG PHÒNG trong dãy / nhà trọ (khách "cho thuê nhà trọ nguyên căn, 1 trệt 1 lầu 2PN" bị xếp
-  phòng trọ, bot hỏi gác lửng / WC riêng).
+  phong_tro chỉ khi cho thuê TỪNG PHÒNG trong dãy / nhà trọ.
   "Nhà" / "căn nhà" trong khu dự án / khu dân cư (vd "bán nhà trong khu dự án Nyah Phú Định") → nha_pho; chung_cu chỉ khi khách nói
   căn hộ / chung cư / tòa / block / tầng X (bot hỏi "tòa nào, tầng mấy" cho nhà phố trong dự án).
   Vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An, Bình Dương, Đồng Nai, Tây Ninh…) mà khách chỉ nói "nhà",
@@ -2560,10 +2559,8 @@ QUY TẮC:
   Khách duyệt tin hoặc hỏi phí thì KHÔNG tạo "add" (thêm căn mới) — operations RỖNG.
   CHỈ tạo thao tác "add" khi khách nói RÕ RÀNG muốn rao MỘT CĂN KHÁC (vd: "tôi còn căn nữa ở...", "thêm căn số 2...", "qua căn khác...").
 - CÂU HỎI hoặc YÊU CẦU XEM ("bản vẽ căn 24", "cho xem mặt bằng", "căn 42 giá bao nhiêu", "có
-  hình không", "phí bao nhiêu") KHÔNG phải thao tác rổ hàng → operations RỖNG. TUYỆT ĐỐI đừng suy ra add/update
-  chỉ vì tin nhắn có nhắc một mã căn.
-- remove / keep_only / clear CHỈ khi khách nói RÕ ý muốn bỏ/xóa/chỉ giữ (bỏ, xóa, không bán nữa,
-  chỉ giữ, xóa hết...). Nhắc một mã căn trong câu hỏi KHÔNG BAO GIỜ là remove/keep_only/clear.
+  hình không", "phí bao nhiêu") KHÔNG phải thao tác rổ hàng → operations RỖNG. Nhắc một mã căn không phải lý do
+  tạo add / update / remove / keep_only / clear.
 - Diện tích: nhà phố/biệt thự/nhà cấp 4 có 2 diện tích. Rõ đất/nhà → dien_tich_dat/dien_tich_nha (xem ĐỌC DẤU HIỆU bên dưới);
   không có dấu hiệu nào → để tạm dien_tich. Loại khác chỉ có 1 dien_tich.
 ĐỌC DẤU HIỆU NHƯ MÔI GIỚI LÂU NĂM ("bot thông minh phải hiểu dấu hiệu căn này thuộc về gì"):
@@ -2571,8 +2568,7 @@ QUY TẮC:
   các quận nội thành cũ của TP.HCM (Quận 1–12, Phú Nhuận, Bình Thạnh, Tân Bình, Tân Phú, Gò Vấp, Bình Tân, Thủ Đức…) → nha_pho.
   "căn hộ", "chung cư", "block / tầng X căn Y", tên toà chung cư → chung_cu. "lô đất", "đất nền", "đất thổ cư", "đất trống" → dat.
   Cho thuê NGUYÊN CĂN ("nhà nguyên căn", "nhà trọ nguyên căn", "thuê nguyên căn" — cả căn nhà có trệt / lầu / phòng ngủ) → nha_pho;
-  phong_tro chỉ khi cho thuê TỪNG PHÒNG trong dãy / nhà trọ (khách "cho thuê nhà trọ nguyên căn, 1 trệt 1 lầu 2PN" bị xếp
-  phòng trọ, bot hỏi gác lửng / WC riêng).
+  phong_tro chỉ khi cho thuê TỪNG PHÒNG trong dãy / nhà trọ.
   "Nhà" / "căn nhà" trong khu dự án / khu dân cư (vd "bán nhà trong khu dự án Nyah Phú Định") → nha_pho; chung_cu chỉ khi khách nói
   căn hộ / chung cư / tòa / block / tầng X (bot hỏi "tòa nào, tầng mấy" cho nhà phố trong dự án).
   Vùng ven / tỉnh (Bình Chánh, Củ Chi, Hóc Môn, Nhà Bè, Cần Giờ, Long An, Bình Dương, Đồng Nai, Tây Ninh…) mà khách chỉ nói "nhà",
