@@ -801,6 +801,14 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz516 · Bốn chỗ sai lộ ra khi bắn thử trên Gemini (16/11/2026)
+Chủ dự án: "Sửa luôn". Bản ghi: `Ban-thu-FDA-BOA_16-11-2026.md` (ngoài repo).
+- **Thuê đã qua thành "đang cho thuê":** `_mot_cum_mot_o` bỏ `thu_nhap_thue` khi căn chưa có `co_hdt = co` (cùng lượt hoặc đã ghi); mô tả ô dặn ghi kèm `co_hdt`, nhà hết cho thuê thì không ghi.
+- **Giá "6.x" vào bản tin:** ô `gia` có số lẻ là chữ x (`_GIA_CHUA_RO_RE`) không được ghi → căn chưa đủ ngưỡng rao, bot hỏi con số.
+- **"TBT" đọc thành Tân Bình:** kiến thức nghề nói rõ viết tắt chữ đầu là tên đường, không phải quận.
+- **Bot nói "Hệ thống đã cập nhật … vào bản tin":** lời nhắc lượt sửa tin từng mở bằng "HỆ THỐNG ĐÃ ĐỌC … (đã ghi vào…)", model chép lại; nay là "KHÁCH VỪA ĐỔI / THÊM THÔNG TIN CĂN".
+- **Cỡ:** lượt hỏi thông tin 58.021 → 58.219 ký tự. `do-prompt.py` 3/3.
+
 ### SRS-5.1zzzzzzz515 · Tin phụ `$$$$$` ghi rõ FDA hay BOA (16/11/2026)
 Chủ dự án: "tin $$$$ giờ chia ra con FDA hay BOA làm thì viết ra nhé". Chỉ khi công tắc `AIOI_DONG_TRICH_XUAT` bật.
 - **Lượt chat:** dòng đầu thành `$$$$$ [FDA] [đã trích xuất: …]` (`che_do_test.chu_thich`).
@@ -856,12 +864,3 @@ Chủ dự án 16/11: "xem rút tiếp được không" — khai báo công cụ
 - **`ghi_y_khach`:** khoá có luật riêng, mô tả > 200 chữ hoặc `_trich_dan` > 90 chữ chỉ giữ câu đầu, kết bằng "…"; `tra_luat_o` trả mô tả nguyên của MỌI khoá. Giữ nguyên các khoá mà mã enum không tự nói đủ (`so_ngang`, `user_intent`, `hoi_ngoai_viec`, `con_ban`, `hen_lai_luc`, `tam_dung_den`). `them_can` không chép lại mô tả `bang_chung` / `is_rental`; `bo_can.op` có mô tả riêng ba giá trị.
 - **Luật form:** gạch "remove / keep_only / clear CHỈ khi…" bỏ — khối ⚠️ của `bo_can` đã nói; ý "nhắc mã căn" gộp vào gạch CÂU HỎI. Bỏ lời kể ca cũ ở luật phòng trọ.
 - **Cỡ prompt (ký tự):** khai báo công cụ bước ghi 28.805 → 25.401; lượt hỏi thông tin 65.781 → 62.325; trình bản tin 84.557 → 81.205; duyệt 67.925 → 64.573. Kiểm: import lõi, `do-prompt.py` 3/3, truyvet sạch. Chưa chạy thật với Claude (Anthropic hết số dư) — rủi ro là model ít gọi `tra_luat_o` cho ô hiếm; có tiền thì nhắn thử một căn kho xưởng / phòng trọ.
-
-### SRS-5.1zzzzzzz506 · Rút gọn GIỌNG và prompt gọn, bước ghi bỏ khối giọng, gỡ /reset-all (16/11/2026)
-Chủ dự án 16/11: "tính cách bot và các thứ kia không làm gọn hơn được à" — làm đợt 2–3 của kế hoạch rút gọn, không chờ hỏi thêm.
-- **`GIONG` 3.728 → 3.112 chữ, `LEAN_SYSTEM_PROMPT` 7.392 → 6.078:** giữ đủ các ý (nghe khách trước, độ dài theo ý, một ý mỗi lượt, không báo đã ghi, khen điểm hiếm, nói thật, ví dụ cảm xúc); bỏ câu nói hai lần giữa GIỌNG và ba khối CÁCH EM NHẮN / HỎI NHƯ TRÒ CHUYỆN / SỰ THẬT (gộp thành một khối LƯỢT HỎI THÔNG TIN chỉ còn ý riêng). Từ điển tiếng nghề tách thành `TIENG_NGHE` (một bản).
-- **Bước ghi có phần cố định riêng `LEAN_GHI`** (`co_dinh_ban`): bước này chỉ gọi công cụ, không viết lời, nên bỏ khối giọng / cách nhắn / ví dụ; giữ tiếng nghề, kiến thức nghề và luật đáp chung (câu chọn khách chỉ "ok" thì không ghi ô). Hai bước vốn không chung cache (khác bộ công cụ) nên tách không tốn ghi cache thêm.
-- **Bớt lặp khác:** hướng dẫn công cụ phía bán (`agent_ban.HUONG_DAN`) không chép lại mô tả từng công cụ; bỏ số phí gõ tay trong mô tả `tinh_phi_moi_gioi`; luật "Dạ" chỉ ở `_GIONG_CHUNG`, các khối xưng hô không nhắc lại; lời dặn bước viết bỏ ý "không báo đã ghi" (đã ở GIỌNG) và "câu hỏi duy nhất"; luật ghi chung bỏ lời kể ca bắn thử.
-- **Cỡ prompt (ký tự, đo `do-prompt.py`):** lượt hỏi thông tin 74.589 → 65.781 (system bước ghi 17.414 → 11.307, bước viết 12.966 → 10.327); trình bản tin 93.330 → 84.557; duyệt 76.035 → 67.925.
-- **Tự quyết các mục treo:** gỡ `/reset-all` (`Engine.reset_all` đọc `_conn` SQLite, lỗi với kho Supabase; xoá hàng loạt đã có nút XOA HET); giữ model riêng cho ID thử (công tắc `AIOI_CHAT_MODEL_THU`); giữ cả `cli.py` (lệnh /state…) và `scripts/chat-cli.py` (chat bằng quota Claude Code) vì khác việc; kiến thức nghề là khối riêng ngoài trần 8.000; chú thích lịch sử (đợt 6) để nguyên.
-- **Kiểm:** import lõi; `do-prompt.py` 3/3; đọc lại system hai bước. Chưa chat thật với Claude (tài khoản Anthropic hết số dư) — có tiền thì nhắn tay vài cuộc để xem giọng.

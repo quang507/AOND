@@ -346,6 +346,7 @@ _DESTRUCTIVE_OPS = {"clear", "keep_only", "remove"}
 
 # Ô PHÂN LOẠI (mã slug AI đọc theo nghĩa) — không qua cổng bằng chứng lời khách (SRS-5.1zzzzzzz73; bắn thử lần 5: model không trích
 # cho loai_hinh, "nha_pho" không phải chữ khách gõ, tin thành chua_ro).
+_GIA_CHUA_RO_RE = re.compile(r"\d[.,]?x+(?!\d)", re.I)   # "6.x", "6,x tỷ", "5x tỷ" — không khớp kích thước "4x16"
 _O_PHAN_LOAI = frozenset({"loai_hinh", "co_hdt"})   # `co_hdt` (SRS-5.1zzzzzzz197): "co" / "khong" AI đọc từ hiện trạng, quyết có hỏi tiền thuê không
 # Ô mang SỐ ĐO (diện tích, giá, kích thước, số tầng / phòng…) — chỉ những ô này được nhận theo số (`_so_khop`). Ô chữ (thương lượng,
 # pháp lý, hiện trạng…) phải khớp nguyên văn: bắn thử 19/10, khách "giá 8,5 tỷ" → AI ghi thuong_luong "thu về 8,5 tỷ", số 8,5 có
@@ -6023,6 +6024,10 @@ class Engine:
             log.warning("Bỏ ô %s: %s", k, hinh_thuc)
             conv.bo_luot.append((k, v, bang_chung.get(k) if isinstance(bang_chung.get(k), str) else None, hinh_thuc))
             return None
+        if k == "gia" and _GIA_CHUA_RO_RE.search(str(v)):   # SRS-5.1zzzzzzz516: "6.x tỷ" từng vào tiêu đề bản tin (bắn thử 16/11)
+            log.warning("Bỏ ô gia: số lẻ chưa rõ")
+            conv.bo_luot.append((k, v, None, "giá chưa rõ số lẻ (kiểu \"6.x\") — hỏi con số chính xác"))
+            return None
         bc = bang_chung.get(k) if isinstance(bang_chung.get(k), str) else None
         # Bằng chứng = cụm AI trích; model không phải lượt nào cũng trích (bắn thử 19/10: bỏ mất "diện tích sàn 170m²") nên
         # thiếu cụm thì kiểm chính giá trị ô — vẫn phải nằm trong lời KHÁCH, nên câu bot tự hỏi không lọt.
@@ -6142,6 +6147,13 @@ class Engine:
             log.warning("Bỏ ô %s: giá trị dạng kích thước, không phải ô kích thước / diện tích", k)
             conv.bo_luot.append((k, out.get(k), None, "giá trị dạng kích thước (AxB / NNm²) chỉ thuộc ô kích thước / diện tích"))
             out.pop(k, None)
+        # (4) Tiền thuê là dữ kiện của căn chỉ khi nhà ĐANG có người thuê (SRS-5.1zzzzzzz516, bắn thử 16/11: "hồi trước anh cho thuê 60 triệu"
+        # thành "đang cho thuê 60 triệu/tháng" trong bản tin). So ô phân loại AI đã ghi, không đọc lời khách.
+        if out.get("thu_nhap_thue") and (out.get("co_hdt") or conv.prop.fields.get("co_hdt")) != "co":
+            log.warning("Bỏ ô thu_nhap_thue: chưa có co_hdt = co")
+            conv.bo_luot.append(("thu_nhap_thue", out.get("thu_nhap_thue"), None,
+                                 "tiền thuê chỉ ghi khi nhà đang có người thuê (co_hdt = co cùng lượt); thuê đã qua thì đưa vào uu_the bằng nguyên lời khách"))
+            out.pop("thu_nhap_thue", None)
         return out
 
     def _extract_fields(self, conv: Conversation) -> dict[str, str]:

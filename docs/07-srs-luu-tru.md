@@ -73,6 +73,15 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz506 · Rút gọn GIỌNG và prompt gọn, bước ghi bỏ khối giọng, gỡ /reset-all (16/11/2026)
+Chủ dự án 16/11: "tính cách bot và các thứ kia không làm gọn hơn được à" — làm đợt 2–3 của kế hoạch rút gọn, không chờ hỏi thêm.
+- **`GIONG` 3.728 → 3.112 chữ, `LEAN_SYSTEM_PROMPT` 7.392 → 6.078:** giữ đủ các ý (nghe khách trước, độ dài theo ý, một ý mỗi lượt, không báo đã ghi, khen điểm hiếm, nói thật, ví dụ cảm xúc); bỏ câu nói hai lần giữa GIỌNG và ba khối CÁCH EM NHẮN / HỎI NHƯ TRÒ CHUYỆN / SỰ THẬT (gộp thành một khối LƯỢT HỎI THÔNG TIN chỉ còn ý riêng). Từ điển tiếng nghề tách thành `TIENG_NGHE` (một bản).
+- **Bước ghi có phần cố định riêng `LEAN_GHI`** (`co_dinh_ban`): bước này chỉ gọi công cụ, không viết lời, nên bỏ khối giọng / cách nhắn / ví dụ; giữ tiếng nghề, kiến thức nghề và luật đáp chung (câu chọn khách chỉ "ok" thì không ghi ô). Hai bước vốn không chung cache (khác bộ công cụ) nên tách không tốn ghi cache thêm.
+- **Bớt lặp khác:** hướng dẫn công cụ phía bán (`agent_ban.HUONG_DAN`) không chép lại mô tả từng công cụ; bỏ số phí gõ tay trong mô tả `tinh_phi_moi_gioi`; luật "Dạ" chỉ ở `_GIONG_CHUNG`, các khối xưng hô không nhắc lại; lời dặn bước viết bỏ ý "không báo đã ghi" (đã ở GIỌNG) và "câu hỏi duy nhất"; luật ghi chung bỏ lời kể ca bắn thử.
+- **Cỡ prompt (ký tự, đo `do-prompt.py`):** lượt hỏi thông tin 74.589 → 65.781 (system bước ghi 17.414 → 11.307, bước viết 12.966 → 10.327); trình bản tin 93.330 → 84.557; duyệt 76.035 → 67.925.
+- **Tự quyết các mục treo:** gỡ `/reset-all` (`Engine.reset_all` đọc `_conn` SQLite, lỗi với kho Supabase; xoá hàng loạt đã có nút XOA HET); giữ model riêng cho ID thử (công tắc `AIOI_CHAT_MODEL_THU`); giữ cả `cli.py` (lệnh /state…) và `scripts/chat-cli.py` (chat bằng quota Claude Code) vì khác việc; kiến thức nghề là khối riêng ngoài trần 8.000; chú thích lịch sử (đợt 6) để nguyên.
+- **Kiểm:** import lõi; `do-prompt.py` 3/3; đọc lại system hai bước. Chưa chat thật với Claude (tài khoản Anthropic hết số dư) — có tiền thì nhắn tay vài cuộc để xem giọng.
+
 ### SRS-5.1zzzzzzz505 · Dọn code chết, bước ghi bớt 8 công cụ tư vấn, tài liệu bỏ vết bắn thử / bộ chấm (16/11/2026)
 Chủ dự án 16/11: "làm tiếp" (đợt 4 dọn code + đợt 5 tài liệu của kế hoạch rút gọn prompt). Không đổi luật hay lời bot.
 - **Bước ghi (vòng agent gộp, người bán) chỉ còn 3 công cụ đọc** (`agent_gop.DOC_BUOC_1` = `ro_hang`, `bo_nho_du_an`, `gia_da_gui`): 8 công cụ tư vấn còn lại (định giá, quy hoạch, dự án…) vốn đã có ở bước viết — mô tả công cụ bước ghi 33.564 → 28.805 ký tự mỗi lượt. Lượt hỏi thông tin: 79.354 → 74.589 ký tự (đầu ngày 73.702).

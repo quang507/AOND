@@ -95,7 +95,7 @@ FIELD_LABELS: dict[str, str] = {
     "hd_thue_con": "hợp đồng thuê hiện tại còn bao lâu (chỉ khi tin BÁN và nhà đang có người thuê)",
     "co_hdt": ("nhà (tin BÁN) đang có hợp đồng thuê hay không — AI đọc theo nghĩa, chỉ ghi \"co\" khi khách nói nhà đang cho thuê / có người thuê, "
                "\"khong\" khi khách nói đang ở hoặc để trống; chưa rõ thì BỎ TRỐNG"),
-    "thu_nhap_thue": "tiền thuê nhà đang thu mỗi tháng (CHỈ khi tin BÁN và nhà đang có hợp đồng thuê; ghi cả số tiền khách nói, vd 35 triệu/tháng)",
+    "thu_nhap_thue": "tiền thuê nhà đang thu mỗi tháng (CHỈ khi tin BÁN và nhà đang có hợp đồng thuê — ghi kèm co_hdt = co; nhà hồi trước cho thuê nay hết thì không ghi ô này; ghi cả số tiền khách nói, vd 35 triệu/tháng)",
     "hinh_anh": "hình ảnh thực tế / sổ đỏ (chủ nhà chụp gửi cho em)",
     # Chung cư / Căn hộ
     "so_phong_ngu": "số phòng ngủ và WC (chỉ số PHÒNG — số tầng / lầu thuộc ô kết cấu)",
@@ -290,7 +290,7 @@ SLANG_NOTES = """TỪ ĐIỂN TIẾNG LÓNG BĐS (hiểu đúng, không hỏi l�
   • Diện tích: "đất" = thửa trên sổ (ngang × dài); "xây dựng" = phần nền nhà chiếm trên đất; "sàn" = từng tầng; "diện tích sử dụng" của nhà phố = TỔNG sàn các tầng (trệt + lửng + lầu + sân thượng có mái), ước ≈ diện tích xây dựng × số tầng — một con số trống không của nhà nhiều tầng thường là đất hoặc một sàn. Chung cư: diện tích trên sổ hồng là thông thủy (lọt lòng), tim tường lớn hơn khoảng 5–10%.
   • Hẻm & xe: ô tô con cần hẻm khoảng 3–3,5 m trở lên; dưới 3 m thường chỉ xe máy / ba gác; xe tải nhỏ khoảng 4–5 m. Hẻm rộng là điều kiện cần, chưa chắc ô tô vào TỚI nhà (khúc hẹp, cột điện) — hẻm xe hơi chỉ khi khách nói HXH / ô tô vào tới / nhà có gara hay chỗ đậu ô tô.
   • Loại nhà theo vị trí: có số nhà trên đường hay trong hẻm ("123 TBT", "100/9") = nhà phố; tên toà / block / tầng / mã căn = chung cư; "lô", "nền" = đất nền; nhiều phòng cho thuê = phòng trọ / CHDV.
-  • Tên đường viết tắt bằng chữ đầu ("TBT", "NVL", "CMT8") = đường khách vừa nhắc hoặc đường quen ở Sài Gòn (Trần Bình Trọng, Nguyễn Văn Linh, Cách Mạng Tháng Tám) — đọc ra tên đầy đủ theo ngữ cảnh; hai đường cùng khớp thì hỏi lại đúng tên.
+  • Tên đường viết tắt bằng chữ đầu ("TBT", "NVL", "CMT8") là tên ĐƯỜNG, không phải quận (quận viết hai chữ: TB, BT, GV) = đường khách vừa nhắc hoặc đường quen ở Sài Gòn (Trần Bình Trọng, Nguyễn Văn Linh, Cách Mạng Tháng Tám) — đọc ra tên đầy đủ theo ngữ cảnh; hai đường cùng khớp thì hỏi lại đúng tên.
   • Khách hỏi kiến thức chung (khu này có chung cư không, hẻm mấy mét xe hơi vào được, diện tích sử dụng là gì, "em nghĩ là diện tích nào") thì đáp ngắn bằng kiến thức này hoặc công cụ tra trước, rồi mới hỏi tiếp — câu hỏi lại của em kèm nghĩa của từ đó.
   • Tin rao dán sẵn: "4x16" = ngang 4 m × dài 16 m (≈ 64 m² đất); "CN 60" / "DTCN" = diện tích công nhận trên sổ; "T1L2ST" / "trệt lửng 2 lầu ST" = trệt + lửng + 2 lầu + sân thượng; "C4", "nhà nát", "tiện xây mới" = nhà cũ bán theo giá đất (không hỏi nội thất); "đúc thật" / "BTCT" = sàn bê tông cốt thép, "đúc giả" = sàn nhẹ; "giá 6.x" = hơn 6 tỷ chưa rõ số lẻ (hỏi số chính xác); "bao sang tên" / "bao thuế phí" = bên bán chịu thuế phí.
   • Pháp lý kéo theo: sổ đang thế chấp ngân hàng → vẫn bán được, phải giải chấp trước khi sang tên; đồng sở hữu / thừa kế / sổ hộ gia đình → cần đủ người đứng tên ký; vi bằng / giấy tay → người mua không vay ngân hàng được; có sổ chưa chắc đã hoàn công (nhà xây sau khi cấp sổ); chung cư "HĐMB" = chưa ra sổ; nhà ở xã hội bị hạn chế chuyển nhượng trong 5 năm.
@@ -1683,7 +1683,7 @@ def build_fee_followup_system(
     yeu_cau = khoi_yeu_cau_viet(prop, yeu_cau_moi)
     # SRS-5.1zzzzzzz493 (bộ vàng 14/11: "Khách đang bổ sung phường nên đây là chỉnh sửa, em rao lại bản tin…"): khách vừa đổi / thêm ô tin
     # (engine biết qua bóc tách) thì nói thẳng trường hợp — model khỏi tự xếp lời khách vào mục nào rồi kể việc xếp đó ra.
-    vua_sua = ("\n- HỆ THỐNG ĐÃ ĐỌC: khách vừa đổi / thêm thông tin căn (đã ghi vào DỮ LIỆU BĐS bên dưới). Lượt này làm theo mục CHỈNH SỬA "
+    vua_sua = ("\n- KHÁCH VỪA ĐỔI / THÊM THÔNG TIN CĂN (DỮ LIỆU BĐS bên dưới đã có điều đó). Lượt này làm theo mục CHỈNH SỬA "
                "THẬT SỰ: rao lại bản tin cập nhật có điều khách vừa đưa." if viet_lai_tin and duyet != "khong_dong_y" and not yeu_cau_moi else "")
     # SRS-5.1zzzzzzz368: khuôn bản tin (AD_FORMAT, ~5k ký tự, sau ranh giới cache) chỉ đi kèm lượt có thể phải rao lại bản tin
     # (`viet_lai_tin`, engine quyết theo ý khách lượt này) — lượt duyệt / hỏi phí / chuyện khác không cần.
