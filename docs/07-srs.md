@@ -803,7 +803,7 @@ Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở 
 
 ### SRS-5.1zzzzzzz517 · Gemini chỉ dùng flash-lite; quá hạn thì thử khoá kế trước khi cho model nghỉ (16/11/2026)
 Chủ dự án: "sau chọn flash-lite thôi" (`gemini-3.5-flash` hết hạn mức ngày sau khoảng 45 lượt, SRS-516).
-- **Cấu hình 146:** `GEMINI_MODEL=gemini-3.1-flash-lite` trong `.env` lõi (sao lưu `C:ondackup\env_20261116_201836`). Mặc định trong code không đổi.
+- **Cấu hình 146:** `GEMINI_MODEL=gemini-3.1-flash-lite` trong `.env` lõi (sao lưu `C:/aond/backup/env_20261116_201836`). Mặc định trong code không đổi.
 - **`llm/du_phong.py`:** còn một model thì một lần quá hạn làm cả đường nghỉ 60 s (lượt kiểm sau khi đổi trả câu giữ chỗ). Khi công tắc chỉ-Gemini bật, quá hạn lần đầu thì thử khoá kế, lần hai mới cho model nghỉ.
 - **Còn lại:** flash-lite có lượt không gọi công cụ, tự nêu giá / nhận định (SRS-516); khoá Groq vẫn 403.
 
