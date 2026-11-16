@@ -55,7 +55,7 @@ flowchart TD
   URL -->|có| HL["Engine.handle_link"]
   URL -->|không| MA{"lenh_tra_loi '#35;mã: …'<br/>và la_nhan_vien?"}
   MA -->|có| TM["tra_loi_theo_ma<br/>(admin trả lời câu khách mua hỏi)"] --> BRS
-  MA -->|không| KH["_lap_ke_hoach — lượt AI đọc ý<br/>chưa rõ vai: đọc nhanh _doc_nhanh_chua_ro_vai (SRS-5.1zzzzzzz406); cần đọc đủ thì form OPERATIONS_SYSTEM<br/>người bán đã rõ vai: bước 1 vòng agent gộp (agent_gop.mo — công cụ ghi / đọc / tra_luat_o)<br/>người mua đã rõ vai: bước 1 cùng vòng (agent_gop.mo_mua — ghi_nhu_cau qua cổng trích, viec_can, ghi_y_khach; ra ý bán → đọc lại form đầy đủ)<br/>vòng lỗi: form OPERATIONS_SYSTEM_BAN / _MUA (AIOI_EXTRACT_MODEL = Sonnet 5.5) dự phòng<br/>ra: operations + vai + ý mua / bán + duyệt + hỏi về + y_luot"]
+  MA -->|không| KH["_lap_ke_hoach — lượt AI đọc ý<br/>chưa rõ vai: vòng agent theo số đang nhắn — ký gửi: agent_gop.mo, tư vấn: agent_gop.mo_mua; đọc ra ý ngược vai thì form OPERATIONS_SYSTEM (SRS-5.1zzzzzzz511, thay đọc nhanh SRS-406)<br/>người bán đã rõ vai: bước 1 vòng agent gộp (agent_gop.mo — công cụ ghi / đọc / tra_luat_o)<br/>người mua đã rõ vai: bước 1 cùng vòng (agent_gop.mo_mua — ghi_nhu_cau qua cổng trích, viec_can, ghi_y_khach; ra ý bán → đọc lại form đầy đủ)<br/>vòng lỗi: form OPERATIONS_SYSTEM_BAN / _MUA (AIOI_EXTRACT_MODEL = Sonnet 5.5) dự phòng<br/>ra: operations + vai + ý mua / bán + duyệt + hỏi về + y_luot"]
   KH --> VAI["định tuyến vai theo user_intent của lượt<br/>buy → buyer · sell → seller · mơ hồ: giữ vai / số tư vấn → buyer"]
   VAI --> TLK["tra_loi_cau_hoi<br/>(chủ nhà vừa trả lời câu khách mua hỏi)"]
   TLK --> DX{"đang chờ xác nhận ẩn tin?<br/>pending_destructive"}

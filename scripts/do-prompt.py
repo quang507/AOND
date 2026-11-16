@@ -76,7 +76,7 @@ class Gia(LLMProvider):
             tc = ToolCall(id="t1", name=n, input={"user_intent": Y_DINH[0]})
             return ToolTurn(text="", tool_calls=[tc], assistant_content=[{"type": "tool_use", "id": "t1", "name": n, "input": tc.input}],
                             stop_reason="tool_use")
-        return ToolTurn(text="" if buoc1 else LOI[0], tool_calls=[])
+        return ToolTurn(text="" if buoc1 else LOI[0] + "\n" + agent_gop.DAU_KHAI_HOI + "[]", tool_calls=[])   # bước viết tự khai ô hỏi (SRS-511)
 
     def describe_media(self, *a, **k):
         return ""

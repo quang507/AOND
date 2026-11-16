@@ -25,6 +25,7 @@ lại cả lượt bằng form đầy đủ (đường bán) như form gọn; v�
 from __future__ import annotations
 
 import copy
+import json
 import logging
 import time
 from typing import Any
@@ -39,6 +40,7 @@ HAN_GIAY = 30.0     # cả hai bước; trần lõi 40 s, bridge chờ 90 s — 
 TRAN_KET_QUA = 6000
 SUA = "Sẽ BỎ"      # dấu trong kết quả công cụ: model cần sửa cụm trích (mở thêm một vòng)
 DAU_BUOC_2 = "=== BƯỚC 2 — ĐÁNH GIÁ KẾT QUẢ RỒI VIẾT LỜI GỬI KHÁCH ==="   # scripts/do-prompt.py nhận lần gọi viết lời bằng dấu này
+DAU_KHAI_HOI = "<<HOI>>"   # SRS-5.1zzzzzzz511: dòng tự khai ô lời hỏi — `tach_khai_hoi` cắt trước khi gửi, lưới `engine._khai_o_hoi` đọc
 
 GHI = ("ghi_o", "them_can", "doi_trang_thai", "bo_can", "ghi_y_khach")
 DOC = tuple(c["name"] for c in agent_ban.CONG_CU)
@@ -328,8 +330,34 @@ HUONG_DAN_VIET = (
     "Em vừa đọc ý khách và gọi công cụ ghi (bước 1). Kết quả công cụ cuối là KẾT QUẢ GHI LƯỢT NÀY — hệ thống đã áp qua cổng kiểm. Đánh giá kết "
     "quả đó rồi viết lời gửi khách theo các luật ở trên và việc lượt này. Không kể cho khách tên công cụ, tên ô, cổng kiểm hay kết quả hệ thống.\n"
 )
+KHAI_HOI = (   # chỉ phía bán (lưới ô hỏi chỉ xét người bán) — bước viết phía mua dùng HUONG_DAN_VIET không kèm dòng này
+    "Xong lời, xuống dòng viết thêm MỘT dòng cho hệ thống (cắt trước khi gửi, khách không thấy): " + DAU_KHAI_HOI + " rồi mảng JSON các chỗ "
+    "lời em hỏi / xin / nhờ khách cho biết hay xác nhận một thông tin của căn — có \"?\" hay không đều tính; không tính hỏi duyệt / đăng "
+    "bản tin, phí, lịch xem, chấm sao, câu chào, chữ trong bản tin: [{\"o\": khoá ô (dòng KHOÁ Ô của kết quả ghi), \"trich\": cụm nguyên "
+    "văn ngắn trong lời em, \"khach_vua_hoi\": true chỉ khi để làm rõ điều khách vừa hỏi em, \"trich_khach\": cụm nguyên văn của khách khi "
+    "đó}]. Không hỏi gì: " + DAU_KHAI_HOI + "[]\n"
+)
 # SRS-5.1zzzzzzz496: bỏ câu "Bước ghi lượt này đã đóng (bước 2 chỉ còn công cụ đọc)" — bộ vàng 14/11 lời gửi khách chép nguyên ("Bước ghi đã
 # đóng, em rao lại bản tin…"); bước 2 vốn chỉ được giao công cụ đọc, gọi nhầm công cụ ghi thì `chay` trả lời riêng.
+
+
+def tach_khai_hoi(conv: Any, loi: str) -> str:
+    """Cắt dòng tự khai ô hỏi (SRS-5.1zzzzzzz511) khỏi lời gửi khách, cất `conv.y_luot["_hoi_tu_khai"]` = (lời đã cắt, danh sách) cho lưới
+    `engine._khai_o_hoi` — thay lượt gọi model soát ô hỏi riêng. Không có dòng / JSON hỏng → không cất (lưới gọi model soát như cũ)."""
+    i = (loi or "").rfind(DAU_KHAI_HOI)
+    if i < 0:
+        return loi
+    goc, duoi = loi[:i].replace(DAU_KHAI_HOI, "").rstrip(), loi[i + len(DAU_KHAI_HOI):]
+    ds = None
+    try:
+        a, b = duoi.index("["), duoi.rindex("]")
+        ds = json.loads(duoi[a:b + 1])
+        goc = goc or duoi[b + 1:].strip()   # model đặt dòng khai lên đầu: lời nằm sau mảng
+    except ValueError:   # json.JSONDecodeError là ValueError
+        goc = goc or duoi.strip()
+    if isinstance(ds, list) and goc:
+        conv.y_luot["_hoi_tu_khai"] = (goc, [x for x in ds if isinstance(x, dict) and isinstance(x.get("o"), str)])
+    return goc
 
 
 def _he_ghi(engine: Any, conv: Any, du_lieu: str, chia: dict[str, Any]) -> str:
@@ -563,9 +591,14 @@ def bao_cao(engine: Any, conv: Any, system: str, captured: list[str]) -> str:
             else "theo các khối ưu tiên / dữ kiện hệ thống trong lời nhắc.")
     # Việc lượt đứng ĐẦU báo cáo; ô thiếu chỉ là dữ kiện (không phải việc để hỏi) — một câu hỏi mỗi lượt do engine chọn (`viec_luot`).
     dong.insert(1, f"- {dau} {viec} (lượt này CHỈ làm đúng việc này)")
-    thieu = [_nhan(o, conv.prop) for o in conv.prop.missing_fields()]
+    thieu = conv.prop.missing_fields()
     if thieu:
-        dong.append("- Ô còn trống (dữ kiện; hệ thống tự hỏi dần ở các lượt sau — lượt này KHÔNG hỏi ô nào ngoài việc trên): " + "; ".join(thieu))
+        dong.append("- Ô còn trống (dữ kiện; hệ thống tự hỏi dần ở các lượt sau — lượt này KHÔNG hỏi ô nào ngoài việc trên): "
+                    + "; ".join(_nhan(o, conv.prop) for o in thieu))
+    from .schema import O_HE_THONG_TRA
+    co = [k for k, v in f.items() if not k.startswith("_") and v not in (None, "", [], {})]
+    dong.append(f"- KHOÁ Ô (chỉ để khai dòng {DAU_KHAI_HOI}): đã có: {', '.join(co) or '-'}; còn trống: {', '.join(thieu) or '-'}; "
+                f"hệ thống tự tra: {', '.join(sorted(O_HE_THONG_TRA))}")
     return "\n".join(dong)
 
 
@@ -577,7 +610,7 @@ def viet(engine: Any, conv: Any, project: Any, system: str, captured: list[str],
     st, conv.vong_gop = conv.vong_gop, None
     bao = bao_cao(engine, conv, system, captured)
     kho_du_an = project is not None and bool(getattr(project, "units", None))
-    huong_dan = HUONG_DAN_VIET + agent_ban.HUONG_DAN + (_AGENT_TOOL_GUIDE if kho_du_an else "")
+    huong_dan = HUONG_DAN_VIET + KHAI_HOI + agent_ban.HUONG_DAN + (_AGENT_TOOL_GUIDE if kho_du_an else "")
     he = system.replace(RANH_GIOI_CACHE, huong_dan + RANH_GIOI_CACHE, 1) if RANH_GIOI_CACHE in system else system + huong_dan
     tools = cong_cu_viet(st["chia"]) + (engine._inventory_tools() if kho_du_an else [])
     tin = _tin_buoc_2(st, bao)
@@ -602,14 +635,15 @@ def viet(engine: Any, conv: Any, project: Any, system: str, captured: list[str],
         them = "".join(agent_ban._khoi(engine, conv, project, t) for t in ("ro_hang", "bo_nho_du_an", "gia_da_gui"))
         log.warning("Agent gộp: dự phòng không gọi công cụ — viết lại với đủ khối dữ liệu")
         khoi_bao = "\n\n=== " + bao + "\n"
-        return engine._provider.reply(system + khoi_bao + them, conv.messages(), max_tokens=max_tokens).strip(), khoi_bao + them
+        return (tach_khai_hoi(conv, engine._provider.reply(system + khoi_bao + them, conv.messages(), max_tokens=max_tokens).strip()),
+                khoi_bao + them)
     loi, ket, da_goi = ra
     them = ("\n\n=== " + bao + "\n") + (("\n=== KẾT QUẢ EM VỪA TRA (hệ thống tra, không phải khách nói) ===\n" + "\n".join(ket) + "\n")
                                          if ket else "")
     if not loi:
         loi = engine._provider.reply(system + them, conv.messages(), max_tokens=max_tokens).strip()
     log.warning("Agent gộp bước 2: công_cụ=%s giây=%.1f", ",".join(da_goi) or "-", time.monotonic() - st["bat_dau"])
-    return loi, them
+    return tach_khai_hoi(conv, loi), them
 
 
 def viet_mua(engine: Any, conv: Any, system: str, next_field: str | None, viec: list[str], can: list[dict],

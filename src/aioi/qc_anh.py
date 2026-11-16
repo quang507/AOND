@@ -10,7 +10,10 @@ quán bên trong vẫn là ảnh căn), thế mạnh nào đã có ảnh / chưa
   đọc `goc_can_xin` từ đây (`prompts.goc_anh_goi_y`);
 - nhắn chủ (8–21 giờ, chat im từ 10 phút, mỗi bộ ảnh tối đa một tin, mỗi căn tối đa `TOI_DA_NHAN_MOI_CAN` tin QC): model viết MỘT câu khéo
   xin đúng góc thiếu. Ghi mốc `sau:anh` để tin nhắc 10 phút không xin lại lần đầu.
-Không gọi model khi bộ ảnh không đổi; mỗi lượt tối đa `TOI_DA_MOT_LUOT` tin."""
+Không gọi model khi bộ ảnh không đổi; mỗi lượt tối đa `TOI_DA_MOT_LUOT` tin.
+
+Mỗi ảnh model xem MỘT lần (SRS-5.1zzzzzzz511, docs/fda-boa-mot-ho-so.md mục 4.4): bộ ảnh đổi thì chỉ gửi ảnh MỚI kèm nhãn chữ của ảnh đã
+chấm (`_nhan_cu`); bộ chỉ bớt ảnh (chủ đồng ý ẩn) thì không gọi model, lọc kết quả cũ. Bản trước chấm lại cả bộ mỗi lần thêm một tấm."""
 from __future__ import annotations
 
 import hashlib
@@ -134,24 +137,81 @@ def huong_dan_qc(tin: dict) -> str:
             "(5) góc còn thiếu theo loại căn, quan trọng nhất trước; (6) tấm đẹp nhất làm ảnh bìa. Nhẹ tay: chỉ gọi là xấu khi rõ ràng kém.")
 
 
-def cham(engine: Any, kho: Any, tin: dict, tep: list[str]) -> dict | None:
-    """Model vision chấm bộ ảnh của một tin; lỗi → None (lượt sau thử lại)."""
+def _nhan_cu(cu: dict | None) -> dict[str, dict]:
+    """{đường dẫn: nhãn} của các ảnh lượt chấm trước đã xem (kết quả cũ trong sổ)."""
+    if not isinstance(cu, dict):
+        return {}
+    duong = cu.get("_duong") or []
+    ra: dict[str, dict] = {}
+    for a in cu.get("nhan_anh") or []:
+        if isinstance(a, dict) and isinstance(a.get("so"), int) and 1 <= a["so"] <= len(duong):
+            ra[duong[a["so"] - 1]] = {k: v for k, v in a.items() if k != "so"}
+    return ra
+
+
+def _ghep(cu: dict | None, nhan: dict[str, dict], con: list[str], moi: list[str], kq: dict) -> dict:
+    """Kết quả cả bộ = ảnh cũ còn hiện (đánh số 1..len(con), nhãn cũ) + ảnh mới (số tiếp theo, nhãn model vừa gắn). Ảnh nghi cũ còn hiện
+    giữ nguyên, đổi số theo bộ mới; ảnh bìa model chọn theo số của cả bộ."""
+    n = len(con)
+    duong = con + moi
+    so_cu = {p: i + 1 for i, p in enumerate((cu or {}).get("_duong") or [])}
+    so_moi = {p: i + 1 for i, p in enumerate(duong)}
+    ds = [a for a in kq.get("nhan_anh") or [] if isinstance(a, dict) and isinstance(a.get("so"), int)]
+    lech = n if ds and min(a["so"] for a in ds) <= n else 0   # model đếm lại từ 1 cho ảnh gửi kèm (ảnh cũ không được gắn nhãn lại)
+    nhan_moi = [{**a, "so": a["so"] + lech} for a in ds if n < a["so"] + lech <= len(duong)]
+    nghi_cu = []
+    for x in (cu or {}).get("anh_khong_khop") or []:
+        p = next((q for q, i in so_cu.items() if str(i) == str((x or {}).get("tep"))), None)
+        if p in so_moi:
+            nghi_cu.append({**x, "tep": str(so_moi[p])})
+    kq["nhan_anh"] = [{**nhan[p], "so": i + 1} for i, p in enumerate(con)] + nhan_moi
+    kq["anh_khong_khop"] = nghi_cu + [x for x in kq.get("anh_khong_khop") or [] if isinstance(x, dict) and str(x.get("tep")) not in
+                                       {y["tep"] for y in nghi_cu}]
+    kq["_duong"] = duong
+    return kq
+
+
+def cham(engine: Any, kho: Any, tin: dict, tep: list[str], cu: dict | None = None) -> dict | None:
+    """Model vision chấm bộ ảnh của một tin — chỉ ảnh CHƯA xem (`cu` = kết quả lượt trước trong sổ); lỗi → None (lượt sau thử lại)."""
+    nhan = _nhan_cu(cu)
+    con = [t for t in tep if t in nhan]
+    moi = [t for t in tep if t not in nhan][:TOI_DA_ANH_MOT_LAN]
+    if con and not moi:   # chỉ bớt ảnh: lọc kết quả cũ, không gọi model
+        kq = _ghep(cu, nhan, con, [], {k: v for k, v in (cu or {}).items() if k not in ("nhan_anh", "anh_khong_khop", "_duong")})
+        dep, duong_cu = (cu or {}).get("anh_dep_nhat") or {}, (cu or {}).get("_duong") or []
+        so = dep.get("so") if isinstance(dep.get("so"), int) else 0
+        p = duong_cu[so - 1] if 1 <= so <= len(duong_cu) else None
+        kq["anh_dep_nhat"] = {"so": con.index(p) + 1, "ly_do": dep.get("ly_do") or ""} if p in con else {"so": 0, "ly_do": ""}
+        kq["goc_da_co"] = sorted({a.get("goc") for a in kq["nhan_anh"] if a.get("goc")})
+        return kq
     goc = f"{_goc_storage(kho)}/storage/v1/object/public/{BUCKET}/"   # `tep` là đường dẫn đầy đủ trong bucket (SRS-425)
     items: list[tuple[bytes, str]] = []
-    for t in tep[:TOI_DA_ANH_MOT_LAN]:
+    gui: list[str] = []
+    for t in moi:
         try:
             with urllib.request.urlopen(goc + t, timeout=20) as r:
                 items.append((r.read(), r.headers.get_content_type() or "image/jpeg"))
+                gui.append(t)
         except Exception as e:  # noqa: BLE001
             log.warning("qc_anh: tải ảnh hụt (%s)", type(e).__name__)
     if not items:
         return None
+    hd = huong_dan_qc(tin)
+    if con:
+        hd += ("\n\nẢNH ĐÃ XEM Ở LẦN TRƯỚC (không gửi lại — dùng nhãn này):\n"
+               + "\n".join(f"{i + 1}. {nhan[p].get('goc') or '?'} — {nhan[p].get('mo_ta') or ''}"
+                           + (f" (kém: {nhan[p].get('ly_do_xau') or 'có'})" if nhan[p].get("xau") else "") for i, p in enumerate(con))
+               + f"\nẢnh gửi kèm lần này là ảnh số {len(con) + 1} tới {len(con) + len(gui)}, theo thứ tự. nhan_anh chỉ ghi cho ảnh gửi kèm "
+               "(đúng số đó); anh_khong_khop chỉ xét ảnh gửi kèm; các ô còn lại (thế mạnh, góc đã có / còn thiếu, ảnh đẹp nhất, điểm) tính trên "
+               "CẢ BỘ ảnh.")
     try:
-        kq = engine._provider.extract_media(items, huong_dan_qc(tin), SCHEMA)
+        kq = engine._provider.extract_media(items, hd, SCHEMA)
     except Exception as e:  # noqa: BLE001
         log.warning("qc_anh: chấm hụt (%s)", type(e).__name__)
         return None
-    return kq if isinstance(kq, dict) else None
+    if not isinstance(kq, dict):
+        return None
+    return _ghep(cu, nhan, con, gui, kq)
 
 
 def _conv_co_san(engine: Any, uk: str) -> Any:
@@ -186,11 +246,10 @@ def chay_mot_luot(engine: Any, gui: Callable[[str, str], bool], xung_ho_cua: Cal
         if tin is None:   # tin không hiện — ghi băm để khỏi xét lại mỗi lượt
             so[lid] = {"bam": bam(tep), "luc": time.time(), "bo_qua": "tin không hiện"}
             continue
-        kq = cham(engine, kho, tin, tep)
+        kq = cham(engine, kho, tin, tep, (so.get(lid) or {}).get("ket_qua"))
         if kq is None:
             continue
         kq["so_anh"] = len(tep)
-        kq["_duong"] = tep[:TOI_DA_ANH_MOT_LAN]   # số thứ tự ảnh model thấy → đường dẫn
         dat_bia(kho, lid, kq)
         da_nhan = _ghi_va_nhan(engine, tin, kq, bay_gio, gui, xung_ho_cua, ghi_lich_su)
         so[lid] = {"bam": bam(tep), "luc": time.time(), "ma": tin.get("code"), "ket_qua": kq, "da_nhan": da_nhan}

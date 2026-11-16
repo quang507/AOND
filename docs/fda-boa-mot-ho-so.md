@@ -1,6 +1,19 @@
 # FDA / BOA một hồ sơ — bản thiết kế (đề xuất, 16/11/2026)
 
-> **Trạng thái:** ĐỀ XUẤT, chưa code. Mọi con số "mới" trong file là **ước tính**, phải đo lại ở từng giai đoạn.
+> **Trạng thái (16/11/2026, SRS-5.1zzzzzzz511):** đã làm phần đo được không cần model thật — xem mục 0. Phần còn lại là ĐỀ XUẤT; số "mới"
+> ở các mục sau là **ước tính**.
+
+## 0. Đã làm và đã đổi khi làm (16/11/2026)
+
+| Mục | Kết quả | Đo (`do-prompt.py`, ký tự / lượt) |
+|---|---|---|
+| Bỏ lượt gọi soát ô hỏi | Bước viết phía bán tự khai các ô lời mình hỏi ở một dòng `<<HOI>>[…]` cuối lời (`agent_gop.KHAI_HOI`, `tach_khai_hoi` cắt trước khi gửi); lưới `engine._khai_o_hoi` đọc dòng này, chỉ gọi model soát khi thiếu dòng hoặc lời là bản viết lại. Code vẫn là trọng tài (`_hoi_sai_o` không đổi) | hỏi thông tin 3 → **2** lượt gọi, 62.325 → 57.586; duyệt 64.277 → 59.436; hỏi phí 64.433 → 59.590 |
+| Tin đầu vai chưa rõ | Đi thẳng vòng agent theo số đang nhắn (ký gửi → vòng bán, tư vấn → vòng mua); đọc ra ý ngược vai thì form đầy đủ như cũ. Gỡ `_doc_nhanh_chua_ro_vai`, `DOC_NHANH_SYSTEM` | chào 4 → **2** lượt gọi, 85.919 → 57.178. Khách MUA nhắn số ký gửi lần đầu: vẫn 3 lượt gọi, 77.069 → 112.732 ký tự (phần lớn là phần cố định đã cache của vòng bán) |
+| Ảnh xem một lần (mục 4.4, làm khác) | Image LQC chỉ gửi ảnh MỚI cho model, ảnh đã chấm đi bằng nhãn chữ; bộ chỉ bớt ảnh thì không gọi model (`qc_anh._nhan_cu`, `_ghep`). Không gộp với lượt đọc ảnh trong chat: lượt chat đọc ảnh từng tin lúc chủ đang khai, QC chấm cả bộ đã lên web — gộp thì lượt chat nào có ảnh cũng gánh khuôn QC | thêm 1 ảnh vào bộ 8: 9 ảnh → 1 ảnh gửi model |
+| GĐ 1 hồ sơ chung | Không tạo bảng / ô mới: sổ tay đã nằm chung một chỗ (`_hen_*`, `_tam_dung_den`, `_ngung_cham`, `_khong_co`, `_sau_da_hoi`, `_qc_anh` trong ô nội bộ của căn), tin BOA vừa gửi nằm trong lịch sử chat FDA đọc mỗi lượt | — |
+| GĐ 2 tin viết sẵn | **Bỏ.** Tin viết sẵn chỉ dùng được ở lượt FDA cuối trước khi khách im; mọi lượt trước đó viết ra rồi bỏ (khách nhắn tiếp là hết hạn). Không biết trước lượt nào là cuối nên phải viết ở MỌI lượt sau đăng → tốn hơn hẳn MỘT lượt gọi tin chủ động (trần 3 tin / người bán / ngày) | — |
+| GĐ 3 một lượt gọi (ghi + viết) | **Chưa làm.** Lời nhắc bước viết (việc lượt, khối ưu tiên, trình bản tin) do code tính SAU khi áp ô; gộp thì model phải đoán trước — cần đo trên model thật (% gọi lại, ghi sai ô). Anthropic trên 146 đang hết số dư | — |
+
 > Tên gọi theo chủ dự án 16/11/2026: **FDA** (Front Desk Agent) = bot chat với người bán; **BOA** (Back Office Agent) = LQC,
 > phần chạy nền. Khách chỉ thấy MỘT người — tên trợ lý gán cho khách đó (Kh•ải, H•ải…), xưng "em" (SRS-5.1zzzzzzz509).
 

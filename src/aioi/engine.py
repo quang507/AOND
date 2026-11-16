@@ -72,8 +72,6 @@ from .projects import (
 from .prompts import (
     nhan_o,
     EXTRACTION_SYSTEM,
-    DOC_NHANH_SYSTEM,
-    doc_nhanh_schema,
     OPERATIONS_SYSTEM,
     OPERATIONS_SYSTEM_BAN,
     OPERATIONS_SYSTEM_MUA,
@@ -1773,6 +1771,10 @@ def _khai_o_hoi(eng, conv: "Conversation", reply: str) -> list[dict] | None:
     nho = conv.y_luot.setdefault("_khai_hoi", {})
     if reply in nho:
         return nho[reply]
+    tu = conv.y_luot.get("_hoi_tu_khai")
+    if tu and _cung_loi(tu[0], reply):   # SRS-5.1zzzzzzz511: lời bước viết tự khai ô hỏi — khỏi lượt gọi model soát riêng
+        nho[reply] = [x for x in tu[1] if _trich_dan_khop(x.get("trich"), reply)]
+        return nho[reply]
     tin = f"TIN NGƯỜI BÁN VỪA NHẮN:\n{conv.loi_khach_luot[:1500]}\n\nLỜI TRỢ LÝ SẮP GỬI:\n{reply[:3000]}"
     try:
         with _do(conv, "soat_o_hoi"):
@@ -1788,6 +1790,12 @@ def _khai_o_hoi(eng, conv: "Conversation", reply: str) -> list[dict] | None:
     kq = [x for x in ds if isinstance(x, dict) and isinstance(x.get("o"), str) and _trich_dan_khop(x.get("trich"), reply)]
     nho[reply] = kq
     return kq
+
+
+def _cung_loi(a: str, b: str) -> bool:
+    """Hai bản lời là một (chỉ khác dấu, markdown, chữ "Dạ" code bỏ, dấu bản tin code gắn) — bản viết lại thì khác."""
+    ka, kb = (re.sub(r"[\W_]+", "", (x or "").lower()) for x in (a, b))
+    return bool(ka and kb) and (ka in kb or kb in ka)
 
 
 def _hoi_sai_o(eng, conv: "Conversation", reply: str) -> list[tuple[str, str, str]]:
@@ -5111,37 +5119,6 @@ class Engine:
     def _plan_and_apply(self, conv: Conversation) -> tuple[list[str], list[tuple]]:
         return self._ap_dung_ke_hoach(conv, self._lap_ke_hoach(conv))
 
-    def _doc_nhanh_chua_ro_vai(self, conv: Conversation, src: list[Message]) -> dict | None:
-        """SRS-5.1zzzzzzz406 (chủ dự án 11/11: "tin đầu chưa rõ khách bán hay mua thì không chạy bản bóc tách 56 nghìn chữ, nhưng vẫn để AI
-        xác định vai"): một lượt AI ngắn (`DOC_NHANH_SYSTEM`) đọc tin theo nghĩa. Chỉ khi AI trả RÕ `can_doc_day_du = false` mới dựng kế
-        hoạch rỗng (vai, lời xã giao, xưng hô do AI đọc — cụm trích vẫn qua cổng kiểm như form đầy đủ); thiếu cờ, lỗi, có ảnh → None
-        (đọc bằng form đầy đủ như cũ). Lượt viết lời KHÔNG đổi (phiếu lượt, giọng giữ nguyên). Đã có ô tin / bản nháp / thao tác chờ xác
-        nhận / tin khách bấm "Trả lời" / tin rao thật → không đọc nhanh: những lượt đó luôn cần form đầy đủ (duyệt, xoá, sửa ô…)."""
-        if (conv.prop.fields or conv.listing_proposed or conv.pending_destructive or conv.tin_tra_loi
-                or any(not self._is_stub_listing(li) for li in conv.listings)):
-            return None
-        if any(m.role == "user" and m.content.startswith(DAU_TA_ANH_CHUP) for m in src):
-            return None
-        cuoi_bot = next((i for i in range(len(src) - 1, -1, -1) if src[i].role == "assistant"), -1)
-        khach = [m.content for m in src[cuoi_bot + 1:] if m.role == "user" and m.content]
-        if not khach:
-            return None
-        # SRS-5.1zzzzzzz461: khách mở lại cuộc chat sau quãng nghỉ dài — tin bot cuối là của lần chat trước, không phải "vừa nhắn"
-        # (thử 13/11: tin giới thiệu căn mua 7 tiếng trước kèm "em ơi" → đọc nhanh ra "buy").
-        vua = cuoi_bot >= 0 and not conv.phien_moi
-        tin = (f"Tin bot vừa nhắn: {src[cuoi_bot].content}\n\n" if vua else "") + "Tin khách:\n" + "\n".join(khach)
-        try:
-            r = self._provider.extract(DOC_NHANH_SYSTEM, [Message("user", tin)], doc_nhanh_schema())
-        except Exception as e:  # noqa: BLE001 — lượt phụ hỏng thì đọc bằng form đầy đủ, không chặn lượt
-            log.warning("Đọc nhanh hỏng (%s) — đọc bằng form đầy đủ", type(e).__name__)
-            return None
-        if not isinstance(r, dict) or r.get("can_doc_day_du") is not False:
-            return None
-        plan: dict = {"operations": [], "user_intent": r.get("user_intent") or "unknown"}
-        plan.update({k: r[k] for k in ("loi_xa_giao", "loi_xa_giao_trich_dan", "xung_ho", "xung_ho_trich_dan") if r.get(k)})
-        log.warning("Đọc nhanh: tin chưa có gì để ghi — bỏ lượt form đầy đủ (ý: %s)", plan["user_intent"])
-        return plan
-
     def _lap_ke_hoach(self, conv: Conversation, gop: bool = False) -> dict:
         """Lượt AI lập thao tác: đọc tin khách theo nghĩa, ghi các thuộc tính hội thoại (vai, ý mua / bán, duyệt, hỏi về,
         xưng hô, y_luot) và TRẢ kế hoạch — chưa đụng rổ hàng (`_ap_dung_ke_hoach`). `gop`: lượt chat thường (`_handle`) — người bán đi vòng
@@ -5160,6 +5137,12 @@ class Engine:
         project = self.project_for(conv.prop, conv)
         gon = _form_mua_gon(conv)
         ban_gon = not gon and _form_ban_gon(conv)   # SRS-5.1zzzzzzz303: người bán đọc bằng form bỏ phần việc khách mua
+        if gop and conv.role == "unknown":
+            # SRS-5.1zzzzzzz511 (FDA một hồ sơ, docs/fda-boa-mot-ho-so.md): vai CHƯA rõ (thường là tin đầu) đi thẳng vòng agent theo số khách
+            # nhắn — số tư vấn: vòng mua, số ký gửi: vòng bán. Vòng đọc ra ý ngược vai (bán ở vòng mua, mua ở vòng bán) thì đọc lại bằng form
+            # đầy đủ như dưới. Thay đọc nhanh + form đầy đủ (SRS-406): tin đầu 4 lượt gọi → 2.
+            gon = conv.so_nhan == SO_TU_VAN
+            ban_gon = not gon
         form = OPERATIONS_SYSTEM_MUA if gon else OPERATIONS_SYSTEM_BAN if ban_gon else OPERATIONS_SYSTEM
         system = (form   # SRS-5.1zzzzzzz293: khách mua đọc bằng form gọn
                   + RANH_GIOI_CACHE + self._project_memory_block(project, conv))   # SRS-5.1zzzzzzz166: phần cố định chung mọi khách
@@ -5215,10 +5198,6 @@ class Engine:
             # chỗ"): khách mua cũng MỘT vòng agent — bước 1 ở đây (ô nhu cầu / việc căn / ý khách qua công cụ ghi), bước 2 ở chỗ viết lời mua.
             with _do(conv, "lap_thao_tac"):
                 plan = agent_gop.mo_mua(self, conv, system.split(RANH_GIOI_CACHE, 1)[1])
-        elif gop:
-            # SRS-5.1zzzzzzz406: vai CHƯA rõ (thường là tin đầu) — AI đọc nhanh trước; tin chưa có gì để ghi thì khỏi lượt form đầy đủ.
-            with _do(conv, "lap_thao_tac"):
-                plan = self._doc_nhanh_chua_ro_vai(conv, src)
         if plan is None:
             with _do(conv, "lap_thao_tac"):
                 plan = self._provider.extract(system, src, operations_schema_mua() if gon else operations_schema_ban() if ban_gon else operations_schema())
