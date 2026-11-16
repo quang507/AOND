@@ -1494,7 +1494,7 @@ def _tieu_de_thieu(reply: str, prop: "Property") -> list[str]:
 
 
 # Ngưỡng GỌI LẠI model vì tiêu đề dài: prompt vẫn dặn 15–25 từ (AD_FORMAT), lưới chỉ bắt khi quá 30 (chủ dự án 30/10, SRS-5.1zzzzzzz303 —
-# tiêu đề 26–30 từ không đáng một lần gọi lại). Đổi thì đổi cả ban-thu-ban.sh / ban-thu-kb.sh đếm wc -w.
+# tiêu đề 26–30 từ không đáng một lần gọi lại).
 TIEU_DE_TOI_DA_TU = 30
 
 

@@ -125,7 +125,7 @@ thì "máy xanh, máy tao đỏ" và không ai biết bên nào đúng.
 | ~~`scripts/do-vang-146.sh` + bộ vàng + `scripts/bang-diem.py`~~ | **TS-CHAM-02** | gỡ 14/11/2026 (SRS-5.1zzzzzzz497, chủ dự án: "xoá giám khảo với chấm thử" — một ngày đo tốn ≈ $55 tiền API) | — | — |
 | `bot/tests/vai-tro.sql` | **TS-SEC3** | **Quyền SQL trên DB thật.** CI chỉ có khoá công khai | Dashboard → SQL Editor → dán cả file → Run; hoặc MCP `execute_sql` | Kết bằng `raise exception 'KQ: …'` nên mọi dòng chèn TỰ CUỘN LẠI. Mọi mục phải `OK`; một chữ `HONG` là một cửa mở |
 
-**Bắn thử production — tiền thật, chạy tay TỪ MÁY CÁ NHÂN ssh được vào 146 (`nguye@192.168.1.146`, SRS-5.1zzzzzzz405):** `TOKEN=… bash bot/tests/<tên>.sh`
+**(Gỡ 16/11/2026, SRS-5.1zzzzzzz498 — script `ban-thu-*` đã xoá; bảng dưới chỉ để tra lịch sử.) Bắn thử production — tiền thật, chạy tay TỪ MÁY CÁ NHÂN ssh được vào 146 (`nguye@192.168.1.146`, SRS-5.1zzzzzzz405):** `TOKEN=… bash bot/tests/<tên>.sh`
 (đầu file ghi kịch bản và SRS gốc), chat với lõi trên máy 146 qua đường hầm ssh (`bot/tests/lib/may146.sh`, kèm khoá nội bộ) bằng ID thử
 (`la_id_thu`) rồi tự dọn. Không vào CI, không còn ô trên Actions (Actions không với tới 146). Chạy sau mỗi lần đưa lõi lên 146
 (`trien-khai-146.sh` khởi động lại lõi — báo trước người đang chat thử). Bộ pytest model giả đã gỡ 13/11/2026
@@ -133,11 +133,11 @@ thì "máy xanh, máy tao đỏ" và không ai biết bên nào đúng.
 
 | Script (`bot/tests/…sh`) / ô | ID | Kiểm cái gì |
 |---|---|---|
-| `ban-thu-ban`, `ban-thu-mua`, `ban-thu-vm`, `ban-thu-srd`, `ban-thu-ai`, `ban-thu-kb`, `ban-thu-dc`, `ban-thu-xa`, `ban-thu-sau`, `ban-thu-nhieu-can`, `ban-thu-dap-y`, `ban-thu-5-khach`, `ban-thu-kiem` | **TS-PROD-01** | Kịch bản viết sẵn trên lõi production: luồng bán, mua, vừa bán vừa mua, kịch bản SRD anh Luận, các mục AI đọc theo nghĩa, địa chỉ số hẻm, đất ở xã, bộ câu môi giới, một tin hai căn, đáp ý khách, 5 tính cách khách, các việc có code nhưng chưa kiểm thật (SRS-5.1zzzzzzz268) |
+| ~~`ban-thu-*` (13 script)~~ | **TS-PROD-01** | gỡ 16/11/2026 (SRS-5.1zzzzzzz498, chủ dự án: "xoá đi" — bắn thử chạy model thật, tốn tiền API) |
 | ~~`ban-thu-khach-ao`~~ | **TS-PROD-02** | gỡ 14/11/2026 (SRS-5.1zzzzzzz497, chủ dự án: "xoá giám khảo với chấm thử" — một ngày đo tốn ≈ $55 tiền API) |
 | `doc-log-loi` | **TS-PROD-03** | CHỈ ĐỌC nhật ký lõi trên máy 146 (N dòng cuối tệp mới nhất trong `C:\aond\logs`; log không có giờ nên không lọc theo khoảng giờ): lượt nào ghi / bỏ ô nào, dòng `💲` tiền từng lần gọi. Không in lời khách |
 | `do-tim-nha` (ô Actions) | **TS-PROD-04** | Đo chất lượng `tim_nha` trên rổ mẫu `seed_thu` (4 chế độ). Đáp án `cau-hoi.json` soạn cho 30 tin cũ — **chưa dùng được** (SRS-5.1zzzzzzz167) |
-| `ban-thu-luan` | — | So cạnh bản của anh Luận (cổng 8001) với lõi mình trên cùng kịch bản (SRS-5.1zzzzzzz199) — CHƯA chạy được trên 146 (cần dịch vụ Windows riêng), thoát 2 |
+| ~~`ban-thu-luan`~~ | — | gỡ 16/11/2026 (SRS-5.1zzzzzzz498, chủ dự án: "xoá đi" — bắn thử chạy model thật, tốn tiền API) |
 
 **Người thật:** chat Zalo thật với ID thử trên hai số (ký gửi, tư vấn — SRS-5.1zzzzzzz210); lệnh `/state`, `/quit` (SRS-5.1zzzzzzz211)
 để xem / xoá phiên. TS-LIVE còn dùng cho thông tuyến bridge. Kịch bản ba điện thoại TS-NGUOI (có vai CTV) đã deprecated.

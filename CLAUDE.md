@@ -81,7 +81,7 @@ Các thư mục sau (nay không còn trên máy chủ dự án, vẫn trong `.gi
   |---|---|---|
   | `AIOI_CHAT_MODEL` | `claude-sonnet-5-5` | model viết lời khách thật — SRS-235 / 308 |
   | `AIOI_EXTRACT_MODEL` | `claude-sonnet-5-5` | model bóc tách; đồng bộ cùng model chat — SRS-392 |
-  | `AIOI_CHAT_MODEL_THU` | `claude-sonnet-5-5` | model của ID thử (`ban-thu-*`); `gemini` = gọi thẳng Gemini — SRS-239 / 243 |
+  | `AIOI_CHAT_MODEL_THU` | `claude-sonnet-5-5` | model của ID thử; `gemini` = gọi thẳng Gemini — SRS-239 / 243 |
   | `AIOI_MODEL_LUOT_DE` | `tat` | model viết lời cho lượt dễ của người bán (thu thập, không tra dữ liệu, không việc khác) — SRS-311 |
   | `AIOI_PROMPT_GON` | `bat` | lượt hỏi ô người bán dùng `LEAN_SYSTEM_PROMPT` thay phiếu `build_phieu_luot` (tắt = về phiếu cũ) — SRS-408 / 414 |
   | `AIOI_DONG_TRICH_XUAT` | `bat` | tin phụ "$$$$$ Đã trích xuất" sau mỗi lượt, MỌI cuộc chat (giai đoạn test; chạy thật đổi `tat`) — SRS-252 |
@@ -152,7 +152,7 @@ bun run test:sec   # TS-SEC trên DB thật (cần Internet); thoát 2 = "chưa 
    - Đổi công tắc env → sửa cả `bot/cau-hinh-loi.env` lẫn `C:\aond\aond_core\.env` trên 146.
 4. Đổi DB → file `bot/supabase/migrations/`, chạy thử trong giao dịch huỷ, rồi ÁP LUÔN cùng lượt và commit file cùng lúc.
 5. Docs: mỗi thay đổi MỘT mục SRS ở docs/07, đi chung commit. Luật bí mật (mục 5) giữ nguyên.
-- **Bắn thử production** (ô `giu_du_lieu = giu` giữ hội thoại cho CRM, chủ dự án tự xoá — SRS-245; ID thử chạy model theo `AIOI_CHAT_MODEL_THU` — SRS-243; chủ dự án 28/10: ưu tiên test offline, bắn production thì bắn chậm `NGHI_GIUA_LUOT`; tự dọn): chạy TỪ MÁY CÁ NHÂN ssh được vào 146 (tài khoản admin `nguye`; mặc định `nguye@192.168.1.146`, ngoài mạng `MAY_146=nguye@100.85.245.112`), không chạy trên Actions — `TOKEN=<Supabase access token> bash bot/tests/ban-thu-<tên>.sh` với tên `ban` / `mua` / `srd` / `ai` / `vm` / `khach-ao` / `5-khach` / `kb` / `dc` / `xa` / `sau` / `nhieu-can` / `dap-y` / `kiem` (`ban-thu-luan` chưa chạy được trên 146); `bot/tests/lib/may146.sh` mở đường hầm + kèm khoá nội bộ (SRS-405). Ô Actions còn lại: nạp dữ liệu `nap-duong` / `nap-giao-lo` / `nap-ranh-gioi` / `nap-tin-mau` / `nap-luat` (script nạp dự án nguồn ngoài đã xoá 13/11/2026, lấy lại ở lịch sử git — SRS-401 / 477); đo tìm nhà `do-tim-nha`. Script ở `bot/tests/ban-thu-*.sh`.
+- **Bắn thử production / bộ chấm / giám khảo: đã gỡ** (14–16/11/2026, SRS-497 / 498 — tốn tiền API). Thử lời bot bằng tin Zalo thật hoặc đọc chat thật trong DB; đọc log lõi bằng `bot/tests/doc-log-loi.sh` (`bot/tests/lib/may146.sh` mở đường hầm). Ô Actions còn lại: nạp dữ liệu `nap-duong` / `nap-giao-lo` / `nap-ranh-gioi` / `nap-tin-mau` / `nap-luat`; đo tìm nhà `do-tim-nha`.
 - Người và máy dùng chung script trong `package.json` — đừng gõ lệnh rời.
 
 **Skill PM mượn ngoài** (`phuryn/pm-skills`, MIT; khai ở `.claude/settings.json`, không ghim commit): chỉ làm khung trình bày, kết quả đổi sang tiếng Việt và gắn ID tay. Đã dùng: `/product-strategy` (`docs/00 §0.4`), `/north-star-metric` (`§0.5`), `/strategy-red-team` (`§0.7`), `/intended-vs-implemented`, `/test-scenarios`, `/job-stories`.

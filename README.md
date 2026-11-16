@@ -50,7 +50,7 @@ bun run dev
 
 ### 3. Kiểm sau khi sửa:
 Không còn bộ pytest (gỡ 13/11/2026). Sửa lõi thì kiểm cú pháp (`python -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" <file>`),
-đưa lên máy 146 (`bash scripts/trien-khai-146.sh`) rồi thử bằng tin Zalo thật hoặc `bot/tests/ban-thu-*.sh`.
+đưa lên máy 146 (`bash scripts/trien-khai-146.sh`) rồi thử bằng tin Zalo thật.
 
 ---
 

@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz488 · "ok" ngay sau câu hỏi thông tin là duyệt bản nháp đang chờ (14/11/2026)
+Lộ ra khi đo SRS-487. Bản nháp đã gửi, lượt sau bot hỏi "sổ hồng đứng tên ai", khách nhắn "ok em" → bot không đăng, hỏi lại câu sổ. Kịch bản Sunrise City với code đang chạy: đăng 0/4 lần. Log: `Duyệt: AI=- …`, tức bước đọc ý bỏ trống `duyet_ban_nhap`, vì luật DUYỆT BẢN NHÁP dặn "chưa rõ → bỏ trống", mà model coi "ok" là đáp câu sổ nên chưa rõ. Code quyết duyệt (`Engine._quyet_duyet`) đúng, không đổi.
+- **Sửa (`OPERATIONS_SYSTEM`, luật DUYỆT BẢN NHÁP):** bản nháp đang chờ mà khách chỉ nhắn lời đồng ý ngắn ngay sau một câu em hỏi thông tin (sổ đứng tên ai, diện tích sàn…) → `dong_y`. "ok" không trả lời được câu hỏi thông tin; câu kia hỏi lại sau. "ok" chỉ là trả lời câu khác khi câu em vừa hỏi là câu có / không mà "ok" đáp trọn được.
+- **Token:** `OPERATIONS_SYSTEM` 18.969 → 19.205 (+236), bản bán gọn 16.500 → 16.736.
+- **Kiểm trên 146:** kịch bản Sunrise City 3/3 lần đăng tin (trước 0/4). Kịch bản Gò Vấp 3 lần không đổi.
+- **Chưa kiểm:** ca "ok" trả lời câu có / không về chính bản nháp (khó dựng bằng kịch bản cố định).
+
 ### SRS-5.1zzzzzzz487 · Câu trước bản tin cập nhật nói về căn, không nói việc sửa tin; bỏ chỗ còn kéo khen (14/11/2026)
 Sau SRS-486 vẫn còn: câu trước "📋 Bản tin cập nhật" hay nói "em thêm vào tin / em sửa lại tin cho anh", bot vẫn khen sổ hồng, số phòng. Còn hai chỗ kéo về phía đáp và khen: `HIEU_CHU_NHA` / `HIEU_KHACH_MUA` dặn "khách hỏi hay **nói** điều gì thì em đáp đúng điều đó", câu mở prompt gọn phía bán dặn "trân trọng tài sản của mình".
 - **Sửa:** `HIEU_CHU_NHA` / `HIEU_KHACH_MUA` đổi thành "khách hỏi hay **lo** điều gì". Prompt gọn bỏ "trân trọng tài sản". Khối sau bản tin: câu trước 📋 nói về căn hay về điều khách hỏi, không nói việc em làm với tin (dòng 📋 và bản tin cập nhật đã cho khách thấy). `GIONG` thêm lý do không khen điều căn nào cũng có ("nghe như đọc kịch bản").

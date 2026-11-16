@@ -801,6 +801,11 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz498 · Gỡ 14 script bắn thử production `ban-thu-*` (16/11/2026)
+Chủ dự án 16/11, sau khi gỡ giám khảo và bộ chấm (SRS-497): "xoá đi" — các script bắn thử cũng chạy lõi production bằng model thật, tốn tiền API.
+- **Xoá:** `bot/tests/ban-thu-{5-khach,ai,ban,dap-y,dc,kb,kiem,luan,mua,nhieu-can,sau,srd,vm,xa}.sh`. Giữ `bot/tests/lib/may146.sh` (còn `doc-log-loi.sh` dùng để đọc log lõi) và cơ chế ID thử trong lõi (`la_id_thu`, `AIOI_CHAT_MODEL_THU`) — không đổi hành vi bot.
+- **Tài liệu:** CLAUDE.md, README, docs/02 (FR-246 / 247), docs/10 (TS-PROD-01, `ban-thu-luan` ghi đã gỡ), docs/11, chú thích `apply-migration.yml` và `bot/cau-hinh-loi.env`. Thử lời bot từ nay: tin Zalo thật hoặc đọc chat thật trong DB.
+
 ### SRS-5.1zzzzzzz497 · Cả hai bên tra được dự án theo đường; lời trước 📋 không kể việc sửa tin; gỡ giám khảo và bộ chấm thử (14/11/2026)
 Chủ dự án 14/11: khách hỏi "Trần Bình Trọng có chung cư không" mà bot không biết → "phải cho cả 2 có công cụ tra, làm tất cả đi"; rồi sau khi thấy hoá đơn API (≈ $57 ngày 14/11, gần hết là 22 lượt đo bộ vàng; bot thật cả ngày 7 tin): "xoá mẹ cái giám khảo với chấm thử đi".
 - **Tra dự án theo đường:** `KhoNguoiMua.du_an_theo_khu` khớp thêm địa chỉ dự án (`location_raw.imatch`, cùng regex chặn số dính liền) — khu nay là quận / phường / tên đường. Đo trên kho thật: Quận 1 87 = 87, Quận 5 28 = 28 (không rộng thêm); "Nguyễn Hữu Thọ" 8 dự án; "Trần Bình Trọng" 0 — kho chưa ghi dự án nào trên đường này, bot nói thật là hệ thống chưa có, không bịa, không kết luận ngoài thực tế không có.
@@ -878,10 +883,3 @@ Chủ dự án 14/11: "kiểm tra các luật các test các thứ có gì dư r
 Hai câu lượt đầu còn sót sau SRS-487: "giá bao nhiêu để em ghi vào tin?" và "Gò Vấp thì em nắm khá rõ khu này".
 - **Sửa (`GIONG`):** câu hỏi không kèm lý do kiểu "để em ghi vào tin". Luật nói thật thêm nhận định về chính em ("em rành khu này"): chỉ nói khi có dữ liệu.
 - **Đo (6 cuộc chat × 5 lượt):** hai câu trên không còn. Câu "ghi nhận" 2/30 lượt (SRS-487: 1/30), là biến thể khác ("Gò Vấp thì em ghi nhận rồi", "em đã đưa điểm này lên bản tin rồi"). Khen bịa 0. Mức này là nhiễu của model, sửa prompt thêm không giảm nữa. Lưới `_mo_dau_ghi_nhan` chỉ bắt câu mở bằng "Em ghi…".
-
-### SRS-5.1zzzzzzz488 · "ok" ngay sau câu hỏi thông tin là duyệt bản nháp đang chờ (14/11/2026)
-Lộ ra khi đo SRS-487. Bản nháp đã gửi, lượt sau bot hỏi "sổ hồng đứng tên ai", khách nhắn "ok em" → bot không đăng, hỏi lại câu sổ. Kịch bản Sunrise City với code đang chạy: đăng 0/4 lần. Log: `Duyệt: AI=- …`, tức bước đọc ý bỏ trống `duyet_ban_nhap`, vì luật DUYỆT BẢN NHÁP dặn "chưa rõ → bỏ trống", mà model coi "ok" là đáp câu sổ nên chưa rõ. Code quyết duyệt (`Engine._quyet_duyet`) đúng, không đổi.
-- **Sửa (`OPERATIONS_SYSTEM`, luật DUYỆT BẢN NHÁP):** bản nháp đang chờ mà khách chỉ nhắn lời đồng ý ngắn ngay sau một câu em hỏi thông tin (sổ đứng tên ai, diện tích sàn…) → `dong_y`. "ok" không trả lời được câu hỏi thông tin; câu kia hỏi lại sau. "ok" chỉ là trả lời câu khác khi câu em vừa hỏi là câu có / không mà "ok" đáp trọn được.
-- **Token:** `OPERATIONS_SYSTEM` 18.969 → 19.205 (+236), bản bán gọn 16.500 → 16.736.
-- **Kiểm trên 146:** kịch bản Sunrise City 3/3 lần đăng tin (trước 0/4). Kịch bản Gò Vấp 3 lần không đổi.
-- **Chưa kiểm:** ca "ok" trả lời câu có / không về chính bản nháp (khó dựng bằng kịch bản cố định).

@@ -333,8 +333,8 @@ Phạm vi MVP: **đặt nền dữ liệu**, chưa làm UI giỏ hàng riêng.
 | FR-243 | ✅ **Tám lỗi còn lại của 10 kịch bản K1–K10 (29/09) chạy qua bot giả lập, phía người bán — ghi nguyên nhân từng lỗi.** | M | chủ dự án 29/09/2026 |
 | FR-244 | ✅ **Tám lỗi phía người bán từ 10 kịch bản mới L1–L10 (29/09) chạy qua bot giả lập — ghi nguyên nhân từng lỗi.** | M | chủ dự án 29/09/2026 |
 | FR-245 | ✅ **Tách dữ liệu THỬ khỏi dữ liệu THẬT, kho lưu trước khi xoá hàng loạt, máy soi dữ liệu tin hằng ngày.** | M | chủ dự án 29/09/2026 |
-| FR-246 | ✅ **Bắn thử bot trên production, không cần Supabase MCP; đổi model chính khi chủ dự án yêu cầu.** Nay chạy từ máy cá nhân ssh vào máy 146 (`bot/tests/ban-thu-*.sh`), không chạy trên GitHub Actions (SRS-5.1zzzzzzz405). | S | chủ dự án 29/09/2026 |
-| FR-247 | ✅ **Bốn lỗi từ 6 kịch bản bắn thật trên production 30/09 (workflow `ban-thu.yml`, ID thử `lx-`) — ghi nguyên nhân từng lỗi.** Workflow `ban-thu.yml` đã gỡ; nay bắn thử bằng `bot/tests/ban-thu-*.sh` (FR-246). | S | chủ dự án 30/09/2026 |
+| FR-246 | ✅ **Bắn thử bot trên production, không cần Supabase MCP; đổi model chính khi chủ dự án yêu cầu.** Từng chạy từ máy cá nhân ssh vào máy 146 (`bot/tests/ban-thu-*.sh`, SRS-5.1zzzzzzz405); script gỡ 16/11/2026 (SRS-5.1zzzzzzz498, tốn tiền API). | S | chủ dự án 29/09/2026 |
+| FR-247 | ✅ **Bốn lỗi từ 6 kịch bản bắn thật trên production 30/09 (workflow `ban-thu.yml`, ID thử `lx-`) — ghi nguyên nhân từng lỗi.** Workflow `ban-thu.yml` đã gỡ; script bắn thử thay thế cũng gỡ 16/11/2026 (FR-246). | S | chủ dự án 30/09/2026 |
 | FR-248 | ✅ **Các lỗi còn lại sau khi bắn lại 6 kịch bản trên chat-reply v274 (30/09) — ghi nguyên nhân từng lỗi.** | S | chủ dự án 30/09/2026 |
 | FR-249 | ✅ **Hai câu hứa suông của nhánh mua lộ ra khi bắn lại trên chat-reply v275 (30/09) — ghi nguyên nhân.** | S | chủ dự án 30/09/2026 |
 | FR-250 | ✅ **Bắn thật chat-reply v277 (30/09) khi AI bóc tách chết (Gemini 503) — bốn lỗi, ghi nguyên nhân.** | S | chủ dự án 30/09/2026 |
