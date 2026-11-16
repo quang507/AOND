@@ -11,8 +11,9 @@
 //  G-06 chat-reply không select nguyên bảng bot_prompts — chỉ khoá DB khác bản code qua rpc doc_prompt_khac.
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const goc = new URL("../..", import.meta.url).pathname;
+const goc = fileURLToPath(new URL("../..", import.meta.url));   // .pathname ra "/C:/…" trên Windows
 let dat = 0, hong = 0;
 const kiem = (ten, ok, chiTiet = "") => { ok ? dat++ : hong++; console.log(`${ok ? "✓" : "✗"} ${ten}${ok ? "" : ` — ${chiTiet}`}`); };
 
