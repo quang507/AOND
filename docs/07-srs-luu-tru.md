@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz489 · Câu hỏi không kèm "để em ghi vào tin"; không tự nhận rành khu (14/11/2026)
+Hai câu lượt đầu còn sót sau SRS-487: "giá bao nhiêu để em ghi vào tin?" và "Gò Vấp thì em nắm khá rõ khu này".
+- **Sửa (`GIONG`):** câu hỏi không kèm lý do kiểu "để em ghi vào tin". Luật nói thật thêm nhận định về chính em ("em rành khu này"): chỉ nói khi có dữ liệu.
+- **Đo (6 cuộc chat × 5 lượt):** hai câu trên không còn. Câu "ghi nhận" 2/30 lượt (SRS-487: 1/30), là biến thể khác ("Gò Vấp thì em ghi nhận rồi", "em đã đưa điểm này lên bản tin rồi"). Khen bịa 0. Mức này là nhiễu của model, sửa prompt thêm không giảm nữa. Lưới `_mo_dau_ghi_nhan` chỉ bắt câu mở bằng "Em ghi…".
+
 ### SRS-5.1zzzzzzz488 · "ok" ngay sau câu hỏi thông tin là duyệt bản nháp đang chờ (14/11/2026)
 Lộ ra khi đo SRS-487. Bản nháp đã gửi, lượt sau bot hỏi "sổ hồng đứng tên ai", khách nhắn "ok em" → bot không đăng, hỏi lại câu sổ. Kịch bản Sunrise City với code đang chạy: đăng 0/4 lần. Log: `Duyệt: AI=- …`, tức bước đọc ý bỏ trống `duyet_ban_nhap`, vì luật DUYỆT BẢN NHÁP dặn "chưa rõ → bỏ trống", mà model coi "ok" là đáp câu sổ nên chưa rõ. Code quyết duyệt (`Engine._quyet_duyet`) đúng, không đổi.
 - **Sửa (`OPERATIONS_SYSTEM`, luật DUYỆT BẢN NHÁP):** bản nháp đang chờ mà khách chỉ nhắn lời đồng ý ngắn ngay sau một câu em hỏi thông tin (sổ đứng tên ai, diện tích sàn…) → `dong_y`. "ok" không trả lời được câu hỏi thông tin; câu kia hỏi lại sau. "ok" chỉ là trả lời câu khác khi câu em vừa hỏi là câu có / không mà "ok" đáp trọn được.

@@ -154,7 +154,11 @@ def khoi_du_an_khu(kq: dict[str, Any] | None, ben: str = "mua") -> str:
             thong_tin.append(st)
         phu = f" ({', '.join(thong_tin)})" if thong_tin else ""
         so_can = f" — đang có {d['so_can']} căn rao" if d.get("so_can") else ""
-        dong.append(f"- {_chu(d['name'])}{so_can}{phu}")
+        cach = f" — cách đường khoảng {d['cach_m']} m" if d.get("cach_m") else ""
+        dong.append(f"- {_chu(d['name'])}{so_can}{phu}{cach}")
+    if any(d.get("cach_m") for d in ds):   # SRS-5.1zzzzzzz499: tra theo toạ độ đường, không phải địa chỉ
+        dau += ("Kho không có dự án nào GHI địa chỉ trên đường này; dưới đây là dự án GẦN đường, cùng quận (đo theo toạ độ, khoảng cách ước) — "
+                "nói là \"gần đường …\", KHÔNG nói \"trên đường\"; đường có ở nhiều quận mà chưa rõ quận nào thì nêu quận kèm từng tên.\n")
     if ben == "ban":
         return dau + "\n".join(dong) + ("\nCÁCH NÓI: kể vài tên trong danh sách này (kho có thể còn dự án khác ở đó — đừng nói \"chỉ có\"); căn "
                                         "của chủ nằm trong một dự án ở đây thì hỏi đúng tên dự án đó (THAY câu hỏi lượt này). KHÔNG thêm dự án ngoài danh sách.\n")

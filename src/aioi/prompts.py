@@ -284,7 +284,13 @@ SLANG_NOTES = """TỪ ĐIỂN TIẾNG LÓNG BĐS (hiểu đúng, không hỏi l�
   • "khu người Hoa / Chợ Lớn" = khu vực Quận 5 cũ (Nguyễn Trãi, Trần Hưng Đạo, Hải Thượng Lãn Ông, Châu Văn Liêm, Hồng Bàng...).
 - PHÁP LÝ & LOẠI ĐẤT:
   • "SHR" = sổ hồng riêng; "SHC" = sổ hồng chung; "HĐMB" = hợp đồng mua bán; "hoàn công" = đã cập nhật tài sản gắn liền với đất trên sổ; "vi bằng / giấy tay" = chưa có sổ riêng.
-  • "thổ cư" / "ONT / ODT" = đất ở nông thôn / đô thị; "SKC / TMD" = đất thương mại dịch vụ, cơ sở sản xuất; "CLN / HNK" = đất trồng cây lâu năm / hoa màu."""
+  • "thổ cư" / "ONT / ODT" = đất ở nông thôn / đô thị; "SKC / TMD" = đất thương mại dịch vụ, cơ sở sản xuất; "CLN / HNK" = đất trồng cây lâu năm / hoa màu.
+- KIẾN THỨC NGHỀ (để hiểu lời khách, giải thích khi khách hỏi, suy điều chắc chắn kéo theo; số ở đây là mức thường gặp — nói kèm "khoảng", KHÔNG ghi vào tin như sự thật của căn):
+  • Diện tích: "đất" = thửa trên sổ (ngang × dài); "xây dựng" = phần nền nhà chiếm trên đất; "sàn" = từng tầng; "diện tích sử dụng" của nhà phố = TỔNG sàn các tầng (trệt + lửng + lầu + sân thượng có mái), ước ≈ diện tích xây dựng × số tầng — một con số trống không của nhà nhiều tầng thường là đất hoặc một sàn. Chung cư: diện tích trên sổ hồng là thông thủy (lọt lòng), tim tường lớn hơn khoảng 5–10%.
+  • Hẻm & xe: ô tô con cần hẻm khoảng 3–3,5 m trở lên; dưới 3 m thường chỉ xe máy / ba gác; xe tải nhỏ khoảng 4–5 m. Hẻm rộng là điều kiện cần, chưa chắc ô tô vào TỚI nhà (khúc hẹp, cột điện) — hẻm xe hơi chỉ khi khách nói HXH / ô tô vào tới / nhà có gara hay chỗ đậu ô tô.
+  • Loại nhà theo vị trí: có số nhà trên đường hay trong hẻm ("123 TBT", "100/9") = nhà phố; tên toà / block / tầng / mã căn = chung cư; "lô", "nền" = đất nền; nhiều phòng cho thuê = phòng trọ / CHDV.
+  • Tên đường viết tắt bằng chữ đầu ("TBT", "NVL", "CMT8") = đường khách vừa nhắc hoặc đường quen ở Sài Gòn (Trần Bình Trọng, Nguyễn Văn Linh, Cách Mạng Tháng Tám) — đọc ra tên đầy đủ theo ngữ cảnh; hai đường cùng khớp thì hỏi lại đúng tên.
+  • Khách hỏi kiến thức chung (khu này có chung cư không, hẻm mấy mét xe hơi vào được, diện tích sử dụng là gì, "em nghĩ là diện tích nào") thì đáp ngắn bằng kiến thức này hoặc công cụ tra trước, rồi mới hỏi tiếp — câu hỏi lại của em kèm nghĩa của từ đó."""
 
 # Một nguồn cho ô is_rental ở lượt bóc tách lẫn lượt lập thao tác (SRS-5.1zzzzzzz107, bắn thử 207 KB2: "giá 27 tỷ… đang cho thuê 50
 # triệu/tháng" thành tin CHO THUÊ — mô tả cũ chỉ "Có phải tin cho thuê không"). Hiện trạng có người thuê không phải ý muốn cho thuê.

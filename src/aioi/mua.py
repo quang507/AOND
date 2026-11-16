@@ -352,6 +352,8 @@ class KhoNguoiMua:
             else:
                 ds = self._get(f'projects?or=(district.imatch."{mau}",ward.imatch."{mau}",location_raw.imatch."{mau}")&select={cot}'
                                f"&order=priority.asc.nullslast,name.asc&limit={toi_da}")
+            if not ds and not la_tp:
+                ds = self._du_an_gan_duong(k, cot, toi_da)
             if not ds:
                 return []
             hien = ",".join(TRANG_THAI_HIEN)
@@ -363,6 +365,43 @@ class KhoNguoiMua:
         for t in tin or []:
             dem[str(t.get("project_id"))] = dem.get(str(t.get("project_id")), 0) + 1
         return [{**d, "so_can": dem.get(str(d["id"]), 0)} for d in ds]
+
+    def _du_an_gan_duong(self, ten: str, cot: str, toi_da: int, ban_kinh: float = 800.0) -> list[dict]:
+        """SRS-5.1zzzzzzz499 (anh Luận 14/11 "Có chung cư ở TBT không?"): nhiều dự án ghi địa chỉ chỉ tới phường ("Phường 1, Quận 5") nên tra
+        theo chữ ra 0. Lấy toạ độ đường trong bảng `duong` (một điểm mỗi đoạn đường / phường), rồi dự án trong bán kính `ban_kinh` m CÙNG QUẬN
+        với đoạn đó — lọc quận vì nhiều dự án tỉnh khác bị gán nhầm toạ độ giữa thành phố (đo 14/11: dự án Trảng Bom nằm ngay Quận 10).
+        Mỗi dòng kèm `cach_m` (làm tròn 50 m) và `gan_duong` = quận của đoạn đường. Chỉ ĐỌC; lỗi mạng → []."""
+        import math
+        from .chu import bo_dau
+        kd = re.sub(r"^(duong|d\.)\s+", "", re.sub(r"\s+", " ", bo_dau(ten).lower()).strip())
+        if len(kd) < 4:
+            return []
+
+        def quan(s: Any) -> str:
+            return re.sub(r"^(quan|huyen|thanh pho|tp\.?|thi xa)\s+", "", re.sub(r"\s+", " ", bo_dau(str(s or "")).lower()).strip())
+        try:
+            diem = [p for p in self._get(f"duong?ten_khong_dau=ilike.{_q(kd)}&loai=eq.duong&lat=not.is.null&select=quan_cu,lat,lng&limit=30")
+                    if quan(p.get("quan_cu"))]
+            if not diem:
+                return []
+            o = ",".join(f"and(lat.gte.{float(p['lat']) - .008},lat.lte.{float(p['lat']) + .008},"
+                         f"lng.gte.{float(p['lng']) - .008},lng.lte.{float(p['lng']) + .008})" for p in diem)
+            ung = self._get(f"projects?or=({o})&select={cot},lat,lng&limit=300")
+        except Exception as e:  # noqa: BLE001
+            log.warning("du_an_gan_duong lỗi: %s", e)
+            return []
+        gan: dict[str, dict] = {}
+        for p in diem:
+            la, lo, q = float(p["lat"]), float(p["lng"]), quan(p.get("quan_cu"))
+            for d in ung or []:
+                if d.get("lat") is None or quan(d.get("district")) != q:
+                    continue
+                m = 111320 * math.hypot(float(d["lat"]) - la, (float(d["lng"]) - lo) * math.cos(math.radians(la)))
+                khoa = str(d["id"])
+                if m <= ban_kinh and (khoa not in gan or m < gan[khoa]["cach_m"]):
+                    gan[khoa] = {**{k: v for k, v in d.items() if k not in ("lat", "lng")}, "cach_m": max(50, round(m / 50) * 50),
+                                 "gan_duong": str(p.get("quan_cu") or "")}
+        return sorted(gan.values(), key=lambda x: x["cach_m"])[:toi_da]
 
     def can_trong_du_an(self, project_id: str, thue: bool = False, toi_da: int = 5) -> list[dict]:
         """Căn ĐANG HIỆN trong một dự án (tin rao nối `project_id`), mới cập nhật trước — "bảng căn còn bán" (SRS-5.1zzzzzzz250)."""
