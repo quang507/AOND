@@ -2342,7 +2342,7 @@ AS $function$
   ), ung as (
     select l.code, l.street, l.ward, l.area_m2, l.price_vnd, l.price_per_m2_vnd, l.access_type, l.floors, l.status, l.updated_at,
            round(khoang_cach_m(g.lat, g.lng, l.lat::float8, l.lng::float8))::int as m,
-           (l.access_type is not distinct from g.access_type) as cung_loi_vao
+           (g.access_type is not null and l.access_type = g.access_type) as cung_loi_vao
       from listings l, g
      where l.id <> g.id and l.deal = g.deal and l.property_type = g.property_type
        and (g.seller_id is null or l.seller_id is distinct from g.seller_id)

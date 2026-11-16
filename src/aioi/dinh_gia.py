@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from . import phap_ly
@@ -160,6 +161,58 @@ def tinh_dinh_gia_tham_khao(
     }
 
 
+_GIA_M2_RE = re.compile(r"(\d+(?:[.,]\d+)?)\s*[-–]\s*(\d+(?:[.,]\d+)?)\s*triệu\s*/\s*m|(\d+(?:[.,]\d+)?)\s*triệu\s*/\s*m", re.I)
+
+
+def don_gia_du_an(p: dict[str, Any]) -> tuple[float, float] | None:
+    """Đơn giá niêm yết (triệu/m²) của một dự án trong kho `projects` (SRS-5.1zzzzzzz502). Ô `price_min` / `price_max` LẪN đơn vị — khi là giá cả
+    căn ("2,5 tỷ"), khi là giá mỗi m² ("33,93 triệu") — nên không dùng; chỉ lấy ô giá mỗi m² có cấu trúc (`specs.gia_m2_min/max`) hoặc cụm
+    "(32 - 42 triệu/m2)" trong `specs.gia_dong`. Ngoài 5–1.000 triệu/m² → bỏ (dữ liệu hỏng). Không có → None, không đoán."""
+    sp = p.get("specs") if isinstance(p.get("specs"), dict) else {}
+    thap, cao = sp.get("gia_m2_min"), sp.get("gia_m2_max")
+    if isinstance(thap, (int, float)) and isinstance(cao, (int, float)) and thap and cao:
+        lo, hi = thap / 1e6, cao / 1e6
+    else:
+        m = _GIA_M2_RE.search(str(sp.get("gia_dong") or ""))
+        if not m:
+            return None
+        if m.group(1):
+            lo, hi = float(m.group(1).replace(",", ".")), float(m.group(2).replace(",", "."))
+        else:
+            lo = hi = float(m.group(3).replace(",", "."))
+    lo, hi = min(lo, hi), max(lo, hi)
+    return (lo, hi) if 5 <= lo and hi <= 1000 else None
+
+
+def dong_don_gia_du_an(kho: Any, du_an: str, gia_chu: int = 0, dien_tich: float = 0.0) -> str:
+    """Dòng dữ kiện cho công cụ định giá: đơn giá niêm yết của dự án chủ nhắc, lấy từ kho dự án chung (2.819 dự án), kèm đối chiếu với đơn
+    giá của chủ khi biết giá và diện tích. Kho hụt / không khớp dự án / dự án không có đơn giá → "" (không dòng nào)."""
+    ten = (du_an or "").strip()
+    if len(ten) < 3 or getattr(kho, "tra_du_an", None) is None:
+        return ""
+    try:
+        kq = kho.tra_du_an(ten)
+    except Exception:  # noqa: BLE001 — định giá vẫn chạy, chỉ thiếu dòng dự án
+        return ""
+    p = kq.get("du_an") if isinstance(kq, dict) else None
+    if not isinstance(p, dict) or kq.get("khop") not in ("ro", "gan"):
+        return ""
+    dg = don_gia_du_an(p)
+    if not dg:
+        return ""
+    lo, hi = dg
+    khoang = f"{lo:g}–{hi:g}" if lo != hi else f"{lo:g}"
+    d = (f"- ĐƠN GIÁ NIÊM YẾT DỰ ÁN \"{p.get('name')}\" (kho dự án; giá niêm yết tham khảo, chưa phải giá giao dịch): {khoang} triệu/m².\n")
+    if kq.get("khop") == "gan":
+        d += "  (tên dự án khớp gần đúng — nhắc TÊN ĐẦY ĐỦ để chủ xác nhận đúng dự án; không phải dự án của chủ thì bỏ qua dòng này)\n"
+    if gia_chu > 0 and dien_tich > 0:
+        chu = gia_chu / dien_tich / 1e6
+        muc = "thấp hơn" if chu < lo * 0.9 else "cao hơn" if chu > hi * 1.1 else "nằm trong / sát"
+        d += (f"  Đối chiếu: đơn giá chủ khoảng {chu:.0f} triệu/m² — {muc} khoảng niêm yết của dự án. Nói NHẸ đúng một câu, không đưa con số giá "
+              "mới, không khuyên tăng / giảm.\n")
+    return d
+
+
 def dinh_gia_tham_khao_tool(engine: Any, conv: Any, project: Any, vao: dict[str, Any]) -> str:
     """Xử lý lệnh gọi công cụ dinh_gia_tham_khao."""
     khu_vuc = str(vao.get("khu_vuc") or "")
@@ -202,9 +255,12 @@ def dinh_gia_tham_khao_tool(engine: Any, conv: Any, project: Any, vao: dict[str,
         project=project,
     )
 
+    dong_da = dong_don_gia_du_an(getattr(engine, "_convstore", None), du_an, gia_chu, dien_tich)   # SRS-5.1zzzzzzz502: dữ liệu dự án trong kho
+
     if kq.get("nguon") == "khong_co":
         return (f"=== ĐỊNH GIÁ THAM KHẢO: KHÔNG CÓ SỐ ({kq['ly_do']}) ===\n"
-                "- Không nêu con số nào. Nói thật là bảng tham khảo chưa có số cho khu / loại này.\n")
+                + ("- Bảng ước lượng theo vùng chưa có số cho khu / loại này; chỉ dùng dòng dự án dưới đây, không nêu số nào khác.\n" + dong_da
+                   if dong_da else "- Không nêu con số nào. Nói thật là bảng tham khảo chưa có số cho khu / loại này.\n"))
 
     if kq.get("nguon") == "du_an":
         return (
@@ -257,6 +313,7 @@ def dinh_gia_tham_khao_tool(engine: Any, conv: Any, project: Any, vao: dict[str,
         f"- Đơn giá rao tham khảo: {kq['don_gia_min']} – {kq['don_gia_max']} triệu/m²\n"
         f"{dong_gia_tong}"
         f"{dong_gan}"
+        f"{dong_da}"
         f"{dong_so_sanh}"
         "- LƯU Ý KHI TRẢ LỜI: Nêu số liệu khách quan để khách tham khảo; dòng đối chiếu / nhận xét (nếu có) chỉ nói NHẸ một câu (chủ dự án "
         "12/11, SRS-5.1zzzzzzz429), không đưa con số giá mới, không đoán dễ bán."

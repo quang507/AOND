@@ -73,6 +73,13 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz492 · Cổng `kiem.yml` xanh lại sau ba ngày chỉ chạy tay (14/11/2026)
+Chủ dự án 14/11 hỏi còn kiểm xanh đỏ / truy vết không. Từ 11/11 (`fd65151`) `kiem.yml` chỉ chạy tay; chạy lại 14/11: 8 job xanh, 2 đỏ, đều là việc của các đợt 11–13/11, không dính lõi bot.
+- **Migration:** 8 file (20261111a–c, 20261113c–g) đã chạy bằng SQL thẳng nên sổ `supabase_migrations` thiếu dòng — đối chiếu DB thì thay đổi đều đã có (cột `can_kiem_chung`, `ghi_chu_test`, hàm `nap_tin_mogi`; cột `ly_do_chua_dang` đúng là đã bỏ ở 20261113d). Ghi bù 8 dòng sổ. `schema.sql` sinh lại bằng `xuat_schema()` (thiếu `nap_tin_mogi`).
+- **Hạt giống dựng lại:** bước `du-lieu` của `dung-lai-db.mjs` nạp thêm `loai_phap_ly` (bảng tham chiếu, 20261112g); hai bảng tạm `_nhom` / `_n` của lượt gộp dự án vào danh sách miễn.
+- **G-04 (`giam-egress.mjs`) báo nhầm:** `/cam-nang/[slug]` thuần nội dung trong code, `dynamicParams = false` — trả [] thì mọi bài 404. G-04 nay chỉ áp cho trang có đọc DB (trang hoặc tệp `@/lib/…` nó nhập có chữ `supabase`).
+- **Còn:** `kiem.yml` vẫn chỉ chạy tay (quyết định 11/11); `giam-egress.mjs` không chạy được trên Windows (đường dẫn `URL.pathname`), chỉ chạy ở CI.
+
 ### SRS-5.1zzzzzzz491 · Bản tin chỉ ghi "thương lượng" khi chủ nhà cho bớt (14/11/2026)
 Chạy thử 6 cuộc chat sau SRS-490 (chủ dự án: "chạy vài cuộc chat thử trên 146 xem bot ổn ko"): cả 2 tin căn hộ Sunrise City ghi "4,6 tỷ (thương lượng)", một tin còn viết "có thể trao đổi thêm khi xem căn", dù khách chỉ nói "giá 4,6 tỷ" và ô `thuong_luong` trống. Gốc: ví dụ gạch đầu dòng trong `AD_FORMAT` là "19 tỷ (thương lượng)", model chép.
 - **Sửa (`AD_FORMAT`):** ví dụ chỉ còn "19 tỷ". Mục GIÁ TRONG TIN: chữ "thương lượng" hay lời mời trả giá chỉ viết khi ô thương lượng ghi chủ cho bớt; ô trống thì giá là đúng con số.
