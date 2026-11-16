@@ -47,6 +47,11 @@ NGAN_SACH_GIAY = 40.0
 # nền cũng vậy → khách nhận câu xin lỗi. Nay model quá hạn NGHỈ một lúc (lượt sau đi thẳng model / nguồn kế), và hạn mỗi lần 15 s để hai
 # lần quá hạn (30 s) vẫn còn chỗ cho Groq trong 40 s.
 NGHI_MODEL_GIAY = 600.0
+# Khi Gemini là đường CHÍNH (công tắc AIOI_CHI_GEMINI_DEN, SRS-5.1zzzzzzz514): bắn thử 16/11 một lần quá hạn 15 s làm model nghỉ 10 phút,
+# model kế quá hạn nốt → cả đường sập, khách nhận câu giữ chỗ. Đường chính được chờ lâu hơn và model quá hạn chỉ nghỉ ngắn.
+HAN_CHINH_GIAY = 30.0
+NGAN_SACH_CHINH_GIAY = 70.0
+NGHI_MODEL_CHINH_GIAY = 60.0
 # Gemini 3 bắt gửi lại chữ ký suy nghĩ của lần gọi công cụ; lần gọi không do Gemini sinh (vòng bắt đầu ở Claude) dùng chữ ký bỏ kiểm này
 # (tài liệu Gemini, "thought signatures").
 CHU_KY_BO_KIEM = "skip_thought_signature_validator"
@@ -154,8 +159,8 @@ class DuPhongProvider(LLMProvider):
                 if time.time() < self._nghi_model.get((n.ten, model), 0.0):
                     continue   # model này vừa quá hạn — nghỉ, khỏi tốn thêm một lần chờ
                 for khoa in n.khoa:
-                    if time.time() - bat_dau > NGAN_SACH_GIAY:
-                        log.warning("Dự phòng (%s): quá ngân sách %.0f s — dừng, không thử tiếp", viec, NGAN_SACH_GIAY)
+                    if time.time() - bat_dau > (NGAN_SACH_CHINH_GIAY if bo_claude else NGAN_SACH_GIAY):
+                        log.warning("Dự phòng (%s): quá ngân sách thời gian — dừng, không thử tiếp", viec)
                         raise loi or RuntimeError("dự phòng quá ngân sách thời gian")
                     try:
                         kq = goi_phu(n, model, khoa)
@@ -167,7 +172,7 @@ class DuPhongProvider(LLMProvider):
                         if not nen_doi_sang(e) and not isinstance(e, (ValueError, LoiNguon, urllib.error.URLError, OSError)):
                             raise
                         if _qua_han(e):
-                            self._nghi_model[(n.ten, model)] = time.time() + NGHI_MODEL_GIAY
+                            self._nghi_model[(n.ten, model)] = time.time() + (NGHI_MODEL_CHINH_GIAY if bo_claude else NGHI_MODEL_GIAY)
                             break   # model này chậm → khoá khác cũng chậm như vậy; sang model / nguồn kế
         raise loi_chinh or loi or RuntimeError("không còn đường gọi model")
 
@@ -218,9 +223,9 @@ class DuPhongProvider(LLMProvider):
         self._ghi_so(n, model, j)
         return chu
 
-    @staticmethod
-    def _han(than: dict[str, Any]) -> float:
-        return min(HAN_MOT_LAN_GIAY, max(10.0, 8.0 + than["max_completion_tokens"] * 0.008))
+    def _han(self, than: dict[str, Any]) -> float:
+        tran = HAN_CHINH_GIAY if (NGUON_LUOT.get() == CHI_GEMINI or self.dang_chi_gemini()) else HAN_MOT_LAN_GIAY
+        return min(tran, max(10.0, 8.0 + than["max_completion_tokens"] * 0.008))
 
     def _ghi_so(self, n: Nguon, model: str, j: dict[str, Any]) -> None:
         u = j.get("usage") or {}
