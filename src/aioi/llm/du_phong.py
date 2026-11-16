@@ -6,6 +6,10 @@ quá tải, quá hạn, 5xx) mới đi tiếp Gemini rồi Groq — cùng prompt
 khách, hình thức, không bịa), engine không biết lượt đó đi đường nào. Lỗi khác (sai prompt, sai schema) ném lên như cũ: đổi model
 không chữa được, nuốt đi là giấu chỗ hỏng.
 
+Vòng công cụ (`converse`) chạy được trên Gemini (SRS-5.1zzzzzzz512): khối Claude (tool_use / tool_result, input_schema) dịch sang
+`tools` / `tool_calls` / vai `tool` của giọng OpenAI rồi dịch ngược; chữ ký suy nghĩ Gemini 3 (`extra_content`) giữ theo id để gửi lại ở
+vòng sau. Groq vẫn trả chữ không gọi công cụ (engine đọc bằng form). Công tắc `AIOI_CHI_GEMINI_DEN` bỏ qua hẳn Claude tới một ngày.
+
 Gemini và Groq cùng nói giọng OpenAI (`/chat/completions`) — một đường gọi, hai nguồn. Bài học bot TypeScript cũ (gỡ 18/10, b2f2d44):
 Gemini tính phần NGHĨ vào trần chữ → `reasoning_effort: "low"` + trần rộng; Groq (qwen) trả kèm `<think>` → `reasoning_format: "hidden"`
 và vẫn cắt lại; model Groq không nhìn được ảnh; PDF chỉ Claude đọc. Groq / Gemini không có bộ nhớ tạm prompt → sổ ghi cache = 0.
@@ -17,12 +21,14 @@ import json
 import logging
 import re
 import time
+import uuid
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from .base import CHI_GEMINI, NGUON_LUOT, LLMProvider, Message, ToolTurn, bo_ranh_gioi
+from .base import CHI_GEMINI, NGUON_LUOT, LLMProvider, Message, ToolCall, ToolTurn, bo_ranh_gioi
 from .claude import chuan_theo_schema
 
 log = logging.getLogger(__name__)
@@ -41,6 +47,11 @@ NGAN_SACH_GIAY = 40.0
 # nền cũng vậy → khách nhận câu xin lỗi. Nay model quá hạn NGHỈ một lúc (lượt sau đi thẳng model / nguồn kế), và hạn mỗi lần 15 s để hai
 # lần quá hạn (30 s) vẫn còn chỗ cho Groq trong 40 s.
 NGHI_MODEL_GIAY = 600.0
+# Gemini 3 bắt gửi lại chữ ký suy nghĩ của lần gọi công cụ; lần gọi không do Gemini sinh (vòng bắt đầu ở Claude) dùng chữ ký bỏ kiểm này
+# (tài liệu Gemini, "thought signatures").
+CHU_KY_BO_KIEM = "skip_thought_signature_validator"
+# Từ khoá JSON Schema cổng OpenAI của Gemini hay từ chối — bỏ trước khi gửi (công cụ của mình chỉ cần type / properties / enum / items).
+_KHOA_SCHEMA_BO = ("additionalProperties", "$schema", "examples", "default", "title", "strict")
 
 
 @dataclass
@@ -95,8 +106,10 @@ def _json_dau(chu: str) -> Any:
 class DuPhongProvider(LLMProvider):
     """Claude trước; lỗi đổi model chữa được thì Gemini rồi Groq. `goi` (thử nghiệm) thay đường HTTP."""
 
-    def __init__(self, chinh: LLMProvider, nguon: list[Nguon], so: Any = None, goi: Any = None):
+    def __init__(self, chinh: LLMProvider, nguon: list[Nguon], so: Any = None, goi: Any = None, chi_gemini_den: str | None = None):
         self._chinh = chinh
+        self._chi_gemini_den = chi_gemini_den
+        self._chu_ky: dict[str, Any] = {}   # id lần gọi công cụ Gemini → extra_content (chữ ký suy nghĩ) để gửi lại vòng sau
         self._nguon = [n for n in nguon if n.khoa and n.models]
         self._so = so
         self._goi_http = goi or self._http
@@ -107,10 +120,21 @@ class DuPhongProvider(LLMProvider):
 
     # --- chọn đường -----------------------------------------------------------------------------
 
+    def dang_chi_gemini(self, bay_gio: datetime | None = None) -> bool:
+        """Công tắc `AIOI_CHI_GEMINI_DEN` còn hiệu lực: hôm nay (giờ VN) trước mốc. Mốc viết sai → coi như tắt (Claude chính)."""
+        if not self._chi_gemini_den:
+            return False
+        try:
+            moc = datetime.strptime(self._chi_gemini_den, "%Y-%m-%d").date()
+        except ValueError:
+            return False
+        return ((bay_gio or datetime.now(timezone.utc)).astimezone(timezone.utc) + timedelta(hours=7)).date() < moc
+
     def _thu(self, viec: str, goi_chinh, goi_phu, can_anh: bool = False):
         chi_gemini = NGUON_LUOT.get() == CHI_GEMINI   # SRS-5.1zzzzzzz239: lượt bắn thử — không gọi Claude, chỉ Gemini
+        bo_claude = chi_gemini or self.dang_chi_gemini()   # công tắc SRS-512: bỏ Claude, vẫn còn Groq sau Gemini
         loi_chinh: BaseException | None = self._loi_nghi if time.time() < self._nghi_den else None
-        if chi_gemini:
+        if bo_claude:
             loi_chinh = None
         elif time.time() >= self._nghi_den:
             try:
@@ -135,7 +159,7 @@ class DuPhongProvider(LLMProvider):
                         raise loi or RuntimeError("dự phòng quá ngân sách thời gian")
                     try:
                         kq = goi_phu(n, model, khoa)
-                        self._bao(viec, n, model, loi_chinh, ghi_so=not chi_gemini)
+                        self._bao(viec, n, model, loi_chinh, ghi_so=not bo_claude)
                         return kq
                     except Exception as e:  # noqa: BLE001
                         loi = e
@@ -179,7 +203,7 @@ class DuPhongProvider(LLMProvider):
             than["max_completion_tokens"] = max(max_tokens, 1500)
         if schema is not None:
             than["response_format"] = {"type": "json_schema", "json_schema": {"name": "ket_qua", "schema": schema, "strict": False}}
-        han = min(HAN_MOT_LAN_GIAY, max(10.0, 8.0 + than["max_completion_tokens"] * 0.008))
+        han = self._han(than)
         try:
             j = self._goi_http(n, khoa, than, han)
         except LoiNguon as e:
@@ -191,10 +215,116 @@ class DuPhongProvider(LLMProvider):
                                    "nào khác:\n" + json.dumps(schema, ensure_ascii=False)}
             j = self._goi_http(n, khoa, than, han)
         chu = str(((j.get("choices") or [{}])[0].get("message") or {}).get("content") or "")
+        self._ghi_so(n, model, j)
+        return chu
+
+    @staticmethod
+    def _han(than: dict[str, Any]) -> float:
+        return min(HAN_MOT_LAN_GIAY, max(10.0, 8.0 + than["max_completion_tokens"] * 0.008))
+
+    def _ghi_so(self, n: Nguon, model: str, j: dict[str, Any]) -> None:
         u = j.get("usage") or {}
         if self._so is not None and hasattr(self._so, "ghi_du_phong"):
             self._so.ghi_du_phong(f"{n.ten}:{model}", int(u.get("prompt_tokens") or 0), int(u.get("completion_tokens") or 0))
-        return chu
+
+    # --- vòng công cụ trên Gemini (SRS-5.1zzzzzzz512) ----------------------------------------------
+
+    @staticmethod
+    def _schema_gon(s: Any) -> Any:
+        """Bỏ từ khoá schema Gemini từ chối; tên ô trong `properties` giữ nguyên (ô tên "title" / "default" vẫn là ô)."""
+        if isinstance(s, dict):
+            return {k: ({o: DuPhongProvider._schema_gon(x) for o, x in v.items()} if k == "properties" and isinstance(v, dict)
+                        else DuPhongProvider._schema_gon(v)) for k, v in s.items() if k not in _KHOA_SCHEMA_BO}
+        if isinstance(s, list):
+            return [DuPhongProvider._schema_gon(v) for v in s]
+        return s
+
+    @staticmethod
+    def _cong_cu_openai(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Công cụ Claude → `tools` giọng OpenAI. Công cụ máy chủ của Claude (web_search…, không có input_schema) bỏ."""
+        return [{"type": "function", "function": {"name": t["name"], "description": t.get("description") or "",
+                                                  "parameters": DuPhongProvider._schema_gon(t["input_schema"])}}
+                for t in tools if isinstance(t, dict) and t.get("input_schema")]
+
+    @staticmethod
+    def _khoi(b: Any) -> dict[str, Any]:
+        """Khối nội dung Claude (dict, hoặc đối tượng SDK khi vòng bắt đầu ở Claude) → dict."""
+        if isinstance(b, dict):
+            return b
+        if hasattr(b, "model_dump"):
+            return b.model_dump()
+        return {"type": getattr(b, "type", ""), **{k: getattr(b, k) for k in ("text", "id", "name", "input") if hasattr(b, k)}}
+
+    def _tin_openai(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Hội thoại vòng công cụ (khối Claude) → messages giọng OpenAI: tool_use → tool_calls của assistant, tool_result → vai tool."""
+        ra: list[dict[str, Any]] = []
+        for m in messages:
+            vai, nd = m.get("role"), m.get("content")
+            if isinstance(nd, str):
+                ra.append({"role": vai, "content": nd})
+                continue
+            khoi = [self._khoi(b) for b in nd or []]
+            if vai == "assistant":
+                chu = "".join(str(b.get("text") or "") for b in khoi if b.get("type") == "text")
+                goi = []
+                for b in khoi:
+                    if b.get("type") != "tool_use":
+                        continue
+                    c: dict[str, Any] = {"id": b["id"], "type": "function",
+                                         "function": {"name": b["name"], "arguments": json.dumps(b.get("input") or {}, ensure_ascii=False)}}
+                    c["extra_content"] = self._chu_ky.get(b["id"]) or {"google": {"thought_signature": CHU_KY_BO_KIEM}}
+                    goi.append(c)
+                tin: dict[str, Any] = {"role": "assistant", "content": chu or None}
+                if goi:
+                    tin["tool_calls"] = goi
+                ra.append(tin)
+                continue
+            chu_them: list[dict[str, Any]] = []
+            for b in khoi:
+                if b.get("type") == "tool_result":
+                    kq = b.get("content")
+                    if isinstance(kq, list):
+                        kq = "".join(str(self._khoi(x).get("text") or "") for x in kq)
+                    ra.append({"role": "tool", "tool_call_id": b.get("tool_use_id"), "content": str(kq or "")})
+                elif b.get("type") == "text":
+                    chu_them.append({"type": "text", "text": str(b.get("text") or "")})
+                elif b.get("type") == "image" and (b.get("source") or {}).get("type") == "base64":
+                    src = b["source"]
+                    chu_them.append({"type": "image_url", "image_url": {"url": f"data:{src['media_type']};base64,{src['data']}"}})
+            if chu_them:
+                ra.append({"role": vai, "content": chu_them})
+        return ra
+
+    def _luot_cong_cu(self, n: Nguon, model: str, khoa: str, system: str, messages: list[dict[str, Any]],
+                      tools: list[dict[str, Any]], max_tokens: int) -> ToolTurn:
+        than: dict[str, Any] = {"model": model, "messages": [{"role": "system", "content": bo_ranh_gioi(system)}, *self._tin_openai(messages)],
+                                "max_completion_tokens": max(max_tokens, 1500), "temperature": 0.6, "reasoning_effort": "low"}
+        ct = self._cong_cu_openai(tools)
+        if ct:
+            than["tools"] = ct
+        j = self._goi_http(n, khoa, than, self._han(than))
+        self._ghi_so(n, model, j)
+        tin = (j.get("choices") or [{}])[0].get("message") or {}
+        chu = _bo_nghi(str(tin.get("content") or ""))
+        goi: list[ToolCall] = []
+        khoi: list[dict[str, Any]] = [{"type": "text", "text": chu}] if chu else []
+        for c in tin.get("tool_calls") or []:
+            f = c.get("function") or {}
+            vao = f.get("arguments")
+            try:
+                vao = json.loads(vao) if isinstance(vao, str) else (vao or {})
+            except ValueError:
+                raise ValueError(f"{n.ten} trả tham số công cụ không phải JSON") from None
+            ma = str(c.get("id") or f"gem_{uuid.uuid4().hex[:12]}")
+            if c.get("extra_content"):
+                if len(self._chu_ky) > 2000:
+                    self._chu_ky.clear()
+                self._chu_ky[ma] = c["extra_content"]
+            goi.append(ToolCall(id=ma, name=str(f.get("name") or ""), input=vao if isinstance(vao, dict) else {}))
+            khoi.append({"type": "tool_use", "id": ma, "name": str(f.get("name") or ""), "input": vao if isinstance(vao, dict) else {}})
+        if not chu and not goi:
+            raise ValueError(f"{n.ten} trả lời rỗng")
+        return ToolTurn(text=chu, tool_calls=goi, assistant_content=khoi, stop_reason="tool_use" if goi else "end_turn")
 
     @staticmethod
     def _tin(messages: list[Message]) -> list[dict[str, Any]]:
@@ -226,11 +356,15 @@ class DuPhongProvider(LLMProvider):
 
     def converse(self, system: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]],
                  max_tokens: int = 1024) -> ToolTurn:
-        # Vòng công cụ chỉ Claude chạy; dự phòng trả lời chữ không gọi công cụ (vòng lặp của engine vẫn dừng đúng). stop_reason "du_phong" cho
-        # vòng nào cần biết lời không qua công cụ (agent bán viết lại với đủ khối dữ liệu, SRS-5.1zzzzzzz308).
+        # Gemini chạy vòng công cụ thật (SRS-5.1zzzzzzz512). Groq trả chữ không gọi công cụ (vòng lặp của engine vẫn dừng đúng); stop_reason
+        # "du_phong" cho vòng nào cần biết lời không qua công cụ (agent bán viết lại với đủ khối dữ liệu, SRS-5.1zzzzzzz308).
         msgs = [Message(m["role"], m["content"]) for m in messages if isinstance(m.get("content"), str)]
-        return self._thu("converse", lambda: self._chinh.converse(system, messages, tools, max_tokens),
-                         lambda n, m, k: ToolTurn(text=self._chu(n, m, k, system, msgs, max_tokens), tool_calls=[], stop_reason="du_phong"))
+
+        def phu(n: Nguon, m: str, k: str) -> ToolTurn:
+            if n.ten == "Gemini":
+                return self._luot_cong_cu(n, m, k, system, messages, tools, max_tokens)
+            return ToolTurn(text=self._chu(n, m, k, system, msgs, max_tokens), tool_calls=[], stop_reason="du_phong")
+        return self._thu("converse", lambda: self._chinh.converse(system, messages, tools, max_tokens), phu)
 
     @staticmethod
     def _anh(items: list[tuple[bytes, str]]) -> list[dict[str, Any]]:

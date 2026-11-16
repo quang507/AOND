@@ -31,6 +31,9 @@ class Settings:
     gemini_chat_models: tuple[str, ...] = ("gemini-3.5-flash", "gemini-3.1-flash-lite")
     groq_chat_models: tuple[str, ...] = ("qwen/qwen3.8-27b", "openai/gpt-oss-120b")
     groq_api_keys: tuple[str, ...] = ()
+    # Công tắc SRS-5.1zzzzzzz512: tới hết ngày TRƯỚC mốc này (giờ VN, "YYYY-MM-DD") mọi lượt gọi model bỏ qua Claude, đi thẳng Gemini (cả
+    # vòng công cụ); tới mốc thì tự về Claude. Rỗng = Claude chính như cũ.
+    chi_gemini_den: str | None = None
 
     @property
     def effective_provider(self) -> str:
@@ -65,6 +68,7 @@ def load_settings() -> Settings:
         gemini_chat_models=_ds_khoa("GEMINI_MODEL") or ("gemini-3.5-flash", "gemini-3.1-flash-lite"),   # SRS-5.1zzzzzzz299
         groq_chat_models=_ds_khoa("GROQ_MODEL") or ("qwen/qwen3.8-27b", "openai/gpt-oss-120b"),
         groq_api_keys=_ds_khoa("GROQ_API_KEY", "GROQ_API_KEYS"),
+        chi_gemini_den=(os.getenv("AIOI_CHI_GEMINI_DEN") or "").strip() or None,
     )
 
 
