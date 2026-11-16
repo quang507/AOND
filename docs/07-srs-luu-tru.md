@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz498 · Gỡ 14 script bắn thử production `ban-thu-*` (16/11/2026)
+Chủ dự án 16/11, sau khi gỡ giám khảo và bộ chấm (SRS-497): "xoá đi" — các script bắn thử cũng chạy lõi production bằng model thật, tốn tiền API.
+- **Xoá:** `bot/tests/ban-thu-{5-khach,ai,ban,dap-y,dc,kb,kiem,luan,mua,nhieu-can,sau,srd,vm,xa}.sh`. Giữ `bot/tests/lib/may146.sh` (còn `doc-log-loi.sh` dùng để đọc log lõi) và cơ chế ID thử trong lõi (`la_id_thu`, `AIOI_CHAT_MODEL_THU`) — không đổi hành vi bot.
+- **Tài liệu:** CLAUDE.md, README, docs/02 (FR-246 / 247), docs/10 (TS-PROD-01, `ban-thu-luan` ghi đã gỡ), docs/11, chú thích `apply-migration.yml` và `bot/cau-hinh-loi.env`. Thử lời bot từ nay: tin Zalo thật hoặc đọc chat thật trong DB.
+
 ### SRS-5.1zzzzzzz497 · Cả hai bên tra được dự án theo đường; lời trước 📋 không kể việc sửa tin; gỡ giám khảo và bộ chấm thử (14/11/2026)
 Chủ dự án 14/11: khách hỏi "Trần Bình Trọng có chung cư không" mà bot không biết → "phải cho cả 2 có công cụ tra, làm tất cả đi"; rồi sau khi thấy hoá đơn API (≈ $57 ngày 14/11, gần hết là 22 lượt đo bộ vàng; bot thật cả ngày 7 tin): "xoá mẹ cái giám khảo với chấm thử đi".
 - **Tra dự án theo đường:** `KhoNguoiMua.du_an_theo_khu` khớp thêm địa chỉ dự án (`location_raw.imatch`, cùng regex chặn số dính liền) — khu nay là quận / phường / tên đường. Đo trên kho thật: Quận 1 87 = 87, Quận 5 28 = 28 (không rộng thêm); "Nguyễn Hữu Thọ" 8 dự án; "Trần Bình Trọng" 0 — kho chưa ghi dự án nào trên đường này, bot nói thật là hệ thống chưa có, không bịa, không kết luận ngoài thực tế không có.

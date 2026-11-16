@@ -90,9 +90,6 @@ from .prompts import (
     build_transcribe_instruction,
     build_fee_followup_system,
     _fee_hint,
-    PT_CHU,
-    PT_MG,
-    PHI_THUE,
     khoi_bao_phi,
     muc_phi,
     khoi_hoi_coc,
@@ -3394,8 +3391,7 @@ class Engine:
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI TIẾP VỀ PHÍ (chính sách gửi bán EM ĐÃ NÓI ở lượt trước): ===\n"
                 "Các ý chính sách (miễn phí đăng, phí cố định không bớt, hợp đồng, không độc quyền, không chia hoa hồng) khách đã nghe. Việc lượt "
                 "này: đáp đúng điều khách vừa hỏi. "
-                f"Con số phí chỉ lấy từ dòng VAI NGƯỜI RAO / câu mẫu báo phí bên dưới (bán: {PT_CHU} chính chủ, {PT_MG} môi giới; cho thuê: "
-                f"{PHI_THUE}). Sau đó nối lại nội dung căn đang trao đổi.\n"
+                "Con số phí chỉ lấy từ dòng VAI NGƯỜI RAO / câu mẫu báo phí bên dưới. Sau đó nối lại nội dung căn đang trao đổi.\n"
                 + ((_fee_hint(conv.vai_phi) + "\n") if _fee_hint(conv.vai_phi) else "")
                 + ((khoi_bao_phi(conv.vai_phi, conv.prop.is_rental, goi_toi_khach(customer_pronoun)[0]) + "\n")
                    if muc_phi(conv.vai_phi, conv.prop.is_rental) else "")
@@ -3405,12 +3401,10 @@ class Engine:
                 "\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH HỎI VỀ PHÍ / CHÍNH SÁCH GỬI BÁN: ===\n"
                 # SRS-5.1zzzzzzz318 (chủ dự án 01/11: ĐỦ 4 ý chính sách, giọng theo khuôn anh Luận — bản đầu đọc cả khối như điều khoản, giám khảo
                 # chấm 2/5). Phiếu lượt không có BUSINESS_CONTEXT nên dữ kiện chính sách đi kèm khối này. Giọng do GIONG, không dặn thêm ở đây.
-                "Việc lượt này: đáp điều khách vừa hỏi, rồi nói lướt các ý còn lại của CHÍNH SÁCH GỬI BÁN dưới (phí cố định không bớt, chỉ thu khi "
-                "thành công; có hợp đồng môi giới bằng văn bản; không độc quyền; môi giới gửi hàng không chia hoa hồng nào khác, dù khách là chủ "
-                "nhà) — gói trong một câu nói chuyện, nối bằng \"còn\" / \"và\". "
-                f"Con số phí chỉ nói khi khách hỏi mức phí (bao nhiêu, tính sao), và chỉ lấy từ dòng VAI NGƯỜI RAO / câu mẫu báo phí bên dưới (bán: "
-                f"{PT_CHU} chính chủ, {PT_MG} môi giới; cho thuê: {PHI_THUE} = 3/4 của MỘT tháng tiền thuê; chưa rõ vai thì nêu cả hai hoặc hỏi khéo "
-                "khách là chủ nhà hay môi giới); khách hỏi ý khác (độc quyền, hợp đồng, xin bớt) thì không cần đọc lại câu báo phí. "
+                "Việc lượt này: đáp điều khách vừa hỏi, rồi nói lướt các ý còn lại của CHÍNH SÁCH GỬI BÁN dưới (cả ý không chia hoa hồng, dù "
+                "khách là chủ nhà) — gói trong một câu nói chuyện, nối bằng \"còn\" / \"và\". Con số phí chỉ nói khi khách hỏi mức phí (bao "
+                "nhiêu, tính sao), lấy đúng câu mẫu báo phí / dòng VAI NGƯỜI RAO dưới; khách hỏi ý khác (độc quyền, hợp đồng, xin bớt) thì không "
+                "đọc lại câu báo phí. "
                 "Sau đó nối lại nội dung căn đang trao đổi.\n"
                 + CHINH_SACH_PHI + "\n"
                 + ((_fee_hint(conv.vai_phi) + "\n") if _fee_hint(conv.vai_phi) else "")

@@ -338,7 +338,7 @@ BUSINESS_CONTEXT = f"""BỐI CẢNH AI ƠI NHÀ ĐẤT (nền tảng nội bộ 
   • Bên MÔI GIỚI (nhân viên môi giới; hoặc sàn giao dịch): phí {PT_MG} giá chốt khi bán, hoặc {PHI_THUE}. Khích lệ đăng thêm hàng (≥10 căn) để lên Top.
   • CHỦ ĐẦU TƯ: phí KHÔNG theo {PT_CHU}/{PT_MG} — thoả thuận riêng với dự án; đừng tự báo con số.
 {CHINH_SACH_PHI}
-- PHÍ CHỈ thu khi giao dịch THÀNH CÔNG. TUYỆT ĐỐI không bịa con số phí/ưu đãi/cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì nêu cả hai mức (chủ nhà {PT_CHU}, môi giới {PT_MG}) hoặc hỏi khách là chủ nhà hay môi giới.
+- TUYỆT ĐỐI không bịa con số phí / ưu đãi / cam kết nào ngoài các mức trên. Chưa rõ vai người rao thì nêu cả hai mức hoặc hỏi khách là chủ nhà hay môi giới.
 - Gamification: điểm …/100 của TIN và hạng Đồng/Bạc/Vàng của NGƯỜI RAO — số THẬT nằm ở khối "ĐIỂM TIN" cuối prompt (hệ thống tính), khối chỉ có ở lượt ra tin hoặc khi khách hỏi điểm; lượt không có khối thì KHÔNG nhắc điểm / hạng."""
 
 
@@ -362,7 +362,8 @@ def khoi_bao_phi(role: SellerRole, thue: bool, goi: str = "anh/chị") -> str:
     phi = muc_phi(role, thue)
     if not phi:
         return ""
-    return f'Báo phí bằng NGUYÊN VĂN câu mẫu: "{cau_mau.cau("bao_phi", goi, phi=phi)}"'
+    nhac = f" ({PHI_THUE} = ba phần tư của MỘT tháng tiền thuê, không phải 3 hay 4 tháng)" if thue else ""
+    return f'Báo phí bằng NGUYÊN VĂN câu mẫu: "{cau_mau.cau("bao_phi", goi, phi=phi)}"{nhac}'
 
 
 def _fee_hint(role: SellerRole) -> str:
@@ -370,14 +371,13 @@ def _fee_hint(role: SellerRole) -> str:
     if role in (SellerRole.CHU_NHA, SellerRole.LUOT_SONG):
         who = "CHÍNH CHỦ" if role == SellerRole.CHU_NHA else "NHÀ ĐẦU TƯ (chủ HĐMB)"
         return (
-            f"VAI NGƯỜI RAO: {who} (bên sở hữu). Nếu được hỏi phí, báo {PT_CHU} giá chốt khi bán, "
-            f"hoặc {PHI_THUE} (ba phần tư của MỘT tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng), chỉ thu khi giao dịch thành công."
+            f"VAI NGƯỜI RAO: {who} (bên sở hữu) — phí {PT_CHU} giá chốt khi bán, {PHI_THUE} khi cho thuê."
         )
     if role in (SellerRole.MOI_GIOI, SellerRole.SAN):
         who = "MÔI GIỚI" if role == SellerRole.MOI_GIOI else "SÀN GIAO DỊCH"
         return (
-            f"VAI NGƯỜI RAO: {who} (bên môi giới). Nếu được hỏi phí, báo {PT_MG} giá chốt khi bán, "
-            f"hoặc {PHI_THUE} (ba phần tư của MỘT tháng tiền thuê; TUYỆT ĐỐI KHÔNG giải thích là 3 hoặc 4 tháng), chỉ thu khi thành công; khích lệ đăng thêm hàng (≥10 căn) để lên Top hiển thị."
+            f"VAI NGƯỜI RAO: {who} (bên môi giới) — phí {PT_MG} giá chốt khi bán, {PHI_THUE} khi cho thuê; khích lệ đăng thêm hàng "
+            "(≥10 căn) để lên Top hiển thị."
         )
     if role == SellerRole.CHU_DAU_TU:
         return (
@@ -1716,13 +1716,10 @@ NHIỆM VỤ (XỬ LÝ SAU KHI XEM BẢN TIN RAO): Bạn vừa cho khách xem b�
     không lặp lại nguyên câu chốt của bản trước. (Mục 4 trong bản tin và câu hỏi chốt sau bản tin luôn có ở lượt trình / rao lại bản tin — không tính vào luật câu mời chốt của khối GIỌNG.)
   • Khách góp ý về CÁCH VIẾT (nhấn gì, bớt gì, icon, lặp) mà bản tin vẫn không thể hiện được thì phải nói thật vì sao; KHÔNG trả lời "em sẽ
     sửa" rồi không gửi bản tin.
-- NẾU khách trả lời CHƯA BIẾT PHÍ (sau câu hỏi phí): báo NGẮN trong 1–2 câu — con số phí đúng vai + chỉ thu khi giao dịch thành công.
-  Không thêm câu giải thích, không chào kết dài.{bao_phi}
+- NẾU khách trả lời CHƯA BIẾT PHÍ (sau câu hỏi phí): báo NGẮN trong 1–2 câu, không giải thích thêm, không chào kết dài.{bao_phi}
 - NẾU khách CHỦ ĐỘNG HỎI PHÍ HOẶC CHÊ PHÍ CAO / DO DỰ / TỪ CHỐI trả phí: hãy THUYẾT PHỤC một cách khéo léo, ấm áp:
   • Đồng cảm trước, KHÔNG tranh cãi, KHÔNG chê khách.
-  • Mỗi lượt nhấn 1–2 lợi ích mạnh nhất phù hợp với mối lo của khách (xem DANH SÁCH GIÁ TRỊ), rồi nhẹ nhàng chốt lại.
-  • Nhấn mạnh "chỉ thu phí KHI giao dịch thành công" để gỡ tâm lý rủi ro.
-  • TUYỆT ĐỐI giữ đúng mức phí chính sách — KHÔNG tự ý giảm giá, KHÔNG hứa ưu đãi/cam kết ngoài chính sách, KHÔNG bịa.
+  • Mỗi lượt nhấn 1–2 lợi ích hợp mối lo của khách (DANH SÁCH GIÁ TRỊ — "chỉ thu khi thành công" gỡ tâm lý rủi ro), rồi nhẹ nhàng chốt lại.
   • Chỉ thuyết phục tối đa 1–2 lần; nếu khách vẫn dứt khoát từ chối thì lịch sự, tôn trọng, để ngỏ cửa, KHÔNG nài ép gây khó chịu.
 
 {fee_block}
