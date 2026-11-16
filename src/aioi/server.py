@@ -328,7 +328,14 @@ def _gui_bao_can_moi(zalo_id: str, tin: str, ten: str | None, can: dict, anh: li
     phan = tach_tin(tin) or [tin]
     i_anh = next((i for i, p in enumerate(phan) if f"/nha-dat/{can.get('code')}" in p), len(phan) - 1)
     da_gui: list[str] = []
+    from . import che_do_test
     with _engine.khoa_luot(zalo_id):
+        nhan = che_do_test.nhan_boa("báo căn mới, câu mẫu")
+        if nhan:
+            try:
+                _gui_bridge(zalo_id, nhan)
+            except Exception:  # noqa: BLE001
+                pass
         for i, p in enumerate(phan):
             ban_anh = anh if (anh and i == i_anh) else None
             try:
@@ -413,6 +420,21 @@ def _gui_nhac_mot(zalo_id: str, text: str) -> bool:
     return True
 
 
+def _gui_boa(viec: str):
+    """`_gui_nhac_mot` kèm tin phụ `$$$$$ [BOA — việc]` gửi trước (giai đoạn test, SRS-5.1zzzzzzz515). Tin phụ hụt thì bỏ qua — tin thật vẫn đi."""
+    from . import che_do_test
+
+    def gui(zalo_id: str, text: str) -> bool:
+        nhan = che_do_test.nhan_boa(viec)
+        if nhan:
+            try:
+                _gui_bridge(zalo_id, nhan)
+            except Exception:  # noqa: BLE001
+                pass
+        return _gui_nhac_mot(zalo_id, text)
+    return gui
+
+
 def _lqc_chan(zalo_id: str, loai: str) -> str | None:
     """Lý do LQC chặn tin chủ động tới người bán này (SRS-5.1zzzzzzz475), None = được gửi. Đọc hụt → không chặn (như trước khi có LQC)."""
     from . import lqc
@@ -445,7 +467,7 @@ def _vong_gui_nhac() -> None:
         try:
             kho = _engine._convstore
             if getattr(kho, "is_configured", False):
-                ra = gui_nhac.chay_mot_luot(kho, _gui_nhac_mot, _xung_ho_khach, _ghi_lich_su_nhac)
+                ra = gui_nhac.chay_mot_luot(kho, _gui_boa("nhắc theo lịch"), _xung_ho_khach, _ghi_lich_su_nhac)
                 if ra:
                     log.info("Gửi nhắc: %d tin (%s)", len(ra), ", ".join(str(r["kind"]) for r in ra))
         except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
@@ -502,7 +524,7 @@ def _vong_giu_ket_noi() -> None:
         try:
             kho = _engine._convstore
             if getattr(kho, "is_configured", False):
-                ra = giu_ket_noi.chay_mot_luot(kho, _gui_nhac_mot, _xung_ho_khach, _ghi_lich_su_nhac, lqc_chan=_lqc_chan)
+                ra = giu_ket_noi.chay_mot_luot(kho, _gui_boa("giữ kết nối, câu mẫu"), _xung_ho_khach, _ghi_lich_su_nhac, lqc_chan=_lqc_chan)
                 if ra:
                     log.warning("Giữ kết nối: đã nhắn %d khách", len(ra))
         except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
@@ -525,7 +547,7 @@ def _vong_hoi_con_ban() -> None:
         try:
             kho = _engine._convstore
             if getattr(kho, "is_configured", False):
-                ra = hoi_con_ban.chay_mot_luot(kho, _gui_nhac_mot, _xung_ho_khach, _ghi_lich_su_nhac, lqc_chan=_lqc_chan)
+                ra = hoi_con_ban.chay_mot_luot(kho, _gui_boa("hỏi còn bán, câu mẫu"), _xung_ho_khach, _ghi_lich_su_nhac, lqc_chan=_lqc_chan)
                 if ra:
                     log.warning("Hỏi còn bán: đã hỏi %d người bán", len(ra))
         except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
@@ -546,7 +568,7 @@ def _vong_qc_anh() -> None:
     time.sleep(240)
     while True:
         try:
-            ra = qc_anh.chay_mot_luot(_engine, _gui_nhac_mot, _xung_ho_khach, _ghi_lich_su_nhac)
+            ra = qc_anh.chay_mot_luot(_engine, _gui_boa("chấm ảnh"), _xung_ho_khach, _ghi_lich_su_nhac)
             if ra:
                 log.warning("Image LQC: đã chấm %d tin", len(ra))
         except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ
@@ -588,7 +610,7 @@ def _vong_hoi_sau_dang() -> None:
     time.sleep(300)
     while True:
         try:
-            ra = hoi_sau_dang.chay_mot_luot(_engine, _gui_nhac_mot, _ghi_lich_su_nhac)
+            ra = hoi_sau_dang.chay_mot_luot(_engine, _gui_boa("hỏi sau đăng"), _ghi_lich_su_nhac)
             if ra:
                 log.warning("Hỏi sau đăng (nền): đã nhắn %d chủ nhà", len(ra))
         except Exception as e:  # noqa: BLE001 — một lượt hỏng không giết vòng; lỗi vào sổ

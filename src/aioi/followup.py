@@ -278,6 +278,13 @@ class FollowUpManager:
                     return
 
             # 1. Send via local bridge HTTP endpoint (non-fatal if bridge fails / test UID)
+            from . import che_do_test
+            nhan = che_do_test.nhan_boa("xin ảnh sau đăng" if moc_anh is not None else "nhắc khi im")   # SRS-5.1zzzzzzz515
+            if nhan:
+                with contextlib.suppress(Exception):
+                    urllib.request.urlopen(urllib.request.Request(
+                        BRIDGE_SEND_URL, data=json.dumps({"threadId": user_key, "message": nhan}).encode("utf-8"),
+                        headers={"Content-Type": "application/json", **khoa_noi_bo.dau_gui()}), timeout=10).close()
             req_data = json.dumps({"threadId": user_key, "message": follow_up_msg}).encode("utf-8")
             req = urllib.request.Request(
                 BRIDGE_SEND_URL,

@@ -801,6 +801,11 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz515 · Tin phụ `$$$$$` ghi rõ FDA hay BOA (16/11/2026)
+Chủ dự án: "tin $$$$ giờ chia ra con FDA hay BOA làm thì viết ra nhé". Chỉ khi công tắc `AIOI_DONG_TRICH_XUAT` bật.
+- **Lượt chat:** dòng đầu thành `$$$$$ [FDA] [đã trích xuất: …]` (`che_do_test.chu_thich`).
+- **Tin vòng nền tự nhắn:** gửi trước một tin phụ `$$$$$ [BOA — việc]` (`che_do_test.nhan_boa`, `server._gui_boa`): nhắc khi im · xin ảnh sau đăng · hỏi sau đăng · chấm ảnh · hỏi còn bán · giữ kết nối · nhắc theo lịch · báo căn mới. Tin phụ không vào lịch sử chat; gửi hụt thì tin thật vẫn đi.
+
 ### SRS-5.1zzzzzzz514 · Gemini là đường chính thì chờ lâu hơn, model quá hạn chỉ nghỉ 1 phút (16/11/2026)
 Bắn thử 2 cuộc chat trên 146 (chủ dự án: "bắn thử 2 test"): 4 lượt đầu chạy bằng `gemini-3.1-flash-lite`, từ lượt 5 bot chỉ trả câu giữ chỗ. Log: `gemini-3.5-flash` quá hạn 15 s một lần → nghỉ 10 phút; `flash-lite` quá hạn nốt → cả hai nghỉ, Groq trả 403. Đo lại ngay sau: lượt công cụ cỡ thật chỉ 3–5 s — quá hạn là nhất thời, luật nghỉ 10 phút mới làm sập.
 - **`llm/du_phong.py`:** khi công tắc chỉ-Gemini bật, mỗi lần gọi chờ tới 30 s (trước 15), cả vòng 70 s (trước 40), model quá hạn nghỉ 60 s (trước 600). Đường dự phòng thường (Claude chính) giữ số cũ.
@@ -860,11 +865,3 @@ Chủ dự án 16/11: "tính cách bot và các thứ kia không làm gọn hơn
 - **Cỡ prompt (ký tự, đo `do-prompt.py`):** lượt hỏi thông tin 74.589 → 65.781 (system bước ghi 17.414 → 11.307, bước viết 12.966 → 10.327); trình bản tin 93.330 → 84.557; duyệt 76.035 → 67.925.
 - **Tự quyết các mục treo:** gỡ `/reset-all` (`Engine.reset_all` đọc `_conn` SQLite, lỗi với kho Supabase; xoá hàng loạt đã có nút XOA HET); giữ model riêng cho ID thử (công tắc `AIOI_CHAT_MODEL_THU`); giữ cả `cli.py` (lệnh /state…) và `scripts/chat-cli.py` (chat bằng quota Claude Code) vì khác việc; kiến thức nghề là khối riêng ngoài trần 8.000; chú thích lịch sử (đợt 6) để nguyên.
 - **Kiểm:** import lõi; `do-prompt.py` 3/3; đọc lại system hai bước. Chưa chat thật với Claude (tài khoản Anthropic hết số dư) — có tiền thì nhắn tay vài cuộc để xem giọng.
-
-### SRS-5.1zzzzzzz505 · Dọn code chết, bước ghi bớt 8 công cụ tư vấn, tài liệu bỏ vết bắn thử / bộ chấm (16/11/2026)
-Chủ dự án 16/11: "làm tiếp" (đợt 4 dọn code + đợt 5 tài liệu của kế hoạch rút gọn prompt). Không đổi luật hay lời bot.
-- **Bước ghi (vòng agent gộp, người bán) chỉ còn 3 công cụ đọc** (`agent_gop.DOC_BUOC_1` = `ro_hang`, `bo_nho_du_an`, `gia_da_gui`): 8 công cụ tư vấn còn lại (định giá, quy hoạch, dự án…) vốn đã có ở bước viết — mô tả công cụ bước ghi 33.564 → 28.805 ký tự mỗi lượt. Lượt hỏi thông tin: 79.354 → 74.589 ký tự (đầu ngày 73.702).
-- **Code chết gỡ:** `engine._mo_dau_ghi_nhan`, `Engine.set_status`, nhánh "lượt dễ" (`_model_luot_de`, công tắc `AIOI_MODEL_LUOT_DE` — luôn tắt), `_la_ban_tin` trùng thân `_la_ban_nhap` (thành bí danh), `schema.SUMMARY_READY_COMPLETENESS`, `agent_gop.bang_luat_md`; script `scripts/sau-gop.sh`, `scripts/cho-workflow.sh` (quy trình PR / VPS cũ); ô `giu_du_lieu` của `apply-migration.yml` (phục vụ `ban-thu-*` đã gỡ). `engine.py` 6.455 → 6.418 dòng.
-- **`bot/tests/lib/may146.sh` chỉ còn phần đọc log** (`ps146`, `log_cuoi_146`): đường hầm, khoá nội bộ, `vps()` chỉ phục vụ script bắn thử đã gỡ. `may146.tu-kiem.sh` bỏ ca M146-01…08 theo; ca M146-09 so bằng `[[ ]]` vì grep của Git Bash bỏ `\r` ở mẫu (mẫu rỗng khớp mọi dòng).
-- **Tài liệu:** CLAUDE.md §7 "Cổng kiểm & triển khai", `.env.example` (`claude_cli` thay `mock`, model Sonnet 5.5), docs/11 / docs/13 / hook / kiem.yml bỏ vết bộ chấm và bắn thử; bảng TS-SRS của docs/10 sang `docs/10-ke-hoach-kiem-thu-luu-tru.md`.
-- **Kiểm:** import lõi; `scripts/do-prompt.py` 3/3; `may146.tu-kiem.sh` đạt; `aond-mot-nguon.mjs` đạt; `bun run truyvet` sạch. Chưa có lượt chat thật với Claude (tài khoản Anthropic hết số dư).

@@ -73,6 +73,14 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz505 · Dọn code chết, bước ghi bớt 8 công cụ tư vấn, tài liệu bỏ vết bắn thử / bộ chấm (16/11/2026)
+Chủ dự án 16/11: "làm tiếp" (đợt 4 dọn code + đợt 5 tài liệu của kế hoạch rút gọn prompt). Không đổi luật hay lời bot.
+- **Bước ghi (vòng agent gộp, người bán) chỉ còn 3 công cụ đọc** (`agent_gop.DOC_BUOC_1` = `ro_hang`, `bo_nho_du_an`, `gia_da_gui`): 8 công cụ tư vấn còn lại (định giá, quy hoạch, dự án…) vốn đã có ở bước viết — mô tả công cụ bước ghi 33.564 → 28.805 ký tự mỗi lượt. Lượt hỏi thông tin: 79.354 → 74.589 ký tự (đầu ngày 73.702).
+- **Code chết gỡ:** `engine._mo_dau_ghi_nhan`, `Engine.set_status`, nhánh "lượt dễ" (`_model_luot_de`, công tắc `AIOI_MODEL_LUOT_DE` — luôn tắt), `_la_ban_tin` trùng thân `_la_ban_nhap` (thành bí danh), `schema.SUMMARY_READY_COMPLETENESS`, `agent_gop.bang_luat_md`; script `scripts/sau-gop.sh`, `scripts/cho-workflow.sh` (quy trình PR / VPS cũ); ô `giu_du_lieu` của `apply-migration.yml` (phục vụ `ban-thu-*` đã gỡ). `engine.py` 6.455 → 6.418 dòng.
+- **`bot/tests/lib/may146.sh` chỉ còn phần đọc log** (`ps146`, `log_cuoi_146`): đường hầm, khoá nội bộ, `vps()` chỉ phục vụ script bắn thử đã gỡ. `may146.tu-kiem.sh` bỏ ca M146-01…08 theo; ca M146-09 so bằng `[[ ]]` vì grep của Git Bash bỏ `\r` ở mẫu (mẫu rỗng khớp mọi dòng).
+- **Tài liệu:** CLAUDE.md §7 "Cổng kiểm & triển khai", `.env.example` (`claude_cli` thay `mock`, model Sonnet 5.5), docs/11 / docs/13 / hook / kiem.yml bỏ vết bộ chấm và bắn thử; bảng TS-SRS của docs/10 sang `docs/10-ke-hoach-kiem-thu-luu-tru.md`.
+- **Kiểm:** import lõi; `scripts/do-prompt.py` 3/3; `may146.tu-kiem.sh` đạt; `aond-mot-nguon.mjs` đạt; `bun run truyvet` sạch. Chưa có lượt chat thật với Claude (tài khoản Anthropic hết số dư).
+
 ### SRS-5.1zzzzzzz504 · Sửa ba lỗi của đợt sửa 16/11, tên trợ lý ra khỏi phần được cache, script đo prompt (16/11/2026)
 Chủ dự án 16/11: "xem hết code 1 lượt rồi làm kế hoạch rút gọn prompt và làm sạch code" → duyệt "làm đợt 0 và 1". Kế hoạch 7 đợt nằm ngoài repo (chủ dự án giữ); đây là đợt 0 (sửa lỗi) và đợt 1 (giảm ghi cache).
 - **Lỗi 1 — kiến thức nghề không tới bot (SRS-499 / 500):** thêm vào `SLANG_NOTES`, mà đường chính của người bán (prompt gọn + vòng agent gộp) không nhận khối này — `agent_gop.chia_luat` bỏ nó khỏi luật ghi vì "phiếu lượt đã có", còn prompt gọn dùng khối "HIỂU TIẾNG NGHỀ" riêng. Kiến thức chỉ tới model ở lượt đầu chưa rõ vai và phía mua. Nay một chuỗi hai tên `TU_LONG` / `KIEN_THUC_NGHE`; `KIEN_THUC_NGHE` đi kèm phần cố định của prompt gọn ở CẢ bước ghi lẫn bước viết (`prompts._lean_co_dinh`, dùng chung cho `co_dinh_ban` và `lean_system_prompt_cho_luot`). `LEAN_SYSTEM_PROMPT` không đổi (7.392 / 8.000) — kiến thức nghề là khối đi kèm, chưa tính vào trần (chờ chủ dự án quyết tính hay không).

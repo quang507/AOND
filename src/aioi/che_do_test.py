@@ -26,6 +26,12 @@ def bat() -> bool:
     return os.environ.get("AIOI_DONG_TRICH_XUAT", "").strip().lower() == "bat"
 
 
+def nhan_boa(viec: str) -> str:
+    """Tin phụ gửi TRƯỚC một tin vòng nền tự nhắn (SRS-5.1zzzzzzz515): người cầm máy biết tin kế là của BOA và là việc gì. Lượt chat thì
+    dòng đầu của `chu_thich` ghi [FDA]. Công tắc tắt → ""."""
+    return f"{DAU} [BOA — {viec}]" if bat() else ""
+
+
 # Bảng giá MỘT NGUỒN là lib/gia-model.ts (đô / 1 triệu chữ-máy). Chép lại ở đây vì lõi trên máy 146 chỉ chạy src/aioi; test so từng dòng
 # đã gỡ cùng bộ pytest 13/11/2026 — đổi giá thì sửa cả hai nơi. Khớp theo tiền tố ID model, cụ thể trước. (tiền tố, vào, ra, đọc-cache-nếu-khác-0,1×)
 BANG_GIA: tuple[tuple[str, float, float, float | None], ...] = (
@@ -115,7 +121,7 @@ def chu_thich(conv: "Conversation", captured: list[str], next_field: str | None 
     try:
         from .schema import FACET_LABEL
         ghi = _o_vua_ghi(conv, list(captured or []))
-        dong = [f"{DAU} [đã trích xuất: " + (", ".join(ghi) if ghi else "không có ô mới") + "]"]
+        dong = [f"{DAU} [FDA] [đã trích xuất: " + (", ".join(ghi) if ghi else "không có ô mới") + "]"]
         bo = _da_bo(conv)
         if bo:
             dong.append("[bỏ: " + ", ".join(bo) + "]")
