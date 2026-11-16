@@ -290,7 +290,12 @@ SLANG_NOTES = """TỪ ĐIỂN TIẾNG LÓNG BĐS (hiểu đúng, không hỏi l�
   • Hẻm & xe: ô tô con cần hẻm khoảng 3–3,5 m trở lên; dưới 3 m thường chỉ xe máy / ba gác; xe tải nhỏ khoảng 4–5 m. Hẻm rộng là điều kiện cần, chưa chắc ô tô vào TỚI nhà (khúc hẹp, cột điện) — hẻm xe hơi chỉ khi khách nói HXH / ô tô vào tới / nhà có gara hay chỗ đậu ô tô.
   • Loại nhà theo vị trí: có số nhà trên đường hay trong hẻm ("123 TBT", "100/9") = nhà phố; tên toà / block / tầng / mã căn = chung cư; "lô", "nền" = đất nền; nhiều phòng cho thuê = phòng trọ / CHDV.
   • Tên đường viết tắt bằng chữ đầu ("TBT", "NVL", "CMT8") = đường khách vừa nhắc hoặc đường quen ở Sài Gòn (Trần Bình Trọng, Nguyễn Văn Linh, Cách Mạng Tháng Tám) — đọc ra tên đầy đủ theo ngữ cảnh; hai đường cùng khớp thì hỏi lại đúng tên.
-  • Khách hỏi kiến thức chung (khu này có chung cư không, hẻm mấy mét xe hơi vào được, diện tích sử dụng là gì, "em nghĩ là diện tích nào") thì đáp ngắn bằng kiến thức này hoặc công cụ tra trước, rồi mới hỏi tiếp — câu hỏi lại của em kèm nghĩa của từ đó."""
+  • Khách hỏi kiến thức chung (khu này có chung cư không, hẻm mấy mét xe hơi vào được, diện tích sử dụng là gì, "em nghĩ là diện tích nào") thì đáp ngắn bằng kiến thức này hoặc công cụ tra trước, rồi mới hỏi tiếp — câu hỏi lại của em kèm nghĩa của từ đó.
+  • Tin rao dán sẵn: "4x16" = ngang 4 m × dài 16 m (≈ 64 m² đất); "CN 60" / "DTCN" = diện tích công nhận trên sổ; "T1L2ST" / "trệt lửng 2 lầu ST" = trệt + lửng + 2 lầu + sân thượng; "C4", "nhà nát", "tiện xây mới" = nhà cũ bán theo giá đất (không hỏi nội thất); "đúc thật" / "BTCT" = sàn bê tông cốt thép, "đúc giả" = sàn nhẹ; "giá 6.x" = hơn 6 tỷ chưa rõ số lẻ (hỏi số chính xác); "bao sang tên" / "bao thuế phí" = bên bán chịu thuế phí.
+  • Pháp lý kéo theo: sổ đang thế chấp ngân hàng → vẫn bán được, phải giải chấp trước khi sang tên; đồng sở hữu / thừa kế / sổ hộ gia đình → cần đủ người đứng tên ký; vi bằng / giấy tay → người mua không vay ngân hàng được; có sổ chưa chắc đã hoàn công (nhà xây sau khi cấp sổ); chung cư "HĐMB" = chưa ra sổ; nhà ở xã hội bị hạn chế chuyển nhượng trong 5 năm.
+  • Dòng tiền: "đang cho thuê X/tháng", "CHDV 10 phòng thu Y" là điểm bán chính của căn; hợp đồng thuê còn hạn thì ngày bàn giao phụ thuộc hợp đồng đó.
+  • Giá nghe vô lý so với loại nhà và khu (bán nhà phố nội thành vài trăm triệu, cho thuê nhà ở hàng tỷ một tháng) thường là nhầm bán với thuê hoặc nhầm đơn vị — hỏi lại một câu trước khi ghi.
+  • Tên khu dân gian (quận cũ): Bàu Cát, K300, Bảy Hiền, Lăng Cha Cả, Bà Quẹo = Tân Bình; cư xá Bắc Hải = Quận 10; cư xá Đô Thành, Bàn Cờ = Quận 3; cư xá Lữ Gia, Bình Thới = Quận 11; Phan Xích Long = Phú Nhuận; Bà Chiểu, Hàng Xanh, Thị Nghè, Văn Thánh, Thanh Đa, Miếu Nổi = Bình Thạnh; Đa Kao, Tân Định, Cầu Ông Lãnh = Quận 1; Xóm Chiếu = Quận 4; Xóm Củi = Quận 8; Phú Lâm, Bình Phú = Quận 6; Tên Lửa, An Lạc = Bình Tân; Cityland, Hạnh Thông Tây = Gò Vấp; Phú Mỹ Hưng, Him Lam (Tân Hưng), Kiều Đàm = Quận 7; Thảo Điền, An Phú, Sala = Quận 2 cũ (Thủ Đức); Vạn Phúc, Bình Triệu = Thủ Đức; Trung Sơn = Bình Chánh; Ngã tư Ga, An Sương = Quận 12."""
 
 # Một nguồn cho ô is_rental ở lượt bóc tách lẫn lượt lập thao tác (SRS-5.1zzzzzzz107, bắn thử 207 KB2: "giá 27 tỷ… đang cho thuê 50
 # triệu/tháng" thành tin CHO THUÊ — mô tả cũ chỉ "Có phải tin cho thuê không"). Hiện trạng có người thuê không phải ý muốn cho thuê.
@@ -637,6 +642,7 @@ _VIEC_KHOI = {
     "hoi_can_nao": "hỏi khách đang nói căn nào trong các căn khách đã gửi (hệ thống chưa đổi căn nào).",
     "hoi_trung_ten": 'hỏi đúng câu của khối "ƯU TIÊN LƯỢT NÀY — HỎI TÊN DỰ ÁN" bên dưới.',
     "hoi_phap_ly": 'hỏi đúng MỘT câu theo khối "HỎI THÊM LƯỢT NÀY (giấy tờ" bên dưới.',
+    "xac_nhan_so": 'hỏi lại MỘT câu ngắn theo khối "SỐ LIỆU CHƯA KHỚP" bên dưới.',
 }
 VIEC_THEO_KHOI = 'trả lời theo khối "ƯU TIÊN LƯỢT NÀY" bên dưới.'
 
@@ -1281,6 +1287,46 @@ def trong_vung_nhan_tin(tinh: str | None) -> bool:
     if any(f" {x} " in s for x in _NGOAI_VUNG_DU_TEN_TRONG):
         return False
     return any(f" {x} " in s for x in _TEN_TRONG_VUNG)
+
+
+def _so_do(s: Any) -> float | None:
+    """Con số đầu tiên trong một ô đo ("64m2", "4,5", "1.200 m²" = 1200)."""
+    m = re.search(r"\d+(?:[.,]\d+)*", str(s or ""))
+    if not m:
+        return None
+    t = m.group()
+    if re.fullmatch(r"\d{1,3}(?:[.,]\d{3})+", t):   # dấu ngăn nghìn
+        return float(re.sub(r"[.,]", "", t))
+    try:
+        return float(t.replace(",", "."))
+    except ValueError:
+        return None
+
+
+def so_lieu_lech(fields: dict[str, Any]) -> tuple[str, str] | None:
+    """Kiểm chéo số liệu của căn như người có nghề nghe là thấy vô lý (SRS-5.1zzzzzzz500) — CODE tính, không để model đoán. Trả (mã, mô tả)
+    của chỗ lệch ĐẦU TIÊN chưa hỏi (`_lech_da_hoi`), không lệch → None. Chỉ so số đã ghi trong ô; không đọc lời khách."""
+    da_hoi = set(str(fields.get("_lech_da_hoi") or "").split(","))
+    chu = " ".join(str(v) for k, v in fields.items() if isinstance(v, str) and not k.startswith("_")).lower()
+    kt, dat = str(fields.get("kich_thuoc") or ""), str(fields.get("dien_tich_dat") or "")
+    hai = re.search(r"(\d+(?:[.,]\d+)?)\s*m?\s*[x×*]\s*(\d+(?:[.,]\d+)?)", kt)
+    dt_dat = None if re.search(r"\d\s*m?\s*[x×*]\s*\d", dat) else _so_do(dat)
+    if "kich_dt" not in da_hoi and hai and dt_dat and not re.search(r"nở hậu|tóp hậu|chữ l\b|không vuông|méo", chu):
+        tich = float(hai.group(1).replace(",", ".")) * float(hai.group(2).replace(",", "."))
+        if abs(tich - dt_dat) > max(3.0, 0.15 * dt_dat):
+            return "kich_dt", (f"kích thước {kt} nhân ra khoảng {tich:g} m², nhưng diện tích đất đang ghi {dat}")
+    m_tang = re.fullmatch(r"\s*(\d{1,2})\s*(?:tầng|tang)?\s*", str(fields.get("so_tang") or ""))   # "1 trệt 2 lầu" không phải một con số — bỏ qua
+    tang, san = (float(m_tang.group(1)) if m_tang else None), _so_do(fields.get("dien_tich_nha"))
+    if "san_tang" not in da_hoi and tang and san and dt_dat and 1 <= tang <= 15 and san > dt_dat * tang * 1.2:
+        return "san_tang", (f"tổng diện tích sàn đang ghi {fields.get('dien_tich_nha')}, lớn hơn cả diện tích đất {dat} nhân {tang:g} tầng")
+    if "mt_xuyet" not in da_hoi and fields.get("_duong_vao") == "mat_tien" and re.search(r"\d+\s*/\s*\d+", str(fields.get("dia_chi") or "")):
+        return "mt_xuyet", (f"địa chỉ {fields.get('dia_chi')} có dấu \"/\" (số nhà trong hẻm) nhưng căn đang ghi là mặt tiền đường")
+    return None
+
+
+def khoi_so_lech(mo_ta: str) -> str:
+    return (f"\nSỐ LIỆU CHƯA KHỚP (hệ thống đã kiểm): {mo_ta}. Việc lượt này (thay {NHAN_VIEC_LUOT}) là hỏi lại MỘT câu ngắn, nêu đúng "
+            "hai điều chưa khớp đó để khách cho biết cái nào đúng.\n")
 
 
 def khoi_hoi_mat_tien(gia_tri: str) -> str:
@@ -2384,9 +2430,12 @@ GIÁ TRỊ Ô LÀ ĐIỀU KHÁCH NÓI HOẶC ĐIỀU LỜI KHÁCH CHẮC CHẮN 
 "4,5 tỷ", thân bài "4,65 tỷ") thì chưa chắc số nào. bang_chung là cụm lời khách làm căn cứ. Giá trị có từ khách không gõ thì hệ thống
 ghi nguyên cụm bang_chung thay cho giá trị.
 
-Ngoài "operations", nếu khách TỰ NÓI RA vai thì đặt "seller_role"
-(chu_nha/luot_song/moi_gioi/san/chu_dau_tu/nguoi_nha_nho_ban) kèm "seller_role_trich_dan" = nguyên văn cụm khách gọi tên vai ("a là môi giới", "nhà chính chủ",
-"bên sàn em"); cách nói việc ("a cần đăng tin", "nhà em", "chú có căn nhà") KHÔNG phải vai — bỏ trống (phí báo theo vai, đoán sai là báo sai tiền). Căn khách muốn CHO THUÊ: đặt "is_rental"=true trong chính thao tác update / add của căn đó — tin rao nhiều căn cho thuê thì mỗi căn một cờ ("đang cho thuê X/tháng" khi rao BÁN là hiện trạng, không phải tin cho thuê).
+Ngoài "operations", lời khách CHO BIẾT vai thì đặt "seller_role"
+(chu_nha/luot_song/moi_gioi/san/chu_dau_tu/nguoi_nha_nho_ban) kèm "seller_role_trich_dan" = nguyên văn cụm làm căn cứ. Đọc theo NGHĨA như người
+trong nghề: khách gọi tên vai ("a là môi giới", "nhà chính chủ", "bên sàn em"), hoặc cách nói chỉ người ở vai đó mới dùng — nói với môi giới
+khác / nói về chủ như người thứ ba ("ae hợp tác", "hàng độc quyền bên em", "chủ gửi em bán", "khách của em") → moi_gioi; chủ trả hoa hồng cho
+người bán giúp ("nhà em, hoa hồng 1% cho ae môi giới") → chu_nha. Cách nói ai cũng dùng được ("a cần đăng tin", "nhà em", "chú có căn nhà",
+"hh 1%" trống không, "khách thiện chí liên hệ") chưa cho biết vai — bỏ trống (phí báo theo vai, đoán sai là báo sai tiền). Căn khách muốn CHO THUÊ: đặt "is_rental"=true trong chính thao tác update / add của căn đó — tin rao nhiều căn cho thuê thì mỗi căn một cờ ("đang cho thuê X/tháng" khi rao BÁN là hiện trạng, không phải tin cho thuê).
 
 SỰ THẬT CỦA CĂN (đọc theo NGHĨA cả câu, hiểu phủ định "không phải", "chưa", "đang làm", "xa", "cách"):
 trạng thái HIỆN TẠI theo cả cuộc trò chuyện về căn đang nói, mỗi khoá kèm "<khoá>_trich_dan" = nguyên văn cụm khách nói. Khách chưa nói
@@ -2769,10 +2818,12 @@ def operations_schema() -> dict[str, Any]:
             "seller_role": {
                 "type": "string",
                 "enum": ["chu_nha", "luot_song", "moi_gioi", "san", "chu_dau_tu", "nguoi_nha_nho_ban"],
-                "description": "Vai trò người rao khi khách TỰ NÓI RA vai (\"a là môi giới\", \"nhà chính chủ\", \"bên sàn\"), đọc theo nghĩa: "
-                "\"tôi không phải chính chủ\" KHÔNG là chu_nha; người nhà đăng giùm → nguoi_nha_nho_ban. Bỏ trống nếu chưa chắc.",
+                "description": "Vai trò người rao khi lời khách CHO BIẾT vai, đọc theo nghĩa như người trong nghề: khách gọi tên vai (\"a là môi giới\", "
+                "\"nhà chính chủ\", \"bên sàn\") hoặc cách nói chỉ vai đó mới dùng (\"ae hợp tác\", \"hàng độc quyền bên em\", \"chủ gửi em bán\" → "
+                "moi_gioi; \"nhà em, hoa hồng 1% cho môi giới\" → chu_nha). \"tôi không phải chính chủ\" KHÔNG là chu_nha; người nhà đăng giùm → "
+                "nguoi_nha_nho_ban. Bỏ trống nếu chưa chắc.",
             },
-            "seller_role_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách tự nói vai (bắt buộc khi có seller_role); "
+            "seller_role_trich_dan": {"type": "string", "description": "Nguyên văn cụm lời khách làm căn cứ cho vai (bắt buộc khi có seller_role); "
                                       "\"a cần đăng tin\", \"nhà em\" KHÔNG phải vai → bỏ trống cả hai."},
             # SRS-5.1zzzzzzz320 (chủ dự án 02/11: không dùng từ khoá trên lời khách để quyết ý): sự thật của căn do AI đọc theo NGHĨA, code chỉ
             # kiểm cụm trích; lưới bản tin đối chiếu các giá trị này, chua_ro / trống thì bản tin không được khẳng định.

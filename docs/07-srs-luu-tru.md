@@ -73,6 +73,17 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz490 · Soát luật, bộ chấm, code và docs: gỡ phần dư, đồng bộ theo giọng mới (14/11/2026)
+Chủ dự án 14/11: "kiểm tra các luật các test các thứ có gì dư ra ko, đồng bộ docs". Ba lượt soát song song (code lõi, bộ chấm và CI, docs và tệp luật), từng mục kiểm lại với code trước khi sửa.
+- **Gỡ code không ai đọc:** trường `Conversation.che_do_test`, `so_luot_thong_tin` (khối "3 lượt đầu khen" gỡ từ SRS-207), `truoc_luot` / `truoc_id`, `admin_escalations`; `TurnResult.escalated`; `contested_keys` / `_contested` (`projects.py`); tập rỗng `HOI_SAU_KHI_RA_TIN`. Hai cột SQLite cũ giữ lại để khỏi đổi lược đồ, `save` ghi giá trị rỗng.
+- **Gỡ công cụ `gui_khach` và công tắc `AIOI_CONG_CU_GUI_KHACH`:** công tắc nằm ở `tat` từ 28/10 (SRS-246), mô tả công cụ còn dặn "mở bằng một lời khen". `ClaudeProvider.reply` chỉ còn đường chữ thường, lời rỗng thì gọi lại một lần. Dòng biến trong `.env` máy 146 để nguyên, không còn ai đọc.
+- **Prompt còn kéo về giọng cũ:** `DAP_TRUOC` (khối nhân vật) nay "khách hỏi hay lộ cảm xúc thì đáp điều đó trước; khách chỉ đưa thông tin thì đi thẳng sang việc cần hỏi"; câu việc khi tin chưa lên web bỏ "đáp điều khách vừa nói như thường"; lượt đọc ảnh bỏ "khen". Lưới tiêu đề nói 15–25 từ cho khớp `AD_FORMAT`. **Token:** +~10 mỗi prompt có khối nhân vật.
+- **Bộ chấm và CI:** `tests/cau_hinh_vps.py` → `tests/kich_ban/cau_hinh_loi.py` (`cong_tac_loi`), bỏ hàm `cong_tac()` không ai gọi. `cham-kich-ban.py`: bỏ nhánh đếm câu không còn trong code, ô cho thuê kiểm mọi căn (SRS-485), tiêu chí giọng tin rao theo SRS-486 (một câu mời). `cham.yml` cài `-e .` (extra `[dev]` không còn). `chat-cli.py` mặc định bóc tách Sonnet như production.
+- **Gỡ script:** `scripts/thu-cli.py` (trùng `chat-cli.py` / `cham-kich-ban.py --chi`), `scripts/hop-nhat-nguon-du-an.mjs` (chạy một lần, xoá nguồn dự án là quyết định 08/11). Lấy lại ở lịch sử git.
+- **Docs và luật:** docs/00, 03, 06, 13, 14 bỏ "khen trước", "báo ghi nhận một lần", `GIONG_VUI`, tiêu đề "lời gọi rao chợ"; `.claude/luat-dang-ap.md` thêm luật SRS-485 / 486 / 487 / 488 / 489, bỏ tên test đã gỡ, sửa dòng "`bun run cham` bắt buộc trước khi đẩy" cho khớp quyết định 06/11 và 11/11. Chú thích trỏ tới test / VPS đã gỡ trong `src/aioi` sửa chữ. `bot/cau-hinh-loi.env` ghi đúng cỡ prompt gọn (≈4,3k token).
+- **Không gỡ, ghi lại:** lưới code trùng luật prompt (`_soat_da`, `_soat_mot_cau_hoi`, `_soat_goi_minh`, `_soat_ten_khoi`, `_soat_binh_luan_gia`…) là lưới đỡ có chủ đích. Công tắc `AIOI_MODEL_LUOT_DE` (đang tắt) và nhánh `AIOI_PROMPT_GON=tat` (phiếu cũ còn dùng ở lượt ảnh sổ) giữ. `llm/mock.py` (đoán ý bằng từ khoá, chỉ chạy khi đặt tay) và `scripts/dao-sau-du-an.mjs` (bóc thông số dự án, FR-196) chủ dự án duyệt gỡ cùng ngày ("gỡ cả hai"); `cli.py` / `config.py` nay chỉ gợi `claude_cli` khi test. `diem_nen.json` còn là điểm của 51 kịch bản / bóc tách Haiku; dựng lại tốn quota.
+- **Kiểm:** parse cú pháp, pyflakes không thêm lỗi mới, lưu / nạp hội thoại SQLite thử một lượt, `bun run truyvet` sạch.
+
 ### SRS-5.1zzzzzzz489 · Câu hỏi không kèm "để em ghi vào tin"; không tự nhận rành khu (14/11/2026)
 Hai câu lượt đầu còn sót sau SRS-487: "giá bao nhiêu để em ghi vào tin?" và "Gò Vấp thì em nắm khá rõ khu này".
 - **Sửa (`GIONG`):** câu hỏi không kèm lý do kiểu "để em ghi vào tin". Luật nói thật thêm nhận định về chính em ("em rành khu này"): chỉ nói khi có dữ liệu.

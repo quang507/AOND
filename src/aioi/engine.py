@@ -117,6 +117,8 @@ from .prompts import (
     build_listing_proposal_system,
     build_ngoai_vung_system,
     khoi_hoi_mat_tien,
+    khoi_so_lech,
+    so_lieu_lech,
     trong_vung_nhan_tin,
     khoi_xin_dang,
     khoi_diem_tin,
@@ -3400,6 +3402,15 @@ class Engine:
             f_mt.pop("_mt_cho_hoi", None)
             system += _hoi("mat_tien", khoi_hoi_mat_tien(f_mt.get("mat_tien", "")),
                            hoan=lambda: (f_mt.pop("_mt_da_hoi", None), f_mt.__setitem__("_mt_cho_hoi", "1")))
+
+        # SRS-5.1zzzzzzz500 (chủ dự án 16/11: "môi giới 20 năm nghe là biết vô lý"): số liệu của căn tự mâu thuẫn (ngang × dài khác diện
+        # tích đất, tổng sàn lớn hơn đất × số tầng, "mặt tiền" mà số nhà có "/") → hỏi lại MỘT lần mỗi chỗ lệch, lượt thu thập. Code tính.
+        if not is_listing_post:
+            lech = so_lieu_lech(f_mt)
+            if lech:
+                ma_lech, da_lech = lech[0], str(f_mt.get("_lech_da_hoi") or "")
+                f_mt["_lech_da_hoi"] = ",".join(x for x in (da_lech, ma_lech) if x)
+                system += _hoi("so_lech", khoi_so_lech(lech[1]), hoan=lambda: f_mt.__setitem__("_lech_da_hoi", da_lech))
 
         # SRS-5.1zzzzzzz301: khối chào chỉ khi khách CHƯA đưa thông tin nào (ô tin trống) hoặc lượt đọc ý thấy khách chỉ chào — thử bằng quota CLI
         # 30/10, Haiku đọc nhầm "nếu khách chỉ chào" và tự giới thiệu kiểu máy dù khách đã nói nhu cầu ngay tin đầu.
