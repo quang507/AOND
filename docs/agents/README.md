@@ -47,7 +47,7 @@ Luật này nằm trong khối GIỌNG của FDA (`prompts.GIONG`).
 3. **Không gấp gáp giả.** "Vừa cọc", "có khách" chỉ nói khi dữ liệu có.
 4. **Giá:** đưa căn thật đang rao, nhận xét nhẹ khi đủ căn cùng lối vào; không kê giá mới, không khuyên đầu tư.
 5. **Không tự xoá.** Ảnh kém: chủ đồng ý từng tấm mới ẩn.
-6. **Nhịp nền có chừng mực:** 8–21 giờ, tối đa 3 tin chủ động / người bán / ngày, chủ bỏ qua 2 tin liền thì thôi, chủ kêu phiền thì thôi hẳn.
+6. **Nhịp nền có chừng mực:** 8–21 giờ, tối đa 3 tin chủ động / người bán / ngày, chủ bỏ qua 2 tin liền thì thôi, chủ kêu phiền thì thôi hỏi (vẫn còn hỏi còn bán / giữ kết nối).
 
 ## 5. Khác bản anh Luận (đã chốt hoặc do code)
 
