@@ -75,10 +75,22 @@ def _so(v: Any) -> float | None:
 def chuan_vung(vung: Any) -> list[tuple[float, float, float, float]]:
     """Khung model trả → danh sách (x0, y0, x1, y1) hợp lệ trong 0–1; bỏ khung hỏng, khung rỗng, khung phủ gần hết ảnh."""
     ra: list[tuple[float, float, float, float]] = []
-    for v in vung if isinstance(vung, list) else []:
-        if not isinstance(v, dict):
+    ds = [v for v in (vung if isinstance(vung, list) else []) if isinstance(v, dict)]
+    # SRS-5.1zzzzzzz522 (thu 17/11 tren Gemini flash-lite): Gemini tra toa do theo thang 0-1000 du huong dan ghi 0-1 -> ban cu cat ve 1,
+    # khung nao cung rong, khong xoa / khong che duoc gi. Co so nao vuot 1 thi ca bo khung la thang 0-1000.
+    tho = []
+    for v in ds:
+        for k in ("x0", "y0", "x1", "y1"):
+            try:
+                tho.append(float(v.get(k)))
+            except (TypeError, ValueError):
+                pass
+    chia = 1000.0 if any(x > 1.0 for x in tho) else 1.0
+    for v in ds:
+        try:
+            x0, y0, x1, y1 = (_so(float(v.get(k)) / chia) for k in ("x0", "y0", "x1", "y1"))
+        except (TypeError, ValueError):
             continue
-        x0, y0, x1, y1 = (_so(v.get(k)) for k in ("x0", "y0", "x1", "y1"))
         if None in (x0, y0, x1, y1):
             continue
         x0, x1 = min(x0, x1), max(x0, x1)   # type: ignore[type-var]
