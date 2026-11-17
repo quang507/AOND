@@ -33,9 +33,9 @@ Vai đọc theo nghĩa lời khách ("ae hợp tác", "chủ gửi em bán" → 
 | 1 | Nhà lẻ hay trong dự án | Dự án → tên dự án + mã căn; lẻ → địa chỉ | ✅ |
 | 2 | Loại hình | Nhóm ở / đất / kho xưởng / thương mại → bộ ô khác | ✅ |
 | 3 | Bán hay cho thuê; nhà đang có người thuê | Hợp đồng thuê là điểm bán (dòng tiền) | ✅ |
-| 4 | Có nhà hay thực chất bán đất (nhà nát, C4) | Model hiểu qua kiến thức nghề; chưa có bộ câu hỏi riêng | 🟡 |
+| 4 | Có nhà hay thực chất bán đất (nhà nát, C4) | Hỏi như đất: kích thước, đường vào, giấy tờ, quy hoạch; xin ảnh như đất; bản tin không tả phòng ốc (SRS-518) | ✅ |
 | 5 | Một hay nhiều căn | Rổ hàng, không trộn tin căn này sang căn kia | ✅ |
-| 6 | Nhà hiện hữu hay hình thành trong tương lai | Có ô tiến độ, bàn giao, dự kiến ra sổ; chưa đổi danh sách ảnh xin | 🟡 |
+| 6 | Nhà hiện hữu hay hình thành trong tương lai | Nhà đang xây: hỏi tiến độ, ngày bàn giao; xin ảnh công trình / mặt bằng, không xin ảnh nội thất (SRS-518) | ✅ |
 | 7 | Pháp lý sơ bộ | 9 loại giấy, câu mơ hồ thì hỏi lại | ✅ |
 | 8 | Tiếng lóng, viết tắt | Khối HIỂU TIẾNG NGHỀ + kiến thức nghề | ✅ |
 | 9 | Đơn vị, quy ước số | tỏi / củ / 5t5, ngang × dài kiểm chéo với diện tích; chưa quy đổi giá vàng | 🟡 |

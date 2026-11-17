@@ -259,6 +259,12 @@ IDENTITY_FIELDS: list[str] = [
 # không cần tách chi tiết hơn). Các loại còn lại (chung cư, đất, công nghiệp...) chỉ có 1.
 HOUSE_TYPES: set[str] = {"nha_pho", "biet_thu", "nha_cap_4"}
 HOUSE_AREA_FIELDS: list[str] = ["dien_tich_dat", "dien_tich_nha"]
+# SRS-5.1zzzzzzz518 (nhận diện 4 và 6 của FDA, docs/agents/fda.md): mã `_tinh_trang_nha` AI đọc theo nghĩa (`prompts.SU_THAT_CAN`) đổi bộ ô.
+# Nhà nát / nhà cũ bán theo giá đất: hỏi như đất (kích thước, đường vào, giấy tờ, quy hoạch), không hỏi kết cấu, diện tích nhà, bàn giao.
+CORE_BAN_NHU_DAT: list[str] = ["kich_thuoc", "lo_gioi_hem", "phap_ly_hoan_cong", "quy_hoach"]
+# Nhà đang xây / chưa bàn giao: bỏ các ô của nhà đã ở được, thêm tiến độ và ngày bàn giao.
+O_NHA_DA_O: frozenset[str] = frozenset({"tinh_trang_ban_giao", "noi_that", "hien_trang_su_dung"})
+O_DANG_XAY: tuple[str, ...] = ("tien_do_xay_dung", "thoi_gian_ban_giao")
 
 # SRS-5.1zzzzzzz359 / 366 / 367 (chủ dự án 02/11): ô HỆ THỐNG tự xác định, không bao giờ là câu hỏi cho khách — NGUỒN DUY NHẤT: vòng chọn
 # câu hỏi (`missing_fields`) lọc theo đây, lưới soát lời bot (`engine._soat_hoi_dung_o`) chặn đầu ra theo đây, bước áp tên kho
@@ -453,6 +459,8 @@ class Property:
           căn) — a unit "graduates" to being located by `dia_chi` once it has one. See the
           identity-handle-decay note in [[aioi-data-model]]."""
         areas = HOUSE_AREA_FIELDS if self.loai_hinh in HOUSE_TYPES else ["dien_tich"]
+        if self.ban_nhu_dat():
+            areas = ["dien_tich_dat"]
         if self.fields.get("du_an") and not self.fields.get("dia_chi"):
             # Căn dự án chưa có địa chỉ: định vị bằng tên dự án. Mã căn "có thì tốt, không có vẫn nhận" (chủ dự án 20/10/2026,
             # SRS-5.1zzzzzzz86) — hỏi như ô thường (`expected_fields`), lờ 2 lần thì để sau, không chặn bản nháp.
@@ -463,7 +471,21 @@ class Property:
 
     def core_fields(self) -> list[str]:
         """Ô cốt lõi của loại này: bộ riêng của loại (`CORE_THEO_LOAI`) nếu có, không thì bộ của nhóm."""
-        return list(CORE_THEO_LOAI.get(self.loai_hinh or "", CORE_FIELDS[self.group]))
+        if self.ban_nhu_dat():
+            return list(CORE_BAN_NHU_DAT)
+        core = list(CORE_THEO_LOAI.get(self.loai_hinh or "", CORE_FIELDS[self.group]))
+        if self.dang_xay():
+            core = [k for k in core if k not in O_NHA_DA_O] + [k for k in O_DANG_XAY if k not in core]
+        return core
+
+    def ban_nhu_dat(self) -> bool:
+        """Nhà nát / nhà cũ bán theo giá đất (SRS-5.1zzzzzzz518): mã `_tinh_trang_nha` AI đọc theo nghĩa, chỉ nhà có đất riêng."""
+        return self.loai_hinh in HOUSE_TYPES and self.fields.get("_tinh_trang_nha") == "ban_nhu_dat"
+
+    def dang_xay(self) -> bool:
+        """Nhà / căn hộ đang xây, chưa bàn giao (SRS-5.1zzzzzzz518): mã `_tinh_trang_nha` AI đọc theo nghĩa."""
+        return (self.group in (PropertyGroup.RESIDENTIAL, PropertyGroup.CONDO)
+                and self.fields.get("_tinh_trang_nha") == "dang_xay")
 
     def fields_khach(self) -> dict[str, str]:
         """Ô tin từ lời khách — bỏ khoá NỘI BỘ bắt đầu bằng "_" (cờ hệ thống như `_ngoai_vung`; khoá DB tự thêm vào `boc_tach` như
@@ -644,8 +666,8 @@ class Property:
                 continue
             if ma == "loi_the" and not self.kinh_doanh_duoc():
                 continue
-            if ma == "chi_tiet" and self.group is not PropertyGroup.RESIDENTIAL:
-                continue
+            if ma == "chi_tiet" and (self.group is not PropertyGroup.RESIDENTIAL or self.ban_nhu_dat() or self.dang_xay()):
+                continue   # hướng / năm xây / nội thất: không hỏi nhà bán như đất hay nhà chưa xây xong (SRS-5.1zzzzzzz518)
             if ma == "hdt" and self.fields.get("co_hdt") != "co":   # ô phân loại AI đọc theo nghĩa, không dò chữ khách (SRS-5.1zzzzzzz197)
                 continue
             pl_da = set((self.fields.get("_pl_da_hoi") or "").split(","))   # ô đã hỏi ngay sau khi chủ nói giấy tờ (SRS-435) — không hỏi lại

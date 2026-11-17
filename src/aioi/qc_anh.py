@@ -129,6 +129,11 @@ def huong_dan_qc(tin: dict) -> str:
             f"Góc ảnh thường làm nổi loại căn này: {goc_anh_goi_y(p)}\n"
             + ("CĂN NÀY ĐANG CÓ HỢP ĐỒNG THUÊ: ảnh quán / nhà hàng / cửa hàng / văn phòng bên trong là ảnh của căn — KHÔNG ghi vào anh_khong_khop.\n"
                if (boc.get("co_hdt") == "co" or boc.get("thu_nhap_thue") or boc.get("hd_thue_con")) else "")   # cùng điều kiện prompts.dang_cho_thue
+            # SRS-5.1zzzzzzz518: hai tình trạng đổi cách chấm — cùng mã với bộ câu hỏi (`Property.dang_xay` / `ban_nhu_dat`).
+            + ("CĂN CHƯA XÂY XONG: ảnh công trình đang thi công, mặt bằng, phối cảnh là ảnh của căn — KHÔNG ghi vào anh_khong_khop; thiếu ảnh "
+               "nội thất không tính là thiếu góc.\n" if p.dang_xay() else "")
+            + ("NHÀ CŨ BÁN THEO GIÁ ĐẤT: thiếu ảnh phòng ốc / nội thất không tính là thiếu góc; nhà cũ, xuống cấp không phải ảnh xấu.\n"
+               if p.ban_nhu_dat() else "")
             + "Chấm: (1) ảnh có đúng căn này không — căn đang cho thuê / kinh doanh thì ảnh quán, cửa hàng bên trong là ảnh của căn; chỉ ghi "
             "không khớp khi có dấu hiệu rõ (căn khác loại, ảnh mạng, phối cảnh, khác hẳn mô tả), chac_chan=true chỉ khi gần như chắc chắn; "
             "(2) thế mạnh nào trong tin đã / chưa có ảnh thể hiện; (3) MỘT góc nên xin chủ nhất. Chỉ dựa vào điều thấy trong ảnh và tin, "

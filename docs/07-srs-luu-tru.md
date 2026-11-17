@@ -73,6 +73,12 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz508 · Chính sách phí mỗi ý một chỗ ở lượt khách hỏi phí (16/11/2026)
+Mục 3.4 kế hoạch rút gọn: trong một lời nhắc lượt phí, "chỉ thu khi giao dịch thành công" lặp ~7 lần, mức phí theo vai 3–4 lần, bốn ý chính sách liệt kê ở cả lời dặn lẫn `CHINH_SACH_PHI`.
+- **Một nguồn mỗi ý:** bốn ý chính sách chỉ ở `CHINH_SACH_PHI`; mức theo vai ở `BUSINESS_CONTEXT` / dòng VAI NGƯỜI RAO (`_fee_hint`, nay chỉ vai + mức); câu khách nghe ở câu mẫu `bao_phi` (không đổi chữ). Lời nhắc "0.75 tháng = ba phần tư của MỘT tháng" chuyển vào `khoi_bao_phi`, chỉ đi kèm khi cho thuê.
+- **Khối ƯU TIÊN hỏi phí (`engine`)** không liệt kê lại bốn ý và con số — trỏ tới chính sách / câu mẫu ngay dưới; vẫn giữ ý "không chia hoa hồng, dù khách là chủ nhà" và "hỏi ý khác thì không đọc lại câu báo phí". Lượt sau bản tin: bỏ gạch "nhấn mạnh chỉ thu khi thành công" (gộp vào gạch lợi ích) và gạch "giữ đúng mức phí" (chính sách đã nói cố định, không bớt; BỐI CẢNH đã cấm bịa ưu đãi).
+- **Cỡ (ký tự):** lượt hỏi phí sau bản tin 64.729 → 64.433, duyệt 64.573 → 64.277, trình bản tin 81.205 → 81.081; khối hỏi phí lúc đang thu thập bớt ≈ 600. Kiểm: import lõi, `do-prompt.py` 3/3, truyvet sạch. Chưa chạy thật với Claude (Anthropic hết số dư).
+
 ### SRS-5.1zzzzzzz507 · Bước ghi: mô tả công cụ chỉ đủ cho ô thường gặp, ô hiếm tra khi cần (16/11/2026)
 Chủ dự án 16/11: "xem rút tiếp được không" — khai báo công cụ bước ghi là phần to nhất còn lại của lượt (28.805 chữ).
 - **`ghi_o.fields`:** ô thường gặp / dễ lẫn (`agent_gop.O_THUONG`: địa chỉ, loại hình, diện tích, giá, pháp lý, kết cấu, hẻm, hợp đồng thuê…) giữ mô tả nguyên; 45 ô hiếm (dự án, kho xưởng, thương mại, phòng trọ, đất nông nghiệp, ô riêng của chủ) chỉ ghi tên khoá — tên đã nói nghĩa, mô tả đủ qua `tra_luat_o`, lượt hệ thống hỏi ô nào thì luật ô đó vẫn nạp sẵn như cũ.

@@ -600,11 +600,16 @@ SU_THAT_CAN: tuple[tuple[str, tuple[str, ...], str], ...] = (
      "Con số bề ngang / mặt tiền khách nói, theo nghĩa lời khách: ngang_can (khách nói rõ là ngang của căn / lô — \"ngang 5m dài 20m\", "
      "\"ngang 4,5\", \"5x20\"); co_the_la_duong (khách chỉ nói \"mặt tiền 5m\" / \"MT 5m\", nghe cũng có thể là đường trước nhà rộng 5m); "
      "chua_ro (khách chưa nói con số bề ngang)."),
-    ("tinh_trang_nha", ("moi_xay", "moi", "dang_o", "cu", "chua_ro"),
+    # SRS-5.1zzzzzzz518 (nhận diện 4 và 6 trong docs/agents/fda.md, theo bản anh Luận): hai mã đổi bộ câu hỏi và góc ảnh xin —
+    # `ban_nhu_dat` hỏi như đất, `dang_xay` hỏi tiến độ / bàn giao (`schema.Property.core_fields`, `goc_anh_goi_y`).
+    ("tinh_trang_nha", ("moi_xay", "moi", "dang_o", "cu", "ban_nhu_dat", "dang_xay", "chua_ro"),
      "Tình trạng nhà khách nói: moi_xay (khách nói mới xây / vừa xây xong); moi (khách nói nhà mới, mới đẹp, mới sửa mà không nói mới xây); "
-     "dang_o; cu; chua_ro."),
+     "dang_o; cu; ban_nhu_dat (khách nói nhà nát / nhà cũ bán theo giá đất / mua về xây mới — thực chất bán đất); dang_xay (nhà đang xây, "
+     "chưa bàn giao, nhà hình thành trong tương lai); chua_ro."),
 )
-_TINH_TRANG_BAN_TIN = {"moi_xay": "mới xây", "moi": "nhà mới (khách nói vậy — KHÔNG ghi mới xây)"}
+_TINH_TRANG_BAN_TIN = {"moi_xay": "mới xây", "moi": "nhà mới (khách nói vậy — KHÔNG ghi mới xây)",
+                       "ban_nhu_dat": "nhà cũ, bán theo giá đất — tả đất và vị trí, KHÔNG tả phòng ốc / nội thất",
+                       "dang_xay": "nhà đang xây / chưa bàn giao — KHÔNG tả như nhà đã ở được"}
 # Ô tin `lo_gioi_hem` ghi theo `duong_vao` AI đọc khi khách không tả gì thêm (SRS-5.1zzzzzzz484 — một nguồn cho mặt tiền / hẻm).
 NHAN_DUONG_VAO = {"mat_tien": "Mặt tiền đường", "hem": "Nhà hẻm", "hem_xe_hoi": "Hẻm xe hơi"}
 TIEN_ICH_GAN: tuple[str, ...] = ("cho", "truong_hoc", "benh_vien", "sieu_thi", "cong_vien", "ttm")
@@ -924,6 +929,10 @@ GOC_ANH_THEO_NHOM: dict[str, str] = {
     "nha_hem": "con hẻm trước nhà (thấy hẻm rộng, xe vào được); mặt tiền nhà; phòng khách; bếp",
     "nha": "mặt tiền nhà; phòng khách; bếp; phòng ngủ; WC; sân thượng / ban công",
     "phong_tro": "một phòng mẫu; WC trong phòng; lối đi chung; chỗ để xe",
+    # SRS-5.1zzzzzzz518: nhà nát bán như đất xin ảnh như đất; nhà chưa xây xong không xin "ảnh thực tế nhà".
+    "ban_nhu_dat": "toàn cảnh thửa đất và căn nhà cũ nhìn từ ngoài; đường / hẻm trước đất (thấy rộng bao nhiêu); ranh đất hai bên",
+    "dang_xay": ("công trình đang thi công (thấy tiến độ hiện tại); mặt bằng hoặc phối cảnh căn; đường trước căn — KHÔNG xin ảnh nội thất, "
+                 "phòng ốc"),
     PropertyGroup.CONDO.value: "phòng khách; view nhìn từ ban công / cửa sổ; bếp; phòng ngủ; sảnh hoặc hồ bơi / tiện ích toà",
     PropertyGroup.LAND.value: "toàn cảnh lô đất; đường trước đất (thấy đường rộng); cọc mốc / ranh đất; xung quanh lô",
     PropertyGroup.PROJECT.value: "toàn cảnh lô / căn trong dự án; đường nội khu trước căn; tiện ích dự án gần căn",
@@ -939,7 +948,11 @@ def goc_anh_goi_y(prop: "Property | None") -> str:
         return GOC_ANH_THEO_NHOM["nha"]
     f = prop.fields
     nhom = prop.group
-    if nhom is PropertyGroup.RESIDENTIAL:
+    if prop.ban_nhu_dat():
+        goc = GOC_ANH_THEO_NHOM["ban_nhu_dat"]
+    elif prop.dang_xay():
+        goc = GOC_ANH_THEO_NHOM["dang_xay"]
+    elif nhom is PropertyGroup.RESIDENTIAL:
         if prop.loai_hinh in ("phong_tro", "chdv"):
             goc = GOC_ANH_THEO_NHOM["phong_tro"]
         elif f.get("_duong_vao") == "mat_tien":
@@ -2496,7 +2509,7 @@ hoặc chưa chắc → bỏ trống (bản tin sẽ KHÔNG khẳng định đi�
 - "hoan_cong": nhà trên đất da_hoan_cong · chua_hoan_cong · chua_ro. Chủ nói ngày dự kiến hoàn công → ô du_kien_hoan_cong.
 - "duong_vao": mat_tien · hem · hem_xe_hoi · chua_ro — nghĩa từng mã ở mô tả của khoá này trong schema.
 - "tien_ich_gan": danh sách CHỈ tiện ích khách khẳng định CÓ GẦN: cho, truong_hoc, benh_vien, sieu_thi, cong_vien, ttm ("xa chợ" → không có cho).
-- "tinh_trang_nha": moi_xay · moi · dang_o · cu · chua_ro — nghĩa từng mã ở mô tả của khoá này trong schema.
+- "tinh_trang_nha": moi_xay · moi · dang_o · cu · ban_nhu_dat · dang_xay · chua_ro — nghĩa từng mã ở mô tả của khoá này trong schema.
 
 PHÂN BIỆT Ý ĐỊNH KHÁCH ("user_intent") BẰNG TOÀN BỘ NGỮ CẢNH (Semantic Understanding):
 - "sell": Người bán / cho thuê gửi thông tin BĐS của họ, HOẶC người bán hỏi thăm tình hình bán/thị trường (vd: "giá này có khách mua không em?", "có ai hỏi mua chưa?", "bên mua có trả giá không?"). Việc nhắc tới chữ "mua" trong câu hỏi VẪN LÀ "sell"!

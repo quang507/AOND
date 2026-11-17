@@ -801,6 +801,14 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz518 · Nhà nát bán như đất và nhà chưa xây xong đổi bộ câu hỏi, góc ảnh (17/11/2026)
+Chủ dự án: "triển khai code luôn đi" (bản r2 của anh Luận; nhận diện 4 và 6 ở `docs/agents/fda.md` còn một phần).
+- **Một mã, AI đọc theo nghĩa:** `tinh_trang_nha` (`prompts.SU_THAT_CAN`) thêm `ban_nhu_dat`, `dang_xay`; engine ghi `_tinh_trang_nha` khi cụm trích có trong lời khách (đường sẵn có, không dò từ khoá).
+- **`schema.Property`:** `ban_nhu_dat()` → hỏi kích thước, đường vào, giấy tờ, quy hoạch; bỏ kết cấu, diện tích nhà, bàn giao. `dang_xay()` → bỏ bàn giao / nội thất / hiện trạng, thêm tiến độ và ngày bàn giao. Cả hai bỏ cụm "chi tiết nhà" sau đăng.
+- **Ảnh và bản tin:** `goc_anh_goi_y` xin góc như đất / công trình đang thi công; `qc_anh` không tính thiếu ảnh nội thất, phối cảnh của căn chưa xong không bị coi là không khớp; dòng "Tình trạng nhà" của bản tin cấm tả phòng ốc.
+- **Cỡ (ký tự):** hỏi thông tin 58.326 → 58.357, M1 chào 113.545 → 113.796; GIONG, LEAN không đổi. `do-prompt.py` 3/3.
+- **Chưa làm:** lọc hỏi dạo / spam (chưa có chat thật để định nghĩa), đổi giá vàng (không có nguồn giá), điểm BOA vào điểm uy tín (phải sửa hàm DB), che thông tin trên ảnh sổ.
+
 ### SRS-5.1zzzzzzz517 · Gemini chỉ dùng flash-lite; quá hạn thì thử khoá kế trước khi cho model nghỉ (16/11/2026)
 Chủ dự án: "sau chọn flash-lite thôi" (`gemini-3.5-flash` hết hạn mức ngày sau khoảng 45 lượt, SRS-516).
 - **Cấu hình 146:** `GEMINI_MODEL=gemini-3.1-flash-lite` trong `.env` lõi (sao lưu `C:/aond/backup/env_20261116_201836`). Mặc định trong code không đổi.
@@ -861,9 +869,3 @@ Sếp 16/11: "LQC giờ gọi là BOA, con bot hôm rày gọi là FDA, tất c�
 - **Một hàm `prompts.build_tin_chu_dong_system`:** `khoi_nhan_vat` (nhân vật + GIỌNG, như lượt chat) + luật chung của tin chủ động (một tin, nối chuyện, không chào / giới thiệu lại, tối đa một câu hỏi) + dữ kiện căn + VIỆC. Nhắc khi im giữa chừng (`build_nhac_hoi_lai_system`), xin ảnh sau đăng (`build_xin_anh_nhac_system`), hỏi sau đăng (`build_hoi_sau_dang_nhac_system`) và Image LQC (`qc_anh.viet_tin_nhan`) chỉ còn đưa VIỆC vào. BOA (`lqc.py`, các vòng nền) vẫn chọn việc và giờ nhắn như cũ; giữ kết nối / hỏi còn bán vẫn câu mẫu.
 - **Tài liệu:** thuật ngữ FDA / BOA ở `docs/00-glossary.md`, ghi chú tên mới đầu `docs/lqc-listing-quality-controller.md`. Tên module giữ (`lqc.py`…).
 - **Cỡ:** prompt mỗi tin chủ động 325–1.228 → 4.287–5.070 ký tự (thêm GIỌNG ≈ 1.200 token); trần 3 tin chủ động / người bán / ngày nên tốn thêm không đáng kể. Lượt chat không đổi (62.325). Kiểm: import, thử `qc_anh.viet_tin_nhan` với model giả, `do-prompt.py` 3/3, truyvet sạch. Chưa chạy thật với Claude.
-
-### SRS-5.1zzzzzzz508 · Chính sách phí mỗi ý một chỗ ở lượt khách hỏi phí (16/11/2026)
-Mục 3.4 kế hoạch rút gọn: trong một lời nhắc lượt phí, "chỉ thu khi giao dịch thành công" lặp ~7 lần, mức phí theo vai 3–4 lần, bốn ý chính sách liệt kê ở cả lời dặn lẫn `CHINH_SACH_PHI`.
-- **Một nguồn mỗi ý:** bốn ý chính sách chỉ ở `CHINH_SACH_PHI`; mức theo vai ở `BUSINESS_CONTEXT` / dòng VAI NGƯỜI RAO (`_fee_hint`, nay chỉ vai + mức); câu khách nghe ở câu mẫu `bao_phi` (không đổi chữ). Lời nhắc "0.75 tháng = ba phần tư của MỘT tháng" chuyển vào `khoi_bao_phi`, chỉ đi kèm khi cho thuê.
-- **Khối ƯU TIÊN hỏi phí (`engine`)** không liệt kê lại bốn ý và con số — trỏ tới chính sách / câu mẫu ngay dưới; vẫn giữ ý "không chia hoa hồng, dù khách là chủ nhà" và "hỏi ý khác thì không đọc lại câu báo phí". Lượt sau bản tin: bỏ gạch "nhấn mạnh chỉ thu khi thành công" (gộp vào gạch lợi ích) và gạch "giữ đúng mức phí" (chính sách đã nói cố định, không bớt; BỐI CẢNH đã cấm bịa ưu đãi).
-- **Cỡ (ký tự):** lượt hỏi phí sau bản tin 64.729 → 64.433, duyệt 64.573 → 64.277, trình bản tin 81.205 → 81.081; khối hỏi phí lúc đang thu thập bớt ≈ 600. Kiểm: import lõi, `do-prompt.py` 3/3, truyvet sạch. Chưa chạy thật với Claude (Anthropic hết số dư).
