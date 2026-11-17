@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-14 12:36 (giờ VN)
+-- Sinh lúc: 2026-11-17 22:05 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -182,6 +182,25 @@ create table if not exists public.curated_lists (
   title text,
   created_at timestamp with time zone not null default now(),
   expires_at timestamp with time zone not null default (now() + '30 days'::interval)
+);
+
+create table if not exists public.dang_ky_moi_gioi (
+  id uuid not null default gen_random_uuid(),
+  created_at timestamp with time zone not null default now(),
+  loai text not null,
+  ho_ten text not null,
+  so_dien_thoai text not null,
+  khu_vuc text[] not null,
+  loai_bds text[] not null default '{}'::text[],
+  cong_ty text,
+  kinh_nghiem text,
+  so_can integer,
+  ghi_chu text,
+  dong_y_du_lieu_luc timestamp with time zone not null default now(),
+  trang_thai text not null default 'moi'::text,
+  ghi_chu_admin text,
+  xu_ly_luc timestamp with time zone,
+  xu_ly_boi text
 );
 
 create table if not exists public.danh_gia_ai (
@@ -751,6 +770,18 @@ do $d$ begin
   alter table public.curated_lists add constraint curated_lists_token_key UNIQUE (token);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.dang_ky_moi_gioi add constraint dang_ky_moi_gioi_loai_check CHECK ((loai = ANY (ARRAY['ca_nhan'::text, 'san'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.dang_ky_moi_gioi add constraint dang_ky_moi_gioi_pkey PRIMARY KEY (id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.dang_ky_moi_gioi add constraint dang_ky_moi_gioi_so_can_check CHECK (((so_can >= 0) AND (so_can <= 100000)));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.dang_ky_moi_gioi add constraint dang_ky_moi_gioi_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['moi'::text, 'da_lien_he'::text, 'duyet'::text, 'tu_choi'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.danh_gia_ai add constraint danh_gia_ai_pkey PRIMARY KEY (id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -1154,6 +1185,8 @@ create index if not exists conversations_buyer_id_idx ON public.conversations US
 CREATE UNIQUE INDEX conversations_buyer_uniq ON public.conversations USING btree (buyer_id) WHERE (buyer_id IS NOT NULL);
 CREATE UNIQUE INDEX conversations_seller_uniq ON public.conversations USING btree (seller_id) WHERE (seller_id IS NOT NULL);
 create index if not exists curated_lists_buyer_idx ON public.curated_lists USING btree (buyer_id);
+create index if not exists dang_ky_moi_gioi_created_idx ON public.dang_ky_moi_gioi USING btree (created_at DESC);
+create index if not exists dang_ky_moi_gioi_sdt_idx ON public.dang_ky_moi_gioi USING btree (so_dien_thoai, created_at DESC);
 create index if not exists danh_gia_ai_hoi_luc_idx ON public.danh_gia_ai USING btree (hoi_luc DESC);
 create index if not exists deals_buyer_id_idx ON public.deals USING btree (buyer_id);
 create index if not exists deals_listing_id_idx ON public.deals USING btree (listing_id);
@@ -1478,14 +1511,12 @@ begin
     raise exception 'phải gõ đúng chữ XOA HET để xác nhận' using errcode = '22023';
   end if;
 
-  -- Tin sinh từ chat thì xoá; tin đã nạp (kiến thức chung) và người bán sở hữu chúng thì giữ.
   create temp table if not exists _tin_xoa on commit drop as
     select id from listings where not public.la_tin_da_nap(source);
   create temp table if not exists _nguoi_xoa on commit drop as
     select s.id from sellers s
      where not exists (select 1 from listings l where l.seller_id = s.id and public.la_tin_da_nap(l.source));
 
-  -- Chép sang kho lưu TRƯỚC khi xoá, cùng giao dịch (một lần xoá = một `lan`); chép hỏng thì không xoá gì.
   insert into luu_tru.lan_xoa (ai) values (coalesce(auth.uid()::text, session_user)) returning lan into v_lan;
   insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'sellers', to_jsonb(x) from sellers x where x.id in (select id from _nguoi_xoa);
   insert into luu_tru.ban_ghi (lan, bang, du_lieu) select v_lan, 'buyers', to_jsonb(x) from buyers x;
@@ -1510,7 +1541,6 @@ begin
       or r.kind in ('promise', 'reengage', 'viewing', 'followup', 'match', 'feedback', 'sold', 'rating');
   v := v || jsonb_build_object('luu_tru_lan', v_lan);
 
-  -- `where true` ở các câu xoá cả bảng: role `authenticator` nạp `safeupdate`, DELETE không WHERE bị chặn khi gọi qua PostgREST (22/09/2026).
   delete from messages where true;               get diagnostics n = row_count; v := v || jsonb_build_object('messages', n);
   delete from info_requests where true;          get diagnostics n = row_count; v := v || jsonb_build_object('info_requests', n);
   delete from listing_media where listing_id in (select id from _tin_xoa);
@@ -1546,6 +1576,76 @@ begin
   update luu_tru.lan_xoa set so_dong = v where lan = v_lan;
   return v;
 end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.admin_xoa_khach(p_zalo text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  if not public.la_admin() then
+    raise exception 'chỉ admin được xoá khách' using errcode = '42501';
+  end if;
+  return public.xoa_nguoi_theo_zalo(p_zalo);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.an_anh_tin(p_listing_id uuid, p_storage_path text, p_an boolean DEFAULT true)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  update listing_media set an_khoi_web = p_an
+   where listing_id = p_listing_id and storage_path = p_storage_path and an_khoi_web is distinct from p_an;
+  return found;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.ban_do_khung(p_tay double precision, p_nam double precision, p_dong double precision, p_bac double precision, p_lop text[] DEFAULT ARRAY['can'::text])
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  select jsonb_build_object(
+    'can', case when 'can' = any(p_lop) then coalesce((
+      select jsonb_agg(to_jsonb(t)) from (
+        -- đúng CARD_COLS + lat, lng (lib/supabase.ts) — đủ cho ListingCard, không kéo mô tả
+        select l.id, l.code, l.deal, l.district, l.ward, l.street, l.location_raw, l.area_m2, l.price_vnd, l.price_raw, l.property_type,
+               l.bedrooms, l.bathrooms, l.floors, l.access_type, l.status, l.created_at, l.lat, l.lng
+          from public.listings l
+         where l.status in ('dang_ban', 'dang_quan_tam', 'da_coc')
+           and l.lat between least(p_nam, p_bac) and greatest(p_nam, p_bac)
+           and l.lng between least(p_tay, p_dong) and greatest(p_tay, p_dong)
+         order by l.created_at desc
+         limit 300) t), '[]'::jsonb) else '[]'::jsonb end,
+    'du_an', case when 'du_an' = any(p_lop) then coalesce((
+      select jsonb_agg(to_jsonb(t)) from (
+        select p.slug, p.name, p.developer, p.district, p.status_text, p.lat::double precision as lat, p.lng::double precision as lng
+          from public.projects p
+         where p.lat is not null and p.lng is not null
+           and p.lat between least(p_nam, p_bac) and greatest(p_nam, p_bac)
+           and p.lng between least(p_tay, p_dong) and greatest(p_tay, p_dong)
+         order by hashtext(coalesce(p.slug, p.name))   -- khung rộng quá 300: rải đều, không dồn tên A–C (thứ tự cố định)
+         limit 300) t), '[]'::jsonb) else '[]'::jsonb end,
+    -- Lớp đường CHỈ khi khung nhỏ (≤ 0,08° mỗi chiều ≈ zoom 15): khung cả TP.HCM quét hết bảng `duong` (dòng nặng vì cột vector) mất ~5 s
+    -- (đo 26/10), khung 0,02° × 0,03° đi chỉ mục `duong_lat_lng` ~36 ms. Chặn ở đây vì hàm mở cho anon — web cũng chỉ xin lớp này từ zoom 15.
+    'duong', case when 'duong' = any(p_lop)
+                   and greatest(p_nam, p_bac) - least(p_nam, p_bac) <= 0.08
+                   and greatest(p_tay, p_dong) - least(p_tay, p_dong) <= 0.08 then coalesce((
+      select jsonb_agg(to_jsonb(t)) from (
+        select d.ten, d.loai, d.phuong, d.quan_cu, d.lat, d.lng
+          from public.duong d
+         where d.loai in ('duong', 'so')
+           and d.lat between least(p_nam, p_bac) and greatest(p_nam, p_bac)
+           and d.lng between least(p_tay, p_dong) and greatest(p_tay, p_dong)
+         order by hashtext(d.ten || coalesce(d.phuong, ''))
+         limit 300) t), '[]'::jsonb) else '[]'::jsonb end);
+$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.bao_can_da_chot(p_listing_id uuid)
@@ -2465,6 +2565,21 @@ AS $function$
 begin new.updated_at := now(); return new; end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.chan_xoa_tin_da_nap()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public'
+AS $function$
+begin
+  if public.la_tin_da_nap(old.source)
+     and coalesce(current_setting('aond.cho_phep_xoa_tin_da_nap', true), '') <> 'XOA TIN DA NAP' then
+    raise exception 'tin đã nạp (%) được giữ làm kiến thức listing chung, không xoá — muốn xoá thì nhắn Claude', old.code
+      using errcode = '42501';
+  end if;
+  return old;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.che_sdt(p text)
  RETURNS text
  LANGUAGE sql
@@ -3167,13 +3282,9 @@ AS $function$
 declare
   v_tin int := 0; v_tin_nhan int := 0; v_nguoi int := 0; v_khach int := 0;
 begin
-  -- 20260922f: hàm xoá dữ liệu, mở cho authenticated — chỉ admin, service_role hoặc cron (postgres) được gọi.
   if not (public.la_admin() or coalesce(auth.role(), '') = 'service_role' or session_user in ('postgres', 'supabase_admin')) then
     raise exception 'don_du_lieu_thu: chi admin' using errcode = '42501';
   end if;
-  -- 20260929a (FR-245): ID thử đọc từ MỘT chỗ (`la_id_thu`).
-  -- 20261116a (SRS-5.1zzzzzzz501): người bán sở hữu TIN ĐÃ NẠP (`la_tin_da_nap`: seed_thu, mogi_thu, import_excel…) không phải dữ liệu thử để dọn —
-  -- bản 20261025f chỉ chừa `seed_thu`, nên người bán `thu-mogi` (ID bắt đầu `thu-`) bị dọn cùng 962 tin Mogi.
   create temp table if not exists _nguoi_thu on commit drop as
     select s.id from sellers s
      where public.la_id_thu(s.zalo_user_id)
@@ -3221,6 +3332,23 @@ begin
   return jsonb_build_object('tin', v_tin, 'tin_nhan', v_tin_nhan,
                             'nguoi_ban', v_nguoi, 'khach', v_khach);
 end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.du_an_can_geocode(p_limit integer DEFAULT 30)
+ RETURNS TABLE(id uuid, name text, location_raw text, ward text, district text)
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public'
+AS $function$
+  select p.id, p.name, p.location_raw, p.ward, p.district
+  from projects p
+  where p.lat is null
+    and (p.geocode_at is null or p.geocode_at < now() - interval '7 days')
+  order by exists (select 1 from listings l where l.project_id = p.id) desc,
+           p.is_partner desc nulls last,
+           p.geocode_at nulls first
+  limit greatest(1, least(coalesce(p_limit, 30), 200))
+$function$
 ;
 
 CREATE OR REPLACE FUNCTION public.du_an_co_phap_ly(p_project_id uuid)
@@ -3373,6 +3501,57 @@ AS $function$
     else null
   end)::property_type
 $function$
+;
+
+CREATE OR REPLACE FUNCTION public.gui_dang_ky_moi_gioi(p jsonb)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_loai text := coalesce(p->>'loai', '');
+  v_ten text := btrim(regexp_replace(coalesce(p->>'ho_ten', ''), '\s+', ' ', 'g'));
+  v_sdt text := regexp_replace(coalesce(p->>'so_dien_thoai', ''), '\D', '', 'g');
+  v_cty text := nullif(btrim(coalesce(p->>'cong_ty', '')), '');
+  v_kn text := nullif(btrim(coalesce(p->>'kinh_nghiem', '')), '');
+  v_ghi text := nullif(btrim(coalesce(p->>'ghi_chu', '')), '');
+  v_can integer;
+  v_khu text[];
+  v_bds text[];
+begin
+  -- Mã lỗi ngắn để form hiện đúng chỗ; không bao giờ trả lại dữ liệu người khác.
+  if v_loai not in ('ca_nhan', 'san') then return jsonb_build_object('ok', false, 'loi', 'loai'); end if;
+  if char_length(v_ten) < 2 or char_length(v_ten) > 80 then return jsonb_build_object('ok', false, 'loi', 'ho_ten'); end if;
+  if v_sdt like '84%' and char_length(v_sdt) = 11 then v_sdt := '0' || substr(v_sdt, 3); end if;
+  if v_sdt !~ '^0[35789]\d{8}$' then return jsonb_build_object('ok', false, 'loi', 'so_dien_thoai'); end if;
+  if coalesce(p->>'dong_y', '') <> 'true' then return jsonb_build_object('ok', false, 'loi', 'dong_y'); end if;
+  if jsonb_typeof(p->'khu_vuc') is distinct from 'array' then return jsonb_build_object('ok', false, 'loi', 'khu_vuc'); end if;
+  select array_agg(distinct btrim(x)) into v_khu from jsonb_array_elements_text(p->'khu_vuc') x where char_length(btrim(x)) between 2 and 60;
+  if v_khu is null or cardinality(v_khu) > 5 then return jsonb_build_object('ok', false, 'loi', 'khu_vuc'); end if;
+  if jsonb_typeof(p->'loai_bds') = 'array' then
+    select array_agg(distinct btrim(x)) into v_bds from jsonb_array_elements_text(p->'loai_bds') x where char_length(btrim(x)) between 2 and 40;
+  end if;
+  v_bds := coalesce(v_bds, '{}');
+  if cardinality(v_bds) > 8 then return jsonb_build_object('ok', false, 'loi', 'loai_bds'); end if;
+  if v_loai = 'san' and v_cty is null then return jsonb_build_object('ok', false, 'loi', 'cong_ty'); end if;
+  if char_length(coalesce(v_cty, '')) > 120 or char_length(coalesce(v_kn, '')) > 60 or char_length(coalesce(v_ghi, '')) > 500 then
+    return jsonb_build_object('ok', false, 'loi', 'qua_dai');
+  end if;
+  if coalesce(p->>'so_can', '') ~ '^\d{1,6}$' then v_can := (p->>'so_can')::integer; end if;
+
+  -- Chống gửi dồn: cùng số trong 24 giờ thì coi như đã nhận (không thêm dòng); cả bảng quá 40 dòng / giờ thì hẹn thử lại.
+  if exists (select 1 from dang_ky_moi_gioi d where d.so_dien_thoai = v_sdt and d.created_at > now() - interval '24 hours') then
+    return jsonb_build_object('ok', true, 'da_co', true);
+  end if;
+  if (select count(*) from dang_ky_moi_gioi d where d.created_at > now() - interval '1 hour') >= 40 then
+    return jsonb_build_object('ok', false, 'loi', 'qua_nhieu');
+  end if;
+
+  insert into dang_ky_moi_gioi (loai, ho_ten, so_dien_thoai, khu_vuc, loai_bds, cong_ty, kinh_nghiem, so_can, ghi_chu)
+  values (v_loai, v_ten, v_sdt, v_khu, v_bds, v_cty, v_kn, v_can, v_ghi);
+  return jsonb_build_object('ok', true, 'da_co', false);
+end $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.ham_md5_cong_khai()
@@ -3700,21 +3879,6 @@ CREATE OR REPLACE FUNCTION public.la_tin_da_nap(p_source text)
  IMMUTABLE
  SET search_path TO 'pg_catalog'
 AS $function$ select coalesce(p_source, 'import_excel') <> 'chat_zalo' $function$
-;
-
-CREATE OR REPLACE FUNCTION public.chan_xoa_tin_da_nap()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public'
-AS $function$
-begin
-  if public.la_tin_da_nap(old.source)
-     and coalesce(current_setting('aond.cho_phep_xoa_tin_da_nap', true), '') <> 'XOA TIN DA NAP' then
-    raise exception 'tin đã nạp (%) được giữ làm kiến thức listing chung, không xoá — muốn xoá thì nhắn Claude', old.code
-      using errcode = '42501';
-  end if;
-  return old;
-end $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.liet_ke_migration()
@@ -7008,10 +7172,11 @@ drop trigger if exists trg_listings_day_ro_ccrb on public.listings;
 CREATE TRIGGER trg_listings_day_ro_ccrb AFTER UPDATE OF status ON public.listings FOR EACH ROW EXECUTE FUNCTION trg_listings_day_ro_ccrb();
 drop trigger if exists trg_listings_fill_property_type on public.listings;
 CREATE TRIGGER trg_listings_fill_property_type BEFORE INSERT OR UPDATE OF description, location_raw, property_type ON public.listings FOR EACH ROW EXECUTE FUNCTION listings_fill_property_type();
+drop trigger if exists trg_listings_giu_tin_da_nap on public.listings;
+CREATE TRIGGER trg_listings_giu_tin_da_nap BEFORE DELETE ON public.listings FOR EACH ROW EXECUTE FUNCTION chan_xoa_tin_da_nap();
 drop trigger if exists trg_listings_price_vnd on public.listings;
 CREATE TRIGGER trg_listings_price_vnd BEFORE INSERT OR UPDATE ON public.listings FOR EACH ROW EXECUTE FUNCTION listings_set_price_vnd();
 drop trigger if exists trg_listings_zz_doi_ma on public.listings;
-CREATE TRIGGER trg_listings_giu_tin_da_nap BEFORE DELETE ON public.listings FOR EACH ROW EXECUTE FUNCTION chan_xoa_tin_da_nap();
 CREATE TRIGGER trg_listings_zz_doi_ma BEFORE UPDATE OF district, property_type ON public.listings FOR EACH ROW EXECUTE FUNCTION listings_doi_ma_theo_quan_loai();
 drop trigger if exists trg_listings_zz_fill_code on public.listings;
 CREATE TRIGGER trg_listings_zz_fill_code BEFORE INSERT ON public.listings FOR EACH ROW EXECUTE FUNCTION listings_fill_code();
@@ -7061,6 +7226,7 @@ alter table public.cau_mau enable row level security;
 alter table public.chat_quota enable row level security;
 alter table public.conversations enable row level security;
 alter table public.curated_lists enable row level security;
+alter table public.dang_ky_moi_gioi enable row level security;
 alter table public.danh_gia_ai enable row level security;
 alter table public.deals enable row level security;
 alter table public.dieu_luat enable row level security;
@@ -7145,6 +7311,10 @@ drop policy if exists conversations_admin_read on public.conversations;
 create policy conversations_admin_read on public.conversations as permissive for SELECT to authenticated using ((EXISTS ( SELECT 1
    FROM admins a
   WHERE (a.email = (( SELECT auth.jwt() AS jwt) ->> 'email'::text)))));
+drop policy if exists dang_ky_moi_gioi_admin_doc on public.dang_ky_moi_gioi;
+create policy dang_ky_moi_gioi_admin_doc on public.dang_ky_moi_gioi as permissive for SELECT to authenticated using (la_admin());
+drop policy if exists dang_ky_moi_gioi_admin_sua on public.dang_ky_moi_gioi;
+create policy dang_ky_moi_gioi_admin_sua on public.dang_ky_moi_gioi as permissive for UPDATE to authenticated using (la_admin()) with check (la_admin());
 drop policy if exists danh_gia_ai_admin_doc on public.danh_gia_ai;
 create policy danh_gia_ai_admin_doc on public.danh_gia_ai as permissive for SELECT to authenticated using (la_admin());
 drop policy if exists dieu_luat_admin_doc on public.dieu_luat;
@@ -7270,6 +7440,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.ca
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.chat_quota to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.conversations to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.curated_lists to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.dang_ky_moi_gioi to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.danh_gia_ai to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.deals to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.dieu_luat to service_role;
@@ -7355,6 +7526,7 @@ grant SELECT on public.bot_usage to authenticated;
 grant SELECT on public.bot_usage_model to authenticated;
 grant SELECT on public.bridge_dang_nhap to authenticated;
 grant SELECT on public.buyer_needs to authenticated;
+grant SELECT on public.dang_ky_moi_gioi to authenticated;
 grant SELECT on public.danh_gia_ai to authenticated;
 grant SELECT on public.dieu_luat to authenticated;
 grant SELECT on public.hoi_thoai_nhan to authenticated;
@@ -7460,6 +7632,10 @@ revoke all on function public.cau_mau_cap_nhat_luc() from public, anon, authenti
 grant execute on function public.cau_mau_cap_nhat_luc() to anon;
 grant execute on function public.cau_mau_cap_nhat_luc() to authenticated;
 grant execute on function public.cau_mau_cap_nhat_luc() to service_role;
+revoke all on function public.chan_xoa_tin_da_nap() from public, anon, authenticated;
+grant execute on function public.chan_xoa_tin_da_nap() to anon;
+grant execute on function public.chan_xoa_tin_da_nap() to authenticated;
+grant execute on function public.chan_xoa_tin_da_nap() to service_role;
 revoke all on function public.che_sdt(p text) from public, anon, authenticated;
 grant execute on function public.che_sdt(p text) to anon;
 grant execute on function public.che_sdt(p text) to authenticated;
@@ -7543,6 +7719,10 @@ grant execute on function public.giu_khach(p_conversation_id uuid, p_giu boolean
 revoke all on function public.guess_property_type(p_text text) from public, anon, authenticated;
 grant execute on function public.guess_property_type(p_text text) to authenticated;
 grant execute on function public.guess_property_type(p_text text) to service_role;
+revoke all on function public.gui_dang_ky_moi_gioi(p jsonb) from public, anon, authenticated;
+grant execute on function public.gui_dang_ky_moi_gioi(p jsonb) to anon;
+grant execute on function public.gui_dang_ky_moi_gioi(p jsonb) to authenticated;
+grant execute on function public.gui_dang_ky_moi_gioi(p jsonb) to service_role;
 revoke all on function public.ham_md5_cong_khai() from public, anon, authenticated;
 grant execute on function public.ham_md5_cong_khai() to anon;
 grant execute on function public.ham_md5_cong_khai() to authenticated;
@@ -7583,6 +7763,10 @@ revoke all on function public.la_id_thu(p text) from public, anon, authenticated
 grant execute on function public.la_id_thu(p text) to anon;
 grant execute on function public.la_id_thu(p text) to authenticated;
 grant execute on function public.la_id_thu(p text) to service_role;
+revoke all on function public.la_tin_da_nap(p_source text) from public, anon, authenticated;
+grant execute on function public.la_tin_da_nap(p_source text) to anon;
+grant execute on function public.la_tin_da_nap(p_source text) to authenticated;
+grant execute on function public.la_tin_da_nap(p_source text) to service_role;
 revoke all on function public.liet_ke_migration() from public, anon, authenticated;
 grant execute on function public.liet_ke_migration() to service_role;
 revoke all on function public.liet_ke_migration_cong_khai() from public, anon, authenticated;

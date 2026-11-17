@@ -19,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/thong-ke`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${SITE_URL}/tinh-lai-vay`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: `${SITE_URL}/moi-gioi`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
+    { url: `${SITE_URL}/moi-gioi/dang-ky`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: `${SITE_URL}/raoban`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     // SRS-5.1zzzzzzz443
     { url: `${SITE_URL}/thue-hay-mua`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },

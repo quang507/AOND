@@ -16,6 +16,7 @@
 // dựng một cái thang mà bậc trên cùng bị bịt, đúng lỗi vừa gỡ ở đoạn trên.
 // Đưa lại khi có giao dịch thật đầu tiên và khi chốt được hạng kèm quyền lợi gì.
 import type { Metadata } from "next";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { zaloLink } from "@/lib/format";
 import { PT_MG } from "@/lib/phi";
@@ -77,12 +78,21 @@ export default async function Page() {
           Vào mạng lưới: phí {PT_MG} mỗi giao dịch thành công, khách tụi em chuyển
           tận nơi. Yêu cầu giữ tối thiểu 10 tin và tỷ lệ chốt từ 5%.
         </p>
-        <a
-          href={zaloLink("nmg-apply")}
-          className="mt-4 inline-block rounded-md bg-zalo px-6 py-2.5 font-bold text-white transition hover:opacity-90 active:scale-[0.98]"
-        >
-          Nhắn Zalo để tham gia
-        </a>
+        {/* SRS-5.1zzzzzzz523: đăng ký bằng form (admin xem ở /admin/moi-gioi); Zalo vẫn là lối đi thứ hai. */}
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Link
+            href="/moi-gioi/dang-ky"
+            className="inline-block rounded-md bg-brand px-6 py-2.5 font-bold text-white transition hover:bg-brand-dark active:scale-[0.98]"
+          >
+            Đăng ký tham gia
+          </Link>
+          <a
+            href={zaloLink("nmg-apply")}
+            className="inline-block rounded-md border border-white/30 px-6 py-2.5 font-bold text-white transition hover:bg-white/10 active:scale-[0.98]"
+          >
+            Hoặc nhắn Zalo
+          </a>
+        </div>
       </div>
     </div>
   );

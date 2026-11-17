@@ -451,6 +451,7 @@ Không hiển thị tên/Zalo ID của B trên trang.
 
 - `/admin/cau-chuan` — chấm / sửa câu bot + khung "Câu mẫu cố định" (SRS-5.1zzzzzzz88 / 106): chưa có WF, nguồn là code trang.
 - `/admin/danh-gia` — khách chấm sao cho AI (SRS-5.1zzzzzzz104): chưa có WF, nguồn là code trang.
+- `/moi-gioi/dang-ky` và `/admin/moi-gioi` — môi giới đăng ký, admin quản lý (SRS-5.1zzzzzzz523): chưa có WF, nguồn là code trang.
 
 ---
 

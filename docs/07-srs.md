@@ -28,7 +28,7 @@ mở rộng mà không lệch khỏi yêu cầu ở `02-requirements.md`.
 | `BOT` | Bộ não hội thoại (B và S) | Lõi Python `src/aioi/` trên máy 146 "NguyetTu" (Windows, Task Scheduler `AOND Core`, `C:\aond\aond_core`, cổng 8000), endpoint `POST /chat-reply`; một lõi cho cả người mua lẫn người bán, vai theo ý định từng lượt (SRS-5.1zzzzzzz153) |
 | `KENH` | Kênh Zalo | Bridge `zca-js` 2.2.0 (`bot/bridge-zca/index.mjs`) trên tài khoản Zalo cá nhân (clone), HAI tiến trình trên máy 146 (`C:\aond\bridge-zca`, Task Scheduler): số ký gửi (`AOND Zalo Bridge`, `/send` :5005) và số tư vấn người mua (`AOND Zalo Bridge Tu Van`, :5006, `SO_NHAN=tu_van`) (SRS-5.1zzzzzzz210, SRS-5.1zzzzzzz401). Zalo OA không dùng |
 | `SEL` | Phía người bán | Cùng lõi, nhánh bán; `/quan-ly` + `/dang-nhap` cho NMG trên web |
-| `ADM` | Admin | `/admin`, `/admin/tin-nhan`, `/admin/cau-chuan`, `/admin/danh-gia`, `/admin/dang-tin`, `/admin/ro-hang`; việc nội bộ (câu khách hỏi, lịch xem, cần người thật) đi thẳng admin qua `reminders` → `escalation-feed` → bridge; cảnh báo ntfy |
+| `ADM` | Admin | `/admin`, `/admin/tin-nhan`, `/admin/cau-chuan`, `/admin/danh-gia`, `/admin/moi-gioi`, `/admin/dang-tin`, `/admin/ro-hang`; việc nội bộ (câu khách hỏi, lịch xem, cần người thật) đi thẳng admin qua `reminders` → `escalation-feed` → bridge; cảnh báo ntfy |
 
 **CTV không còn là phân hệ** (chủ dự án 28/10/2026: "bỏ hẳn CTV đi"). Mọi việc từng giao CTV nay giao admin, hoặc chủ nhà
 khi tin có chủ nhà trên hệ thống (SRS-5.1zzzzzzz165, SRS-5.1zzzzzzz170, SRS-5.1zzzzzzz172, SRS-5.1zzzzzzz173).
@@ -801,6 +801,14 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz523 · Môi giới đăng ký bằng form trên web, admin quản lý (17/11/2026)
+Chủ dự án 17/11, sau khi xem batdongsan.com.vn và hifriendz.com: "Form trên web như HiFriendz và có trang trong admin quản lý đi".
+- **Form** `/moi-gioi/dang-ky` (`components/FormDangKyMoiGioi.tsx`, lựa chọn ở `lib/moi-gioi.ts`): cá nhân hay sàn, họ tên, số điện thoại có Zalo, khu vực (13 cụm, tối đa 5), loại nhà đất, công ty, kinh nghiệm, số căn đang nhận, lời nhắn, ô đồng ý xử lý dữ liệu. Không thu căn cước hay tài khoản ngân hàng. Trang `/moi-gioi` đổi nút chính thành "Đăng ký tham gia", Zalo là lối phụ.
+- **DB** (migration `20261117b`): bảng `dang_ky_moi_gioi`; web ghi qua hàm `gui_dang_ky_moi_gioi(jsonb)` — kiểm dữ liệu, chuẩn số điện thoại, một số chỉ đăng ký một lần / 24 giờ, cả bảng tối đa 40 lượt / giờ. Chỉ admin đọc; admin chỉ sửa được bốn cột xử lý.
+- **Admin** `/admin/moi-gioi`: lọc theo trạng thái (mới → đã liên hệ → đã duyệt / từ chối), nút mở Zalo theo số, ghi chú nội bộ; thanh bên hiện số đăng ký mới.
+- **Thử:** hàm chạy trong giao dịch huỷ 6 ca rồi áp; form trên bản build thật báo lỗi đúng ô khi bỏ trống và ghi được một dòng thử; quyền kiểm bằng giả lập phiên: admin đọc và sửa được, người lạ 0 dòng, cột người đăng ký khai không sửa được. Trang admin lúc đã đăng nhập chưa xem bằng mắt (không có phiên admin).
+- **Chưa làm:** bot chưa nối dòng đăng ký với người nhắn Zalo; trang `/moi-gioi` chưa hiện khu vực của từng môi giới; chưa có mã môi giới gắn khách giới thiệu.
+
 ### SRS-5.1zzzzzzz522 · Che thông tin cá nhân trên ảnh sổ; khung Gemini trả theo thang 0–1000 (17/11/2026)
 Chủ dự án 17/11: "làm mấy cái này đi". Bản anh Luận (`boa-phaply.md`): ảnh sổ che số sổ, tên, số định danh, mã QR trước khi lưu / đưa đi.
 - **Che sổ** (`che_so.py`, vòng nền `server._vong_che_so`, tắt bằng `CHE_SO=tat`): ảnh giấy tờ ở kho riêng đi một lần — model khoanh họ tên, số căn cước, năm sinh, địa chỉ người, số phát hành / số vào sổ, mã QR, chữ ký; code tô đen, khung nới 12 % bề ngang. Bản gốc chép sang `goc/` trong kho riêng, bản đã che ghi đè khoá cũ (CRM mở giấy tờ thấy bản đã che). Số thửa, số tờ, diện tích, địa chỉ thửa giữ nguyên.
@@ -866,12 +874,3 @@ Chủ dự án: "tin $$$$ giờ chia ra con FDA hay BOA làm thì viết ra nhé
 Bắn thử 2 cuộc chat trên 146 (chủ dự án: "bắn thử 2 test"): 4 lượt đầu chạy bằng `gemini-3.1-flash-lite`, từ lượt 5 bot chỉ trả câu giữ chỗ. Log: `gemini-3.5-flash` quá hạn 15 s một lần → nghỉ 10 phút; `flash-lite` quá hạn nốt → cả hai nghỉ, Groq trả 403. Đo lại ngay sau: lượt công cụ cỡ thật chỉ 3–5 s — quá hạn là nhất thời, luật nghỉ 10 phút mới làm sập.
 - **`llm/du_phong.py`:** khi công tắc chỉ-Gemini bật, mỗi lần gọi chờ tới 30 s (trước 15), cả vòng 70 s (trước 40), model quá hạn nghỉ 60 s (trước 600). Đường dự phòng thường (Claude chính) giữ số cũ.
 - **Còn lại:** khoá Groq trên 146 đang bị từ chối (403) — hết Gemini là không còn đường nào.
-
-### SRS-5.1zzzzzzz513 · Lấy bộ tài liệu agent của anh Luận; FDA theo khách đang hăng, hẹn mà giữ hứng (16/11/2026)
-Chủ dự án: "kiểm tra các phần này của repo anh Luận… lấy về phần lớn áp lên cái của mình". So `docs/agents/` bản anh Luận (7 file) với code: bốn chuyên môn BOA (ảnh, pháp lý, lợi thế, giá) đã chạy từ SRS-425…476; phần chưa có là nguyên tắc tiếp khách của FDA.
-- **`docs/agents/` (README, fda, boa):** một danh tính, ranh FDA ↔ BOA là độ nghiêng, 4 nhiệm vụ FDA, vai người gửi, 10 nhận diện kèm tình trạng theo code, bảng 4 chuyên môn BOA, chỗ khác bản anh Luận (3 tin / ngày, FDA có công cụ, có phía mua, ảnh sổ chưa che). Chi tiết câu mẫu vẫn ở `lqc-listing-quality-controller.md`.
-- **`prompts.GIONG`** thêm một đoạn: khách đang hăng thì theo khách, hưởng ứng thật, hỏi nối, không cắt ngang / nhắc còn thiếu / gạt "để sau"; việc lượt này chưa có dữ liệu để xem ảnh hay so giá thì không đoán, hẹn xem kỹ rồi nhắn lại.
-- **Cỡ:** GIONG 3.112 → 3.547 / 4.000, LEAN 6.078 → 6.513 / 8.000; lượt hỏi thông tin 57.586 → 58.021 ký tự. `do-prompt.py` 3/3.
-- **Chưa làm (soát lại 17/11):** lọc khách hỏi dạo / spam; quy đổi giá vàng; che thông tin trên ảnh sổ (mới che chữ trong bản đọc giấy tờ); điểm riêng của pháp lý / lợi thế / giá cộng vào điểm uy tín — điểm ảnh thì đã nối từ SRS-424 (`engine.do_du_tin`: ảnh 30% độ đủ của tin, điểm chấm ảnh chỉnh 0,75–1; mới ở điểm tin lượt chat). Điểm bốn mảng và giá vàng làm ở SRS-520. Nhà nát bán như đất và nhà đang xây đã làm ở SRS-518.
-- **Tên gọi:** bản anh Luận dùng "LQC" cho riêng chuyên môn ảnh (BOA số 1); ở đây `lqc.py` điều phối mọi tin chủ động (vai BOA chung), `qc_anh.py` là BOA số 1. Chưa đổi tên tệp.
-- **Soát lại 17/11:** repo anh Luận chỉ thêm commit tài liệu `59e3ac3` (tag `r1` ở `207a145`, nhánh `r2-boa` chưa có code). Lấy về mục 0 "r1 → r2" và hai chuyên môn để ngỏ (Matcher, Re-engagement) vào `docs/agents/README.md`; repo này đã ở r2.
