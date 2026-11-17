@@ -27,7 +27,7 @@ log = logging.getLogger("aioi.che_so")
 TOI_DA_MOT_LUOT = 10
 # Nới khung model trả. Thử 17/11 trên tờ sổ giả (Gemini flash-lite): khung đúng dòng nhưng hụt mép trái / phải tới 3,5 % bề ngang — lộ ba
 # số cuối căn cước. Che dư vô hại, che thiếu là lộ, nên nới ngang rộng hơn hẳn nới dọc.
-NOI_NGANG = 0.045   # theo bề ngang ảnh, mỗi bên
+NOI_NGANG = 0.12    # theo bề ngang ảnh, mỗi bên — lần thử hai khung năm sinh trùm lên nhãn, hụt cả giá trị (lệch ~10 %)
 NOI_DOC = 0.008     # theo chiều cao ảnh, mỗi bên
 _hong: dict[str, int] = {}
 
