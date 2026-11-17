@@ -73,6 +73,20 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz512 · Gemini chạy được vòng công cụ; công tắc chỉ-Gemini tới 29/11 (16/11/2026)
+Chủ dự án: "dùng gemini free đi … làm công tắc đi, đến ngày 29 là có credit anthropic lại". Trước bản này dự phòng Gemini chỉ trả chữ nên mọi lượt đi đường form cũ.
+- **`llm/du_phong.py` `_luot_cong_cu`:** dịch công cụ và hội thoại khối Claude sang giọng OpenAI rồi dịch ngược; giữ chữ ký suy nghĩ Gemini 3 theo id. Groq vẫn chỉ trả chữ.
+- **Công tắc `AIOI_CHI_GEMINI_DEN`:** trước mốc (giờ VN) bỏ qua Claude, đi Gemini rồi Groq; tới mốc tự về Claude. 146 đặt `2026-11-29`.
+- **Thử thật trên 146** với 9 công cụ bước ghi: Gemini gọi `ghi_o` + `ghi_y_khach` đúng ô, vòng sau nhận kết quả và kết thúc. Không đọc PDF, không cache prompt khi chỉ-Gemini.
+
+### SRS-5.1zzzzzzz511 · FDA bớt lượt gọi: bước viết tự khai ô hỏi, tin đầu đi thẳng vòng agent; Image LQC chỉ chấm ảnh mới (16/11/2026)
+Làm theo `docs/fda-boa-mot-ho-so.md` (chủ dự án: "thiết kế có rồi thì làm lại code theo cái này"). Phần đã làm / đổi ghi ở mục 0 của bản thiết kế.
+- **Bỏ lượt gọi soát ô hỏi:** bước viết phía bán (`agent_gop.viet`) dặn thêm `KHAI_HOI` — cuối lời một dòng `<<HOI>>[{o, trich, khach_vua_hoi, trich_khach}]`; `tach_khai_hoi` cắt dòng đó trước khi gửi, cất `y_luot["_hoi_tu_khai"]`. Kết quả ghi (`bao_cao`) có thêm dòng KHOÁ Ô (đã có / còn trống / hệ thống tự tra) để model khai đúng khoá. Lưới `engine._khai_o_hoi` dùng dòng tự khai khi lời cùng bản (`_cung_loi`: chỉ khác dấu, markdown, "Dạ", dấu bản tin); thiếu dòng hay bản viết lại → gọi `SOAT_O_HOI_SYSTEM` như cũ. Phía mua không đổi (`HUONG_DAN_VIET` không kèm `KHAI_HOI`).
+- **Tin đầu vai chưa rõ:** `_lap_ke_hoach` cho vai `unknown` đi vòng agent theo số (ký gửi → `agent_gop.mo`, tư vấn → `mo_mua`); ra ý ngược vai thì đọc lại bằng form đầy đủ (nhánh có sẵn). Gỡ `_doc_nhanh_chua_ro_vai`, `DOC_NHANH_SYSTEM`, `doc_nhanh_schema` (SRS-406).
+- **Image LQC:** `qc_anh.cham` nhận kết quả lượt trước trong sổ; chỉ tải + gửi ảnh chưa có nhãn, ảnh cũ đi bằng nhãn chữ (đánh số 1..n, ảnh mới số tiếp theo); bộ chỉ bớt ảnh thì lọc kết quả cũ, không gọi model. Ảnh nghi cũ còn hiện giữ nguyên, đổi số theo bộ mới.
+- **Không làm:** tin viết sẵn cho BOA (tốn hơn tiết kiệm — lý do ở thiết kế mục 0); gộp ghi + viết thành một lượt gọi (chờ đo trên model thật).
+- **Cỡ (`do-prompt.py`, ký tự):** chào 85.919 → 57.178 (4 → 2 lượt gọi), hỏi thông tin 62.325 → 57.586 (3 → 2), duyệt 64.277 → 59.436, hỏi phí 64.433 → 59.590, trình bản tin 81.081 → 76.328; khách mua nhắn số ký gửi lần đầu 77.069 → 112.732 (3 lượt gọi như cũ). `do-prompt.py` stub bước viết trả kèm dòng tự khai. Kiểm: import, `do-prompt.py` 3/3, thử `tach_khai_hoi` / `_cung_loi` / `qc_anh.cham` với dữ liệu giả, truyvet. Chưa chạy thật với Claude.
+
 ### SRS-5.1zzzzzzz510 · Bản thiết kế FDA / BOA một hồ sơ (đề xuất, 16/11/2026)
 Chủ dự án: "ít lượt đọc, ít prompt mà vẫn luân chuyển tốt giữa FDA và BOA". Chỉ tài liệu, chưa đổi code.
 - **`docs/fda-boa-mot-ho-so.md`:** hồ sơ chung mỗi người bán (ô tin, sổ tay hẹn / bận / từ chối / lo ngại, tin viết sẵn `tin_ke`, phiên bản) là chỗ bàn giao duy nhất; FDA một lượt gọi trả tool `ket_qua_luot` (ghi + bằng chứng, lời, `hoi_o`, sổ tay, tin kế), code vẫn làm trọng tài và gọi lại khi lệch; BOA gửi `tin_ke` khi còn hợp lệ (0 lượt gọi); ảnh đọc một lần cho cả QC lẫn ô.

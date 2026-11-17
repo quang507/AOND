@@ -62,7 +62,7 @@ Luật này nằm trong khối GIỌNG của FDA (`prompts.GIONG`).
 ## 4. Luật an toàn chung
 
 1. **Không tự chế.** Chỉ ghi điều khách đã nói hoặc ảnh / giấy đã chứng minh; cụm trích phải nằm trong lời khách (code kiểm).
-2. **Ảnh sổ:** vào kho riêng, không lên web; bot chỉ nói "để em kiểm, không đăng" (hệ thống chưa che thông tin trên ảnh).
+2. **Ảnh sổ:** vào kho riêng, không lên web; vòng nền tô đen thông tin cá nhân, bản gốc giữ riêng (SRS-522). Bot vẫn chỉ nói "để em kiểm, không đăng" — độ trúng trên sổ thật chưa đo.
 3. **Không gấp gáp giả.** "Vừa cọc", "có khách" chỉ nói khi dữ liệu có.
 4. **Giá:** đưa căn thật đang rao, nhận xét nhẹ khi đủ căn cùng lối vào; không kê giá mới, không khuyên đầu tư.
 5. **Không tự xoá.** Ảnh kém: chủ đồng ý từng tấm mới ẩn.

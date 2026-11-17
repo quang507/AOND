@@ -35,5 +35,5 @@ Thứ tự khi nhiều mảng cùng muốn hỏi: ảnh → pháp lý → hợp 
 
 ## 4. Chưa có
 
-- Che thông tin cá nhân trên ảnh sổ.
+- Đo độ trúng của bước che ảnh sổ trên sổ thật (SRS-522 mới thử trên sổ giả).
 - Giao dịch thật để dẫn "tháng trước bên em chốt căn…" (code đã đọc được, kho chưa có giao dịch).

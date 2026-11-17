@@ -801,6 +801,20 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz522 · Che thông tin cá nhân trên ảnh sổ; khung Gemini trả theo thang 0–1000 (17/11/2026)
+Chủ dự án 17/11: "làm mấy cái này đi". Bản anh Luận (`boa-phaply.md`): ảnh sổ che số sổ, tên, số định danh, mã QR trước khi lưu / đưa đi.
+- **Che sổ** (`che_so.py`, vòng nền `server._vong_che_so`, tắt bằng `CHE_SO=tat`): ảnh giấy tờ ở kho riêng đi một lần — model khoanh họ tên, số căn cước, năm sinh, địa chỉ người, số phát hành / số vào sổ, mã QR, chữ ký; code tô đen, khung nới 12 % bề ngang. Bản gốc chép sang `goc/` trong kho riêng, bản đã che ghi đè khoá cũ (CRM mở giấy tờ thấy bản đã che). Số thửa, số tờ, diện tích, địa chỉ thửa giữ nguyên.
+- **Lỗi lộ ra khi thử, sửa ở `xoa_logo.chuan_vung`:** Gemini trả toạ độ theo thang 0–1000 dù hướng dẫn ghi 0–1; bản cũ cắt về 1 nên khung nào cũng rỗng — từ khi chạy chỉ-Gemini (16/11) vòng xoá logo không xoá được vùng nào. Nay có số vượt 1 thì chia 1000.
+- **Thử:** tờ sổ GIẢ tự vẽ, flash-lite, 4 lần. Hai lần đầu (nới 0,6 % rồi 4,5 %) còn lộ ba số cuối căn cước, một năm sinh; hai lần sau (nới 12 %) che kín mọi thông tin người, phần thửa đất nguyên vẹn.
+- **Chưa làm / chưa đo:** chưa thử trên sổ thật (thư mục mẫu sổ không được đọc). Lời bot về ảnh sổ giữ nguyên "chỉ để em kiểm, không đăng", chưa hứa "em xoá thông tin".
+
+### SRS-5.1zzzzzzz521 · Cụm trích của sự thật căn là trường bắt buộc; lọc khách hỏi dạo / tin rác (17/11/2026)
+Chủ dự án 17/11: "sửa luôn lỗi flash-lite không ghi sổ hồng riêng đi"; lọc hỏi dạo: "làm mấy cái này đi".
+- **Mã giấy tờ rớt:** SRS-519 bắt buộc mã mà cụm trích tuỳ chọn → flash-lite trả mã, bỏ cụm trích, engine loại vì thiếu bằng chứng. Nay `<mã>_trich_dan` bắt buộc cùng mã (`agent_gop._cong_cu_ghi`); mã bị loại thì ghi log lý do. Thử 3 / 3 lần ghi `so_hong_rieng` (cả khi khách gõ "SHR").
+- **Lọc khách** (bản anh Luận, FDA nhận diện 10): ý mới `loc_khach` = spam / hoi_dao, AI đọc theo nghĩa kèm cụm trích, chỉ nhận khi khách chưa tỏ ý bán / mua và chưa khai căn nào. Lượt đó không mở tin, bot đáp một câu ngắn không hỏi dồn (`prompts.khoi_loc_khach`); dấu `_loc_khach` chặn mọi tin chủ động của vòng nền (`lqc.chu_dang_hen`), khách tỏ ý bán / mua thì gỡ. Bot vẫn đáp mỗi tin, chưa có chế độ im hẳn.
+- **Cỡ:** hỏi thông tin 58.449 → 59.037 ký tự. `do-prompt.py` 3/3.
+- **Thử trên 146 (flash-lite):** tin quảng cáo mỹ phẩm 2 lượt và khách "hỏi cho biết thôi" đều được đáp ngắn, không hỏi thông tin căn.
+
 ### SRS-5.1zzzzzzz520 · Điểm chất lượng bốn mảng BOA vào điểm uy tín; vòng nền xét tin điểm thấp trước; giá không quy ra tiền thì hỏi chủ (17/11/2026)
 Chủ dự án 17/11, sau khi đối chiếu việc chưa làm với bộ `docs/agents/` của anh Luận: "có docs thì làm đi".
 - **Điểm BOA** (`diem_boa.py`, tiền định, 0–1 mỗi mảng): pháp lý theo thang anh Luận (sổ riêng 0,6 … giấy tay 0; ảnh sổ đã đọc +0,3; hoàn công +0,1); vị thế = số điểm vị thế cụ thể / 3; giá = có giá 0,4 + chủ đã xem căn đang rao gần 0,3 + rõ thương lượng 0,3; ảnh = điểm Image LQC. Mảng chưa có gì để chấm thì không trừ.
@@ -861,17 +875,3 @@ Chủ dự án: "kiểm tra các phần này của repo anh Luận… lấy về
 - **Chưa làm (soát lại 17/11):** lọc khách hỏi dạo / spam; quy đổi giá vàng; che thông tin trên ảnh sổ (mới che chữ trong bản đọc giấy tờ); điểm riêng của pháp lý / lợi thế / giá cộng vào điểm uy tín — điểm ảnh thì đã nối từ SRS-424 (`engine.do_du_tin`: ảnh 30% độ đủ của tin, điểm chấm ảnh chỉnh 0,75–1; mới ở điểm tin lượt chat). Điểm bốn mảng và giá vàng làm ở SRS-520. Nhà nát bán như đất và nhà đang xây đã làm ở SRS-518.
 - **Tên gọi:** bản anh Luận dùng "LQC" cho riêng chuyên môn ảnh (BOA số 1); ở đây `lqc.py` điều phối mọi tin chủ động (vai BOA chung), `qc_anh.py` là BOA số 1. Chưa đổi tên tệp.
 - **Soát lại 17/11:** repo anh Luận chỉ thêm commit tài liệu `59e3ac3` (tag `r1` ở `207a145`, nhánh `r2-boa` chưa có code). Lấy về mục 0 "r1 → r2" và hai chuyên môn để ngỏ (Matcher, Re-engagement) vào `docs/agents/README.md`; repo này đã ở r2.
-
-### SRS-5.1zzzzzzz512 · Gemini chạy được vòng công cụ; công tắc chỉ-Gemini tới 29/11 (16/11/2026)
-Chủ dự án: "dùng gemini free đi … làm công tắc đi, đến ngày 29 là có credit anthropic lại". Trước bản này dự phòng Gemini chỉ trả chữ nên mọi lượt đi đường form cũ.
-- **`llm/du_phong.py` `_luot_cong_cu`:** dịch công cụ và hội thoại khối Claude sang giọng OpenAI rồi dịch ngược; giữ chữ ký suy nghĩ Gemini 3 theo id. Groq vẫn chỉ trả chữ.
-- **Công tắc `AIOI_CHI_GEMINI_DEN`:** trước mốc (giờ VN) bỏ qua Claude, đi Gemini rồi Groq; tới mốc tự về Claude. 146 đặt `2026-11-29`.
-- **Thử thật trên 146** với 9 công cụ bước ghi: Gemini gọi `ghi_o` + `ghi_y_khach` đúng ô, vòng sau nhận kết quả và kết thúc. Không đọc PDF, không cache prompt khi chỉ-Gemini.
-
-### SRS-5.1zzzzzzz511 · FDA bớt lượt gọi: bước viết tự khai ô hỏi, tin đầu đi thẳng vòng agent; Image LQC chỉ chấm ảnh mới (16/11/2026)
-Làm theo `docs/fda-boa-mot-ho-so.md` (chủ dự án: "thiết kế có rồi thì làm lại code theo cái này"). Phần đã làm / đổi ghi ở mục 0 của bản thiết kế.
-- **Bỏ lượt gọi soát ô hỏi:** bước viết phía bán (`agent_gop.viet`) dặn thêm `KHAI_HOI` — cuối lời một dòng `<<HOI>>[{o, trich, khach_vua_hoi, trich_khach}]`; `tach_khai_hoi` cắt dòng đó trước khi gửi, cất `y_luot["_hoi_tu_khai"]`. Kết quả ghi (`bao_cao`) có thêm dòng KHOÁ Ô (đã có / còn trống / hệ thống tự tra) để model khai đúng khoá. Lưới `engine._khai_o_hoi` dùng dòng tự khai khi lời cùng bản (`_cung_loi`: chỉ khác dấu, markdown, "Dạ", dấu bản tin); thiếu dòng hay bản viết lại → gọi `SOAT_O_HOI_SYSTEM` như cũ. Phía mua không đổi (`HUONG_DAN_VIET` không kèm `KHAI_HOI`).
-- **Tin đầu vai chưa rõ:** `_lap_ke_hoach` cho vai `unknown` đi vòng agent theo số (ký gửi → `agent_gop.mo`, tư vấn → `mo_mua`); ra ý ngược vai thì đọc lại bằng form đầy đủ (nhánh có sẵn). Gỡ `_doc_nhanh_chua_ro_vai`, `DOC_NHANH_SYSTEM`, `doc_nhanh_schema` (SRS-406).
-- **Image LQC:** `qc_anh.cham` nhận kết quả lượt trước trong sổ; chỉ tải + gửi ảnh chưa có nhãn, ảnh cũ đi bằng nhãn chữ (đánh số 1..n, ảnh mới số tiếp theo); bộ chỉ bớt ảnh thì lọc kết quả cũ, không gọi model. Ảnh nghi cũ còn hiện giữ nguyên, đổi số theo bộ mới.
-- **Không làm:** tin viết sẵn cho BOA (tốn hơn tiết kiệm — lý do ở thiết kế mục 0); gộp ghi + viết thành một lượt gọi (chờ đo trên model thật).
-- **Cỡ (`do-prompt.py`, ký tự):** chào 85.919 → 57.178 (4 → 2 lượt gọi), hỏi thông tin 62.325 → 57.586 (3 → 2), duyệt 64.277 → 59.436, hỏi phí 64.433 → 59.590, trình bản tin 81.081 → 76.328; khách mua nhắn số ký gửi lần đầu 77.069 → 112.732 (3 lượt gọi như cũ). `do-prompt.py` stub bước viết trả kèm dòng tự khai. Kiểm: import, `do-prompt.py` 3/3, thử `tach_khai_hoi` / `_cung_loi` / `qc_anh.cham` với dữ liệu giả, truyvet. Chưa chạy thật với Claude.

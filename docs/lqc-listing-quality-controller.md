@@ -114,11 +114,11 @@ AI ghi cả điều lời chủ **chắc chắn kéo theo** (nhà trong hẻm c�
 1. **Nhiều chủ nhà đăng qua Zalo hơn** — LQC chỉ chăm được tin có Zalo chủ nhà (hiện 2 / 244).
 2. **Giao dịch thật đầu tiên** — bot đã tự hỏi giá chốt (SRS-456); có vài giao dịch thì bot dẫn được 4.3 · 4.4, và báo cáo 4.6 thêm được
    phần giá chốt.
-3. **Che thông tin trên ảnh sổ** — nếu muốn bot được hứa "em xoá thông tin rồi mới gửi" (2.2).
+3. **Đo bước che ảnh sổ trên sổ thật** (SRS-522 đã tô đen thông tin cá nhân ở vòng nền, mới thử trên sổ giả) — đạt thì bot mới được hứa "em xoá thông tin rồi mới gửi" (2.2).
 
 ## 6. Quyết định đã chốt (chủ dự án 12/11)
 
-- Ảnh sổ: chỉ nói "để em kiểm, không đăng"; chưa che thông tin trên ảnh.
+- Ảnh sổ: chỉ nói "để em kiểm, không đăng"; vòng nền che thông tin cá nhân từ SRS-522, lời hứa chưa đổi.
 - Ảnh kém: chủ đồng ý từng tấm mới ẩn.
 - Giá: phía bán được nhận xét giá chủ rao, nói nhẹ.
 - Trần tin: "Giữ 10" — 10 câu sau đăng / căn, ≤ 3 tin chủ động / người bán / ngày (mọi loại, mọi căn — SRS-475), chủ bỏ qua 2 tin liền thì thôi.

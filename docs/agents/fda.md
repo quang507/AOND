@@ -39,7 +39,7 @@ Vai đọc theo nghĩa lời khách ("ae hợp tác", "chủ gửi em bán" → 
 | 7 | Pháp lý sơ bộ | 9 loại giấy, câu mơ hồ thì hỏi lại | ✅ |
 | 8 | Tiếng lóng, viết tắt | Khối HIỂU TIẾNG NGHỀ + kiến thức nghề | ✅ |
 | 9 | Đơn vị, quy ước số | tỏi / củ / 5t5, ngang × dài kiểm chéo với diện tích; giá tính bằng vàng thì bot hỏi chủ quy ra tiền, không tự quy đổi (SRS-520) | ✅ |
-| 10 | Khách thật hay hỏi dạo, spam | — | ❌ |
+| 10 | Khách thật hay hỏi dạo, spam | AI đọc `loc_khach`: đáp ngắn, không mở tin, vòng nền không nhắn chủ động (SRS-521) | ✅ |
 
 ## 4. Giọng
 
