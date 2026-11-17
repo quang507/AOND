@@ -135,6 +135,8 @@ def hen_dang_treo(conv: Any) -> Any:
 def chu_dang_hen(conv: Any, ts: float, loai: str = "hoi") -> str | None:
     """Lý do chủ muốn yên lúc này: đang bận, đang chờ tới giờ hẹn, hoặc đã bảo thôi hỏi (chỉ chặn việc hỏi)."""
     ds = list(getattr(conv, "listings", None) or [])
+    if any(x.prop.fields.get("_loc_khach") for x in ds):   # SRS-5.1zzzzzzz521: tin rác / hỏi dạo — không tin chủ động nào, kể cả giữ kết nối
+        return "khách hỏi dạo / tin rác"
     if any((doc_gio_epoch(x.prop.fields.get("_tam_dung_den")) or 0) > ts for x in ds):
         return "chủ đang bận, hẹn nói sau"
     if loai in LOAI_NHIP_RIENG:

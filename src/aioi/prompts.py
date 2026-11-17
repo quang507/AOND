@@ -580,6 +580,22 @@ LUAT_DAP_CHUA_CHON = ("KHÁCH ĐÁP CHƯA CHỌN: câu em vừa hỏi là câu c
                       "đó để trống, có dịp (khách mua hỏi tới) mới nhắc lại. Phương án nào khách tự nói ra mới là ý của khách.")
 # Sự thật của căn do AI đọc theo nghĩa (SRS-5.1zzzzzzz320) — (khoá, giá trị, mô tả cho schema). Engine ghi vào ô nội bộ "_<khoá>" khi cụm trích
 # có trong lời khách; lưới bản tin (`engine._khang_dinh_khong_co_du_lieu`) chỉ đối chiếu các ô này + vai, không đọc lời khách.
+LOC_KHACH = ("spam", "hoi_dao")   # SRS-5.1zzzzzzz521: mã lọc khách (ô nội bộ `_loc_khach` trên mọi căn của hội thoại)
+
+
+def khoi_loc_khach(loai: str | None) -> str:
+    """Việc của lượt khi tin khách là tin rác / hỏi dạo (SRS-5.1zzzzzzz521): đáp ngắn, không hỏi dồn, không mở tin."""
+    if loai == "spam":
+        return ("\n\n=== ƯU TIÊN LƯỢT NÀY — TIN VỪA NHẮN LÀ QUẢNG CÁO / TIN RÁC (hệ thống đã đọc): ===\n"
+                "Việc lượt này: đáp MỘT câu ngắn, lịch sự rằng bên em chỉ hỗ trợ gửi bán, cho thuê, tìm mua nhà đất. Không hỏi gì, không "
+                "mời chào, không nhắc lại nội dung tin đó.\n")
+    if loai == "hoi_dao":
+        return ("\n\n=== ƯU TIÊN LƯỢT NÀY — KHÁCH CHỈ HỎI CHO BIẾT, CHƯA CÓ NHU CẦU (hệ thống đã đọc): ===\n"
+                "Việc lượt này: trả lời ngắn điều khách hỏi nếu em nắm, rồi nói khi nào cần gửi bán, cho thuê hay tìm mua thì nhắn em. "
+                "Không hỏi thông tin căn, không hỏi dồn.\n")
+    return ""
+
+
 SU_THAT_CAN: tuple[tuple[str, tuple[str, ...], str], ...] = (
     # SRS-5.1zzzzzzz435: mã và mô tả lấy từ `schema.LOAI_PHAP_LY` — một nguồn với cột `legal_status`, bản tin và câu hỏi theo sau.
     ("phap_ly_trang_thai", MA_PHAP_LY_AI,
@@ -2895,7 +2911,7 @@ def operations_schema() -> dict[str, Any]:
             **{k: {"type": "string", "enum": list(v), "description": d} for k, v, d in SU_THAT_CAN},
             "tien_ich_gan": {"type": "array", "items": {"type": "string", "enum": list(TIEN_ICH_GAN)},
                              "description": "Tiện ích khách KHẲNG ĐỊNH có gần căn (\"xa chợ\", \"cho em hỏi\" → không có). Không nói → bỏ trống."},
-            **{f"{k}_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách nói (bắt buộc khi có " + k + ")."}
+            **{f"{k}_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách nói (bắt buộc khi có " + k + "; chua_ro thì \"\")."}
                for k in [x[0] for x in SU_THAT_CAN] + ["tien_ich_gan"]},
             # SRS-5.1zzzzzzz241 (OPEN-59 a): một căn vừa bán vừa cho thuê → hai tin chung căn.
             # SRS-5.1zzzzzzz476 (LQC đợt 1, chủ dự án 13/11: "khách hẹn chiều chị gửi ảnh thì chiều nó hỏi lại"): trạng thái của CHỦ với việc
@@ -2917,6 +2933,12 @@ def operations_schema() -> dict[str, Any]:
             "ngung_cham": {"type": "boolean", "description": "true khi chủ tỏ ra phiền vì bị hỏi nhiều hoặc bảo thôi đừng hỏi nữa (\"hỏi gì hỏi "
                            "hoài\", \"thôi em, vậy đủ rồi\")."},
             "ngung_cham_trich_dan": {"type": "string", "description": "Nguyên văn cụm chủ nói (bắt buộc khi có ngung_cham)."},
+            # SRS-5.1zzzzzzz521 (bản anh Luận, FDA nhận diện 10: "khách nghiêm túc vs hỏi dạo / spam"): AI đọc theo nghĩa, code kiểm cụm trích.
+            "loc_khach": {"type": "string", "enum": list(LOC_KHACH),
+                          "description": "Tin vừa nhắn KHÔNG phải của người cần bán, cho thuê, mua hay thuê nhà đất: spam = quảng cáo, mời chào "
+                          "dịch vụ / hàng hoá khác, tin rác, chửi phá; hoi_dao = khách nói rõ chỉ hỏi cho biết / thử bot, không có nhà để bán và "
+                          "không cần mua, thuê. Khách thật nói cộc lốc, hỏi phí, hỏi thử rồi khai căn → bỏ trống."},
+            "loc_khach_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách nói (bắt buộc khi có loc_khach)."},
             "ca_ban_ca_thue": {"type": "boolean", "description": "true CHỈ KHI khách nói CÙNG căn đang nói muốn VỪA bán VỪA cho thuê (\"bán "
                                "hay cho thuê đều được\", \"ai thuê cũng cho, mua cũng bán\"). \"Đang cho thuê 30 triệu\" khi rao bán là hiện trạng → bỏ trống."},
             "ca_ban_ca_thue_trich_dan": {"type": "string", "description": "Nguyên văn cụm khách nói vừa bán vừa cho thuê (bắt buộc khi có ca_ban_ca_thue)."},

@@ -31,7 +31,7 @@ from . import gamification as g
 from . import phap_ly
 from .prompts import _dien_tich_mo_ho, khoi_nhan_vat, nhan_o_ngan, viec_phieu, viec_theo_khoi
 from .prompts import NHAN_VIEC_LUOT, khoi_doi_so, khoi_so_dang_nhan, prompt_gon_bat
-from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, NHAN_DUONG_VAO, SU_THAT_CAN, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
+from .prompts import CHINH_SACH_PHI, KHOI_MOT_UU_TIEN, LOC_KHACH, NHAN_DUONG_VAO, SU_THAT_CAN, khoi_loc_khach, khoi_su_that_can, TIEN_ICH_GAN, YEU_CAU_VIET_TOI_DA
 from . import cau_mau
 from . import so_token
 from .sdt import che_giay_to, che_sdt
@@ -1305,6 +1305,8 @@ def _ghi_su_that_can(conv: "Conversation", plan: dict, loi_khach: list[str]) -> 
     (AI có thể chỉ không nhắc lại); giá trị mới có bằng chứng thì thay (khách đính chính)."""
     for khoa, gia_tri, _ in SU_THAT_CAN:
         v = plan.get(khoa)
+        if v in gia_tri and v != "chua_ro" and not _vai_co_bang_chung(plan.get(f"{khoa}_trich_dan"), loi_khach):
+            log.warning("Sự thật căn %s=%s bị bỏ: cụm trích %s", khoa, v, "không có trong lời khách" if plan.get(f"{khoa}_trich_dan") else "trống")
         if v in gia_tri and v != "chua_ro" and _vai_co_bang_chung(plan.get(f"{khoa}_trich_dan"), loi_khach):
             if khoa == "phap_ly_trang_thai" and v == "mo_ho" and loai_phap_ly(conv.prop.fields) is not None:
                 continue   # đã biết loại giấy (khách nói / ảnh sổ) thì câu chung chung sau không hạ xuống mơ hồ
@@ -3466,6 +3468,7 @@ class Engine:
         # định giá); có khối ưu tiên thì không hỏi ô kế. Không có thì mới tới việc lượt thường (hỏi ô kế, giọng theo `GIONG`).
         uu_tien = ""
         for ten_ut, lay in (("can_nguoi", lambda: khoi_can_nguoi(conv)), ("phap_ly", lambda: khoi_phap_ly(conv, self._can_cua_chu(conv))),
+                            ("loc_khach", lambda: khoi_loc_khach(conv.y_luot.get("loc_khach"))),   # SRS-5.1zzzzzzz521
                             ("ngoai_viec", lambda: khoi_ngoai_viec(conv)), ("hoi_ve", lambda: hoi_ve_khoi),
                             ("hoi_trung_ten", lambda: self._khoi_hoi_trung_ten(conv))):   # cùng thứ tự / cùng ngắt sớm như chuỗi `or` cũ
             note_cu = conv.pending_name_note
@@ -5293,7 +5296,7 @@ class Engine:
         intent = plan.get("user_intent")
         has_seller_context = (
             conv.role == "seller"
-            or len(conv.prop.fields) >= 1
+            or any(k != "_loc_khach" for k in conv.prop.fields)   # dau loc khach (SRS-521) khong phai thong tin can
             or bool(conv.prop.loai_hinh)
             or any(not self._is_stub_listing(li) for li in conv.listings)
         )
@@ -5364,6 +5367,21 @@ class Engine:
             la_ngoai_viec = True   # ghi vào y_luot SAU chỗ làm mới y_luot bên dưới
             plan["operations"] = []
             plan.pop("buyer_lead", None)
+        # SRS-5.1zzzzzzz521 (bản anh Luận, FDA nhận diện 10): tin rác / hỏi dạo — AI đọc theo nghĩa, cụm trích phải có trong lời khách, và chỉ
+        # khi khách chưa tỏ ý bán / mua, chưa khai căn nào. Dấu `_loc_khach` nằm trên mọi căn của hội thoại (kể cả căn mồi rỗng) để vòng nền
+        # không chạy theo (`lqc.chu_dang_hen`). Lượt nào khách tỏ ý bán / mua thì gỡ dấu.
+        loc = plan.get("loc_khach")
+        la_loc = (loc in LOC_KHACH and intent not in ("buy", "sell") and not has_seller_context
+                  and _vai_co_bang_chung(plan.get("loc_khach_trich_dan"), gan_khach))
+        if la_loc:
+            plan["operations"] = []
+            plan.pop("buyer_lead", None)
+            for x in conv.listings:
+                x.prop.fields["_loc_khach"] = loc
+            log.warning("Lọc khách: %s", loc)
+        elif intent in ("buy", "sell"):
+            for x in conv.listings:
+                x.prop.fields.pop("_loc_khach", None)
         # Hỏi về gì / tự xưng gì (SRS-5.1zzzzzzz54): "hỏi về" theo ý AI đọc (SRS-5.1zzzzzzz281); xưng hô nhận khi cụm trích có thật trong một
         # trong sáu lượt khách gần nhất (xưng hô giữ qua các lượt).
         conv.hoi_ve_luot = None
@@ -5419,6 +5437,8 @@ class Engine:
             conv.y_luot["chua_ro_can"] = list(plan["_chua_ro_can"])
         if la_ngoai_viec:
             conv.y_luot["ngoai_viec"] = conv.so_luot_ngoai_viec   # SRS-5.1zzzzzzz177
+        if la_loc:
+            conv.y_luot["loc_khach"] = loc   # SRS-5.1zzzzzzz521
         for k in ("xin_xem_ban_ve", "cau_hoi_du_an", "mo_ta_du_an"):   # Q5 (SRS-5.1zzzzzzz328): theo ý AI đọc, không so nguyên văn
             if _ai_co_y(plan.get(k)):
                 conv.y_luot[k] = True

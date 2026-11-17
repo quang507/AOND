@@ -211,7 +211,10 @@ def _cong_cu_ghi(schema: dict[str, Any]) -> list[dict[str, Any]]:
         # được ghi): sự thật của căn là trường tuỳ chọn nên model yếu bỏ qua cả cụm. Nay BẮT BUỘC trả đủ từng mã (chưa nói thì "chua_ro") —
         # engine vẫn chỉ nhận mã có cụm trích nằm trong lời khách (`_ghi_su_that_can`).
         {"name": "ghi_y_khach", "description": "Ý khách lượt này ngoài ô tin: vai, ý định, duyệt bản nháp, xin đăng, hỏi về, cần người thật…",
-         "input_schema": {"type": "object", "properties": y, "required": [k for k, _, _ in SU_THAT_CAN if k in y]}},
+         # SRS-5.1zzzzzzz521 (bắn thử 17/11, 2 / 3 lần mã "sổ hồng riêng" không được ghi): mã bắt buộc mà cụm trích tuỳ chọn → flash-lite
+         # trả mã, bỏ cụm trích, engine loại vì thiếu bằng chứng. Nay cụm trích cũng bắt buộc (mã chua_ro thì để "").
+         "input_schema": {"type": "object", "properties": y,
+                          "required": [x for k, _, _ in SU_THAT_CAN if k in y for x in (k, f"{k}_trich_dan") if x in y]}},
     ]
 
 
