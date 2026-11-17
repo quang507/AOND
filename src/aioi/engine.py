@@ -5297,6 +5297,11 @@ class Engine:
             ghi_tu_ke_hoach(conv, plan, gan_khach, time.time())   # SRS-5.1zzzzzzz476: hẹn / bận / không có / thôi hỏi
 
         intent = plan.get("user_intent")
+        if _MA_KICH_HOAT.search(conv.loi_khach_luot or "") and getattr(self._convstore, "noi_moi_gioi", None) is not None:
+            # SRS-5.1zzzzzzz524 (ban thu 17/11: cuoc chat dang o vai mua thi luot nhan ma di nhanh mua, khong ai bao ket qua kich hoat):
+            # luot co ma kich hoat moi gioi la viec cua phia ban.
+            intent = "sell"
+            plan.pop("buyer_lead", None)
         has_seller_context = (
             conv.role == "seller"
             or any(k != "_loc_khach" for k in conv.prop.fields)   # dau loc khach (SRS-521) khong phai thong tin can
