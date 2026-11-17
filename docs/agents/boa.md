@@ -1,6 +1,6 @@
 # BOA — Back Office Agent (vòng nền)
 
-> Tên nội bộ (tên cũ: LQC); với khách vẫn là "em". Khung chung: [`README.md`](README.md).
+> Tên nội bộ (tên cũ ở repo này: LQC; bản anh Luận nay gọi LQC là riêng chuyên môn ảnh); với khách vẫn là "em". Khung chung: [`README.md`](README.md).
 > Từng câu mẫu đã chạy tới đâu, luật khi nào không nhắn: [`../lqc-listing-quality-controller.md`](../lqc-listing-quality-controller.md).
 
 BOA chạy nền theo từng căn đã lên web: xem lại cả hồ sơ rồi nhắn **một việc đáng nhất**, bằng đúng tên và giọng của lượt chat.
@@ -33,6 +33,6 @@ Thứ tự khi nhiều mảng cùng muốn hỏi: ảnh → pháp lý → hợp 
 
 ## 4. Chưa có
 
-- Điểm chất lượng của từng mảng cộng vào điểm uy tín của tin.
+- Điểm riêng của pháp lý, lợi thế, giá cộng vào điểm uy tín của tin (điểm ảnh đã nối: `engine.do_du_tin`, SRS-424).
 - Che thông tin cá nhân trên ảnh sổ.
 - Giao dịch thật để dẫn "tháng trước bên em chốt căn…" (code đã đọc được, kho chưa có giao dịch).

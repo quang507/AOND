@@ -47,6 +47,8 @@ FDA và BOA là tên nội bộ; khách không bao giờ biết có hai bộ má
 BOA có bốn chuyên môn (ảnh · pháp lý · lợi thế · giá, xem `boa.md`). Bản anh Luận để ngỏ hai chuyên môn về sau: ghép khách mua (Matcher) và hâm tin nguội
 (Re-engagement). Ở đây đã có một phần: báo căn mới cho người mua (`bao_can_moi.py`), hỏi còn bán sau 20 ngày, giữ kết nối sau 6 ngày.
 
+Tên "LQC": bản anh Luận dùng cho riêng chuyên môn ảnh (BOA số 1). Ở đây `lqc.py` là bộ điều phối mọi tin chủ động (vai BOA chung), `qc_anh.py` mới là BOA số 1; chưa đổi tên tệp.
+
 ## 3. Ranh FDA ↔ BOA là độ nghiêng, không phải bức tường
 
 - **Mặc định:** FDA nghiêng về nhanh và nông — gom đủ ngưỡng rao rồi dừng. Chuyện "đẹp không / đủ không / đúng không" để BOA.
@@ -74,4 +76,5 @@ Luật này nằm trong khối GIỌNG của FDA (`prompts.GIONG`).
 | FDA chỉ có lời khách, việc cần tra thì hẹn BOA | FDA có công cụ (đọc ảnh trong lượt, so giá, tra dự án, quy hoạch) nên nhiều việc làm ngay; chỉ hẹn khi lượt đó chưa có dữ liệu |
 | FDA chỉ rao bán | Có cả phía mua (số tư vấn) |
 | Hứa "em xoá thông tin trên ảnh sổ" | Chỉ nói "để em kiểm, không đăng" |
-| Điểm chất lượng của BOA cộng vào điểm uy tín | Chưa nối |
+| Điểm chất lượng của BOA cộng vào điểm uy tín | Mới nối điểm ảnh (ảnh 30% độ đủ của tin, điểm chấm ảnh chỉnh 0,75–1 — SRS-424); pháp lý, lợi thế, giá chưa có điểm riêng |
+| Mỗi ngày soi lại tin điểm còn thấp | Vòng nền đi theo hàng câu hỏi còn thiếu của từng căn, không theo điểm |

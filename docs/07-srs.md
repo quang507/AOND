@@ -849,7 +849,8 @@ Chủ dự án: "kiểm tra các phần này của repo anh Luận… lấy về
 - **`docs/agents/` (README, fda, boa):** một danh tính, ranh FDA ↔ BOA là độ nghiêng, 4 nhiệm vụ FDA, vai người gửi, 10 nhận diện kèm tình trạng theo code, bảng 4 chuyên môn BOA, chỗ khác bản anh Luận (3 tin / ngày, FDA có công cụ, có phía mua, ảnh sổ chưa che). Chi tiết câu mẫu vẫn ở `lqc-listing-quality-controller.md`.
 - **`prompts.GIONG`** thêm một đoạn: khách đang hăng thì theo khách, hưởng ứng thật, hỏi nối, không cắt ngang / nhắc còn thiếu / gạt "để sau"; việc lượt này chưa có dữ liệu để xem ảnh hay so giá thì không đoán, hẹn xem kỹ rồi nhắn lại.
 - **Cỡ:** GIONG 3.112 → 3.547 / 4.000, LEAN 6.078 → 6.513 / 8.000; lượt hỏi thông tin 57.586 → 58.021 ký tự. `do-prompt.py` 3/3.
-- **Chưa làm:** lọc khách hỏi dạo / spam, bộ câu hỏi riêng cho nhà nát bán như đất, điểm chất lượng BOA cộng vào điểm uy tín.
+- **Chưa làm (soát lại 17/11):** lọc khách hỏi dạo / spam; quy đổi giá vàng; che thông tin trên ảnh sổ (mới che chữ trong bản đọc giấy tờ); điểm riêng của pháp lý / lợi thế / giá cộng vào điểm uy tín — điểm ảnh thì đã nối từ SRS-424 (`engine.do_du_tin`: ảnh 30% độ đủ của tin, điểm chấm ảnh chỉnh 0,75–1). Nhà nát bán như đất và nhà đang xây đã làm ở SRS-518.
+- **Tên gọi:** bản anh Luận dùng "LQC" cho riêng chuyên môn ảnh (BOA số 1); ở đây `lqc.py` điều phối mọi tin chủ động (vai BOA chung), `qc_anh.py` là BOA số 1. Chưa đổi tên tệp.
 - **Soát lại 17/11:** repo anh Luận chỉ thêm commit tài liệu `59e3ac3` (tag `r1` ở `207a145`, nhánh `r2-boa` chưa có code). Lấy về mục 0 "r1 → r2" và hai chuyên môn để ngỏ (Matcher, Re-engagement) vào `docs/agents/README.md`; repo này đã ở r2.
 
 ### SRS-5.1zzzzzzz512 · Gemini chạy được vòng công cụ; công tắc chỉ-Gemini tới 29/11 (16/11/2026)

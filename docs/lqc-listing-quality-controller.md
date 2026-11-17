@@ -2,7 +2,7 @@
 
 > Khung chung FDA / BOA, nguyên tắc một danh tính và ranh giữa hai bên: [`agents/README.md`](agents/README.md).
 
-> **Tên mới (chủ dự án 16/11/2026):** LQC = **BOA** (Back Office Agent) — chọn việc, chọn giờ, chấm ảnh; bot chat = **FDA** (Front Desk Agent). Mọi tin gửi chủ nhà, kể cả tin LQC tự nhắn, do FDA viết bằng cùng nhân vật + giọng lượt chat (`prompts.build_tin_chu_dong_system`, SRS-5.1zzzzzzz509): khách chỉ thấy một "em" mang tên trợ lý của mình. Bản thiết kế hồ sơ chung + tin viết sẵn: `docs/fda-boa-mot-ho-so.md` (đề xuất, chưa code).
+> **Tên mới (chủ dự án 16/11/2026):** LQC = **BOA** (Back Office Agent) — chọn việc, chọn giờ, chấm ảnh; bot chat = **FDA** (Front Desk Agent). Mọi tin gửi chủ nhà, kể cả tin LQC tự nhắn, do FDA viết bằng cùng nhân vật + giọng lượt chat (`prompts.build_tin_chu_dong_system`, SRS-5.1zzzzzzz509): khách chỉ thấy một "em" mang tên trợ lý của mình. Bản thiết kế hồ sơ chung + tin viết sẵn: `docs/fda-boa-mot-ho-so.md` (đề xuất, chưa code). Bản anh Luận 17/11 dùng chữ LQC cho riêng chuyên môn ảnh (BOA số 1); trong tài liệu này LQC vẫn chỉ cả vòng nền.
 
 Cập nhật 13/11/2026 (lần 3, SRS-475 điều phối chung), đối chiếu code `main` @ 4ebda18 và dữ liệu Supabase cùng ngày. Nguồn: đặc tả anh Luận (4 mảng, 22 câu mẫu).
 
