@@ -3,7 +3,7 @@
 -- Sinh lại: gọi rpc xuat_schema() rồi ghi đè file này (CLAUDE.md).
 -- Đây là lưới an toàn để dựng lại từ số không, KHÔNG thay cho migration:
 -- thay đổi schema vẫn phải đi qua một file trong bot/supabase/migrations/.
--- Sinh lúc: 2026-11-17 22:36 (giờ VN)
+-- Sinh lúc: 2026-11-17 22:56 (giờ VN)
 
 -- ══ Extension ══
 create extension if not exists fuzzystrmatch with schema extensions;
@@ -143,6 +143,14 @@ create table if not exists public.cau_chuan (
   updated_at timestamp with time zone not null default now(),
   phien uuid,
   seq bigint
+);
+
+create table if not exists public.cau_hinh_moi_gioi (
+  id smallint not null default 1,
+  ty_le_ban numeric not null default 0.20,
+  ty_le_thue numeric not null default 0.20,
+  cap_nhat_luc timestamp with time zone,
+  cap_nhat_boi text
 );
 
 create table if not exists public.cau_mau (
@@ -329,7 +337,14 @@ create table if not exists public.khach_gioi_thieu (
   khach_dong_y_luc timestamp with time zone not null default now(),
   trang_thai text not null default 'moi'::text,
   nguoi_phu_trach text,
-  cap_nhat_luc timestamp with time zone
+  cap_nhat_luc timestamp with time zone,
+  loai_chot text,
+  gia_chot_vnd bigint,
+  phi_cong_ty_vnd bigint,
+  hoa_hong_ty_le numeric,
+  hoa_hong_vnd bigint,
+  hoa_hong_trang_thai text,
+  hoa_hong_chi_luc timestamp with time zone
 );
 
 create table if not exists public.khach_gioi_thieu_nhat_ky (
@@ -778,6 +793,18 @@ do $d$ begin
   alter table public.cau_chuan add constraint cau_chuan_pkey PRIMARY KEY (id);
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.cau_hinh_moi_gioi add constraint cau_hinh_moi_gioi_id_check CHECK ((id = 1));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.cau_hinh_moi_gioi add constraint cau_hinh_moi_gioi_pkey PRIMARY KEY (id);
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.cau_hinh_moi_gioi add constraint cau_hinh_moi_gioi_ty_le_ban_check CHECK (((ty_le_ban >= (0)::numeric) AND (ty_le_ban <= (1)::numeric)));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.cau_hinh_moi_gioi add constraint cau_hinh_moi_gioi_ty_le_thue_check CHECK (((ty_le_thue >= (0)::numeric) AND (ty_le_thue <= (1)::numeric)));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.cau_mau add constraint cau_mau_cau_check CHECK ((length(btrim(cau)) > 0));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
@@ -886,7 +913,19 @@ do $d$ begin
   alter table public.interests add constraint interests_trang_thai_check CHECK ((trang_thai = ANY (ARRAY['quan_tam'::text, 'khong_hop'::text])));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
+  alter table public.khach_gioi_thieu add constraint khach_gioi_thieu_gia_chot_vnd_check CHECK ((gia_chot_vnd >= 0));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.khach_gioi_thieu add constraint khach_gioi_thieu_hoa_hong_trang_thai_check CHECK ((hoa_hong_trang_thai = ANY (ARRAY['cho_thu_phi'::text, 'da_chi'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.khach_gioi_thieu add constraint khach_gioi_thieu_loai_chot_check CHECK ((loai_chot = ANY (ARRAY['ban'::text, 'thue'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
   alter table public.khach_gioi_thieu add constraint khach_gioi_thieu_nhu_cau_check CHECK ((nhu_cau = ANY (ARRAY['mua'::text, 'thue'::text])));
+exception when duplicate_object then null; end $d$;
+do $d$ begin
+  alter table public.khach_gioi_thieu add constraint khach_gioi_thieu_phi_cong_ty_vnd_check CHECK ((phi_cong_ty_vnd >= 0));
 exception when duplicate_object then null; end $d$;
 do $d$ begin
   alter table public.khach_gioi_thieu add constraint khach_gioi_thieu_pkey PRIMARY KEY (id);
@@ -2585,6 +2624,9 @@ begin
       return jsonb_build_object('ok', false, 'loi', 'trang_thai');
     end if;
     if p_trang_thai is null and v_ghi is null then return jsonb_build_object('ok', false, 'loi', 'trong'); end if;
+    -- SRS-5.1zzzzzzz525: chốt phải qua chot_khach_gioi_thieu (cần phí công ty thu); khách đã chi thì không đổi trạng thái.
+    if p_trang_thai = 'chot' then return jsonb_build_object('ok', false, 'loi', 'dung_form_chot'); end if;
+    if p_trang_thai is not null and k.hoa_hong_trang_thai = 'da_chi' then return jsonb_build_object('ok', false, 'loi', 'da_chi'); end if;
     v_nhan := case p_trang_thai when 'moi' then 'Chuyển về mới' when 'da_tiep_nhan' then 'Tiếp nhận khách' when 'dang_cham_soc' then 'Đang chăm sóc'
                                 when 'da_xem_nha' then 'Khách đã xem nhà' when 'chot' then 'Chốt giao dịch' when 'khong_thanh' then 'Không thành'
                                 else 'Ghi chú' end;
@@ -2592,6 +2634,10 @@ begin
        set trang_thai = coalesce(p_trang_thai, trang_thai), cap_nhat_luc = now(),
            nguoi_phu_trach = case when p_trang_thai is not null and p_trang_thai <> 'moi' then v_email else nguoi_phu_trach end
      where id = p_id;
+    if p_trang_thai is not null and k.trang_thai = 'chot' then   -- mở lại khách đã chốt: xoá phần đã tính
+      update khach_gioi_thieu set loai_chot = null, gia_chot_vnd = null, phi_cong_ty_vnd = null, hoa_hong_ty_le = null, hoa_hong_vnd = null,
+             hoa_hong_trang_thai = null, hoa_hong_chi_luc = null where id = p_id;
+    end if;
     insert into khach_gioi_thieu_nhat_ky (khach_id, vai, ai, viec, ghi_chu) values (p_id, 'admin', coalesce(v_email, 'admin'), v_nhan, v_ghi);
     return jsonb_build_object('ok', true);
   end if;
@@ -2694,6 +2740,29 @@ AS $function$
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.chi_hoa_hong_khach_gioi_thieu(p_id uuid, p_ghi_chu text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_email text := (select auth.jwt()) ->> 'email';
+  v_ghi text := nullif(btrim(coalesce(p_ghi_chu, '')), '');
+  k public.khach_gioi_thieu;
+begin
+  if not public.la_admin() then return jsonb_build_object('ok', false, 'loi', 'khong_quyen'); end if;
+  select * into k from khach_gioi_thieu where id = p_id for update;
+  if not found then return jsonb_build_object('ok', false, 'loi', 'khong_thay'); end if;
+  if k.trang_thai <> 'chot' or k.hoa_hong_trang_thai is distinct from 'cho_thu_phi' then return jsonb_build_object('ok', false, 'loi', 'chua_chot'); end if;
+  update khach_gioi_thieu set hoa_hong_trang_thai = 'da_chi', hoa_hong_chi_luc = now(), cap_nhat_luc = now() where id = p_id;
+  insert into khach_gioi_thieu_nhat_ky (khach_id, vai, ai, viec, ghi_chu)
+  values (p_id, 'admin', coalesce(v_email, 'admin'), 'Đã chi cho môi giới',
+          concat_ws(' ', replace(to_char(k.hoa_hong_vnd, 'FM999,999,999,999'), ',', '.') || ' đồng.', v_ghi));
+  return jsonb_build_object('ok', true);
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.chon_viec_don_chet()
  RETURNS integer
  LANGUAGE sql
@@ -2706,6 +2775,42 @@ AS $function$
     returning 1)
   select count(*)::int from x;
 $function$
+;
+
+CREATE OR REPLACE FUNCTION public.chot_khach_gioi_thieu(p_id uuid, p_loai text, p_phi_cong_ty bigint, p_gia_chot bigint DEFAULT NULL::bigint, p_ghi_chu text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_email text := (select auth.jwt()) ->> 'email';
+  v_ghi text := nullif(btrim(coalesce(p_ghi_chu, '')), '');
+  k public.khach_gioi_thieu;
+  v_tl numeric;
+  v_hh bigint;
+begin
+  if not public.la_admin() then return jsonb_build_object('ok', false, 'loi', 'khong_quyen'); end if;
+  if p_loai not in ('ban', 'thue') then return jsonb_build_object('ok', false, 'loi', 'loai'); end if;
+  if p_phi_cong_ty is null or p_phi_cong_ty <= 0 or p_phi_cong_ty > 100000000000 then return jsonb_build_object('ok', false, 'loi', 'phi'); end if;
+  if p_gia_chot is not null and (p_gia_chot <= 0 or p_gia_chot < p_phi_cong_ty) then return jsonb_build_object('ok', false, 'loi', 'gia'); end if;
+  if char_length(coalesce(v_ghi, '')) > 1000 then return jsonb_build_object('ok', false, 'loi', 'qua_dai'); end if;
+  select * into k from khach_gioi_thieu where id = p_id for update;
+  if not found then return jsonb_build_object('ok', false, 'loi', 'khong_thay'); end if;
+  if k.hoa_hong_trang_thai = 'da_chi' then return jsonb_build_object('ok', false, 'loi', 'da_chi'); end if;
+  select case p_loai when 'ban' then ty_le_ban else ty_le_thue end into v_tl from cau_hinh_moi_gioi where id = 1;
+  v_tl := coalesce(v_tl, 0.20);
+  v_hh := (round(p_phi_cong_ty * v_tl / 1000.0) * 1000)::bigint;
+  update khach_gioi_thieu
+     set trang_thai = 'chot', loai_chot = p_loai, gia_chot_vnd = p_gia_chot, phi_cong_ty_vnd = p_phi_cong_ty, hoa_hong_ty_le = v_tl,
+         hoa_hong_vnd = v_hh, hoa_hong_trang_thai = 'cho_thu_phi', hoa_hong_chi_luc = null, cap_nhat_luc = now(), nguoi_phu_trach = v_email
+   where id = p_id;
+  insert into khach_gioi_thieu_nhat_ky (khach_id, vai, ai, viec, ghi_chu)
+  values (p_id, 'admin', coalesce(v_email, 'admin'), 'Chốt giao dịch',
+          concat_ws(' ', 'Phần của môi giới: ' || replace(to_char(v_hh, 'FM999,999,999,999'), ',', '.') || ' đồng (' || round(v_tl * 100)::text
+                    || '% phí công ty thu), chi sau khi công ty thu đủ phí.', v_ghi));
+  return jsonb_build_object('ok', true, 'hoa_hong_vnd', v_hh, 'ty_le', v_tl);
+end $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.chu_nha_han_gio()
@@ -3669,6 +3774,9 @@ begin
 
   insert into dang_ky_moi_gioi (loai, ho_ten, so_dien_thoai, khu_vuc, loai_bds, cong_ty, kinh_nghiem, so_can, ghi_chu)
   values (v_loai, v_ten, v_sdt, v_khu, v_bds, v_cty, v_kn, v_can, v_ghi);
+  -- SRS-5.1zzzzzzz525: báo admin qua Zalo (tin nội bộ, đường bridge); không kèm số điện thoại.
+  insert into reminders (kind, due_at, note)
+  values ('escalation', now(), '🆕 Môi giới mới đăng ký: ' || v_ten || ' (' || array_to_string(v_khu, ', ') || '). Xem ở /admin/moi-gioi');
   return jsonb_build_object('ok', true, 'da_co', false);
 end $function$
 ;
@@ -3712,6 +3820,10 @@ begin
   insert into khach_gioi_thieu (seller_id, ten_khach, so_dien_thoai, nhu_cau, khu_vuc, ngan_sach, ma_tin, ghi_chu)
   values (v_sid, v_ten, v_sdt, v_nc, v_khu, v_ns, v_tin, v_ghi) returning id into v_id;
   insert into khach_gioi_thieu_nhat_ky (khach_id, vai, ai, viec) values (v_id, 'moi_gioi', v_ma, 'Tạo hồ sơ khách');
+  -- SRS-5.1zzzzzzz525: báo admin qua Zalo; không kèm số điện thoại khách.
+  insert into reminders (kind, due_at, note)
+  values ('escalation', now(), '🆕 Môi giới ' || v_ma || ' gửi khách cần ' || case v_nc when 'thue' then 'thuê' else 'mua' end
+          || coalesce(' ở ' || v_khu, '') || '. Xem ở /admin/khach-gioi-thieu');
   return jsonb_build_object('ok', true, 'id', v_id);
 end $function$
 ;
@@ -7470,6 +7582,7 @@ alter table public.bridge_dang_nhap enable row level security;
 alter table public.buyer_needs enable row level security;
 alter table public.buyers enable row level security;
 alter table public.cau_chuan enable row level security;
+alter table public.cau_hinh_moi_gioi enable row level security;
 alter table public.cau_mau enable row level security;
 alter table public.chat_quota enable row level security;
 alter table public.conversations enable row level security;
@@ -7553,6 +7666,10 @@ drop policy if exists buyers_self_update on public.buyers;
 create policy buyers_self_update on public.buyers as permissive for UPDATE to authenticated using ((auth_user_id = ( SELECT auth.uid() AS uid))) with check ((auth_user_id = ( SELECT auth.uid() AS uid)));
 drop policy if exists cau_chuan_admin on public.cau_chuan;
 create policy cau_chuan_admin on public.cau_chuan as permissive for ALL to authenticated using (la_admin()) with check (la_admin());
+drop policy if exists cau_hinh_moi_gioi_admin_sua on public.cau_hinh_moi_gioi;
+create policy cau_hinh_moi_gioi_admin_sua on public.cau_hinh_moi_gioi as permissive for UPDATE to authenticated using (la_admin()) with check (la_admin());
+drop policy if exists cau_hinh_moi_gioi_doc on public.cau_hinh_moi_gioi;
+create policy cau_hinh_moi_gioi_doc on public.cau_hinh_moi_gioi as permissive for SELECT to anon, authenticated using (true);
 drop policy if exists cau_mau_admin_doc on public.cau_mau;
 create policy cau_mau_admin_doc on public.cau_mau as permissive for SELECT to authenticated using (la_admin());
 drop policy if exists cau_mau_admin_sua on public.cau_mau;
@@ -7696,6 +7813,7 @@ grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.br
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.buyer_needs to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.buyers to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.cau_chuan to service_role;
+grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.cau_hinh_moi_gioi to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.cau_mau to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.chat_quota to service_role;
 grant DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.conversations to service_role;
@@ -7788,6 +7906,8 @@ grant SELECT on public.bot_usage to authenticated;
 grant SELECT on public.bot_usage_model to authenticated;
 grant SELECT on public.bridge_dang_nhap to authenticated;
 grant SELECT on public.buyer_needs to authenticated;
+grant SELECT on public.cau_hinh_moi_gioi to anon;
+grant SELECT on public.cau_hinh_moi_gioi to authenticated;
 grant SELECT on public.dang_ky_moi_gioi to authenticated;
 grant SELECT on public.danh_gia_ai to authenticated;
 grant SELECT on public.dieu_luat to authenticated;
@@ -7907,8 +8027,14 @@ revoke all on function public.che_sdt(p text) from public, anon, authenticated;
 grant execute on function public.che_sdt(p text) to anon;
 grant execute on function public.che_sdt(p text) to authenticated;
 grant execute on function public.che_sdt(p text) to service_role;
+revoke all on function public.chi_hoa_hong_khach_gioi_thieu(p_id uuid, p_ghi_chu text) from public, anon, authenticated;
+grant execute on function public.chi_hoa_hong_khach_gioi_thieu(p_id uuid, p_ghi_chu text) to authenticated;
+grant execute on function public.chi_hoa_hong_khach_gioi_thieu(p_id uuid, p_ghi_chu text) to service_role;
 revoke all on function public.chon_viec_don_chet() from public, anon, authenticated;
 grant execute on function public.chon_viec_don_chet() to service_role;
+revoke all on function public.chot_khach_gioi_thieu(p_id uuid, p_loai text, p_phi_cong_ty bigint, p_gia_chot bigint, p_ghi_chu text) from public, anon, authenticated;
+grant execute on function public.chot_khach_gioi_thieu(p_id uuid, p_loai text, p_phi_cong_ty bigint, p_gia_chot bigint, p_ghi_chu text) to authenticated;
+grant execute on function public.chot_khach_gioi_thieu(p_id uuid, p_loai text, p_phi_cong_ty bigint, p_gia_chot bigint, p_ghi_chu text) to service_role;
 revoke all on function public.chu_nha_han_gio() from public, anon, authenticated;
 grant execute on function public.chu_nha_han_gio() to service_role;
 revoke all on function public.chuan_dia_ban(p_text text) from public, anon, authenticated;

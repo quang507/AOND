@@ -73,6 +73,11 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz515 · Tin phụ `$$$$$` ghi rõ FDA hay BOA (16/11/2026)
+Chủ dự án: "tin $$$$ giờ chia ra con FDA hay BOA làm thì viết ra nhé". Chỉ khi công tắc `AIOI_DONG_TRICH_XUAT` bật.
+- **Lượt chat:** dòng đầu thành `$$$$$ [FDA] [đã trích xuất: …]` (`che_do_test.chu_thich`).
+- **Tin vòng nền tự nhắn:** gửi trước một tin phụ `$$$$$ [BOA — việc]` (`che_do_test.nhan_boa`, `server._gui_boa`): nhắc khi im · xin ảnh sau đăng · hỏi sau đăng · chấm ảnh · hỏi còn bán · giữ kết nối · nhắc theo lịch · báo căn mới. Tin phụ không vào lịch sử chat; gửi hụt thì tin thật vẫn đi.
+
 ### SRS-5.1zzzzzzz514 · Gemini là đường chính thì chờ lâu hơn, model quá hạn chỉ nghỉ 1 phút (16/11/2026)
 Bắn thử 2 cuộc chat trên 146 (chủ dự án: "bắn thử 2 test"): 4 lượt đầu chạy bằng `gemini-3.1-flash-lite`, từ lượt 5 bot chỉ trả câu giữ chỗ. Log: `gemini-3.5-flash` quá hạn 15 s một lần → nghỉ 10 phút; `flash-lite` quá hạn nốt → cả hai nghỉ, Groq trả 403. Đo lại ngay sau: lượt công cụ cỡ thật chỉ 3–5 s — quá hạn là nhất thời, luật nghỉ 10 phút mới làm sập.
 - **`llm/du_phong.py`:** khi công tắc chỉ-Gemini bật, mỗi lần gọi chờ tới 30 s (trước 15), cả vòng 70 s (trước 40), model quá hạn nghỉ 60 s (trước 600). Đường dự phòng thường (Claude chính) giữ số cũ.

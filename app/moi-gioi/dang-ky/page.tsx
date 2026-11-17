@@ -4,6 +4,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import FormDangKyMoiGioi from "@/components/FormDangKyMoiGioi";
 import { PT_MG } from "@/lib/phi";
+import { supabase } from "@/lib/supabase";
+import { MUC_CHI_MAC_DINH, phanTram } from "@/lib/moi-gioi";
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Đăng ký làm môi giới cùng AI Ơi Nhà Đất",
@@ -17,7 +21,11 @@ const BUOC = [
   ["Gửi hàng qua Zalo", "Anh chị nhắn căn đang nhận bán, cho thuê; trợ lý soạn tin và đăng lên web."],
 ];
 
-export default function Page() {
+export default async function Page() {
+  // SRS-5.1zzzzzzz525: mức chi công bố đọc từ DB (admin chỉnh ở /admin/khach-gioi-thieu); đọc hụt thì dùng mức mặc định.
+  const { data: mc } = await supabase.from("cau_hinh_moi_gioi").select("ty_le_ban, ty_le_thue").eq("id", 1).maybeSingle();
+  const tlBan = mc ? Number(mc.ty_le_ban) : MUC_CHI_MAC_DINH.ty_le_ban;
+  const tlThue = mc ? Number(mc.ty_le_thue) : MUC_CHI_MAC_DINH.ty_le_thue;
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <nav aria-label="Đường dẫn" className="text-sm text-mute">
@@ -27,6 +35,10 @@ export default function Page() {
       <p className="mt-2 max-w-xl text-mute">
         Phí {PT_MG} mỗi giao dịch thành công, đăng tin không mất phí. Mạng lưới giữ chuẩn tối thiểu 10 tin đang rao và tỷ lệ chốt từ 5%
         trong 6 tháng.
+      </p>
+      <p className="mt-2 max-w-xl text-mute">
+        Có khách cần mua hay thuê, anh chị gửi cho bên em chăm: khách chốt thành công, anh chị nhận {phanTram(tlBan)} phí công ty thu được
+        {tlThue === tlBan ? "" : ` (giao dịch cho thuê: ${phanTram(tlThue)})`}, chi sau khi công ty thu đủ phí.
       </p>
 
       <ol className="mt-6 grid gap-3 sm:grid-cols-3">

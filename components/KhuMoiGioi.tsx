@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { zaloLink } from "@/lib/format";
-import { TRANG_THAI_KHACH, chuanSoDienThoai, type HoSoMoiGioi, type KhachGioiThieu, type NhatKyKhach } from "@/lib/moi-gioi";
+import { COT_KHACH, MUC_CHI_MAC_DINH, TRANG_THAI_KHACH, chuanSoDienThoai, phanTram, tienDong, type HoSoMoiGioi, type KhachGioiThieu, type MucChiMG, type NhatKyKhach } from "@/lib/moi-gioi";
 
 const O = "w-full rounded-lg border border-line bg-white px-3 py-2.5 focus-visible:outline-2 focus-visible:outline-brand";
 const NHAN = "mb-1 block text-xs font-semibold text-mute";
@@ -44,12 +44,11 @@ export default function KhuMoiGioi() {
   const [loiKhach, setLoiKhach] = useState("");
   const [baoKhach, setBaoKhach] = useState("");
   const [loiNhan, setLoiNhan] = useState<Record<string, string>>({});
+  const [mucChi, setMucChi] = useState<MucChiMG>(MUC_CHI_MAC_DINH);
 
   const napKhach = useCallback(async () => {
-    const { data: ks } = await supabase.from("khach_gioi_thieu")
-      .select("id, created_at, seller_id, ten_khach, so_dien_thoai, nhu_cau, khu_vuc, ngan_sach, ma_tin, ghi_chu, trang_thai, nguoi_phu_trach, cap_nhat_luc")
-      .order("created_at", { ascending: false }).limit(200);
-    const ds = (ks ?? []) as KhachGioiThieu[];
+    const { data: ks } = await supabase.from("khach_gioi_thieu").select(COT_KHACH).order("created_at", { ascending: false }).limit(200);
+    const ds = (ks ?? []) as unknown as KhachGioiThieu[];   // cột chọn bằng chuỗi ghép (COT_KHACH) nên kiểu suy ra không dùng được
     setKhach(ds);
     if (ds.length) {
       const { data: nk } = await supabase.from("khach_gioi_thieu_nhat_ky").select("id, khach_id, luc, vai, ai, viec, ghi_chu")
@@ -62,7 +61,11 @@ export default function KhuMoiGioi() {
     const { data } = await supabase.rpc("toi_la_moi_gioi");
     const h = (data ?? null) as HoSoMoiGioi | null;
     setHoSo(h);
-    if (h?.ma_moi_gioi) await napKhach();
+    if (h?.ma_moi_gioi) {
+      const { data: mc } = await supabase.from("cau_hinh_moi_gioi").select("ty_le_ban, ty_le_thue").eq("id", 1).maybeSingle();
+      if (mc) setMucChi({ ty_le_ban: Number(mc.ty_le_ban), ty_le_thue: Number(mc.ty_le_thue) });
+      await napKhach();
+    }
   }, [napKhach]);
 
   useEffect(() => { void nap(); }, [nap]);
@@ -170,6 +173,12 @@ export default function KhuMoiGioi() {
             {moForm ? "Đóng" : "Gửi khách mới"}
           </button>
         </div>
+        {/* SRS-5.1zzzzzzz525: mức chi công bố — tỷ lệ đọc từ DB, admin chỉnh được. */}
+        <p className="mt-2 text-sm text-mute">
+          Khách anh chị giới thiệu chốt thành công: anh chị nhận <strong className="text-navy">{phanTram(mucChi.ty_le_ban)}</strong> phí công ty thu được
+          với giao dịch mua bán{mucChi.ty_le_thue === mucChi.ty_le_ban ? " và cho thuê" : <>, <strong className="text-navy">{phanTram(mucChi.ty_le_thue)}</strong> với giao dịch cho thuê</>}.
+          Chi sau khi công ty thu đủ phí; số tiền là trước thuế thu nhập cá nhân.
+        </p>
         {baoKhach && <p role="status" className="mt-2 text-sm font-medium text-navy">{baoKhach}</p>}
 
         {moForm && (
@@ -221,6 +230,14 @@ export default function KhuMoiGioi() {
                       {TRANG_THAI_KHACH[k.trang_thai]}
                     </span>
                   </button>
+                  {k.hoa_hong_vnd != null && (
+                    <p className="mt-1 text-sm text-navy">
+                      Phần của anh chị: <strong className="tabular-nums">{tienDong(k.hoa_hong_vnd)}</strong>{" "}
+                      <span className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${k.hoa_hong_trang_thai === "da_chi" ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}>
+                        {k.hoa_hong_trang_thai === "da_chi" ? `Đã chi ${k.hoa_hong_chi_luc ? luc(k.hoa_hong_chi_luc) : ""}` : "Chờ công ty thu đủ phí"}
+                      </span>
+                    </p>
+                  )}
                   {mo === k.id && (
                     <div className="mt-2 rounded-lg bg-cream/50 p-3">
                       <ol className="space-y-2">

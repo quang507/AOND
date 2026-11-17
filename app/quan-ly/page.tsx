@@ -101,7 +101,7 @@ export default function Page() {
       <div className="mx-auto max-w-md px-4 py-16 text-center">
         <h1 className="text-2xl font-extrabold">Chưa đăng nhập</h1>
         <p className="mt-2 text-mute">Trang này dành cho nhà môi giới trong mạng lưới.</p>
-        <Link href="/dang-nhap" className="mt-5 inline-block rounded-md bg-brand px-6 py-2.5 font-bold text-white">
+        <Link href="/dang-nhap?next=quan-ly" className="mt-5 inline-block rounded-md bg-brand px-6 py-2.5 font-bold text-white">
           Đăng nhập bằng email
         </Link>
       </div>

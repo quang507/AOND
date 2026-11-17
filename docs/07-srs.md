@@ -801,6 +801,15 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz525 · Mức chi cho môi giới giới thiệu khách; chốt và đánh dấu đã chi; báo admin qua Zalo (17/11/2026)
+Chủ dự án 17/11: "đưa con số theo thị trường đi … cứ đưa số hợp lý trước chỉnh sau, còn gì thiếu thì làm để chạy được đã".
+- **Mức khởi đầu: 20 % phí công ty thu được**, cả mua bán và cho thuê, chi sau khi công ty thu đủ phí, trước thuế thu nhập cá nhân. Mốc tra 17/11: môi giới có khách và môi giới giữ hàng thường chia 50/50; người chỉ giới thiệu nhận 10–20 %; HiFriendz chi cộng tác viên khoảng 12–22 % tiền thuê một tháng. Ở đây môi giới chỉ giới thiệu, admin dẫn khách.
+- **Chỉnh được:** bảng một dòng `cau_hinh_moi_gioi` (migration `20261117d`), admin sửa ngay đầu trang `/admin/khach-gioi-thieu`; `/quan-ly` và `/moi-gioi/dang-ky` đọc mức này để công bố.
+- **Chốt:** `chot_khach_gioi_thieu` — admin nhập phí công ty thu (và giá chốt nếu có), hệ thống tính phần môi giới theo mức lúc chốt, làm tròn nghìn, ghi nhật ký; `chi_hoa_hong_khach_gioi_thieu` đánh dấu đã chi (một chiều). Mở lại khách đã chốt thì xoá phần đã tính; đã chi thì không đổi trạng thái được. Môi giới thấy số tiền và tình trạng chi ở trang của mình.
+- **Vá để chạy được:** môi giới đăng ký hoặc gửi khách thì admin nhận một tin nội bộ qua Zalo (`reminders` kind escalation, không kèm số điện thoại); nút đăng nhập ở `/quan-ly` quay lại đúng `/quan-ly` (trước đó về `/tai-khoan`).
+- **Thử:** khối tự kiểm lúc áp migration (dữ liệu thử tự huỷ): phí 50 triệu → 10 triệu, phí thuê 7,5 triệu → 1,5 triệu, môi giới tự chốt bị từ chối, chốt qua hàm cũ bị từ chối, mở lại xoá phần đã tính, chi lần hai bị từ chối, người lạ không sửa được mức. Trang admin lúc đã đăng nhập chưa xem bằng mắt.
+- **Chưa làm:** khấu trừ thuế thu nhập cá nhân lúc chi (mới ghi "trước thuế"); gửi khách qua Zalo; `/moi-gioi` chưa hiện khu vực từng môi giới.
+
 ### SRS-5.1zzzzzzz524 · Nối đăng ký môi giới với Zalo và tài khoản web; môi giới giới thiệu khách (17/11/2026)
 Chủ dự án 17/11, sau khi xem cổng agent của HiFriendz: "nối ba thứ thành một đi thì bên mình có khách riêng và môi giới đem khách về". **Đảo quyết định 28/10** (bỏ đội cộng tác viên, SRS-237): môi giới nay cũng đem khách về; người dẫn khách vẫn là admin.
 - **Mã:** admin duyệt đăng ký → DB cấp mã môi giới `MG0001…` và mã kích hoạt `AOND-XXXXXXXXXX` (trigger `dang_ky_moi_gioi_cap_ma`); `/admin/moi-gioi` hiện hai mã kèm nút sao chép lời nhắn.
@@ -808,7 +817,7 @@ Chủ dự án 17/11, sau khi xem cổng agent của HiFriendz: "nối ba thứ 
 - **`/quan-ly`** (`components/KhuMoiGioi.tsx`): ô kích hoạt; sau khi kích hoạt hiện mã môi giới, chuẩn của chính mình (`toi_la_moi_gioi` → `chuan_nmg`), form gửi khách cần mua / thuê và danh sách khách kèm nhật ký.
 - **Khách giới thiệu:** bảng `khach_gioi_thieu` + `khach_gioi_thieu_nhat_ky`; môi giới gửi qua `gui_khach_gioi_thieu` (phải xác nhận khách đồng ý; khách đang được chăm thì không nhận lần hai; tối đa 30 khách / ngày); admin xử lý ở `/admin/khach-gioi-thieu` qua `cap_nhat_khach_gioi_thieu`, mỗi bước một dòng nhật ký mà môi giới đọc được.
 - **Thử:** migration áp kèm khối tự kiểm (dữ liệu thử tự huỷ): nối web trước rồi Zalo sau về một dòng, Zalo khác bị từ chối, khách trùng bị chặn, người lạ đọc 0 dòng, trạng thái sai bị từ chối, 3 dòng nhật ký. Bắn thử trên 146 (flash-lite): nhắn mã đúng thì dòng `sellers` của Zalo đó thành `nmg` mang mã MG0001 và bot báo mã môi giới; mã sai thì bot báo chưa nối được. Hai lỗi lộ ra và đã sửa: bot đọc lại mã kích hoạt thay vì mã môi giới; cuộc chat đang ở vai mua thì lượt nhắn mã đi nhánh mua (nay lượt có mã luôn đi nhánh bán). Phần web lúc đã đăng nhập chưa xem bằng mắt.
-- **Chưa làm:** mức chi cho môi giới khi khách chốt (chủ dự án chưa đưa số); gửi khách qua Zalo (mới có form web); `/moi-gioi` chưa hiện khu vực từng môi giới.
+- **Chưa làm:** gửi khách qua Zalo (mới có form web); `/moi-gioi` chưa hiện khu vực từng môi giới. (Mức chi: làm ở SRS-525.)
 
 ### SRS-5.1zzzzzzz523 · Môi giới đăng ký bằng form trên web, admin quản lý (17/11/2026)
 Chủ dự án 17/11, sau khi xem batdongsan.com.vn và hifriendz.com: "Form trên web như HiFriendz và có trang trong admin quản lý đi".
@@ -873,8 +882,3 @@ Chủ dự án: "Sửa luôn". Bản ghi: `Ban-thu-FDA-BOA_16-11-2026.md` (ngoà
 - **Bắn lại:** thuê đã qua, giá 6.x và câu "hệ thống đã cập nhật" hết; "TBT" đúng khi cuộc chat đang nói Quận 5, vẫn thành Tân Bình khi đang nói căn ở Tân Bình.
 - **"T1L2ST":** chủ dự án chốt là 1 trệt 2 lầu sân thượng (kiến thức nghề từng ghi trệt + lửng + 2 lầu); có lửng thì tin ghi rõ chữ "lửng".
 - **Hạn mức Gemini miễn phí:** sau khoảng 45 lượt bắn thử trong ngày, `gemini-3.5-flash` trả 429 (hạn mức số lượt gọi mỗi ngày) trên cả 5 khoá, gần 19 giờ sau mới có lại; trong lúc đó bot chạy `gemini-3.1-flash-lite` — bản này có lượt không gọi công cụ và tự nêu giá / nhận định không có trong dữ liệu.
-
-### SRS-5.1zzzzzzz515 · Tin phụ `$$$$$` ghi rõ FDA hay BOA (16/11/2026)
-Chủ dự án: "tin $$$$ giờ chia ra con FDA hay BOA làm thì viết ra nhé". Chỉ khi công tắc `AIOI_DONG_TRICH_XUAT` bật.
-- **Lượt chat:** dòng đầu thành `$$$$$ [FDA] [đã trích xuất: …]` (`che_do_test.chu_thich`).
-- **Tin vòng nền tự nhắn:** gửi trước một tin phụ `$$$$$ [BOA — việc]` (`che_do_test.nhan_boa`, `server._gui_boa`): nhắc khi im · xin ảnh sau đăng · hỏi sau đăng · chấm ảnh · hỏi còn bán · giữ kết nối · nhắc theo lịch · báo căn mới. Tin phụ không vào lịch sử chat; gửi hụt thì tin thật vẫn đi.

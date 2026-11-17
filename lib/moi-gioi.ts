@@ -95,7 +95,23 @@ export type KhachGioiThieu = {
   trang_thai: TrangThaiKhach;
   nguoi_phu_trach: string | null;
   cap_nhat_luc: string | null;
+  // SRS-5.1zzzzzzz525: phần chi cho môi giới, có sau khi admin chốt.
+  loai_chot: "ban" | "thue" | null;
+  gia_chot_vnd: number | null;
+  phi_cong_ty_vnd: number | null;
+  hoa_hong_ty_le: number | null;
+  hoa_hong_vnd: number | null;
+  hoa_hong_trang_thai: "cho_thu_phi" | "da_chi" | null;
+  hoa_hong_chi_luc: string | null;
 };
+export const COT_KHACH =
+  "id, created_at, seller_id, ten_khach, so_dien_thoai, nhu_cau, khu_vuc, ngan_sach, ma_tin, ghi_chu, trang_thai, nguoi_phu_trach, cap_nhat_luc, " +
+  "loai_chot, gia_chot_vnd, phi_cong_ty_vnd, hoa_hong_ty_le, hoa_hong_vnd, hoa_hong_trang_thai, hoa_hong_chi_luc";
+/** Tỷ lệ chi cho môi giới giới thiệu khách, trên phí công ty thu được (bảng `cau_hinh_moi_gioi`, admin chỉnh). */
+export type MucChiMG = { ty_le_ban: number; ty_le_thue: number };
+export const MUC_CHI_MAC_DINH: MucChiMG = { ty_le_ban: 0.2, ty_le_thue: 0.2 };
+export const phanTram = (x: number) => `${Math.round(x * 1000) / 10}%`.replace(".", ",");
+export const tienDong = (n: number | null | undefined) => (n == null ? "—" : `${Math.round(n).toLocaleString("vi-VN")} đ`);
 export type HoSoMoiGioi = {
   seller_id: string;
   ma_moi_gioi: string | null;
