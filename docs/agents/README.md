@@ -45,7 +45,7 @@ FDA và BOA là tên nội bộ; khách không bao giờ biết có hai bộ má
 | Code | `engine.py`, `agent_gop.py`, `prompts.py` | `lqc.py`, `qc_anh.py`, `hoi_sau_dang.py`, `followup.py` |
 
 BOA có bốn chuyên môn (ảnh · pháp lý · lợi thế · giá, xem `boa.md`). Bản anh Luận để ngỏ hai chuyên môn về sau: ghép khách mua (Matcher) và hâm tin nguội
-(Re-engagement). Ở đây đã có một phần: báo căn mới cho người mua (`bao_can_moi.py`), hỏi còn bán sau 20 ngày, giữ kết nối sau 6 ngày.
+(Re-engagement). Ở đây đã có một phần: hỏi còn bán sau 20 ngày, giữ kết nối sau 6 ngày; báo căn mới cho người mua (`bao_can_moi.py`) có code nhưng tắt cùng phía mua (SRS-526).
 
 Tên "LQC": bản anh Luận dùng cho riêng chuyên môn ảnh (BOA số 1). Ở đây `lqc.py` là bộ điều phối mọi tin chủ động (vai BOA chung), `qc_anh.py` mới là BOA số 1; chưa đổi tên tệp.
 
@@ -57,7 +57,7 @@ Tên "LQC": bản anh Luận dùng cho riêng chuyên môn ảnh (BOA số 1). �
 - **Một điều cứng:** việc cần xem kỹ ảnh / so giá / đối chiếu sổ mà lượt đó chưa có dữ liệu thì **không đoán** — hẹn xem kỹ rồi nhắn lại,
   và hẹn cũng phải giữ hứng cho khách.
 
-Luật này nằm trong khối GIỌNG của FDA (`prompts.GIONG`).
+Luật này nằm trong khối GIỌNG của FDA (`prompts.GIONG`). Từ SRS-526 FDA không còn công cụ tra cứu trong lượt: câu khách hỏi ghi vào căn (`_cho_tra_cuu`), BOA tra rồi nhắn lại (`hoi_sau_dang._tra_loi_tra_cuu`); không có dữ kiện thì nói thật và chuyển người phụ trách.
 
 ## 4. Luật an toàn chung
 
@@ -66,15 +66,16 @@ Luật này nằm trong khối GIỌNG của FDA (`prompts.GIONG`).
 3. **Không gấp gáp giả.** "Vừa cọc", "có khách" chỉ nói khi dữ liệu có.
 4. **Giá:** đưa căn thật đang rao, nhận xét nhẹ khi đủ căn cùng lối vào; không kê giá mới, không khuyên đầu tư.
 5. **Không tự xoá.** Ảnh kém: chủ đồng ý từng tấm mới ẩn.
-6. **Nhịp nền có chừng mực:** 8–21 giờ, tối đa 3 tin chủ động / người bán / ngày, chủ bỏ qua 2 tin liền thì thôi, chủ kêu phiền thì thôi hỏi (vẫn còn hỏi còn bán / giữ kết nối).
+6. **Nhịp nền có chừng mực:** 8–21 giờ, tối đa 1 tin chủ động / người bán / ngày (SRS-526; tin trả lời điều bot đã hẹn không tính), chủ bỏ qua 2 tin liền thì thôi, chủ kêu phiền thì thôi hỏi (vẫn còn hỏi còn bán / giữ kết nối).
 
 ## 5. Khác bản anh Luận (đã chốt hoặc do code)
 
 | Bản anh Luận | Repo này |
 |---|---|
-| BOA ~1 nhắc / ngày | 3 tin / người bán / ngày, 10 câu / căn (chốt 12/11) |
-| FDA chỉ có lời khách, việc cần tra thì hẹn BOA | FDA có công cụ (đọc ảnh trong lượt, so giá, tra dự án, quy hoạch) nên nhiều việc làm ngay; chỉ hẹn khi lượt đó chưa có dữ liệu |
-| FDA chỉ rao bán | Có cả phía mua (số tư vấn) |
+| BOA ~1 nhắc / ngày | Đã theo (SRS-526): 1 tin / người bán / ngày, 10 câu / căn; trước đó 3 tin |
+| FDA chỉ có lời khách, việc cần tra thì hẹn BOA | Đã theo (SRS-526): FDA không còn công cụ so giá, tra dự án, quy hoạch, pháp lý sổ — hẹn, BOA nhắn lại; ảnh khách gửi vẫn đọc trong lượt |
+| FDA chỉ rao bán | Đã theo (SRS-526): khách cần mua / thuê thì ghi nhu cầu, chuyển người phụ trách; vòng tư vấn mua tắt bằng `PHIA_MUA` |
+| (chưa có) | Môi giới gửi khách về, nhận 20 % phí công ty thu được — mức tạm, admin chỉnh được (SRS-524, 525); chủ dự án giữ |
 | Hứa "em xoá thông tin trên ảnh sổ" | Chỉ nói "để em kiểm, không đăng" |
 | Điểm chất lượng của BOA cộng vào điểm uy tín | Đã nối cả bốn mảng (SRS-520, `diem_boa.py`): mỗi mảng 0–1, chỉnh mục của nó trong khoảng 0,75–1 ở điểm tin lượt chat và ở `diem_tin` trên DB (→ hạng) |
 | Mỗi ngày soi lại tin điểm còn thấp | Vòng nền chạy liên tục trong khung giờ, xét tin điểm BOA thấp trước (SRS-520) |

@@ -57,7 +57,7 @@ AI ghi cả điều lời chủ **chắc chắn kéo theo** (nhà trong hẻm c�
 | Người thật (admin) đang tiếp chủ | không chen (cờ nhường sân + nút "giữ" trên CRM) |
 | Chủ đang khai dở một căn khác | không hỏi chuyện căn cũ |
 | Câu hỏi trước chưa được đáp | chờ 24 giờ; chủ bỏ qua **2 tin liền** thì thôi hẳn (hỏi còn bán / giữ kết nối có nhịp riêng 20 / 6 ngày, không theo luật này) |
-| Mỗi **người bán** / ngày | tối đa 3 tin chủ động, tính **mọi loại tin và mọi căn** của người đó, đếm từ lịch sử chat (SRS-475) |
+| Mỗi **người bán** / ngày | tối đa 1 tin chủ động (SRS-526; trước đó 3), tính **mọi loại tin và mọi căn** của người đó, đếm từ lịch sử chat (SRS-475); tin trả lời điều bot đã hẹn không tính |
 | Mỗi căn / tổng sau đăng | tối đa **10 câu** (tính cả tin Image LQC) — chạm trần thì phần cuối hàng (giá, xem nhà, chi tiết) bị cắt |
 | Mỗi tin | đúng MỘT câu hỏi; AI viết ra hơn một câu hỏi hay quá dài thì không gửi |
 | Chủ đáp chung ("ok", "ừ", "được") cho câu hỏi chọn | coi là chưa chọn: không hỏi lại, không đoán, để trống tới khi có khách hỏi (SRS-450) |
@@ -121,5 +121,5 @@ AI ghi cả điều lời chủ **chắc chắn kéo theo** (nhà trong hẻm c�
 - Ảnh sổ: chỉ nói "để em kiểm, không đăng"; vòng nền che thông tin cá nhân từ SRS-522, lời hứa chưa đổi.
 - Ảnh kém: chủ đồng ý từng tấm mới ẩn.
 - Giá: phía bán được nhận xét giá chủ rao, nói nhẹ.
-- Trần tin: "Giữ 10" — 10 câu sau đăng / căn, ≤ 3 tin chủ động / người bán / ngày (mọi loại, mọi căn — SRS-475), chủ bỏ qua 2 tin liền thì thôi.
+- Trần tin: "Giữ 10" — 10 câu sau đăng / căn, ≤ 1 tin chủ động / người bán / ngày (3 → 1 ở SRS-526) (mọi loại, mọi căn — SRS-475), chủ bỏ qua 2 tin liền thì thôi.
 - Thứ tự khi nhiều mảng cùng muốn hỏi: ảnh → pháp lý → lợi thế → so sánh → giá; một hàng chung, không phải 4 vòng nhắn riêng.

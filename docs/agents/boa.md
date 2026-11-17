@@ -10,6 +10,7 @@ BOA chạy nền theo từng căn đã lên web: xem lại cả hồ sơ rồi n
 - Tin vừa lên web: xin ảnh sau 10 phút nếu chưa đủ 6 ảnh.
 - Bộ ảnh đổi: chấm lại, chỉ ảnh mới gửi cho model (SRS-511).
 - Chủ im: hàng câu hỏi sau đăng, mỗi lần một câu.
+- FDA đã hẹn xem kỹ một điều (so giá, dự án, quy hoạch, pháp lý sổ): BOA tra rồi nhắn lại trước mọi câu khác; không có dữ kiện thì nói thật và chuyển người phụ trách (SRS-526).
 - Định kỳ: hỏi còn bán (20 ngày), giữ kết nối Zalo (6 ngày) — câu mẫu, không gọi model.
 
 ## 2. Nhắn thế nào

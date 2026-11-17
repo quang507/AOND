@@ -73,6 +73,17 @@ Chưa có: nhánh từ đánh giá ≤ 3 sao, `unfollow`.
 
 ## Nhật ký sửa (tiếp)
 
+### SRS-5.1zzzzzzz516 · Bốn chỗ sai lộ ra khi bắn thử trên Gemini (16/11/2026)
+Chủ dự án: "Sửa luôn". Bản ghi: `Ban-thu-FDA-BOA_16-11-2026.md` (ngoài repo).
+- **Thuê đã qua thành "đang cho thuê":** `_mot_cum_mot_o` bỏ `thu_nhap_thue` khi căn chưa có `co_hdt = co` (cùng lượt hoặc đã ghi); mô tả ô dặn ghi kèm `co_hdt`, nhà hết cho thuê thì không ghi.
+- **Giá "6.x" vào bản tin:** ô `gia` có số lẻ là chữ x (`_GIA_CHUA_RO_RE`) không được ghi → căn chưa đủ ngưỡng rao, bot hỏi con số.
+- **"TBT" đọc thành Tân Bình:** kiến thức nghề nói rõ viết tắt chữ đầu là tên đường, không phải quận.
+- **Bot nói "Hệ thống đã cập nhật … vào bản tin":** lời nhắc lượt sửa tin từng mở bằng "HỆ THỐNG ĐÃ ĐỌC … (đã ghi vào…)", model chép lại; nay là "KHÁCH VỪA ĐỔI / THÊM THÔNG TIN CĂN".
+- **Cỡ:** lượt hỏi thông tin 58.021 → 58.219 ký tự. `do-prompt.py` 3/3.
+- **Bắn lại:** thuê đã qua, giá 6.x và câu "hệ thống đã cập nhật" hết; "TBT" đúng khi cuộc chat đang nói Quận 5, vẫn thành Tân Bình khi đang nói căn ở Tân Bình.
+- **"T1L2ST":** chủ dự án chốt là 1 trệt 2 lầu sân thượng (kiến thức nghề từng ghi trệt + lửng + 2 lầu); có lửng thì tin ghi rõ chữ "lửng".
+- **Hạn mức Gemini miễn phí:** sau khoảng 45 lượt bắn thử trong ngày, `gemini-3.5-flash` trả 429 (hạn mức số lượt gọi mỗi ngày) trên cả 5 khoá, gần 19 giờ sau mới có lại; trong lúc đó bot chạy `gemini-3.1-flash-lite` — bản này có lượt không gọi công cụ và tự nêu giá / nhận định không có trong dữ liệu.
+
 ### SRS-5.1zzzzzzz515 · Tin phụ `$$$$$` ghi rõ FDA hay BOA (16/11/2026)
 Chủ dự án: "tin $$$$ giờ chia ra con FDA hay BOA làm thì viết ra nhé". Chỉ khi công tắc `AIOI_DONG_TRICH_XUAT` bật.
 - **Lượt chat:** dòng đầu thành `$$$$$ [FDA] [đã trích xuất: …]` (`che_do_test.chu_thich`).

@@ -8,7 +8,7 @@ FDA nằm trong lượt chat, đáp ngay, lấy tin và soạn bản rao.
 
 | # | Nhiệm vụ | Cốt lõi |
 |---|---|---|
-| 1 | **Rao bán / cho thuê** | Khách tới mua hay tìm thuê thì chuyển sang luồng tư vấn mua (số tư vấn), không ôm vào luồng rao. |
+| 1 | **Rao bán / cho thuê** | Khách tới mua hay tìm thuê thì ghi nhu cầu, chuyển người phụ trách và chỉ web (SRS-526), không ôm vào luồng rao. |
 | 2 | **Nhanh nhất lấy đủ để rao** (một hay nhiều căn) | Ngưỡng rao = loại hình + vị trí + giá. Không hỏi lan man; phần sâu để BOA. |
 | 3 | **Nhanh nhất biết vai người gửi** | Vai đổi cách hỏi, mức phí, độ tin. |
 | 4 | **Để lại cảm giác tốt** | Tích cực, thật lòng; mở đường cho BOA quay lại chăm tiếp. |

@@ -801,6 +801,16 @@ Edge function `nudge` đã gỡ; việc nhắn khách chủ động do lõi ch�
 
 Nhật ký sửa: chỉ giữ 10 mục mới nhất ở đây (mới nhất ở đầu, mỗi mục ≤ ~5 dòng); mục cũ hơn ở `docs/07-srs-luu-tru.md` — mã giữ nguyên, tìm bằng `grep -n "<mã> " docs/07*.md`. Bản đầy đủ của SRS-299…308 trước khi rút gọn (30/10): `git show 5c7d5ea:docs/07-srs.md`.
 
+### SRS-5.1zzzzzzz526 · Theo thiết kế r2 của anh Luận: BOA 1 tin / ngày, FDA thôi tra cứu trong lượt, tắt phía người mua (18/11/2026)
+Chủ dự án 17/11: "7 làm giống sếp đi" — chọn ba điểm: nhịp nhắn 1 tin / ngày, FDA thôi tra cứu ngay, bỏ phía người mua. Giữ lại: môi giới gửi khách về (SRS-524, 525).
+- **Nhịp:** `TIN_CHU_DONG_MOT_NGAY` mặc định 1 (trước 3). Tin trả lời điều bot đã hẹn (`tra_hen`) không tính trần, không chờ chủ đáp câu cũ.
+- **FDA thôi tra cứu:** lượt chat bỏ các công cụ `tra_du_an`, `du_an_trong_khu`, `kiem_tra_phap_ly_so`, `tham_dinh_quy_hoach`, `tra_cuu_phong_thuy` (giữ rổ hàng, bộ nhớ dự án, giá đã gửi, tính phí; ảnh khách gửi vẫn đọc trong lượt). Khách hỏi điều phải tra (ô `can_tra_cuu` + cụm trích, hoặc hỏi giá cao hay thấp) thì FDA hẹn, câu hỏi ghi vào căn (`_cho_tra_cuu`, giữ 3 câu). `FDA_TRA_CUU=bat` trả lại như cũ.
+- **BOA trả lời:** `hoi_sau_dang._tra_loi_tra_cuu` — vòng nền xét căn có câu hẹn trước, chat im đủ lâu thì tra bằng các công cụ trên cùng căn đang rao gần rồi nhắn một tin. Không có dữ kiện nào thì tin của model bị bỏ; hai lượt vẫn không có thì code soạn câu "chưa có dữ liệu, không đoán" và chuyển người phụ trách. Hẹn quá 24 giờ thì bỏ.
+- **Tắt phía mua:** `PHIA_MUA` mặc định tắt. Khách cần mua / thuê: bot ghi nhu cầu, báo người phụ trách một lần (`bao_can_nguoi`), chỉ web; không gợi ý căn, không hẹn lịch xem; vòng báo căn mới không chạy. `PHIA_MUA=bat` trả lại.
+- **Prompt:** người bán "hỏi thông tin" 59.037 → 55.381 ký tự.
+- **Thử (máy 146, ID thử):** người bán hỏi "giá cao hay thấp, có dính quy hoạch không" → FDA hẹn, câu hẹn nằm trong căn; BOA nhắn lại "chưa đủ dữ liệu để so giá", xin số tờ số thửa để tra quy hoạch, xoá hẹn; lượt model quá hạn thì giữ hẹn. Khách cần mua → ghi nhu cầu, chuyển người phụ trách, câu sau không hỏi tiếp. Lần bắn đầu BOA tự khẳng định "giá cạnh tranh, không vướng quy hoạch" khi không có dữ kiện — đã chặn bằng code (`2ae1cf8`).
+- **Chưa làm:** câu "chưa có dữ liệu" do code soạn chưa bắn qua Zalo thật; số Zalo tư vấn mua vẫn đăng nhập ở cầu nối.
+
 ### SRS-5.1zzzzzzz525 · Mức chi cho môi giới giới thiệu khách; chốt và đánh dấu đã chi; báo admin qua Zalo (17/11/2026)
 Chủ dự án 17/11: "đưa con số theo thị trường đi … cứ đưa số hợp lý trước chỉnh sau, còn gì thiếu thì làm để chạy được đã".
 - **Mức khởi đầu: 20 % phí công ty thu được**, cả mua bán và cho thuê, chi sau khi công ty thu đủ phí, trước thuế thu nhập cá nhân. Mốc tra 17/11: môi giới có khách và môi giới giữ hàng thường chia 50/50; người chỉ giới thiệu nhận 10–20 %; HiFriendz chi cộng tác viên khoảng 12–22 % tiền thuê một tháng. Ở đây môi giới chỉ giới thiệu, admin dẫn khách.
@@ -871,14 +881,3 @@ Chủ dự án: "sau chọn flash-lite thôi" (`gemini-3.5-flash` hết hạn m�
 - **Cấu hình 146:** `GEMINI_MODEL=gemini-3.1-flash-lite` trong `.env` lõi (sao lưu `C:/aond/backup/env_20261116_201836`). Mặc định trong code không đổi.
 - **`llm/du_phong.py`:** còn một model thì một lần quá hạn làm cả đường nghỉ 60 s (lượt kiểm sau khi đổi trả câu giữ chỗ). Khi công tắc chỉ-Gemini bật, quá hạn lần đầu thì thử khoá kế, lần hai mới cho model nghỉ.
 - **Còn lại:** flash-lite có lượt không gọi công cụ, tự nêu giá / nhận định (SRS-516); khoá Groq vẫn 403.
-
-### SRS-5.1zzzzzzz516 · Bốn chỗ sai lộ ra khi bắn thử trên Gemini (16/11/2026)
-Chủ dự án: "Sửa luôn". Bản ghi: `Ban-thu-FDA-BOA_16-11-2026.md` (ngoài repo).
-- **Thuê đã qua thành "đang cho thuê":** `_mot_cum_mot_o` bỏ `thu_nhap_thue` khi căn chưa có `co_hdt = co` (cùng lượt hoặc đã ghi); mô tả ô dặn ghi kèm `co_hdt`, nhà hết cho thuê thì không ghi.
-- **Giá "6.x" vào bản tin:** ô `gia` có số lẻ là chữ x (`_GIA_CHUA_RO_RE`) không được ghi → căn chưa đủ ngưỡng rao, bot hỏi con số.
-- **"TBT" đọc thành Tân Bình:** kiến thức nghề nói rõ viết tắt chữ đầu là tên đường, không phải quận.
-- **Bot nói "Hệ thống đã cập nhật … vào bản tin":** lời nhắc lượt sửa tin từng mở bằng "HỆ THỐNG ĐÃ ĐỌC … (đã ghi vào…)", model chép lại; nay là "KHÁCH VỪA ĐỔI / THÊM THÔNG TIN CĂN".
-- **Cỡ:** lượt hỏi thông tin 58.021 → 58.219 ký tự. `do-prompt.py` 3/3.
-- **Bắn lại:** thuê đã qua, giá 6.x và câu "hệ thống đã cập nhật" hết; "TBT" đúng khi cuộc chat đang nói Quận 5, vẫn thành Tân Bình khi đang nói căn ở Tân Bình.
-- **"T1L2ST":** chủ dự án chốt là 1 trệt 2 lầu sân thượng (kiến thức nghề từng ghi trệt + lửng + 2 lầu); có lửng thì tin ghi rõ chữ "lửng".
-- **Hạn mức Gemini miễn phí:** sau khoảng 45 lượt bắn thử trong ngày, `gemini-3.5-flash` trả 429 (hạn mức số lượt gọi mỗi ngày) trên cả 5 khoá, gần 19 giờ sau mới có lại; trong lúc đó bot chạy `gemini-3.1-flash-lite` — bản này có lượt không gọi công cụ và tự nêu giá / nhận định không có trong dữ liệu.
